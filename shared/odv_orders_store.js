@@ -321,7 +321,8 @@
     });
   }
   const span = x => [x.debut ? min(x.debut) : 0, x.fin ? min(x.fin) : 1440];
-  /** État d'un membre sur [début, fin[ (minutes) d'après ses plages du jour : { ok, raison: non_declare | non_affectable,
+  /** État d'un membre sur [début, fin[ (minutes) d'après ses plages du jour : { ok, raison: non_declare | non_couvert |
+   *  non_affectable,
    *  categorie } ; plages null : semaine non déclarée. */
   function memberState(plages, kind, s, e) {
     if (!plages) return {
@@ -353,11 +354,12 @@
       ok: true
     } : {
       ok: false,
-      raison: good.length ? 'non_affectable' : 'non_declare'
+      raison: 'non_couvert'
     };
   }
   const range = e => [min(e.debut), min(e.debut) + e.duree];
-  /** Conflits de l'ordre de vol : Map id → [{ code: non_declare | non_affectable | chevauchement | doublon, tri,
+  /** Conflits de l'ordre de vol : Map id → [{ code: non_declare (semaine non déclarée) | non_couvert (pas de plage
+   *  affectable sur toute la durée) | non_affectable (plage d'une catégorie non affectable) | chevauchement | doublon, tri,
    *  categorie?, avec? }] ; éléments annulés et notes ignorés. Les zones (OdvAirspace.check) sont vérifiées par la page. */
   function conflicts(doc, {
     dispos = {},

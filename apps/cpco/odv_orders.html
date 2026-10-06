@@ -1,0 +1,644 @@
+<!doctype html>
+<html data-tool="dark" lang="fr">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Ordres de vols</title>
+<link rel="stylesheet" href="../../shared/repository_nav.css?v=f6a61e75">
+<script src="../../config/repository_tree?v=e42a878f"></script>
+<style data-layer="app">
+@layer app {
+  /* Ordres de vols : frise horaire (heures z) ; angles droits partout (frise, plaquettes, barres). */
+  :root {
+    font-family: Inter, system-ui, Segoe UI, Arial, sans-serif;
+    color-scheme: dark;
+    /* surfaces et encres : celles du design à matières s'il y en a un (designs_skeuo.css), sinon celles du thème */
+    --odvo-ink: var(--sk-ink, var(--ink));
+    --odvo-mute: var(--sk-ink-2, var(--muted));
+    --odvo-surface: var(--sk-card, var(--field));
+    --odvo-head: var(--sk-card, var(--card))
+  }
+  * {
+    box-sizing: border-box
+  }
+  body {
+    margin: 0;
+    color: var(--ink)
+  }
+  header {
+    padding: 10px 18px
+  }
+  header h1 {
+    font-size: 18px;
+    margin: 0
+  }
+  main.odvo-page {
+    max-width: 1700px;
+    margin: 0 auto;
+    padding: 16px 16px 48px
+  }
+  main.odvo-page>section {
+    background: var(--card);
+    border: 1px solid var(--line);
+    padding: 12px 14px;
+    margin: 0 0 14px;
+    min-width: 0
+  }
+  main.odvo-page h2 {
+    font-size: 15px;
+    margin: 0 0 10px
+  }
+  main.odvo-page h3 {
+    font-size: 12px;
+    margin: 10px 0 4px;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    color: var(--muted)
+  }
+  .odvo-page button,
+  .odvo-page select,
+  .odvo-page input:not([type=checkbox]):not([type=range]),
+  .odvo-page textarea,
+  .odvo-dlg :is(button, select, input:not([type=checkbox]), textarea) {
+    background: var(--field);
+    color: var(--ink);
+    border: 1px solid var(--line);
+    padding: 5px 8px;
+    font: inherit;
+    font-size: 13px
+  }
+  .odvo-page button,
+  .odvo-dlg button {
+    cursor: pointer
+  }
+  :is(.odvo-page, .odvo-dlg) button.on,
+  :is(.odvo-page, .odvo-dlg) button.primary {
+    background: var(--repo-accent, #71b7ff);
+    border-color: transparent;
+    color: #0b1016;
+    font-weight: 650
+  }
+  .odvo-dlg button.danger {
+    color: #ff8a8a;
+    border-color: #ff8a8a
+  }
+  .row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap
+  }
+  .mut {
+    color: var(--odvo-mute);
+    font-size: 12px
+  }
+  .odvo-sep {
+    width: 1px;
+    align-self: stretch;
+    background: var(--line);
+    margin: 0 4px
+  }
+  .odvo-week {
+    font-size: 15px
+  }
+  .odvo-days {
+    margin-top: 8px
+  }
+  .odvo-badge {
+    display: inline-block;
+    min-width: 1.4em;
+    padding: 0 4px;
+    background: #d33;
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700
+  }
+  .odvo-ro .odvo-rsz {
+    display: none
+  }
+  /* jour : palette + frise */
+  .odvo-day {
+    display: grid;
+    grid-template-columns: 190px minmax(0, 1fr);
+    gap: 12px;
+    align-items: start
+  }
+  .odvo-palette {
+    max-height: 78vh;
+    overflow: auto;
+    font-size: 12px
+  }
+  .odvo-tpl,
+  .odvo-mem {
+    border: 1px solid var(--line);
+    border-left-width: 4px;
+    padding: 3px 6px;
+    margin: 0 0 3px;
+    cursor: grab;
+    user-select: none;
+    background: var(--odvo-surface);
+    color: var(--odvo-ink)
+  }
+  .odvo-tpl small {
+    opacity: .7
+  }
+  .odvo-mem {
+    display: grid;
+    grid-template-columns: 3.2em 1fr;
+    gap: 6px;
+    align-items: center;
+    border-left-width: 1px
+  }
+  .odvo-bar {
+    position: relative;
+    display: block;
+    height: 9px;
+    background: color-mix(in srgb, var(--line) 60%, transparent)
+  }
+  .odvo-bar i {
+    position: absolute;
+    top: 0;
+    bottom: 0
+  }
+  .odvo-bar-none {
+    background: repeating-linear-gradient(45deg, transparent 0 3px, color-mix(in srgb, var(--muted) 35%, transparent) 3px 5px)
+  }
+  .odvo-scroll {
+    overflow: auto;
+    max-height: 78vh;
+    border: 1px solid var(--line);
+    background: var(--repo-veil, transparent)
+  }
+  /* frise posée sur le voile des données (--repo-veil, sombre dans les designs à matières) : encre du thème */
+  .odvo-scroll {
+    color: var(--ink)
+  }
+  .odvo-scroll .odvo-tri {
+    background: var(--field);
+    color: var(--ink)
+  }
+  .odvo-frise {
+    position: relative;
+    width: max-content;
+    min-width: 100%
+  }
+  .odvo-row {
+    display: grid;
+    grid-template-columns: 92px var(--w);
+    border-bottom: 1px solid var(--line)
+  }
+  .odvo-lbl {
+    position: sticky;
+    left: 0;
+    z-index: 3;
+    background: var(--odvo-head);
+    color: var(--odvo-mute);
+    font-size: 11px;
+    font-weight: 650;
+    padding: 4px 6px;
+    border-right: 1px solid var(--line)
+  }
+  .odvo-lane {
+    position: relative
+  }
+  .odvo-ruler .odvo-lane {
+    height: 20px
+  }
+  .odvo-ruler span {
+    position: absolute;
+    top: 3px;
+    font-size: 10px;
+    transform: translateX(-50%);
+    color: var(--muted)
+  }
+  .odvo-overlay {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 92px;
+    pointer-events: none;
+    z-index: 1
+  }
+  .odvo-tr {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    border-left: 2px dashed color-mix(in srgb, var(--repo-accent, #71b7ff) 70%, transparent)
+  }
+  .odvo-tr span {
+    position: absolute;
+    top: 21px;
+    left: 4px;
+    font-size: 10px;
+    color: var(--repo-accent, #71b7ff);
+    text-transform: uppercase
+  }
+  .odvo-night {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    background: color-mix(in srgb, #1b2a55 35%, transparent)
+  }
+  .odvo-now {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    border-left: 2px solid #ff4d4d
+  }
+  .odvo-ll,
+  .odvo-tog,
+  .odvo-zn {
+    position: absolute;
+    top: 3px;
+    bottom: 3px;
+    font-size: 10px;
+    overflow: hidden;
+    white-space: nowrap;
+    padding: 1px 4px;
+    z-index: 2
+  }
+  .odvo-ll {
+    color: #111
+  }
+  .odvo-ll-demandee {
+    opacity: .55;
+    background-image: repeating-linear-gradient(45deg, transparent 0 4px, rgba(0, 0, 0, .25) 4px 6px) !important
+  }
+  .odvo-tog {
+    background: color-mix(in srgb, #22c55e 30%, transparent);
+    border: 1px solid color-mix(in srgb, #22c55e 60%, transparent)
+  }
+  .odvo-tog span {
+    margin-right: 3px;
+    font-weight: 600
+  }
+  .odvo-zn {
+    display: flex;
+    gap: 3px;
+    padding: 0
+  }
+  .odvo-z {
+    padding: 1px 4px;
+    border: 1px solid
+  }
+  .odvo-z-active {
+    background: #16a34a;
+    color: #fff;
+    border-color: #16a34a
+  }
+  .odvo-z-demandee {
+    background: #f59e0b;
+    color: #111;
+    border-color: #f59e0b
+  }
+  .odvo-z-absente,
+  .odvo-z-interdite {
+    background: #dc2626;
+    color: #fff;
+    border-color: #dc2626
+  }
+  /* plaquettes */
+  .odvo-it {
+    position: absolute;
+    z-index: 2;
+    border: 2px solid;
+    padding: 2px 4px;
+    font-size: 11px;
+    line-height: 1.25;
+    overflow: hidden;
+    cursor: pointer;
+    user-select: none
+  }
+  .odvo-it.conflit {
+    outline: 2px solid #ff3b3b;
+    outline-offset: -1px
+  }
+  .odvo-it.flash {
+    animation: odvoFlash .4s 3
+  }
+  @keyframes odvoFlash {
+    50% {
+      outline: 4px solid #ffd400
+    }
+  }
+  .odvo-it.odvo-annule {
+    opacity: .45;
+    text-decoration: line-through
+  }
+  .odvo-it.odvo-fait {
+    box-shadow: inset 0 -4px 0 #22c55e
+  }
+  .odvo-it.odvo-non_fait {
+    box-shadow: inset 0 -4px 0 #f59e0b
+  }
+  .odvo-it-h {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis
+  }
+  .odvo-it-t {
+    font-size: 10px;
+    opacity: .85;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis
+  }
+  .odvo-it-c {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px;
+    margin-top: 2px
+  }
+  .odvo-it-n {
+    font-style: italic;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis
+  }
+  .odvo-note {
+    border-style: dashed
+  }
+  .odvo-tri {
+    padding: 0 3px;
+    border: 1px solid currentColor;
+    font-size: 10px;
+    font-weight: 650;
+    cursor: grab;
+    background: var(--odvo-surface);
+    color: var(--odvo-ink)
+  }
+  .odvo-tri.bad {
+    background: #dc2626;
+    color: #fff;
+    border-color: #dc2626
+  }
+  .odvo-mis,
+  .odvo-cr,
+  .odvo-p {
+    font-size: 9px;
+    padding: 0 3px;
+    border: 1px solid currentColor
+  }
+  .odvo-cr-ME {
+    background: #16a34a;
+    color: #fff
+  }
+  .odvo-cr-BACHE {
+    background: #dc2626;
+    color: #fff
+  }
+  .odvo-cr-MNE {
+    background: #f59e0b;
+    color: #111
+  }
+  .odvo-p {
+    background: #7c3aed;
+    color: #fff
+  }
+  .odvo-warn {
+    float: right;
+    background: #dc2626;
+    color: #fff;
+    font-size: 10px;
+    padding: 0 3px;
+    margin-left: 3px
+  }
+  .odvo-rec {
+    float: right;
+    font-size: 10px;
+    opacity: .8
+  }
+  .odvo-rsz {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 6px;
+    cursor: ew-resize
+  }
+  .odvo-problems {
+    margin: 8px 0 0;
+    font-size: 12px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    align-items: center
+  }
+  .odvo-prob {
+    font-size: 11px !important;
+    border-color: #dc2626 !important
+  }
+  .odvo-zoom {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    font-size: 12px;
+    margin: 0 0 6px
+  }
+  /* semaine, statistiques */
+  .odvo-wk {
+    border-collapse: collapse;
+    width: 100%;
+    font-size: 12px
+  }
+  .odvo-wk :is(th, td) {
+    border: 1px solid var(--line);
+    padding: 3px 5px;
+    text-align: left
+  }
+  .odvo-wk td[data-cell] {
+    cursor: pointer;
+    min-width: 90px;
+    position: relative
+  }
+  .odvo-occ {
+    position: absolute;
+    top: 1px;
+    right: 2px;
+    font-size: 9px;
+    background: #1a5898;
+    color: #fff;
+    padding: 0 3px
+  }
+  .odvo-wk td.bad {
+    color: #ff6b6b;
+    font-weight: 700
+  }
+  .odvo-wk td.warn {
+    color: #f59e0b;
+    font-weight: 700
+  }
+  .odvo-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 8px;
+    margin: 0 0 12px
+  }
+  .odvo-card {
+    border: 1px solid var(--line);
+    padding: 8px;
+    display: grid
+  }
+  .odvo-card b {
+    font-size: 20px
+  }
+  .odvo-card span {
+    font-size: 11px;
+    color: var(--muted)
+  }
+  .odvo-chg {
+    font-size: 12px;
+    padding-left: 18px
+  }
+  /* fenêtre d'édition */
+  .odvo-dlg {
+    width: min(760px, 94vw);
+    padding: 0;
+    border: 1px solid var(--line);
+    background: var(--sk-card, var(--repo-card, var(--card, #1d222a)));
+    color: var(--odvo-ink)
+  }
+  .odvo-dlg :is(select, input:not([type=checkbox]), textarea) {
+    background: color-mix(in srgb, var(--odvo-ink) 7%, transparent) !important;
+    color: var(--odvo-ink) !important
+  }
+  .odvo-dlg::backdrop {
+    background: rgba(10, 14, 20, .55)
+  }
+  .odvo-dlg header,
+  .odvo-dlg footer {
+    padding: 10px 14px;
+    display: flex;
+    gap: 8px;
+    align-items: center
+  }
+  .odvo-dlg-b {
+    padding: 0 14px;
+    max-height: 70vh;
+    overflow: auto;
+    font-size: 13px
+  }
+  .odvo-dlg label {
+    display: grid;
+    gap: 2px;
+    font-size: 12px
+  }
+  .odvo-dlg label.wide {
+    grid-column: 1/-1;
+    margin: 6px 0
+  }
+  .odvo-dlg label>span {
+    color: var(--odvo-mute)
+  }
+  .odvo-grid2 {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+    gap: 8px;
+    margin: 6px 0
+  }
+  .odvo-av {
+    border-collapse: collapse;
+    font-size: 12px
+  }
+  .odvo-av :is(th, td) {
+    padding: 2px 4px;
+    text-align: left
+  }
+  .odvo-dlg fieldset {
+    border: 1px solid var(--line);
+    margin: 8px 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 12px
+  }
+  .odvo-dlg fieldset label {
+    display: flex;
+    gap: 4px;
+    align-items: center
+  }
+  .odvo-dlg h4 {
+    margin: 10px 0 4px;
+    font-size: 12px
+  }
+  /* briefing (plein écran) */
+  #odvoDaySection:fullscreen {
+    overflow: auto;
+    padding: 12px;
+    background: var(--card)
+  }
+  #odvoDaySection:fullscreen .odvo-scroll,
+  #odvoDaySection:fullscreen .odvo-palette {
+    max-height: none
+  }
+  @media (max-width: 760px) {
+    .odvo-day {
+      grid-template-columns: 1fr
+    }
+    .odvo-palette {
+      max-height: 30vh
+    }
+  }
+}
+</style>
+</head>
+<body>
+<header><h1>Ordres de vols</h1><div class="mut">Centre de planification et de conduite des opérations</div></header>
+<main class="odvo-page">
+<section data-block-id="semaine" data-icon="calendar" data-subtitle="Semaine ISO, jours (nombre d'éléments en conflit), vue, officier de permanence. Heures en z (UTC).">
+  <h2>Semaine</h2>
+  <div id="odvoBar" data-no-i18n></div>
+</section>
+<section id="odvoDaySection" data-block-id="jour" data-icon="clock" data-subtitle="Glisser un modèle sur sa section, un membre sur une plaquette ; clic : modifier ; bord droit : durée. Tranches matin, après-midi, soir du Planning ODV.">
+  <h2>Ordre du jour</h2>
+  <div id="odvoDay">
+    <div class="odvo-zoom"><span>Zoom</span><input type="range" id="odvoZoom" min="0" max="4" step="1"></div>
+    <div class="odvo-day">
+      <div class="odvo-palette" id="odvoPalette" data-no-i18n></div>
+      <div>
+        <div class="odvo-scroll" id="odvoGrid" data-no-i18n></div>
+        <div class="odvo-problems" id="odvoProblems" data-no-i18n></div>
+      </div>
+    </div>
+  </div>
+  <div id="odvoWeekView" data-no-i18n hidden></div>
+  <div id="odvoStats" data-no-i18n hidden></div>
+</section>
+<section data-block-id="zones" data-icon="map" data-subtitle="Activations des zones par réseau (VATSIM, IVAO), saisies à la main : une zone requise par un vol sans activation « active » de son réseau sur toute sa durée est en conflit.">
+  <h2>Activations des zones</h2>
+  <div id="odvoActivations"></div>
+</section>
+</main>
+<script src="../../shared/kit.js?v=a819e6df"></script>
+<script src="../../shared/repository_nav.js?v=e056e6ab"></script>
+<script src="../../shared/mission_core/vendor/js-yaml.min.js?v=64052ae4"></script>
+<script src="../../shared/data_files.js?v=dcb47c6a" data-file="references/callsigns.js"></script>
+<script src="../../shared/data_files.js?v=dcb47c6a" data-file="references/defa_reference.js"></script>
+<script src="../../shared/mission_core/vocab.js?v=51b46b47"></script>
+<script src="../../shared/sia_base.js?v=50435856"></script>
+<script src="../../shared/assignments.js?v=130797f4"></script>
+<script src="../../shared/assign_dialog.js?v=685b7192"></script>
+<script src="../../shared/mission_core/assist.js?v=6742e451"></script>
+<script src="odv_core.js?v=e1e7d2da"></script>
+<script src="odv_settings.js?v=dee80a0d"></script>
+<script src="../../shared/odv_airspace.js?v=649e93b8"></script>
+<script src="../../shared/odv_activations_editor.js?v=2d510137"></script>
+<script src="../../shared/odv_reports.js?v=dad6bbad"></script>
+<script src="../../shared/odv_orders_store.js?v=e4072c38"></script>
+<script src="odv_orders.js?v=9fe453c3"></script>
+<script src="../../shared/app_framework.js?v=278663dd"></script>
+<script src="../../shared/content_i18n.js?v=7afecb78"></script>
+<script>
+// Traductions des textes fixes de la page (contenus calculés : zones data-no-i18n, traduits par le script).
+RepositoryContentI18n([
+  ["Ordres de vols", "Flight orders", "Flugbefehle", "Órdenes de vuelo"],
+  ["Centre de planification et de conduite des opérations", "Operations planning and command centre", "Einsatzplanungs- und Führungszentrum", "Centro de planificación y conducción de operaciones"],
+  ["Semaine", "Week", "Woche", "Semana"],
+  ["Semaine ISO, jours (nombre d'éléments en conflit), vue, officier de permanence. Heures en z (UTC).", "ISO week, days (number of items in conflict), view, duty officer. Times in z (UTC).", "ISO-Woche, Tage (Anzahl der Elemente im Konflikt), Ansicht, Diensthabender. Zeiten in z (UTC).", "Semana ISO, días (número de elementos en conflicto), vista, oficial de guardia. Horas en z (UTC)."],
+  ["Ordre du jour", "Order of the day", "Tagesbefehl", "Orden del día"],
+  ["Glisser un modèle sur sa section, un membre sur une plaquette ; clic : modifier ; bord droit : durée. Tranches matin, après-midi, soir du Planning ODV.", "Drag a template onto its section, a member onto a flight strip; click: edit; right edge: duration. Morning, afternoon, evening slots of the ODV planning.", "Vorlage auf ihren Abschnitt ziehen, Mitglied auf einen Streifen; Klick: bearbeiten; rechter Rand: Dauer. Zeitfenster Morgen, Nachmittag, Abend der ODV-Planung.", "Arrastrar una plantilla a su sección, un miembro a una ficha; clic: modificar; borde derecho: duración. Franjas mañana, tarde, noche de la planificación ODV."],
+  ["Zoom", "Zoom", "Zoom", "Zoom"],
+  ["Activations des zones", "Area activations", "Gebietsaktivierungen", "Activaciones de zonas"],
+  ["Activations des zones par réseau (VATSIM, IVAO), saisies à la main : une zone requise par un vol sans activation « active » de son réseau sur toute sa durée est en conflit.", "Area activations per network (VATSIM, IVAO), entered by hand: an area required by a flight without an “active” activation of its network over its whole duration is in conflict.", "Gebietsaktivierungen je Netzwerk (VATSIM, IVAO), manuell eingegeben: ein von einem Flug benötigtes Gebiet ohne „aktive“ Aktivierung seines Netzwerks über die ganze Dauer steht im Konflikt.", "Activaciones de zonas por red (VATSIM, IVAO), introducidas a mano: una zona requerida por un vuelo sin activación «activa» de su red durante toda su duración está en conflicto."],
+]);
+</script>
+</body>
+</html>

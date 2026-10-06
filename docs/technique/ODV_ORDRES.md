@@ -52,9 +52,9 @@ Les 12 types de l'outil V0 correspondent aux catégories de `data/config/disponi
 - Règle (`SuiteDispos.affectable(catégorie)`) : champ `affectable` de la catégorie (`vol`, `controle`, `divers`), sinon
   d'après le type — `dispo` : tout ; `atc` : contrôle ; groupe `occupe` (vol, contrôle hors SOG, DCS) : jamais ;
   `indispo` : jamais. **Un contrôle n'est jamais affectable, sauf en contrôle.**
-- Catégorie `sol` (« Disponible au sol seulement », groupe `occupe`, `affectable: ["divers"]`) ajoutée au `DEFAULT` de
-  `shared/dispos.js` et à `data/config/disponibilites.json` (champ `affectable` gardé par l'éditeur de Paramètres ›
-  Centre, qui recopie les champs inconnus).
+- Catégorie `sol` (« Disponible au sol seulement », groupe `occupe`, `affectable: ["divers"]`) ajoutée aux catégories
+  par défaut (`DEFAULT` de `shared/dispos.js`) ; `data/config/disponibilites.json` est généré pour l'utilisateur à partir
+  d'elles (champ `affectable` gardé par l'éditeur de Paramètres › Centre, qui recopie les champs inconnus).
 - Un membre est en **conflit** sur un élément s'il n'est pas couvert, sur toute la durée, par une plage d'une catégorie
   affectable à cet élément (non déclaré = conflit).
 
