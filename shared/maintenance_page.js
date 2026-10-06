@@ -927,10 +927,10 @@
       promptState = block == null ? pill('warn', '?') : block.trim() === window.MISSION_PROMPT.trim() ? pill('ok', t(['synchronisé', 'in sync'])) : pill('warn', t(['à régénérer : python tools/build_mission_prompt.py', 'rebuild: python tools/build_mission_prompt.py']));
     }
     add(t(['Prompt des missions', 'Mission prompt']), 'apps/cpco/mission_prompt.js ← docs/technique/PROMPT_GENERATEUR_MISSIONS.md', t(['git ; en-tête « GÉNÉRÉ »', 'git; “GENERATED” header']), 'build_mission_prompt.py (bump_versions.py)', t(['générateur, registre des missions', 'generator, mission registry']), promptState);
-    host.innerHTML = `<p class="row"><button type="button" class="secondary" id="mtDepRefresh" data-icon="refresh">${esc(t(['Vérifier', 'Check', 'Prüfen', 'Comprobar']))}</button></p>
+    host.innerHTML = `<div id="mtAircraftDb"></div><p class="row"><button type="button" class="secondary" id="mtDepRefresh" data-icon="refresh">${esc(t(['Vérifier', 'Check', 'Prüfen', 'Comprobar']))}</button></p>
       <div class="mt-scroll"><table class="mt-table mt-wide"><thead><tr><th>${esc(t(['Référence', 'Reference', 'Referenz', 'Referencia']))}</th><th>${esc(t(['Fichier', 'File', 'Datei', 'Archivo']))}</th><th>${esc(t(['Traçage', 'Tracing', 'Nachverfolgung', 'Trazado']))}</th><th>${esc(t(['Mise à jour', 'Update', 'Aktualisierung', 'Actualización']))}</th><th>${esc(t(['Dépendants', 'Dependents', 'Abhängige', 'Dependientes']))}</th><th>${esc(t(['Contrôle', 'Check', 'Prüfung', 'Control']))}</th></tr></thead><tbody>
       ${rows.map(r => `<tr><td><b>${esc(r.ref)}</b></td><td class="mt-small"><code>${esc(r.file)}</code></td><td class="mt-small">${esc(r.traced)}</td><td class="mt-small">${esc(r.process)}</td><td class="mt-small">${esc(r.dependents)}</td><td>${r.state}</td></tr>`).join('')}
-      </tbody></table></div><div id="mtAircraftDb"></div>`;
+      </tbody></table></div>`;
     host.querySelector('#mtDepRefresh').onclick = async () => {
       await scanSiaFolder(false);
       renderDeps();
@@ -967,6 +967,7 @@
   // appareil (code saisi), les types de la flotte, ceux des missions (ODV, registre), ou les types encore inconnus de la
   // base ; jamais toute la base EUROCONTROL. État relu toutes les 5 s pendant une passe.
   let acTimer = 0,
+    acWarned = false,
     acLists = {};
   async function aircraftDbState(el, lists) {
     if (!el?.isConnected) return;
@@ -993,14 +994,29 @@
       }) : s.state === 'done' ? t(['dernière passe terminée ({c})', 'last pass done ({c})', 'letzter Durchlauf beendet ({c})', 'última pasada terminada ({c})'], {
         c: (s.codes || []).join(' ')
       }) : s.state === 'error' ? t(['échec de la dernière passe', 'last pass failed', 'letzter Durchlauf fehlgeschlagen', 'falló la última pasada']) : '';
-    const busy = !s || s.state === 'running';
+    const busy = !s || s.state === 'running',
+      empty = !types.size,
+      all = [...new Set([...(acLists.fleet || []), ...(acLists.missions || [])])],
+      // passe terminée depuis le chargement de la page : la base relue au prochain chargement
+      fresh = s?.state === 'done' && s.ended && s.ended * 1000 > performance.timeOrigin;
+    if (empty && s && !acWarned) {
+      acWarned = true;
+      window.AppFramework?.notify?.(t(['Base des types d’aéronefs vide : Paramètres › Maintenance › Références et dépendances, « Compléter la base ».', 'Aircraft type database empty: Settings › Maintenance › References and dependencies, “Complete the database”.', 'Luftfahrzeugtyp-Datenbank leer: Einstellungen › Wartung › Referenzen und Abhängigkeiten, „Datenbank ergänzen“.', 'Base de tipos de aeronave vacía: Ajustes › Mantenimiento › Referencias y dependencias, «Completar la base».']), 'warn');
+    }
     const btn = (id, label, list, title) => `<button type="button" class="secondary" data-ac="${id}" data-icon="refresh"${busy || !list.length ? ' disabled' : ''} title="${esc(title + (list.length ? ' : ' + list.slice(0, 20).join(' ') + (list.length > 20 ? '…' : '') : ''))}">${esc(label)} (${list.length})</button>`;
     el.innerHTML = `<div class="repo-card" data-icon="plane" data-subtitle="${esc(t(['Données de l’OACI (Doc 8643) et d’EUROCONTROL : non publiées avec la suite, complétées sur ce poste, type par type (réseau, quelques secondes par type)', 'ICAO (Doc 8643) and EUROCONTROL data: not published with the suite, completed on this computer type by type (network, a few seconds per type)', 'Daten von ICAO (Doc 8643) und EUROCONTROL: nicht mit der Suite veröffentlicht, auf diesem Rechner Typ für Typ ergänzt', 'Datos de la OACI (Doc 8643) y EUROCONTROL: no publicados con la suite, completados en este equipo tipo por tipo']))}"><h3>${esc(t(['Types d’aéronefs et performances', 'Aircraft types and performance', 'Luftfahrzeugtypen und Leistungen', 'Tipos de aeronave y rendimientos']))}</h3>
+      ${empty ? `<div class="repo-notice"><b>${esc(t(['Base vide.', 'Empty database.', 'Leere Datenbank.', 'Base vacía.']))}</b> ${esc(t(['Sans elle, pas de types d’aéronefs (flotte, missions, CR, performances du planificateur). Un clic la complète avec les types de la flotte et des missions ; ensuite, un type à la fois quand un nouvel appareil arrive.', 'Without it, no aircraft types (fleet, missions, reports, planner performance). One click completes it with the fleet and mission types; then one type at a time when a new aircraft arrives.', 'Ohne sie keine Luftfahrzeugtypen (Flotte, Missionen, Berichte, Leistungen des Planers). Ein Klick ergänzt sie mit den Typen der Flotte und der Missionen; danach ein Typ nach dem anderen, wenn ein neues Luftfahrzeug kommt.', 'Sin ella, no hay tipos de aeronave (flota, misiones, informes, rendimientos del planificador). Un clic la completa con los tipos de la flota y de las misiones; después, un tipo cada vez que llega una aeronave nueva.']))}</div>
+      <p class="row"><button type="button" class="primary" data-ac="all" data-icon="download"${busy || !all.length ? ' disabled' : ''}>${esc(t(['Compléter la base ({n} types)', 'Complete the database ({n} types)', 'Datenbank ergänzen ({n} Typen)', 'Completar la base ({n} tipos)'], {
+        n: all.length
+      }))}</button></p>` : ''}
       <p class="mt-small">${esc(files)}${state ? ` · ${esc(state)}` : ''}</p>
+      ${fresh ? `<p class="row">${pill('ok', t(['base mise à jour', 'database updated', 'Datenbank aktualisiert', 'base actualizada']))} <button type="button" class="secondary" data-ac-reload data-icon="refresh">${esc(t(['Recharger la page pour la lire', 'Reload the page to read it', 'Seite neu laden, um sie zu lesen', 'Recargar la página para leerla']))}</button></p>` : ''}
       <p class="row"><input type="text" class="mt-ac-code" size="10" maxlength="40" placeholder="${esc(t(['code OACI', 'ICAO code', 'ICAO-Code', 'código OACI']))}" spellcheck="false" aria-label="${esc(t(['Codes OACI', 'ICAO codes', 'ICAO-Codes', 'Códigos OACI']))}"><button type="button" class="secondary" data-ac="one" data-icon="plus"${busy ? ' disabled' : ''}>${esc(t(['Ajouter / mettre à jour', 'Add / update', 'Hinzufügen / aktualisieren', 'Añadir / actualizar']))}</button></p>
       <p class="row">${btn('unknown', t(['Types inconnus', 'Unknown types', 'Unbekannte Typen', 'Tipos desconocidos']), unknown, t(['types de la flotte et des missions absents de la base', 'fleet and mission types missing from the database']))} ${btn('fleet', t(['Flotte', 'Fleet', 'Flotte', 'Flota']), acLists.fleet || [], t(['tous les types de la flotte', 'all fleet types']))} ${btn('missions', t(['Missions (ODV, registre)', 'Missions (ODV, registry)', 'Missionen (ODV, Register)', 'Misiones (ODV, registro)']), acLists.missions || [], t(['types demandés par les missions', 'types required by the missions']))}</p>
+      <p class="mt-small">${esc(t(['Fichiers écrits sur ce poste : AircraftDB/aircraft_db.js (types) et aircraft_perf.js (performances). Rien à en faire : toutes les pages les lisent à leur prochain chargement. Ils ne sont pas versionnés (données OACI et EUROCONTROL, non redistribuées) : à compléter sur chaque poste, ou à recopier d’un poste à l’autre.', 'Files written on this computer: AircraftDB/aircraft_db.js (types) and aircraft_perf.js (performance). Nothing to do with them: every page reads them at its next load. They are not versioned (ICAO and EUROCONTROL data, not redistributed): complete them on each computer, or copy them from one computer to another.', 'Auf diesem Rechner geschriebene Dateien: AircraftDB/aircraft_db.js (Typen) und aircraft_perf.js (Leistungen). Nichts damit zu tun: Alle Seiten lesen sie beim nächsten Laden. Sie werden nicht versioniert (Daten von ICAO und EUROCONTROL, nicht weitergegeben): auf jedem Rechner ergänzen oder von Rechner zu Rechner kopieren.', 'Archivos escritos en este equipo: AircraftDB/aircraft_db.js (tipos) y aircraft_perf.js (rendimientos). Nada que hacer con ellos: todas las páginas los leen en su próxima carga. No se versionan (datos de la OACI y EUROCONTROL, no redistribuidos): completarlos en cada equipo o copiarlos de uno a otro.']))}</p>
       ${s?.log?.length ? `<details class="mt-small"><summary>${esc(t(['Journal', 'Log', 'Protokoll', 'Registro']))}</summary><pre>${esc(s.log.slice(-12).join('\n'))}</pre></details>` : ''}</div>`;
     const lists2 = {
+      all,
       unknown,
       fleet: acLists.fleet || [],
       missions: acLists.missions || []
@@ -1013,6 +1029,8 @@
       });
       aircraftDbState(el);
     });
+    el.querySelector('[data-ac-reload]')?.addEventListener('click', () => location.reload());
+    if (empty) el.querySelector('.repo-card')?.classList.add('mt-ac-empty');
     if (s?.state === 'running') acTimer = setTimeout(() => aircraftDbState(el), 5000);
   }
 
