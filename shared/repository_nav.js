@@ -334,7 +334,7 @@
   // Designs à matières (Cabinet, Durci, Aqua : textures, plaques, vis) : feuille propre (designs.list[id].css),
   // chargée seulement quand l'un d'eux est choisi, avec sa propre version (empreinte de son contenu, table FILE_V
   // écrite par tools/bump_versions.py).
-  const FILE_V = {"designs_skeuo.css": "4df4adc1"};
+  const FILE_V = {"designs_skeuo.css": "e5fdba8d"};
   const designCss = id => {
     const f = designs[id]?.css;
     if (!f) return;
