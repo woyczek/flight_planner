@@ -28,7 +28,7 @@
   let aeroLoad = null;
   const needAero = () => aeroLoad ||= window.AeroSources ? Promise.resolve(window.AeroSources) : new Promise(res => {
     const sc = document.createElement('script');
-    sc.src = new URL('aero_sources.js?v=7479c145', SCRIPT_URL).href;
+    sc.src = new URL('aero_sources.js?v=769e86d5', SCRIPT_URL).href;
     sc.onload = () => res(window.AeroSources || null);
     sc.onerror = () => res(null);
     document.head.append(sc);
@@ -977,7 +977,13 @@
           /* absent */ }
       for (const a of ['airspace', 'airspaces']) {
         const sd = await subDir(d, a);
-        if (sd) out.push(...(await filesOf(sd)).filter(f => /\.(txt|air)$/i.test(f.name)));
+        // espaces OpenAir (airspace.txt ; pas borders.txt) : ceux de « Custom Data » d'abord, un seul de chaque nom
+        if (sd)
+          for (const f of await filesOf(sd))
+            if (/airspace.*\.(txt|air)$/i.test(f.name) && !seen.has(f.name)) {
+              out.push(f);
+              seen.add(f.name);
+            }
       }
     }
     return out;
@@ -1164,8 +1170,25 @@
       })),
       cachedAt: Date.now()
     };
-    // autres sources (shared/aero_sources.js) : ajoutées sans doublon après le SIA, dans l'ordre des réglages
+    // autres sources (shared/aero_sources.js) : ajoutées sans doublon après le SIA, dans l'ordre des réglages ; dans les
+    // FIR françaises (contours XML_SIA), le SIA seul : un espace d'une autre source dont le centre y tombe est écarté
+    // (les autres sources découpent et nomment les mêmes espaces autrement)
     const bySource = {};
+    const FR_FIR = /^(PARIS|REIMS|BREST|BORDEAUX|MARSEILLE|CAYENNE)$/i,
+      cover = base.airspaces.filter(a => a.type === 'FIR' && a.src === 'sia' && FR_FIR.test(a.name)).map(a => a.rings[0]).filter(Boolean);
+    const inFrance = a => {
+      let la0 = 90,
+        la1 = -90,
+        lo0 = 180,
+        lo1 = -180;
+      for (const [la, lo] of a.rings?.[0] || []) {
+        la0 = Math.min(la0, la);
+        la1 = Math.max(la1, la);
+        lo0 = Math.min(lo0, lo);
+        lo1 = Math.max(lo1, lo);
+      }
+      return la0 <= la1 && cover.some(r => inRing(r, (la0 + la1) / 2, (lo0 + lo1) / 2));
+    };
     if (AS)
       for (const src of AS.SOURCES.filter(x => x.dir || x.id === 'xplane')) {
         const list = on(src.id) ? extra[src.id] || [] : [];
@@ -1213,6 +1236,7 @@
         const before = base.airspaces.length;
         for (const p of parts) {
           for (const a of p.airspaces || []) a.src ||= src.id;
+          if (cover.length && p.airspaces) p.airspaces = p.airspaces.filter(a => !inFrance(a));
           AS.merge(base, p);
         }
         bySource[src.id] = {

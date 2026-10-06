@@ -645,7 +645,7 @@ Die Schaltfläche „Prüfen“ startet die Prüfungen erneut.
 
 ### Luftfahrtdaten: Quellen und SIA-Aktualisierung (AIRAC)
 
-**Quellen**: eine Zeile pro Datenquelle, jeweils angehakt (gelesen) oder nicht; Änderungen gelten beim nächsten Neuaufbau der Basis („Ordner neu einlesen“, Schritt 4). Das SIA hat Vorrang: ein bereits gelesener Luftraum, Flugplatz oder ein Funkfeuer wird nicht ein zweites Mal hinzugefügt.
+**Quellen**: eine Zeile pro Datenquelle, jeweils angehakt (gelesen) oder nicht; Änderungen gelten beim nächsten Neuaufbau der Basis („Ordner neu einlesen“, Schritt 4). Das SIA hat Vorrang: in den französischen FIR zählen nur seine Lufträume; anderswo wird ein bereits gelesener Luftraum, Flugplatz oder ein Funkfeuer nicht ein zweites Mal hinzugefügt.
 - **SIA Frankreich** (AIXM 4.5, XML_SIA) und **DIRCAM / MILAIP** (RTBA-/AZBA-Gebiete, Betankungsstrecken ENR 5.7): Schritt für Schritt unten.
 - **AIXM 5.1** (andere Länder): `.xml`-Dateien im Ordner `data/sia/aixm5/`. „ENAIRE (Spanien): herunterladen“ holt die zuletzt veröffentlichten Datensätze (Lufträume, Strecken). Vereinigtes Königreich (NATS): Registrierung auf der Website, Datei von Hand ablegen.
 - **GeoJSON**: `.geojson`- oder `.json`-Dateien (und OpenAir `.txt`) in `data/sia/geojson/`. „FAA (USA): Sonderlufträume und Militärrouten“ lädt die Sonderlufträume (MOA, R, W, A, P) und die MTR-Routen, als Korridore gelesen; „FAA: Luftraumklassen“ ist eine große Datei.

@@ -645,7 +645,7 @@ The “Check” button reruns the checks.
 
 ### Aeronautical data: sources and SIA update (AIRAC)
 
-**Sources**: one line per data source, each ticked (read) or not; changes apply at the next rebuild of the base (“Re-read the folder”, step 4). The SIA keeps priority: an airspace, aerodrome or navaid already read is not added a second time.
+**Sources**: one line per data source, each ticked (read) or not; changes apply at the next rebuild of the base (“Re-read the folder”, step 4). The SIA keeps priority: within the French FIRs only its airspace counts; elsewhere, an airspace, aerodrome or navaid already read is not added a second time.
 - **SIA France** (AIXM 4.5, XML_SIA) and **DIRCAM / MILAIP** (RTBA / AZBA areas, ENR 5.7 refuelling tracks): the step by step below.
 - **AIXM 5.1** (other countries): `.xml` files in the `data/sia/aixm5/` folder. “ENAIRE (Spain): download” takes the latest published datasets (airspace, en route). United Kingdom (NATS): register on the site, drop the file by hand.
 - **GeoJSON**: `.geojson` or `.json` files (and OpenAir `.txt`) in `data/sia/geojson/`. “FAA (USA): special use airspace and military routes” downloads the special use airspace (MOA, R, W, A, P) and the MTR routes, read as corridors; “FAA: airspace classes” is a large file.

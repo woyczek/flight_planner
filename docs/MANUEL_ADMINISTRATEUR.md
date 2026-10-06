@@ -645,7 +645,7 @@ Le bouton « Vérifier » relance les contrôles.
 
 ### Données aéronautiques : sources et mise à jour SIA (AIRAC)
 
-**Sources** : une ligne par source de données, chacune cochée (lue) ou non ; les changements s'appliquent à la prochaine reconstruction de la base (« Relire le dossier », étape 4). Le SIA garde la priorité : un espace, un aérodrome ou une balise déjà lu n'est pas ajouté une deuxième fois.
+**Sources** : une ligne par source de données, chacune cochée (lue) ou non ; les changements s'appliquent à la prochaine reconstruction de la base (« Relire le dossier », étape 4). Le SIA garde la priorité : dans les FIR françaises, seuls ses espaces comptent ; ailleurs, un espace, un aérodrome ou une balise déjà lu n'est pas ajouté une deuxième fois.
 - **SIA France** (AIXM 4.5, XML_SIA) et **DIRCAM / MILAIP** (zones RTBA / AZBA, axes de ravitaillement ENR 5.7) : le pas à pas ci-dessous.
 - **AIXM 5.1** (autres pays) : fichiers `.xml` du dossier `data/sia/aixm5/`. « ENAIRE (Espagne) : télécharger » prend les derniers jeux publiés (espaces, en route). Royaume-Uni (NATS) : inscription sur le site, fichier déposé à la main.
 - **GeoJSON** : fichiers `.geojson` ou `.json` (et OpenAir `.txt`) de `data/sia/geojson/`. « FAA (États-Unis) : zones et routes militaires » télécharge les espaces à usage spécial (MOA, R, W, A, P) et les routes MTR, lues en couloirs ; « FAA : classes d'espace » est un gros fichier.

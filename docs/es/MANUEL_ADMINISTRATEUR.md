@@ -645,7 +645,7 @@ El botón «Comprobar» vuelve a lanzar los controles.
 
 ### Datos aeronáuticos: fuentes y actualización SIA (AIRAC)
 
-**Fuentes**: una línea por fuente de datos, cada una marcada (leída) o no; los cambios se aplican en la próxima reconstrucción de la base («Releer la carpeta», paso 4). El SIA tiene prioridad: un espacio, aeródromo o radioayuda ya leído no se añade una segunda vez.
+**Fuentes**: una línea por fuente de datos, cada una marcada (leída) o no; los cambios se aplican en la próxima reconstrucción de la base («Releer la carpeta», paso 4). El SIA tiene prioridad: en las FIR francesas solo cuentan sus espacios; en otros lugares, un espacio, aeródromo o radioayuda ya leído no se añade una segunda vez.
 - **SIA Francia** (AIXM 4.5, XML_SIA) y **DIRCAM / MILAIP** (zonas RTBA / AZBA, ejes de reabastecimiento ENR 5.7): el paso a paso de abajo.
 - **AIXM 5.1** (otros países): archivos `.xml` de la carpeta `data/sia/aixm5/`. «ENAIRE (España): descargar» toma los últimos conjuntos publicados (espacios, en ruta). Reino Unido (NATS): registro en el sitio, archivo depositado a mano.
 - **GeoJSON**: archivos `.geojson` o `.json` (y OpenAir `.txt`) de `data/sia/geojson/`. «FAA (EE. UU.): espacios de uso especial y rutas militares» descarga los espacios de uso especial (MOA, R, W, A, P) y las rutas MTR, leídas como corredores; «FAA: clases de espacio» es un archivo grande.

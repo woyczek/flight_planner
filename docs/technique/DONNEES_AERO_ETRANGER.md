@@ -11,8 +11,14 @@ lus par la base SIA (`shared/sia_base.js`, version 16) ; sources actives ou non 
 Données aéronautiques ; téléchargements ENAIRE, FAA (zones, routes MTR, classes) et openAIP par
 `tools/aero_fetch.py` (lanceur : `POST /__setup/aero-fetch`). Essais : Espagne (520 espaces, 147 balises, 901 tronçons),
 États-Unis (1 542 zones, 3 654 segments MTR), Belgique et Luxembourg (openAIP), avec le SIA du cycle 2026-10-01.
+X-Plane 12 (cycle 2606 de « Custom Data ») : `airspace.txt` est un fichier OpenAir mondial (≈ 25 800 espaces ; gardés :
+R, Q = D, P, CTR, classes B, C, D — 18 000 hors de France) ; `earth_mora.dat` : par ligne, latitude du bord sud, longitude
+du bord ouest, puis 30 valeurs en centaines de pieds (une case d'un degré chacune vers l'est) ; 86 000 points de route,
+7 800 balises, 112 000 tronçons de voies ; base d'environ 60 Mo avec le SIA (lue en 3 s). Données Navigraph / Jeppesen
+sous licence personnelle : lues chez l'utilisateur, jamais copiées dans le dépôt. Dans les FIR françaises (contours
+XML_SIA), les espaces des autres sources sont écartés : le SIA seul (mêmes zones découpées et nommées autrement).
 À faire : Royaume-Uni (fichier NATS à déposer à la main ; zones de vol à basse altitude de la Mil AIP à extraire des
-PDF, comme l'ENR 5.7) ; format exact de `earth_mora.dat` à confirmer sur un X-Plane 12 installé.
+PDF, comme l'ENR 5.7).
 
 ## Royaume-Uni
 

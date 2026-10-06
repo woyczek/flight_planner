@@ -672,10 +672,10 @@
     MATZ: 'MATZ',
     TRA: 'TRA',
     TSA: 'TSA',
-    W: 'W',
-    MOA: 'MOA',
-    GP: 'P'
+    MOA: 'MOA'
   };
+  // classes sans intérêt pour les cartes de mission : A (espaces supérieurs et océaniques), E, F, G ; W (fenêtre d'onde)
+  const OPENAIR_SKIP = new Set(['A', 'E', 'F', 'G', 'W', 'GP', 'GSEC']);
   const oaLim = s => {
     const t = String(s || '').trim().toUpperCase();
     if (!t) return '';
@@ -693,7 +693,7 @@
       center = null,
       cw = true;
     const flush = () => {
-      if (cur?.ring.length > 2) {
+      if (cur?.ring.length > 2 && !OPENAIR_SKIP.has(cur.ac)) {
         const type = OPENAIR_TYPES[cur.ac] || normType(cur.ac);
         if (KEEP.has(type)) out.push(zone(src, {
           type,
@@ -845,21 +845,24 @@
         });
       }
     } else if (n === 'earth_mora.dat') {
-      // une case d'un degré par ligne : coin sud-ouest et MORA en centaines de pieds (« N45W001 033 » ou « 45 -1 33 »)
+      // « +45 -030 010 012 … » : latitude du bord sud, longitude du bord ouest de la première case, puis 30 valeurs en
+      // centaines de pieds, une par case d'un degré vers l'est (format XP1150, grille ARINC 424) ; 000 ou UNK : inconnu
       for (const l of datLines(txt)) {
-        const m = /^([NS])(\d{1,2})([EW])(\d{1,3})\s+(\d+)/i.exec(l) || /^(-?\d+(?:\.\d+)?)\s+(-?\d+(?:\.\d+)?)\s+(\d+)/.exec(l);
-        if (!m) continue;
-        const lat = m.length === 6 ? +m[2] * (/S/i.test(m[1]) ? -1 : 1) : +m[1],
-          lon = m.length === 6 ? +m[4] * (/W/i.test(m[3]) ? -1 : 1) : +m[2],
-          h = +(m.length === 6 ? m[5] : m[3]);
-        if (!h) continue;
-        out.moraCells.push({
-          lat: lat + .5,
-          lon: lon + .5,
-          mora: `${Math.floor(h / 10)}${'⁰¹²³⁴⁵⁶⁷⁸⁹' [h % 10]}`,
-          moraFt: h * 100,
-          latStep: 1,
-          lonStep: 1
+        const f = l.split(/\s+/);
+        if (f.length < 3 || !/^[+-]?\d+$/.test(f[0]) || !/^[+-]?\d+$/.test(f[1])) continue;
+        const lat = +f[0],
+          lon0 = +f[1];
+        f.slice(2).forEach((v, i) => {
+          const h = /^\d+$/.test(v) ? +v : 0;
+          if (!h) return;
+          out.moraCells.push({
+            lat: lat + .5,
+            lon: ((lon0 + i + 180) % 360) - 180 + .5,
+            mora: `${Math.floor(h / 10)}${'⁰¹²³⁴⁵⁶⁷⁸⁹' [h % 10]}`,
+            moraFt: h * 100,
+            latStep: 1,
+            lonStep: 1
+          });
         });
       }
     }
@@ -914,13 +917,62 @@
   /** Ajoute à la base les données d'une source (part : { airspaces, aero, obstacleMax, moraCells }) sans doublons :
    *  un espace de même type et même nom déjà présent (SIA d'abord) est gardé ; un aérodrome de même indicatif ; une
    *  balise ou un point de même identifiant à moins de 2 NM ; obstacles et MORA : seulement les cases encore vides. */
+  const FAMILY = {
+    CTA: 'C',
+    TMA: 'C',
+    TRA: 'T',
+    TSA: 'T',
+    W: 'D',
+    A: 'D'
+  };
+  const bbox = a => {
+    let b = null;
+    for (const [la, lo] of a.rings?.[0] || []) b = b ? [Math.min(b[0], la), Math.min(b[1], lo), Math.max(b[2], la), Math.max(b[3], lo)] : [la, lo, la, lo];
+    return b;
+  };
+  /** Index des emprises par famille de type et case de 0,1° de leur centre : un espace d'une autre source qui a la même
+   *  emprise (bords à moins de 0,05°) qu'un espace déjà présent de la même famille est un doublon, quel que soit son nom
+   *  (le SIA et X-Plane ne nomment pas les zones de la même façon). */
+  function shapeIndex(list) {
+    const grid = new Map;
+    const key = (f, la, lo) => `${f}|${la}|${lo}`;
+    const add = a => {
+      const b = bbox(a);
+      if (!b) return;
+      const f = FAMILY[a.type] || a.type,
+        la = Math.round((b[0] + b[2]) * 5),
+        lo = Math.round((b[1] + b[3]) * 5),
+        k = key(f, la, lo);
+      (grid.get(k) || grid.set(k, []).get(k)).push(b);
+    };
+    const has = a => {
+      const b = bbox(a);
+      if (!b) return false;
+      const f = FAMILY[a.type] || a.type,
+        la = Math.round((b[0] + b[2]) * 5),
+        lo = Math.round((b[1] + b[3]) * 5);
+      for (let i = -1; i <= 1; i++)
+        for (let j = -1; j <= 1; j++)
+          for (const q of grid.get(key(f, la + i, lo + j)) || [])
+            if (Math.abs(q[0] - b[0]) < .05 && Math.abs(q[1] - b[1]) < .05 && Math.abs(q[2] - b[2]) < .05 && Math.abs(q[3] - b[3]) < .05) return true;
+      return false;
+    };
+    list.forEach(add);
+    return {
+      add,
+      has
+    };
+  }
+
   function merge(base, part) {
     base.airspaces ||= [];
-    const seenZ = new Set(base.airspaces.map(a => a.type + '|' + String(a.name).toUpperCase()));
+    const seenZ = new Set(base.airspaces.map(a => a.type + '|' + String(a.name).toUpperCase())),
+      shapes = shapeIndex(base.airspaces);
     for (const a of part.airspaces || []) {
       const k = a.type + '|' + String(a.name).toUpperCase();
-      if (seenZ.has(k) && !a.type.match(/^MTR$/)) continue;
+      if (a.type !== 'MTR' && (seenZ.has(k) || shapes.has(a))) continue;
       seenZ.add(k);
+      shapes.add(a);
       base.airspaces.push(a);
     }
     if (part.aero) {

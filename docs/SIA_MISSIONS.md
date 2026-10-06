@@ -43,7 +43,7 @@ relit le dossier mémorisé.
 
 **Autres pays et autres sources** (`shared/aero_sources.js`, réglées dans Paramètres › Maintenance › Données
 aéronautiques, chacune active ou non) : lues à la même relecture et ajoutées sans doublon après le SIA (le SIA garde la
-priorité) ; chaque espace porte sa source (`src` : `sia`, `dircam`, `aixm5`, `geojson`, `openaip`, `xplane`).
+priorité ; dans les FIR françaises, ses espaces seuls — même zone découpée ou nommée autrement ailleurs) ; chaque espace porte sa source (`src` : `sia`, `dircam`, `aixm5`, `geojson`, `openaip`, `xplane`).
 
 | Source | Fichiers | Contenu |
 |---|---|---|
