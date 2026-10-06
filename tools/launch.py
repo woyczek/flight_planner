@@ -15,7 +15,7 @@
 Usage : python tools/launch.py [--port 8000] [--page apps/…] [--no-browser] [--no-data]
 Arrêt : fermer la fenêtre, ou Ctrl+C.
 """
-import argparse, glob, http.server, io, json, os, re, secrets, shutil, socket, subprocess, sys, tempfile, threading, time
+import argparse, datetime, glob, http.server, io, json, os, re, secrets, shutil, socket, subprocess, sys, tempfile, threading, time
 import urllib.parse, urllib.request, webbrowser, zipfile
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import data_sync  # synchronisation git du pool de données (bouton « Synchroniser »)
@@ -296,6 +296,13 @@ class Setup(http.server.SimpleHTTPRequestHandler):
             if not self._allowed():
                 return self._json({'error': 'refusé'}, 403)
             return self._json(vatsim_bookings())
+        if self.path.split('?')[0] == '/__setup/ivao-activations':
+            # zones spéciales IVAO activées (Ordres de vols, shared/odv_airspace.js) : NOTAM de la division liés à une
+            # zone et horaires publiés des zones de France ; clé d'API locale (ivao_key), jamais transmise à la page
+            if not self._allowed():
+                return self._json({'error': 'refusé'}, 403)
+            q = urllib.parse.parse_qs(urllib.parse.urlsplit(self.path).query)
+            return self._json(ivao_activations(q.get('from', [''])[0], q.get('to', [''])[0]))
         if self.path.split('?')[0] == '/__setup/aircraft-db':
             if not self._allowed():
                 return self._json({'error': 'refusé'}, 403)
@@ -529,6 +536,83 @@ def vatsim_bookings():
         return {'error': str(e)}
     _vatsim.update(at=time.time(), data={'bookings': data if isinstance(data, list) else []})
     return _vatsim['data']
+
+
+IVAO_API = 'https://api.ivao.aero/v2'
+_ivao = {'at': 0.0, 'areas': None}
+
+
+def ivao_key():
+    """Clé d'API IVAO (en-tête apiKey) : variable d'environnement IVAO_API_KEY, sinon secrets/ivao.json { "apiKey" }
+    à la racine de la suite (dossier hors git, .gitignore) ; '' si absente."""
+    k = os.environ.get('IVAO_API_KEY', '').strip()
+    if k:
+        return k
+    try:
+        with open(os.path.join(ROOT, 'secrets', 'ivao.json'), encoding='utf-8') as f:
+            return str(json.load(f).get('apiKey', '')).strip()
+    except (OSError, ValueError):
+        return ''
+
+
+def _ivao_get(path, key):
+    req = urllib.request.Request(IVAO_API + path, headers={'User-Agent': 'SOG-suite', 'Accept': 'application/json', 'apiKey': key})
+    with urllib.request.urlopen(req, timeout=20) as r:
+        return json.load(r)
+
+
+def ivao_activations(day_from='', day_to=''):
+    """Zones spéciales IVAO de France actives entre deux dates (AAAA-MM-JJ, incluses) : { activations: [{ ivao, zone,
+    type, date, debut, fin, source: 'notam' | 'horaire', texte }], zones } ; NOTAM de la division FR liés à une zone
+    (specialAreaId), horaires publiés des zones (times : jours et heures UTC) ; { error } sans clé ou sans réponse.
+    Zones gardées une heure, NOTAM relus à chaque appel."""
+    key = ivao_key()
+    if not key:
+        return {'error': 'clé IVAO absente : variable IVAO_API_KEY ou secrets/ivao.json { "apiKey" }'}
+    try:
+        d0 = datetime.date.fromisoformat(day_from) if day_from else datetime.date.today()
+        d1 = datetime.date.fromisoformat(day_to) if day_to else d0 + datetime.timedelta(days=6)
+    except ValueError:
+        return {'error': 'dates attendues : from=AAAA-MM-JJ&to=AAAA-MM-JJ'}
+    try:
+        if _ivao['areas'] is None or time.time() - _ivao['at'] > 3600:
+            areas = _ivao_get('/specialAreas/all?now=false', key)
+            _ivao.update(at=time.time(), areas=[a for a in areas if str(a.get('name', '')).startswith('LF') and any(str(c.get('id', '')).startswith('LF') for c in a.get('centers') or [])])
+        notams = _ivao_get('/divisions/FR/notams/all?now=false', key)
+    except (OSError, ValueError) as e:
+        return {'error': f'IVAO : {e}'}
+    by_id = {a['id']: a for a in _ivao['areas']}
+    out = []
+    days = [d0 + datetime.timedelta(days=i) for i in range((d1 - d0).days + 1)][:62]
+    def hm(v):
+        return str(v or '')[:5]
+    for n in notams if isinstance(notams, list) else []:
+        a = by_id.get(n.get('specialAreaId'))
+        if not a:
+            continue
+        try:
+            s = datetime.datetime.fromisoformat(str(n['startTime']).replace('Z', '+00:00'))
+            e = datetime.datetime.fromisoformat(str(n['endTime']).replace('Z', '+00:00')) if n.get('endTime') else None
+        except (KeyError, ValueError):
+            continue
+        for d in days:
+            if s.date() > d or (e and e.date() < d):
+                continue
+            out.append({'ivao': a['id'], 'zone': a['name'], 'type': a.get('type', ''), 'date': d.isoformat(),
+                        'debut': s.strftime('%H:%M') if s.date() == d else '00:00',
+                        'fin': e.strftime('%H:%M') if e and e.date() == d else '24:00',
+                        'source': 'notam', 'texte': str(n.get('description', '')).split('E)')[-1].strip()[:200]})
+    names = ['dayMon', 'dayTue', 'dayWed', 'dayThu', 'dayFri', 'daySat', 'daySun']
+    for a in _ivao['areas']:
+        for t in a.get('times') or []:
+            if not t.get('endTime'):  # « sur NOTAM » ou H24 possible : pas d'horaire publié
+                continue
+            for d in days:
+                if t.get(names[d.weekday()]):
+                    out.append({'ivao': a['id'], 'zone': a['name'], 'type': a.get('type', ''), 'date': d.isoformat(),
+                                'debut': hm(t.get('startTime')), 'fin': hm(t.get('endTime')), 'source': 'horaire',
+                                'texte': str(a.get('activationDetails', ''))[:200]})
+    return {'activations': out, 'zones': len(_ivao['areas'])}
 
 
 # Repère de cette installation : un jeton tiré à chaque lancement, écrit à la racine et dans les dossiers de données.

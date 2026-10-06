@@ -7,6 +7,10 @@
 //       activations(semaine) → [{ id, zone (id de la base), nom, reseau "VATSIM" | "IVAO", etat "active" | "demandee"
 //                                 | "refusee", date "AAAA-MM-JJ", debut "HH:MM", fin "HH:MM" (UTC), texte, by }]
 //       saveActivations(semaine, liste) → retour de writeData ({ where, error })
+//       importIvao(semaine) → { ajoutees, total, error } : zones spéciales IVAO de France actives dans la semaine (par le
+//                            lanceur, tools/launch.py /__setup/ivao-activations : NOTAM de la division liés à une zone,
+//                            horaires publiés — RTBA « DIRCAM 3050 ») ; remplacent les activations IVAO importées avant
+//                            (source « ivao »), les saisies à la main restent
 //       rtba(date, { ll }) → activations du jour [{ zone, nom, reseau, etat, creneaux: [{ debut, fin }], rtba }], plus
 //                            le repli ll de data/odv/config.json ([{ nom, debut, fin, jours: [1..7], sia? }], reseau null)
 //  2. Zones requises par une mission (MissionAirspaces : route probable et zones de travail) et leur état :
@@ -150,6 +154,7 @@
       debut: x.debut || '00:00',
       fin: x.fin || '24:00',
       texte: String(x.texte || ''),
+      source: x.source === 'ivao' ? 'ivao' : 'saisie',
       by: x.by || window.SuiteUsers?.by?.() || ''
     })).sort((a, b) => `${a.date} ${a.debut} ${a.zone}`.localeCompare(`${b.date} ${b.debut} ${b.zone}`));
     return A.writeData(activationsFile(week), {
@@ -160,6 +165,60 @@
       by: window.SuiteUsers?.by?.() || '',
       activations: clean
     });
+  }
+  /** Activations IVAO de la semaine par le lanceur, rapprochées des zones de la base (nom « LF R 45 N2 » → id). */
+  async function fetchIvao(week) {
+    const days = [];
+    const wm = /^(\d{4})-W(\d{2})$/.exec(String(week || '')),
+      jan4 = wm ? Date.UTC(+wm[1], 0, 4) : NaN,
+      m0 = wm ? jan4 - ((new Date(jan4).getUTCDay() + 6) % 7) * 864e5 + (+wm[2] - 1) * 6048e5 : NaN;
+    if (!Number.isFinite(m0)) return {
+      error: 'semaine ?'
+    };
+    for (let i = 0; i < 7; i++) days.push(new Date(m0 + i * 864e5).toISOString().slice(0, 10));
+    let r;
+    try {
+      r = await (await fetch(new URL(`../__setup/ivao-activations?from=${days[0]}&to=${days[6]}`, SCRIPT).href, {
+        headers: {
+          'X-SOG-Setup': '1'
+        },
+        cache: 'no-store'
+      })).json();
+    } catch {
+      return {
+        error: 'lanceur absent (tools/launch.py)'
+      };
+    }
+    if (!Array.isArray(r?.activations)) return {
+      error: r?.error || 'réponse IVAO illisible'
+    };
+    const b = await base(),
+      list = b ? activables(b) : [];
+    return {
+      activations: r.activations.map(a => ({
+        zone: matchIn(list, a.zone) || a.zone,
+        nom: a.zone,
+        reseau: 'IVAO',
+        etat: 'active',
+        date: a.date,
+        debut: a.debut,
+        fin: a.fin,
+        texte: `${a.source === 'notam' ? 'NOTAM IVAO' : 'horaire IVAO'}${a.texte ? ' — ' + a.texte : ''}`.slice(0, 240),
+        source: 'ivao'
+      }))
+    };
+  }
+  async function importIvao(week) {
+    const r = await fetchIvao(week);
+    if (r.error) return r;
+    const keep = (await activations(week)).filter(x => x.source !== 'ivao'),
+      w = await saveActivations(week, [...keep, ...r.activations]);
+    return {
+      ajoutees: r.activations.length,
+      total: keep.length + r.activations.length,
+      error: w?.error || '',
+      where: w?.where || ''
+    };
   }
   async function rtba(date, {
     ll = []
@@ -422,6 +481,8 @@
     ETATS,
     activations,
     saveActivations,
+    fetchIvao,
+    importIvao,
     rtba,
     missionZones,
     check,

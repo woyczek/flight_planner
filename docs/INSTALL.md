@@ -149,6 +149,13 @@ Maintenance › Données aéronautiques, source SIA de la zone France. Le ZIP s'
 confirmation ou « Mes commandes ». Puis **Récupérer le ZIP téléchargé** : le serveur du lanceur prend le dernier
 `export_xml_bd_SIA_*.zip` du dossier Téléchargements et la page l'extrait dans `data/sia/`. Détail : [SIA_MISSIONS.md](SIA_MISSIONS.md).
 
+### Clé d'API IVAO (ordres de vols)
+
+« Importer d'IVAO » (activations de zones des ordres de vols : horaires publiés des zones de France, dont le RTBA, et
+NOTAM de la division) passe par le lanceur, qui lit la clé d'API IVAO dans la variable d'environnement `IVAO_API_KEY`,
+sinon dans `secrets/ivao.json` à la racine de la suite : `{ "apiKey": "…" }`. Le dossier `secrets/` est exclu de git ;
+la clé n'est jamais envoyée à la page ni écrite dans les données. Sans clé, les activations se saisissent à la main.
+
 ## 7. Mise à jour
 
 Paramètres › Maintenance › **Mises à jour**, ou :

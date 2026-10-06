@@ -29,7 +29,12 @@
     absent: ['Saisie des activations indisponible : shared/odv_airspace.js n’est pas chargé.', 'Activation entry unavailable: shared/odv_airspace.js is not loaded.', 'Erfassung der Aktivierungen nicht verfügbar: shared/odv_airspace.js nicht geladen.', 'Introducción de activaciones no disponible: shared/odv_airspace.js no está cargado.'],
     base: ['Base aéronautique absente ou zone France inactive : zones à saisir par leur nom.', 'Aeronautical database missing or France zone inactive: enter zones by name.', 'Luftfahrtdatenbank fehlt oder Zone Frankreich inaktiv: Zonen mit Namen eingeben.', 'Base aeronáutica ausente o zona Francia inactiva: introducir las zonas por su nombre.'],
     local: ['Activations gardées dans ce navigateur : le dossier des données n’est pas autorisé.', 'Activations kept in this browser: the data folder is not authorised.', 'Aktivierungen in diesem Browser gespeichert: Datenordner nicht erlaubt.', 'Activaciones guardadas en este navegador: carpeta de datos no autorizada.'],
-    erreur: ['Activations non enregistrées : {e}', 'Activations not saved: {e}', 'Aktivierungen nicht gespeichert: {e}', 'Activaciones no guardadas: {e}']
+    erreur: ['Activations non enregistrées : {e}', 'Activations not saved: {e}', 'Aktivierungen nicht gespeichert: {e}', 'Activaciones no guardadas: {e}'],
+    ivao: ['Importer d’IVAO', 'Import from IVAO', 'Von IVAO importieren', 'Importar de IVAO'],
+    ivaoTitre: ['Zones spéciales de France actives cette semaine sur IVAO (horaires publiés, dont le RTBA, et NOTAM) : remplacent l’import précédent ; les saisies à la main restent. Lanceur et clé d’API IVAO requis.', 'French special areas active this week on IVAO (published schedules, RTBA included, and NOTAMs): replace the previous import; manual entries stay. Launcher and IVAO API key required.', 'Auf IVAO diese Woche aktive französische Sondergebiete (veröffentlichte Zeiten, inkl. RTBA, und NOTAM): ersetzen den vorigen Import; manuelle Einträge bleiben. Starter und IVAO-API-Schlüssel nötig.', 'Zonas especiales de Francia activas esta semana en IVAO (horarios publicados, RTBA incluido, y NOTAM): sustituyen la importación anterior; las entradas manuales se conservan. Requiere el lanzador y la clave de API de IVAO.'],
+    ivaoOk: ['{n} activation(s) IVAO importée(s).', '{n} IVAO activation(s) imported.', '{n} IVAO-Aktivierung(en) importiert.', '{n} activación(es) IVAO importada(s).'],
+    ivaoErr: ['Import IVAO impossible : {e}', 'IVAO import failed: {e}', 'IVAO-Import fehlgeschlagen: {e}', 'Importación IVAO imposible: {e}'],
+    ivaoListe: ['{n} activation(s) importée(s) d’IVAO (remplacées au prochain import)', '{n} activation(s) imported from IVAO (replaced at the next import)', '{n} von IVAO importierte Aktivierung(en) (beim nächsten Import ersetzt)', '{n} activación(es) importada(s) de IVAO (sustituidas en la próxima importación)']
   };
   const ETAT = {
     active: ['active', 'active', 'aktiv', 'activa'],
@@ -65,7 +70,7 @@
     if (css) return;
     css = true;
     const s = document.createElement('style');
-    s.textContent = `@layer app{.odv-act table{border-collapse:collapse;width:100%}.odv-act th,.odv-act td{padding:3px 5px;text-align:left;vertical-align:middle}.odv-act th{font-size:12px;font-weight:650}.odv-act input[type=text]{width:100%;min-width:7em}.odv-act input[type=time]{width:6.5em}.odv-act .odv-act-scroll{max-width:100%;overflow-x:auto}.odv-act tr[data-etat=active] td:first-child{box-shadow:inset 3px 0 #2e9d4f}.odv-act tr[data-etat=demandee] td:first-child{box-shadow:inset 3px 0 #e39b1b}.odv-act tr[data-etat=refusee] td:first-child{box-shadow:inset 3px 0 #b91c1c}.odv-act .odv-act-note{font-size:12px;opacity:.8;margin:4px 0}}`;
+    s.textContent = `@layer app{.odv-act table{border-collapse:collapse;width:100%}.odv-act th,.odv-act td{padding:3px 5px;text-align:left;vertical-align:middle}.odv-act th{font-size:12px;font-weight:650}.odv-act input[type=text]{width:100%;min-width:7em}.odv-act input[type=time]{width:6.5em}.odv-act .odv-act-scroll{max-width:100%;overflow-x:auto}.odv-act tr[data-etat=active] td:first-child{box-shadow:inset 3px 0 #2e9d4f}.odv-act tr[data-etat=demandee] td:first-child{box-shadow:inset 3px 0 #e39b1b}.odv-act tr[data-etat=refusee] td:first-child{box-shadow:inset 3px 0 #b91c1c}.odv-act .odv-act-note{font-size:12px;opacity:.8;margin:4px 0}.odv-act .odv-act-ivao summary{cursor:pointer;font-size:13px;margin:6px 0}}`;
     document.head.append(s);
   }
 
@@ -111,6 +116,10 @@
 
     function render() {
       const days = daysOf(week);
+      // saisies à la main éditables ; activations importées d'IVAO (nombreuses, remplacées à chaque import) repliées
+      const mine = rows.map((r, i) => [r, i]).filter(([r]) => r.source !== 'ivao'),
+        ivao = rows.filter(r => r.source === 'ivao').sort((a, b) => `${a.date} ${a.debut} ${a.nom}`.localeCompare(`${b.date} ${b.debut} ${b.nom}`));
+      const head = [T.jour, T.zone, T.reseau, T.etat, T.de, T.a, T.texte].map(x => `<th>${esc(t(x))}</th>`).join('');
       const sel = (name, value, opts) => `<select data-k="${name}"${ro ? ' disabled' : ''}>${opts.map(([v, l]) => `<option value="${esc(v)}"${v === value ? ' selected' : ''}>${esc(l)}</option>`).join('')}</select>`;
       const line = (r, i) => `<tr data-i="${i}" data-etat="${esc(r.etat)}">
         <td>${sel('date', r.date, days.map(d => [d, dayLabel(d)]))}</td>
@@ -123,8 +132,9 @@
         <td>${ro ? '' : `<button type="button" class="secondary" data-del title="${esc(t(T.retirer))}" aria-label="${esc(t(T.retirer))}">×</button>`}</td></tr>`;
       host.innerHTML = `${zonesNote ? `<p class="odv-act-note">${esc(zonesNote)}</p>` : ''}
         <datalist id="${listId}">${zones.map(z => `<option value="${esc(z.nom)}">${esc(`${z.type} · ${z.plancher || '?'} – ${z.plafond || '?'}`)}</option>`).join('')}</datalist>
-        ${rows.length ? `<div class="odv-act-scroll"><table><thead><tr><th>${esc(t(T.jour))}</th><th>${esc(t(T.zone))}</th><th>${esc(t(T.reseau))}</th><th>${esc(t(T.etat))}</th><th>${esc(t(T.de))}</th><th>${esc(t(T.a))}</th><th>${esc(t(T.texte))}</th><th></th></tr></thead><tbody>${rows.map(line).join('')}</tbody></table></div>` : `<p class="odv-act-note">${esc(t(T.vide))}</p>`}
-        ${ro ? '' : `<p class="row"><button type="button" class="secondary" data-add data-icon="plus">${esc(t(T.ajouter))}</button></p>`}`;
+        ${mine.length ? `<div class="odv-act-scroll"><table><thead><tr>${head}<th></th></tr></thead><tbody>${mine.map(([r, i]) => line(r, i)).join('')}</tbody></table></div>` : `<p class="odv-act-note">${esc(t(T.vide))}</p>`}
+        ${ivao.length ? `<details class="odv-act-ivao"><summary>${esc(tf(T.ivaoListe, { n: ivao.length }))}</summary><div class="odv-act-scroll"><table><thead><tr>${head}</tr></thead><tbody>${ivao.map(r => `<tr data-etat="${esc(r.etat)}"><td>${esc(dayLabel(r.date))}</td><td>${esc(zoneName(r.zone))}</td><td>${esc(r.reseau || t(T.tous))}</td><td>${esc(t(ETAT[r.etat] || [r.etat]))}</td><td>${esc(r.debut)}</td><td>${esc(r.fin)}</td><td>${esc(r.texte || '')}</td></tr>`).join('')}</tbody></table></div></details>` : ''}
+        ${ro ? '' : `<p class="row"><button type="button" class="secondary" data-add data-icon="plus">${esc(t(T.ajouter))}</button> <button type="button" class="secondary" data-ivao data-icon="download" title="${esc(t(T.ivaoTitre))}">${esc(t(T.ivao))}</button></p>`}`;
       window.AppFramework?.refresh?.(host);
     }
 
@@ -163,7 +173,27 @@
       if (ro) return;
       const b = e.target.closest('button');
       if (!b) return;
-      if (b.hasAttribute('data-add')) {
+      if (b.hasAttribute('data-ivao')) {
+        b.disabled = true;
+        (async () => {
+          // retouche en attente enregistrée avant l'import (qui relit le fichier)
+          if (timer) {
+            clearTimeout(timer);
+            await save();
+          }
+          const r = await O().importIvao(week);
+          if (r.error) notify(tf(T.ivaoErr, {
+            e: r.error
+          }), 'error');
+          else notify(tf(T.ivaoOk, {
+            n: r.ajoutees
+          }), 'ok');
+          await load();
+          onChange?.(rows.map(x => ({
+            ...x
+          })));
+        })();
+      } else if (b.hasAttribute('data-add')) {
         const last = rows[rows.length - 1],
           days = daysOf(week);
         rows.push({
