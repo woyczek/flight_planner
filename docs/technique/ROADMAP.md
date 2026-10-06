@@ -103,6 +103,16 @@ Le site n'a **pas d'API** : on récupère ses données par **copier-coller** de 
 Si le site ouvre un jour une API : reprendre ce tableau (lecture automatique, puis envoi des CR et des affectations
 avec les identifiants saisis au premier lancement, jamais écrits dans un fichier).
 
+## Ordres de vols (Centre, en cours)
+
+L'éditeur hebdomadaire des ordres de vols ([ODV_ORDRES.md](ODV_ORDRES.md)), repris de l'outil autonome « Ordres de vols
+V0 » dans le modèle de la suite (dispos, affectations, zones de mission, CR). Lots L2-L3 : session Ordres de vols ;
+L4-L5 : session Features SOG. Ensuite, sur cette feuille de route :
+
+- **Tâches du planificateur** : liste de tâches quotidiennes, variable, cochée quand c'est fait, échéance visible (V0 :
+  check-list hebdomadaire `checkPrep`, liens IVAO).
+- **Marqueurs libres** sur la frise (trait, bande, NLT : repères visuels sans calcul).
+
 ## En continu
 
 - **Dette technique** ([DETTE_TECHNIQUE.md](DETTE_TECHNIQUE.md)), avec une échéance ferme : **découpage des CR par

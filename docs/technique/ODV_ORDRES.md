@@ -1,12 +1,13 @@
 # Ordres de vols (Centre) — modèle de données et branchement
 
 Page du Centre `apps/cpco/odv_orders.html` (☰ › Centre — Ordres de vols) : l'éditeur hebdomadaire des ordres de vols
-(plaquettes de vol posées sur une frise horaire, zones, ravitaillements, contrôle, divers, butées, DLO, check-list de
-préparation). Elle **produit** l'ordre de vol ; le Planning ODV (`apps/cpco/odv_planning.html`, `docs/ODV_PLANNING.md`)
-l'**analyse** (créneaux communs, missions probables). Origine : l'outil autonome « Ordres de vols V0 » (HTML monofichier,
-`localStorage`), repris dans le modèle de la suite ; son format de fichier n'est pas importé (format provisoire).
+(plaquettes de vol posées sur une frise horaire, zones, contrôle, divers, notes). Chaîne : **mission → ordre de vol →
+exécution → CR**. La page **produit** l'ordre de vol ; le Planning ODV (`apps/cpco/odv_planning.html`,
+`docs/ODV_PLANNING.md`) l'**analyse** (créneaux communs, missions probables). Origine : l'outil autonome « Ordres de vols
+V0 » (HTML monofichier, `localStorage`), repris dans le modèle de la suite ; son format de fichier n'est pas importé
+(format provisoire).
 
-Statut : **proposition (lot L2)**, à valider avant l'écriture de la page (lot L3).
+Statut : **modèle validé en partie (lot L2)** ; questions ouvertes au § 7.
 
 ## 1. Principes
 
@@ -14,153 +15,164 @@ Statut : **proposition (lot L2)**, à valider avant l'écriture de la page (lot 
 - Tout passe par le pool `data/` (`MissionAssignments.readData` / `writeData`) : synchronisé par git aujourd'hui, par le
   webservice demain, même format (`docs/technique/INDEX_DONNEES.md` § 9). Pas d'autre export (ni HTML, ni PNG, ni PDF).
 - **Disponibilités : celles de la suite** (`data/disponibilites/<TRI>/<AAAA>-W<nn>.json`, `shared/dispos.js`). L'ODV ne
-  garde aucune copie des dispos ; une dispo modifiée depuis l'ODV est écrite dans la déclaration du pilote
-  (`SuiteDispos.saveWeek`, signée `by` du planificateur).
+  garde aucune copie des dispos ; une dispo modifiée depuis l'ODV (dont la **récup**, catégorie `recup`) est écrite dans
+  la déclaration du membre (`SuiteDispos.saveWeek`, signée `by` du planificateur).
 - **Membres : ceux de la suite** (`SuiteUsers.list()`, index des dispos, référence). L'ODV n'ajoute que des réglages
   d'affichage (groupe Staff / Autres, couleur, ordre).
+- **Vols liés à une mission : affectations de la suite** (`data/missions/affectations.json`, `writeAssignment`) — Mes
+  missions, les zones à activer (`OdvAirspace.missionZones`) et le registre les voient sans passer par l'ODV.
 - **Heures UTC (z)**, au quart d'heure pour les dispos (règle existante), à 5 min pour les éléments de l'ordre.
 - Affectation **à heures libres**, affichage **en trois tranches** : les limites matin / après-midi / soir du Planning ODV
   (`odvPlanning:v1`, 08-12z, 12-18z, 18-23z par défaut) sont tracées sur la frise.
-- Pas de positions en pixels dans les données : les éléments d'une section s'empilent automatiquement (couloirs).
-- Droits : édition = Centre déverrouillé (`cpcoAccess:v1`) et, en mode production, `admin_centre` (le « Drille » de la
-  semaine) ; sinon lecture seule. Un membre modifie ses dispos dans Mes missions, comme aujourd'hui. L'authentification
-  propre à l'outil V0 est abandonnée.
+- Pas de positions en pixels dans les données : les éléments d'une section s'empilent automatiquement (couloirs) ;
+  placement libre sans aimantation : dette technique.
+- Droits : édition = Centre déverrouillé (`cpcoAccess:v1`) et, en mode production, `admin_centre` ; sinon lecture
+  seule. Un membre modifie ses dispos dans Mes missions, comme aujourd'hui. L'authentification propre à l'outil V0 est
+  abandonnée.
 
-## 2. Catégories de dispo
+## 2. Catégories de dispo et affectabilité
 
 Les 12 types de l'outil V0 correspondent aux catégories de `data/config/disponibilites.json` :
 
-| V0 (`urTypes`) | Libellé V0 | Catégorie de la suite | Type |
+| V0 (`urTypes`) | Libellé V0 | Catégorie de la suite | Affectable à |
 |---|---|---|---|
-| exo | Disponible tout | `tout` (O) | dispo |
-| nuke | Sécurité civile | `secu` (SC) | dispo |
-| po | Chasse FAF | `defense_perso` (C) | dispo |
-| pld | Transport | `defense_perso` (T) | dispo |
-| opssol | FNY | `defense_perso` (N) | dispo |
-| opsvol | Exercice IVAO SO | `exercice_vol` (S) | dispo |
-| stage | Contrôle IVAO SO | `exercice_ctrl` (AM) | atc |
-| tache | Contrôle IVAO civil | `ctrl_hors` (AT) | atc → **non affectable** |
-| dv | Indisponible | `indispo` (IN) | indispo |
-| recup | Récup | `recup` (Q) | indispo |
-| volivaohorss | Vol IVAO hors SO | `vol_hors` (G) | occupe → **non affectable** |
-| dispouniquem | Dispo uniquement sol | **nouvelle** `sol` (groupe occupe) | occupe → **non affectable** |
+| exo | Disponible tout | `tout` (O) | vol, contrôle, divers |
+| nuke | Sécurité civile | `secu` (SC) | vol, contrôle, divers |
+| po | Chasse FAF | `defense_perso` (C) | vol, contrôle, divers |
+| pld | Transport | `defense_perso` (T) | vol, contrôle, divers |
+| opssol | FNY | `defense_perso` (N) | vol, contrôle, divers |
+| opsvol | Exercice IVAO SO | `exercice_vol` (S) | vol, contrôle, divers |
+| stage | Contrôle IVAO SO | `exercice_ctrl` (AM) | contrôle |
+| tache | Contrôle IVAO civil | `ctrl_hors` (AT) | — |
+| volivaohorss | Vol IVAO hors SO | `vol_hors` (G) | — |
+| dispouniquem | Dispo uniquement sol | `sol` (nouvelle) | divers |
+| dv | Indisponible | `indispo` (IN) | — |
+| recup | Récup | `recup` (Q) | — |
 
-Évolution proposée : catégorie `sol` (« Disponible au sol seulement », type `occupe`) ajoutée au `DEFAULT` de
-`shared/dispos.js` et à `data/config/disponibilites.json` (dépôt data : accord requis).
+- Règle (`SuiteDispos.affectable(catégorie)`) : champ `affectable` de la catégorie (`vol`, `controle`, `divers`), sinon
+  d'après le type — `dispo` : tout ; `atc` : contrôle ; groupe `occupe` (vol, contrôle hors SOG, DCS) : jamais ;
+  `indispo` : jamais. **Un contrôle n'est jamais affectable, sauf en contrôle.**
+- Catégorie `sol` (« Disponible au sol seulement », groupe `occupe`, `affectable: ["divers"]`) ajoutée au `DEFAULT` de
+  `shared/dispos.js` et à `data/config/disponibilites.json` (champ `affectable` gardé par l'éditeur de Paramètres ›
+  Centre, qui recopie les champs inconnus).
+- Un membre est en **conflit** sur un élément s'il n'est pas couvert, sur toute la durée, par une plage d'une catégorie
+  affectable à cet élément (non déclaré = conflit).
 
-**Affectabilité** (règle de conflit) :
-- vol : le membre doit être couvert par une plage de type `dispo` sur toute la durée ; `occupe`, `atc`, `indispo`,
-  non déclaré → conflit (« sol = indispo ») ;
-- contrôle : type `atc` ou `dispo` ;
-- divers (cours au sol, réunion) : tout sauf `indispo`.
+## 3. Éléments d'un ordre de vol
 
-## 3. Fichiers
+| Élément | Section | Stockage |
+|---|---|---|
+| **Vol de mission** (y compris ravitailleur) | vols | affectations (équipage, indicatif, appareil, décollage, durée) + présentation dans le fichier de semaine |
+| **Entraînement** (BLUE, RED… sans mission du registre) | vols | fichier de semaine ; zones choisies à la main (facultatif) |
+| **Divers** (cours au sol, réunion) | divers | fichier de semaine |
+| **Contrôle** | contrôle | fichier de semaine (positions SOG) ; sessions des réseaux : `data/atc/` (SuiteAtc) |
+| **Note** | libre | fichier de semaine (texte simple) |
+| Récup | — | dispos du membre (catégorie `recup`) |
+| Zones | zones | calculées : RTBA actif par réseau, zones de la mission, zones ouvertes au contrôle, zones en conflit (`OdvAirspace`, lot L4) ; activations saisies : `data/atc/activations/<AAAA>-W<nn>.json` (`OdvActivationsEditor`) |
 
-### 3.1 `data/odv/config.json` — réglages de l'ordre de vol (partagés)
+- **AAR** : une mission ravitailleur du registre, souvent impliquée par une autre mission (missions complexes) ; sa
+  plaquette est un vol de mission avec `axe` et `offload` ; les vols ravitaillés s'y accrochent (`ravitaillements`).
+- Retirés de V0 : plaquettes de zone et LL saisies à la main comme source principale (repli `ll` gardé), marqueurs et
+  NLT (feuille de route), PTA, priorité P1-P5, check-list (feuille de route), clés inutilisées (`extSqDefault`,
+  `cavTpls`, `showSim`, `simAnchorGap`, `tzDefault`, `prepText`, `dutyText`, `recur_refuels`, `auth`, `dayStart` /
+  `dayEnd`).
+
+## 4. Fichiers
+
+### 4.1 `data/config/odv.json` — réglages de l'ordre de vol (partagés)
 
 ```json
 {
   "schema": 1, "va": "SOG", "updated_at": "…", "by": "TRI",
-  "terrain": "LFOA",
+  "terrain": "LFOA", "reseau": "IVAO", "crDelaiHeures": 48,
   "jours": { "1": { "debut": "04:00", "fin": "22:00" }, "…": {} },
   "nbJours": 7,
   "personnel": { "ABC": { "groupe": "staff", "couleur": "#EF4444", "ordre": 0 } },
   "modeles": {
     "vols":   [{ "id": "…", "libelle": "BLUE", "duree": 105, "couleur": "#1a5898", "fond": "#1a5898", "parIndicatif": false }],
-    "divers": [{ "id": "…", "libelle": "COURS AU SOL", "duree": 60, "couleur": "#8a6010", "fond": null, "section": "divers" }],
-    "aar":    [{ "id": "…", "tanker": "", "axe": "SIMONE", "debut": "09:00", "fin": "11:00", "offload": 4, "couleur": "#787808" }],
-    "zones":  [{ "id": "…", "nom": "T43", "duree": 60, "couleur": "#2a7030", "sia": null }]
+    "divers": [{ "id": "…", "libelle": "COURS AU SOL", "duree": 60, "couleur": "#8a6010", "fond": null }],
+    "controle": [{ "id": "…", "libelle": "CONTRÔLE", "duree": 120, "couleur": "#7300ff" }]
   },
   "indicatifs": { "MASTIFF": { "fond": "#a49ea0", "contour": "#cd030d" } },
   "ll": [{ "nom": "RTBA Lorraine", "debut": "11:30", "fin": "15:00", "jours": [1], "couleur": "#4ADE80", "sia": null }],
-  "recurrences": [{ "id": "…", "element": { "type": "zone", "…": "…" }, "rythme": "hebdo", "jour": 2, "debut": "2026-10-12", "fin": null }],
-  "checklist": [{ "id": "…", "texte": "Réserver les zones (lundi-mercredi)", "url": "https://…", "semainesAvant": 1, "jour": 6 }]
+  "recurrences": [{ "id": "…", "element": { "type": "divers", "…": "…" }, "rythme": "hebdo", "jour": 2, "debut": "2026-10-12", "fin": null }]
 }
 ```
 
-- `section` des divers : `divers` ou `controle`.
-- `zones[].sia`, `ll[].sia` : identifiant de la base aéronautique, relié par `OdvAirspace` (lot L4) ; `ll` saisi à la
-  main = repli quand la base n'a pas l'activité de la zone.
+- `reseau` : réseau par défaut d'un vol (VATSIM | IVAO), pour l'état des activations (`OdvAirspace.check`).
+- `crDelaiHeures` : délai après la fin du vol au-delà duquel un vol de mission sans CR passe en MNE (§ 5).
 - `indicatifs` : couleurs de plaquette par préfixe d'indicatif (la table `MISSION_CALLSIGNS` reste inchangée ; le préfixe
-  le plus long contenu dans l'indicatif saisi l'emporte). Variante : champs facultatifs `fond` / `contour` dans
-  `data/references/callsigns.js`.
+  le plus long contenu dans l'indicatif saisi l'emporte).
+- `ll` : repli des créneaux RTBA / LL par jour de semaine (`OdvAirspace.rtba(date, { ll })`, `sia` prioritaire sur le
+  nom).
 - `recurrences` : `rythme` `quotidien` | `hebdo` | `bimensuel` (semaines paires), `debut` **obligatoire** (une récurrence
   ne remplit plus les semaines passées), appliquée à la première ouverture d'une semaine.
-- Supprimés de V0 (inutilisés) : `extSqDefault`, `cavTpls`, `showSim`, `simAnchorGap`, `tzDefault`, `prepText`,
-  `dutyText`, `recur_refuels`, `auth`, `dayStart` / `dayEnd` (remplacés par `jours`).
 
-### 3.2 `data/odv/<AAAA>-W<nn>.json` — l'ordre de vol d'une semaine
+### 4.2 `data/odv/<AAAA>-W<nn>.json` — l'ordre de vol d'une semaine
+
+Ce qui n'a pas sa place dans le modèle existant : entraînements, divers, contrôle SOG, notes, permanence, et la
+présentation des vols de mission.
 
 ```json
 {
   "schema": 1, "va": "SOG", "semaine": "2026-W42", "updated_at": "…", "by": "TRI",
-  "prep": "TRI", "permanence": "TRI", "remarques": "texte",
+  "permanence": "TRI",
   "elements": [
     { "id": "…", "type": "vol", "date": "2026-10-13", "debut": "09:30", "duree": 105,
-      "libelle": "BLUE", "indicatif": "MASTIFF45", "couleur": "#1a5898", "fond": null,
+      "mission": "A-001C", "libelle": "BLUE", "indicatif": "MASTIFF45", "reseau": "IVAO", "couleur": "#1a5898", "fond": null,
       "avions": [{ "pilote": "ABC", "nav": null, "annule": false }],
       "taches": [{ "nom": "Leader", "pilote": "ABC" }],
-      "zones": ["<id d'un élément zone>"],
-      "ravitaillements": [{ "aar": "<id d'un élément aar>", "heure": "10:15", "offload": 5 }],
-      "infos": "", "etat": "prevu", "cr": null, "motif": "", "mission": null, "recurrence": null }
-  ],
-  "butees": [{ "pilote": "ABC", "items": [{ "id": "…", "texte": "BFM", "echeance": "2026-10-20", "etat": "a_faire" }] }],
-  "dlo":    [{ "pilote": "ABC", "items": [{ "id": "…", "texte": "CAS", "etat": "auto" }] }],
-  "checklist": { "<id de tâche>": true }
+      "zones": [{ "id": "<id base>", "nom": "R 45 A" }],
+      "axe": null, "offload": null,
+      "ravitaillements": [{ "vol": "<id du vol ravitailleur>", "heure": "10:15", "offload": 5 }],
+      "infos": "", "etat": "prevu", "cr": null, "causes": [], "recurrence": null }
+  ]
 }
 ```
 
-Types d'élément (`type`) et champs propres :
+| `type` | champs propres |
+|---|---|
+| `vol` | voir l'exemple ; `mission` null = **entraînement** ; jusqu'à 8 avions (pilote + navigateur) |
+| `divers` | `libelle`, `equipage: [TRI]`, `notes`, `etat`, `motif` |
+| `controle` | `libelle`, `position`, `equipage: [TRI]`, `etat` |
+| `note` | `texte` (texte simple : plus de HTML, risque d'injection de V0 supprimé) |
 
-| type | section | champs |
-|---|---|---|
-| `vol` | vols | voir l'exemple ; jusqu'à 8 avions (pilote + navigateur), 5 zones liées |
-| `zone` | zones | `nom`, `couleur`, `reservee`, `sia` |
-| `aar` | zones | `tanker`, `axe`, `offload`, `couleur`, `reservee` |
-| `divers` | divers / controle | `section`, `libelle`, `equipage: [TRI]`, `notes`, `etat`, `motif` |
-| `marqueur` | toutes | `texte`, `fin` (absent : trait) |
-| `nlt` | toutes | `texte` (No Later Than) |
-| `recup` | toutes | `pilotes: [TRI]` — indisponibles de `debut` à minuit |
-| `pta` | libre | — (sens à confirmer) |
-| `note` | libre | `texte` (texte simple : plus de HTML, risque d'injection de V0 supprimé) |
-
-- `etat` : `prevu` | `fait` | `non_fait` | `annule` ; `cr` : `ME` | `BACHE` | `MNE` | null. Valeurs **brutes** : la
-  correspondance vers les CR de la suite (ledger, outcomes) est faite par le lot L5. Un CR pose l'état s'il était
-  `prevu` (ME → fait, BACHE → annule, MNE → non_fait).
-- `mission` : identifiant du registre des missions (lot L5).
+- Vol de mission : l'équipage, l'indicatif et le décollage font foi **dans les affectations** ; `avions` en est la copie
+  de présentation (navigateurs, annulations), réécrite à chaque enregistrement.
+- `etat` : `prevu` | `fait` | `non_fait` | `annule` ; `cr` : `ME` | `BACHE` | `MNE` | null ; `causes` : causes d'une MNE
+  (plusieurs possibles). Valeurs **brutes** ; correspondance avec le registre des CR : lot L5.
 - Un élément ne passe pas minuit (`debut` + `duree` ≤ 24:00), comme V0.
-- Priorité P1-P5 de V0 : retirée (jamais branchée).
+- `permanence` : officier de permanence de la semaine ; son affichage hors de la page est fait par Features SOG.
 
-## 4. Calculs (repris de V0, corrigés)
+## 5. Règles
 
-- **Conflits** : membre non affectable (§ 2), récup en cours, chevauchement avec un autre vol ou divers non annulé du même
-  jour, même membre deux fois sur un élément.
+- **Conflits** : membre non affectable (§ 2), chevauchement avec un autre vol, contrôle ou divers non annulé du même jour,
+  même membre deux fois sur un élément ; zone requise sans activation « active » du réseau du vol sur toute sa plage, ou
+  zone P (`OdvAirspace.check`).
+- **CR** : le CR fait foi (`etatFromLedger`, lot L5). Succès → `ME`, `fait`. Pas de CR `crDelaiHeures` après la fin du
+  vol → `MNE`, `non_fait`, `causes` à renseigner. `BACHE` (annulé) posé par le planificateur. Entraînement sans
+  mission : `cr` posé à la main.
 - **Badge P** : aucun membre d'équipage disponible dans l'heure et demie avant le vol.
-- **Dispos ensemble** : plages où au moins deux membres sont disponibles (type `dispo`).
+- **Dispos ensemble** : plages où au moins deux membres sont affectables à un vol.
 - **Jour et nuit aéronautiques** : `sunTimes` (`shared/mission_core/assist.js`) et coordonnées du terrain (base des
   aérodromes de la suite) ; « maintenant » en UTC (V0 : heure locale).
-- **Check-list** : échéance = lundi de la semaine − 7 × `semainesAvant` jours + (`jour` − 1) ; en retard si dépassée.
-- **Butées** : couleur d'urgence par jours ouvrés restants (≤ 3 rouge, ≤ 10 jaune).
-- **DLO auto** : faite si un vol `fait` de la semaine a le texte dans son libellé et le membre dans son équipage.
 - **Statistiques** : vols prévus, durée, faits, annulés, AAR, ME / Bâchés / MNE ; par membre : disponibilité (sur les
   heures de service `jours`) et charge (minutes de vol / minutes dispo).
-- **Modifications de dispo** (onglet de la vue semaine) : déclarations dont `updated_at` est postérieur à la dernière
-  prise en compte (marque de lecture locale, `readMarks`) — remplace le journal `avLog` de V0.
+- **Modifications de dispo** : déclarations dont `updated_at` est postérieur à la dernière prise en compte (marque de
+  lecture locale) — remplace le journal `avLog` de V0.
 
-## 5. Lots
+## 6. Lots
 
 | Lot | Contenu | Qui |
 |---|---|---|
-| L2 | ce modèle ; `shared/odv_orders_store.js` (lecture, écriture, récurrences, conflits — testable) | Ordres de vols |
-| L3 | page `apps/cpco/odv_orders.html` : vue jour (frise, glisser-déposer), vue semaine, panneaux, check-list, stats, briefing ; rubrique Paramètres › Centre › Ordres de vols (modèles, LL, check-list, personnel, heures) | Ordres de vols |
-| L4 | `shared/odv_airspace.js` (`OdvAirspace` : zones et LL de la base, axes AAR, espaces à éviter) | Features SOG |
-| L5 | `etat` / `cr` → ledger ; plaquette ↔ registre et affectations | Features SOG |
+| L2 | ce modèle ; catégorie `sol` et `SuiteDispos.affectable` ; `shared/odv_orders_store.js` (lecture, écriture, récurrences, conflits) | Ordres de vols |
+| L3 | page `apps/cpco/odv_orders.html` : vue jour (frise, glisser-déposer), vue semaine, statistiques, briefing ; rubrique Paramètres › Centre › Ordres de vols | Ordres de vols |
+| L4 | `shared/odv_airspace.js` (`OdvAirspace`), `shared/odv_activations_editor.js` — faits | Features SOG |
+| L5 | `etat` / `cr` ↔ registre des CR, délai MNE ; missions ravitailleur liées ; officier de permanence hors de la page | Features SOG |
 | L6 | manuels (4 langues), CHANGELOG ; puis stabilisation | ensemble |
 
-## 6. Questions ouvertes
+## 7. Questions ouvertes
 
-1. Catégorie `sol` : ajout à la configuration partagée ?
-2. Couleurs des indicatifs : dans `data/odv/config.json` (proposé) ou dans `callsigns.js` ?
-3. Empilement automatique des éléments (au lieu des positions libres de V0) : d'accord ?
-4. Récup : élément de l'ordre (proposé) ou plage `recup` écrite dans les dispos du membre ?
-5. PTA, DLO : sens métier (recherche en cours).
+1. **Butées et DLO** (V0 : listes par membre rangées dans la semaine) : une liste d'échéances par membre, hors semaine ?
+2. **NLT** : repère horaire du jour (feuille de route avec les marqueurs) ou lié aux DLO ?
+3. **PTA** : sens métier inconnu ; non repris.
