@@ -18,7 +18,7 @@ window.REPOSITORY_TREE={
   va:{name:"SO Group Virtual",short:"SO Group",centre:"CPCO",centreName:"Centre de planification et de conduite des opérations",
     pages:{home:"/index.php",log:"/log_vols.php",fleet:"/flotte.php",aircraft:"/appareil.php?id={id}"}},
   sources:{
-    defa:{url:"https://flotte.defa-virtual.fr",label:["Site de la compagnie virtuelle (SO Group Virtual)","Virtual airline website (SO Group Virtual)","Website der virtuellen Fluggesellschaft (SO Group Virtual)","Sitio de la aerolínea virtual (SO Group Virtual)"]},
+    defa:{url:"https://flotte.defa-virtual.fr",label:["Site de la compagnie virtuelle","Virtual airline website","Website der virtuellen Fluggesellschaft","Sitio de la aerolínea virtual"]},
     siaData:{url:"https://www.sia.aviation-civile.gouv.fr/produits-numeriques-en-libre-disposition/les-bases-de-donnees-sia.html",label:["SIA — bases de données (export XML)","SIA — databases (XML export)","SIA — Datenbanken (XML-Export)","SIA — bases de datos (XML)"]},
     siaCycle:{url:"https://www.sia.aviation-civile.gouv.fr/donnees-aeronautiques-xml-airac-{nn}-{yy}.html",label:["SIA — page d’un cycle AIRAC","SIA — AIRAC cycle page","SIA — Seite eines AIRAC-Zyklus","SIA — página de un ciclo AIRAC"]},
     siaEaip:{url:"https://www.sia.aviation-civile.gouv.fr/produits-numeriques-en-libre-disposition/eaip.html",label:["SIA — eAIP","SIA — eAIP","SIA — eAIP","SIA — eAIP"]},

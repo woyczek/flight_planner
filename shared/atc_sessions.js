@@ -69,7 +69,7 @@
     try {
       r = await (await fetch(new URL('__setup/vatsim-bookings', ROOT).href, {
         headers: {
-          'X-DEFA-Setup': '1'
+          'X-SOG-Setup': '1'
         },
         cache: 'no-store'
       })).json();

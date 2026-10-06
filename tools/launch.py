@@ -155,7 +155,7 @@ def ensure_data():
 
 
 # ---- interface de la page de premier lancement (/__setup/…) : seulement depuis la page servie ici (adresse
-# 127.0.0.1:<port> exigée, en-tête X-DEFA-Setup : une autre page web ne peut pas l'envoyer sans pré-vérification CORS,
+# 127.0.0.1:<port> exigée, en-tête X-SOG-Setup : une autre page web ne peut pas l'envoyer sans pré-vérification CORS,
 # à laquelle ce serveur ne répond pas)
 class Setup(http.server.SimpleHTTPRequestHandler):
     port = 0
@@ -170,7 +170,7 @@ class Setup(http.server.SimpleHTTPRequestHandler):
         return self.headers.get('Host') in (f'127.0.0.1:{self.port}', f'localhost:{self.port}', f'[::1]:{self.port}')
 
     def _allowed(self):
-        return self._local_host() and self.headers.get('X-DEFA-Setup') == '1'
+        return self._local_host() and (self.headers.get('X-SOG-Setup') == '1' or self.headers.get('X-DEFA-Setup') == '1')
 
     def translate_path(self, path):
         """/data/… : dossier de données choisi (--data), s'il n'est pas celui de la suite."""

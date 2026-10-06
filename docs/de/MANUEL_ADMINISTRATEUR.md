@@ -516,7 +516,7 @@ Diese Rubrik legt fest, was die Piloten als Verfügbarkeiten angeben können (`d
 | Spalte | Verwendung |
 |---|---|
 | id | Kennung, nach dem Speichern der Kategorie fest; bei einer neuen Kategorie einzugeben |
-| Gruppe | in der ODV angezeigte Gruppe (Verfügbar, DEFA-Übung, Belegt, Nicht verfügbar…) |
+| Gruppe | in der ODV angezeigte Gruppe (Verfügbar, SOG-Übung, Belegt, Nicht verfügbar…) |
 | Bezeichnung, Farbe | Bezeichnung **nur auf Französisch**, Farbe des Felds |
 | Offene Themen | „alle Themen“, „keins“, „Bereich …“, „… nach Präferenzen, aus …“, oder „Themenliste“ (freies Feld, Themen durch Leerzeichen getrennt) |
 | Typ | verfügbar, Fluglotse, belegt, nicht verfügbar |
@@ -595,7 +595,7 @@ Diese Rubrik ist der einzige Ort, an dem die lokalen Ordner und die Adressen der
 
 - **Externe Quellen**: Die Standardadresse wird grau angezeigt. Ein eingegebener Wert gilt nur für diesen Browser; „↺“ kehrt zum Standardwert zurück, und „Öffnen ↗“ öffnet die Adresse.
 - **Virtuelle Fluggesellschaft**: „Name“, „Kürzel“, „Zentrum (Kürzel)“, „Zentrum (voller Name)“, und die Seiten der Website („Startseite“, „Flugbuch“, „Flotte“, „Flugzeugseite“). Ein leeres Feld behält den Standardwert. „Zurück zu SO Group Virtual“ löscht alle diese Einstellungen.
-- **Erststart**: „Ersten Start erneut öffnen“; „Bereinigen und neu beginnen…“ löscht die gespeicherten Ordner, die Kopie der ODV-Arbeitsmappe, die Zugangsdaten der DEFA-Website und das Profil. Die Dateien auf der Festplatte bleiben unberührt.
+- **Erststart**: „Ersten Start erneut öffnen“; „Bereinigen und neu beginnen…“ löscht die gespeicherten Ordner, die Kopie der ODV-Arbeitsmappe, die Zugangsdaten der Website der Fluggesellschaft und das Profil. Die Dateien auf der Festplatte bleiben unberührt.
 
 ## Einstellungen › Wartung
 <!-- page: apps/settings/maintenance.html -->

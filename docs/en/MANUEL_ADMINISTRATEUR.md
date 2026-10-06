@@ -516,7 +516,7 @@ This section defines what the pilots can declare as availability (`data/config/d
 | Column | Use |
 |---|---|
 | id | identifier, fixed once the category is saved; entered for a new category |
-| Group | group shown in the ODV (Available, DEFA exercise, Busy, Unavailable…) |
+| Group | group shown in the ODV (Available, SOG exercise, Busy, Unavailable…) |
 | Label, Colour | label **in French only**, cell colour |
 | Open themes | “every theme”, “none”, “domain …”, “… per preferences, among …”, or “theme list” (free field, themes separated by spaces) |
 | Type | available, control, busy, unavailable |
@@ -595,7 +595,7 @@ This section is the only place to set the local folders and the addresses of the
 
 - **External sources**: the default address is shown greyed out. An entered value applies to this browser only; “↺” goes back to the default value and “Open ↗” opens the address.
 - **Virtual airline**: “Name”, “Short name”, “Centre (short)”, “Centre (full name)”, and the site pages (“Home page”, “Flight log”, “Fleet”, “Aircraft page”). An empty field keeps the default value. “Back to SO Group Virtual” clears all these settings.
-- **First run**: “Reopen the first run”; “Clean and start over…” clears the stored folders, the copy of the ODV workbook, the DEFA site credentials and the profile. The files on disk are not touched.
+- **First run**: “Reopen the first run”; “Clean and start over…” clears the stored folders, the copy of the ODV workbook, the airline site credentials and the profile. The files on disk are not touched.
 
 ## Settings › Maintenance
 <!-- page: apps/settings/maintenance.html -->

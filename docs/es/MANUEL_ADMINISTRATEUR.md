@@ -516,7 +516,7 @@ Este apartado define lo que los pilotos pueden declarar como disponibilidades (`
 | Columna | Uso |
 |---|---|
 | id | identificador, fijo una vez guardada la categoría; se introduce para una categoría nueva |
-| Grupo | grupo mostrado en la ODV (Disponible, Ejercicio DEFA, Ocupado, No disponible…) |
+| Grupo | grupo mostrado en la ODV (Disponible, Ejercicio SOG, Ocupado, No disponible…) |
 | Etiqueta, Color | etiqueta **solo en francés**, color de la casilla |
 | Temas abiertos | «todos los temas», «ninguno», «dominio …», «… según preferencias, entre …» o «lista de temas» (campo libre, temas separados por espacios) |
 | Tipo | disponible, control, ocupado, no disponible |
@@ -595,7 +595,7 @@ Este apartado es el único lugar donde se ajustan las carpetas locales y las dir
 
 - **Fuentes externas**: la dirección por defecto aparece en gris. Un valor introducido solo vale para este navegador; «↺» vuelve al valor por defecto y «Abrir ↗» abre la dirección.
 - **Aerolínea virtual**: «Nombre», «Sigla», «Centro (sigla)», «Centro (nombre completo)» y las páginas del sitio («Página de inicio», «Registro de vuelos», «Flota», «Ficha de un avión»). Un campo vacío mantiene el valor por defecto. «Volver a SO Group Virtual» borra todos estos ajustes.
-- **Primer arranque**: «Reabrir el primer inicio»; «Limpiar y empezar de nuevo…» borra las carpetas recordadas, la copia del libro ODV, los identificadores del sitio DEFA y el perfil. Los archivos del disco no se tocan.
+- **Primer arranque**: «Reabrir el primer inicio»; «Limpiar y empezar de nuevo…» borra las carpetas recordadas, la copia del libro ODV, los identificadores del sitio de la aerolínea y el perfil. Los archivos del disco no se tocan.
 
 ## Ajustes › Mantenimiento
 <!-- page: apps/settings/maintenance.html -->

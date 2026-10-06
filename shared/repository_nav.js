@@ -654,7 +654,12 @@
   };
   document.body.style.backgroundColor = theme.page || "";
   /** Adresse d'une source externe : réglage local (suiteSources:v1, Paramètres › Maintenance) sinon repository_tree.sources. */
-  const source = key => String(K.store.json("suiteSources:v1", {})[key] || cfg.sources?.[key]?.url || "").replace(/\/+$/, "");
+  // Site de la compagnie (source « defa », va.pages) : les adresses par défaut de repository_tree sont celles de DEFA
+  // Virtual et ne valent que pour elle ; autre compagnie : adresses réglées (Paramètres › Installation › Sources et
+  // dossiers) ou aucune — jamais de lien inventé (siteLink : invitation à renseigner l'adresse)
+  const DEFAULT_SITE_FOR = "DEFA Virtual";
+  const vaName = () => (K.store.json("suiteVA:v1", {}) || {}).name || cfg.va?.name || "SO Group Virtual";
+  const source = key => String(K.store.json("suiteSources:v1", {})[key] || (key === "defa" && vaName() !== DEFAULT_SITE_FOR ? "" : cfg.sources?.[key]?.url) || "").replace(/\/+$/, "");
   /** Compagnie virtuelle : repository_tree.va (SO Group Virtual par défaut) et réglage local (suiteVA:v1) ; url : site
    *  (sources.defa). { name, short, centre, centreName, url, pages: { home, log, fleet, aircraft } }. */
   const va = () => {
@@ -667,7 +672,7 @@
       centreName: o.centreName || d.centreName || "",
       url: source("defa"),
       pages: {
-        ...(d.pages || {}),
+        ...(vaName() === DEFAULT_SITE_FOR ? d.pages || {} : {}),
         ...(o.pages || {})
       }
     };
@@ -676,7 +681,16 @@
   const vaUrl = (pageKey, vars = {}) => {
     const v = va(),
       p = String(v.pages[pageKey] ?? "").replace(/\{(\w+)\}/g, (_, k) => encodeURIComponent(vars[k] ?? ""));
-    return /^https?:/i.test(p) ? p : v.url + (p && !p.startsWith("/") ? "/" : "") + p;
+    if (/^https?:/i.test(p)) return p;
+    return v.url ? v.url + (p && !p.startsWith("/") ? "/" : "") + p : "";
+  };
+  /** Lien HTML vers une page du site de la compagnie (texte : celui donné, sinon l'adresse) ; adresse inconnue : lien
+   *  vers le réglage de l'adresse (Paramètres › Installation › Sources et dossiers). */
+  const siteLink = (pageKey, vars = {}, text = "") => {
+    const u = vaUrl(pageKey, vars),
+      i = Math.max(0, supported.indexOf(language));
+    return u ? `<a href="${K.esc(u)}" target="_blank" rel="noopener">${K.esc(text || u.replace(/^https?:\/\//, ""))} ↗</a>` :
+      `<a href="${K.esc(settingsUrl("sources"))}" title="${K.esc(["Paramètres › Installation › Sources et dossiers", "Settings › Installation › Sources and folders", "Einstellungen › Installation › Quellen und Ordner", "Ajustes › Instalación › Fuentes y carpetas"][i])}">${K.esc(["adresse du site de la compagnie à renseigner", "airline website address to be set", "Website-Adresse der Fluggesellschaft eintragen", "dirección del sitio de la aerolínea por indicar"][i])}</a>`;
   };
   /** Émet « repository-design-change » (detail : ce qui a changé) : décors, icônes, graphiques des pages se refont. */
   const designChanged = detail => window.dispatchEvent(new CustomEvent("repository-design-change", {
@@ -696,6 +710,7 @@
     source,
     va,
     vaUrl,
+    siteLink,
     /** Enregistre la surcharge locale de la compagnie virtuelle (objet vide : défauts) ; événement « suite-sources-change ». */
     setVa(o) {
       const clean = Object.fromEntries(Object.entries(o || {}).filter(([k, v]) => k === "pages" ? v && Object.values(v).some(Boolean) : String(v || "").trim()));
@@ -975,7 +990,7 @@
     // flat) — celui de la compagnie (shared/icons/defa) si la compagnie réglée est SO Group Virtual, sinon le logo générique (cible,
     // shared/icons/generic) ; lien vers le site de la compagnie (nouvel onglet : la page en cours reste ouverte)
     const logoSrc = () => new URL(`icons/${/\bDEFA\b/i.test(`${va().short} ${va().name}`) ? "defa" : "generic"}/${designs[doc.dataset.design]?.skeuo ? doc.dataset.design : "flat"}.webp${ver}`, script.src).href;
-    side.innerHTML = `<a class="repo-sidenav-brand" href="${K.esc(vaUrl("home"))}" target="_blank" rel="noopener" title="${K.esc(va().name)} — ${K.esc(source("defa").replace(/^https?:\/\//, ""))}"><img class="repo-sidenav-logo" src="${logoSrc()}" alt="${K.esc(va().name)}"></a><ul></ul><ul class="repo-sidenav-foot"></ul>`;
+    side.innerHTML = `<a class="repo-sidenav-brand"${vaUrl("home") ? ` href="${K.esc(vaUrl("home"))}" target="_blank" rel="noopener"` : ""} title="${K.esc(va().name)} — ${K.esc(source("defa").replace(/^https?:\/\//, ""))}"><img class="repo-sidenav-logo" src="${logoSrc()}" alt="${K.esc(va().name)}"></a><ul></ul><ul class="repo-sidenav-foot"></ul>`;
     // entrées du bas (séparateur « bottom » et suivantes : Apparence, Paramètres, Aide) dans leur propre liste, fixée en
     // bas de la barre ; seule la liste du haut défile quand les entrées dépassent la hauteur de la fenêtre
     let ul = side.querySelector("ul");
@@ -1088,7 +1103,7 @@
     profile.src = new URL("pilot_profile.js?v=60bc0e70", script.src).href;
     document.head.append(profile); /* Dossiers autorisés et ouverture des fichiers dans le dossier paramétré */
     const files = document.createElement("script");
-    files.src = new URL("file_access.js?v=33aec18d", script.src).href;
+    files.src = new URL("file_access.js?v=b08275e1", script.src).href;
     document.head.append(files); /* Données locales du navigateur ⇄ fichier de sauvegarde */
     /* Icônes, sous-titres de blocs, sous-cartes, zones de dépôt, icônes de la barre latérale (ordre conservé) */
     for (const f of ["icons/repository_icons.js?v=27853364", "block_icons.js?v=c8ee7213", "side_nav.js?v=19f74efd"]) {
@@ -1098,7 +1113,7 @@
       document.head.append(sc);
     }
     const store = document.createElement("script");
-    store.src = new URL("browser_store.js?v=dd1e8ec1", script.src).href;
+    store.src = new URL("browser_store.js?v=1e959067", script.src).href;
     document.head.append(store); /* Canal et contrôle des mises à jour, pastilles « Mise à jour » / « AIRAC » de l'en-tête */
     const assign = document.createElement("script"); /* Missions affectées : pli cacheté de l'en-tête, « Mes missions » */
     assign.src = new URL("assignments.js?v=aeb13216", script.src).href;
@@ -1109,11 +1124,11 @@
     document.head.append(users);
     /* Synchronisation git du pool de données : bouton « Synchroniser » de l'en-tête (lanceur, data/ dépôt git) */
     const sync = document.createElement("script");
-    sync.src = new URL("sync.js?v=14aeb29b", script.src).href;
+    sync.src = new URL("sync.js?v=ccb12def", script.src).href;
     document.head.append(sync);
     /* Disponibilités : catégories configurables, thèmes ouverts, déclarations par semaine */
     const dispos = document.createElement("script");
-    dispos.src = new URL("dispos.js?v=d99a8e23", script.src).href;
+    dispos.src = new URL("dispos.js?v=8a2333d5", script.src).href;
     document.head.append(dispos);
     const update = document.createElement("script");
     update.src = new URL("suite_update.js?v=a6f1e9d1", script.src).href;

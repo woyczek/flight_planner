@@ -2,7 +2,7 @@
 
 Usage : python tools/defa_reference.py "Stub/Log des vols.html"  [--dry-run]
 
-Entrée : page « Log des vols » de la DEFA enregistrée (tableau à 9 colonnes : date, durée,
+Entrée : page « Log des vols » du site de la compagnie enregistrée (tableau à 9 colonnes : date, durée,
 trigramme, indicatif, immatriculation, appareil, départ, arrivée, mission).
 Sortie : data/references/defa_reference.js (format commun des fichiers de données, éditable dans
 Paramétrage › Bases de données) — seulement des informations agrégées :

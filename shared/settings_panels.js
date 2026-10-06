@@ -1,7 +1,7 @@
 (() => {
   'use strict';
   // Rubriques des pages de Paramètres écrites hors de shared/data_admin.js (docs/technique/DISPOS_ET_REORGANISATION.md § 2) :
-  //   · Mon profil — identité (trigramme, IVAO, VATSIM, SimBrief, identifiants du site DEFA, langue), connexion et mot de
+  //   · Mon profil — identité (trigramme, IVAO, VATSIM, SimBrief, identifiants du site de la compagnie, langue), connexion et mot de
   //     passe, préférences de thèmes (listes blanches / noires par domaine), appareils et simulateurs ;
   //   · Centre — utilisateurs et droits (shared/users.js), catégories de disponibilité (shared/dispos.js) ;
   //   · Installation — premier lancement.
@@ -34,7 +34,7 @@
   const nav = () => window.RepositoryNav;
 
   // sous-titres des en-têtes des quatre pages (« SO Group Virtual — … » : la couche de traduction traduit la partie après le tiret)
-  L('trigramme, identifiants VATSIM, IVAO, SimBrief et du site DEFA, connexion et mot de passe, types de missions, langue, appareils et simulateurs', 'trigram, VATSIM, IVAO, SimBrief and DEFA website credentials, sign-in and password, mission types, language, aircraft and simulators', 'Kürzel, VATSIM-, IVAO-, SimBrief- und DEFA-Website-Zugangsdaten, Anmeldung und Passwort, Missionsarten, Sprache, Luftfahrzeuge und Simulatoren', 'trigrama, credenciales de VATSIM, IVAO, SimBrief y del sitio DEFA, conexión y contraseña, tipos de misión, idioma, aeronaves y simuladores');
+  L('trigramme, identifiants VATSIM, IVAO, SimBrief et du site de la compagnie, connexion et mot de passe, types de missions, langue, appareils et simulateurs', 'trigram, VATSIM, IVAO, SimBrief and airline website credentials, sign-in and password, mission types, language, aircraft and simulators', 'Kürzel, VATSIM-, IVAO-, SimBrief- und Website-Zugangsdaten der Fluggesellschaft, Anmeldung und Passwort, Missionsarten, Sprache, Luftfahrzeuge und Simulatoren', 'trigrama, credenciales de VATSIM, IVAO, SimBrief y del sitio de la aerolínea, conexión y contraseña, tipos de misión, idioma, aeronaves y simuladores');
   L('accès au Centre, utilisateurs et droits, catégories de disponibilité, réglages du routage, envoi des comptes rendus', 'Centre access, users and rights, availability categories, routing settings, report sending', 'Zugang zum Zentrum, Benutzer und Rechte, Verfügbarkeitskategorien, Routing-Einstellungen, Berichtsversand', 'acceso al Centro, usuarios y derechos, categorías de disponibilidad, ajustes de rutas, envío de informes');
   L('premier lancement, dépôt de données, dossiers, compagnie virtuelle', 'first run, data repository, folders, virtual airline', 'Erststart, Datenrepository, Ordner, virtuelle Fluggesellschaft', 'primer arranque, repositorio de datos, carpetas, aerolínea virtual');
   L('mises à jour, versions, dépendances, base SIA, caches, stockage, sauvegarde, journal, fichiers de référence', 'updates, versions, dependencies, SIA base, caches, storage, backup, journal, reference files', 'Aktualisierungen, Versionen, Abhängigkeiten, SIA-Basis, Caches, Speicher, Sicherung, Protokoll, Referenzdateien', 'actualizaciones, versiones, dependencias, base SIA, cachés, almacenamiento, copia, registro, archivos de referencia');
@@ -54,7 +54,7 @@
     id: 'identity',
     group: GROUP_PROFILE,
     title: L('Identité et réseaux', 'Identity and networks', 'Identität und Netzwerke', 'Identidad y redes'),
-    intro: L('Trigramme, identifiants des réseaux (VATSIM, IVAO), SimBrief et du site DEFA, langue de la suite. Repris par toutes les pages (☰ › Profil pilote, comptes rendus, reportings).', 'Trigram, network IDs (VATSIM, IVAO), SimBrief and DEFA website credentials, suite language. Used by every page (☰ › Pilot profile, reports, reportings).', 'Kürzel, Netzwerk-IDs (VATSIM, IVAO), SimBrief- und DEFA-Website-Zugangsdaten, Sprache der Suite. Von allen Seiten verwendet (☰ › Pilotenprofil, Berichte).', 'Trigrama, identificadores de redes (VATSIM, IVAO), SimBrief y del sitio DEFA, idioma de la suite. Usado por todas las páginas (☰ › Perfil de piloto, informes).'),
+    intro: L('Trigramme, identifiants des réseaux (VATSIM, IVAO), SimBrief et du site de la compagnie, langue de la suite. Repris par toutes les pages (☰ › Profil pilote, comptes rendus, reportings).', 'Trigram, network IDs (VATSIM, IVAO), SimBrief and airline website credentials, suite language. Used by every page (☰ › Pilot profile, reports, reportings).', 'Kürzel, Netzwerk-IDs (VATSIM, IVAO), SimBrief- und Website-Zugangsdaten der Fluggesellschaft, Sprache der Suite. Von allen Seiten verwendet (☰ › Pilotenprofil, Berichte).', 'Trigrama, identificadores de redes (VATSIM, IVAO), SimBrief y del sitio de la aerolínea, idioma de la suite. Usado por todas las páginas (☰ › Perfil de piloto, informes).'),
     render(body, api) {
       const p = read(PROFILE),
         d = read(DEFA),
@@ -74,7 +74,7 @@
           ${field(L('ID IVAO (VID)', 'IVAO ID (VID)', 'IVAO-ID (VID)', 'ID IVAO (VID)'), 'data-f="ivaoId" inputmode="numeric"')}
           ${field(L('SimBrief (utilisateur ou ID)', 'SimBrief (username or ID)', 'SimBrief (Benutzer oder ID)', 'SimBrief (usuario o ID)'), 'data-f="simbriefUser"')}
         </div>${triLocked ? `<p class="sp-hint">${esc(L('Mode production : le trigramme est celui de l’utilisateur connecté.', 'Production mode: the trigram is the signed-in user’s.', 'Produktionsmodus: Das Kürzel ist das des angemeldeten Benutzers.', 'Modo producción: el trigrama es el del usuario conectado.'))}</p>` : ''}</div>
-        <div class="sp-card"><h3>${esc(L('Site DEFA', 'DEFA website', 'DEFA-Website', 'Sitio DEFA'))}</h3><div class="sp-form">
+        <div class="sp-card"><h3>${esc(L('Site de la compagnie', 'Airline website', 'Website der Fluggesellschaft', 'Sitio de la aerolínea'))}</h3><div class="sp-form">
           ${field(L('Identifiant', 'Login', 'Kennung', 'Identificador'), 'data-defa="login"')}
           <label>${esc(L('Mot de passe', 'Password', 'Passwort', 'Contraseña'))}</label><input type="password" data-defa="password" autocomplete="off">
         </div><p class="sp-hint">${esc(L('Gardés dans ce navigateur seulement : jamais écrits dans un fichier ni dans une sauvegarde.', 'Kept in this browser only: never written to a file or a backup.', 'Nur in diesem Browser gespeichert: nie in eine Datei oder Sicherung geschrieben.', 'Guardadas solo en este navegador: nunca escritas en un archivo ni en una copia.'))}</p></div>

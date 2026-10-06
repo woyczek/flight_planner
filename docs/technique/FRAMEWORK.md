@@ -496,8 +496,8 @@ appareil). `link(item)` : lien en tête de carte (fiche appareil). Ajout par le 
   archive `.zip` déposée, ou clone du dépôt privé), serveur local (`http://127.0.0.1`, premier port libre à partir de
   8000), navigateur sur `apps/settings/premier_lancement.html`.
 - Le serveur du lanceur porte une interface locale `/__setup/` (état, clone avec identifiants, envoi de l'archive ou du
-  journal), refusée hors des pages qu'il sert (hôte `127.0.0.1:<port>` et en-tête `X-DEFA-Setup` exigés).
-- Premier lancement : données, profil (`missionReportingConfig:v1` ; identifiants DEFA `defaCredentials:v1`, exclus des
+  journal), refusée hors des pages qu'il sert (hôte `127.0.0.1:<port>` et en-tête `X-SOG-Setup` exigés).
+- Premier lancement : données, profil (`missionReportingConfig:v1` ; identifiants du site de la compagnie `defaCredentials:v1`, exclus des
   sauvegardes par `browser_store.js`), dossiers (`__repo`, `__odv` / `__odvFile`), puis Paramètres › Mise à jour SIA ;
   `suiteSetup:v1` marque la suite réglée (le lanceur ouvre alors l'accueil), « Nettoyer » l'efface.
 

@@ -203,15 +203,15 @@ El botón «⤢ Ancho completo» del título del bloque extiende la carpeta a to
 
 Su disponibilidad de la semana mostrada, en horas UTC. El Centro la utiliza para asignarle misiones. Es el mismo editor que en la página Mi disponibilidad (capítulo siguiente); aquí, la semana es la de la barra de semana de la lista.
 
-**Paleta**: las categorías se ordenan por grupo («Disponible», «Ejercicio DEFA», «Ocupado», «No disponible»). Cada pastilla lleva la letra de código ODV y un texto corto; el texto emergente da el nombre completo. La categoría elegida se memoriza.
+**Paleta**: las categorías se ordenan por grupo («Disponible», «Ejercicio SOG», «Ocupado», «No disponible»). Cada pastilla lleva la letra de código ODV y un texto corto; el texto emergente da el nombre completo. La categoría elegida se memoriza.
 
 Categorías por defecto (el Centro puede modificar esta lista):
 
 | Grupo | Categorías (código ODV) |
 |---|---|
 | Disponible | Disponible para todo (O), Disponible seguridad civil (SC), Disponible defensa (D+), Seguridad civil personalizada (SC-), Defensa personalizada (D-) |
-| Ejercicio DEFA | Vuelo en ejercicio DEFA (S), Control DEFA (AM) |
-| Ocupado | Vuelo fuera de DEFA (IVAO / VATSIM) (G), DCS (DC), Control fuera de DEFA (IVAO / VATSIM) (AT) |
+| Ejercicio SOG | Vuelo en ejercicio SOG (S), Control SOG (AM) |
+| Ocupado | Vuelo fuera de SOG (IVAO / VATSIM) (G), DCS (DC), Control fuera de SOG (IVAO / VATSIM) (AT) |
 | No disponible | No disponible (IN), Vacaciones (V), Descanso (Q), Actividad real (IR) |
 
 **Cuadrícula hora por hora**: una línea por día (hoy resaltado), una columna por hora de 0 a 23 UTC.
@@ -272,14 +272,14 @@ Su identidad en la suite, que usan todas las páginas (☰ › Perfil de piloto,
 | Tarjeta | Campos |
 |---|---|
 | «Piloto» | «Trigrama», «ID VATSIM (CID)», «ID IVAO (VID)», «SimBrief (usuario o ID)» |
-| «Sitio DEFA» | «Identificador», «Contraseña» |
+| «Sitio de la aerolínea» | «Identificador», «Contraseña» |
 | «Idioma» | «Idioma de la suite»: Automático (idioma del navegador), Français, English, Deutsch, Español |
 
 1. Rellene los campos.
 2. Haga clic en «Guardar». El mensaje de estado confirma «Perfil guardado en este navegador».
 
 - El trigrama tiene de 2 a 4 letras o cifras; sirve para encontrar sus misiones asignadas.
-- Los identificadores del sitio DEFA se quedan solo en este navegador: nunca se escriben en un archivo ni en una copia de seguridad.
+- Los identificadores del sitio de la aerolínea se quedan solo en este navegador: nunca se escriben en un archivo ni en una copia de seguridad.
 - El idioma se aplica en cuanto se elige, sin «Guardar».
 - En modo producción, el trigrama es el del usuario conectado y no se modifica aquí.
 
@@ -427,7 +427,7 @@ Dos posibilidades:
   «Comprobar» dice si responde desde este equipo (30 s como máximo), «Guardar» lo convierte en el repositorio remoto de `data/`
   (si aún no hay datos, la dirección sirve para obtenerlos). Nada es bloqueante: un repositorio que no responde se señala,
   y la suite funciona sin compartir. Detalles: [sincronización](../technique/SYNCHRONISATION.md).
-- Una vez presentes los datos, la tarjeta opcional «Registro de vuelos» ofrece «Registro (.html)…»: la página «Log des vols» del sitio DEFA, guardada, rellena los pilotos y las aeronaves de la referencia (ayuda a la introducción).
+- Una vez presentes los datos, la tarjeta opcional «Registro de vuelos» ofrece «Registro (.html)…»: la página «Log des vols» del sitio de la aerolínea, guardada, rellena los pilotos y las aeronaves de la referencia (ayuda a la introducción).
 
 ### 2 Perfil
 
@@ -436,7 +436,7 @@ Su perfil de piloto, que usan todas las páginas (☰ › Perfil de piloto).
 1. Rellene la tarjeta «Piloto»: «Trigrama», «ID IVAO (VID)», «ID VATSIM (CID)», «SimBrief».
 2. Haga clic en «Guardar el perfil».
 
-Los identificadores del sitio DEFA, la contraseña y las preferencias se configuran después en [Mi perfil](#mi-perfil).
+Los identificadores del sitio de la aerolínea, la contraseña y las preferencias se configuran después en [Mi perfil](#mi-perfil).
 
 ### 3 Carpetas
 
@@ -461,7 +461,7 @@ El enlace «Inicio» lleva a la página de inicio sin terminar.
 
 Para retomar el primer arranque desde cero, y solo en ese caso.
 
-- «Limpiar y empezar de nuevo…» borra, **en este navegador**, las carpetas recordadas (aplicación, datos, registro, misiones, SIA, ODV, X-Plane, rendimiento, copia local), la copia del libro ODV, los identificadores del sitio DEFA, el perfil (trigrama, IVAO, VATSIM, SimBrief) y el indicador «suite configurada».
+- «Limpiar y empezar de nuevo…» borra, **en este navegador**, las carpetas recordadas (aplicación, datos, registro, misiones, SIA, ODV, X-Plane, rendimiento, copia local), la copia del libro ODV, los identificadores del sitio de la aerolínea, el perfil (trigrama, IVAO, VATSIM, SimBrief) y el indicador «suite configurada».
 - Se pide una confirmación y, después, la página se recarga en el paso 1.
 - Los archivos del disco no se tocan: carpeta `data/`, registros, copia `defa_local_store.yaml`.
 

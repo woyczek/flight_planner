@@ -16,9 +16,13 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   documentation) : nom de la compagnie « SO Group Virtual » (`repository_tree.va`, en-têtes, pieds de page, PDF, YAML,
   sauvegardes) ; « DEFA » qualificatif retiré (« CR DEFA » → « CR » / « Report », flotte, référence, base, journal,
   trigramme, équipes et aéronefs du générateur, Planning ODV) ; logo générique (cible) ; couche de renommage pour une
-  autre compagnie comparée désormais à la marque des sources. Gardés : identifiants (`ÉQUIPES_DEFA`, `X-DEFA-Setup`,
-  clés), adresses defa-virtual.fr, champ `va` des données. En attente de décision : site et identifiants de la
-  compagnie, page « Log des vols » ; catégories de disponibilité (`data/config/disponibilites.json`).
+  autre compagnie comparée désormais à la marque des sources. **Site de la compagnie** : réglage (Paramètres ›
+  Installation › Sources et dossiers) ; les adresses par défaut (flotte.defa-virtual.fr) ne valent que pour DEFA
+  Virtual — sinon aucun lien inventé, invitation à renseigner l'adresse (`RepositoryNav.siteLink`) ; libellés « site de
+  la compagnie ». **Catégories de disponibilité** : « Exercice SOG », « Vol hors SOG »… (4 langues). En-tête du lanceur
+  `X-SOG-Setup` (l'ancien `X-DEFA-Setup` reste accepté pour cette version : **relancer le lanceur** après la mise à
+  jour) ; constante du générateur `ÉQUIPES_SOG` (l'ancien nom reste lu). Gardés : identifiants et clés, champ `va` des
+  données.
 
 ## [4.9.0] — 2026-10-06
 

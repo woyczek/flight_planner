@@ -25,7 +25,7 @@ PARAMÈTRES DE CETTE EXÉCUTION
                                      Nouvelle-Calédonie, Polynésie…, ou « étranger (pays) », ex.
                                      « étranger (Japon) » ; plusieurs possibles, liés par « + »,
                                      ex. « Guyane + métropole » — voir § 5)
-  ÉQUIPES_DEFA    = 2                (1 à 5 : équipes en vol par opération ; UNE mission
+  ÉQUIPES_SOG    = 2                (1 à 5 : équipes en vol par opération ; UNE mission
                                      complète par équipe — voir § 3)
   SOUS_TYPE       = libre            (ou un code de sous-type du § 2 pour la famille TYPE)
   RENDEZ_VOUS     = libre            (avec : au moins un rendez-vous par mission ; sans : aucun)
@@ -128,7 +128,7 @@ SPECIAL   (VIP, essais, formation, convoyage) sous-type libre et court (ex. VIP,
 ────────────────────────────────────────────────────────────────────────────
 3. LIVRABLES ET NUMÉROTATION
 ────────────────────────────────────────────────────────────────────────────
-OPÉRATION ET MISSIONS. Chaque opération n (1 à NOMBRE_MISSIONS) engage ÉQUIPES_DEFA équipes en vol ; chaque
+OPÉRATION ET MISSIONS. Chaque opération n (1 à NOMBRE_MISSIONS) engage ÉQUIPES_SOG équipes en vol ; chaque
 équipe reçoit SA mission complète — son brief, son PDF, son compte rendu : propre aéronef, propre terrain de
 départ, propres points tournants, propres cartes de situation. Les missions d'une opération se coordonnent
 (rendez-vous communs, relèves, créneaux, commandement) et partagent le récit d'ensemble. Exemples : FIRE — un
@@ -305,7 +305,7 @@ phases:                        # FACULTATIF (0 à 3) : briefs successifs prévus
 timing:                        # durées estimées par TOI d'après route_order, vitesses, niveaux et time_on_task_min
   estimated_flight_min: 95     # décollage → atterrissage, retour base compris (option principale)
   estimated_block_min: 110     # cales → cales (mise en route et roulage compris)
-teams:                         # tous les acteurs : les ÉQUIPES_DEFA aéronefs, plus autant d'équipes sol ou
+teams:                         # tous les acteurs : les ÉQUIPES_SOG aéronefs, plus autant d'équipes sol ou
                                # d'autres acteurs que la mission le demande
   - name: CERBERES51/52        # callsign ou nom d'équipe
     service: "Armée de l'Air et de l'Espace"   # ou SAMU, gendarmerie, douane, SDIS, Marine nationale…
@@ -742,7 +742,7 @@ liste des corrections faites :
       lieux réels, points en mer réellement en mer
   [ ] aircraft : l'aéronef de la mission (une équipe), repris dans teams ; indicatifs distincts d'une mission
       à l'autre ; rôle de chacun dans l'opération (pas de figurant)
-  [ ] ÉQUIPES_DEFA ≥ 2 : une mission complète par équipe (41A, 41B…), chacune avec son aéronef, son départ, ses
+  [ ] ÉQUIPES_SOG ≥ 2 : une mission complète par équipe (41A, 41B…), chacune avec son aéronef, son départ, ses
       points tournants et ses cartes ; bloc operation identique partout ; rendez-vous communs identiques
       (id, nom, coordonnées) ; autres équipes dans teams ; section « Coordination de l'opération »
   [ ] TYPES_EQUIPES : chaque aéronef (IMPOSÉ) repris à l'identique (désignateur en tête de aircraft[0].type, indicatif

@@ -34,7 +34,7 @@ A shared pilot profile, four interface languages and connected tools reduce repe
 
 3. **On this page**, complete four steps:
    1. **Data**: enter your Framagit credentials (or use the archive received by email);
-   2. **Profile**: callsign/trigram, IVAO, VATSIM, SimBrief, and DEFA website credentials;
+   2. **Profile**: callsign/trigram, IVAO, VATSIM, SimBrief, and airline website credentials;
    3. **Folders**: select **this folder** (the one containing `lancer.cmd`) — all other paths are derived from it — then select the OneDrive folder containing the ODV workbook (or the Excel file itself);
    4. **Finish**: the SIA data update will then start automatically.
 
@@ -93,7 +93,7 @@ compliquée.
    Le lanceur installe Python si besoin, démarre la suite et ouvre la page **Premier lancement**.
 3. **Dans cette page**, quatre étapes :
    1. **Données** : vos identifiants framagit (ou l'archive reçue par mail) ;
-   2. **Profil** : trigramme, IVAO, VATSIM, SimBrief, identifiants du site DEFA ;
+   2. **Profil** : trigramme, IVAO, VATSIM, SimBrief, identifiants du site de la compagnie ;
    3. **Dossiers** : choisir **ce dossier** (celui qui contient `lancer.cmd`) — tous les autres en sont déduits —, puis
       le dossier OneDrive du classeur ODV (ou le fichier Excel) ;
    4. **Terminer** : la mise à jour des données SIA s'enchaîne.

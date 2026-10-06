@@ -161,7 +161,7 @@
   /** Dossier de la suite servie (chemin donné par le lanceur), pour le message. */
   const servedRoot = () => fetch(new URL('__setup/status', ROOT_URL), {
     headers: {
-      'X-DEFA-Setup': '1'
+      'X-SOG-Setup': '1'
     },
     cache: 'no-store'
   }).then(r => r.json()).then(j => j.root || '', () => '');

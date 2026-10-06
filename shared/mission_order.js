@@ -210,7 +210,7 @@
     p = p.replace(/^(\s*PROCHAINS_NUMEROS\s*=\s*)auto\b/m, (_, a) => a + table.replace(/\$/g, '$$$$'));
     p = set(p, 'NOMBRE_MISSIONS', 1);
     p = set(p, 'THÉÂTRE', r.theatre || 'aléatoire');
-    p = set(p, 'ÉQUIPES_DEFA', r.teams);
+    p = set(set(p, 'ÉQUIPES_SOG', r.teams), 'ÉQUIPES_DEFA', r.teams); // ancien nom : prompts gardés d'avant le renommage
     p = set(p, 'SOUS_TYPE', r.subtype || 'libre');
     p = set(p, 'RENDEZ_VOUS', r.rdv || 'libre');
     p = set(p, 'TYPES_EQUIPES', r.teamTypes || 'libre');

@@ -3,7 +3,7 @@
   // Disponibilités en catégories configurables (docs/technique/DISPOS_ET_REORGANISATION.md § 1), chargé sur chaque page par
   // repository_nav.js.
   //   · configuration partagée data/config/disponibilites.json (synchronisée, datée, va) : groupes (affichés dans l'ODV :
-  //     Disponible, Exercice DEFA, Occupé, Indisponible), catégories (libellés [fr, en, de, es], couleur, thèmes ouverts,
+  //     Disponible, Exercice SOG, Occupé, Indisponible), catégories (libellés [fr, en, de, es], couleur, thèmes ouverts,
   //     codes ODV, type : dispo | atc | occupe | indispo, retirée), domaines et leurs thèmes (familles de mission),
   //     alias de familles ; sans fichier : DEFAULT ci-dessous ;
   //   · thèmes ouverts d'une catégorie : « all » (tous), « domain:<d> » (ceux du domaine), « prefs:<d> » (ceux du
@@ -28,7 +28,7 @@
     va: 'DEFA',
     groupes: [
       { id: 'dispo', label: L4('Disponible', 'Available', 'Verfügbar', 'Disponible'), court: 'D', couleur: '#00B050' },
-      { id: 'exercice', label: L4('Exercice DEFA', 'DEFA exercise', 'DEFA-Übung', 'Ejercicio DEFA'), court: 'E', couleur: '#E03C31' },
+      { id: 'exercice', label: L4('Exercice SOG', 'SOG exercise', 'SOG-Übung', 'Ejercicio SOG'), court: 'E', couleur: '#E03C31' },
       { id: 'occupe', label: L4('Occupé', 'Busy', 'Beschäftigt', 'Ocupado'), court: 'O', couleur: '#FFD966' },
       { id: 'indispo', label: L4('Indisponible', 'Unavailable', 'Nicht verfügbar', 'No disponible'), court: 'I', couleur: '#BFBFBF' }
     ],
@@ -50,7 +50,7 @@
       AIRBORNE: L4('Largage', 'Airdrop', 'Absetzen', 'Lanzamiento'),
       MARITIME: L4('Marine', 'Maritime', 'Marine', 'Marítimo'),
       SPECIAL: L4('Spécial', 'Special', 'Spezial', 'Especial'),
-      EXERCICE: L4('Exercice DEFA', 'DEFA exercise', 'DEFA-Übung', 'Ejercicio DEFA'),
+      EXERCICE: L4('Exercice SOG', 'SOG exercise', 'SOG-Übung', 'Ejercicio SOG'),
       CONTROLE: L4('Contrôleur d’exercice', 'Exercise controller', 'Übungslotse', 'Controlador de ejercicio')
     },
     // familles de mission sans thème propre → thème (TRAINING : ouvert à toute catégorie de type « dispo »)
@@ -61,11 +61,11 @@
       { id: 'defense', groupe: 'dispo', type: 'dispo', label: L4('Disponible défense', 'Available defence', 'Verfügbar Verteidigung', 'Disponible defensa'), couleur: '#0070C0', ouverts: 'domain:defense', odv: [] },
       { id: 'secu_perso', groupe: 'dispo', type: 'dispo', label: L4('Sécurité civile personnalisée', 'Custom civil security', 'Zivilschutz nach Wahl', 'Seguridad civil personalizada'), couleur: '#6C8EBF', ouverts: 'prefs:secu', odv: [] },
       { id: 'defense_perso', groupe: 'dispo', type: 'dispo', label: L4('Défense personnalisée', 'Custom defence', 'Verteidigung nach Wahl', 'Defensa personalizada'), couleur: '#8693A0', ouverts: 'prefs:defense', odv: ['C', 'T', 'N'] },
-      { id: 'exercice_vol', groupe: 'exercice', type: 'dispo', label: L4('Vol en exercice DEFA', 'DEFA exercise flight', 'Flug in DEFA-Übung', 'Vuelo en ejercicio DEFA'), couleur: '#FF0000', ouverts: ['EXERCICE'], odv: ['S'] },
-      { id: 'exercice_ctrl', groupe: 'exercice', type: 'atc', label: L4('Contrôle DEFA', 'DEFA control', 'DEFA-Lotsendienst', 'Control DEFA'), couleur: '#C4BD97', ouverts: ['CONTROLE'], odv: ['AM'] },
-      { id: 'vol_hors', groupe: 'occupe', type: 'occupe', label: L4('Vol hors DEFA (IVAO / VATSIM)', 'Flight outside DEFA (IVAO / VATSIM)', 'Flug außerhalb DEFA (IVAO / VATSIM)', 'Vuelo fuera de DEFA (IVAO / VATSIM)'), couleur: '#FFD966', ouverts: 'none', odv: ['G'] },
+      { id: 'exercice_vol', groupe: 'exercice', type: 'dispo', label: L4('Vol en exercice SOG', 'SOG exercise flight', 'Flug in SOG-Übung', 'Vuelo en ejercicio SOG'), couleur: '#FF0000', ouverts: ['EXERCICE'], odv: ['S'] },
+      { id: 'exercice_ctrl', groupe: 'exercice', type: 'atc', label: L4('Contrôle SOG', 'SOG control', 'SOG-Lotsendienst', 'Control SOG'), couleur: '#C4BD97', ouverts: ['CONTROLE'], odv: ['AM'] },
+      { id: 'vol_hors', groupe: 'occupe', type: 'occupe', label: L4('Vol hors SOG (IVAO / VATSIM)', 'Flight outside SOG (IVAO / VATSIM)', 'Flug außerhalb SOG (IVAO / VATSIM)', 'Vuelo fuera de SOG (IVAO / VATSIM)'), couleur: '#FFD966', ouverts: 'none', odv: ['G'] },
       { id: 'dcs', groupe: 'occupe', type: 'occupe', label: L4('DCS', 'DCS', 'DCS', 'DCS'), couleur: '#002060', ouverts: 'none', odv: ['DC'] },
-      { id: 'ctrl_hors', groupe: 'occupe', type: 'atc', label: L4('Contrôle hors DEFA (IVAO / VATSIM)', 'Control outside DEFA (IVAO / VATSIM)', 'Lotsendienst außerhalb DEFA (IVAO / VATSIM)', 'Control fuera de DEFA (IVAO / VATSIM)'), couleur: '#7030A0', ouverts: 'none', odv: ['AT'] },
+      { id: 'ctrl_hors', groupe: 'occupe', type: 'atc', label: L4('Contrôle hors SOG (IVAO / VATSIM)', 'Control outside SOG (IVAO / VATSIM)', 'Lotsendienst außerhalb SOG (IVAO / VATSIM)', 'Control fuera de SOG (IVAO / VATSIM)'), couleur: '#7030A0', ouverts: 'none', odv: ['AT'] },
       { id: 'indispo', groupe: 'indispo', type: 'indispo', label: L4('Indisponible', 'Unavailable', 'Nicht verfügbar', 'No disponible'), couleur: '#BFBFBF', ouverts: 'none', odv: ['IN'] },
       { id: 'conges', groupe: 'indispo', type: 'indispo', label: L4('Congés', 'Holidays', 'Urlaub', 'Vacaciones'), couleur: '#FFC000', ouverts: 'none', odv: ['V'] },
       { id: 'recup', groupe: 'indispo', type: 'indispo', label: L4('Récupération', 'Time off', 'Ausgleich', 'Descanso'), couleur: '#D9D9D9', ouverts: 'none', odv: ['Q'] },

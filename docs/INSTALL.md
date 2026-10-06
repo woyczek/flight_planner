@@ -16,7 +16,7 @@ local. Rien à compiler.
    1. **Données** : identifiants framagit (mot de passe ou jeton ; « mémoriser » les confie au gestionnaire
       d'identifiants de Git) → clone de `data/` ; ou l'archive `.zip` reçue par mail. En option, le journal des vols
       DEFA (page « Log des vols » enregistrée, `.html`) → référence (`tools/defa_reference.py`) ;
-   2. **Profil** : trigramme, ID IVAO, ID VATSIM, SimBrief ; identifiants du site DEFA, gardés dans ce navigateur et
+   2. **Profil** : trigramme, ID IVAO, ID VATSIM, SimBrief ; identifiants du site de la compagnie, gardés dans ce navigateur et
       exclus des sauvegardes ;
    3. **Dossiers** : dossier de l'application (données, registre, missions, SIA, performances et sauvegarde locale en
       sont déduits) ; classeur ODV : dossier OneDrive où l'escadrille le dépose, ou à défaut le fichier Excel ;

@@ -203,15 +203,15 @@ The “⤢ Full width” button in the block title spreads the folder across the
 
 Your availability for the week shown, in UTC. The Centre uses it to assign missions to you. It is the same editor as on the My availability page (next chapter); here, the week is the one of the week bar of the list.
 
-**Palette**: the categories are arranged by group (“Available”, “DEFA exercise”, “Busy”, “Unavailable”). Each badge carries the ODV code letter and a short label; the tooltip gives the full label. The chosen category is remembered.
+**Palette**: the categories are arranged by group (“Available”, “SOG exercise”, “Busy”, “Unavailable”). Each badge carries the ODV code letter and a short label; the tooltip gives the full label. The chosen category is remembered.
 
 Default categories (the Centre can change this list):
 
 | Group | Categories (ODV code) |
 |---|---|
 | Available | Available for everything (O), Available civil security (SC), Available defence (D+), Custom civil security (SC-), Custom defence (D-) |
-| DEFA exercise | DEFA exercise flight (S), DEFA control (AM) |
-| Busy | Flight outside DEFA (IVAO / VATSIM) (G), DCS (DC), Control outside DEFA (IVAO / VATSIM) (AT) |
+| SOG exercise | SOG exercise flight (S), SOG control (AM) |
+| Busy | Flight outside SOG (IVAO / VATSIM) (G), DCS (DC), Control outside SOG (IVAO / VATSIM) (AT) |
 | Unavailable | Unavailable (IN), Holidays (V), Time off (Q), Real-life activity (IR) |
 
 **Hour-by-hour grid**: one line per day (today highlighted), one column per hour from 0 to 23 UTC.
@@ -272,14 +272,14 @@ Your identity in the suite, used by all pages (☰ › Pilot profile, reports, r
 | Card | Fields |
 |---|---|
 | “Pilot” | “Trigram”, “VATSIM ID (CID)”, “IVAO ID (VID)”, “SimBrief (username or ID)” |
-| “DEFA website” | “Login”, “Password” |
+| “Airline website” | “Login”, “Password” |
 | “Language” | “Suite language”: Automatic (browser language), Français, English, Deutsch, Español |
 
 1. Fill in the fields.
 2. Click “Save”. The status message confirms “Profile saved in this browser”.
 
 - The trigram has 2 to 4 letters or digits; it is used to find your assigned missions.
-- The DEFA website credentials stay in this browser only: they are never written to a file or to a backup.
+- The airline website credentials stay in this browser only: they are never written to a file or to a backup.
 - The language applies as soon as you choose it, without “Save”.
 - In production mode, the trigram is the one of the signed-in user and cannot be changed here.
 
@@ -427,7 +427,7 @@ Two options:
   “Check” tells you whether it answers from this computer (30 s at most), “Save” makes it the remote repository of `data/`
   (with no data yet, the address is used to fetch them). Nothing is blocking: a repository that does not answer is reported,
   and the suite works without sharing. Details: [synchronisation](../technique/SYNCHRONISATION.md).
-- Once the data is present, the optional “Flight log” card offers “Log (.html)…”: the “Flight log” page of the DEFA website, saved, fills in the pilots and aircraft of the reference (entry help).
+- Once the data is present, the optional “Flight log” card offers “Log (.html)…”: the “Flight log” page of the airline website, saved, fills in the pilots and aircraft of the reference (entry help).
 
 ### 2 Profile
 
@@ -436,7 +436,7 @@ Your pilot profile, used by all pages (☰ › Pilot profile).
 1. Fill in the “Pilot” card: “Trigram”, “IVAO ID (VID)”, “VATSIM ID (CID)”, “SimBrief”.
 2. Click “Save the profile”.
 
-The DEFA website credentials, the password and the preferences are set afterwards in [My profile](#my-profile).
+The airline website credentials, the password and the preferences are set afterwards in [My profile](#my-profile).
 
 ### 3 Folders
 
@@ -461,7 +461,7 @@ The “Home” link takes you back to the home page without finishing.
 
 To restart the first run from scratch, and only in that case.
 
-- “Clean and start again…” clears, **in this browser**, the remembered folders (application, data, registry, missions, SIA, ODV, X-Plane, performance, local backup), the copy of the ODV workbook, the DEFA website credentials, the profile (trigram, IVAO, VATSIM, SimBrief) and the “suite set up” flag.
+- “Clean and start again…” clears, **in this browser**, the remembered folders (application, data, registry, missions, SIA, ODV, X-Plane, performance, local backup), the copy of the ODV workbook, the airline website credentials, the profile (trigram, IVAO, VATSIM, SimBrief) and the “suite set up” flag.
 - A confirmation is requested, then the page reloads at step 1.
 - Files on disk are not touched: `data/` folder, registries, `defa_local_store.yaml` backup.
 

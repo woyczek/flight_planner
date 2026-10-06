@@ -1,6 +1,6 @@
 (() => {
   'use strict';
-  // Base « DEFA » : journal des vols réalisés (page « Log des vols » de la DEFA enregistrée,
+  // Base « DEFA » : journal des vols réalisés (page « Log des vols » du site de la compagnie enregistrée,
   // ou export CSV / JSON), distincte du registre des missions CR. Chargée à la demande
   // (Paramétrage › Base) et gardée dans ce navigateur (defaFlightLog:v1) — jamais dans le
   // dépôt (trigrammes des pilotes), ni dans la sauvegarde locale (rechargeable depuis le fichier).
@@ -462,10 +462,10 @@
     }));
   };
 
-  // ---- chargement / mise à jour (reportings, Paramétrage) : page DEFA copiée ou enregistrée
+  // ---- chargement / mise à jour (reportings, Paramétrage) : page copiée ou enregistrée
   const LOADER = {
     title: ['Journal — charger / mettre à jour', 'Log — load / update', 'Journal — laden / aktualisieren', 'Diario — cargar / actualizar'],
-    step1: ['1. Ouvrir « Log des vols » sur le site de la DEFA (connexion DEFA) :', '1. Open “Log des vols” on the DEFA website (DEFA login):', '1. „Log des vols“ auf der DEFA-Website öffnen:', '1. Abrir «Log des vols» en el sitio DEFA:'],
+    step1: ['1. Ouvrir « Log des vols » sur le site de la compagnie (connexion au site) :', '1. Open “Log des vols” on the airline website (website login):', '1. „Log des vols“ auf der Website der Fluggesellschaft öffnen:', '1. Abrir «Log des vols» en el sitio de la aerolínea:'],
     step2: ['2. Sur cette page : un clic sur le favori ci-dessous copie toute la page (ou Ctrl+A puis Ctrl+C) ; revenir ici et coller (Ctrl+V ou « Coller depuis le presse-papiers ») — ou choisir la page enregistrée (Ctrl+S).', '2. On that page: one click on the bookmark below copies the whole page (or Ctrl+A then Ctrl+C); come back here and paste (Ctrl+V or “Paste from clipboard”) — or choose the saved page (Ctrl+S).', '2. Dort: ein Klick auf das Lesezeichen unten kopiert die ganze Seite (oder Strg+A, Strg+C); hierher zurück und einfügen (Strg+V oder „Aus der Zwischenablage einfügen“) — oder die gespeicherte Seite wählen.', '2. En esa página: un clic en el marcador de abajo copia toda la página (o Ctrl+A y Ctrl+C); volver aquí y pegar (Ctrl+V o «Pegar desde el portapapeles») — o elegir la página guardada.'],
     bookmark: ['← à glisser dans la barre des favoris (une fois) : sur la page « Log des vols », un clic copie toute la page, tableau compris.', '← drag to the bookmarks bar (once): on the “Log des vols” page, one click copies the whole page, table included.', '← einmal in die Lesezeichenleiste ziehen: auf der Seite „Log des vols“ kopiert ein Klick die ganze Seite samt Tabelle.', '← arrastrar a la barra de marcadores (una vez): en la página «Log des vols», un clic copia toda la página, tabla incluida.'],
     bookmarkHelp: ['Ce lien s’utilise depuis la barre des favoris, sur la page « Log des vols » (glisser-déposer le lien dans la barre).', 'Use this link from the bookmarks bar, on the “Log des vols” page (drag and drop the link to the bar).', 'Diesen Link aus der Lesezeichenleiste auf der Seite „Log des vols“ verwenden (in die Leiste ziehen).', 'Use este enlace desde la barra de marcadores, en la página «Log des vols» (arrastrarlo a la barra).'],
@@ -479,9 +479,9 @@
     done: ['{n} vols lus, {a} nouveaux — journal : {t} vols ({d1} → {d2})', '{n} flights read, {a} new — log: {t} flights ({d1} → {d2})', '{n} Flüge gelesen, {a} neu — Journal: {t} Flüge ({d1} → {d2})', '{n} vuelos leídos, {a} nuevos — diario: {t} vuelos ({d1} → {d2})'],
     none: ['Aucun vol reconnu dans ce texte.', 'No flight recognised in this text.', 'Kein Flug erkannt.', 'Ningún vuelo reconocido.']
   };
-  // page « Log des vols » du site DEFA (adresse réglable : Paramètres › Installation › Sources et dossiers)
-  const defaUrl = () => window.RepositoryNav?.source?.('defa') || 'https://flotte.defa-virtual.fr';
-  const LOG_URL = window.RepositoryNav?.vaUrl?.('log') || defaUrl() + '/log_vols.php'; // page du log de la compagnie virtuelle
+  // page « Log des vols » du site de la compagnie (adresse réglable : Paramètres › Installation › Sources et dossiers ;
+  // par défaut seulement pour DEFA Virtual) ; adresse inconnue : lien vers ce réglage
+  const LOG_URL = window.RepositoryNav?.vaUrl?.('log') || ''; // page du log de la compagnie virtuelle
 
   // Favori (bookmarklet) « → Journal », à glisser dans la barre des favoris : sur la page « Log des vols » du site,
   // copie la page entière (son HTML : le tableau garde ses colonnes et les liens des appareils) ; la suite la lit comme
@@ -532,8 +532,9 @@
       e.preventDefault(); // depuis la barre des favoris seulement
       dialog.querySelector('.dl-result').textContent = T('bookmarkHelp');
     };
-    link.href = logUrl;
-    link.textContent = `${logUrl} ↗`;
+    link.href = logUrl || window.RepositoryNav?.settingsUrl?.('sources') || '#';
+    link.textContent = logUrl ? `${logUrl} ↗` : (['adresse du site de la compagnie à renseigner (Paramètres › Installation › Sources et dossiers)', 'airline website address to be set (Settings › Installation › Sources and folders)', 'Website-Adresse der Fluggesellschaft eintragen (Einstellungen › Installation › Quellen und Ordner)', 'dirección del sitio de la aerolínea por indicar (Ajustes › Instalación › Fuentes y carpetas)'])[lang];
+    if (!logUrl) link.removeAttribute('target');
     dialog.querySelectorAll('[data-t]').forEach(el => {
       el.textContent = T(el.dataset.t);
     });

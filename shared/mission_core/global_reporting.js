@@ -391,7 +391,7 @@
       logMissions = null;
     });
     // Menu « Données » toujours visible : registre, journal (s'il est chargé) et chargement /
-    // mise à jour du journal (page DEFA copiée ou enregistrée) sans passer par le Paramétrage.
+    // mise à jour du journal (page copiée ou enregistrée) sans passer par le Paramétrage.
     const SRC_LOAD = L('Charger / mettre à jour le journal…', 'Load / update the log…', 'Journal laden / aktualisieren…', 'Cargar / actualizar el diario…');
 
     /** Choix de la source (registre / journal) et chargement du journal. */

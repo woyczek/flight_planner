@@ -203,15 +203,15 @@ Le bouton « ⤢ Pleine largeur » du titre du bloc étale le dossier sur toute 
 
 Vos disponibilités de la semaine affichée, en heures UTC. Le Centre s'en sert pour vous affecter des missions. C'est le même éditeur que sur la page Mes disponibilités (chapitre suivant) ; ici, la semaine est celle de la barre de semaine de la liste.
 
-**Palette** : les catégories sont rangées par groupe (« Disponible », « Exercice DEFA », « Occupé », « Indisponible »). Chaque pastille porte la lettre de code ODV et un libellé court ; l'infobulle donne le libellé complet. La catégorie choisie est mémorisée.
+**Palette** : les catégories sont rangées par groupe (« Disponible », « Exercice SOG », « Occupé », « Indisponible »). Chaque pastille porte la lettre de code ODV et un libellé court ; l'infobulle donne le libellé complet. La catégorie choisie est mémorisée.
 
 Catégories par défaut (le Centre peut modifier cette liste) :
 
 | Groupe | Catégories (code ODV) |
 |---|---|
 | Disponible | Disponible pour tout (O), Disponible sécurité civile (SC), Disponible défense (D+), Sécurité civile personnalisée (SC-), Défense personnalisée (D-) |
-| Exercice DEFA | Vol en exercice DEFA (S), Contrôle DEFA (AM) |
-| Occupé | Vol hors DEFA (IVAO / VATSIM) (G), DCS (DC), Contrôle hors DEFA (IVAO / VATSIM) (AT) |
+| Exercice SOG | Vol en exercice SOG (S), Contrôle SOG (AM) |
+| Occupé | Vol hors SOG (IVAO / VATSIM) (G), DCS (DC), Contrôle hors SOG (IVAO / VATSIM) (AT) |
 | Indisponible | Indisponible (IN), Congés (V), Récupération (Q), Activité réelle (IR) |
 
 **Grille heure par heure** : une ligne par jour (aujourd'hui mis en évidence), une colonne par heure de 0 à 23 UTC.
@@ -272,14 +272,14 @@ Votre identité dans la suite, reprise par toutes les pages (☰ › Profil pilo
 | Carte | Champs |
 |---|---|
 | « Pilote » | « Trigramme », « ID VATSIM (CID) », « ID IVAO (VID) », « SimBrief (utilisateur ou ID) » |
-| « Site DEFA » | « Identifiant », « Mot de passe » |
+| « Site de la compagnie » | « Identifiant », « Mot de passe » |
 | « Langue » | « Langue de la suite » : Automatique (langue du navigateur), Français, English, Deutsch, Español |
 
 1. Remplissez les champs.
 2. Cliquez sur « Enregistrer ». Le message d'état confirme « Profil enregistré dans ce navigateur ».
 
 - Le trigramme compte 2 à 4 lettres ou chiffres ; il sert à retrouver vos missions affectées.
-- Les identifiants du site DEFA restent dans ce navigateur seulement : ils ne sont jamais écrits dans un fichier ni dans une sauvegarde.
+- Les identifiants du site de la compagnie restent dans ce navigateur seulement : ils ne sont jamais écrits dans un fichier ni dans une sauvegarde.
 - La langue s'applique dès qu'on la choisit, sans « Enregistrer ».
 - En mode production, le trigramme est celui de l'utilisateur connecté et ne se modifie pas ici.
 
@@ -427,7 +427,7 @@ Deux possibilités :
   « Vérifier » dit s'il répond depuis ce poste (30 s au plus), « Enregistrer » en fait le dépôt distant de `data/`
   (sans données encore, l'adresse sert à les récupérer). Rien n'est bloquant : un dépôt qui ne répond pas est signalé,
   la suite fonctionne sans partage. Détails : [synchronisation](technique/SYNCHRONISATION.md).
-- Une fois les données présentes, la carte facultative « Journal des vols » propose « Journal (.html)… » : la page « Log des vols » du site DEFA, enregistrée, remplit les pilotes et appareils de la référence (aide à la saisie).
+- Une fois les données présentes, la carte facultative « Journal des vols » propose « Journal (.html)… » : la page « Log des vols » du site de la compagnie, enregistrée, remplit les pilotes et appareils de la référence (aide à la saisie).
 
 ### 2 Profil
 
@@ -436,7 +436,7 @@ Votre profil pilote, repris par toutes les pages (☰ › Profil pilote).
 1. Remplissez la carte « Pilote » : « Trigramme », « ID IVAO (VID) », « ID VATSIM (CID) », « SimBrief ».
 2. Cliquez sur « Enregistrer le profil ».
 
-Les identifiants du site DEFA, le mot de passe et les préférences se règlent ensuite dans [Mon profil](#mon-profil).
+Les identifiants du site de la compagnie, le mot de passe et les préférences se règlent ensuite dans [Mon profil](#mon-profil).
 
 ### 3 Dossiers
 
@@ -461,7 +461,7 @@ Le lien « Accueil » ramène à la page d'accueil sans terminer.
 
 Pour reprendre le premier lancement de zéro, et seulement dans ce cas.
 
-- « Nettoyer et recommencer… » efface, **dans ce navigateur**, les dossiers mémorisés (application, données, registre, missions, SIA, ODV, X-Plane, performances, sauvegarde locale), la copie du classeur ODV, les identifiants du site DEFA, le profil (trigramme, IVAO, VATSIM, SimBrief) et l'indicateur « suite réglée ».
+- « Nettoyer et recommencer… » efface, **dans ce navigateur**, les dossiers mémorisés (application, données, registre, missions, SIA, ODV, X-Plane, performances, sauvegarde locale), la copie du classeur ODV, les identifiants du site de la compagnie, le profil (trigramme, IVAO, VATSIM, SimBrief) et l'indicateur « suite réglée ».
 - Une confirmation est demandée, puis la page se recharge à l'étape 1.
 - Les fichiers sur le disque ne sont pas touchés : dossier `data/`, registres, sauvegarde `defa_local_store.yaml`.
 

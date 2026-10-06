@@ -174,7 +174,7 @@
     id: 'sources',
     icon: 'folder',
     title: ['Sources et dossiers', 'Sources and folders', 'Quellen und Ordner', 'Fuentes y carpetas'],
-    sub: ['Dossiers locaux (dépôt, registres, missions, SIA, X-Plane…) et adresses des sources externes (DEFA, SIA, dépôts) : un seul endroit pour les régler', 'Local folders (repository, ledgers, missions, SIA, X-Plane…) and external source addresses (DEFA, SIA, repositories): one place to set them', 'Lokale Ordner und Adressen externer Quellen (DEFA, SIA, Repositorys) an einem Ort', 'Carpetas locales y direcciones de fuentes externas (DEFA, SIA, repositorios) en un solo lugar']
+    sub: ['Dossiers locaux (dépôt, registres, missions, SIA, X-Plane…) et adresses des sources externes (compagnie, SIA, dépôts) : un seul endroit pour les régler', 'Local folders (repository, ledgers, missions, SIA, X-Plane…) and external source addresses (airline, SIA, repositories): one place to set them', 'Lokale Ordner und Adressen externer Quellen (Fluggesellschaft, SIA, Repositorys) an einem Ort', 'Carpetas locales y direcciones de fuentes externas (aerolínea, SIA, repositorios) en un solo lugar']
   }, {
     id: 'versions',
     icon: 'layers',
@@ -552,7 +552,7 @@
       <table class="mt-table mt-wide mt-va"><tbody>${vaRows()}</tbody></table>
       <p class="row"><button type="button" class="secondary" id="mtVaReset" data-icon="refresh">${esc(t(['Revenir à SO Group Virtual', 'Back to SO Group Virtual', 'Zurück zu SO Group Virtual', 'Volver a SO Group Virtual']))}</button></p>
       <h3>${esc(t(['Premier lancement', 'First run', 'Erster Start', 'Primer inicio']))}</h3>
-      <div class="mt-reset"><b>⚠ ${esc(t(['« Nettoyer » efface les réglages de ce navigateur', '“Clean” erases this browser’s settings', '„Bereinigen“ löscht die Einstellungen dieses Browsers', '«Limpiar» borra los ajustes de este navegador']))}</b> : ${esc(t(['dossiers mémorisés, copie du classeur ODV, identifiants du site DEFA, profil et l’indicateur « suite réglée » (confirmation sur la page du premier lancement). Les fichiers sur le disque ne sont pas touchés.', 'remembered folders, ODV workbook copy, DEFA site credentials, profile and the “suite set up” flag (confirmed on the first-run page). Files on disk are not touched.']))}</div>
+      <div class="mt-reset"><b>⚠ ${esc(t(['« Nettoyer » efface les réglages de ce navigateur', '“Clean” erases this browser’s settings', '„Bereinigen“ löscht die Einstellungen dieses Browsers', '«Limpiar» borra los ajustes de este navegador']))}</b> : ${esc(t(['dossiers mémorisés, copie du classeur ODV, identifiants du site de la compagnie, profil et l’indicateur « suite réglée » (confirmation sur la page du premier lancement). Les fichiers sur le disque ne sont pas touchés.', 'remembered folders, ODV workbook copy, airline site credentials, profile and the “suite set up” flag (confirmed on the first-run page). Files on disk are not touched.']))}</div>
       <p class="row"><button type="button" class="secondary" id="mtSetupOpen" data-icon="refresh">${esc(t(['Rouvrir le premier lancement', 'Reopen the first run', 'Ersten Start erneut öffnen', 'Reabrir el primer inicio']))}</button> <button type="button" class="mt-danger" id="mtSetupClean">${esc(t(['Nettoyer et recommencer…', 'Clean and start over…', 'Bereinigen und neu beginnen…', 'Limpiar y empezar de nuevo…']))}</button></p>`;
     // compagnie virtuelle : un champ modifié → réglage local (RepositoryNav.setVa), défauts de repository_tree sinon
     host.querySelectorAll('.mt-va [data-va]').forEach(input => input.onchange = () => {
@@ -992,7 +992,7 @@
         const r = await fetch('/__setup/aero-fetch', {
           method: 'POST',
           headers: {
-            'X-DEFA-Setup': '1',
+            'X-SOG-Setup': '1',
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({
@@ -1031,7 +1031,7 @@
     const api = (body = null) => fetch('/__setup/aircraft-db', {
       method: body ? 'POST' : 'GET',
       headers: {
-        'X-DEFA-Setup': '1',
+        'X-SOG-Setup': '1',
         'Content-Type': 'application/json'
       },
       body: body ? JSON.stringify(body) : undefined,
@@ -1169,7 +1169,7 @@
       const say = (m, k = 'warn') => (window.AppFramework?.notify || alert)(m, k);
       const api = q => fetch(`/__setup/sia-zip${q}`, {
         headers: {
-          'X-DEFA-Setup': '1'
+          'X-SOG-Setup': '1'
         },
         cache: 'no-store'
       });

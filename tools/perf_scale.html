@@ -199,7 +199,7 @@ extrapolée. Servir le dépôt avec le lanceur, ouvrir <code>/tools/perf_scale.h
   };
   $('save').onclick = async () => {
     if (!last) return;
-    const r = await fetch(`../__setup/perf?name=${encodeURIComponent(new Date().toISOString().slice(0, 10) + '_scale_' + (last.label || 'mesure'))}`, { method: 'POST', headers: { 'X-DEFA-Setup': '1', 'Content-Type': 'application/json' }, body: JSON.stringify(last, null, 1) });
+    const r = await fetch(`../__setup/perf?name=${encodeURIComponent(new Date().toISOString().slice(0, 10) + '_scale_' + (last.label || 'mesure'))}`, { method: 'POST', headers: { 'X-SOG-Setup': '1', 'Content-Type': 'application/json' }, body: JSON.stringify(last, null, 1) });
     $('state').textContent = r.ok ? `Enregistré : ${(await r.json()).file}` : 'Enregistrement impossible (lanceur requis).';
   };
 })();

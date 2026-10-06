@@ -203,15 +203,15 @@ Der Knopf „⤢ Volle Breite“ im Blocktitel breitet die Mappe über die ganze
 
 Ihre Verfügbarkeit in der angezeigten Woche, in UTC-Stunden. Das Zentrum nutzt sie, um Ihnen Missionen zuzuweisen. Es ist derselbe Editor wie auf der Seite Meine Verfügbarkeit (nächstes Kapitel); hier ist die Woche die der Wochenleiste der Liste.
 
-**Palette**: Die Kategorien sind nach Gruppen geordnet („Verfügbar“, „DEFA-Übung“, „Beschäftigt“, „Nicht verfügbar“). Jeder Farbpunkt trägt den ODV-Codebuchstaben und eine kurze Beschriftung; der Tooltip zeigt die vollständige Beschriftung. Die gewählte Kategorie wird gespeichert.
+**Palette**: Die Kategorien sind nach Gruppen geordnet („Verfügbar“, „SOG-Übung“, „Beschäftigt“, „Nicht verfügbar“). Jeder Farbpunkt trägt den ODV-Codebuchstaben und eine kurze Beschriftung; der Tooltip zeigt die vollständige Beschriftung. Die gewählte Kategorie wird gespeichert.
 
 Standardkategorien (das Zentrum kann diese Liste ändern):
 
 | Gruppe | Kategorien (ODV-Code) |
 |---|---|
 | Verfügbar | Für alles verfügbar (O), Verfügbar Zivilschutz (SC), Verfügbar Verteidigung (D+), Zivilschutz nach Wahl (SC-), Verteidigung nach Wahl (D-) |
-| DEFA-Übung | Flug in DEFA-Übung (S), DEFA-Lotsendienst (AM) |
-| Beschäftigt | Flug außerhalb DEFA (IVAO / VATSIM) (G), DCS (DC), Lotsendienst außerhalb DEFA (IVAO / VATSIM) (AT) |
+| SOG-Übung | Flug in SOG-Übung (S), SOG-Lotsendienst (AM) |
+| Beschäftigt | Flug außerhalb SOG (IVAO / VATSIM) (G), DCS (DC), Lotsendienst außerhalb SOG (IVAO / VATSIM) (AT) |
 | Nicht verfügbar | Nicht verfügbar (IN), Urlaub (V), Ausgleich (Q), Termin im echten Leben (IR) |
 
 **Stundenraster**: eine Zeile pro Tag (heute hervorgehoben), eine Spalte pro Stunde von 0 bis 23 UTC.
@@ -272,14 +272,14 @@ Ihre Identität in der Suite, die alle Seiten übernehmen (☰ › Pilotenprofil
 | Karte | Felder |
 |---|---|
 | „Pilot“ | „Kürzel“, „VATSIM-ID (CID)“, „IVAO-ID (VID)“, „SimBrief (Benutzer oder ID)“ |
-| „DEFA-Website“ | „Kennung“, „Passwort“ |
+| „Website der Fluggesellschaft“ | „Kennung“, „Passwort“ |
 | „Sprache“ | „Sprache der Suite“: Automatisch (Browsersprache), Français, English, Deutsch, Español |
 
 1. Füllen Sie die Felder aus.
 2. Klicken Sie auf „Speichern“. Die Statusmeldung bestätigt „Profil in diesem Browser gespeichert“.
 
 - Das Kürzel hat 2 bis 4 Buchstaben oder Ziffern; damit werden Ihre zugewiesenen Missionen gefunden.
-- Die Zugangsdaten der DEFA-Website bleiben nur in diesem Browser: Sie werden nie in eine Datei oder eine Sicherung geschrieben.
+- Die Zugangsdaten der Website der Fluggesellschaft bleiben nur in diesem Browser: Sie werden nie in eine Datei oder eine Sicherung geschrieben.
 - Die Sprache gilt, sobald sie gewählt ist, ohne „Speichern“.
 - Im Produktionsmodus ist das Kürzel das des angemeldeten Benutzers und lässt sich hier nicht ändern.
 
@@ -427,7 +427,7 @@ Zwei Möglichkeiten:
   „Prüfen“ sagt, ob es von diesem Rechner aus antwortet (höchstens 30 s), „Speichern“ macht es zum entfernten Repository von `data/`
   (sind noch keine Daten vorhanden, dient die Adresse dazu, sie zu holen). Nichts ist blockierend: Ein Repository, das nicht antwortet, wird gemeldet,
   die Suite funktioniert ohne Teilen. Einzelheiten: [Synchronisierung](../technique/SYNCHRONISATION.md).
-- Sind die Daten vorhanden, bietet die optionale Karte „Flugbuch“ den Knopf „Journal (.html)…“: Die gespeicherte Seite „Log des vols“ der DEFA-Website füllt die Piloten und Luftfahrzeuge der Referenz (Eingabehilfe).
+- Sind die Daten vorhanden, bietet die optionale Karte „Flugbuch“ den Knopf „Journal (.html)…“: Die gespeicherte Seite „Log des vols“ der Website der Fluggesellschaft füllt die Piloten und Luftfahrzeuge der Referenz (Eingabehilfe).
 
 ### 2 Profil
 
@@ -436,7 +436,7 @@ Ihr Pilotenprofil, das alle Seiten übernehmen (☰ › Pilotenprofil).
 1. Füllen Sie die Karte „Pilot“ aus: „Kürzel“, „IVAO-ID (VID)“, „VATSIM-ID (CID)“, „SimBrief“.
 2. Klicken Sie auf „Profil speichern“.
 
-Die Zugangsdaten der DEFA-Website, das Passwort und die Einstellungen werden danach in [Mein Profil](#mein-profil) eingestellt.
+Die Zugangsdaten der Website der Fluggesellschaft, das Passwort und die Einstellungen werden danach in [Mein Profil](#mein-profil) eingestellt.
 
 ### 3 Ordner
 
@@ -461,7 +461,7 @@ Der Link „Start“ führt ohne Abschluss zur Startseite zurück.
 
 Um den Erststart von vorn zu beginnen, und nur in diesem Fall.
 
-- „Bereinigen und neu beginnen…“ löscht **in diesem Browser** die gespeicherten Ordner (Anwendung, Daten, Register, Missionen, SIA, ODV, X-Plane, Leistungen, lokale Sicherung), die Kopie der ODV-Arbeitsmappe, die Zugangsdaten der DEFA-Website, das Profil (Kürzel, IVAO, VATSIM, SimBrief) und den Vermerk „Suite eingerichtet“.
+- „Bereinigen und neu beginnen…“ löscht **in diesem Browser** die gespeicherten Ordner (Anwendung, Daten, Register, Missionen, SIA, ODV, X-Plane, Leistungen, lokale Sicherung), die Kopie der ODV-Arbeitsmappe, die Zugangsdaten der Website der Fluggesellschaft, das Profil (Kürzel, IVAO, VATSIM, SimBrief) und den Vermerk „Suite eingerichtet“.
 - Eine Bestätigung wird verlangt, dann lädt die Seite neu bei Schritt 1.
 - Die Dateien auf der Festplatte werden nicht berührt: Ordner `data/`, Register, Sicherung `defa_local_store.yaml`.
 
