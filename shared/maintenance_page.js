@@ -870,11 +870,17 @@
     host.innerHTML = `<p class="row"><button type="button" class="secondary" id="mtDepRefresh" data-icon="refresh">${esc(t(['Vérifier', 'Check', 'Prüfen', 'Comprobar']))}</button></p>
       <div class="mt-scroll"><table class="mt-table mt-wide"><thead><tr><th>${esc(t(['Référence', 'Reference', 'Referenz', 'Referencia']))}</th><th>${esc(t(['Fichier', 'File', 'Datei', 'Archivo']))}</th><th>${esc(t(['Traçage', 'Tracing', 'Nachverfolgung', 'Trazado']))}</th><th>${esc(t(['Mise à jour', 'Update', 'Aktualisierung', 'Actualización']))}</th><th>${esc(t(['Dépendants', 'Dependents', 'Abhängige', 'Dependientes']))}</th><th>${esc(t(['Contrôle', 'Check', 'Prüfung', 'Control']))}</th></tr></thead><tbody>
       ${rows.map(r => `<tr><td><b>${esc(r.ref)}</b></td><td class="mt-small"><code>${esc(r.file)}</code></td><td class="mt-small">${esc(r.traced)}</td><td class="mt-small">${esc(r.process)}</td><td class="mt-small">${esc(r.dependents)}</td><td>${r.state}</td></tr>`).join('')}
-      </tbody></table></div>`;
+      </tbody></table></div><div id="mtAircraftDb"></div>`;
     host.querySelector('#mtDepRefresh').onclick = async () => {
       await scanSiaFolder(false);
       renderDeps();
     };
+    // types d'aéronefs : complétés type par type (flotte, missions du registre et de l'ODV)
+    const reg = (await regIndex().catch(() => null))?.missions || [];
+    aircraftDbState(host.querySelector('#mtAircraftDb'), {
+      fleet: [...new Set((window.DEFA_FLEET || []).map(r => r.type).filter(Boolean))],
+      missions: [...new Set(reg.flatMap(m => m.aircraftTypes || []))]
+    });
     window.AppFramework?.refresh?.();
   }
 
@@ -1010,6 +1016,60 @@
         renderAeroSources(box);
       }
     });
+  }
+
+  // ---- base des types d'aéronefs (OACI Doc 8643, performances EUROCONTROL) : non publiée, complétée sur ce poste type
+  // par type par le lanceur (AircraftDB/update_aircraft_db.py ; GET / POST /__setup/aircraft-db { codes }) : un nouvel
+  // appareil (code saisi), les types de la flotte, ceux des missions (ODV, registre), ou les types encore inconnus de la
+  // base ; jamais toute la base EUROCONTROL. État relu toutes les 5 s pendant une passe.
+  let acTimer = 0,
+    acLists = {};
+  async function aircraftDbState(el, lists) {
+    if (!el?.isConnected) return;
+    if (lists) acLists = lists;
+    clearTimeout(acTimer);
+    const api = (body = null) => fetch('/__setup/aircraft-db', {
+      method: body ? 'POST' : 'GET',
+      headers: {
+        'X-DEFA-Setup': '1',
+        'Content-Type': 'application/json'
+      },
+      body: body ? JSON.stringify(body) : undefined,
+      cache: 'no-store'
+    }).then(r => r.ok ? r.json() : null).catch(() => null);
+    const s = await api();
+    const types = typeSet(),
+      unknown = [...new Set([...(acLists.fleet || []), ...(acLists.missions || [])])].filter(x => !knownType(types, x));
+    const files = s ? (s.db ? t(['base présente ({n} types)', 'database present ({n} types)', 'Basis vorhanden ({n} Typen)', 'base presente ({n} tipos)'], {
+      n: types.size
+    }) : t(['base absente', 'database missing', 'Basis fehlt', 'base ausente'])) : '';
+    const state = !s ? t(['lanceur absent : python update_aircraft_db.py --only CODES puis --apd CODES (dans AircraftDB/)', 'no launcher: python update_aircraft_db.py --only CODES then --apd CODES (in AircraftDB/)']) :
+      s.state === 'running' ? t(['passe en cours : {s}', 'pass running: {s}', 'Durchlauf läuft: {s}', 'pasada en curso: {s}'], {
+        s: s.step
+      }) : s.state === 'done' ? t(['dernière passe terminée ({c})', 'last pass done ({c})', 'letzter Durchlauf beendet ({c})', 'última pasada terminada ({c})'], {
+        c: (s.codes || []).join(' ')
+      }) : s.state === 'error' ? t(['échec de la dernière passe', 'last pass failed', 'letzter Durchlauf fehlgeschlagen', 'falló la última pasada']) : '';
+    const busy = !s || s.state === 'running';
+    const btn = (id, label, list, title) => `<button type="button" class="secondary" data-ac="${id}" data-icon="refresh"${busy || !list.length ? ' disabled' : ''} title="${esc(title + (list.length ? ' : ' + list.slice(0, 20).join(' ') + (list.length > 20 ? '…' : '') : ''))}">${esc(label)} (${list.length})</button>`;
+    el.innerHTML = `<div class="repo-card" data-icon="plane" data-subtitle="${esc(t(['Données de l’OACI (Doc 8643) et d’EUROCONTROL : non publiées avec la suite, complétées sur ce poste, type par type (réseau, quelques secondes par type)', 'ICAO (Doc 8643) and EUROCONTROL data: not published with the suite, completed on this computer type by type (network, a few seconds per type)', 'Daten von ICAO (Doc 8643) und EUROCONTROL: nicht mit der Suite veröffentlicht, auf diesem Rechner Typ für Typ ergänzt', 'Datos de la OACI (Doc 8643) y EUROCONTROL: no publicados con la suite, completados en este equipo tipo por tipo']))}"><h3>${esc(t(['Types d’aéronefs et performances', 'Aircraft types and performance', 'Luftfahrzeugtypen und Leistungen', 'Tipos de aeronave y rendimientos']))}</h3>
+      <p class="mt-small">${esc(files)}${state ? ` · ${esc(state)}` : ''}</p>
+      <p class="row"><input type="text" class="mt-ac-code" size="10" maxlength="40" placeholder="${esc(t(['code OACI', 'ICAO code', 'ICAO-Code', 'código OACI']))}" spellcheck="false" aria-label="${esc(t(['Codes OACI', 'ICAO codes', 'ICAO-Codes', 'Códigos OACI']))}"><button type="button" class="secondary" data-ac="one" data-icon="plus"${busy ? ' disabled' : ''}>${esc(t(['Ajouter / mettre à jour', 'Add / update', 'Hinzufügen / aktualisieren', 'Añadir / actualizar']))}</button></p>
+      <p class="row">${btn('unknown', t(['Types inconnus', 'Unknown types', 'Unbekannte Typen', 'Tipos desconocidos']), unknown, t(['types de la flotte et des missions absents de la base', 'fleet and mission types missing from the database']))} ${btn('fleet', t(['Flotte', 'Fleet', 'Flotte', 'Flota']), acLists.fleet || [], t(['tous les types de la flotte', 'all fleet types']))} ${btn('missions', t(['Missions (ODV, registre)', 'Missions (ODV, registry)', 'Missionen (ODV, Register)', 'Misiones (ODV, registro)']), acLists.missions || [], t(['types demandés par les missions', 'types required by the missions']))}</p>
+      ${s?.log?.length ? `<details class="mt-small"><summary>${esc(t(['Journal', 'Log', 'Protokoll', 'Registro']))}</summary><pre>${esc(s.log.slice(-12).join('\n'))}</pre></details>` : ''}</div>`;
+    const lists2 = {
+      unknown,
+      fleet: acLists.fleet || [],
+      missions: acLists.missions || []
+    };
+    el.querySelectorAll('[data-ac]').forEach(b => b.onclick = async () => {
+      const codes = b.dataset.ac === 'one' ? el.querySelector('.mt-ac-code').value.toUpperCase().split(/[\s,;]+/).filter(Boolean) : lists2[b.dataset.ac];
+      if (!codes.length) return;
+      await api({
+        codes
+      });
+      aircraftDbState(el);
+    });
+    if (s?.state === 'running') acTimer = setTimeout(() => aircraftDbState(el), 5000);
   }
 
   async function renderSia() {

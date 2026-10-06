@@ -741,7 +741,7 @@ Cette base (`AircraftDB/aircraft_db.js`) contient deux tableaux :
 - « Types » : « Désignateur », « Modèle », « Description OACI », « WTC », « Aile », « Source » ;
 - « Alias (nom courant → désignateur) ».
 Les modifications sont aussi reportées dans `aircraft_overrides.json`. Les boutons sont ceux des bases du dépôt.
-Le « Mode opératoire » donne les commandes du script de rafraîchissement, à lancer depuis `AircraftDB` : `python update_aircraft_db.py --no-network`, `--add <types>`, `--refresh-icao`.
+Le « Mode opératoire » donne les commandes du script de rafraîchissement, à lancer depuis `AircraftDB` : `python update_aircraft_db.py --no-network`, `--add <types>`, `--refresh-icao`. La base n'est pas publiée avec la suite (données de l'OACI et d'EUROCONTROL) : la carte « Types d'aéronefs et performances » de Paramètres › Maintenance › Références et dépendances la complète sur ce poste, type par type, sans jamais tout reprendre — un code saisi (« Ajouter / mettre à jour »), les types inconnus, ceux de la flotte ou ceux des missions (ODV, registre) ; il faut le lanceur et le réseau, puis recharger la page.
 Limite : un type supprimé ici peut revenir au prochain rafraîchissement, s'il fait partie de la liste de base du script.
 
 ### Correspondance des indicatifs

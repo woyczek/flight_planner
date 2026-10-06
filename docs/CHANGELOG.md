@@ -12,6 +12,13 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Ajouté
 
+- **Types d'aéronefs complétés sur chaque poste, type par type** : les bases OACI (Doc 8643) et EUROCONTROL
+  (`AircraftDB/aircraft_db.js`, `aircraft_perf.js`) ne sont plus publiées (ignorées par git) ; Paramètres › Maintenance ›
+  Références et dépendances, carte « Types d'aéronefs et performances » : un code saisi, les types inconnus, ceux de la
+  flotte ou des missions — jamais toute la base EUROCONTROL (lanceur : `POST /__setup/aircraft-db`,
+  `update_aircraft_db.py --only` puis `--apd`) ; liste des codes de la suite : `AircraftDB/aircraft_types.txt`.
+  `LICENSE.md` : grille MORA (ODbL pour sa part OpenStreetMap) et axes ENR 5.7 calculés sur le poste, jamais
+  redistribués.
 - **Licences** : `LICENSE.md` — code sous Mozilla Public License 2.0, contenu (documentation, images) sous CC BY-SA 4.0
   (textes complets dans `LICENSES/`) ; licences et crédits exigés de tout ce qui vient de tiers (MapLibre, jsPDF,
   js-yaml, textures ambientCG, GeoNames, OACI, EUROCONTROL, SIA, DIRCAM, FAA, openAIP, ENAIRE, NATS, Mil AIP, X-Plane,

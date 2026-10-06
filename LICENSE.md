@@ -52,9 +52,14 @@ Modules Python utilisés par certains outils, installés à part et non inclus :
 | Données | Source | Licence ou conditions | Crédit |
 |---|---|---|---|
 | Villes (`shared/carto/villes_geonames.csv`) | GeoNames — <https://www.geonames.org> | CC BY 4.0 | « GeoNames (geonames.org), CC BY 4.0 » |
-| Types d'aéronefs (`AircraftDB/aircraft_db.js`) | OACI, Doc 8643 *Aircraft Type Designators* ; vérifications EUROCONTROL, Wikidata (CC0), Wikipédia | désignateurs et caractéristiques factuels ; © OACI pour la base elle-même, aucune licence libre | « Indicatifs de type : OACI, Doc 8643 » |
-| Performances d'aéronefs (`AircraftDB/aircraft_perf.js`) | EUROCONTROL, *Aircraft Performance Database* | valeurs factuelles ; © EUROCONTROL pour la base elle-même | « Performances : EUROCONTROL Aircraft Performance Database » |
+| Liste des codes de types (`AircraftDB/aircraft_types.txt`) | désignateurs OACI (Doc 8643) utilisés par la suite | codes seulement (faits), sans les données de l'OACI | — |
 | Exemples (`examples/references/`) | indicatifs publics, flotte fictive, structure de la flotte DEFA Virtual | celle du contenu (section 1) | — |
+
+**Non publiées, reconstruites sur chaque poste.** La base des types d'aéronefs (`AircraftDB/aircraft_db.js` : OACI,
+Doc 8643, recoupée EUROCONTROL, Wikidata) et celle des performances (`AircraftDB/aircraft_perf.js` : EUROCONTROL,
+*Aircraft Performance Database*) ne sont ni publiées ni redistribuées : elles sont ignorées par git et complétées sur
+le poste de chaque utilisateur, type par type, par `AircraftDB/update_aircraft_db.py`. Elles restent © OACI et
+© EUROCONTROL.
 
 ## 5. Données aéronautiques
 
@@ -74,12 +79,14 @@ britannique) pourraient être redistribuées ; les autres ne doivent jamais êtr
 | **X-Plane** (Laminar Research) | données de navigation par défaut (`Resources/default data`) | GNU GPL v2 ou ultérieure, selon l'en-tête de chaque fichier (© Robin A. Peel) | lues sur le poste de l'utilisateur, jamais copiées |
 | **Navigraph / Jeppesen** | données de navigation de « Custom Data » d'X-Plane | licence personnelle, non transférable : ni copie, ni publication, ni redistribution | « Navigation data © Jeppesen, via Navigraph » ; lues sur le poste de l'utilisateur, jamais copiées |
 
-**Produits dérivés du dépôt de données** (dépôt séparé, `data/`, hors du dépôt du code) :
-- la grille MORA (`data/sia/mora.csv`) est calculée à partir des obstacles du SIA, du relief Terrarium et des sommets
-  d'OpenStreetMap. Elle relève donc de l'ODbL 1.0 pour la part issue d'OpenStreetMap, et doit citer le SIA (cycle AIRAC
-  des obstacles) et les sources du relief (section 6). Ces valeurs sont calculées, elles ne sont pas certifiées ;
+**Données calculées ou extraites sur le poste de l'utilisateur, jamais redistribuées :**
+- la grille MORA (`data/sia/mora.csv`) est calculée par chaque utilisateur (Paramètres › Maintenance › Données
+  aéronautiques) à partir des obstacles du SIA, du relief Terrarium et des sommets d'OpenStreetMap. Pour sa part issue
+  d'OpenStreetMap, elle relève de l'**ODbL 1.0** ; elle cite le SIA (cycle AIRAC des obstacles) et les sources du relief
+  (section 6). Elle n'est pas publiée : son usage est de la responsabilité de l'utilisateur, dans le respect de ces
+  licences. Ces valeurs sont calculées, elles ne sont pas certifiées ;
 - les axes de ravitaillement (`data/sia/miam-enr-5-7-*.xml`) sont tirés de la MILAIP ENR 5.7 (DIRCAM) : réutilisation
-  non commerciale, avec mention de l'amendement.
+  non commerciale, avec mention de l'amendement ; pas de redistribution.
 
 ## 6. Services en ligne utilisés par les pages
 

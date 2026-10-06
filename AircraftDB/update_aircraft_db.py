@@ -255,6 +255,9 @@ def replace_retry(tmp, target, tries=10):
 
 
 def load_js_db(path):
+    # base absente (nouvelle installation : la base n'est pas publiée, elle est reconstruite sur chaque poste) : vide
+    if not Path(path).exists():
+        return {}
     txt = Path(path).read_text(encoding="utf-8-sig")
     m = re.search(r"window\.AIRCRAFT_DB\s*=\s*(\{.*\})\s*;?\s*$", txt, re.S)
     if not m:
@@ -1002,6 +1005,7 @@ def main():
     ap.add_argument("--delay", type=float, default=1.25, help="minimum pause between live HTTP requests")
     ap.add_argument("--retries", type=int, default=6, help="retries on HTTP 429/network errors")
     ap.add_argument("--add", nargs="*", default=[], help="extra designators/names")
+    ap.add_argument("--add-file", help="fichier de désignateurs à traiter (un par ligne, # : commentaire), ex. aircraft_types.txt")
     ap.add_argument("--no-network", action="store_true", help="no web lookup; use cached ICAO docs/index only")
     ap.add_argument("--only", nargs="+", metavar="CODE", help="ne traiter que ces types (au lieu de toute la base)")
     ap.add_argument("--apd", nargs="*", metavar="CODE", help="passe EUROCONTROL APD seule : performances -> aircraft_perf.js et réparation des noms de modèle (tous les types, ou les codes donnés)")
@@ -1037,6 +1041,8 @@ def main():
 
     wanted = {normalize_key(x) for x in DEFAULT_COMMON}
     wanted |= {normalize_key(x) for x in args.add}
+    if args.add_file and Path(args.add_file).exists():
+        wanted |= {normalize_key(l.split('#')[0].strip()) for l in Path(args.add_file).read_text(encoding="utf-8").splitlines() if l.split('#')[0].strip()}
     wanted |= designators_from_csv(args.csv)
     wanted |= {normalize_key(k) for k in db if not str(k).startswith("__")}
     wanted = sorted(x for x in wanted if x)

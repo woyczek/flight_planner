@@ -741,7 +741,7 @@ This database (`AircraftDB/aircraft_db.js`) contains two tables:
 - “Types”: “Designator”, “Model”, “ICAO description”, “WTC”, “Wing”, “Source”;
 - “Aliases (common name → designator)”.
 Changes are also carried over to `aircraft_overrides.json`. The buttons are those of the repository databases.
-The “Procedure” gives the commands of the refresh script, to be run from `AircraftDB`: `python update_aircraft_db.py --no-network`, `--add <types>`, `--refresh-icao`.
+The “Procedure” gives the commands of the refresh script, to be run from `AircraftDB`: `python update_aircraft_db.py --no-network`, `--add <types>`, `--refresh-icao`. The database is not published with the suite (ICAO and EUROCONTROL data): the “Aircraft types and performance” card in Settings › Maintenance › References and dependencies completes it on this computer, type by type, never all at once — a code typed in (“Add / update”), the unknown types, the fleet types or the mission types (ODV, registry); it needs the launcher and the network, then reload the page.
 Limit: a type deleted here may come back at the next refresh, if it is part of the script's base list.
 
 ### Callsign correspondence

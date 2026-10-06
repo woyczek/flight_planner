@@ -134,7 +134,7 @@ Bibliothèque standard uniquement :
 | `tools/launch.py` | lanceur (données, serveur, navigateur) — appelé par `lancer.cmd` / `lancer.sh` |
 | `tools/update_suite.py update` / `doctor` | mise à jour de la suite / diagnostic de l'installation |
 | `AircraftDB/update_fleet.py Flotte.html` | met à jour la flotte depuis la page « Flotte virtuelle » enregistrée |
-| `AircraftDB/update_aircraft_db.py` (depuis `AircraftDB/`) | rafraîchit la base des types OACI (Doc 8643, EUROCONTROL, Wikidata) |
+| `AircraftDB/update_aircraft_db.py` (depuis `AircraftDB/`) | complète la base des types OACI (Doc 8643, EUROCONTROL, Wikidata), non publiée : type par type (`--only`, `--apd`), aussi depuis Paramètres › Maintenance |
 | `tools/bump_versions.py` | versions de cache des scripts, feuilles et images (après modification du code) |
 | `tools/new_family_pages.py famille.json` | crée les pages d'une nouvelle famille de missions |
 

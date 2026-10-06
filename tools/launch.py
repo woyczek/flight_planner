@@ -262,6 +262,10 @@ class Setup(http.server.SimpleHTTPRequestHandler):
             if not self._allowed():
                 return self._json({'error': 'refusé'}, 403)
             return self._json(vatsim_bookings())
+        if self.path.split('?')[0] == '/__setup/aircraft-db':
+            if not self._allowed():
+                return self._json({'error': 'refusé'}, 403)
+            return self._json({**AIRCRAFT, **aircraft_files()})
         if self.path.split('?')[0] == '/__setup/sia-zip':
             # ZIP du SIA téléchargé : ?info → nom, taille, date ; sinon le fichier lui-même
             if not self._allowed():
@@ -332,6 +336,12 @@ class Setup(http.server.SimpleHTTPRequestHandler):
                     index_availability()
                     index_users()
             return self._json(r)
+        if path == '/__setup/aircraft-db':
+            try:
+                a = json.loads(body or b'{}')
+            except ValueError:
+                a = {}
+            return self._json({'started': aircraft_start(a.get('codes') or []), **AIRCRAFT, **aircraft_files()})
         if path == '/__setup/aero-fetch':
             # données aéronautiques d'autres pays (tools/aero_fetch.py) : téléchargées dans data/sia/<source>/
             try:
@@ -489,6 +499,54 @@ INSTANCE_DIRS = ('', 'data', os.path.join('data', 'missions'), os.path.join('dat
 
 
 INDEX_LOCK = threading.Lock()
+# ---- base des types d'aéronefs (OACI Doc 8643, performances EUROCONTROL) : non publiée, complétée sur chaque poste,
+# type par type, par AircraftDB/update_aircraft_db.py (--only CODES, puis --apd CODES) : un nouvel appareil, ou une liste
+# (flotte, missions de l'ODV et du registre) — Paramètres › Maintenance › Références et dépendances, /__setup/aircraft-db.
+# Jamais toute la base EUROCONTROL d'un coup.
+AIRCRAFT = {'state': 'idle', 'step': '', 'started': None, 'ended': None, 'log': []}
+AIRCRAFT_LOCK = threading.Lock()
+
+
+def aircraft_files():
+    d = os.path.join(ROOT, 'AircraftDB')
+    return {'db': os.path.exists(os.path.join(d, 'aircraft_db.js')), 'perf': os.path.exists(os.path.join(d, 'aircraft_perf.js'))}
+
+
+def aircraft_rebuild(codes):
+    d = os.path.join(ROOT, 'AircraftDB')
+    script = os.path.join(d, 'update_aircraft_db.py')
+    overrides = os.path.join(DATA, 'references', 'aircraft_overrides.json')
+    steps = [('types (OACI Doc 8643) : ' + ' '.join(codes), [sys.executable, script, '--only', *codes, '--overrides', overrides]),
+             ('performances (EUROCONTROL APD) : ' + ' '.join(codes), [sys.executable, script, '--apd', *codes])]
+    env = {**os.environ, 'PYTHONIOENCODING': 'utf-8'}
+    ok = True
+    for name, cmd in steps:
+        AIRCRAFT['step'] = name
+        try:
+            p = subprocess.Popen(cmd, cwd=d, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, env=env, text=True, encoding='utf-8', errors='replace')
+            for line in p.stdout:
+                AIRCRAFT['log'] = (AIRCRAFT['log'] + [line.rstrip()])[-40:]
+            ok = p.wait() == 0 and ok
+        except OSError as e:
+            AIRCRAFT['log'].append(str(e))
+            ok = False
+    AIRCRAFT.update(state='done' if ok else 'error', step='', ended=time.time())
+
+
+def aircraft_start(codes):
+    """Complète les types donnés (désignateurs OACI) en tâche de fond ; False si une passe tourne déjà ou si la liste
+    est vide."""
+    codes = sorted({re.sub(r'[^A-Z0-9]', '', str(c).upper())[:8] for c in codes} - {''})[:200]
+    if not codes:
+        return False
+    with AIRCRAFT_LOCK:
+        if AIRCRAFT['state'] == 'running':
+            return False
+        AIRCRAFT.update(state='running', started=time.time(), ended=None, log=[], codes=codes)
+    threading.Thread(target=aircraft_rebuild, args=(codes,), daemon=True).start()
+    return True
+
+
 AERO_LOCK = threading.Lock()  # un téléchargement de données aéronautiques à la fois (tools/aero_fetch.py)
 SYNC_LOCK = threading.Lock()  # une synchronisation git à la fois (tools/data_sync.py)  # index du pool refaits à la demande (do_GET)
 
@@ -619,6 +677,8 @@ def main():
     mark_instance()
     index_availability()
     index_users()
+    if not aircraft_files()['db']:
+        say("  Base des types d'aéronefs absente : la compléter dans Paramètres › Maintenance › Références et dépendances.")
     handler = lambda *x, **k: Setup(*x, directory=ROOT, **k)
     srv = Server(('127.0.0.1', port), handler)
     url = f'http://127.0.0.1:{port}/{a.page}?t={int(time.time())}'  # adresse neuve : page jamais reprise du cache

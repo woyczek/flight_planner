@@ -741,7 +741,7 @@ Esta base (`AircraftDB/aircraft_db.js`) contiene dos tablas:
 - «Tipos»: «Designador», «Modelo», «Descripción OACI», «WTC», «Ala», «Fuente»;
 - «Alias (nombre común → designador)».
 Los cambios también se trasladan a `aircraft_overrides.json`. Los botones son los de las bases del repositorio.
-El «Procedimiento» da los comandos del script de actualización, que se ejecuta desde `AircraftDB`: `python update_aircraft_db.py --no-network`, `--add <types>`, `--refresh-icao`.
+El «Procedimiento» da los comandos del script de actualización, que se ejecuta desde `AircraftDB`: `python update_aircraft_db.py --no-network`, `--add <types>`, `--refresh-icao`. La base no se publica con la suite (datos de la OACI y de EUROCONTROL): la tarjeta «Tipos de aeronave y rendimientos» de Ajustes › Mantenimiento › Referencias y dependencias la completa en este equipo, tipo por tipo, nunca toda a la vez — un código introducido («Añadir / actualizar»), los tipos desconocidos, los de la flota o los de las misiones (ODV, registro); hacen falta el lanzador y la red, y después recargar la página.
 Límite: un tipo eliminado aquí puede volver en la siguiente actualización si forma parte de la lista de base del script.
 
 ### Correspondencia de indicativos
