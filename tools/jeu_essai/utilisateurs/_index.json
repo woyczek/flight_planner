@@ -1,0 +1,31 @@
+{
+ "schema": 1,
+ "va": "SOG",
+ "updated_at": "2026-10-06T12:00:00.000Z",
+ "utilisateurs": {
+  "ALF": {
+   "role": "admin_centre",
+   "actif": true,
+   "nom": "Alpha (essai)",
+   "updated_at": "2026-10-06T12:00:00.000Z"
+  },
+  "BRV": {
+   "role": "utilisateur",
+   "actif": true,
+   "nom": "Bravo (essai)",
+   "updated_at": "2026-10-06T12:00:00.000Z"
+  },
+  "CHL": {
+   "role": "utilisateur",
+   "actif": true,
+   "nom": "Charlie (essai)",
+   "updated_at": "2026-10-06T12:00:00.000Z"
+  },
+  "DLT": {
+   "role": "utilisateur",
+   "actif": true,
+   "nom": "Delta (essai)",
+   "updated_at": "2026-10-06T12:00:00.000Z"
+  }
+ }
+}

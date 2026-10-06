@@ -1,0 +1,240 @@
+# Mission A-001A — modified in the generator — 30/09/2026 21:56:30
+schema: helo-xp-mission
+schema_version: '2.0'
+mission:
+  series: 1
+  number: 1
+  id: A-001A
+  former_id: BFM-001A
+  type: COMBAT
+  subtype: BFM
+  theatre: métropole
+  country: FR
+operation:
+  id: A-001
+  name: BOXING GLOVES
+  missions:
+    - A-001A
+    - A-001B
+    - A-001C
+    - A-001D
+    - A-001E
+  organisation: A-001Z
+title: BOXING GLOVES — round one in TRA 34 A
+summary: |-
+  MERCURE31 is the first fighter element of exercise BOXING GLOVES, run between D31D and TRA 34 A with a second Rafale element and a Phénix. The set-up includes air-to-air refuelling before entering the combat sector, so that the first serious opponent of the day is not the fuel gauge.
+
+  The crew must join the formation, take on fuel and then fly the BFM sequences assigned by the exercise director. The adversary tracks and their behaviour are not known at take-off and will be passed in flight in accordance with organisation mission A-001Z.
+detailed_description: |-
+  BOXING GLOVES is an air combat exercise involving two Rafale elements in TRA 34 A, with two training tracks introduced progressively by exercise control. MERCURE31 is one of the blue elements and must be able to switch quickly from coordinated navigation to a BFM sequence. The bandits have been told to stay credible, but not to demand a rematch in the mess after every engagement.
+
+  MERCURE31 takes off from BA 118 Mont-de-Marsan in the air-to-air configuration planned for the exercise. The set-up is coordinated with MERCURE41 and the Phénix COTAM3510, each with its own mission. Joining the formation remains subject to the availability of the tanker and of the combat area, and to military ATC instructions.
+
+  A first coordination takes place in D31D to form up behind COTAM3510 and carry out the refuelling sequence. After leaving the tanker, MERCURE31 proceeds to TRA 34 A and comes under the control of the exercise director. Adversary contacts are then revealed according to the A-001Z timeline and must be acquired, identified and engaged in accordance with the exercise rules.
+
+  A sequence is terminated in case of loss of separation, a fuel state incompatible with continuing, area unavailability or on the exercise director's order. The flight may also temporarily leave the fight if it loses the tactical picture or if a reset is needed. The aim remains BFM training, not turning a poorly prepared merge into an improvised demonstration of applied geometry.
+
+  After the engagements, MERCURE31 leaves the area via the planned point and returns to Mont-de-Marsan. The mission ends once the aircraft has landed and been released from the exercise. Any sequence not flown may be carried over to a later sortie rather than extended at the expense of reserves.
+aircraft:
+  - id: AC1
+    type: RFAL Rafale
+    callsign: MERCURE31
+    operator: French Air and Space Force
+    role: BFM fighter element
+    cruise_speed_kt: 430
+    cruise_level: FL240
+origin:
+  name: BA 118 Mont-de-Marsan (LFBM)
+  lat: 43.911667
+  lon: -0.5075
+destination:
+  name: BA 118 Mont-de-Marsan (LFBM)
+  lat: 43.911667
+  lon: -0.5075
+target:
+  id: TARGET
+  name: TRA 34 A — central engagement sector
+  lat: 44.05
+  lon: -0.35
+  time_on_task_min: 25
+turning_points:
+  - id: PT1
+    name: OCEANE ARIP
+    lat: 44.333333
+    lon: -1.55
+    role: entry into the refuelling set-up in D31D
+    time_on_task_min: 0
+  - id: PT2
+    name: OCEANE ARCP
+    lat: 44.25
+    lon: -1.45
+    role: contact and stabilisation behind the tanker
+    time_on_task_min: 8
+  - id: PT3
+    name: TRA 34 A — west entry
+    lat: 44.1
+    lon: -0.65
+    role: combat area entry and fence-in
+    time_on_task_min: 0
+  - id: PT4
+    name: TRA 34 A — south-east exit
+    lat: 43.85
+    lon: -0.15
+    role: combat exit and fence-out
+    time_on_task_min: 0
+rendezvous:
+  - id: RDV-1
+    name: D31D — refuelling rendezvous
+    lat: 44.333333
+    lon: -1.55
+    participants:
+      - MERCURE31
+      - MERCURE41
+      - COTAM3510
+    role: join-up with the tanker and forming up
+    time_on_task_min: 5
+zones:
+  - id: ZONE-1
+    name: TRA 34 A — BFM sector
+    kind: mission
+    centre:
+      lat: 44.05
+      lon: -0.35
+    radius_km: 35
+    role: BFM working area
+    time_on_task_min: 25
+route_order:
+  - ORIGIN
+  - PT1
+  - RDV-1
+  - PT2
+  - PT3
+  - ZONE-1
+  - TARGET
+  - PT4
+  - DESTINATION
+return_options:
+  - name: BA 120 Cazaux (LFBC)
+    lat: 44.533333
+    lon: -1.125
+    condition: diversion required after the D31D phase or Mont-de-Marsan unavailable
+    time_on_task_min: 0
+    then_base: false
+timing:
+  estimated_flight_min: 82
+  estimated_block_min: 102
+teams:
+  - name: MERCURE31
+    service: French Air and Space Force
+    department: Landes
+    type: RFAL Rafale
+    role: BFM fighter element A
+  - name: MERCURE41
+    service: French Air and Space Force
+    department: Landes
+    type: RFAL Rafale
+    role: BFM fighter element B
+  - name: COTAM3510
+    service: French Air and Space Force
+    department: Bouches-du-Rhône
+    type: A332 A330 MRTT Phénix
+    role: exercise tanker
+payload:
+  category: NONE
+  description: Air-to-air training configuration; no load carried.
+  mass_kg: 0
+  passengers: 0
+  constraints:
+    - Keep enough reserves to return or divert after the BFM sequence.
+    - Comply with the exercise separation rules and knock-it-offs.
+objectives:
+  primary: Complete the planned refuelling, then fly the assigned BFM sequences in TRA 34 A before returning to Mont-de-Marsan.
+  secondary:
+    - Maintain coordination with MERCURE41 and the exercise director.
+    - Correctly identify the revealed tracks before each engagement.
+    - Comply with the separation, termination and area exit criteria.
+risks:
+  - hazard: Loss of separation
+    consequence: Dangerous closure between participants during BFM manoeuvring.
+    mitigation: Comply with the rules of engagement and separation altitudes, and call any knock-it-off immediately.
+  - hazard: Fuel state
+    consequence: Insufficient reserves to continue the exercise or return to base.
+    mitigation: Check fuel after refuelling and at each exit from an engagement; terminate before reaching minimums.
+  - hazard: Loss of situational awareness
+    consequence: Continuing a manoeuvre without reliable knowledge of the other aircraft's positions.
+    mitigation: Break off the engagement and re-form as soon as the tactical picture is lost.
+  - hazard: Workload
+    consequence: Degraded lookout or flight parameters.
+    mitigation: Strictly share flying, lookout and communications within the crew and the flight.
+air_refueling:
+  capable: true
+  planned: true
+  role: receiver
+  track: OCEANE
+vertical_profile:
+  route: ORIGIN, FL240, PT1, RDV-1, PT2, FL240, PT3, TARGET, PT4, FL200, DESTINATION
+  cruise: FL240
+maps:
+  - id: general
+    filename: generalA-001A.png
+    type: general
+    description: Overview covering Mont-de-Marsan, D31D, the refuelling rendezvous, TRA 34 A and the return leg.
+    include:
+      origin: true
+      destination: true
+      turning_points: true
+      target: true
+      rendezvous: true
+      zones: true
+  - id: cible
+    filename: cibleA-001A.png
+    type: target
+    description: Local view of TRA 34 A centred on the main engagement sector.
+    centre_ref: TARGET
+    range_km: 50
+  - id: detail_cible
+    filename: detail_cibleA-001A.png
+    type: detail
+    description: Detailed 8 × 5 km view around the central point of the exercise.
+    centre_ref: TARGET
+    width_km: 8
+    height_km: 5
+  - id: detail_rdv_1
+    filename: detail_rdvA-001A-1.png
+    type: detail_rdv
+    description: Detailed 8 × 5 km view of the rendezvous with COTAM3510 in D31D.
+    centre_ref: RDV-1
+    width_km: 8
+    height_km: 5
+  - id: zone_1
+    filename: zoneA-001A.png
+    type: zone
+    description: View of the BFM working area covering TRA 34 A.
+    centre_ref: ZONE-1
+    range_km: 70
+  - filename: exercice_EV-3_A-001A.png
+    type: general
+    description: Exercise map MERCURE31 — First tactical contact (H+11)
+    exercise: EV-3
+    trace: none
+    center:
+      lat: 44.12667
+      lon: -0.865
+    range_km: 75
+rendering:
+  north_up: true
+  draw_routes: false
+  add_markers: false
+  attribution_required: true
+notes:
+  - Air simulation exercise.
+  - 'TYPE BFM does not exist in the list of schema 2.0 families: the mission is coded SPECIAL with subtype BFM, while the requested identifier A-001 is kept.'
+  - The requested foreign theatre is incompatible with the explicit TRA 34 A and D31D constraints; the theatre is therefore corrected to metropolitan France.
+  - The TRA 34 A sector coordinates are working coordinates, to be adjusted to the applicable AIP boundaries.
+  - OCEANE track coordinates to be adjusted to ENR 5.7.
+meta:
+  received_at: '2026-09-30T19:56:30.841Z'
+  modified_at: '2026-09-30T19:56:30.841Z'
+  history:
+    - at: '2026-09-30T19:56:30.841Z'
+      action: modifiée dans le générateur

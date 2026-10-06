@@ -413,15 +413,15 @@ Die Nummer jedes Schritts wird grün, wenn er erledigt ist.
 
 Dieser Schritt installiert die Daten der Fluggesellschaft (Missionen, Referenzen…). Er läuft über den Starter: Ohne ihn zeigt die Seite „Öffnen Sie für diesen Schritt die Suite mit dem Starter…“.
 
-Zwei Möglichkeiten:
+Drei Möglichkeiten:
 
 | Karte | Vorgehen |
 |---|---|
-| „Ich habe Zugang zum Repository (framagit)“ | Geben Sie „Kennung“ und „Passwort oder Token“ ein, kreuzen Sie bei Bedarf „im Anmeldeinformations-Manager von Git speichern“ an, dann „Daten abrufen“. Der erste Download dauert einige Minuten. |
+| „Testdatensatz“ | „Testdaten installieren“: fiktive Daten, mit der Suite geliefert (Missionen mit einer Übung, Piloten, Flotte, Verfügbarkeit und Zuweisungen der laufenden Woche), um die Suite kennenzulernen; später durch die Daten der Fluggesellschaft zu ersetzen. Abgelehnt, wenn bereits Daten vorhanden sind. |
+| „Daten-Repository“ | Geben Sie „Repository-Adresse“ ein (von Ihrer Fluggesellschaft: `https://…` oder `git@…`), bei Bedarf „Kennung (optional)“ und „Passwort oder Token (optional)“, haken Sie bei Bedarf „im Anmeldeinformations-Manager von Git speichern“ an, dann „Daten abrufen“. Das erste Herunterladen dauert einige Minuten. |
 | „Ich habe die Daten per E-Mail erhalten“ | „Datenarchiv…“: Wählen Sie das erhaltene `.zip`-Archiv (es enthält `data_tree.js`). |
-
-- Konto mit Zwei-Faktor-Authentifizierung: Verwenden Sie ein Zugangstoken (framagit › Einstellungen › Zugangstoken, Recht `read_repository`).
-- Ist Git nicht installiert, ist nur das Archiv möglich (oder installieren Sie Git und starten Sie neu).
+- Keine Adresse ist vorausgefüllt. Privates Repository über HTTPS: Kennung und Passwort, oder ein Lese-Zugriffstoken bei Zwei-Faktor-Authentifizierung; über SSH (`git@…`) der SSH-Schlüssel des Rechners.
+- Ist Git nicht installiert: Testdatensatz oder Archiv (oder installieren Sie Git und starten Sie neu).
 - **„Git-Repository zur Datensynchronisierung“**: die Adresse des entfernten Repositorys von `data/`, das die Daten
   zwischen den Rechnern teilt (Knopf „Synchronisieren“). SSH-Adresse `git@hôte:compte/dépôt.git` (SSH-Schlüssel des Computers) oder
   HTTPS `https://hôte/compte/dépôt.git` (in Git gespeicherte Zugangsdaten). Die Karte zeigt das aktuelle Repository;

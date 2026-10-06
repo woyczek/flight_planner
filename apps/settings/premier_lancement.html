@@ -64,6 +64,11 @@
   .pl-form label {
     font-size: 13px
   }
+  /* carte étroite (dépôt de données) : libellés au-dessus des champs, champs sur toute la largeur */
+  .pl-form.pl-stack {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 3px
+  }
   .pl-form input[type=text],
   .pl-form input[type=password] {
     width: 100%;
@@ -116,8 +121,9 @@
 </style>
 </head><body>
 <!-- Premier lancement : page ouverte par le lanceur (lancer.cmd / lancer.sh → tools/launch.py). Quatre étapes :
-     données (identifiants framagit → clone par le serveur du lanceur, ou archive reçue par mail ; journal DEFA en
-     option → référence DEFA), profil (trigramme, IVAO, VATSIM, SimBrief ; identifiants DEFA : Paramètres › Mon profil), dossiers (dossier de l'application : tous les dossiers déduits ; classeur ODV : dossier OneDrive
+     données (jeu d'essai livré avec la suite, dépôt de données dont l'utilisateur donne l'adresse → clone par le serveur du
+     lanceur, ou archive reçue par mail ; journal en
+     option → référence), profil (trigramme, IVAO, VATSIM, SimBrief ; identifiants du site de la compagnie : Paramètres › Mon profil), dossiers (dossier de l'application : tous les dossiers déduits ; classeur ODV : dossier OneDrive
      ou, à défaut, le fichier Excel gardé dans le navigateur), puis la mise à jour SIA. Les étapes « données » passent par
      l'interface locale du lanceur (/__setup/…) ; sans lanceur, la page le dit. Une fois terminé (suiteSetup:v1), le
      lanceur renvoie vers l'accueil. -->
@@ -126,13 +132,19 @@
   <section id="plData"><h2><span class="pl-n">1</span>Données</h2>
     <p class="pl-state" id="plDataState">Vérification…</p>
     <div class="pl-grid" id="plDataForms" hidden>
-      <div class="pl-card"><h3>J’ai un accès au dépôt (framagit)</h3>
-        <div class="pl-form">
-          <label for="plUser">Identifiant</label><input type="text" id="plUser" autocomplete="username" spellcheck="false">
-          <label for="plSecret">Mot de passe ou jeton</label><input type="password" id="plSecret" autocomplete="current-password">
+      <div class="pl-card"><h3>Jeu d’essai</h3>
+        <p class="pl-hint">Données fictives livrées avec la suite, pour la découvrir : missions (dont un exercice), pilotes, flotte, disponibilités et affectations de la semaine en cours. À remplacer plus tard par les données de votre compagnie.</p>
+        <div class="pl-row"><button type="button" class="primary" id="plSample">Installer le jeu d’essai</button></div>
+        <p class="pl-msg" id="plSampleMsg"></p>
+      </div>
+      <div class="pl-card"><h3>Dépôt de données</h3>
+        <div class="pl-form pl-stack">
+          <label for="plDataUrl">Adresse du dépôt</label><input type="text" id="plDataUrl" spellcheck="false" autocomplete="off" placeholder="https://hôte/compte/dépôt.git">
+          <label for="plUser">Identifiant (facultatif)</label><input type="text" id="plUser" autocomplete="username" spellcheck="false">
+          <label for="plSecret">Mot de passe ou jeton (facultatif)</label><input type="password" id="plSecret" autocomplete="current-password">
         </div>
         <label class="pl-row"><input type="checkbox" id="plRemember"> mémoriser dans le gestionnaire d’identifiants de Git</label>
-        <p class="pl-hint">Compte avec double authentification : un jeton d’accès (framagit › Préférences › Jetons d’accès, droit <code>read_repository</code>). Les identifiants servent au téléchargement, sur cet ordinateur seulement.</p>
+        <p class="pl-hint">Adresse HTTPS <code>https://hôte/compte/dépôt.git</code> ou SSH <code>git@hôte:compte/dépôt.git</code>, donnée par votre compagnie. Dépôt privé en HTTPS : identifiant et mot de passe, ou un jeton d’accès en lecture si le compte a la double authentification. En SSH : la clé SSH de cet ordinateur. Les identifiants servent au téléchargement, sur cet ordinateur seulement.</p>
         <div class="pl-row"><button type="button" class="primary" id="plClone">Récupérer les données</button></div>
         <p class="pl-msg" id="plCloneMsg"></p>
       </div>
@@ -145,9 +157,9 @@
     <div class="pl-card" id="plRepoCard" hidden style="margin-top:14px"><h3>Dépôt git de synchronisation des données</h3>
       <p class="pl-hint">Dépôt distant du dossier <code>data/</code> : il partage les données entre les postes (bouton « Synchroniser » de l’en-tête). Adresse SSH <code>git@hôte:compte/dépôt.git</code> (clé SSH de cet ordinateur) ou HTTPS <code>https://hôte/compte/dépôt.git</code> (identifiants enregistrés dans Git). Facultatif et jamais bloquant : sans dépôt qui répond, la suite fonctionne, sans partage.</p>
       <p class="pl-hint" id="plRepoNow"></p>
-      <div class="pl-form"><label for="plRepo">Adresse du dépôt</label><input type="text" id="plRepo" spellcheck="false" autocomplete="off" placeholder="git@hôte:compte/defa-data.git"></div>
+      <div class="pl-form"><label for="plSyncUrl">Adresse du dépôt</label><input type="text" id="plSyncUrl" spellcheck="false" autocomplete="off" placeholder="git@hôte:compte/dépôt.git"></div>
       <div class="pl-row"><button type="button" class="secondary" id="plRepoCheck">Vérifier</button><button type="button" class="primary" id="plRepoSave">Enregistrer</button></div>
-      <p class="pl-msg" id="plRepoMsg"></p>
+      <p class="pl-msg" id="plSyncMsg"></p>
     </div>
     <div class="pl-card" id="plLogCard" hidden style="margin-top:14px"><h3>Journal des vols (facultatif)</h3>
       <p class="pl-hint">La page « Log des vols » du site de la compagnie enregistrée (<code>.html</code>) : pilotes et appareils de la référence (aide à la saisie).</p>
@@ -265,13 +277,34 @@
     $('plLogCard').hidden = !st.data;
     $('plDataForms').hidden = st.data;
     $('plDataState').textContent = st.data ? `Données présentes${st.dataGit ? ' (dépôt git : reçu à chaque lancement, envoyé et partagé par le bouton « Synchroniser » de l’en-tête)' : ''}.` :
-      st.git ? 'Pas encore de données : identifiants framagit, ou archive reçue par mail.' : 'Pas encore de données. Git n’est pas installé : archive reçue par mail (ou installer Git, puis relancer).';
+      st.git ? 'Pas encore de données : jeu d’essai, dépôt de données de votre compagnie, ou archive reçue par mail.' : 'Pas encore de données : jeu d’essai, ou archive reçue par mail (Git n’est pas installé : pour un dépôt de données, installer Git, puis relancer).';
     $('plClone').disabled = !st.git;
   }
+  // jeu d'essai livré avec la suite (tools/jeu_essai.py, lancé par le lanceur : POST /__setup/jeu-essai)
+  on('click', 'plSample', async () => {
+    $('plSample').disabled = true;
+    msg('plSampleMsg', 'Installation du jeu d’essai…');
+    try {
+      const r = await api('jeu-essai', {
+        method: 'POST'
+      });
+      msg('plSampleMsg', r.message, r.ok ? 'ok' : 'err');
+      if (r.ok) {
+        dataState();
+        repoState();
+      }
+    } catch (e) {
+      msg('plSampleMsg', `Échec : ${e.message}`, 'err');
+    }
+    $('plSample').disabled = false;
+  });
+  // dépôt de données de la compagnie : adresse donnée par l'utilisateur (aucune par défaut), identifiants facultatifs
   on('click', 'plClone', async () => {
-    const user = $('plUser').value.trim(),
+    const url = $('plDataUrl').value.trim(),
+      user = $('plUser').value.trim(),
       secret = $('plSecret').value;
-    if (!user || !secret) return msg('plCloneMsg', 'Identifiant et mot de passe (ou jeton) nécessaires.', 'err');
+    if (!url) return msg('plCloneMsg', 'Adresse du dépôt de données à préciser (https://… ou git@…).', 'err');
+    if (!user !== !secret) return msg('plCloneMsg', 'Identifiant et mot de passe (ou jeton) : les deux, ou aucun (dépôt public, clé SSH, identifiants déjà connus de Git).', 'err');
     $('plClone').disabled = true;
     msg('plCloneMsg', 'Téléchargement des données… (quelques minutes la première fois)');
     try {
@@ -284,7 +317,7 @@
           user,
           secret,
           remember: $('plRemember').checked,
-          url: $('plRepo').value.trim() // dépôt précisé ci-dessous (sinon celui de la configuration)
+          url
         })
       });
       msg('plCloneMsg', r.message, r.ok ? 'ok' : 'err');
@@ -308,18 +341,18 @@
       return; // sans lanceur : carte masquée
     }
     $('plRepoCard').hidden = false;
-    if (!$('plRepo').value) $('plRepo').value = repo.url || repo.default || '';
-    $('plRepoNow').textContent = !repo.repo ? 'data/ n’est pas encore un dépôt git : cette adresse servira à récupérer les données (carte « J’ai un accès au dépôt »).' :
+    if (!$('plSyncUrl').value) $('plSyncUrl').value = repo.url || '';
+    $('plRepoNow').textContent = !repo.repo ? 'data/ n’est pas encore un dépôt git : les données récupérées depuis un dépôt (carte « Dépôt de données ») en gardent l’adresse.' :
       repo.url ? `Actuel : dépôt distant « ${repo.remote} » — ${repo.url} (branche ${repo.branch}).` :
       'data/ est un dépôt git sans dépôt distant : rien n’est partagé tant qu’aucune adresse n’est enregistrée.';
     $('plRepoSave').disabled = !repo.repo;
     done('plRepoCard', repo.repo && !!repo.url);
   }
   const repoCheck = async save => {
-    const url = $('plRepo').value.trim();
-    if (!url) return msg('plRepoMsg', 'Adresse du dépôt à préciser (git@… ou https://…).', 'err');
+    const url = $('plSyncUrl').value.trim();
+    if (!url) return msg('plSyncMsg', 'Adresse du dépôt à préciser (git@… ou https://…).', 'err');
     $('plRepoCheck').disabled = $('plRepoSave').disabled = true;
-    msg('plRepoMsg', save ? 'Enregistrement, puis vérification…' : 'Vérification… (jusqu’à 30 s)');
+    msg('plSyncMsg', save ? 'Enregistrement, puis vérification…' : 'Vérification… (jusqu’à 30 s)');
     try {
       const r = await api('sync-remote', {
         method: 'POST',
@@ -336,9 +369,9 @@
       if (c.ok && repo?.branch && !(c.branches || []).includes(repo.branch)) text += ` La branche « ${repo.branch} » n’y est pas encore : la première synchronisation la créera.`;
       if (!c.ok) text += '\nCe n’est pas bloquant : la suite fonctionne sans synchronisation ; à régler avant d’utiliser le bouton « Synchroniser ».';
       if (r.saved) text = `${r.saved.message}\n${text}`;
-      msg('plRepoMsg', text, r.saved && !r.saved.ok ? 'err' : c.ok ? 'ok' : 'warn');
+      msg('plSyncMsg', text, r.saved && !r.saved.ok ? 'err' : c.ok ? 'ok' : 'warn');
     } catch (e) {
-      msg('plRepoMsg', `Échec : ${e.message}`, 'err');
+      msg('plSyncMsg', `Échec : ${e.message}`, 'err');
     }
     $('plRepoCheck').disabled = false;
     await repoState();

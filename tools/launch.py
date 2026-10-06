@@ -4,7 +4,8 @@
    - déjà là (data/data_tree.js) : mise à jour si c'est un clone git (git pull, sans bloquer en cas d'échec) ;
    - sinon, une archive reçue par mail (un .zip qui contient data_tree.js), déposée à la racine du dossier : extraite
      dans data/ ;
-   - sinon, clone du dépôt de données (adresse : config/repository_tree › sources.dataRepo), si Git connaît déjà les
+   - sinon, clone du dépôt de données s'il a une adresse (config/repository_tree › sources.dataRepo, vide par défaut : la
+     page de premier lancement la demande, ou propose le jeu d'essai tools/jeu_essai.py), si Git connaît déjà les
      identifiants ; sinon, la page de premier lancement les demande (ou l'archive).
 2. Serveur web local (http://127.0.0.1, premier port libre à partir de 8000) servi depuis la racine du dossier, avec
    l'interface de la page de premier lancement (/__setup/…, voir Setup) ; déjà lancé : on ouvre seulement le navigateur.
@@ -52,9 +53,11 @@ def va_short():
 
 
 def data_repo_url():
-    m = re.search(r'dataRepo\s*:\s*\{\s*url\s*:\s*"([^"]+)"', config_text())
-    url = m.group(1) if m else 'https://framagit.org/defa-virtual/missions-defa'
-    return url if url.endswith('.git') else url + '.git'
+    """Dépôt de données de la configuration (sources.dataRepo) ; chaîne vide s'il n'y en a pas (pas d'adresse par défaut :
+    l'utilisateur la donne au premier lancement)."""
+    m = re.search(r'dataRepo\s*:\s*\{\s*url\s*:\s*"([^"]*)"', config_text())
+    url = m.group(1).strip() if m else ''
+    return url if not url or url.endswith('.git') else url + '.git'
 
 
 def run(cmd, **kw):
@@ -113,6 +116,8 @@ def clone(user=None, secret=None, remember=False, url=None):
     if any(c in (user or '') + (secret or '') for c in '\r\n\0'):
         return False, 'Identifiant ou mot de passe invalide (retour à la ligne).'  # pas de champ glissé dans « git credential »
     url = (url or '').strip() or data_repo_url()  # dépôt précisé au premier lancement, sinon celui de la configuration
+    if not url:
+        return False, 'Adresse du dépôt de données à préciser.'
     if not data_sync.REMOTE_RE.match(url):
         return False, 'Adresse du dépôt invalide.'
     env = git_env()
@@ -155,14 +160,32 @@ def ensure_data():
         return True
     if from_archive():
         return True
-    if git:
-        say(f'  Essai du dépôt de données (privé) : {data_repo_url()}')
+    if git and data_repo_url():
+        say(f'  Essai du dépôt de données : {data_repo_url()}')
         ok, log = clone()
         if ok:
             say('  Données récupérées.')
             return True
-    say('  Données pas encore là : la page de premier lancement demande vos identifiants framagit ou l’archive reçue.')
+    say('  Données pas encore là : la page de premier lancement propose le jeu d’essai, l’adresse de votre dépôt de données')
+    say('  ou l’archive reçue.')
     return False
+
+
+def sample_data():
+    """Jeu d'essai livré avec la suite (tools/jeu_essai.py) installé dans data/ ; refusé si des données y sont déjà.
+    Retourne (ok, journal)."""
+    if has_data():
+        return False, 'Des données sont déjà dans data/ (data_tree.js) : le jeu d’essai ne les remplace pas.'
+    script = os.path.join(ROOT, 'tools', 'jeu_essai.py')
+    if not os.path.isfile(script):
+        return False, 'Jeu d’essai absent de cette version de la suite (tools/jeu_essai.py).'
+    try:
+        r = subprocess.run([sys.executable, script, '--data', DATA], cwd=ROOT, capture_output=True, text=True,
+                           encoding='utf-8', errors='replace', timeout=300, env={**os.environ, 'PYTHONIOENCODING': 'utf-8'})
+    except (OSError, subprocess.SubprocessError) as e:
+        return False, str(e)
+    log = (r.stdout + r.stderr).strip()[-3000:]
+    return r.returncode == 0 and has_data(), log or ('Jeu d’essai installé.' if r.returncode == 0 else 'Échec du jeu d’essai.')
 
 
 # ---- interface de la page de premier lancement (/__setup/…) : seulement depuis la page servie ici (adresse
@@ -362,6 +385,13 @@ class Setup(http.server.SimpleHTTPRequestHandler):
             args = [str(x)[:12] for x in (a.get('args') or [])][:40]
             with AERO_LOCK:
                 return self._json(aero_fetch.fetch(DATA, str(a.get('provider') or ''), args))
+        if path == '/__setup/jeu-essai':
+            ok, log = sample_data()
+            if ok:
+                with INDEX_LOCK:
+                    index_availability()
+                    index_users()
+            return self._json({'ok': ok, 'message': log})
         if path == '/__setup/clone':
             try:
                 a = json.loads(body or b'{}')
