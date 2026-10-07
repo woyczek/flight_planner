@@ -74,19 +74,23 @@ ASSIGN = [
 
 
 def iso(t):
+    """Horodatage ISO 8601 UTC à la milliseconde (format des dates de la suite)."""
     return t.strftime('%Y-%m-%dT%H:%M:%S.000Z')
 
 
 def hhmm(t):
+    """Heure « HH:MM », minutes arrondies au quart d'heure inférieur."""
     return f'{t.hour:02d}:{t.minute // 15 * 15:02d}'
 
 
 def week_id(d):
+    """Semaine ISO du jour, au format « AAAA-Wnn »."""
     y, w, _ = d.isocalendar()
     return f'{y}-W{w:02d}'
 
 
 def write_json(path, obj):
+    """Écrit obj en JSON UTF-8 (indentation 1, fins de ligne LF), dossiers créés au besoin."""
     os.makedirs(os.path.dirname(path), exist_ok=True)
     with open(path, 'w', encoding='utf-8', newline='\n') as f:
         json.dump(obj, f, ensure_ascii=False, indent=1)
@@ -116,6 +120,8 @@ def mission_file(folder):
 
 
 def install(data, ref, now):
+    """Copie le contenu fixe dans data puis écrit les disponibilités et les affectations datées d'après le jour de
+    référence ref (now : horodatage des écritures). Retourne le lundi de la semaine de référence."""
     shutil.copytree(STATIC, data, dirs_exist_ok=True)
     stamp = iso(now)
     monday = ref - dt.timedelta(days=ref.weekday())
@@ -183,6 +189,7 @@ def is_stub(data):
 
 
 def main():
+    """Installe le jeu d'essai, sauf par-dessus des données réelles. Retourne le code de sortie (2 : rien écrit)."""
     ap = argparse.ArgumentParser(description=__doc__.split('\n')[0])
     ap.add_argument('--data', required=True, help='dossier des données à créer (data/ de l’application)')
     ap.add_argument('--week', help='jour de référence AAAA-MM-JJ : affectations les jours suivants, disponibilités de sa '

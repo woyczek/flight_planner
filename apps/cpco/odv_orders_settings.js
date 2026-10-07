@@ -12,10 +12,12 @@
     tf = K.tf;
   // libellé français inscrit pour la traduction du DOM (SettingsPanels.L), ligne gardée ici pour les textes calculés
   const ROWS = [];
+  /** Inscrit une ligne [fr, en, de, es] (gardée dans ROWS) et renvoie le libellé de SettingsPanels.L. */
   const L = (...row) => {
     ROWS.push(row);
     return SP.L(...row);
   };
+  /** Données et règles du Tableau (shared/odv_orders_store.js), lues à l'usage. */
   const O = () => window.OdvOrders;
   const DAYS = [L('Lundi', 'Monday', 'Montag', 'Lunes'), L('Mardi', 'Tuesday', 'Dienstag', 'Martes'), L('Mercredi', 'Wednesday', 'Mittwoch', 'Miércoles'), L('Jeudi', 'Thursday', 'Donnerstag', 'Jueves'), L('Vendredi', 'Friday', 'Freitag', 'Viernes'), L('Samedi', 'Saturday', 'Samstag', 'Sábado'), L('Dimanche', 'Sunday', 'Sonntag', 'Domingo')];
   const SHORT = ['L', 'M', 'M', 'J', 'V', 'S', 'D'];
@@ -61,11 +63,19 @@
   };
   // libellé dans la langue courante : ligne [fr, en, de, es] inscrite par L (SettingsPanels.rows), sinon le français
   const T = fr => K.t(ROWS.find(r => r[0] === fr) || [fr]);
+  /** Champ data-k d'une ligne du tableau. */
   const val = (tr, k) => tr.querySelector(`[data-k="${k}"]`);
+  /** Champ couleur ; gris ardoise si la valeur manque. */
   const color = (k, v) => `<input type="color" data-k="${k}" value="${esc(v || '#64748b')}">`;
+  /** Champ texte (attrs : attributs HTML ajoutés tels quels). */
   const text = (k, v, attrs = '') => `<input data-k="${k}" value="${esc(v ?? '')}"${attrs}>`;
+  // bouton « Retirer » d'une ligne (tr ou li), géré par body.onclick
   const drop = `<button type="button" data-drop title="${esc(H.retirer)}">✕</button>`;
 
+  /**
+   *  Membres proposés dans « Personnel » : déjà réglés, utilisateurs actifs de la suite (SuiteUsers) et pilotes
+   *  de l'index des disponibilités (data/disponibilites/_index.json), triés.
+   */
   async function membersOf(cfg) {
     const set = new Set(Object.keys(cfg.personnel || {}));
     for (const u of await Promise.resolve(window.SuiteUsers?.list?.()).catch(() => []) || [])
@@ -75,11 +85,14 @@
     return [...set].sort();
   }
 
+  // rubrique « Tableau » du groupe Centre : rendu, collecte, enregistrement et retour aux valeurs par défaut
   SP.add({
     id: 'odvOrders',
     group: L('Centre (CPCO)', 'Centre (CPCO)', 'Zentrum (CPCO)', 'Centro (CPCO)'),
     title: L('Tableau', 'Board', 'Einsatztafel', 'Tablero'),
     intro: L('Réglages partagés de la page Tableau (data/config/odv.json, synchronisé) : terrain, réseau par défaut, délai des CR, heures de service, modèles de plaquettes, couleurs des indicatifs, créneaux LL / RTBA de repli, personnel, récurrences.', 'Shared settings of the Board page (data/config/odv.json, synchronised): airfield, default network, report delay, duty hours, strip templates, callsign colours, fallback LL / RTBA slots, personnel, recurrences.', 'Gemeinsame Einstellungen der Seite Einsatztafel (data/config/odv.json, synchronisiert): Flugplatz, Standardnetzwerk, Berichtsfrist, Dienstzeiten, Streifenvorlagen, Rufzeichenfarben, Ersatz-LL-/RTBA-Zeitfenster, Personal, Wiederholungen.', 'Ajustes compartidos de la página Tablero (data/config/odv.json, sincronizado): aeródromo, red por defecto, plazo de informes, horas de servicio, plantillas de fichas, colores de indicativos, franjas LL / RTBA de respaldo, personal, recurrencias.'),
+    /** Construit la rubrique d'après les réglages relus (fresh) ;
+     *  api (SettingsPanels) : changed, saved, status, actions. */
     async render(body, api) {
       if (!O()) {
         body.textContent = 'OdvOrders ?';
@@ -90,11 +103,18 @@
       }));
       const members = await membersOf(cfg);
       const prefixes = window.MISSION_CALLSIGNS?.table?.map(x => x.prefix).filter(Boolean) || [];
+      /** Ligne d'un modèle de plaquette (kind : vols, divers, controle) ;
+       *  « Couleur de l'indicatif » pour les vols seulement. */
       const tplRow = (kind, m) => `<tr data-id="${esc(m.id || O().uid())}"><td>${text('libelle', m.libelle)}</td><td>${text('duree', m.duree, ' type="number" min="5" step="5" style="width:6em"')}</td><td>${color('couleur', m.couleur)}</td><td><input type="checkbox" data-k="fond"${m.fond ? ' checked' : ''}></td>${kind === 'vols' ? `<td><input type="checkbox" data-k="parIndicatif"${m.parIndicatif ? ' checked' : ''}></td>` : ''}<td>${drop}</td></tr>`;
+      /** Tableau des modèles d'un genre, avec son bouton « Ajouter ». */
       const tplTable = kind => `<h3>${esc(H[kind])}</h3><div class="da-scroll"><table class="da-table"><thead><tr><th>${esc(H.libelle)}</th><th>${esc(H.duree)}</th><th>${esc(H.couleur)}</th><th>${esc(H.fond)}</th>${kind === 'vols' ? `<th>${esc(H.parIndicatif)}</th>` : ''}<th></th></tr></thead><tbody data-tpl="${kind}" data-no-i18n>${(cfg.modeles?.[kind] || []).map(m => tplRow(kind, m)).join('')}</tbody></table></div><button type="button" data-add="${kind}">${esc(H.ajouter)}</button>`;
+      /** Ligne des couleurs d'un préfixe d'indicatif (préfixes connus proposés par la datalist odvoSetCs). */
       const csRow = (p, c) => `<tr><td>${text('prefixe', p, ' list="odvoSetCs"')}</td><td>${color('fond', c?.fond)}</td><td>${color('contour', c?.contour)}</td><td>${drop}</td></tr>`;
+      /** Ligne d'un créneau LL / RTBA de repli : nom, heures, jours de la semaine, couleur, zone de la base (sia). */
       const llRow = l => `<tr><td>${text('nom', l.nom)}</td><td>${text('debut', l.debut, ' type="time" step="300"')}</td><td>${text('fin', l.fin, ' type="time" step="300"')}</td><td>${SHORT.map((s, i) => `<label title="${esc(T(DAYS[i]))}"><input type="checkbox" data-j="${i + 1}"${(l.jours || []).includes(i + 1) ? ' checked' : ''}>${s}</label>`).join(' ')}</td><td>${color('couleur', l.couleur || '#4ADE80')}</td><td>${text('sia', l.sia || '', ' style="width:9em"')}</td><td>${drop}</td></tr>`;
+      /** Résumé d'une récurrence (élément, rythme, jour, heure, période) ; ici, on ne peut que la retirer. */
       const recText = r => `${esc(r.element?.libelle || r.element?.texte || r.element?.type || '')} · ${esc(T(H.rythmes[r.rythme] || r.rythme))}${r.rythme !== 'quotidien' ? ' · ' + esc(DAYS[(+r.jour || 1) - 1]) : ''} · ${esc(r.element?.debut || '')}z · ${esc(r.debut)} → ${esc(r.fin || '…')}`;
+      /** Redessine toute la rubrique d'après cfg. */
       const draw = () => {
         body.innerHTML = `<div class="odvo-set">
           <h3>${esc(H.general)}</h3>
@@ -126,8 +146,14 @@
           <ul data-rec data-no-i18n>${(cfg.recurrences || []).map(r => `<li data-id="${esc(r.id)}">${recText(r)} ${drop}</li>`).join('') || '<li>—</li>'}</ul>
         </div>`;
       };
+      /**
+       *  Réglages lus dans le formulaire, fusionnés sur cfg : lignes sans libellé, préfixe, texte ou nom retirées ;
+       *  personnel gardé seulement s'il diffère du défaut (Staff, couleur ou ordre) ; récurrences retirées supprimées.
+       */
       const collect = () => {
+        // champ général (data-g)
         const g = k => body.querySelector(`[data-k="${k}"][data-g]`)?.value;
+        // modèles d'un genre ; les champs non affichés du modèle existant sont gardés
         const tpl = kind => [...body.querySelectorAll(`[data-tpl="${kind}"] tr`)].map(tr => ({
           ...((cfg.modeles?.[kind] || []).find(m => m.id === tr.dataset.id) || {}),
           id: tr.dataset.id,
@@ -182,6 +208,7 @@
       };
       draw();
       body.oninput = body.onchange = () => api.changed();
+      // « Retirer » enlève la ligne ; « Ajouter » collecte la saisie puis redessine avec une ligne par défaut en plus
       body.onclick = e => {
         const add = e.target.closest('[data-add]')?.dataset.add,
           dr = e.target.closest('[data-drop]');
@@ -225,6 +252,7 @@
         r: (cfg.recurrences || []).length
       }));
       api.actions([
+        // enregistrement local (navigateur) accepté malgré l'erreur ; message selon l'endroit écrit
         [L('Enregistrer', 'Save', 'Speichern', 'Guardar'), async () => {
           const next = collect();
           const r = await O().saveConfig(next).catch(err => ({
@@ -235,6 +263,7 @@
           api.saved();
           api.status(r?.where === 'folder' ? K.t(['Réglages enregistrés.', 'Settings saved.', 'Einstellungen gespeichert.', 'Ajustes guardados.']) : K.t(['Réglages enregistrés dans ce navigateur.', 'Settings saved in this browser.', 'Einstellungen in diesem Browser gespeichert.', 'Ajustes guardados en este navegador.']));
         }, 'primary'],
+        // défauts affichés, écrits par « Enregistrer » ; personnel, indicatifs, LL et récurrences gardés
         [L('Valeurs par défaut', 'Default values', 'Standardwerte', 'Valores por defecto'), async () => {
           if (!await window.AppFramework.ask(K.t(['Revenir aux réglages par défaut du Tableau ? (personnel, couleurs des indicatifs, créneaux LL et récurrences gardés)', 'Back to the default Board settings? (personnel, callsign colours, LL slots and recurrences kept)', 'Zu den Standardeinstellungen der Einsatztafel zurück? (Personal, Rufzeichenfarben, LL-Zeitfenster und Wiederholungen bleiben)', '¿Volver a los ajustes por defecto del Tablero? (personal, colores de indicativos, franjas LL y recurrencias conservados)']))) return;
           const d = structuredClone(O().DEFAULT_CONFIG);

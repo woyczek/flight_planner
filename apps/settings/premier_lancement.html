@@ -337,14 +337,27 @@
 <script>
 (() => {
   'use strict';
+  // Premier lancement : assistant de mise en route de la suite, par étapes (1 données, 2 dossiers, 3 compagnie,
+  // 4 profil et identifiants, 6 Centre) et bilan des besoins (checklist). Les actions sur le disque passent par le
+  // lanceur local (/__setup/…, en-tête X-SOG-Setup) : jeu d'essai, dépôt de données, synchronisation, envois, secrets.
+  // Clés du navigateur : suiteSetup:v1 (mise en route terminée), suiteSetupState:v1 (reste à faire, lu par l'accueil),
+  // missionReportingConfig:v1 (profil pilote), defaCredentials:v1 (identifiants du site). ?force : rester sur la page
+  // même déjà réglée ; ?clean : proposer aussitôt le nettoyage.
+  /** Élément d'identifiant id. */
   const $ = id => document.getElementById(id);
   const K = window.RepositoryKit;
+  /** Libellé dans la langue courante (fr, en, de, es). */
   const L = (fr, en, de, es) => K.t([fr, en, de, es]);
+  /** Notification flottante (AppFramework.notify), sinon alert. */
   const notify = (m, k) => window.AppFramework?.notify ? window.AppFramework.notify(m, k) : alert(m);
   const DONE = 'suiteSetup:v1',
     STATE = 'suiteSetupState:v1',
     PROFILE = 'missionReportingConfig:v1',
     DEFA = 'defaCredentials:v1';
+  /**
+   *  Appel au lanceur (/__setup/<path>, sans cache) ; renvoie le JSON, rejette si la réponse n'est pas OK
+   *  (404 : « lanceur absent », page ouverte sans le lanceur).
+   */
   const api = (path, opts = {}) => fetch(`/__setup/${path}`, {
       ...opts,
       headers: {
@@ -354,6 +367,7 @@
       cache: 'no-store'
     })
     .then(r => r.ok ? r.json() : Promise.reject(new Error(r.status === 404 ? 'lanceur absent' : `${r.status}`)));
+  /** POST JSON au lanceur. */
   const post = (path, body) => api(path, {
     method: 'POST',
     headers: {
@@ -361,6 +375,7 @@
     },
     body: JSON.stringify(body)
   });
+  /** Message d'état sous une action (kind : ok, warn, err ; vide l'efface). */
   const msg = (id, text, kind) => {
     const el = $(id);
     el.textContent = text || '';
@@ -381,6 +396,7 @@
     click: {},
     change: {}
   };
+  /** Inscrit l'action d'un élément par son id (type : click ou change). */
   const on = (type, id, fn) => {
     handlers[type][id] = fn;
   };
@@ -390,7 +406,9 @@
     if (type === 'click' && el.dataset.pick) return $(el.dataset.pick).click(); // bouton → sélecteur de fichier
     handlers[type][el.id]?.(e);
   });
+  /** Marque une étape réglée (classe pl-done). */
   const done = (id, yes) => $(id).classList.toggle('pl-done', !!yes);
+  /** Objet JSON d'une clé du navigateur ; {} si absente ou illisible. */
   const read = k => {
     try {
       return JSON.parse(localStorage.getItem(k) || '{}') || {};
@@ -398,15 +416,21 @@
       return {};
     }
   };
+  /** Centre déverrouillé dans ce navigateur. */
   const cpcoOn = () => !!window.RepositoryNav?.cpco?.enabled?.();
 
   // bilan : état de chaque besoin de la suite (true : réglé, false : à faire, null : inconnu), relu après chaque action
   const S = {};
+  /**
+   *  Dessine le bilan « Pour tous » et « Centre » (lien vers l'étape de chaque besoin) et mémorise pour l'accueil
+   *  le nombre de besoins obligatoires restant à faire.
+   */
   function checklist() {
     const p = read(PROFILE),
       c = read(DEFA),
       va = window.RepositoryNav?.va?.() || {},
       sia = window.SiaBase?.info?.();
+    // besoin du bilan : ok (true, false, null inconnu), étape (ancre), opt (facultatif), detail (valeur affichée)
     const item = (id, ok, label, step, opt, detail) => ({
       id,
       ok,
@@ -433,6 +457,7 @@
       item('users', S.admins == null ? null : S.admins > 0, L('Utilisateurs et droits (un administrateur)', 'Users and rights (one administrator)', 'Benutzer und Rechte (ein Administrator)', 'Usuarios y derechos (un administrador)'), 'plCentreOn', false, S.users == null ? '' : `${S.users}`),
       item('send', !!read('missionSendConfig:v1').url, L('Envoi des CR', 'Report sending', 'Berichtsversand', 'Envío de informes'), 'plCentreOn', true)
     ];
+    // ligne du bilan : ✓ réglé, ? inconnu, – facultatif, ○ à faire
     const li = x => `<li class="${x.ok === true ? 'ok' : x.ok === null ? 'unknown' : x.opt ? 'opt' : 'todo'}"><b>${x.ok === true ? '✓' : x.ok === null ? '?' : x.opt ? '–' : '○'}</b><span><a href="#${x.step}">${K.esc(x.label)}</a>${x.opt ? ` <small>(${K.esc(L('facultatif', 'optional', 'optional', 'opcional'))})</small>` : ''}${x.detail ? ` <small>${K.esc(x.detail)}</small>` : ''}</span></li>`;
     $('plChecklist').innerHTML = `<h4>${K.esc(L('Pour tous', 'For everyone', 'Für alle', 'Para todos'))}</h4>${suite.map(li).join('')}<h4>${K.esc(L('Centre', 'Centre', 'Zentrum', 'Centro'))}</h4>${centre.map(li).join('')}`;
     // mémorisé pour l'accueil : reste à faire (obligatoire seulement)
@@ -512,6 +537,7 @@
   // dépôt git de synchronisation de data/ (docs/technique/SYNCHRONISATION.md § 9) : précisé ici, vérifié (git ls-remote),
   // enregistré comme dépôt distant de data/ ; jamais bloquant
   let repo = null;
+  /** Dépôt distant de data/ lu auprès du lanceur ; sans lanceur, la carte reste masquée. */
   async function repoState() {
     try {
       repo = await api('sync-remote');
@@ -529,6 +555,7 @@
     done('plRepoCard', S.git);
     checklist();
   }
+  /** Vérifie l'adresse du dépôt de synchronisation (save : l'enregistre d'abord) ; un échec n'est jamais bloquant. */
   const repoCheck = async save => {
     const url = $('plSyncUrl').value.trim();
     if (!url) return msg('plSyncMsg', 'Adresse du dépôt à préciser (git@… ou https://…).', 'err');
@@ -553,6 +580,7 @@
   };
   on('click', 'plRepoCheck', () => repoCheck(false));
   on('click', 'plRepoSave', () => repoCheck(true));
+  /** Envoi d'un fichier choisi au lanceur (kind : data pour l'archive des données, log pour le journal), puis after. */
   const upload = (id, kind, out, after) => on('change', id, async e => {
     const input = e.target,
       f = input.files?.[0];
@@ -587,6 +615,7 @@
     msg('plOdvMsg', odvDir.handle ? `Dossier : ${odvDir.name}` : odvFile ? `Classeur gardé : ${odvFile.name || 'classeur'}` : '', odvDir.handle || odvFile ? 'ok' : '');
     checklist();
   }
+  /** Action d'un bouton « Choisir le dossier » (FileAccess.pickFolder) ; un refus ou une annulation est silencieux. */
   const pick = (key, out) => async () => {
     try {
       const h = await window.FileAccess.pickFolder(key);
@@ -599,6 +628,7 @@
   };
   on('click', 'plRepo', pick('__repo', 'plRepoMsg'));
   on('click', 'plOdvDir', pick('__odv', 'plOdvMsg'));
+  // classeur ODV gardé à défaut de dossier (FileAccess, clé __odvFile)
   on('change', 'plOdvFile', async e => {
     const f = e.target.files?.[0];
     e.target.value = '';
@@ -619,6 +649,7 @@
     $('plSourcesLink').href = nav?.settingsUrl?.('sources') || 'installation.html?m=sources';
     done('plCompany', va.name && va.url);
   }
+  /** État de la clé d'API IVAO (indice seulement, la clé n'est jamais relue) ; sans lanceur : saisie désactivée. */
   async function ivaoKeyState() {
     try {
       const k = (await api('secrets'))?.app?.ivao?.apiKey || {};
@@ -631,6 +662,7 @@
     }
     checklist();
   }
+  // compagnie et site enregistrés aussitôt ; clé IVAO envoyée au lanceur seulement si saisie, puis champ vidé
   on('click', 'plSaveCompany', async () => {
     const nav = window.RepositoryNav;
     if (!nav?.setVa) return;
@@ -680,6 +712,7 @@
     $('plTri').readOnly = !!window.SuiteUsers?.trigramLocked?.();
     done('plProfile', p.trigram && c.login && c.password);
   }
+  // profil et identifiants (vides : clé defaCredentials:v1 retirée), puis événement pilot-profile-change
   on('click', 'plSaveProfile', () => {
     const tri = $('plTri').value.trim().toUpperCase();
     if (tri && !/^[A-Z0-9]{2,4}$/.test(tri)) return msg('plProfileMsg', L('Trigramme : 2 à 4 lettres ou chiffres.', 'Trigram: 2 to 4 letters or digits.', 'Kürzel: 2 bis 4 Buchstaben oder Ziffern.', 'Trigrama: de 2 a 4 letras o cifras.'), 'err');
@@ -713,10 +746,12 @@
     msg('plCpcoMsg', '');
     centreState();
   });
+  /** Date et heure courtes dans la langue courante ; '' sans date. */
   const when = iso => iso ? new Date(iso).toLocaleString(K.lang?.() || undefined, {
     dateStyle: 'short',
     timeStyle: 'short'
   }) : '';
+  /** État de la dernière lecture de la flotte et du journal sur le site (DefaSite.status, par le lanceur). */
   async function fleetState() {
     const DS = await wait('DefaSite');
     const st = await DS?.status?.().catch(() => null);
@@ -731,6 +766,7 @@
     $('plFleetGo').disabled = !st;
     checklist();
   }
+  // relit maintenant la flotte et le journal du site (DefaSite.refresh forcé)
   on('click', 'plFleetGo', async () => {
     $('plFleetGo').disabled = true;
     msg('plFleetNow', L('Lecture du site…', 'Reading the website…', 'Website wird gelesen…', 'Leyendo el sitio…'));
@@ -739,6 +775,7 @@
     })?.catch?.(() => null);
     fleetState();
   });
+  /** Nombre de missions du registre (entrées « - id: » de data/missions/mission_registry.yaml) ; null si illisible. */
   async function missionsState() {
     let n = null;
     try {
@@ -755,6 +792,7 @@
     }) : L('Registre vide ou absent : récupérer les données (étape 1), puis relire le registre.', 'Registry empty or missing: fetch the data (step 1), then reread the registry.', 'Register leer oder fehlt: Daten abrufen (Schritt 1), dann das Register neu lesen.', 'Registro vacío o ausente: obtener los datos (paso 1) y releer el registro.'), n ? 'ok' : 'warn');
     checklist();
   }
+  /** Utilisateurs, administrateurs du Centre et liens vers les réglages du SO Group (Paramètres › Centre). */
   async function sogState() {
     const nav = window.RepositoryNav,
       U = await wait('SuiteUsers');
@@ -777,6 +815,7 @@
     $('plSogLinks').innerHTML = rows.map(([id, label, note]) => `<li><a href="${K.esc(nav?.settingsUrl?.(id) || `centre.html?base=${id}`)}">${K.esc(label)}</a>${note ? ` <small>— ${K.esc(note)}</small>` : ''}</li>`).join('');
     checklist();
   }
+  /** Étape 6 : verrou ou, Centre activé, flotte, missions et réglages du SO Group. */
   function centreState() {
     const onC = cpcoOn();
     $('plCentreLock').hidden = onC;

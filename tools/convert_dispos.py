@@ -48,6 +48,7 @@ def va_short():
 
 
 def load_json(path):
+    """Contenu JSON du fichier ; None s'il est absent ou illisible."""
     try:
         with open(path, encoding='utf-8') as f:
             return json.load(f)
@@ -56,6 +57,7 @@ def load_json(path):
 
 
 def write_json(path, value, indent=1):
+    """Écrit value en JSON UTF-8 (fins de ligne LF, saut de ligne final), dossiers créés au besoin."""
     os.makedirs(os.path.dirname(path), exist_ok=True)
     with open(path, 'w', encoding='utf-8', newline='\n') as f:
         json.dump(value, f, ensure_ascii=False, indent=indent)
@@ -63,11 +65,13 @@ def write_json(path, value, indent=1):
 
 
 def iso_week(monday):
+    """Semaine ISO du jour donné, au format « AAAA-Wnn »."""
     y, w, _ = monday.isocalendar()
     return f'{y}-W{w:02d}'
 
 
 def monday_of(day):
+    """Lundi de la semaine du jour donné."""
     return day - datetime.timedelta(days=day.weekday())
 
 
@@ -104,6 +108,8 @@ def ranges(row, codes):
 
 
 def main():
+    """Convertit les grilles de chaque pilote (aperçu, ou écriture avec --write) et refait les index.
+    Retourne le code de sortie (1 : dossier des disponibilités absent)."""
     ap = argparse.ArgumentParser(description='Conversion des disponibilités en grille vers le format par plages.')
     ap.add_argument('--data', default=os.path.join(ROOT, 'data'), help='dossier des données (défaut : data/ de la suite)')
     ap.add_argument('--write', action='store_true', help='écrire les fichiers (sinon : aperçu)')

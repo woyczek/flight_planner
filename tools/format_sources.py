@@ -48,6 +48,7 @@ STYLE = re.compile(r'(<style\b[^>]*>)(.*?)(</style>)', re.S | re.I)
 
 
 def fichiers():
+    """Fichiers suivis par git à mettre en forme : .js, .css et .html de shared/, apps/ et index.html, hors EXCLUS."""
     out = subprocess.run(['git', 'ls-files'], cwd=ROOT, capture_output=True, text=True, encoding='utf-8').stdout.split('\n')
     return [f for f in out if re.search(r'\.(js|css|html)$', f) and (f.startswith(('shared/', 'apps/')) or f == 'index.html') and not EXCLUS.search(f)]
 
@@ -62,12 +63,14 @@ def templates(src):
     out, i, n = [], 0, len(src)
 
     def skip_string(i, q):
+        """Position après la chaîne commençant en i (guillemet q), échappements compris."""
         i += 1
         while i < n and src[i] != q:
             i += 2 if src[i] == '\\' else 1
         return i + 1
 
     def skip_template(i):
+        """Position après le gabarit `…` commençant en i, ses ${…} imbriqués compris."""
         i += 1
         while i < n and src[i] != '`':
             if src[i] == '\\':
@@ -79,6 +82,7 @@ def templates(src):
         return i + 1
 
     def skip_regex(i):
+        """Position après l'expression régulière /…/ commençant en i, classes […] et drapeaux compris."""
         i += 1
         cls = False
         while i < n and (cls or src[i] != '/'):
@@ -95,6 +99,9 @@ def templates(src):
         return i
 
     def skip_code(i, stop=None, top=False):
+        """Parcourt le code depuis i jusqu'au fermant stop de même niveau (ou la fin) ; retourne la position qui le suit.
+        top : niveau du fichier, les gabarits rencontrés sont relevés dans out. « / » : division après une valeur (sauf
+        mot-clé de MOTS), expression régulière sinon."""
         depth, last = 0, ''
         while i < n:
             c = src[i]
@@ -157,15 +164,20 @@ def js(src):
 
 
 def css(src):
+    """Feuille de style mise en forme (cssbeautifier, CSS_OPTS)."""
     return cssbeautifier.beautify(src, CSS_OPTS)
 
 
 def est_js(attrs):
+    """Vrai si les attributs d'un <script> désignent du JavaScript (sans type, ou type JavaScript / module)."""
     m = re.search(r'\btype\s*=\s*["\']?([\w/+-]+)', attrs)
     return not m or m.group(1).lower() in ('text/javascript', 'module', 'application/javascript')
 
 
 def mettre_en_forme(chemin, paires):
+    """Met en forme un fichier .js, .css ou .html (blocs <script> et <style>), section générée de block_icons.css
+    laissée telle quelle ; chaque bloc traité est ajouté à paires (avant / après) pour le contrôle.
+    Retourne (nom relatif, nouveau texte ou None s'il ne change pas, fin de ligne du fichier)."""
     brut = open(chemin, 'rb').read().decode('utf-8')
     nl = '\r\n' if '\r\n' in brut else '\n'
     texte = brut.replace('\r\n', '\n')
@@ -183,6 +195,7 @@ def mettre_en_forme(chemin, paires):
         paires.append({'nom': nom, 'type': 'css', 'avant': texte, 'apres': neuf})
     else:
         def sc(m):
+            """Bloc <script> JavaScript non vide mis en forme ; autres blocs inchangés."""
             if not est_js(m.group(2)) or not m.group(3).strip():
                 return m.group(0)
             corps = js(m.group(3).strip('\n'))
@@ -190,6 +203,7 @@ def mettre_en_forme(chemin, paires):
             return f'{m.group(1)}\n{corps}\n{m.group(4)}'
 
         def st(m):
+            """Bloc <style> non vide mis en forme."""
             if not m.group(2).strip():
                 return m.group(0)
             corps = css(m.group(2).strip('\n'))
@@ -202,6 +216,8 @@ def mettre_en_forme(chemin, paires):
 
 
 def main(args):
+    """Met en forme les fichiers donnés (tous les fichiers concernés sans argument) et dépose les paires à contrôler ;
+    --check : liste seulement les fichiers qui changeraient."""
     check = '--check' in args
     liste = [a for a in args if a != '--check'] or fichiers()
     paires, changes = [], []

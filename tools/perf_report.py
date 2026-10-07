@@ -26,10 +26,12 @@ KEYS = [('settleMs', 'temps jusqu’à page stable (ms)'), ('longtask.ms', 'temp
 
 
 def esc(s):
+    """Texte échappé pour le SVG (&, <, >)."""
     return str(s).replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
 
 
 def load_runs():
+    """Mesures de docs/technique/perf/runs/ : (parcours de clics, montées en charge), chacune annotée de son fichier."""
     audits, scales = [], []
     for p in sorted(glob.glob(os.path.join(RUNS, '*.json'))):
         data = json.load(io.open(p, encoding='utf-8'))
@@ -44,12 +46,14 @@ def load_runs():
 
 
 def val(step, key):
+    """Valeur d'un indicateur pour une étape (settleMs, nodes, ou compteur) ; 0 si absent."""
     if key in ('settleMs', 'nodes'):
         return step.get(key) or 0
     return (step.get('counters') or {}).get(key, 0) or 0
 
 
 def median(v):
+    """Médiane des valeurs ; 0 sans valeur."""
     v = sorted(v)
     n = len(v)
     return (v[n // 2] if n % 2 else (v[n // 2 - 1] + v[n // 2]) / 2) if n else 0
@@ -72,6 +76,7 @@ def pick(runs, label, mode=None):
 
 # ---------------------------------------------------------------- graphes SVG
 def svg_steps(a, b, title):
+    """Graphe SVG du temps jusqu'à page stable par étape, avant (a) et après (b), étapes communes seulement."""
     key = lambda s: f"{s['page'].split('/')[-1].replace('.html', '')} · {s['step']}"
     bm = {key(s): s for s in b['steps']}
     rows = [(key(s), s, bm[key(s)]) for s in a['steps'] if key(s) in bm]
@@ -93,6 +98,7 @@ def svg_steps(a, b, title):
 
 
 def totals(a, b):
+    """Totaux de chaque indicateur de KEYS sur les étapes communes : [(clé, libellé, total avant, total après)]."""
     key = lambda s: (s['page'], s['step'])
     bm = {key(s): s for s in b['steps']}
     rows = [(s, bm[key(s)]) for s in a['steps'] if key(s) in bm]
@@ -100,6 +106,7 @@ def totals(a, b):
 
 
 def svg_totals(tot, title):
+    """Graphe SVG des totaux avant / après par indicateur, écart en % coloré (gain, perte)."""
     rows = [t for t in tot if t[2] or t[3]]
     left, w, h = 230, 380, 24
     H = 40 + len(rows) * h
@@ -181,12 +188,14 @@ def svg_scale(case_a, case_b, title):
 
 
 def write(name, svg):
+    """Écrit le SVG dans docs/technique/perf/img/ ; retourne son chemin relatif au rapport."""
     os.makedirs(IMG, exist_ok=True)
     io.open(os.path.join(IMG, name), 'w', encoding='utf-8', newline='\n').write(svg)
     return f'img/{name}'
 
 
 def main():
+    """Écrit RAPPORT_PERF.md et ses graphes : parcours de clics par mode (serveur, sans serveur) et montée en charge."""
     la, lb = (sys.argv[1], sys.argv[2]) if len(sys.argv) > 2 else (None, None)
     audits, scales = load_runs()
     md = ['# Rapport de performance', '', 'Généré par `python tools/perf_report.py` d’après `docs/technique/perf/runs/` (méthode et plan d’action :',

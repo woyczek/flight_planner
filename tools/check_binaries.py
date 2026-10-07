@@ -31,11 +31,14 @@ exit 0
 
 
 def git(root, *args, binary=False):
+    """Sortie d'une commande git dans le dépôt root (texte, ou octets avec binary=True) ; erreurs ignorées."""
     r = subprocess.run(['git', *args], cwd=root, capture_output=True)
     return r.stdout if binary else r.stdout.decode('utf-8', 'replace')
 
 
 def main():
+    """Installe le crochet (--install) ou contrôle les fichiers suivis / indexés (--staged).
+    Retourne le code de sortie : 1 si un binaire est hors LFS (ou crochet déjà occupé), 0 sinon."""
     args = sys.argv[1:]
     root = os.path.abspath(args[args.index('--repo') + 1]) if '--repo' in args else os.getcwd()
     root = git(root, 'rev-parse', '--show-toplevel').strip() or root

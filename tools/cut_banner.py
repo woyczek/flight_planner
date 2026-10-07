@@ -16,6 +16,8 @@ ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)),
 
 
 def bandes(im):
+    """Bandes horizontales de la planche : suites de lignes à plus de moitié non blanches, de plus de 60 px.
+    Retourne [(y0, y1)] de haut en bas."""
     a = np.asarray(im.convert('RGB')).astype(int)
     pleine = (1 - (a.min(axis=2) > 245).mean(axis=1)) > .5
     out, y0 = [], None
@@ -31,6 +33,7 @@ def bandes(im):
 
 
 def main():
+    """Découpe les deux bandeaux (sombre, clair) de la planche, les écrit en WebP et garde une copie de la planche."""
     ap = argparse.ArgumentParser()
     ap.add_argument('planche')
     ap.add_argument('--design', default='aqua')

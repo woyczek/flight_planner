@@ -17,6 +17,8 @@ OLD = re.compile(r'^([A-Z])(\d{3})([A-Z]?)$')
 
 
 def main():
+    """Passe chaque dossier de série au dossier de sa famille : identifiants renumérotés par famille, textes et noms
+    réécrits, table ajoutée à RENUMEROTATION.md (rien n'est écrit avec --dry-run)."""
     series = sorted(d for d in os.listdir(M) if SERIES_DIR.match(d) and os.path.isdir(os.path.join(M, d)))
     counters, series_rank, plan = {}, {}, []
     for d in series:

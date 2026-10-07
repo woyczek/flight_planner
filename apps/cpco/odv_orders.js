@@ -12,11 +12,14 @@
     esc = K.esc,
     t = row => K.t(row),
     tf = (row, v) => K.tf(row, v);
+  /** Accès paresseux aux modules partagés chargés par la page : OdvOrders, SuiteDispos, OdvAirspace, OdvReports,
+   *  MissionAssignments. */
   const O = () => window.OdvOrders,
     SD = () => window.SuiteDispos,
     AS = () => window.OdvAirspace,
     REP = () => window.OdvReports,
     MA = () => window.MissionAssignments;
+  /** Notification flottante de la suite (AppFramework.notify) ; k : info, warn ou error. */
   const notify = (m, k = 'info') => window.AppFramework?.notify?.(m, k);
   const $ = (s, r = document) => r.querySelector(s),
     $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -24,6 +27,7 @@
     SEEN = 'odvOrdersSeen:v1';
   const ZOOMS = [0.6, 0.8, 1, 1.3, 1.7],
     PPH = 96; // pixels par heure au zoom 1
+  /** Libellé en quatre langues (fr, en, de, es), traduit par t() et tf() selon la langue de la suite. */
   const L4 = (fr, en, de, es) => [fr, en, de, es];
   const TX = {
     days: [L4('Lun', 'Mon', 'Mo', 'Lun'), L4('Mar', 'Tue', 'Di', 'Mar'), L4('Mer', 'Wed', 'Mi', 'Mié'), L4('Jeu', 'Thu', 'Do', 'Jue'), L4('Ven', 'Fri', 'Fr', 'Vie'), L4('Sam', 'Sat', 'Sa', 'Sáb'), L4('Dim', 'Sun', 'So', 'Dom')],
@@ -104,21 +108,32 @@
     timer: null,
     airMissing: null
   };
+  /** Vue mémorisée (onglet, zoom) lue dans odvOrdersView:v1. */
   const readView = () => K.store.json(VIEW, {}) || {};
+  /** Mémorise l'onglet et le zoom courants dans odvOrdersView:v1. */
   const keepView = () => K.store.setJson(VIEW, {
     view: S.view,
     zoom: S.zoom
   });
+  /** Conversions « HH:MM » ↔ minutes depuis 0 h z (OdvOrders.min, OdvOrders.hhmm). */
   const min = s => O().min(s),
     hhmm = n => O().hhmm(n);
+  /** Minutes arrondies au pas de 5 min (pose, déplacement et durée à la souris). */
   const snap = n => Math.round(n / 5) * 5;
+  /** Dates ISO des jours affichés de la semaine (nbJours des réglages, 7 par défaut). */
   const dates = () => O().weekDates(S.week, S.cfg?.nbJours || 7);
+  /** Date du jour sélectionné (premier jour à défaut). */
   const curDate = () => dates()[S.day] || dates()[0];
+  /** Jour ISO d'une date (1 = lundi … 7 = dimanche) : clé des heures de service, des créneaux LL et des récurrences. */
   const dow = date => (new Date(`${date}T12:00:00Z`).getUTCDay() + 6) % 7 + 1;
+  /** Encre lisible (blanc ou noir) sur un fond de couleur c. */
   const ink = c => (K.color?.luminance?.(c) ?? 1) < .45 ? '#fff' : '#111';
+  /** Couleur adaptée au design courant (RepositoryNav.chartColor), sinon telle quelle. */
   const tint = c => window.RepositoryNav?.chartColor?.(c) || c;
+  /** Nom d'un membre d'après son trigramme (le trigramme s'il n'a pas de nom). */
   const memberName = tri => S.members.find(m => m.tri === tri)?.nom || tri;
 
+  /** Page modifiable : Centre déverrouillé et, en mode production, utilisateur administrateur (admin_centre). */
   function canEdit() {
     if (!window.RepositoryNav?.cpco?.enabled?.()) return false;
     const U = window.SuiteUsers;
@@ -151,6 +166,9 @@
       ordre: pers[m.tri]?.ordre ?? 999
     })).sort((a, b) => a.ordre - b.ordre || a.tri.localeCompare(b.tri));
   }
+  /** Charge la semaine (« AAAA-Www ») : réglages, membres, ordre de vol, dispos, affectations, registre, journal, DLO,
+   *  puis rattrapages (indicatifs, plaquettes issues des affectations, heures, états des CR), conflits, rendu, zones,
+   *  soleil, demandes et import ATC. fresh : relecture sans cache. */
   async function load(week, {
     fresh = false
   } = {}) {
@@ -218,8 +236,6 @@
     }
     if (changed && canEdit()) queueSave();
   }
-  /** Heure d'un vol de mission tenue sur le décollage de son affectation (l'ordre de mission fait foi), avec un
-   *  avertissement qui liste les écarts corrigés. */
   /** Affectations de la semaine sans plaquette (mission affectée depuis le Planning ODV, le Registre…) : plaquette créée
    *  sur la frise, au décollage, avec ses avions (appareil, pilote) et son astreinte ; les convoyages en découlent. */
   function fromAssignments() {
@@ -285,6 +301,7 @@
   /** Ordres de mission à réémettre, après la fin des déplacements (une seule réécriture par vol). */
   const omQueue = new Set();
   let omTimer = null;
+  /** Met un vol dans la file de réémission ; la file part 900 ms après le dernier déplacement. */
   function omSoon(id) {
     omQueue.add(id);
     clearTimeout(omTimer);
@@ -329,6 +346,7 @@
         to
       }));
     });
+    // réémission refusée : plaquette marquée « ordre de mission en attente » avec sa raison, enregistrée et signalée
     const hold = (reason) => {
       v.omAttente = true;
       v.omRaison = reason;
@@ -394,6 +412,8 @@
       h: v.debut
     }), 'info');
   }
+  /** Heure des vols de mission alignée sur le premier décollage de leurs affectations (l'ordre de mission fait foi) ;
+   *  écarts corrigés signalés. Vols dont la réémission est en attente exclus (leur heure est celle voulue). */
   function syncTakeoffs() {
     const moved = [];
     for (const v of S.doc.elements.filter(x => x.type === 'vol' && x.mission && !x.convoyage && !x.omAttente)) {
@@ -435,6 +455,8 @@
     }
     if (changed && S.editable) queueSave();
   }
+  /** Recalcule les conflits par élément (S.conf) : dispos et chevauchements (OdvOrders.conflicts), ordre de mission
+   *  absent, en écart ou en attente, convoyage arrivé trop tard, famille de mission non ouverte par la dispo. */
   function recompute() {
     S.conf = O().conflicts(S.doc, {
       dispos: S.dispos,
@@ -498,12 +520,14 @@
       }
     }
   }
+  /** Enregistrement différé (500 ms) des modifications, en écriture seulement ; état « en attente » affiché. */
   function queueSave() {
     if (!S.editable) return;
     clearTimeout(S.timer);
     setStatus(t(L4('Modifications en attente…', 'Changes pending…', 'Änderungen ausstehend…', 'Cambios pendientes…')));
     S.timer = setTimeout(save, 500);
   }
+  /** Écrit la semaine (dossier, sinon ce navigateur) ; modifiée pendant l'écriture : sa version est réenregistrée. */
   async function save() {
     clearTimeout(S.timer);
     S.timer = null;
@@ -522,10 +546,13 @@
     setStatus(r.where === 'folder' ? t(L4('Enregistré', 'Saved', 'Gespeichert', 'Guardado')) : t(L4('Enregistré dans ce navigateur', 'Saved in this browser', 'In diesem Browser gespeichert', 'Guardado en este navegador')));
     if (r.error && r.where !== 'local') notify(String(r.error?.message || r.error), 'error');
   }
+  /** Texte d'état de l'enregistrement dans la barre (#odvoStatus). */
   const setStatus = s => {
     const el = $('#odvoStatus');
     if (el) el.textContent = s;
   };
+  /** Applique une modification fn(doc) de l'ordre de vol puis enchaîne : réémission des ordres de mission des vols
+   *  déplacés, convoyages, DLO, demandes de zones, conflits, rendu, zones, enregistrement. Refusée en lecture seule. */
   function mutate(fn) {
     if (!S.editable) return notify(t(L4('Lecture seule : déverrouillez le Centre (et connectez-vous en admin_centre en mode production).', 'Read only: unlock the Centre (and log in as admin_centre in production mode).', 'Nur lesen: Zentrum entsperren (im Produktionsmodus als admin_centre anmelden).', 'Solo lectura: desbloquee el Centro (y conéctese como admin_centre en modo producción).')), 'warn');
     const slot = v => `${v.date} ${v.debut} ${v.duree}`;
@@ -593,6 +620,8 @@
       }
     }
   }
+  /** Zones du jour sélectionné : sessions ATC, créneaux RTBA · LL (repli : ceux des réglages), zones des vols (mission
+   *  et plaquette) contrôlées par OdvAirspace à l'heure et sur le réseau du vol ; conflits dans S.zoneConf. */
   async function refreshAirspace() {
     const date = curDate();
     const A = AS();
@@ -676,6 +705,7 @@
   // (data/atc/activations, mêmes fichiers que le Planning ODV) ; la demande elle-même se fait sur le site du réseau
   const IVAO_REQUESTS = 'https://www.ivao.fr/fr/so/special_areas/activations/requests';
   let reqTimer = null;
+  /** Recalcul différé (1,2 s) du tableau des demandes de réservation. */
   const requestsSoon = () => {
     clearTimeout(reqTimer);
     reqTimer = setTimeout(() => renderRequests().catch(() => {}), 1200);
@@ -706,6 +736,8 @@
     }
     if (week === S.week) refreshAirspace();
   }
+  /** Zones à demander pour la semaine : zones des vols de mission non actives sur leur réseau, une ligne par zone,
+   *  réseau et jour (créneau englobant les vols). null sans module de zones ; objet « missing » sans base. */
   async function zoneRequests() {
     const A = AS();
     if (!A?.missionZones || !A?.check) return null;
@@ -744,7 +776,10 @@
       }
     return [...out.values()].sort((a, b) => `${a.date} ${a.debut} ${a.nom}`.localeCompare(`${b.date} ${b.debut} ${b.nom}`));
   }
+  /** Ligne texte d'une demande (zone, réseau, jour, créneau, vols) pour « Copier la liste ». */
   const reqLine = r => `${r.nom} · ${r.reseau || t(L4('tous réseaux', 'all networks', 'alle Netzwerke', 'todas las redes'))} · ${r.date.slice(8, 10)}/${r.date.slice(5, 7)} ${hhmm(r.debut)}–${hhmm(Math.min(1440, r.fin))}z · ${r.vols.join(', ')}`;
+  /** Tableau des demandes de réservation (#odvoRequests) : « Inscrire comme demandée », tout inscrire, copie, lien
+   *  vers les demandes d'activation IVAO. */
   async function renderRequests() {
     const host = $('#odvoRequests');
     if (!host) return;
@@ -758,6 +793,8 @@
         n: todo.length
       }))}</button>` : ''}<button type="button" data-req="copy">${esc(t(L4('Copier la liste', 'Copy the list', 'Liste kopieren', 'Copiar la lista')))}</button><a href="${IVAO_REQUESTS}" target="_blank" rel="noopener">${esc(t(L4('Demandes d’activation IVAO', 'IVAO activation requests', 'IVAO-Aktivierungsanträge', 'Solicitudes de activación IVAO')))}</a></div>` : `<p class="mut">${esc(t(L4('Aucune zone à demander : les zones des vols de mission de la semaine sont actives sur leur réseau.', 'No area to request: the areas of the week’s mission flights are active on their network.', 'Kein Gebiet zu beantragen: die Gebiete der Missionsflüge der Woche sind in ihrem Netzwerk aktiv.', 'Ninguna zona que solicitar: las zonas de los vuelos de misión de la semana están activas en su red.')))}</p>`;
   }
+  /** Inscrit des demandes dans les activations communes de la semaine (état « demandee ») ; la demande elle-même
+   *  reste à faire sur le site du réseau. */
   async function recordRequests(rows) {
     const A = AS();
     const list = await A.activations(S.week).catch(() => []);
@@ -782,6 +819,7 @@
     refreshAirspace();
     renderRequests();
   }
+  /** Base aéronautique absente : un seul avertissement (jusqu'au changement de semaine), zones peintes avec le repli. */
   function missingBase(r) {
     if (!S.airMissing) {
       S.airMissing = r;
@@ -789,6 +827,7 @@
     }
     paintZones();
   }
+  /** Coordonnées du terrain des réglages, pour la nuit aéronautique de la frise (MissionAssist.sunTimes). */
   async function loadSun() {
     S.sun = null;
     const icao = S.cfg.terrain;
@@ -814,12 +853,15 @@
     if (S.view === 'semaine') renderWeekView();
     if (S.view === 'stats') renderStats();
   }
+  /** Nombre d'éléments du jour en conflit (dispos ou zones) : pastille du bouton du jour. */
   function confCount(date) {
     let n = 0;
     for (const e of S.doc.elements)
       if (e.date === date && ((S.conf.get(e.id)?.length) || S.zoneConf.get(e.id)?.length)) n++;
     return n;
   }
+  /** Barre du haut : semaine (précédente, suivante, courante), onglets Jour / Semaine / Statistiques, permanence,
+   *  briefing, état de l'enregistrement, boutons des jours. */
   function renderBar() {
     const ds = dates();
     const fmt = d => `${d.slice(8, 10)}/${d.slice(5, 7)}`;
@@ -860,6 +902,7 @@
       }
     return [Math.floor(s / 60) * 60, Math.min(1440, Math.ceil(e / 60) * 60)];
   }
+  /** Pixels par minute au zoom courant. */
   const ppm = () => PPH * ZOOMS[S.zoom] / 60;
   // hauteur d'un couloir par section (plaquettes empilées)
   const LANE_H = {
@@ -879,6 +922,8 @@
       return [e, i];
     });
   }
+  /** Frise du jour sélectionné : heures, tranches, nuit aéronautique, heure courante, lignes RTBA · LL, zones et ATC,
+   *  membres disponibles ensemble, plaquettes par section en couloirs ; puis palette, problèmes et zones. */
   function renderDay() {
     const date = curDate();
     const [s0, e0] = dayRange(date);
@@ -900,6 +945,7 @@
       if (dawn != null && dawn > s0) night += `<div class="odvo-night" style="left:0;width:${X(Math.min(dawn, e0))}px" title="${esc(t(L4('Nuit aéronautique', 'Aeronautical night', 'Luftfahrtnacht', 'Noche aeronáutica')))}"></div>`;
       if (dusk != null && dusk < e0) night += `<div class="odvo-night" style="left:${X(Math.max(dusk, s0))}px;width:${(e0 - Math.max(dusk, s0)) * P}px" title="${esc(t(L4('Nuit aéronautique', 'Aeronautical night', 'Luftfahrtnacht', 'Noche aeronáutica')))}"></div>`;
     }
+    // ligne de la frise : libellé de la section et couloir d'une hauteur donnée (data-lane : cible du dépôt)
     const sect = (key, body, h, extra = '') => `<div class="odvo-row odvo-sec-${key}" data-sec="${key}"${extra}><div class="odvo-lbl">${esc(t(TX.sections[key]))}</div><div class="odvo-lane" data-lane="${key}" style="width:${W}px;height:${h}px">${body}</div></div>`;
     // sections d'éléments
     const secOf = {
@@ -939,6 +985,8 @@
     renderProblems(date);
     paintZones();
   }
+  /** Pastille d'un membre sur une plaquette : couleur, PTA, DLO, qualification sur le type de l'avion, conflit en
+   *  infobulle ; locked : non glissable (pilote tenu par l'ordre de mission). */
   function crewChip(tri, e, locked = false) {
     const c = (S.conf.get(e.id) || []).find(x => x.tri === tri);
     const col = S.members.find(m => m.tri === tri)?.couleur;
@@ -956,6 +1004,8 @@
     const c = (S.cfg.configs || []).find(k => k.texte === x)?.couleur;
     return `<span class="odvo-cfg"${c ? ` style="border-color:${esc(tint(c))};color:${esc(tint(c))}"` : ''}>${esc(x)}</span>`;
   }).join('');
+  /** Plaquette d'un élément : X (minutes → px), P (px par minute), top et h (place dans la section). Vol : indicatif,
+   *  mission, OM, CR, P (préparation), convoyage, axe AAR, ravitaillements, astreinte, avions et équipage. */
   function itemHtml(e, X, P, top, h) {
     const s = min(e.debut),
       w = Math.max(18, e.duree * P);
@@ -1006,6 +1056,7 @@
     else body = `<div class="odvo-it-h"><b>${esc(e.libelle || '—')}</b>${e.position ? ` <span>${esc(e.position)}</span>` : ''}</div><div class="odvo-it-c">${e.equipage.map(x => crewChip(x, e)).join('')}</div>`;
     return `<div class="odvo-it odvo-${e.type}${state}${conf.length ? ' conflit' : ''}" data-id="${esc(e.id)}" style="left:${X(s)}px;top:${top}px;width:${w}px;height:${h}px;background:${fill};border-color:${border};color:${fg}" title="${esc(tip)}">${conf.length ? `<span class="odvo-warn">⚠ ${conf.length}</span>` : ''}${e.recurrence ? '<span class="odvo-rec" title="↻">↻</span>' : ''}${body}<span class="odvo-rsz" data-rsz></span></div>`;
   }
+  /** Texte traduit d'un conflit (code de TX.conflicts, ou zone et son état). */
   function conflictText(c) {
     if (c.code === 'zone') return tf(TX.conflicts.zone, {
       z: c.z.nom || c.z.id,
@@ -1054,6 +1105,8 @@
     }
     return out.join('');
   }
+  /** Peint sur la frise affichée les sessions ATC (couloirs ; encadrées si elles gênent un vol), la ligne RTBA · LL et
+   *  les zones des vols ; problèmes et barre redessinés s'il y a des zones en conflit. */
   function paintZones() {
     const host = $('#odvoGrid'),
       s0 = +host?.dataset.s0;
@@ -1113,6 +1166,7 @@
       n: (S.log || []).length
     }))}</summary><ul>${list.map(x => `<li>${esc(MA()?.logText?.(x) || JSON.stringify(x))}</li>`).join('')}</ul></details>` : '';
   }
+  /** Éléments du jour en conflit, en boutons qui mènent à la plaquette, et journal des affectations. */
   function renderProblems(date) {
     renderLog();
     const items = S.doc.elements.filter(e => e.date === date && (S.conf.get(e.id)?.length || S.zoneConf.get(e.id)?.length));
@@ -1121,10 +1175,14 @@
       z
     }))].map(conflictText).join(' ; '))}</button>`).join('')}` : '';
   }
+  /** Palette du jour : réserve des vols, modèles par section, formations des missions (generated), note, membres staff
+   *  puis autres avec leur barre de dispo et leurs DLO ouvertes (pastille selon l'urgence). */
   function renderPalette(date) {
     const M = S.cfg.modeles || {};
+    // cartes des modèles d'une section (glissables en écriture)
     const tpl = (type, list) => (list || []).map(m => `<div class="odvo-tpl" draggable="${S.editable}" data-tpl="${esc(type)}:${esc(m.id)}" style="border-color:${esc(tint(m.couleur || '#64748b'))}${m.fond ? `;background:${esc(tint(m.fond))};color:${ink(tint(m.fond))}` : ''}" title="${esc(t(L4('Glisser sur la frise', 'Drag onto the timeline', 'Auf die Zeitleiste ziehen', 'Arrastrar a la cronología')))}">${esc(m.libelle)} <small>${esc(String(m.duree))}′</small></div>`).join('');
     const note = `<div class="odvo-tpl" draggable="${S.editable}" data-tpl="note:note">${esc(t(L4('Note', 'Note', 'Notiz', 'Nota')))}</div>`;
+    // cartes des membres d'un groupe (staff ou autre) : barre de dispo du jour, DLO ouvertes
     const mem = grp => S.members.filter(m => m.groupe === grp).map(m => {
       const day = S.dispos[m.tri]?.[date];
       const bar = dispoBar(day, 0, 1440);
@@ -1176,10 +1234,14 @@
       return null;
     }
   }
+  /** Minute sous l'abscisse clientX d'une section de la frise, au pas de 5 min, bornée à la journée. */
   function minuteAt(lane, clientX) {
     const s0 = +$('#odvoGrid').dataset.s0;
     return Math.max(0, Math.min(1435, snap(s0 + (clientX - lane.getBoundingClientRect().left) / ppm())));
   }
+  /** Nouvel élément normalisé posé à date et debut (minutes) d'après une carte de palette : formation d'une mission
+   *  (gen), patrouille sans mission (genteam, « indicatif|type »), note, ou modèle des réglages (vol, contrôle,
+   *  divers). */
   function fromTemplate(type, id, date, debut) {
     if (type === 'gen' || type === 'genteam') {
       // plaquette générée : patrouille d'une mission (indicatif, type, durée estimée), ou patrouille sans mission
@@ -1295,7 +1357,9 @@
     if (!kind) return s0;
     const crew = O().crewOf(el, S.affect);
     const need = crew.length ? 0 : el.type === 'vol' ? Math.max(1, el.avions.length) : 1;
+    // membre déjà pris par un autre élément actif du jour sur [a, b[
     const busy = (tri, a, b) => S.doc.elements.some(x => x.id !== el.id && x.date === date && x.etat !== 'annule' && O().kindOf(x) && O().crewOf(x, S.affect).includes(tri) && min(x.debut) < b && a < min(x.debut) + x.duree);
+    // membre libre sur [a, b[ : semaine déclarée, dispo valable pour ce genre d'élément (memberState), pas déjà pris
     const free = (tri, a, b) => S.dispos[tri] && O().memberState(S.dispos[tri][date] || [], kind, a, b).ok && !busy(tri, a, b);
     for (let a = s0; a + el.duree <= Math.max(e0, s0 + el.duree); a += 5) {
       const b = a + el.duree;
@@ -1376,6 +1440,9 @@
     }
     return false;
   }
+  /** Événements du jour : glisser-déposer des cartes (modèles, formations, réserve) et des membres, copie flottante
+   *  calée sur la section, double clic (pose automatique), déplacement et durée à la souris, plaquette lâchée sur la
+   *  palette (réserve), clic sur un problème (plaquette mise en évidence). */
   function wireGrid() {
     const host = $('#odvoDay');
     host.addEventListener('dragstart', ev => {
@@ -1446,6 +1513,7 @@
         dragGhost.style.top = `${ev.clientY - 12}px`;
       }
     });
+    // fin du glisser d'une carte : copie flottante retirée, heure de synchro oubliée juste après le dépôt
     const dropGhost = () => {
       dragGhost?.remove();
       dragGhost = null;
@@ -1536,11 +1604,13 @@
       const y0 = ev.clientY,
         box = it.getBoundingClientRect(),
         pal = $('#odvoPalette');
+      // pointeur au-dessus de la palette : la plaquette lâchée là rejoint la réserve
       const overPalette = m => {
         const r = pal.getBoundingClientRect();
         return m.clientX >= r.left && m.clientX <= r.right && m.clientY >= r.top && m.clientY <= r.bottom;
       };
       it.setPointerCapture(ev.pointerId);
+      // décalage au pas de 5 min : largeur (poignée de durée) ou position, copie flottante jusqu'à la palette
       const move = m => {
         const dm = snap((m.clientX - x0) / P);
         if (Math.abs(m.clientX - x0) > 3 || Math.abs(m.clientY - y0) > 3) moved = true;
@@ -1569,6 +1639,7 @@
         ghost.style.transform = onPal ? `translate(${m.clientX - x0}px, ${m.clientY - y0}px)` : `translate(${dm * P}px, ${m.clientY - y0}px)`;
         it.style.transform = `translateX(${dm * P}px)`;
       };
+      // fin du geste : copie flottante et écouteurs retirés
       const stop = () => {
         ghost?.remove();
         ghost = null;
@@ -1584,6 +1655,7 @@
         it.style.transform = '';
         it.style.width = '';
       };
+      // relâché : sans mouvement, fenêtre d'édition ; sur la palette, réserve ; sinon nouvelle durée ou nouvelle heure
       const up = m => {
         stop();
         if (!moved) return openEdit(e.id);
@@ -1622,7 +1694,9 @@
     const [ty, id] = String(v).split(':');
     return ty === 'res' ? (S.doc.reserve || []).find(x => x.id === id)?.type : ty;
   };
+  /** Section qui accepte un genre d'élément : la sienne ; les formations (gen, genteam) vont dans « Vols ». */
   const laneAccepts = (lane, type) => lane === type || (lane === 'vol' && (type === 'gen' || type === 'genteam'));
+  /** Retire un membre d'un élément : pilote, navigateur et tâches d'un vol ; équipage des autres. */
   function removeMember(e, tri) {
     if (!e) return;
     if (e.type === 'vol') {
@@ -1652,14 +1726,19 @@
   // une mission = une patrouille : son indicatif (callsigns[0]) et son type (aircraftTypes[0]) ; teams = toute la
   // formation du scénario (autres patrouilles, ravitailleur, équipes au sol)
   const ownCs = m => (m?.callsigns || [])[0] || '';
+  /** Équipe propre d'une mission (sa patrouille dans teams), sinon reconstituée de l'indicatif et du premier type. */
   const ownTeam = m => (m?.teams || []).find(x => x.name === ownCs(m)) || {
     name: ownCs(m),
     type: (m?.aircraftTypes || [])[0] || '',
     role: ''
   };
+  /** Code de type d'aéronef : premier mot, en majuscules. */
   const typeCode = s => String(s || '').trim().split(/\s+/)[0].toUpperCase();
+  /** Mission ravitailleur : rôle AAR « tanker », rôle de sa patrouille, ou type (tanker, MRTT). */
   const isTankerMission = m => !!m && (m.aarRole === 'tanker' || /tanker|ravitaill|refuel/i.test(ownTeam(m).role || '') || /tanker|MRTT/i.test((m.aircraftTypes || []).join(' ')));
+  /** Mission du registre d'après son identifiant (null si absente). */
   const reg = id => (S.registry || []).find(m => m.id === id) || null;
+  /** Axe AAR d'une mission : aarTrack, axe lu dans son yaml (fillTracks), sinon « sur <AXE> » en fin de titre. */
   const trackOf = m => m ? m.aarTrack || S.trackCache?.[m.id] || /\bsur\s+([A-Z][A-Z0-9-]{1,15})\s*$/.exec(m.title || '')?.[1] || '' : '';
   /** Axes des missions ravitailleur de la semaine lus par OdvReports.trackOf (yaml de la mission), s'il existe. */
   async function fillTracks() {
@@ -1684,6 +1763,7 @@
   const ownerOf = (name, near) => (S.registry || []).find(x => (x.callsigns || []).includes(name) && near?.operation?.id && x.operation?.id === near.operation.id) || (S.registry || []).find(x => (x.callsigns || []).includes(name)) || null;
   /** Types d'aéronefs connus (flotte, table des indicatifs) : une équipe d'un autre type (VSAV, navire…) est au sol. */
   const knownTypes = () => new Set([...(window.DEFA_FLEET || []).map(f => typeCode(f.type)), ...(window.MISSION_CALLSIGNS?.table || []).flatMap(x => x.types || []).map(typeCode)]);
+  /** Équipe volante : patrouille d'une mission du registre, ravitailleur, ou type d'aéronef connu. */
   const isAirTeam = tm => !!ownerOf(tm.name) || isTanker(tm) || knownTypes().has(typeCode(tm.type));
   /** Plaquettes générées pour un jour : formation complémentaire des vols de mission posés (patrouilles des autres
    *  missions, ravitailleurs qui les servent, chiffons de l'opération, patrouilles sans mission), et missions
@@ -1728,7 +1808,9 @@
     }
     return [...out.values()];
   }
+  /** Durée bloc estimée d'une mission (estimate.block, sinon estimate.flight), en minutes ; null si absente. */
   const blockOf = m => Math.round(m?.estimate?.block ?? m?.estimate?.flight ?? 0) || null;
+  /** Équipe ravitailleur (rôle tanker, ravitaillement, refuel). */
   const isTanker = team => /tanker|ravitaill|refuel/i.test(team?.role || '');
   /** Durée de la mission compatible avec la durée demandée (écart ≤ 15 min ou 15 %) ; null si la mission n'en a pas. */
   const fits = (m, duree) => {
@@ -1764,6 +1846,7 @@
     turbopropulseur: L4('turbopropulseur', 'turboprop', 'Turboprop', 'turbohélice'),
     'réacteur': L4('réacteur', 'jet', 'Strahlflugzeug', 'reactor')
   };
+  /** Classe d'appareil de l'estimation traduite (libellé d'origine si inconnu). */
   const classLabel = s => s ? t(CLASS_LABELS[String(s).toLowerCase()] || [s, s, s, s]) : '';
   /** Estimation de la mission (registre : estimate) en clair, avec la durée demandée. */
   function estText(m, duree) {
@@ -1786,6 +1869,8 @@
       d: duree
     });
   }
+  /** Ligne d'une mission dans la liste de choix : identifiant, titre, durée bloc (⚠ si incompatible), équipe, famille,
+   *  trajet, opération, axe AAR, autres patrouilles, lien ; data-q pour le filtre, data-est pour l'estimation. */
   function mpRow(r) {
     const m = r.m,
       tm = r.team;
@@ -1803,6 +1888,8 @@
     const empty = S.registry?.length ? '' : `<p class="odvo-mp-warn">${esc(t(L4('Registre des missions vide dans ce navigateur : ouvrez le Registre des missions du Centre et lisez le dossier des missions.', 'Mission registry empty in this browser: open the Centre’s Mission registry and read the missions folder.', 'Missionsregister in diesem Browser leer: Missionsregister des Zentrums öffnen und den Missionsordner einlesen.', 'Registro de misiones vacío en este navegador: abra el Registro de misiones del Centro y lea la carpeta de misiones.')))} <a href="mission_registry.html" target="_blank" rel="noopener">${esc(t(L4('Registre des missions', 'Mission registry', 'Missionsregister', 'Registro de misiones')))}</a></p>`;
     return `<div class="odvo-mp" data-mp="${esc(name)}">${empty}<input type="hidden" name="${esc(name)}" value="${esc(cur || '')}"><button type="button" class="odvo-mp-btn">${esc(label)} ▾</button><div class="odvo-mp-pop" hidden><input type="search" placeholder="${esc(t(L4('Filtrer…', 'Filter…', 'Filtern…', 'Filtrar…')))}"><div class="odvo-mp-list" role="listbox">${firstRows}<div role="option" tabindex="0" class="odvo-mp-row" data-v="" data-q=""><span>${esc(emptyLabel)}</span></div>${extraRows}${rows.map(mpRow).join('')}</div></div><div class="odvo-mp-warn">${sel ? esc((sel.fit === false ? '⚠ ' : '') + estText(sel.m, sel.duree)) : ''}</div></div>`;
   }
+  /** Branche la liste de choix name de la fenêtre dlg : ouverture, filtre, Entrée, choix (champ caché, libellé,
+   *  estimation) puis onPick(valeur). */
   function wirePicker(dlg, name, onPick) {
     const box = dlg.querySelector(`[data-mp="${CSS.escape(name)}"]`);
     if (!box) return;
@@ -1856,6 +1943,7 @@
     d.showModal();
     return d;
   }
+  /** Option de liste déroulante, sélectionnée si v vaut cur. */
   const opt = (v, cur, label = v) => `<option value="${esc(v)}"${String(v) === String(cur ?? '') ? ' selected' : ''}>${esc(label)}</option>`;
   /** Pilotes proposés (tous, rien d'interdit) : disponibles et qualifiés sur le type d'abord, puis disponibles, puis les
    *  autres ; marque de qualification (maîtrisé, possède, connu). */
@@ -1877,12 +1965,18 @@
         mark: lvl[q?.level] || ''
       };
     });
+    // groupe d'options (rien si la liste est vide), marque de qualification après le nom
     const group = (title, list) => list.length ? `<optgroup label="${esc(title)}">${list.map(r => opt(r.m.tri, cur, `${r.m.tri}${r.m.nom ? ' — ' + r.m.nom : ''}${r.mark ? ' · ' + r.mark : ''}`)).join('')}</optgroup>` : '';
     const good = r => ['mastered', 'owned', 'flown'].includes(r.ql);
     return `<option value="">—</option>${group(t(L4('Disponibles, qualifiés sur le type', 'Available, qualified on the type', 'Verfügbar, auf dem Typ qualifiziert', 'Disponibles, cualificados en el tipo')), rows.filter(r => r.free && good(r)))}${group(t(L4('Disponibles', 'Available', 'Verfügbar', 'Disponibles')), rows.filter(r => r.free && !good(r)))}${group(t(L4('Autres', 'Others', 'Andere', 'Otros')), rows.filter(r => !r.free))}`;
   }
+  /** Options « membre » (trigramme — nom), vide en tête. */
   const memOpts = cur => `<option value="">—</option>${S.members.map(m => opt(m.tri, cur, m.tri + (m.nom ? ' — ' + m.nom : ''))).join('')}`;
+  /** Champ de formulaire étiqueté (libellé traduit) ; wide : sur toute la largeur. */
   const field = (label, html, wide = false) => `<label class="${wide ? 'wide' : ''}"><span>${esc(t(label))}</span>${html}</label>`;
+  /** Fenêtre d'édition d'un élément. Vol : mission et équipe, réseau, zones, axe AAR, ravitaillement, avions, DLO,
+   *  tâches, état, CR, astreinte, causes MNE, répétition, boutons d'ordre de mission, de convoyage, de commande et de
+   *  réserve. Note : texte. Contrôle et divers : équipage, PTA, DLO. */
   async function openEdit(id) {
     const e = S.doc.elements.find(x => x.id === id);
     if (!e) return;
@@ -2050,6 +2144,7 @@
   const depOf = m => m ? MA()?.geo?.icaoOf?.({
     name: m.origin || ''
   }) || '' : '';
+  /** Indicatif décalé de n sur son dernier nombre, zéros gardés (indicatifs des équipiers). */
   const nextCs = (cs, n) => String(cs || '').replace(/(\d+)(?!.*\d)/, x => String(+x + n).padStart(x.length, '0'));
   // terrain actuel d'un appareil (AircraftPositions : CR d'un ordre de mission récent, sinon emplacement du site, sinon
   // base) ; le convoyage part de là
@@ -2062,6 +2157,7 @@
     if (!a || !b) return null;
     return Math.round(MA().geo.nm(a, b) / MA().cruiseKt(MA().typeOf(type)) * 60 + 20);
   }
+  /** Durée en minutes affichée « h mm ». */
   const fmtMin = n => `${Math.floor(n / 60)} h ${String(n % 60).padStart(2, '0')}`;
   /** Appareils proposés pour un poste : compatibles (planesFor), sur place d'abord puis du plus proche au plus lointain ;
    *  libellé « sur place » ou « convoyage x h xx » ; grisés si déjà pris ce jour-là pendant le vol (autre plaquette). */
@@ -2117,6 +2213,8 @@
   /** Plaquettes de convoyage tenues à jour : une par appareil d'un vol de mission basé ailleurs que le départ, arrivée
    *  30 min avant le décollage, pilote « à affecter » (gardé s'il a été glissé) ; retirées si l'appareil change. */
   let ferryRun = null;
+  /** Calcul des convoyages (voir ci-dessus) : un vol déplacé entraîne son convoyage du même écart, un convoyage
+   *  déplacé à la main garde sa place ; terrains sans coordonnées signalés une fois ; enregistré s'il y a du nouveau. */
   async function syncFerries() {
     const doc = S.doc;
     const want = [];
@@ -2235,6 +2333,7 @@
     const n = O().workdaysTo(x.echeance);
     return n == null ? '' : n <= 3 ? 'u-red' : n <= 10 ? 'u-yellow' : 'u-green';
   };
+  /** Libellé d'une DLO avec sa butée (jj/mm). */
   const dloLabel = x => `${x.texte}${x.echeance ? ` (${x.echeance.slice(8, 10)}/${x.echeance.slice(5, 7)})` : ''}`;
   /** DLO fermées par un vol fait de la semaine : le membre est dans son équipage et l'objectif figure dans la DLO de
    *  l'élément, son libellé, sa mission (famille, sous-type, titre). */
@@ -2243,6 +2342,7 @@
     const today = new Date().toISOString().slice(0, 10);
     for (const e of S.doc.elements.filter(x => x.type === 'vol' && x.etat === 'fait')) {
       const m = reg(e.mission);
+      // texte où chercher l'objectif d'une DLO : DLO du membre sur l'élément, libellé, indicatif, mission
       const hay = tri => `${e.dlo?.[tri] || ''} ${e.libelle} ${e.indicatif} ${m?.family || ''} ${m?.subtype || ''} ${m?.title || ''}`.toLowerCase();
       for (const tri of new Set(O().crewOf(e, S.affect)))
         for (const x of openDlo(tri))
@@ -2258,6 +2358,7 @@
     if (changed && S.editable) saveDloSoon();
   }
   let dloTimer = null;
+  /** Enregistrement différé (400 ms) des DLO (data/odv/dlo.json). */
   function saveDloSoon() {
     clearTimeout(dloTimer);
     dloTimer = setTimeout(async () => {
@@ -2268,10 +2369,13 @@
       if (r?.error && r.where !== 'local') notify(String(r.error?.message || r.error), 'error');
     }, 400);
   }
+  /** Boutons des DLO d'un membre (état et urgence en classes) ; un clic ouvre la DLO (data-dlo « TRI|id »). */
   function dloChips(tri) {
     const list = S.dlo?.membres?.[tri] || [];
     return list.map(x => `<button type="button" class="odvo-dlochip ${esc(x.etat)} ${urgency(x)}" data-dlo="${esc(tri)}|${esc(x.id)}" title="${esc([x.texte, x.echeance ? t(L4('butée', 'deadline', 'Frist', 'plazo')) + ' ' + x.echeance : '', x.etat === 'fait' && x.fait_le ? t(L4('fait le', 'done on', 'erledigt am', 'hecho el')) + ' ' + x.fait_le : ''].filter(Boolean).join(' — '))}">${esc(dloLabel(x))}</button>`).join('');
   }
+  /** Fenêtre d'une DLO d'un membre (création si id inconnu) : objectif, butée, état, fermeture automatique par un
+   *  vol fait ; suppression. */
   function openDloEdit(tri, id) {
     S.dlo ||= {
       membres: {}
@@ -2310,6 +2414,7 @@
       } : null
     });
   }
+  /** Champ DLO d'un élément (« TRI = objectifs » par ligne), avec en rappel les DLO ouvertes de son équipage. */
   const dloField = e => field(L4('DLO — objectifs de chaque membre sur cet élément (une ligne par membre : TRI = objectifs)', 'DLO — objectives of each member on this item (one line per member: TRI = objectives)', 'DLO — Ziele jedes Mitglieds für dieses Element (eine Zeile pro Mitglied: TRI = Ziele)', 'DLO — objetivos de cada miembro en este elemento (una línea por miembro: TRI = objetivos)'), `<textarea name="dlo" rows="2" placeholder="RBR = FULL COMMS no L16">${esc(Object.entries(e.dlo || {}).map(([k, v]) => `${k} = ${v}`).join('\n'))}</textarea>${(() => {
     const open = [...new Set(O().crewOf(e, S.affect))].map(tri => [tri, openDlo(tri)]).filter(([, l]) => l.length);
     return open.length ? `<small class="mut">${esc(t(L4('DLO en cours de l’équipage :', 'Crew’s open DLO:', 'Offene DLO der Besatzung:', 'DLO abiertos de la tripulación:')))} ${esc(open.map(([tri, l]) => `${tri} : ${l.map(dloLabel).join(', ')}`).join(' · '))}</small>` : '';
@@ -2319,10 +2424,14 @@
     const i = l.indexOf('=');
     return i < 0 ? ['', ''] : [l.slice(0, i).trim().toUpperCase(), l.slice(i + 1).trim()];
   }).filter(([k, v]) => k && v));
+  /** Champs de répétition d'un élément (rythme, date de fin), préremplis depuis sa récurrence des réglages. */
   function repeatFields(e) {
     const r = (S.cfg.recurrences || []).find(x => x.id === e.recurrence);
     return `<div class="odvo-grid2">${field(L4('Répéter', 'Repeat', 'Wiederholen', 'Repetir'), `<select name="rythme">${[['', L4('non', 'no', 'nein', 'no')], ['quotidien', L4('chaque jour', 'every day', 'täglich', 'cada día')], ['hebdo', L4('chaque semaine', 'every week', 'wöchentlich', 'cada semana')], ['bimensuel', L4('une semaine sur deux', 'every other week', 'alle zwei Wochen', 'cada dos semanas')]].map(([v, l]) => opt(v, r?.rythme || '', t(l))).join('')}</select>`)}${field(L4('Jusqu’au', 'Until', 'Bis', 'Hasta'), `<input name="rfin" type="date" value="${esc(r?.fin || '')}">`)}</div>`;
   }
+  /** Applique la fenêtre d'édition (FormData f) à l'élément id. Vol : mission, zones, avions (8 places, 2 gardées),
+   *  PTA, tâches, ravitaillement (vol du jour, mission, ou ravitailleur générique en réserve), astreinte, CR (état
+   *  déduit s'il était « prévu »), zones à identifier. Autres : équipage, PTA. Puis DLO et récurrence. */
   function applyEdit(id, f) {
     mutate(doc => {
       const e = doc.elements.find(x => x.id === id);
@@ -2517,6 +2626,8 @@
   }
   // commande d'une mission (générateur, MissionOrder) préremplie d'après la plaquette ; scripts chargés à la demande
   const SELF = document.currentScript?.src || location.href;
+  /** Charge un script (chemin relatif à ce fichier) une seule fois : déjà dans la page, quelle que soit sa version,
+   *  rien n'est rechargé. */
   const loadScript = src => new Promise((ok, ko) => {
     const url = new URL(src, SELF).href.split('?')[0];
     if ([...document.scripts].some(x => x.src.split('?')[0] === url)) return ok();
@@ -2526,6 +2637,8 @@
     s.onerror = () => ko(new Error(src));
     document.head.append(s);
   });
+  /** Commande d'une mission au générateur (MissionOrder) préréglée d'après la plaquette : équipes et types (5 au
+   *  plus), classe de durée XS à XL, ravitaillement ; la mission générée se lie ensuite à la plaquette. */
   async function orderMission(e) {
     try {
       for (const src of ['mission_store.js?v=bc7f59ef', 'mission_prompt.js?v=8774038d', '../../shared/mission_order.js?v=ac4119b1']) await loadScript(src);
@@ -2624,6 +2737,9 @@
       takeoff: Date.parse(`${c.date}T${c.debut}:00Z`)
     } : null;
   }
+  /** Fenêtre d'affectation (AssignDialog) de la mission d'un vol : une ligne par avion pourvu (pilote, immatriculation,
+   *  indicatif, convoyage, convoyeur) ; ordre de mission émis : affectations relues, conflits et zones recalculés.
+   *  Retourne une promesse résolue à la fermeture (ordres de l'opération enchaînés). */
   async function assignMission(e) {
     const m = reg(e.mission) || (window.MissionIndex?.all?.() || []).find(x => x.id === e.mission);
     if (!m) return notify(tf(L4('Mission {m} absente du registre', 'Mission {m} not in the registry', 'Mission {m} nicht im Register', 'Misión {m} ausente del registro'), {
@@ -2683,6 +2799,7 @@
   // ---- vue de la semaine : dispos par membre et modifications
   function renderWeekView() {
     const ds = dates();
+    // éléments actifs du jour où le membre est d'équipage (nombre dans la case, détail en infobulle)
     const occ = (tri, date) => S.doc.elements.filter(e => e.date === date && e.etat !== 'annule' && O().crewOf(e, S.affect).includes(tri));
     const row = m => `<tr><th title="${esc(m.nom)}">${esc(m.tri)}</th>${ds.map((d, i) => {
       const o = occ(m.tri, d);
@@ -2700,6 +2817,8 @@
       <h3>${esc(t(L4('Modifications de dispo', 'Availability changes', 'Verfügbarkeitsänderungen', 'Cambios de disponibilidad')))}</h3>
       ${changes.length ? `<ul class="odvo-chg">${changes.map(([tri, d]) => `<li><b>${esc(tri)}</b> ${esc(String(d.updated_at).slice(0, 16).replace('T', ' '))}z ${d.by && d.by !== tri ? `(${esc(d.by)})` : ''} <button type="button" data-seen="${esc(tri)}">${esc(t(L4('Pris en compte', 'Noted', 'Berücksichtigt', 'Tenido en cuenta')))}</button></li>`).join('')}</ul><button type="button" data-seen="*">${esc(t(L4('Tout prendre en compte', 'Note all', 'Alle berücksichtigen', 'Tener todo en cuenta')))}</button>` : `<p class="mut">${esc(t(L4('Aucune modification depuis la dernière prise en compte.', 'No change since last noted.', 'Keine Änderung seit der letzten Berücksichtigung.', 'Ningún cambio desde la última vez.')))}</p>`}`;
   }
+  /** Fenêtre des plages de dispo d'un membre un jour donné (catégorie, début, fin en z ; deux lignes vides en plus ;
+   *  récup à partir d'une heure) ; écrites par OdvOrders.setDispos, puis conflits recalculés. */
   function openDispos(tri, date) {
     const cats = SD()?.categories?.() || [];
     const plages = [...(S.dispos[tri]?.[date] || [])];
@@ -2842,7 +2961,9 @@
       });
     });
   }
+  /** Index du jour d'aujourd'hui dans la semaine affichée (lundi = 0), borné au nombre de jours. */
   const todayIndex = () => Math.max(0, Math.min((S.cfg?.nbJours || 7) - 1, (new Date().getUTCDay() + 6) % 7));
+  /** Change de semaine (enregistrement en attente écrit d'abord) : URL ?semaine=, rechargement, activations. */
   async function gotoWeek(w, day = 0) {
     if (S.timer) await save();
     S.day = day;
@@ -2851,6 +2972,7 @@
     await load(w);
     mountActivations();
   }
+  /** Briefing : frise du jour en plein écran, ou sortie du plein écran ; ← → changent de jour (wireBar). */
   function briefing() {
     const sec = $('#odvoDaySection');
     if (document.fullscreenElement) return document.exitFullscreen();
@@ -2859,6 +2981,8 @@
     sec.requestFullscreen?.().catch(() => {});
   }
   let activations = null;
+  /** Éditeur des activations de zones de la semaine (OdvActivationsEditor), monté une fois puis remis sur la semaine ;
+   *  modification ou import : zones et demandes de réservation recalculées. */
   function mountActivations() {
     const host = $('#odvoActivations');
     if (!window.OdvActivationsEditor) {
@@ -2884,6 +3008,8 @@
     });
   }
 
+  /** Démarrage : vue mémorisée, semaine de l'URL (?semaine=AAAA-Www) sinon la courante sur le jour d'aujourd'hui,
+   *  écouteurs, chargement, activations, garde des modifications non enregistrées. */
   async function init() {
     const v = readView();
     S.view = ['jour', 'semaine', 'stats'].includes(v.view) ? v.view : 'jour';

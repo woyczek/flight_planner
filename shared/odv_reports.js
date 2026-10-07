@@ -28,6 +28,7 @@
   //   registre : aarTrack s'il est rempli) ou ''.
   if (window.OdvReports) return;
   const SCRIPT = document.currentScript?.src || location.href;
+  /** Missions du registre : MissionIndex une fois prêt, sinon copie du navigateur (missionRegistry:v1), sinon []. */
   const registry = async () => {
     await window.MissionIndex?.ready;
     if (window.MissionIndex) return window.MissionIndex.all();
@@ -37,11 +38,15 @@
       return [];
     }
   };
+  /** Normalise un identifiant, un indicatif ou un code pour comparaison (texte, sans espaces aux bords, majuscules). */
   const norm = v => String(v || '').trim().toUpperCase();
   /** Opération d'une mission : operation.id, sinon l'identifiant sans sa lettre d'équipe (A-001A → A-001). */
   const opOf = m => norm(m.operation?.id) || norm(m.id).replace(/^([A-Z]-\d{3})[A-Z]$/, '$1');
+  /** Mission au rôle ravitailleur : aarRole « tanker », ou, sans rôle au registre, mission AAR de type AAR ou R-xxx. */
   const isTanker = m => m.aarRole === 'tanker' || (!m.aarRole && m.aar && (/^AAR$/i.test(m.type || '') || /^R-/.test(norm(m.id))));
+  /** Mission receveuse : aarRole « receiver », ou, rôle absent, mission AAR qui n'est pas ravitailleur. */
   const isReceiver = m => m.aarRole === 'receiver' || (!m.aarRole && m.aar && !isTanker(m));
+  /** Mission liée telle que renvoyée par tankersFor / receiversFor, lien « operation » ou « axe ». */
   const view = (m, lien) => ({
     id: m.id,
     title: m.title || '',
@@ -52,6 +57,10 @@
     folder: m.folder || '',
     lien
   });
+  /**
+   *  Missions liées à la mission id et retenues par want : celles de la même opération, plus, pour les
+   *  ravitailleurs, les missions tanker d'autres opérations sur le même axe (aarTrack). Mission inconnue : [].
+   */
   async function linked(id, want) {
     const all = await registry(),
       me = all.find(m => norm(m.id) === norm(id));
@@ -76,6 +85,11 @@
     TECHNICAL: 'TECHNICAL',
     OPERATIONAL: 'OPERATIONAL'
   };
+  /**
+   *  Traduit le résultat d'un CR (results.outcome) en état de plaquette : SUCCESS → ME, CANCELLED → BACHE,
+   *  PARTIAL_SUCCESS → MNE partielle faite, tout autre code → MNE non faite ; causes du CR, sinon celle
+   *  du résultat, sinon OTHER. Code vide : null.
+   */
   function outcomeOf(code, causes = []) {
     const c = norm(code),
       own = [...new Set((Array.isArray(causes) ? causes : []).map(norm).filter(Boolean))];
@@ -99,6 +113,7 @@
       causes: own.length ? own : [OUTCOME_CAUSE[c] || 'OTHER']
     };
   }
+  /** CR du registre : index ReportIndex, sinon registre YAML copié dans le navigateur (missionCoreLedger:v2). */
   async function reports() {
     const i = await window.ReportIndex?.load?.().catch(() => null);
     if (i) return i.missions || [];
@@ -108,13 +123,19 @@
       return [];
     }
   }
+  /** Mission d'un CR : tirée du n° CR<mission>-<n> (MissionVocab.parseCrId), sinon metadata.missionNumber. */
   const crMission = r => window.MissionVocab?.parseCrId?.(r?.metadata?.missionId)?.mission || norm(r?.metadata?.missionNumber);
+  /** Date du CR (AAAA-MM-JJ) ou '' s'il n'en porte pas. */
   const crDate = r => String(r?.metadata?.date || '').slice(0, 10);
   /** Fin du vol (ms UTC) : date + debut + duree (minutes). */
   const endOf = v => {
     const t0 = Date.parse(`${v.date}T${v.debut || '00:00'}:00Z`);
     return Number.isFinite(t0) ? t0 + (Number(v.duree) || 0) * 6e4 : NaN;
   };
+  /**
+   *  État d'un vol d'après une liste de CR déjà lue (cœur d'etatFromLedger) : CR le plus récent de la mission
+   *  du vol et du même jour, sinon MNE NO_REPORT passé delaiH heures après la fin du vol, sinon null (cf. en-tête).
+   */
   function fromReports(vol, list, {
     delaiH = 48,
     now = Date.now()
@@ -154,13 +175,19 @@
     };
     return null;
   }
+  /** État d'un vol d'après le registre des CR (opts.reports évite de relire le registre). */
   async function etatFromLedger(vol, opts = {}) {
     return fromReports(vol, opts.reports || await reports(), opts);
   }
+  /** États de plusieurs vols, CR lus une seule fois : Map id du vol → résultat ou null. */
   async function etatsFromLedger(vols, opts = {}) {
     const list = opts.reports || await reports();
     return new Map((vols || []).map(v => [v.id, fromReports(v, list, opts)]));
   }
+  /**
+   *  Mission d'une affectation (MissionAssignments) par indicatif, espaces ignorés, hors affectations annulées
+   *  et, si date est donnée, décollant ce jour-là ; '' si aucune.
+   */
   async function missionFor({
     indicatif,
     date
@@ -173,6 +200,10 @@
   }
 
   const tracks = new Map();
+  /**
+   *  Axe de ravitaillement d'une mission : aarTrack du registre, sinon air_refueling.track du yaml de son dossier
+   *  (js-yaml chargé à la demande) ; la promesse est gardée dans tracks pour ne lire le dossier qu'une fois.
+   */
   async function trackOf(id) {
     const key = norm(id);
     if (!key) return '';
@@ -200,6 +231,7 @@
     return p;
   }
 
+  // API publique (voir l'en-tête) ; CAUSES est un accesseur pour suivre MissionVocab chargé après ce module
   window.OdvReports = {
     trackOf,
     tankersFor: id => linked(id, isTanker),

@@ -21,18 +21,23 @@ SOURCES = ('README.md', 'MANUEL_UTILISATEUR.md', 'MANUEL_ADMINISTRATEUR.md')
 
 
 def git(*args):
+    """Sortie texte d'une commande git à la racine du dépôt."""
     return subprocess.run(['git', *args], cwd=ROOT, capture_output=True, text=True, encoding='utf-8').stdout
 
 
 def lines(path):
+    """Lignes du fichier (fins de ligne normalisées)."""
     return io.open(path, encoding='utf-8').read().replace('\r\n', '\n').split('\n')
 
 
 def empreinte(name):
+    """Empreinte git (hash-object) du document docs/<name> tel qu'il est sur le disque."""
     return git('hash-object', f'docs/{name}').strip()
 
 
 def main():
+    """Avec --valider, enregistre les empreintes du français actuel ; sinon montre, pour chaque document, les lignes
+    françaises changées depuis la dernière traduction."""
     sys.stdout.reconfigure(encoding='utf-8')
     ref = json.load(io.open(REF, encoding='utf-8')) if os.path.exists(REF) else {}
     if '--valider' in sys.argv:

@@ -20,14 +20,17 @@
   const K = window.RepositoryKit,
     esc = K.esc,
     A = () => window.MissionAssignments;
+  /** Heure UTC « HH:MMZ » d'un instant en ms. */
   const hhmm = ms => new Date(ms).toISOString().slice(11, 16) + 'Z';
   /** « H-20mn » → -20, « H+1h » → 60 (minutes) ; « H » → 0 (lecture commune, shared/kit.js). */
   const offsetOf = s => K.hOffset(s) ?? 0;
   /** Indicatif suivant d'une patrouille : MERCURE31 → MERCURE32. */
   const nextCallsign = (cs, n) => String(cs || '').replace(/(\d+)(?!.*\d)/, d => String(+d + n).padStart(d.length, '0'));
+  /** Pastille de contrôle (HTML, texte déjà échappé) ; kind : ok, warn, err ou focus. */
   const chip = (text, kind = '') => `<span class="ad-chip ${kind}">${text}</span>`;
   const L = K.tf; // phrase traduite, valeurs {clé} insérées (shared/kit.js)
 
+  /** Injecte une seule fois la feuille de style du dialogue (style#adCss), partagée par open et frame. */
   const css = () => {
     if (!document.getElementById('adCss')) document.head.insertAdjacentHTML('beforeend', `<style id="adCss">
 .ad-dialog{width:min(920px,96vw);max-height:92vh;padding:0;border:1px solid color-mix(in srgb,currentColor 25%,transparent);border-radius:calc(10px * var(--repo-round, 1));box-shadow:0 18px 50px rgba(0,0,0,.45);overflow:hidden}
@@ -97,6 +100,11 @@ dialog.ad-dialog{overflow:hidden;max-height:92vh}dialog.ad-dialog[open]{display:
   }
 
   let dlg = null;
+  /**
+   *  Ouvre (ou réutilise) le dialogue d'affectation de la mission m (entrée du registre, yaml y) : lignes préremplies
+   *  (rows, sinon affectations existantes hors convoyage, sinon un poste par équipage), contrôles par participant,
+   *  puis écriture (MissionAssignments.writeAssignment) ou renvoi à apply. Options : voir l'en-tête. Renvoie le dialog.
+   */
   async function open(m, y, {
     maps = [],
     pilots: preset = [],
@@ -112,6 +120,7 @@ dialog.ad-dialog{overflow:hidden;max-height:92vh}dialog.ad-dialog[open]{display:
       ref = window.DEFA_REFERENCE?.pilots || [];
     // terrain actuel des appareils (site ou CR issu d'un ordre de mission ; sinon la base) : départ du convoyage
     await window.AircraftPositions?.load?.();
+    /** Terrain actuel d'un appareil (AircraftPositions), sinon sa base. */
     const adOf = p => window.AircraftPositions?.adOf?.(p) || p?.base || '';
     const idx = await M.index({
       fresh: true
@@ -133,6 +142,7 @@ dialog.ad-dialog{overflow:hidden;max-height:92vh}dialog.ad-dialog[open]{display:
       d.setUTCHours(10, 0, 0, 0);
       return +d;
     })();
+    /** Ligne vide d'un poste ; sans indicatif au poste, celui de la patrouille décalé de i (MERCURE31 → MERCURE32). */
     const postRow = (post, pilot = '', i = 0) => ({
       pilot,
       registration: '',
@@ -156,10 +166,13 @@ dialog.ad-dialog{overflow:hidden;max-height:92vh}dialog.ad-dialog[open]{display:
     })) : Array.from({
       length: Math.max(posts.length, preset.length)
     }, (_, i) => postRow(posts[i] || posts[posts.length - 1], preset[i] || '', i));
+    /** Libellé du type ou de la catégorie d'un poste (MissionAssignments.specLabel), « ? » si inconnu. */
     const typeLabel = post => M.specLabel(post) || '?';
     const alert0 = existing[0]?.alert || null;
     const decl = {}; // déclarations des pilotes (disponibilités, appareils)
+    /** Déclaration d'un pilote (disponibilités, appareils), lue une fois puis gardée dans decl. */
     const declOf = async tri => tri ? (decl[tri] ??= await M.availability(tri)) : null;
+    /** Appareils proposés pour un poste. */
     const planesOf = post => M.planesFor(post, departure); // du type ou de la catégorie du poste, service puis terrain d'abord
     const pilotList = [...new Set([...ref.map(p => p.trigram), ...preset, ...rows.map(r => r.pilot)])].filter(Boolean).sort();
     const decls = await M.declarations(pilotList);
@@ -190,6 +203,7 @@ dialog.ad-dialog{overflow:hidden;max-height:92vh}dialog.ad-dialog[open]{display:
         if (e.target === dlg) dlg.close();
       });
     }
+    /** Valeur d'un champ datetime-local (heure UTC affichée telle quelle). */
     const toInput = ms => new Date(ms).toISOString().slice(0, 16);
     dlg.innerHTML = `<form method="dialog" class="ad-form">
       <header class="ad-head"><div><h3>${L(['Affecter {m}', 'Assign {m}', '{m} zuweisen', 'Asignar {m}'], { m: esc(m.id) })}</h3><p>${esc(m.title || y.title || '')}</p></div><button type="button" class="repo-plain ad-x" data-close aria-label="${L(['Fermer', 'Close', 'Schließen', 'Cerrar'])}">×</button></header>
@@ -208,13 +222,20 @@ dialog.ad-dialog{overflow:hidden;max-height:92vh}dialog.ad-dialog[open]{display:
       </div>
       <footer class="ad-foot"><p class="ad-msg" data-status></p><button type="button" class="primary" data-save data-icon="save">${apply ? L(['Reporter dans le créneau', 'Carry over to the slot', 'In das Zeitfenster übernehmen', 'Llevar a la franja']) : L(['Enregistrer l’affectation', 'Save the assignment', 'Zuweisung speichern', 'Guardar la asignación'])}</button><button type="button" class="ghost" data-close>${L(['Fermer', 'Close', 'Schließen', 'Cerrar'])}</button></footer>
     </form>`;
+    /** Premier élément du dialogue répondant au sélecteur. */
     const $ = s => dlg.querySelector(s);
     const box = $('.ad-rows');
+    /** Décollage saisi (ms UTC) ; en exercice, le champ porte l'heure H et le décalage du participant est ajouté. */
     const takeoffOf = () => {
       const v = Date.parse($('[data-k="t"]').value + ':00Z');
       return ex ? v + myOffset * 6e4 : v;
     };
+    /**
+     *  Options du choix d'appareil d'un poste : immatriculation, variante, terrain (« convoyage » s'il diffère
+     *  du départ), exploitant si le poste vise un service, indisponibilité ; « autre (saisie)… » : saisie libre.
+     */
     const planeOpts = (sel, post) => `<option value="">${L(['— appareil —', '— aircraft —', '— Luftfahrzeug —', '— aeronave —'])}</option>${planesOf(post).map(p => `<option value="${esc(p.registration)}" ${p.registration === sel ? 'selected' : ''}>${esc(p.registration)} · ${esc(p.variant || p.type)} · ${esc(adOf(p) || '?')}${post?.service && p.operator ? ` · ${esc(p.operator)}` : ''}${adOf(p) && adOf(p) !== departure ? L([' (convoyage)', ' (ferry)', ' (Überführung)', ' (traslado)']) : ''}${p.operational === false ? L([' — indisponible', ' — unavailable', ' — nicht verfügbar', ' — no disponible']) : ''}</option>`).join('')}<option value="__other">${L(['autre (saisie)…', 'other (type in)…', 'andere (Eingabe)…', 'otra (introducir)…'])}</option>`;
+    /** Redessine les cartes des participants (le vivier dépend de l'heure et des autres pilotes), puis lance check. */
     const draw = () => {
       box.innerHTML = rows.map((r, i) => `<section class="ad-card" data-i="${i}"><h4 class="ad-post">${esc(r.callsign || L(['Équipage {n}', 'Crew {n}', 'Besatzung {n}', 'Tripulación {n}'], { n: i + 1 }))} — ${esc(r.post?.type || r.post?.label || L(['type libre', 'any type', 'beliebiger Typ', 'tipo libre']))}${r.post?.service ? ` · ${esc(r.post.service)}` : ''}</h4>
         <div class="ad-line"><label class="ad-pilot">${L(['Pilote', 'Pilot', 'Pilot', 'Piloto'])}<select data-r="pilot">${poolOpts(r.pilot, takeoffOf() + i * 6e4, { exclude: rows.filter((x, j) => j !== i).map(x => x.pilot), spec: r.post })}</select></label>
@@ -328,6 +349,7 @@ dialog.ad-dialog{overflow:hidden;max-height:92vh}dialog.ad-dialog[open]{display:
       rows.splice(+d.dataset.del, 1);
       draw();
     });
+    // équipier de patrouille : même poste que la dernière ligne, indicatif suivant
     $('[data-add]').onclick = () => {
       const lastPost = rows[rows.length - 1]?.post || posts[0];
       rows.push({
@@ -341,6 +363,7 @@ dialog.ad-dialog{overflow:hidden;max-height:92vh}dialog.ad-dialog[open]{display:
     };
     dlg.querySelectorAll('[data-k]').forEach(el => el.addEventListener('change', () => el.dataset.k === 't' ? draw() : check())); // heure : vivier recalculé
     dlg.querySelectorAll('[data-close]').forEach(b => b.onclick = () => dlg.close());
+    // sans apply : refusé tant qu'un participant n'a pas pilote et appareil ; écrit les lignes évaluées par check
     $('[data-save]').onclick = async () => {
       const msg = $('.ad-msg');
       if (apply) { // ouvert depuis la matrice d'un créneau : le résultat y revient, en attente (rien n'est écrit ici)
@@ -400,6 +423,7 @@ dialog.ad-dialog{overflow:hidden;max-height:92vh}dialog.ad-dialog[open]{display:
     return dlg;
   }
 
+  // API publique (voir l'en-tête)
   window.AssignDialog = {
     open,
     frame,

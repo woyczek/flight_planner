@@ -44,6 +44,8 @@ def rows_of(name, minimum):
 
 
 def main(args):
+    """Remplace les lignes des pays demandés, ajoute les villes du monde des pays absents (--world) et réécrit le CSV
+    trié par population."""
     minimum, world = 500, 15000
     if '--min' in args:
         i = args.index('--min'); minimum = int(args[i + 1]); del args[i:i + 2]

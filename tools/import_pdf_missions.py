@@ -23,6 +23,7 @@ DRY = '--dry-run' in sys.argv
 
 
 def pdf_text(path):
+    """Texte du PDF (toutes les pages), sans les pieds de page ni les légendes des cartes."""
     import pypdf
     r = pypdf.PdfReader(path)
     pages = [p.extract_text() or '' for p in r.pages]
@@ -33,6 +34,8 @@ def pdf_text(path):
 
 
 def between(text, start, ends):
+    """Texte entre la ligne de titre start et la première ligne de titre de ends (fin du texte à défaut) ;
+    '' si start est absent. start et ends sont des expressions régulières."""
     m = re.search(rf'^{start}\s*$', text, re.M)
     if not m:
         return ''
@@ -57,6 +60,8 @@ def paragraphs(block):
 
 
 def parse_pdf(path):
+    """Champs de la mission relevés dans le texte du dossier PDF du générateur : ancien identifiant, titre, type,
+    sous-type, aéronefs, résumé, description, risques, équipes, rendez-vous."""
     t = pdf_text(path)
     head = t.split('Information Valeur')[0] if 'Information Valeur' in t else t.split('\n', 2)[0]
     m = re.match(r'\s*Mission\s+(\S+)\s*-\s*(.+)', ' '.join(head.split()), re.S)
@@ -90,14 +95,18 @@ def parse_pdf(path):
 
 
 def q(s):
+    """Valeur en chaîne YAML entre guillemets doubles (antislashs et guillemets échappés)."""
     return '"' + str(s).replace('\\', '\\\\').replace('"', '\\"') + '"'
 
 
 def lit(pars, indent='  '):
+    """Bloc littéral YAML (« |- ») des paragraphes, indentés ; chaîne vide YAML sans paragraphe."""
     return '|-\n' + '\n\n'.join(indent + p for p in pars) if pars else '""'
 
 
 def build_yaml(p, mid, series, maps, operation=None, pdf_name=''):
+    """Texte YAML reconstruit de la mission (reconstructed_from_pdf: true) : champs du PDF, cartes du ZIP,
+    opération éventuelle ; points tournants et cible à compléter."""
     ac = '\n'.join(f"  - type: {p2['type']}\n    variant: {q(p2['variant'])}\n    callsign: {p2['callsign']}" for p2 in p['aircraft']) or '  []'
     rdv = '\n'.join(f"  - id: {r['id']}\n    name: {q(r['name'])}\n    lat: {r['lat']:.6f}\n    lon: {r['lon']:.6f}\n    participants: {q(r['participants'])}" for r in p['rdvs'])
     teams = '\n'.join(f"  - name: {q(x['name'])}\n    description: {q(x['rest'])}" for x in p['teams'])
@@ -148,6 +157,7 @@ notes:
 
 
 def build_md(p, mid):
+    """Résumé Markdown de la mission (summary<id>.md) reconstruit depuis les champs du PDF."""
     lines = [f"# Mission {mid} — {p['title']}", '', '## Introduction', '']
     if p['concerned']:
         lines.append(f"**Aéronef concerné :** {p['concerned'].replace(' - ', ' — ')}  ")
@@ -165,6 +175,8 @@ def build_md(p, mid):
 
 
 def map_kind(name):
+    """Type de carte d'après son nom de fichier (assemblage, profil_vertical, detail_rdv, detail, general, target, zone ;
+    map à défaut)."""
     n = name.lower()
     for k, v in (('assemblage', 'assemblage'), ('profil_vertical', 'profil_vertical'), ('detail_rdv', 'detail_rdv'), ('detail_cible', 'detail'), ('general', 'general'), ('cible', 'target'), ('zone', 'zone')):
         if k in n:
@@ -173,6 +185,8 @@ def map_kind(name):
 
 
 def put(dst, data, moved, missions_root):
+    """Écrit data dans dst ; un fichier différent déjà présent est d'abord déplacé dans _remplaces/<date>/ (noté dans
+    moved). Rien n'est écrit en simulation. Retourne « identique » ou « écrit »."""
     if os.path.exists(dst):
         if open(dst, 'rb').read() == data:
             return 'identique'
@@ -188,6 +202,7 @@ def put(dst, data, moved, missions_root):
 
 
 def main():
+    """Exécute le plan JSON (premier argument) : cartes des ZIP, PDF, YAML et résumé reconstruits ou rangés ; bilan affiché."""
     plan = json.load(open(sys.argv[1], encoding='utf-8'))
     dl, root = plan['downloads'], plan['missions']
     moved, report = [], []

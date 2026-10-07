@@ -39,10 +39,12 @@ _cache = {}
 
 
 def rel(path):
+    """Chemin relatif à la racine du dépôt, séparateurs « / »."""
     return os.path.relpath(path, ROOT).replace(os.sep, '/')
 
 
 def lire(path):
+    """Octets du fichier pour l'empreinte : fins de ligne ramenées à LF, sauf pour les binaires (images, polices)."""
     b = open(path, 'rb').read()
     return b if path.lower().endswith(BINAIRE) else b.replace(b'\r\n', b'\n')
 
@@ -84,6 +86,7 @@ def empreinte(path):
 
 
 def ecrire_si_change(path, avant, apres):
+    """Écrit le texte s'il diffère de l'original (et vide le cache des empreintes) ; vrai si le fichier a été écrit."""
     if apres != avant:
         io.open(path, 'w', encoding='utf-8', newline='').write(apres)
         _cache.clear()   # les empreintes qui en dépendent sont à recalculer
@@ -97,6 +100,7 @@ absents = set()
 def versionner(texte, base, motif):
     """Remplace chaque « chemin?v=… » du motif (groupe 2 : chemin) par l'empreinte du fichier (relatif à base)."""
     def sub(m):
+        """Référence avec l'empreinte du fichier visé ; fichier absent : laissée telle quelle et signalée (absents)."""
         cible = os.path.normpath(os.path.join(base, m.group(2)))
         if not os.path.isfile(cible):
             absents.add(f'{m.group(2)} (depuis {rel(base)})')

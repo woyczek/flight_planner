@@ -28,6 +28,7 @@ AIRAC = ('AIXM4.5_all_FR_OM_', 'XML_SIA_', 'sia-airspaces-', 'export_xml_bd_SIA_
 
 
 def git(*args, check=True):
+    """Sortie d'une commande git à la racine de l'application ; en échec : RuntimeError (check) ou None."""
     r = subprocess.run(['git', *args], cwd=ROOT, capture_output=True, text=True, encoding='utf-8', errors='replace')
     if r.returncode and check:
         raise RuntimeError(r.stderr.strip())
@@ -70,6 +71,8 @@ def last_v2_commit():
 
 
 def main():
+    """Prépare data/, y recopie les données suivies en v2 et y déplace les fichiers restés, puis affiche le bilan et
+    l'inscrit dans .git/suite-update.log (rien n'est changé avec --dry-run)."""
     report = {'created': [], 'restored': [], 'moved': [], 'conflicts': [], 'removed_dirs': []}
     url = sys.argv[sys.argv.index('--data-url') + 1] if '--data-url' in sys.argv else None
     # 1. data/

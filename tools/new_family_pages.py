@@ -28,6 +28,7 @@ fam, folder, prefix, file = cfg['family'], cfg['folder'], cfg['prefix'], cfg.get
 
 
 def from_template(name, title):
+    """Page de HEMS (name) adaptée à la nouvelle famille : titre, en-tête, module et identifiant de la famille."""
     s = io.open(os.path.join(ROOT, APP, 'HEMS', name), encoding='utf-8').read()
     s = re.sub(r'<title>.*?</title>', f'<title>{title}</title>', s)
     s = re.sub(r'(<header class="mc-header"><h1>).*?(</h1>)', lambda m: m.group(1) + title + m.group(2), s)

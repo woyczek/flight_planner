@@ -18,18 +18,25 @@
   //   plages), memberState(plages, genre, début, fin), conflicts(document, { dispos, affectations }), prepReady(élément,
   //   { dispos, affectations }), together(date, TRI[], dispos, { genre, min }), tranches(), colorFor(indicatif, réglages),
   //   stats(document, { dispos, affectations, config }).
+  //   Aussi : loadDlo({ fresh }), saveDlo(document) (DLO permanentes, data/odv/dlo.json), workdaysTo(échéance, depuis).
   if (window.OdvOrders) return;
+  // modules de la suite lus à l'usage (chargés avant ou après celui-ci) : affectations et disponibilités
   const A = () => window.MissionAssignments,
     D = () => window.SuiteDispos;
+  // chemins relatifs à data/ (lus et écrits par MissionAssignments.readData / writeData)
   const CONFIG = 'config/odv.json',
     fileOf = week => `odv/${week}.json`;
+  /** Visa de l'entité (court, SOG par défaut) et auteur d'une écriture (utilisateur, sinon trigramme, sinon CPCO). */
   const VA = () => window.RepositoryNav?.va?.().short || 'SOG',
     by = () => window.SuiteUsers?.by?.() || A()?.trigram?.() || 'CPCO';
+  /** Copie profonde d'un objet JSON (réglages par défaut, élément d'une récurrence). */
   const clone = o => JSON.parse(JSON.stringify(o));
+  /** Nombre sur deux chiffres. */
   const pad = n => String(n).padStart(2, '0');
   const TYPES = ['vol', 'divers', 'controle', 'note'],
     ETATS = ['prevu', 'fait', 'non_fait', 'annule'],
     CR = ['ME', 'BACHE', 'MNE'];
+  /** Heures de service d'un jour : début h:m, fin 23:00. */
   const day = (h, m = 0) => ({
     debut: `${pad(h)}:${pad(m)}`,
     fin: '23:00'
@@ -72,11 +79,17 @@
     const m = /^(\d{1,2}):(\d{2})$/.exec(String(s ?? ''));
     return m ? Math.min(1440, +m[1] * 60 + +m[2]) : null;
   };
+  /** Minutes depuis minuit → « HH:MM ». */
   const hhmm = n => `${pad(Math.floor(n / 60))}:${pad(n % 60)}`;
+  /** Identifiant court d'élément (horodatage et aléa en base 36). */
   const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
 
   // ---- réglages partagés
   let cfg = null;
+  /**
+   *  Réglages partagés (data/config/odv.json) fusionnés sur DEFAULT_CONFIG (jours et modèles fusionnés clé par clé) ;
+   *  gardés en mémoire, relus si fresh. Fichier absent ou illisible : les réglages par défaut.
+   */
   async function loadConfig({
     fresh = false
   } = {}) {
@@ -120,6 +133,7 @@
   // updated_at, by, membres: { TRI → [{ id, texte, echeance "AAAA-MM-JJ" | null (butée), etat: a_faire | fait | annule,
   // auto (fermée par un vol fait), fait_le, vol }] } } ; courent d'une semaine à l'autre
   const DLO_FILE = 'odv/dlo.json';
+  /** DLO permanentes de tous les membres ; fichier absent : { schema: 1, membres: {} }. */
   async function loadDlo({
     fresh = false
   } = {}) {
@@ -132,6 +146,8 @@
       ...(v || {})
     };
   }
+  /** Enregistre les DLO (datées, signées ; DLO sans texte et membres sans DLO retirés) ;
+   *  renvoie { …retour de writeData, doc }. */
   async function saveDlo(doc) {
     const out = {
       ...doc,
@@ -170,6 +186,7 @@
       length: Math.max(1, Math.min(7, n))
     }, (_, i) => new Date(mon + i * 864e5).toISOString().slice(0, 10));
   }
+  /** Ordre de vol vide d'une semaine (sans élément, sans permanence). */
   const emptyWeek = week => ({
     schema: 1,
     va: VA(),
@@ -361,6 +378,7 @@
   /** Entraînement d'un élément : PTA (principal training audience : membres que l'élément entraîne en priorité, entourés
    *  sur l'ordre) et DLO (desired learning objectives : objectifs de chaque membre sur cet élément, { TRI → texte }). */
   function training(e) {
+    // trigramme normalisé
     const tri = x => String(x || '').trim().toUpperCase();
     return {
       pta: [...new Set((e?.pta || []).map(tri).filter(Boolean))],
@@ -422,6 +440,7 @@
       simulateurs: doc.simulateurs
     });
   }
+  /** Plage de disponibilité en minutes [début, fin[ ; bornes absentes : toute la journée. */
   const span = x => [x.debut ? min(x.debut) : 0, x.fin ? min(x.fin) : 1440];
   /** État d'un membre sur [début, fin[ (minutes) d'après ses plages du jour : { ok, raison: non_declare | non_couvert |
    *  non_affectable,
@@ -431,6 +450,7 @@
       ok: false,
       raison: 'non_declare'
     };
+    // genres d'éléments auxquels une catégorie de plage rend affectable
     const aff = id => D()?.affectable?.(id) || [];
     let block = null;
     const good = [];
@@ -469,6 +489,7 @@
     affectations = []
   } = {}) {
     const out = new Map();
+    // ajoute un conflit à la liste de l'élément id
     const add = (id, c) => (out.get(id) || out.set(id, []).get(id)).push(c);
     const live = (doc?.elements || []).filter(e => kindOf(e) && e.etat !== 'annule');
     const busy = []; // [tri, date, début, fin, id]
@@ -584,6 +605,7 @@
   } = {}) {
     const vols = (doc?.elements || []).filter(e => e.type === 'vol');
     const live = vols.filter(e => e.etat !== 'annule');
+    // nombre d'éléments de l répondant à f
     const cnt = (l, f) => l.filter(f).length;
     const membres = {};
     for (const [tri, days] of Object.entries(dispos)) {
@@ -621,6 +643,7 @@
     };
   }
 
+  // API publique (voir l'en-tête)
   window.OdvOrders = {
     DEFAULT_CONFIG,
     TYPES,

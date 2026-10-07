@@ -19,6 +19,7 @@ TOL = .08  # tolérance de simplification (degrés)
 
 
 def simplify(pts, tol):
+    """Douglas-Peucker sur une ligne ouverte de points [lon, lat] : garde les points à plus de tol (degrés) de la corde."""
     if len(pts) < 4:
         return pts
     a, b = pts[0], pts[-1]
@@ -35,6 +36,8 @@ def simplify(pts, tol):
 
 
 def rings(geom):
+    """Contours extérieurs simplifiés et arrondis au centième de degré d'une géométrie Polygon / MultiPolygon
+    (contours de moins de 4 points écartés)."""
     polys = geom['coordinates'] if geom['type'] == 'MultiPolygon' else [geom['coordinates']]
     for p in polys:
         r = p[0]  # contour extérieur seulement ; fermé (extrémités confondues) : simplifié en deux moitiés
@@ -45,6 +48,7 @@ def rings(geom):
 
 
 def main():
+    """Lit les pays de Natural Earth (fichier donné ou téléchargé), les regroupe en zones et écrit aero_zones_geo.js."""
     sys.stdout.reconfigure(encoding='utf-8')
     if len(sys.argv) > 1:
         data = json.load(io.open(sys.argv[1], encoding='utf-8'))

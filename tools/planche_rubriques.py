@@ -37,6 +37,7 @@ FAMILIES = ['FIRE', 'HEMS', 'SAR', 'AIRLIFT', 'MARITIME', 'HADR', 'AIRBORNE', 'F
 
 
 def font(size, bold=False):
+    """Police Windows (Georgia, sinon Arial ; grasse avec bold) à la taille donnée ; police par défaut de Pillow à défaut."""
     for name in (('georgiab.ttf' if bold else 'georgia.ttf'), ('arialbd.ttf' if bold else 'arial.ttf')):
         p = os.path.join(os.environ.get('WINDIR', 'C:/Windows'), 'Fonts', name)
         if os.path.exists(p):
@@ -79,6 +80,7 @@ def tile(path, title, fams, stamp=None, w=520):
     probe = ImageDraw.Draw(Image.new('RGB', (1, 1)))
 
     def wrap(s, f):
+        """Texte s renvoyé à la ligne pour tenir dans la largeur de texte de la vignette (police f) ; liste des lignes."""
         lines, cur = [], ''
         for word in s.split():
             nxt = (cur + ' ' + word).strip()
@@ -109,6 +111,8 @@ def tile(path, title, fams, stamp=None, w=520):
 
 
 def sheet(design, data, cols=3):
+    """Planche d'un design : une vignette par en-tête d'organisme, plus l'en-tête par défaut avec les familles
+    restantes ; None sans en-tête."""
     tiles = []
     for hid, fams in data['headers'].items():
         path = os.path.join(ROOT, 'shared', 'deco', design, f'order-header-{hid}.webp')
@@ -136,6 +140,7 @@ def sheet(design, data, cols=3):
 
 
 def main():
+    """Écrit la planche de chaque design et la planche d'ensemble dans docs/technique/planches/."""
     os.makedirs(OUT, exist_ok=True)
     data = mapping()
     sheets = []
