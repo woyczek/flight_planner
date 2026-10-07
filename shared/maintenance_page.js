@@ -1213,7 +1213,10 @@
       if (S.kind === 'download') return `<p class="row"><button type="button" class="secondary" data-aero-fetch="${esc(S.provider)}" data-src="${esc(src)}" data-args="${esc((S.args || [id]).join(' '))}" data-icon="download"${aeroFetching.has(`${id}|${src}`) ? ' disabled' : ''}>${esc(t(['Télécharger', 'Download', 'Herunterladen', 'Descargar']))}</button> <span class="mt-small" data-fetch-msg>${aeroFetchMsg[`${id}|${src}`] || ''}</span></p>`;
       if (S.kind === 'local') return `<p class="mt-small">${esc(t(S.howto))}</p><p class="row" data-aero-xp></p>`;
       if (S.kind === 'computed') return `<p class="row"><button type="button" class="secondary" data-mora-zone="${esc(id)}"${moraBusy ? ' disabled' : ''} data-icon="chart" title="${esc(t(['Relief Terrarium, sommets OpenStreetMap et obstacles de la base, sur l’emprise de la zone (réseau)', 'Terrarium terrain, OpenStreetMap peaks and base obstacles, over the zone extent (network)']))}">${esc(t(['Calculer la MORA de la zone', 'Compute the zone MORA', 'MORA der Zone berechnen', 'Calcular la MORA de la zona']))}</button></p><p class="mt-small">${esc(t(['Autre source de MORA : X-Plane (grille mondiale, si la source X-Plane est cochée) ; la grille calculée a la priorité.', 'Other MORA source: X-Plane (world grid, if the X-Plane source is ticked); the computed grid has priority.']))}</p>`;
-      return `<p class="mt-small">${esc(t(S.howto || ['', '']))}</p>${link ? `<p class="row">${link}</p>` : ''}`;
+      // source à fournir par l'utilisateur (NATS…) et lisible par la base : bouton de dépôt (sélecteur ouvert sur
+      // Téléchargements, fichiers rangés dans data/sia/zones/<zone>/, base reconstruite) — plus de dépôt à la main
+      const drop = (S.kind === 'manual' || S.kind === 'pdf') && S.readable ? ` <button type="button" class="secondary" data-aero-drop="${esc(src)}" data-icon="upload" title="${esc(t(['Choisir les fichiers téléchargés (le sélecteur s’ouvre sur Téléchargements) : rangés dans data/sia/zones/{z}/, puis base reconstruite', 'Choose the downloaded files (the picker opens on Downloads): stored in data/sia/zones/{z}/, then database rebuilt', 'Heruntergeladene Dateien wählen (Auswahl öffnet „Downloads“): abgelegt in data/sia/zones/{z}/, dann Datenbank neu aufgebaut', 'Elegir los archivos descargados (el selector se abre en Descargas): guardados en data/sia/zones/{z}/ y base reconstruida']).replace(/\{z\}/g, id))}">${esc(t(['Déposer les fichiers…', 'Drop the files…', 'Dateien ablegen…', 'Depositar los archivos…']))}</button>` : '';
+      return `<p class="mt-small">${esc(t(S.howto || ['', '']))}</p>${link || drop ? `<p class="row">${link}${drop}</p>` : ''}`;
     };
     const rows = z.sources.map(src => {
       const S = Z.SOURCES[src],
@@ -1399,7 +1402,7 @@
     });
     li.classList.add('repo-block-flash');
     setTimeout(() => li.classList.remove('repo-block-flash'), 1600);
-    const ctl = src === 'sia' ? li.querySelector('#mtSiaFetch') : src === 'dircam' ? li.querySelector('#mtEnr57') : src === 'mora' ? li.querySelector('[data-mora-zone]') : src === 'xplane' ? li.querySelector('button.mt-folder') : li.querySelector('[data-aero-fetch]');
+    const ctl = src === 'sia' ? li.querySelector('#mtSiaFetch') : src === 'dircam' ? li.querySelector('#mtEnr57') : src === 'mora' ? li.querySelector('[data-mora-zone]') : src === 'xplane' ? li.querySelector('button.mt-folder') : li.querySelector('[data-aero-fetch]') || li.querySelector('[data-aero-drop]');
     if (ctl && !ctl.disabled) ctl.click();
   }
   /** Zone du panneau : l'épinglée, sinon la survolée, sinon la dernière choisie. */
@@ -1706,6 +1709,51 @@
     enr57Show();
   }
   /** Téléchargement d'une source par le lanceur (tools/aero_fetch.py) ; état et résultat sous le bouton. */
+  /** Fichiers d'une source fournis par l'utilisateur (NATS…) : choisis (sélecteur ouvert sur Téléchargements), copiés dans
+   *  data/sia/zones/<zone>/ du dossier SIA autorisé, puis base reconstruite par le bloc commun (« Tout recalculer »). */
+  async function aeroDrop(zone, src) {
+    const say = (m, k) => window.AppFramework?.notify?.(m, k);
+    let handles = [];
+    try {
+      if (window.showOpenFilePicker) handles = await window.showOpenFilePicker({
+        multiple: true,
+        startIn: 'downloads'
+      });
+      else {
+        // sans l'API (Firefox…) : sélecteur classique
+        handles = await new Promise(res => {
+          const i = Object.assign(document.createElement('input'), {
+            type: 'file',
+            multiple: true
+          });
+          i.onchange = () => res([...i.files].map(f => ({
+            getFile: async () => f
+          })));
+          i.click();
+        });
+      }
+    } catch {
+      return; // sélection annulée
+    }
+    if (!handles.length) return;
+    try {
+      const dir = await folder('__sia', true);
+      if (!dir) throw new Error(t(['dossier SIA non autorisé : Installation › Sources et dossiers', 'SIA folder not authorised: Installation › Sources and folders', 'SIA-Ordner nicht freigegeben: Installation › Quellen und Ordner', 'carpeta SIA no autorizada: Instalación › Fuentes y carpetas']));
+      const names = [];
+      for (const h of handles) {
+        const f = await h.getFile();
+        await writeAt(dir, `zones/${zone}/${f.name}`, await f.arrayBuffer());
+        names.push(f.name);
+      }
+      say(t(['{n} fichier(s) {s} rangé(s) dans data/sia/zones/{z}/ : {l} — reconstruction de la base…', '{n} {s} file(s) stored in data/sia/zones/{z}/: {l} — rebuilding the database…', '{n} {s}-Datei(en) in data/sia/zones/{z}/ abgelegt: {l} — Datenbank wird neu aufgebaut…', '{n} archivo(s) {s} guardado(s) en data/sia/zones/{z}/: {l} — reconstruyendo la base…']).replace('{n}', names.length).replace('{s}', t(window.AeroZones?.SOURCES?.[src]?.label || [src, src])).replace('{z}', zone).replace('{l}', names.join(', ')), 'ok');
+      await scanSiaFolder(false);
+      renderSia();
+      await new Promise(r => setTimeout(r, 50));
+      basePanelApi?.reread(true); // même traitement que « Tout recalculer »
+    } catch (e) {
+      say(e.message, 'err');
+    }
+  }
   async function aeroFetch(provider, args, btn, zone = '', src = '') {
     const say = (m, k = 'warn') => window.AppFramework.notify(m, k),
       key = `${zone}|${src}`;
@@ -1795,7 +1843,8 @@
         Z.setZone(b.dataset.zoneToggle, !Z.isOn(b.dataset.zoneToggle));
         aeroPin(Z, b.dataset.zoneToggle); // la zone reste au panneau pour régler ses sources
         aeroRefresh(Z);
-      } else if (b.dataset.aeroFetch) aeroFetch(b.dataset.aeroFetch, b.dataset.args.split(' ').filter(Boolean), b, panel.dataset.zone, b.dataset.src);
+      } else if (b.dataset.aeroDrop) aeroDrop(panel.dataset.zone, b.dataset.aeroDrop);
+      else if (b.dataset.aeroFetch) aeroFetch(b.dataset.aeroFetch, b.dataset.args.split(' ').filter(Boolean), b, panel.dataset.zone, b.dataset.src);
       else if (b.dataset.moraZone) moraExclusive(planMoraZone, b.dataset.moraZone);
       else if (b.id === 'mtArchive') archiveOld();
       else if (b.id === 'mtSiaZipFolder') extractZip(siaFolderState.zips[0].file);
