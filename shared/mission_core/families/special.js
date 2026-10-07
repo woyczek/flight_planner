@@ -88,8 +88,8 @@
           'Authority', 'Behörde', 'Autoridad')),
         f(P + 'passengerDetail', L('Délégation (détail)', 'Delegation (detail)', 'Delegation (Details)',
           'Delegación (detalle)'), 'text', {
-            sensitive: true
-          }),
+          sensitive: true
+        }),
         f(P + 'origin', L('Origine', 'Origin', 'Start', 'Origen'), 'text', {
           upper: true
         }), f(P + 'destination', L('Destination', 'Destination', 'Ziel', 'Destino'), 'text', {
@@ -119,9 +119,9 @@
         f(P + 'stops', L('Escales', 'Stops', 'Zwischenlandungen', 'Escalas'), 'text', {
           upper: true
         }), f(P + 'defects', L('Défauts constatés', 'Defects found', 'Festgestellte Mängel', 'Defectos detectados'),
-        'textarea', {
-          full: true
-        })
+          'textarea', {
+            full: true
+          })
       ]
     }, {
       id: 'special-test',

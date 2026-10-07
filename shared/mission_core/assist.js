@@ -974,7 +974,8 @@
 
     // ---- saisie validée (change) : appareils, terrains, METAR, soleil automatique
     const AERODROME = new Set(['aircraft.*.baseDeparture', 'aircraft.*.baseReturn', 'navigation.dep', 'navigation.arr',
-      'navigation.altn']);
+      'navigation.altn'
+    ]);
     /** Après une saisie validée : valeurs connues à recalculer ; terrain → aide et, au départ, lever / coucher du soleil ; date ou décollage → soleil ; METAR → champs météo ; METAR, température, QNH ou départ → altitude densité. */
     async function onCommit(path, value) {
       pools = null; // valeurs connues recalculées au prochain focus

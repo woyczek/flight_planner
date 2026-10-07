@@ -402,7 +402,7 @@
         s = Math.sqrt(at.sigma);
       let ve;
       if (mode === 'eco') ve = jet ? Math.min(Math.pow(3, .25) * M.veMd, M.mRef * at.a * s, veCap) : M
-      .veMd; // jamais plus rapide que la croisière du profil
+        .veMd; // jamais plus rapide que la croisière du profil
       else if (jet) ve = Math.min(M.mRef * at.a * s, veCap);
       else ve = powerSpeed(h, Math.min(M.pRef, .98 * M.avail(h)));
       // hélice : si la puissance de croisière du profil ne tient plus le palier (air moins dense), l'équipage remet juste

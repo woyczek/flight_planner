@@ -157,9 +157,9 @@
         f(P + 'ils.interceptAltFt', L('Altitude d’interception (ft)', 'Intercept altitude (ft)', 'Abfanghöhe (ft)',
           'Altitud de interceptación (ft)'), 'number'),
         f(P + 'ils.direction', L('Sens d’approche', 'Approach direction', 'Anflugrichtung', 'Sentido de aproximación'),
-        'text', {
-          upper: true
-        }),
+          'text', {
+            upper: true
+          }),
         f(P + 'ils.locResult', L('Résultat LOC', 'LOC result', 'LOC-Ergebnis', 'Resultado LOC'), 'select', {
           options: tolerance,
           blank: true

@@ -96,7 +96,7 @@
       length: 7
     }, (_, j) => new Date(mon + j * 864e5).toISOString().slice(0, 10));
     const tris = [...new Set((window.DEFA_REFERENCE?.pilots || []).map(x => String(x.trigram || '').toUpperCase()).filter(Boolean))]
-    .sort();
+      .sort();
     const pilotes = tris.map((tr, i) => ({
       trigramme: tr,
       ligne: i + 1,
@@ -395,9 +395,10 @@
     } catch (e) {
       console.error(e);
       notify(L(['Analyse impossible : {e}', 'Cannot analyse the workbook: {e}', 'Analyse nicht möglich: {e}',
-        'Análisis imposible: {e}'], {
-          e: e.message
-        }), 'err');
+        'Análisis imposible: {e}'
+      ], {
+        e: e.message
+      }), 'err');
       xl = null;
     }
     await showWeek();
@@ -1372,7 +1373,7 @@
             // convoyeur : libre sur tout le convoyage et sans autre mission dans les créneaux qu'il touche (une mission
             // par pilote et par tranche, même si ses disponibilités déclarées sont plus larges)
             const slotFree = tr => O.slotsOver(a, b).every(([jj, kk]) => !O.assigned(tr, jj, kk).some(l => !inWin.has(l
-            .mission))); // missions de la fenêtre : en cours de modification
+              .mission))); // missions de la fenêtre : en cours de modification
             r.ferryCands = O.pilots().filter(tr => tr !== r.pilot && !(x.on && taken.has(tr)) && !used.has(tr) && owns(tr) !==
                 false && O.freeOver(tr, a, b) && slotFree(tr))
               .map(tr => ({
@@ -2339,7 +2340,7 @@
     }
     bindExports();
     window.OdvAssign?.load(emptyWeek(), settings).then(() => loadAtc()).then(refreshNoBook).catch(
-  () => {}); // sans classeur : déclarations
+      () => {}); // sans classeur : déclarations
     loadPlays().then(() => {
       if (basis) {
         compute();

@@ -191,7 +191,7 @@
       fields: [
         f(P + 'reportedTo', L('Compte rendu transmis à', 'Report sent to', 'Meldung an', 'Informe transmitido a')),
         f(P + 'reportTime', L('Heure de transmission', 'Transmission time', 'Übermittlungszeit', 'Hora de transmisión'),
-        'time'),
+          'time'),
         f(P + 'reportMeans', L('Moyen (radio, datalink…)', 'Means (radio, datalink…)', 'Mittel (Funk, Datalink…)',
           'Medio (radio, enlace de datos…)'))
       ]

@@ -228,7 +228,7 @@
     p = set(p, 'RAVITAILLEMENT', r.aar || 'libre');
     p = set(p, 'DURÉE', r.duration || 'libre');
     p = p.replace(/^(\s*TRADUCTIONS\s*=\s*)\S+/m, (_, a) => a + String(r.translations || 'en').replace(/\$/g,
-    '$$$$')); // valeur à espaces (« en, de, es »)
+      '$$$$')); // valeur à espaces (« en, de, es »)
     let copied = false;
     try {
       await navigator.clipboard.writeText(p);

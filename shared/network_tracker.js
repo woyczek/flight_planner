@@ -411,7 +411,7 @@
     const localDay = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
     let day = sessions.filter(s => Number(s.type ?? 1) === 1 && (!date || localDay(utc(s.start)) === date));
     if (callsign && day.some(s => String(s.callsign).toUpperCase() === callsign)) day = day.filter(s => String(s.callsign)
-    .toUpperCase() === callsign);
+      .toUpperCase() === callsign);
     if (!day.length) {
       status(t('noSession', {
         date: date || '—',
@@ -550,7 +550,7 @@
     panel.querySelector('.nt-clip').onclick = () => readClipboard(false);
     // Ctrl+V dans la zone : analyse immédiate.
     panel.querySelector('.nt-paste textarea').addEventListener('paste', event => setTimeout(() => applyVatsimHistory(event.target
-    .value)));
+      .value)));
     panel.querySelectorAll('.nt-link').forEach(link => link.onclick = event => {
       const kind = link.dataset.kind,
         id = kind === 'ivao' ? value('ivaoId') : value('vatsimId');
@@ -560,7 +560,7 @@
         return;
       }
       link.href = kind === 'ivao' ? HISTORY.ivaoTracker(id) : kind === 'vatsim' ? HISTORY.vatsimStats(id) : HISTORY.statsimFlights(
-      id);
+        id);
     });
     paintLog();
   }

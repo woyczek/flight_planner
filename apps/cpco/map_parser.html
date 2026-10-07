@@ -11,8 +11,8 @@
 <script src="../../shared/carto/maplibre-gl.js"></script>
 <script src="../../shared/mission_core/vendor/js-yaml.min.js"></script>
 <script src="mission_store.js?v=559e3351"></script>
-<script src="../../shared/carto/aero_symbols.js?v=50ad43df"></script><script src="../../shared/carto/vertical_profile.js?v=75163ccf"></script><script src="../../shared/carto/vprof_editor.js?v=e34b66fc"></script><script src="../../AircraftDB/aircraft_db.js"></script><script src="../../shared/flight_performance_model.js?v=55d82d9b"></script><script src="../../AircraftDB/aircraft_perf.js"></script><script src="../../shared/mission_routing.js?v=3cc1352c"></script><script src="../../shared/mission_estimate.js?v=e352037a"></script><script src="../../shared/mission_exercise.js?v=b68ac247"></script><script src="../../shared/mission_registry.js?v=f6f9c789"></script>
-<script src="../../shared/sia_base.js?v=d1015ca7"></script><script src="../../shared/aar_tracks.js?v=32606456"></script><script src="../../shared/airac.js?v=1fa4a088"></script><script src="../../shared/sticky_frame.js?v=90db4df1"></script>
+<script src="../../shared/carto/aero_symbols.js?v=50ad43df"></script><script src="../../shared/carto/vertical_profile.js?v=75163ccf"></script><script src="../../shared/carto/vprof_editor.js?v=e34b66fc"></script><script src="../../AircraftDB/aircraft_db.js"></script><script src="../../shared/flight_performance_model.js?v=e12c839a"></script><script src="../../AircraftDB/aircraft_perf.js"></script><script src="../../shared/mission_routing.js?v=3cc1352c"></script><script src="../../shared/mission_estimate.js?v=e352037a"></script><script src="../../shared/mission_exercise.js?v=b68ac247"></script><script src="../../shared/mission_registry.js?v=f6f9c789"></script>
+<script src="../../shared/sia_base.js?v=d9162699"></script><script src="../../shared/aar_tracks.js?v=8f76a899"></script><script src="../../shared/airac.js?v=1fa4a088"></script><script src="../../shared/sticky_frame.js?v=90db4df1"></script>
 <style data-layer="app">
 @layer app {
   :root {
@@ -1618,7 +1618,7 @@ async function relireOnOpen() {
   });
   basePanel.setMessage(
     '<span class="err">Cliquer « Relire le dossier » : le navigateur demande de confirmer l’accès au dossier SIA, puis la base est relue (quelques secondes).</span>'
-    )
+  )
 }
 /** Texte du premier élément XML de nom local donné (espace de noms ignoré) ; chaîne vide s'il manque. */
 const txt = (node, local) => {
@@ -1744,7 +1744,7 @@ function parseMission(text) {
     points = [];
   const targetBlock = (text.match(
     /^\s*TARGET\s*:\s*\r?\n([\s\S]*?)(?=^\s*(?:TURNING POINTS|POINTS TOURNANTS|RDV|ZONE|MAPS TO PRODUCE|MAPS|NOTES)\s*:\s*$|(?![\s\S]))/mi
-    ) || [])[1] || '';
+  ) || [])[1] || '';
   if (targetBlock) addPoint(points, {
     id: 'TARGET',
     name: after(targetBlock, 'NAME') || after(targetBlock, 'NOM') || 'Cible',
@@ -2841,7 +2841,7 @@ function addInteractiveMissionMarkers(map, mapDef) {
       font = +el(mapDef, 'pointFont') || 11,
       color = el(mapDef, 'pointColor'),
       fill = el(mapDef,
-      'pointFill'); /* points déjà portés par la route éditable (bloc Route, même position à ~100 m près) : pas de second marqueur */
+        'pointFill'); /* points déjà portés par la route éditable (bloc Route, même position à ~100 m près) : pas de second marqueur */
     const onRoute = (() => {
       let r = [];
       try {
@@ -4677,7 +4677,7 @@ async function drawVprofPreview() {
     $('vprofStatus').textContent = `${(data.total/1852).toFixed(1)} NM, ${data.crossed.length} traversée(s) d’espace, ${data.obstacles.length} obstacle(s) à moins de 1 NM.`;
     if (!data.plan) $('vprofStatus').insertAdjacentHTML('beforeend',
       ' <span class="err">Trajectoire non tracée : ni niveau de croisière, ni altitude dans le cheminement (« /3000 », « /FL65 » ou « N0450F350 »).</span>'
-      )
+    )
   } catch (e) {
     $('vprofStatus').innerHTML = `<span class="err">${esc(e.message)}</span>`
   }
@@ -6841,7 +6841,7 @@ function enlargePreview(src, alt) {
 }
 $('previewGallery').addEventListener('click', e => {
   if (e.target.matches('img')) return enlargePreview(e.target.src, e.target
-  .alt); /* designs à cadre : clic sur le carnet (fermé, ou marge du carnet ouvert) = actualiser les aperçus */
+    .alt); /* designs à cadre : clic sur le carnet (fermé, ou marge du carnet ouvert) = actualiser les aperçus */
   if (document.documentElement.dataset.skeuo === 'frame' && (e.target === e.currentTarget || e.target.matches('.previewCard')) && !$(
       'previewAll').disabled) $('previewAll').click()
 });
@@ -6849,7 +6849,7 @@ $('generalPreview').addEventListener('click', e => enlargePreview(e.target.src, 
 $('assemblyPreview').addEventListener('click', e => enlargePreview(e.target.src, e.target.alt));
 $('closePreview').onclick = () => $('previewDialog').close();
 $('previewDialog').addEventListener('click', () => $('previewDialog')
-.close()); /* un clic sur la carte agrandie (ou autour) la ferme */ ; // Sorties (PNG / SVG, largeur) : menu ☰ › Page ; choix mémorisés.
+  .close()); /* un clic sur la carte agrandie (ou autour) la ferme */ ; // Sorties (PNG / SVG, largeur) : menu ☰ › Page ; choix mémorisés.
 /** Préférences de sortie (localStorage siaOutput) : PNG, SVG éditable, largeur des PNG ; défauts si illisibles. */
 const outputPrefs = (() => {
     try {
@@ -7007,7 +7007,7 @@ applyOutputPrefs();;
   }
 })();
 </script>
-<script src="../../shared/repository_nav.js?v=fa2068e8"></script>
-<script src="../../shared/app_framework.js?v=9b52c6db"></script>
-<script src="../../shared/content_i18n.js?v=efa62576"></script><script src="sia_i18n.js?v=e4046ef4"></script>
+<script src="../../shared/repository_nav.js?v=954144f3"></script>
+<script src="../../shared/app_framework.js?v=a55121f7"></script>
+<script src="../../shared/content_i18n.js?v=499ea78f"></script><script src="sia_i18n.js?v=e4046ef4"></script>
 </body></html>

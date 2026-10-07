@@ -2749,7 +2749,7 @@
    *  plus), classe de durée XS à XL, ravitaillement ; la mission générée se lie ensuite à la plaquette. */
   async function orderMission(e) {
     try {
-      for (const src of ['mission_store.js?v=559e3351', 'mission_prompt.js?v=8774038d', '../../shared/mission_order.js?v=f0b5d1a2'])
+      for (const src of ['mission_store.js?v=559e3351', 'mission_prompt.js?v=8774038d', '../../shared/mission_order.js?v=10ea62d0'])
         await loadScript(src);
     } catch (err) {
       return notify(String(err?.message || err), 'error');

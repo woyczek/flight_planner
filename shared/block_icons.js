@@ -32,7 +32,8 @@
     drop: ['ou glisser-déposer ici', 'or drag and drop here', 'oder hierher ziehen', 'o arrastrar y soltar aquí'],
     none: ['Aucun fichier choisi', 'No file chosen', 'Keine Datei ausgewählt', 'Ningún archivo elegido'],
     refused: ['Type de fichier non accepté : ', 'File type not accepted: ', 'Dateityp nicht zulässig: ',
-      'Tipo de archivo no aceptado: ']
+      'Tipo de archivo no aceptado: '
+    ]
   };
   const tr = row => K.t(row);
 

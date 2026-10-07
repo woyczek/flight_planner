@@ -115,7 +115,8 @@
   // Clé = ligne complète : seuls les vrais doublons (lignes identiques) sont fusionnés ; un aller /
   // retour à la même minute (départ / arrivée différents) reste deux vols.
   const recordKey = r => [r.date, r.time, r.durationMin, r.callsign, r.registration, r.trigram, r.type, r.variant, r.dep, r.arr, r
-    .mission].map(up).join('|');
+    .mission
+  ].map(up).join('|');
 
   /** Mémorise le journal (merge : fusion sans doublon — seules les lignes identiques sont fusionnées ; sinon remplacement), trié du plus récent, et prévient les pages (defa-log-change). Retourne { importedAt, source, records, added }. */
   function save(records, source, {
@@ -642,7 +643,7 @@
     };
     if (!document.getElementById('defa-loader-style')) document.head.insertAdjacentHTML('beforeend',
       '<style id="defa-loader-style">.defa-loader{max-width:640px;width:calc(100vw - 32px);border:1px solid #cbd5e1;border-radius:12px;padding:16px;color:#111827;background:#fff}.defa-loader::backdrop{background:#0006}.defa-loader h3{margin:0 0 8px}.defa-loader textarea{width:100%;box-sizing:border-box;font:12px/1.4 ui-monospace,Consolas,monospace}.defa-loader .dl-row{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:8px 0}.defa-loader button,.defa-loader .dl-file{padding:6px 12px;border-radius:8px;border:1px solid #cbd5e1;background:#f1f5f9;cursor:pointer;font:inherit}.defa-loader button.primary{background:#2f3b52;color:#fff;border-color:#2f3b52}.defa-loader .dl-result{color:#047857;font-weight:600}</style>'
-      );
+    );
     dialog.addEventListener('close', () => dialog.remove());
     // « × », « Fermer », « Charger » désactivé si vide puis « Valider » (framework FileAccess).
     const panel = window.FileAccess?.pastePanel({

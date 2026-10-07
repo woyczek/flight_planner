@@ -148,7 +148,7 @@
       'Settings of the ODV planning page: morning, afternoon and evening slot hours, preferred country (ATC session perimeter, also for the Board), workbook reading (dates of the week, empty cell, FLOTTE types), likely missions. Kept in this browser.',
       'Einstellungen für die ODV-Planung: Stunden der Zeitfenster Morgen, Nachmittag und Abend, bevorzugtes Land (Bereich der ATC-Sitzungen, auch für die Einsatztafel), Lesen der Arbeitsmappe (Daten der Woche, leere Zelle, FLOTTE-Typen), wahrscheinliche Missionen. In diesem Browser gespeichert.',
       'Ajustes de la página de planificación ODV: horas de las franjas de mañana, tarde y noche, país preferido (perímetro de las sesiones ATC, también para el Tablero), lectura del libro (fechas de la semana, celda vacía, tipos FLOTTE), misiones probables. Guardados en este navegador.'
-      ),
+    ),
     render(body) {
       render(body);
     }

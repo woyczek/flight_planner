@@ -586,9 +586,9 @@
     window.addEventListener('repository-language-change', () => setTimeout(render));
     window.addEventListener('repository-design-change', () => setTimeout(render)); // palette, style des graphiques
     window.addEventListener('load', () => window.RepositoryNav?.addAction?.(UI.newReport.map(s => `${s} ${family.id}`),
-  () => { // libellé des 4 langues : le menu le traduit
-      location.href = family.pages.cr;
-    }));
+      () => { // libellé des 4 langues : le menu le traduit
+        location.href = family.pages.cr;
+      }));
     const ready = ledger.load().then(render);
     window.addEventListener('local-store-restored', () => ledger.load(true).then(render));
     window.addEventListener('mission-ledger-change', () => render()); // enregistré dans un autre onglet (déjà relu)

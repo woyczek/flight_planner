@@ -101,7 +101,7 @@
       'Shared settings of the Board page (data/config/odv.json, synchronised): airfield, default network, report delay, duty hours, strip templates, callsign colours, fallback LL / RTBA slots, personnel, recurrences.',
       'Gemeinsame Einstellungen der Seite Einsatztafel (data/config/odv.json, synchronisiert): Flugplatz, Standardnetzwerk, Berichtsfrist, Dienstzeiten, Streifenvorlagen, Rufzeichenfarben, Ersatz-LL-/RTBA-Zeitfenster, Personal, Wiederholungen.',
       'Ajustes compartidos de la página Tablero (data/config/odv.json, sincronizado): aeródromo, red por defecto, plazo de informes, horas de servicio, plantillas de fichas, colores de indicativos, franjas LL / RTBA de respaldo, personal, recurrencias.'
-      ),
+    ),
     /** Construit la rubrique d'après les réglages relus (fresh) ;
      *  api (SettingsPanels) : changed, saved, status, actions. */
     async render(body, api) {

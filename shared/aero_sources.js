@@ -272,7 +272,7 @@
     return all.find(s => text(s, 'interpretation') === 'BASELINE') || all[0] || null;
   }
   const idOf = feat => (kid(feat, 'identifier')?.textContent || feat.getAttributeNS?.('http://www.opengis.net/gml/3.2', 'id') || '')
-  .trim();
+    .trim();
   const href = el => (el?.getAttributeNS('http://www.w3.org/1999/xlink', 'href') || el?.getAttribute('xlink:href') || '').replace(
     /^.*?(urn:uuid:|#uuid\.|#)/, '');
 

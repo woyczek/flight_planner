@@ -188,7 +188,8 @@
       updated_at: new Date().toISOString(),
       by: by(),
       membres: Object.fromEntries(Object.entries(doc.membres || {}).map(([k, l]) => [k, (l || []).filter(x => x?.texte)]).filter(([,
-        l]) => l.length))
+        l
+      ]) => l.length))
     };
     const r = await A().writeData(DLO_FILE, out);
     return {

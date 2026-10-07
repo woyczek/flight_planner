@@ -355,7 +355,7 @@
   // tirées inchangées. La recherche ignore le tiret (MissionAircraft.regKey).
   const TWO_LETTER_MARKS = new Set((
     'HB OO OE OK OM PH EC EI ES LX LY LZ SE SP SX TC UR YL YR YU OH OY LN CS TF HA S5 9A 9H 4X VH ZS ZK VT HS PK RP 9M 9V A6 A7 HZ SU CN EP YI JY OD 5B 5Y ZP LV CC HK YV OB CX HP TG TI XA XB XC EW ER UK UN EX EY EZ 4K 4L EK RA RF PP PR PT PU HI T7 3A HL'
-    ).split(' '));
+  ).split(' '));
 
   /** Immatriculation normalisée (majuscules, tiret après la marque de nationalité : F-HABC). */
   function formatRegistration(value) {

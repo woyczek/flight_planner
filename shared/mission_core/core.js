@@ -117,7 +117,7 @@
       'Fills empty fields: aircraft, ICAO equipment, route, waypoints, levels, aerodromes, METAR / TAF (SimBrief), planned masses and fuel (SimBrief). IDs: menu ☰ › Pilot profile.',
       'Füllt leere Felder: Luftfahrzeug, ICAO-Ausrüstung, Route, Wegpunkte, Flughöhen, Flugplätze, METAR / TAF (SimBrief), geplante Massen und Kraftstoff (SimBrief). Kennungen: Menü ☰ › Pilotenprofil.',
       'Rellena los campos vacíos: aeronave, equipos OACI, ruta, puntos, niveles, aeródromos, METAR / TAF (SimBrief), masas y combustible previstos (SimBrief). Identificadores: menú ☰ › Perfil de piloto.'
-      ),
+    ),
     fplSimbrief: L('Dernier OFP SimBrief', 'Latest SimBrief OFP', 'Letzter SimBrief-OFP', 'Último OFP de SimBrief'),
     fplIvao: L('Plan de vol IVAO (vol en cours)', 'IVAO flight plan (current flight)', 'IVAO-Flugplan (laufender Flug)',
       'Plan de vuelo IVAO (vuelo en curso)'),
@@ -139,7 +139,7 @@
       'Paste an ICAO flight plan “(FPL-…)”, an IVAO tracker page (flight details or connection list: Ctrl+A, Ctrl+C on the page), a StatSim flight page (VATSIM), the VATSIM history (JSON) or a METAR: empty fields are filled. Tracker times converted to local time at the departure aerodrome.',
       'Einen ICAO-Flugplan „(FPL-…)“, eine IVAO-Tracker-Seite (Flugdetails oder Verbindungsliste: Strg+A, Strg+C auf der Seite), die VATSIM-Historie (JSON) oder ein METAR einfügen: leere Felder werden ausgefüllt. Tracker-Zeiten in Ortszeit des Startflugplatzes umgerechnet.',
       'Pegue un plan de vuelo OACI «(FPL-…)», una página del tracker IVAO (detalle de un vuelo o lista de conexiones: Ctrl+A, Ctrl+C en la página), el historial VATSIM (JSON) o un METAR: se rellenan los campos vacíos. Horas del tracker convertidas a hora local del aeródromo de salida.'
-      ),
+    ),
     importRun: L('Analyser et remplir', 'Analyse and fill', 'Auswerten und ausfüllen', 'Analizar y rellenar'),
     importClip: L('Coller depuis le presse-papiers', 'Paste from clipboard', 'Aus Zwischenablage einfügen',
       'Pegar desde el portapapeles'),
@@ -148,7 +148,7 @@
       '← drag to the bookmarks bar: one click on a flight page (IVAO tracker, or StatSim for VATSIM) copies it; come back here, it is analysed.',
       '← in die Lesezeichenleiste ziehen: ein Klick auf einer Flugseite (IVAO-Tracker, oder StatSim für VATSIM) kopiert sie; hierher zurückkehren, sie wird ausgewertet.',
       '← arrastre a la barra de marcadores: un clic en la página de un vuelo (tracker IVAO, o StatSim para VATSIM) la copia; vuelva aquí, se analiza.'
-      ),
+    ),
     ledgerUnavailable: L('registre illisible (serveur ou fichier indisponible) — mission conservée en brouillon, réessayez.',
       'ledger unreadable (server or file unavailable) — mission kept as a draft, try again.',
       'Register nicht lesbar (Server oder Datei nicht verfügbar) — Einsatz als Entwurf behalten, erneut versuchen.',
@@ -202,7 +202,7 @@
       'Text not recognised: flight plan “(FPL-…)”, IVAO tracker page, VATSIM history (JSON) or METAR expected.',
       'Text nicht erkannt: Flugplan „(FPL-…)“, IVAO-Tracker-Seite, VATSIM-Historie (JSON) oder METAR erwartet.',
       'Texto no reconocido: se espera un plan de vuelo «(FPL-…)», una página del tracker IVAO, el historial VATSIM (JSON) o un METAR.'
-      ),
+    ),
     importClipDenied: L('Lecture du presse-papiers refusée : collez dans la zone (Ctrl+V).',
       'Clipboard access denied: paste into the box (Ctrl+V).',
       'Zugriff auf die Zwischenablage verweigert: in das Feld einfügen (Strg+V).',
@@ -212,7 +212,7 @@
       'Paste with Ctrl+V in the box (immediate analysis). “Paste from clipboard” asks for permission once; then returning from the tracker (“→ CR” bookmark) is analysed automatically.',
       'Mit Strg+V in das Feld einfügen (sofortige Auswertung). „Aus Zwischenablage einfügen“ fragt einmal nach der Erlaubnis; danach wird die Rückkehr vom Tracker (Lesezeichen „→ CR“) automatisch ausgewertet.',
       'Pegue con Ctrl+V en el cuadro (análisis inmediato). «Pegar desde el portapapeles» pide permiso una vez; después, la vuelta desde el tracker (marcador «→ CR») se analiza automáticamente.'
-      ),
+    ),
     importStatsim: L('StatSim (VATSIM) — détails du vol', 'StatSim (VATSIM) — flight details', 'StatSim (VATSIM) — Flugdetails',
       'StatSim (VATSIM) — detalle del vuelo'),
     importOpenIvao: L('↗ Tracker IVAO (mes connexions)', '↗ IVAO tracker (my connections)', '↗ IVAO-Tracker (meine Verbindungen)',
@@ -1631,7 +1631,7 @@
           mission = fresh();
           fromSia(mission, sia);
           mission.metadata.missionId = ledger.nextId(prefix, mission.metadata
-          .missionNumber); // CR<mission>-<essai> : CRM-016-1, CRM-016-2 si rejouée
+            .missionNumber); // CR<mission>-<essai> : CRM-016-1, CRM-016-2 si rejouée
           dirty = true;
           localStorage.removeItem(SIA_KEY);
         }

@@ -319,7 +319,7 @@
       'Aircraft you flew or reported (reports with your trigram in the crew); greyed box: DEFA fleet aircraft or not.',
       'Luftfahrzeuge, die Sie geflogen oder berichtet haben (Berichte mit Ihrem Kürzel in der Besatzung); grau: Luftfahrzeug der DEFA-Flotte oder nicht.',
       'Aeronaves que ha pilotado o reportado (informes con su trigrama en la tripulación); casilla gris: aeronave de la flota DEFA o no.'
-      ),
+    ),
     /** Contenu de la rubrique : la liste « Mes appareils » montée dans body. */
     render(body) {
       mountMine(body);

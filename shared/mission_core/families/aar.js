@@ -103,10 +103,10 @@
           when: ctx => ctx.mission.missionData?.aar?.track === 'OTHER'
         }),
         f(P + 'level', L('Niveau de ravitaillement', 'Refuelling level', 'Betankungshöhe', 'Nivel de reabastecimiento'),
-        'text', {
-          upper: true,
-          placeholder: L('FL200', 'FL200')
-        }),
+          'text', {
+            upper: true,
+            placeholder: L('FL200', 'FL200')
+          }),
         f(P + 'rvType', L('Type de rendez-vous', 'Rendezvous type', 'Rendezvous-Art', 'Tipo de encuentro'), 'select', {
           options: rvTypes,
           blank: true

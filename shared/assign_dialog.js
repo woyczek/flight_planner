@@ -383,7 +383,7 @@ dialog.ad-dialog{overflow:hidden;max-height:92vh}dialog.ad-dialog[open]{display:
       draw();
     };
     dlg.querySelectorAll('[data-k]').forEach(el => el.addEventListener('change', () => el.dataset.k === 't' ? draw() :
-  check())); // heure : vivier recalculé
+      check())); // heure : vivier recalculé
     dlg.querySelectorAll('[data-close]').forEach(b => b.onclick = () => dlg.close());
     // sans apply : refusé tant qu'un participant n'a pas pilote et appareil ; écrit les lignes évaluées par check
     $('[data-save]').onclick = async () => {

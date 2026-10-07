@@ -6,10 +6,10 @@
 <link rel="stylesheet" href="../../shared/repository_nav.css?v=f6a61e75">
 <script src="../../config/repository_tree?v=2a75a8a5"></script><script src="../../shared/kit.js?v=7f07f523"></script>
 <script src="../../shared/mission_core/vendor/js-yaml.min.js"></script>
-<script src="mission_prompt.js?v=8774038d"></script><script src="../../shared/data_files.js?v=dcb47c6a" data-file="references/aircraft_fleet.js"></script><script src="../../shared/mission_order.js?v=f0b5d1a2"></script><script src="../../AircraftDB/aircraft_db.js"></script><script src="../../AircraftDB/aircraft_perf.js"></script><script src="../../shared/mission_core/model.js?v=dc3aef83"></script><script src="../../shared/mission_estimate.js?v=e352037a"></script><script src="../../shared/sia_base.js?v=d1015ca7"></script><script src="../../shared/mission_routing.js?v=3cc1352c"></script><script src="../../shared/mission_airspaces.js?v=2347985e"></script><script src="../../shared/mission_exercise.js?v=b68ac247"></script><script src="../../shared/mission_registry.js?v=f6f9c789"></script>
+<script src="mission_prompt.js?v=8774038d"></script><script src="../../shared/data_files.js?v=dcb47c6a" data-file="references/aircraft_fleet.js"></script><script src="../../shared/mission_order.js?v=10ea62d0"></script><script src="../../AircraftDB/aircraft_db.js"></script><script src="../../AircraftDB/aircraft_perf.js"></script><script src="../../shared/mission_core/model.js?v=88cf78c1"></script><script src="../../shared/mission_estimate.js?v=e352037a"></script><script src="../../shared/sia_base.js?v=d9162699"></script><script src="../../shared/mission_routing.js?v=3cc1352c"></script><script src="../../shared/mission_airspaces.js?v=e13e97bf"></script><script src="../../shared/mission_exercise.js?v=b68ac247"></script><script src="../../shared/mission_registry.js?v=f6f9c789"></script>
 <script src="mission_store.js?v=559e3351"></script>
-<script src="../../shared/aar_tracks.js?v=32606456"></script>
-<script src="../../shared/mission_core/vocab.js?v=b1e809ba"></script>
+<script src="../../shared/aar_tracks.js?v=8f76a899"></script>
+<script src="../../shared/mission_core/vocab.js?v=8c65f5c2"></script>
 <script src="jspdf.umd.min.js"></script>
 <style data-layer="app">
 @layer app {
@@ -671,7 +671,8 @@ async function autoNarrative(y) {
 // Fichiers de mission : YAML (données) et / ou Markdown exporté (textes + YAML intégré), images de cartes.
 async function importMissionFiles(files) {
   const list = [...files].filter(f => !/\.(png|jpe?g|svg|pdf)$/i.test(f
-  .name)); /* lecture commune : SiaMission.fromTexts (mission_store.js) — YAML + Markdown d'une mission, annexes ignorées */ /* plusieurs missions (opération à plusieurs équipes, ou réponse ChatGPT collée) : lot, navigation dans l'en-tête */
+    .name
+  )); /* lecture commune : SiaMission.fromTexts (mission_store.js) — YAML + Markdown d'une mission, annexes ignorées */ /* plusieurs missions (opération à plusieurs équipes, ou réponse ChatGPT collée) : lot, navigation dans l'en-tête */
   const inputs = await Promise.all(list.map(async f => ({
       name: f.name,
       text: await f.text()
@@ -1300,7 +1301,7 @@ function createChiffonMissions() {
     crews = docs.filter(d => !X.isOrganisation(d) && d.origin),
     base = crews[0] || {},
     taken = new Set([...docs.map(d => String(d.mission?.id || '').toUpperCase()), ...(op.missions || []).map(v => String(v)
-  .toUpperCase())]),
+      .toUpperCase())]),
     stem = String(op.id || z.mission?.id || '').replace(/Z$/i, '');
   let letter = 'A'.charCodeAt(0);
   /** Prochain identifiant libre de l'opération : radical + lettre suivante (Z réservé à l'organisation). */
@@ -1529,7 +1530,7 @@ function missionReports(id) {
   }).sort((a, b) => b.date.localeCompare(a.date))
 }
 let estimateTimer =
-0; /* ===== Transit : mode de la mission (route_mode du YAML) et réglages du calcul (shared/mission_routing.js, navigateur) ===== */
+  0; /* ===== Transit : mode de la mission (route_mode du YAML) et réglages du calcul (shared/mission_routing.js, navigateur) ===== */
 const ROUTE_MODE_LABEL = {
   auto: 'automatique (selon l’appareil et le niveau)',
   airways: 'voies aériennes (IFR)',
@@ -1698,7 +1699,8 @@ function asArray(v) {
 function risksText() {
   const r = state.yaml.risks;
   if (Array.isArray(r) && r.length) return r.map(x => typeof x === 'string' ? x : [x.hazard || x.risk || x.name, x.consequence, x
-    .mitigation].filter(Boolean).join(' - '));
+    .mitigation
+  ].filter(Boolean).join(' - '));
   const s = findSection(['risques', 'risks', 'points_d_attention']);
   return s ? s.content.split(/\r?\n/).map(x => x.replace(/^\s*[-*•]\s*/, '')).filter(Boolean) : []
 }
@@ -2073,7 +2075,7 @@ async function exportOrganisationPdf(zy, opts) {
   y = addAirspacesSection(doc, y, window.MissionAirspaces && siaAirspaces ? window.MissionAirspaces.crossedAll(docs.filter(d => !X
       .isOrganisation(d)), siaAirspaces) : null,
     'Demandes d’activation à faire par l’organisation, auprès des gestionnaires (calcul indicatif : vérifier les cartes AZBA et les NOTAM).'
-    );
+  );
   y = addSection(doc, 'Chronologie', tl.map(e => `• ${e.t==null?'H+?':X.hText(e.t)} — ${e.kind==='pli'?'PLI SCELLÉ':'RADIO'} — ${e.from||'—'} → ${e.to.join(', ')||'—'} : ${e.title||e.id}\n  Déclencheur : ${e.when}${e.reveals.length?' · pistes révélées : '+e.reveals.join(', '):''}${e.text?'\n  '+String(e.text).replace(/\n+/g,'\n  '):''}`).join('\n\n') || '—', y);
   const missing = cur ? addMapPages(doc) : [];
   if (!into) {
@@ -2853,7 +2855,7 @@ $('openCr').onclick = () => {
   }
 };
 </script>
-<script src="../../shared/repository_nav.js?v=fa2068e8"></script>
-<script src="../../shared/app_framework.js?v=9b52c6db"></script>
-<script src="../../shared/content_i18n.js?v=efa62576"></script><script src="sia_i18n.js?v=e4046ef4"></script>
+<script src="../../shared/repository_nav.js?v=954144f3"></script>
+<script src="../../shared/app_framework.js?v=a55121f7"></script>
+<script src="../../shared/content_i18n.js?v=499ea78f"></script><script src="sia_i18n.js?v=e4046ef4"></script>
 </body></html>

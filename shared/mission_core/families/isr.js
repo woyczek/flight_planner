@@ -110,7 +110,8 @@
           }), f('mode', L('Mode', 'Mode', 'Modus', 'Modo')),
           f('start', L('Début', 'Start', 'Beginn', 'Inicio'), 'time'), f('end', L('Fin', 'End', 'Ende', 'Fin'), 'time'),
           f('recordingMinutes', L('Enregistrement (min)', 'Recording (min)', 'Aufzeichnung (min)', 'Grabación (min)'),
-          'number'), f('images', L('Images collectées', 'Imagery collected', 'Erfasste Bilder', 'Imágenes obtenidas'), 'number')
+            'number'), f('images', L('Images collectées', 'Imagery collected', 'Erfasste Bilder', 'Imágenes obtenidas'),
+            'number')
         ]
       }
     }, {

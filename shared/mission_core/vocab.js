@@ -120,7 +120,8 @@
   const familyLabels = {
     HEMS: ['HEMS / MEDEVAC', 'HEMS / MEDEVAC', 'HEMS / MEDEVAC', 'HEMS / MEDEVAC'],
     FIRE: ['FIRE / GAAR — sécurité civile', 'FIRE / aerial firefighting', 'FIRE / Waldbrandbekämpfung',
-      'FIRE / extinción de incendios'],
+      'FIRE / extinción de incendios'
+    ],
     SAR: ['SAR / récupération de personnel', 'SAR / personnel recovery', 'SAR / Personenbergung', 'SAR / recuperación de personal'],
     AIRLIFT: ['Transport aérien / logistique', 'Airlift / logistics', 'Lufttransport / Logistik', 'Transporte aéreo / logística'],
     AAR: ['Ravitaillement en vol', 'Air-to-air refuelling', 'Luftbetankung', 'Reabastecimiento en vuelo'],
@@ -451,7 +452,7 @@
     opt('REFUEL', L('Ravitaillement', 'Refuel', 'Betankung', 'Repostaje')), opt('TECHNICAL', L('Technique', 'Technical', 'Technisch',
       'Técnico')),
     opt('WEATHER', L('Météo', 'Weather', 'Wetter', 'Meteorología')), opt('ABORT', L('Interruption', 'Abort', 'Abbruch',
-    'Interrupción')),
+      'Interrupción')),
     opt('OTHER', L('Autre', 'Other', 'Andere', 'Otro'))
   ];
 
@@ -508,7 +509,7 @@
     opt('RESCUE_SWIMMER', L('Nageur-sauveteur', 'Rescue swimmer', 'Rettungsschwimmer', 'Nadador de rescate')), opt('MISSION_COMMANDER',
       L('Chef de mission', 'Mission commander', 'Missionskommandant', 'Jefe de misión')),
     opt('JUMPMASTER', L('Largueur', 'Jumpmaster', 'Absetzer', 'Jefe de salto')), opt('DOCTOR', L('Médecin', 'Doctor', 'Arzt',
-    'Médico')),
+      'Médico')),
     opt('NURSE', L('Infirmier', 'Nurse', 'Pflegekraft', 'Enfermero')), opt('OBSERVER', L('Observateur', 'Observer', 'Beobachter',
       'Observador')),
     opt('TECHNICIAN', L('Technicien', 'Technician', 'Techniker', 'Técnico')), opt('OTHER', L('Autre', 'Other', 'Andere', 'Otro'))

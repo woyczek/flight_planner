@@ -78,7 +78,7 @@
         'X-Plane installation folder (Custom Data, Resources/default data: earth_nav.dat, earth_fix.dat, earth_awy.dat, earth_mora.dat), read only when an active zone of Aeronautical data has the “X-Plane” source ticked',
         'X-Plane-Installationsordner (Custom Data, Resources/default data: earth_*.dat), nur gelesen, wenn eine aktive Zone unter Luftfahrtdaten die Quelle „X-Plane“ angehakt hat',
         'carpeta de instalación de X-Plane (Custom Data, Resources/default data: earth_*.dat), leída solo si una zona activa de Datos aeronáuticos tiene marcada la fuente «X-Plane»'
-        )
+      )
     },
     __odv: {
       label: L('Dossier du classeur ODV', 'ODV workbook folder', 'Ordner der ODV-Arbeitsmappe', 'Carpeta del libro ODV'),
@@ -261,7 +261,7 @@
       'Suite launched from {root}, declared folder {dir}: nothing is written there until this choice is confirmed (choose the folder again).',
       'Suite gestartet aus {root}, angegebener Ordner {dir}: dort wird nichts geschrieben, solange diese Wahl nicht bestätigt ist (Ordner neu wählen).',
       'Suite iniciada desde {root}, carpeta declarada {dir}: no se escribe nada allí mientras no se confirme esta elección (volver a elegir la carpeta).'
-      )
+    )
   };
   /** Message « Suite lancée depuis …, dossier déclaré … » ; kind : ask (question), accepted, other. Chemin du dossier
    *  déclaré : celui de son repère (lanceur de cette version), sinon son nom seul. */
@@ -528,7 +528,7 @@
     document.addEventListener('click', event => {
       const input = event.target;
       if (!(input instanceof HTMLInputElement) || input.type !== 'file' || input.dataset.nativePicker || input.webkitdirectory)
-    return;
+        return;
       event.preventDefault();
       openFiles(input).catch(error => {
         if (error?.name !== 'AbortError') {
@@ -570,7 +570,7 @@
     root.dataset.pastePanel = '1';
     if (!document.getElementById('fa-paste-style')) document.head.insertAdjacentHTML('beforeend',
       '<style id="fa-paste-style">.fa-x{position:absolute;top:6px;right:8px;width:28px;height:28px;border:0!important;border-radius:50%!important;background:transparent!important;color:inherit!important;font-size:20px!important;line-height:1;cursor:pointer;opacity:.7;padding:0!important;min-width:0!important}.fa-x:hover{opacity:1;background:#0000001a!important}.fa-valid{background:#16a34a!important;border-color:#16a34a!important;color:#fff!important}button.fa-run:disabled{opacity:.45;cursor:not-allowed}</style>'
-      );
+    );
     // « × » positionné dans le panneau (sans toucher à un panneau déjà positionné : popup absolue).
     if (getComputedStyle(root).position === 'static') root.style.position = 'relative';
     const x = document.createElement('button');

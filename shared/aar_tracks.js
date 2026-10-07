@@ -79,7 +79,7 @@
                 cross = (axis[0] * o[1] - axis[1] * o[0]) / L,
                 along = (axis[0] * o[0] + axis[1] * o[1]) / L;
               if (Math.abs(along) <= perpendicularTolerance * Math.abs(cross) && Math.abs(cross) < L) offset =
-              cross; // + : à gauche de l'axe
+                cross; // + : à gauche de l'axe
             }
             const used = offset == null ? 3 : 4;
             out.push({

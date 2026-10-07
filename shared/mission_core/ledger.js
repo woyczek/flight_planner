@@ -384,7 +384,7 @@
         unavailable = !candidates.length;
       }
       else if (!candidates.length) unavailable = served.status !== 404 && served.status !==
-      304; // erreur réseau / serveur : registre inconnu, pas « vide »
+        304; // erreur réseau / serveur : registre inconnu, pas « vide »
       // Registre illisible : rien n'est migré ni enregistré (sinon une copie partielle
       // remplacerait le registre complet) ; nouvel essai au prochain chargement / enregistrement.
       if (unavailable) {

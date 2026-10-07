@@ -406,7 +406,8 @@
       upper = [...pts].reverse().map(p => `${X(p.rpm).toFixed(1)},${Y(val(p,"fuelFlowMax","fuelFlowPerHour")).toFixed(1)}`).join(" "),
       lower = pts.map(p => `${X(p.rpm).toFixed(1)},${Y(val(p,"fuelFlowMin","fuelFlowPerHour")).toFixed(1)}`).join(" "),
       marks = [...new Map(pts.filter(p => p.phaseLabel).map(p => [p.phaseLabel, pts.filter(x => x.phaseLabel === p.phaseLabel)]))
-      .entries()].map(([label, list], i) => {
+        .entries()
+      ].map(([label, list], i) => {
         let a = X(list[0].rpm),
           b = X(list.at(-1).rpm),
           mid = (a + b) / 2,
@@ -472,7 +473,7 @@
       "Elegir la carpeta de rendimiento"
     ], () => $("dirBtn").click());
     n.addAction(["Exporter le profil .lnmperf", "Export .lnmperf profile", ".lnmperf-Profil exportieren", "Exportar perfil .lnmperf"],
-    () => $("exportLnmBtn").click());
+      () => $("exportLnmBtn").click());
     n.addAction(["Exporter le profil JSON", "Export JSON profile", "JSON-Profil exportieren", "Exportar perfil JSON"], () => $(
       "exportBtn").click());
     n.addAction(["Enregistrer / exporter la BDD locale", "Save / export the local database", "Lokale Datenbank speichern / exportieren",
@@ -486,7 +487,7 @@
     units.innerHTML =
       '<span>Unités :</span><label><input type="radio" name="fuel-unit" value="kg"> kg</label><label><input type="radio" name="fuel-unit" value="lb"> lbs</label>';
     (document.querySelector(".repo-header .header-row:nth-of-type(2)") || document.querySelector(".repo-header")).append(
-    units); /* unité de carburant affichée (kg / lb) : préférence, recalcul, enregistrement */
+      units); /* unité de carburant affichée (kg / lb) : préférence, recalcul, enregistrement */
     function setUnits(u) {
       state.displayFuelUnit = u;
       updateFuelUnitButton();

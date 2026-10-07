@@ -321,7 +321,8 @@
   const designatorOf = operator => {
     const key = up(operator).replace(/[’`]/g, "'");
     return Object.entries(window.MissionVocab?.operatorDesignators || {}).find(([name]) => up(name).replace(/[’`]/g, "'") === key)?.[
-      1] || '';
+      1
+    ] || '';
   };
   /** Organisme d'un désignateur OACI d'exploitant (OPR/) ; « » si inconnu. */
   const operatorOfDesignator = code => Object.entries(window.MissionVocab?.operatorDesignators || {}).find(([, d]) => d === clean(code))

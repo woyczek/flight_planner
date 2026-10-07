@@ -87,8 +87,8 @@
           'Investigador principal')), f(P + 'area', L('Zone de levé', 'Survey area', 'Messgebiet', 'Zona de levantamiento')),
         f(P + 'polygon', L('Polygone (coordonnées)', 'Polygon (coordinates)', 'Polygon (Koordinaten)',
           'Polígono (coordenadas)'), 'textarea', {
-            full: true
-          }),
+          full: true
+        }),
         f(P + 'payload', L('Charge utile scientifique', 'Scientific payload', 'Wissenschaftliche Nutzlast',
           'Carga útil científica'), 'text', {
           full: true

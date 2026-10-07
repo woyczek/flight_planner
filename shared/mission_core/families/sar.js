@@ -21,10 +21,10 @@
     'PLB (personnelle)', 'PLB (personal)', 'PLB (persönlich)', 'PLB (personal)')), opt('EPIRB', L('EPIRB (navire)', 'EPIRB (vessel)',
     'EPIRB (Schiff)', 'EPIRB (buque)')), opt('NONE', L('Aucune', 'None', 'Keine', 'Ninguna'))];
   const alertSources = [opt('BEACON', L('Balise de détresse', 'Distress beacon', 'Notfunkbake', 'Radiobaliza')), opt('CALL', L(
-      'Appel (112, VHF…)', 'Call (112, VHF…)', 'Anruf (112, UKW…)', 'Llamada (112, VHF…)')), opt('OVERDUE', L(
-      'Retard / disparition signalée', 'Overdue / reported missing', 'Überfällig / vermisst gemeldet',
-      'Retraso / desaparición notificada')), opt('ATC', L('Contrôle aérien', 'Air traffic control', 'Flugverkehrskontrolle',
-      'Control aéreo')), opt('WITNESS', L('Témoin', 'Witness', 'Zeuge', 'Testigo')), opt('OTHER', L('Autre', 'Other', 'Andere',
+    'Appel (112, VHF…)', 'Call (112, VHF…)', 'Anruf (112, UKW…)', 'Llamada (112, VHF…)')), opt('OVERDUE', L(
+    'Retard / disparition signalée', 'Overdue / reported missing', 'Überfällig / vermisst gemeldet',
+    'Retraso / desaparición notificada')), opt('ATC', L('Contrôle aérien', 'Air traffic control', 'Flugverkehrskontrolle',
+    'Control aéreo')), opt('WITNESS', L('Témoin', 'Witness', 'Zeuge', 'Testigo')), opt('OTHER', L('Autre', 'Other', 'Andere',
     'Otro'))];
   const personStatus = [opt('UNKNOWN', L('Inconnu', 'Unknown', 'Unbekannt', 'Desconocido')), opt('UNINJURED', L('Indemne', 'Uninjured',
     'Unverletzt', 'Ileso')), opt('INJURED', L('Blessé', 'Injured', 'Verletzt', 'Herido')), opt('CRITICAL', L('État grave', 'Critical',
@@ -115,9 +115,9 @@
           blank: true
         }),
         f(P + 'beaconFrequency', L('Fréquence balise', 'Beacon frequency', 'Bakenfrequenz', 'Frecuencia de la baliza'),
-        'text', {
-          placeholder: L('406 MHz / 121.5', '406 MHz / 121.5')
-        }),
+          'text', {
+            placeholder: L('406 MHz / 121.5', '406 MHz / 121.5')
+          }),
         f(P + 'datum', L('Datum initial (coordonnées)', 'Initial datum (coordinates)', 'Ausgangsdatum (Koordinaten)',
           'Datum inicial (coordenadas)')),
         f(P + 'lkp', L('Dernière position connue (LKP)', 'Last known position (LKP)', 'Letzte bekannte Position (LKP)',
@@ -173,10 +173,10 @@
         }),
         fields: [
           f('name', L('Zone', 'Area', 'Gebiet', 'Zona')), f('pattern', L('Schéma', 'Pattern', 'Suchmuster', 'Patrón'),
-          'select', {
-            options: patterns,
-            blank: true
-          }),
+            'select', {
+              options: patterns,
+              blank: true
+            }),
           f('trackSpacingNm', L('Espacement (NM)', 'Track spacing (NM)', 'Bahnabstand (NM)', 'Separación (NM)'), 'number'), f(
             'altitudeFt', L('Altitude (ft)', 'Altitude (ft)', 'Höhe (ft)', 'Altitud (ft)'), 'number'),
           f('speedKt', L('Vitesse (kt)', 'Speed (kt)', 'Geschwindigkeit (kt)', 'Velocidad (kt)'), 'number'), f('visibility', L(

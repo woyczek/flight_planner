@@ -111,7 +111,7 @@
     async unlock(password) {
       const bytes = new TextEncoder().encode(String(password || "").trim().toUpperCase());
       const hex = [...new Uint8Array(await crypto.subtle.digest("SHA-256", bytes))].map(b => b.toString(16).padStart(2, "0")).join(
-      "");
+        "");
       if (hex !== CPCO_HASH) return false;
       if (!K.store.set(CPCO_KEY, "on")) return false;
       doc.dataset.cpco = "on";
@@ -344,7 +344,10 @@
   // Designs à matières (Cabinet, Durci, Aqua : textures, plaques, vis) : feuille propre (designs.list[id].css),
   // chargée seulement quand l'un d'eux est choisi, avec sa propre version (empreinte de son contenu, table FILE_V
   // écrite par tools/bump_versions.py).
+  /* beautify preserve:start */
+  // ligne réécrite telle quelle par tools/bump_versions.py : le formateur n'y touche pas
   const FILE_V = {"designs_skeuo.css": "f6dd1e62"};
+  /* beautify preserve:end */
   /** Pour un design à feuille propre : pose sa feuille (une fois) et charge une fois design_deco.js (décor complet). */
   const designCss = id => {
     const f = designs[id]?.css;
@@ -500,7 +503,7 @@
   // Réglages en tête du menu, en boutons : Apparence (design, icônes, couleurs) et Paramètres (bases de données).
   menu.insertAdjacentHTML("afterbegin",
     '<div class="repo-settings-row"><a class="repo-settings-button repo-appearance-link" data-label="Apparence"></a><a class="repo-settings-button repo-parametrage-link" data-label="Paramètres"></a></div>'
-    );
+  );
   menu.querySelector(".repo-appearance-link").href = new URL("apps/settings/apparence.html", root).href;
   menu.querySelector(".repo-appearance-link").addEventListener("click", e => {
     if (openAppearance()) {
@@ -619,7 +622,7 @@
   document.addEventListener("click", e => {
     const a = e.target.closest?.("a[href]");
     if (!a || e.defaultPrevented || e.button || e.ctrlKey || e.metaKey || e.shiftKey || e.altKey || (a.target && a.target !==
-      "_self")) return;
+        "_self")) return;
     if (a.href.split(/[?#]/)[0] !== new URL(HELP, root).href) return;
     if (openHelp(a.getAttribute("href"))) {
       e.preventDefault();
@@ -1160,17 +1163,17 @@
     profile.src = new URL("pilot_profile.js?v=fbe1241b", script.src).href;
     document.head.append(profile); /* Dossiers autorisés et ouverture des fichiers dans le dossier paramétré */
     const files = document.createElement("script");
-    files.src = new URL("file_access.js?v=c9c20745", script.src).href;
+    files.src = new URL("file_access.js?v=dbd43b8f", script.src).href;
     document.head.append(files); /* Données locales du navigateur ⇄ fichier de sauvegarde */
     /* Icônes, sous-titres de blocs, sous-cartes, zones de dépôt, icônes de la barre latérale (ordre conservé) */
-    for (const f of ["icons/repository_icons.js?v=27853364", "block_icons.js?v=5002d2f9", "side_nav.js?v=19f74efd"]) {
+    for (const f of ["icons/repository_icons.js?v=27853364", "block_icons.js?v=567b5128", "side_nav.js?v=19f74efd"]) {
       const sc = document.createElement("script");
       sc.src = new URL(f, script.src).href;
       sc.async = false;
       document.head.append(sc);
     }
     const store = document.createElement("script");
-    store.src = new URL("browser_store.js?v=1cb639ca", script.src).href;
+    store.src = new URL("browser_store.js?v=1b114137", script.src).href;
     document.head.append(store); /* Canal et contrôle des mises à jour, pastilles « Mise à jour » / « AIRAC » de l'en-tête */
     const assign = document.createElement("script"); /* Missions affectées : pli cacheté de l'en-tête, « Mes missions » */
     assign.src = new URL("assignments.js?v=95fcb353", script.src).href;
@@ -1185,7 +1188,7 @@
     document.head.append(users);
     /* Synchronisation git du pool de données : bouton « Synchroniser » de l'en-tête (lanceur, data/ dépôt git) */
     const sync = document.createElement("script");
-    sync.src = new URL("sync.js?v=4972ad19", script.src).href;
+    sync.src = new URL("sync.js?v=3b97ce23", script.src).href;
     document.head.append(sync);
     /* Flotte et journal DEFA depuis le site : une fois par jour à l'ouverture d'une page (lanceur) */
     const defaSite = document.createElement("script");

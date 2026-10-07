@@ -42,10 +42,9 @@
   /** Nombre d'une saisie (0, ou null selon la famille, si vide ou invalide). */
   const num = v => Number(v) || 0;
   const unitTypes = [opt('AIRCRAFT', L('Aéronef', 'Aircraft', 'Luftfahrzeug', 'Aeronave')), opt('HELICOPTER', L('Hélicoptère',
-      'Helicopter', 'Hubschrauber', 'Helicóptero')), opt('GROUND', L('Unité au sol', 'Ground unit', 'Bodeneinheit',
+    'Helicopter', 'Hubschrauber', 'Helicóptero')), opt('GROUND', L('Unité au sol', 'Ground unit', 'Bodeneinheit',
     'Unidad de tierra')), opt('SHIP', L('Navire', 'Ship', 'Schiff', 'Buque')), opt('CENTRE', L('Centre / PC', 'Centre / command post',
-      'Zentrale / Gefechtsstand', 'Centro / puesto de mando')), opt('OTHER', L('Autre', 'Other', 'Andere', 'Otro'))
-  ];
+    'Zentrale / Gefechtsstand', 'Centro / puesto de mando')), opt('OTHER', L('Autre', 'Other', 'Andere', 'Otro'))];
   const logKinds = [opt('HANDOVER', L('Passage de relais', 'Handover', 'Übergabe', 'Relevo')), opt('COORDINATION', L('Coordination',
       'Coordination', 'Koordination', 'Coordinación')), opt('RELAY', L('Relais radio', 'Radio relay', 'Funkrelais', 'Retransmisión')),
     opt('CONTACT', L('Contact', 'Contact', 'Kontakt', 'Contacto')), opt('OUTAGE', L('Coupure de communication', 'Communication outage',

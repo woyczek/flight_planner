@@ -160,7 +160,7 @@
         'danger (CYD), restricted (CYR) and advisory areas (CYA: military operations, aerobatics, training, parachuting, soaring…), with vertical limits, times and controlling agency',
         'Gefahrengebiete (CYD), Flugbeschränkungsgebiete (CYR) und Advisory Areas (CYA: militärischer Flugbetrieb, Kunstflug, Schulung, Fallschirmspringen, Segelflug…), mit Höhengrenzen, Zeiten und Kontrollstelle',
         'zonas peligrosas (CYD), restringidas (CYR) y de aviso (CYA: operaciones militares, acrobacia, escuela, paracaidismo, vuelo a vela…), con límites verticales, horarios y dependencia de control'
-        ),
+      ),
       src: 'navcanAip',
       link: 'https://www.navcanada.ca/en/aeronautical-information/operational-guides.aspx',
       howto: L4(

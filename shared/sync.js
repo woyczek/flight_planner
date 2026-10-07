@@ -36,7 +36,7 @@
   button.hidden = true;
   if (!document.getElementById('repoSyncStyle')) document.head.insertAdjacentHTML('beforeend',
     '<style id="repoSyncStyle">.repo-sync-button{display:inline-flex;align-items:center;gap:5px;white-space:nowrap;cursor:pointer}.repo-sync-button[hidden]{display:none}.repo-sync-button .repo-svg{flex:none;display:block}.repo-sync-button.repo-sync-warn{box-shadow:inset 0 -3px #e39b1b}.repo-sync-button.repo-sync-alert{box-shadow:inset 0 -3px #c0392b;color:#c0392b}.repo-sync-button.busy .repo-svg{animation:repoSyncTurn 1s linear infinite}@keyframes repoSyncTurn{to{transform:rotate(360deg)}}html:not([data-skeuo]) .repo-sync-button{height:32px;border:0!important;border-radius:7px!important;padding:4px 10px!important;background:#2563eb!important;color:#fff!important;font:600 12px/1 Inter,system-ui,Segoe UI,Arial,sans-serif}html:not([data-skeuo]) .repo-sync-button:hover{background:#1d4ed8!important}@media print{.repo-sync-button{display:none!important}}@media (prefers-reduced-motion:reduce){.repo-sync-button.busy .repo-svg{animation:none}}</style>'
-    );
+  );
   const place = () => {
     const tools = document.querySelector('.repo-header-tools');
     if (tools && !button.isConnected) tools.prepend(button);

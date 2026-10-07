@@ -7,7 +7,7 @@
   const $ = id => document.getElementById(id);
   if (!$('vpDraw') || !window.SiaProfile) return;
   const tl = (...r) => r[Math.max(0, ['fr', 'en', 'de', 'es'].indexOf(window.RepositoryNav?.getLanguage?.() || 'fr'))] || r[
-  0]; // texte dans la langue de la page
+    0]; // texte dans la langue de la page
   const KEY = 'flightPerfVerticalProfile',
     esc = v => String(v ?? '').replace(/[&<>"]/g, c => ({
       '&': '&amp;',
@@ -92,14 +92,15 @@
     sel.value = studio.list.some(p => p.id === want) ? want : studio.list[0].id;
     const b = studio.base;
     const n = [b?.airspaces?.length || 0, b?.aero?.aerodromes?.length || 0, b?.aero?.navaids?.length || 0, b?.aero?.points?.length ||
-    0];
+      0
+    ];
     status(b ? tl(`Base SIA du studio : ${n[0]} espaces, ${n[1]} aérodromes, ${n[2]} balises, ${n[3]} points RNAV.`, `Studio SIA database: ${n[0]} airspaces, ${n[1]} aerodromes, ${n[2]} navaids, ${n[3]} RNAV points.`, `SIA-Datenbank des Studios: ${n[0]} Lufträume, ${n[1]} Flugplätze, ${n[2]} Funkfeuer, ${n[3]} RNAV-Punkte.`, `Base SIA del estudio: ${n[0]} espacios, ${n[1]} aeródromos, ${n[2]} radioayudas, ${n[3]} puntos RNAV.`) :
       tl(
         'Base SIA absente : ouvrir le studio cartographique (Missions SIA) dans ce navigateur et y charger le dossier SIA une fois. Sans elle, route en coordonnées ou SimBrief, sans espaces aériens.',
         'No SIA database: open the map studio (SIA missions) in this browser and load the SIA folder once. Without it, routes in coordinates or from SimBrief only, with no airspaces.',
         'Keine SIA-Datenbank: das Kartenstudio (SIA-Missionen) in diesem Browser öffnen und den SIA-Ordner einmal laden. Ohne sie nur Routen in Koordinaten oder aus SimBrief, ohne Lufträume.',
         'Sin base SIA: abra el estudio cartográfico (misiones SIA) en este navegador y cargue la carpeta SIA una vez. Sin ella, solo rutas en coordenadas o de SimBrief, sin espacios aéreos.'
-        ));
+      ));
   }
 
   // Route d'un OFP SimBrief : départ, groupe vitesse / niveau initial (TAS de croisière, niveau initial),
@@ -194,7 +195,7 @@
       ' (base SIA absente : seuls les points en coordonnées sont reconnus)',
       ' (no SIA database: only coordinate points are recognised)',
       ' (keine SIA-Datenbank: nur Koordinatenpunkte werden erkannt)', ' (sin base SIA: solo se reconocen puntos en coordenadas)'
-      )));
+    )));
     terrain ??= SiaProfile.terrainSampler();
     status(tl('Calcul du profil (relief, espaces, obstacles, trajectoire)…',
       'Computing the profile (terrain, airspaces, obstacles, trajectory)…',

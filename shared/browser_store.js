@@ -719,7 +719,7 @@
   if (tools) tools.prepend(button);
   if (!document.getElementById('repoBackupStyle')) document.head.insertAdjacentHTML('beforeend',
     '<style id="repoBackupStyle">.repo-backup-button{display:inline-flex;align-items:center;gap:5px;white-space:nowrap;cursor:pointer}.repo-backup-button:not([hidden]){display:inline-flex}.repo-backup-button[hidden]{display:none}.repo-backup-button .repo-svg{flex:none;display:block}html:not([data-skeuo]) .repo-backup-button{height:32px;border:0!important;border-radius:7px!important;padding:4px 10px!important;background:#dc2626!important;color:#fff!important;font:600 12px/1 Inter,system-ui,Segoe UI,Arial,sans-serif}html:not([data-skeuo]) .repo-backup-button:hover{background:#b91c1c!important}@media print{.repo-backup-button{display:none!important}}</style>'
-    );
+  );
 
   /** Bouton rouge « Sauvegarder (n) · dernière : … » de l'en-tête : affiché à partir de REMIND modifications non sauvegardées. */
   function reminder() {

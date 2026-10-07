@@ -36,7 +36,7 @@
   // attributs (infobulles, indications) : traduits aussi dans les zones [data-no-i18n] — contenus calculés dont les
   // libellés d'infobulle restent fixes ; [data-no-i18n="all"] les exclut aussi
   const attrExcluded = el => !!el?.closest(
-  'script,style,pre,[contenteditable],[data-no-i18n="all"],.repo-header-tools,.repo-block-tools');
+    'script,style,pre,[contenteditable],[data-no-i18n="all"],.repo-header-tools,.repo-block-tools');
   const ATTRS = ['title', 'placeholder', 'aria-label'];
   // garde-fou : un même texte réécrit plus de 12 fois en 5 s, c'est qu'un autre code se le dispute — on cesse d'y
   // toucher (et on le signale une fois dans la console)
@@ -240,7 +240,7 @@
       version++;
       prefixKeys = new Map();
       for (const item of [...index.keys()].filter(item => item.length >= 8 || /[.:→]$/.test(item)).sort((a, b) => b.length - a
-        .length)) {
+          .length)) {
         const w = item.split(' ', 1)[0];
         prefixKeys.has(w) ? prefixKeys.get(w).push(item) : prefixKeys.set(w, [item]);
       }

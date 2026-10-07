@@ -212,7 +212,8 @@
     id: 'deps',
     icon: 'link',
     title: ['Références et dépendances', 'References and dependencies', 'Referenzen und Abhängigkeiten',
-      'Referencias y dependencias'],
+      'Referencias y dependencias'
+    ],
     sub: ['Chaque référence : tracée, processus de mise à jour, données qui en dépendent, cohérence vérifiée',
       'Each reference: traced, update process, dependent data, consistency checked',
       'Jede Referenz: nachverfolgt, Aktualisierungsprozess, abhängige Daten, geprüfte Konsistenz',
@@ -590,7 +591,8 @@
   // premier lancement (lanceur : ?m=sources&setup=1), lu une fois : la page réécrit ensuite son adresse (?m=…)
   const SETUP = new URLSearchParams(location.search).has('setup');
   const FOLDER_ORDER = ['__repo', '__data', '__ledger', '__missions', '__sia', '__odv', '__xplane', '__xpnav', '__perf',
-  '__store']; // le dépôt d'abord : les autres s'en déduisent
+    '__store'
+  ]; // le dépôt d'abord : les autres s'en déduisent
   /** Dessine le bloc « Sources et dossiers » : dossiers FileAccess (état, autorisation, fichier témoin), adresses des sources
    *  externes surchargeables (suiteSources:v1), clés d'API du lanceur, compagnie virtuelle (suiteVA:v1) et premier lancement. */
   async function renderSources() {
@@ -751,7 +753,8 @@
       tr.querySelector('[data-state]').innerHTML = !st ? pill('info', t(['lanceur absent', 'no launcher', 'kein Starter',
         'sin lanzador'
       ])) : v?.env ? pill('ok', t(['variable d’environnement', 'environment variable', 'Umgebungsvariable',
-        'variable de entorno'])) : v?.set ? pill('ok', t(['enregistrée {h}', 'saved {h}', 'gespeichert {h}', 'guardada {h}'], {
+        'variable de entorno'
+      ])) : v?.set ? pill('ok', t(['enregistrée {h}', 'saved {h}', 'gespeichert {h}', 'guardada {h}'], {
         h: v.hint
       })) : pill('warn', t(['absente', 'missing', 'fehlt', 'ausente']));
       input.disabled = !st;
@@ -1080,10 +1083,11 @@
       b: info.airac
     })) : pill('ok', mc);
     add('Grille MORA', 'data/sia/mora.csv', t(['git ; colonne source (+ cycle des obstacles)',
-      'git; source column (+ obstacle cycle)']), t([
-        'Studio › bloc 5 (complet, réseau) ; Données aéronautiques › MORA (recalcul simple, obstacles)',
-        'Studio › block 5 (full, network); Aeronautical data › MORA (simple, obstacles)'
-      ]), t(['cartes, profil vertical', 'maps, vertical profile']), st);
+      'git; source column (+ obstacle cycle)'
+    ]), t([
+      'Studio › bloc 5 (complet, réseau) ; Données aéronautiques › MORA (recalcul simple, obstacles)',
+      'Studio › block 5 (full, network); Aeronautical data › MORA (simple, obstacles)'
+    ]), t(['cartes, profil vertical', 'maps, vertical profile']), st);
     const trk = await repoText('data/sia/miam-enr-5-7-tracks.xml'),
       crd = await repoText('data/sia/miam-enr-5-7-coordinates.xml');
     const ed = x => /<miam:sourceEdition>([^<]+)</.exec(x?.text || '')?.[1] || '';
@@ -1092,9 +1096,9 @@
       amdt = s => /AMDT\s*(\d+\/\d+)/i.exec(s)?.[1] || s;
     st = !trk ? pill('info', t(['non lisible (dossier du dépôt ou serveur)', 'not readable (repository folder or server)'])) : amdt(
       e1) === amdt(e2) ? pill('ok', e1) : pill('warn', t(['éditions différentes : {a} / {b}', 'different editions: {a} / {b}'], {
-        a: e1,
-        b: e2
-      }));
+      a: e1,
+      b: e2
+    }));
     add(t(['Axes AAR (ENR 5.7)', 'AAR tracks (ENR 5.7)']), 'miam-enr-5-7-tracks.xml ← coordinates.xml', t([
       'git ; édition (AMDT) dans l’en-tête', 'git; edition (AMDT) in header'
     ]), 'AarTracks.parseEnr57 → toXml (MANUEL § 9.1)', t(['studio, CR AAR', 'studio, AAR reports']), st);
@@ -1593,7 +1597,9 @@
           'fill-color': ['case', ['boolean', ['feature-state', 'sel'], false], '#1e6fd9', ['boolean', ['feature-state', 'hover'],
             false
           ], '#1e6fd9', color],
-          'fill-opacity': ['case', ['boolean', ['feature-state', 'sel'], false], .55, ['boolean', ['feature-state', 'hover'], false],
+          'fill-opacity': ['case', ['boolean', ['feature-state', 'sel'], false], .55, ['boolean', ['feature-state', 'hover'],
+              false
+            ],
             .2, ['match', ['get', 'state'], 'blank', .02, 'data', .35, 'partial', .5, 'complete', .55, .02]
           ]
         }
@@ -1605,10 +1611,13 @@
         paint: {
           'line-color': ['case', ['boolean', ['feature-state', 'sel'], false], '#0b2f6b', ['boolean', ['feature-state', 'pinned'],
             false
-          ], '#0b2f6b', ['boolean', ['feature-state', 'hover'], false], '#1e6fd9', ['match', ['get', 'state'], 'blank', '#9aa3ad',
+          ], '#0b2f6b', ['boolean', ['feature-state', 'hover'], false], '#1e6fd9', ['match', ['get', 'state'], 'blank',
+            '#9aa3ad',
             color
           ]],
-          'line-width': ['case', ['boolean', ['feature-state', 'sel'], false], 2.6, ['boolean', ['feature-state', 'pinned'], false],
+          'line-width': ['case', ['boolean', ['feature-state', 'sel'], false], 2.6, ['boolean', ['feature-state', 'pinned'],
+              false
+            ],
             3.2, ['boolean', ['feature-state', 'hover'], false], 2.4, ['match', ['get', 'state'], 'blank', .5, 1.2]
           ]
         }
@@ -3370,7 +3379,7 @@
     }))]);
     // Performances : APD (Eurocontrol, surtout civils) ou profil du planificateur ; seul « aucune des deux » est à traiter.
     const profTypes = new Set(Object.values(readJson('flightPerfState', {})?.profiles || {}).map(p => String(p?.icao || '')
-    .toUpperCase()).filter(Boolean));
+      .toUpperCase()).filter(Boolean));
     const noneAtAll = noPerf.filter(x => !profTypes.has(String(x).toUpperCase()));
     out.push([t(['Flotte → performances', 'Fleet → performance']), `${pill('info', t(['APD : {a}/{m} types (base Eurocontrol, surtout civile)', 'APD: {a}/{m} types (Eurocontrol, mostly civil)'], { a: fleetTypes.length - noPerf.length, m: fleetTypes.length }))} ${pill('info', t(['profils du planificateur : {p} type(s)', 'planner profiles: {p} type(s)'], { p: fleetTypes.filter(x => profTypes.has(String(x).toUpperCase())).length }))} ${noneAtAll.length ? pill('warn', t(['{n} type(s) sans aucune performance (ni APD ni profil) : {l} — à couvrir dans le planificateur si ces appareils volent', '{n} type(s) with no performance at all (no APD, no profile): {l}'], { n: noneAtAll.length, l: noneAtAll.join(', ') })) : pill('ok', t(['tous couverts', 'all covered']))}`]);
     const profs = Object.values(readJson('flightPerfState', {})?.profiles || {});

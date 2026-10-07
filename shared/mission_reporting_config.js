@@ -107,7 +107,7 @@
       name = config[configKey],
       stored = cached(configKey);
     if (stored?.text && (!name || stored.filename === name || stored.filename?.endsWith('/' + String(name).replace(/^.*[\\/]/,
-      '')))) {
+        '')))) {
       publish(configKey, stored.filename || name, stored.text, 'cache');
       return true;
     }

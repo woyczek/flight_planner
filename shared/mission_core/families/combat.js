@@ -43,7 +43,7 @@
     opt('DEFENSIVE', L('Défensif (adversaire en arrière)', 'Defensive (bandit behind)', 'Defensiv (Gegner hinten)',
       'Defensivo (adversario detrás)')),
     opt('NEUTRAL', L('Neutre / croisement de face', 'Neutral / head-on pass', 'Neutral / Frontalbegegnung',
-    'Neutro / cruce de frente')),
+      'Neutro / cruce de frente')),
     opt('BEAM', L('Travers (perpendiculaire)', 'Beam (perpendicular)', 'Querab (senkrecht)', 'Través (perpendicular)')),
     opt('BVR', L('Au-delà de la portée visuelle (BVR)', 'Beyond visual range (BVR)', 'Jenseits Sichtweite (BVR)',
       'Más allá del alcance visual (BVR)'))

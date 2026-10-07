@@ -540,7 +540,7 @@
     if (!a || a.target === "_blank" || a.hasAttribute("download")) return;
     const url = new URL(a.href, location.href);
     if (url.origin === location.origin && url.pathname === location.pathname && url.search === location.search)
-  return; // ancre de la page
+      return; // ancre de la page
     if (!window.confirm(tk("leave").replace("{t}", busy()))) {
       e.preventDefault();
       e.stopImmediatePropagation();

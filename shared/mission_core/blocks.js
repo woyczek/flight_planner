@@ -639,7 +639,7 @@
       'duración declarada sin horas — introducir las horas en el informe'),
     future: L('date future — un CR porte sur un vol réalisé', 'future date — a report covers a flight already flown',
       'Datum in der Zukunft — ein Bericht betrifft einen durchgeführten Flug', 'fecha futura — un informe trata de un vuelo realizado'
-      ),
+    ),
     dateInvalid: L('date invalide', 'invalid date', 'ungültiges Datum', 'fecha no válida'),
     fuel: L('carburant final supérieur au carburant de départ', 'final fuel above starting fuel',
       'Endkraftstoff höher als Startkraftstoff', 'combustible final superior al inicial')

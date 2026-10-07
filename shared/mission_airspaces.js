@@ -108,7 +108,7 @@
   function workFt(y) {
     const ac = (Array.isArray(y.aircraft) ? y.aircraft : [y.aircraft]).find(Boolean) || {};
     return levelFt(ac.cruise_level) ?? levelFt(y.vertical_profile?.cruise) ?? window.MissionEstimate?.estimate?.(y)?.aircraft?.alt ??
-    3000;
+      3000;
   }
 
   /** Espaces recoupés par une mission : [{ key, name, type, lower, upper, admin, act, info, azba, where: [texte] }]. */

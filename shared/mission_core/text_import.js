@@ -395,7 +395,7 @@
       const track = analyseTrack(result.samples, rotary);
       if (result.tracksMissing) notes.push(
         'table des positions absente (section « Tracks Table » repliée) : utilisez le favori « → CR », qui déplie tout, ou dépliez « Tracks Table » avant de copier'
-        );
+      );
       if (result.connected) setDate(day(result.connected, tz));
       // Début / fin de mission ≈ connexion / déconnexion (période volée sur le réseau).
       if (result.connected) set('timeline.missionStart', clock(result.connected, tz));
