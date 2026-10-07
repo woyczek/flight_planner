@@ -409,7 +409,7 @@ Jede Änderung wird sofort gespeichert.
 <!-- page: apps/settings/premier_lancement.html -->
 
 Diese Seite richtet ein, was die Suite zum Arbeiten braucht. Der Starter (`lancer.cmd` unter Windows, `sh lancer.sh` unter macOS oder Linux) öffnet sie von selbst; jederzeit erreichbar über Einstellungen › Registerkarte „Erststart“ oder die Karte „Erststart“ der Startseite, die angezeigt wird, solange noch etwas einzustellen ist.
-Ist die Suite eingerichtet, leitet die vom Starter geöffnete Seite zur Startseite weiter.
+Vom Starter geöffnet, leitet die Seite nur dann zur Startseite weiter, wenn „Abschließen“ für diese Installation erfolgt ist (derselbe Suite-Ordner) und nichts Verpflichtendes fehlt. Eine neue Installation unter derselben Adresse zeigt daher den Erststart, und die Startseite kündigt ihn als Banner an.
 
 Oben zieht **„Stand der Suite“** Bilanz, Zeile für Zeile, und jede Zeile führt zu ihrem Schritt: ✓ eingestellt, ○ zu erledigen, – optional, ? unbekannt (kein Starter).
 - Für alle: Daten, Git-Synchronisierungs-Repository (optional), Anwendungsordner, Fluggesellschaft und Website, IVAO-API-Schlüssel (optional), Pilot (Kürzel und mindestens ein Netzwerk), Zugangsdaten der Website, Luftfahrtdaten.
@@ -417,9 +417,21 @@ Oben zieht **„Stand der Suite“** Bilanz, Zeile für Zeile, und jede Zeile f�
 
 Die Nummer jedes Schritts wird grün, wenn er erledigt ist.
 
-### 1 Daten
+### 1 Ordner
+
+Der Browser verlangt, jeden Ordner einmal anzugeben; danach merkt er ihn sich.
+
+- **„Anwendungsordner“**: „Anwendungsordner wählen“, dann geben Sie den Ordner an, der `lancer.cmd` und `lancer.sh` enthält. Die anderen Ordner (Daten, Register, Missionen, SIA, Leistungen, lokale Sicherung) werden daraus abgeleitet; die Meldung zeigt, wie viele eingestellt wurden.
+- Der Ordner muss der der vom Starter bereitgestellten Suite sein: gehört er zu einer anderen Kopie der Suite, bleibt der Schritt offen (✗ in der Übersicht) mit der Meldung „Suite gestartet aus …, angegebener Ordner …“; wählen Sie den richtigen Ordner neu.
+- **„ODV-Arbeitsmappe (optional)“**: „OneDrive-Ordner…“ gibt den synchronisierten Ordner an, in dem die Staffel die Arbeitsmappe ablegt (die ODV-Planung öffnet die neueste). Ohne OneDrive: „oder die Excel-Datei…“, in diesem Browser gespeichert.
+
+Dieser Schritt ist wichtig: Ohne freigegebenen Datenordner bleibt Ihre Verfügbarkeit im Browser und das Zentrum sieht sie nicht.
+
+### 2 Daten
 
 Dieser Schritt installiert die Daten der Fluggesellschaft (Missionen, Referenzen…). Er läuft über den Starter: Ohne ihn zeigt die Seite „Öffnen Sie für diesen Schritt die Suite mit dem Starter…“.
+
+Die Schaltflächen dieses Schritts bleiben inaktiv, bis der Anwendungsordner (Schritt 1) gewählt ist: die Daten werden in der bereitgestellten Suite installiert.
 
 Drei Möglichkeiten:
 
@@ -437,15 +449,6 @@ Drei Möglichkeiten:
   (sind noch keine Daten vorhanden, dient die Adresse dazu, sie zu holen). Nichts ist blockierend: Ein Repository, das nicht antwortet, wird gemeldet,
   die Suite funktioniert ohne Teilen. Einzelheiten: [Synchronisierung](../technique/SYNCHRONISATION.md).
 - Sind die Daten vorhanden, bietet die optionale Karte „Flugbuch“ den Knopf „Journal (.html)…“: Die gespeicherte Seite „Log des vols“ der Website der Fluggesellschaft füllt die Piloten und Luftfahrzeuge der Referenz (Eingabehilfe).
-
-### 2 Ordner
-
-Der Browser verlangt, jeden Ordner einmal anzugeben; danach merkt er ihn sich.
-
-- **„Anwendungsordner“**: „Anwendungsordner wählen“, dann geben Sie den Ordner an, der `lancer.cmd` und `lancer.sh` enthält. Die anderen Ordner (Daten, Register, Missionen, SIA, Leistungen, lokale Sicherung) werden daraus abgeleitet; die Meldung zeigt, wie viele eingestellt wurden.
-- **„ODV-Arbeitsmappe (optional)“**: „OneDrive-Ordner…“ gibt den synchronisierten Ordner an, in dem die Staffel die Arbeitsmappe ablegt (die ODV-Planung öffnet die neueste). Ohne OneDrive: „oder die Excel-Datei…“, in diesem Browser gespeichert.
-
-Dieser Schritt ist wichtig: Ohne freigegebenen Datenordner bleibt Ihre Verfügbarkeit im Browser und das Zentrum sieht sie nicht.
 
 ### 3 Fluggesellschaft
 

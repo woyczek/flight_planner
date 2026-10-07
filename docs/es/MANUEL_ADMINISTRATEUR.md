@@ -676,8 +676,8 @@ Estos apartados se asignan a la página mediante `config/repository_tree` (clave
 
 Este apartado indica si el primer arranque se ha completado en este navegador, y en qué fecha.
 - «Abrir el primer arranque» vuelve a abrir el asistente (`premier_lancement.html?force`), también accesible por la pestaña «Primer arranque» de Ajustes y por la tarjeta de la página de inicio mientras quede algo por ajustar. Arriba, «Estado de la suite» hace balance; luego seis pasos:
-  1. Datos: «Obtener los datos» (clon del repositorio de datos) o «Archivo de datos…»; repositorio git de sincronización (opcional); opcionalmente, «Diario (.html)…».
-  2. Carpetas: «Elegir la carpeta de la aplicación» y después el libro ODV, opcional («Carpeta OneDrive…» u «o el archivo Excel…»).
+  1. Carpetas: «Elegir la carpeta de la aplicación» y después el libro ODV, opcional («Carpeta OneDrive…» u «o el archivo Excel…»).
+  2. Datos: «Obtener los datos» (clon del repositorio de datos) o «Archivo de datos…»; repositorio git de sincronización (opcional); opcionalmente, «Diario (.html)…».
   3. Aerolínea: nombre, sigla, nombre completo, sitio de la aerolínea; clave de API IVAO de la instalación (opcional, guardada por el lanzador); «Guardar la aerolínea».
   4. Perfil y credenciales: trigrama, IVAO, VATSIM, SimBrief, credenciales del sitio de la aerolínea; «Guardar el perfil».
   5. Datos aeronáuticos y tipos de aeronave: los bloques «Datos aeronáuticos» y «Tipos de aeronave» (los mismos que aquí).

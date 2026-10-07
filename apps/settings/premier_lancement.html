@@ -24,6 +24,7 @@
     gap: 10px
   }
   .pl-n {
+    margin-right: 10px;
     display: inline-grid;
     place-items: center;
     width: 26px;
@@ -127,26 +128,47 @@
     grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
     gap: 4px 18px
   }
+  /* designs à matières : le décor (galon, photo) passe sous le bilan ; fond papier pour garder les lignes lisibles */
+  html[data-design="cabinet"] .pl-check,
+  html[data-design="field"] .pl-check,
+  html[data-design="flightlog"] .pl-check {
+    position: relative;
+    z-index: 1;
+    background: rgba(246, 238, 218, .93);
+    color: #2b2116;
+    padding: 6px 12px 10px
+  }
   .pl-check li {
     display: flex;
     gap: 8px;
     align-items: baseline;
     font-size: 13.5px
   }
+  /* symbole en pastille pleine (lisible sur tous les fonds, matières comprises) */
   .pl-check li>b {
     flex: none;
-    width: 1.2em;
-    text-align: center
+    display: inline-grid;
+    place-items: center;
+    width: 1.4em;
+    height: 1.4em;
+    border-radius: 50%;
+    font-size: 11px;
+    color: #fff;
+    background: #6b7280
   }
   .pl-check li.ok>b {
-    color: var(--ok, #2e9d5b)
+    background: #2e7d32
   }
   .pl-check li.todo>b {
-    color: var(--warn, #b26a00)
+    background: #b45309
+  }
+  .pl-check li.bad>b {
+    background: #b3261e
   }
   .pl-check li.opt>b,
   .pl-check li.unknown>b {
-    opacity: .6
+    background: #6b7280;
+    opacity: .75
   }
   .pl-check li small {
     opacity: .75
@@ -184,8 +206,26 @@
     <ul class="pl-check" id="plChecklist"></ul>
   </section>
 
-  <section id="plData"><h2><span class="pl-n">1</span>Données</h2>
+  <section id="plFolders"><h2><span class="pl-n">1</span>Dossiers</h2>
+    <p class="pl-hint">Le navigateur demande de désigner chaque dossier une fois (il le mémorise).</p>
+    <div class="pl-grid">
+      <div class="pl-card"><h3>Dossier de l’application</h3>
+        <p class="pl-hint">Le dossier qui contient <code>lancer.cmd</code> et <code>lancer.sh</code> : données, registre, missions, SIA, performances et sauvegarde locale en sont déduits.</p>
+        <div class="pl-row"><button type="button" class="primary" id="plRepo" data-icon="folder">Choisir le dossier de l’application</button></div>
+        <p class="pl-msg" id="plRepoMsg"></p>
+      </div>
+      <div class="pl-card"><h3>Classeur ODV (facultatif)</h3>
+        <p class="pl-hint">Le dossier OneDrive (synchronisé) où l’escadrille dépose le classeur : le Planning ODV ouvre le plus récent. Sans OneDrive : choisir le fichier Excel, gardé dans ce navigateur.</p>
+        <div class="pl-row"><button type="button" class="secondary" id="plOdvDir" data-icon="folder">Dossier OneDrive…</button>
+          <button type="button" class="secondary" data-pick="plOdvFile">ou le fichier Excel…</button><input type="file" id="plOdvFile" accept=".xlsx" hidden></div>
+        <p class="pl-msg" id="plOdvMsg"></p>
+      </div>
+    </div>
+  </section>
+
+  <section id="plData"><h2><span class="pl-n">2</span>Données</h2>
     <p class="pl-state" id="plDataState">Vérification…</p>
+    <p class="pl-msg warn" id="plDataNeed" hidden></p>
     <div class="pl-grid" id="plDataForms" hidden>
       <div class="pl-card"><h3>Jeu d’essai</h3>
         <p class="pl-hint">Données fictives livrées avec la suite, pour la découvrir : missions (dont un exercice), pilotes, flotte, disponibilités et affectations de la semaine en cours. À remplacer plus tard par les données de votre compagnie.</p>
@@ -220,23 +260,6 @@
       <p class="pl-hint">La page « Log des vols » du site de la compagnie enregistrée (<code>.html</code>) : pilotes et appareils de la référence (aide à la saisie).</p>
       <div class="pl-row"><button type="button" class="secondary" data-pick="plLog">Journal (.html)…</button><input type="file" id="plLog" accept=".html,.htm" hidden></div>
       <p class="pl-msg" id="plLogMsg"></p>
-    </div>
-  </section>
-
-  <section id="plFolders"><h2><span class="pl-n">2</span>Dossiers</h2>
-    <p class="pl-hint">Le navigateur demande de désigner chaque dossier une fois (il le mémorise).</p>
-    <div class="pl-grid">
-      <div class="pl-card"><h3>Dossier de l’application</h3>
-        <p class="pl-hint">Le dossier qui contient <code>lancer.cmd</code> et <code>lancer.sh</code> : données, registre, missions, SIA, performances et sauvegarde locale en sont déduits.</p>
-        <div class="pl-row"><button type="button" class="primary" id="plRepo" data-icon="folder">Choisir le dossier de l’application</button></div>
-        <p class="pl-msg" id="plRepoMsg"></p>
-      </div>
-      <div class="pl-card"><h3>Classeur ODV (facultatif)</h3>
-        <p class="pl-hint">Le dossier OneDrive (synchronisé) où l’escadrille dépose le classeur : le Planning ODV ouvre le plus récent. Sans OneDrive : choisir le fichier Excel, gardé dans ce navigateur.</p>
-        <div class="pl-row"><button type="button" class="secondary" id="plOdvDir" data-icon="folder">Dossier OneDrive…</button>
-          <button type="button" class="secondary" data-pick="plOdvFile">ou le fichier Excel…</button><input type="file" id="plOdvFile" accept=".xlsx" hidden></div>
-        <p class="pl-msg" id="plOdvMsg"></p>
-      </div>
     </div>
   </section>
 
@@ -301,7 +324,7 @@
         <div class="pl-row"><button type="button" class="primary" id="plFleetGo">Mettre à jour maintenant</button><a class="secondary" id="plFleetLink" href="centre.html?base=fleet">Flotte</a></div>
       </div>
       <div class="pl-card"><h3>Missions</h3>
-        <p class="pl-hint">Les missions arrivent avec les données (étape 1, registre <code>data/missions</code>) ; le registre se relit depuis sa page.</p>
+        <p class="pl-hint">Les missions arrivent avec les données (étape 2, registre <code>data/missions</code>) ; le registre se relit depuis sa page.</p>
         <p class="pl-msg" id="plMissionsNow"></p>
         <div class="pl-row"><a class="secondary" href="../cpco/mission_registry.html">Registre des missions</a></div>
       </div>
@@ -325,7 +348,7 @@
 </main>
 <script src="../../shared/kit.js?v=d084129f"></script>
 <script src="../../shared/repository_nav.js?v=ad188ce2"></script>
-<script src="../../shared/content_i18n.js?v=efa62576"></script><script src="premier_lancement_i18n.js?v=57c29129"></script>
+<script src="../../shared/content_i18n.js?v=efa62576"></script><script src="premier_lancement_i18n.js?v=0bc9c5d1"></script>
 <!-- blocs « Données aéronautiques » et « Types d'aéronefs » (shared/maintenance_page.js) et leurs dépendances -->
 <script src="../../AircraftDB/aircraft_db.js"></script><script src="../../shared/data_files.js?v=dcb47c6a" data-file="references/aircraft_fleet.js"></script>
 <script src="../../shared/mission_core/vendor/js-yaml.min.js"></script>
@@ -444,7 +467,7 @@
       item('data', S.data ?? null, L('Données', 'Data', 'Daten', 'Datos'), 'plData'),
       item('git', S.git ?? null, L('Dépôt git de synchronisation', 'Git sync repository', 'Git-Synchronisierungs-Repository',
         'Repositorio git de sincronización'), 'plRepoCard', true, S.gitUrl || ''),
-      item('folder', S.folder ?? null, L('Dossier de l’application', 'Application folder', 'Anwendungsordner',
+      item('folder', S.folderOther ? 'bad' : S.folder ?? null, L('Dossier de l’application', 'Application folder', 'Anwendungsordner',
         'Carpeta de la aplicación'), 'plFolders', false, S.folderName || ''),
       item('company', !!(va.name && va.url), L('Compagnie et site', 'Airline and website', 'Fluggesellschaft und Website',
         'Aerolínea y sitio'), 'plCompany', false, [va.name, va.url && va.url.replace(/^https?:\/\//, '')].filter(Boolean).join(' — ')),
@@ -472,7 +495,7 @@
         'plCentreOn', true)
     ];
     // ligne du bilan : ✓ réglé, ? inconnu, – facultatif, ○ à faire
-    const li = x => `<li class="${x.ok === true ? 'ok' : x.ok === null ? 'unknown' : x.opt ? 'opt' : 'todo'}"><b>${x.ok === true ? '✓' : x.ok === null ? '?' : x.opt ? '–' : '○'}</b><span><a href="#${x.step}">${K.esc(x.label)}</a>${x.opt ? ` <small>(${K.esc(L('facultatif', 'optional', 'optional', 'opcional'))})</small>` : ''}${x.detail ? ` <small>${K.esc(x.detail)}</small>` : ''}</span></li>`;
+    const li = x => `<li class="${x.ok === 'bad' ? 'bad' : x.ok === true ? 'ok' : x.ok === null ? 'unknown' : x.opt ? 'opt' : 'todo'}"><b>${x.ok === 'bad' ? '✗' : x.ok === true ? '✓' : x.ok === null ? '?' : x.opt ? '–' : '○'}</b><span><a href="#${x.step}">${K.esc(x.label)}</a>${x.opt ? ` <small>(${K.esc(L('facultatif', 'optional', 'optional', 'opcional'))})</small>` : ''}${x.detail ? ` <small>${K.esc(x.detail)}</small>` : ''}</span></li>`;
     $('plChecklist').innerHTML = `<h4>${K.esc(L('Pour tous', 'For everyone', 'Für alle', 'Para todos'))}</h4>${suite.map(li).join('')}<h4>${K.esc(L('Centre', 'Centre', 'Zentrum', 'Centro'))}</h4>${centre.map(li).join('')}`;
     // mémorisé pour l'accueil : reste à faire (obligatoire seulement)
     const need = [...suite, ...centre].filter(x => !x.opt);
@@ -480,12 +503,34 @@
       localStorage.setItem(STATE, JSON.stringify({
         at: new Date().toISOString(),
         todo: need.filter(x => x.ok !== true).length,
-        total: need.length
+        total: need.length,
+        // « pour tous » seulement : décide du renvoi vers l'accueil à l'ouverture par le lanceur
+        todoSuite: suite.filter(x => !x.opt && x.ok !== true).length
       }));
     } catch {}
   }
 
-  // 1. données
+  // 2. données : installées par le lanceur dans la suite servie ; seulement une fois le dossier de l'application réglé
+  // (étape 1), qui doit être celui de cette suite (sinon les pages liraient et écriraient ailleurs)
+  /** Boutons de l'étape « Données » actifs seulement si le dossier de l'application est réglé (raison affichée sinon). */
+  function dataGate() {
+    const ok = !!S.folder;
+    $('plSample').disabled = !ok;
+    $('plClone').disabled = !ok || !S.hasGit;
+    const zip = document.querySelector('[data-pick="plZip"]');
+    if (zip) zip.disabled = !ok;
+    $('plDataNeed').hidden = ok;
+    $('plDataNeed').textContent = ok ? '' : S.folderOther ? L(
+        'Le dossier de l’application choisi est celui d’une autre copie de la suite : le rechoisir (étape 1) avant d’installer les données.',
+        'The chosen application folder belongs to another copy of the suite: choose it again (step 1) before installing the data.',
+        'Der gewählte Anwendungsordner gehört zu einer anderen Kopie der Suite: vor dem Installieren der Daten neu wählen (Schritt 1).',
+        'La carpeta de la aplicación elegida es la de otra copia de la suite: volver a elegirla (paso 1) antes de instalar los datos.') :
+      L(
+        'Choisir d’abord le dossier de l’application (étape 1) : les données s’installent dans cette suite.',
+        'First choose the application folder (step 1): the data are installed in this suite.',
+        'Zuerst den Anwendungsordner wählen (Schritt 1): die Daten werden in dieser Suite installiert.',
+        'Elegir primero la carpeta de la aplicación (paso 1): los datos se instalan en esta suite.');
+  }
   async function dataState() {
     let st;
     try {
@@ -502,11 +547,13 @@
     $('plDataState').textContent = st.data ? `Données présentes${st.dataGit ? ' (dépôt git : reçu à chaque lancement, envoyé et partagé par le bouton « Synchroniser » de l’en-tête)' : ''}.` :
       st.git ? 'Pas encore de données : jeu d’essai, dépôt de données de votre compagnie, ou archive reçue par mail.' :
       'Pas encore de données : jeu d’essai, ou archive reçue par mail (Git n’est pas installé : pour un dépôt de données, installer Git, puis relancer).';
-    $('plClone').disabled = !st.git;
+    S.hasGit = !!st.git;
+    dataGate();
     checklist();
   }
   // jeu d'essai livré avec la suite (tools/jeu_essai.py, lancé par le lanceur : POST /__setup/jeu-essai)
   on('click', 'plSample', async () => {
+    if (!S.folder) return dataGate();
     $('plSample').disabled = true;
     msg('plSampleMsg', 'Installation du jeu d’essai…');
     try {
@@ -521,13 +568,14 @@
     } catch (e) {
       msg('plSampleMsg', `Échec : ${e.message}`, 'err');
     }
-    $('plSample').disabled = false;
+    dataGate();
   });
   // dépôt de données de la compagnie : adresse donnée par l'utilisateur (aucune par défaut), identifiants facultatifs
   on('click', 'plClone', async () => {
     const url = $('plDataUrl').value.trim(),
       user = $('plUser').value.trim(),
       secret = $('plSecret').value;
+    if (!S.folder) return dataGate();
     if (!url) return msg('plCloneMsg', 'Adresse du dépôt de données à préciser (https://… ou git@…).', 'err');
     if (!user !== !secret) return msg('plCloneMsg',
       'Identifiant et mot de passe (ou jeton) : les deux, ou aucun (dépôt public, clé SSH, identifiants déjà connus de Git).',
@@ -550,7 +598,7 @@
     } catch (e) {
       msg('plCloneMsg', `Échec : ${e.message}`, 'err');
     }
-    $('plClone').disabled = false;
+    dataGate();
   });
   // dépôt git de synchronisation de data/ (docs/technique/SYNCHRONISATION.md § 9) : précisé ici, vérifié (git ls-remote),
   // enregistré comme dépôt distant de data/ ; jamais bloquant
@@ -621,18 +669,24 @@
   upload('plZip', 'data', 'plZipMsg', dataState);
   upload('plLog', 'log', 'plLogMsg');
 
-  // 2. dossiers
+  // 1. dossiers : le dossier de l'application doit être celui de la suite servie (repère .defa_instance du lanceur) ;
+  // autre copie : non réglé (✗), à rechoisir ; autre copie confirmée : réglé, avec l'avertissement ; sans lanceur : réglé
   async function foldersState() {
     const FA = window.FileAccess;
     if (!FA) return;
     const repo = await FA.status('__repo'),
       odvDir = await FA.status('__odv'),
       odvFile = await FA.get('__odvFile');
-    S.folder = !!repo.handle;
+    const state = repo.handle ? await FA.otherState?.('__repo', repo.handle).catch(() => null) : null;
+    S.folderOther = state === 'other';
+    S.folder = !!repo.handle && !S.folderOther;
     S.folderName = repo.handle ? repo.name : '';
-    done('plFolders', repo.handle);
-    msg('plRepoMsg', repo.handle ? `Choisi : ${repo.name}` : '', repo.handle ? 'ok' : '');
+    done('plFolders', S.folder);
+    if (repo.handle && (state === 'other' || state === 'accepted')) msg('plRepoMsg', await FA.otherText('__repo', repo.handle, state),
+      state === 'other' ? 'err' : 'warn');
+    else msg('plRepoMsg', repo.handle ? `Choisi : ${repo.name}` : '', repo.handle ? 'ok' : '');
     msg('plOdvMsg', odvDir.handle ? `Dossier : ${odvDir.name}` : odvFile ? `Classeur gardé : ${odvFile.name || 'classeur'}` : '', odvDir.handle || odvFile ? 'ok' : '');
+    dataGate();
     checklist();
   }
   /** Action d'un bouton « Choisir le dossier » (FileAccess.pickFolder) ; un refus ou une annulation est silencieux. */
@@ -641,7 +695,7 @@
       const h = await window.FileAccess.pickFolder(key);
       const derived = (h.derived || []).length;
       msg(out, `Choisi : ${h.name}${derived ? ` — ${derived} dossier(s) réglé(s) d’après lui` : ''}`, 'ok');
-      foldersState();
+      await foldersState();
     } catch (e) {
       if (e?.name !== 'AbortError' && e?.message !== 'Dossier refusé') notify(e.message, 'warn');
     }
@@ -822,10 +876,10 @@
       '{n} Mission(en) im Register.', '{n} misión(es) en el registro.'
     ], {
       n
-    }) : L('Registre vide ou absent : récupérer les données (étape 1), puis relire le registre.',
-      'Registry empty or missing: fetch the data (step 1), then reread the registry.',
-      'Register leer oder fehlt: Daten abrufen (Schritt 1), dann das Register neu lesen.',
-      'Registro vacío o ausente: obtener los datos (paso 1) y releer el registro.'), n ? 'ok' : 'warn');
+    }) : L('Registre vide ou absent : récupérer les données (étape 2), puis relire le registre.',
+      'Registry empty or missing: fetch the data (step 2), then reread the registry.',
+      'Register leer oder fehlt: Daten abrufen (Schritt 2), dann das Register neu lesen.',
+      'Registro vacío o ausente: obtener los datos (paso 2) y releer el registro.'), n ? 'ok' : 'warn');
     checklist();
   }
   /** Utilisateurs, administrateurs du Centre et liens vers les réglages du SO Group (Paramètres › Centre). */
@@ -872,10 +926,16 @@
   }
   window.addEventListener('cpco-access-change', centreState);
 
-  // fin
-  on('click', 'plFinish', () => {
+  /** Chemin réel de la suite servie (2e ligne du repère .defa_instance écrit par le lanceur) ; '' sans lanceur. */
+  const installPath = () => fetch('../../.defa_instance', {
+    cache: 'no-store'
+  }).then(r => r.ok ? r.text() : '').then(t => (String(t).split(/\r?\n/)[1] || '').trim(), () => '');
+  // fin : la suite est notée réglée POUR CETTE INSTALLATION (les réglages du navigateur suivent l'adresse, pas le dossier :
+  // une autre installation servie au même port n'hérite pas du « Terminer »)
+  on('click', 'plFinish', async () => {
     localStorage.setItem(DONE, JSON.stringify({
-      at: new Date().toISOString()
+      at: new Date().toISOString(),
+      path: await installPath()
     }));
     location.href = '../../index.html';
   });
@@ -884,7 +944,7 @@
   on('click', 'plClean', async () => {
     if (!await window.AppFramework.ask(
         'Nettoyer les réglages du premier lancement dans ce navigateur (dossiers mémorisés, classeur ODV gardé, identifiants du site de la compagnie, profil) ? Les fichiers sur le disque ne sont pas touchés.'
-        )) return;
+      )) return;
     const FA = window.FileAccess;
     if (FA)
       for (const key of [...Object.keys(FA.FOLDERS), '__odvFile']) await FA.set(key, null);
@@ -899,19 +959,22 @@
 
   // déjà réglée : l'accueil (lanceur relancé), sauf ?force
   async function start() {
-    const FA = await wait('FileAccess');
-    if (localStorage.getItem(DONE) && !new URLSearchParams(location.search).has('force') && FA && (await FA.status('__repo')).handle) {
+    await wait('FileAccess');
+    checklist();
+    companyLoad();
+    profileLoad();
+    await Promise.all([foldersState(), dataState(), repoState(), ivaoKeyState()]);
+    centreState();
+    checklist();
+    // ouverte par le lanceur (sans ?force) : l'accueil seulement si « Terminer » vaut pour cette installation et que tout
+    // l'obligatoire « pour tous » est réglé
+    const fin = read(DONE),
+      st = read(STATE);
+    if (fin.at && !new URLSearchParams(location.search).has('force') && (fin.path || '') === await installPath() && st.todoSuite ===
+      0) {
       location.replace('../../index.html');
       return;
     }
-    checklist();
-    dataState();
-    repoState();
-    foldersState();
-    companyLoad();
-    ivaoKeyState();
-    profileLoad();
-    centreState();
     // données aéronautiques construites par les blocs : bilan relu quand la base change
     window.addEventListener('storage', e => e.key === 'siaBaseInfo:v1' && checklist());
     setInterval(checklist, 15000);

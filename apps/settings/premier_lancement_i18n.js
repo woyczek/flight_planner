@@ -78,7 +78,8 @@ RepositoryContentI18n([
     'He recibido los datos por correo'
   ],
   ['du jeu de données (elle contient', 'of the data set (it contains', 'des Datensatzes (es enthält',
-  'del conjunto de datos (contiene'],
+    'del conjunto de datos (contiene'
+  ],
   ['Archive des données…', 'Data archive…', 'Datenarchiv…', 'Archivo de datos…'],
   ['Journal des vols (facultatif)', 'Flight log (optional)', 'Flugbuch (optional)', 'Registro de vuelos (opcional)'],
   ['La page « Log des vols » du site de la compagnie enregistrée (', 'The “Log des vols” page of the airline site, saved (',
@@ -226,13 +227,17 @@ RepositoryContentI18n([
   ['Mettre à jour maintenant', 'Update now', 'Jetzt aktualisieren', 'Actualizar ahora'],
   ['Flotte', 'Fleet', 'Flotte', 'Flota'],
   ['Missions', 'Missions', 'Missionen', 'Misiones'],
-  ['Les missions arrivent avec les données (étape 1, registre', 'Missions come with the data (step 1, registry',
-    'Die Missionen kommen mit den Daten (Schritt 1, Register', 'Las misiones llegan con los datos (paso 1, registro'
+  ['Les missions arrivent avec les données (étape 2, registre', 'Missions come with the data (step 2, registry',
+    'Die Missionen kommen mit den Daten (Schritt 2, Register', 'Las misiones llegan con los datos (paso 2, registro'
   ],
   [') ; le registre se relit depuis sa page.', '); the registry is reread from its page.',
     '); das Register wird auf seiner Seite neu gelesen.', '); el registro se relee desde su página.'
   ],
   ['Registre des missions', 'Mission registry', 'Missionsregister', 'Registro de misiones'],
   ['Réglages du SO Group', 'SO Group settings', 'Einstellungen der SO Group', 'Ajustes del SO Group'],
-  ['Accueil', 'Home', 'Startseite', 'Inicio']
+  ['Accueil', 'Home', 'Startseite', 'Inicio'],
+  ['https://hôte/compte/dépôt.git', 'https://host/account/repository.git', 'https://host/konto/repository.git',
+    'https://host/cuenta/repositorio.git'
+  ],
+  ['git@hôte:compte/dépôt.git', 'git@host:account/repository.git', 'git@host:konto/repository.git', 'git@host:cuenta/repositorio.git']
 ]);

@@ -676,8 +676,8 @@ These sections are assigned to the page by `config/repository_tree` (key `settin
 
 This section shows whether the first run is complete in this browser, and on what date.
 - “Open the first run” reopens the wizard (`premier_lancement.html?force`), also reachable through the “First run” tab of Settings and the home page card as long as something remains to be set. At the top, “Where the suite stands” takes stock; then six steps:
-  1. Data: “Fetch the data” (clone of the data repository) or “Data archive…”; git sync repository (optional); optionally, “Log (.html)…”.
-  2. Folders: “Choose the application folder”, then the ODV workbook, optional (“OneDrive folder…” or “or the Excel file…”).
+  1. Folders: “Choose the application folder”, then the ODV workbook, optional (“OneDrive folder…” or “or the Excel file…”).
+  2. Data: “Fetch the data” (clone of the data repository) or “Data archive…”; git sync repository (optional); optionally, “Log (.html)…”.
   3. Airline: name, short name, full name, airline website; the installation's IVAO API key (optional, kept by the launcher); “Save the airline”.
   4. Profile and credentials: trigram, IVAO, VATSIM, SimBrief, airline website credentials; “Save the profile”.
   5. Aeronautical data and aircraft types: the “Aeronautical data” and “Aircraft types” blocks (the same as here).

@@ -409,7 +409,7 @@ Chaque changement est enregistré aussitôt.
 <!-- page: apps/settings/premier_lancement.html -->
 
 Cette page règle ce dont la suite a besoin pour travailler. Le lanceur (`lancer.cmd` sous Windows, `sh lancer.sh` sous macOS ou Linux) l'ouvre de lui-même ; on y revient à tout moment par Paramètres › onglet « Premier lancement », ou par la carte « Premier lancement » de l'accueil, affichée tant qu'il reste quelque chose à régler.
-Une fois la suite réglée, la page ouverte par le lanceur renvoie vers l'accueil.
+Ouverte par le lanceur, la page ne renvoie vers l'accueil que si « Terminer » a été fait pour cette installation (même dossier de la suite) et que rien d'obligatoire ne manque. Une nouvelle installation servie à la même adresse affiche donc le premier lancement, et l'accueil l'annonce en bandeau.
 
 En tête, **« Où en est la suite »** fait le bilan, ligne par ligne, et chaque ligne mène à son étape : ✓ réglé, ○ à faire, – facultatif, ? inconnu (lanceur absent).
 - Pour tous : données, dépôt git de synchronisation (facultatif), dossier de l'application, compagnie et site, clé d'API IVAO (facultative), pilote (trigramme et au moins un réseau), identifiants du site de la compagnie, données aéronautiques.
@@ -417,9 +417,21 @@ En tête, **« Où en est la suite »** fait le bilan, ligne par ligne, et chaqu
 
 Le numéro de chaque étape passe au vert quand elle est faite.
 
-### 1 Données
+### 1 Dossiers
+
+Le navigateur demande de désigner chaque dossier une fois ; il s'en souvient ensuite.
+
+- **« Dossier de l'application »** : « Choisir le dossier de l'application », puis désignez le dossier qui contient `lancer.cmd` et `lancer.sh`. Les autres dossiers (données, registre, missions, SIA, performances, sauvegarde locale) en sont déduits ; le message indique combien ont été réglés.
+- Le dossier doit être celui de la suite servie par le lanceur : s'il appartient à une autre copie de la suite, l'étape reste à faire (✗ dans le bilan) avec le message « Suite lancée depuis …, dossier déclaré … » ; rechoisissez le bon dossier.
+- **« Classeur ODV (facultatif) »** : « Dossier OneDrive… » désigne le dossier synchronisé où l'escadrille dépose le classeur (le Planning ODV ouvre le plus récent). Sans OneDrive : « ou le fichier Excel… », gardé dans ce navigateur.
+
+Cette étape est importante : sans dossier des données autorisé, vos disponibilités restent dans le navigateur et le Centre ne les voit pas.
+
+### 2 Données
 
 Cette étape installe les données de la compagnie (missions, références…). Elle passe par le lanceur : sans lui, la page affiche « Pour cette étape, ouvrez la suite avec le lanceur… ».
+
+Les boutons de cette étape restent inactifs tant que le dossier de l'application (étape 1) n'est pas choisi : les données s'installent dans la suite servie.
 
 Trois possibilités :
 
@@ -437,15 +449,6 @@ Trois possibilités :
   (sans données encore, l'adresse sert à les récupérer). Rien n'est bloquant : un dépôt qui ne répond pas est signalé,
   la suite fonctionne sans partage. Détails : [synchronisation](technique/SYNCHRONISATION.md).
 - Une fois les données présentes, la carte facultative « Journal des vols » propose « Journal (.html)… » : la page « Log des vols » du site de la compagnie, enregistrée, remplit les pilotes et appareils de la référence (aide à la saisie).
-
-### 2 Dossiers
-
-Le navigateur demande de désigner chaque dossier une fois ; il s'en souvient ensuite.
-
-- **« Dossier de l'application »** : « Choisir le dossier de l'application », puis désignez le dossier qui contient `lancer.cmd` et `lancer.sh`. Les autres dossiers (données, registre, missions, SIA, performances, sauvegarde locale) en sont déduits ; le message indique combien ont été réglés.
-- **« Classeur ODV (facultatif) »** : « Dossier OneDrive… » désigne le dossier synchronisé où l'escadrille dépose le classeur (le Planning ODV ouvre le plus récent). Sans OneDrive : « ou le fichier Excel… », gardé dans ce navigateur.
-
-Cette étape est importante : sans dossier des données autorisé, vos disponibilités restent dans le navigateur et le Centre ne les voit pas.
 
 ### 3 Compagnie
 

@@ -72,12 +72,22 @@
     color: #71b7ff;
     font-size: 13px
   }
+  /* rappel du premier lancement : bandeau pleine largeur en tête de page */
+  .setup {
+    margin: 0 0 22px
+  }
   .setup a {
-    border-color: #b45309;
-    background: #2a1d0c
+    border: 2px solid #f59e0b;
+    background: #3a2608;
+    padding: 16px 20px
   }
   .setup b {
-    color: #fcd34d !important
+    color: #fcd34d !important;
+    font-size: 18px
+  }
+  .setup small {
+    color: #fde68a;
+    font-size: 14px
   }
   .warn {
     border: 1px solid #b45309;
@@ -167,10 +177,23 @@
       st = JSON.parse(localStorage.getItem('suiteSetupState:v1') || 'null');
     } catch {}
     const box = document.getElementById('setup');
-    if (!done || st?.todo) {
+    // « Terminer » d'une autre installation servie à la même adresse (réglages du navigateur liés à l'adresse) : le chemin
+    // réel de la suite servie (repère .defa_instance du lanceur, 2e ligne) diffère de celui noté au « Terminer »
+    const show = fresh => {
       box.hidden = false;
-      box.innerHTML = `<a href="apps/settings/premier_lancement.html?force"><b>${esc(tr(['Premier lancement', 'First run', 'Erststart', 'Primer arranque']))}</b><small>${esc(st?.todo ? tr(['{n} élément(s) à régler sur {t} — reprendre où vous en étiez', '{n} item(s) to set out of {t} — resume where you left off', '{n} von {t} Punkt(en) einzustellen — dort weitermachen, wo Sie waren', '{n} elemento(s) por ajustar de {t} — retomar donde lo dejó']).replace('{n}', st.todo).replace('{t}', st.total) : tr(['Régler la suite : données, dossiers, compagnie, profil, données aéronautiques', 'Set up the suite: data, folders, airline, profile, aeronautical data', 'Die Suite einrichten: Daten, Ordner, Fluggesellschaft, Profil, Luftfahrtdaten', 'Configurar la suite: datos, carpetas, aerolínea, perfil, datos aeronáuticos']))}</small></a>`;
-    }
+      box.innerHTML = `<a href="apps/settings/premier_lancement.html?force"><b>${esc(tr(['Premier lancement', 'First run', 'Erststart', 'Primer arranque']))}</b><small>${esc(fresh ? tr(['Nouvelle installation : régler la suite (dossier, données, compagnie, profil, données aéronautiques)', 'New installation: set up the suite (folder, data, airline, profile, aeronautical data)', 'Neue Installation: die Suite einrichten (Ordner, Daten, Fluggesellschaft, Profil, Luftfahrtdaten)', 'Nueva instalación: configurar la suite (carpeta, datos, aerolínea, perfil, datos aeronáuticos)']) : st?.todo ? tr(['{n} élément(s) à régler sur {t} — reprendre où vous en étiez', '{n} item(s) to set out of {t} — resume where you left off', '{n} von {t} Punkt(en) einzustellen — dort weitermachen, wo Sie waren', '{n} elemento(s) por ajustar de {t} — retomar donde lo dejó']).replace('{n}', st.todo).replace('{t}', st.total) : tr(['Régler la suite : dossier, données, compagnie, profil, données aéronautiques', 'Set up the suite: folder, data, airline, profile, aeronautical data', 'Die Suite einrichten: Ordner, Daten, Fluggesellschaft, Profil, Luftfahrtdaten', 'Configurar la suite: carpeta, datos, aerolínea, perfil, datos aeronáuticos']))}</small></a>`;
+    };
+    let fin = {};
+    try {
+      fin = JSON.parse(done || '{}') || {};
+    } catch {}
+    if (!done || st?.todo) show(false);
+    else fetch('.defa_instance', {
+      cache: 'no-store'
+    }).then(r => r.ok ? r.text() : '').then(t => {
+      const path = (String(t).split(/\r?\n/)[1] || '').trim();
+      if ((fin.path || '') !== path) show(true);
+    }, () => {});
   })();
   const r = window.REPOSITORY_TREE?.release || {};
   document.getElementById('rel').textContent = `Version ${r.version || ''} (${r.date || ''})`;

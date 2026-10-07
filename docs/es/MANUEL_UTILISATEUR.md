@@ -409,7 +409,7 @@ Cada cambio se guarda al instante.
 <!-- page: apps/settings/premier_lancement.html -->
 
 Esta página configura lo que la suite necesita para trabajar. El lanzador (`lancer.cmd` en Windows, `sh lancer.sh` en macOS o Linux) la abre por sí mismo; se vuelve a ella en cualquier momento por Ajustes › pestaña «Primer arranque», o por la tarjeta «Primer arranque» de la página de inicio, mostrada mientras quede algo por ajustar.
-Una vez configurada la suite, la página abierta por el lanzador remite a la página de inicio.
+Abierta por el lanzador, la página solo remite a la página de inicio si se hizo «Terminar» para esta instalación (misma carpeta de la suite) y no falta nada obligatorio. Una nueva instalación servida en la misma dirección muestra pues el primer arranque, y la página de inicio lo anuncia en un banner.
 
 Arriba, **«Estado de la suite»** hace balance, línea por línea, y cada línea lleva a su paso: ✓ ajustado, ○ por hacer, – opcional, ? desconocido (sin lanzador).
 - Para todos: datos, repositorio git de sincronización (opcional), carpeta de la aplicación, aerolínea y sitio, clave de API IVAO (opcional), piloto (trigrama y al menos una red), credenciales del sitio de la aerolínea, datos aeronáuticos.
@@ -417,9 +417,21 @@ Arriba, **«Estado de la suite»** hace balance, línea por línea, y cada líne
 
 El número de cada paso se pone en verde cuando está hecho.
 
-### 1 Datos
+### 1 Carpetas
+
+El navegador pide designar cada carpeta una vez; después la recuerda.
+
+- **«Carpeta de la aplicación»**: «Elegir la carpeta de la aplicación» y, después, designe la carpeta que contiene `lancer.cmd` y `lancer.sh`. Las demás carpetas (datos, registro, misiones, SIA, rendimiento, copia local) se deducen de ella; el mensaje indica cuántas se han configurado.
+- La carpeta debe ser la de la suite servida por el lanzador: si pertenece a otra copia de la suite, el paso queda por hacer (✗ en el balance) con el mensaje «Suite iniciada desde …, carpeta declarada …»; vuelva a elegir la carpeta correcta.
+- **«Libro ODV (opcional)»**: «Carpeta OneDrive…» designa la carpeta sincronizada donde la escuadrilla deposita el libro (la Planificación ODV abre el más reciente). Sin OneDrive: «o el archivo Excel…», guardado en este navegador.
+
+Este paso es importante: sin carpeta de datos autorizada, su disponibilidad se queda en el navegador y el Centro no la ve.
+
+### 2 Datos
 
 Este paso instala los datos de la aerolínea (misiones, referencias…). Pasa por el lanzador: sin él, la página muestra «Para este paso, abra la suite con el lanzador…».
+
+Los botones de este paso quedan inactivos mientras no se elija la carpeta de la aplicación (paso 1): los datos se instalan en la suite servida.
 
 Tres posibilidades:
 
@@ -437,15 +449,6 @@ Tres posibilidades:
   (si aún no hay datos, la dirección sirve para obtenerlos). Nada es bloqueante: un repositorio que no responde se señala,
   y la suite funciona sin compartir. Detalles: [sincronización](../technique/SYNCHRONISATION.md).
 - Una vez presentes los datos, la tarjeta opcional «Registro de vuelos» ofrece «Registro (.html)…»: la página «Log des vols» del sitio de la aerolínea, guardada, rellena los pilotos y las aeronaves de la referencia (ayuda a la introducción).
-
-### 2 Carpetas
-
-El navegador pide designar cada carpeta una vez; después la recuerda.
-
-- **«Carpeta de la aplicación»**: «Elegir la carpeta de la aplicación» y, después, designe la carpeta que contiene `lancer.cmd` y `lancer.sh`. Las demás carpetas (datos, registro, misiones, SIA, rendimiento, copia local) se deducen de ella; el mensaje indica cuántas se han configurado.
-- **«Libro ODV (opcional)»**: «Carpeta OneDrive…» designa la carpeta sincronizada donde la escuadrilla deposita el libro (la Planificación ODV abre el más reciente). Sin OneDrive: «o el archivo Excel…», guardado en este navegador.
-
-Este paso es importante: sin carpeta de datos autorizada, su disponibilidad se queda en el navegador y el Centro no la ve.
 
 ### 3 Aerolínea
 

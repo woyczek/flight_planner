@@ -676,8 +676,8 @@ Diese Rubriken werden der Seite durch `config/repository_tree` zugeordnet (Schl�
 
 Diese Rubrik zeigt, ob der Erststart in diesem Browser abgeschlossen ist, und an welchem Datum.
 - „Erststart öffnen“ öffnet den Assistenten erneut (`premier_lancement.html?force`), auch über die Registerkarte „Erststart“ der Einstellungen und die Karte der Startseite erreichbar, solange noch etwas einzustellen ist. Oben zieht „Stand der Suite“ Bilanz; dann sechs Schritte:
-  1. Daten: „Daten abrufen“ (Klon des Datenrepositorys) oder „Datenarchiv…“; Git-Synchronisierungs-Repository (optional); optional „Journal (.html)…“.
-  2. Ordner: „Anwendungsordner wählen“, dann die ODV-Arbeitsmappe, optional („OneDrive-Ordner…“ oder „oder die Excel-Datei…“).
+  1. Ordner: „Anwendungsordner wählen“, dann die ODV-Arbeitsmappe, optional („OneDrive-Ordner…“ oder „oder die Excel-Datei…“).
+  2. Daten: „Daten abrufen“ (Klon des Datenrepositorys) oder „Datenarchiv…“; Git-Synchronisierungs-Repository (optional); optional „Journal (.html)…“.
   3. Fluggesellschaft: Name, Kürzel, vollständiger Name, Website der Fluggesellschaft; IVAO-API-Schlüssel der Installation (optional, beim Starter gespeichert); „Fluggesellschaft speichern“.
   4. Profil und Zugangsdaten: Kürzel, IVAO, VATSIM, SimBrief, Zugangsdaten der Website; „Profil speichern“.
   5. Luftfahrtdaten und Luftfahrzeugtypen: die Blöcke „Luftfahrtdaten“ und „Luftfahrzeugtypen“ (dieselben wie hier).

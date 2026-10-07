@@ -409,7 +409,7 @@ Each change is saved at once.
 <!-- page: apps/settings/premier_lancement.html -->
 
 This page sets up what the suite needs to work. The launcher (`lancer.cmd` on Windows, `sh lancer.sh` on macOS or Linux) opens it by itself; you can come back at any time through Settings › “First run” tab, or the “First run” card of the home page, shown as long as something remains to be set.
-Once the suite is set up, the page opened by the launcher sends you to the home page.
+Opened by the launcher, the page only sends you to the home page if “Finish” was done for this installation (same suite folder) and nothing mandatory is missing. A new installation served at the same address therefore shows the first run, and the home page announces it in a banner.
 
 At the top, **“Where the suite stands”** takes stock, line by line, and each line leads to its step: ✓ set, ○ to do, – optional, ? unknown (no launcher).
 - For everyone: data, git sync repository (optional), application folder, airline and website, IVAO API key (optional), pilot (trigram and at least one network), airline website credentials, aeronautical data.
@@ -417,9 +417,21 @@ At the top, **“Where the suite stands”** takes stock, line by line, and each
 
 The number of each step turns green when it is done.
 
-### 1 Data
+### 1 Folders
+
+The browser asks you to point to each folder once; it remembers it afterwards.
+
+- **“Application folder”**: “Choose the application folder”, then point to the folder that contains `lancer.cmd` and `lancer.sh`. The other folders (data, registry, missions, SIA, performance, local backup) are deduced from it; the message tells you how many were set.
+- The folder must be the one of the suite served by the launcher: if it belongs to another copy of the suite, the step stays to do (✗ in the summary) with the message “Suite launched from …, declared folder …”; choose the right folder again.
+- **“ODV workbook (optional)”**: “OneDrive folder…” points to the synchronised folder where the squadron drops the workbook (the ODV planning opens the most recent one). Without OneDrive: “or the Excel file…”, kept in this browser.
+
+This step matters: without an allowed data folder, your availability stays in the browser and the Centre cannot see it.
+
+### 2 Data
 
 This step installs the airline's data (missions, references…). It goes through the launcher: without it, the page shows “For this step, open the suite with the launcher…”.
+
+The buttons of this step stay inactive until the application folder (step 1) is chosen: the data are installed in the served suite.
 
 Three options:
 
@@ -437,15 +449,6 @@ Three options:
   (with no data yet, the address is used to fetch them). Nothing is blocking: a repository that does not answer is reported,
   and the suite works without sharing. Details: [synchronisation](../technique/SYNCHRONISATION.md).
 - Once the data is present, the optional “Flight log” card offers “Log (.html)…”: the “Flight log” page of the airline website, saved, fills in the pilots and aircraft of the reference (entry help).
-
-### 2 Folders
-
-The browser asks you to point to each folder once; it remembers it afterwards.
-
-- **“Application folder”**: “Choose the application folder”, then point to the folder that contains `lancer.cmd` and `lancer.sh`. The other folders (data, registry, missions, SIA, performance, local backup) are deduced from it; the message tells you how many were set.
-- **“ODV workbook (optional)”**: “OneDrive folder…” points to the synchronised folder where the squadron drops the workbook (the ODV planning opens the most recent one). Without OneDrive: “or the Excel file…”, kept in this browser.
-
-This step matters: without an allowed data folder, your availability stays in the browser and the Centre cannot see it.
 
 ### 3 Airline
 
