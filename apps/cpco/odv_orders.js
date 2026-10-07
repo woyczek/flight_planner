@@ -626,7 +626,7 @@
    *  réservations ; mêmes fichiers data/atc que le Planning ODV. */
   async function loadAtcDay(date) {
     try {
-      if (!window.SuiteAtc) await loadScript('../../shared/atc_sessions.js?v=996ad1ea');
+      if (!window.SuiteAtc) await loadScript('../../shared/atc_sessions.js?v=53bdcc60');
     } catch {
       return;
     }
@@ -764,7 +764,7 @@
   async function autoImportAtc() {
     if (!canEdit()) return;
     try {
-      if (!window.SuiteAtc) await loadScript('../../shared/atc_sessions.js?v=996ad1ea');
+      if (!window.SuiteAtc) await loadScript('../../shared/atc_sessions.js?v=53bdcc60');
     } catch {
       return;
     }

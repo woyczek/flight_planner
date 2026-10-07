@@ -14,6 +14,7 @@
   if (!main) return;
   const embedded = main.id === 'dataAdmin';
   const LANGS = ['fr', 'en', 'de', 'es'];
+  /** Indice de la langue courante dans LANGS (0 = français, repli si langue inconnue). */
   const li = () => Math.max(0, LANGS.indexOf(window.RepositoryNav?.getLanguage?.() || 'fr'));
   /** Texte d'une ligne [fr, en, de, es] (repli : anglais puis français), variables {x} remplacées. */
   const t = (row, vars = {}) => {
@@ -21,7 +22,9 @@
     return s.replace(/\{(\w+)\}/g, (_, k) => vars[k] ?? '');
   };
   const esc = window.RepositoryKit.esc; // échappement HTML commun (shared/kit.js)
+  /** Locale Intl de la langue courante (fr-FR, en-GB, de-DE, es-ES). */
   const locale = () => ['fr-FR', 'en-GB', 'de-DE', 'es-ES'][li()];
+  /** Date lisible dans la langue courante (avec l'heure si time) ; « — » si vide, la valeur échappée si illisible. */
   const fmtDate = (v, time = true) => {
     if (!v) return '—';
     const d = new Date(v);
@@ -31,7 +34,9 @@
       timeStyle: 'short'
     }) : d.toLocaleDateString(locale());
   };
+  /** Taille en octets rendue en « o », « Ko » ou « Mo ». */
   const fmtSize = n => n >= 1048576 ? `${(n / 1048576).toFixed(1)} Mo` : n >= 1024 ? `${Math.round(n / 1024)} Ko` : `${n || 0} o`;
+  /** Ancienneté d'une date en jours (« aujourd'hui », « il y a n j ») ; chaîne vide si pas de date. */
   const ago = v => {
     if (!v) return '';
     const d = (Date.now() - new Date(v).getTime()) / 864e5;
@@ -39,6 +44,7 @@
       n: Math.floor(d)
     });
   };
+  /** Pastille d'état HTML (level : ok ✓, warn ⚠, err ✗, sinon ℹ) suivie du texte échappé. */
   const pill = (level, text) => `<span class="mt-pill mt-${level}">${level === 'ok' ? '✓' : level === 'warn' ? '⚠' : level === 'err' ? '✗' : 'ℹ'} ${esc(text)}</span>`;
   /** Registre des missions : index IndexedDB (shared/data_index.js), sinon ancienne copie du navigateur. */
   const regIndex = async () => {
@@ -48,6 +54,7 @@
       updatedAt: window.MissionIndex.updatedAt()
     } : readJson('missionRegistry:v1', null);
   };
+  /** Valeur JSON de la clé k du localStorage ; d si absente ou illisible. */
   const readJson = (k, d = null) => {
     try {
       return JSON.parse(localStorage.getItem(k) || 'null') ?? d;
@@ -55,6 +62,7 @@
       return d;
     }
   };
+  /** Écrit v en JSON sous la clé k du localStorage (quota dépassé : ignoré en silence). */
   const writeJson = (k, v) => {
     try {
       localStorage.setItem(k, JSON.stringify(v));
@@ -62,6 +70,7 @@
       /* quota */
     }
   };
+  /** URL racine de la suite (RepositoryNav.root, sinon dossier parent de la page). */
   const root = () => window.RepositoryNav?.root || new URL('../', location.href).href;
   /** Attend un composant chargé à la demande par repository_nav.js (FileAccess, LocalStore, SuiteUpdate). */
   const waitFor = (name, ms = 6000) => new Promise(resolve => {
@@ -281,6 +290,7 @@
   const PAGE = embedded ? main.dataset.settings || '' : '',
     SECTIONS = window.REPOSITORY_TREE?.settings?.sections || {},
     ONLY = !embedded && main.dataset.blocks ? new Set(main.dataset.blocks.split(/[\s,]+/).filter(Boolean)) : null;
+  /** Vrai si le bloc id appartient à la page de Paramètres courante (ou à la liste data-blocks de la page autonome). */
   const onPage = id => PAGE ? !SECTIONS[id] || String(SECTIONS[id]).split(',').includes(PAGE) : !ONLY || ONLY.has(id);
   const hosts = {};
   for (const b of BLOCKS) {
@@ -296,6 +306,7 @@
     hosts[b.id] = s.querySelector('.mt-body');
   }
 
+  /** Remplit titre et sous-titre de chaque bloc dans la langue courante, puis les libellés du menu latéral. */
   function titles() {
     for (const b of BLOCKS) {
       const s = document.getElementById(b.id);
@@ -319,6 +330,7 @@
   };
   let navHost = null;
 
+  /** Traduit la rubrique du menu latéral (titre « Maintenance » ou « Dossiers et sources » sur Installation, une entrée par bloc). */
   function navLabels() {
     if (!navHost) return;
     navHost.querySelector('h3').textContent = PAGE === 'installation' ? t(['Dossiers et sources', 'Folders and sources',
@@ -331,8 +343,10 @@
   /** Affiche le bloc id (Paramètres) : l'éditeur de base est masqué, l'entrée du menu est active. */
   // blocs du Centre (CPCO) : absents tant que le Centre n'est pas activé (Paramètres › Centre)
   const CPCO_BLOCKS = new Set(['storage']);
+  /** Vrai si le bloc id est réservé au Centre et que le Centre n'est pas activé. */
   const cpcoLocked = id => CPCO_BLOCKS.has(id) && !window.RepositoryNav?.cpco?.enabled?.();
 
+  /** Masque les entrées du menu latéral des blocs réservés au Centre tant qu'il n'est pas activé. */
   function cpcoNav() {
     navHost?.querySelectorAll('[data-mt]').forEach(b => {
       b.hidden = cpcoLocked(b.dataset.mt);
@@ -346,6 +360,8 @@
     });
   });
 
+  /** Ouvre le bloc id : sur une autre page de Paramètres, y navigue ; sinon masque l'éditeur de base et les autres blocs,
+   *  active l'entrée du menu et inscrit ?m=id dans l'adresse. */
   function showBlock(id) {
     if (embedded && NAV[id] && !onPage(id) && window.RepositoryNav?.settingsUrl) return location.assign(window.RepositoryNav.settingsUrl(
       id));
@@ -404,6 +420,8 @@
     [30, ['tous les mois', 'monthly', 'monatlich', 'mensual']]
   ];
   let gitState = null;
+  /** Dessine le bloc « Mises à jour » : canal master / develop, mode et période du contrôle (SuiteUpdate), dernier contrôle,
+   *  commandes update_suite.py à copier et état du dépôt git local ; chaque réglage modifié redessine le bloc. */
   async function renderUpdates() {
     const host = hosts.updates,
       SU = await waitFor('SuiteUpdate');
@@ -481,6 +499,8 @@
     window.AppFramework?.refresh?.();
   }
 
+  /** HTML du dernier contrôle r (SuiteUpdate.last / check) : à jour ou mise à jour disponible, versions locale et distante ;
+   *  signale un contrôle fait sur un autre canal que celui des réglages s. */
   function checkResult(r, s) {
     if (!r) return `<p class="mt-small">${esc(t(['Aucun contrôle effectué.', 'No check yet.', 'Noch keine Prüfung.', 'Ninguna comprobación.']))}</p>`;
     if (!r.ok) return `<p>${pill('err', t(['Contrôle impossible ({d})', 'Check failed ({d})'], { d: fmtDate(r.at) }))}</p><p class="mt-small">${esc(r.error)} — ${esc(t(['hors ligne, ou API bloquée par le navigateur (page ouverte en file://) : utiliser « python tools/update_suite.py ».', 'offline, or API blocked by the browser (page opened as file://): use “python tools/update_suite.py”.']))}</p>`;
@@ -493,6 +513,8 @@
         <tr><th>${esc(t(['Contrôlé le', 'Checked on', 'Geprüft am', 'Comprobado el']))}</th><td>${esc(fmtDate(r.at))}</td></tr>
       </tbody></table>`;
   }
+  /** Lit l'état git du dossier du dépôt (SuiteUpdate.readGit) dans gitState, l'affiche et redessine versions et dépendances ;
+   *  request : demande l'autorisation du dossier. Renvoie l'état, ou null sans dossier. */
   async function readGitState(request = false) {
     const SU = await waitFor('SuiteUpdate'),
       dir = await folder('__repo', request);
@@ -508,6 +530,8 @@
     return gitState;
   }
 
+  /** Tableau HTML de l'état git g : branche, HEAD, origin, suivi, têtes master / develop, dernier fetch, canal configuré,
+   *  packs orphelins, puis les 6 dernières entrées du journal de update_suite.py. */
   function gitHtml(g) {
     if (!g) return `<p class="mt-small">${esc(t(['État git non lu.', 'Git state not read.', 'Git-Status nicht gelesen.', 'Estado git no leído.']))}</p>`;
     if (!g.ok) return pill('warn', t([
@@ -541,6 +565,7 @@
     return `<table class="mt-table"><tbody>${rows.join('')}</tbody></table>${log ? `<h3>${esc(t(['Journal de update_suite.py', 'update_suite.py log']))}</h3><ul class="mt-list">${log}</ul>` : ''}`;
   }
 
+  /** Ajoute un bouton « Copier » (presse-papiers) devant chaque <pre data-copy> de scope qui n'en a pas encore. */
   function copyButtons(scope) {
     scope.querySelectorAll('pre[data-copy]').forEach(pre => {
       if (pre.previousElementSibling?.classList?.contains('mt-copy')) return;
@@ -566,6 +591,8 @@
   const SETUP = new URLSearchParams(location.search).has('setup');
   const FOLDER_ORDER = ['__repo', '__data', '__ledger', '__missions', '__sia', '__odv', '__xplane', '__xpnav', '__perf',
   '__store']; // le dépôt d'abord : les autres s'en déduisent
+  /** Dessine le bloc « Sources et dossiers » : dossiers FileAccess (état, autorisation, fichier témoin), adresses des sources
+   *  externes surchargeables (suiteSources:v1), clés d'API du lanceur, compagnie virtuelle (suiteVA:v1) et premier lancement. */
   async function renderSources() {
     const host = hosts.sources,
       FA = await waitFor('FileAccess'),
@@ -705,6 +732,7 @@
   // ---- clés d'API de la suite (lanceur : GET / POST /__setup/secrets ; secrets/<service>.json) : la page n'en reçoit
   // que l'état (enregistrée, 4 derniers caractères) ; saisie vide + « Enregistrer » ne change rien, « Effacer » la retire
   async function secretsRows(host) {
+    /** Appel au lanceur : GET (état) sans body, POST sinon ; réponse JSON, ou null si refus ou lanceur absent. */
     const api = (body = null) => fetch('/__setup/secrets', {
       method: body ? 'POST' : 'GET',
       headers: {
@@ -715,6 +743,7 @@
       cache: 'no-store'
     }).then(r => r.ok ? r.json() : null).catch(() => null);
     const rows = [...host.querySelectorAll('tr[data-secret]')];
+    /** Met à jour chaque ligne selon l'état st du lanceur (null : lanceur absent, champs désactivés). */
     const draw = st => rows.forEach(tr => {
       const [service, key] = tr.dataset.secret.split('.'),
         v = st?.app?.[service]?.[key],
@@ -734,6 +763,7 @@
     rows.forEach(tr => {
       const [service, key] = tr.dataset.secret.split('.'),
         input = tr.querySelector('input');
+      /** Envoie la valeur de la clé au lanceur (vide : effacement), vide le champ, signale un échec et redessine. */
       const send = async value => {
         const r = await api({
           scope: 'app',
@@ -765,12 +795,16 @@
   }
 
   // ---- types d'aéronefs : base OACI fusionnée (aircraft_catalog.js) et alias (AIRCRAFT_DB.__aliases : H145 → EC45…)
+  /** Codes OACI de la base des types chargée (clés techniques « __… » exclues). */
   const typeSet = () => new Set(Object.keys(window.AIRCRAFT_DB || {}).filter(k => !k.startsWith('__')));
+  /** Code de type en majuscules, remplacé par son code OACI s'il figure dans AIRCRAFT_DB.__aliases. */
   const alias = code => {
     const k = String(code || '').toUpperCase().trim();
     return window.AIRCRAFT_DB?.__aliases?.[k] || k;
   };
+  /** Vrai si code (ou son alias) figure dans l'ensemble de types. */
   const knownType = (types, code) => types.has(alias(code)) || types.has(String(code || '').toUpperCase().trim());
+  /** Vrai si des performances EUROCONTROL sont chargées pour code (ou son alias). */
   const hasPerf = code => !!(window.AIRCRAFT_PERF || {})[alias(code)] || !!(window.AIRCRAFT_PERF || {})[code];
 
   // ===== 2. Versions et synchronisations
@@ -815,6 +849,7 @@
   }
   /** Texte d'un fichier du dépôt : dossier autorisé, sinon lecture servie (http). */
   const textCache = new Map();
+  /** repoTextUncached avec un cache mémoire de 15 s par chemin. */
   async function repoText(path) {
     const hit = textCache.get(path);
     if (hit && Date.now() - hit.at < 15000) return hit.value;
@@ -825,6 +860,7 @@
     });
     return value;
   }
+  /** Lit path dans le dossier du dépôt autorisé, sinon par fetch (sans cache) : { text, lastModified, size? } ou null. */
   async function repoTextUncached(path) {
     const dir = await folder('__repo');
     if (dir) {
@@ -853,6 +889,8 @@
   }
   let siaFolderState = null,
     baseSummary = null;
+  /** Dessine le tableau « Versions et synchronisations » par groupe (code, SIA / AIRAC, bases de référence, données
+   *  utilisateur) : version, date de synchro, état et outil de chaque élément, lus dans le navigateur et le dépôt. */
   async function renderVersions() {
     const host = hosts.versions;
     const rows = [];
@@ -984,6 +1022,8 @@
   }
 
   // ===== 3. Références et dépendances
+  /** Dessine le tableau « Références et dépendances » : pour chaque référence (SIA XML, base du studio, MORA, axes AAR,
+   *  performances, flotte, profils, prompt des missions), traçage, processus, dépendants et contrôle de cohérence. */
   async function renderDeps() {
     const host = hosts.deps,
       A = window.Airac,
@@ -1130,6 +1170,8 @@
     moraMsg = '',
     basePanelEl = null;
   let basePanelApi = null; // bloc commun de la base (SiaBase.panel) : reread() = « Tout recalculer »
+  /** Inspecte le dossier SIA (Airac.inspectFolder) dans siaFolderState : dernier cycle, fichiers manquants, anciens cycles,
+   *  fichiers fixes ; null si dossier absent, non autorisé ou illisible. request : demande l'autorisation. */
   async function scanSiaFolder(request = false) {
     const dir = await folder('__sia', request);
     if (!dir) return (siaFolderState = null);
@@ -1149,10 +1191,13 @@
   let acTimer = 0,
     acWarned = false,
     acLists = {};
+  /** Dessine dans el la carte « Types d'aéronefs et performances » d'après l'état du lanceur (/__setup/aircraft-db) ; lists
+   *  { fleet, missions } : codes à proposer (gardés pour les redessins). Les boutons lancent une passe sur les codes choisis. */
   async function aircraftDbState(el, lists) {
     if (!el?.isConnected) return;
     if (lists) acLists = lists;
     clearTimeout(acTimer);
+    /** Appel au lanceur : GET (état de la passe) sans body, POST { codes } pour en lancer une ; JSON, ou null sans lanceur. */
     const api = (body = null) => fetch('/__setup/aircraft-db', {
       method: body ? 'POST' : 'GET',
       headers: {
@@ -1196,6 +1241,7 @@
         'Base de tipos de aeronave vacía: Ajustes › Mantenimiento › Referencias y dependencias, «Completar la base».'
       ]), 'warn');
     }
+    /** Bouton de passe sur une liste de codes (désactivé si vide ou passe en cours), codes en infobulle (20 au plus). */
     const btn = (id, label, list, title) => `<button type="button" class="secondary" data-ac="${id}" data-icon="refresh"${busy || !list.length ? ' disabled' : ''} title="${esc(title + (list.length ? ' : ' + list.slice(0, 20).join(' ') + (list.length > 20 ? '…' : '') : ''))}">${esc(label)} (${list.length})</button>`;
     el.innerHTML = `<div class="repo-card" data-icon="plane" data-subtitle="${esc(t(['Données de l’OACI (Doc 8643) et d’EUROCONTROL : non publiées avec la suite, complétées sur ce poste, type par type (réseau, quelques secondes par type)', 'ICAO (Doc 8643) and EUROCONTROL data: not published with the suite, completed on this computer type by type (network, a few seconds per type)', 'Daten von ICAO (Doc 8643) und EUROCONTROL: nicht mit der Suite veröffentlicht, auf diesem Rechner Typ für Typ ergänzt', 'Datos de la OACI (Doc 8643) y EUROCONTROL: no publicados con la suite, completados en este equipo tipo por tipo']))}"><h3>${esc(t(['Types d’aéronefs et performances', 'Aircraft types and performance', 'Luftfahrzeugtypen und Leistungen', 'Tipos de aeronave y rendimientos']))}</h3>
       ${!empty && unknown.length ? `<p class="row"><button type="button" class="primary" data-ac="unknown" data-icon="download"${busy ? ' disabled' : ''}>${esc(t(['Compléter les types manquants de la flotte et des missions ({n})', 'Complete the missing fleet and mission types ({n})', 'Fehlende Typen der Flotte und der Missionen ergänzen ({n})', 'Completar los tipos que faltan de la flota y las misiones ({n})'], {
@@ -1258,6 +1304,7 @@
     partial: '#e39b1b',
     complete: '#2e9d4f'
   };
+  /** Nom traduit d'une zone (identifiant à défaut). */
   const zName = z => t(z.name || [z.id]);
   /** Inventaire : fichiers du dossier SIA (racine, sous-dossiers, zones/), cases de mora.csv, dossier X-Plane. */
   async function aeroInventory() {
@@ -1314,6 +1361,7 @@
     moraIdxOf = null;
   const moraCounts = new Map();
 
+  /** Nombre de cases de mora.csv de l'inventaire inv dans la zone id (index par degré reconstruit si les cases changent). */
   function moraCount(Z, id, inv) {
     const cells = inv?.moraCells || [];
     if (!cells.length) return 0;
@@ -1406,6 +1454,8 @@
       state = aeroZoneState(Z, z),
       on = Z.isOn(id),
       f = siaFolderState;
+    /** HTML de l'action propre à la source src selon son genre : import du PDF MILAIP (dircam), ZIP du SIA, téléchargement,
+     *  dossier local, calcul de la MORA (par blocs pour une grande zone), sinon lien, mode d'emploi et bouton de dépôt. */
     const action = src => {
       const S = Z.SOURCES[src];
       const url = Z.linkOf(src),
@@ -1779,6 +1829,7 @@
     }));
   }
   const AERO_PB_KEY = 'mtAeroProblems:v1';
+  /** Vrai si la case « Afficher les problèmes » est mémorisée cochée (mtAeroProblems:v1) ; faux si le stockage est inaccessible. */
   const aeroProblemsOnly = () => {
     try {
       return localStorage.getItem(AERO_PB_KEY) === '1';
@@ -1930,6 +1981,7 @@
   // de ses sources, derniers ZIP de Téléchargements (SIA, NATS…), reconstruction de la base, MORA de la zone — enchaînés,
   // double jauge (AppFramework.task : étape, puis détail) ; ce qui reste à la main paraît sous la carte (aeroTodo).
   const AERO_AUTO_KEY = 'aeroZoneAuto:v1';
+  /** Zones déjà mises en place automatiquement (Set lu dans aeroZoneAuto:v1 ; vide si illisible). */
   const aeroAutoDone = () => {
     try {
       return new Set(JSON.parse(localStorage.getItem(AERO_AUTO_KEY) || '[]'));
@@ -1938,6 +1990,7 @@
     }
   };
   let aeroAutoBusy = false;
+  /** Mise en place automatique d'une seule zone (aeroAutoZones). */
   const aeroAutoZone = (Z, id) => aeroAutoZones(Z, [id]);
   /** Mise en place de zones actives : téléchargements de leurs sources, derniers ZIP de Téléchargements, une seule
    *  reconstruction de la base, puis MORA de chaque zone qui en manque — seulement si la base a été reconstruite (relief
@@ -2051,6 +2104,7 @@
   // un seul calcul de MORA à la fois (zone, simple, complet) : boutons désactivés pendant le calcul, un clic de plus
   // ne relance rien (deux calculs mêlaient leurs progressions, comme un calcul qui tourne en boucle)
   let moraBusy = false;
+  /** Désactive (ou réactive) tous les boutons de calcul de MORA selon moraBusy. */
   const moraButtons = () => document.querySelectorAll(
     '#mtMora, #mtMoraFull, #mtMoraXp, [data-mora-zone], [data-mora-xp-zone], [data-mora-roll]').forEach(x => {
     x.disabled = moraBusy;
@@ -2064,6 +2118,8 @@
       for (const [lon, lat] of r) out.add(`${Math.floor(lat)}|${Math.floor(lon)}`);
     return out;
   }
+  /** Lance le calcul de MORA fn(...args) s'il n'y en a pas déjà un, boutons désactivés ; écrit mora.csv si un plan reste
+   *  à écrire, puis reprend le message de la carte MORA en notification. */
   async function moraExclusive(fn, ...args) {
     if (moraBusy) return window.AppFramework?.notify?.(t(['Calcul de la MORA déjà en cours : attendez qu’il se termine.',
       'MORA calculation already running: wait for it to finish.',
@@ -2091,12 +2147,14 @@
   }
   /** Nombre de cases d'un degré d'une zone (emprises) ; au-delà de 1500, calcul d'un seul tenant refusé (grande zone). */
   const moraCellsOf = (Z, id) => Z.zoneBoxes(id).reduce((n, b) => n + (b.n - b.s) * (b.e - b.w), 0);
+  /** Vrai pour une grande zone (plus de 1500 cases d'un degré). */
   const moraTooLarge = (Z, id) => moraCellsOf(Z, id) > 1500;
   // ---- MORA d'une grande zone par blocs (option B, sur confirmation) : blocs de 10° × 10° au plus, chacun écrit
   // aussitôt dans mora.csv (reprise possible, d'une séance à l'autre : blocs faits notés dans ce navigateur) ; relief des
   // tuiles Terrarium d'AWS (données ouvertes, faites pour l'accès en masse), une tuile fine par case, relief majoré de
   // 100 m, sans requête OpenStreetMap ; « Arrêter » entre deux blocs.
   const ROLL_KEY = id => `moraRolling:v1:${id}`;
+  /** Avancement du calcul par blocs de la zone id mémorisé dans ce navigateur : { done: [clés des blocs faits], total?, … }. */
   const moraRollState = id => {
     try {
       return JSON.parse(localStorage.getItem(ROLL_KEY(id)) || 'null') || {
@@ -2109,6 +2167,7 @@
     }
   };
 
+  /** Découpe les emprises de la zone id en blocs de 10° × 10° au plus : [{ s, n, w, e }] (degrés entiers). */
   function moraChunks(Z, id) {
     const out = [];
     for (const b of Z.zoneBoxes(id))
@@ -2128,6 +2187,8 @@
       e.target.closest('[data-mora-stop]').disabled = true;
     }
   });
+  /** Calcul complet de la MORA d'une grande zone par blocs, après confirmation : chaque bloc restant est calculé (relief AWS,
+   *  sans sommets OSM), fusionné aussitôt dans mora.csv (ancien archivé une fois) et noté fait ; « Arrêter » entre deux blocs. */
   async function moraRolling(id) {
     const Z = await window.SiaBase.zones(),
       z = Z.byId(id),
@@ -2158,6 +2219,7 @@
       }), {
         ok: t(['Lancer le calcul', 'Start the calculation', 'Berechnung starten', 'Iniciar el cálculo'])
       })) return;
+    /** Affiche x (HTML) dans le message de la carte MORA (#mtMoraMsg). */
     const say = x => {
       const m = hosts.sia.querySelector('#mtMoraMsg');
       if (m) m.innerHTML = x;
@@ -2260,6 +2322,7 @@
     const Z = await window.SiaBase.zones(),
       boxes = Z.zoneBoxes(id),
       cellsN = boxes.reduce((n, b) => n + (b.n - b.s) * (b.e - b.w), 0);
+    /** Affiche x (HTML) dans le message de la carte MORA (#mtMoraMsg). */
     const say = x => {
       const m = hosts.sia.querySelector('#mtMoraMsg');
       if (m) m.innerHTML = x;
@@ -2350,6 +2413,7 @@
   // anomalies (miam:issues) montrées avant l'écriture ; l'ancien fichier part dans _archives/, la base est mise à jour.
   const PDFJS = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/build/';
   let enr57 = null; // { busy, error, file, tracks, issues, edition, xml, written }
+  /** HTML de l'état de l'import ENR 5.7 (enr57) : en cours, erreur, ou axes lus, anomalies, édition et bouton d'écriture. */
   function enr57Html() {
     const r = enr57;
     if (!r) return '';
@@ -2360,10 +2424,13 @@
       ${r.written ? `<p>${pill('ok', t(['miam-enr-5-7-tracks.xml écrit (ancien archivé) et base mise à jour', 'miam-enr-5-7-tracks.xml written (old one archived) and database updated', 'miam-enr-5-7-tracks.xml geschrieben (alte archiviert), Datenbank aktualisiert', 'miam-enr-5-7-tracks.xml escrito (anterior archivado) y base actualizada']))}</p>` : r.tracks.length ? `<p class="row"><label class="mt-small">${esc(t(['Édition', 'Edition', 'Ausgabe', 'Edición']))} <input type="text" id="mtEnr57Edition" size="26" value="${esc(r.edition)}" spellcheck="false"></label> <button type="button" class="primary" id="mtEnr57Write" data-icon="save">${esc(t(['Écrire miam-enr-5-7-tracks.xml', 'Write miam-enr-5-7-tracks.xml', 'miam-enr-5-7-tracks.xml schreiben', 'Escribir miam-enr-5-7-tracks.xml']))}</button></p>` : ''}`;
   }
 
+  /** Redessine l'état de l'import ENR 5.7 dans #mtEnr57Msg (s'il est affiché). */
   function enr57Show() {
     const el = document.getElementById('mtEnr57Msg');
     if (el) el.innerHTML = enr57Html();
   }
+  /** Lit le PDF de la MILAIP (pdf.js et aar_tracks.js chargés à la demande), analyse les pages ENR 5.7 (AarTracks.parseEnr57)
+   *  et garde dans enr57 axes, anomalies et édition (AMDT, date) ; erreur claire si le PDF n'est pas la MILAIP ENR 5.7. */
   async function importEnr57(file) {
     enr57 = {
       busy: t(['Lecture du PDF…', 'Reading the PDF…', 'PDF wird gelesen…', 'Leyendo el PDF…'])
@@ -2434,6 +2501,8 @@
     }
     enr57Show();
   }
+  /** Écrit miam-enr-5-7-tracks.xml (édition saisie) dans le dossier SIA, l'ancien archivé dans _archives/, met à jour la
+   *  base (SiaBase.patch) et la carte des zones ; échec en notification. */
   async function writeEnr57() {
     const r = enr57;
     if (!r?.parsed) return;
@@ -2564,9 +2633,12 @@
       return false;
     }
   }
+  /** Fait télécharger la source par le lanceur (POST /__setup/aero-fetch { provider, args }) ; btn désactivé pendant ce temps,
+   *  compte rendu gardé par « zone|source » (aeroFetchMsg) et affiché au panneau, puis inventaire et carte rafraîchis. */
   async function aeroFetch(provider, args, btn, zone = '', src = '') {
     const say = (m, k = 'warn') => window.AppFramework.notify(m, k),
       key = `${zone}|${src}`;
+    /** Mémorise le message de la source et le pose sous ses boutons si sa zone est au panneau (boutons grisés en cours). */
     const show = html => {
       aeroFetchMsg[key] = html;
       const p = document.getElementById('mtAeroPanel');
@@ -2634,6 +2706,8 @@
     aeroRefresh(Z);
   }
 
+  /** Dessine le bloc « Données aéronautiques » : carte des zones et panneau, actions à faire, tableau des sources et bloc
+   *  commun de la base (SiaBase.panel), carte MORA et contrôle de cohérence ; branche leurs actions (délégation au panneau). */
   async function renderSia() {
     const host = hosts.sia,
       Z = await window.SiaBase.zones();
@@ -2763,6 +2837,7 @@
       // le bloc peut être encore masqué (affichage du bloc demandé par ?m=) : attendre qu'il soit visible
       const target = /^#mt-step-/.test(location.hash) ? 'mt-aero-base' : location.hash.slice(1);
       let tries = 0;
+      /** Fait défiler jusqu'à la cible et la fait clignoter dès qu'elle est visible (40 essais toutes les 100 ms). */
       const go = () => {
         const el = document.getElementById(target);
         if (el?.offsetParent) {
@@ -2781,6 +2856,7 @@
     quiet = false
   } = {}) {
     const say = (m, k = 'warn') => quiet ? null : (window.AppFramework?.notify || alert)(m, k);
+    /** Requête au lanceur (q : « ?info » pour la description du ZIP trouvé, vide pour le fichier lui-même). */
     const api = q => fetch(`/__setup/sia-zip${q}`, {
       headers: {
         'X-SOG-Setup': '1'
@@ -2812,7 +2888,10 @@
   }
   let stepHashDone = false;
 
+  /** Tableau HTML du contenu du dossier SIA inspecté f : XML de chaque cycle (anciens grisés), ZIP, fichiers fixes, précédé
+   *  de l'état du dernier cycle (complet ou fichiers manquants). */
   function folderTable(f) {
+    /** Libellé traduit d'un rôle de fichier (Airac.ROLES), sinon l'identifiant. */
     const role = id => {
       const r = window.Airac.ROLES.find(x => x.id === id);
       return r ? t(r.label) : id;
@@ -2825,6 +2904,8 @@
     const lat = f.latest;
     return `<p>${lat ? (lat.complete ? pill('ok', t(['cycle {c} complet', 'cycle {c} complete'], { c: lat.date })) : pill('warn', t(['cycle {c} incomplet : manque {m}', 'cycle {c} incomplete: missing {m}'], { c: lat.date, m: lat.missing.join(', ') }))) : pill('warn', t(['aucun XML AIRAC', 'no AIRAC XML']))}</p><div class="mt-scroll"><table class="mt-table mt-wide"><tbody>${rows.join('')}</tbody></table></div>`;
   }
+  /** Extrait d'un ZIP d'export du SIA, dans le dossier SIA autorisé, les XML reconnus (Airac.ROLES) et le Lisez_moi.txt,
+   *  trace l'extraction au journal (LocalStore), puis relit le dossier et reconstruit la base. */
   async function extractZip(file) {
     const el = () => document.getElementById('mtExtract');
     try {
@@ -2873,6 +2954,8 @@
     }
     return false;
   }
+  /** Après confirmation, déplace les XML des anciens cycles du dossier SIA dans _archives/<cycle>/ (copie puis suppression),
+   *  trace l'opération au journal et relit le dossier. */
   async function archiveOld() {
     const f = siaFolderState;
     if (!f?.old.length) return;
@@ -2988,6 +3071,8 @@
     }
     renderSia();
   }
+  /** Recalcul simple : obstacles du cycle de la base appliqués au relief du mora.csv existant (SiaBase.moraFromObstacles) ;
+   *  plan gardé dans moraPlan, déjà « écrit » si rien ne change et que le cycle est le même. */
   async function planMora() {
     moraMsg = '';
     moraPlan = null;
@@ -3083,6 +3168,8 @@
     renderSia();
   }
 
+  /** HTML d'un plan MORA p : nombre de cases en hausse, en baisse ou à obstacle seul, tableau des changements, zones
+   *  calculées ou hors théâtres, puis la méthode employée (X-Plane, complet ou simple). */
   function moraHtml(p) {
     const up = p.changes.filter(c => c.after > c.before),
       down = p.changes.filter(c => c.after < c.before),
@@ -3093,6 +3180,8 @@
       ${p.extraZones?.length ? `<p class="mt-small">${esc(t(['Hors des théâtres couverts, pour les missions du registre : {z} — relief et sommets seulement (pas d’obstacles hors de l’AIXM française).', 'Outside the covered theatres, for the registry missions: {z} — terrain and peaks only (no obstacles outside the French AIXM).'], { z: p.extraZones.join(' ; ') }))}</p>` : ''}
       <p class="mt-small">${esc(p.mode === 'xplane' ? t(['MORA d’X-Plane (earth_mora.dat) : cases absentes de la grille calculée ajoutées ; les cases calculées sont gardées.', 'X-Plane MORA (earth_mora.dat): cells missing from the computed grid added; computed cells kept.', 'X-Plane-MORA (earth_mora.dat): fehlende Felder des berechneten Rasters ergänzt; berechnete Felder bleiben.', 'MORA de X-Plane (earth_mora.dat): casillas ausentes de la cuadrícula calculada añadidas; las calculadas se conservan.']) : p.mode === 'full' ? t(['Calcul complet : relief Terrarium + sommets OSM{o} + obstacles de l’AIRAC {c} ; + 1000 ft (2000 ft au-delà de 5000 ft), centaine supérieure.', 'Full calculation: Terrarium terrain + OSM peaks{o} + AIRAC {c} obstacles.'], { c: p.cycle, o: p.peaksOk === false ? t([' (indisponibles : relief majoré de 100 m)', ' (unavailable: terrain +100 m)']) : '' }) : t(['Recalcul simple : obstacles de l’AIRAC {c}, relief du mora.csv conservé ; + 1000 ft (2000 ft au-delà de 5000 ft), centaine supérieure.', 'Simple recalculation: AIRAC {c} obstacles, terrain kept.'], { c: p.cycle }))}</p>`;
   }
+  /** Écrit le mora.csv du plan en cours (l'ancien archivé dans _archives/), met à jour les cases de la base en gardant celles
+   *  d'X-Plane hors fichier, trace au journal et redessine les blocs. */
   async function writeMora() {
     try {
       const dir = await folder('__sia', true);
@@ -3149,6 +3238,7 @@
       openair: 'OpenAir',
       xplane: 'X-Plane'
     };
+    /** Décompte d'une liste d'objets par source (« SIA 12 · openAIP 3 »), du plus fréquent au moins fréquent ; « 0 » si vide. */
     const bySrc = list => {
       const n = {};
       for (const a of list) n[a.src || 'sia'] = (n[a.src || 'sia'] || 0) + 1;
@@ -3172,6 +3262,7 @@
     }))]);
     rows.push([t(['Espaces par source', 'Airspace by source', 'Lufträume nach Quelle', 'Espacios por fuente']), pill('info', bySrc(b
       .airspaces || []))]);
+    /** Centre [lat, lon] de l'emprise du premier contour d'un espace ; null sans contour. */
     const centre = a => {
       let s = 90,
         n = -90,
@@ -3207,6 +3298,8 @@
     }
     return rows;
   }
+  /** Contrôle de cohérence (carte « Cohérence ») : terrains des missions du registre dans la base, espaces, données des zones
+   *  actives, types et performances de la flotte, profils du planificateur, types des missions ; tableau dans #mtUsage. */
   async function usageCheck() {
     const box = document.getElementById('mtUsage');
     box.innerHTML = `<p class="mt-small">${esc(t(['Contrôle…', 'Checking…']))}</p>`;
@@ -3304,6 +3397,8 @@
 
   // ===== 5. Sauvegarde totale
   const EXTRA = 'suiteBackupSources:v1';
+  /** Sources de fichiers de la sauvegarde totale : dépôt de données, journaux d'atterrissage, profils de performance, puis
+   *  les dossiers ajoutés par l'utilisateur (suiteBackupSources:v1, motif converti en expression régulière). */
   const SOURCES = () => [
     // v3 : tout le dépôt de données (data/) — registres, missions, références, SIA hors XML AIRAC, performances
     {
@@ -3338,6 +3433,7 @@
   let backupMsg = '',
     restorePlan = null,
     sinceHtml = '';
+  /** Options de la sauvegarde : heavy (case « fichiers lourds » cochée), off (identifiants des sources décochées). */
   const opts = () => ({
     heavy: !!document.getElementById('mtHeavy')?.checked,
     off: readJson('suiteBackupOff:v1', []) || []
@@ -3383,6 +3479,8 @@
       files
     };
   }
+  /** Dessine le bloc « Sauvegarde totale » (sources et dossiers, options, lancement, restauration) et, à côté, le journal des
+   *  sauvegardes et rechargements. */
   async function renderBackup() {
     const host = hosts.backup,
       o = opts(),
@@ -3451,6 +3549,8 @@
     host.querySelector('#mtRestoreGo')?.addEventListener('click', runRestore);
     window.AppFramework?.refresh?.();
   }
+  /** Ajoute un dossier à la sauvegarde : nom et motif des fichiers demandés (motif vérifié), dossier choisi par FileAccess,
+   *  source mémorisée dans suiteBackupSources:v1 ; le bloc est redessiné. */
   async function addSource() {
     const label = prompt(t(['Nom de ce dossier (ex. « Journaux d’atterrissage du plugin »)',
       'Name of this folder (e.g. “Plugin landing logs”)'
@@ -3513,8 +3613,11 @@
       missing
     };
   }
+  /** Crée la sauvegarde totale : données du navigateur (LocalStore.toText), fichiers des sources actives, manifest.json
+   *  (tailles, dates, SHA-256) et LISEZMOI.txt en un ZIP, écrit dans sauvegardes/ du dossier de sauvegarde ou téléchargé. */
   async function fullBackup() {
     const msg = document.getElementById('mtBackupMsg');
+    /** Mémorise le message d'avancement (backupMsg) et l'affiche. */
     const say = h => {
       backupMsg = h;
       if (msg) msg.innerHTML = h;
@@ -3646,6 +3749,8 @@
       say(pill('err', e.message));
     }
   }
+  /** Compare les fichiers actuels des sources au manifeste de la dernière sauvegarde totale tracée (taille, empreinte) :
+   *  modifiés, nouveaux, disparus, plus le nombre de modifications du navigateur non sauvegardées. */
   async function changesSince() {
     const box = document.getElementById('mtSinceBox');
     const last = (window.LocalStore?.journal?.() || []).find(e => e.kind === 'full-backup' && e.manifest);
@@ -3680,6 +3785,8 @@
       ${changed.length ? `<p>${list(changed, 'mt-chg')}</p>` : ''}${added.length ? `<p>${list(added, 'mt-plus')}</p>` : ''}${removed.length ? `<p>${list(removed, 'mt-minus')}</p>` : ''}`;
     if (box) box.innerHTML = sinceHtml;
   }
+  /** Lit une archive de sauvegarde totale et prépare restorePlan : état de chaque fichier du manifeste face au disque
+   *  (identique, absent, plus ancien, plus récent, dossier non autorisé), absents et plus anciens présélectionnés. */
   async function planRestore(file) {
     const box = document.getElementById('mtRestore');
     try {
@@ -3726,6 +3833,7 @@
     renderBackup();
   }
 
+  /** HTML du plan de restauration p : résumé de l'archive, case des données du navigateur, tableau des fichiers à cocher. */
   function restoreHtml(p) {
     const lbl = {
       same: pill('ok', t(['identique', 'identical'])),
@@ -3742,6 +3850,8 @@
       </tbody></table></div>
       <p class="row"><button type="button" class="primary" id="mtRestoreGo" data-icon="upload">${esc(t(['Restaurer la sélection', 'Restore selection', 'Auswahl wiederherstellen', 'Restaurar la selección']))}</button></p>`;
   }
+  /** Restaure, après confirmation, les fichiers cochés (les remplacés copiés d'abord dans _avant_restauration/<date>/) et,
+   *  si demandé, fusionne les données du navigateur ; trace au journal et redessine les blocs. */
   async function runRestore() {
     const p = restorePlan,
       box = document.getElementById('mtRestore');
@@ -3829,10 +3939,12 @@
   // l'application (scripts, styles, repository_tree). Restent hors purge : registres, brouillons, profils,
   // FlightPerfCache (OFP, calibrations) et Landing (dernier journal), sauvegardés avec les données locales.
   const AIRPORTS_DEFAULT = 'https://cdn.jsdelivr.net/gh/mwgg/Airports@master/airports.json';
+  /** Adresse de la base mondiale des aérodromes (source « airports » réglable, jsDelivr par défaut). */
   const airportsUrl = () => window.RepositoryNav?.source?.('airports') || AIRPORTS_DEFAULT;
   /** Adresse de purge jsDelivr (purge.jsdelivr.net) d'un fichier servi par cdn.jsdelivr.net ; '' pour une autre source. */
   const jsdelivrPurgeUrl = url => /^https:\/\/cdn\.jsdelivr\.net\//.test(url) ? url.replace('https://cdn.jsdelivr.net/',
     'https://purge.jsdelivr.net/') : '';
+  /** Place approximative d'une clé du localStorage en octets (clé + valeur, 2 octets par caractère) ; 0 si absente. */
   const lsBytes = key => {
     try {
       const v = localStorage.getItem(key);
@@ -3841,6 +3953,7 @@
       return 0;
     }
   };
+  /** Nombre d'éléments de la valeur JSON d'une clé du localStorage (tableau ou objet) ; 0 si absente ou illisible. */
   const lsCount = key => {
     try {
       const v = JSON.parse(localStorage.getItem(key) || 'null');
@@ -3849,6 +3962,7 @@
       return 0;
     }
   };
+  /** Retire les clés données du localStorage (erreurs de stockage ignorées). */
   const lsDrop = keys => keys.forEach(k => {
     try {
       localStorage.removeItem(k);
@@ -3880,11 +3994,14 @@
       total: urls.length - missing
     };
   }
+  /** Caches purgeables : { id, icon, label, where, state() : état lisible, after : effet de la purge, confirm?, reload?,
+   *  purge() : message, ou { warn } en cas de souci }. */
   const CACHES = () => [{
     id: 'dataIndex',
     icon: 'refresh',
     label: ['Index des données', 'Data index', 'Datenindex', 'Índice de datos'],
     where: 'IndexedDB defaIndex',
+    /** Contenu de l'index (texte fixe). */
     state: () => t(['Registre des missions, CR, copies des fichiers du pool (disponibilités, fiches) ; les fichiers font foi.',
       'Mission registry, reports, copies of pool files (availability, user cards); the files prevail.'
     ]),
@@ -3892,6 +4009,7 @@
       'Base effacée, reconstruite depuis les fichiers au prochain chargement des pages (après un changement extérieur des fichiers sans lanceur, par exemple).',
       'Base erased, rebuilt from the files when pages next load (after the files changed outside the suite without the launcher, for example).'
     ],
+    /** Efface l'index IndexedDB des données (DataIndex.rebuild) : il se reconstruit depuis les fichiers. */
     purge: async () => {
       await window.DataIndex?.rebuild?.();
       return t(['Index des données effacé : il se reconstruit depuis les fichiers.',
@@ -3903,6 +4021,7 @@
     icon: 'map',
     label: ['Aérodromes utilisés', 'Aerodromes used', 'Verwendete Flugplätze', 'Aeródromos usados'],
     where: 'localStorage missionAirports:v1',
+    /** Nombre de terrains gardés et place occupée. */
     state: () => t(['{n} terrains, {s}', '{n} aerodromes, {s}'], {
       n: lsCount('missionAirports:v1'),
       s: fmtSize(lsBytes('missionAirports:v1'))
@@ -3910,6 +4029,7 @@
     after: ['Relus dans la base mondiale au prochain usage ; les terrains importés d’un OFP hors base sont à réimporter.',
       'Read again from the world base when next used; aerodromes imported from an OFP outside the base must be re-imported.'
     ],
+    /** Oublie les aérodromes gardés (missionAirports:v1). */
     purge: async () => {
       lsDrop(['missionAirports:v1']);
       return t(['Aérodromes oubliés.', 'Aerodromes cleared.']);
@@ -3921,12 +4041,14 @@
       'Base mundial de aeródromos (jsDelivr)'
     ],
     where: airportsUrl(),
+    /** Durée de garde selon que la source est servie par jsDelivr ou non. */
     state: () => jsdelivrPurgeUrl(airportsUrl()) ? t(['CDN : branche gardée ≈ 12 h ; navigateur : cache HTTP',
       'CDN: branch kept ≈ 12 h; browser: HTTP cache'
     ]) : t(['source hors jsDelivr : cache HTTP du navigateur', 'non-jsDelivr source: browser HTTP cache']),
     after: ['Purge du CDN demandée à purge.jsdelivr.net, puis fichier rechargé depuis le serveur (cache HTTP remplacé).',
       'CDN purge requested from purge.jsdelivr.net, then the file is reloaded from the server (HTTP cache replaced).'
     ],
+    /** Demande la purge du CDN jsDelivr (sans attendre de réponse lisible), puis recharge le fichier sans cache HTTP. */
     purge: async () => {
       const url = airportsUrl(),
         purgeUrl = jsdelivrPurgeUrl(url);
@@ -3948,6 +4070,7 @@
     icon: 'database',
     label: ['Base SIA analysée', 'Analysed SIA base', 'Analysierte SIA-Basis', 'Base SIA analizada'],
     where: 'IndexedDB sia-map-parser + localStorage siaBaseInfo:v1',
+    /** Cycle et date de lecture de la base SIA (baseSummary), ou « vide ». */
     state: () => baseSummary ? t(['AIRAC {c}, lue le {d}', 'AIRAC {c}, read {d}'], {
       c: baseSummary.airac || '?',
       d: fmtDate(baseSummary.cachedAt)
@@ -3959,6 +4082,7 @@
     confirm: ['La base SIA devra être relue depuis le dossier SIA (quelques dizaines de secondes). Purger ?',
       'The SIA base will have to be read again from the SIA folder (a few tens of seconds). Purge?'
     ],
+    /** Vide la base SIA analysée (SiaBase.purge). */
     purge: async () => {
       await window.SiaBase?.purge?.();
       return t(['Base SIA purgée.', 'SIA base purged.']);
@@ -3968,6 +4092,7 @@
     icon: 'refresh',
     label: ['Contrôle des mises à jour', 'Update check', 'Update-Prüfung', 'Control de actualizaciones'],
     where: 'localStorage suiteUpdateCheck:v1, suiteGitInfo:v1',
+    /** Date du dernier contrôle des mises à jour, ou « aucun ». */
     state: () => {
       const c = window.SuiteUpdate?.last?.();
       return c?.at ? t(['dernier contrôle {d}', 'last check {d}'], {
@@ -3977,6 +4102,7 @@
     after: ['Canal distant et état git relus au prochain contrôle (réglages du canal conservés).',
       'Remote channel and git state read again at the next check (channel settings kept).'
     ],
+    /** Oublie le dernier contrôle et l'état git mémorisés (gitState compris). */
     purge: async () => {
       lsDrop(['suiteUpdateCheck:v1', 'suiteGitInfo:v1']);
       gitState = null;
@@ -3989,6 +4115,7 @@
       'Archivos de la aplicación (caché HTTP)'
     ],
     where: t(['scripts et styles de la page (?v=…), repository_tree', 'page scripts and styles (?v=…), repository_tree']),
+    /** Version de cache (?v=) de repository_nav.js chargé par la page. */
     state: () => t(['version de cache {v}', 'cache version {v}'], {
       v: /[?&]v=(\w+)/.exec([...document.scripts].map(x => x.src).find(x => /repository_nav\.js/.test(x)) || '')?.[1] || '—'
     }),
@@ -3996,6 +4123,7 @@
       'Files reloaded from the server, then the page reloads; other pages follow the cache version (?v=).'
     ],
     reload: true,
+    /** Recharge sans cache les fichiers de la page (refreshAppFiles) ; avertissement si certains n'ont pas pu l'être. */
     purge: async () => {
       if (location.protocol === 'file:') return t([
         'Pages ouvertes depuis le disque (file://) : fichiers lus directement, sans cache HTTP ; page rechargée.',
@@ -4012,6 +4140,8 @@
     }
   }];
   let cacheMsg = '';
+  /** Dessine le bloc « Caches » : une ligne par cache (état, effet de la purge, bouton) et « Tout purger et recharger » ;
+   *  le compte rendu survit au rechargement de la page (sessionStorage mtCacheMsg). */
   async function renderCaches() {
     const host = hosts.caches;
     let est = '';
@@ -4029,6 +4159,7 @@
       <div class="mt-scroll"><table class="mt-table mt-wide"><tbody>${list.map(c => `<tr data-cache="${esc(c.id)}"><td><b>${esc(t(c.label))}</b><br><code class="mt-small">${esc(c.where)}</code></td><td>${esc(c.state())}<br><span class="mt-small">${esc(t(c.after))}</span></td><td class="mt-nowrap"><button type="button" class="secondary" data-icon="trash">${esc(t(c.reload ? ['Recharger sans cache', 'Reload without cache', 'Ohne Cache neu laden', 'Recargar sin caché'] : ['Purger', 'Purge', 'Leeren', 'Purgar']))}</button></td></tr>`).join('')}</tbody></table></div>
       <p class="row"><button type="button" class="primary" id="mtPurgeAll" data-icon="trash">${esc(t(['Tout purger et recharger', 'Purge all and reload', 'Alles leeren und neu laden', 'Purgar todo y recargar']))}</button></p>
       <div id="mtCacheMsg">${cacheMsg}</div>`;
+    /** Compte rendu des purges (pastille d'avertissement si l'une en renvoie un) ; reload : page rechargée, sinon blocs redessinés. */
     const done = async (msgs, reload) => {
       cacheMsg = pill(msgs.some(m => m?.warn) ? 'warn' : 'ok', msgs.map(m => m?.warn || m).join(' '));
       if (reload) {
@@ -4068,6 +4199,8 @@
   // ===== Espace disque : place occupée par les missions (par mission, par type, total) et par le navigateur ; purge
   //       des cartes surnuméraires (absentes du YAML) et des cartes générées (régénérables depuis le YAML par le studio).
   let storageState = null; // { rows, totals, browser } après calcul
+  /** Mesure la place de chaque dossier de mission (famille/identifiant, avec un mission*.yaml) par MissionRegistryCore :
+   *  tailles par type, cartes surnuméraires, totaux et estimation du navigateur, gardés dans storageState. */
   async function scanStorage(request) {
     const C = window.MissionRegistryCore;
     if (!C) throw new Error('shared/mission_registry.js');
@@ -4180,6 +4313,8 @@
     }))}</p>${rows ? `<div class="mt-scroll"><table class="mt-table mt-wide"><thead><tr><th>${esc(t(['Zone', 'Zone', 'Zone', 'Zona']))}</th><th>${esc(t(['Sources', 'Sources', 'Quellen', 'Fuentes']))}</th><th class="num">${esc(t(['Fichiers', 'Files', 'Dateien', 'Archivos']))}</th><th class="num">${esc(t(['Taille', 'Size', 'Größe', 'Tamaño']))}</th></tr></thead><tbody>${rows}${other ? `<tr><td>${esc(t(['autres fichiers', 'other files', 'andere Dateien', 'otros archivos']))}</td><td></td><td></td><td class="num">${esc(B(other))}</td></tr>` : ''}</tbody></table></div>` : `<p class="mt-small">${esc(t(['Aucune donnée dans le dossier.', 'No data in the folder.', 'Keine Daten im Ordner.', 'Ningún dato en la carpeta.']))}</p>`}`;
   }
 
+  /** Dessine le bloc « Espace disque » : boutons de calcul et de purge, totaux du dossier des missions et du navigateur,
+   *  tableau par mission (une fois calculé, storageState) et place des données aéronautiques par zone. */
   function renderStorage() {
     const host = hosts.storage,
       C = window.MissionRegistryCore,
@@ -4199,6 +4334,7 @@
       <div id="mtStorageTable" class="mt-scroll mt-short"></div><div id="mtAeroSizes"></div>`;
     aeroSizes(host.querySelector('#mtAeroSizes'));
     // tableau du framework (shared/mission_table.js) : tri par colonne, largeurs réglables, en-tête fixe
+    /** Colonne numérique de taille pour la clé k (octets lisibles, « — » si nul). */
     const size = k => ({
       key: k,
       type: 'number',
@@ -4240,10 +4376,12 @@
     bindStorage();
   }
 
+  /** Branche les boutons du bloc « Espace disque » : calcul de la place, purges (cartes surnuméraires, cartes générées, PDF). */
   function bindStorage() {
     const host = hosts.storage,
       C = window.MissionRegistryCore,
       B = C?.fmtBytes;
+    /** Exécute fn bouton désactivé ; erreur en notification. */
     const busy = async (btn, fn) => {
       btn.disabled = true;
       try {
@@ -4258,6 +4396,8 @@
       await scanStorage(true);
       renderStorage();
     });
+    /** Branche le bouton sel : fichiers choisis par pick dans chaque mission supprimés après confirmation (what : libellé),
+     *  puis place recalculée. */
     const purge = (sel, pick, what) => {
       const b = host.querySelector(sel);
       if (b) b.onclick = e => busy(e.currentTarget, async () => {
@@ -4303,6 +4443,8 @@
       return null;
     }
   };
+  /** Rendu complet : titres, attente des modules, état git, dossier SIA et base, puis chaque bloc de la page (erreurs isolées
+   *  par guard) ; ouvre ensuite le bloc demandé (?m= ou ancre), « Mises à jour » par défaut sur la page Maintenance. */
   async function renderAll() {
     titles();
     await guard('Chargement des modules', () => Promise.all([waitFor('FileAccess'), waitFor('LocalStore'), waitFor('SuiteUpdate')]));
@@ -4376,6 +4518,7 @@
     }
   };
   let lastInfo = baseKey(localStorage.getItem('siaBaseInfo:v1'));
+  /** Vrai (et nouvelle empreinte retenue) si le résumé siaBaseInfo:v1 désigne une autre base que la dernière vue. */
   const infoChanged = () => {
     const cur = baseKey(localStorage.getItem('siaBaseInfo:v1'));
     if (cur === lastInfo) return false;

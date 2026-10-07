@@ -28,6 +28,8 @@
       override: 'dataOverride:defaReference:v1'
     }
   };
+  /** Appel au lanceur (/__setup/defa-site) : GET sans corps (état), POST avec corps JSON (passe, réglage) ; renvoie la
+   *  réponse JSON, null si le lanceur est absent ou en erreur. */
   const api = body => fetch(new URL('/__setup/defa-site', location.origin), {
     method: body ? 'POST' : 'GET',
     headers: {
@@ -115,6 +117,7 @@
     PAGES,
     status: () => api(),
     refresh,
+    /** Active ou coupe la mise à jour automatique quotidienne côté lanceur ; renvoie son état (null sans lanceur). */
     setAuto: on => api({
       auto_enabled: !!on
     })

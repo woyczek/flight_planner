@@ -228,6 +228,8 @@
     };
     return list;
   }
+  /** Zone d'identifiant id ; zone de repli (nom = id en majuscules, sources communes et propres au pays) si les
+   *  contours ne la connaissent pas. */
   const byIdOf = id => (zones(), cache?.by?.[id]) || {
     id,
     name: [id.toUpperCase()],
@@ -267,6 +269,7 @@
       src: {}
     };
   }
+  /** Enregistre les réglages s dans aeroZones:v1 (erreur de stockage ignorée), émet « aero-zones-change » et renvoie s. */
   const save = s => {
     try {
       localStorage.setItem(KEY, JSON.stringify(s));
@@ -281,11 +284,13 @@
   const isOn = (zone, s = settings()) => !!s.on[zone];
   /** Source cochée dans la zone (cochée par défaut, sauf les sources marquées off). */
   const srcOn = (zone, src, s = settings()) => s.src[zone]?.[src] ?? !SOURCES[src]?.off;
+  /** Active ou désactive une zone, enregistre et renvoie les réglages. */
   const setZone = (zone, on) => {
     const s = settings();
     s.on[zone] = !!on;
     return save(s);
   };
+  /** Coche ou décoche la source src dans la zone, enregistre et renvoie les réglages. */
   const setSource = (zone, src, on) => {
     const s = settings();
     (s.src[zone] ||= {})[src] = !!on;
@@ -365,6 +370,7 @@
     }
     return inside;
   };
+  /** Cadre { w, e, s, n } (degrés) englobant tous les sommets [lon, lat] des contours donnés. */
   const bboxOf = rings => {
     let w = 180,
       e = -180,
@@ -406,6 +412,7 @@
    *  nombre de sommets, pas du nombre de cases ; gardé par zone. */
   const cellsCache = new Map();
 
+  /** Cases de la zone id (Set « lat|lon » décrit ci-dessus), calculées au premier appel puis lues dans cellsCache. */
   function cellsOf(id) {
     if (cellsCache.has(id)) return cellsCache.get(id);
     const out = new Set();

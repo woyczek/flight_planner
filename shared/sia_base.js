@@ -27,9 +27,10 @@
   const appUrl = path => new URL('../' + path, SCRIPT_URL).href;
   /** Lecteurs et réglages des autres sources (shared/aero_sources.js), chargés à la demande ; null s'ils manquent. */
   let aeroLoad = null;
+  /** Promesse unique (gardée dans aeroLoad) de window.AeroSources : injecte aero_sources.js au premier appel ; null si échec. */
   const needAero = () => aeroLoad ||= window.AeroSources ? Promise.resolve(window.AeroSources) : new Promise(res => {
     const sc = document.createElement('script');
-    sc.src = new URL('aero_sources.js?v=d5cffeb9', SCRIPT_URL).href;
+    sc.src = new URL('aero_sources.js?v=93f6f7b9', SCRIPT_URL).href;
     sc.onload = () => res(window.AeroSources || null);
     sc.onerror = () => res(null);
     document.head.append(sc);
@@ -37,6 +38,7 @@
   /** Zones de données (shared/aero_zones.js et leurs contours, shared/carto/aero_zones_geo.js), chargées à la demande ;
    *  null si elles manquent (tout est lu, comme avant les zones). */
   let zonesLoad = null;
+  /** Injecte un script (chemin relatif à sia_base.js) ; promesse résolue à vrai une fois chargé, faux en cas d'erreur. */
   const loadScript = src => new Promise(res => {
     const sc = document.createElement('script');
     sc.src = new URL(src, SCRIPT_URL).href;
@@ -44,9 +46,10 @@
     sc.onerror = () => res(false);
     document.head.append(sc);
   });
+  /** Promesse unique (gardée dans zonesLoad) de window.AeroZones : charge si besoin les contours puis aero_zones.js. */
   const needZones = () => zonesLoad ||= (async () => {
     if (!window.AERO_ZONES_GEO) await loadScript('carto/aero_zones_geo.js?v=6e9678c4');
-    if (!window.AeroZones) await loadScript('aero_zones.js?v=8ab45427');
+    if (!window.AeroZones) await loadScript('aero_zones.js?v=941f4605');
     return window.AeroZones || null;
   })();
   /** Sous-dossiers du dossier SIA par source (fichiers d'autres pays rangés à part) ; zones/<zone>/ : fichiers déposés
@@ -68,6 +71,7 @@
       const guard = setTimeout(() => reject(new Error(
         'La base du navigateur (IndexedDB) ne répond pas : fermer les autres onglets du studio et de Paramètres, puis relancer.'
       )), 15000);
+      /** Enveloppe resolve / reject : arrête la minuterie de garde (15 s) avant d'appeler f. */
       const done = f => (...a) => {
         clearTimeout(guard);
         f(...a);
@@ -77,6 +81,7 @@
       r.onblocked = () => reject(new Error(
         'La base du navigateur est bloquée par un autre onglet : fermer les autres onglets du studio et de Paramètres, puis relancer.'
       ));
+      /** Base absente : crée le magasin, ou, sans create, annule la création et rend null. */
       r.onupgradeneeded = () => {
         if (create) r.result.createObjectStore(STORE);
         else {
@@ -84,6 +89,7 @@
           resolve(null);
         }
       };
+      /** Rend la base ouverte, ou null (base refermée) si elle n'a pas le magasin cache. */
       r.onsuccess = () => {
         const db = r.result;
         if (!db.objectStoreNames.contains(STORE)) {
@@ -96,6 +102,8 @@
     });
   }
 
+  /** Transaction sur le magasin cache : run(magasin) lance la requête ; promesse du résultat de cette requête à la fin
+   *  de la transaction. Ferme db dans tous les cas. */
   function tx(db, mode, run) {
     return new Promise((resolve, reject) => {
       const t = db.transaction(STORE, mode),
@@ -237,6 +245,8 @@
     }
   };
 
+  /** Écrit le résumé s (sans byType) dans siaBaseInfo:v1 avec checkedAt, puis émet « sia-base-change » ; rien s'il est
+   *  inchangé. */
   function remember(s) {
     if (!s) return;
     const next = {
@@ -311,6 +321,7 @@
     }
     return rows.filter(r => r.some(c => c !== ''));
   }
+  /** Champ CSV : entre guillemets (guillemets doublés) s'il contient une virgule, un guillemet ou un saut de ligne. */
   const csvField = v => {
     const s = String(v ?? '');
     return /[",\r\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
@@ -460,6 +471,7 @@
    *  (Mont Blanc, Cervin, Dru, Ossau, Piton des Neiges) ; les parasites, de 2 000 à 5 400 m. */
   const SPIKE_M = 1000;
 
+  /** Décode les pixels RVBA d'une tuile Terrarium en Float32Array de 256 × 256 altitudes (m), pics parasites à NaN. */
   function despike(d) {
     const h = new Float32Array(65536),
       out = new Float32Array(65536),
@@ -478,6 +490,8 @@
     return out;
   }
 
+  /** Parcourt les altitudes d de la tuile z/x/y : visit(lat, lon, h) pour chaque pixel valide (non NaN) dont le centre
+   *  tombe dans box { s, n, w, e }. */
   function scanTile(d, z, x, y, box, visit) {
     for (let py = 0; py < 256; py++) {
       const k = Math.PI - 2 * Math.PI * (y + (py + .5) / 256) / 2 ** z,
@@ -623,6 +637,7 @@
     const cell = {},
       spots = {},
       tiles = [];
+    /** Colonne et ligne de la tuile (projection Web Mercator) qui contient une longitude ou une latitude au niveau zz. */
     const tileX = (lon, zz) => Math.floor((lon + 180) / 360 * 2 ** zz),
       tileY = (lat, zz) => {
         const r = lat * Math.PI / 180;
@@ -630,6 +645,7 @@
       };
     for (let x = tileX(w, z); x <= tileX(e - 1e-9, z); x++)
       for (let y = tileY(n - 1e-9, z); y <= tileY(s, z); y++) tiles.push([x, y]);
+    /** Exécute run(job) sur chaque job, huit à la fois au plus ; promesse résolue quand tout est fait. */
     const pool = async (jobs, run) => {
       const queue = [...jobs];
       await Promise.all(Array.from({
@@ -774,6 +790,8 @@
     };
   }
 
+  /** Espaces d'un document AIXM 4.5 (DOM) : métadonnées des Ase, contours des Abd (sommets, arcs, cercles) groupés par
+   *  espace ; types hors AIXM_TYPES écartés. [{ type, cls, name, key, lower, upper, azba, admin, act, info, rings }]. */
   function parseAixmAirspaces(doc) {
     const meta = new Map;
     for (const ase of doc.getElementsByTagName('Ase')) {
@@ -783,6 +801,7 @@
         raw = txt(uid, 'codeType').toUpperCase(),
         local = txt(ase, 'txtLocalType').toUpperCase(),
         type = raw === 'D-OTHER' && /SIV|FIS/.test(local) ? 'SIV' : raw === 'D-OTHER' && /^(SUR|PRN)$/.test(local) ? local : raw;
+      /** Limite verticale de l'Ase (balises code, valeur, unité) : « FL 115 », « SFC », « 1500 ft AMSL », « 300 m ASFC ». */
       const lim = (c, v, u) => {
         const code = txt(ase, c).toUpperCase(),
           val = txt(ase, v),
@@ -877,11 +896,13 @@
   /** XML_SIA_<date>.xml (ISO-8859-1) : contours de tous les espaces (SIV, RMZ/TMZ, AP, FIR…) — <EspaceS> (type, nom) et
    *  <PartieS> (<Geometrie> « lat,lon » par ligne, arcs déjà densifiés). Découpage de chaînes, sans DOM : ≈ 40 ms pour 27 Mo. */
   function parseXmlSiaAirspaces(text) {
+    /** Texte du premier bloc <tag>…</tag> (balise fermante exclue) ; '' s'il manque. */
     const section = tag => {
       const a = text.indexOf(`<${tag}>`),
         b = a < 0 ? -1 : text.indexOf(`</${tag}>`, a);
       return a < 0 || b < 0 ? '' : text.slice(a, b);
     };
+    /** Contenu (sans espaces autour) de la première balise <t> du bloc b, jusqu'au chevron suivant ; '' si absente. */
     const val = (b, t) => {
       const i = b.indexOf(`<${t}>`);
       if (i < 0) return '';
@@ -951,6 +972,7 @@
       role
     };
   }
+  /** Vrai si le point (lat, lon) est dans l'anneau [[lat, lon]…] (règle pair-impair, en degrés). */
   const inRing = (ring, lat, lon) => {
     let inside = false;
     for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
@@ -979,6 +1001,7 @@
     return out;
   }
 
+  /** Marque controlled = vrai les aérodromes de aero situés dans une CTR (ceux déjà marqués ne sont pas revus). */
   function markControlledAerodromes(aero, airspaces) {
     const ctr = airspaces.filter(a => a.type === 'CTR');
     for (const ad of aero?.aerodromes || [])
@@ -1185,6 +1208,8 @@
     let doneUnits = 0,
       phase = '',
       phaseAt = t0;
+    /** Nouvelle étape : clôt le chronométrage de la précédente, ajoute units à la jauge, annonce label, vérifie l'annulation
+     *  et laisse le navigateur afficher. */
     const step = async (label, units = 0) => {
       if (phase) timings.push([phase, performance.now() - phaseAt]);
       phase = label;
@@ -1194,10 +1219,12 @@
       if (signal?.aborted) throw new DOMException('Relecture annulée', 'AbortError');
       await breathe();
     };
+    /** Rappel onBytes de la lecture de file : affiche « label — x Mo / y Mo » et avance la jauge des octets lus. */
     const reading = (label, file) => {
       const base = doneUnits;
       return n => progress(`${label} — ${mb(n)} / ${mb(file.size)}`, Math.min(1, (base + n) / total));
     };
+    /** Texte de file lu en flux sous l'étape label (jauge suivie octet par octet, encoding au besoin : iso-8859-1). */
     const text = async (label, file, encoding) => {
       await step(label);
       const t = await readText(file, {
@@ -1289,6 +1316,7 @@
     const FR_FIR = /^(PARIS|REIMS|BREST|BORDEAUX|MARSEILLE|CAYENNE)$/i,
       cover = base.airspaces.filter(a => a.type === 'FIR' && a.src === 'sia' && FR_FIR.test(a.name)).map(a => a.rings[0]).filter(
         Boolean);
+    /** Vrai si le centre du cadre du premier anneau de l'espace a tombe dans une FIR française du SIA (cover). */
     const inFrance = a => {
       let la0 = 90,
         la1 = -90,
@@ -1351,6 +1379,7 @@
             if (p.aero?.points) p.aero.points = p.aero.points.filter(x => x.type === 'ICAO');
           // données mondiales : découpées aux contours des zones actives qui ont coché X-Plane (marge d'un demi-degré)
           if (xpZones) {
+            /** inZ(lat, lon) : point dans une zone active ; mid(a) : barycentre des sommets du premier anneau de a dans une zone. */
             const inZ = Z.inZones(xpZones),
               mid = a => {
                 const r = a.rings?.[0] || [];
@@ -1402,6 +1431,7 @@
       bySource,
       timings
     };
+    /** À appeler après l'enregistrement : clôt la dernière étape, fixe report.total (ms) et annonce « Terminé ». */
     report.finish = () => {
       timings.push([phase, performance.now() - phaseAt]);
       report.total = performance.now() - t0;
@@ -1521,10 +1551,12 @@
     const $ = s => host.querySelector(s),
       msg = $('.sia-base-msg'),
       state = $('.sia-base-state');
+    /** Remplace le contenu de la zone de message du bloc (HTML) ; vide si html est absent. */
     const setMessage = html => {
       msg.innerHTML = html || '';
     };
     window.AppFramework?.watchStatus?.(host); // erreurs de lecture → notification
+    /** Liste « Fichiers analysés » de la base b (nom, rôle, taille) ; repliée et cachée si elle est vide. */
     const showFiles = b => {
       const list = b?.xmlInventoryData || [];
       $('.sia-base-files').hidden = !list.length;
@@ -1532,6 +1564,8 @@
     };
     let busy = false,
       controller = null;
+    /** Affiche l'état de la base mémorisée (avertissement si elle n'est pas de la version VERSION) et ses fichiers ;
+     *  appelle opts.onCached et renvoie la base, ou null. */
     async function refresh() {
       const any = await get({
           any: true
@@ -1548,6 +1582,8 @@
       stepEl = gauge.querySelector('.sia-base-step'),
       stall = gauge.querySelector('.sia-base-stall');
     const secs = ms => (ms / 1000).toFixed(1).replace('.', ',') + ' s';
+    /** Lance task(onProgress, signal) (une seule à la fois) : boutons grisés, jauge, alerte d'inactivité après 15 s,
+     *  compte rendu et durées à la fin, message d'erreur ou d'annulation sinon. */
     async function run(task) {
       if (busy) return;
       busy = true;
@@ -1566,6 +1602,7 @@
         label: L(T.reading),
         at: t0
       };
+      /** Rafraîchit l'étape et le temps écoulé ; montre l'alerte de blocage après 15 s sans changement. */
       const paint = () => {
         const el = Math.round((Date.now() - t0) / 1000),
           idle = Math.round((Date.now() - last.at) / 1000);
@@ -1573,6 +1610,7 @@
         stall.hidden = idle < 15;
         if (!stall.hidden) stall.textContent = L(T.stall).replace('{s}', idle).replace('{p}', last.label);
       };
+      /** Rappel de progression (étape, fraction de 0 à 1 ou null) : met à jour la jauge et la console. */
       const onProgress = (label, fraction) => {
         if (label !== last.label || fraction !== last.fraction) last = {
           label,
@@ -1614,12 +1652,14 @@
       }
     }
     $('.sia-base-cancel').onclick = () => controller?.abort();
+    /** Reconstruit la base depuis le dossier mémorisé (rebuild) dans le bloc ; request : demander l'accès si besoin. */
     const reread = (request = true) => run((progress, signal) => rebuild({
       request,
       progress,
       signal
     }));
     $('.sia-base-reread').onclick = () => reread(true);
+    /** Purger : après confirmation, vide le cache, dit s'il y avait une base, rafraîchit l'état et appelle opts.onPurged. */
     $('.sia-base-purge').onclick = async () => {
       if (!confirm(L(T.confirmPurge))) return;
       const had = await purge();
@@ -1628,6 +1668,7 @@
       opts.onPurged?.();
     };
     const input = $('.sia-base-native input');
+    /** Sélecteur natif : construit et mémorise la base à partir des fichiers choisis (nom du dossier = début du chemin). */
     input.onchange = () => {
       const files = [...input.files];
       input.value = '';
@@ -1661,6 +1702,7 @@
       b.type = 'button';
       b.className = 'secondary';
       b.textContent = L(T.folder) + ' : …';
+      /** Choix du dossier SIA (__sia) puis reconstruction sans nouvelle demande d'accès ; abandon du choix ignoré. */
       b.onclick = async () => {
         try {
           await window.FileAccess.pickFolder('__sia');

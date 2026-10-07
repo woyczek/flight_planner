@@ -22,6 +22,8 @@
     for (let i = 0; i < 50 && !A()?.readData; i++) await new Promise(r => setTimeout(r, 100));
     return A()?.readData ? A() : null;
   }
+  /** Lit missions/aircraft_positions.json du pool et renvoie ses positions { IMMAT: { ad, at, orderRef, cr… } } ({} si absent),
+   *  gardées en cache ; un appel en cours est partagé. fresh : relecture sans cache. */
   async function load({
     fresh = false
   } = {}) {

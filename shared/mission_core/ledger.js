@@ -110,6 +110,8 @@
     baseStamp = '';
   const PATH = 'data/cr/missions.yaml',
     CONFLICTS = 'missionCoreLedger:conflits:v1'; // versions écartées sans dossier autorisé
+  /** Note l'état actuel du registre comme base de fusion : missions sérialisées par clé (famille | n° | date) et date
+   *  updatedAt correspondante. */
   const remember = () => {
     base = new Map(store.missions.map(m => [key(m), JSON.stringify(m)]));
     baseStamp = store.updatedAt;
@@ -123,6 +125,7 @@
       out = [],
       conflicts = [],
       seen = new Set();
+    /** Version retenue pour une clé (la mienne, la leur ou null si supprimée) ; ajoute la leur à conflicts au besoin. */
     const pick = k => {
       const b = base.get(k),
         mi = mine.get(k),
@@ -207,6 +210,7 @@
   });
   // enregistrements et relectures de cette page, l'un après l'autre
   let queue = Promise.resolve();
+  /** Met fn en file derrière les opérations précédentes de la page (même après un échec) ; renvoie sa promesse. */
   const serial = fn => {
     const p = queue.then(fn, fn);
     queue = p.catch(() => {});
@@ -322,6 +326,7 @@
       const candidates = [];
       // copie indexée (shared/data_index.js) : un fichier n'est relu et analysé que si sa signature a changé
       const idx = window.ReportIndex ? await window.ReportIndex.load() : null;
+      /** Candidat tiré de la copie indexée, étiqueté source (« folder » ou « browser ») ; null sans index. */
       const fromIndex = source => idx && {
         source,
         updatedAt: idx.meta.updatedAt || '',
@@ -457,6 +462,8 @@
       };
     });
   }
+  /** Réécrit la copie indexée (ReportIndex) avec les missions, la date, les anciens registres repris et les signatures
+   *  sig des sources (retenues dans lastSig) ; rien sans ReportIndex. */
   async function writeIndex(sig = lastSig) {
     if (!window.ReportIndex) return;
     lastSig = sig;
@@ -483,6 +490,8 @@
   // Écrit la copie navigateur et, si autorisé, data/cr/missions.yaml (à la suite des autres enregistrements et
   // relectures de la page).
   const save = options => serial(() => saveNow(options));
+  /** Enregistrement immédiat : relit le registre sous verrou, fusionne s'il a changé ailleurs, écrit index, copie texte et
+   *  fichier du dossier (request : demande l'autorisation), range les conflits ; renvoie { written, text }. */
   async function saveNow({
     request = true
   } = {}) {
@@ -744,14 +753,17 @@
         missionNumber,
         crIds: store.missions.map(m => normId(m.metadata?.missionId))
       }),
+      /** Ajoute une copie de la mission à la famille ; renvoie son rang dans la vue de la famille. */
       add: mission => {
         store.missions.push(withFamily(mission));
         return list().length - 1;
       },
+      /** Remplace la index-ième mission de la famille par une copie de mission (rien si le rang n'existe pas). */
       replace: (index, mission) => {
         const k = position(index);
         if (k >= 0) store.missions[k] = withFamily(mission);
       },
+      /** Retire la index-ième mission de la famille ; renvoie le tableau des missions retirées ([] si rang inconnu). */
       remove: index => {
         const k = position(index);
         return k >= 0 ? store.missions.splice(k, 1) : [];
@@ -781,6 +793,7 @@
     store,
     downloadAll: () => download(FILE, yaml(), 'text/yaml;charset=utf-8'),
     downloadAllCsv: () => download(FILE.replace(/\.yaml$/, '.csv'), csv(store.missions), 'text/csv;charset=utf-8'),
+    /** Remplace tout le registre (toutes familles) par missions, sans enregistrer. */
     setAll: missions => {
       store.missions = missions;
     }

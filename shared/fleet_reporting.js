@@ -120,10 +120,13 @@
     const k = String(code || '').toUpperCase().trim();
     return window.AIRCRAFT_DB?.__aliases?.[k] || k;
   };
+  /** Le type (code OACI ou alias) figure-t-il dans la base des types d'aéronefs chargée (window.AIRCRAFT_DB) ? */
   const known = code => {
     const db = window.AIRCRAFT_DB || {};
     return !!(db[alias(code)] || db[String(code || '').toUpperCase().trim()]);
   };
+  /** Appel au lanceur (/__setup/aircraft-db) : GET sans corps (état de la passe), POST { codes } pour compléter ces types ;
+   *  renvoie la réponse JSON, null sans lanceur ou en erreur. */
   const acApi = (body = null) => fetch('/__setup/aircraft-db', {
     method: body ? 'POST' : 'GET',
     headers: {
@@ -134,6 +137,7 @@
     cache: 'no-store'
   }).then(r => r.ok ? r.json() : null).catch(() => null);
 
+  /** Ajoute une seule fois à la page la feuille de style des listes d'appareils (#fleetReportingCss, classes .fr-…). */
   function style() {
     if (document.getElementById('fleetReportingCss')) return;
     document.head.insertAdjacentHTML('beforeend', `<style id="fleetReportingCss">@layer app{.fr-rep{margin-top:18px}.fr-rep table{border-collapse:collapse;width:100%;font-size:12px}.fr-rep th,.fr-rep td{padding:3px 7px;text-align:left;border-bottom:1px solid color-mix(in srgb,currentColor 12%,transparent)}.fr-rep td.num{text-align:right}.fr-rep tr.fr-fleet td{opacity:.75}.fr-rep .fr-scroll{max-width:100%;overflow-x:auto}.fr-rep .fr-unknown{color:#b45309;font-weight:650}.fr-rep .fr-note{font-size:12px;opacity:.8;margin:4px 0}}</style>`);
@@ -149,11 +153,14 @@
     let list = [],
       acTimer = 0;
     const inFleet = a => !!a.registration && rows.some(r => keyOf(r.registration) === keyOf(a.registration));
+    /** Date et heure courtes, à la locale du navigateur, d'un instant ISO ; '' sans instant. */
     const when = at => at ? new Date(at).toLocaleString(undefined, {
       dateStyle: 'short',
       timeStyle: 'short'
     }) : '';
 
+    /** Remplit la ligne [data-fr-site] : dernière mise à jour de chaque page du site (DefaSite.status), case « automatique »
+     *  et bouton « Mettre à jour maintenant » ; sans lanceur, renvoie au collage. Se redessine après chaque action. */
     async function siteLine() {
       const el = host.querySelector('[data-fr-site]');
       if (!el) return;
@@ -168,6 +175,7 @@
         ]));
         return;
       }
+      /** Résumé HTML d'une page du site (clé p, définition def de DefaSite.PAGES) : ✓/✗, date et message, ou « jamais ». */
       const page = (p, def) => {
         const r = s.pages?.[p];
         return `${esc(t(def.name))} : ${r ? `${r.ok ? '✓' : '✗'} ${esc(when(r.at))} — ${esc(String(r.message || '').trim().split('\n')[0])}` : esc(t(['jamais', 'never', 'nie', 'nunca']))}`;
@@ -193,6 +201,8 @@
       };
     }
 
+    /** Remplit la ligne [data-fr-types] : types connus / inconnus de la base (flotte et reporting), état de la passe du
+     *  lanceur et bouton de rafraîchissement ; relu toutes les 5 s tant que la passe tourne. */
     async function typesLine() {
       const el = host.querySelector('[data-fr-types]');
       if (!el?.isConnected) return;
@@ -216,9 +226,12 @@
       if (running) acTimer = setTimeout(typesLine, 5000);
     }
 
+    /** Dessine le bloc : appareils individuels puis ceux de la flotte, case « personnel » qui ajoute à rows ou en retire
+     *  (puis onChange), lignes des types et du site. */
     function draw() {
       const personal = list.filter(a => !inFleet(a)),
         fleet = list.filter(a => inFleet(a));
+      /** Ligne HTML d'un appareil : case « personnel » (grisée sans immatriculation), type signalé s'il est inconnu. */
       const row = a => {
         const f = inFleet(a);
         return `<tr class="${f ? 'fr-fleet' : ''}" data-k="${esc(a.key)}"><td><input type="checkbox" data-fr-personal${f ? '' : ' checked'}${a.registration ? '' : ' disabled'} title="${esc(a.registration ? t(['Coché : appareil individuel, hors de la flotte du SOG ; décoché : dans la flotte', 'Ticked: individual aircraft, outside the SOG fleet; unticked: in the fleet', 'Angehakt: einzelnes Luftfahrzeug, außerhalb der SOG-Flotte; nicht angehakt: in der Flotte', 'Marcado: aeronave individual, fuera de la flota del SOG; desmarcado: en la flota']) : t(['immatriculation inconnue : ne peut pas entrer dans la flotte', 'registration unknown: cannot enter the fleet', 'Kennzeichen unbekannt: kann nicht in die Flotte', 'matrícula desconocida: no puede entrar en la flota']))}"></td>
@@ -307,6 +320,7 @@
       'Luftfahrzeuge, die Sie geflogen oder berichtet haben (Berichte mit Ihrem Kürzel in der Besatzung); grau: Luftfahrzeug der DEFA-Flotte oder nicht.',
       'Aeronaves que ha pilotado o reportado (informes con su trigrama en la tripulación); casilla gris: aeronave de la flota DEFA o no.'
       ),
+    /** Contenu de la rubrique : la liste « Mes appareils » montée dans body. */
     render(body) {
       mountMine(body);
     }

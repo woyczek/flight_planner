@@ -36,11 +36,13 @@
   const ETATS = ['active', 'demandee', 'refusee'];
   const settingsUrl = () => window.RepositoryNav?.settingsUrl?.('sia', 'mt-aero-base') || new URL(
     '../apps/settings/maintenance.html?m=sia#mt-aero-base', SCRIPT).href;
+  /** Réponse « base indisponible » : { missing: true, raison (« base », « zone-fr »), url de la page de réglage }. */
   const missing = raison => ({
     missing: true,
     raison,
     url: settingsUrl()
   });
+  /** Charge un script (chemin relatif à ce fichier) ; promesse résolue à true s'il s'est chargé, false sinon. */
   const loadScript = src => new Promise(res => {
     const sc = document.createElement('script');
     sc.src = new URL(src, SCRIPT).href;
@@ -52,6 +54,8 @@
 
   // ---- base, lue une fois, relue si elle change (relecture ici ou dans un autre onglet : siaBaseInfo:v1)
   let baseLoad = null;
+  /** Base aéronautique (SiaBase.get, même d'une autre version du format), lue une fois puis gardée ; promesse de null si
+   *  absente ou illisible. */
   const base = () => baseLoad ||= (async () => {
     try {
       return await window.SiaBase?.get?.({
@@ -84,6 +88,7 @@
       near = list.find(a => norm(a.key) === r || norm(a.name) === r);
     return near ? near.key || near.name : '';
   }
+  /** Espaces activables de la base b (zones du RTBA et types de TYPES), sans doublon de clé (ou de nom). */
   const activables = b => {
     const seen = new Set;
     return (b.airspaces || []).filter(a => {
@@ -94,6 +99,8 @@
       return true;
     });
   };
+  /** Zone proposée à la saisie à partir d'un espace de la base : { id, nom, type (« RTBA » pour l'AZBA), act, info, admin,
+   *  plancher, plafond, azba }. */
   const zoneOf = a => ({
     id: a.key || a.name,
     nom: a.name || a.key,
@@ -111,6 +118,7 @@
     return w === 0 ? 7 : w;
   };
   const pad = n => String(n).padStart(2, '0');
+  /** Heure « HH:MM » en minutes depuis minuit ; null si l'heure est illisible. */
   const minutes = hm => {
     const [h, m] = String(hm || '').split(':').map(Number);
     return Number.isFinite(h) ? h * 60 + (m || 0) : null;
@@ -136,11 +144,14 @@
 
   // ===== 1. activations par réseau (saisies), RTBA du jour
   const activationsFile = week => `atc/activations/${week}.json`;
+  /** Activations enregistrées de la semaine (atc/activations/<semaine>.json du pool) ; [] si absent ou illisible. */
   async function activations(week) {
     const d = await window.MissionAssignments?.readData?.(activationsFile(week)).catch(() => null);
     return Array.isArray(d?.activations) ? d.activations : [];
   }
 
+  /** Enregistre les activations de la semaine : lignes sans zone ou sans date écartées, champs normalisés (réseau inconnu →
+   *  null = les deux, état inconnu → « demandee »), tri par date et heure ; renvoie le retour de writeData. */
   function saveActivations(week, list) {
     const A = window.MissionAssignments;
     if (!A?.writeData) return Promise.resolve({
@@ -210,6 +221,8 @@
       }))
     };
   }
+  /** Import IVAO de la semaine : remplace les activations importées d'IVAO, garde les saisies à la main et enregistre ;
+   *  renvoie { ajoutees, total, error, where } ou l'erreur de fetchIvao. */
   async function importIvao(week) {
     const r = await fetchIvao(week);
     if (r.error) return r;
@@ -223,6 +236,8 @@
       where: w?.where || ''
     };
   }
+  /** Activations du jour regroupées par zone, réseau et état (créneaux réunis), puis les plages du repli ll de la config
+   *  (réseau null, « active ») ; { missing } sans base France. */
   async function rtba(date, {
     ll = []
   } = {}) {
@@ -277,6 +292,8 @@
       return null;
     }
   }
+  /** Zones traversées par la mission (MissionAirspaces.crossed sur le yaml de ref) : { mission, zones } ; note en plus si la
+   *  mission ou le module manque ; { missing } sans base. */
   async function missionZones(ref) {
     const b = await base();
     if (!b) return missing('base');
@@ -363,6 +380,7 @@
   /** Positions en ligne maintenant (flux publics, CORS ouvert) : [{ position, reseau, debut }]. */
   async function online() {
     const out = [];
+    /** JSON d'un flux public (sans cache) ; null en cas d'échec. */
     const get = url => fetch(url, {
       cache: 'no-store'
     }).then(r => r.ok ? r.json() : null).catch(() => null);
@@ -382,10 +400,13 @@
       });
     return out;
   }
+  /** Sessions ATC enregistrées d'un jour (SuiteAtc, chargé au besoin) ; [] sans le module. */
   async function sessionsOf(date) {
     const S = window.SuiteAtc || await need('SuiteAtc', 'atc_sessions.js');
     return S ? (await S.read(weekOf(date))).filter(s => s.date === date) : [];
   }
+  /** Contrôle ouvert un jour : sessions réservées et, si live et que c'est aujourd'hui (UTC), positions en ligne ; chacune
+   *  avec l'indicatif de son terrain et ses espaces (espacesOf). */
   async function atcOpen(date, {
     live = true
   } = {}) {
@@ -409,6 +430,7 @@
       });
     return out;
   }
+  /** Examens et trainings ATC du jour, avec la position, le réseau, la plage, le texte et les espaces du terrain. */
   async function conflicts(date) {
     const b = await base();
     return (await sessionsOf(date)).filter(s => s.type === 'examen' || s.type === 'training').map(s => ({
@@ -435,6 +457,8 @@
       creneaux: slots.get(a.key || a.name) || null
     }));
   }
+  /** Axes de ravitaillement (ENR 5.7) de la base, MILAIP puis autres pays : [{ id, nom, kind, heading, lengthNm, ip, cp }],
+   *  seuls les axes avec IP et CP ; [] sans AarTracks ni XML ; { missing } sans base France. */
   async function aarTracks() {
     const b = await frBase();
     if (b.missing) return b;
@@ -452,10 +476,13 @@
       cp: t.cp
     }));
   }
+  /** CTR et TMA des terrains de départ et d'arrivée : { dep, arr } (chacun { icao, ctr, tma, note? } ou null sans code) ;
+   *  { missing } sans base. */
   async function zonesToAvoid(dep, arr) {
     const b = await base();
     if (!b) return missing('base');
     const ads = b.aero?.aerodromes || [];
+    /** { icao, ctr, tma } d'un terrain ; note si le terrain manque à la base ; null sans code. */
     const one = code => {
       const icao = String(code || '').toUpperCase().trim();
       if (!icao) return null;
@@ -465,6 +492,7 @@
         tma: [],
         note: `terrain ${icao} inconnu de la base aéronautique`
       };
+      /** Noms des espaces du type t (CTR ou TMA) qui contiennent le terrain. */
       const inside = t => espacesOf({
         ...b,
         airspaces: (b.airspaces || []).filter(a => a.type === t)
@@ -480,6 +508,7 @@
       arr: one(arr)
     };
   }
+  /** Id de base de l'espace activable qui porte ce nom local ; '' sans base ou sans correspondance. */
   async function match(nom) {
     const b = await base();
     return b ? matchIn(activables(b), nom) : '';

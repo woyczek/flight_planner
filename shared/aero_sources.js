@@ -62,6 +62,7 @@
       'X-Plane (Navigationsdaten des Simulators)', 'X-Plane (datos de navegación del simulador)'
     ]
   }];
+  /** Réglages bruts de aeroSources:v1 ; {} s'ils sont absents ou illisibles. */
   const read = () => {
     try {
       return JSON.parse(localStorage.getItem(KEY) || '{}') || {};
@@ -69,6 +70,8 @@
       return {};
     }
   };
+  /** Réglages complétés : enabled { source: booléen } (valeur « on » de SOURCES par défaut), pays openAIP et couches FAA
+   *  (listes séparées par des espaces). */
   const settings = () => {
     const s = read();
     return {
@@ -77,6 +80,7 @@
       faaLayers: s.faaLayers ?? 'sua mtr'
     };
   };
+  /** Fusionne patch dans les réglages, les enregistre (erreur de stockage ignorée), émet « aero-sources-change » et les renvoie. */
   const save = patch => {
     const s = {
       ...settings(),
@@ -122,6 +126,7 @@
     const l2 = l1 + Math.atan2(Math.sin(t) * Math.sin(d) * Math.cos(p1), Math.cos(d) - Math.sin(p1) * Math.sin(p2));
     return [p2 * 180 / Math.PI, ((l2 * 180 / Math.PI + 540) % 360) - 180];
   }
+  /** Route vraie initiale (degrés, 0 à 360) du point [lat, lon] vers le second (orthodromie). */
   const bearing = ([a, b], [c, d]) => {
     const p1 = a * Math.PI / 180,
       p2 = c * Math.PI / 180,
@@ -129,6 +134,7 @@
     return (Math.atan2(Math.sin(dl) * Math.cos(p2), Math.cos(p1) * Math.sin(p2) - Math.sin(p1) * Math.cos(p2) * Math.cos(dl)) * 180 /
       Math.PI + 360) % 360;
   };
+  /** Distance orthodromique (m) entre deux points [lat, lon] (haversine, sphère de rayon R_EARTH). */
   const distM = ([a, b], [c, d]) => {
     const p1 = a * Math.PI / 180,
       p2 = c * Math.PI / 180,
@@ -210,6 +216,7 @@
   const kids = (el, name) => el ? [...el.getElementsByTagNameNS(NSX, name)] : [];
   const kid = (el, name) => kids(el, name)[0] || null;
   const text = (el, name) => kid(el, name)?.textContent.trim() || '';
+  /** Premier gml:pos sous el en [premier nombre, second nombre] (ordre du fichier, non permuté) ; null s'il manque ou est invalide. */
   const posOf = el => {
     const p = kid(el, 'pos');
     if (!p) return null;
@@ -219,12 +226,14 @@
   /** Ordre des axes : EPSG:4326 (urn) = lat lon ; CRS84 = lon lat. */
   const lonFirst = el => /CRS84|OGC.*1\.3.*CRS84/i.test(el?.closest?.('[srsName]')?.getAttribute('srsName') || '');
 
+  /** Paires de nombres d'un gml:posList (ou gml:pos) en [lat, lon] ; swap : fichier en lon lat, paires inversées. */
   function posList(el, swap) {
     const v = el.textContent.trim().split(/\s+/).map(Number),
       out = [];
     for (let i = 0; i + 1 < v.length; i += 2) out.push(swap ? [v[i + 1], v[i]] : [v[i], v[i + 1]]);
     return out;
   }
+  /** Rayon (m) de l'élément radius sous el, selon son unité (NM par défaut, km, ft, sinon mètres) ; 0 s'il manque. */
   const radiusM = el => {
     const r = kid(el, 'radius');
     if (!r) return 0;
@@ -267,6 +276,8 @@
   const href = el => (el?.getAttributeNS('http://www.w3.org/1999/xlink', 'href') || el?.getAttribute('xlink:href') || '').replace(
     /^.*?(urn:uuid:|#uuid\.|#)/, '');
 
+  /** Lit un fichier AIXM 5.1 : { airspaces (types de KEEP), aero { navaids, points, vrp, aerodromes, airways, obstacles },
+   *  obstacleMax par case d'un degré } ; lève une erreur si le XML est illisible. */
   function aixm5(txt) {
     const doc = new DOMParser().parseFromString(txt, 'application/xml');
     if (doc.querySelector('parsererror')) throw new Error('AIXM 5.1 illisible');
@@ -311,6 +322,7 @@
     }
     // balises : équipements (VOR, NDB, DME, TACAN) puis Navaid (type, nom) qui les regroupe
     const equip = new Map;
+    /** Fréquence de l'élément name en texte : entière en kHz, à deux décimales sinon ; '' si absente. */
     const freq = (s, name) => {
       const e = kid(s, name);
       return e ? (+e.textContent).toFixed(/K/i.test(e.getAttribute('uom') || '') ? 0 : 2) : '';
@@ -421,6 +433,7 @@
       if (s) routes.set(idOf(f), [text(s, 'designatorPrefix'), text(s, 'designatorSecondLetter'), text(s, 'designatorNumber')].join('') ||
         text(s, 'name'));
     }
+    /** Extrémité d'un tronçon { id, lat, lon } : point ou balise référencé (déjà lu), sinon position propre (id vide) ; null. */
     const endOf = el => {
       if (!el) return null;
       for (const c of el.getElementsByTagNameNS(NSX, '*'))
@@ -535,6 +548,7 @@
     7: 'VOR',
     8: 'VOR'
   };
+  /** Limite verticale openAIP ({ value, unit, referenceDatum } codés) au format de la base ; '' si absente. */
   const oaLimit = l => l ? limit(l.value, {
     0: 'M',
     1: 'FT',
@@ -550,6 +564,7 @@
   const linesOf = g => !g ? [] : g.type === 'LineString' ? [g.coordinates.map(([x, y]) => [y, x])] : g.type === 'MultiLineString' ? g
     .coordinates.map(l => l.map(([x, y]) => [y, x])) : [];
   const pointOf = g => g?.type === 'Point' ? [g.coordinates[1], g.coordinates[0]] : null;
+  /** Première propriété non vide de p parmi keys (essayées telles quelles, en majuscules puis en minuscules) ; '' sinon. */
   const pick = (p, ...keys) => {
     for (const k of keys)
       for (const q of [k, k.toUpperCase(), k.toLowerCase()])
@@ -557,6 +572,8 @@
     return '';
   };
 
+  /** Lit un GeoJSON (FeatureCollection ou Feature) : export openAIP (espaces, aérodromes, balises, points VFR), MTR et zones
+   *  FAA ADDS, sinon polygones à propriétés courantes ; name (nom du fichier) distingue la source openaip / geojson. */
   function geojson(obj, name = '') {
     const out = {
       airspaces: [],
@@ -705,6 +722,8 @@
   };
   // classes sans intérêt pour les cartes de mission : A (espaces supérieurs et océaniques), E, F, G ; W (fenêtre d'onde)
   const OPENAIR_SKIP = new Set(['A', 'E', 'F', 'G', 'W', 'GP', 'GSEC']);
+  /** Limite OpenAir (« FL95 », « 1500ft AMSL », « 300 m AGL », « GND », « UNLTD ») au format de la base ; texte brut si
+   *  non reconnue. */
   const oaLim = s => {
     const t = String(s || '').trim().toUpperCase();
     if (!t) return '';
@@ -716,11 +735,14 @@
     return n ? limit(n[1], n[2] === 'M' ? 'M' : 'FT', /AGL|GND|SFC|ASFC/.test(n[3] || '') ? 'SFC' : 'MSL') : t;
   };
 
+  /** Espaces d'un texte OpenAir (AC, AN, AH, AL, DP, V X= / D=, DC, DA, DB) au modèle de la base, marqués src ; classes
+   *  de OPENAIR_SKIP et types hors KEEP écartés. */
   function openair(txt, src = 'openair') {
     const out = [];
     let cur = null,
       center = null,
       cw = true;
+    /** Termine l'espace en cours (ajouté s'il a au moins 3 sommets et un type gardé) et remet centre et sens à zéro. */
     const flush = () => {
       if (cur?.ring.length > 2 && !OPENAIR_SKIP.has(cur.ac)) {
         const type = OPENAIR_TYPES[cur.ac] || normType(cur.ac);
@@ -801,6 +823,8 @@
   /** Lignes de données d'un fichier X-Plane (en-tête « I » / « A », ligne de version, « 99 » final). */
   const datLines = t => t.split(/\r?\n/).slice(2).map(l => l.trim()).filter(l => l && l !== '99');
 
+  /** Lit un fichier de navigation X-Plane selon son nom (earth_nav, earth_fix, earth_awy, earth_mora.dat) : { aero { navaids,
+   *  points, airways sans coordonnées (resolveAirways) }, moraCells } ; autre nom : résultat vide. */
   function xplane(name, txt) {
     const out = {
       aero: {
@@ -955,6 +979,7 @@
     W: 'D',
     A: 'D'
   };
+  /** Cadre [latMin, lonMin, latMax, lonMax] du premier anneau d'un espace ; null s'il n'en a pas. */
   const bbox = a => {
     let b = null;
     for (const [la, lo] of a.rings?.[0] || []) b = b ? [Math.min(b[0], la), Math.min(b[1], lo), Math.max(b[2], la), Math.max(b[3],
@@ -967,6 +992,7 @@
   function shapeIndex(list) {
     const grid = new Map;
     const key = (f, la, lo) => `${f}|${la}|${lo}`;
+    /** Range le cadre de l'espace a dans la case de sa famille et de son centre. */
     const add = a => {
       const b = bbox(a);
       if (!b) return;
@@ -976,6 +1002,7 @@
         k = key(f, la, lo);
       (grid.get(k) || grid.set(k, []).get(k)).push(b);
     };
+    /** Vrai si un cadre de même famille, dans la case du centre ou une case voisine, a ses quatre bords à moins de 0,05°. */
     const has = a => {
       const b = bbox(a);
       if (!b) return false;
@@ -996,6 +1023,8 @@
     };
   }
 
+  /** Fusionne part dans base (modifiée en place et renvoyée) selon les règles anti-doublons décrites au-dessus de FAMILY ;
+   *  les MTR sont toujours ajoutées, voies et obstacles ajoutés sans contrôle. */
   function merge(base, part) {
     base.airspaces ||= [];
     const seenZ = new Set(base.airspaces.map(a => a.type + '|' + String(a.name).toUpperCase())),

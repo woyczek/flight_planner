@@ -239,6 +239,8 @@
     x: PREFIXES.fr.x
   });
 
+  /** Sessions ATC enregistrées de la semaine (fichier atc/<semaine>.json du pool) ; [] si absent ou illisible.
+   *  fresh : relecture sans cache. */
   async function read(week, {
     fresh = false
   } = {}) {
@@ -393,6 +395,7 @@
     } catch {}
     return importNetwork(week, reseau);
   }
+  /** Heure « HH:MM » en heures décimales (« 14:30 » → 14,5) ; vide ou illisible → 0. */
   const hours = hm => {
     const [h, m] = String(hm || '0:0').split(':').map(Number);
     return (h || 0) + (m || 0) / 60;

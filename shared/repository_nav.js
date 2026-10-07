@@ -93,6 +93,7 @@
   /** Adresse d'une rubrique de Paramètres (REPOSITORY_TREE.settings : rubrique → page ; ?base= pour les rubriques de
    *  data_admin.js et settings_panels.js, ?m= pour les blocs de maintenance_page.js) ; sans rubrique : Mon profil. */
   const MT_BLOCKS = ["updates", "sources", "versions", "deps", "sia", "types", "caches", "storage", "backup", "journal"];
+  /** Adresse complète (href) de la rubrique section de Paramètres, ancre hash en plus (« mt-aero-base »…). */
   const settingsUrl = (section, hash = "") => {
     const s = cfg.settings || {},
       // bloc sur plusieurs pages (« installation,maintenance ») : la page courante si elle en est, sinon la première
@@ -121,6 +122,7 @@
       }));
       return true;
     },
+    /** Verrouille le Centre dans ce navigateur (préférence effacée, html[data-cpco="off"]) ; événement « cpco-access-change ». */
     lock() {
       K.store.remove(CPCO_KEY);
       doc.dataset.cpco = "off";
@@ -132,6 +134,7 @@
     }
   };
   if (isCpco(page?.path || rel) && !cpcoOn()) {
+    /** Ajoute au corps de la page l'avis « Accès réservé » (liens vers l'activation du Centre et l'accueil), traduit. */
     const lockNotice = () => {
       const box = document.createElement("div");
       box.className = "cpco-lock";
@@ -246,6 +249,7 @@
     attributeFilter: ["data-tone", "data-design"]
   });
 
+  /** Applique le thème name : variables CSS de l'en-tête et de l'accent, fond de page, ton (data-tone), surface et gel Aqua. */
   function applyTheme(name) {
     const t = themeColors(name);
     currentTheme = name;
@@ -277,6 +281,8 @@
     pink: [328, 60]
   };
 
+  /** Pose --aq-gel : teinte choisie (or sur les pages du Centre, accent si « app »), assombrie jusqu'au contraste 4,5:1
+   *  avec le texte blanc. accent : couleur d'accent du thème de la page. */
   function applyAqua(accent) {
     const v = readPref("repositoryAquaColor", "blue");
     // pages du Centre : gel or (galons de l'état-major), quel que soit le choix d'Apparence
@@ -339,6 +345,7 @@
   // chargée seulement quand l'un d'eux est choisi, avec sa propre version (empreinte de son contenu, table FILE_V
   // écrite par tools/bump_versions.py).
   const FILE_V = {"designs_skeuo.css": "f6dd1e62"};
+  /** Pour un design à feuille propre : pose sa feuille (une fois) et charge une fois design_deco.js (décor complet). */
   const designCss = id => {
     const f = designs[id]?.css;
     if (!f) return;
@@ -400,6 +407,7 @@
   emblem.className = "repo-header-emblem";
   emblem.setAttribute("aria-hidden", "true");
   line.prepend(emblem);
+  /** Dessine l'emblème du design courant dans l'en-tête (RepositoryIcons.emblem) ; emplacement masqué sans emblème. */
   const renderEmblem = () => {
     const name = designs[design]?.emblem;
     emblem.hidden = !name;
@@ -524,6 +532,7 @@
    *  demande. Sur la page Apparence elle-même : rien (false, le lien s'ouvre normalement). */
   let apDialog = null;
 
+  /** Ouvre la fenêtre Apparence décrite ci-dessus (créée une fois) ; renvoie true si elle s'ouvre, false sur la page Apparence. */
   function openAppearance() {
     if (document.getElementById("appearancePage")) return false;
     if (!apDialog) {
@@ -542,6 +551,7 @@
     }
     apDialog.querySelector(".repo-ap-head h1").textContent = trLabel("Apparence");
     const host = apDialog.querySelector("main");
+    /** Monte l'interface Apparence dans la fenêtre et l'affiche en modale si elle ne l'est pas déjà. */
     const show = () => {
       window.RepositoryAppearance.mount(host);
       window.AppFramework?.refresh?.(host);
@@ -565,6 +575,7 @@
   let helpDialog = null,
     helpAt = "";
 
+  /** Ouvre la fenêtre d'aide décrite ci-dessus ; href : lien cliqué (son ?doc= est suivi) ; true si ouverte, false sinon. */
   function openHelp(href = "") {
     if (rel === HELP || page?.path === HELP || doc.hasAttribute("data-help-frame")) return false;
     const base = new URL(HELP, root).href,
@@ -782,6 +793,8 @@
       designs,
       families: cfg.colorFamilies || {},
       themes: cfg.themes,
+      /** Réglages d'apparence en vigueur : design, icônes (effectives et choix mémorisé), barre latérale, décor, couleurs,
+       *  thème de la page. */
       current: () => ({
         design,
         icons: doc.dataset.icons || "line",
@@ -801,6 +814,7 @@
       /** Graphiques : palettes ("auto", "vivid", "brass", "khaki", "slate") et styles ("auto", "flat", "relief"). */
       chartPalettes: ["auto", "vivid", ...Object.keys(CHART)],
       chartStyles: ["auto", "flat", "relief"],
+      /** Palette et style des graphiques : choix mémorisés (« auto » par défaut) et valeurs effectives posées sur <html>. */
       chart: () => ({
         palette: readPref("repositoryChartPalette", "auto"),
         style: readPref("repositoryChartStyle", "auto"),
@@ -817,6 +831,8 @@
         doc.dataset.chartPalette = keep;
         return out;
       },
+      /** Mémorise la palette (kind « palette ») ou le style (kind « style ») des graphiques, « auto » ou vide = effacé ;
+       *  applique et émet « repository-design-change ». */
       setChart(kind, v) {
         writePref(kind === "style" ? "repositoryChartStyle" : "repositoryChartPalette", v && v !== "auto" ? v : null);
         applyChart();
@@ -826,10 +842,12 @@
       },
       aquaColors: Object.keys(AQUA),
       aquaColor: () => readPref("repositoryAquaColor", "blue"),
+      /** Échantillon (hexadécimal) de la teinte Aqua k, bleu si k est inconnue. */
       aquaSample: k => {
         const [h, s] = AQUA[k] || AQUA.blue;
         return hslHex(h, s, 48);
       },
+      /** Mémorise la couleur Aqua v (bleu ou vide = défaut, effacé), recalcule --aq-gel et émet « repository-design-change ». */
       setAqua(v) {
         writePref("repositoryAquaColor", v && v !== "blue" ? v : null);
         applyAqua(themeColors(currentTheme).accent);
@@ -1070,6 +1088,7 @@
       ul.append(li);
     });
     document.body.prepend(side);
+    /** Libellés et infobulles des entrées et titres de séparateurs de la barre latérale dans la langue courante. */
     const label = () => {
       const i = Math.max(0, supported.indexOf(language));
       side.querySelectorAll(".repo-sidenav-item").forEach(a => {
@@ -1128,6 +1147,7 @@
         bar.append(a);
       }
       header.after(bar);
+      /** Libellés des onglets dans la langue courante (premier libellé à défaut). */
       const tabLabels = () => bar.querySelectorAll(".repo-tab").forEach(a => {
         a.textContent = a._label[Math.max(0, supported.indexOf(language))] || a._label[0];
       });
@@ -1157,7 +1177,7 @@
     document.head.append(assign);
     /* Terrain actuel des appareils : site (emplacement) ou CR issu d'un ordre de mission (après assignments.js) */
     const positions = document.createElement("script");
-    positions.src = new URL("aircraft_positions.js?v=72ee36c7", script.src).href;
+    positions.src = new URL("aircraft_positions.js?v=cc7e2381", script.src).href;
     document.head.append(positions);
     /* Utilisateurs et droits : mode develop / production, connexion, usurpation (bandeau sur toutes les pages) */
     const users = document.createElement("script");
@@ -1169,7 +1189,7 @@
     document.head.append(sync);
     /* Flotte et journal DEFA depuis le site : une fois par jour à l'ouverture d'une page (lanceur) */
     const defaSite = document.createElement("script");
-    defaSite.src = new URL("defa_site.js?v=deca269e", script.src).href;
+    defaSite.src = new URL("defa_site.js?v=ceeb2b55", script.src).href;
     document.head.append(defaSite);
     /* Disponibilités : catégories configurables, thèmes ouverts, déclarations par semaine */
     const dispos = document.createElement("script");
@@ -1190,6 +1210,8 @@
       short: "SOG",
       centre: "CPCO"
     };
+    /** Remplace dans la page (textes, infobulles, titre) les noms de la marque des sources par ceux de la compagnie réglée,
+     *  puis suit les contenus ajoutés ou retraduits ; rien si la compagnie réglée ne diffère pas. */
     const rebrand = () => {
       const v = va(),
         rules = [
@@ -1201,6 +1223,7 @@
       if (!rules.length) return;
       const fix = s => rules.reduce((x, [re, to]) => x.replace(re, to), s);
       const skip = el => !el || el.closest("script,style,textarea,input,code,pre,[contenteditable],[data-no-rebrand]");
+      /** Corrige les nœuds texte et les attributs title sous root (hors zones exclues par skip). */
       const walk = root => {
         const w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
         for (let n;

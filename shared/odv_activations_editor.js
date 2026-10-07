@@ -109,12 +109,14 @@
       d = new Date(jan4);
     return jan4 - ((d.getUTCDay() + 6) % 7) * 864e5 + (+m[2] - 1) * 6048e5;
   }
+  /** Les 7 dates « AAAA-MM-JJ » (lundi → dimanche) d'une semaine ISO ; [] si la semaine est illisible. */
   const daysOf = week => {
     const m0 = monday(week);
     return isNaN(m0) ? [] : Array.from({
       length: 7
     }, (_, i) => new Date(m0 + i * 864e5).toISOString().slice(0, 10));
   };
+  /** Libellé court d'une date « AAAA-MM-JJ » dans la langue de la page (« lun. 5 oct. »), lu en UTC. */
   const dayLabel = d => new Date(`${d}T12:00:00Z`).toLocaleDateString(loc(), {
     weekday: 'short',
     day: 'numeric',
@@ -123,6 +125,7 @@
   });
   let css = false;
 
+  /** Ajoute une seule fois à la page la feuille de style de l'éditeur (couche app, classes .odv-act…). */
   function style() {
     if (css) return;
     css = true;
@@ -131,6 +134,8 @@
     document.head.append(s);
   }
 
+  /** Monte l'éditeur des activations de la semaine semaine dans host (lecture seule si readOnly) ; onChange reçoit une copie
+   *  des lignes à chaque retouche, onImport le résultat d'un import IVAO. Renvoie { set, refresh, list }. */
   function mount(host, {
     semaine = '',
     readOnly = false,
@@ -149,6 +154,8 @@
     const listId = `odvActZones${Math.random().toString(36).slice(2, 8)}`;
     const notify = (m, k = 'warn') => window.AppFramework?.notify?.(m, k);
 
+    /** Relit les activations de la semaine et les zones activables de la base, puis redessine ; une lecture dépassée
+     *  (semaine changée entre-temps) est ignorée. Sans OdvAirspace : message d'absence. */
     async function load() {
       const me = ++seq;
       if (!O()) {
@@ -176,10 +183,12 @@
     const imported = r => !!r.source && r.source !== 'saisie';
     const byTime = (a, b) => `${a.date} ${a.debut} ${a.nom}`.localeCompare(`${b.date} ${b.debut} ${b.nom}`);
 
+    /** Redessine host : note sur la base, liste des zones proposées et une colonne par réseau. */
     function render() {
       const days = daysOf(week);
       const head = [T.jour, T.zone, T.etat, T.de, T.a, T.texte, T.reseau].map(x => `<th>${esc(t(x))}</th>`).join('');
       const sel = (name, value, opts) => `<select data-k="${name}"${ro ? ' disabled' : ''}>${opts.map(([v, l]) => `<option value="${esc(v)}"${v === value ? ' selected' : ''}>${esc(l)}</option>`).join('')}</select>`;
+      /** Ligne de tableau modifiable d'une saisie r (rang i dans rows) : jour, zone, état, plage UTC, remarque, réseau, retrait. */
       const line = (r, i) => `<tr data-i="${i}" data-etat="${esc(r.etat)}"${r.reseau ? '' : ` data-both title="${esc(t(T.deux))}"`}>
         <td>${sel('date', r.date, days.map(d => [d, dayLabel(d)]))}</td>
         <td><input type="text" data-k="zone" list="${listId}" value="${esc(zoneName(r.zone))}" spellcheck="false"${ro ? ' disabled' : ''}></td>
@@ -207,6 +216,7 @@
       window.AppFramework?.refresh?.(host);
     }
 
+    /** Après une retouche : copie des lignes à onChange, enregistrement programmé 600 ms après la dernière retouche. */
     function changed() {
       onChange?.(rows.map(r => ({
         ...r
@@ -214,6 +224,8 @@
       clearTimeout(timer);
       timer = setTimeout(save, 600);
     }
+    /** Enregistre les lignes qui ont une zone (OdvAirspace.saveActivations) ; notification d'erreur si l'écriture échoue
+     *  ailleurs que dans ce navigateur. */
     async function save() {
       timer = 0;
       const r = await O().saveActivations(week, rows.filter(x => x.zone));
@@ -309,6 +321,8 @@
     window.addEventListener('repository-language-change', () => host.isConnected && render());
     load();
     return {
+      /** Change la lecture seule (readOnly) et/ou la semaine (semaine) : retouche en attente enregistrée dans l'ancienne
+       *  semaine, puis relecture ; sinon simple redessin. */
       set({
         semaine: s,
         readOnly: r
@@ -325,6 +339,7 @@
         } else render();
       },
       refresh: load,
+      /** Copie des activations affichées (saisies et importées). */
       list: () => rows.map(r => ({
         ...r
       }))
