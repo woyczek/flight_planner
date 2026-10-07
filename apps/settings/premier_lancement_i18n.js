@@ -27,6 +27,8 @@ RepositoryContentI18n([
   ['Données présentes.', 'Data present.', 'Daten vorhanden.', 'Datos presentes.'],
   ['Pilote', 'Pilot', 'Pilot', 'Piloto'],
   ['Profil', 'Profile', 'Profil', 'Perfil'],
+  ['Dossiers', 'Folders', 'Ordner', 'Carpetas'],
+  ['Recommencer', 'Start again', 'Neu beginnen', 'Empezar de nuevo'],
   ['Trigramme', 'Trigram', 'Kürzel', 'Trigrama'],
   ['ID IVAO (VID)', 'IVAO ID (VID)', 'IVAO-ID (VID)', 'ID IVAO (VID)'],
   ['ID VATSIM (CID)', 'VATSIM ID (CID)', 'VATSIM-ID (CID)', 'ID VATSIM (CID)'],
