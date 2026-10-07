@@ -1193,10 +1193,10 @@
     document.head.append(defaSite);
     /* Disponibilités : catégories configurables, thèmes ouverts, déclarations par semaine */
     const dispos = document.createElement("script");
-    dispos.src = new URL("dispos.js?v=37e55264", script.src).href;
+    dispos.src = new URL("dispos.js?v=b93daed0", script.src).href;
     document.head.append(dispos);
     const update = document.createElement("script");
-    update.src = new URL("suite_update.js?v=3a068fbe", script.src).href;
+    update.src = new URL("suite_update.js?v=695e4c03", script.src).href;
     document.head.append(update)
   } {
     /* Autre compagnie virtuelle que celle écrite dans les sources (Paramètres › Sources et dossiers) : « SO Group

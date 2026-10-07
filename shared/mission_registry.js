@@ -329,7 +329,7 @@
         organisation: String(y.operation.organisation || '')
       } : null,
       organisation: !!ex || /organi/i.test(String(meta.role || '')) || /\d[A-Z]?Z$/i.test(String(meta.id || '')
-    .trim()), // mission d'organisation d'un exercice (…Z)
+        .trim()), // mission d'organisation d'un exercice (…Z)
       exercise: ex ? {
         participants: arr(ex.participants).length,
         tracks: arr(ex.tracks).length,
@@ -1849,7 +1849,7 @@
         return;
       }
       if ((where === 'editor' || where === 'studio') && operationMembers(m).length > 1) return goOperation(m,
-      where); // mission d'opération : tout le lot
+        where); // mission d'opération : tout le lot
       select(keyOf(m));
       // lien « ← Registre » du générateur et du studio (même onglet) : SiaMission.mountNav
       try {

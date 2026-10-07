@@ -131,7 +131,8 @@ if (!window.DataIndex) {
    *  ni, sans guillemets, de sortir de l'attribut. */
   const cssColor = (v, fallback = '') => {
     const s = String(v ?? '').trim();
-    return /^#(?:[0-9a-f]{3,4}|[0-9a-f]{6}|[0-9a-f]{8})$/i.test(s) || /^rgba?\(\s*\d{1,3}(?:\s*[,\s]\s*\d{1,3}){2}(?:\s*[,/]\s*(?:0|1|0?\.\d+|\d{1,3}%))?\s*\)$/i.test(s) ? s : fallback;
+    return /^#(?:[0-9a-f]{3,4}|[0-9a-f]{6}|[0-9a-f]{8})$/i.test(s) ||
+      /^rgba?\(\s*\d{1,3}(?:\s*[,\s]\s*\d{1,3}){2}(?:\s*[,/]\s*(?:0|1|0?\.\d+|\d{1,3}%))?\s*\)$/i.test(s) ? s : fallback;
   };
   /** Échappe un texte pour HTML (& < > " '). */
   const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({
@@ -364,7 +365,7 @@ if (!window.DataIndex) {
     if (d) return d;
     document.head.insertAdjacentHTML('beforeend',
       '<style id="repoImageViewerCss">#repoImageViewer{width:min(96vw,1400px);max-height:94vh;padding:0;border:0;border-radius:calc(10px * var(--repo-round, 1));background:#111;color:#eee;overflow:hidden}#repoImageViewer::backdrop{background:rgba(0,0,0,.7)}#repoImageViewer header{display:flex;align-items:center;gap:10px;padding:6px 10px;background:#1c1c1c}#repoImageViewer header b{flex:1;font:600 13px system-ui,sans-serif;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}#repoImageViewer header button{all:unset;cursor:pointer;font:600 22px/1 system-ui,sans-serif;padding:2px 8px;color:#eee}#repoImageViewer header button:hover{color:#fff;background:#c0392b}#repoImageViewer .rv-body{overflow:auto;max-height:calc(94vh - 40px);display:grid;place-items:center}#repoImageViewer .rv-body>img{display:block;max-width:100%;max-height:calc(94vh - 40px);cursor:zoom-in}#repoImageViewer.rv-full .rv-body>img{max-width:none;max-height:none;cursor:zoom-out}#repoImageViewer.rv-doc{width:min(96vw,1100px);background:var(--repo-page, #f4f6f8);color:var(--repo-ink, #1d2633)}#repoImageViewer.rv-doc header{background:color-mix(in srgb,currentColor 8%,transparent)}#repoImageViewer.rv-doc header button{color:inherit}#repoImageViewer.rv-doc .rv-body{display:block;padding:12px 16px}#repoImageViewer.rv-doc pre{white-space:pre-wrap;font:12px ui-monospace,monospace}#repoImageViewer.rv-doc table{border-collapse:collapse}#repoImageViewer.rv-doc :is(td,th){border:1px solid color-mix(in srgb,currentColor 25%,transparent);padding:2px 6px}#repoImageViewer.rv-doc img{max-width:100%}</style>'
-      );
+    );
     d = document.createElement('dialog');
     d.id = 'repoImageViewer';
     d.innerHTML =

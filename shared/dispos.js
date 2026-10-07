@@ -420,7 +420,8 @@
         fin: x.fin || null,
         categorie: x.categorie
       })).sort((a, b) => String(a.debut ?? '').localeCompare(String(b.debut ?? '')))]).filter(([, l]) => l.length).sort(([a], [
-      b]) => a.localeCompare(b)));
+      b
+    ]) => a.localeCompare(b)));
     const doc = {
       schema: 2,
       va: window.RepositoryNav?.va?.().short || 'SOG',

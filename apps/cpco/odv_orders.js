@@ -323,7 +323,7 @@
       // convoyeur de l'affectation repris par la plaquette de convoyage (tiers, pilote de la mission, ou à affecter)
       S.doc.elements[S.doc.elements.length - 1]._ferryChoice = Object.fromEntries(list.filter(x => x.ferry && x.aircraft?.registration)
         .map(x => [x.aircraft.registration, x.ferry.open ? '__open' : !x.ferry.pilot || x.ferry.pilot === x.pilot ? '' : x.ferry.pilot])
-        );
+      );
       made.push(`${a0.callsign || mid} ${date.slice(8, 10)}/${date.slice(5, 7)} ${String(a0.takeoff).slice(11, 16)}z`);
     }
     if (!made.length) return;
@@ -2408,10 +2408,10 @@
       (S.ferryWarned ||= new Set());
       unknown.forEach(u => S.ferryWarned.add(u));
       notify(tf(L4('Convoyage non calculé (terrain sans coordonnées) : {l}', 'Ferry not computed (airfield without coordinates): {l}',
-          'Überführung nicht berechnet (Flugplatz ohne Koordinaten): {l}', 'Traslado no calculado (aeródromo sin coordenadas): {l}'
-          ), {
-          l: unknown.join(', ')
-        }), 'warn');
+        'Überführung nicht berechnet (Flugplatz ohne Koordinaten): {l}', 'Traslado no calculado (aeródromo sin coordenadas): {l}'
+      ), {
+        l: unknown.join(', ')
+      }), 'warn');
     }
     if (!changed) return;
     S.rev = (S.rev || 0) + 1;
@@ -2784,7 +2784,7 @@
       onOrdered: () => notify(t(L4('Mission commandée : elle apparaît au registre (« commandée »).',
         'Mission ordered: it appears in the registry (“ordered”).',
         'Mission bestellt: sie erscheint im Register („bestellt“).', 'Misión encargada: aparece en el registro («encargada»).'
-        )), 'info')
+      )), 'info')
     });
     dl.showModal();
   }
@@ -2919,7 +2919,7 @@
     const ds = dates();
     // éléments actifs du jour où le membre est d'équipage (nombre dans la case, détail en infobulle)
     const occ = (tri, date) => S.doc.elements.filter(e => e.date === date && e.etat !== 'annule' && O().crewOf(e, S.affect).includes(
-    tri));
+      tri));
     const row = m => `<tr><th title="${esc(m.nom)}">${esc(m.tri)}</th>${ds.map((d, i) => {
       const o = occ(m.tri, d);
       return `<td data-cell="${esc(m.tri)}|${esc(d)}" title="${esc(o.map(e => `${e.debut}z ${e.indicatif || e.libelle || t(TX.types[e.type] || TX.types.note)}`).join('\n'))}">${dispoBar(S.dispos[m.tri]?.[d] ?? (S.dispos[m.tri] ? [] : null), 0, 1440)}${o.length ? `<span class="odvo-occ">${o.length}</span>` : ''}</td>`;

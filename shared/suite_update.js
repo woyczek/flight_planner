@@ -401,7 +401,7 @@
       tools.prepend(host);
       if (!document.getElementById('repoUpdateStyle')) document.head.insertAdjacentHTML('beforeend',
         '<style id="repoUpdateStyle">.repo-update-badges{display:inline-flex;gap:6px;align-items:center}.repo-update-badge{height:28px;display:inline-flex;align-items:center;gap:4px;border-radius:7px;padding:3px 9px;font:600 12px/1 Inter,system-ui,Segoe UI,Arial,sans-serif;text-decoration:none;white-space:nowrap;background:#1d4ed8;color:#fff!important}.repo-update-badge.airac{background:#b45309}.repo-update-badge:hover{filter:brightness(1.1)}@media print{.repo-update-badges{display:none!important}}</style>'
-        );
+      );
     }
     const s = settings(),
       r = last(),
