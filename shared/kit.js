@@ -24,7 +24,7 @@ try {
 // Index des données (shared/data_index.js : registre des missions en IndexedDB, docs/technique/INDEX_DONNEES.md) : inséré de même,
 // avant les scripts de la page ; kit chargé après coup (page déjà lue) : ajouté à la fin du document.
 if (!window.DataIndex) {
-  const src = new URL('data_index.js?v=bfda095e', document.currentScript?.src || location.href).href;
+  const src = new URL('data_index.js?v=dd71f9f7', document.currentScript?.src || location.href).href;
   if (document.readyState === 'loading') document.write(`<script src="${src}"></scr` + 'ipt>');
   else document.head.append(Object.assign(document.createElement('script'), {
     src

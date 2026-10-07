@@ -19,6 +19,7 @@
         return {}
       }
     },
+    /** Mémorise la disposition des blocs de la page (localStorage, clé key()). */
     write = x => localStorage.setItem(key(), JSON.stringify(x));
 
   /** Transforme les sections de la page en blocs : en-tête avec poignée de déplacement ↕ et bouton Masquer / Afficher, glisser-déposer entre blocs frères, disposition mémorisée par page et réappliquée ; data-default-hidden="1" : bloc masqué tant que l'utilisateur ne l'a pas affiché. */
@@ -151,6 +152,7 @@
     const src = document.querySelector('script[src*="repository_tree"]')?.src;
     return src ? new URL(/\/config\/repository_tree/.test(src) ? ".." : ".", src).href : new URL(".", location.href).href;
   };
+  /** Texte d'un fichier du dossier .git servi (relu sans cache) ; null s'il est illisible. */
   const gitText = async path => {
     const res = await fetch(gitRoot() + ".git/" + path, {
       cache: "no-store"
@@ -369,6 +371,7 @@
     d.append(p, foot);
     document.body.append(d);
     return new Promise(resolve => {
+      /** Ferme et retire la fenêtre, puis résout la promesse (true : confirmé). */
       const end = v => {
         d.close();
         d.remove();
@@ -388,6 +391,8 @@
     });
   }
 
+  /** Notification flottante (kind : info | ok | warn | err), effacée seule (err 12 s, warn 8 s, autres 5 s ; timeout
+   *  pour changer, 0 : reste) ; même texte remplacé, 4 au plus ; err et warn vont au journal. Retour : l'élément. */
   function notify(message, kind = "info", {
     timeout
   } = {}) {
@@ -445,7 +450,9 @@
     ],
     cancelled: ["Annulé.", "Cancelled.", "Abgebrochen.", "Cancelado."]
   };
+  /** Libellé TK dans la langue de la page. */
   const tk = k => window.RepositoryKit.t(TK[k]);
+  /** Ajoute une fois la feuille de style des barres de tâches (#repoTaskCss). */
   const taskCss = () => {
     if (document.getElementById("repoTaskCss")) return;
     const s = document.createElement("style");
@@ -458,6 +465,8 @@
     document.head.append(s);
   };
 
+  /** Tâche longue : barre dans la pile des notifications (sauf quiet) et garde de sortie de page tant qu'elle tourne ;
+   *  total : nombre d'étapes (0 : indéterminé). Retour : { title, set, sub, end, fail }. */
   function task(title, {
     total = 0,
     quiet = false
@@ -517,6 +526,7 @@
     tasks.add(job);
     return job.set(0, total);
   }
+  /** Titres des tâches en cours entre « », pour la confirmation de sortie de page. */
   const busy = () => [...tasks].map(j => `« ${j.title} »`).join(", ");
   window.addEventListener("beforeunload", e => {
     if (!tasks.size) return;
@@ -581,8 +591,11 @@
       tip: "Alertas de la página: releer y confirmar"
     }
   };
+  /** Libellé du journal des alertes dans la langue de la page (français à défaut). */
   const al = k => (AL[window.RepositoryNav?.getLanguage?.()] || AL.fr)[k];
 
+  /** Ajoute une alerte au journal (même texte non acquitté : compteur et heure mis à jour ; 50 au plus) et repeint
+   *  le témoin. */
   function record(text, kind) {
     const old = journal.find(e => e.text === text && !e.ack);
     if (old) {
@@ -601,6 +614,7 @@
     paintAlerts();
   }
 
+  /** Ajoute une fois la feuille de style du témoin et du panneau des alertes (#repoAlertsCss). */
   function alertsCss() {
     if (document.getElementById("repoAlertsCss")) return;
     const s = document.createElement("style");
@@ -645,12 +659,14 @@
     if (alertsPanel) fillAlerts();
   }
 
+  /** Remplit le panneau : alertes de la plus récente à la plus ancienne, ACK, « Tout acquitter », « Vider ». */
   function fillAlerts() {
     const hh = d => d.toTimeString().slice(0, 8),
       esc = window.RepositoryKit.esc;
     alertsPanel.innerHTML = `<h3>${al("title")}</h3>${journal.length ? `<ul>${[...journal].reverse().map(e => `<li class="${e.kind}${e.ack ? " ack" : ""}"><time>${hh(e.t)}</time><span>${esc(e.text)}${e.count > 1 ? ` (×${e.count})` : ""}</span>${e.ack ? `<em>${al("acked")}</em>` : `<button type="button" data-ack="${e.id}">${al("ack")}</button>`}</li>`).join("")}</ul><div class="bar"><button type="button" data-ackall>${al("ackAll")}</button><button type="button" data-clear>${al("clear")}</button></div>` : `<p>${al("none")}</p>`}`;
   }
 
+  /** Ouvre le panneau des alertes sous le témoin (ACK, tout acquitter, vider) ; refermé au clic suivant ailleurs. */
   function openAlerts() {
     alertsPanel = document.createElement("div");
     alertsPanel.className = "repo-alerts-panel no-print";
@@ -680,6 +696,7 @@
     }));
   }
 
+  /** Ferme le panneau des alertes. */
   function closeAlerts() {
     alertsPanel?.remove();
     alertsPanel = null;
@@ -694,6 +711,7 @@
   // Relais des zones d'état data-status : erreur / avertissement affiché → notification (une fois par texte).
   const watched = new WeakSet();
 
+  /** Observe les zones [data-status] de root (une fois chacune) : erreur ou avertissement affiché → notification. */
   function watchStatus(root = document) {
     for (const el of root.querySelectorAll("[data-status]")) {
       if (watched.has(el)) continue;
@@ -723,6 +741,7 @@
   else watchStatus();
   window.addEventListener("load", () => watchStatus());
   window.AppFramework = {
+    /** Remonte les blocs (init, root facultatif) et relaie les nouvelles zones d'état. */
     refresh: (...a) => {
       const r = init(...a);
       watchStatus();
@@ -733,9 +752,11 @@
     ask,
     /** Journal des alertes de la page (erreurs, avertissements) : liste, tout acquitter. */
     alerts: {
+      /** Copie des alertes du journal. */
       list: () => journal.map(e => ({
         ...e
       })),
+      /** Acquitte toutes les alertes. */
       ackAll() {
         journal.forEach(e => {
           e.ack = true;

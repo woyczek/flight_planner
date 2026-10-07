@@ -8,9 +8,11 @@
   // sur une ligne, heure H commune et décalage par équipage ; « Modifier » rouvre les missions enregistrées du créneau ;
   // une mission par pilote et par tranche (convoyeurs compris). Textes : RepositoryKit.tf (4 langues).
   const C = window.OdvCore;
+  /** Élément de la page par son identifiant. */
   const $ = id => document.getElementById(id);
   const esc = window.RepositoryKit.esc; // échappement HTML commun (shared/kit.js)
   const L = window.RepositoryKit.tf; // phrase traduite, valeurs {clé} insérées (shared/kit.js)
+  /** Notification flottante (AppFramework.notify), console à défaut. */
   const notify = (msg, kind) => window.AppFramework?.notify ? window.AppFramework.notify(msg, kind) : console.warn(msg);
   const SHORT = ['M', 'A', 'S'];
 
@@ -19,6 +21,7 @@
   // réglages propres à la compagnie (créneaux, lecture du classeur, missions probables) : saisis dans Paramètres › Centre ›
   // Planning ODV, module commun apps/cpco/odv_settings.js ; ici, lus (et les filtres de la page enregistrés)
   const loadSettings = () => window.OdvSettings.load();
+  /** Enregistre les réglages, filtres de la page compris (OdvSettings, odvPlanning:v1). */
   const saveSettings = () => window.OdvSettings.save(settings);
   let settings = loadSettings();
   // réglages changés dans un autre onglet (Paramètres) : relus, données recalculées
@@ -52,6 +55,7 @@
   } catch {
     /* stockage refusé ou illisible : valeurs par défaut */
   }
+  /** Mémorise l'affichage de la grille (odvPlanningView:v1) ; stockage refusé : ignoré. */
   const saveView = () => {
     try {
       localStorage.setItem(VIEW_KEY, JSON.stringify(view));
@@ -65,12 +69,14 @@
   // Sans classeur, la grille reste affichée : pilotes de la référence, semaine en cours, ligne du classeur vide
   // (« non renseigné »), déclarations des pilotes et affectations ; légende par défaut (OdvCore.LEGEND).
   let virtual = null;
+  /** Date AAAA-MM-JJ (UTC) d'un instant en ms. */
   const isoDay = ms => new Date(ms).toISOString().slice(0, 10);
   /** Lundi (UTC, ms) de la semaine qui contient ms. */
   const mondayOf = ms => {
     const d = new Date(ms);
     return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() - (d.getUTCDay() + 6) % 7);
   };
+  /** Lundi (UTC, ms) de la semaine du classeur lu ; null sans classeur. */
   const xlMonday = () => xl ? Date.parse(`${xl.dates[0]}T00:00:00Z`) : null;
   /** Lundi affiché : choisi (◀ ▶, classeur choisi à la main), sinon la semaine en cours. */
   const shownMonday = () => weekMon ?? mondayOf(Date.now());
@@ -81,6 +87,8 @@
     return 1 + Math.round((d - mondayOf(y)) / 6048e5);
   };
 
+  /** Semaine sans classeur du lundi affiché : pilotes de la référence, 21 cases « inconnu » chacun, légende par
+   *  défaut ; gardée dans virtual tant que la semaine affichée ne change pas. */
   function emptyWeek() {
     const mon = shownMonday();
     if (virtual && virtual.dates[0] === isoDay(mon)) return virtual;
@@ -215,6 +223,7 @@
   }
   /** Données de la grille : le classeur lu, sinon la semaine sans classeur. */
   const gridData = () => data || emptyWeek();
+  /** Nombre sur deux chiffres. */
   const pad2 = n => String(n).padStart(2, '0');
   /** Créneau (jour j, créneau k) : celui du plan, sinon un créneau vide (sans classeur) pour affecter quand même. */
   const slotOf = (j, k) => slots.find(x => x.jourIndex === j && x.creneauIndex === k) || {
@@ -252,6 +261,7 @@
       n = withName ? fullName(t) : '';
     return `<span class="odv-tri" style="--c:${c ? '#' + c : '#556'};--t:${inkOn(c)}">${esc(t)}</span>${n ? `<span class="odv-name">${esc(n)}</span>` : ''}`;
   }
+  /** Date JJ/MM d'une date ISO ('' sans date). */
   const dateFr = iso => iso ? `${iso.slice(8, 10)}/${iso.slice(5, 7)}` : '';
   // jour et créneau du classeur (en français) dans la langue de la page
   const DAY_ROWS = {
@@ -266,8 +276,11 @@
     'après-midi': ['après-midi', 'afternoon', 'Nachmittag', 'tarde'],
     soir: ['soir', 'evening', 'Abend', 'noche']
   };
+  /** Jour ou créneau du classeur (en français) dans la langue de la page ; tel quel s'il est inconnu. */
   const wordL = w => DAY_ROWS[String(w || '').toLowerCase()] ? L(DAY_ROWS[String(w).toLowerCase()]) : w;
+  /** Jour ou créneau traduit, initiale en majuscule. */
   const capL = w => (s => s.charAt(0).toUpperCase() + s.slice(1))(String(wordL(w) ?? '')); // « Matin » → « Morning »
+  /** Abréviation du jour dans la langue de la page (2 lettres en allemand, 3 sinon). */
   const dayAbbr = d => String(wordL(d) ?? '').slice(0, +L(['3', '3', '2', '3'])); // Lun, Mon, Mo, Lun
   // initiale du créneau (SHORT : M / A / S) dans la langue de la page
   const shortL = k => L([
@@ -278,11 +291,13 @@
   // catégories de disponibilité (OdvCore.CATEGORIES, en français), sens des codes et sources des cases, à l'affichage ;
   // phrases produites par odv_core.js (rapport, alertes, calcul, contexte) : C.say
   const catL = c => C.categoryLabel(c);
+  /** Sens d'un code de la légende dans la langue de la page. */
   const sensL = s => C.sensLabel(s);
   const SRC_ROWS = {
     'pas de classeur': ['pas de classeur', 'no workbook', 'keine Arbeitsmappe', 'sin libro'],
     'déclaration du pilote': ['déclaration du pilote', 'pilot declaration', 'Angabe des Piloten', 'declaración del piloto']
   };
+  /** Source d'une case (pas de classeur, déclaration du pilote) dans la langue de la page. */
   const srcL = s => SRC_ROWS[s] ? L(SRC_ROWS[s]) : s;
   /** « 3 grilles remplies » (pluriel à partir de 2, comme le texte français d'origine). */
   const gridsL = n => L(n > 1 ? ['{n} grilles remplies', '{n} grids filled', '{n} Raster ausgefüllt', '{n} cuadrículas rellenadas'] : [
@@ -290,6 +305,7 @@
   ], {
     n
   });
+  /** Titre d'un créneau : « Lundi 22/09 — matin (06-12z) ». */
   const slotTitle = s => `${wordL(s.jour)} ${dateFr(s.date)} — ${wordL(s.creneau)} (${s.heures})`;
   /** Case de la grille : code en couleur de la légende, commentaire au survol. */
   function codeCell(r) {
@@ -324,6 +340,7 @@
     a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 2000);
   }
+  /** Nom du classeur sans .xlsx (« ODV » sans classeur) : base des noms de fichiers exportés. */
   const baseName = () => (fileName || 'ODV').replace(/\.xlsx$/i, '');
   /** Tableau triable (créé une fois, puis lignes remplacées). */
   function table(id, opts, rows) {
@@ -334,6 +351,7 @@
     else tables[id].setRows(rows);
   }
 
+  /** Remplace le contenu d'un conteneur de tableau et oublie son SortedTable (recréé au prochain table()). */
   function resetTable(id, html) {
     delete tables[id];
     $(id).innerHTML = html;
@@ -451,6 +469,8 @@
   // CR par famille (registre des CR de ce navigateur, sinon data/cr/missions.yaml servi) : pondération des missions
   // probables (une famille souvent jouée recule un peu : odv_core.js, playWeight)
   let plays = null;
+  /** Compte les CR par famille dans plays : ReportIndex, sinon copie « missionCoreLedger:v2 », sinon
+   *  data/cr/missions.yaml servi (js-yaml chargé à la demande). */
   async function loadPlays() {
     // copie indexée du registre des CR (shared/data_index.js) : comptage sans analyse YAML
     const idx = await window.ReportIndex?.load?.();
@@ -564,6 +584,7 @@
     }), 'warn');
   }
 
+  /** « Effacer les données » : classeur et calculs oubliés, retour à la semaine en cours sans classeur. */
   function clearAll() {
     book = null;
     xl = null;
@@ -609,7 +630,9 @@
     week: '',
     list: []
   };
+  /** Identifiant de la semaine affichée pour les sessions ATC (SuiteAtc.weekId) ; '' sans module. */
   const atcWeek = () => window.SuiteAtc?.weekId(shownMonday()) || '';
+  /** Lit les sessions ATC de la semaine affichée (fresh : sans cache), puis lance l'import IVAO automatique. */
   async function loadAtc(fresh = false) {
     const S = window.SuiteAtc,
       w = atcWeek();
@@ -648,6 +671,8 @@
       evenements: [...d.evenements, ...p.evenements]
     };
   }
+  /** Enregistre les sessions ATC de la semaine affichée (SuiteAtc.save) ; text : message de réussite, notifié si elles
+   *  sont écrites dans le dossier ; recalcule et redessine la page. */
   async function saveAtc(list, text) {
     const w = atcWeek();
     let r;
@@ -666,6 +691,8 @@
     render();
   }
 
+  /** Bloc des sessions ATC de la semaine : trainings, examens et événements, réservations repliées, ajout et retrait
+   *  à la main, import VATSIM / IVAO. */
   function renderAtc() {
     const host = $('odvAtc'),
       S = window.SuiteAtc;
@@ -684,6 +711,7 @@
       key = indexed.filter(([x]) => x.type !== 'reservation'),
       resa = indexed.filter(([x]) => x.type === 'reservation');
     const head = `<thead><tr><th>${L(['Jour', 'Day', 'Tag', 'Día'])}</th><th>${L(['Heures (UTC)', 'Hours (UTC)', 'Uhrzeit (UTC)', 'Horas (UTC)'])}</th><th>${L(['Position', 'Position', 'Position', 'Posición'])}</th><th>${L(['Réseau', 'Network', 'Netzwerk', 'Red'])}</th><th>${L(['Type', 'Type', 'Art', 'Tipo'])}</th><th>${L(['Commentaire', 'Comment', 'Kommentar', 'Comentario'])}</th><th>${L(['Source', 'Source', 'Quelle', 'Fuente'])}</th><th></th></tr></thead>`;
+    /** Tableau des sessions données ([session, rang dans list]). */
     const table = l => `<table class="odv-week odv-atc">${head}<tbody>${l.map(([x, i]) => row(x, i)).join('')}</tbody></table>`;
     host.innerHTML = `${key.length ? table(key) : `<p class="mut odv-d-note">${list.length ? L(['Aucun training, examen ou événement ATC cette semaine.', 'No ATC training, exam or event this week.', 'Diese Woche kein ATC-Training, keine Prüfung, keine Veranstaltung.', 'Ningún entrenamiento, examen ni evento ATC esta semana.']) : L(['Aucune session ATC enregistrée pour cette semaine.', 'No ATC session recorded for this week.', 'Für diese Woche keine ATC-Sitzung erfasst.', 'Ninguna sesión ATC registrada para esta semana.'])}</p>`}
       ${resa.length ? `<details class="odv-atc-resa"><summary class="mut">${L(['{n} réservation(s) de position (contexte ★ des créneaux)', '{n} position booking(s) (★ slot context)', '{n} Positionsbuchung(en) (★ Kontext der Zeitfenster)', '{n} reserva(s) de posición (contexto ★ de las franjas)'], { n: resa.length })}</summary>${table(resa)}</details>` : ''}
@@ -767,9 +795,12 @@
   // même éditeur et même fichier que le Tableau (shared/odv_activations_editor.js, OdvAirspace :
   // data/atc/activations/<semaine>.json) ; retouche réservée comme au Tableau (Centre activé, hors production : admin)
   let activations = null;
+  /** Retouche des activations permise : Centre activé et, en mode production, admin connecté. */
   const canEditActivations = () => !!window.RepositoryNav?.cpco?.enabled?.() && (window.SuiteUsers?.mode?.() !== 'production' || !!window
     .SuiteUsers?.isAdmin?.());
 
+  /** Bloc des activations des zones (OdvActivationsEditor, monté une fois puis mis à la semaine affichée) ; un import
+   *  de sessions depuis l'éditeur recalcule la page. */
   function renderActivations() {
     const host = $('odvActivations'),
       w = atcWeek();
@@ -795,6 +826,8 @@
     });
   }
 
+  /** Bloc « Classeur ODV » : fichier, semaine et source des dates, permanence, thème, pilotes, FLOTTE, frise et rapport
+   *  de lecture ; vide sans classeur. */
   function renderReport() {
     const host = $('odvReport');
     if (!data) {
@@ -835,6 +868,8 @@
 
   // --- grille
 
+  /** Filtres de la grille (grilles vides, couleur, rôle, simulateur) d'après les données du calcul ; filtre devenu sans
+   *  objet levé ; choix mémorisés (odvPlanningView:v1). */
   function renderGridFilters() {
     const host = $('odvGridFilters'),
       data = basis;
@@ -849,6 +884,7 @@
     if (view.color && !colors.includes(view.color)) view.color = '';
     if (view.role && !roles.includes(view.role)) view.role = '';
     if (view.sim && !sims.includes(view.sim)) view.sim = '';
+    /** Option d'une liste, sélectionnée si v est la valeur courante. */
     const opt = (v, l, cur) => `<option value="${esc(v)}"${v === cur ? ' selected' : ''}>${esc(l)}</option>`;
     host.innerHTML = `<label><input type="checkbox" id="odvHideEmpty"${view.hideEmpty ? ' checked' : ''}> ${L(['Masquer les grilles vides', 'Hide empty grids', 'Leere Raster ausblenden', 'Ocultar las cuadrículas vacías'])}</label>
       ${colors.length ? `<label>${L(['Couleur du trigramme', 'Trigram colour', 'Farbe des Kürzels', 'Color del trigrama'])} <select id="odvColor">${opt('', L(['toutes', 'all', 'alle', 'todas']), view.color)}${colors.map(c => opt(c, `#${c} (${data.pilotes.filter(p => p.couleur === c).length})`, view.color)).join('')}</select></label>` : ''}
@@ -933,11 +969,13 @@
   // jour affiché dans le planning heure par heure (indice 0-6 de la semaine ; mémoire)
   let planDay = null;
   const PLAN_COLORS = ['#3b6fd8', '#d8763b', '#2f9e6e', '#a64fc4', '#c43f5a', '#2a9bb5', '#b59a2a', '#6a7a8c'];
+  /** Couleur stable d'une mission dans le planning (empreinte de son identifiant). */
   const planColor = id => PLAN_COLORS[[...String(id)].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 7) % PLAN_COLORS.length];
   /** Planning heure par heure d'un jour de la semaine (onglets : jours ayant des missions). */
   function planningHtml(week, dates) {
     const M = window.MissionAssignments;
     if (!week.length || !M?.busyRange) return '';
+    /** Jour (0-6) du début d'occupation d'une affectation ; -1 hors de la semaine. */
     const dayOf = a => dates.indexOf(new Date(M.busyRange(a)[0]).toISOString().slice(0, 10));
     const days = [...new Set(week.map(dayOf).filter(j => j >= 0))].sort((a, b) => a - b);
     if (!days.length) return '';
@@ -983,6 +1021,8 @@
       <div class="odv-plan"><div class="odv-plan-row odv-plan-head"><span></span><div class="odv-plan-track">${hours.map(h => `<span style="left:${x(d0 + h * 36e5)}%">${String(h).padStart(2, '0')}z</span>`).join('')}</div></div>${rows}</div>`;
   }
 
+  /** Grille dense de la semaine : légende, une ligne par pilote filtré (code du classeur, puis déclaration et
+   *  affectation par créneau), missions affectées de la semaine, planning heure par heure, journal des affectations. */
   function renderGrid() {
     renderGridFilters();
     const data = gridData(); // classeur lu, sinon semaine sans classeur (ligne du classeur vide)
@@ -1078,6 +1118,8 @@
     };
   }
 
+  /** Carte de chaleur des 21 créneaux (pilotes libres, contrôleurs, affectations ✎, événements ★) ; clic : fenêtre
+   *  d'affectation du créneau (pickMission). */
   function renderSlots() {
     renderSlotFilters();
     const data = basis;
@@ -1112,10 +1154,12 @@
   // (points du registre, tronçons échantillonnés) confrontée aux sessions ATC du créneau : CTR du terrain en examen ou
   // en training → écartée, TMA contenant le terrain → signalée. Ouverture dans le registre (?mission=…).
   const centreOn = () => !!window.RepositoryNav?.cpco?.enabled?.();
+  /** Texte sans accents, en majuscules (comparaison des familles). */
   const fold = s => String(s ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase();
   /** Opération d'une mission : tirée de l'identifiant (I-001A → I-001 : missions d'équipage d'une opération), sinon
    *  celle du registre (registres anciens ou incomplets : l'identifiant fait foi) ; '' sinon. */
   const opOf = m => (/^([A-Z]+-\d+)[A-Y]$/i.exec(String(m?.id || '')) || [])[1] || m?.operation?.id || '';
+  /** Missions du registre du navigateur (MissionIndex, sinon « missionRegistry:v1 ») ; [] si illisible. */
   const regMissions = () => {
     try {
       // registre des missions : copie en mémoire de l'index (shared/data_index.js)
@@ -1213,6 +1257,7 @@
     }
     return out;
   }
+  /** Durée en minutes → « 1 h 05 » ; « — » si absente ou nulle. */
   const hmOf = min => Number.isFinite(+min) && +min > 0 ? `${Math.floor(min / 60)} h ${String(Math.round(min % 60)).padStart(2, '0')}` : '—';
   /** Fenêtre de choix : missions du registre pour le créneau s (famille fam, sinon familles probables du créneau). */
   async function pickMission(s, fam = '', {
@@ -1267,6 +1312,7 @@
       ctx = null, // { free, decls, d: Map(id → { m, on, rows: [{ post, pilot, registration, callsign, ferryPilot }] }) }
       initial = '',
       dlg = null;
+    /** Empreinte des choix de la matrice (missions cochées, décollages, postes) : modifications en attente. */
     const snap = () => JSON.stringify([...ctx.d.values()].map(x => [x.m.id, x.on, x.takeoffSet ?? null, x.rows.map(r => [r.pilot, r
       .registration, r.callsign, r.ferryPilot || '', !!r.ferrySelf, !!r.ferryOpen
     ])]));
@@ -1321,6 +1367,7 @@
               takeoff: a,
               land: b
             };
+            /** Type de l'appareil du poste possédé par le pilote (ownsType : true, false ou inconnu). */
             const owns = tr => M.ownsType(ctx.declsAll[tr], pl.type);
             // convoyeur : libre sur tout le convoyage et sans autre mission dans les créneaux qu'il touche (une mission
             // par pilote et par tranche, même si ses disponibilités déclarées sont plus larges)
@@ -1369,8 +1416,8 @@
         }
       }
     }
+    /** Choix modifiés depuis l'état de référence de la fenêtre (initial, pris à chaque build). */
     const dirty = () => !!ctx && snap() !== initial;
-    /** Proposition : missions des options (proposition d'abord), postes préremplis (pilote proposé, premier appareil libre). */
     /** L'appareil basé à base est-il au départ (même terrain, ou base à moins de 3 NM d'un départ donné par sa position) ? */
     const atDeparture = async (base, dep) => !!base && ((!!dep.code && base === dep.code) || (!!dep.pos && (q => !!q && M.geo.nm(q, dep
       .pos) < 3)(await M.coordsOf(base))));
@@ -1524,8 +1571,11 @@
       await timeAll();
       initial = snap();
     }
+    /** Appareil de la flotte (DEFA_FLEET) d'immatriculation donnée. */
     const planeOf = reg => (window.DEFA_FLEET || []).find(f => f.registration === reg);
 
+    /** Redessine la fenêtre du créneau : bande des trois créneaux du jour, matrice missions × postes, convoyages à
+     *  affecter, affectations en attente et enregistrées ; défilement et champ en cours de saisie gardés. */
     function render() {
       const {
         free,
@@ -1548,12 +1598,15 @@
         m: x.m,
         r
       })));
+      /** Affectation en attente d'un pilote (mission cochée, appareil choisi), sinon undefined. */
       const pendOf = tr => pend.find(p => p.r.pilot === tr);
+      /** Conflits d'un poste : pilote ou appareil en double, appareil déjà engagé sur le créneau. */
       const errs = r => [useP[r.pilot] > 1 && L(['pilote en double', 'pilot twice', 'Pilot doppelt', 'piloto duplicado']), useA[r
         .registration] > 1 && L(['appareil en double', 'aircraft twice', 'Luftfahrzeug doppelt', 'aeronave duplicada']), busy.has(r
         .registration) && L(['appareil déjà engagé sur le créneau', 'aircraft already engaged in the slot',
         'Luftfahrzeug im Zeitfenster bereits eingesetzt', 'aeronave ya asignada en la franja'
       ])].filter(Boolean);
+      /** Types d'appareils déclarés par un pilote (maîtrisés en gras). */
       const types = tr => {
         const ac = decls[tr]?.aircraft;
         if (!ac) return `<small>${L(['appareils non déclarés', 'aircraft not declared', 'Luftfahrzeuge nicht angegeben', 'aeronaves no declaradas'])}</small>`;
@@ -1594,6 +1647,8 @@
           opts = `${r.ferryCands.map(c => `<option value="${esc(c.tri)}"${c.tri === r.ferryBy ? ' selected' : ''}>${esc(c.tri)}${c.q.level === 'mastered' ? `${L([' (maîtrisé)', ' (mastered)', ' (beherrscht)', ' (dominado)'])}` : ''}</option>`).join('')}<option value="__self"${self ? ' selected' : ''}>${L(['{p} lui-même', '{p} himself', '{p} selbst', '{p} mismo'], { p: esc(r.pilot || L(['le pilote', 'the pilot', 'der Pilot', 'el piloto'])) })}</option><option value="__open"${r.ferryOpen ? ' selected' : ''}>${L(['à affecter (mission de convoyage)', 'to assign (ferry mission)', 'zuzuweisen (Überführungsmission)', 'por asignar (misión de traslado)'])}</option>`;
         return `<div class="ad-help">${L(['Convoyage', 'Ferry', 'Überführung', 'Traslado'])} <b>${esc(f.from)} → ${esc(f.to)}</b> <b>${hm(f.takeoff)} → ${hm(f.land)}</b> (≈ ${hmOf(f.minutes)})${r.ferryCands.length ? '' : L([' — aucun pilote libre à cette heure', ' — no pilot free at that time', ' — kein Pilot zu dieser Zeit frei', ' — ningún piloto libre a esa hora'])} · ${L(['par', 'by', 'durch', 'por'])} <select data-f="ferry">${opts}</select></div>`;
       };
+      /** Contrôles d'un poste en pastilles : pilote libre sur toute la plage, convoyage, qualification, conflits,
+       *  affectation prête. */
       const checks = (x, r) => {
         const c = [];
         if (r.pilot && r.spanOk === false) c.push(chip(L(['{p} non déclaré libre sur toute la plage {a} → {b}',
@@ -1994,6 +2049,7 @@
     const s = r.slot,
       O = window.OdvAssign,
       assigned = [...new Set((O?.inSlot(s.jourIndex, s.creneauIndex) || []).filter(a => a.role !== 'convoyage').map(a => `${a.mission}${a.title ? ` ${a.title}` : ''}`))];
+    /** Ligne du résumé, omise si v est vide. */
     const row = (k, v) => v ? `<dt>${k}</dt><dd>${v}</dd>` : '';
     return `<dl class="odv-mp-sum">${[
       row(L(['Créneau', 'Slot', 'Zeitfenster', 'Franja']), `${esc(wordL(s.jour))} ${esc(dateFr(s.date))}, ${esc(wordL(s.creneau))} (${esc(s.heures)}) — ${esc(L(['{n} pilote(s) libre(s)', '{n} free pilot(s)', '{n} freie(r) Pilot(en)', '{n} piloto(s) libre(s)'], { n: s.n }))}`),
@@ -2007,6 +2063,8 @@
     ].join('')}</dl>`;
   }
 
+  /** Bloc des missions probables : règles des familles et du score, tableau des familles proposées par créneau
+   *  (créneaux d'au moins minPilots pilotes avant affectations), résumé déplié sous chaque ligne. */
   function renderMissions() {
     const rules = $('odvRules');
     rules.innerHTML = `<summary>${L(['Règles des familles et du score', 'Family and score rules', 'Regeln der Familien und der Punktzahl', 'Reglas de las familias y de la puntuación'])}</summary><ul>${Object.entries(C.FAMILIES).map(([f, d]) => `<li><span class="odv-fam">${esc(f)}</span> ${esc(C.familyRule(f) ?? d.rule)}</li>`).join('')}</ul>
@@ -2240,6 +2298,7 @@
     download(`${baseName()}_planning.json`, JSON.stringify(out, null, 1), 'application/json');
   }
 
+  /** Branche les exports : CSV de la grille, JSON, récapitulatif texte (affiché, téléchargé ou copié). */
   function bindExports() {
     $('odvCsv').onclick = () => data && download(`${baseName()}_grille.csv`, C.toCsv(data), 'text/csv;charset=utf-8');
     $('odvJson').onclick = () => data && exportJson();
@@ -2335,15 +2394,19 @@
   // accès pour les tests (données en mémoire uniquement)
   window.OdvPlanning = {
     loadFile,
+    /** Données affichées : le classeur lu si la semaine affichée est la sienne, sinon null. */
     get data() {
       return data;
     },
+    /** Créneaux calculés (créneaux communs et missions probables). */
     get slots() {
       return slots;
     },
+    /** Vols de la frise et leurs contrôles. */
     get flights() {
       return flights;
     },
+    /** Réglages courants. */
     settings: () => settings
   };
 })();

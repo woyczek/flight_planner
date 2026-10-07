@@ -18,6 +18,7 @@
   //   themePrefs(TRI), setThemePrefs(TRI, prefs), ROLES.
   if (window.SuiteUsers) return;
   const K = window.RepositoryKit;
+  /** Traduction d'une ligne [fr, en, de, es] par le kit (première colonne sans kit) ; tf : avec ses variables {x}. */
   const t = row => K?.t ? K.t(row) : row[0],
     tf = (row, v) => K?.tf ? K.tf(row, v) : row[0];
   const SESSION = 'suiteSession:v1',
@@ -29,11 +30,15 @@
   const ROLES = ['admin_centre', 'utilisateur'];
   /** Socle des fichiers du pool (shared/assignments.js, chargé avec ce script). */
   const A = () => window.MissionAssignments;
+  /** Horodatage ISO des écritures (updated_at, at). */
   const now = () => new Date().toISOString();
+  /** Trigramme normalisé (sans espaces, en majuscules). */
   const norm = tri => String(tri || '').trim().toUpperCase();
 
   // ---- configuration partagée (mode develop / production), lue une fois puis à chaque écriture d'un onglet
   let cfg = K?.store?.json('suiteConfigCache:v1', null) || null; // dernière valeur lue : mode connu dès le chargement
+  /** Lit data/config/suite.json (develop par défaut si absent), le garde en cache « suiteConfigCache:v1 » et émet
+   *  « suite-mode-change » si le mode a changé. fresh : relecture sans cache. */
   async function loadConfig(fresh = false) {
     const v = await A()?.readData?.(CONFIG, {
       fresh
@@ -52,10 +57,12 @@
     }));
     return cfg;
   }
+  /** Mode de la suite : « production » seulement s'il est écrit tel quel dans la configuration, sinon « develop ». */
   const mode = () => cfg?.mode === 'production' ? 'production' : 'develop';
 
   // ---- session de ce navigateur
   const session = () => K?.store?.json(SESSION, null) || null;
+  /** Écrit la session « suiteSession:v1 » (null : l'efface), émet « suite-session-change » et met à jour le bandeau. */
   const setSession = s => {
     if (s) K.store.setJson(SESSION, s);
     else K.store.remove(SESSION);
@@ -76,12 +83,16 @@
     const s = session();
     return s?.as ? `${s.tri} pour ${s.as}` : effective();
   };
+  /** Session d'un admin_centre (connecté, ou qui usurpe un utilisateur). */
   const isAdmin = () => session()?.role === 'admin_centre';
+  /** Trigramme non modifiable dans les pages : mode production, ou usurpation en cours. */
   const trigramLocked = () => mode() === 'production' || !!session()?.as;
 
   // ---- empreinte du mot de passe (PBKDF2-SHA256, sel aléatoire de 16 octets)
   const b64 = buf => btoa(String.fromCharCode(...new Uint8Array(buf)));
+  /** Base64 → octets (sel et empreinte lus dans les fiches). */
   const unb64 = s => Uint8Array.from(atob(s), c => c.charCodeAt(0));
+  /** Dérive 256 bits PBKDF2-SHA256 du mot de passe (sel en octets, nombre d'itérations). */
   async function derive(password, salt, iterations) {
     const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(String(password)), 'PBKDF2', false, ['deriveBits']);
     return crypto.subtle.deriveBits({
@@ -91,6 +102,7 @@
       iterations
     }, key, 256);
   }
+  /** Empreinte à ranger dans la fiche (mot_de_passe) : { algo, iterations, sel, empreinte }, sel neuf de 16 octets. */
   async function hashPassword(password) {
     const salt = crypto.getRandomValues(new Uint8Array(16));
     return {
@@ -229,6 +241,7 @@
     const u = await get(tri, {
       fresh: true
     });
+    /** Échec de connexion : lève l'erreur traduite. */
     const fail = row => {
       throw new Error(t(row));
     };
@@ -266,6 +279,7 @@
       mustChange: !!u.a_changer || !u.mot_de_passe
     };
   }
+  /** Déconnexion : session effacée (usurpation comprise). */
   const logout = () => setSession(null);
   /** Change le mot de passe de l'utilisateur connecté (l'ancien est exigé s'il en a un). */
   async function changePassword(oldPassword, newPassword) {
@@ -389,7 +403,9 @@
     if (!idx[norm(tri)]) return null;
     return A()?.readIndexed ? A().readIndexed(`${DIR}/${norm(tri)}.json`, idx[norm(tri)].updated_at, opts) : get(tri, opts);
   }
+  /** Préférences de thèmes d'un utilisateur (preferences.themes de sa fiche) ; null si aucune. */
   const themePrefs = async tri => (await getIndexed(tri))?.preferences?.themes || null;
+  /** Enregistre les préférences de thèmes dans la fiche (fiche « utilisateur » créée si absente). */
   async function setThemePrefs(tri, themes) {
     tri = norm(tri);
     const u = (await get(tri, {
@@ -449,6 +465,8 @@
     return '';
   }
 
+  /** Mode production sur une page protégée sans session suffisante : boîte de connexion par-dessus la page
+   *  (rôle admin_centre exigé pour le Centre), page rechargée après connexion. */
   function gate() {
     document.getElementById('suiteLogin')?.remove();
     const need = gateOf(),
@@ -505,6 +523,7 @@
   window.SuiteUsers = {
     ROLES,
     mode,
+    /** Configuration partagée lue en dernier, avec le mode effectif. */
     config: () => ({
       ...(cfg || {}),
       mode: mode()

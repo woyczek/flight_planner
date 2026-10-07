@@ -4,9 +4,9 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>CPCO — Générateur de mission</title>
 <link rel="stylesheet" href="../../shared/repository_nav.css?v=f6a61e75">
-<script src="../../config/repository_tree?v=2a75a8a5"></script><script src="../../shared/kit.js?v=d084129f"></script>
+<script src="../../config/repository_tree?v=2a75a8a5"></script><script src="../../shared/kit.js?v=2e1b2340"></script>
 <script src="../../shared/mission_core/vendor/js-yaml.min.js"></script>
-<script src="mission_prompt.js?v=8774038d"></script><script src="../../shared/data_files.js?v=dcb47c6a" data-file="references/aircraft_fleet.js"></script><script src="../../shared/mission_order.js?v=f0b5d1a2"></script><script src="../../AircraftDB/aircraft_db.js"></script><script src="../../AircraftDB/aircraft_perf.js"></script><script src="../../shared/mission_core/model.js?v=dc3aef83"></script><script src="../../shared/mission_estimate.js?v=44ce871f"></script><script src="../../shared/sia_base.js?v=fb5d9f9f"></script><script src="../../shared/mission_routing.js?v=3cc1352c"></script><script src="../../shared/mission_airspaces.js?v=2347985e"></script><script src="../../shared/mission_exercise.js?v=32a1ef21"></script><script src="../../shared/mission_registry.js?v=96cd68c2"></script>
+<script src="mission_prompt.js?v=8774038d"></script><script src="../../shared/data_files.js?v=dcb47c6a" data-file="references/aircraft_fleet.js"></script><script src="../../shared/mission_order.js?v=f0b5d1a2"></script><script src="../../AircraftDB/aircraft_db.js"></script><script src="../../AircraftDB/aircraft_perf.js"></script><script src="../../shared/mission_core/model.js?v=dc3aef83"></script><script src="../../shared/mission_estimate.js?v=44ce871f"></script><script src="../../shared/sia_base.js?v=fb5d9f9f"></script><script src="../../shared/mission_routing.js?v=3cc1352c"></script><script src="../../shared/mission_airspaces.js?v=2347985e"></script><script src="../../shared/mission_exercise.js?v=32a1ef21"></script><script src="../../shared/mission_registry.js?v=ad013858"></script>
 <script src="mission_store.js?v=4b918511"></script>
 <script src="../../shared/aar_tracks.js?v=32606456"></script>
 <script src="../../shared/mission_core/vocab.js?v=b1e809ba"></script>
@@ -520,10 +520,14 @@ html[data-skeuo] .repo-block .mapCard.missing:not(#imp) {
 </main>
 
 <script>
+/** Raccourcis communs : élément par id, copie profonde (JSON), clé normalisée, échappement HTML. */
 const $ = id => document.getElementById(id),
+  /** Copie profonde d'une valeur sérialisable en JSON (YAML de mission). */
   deepClone = v => JSON.parse(JSON.stringify(v)),
+  /** Clé normalisée : sans accents, minuscules, suites de caractères non alphanumériques → « _ ». */
   norm = s => String(s ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g,
     ''),
+  /** Texte échappé pour l'insertion dans du HTML (& < > " '). */
   esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({
     '&': '&amp;',
     '<': '&lt;',
@@ -638,6 +642,7 @@ async function autoNarrative(y) {
     notes = [].concat(y.notes || []).filter(Boolean),
     kind = [m.type, m.subtype].filter(Boolean).join(' — ');
   const all = [y.target, ...pts, ...rdv].filter(p => p && Number.isFinite(+p.lat)),
+    /** Vrai si deux points sont à 2 km au plus (distance plane approchée) : rapprochement avec les axes AAR. */
     near = (a, b) => Math.hypot((a.lat - b.lat) * 111.2, (a.lon - b.lon) * 111.2 * Math.cos(a.lat * Math.PI / 180)) <= 2;
   const aar = (await aarTracksData()).find(t => t.points.some(tp => all.some(p => near({
     lat: +p.lat,
@@ -651,6 +656,7 @@ async function autoNarrative(y) {
     aarText = `Axe de ravitaillement ${aar.name} (MILAIP ENR 5.7) : entrée ${aar.ip.name} (${coord(aar.ip)}), fin d’axe ${aar.cp.name} (${coord(aar.cp)}), route ${String(Math.round(r.heading)).padStart(3,'0')}°, branches de ${r.lengthNm} NM, ${r.widthNm} NM de large, ${aar.side?`virages par la ${aar.side==='L'?'gauche':'droite'}`:'côté du circuit non publié'}${aar.remark?` — ${aar.remark}`:''}.`
   }
   const who = [...new Set(rdv.flatMap(r => [].concat(r.participants || [])).map(String))].filter(Boolean),
+    /** Ligne de liste d'un rendez-vous : identifiant et nom, coordonnées, participants, rôle ou description. */
     rdvLine = r => `- ${[r.id,r.name].filter(Boolean).join(' ')} (${coord(r)})${[].concat(r.participants||[]).length?` — ${[].concat(r.participants).join(', ')}`:''}${r.role||r.description?` : ${r.role||r.description}`:''}`;
   const summary = [`${kind||'Mission'}${y.target?.name?` — ${y.target.name}`:''}.`, aar ? `Circuit de ravitaillement ${aar.name}.` : '', zone.name ? `Zone : ${zone.name}${zone.radius_km?` (rayon ${zone.radius_km} km)`:''}.` : '', who.length ? `Participants : ${who.join(', ')}.` : ''].filter(Boolean).join(' ');
   const detailed = [aarText, pts.length ? 'Points tournants :\n' + pts.map(p => `- ${[p.id,p.name].filter(Boolean).join(' ')} (${coord(p)})${p.role||p.description?` : ${p.role||p.description}`:''}`).join('\n') : '', rdv.length ?
@@ -941,6 +947,7 @@ function renderMaps() {
    dans le dossier des missions s'il est autorisé — data/missions/<lettre>_<FAMILLE>/<identifiant>/mission<ID>.yaml
    (YAML, source de vérité) et summary<ID>.md (Markdown reçu). Sans autorisation : bouton « Ranger dans le dossier ». */
 let lastInputs = null;
+/** inputs = [{ name, text }] reçus ; request : demander l'accès au dossier des missions si besoin. */
 async function registerDocs(inputs, request = false) {
   lastInputs = inputs;
   const C = window.MissionRegistryCore;
@@ -952,6 +959,7 @@ async function registerDocs(inputs, request = false) {
     docs = SiaMission.fromTextsBatch(inputs).docs,
     out = [];
   let missing = false;
+  /** Identifiant de mission lu dans le titre « # Mission … » d'un Markdown ; cur : celui de la mission affichée. */
   const mdId = f => SiaMission.parseId(/^#\s+Mission\s+([A-Z]?-?\d+[A-Z]?)/im.exec(f.text)?.[1] || '').id,
     cur = SiaMission.parseId(state.yaml?.mission?.id || '').id;
   for (const d of docs) {
@@ -1154,6 +1162,7 @@ function renderOperation() {
   const docs = opDocs(),
     zId = String(op.organisation || X.organisationId(op.id)).toUpperCase(),
     ids = [...new Set([...(op.missions || []).map(v => String(v).toUpperCase()), zId])],
+    /** Mission du lot portant cet identifiant (capitales), sinon undefined. */
     have = id => docs.find(d => String(d.mission?.id || '').toUpperCase() === id),
     cur = String(y.mission?.id || '').toUpperCase(),
     ex = X.of(y, docs);
@@ -1182,7 +1191,9 @@ function renderOperation() {
 /** Brief général proposé d'après les missions de l'opération : situation commune (premier paragraphe de chaque résumé),
  *  rôle de chaque équipage ; à reprendre par l'organisation. */
 function briefOfCrews(op, crews) {
+  /** Premier paragraphe d'un texte, ramené sur une ligne. */
   const first = v => String(v || '').split(/\n\s*\n/)[0].replace(/\s*\n\s*/g, ' ').trim(),
+    /** Mission courante prise avec son récit en cours d'édition (résumé, description détaillée). */
     docOf = d => d === state.yaml ? {
       ...d,
       summary: state.narrative.summary || d.summary,
@@ -1292,6 +1303,7 @@ function createChiffonMissions() {
   .toUpperCase())]),
     stem = String(op.id || z.mission?.id || '').replace(/Z$/i, '');
   let letter = 'A'.charCodeAt(0);
+  /** Prochain identifiant libre de l'opération : radical + lettre suivante (Z réservé à l'organisation). */
   const nextId = () => {
     while (taken.has(`${stem}${String.fromCharCode(letter)}`) || String.fromCharCode(letter) === 'Z') letter++;
     const id = `${stem}${String.fromCharCode(letter)}`;
@@ -1379,6 +1391,7 @@ function createChiffonMissions() {
     missions = [...new Set([...(op.missions || []).map(v => String(v).toUpperCase()), ...ids])];
   for (const y of made) y.operation.missions = missions;
   const b = SiaMission.loadBatch(),
+    /** Entrée du lot de la mission y (récit, sources), sinon entrée vide pour une mission créée ici. */
     docOf = y => b?.docs.find(d => String(d.yaml?.mission?.id || '').toUpperCase() === String(y.mission?.id || '').toUpperCase()) || {
       narrative: {
         summary: '',
@@ -1474,6 +1487,8 @@ function syncDocButtons() {
    MissionModel.computeStatistics). Liste lue une fois (puis à chaque CR enregistré ailleurs), pas à chaque modification
    du YAML. */
 let crReports = null;
+/** Liste des CR : index ReportIndex, sinon ancienne copie texte du navigateur (missionCoreLedger:v2) ;
+ *  l'estimation est redessinée ensuite. */
 async function loadCrReports() {
   const i = await window.ReportIndex?.load?.();
   if (i) crReports = i.missions;
@@ -1488,6 +1503,8 @@ if (typeof BroadcastChannel === 'function') new BroadcastChannel('defa-data').ad
   if (e.data?.path === 'data/cr/missions.yaml') loadCrReports()
 });
 
+/** CR de la mission id, du plus récent au plus ancien : date et durées (vol, bloc, transits, sur zone) ;
+ *  le premier appel lance la lecture de la liste et renvoie une liste vide en attendant. */
 function missionReports(id) {
   const mid = window.MissionVocab?.missionIdOf?.(id);
   if (!mid) return [];
@@ -1597,6 +1614,7 @@ function download(blob, name) {
 function safeStem() {
   const y = state.yaml || {},
     m = y.mission || {},
+    /** Texte sans accents, caractères spéciaux remplacés par « _ » (bords rognés). */
     slug = v => String(v ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/gi, '_').replace(/^_+|_+$/g, ''),
     id = m.id ?? m.number,
     num = id != null && id !== '' ? 'M' + String(id).padStart(2, '0') : '',
@@ -1716,6 +1734,8 @@ function addMarkdownTable(doc, headers, rows, y) {
     widths = Array(count).fill(total / count),
     pad = 1.6,
     lineH = 4.2;
+  /** Ligne du tableau : texte replié par colonne, hauteur ajustée, page suivante si elle déborde ;
+   *  en-tête sur fond gris et en gras. */
   const drawRow = (cells, header = false) => {
     const wrapped = Array.from({
         length: count
@@ -1751,6 +1771,7 @@ function addMarkdownTable(doc, headers, rows, y) {
 function addMarkdownContent(doc, text, y) {
   const lines = String(text || '').split(/\r?\n/);
   let paragraph = [];
+  /** Écrit le paragraphe en attente, puis le vide. */
   const flush = () => {
     if (!paragraph.length) return;
     y = addWrapped(doc, paragraph.join('\n'), 20, y, 170, 5.2) + 2;
@@ -1929,6 +1950,7 @@ function addCrewPlis(doc) {
   if (!c) return;
   const X = window.MissionExercise,
     id = String(state.yaml.mission?.id || '');
+  /** Page A4 paysage : titre head puis image de la carte, la plus grande possible et centrée. */
   const mapPage = (img, head) => {
     doc.addPage('a4', 'landscape');
     const pw = doc.internal.pageSize.getWidth(),
@@ -2165,6 +2187,7 @@ async function exportPdf(opts) {
   if (risks.length) y = addSection(doc, "Risques et points d'attention", risks.map(x => '• ' + x).join('\n'), y);
   y = addTeams(doc, y);
   y = addRendezvous(doc, y);
+  /** Section « Partie B… » (et suivantes) du récit : non reprise telle quelle dans ce PDF. */
   const isPart = s => /^partie\s+[b-z]\b/i.test(String(s.title || '').trim());
   for (const s of state.narrative.sections) {
     if (isPart(s) || /introduction|risque|equipe|rendez_vous|summary|description/i.test(norm(s.title))) continue;
@@ -2785,6 +2808,7 @@ let shareTimer = 0;
 /** Mission courante partagée avec les autres pages (SiaMission.save) : tout de suite, ou 400 ms après la dernière saisie. */
 function shareMission(now) {
   clearTimeout(shareTimer);
+  /** Recopie le récit dans l'état puis publie la mission (source « generator ») ; erreur affichée dans l'état. */
   const run = () => {
     try {
       syncNarrative();
@@ -2829,7 +2853,7 @@ $('openCr').onclick = () => {
   }
 };
 </script>
-<script src="../../shared/repository_nav.js?v=ad188ce2"></script>
-<script src="../../shared/app_framework.js?v=5653237c"></script>
+<script src="../../shared/repository_nav.js?v=a8f7a464"></script>
+<script src="../../shared/app_framework.js?v=9b52c6db"></script>
 <script src="../../shared/content_i18n.js?v=efa62576"></script><script src="sia_i18n.js?v=e4046ef4"></script>
 </body></html>

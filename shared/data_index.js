@@ -94,10 +94,12 @@
       q.onblocked = () => console.warn('defaIndex : mise à jour de la base en attente (autre onglet ouvert)');
     });
   }
+  /** Promesse du résultat d'une requête IndexedDB. */
   const req = r => new Promise((resolve, reject) => {
     r.onsuccess = () => resolve(r.result);
     r.onerror = () => reject(r.error);
   });
+  /** Promesse résolue à la fin de la transaction, rejetée sur erreur ou annulation. */
   const done = tx => new Promise((resolve, reject) => {
     tx.oncomplete = resolve;
     tx.onerror = () => reject(tx.error);
@@ -108,6 +110,7 @@
     const os = (await open()).transaction(store).objectStore(store);
     return req((index ? os.index(index) : os).getAll(query));
   }
+  /** Enregistrement d'un store par sa clé (undefined si absent). */
   async function get(store, key) {
     return req((await open()).transaction(store).objectStore(store).get(key));
   }
@@ -117,11 +120,13 @@
     for (const v of [].concat(values)) tx.objectStore(store).put(v);
     return done(tx);
   }
+  /** Supprime un ou plusieurs enregistrements par leur clé (une transaction). */
   async function del(store, keys) {
     const tx = (await open()).transaction(store, 'readwrite');
     for (const k of [].concat(keys)) tx.objectStore(store).delete(k);
     return done(tx);
   }
+  /** Vide un store. */
   async function clear(store) {
     const tx = (await open()).transaction(store, 'readwrite');
     tx.objectStore(store).clear();
@@ -154,6 +159,7 @@
 
   // ---- autres onglets
   const channel = typeof BroadcastChannel === 'function' ? new BroadcastChannel('defa-data') : null;
+  /** Prévient les autres onglets qu'un store a changé (BroadcastChannel « defa-data », détail facultatif). */
   const changed = (store, detail = {}) => channel?.postMessage({
     index: store,
     ...detail
@@ -161,6 +167,7 @@
 
   // ---- registre des missions
   const LEGACY = 'missionRegistry:v1';
+  /** Registre des missions en mémoire, adossé au store « missions » (ou à l'ancienne clé sans IndexedDB). */
   const MissionIndex = (() => {
     let list = [],
       meta = {
@@ -171,6 +178,7 @@
       fallback = false, // sans IndexedDB : ancienne copie du stockage du navigateur
       loaded = false, // index lu (ready résolu)
       saved = new Map(); // k → texte JSON de l'entrée telle que lue ou écrite en dernier : écritures limitées aux changements
+    /** Registre lu sous l'ancienne clé du navigateur « missionRegistry:v1 » ; null si absent ou illisible. */
     const legacy = () => {
       try {
         return JSON.parse(localStorage.getItem(LEGACY) || 'null');
@@ -201,6 +209,7 @@
     // branche, autre onglet pas encore rechargé) voit le même registre ; au-delà, retirée (quota du stockage)
     const MIRROR_MAX = 2e6;
 
+    /** Écrit la copie de compatibilité, ou la retire si elle dépasse MIRROR_MAX ou le quota du stockage. */
     function mirror(missions, updatedAt) {
       try {
         const text = JSON.stringify({
@@ -219,6 +228,7 @@
         }
       }
     }
+    /** Chargement à l'ouverture : index lu, ancienne clé reprise si plus récente ; sans IndexedDB : repli sur elle. */
     const ready = (async () => {
       try {
         list = await read();
@@ -289,6 +299,7 @@
         }
       }));
     });
+    // registre écrit par un autre onglet : relu, puis « mission-index-change » (écho de sa propre écriture ignoré)
     channel?.addEventListener('message', async e => {
       if (e.data?.index !== 'missions' && e.data?.index !== '*') return;
       if (e.data.updatedAt && e.data.updatedAt === meta.updatedAt) return;
@@ -305,15 +316,20 @@
     });
     return {
       ready,
+      /** true si le registre vit dans le stockage du navigateur (IndexedDB indisponible). */
       get fallback() {
         return fallback;
       },
+      /** true une fois le registre lu (ready résolu). */
       get loaded() {
         return loaded;
       },
       adoptLegacy,
+      /** Missions en mémoire, lecture synchrone (après ready). */
       all: () => list,
+      /** Mission d'identifiant donné, ou null. */
       byId: id => list.find(m => m.id === id) || null,
+      /** Date ISO de la dernière écriture du registre. */
       updatedAt: () => meta.updatedAt,
       save,
       /** Relit l'index (après une restauration de sauvegarde, par exemple). */
