@@ -343,7 +343,9 @@
         conflit: true
       };
       const mine = list.filter(x => x.zone === z.id && (!reseau || !x.reseau || x.reseau === reseau));
-      const etat = mine.some(x => x.etat === 'active' && covers(x)) ? 'active' : mine.some(x => x.etat === 'demandee') ?
+      // active ou demandée : seulement si l'activation couvre le créneau du vol (une autre heure du jour ne compte pas)
+      const etat = mine.some(x => x.etat === 'active' && covers(x)) ? 'active' : mine.some(x => x.etat === 'demandee' && covers(
+          x)) ?
         'demandee' : 'absente';
       return {
         ...z,

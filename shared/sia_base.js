@@ -30,7 +30,7 @@
   /** Promesse unique (gardée dans aeroLoad) de window.AeroSources : injecte aero_sources.js au premier appel ; null si échec. */
   const needAero = () => aeroLoad ||= window.AeroSources ? Promise.resolve(window.AeroSources) : new Promise(res => {
     const sc = document.createElement('script');
-    sc.src = new URL('aero_sources.js?v=55a4cbc1', SCRIPT_URL).href;
+    sc.src = new URL('aero_sources.js?v=708d2c7b', SCRIPT_URL).href;
     sc.onload = () => res(window.AeroSources || null);
     sc.onerror = () => res(null);
     document.head.append(sc);

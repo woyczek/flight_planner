@@ -244,7 +244,8 @@
   /** Anneau d'une surface GML (segments : listes de points, arcs et cercles autour d'un centre). */
   function ringOf(ringEl) {
     const swap = lonFirst(ringEl),
-      out = [];
+      out = [],
+      half = [];
     for (const seg of ringEl.getElementsByTagNameNS(NSX, '*')) {
       const n = seg.localName;
       if (n === 'GeodesicString' || n === 'LineStringSegment' || n === 'LinearRing') {
@@ -258,13 +259,38 @@
         const c = posOf(seg);
         if (!c) continue;
         const a = +text(seg, 'startAngle'),
-          b = +text(seg, 'endAngle');
+          b = +text(seg, 'endAngle'),
+          center = swap ? [c[1], c[0]] : c;
         // angles AIXM : caps vrais ; sens : celui où l'on va de l'angle de départ à celui d'arrivée en croissant
-        // (b > a : horaire) ou en décroissant
-        out.push(...arc(swap ? [c[1], c[0]] : c, radiusM(seg), a, b, b >= a));
+        // (b > a : horaire) ou en décroissant (vérifié sur les arcs de l'AIXM de NATS). Demi-cercle : ce signe n'est
+        // pas fiable (NATS code parfois les deux demi-cercles d'un même contour en sens contraires) ; tranché plus bas
+        if (Math.abs(Math.abs(b - a) - 180) < 1) half.push({
+          at: out.length,
+          center,
+          r: radiusM(seg),
+          a,
+          b
+        });
+        else out.push(...arc(center, radiusM(seg), a, b, b >= a));
       }
     }
-    return out;
+    if (!half.length) return out;
+    // demi-cercles : bombés vers l'extérieur, donc parcourus dans le sens de l'anneau (aire signée des points connus et
+    // des extrémités des demi-cercles ; lon en x, lat en y : aire négative = sens horaire)
+    const pts = [...out];
+    half.forEach((h, i) => pts.splice(h.at + 2 * i, 0, dest(h.center, h.r, h.a), dest(h.center, h.r, h.b)));
+    let area = 0;
+    pts.forEach((p, i) => {
+      const q = pts[(i + 1) % pts.length];
+      area += p[1] * q[0] - q[1] * p[0];
+    });
+    const res = [];
+    let from = 0;
+    for (const h of half) {
+      res.push(...out.slice(from, h.at), ...arc(h.center, h.r, h.a, h.b, area < 0));
+      from = h.at;
+    }
+    return res.concat(out.slice(from));
   }
   /** TimeSlice BASELINE la plus récente d'un élément AIXM (les autres sont ignorées). */
   function slice(feat, name) {

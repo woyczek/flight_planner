@@ -782,7 +782,7 @@
           e: r?.message || t(['lanceur injoignable', 'launcher unreachable', 'Starter nicht erreichbar',
             'lanzador inaccesible'
           ])
-        }), 'error');
+        }), 'err');
         draw(r?.ok ? r : await api());
       };
       tr.querySelector('[data-save]').onclick = () => input.value.trim() && send(input.value.trim());
@@ -2103,7 +2103,7 @@
         behavior: 'smooth'
       });
     } catch (e) {
-      window.AppFramework?.notify?.(e.message, 'error');
+      window.AppFramework?.notify?.(e.message, 'err');
     } finally {
       job?.end?.();
       aeroAutoBusy = false;
@@ -2238,7 +2238,7 @@
       'SIA folder not authorised: Installation › Sources and folders.',
       'SIA-Ordner nicht freigegeben: Installation › Quellen und Ordner.',
       'Carpeta SIA no autorizada: Instalación › Fuentes y carpetas.'
-    ]), 'error');
+    ]), 'err');
     moraStop = false;
     moraMsg = '';
     moraPlan = null;
@@ -2539,7 +2539,7 @@
         'Ejes no escritos: {e}'
       ], {
         e: e.message
-      }), 'error');
+      }), 'err');
     }
     enr57Show();
   }
@@ -2681,7 +2681,7 @@
       if (res.files.length) say(t(['Téléchargé : {f}.', 'Downloaded: {f}.', 'Heruntergeladen: {f}.', 'Descargado: {f}.'], {
         f: res.files.map(f => f.name + (f.features != null ? ` (${f.features})` : '')).join(', ')
       }), res.errors.length ? 'warn' : 'ok');
-      if (res.errors.length) say(res.errors.join(' · '), 'error');
+      if (res.errors.length) say(res.errors.join(' · '), 'err');
       if (!res.files.length && !res.errors.length) say(t(['Rien à télécharger pour cette zone.', 'Nothing to download for this zone.',
         'Für diese Zone nichts herunterzuladen.', 'Nada que descargar para esta zona.'
       ]));

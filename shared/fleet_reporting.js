@@ -16,7 +16,7 @@
   //     (POST /__setup/aircraft-db, OACI Doc 8643 et EUROCONTROL, type par type) ; mise à jour de la flotte et du
   //     journal depuis le site (shared/defa_site.js).
   // Mon profil (rubrique « Mes appareils (reporting) ») : la même liste réduite aux CR où le trigramme connecté figure
-  // dans l'équipage (l'appareil de son poste quand le CR le précise), en lecture seule : coche grisée « Flotte DEFA »
+  // dans l'équipage (l'appareil de son poste quand le CR le précise), en lecture seule : coche grisée « Flotte »
   // (cochée : appareil de la flotte ; décochée : appareil hors flotte, indicatif compris).
   // API (window.FleetReporting) : aircraft({ pilot }) → [{ key, registration, type, variant, callsigns, operator,
   //   flights, first, last }], mount(hôte, { rows: lignes de travail de la flotte, onChange }), mountMine(hôte),
@@ -196,7 +196,7 @@
           'An update from the website is already running.', 'Eine Aktualisierung von der Website läuft bereits.',
           'Ya hay una actualización desde el sitio en curso.'
         ]), 'info');
-        else if (r?.error) notify(r.error, 'error');
+        else if (r?.error) notify(r.error, 'err');
         siteLine();
       };
     }
@@ -277,7 +277,7 @@
     };
   }
 
-  /** Mon profil : appareils pilotés ou reportés par le trigramme connecté, coche grisée « Flotte DEFA ». */
+  /** Mon profil : appareils pilotés ou reportés par le trigramme connecté, coche grisée « Flotte ». */
   async function mountMine(host) {
     style();
     host.classList.add('fr-rep');
@@ -292,12 +292,12 @@
     });
     const fleet = new Set((window.DEFA_FLEET || []).map(r => keyOf(r.registration)).filter(Boolean));
     const isFleet = a => !!a.registration && fleet.has(keyOf(a.registration));
-    const head = `<thead><tr><th>${esc(t(['Flotte DEFA', 'DEFA fleet', 'DEFA-Flotte', 'Flota DEFA']))}</th><th>${esc(t(['Immatriculation', 'Registration', 'Kennzeichen', 'Matrícula']))}</th><th>${esc(t(['Type', 'Type', 'Typ', 'Tipo']))}</th><th>${esc(t(['Variante', 'Variant', 'Variante', 'Variante']))}</th><th>${esc(t(['Indicatifs', 'Callsigns', 'Rufzeichen', 'Indicativos']))}</th><th>${esc(t(['Exploitant', 'Operator', 'Betreiber', 'Operador']))}</th><th>${esc(t(['Vols', 'Flights', 'Flüge', 'Vuelos']))}</th><th>${esc(t(['Dernier vol', 'Last flight', 'Letzter Flug', 'Último vuelo']))}</th></tr></thead>`;
-    const row = a => `<tr><td><input type="checkbox" disabled${isFleet(a) ? ' checked' : ''} title="${esc(isFleet(a) ? t(['appareil de la flotte DEFA', 'DEFA fleet aircraft', 'Luftfahrzeug der DEFA-Flotte', 'aeronave de la flota DEFA']) : t(['appareil hors flotte DEFA', 'aircraft outside the DEFA fleet', 'Luftfahrzeug außerhalb der DEFA-Flotte', 'aeronave fuera de la flota DEFA']))}"></td><td><b>${esc(a.registration || '—')}</b></td><td>${esc(a.type || '?')}</td><td>${esc(a.variant || '')}</td><td>${esc(a.callsigns.join(', '))}</td><td>${esc(a.operator || '')}</td><td class="num">${a.flights}</td><td>${esc(a.last || '')}</td></tr>`;
+    const head = `<thead><tr><th>${esc(t(['Flotte', 'Fleet', 'Flotte', 'Flota']))}</th><th>${esc(t(['Immatriculation', 'Registration', 'Kennzeichen', 'Matrícula']))}</th><th>${esc(t(['Type', 'Type', 'Typ', 'Tipo']))}</th><th>${esc(t(['Variante', 'Variant', 'Variante', 'Variante']))}</th><th>${esc(t(['Indicatifs', 'Callsigns', 'Rufzeichen', 'Indicativos']))}</th><th>${esc(t(['Exploitant', 'Operator', 'Betreiber', 'Operador']))}</th><th>${esc(t(['Vols', 'Flights', 'Flüge', 'Vuelos']))}</th><th>${esc(t(['Dernier vol', 'Last flight', 'Letzter Flug', 'Último vuelo']))}</th></tr></thead>`;
+    const row = a => `<tr><td><input type="checkbox" disabled${isFleet(a) ? ' checked' : ''} title="${esc(isFleet(a) ? t(['appareil de la flotte', 'fleet aircraft', 'Luftfahrzeug der Flotte', 'aeronave de la flota']) : t(['appareil hors flotte', 'aircraft outside the fleet', 'Luftfahrzeug außerhalb der Flotte', 'aeronave fuera de la flota']))}"></td><td><b>${esc(a.registration || '—')}</b></td><td>${esc(a.type || '?')}</td><td>${esc(a.variant || '')}</td><td>${esc(a.callsigns.join(', '))}</td><td>${esc(a.operator || '')}</td><td class="num">${a.flights}</td><td>${esc(a.last || '')}</td></tr>`;
     const n = list.filter(isFleet).length,
       st = list.stats || {};
     host.innerHTML = `<p class="fr-note">${esc(tf(['Journal des missions : {m} CR, dont {y} à vous (votre trigramme dans l’équipage, ou rédigés par vous) ; {c} CR sans équipage saisi ne comptent pour personne. Les CR enregistrés avant cette version ne gardent pas leur rédacteur : seul l’équipage compte pour eux.', 'Mission log: {m} reports, {y} of them yours (your trigram in the crew, or written by you); {c} reports with no crew entered count for nobody. Reports saved before this version do not keep their author: only the crew counts for them.', 'Missionsjournal: {m} Berichte, davon {y} Ihre (Ihr Kürzel in der Besatzung oder von Ihnen verfasst); {c} Berichte ohne erfasste Besatzung zählen für niemanden. Vor dieser Version gespeicherte Berichte behalten ihren Verfasser nicht: Für sie zählt nur die Besatzung.', 'Diario de misiones: {m} informes, {y} suyos (su trigrama en la tripulación, o redactados por usted); {c} informes sin tripulación introducida no cuentan para nadie. Los informes guardados antes de esta versión no conservan su autor: para ellos solo cuenta la tripulación.'], { m: st.missions || 0, y: st.mine || 0, c: st.noCrew || 0 }))}</p>
-      <p class="fr-note">${esc(tf(['{t} : {a} appareil(s) dans vos CR — {f} de la flotte DEFA, {o} hors flotte. La liste complète et la case « personnel » : Paramètres › Centre › Flotte.', '{t}: {a} aircraft in your reports — {f} from the DEFA fleet, {o} outside it. Full list and “personal” box: Settings › Centre › Fleet.', '{t}: {a} Luftfahrzeug(e) in Ihren Berichten — {f} aus der DEFA-Flotte, {o} außerhalb. Vollständige Liste und Kästchen „Privat“: Einstellungen › Zentrum › Flotte.', '{t}: {a} aeronave(s) en sus informes — {f} de la flota DEFA, {o} fuera de ella. Lista completa y casilla «personal»: Ajustes › Centro › Flota.'], { t: tri, a: list.length, f: n, o: list.length - n }))}</p>
+      <p class="fr-note">${esc(tf(['{t} : {a} appareil(s) dans vos CR — {f} de la flotte, {o} hors flotte. La liste complète et la case « personnel » : Paramètres › Centre › Flotte.', '{t}: {a} aircraft in your reports — {f} from the fleet, {o} outside it. Full list and “personal” box: Settings › Centre › Fleet.', '{t}: {a} Luftfahrzeug(e) in Ihren Berichten — {f} aus der Flotte, {o} außerhalb. Vollständige Liste und Kästchen „Privat“: Einstellungen › Zentrum › Flotte.', '{t}: {a} aeronave(s) en sus informes — {f} de la flota, {o} fuera de ella. Lista completa y casilla «personal»: Ajustes › Centro › Flota.'], { t: tri, a: list.length, f: n, o: list.length - n }))}</p>
       ${list.length ? `<div class="fr-scroll"><table>${head}<tbody>${list.map(row).join('')}</tbody></table></div>` : `<p class="fr-note">${esc(t(['Aucun CR avec votre trigramme dans l’équipage.', 'No report with your trigram in the crew.', 'Kein Bericht mit Ihrem Kürzel in der Besatzung.', 'Ningún informe con su trigrama en la tripulación.']))}</p>`}`;
     window.AppFramework?.refresh?.(host);
   }
@@ -315,10 +315,10 @@
     title: window.SettingsPanels.L('Mes appareils (reporting)', 'My aircraft (reporting)', 'Meine Luftfahrzeuge (Reporting)',
       'Mis aeronaves (reporting)'),
     intro: window.SettingsPanels.L(
-      'Appareils que vous avez pilotés ou reportés (CR où votre trigramme figure dans l’équipage) ; coche grisée : appareil de la flotte DEFA ou non.',
-      'Aircraft you flew or reported (reports with your trigram in the crew); greyed box: DEFA fleet aircraft or not.',
-      'Luftfahrzeuge, die Sie geflogen oder berichtet haben (Berichte mit Ihrem Kürzel in der Besatzung); grau: Luftfahrzeug der DEFA-Flotte oder nicht.',
-      'Aeronaves que ha pilotado o reportado (informes con su trigrama en la tripulación); casilla gris: aeronave de la flota DEFA o no.'
+      'Appareils que vous avez pilotés ou reportés (CR où votre trigramme figure dans l’équipage) ; coche grisée : appareil de la flotte ou non.',
+      'Aircraft you flew or reported (reports with your trigram in the crew); greyed box: fleet aircraft or not.',
+      'Luftfahrzeuge, die Sie geflogen oder berichtet haben (Berichte mit Ihrem Kürzel in der Besatzung); grau: Luftfahrzeug der Flotte oder nicht.',
+      'Aeronaves que ha pilotado o reportado (informes con su trigrama en la tripulación); casilla gris: aeronave de la flota o no.'
     ),
     /** Contenu de la rubrique : la liste « Mes appareils » montée dans body. */
     render(body) {

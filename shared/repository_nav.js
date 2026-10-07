@@ -1045,9 +1045,10 @@
       return `<img class="repo-sidenav-img" src="${new URL(`icons/skeuo/${d}/${name}.webp${ver}`, script.src).href}" alt="">`;
     };
     // haut de la barre : logo de la compagnie virtuelle décliné selon le design (<id du design à matières>.webp, sinon
-    // flat) — celui de la compagnie (shared/icons/defa) si la compagnie réglée est SO Group Virtual, sinon le logo générique (cible,
-    // shared/icons/generic) ; lien vers le site de la compagnie (nouvel onglet : la page en cours reste ouverte)
-    const logoSrc = () => new URL(`icons/${/\bDEFA\b/i.test(`${va().short} ${va().name}`) ? "defa" : "generic"}/${designs[doc.dataset.design]?.skeuo ? designs[doc.dataset.design].logo || doc.dataset.design : "flat"}.webp${ver}`, script.src).href;
+    // flat) — celui de la compagnie (shared/icons/defa : ailes) si la compagnie réglée est SO Group Virtual (sigle SOG) ou
+    // DEFA Virtual, son ancien nom, sinon le logo générique (cible, shared/icons/generic) ; lien vers le site de la
+    // compagnie (nouvel onglet : la page en cours reste ouverte)
+    const logoSrc = () => new URL(`icons/${/\b(?:SO Group|SOG|DEFA)\b/i.test(`${va().short} ${va().name}`) ? "defa" : "generic"}/${designs[doc.dataset.design]?.skeuo ? designs[doc.dataset.design].logo || doc.dataset.design : "flat"}.webp${ver}`, script.src).href;
     side.innerHTML = `<a class="repo-sidenav-brand"${vaUrl("home") ? ` href="${K.esc(vaUrl("home"))}" target="_blank" rel="noopener"` : ""} title="${K.esc(va().name)} — ${K.esc(source("defa").replace(/^https?:\/\//, ""))}"><img class="repo-sidenav-logo" src="${logoSrc()}" alt="${K.esc(va().name)}"></a><ul></ul><ul class="repo-sidenav-foot"></ul>`;
     // entrées du bas (séparateur « bottom » et suivantes : Apparence, Paramètres, Aide) dans leur propre liste, fixée en
     // bas de la barre ; seule la liste du haut défile quand les entrées dépassent la hauteur de la fenêtre

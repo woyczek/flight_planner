@@ -398,6 +398,12 @@
   } = {}) {
     const text = String(message ?? "").trim();
     if (!text) return null;
+    // « error », « warning », « success » : synonymes courants des types attendus
+    kind = {
+      error: "err",
+      warning: "warn",
+      success: "ok"
+    } [kind] || kind;
     notifyCss();
     const box = notifyBox();
     if (kind === "err" || kind === "warn") record(text, kind);
