@@ -162,6 +162,8 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Modifié
 
+- **MORA : tableau des changements de hauteur replié par défaut** (« Voir le tableau des changements de hauteur (n
+  case(s)) ») ; ouvert ou fermé, il le reste quand le bloc se redessine.
 - **Données aéronautiques : pays choisis sur la carte, puis « Activer »** (Maintenance, Installation, premier lancement) :
   un clic ajoute un pays à la sélection, un autre l'en retire (pays choisis en bleu, barre sous la carte : pays, à
   activer, à désactiver, « Annuler ») ; « Activer » applique la sélection et enchaîne pour toutes les zones choisies
