@@ -21,7 +21,7 @@
   /** Version du format de la base mémorisée : une base d'une autre version est ignorée (à relire). */
   const COMPAT = 14; // plus ancien format encore utilisable tel quel (15 n'ajoute que aero.vrp)
   const VERSION =
-  16; // 13 : gestionnaire (admin) et mode d'activation (act) des espaces AIXM ; 14 : voies aériennes (aero.airways) ; 15 : points de report VFR (aero.vrp) ; 16 : sources (src) et données d'autres pays (shared/aero_sources.js)
+    16; // 13 : gestionnaire (admin) et mode d'activation (act) des espaces AIXM ; 14 : voies aériennes (aero.airways) ; 15 : points de report VFR (aero.vrp) ; 16 : sources (src) et données d'autres pays (shared/aero_sources.js)
   const SCRIPT_URL = document.currentScript?.src || location.href;
   /** URL d'un fichier de l'application (chemin depuis la racine : « shared/carto/… »). */
   const appUrl = path => new URL('../' + path, SCRIPT_URL).href;
@@ -46,7 +46,7 @@
   });
   const needZones = () => zonesLoad ||= (async () => {
     if (!window.AERO_ZONES_GEO) await loadScript('carto/aero_zones_geo.js?v=6e9678c4');
-    if (!window.AeroZones) await loadScript('aero_zones.js?v=ad85da06');
+    if (!window.AeroZones) await loadScript('aero_zones.js?v=1589a73b');
     return window.AeroZones || null;
   })();
   /** Sous-dossiers du dossier SIA par source (fichiers d'autres pays rangés à part) ; zones/<zone>/ : fichiers déposés
@@ -67,7 +67,7 @@
       }
       const guard = setTimeout(() => reject(new Error(
         'La base du navigateur (IndexedDB) ne répond pas : fermer les autres onglets du studio et de Paramètres, puis relancer.'
-        )), 15000);
+      )), 15000);
       const done = f => (...a) => {
         clearTimeout(guard);
         f(...a);
@@ -76,7 +76,7 @@
       reject = done(reject);
       r.onblocked = () => reject(new Error(
         'La base du navigateur est bloquée par un autre onglet : fermer les autres onglets du studio et de Paramètres, puis relancer.'
-        ));
+      ));
       r.onupgradeneeded = () => {
         if (create) r.result.createObjectStore(STORE);
         else {
@@ -1179,7 +1179,7 @@
     const moraFile = wanted('mora.csv') ? files.find(f => /^mora\.csv$/i.test(f.name)) : null,
       tracks = wanted('miam-enr-5-7-tracks.xml') ? files.find(f => /^miam-enr-5-7-tracks\.xml$/i.test(f.name)) : null;
     const extraSize = Object.entries(extra).reduce((n, [id, l]) => n + l.filter(f => extraOk(id, f)).reduce((m, f) => m + f.size, 0),
-    0);
+      0);
     const readSize = xmlFiles.reduce((n, f) => n + f.size, 0) + (moraFile?.size || 0) + (tracks?.size || 0) + 2.5e6 + 1.5 * extraSize;
     const total = readSize + 0.8 * xmlFiles.filter(isAixm).reduce((n, f) => n + f.size, 0) + 0.15 * readSize;
     let doneUnits = 0,
@@ -1270,6 +1270,7 @@
       moraCells,
       obstacleMax,
       aarXml,
+      aarXmlExtra: aarExtra,
       aero,
       xmlInventoryData: inventory.map(i => ({
         name: i.file.name,
@@ -1298,6 +1299,8 @@
       }
       return la0 <= la1 && cover.some(r => inRing(r, (la0 + la1) / 2, (lo0 + lo1) / 2));
     };
+    // axes de ravitaillement d'autres pays (zones/<zone>/…-tracks.xml, format de la MILAIP française : UK Mil AIP AARA)
+    const aarExtra = [];
     if (AS)
       for (const src of AS.SOURCES.filter(x => x.dir || x.id === 'xplane')) {
         const list = (extra[src.id] || []).filter(f => extraOk(src.id, f));
@@ -1320,6 +1323,9 @@
                 airspaces: AS.openair(t, src.id)
               };
               role = 'OpenAir';
+            } else if (/-tracks\.xml$/i.test(f.name)) {
+              aarExtra.push(t);
+              role = 'axes de ravitaillement';
             } else if (/\.xml$/i.test(f.name)) {
               part = AS.aixm5(t);
               role = 'AIXM 5.1';
@@ -1674,7 +1680,7 @@
   }
   if (!document.getElementById('siaBaseStyle')) document.head.insertAdjacentHTML('beforeend',
     '<style id="siaBaseStyle">.sia-base-actions{display:flex;flex-wrap:wrap;gap:.5rem;align-items:center}.sia-base-msg{margin:.4rem 0}.sia-base-state{margin:.4rem 0}.sia-base-progress{margin:.5rem 0;display:flex;flex-wrap:wrap;gap:.3rem .6rem;align-items:center}.sia-base-progress progress{flex:1 1 240px;height:14px}.sia-base-progress .sia-base-step,.sia-base-progress .sia-base-stall{flex-basis:100%}</style>'
-    );
+  );
 
   window.SiaBase = {
     VERSION,

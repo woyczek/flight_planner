@@ -30,7 +30,7 @@
         'Free order (0 €) on the SIA website, to redo at each AIRAC cycle: SIA account, “Add to cart”, “Place order” accepting the licence, download the ZIP; then “Fetch the downloaded ZIP” (the launcher takes it from Downloads) or “SIA export ZIP…”.',
         'Kostenlose Bestellung (0 €) auf der SIA-Website, bei jedem AIRAC-Zyklus erneut: SIA-Konto, „In den Warenkorb“, „Bestellen“ mit Annahme der Lizenz, ZIP herunterladen; dann „Heruntergeladenes ZIP holen“ (der Starter nimmt es aus dem Download-Ordner) oder „SIA-Export-ZIP…“.',
         'Pedido gratuito (0 €) en el sitio del SIA, a repetir en cada ciclo AIRAC: cuenta SIA, «Añadir al carrito», «Realizar pedido» aceptando la licencia, descargar el ZIP; luego «Recuperar el ZIP descargado» (el lanzador lo toma de Descargas) o «ZIP de exportación del SIA…».'
-        ),
+      ),
       licence: 'Licence ouverte du SIA',
       age: 'airac'
     },
@@ -46,7 +46,7 @@
       howto: L4(
         'PDF de la MILAIP (section ENR 5.7) à télécharger sur le site de la DIRCAM, puis extraction des axes (procédure : MANUEL_EXPLOITATION § 9.1) vers data/sia/miam-enr-5-7-tracks.xml. Réutilisation non commerciale, en citant l’amendement.',
         'MILAIP PDF (section ENR 5.7) to download from the DIRCAM website, then track extraction (procedure: MANUEL_EXPLOITATION § 9.1) into data/sia/miam-enr-5-7-tracks.xml. Non-commercial reuse, citing the amendment.'
-        ),
+      ),
       licence: 'DIRCAM (non commercial)',
       age: 'file'
     },
@@ -112,24 +112,37 @@
         'Free registration on the NATS website, then download the “UK ICAO AIP Dataset” (AIXM 5.1) and drop it into data/sia/zones/gb/. To redo at each AIRAC cycle.',
         'Kostenlose Registrierung auf der NATS-Website, dann das „UK ICAO AIP Dataset“ (AIXM 5.1) herunterladen und in data/sia/zones/gb/ ablegen. Bei jedem AIRAC-Zyklus erneut.',
         'Registro gratuito en el sitio de NATS, luego descargar el «UK ICAO AIP Dataset» (AIXM 5.1) y depositarlo en data/sia/zones/gb/. A repetir en cada ciclo AIRAC.'
-        ),
+      ),
       licence: 'NATS (usage personnel)',
       age: 'file'
     },
+    // ENR 5.2 de la MILAIP britannique (adresse fixe, texte) : téléchargé et lu par le lanceur (tools/aero_fetch.py
+    // ukmil → tools/ukmil_aip.py) ; zones/gb/ukmil_enr52.geojson (LFA, VATA, TVAA), ukmil_aara-tracks.xml (AARA)
     ukmil: {
-      kind: 'pdf',
-      readable: false,
-      label: L4('UK Mil AIP — zones de vol à basse altitude (PDF)', 'UK Mil AIP — low flying areas (PDF)',
-        'UK Mil AIP — Tiefluggebiete (PDF)', 'UK Mil AIP — zonas de vuelo a baja altura (PDF)'),
-      gives: L4('zones d’exercice (ENR 5.2), zones de vol à basse altitude (ENR 6) — lecture par la suite à venir',
-        'exercise areas (ENR 5.2), low flying areas (ENR 6) — reading by the suite to come'),
+      kind: 'download',
+      provider: 'ukmil',
+      args: [],
+      readable: true,
+      label: L4('UK Mil AIP — ENR 5.2 : basse altitude, VATA, ravitaillement (AARA)',
+        'UK Mil AIP — ENR 5.2: low flying, VATA, air-to-air refuelling (AARA)',
+        'UK Mil AIP — ENR 5.2: Tiefflug, VATA, Luftbetankung (AARA)',
+        'UK Mil AIP — ENR 5.2: baja altura, VATA, reabastecimiento (AARA)'),
+      gives: L4(
+        'zones de vol à basse altitude (LFA, sol à 2000 ft AGL), Valley Aerial Tactics Area, zone d’évitement TVAA, axes de ravitaillement AARA (IP → CP)',
+        'low flying areas (LFA, surface to 2000 ft AGL), Valley Aerial Tactics Area, TVAA avoidance area, AARA refuelling tracks (IP → CP)',
+        'Tieffluggebiete (LFA, Boden bis 2000 ft AGL), Valley Aerial Tactics Area, Ausweichgebiet TVAA, Betankungsstrecken AARA (IP → CP)',
+        'zonas de vuelo a baja altura (LFA, suelo a 2000 ft AGL), Valley Aerial Tactics Area, zona de evitación TVAA, ejes de reabastecimiento AARA (IP → CP)'
+        ),
       src: 'ukMilAip',
       link: 'https://www.aidu.mod.uk/aip/aipVolumes.html',
-      howto: L4('PDF en libre accès (Open Government Licence v3.0). La suite ne lit pas encore ces PDF : lien gardé pour consultation.',
-        'Freely available PDFs (Open Government Licence v3.0). The suite does not read these PDFs yet: link kept for reference.'),
+      howto: L4(
+        'PDF officiel en libre accès (Open Government Licence v3.0), téléchargé et lu par le lanceur ; contours décrits en toutes lettres approchés par des segments droits.',
+        'Official freely available PDF (Open Government Licence v3.0), downloaded and read by the launcher; boundaries described in words approximated by straight segments.',
+        'Offizielles frei zugängliches PDF (Open Government Licence v3.0), vom Starter heruntergeladen und gelesen; in Worten beschriebene Grenzen durch gerade Segmente angenähert.',
+        'PDF oficial de libre acceso (Open Government Licence v3.0), descargado y leído por el lanzador; límites descritos con palabras aproximados por segmentos rectos.'
+        ),
       licence: 'OGL v3.0',
-      age: 'file',
-      off: true
+      age: 'file'
     },
     navcan: {
       kind: 'pdf',
@@ -141,11 +154,11 @@
       gives: L4('espaces réglementés et désignés — lecture par la suite à venir',
         'restricted and designated airspace — reading by the suite to come'),
       src: 'navcanAip',
-      link: 'https://www.navcanada.ca/en/aeronautical-information/operational-guides-and-products.aspx',
+      link: 'https://www.navcanada.ca/en/aeronautical-information/operational-guides.aspx',
       howto: L4(
         'Publications gratuites en PDF ; les données numériques de NAV CANADA sont vendues sous licence. La suite ne lit pas encore ces PDF : lien gardé pour consultation ; openAIP et X-Plane couvrent le Canada.',
         'Free PDF publications; NAV CANADA digital data are sold under licence. The suite does not read these PDFs yet: link kept for reference; openAIP and X-Plane cover Canada.'
-        ),
+      ),
       licence: 'NAV CANADA',
       age: 'file',
       off: true
@@ -163,7 +176,7 @@
       howto: L4(
         'Choisir une fois le dossier d’installation d’X-Plane (bouton ci-dessous). Données Navigraph de « Custom Data » : licence personnelle, jamais copiées.',
         'Choose the X-Plane installation folder once (button below). Navigraph data in “Custom Data”: personal licence, never copied.'
-        ),
+      ),
       licence: 'GPL (Laminar) / Navigraph (personnel)',
       age: 'xplane'
     },
@@ -310,6 +323,12 @@
     if (dir === 'geojson' && /^faa_/i.test(name)) return {
       zone: 'us',
       source: 'faa'
+    };
+    // zones/<zone>/<source>_… : fichier d'une source nommée (ukmil_…) ; sinon la source déposée à la main de la zone
+    const pre = /^([a-z]+)[_-]/i.exec(name)?.[1]?.toLowerCase();
+    if (dir === 'zones' && sub && pre && byIdOf(sub).sources.includes(pre)) return {
+      zone: sub,
+      source: pre
     };
     if (dir === 'zones' && sub) return {
       zone: sub,

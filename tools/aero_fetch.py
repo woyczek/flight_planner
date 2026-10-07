@@ -10,13 +10,17 @@ Fournisseurs :
            W, A, P), mtr (routes d'entraînement militaire IR / VR / SR, en couloirs à la lecture), class (classes B, C, D,
            E) ;
   enaire   ENAIRE, Espagne (AIP en AIXM 5.1) : data/sia/aixm5/LE_…_Airspace.xml et …_EnRoute.xml (dernier amendement
-           publié sur la page des données numériques ; les versions précédentes sont retirées).
+           publié sur la page des données numériques ; les versions précédentes sont retirées) ;
+  ukmil    UK Military AIP (AIDU, OGL v3.0) : ENR-5-2.pdf (adresse fixe) lu par tools/ukmil_aip.py →
+           data/sia/zones/gb/ukmil_enr52.geojson (zones de vol à basse altitude, VATA, TVAA) et ukmil_aara-tracks.xml
+           (zones de ravitaillement en vol en axes IP → CP) ; le PDF est gardé à côté (ukmil_ENR-5-2.pdf).
 Le Royaume-Uni (NATS, AIXM 5.1) demande une inscription : fichier à déposer à la main dans data/sia/aixm5/.
 
 Usage (racine du dépôt) :
   python tools/aero_fetch.py openaip gb de es      pays (codes ISO à deux lettres)
   python tools/aero_fetch.py faa [sua mtr class]
   python tools/aero_fetch.py enaire
+  python tools/aero_fetch.py ukmil
   option --data <dossier> : dossier des données (défaut : data/)
 Appelé aussi par le lanceur (POST /__setup/aero-fetch) pour les boutons de Paramètres › Maintenance › Données
 aéronautiques.
@@ -140,6 +144,35 @@ def enaire(data):
     return out, errors
 
 
+def ukmil(data):
+    """UK Mil AIP ENR 5.2 : PDF téléchargé, lu (zones, AARA) et rangé dans zones/gb/ avec ses deux sorties."""
+    import ukmil_aip
+    try:
+        raw = get(ukmil_aip.URL)
+    except OSError as e:
+        return [], [f'UK Mil AIP : {e}']
+    try:
+        g, xml, edition, n = ukmil_aip.convert(raw)
+    except Exception as e:  # PDF d'une autre forme : on le garde quand même pour consultation
+        g, xml, edition, n = None, None, '', {}
+        err = [f'UK Mil AIP : PDF illisible ({e})']
+    else:
+        err = [] if n.get('zones') else ['UK Mil AIP : aucune zone lue dans l’ENR 5.2 (mise en page changée ?)']
+    folder = os.path.join(data, 'sia', 'zones', 'gb')
+    out = []
+    write(os.path.join(folder, 'ukmil_ENR-5-2.pdf'), raw)
+    out.append({'name': 'ukmil_ENR-5-2.pdf', 'bytes': len(raw)})
+    if g and n.get('zones'):
+        body = json.dumps(g, ensure_ascii=False).encode('utf-8')
+        write(os.path.join(folder, 'ukmil_enr52.geojson'), body)
+        out.append({'name': 'ukmil_enr52.geojson', 'bytes': len(body), 'features': n['zones']})
+    if xml and n.get('aara'):
+        body = xml.encode('utf-8')
+        write(os.path.join(folder, 'ukmil_aara-tracks.xml'), body)
+        out.append({'name': 'ukmil_aara-tracks.xml', 'bytes': len(body), 'features': n['aara']})
+    return out, err
+
+
 def fetch(data, provider, args=()):
     """Point d'entrée commun (ligne de commande, lanceur) : { ok, files, errors }."""
     args = [a for a in args if a]
@@ -149,6 +182,8 @@ def fetch(data, provider, args=()):
         files, errors = faa(data, args or ['sua', 'mtr'])
     elif provider == 'enaire':
         files, errors = enaire(data)
+    elif provider == 'ukmil':
+        files, errors = ukmil(data)
     else:
         return {'ok': False, 'files': [], 'errors': [f'fournisseur inconnu : {provider}']}
     return {'ok': bool(files) and not errors, 'files': files, 'errors': errors}

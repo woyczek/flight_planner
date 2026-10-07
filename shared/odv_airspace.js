@@ -439,8 +439,10 @@
     const b = await frBase();
     if (b.missing) return b;
     const T = await need('AarTracks', 'aar_tracks.js');
-    if (!T || !b.aarXml) return [];
-    return T.parseTrackXml(b.aarXml).filter(t => t.kind === 'track' && t.ip && t.cp).map(t => ({
+    // axes de la MILAIP française, puis ceux d'autres pays (UK Mil AIP : AARA, SiaBase aarXmlExtra)
+    const xmls = [b.aarXml, ...(b.aarXmlExtra || [])].filter(Boolean);
+    if (!T || !xmls.length) return [];
+    return xmls.flatMap(x => T.parseTrackXml(x)).filter(t => t.kind === 'track' && t.ip && t.cp).map(t => ({
       id: t.name,
       nom: t.name,
       kind: t.kind,
