@@ -10,6 +10,13 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ## [Non publié]
 
+### Corrigé
+
+- **Villes absentes de la base aéronautique (« villes_geonames.csv not found »)** : la lecture de
+  `shared/carto/villes_geonames.csv` est tentée deux fois (un lanceur occupé par un téléchargement peut refuser ou couper
+  une requête) ; en cas d'échec, le compte rendu de la relecture donne l'adresse et la raison (code HTTP, erreur réseau,
+  dossier de l'application) ; message en 4 langues.
+
 ## [4.10.0] — 2026-10-07
 
 La compagnie devient SO Group Virtual. Nouvelle page Tableau (ordre de vol de la semaine). Premier lancement repensé :
