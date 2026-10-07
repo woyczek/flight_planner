@@ -31,9 +31,13 @@
   //       crewPanel(host, yaml, docs) · fromLegacy(yaml) · compatibilité : schedule(y) · revealed(y, id) · injectsOf(y)
   //       · whenText(x) · pointsText(pts) · parseTracksTable(md).
   const esc = window.RepositoryKit.esc; // échappement HTML commun (shared/kit.js)
+  /** Valeur en liste : tableau tel quel, [] pour vide ou absent, [v] sinon. */
   const arr = v => Array.isArray(v) ? v : v == null || v === '' ? [] : [v];
+  /** Texte nettoyé en majuscules (identifiants, indicatifs). */
   const up = v => String(v ?? '').trim().toUpperCase();
+  /** YAML d'un document du lot ou du registre ({ yaml }) ou objet YAML déjà nu. */
   const yamlOf = d => d?.yaml || d || {};
+  /** Durée « 1 h 05 » (valeur absolue, MissionEstimate.hm), « ? » si inconnue. */
   const hm = m => m == null ? '?' : window.MissionEstimate?.hm?.(Math.abs(m)) || `${Math.abs(m)} min`;
   // heure relative à H (T ou M) : lecture et écriture communes (shared/kit.js) : « H+1h30mn » ↔ 90 minutes
   const parseH = window.RepositoryKit.hOffset;
@@ -74,6 +78,7 @@
       alias.set(t.id, t.callsign);
       alias.set(t.callsign, t.id);
     }
+    /** Destinataires complétés de leur alias (piste ↔ indicatif d'un chiffon joué), sans doublon. */
     const withAlias = list => [...new Set(list.flatMap(v => alias.has(v) ? [v, alias.get(v)] : [v]))];
     e.events = arr(ex.events).filter(Boolean).map((x, i) => ({
       ...x,
@@ -208,7 +213,9 @@
     if (!ex) return [];
     const ys = arr(docs).map(yamlOf),
       missionYaml = id => ys.find(d => up(d.mission?.id) === up(id));
+    /** Décalage du décollage d'un participant par rapport à H (minutes, 0 si absent). */
     const offset = p => parseH(p?.takeoff) ?? 0;
+    /** Vrai si la mission y contient le point id (point tournant, rendez-vous, zone ou cible). */
     const hasPoint = (y, id) => [...arr(y?.turning_points), ...arr(y?.rendezvous), ...arr(y?.zones), y?.target].some(q => q && up(q
       .id) === up(id));
     return ex.events.map(x => {
@@ -253,8 +260,10 @@
       tracks: x.reveals
     })) : [];
   };
+  /** Compatibilité : moment d'un événement en clair (voir whenOf). */
   const whenText = x => whenOf(x);
 
+  /** Compatibilité : chronologie d'une mission au format des anciens injects ({ inject, when, at }). */
   function schedule(y, docs) {
     const ex = of(y, docs),
       tl = timeline(ex, [yamlOf(y), ...arr(docs)]);
@@ -268,6 +277,7 @@
     }));
   }
 
+  /** Compatibilité : pistes connues de la mission y après l'événement upTo (toutes pour l'organisation). */
   function revealed(y, upTo, docs) {
     const ex = of(y, docs);
     if (!ex) return [];
@@ -322,6 +332,7 @@
   /** Points d'une piste en texte : « Rosnay 46.701667, 1.215278 ; Mézières-en-Brenne 46.821667, 1.211389 ». */
   const pointsText = pts => arr(pts).map(p => [p.name, Number.isFinite(+p.lat) && p.lat !== undefined ? `${p.lat}, ${p.lon}` : ''].filter(Boolean)
     .join(' ')).join(' ; ');
+  /** Texte « Nom lat, lon ; … » → points [{ name, lat, lon }] (nom seul si pas de coordonnées). */
   const parsePoints = txt => String(txt || '').split(';').map(s => s.trim()).filter(Boolean).map(s => {
     const m = /(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*$/.exec(s);
     return m ? {
@@ -346,6 +357,7 @@
 .mx .mx-aud{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:8px}.mx .mx-aud div{border:1px solid var(--mx-line);border-radius:8px;padding:6px 9px;font-size:13px}
 .mx .mx-warn{color:#b45309;font-size:12px}`;
 
+  /** Insère une fois la feuille de style de l'éditeur (missionExerciseCss). */
   function css() {
     if (document.getElementById('missionExerciseCss')) return;
     const s = document.createElement('style');
@@ -353,6 +365,7 @@
     s.textContent = CSS;
     document.head.append(s);
   }
+  /** Case à cocher en pastille (data-name = value), pour les destinataires et les pistes révélées. */
   const chip = (name, value, on, label) => `<label class="mx-chip"><input type="checkbox" data-${name}="${esc(value)}"${on ? ' checked' : ''}><span>${esc(label)}</span></label>`;
 
   /** Éditeur de l'exercice dans la mission d'organisation y (bloc exercise créé au besoin). docs : missions de l'opération
@@ -413,6 +426,7 @@
 
       <h3>Ce que reçoit chacun</h3>
       <div class="mx-aud">${audiences(ex).map(a => { const list = eventsFor(tl, a.id), plis = list.filter(x => x.kind === 'pli').length, radio = list.length - plis; return `<div><b>${esc(a.label)}</b><br><span class="mx-help">${a.kind === 'org' ? `brief général, chronologie complète (${list.length}), tous les chiffons` : a.kind === 'chiffon' ? 'sa route, son heure de départ, ses consignes, sa carte' : `son brief, ${plis} pli(s) scellé(s) à ouvrir, ${radio} message(s) radio reçus en vol, ${revealedFor(ex, tl, a.id).length} piste(s) révélée(s)`}</span></div>`; }).join('')}</div>`;
+    /** Après une saisie : prévient onChange et redessine l'éditeur si l'affichage en dépend. */
     const changed = redraw => {
       onChange?.();
       if (redraw) editor(host, y, {
@@ -654,6 +668,7 @@
       'Diese Mission ist noch nicht unter den Teilnehmern eingetragen.', 'Esta misión aún no figura entre los participantes.'
     ]
   ]);
+  /** Déclare les libellés traduits auprès de RepositoryContentI18n ; faux si la couche n'est pas encore chargée. */
   const register = () => {
     if (!window.RepositoryContentI18n) return false;
     window.RepositoryContentI18n(ROWS);

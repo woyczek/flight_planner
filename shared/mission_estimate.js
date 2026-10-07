@@ -25,13 +25,16 @@
   const NM = 1852,
     R = 6371000,
     rad = d => d * Math.PI / 180;
+  /** Distance orthodromique (milles nautiques) entre deux points { lat, lon } en degrés. */
   const distNm = (a, b) => {
     const dLat = rad(b.lat - a.lat),
       dLon = rad(b.lon - a.lon);
     const h = Math.sin(dLat / 2) ** 2 + Math.cos(rad(a.lat)) * Math.cos(rad(b.lat)) * Math.sin(dLon / 2) ** 2;
     return 2 * R * Math.asin(Math.min(1, Math.sqrt(h))) / NM;
   };
+  /** Vrai si le point a des coordonnées utilisables (nombres, et pas 0 / 0 laissé par défaut). */
   const ok = p => p && Number.isFinite(+p.lat) && Number.isFinite(+p.lon) && !(+p.lat === 0 && +p.lon === 0);
+  /** Point de route normalisé : identifiant en majuscules, nature (kind), rôle, temps sur objectif (null si absent). */
   const pt = (p, kind, id) => ({
     id: String(id || p.id || '').toUpperCase(),
     name: p.name || p.id || id || '',
@@ -183,12 +186,14 @@
     SPECIAL: 15
   };
 
+  /** Temps sur objectif par défaut (minutes) d'un point sans time_on_task_min : cible selon la famille de mission,
+   *  zone et rendez-vous selon le rôle (recherche, ravitaillement, poser, treuillage…), 0 pour un point de passage. */
   function defaultTask(p, y) {
     const fam = String(y.mission?.type || '').toUpperCase(),
       role = `${p.role} ${p.name}`.toLowerCase();
     if (p.kind === 'target') return FAMILY_TASK[fam] ?? 15;
     if (p.kind === 'zone') return /recherche|search|surveill|patrouille/.test(role) ? 45 : /aar|ravitaill|hippodrome/.test(role) ? 30 :
-    20;
+      20;
     if (p.kind === 'rdv') return /poser|posé|largage|treuil|héliport|relève|embarq|débarq/.test(role) ? 10 : 5;
     if (/poser|posé|treuil|largage|drop|hélistation|hôpital|chu\b/.test(role)) return 10;
     return 0;
@@ -198,6 +203,7 @@
   function routeOf(y) {
     const pts = [],
       byId = new Map();
+    /** Ajoute le point s'il a des coordonnées (pts et index par identifiant) ; rend le point normalisé ou null. */
     const add = (p, kind, id) => {
       if (!ok(p)) return null;
       const q = pt(p, kind, id);
@@ -280,6 +286,7 @@
     const climbKt = P.tas * 0.8,
       descKt = P.tas * 0.9;
     let alt = Math.max(P.alt, fromFt, toFt);
+    /** Distance (NM) consommée par la montée de fromFt à a puis la descente de a à toFt. */
     const need = a => (a - fromFt) / P.roc / 60 * climbKt + (a - toFt) / P.rod / 60 * descKt;
     if (need(alt) > nm) { // tronçon court : plafond atteignable
       let lo = Math.max(fromFt, toFt),
@@ -381,6 +388,7 @@
         if (+c.transitIn > 0 && near(pts[pts.length - 1], r.dest) && near(mw[mw.length - 1], w1)) ins.push(+c.transitIn);
       }
     }
+    /** Moyenne arrondie et nombre de vols d'une série de durées, null si la série est vide. */
     const avg = v => v.length ? {
       min: Math.round(v.reduce((a, b) => a + b, 0) / v.length),
       n: v.length
@@ -437,6 +445,8 @@
     });
   }
 
+  /** Estimation complète d'une mission YAML : appareil, route (avec transit), durées par phase, temps éprouvés, options
+   *  de retour, heures de remise des briefs successifs, durées annoncées par la mission ; { ok: false } sans départ. */
   function estimate(y) {
     y = y || {};
     const P = performance(y),
@@ -525,6 +535,7 @@
   const summary = y => {
     const e = estimate(y);
     if (!e.ok) return null;
+    /** Point réduit pour le stockage : identifiant, nom, nature et position arrondie à 4 décimales. */
     const P = p => ({
       id: p.id,
       name: p.name,
@@ -532,6 +543,7 @@
       lon: +(+p.lon).toFixed(4),
       kind: p.kind
     });
+    /** Tronçons réduits pour le stockage : extrémités par identifiant, NM et minutes arrondis. */
     const legs = L => L.map(l => ({
       from: l.from.id || l.from.name,
       to: l.to.id || l.to.name,
@@ -577,6 +589,7 @@
   // ---- affichage commun (générateur de brief, registre des missions)
   const esc = window.RepositoryKit.esc; // échappement HTML commun (shared/kit.js)
   const ROUTE_KEY = 'missionEstimateRoute:v1';
+  /** Route affichée ou non sous l'estimation, choix mémorisé dans localStorage (missionEstimateRoute:v1). */
   const routeOn = () => {
     try {
       return localStorage.getItem(ROUTE_KEY) === '1';
@@ -600,8 +613,10 @@
       H = 260,
       pad = 28,
       sc = Math.min((W - 2 * pad) / Math.max(x1 - x0, 1e-3), (H - 2 * pad) / Math.max(y1 - y0, 1e-3));
+    /** Projection plate centrée dans le cadre W × H (marge pad) : X(p) et Y(p) en pixels. */
     const X = p => pad + (p.lon * k - x0) * sc + ((W - 2 * pad) - (x1 - x0) * sc) / 2,
       Y = p => H - pad - (p.lat - y0) * sc - ((H - 2 * pad) - (y1 - y0) * sc) / 2;
+    /** Attribut points d'une polyligne SVG. */
     const line = pts => pts.map(p => `${X(p).toFixed(1)},${Y(p).toFixed(1)}`).join(' ');
     const last = sum.points.slice(0, -1).filter(p => p.kind !== 'origin').pop() || sum.points[0];
     const opts = sum.options.map(o => `<polyline points="${line([last, ...o.points])}" fill="none" stroke="currentColor" stroke-width="1.5" stroke-dasharray="5 4" opacity=".55"/>`).join('');
@@ -636,6 +651,7 @@
     }
     const phase = `aller ${hm(sum.transitOut)} · sur zone ${hm(sum.onStation)} · retour ${hm(sum.transitIn)}`;
     const range = sum.options.length ? ` <span class="me-small">(${hm(sum.min)} à ${hm(sum.max)} selon le retour)</span>` : '';
+    /** Écart coloré (hausse / baisse) entre la durée estimée key et celle du CR r. */
     const cmp = (r, key) => {
       const c = compare(sum[key], r[key]);
       return c ? `<span class="${c.diff > 0 ? 'me-up' : 'me-down'}">${esc(c.text)}</span>` : '';

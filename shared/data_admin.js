@@ -27,15 +27,17 @@
   const write = (key, value) => localStorage.setItem(key, JSON.stringify(value));
   /** Horodatage ISO courant. */
   const now = () => new Date().toISOString();
+  /** Sérialisation JSON compacte (contenu des fichiers de données générés). */
   const dumps = v => JSON.stringify(v);
   const rows = [];
   // allemand et espagnol : table DataAdminI18n (shared/data_admin_i18n.js), repérée par le texte français ; sinon anglais
-  /** Texte source (français) d'un libellé de la page ; enregistre sa ligne de traduction [fr, en, de, es] pour le traducteur commun (de / es tirés de DataAdminI18n par le texte français, anglais à défaut). Retourne fr : la traduction se fait à l'affichage. */
   // lignes déjà données au traducteur commun (une fois chacune) ; celles qui n'apparaissent qu'après le premier affichage
   // (sections ouvertes ensuite : « Enregistrer », « entrées »…) lui sont données par lot, sinon elles restaient en français
   const seen = new Set(),
     pending = [];
   let registered = false;
+  /** Libellé source (français) ; sa ligne [fr, en, de, es] est notée une fois pour la traduction (de / es tirés de
+   *  DataAdminI18n, sinon l'anglais) et, après le premier affichage, transmise par lot au traducteur commun. */
   const T = (fr, en) => {
     if (seen.has(fr)) return fr;
     seen.add(fr);
@@ -177,6 +179,7 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
       return `<input ${col.type === 'number' ? 'type="number" step="any" ' : ''}${attrs} value="${esc(value)}"${col.width ? ` style="min-width:${col.width}"` : ''}>`;
     };
 
+    /** Redessine le tableau : lignes filtrées (texte de toutes les colonnes) et triées sur la colonne choisie. */
     function paint() {
       const text = filter.toLowerCase();
       const order = data.map((row, index) => ({
@@ -287,6 +290,7 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
         v = v.trim().toUpperCase();
         return /^[FD][A-Z]{4}$/.test(v) ? `${v[0]}-${v.slice(1)}` : v;
       };
+    /** Ajoute à out l'appareil d'une ligne du tableau Flotte (9 colonnes au moins), en-têtes et menus écartés. */
     const row = (operator, cells) => {
       if (cells.length < 9) return;
       const [name, registration, code, number, callsign, base, location, , operational] = cells.map(c => String(c).replace(/\s+/g, ' ')
@@ -374,6 +378,7 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
       <p class="small dl-result"></p></form>`;
     const area = dialog.querySelector('textarea'),
       result = dialog.querySelector('.dl-result');
+    /** Lit le texte collé ou le fichier : appareils reconnus remis à onRows et dialogue fermé, sinon message. */
     const run = text => {
       const list = parseFleetPage(text || '');
       if (!list.length) {
@@ -430,6 +435,7 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
     dialog.showModal();
     area.focus();
   }
+  /** Noms d'opérateurs proposés (indicatifs, opérateurs, table de correspondance, SAMU), triés, sans doublon. */
   const operatorNames = () => [...(work.callsigns?.operatorRows || []).map(r => r.name), ...Object.keys(work.callsigns?.data?.operators ||
     {}),
     ...(work.callsigns?.data?.table || []).map(r => r.operator), 'SAMU'
@@ -584,7 +590,8 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
       intro: T(
         'Flotte du SOG : appareils affectables et proposés dans les CR (immatriculation, type, indicatifs, base, opérateur ; plusieurs indicatifs séparés par des virgules). Dessous : les appareils qui volent dans le reporting, avec la case « personnel » (hors flotte).',
         'SOG fleet: assignable aircraft offered in reports (registration, type, callsigns, base, operator; several callsigns comma-separated). Below: the aircraft flying in the reporting, with the “personal” box (outside the fleet).'
-        ),
+      ),
+      /** Tableaux éditables de la base (colonnes et lignes de travail). */
       tables: () => [{
         columns: [{
           key: 'operator',
@@ -628,6 +635,7 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
         }],
         data: work.fleet.data.rows
       }],
+      /** Fichiers à écrire [chemin, texte] : flotte, plus l'index des appareils personnels du reporting. */
       files: async stamp => [
         // index des appareils individuels (reporting hors flotte), recalculé à chaque enregistrement de la flotte
         ...(window.FleetReporting ? [await window.FleetReporting.personalFile(render, work.fleet.data.rows)] : []),
@@ -635,6 +643,7 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
           "window.DEFA_FLEET = data.rows.map(row => ({ ...row, callsign: (row.callsigns || [])[0] || '' })); window.DEFA_FLEET_META = META; window.DEFA_FLEET_FILE = fileData.rows;",
           stamp)]
       ],
+      /** Données appliquées dans ce navigateur (dataOverride:fleet:v1). */
       overlay: () => fleetData(),
       howto: `<p>${T('Mise à jour depuis le site : automatique une fois par jour (lanceur, réglage sous la liste des appareils du reporting) ; à la main, « Coller la page Flotte du site… » (copier-coller de la page « Flotte virtuelle »), vérifier, puis « Enregistrer dans le dépôt ». Ou, avec le script :', 'Update from the website: “Paste the website Fleet page…” (copy-paste of the “Virtual fleet” page), check, then “Save to repository”. Or, with the script:')}</p>
         <ol><li>${T('Ouvrir', 'Open')} ${window.RepositoryNav?.siteLink?.('fleet', {}, T('Flotte virtuelle', 'Virtual fleet')) || ''}, <span>${T('puis Fichier › Enregistrer sous… (« Flotte.html »).', 'then File › Save as… (“Flotte.html”).')}</span></li>
@@ -650,7 +659,8 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
       intro: T(
         'Désignateur OACI (Doc 8643), modèle, description (L2J, H1T…), catégorie de turbulence, position de l’aile. Les modifications sont aussi reportées dans aircraft_overrides.json.',
         'ICAO designator (Doc 8643), model, description (L2J, H1T…), wake category, wing position. Changes are also written to aircraft_overrides.json.'
-        ),
+      ),
+      /** Tableaux éditables de la base : types puis alias. */
       tables: () => [{
         title: T('Types', 'Types'),
         columns: [{
@@ -673,6 +683,7 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
           key: 'wing_position',
           label: T('Aile', 'Wing'),
           type: 'select',
+          /** Positions d'aile reconnues par la base OACI (wing_position). */
           options: () => ['low', 'mid', 'high', 'none']
         }, {
           key: 'source',
@@ -692,6 +703,7 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
         }],
         data: work.aircraftDb.aliases
       }],
+      /** Fichiers à écrire : base OACI (aircraft_db.js) et modifications manuelles (aircraft_overrides.json). */
       files: async stamp => {
         const db = aircraftDbData(stamp);
         return [
@@ -699,6 +711,7 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
           ['data/references/aircraft_overrides.json', await overridesText(db)]
         ];
       },
+      /** Données appliquées dans ce navigateur (dataOverride:aircraftDb:v1). */
       overlay: stamp => aircraftDbData(stamp),
       stampKey: true,
       howto: `<p>${T('Rafraîchissement par le script (sources : OACI Doc 8643, EUROCONTROL, Wikidata ; modifications manuelles d’aircraft_overrides.json prioritaires) — depuis le dossier AircraftDB :', 'Refresh with the script (sources: ICAO Doc 8643, EUROCONTROL, Wikidata; manual changes from aircraft_overrides.json take priority) — from the AircraftDB folder:')}</p>
@@ -716,7 +729,8 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
       intro: T(
         'Indicatif complet (conservé dans les CR) ↔ forme plan de vol (case 7, 7 caractères avec le numéro) ↔ exploitant OACI (OPR/, case 18). Types : types OACI de la série, séparés par des virgules.',
         'Full callsign (kept in reports) ↔ flight plan form (item 7, 7 characters with the number) ↔ ICAO operator (OPR/, item 18). Types: ICAO types of the series, comma-separated.'
-        ),
+      ),
+      /** Tableaux éditables de la base : indicatifs puis exploitants. */
       tables: () => [{
         title: T('Indicatifs', 'Callsigns'),
         columns: [{
@@ -776,10 +790,12 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
         }],
         data: work.callsigns.operatorRows
       }],
+      /** Fichier à écrire : data/references/callsigns.js. */
       files: stamp => [
         ['data/references/callsigns.js', render(CALLSIGN_COMMENT, callsignData(), 'dataOverride:callsigns:v1',
           'window.MISSION_CALLSIGNS = { META, table: data.table, operators: data.operators, file: fileData };', stamp)]
       ],
+      /** Données appliquées dans ce navigateur (dataOverride:callsigns:v1). */
       overlay: () => callsignData(),
       howto: `<p>${T('Pas de script : cette page (ou le fichier, à la main) est la source. Les formes corrigées dans les CR apparaissent dans « Indicatifs appris » ci-dessous, à intégrer ici.', 'No script: this page (or the file, by hand) is the source. Forms corrected in reports appear in “Learned callsigns” below, to integrate here.')}</p>`
     },
@@ -789,6 +805,7 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
       group: T('Données du navigateur', 'Browser data'),
       title: T('Appareils des missions enregistrées', 'Aircraft from recorded missions'),
       key: 'missionAircraftRegistry:v1',
+      /** Clé d'enregistrement d'une ligne : immatriculation sans séparateurs. */
       byKey: r => String(r.registration || '').toUpperCase().replace(/[^A-Z0-9]/g, ''),
       intro: T('Mémorisés à chaque enregistrement d’une mission (la donnée la plus récente l’emporte sur la flotte).',
         'Remembered each time a mission is saved (latest data wins over the fleet).'),
@@ -807,6 +824,7 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
         key: 'category',
         label: T('Catégorie', 'Category'),
         type: 'select',
+        /** Catégories d'appareil : avion, hélicoptère, amphibie. */
         options: () => ['fixed', 'rotary', 'amphibious']
       }, {
         key: 'callsign',
@@ -827,6 +845,7 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
       group: T('Données du navigateur', 'Browser data'),
       title: T('Types ajoutés localement', 'Locally added types'),
       key: 'missionAircraftTypes:v1',
+      /** Clé d'enregistrement d'une ligne : désignateur OACI. */
       byKey: r => String(r.tdesig || '').toUpperCase(),
       intro: T('Types inconnus saisis dans des missions. « Intégrer » les copie dans la base OACI (à enregistrer ensuite).',
         'Unknown types entered in missions. “Integrate” copies them into the ICAO base (save it afterwards).'),
@@ -841,11 +860,13 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
         key: 'category',
         label: T('Catégorie', 'Category'),
         type: 'select',
+        /** Catégories d'appareil : avion, hélicoptère, amphibie. */
         options: () => ['fixed', 'rotary', 'amphibious']
       }, {
         key: 'addedAt',
         label: T('Ajouté le', 'Added')
       }],
+      /** Copie les types absents dans la base OACI de travail ; rend la base à afficher ensuite. */
       integrate: list => {
         list.forEach(r => {
           if (r.tdesig && !work.aircraftDb.records.some(x => x.tdesig === r.tdesig)) work.aircraftDb.records.unshift({
@@ -884,6 +905,7 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
         key: 'updatedAt',
         label: T('Date', 'Date')
       }],
+      /** Reporte les formes plan de vol apprises dans la table des indicatifs ; rend la base à afficher. */
       integrate: list => {
         list.forEach(r => {
           const row = work.callsigns.data.table.find(x => x.prefix === r.prefix);
@@ -903,6 +925,7 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
       group: T('Données du navigateur', 'Browser data'),
       title: T('Aérodromes utilisés (cache)', 'Aerodromes used (cache)'),
       key: 'missionAirports:v1',
+      /** Clé d'enregistrement d'une ligne : code OACI. */
       byKey: r => String(r.icao || '').toUpperCase(),
       intro: T('Coordonnées et fuseaux des terrains utilisés (lever / coucher du soleil, météo).',
         'Coordinates and time zones of aerodromes used (sunrise / sunset, weather).'),
@@ -942,7 +965,8 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
       intro: T(
         'Pilotes (trigrammes) et appareils de la compagnie — immatriculation, type, indicatifs utilisés, terrain de rattachement (modifiable), dernier terrain connu, statut — sans les vols ni les missions. Utilisée par les trois applications (CR, Landing Dashboard, Flight Planner). Base « lâche » : aide à la saisie, non exhaustive. Mise à jour : « Base » › « Mettre à jour la référence », ou tools/defa_reference.py.',
         'Pilots (trigrams) and aircraft — registration, type, callsigns used, home aerodrome (editable), last known aerodrome, status — without flights or missions. Used by the three applications. Loose base: input aid, not exhaustive.'
-        ),
+      ),
+      /** Tableaux éditables de la référence : appareils puis pilotes. */
       tables: () => [{
         title: T('Appareils', 'Aircraft'),
         columns: [{
@@ -961,6 +985,7 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
           key: 'status',
           label: T('Statut', 'Status'),
           type: 'select',
+          /** Statuts d'un appareil de la référence. */
           options: () => ['DISPONIBLE', 'INDISPONIBLE', 'MAINTENANCE', 'RETIRÉ']
         }, {
           key: 'homeAd',
@@ -1025,6 +1050,7 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
         }],
         data: work.defaReference.data.pilots
       }],
+      /** Fichier à écrire : data/references/defa_reference.js (lignes sans trigramme ni immatriculation écartées). */
       files: stamp => [
         ['data/references/defa_reference.js', render([
             'Référence anonymisée : pilotes (trigrammes), appareils (immatriculation, type, indicatifs',
@@ -1037,6 +1063,7 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
           }, 'dataOverride:defaReference:v1',
           'window.DEFA_REFERENCE = { META, pilots: data.pilots, aircraft: data.aircraft, file: fileData };', stamp)]
       ],
+      /** Données appliquées dans ce navigateur (dataOverride:defaReference:v1). */
       overlay: () => ({
         pilots: work.defaReference.data.pilots.filter(p => p.trigram),
         aircraft: work.defaReference.data.aircraft.filter(a => a.registration)
@@ -1050,7 +1077,7 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
       intro: T(
         'Base distincte du registre des missions : page « Log des vols » du site de la compagnie enregistrée (Ctrl+S, page web complète ou HTML seul), ou export CSV / JSON de cette base. Chargée à la demande, gardée dans ce navigateur seulement (hors dépôt et hors sauvegarde locale : trigrammes des pilotes). Les CR s’en servent pour les appareils connus (immatriculation → type, indicatifs utilisés), les trigrammes d’équipage et les terrains ; l’analyse des indicatifs alimente la table de correspondance.',
         'Separate from the mission ledger: “Log des vols” page saved (Ctrl+S), or CSV / JSON export of this base. Loaded on demand, kept in this browser only (not in the repository nor the local backup: pilot trigrams). Reports use it for known aircraft, crew trigrams and aerodromes; the callsign analysis feeds the correspondence table.'
-        )
+      )
     }, {
       id: 'merges',
       group: T('Base', 'Base'),
@@ -1059,7 +1086,7 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
       intro: T(
         'Équivalences mémorisées par « Fusionner avec… / renommer » des fiches : appliquées au journal rechargé, à la référence et au catalogue. Une boucle (A → B et B → A) échange les deux noms : supprime l’entrée fautive, puis refais la fusion depuis la fiche.',
         'Equivalences stored by the sheets’ “Merge with… / rename”: applied to the reloaded log, the reference and the catalogue. A loop (A → B and B → A) swaps both names: delete the wrong entry, then redo the merge from the sheet.'
-        )
+      )
     }, {
       id: 'send',
       group: T('Centre (CPCO)', 'Centre (CPCO)'),
@@ -1068,7 +1095,7 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
       intro: T(
         'Bouton « Envoyer le CR » des pages de saisie : POST JSON (mission, CR HTML et texte, calculs) vers l’adresse ci-dessous. La clef reste dans ce navigateur (missionSendKey:v1), hors sauvegarde locale. Le service doit accepter les appels de cette origine (CORS).',
         '“Send report” button of the entry pages: JSON POST (mission, report HTML and text, calculations) to the address below. The key stays in this browser (missionSendKey:v1), outside the local backup. The service must accept calls from this origin (CORS).'
-        )
+      )
     }, {
       id: 'cpco',
       group: T('Centre (CPCO)', 'Centre (CPCO)'),
@@ -1077,7 +1104,7 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
       intro: T(
         'Le Centre de planification et de conduite des opérations (générateur de mission, studio cartographique, registre des missions) est réservé : il s’active ici par un mot de passe, gardé dans ce navigateur. Centre verrouillé : ses pages sont absentes des menus et ses réglages (calcul des routes, espace disque des missions) sont verrouillés.',
         'The planning and operations command centre (mission generator, map studio, mission registry) is restricted: it is enabled here with a password, kept in this browser. Locked centre: its pages are hidden from menus and its settings (route calculation, missions disk space) are locked.'
-        )
+      )
     }, {
       id: 'planner',
       group: T('Planificateur carburant', 'Fuel planner'),
@@ -1086,7 +1113,7 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
       intro: T(
         'Au-dessus de cette altitude, le graphique d’altitude optimale du planificateur signale « oxygène requis » pour les avions à cabine non pressurisée (champ « Cabine pressurisée » du profil ; non renseigné : piston non pressurisé). Information seulement : le calcul n’est pas limité. Réglage gardé dans ce navigateur.',
         'Above this altitude, the planner’s optimum altitude chart shows “oxygen required” for aircraft with an unpressurised cabin (profile field “Pressurised cabin”; not set: piston unpressurised). Information only: the computation is not limited. Setting kept in this browser.'
-        )
+      )
     }, {
       id: 'ledgers',
       group: T('Missions', 'Missions'),
@@ -1095,7 +1122,7 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
       intro: T(
         'Registre unique data/cr/missions.yaml (toutes familles, source de vérité des reportings). Édition directe du YAML, complète ou par famille, avec contrôle avant enregistrement ; pour une mission, préférer le CR (clic sur la ligne du reporting).',
         'Single ledger data/cr/missions.yaml (all families, source of truth of the reportings). Direct YAML editing, full or per family, checked before saving; for a single mission, prefer the report (click its reporting row).'
-        )
+      )
     }
   ];
 
@@ -1172,7 +1199,6 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
       });
     }
 
-    /** Affiche la base choisie : titre, présentation, mode d'emploi, éditeur (tableaux ou panneau dédié : envoi, journal, fusions, registres). */
     /** Rubriques réservées au Centre masquées tant qu'il est verrouillé (titres de groupe vides compris). */
     function lockNav() {
       root.querySelectorAll('.da-nav [data-set]').forEach(b => {
@@ -1199,6 +1225,8 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
       if (!root.querySelector('.da-main').hidden) show();
     });
 
+    /** Affiche la base choisie (rubrique du Centre si elle est verrouillée) : titre, présentation, mode d'emploi,
+     *  puis éditeur (tableaux) ou panneau dédié. */
     function show() {
       let set = SETS.find(d => d.id === current.id) || SETS[0];
       if (locked(set)) set = SETS.find(d => d.id === 'cpco') || set;
@@ -1224,10 +1252,12 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
         status,
         actions,
         changed,
+        /** Modifications enregistrées par la rubrique : plus de garde au départ de la page. */
         saved: () => {
           dirty = false;
         },
         show,
+        /** Ouvre la rubrique id (adresse ?base=id). */
         open: id => {
           current.id = id;
           history.replaceState(null, '', `?base=${id}`);
@@ -1363,6 +1393,7 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
       const D = window.DefaFlightLog,
         data = D.load(),
         list = data.records || [];
+      /** Texte en majuscules ; clean : lettres et chiffres seulement (comparaison des indicatifs). */
       const up = v => String(v ?? '').trim().toUpperCase(),
         clean = v => up(v).replace(/[^A-Z0-9]/g, '');
       /** Durée en minutes → « h HH ». */
@@ -1382,7 +1413,7 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
       });
       if (!list.length) {
         body.querySelector('.da-defa-stats').textContent = T('Aucun journal chargé dans ce navigateur.',
-        'No log loaded in this browser.');
+          'No log loaded in this browser.');
         actions([]);
         return;
       }
@@ -1393,6 +1424,7 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
       body.querySelector('.da-defa-stats').textContent = `${data.source || '—'} · ${T('chargé le', 'loaded on')} ${new Date(data.importedAt).toLocaleString()} · ${list.length} ${T('vols', 'flights')} · ${dates[0]} → ${dates[dates.length - 1]} · ${hours(minutes)} · ${count('trigram')} ${T('pilotes', 'pilots')} · ${count('registration')} ${T('appareils', 'aircraft')} · ${count('type')} types`;
       // Séries : état dans la table de correspondance (indicatif, forme plan de vol ou autre forme).
       const table = () => work.callsigns.data.table;
+      /** Entrée de la table de correspondance qui couvre une série (indicatif, forme plan de vol ou autre forme). */
       const entryOf = s => table().find(e => [e.prefix, e.fpl, ...(e.aliases || [])].map(clean).some(f => f === s.prefix || s.forms.has(
         f)));
       const series = D.series(list);
@@ -1456,6 +1488,7 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
       // Vols : filtre plein texte, 300 lignes affichées.
       const flights = body.querySelector('.da-defa-flights'),
         filter = body.querySelector('.da-defa-filter');
+      /** Tableau des vols filtré (300 premiers affichés). */
       const paint = () => {
         const q = up(filter.value),
           shown = (q ? list.filter(r => up(Object.values(r).join(' ')).includes(q)) : list);
@@ -1530,6 +1563,7 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
       if (!access.enabled()) {
         body.innerHTML = `<div class="da-form"><label>${esc(T('Mot de passe du Centre', 'Centre password'))}<input type="password" autocomplete="off" data-cpco-pwd></label></div>`;
         const input = body.querySelector('[data-cpco-pwd]');
+        /** Déverrouille le Centre avec le mot de passe saisi, sinon message et nouvelle saisie. */
         const go = async () => {
           if (await access.unlock(input.value)) {
             status(T('Centre activé dans ce navigateur', 'Centre enabled in this browser'));
@@ -1746,6 +1780,7 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
         });
       }
 
+      /** Liste des registres par famille : nombre de missions, boutons d'édition (YAML) et d'export. */
       function paint() {
         tbody.innerHTML = '';
         families.forEach(f => {
@@ -1778,7 +1813,7 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
       status(T(
         'Registre unique : dossier autorisé, sinon copie du navigateur, sinon fichier du dépôt ; anciens registres par famille repris automatiquement.',
         'Single ledger: authorised folder, else browser copy, else repository file; legacy per-family ledgers merged automatically.'
-        ));
+      ));
     }
 
     show();

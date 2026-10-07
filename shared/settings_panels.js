@@ -30,7 +30,9 @@
   const tf = K.tf;
   const PROFILE = 'missionReportingConfig:v1',
     DEFA = 'defaCredentials:v1'; // secret : gardé dans ce navigateur seulement (exclu des sauvegardes : browser_store.js)
+  /** Notification flottante de la suite (AppFramework.notify), sans effet si le cadre n'est pas chargé. */
   const notify = (m, k) => window.AppFramework?.notify?.(m, k);
+  /** Bandeau commun (RepositoryNav), lu à l'appel. */
   const nav = () => window.RepositoryNav;
 
   // sous-titres des en-têtes des quatre pages (« SO Group Virtual — … » : la couche de traduction traduit la partie après le tiret)
@@ -38,7 +40,7 @@
     'trigram, VATSIM, IVAO, SimBrief and airline website credentials, sign-in and password, mission types, language, aircraft and simulators',
     'Kürzel, VATSIM-, IVAO-, SimBrief- und Website-Zugangsdaten der Fluggesellschaft, Anmeldung und Passwort, Missionsarten, Sprache, Luftfahrzeuge und Simulatoren',
     'trigrama, credenciales de VATSIM, IVAO, SimBrief y del sitio de la aerolínea, conexión y contraseña, tipos de misión, idioma, aeronaves y simuladores'
-    );
+  );
   L('accès au Centre, utilisateurs et droits, catégories de disponibilité, réglages du routage, envoi des comptes rendus',
     'Centre access, users and rights, availability categories, routing settings, report sending',
     'Zugang zum Zentrum, Benutzer und Rechte, Verfügbarkeitskategorien, Routing-Einstellungen, Berichtsversand',
@@ -56,6 +58,7 @@
   L('Paramètres — Installation', 'Settings — Installation', 'Einstellungen — Installation', 'Ajustes — Instalación');
   L('Paramètres — Maintenance', 'Settings — Maintenance', 'Einstellungen — Wartung', 'Ajustes — Mantenimiento');
 
+  /** Objet JSON gardé dans le stockage du navigateur sous la clé k ({} si absent ou illisible). */
   const read = k => K.store.json(k, {}) || {};
   /** Champ de formulaire : libellé, saisie (attributs). */
   const field = (label, attrs) => `<label>${esc(label)}</label><input ${attrs} autocomplete="off" spellcheck="false">`;
@@ -71,7 +74,9 @@
       'Trigram, network IDs (VATSIM, IVAO), SimBrief and airline website credentials, suite language. Used by every page (☰ › Pilot profile, reports, reportings).',
       'Kürzel, Netzwerk-IDs (VATSIM, IVAO), SimBrief- und Website-Zugangsdaten der Fluggesellschaft, Sprache der Suite. Von allen Seiten verwendet (☰ › Pilotenprofil, Berichte).',
       'Trigrama, identificadores de redes (VATSIM, IVAO), SimBrief y del sitio de la aerolínea, idioma de la suite. Usado por todas las páginas (☰ › Perfil de piloto, informes).'
-      ),
+    ),
+    /** Identité : profil pilote (missionReportingConfig:v1), identifiants du site gardés dans ce navigateur
+     *  (defaCredentials:v1), client OAuth IVAO, langue ; « Enregistrer » prévient les pages (pilot-profile-change). */
     render(body, api) {
       const p = read(PROFILE),
         d = read(DEFA),
@@ -158,9 +163,11 @@
   async function ivaoClient(body, tri) {
     const card = body.querySelector('[data-ivc-card]');
     if (!card) return;
+    /** Élément de la carte ; say : texte d'état du client IVAO. */
     const $ = s => card.querySelector(s),
       say = txt => $('[data-ivc-state]').textContent = txt;
     $('[data-ivc-redirect]').value = `${location.origin}/__setup/ivao-callback`;
+    /** Appel du lanceur /__setup/secrets : GET (trigramme) sans b, POST de b sinon ; null en cas d'échec. */
     const api = (b = null) => fetch(`/__setup/secrets${b ? '' : `?tri=${encodeURIComponent(tri)}`}`, {
       method: b ? 'POST' : 'GET',
       headers: {
@@ -170,6 +177,7 @@
       body: b ? JSON.stringify(b) : undefined,
       cache: 'no-store'
     }).then(r => r.ok ? r.json() : null).catch(() => null);
+    /** Affiche l'état du client IVAO lu au lanceur (st null : lanceur absent ; secret jamais réaffiché). */
     const draw = st => {
       const v = st?.user?.ivao;
       card.querySelectorAll('input[data-ivc], button').forEach(e => e.disabled = !st || !tri);
@@ -197,6 +205,7 @@
         t: tri
       }));
     };
+    /** Enregistre (ou efface, valeurs vides) le client IVAO de l'utilisateur chez le lanceur, puis relit l'état. */
     const send = async values => {
       const r = await api({
         scope: 'user',
@@ -244,7 +253,8 @@
       'Fleet types owned and mastered, installed simulators: the Centre uses them to assign you an aircraft and to gather pilots on a common simulator. Copied into your declared availability weeks.',
       'Besessene und beherrschte Flottentypen, installierte Simulatoren: Das Zentrum nutzt sie für die Zuweisung eines Luftfahrzeugs und um Piloten auf einem gemeinsamen Simulator zusammenzubringen. In Ihre angegebenen Verfügbarkeitswochen übernommen.',
       'Tipos de la flota poseídos y dominados, simuladores instalados: el Centro los usa para asignarle una aeronave y reunir a pilotos en un simulador común. Copiados en sus semanas de disponibilidad declaradas.'
-      ),
+    ),
+    /** Appareils et simulateurs du pilote : éditeur commun (EquipmentEditor) monté pour son trigramme. */
     async render(body, api) {
       // éditeur (shared/equipment_editor.js) : avant, blocs « Mes appareils » et « Mes simulateurs » de Mes missions
       const [A, E] = [await need('MissionAssignments'), await need('EquipmentEditor')],
@@ -271,7 +281,8 @@
       'One-time settings: data (framagit repository or archive), profile, application folder, ODV workbook, then SIA data. The virtual airline (SO Group Virtual by default) and folders are set in “Sources and folders”, the update channel in Maintenance › Updates.',
       'Einmalige Einstellungen: Daten (framagit-Repository oder Archiv), Profil, Anwendungsordner, ODV-Arbeitsmappe, dann SIA-Daten. Virtuelle Fluggesellschaft (standardmäßig SO Group Virtual) und Ordner unter „Quellen und Ordner“, Update-Kanal unter Wartung › Updates.',
       'Ajustes hechos una vez: datos (repositorio framagit o archivo), perfil, carpeta de la aplicación, libro ODV y luego datos SIA. La aerolínea virtual (SO Group Virtual por defecto) y las carpetas se ajustan en «Fuentes y carpetas», el canal de actualización en Mantenimiento › Actualizaciones.'
-      ),
+    ),
+    /** Premier lancement : date de fin (suiteSetup:v1), liens vers l'assistant, sources et canal de mise à jour. */
     render(body, api) {
       const done = K.store.json('suiteSetup:v1', null);
       body.innerHTML = `<p data-no-i18n>${esc(done?.at ? tf(['Premier lancement terminé le {d}.', 'First run completed on {d}.', 'Erststart abgeschlossen am {d}.', 'Primer arranque terminado el {d}.'], {
@@ -331,6 +342,7 @@
       'Shared user file (data/utilisateurs/<TRI>.json): role, password (salted PBKDF2 hash, never in clear).',
       'Gemeinsame Benutzerdatei (data/utilisateurs/<TRI>.json): Rolle, Passwort (gesalzener PBKDF2-Hash, nie im Klartext).',
       'Ficha de usuario compartida (data/utilisateurs/<TRI>.json): rol, contraseña (huella PBKDF2 con sal, nunca en claro).'),
+    /** Connexion (trigramme et mot de passe) ; une fois connecté : changement de mot de passe, déconnexion. */
     async render(body, api) {
       const U = await need('SuiteUsers');
       if (!U) {
@@ -398,6 +410,7 @@
       ] : []);
     }
   };
+  /** Affectations des missions (MissionAssignments), lues à l'appel. */
   const A = () => window.MissionAssignments;
 
   // ---------------------------------------------------------------- Centre › Utilisateurs et droits
@@ -411,7 +424,9 @@
       'One file per user (data/utilisateurs/<TRI>.json, synchronised): role admin_centre or user, active, password. Develop / production mode for the whole airline (data/config/suite.json). An administrator can act as another user: a banner shows it on every page and every write is signed “ADM pour TOTO”.',
       'Eine Datei pro Benutzer (data/utilisateurs/<TRI>.json, synchronisiert): Rolle admin_centre oder Benutzer, aktiv, Passwort. Modus develop / production für die ganze Gesellschaft (data/config/suite.json). Ein Administrator kann als anderer Benutzer handeln: ein Banner zeigt es auf allen Seiten, jede Schreibung trägt „ADM pour TOTO“.',
       'Una ficha por usuario (data/utilisateurs/<TRI>.json, sincronizada): rol admin_centre o usuario, activo, contraseña. Modo develop / production para toda la compañía (data/config/suite.json). Un administrador puede actuar como otro usuario: una banda lo recuerda en todas las páginas y cada escritura lleva «ADM pour TOTO».'
-      ),
+    ),
+    /** Utilisateurs et droits : mode de la compagnie, fiches (nom, rôle, actif), ajout, mot de passe provisoire ;
+     *  dossier vide : fiches créées d'après la référence des pilotes. */
     async render(body, api) {
       const U = await need('SuiteUsers');
       if (!U) {
@@ -422,6 +437,7 @@
       }
       // relecture des fiches (une par utilisateur) : texte d'attente dans le panneau et barre de progression du framework
       body.innerHTML = `<p class="sp-hint">${esc(L('Lecture des fiches utilisateurs…', 'Reading user files…', 'Benutzerdateien werden gelesen…', 'Leyendo las fichas de usuario…'))}</p>`;
+      /** Relit toutes les fiches utilisateurs (barre de progression du cadre) ; fiches valides seulement. */
       const readAll = async () => {
         const tris = Object.keys(await U.index(true)).sort();
         const job = window.AppFramework?.task?.(L('Relecture des fiches utilisateurs', 'Reading user files',
@@ -463,6 +479,7 @@
       }
       const s = U.session(),
         pending = (A()?.pendingData?.() || []).filter(p => /^(utilisateurs|config)\//.test(p));
+      /** État du mot de passe d'une fiche : provisoire, défini ou aucun. */
       const pwState = u => u.mot_de_passe ? (u.a_changer ? L('provisoire', 'temporary', 'vorläufig', 'provisional') : L('défini',
         'set', 'gesetzt', 'definida')) : L('aucun', 'none', 'keins', 'ninguna');
       body.innerHTML = `<div class="sp-card"><h3>${esc(L('Mode de la compagnie', 'Airline mode', 'Modus der Gesellschaft', 'Modo de la compañía'))}</h3>
@@ -610,7 +627,8 @@
       'Mission themes opened by the custom categories (“custom civil security”, “custom defence”) of your availability: for each domain, an allow list (only these themes) or a block list (all but these themes). Kept in your user file, synchronised.',
       'Missionsthemen, die die Kategorien nach Wahl („Zivilschutz nach Wahl“, „Verteidigung nach Wahl“) Ihrer Verfügbarkeit öffnen: je Bereich eine Positivliste (nur diese Themen) oder eine Negativliste (alle außer diesen). In Ihrer synchronisierten Benutzerdatei gespeichert.',
       'Temas de misión abiertos por las categorías personalizadas («seguridad civil personalizada», «defensa personalizada») de su disponibilidad: por dominio, una lista blanca (solo estos temas) o una lista negra (todos menos estos). Guardadas en su ficha de usuario, sincronizada.'
-      ),
+    ),
+    /** Préférences de thèmes du pilote par domaine (tous, liste blanche, liste noire) et thèmes réellement ouverts. */
     async render(body, api) {
       const [U, SD] = [await need('SuiteUsers'), await need('SuiteDispos')];
       const tri = A()?.trigram?.() || '';
@@ -635,6 +653,7 @@
         mode: c.querySelector('input[type=radio]:checked')?.value || 'tous',
         liste: [...c.querySelectorAll('[data-list] input:checked')].map(x => x.value)
       }]));
+      /** Affiche, par domaine, les thèmes qu'ouvre la catégorie personnalisée avec les choix en cours. */
       const preview = () => {
         const p = read();
         body.querySelectorAll('[data-dom]').forEach(c => {
@@ -673,6 +692,7 @@
       ]);
     }
   };
+  /** Ligne [fr, en, de, es] du libellé d'un mode de préférence (tous, blanche, noire). */
   const rowOf = m => ({
     tous: ['Tous les thèmes du domaine', 'Every theme of the domain', 'Alle Themen des Bereichs', 'Todos los temas del dominio'],
     blanche: ['Liste blanche : seulement ces thèmes', 'Allow list: only these themes', 'Positivliste: nur diese Themen',
@@ -703,7 +723,9 @@
       'What pilots declare (data/config/disponibilites.json, synchronised): groups shown in the ODV, categories (labels, colour, open themes, type, ODV workbook codes), themes per domain. A category that has been used is retired (hidden from lists, kept for history), never deleted.',
       'Was die Piloten angeben (data/config/disponibilites.json, synchronisiert): in der ODV angezeigte Gruppen, Kategorien (Bezeichnungen, Farbe, offene Themen, Typ, Codes der ODV-Arbeitsmappe), Themen je Bereich. Eine benutzte Kategorie wird zurückgezogen (in Listen ausgeblendet, für den Verlauf behalten), nie gelöscht.',
       'Lo que declaran los pilotos (data/config/disponibilites.json, sincronizado): grupos mostrados en el ODV, categorías (etiquetas, color, temas abiertos, tipo, códigos del libro ODV), temas por dominio. Una categoría usada se retira (oculta en las listas, guardada para el historial), nunca se borra.'
-      ),
+    ),
+    /** Catégories de disponibilité du Centre (data/config/disponibilites.json) : catégories, groupes ODV, thèmes par
+     *  domaine ; identifiants existants figés (retrait au lieu de suppression), retour aux valeurs par défaut. */
     async render(body, api) {
       const SD = await need('SuiteDispos');
       if (!SD) {
@@ -714,6 +736,7 @@
       }
       const cfg = structuredClone(await SD.load(true));
       const known = new Set((cfg.categories || []).map(c => c.id)); // catégories existantes : identifiant figé, pas de suppression
+      /** Options « thèmes ouverts » d'une catégorie : tous, aucun, par domaine, selon les préférences, liste. */
       const ouvertsOpts = c => {
         const v = Array.isArray(c.ouverts) ? 'list' : c.ouverts || 'none';
         return [...OUVERTS, ...cfg.domaines.flatMap(d => [
@@ -721,7 +744,9 @@
           [`prefs:${d.id}`, [`${SD.label(d.label)} selon les préférences, parmi {t}`, `${SD.label(d.label)} per preferences, among {t}`, `${SD.label(d.label)} nach Präferenzen, aus {t}`, `${SD.label(d.label)} según preferencias, entre {t}`], d]
         ]), ['list', ['liste de thèmes', 'theme list', 'Themenliste', 'lista de temas']]].map(([k, row, d]) => `<option value="${esc(k)}"${k === v ? ' selected' : ''}>${esc(d ? tf(row, { t: d.themes.join(' ') }) : K.t(row))}</option>`).join('');
       };
+      /** Saisie du libellé français (k0) d'une ligne [fr, en, de, es] ; les autres langues : à l'enregistrement. */
       const L4 = (row, k) => `<input data-k="${k}0" value="${esc((Array.isArray(row) ? row[0] : row) || '')}" style="width:16em">`; // français seul : les autres langues passent par l'audit i18n
+      /** Ligne du tableau des catégories (identifiant saisi seulement pour une nouvelle catégorie, sinon figé). */
       const catRow = c => `<tr data-id="${esc(c.id)}"${c.retiree ? ' class="sp-retired"' : ''}><td>${known.has(c.id) ? `<code>${esc(c.id)}</code>` : `<input data-k="id" value="${esc(c.id)}" style="width:8em">`}</td>
         <td><select data-k="groupe">${cfg.groupes.map(g => `<option value="${esc(g.id)}"${g.id === c.groupe ? ' selected' : ''}>${esc(SD.label(g.label))}</option>`).join('')}</select></td>
         <td>${L4(c.label, 'l')}</td><td><input type="color" data-k="couleur" value="${esc(c.couleur || '#bfbfbf')}"></td>
@@ -729,6 +754,7 @@
         <td><select data-k="type">${TYPES.map(([k, row]) => `<option value="${k}"${k === c.type ? ' selected' : ''}>${esc(K.t(row))}</option>`).join('')}</select></td>
         <td><input data-k="odv" value="${esc((c.odv || []).join(' '))}" title="${esc(K.t(['Codes des cases du classeur ODV lus comme cette catégorie à l’import, séparés par des espaces ; le premier s’affiche dans la grille des disponibilités', 'ODV workbook cell codes read as this category on import, separated by spaces; the first one is shown in the availability grid', 'Zellcodes der ODV-Arbeitsmappe, die beim Import als diese Kategorie gelesen werden, durch Leerzeichen getrennt; der erste erscheint im Verfügbarkeitsraster', 'Códigos de celda del libro ODV leídos como esta categoría al importar, separados por espacios; el primero se muestra en la cuadrícula de disponibilidad']))}" style="width:6em"></td>
         <td>${known.has(c.id) ? `<input type="checkbox" data-k="retiree"${c.retiree ? ' checked' : ''}>` : `<button type="button" class="repo-plain da-del" data-drop title="${esc(K.t(['Supprimer cette nouvelle catégorie', 'Delete this new category', 'Diese neue Kategorie löschen', 'Eliminar esta nueva categoría']))}">✕</button>`}</td></tr>`;
+      /** Dessine les tableaux des catégories, des groupes et des thèmes par domaine. */
       const draw = () => {
         body.innerHTML = `<div data-no-i18n><h3>${esc(K.t(['Catégories', 'Categories', 'Kategorien', 'Categorías']))}</h3><div class="da-scroll"><table class="da-table"><thead><tr><th>id</th><th>${esc(K.t(['Groupe', 'Group', 'Gruppe', 'Grupo']))}</th><th>${esc(K.t(['Libellé', 'Label', 'Bezeichnung', 'Etiqueta']))}</th><th>${esc(K.t(['Couleur', 'Colour', 'Farbe', 'Color']))}</th><th>${esc(K.t(['Thèmes ouverts', 'Open themes', 'Offene Themen', 'Temas abiertos']))}</th><th>Type</th><th>${esc(K.t(['Codes ODV', 'ODV codes', 'ODV-Codes', 'Códigos ODV']))}</th><th>${esc(K.t(['Retirée', 'Retired', 'Zurückgezogen', 'Retirada']))}</th></tr></thead>
           <tbody data-cats>${cfg.categories.map(catRow).join('')}</tbody></table></div>
@@ -740,6 +766,7 @@
       draw();
       /** Configuration d'après le formulaire. */
       const collect = () => {
+        /** Champ data-k=k d'une ligne. */
         const val = (tr, k) => tr.querySelector(`[data-k="${k}"]`);
         // libellé français saisi ; en, de, es gardés s'il n'a pas changé, sinon vidés (l'audit des traductions les relève)
         const lab = (tr, prev) => {
@@ -832,7 +859,8 @@
           api.saved();
           api.show();
           api.status(K.t(['Catégories enregistrées.', 'Categories saved.', 'Kategorien gespeichert.',
-            'Categorías guardadas.']));
+            'Categorías guardadas.'
+          ]));
         }, 'primary'],
         [L('Valeurs par défaut', 'Default values', 'Standardwerte', 'Valores por defecto'), async () => {
           if (!await window.AppFramework.ask(K.t([
@@ -865,6 +893,7 @@
     L,
     rows
   };
+  /** Inscrit les libellés en attente auprès de la couche de traduction (shared/content_i18n.js). */
   const reg = () => rows.length && window.RepositoryContentI18n?.(rows.splice(0));
   window.RepositoryContentI18n ? reg() : addEventListener('DOMContentLoaded', reg, {
     once: true

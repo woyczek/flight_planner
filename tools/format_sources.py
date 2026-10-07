@@ -151,6 +151,19 @@ def templates(src):
 
 
 def js(src):
+    """Mise en forme jusqu'à stabilité : avec la coupure des lignes longues, un passage de jsbeautifier décale encore
+    l'indentation des suites de ligne au passage suivant ; trois passages au plus (le deuxième suffit en pratique), pour
+    qu'une seule exécution de l'outil soit idempotente."""
+    out = src
+    for _ in range(3):
+        nxt = js_once(out)
+        if nxt == out:
+            break
+        out = nxt
+    return out
+
+
+def js_once(src):
     """jsbeautifier « protégé » : gabarits `…` masqués pendant la mise en forme (jsbeautifier reformate à tort le
     contenu des gabarits imbriqués), remis tels quels ensuite."""
     spans, parts, masque = templates(src), [], []

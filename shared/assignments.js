@@ -28,8 +28,11 @@
     READ = 'assignmentsRead:v1',
     AVAIL = 'pilotAvailability:v1',
     PAGE = 'apps/pilot/mes_missions.html';
+  /** Texte d'une ligne [fr, en, de, es] dans la langue de la page (français si le kit n'est pas chargé). */
   const t = row => K?.t ? K.t(row) : row[0];
+  /** Comme t, avec valeurs {clé} remplacées. */
   const tf = (row, v) => K?.tf ? K.tf(row, v) : row[0].replace(/\{(\w+)\}/g, (_, k) => v[k] ?? '');
+  /** Adresse de la racine de la suite (bandeau commun, sinon dossier parent de ce script). */
   const root = () => window.RepositoryNav?.root || new URL('../', document.currentScript?.src || location.href).href;
   // lectures mémorisées (RepositoryKit.store.jsonCached) : analyse refaite seulement si le texte a changé — isRead,
   // pliState, disponibilités… sont lus à chaque ligne de la liste et à chaque case de la grille
@@ -40,6 +43,7 @@
       return d;
     }
   };
+  /** Écrit un objet JSON dans localStorage (stockage plein ou indisponible : ignoré). */
   const setJson = (k, v) => {
     try {
       localStorage.setItem(k, JSON.stringify(v));
@@ -67,6 +71,7 @@
     // seconde : un fichier réécrit dans la seconde de sa lecture répondait « 304, inchangé » et l'ancien contenu restait
     // — utilisateur ajouté absent de la liste, index des disponibilités d'avant l'enregistrement)
     const written = new Set();
+    /** Oublie les lectures gardées d'un fichier (toutes sans path), noté écrit : relu ensuite sans cache HTTP. */
     const drop = path => {
       if (!path) {
         mem.clear();
@@ -80,6 +85,7 @@
             }
       if (path) written.add(new URL(path, root()).href);
     };
+    /** Prévient la page (événement defa-data-change) qu'un fichier de données a changé. */
     const announce = path => window.dispatchEvent(new CustomEvent('defa-data-change', {
       detail: {
         path
@@ -101,6 +107,7 @@
         if (inflight.has(url)) return inflight.get(url);
         // lecture « fraîche » ou fichier écrit depuis : sans cache HTTP (pas de 304 sur une date à la seconde)
         const bypass = fresh || written.delete(url);
+        /** Lecture partagée : fetch du fichier (null si absent), dernière valeur connue si le lanceur ne répond pas. */
         const p = (async () => {
           let value = null;
           try {
@@ -141,6 +148,7 @@
   // annoncés (store.changed) ; sans dossier autorisé, gardés dans ce navigateur (boîte d'envoi suiteDataOutbox:v1, relue
   // en priorité tant qu'elle est plus récente que le fichier) et écrits au prochain flushData().
   const OUTBOX = 'suiteDataOutbox:v1';
+  /** Boîte d'envoi : fichiers en attente d'écriture dans le dossier des données (suiteDataOutbox:v1), par chemin. */
   const outbox = () => json(OUTBOX, {}) || {};
   /** Dossier des données autorisé en écriture (handle) ; erreur expliquée sinon. */
   async function dataDir() {
@@ -186,6 +194,7 @@
   /** Dossier des données accordé et résultat du contrôle de copie : { dir, same } (mémorisé 5 s). */
   function poolSource() {
     if (srcMemo && Date.now() - srcMemo.at < 5e3) return srcMemo.p;
+    /** Lecture du dossier accordé et contrôle « même copie que la suite servie » (FileAccess.sameAsServed). */
     const p = (async () => {
       const FA = window.FileAccess,
         st = FA ? await FA.status('__data') : null;
@@ -211,11 +220,13 @@
     srcMemo = null;
   });
   const alerted = new Map(); // message → instant (une alerte identique toutes les 5 s au plus : fichier + index)
+  /** Alerte flottante, une seule fois par texte toutes les 5 s. */
   function alertOnce(text) {
     if (Date.now() - (alerted.get(text) || 0) < 5e3) return;
     alerted.set(text, Date.now());
     window.AppFramework?.notify?.(text, 'warn');
   }
+  /** Avertissement : dossier des données dont on ne peut pas vérifier qu'il est celui de la suite servie. */
   const uncheckedText = name => tf([
     'Dossier des données « {n} » : impossible de vérifier qu’il est celui de la suite servie (lanceur absent ou d’une version antérieure). Les données sont lues et écrites dans ce dossier.',
     'Data folder “{n}”: cannot check that it is the one of the served suite (launcher missing or from an earlier version). Data is read from and written to this folder.',
@@ -358,6 +369,8 @@
   /** Index des affectations (data/missions/affectations.json) : { updatedAt, assignments: [...] } ; vide si absent. */
   let warned = false; // dossier autorisé ≠ fichiers servis : signalé une fois
   let warnedOther = false; // dossier autorisé d'une autre copie de la suite : signalé une fois
+  /** Index des affectations : data/missions/affectations.json servi, ou celui du dossier des missions autorisé
+   *  (prioritaire) quand la page ne peut pas vérifier qu'il est celui de la suite ; mémorisé sauf fresh. */
   async function index({
     fresh = false
   } = {}) {
@@ -405,12 +418,15 @@
     return (list || cache?.assignments || []).filter(a => me && String(a.pilot).toUpperCase() === me && a.status !== 'annulée' && (all ||
       !when(a) || when(a) >= now)).sort((x, y) => when(x) - when(y));
   }
+  /** Vrai si l'affectation a été ouverte par le pilote (marque locale assignmentsRead:v1). */
   const isRead = a => !!json(READ, {})[key(a)];
   /** État d'un pli d'exercice pour le pilote (clé de l'affectation + identifiant du pli) : { state: 'open' (scellé brisé)
    *  | 'sealed' (rescellé), at, logged (ouverture à l'heure déjà portée au journal) } ; {} : rien de fait. */
   const PLIS = 'pilotPlis:v2';
+  /** État noté d'un pli d'exercice (pilotPlis:v2) pour une affectation et un identifiant de pli. */
   const pliState = (a, id) => json(PLIS, {})[`${key(a)}|${id}`] || {};
 
+  /** Complète l'état d'un pli d'exercice (state, at, logged) dans pilotPlis:v2. */
   function setPliState(a, id, patch) {
     const r = json(PLIS, {}),
       k = `${key(a)}|${id}`;
@@ -428,6 +444,7 @@
     envelope();
   }
 
+  /** Marque une affectation lue (date de lecture) et met à jour le pli de l'en-tête. */
   function markRead(a) {
     const r = json(READ, {});
     r[key(a)] = new Date().toISOString();
@@ -438,6 +455,8 @@
   // ---- pli cacheté de l'en-tête
   const ENVELOPE_SVG =
     '<svg viewBox="0 0 40 28" aria-hidden="true"><rect x="1" y="1" width="38" height="26" rx="2" class="pa-paper"/><path d="M1 3 20 16 39 3" class="pa-fold"/><circle cx="20" cy="16" r="6.2" class="pa-seal"/><path d="M17 16h6M20 13v6" class="pa-seal-mark"/></svg>';
+  /** Pli cacheté de l'en-tête et pastille de « Mes missions » : affectations à venir non lues du pilote ; masqués
+   *  sans trigramme ou sans affectation non lue. */
   async function envelope() {
     const tools = document.querySelector('.repo-header-tools');
     if (!tools) return;
@@ -557,6 +576,7 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
     ["CONTRÔLE (marque de suivi)", "CHECK (tracking mark)", "KONTROLLE (Markierung)", "CONTROL (marca de seguimiento)"],
     ["A : CONTRÔLE (marque de suivi)", "A: CHECK (tracking mark)", "A: KONTROLLE (Markierung)", "A: CONTROL (marca de seguimiento)"],
   ];
+  /** Inscrit les libellés traduits de la légende auprès de la couche de traduction (shared/content_i18n.js). */
   const legendI18n = () => window.RepositoryContentI18n?.(LEGEND_I18N);
   /** Ligne [fr, en, de, es] d'un libellé de la légende (texte français exact), sinon null (Planning ODV). */
   const legendRow = label => LEGEND_I18N.find(r => r[0] === label) || null;
@@ -587,6 +607,7 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
     ['Sam', 'Sat', 'Sa', 'Sáb'],
     ['Dim', 'Sun', 'So', 'Dom']
   ];
+  /** Grille vide : 7 jours × 24 heures non renseignées. */
   const emptyGrid = () => DAYS.map(() => Array(24).fill(''));
   /** Grille normalisée : codes de la légende ('' : non renseigné) ; true → O, false → ''. */
   const normGrid = g => DAYS.map((_, d) => Array.from({
@@ -604,6 +625,7 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
   };
   /** Semaine décalée de n semaines (clé lundi ISO). */
   const addWeeks = (week, n) => new Date(Date.parse(`${week}T00:00:00Z`) + n * 7 * 864e5).toISOString().slice(0, 10);
+  /** Vrai si la déclaration a au moins une semaine au format weeks. */
   const hasWeeks = av => !!av?.weeks && Object.keys(av.weeks).length > 0;
   /** Semaine d'une déclaration de l'ancien format : celle de sa saisie. */
   const legacyWeek = av => weekKey(Date.parse(av?.updated_at || '') || Date.now());
@@ -789,7 +811,7 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
   function simChips(list) {
     if (!document.getElementById('simChipCss')) document.head.insertAdjacentHTML('beforeend',
       '<style id="simChipCss">.sim-chip{display:inline-block;margin:0 3px 2px 0;padding:0 5px;border-radius:3px;font:700 10.5px/1.6 system-ui,sans-serif;letter-spacing:.03em;color:#fff;background:var(--sim);vertical-align:middle;white-space:nowrap}</style>'
-      );
+    );
     return (list || []).map(simTag).map(t => `<span class="sim-chip" style="--sim:${t.color}" title="${K.esc(t.name)}">${K.esc(t.abbr)}</span>`).join('');
   }
   /** Simulateurs du pilote (liste de la feuille FLOTTE) : gardés avec ses disponibilités, comme ses appareils. */
@@ -813,6 +835,7 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
     const c = '#' + (LEGEND[code]?.[3] || 'D9D9D9');
     return window.RepositoryNav?.chartColor?.(c) || c;
   };
+  /** Couleur d'encre lisible sur la couleur d'un code : blanc sur fond sombre, presque noir sinon. */
   const inkOf = code => {
     const L = K?.color?.luminance?.(colorOf(code));
     return L != null && L < .35 ? '#fff' : '#1b1b1b';
@@ -826,11 +849,13 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
     readOnly = false // ancienne grille montrée en lecture seule (saisie par plages : shared/dispos_editor.js)
   } = {}) {
     grid = normGrid(grid);
+    /** Libellé d'une ligne : celui fourni (days), sinon le jour de la semaine. */
     const dayLabel = i => days?.[i] || t(DAYS[i]);
     let brush = LEGEND[code] ? code : 'O';
     // couleur de la case : valeur propre à la case, posée avec !important (les designs rendent les cases de tableau
     // transparentes avec !important ; seul un style en ligne !important l'emporte)
     const cell = (d, h, v) => `<td data-d="${d}" data-h="${h}" title="${K.esc(dayLabel(d))} ${h}h–${h + 1}h UTC${v ? ' · ' + K.esc(LEGEND[v][0]) : ''}"${v ? ` data-code="${v}" style="background-color:${colorOf(v)} !important;color:${inkOf(v)} !important"` : ''}>${v}</td>`;
+    /** Lignes du tableau : une par jour, une case par heure. */
     const rows = () => DAYS.map((_, i) => `<tr><th>${K.esc(dayLabel(i))}</th>${grid[i].map((v, h) => cell(i, h, v)).join('')}</tr>`).join('');
     host.classList.add('pa-grid');
     host.classList.toggle('pa-readonly', readOnly);
@@ -852,6 +877,7 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
     let paint = null, // code posé pendant le geste ('' : effacement)
       anchor = null,
       before = null; // grille au début du geste
+    /** Peint le rectangle ancre → (d1, h1) avec le code du geste ; hors rectangle, la grille d'avant le geste. */
     const fill = (d1, h1) => {
       const [da, db] = [Math.min(anchor[0], d1), Math.max(anchor[0], d1)],
       [ha, hb] = [Math.min(anchor[1], h1), Math.max(anchor[1], h1)];
@@ -873,6 +899,7 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
       const td = e.target.closest('td[data-d]');
       if (td && paint !== null) fill(+td.dataset.d, +td.dataset.h);
     };
+    /** Fin du geste : la grille modifiée est remise à onChange. */
     const stop = () => {
       if (paint === null) return;
       paint = null;
@@ -966,6 +993,7 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
   // ---- géographie et appareils (communs au Centre, à l'ODV et à la page pilote)
   const TURN_MIN = 30, // remise en œuvre d'un appareil entre deux vols
     FERRY_SETUP_MIN = 20; // mise en œuvre d'un convoyage (en plus du vol)
+  /** Degrés → radians. */
   const rad = x => x * Math.PI / 180;
   const geo = {
     /** Distance orthodromique (NM). */
@@ -985,6 +1013,7 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
     icaoOf: p => /\(([A-Z]{4})\)/.exec(p?.name || '')?.[1] || '',
     /** Position en degrés et minutes pour une route de plan de vol : 4422N00052W. */
     coord: p => {
+      /** Valeur en degrés et minutes sur w chiffres, suivie de l'hémisphère (pos ou neg). */
       const f = (v, w, pos, neg) => {
         const a = Math.abs(v),
           d = Math.floor(a),
@@ -1010,6 +1039,7 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
   const AP_KEY = 'missionAirports:v1';
   let airports = null,
     worldLoad = null;
+  /** Positions des terrains par code OACI : base SIA, puis départs et destinations du registre (lu une fois). */
   async function knownAirports() {
     if (airports) return airports;
     airports = {};
@@ -1154,6 +1184,7 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
     P: ['piston', ['Avions à pistons', 'Piston aircraft', 'Kolbenmotorflugzeuge', 'Aviones de pistón']],
     '?': ['other', ['Autres', 'Other', 'Andere', 'Otros']]
   };
+  /** Catégorie de la flotte d'après la description OACI (H / G : hélicoptère, sinon motorisation) : [id, libellés]. */
   const categoryOf = desc => {
     const d = String(desc || '').toUpperCase();
     return CATEGORY[d.startsWith('H') || d.startsWith('G') ? 'H' : d.charAt(2)] || CATEGORY['?'];
@@ -1273,6 +1304,7 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
       codes[a.code] = (codes[a.code] || 0) + 1;
       seen[a.code] ||= a;
     }
+    /** Vrai si le code est de catégorie « dispo » (déclaration par plages, sinon légende de l'ODV). */
     const isDispo = c => (seen[c].category || LEGEND[c]?.[1]) === 'dispo';
     const list = Object.entries(codes).sort((x, y) => isDispo(y[0]) - isDispo(x[0]) || y[1] - x[1]);
     if (!list.length) return null;
@@ -1335,7 +1367,6 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
     }));
     return Object.fromEntries([...new Set(tris)].map(tr => [tr, declCache[tr] ?? null]));
   }
-  /** Possède l'appareil (déclaré possédé ou maîtrisé) ; null si le pilote n'a rien déclaré. */
   // ---- postes d'une mission : un par équipage aérien, chacun son type (désignateur) ou, type générique du schéma
   // hélico (« Hélicoptère »), une catégorie et un service (« Gendarmerie » → appareils de la Gendarmerie nationale)
   /** Catégorie d'un désignateur (base OACI) : helico, jet, turboprop, piston, other. */
@@ -1343,7 +1374,9 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
     const db = window.AIRCRAFT_DB || {};
     return categoryOf((db[ty] || db[db.__aliases?.[ty]] || {}).description)[0];
   };
+  /** Texte en majuscules sans accents. */
   const fold = s => String(s ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().trim();
+  /** Nature d'un type écrit en clair : helico, avion, any (aéronef) ou '' si rien n'est reconnu. */
   const kindOf = s => /h[ée]lico|helicopter|rotor/i.test(s) ? 'helico' : /avion|airplane|plane|jet/i.test(s) ? 'avion' :
     /a[ée]ronef|aircraft/i.test(s) ? 'any' : '';
   // ---- type écrit en clair dans une mission (« H225M Caracal », « Rafale », « E-3F / A400M ») → désignateurs de la
@@ -1363,6 +1396,7 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
     MRTT: 'A332',
     PHENIX: 'A332'
   };
+  /** Texte réduit à ses lettres et chiffres en majuscules (clé de l'index de la flotte). */
   const norm = s => fold(s).replace(/[^A-Z0-9]/g, '');
   let fleetKeys = null;
   /** Mot normalisé → désignateur de la flotte (construit une fois). */
@@ -1410,6 +1444,7 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
       label: String(rawType || '')
     };
   }
+  /** Vraie équipe aérienne : nom et type renseignés (pas de tirets seuls). */
   const isTeam = x => x && x.name && !/^[-\s]*$/.test(x.name) && !/^[-\s]*$/.test(String(x.type || ''));
   /** Postes d'une mission : yaml (aircraft[], ou teams[] du schéma hélico), sinon entrée du registre (teams,
    *  aircraftTypes) ; équipes au sol (type ni appareil ni hélicoptère/avion) écartées. Mission d'une opération à
@@ -1417,6 +1452,7 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
    *  (callsigns). */
   function postsOf(entry, y = {}) {
     let out = [];
+    /** Équipes qui sont les appareils propres de la mission (indicatifs de l'entrée), sinon toute la liste. */
     const own = list => {
       const cs = new Set((entry?.callsigns || []).map(c => String(c).trim().toUpperCase()));
       const mine = list.filter(x => cs.has(String(x.name || '').trim().toUpperCase()));
@@ -1436,6 +1472,7 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
     if (spec.type) return k === spec.type || !!spec.types?.includes(k);
     return spec.kind === 'helico' ? catOfType(k) === 'helico' : spec.kind === 'avion' ? catOfType(k) !== 'helico' : true;
   };
+  /** Libellé d'un poste : type(s), sinon sa catégorie (hélicoptère, avion, aéronef). */
   const specLabel = spec => typeof spec === 'string' ? typeOf(spec) : spec?.types?.join(' / ') || spec?.type || (spec?.kind === 'helico' ?
     t(['hélicoptère', 'helicopter']) : spec?.kind === 'avion' ? t(['avion', 'aircraft']) : spec?.kind === 'any' ? t(['aéronef',
       'aircraft'
@@ -1451,6 +1488,7 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
     const svc = fold(spec?.service || '');
     let list = (window.DEFA_FLEET || []).filter(f => fits(spec, f.type) || (spec?.type && typeOf(f.variant) === spec.type));
     if (list.some(f => serves(svc, f))) list = list.filter(f => serves(svc, f));
+    /** Terrain actuel de l'appareil (positions connues), sinon sa base. */
     const at = f => window.AircraftPositions?.adOf?.(f) || f.base; // terrain actuel (site, ordre de mission), sinon la base
     return list.sort((a, b) => (at(b) === departure) - (at(a) === departure) || (b.operational !== false) - (a.operational !== false) ||
       String(a.base).localeCompare(String(b.base)));
@@ -1467,6 +1505,7 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
     family = '',
     exclude = []
   }) {
+    /** Rang de tri d'un candidat : disponible et possesseur d'abord, puis maîtrise, puis disponibilité. */
     const rank = c => (c.ok ? 0 : 10) + (c.qual.level === 'mastered' ? 0 : c.qual.level === 'owned' ? 1 : c.qual.level === 'flown' ? 2 :
       3) + (c.avail ? (c.avail.ok ? 0 : 4) : 2);
     return [...new Set(tris)].filter(tr => tr && !exclude.includes(tr)).map(tr => {
@@ -1506,6 +1545,7 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
         mission: m,
         post: p
       })));
+      /** Vrai si le pilote maîtrise un type qui convient au poste. */
       const masters = (tr, s) => (decls[tr]?.aircraft?.mastered || []).some(ty => fits(s.post, ty));
       // affectation gloutonne : postes les plus rares d'abord (moins de pilotes éligibles), maîtrisé avant possédé
       const elig = s => free.filter(tr => !(s.post.type || s.post.kind) || ownsType(decls[tr], s.post));
@@ -1559,6 +1599,7 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
   async function missionsDir() {
     const FA = window.FileAccess;
     if (!FA) throw new Error(t(['Module d’accès aux dossiers absent', 'Folder access module missing']));
+    /** Demande le dossier des missions à l'utilisateur ; erreur expliquée s'il refuse. */
     const pick = async () => {
       try {
         return await FA.pickFolder('__missions');
@@ -1701,6 +1742,7 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
       if (!participants.some(p => p.pilot === a.pilot)) out.push(line('retire', a));
     return out;
   }
+  /** Ajoute des entrées au journal des affectations (affectations_log.json) du dossier des missions. */
   async function appendLog(dir, entries) {
     if (!entries.length) return;
     let log = {
@@ -1791,6 +1833,7 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
   }
   /** Phrase d'une entrée : « 01/10 10:35 · DCP affecte M-002 à RBR (H145 F-ZBPO, DRAGON05, décollage 30/09 08:00Z) ». */
   function logText(e) {
+    /** Date courte « JJ/MM hh:mm » d'un instant ISO, '' si absent. */
     const d = s => s ? new Date(s).toISOString().slice(5, 16).replace(/(\d\d)-(\d\d)T/, '$2/$1 ') : '';
     // langue de la page (fr, en, de, es) ; phrase composée ici, la couche de traduction ne la reconnaîtrait pas
     const li = Math.max(0, ['fr', 'en', 'de', 'es'].indexOf(window.RepositoryNav?.getLanguage?.() || 'fr'));
@@ -1804,6 +1847,7 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
       pour: ['pour {x}', 'for {x}', 'für {x}', 'para {x}'],
       takeoff: ['décollage {x}', 'take-off {x}', 'Start {x}', 'despegue {x}']
     };
+    /** Verbe ou complément k dans la langue de la page, {lettre} remplacée par v. */
     const w = (k, v) => W[k][li].replace(/\{(\w)\}/g, (_, c) => v[c] ?? '');
     const act = W[e.action] ? w(e.action, {
       m: e.mission,
@@ -1829,6 +1873,8 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
     store.changed(`data/missions/${LOG_FILE}`);
     return out;
   }
+  /** Écrit affectations.yaml de la mission, met à jour l'index affectations.json et le journal (appelé sous verrou
+   *  par writeAssignment) ; rend le chemin du fichier de la mission. */
   async function writeAssignmentLocked(dir, mission, participants, extra) {
     const at = new Date().toISOString();
     const doc = {

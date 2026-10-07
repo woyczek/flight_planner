@@ -23,6 +23,7 @@
   /** URL d'une image de décor : DECO(design)(nom) → shared/deco/<design>/<nom>.webp */
   const DECO = d => n => new URL(`deco/${d}/${n}.webp${V}`, script.src).href;
   const html = document.documentElement;
+  /** Vrai en décor complet (html[data-decor="full"]) ; sinon décor sobre : ni panneaux, ni objets, ni décor de page. */
   const fullDecor = () => html.dataset.decor === 'full';
 
   // ------------------------------------------------------------------ libellés (voyant et radar de Durci)
@@ -34,6 +35,7 @@
       'Jetzt im Sicherungsordner sichern', 'Guardar ahora en la carpeta de copia'
     ]
   };
+  /** Libellé k de T dans la langue de la page. */
   const tr = k => window.RepositoryKit.t(T[k]); // shared/kit.js
 
   // ------------------------------------------------------------------ décor de page, par design
@@ -49,7 +51,9 @@
   // sides    : objets des marges, alternativement à gauche et à droite : [image, largeur px maximale].
   // composants de la frise : img(nom) → adresse de l'image du design
   const FOOT = {
+    /** Bandeau du pied de page : image « footer » du design, ou sa variante du ton (footTones). */
     strip: (img, set) => `<img class="repo-deco-strip" src="${img(set?.footTones ? `footer-${html.dataset.tone === 'dark' ? 'sombre' : 'clair'}` : 'footer')}" alt="">`,
+    /** Plaque gravée du pied de page (image plate-defa). */
     plate: img => `<div class="repo-deco-plate-img"><img src="${img('plate-defa')}" alt=""></div>`,
     // plots du radar : position dans l'écran (%) et couleur ; délai d'allumage calculé au rendu (passage du balayage)
     radar: img => `<div class="repo-deco-radar" title="${tr('radar')}"><div class="repo-deco-radar-stage">` +
@@ -252,6 +256,7 @@
   /** Bloc de premier niveau, affiché. */
   const topBlock = b => !b.hidden && b.offsetHeight > 0 && !b.parentElement.closest('.repo-block');
 
+  /** Feuille de registre (ton clair, décor complet) en fond des grands blocs de tableau reconnus par SHEETS[d]. */
   function sheets(d) {
     const re = SHEETS[d];
     if (!re || !fullDecor() || html.dataset.tone === 'dark') return;
@@ -269,6 +274,7 @@
     });
   }
 
+  /** Objet posé (PROPS) dans le coin des grands blocs reconnus, sauf sur une feuille de registre. */
   function props(d) {
     const list = PROPS[d];
     if (!list || !fullDecor()) return;
@@ -294,6 +300,7 @@
    */
   function panelOf(b, set, prev) {
     const o = b.offsetWidth >= b.offsetHeight ? 'w' : 't';
+    /** Thèmes de THEMES reconnus dans un texte (« ops » toujours en dernier). */
     const hit = s => THEMES.filter(([, re]) => re.test(String(s || '').toLowerCase()));
     // titre, puis icône et identifiant, puis sous-titre : premier niveau qui reconnaît un thème autre que « ops »
     const themes = [b.querySelector('h2,h3')?.textContent, `${b.dataset.icon || ''} ${b.dataset.blockId || ''}`, b.dataset.subtitle]
@@ -361,13 +368,17 @@
   // de la place libre (0 : calé à droite, 1 : à gauche), valable quelle que soit la largeur de la page.
   const deviceKey = d => `repositoryDeviceX:${d}`;
 
+  /** Rend l'appareil de page dv déplaçable : position (fraction de la place libre) gardée par design dans le stockage
+   *  (repositoryDeviceX:<design>), réduit à la largeur de sa colonne si besoin. */
   function slideDevice(dv, d) {
     const set = dv.firstElementChild,
       K = window.RepositoryKit;
     // plus large que sa colonne : réduit à sa largeur (depuis le coin bas droit)
     const scale = () => Math.min(1, dv.clientWidth / (set.offsetWidth || 1));
+    /** Place libre (px) à gauche de l'appareil une fois réduit. */
     const room = () => Math.max(0, dv.clientWidth - set.offsetWidth * scale());
     let frac = Math.min(1, Math.max(0, +K.store.get(deviceKey(d), 0) || 0));
+    /** Applique la position et l'échelle ; gardée sur dv._place pour la recalculer quand le nœud est repris. */
     const place = dv._place = () => {
       set.style.transform = `translateX(${-Math.round(frac * room())}px) scale(${scale().toFixed(3)})`;
     };
@@ -383,10 +394,12 @@
       const x0 = e.clientX,
         f0 = frac,
         r = room() || 1;
+      /** Glissement : nouvelle fraction d'après le déplacement horizontal du pointeur. */
       const move = ev => {
         frac = Math.min(1, Math.max(0, f0 - (ev.clientX - x0) / r));
         place();
       };
+      /** Fin du glissement : position enregistrée pour ce design. */
       const up = () => {
         set.classList.remove('dragging');
         set.removeEventListener('pointermove', move);
@@ -402,6 +415,8 @@
     });
   }
 
+  /** Passe complète du décor : retire le décor de page, reconstruit, puis supprime les nœuds de l'ancienne passe
+   *  que reuse() n'a pas repris. */
   function render() {
     // décor de page retiré (mesures des écarts sans lui), fonds des blocs laissés en place ; repris s'ils reviennent
     keep = nodes.map(n => (n.remove(), n));
@@ -416,6 +431,8 @@
     }
   }
 
+  /** Construit le décor du design courant : fonds et objets des blocs, puis (décor complet) pied de page, objets
+   *  entre les blocs, appareil de page et objets des marges. */
   function build() {
     const d = html.dataset.design,
       set = SETS[d];
@@ -530,12 +547,14 @@
     // voyant actif : sauvegarde comme le bouton de l'en-tête (browser_store.js : dossier, sinon choix, sinon téléchargement)
     if (b && !b.onclick) {
       b.title = tr('saveNow');
+      /** Clic sur le voyant : même action que le bouton de sauvegarde de l'en-tête. */
       b.onclick = () => document.querySelector('.repo-backup-button')?.click();
     }
   }
 
   // ------------------------------------------------------------------ déclencheurs
   let timer = 0;
+  /** Recalcul différé (250 ms) : regroupe les changements rapprochés (redimensionnement, design, langue). */
   const later = () => {
     clearTimeout(timer);
     timer = setTimeout(render, 250);
@@ -559,6 +578,7 @@
   let shown = '',
     checking = false;
 
+  /** Signature des blocs de premier niveau affichés (titre, icône, identifiant) : détecte un changement. */
   function blocksShown() {
     return [...document.querySelectorAll('.repo-block')].filter(b => !b.hidden && !b.parentElement.closest('.repo-block')).map(blockText)
       .join('|');

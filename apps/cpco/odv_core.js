@@ -112,7 +112,8 @@
     FNY: ['FNY (code N)', 'FNY (code N)', 'FNY (Code N)', 'FNY (código N)'],
     MARITIME: ['Maritime', 'Maritime', 'Seefahrt', 'Marítimo'],
     EXERCICE: ['Exercice SO (IVAO / VATSIM)', 'SO exercise (IVAO / VATSIM)', 'SO-Übung (IVAO / VATSIM)',
-      'Ejercicio SO (IVAO / VATSIM)'],
+      'Ejercicio SO (IVAO / VATSIM)'
+    ],
     TOUT: ['Tout rôle (code O)', 'Any role (code O)', 'Jede Rolle (Code O)', 'Cualquier función (código O)']
   };
   /** Libellé d'un rôle dans la langue de la page (rôle inconnu : tel quel). */
@@ -123,6 +124,7 @@
   // données (exports CSV, JSON, récapitulatif inchangés) ; say(texte) le rend dans la langue de la page, à l'affichage.
   // Valeur {clé} : texte, ou ligne [fr, en, de, es] (libellé traduit, nombre au format de la langue).
   const PHRASES = new Map();
+  /** Texte de la langue i d'une ligne [fr, en, de, es], {clé} remplacées (valeur en ligne : celle de la langue). */
   const fillRow = (row, vals, i) => String(row[i] ?? row[0]).replace(/\{(\w+)\}/g, (_, k) => {
     const v = vals[k];
     return Array.isArray(v) ? v[i] ?? v[0] ?? '' : v ?? '';
@@ -159,9 +161,11 @@
     inconnu: ['Non renseigné', 'Not specified', 'Nicht angegeben', 'Sin indicar'],
     hors_legende: ['Code hors légende', 'Code not in the legend', 'Code nicht in der Legende', 'Código fuera de la leyenda']
   };
+  /** Ligne [fr, en, de, es] du libellé d'une catégorie de disponibilité (libellé français seul si non traduit). */
   const catRow = c => CAT_I18N[c] || CATEGORIES[c];
   /** Libellé d'une catégorie de disponibilité dans la langue de la page. */
   const categoryLabel = c => CAT_I18N[c] ? window.RepositoryKit.tf(CAT_I18N[c]) : CATEGORIES[c];
+  /** Ligne [fr, en, de, es] du libellé d'un rôle (code tel quel s'il est inconnu). */
   const roleRow = r => ROLE_I18N[r] || ROLES[r] || r;
   const SLOT_I18N = [
     ['matin', 'morning', 'Morgen', 'mañana'],
@@ -173,6 +177,7 @@
   const SENS_I18N = {
     'VOL (marque de suivi)': ['VOL (marque de suivi)', 'FLIGHT (tracking mark)', 'FLUG (Markierung)', 'VUELO (marca de seguimiento)']
   };
+  /** Ligne [fr, en, de, es] du sens d'un code de la légende, sinon le libellé lu dans le classeur. */
   const sensRow = s => s && (window.MissionAssignments?.legendRow?.(s) || SENS_I18N[s]) || s;
   /** Sens d'un code de la légende dans la langue de la page (libellé inconnu : tel quel). */
   const sensLabel = s => (r => Array.isArray(r) ? window.RepositoryKit.tf(r) : r)(sensRow(s));
@@ -181,8 +186,10 @@
     examen: ['examen', 'exam', 'Prüfung', 'examen'],
     training: ['training', 'training', 'Training', 'entrenamiento']
   };
+  /** Libellé d'une nature de session ATC à éviter (examen, training) dans la langue de la page. */
   const kindLabel = k => KIND_I18N[k] ? window.RepositoryKit.tf(KIND_I18N[k]) : k;
   const LOCALES = ['fr-FR', 'en-GB', 'de-DE', 'es-ES'];
+  /** Date mise en forme dans chacune des quatre langues (ligne [fr, en, de, es]). */
   const dateRow = (d, opts) => LOCALES.map(l => d.toLocaleDateString(l, opts));
 
   // Types d'aéronefs → rôles (mot-clé contenu dans la liste déclarée dans FLOTTE ou dans le texte d'un vol).
@@ -337,11 +344,15 @@
       row: +m[2]
     } : null;
   };
+  /** Adresse de cellule « B12 » (ligne, colonne numérotée à partir de 1). */
   const ref = (row, col) => colName(col) + row;
   /** Texte normalisé pour comparer des libellés (majuscules, sans accents ni espaces superflus). */
   const fold = s => String(s ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\s+/g, ' ').trim().toUpperCase();
+  /** Nombre sur deux chiffres. */
   const pad = n => String(n).padStart(2, '0');
+  /** Date « AAAA-MM-JJ » (UTC). */
   const isoDate = d => `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())}`;
+  /** Date décalée de n jours. */
   const addDays = (d, n) => new Date(d.getTime() + n * 864e5);
   /** Date d'un numéro de série Excel (système 1900). */
   const serialDate = v => new Date(Date.UTC(1899, 11, 30) + Math.round(+v) * 864e5);
@@ -359,6 +370,7 @@
       mm = Math.round((q - hh) * 60);
     return `${pad(((hh % 24) + 24) % 24)}:${pad(mm)}`;
   };
+  /** Analyse un XML du classeur ; erreur traduite s'il est illisible. */
   const parseXml = text => {
     const doc = new DOMParser().parseFromString(text, 'application/xml');
     if (doc.getElementsByTagName('parsererror').length) throw new Error(window.RepositoryKit.tf(['XML illisible dans le classeur',
@@ -368,9 +380,11 @@
   };
   /** Enfants directs d'un élément par nom local (sans se soucier des espaces de noms). */
   const kids = (el, name) => el ? [...el.children].filter(c => c.localName === name) : [];
+  /** Premier enfant direct de nom local name, null sinon. */
   const kid = (el, name) => kids(el, name)[0] || null;
   /** Descendants par nom local. */
   const all = (el, name) => el ? [...el.getElementsByTagNameNS('*', name)] : [];
+  /** Texte d'un élément : concaténation de ses nœuds <t> (texte enrichi compris). */
   const textOf = el => el ? all(el, 't').map(t => t.textContent).join('') : '';
 
   // Couleurs : ARGB → RGB, thème + teinte, classement vert / orange / rouge du texte enrichi de FLOTTE.
@@ -379,6 +393,7 @@
     return /^[0-9A-F]{8}$/.test(s) ? s.slice(2) : /^[0-9A-F]{6}$/.test(s) ? s : null;
   };
 
+  /** Couleur « RRGGBB » → [teinte °, saturation, luminosité] (0 à 1). */
   function hexToHsl(hex) {
     const [r, g, b] = [0, 2, 4].map(i => parseInt(hex.slice(i, i + 2), 16) / 255), mx = Math.max(r, g, b), mn = Math.min(r, g, b), d =
       mx - mn, l = (mx + mn) / 2;
@@ -387,6 +402,7 @@
     return [h, s, l];
   }
 
+  /** [teinte °, saturation, luminosité] → couleur « RRGGBB » en majuscules. */
   function hslToHex(h, s, l) {
     const c = (1 - Math.abs(2 * l - 1)) * s,
       x = c * (1 - Math.abs((h / 60) % 2 - 1)),
@@ -492,6 +508,7 @@
     }) : [];
     // index de thème Excel : 0 lt1, 1 dk1, 2 lt2, 3 dk2, 4-9 accent1-6 (le schéma liste dk1, lt1, dk2, lt2…)
     const themeColor = i => schemeColors[[1, 0, 3, 2][i] ?? i] || null;
+    /** Couleur d'un élément de style Excel : rgb direct ou couleur du thème, teinte (tint) appliquée ; null sinon. */
     const colorOf = el => {
       if (!el) return null;
       const t = el.getAttribute('tint') ? +el.getAttribute('tint') : 0;
@@ -532,6 +549,8 @@
       if (!loaded.has(info.path)) loaded.set(info.path, await loadSheet(info));
       return loaded.get(info.path);
     }
+    /** Lit une feuille : cellules (valeur, style, texte enrichi), fusions, mises en forme conditionnelles, formes
+     *  du dessin (zones de texte et position), commentaires, hauteurs de lignes et largeurs de colonnes. */
     async function loadSheet(info) {
       const doc = await xml(info.path);
       if (!doc) return null;
@@ -611,6 +630,7 @@
         if (!d) continue;
         for (const anc of [...d.documentElement.children]) {
           if (!/Anchor$/.test(anc.localName) || anc.localName === 'absoluteAnchor') continue;
+          /** Position d'ancrage d'une forme (colonne, ligne et décalages EMU), null sans élément. */
           const pos = e => e && {
             col: +(kid(e, 'col')?.textContent || 0),
             colOff: +(kid(e, 'colOff')?.textContent || 0),
@@ -674,6 +694,7 @@
           comments.set(c.getAttribute('ref'), text);
         }
       }
+      /** Cellule (ligne, colonne), null si vide. */
       const get = (row, col) => cells.get(`${row},${col}`) || null;
       return {
         name: info.name,
@@ -960,6 +981,7 @@
         const key = fold(m[1]);
         if (key in RUBRICS) rubrics[key] = m[2].split(/[\/,;+]+/).map(fold).filter(Boolean);
       }
+      /** Type gardé selon le niveau de maîtrise demandé (settings.flotteLevel : all, green, ou tout sauf rouge). */
       const keep = tok => {
         const l = levels[tok];
         return settings.flotteLevel === 'all' ? true : settings.flotteLevel === 'green' ? !l || l === 'vert' : l !== 'rouge';
@@ -1155,6 +1177,7 @@
       }
     }
     const lundi = monday ? (settings.dateSource === 'frise' && friseDate ? friseDate : monday) : null;
+    /** Date ISO du jour j (0 = lundi) de la semaine lue, '' sans date de semaine. */
     const dateOf = j => lundi ? isoDate(addDays(lundi, j)) : '';
 
     // pilotes : zones de texte de trois lettres sur les colonnes avant la grille, rattachées à la ligne de leur centre
@@ -1410,6 +1433,7 @@
       }
     };
   }
+  /** Année ISO de la semaine qui commence le lundi d (celle de son jeudi). */
   const isoYear = d => addDays(d, 3).getUTCFullYear();
 
   /** Disposition de la frise : 1re colonne, largeur d'un jour, colonne de l'heure 0, colonnes par heure, couloirs. */
@@ -1485,11 +1509,14 @@
         fill: s.fill
       });
     }
+    /** Étiquettes de la frise : trigramme d'équipage (3 lettres) ou indicatif (« COBRA 12 »). */
     const isTag = t => /^[A-Z]{3}$/.test(t.text),
       isCallsign = t => /^[A-Z][A-Z-]*\s*\d{2,4}$/.test(t.text);
     const tags = items.filter(isTag),
       calls = items.filter(isCallsign);
+    /** Couloir de la frise (libellé) qui contient la ligne r. */
     const laneOf = r => f.lanes.find(l => r >= l.r0 && r <= l.r1)?.label || '';
+    /** Équipage d'un vol : trigrammes posés le même jour, sur ses lignes et dans sa plage horaire (± marge). */
     const crewOf = it => [...new Set(tags.filter(t => t.jourIndex === it.jourIndex && t.r0 >= it.r0 - 1 && t.r0 <= it.r1 && t.h0 >= it
       .h0 - 1.5 && t.h0 <= it.h1).map(t => t.text))].sort();
     const vols = [],
@@ -1592,6 +1619,7 @@
     const known = new Set(profile?.roles || []),
       r = rec.role_impose,
       strict = settings.strictCodes;
+    /** Rôles requis présents parmi ceux de l'appareil du pilote. */
     const pick = list => new Set(list.filter(x => known.has(x)));
     if (!strict && r && r !== 'EXERCICE') return new Set([...known, r === 'FNY' ? 'MARITIME' : r, ...(r === 'FNY' ? ['FNY'] : [])]);
     if (r === 'CHASSE') return new Set(['CHASSE']);
@@ -1624,8 +1652,10 @@
       ...settings
     };
     const pref = [...settings.preference.filter(f => FAMILIES[f]), ...Object.keys(FAMILIES).filter(f => !settings.preference.includes(
-    f))];
+      f))];
+    /** Profil FLOTTE d'un pilote (appareils, rôles, simulateurs), null s'il n'y figure pas. */
     const profile = t => data.flotte[t] || null;
+    /** Vrai si le pilote a le simulateur demandé (ou si aucun n'est imposé). */
     const hasSim = t => !settings.sim || (profile(t)?.sims || []).includes(settings.sim);
     const order = new Map(data.pilotes.map((p, i) => [p.trigramme, i]));
     const themeText = fold(data.theme || '');
@@ -1633,8 +1663,11 @@
     // catégorie du code du classeur avec les préférences du pilote (settings.prefsOf) ; null : anciennes règles (rôle
     // imposé par le code, DOMAIN)
     const SD = settings.dispos || window.SuiteDispos;
+    /** Thèmes ouverts d'une disponibilité : déclarés, sinon ceux de la catégorie de son code avec les préférences
+     *  du pilote ; null : anciennes règles. */
     const themesOf = r => Array.isArray(r.themes) ? new Set(r.themes) : SD && r.code && SD.codeCategory(r.code) ? SD.openThemes(SD
       .codeCategory(r.code), settings.prefsOf?.(r.pilote)) : null;
+    /** Vrai si les thèmes du pilote ouvrent la famille fam (TRAINING : dès qu'un thème est ouvert). */
     const opensFam = (p, fam) => !p.themes || (fam === 'TRAINING' ? p.themes.size > 0 : SD.opens(p.themes, fam));
     const slots = [];
     for (let j = 0; j < 7; j++)

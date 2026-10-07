@@ -106,7 +106,8 @@
     if (rows.length < 2) return [];
     const head = rows[0].map(norm);
     return rows.slice(1).filter(r => !r.every(c => /^:?-{2,}:?$/.test(c))).map(r => Object.fromEntries(head.map((h, i) => [h, r[i] ??
-      ''])));
+      ''
+    ])));
   }
   /** Éléments de liste « - … » d'une section. */
   const mdList = block => String(block).split('\n').map(l => /^\s*-\s+(.*)$/.exec(l)?.[1]?.trim()).filter(Boolean);
@@ -136,6 +137,7 @@
       mission: {}
     };
     const intro = mdPairs(mdSection(text, /^introduction/));
+    /** Première valeur renseignée de l'introduction parmi les clés données (alias français / anglais). */
     const pick = (...keys) => keys.map(k => intro[k]).find(Boolean);
     if (pick('type')) y.mission.type = pick('type');
     if (pick('sous_type', 'subtype')) y.mission.subtype = pick('sous_type', 'subtype');
@@ -230,6 +232,8 @@
     return y;
   }
 
+  /** Métadonnées d'une mission Markdown à l'ancien format (blocs « TYPE: », « TARGET », « TURNING POINTS », « RDV »,
+   *  « ZONE », « MAPS TO PRODUCE », « NOTES ») → objet YAML partiel. */
   function extractMdMetadata(text, parsed) {
     const y = {
       title: parsed.title || 'Mission',
@@ -326,6 +330,7 @@
   /** Identifiant de mission normalisé (M-016, m-16 → M-016 ; 041A → 41A) : regroupement des fichiers d'une même mission. */
   const normId = v => parseId(v).id;
 
+  /** Identifiants de mission normalisés, sans doublon, trouvés dans les YAML analysés et les titres « # Mission ». */
   function missionIds(yamls, mds) {
     const ids = new Set();
     yamls.forEach(({
@@ -494,8 +499,8 @@
   const idToken = (old, base) => new RegExp(`(?<![A-Z0-9-])${old.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}${base ? '([A-Z]?)' : '()'}(?![A-Z0-9])`, 'g');
   /** Valeurs texte d'un document (clés comprises), parcours profond ; fn(texte) → texte. */
   const mapStrings = (v, fn) => Array.isArray(v) ? v.map(x => mapStrings(x, fn)) : v && typeof v === 'object' ? Object.fromEntries(Object
-    .entries(v).map(([k, x]) => [k, k === 'former_id' ? x : mapStrings(x, fn)])) : typeof v === 'string' ? fn(v) :
-  v; // former_id : trace, gardé tel quel
+      .entries(v).map(([k, x]) => [k, k === 'former_id' ? x : mapStrings(x, fn)])) : typeof v === 'string' ? fn(v) :
+    v; // former_id : trace, gardé tel quel
   /** Missions du lot (et courante) qui citent un identifiant ailleurs que dans leur propre mission.id : [{ id, count }]. */
   function idRelations(id) {
     const old = idNorm(id);
@@ -534,6 +539,8 @@
       rx = idToken(old, base),
       sub = s => s.replace(rx, (_, team) => now + team);
     let n = 0;
+    /** Applique la migration à un document du lot (YAML et récit), note l'ancien identifiant (former_id) et compte
+     *  les documents réellement modifiés. */
     const fix = d => {
       if (!d?.yaml) return d;
       const before = JSON.stringify([d.yaml, d.narrative]),
@@ -623,6 +630,7 @@
   /** Ajoute (ou remplace, même identifiant) une mission au lot de son opération et la rend courante ; sans lot, le lot
    *  est créé avec la mission courante. Utilisé pour la mission d'organisation (<lettre>-<nnn>Z) créée par le générateur. */
   function addToBatch(doc, by) {
+    /** Document réduit à ce que garde le lot : YAML, récit (vide par défaut) et noms des fichiers sources. */
     const slim = d => ({
       yaml: d.yaml,
       narrative: d.narrative || {
@@ -714,6 +722,7 @@
       const parts = /\.ya?ml$/i.test(f.name || '') ? [] : splitBundle(f.text);
       return parts.length ? parts : [f];
     });
+    /** Identifiant normalisé de la mission d'un fichier (YAML analysé, sinon titre « # Mission … »), '' si aucun. */
     const idOfFile = f => {
       if (isYaml(f)) {
         try {
@@ -803,6 +812,7 @@
   /** Navigation du lot dans l'en-tête de la page : « ◀ Mission 41A — titre (1/3) ▶ », masquée sans lot.
    *  apply(doc) : la page affiche la mission choisie. me : identifiant de la page (générateur, studio). */
   function mountNav(me, apply) {
+    /** Pose la barre de navigation du lot dans l'en-tête (une seule fois), avec le lien de retour au registre. */
     const mount = () => {
       const line = document.querySelector('body>header .repo-header-line1') || document.querySelector('body>header');
       if (!line || document.getElementById('siaBatchNav')) return;
@@ -835,6 +845,7 @@
         '.sia-back{display:inline-flex;align-items:center;margin:0 6px 0 10px;padding:3px 10px;border-radius:999px;border:1px solid currentColor;color:inherit;text-decoration:none;font-size:13px;font-weight:600;white-space:nowrap;opacity:.9}.sia-back:hover{opacity:1}.sia-batch-nav{display:inline-flex;align-items:center;gap:4px;margin:0 10px}.sia-batch-nav[hidden]{display:none}.sia-batch-nav select{max-width:320px;padding:3px 6px;border-radius:6px;font:inherit;font-size:13px}.sia-batch-nav button{padding:3px 9px;border-radius:6px;font-size:13px;cursor:pointer}';
       document.head.append(css);
       const sel = nav.querySelector('select');
+      /** Remplit la liste des missions du lot (chargées, et prévues par l'opération à charger) ; masquée sous deux. */
       const render = () => {
         const b = loadBatch(),
           planned = b ? plannedIds(b.docs) : [],
@@ -856,6 +867,7 @@
         });
         nav.title = b.docs[0]?.yaml?.operation?.name ? `Opération : ${b.docs[0].yaml.operation.name}` : '';
       };
+      /** Rend courante la mission i du lot, l'affiche dans la page (apply) ; erreur notifiée. */
       const goTo = i => {
         try {
           const d = go(i, me);
@@ -976,9 +988,11 @@
     docs = []
   } = {}) {
     y = y?.yaml || y || {};
+    /** Outils de mise en forme : liste, texte nettoyé, cellule de tableau Markdown (sans « | » ni saut de ligne). */
     const arr = v => Array.isArray(v) ? v : v ? [v] : [],
       txt = v => String(v ?? '').trim(),
       cell = v => txt(v).replace(/\|/g, '/').replace(/\n+/g, ' ');
+    /** Coordonnée à 6 décimales ; « — lat, lon » après un nom de point s'il a une position. */
     const num = v => Number.isFinite(+v) ? (+v).toFixed(6) : '',
       at = p => p && Number.isFinite(+p.lat) ? ` — ${num(p.lat)}, ${num(p.lon)}` : '';
     const m = y.mission || {},
@@ -987,7 +1001,9 @@
       op = y.operation || {},
       ex = y.exercise,
       out = [];
+    /** Paragraphes du texte, chaque paragraphe remis sur une ligne. */
     const para = v => txt(v).split(/\n\s*\n/).map(s => s.replace(/\s*\n\s*/g, ' ').trim()).filter(Boolean).join('\n\n');
+    /** Ajoute la section « ## title » si son contenu n'est pas vide. */
     const sec = (title, body) => {
       if (txt(body)) out.push(`## ${title}\n\n${txt(body)}`);
     };
@@ -1028,7 +1044,8 @@
       ].join('\n'));
       if (arr(y.rendezvous).length) sec('Rendez-vous', arr(y.rendezvous).map(r => `- **${txt(r.id)} — ${txt(r.name)}** — ${num(r.lat)}, ${num(r.lon)}${arr(r.participants).length ? ` — participants : ${arr(r.participants).join(', ')}` : ''}${r.role ? ` — ${txt(r.role)}` : ''}`).join('\n'));
       if (y.air_refueling && typeof y.air_refueling === 'object') sec('Ravitaillement en vol', Object.entries(y.air_refueling).map(([k,
-        v]) => `- ${k}: ${Array.isArray(v) ? v.join(', ') : v}`).join('\n'));
+        v
+      ]) => `- ${k}: ${Array.isArray(v) ? v.join(', ') : v}`).join('\n'));
       sec('Risques à prendre en compte', arr(y.risks).map(r => typeof r === 'object' ? `- **${txt(r.hazard)}** — conséquence : ${txt(r.consequence)} — mesure : ${txt(r.mitigation)}` : `- ${txt(r)}`).join('\n'));
       sec('Cartographie prévue', arr(y.maps).map(mp => typeof mp === 'object' ? `- \`${txt(mp.filename || mp.file)}\` — ${txt(mp.description)}` : `- \`${txt(mp)}\``).join('\n'));
       // exercice : organisation de l'opération (docs) ; plis comptés, pas leur contenu

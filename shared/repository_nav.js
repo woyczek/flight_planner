@@ -361,7 +361,7 @@
     if (document.getElementById("repoDesignDeco")) return;
     const d = document.createElement("script");
     d.id = "repoDesignDeco";
-    d.src = new URL("design_deco.js?v=b236a7e0", script.src).href;
+    d.src = new URL("design_deco.js?v=fe6b89a2", script.src).href;
     document.head.append(d);
   };
   designCss(design);
@@ -1173,7 +1173,7 @@
     store.src = new URL("browser_store.js?v=1cb639ca", script.src).href;
     document.head.append(store); /* Canal et contrôle des mises à jour, pastilles « Mise à jour » / « AIRAC » de l'en-tête */
     const assign = document.createElement("script"); /* Missions affectées : pli cacheté de l'en-tête, « Mes missions » */
-    assign.src = new URL("assignments.js?v=f927a24e", script.src).href;
+    assign.src = new URL("assignments.js?v=95fcb353", script.src).href;
     document.head.append(assign);
     /* Terrain actuel des appareils : site (emplacement) ou CR issu d'un ordre de mission (après assignments.js) */
     const positions = document.createElement("script");

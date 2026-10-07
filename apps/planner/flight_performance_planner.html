@@ -1079,11 +1079,11 @@ html[data-skeuo] .repo-block-tools .fp-result-pin[aria-pressed="true"]:not(#imp)
 
 <!-- navigation (en-tête, barre latérale) avant les scripts de calcul : la barre et la marge du contenu paraissent tout de suite -->
 <script src="../../shared/kit.js?v=9c953900"></script>
-<script src="../../shared/repository_nav.js?v=eb1231d4"></script>
+<script src="../../shared/repository_nav.js?v=53111f03"></script>
 <script src="../../AircraftDB/aircraft_db.js"></script><script src="../../shared/data_files.js?v=dcb47c6a" data-file="references/aircraft_fleet.js"></script><script src="../../shared/data_files.js?v=dcb47c6a" data-file="references/defa_reference.js"></script><script src="../../shared/aircraft_catalog.js?v=53010467"></script>
 <script src="../../AircraftDB/aircraft_icons.js"></script>
 <script src="../../AircraftDB/aircraft_perf.js"></script>
-<script src="../../shared/sticky_frame.js?v=90db4df1"></script><script src="../../shared/flight_profile_help.js?v=c619577e"></script><script src="../../shared/column_resize.js?v=953e38b1"></script><script src="../../shared/flight_instruments.js?v=f1ba4a60"></script><script src="../../shared/flight_perf_view.js?v=38baab6d"></script>
+<script src="../../shared/sticky_frame.js?v=90db4df1"></script><script src="../../shared/flight_profile_help.js?v=c619577e"></script><script src="../../shared/column_resize.js?v=953e38b1"></script><script src="../../shared/flight_instruments.js?v=f1ba4a60"></script><script src="../../shared/flight_perf_view.js?v=501e61c5"></script>
 <script src="../../shared/flight_performance_model.js?v=55d82d9b"></script>
 <script>
 // Planificateur de performances : profils d'appareils (SimBrief, Little Navmap, CSV, calibration par
@@ -1125,6 +1125,7 @@ let active = null,
   simAirframes = [],
   activeSavedSnapshot = "",
   profileDirty = false;
+/** Nombre au format français, d décimales au plus ; « — » s'il n'est pas fini. */
 const fmt = (x, d = 0) => Number.isFinite(x) ? x.toLocaleString("fr-FR", {
   maximumFractionDigits: d
 }) : "—";
@@ -1323,6 +1324,7 @@ function apdFor(p) {
       if (dh && r) dt += dh / r
     }
   }
+  /** Libellé [fr, en, de, es] dans la langue de la page. */
   const T = v => tl(...v);
   set("cruise.tasKt", c.tasKt, T(["TAS de croisière", "cruise TAS", "Reiseflug-TAS", "TAS de crucero"]));
   set("cruise.ceilingFt", ceil, T(["plafond", "ceiling", "Gipfelhöhe", "techo"]));
@@ -1377,6 +1379,7 @@ function decorateApd(box) {
       kind
     })
   });
+  /** Nombre de champs de la fiche APD dans l'état k : empty (champ vide), same (identique), diff (différent). */
   const n = k => tags.filter(g => g.kind === k).length;
   bar.innerHTML = typo(`<b>EUROCONTROL APD — ${x.code}</b> <span class="mut">${tl("fiche de performances publique, lue par le scrapper de la base","public performance sheet, read by the database scraper","öffentliches Leistungsblatt, vom Datenbank-Scraper gelesen","ficha pública de prestaciones, leída por el scraper de la base")} (${x.data.fetched||"?"})</span> · <span class="apd-same">${n("same")} ${tl("identique(s)","same","gleich","igual(es)")}</span> · <span class="apd-diff">${n("diff")} ${tl("différent(s)","different","abweichend","diferente(s)")}</span> · <span class="apd-empty">${n("empty")} ${tl("vide(s) localement","empty locally","lokal leer","vacío(s) localmente")}</span> <button type="button" id="apdFillEmpty" class="mini">${tl("remplir les champs vides","fill empty fields","leere Felder füllen","rellenar campos vacíos")}</button> <a href="${escXml(x.data.url||"#")}" target="_blank" rel="noopener">${tl("fiche","sheet","Blatt","ficha")} ↗</a><div class="mut">${tl("L’APD ne donne ni débits carburant ni table RPM / N1 : ces valeurs, et la table ci-dessous, sont locales (profil, SimBrief, saisie).","The APD gives neither fuel flows nor an RPM / N1 table: these values, and the table below, are local (profile, SimBrief, manual entry).","Die APD liefert weder Verbrauch noch RPM-/N1-Tabelle: diese Werte und die Tabelle unten sind lokal (Profil, SimBrief, Eingabe).","La APD no da ni flujos de combustible ni tabla RPM / N1: esos valores, y la tabla de abajo, son locales (perfil, SimBrief, introducción manual).")}</div>`);
   $("apdFillEmpty").onclick = () => tags.filter(g => g.kind === "empty").forEach(g => g.t.click());
@@ -1473,6 +1476,7 @@ function renderProfileEditor() {
       detected = inferredCurvePhase(comment.value);
     if (phase && !phase.value && detected) phase.value = detected;
     if (!inferred) return;
+    /** Débit arrondi au dixième, en texte. */
     let plain = v => String(Math.round(v * 10) / 10);
     [
       ["fuelFlowMin", inferred.min],
@@ -1492,7 +1496,7 @@ function renderProfileEditor() {
   curveBox.onchange = curveBox.oninput;
   decorateApd(box);
   FlightProfileHelp?.annotate(box, window.RepositoryNav?.getLanguage?.() ||
-  "fr"); // aide au survol de chaque champ (shared/flight_profile_help.js)
+    "fr"); // aide au survol de chaque champ (shared/flight_profile_help.js)
   box.style.display = state.profileEditorHidden ? "none" : "grid";
   box.style.gridTemplateColumns = "repeat(3,minmax(0,1fr))";
   $("toggleProfileEditor").textContent = state.profileEditorHidden ? "Afficher les champs" : "Masquer les champs";
@@ -1564,6 +1568,7 @@ function fuelConvertedCopy(o, from, to, ok) {
 function mergeCurves(t, s) {
   t = Array.isArray(t) ? t : [];
   s = Array.isArray(s) ? s : [];
+  /** Clé de rapprochement d'une ligne de table RPM : régime au millième, null sans régime. */
   const key = r => r && r.rpm !== null && r.rpm !== undefined && Number.isFinite(Number(r.rpm)) ? Math.round(Number(r.rpm) * 1000) : null;
   const out = [...t];
   for (const r of s) {
@@ -1585,6 +1590,7 @@ function fillProfileGaps(target, source) {
   let src = structuredClone(source);
   if (src.unit && target.unit && src.unit !== target.unit) src = fuelConvertedCopy(src, src.unit, target.unit, ["kg", "lb"].includes(src
     .unit) && ["kg", "lb"].includes(target.unit));
+  /** Fusion récursive : champs vides de t remplis par s (clés exclues ignorées, tables RPM fusionnées). */
   const merge = (t, s) => {
     for (const [k, v] of Object.entries(s)) {
       if (SKIP_MERGE_KEYS.has(k)) continue;
@@ -1720,6 +1726,7 @@ function calculate(opts) {
     $("windInfo").textContent = supplied === "" ? tl(`Vent inconnu : fourchette ±${band} kt sur la composante route`, `Unknown wind: ±${band} kt range on the track component`, `Wind unbekannt: Bereich ±${band} kt auf der Streckenkomponente`, `Viento desconocido: horquilla ±${band} kt en la componente de ruta`) : tl(`Direction inconnue : fourchette −${band} à +${band} kt sur la composante route`, `Unknown direction: −${band} to +${band} kt range on the track component`, `Richtung unbekannt: Bereich −${band} bis +${band} kt auf der Streckenkomponente`,
       `Dirección desconocida: horquilla −${band} a +${band} kt en la componente de ruta`);
   }
+  /** Régime nominal d'une phase du profil et débit lu dans la table RPM ({ rpm, map, ff }), sinon débit de la phase. */
   const mappedPhase = phaseName => {
     let phase = active[phaseName] || {},
       rpm = finiteProfileNumber(phase.rpmNominal) ? Number(phase.rpmNominal) : null,
@@ -1754,6 +1761,7 @@ function calculate(opts) {
   const climbDist = pClimb ? pClimb.nm : (active.climb.tasKt || 220) * climbMin / 60,
     descentDist = (active.descent.tasKt || 250) * descentMin / 60;
   const cruiseDist = Math.max(0, D - climbDist - descentDist);
+  /** Carburant d'une phase : durée (min) × débit horaire. */
   const phaseFuel = (mins, ff) => mins / 60 * (ff || 0);
   const climbFF = climbPhase.ff ?? cruisePhase.ff ?? 0,
     cruiseFF = cruisePhase.ff ?? 0,
@@ -1764,6 +1772,7 @@ function calculate(opts) {
   const tasAlt = pCruise?.ok ? pCruise.tas : tas,
     ffAlt = pCruise?.ok ? pCruise.ff : cruiseFF;
 
+  /** Carburant de croisière avec une composante de vent w (vitesse sol de 80 kt au moins). */
   function cruiseFuelFor(w) {
     let gs = Math.max(80, tasAlt + w);
     return cruiseDist / gs * ffAlt
@@ -1788,6 +1797,7 @@ function calculate(opts) {
     console.warn("Météo :", e);
     $("wxImpact").innerHTML = ""
   }
+  /** Mention du régime et du débit lus dans la table RPM pour une phase (vide sans table). */
   const mapNote = phase => phase.map ? `<span class="mapval">${phase.rpm} RPM → ${showFuel(phase.map.nominal)} ${fuelUnit()}/h <small>(${showFuel(phase.map.min)}–${showFuel(phase.map.max)})</small></span>` : "";
   const rows = [
     ["Taxi", taxiFuel],
@@ -1857,6 +1867,7 @@ const isaTemp = ft => ft <= 36089 ? 15 - 1.98 * ft / 1000 : -56.5;
 /** Champs météo liés : l'écart ISA, la température au sol (avec l'altitude du terrain) et la température au niveau
  *  se déduisent l'un de l'autre ; src : champ modifié par l'utilisateur. */
 function syncWeather(src) {
+  /** Arrondi au dixième. */
   const r1 = v => Math.round(v * 10) / 10,
     elev = +$("elevFt").value || 0,
     lvl = (+$("fl").value || 0) * 100;
@@ -1869,7 +1880,7 @@ function syncWeather(src) {
   if (src !== "tLevel") $("tLevel").value = r1(isaTemp(lvl) + d)
 }
 ["isaDev", "tGround", "elevFt", "tLevel"].forEach(id => $(id).addEventListener("input", () => syncWeather(id === "elevFt" ? "isaDev" :
-id)));
+  id)));
 $("fl").addEventListener("input", () => syncWeather("isaDev"));
 /** Effet de la météo (écart ISA non nul) sur le trajet : niveau du plan et niveau optimal, comparés à l'atmosphère
  *  standard du profil — temps, carburant, plafond. HTML (vide en atmosphère standard ou sans modèle). */
@@ -1882,6 +1893,7 @@ function weatherImpact(perf, D, alt, wc) {
   } catch {
     return ""
   }
+  /** Niveau le plus économe du trajet (pas de 500 ft, de 1000 ft au plafond) pour un modèle ; null si aucun. */
   const best = m => {
       let b = null;
       for (let h = 1000; h <= m.ceiling; h += 500) {
@@ -1920,6 +1932,7 @@ window.addEventListener("repository-language-change", () => setTimeout(() => {
     calculate()
   } catch {}
 }));
+/** Mise en forme : niveau « FL085 », durée « 1 h 05 », nombre à 3 décimales (« — » s'il n'est pas fini). */
 const flTxt = h => "FL" + String(Math.round(h / 100)).padStart(3, "0"),
   hmTxt = x => `${Math.floor(x/60)} h ${String(Math.round(x%60)).padStart(2,"0")}`,
   f3 = v => Number.isFinite(v) ? v.toLocaleString("fr-FR", {
@@ -1998,7 +2011,7 @@ function parseRpmFuelCurve(raw, targetUnit = "kg") {
     }
     let m = part.match(
       /(\d{2,5}(?:[.,]\d+)?)\s*(?:rpm|n1|%\s*n1|%\s*power)?\s*(?:=|:|→|->|@)\s*~?\s*(\d+(?:[.,]\d+)?)(?:\s*(?:-|–|to)\s*~?(\d+(?:[.,]\d+)?))?/i
-      );
+    );
     if (m) {
       let a = numberText(m[2]),
         b = m[3] ? numberText(m[3]) : a;
@@ -2029,6 +2042,7 @@ function interpRange(curve, rpm) {
       b) => a.rpm - b.rpm),
     value = (p, k, fallback) => Number.isFinite(p[k]) ? p[k] : p[fallback];
   if (!c.length || !Number.isFinite(rpm)) return null;
+  /** Plage de débit { min, nominal, max } de la ligne k (valeurs manquantes complétées par les voisines). */
   let at = k => ({
     min: value(c[k], "fuelFlowMin", "fuelFlowPerHour"),
     nominal: value(c[k], "fuelFlowPerHour", "fuelFlowMin"),
@@ -2188,7 +2202,7 @@ function jsonKind(obj) {
   if (obj?.schema === "flight-performance-db/v1" && Array.isArray(obj.profiles)) return "Base de profils";
   if (isSimbriefOfp(obj)) return "OFP SimBrief";
   if (obj && typeof obj === "object" && (obj.cruise || obj.climb || obj.descent || obj.icao || obj.aircraft))
-  return "Profil performance JSON";
+    return "Profil performance JSON";
   return "JSON générique";
 }
 /** Affiche un JSON importé dans le bloc « JSON importé » (texte et résumé des clés) et le garde pour la copie. */
@@ -2542,6 +2556,7 @@ function parseLnmperf(txt, name = "profil.lnmperf") {
   if (!ap || !perf) throw Error("Structure Little Navmap non reconnue");
   const fuelAsVolume = xmlNum(opt, "FuelAsVolume", 0),
     unit = fuelAsVolume ? "gal" : "lb";
+  /** Phase d'un profil Little Navmap : débit et TAS (et vario pour la montée ou la descente). */
   const phase = (tag, vert = false) => {
     let q = perf.querySelector(tag);
     if (!q) return {};
@@ -2909,10 +2924,12 @@ async function storeOFP(raw, calibration, fileName) {
 async function loadOFP() {
   return await cacheGet("lastOFP")
 }
+/** Nombre lu dans un texte (séparateurs de milliers « , » retirés) ; null s'il n'est pas lisible. */
 const n = v => {
   let x = Number(String(v ?? "").replace(/,/g, ""));
   return Number.isFinite(x) ? x : null
 };
+/** Premier nombre lisible parmi les clés données (valeur directe ou nœud texte d'un OFP converti en JSON). */
 const firstNum = (o, keys) => {
   for (const k of keys) {
     let v = o?.[k];
@@ -2922,6 +2939,7 @@ const firstNum = (o, keys) => {
   }
   return null
 };
+/** Premier texte non vide parmi les clés données (valeur directe ou nœud texte). */
 const firstText = (o, keys) => {
   for (const k of keys) {
     let v = o?.[k];
@@ -2980,6 +2998,7 @@ function extractOfpCalibration(ofp) {
   const maxAlt = Math.max(...pts.map(p => p.alt ?? -Infinity));
   if (!Number.isFinite(maxAlt)) throw Error("Altitudes du navlog absentes : phases non identifiables sans les inventer.");
   const cruiseFloor = maxAlt * .98;
+  /** Phase du point i du navlog : croisière près de l'altitude max, sinon montée ou descente selon la variation. */
   let phaseOf = i => {
     let p = pts[i],
       q = pts[Math.max(0, i - 1)];
@@ -2995,6 +3014,7 @@ function extractOfpCalibration(ofp) {
     descent: []
   };
   for (let i = 1; i < pts.length; i++) groups[phaseOf(i)].push([pts[i - 1], pts[i]]);
+  /** Mesures d'une phase sur ses segments : durée, carburant, distances, débit, TAS (distance air) et vario moyens. */
   const phase = (name, segs) => {
     let time = 0,
       fuel = 0,
@@ -3128,6 +3148,7 @@ $("simBtn").onclick = async () => {
   try {
     $("simBtn").disabled = true;
     $("source").textContent = "SimBrief : récupération du dernier FPL…";
+    /** Identifiant SimBrief du profil pilote commun (missionReportingConfig:v1), '' s'il manque. */
     const u = (() => {
       try {
         return JSON.parse(localStorage.getItem("missionReportingConfig:v1") || "{}").simbriefUser
@@ -3461,6 +3482,7 @@ applyHeaderPreferences();
     defaults: [1, .62, .17],
     min: 150,
     media: '(min-width:801px)',
+    /** Élément dont le bas limite la hauteur des poignées : le plus bas des blocs moteur et table RPM affichés. */
     until: () => {
       const a = document.querySelector('[data-block-id="engine-performance"]'),
         b = document.querySelector('[data-block-id="rpm-table"]');
