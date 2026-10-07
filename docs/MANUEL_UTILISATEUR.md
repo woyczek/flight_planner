@@ -426,7 +426,7 @@ Trois possibilités :
 | « J'ai reçu les données par mail » | « Archive des données… » : choisissez l'archive `.zip` reçue (elle contient `data_tree.js`). |
 - Aucune adresse n’est préremplie. Dépôt privé en HTTPS : identifiant et mot de passe, ou un jeton d’accès en lecture si le compte a la double authentification ; en SSH (`git@…`), la clé SSH de l’ordinateur.
 - Si Git n'est pas installé : jeu d’essai ou archive (ou installez Git, puis relancez).
-- **« Dépôt git de synchronisation des données »** : l'adresse du dépôt distant de `data/`, qui partage les données
+- **« Dépôt git de synchronisation des données (facultatif) »** : l'adresse du dépôt distant de `data/`, qui partage les données
   entre les postes (bouton « Synchroniser »). Adresse SSH `git@hôte:compte/dépôt.git` (clé SSH de l'ordinateur) ou
   HTTPS `https://hôte/compte/dépôt.git` (identifiants enregistrés dans Git). La carte affiche le dépôt actuel ;
   « Vérifier » dit s'il répond depuis ce poste (30 s au plus), « Enregistrer » en fait le dépôt distant de `data/`
@@ -448,17 +448,17 @@ Les identifiants du site de la compagnie, le mot de passe et les préférences s
 Le navigateur demande de désigner chaque dossier une fois ; il s'en souvient ensuite.
 
 - **« Dossier de l'application »** : « Choisir le dossier de l'application », puis désignez le dossier qui contient `lancer.cmd` et `lancer.sh`. Les autres dossiers (données, registre, missions, SIA, performances, sauvegarde locale) en sont déduits ; le message indique combien ont été réglés.
-- **« Classeur ODV »** : « Dossier OneDrive… » désigne le dossier synchronisé où l'escadrille dépose le classeur (le Planning ODV ouvre le plus récent). Sans OneDrive : « ou le fichier Excel… », gardé dans ce navigateur.
+- **« Classeur ODV (facultatif) »** : « Dossier OneDrive… » désigne le dossier synchronisé où l'escadrille dépose le classeur (le Planning ODV ouvre le plus récent). Sans OneDrive : « ou le fichier Excel… », gardé dans ce navigateur.
 
 Cette étape est importante : sans dossier des données autorisé, vos disponibilités restent dans le navigateur et le Centre ne les voit pas.
 
-### 4 Données SIA
+### 4 Données aéronautiques et types d’aéronefs
 
-Cartes et missions utilisent les données AIRAC du SIA (cycle de 28 jours).
+Cartes, missions et planification utilisent les données aéronautiques (AIRAC) et la base des types d’aéronefs. L'étape montre les mêmes blocs que Paramètres › Installation :
 
-1. Cliquez sur « Terminer et mettre à jour les données SIA ». La suite est notée « réglée » et la page Maintenance s'ouvre sur les données aéronautiques (carte des zones ; la France est active par défaut).
-2. Suivez les étapes guidées : sur le site du SIA (compte gratuit), « Ajouter au panier » le produit du cycle (0 €), puis « Passer commande » en acceptant la licence.
-3. Reprenez le ZIP téléchargé avec « Récupérer le ZIP téléchargé ».
+1. « Données aéronautiques » : la France est active par défaut ; un clic sur la carte active une autre zone. Chaque source a son bouton : ZIP du SIA (lien vers la boutique, compte gratuit, produit du cycle à 0 €, puis « Récupérer le ZIP téléchargé »), MORA de la zone, PDF MILAIP (axes de ravitaillement), jeux des autres pays. La base se construit seule.
+2. « Types d’aéronefs » : « Compléter les types manquants de la flotte et des missions » télécharge les types (OACI) et leurs performances (EUROCONTROL).
+3. « Terminer » : la suite est notée « réglée » et l'accueil s'ouvre.
 
 Le lien « Accueil » ramène à la page d'accueil sans terminer.
 

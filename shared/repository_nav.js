@@ -92,10 +92,13 @@
   doc.dataset.cpco = cpcoOn() ? "on" : "off";
   /** Adresse d'une rubrique de Paramètres (REPOSITORY_TREE.settings : rubrique → page ; ?base= pour les rubriques de
    *  data_admin.js et settings_panels.js, ?m= pour les blocs de maintenance_page.js) ; sans rubrique : Mon profil. */
-  const MT_BLOCKS = ["updates", "sources", "versions", "deps", "sia", "caches", "storage", "backup", "journal"];
+  const MT_BLOCKS = ["updates", "sources", "versions", "deps", "sia", "types", "caches", "storage", "backup", "journal"];
   const settingsUrl = (section, hash = "") => {
     const s = cfg.settings || {},
-      page = s.pages?.[s.sections?.[section]] || s.pages?.profile || "apps/settings/parametrage.html",
+      // bloc sur plusieurs pages (« installation,maintenance ») : la page courante si elle en est, sinon la première
+      pages = String(s.sections?.[section] || "").split(",").filter(Boolean),
+      here = pages.find(p => s.pages?.[p] && location.pathname.endsWith(s.pages[p])),
+      page = s.pages?.[here || pages[0]] || s.pages?.profile || "apps/settings/parametrage.html",
       u = new URL(page, root);
     if (section) u.search = `?${MT_BLOCKS.includes(section) ? "m" : "base"}=${encodeURIComponent(section)}`;
     if (hash) u.hash = hash;

@@ -669,8 +669,8 @@ Detalles: [Manual de explotación](../MANUEL_EXPLOITATION.md), § 10.
 
 Esta página reúne los ajustes que se hacen una sola vez: primer arranque, carpetas locales, fuentes externas y aerolínea virtual.
 Para abrirla: barra lateral › «Ajustes» y después la pestaña «Instalación».
-El menú lateral tiene dos grupos. El grupo «Instalación» contiene «Primer arranque»; el grupo «Carpetas y fuentes» contiene «Fuentes y carpetas».
-Estos apartados se asignan a la página mediante `config/repository_tree` (clave `settings.sections`: `setup` y `sources` → installation). Todos los demás apartados de mantenimiento se abren en la página Mantenimiento.
+El menú lateral tiene dos grupos. El grupo «Instalación» contiene «Primer arranque»; el grupo «Carpetas y fuentes» contiene «Fuentes y carpetas», «Datos aeronáuticos» y «Tipos de aeronave».
+Estos apartados se asignan a la página mediante `config/repository_tree` (clave `settings.sections`: `setup` y `sources` → installation; `sia` y `types` → installation,maintenance, es decir, en las dos páginas: la puesta en marcha aquí, la actualización en Mantenimiento, mismos bloques). Todos los demás apartados de mantenimiento se abren en la página Mantenimiento.
 
 ### Primer arranque
 
@@ -678,8 +678,8 @@ Este apartado indica si el primer arranque se ha completado en este navegador, y
 - «Abrir el primer arranque» vuelve a abrir el asistente (`premier_lancement.html?force`). Se desarrolla en cuatro pasos:
   1. Datos: «Obtener los datos» (clon del repositorio de datos) o «Archivo de datos…»; opcionalmente, «Diario (.html)…».
   2. Perfil: «Guardar el perfil».
-  3. Carpetas: «Elegir la carpeta de la aplicación» y después el libro ODV («Carpeta OneDrive…» u «o el archivo Excel…»).
-  4. «Terminar y actualizar los datos SIA».
+  3. Carpetas: «Elegir la carpeta de la aplicación» y después el libro ODV, opcional («Carpeta OneDrive…» u «o el archivo Excel…»).
+  4. Datos aeronáuticos y tipos de aeronave: los bloques «Datos aeronáuticos» y «Tipos de aeronave» (los mismos que aquí), luego «Terminar».
 - «Fuentes y carpetas, aerolínea virtual» abre el apartado siguiente.
 - «Canal de actualización» abre Mantenimiento › Actualizaciones.
 - Para empezar desde cero: «Limpiar y empezar de nuevo…», al pie del primer arranque. Esto borra los ajustes de este navegador, no los archivos.

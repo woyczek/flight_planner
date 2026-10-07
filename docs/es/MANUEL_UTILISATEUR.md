@@ -426,7 +426,7 @@ Tres posibilidades:
 | «He recibido los datos por correo» | «Archivo de datos…»: elija el archivo `.zip` recibido (contiene `data_tree.js`). |
 - No hay ninguna dirección rellenada de antemano. Repositorio privado por HTTPS: identificador y contraseña, o un token de acceso de lectura si la cuenta tiene doble autenticación; por SSH (`git@…`), la clave SSH del equipo.
 - Si Git no está instalado: conjunto de prueba o archivo (o instale Git y vuelva a arrancar).
-- **«Repositorio git de sincronización de datos»**: la dirección del repositorio remoto de `data/`, que comparte los datos
+- **«Repositorio git de sincronización de datos (opcional)»**: la dirección del repositorio remoto de `data/`, que comparte los datos
   entre los equipos (botón «Sincronizar»). Dirección SSH `git@hôte:compte/dépôt.git` (clave SSH del equipo) o
   HTTPS `https://hôte/compte/dépôt.git` (identificadores registrados en Git). La tarjeta muestra el repositorio actual;
   «Comprobar» dice si responde desde este equipo (30 s como máximo), «Guardar» lo convierte en el repositorio remoto de `data/`
@@ -448,17 +448,17 @@ Los identificadores del sitio de la aerolínea, la contraseña y las preferencia
 El navegador pide designar cada carpeta una vez; después la recuerda.
 
 - **«Carpeta de la aplicación»**: «Elegir la carpeta de la aplicación» y, después, designe la carpeta que contiene `lancer.cmd` y `lancer.sh`. Las demás carpetas (datos, registro, misiones, SIA, rendimiento, copia local) se deducen de ella; el mensaje indica cuántas se han configurado.
-- **«Libro ODV»**: «Carpeta OneDrive…» designa la carpeta sincronizada donde la escuadrilla deposita el libro (la Planificación ODV abre el más reciente). Sin OneDrive: «o el archivo Excel…», guardado en este navegador.
+- **«Libro ODV (opcional)»**: «Carpeta OneDrive…» designa la carpeta sincronizada donde la escuadrilla deposita el libro (la Planificación ODV abre el más reciente). Sin OneDrive: «o el archivo Excel…», guardado en este navegador.
 
 Este paso es importante: sin carpeta de datos autorizada, su disponibilidad se queda en el navegador y el Centro no la ve.
 
-### 4 Datos SIA
+### 4 Datos aeronáuticos y tipos de aeronave
 
-Los mapas y las misiones utilizan los datos AIRAC del SIA (ciclo de 28 días).
+Mapas, misiones y planificación usan los datos aeronáuticos (AIRAC) y la base de tipos de aeronave. El paso muestra los mismos bloques que Ajustes › Instalación:
 
-1. Haga clic en «Terminar y actualizar los datos SIA». La suite se marca como «configurada» y la página Mantenimiento se abre en los datos aeronáuticos (mapa de zonas; Francia está activa por defecto).
-2. Siga los pasos guiados: en el sitio del SIA (cuenta gratuita), «Ajouter au panier» el producto del ciclo (0 €) y, después, «Passer commande» aceptando la licencia.
-3. Recupere el ZIP descargado con «Recuperar el ZIP descargado».
+1. «Datos aeronáuticos»: Francia está activa por defecto; un clic en el mapa activa otra zona. Cada fuente tiene su botón: ZIP del SIA (enlace a la tienda, cuenta gratuita, producto del ciclo a 0 €, luego «Obtener el ZIP descargado»), MORA de la zona, PDF MILAIP (ejes de reabastecimiento), conjuntos de otros países. La base se construye sola.
+2. «Tipos de aeronave»: «Completar los tipos que faltan de la flota y las misiones» descarga los tipos (OACI) y sus rendimientos (EUROCONTROL).
+3. «Terminar»: la suite se marca como «configurada» y se abre la página de inicio.
 
 El enlace «Inicio» lleva a la página de inicio sin terminar.
 

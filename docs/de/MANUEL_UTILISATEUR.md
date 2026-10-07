@@ -426,7 +426,7 @@ Drei Möglichkeiten:
 | „Ich habe die Daten per E-Mail erhalten“ | „Datenarchiv…“: Wählen Sie das erhaltene `.zip`-Archiv (es enthält `data_tree.js`). |
 - Keine Adresse ist vorausgefüllt. Privates Repository über HTTPS: Kennung und Passwort, oder ein Lese-Zugriffstoken bei Zwei-Faktor-Authentifizierung; über SSH (`git@…`) der SSH-Schlüssel des Rechners.
 - Ist Git nicht installiert: Testdatensatz oder Archiv (oder installieren Sie Git und starten Sie neu).
-- **„Git-Repository zur Datensynchronisierung“**: die Adresse des entfernten Repositorys von `data/`, das die Daten
+- **„Git-Repository zur Datensynchronisierung (optional)“**: die Adresse des entfernten Repositorys von `data/`, das die Daten
   zwischen den Rechnern teilt (Knopf „Synchronisieren“). SSH-Adresse `git@hôte:compte/dépôt.git` (SSH-Schlüssel des Computers) oder
   HTTPS `https://hôte/compte/dépôt.git` (in Git gespeicherte Zugangsdaten). Die Karte zeigt das aktuelle Repository;
   „Prüfen“ sagt, ob es von diesem Rechner aus antwortet (höchstens 30 s), „Speichern“ macht es zum entfernten Repository von `data/`
@@ -448,17 +448,17 @@ Die Zugangsdaten der Website der Fluggesellschaft, das Passwort und die Einstell
 Der Browser verlangt, jeden Ordner einmal anzugeben; danach merkt er ihn sich.
 
 - **„Anwendungsordner“**: „Anwendungsordner wählen“, dann geben Sie den Ordner an, der `lancer.cmd` und `lancer.sh` enthält. Die anderen Ordner (Daten, Register, Missionen, SIA, Leistungen, lokale Sicherung) werden daraus abgeleitet; die Meldung zeigt, wie viele eingestellt wurden.
-- **„ODV-Arbeitsmappe“**: „OneDrive-Ordner…“ gibt den synchronisierten Ordner an, in dem die Staffel die Arbeitsmappe ablegt (die ODV-Planung öffnet die neueste). Ohne OneDrive: „oder die Excel-Datei…“, in diesem Browser gespeichert.
+- **„ODV-Arbeitsmappe (optional)“**: „OneDrive-Ordner…“ gibt den synchronisierten Ordner an, in dem die Staffel die Arbeitsmappe ablegt (die ODV-Planung öffnet die neueste). Ohne OneDrive: „oder die Excel-Datei…“, in diesem Browser gespeichert.
 
 Dieser Schritt ist wichtig: Ohne freigegebenen Datenordner bleibt Ihre Verfügbarkeit im Browser und das Zentrum sieht sie nicht.
 
-### 4 SIA-Daten
+### 4 Luftfahrtdaten und Luftfahrzeugtypen
 
-Karten und Missionen nutzen die AIRAC-Daten des SIA (Zyklus von 28 Tagen).
+Karten, Missionen und Planung nutzen die Luftfahrtdaten (AIRAC) und die Datenbank der Luftfahrzeugtypen. Der Schritt zeigt dieselben Blöcke wie Einstellungen › Installation:
 
-1. Klicken Sie auf „Abschließen und SIA-Daten aktualisieren“. Die Suite wird als „eingerichtet“ vermerkt und die Seite Wartung öffnet sich bei den Luftfahrtdaten (Zonenkarte; Frankreich ist standardmäßig aktiv).
-2. Folgen Sie den geführten Schritten: Auf der Website des SIA (kostenloses Konto) das Produkt des Zyklus (0 €) mit „Ajouter au panier“ in den Warenkorb legen, dann „Passer commande“ und die Lizenz akzeptieren.
-3. Übernehmen Sie das heruntergeladene ZIP mit „Heruntergeladenes ZIP holen“.
+1. „Luftfahrtdaten“: Frankreich ist standardmäßig aktiv; ein Klick auf die Karte aktiviert eine andere Zone. Jede Quelle hat ihre Schaltfläche: SIA-ZIP (Link zum Shop, kostenloses Konto, Zyklusprodukt zu 0 €, dann „Heruntergeladene ZIP abrufen“), MORA der Zone, MILAIP-PDF (Betankungsstrecken), Datensätze anderer Länder. Die Datenbank baut sich selbst auf.
+2. „Luftfahrzeugtypen“: „Fehlende Typen der Flotte und der Missionen ergänzen“ lädt die Typen (ICAO) und ihre Leistungen (EUROCONTROL) herunter.
+3. „Abschließen“: Die Suite wird als „eingerichtet“ vermerkt und die Startseite öffnet sich.
 
 Der Link „Start“ führt ohne Abschluss zur Startseite zurück.
 

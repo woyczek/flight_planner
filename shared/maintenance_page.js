@@ -7,6 +7,9 @@
   // S'appuie sur SuiteUpdate (suite_update.js), Airac (airac.js), ZipStore (zip_store.js), FileAccess, LocalStore.
   // Page autonome (#maintenance) ou rubrique « Maintenance » de Paramètres (#dataAdmin, construit par data_admin.js) :
   // dans Paramètres, chaque bloc a son entrée dans le menu latéral et s'affiche à la place de l'éditeur de base.
+  // Un bloc peut être sur plusieurs pages de Paramètres (REPOSITORY_TREE.settings.sections : « installation,maintenance »
+  // pour les données aéronautiques et les types d'aéronefs : mise en place sur Installation, mise à jour sur Maintenance).
+  // Page autonome réduite à quelques blocs : <div id="maintenance" data-blocks="sia,types"> (premier lancement).
   const main = document.getElementById('maintenance') || document.getElementById('dataAdmin');
   if (!main) return;
   const embedded = main.id === 'dataAdmin';
@@ -191,6 +194,11 @@
     title: ['Données aéronautiques : zones du monde, sources et cycles AIRAC', 'Aeronautical data: world zones, sources and AIRAC cycles', 'Luftfahrtdaten: Zonen der Welt, Quellen und AIRAC-Zyklen', 'Datos aeronáuticos: zonas del mundo, fuentes y ciclos AIRAC'],
     sub: ['Carte des zones (pays) : zones actives, sources de chacune (téléchargement, commande, PDF, dossier) et leur état ; reconstruction de la base aéronautique, âge des données, MORA, cohérence', 'Zone map (countries): active zones, the sources of each (download, order, PDF, folder) and their state; aeronautical database rebuild, data age, MORA, consistency', 'Zonenkarte (Länder): aktive Zonen, ihre Quellen (Download, Bestellung, PDF, Ordner) und deren Stand; Neuaufbau der Luftfahrtdatenbank, Alter der Daten, MORA, Konsistenz', 'Mapa de zonas (países): zonas activas, fuentes de cada una (descarga, pedido, PDF, carpeta) y su estado; reconstrucción de la base aeronáutica, antigüedad de los datos, MORA, coherencia']
   }, {
+    id: 'types',
+    icon: 'plane',
+    title: ['Types d’aéronefs (OACI et performances)', 'Aircraft types (ICAO and performance)', 'Luftfahrzeugtypen (ICAO und Leistungen)', 'Tipos de aeronave (OACI y rendimientos)'],
+    sub: ['Base des types (OACI Doc 8643) et performances (EUROCONTROL) : non publiée avec la suite, téléchargée sur ce poste type par type — après l’installation, puis quand un nouvel appareil arrive', 'Type database (ICAO Doc 8643) and performance (EUROCONTROL): not published with the suite, downloaded on this computer type by type — after installation, then when a new aircraft arrives', 'Typendatenbank (ICAO Doc 8643) und Leistungen (EUROCONTROL): nicht mit der Suite veröffentlicht, auf diesem Rechner Typ für Typ geladen — nach der Installation, dann bei jedem neuen Luftfahrzeug', 'Base de tipos (OACI Doc 8643) y rendimientos (EUROCONTROL): no publicada con la suite, descargada en este equipo tipo por tipo — tras la instalación y luego al llegar una aeronave nueva']
+  }, {
     id: 'caches',
     icon: 'trash',
     title: ['Caches', 'Caches', 'Caches', 'Cachés'],
@@ -215,8 +223,9 @@
   // .sections : « Sources et dossiers » sur Installation, les autres sur Maintenance) ; un bloc d'une autre page s'ouvre
   // sur sa page. Sans data-settings (page autonome, ancienne page unique) : tous les blocs.
   const PAGE = embedded ? main.dataset.settings || '' : '',
-    SECTIONS = window.REPOSITORY_TREE?.settings?.sections || {};
-  const onPage = id => !PAGE || !SECTIONS[id] || SECTIONS[id] === PAGE;
+    SECTIONS = window.REPOSITORY_TREE?.settings?.sections || {},
+    ONLY = !embedded && main.dataset.blocks ? new Set(main.dataset.blocks.split(/[\s,]+/).filter(Boolean)) : null;
+  const onPage = id => PAGE ? !SECTIONS[id] || String(SECTIONS[id]).split(',').includes(PAGE) : !ONLY || ONLY.has(id);
   const hosts = {};
   for (const b of BLOCKS) {
     const s = document.createElement('section');
@@ -226,7 +235,7 @@
     s.dataset.noI18n = '';
     s.className = 'mt-block';
     s.innerHTML = `<h2></h2><p class="repo-block-subtitle mt-sub"></p><div class="mt-body"></div>`;
-    if (embedded || (b.id === 'storage' && !window.RepositoryNav?.cpco?.enabled?.())) s.hidden = true;
+    if (embedded || (ONLY && !ONLY.has(b.id)) || (b.id === 'storage' && !window.RepositoryNav?.cpco?.enabled?.())) s.hidden = true;
     main.append(s);
     hosts[b.id] = s.querySelector('.mt-body');
   }
@@ -245,6 +254,7 @@
     sources: ['Sources et dossiers', 'Sources and folders', 'Quellen und Ordner', 'Fuentes y carpetas'],
     versions: ['Versions et synchros', 'Versions and sync', 'Versionen', 'Versiones'],
     deps: ['Références et dépendances', 'References and dependencies', 'Referenzen', 'Referencias'],
+    types: ['Types d’aéronefs', 'Aircraft types', 'Luftfahrzeugtypen', 'Tipos de aeronave'],
     sia: ['Données aéronautiques', 'Aeronautical data', 'Luftfahrtdaten', 'Datos aeronáuticos'],
     caches: ['Caches', 'Caches', 'Caches', 'Cachés'],
     storage: ['Espace disque', 'Disk space', 'Speicherplatz', 'Espacio en disco'],
@@ -927,7 +937,7 @@
       promptState = block == null ? pill('warn', '?') : block.trim() === window.MISSION_PROMPT.trim() ? pill('ok', t(['synchronisé', 'in sync'])) : pill('warn', t(['à régénérer : python tools/build_mission_prompt.py', 'rebuild: python tools/build_mission_prompt.py']));
     }
     add(t(['Prompt des missions', 'Mission prompt']), 'apps/cpco/mission_prompt.js ← docs/technique/PROMPT_GENERATEUR_MISSIONS.md', t(['git ; en-tête « GÉNÉRÉ »', 'git; “GENERATED” header']), 'build_mission_prompt.py (bump_versions.py)', t(['générateur, registre des missions', 'generator, mission registry']), promptState);
-    host.innerHTML = `<div id="mtAircraftDb"></div><p class="row"><button type="button" class="secondary" id="mtDepRefresh" data-icon="refresh">${esc(t(['Vérifier', 'Check', 'Prüfen', 'Comprobar']))}</button></p>
+    host.innerHTML = `<p class="mt-small"><a href="#types">${esc(t(['Types d’aéronefs et performances : bloc « Types d’aéronefs »', 'Aircraft types and performance: “Aircraft types” block', 'Luftfahrzeugtypen und Leistungen: Block „Luftfahrzeugtypen“', 'Tipos de aeronave y rendimientos: bloque «Tipos de aeronave»']))}</a></p><p class="row"><button type="button" class="secondary" id="mtDepRefresh" data-icon="refresh">${esc(t(['Vérifier', 'Check', 'Prüfen', 'Comprobar']))}</button></p>
       <div class="mt-scroll"><table class="mt-table mt-wide"><thead><tr><th>${esc(t(['Référence', 'Reference', 'Referenz', 'Referencia']))}</th><th>${esc(t(['Fichier', 'File', 'Datei', 'Archivo']))}</th><th>${esc(t(['Traçage', 'Tracing', 'Nachverfolgung', 'Trazado']))}</th><th>${esc(t(['Mise à jour', 'Update', 'Aktualisierung', 'Actualización']))}</th><th>${esc(t(['Dépendants', 'Dependents', 'Abhängige', 'Dependientes']))}</th><th>${esc(t(['Contrôle', 'Check', 'Prüfung', 'Control']))}</th></tr></thead><tbody>
       ${rows.map(r => `<tr><td><b>${esc(r.ref)}</b></td><td class="mt-small"><code>${esc(r.file)}</code></td><td class="mt-small">${esc(r.traced)}</td><td class="mt-small">${esc(r.process)}</td><td class="mt-small">${esc(r.dependents)}</td><td>${r.state}</td></tr>`).join('')}
       </tbody></table></div>`;
@@ -935,13 +945,18 @@
       await scanSiaFolder(false);
       renderDeps();
     };
-    // types d'aéronefs : complétés type par type (flotte, missions du registre et de l'ODV)
+    window.AppFramework?.refresh?.();
+  }
+  /** Bloc « Types d'aéronefs » (Installation, Maintenance, premier lancement) : types complétés type par type (flotte,
+   *  missions du registre et de l'ODV, inconnus), même carte et même lanceur partout. */
+  async function renderTypes() {
+    const host = hosts.types;
+    host.innerHTML = '<div class="mt-types"></div>';
     const reg = (await regIndex().catch(() => null))?.missions || [];
-    aircraftDbState(host.querySelector('#mtAircraftDb'), {
+    aircraftDbState(host.querySelector('.mt-types'), {
       fleet: [...new Set((window.DEFA_FLEET || []).map(r => r.type).filter(Boolean))],
       missions: [...new Set(reg.flatMap(m => m.aircraftTypes || []))]
     });
-    window.AppFramework?.refresh?.();
   }
 
   // ===== 4. Mise à jour SIA pas à pas
@@ -1006,6 +1021,9 @@
     }
     const btn = (id, label, list, title) => `<button type="button" class="secondary" data-ac="${id}" data-icon="refresh"${busy || !list.length ? ' disabled' : ''} title="${esc(title + (list.length ? ' : ' + list.slice(0, 20).join(' ') + (list.length > 20 ? '…' : '') : ''))}">${esc(label)} (${list.length})</button>`;
     el.innerHTML = `<div class="repo-card" data-icon="plane" data-subtitle="${esc(t(['Données de l’OACI (Doc 8643) et d’EUROCONTROL : non publiées avec la suite, complétées sur ce poste, type par type (réseau, quelques secondes par type)', 'ICAO (Doc 8643) and EUROCONTROL data: not published with the suite, completed on this computer type by type (network, a few seconds per type)', 'Daten von ICAO (Doc 8643) und EUROCONTROL: nicht mit der Suite veröffentlicht, auf diesem Rechner Typ für Typ ergänzt', 'Datos de la OACI (Doc 8643) y EUROCONTROL: no publicados con la suite, completados en este equipo tipo por tipo']))}"><h3>${esc(t(['Types d’aéronefs et performances', 'Aircraft types and performance', 'Luftfahrzeugtypen und Leistungen', 'Tipos de aeronave y rendimientos']))}</h3>
+      ${!empty && unknown.length ? `<p class="row"><button type="button" class="primary" data-ac="unknown" data-icon="download"${busy ? ' disabled' : ''}>${esc(t(['Compléter les types manquants de la flotte et des missions ({n})', 'Complete the missing fleet and mission types ({n})', 'Fehlende Typen der Flotte und der Missionen ergänzen ({n})', 'Completar los tipos que faltan de la flota y las misiones ({n})'], {
+        n: unknown.length
+      }))}</button></p>` : ''}
       ${empty ? `<div class="repo-notice"><b>${esc(t(['Base vide.', 'Empty database.', 'Leere Datenbank.', 'Base vacía.']))}</b> ${esc(t(['Sans elle, pas de types d’aéronefs (flotte, missions, CR, performances du planificateur). Un clic la complète avec les types de la flotte et des missions ; ensuite, un type à la fois quand un nouvel appareil arrive.', 'Without it, no aircraft types (fleet, missions, reports, planner performance). One click completes it with the fleet and mission types; then one type at a time when a new aircraft arrives.', 'Ohne sie keine Luftfahrzeugtypen (Flotte, Missionen, Berichte, Leistungen des Planers). Ein Klick ergänzt sie mit den Typen der Flotte und der Missionen; danach ein Typ nach dem anderen, wenn ein neues Luftfahrzeug kommt.', 'Sin ella, no hay tipos de aeronave (flota, misiones, informes, rendimientos del planificador). Un clic la completa con los tipos de la flota y de las misiones; después, un tipo cada vez que llega una aeronave nueva.']))}</div>
       <p class="row"><button type="button" class="primary" data-ac="all" data-icon="download"${busy || !all.length ? ' disabled' : ''}>${esc(t(['Compléter la base ({n} types)', 'Complete the database ({n} types)', 'Datenbank ergänzen ({n} Typen)', 'Completar la base ({n} tipos)'], {
         n: all.length
@@ -3381,6 +3399,7 @@
         ['Mises à jour', renderUpdates, hosts.updates],
         ['Sources et dossiers', renderSources, hosts.sources],
         ['Données aéronautiques', renderSia, hosts.sia],
+        ['Types d’aéronefs', renderTypes, hosts.types],
         ['Sauvegarde', renderBackup, hosts.backup],
         ['Journal', renderJournal, hosts.journal],
         ['Caches', renderCaches, hosts.caches],

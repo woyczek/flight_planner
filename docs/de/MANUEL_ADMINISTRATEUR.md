@@ -669,8 +669,8 @@ Details: [Betriebshandbuch](../MANUEL_EXPLOITATION.md), § 10.
 
 Diese Seite vereint die einmalig vorzunehmenden Einstellungen: Erststart, lokale Ordner, externe Quellen und virtuelle Fluggesellschaft.
 Zum Öffnen: Seitenleiste › „Einstellungen“, dann der Reiter „Installation“.
-Das Seitenmenü hat zwei Gruppen. Die Gruppe „Installation“ enthält „Erststart“; die Gruppe „Ordner und Quellen“ enthält „Quellen und Ordner“.
-Diese Rubriken werden der Seite durch `config/repository_tree` zugeordnet (Schlüssel `settings.sections`: `setup` und `sources` → installation). Alle anderen Wartungsrubriken öffnen sich auf der Seite Wartung.
+Das Seitenmenü hat zwei Gruppen. Die Gruppe „Installation“ enthält „Erststart“; die Gruppe „Ordner und Quellen“ enthält „Quellen und Ordner“, „Luftfahrtdaten“ und „Luftfahrzeugtypen“.
+Diese Rubriken werden der Seite durch `config/repository_tree` zugeordnet (Schlüssel `settings.sections`: `setup` und `sources` → installation; `sia` und `types` → installation,maintenance, also auf beiden Seiten: Einrichtung hier, Aktualisierung unter Wartung, dieselben Blöcke). Alle anderen Wartungsrubriken öffnen sich auf der Seite Wartung.
 
 ### Erststart
 
@@ -678,8 +678,8 @@ Diese Rubrik zeigt, ob der Erststart in diesem Browser abgeschlossen ist, und an
 - „Erststart öffnen“ öffnet den Assistenten erneut (`premier_lancement.html?force`). Er läuft in vier Schritten ab:
   1. Daten: „Daten abrufen“ (Klon des Datenrepositorys) oder „Datenarchiv…“; optional „Journal (.html)…“.
   2. Profil: „Profil speichern“.
-  3. Ordner: „Anwendungsordner wählen“, dann die ODV-Arbeitsmappe („OneDrive-Ordner…“ oder „oder die Excel-Datei…“).
-  4. „Abschließen und SIA-Daten aktualisieren“.
+  3. Ordner: „Anwendungsordner wählen“, dann die ODV-Arbeitsmappe, optional („OneDrive-Ordner…“ oder „oder die Excel-Datei…“).
+  4. Luftfahrtdaten und Luftfahrzeugtypen: die Blöcke „Luftfahrtdaten“ und „Luftfahrzeugtypen“ (dieselben wie hier), dann „Abschließen“.
 - „Quellen und Ordner, virtuelle Fluggesellschaft“ öffnet die nächste Rubrik.
 - „Update-Kanal“ öffnet Wartung › Updates.
 - Um bei null anzufangen: „Bereinigen und neu beginnen…“, unten im Erststart. Das löscht die Einstellungen dieses Browsers, nicht die Dateien.

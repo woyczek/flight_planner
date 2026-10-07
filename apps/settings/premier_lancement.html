@@ -1,8 +1,8 @@
 <!doctype html>
 <html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Premier lancement</title>
-<link rel="stylesheet" href="../../shared/repository_nav.css?v=f6a61e75"><link rel="stylesheet" href="../../shared/mission_core/core.css?v=8594d3c0">
-<script src="../../config/repository_tree?v=6a71ef44"></script>
+<link rel="stylesheet" href="../../shared/repository_nav.css?v=f6a61e75"><link rel="stylesheet" href="../../shared/mission_core/core.css?v=8594d3c0"><link rel="stylesheet" href="../../shared/maintenance.css?v=2884f8a4">
+<script src="../../config/repository_tree?v=2ce4d5f5"></script>
 <style>
   main.pl-page {
     max-width: 980px;
@@ -154,7 +154,7 @@
         <p class="pl-msg" id="plZipMsg"></p>
       </div>
     </div>
-    <div class="pl-card" id="plRepoCard" hidden style="margin-top:14px"><h3>Dépôt git de synchronisation des données</h3>
+    <div class="pl-card" id="plRepoCard" hidden style="margin-top:14px"><h3>Dépôt git de synchronisation des données (facultatif)</h3>
       <p class="pl-hint">Dépôt distant du dossier <code>data/</code> : il partage les données entre les postes (bouton « Synchroniser » de l’en-tête). Adresse SSH <code>git@hôte:compte/dépôt.git</code> (clé SSH de cet ordinateur) ou HTTPS <code>https://hôte/compte/dépôt.git</code> (identifiants enregistrés dans Git). Facultatif et jamais bloquant : sans dépôt qui répond, la suite fonctionne, sans partage.</p>
       <p class="pl-hint" id="plRepoNow"></p>
       <div class="pl-form"><label for="plSyncUrl">Adresse du dépôt</label><input type="text" id="plSyncUrl" spellcheck="false" autocomplete="off" placeholder="git@hôte:compte/dépôt.git"></div>
@@ -191,7 +191,7 @@
         <div class="pl-row"><button type="button" class="primary" id="plRepo" data-icon="folder">Choisir le dossier de l’application</button></div>
         <p class="pl-msg" id="plRepoMsg"></p>
       </div>
-      <div class="pl-card"><h3>Classeur ODV</h3>
+      <div class="pl-card"><h3>Classeur ODV (facultatif)</h3>
         <p class="pl-hint">Le dossier OneDrive (synchronisé) où l’escadrille dépose le classeur : le Planning ODV ouvre le plus récent. Sans OneDrive : choisir le fichier Excel, gardé dans ce navigateur.</p>
         <div class="pl-row"><button type="button" class="secondary" id="plOdvDir" data-icon="folder">Dossier OneDrive…</button>
           <button type="button" class="secondary" data-pick="plOdvFile">ou le fichier Excel…</button><input type="file" id="plOdvFile" accept=".xlsx" hidden></div>
@@ -200,9 +200,11 @@
     </div>
   </section>
 
-  <section id="plSia"><h2><span class="pl-n">4</span>Données SIA</h2>
-    <p class="pl-hint">Cartes et missions utilisent les données AIRAC du SIA (cycle de 28 jours). La mise à jour se fait par étapes guidées : sur le site du SIA (compte gratuit), « Ajouter au panier » le produit du cycle (0 €) et « Passer commande » en acceptant la licence ; le ZIP téléchargé est ensuite repris du dossier Téléchargements par « Récupérer le ZIP téléchargé ».</p>
-    <div class="pl-row"><button type="button" class="primary" id="plFinish">Terminer et mettre à jour les données SIA</button>
+  <section id="plSia"><h2><span class="pl-n">4</span>Données aéronautiques et types d’aéronefs</h2>
+    <p class="pl-hint">Cartes, missions et planification utilisent les données aéronautiques (AIRAC) et la base des types d’aéronefs. Ci-dessous, les mêmes blocs que dans Paramètres › Installation : choisir les zones (France active par défaut) et, pour chacune, le bouton de chaque source (ZIP du SIA : lien vers la boutique, compte gratuit, produit du cycle à 0 €, puis « Récupérer le ZIP téléchargé » ; MORA ; axes de ravitaillement : PDF MILAIP ; autres pays) — la base se construit seule ; puis « Compléter les types… » pour les types d’aéronefs et leurs performances.</p>
+    <!-- blocs de shared/maintenance_page.js (page autonome réduite) : mêmes composants qu'Installation et Maintenance -->
+    <div id="maintenance" class="pl-mt" data-blocks="sia,types"></div>
+    <div class="pl-row"><button type="button" class="primary" id="plFinish">Terminer</button>
       <a class="secondary" href="../../index.html">Accueil</a></div>
   </section>
 
@@ -216,8 +218,15 @@
   </section>
 </main>
 <script src="../../shared/kit.js?v=a819e6df"></script>
-<script src="../../shared/repository_nav.js?v=e7918234"></script>
-<script src="../../shared/content_i18n.js?v=7afecb78"></script><script src="premier_lancement_i18n.js?v=2e8bafd2"></script>
+<script src="../../shared/repository_nav.js?v=a96548cc"></script>
+<script src="../../shared/content_i18n.js?v=7afecb78"></script><script src="premier_lancement_i18n.js?v=6028956b"></script>
+<!-- blocs « Données aéronautiques » et « Types d'aéronefs » (shared/maintenance_page.js) et leurs dépendances -->
+<script src="../../AircraftDB/aircraft_db.js"></script><script src="../../shared/data_files.js?v=dcb47c6a" data-file="references/aircraft_fleet.js"></script>
+<script src="../../shared/mission_core/vendor/js-yaml.min.js"></script>
+<script src="../../AircraftDB/aircraft_perf.js"></script><script src="../cpco/mission_prompt.js?v=8774038d"></script>
+<script src="../../shared/zip_store.js?v=1b42107f"></script><script src="../../shared/airac.js?v=6d1d8444"></script><script src="../../shared/carto/aero_symbols.js?v=50ad43df"></script><script src="../../shared/sia_base.js?v=efa3366e"></script>
+<script src="../../shared/mission_table.js?v=2ecaeba4"></script><script src="../cpco/mission_store.js?v=bc7f59ef"></script><script src="../../shared/mission_routing.js?v=c23f4287"></script><script src="../../shared/mission_registry.js?v=86c9b0de"></script>
+<script src="../../shared/maintenance_page.js?v=b7fb3b6d"></script>
 <script src="../../shared/app_framework.js?v=003108e7"></script>
 <script>
 (() => {
@@ -456,7 +465,7 @@
     localStorage.setItem(DONE, JSON.stringify({
       at: new Date().toISOString()
     }));
-    location.href = 'maintenance.html?m=sia';
+    location.href = '../../index.html';
   });
 
   // recommencer : réglages de ce navigateur effacés (fichiers sur le disque intacts), page rechargée

@@ -669,8 +669,8 @@ Details: [Operations manual](../MANUEL_EXPLOITATION.md), § 10.
 
 This page groups the one-time settings: first run, local folders, external sources and virtual airline.
 To open it: sidebar › “Settings”, then the “Installation” tab.
-The side menu has two groups. The “Installation” group contains “First run”; the “Folders and sources” group contains “Sources and folders”.
-These sections are assigned to the page by `config/repository_tree` (key `settings.sections`: `setup` and `sources` → installation). All the other maintenance sections open on the Maintenance page.
+The side menu has two groups. The “Installation” group contains “First run”; the “Folders and sources” group contains “Sources and folders”, “Aeronautical data” and “Aircraft types”.
+These sections are assigned to the page by `config/repository_tree` (key `settings.sections`: `setup` and `sources` → installation; `sia` and `types` → installation,maintenance, i.e. on both pages: set-up here, update in Maintenance, same blocks). All the other maintenance sections open on the Maintenance page.
 
 ### First run
 
@@ -678,8 +678,8 @@ This section shows whether the first run is complete in this browser, and on wha
 - “Open the first run” reopens the wizard (`premier_lancement.html?force`). It runs in four steps:
   1. Data: “Fetch the data” (clone of the data repository) or “Data archive…”; optionally, “Log (.html)…”.
   2. Profile: “Save the profile”.
-  3. Folders: “Choose the application folder”, then the ODV workbook (“OneDrive folder…” or “or the Excel file…”).
-  4. “Finish and update the SIA data”.
+  3. Folders: “Choose the application folder”, then the ODV workbook, optional (“OneDrive folder…” or “or the Excel file…”).
+  4. Aeronautical data and aircraft types: the “Aeronautical data” and “Aircraft types” blocks (the same as here), then “Finish”.
 - “Sources and folders, virtual airline” opens the next section.
 - “Update channel” opens Maintenance › Updates.
 - To start from scratch: “Clean and start again…”, at the bottom of the first run. This clears the settings of this browser, not the files.

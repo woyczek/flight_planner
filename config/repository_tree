@@ -174,7 +174,7 @@ window.REPOSITORY_TREE={
       setup:"installation",sources:"installation",
       fleet:"centre",aircraftDb:"maintenance",callsigns:"maintenance",defaReference:"maintenance",defaLog:"maintenance",merges:"maintenance",ledgers:"maintenance",
       registry:"maintenance",localTypes:"maintenance",learned:"maintenance",airports:"maintenance",
-      updates:"maintenance",versions:"maintenance",deps:"maintenance",sia:"maintenance",caches:"maintenance",storage:"maintenance",backup:"maintenance",journal:"maintenance"
+      updates:"maintenance",versions:"maintenance",deps:"maintenance",types:"installation,maintenance",sia:"installation,maintenance",caches:"maintenance",storage:"maintenance",backup:"maintenance",journal:"maintenance"
     }
   },
   pages:[

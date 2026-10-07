@@ -669,8 +669,8 @@ Détails : [Manuel d'exploitation](MANUEL_EXPLOITATION.md), § 10.
 
 Cette page regroupe les réglages faits une seule fois : premier lancement, dossiers locaux, sources externes et compagnie virtuelle.
 Pour l'ouvrir : barre latérale › « Paramètres », puis l'onglet « Installation ».
-Le menu latéral comporte deux groupes. Le groupe « Installation » contient « Premier lancement » ; le groupe « Dossiers et sources » contient « Sources et dossiers ».
-Ces rubriques sont attribuées à la page par `config/repository_tree` (clé `settings.sections` : `setup` et `sources` → installation). Toutes les autres rubriques de maintenance s'ouvrent sur la page Maintenance.
+Le menu latéral comporte deux groupes. Le groupe « Installation » contient « Premier lancement » ; le groupe « Dossiers et sources » contient « Sources et dossiers », « Données aéronautiques » et « Types d’aéronefs ».
+Ces rubriques sont attribuées à la page par `config/repository_tree` (clé `settings.sections` : `setup` et `sources` → installation ; `sia` et `types` → installation,maintenance, c'est-à-dire sur les deux pages : la mise en place ici, la mise à jour dans Maintenance, mêmes blocs). Toutes les autres rubriques de maintenance s'ouvrent sur la page Maintenance.
 
 ### Premier lancement
 
@@ -678,8 +678,8 @@ Cette rubrique indique si le premier lancement est terminé dans ce navigateur, 
 - « Ouvrir le premier lancement » rouvre l'assistant (`premier_lancement.html?force`). Il se déroule en quatre étapes :
   1. Données : « Récupérer les données » (clone du dépôt de données) ou « Archive des données… » ; en option, « Journal (.html)… ».
   2. Profil : « Enregistrer le profil ».
-  3. Dossiers : « Choisir le dossier de l'application », puis le classeur ODV (« Dossier OneDrive… » ou « ou le fichier Excel… »).
-  4. « Terminer et mettre à jour les données SIA ».
+  3. Dossiers : « Choisir le dossier de l'application », puis le classeur ODV, facultatif (« Dossier OneDrive… » ou « ou le fichier Excel… »).
+  4. Données aéronautiques et types d’aéronefs : les blocs « Données aéronautiques » et « Types d’aéronefs » (les mêmes qu'ici), puis « Terminer ».
 - « Sources et dossiers, compagnie virtuelle » ouvre la rubrique suivante.
 - « Canal de mise à jour » ouvre Maintenance › Mises à jour.
 - Pour repartir de zéro : « Nettoyer et recommencer… », en bas du premier lancement. Cela efface les réglages de ce navigateur, pas les fichiers.

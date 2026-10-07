@@ -426,7 +426,7 @@ Three options:
 | “I received the data by e-mail” | “Data archive…”: choose the `.zip` archive you received (it contains `data_tree.js`). |
 - No address is prefilled. Private repository over HTTPS: login and password, or a read access token if the account uses two-factor authentication; over SSH (`git@…`), the computer’s SSH key.
 - If Git is not installed: sample data set or archive (or install Git, then start again).
-- **“Git repository for data synchronisation”**: the address of the remote repository of `data/`, which shares the data
+- **“Git repository for data synchronisation (optional)”**: the address of the remote repository of `data/`, which shares the data
   between computers (“Synchronise” button). SSH address `git@hôte:compte/dépôt.git` (the computer's SSH key) or
   HTTPS `https://hôte/compte/dépôt.git` (credentials saved in Git). The card shows the current repository;
   “Check” tells you whether it answers from this computer (30 s at most), “Save” makes it the remote repository of `data/`
@@ -448,17 +448,17 @@ The airline website credentials, the password and the preferences are set afterw
 The browser asks you to point to each folder once; it remembers it afterwards.
 
 - **“Application folder”**: “Choose the application folder”, then point to the folder that contains `lancer.cmd` and `lancer.sh`. The other folders (data, registry, missions, SIA, performance, local backup) are deduced from it; the message tells you how many were set.
-- **“ODV workbook”**: “OneDrive folder…” points to the synchronised folder where the squadron drops the workbook (the ODV planning opens the most recent one). Without OneDrive: “or the Excel file…”, kept in this browser.
+- **“ODV workbook (optional)”**: “OneDrive folder…” points to the synchronised folder where the squadron drops the workbook (the ODV planning opens the most recent one). Without OneDrive: “or the Excel file…”, kept in this browser.
 
 This step matters: without an allowed data folder, your availability stays in the browser and the Centre cannot see it.
 
-### 4 SIA data
+### 4 Aeronautical data and aircraft types
 
-Maps and missions use the SIA AIRAC data (28-day cycle).
+Maps, missions and planning use the aeronautical data (AIRAC) and the aircraft type database. The step shows the same blocks as Settings › Installation:
 
-1. Click “Finish and update the SIA data”. The suite is marked as “set up” and the Maintenance page opens on the aeronautical data (zone map; France is active by default).
-2. Follow the guided steps: on the SIA website (free account), “Ajouter au panier” the cycle product (0 €), then “Passer commande” accepting the licence.
-3. Take the downloaded ZIP back with “Fetch the downloaded ZIP”.
+1. “Aeronautical data”: France is active by default; a click on the map activates another zone. Each source has its button: SIA ZIP (link to the shop, free account, cycle product at 0 €, then “Fetch the downloaded ZIP”), zone MORA, MILAIP PDF (refuelling tracks), datasets of other countries. The database builds itself.
+2. “Aircraft types”: “Complete the missing fleet and mission types” downloads the types (ICAO) and their performance (EUROCONTROL).
+3. “Finish”: the suite is marked as “set up” and the home page opens.
 
 The “Home” link takes you back to the home page without finishing.
 
