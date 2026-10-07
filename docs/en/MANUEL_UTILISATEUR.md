@@ -448,8 +448,8 @@ Three options:
   HTTPS `https://hôte/compte/dépôt.git` (credentials saved in Git). The card shows the current repository;
   “Check” tells you whether it answers from this computer (30 s at most), “Save” makes it the remote repository of `data/`
   (with no data yet, the address is used to fetch them). Nothing is blocking: a repository that does not answer is reported,
-  Only the repository already in place (or the one in the suite configuration) can be saved here; for another repository,
-  type the command in a terminal (`git -C data remote set-url origin <address>`), so that no page can send the data elsewhere. Never put a password or a token in the address.
+  For another repository than the current one, the launcher opens a confirmation window on the computer (current and new
+  address, “No” by default): answer “Yes” to change; no page can answer it for you. Never put a password or a token in the address.
   and the suite works without sharing. Details: [synchronisation](../technique/SYNCHRONISATION.md).
 - Once the data is present, the optional “Flight log” card offers “Log (.html)…”: the “Flight log” page of the airline website, saved, fills in the pilots and aircraft of the reference (entry help).
 

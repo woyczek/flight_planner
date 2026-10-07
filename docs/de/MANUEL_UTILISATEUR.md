@@ -448,8 +448,8 @@ Drei Möglichkeiten:
   HTTPS `https://hôte/compte/dépôt.git` (in Git gespeicherte Zugangsdaten). Die Karte zeigt das aktuelle Repository;
   „Prüfen“ sagt, ob es von diesem Rechner aus antwortet (höchstens 30 s), „Speichern“ macht es zum entfernten Repository von `data/`
   (sind noch keine Daten vorhanden, dient die Adresse dazu, sie zu holen). Nichts ist blockierend: Ein Repository, das nicht antwortet, wird gemeldet,
-  Hier lässt sich nur das bereits eingerichtete Repository speichern (oder das aus der Konfiguration der Suite); für ein anderes
-  Repository wird der Befehl in einem Terminal eingegeben (`git -C data remote set-url origin <Adresse>`), damit keine Seite die Daten anderswohin senden kann. Nie ein Passwort oder Token in der Adresse.
+  Für ein anderes Repository als das aktuelle öffnet der Starter ein Bestätigungsfenster auf dem Computer (aktuelle und neue
+  Adresse, „Nein“ voreingestellt): mit „Ja“ antworten, um zu wechseln; keine Seite kann an Ihrer Stelle antworten. Nie ein Passwort oder Token in der Adresse.
   die Suite funktioniert ohne Teilen. Einzelheiten: [Synchronisierung](../technique/SYNCHRONISATION.md).
 - Sind die Daten vorhanden, bietet die optionale Karte „Flugbuch“ den Knopf „Journal (.html)…“: Die gespeicherte Seite „Log des vols“ der Website der Fluggesellschaft füllt die Piloten und Luftfahrzeuge der Referenz (Eingabehilfe).
 

@@ -532,7 +532,16 @@ class Setup(http.server.SimpleHTTPRequestHandler):
             url = str(a.get('url') or '').strip()
             r = {'check': data_sync.check_remote(url)}
             if a.get('save'):
-                r['saved'] = data_sync.set_remote(DATA, url, allowed=[data_repo_url()])
+                saved = data_sync.set_remote(DATA, url, allowed=[data_repo_url()])
+                if saved.get('refused'):
+                    # autre dépôt : confirmé par l'utilisateur dans une fenêtre du système (ancienne et nouvelle adresse),
+                    # hors du navigateur — un script de la page ne peut ni la voir ni y répondre
+                    if confirm_remote(saved.get('current') or '', url):
+                        saved = data_sync.set_remote(DATA, url, allowed=[data_repo_url(), url])
+                    else:
+                        saved['message'] = ('Changement de dépôt non confirmé dans la fenêtre du lanceur (refusé, fermé, '
+                                            'ou fenêtre impossible à ouvrir sur cet ordinateur) : dépôt inchangé.')
+                r['saved'] = saved
             return self._json(r)
         if path == '/__setup/sync':
             # un passage de synchronisation (commit au nom du trigramme, fusion fiche par fiche, envoi), un à la fois
@@ -668,6 +677,57 @@ def tools_inventory():
                 item['head'] = '\n'.join(lines)
         out.append(item)
     return out
+
+
+# ---- confirmation hors du navigateur : fenêtre Oui / Non du système, ouverte par le lanceur
+CONFIRM_LOCK = threading.Lock()
+_confirm = {'until': 0.0}  # après un « Non » : pas de nouvelle fenêtre pendant 30 s (une page piégée insisterait)
+
+
+def confirm_box(title, text):
+    """Fenêtre Oui / Non du système (« Non » par défaut), au premier plan : une page web ne peut ni la voir ni y
+    répondre. Vrai seulement sur « Oui » ; faux sur « Non », si elle est fermée, si une autre est déjà ouverte ou si
+    aucune fenêtre ne peut s'ouvrir (Linux sans zenity)."""
+    if not CONFIRM_LOCK.acquire(blocking=False):
+        return False
+    try:
+        if sys.platform == 'win32':
+            import ctypes
+            # MB_YESNO | MB_ICONWARNING | MB_DEFBUTTON2 | MB_SETFOREGROUND | MB_TOPMOST ; IDYES = 6
+            return ctypes.windll.user32.MessageBoxW(None, text, title, 0x4 | 0x30 | 0x100 | 0x10000 | 0x40000) == 6
+        if sys.platform == 'darwin':
+            r = subprocess.run(['osascript', '-e', 'on run argv', '-e',
+                                'display dialog (item 2 of argv) with title (item 1 of argv) buttons {"Non", "Oui"} '
+                                'default button "Non" with icon caution', '-e', 'end run', title, text],
+                               capture_output=True, text=True, timeout=900)
+            return r.returncode == 0 and 'Oui' in r.stdout
+        zenity = shutil.which('zenity')
+        if zenity:
+            r = subprocess.run([zenity, '--question', '--no-markup', '--default-cancel', '--title', title, '--text', text,
+                                '--ok-label', 'Oui', '--cancel-label', 'Non'], capture_output=True, timeout=900)
+            return r.returncode == 0
+        return False
+    except (OSError, AttributeError, subprocess.SubprocessError):
+        return False
+    finally:
+        CONFIRM_LOCK.release()
+
+
+def confirm_remote(old, new):
+    """Changement du dépôt de synchronisation de data/ confirmé par l'utilisateur (fenêtre du lanceur)."""
+    if time.time() < _confirm['until']:
+        return False
+    ok = confirm_box('SO Group — dépôt des données / data repository', (
+        'Changer le dépôt de synchronisation des données ?\n\n'
+        f'Actuel : {old or "(aucun)"}\nNouveau : {new}\n\n'
+        'Toutes les données de data/ partiront vers le nouveau dépôt au prochain « Synchroniser ». '
+        'Si vous n’avez pas demandé ce changement, répondez Non.\n\n'
+        'Change the data synchronisation repository? All data in data/ will be sent to the new repository at the next '
+        '“Synchronise”. If you did not ask for this change, answer No.'))
+    if not ok:
+        _confirm['until'] = time.time() + 30
+    say(f'  Dépôt de synchronisation : {new} — ' + ('confirmé' if ok else 'non confirmé'))
+    return ok
 
 
 _patterns = []

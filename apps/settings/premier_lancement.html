@@ -348,7 +348,7 @@
 </main>
 <script src="../../shared/kit.js?v=7f07f523"></script>
 <script src="../../shared/repository_nav.js?v=dade04a4"></script>
-<script src="../../shared/content_i18n.js?v=499ea78f"></script><script src="premier_lancement_i18n.js?v=0bc9c5d1"></script>
+<script src="../../shared/content_i18n.js?v=499ea78f"></script><script src="premier_lancement_i18n.js?v=394a45ab"></script>
 <!-- blocs « Données aéronautiques » et « Types d'aéronefs » (shared/maintenance_page.js) et leurs dépendances -->
 <script src="../../AircraftDB/aircraft_db.js"></script><script src="../../shared/data_files.js?v=dcb47c6a" data-file="references/aircraft_fleet.js"></script>
 <script src="../../shared/mission_core/vendor/js-yaml.min.js"></script>
@@ -627,7 +627,9 @@
     const url = $('plSyncUrl').value.trim();
     if (!url) return msg('plSyncMsg', 'Adresse du dépôt à préciser (git@… ou https://…).', 'err');
     $('plRepoCheck').disabled = $('plRepoSave').disabled = true;
-    msg('plSyncMsg', save ? 'Enregistrement, puis vérification…' : 'Vérification… (jusqu’à 30 s)');
+    msg('plSyncMsg', save ?
+      'Enregistrement, puis vérification… Autre dépôt que l’actuel : confirmez dans la fenêtre que le lanceur ouvre sur l’ordinateur.' :
+      'Vérification… (jusqu’à 30 s)');
     try {
       const r = await post('sync-remote', {
         url,

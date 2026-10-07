@@ -448,8 +448,8 @@ Trois possibilités :
   HTTPS `https://hôte/compte/dépôt.git` (identifiants enregistrés dans Git). La carte affiche le dépôt actuel ;
   « Vérifier » dit s'il répond depuis ce poste (30 s au plus), « Enregistrer » en fait le dépôt distant de `data/`
   (sans données encore, l'adresse sert à les récupérer). Rien n'est bloquant : un dépôt qui ne répond pas est signalé,
-  Seul le dépôt déjà en place (ou celui de la configuration de la suite) s'enregistre ici ; vers un autre dépôt, la
-  commande se tape dans un terminal (`git -C data remote set-url origin <adresse>`), pour qu'aucune page ne puisse envoyer les données ailleurs. Jamais de mot de passe ni de jeton dans l'adresse.
+  Vers un autre dépôt que celui en place, le lanceur ouvre une fenêtre de confirmation sur l'ordinateur (adresse actuelle
+  et nouvelle, « Non » par défaut) : répondez « Oui » pour changer ; aucune page ne peut y répondre à votre place. Jamais de mot de passe ni de jeton dans l'adresse.
   la suite fonctionne sans partage. Détails : [synchronisation](technique/SYNCHRONISATION.md).
 - Une fois les données présentes, la carte facultative « Journal des vols » propose « Journal (.html)… » : la page « Log des vols » du site de la compagnie, enregistrée, remplit les pilotes et appareils de la référence (aide à la saisie).
 

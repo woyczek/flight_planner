@@ -448,8 +448,8 @@ Tres posibilidades:
   HTTPS `https://hôte/compte/dépôt.git` (identificadores registrados en Git). La tarjeta muestra el repositorio actual;
   «Comprobar» dice si responde desde este equipo (30 s como máximo), «Guardar» lo convierte en el repositorio remoto de `data/`
   (si aún no hay datos, la dirección sirve para obtenerlos). Nada es bloqueante: un repositorio que no responde se señala,
-  Aquí solo se guarda el repositorio ya configurado (o el de la configuración de la suite); para otro repositorio,
-  el comando se escribe en un terminal (`git -C data remote set-url origin <dirección>`), para que ninguna página pueda enviar los datos a otro lugar. Nunca ponga una contraseña ni un token en la dirección.
+  Para otro repositorio distinto del actual, el lanzador abre una ventana de confirmación en el equipo (dirección actual
+  y nueva, «No» por defecto): responda «Sí» para cambiar; ninguna página puede responder en su lugar. Nunca ponga una contraseña ni un token en la dirección.
   y la suite funciona sin compartir. Detalles: [sincronización](../technique/SYNCHRONISATION.md).
 - Una vez presentes los datos, la tarjeta opcional «Registro de vuelos» ofrece «Registro (.html)…»: la página «Log des vols» del sitio de la aerolínea, guardada, rellena los pilotos y las aeronaves de la referencia (ayuda a la introducción).
 

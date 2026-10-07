@@ -74,8 +74,10 @@ Choix faits en corrigeant :
   envoyer les fichiers. Le danger venait du `.git/` reçu dans une archive, qui n'est plus extrait.
 - **Navigations venues d'un autre site refusées.** Le lanceur rend une page explicative avec un lien vers l'accueil,
   jamais vers l'adresse demandée.
-- **Changement de dépôt distant par terminal seulement.** La page n'enregistre que le dépôt en place ou celui de la
-  configuration.
+- **Changement de dépôt distant confirmé hors du navigateur.** Pour un autre dépôt que celui en place ou celui de la
+  configuration, le lanceur ouvre une fenêtre Oui / Non du système. Elle montre l'adresse actuelle et la nouvelle,
+  avec « Non » par défaut. Une confirmation dans la page ne protégerait rien, puisqu'un script injecté la validerait
+  lui-même. Après un « Non », aucune nouvelle demande pendant 30 s.
 
 ## Qui attaque
 
@@ -172,7 +174,7 @@ Aucune requête sortante n'est visible côté page : c'est git qui envoie.
 
 **Correction** :
 
-- changer de dépôt distant seulement depuis la console du lanceur (confirmation tapée), ou vers un hôte d'une liste
+- changer de dépôt distant seulement après confirmation hors du navigateur (fenêtre Oui / Non ouverte par le lanceur), ou vers un hôte d'une liste
   fixée dans `config/repository_tree` (framagit.org) ;
 - à la synchronisation, refuser de pousser vers un hôte qui n'est pas celui du clone d'origine.
 
@@ -537,7 +539,7 @@ essayer sur le port 8000 avec le navigateur habituel (cache ancien) et sur les 5
 
 | Lot | Contenu | Constats | Taille |
 |---|---|---|---|
-| **1. Lanceur fermé** | `Sec-Fetch-Site`, 403 sur `secrets/`, segments en point et `data/local/`, plus de listes de dossiers ; motifs de Téléchargements en liste fermée ; changement de dépôt distant confirmé dans la console ; `frame-ancestors` / `X-Frame-Options` ; gabarit exigé pour `data/**/*.js` | C2, E1, E2, E3, C1 (palliatif), M2 (partiel) | petit |
+| **1. Lanceur fermé** | `Sec-Fetch-Site`, 403 sur `secrets/`, segments en point et `data/local/`, plus de listes de dossiers ; motifs de Téléchargements en liste fermée ; changement de dépôt distant confirmé dans une fenêtre du lanceur ; `frame-ancestors` / `X-Frame-Options` ; gabarit exigé pour `data/**/*.js` | C2, E1, E2, E3, C1 (palliatif), M2 (partiel) | petit |
 | **2. Git et archives durcis** | options `-c` de durcissement sur chaque appel, `--`, `.git/` et extensions refusées à l'extraction, identifiants refusés dans l'adresse, `NoDefaultCurrentDirectoryInExePath`, git par chemin absolu | C3, M5, M6 (partiel), faibles | petit |
 | **3. Échappements** | `suite_update.js` (version), `dispos.color()`, `mission_registry` `pill`, profil de performance, aide (`?doc=`, schémas de liens), couleurs des modèles ODV, altitude densité | E5, M1 | petit |
 | **4. Droits du navigateur** | poignées `__repo` / `__xplane` / `__xpnav` en lecture, écriture au clic ; CSP `connect-src` envoyée par le lanceur | E4, M2 | moyen |

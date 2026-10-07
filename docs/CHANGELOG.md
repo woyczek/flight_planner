@@ -234,9 +234,11 @@ Suite de l'[audit du 7 octobre](technique/AUDIT_SECURITE_2026-10-07.md), lots 1 
   sable.
 - **Téléchargements** : la page ne demande plus qu'un motif déclaré par une source (`aero_zones.js`). Avant, `*.*`
   rendait tout le dossier.
-- **Dépôt distant de `data/`** : la page n'enregistre plus que le dépôt en place ou celui de la configuration. Un autre
-  dépôt se règle dans un terminal, sinon une page piégée pouvait faire envoyer toutes les données ailleurs. L'adresse
-  ne peut plus contenir de mot de passe ou de jeton, ni commencer par « - ».
+- **Dépôt distant de `data/`** : un autre dépôt que celui en place (ou celui de la configuration) se confirme dans une
+  fenêtre Oui / Non que le lanceur ouvre sur l'ordinateur. Elle montre l'adresse actuelle et la nouvelle, avec « Non »
+  par défaut, et aucune page ne peut y répondre. Sans cela, une page piégée pouvait faire envoyer toutes les données
+  ailleurs. Après un « Non », pas de nouvelle demande pendant 30 s. L'adresse ne peut plus contenir de mot de passe ou
+  de jeton, ni commencer par « - ».
 - **Git durci** : git pris par son chemin absolu hors du dossier de la suite ; `core.fsmonitor=false`,
   `protocol.ext.allow=never`, `submodule.recurse=false` sur chaque appel ; `--` devant les adresses. `lancer.cmd` ne
   lance plus un `py` ou un `git` déposé dans le dossier (`NoDefaultCurrentDirectoryInExePath`).

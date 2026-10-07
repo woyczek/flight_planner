@@ -119,9 +119,10 @@ def check_remote(url):
 
 
 def set_remote(data, url, allowed=()):
-    """Adresse du dépôt distant de data/ (dépôt distant de la branche, sinon origin, créé au besoin). Depuis une page,
-    seulement vers le dépôt actuel ou l'un des dépôts admis (allowed : celui de la configuration) : une page piégée
-    enverrait sinon toutes les données ailleurs au « Synchroniser » suivant ; un autre dépôt se règle dans un terminal."""
+    """Adresse du dépôt distant de data/ (dépôt distant de la branche, sinon origin, créé au besoin). Seulement vers le
+    dépôt actuel ou l'un des dépôts admis (allowed : celui de la configuration, ou celui que l'utilisateur vient de
+    confirmer dans la fenêtre du lanceur) : une page piégée enverrait sinon toutes les données ailleurs au
+    « Synchroniser » suivant. Refus : { ok: False, refused: True, current }."""
     url = (url or '').strip()
     if not REMOTE_RE.match(url):
         return {'ok': False, 'message': REMOTE_HELP}
@@ -130,9 +131,8 @@ def set_remote(data, url, allowed=()):
     info = remote_info(data)
     name = info['remote'] or 'origin'
     if not any(same_repo(url, u) for u in (info['url'], *allowed)):
-        return {'ok': False, 'refused': True,
-                'message': 'Autre dépôt que celui des données : pour qu’aucune page ne puisse envoyer les données ailleurs, '
-                           f'ce changement se fait dans un terminal : git -C data remote set-url {name} {url}'}
+        return {'ok': False, 'refused': True, 'current': info['url'],
+                'message': 'Autre dépôt que celui des données : changement à confirmer dans la fenêtre du lanceur.'}
     code, out = git(data, 'remote', 'set-url', '--', name, url) if info['remote'] else git(data, 'remote', 'add', '--', name, url)
     return {'ok': code == 0, 'message': f'Dépôt distant « {name} » : {url}' if code == 0 else out}
 
