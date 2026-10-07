@@ -39,6 +39,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   Le lanceur complète en tâche de fond les types inconnus après la mise à jour quotidienne (`unknown_types`).
 - **Terrain d'un appareil** : il ne change que par la mise à jour depuis le site ou un CR issu d'un ordre de mission ;
   la fiche appareil (« 📍 ») ne le déduit plus du dernier CR venu.
+- **Ordres de vols : ordre de mission réémis d'office au déplacement d'une plaquette** — mêmes pilotes, appareils,
+  indicatifs et convoyeurs à la nouvelle heure, sans fenêtre ; pli déjà ouvert rescellé. Conflit d'affectation ou dossier
+  non autorisé : non réémis, signalé sur la plaquette (`omAttente`, `omRaison`) qui garde sa nouvelle heure.
 - **Fenêtre d'affectation : convoyage repris des Ordres de vols** — option `departure` (terrain de départ de secours
   quand le yaml de la mission n'en donne pas : le convoyage n'était alors ni calculé ni montré) et `rows[].ferry`
   (plaquette de convoyage placée : heure et durée reprises telles quelles, marquées « plaquette de convoyage »).

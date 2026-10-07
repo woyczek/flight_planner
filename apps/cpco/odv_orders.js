@@ -59,6 +59,7 @@
       ferry_late: L4('Convoyage {tri} : arrive à {arr}z, après {lim}z (30 min avant le décollage)', 'Ferry {tri}: arrives at {arr}z, after {lim}z (30 min before take-off)', 'Überführung {tri}: Ankunft {arr}z, nach {lim}z (30 min vor dem Start)', 'Traslado {tri}: llega a las {arr}z, después de las {lim}z (30 min antes del despegue)'),
       theme: L4('{tri} : dispo « {cat} » sans la famille {fam}', '{tri}: availability “{cat}” without family {fam}', '{tri}: Verfügbarkeit „{cat}“ ohne Familie {fam}', '{tri}: disponibilidad «{cat}» sin la familia {fam}'),
       non_affectable: L4('{tri} : non affectable ({cat})', '{tri}: not assignable ({cat})', '{tri}: nicht einsetzbar ({cat})', '{tri}: no asignable ({cat})'),
+      om_attente: L4('Ordre de mission non réémis après le déplacement ({cat}) : « Ordre de mission… »', 'Mission order not reissued after the move ({cat}): “Mission order…”', 'Missionsbefehl nach dem Verschieben nicht neu erteilt ({cat}): „Missionsbefehl…“', 'Orden de misión no reemitida tras el desplazamiento ({cat}): «Orden de misión…»'),
       om_absent: L4('Ordre de mission non émis : {tri} ne voit pas la mission dans Mes missions (« Ordre de mission… »)', 'Mission order not issued: {tri} does not see the mission in My missions (“Mission order…”)', 'Missionsbefehl nicht erteilt: {tri} sieht die Mission nicht in Meine Missionen („Missionsbefehl…“)', 'Orden de misión no emitida: {tri} no ve la misión en Mis misiones («Orden de misión…»)'),
       om_ecart: L4('Ordre de mission à réémettre : plaquette {tri}, affectations {cat}', 'Mission order to reissue: strip {tri}, assignments {cat}', 'Missionsbefehl neu erteilen: Streifen {tri}, Zuweisungen {cat}', 'Orden de misión que reemitir: ficha {tri}, asignaciones {cat}'),
       chevauchement: L4('{tri} : déjà pris à cette heure', '{tri}: already busy at that time', '{tri}: zu dieser Zeit schon eingeteilt', '{tri}: ya ocupado a esa hora'),
@@ -281,9 +282,121 @@
     clearTimeout(ferryRun);
     ferryRun = setTimeout(() => syncFerries().catch(() => {}), 60);
   }
+  /** Ordres de mission à réémettre, après la fin des déplacements (une seule réécriture par vol). */
+  const omQueue = new Set();
+  let omTimer = null;
+  function omSoon(id) {
+    omQueue.add(id);
+    clearTimeout(omTimer);
+    omTimer = setTimeout(async () => {
+      const ids = [...omQueue];
+      omQueue.clear();
+      for (const vid of ids) await reissueOm(vid).catch(err => notify(String(err?.message || err), 'error'));
+    }, 900);
+  }
+  /** Réémission silencieuse de l'ordre de mission d'un vol déplacé : mêmes pilotes, appareils, indicatifs et convoyeurs, à
+   *  la nouvelle heure ; sans conflit d'affectation, écrite sans fenêtre (le pli redevient cacheté : nouvelle date
+   *  d'écriture) ; avec conflit, ou dossier des missions non autorisé, non réémise et signalée sur la plaquette. */
+  async function reissueOm(vid) {
+    const v = S.doc.elements.find(x => x.id === vid);
+    const m = v && reg(v.mission);
+    if (!v || !m || !MA()?.writeAssignment) return;
+    const idx = await MA().index({
+      fresh: true
+    }).catch(() => null);
+    const all = idx?.assignments || S.affect;
+    const old = all.filter(a => a.mission === v.mission && a.role !== 'convoyage' && a.status !== 'annulée').sort((a, b) => String(a.takeoff).localeCompare(String(b.takeoff)));
+    if (!old.length) return;
+    const t0 = Date.parse(`${v.date}T${v.debut}:00Z`);
+    const rows = old.map(a => ({
+      pilot: a.pilot,
+      registration: a.aircraft?.registration || '',
+      callsign: a.callsign || '',
+      ferryPilot: a.ferry ? (a.ferry.open ? '__open' : a.ferry.pilot && a.ferry.pilot !== a.pilot ? a.ferry.pilot : '') : ''
+    }));
+    // conflits d'affectation (autres missions des mêmes pilotes, convoyeurs et appareils sur la nouvelle plage)
+    const why = [];
+    rows.forEach((r, i) => {
+      const fr = ferryOf(v, r.registration);
+      const from = Math.min(t0 + i * 6e4, fr?.takeoff || Infinity),
+        to = t0 + (v.duree + (MA().TURN_MIN || 30)) * 6e4;
+      why.push(...MA().conflicts(all, {
+        mission: v.mission,
+        pilot: r.pilot,
+        registration: r.registration,
+        ferryPilot: r.ferryPilot && r.ferryPilot !== '__open' ? r.ferryPilot : '',
+        from,
+        to
+      }));
+    });
+    const hold = (reason) => {
+      v.omAttente = true;
+      v.omRaison = reason;
+      S.rev = (S.rev || 0) + 1;
+      recompute();
+      render();
+      queueSave();
+      notify(tf(L4('Ordre de mission de {v} non réémis : {r}', 'Mission order of {v} not reissued: {r}', 'Missionsbefehl von {v} nicht neu erteilt: {r}', 'Orden de misión de {v} no reemitida: {r}'), {
+        v: v.indicatif || v.mission,
+        r: reason
+      }), 'warn');
+    };
+    if (why.length) return hold([...new Set(why)].join(' ; '));
+    const y = await yamlOf(m);
+    let dep = await MA().departureOf?.(y, m).catch(() => null);
+    if (!dep?.code && depOf(m)) dep = {
+      ...(dep || {}),
+      code: depOf(m)
+    };
+    const parts = await MA().buildParticipants(y, rows, t0, dep);
+    for (const p of parts) {
+      p.block_min = v.duree;
+      // convoyage : celui de la plaquette (heure et durée, déplacement à la main compris)
+      const fr = ferryOf(v, p.aircraft?.registration);
+      if (fr && p.ferry) Object.assign(p.ferry, {
+        from: fr.from,
+        minutes: fr.minutes,
+        takeoff: new Date(fr.takeoff).toISOString()
+      });
+    }
+    const o0 = old[0];
+    const h_hour = o0.h_hour ? new Date(Date.parse(o0.h_hour) + (t0 - Date.parse(o0.takeoff))).toISOString() : null;
+    const alert = v.astreinte ? {
+      ready_at_utc: new Date(t0).toISOString(),
+      aerodrome: dep?.code || '',
+      notice_min: v.astreinte.preavis,
+      window_end_utc: new Date(t0 + v.astreinte.finH * 36e5).toISOString()
+    } : null;
+    try {
+      await MA().writeAssignment({
+        ...m,
+        maps: m.images || []
+      }, parts, {
+        h_hour,
+        alert
+      });
+    } catch (err) {
+      return hold(String(err?.message || err));
+    }
+    v.omAttente = false;
+    delete v.omRaison;
+    S.affect = (await MA().index({
+      fresh: true
+    }).catch(() => null))?.assignments || S.affect;
+    S.log = await MA()?.readLog?.().catch(() => S.log) || S.log;
+    S.rev = (S.rev || 0) + 1;
+    recompute();
+    render();
+    queueSave();
+    notify(tf(L4('Ordre de mission réémis : {v} {d} {h}z (pli rescellé)', 'Mission order reissued: {v} {d} {h}z (envelope resealed)', 'Missionsbefehl neu erteilt: {v} {d} {h}z (Umschlag neu versiegelt)', 'Orden de misión reemitida: {v} {d} {h}z (sobre resellado)'), {
+      v: v.indicatif || v.mission,
+      d: `${v.date.slice(8, 10)}/${v.date.slice(5, 7)}`,
+      h: v.debut
+    }), 'info');
+  }
   function syncTakeoffs() {
     const moved = [];
-    for (const v of S.doc.elements.filter(x => x.type === 'vol' && x.mission && !x.convoyage)) {
+    for (const v of S.doc.elements.filter(x => x.type === 'vol' && x.mission && !x.convoyage && !x.omAttente)) {
       const a = O().missionCrew(v, S.affect).map(x => x.takeoff).filter(Boolean).sort()[0];
       const hm = a ? new Date(a).toISOString().slice(11, 16) : '';
       if (!hm || hm === v.debut) continue;
@@ -343,6 +456,12 @@
         categorie: aff.join(' ')
       });
     }
+    for (const e of S.doc.elements.filter(x => x.omAttente))
+      (S.conf.get(e.id) || S.conf.set(e.id, []).get(e.id)).push({
+        code: 'om_attente',
+        tri: e.indicatif || e.mission,
+        categorie: e.omRaison || ''
+      });
     // convoyage arrivé trop tard : il doit se poser 30 min avant le décollage du vol qu'il sert
     for (const c of S.doc.elements.filter(x => x.convoyage && x.etat !== 'annule')) {
       const v = S.doc.elements.find(x => x.id === c.convoyage.pour);
@@ -409,7 +528,12 @@
   };
   function mutate(fn) {
     if (!S.editable) return notify(t(L4('Lecture seule : déverrouillez le Centre (et connectez-vous en admin_centre en mode production).', 'Read only: unlock the Centre (and log in as admin_centre in production mode).', 'Nur lesen: Zentrum entsperren (im Produktionsmodus als admin_centre anmelden).', 'Solo lectura: desbloquee el Centro (y conéctese como admin_centre en modo producción).')), 'warn');
+    const slot = v => `${v.date} ${v.debut} ${v.duree}`;
+    const before = new Map(S.doc.elements.filter(x => x.type === 'vol' && x.mission && !x.convoyage).map(v => [v.id, slot(v)]));
     fn(S.doc);
+    // vol de mission déplacé (jour, heure, durée) : son ordre de mission est réémis d'office s'il en a un
+    for (const v of S.doc.elements.filter(x => x.type === 'vol' && x.mission && !x.convoyage && before.has(x.id) && before.get(x.id) !== slot(x)))
+      if (S.affect.some(a => a.mission === v.mission && a.role !== 'convoyage' && a.status !== 'annulée')) omSoon(v.id);
     S.rev = (S.rev || 0) + 1;
     clearTimeout(ferryRun);
     ferryRun = setTimeout(() => syncFerries().catch(() => {}), 60);

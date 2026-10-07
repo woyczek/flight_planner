@@ -330,6 +330,9 @@
       etat: ETATS.includes(e.etat) ? e.etat : 'prevu',
       cr: CR.includes(e.cr) ? e.cr : null,
       partiel: !!e.partiel,
+      // ordre de mission pas encore réémis après un déplacement (conflit, dossier des missions non autorisé)
+      omAttente: !!e.omAttente,
+      omRaison: e.omAttente ? String(e.omRaison || '') : '',
       causes: Array.isArray(e.causes) ? e.causes : [],
       motif: e.motif || '',
       recurrence: e.recurrence || null
