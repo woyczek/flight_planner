@@ -12,6 +12,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Ajouté
 
+- **MORA des grandes zones** (plus de 1500 cases : États-Unis, Canada…) : MORA d'X-Plane par défaut (panneau, actions à
+  faire, mise en place automatique) ; « Calcul complet… » par blocs de 10° sur confirmation (volume annoncé), chaque bloc
+  écrit aussitôt dans `mora.csv`, arrêt et reprise ; relief des tuiles ouvertes d'AWS majoré de 100 m, sans requête
+  OpenStreetMap (`computeMoraGrid` : options `peaks`, `fineMax`).
 - **Données aéronautiques : mise en place automatique d'une zone** à sa première activation (téléchargements, derniers
   ZIP de Téléchargements, reconstruction de la base, MORA de la zone, double jauge) et bouton « Tout récupérer et
   recalculer » ; « Actions à faire » sous la carte (une ligne par source des zones actives, lien et bouton) ; tableau

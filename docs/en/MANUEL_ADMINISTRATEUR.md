@@ -762,7 +762,7 @@ The “Check” button reruns the checks.
   - a PDF, with the link and the instructions: DIRCAM / MILAIP ENR 5.7 (refuelling tracks), UK military AIP, NAV CANADA;
     DIRCAM: “Import the MILAIP PDF…” reads the PDF of section ENR 5.7 (pdf.js, network at the first import), shows the number of tracks and the anomalies found, then “Write miam-enr-5-7-tracks.xml” stores the file in the SIA folder (old one in `_archives/`) and updates the database;
   - a folder of the computer: X-Plane (navaids, fixes, airways, MORA grid, cut to the outlines of the active zones that ticked it);
-  - a calculation: the zone MORA.
+  - a calculation: the zone MORA. A very large zone (more than 1500 one-degree cells: United States, Canada…) takes the X-Plane MORA by default; “Full calculation…” computes it in 10° blocks, after a confirmation that states the volume (AWS open terrain tiles raised by 100 m, no OpenStreetMap query): each block is written to `mora.csv` at once, “Stop” between two blocks, “Resume the full calculation…” later.
 - SIA France (France zone): “Fetch the downloaded ZIP” (the launcher takes it from Downloads), “SIA export ZIP…”, “Extract …” if it is already in the folder, “Archive the old cycles” (`_archives/`); “SIA folder content” lists the cycle files.
 - The SIA keeps priority: inside the French FIRs only its airspace counts; elsewhere an airspace, aerodrome or navaid already read is not added twice. Outside France, R, D, TRA, TSA, MOA, W, A areas and MTR routes crossed by a mission appear in its airspace to activate.
 - Website addresses (SIA, DIRCAM, NATS, UK military AIP, NAV CANADA) are set in Settings › Installation › Sources and folders › External sources; the SIA and X-Plane folders there are the same as here.

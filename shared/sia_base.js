@@ -569,13 +569,17 @@
     all.peaksOk = peaksOk;
     return all;
   }
+  // peaks : sommets OSM (Overpass, une requête par emprise) ; false pour les grandes zones calculées par blocs (relief
+  // seul, majoré de 100 m : pas de charge sur les serveurs publics d'OpenStreetMap). fineMax : tuiles fines relues par case.
   async function computeMoraBox(obstacleMax = {}, {
     s = 41,
     n = 51,
     w = -5,
     e = 10,
     z = 9,
-    fine = 12
+    fine = 12,
+    peaks: withPeaks = true,
+    fineMax = 8
   } = {}, progress) {
     const cell = {},
       spots = {},
@@ -612,7 +616,7 @@
       progress?.(++done, tiles.length, 'relief');
     });
     // Sommets lissés à ~200 m : relecture à ~25 m (z12) des tuiles proches du maximum de chaque cellule (8 au plus).
-    const jobs = Object.entries(spots).flatMap(([key, sp]) => Object.entries(sp).filter(([, h]) => h >= cell[key] - 100).sort((a, b) => b[1] - a[1]).slice(0, 8).map(([t]) => [key, t]));
+    const jobs = Object.entries(spots).flatMap(([key, sp]) => Object.entries(sp).filter(([, h]) => h >= cell[key] - 100).sort((a, b) => b[1] - a[1]).slice(0, fineMax).map(([t]) => [key, t]));
     const cache = {};
     let fineDone = 0;
     await pool(jobs, async ([key, t]) => {
@@ -629,8 +633,8 @@
     });
     // Le relief Terrarium (~90 m à la source) écrête les sommets de 20 à 90 m : altitudes des sommets OSM (natural=peak).
     const peak = {};
-    let peaksOk = true;
-    try {
+    let peaksOk = withPeaks;
+    if (withPeaks) try {
       progress?.(0, 1, 'sommets OSM');
       const q = `[out:json][timeout:90];node["natural"="peak"]["ele"~"^[1-4][0-9]{3}([.,][0-9]+)?$"](${s},${w},${n},${e});out;`;
       const r = await fetch('https://overpass-api.de/api/interpreter', {

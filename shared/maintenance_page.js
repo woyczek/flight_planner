@@ -1230,6 +1230,13 @@
       }
       if (S.kind === 'download') return `<p class="row"><button type="button" class="secondary" data-aero-fetch="${esc(S.provider)}" data-src="${esc(src)}" data-args="${esc((S.args || [id]).join(' '))}" data-icon="download"${aeroFetching.has(`${id}|${src}`) ? ' disabled' : ''}>${esc(t(['Télécharger', 'Download', 'Herunterladen', 'Descargar']))}</button> <span class="mt-small" data-fetch-msg>${aeroFetchMsg[`${id}|${src}`] || ''}</span></p>`;
       if (S.kind === 'local') return `<p class="mt-small">${esc(t(S.howto))}</p><p class="row" data-aero-xp></p>`;
+      // grande zone (plus de 1500 cases) : MORA d'X-Plane par défaut ; calcul complet par blocs sur confirmation
+      if (S.kind === 'computed' && moraTooLarge(Z, id)) {
+        const roll = moraRollState(id);
+        return `<p class="mt-small">${esc(t(['Zone très étendue ({n} cases d’un degré) : MORA d’X-Plane par défaut ; le calcul complet se fait par blocs de 10°, reprenable, sur le relief ouvert d’AWS (sans requête OpenStreetMap).', 'Very large zone ({n} one-degree cells): X-Plane MORA by default; the full calculation runs in 10° blocks, resumable, on AWS open terrain (no OpenStreetMap query).', 'Sehr große Zone ({n} Ein-Grad-Felder): standardmäßig MORA von X-Plane; die vollständige Berechnung läuft in 10°-Blöcken, fortsetzbar, auf dem offenen AWS-Relief (ohne OpenStreetMap-Abfrage).', 'Zona muy extensa ({n} casillas de un grado): MORA de X-Plane por defecto; el cálculo completo se hace por bloques de 10°, reanudable, sobre el relieve abierto de AWS (sin consulta a OpenStreetMap).'], { n: moraCellsOf(Z, id) }))}${roll.done.length ? ` ${pill('info', t(['{d}/{n} bloc(s) calculé(s)', '{d}/{n} block(s) computed', '{d}/{n} Block/Blöcke berechnet', '{d}/{n} bloque(s) calculado(s)'], { d: roll.done.length, n: roll.total || '?' }))}` : ''}</p>
+          <p class="row"><button type="button" class="primary" data-mora-xp-zone="${esc(id)}"${moraBusy ? ' disabled' : ''} data-icon="download">${esc(t(['MORA d’X-Plane', 'X-Plane MORA', 'MORA von X-Plane', 'MORA de X-Plane']))}</button>
+          <button type="button" class="secondary" data-mora-roll="${esc(id)}"${moraBusy ? ' disabled' : ''} data-icon="chart">${esc(roll.done.length && !roll.complete ? t(['Reprendre le calcul complet…', 'Resume the full calculation…', 'Vollständige Berechnung fortsetzen…', 'Reanudar el cálculo completo…']) : t(['Calcul complet…', 'Full calculation…', 'Vollständige Berechnung…', 'Cálculo completo…']))}</button></p>`;
+      }
       if (S.kind === 'computed') return `<p class="row"><button type="button" class="secondary" data-mora-zone="${esc(id)}"${moraBusy ? ' disabled' : ''} data-icon="chart" title="${esc(t(['Relief Terrarium, sommets OpenStreetMap et obstacles de la base, sur l’emprise de la zone (réseau)', 'Terrarium terrain, OpenStreetMap peaks and base obstacles, over the zone extent (network)']))}">${esc(t(['Calculer la MORA de la zone', 'Compute the zone MORA', 'MORA der Zone berechnen', 'Calcular la MORA de la zona']))}</button></p><p class="mt-small">${esc(t(['Autre source de MORA : X-Plane (grille mondiale, si la source X-Plane est cochée) ; la grille calculée a la priorité.', 'Other MORA source: X-Plane (world grid, if the X-Plane source is ticked); the computed grid has priority.']))}</p>`;
       // source à fournir par l'utilisateur (NATS…) et lisible par la base : bouton de dépôt (sélecteur ouvert sur
       // Téléchargements, fichiers rangés dans data/sia/zones/<zone>/, base reconstruite) — plus de dépôt à la main
@@ -1422,7 +1429,7 @@
     });
     li.classList.add('repo-block-flash');
     setTimeout(() => li.classList.remove('repo-block-flash'), 1600);
-    const ctl = src === 'sia' ? li.querySelector('#mtSiaFetch') : src === 'dircam' ? li.querySelector('#mtEnr57') : src === 'mora' ? li.querySelector('[data-mora-zone]') : src === 'xplane' ? li.querySelector('button.mt-folder') : li.querySelector('[data-aero-fetch]') || li.querySelector('[data-aero-drop]');
+    const ctl = src === 'sia' ? li.querySelector('#mtSiaFetch') : src === 'dircam' ? li.querySelector('#mtEnr57') : src === 'mora' ? li.querySelector('[data-mora-zone], [data-mora-xp-zone]') : src === 'xplane' ? li.querySelector('button.mt-folder') : li.querySelector('[data-aero-fetch]') || li.querySelector('[data-aero-drop]');
     if (ctl && !ctl.disabled) ctl.click();
   }
   /** Zone du panneau : l'épinglée, sinon la survolée, sinon la dernière choisie. */
@@ -1616,7 +1623,7 @@
         S.downloads ? [t(['télécharger les jeux', 'download the datasets', 'Datensätze herunterladen', 'descargar los conjuntos']), t(['Prendre les derniers ZIP', 'Take the latest ZIPs', 'Neueste ZIPs übernehmen', 'Tomar los últimos ZIP'])] :
         s === 'dircam' ? [t(['télécharger le PDF de la MILAIP (ENR 5.7)', 'download the MILAIP PDF (ENR 5.7)', 'MILAIP-PDF herunterladen (ENR 5.7)', 'descargar el PDF de la MILAIP (ENR 5.7)']), t(['Importer le PDF…', 'Import the PDF…', 'PDF importieren…', 'Importar el PDF…'])] :
         S.kind === 'download' ? ['', t(['Télécharger', 'Download', 'Herunterladen', 'Descargar'])] :
-        S.kind === 'computed' ? ['', t(['Calculer la MORA', 'Compute the MORA', 'MORA berechnen', 'Calcular la MORA'])] :
+        S.kind === 'computed' ? ['', moraTooLarge(Z, z.id) ? t(['MORA d’X-Plane', 'X-Plane MORA', 'MORA von X-Plane', 'MORA de X-Plane']) : t(['Calculer la MORA', 'Compute the MORA', 'MORA berechnen', 'Calcular la MORA'])] :
         S.kind === 'local' ? ['', t(['Choisir le dossier…', 'Choose the folder…', 'Ordner wählen…', 'Elegir la carpeta…'])] : [t(['télécharger les fichiers', 'download the files', 'Dateien herunterladen', 'descargar los archivos']), t(['Déposer les fichiers…', 'Drop the files…', 'Dateien ablegen…', 'Depositar los archivos…'])];
       return `<li>${pill(age === 'none' ? 'err' : 'warn', age === 'none' ? t(['manquant', 'missing', 'fehlt', 'falta']) : t(['ancien', 'old', 'alt', 'antiguo']))} <b>${esc(zName(z))} — ${esc(t(S.label).split(/ — | \(/)[0])}</b> : ${url && what[0] ? `<a class="mt-link" href="${esc(url)}" target="_blank" rel="noopener">${esc(what[0])} ↗</a> / ` : ''}<button type="button" class="secondary" data-todo-zone="${esc(z.id)}" data-todo-src="${esc(s)}">${esc(what[1])}</button></li>`;
     })).filter(Boolean);
@@ -1667,8 +1674,10 @@
           })) rebuilt = true;
       }]);
     }
-    const moraOn = z.sources.includes('mora') && Z.srcOn(id, 'mora') && !aeroSourceStatus(Z, id, 'mora').has &&
-      Z.zoneBoxes(id).reduce((n, b) => n + (b.n - b.s) * (b.e - b.w), 0) <= 1500;
+    // MORA : calculée pour une zone ordinaire ; grande zone : celle d'X-Plane (option A), si la base en a
+    const moraWanted = z.sources.includes('mora') && Z.srcOn(id, 'mora') && !aeroSourceStatus(Z, id, 'mora').has,
+      moraLarge = moraTooLarge(Z, id),
+      moraOn = moraWanted && (!moraLarge || ((await window.SiaBase.get())?.moraCells || []).some(c => c.src === 'xplane'));
     const total = steps.length + 1 + (moraOn ? 1 : 0);
     const job = window.AppFramework?.task?.(t(['Mise en place de la zone {z}', 'Setting up zone {z}', 'Einrichtung der Zone {z}', 'Puesta en marcha de la zona {z}'], {
       z: zName(z)
@@ -1683,7 +1692,7 @@
       if (!rebuilt || fetched) await basePanelApi?.reread(true);
       if (moraOn) {
         job?.set?.(steps.length + 1, total, 'MORA');
-        await moraExclusive(planMoraZone, id);
+        await moraExclusive(moraLarge ? planMoraXplane : planMoraZone, id);
       }
       const done = aeroAutoDone();
       done.add(id);
@@ -1711,7 +1720,7 @@
   // un seul calcul de MORA à la fois (zone, simple, complet) : boutons désactivés pendant le calcul, un clic de plus
   // ne relance rien (deux calculs mêlaient leurs progressions, comme un calcul qui tourne en boucle)
   let moraBusy = false;
-  const moraButtons = () => document.querySelectorAll('#mtMora, #mtMoraFull, #mtMoraXp, [data-mora-zone]').forEach(x => {
+  const moraButtons = () => document.querySelectorAll('#mtMora, #mtMoraFull, #mtMoraXp, [data-mora-zone], [data-mora-xp-zone], [data-mora-roll]').forEach(x => {
     x.disabled = moraBusy;
   });
   /** Cases d'un degré d'une zone (« lat|lon » du coin sud-ouest) : celles dont le centre est dans un contour, plus
@@ -1743,6 +1752,147 @@
       }
     }
   }
+  /** Nombre de cases d'un degré d'une zone (emprises) ; au-delà de 1500, calcul d'un seul tenant refusé (grande zone). */
+  const moraCellsOf = (Z, id) => Z.zoneBoxes(id).reduce((n, b) => n + (b.n - b.s) * (b.e - b.w), 0);
+  const moraTooLarge = (Z, id) => moraCellsOf(Z, id) > 1500;
+  // ---- MORA d'une grande zone par blocs (option B, sur confirmation) : blocs de 10° × 10° au plus, chacun écrit
+  // aussitôt dans mora.csv (reprise possible, d'une séance à l'autre : blocs faits notés dans ce navigateur) ; relief des
+  // tuiles Terrarium d'AWS (données ouvertes, faites pour l'accès en masse), une tuile fine par case, relief majoré de
+  // 100 m, sans requête OpenStreetMap ; « Arrêter » entre deux blocs.
+  const ROLL_KEY = id => `moraRolling:v1:${id}`;
+  const moraRollState = id => {
+    try {
+      return JSON.parse(localStorage.getItem(ROLL_KEY(id)) || 'null') || {
+        done: []
+      };
+    } catch {
+      return {
+        done: []
+      };
+    }
+  };
+  function moraChunks(Z, id) {
+    const out = [];
+    for (const b of Z.zoneBoxes(id))
+      for (let s = b.s; s < b.n; s += 10)
+        for (let w = b.w; w < b.e; w += 10) out.push({
+          s,
+          n: Math.min(b.n, s + 10),
+          w,
+          e: Math.min(b.e, w + 10)
+        });
+    return out;
+  }
+  let moraStop = false;
+  document.addEventListener('click', e => {
+    if (e.target.closest?.('[data-mora-stop]')) {
+      moraStop = true;
+      e.target.closest('[data-mora-stop]').disabled = true;
+    }
+  });
+  async function moraRolling(id) {
+    const Z = await window.SiaBase.zones(),
+      z = Z.byId(id),
+      chunks = moraChunks(Z, id),
+      zk = zoneCellKeys(Z, id),
+      st = moraRollState(id);
+    if (st.total !== chunks.length) st.done = [];
+    const left = chunks.map((c, i) => i).filter(i => !st.done.includes(i));
+    if (!left.length) return window.AppFramework?.notify?.(t(['MORA de {z} : tous les blocs sont déjà calculés (dans mora.csv).', 'MORA of {z}: all blocks are already computed (in mora.csv).', 'MORA von {z}: alle Blöcke sind bereits berechnet (in mora.csv).', 'MORA de {z}: todos los bloques ya están calculados (en mora.csv).'], {
+      z: zName(z)
+    }), 'ok');
+    const cells = left.reduce((n, i) => n + (chunks[i].n - chunks[i].s) * (chunks[i].e - chunks[i].w), 0),
+      mb = Math.round(cells * 0.25); // ≈ 2 tuiles z9 et 1 tuile fine par case
+    if (!await window.AppFramework.ask(t(['Calcul complet de la MORA de {z} : {b} bloc(s) de 10°, {c} cases d’un degré, environ {m} Mo de relief téléchargé (tuiles ouvertes d’AWS, sans requête OpenStreetMap) et plusieurs minutes par bloc.\n\nChaque bloc est écrit aussitôt dans mora.csv : « Arrêter » entre deux blocs, reprise plus tard là où le calcul s’est arrêté. Lancer ?', 'Full MORA calculation of {z}: {b} 10° block(s), {c} one-degree cells, about {m} MB of terrain downloaded (AWS open tiles, no OpenStreetMap query) and several minutes per block.\n\nEach block is written to mora.csv at once: “Stop” between two blocks, resume later where it stopped. Start?', 'Vollständige MORA-Berechnung von {z}: {b} 10°-Block/Blöcke, {c} Ein-Grad-Felder, etwa {m} MB Relief heruntergeladen (offene AWS-Kacheln, ohne OpenStreetMap-Abfrage) und mehrere Minuten pro Block.\n\nJeder Block wird sofort in mora.csv geschrieben: „Anhalten“ zwischen zwei Blöcken, später dort fortsetzen. Starten?', 'Cálculo completo de la MORA de {z}: {b} bloque(s) de 10°, {c} casillas de un grado, unos {m} MB de relieve descargados (teselas abiertas de AWS, sin consulta a OpenStreetMap) y varios minutos por bloque.\n\nCada bloque se escribe enseguida en mora.csv: «Detener» entre dos bloques, reanudar más tarde donde se detuvo. ¿Iniciar?'], {
+        z: zName(z),
+        b: left.length,
+        c: cells,
+        m: mb
+      }), {
+        ok: t(['Lancer le calcul', 'Start the calculation', 'Berechnung starten', 'Iniciar el cálculo'])
+      })) return;
+    const say = x => {
+      const m = hosts.sia.querySelector('#mtMoraMsg');
+      if (m) m.innerHTML = x;
+    };
+    const dir = await folder('__sia', true);
+    if (!dir) return window.AppFramework?.notify?.(t(['Dossier SIA non autorisé : Installation › Sources et dossiers.', 'SIA folder not authorised: Installation › Sources and folders.', 'SIA-Ordner nicht freigegeben: Installation › Quellen und Ordner.', 'Carpeta SIA no autorizada: Instalación › Fuentes y carpetas.']), 'error');
+    moraStop = false;
+    moraMsg = '';
+    moraPlan = null;
+    const job = window.AppFramework?.task?.(t(['MORA de {z} par blocs', 'MORA of {z} in blocks', 'MORA von {z} in Blöcken', 'MORA de {z} por bloques'], {
+      z: zName(z)
+    }));
+    const b = await window.SiaBase.get(),
+      key = c => `${Math.floor(c.lat)}|${Math.floor(c.lon)}`,
+      SRC = 'Calculée par blocs : relief Terrarium (AWS Terrain Tiles) majoré de 100 m + obstacles AIXM SIA, sans sommets OSM — non certifiée';
+    let archived = false,
+      merged = null;
+    try {
+      for (const [k, i] of left.entries()) {
+        if (moraStop) break;
+        const c = chunks[i],
+          label = `${id.toUpperCase()} — ${t(['bloc', 'block', 'Block', 'bloque'])} ${st.done.length + 1}/${chunks.length} (${c.s}…${c.n}° / ${c.w}…${c.e}°)`;
+        job?.set?.(k, left.length, label);
+        say(`<span class="mt-small">${esc(label)}…</span> <button type="button" class="secondary" data-mora-stop>${esc(t(['Arrêter (reprise plus tard)', 'Stop (resume later)', 'Anhalten (später fortsetzen)', 'Detener (reanudar más tarde)']))}</button>`);
+        const part = await window.SiaBase.computeMoraGrid(b?.obstacleMax || {}, {
+          ...c,
+          name: `${id}-${i + 1}`,
+          peaks: false,
+          fineMax: 1
+        }, (d, n, step) => job?.sub?.(d, n, `${label} — ${step || ''} ${d}/${n}`));
+        const mine = part.filter(x => zk.has(key(x))).map(x => ({
+          ...x,
+          source: SRC,
+          keepSource: true
+        }));
+        // fusion immédiate dans mora.csv : la reprise repart du fichier
+        const old = await fileAt(dir, 'mora.csv'),
+          text = old ? await old.text() : '';
+        if (old && !archived) {
+          await writeAt(dir, `_archives/mora_${new Date(old.lastModified).toISOString().slice(0, 10)}.csv`, await old.arrayBuffer());
+          archived = true;
+        }
+        const keys = new Set(mine.map(key));
+        merged = (text ? window.SiaBase.parseMora(text) : []).filter(x => !keys.has(key(x))).map(x => ({
+          ...x,
+          keepSource: true
+        })).concat(mine);
+        await writeAt(dir, 'mora.csv', window.SiaBase.moraCsv(merged, {
+          airac: b?.airac || ''
+        }));
+        st.done.push(i);
+        st.total = chunks.length;
+        st.complete = st.done.length === chunks.length;
+        try {
+          localStorage.setItem(ROLL_KEY(id), JSON.stringify(st));
+        } catch {}
+      }
+      if (merged) {
+        const inCsv = new Set(merged.map(key)),
+          xp = (b?.moraCells || []).filter(x => x.src === 'xplane' && !inCsv.has(key(x)));
+        await window.SiaBase.patch?.({
+          moraCells: merged.concat(xp)
+        });
+      }
+      moraMsg = pill(st.complete ? 'ok' : 'info', st.complete ? t(['MORA de {z} : {n} bloc(s) calculé(s), mora.csv écrit — à committer', 'MORA of {z}: {n} block(s) computed, mora.csv written — commit it', 'MORA von {z}: {n} Block/Blöcke berechnet, mora.csv geschrieben — committen', 'MORA de {z}: {n} bloque(s) calculado(s), mora.csv escrito — confirmarlo'], {
+        z: zName(z),
+        n: st.done.length
+      }) : t(['MORA de {z} : {d}/{n} bloc(s) calculé(s) et écrits ; « Reprendre le calcul complet… » pour la suite', 'MORA of {z}: {d}/{n} block(s) computed and written; “Resume the full calculation…” for the rest', 'MORA von {z}: {d}/{n} Block/Blöcke berechnet und geschrieben; „Vollständige Berechnung fortsetzen…“ für den Rest', 'MORA de {z}: {d}/{n} bloque(s) calculado(s) y escritos; «Reanudar el cálculo completo…» para el resto'], {
+        z: zName(z),
+        d: st.done.length,
+        n: chunks.length
+      }));
+    } catch (e) {
+      moraMsg = pill('err', e.message);
+      job?.fail?.(e);
+    } finally {
+      job?.end?.();
+    }
+    await scanSiaFolder(false);
+    aeroInv = await aeroInventory();
+    renderSia();
+  }
   /** MORA calculée sur l'emprise d'une zone, fusionnée avec mora.csv (cases de la zone remplacées), à écrire ensuite. */
   async function planMoraZone(id) {
     const Z = await window.SiaBase.zones(),
@@ -1752,7 +1902,7 @@
       const m = hosts.sia.querySelector('#mtMoraMsg');
       if (m) m.innerHTML = x;
     };
-    if (cellsN > 1500) return window.AppFramework.notify(t(['Zone trop étendue pour le calcul ({n} cases d’un degré) : utilisez la MORA d’X-Plane pour cette zone.', 'Zone too large for the calculation ({n} one-degree cells): use the X-Plane MORA for this zone.'], {
+    if (cellsN > 1500) return window.AppFramework.notify(t(['Zone trop étendue pour un calcul d’un seul tenant ({n} cases d’un degré) : « MORA d’X-Plane », ou « Calcul complet… » par blocs.', 'Zone too large for the calculation ({n} one-degree cells): use the X-Plane MORA for this zone.'], {
       n: cellsN
     }), 'warn');
     moraMsg = '';
@@ -2118,6 +2268,8 @@
       } else if (b.dataset.aeroDrop) aeroDrop(panel.dataset.zone, b.dataset.aeroDrop);
       else if (b.dataset.aeroFetch) aeroFetch(b.dataset.aeroFetch, b.dataset.args.split(' ').filter(Boolean), b, panel.dataset.zone, b.dataset.src);
       else if (b.dataset.moraZone) moraExclusive(planMoraZone, b.dataset.moraZone);
+      else if (b.dataset.moraXpZone) moraExclusive(planMoraXplane);
+      else if (b.dataset.moraRoll) moraExclusive(moraRolling, b.dataset.moraRoll);
       else if (b.id === 'mtArchive') archiveOld();
       else if (b.id === 'mtSiaZipFolder') extractZip(siaFolderState.zips[0].file);
       else if (b.id === 'mtSiaFetch') siaFetchZip();
