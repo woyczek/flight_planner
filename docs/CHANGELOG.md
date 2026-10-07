@@ -12,6 +12,12 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Ajouté
 
+- **Canada : manuel des espaces aériens désignés de NAV CANADA (DAH) téléchargé et lu** — source officielle cochée par
+  défaut (openAIP et X-Plane en repli) : le lanceur trouve l'édition en vigueur sur la page des guides opérationnels
+  (`aero_fetch.py navcan` → `tools/navcan_dah.py`, sans bibliothèque : polices CID décodées par leur table ToUnicode) ;
+  243 espaces de la partie 5 (`zones/ca/navcan_dah.geojson`) : 19 zones dangereuses, 142 réglementées, 26 consultatives
+  d'opérations militaires (MOA) et 56 autres consultatives, avec arcs, cercles, secteurs séparés, limites verticales,
+  horaires et organisme de contrôle. À retélécharger tous les 56 jours.
 - **Royaume-Uni : AIP militaire (UK Mil AIP ENR 5.2) téléchargée et lue** — source officielle cochée par défaut (openAIP et
   X-Plane en repli) : le lanceur prend le PDF à son adresse fixe (`aero_fetch.py ukmil` → `tools/ukmil_aip.py`) ; 25 zones
   de vol à basse altitude (sol à 2000 ft AGL), 30 secteurs de la Valley Aerial Tactics Area, zone d'évitement TVAA, et

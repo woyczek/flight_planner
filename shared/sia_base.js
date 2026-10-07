@@ -46,7 +46,7 @@
   });
   const needZones = () => zonesLoad ||= (async () => {
     if (!window.AERO_ZONES_GEO) await loadScript('carto/aero_zones_geo.js?v=6e9678c4');
-    if (!window.AeroZones) await loadScript('aero_zones.js?v=1589a73b');
+    if (!window.AeroZones) await loadScript('aero_zones.js?v=8ab45427');
     return window.AeroZones || null;
   })();
   /** Sous-dossiers du dossier SIA par source (fichiers d'autres pays rangés à part) ; zones/<zone>/ : fichiers déposés

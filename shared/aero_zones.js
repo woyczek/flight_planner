@@ -132,7 +132,7 @@
         'low flying areas (LFA, surface to 2000 ft AGL), Valley Aerial Tactics Area, TVAA avoidance area, AARA refuelling tracks (IP → CP)',
         'Tieffluggebiete (LFA, Boden bis 2000 ft AGL), Valley Aerial Tactics Area, Ausweichgebiet TVAA, Betankungsstrecken AARA (IP → CP)',
         'zonas de vuelo a baja altura (LFA, suelo a 2000 ft AGL), Valley Aerial Tactics Area, zona de evitación TVAA, ejes de reabastecimiento AARA (IP → CP)'
-        ),
+      ),
       src: 'ukMilAip',
       link: 'https://www.aidu.mod.uk/aip/aipVolumes.html',
       howto: L4(
@@ -140,28 +140,37 @@
         'Official freely available PDF (Open Government Licence v3.0), downloaded and read by the launcher; boundaries described in words approximated by straight segments.',
         'Offizielles frei zugängliches PDF (Open Government Licence v3.0), vom Starter heruntergeladen und gelesen; in Worten beschriebene Grenzen durch gerade Segmente angenähert.',
         'PDF oficial de libre acceso (Open Government Licence v3.0), descargado y leído por el lanzador; límites descritos con palabras aproximados por segmentos rectos.'
-        ),
+      ),
       licence: 'OGL v3.0',
       age: 'file'
     },
+    // Designated Airspace Handbook (TP 1820, tous les 56 jours, nom daté lu sur la page des guides) : téléchargé et lu par
+    // le lanceur (tools/aero_fetch.py navcan → tools/navcan_dah.py) ; zones/ca/navcan_dah.geojson (CYD, CYR, CYA)
     navcan: {
-      kind: 'pdf',
-      readable: false,
-      label: L4('NAV CANADA — AIP Canada et manuel des espaces aériens désignés (PDF)',
-        'NAV CANADA — AIP Canada and Designated Airspace Handbook (PDF)',
-        'NAV CANADA — AIP Kanada und Designated Airspace Handbook (PDF)',
-        'NAV CANADA — AIP Canadá y Designated Airspace Handbook (PDF)'),
-      gives: L4('espaces réglementés et désignés — lecture par la suite à venir',
-        'restricted and designated airspace — reading by the suite to come'),
+      kind: 'download',
+      provider: 'navcan',
+      args: [],
+      readable: true,
+      label: L4('NAV CANADA — manuel des espaces aériens désignés (DAH)',
+        'NAV CANADA — Designated Airspace Handbook (DAH)',
+        'NAV CANADA — Designated Airspace Handbook (DAH)',
+        'NAV CANADA — Designated Airspace Handbook (DAH)'),
+      gives: L4(
+        'zones dangereuses (CYD), réglementées (CYR), consultatives (CYA : opérations militaires, voltige, école, parachutage, vol à voile…), avec limites verticales, horaires et organisme de contrôle',
+        'danger (CYD), restricted (CYR) and advisory areas (CYA: military operations, aerobatics, training, parachuting, soaring…), with vertical limits, times and controlling agency',
+        'Gefahrengebiete (CYD), Flugbeschränkungsgebiete (CYR) und Advisory Areas (CYA: militärischer Flugbetrieb, Kunstflug, Schulung, Fallschirmspringen, Segelflug…), mit Höhengrenzen, Zeiten und Kontrollstelle',
+        'zonas peligrosas (CYD), restringidas (CYR) y de aviso (CYA: operaciones militares, acrobacia, escuela, paracaidismo, vuelo a vela…), con límites verticales, horarios y dependencia de control'
+        ),
       src: 'navcanAip',
       link: 'https://www.navcanada.ca/en/aeronautical-information/operational-guides.aspx',
       howto: L4(
-        'Publications gratuites en PDF ; les données numériques de NAV CANADA sont vendues sous licence. La suite ne lit pas encore ces PDF : lien gardé pour consultation ; openAIP et X-Plane couvrent le Canada.',
-        'Free PDF publications; NAV CANADA digital data are sold under licence. The suite does not read these PDFs yet: link kept for reference; openAIP and X-Plane cover Canada.'
+        'PDF officiel gratuit, édition en vigueur (tous les 56 jours) trouvée sur la page des guides opérationnels, téléchargée et lue par le lanceur ; à retélécharger à chaque édition. Les données numériques de NAV CANADA sont vendues sous licence : le PDF en tient lieu.',
+        'Free official PDF, current edition (every 56 days) found on the operational guides page, downloaded and read by the launcher; download again at each edition. NAV CANADA digital data are sold under licence: the PDF stands in for them.',
+        'Kostenloses offizielles PDF, gültige Ausgabe (alle 56 Tage) auf der Seite der Betriebshandbücher gefunden, vom Starter heruntergeladen und gelesen; bei jeder Ausgabe neu herunterladen. Die digitalen Daten von NAV CANADA werden unter Lizenz verkauft: das PDF ersetzt sie.',
+        'PDF oficial gratuito, edición vigente (cada 56 días) encontrada en la página de guías operativas, descargada y leída por el lanzador; volver a descargar en cada edición. Los datos digitales de NAV CANADA se venden bajo licencia: el PDF los sustituye.'
       ),
       licence: 'NAV CANADA',
-      age: 'file',
-      off: true
+      age: 'file'
     },
     xplane: {
       kind: 'local',
