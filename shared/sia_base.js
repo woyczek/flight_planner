@@ -436,7 +436,31 @@
       c = new OffscreenCanvas(256, 256),
       g = c.getContext('2d');
     g.drawImage(img, 0, 0);
-    return g.getImageData(0, 0, 256, 256).data;
+    return despike(g.getImageData(0, 0, 256, 256).data);
+  }
+
+  /** Altitudes (m) d'une tuile Terrarium ; pixel parasite → NaN. Les tuiles portent des pixels isolés faux (trous de la
+   *  source mal comblés : 5 389 m au bord de mer à La Réunion) : un pixel qui dépasse de plus de SPIKE_M la médiane de ses
+   *  voisins est écarté. Relevé : un vrai sommet ne dépasse cette médiane que de 390 m au plus en z9, 70 m en z12
+   *  (Mont Blanc, Cervin, Dru, Ossau, Piton des Neiges) ; les parasites, de 2 000 à 5 400 m. */
+  const SPIKE_M = 1000;
+
+  function despike(d) {
+    const h = new Float32Array(65536),
+      out = new Float32Array(65536),
+      nb = [];
+    for (let i = 0; i < 65536; i++) h[i] = d[i * 4] * 256 + d[i * 4 + 1] + d[i * 4 + 2] / 256 - 32768;
+    for (let py = 0; py < 256; py++)
+      for (let px = 0; px < 256; px++) {
+        nb.length = 0;
+        for (let b = -1; b <= 1; b++)
+          for (let a = -1; a <= 1; a++)
+            if ((a || b) && px + a >= 0 && px + a < 256 && py + b >= 0 && py + b < 256) nb.push(h[(py + b) * 256 + px + a]);
+        nb.sort((u, v) => u - v);
+        const i = py * 256 + px;
+        out[i] = h[i] - nb[nb.length >> 1] > SPIKE_M ? NaN : h[i];
+      }
+    return out;
   }
 
   function scanTile(d, z, x, y, box, visit) {
@@ -447,8 +471,8 @@
       for (let px = 0; px < 256; px++) {
         const lon = (x + (px + .5) / 256) / 2 ** z * 360 - 180;
         if (lon < box.w || lon >= box.e) continue;
-        const i = (py * 256 + px) * 4;
-        visit(lat, lon, d[i] * 256 + d[i + 1] + d[i + 2] / 256 - 32768);
+        const h = d[py * 256 + px];
+        if (h === h) visit(lat, lon, h);
       }
     }
   }

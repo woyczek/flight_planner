@@ -169,6 +169,15 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   rappel du même message ; la confirmation est oubliée si le dossier est rechoisi sans elle. Non confirmé (choix
   antérieur), rien n'y est écrit et le message dit pourquoi, au lieu de « Dossier des données d'une autre copie… ».
 
+### Corrigé
+
+- **MORA faussée par des pixels parasites du relief** : les tuiles de relief (Terrarium, AWS) portent des pixels isolés
+  faux (5 389 m au bord de mer de La Réunion, trou de la source mal comblé) ; la MORA gardant le point le plus haut de
+  chaque case, La Réunion sud sortait à 20 100 ft au lieu de 12 400 ft. Un pixel qui dépasse de plus de 1 000 m la
+  médiane de ses 8 voisins est désormais écarté (un vrai sommet : 390 m au plus en z9, 70 m en z12 ; relevé sur le
+  Mont Blanc, le Cervin, le Dru, l'Ossau et le Piton des Neiges). Les `mora.csv` déjà calculés gardent l'ancienne
+  valeur : recalculer la zone (Paramètres › Maintenance › Données aéronautiques).
+
 ## [4.9.0] — 2026-10-06
 
 Données aéronautiques d'autres pays : lecteurs AIXM 5.1, GeoJSON, OpenAir et X-Plane, téléchargements (openAIP, FAA,
