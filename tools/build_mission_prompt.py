@@ -15,6 +15,7 @@ OUT = os.path.join(ROOT, 'apps', 'cpco', 'mission_prompt.js')
 
 
 def build(verbose=True):
+    """Écrit mission_prompt.js depuis le bloc ```text du document, seulement s'il change ; verbose : bilan affiché."""
     text = io.open(SRC, encoding='utf-8').read().replace('\r\n', '\n')
     m = re.search(r'```text\n(.*?)\n```', text, re.S)
     if not m:

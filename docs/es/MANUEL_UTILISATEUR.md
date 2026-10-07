@@ -1,6 +1,6 @@
 # Manual de usuario
 
-Este manual describe la suite DEFA Virtual para los **pilotos**: un capítulo por página, una sección por pestaña o por
+Este manual describe la suite SO Group Virtual (Virtual Special Operation Group) para los **pilotos**: un capítulo por página, una sección por pestaña o por
 bloque, en el orden en que aparecen. En la suite, la entrada **«Ayuda»** de la barra lateral abre este manual en el
 capítulo de la página actual. El Centro y la administración de la suite se describen en el
 [manual del administrador](MANUEL_ADMINISTRATEUR.md); para un primer informe paso a paso, consulte el
@@ -9,10 +9,11 @@ capítulo de la página actual. El Centro y la administración de la suite se de
 ## Primeros pasos
 <!-- page: index.html -->
 
-La suite «DEFA Virtual» reúne en el navegador todo lo que el piloto necesita: misiones asignadas por el Centro, disponibilidad, mapas de vuelo, combustible, informes de misión, aterrizajes e informes estadísticos.
+La suite «SO Group Virtual» reúne en el navegador todo lo que el piloto necesita: misiones asignadas por el Centro, disponibilidad, mapas de vuelo, combustible, informes de misión, aterrizajes e informes estadísticos.
 Todas las páginas comparten las mismas referencias: una barra lateral a la izquierda, una cabecera arriba, a veces pestañas y, después, bloques.
 Este capítulo describe estos elementos comunes; los capítulos siguientes detallan cada página.
 La página de inicio (`index.html`) muestra las aplicaciones en forma de tarjetas y la versión de la suite.
+Abra la suite con el lanzador o un marcador: una página de la suite abierta desde un enlace de otro sitio (correo web, foro…) se rechaza, para que ese sitio no pueda leer ni activar nada en ella.
 
 ### La barra lateral
 
@@ -21,11 +22,11 @@ La columna de la izquierda da acceso a las aplicaciones. La entrada de la págin
 | Entrada | Lo que abre |
 |---|---|
 | «Mis misiones» | Misiones asignadas por el Centro y disponibilidad (con una pastilla roja: número de misiones no leídas) |
-| «Informe DEFA» | Introducción de un nuevo informe de misión |
+| «Informe» | Introducción de un nuevo informe de misión |
 | «Mapas de vuelo» | Mapas de vuelo: ruta, topográfico, aproximación, encuentro, destino |
 | «Combustible» | Planificador de rendimiento y de combustible |
 | «Aterrizajes» | Panel de los aterrizajes |
-| «Informes» | Informes de las misiones (Informe DEFA) |
+| «Informes» | Informes de las misiones (Informe) |
 
 - El grupo **«Centro»** («Misiones», «Registro», «ODV») solo aparece si el Centro está desbloqueado en este navegador (Ajustes › Centro). Para un piloto, normalmente permanece oculto.
 - Al pie de la columna: «Apariencia» (abre los ajustes de visualización en una ventana, encima de la página actual), «Ajustes» (Mi perfil y las demás páginas de ajustes) y **«Ayuda»**. Estas tres entradas permanecen fijas al pie de la pantalla: solo la lista superior se desplaza cuando hay demasiados iconos (ventana de menos de 460 px de alto: se desplaza toda la barra).
@@ -118,7 +119,7 @@ La suite ofrece varios diseños. Cambian la forma de las páginas, no la informa
 | Diseño | En resumen |
 |---|---|
 | Estándar, Aero, Operativo, Consola | Diseños «planos»: esquinas redondeadas, densidad, títulos, barra lateral. |
-| Gabinete, Cuaderno de vuelo, Robusto, Aqua | Diseños con materiales (cuero, madera, latón, aluminio, acero, cristal). Aqua es el diseño de una instalación nueva. |
+| Gabinete, Cuaderno de vuelo, Robusto, Aqua, Táctico | Diseños con materiales (cuero, madera, latón, aluminio, acero, cristal); Táctico: noche, vidrio ahumado, acento cian, títulos Orbitron, sin imágenes. Aqua es el diseño de una instalación nueva. |
 
 - En los diseños con materiales, la carpeta de misión de «Mis misiones» se convierte en un auténtico libro, con sus animaciones.
 - La elección se hace en Apariencia: cada diseño se muestra en miniatura y se aplica al instante. Consulte el capítulo [Apariencia](#apariencia).
@@ -203,15 +204,15 @@ El botón «⤢ Ancho completo» del título del bloque extiende la carpeta a to
 
 Su disponibilidad de la semana mostrada, en horas UTC. El Centro la utiliza para asignarle misiones. Es el mismo editor que en la página Mi disponibilidad (capítulo siguiente); aquí, la semana es la de la barra de semana de la lista.
 
-**Paleta**: las categorías se ordenan por grupo («Disponible», «Ejercicio DEFA», «Ocupado», «No disponible»). Cada pastilla lleva la letra de código ODV y un texto corto; el texto emergente da el nombre completo. La categoría elegida se memoriza.
+**Paleta**: las categorías se ordenan por grupo («Disponible», «Ejercicio SOG», «Ocupado», «No disponible»). Cada pastilla lleva la letra de código ODV y un texto corto; el texto emergente da el nombre completo. La categoría elegida se memoriza.
 
 Categorías por defecto (el Centro puede modificar esta lista):
 
 | Grupo | Categorías (código ODV) |
 |---|---|
 | Disponible | Disponible para todo (O), Disponible seguridad civil (SC), Disponible defensa (D+), Seguridad civil personalizada (SC-), Defensa personalizada (D-) |
-| Ejercicio DEFA | Vuelo en ejercicio DEFA (S), Control DEFA (AM) |
-| Ocupado | Vuelo fuera de DEFA (IVAO / VATSIM) (G), DCS (DC), Control fuera de DEFA (IVAO / VATSIM) (AT) |
+| Ejercicio SOG | Vuelo en ejercicio SOG (S), Control SOG (AM) |
+| Ocupado | Vuelo fuera de SOG (IVAO / VATSIM) (G), DCS (DC), Control fuera de SOG (IVAO / VATSIM) (AT) |
 | No disponible | No disponible (IN), Vacaciones (V), Descanso (Q), Actividad real (IR) |
 
 **Cuadrícula hora por hora**: una línea por día (hoy resaltado), una columna por hora de 0 a 23 UTC.
@@ -271,15 +272,16 @@ Su identidad en la suite, que usan todas las páginas (☰ › Perfil de piloto,
 
 | Tarjeta | Campos |
 |---|---|
-| «Piloto» | «Trigrama DEFA», «ID VATSIM (CID)», «ID IVAO (VID)», «SimBrief (usuario o ID)» |
-| «Sitio DEFA» | «Identificador», «Contraseña» |
+| «Piloto» | «Trigrama», «ID VATSIM (CID)», «ID IVAO (VID)», «SimBrief (usuario o ID)» |
+| «Sitio de la aerolínea» | «Identificador», «Contraseña» |
+| «IVAO — cliente OAuth (personal)» | «Identificador del cliente (client ID)», «Secreto del cliente», «Dirección de redirección a declarar en IVAO» (a copiar en developers.ivao.aero); botón «Guardar el cliente IVAO»: guardado por el lanzador de este equipo, el secreto nunca se vuelve a mostrar |
 | «Idioma» | «Idioma de la suite»: Automático (idioma del navegador), Français, English, Deutsch, Español |
 
 1. Rellene los campos.
 2. Haga clic en «Guardar». El mensaje de estado confirma «Perfil guardado en este navegador».
 
 - El trigrama tiene de 2 a 4 letras o cifras; sirve para encontrar sus misiones asignadas.
-- Los identificadores del sitio DEFA se quedan solo en este navegador: nunca se escriben en un archivo ni en una copia de seguridad.
+- Los identificadores del sitio de la aerolínea se quedan solo en este navegador: nunca se escriben en un archivo ni en una copia de seguridad.
 - El idioma se aplica en cuanto se elige, sin «Guardar».
 - En modo producción, el trigrama es el del usuario conectado y no se modifica aquí.
 
@@ -315,7 +317,7 @@ Los tipos de la flota que posee y domina, y sus simuladores. El Centro los utili
 | Columna | Contenido |
 |---|---|
 | «Tipo» | Modelo y designador OACI |
-| «Variantes de la flota» | Variantes presentes en la flota DEFA |
+| «Variantes de la flota» | Variantes presentes en la flota |
 | «Aeronaves» | Número de aeronaves en servicio (sobre el total) y sus bases |
 | «Poseído» | Tiene este tipo en su simulador |
 | «Dominado» | Lo pilota con soltura |
@@ -337,6 +339,10 @@ Esta sección (grupo «Planificador de combustible») configura el umbral por en
 Referencias recordadas bajo el campo: 10 000 ft (uso habitual, EASA NCO), 12 500 ft (FAA, tripulación más de 30 minutos), 14 000 ft (FAA, tripulación en todo momento).
 Es solo una información: el cálculo no se limita. El ajuste se guarda en este navegador.
 
+### Mis aeronaves (reporting)
+
+Las aeronaves que ha pilotado o reportado: las de los informes con su trigrama en la tripulación, o que usted redactó (informes guardados desde esta versión) (la aeronave de su puesto cuando el informe lo indica), con tipo, variante, indicativos, operador, número de vuelos y último vuelo. La casilla gris «Flota» indica si la aeronave pertenece a la flota (marcada) o no (desmarcada, indicativo incluido); no se modifica aquí. La lista completa, con la casilla «personal», está en Ajustes › Centro › Flota (reservada al Centro). Arriba, el recuento del diario: informes en total, sus informes, informes sin tripulación introducida (no cuentan para nadie).
+
 ## Apariencia
 <!-- page: apps/settings/apparence.html -->
 
@@ -349,9 +355,9 @@ Los ajustes se memorizan en este navegador y se aplican a todas las páginas; no
 
 La forma de las páginas: esquinas redondeadas, densidad, títulos, barra lateral.
 
-- Cada diseño se presenta con una miniatura dibujada en su estilo, con su nombre y su descripción: Estándar, Aero, Operativo, Consola, Gabinete, Cuaderno de vuelo, Robusto, Aqua.
+- Cada diseño se presenta con una miniatura dibujada en su estilo, con su nombre y su descripción: Estándar, Aero, Operativo, Consola, Gabinete, Cuaderno de vuelo, Robusto, Aqua, Táctico.
 - Un clic en una miniatura aplica el diseño al instante. La miniatura elegida aparece enmarcada.
-- Gabinete, Cuaderno de vuelo, Robusto y Aqua añaden sus materiales; los colores de información siguen siendo los del tema.
+- Gabinete, Cuaderno de vuelo, Robusto y Aqua añaden sus materiales, Táctico su vidrio ahumado sobre fondo nocturno; los colores de información siguen siendo los del tema (Táctico: filete en lo alto de los bloques).
 
 **«Decoración (diseños con materiales)»**:
 - «Completo» (por defecto): paneles ilustrados de los bloques, hojas de registro, tornillos, radar;
@@ -379,13 +385,13 @@ El grosor del trazo de los iconos, o ningún icono. Cada fila muestra una vista 
 | «Latón (medallones)», «Acero (placas)», «Gel (burbujas)», «Aviónica (instrumentos)» | Juegos con materiales |
 | «Sin iconos» | Sin iconos |
 
-**«Barra lateral»**: «Según el diseño», «Siempre» o «Nunca». Por defecto, se muestra siempre (salvo en pantalla estrecha y al imprimir).
+**«Barra lateral»**: «Según el diseño», «Siempre» o «Nunca». Por defecto, se muestra siempre (salvo en pantalla estrecha y al imprimir). «Tamaño de los iconos»: «Pequeño», «Mediano» (por defecto) o «Grande». «Visualización»: «Icono y etiqueta» (por defecto), «Solo icono» (barra más estrecha, nombre de la entrada como información emergente) o «Solo etiqueta».
 
 ### Colores de los temas
 
 Cada página de la suite tiene un tema de colores (barra, texto de la barra, acento). Para cada tema, elige una familia de colores y un tono; los colores se calculan a partir de ellos, con un control de legibilidad.
 
-Los temas se presentan en tarjetas, en dos grupos: «Aplicaciones» (Combustible, Aterrizajes, Centro, Informe DEFA) y «Familias de informes».
+Los temas se presentan en tarjetas, en dos grupos: «Aplicaciones» (Combustible, Aterrizajes, Centro, Informe) y «Familias de informes».
 
 En cada tarjeta:
 1. La vista previa muestra un «Título» sobre la barra, un «Botón» y un «Enlace, icono».
@@ -403,65 +409,91 @@ Cada cambio se guarda al instante.
 ## Primer arranque
 <!-- page: apps/settings/premier_lancement.html -->
 
-Esta página configura la suite en cuatro pasos durante la primera instalación. El lanzador (`lancer.cmd` en Windows, `sh lancer.sh` en macOS o Linux) la abre por sí mismo.
-Para volver a ella: Ajustes › pestaña «Instalación» › «Primer arranque» › «Abrir el primer arranque».
-Una vez configurada la suite, la página remite a la página de inicio, salvo si se abre con ese botón.
+Esta página configura lo que la suite necesita para trabajar. El lanzador (`lancer.cmd` en Windows, `sh lancer.sh` en macOS o Linux) la abre por sí mismo; se vuelve a ella en cualquier momento por Ajustes › pestaña «Primer arranque», o por la tarjeta «Primer arranque» de la página de inicio, mostrada mientras quede algo por ajustar.
+Abierta por el lanzador, la página solo remite a la página de inicio si se hizo «Terminar» para esta instalación (misma carpeta de la suite) y no falta nada obligatorio. Una nueva instalación servida en la misma dirección muestra pues el primer arranque, y la página de inicio lo anuncia en un banner.
+
+Arriba, **«Estado de la suite»** hace balance, línea por línea, y cada línea lleva a su paso: ✓ ajustado, ○ por hacer, – opcional, ? desconocido (sin lanzador).
+- Para todos: datos, repositorio git de sincronización (opcional), carpeta de la aplicación, aerolínea y sitio, clave de API IVAO (opcional), piloto (trigrama y al menos una red), credenciales del sitio de la aerolínea, datos aeronáuticos.
+- Centro: activación (administradores); con el Centro activado, flota y registro del sitio, misiones del registro, usuarios y derechos (al menos un administrador), envío de informes (opcional).
+
 El número de cada paso se pone en verde cuando está hecho.
 
-### 1 Datos
-
-Este paso instala los datos de la aerolínea (misiones, referencias…). Pasa por el lanzador: sin él, la página muestra «Para este paso, abra la suite con el lanzador…».
-
-Dos posibilidades:
-
-| Tarjeta | Procedimiento |
-|---|---|
-| «Tengo acceso al repositorio (framagit)» | Introduzca «Identificador» y «Contraseña o token», marque si es necesario «recordar en el gestor de credenciales de Git» y, después, «Obtener los datos». La primera descarga tarda unos minutos. |
-| «He recibido los datos por correo» | «Archivo de datos…»: elija el archivo `.zip` recibido (contiene `data_tree.js`). |
-
-- Cuenta con doble autenticación: utilice un token de acceso (framagit › Preferencias › Tokens de acceso, permiso `read_repository`).
-- Si Git no está instalado, solo es posible el archivo (o instale Git y vuelva a arrancar).
-- **«Repositorio git de sincronización de datos»**: la dirección del repositorio remoto de `data/`, que comparte los datos
-  entre los equipos (botón «Sincronizar»). Dirección SSH `git@hôte:compte/dépôt.git` (clave SSH del equipo) o
-  HTTPS `https://hôte/compte/dépôt.git` (identificadores registrados en Git). La tarjeta muestra el repositorio actual;
-  «Comprobar» dice si responde desde este equipo (30 s como máximo), «Guardar» lo convierte en el repositorio remoto de `data/`
-  (si aún no hay datos, la dirección sirve para obtenerlos). Nada es bloqueante: un repositorio que no responde se señala,
-  y la suite funciona sin compartir. Detalles: [sincronización](../technique/SYNCHRONISATION.md).
-- Una vez presentes los datos, la tarjeta opcional «Registro de vuelos DEFA» ofrece «Registro DEFA (.html)…»: la página «Log des vols» del sitio DEFA, guardada, rellena los pilotos y las aeronaves de la referencia DEFA (ayuda a la introducción).
-
-### 2 Perfil
-
-Su perfil de piloto, que usan todas las páginas (☰ › Perfil de piloto).
-
-1. Rellene la tarjeta «Piloto»: «Trigrama DEFA», «ID IVAO (VID)», «ID VATSIM (CID)», «SimBrief».
-2. Haga clic en «Guardar el perfil».
-
-Los identificadores del sitio DEFA, la contraseña y las preferencias se configuran después en [Mi perfil](#mi-perfil).
-
-### 3 Carpetas
+### 1 Carpetas
 
 El navegador pide designar cada carpeta una vez; después la recuerda.
 
 - **«Carpeta de la aplicación»**: «Elegir la carpeta de la aplicación» y, después, designe la carpeta que contiene `lancer.cmd` y `lancer.sh`. Las demás carpetas (datos, registro, misiones, SIA, rendimiento, copia local) se deducen de ella; el mensaje indica cuántas se han configurado.
-- **«Libro ODV»**: «Carpeta OneDrive…» designa la carpeta sincronizada donde la escuadrilla deposita el libro (la Planificación ODV abre el más reciente). Sin OneDrive: «o el archivo Excel…», guardado en este navegador.
+- La carpeta debe ser la de la suite servida por el lanzador: si pertenece a otra copia de la suite, el paso queda por hacer (✗ en el balance) con el mensaje «Suite iniciada desde …, carpeta declarada …»; vuelva a elegir la carpeta correcta.
+- **«Libro ODV (opcional)»**: «Carpeta OneDrive…» designa la carpeta sincronizada donde la escuadrilla deposita el libro (la Planificación ODV abre el más reciente). Sin OneDrive: «o el archivo Excel…», guardado en este navegador.
 
 Este paso es importante: sin carpeta de datos autorizada, su disponibilidad se queda en el navegador y el Centro no la ve.
 
-### 4 Datos SIA
+### 2 Datos
 
-Los mapas y las misiones utilizan los datos AIRAC del SIA (ciclo de 28 días).
+Este paso instala los datos de la aerolínea (misiones, referencias…). Pasa por el lanzador: sin él, la página muestra «Para este paso, abra la suite con el lanzador…».
 
-1. Haga clic en «Terminar y actualizar los datos SIA». La suite se marca como «configurada» y la página Mantenimiento se abre en la actualización SIA.
-2. Siga los pasos guiados: en el sitio del SIA (cuenta gratuita), «Ajouter au panier» el producto del ciclo (0 €) y, después, «Passer commande» aceptando la licencia.
-3. Recupere el ZIP descargado con «Recuperar el ZIP descargado».
+Mientras no se elija la carpeta de la aplicación (paso 1), o si pertenece a otra copia de la suite, este paso y los siguientes (aerolínea, perfil, datos aeronáuticos, Centro) aparecen en gris e inactivos, con el motivo arriba de cada uno, igual que «Terminar»; el balance sigue legible.
 
-El enlace «Inicio» lleva a la página de inicio sin terminar.
+Tres posibilidades:
+
+| Tarjeta | Procedimiento |
+|---|---|
+| «Conjunto de prueba» | «Instalar el conjunto de prueba»: datos ficticios entregados con la suite (misiones con un ejercicio, pilotos, flota, disponibilidad y asignaciones de la semana en curso), para descubrir la suite; para sustituir más adelante por los datos de la aerolínea. Se rechaza si ya hay datos. |
+| «Repositorio de datos» | Introduzca «Dirección del repositorio» (facilitada por su aerolínea: `https://…` o `git@…`), si hace falta «Identificador (opcional)» y «Contraseña o token (opcional)», marque si hace falta «recordar en el gestor de credenciales de Git» y luego «Obtener los datos». La primera descarga tarda unos minutos. |
+| «He recibido los datos por correo» | «Archivo de datos…»: elija el archivo `.zip` recibido (contiene `data_tree.js`). |
+- No hay ninguna dirección rellenada de antemano. Repositorio privado por HTTPS: identificador y contraseña, o un token de acceso de lectura si la cuenta tiene doble autenticación; por SSH (`git@…`), la clave SSH del equipo.
+- Si Git no está instalado: conjunto de prueba o archivo (o instale Git y vuelva a arrancar).
+- **«Repositorio git de sincronización de datos (opcional)»**: la dirección del repositorio remoto de `data/`, que comparte los datos
+  entre los equipos (botón «Sincronizar»). Dirección SSH `git@hôte:compte/dépôt.git` (clave SSH del equipo) o
+  HTTPS `https://hôte/compte/dépôt.git` (identificadores registrados en Git). La tarjeta muestra el repositorio actual;
+  «Comprobar» dice si responde desde este equipo (30 s como máximo), «Guardar» lo convierte en el repositorio remoto de `data/`
+  (si aún no hay datos, la dirección sirve para obtenerlos). Nada es bloqueante: un repositorio que no responde se señala,
+  Para otro repositorio distinto del actual, el lanzador abre una ventana de confirmación en el equipo (dirección actual
+  y nueva, «No» por defecto): responda «Sí» para cambiar; ninguna página puede responder en su lugar. Nunca ponga una contraseña ni un token en la dirección.
+  y la suite funciona sin compartir. Detalles: [sincronización](../technique/SYNCHRONISATION.md).
+- Una vez presentes los datos, la tarjeta opcional «Registro de vuelos» ofrece «Registro (.html)…»: la página «Log des vols» del sitio de la aerolínea, guardada, rellena los pilotos y las aeronaves de la referencia (ayuda a la introducción).
+
+### 3 Aerolínea
+
+La aerolínea virtual cuyo nombre lleva la suite, y la dirección de su sitio (enlaces, flota, registro de vuelos); ajuste de este navegador.
+
+1. Tarjeta «Aerolínea virtual»: «Nombre», «Sigla», «Nombre completo», «Sitio de la aerolínea» (`https://…`).
+2. Tarjeta «Clave de API IVAO (opcional)»: la clave de la instalación (activaciones de zonas y sesiones ATC IVAO del Tablero y de la planificación ODV). Guardada por el lanzador, nunca se vuelve a mostrar: la tarjeta solo indica que hay una clave guardada.
+3. «Guardar la aerolínea».
+
+Los demás campos (centro, páginas del sitio, fuentes externas) están en Ajustes › Instalación › Fuentes y carpetas.
+
+### 4 Perfil y credenciales
+
+1. Tarjeta «Piloto»: «Trigrama», «ID IVAO (VID)», «ID VATSIM (CID)», «SimBrief». En modo producción el trigrama queda fijo (viene de la cuenta).
+2. Tarjeta «Sitio de la aerolínea»: «Identificador» y «Contraseña» de su cuenta en el sitio, guardados solo en este navegador (nunca en un archivo ni en una copia).
+3. «Guardar el perfil».
+
+La suite nunca pide sus contraseñas IVAO ni VATSIM: sus identificadores (VID, CID) bastan. La cuenta de la suite (contraseña, modo producción), el cliente IVAO personal y las preferencias se ajustan en [Mi perfil](#mi-perfil).
+
+### 5 Datos aeronáuticos y tipos de aeronave
+
+Mapas, misiones y planificación usan los datos aeronáuticos (AIRAC) y la base de tipos de aeronave. El paso muestra los mismos bloques que Ajustes › Instalación:
+
+1. «Datos aeronáuticos»: Francia está activa por defecto; un clic en el mapa activa otra zona. Cada fuente tiene su botón: ZIP del SIA (enlace a la tienda, cuenta gratuita, producto del ciclo a 0 €, luego «Obtener el ZIP descargado»), MORA de la zona, PDF MILAIP (ejes de reabastecimiento), conjuntos de otros países. La base se construye sola.
+2. «Tipos de aeronave»: «Completar los tipos que faltan de la flota y las misiones» descarga los tipos (OACI) y sus rendimientos (EUROCONTROL).
+
+### 6 Centro (administradores)
+
+Reservado a los administradores del SO Group: los pilotos se saltan este paso.
+- Tarjeta «Activar el Centro»: «Contraseña del Centro», luego «Activar el Centro».
+- Con el Centro activado:
+  - «Flota y registro de vuelos»: última lectura del sitio por el lanzador (flota, ubicación de las aeronaves, registro), «Actualizar ahora» y el enlace a la flota (Ajustes › Centro).
+  - «Misiones»: número de misiones en el registro (llegan con los datos, paso 1) y el enlace al registro.
+  - «Ajustes del SO Group»: enlaces a las rúbricas de Ajustes › Centro — usuarios y derechos (número, administradores, modo), categorías de disponibilidad, planificación ODV, Tablero, envío de informes, cálculo de rutas.
+
+«Terminar» marca la suite como «configurada» y abre la página de inicio; el enlace «Inicio» vuelve a ella sin terminar.
 
 ### Empezar de nuevo
 
 Para retomar el primer arranque desde cero, y solo en ese caso.
 
-- «Limpiar y empezar de nuevo…» borra, **en este navegador**, las carpetas recordadas (aplicación, datos, registro, misiones, SIA, ODV, X-Plane, rendimiento, copia local), la copia del libro ODV, los identificadores del sitio DEFA, el perfil (trigrama, IVAO, VATSIM, SimBrief) y el indicador «suite configurada».
+- «Limpiar y empezar de nuevo…» borra, **en este navegador**, las carpetas recordadas (aplicación, datos, registro, misiones, SIA, ODV, X-Plane, rendimiento, copia local), la copia del libro ODV, los identificadores del sitio de la aerolínea, el perfil (trigrama, IVAO, VATSIM, SimBrief) y el indicador «suite configurada».
 - Se pide una confirmación y, después, la página se recarga en el paso 1.
 - Los archivos del disco no se tocan: carpeta `data/`, registros, copia `defa_local_store.yaml`.
 
@@ -470,7 +502,7 @@ Para retomar el primer arranque desde cero, y solo en ese caso.
 
 Esta página es la puerta de entrada de todo informe de misión: en ella elige la familia de
 misión y, después, se abre la página de informe de esa familia. Está dirigida a todos los pilotos.
-Para ir a ella: barra lateral › **Informe DEFA**, o el botón «Nuevo informe» de la cabecera del
+Para ir a ella: barra lateral › **Informe**, o el botón «Nuevo informe» de la cabecera del
 informe general de misiones. Un informe también puede abrirse directamente, ya rellenado, desde una misión que se le ha
 asignado (véase más abajo). Paso a paso completo: [tutorial](../TUTORIAL.md).
 
@@ -513,7 +545,7 @@ se abre directamente en la familia correcta, ya rellenado.
 |---|---|
 | **Mis misiones** (carpeta de la misión abierta) | «Crear el informe» (en gris si la misión no tiene archivo de misión) |
 | **Registro** de misiones (Centro) | «Crear informe», o «Nuevo informe (vuelo n)» si la misión ya tiene informes |
-| **Generador de misiones** (Centro) | botón de la cabecera «Crear el informe DEFA →» |
+| **Generador de misiones** (Centro) | botón de la cabecera «Crear el informe →» |
 
 Lo que se recupera: nombre del ejercicio / operación (título de la misión), identificador de la misión (campo
 «Misión»), objetivo e instrucciones (bloque Tarea), aeródromos de salida y de llegada, puntos de ruta y
@@ -559,7 +591,7 @@ La cabecera permanece fija en la parte superior de la página. De izquierda a de
 |---|---|
 | «SAR · SAR terrestre ▾» (familia · subtipo) | ventana «Familia de misión» (abre la página de la otra familia) y «Subtipo de misión» |
 | «Añadir al registro» / «Guardar cambios» | guarda la misión en el registro |
-| «Enviar informe» | transmite el informe al servicio web de la DEFA (con línea de puntos mientras no esté configurado) |
+| «Enviar informe» | transmite el informe al servicio web de la compagnie (con línea de puntos mientras no esté configurado) |
 | «Analizar / importar…» ▾ | pegar un plan de vuelo, una página de tracker, un METAR; importar un archivo |
 | «Seguimiento de red» ▾ | seguimiento en directo IVAO / VATSIM, historial VATSIM |
 | «Misión» ▾ | «Nueva misión», «Exportar misión (YAML)», «Eliminar esta misión» (en modificación) |
@@ -605,7 +637,7 @@ Resultado de la misión y acciones que derivan de él (bloque situado en 2.ª po
 
 1. Elija el «Resultado»: Éxito, Éxito parcial, Abortada, Cancelada, Desviada, Sin contacto,
    Objetivo no encontrado, Meteorología, Técnico, Operacional, Otro.
-2. Para cualquier resultado distinto de Éxito u Otro, aparece el campo «Motivo de interrupción».
+2. Para cualquier resultado distinto de Éxito u Otro, aparecen los campos «Motivo de interrupción» y «Causas»; marque todas las causas (meteorología, técnica, simulador, piloto ausente, sin control, red, zona no activada, cisterna ausente, falta de tiempo…): suben a la plaqueta de la orden de vuelo (MNE).
 3. Complete si es necesario «Resultado detallado», «Incidentes» y «Anomalías técnicas».
 
 Este resultado alimenta la tasa de éxito y el gráfico «Resultados» de los informes estadísticos.
@@ -626,6 +658,7 @@ Una tarjeta por aeronave desplegada; siempre hay al menos una. El «+» del tít
 | «⟲ Borrar» | vacía la aeronave para volver a buscar (aeronave o tipo equivocado) |
 | «Operador OACI (OPR/, casilla 18)» | deducido del organismo o de la aeronave conocida |
 | «Base de salida», «Base de regreso», masas, «Autonomía disponible (min)», «Configuración de misión» | completar si es útil |
+| «Aeródromo de aterrizaje real (OACI)» | aeródromo donde la aeronave aterrizó realmente, nunca prerrellenado; en un informe abierto desde «Mis misiones» (orden de misión o de traslado), sitúa la aeronave en ese aeródromo para los traslados siguientes. Un informe fuera de orden de misión no desplaza la aeronave |
 | «Equipamiento / capacidades técnicas de la aeronave» | plegado; tomado de la aeronave conocida o del plan de vuelo |
 
 Los campos se filtran entre sí (tipo de ala, tipo, serie). Elegir otra aeronave sustituye lo que se había
@@ -804,7 +837,7 @@ Menú de la cabecera para rellenar el informe a partir de un texto pegado. **Sol
 3. El resultado indica la fuente reconocida y los campos rellenados; el botón pasa a ser «✓ Validar».
 
 Los enlaces «↗ Tracker IVAO (mis conexiones)» y «↗ Mis vuelos StatSim (VATSIM)» abren sus páginas. El
-enlace «→ CR DEFA», que se arrastra a la barra de marcadores, copia la página del tracker con un clic. Abajo,
+enlace «→ CR», que se arrastra a la barra de marcadores, copia la página del tracker con un clic. Abajo,
 «Importar (YAML / JSON antiguo)» carga un archivo de misión. Detalles: [tutorial](../TUTORIAL.md), § 6.
 
 ### Seguimiento de red
@@ -892,7 +925,7 @@ El título muestra la matrícula, el tipo y el modelo. Debajo, tres pastillas:
 
 - el **estado** (Disponible, No disponible, En mantenimiento, Retirado), en color;
 - «📍 Actualmente en»: último aeródromo conocido (llegada de la última misión o del último vuelo del
-  diario DEFA);
+  diario);
 - «🏠 Aeródromo de base».
 
 La barra de **periodo** de los informes estadísticos (preajustes, fechas, ◀ − ▶) está en la cabecera: la actividad, el
@@ -907,7 +940,7 @@ ficha se completará con los informes».
 | «Aeródromo de base» | sí | código OACI, en mayúsculas |
 | «Puesta en servicio» | sí | fecha |
 | «Tipo», «Variante», «Ala», «Estela», «Operador» | no | tomados de la flota y de la base de tipos |
-| «Ficha de flota DEFA» | no | enlace a la ficha de la aeronave en el sitio de la flota |
+| «Ficha de flota» | no | enlace a la ficha de la aeronave en el sitio de la flota |
 | «Indicativos usados», «Equipamiento» | no | tomados de las misiones, con su número |
 | «Notas» | sí | texto libre |
 
@@ -952,10 +985,10 @@ Flight Planner.»
 ### Misiones y vuelos
 
 Tabla de las misiones y vuelos de la aeronave en el periodo: fecha, familia, n.º, indicativo, salida →
-llegada, tripulación, horas de vuelo, fuente («registro» o «diario DEFA»).
+llegada, tripulación, horas de vuelo, fuente («registro» o «diario»).
 
 - Haga clic en un título de columna para ordenar.
-- Haga clic en una misión del registro para abrir su informe en modo de modificación; los vuelos del diario DEFA son de
+- Haga clic en una misión del registro para abrir su informe en modo de modificación; los vuelos del diario son de
   solo lectura.
 - Bajo la tabla, cuando se elige un periodo: botones para ver las misiones anteriores o posteriores al
   periodo, y zoom − / +.
@@ -988,13 +1021,13 @@ Tarjetas del periodo: «Misiones / vuelos», «Horas de vuelo», «Primer vuelo�
 «Por tipo»: horas de vuelo por tipo de aeronave. El gráfico apila las horas por familia; arrastrar
 o hacer clic hace zoom, hacer doble clic lo quita.
 
-Para un piloto sin misiones en el registro, las cifras proceden de la referencia DEFA si lo conoce.
+Para un piloto sin misiones en el registro, las cifras proceden de la referencia si lo conoce.
 
 ### Misiones y vuelos
 
 La misma tabla que en la ficha de aeronave, con además la columna «Matr.» (enlace a la ficha de
 la aeronave) y el tipo. Ordenación por título de columna; clic en una misión del registro: informe en
-modo de modificación; vuelos del diario DEFA en solo lectura.
+modo de modificación; vuelos del diario en solo lectura.
 
 ## Informes
 <!-- page: apps/cr/mission_operations_reporting.html -->
@@ -1014,7 +1047,7 @@ La cabecera permanece visible en la parte superior de la página.
 | «Familias» | una etiqueta de color por familia: clic para ocultar / mostrar, Ctrl + clic para conservar solo una, «Todas» para cambiarlas todas |
 | «Agrupación» | Automático, Día, Semana, Mes, Trimestre, Año |
 | «Medida» | Misiones, Horas de vuelo, Horas calzo a calzo, Tiempo en zona, Horas de misión, Salidas, Distancia (NM) |
-| «Datos» | «Mis misiones (registro)», «Diario DEFA (vuelos realizados)» (solo lectura) o «Cargar / actualizar el diario DEFA…» |
+| «Datos» | «Mis misiones (registro)», «Diario (vuelos realizados)» (solo lectura) o «Cargar / actualizar el diario…» |
 
 El periodo se comparte con los informes de familia y las fichas. Las familias, la agrupación y la medida
 se memorizan.
@@ -1090,7 +1123,7 @@ Una duración introducida sin horas queda «declarada» (≈), se cuenta y se se
 que se introduzcan las horas en el informe.
 
 Bajo la tabla, cuando se elige un periodo: «◀ n antes del periodo», «− / +», «m después del
-periodo ▶». Los vuelos del diario DEFA son de solo lectura.
+periodo ▶». Los vuelos del diario son de solo lectura.
 
 ### Registro de misiones
 
@@ -1136,7 +1169,7 @@ por familia» del informe general de misiones, o por la ventana de la cabecera d
 | «+ Nuevo informe» | abre directamente la página de informe de la familia |
 | Periodo | el mismo componente y el mismo periodo que el informe general de misiones |
 | «Agrupación», «Medida» | ajustes del gráfico de actividad (Misiones, Tiempo de vuelo, Tiempo calzo a calzo, Tiempo en zona), compartidos con el informe general de misiones |
-| «Datos» | registro o diario DEFA, como en el informe general de misiones |
+| «Datos» | registro o diario, como en el informe general de misiones |
 
 ### Registro de misiones
 
@@ -1285,7 +1318,7 @@ Los botones permanecen en gris mientras no haya ningún mapa que producir.
 Este bloque está oculto por defecto: haga clic en «Mostrar». Lee la carpeta SIA (AIXM) y la guarda en el navegador. Sin ella, la página no reconoce aeródromos, balizas ni espacios.
 
 - Botón «Carpeta SIA: …»: elegir la carpeta `data/sia` (el navegador pide acceso) y, después, lectura.
-- «Releer la carpeta»: hay que hacerlo tras cada actualización AIRAC. Un indicador sigue la lectura; «Cancelar» la interrumpe sin tocar la base guardada.
+- «Reconstruir la base aeronáutica»: hay que hacerlo tras cada actualización AIRAC; lee las zonas activas de Ajustes › Mantenimiento › Datos aeronáuticos. Un indicador sigue la lectura; «Cancelar» la interrumpe sin tocar la base guardada.
 - «Vaciar la caché»: borra la base guardada (se reconstruirá en la siguiente relectura).
 - La línea de estado indica la base guardada, su ciclo AIRAC y su fecha; se muestra «ciclo caducado» si hay un ciclo más reciente en vigor. «Archivos analizados» muestra los archivos leídos.
 
@@ -1302,7 +1335,7 @@ Cabecera: menú «Avión», botón «Recuperar último FPL de SimBrief», «Unid
 
 1. Haga clic en el botón de avión de la cabecera («Ningún avión» al principio).
 2. Elija un perfil en la lista, agrupada por categoría (helicópteros, reactores, monomotores, turbohélices…).
-3. Un tipo marcado «DEFA, sin perfil» crea un perfil vacío: hay que rellenar sus prestaciones.
+3. Un tipo marcado «flota, sin perfil» crea un perfil vacío: hay que rellenar sus prestaciones.
 
 La barra al pie de la página indica «Perfil guardado — …» o «Cambios sin guardar — …». Contiene «Recargar la base local», «Guardar perfil» y «Eliminar este avión».
 Si cambia de avión con cambios sin guardar, la página propone «Quedarse», «Descartar y cambiar» o «Guardar y cambiar».
@@ -1344,7 +1377,7 @@ Este bloque, en la columna de la derecha, acompaña a la página mientras se des
 - Base del cálculo: nivel y ley de ascenso utilizados.
 - Detalle: rodaje, ascenso, crucero, descenso, contingencia, reserva; masa de despegue prevista y MTOW si la ha introducido (en rojo si se supera).
 - Ficha del cursor (⌖ al pasar el ratón, 📌 fijado): combustible y tiempo del trayecto a ese nivel, régimen de ascenso máximo, velocidades de ascenso; «soltar» quita la fijación.
-- Grupo plegable «Regímenes de vuelo — perfil ↔ mapa»: IAS, régimen de ascenso, régimen del motor y flujo por fase, comparados con el mapa del motor. También contiene el campo «SimBrief Airframe Internal ID» y los enlaces a las fichas de las aeronaves DEFA de ese tipo.
+- Grupo plegable «Regímenes de vuelo — perfil ↔ mapa»: IAS, régimen de ascenso, régimen del motor y flujo por fase, comparados con el mapa del motor. También contiene el campo «SimBrief Airframe Internal ID» y los enlaces a las fichas de las aeronaves de ese tipo.
 
 «Fijar» conserva el bloque entero cuando acompaña a la página; si no, se pliega. Bajo el bloque, un panel por curva da los óptimos, los límites (techo, nivel solicitado) y una ayuda de lectura. Una columna de instrumentos muestra IAS, variómetro, altitud, combustible y tiempo de vuelo.
 

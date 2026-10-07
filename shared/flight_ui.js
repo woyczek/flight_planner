@@ -25,7 +25,8 @@
   state.profileEditorHidden = false;
 
   // Regroupement : la table RPM rejoint la fiche « Performances moteur » avec sa courbe (SVG #engineCurveChart, colonnes triables).
-  const engineCard = [...document.querySelectorAll(".card")].find(c => c.querySelector("h2")?.textContent.includes("Fiche performance moteur"));
+  const engineCard = [...document.querySelectorAll(".card")].find(c => c.querySelector("h2")?.textContent.includes(
+    "Fiche performance moteur"));
   const curveCard = [...document.querySelectorAll(".card")].find(c => c.querySelector("h2")?.textContent.includes("Table RPM"));
   if (engineCard && curveCard) {
     engineCard.querySelector("h2").textContent = "Performances moteur — RPM / puissance / consommation";
@@ -41,7 +42,8 @@
     heading.textContent = "Courbe RPM / puissance → consommation";
     group.className = "engine-performance-group";
     table.id = "engineCurveTable";
-    table.querySelector("thead").innerHTML = '<tr><th data-sort="rpm">RPM / N1 ↕</th><th data-sort="fuelFlowMin">Min. ↕</th><th data-sort="fuelFlowPerHour">Nominal ↕</th><th data-sort="fuelFlowMax">Max. ↕</th><th data-sort="phaseLabel">Régime de vol ↕</th><th>Commentaire</th></tr>';
+    table.querySelector("thead").innerHTML =
+      '<tr><th data-sort="rpm">RPM / N1 ↕</th><th data-sort="fuelFlowMin">Min. ↕</th><th data-sort="fuelFlowPerHour">Nominal ↕</th><th data-sort="fuelFlowMax">Max. ↕</th><th data-sort="phaseLabel">Régime de vol ↕</th><th>Commentaire</th></tr>';
     group.append(heading, svg);
     engineCard.append(group);
     curveCard.dataset.blockId = "rpm-table";
@@ -67,7 +69,8 @@
     profileCard.remove()
   }
   // La traçabilité de calibration rejoint le bloc « Calibration SimBrief » (un seul bloc pleine largeur).
-  const calibrationCard = [...document.querySelectorAll(".card")].find(c => c.querySelector("h2")?.textContent.includes("Calibration SimBrief"));
+  const calibrationCard = [...document.querySelectorAll(".card")].find(c => c.querySelector("h2")?.textContent.includes(
+    "Calibration SimBrief"));
   const traceCard = [...document.querySelectorAll(".card")].find(c => c.querySelector("h2")?.textContent.includes("Traçabilité"));
   if (calibrationCard && traceCard) {
     let h = document.createElement("h3");
@@ -80,7 +83,8 @@
   }
 
   // Identifiant de bloc tiré de son titre (sans accents, minuscules, tirets) ; grid : grille des blocs de la page.
-  const idFor = txt => txt.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+  const idFor = txt => txt.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g,
+    "");
   const grid = document.querySelector(".wrap>.grid");
   // Blocs repliables et déplaçables (si le framework AppFramework n'est pas chargé) : en-tête avec poignée ↕ et « Masquer », glisser-déposer entre blocs, ordre et état repliés mémorisés (state.blockOrder, state.blockPrefs), ordre enregistré réappliqué.
   function prepareBlocks() {
@@ -90,8 +94,10 @@
       let id = card.dataset.blockId || idFor(title.textContent);
       card.dataset.blockId = id;
       card.classList.add("collapsible");
-      if (state.blockPrefs[id] === undefined && (id.includes("calibration-simbrief") || id.includes("json-importe"))) state.blockPrefs[id] = true;
-      let head = title.parentElement?.classList.contains("row") && title.parentElement.firstElementChild === title ? title.parentElement : null;
+      if (state.blockPrefs[id] === undefined && (id.includes("calibration-simbrief") || id.includes("json-importe"))) state
+        .blockPrefs[id] = true;
+      let head = title.parentElement?.classList.contains("row") && title.parentElement.firstElementChild === title ? title
+        .parentElement : null;
       if (!head) {
         head = document.createElement("div");
         head.className = "block-heading";
@@ -101,7 +107,8 @@
       if (!head.querySelector(".block-tools")) {
         let tools = document.createElement("span");
         tools.className = "block-tools";
-        tools.innerHTML = '<button type="button" class="drag-handle" title="Déplacer">↕</button><button type="button" class="block-toggle">Masquer</button>';
+        tools.innerHTML =
+          '<button type="button" class="drag-handle" title="Déplacer">↕</button><button type="button" class="block-toggle">Masquer</button>';
         head.append(tools);
         tools.querySelector(".block-toggle").onclick = () => {
           state.blockPrefs[id] = !card.classList.contains("collapsed");
@@ -162,7 +169,8 @@
   document.body.classList.add("has-status-bar");
   const status = document.createElement("div");
   status.className = "status-bar";
-  status.innerHTML = '<span id="persistentStatus" class="status-text">Base locale prête.</span><button id="statusReload">Recharger la base locale</button><button id="statusSave" class="primary">Enregistrer le profil</button><button id="statusDelete">Supprimer cet avion</button>';
+  status.innerHTML =
+    '<span id="persistentStatus" class="status-text">Base locale prête.</span><button id="statusReload">Recharger la base locale</button><button id="statusSave" class="primary">Enregistrer le profil</button><button id="statusDelete">Supprimer cet avion</button>';
   document.body.append(status);
   // Texte et couleur de la barre d'état selon le profil actif et profileDirty ; appelée par la page après chaque modification.
   window.updateProfileStatus = () => {
@@ -201,7 +209,8 @@
   // Boîte de confirmation quand on change d'avion avec des modifications non enregistrées.
   const dialog = document.createElement("dialog");
   dialog.id = "unsavedDialog";
-  dialog.innerHTML = '<h2>Modifications non enregistrées</h2><p>Le profil courant a été modifié. Que veux-tu faire avant de changer d’avion ?</p><div class="dialog-actions"><button data-choice="stay">Rester</button><button data-choice="discard">Abandonner et changer</button><button class="primary" data-choice="save">Enregistrer et changer</button></div>';
+  dialog.innerHTML =
+    '<h2>Modifications non enregistrées</h2><p>Le profil courant a été modifié. Que veux-tu faire avant de changer d’avion ?</p><div class="dialog-actions"><button data-choice="stay">Rester</button><button data-choice="discard">Abandonner et changer</button><button class="primary" data-choice="save">Enregistrer et changer</button></div>';
   document.body.append(dialog);
   // Change d'avion (profil p) : direct si rien n'est modifié ; sinon demande rester / abandonner / enregistrer puis changer.
   function requestSwitch(p) {
@@ -331,8 +340,10 @@
         cr = cartoRpm(key, ff),
         eff = rpm ?? cr?.rpm ?? null,
         map = eff !== null ? interpRange(active.rpmFuelCurve || [], eff) : null,
-        kind = !map ? "" : pts.some(x => Math.abs(x.rpm - eff) < .5) ? "point exact" : (pts.length && (eff < pts[0].rpm || eff > pts.at(-1).rpm) ? "hors plage (borne)" : "interpolé"),
-        badin = finiteProfileNumber(p.iasKt) ? fmt(Number(p.iasKt), 2) : finiteProfileNumber(p.tasKt) ? fmt(Number(p.tasKt), 2) : "—",
+        kind = !map ? "" : pts.some(x => Math.abs(x.rpm - eff) < .5) ? "point exact" : (pts.length && (eff < pts[0].rpm || eff > pts
+          .at(-1).rpm) ? "hors plage (borne)" : "interpolé"),
+        badin = finiteProfileNumber(p.iasKt) ? fmt(Number(p.iasKt), 2) : finiteProfileNumber(p.tasKt) ? fmt(Number(p.tasKt), 2) :
+        "—",
         vario = finiteProfileNumber(p.rateFpm) ? `${key==="descent"&&Number(p.rateFpm)>0?"−":""}${fmt(Math.abs(Number(p.rateFpm)),0)}` : "—",
         rpmCell = [rpm !== null ? `<div class="profile-value">${fmt(rpm,1)}</div>` : "", cr ? `<div class="carto-value">${cr.text||fmt(cr.rpm,1)}<span class="source-note">carto · ${cr.note}</span></div>` : ""].join("") || "—";
       return `<tr><td>${names[key]}</td><td class="profile-value">${badin}</td><td class="profile-value">${vario}</td><td>${rpmCell}</td><td class="profile-value">${ff!==null?showFuel(p.fuelFlowPerHour):"—"}</td><td class="carto-value">${map?`${showFuel(map.nominal,1)}<span class="source-note">${showFuel(map.min,1)} – ${showFuel(map.max,1)} · ${kind}${rpm===null?" · via RPM carto":""}</span>`:"—"}</td></tr>`
@@ -366,12 +377,14 @@
   function renderEngineChart() {
     let svg = $("engineCurveChart");
     if (!svg || !active) return;
-    let pts = (active.rpmFuelCurve || []).filter(p => Number.isFinite(p.rpm) && [p.fuelFlowMin, p.fuelFlowPerHour, p.fuelFlowMax].some(Number.isFinite)).sort((a, b) => a.rpm - b.rpm);
+    let pts = (active.rpmFuelCurve || []).filter(p => Number.isFinite(p.rpm) && [p.fuelFlowMin, p.fuelFlowPerHour, p.fuelFlowMax].some(
+      Number.isFinite)).sort((a, b) => a.rpm - b.rpm);
     if (!pts.length) {
       svg.innerHTML = '<text x="380" y="115" text-anchor="middle">Aucune cartographie chiffrée</text>';
       return
     }
-    let vals = pts.flatMap(p => [p.fuelFlowMin, p.fuelFlowPerHour, p.fuelFlowMax].filter(Number.isFinite).map(v => convertFuel(v, active.unit, fuelUnit()))),
+    let vals = pts.flatMap(p => [p.fuelFlowMin, p.fuelFlowPerHour, p.fuelFlowMax].filter(Number.isFinite).map(v => convertFuel(v, active
+        .unit, fuelUnit()))),
       xmin = Math.min(...pts.map(p => p.rpm)),
       xmax = Math.max(...pts.map(p => p.rpm)),
       ymin = Math.min(...vals),
@@ -387,11 +400,14 @@
     let X = x => 55 + (x - xmin) / (xmax - xmin) * 675,
       Y = y => 190 - (y - ymin) / (ymax - ymin) * 150,
       // débit d'une ligne : colonne demandée, sinon repli (f), sinon toute autre colonne chiffrée de la ligne (évite NaN)
-      val = (p, k, f) => convertFuel([p[k], p[f], p.fuelFlowPerHour, p.fuelFlowMin, p.fuelFlowMax].find(Number.isFinite), active.unit, fuelUnit()),
+      val = (p, k, f) => convertFuel([p[k], p[f], p.fuelFlowPerHour, p.fuelFlowMin, p.fuelFlowMax].find(Number.isFinite), active.unit,
+        fuelUnit()),
       line = k => pts.map((p, i) => `${i?"L":"M"}${X(p.rpm).toFixed(1)},${Y(val(p,k,"fuelFlowPerHour")).toFixed(1)}`).join(" "),
       upper = [...pts].reverse().map(p => `${X(p.rpm).toFixed(1)},${Y(val(p,"fuelFlowMax","fuelFlowPerHour")).toFixed(1)}`).join(" "),
       lower = pts.map(p => `${X(p.rpm).toFixed(1)},${Y(val(p,"fuelFlowMin","fuelFlowPerHour")).toFixed(1)}`).join(" "),
-      marks = [...new Map(pts.filter(p => p.phaseLabel).map(p => [p.phaseLabel, pts.filter(x => x.phaseLabel === p.phaseLabel)])).entries()].map(([label, list], i) => {
+      marks = [...new Map(pts.filter(p => p.phaseLabel).map(p => [p.phaseLabel, pts.filter(x => x.phaseLabel === p.phaseLabel)]))
+        .entries()
+      ].map(([label, list], i) => {
         let a = X(list[0].rpm),
           b = X(list.at(-1).rpm),
           mid = (a + b) / 2,
@@ -447,17 +463,31 @@
   function addMenuActions() {
     if (!window.RepositoryNav) return;
     let n = RepositoryNav;
-    n.addAction(["Importer profils / CSV / JSON", "Import profiles / CSV / JSON", "Profile / CSV / JSON importieren", "Importar perfiles / CSV / JSON"], () => $("importBtn").click());
-    n.addAction(["Importer un airframe SimBrief", "Import a SimBrief airframe", "SimBrief-Airframe importieren", "Importar un airframe de SimBrief"], () => $("sbAirframeBtn").click());
-    n.addAction(["Choisir le dossier performances", "Choose the performance folder", "Leistungsordner wählen", "Elegir la carpeta de rendimiento"], () => $("dirBtn").click());
-    n.addAction(["Exporter le profil .lnmperf", "Export .lnmperf profile", ".lnmperf-Profil exportieren", "Exportar perfil .lnmperf"], () => $("exportLnmBtn").click());
-    n.addAction(["Exporter le profil JSON", "Export JSON profile", "JSON-Profil exportieren", "Exportar perfil JSON"], () => $("exportBtn").click());
-    n.addAction(["Enregistrer / exporter la BDD locale", "Save / export the local database", "Lokale Datenbank speichern / exportieren", "Guardar / exportar la base local"], () => $("exportDbBtn").click());
-    n.addAction(["Restaurer la sauvegarde locale précédente", "Restore the previous local backup", "Vorherige lokale Sicherung wiederherstellen", "Restaurar la copia local anterior"], restoreBackup);
+    n.addAction(["Importer profils / CSV / JSON", "Import profiles / CSV / JSON", "Profile / CSV / JSON importieren",
+      "Importar perfiles / CSV / JSON"
+    ], () => $("importBtn").click());
+    n.addAction(["Importer un airframe SimBrief", "Import a SimBrief airframe", "SimBrief-Airframe importieren",
+      "Importar un airframe de SimBrief"
+    ], () => $("sbAirframeBtn").click());
+    n.addAction(["Choisir le dossier performances", "Choose the performance folder", "Leistungsordner wählen",
+      "Elegir la carpeta de rendimiento"
+    ], () => $("dirBtn").click());
+    n.addAction(["Exporter le profil .lnmperf", "Export .lnmperf profile", ".lnmperf-Profil exportieren", "Exportar perfil .lnmperf"],
+      () => $("exportLnmBtn").click());
+    n.addAction(["Exporter le profil JSON", "Export JSON profile", "JSON-Profil exportieren", "Exportar perfil JSON"], () => $(
+      "exportBtn").click());
+    n.addAction(["Enregistrer / exporter la BDD locale", "Save / export the local database", "Lokale Datenbank speichern / exportieren",
+      "Guardar / exportar la base local"
+    ], () => $("exportDbBtn").click());
+    n.addAction(["Restaurer la sauvegarde locale précédente", "Restore the previous local backup",
+      "Vorherige lokale Sicherung wiederherstellen", "Restaurar la copia local anterior"
+    ], restoreBackup);
     let units = document.createElement("div");
     units.className = "repo-unit-control";
-    units.innerHTML = '<span>Unités :</span><label><input type="radio" name="fuel-unit" value="kg"> kg</label><label><input type="radio" name="fuel-unit" value="lb"> lbs</label>';
-    (document.querySelector(".repo-header .header-row:nth-of-type(2)") || document.querySelector(".repo-header")).append(units); /* unité de carburant affichée (kg / lb) : préférence, recalcul, enregistrement */
+    units.innerHTML =
+      '<span>Unités :</span><label><input type="radio" name="fuel-unit" value="kg"> kg</label><label><input type="radio" name="fuel-unit" value="lb"> lbs</label>';
+    (document.querySelector(".repo-header .header-row:nth-of-type(2)") || document.querySelector(".repo-header")).append(
+      units); /* unité de carburant affichée (kg / lb) : préférence, recalcul, enregistrement */
     function setUnits(u) {
       state.displayFuelUnit = u;
       updateFuelUnitButton();

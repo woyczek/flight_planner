@@ -18,14 +18,17 @@ const AIRCRAFT_ICON_SVGS = {
 };
 window.AIRCRAFT_ICON_SVGS = AIRCRAFT_ICON_SVGS;
 
+/** Silhouette SVG d'une catégorie visuelle (clé de AIRCRAFT_ICON_SVGS), « other » si la catégorie est inconnue. */
 function aircraftSvgForVisual(visual) {
   return AIRCRAFT_ICON_SVGS[visual] || AIRCRAFT_ICON_SVGS.other;
 }
 
+/** Clé de recherche : majuscules sans accents, lettres et chiffres seulement (« A-400m » → « A400M »). */
 function fpNormalizeKey(s) {
   return String(s || "").toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^A-Z0-9]/g, "")
 }
 
+/** Fiche AIRCRAFT_DB du profil (OACI, type, id puis nom, alias __aliases compris) ; fiche minimale si introuvable. */
 function fpResolve(profile) {
   const db = window.AIRCRAFT_DB || {},
     candidates = [profile?.icao, profile?.type, profile?.id, profile?.name];
@@ -43,6 +46,7 @@ function fpResolve(profile) {
   }
 }
 
+/** Décode la description OACI (« L2J » : famille, nombre de moteurs, motorisation) et la catégorie de turbulence. */
 function fpSpec(rec) {
   const d = String(rec?.description || "").toUpperCase();
   return {
@@ -54,6 +58,7 @@ function fpSpec(rec) {
   }
 }
 
+/** Position de l'aile (wing_position de la fiche), sinon « high » pour les ailes hautes connues, « low » par défaut. */
 function fpWing(rec) {
   const e = String(rec?.wing_position || "").toLowerCase();
   if (e) return e;
@@ -62,6 +67,7 @@ function fpWing(rec) {
   return "low"
 }
 
+/** Catégorie de silhouette (heli, fighter, seaplane, biplane, monoProp…, bizJet, twinJet) d'après la fiche OACI. */
 function fpVisual(profile) {
   const rec = fpResolve(profile),
     s = fpSpec(rec),
@@ -80,10 +86,12 @@ function fpVisual(profile) {
     }
     if (s.engines === 1) return wing === "high" ? "monoHigh" : "monoProp"
   }
-  if (s.power === "J") return s.engines >= 4 ? "quadJet" : /CITATION|LEAR|GULFSTREAM|FALCON|CHALLENGER|PHENOM|HAWKER/.test(k) ? "bizJet" : "twinJet";
+  if (s.power === "J") return s.engines >= 4 ? "quadJet" : /CITATION|LEAR|GULFSTREAM|FALCON|CHALLENGER|PHENOM|HAWKER/.test(k) ? "bizJet" :
+    "twinJet";
   return "other"
 }
 
+/** Groupe d'affichage du profil : [libellé du groupe, libellé de l'appareil] (Jets, Turboprops / bimoteurs…). */
 function fpGroup(profile) {
   const visual = fpVisual(profile),
     rec = fpResolve(profile),
@@ -95,12 +103,14 @@ function fpGroup(profile) {
   return ["Autres", "Autre"]
 }
 
+/** Pastille HTML de l'appareil : silhouette, classe de turbulence (wtc-L/M/H…) et infobulle type · modèle · WTC. */
 function fpIcon(profile) {
   const rec = fpResolve(profile),
     visual = fpVisual(profile),
     wtc = String(rec.wtc || "L").replace(/[^A-Z]/g, "") || "L";
   const label = [rec.tdesig, rec.model, rec.description, rec.wtc ? "WTC " + rec.wtc : ""].filter(Boolean).join(" · ");
-  return '<span class="ac-icon ' + (visual === "other" ? "unknown " : "") + 'wtc-' + wtc + '" title="' + label.replace(/"/g, "&quot;") + '">' + aircraftSvgForVisual(visual) + '</span>'
+  return '<span class="ac-icon ' + (visual === "other" ? "unknown " : "") + 'wtc-' + wtc + '" title="' + label.replace(/"/g, "&quot;") +
+    '">' + aircraftSvgForVisual(visual) + '</span>'
 }
 window.AircraftDBIcons = {
   resolve: fpResolve,

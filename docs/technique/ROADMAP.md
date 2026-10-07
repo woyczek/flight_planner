@@ -95,13 +95,23 @@ Le site n'a **pas d'API** : on récupère ses données par **copier-coller** de 
 
 | Page du site | Dans la suite | État |
 |---|---|---|
-| Log des vols | Paramètres › Maintenance › Base DEFA › Journal des vols : « Charger / mettre à jour le journal (page copiée ou enregistrée) », puis référence DEFA (pilotes, appareils) mise à jour depuis le journal | fait |
-| Flotte virtuelle | Paramètres › Maintenance › Flotte DEFA : « Coller la page Flotte du site… » (mêmes règles que `AircraftDB/update_fleet.py`, sans script), puis « Enregistrer dans le dépôt » | fait (5 octobre) |
+| Log des vols | Paramètres › Maintenance › Base › Journal des vols : « Charger / mettre à jour le journal (page copiée ou enregistrée) », puis référence (pilotes, appareils) mise à jour depuis le journal | fait |
+| Flotte virtuelle | Paramètres › Maintenance › Flotte : « Coller la page Flotte du site… » (mêmes règles que `AircraftDB/update_fleet.py`, sans script), puis « Enregistrer dans le dépôt » | fait (5 octobre) |
 | Maintenance, Statistiques | — | rien à reprendre pour l'instant |
 | Enregistrer mon vol (connexion requise) | — | l'envoi des CR au site reste manuel : pas d'API, et pas question d'automatiser un formulaire avec les identifiants d'un pilote |
 
 Si le site ouvre un jour une API : reprendre ce tableau (lecture automatique, puis envoi des CR et des affectations
 avec les identifiants saisis au premier lancement, jamais écrits dans un fichier).
+
+## Tableau (Centre, en cours)
+
+L'éditeur hebdomadaire des ordres de vols ([ODV_ORDRES.md](ODV_ORDRES.md)), repris de l'outil autonome « Tableau
+V0 » dans le modèle de la suite (dispos, affectations, zones de mission, CR). Lots L2-L3 : session Ordres de vols ;
+L4-L5 : session Features SOG. Ensuite, sur cette feuille de route :
+
+- **Tâches du planificateur** : liste de tâches quotidiennes, variable, cochée quand c'est fait, échéance visible (V0 :
+  check-list hebdomadaire `checkPrep`, liens IVAO).
+- **Marqueurs libres** sur la frise (trait, bande, NLT : repères visuels sans calcul).
 
 ## En continu
 

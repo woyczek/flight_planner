@@ -36,6 +36,9 @@
       menu.hidden = false
     }
   }
-  RepositoryNav.addAction(["Choisir les fichiers CSV / LOG", "Choose CSV / LOG files", "CSV- / LOG-Dateien wählen", "Elegir archivos CSV / LOG"], () => document.getElementById("fileButton")?.click());
-  RepositoryNav.addAction(["Imprimer / PDF", "Print / PDF", "Drucken / PDF", "Imprimir / PDF"], () => document.getElementById("printBtn")?.click());
+  RepositoryNav.addAction(["Choisir les fichiers CSV / LOG", "Choose CSV / LOG files", "CSV- / LOG-Dateien wählen",
+    "Elegir archivos CSV / LOG"
+  ], () => document.getElementById("fileButton")?.click());
+  RepositoryNav.addAction(["Imprimer / PDF", "Print / PDF", "Drucken / PDF", "Imprimir / PDF"], () => document.getElementById("printBtn")
+    ?.click());
 })();

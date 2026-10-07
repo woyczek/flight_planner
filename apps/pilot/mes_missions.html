@@ -1,8 +1,8 @@
 <!doctype html>
 <html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Mes missions</title>
-<link rel="stylesheet" href="../../shared/repository_nav.css?v=bc0f3060"><link rel="stylesheet" href="../../shared/mission_core/core.css?v=7e4ed0f1">
-<script src="../../config/repository_tree?v=2bea194f"></script>
+<link rel="stylesheet" href="../../shared/repository_nav.css?v=f6a61e75"><link rel="stylesheet" href="../../shared/mission_core/core.css?v=8594d3c0">
+<script src="../../config/repository_tree?v=7b133f6e"></script>
 <style>
   /* liste en cours de lecture (affectations) : estompée */
   #pmList[aria-busy="true"] {
@@ -91,19 +91,19 @@
     column-gap: 18px;
     align-items: start
   }
-  .pm-cols > section {
+  .pm-cols>section {
     min-width: 0
   }
   #pilotMissions:not(.pm-dossier) [data-block-id="list"],
   #pilotMissions.pm-wide [data-block-id="list"],
   #pilotMissions.pm-wide #pmMission,
-  .pm-cols > [data-block-id="availability"] {
+  .pm-cols>[data-block-id="availability"] {
     grid-column: 1 / -1
   }
   #pilotMissions.pm-wide #pmMission {
     order: -1
   }
-  .pm-cols > [data-block-id="availability"] {
+  .pm-cols>[data-block-id="availability"] {
     order: 1
   }
   /* pilote, appareils, simulateurs : liens vers Paramètres › Mon profil */
@@ -806,7 +806,8 @@
     bottom: var(--pm-page-b);
     overflow: auto;
     padding: 1.6cqw 2.4cqw 5.2cqw;
-    font: clamp(11px, 1.18cqw, 13px)/1.5 var(--pm-font, "Courier Prime", "Courier New", Courier, monospace); /* suit la taille du livre (12,5 px en pleine taille) */
+    font: clamp(11px, 1.18cqw, 13px)/1.5 var(--pm-font, "Courier Prime", "Courier New", Courier, monospace);
+    /* suit la taille du livre (12,5 px en pleine taille) */
     color: var(--pm-ink, #2b2112);
     scrollbar-width: thin
   }
@@ -925,7 +926,7 @@
     transform: rotate(-6deg)
   }
   /* logo en page 1 (Cabinet, Carnet de vol, Durci, Aqua) : l'en-tête de l'ordre, en haut à gauche, au-dessus de l'étiquette
-     (Cabinet : ailes et « DEFA Virtual CPCO » ; les autres : l'en-tête de l'émetteur de la famille, comme en page 2) */
+     (Cabinet : ailes et « SO Group Virtual CPCO » ; les autres : l'en-tête de l'émetteur de la famille, comme en page 2) */
   .pm-logo {
     display: none
   }
@@ -1109,7 +1110,8 @@
     background: var(--pm-face) center/100% 100%;
     box-shadow: 0 0 22px rgba(0, 0, 0, .25);
     padding: var(--pm-pad);
-    font: clamp(11px, 1.18cqw, 13px)/1.5 var(--pm-font, "Courier Prime", "Courier New", Courier, monospace); /* suit la taille du livre (12,5 px en pleine taille) */
+    font: clamp(11px, 1.18cqw, 13px)/1.5 var(--pm-font, "Courier Prime", "Courier New", Courier, monospace);
+    /* suit la taille du livre (12,5 px en pleine taille) */
     color: var(--pm-ink, #2b2112)
   }
   .pm-leaf .pm-back {
@@ -1663,22 +1665,24 @@
 </section>
 </div>
 </main>
-<script src="../../shared/kit.js?v=a819e6df"></script>
-<script src="../../shared/repository_nav.js?v=6262a76e"></script>
-<script src="mes_missions_i18n.js?v=6221abe4" defer></script>
-<script src="../../shared/dispos_editor.js?v=53d09022"></script>
-<script src="../../shared/content_i18n.js?v=7afecb78"></script>
-<script src="../../AircraftDB/aircraft_db.js"></script><script src="../../shared/mission_core/vendor/js-yaml.min.js"></script><script src="../../shared/data_files.js?v=50601f47" data-file="references/aircraft_fleet.js"></script>
-<script src="../../shared/mission_core/vocab.js?v=74550207"></script>
-<script src="../../shared/mission_estimate.js?v=1e7731a5"></script><script src="../../shared/mission_i18n.js?v=bfd45c20"></script><script src="../../shared/machine_translate.js?v=c029bc1a"></script><script src="../../shared/mission_exercise.js?v=6c6aed4f"></script>
-<script src="../../shared/assignments.js?v=9e7845c6"></script>
+<script src="../../shared/kit.js?v=7f07f523"></script>
+<script src="../../shared/repository_nav.js?v=dade04a4"></script>
+<script src="mes_missions_i18n.js?v=ff059abb" defer></script>
+<script src="../../shared/dispos_editor.js?v=4a8b0acf"></script>
+<script src="../../shared/content_i18n.js?v=499ea78f"></script>
+<script src="../../AircraftDB/aircraft_db.js"></script><script src="../../shared/mission_core/vendor/js-yaml.min.js"></script><script src="../../shared/data_files.js?v=dcb47c6a" data-file="references/aircraft_fleet.js"></script>
+<script src="../../shared/mission_core/vocab.js?v=8c65f5c2"></script>
+<script src="../../shared/mission_estimate.js?v=e352037a"></script><script src="../../shared/mission_i18n.js?v=bfd45c20"></script><script src="../../shared/machine_translate.js?v=9e5fc37d"></script><script src="../../shared/mission_exercise.js?v=b68ac247"></script>
+<script src="../../shared/assignments.js?v=95fcb353"></script>
 <script>
 (() => {
   'use strict';
+  /** Élément de la page par son identifiant ; A : affectations (shared/assignments.js), K : kit commun. */
   const $ = id => document.getElementById(id),
     A = window.MissionAssignments,
     K = window.RepositoryKit,
     esc = K.esc;
+  /** Racine de la suite (adresse), base des fichiers servis de data/. */
   const root = () => window.RepositoryNav?.root || new URL('../../', location.href).href;
   const PROFILE = 'missionReportingConfig:v1';
   let list = [],
@@ -1688,7 +1692,13 @@
   let week = A.weekKey(Date.now());
   const tv = window.RepositoryKit.tf; // phrase traduite, valeurs {clé} insérées (shared/kit.js)
   /** Paramètres régionaux de la langue de la page (dates : « mer. 30/09 », « Wed 30/09 »…). */
-  const loc = () => ({ fr: 'fr-FR', en: 'en-GB', de: 'de-DE', es: 'es-ES' })[window.RepositoryNav?.getLanguage?.() || 'fr'] || 'fr-FR';
+  const loc = () => ({
+    fr: 'fr-FR',
+    en: 'en-GB',
+    de: 'de-DE',
+    es: 'es-ES'
+  })[window.RepositoryNav?.getLanguage?.() || 'fr'] || 'fr-FR';
+  /** Jour i (0 : lundi) de la semaine w, court, dans la langue de la page : « mer. 30/09 ». */
   const dayFr = (w, i) => new Date(Date.parse(`${w}T00:00:00Z`) + i * 864e5).toLocaleDateString(loc(), {
     weekday: 'short',
     day: '2-digit',
@@ -1696,16 +1706,24 @@
     timeZone: 'UTC'
   }).replace('.', '');
 
+  /** Remplit les barres de semaine ([data-weekbar]) : semaine précédente / suivante, choix d'une date, intervalle
+   *  affiché ; data-end : dernier jour de la semaine. */
   function weekBars() {
     const end = A.addWeeks(week, 1),
       last = new Date(Date.parse(`${end}T00:00:00Z`) - 864e5).toISOString().slice(0, 10);
-    const label = tv(week === A.weekKey(Date.now()) ? ['du {a} au {b} (cette semaine)', 'from {a} to {b} (this week)', 'vom {a} bis {b} (diese Woche)', 'del {a} al {b} (esta semana)'] : ['du {a} au {b}', 'from {a} to {b}', 'vom {a} bis {b}', 'del {a} al {b}'], { a: dayFr(week, 0), b: dayFr(week, 6) });
+    const label = tv(week === A.weekKey(Date.now()) ? ['du {a} au {b} (cette semaine)', 'from {a} to {b} (this week)',
+      'vom {a} bis {b} (diese Woche)', 'del {a} al {b} (esta semana)'
+    ] : ['du {a} au {b}', 'from {a} to {b}', 'vom {a} bis {b}', 'del {a} al {b}'], {
+      a: dayFr(week, 0),
+      b: dayFr(week, 6)
+    });
     document.querySelectorAll('[data-weekbar]').forEach(b => {
       b.innerHTML = `<button type="button" class="secondary" data-wk="-1" title="${esc(tv(['Semaine précédente', 'Previous week', 'Vorherige Woche', 'Semana anterior']))}">‹</button><input type="date" data-wk-date value="${week}" title="${esc(tv(['Aller à la semaine d’une date', 'Go to the week of a date', 'Zur Woche eines Datums', 'Ir a la semana de una fecha']))}"><button type="button" class="secondary" data-wk="1" title="${esc(tv(['Semaine suivante', 'Next week', 'Nächste Woche', 'Semana siguiente']))}">›</button>${week === A.weekKey(Date.now()) ? '' : `<button type="button" class="secondary" data-wk="0" title="${esc(tv(['Revenir à la semaine en cours', 'Back to the current week', 'Zurück zur aktuellen Woche', 'Volver a la semana actual']))}" aria-label="${esc(tv(['Semaine en cours', 'Current week', 'Aktuelle Woche', 'Semana actual']))}">⟲</button>`}<span class="small">${esc(label)}</span>`;
       b.dataset.end = last;
     });
   }
 
+  /** Affiche la semaine w (lundi ISO) : barres, liste et disponibilités relues ; null si elle est déjà affichée. */
   function goWeek(w) {
     if (!w || w === week) return null;
     week = w;
@@ -1720,24 +1738,36 @@
     // correction après chaque changement de mise en page, avant l'affichage (ResizeObserver) : aucun saut visible
     const fix = () => {
       const d = bar.getBoundingClientRect().top - top0;
-      if (Math.abs(d) >= 1) window.scrollBy({ top: d, behavior: 'instant' });
+      if (Math.abs(d) >= 1) window.scrollBy({
+        top: d,
+        behavior: 'instant'
+      });
     };
     let stopped = false;
     const ro = new ResizeObserver(fix),
       evs = ['wheel', 'touchmove', 'keydown', 'mousedown'],
+      /** Fin du recalage : délai écoulé, ou défilement par l'utilisateur. */
       quit = () => {
         stopped = true;
         ro.disconnect();
         clearTimeout(timer);
-        evs.forEach(ev => removeEventListener(ev, quit, { capture: true }));
+        evs.forEach(ev => removeEventListener(ev, quit, {
+          capture: true
+        }));
       },
       timer = setTimeout(quit, 2000);
-    evs.forEach(ev => addEventListener(ev, quit, { passive: true, capture: true }));
+    evs.forEach(ev => addEventListener(ev, quit, {
+      passive: true,
+      capture: true
+    }));
     ro.observe(document.body);
     // blocs de la grille (la liste peut rapetisser d'autant que les disponibilités grandissent : page de même hauteur)
-    (bar.closest('.pm-cols') || document.querySelector('main'))?.querySelectorAll(':scope > section, :scope > *').forEach(el => ro.observe(el));
+    (bar.closest('.pm-cols') || document.querySelector('main'))?.querySelectorAll(':scope > section, :scope > *').forEach(el => ro
+      .observe(el));
     const done = go();
-    (bar.querySelector(key) || bar.querySelector('[data-wk="1"]'))?.focus({ preventScroll: true });
+    (bar.querySelector(key) || bar.querySelector('[data-wk="1"]'))?.focus({
+      preventScroll: true
+    });
     fix();
     // fin des rechargements (liste, disponibilités) : dernier recalage, même si la page n'a pas été redessinée entre-temps
     done?.then(() => {
@@ -1746,10 +1776,12 @@
   }
   document.addEventListener('click', e => {
     const b = e.target.closest('[data-weekbar] [data-wk]');
-    if (b) anchored(b.closest('[data-weekbar]'), `[data-wk="${b.dataset.wk}"]`, () => goWeek(+b.dataset.wk ? A.addWeeks(week, +b.dataset.wk) : A.weekKey(Date.now())));
+    if (b) anchored(b.closest('[data-weekbar]'), `[data-wk="${b.dataset.wk}"]`, () => goWeek(+b.dataset.wk ? A.addWeeks(week, +b.dataset.wk) : A.weekKey(
+      Date.now())));
   });
   document.addEventListener('change', e => {
-    if (e.target.matches('[data-weekbar] [data-wk-date]') && e.target.value) anchored(e.target.closest('[data-weekbar]'), '[data-wk-date]', () => goWeek(A.weekKey(Date.parse(`${e.target.value}T12:00:00Z`))));
+    if (e.target.matches('[data-weekbar] [data-wk-date]') && e.target.value) anchored(e.target.closest('[data-weekbar]'),
+      '[data-wk-date]', () => goWeek(A.weekKey(Date.parse(`${e.target.value}T12:00:00Z`))));
   });
   weekBars();
   // affectation écrite dans un autre onglet (Centre, ODV) : liste relue aussitôt (index revalidé, sans tout relire)
@@ -1758,7 +1790,9 @@
   });
   // changement de langue : semaine, liste (dates, phrases) et grille dans la nouvelle langue
   // titre de l'onglet (hors de la page : la couche de traduction ne le voit pas)
-  const pageTitle = () => { document.title = tv(['Mes missions', 'My missions', 'Meine Missionen', 'Mis misiones']); };
+  const pageTitle = () => {
+    document.title = tv(['Mes missions', 'My missions', 'Meine Missionen', 'Mis misiones']);
+  };
   pageTitle();
   window.addEventListener('repository-language-change', () => {
     pageTitle();
@@ -1777,6 +1811,7 @@
     minute: '2-digit',
     timeZone: 'UTC'
   }).replace(',', '') + 'Z' : '—';
+  /** Heure UTC « 12:40Z » ; « — » sans date. */
   const hhmm = ms => ms ? new Date(ms).toISOString().slice(11, 16) + 'Z' : '—';
 
   // ---- identité : trigramme du profil pilote (Paramètres › Mon profil, bouton « Pilote »)
@@ -1786,7 +1821,12 @@
     let t = b.querySelector('b');
     if (!t) b.append(t = document.createElement('b'));
     t.textContent = tri;
-    $('pmWhoNote').textContent = tri ? '' : tv(['Trigramme non réglé : « Pilote » pour le saisir et voir les missions qui vous sont affectées.', 'Trigram not set: “Pilot” to enter it and see the missions assigned to you.', 'Kürzel nicht gesetzt: „Pilot“, um es einzugeben und die Ihnen zugewiesenen Missionen zu sehen.', 'Trigrama no definido: «Piloto» para introducirlo y ver las misiones que se le asignan.']);
+    $('pmWhoNote').textContent = tri ? '' : tv([
+      'Trigramme non réglé : « Pilote » pour le saisir et voir les missions qui vous sont affectées.',
+      'Trigram not set: “Pilot” to enter it and see the missions assigned to you.',
+      'Kürzel nicht gesetzt: „Pilot“, um es einzugeben und die Ihnen zugewiesenen Missionen zu sehen.',
+      'Trigrama no definido: «Piloto» para introducirlo y ver las misiones que se le asignan.'
+    ]);
   }
   // trigramme changé dans un autre onglet (Mon profil, menu ☰) : liste relue
   window.addEventListener('storage', e => {
@@ -1803,10 +1843,14 @@
   // chargements de la liste : seul le dernier lancé affiche (changement de semaine, de langue, de profil… pendant une
   // lecture : une lecture plus ancienne qui finit après ne remplace plus la liste) ; barre de progression pendant la lecture
   let loadSeq = 0;
+  /** Relit l'index des affectations et liste les missions du pilote de la semaine affichée (passées comprises si
+   *  coché) ; rouvre la mission courante ou demandée (?mission=) si elle a changé. */
   async function load() {
     who();
     const seq = ++loadSeq,
-      job = window.AppFramework?.task?.(tv(['Lecture des affectations', 'Reading the assignments', 'Zuweisungen werden gelesen', 'Leyendo las asignaciones']));
+      job = window.AppFramework?.task?.(tv(['Lecture des affectations', 'Reading the assignments', 'Zuweisungen werden gelesen',
+        'Leyendo las asignaciones'
+      ]));
     $('pmList').setAttribute('aria-busy', 'true');
     let idx;
     try {
@@ -1853,15 +1897,20 @@
   try {
     Object.assign(view, JSON.parse(localStorage.getItem(VIEW_KEY) || '{}') || {});
   } catch {
-    /* valeurs par défaut */ }
+    /* valeurs par défaut */
+  }
+  /** Mémorise l'affichage (pilotMissionsView:v1) ; stockage refusé : ignoré. */
   const saveView = () => {
     try {
       localStorage.setItem(VIEW_KEY, JSON.stringify(view));
     } catch {
-      /* stockage refusé */ }
+      /* stockage refusé */
+    }
   };
   // ---- deux colonnes : dossier ouvert → colonne de gauche élargie, ou pleine largeur au-dessus des colonnes (view.wide)
   const NARROW = matchMedia('(max-width: 1100px)'); // une seule colonne : le choix de largeur ne s'applique pas
+  /** Dossier en pleine largeur ou à côté de la liste (view.wide, sans effet sur écran étroit) ; crée ou met à jour
+   *  le bouton de bascule. */
   function applyWide() {
     const host = $('pilotMissions'),
       box = $('pmMission'),
@@ -1884,8 +1933,16 @@
       const head = box.querySelector('.repo-block-heading');
       head ? head.insertBefore(b, head.querySelector('.repo-block-tools')) : box.querySelector('h2')?.after(b);
     }
-    b.textContent = wide ? tv(['⇥ À côté de la liste', '⇥ Beside the list', '⇥ Neben der Liste', '⇥ Junto a la lista']) : tv(['⤢ Pleine largeur', '⤢ Full width', '⤢ Volle Breite', '⤢ Ancho completo']);
-    b.title = wide ? tv(['Dossier à côté de la liste des missions', 'Folder beside the missions list', 'Mappe neben der Missionsliste', 'Carpeta junto a la lista de misiones']) : tv(['Dossier sur toute la largeur, au-dessus de la liste (double page plus grande)', 'Folder across the whole width, above the list (larger double page)', 'Mappe über die ganze Breite, über der Liste (größere Doppelseite)', 'Carpeta a todo el ancho, encima de la lista (doble página más grande)']);
+    b.textContent = wide ? tv(['⇥ À côté de la liste', '⇥ Beside the list', '⇥ Neben der Liste', '⇥ Junto a la lista']) : tv([
+      '⤢ Pleine largeur', '⤢ Full width', '⤢ Volle Breite', '⤢ Ancho completo'
+    ]);
+    b.title = wide ? tv(['Dossier à côté de la liste des missions', 'Folder beside the missions list', 'Mappe neben der Missionsliste',
+      'Carpeta junto a la lista de misiones'
+    ]) : tv(['Dossier sur toute la largeur, au-dessus de la liste (double page plus grande)',
+      'Folder across the whole width, above the list (larger double page)',
+      'Mappe über die ganze Breite, über der Liste (größere Doppelseite)',
+      'Carpeta a todo el ancho, encima de la lista (doble página más grande)'
+    ]);
   }
   NARROW.addEventListener('change', applyWide);
   $('pmAll').checked = !!view.all;
@@ -1905,6 +1962,7 @@
     const X = window.MissionExercise,
       op = y?.operation?.id;
     if (!X || !op || X.isOrganisation(y)) return [];
+    /** Mission (YAML) d'identifiant id, lue dans le dossier voisin de celui de a ; null si absente ou illisible. */
     const read = async id => {
       const f = await A.missionFirst(String(a.folder).replace(/[^/]*$/, id), [`mission${id}.yaml`, `mission${id.replace('-', '')}.yaml`]);
       try {
@@ -1915,7 +1973,8 @@
     };
     const z = await read(X.organisationId(op));
     if (!z?.exercise) return [];
-    const others = [...z.exercise.participants || [], ...(z.exercise.tracks || []).filter(t => t?.played)].map(p => String(p?.mission || '').toUpperCase()).filter(id => id && id !== String(y.mission?.id || '').toUpperCase());
+    const others = [...z.exercise.participants || [], ...(z.exercise.tracks || []).filter(t => t?.played)].map(p => String(p?.mission ||
+      '').toUpperCase()).filter(id => id && id !== String(y.mission?.id || '').toUpperCase());
     return [z, ...(await Promise.all(others.map(read))).filter(Boolean)];
   }
   /** Plis et messages de l'exercice adressés à cet équipage, dans l'ordre : { id, kind, from, title, text, when, at (ms,
@@ -1928,17 +1987,21 @@
       ex = X?.of(y, docs),
       me = ex && X.participantOf(ex, y.mission?.id);
     if (!me) return [];
+    /** Indicatif normalisé (sans espaces, en majuscules). */
     const up = s => String(s || '').trim().toUpperCase(),
       // lecteur : l'indicatif de l'affectation (mission à plusieurs équipages : un pli ne concerne que son destinataire
       // ou son émetteur, qui le passe à l'heure dite), sinon le participant de la mission
       cs = up(a.callsign) || me.callsign,
-      list = X.timeline(ex, [y, ...docs]).filter(e => e.to.includes(cs) || e.to.includes('ALL') || e.to.includes('TOUS') || up(e.from) === cs),
+      list = X.timeline(ex, [y, ...docs]).filter(e => e.to.includes(cs) || e.to.includes('ALL') || e.to.includes('TOUS') || up(e.from) ===
+        cs),
       // heure H réelle : décollage du participant de la mission (son affectation, même s'il n'est pas le lecteur) moins
       // son décalage ; sans son affectation, heure inconnue (ouverture au passage du point)
       anchor = me.callsign === cs ? a : (A._all || []).find(x => x.mission === a.mission && up(x.callsign) === me.callsign),
       t0 = anchor && A.when(anchor) ? A.when(anchor) - (X.parseH(me.takeoff) ?? 0) * 6e4 : null,
       lastReveal = [...list].reverse().find(e => e.reveals.length)?.id,
-      mapsOf = id => (y.maps || []).filter(m => m?.filename && (m.exercise === id || (m.exercise === 'all' && id === lastReveal))).map(m => m.filename);
+      /** Cartes d'exercice révélées par l'événement id (« all » : avec le dernier pli qui révèle des pistes). */
+      mapsOf = id => (y.maps || []).filter(m => m?.filename && (m.exercise === id || (m.exercise === 'all' && id === lastReveal))).map(
+        m => m.filename);
     return list.map(e => {
       const at = e.t != null && t0 != null ? t0 + e.t * 6e4 : null;
       const st = A.pliState(a, e.id),
@@ -1968,11 +2031,11 @@
   });
   /** Carte d'exercice (réservée à un pli) ? */
   const isExerciseMap = (y, name) => !!(y.maps || []).find(m => m?.filename === name && m.exercise && m.exercise !== 'none');
-  /** Étiquette d'une mission (couverture scellée, page 1 du dossier) : numéro, nom, appareil, indicatif, décollage ;
-   *  tampon « CONFIDENTIEL » posé par-dessus, à place fixe. */
   /** Titre d'une affectation : convoyage → son trajet seulement (le pilote convoyeur ne reçoit pas le brief de la
    *  mission) ; sinon le titre de la mission. */
   const titleOf = a => a.role === 'convoyage' ? `Convoyage ${a.aircraft?.registration || ''} ${a.departure || '?'} → ${a.destination || '?'}`.replace(/\s+/g, ' ') : a.title || '';
+  /** Étiquette d'une mission (couverture scellée, page 1 du dossier) : numéro, nom, appareil, indicatif, décollage ;
+   *  tampon « CONFIDENTIEL » posé par-dessus, à place fixe. */
   const labelHtml = a => `<div class="pm-label"><small aria-label="Confidentiel">CONFIDENTIEL</small><b>${esc(a.mission)}</b><span>${esc(titleOf(a))}</span>
       <dl><dt>Appareil</dt><dd>${esc([a.aircraft?.type, a.aircraft?.registration].filter(Boolean).join(' ') || '—')}</dd><dt>Indicatif</dt><dd>${esc(a.callsign || '—')}</dd><dt>Décollage</dt><dd>${esc(a.alert ? 'astreinte ' + hhmm(Date.parse(a.alert.ready_at_utc)) : fmt(A.when(a)))}</dd></dl></div>`;
   // ---- animations du dossier : ouverture et fermeture propres à chaque design — Cabinet : la liasse sort du
@@ -1983,9 +2046,12 @@
   // gauche, le nouveau arrive de la droite (les boutons ne bougent pas), puis il s'ouvre si l'autre l'était.
   // Rien si l'utilisateur demande moins d'animations. Chaque mouvement rend une promesse (enchaînements).
   const still = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
+  /** Design de la page (data-design de <html> : cabinet, flightlog, field, aqua…). */
   const designNow = () => document.documentElement.dataset.design || '';
+  /** Promesse résolue au bout de ms. */
   const wait = ms => new Promise(r => setTimeout(r, ms));
   let tempo = 1; // < 1 : mouvements raccourcis (changement de mission : fermeture, glissement, ouverture à la suite)
+  /** Durée d'un mouvement ajustée au tempo. */
   const T = ms => Math.round(ms * tempo);
   /** Anime el (Web Animations) ; promesse résolue à la fin, ou à l'abandon (dossier redessiné entre-temps). */
   const play = (el, kf, opt) => el.animate(kf, opt).finished.catch(() => {});
@@ -2015,12 +2081,14 @@
       h: r.height
     };
   };
+  /** Place el en absolu au rectangle r ({ x, y, w, h }, relatif au dossier). */
   const box = (el, r) => Object.assign(el.style, {
     left: `${r.x}px`,
     top: `${r.y}px`,
     width: `${r.w}px`,
     height: `${r.h}px`
   });
+  /** Image clé d'animation au rectangle r. */
   const boxKf = r => ({
     left: `${r.x}px`,
     top: `${r.y}px`,
@@ -2039,6 +2107,7 @@
     box(el, b);
     return r;
   }
+  /** Rend à el sa place dans le flux (animations annulées, style retiré). */
   const unpin = el => {
     el.getAnimations().forEach(x => x.cancel());
     el.removeAttribute('style');
@@ -2135,7 +2204,8 @@
     const st = document.createElement('div');
     st.className = 'pm-stage';
     st.setAttribute('aria-hidden', 'true');
-    st.innerHTML = '<div class="pm-st-back"></div><div class="pm-st-sheet"></div><div class="pm-st-front"></div><div class="pm-st-panel"></div>';
+    st.innerHTML =
+      '<div class="pm-st-back"></div><div class="pm-st-sheet"></div><div class="pm-st-front"></div><div class="pm-st-panel"></div>';
     $('pmDetail').append(st);
     const [back, sheet, front, panel] = st.children; // liasse sous les coins et la poche
     box(back, c);
@@ -2171,6 +2241,7 @@
     panel.style.backgroundImage = getComputedStyle(book).getPropertyValue('--pm-open');
     panel.style.backgroundSize = `${b.w}px ${b.h}px`;
     panel.style.visibility = 'hidden';
+    /** Part (0 à 1) lue dans une variable CSS du livre (pourcentages propres au design). */
     const pct = n => (parseFloat(getComputedStyle(book).getPropertyValue(n)) || 0) / 100,
       area = p => ({ // feuille du dossier ouvert (p : '' droite, 'b' gauche)
         x: b.x + b.w * pct(`--pm-${p}sheet-l`),
@@ -2601,7 +2672,7 @@
         cabinet: 4,
         flightlog: 3,
         field: 2
-      }[d] || 0,
+      } [d] || 0,
       dur = T(d === 'aqua' ? 420 : 520);
     host.append(g);
     host.classList.add('pm-swapping');
@@ -2652,6 +2723,7 @@
     const y0 = lastRender?.[0] === a ? lastRender[1] : null; // même titre que l'étiquette de la page 1
     cv.innerHTML = `${labelHtml({ ...a, title: y0?.title || a.title })}<p class="pm-open"><button type="button" class="primary" data-open>${sealed ? 'Ouvrir la mission' : 'Ouvrir le dossier'}</button></p>`;
     host.insertBefore(cv, actions || null);
+    /** Ouvre le dossier (un geste à la fois) ; scellé brisé : mission marquée lue, geste journalisé. */
     const open = () => {
       if (cv.dataset.opening) return Promise.resolve();
       cv.dataset.opening = '1';
@@ -2691,6 +2763,7 @@
     open = false
   } = {}) {
     const seq = ++showSeq; // un affichage plus récent rend celui-ci caduc (ses lectures ne s'affichent pas)
+    /** Affichage dépassé par un plus récent : ses lectures ne s'affichent pas. */
     const stale = () => seq !== showSeq;
     current = a;
     shown = '';
@@ -2699,6 +2772,7 @@
     // coup (avant : vidé et remplacé par « Chargement… », le livre clignotait) ; premier dossier : bloc et colonnes
     // posés avec le contenu, « Chargement… » seulement si la lecture dure
     const hadBook = !$('pmMission').hidden && !!$('pmDetail').querySelector('.pm-content, .pm-cover');
+    /** Montre le bloc de la mission et élargit la colonne des missions. */
     const reveal = () => {
       $('pmMission').hidden = false;
       $('pilotMissions').classList.add('pm-dossier'); // colonne des missions élargie (ou dossier en pleine largeur)
@@ -2714,6 +2788,8 @@
     /** Nouvelle mission prête : état de la page remplacé, dossier dessiné, bloc montré et amené à l'écran. */
     let ghost = null, // dossier précédent (fermé), qui part à gauche
       wasOpen = false; // il était ouvert : le nouveau s'ouvre à son tour (s'il n'est pas sous scellés)
+    /** Applique la mission lue (yaml, cartes, missions de l'exercice) après la fermeture animée du dossier précédent,
+     *  gardé de côté (ghost) ; false si un affichage plus récent l'a rendue caduque. */
     const commit = async (y, urls, docs) => {
       clearTimeout(waitTimer);
       if (hadBook && !still()) {
@@ -2766,7 +2842,8 @@
       try {
         log = (await A.readLog()).filter(e => e.mission === a.mission);
       } catch {
-        /* pas de journal */ }
+        /* pas de journal */
+      }
       if (stale() || !await commit(null, {}, [])) return;
       render(a, {}, '', log);
       await land('convoyage ouvert');
@@ -2777,7 +2854,8 @@
     try {
       if (yf) y = window.jsyaml.load(yf.value.replace(/^#.*\n/, ''));
     } catch {
-      /* mission illisible : affectation seule */ }
+      /* mission illisible : affectation seule */
+    }
     const md = (await A.missionFirst(a.folder, [a.files?.md, `summary${a.mission}.md`, `summary${bare}.md`]))?.value || '';
     if (!yf) window.AppFramework?.notify?.(`Mission ${a.mission} : fichier introuvable (dossier « ${a.folder} »), ni dans le dossier des missions autorisé ni dans la copie servie — seule l’affectation est affichée.`, 'warn');
     // cartes : index de l'affectation, sinon yaml ; adresse résolue (cartes/x.png, sinon x.png)
@@ -2815,7 +2893,8 @@
     try {
       log = (await A.readLog()).filter(e => e.mission === a.mission);
     } catch {
-      /* pas de journal */ }
+      /* pas de journal */
+    }
     if (stale() || !await commit(y, urls, docs)) return;
     render(a, y || {}, md, log);
     await land('mission ouverte (scellé brisé)');
@@ -2824,6 +2903,7 @@
   /** Points de la route dans l'ordre (origine, points tournants, rendez-vous, cible, destination) ; route_order si présent. */
   function routeOf(y) {
     const by = {};
+    /** Retient un point de la route s'il a des coordonnées (by[id] : nom, position, nature, rôle). */
     const add = (id, p, kind) => {
       if (p && Number.isFinite(+p.lat) && Number.isFinite(+p.lon)) by[id] = {
         id,
@@ -2844,7 +2924,8 @@
     }, 'zone'));
     add('TARGET', y.target, 'target');
     add('DESTINATION', y.destination, 'ad');
-    const order = Array.isArray(y.route_order) && y.route_order.length ? y.route_order : ['ORIGIN', ...(y.turning_points || []).map(p => p.id), 'TARGET', 'DESTINATION'];
+    const order = Array.isArray(y.route_order) && y.route_order.length ? y.route_order : ['ORIGIN', ...(y.turning_points || []).map(p => p
+      .id), 'TARGET', 'DESTINATION'];
     return order.map(id => by[id]).filter(Boolean);
   }
 
@@ -2884,13 +2965,17 @@
       }
       if (cur) raw[cur] += line + '\n';
     }
+    /** Gras Markdown (**…**) sur texte échappé. */
     const inline = s => esc(s).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>');
+    /** Cellules d'une ligne de tableau Markdown, mises en forme. */
     const cells = l => l.trim().replace(/^\||\|$/g, '').split('|').map(c => inline(c.trim()));
+    /** Bloc de tableau Markdown → tableau HTML (ligne de séparation ignorée). */
     const table = b => {
       const rows = b.split('\n').filter(l => l.trim() && !/^\s*\|?\s*:?-{2,}/.test(l));
       const [head, ...body] = rows.map(cells);
       return `<table class="pm-mdtable"><thead><tr>${head.map(c => `<th>${c}</th>`).join('')}</tr></thead><tbody>${body.map(r => `<tr>${r.map(c => `<td>${c}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
     };
+    /** Texte d'une rubrique → HTML : paragraphes, tableaux, citations, listes. */
     const html = s => s.trim().split(/\n\s*\n/).map(b => /^\s*\|/.test(b) ? table(b) : /^\s*>/.test(b) ?
       `<blockquote>${inline(b.replace(/^\s*>\s?/gm, '').trim()).replace(/\n/g, '<br>')}</blockquote>` :
       /^\s*[-*] /.test(b) ?
@@ -2905,7 +2990,8 @@
   /** Fiche technique : tout champ du yaml qui n'a pas sa place ailleurs dans le dossier (rien n'est perdu). */
   // déjà présentés ailleurs, ou techniques sans intérêt pour l'équipage (rendu et liste des cartes, méta-données,
   // dates de mise à jour, participants de l'affectation)
-  const SHOWN = new Set(['schema', 'schema_version', 'title', 'summary', 'detailed_description', 'objectives', 'notes', 'turning_points', 'teams', 'target',
+  const SHOWN = new Set(['schema', 'schema_version', 'title', 'summary', 'detailed_description', 'objectives', 'notes', 'turning_points',
+    'teams', 'target',
     'rendering', 'meta', 'updated_at', 'updatedAt', 'participants', 'maps', 'generated', 'generator',
     'tracks', 'injects', 'phases', 'exercise', 'i18n'
   ]); // exercice : seulement dans les plis, à leur heure
@@ -2971,8 +3057,12 @@
     base: 'Base',
     notes: 'Notes'
   };
-  const NOISE = new Set(['output', 'on_map', 'profile', 'climb_fpm', 'climb_kt', 'descent_fpm', 'descent_kt', 'ceiling_ft', 'floor_ft', 'series', 'number', 'include']);
+  const NOISE = new Set(['output', 'on_map', 'profile', 'climb_fpm', 'climb_kt', 'descent_fpm', 'descent_kt', 'ceiling_ft', 'floor_ft',
+    'series', 'number', 'include'
+  ]);
+  /** Valeur qui est une position (objet lat, lon numériques). */
   const isPos = v => v && typeof v === 'object' && !Array.isArray(v) && Number.isFinite(+v.lat) && Number.isFinite(+v.lon);
+  /** Libellé lisible d'une clé YAML : SUB, sinon la clé avec majuscule et espaces. */
   const human = k => SUB[k] || (k.charAt(0).toUpperCase() + k.slice(1)).replace(/_/g, ' ');
   /** Objet → paires [libellé, valeur] lisibles : position (lat, lon) en une coordonnée, oui/non, champs vides ou techniques retirés. */
   const fieldsOf = o => {
@@ -2989,6 +3079,7 @@
     }
     return out;
   };
+  /** Valeur → HTML : oui / non, coordonnée, objet détaillé (dump), texte échappé. */
   const val = v => typeof v === 'boolean' ? (v ? 'oui' : 'non') : isPos(v) ? esc(coord({
     lat: +v.lat,
     lon: +v.lon
@@ -3011,8 +3102,10 @@
   // déjà montrés ailleurs (route fournie, ordre de mission) : pas repris dans la fiche
   const ELSEWHERE = new Set(['mission', 'origin', 'destination', 'route_order']);
 
+  /** Fiche technique : champs du YAML montrés ni dans le dossier (SHOWN) ni ailleurs (ELSEWHERE). */
   function techSheet(y) {
-    const keys = Object.keys(y || {}).filter(k => !SHOWN.has(k) && !ELSEWHERE.has(k) && y[k] != null && y[k] !== '' && !(Array.isArray(y[k]) && !y[k].length));
+    const keys = Object.keys(y || {}).filter(k => !SHOWN.has(k) && !ELSEWHERE.has(k) && y[k] != null && y[k] !== '' && !(Array.isArray(y[
+      k]) && !y[k].length));
     return keys.map(k => `<h5>${esc(LABELS[k] || human(k))}</h5>${dump(y[k])}`).join('');
   }
   /** Contenu de la mission, en parties (data-part) lues dans l'ordre : présentation ordinaire, ou pages du dossier
@@ -3038,7 +3131,9 @@
   /** Brief sans traduction fournie (bloc i18n) : textes du YAML passés au traducteur du navigateur (MachineTranslate),
    *  champs rédigés seulement — noms de lieux, identifiants, valeurs techniques restent tels quels. */
   function mtYaml(y, T) {
+    /** Valeur → liste (vide si absente). */
     const arr = v => Array.isArray(v) ? v : v == null || v === '' ? [] : [v];
+    /** Équipes ou participants, rôle traduit. */
     const role = list => arr(list).map(p => p && typeof p === 'object' && p.role ? {
       ...p,
       role: T(p.role)
@@ -3076,11 +3171,26 @@
    *  qu'à leur affichage). */
   function mtNoteHtml() {
     const MT = window.MachineTranslate;
-    if (!MT.supported()) return esc(tv(['Contenu de la mission en français : la mission n’apporte pas sa traduction et ce navigateur n’a pas de traducteur intégré (Chrome ou Edge récents).', 'Mission content in French: the mission has no translation and this browser has no built-in translator (recent Chrome or Edge).', 'Missionsinhalt auf Französisch: die Mission bringt keine Übersetzung mit und dieser Browser hat keinen eingebauten Übersetzer (aktuelles Chrome oder Edge).', 'Contenido de la misión en francés: la misión no trae traducción y este navegador no tiene traductor integrado (Chrome o Edge recientes).']));
-    if (mtNone) return esc(tv(['Contenu de la mission en français : traducteur du navigateur indisponible pour cette langue.', 'Mission content in French: the browser translator is not available for this language.', 'Missionsinhalt auf Französisch: Browser-Übersetzer für diese Sprache nicht verfügbar.', 'Contenido de la misión en francés: traductor del navegador no disponible para este idioma.']));
+    if (!MT.supported()) return esc(tv([
+      'Contenu de la mission en français : la mission n’apporte pas sa traduction et ce navigateur n’a pas de traducteur intégré (Chrome ou Edge récents).',
+      'Mission content in French: the mission has no translation and this browser has no built-in translator (recent Chrome or Edge).',
+      'Missionsinhalt auf Französisch: die Mission bringt keine Übersetzung mit und dieser Browser hat keinen eingebauten Übersetzer (aktuelles Chrome oder Edge).',
+      'Contenido de la misión en francés: la misión no trae traducción y este navegador no tiene traductor integrado (Chrome o Edge recientes).'
+    ]));
+    if (mtNone) return esc(tv(['Contenu de la mission en français : traducteur du navigateur indisponible pour cette langue.',
+      'Mission content in French: the browser translator is not available for this language.',
+      'Missionsinhalt auf Französisch: Browser-Übersetzer für diese Sprache nicht verfügbar.',
+      'Contenido de la misión en francés: traductor del navegador no disponible para este idioma.'
+    ]));
     if (mtStart) return `${esc(tv(['Contenu de la mission en français : le traducteur du navigateur doit d’abord télécharger sa langue (une fois).', 'Mission content in French: the browser translator first needs to download its language (once).', 'Missionsinhalt auf Französisch: der Browser-Übersetzer muss zuerst seine Sprache herunterladen (einmalig).', 'Contenido de la misión en francés: el traductor del navegador debe descargar primero su idioma (una vez).']))} <button type="button" class="secondary" data-mt-go>${esc(tv(['Traduire le contenu', 'Translate the content', 'Inhalt übersetzen', 'Traducir el contenido']))}</button>`;
-    if (MT.pending()) return esc(tv(['Traduction automatique du contenu en cours…', 'Translating the content automatically…', 'Inhalt wird automatisch übersetzt…', 'Traduciendo el contenido automáticamente…']));
-    return esc(tv(['Contenu traduit automatiquement par le navigateur (la mission n’apporte pas sa traduction) : à lire avec prudence.', 'Content translated automatically by the browser (the mission has no translation): read with care.', 'Inhalt automatisch vom Browser übersetzt (die Mission bringt keine Übersetzung mit): mit Vorsicht lesen.', 'Contenido traducido automáticamente por el navegador (la misión no trae traducción): leer con prudencia.']));
+    if (MT.pending()) return esc(tv(['Traduction automatique du contenu en cours…', 'Translating the content automatically…',
+      'Inhalt wird automatisch übersetzt…', 'Traduciendo el contenido automáticamente…'
+    ]));
+    return esc(tv(['Contenu traduit automatiquement par le navigateur (la mission n’apporte pas sa traduction) : à lire avec prudence.',
+      'Content translated automatically by the browser (the mission has no translation): read with care.',
+      'Inhalt automatisch vom Browser übersetzt (die Mission bringt keine Übersetzung mit): mit Vorsicht lesen.',
+      'Contenido traducido automáticamente por el navegador (la misión no trae traducción): leer con prudencia.'
+    ]));
   }
   /** Traduit les textes notés au rendu, puis redessine le livre (ou le redessine avec le bouton de téléchargement). */
   function mtFlush() {
@@ -3107,9 +3217,14 @@
     const start = mtStart;
     mtStart = null;
     b.disabled = true;
-    b.textContent = tv(['Téléchargement du modèle de traduction…', 'Downloading the translation model…', 'Übersetzungsmodell wird heruntergeladen…', 'Descargando el modelo de traducción…']);
+    b.textContent = tv(['Téléchargement du modèle de traduction…', 'Downloading the translation model…',
+      'Übersetzungsmodell wird heruntergeladen…', 'Descargando el modelo de traducción…'
+    ]);
     start?.();
   }, true);
+
+  /** Dessine la mission (affectation a, YAML y, résumé Markdown md, journal log) dans la langue de la page (bloc
+   *  i18n, sinon traduction automatique) en parties data-part (voir plus haut), puis en livre (bookify). */
   function render(a, y, md = '', log = []) {
     lastRender = [a, y, md, log];
     const pageLang = window.RepositoryNav?.getLanguage?.() || 'fr',
@@ -3122,6 +3237,7 @@
       dist = pts.slice(1).reduce((s, p, i) => s + nm(pts[i], p), 0);
     const alert = a.alert || y.alert;
     const secs = mdSections(md, T);
+    /** Retire et rend la rubrique du résumé dont le titre correspond à re ; null si aucune. */
     const take = re => {
       const i = secs.findIndex(s => re.test(s.title));
       return i < 0 ? null : secs.splice(i, 1)[0];
@@ -3131,7 +3247,9 @@
       mdDetail = take(/description/i),
       mdRisks = take(/risque|attention|s[ée]curit/i),
       mdTeams = take(/[ée]quipe/i);
+    /** Rubrique titrée, omise si son contenu est vide. */
     const sec = (title, body) => body ? `<h4>${esc(title)}</h4>${body}` : '';
+    /** Texte → paragraphes HTML (ligne vide : nouveau paragraphe). */
     const para = s => s ? String(s).trim().split(/\n\s*\n/).map(p => `<p>${esc(p).replace(/\n/g, '<br>')}</p>`).join('') : '';
     const order = `<div class="pm-order">
       <div><span>Appareil attribué</span><b>${esc([a.aircraft?.type, a.aircraft?.registration].filter(Boolean).join(' · ') || '—')}</b></div>
@@ -3147,11 +3265,15 @@
     // ordre de la mission (cartes déclarées), sinon celui de l'index ; seules les cartes retenues et trouvées (mapUrls)
     const declared = (y.maps || []).map(m => m?.filename).filter(Boolean);
     const maps = (declared.length ? declared : a.files?.maps || []).filter(m => mapUrls[m] && !isExerciseMap(y, m));
+    /** Légende d'une carte : sa description dans le YAML, sinon son nom. */
     const mapCaption = m => (y.maps || []).find(x => x?.filename === m)?.description || m;
+    /** Carte en vignette, ouverte en taille réelle dans un nouvel onglet, avec sa légende. */
     const figure = m => `<figure><a href="${esc(mapUrls[m])}" target="_blank" rel="noopener"><img loading="lazy" src="${esc(mapUrls[m])}" alt="${esc(m)}"></a><figcaption>${esc(mapCaption(m))}</figcaption></figure>`;
     // plis : scellés (enveloppe, heure d'ouverture) jusqu'à l'heure, puis contenu et cartes (deux par bloc)
     const plis = plisOf(a, y);
+    /** Moment d'ouverture d'un pli : heure UTC estimée (si connue) et repère de l'exercice. */
     const pliWhen = p => `${p.at != null ? `${hhmm(p.at)} — ` : ''}${p.when}`;
+    /** Pli ouvert (contenu, pistes, cartes) ou scellé (enveloppe à briser, heure d'ouverture). */
     const pliHtml = p => p.open ?
       `<h5 class="pm-pli-head">${p.emitter ? 'Message à transmettre' : p.kind === 'pli' ? 'Pli' : 'Message radio'} ${esc(p.id)}${p.title ? ` — ${esc(T(p.title))}` : ''}</h5>
         <p class="pm-pli-meta">${p.emitter ? tv(['À {x} · ', 'To {x} · ', 'An {x} · ', 'A {x} · '], { x: esc(p.to.join(', ')) }) : p.from ? tv(['De {x} · ', 'From {x} · ', 'Von {x} · ', 'De {x} · '], { x: esc(p.from) }) : ''}${esc(pliWhen(p))} · <button type="button" class="repo-plain ad-link pm-reseal" data-pli-reseal="${esc(p.id)}">Resceller</button></p>${para(T(p.text))}${tracksHtml(p.tracks)}
@@ -3160,7 +3282,8 @@
         <span class="pm-pli-at">À ouvrir : ${esc(pliWhen(p))}</span>${p.tracks.length ? `<small>${tv(p.tracks.length > 1 ? ['{n} pistes', '{n} tracks', '{n} Spuren', '{n} pistas'] : ['1 piste', '1 track', '1 Spur', '1 pista'], { n: p.tracks.length })}</small>` : ''}${p.maps.length ? `<small>${tv(p.maps.length > 1 ? ['{n} cartes jointes', '{n} maps attached', '{n} Karten beigefügt', '{n} mapas adjuntos'] : ['1 carte jointe', '1 map attached', '1 Karte beigefügt', '1 mapa adjunto'], { n: p.maps.length })}</small>` : ''}
         <button type="button" class="ghost" data-pli-open="${esc(p.id)}">Briser le scellé</button></div>`;
     const summary = y.summary ? para(y.summary) : mdSummary?.html || '';
-    const objectives = [y.objectives?.primary && `<p><b>Objectif principal</b> : ${esc(y.objectives.primary)}</p>`, ...(Array.isArray(y.objectives?.secondary) ? y.objectives.secondary : y.objectives?.secondary ? [y.objectives.secondary] : []).map(o => `<p><b>Objectif secondaire</b> : ${esc(o)}</p>`)].filter(Boolean).join('');
+    const objectives = [y.objectives?.primary && `<p><b>Objectif principal</b> : ${esc(y.objectives.primary)}</p>`, ...(Array.isArray(y.objectives?.secondary) ? y.objectives.secondary : y
+      .objectives?.secondary ? [y.objectives.secondary] : []).map(o => `<p><b>Objectif secondaire</b> : ${esc(o)}</p>`)].filter(Boolean).join('');
     const notes = (Array.isArray(y.notes) ? y.notes : y.notes ? [y.notes] : []).filter(n => !String(n).startsWith(`Mission ${a.mission}`));
     const signed = new Date(Date.parse(a.updated_at || '') || Date.now()).toLocaleDateString(loc(), {
       day: '2-digit',
@@ -3169,8 +3292,8 @@
     });
     // famille de la mission : en-tête de l'ordre propre à la famille quand le design en a un (feuille de la page)
     $('pmDetail').dataset.family = window.MissionVocab?.familyForType?.(y.mission?.type || a.type) || '';
-    $('pmDetail').innerHTML = `<div data-part="title"><header class="pm-head pm-logo" aria-hidden="true"><img class="pm-emblem" src="../../shared/deco/cabinet/emblem-wings.webp?v=79ab9a8f" alt=""><div><b>DEFA Virtual CPCO</b><span>Centre de planification et de conduite des opérations</span></div></header>${labelHtml({ ...a, title: y.title || a.title })}</div>
-      <div data-part="order"><header class="pm-head"><img class="pm-emblem" src="../../shared/deco/cabinet/emblem-wings.webp?v=79ab9a8f" alt=""><div><b>DEFA Virtual CPCO</b><span>Centre de planification et de conduite des opérations</span></div><span class="pm-no">N° ${esc(a.mission)}</span></header>
+    $('pmDetail').innerHTML = `<div data-part="title"><header class="pm-head pm-logo" aria-hidden="true"><img class="pm-emblem" src="../../shared/deco/cabinet/emblem-wings.webp?v=79ab9a8f" alt=""><div><b>SO Group Virtual CPCO</b><span>Centre de planification et de conduite des opérations</span></div></header>${labelHtml({ ...a, title: y.title || a.title })}</div>
+      <div data-part="order"><header class="pm-head"><img class="pm-emblem" src="../../shared/deco/cabinet/emblem-wings.webp?v=79ab9a8f" alt=""><div><b>SO Group Virtual CPCO</b><span>Centre de planification et de conduite des opérations</span></div><span class="pm-no">N° ${esc(a.mission)}</span></header>
         <i class="pm-dr" aria-label="Diffusion restreinte"></i>
         <h3>${a.role === 'convoyage' ? `Ordre de convoyage — ${esc(titleOf(a).replace(/^Convoyage /, ''))}` : `Ordre de mission — ${esc(y.title || a.title || '')}`}</h3>
         ${auto ? `<p class="pm-mt small" data-mt-note data-no-i18n>${mtNoteHtml()}</p>` : ''}
@@ -3312,17 +3435,21 @@
   // sur la page suivante. Écran étroit (< 760 px) ou autre design : présentation ordinaire.
   let bookStart = 0; // double page à rouvrir quand le livre est redessiné (changement de design)
   function bookify() {
-    if (!['cabinet', 'flightlog', 'aqua', 'field'].includes(document.documentElement.dataset.design) || !matchMedia('(min-width: 760px)').matches) return;
+    if (!['cabinet', 'flightlog', 'aqua', 'field'].includes(document.documentElement.dataset.design) || !matchMedia('(min-width: 760px)')
+      .matches) return;
     const host = $('pmDetail'),
       part = n => host.querySelector(`[data-part="${n}"]`),
       actions = part('actions');
     const book = document.createElement('div');
     book.className = 'pm-book';
-    book.innerHTML = '<button type="button" class="repo-plain pm-sig" title="Signet : dernière page" aria-label="Signet : dernière page"></button><div class="pm-page pm-left"></div><div class="pm-page pm-right"></div><button type="button" class="repo-plain pm-corner pm-prev" title="Page précédente" aria-label="Page précédente"></button><button type="button" class="repo-plain pm-corner pm-next" title="Page suivante" aria-label="Page suivante"></button><div class="pm-leaf" hidden><div class="pm-page pm-face pm-front"></div><div class="pm-page pm-face pm-back"></div></div>';
+    book.innerHTML =
+      '<button type="button" class="repo-plain pm-sig" title="Signet : dernière page" aria-label="Signet : dernière page"></button><div class="pm-page pm-left"></div><div class="pm-page pm-right"></div><button type="button" class="repo-plain pm-corner pm-prev" title="Page précédente" aria-label="Page précédente"></button><button type="button" class="repo-plain pm-corner pm-next" title="Page suivante" aria-label="Page suivante"></button><div class="pm-leaf" hidden><div class="pm-page pm-face pm-front"></div><div class="pm-page pm-face pm-back"></div></div>';
     host.prepend(book);
     if (actions) book.after(actions);
-    const [left, right, prev, next, leaf, sig] = ['.pm-left', '.pm-right', '.pm-prev', '.pm-next', '.pm-leaf', '.pm-sig'].map(s => book.querySelector(s));
-    host.querySelectorAll(':is([data-part="maps"], [data-part="plis"]) figure').forEach((f, i) => f.style.setProperty('--tilt', `${[-3, 2.5, -1.5, 3.5][i % 4]}deg`));
+    const [left, right, prev, next, leaf, sig] = ['.pm-left', '.pm-right', '.pm-prev', '.pm-next', '.pm-leaf', '.pm-sig'].map(s => book
+      .querySelector(s));
+    host.querySelectorAll(':is([data-part="maps"], [data-part="plis"]) figure').forEach((f, i) => f.style.setProperty('--tilt',
+      `${[-3, 2.5, -1.5, 3.5][i % 4]}deg`));
     // découpe d'une partie en pages : éléments ajoutés un à un dans une page témoin ; débordement → page suivante
     // (un titre reste avec ce qui le suit)
     const split = el => {
@@ -3365,7 +3492,8 @@
     mapsPart?.remove();
     const title = part('title');
     title?.remove();
-    const pages = [null, title, ...split(part('order')), ...split(part('details')), ...mapPages, ...split(part('final'))].filter((p, i) => i === 0 || p);
+    const pages = [null, title, ...split(part('order')), ...split(part('details')), ...mapPages, ...split(part('final'))].filter((p, i) =>
+      i === 0 || p);
     // plis de l'exercice : derrière le signet, sur une double page à eux (page blanche en face de la fin du dossier) ;
     // le coin de page s'arrête à la fin du dossier, le signet ouvre les plis
     part('plis')?.querySelector(':scope > h4')?.remove(); // le signet tient lieu de titre
@@ -3398,6 +3526,7 @@
     const S = plisPages.length ? P - 2 : (pages.length - 1) & ~1,
       endOf = n => n + 2 >= pages.length,
       atSig = n => n === S;
+    /** Montre la double page courante (at, at + 1) : folios, coins de page, signet. */
     const draw = () => {
       left.replaceChildren(...(pages[at] ? [pages[at]] : []));
       right.replaceChildren(...(pages[at + 1] ? [pages[at + 1]] : []));
@@ -3406,11 +3535,18 @@
       right.dataset.folio = pages[at + 1] ? at + 1 : '';
       prev.hidden = false; // à la première double page : refermer le dossier
       // infobulles écrites traduites (réécrites à chaque page tournée : la couche de traduction les laisserait au garde-fou)
-      prev.title = prev.ariaLabel = at === 0 ? tv(['Refermer le dossier', 'Close the folder', 'Mappe schließen', 'Cerrar la carpeta']) : tv(['Page précédente', 'Previous page', 'Vorherige Seite', 'Página anterior']);
+      prev.title = prev.ariaLabel = at === 0 ? tv(['Refermer le dossier', 'Close the folder', 'Mappe schließen', 'Cerrar la carpeta']) :
+        tv(['Page précédente', 'Previous page', 'Vorherige Seite', 'Página anterior']);
       next.hidden = endOf(at);
       book.classList.toggle('pm-at-end', atSig(at)); // signet posé : double page de fin du dossier
       book.classList.toggle('pm-past', at > S); // plis : signet passé, sous la page de gauche
-      sig.title = sig.ariaLabel = tv(!atSig(at) ? ['Signet : fin du dossier', 'Bookmark: end of the folder', 'Lesezeichen: Ende der Mappe', 'Marcapáginas: fin de la carpeta'] : plisPages.length ? ['Signet : ouvrir les plis scellés', 'Bookmark: open the sealed envelopes', 'Lesezeichen: versiegelte Umschläge öffnen', 'Marcapáginas: abrir los sobres sellados'] : ['Signet : retour au début', 'Bookmark: back to the start', 'Lesezeichen: zurück zum Anfang', 'Marcapáginas: volver al principio']);
+      sig.title = sig.ariaLabel = tv(!atSig(at) ? ['Signet : fin du dossier', 'Bookmark: end of the folder',
+        'Lesezeichen: Ende der Mappe', 'Marcapáginas: fin de la carpeta'
+      ] : plisPages.length ? ['Signet : ouvrir les plis scellés', 'Bookmark: open the sealed envelopes',
+        'Lesezeichen: versiegelte Umschläge öffnen', 'Marcapáginas: abrir los sobres sellados'
+      ] : ['Signet : retour au début', 'Bookmark: back to the start', 'Lesezeichen: zurück zum Anfang',
+        'Marcapáginas: volver al principio'
+      ]);
       left.scrollTop = right.scrollTop = 0;
       host.dataset.bookAt = at; // double page affichée (gardée si le livre est redessiné)
     };
@@ -3423,6 +3559,7 @@
     // numéro de page d'une face à la hauteur de celui des pages fixes : la face (feuille) descend plus bas que la page
     // (zone de texte) ; écart mesuré sur la mise en page, hors rotation
     const folioOnFaces = () => {
+      /** Bas d'un élément dans la mise en page (hors rotation). */
       const bottom = el => el.offsetTop + el.offsetHeight,
         gap = (bottom(leaf) - bottom(right)) / (book.clientWidth / 100);
       leaf.style.setProperty('--pm-folio-b', `calc(1.9cqw + ${gap.toFixed(3)}cqw)`);
@@ -3466,6 +3603,8 @@
         }, 350);
       }
     };
+    /** Tourne la page vers dir (1 : suivante, -1 : précédente) jusqu'à la double page to ; animée sauf
+     *  mouvement réduit. */
     const turn = (dir, to = at + 2 * dir) => {
       if (busy || to === at) return;
       if (matchMedia('(prefers-reduced-motion: reduce)').matches) {
@@ -3521,11 +3660,14 @@
     left.onclick = pageClick(prev);
     // pour les animations du dossier (Cabinet : tourner la page de droite à l'ouverture, revenir au début au rangement)
     book.pmAt = () => at;
+    /** Nombre de pages du livre. */
     book.pmPages = () => pages.length;
+    /** Va sans animation à la double page qui contient la page n. */
     book.pmGoto = n => {
       at = Math.max(0, Math.min(n, pages.length - 1)) & ~1;
       draw();
     };
+    /** Tourne la page (comme turn) ; promesse résolue à la fin du mouvement. */
     book.pmTurn = (dir, to = at + 2 * dir) => new Promise(r => {
       const moves = !busy && to !== at && to >= 0 && to < pages.length;
       if (!moves) return r();
@@ -3575,6 +3717,14 @@
     } else if (where === 'cr') {
       const yaml = structuredClone(y);
       if (yaml.aircraft?.[0] && a.aircraft?.registration) yaml.aircraft[0].registration = a.aircraft.registration;
+      // ordre de mission (ou de convoyage) dont le CR est issu : seul un tel CR peut déplacer l'appareil
+      // (terrain d'atterrissage réel, shared/aircraft_positions.js) ; convoyage : départ et arrivée du convoyage
+      yaml.__order = {
+        ref: [a.mission, a.pilot, a.takeoff || '', a.role === 'convoyage' ? 'convoyage' : ''].filter(Boolean).join('/'),
+        role: a.role || 'mission',
+        dep: a.departure || '',
+        arr: a.destination || ''
+      };
       const family = window.MissionVocab.familyForType(yaml.mission?.type),
         target = window.MissionVocab.families.find(f => f.id === family);
       localStorage.setItem('siaMissionToCr:v1', JSON.stringify(yaml));
@@ -3586,6 +3736,8 @@
   // semaine reste visible en lecture seule tant qu'elle existe (docs/technique/DISPOS_ET_REORGANISATION.md § 1.5)
   let doc = null; // déclaration lue (ce poste, sinon les fichiers) : anciennes semaines
   let dispoEd = null;
+  /** Disponibilités du pilote pour la semaine affichée : éditeur de plages (DisposEditor), qui reprend l'ancienne
+   *  grille horaire ; sans éditeur, ancienne grille en lecture seule. */
   async function gridLoad() {
     const tri = A.trigram();
     doc = tri ? await A.availability(tri) : null;
@@ -3623,5 +3775,5 @@
   keepAll().then(load).then(gridLoad);
 })();
 </script>
-<script src="../../shared/app_framework.js?v=cc5e8c7b"></script>
+<script src="../../shared/app_framework.js?v=7a889fe5"></script>
 </body></html>

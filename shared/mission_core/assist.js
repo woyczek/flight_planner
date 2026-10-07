@@ -67,7 +67,8 @@
   const AIRWAY = /^(?:[A-Z]{1,2}\d{1,4}[A-Z]?|DCT|SID|STAR)$/,
     PROCEDURE = /^[A-Z]{3,6}\d[A-Z]?$/;
   // Points d'une route : sans voies aériennes, procédures ni vitesses / niveaux.
-  const routePoints = route => String(route || '').toUpperCase().split(/\s+/).map(t => t.split('/')[0]).filter(t => t && !AIRWAY.test(t) && !PROCEDURE.test(t) && /^[A-Z0-9]{2,11}$/.test(t));
+  const routePoints = route => String(route || '').toUpperCase().split(/\s+/).map(t => t.split('/')[0]).filter(t => t && !AIRWAY.test(
+    t) && !PROCEDURE.test(t) && /^[A-Z0-9]{2,11}$/.test(t));
 
   /** Réserves de valeurs connues tirées des missions (par champ ou réserve partagée) : pour chaque valeur, nombre d'emplois et date la plus récente. */
   function collect(missions) {
@@ -115,13 +116,13 @@
       };
       walk(m, '');
     });
-    // Référence DEFA anonymisée (committée) : trigrammes des pilotes, terrains des appareils.
+    // Référence anonymisée (committée) : trigrammes des pilotes, terrains des appareils.
     (window.DEFA_REFERENCE?.pilots || []).forEach(p => add('person', p.trigram, p.last || ''));
     (window.DEFA_REFERENCE?.aircraft || []).forEach(a => {
       add('aerodrome', a.homeAd, a.last || '');
       add('aerodrome', a.lastAd, a.last || '');
     });
-    // Base DEFA (journal des vols) : trigrammes des pilotes, terrains de départ / arrivée.
+    // Base (journal des vols) : trigrammes des pilotes, terrains de départ / arrivée.
     try {
       ((JSON.parse(localStorage.getItem('defaFlightLog:v1') || 'null') || {}).records || []).forEach(r => {
         add('person', r.trigram, r.date);
@@ -154,7 +155,9 @@
     return out;
   }
   /** Valeurs d'une réserve, des plus récentes et fréquentes aux autres. */
-  const ranked = map => [...(map || new Map()).entries()].sort((a, b) => b[1].date.localeCompare(a[1].date) || b[1].n - a[1].n).map(([value]) => value);
+  const ranked = map => [...(map || new Map()).entries()].sort((a, b) => b[1].date.localeCompare(a[1].date) || b[1].n - a[1].n).map(([
+    value
+  ]) => value);
 
   // ------------------------------------------------------------------ aérodromes
   // Source réglable (repository_tree.sources.airports, surcharge locale : Paramètres › Maintenance › Sources) ;
@@ -164,7 +167,8 @@
   let airportDb = null,
     airportLoad = null;
   /** Base mondiale des aérodromes (chargée une fois, à la demande). */
-  const loadAirports = () => airportLoad ||= fetch(AIRPORTS_URL).then(r => r.ok ? r.json() : null).then(data => (airportDb = data)).catch(() => null);
+  const loadAirports = () => airportLoad ||= fetch(AIRPORTS_URL).then(r => r.ok ? r.json() : null).then(data => (airportDb = data)).catch(
+    () => null);
   /** Aérodrome réduit aux champs utiles (OACI, nom, ville, pays, position, altitude, fuseau). */
   const slim = a => a && {
     icao: a.icao,
@@ -251,7 +255,8 @@
       else if ((m = /^A(\d{4})$/.exec(t))) out.qnh = Math.round(Number(m[1]) / 100 * 33.8639);
       else if (!out.ceiling && (m = /^(BKN|OVC|VV)(\d{3})/.exec(t))) out.ceiling = `${m[1]} ${Number(m[2]) * 100} ft`;
       else if (/^(NSC|SKC|CLR|NCD)$/.test(t) && !out.ceiling) out.ceiling = t;
-      else if ((m = /^(\+|-|VC)?(MI|BC|PR|DR|BL|SH|TS|FZ)?((?:DZ|RA|SN|SG|PL|GR|GS|UP|BR|FG|HZ|FU|TS|SQ|FC|DS|SS|VA)+)?$/.exec(t)) && (m[2] || m[3])) {
+      else if ((m = /^(\+|-|VC)?(MI|BC|PR|DR|BL|SH|TS|FZ)?((?:DZ|RA|SN|SG|PL|GR|GS|UP|BR|FG|HZ|FU|TS|SQ|FC|DS|SS|VA)+)?$/.exec(t)) && (m[
+          2] || m[3])) {
         const kinds = (m[3] || '').match(/../g) || [];
         const what = `${m[2] === 'SH' ? 'averses de ' : m[2] === 'FZ' ? 'verglaçant(e) : ' : m[2] === 'TS' && kinds.length ? 'orage avec ' : ''}${kinds.map(k => WX[k] || k).join(', ') || WX[m[2]] || m[2]}`;
         wx.push(`${what}${m[1] === '+' ? ' (fort)' : m[1] === '-' ? ' (faible)' : m[1] === 'VC' ? ' (au voisinage)' : ''}`);
@@ -342,7 +347,8 @@
   // Météo horaire (modèles / réanalyse) à l'heure et au lieu donnés : prévision ou passé
   // récent (api.open-meteo.com), sinon archive (archive-api.open-meteo.com).
   async function archivedWeather(lat, lon, date, hour, icao = '') {
-    const vars = 'temperature_2m,dew_point_2m,pressure_msl,wind_speed_10m,wind_direction_10m,wind_gusts_10m,visibility,cloud_cover_low,cloud_cover_mid,cloud_cover_high,weather_code';
+    const vars =
+      'temperature_2m,dew_point_2m,pressure_msl,wind_speed_10m,wind_direction_10m,wind_gusts_10m,visibility,cloud_cover_low,cloud_cover_mid,cloud_cover_high,weather_code';
     const q = `latitude=${lat}&longitude=${lon}&hourly=${vars}&daily=sunrise,sunset&wind_speed_unit=kn&timezone=auto&start_date=${date}&end_date=${date}`;
     let data = null;
     for (const base of ['https://api.open-meteo.com/v1/forecast', 'https://archive-api.open-meteo.com/v1/archive']) {
@@ -469,21 +475,42 @@
 
   // ---------------------------------------------------------------------- page
   const T = {
-    unique: L('Seul appareil connu correspondant : champs complétés', 'Only matching known aircraft: fields completed', 'Einziges passendes bekanntes Luftfahrzeug: Felder ergänzt', 'Única aeronave conocida coincidente: campos completados'),
-    matches: L('appareils connus correspondants', 'matching known aircraft', 'passende bekannte Luftfahrzeuge', 'aeronaves conocidas coincidentes'),
-    noMatch: L('Aucun appareil connu ne correspond (nouvel appareil : il sera mémorisé à l’enregistrement)', 'No known aircraft matches (new aircraft: it will be remembered when saved)', 'Kein bekanntes Luftfahrzeug passt (neues Luftfahrzeug: wird beim Speichern gemerkt)', 'Ninguna aeronave conocida coincide (nueva aeronave: se memorizará al guardar)'),
-    unknownAd: L('Terrain inconnu de la base mondiale', 'Aerodrome not in the world database', 'Flugplatz nicht in der Weltdatenbank', 'Aeródromo no incluido en la base mundial'),
+    unique: L('Seul appareil connu correspondant : champs complétés', 'Only matching known aircraft: fields completed',
+      'Einziges passendes bekanntes Luftfahrzeug: Felder ergänzt', 'Única aeronave conocida coincidente: campos completados'),
+    matches: L('appareils connus correspondants', 'matching known aircraft', 'passende bekannte Luftfahrzeuge',
+      'aeronaves conocidas coincidentes'),
+    noMatch: L('Aucun appareil connu ne correspond (nouvel appareil : il sera mémorisé à l’enregistrement)',
+      'No known aircraft matches (new aircraft: it will be remembered when saved)',
+      'Kein bekanntes Luftfahrzeug passt (neues Luftfahrzeug: wird beim Speichern gemerkt)',
+      'Ninguna aeronave conocida coincide (nueva aeronave: se memorizará al guardar)'),
+    unknownAd: L('Terrain inconnu de la base mondiale', 'Aerodrome not in the world database', 'Flugplatz nicht in der Weltdatenbank',
+      'Aeródromo no incluido en la base mundial'),
     weatherTitle: L('Sources météo et soleil', 'Weather and sun sources', 'Wetter- und Sonnenquellen', 'Fuentes de meteorología y sol'),
-    metarNow: L('METAR actuel du terrain de départ (VATSIM)', 'Current departure METAR (VATSIM)', 'Aktuelles METAR des Startflugplatzes (VATSIM)', 'METAR actual del aeródromo de salida (VATSIM)'),
-    archive: L('METAR calculé à l’heure du vol (Open-Meteo)', 'Computed METAR at flight time (Open-Meteo)', 'Berechnetes METAR zur Flugzeit (Open-Meteo)', 'METAR calculado a la hora del vuelo (Open-Meteo)'),
-    auto: L('Météo et soleil renseignés automatiquement (terrain de départ, date, heure)', 'Weather and sun filled automatically (departure aerodrome, date, time)', 'Wetter und Sonne automatisch ausgefüllt (Startflugplatz, Datum, Uhrzeit)', 'Meteorología y sol completados automáticamente (aeródromo de salida, fecha, hora)'),
-    sun: L('Calculer lever / coucher du soleil', 'Compute sunrise / sunset', 'Sonnenauf-/-untergang berechnen', 'Calcular salida / puesta del sol'),
-    needAd: L('Renseignez le terrain de départ (ADEP ou base de départ).', 'Enter the departure aerodrome (ADEP or departure base).', 'Startflugplatz angeben (ADEP oder Startbasis).', 'Indique el aeródromo de salida (ADEP o base de salida).'),
-    noCoords: L('Coordonnées du terrain introuvables (base mondiale indisponible ou terrain inconnu).', 'Aerodrome coordinates not found (world database unavailable or unknown aerodrome).', 'Flugplatzkoordinaten nicht gefunden (Weltdatenbank nicht verfügbar oder Flugplatz unbekannt).', 'Coordenadas del aeródromo no encontradas (base mundial no disponible o aeródromo desconocido).'),
-    noMetar: L('Aucun METAR disponible pour ce terrain.', 'No METAR available for this aerodrome.', 'Kein METAR für diesen Flugplatz verfügbar.', 'Ningún METAR disponible para este aeródromo.'),
-    notToday: L('METAR actuel : la mission n’est pas datée d’aujourd’hui, préférez la météo à l’heure du vol.', 'Current METAR: the mission is not dated today, prefer the weather at flight time.', 'Aktuelles METAR: Einsatz nicht von heute, besser Wetter zur Flugzeit verwenden.', 'METAR actual: la misión no es de hoy, mejor la meteorología a la hora del vuelo.'),
+    metarNow: L('METAR actuel du terrain de départ (VATSIM)', 'Current departure METAR (VATSIM)',
+      'Aktuelles METAR des Startflugplatzes (VATSIM)', 'METAR actual del aeródromo de salida (VATSIM)'),
+    archive: L('METAR calculé à l’heure du vol (Open-Meteo)', 'Computed METAR at flight time (Open-Meteo)',
+      'Berechnetes METAR zur Flugzeit (Open-Meteo)', 'METAR calculado a la hora del vuelo (Open-Meteo)'),
+    auto: L('Météo et soleil renseignés automatiquement (terrain de départ, date, heure)',
+      'Weather and sun filled automatically (departure aerodrome, date, time)',
+      'Wetter und Sonne automatisch ausgefüllt (Startflugplatz, Datum, Uhrzeit)',
+      'Meteorología y sol completados automáticamente (aeródromo de salida, fecha, hora)'),
+    sun: L('Calculer lever / coucher du soleil', 'Compute sunrise / sunset', 'Sonnenauf-/-untergang berechnen',
+      'Calcular salida / puesta del sol'),
+    needAd: L('Renseignez le terrain de départ (ADEP ou base de départ).', 'Enter the departure aerodrome (ADEP or departure base).',
+      'Startflugplatz angeben (ADEP oder Startbasis).', 'Indique el aeródromo de salida (ADEP o base de salida).'),
+    noCoords: L('Coordonnées du terrain introuvables (base mondiale indisponible ou terrain inconnu).',
+      'Aerodrome coordinates not found (world database unavailable or unknown aerodrome).',
+      'Flugplatzkoordinaten nicht gefunden (Weltdatenbank nicht verfügbar oder Flugplatz unbekannt).',
+      'Coordenadas del aeródromo no encontradas (base mundial no disponible o aeródromo desconocido).'),
+    noMetar: L('Aucun METAR disponible pour ce terrain.', 'No METAR available for this aerodrome.',
+      'Kein METAR für diesen Flugplatz verfügbar.', 'Ningún METAR disponible para este aeródromo.'),
+    notToday: L('METAR actuel : la mission n’est pas datée d’aujourd’hui, préférez la météo à l’heure du vol.',
+      'Current METAR: the mission is not dated today, prefer the weather at flight time.',
+      'Aktuelles METAR: Einsatz nicht von heute, besser Wetter zur Flugzeit verwenden.',
+      'METAR actual: la misión no es de hoy, mejor la meteorología a la hora del vuelo.'),
     filled: L('Renseigné', 'Filled', 'Ausgefüllt', 'Rellenado'),
-    nothing: L('rien à compléter (champs déjà remplis)', 'nothing to fill (fields already set)', 'nichts zu ergänzen (Felder bereits ausgefüllt)', 'nada que completar (campos ya rellenados)'),
+    nothing: L('rien à compléter (champs déjà remplis)', 'nothing to fill (fields already set)',
+      'nichts zu ergänzen (Felder bereits ausgefüllt)', 'nada que completar (campos ya rellenados)'),
     local: L('heure locale', 'local time', 'Ortszeit', 'hora local'),
     sunNote: L('Soleil calculé pour', 'Sun computed for', 'Sonne berechnet für', 'Sol calculado para'),
     polar: L('jour ou nuit polaire', 'polar day or night', 'Polartag oder -nacht', 'día o noche polar'),
@@ -519,18 +546,22 @@
     // pas un filtre.
     // Catégorie choisie : voilure tournante → ni avions ni hydravions ; voilure fixe /
     // amphibie → pas d'hélicoptères.
-    const sameCategory = (wanted, category) => !wanted || !category || (wanted === 'rotary' ? category === 'rotary' : category !== 'rotary');
+    const sameCategory = (wanted, category) => !wanted || !category || (wanted === 'rotary' ? category === 'rotary' : category !==
+      'rotary');
     const matchesOf = (item, skip, generic = item.type && A.lookupType(item.type)?.model) => A.known().filter(a =>
       (skip === 'category' || sameCategory(item.category, a.category || A.lookupType(a.type)?.category)) &&
       (skip === 'registration' || !item.registration || A.regKey(a.registration) === A.regKey(item.registration))
       // Formes complète et plan de vol équivalentes (DRAGON76 = DRAGO76).
       &&
-      (['callsign', 'callsignPrefix', 'callsignNumber'].includes(skip) || !item.callsign || !item.callsignNumber || a.callsigns.some(c => A.canonicalCallsign(c) === A.canonicalCallsign(item.callsign))) &&
-      (['callsign', 'callsignPrefix'].includes(skip) || !item.callsignPrefix || a.callsigns.some(c => A.canonicalPrefix(split(c).prefix) === A.canonicalPrefix(item.callsignPrefix)))
+      (['callsign', 'callsignPrefix', 'callsignNumber'].includes(skip) || !item.callsign || !item.callsignNumber || a.callsigns.some(
+        c => A.canonicalCallsign(c) === A.canonicalCallsign(item.callsign))) &&
+      (['callsign', 'callsignPrefix'].includes(skip) || !item.callsignPrefix || a.callsigns.some(c => A.canonicalPrefix(split(c)
+        .prefix) === A.canonicalPrefix(item.callsignPrefix)))
       // Type / variante inconnus pour un appareil connu : ils ne l'excluent pas.
       &&
       (skip === 'type' || !item.type || !a.type || A.typeKey(a.type) === A.typeKey(item.type)) &&
-      (skip === 'variant' || !item.variant || item.variant === generic || !a.variant || String(a.variant).toLowerCase() === String(item.variant).toLowerCase()));
+      (skip === 'variant' || !item.variant || item.variant === generic || !a.variant || String(a.variant).toLowerCase() === String(item
+        .variant).toLowerCase()));
 
     /** Suggestions pour un champ de l'appareil index (immatriculation, indicatif, série, numéro, type, variante), filtrées par ce qui est déjà saisi (organisme, catégorie, type). */
     function aircraftSuggest(index, field) {
@@ -554,7 +585,8 @@
         });
         A.callsignSeries().filter(s => allowed.has(s.prefix))
           .sort((a, b) => Number(hasOperator(b, operator)) - Number(hasOperator(a, operator)) || b.numbers.length - a.numbers.length)
-          .forEach(s => out.set(s.prefix, [s.table?.telephony, s.abbreviations.size ? `plan de vol : ${[...s.abbreviations].join(', ')}` : '', s.table?.note, [...s.types].join(', '), [...s.operators].join(', ')].filter(Boolean).join(' — ')));
+          .forEach(s => out.set(s.prefix, [s.table?.telephony, s.abbreviations.size ? `plan de vol : ${[...s.abbreviations].join(', ')}` : '', s.table?.note, [...s.types].join(
+            ', '), [...s.operators].join(', ')].filter(Boolean).join(' — ')));
         if (!item.registration) ledgerMissions().forEach(m => (m.aircraft || []).forEach(a => {
           const p = a.callsignPrefix || split(a.callsign).prefix;
           if (p && (!item.type || A.typeKey(a.type) === A.typeKey(item.type)) && !out.has(up(p))) out.set(up(p), a.type || '');
@@ -570,7 +602,8 @@
         matches.forEach(a => a.callsigns.forEach(c => {
           const s = split(c),
             prefix = A.canonicalPrefix(s.prefix);
-          if (!wanted || prefix === wanted) out.set(s.number, [prefix + s.number, a.registration, a.type].filter(Boolean).join(' — '));
+          if (!wanted || prefix === wanted) out.set(s.number, [prefix + s.number, a.registration, a.type].filter(Boolean).join(
+            ' — '));
         }));
         out.delete('');
         return [...out].sort((a, b) => a[0].localeCompare(b[0], undefined, {
@@ -585,7 +618,8 @@
         matches.forEach(a => a.callsigns.forEach(c => out.set(c, [a.registration, a.type].filter(Boolean).join(' — '))));
         // Indicatifs déjà utilisés avec ce type (appareils non immatriculés dans la base).
         if (!item.registration) ledgerMissions().forEach(m => (m.aircraft || []).forEach(a => {
-          if (a.callsign && (!item.type || up(a.type) === up(item.type)) && !out.has(up(a.callsign))) out.set(up(a.callsign), a.type || '');
+          if (a.callsign && (!item.type || up(a.type) === up(item.type)) && !out.has(up(a.callsign))) out.set(up(a.callsign), a
+            .type || '');
         }));
         return [...out].map(([value, label]) => ({
           value,
@@ -604,7 +638,8 @@
           value,
           label: A.lookupType(value)?.model || ''
         }));
-        if (typed.length >= 1) A.listTypes().filter(ty => ty.tdesig.startsWith(typed) && !known.includes(ty.tdesig) && sameCategory(item.category, ty.category)).slice(0, 60).forEach(ty => all.push({
+        if (typed.length >= 1) A.listTypes().filter(ty => ty.tdesig.startsWith(typed) && !known.includes(ty.tdesig) && sameCategory(item
+          .category, ty.category)).slice(0, 60).forEach(ty => all.push({
           value: ty.tdesig,
           label: ty.model
         }));
@@ -621,9 +656,10 @@
           value
         }));
       }
-      if (field === 'tacticalNumber') return [...new Set(matches.map(a => a.tacticalNumber).filter(Boolean).concat(history))].map(value => ({
-        value
-      }));
+      if (field === 'tacticalNumber') return [...new Set(matches.map(a => a.tacticalNumber).filter(Boolean).concat(history))].map(value =>
+        ({
+          value
+        }));
       return [];
     }
     // Remplit les champs vides quand toutes les possibilités restantes concordent.
@@ -687,7 +723,8 @@
       // LFTW→LFRN, LFBD→LFRD…).
       if (keyOf(path) === 'navigation.route') {
         const m = getMission(),
-          seq = [m.navigation?.dep || m.aircraft?.[0]?.baseDeparture, ...(m.legs || []).flatMap(l => [l.from, l.to]), m.navigation?.arr].map(up).filter(Boolean).filter((v, i, a) => a[i - 1] !== v);
+          seq = [m.navigation?.dep || m.aircraft?.[0]?.baseDeparture, ...(m.legs || []).flatMap(l => [l.from, l.to]), m.navigation?.arr]
+          .map(up).filter(Boolean).filter((v, i, a) => a[i - 1] !== v);
         const pairs = new Set();
         seq.forEach((a, i) => seq.slice(i + 1).forEach(b => {
           if (a !== b) pairs.add(`${a}>${b}`);
@@ -789,7 +826,8 @@
       if (takeoff != null) {
         const civil = sunTimes(m.metadata.date, ad.lat, ad.lon, -6),
           mins = d => M.minutes(clock(d, ad.tz));
-        const phase = takeoff >= mins(s.rise) && takeoff <= mins(s.set) ? 'DAY' : civil && !civil.polar && takeoff >= mins(civil.rise) && takeoff <= mins(civil.set) ? 'TWILIGHT' : 'NIGHT';
+        const phase = takeoff >= mins(s.rise) && takeoff <= mins(s.set) ? 'DAY' : civil && !civil.polar && takeoff >= mins(civil
+          .rise) && takeoff <= mins(civil.set) ? 'TWILIGHT' : 'NIGHT';
         setIfEmpty('environment.dayNight', phase, done);
       }
       if (!quiet) status(`${tr(T.sunNote)} ${icao} (${ad.tz || 'UTC'}, ${tr(T.local)}) — ${report(done)}`);
@@ -935,7 +973,9 @@
     }
 
     // ---- saisie validée (change) : appareils, terrains, METAR, soleil automatique
-    const AERODROME = new Set(['aircraft.*.baseDeparture', 'aircraft.*.baseReturn', 'navigation.dep', 'navigation.arr', 'navigation.altn']);
+    const AERODROME = new Set(['aircraft.*.baseDeparture', 'aircraft.*.baseReturn', 'navigation.dep', 'navigation.arr',
+      'navigation.altn'
+    ]);
     /** Après une saisie validée : valeurs connues à recalculer ; terrain → aide et, au départ, lever / coucher du soleil ; date ou décollage → soleil ; METAR → champs météo ; METAR, température, QNH ou départ → altitude densité. */
     async function onCommit(path, value) {
       pools = null; // valeurs connues recalculées au prochain focus
@@ -953,7 +993,8 @@
         commit(done);
       }
       if (path === 'environment.metar' && value) commit(applyMetar(value));
-      if (['environment.metar', 'environment.temperature', 'environment.qnh', 'navigation.dep', 'aircraft.0.baseDeparture'].includes(path)) commit(await densityAltitude([]));
+      if (['environment.metar', 'environment.temperature', 'environment.qnh', 'navigation.dep', 'aircraft.0.baseDeparture'].includes(
+          path)) commit(await densityAltitude([]));
     }
     // Indicatif de la série quand il n'en reste qu'un pour ce type (et cet opérateur) :
     // Sécurité civile + H145 → DRAGON ; SAMU + H145 → SAMU.
@@ -976,7 +1017,8 @@
       if (best) return best[1] / entries.length >= 0.8 ? best[0] : '';
       // Aucun appareil connu : table de correspondance (Sécurité civile + BE20 → BENGALE),
       // hors indicatifs de fonction (ICARE) et désignateurs génériques.
-      const rows = A.table().filter(e => !e.role && !e.generic && e.types.some(t => A.typeKey(t) === type) && (!operator || up(e.operator) === up(operator)));
+      const rows = A.table().filter(e => !e.role && !e.generic && e.types.some(t => A.typeKey(t) === type) && (!operator || up(e
+        .operator) === up(operator)));
       return rows.length === 1 ? rows[0].prefix : '';
     }
     return {

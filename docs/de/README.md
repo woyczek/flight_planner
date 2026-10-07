@@ -1,4 +1,4 @@
-# Dokumentationsverzeichnis — Suite DEFA Virtual
+# Dokumentationsverzeichnis — Suite SO Group Virtual
 
 *[← Zurück zum Ordner](../../README.md)* · In der Suite: Eintrag **„Hilfe“** der Seitenleiste (beim Kapitel der
 aktuellen Seite geöffnet) oder ☰ › Hilfe. Noch nicht übersetzte Dokumente öffnen sich auf Französisch.

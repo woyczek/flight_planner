@@ -27,11 +27,14 @@ ORDRE = '@layer lib, app;'
 
 
 def lire(p):
+    """Texte du fichier et sa fin de ligne (CRLF ou LF)."""
     s = io.open(p, encoding='utf-8', newline='').read()
     return s, ('\r\n' if '\r\n' in s else '\n')
 
 
 def feuille(rel, check):
+    """Range une feuille du socle dans la couche « app » (règles des designs hors couche, après le bloc) ;
+    check : rien n'est écrit. Retourne la ligne de bilan."""
     p = os.path.join(ROOT, rel)
     s, nl = lire(p)
     t = s.replace('\r\n', '\n')
@@ -50,12 +53,15 @@ def feuille(rel, check):
 
 
 def page(rel, check):
+    """Range les <style> de la page dans « app » (règles des designs à part) et le lien MapLibre dans « lib » ;
+    check : rien n'est écrit. Retourne la ligne de bilan."""
     p = os.path.join(ROOT, rel)
     s, nl = lire(p)
     t = s.replace('\r\n', '\n')
     n = {'style': 0, 'designs': 0, 'lib': 0}
 
     def st(m):
+        """Bloc <style> réparti en <style data-layer="app"> et <style data-layer="designs"> ; déjà migré : inchangé."""
         attrs, corps = m.group(1), m.group(2)
         if 'data-layer' in attrs or corps.lstrip().startswith('@layer'):
             return m.group(0)
@@ -71,6 +77,7 @@ def page(rel, check):
     t = re.sub(r'<style([^>]*)>(.*?)</style>', st, t, flags=re.S)
 
     def lib(m):
+        """Lien de maplibre-gl.css remplacé par un @import dans la couche « lib »."""
         n['lib'] += 1
         return f'<style data-layer="lib">@import url("{m.group(1)}") layer(lib);</style>'
     t = re.sub(r'<link rel="stylesheet" href="([^"]*maplibre-gl\.css[^"]*)">', lib, t)
@@ -80,6 +87,7 @@ def page(rel, check):
 
 
 def main():
+    """Migre les feuilles du socle (--css) et les pages données en argument ; --check : aperçu."""
     sys.stdout.reconfigure(encoding='utf-8')
     check = '--check' in sys.argv
     args = [a for a in sys.argv[1:] if not a.startswith('--')]

@@ -19,6 +19,7 @@ VER = re.compile(r"^schema_version:\s*['\"]?1\.0['\"]?\s*$", re.M)
 
 
 def main(args):
+    """Passe en 2.0 les fichiers de mission dont l'identifiant est au format (--write pour écrire) et liste les autres."""
     write = '--write' in args
     folder = args[args.index('--missions') + 1] if '--missions' in args else os.path.join(ROOT, 'data', 'missions')
     done, skipped, current = [], [], 0

@@ -20,7 +20,8 @@
   };
   /** Nombre d'une saisie (0, ou null selon la famille, si vide ou invalide). */
   const num = v => Number(v) || 0;
-  const confidence = [opt('HIGH', L('Élevée', 'High', 'Hoch', 'Alta')), opt('MEDIUM', L('Moyenne', 'Medium', 'Mittel', 'Media')), opt('LOW', L('Faible', 'Low', 'Niedrig', 'Baja'))];
+  const confidence = [opt('HIGH', L('Élevée', 'High', 'Hoch', 'Alta')), opt('MEDIUM', L('Moyenne', 'Medium', 'Mittel', 'Media')), opt(
+    'LOW', L('Faible', 'Low', 'Niedrig', 'Baja'))];
   const sensors = V.capabilityGroups.find(g => g.id === 'sensors').items;
   const isr = m => m.missionData?.isr || {};
   const contacts = m => (isr(m).contacts || []).filter(c => c.time || c.contactId || c.trackId);
@@ -67,7 +68,9 @@
     flags: mission => ({
       maritime: mission.series === 'MARITIME_ISR'
     }),
-    events: [opt('ON_STATION', L('Sur station', 'On station', 'Im Einsatzraum', 'En estación')), opt('SENSOR_ON', L('Capteur actif', 'Sensor on', 'Sensor aktiv', 'Sensor activo')), opt('TRACK_INITIATED', L('Piste créée', 'Track initiated', 'Spur angelegt', 'Traza iniciada')), opt('TRACK_LOST', L('Piste perdue', 'Track lost', 'Spur verloren', 'Traza perdida'))],
+    events: [opt('ON_STATION', L('Sur station', 'On station', 'Im Einsatzraum', 'En estación')), opt('SENSOR_ON', L('Capteur actif',
+      'Sensor on', 'Sensor aktiv', 'Sensor activo')), opt('TRACK_INITIATED', L('Piste créée', 'Track initiated', 'Spur angelegt',
+      'Traza iniciada')), opt('TRACK_LOST', L('Piste perdue', 'Track lost', 'Spur verloren', 'Traza perdida'))],
     blocks: [{
       id: 'isr-tasking',
       title: L('Tâche de collecte', 'Collection task', 'Aufklärungsauftrag', 'Tarea de obtención'),
@@ -76,9 +79,12 @@
           full: true,
           ...S
         }),
-        f(P + 'zone', L('Zone', 'Area', 'Gebiet', 'Zona')), f(P + 'target', L('Objectif / référence', 'Target / reference', 'Ziel / Referenz', 'Objetivo / referencia'), 'text', S),
-        f(P + 'orbit', L('Orbite', 'Orbit', 'Orbit', 'Órbita')), f(P + 'altitudeFt', L('Altitude (ft)', 'Altitude (ft)', 'Höhe (ft)', 'Altitud (ft)'), 'number'),
-        f(P + 'standoffNm', L('Distance de stand-off (NM)', 'Stand-off distance (NM)', 'Abstand (NM)', 'Distancia de stand-off (NM)'), 'number')
+        f(P + 'zone', L('Zone', 'Area', 'Gebiet', 'Zona')), f(P + 'target', L('Objectif / référence', 'Target / reference',
+          'Ziel / Referenz', 'Objetivo / referencia'), 'text', S),
+        f(P + 'orbit', L('Orbite', 'Orbit', 'Orbit', 'Órbita')), f(P + 'altitudeFt', L('Altitude (ft)', 'Altitude (ft)',
+          'Höhe (ft)', 'Altitud (ft)'), 'number'),
+        f(P + 'standoffNm', L('Distance de stand-off (NM)', 'Stand-off distance (NM)', 'Abstand (NM)',
+          'Distancia de stand-off (NM)'), 'number')
       ]
     }, {
       id: 'isr-sensors',
@@ -103,7 +109,9 @@
             blank: true
           }), f('mode', L('Mode', 'Mode', 'Modus', 'Modo')),
           f('start', L('Début', 'Start', 'Beginn', 'Inicio'), 'time'), f('end', L('Fin', 'End', 'Ende', 'Fin'), 'time'),
-          f('recordingMinutes', L('Enregistrement (min)', 'Recording (min)', 'Aufzeichnung (min)', 'Grabación (min)'), 'number'), f('images', L('Images collectées', 'Imagery collected', 'Erfasste Bilder', 'Imágenes obtenidas'), 'number')
+          f('recordingMinutes', L('Enregistrement (min)', 'Recording (min)', 'Aufzeichnung (min)', 'Grabación (min)'),
+            'number'), f('images', L('Images collectées', 'Imagery collected', 'Erfasste Bilder', 'Imágenes obtenidas'),
+            'number')
         ]
       }
     }, {
@@ -124,9 +132,10 @@
           observation: ''
         }),
         fields: [
-          f('time', L('Heure d’acquisition', 'Acquisition time', 'Erfassungszeit', 'Hora de adquisición'), 'time'), f('contactId', L('ID contact', 'Contact ID', 'Kontakt-ID', 'ID de contacto'), 'text', {
-            upper: true
-          }),
+          f('time', L('Heure d’acquisition', 'Acquisition time', 'Erfassungszeit', 'Hora de adquisición'), 'time'), f(
+            'contactId', L('ID contact', 'Contact ID', 'Kontakt-ID', 'ID de contacto'), 'text', {
+              upper: true
+            }),
           f('trackId', L('ID piste', 'Track ID', 'Spur-ID', 'ID de traza'), 'text', {
             upper: true
           }), f('position', L('Position', 'Position', 'Position', 'Posición'), 'text', S),
@@ -141,7 +150,8 @@
       }
     }, {
       id: 'isr-emitters',
-      title: L('Observations émetteurs / communications', 'Emitter / communication observations', 'Emitter- / Funkbeobachtungen', 'Observaciones de emisores / comunicaciones'),
+      title: L('Observations émetteurs / communications', 'Emitter / communication observations', 'Emitter- / Funkbeobachtungen',
+        'Observaciones de emisores / comunicaciones'),
       when: ctx => ['SIGINT', 'ELINT', 'COMINT'].includes(ctx.series),
       collection: {
         path: P + 'emitters',
@@ -156,7 +166,10 @@
           bearing: null,
           observation: ''
         }),
-        fields: [f('time', L('Heure', 'Time', 'Zeit', 'Hora'), 'time'), f('type', L('Type', 'Type', 'Typ', 'Tipo')), f('band', L('Bande / fréquence', 'Band / frequency', 'Band / Frequenz', 'Banda / frecuencia'), 'text', S), f('bearing', L('Relèvement (°)', 'Bearing (°)', 'Peilung (°)', 'Marcación (°)'), 'number'), f('observation', L('Observation', 'Observation', 'Beobachtung', 'Observación'), 'text', {
+        fields: [f('time', L('Heure', 'Time', 'Zeit', 'Hora'), 'time'), f('type', L('Type', 'Type', 'Typ', 'Tipo')), f('band', L(
+          'Bande / fréquence', 'Band / frequency', 'Band / Frequenz', 'Banda / frecuencia'), 'text', S), f('bearing', L(
+          'Relèvement (°)', 'Bearing (°)', 'Peilung (°)', 'Marcación (°)'), 'number'), f('observation', L('Observation',
+          'Observation', 'Beobachtung', 'Observación'), 'text', {
           full: true,
           ...S
         })]
@@ -165,8 +178,10 @@
       id: 'isr-coverage',
       title: L('Couverture et diffusion', 'Coverage and dissemination', 'Abdeckung und Verteilung', 'Cobertura y difusión'),
       fields: [
-        f(P + 'coveragePct', L('Couverture de la mission (%)', 'Mission coverage (%)', 'Auftragsabdeckung (%)', 'Cobertura de la misión (%)'), 'number'),
-        f(P + 'gaps', L('Lacunes', 'Gaps', 'Lücken', 'Lagunas')), f(P + 'dissemination', L('Diffusion', 'Dissemination', 'Verteilung', 'Difusión'), 'text', S)
+        f(P + 'coveragePct', L('Couverture de la mission (%)', 'Mission coverage (%)', 'Auftragsabdeckung (%)',
+          'Cobertura de la misión (%)'), 'number'),
+        f(P + 'gaps', L('Lacunes', 'Gaps', 'Lücken', 'Lagunas')), f(P + 'dissemination', L('Diffusion', 'Dissemination',
+          'Verteilung', 'Difusión'), 'text', S)
       ]
     }],
     stats: [{

@@ -86,6 +86,9 @@ def code_checks():
 
 
 def status():
+    """Relevé des assets attendus par famille et par design.
+    Retourne (rows, missing) : rows = [(famille, { design: « complet » | « n/m » | « à faire » | « — » })] ;
+    missing = { design: [(famille, fichiers manquants)] }."""
     rows, missing = [], {}
     for fam, (optional, per) in SPEC.items():
         cells = {}
@@ -124,6 +127,8 @@ def compress(files):
 
 
 def new_drops(drop):
+    """Images PNG du dossier de dépôt (sous-dossiers compris) modifiées depuis le dernier relevé (--mark).
+    Retourne (horodatage du relevé, chemins triés du plus ancien au plus récent)."""
     seen = {}
     try:
         seen = json.load(io.open(SEEN, encoding='utf-8'))
@@ -135,6 +140,7 @@ def new_drops(drop):
 
 
 def main():
+    """Affiche le tableau par famille et les manquants ; --new / --mark : images déposées, puis relevé noté."""
     sys.stdout.reconfigure(encoding='utf-8')
     ap = argparse.ArgumentParser()
     ap.add_argument('--new', action='store_true')

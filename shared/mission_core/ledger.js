@@ -2,7 +2,7 @@
   'use strict';
   // Mission Report Core — registre UNIQUE des missions, toutes familles : data/cr/missions.yaml
   // (chaque mission porte sa famille). Sources, la plus récente (updatedAt) l'emporte :
-  // fichier du dossier « CR DEFA » autorisé (Chrome / Edge, une seule autorisation), copie du
+  // fichier du dossier « CR » autorisé (Chrome / Edge, une seule autorisation), copie du
   // navigateur (partagée entre pages), fichier servi avec le dépôt (lecture seule).
   //
   // Vues par famille : MissionLedger.open(famille) — missions de la famille, index propres à
@@ -23,7 +23,8 @@
     STORE = 'handles';
   /** Base IndexedDB « missionCore » (magasin handles) : dossier du registre. */
   // connexion partagée par la page (RepositoryKit.idb) : plus une ouverture par lecture
-  const idb = () => window.RepositoryKit?.idb ? window.RepositoryKit.idb(DB, 1, db => db.objectStoreNames.contains(STORE) || db.createObjectStore(STORE)) : new Promise((resolve, reject) => {
+  const idb = () => window.RepositoryKit?.idb ? window.RepositoryKit.idb(DB, 1, db => db.objectStoreNames.contains(STORE) || db
+    .createObjectStore(STORE)) : new Promise((resolve, reject) => {
     const request = indexedDB.open(DB, 1);
     request.onupgradeneeded = () => request.result.createObjectStore(STORE);
     request.onsuccess = () => resolve(request.result);
@@ -82,7 +83,7 @@
       missions: missions.map(m => M.migrate(m, m?.family || data.family || family))
     };
   };
-  /** Dossier du registre (CR DEFA) autorisé ; request : demande l'autorisation. null sinon. */
+  /** Dossier du registre (CR) autorisé ; request : demande l'autorisation. null sinon. */
   async function directory(request = false, id = HANDLE) {
     const h = id === HANDLE ? (handle = handle || await idbGet(HANDLE)) : await idbGet(id);
     if (!h) return null;
@@ -109,6 +110,8 @@
     baseStamp = '';
   const PATH = 'data/cr/missions.yaml',
     CONFLICTS = 'missionCoreLedger:conflits:v1'; // versions écartées sans dossier autorisé
+  /** Note l'état actuel du registre comme base de fusion : missions sérialisées par clé (famille | n° | date) et date
+   *  updatedAt correspondante. */
   const remember = () => {
     base = new Map(store.missions.map(m => [key(m), JSON.stringify(m)]));
     baseStamp = store.updatedAt;
@@ -122,6 +125,7 @@
       out = [],
       conflicts = [],
       seen = new Set();
+    /** Version retenue pour une clé (la mienne, la leur ou null si supprimée) ; ajoute la leur à conflicts au besoin. */
     const pick = k => {
       const b = base.get(k),
         mi = mine.get(k),
@@ -206,6 +210,7 @@
   });
   // enregistrements et relectures de cette page, l'un après l'autre
   let queue = Promise.resolve();
+  /** Met fn en file derrière les opérations précédentes de la page (même après un échec) ; renvoie sa promesse. */
   const serial = fn => {
     const p = queue.then(fn, fn);
     queue = p.catch(() => {});
@@ -321,6 +326,7 @@
       const candidates = [];
       // copie indexée (shared/data_index.js) : un fichier n'est relu et analysé que si sa signature a changé
       const idx = window.ReportIndex ? await window.ReportIndex.load() : null;
+      /** Candidat tiré de la copie indexée, étiqueté source (« folder » ou « browser ») ; null sans index. */
       const fromIndex = source => idx && {
         source,
         updatedAt: idx.meta.updatedAt || '',
@@ -377,7 +383,8 @@
       } catch {
         unavailable = !candidates.length;
       }
-      else if (!candidates.length) unavailable = served.status !== 404 && served.status !== 304; // erreur réseau / serveur : registre inconnu, pas « vide »
+      else if (!candidates.length) unavailable = served.status !== 404 && served.status !==
+        304; // erreur réseau / serveur : registre inconnu, pas « vide »
       // Registre illisible : rien n'est migré ni enregistré (sinon une copie partielle
       // remplacerait le registre complet) ; nouvel essai au prochain chargement / enregistrement.
       if (unavailable) {
@@ -425,7 +432,8 @@
         request: false
       });
       // copie indexée à jour : registre relu d'un fichier, ou signatures changées
-      else if (window.ReportIndex && (!best?.indexed || JSON.stringify(sig) !== JSON.stringify(idx?.meta?.sig || {}))) await writeIndex().catch(() => {});
+      else if (window.ReportIndex && (!best?.indexed || JSON.stringify(sig) !== JSON.stringify(idx?.meta?.sig || {})))
+        await writeIndex().catch(() => {});
       store.migrated = migrated;
       return store;
     })();
@@ -454,6 +462,8 @@
       };
     });
   }
+  /** Réécrit la copie indexée (ReportIndex) avec les missions, la date, les anciens registres repris et les signatures
+   *  sig des sources (retenues dans lastSig) ; rien sans ReportIndex. */
   async function writeIndex(sig = lastSig) {
     if (!window.ReportIndex) return;
     lastSig = sig;
@@ -472,13 +482,16 @@
     missions: store.missions
   });
   /** Texte YAML du registre (ou d'une sélection de missions). */
-  const yaml = (missions = store.missions, title = 'Registre des missions — toutes familles — Mission Report — DEFA Virtual') => M.toYaml({
-    ...doc(),
-    missions
-  }, title);
+  const yaml = (missions = store.missions, title = 'Registre des missions — toutes familles — Mission Report — SO Group Virtual') => M
+    .toYaml({
+      ...doc(),
+      missions
+    }, title);
   // Écrit la copie navigateur et, si autorisé, data/cr/missions.yaml (à la suite des autres enregistrements et
   // relectures de la page).
   const save = options => serial(() => saveNow(options));
+  /** Enregistrement immédiat : relit le registre sous verrou, fusionne s'il a changé ailleurs, écrit index, copie texte et
+   *  fichier du dossier (request : demande l'autorisation), range les conflits ; renvoie { written, text }. */
   async function saveNow({
     request = true
   } = {}) {
@@ -508,7 +521,9 @@
         store.missions.splice(0, store.missions.length, ...merged.missions); // même tableau : les vues par famille le gardent
         conflicts = merged.conflicts;
         // anciens registres déjà repris : réunion, la date la plus récente de chaque côté
-        const mineImported = { ...store.legacyImported };
+        const mineImported = {
+          ...store.legacyImported
+        };
         for (const [fam, stamp] of Object.entries(now.legacyImported || {}))
           if (!mineImported[fam] || String(stamp) > String(mineImported[fam])) mineImported[fam] = stamp;
         store.legacyImported = mineImported;
@@ -598,9 +613,19 @@
       updatedAt: result.updatedAt // date posée sous le verrou
     });
     const tf = window.RepositoryKit?.tf || (row => row[0]);
-    if (result.conflicts.length) window.AppFramework?.notify?.(result.written ? tf(['{n} compte(s) rendu(s) modifié(s) en même temps ailleurs : votre version est gardée, l’autre est rangée dans data/cr/_conflits.', '{n} report(s) changed elsewhere at the same time: your version is kept, the other one is stored in data/cr/_conflits.', '{n} Bericht(e) gleichzeitig anderswo geändert: Ihre Fassung bleibt, die andere liegt in data/cr/_conflits.', '{n} informe(s) modificado(s) a la vez en otro lugar: se conserva su versión, la otra se guarda en data/cr/_conflits.'], {
+    if (result.conflicts.length) window.AppFramework?.notify?.(result.written ? tf([
+      '{n} compte(s) rendu(s) modifié(s) en même temps ailleurs : votre version est gardée, l’autre est rangée dans data/cr/_conflits.',
+      '{n} report(s) changed elsewhere at the same time: your version is kept, the other one is stored in data/cr/_conflits.',
+      '{n} Bericht(e) gleichzeitig anderswo geändert: Ihre Fassung bleibt, die andere liegt in data/cr/_conflits.',
+      '{n} informe(s) modificado(s) a la vez en otro lugar: se conserva su versión, la otra se guarda en data/cr/_conflits.'
+    ], {
       n: result.conflicts.length
-    }) : tf(['{n} compte(s) rendu(s) modifié(s) en même temps ailleurs : votre version est gardée, l’autre est conservée dans ce navigateur.', '{n} report(s) changed elsewhere at the same time: your version is kept, the other one is kept in this browser.', '{n} Bericht(e) gleichzeitig anderswo geändert: Ihre Fassung bleibt, die andere wird in diesem Browser aufbewahrt.', '{n} informe(s) modificado(s) a la vez en otro lugar: se conserva su versión, la otra se guarda en este navegador.'], {
+    }) : tf([
+      '{n} compte(s) rendu(s) modifié(s) en même temps ailleurs : votre version est gardée, l’autre est conservée dans ce navigateur.',
+      '{n} report(s) changed elsewhere at the same time: your version is kept, the other one is kept in this browser.',
+      '{n} Bericht(e) gleichzeitig anderswo geändert: Ihre Fassung bleibt, die andere wird in diesem Browser aufbewahrt.',
+      '{n} informe(s) modificado(s) a la vez en otro lugar: se conserva su versión, la otra se guarda en este navegador.'
+    ], {
       n: result.conflicts.length
     }), 'warn');
     return {
@@ -617,7 +642,8 @@
       loading = null;
       return picked.name;
     }
-    if (!window.showDirectoryPicker) throw new Error(window.RepositoryKit?.noFolderAccess?.() || 'API dossier local indisponible (Chrome / Edge requis)');
+    if (!window.showDirectoryPicker) throw new Error(window.RepositoryKit?.noFolderAccess?.() ||
+      'API dossier local indisponible (Chrome / Edge requis)');
     const current = handle || await idbGet(HANDLE);
     const picked = await window.showDirectoryPicker({
       mode: 'readwrite',
@@ -670,7 +696,8 @@
     ['trackerUrl', m => m.network?.trackerUrl]
   ];
   /** Registre en CSV « ; » (colonnes CSV_COLUMNS). */
-  const csv = missions => [CSV_COLUMNS.map(c => c[0]).join(';')].concat(missions.map(m => CSV_COLUMNS.map(([, get]) => `"${String(get(m) ?? '').replace(/"/g, '""')}"`).join(';'))).join('\n') + '\n';
+  const csv = missions => [CSV_COLUMNS.map(c => c[0]).join(';')].concat(missions.map(m => CSV_COLUMNS.map(([, get]) => `"${String(get(m) ?? '').replace(/"/g, '""')}"`).join(
+    ';'))).join('\n') + '\n';
   /** N° de mission normalisé (majuscules, sans blancs). */
   const normId = v => String(v ?? '').trim().toUpperCase();
 
@@ -726,14 +753,17 @@
         missionNumber,
         crIds: store.missions.map(m => normId(m.metadata?.missionId))
       }),
+      /** Ajoute une copie de la mission à la famille ; renvoie son rang dans la vue de la famille. */
       add: mission => {
         store.missions.push(withFamily(mission));
         return list().length - 1;
       },
+      /** Remplace la index-ième mission de la famille par une copie de mission (rien si le rang n'existe pas). */
       replace: (index, mission) => {
         const k = position(index);
         if (k >= 0) store.missions[k] = withFamily(mission);
       },
+      /** Retire la index-ième mission de la famille ; renvoie le tableau des missions retirées ([] si rang inconnu). */
       remove: index => {
         const k = position(index);
         return k >= 0 ? store.missions.splice(k, 1) : [];
@@ -742,7 +772,7 @@
       setMissions: missions => {
         store.missions = store.missions.filter(m => m.family !== id).concat(missions.map(withFamily));
       },
-      downloadYaml: () => download(`${id.toLowerCase()}_missions.yaml`, yaml(list(), `Missions ${id} (extrait du registre ${FILE}) — Mission Report — DEFA Virtual`), 'text/yaml;charset=utf-8'),
+      downloadYaml: () => download(`${id.toLowerCase()}_missions.yaml`, yaml(list(), `Missions ${id} (extrait du registre ${FILE}) — Mission Report — SO Group Virtual`), 'text/yaml;charset=utf-8'),
       downloadCsv: () => download(`${id.toLowerCase()}_missions.csv`, csv(list()), 'text/csv;charset=utf-8'),
       // Import : missions sans famille rattachées à celle-ci ; les autres gardent la leur.
       async importFile(text) {
@@ -763,6 +793,7 @@
     store,
     downloadAll: () => download(FILE, yaml(), 'text/yaml;charset=utf-8'),
     downloadAllCsv: () => download(FILE.replace(/\.yaml$/, '.csv'), csv(store.missions), 'text/csv;charset=utf-8'),
+    /** Remplace tout le registre (toutes familles) par missions, sans enregistrer. */
     setAll: missions => {
       store.missions = missions;
     }

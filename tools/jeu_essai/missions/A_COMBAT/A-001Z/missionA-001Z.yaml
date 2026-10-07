@@ -1,0 +1,191 @@
+# Mission A-001Z — received — 30/09/2026 22:04:36
+schema: helo-xp-mission
+schema_version: '2.0'
+mission:
+  series: 1
+  number: 1
+  id: A-001Z
+  type: COMBAT
+  subtype: EXERCICE
+  role: organisation
+operation:
+  id: A-001
+  name: BOXING GLOVES
+  missions:
+    - A-001A
+    - A-001B
+    - A-001C
+    - A-001D
+    - A-001E
+  organisation: A-001Z
+title: BOXING GLOVES — exercise organisation
+summary: |-
+  BOXING GLOVES coordinates two Rafale elements and an A330 MRTT Phénix for a refuelling sequence in D31D followed by BFM training in TRA 34 A. Both fighter elements know their rendezvous, their set-up sectors and the general rules, but the adversary tracks are only revealed to them in flight; the exercise director therefore keeps a few cards up his sleeve, almost literally.
+
+  The organisation must sequence the departures, the refuelling, the entry of the fighter elements into the area and then the successive appearance of the two bandits. Each track is revealed by radio at the planned time, with immediate termination in case of loss of separation, degraded tactical situation or safety instruction.
+detailed_description: |-
+  BOXING GLOVES is built as a progressive exercise combining AAR support and visual air combat training. COTAM3510 sets up the refuelling while MERCURE31 and MERCURE41 join the formation in turn before proceeding to TRA 34 A. The crews know the overall architecture, but not the exact order of appearance nor the behaviour of the adversary tracks; otherwise the bandit would end up filing a complaint for lack of surprise.
+
+  H-hour is the start of the first BFM window after the planned end of refuelling. COTAM3510 takes off early enough to establish the set-up in D31D; MERCURE31 then MERCURE41 join it a few minutes apart. The two fighter elements are then separated in their respective holding areas until called in.
+
+  The first bandit is introduced once MERCURE31 is established in the working area and must be handled as a visual manoeuvring threat. The second one appears later for MERCURE41 with a different profile, so that the two engagements are not mere copies of each other. Radio calls give only the information needed for initial acquisition and leave the crews to build their own tactical picture.
+
+  The exercise director retains the authority to delay a track, terminate a sequence, change the order of engagements or cancel the second presentation if fuel margins shrink. Both bandits must respect their altitude, speed and sector limits, and exit immediately on command. A track that carries on after a knock-it-off stops being a good training tool and very quickly becomes an administrative problem.
+
+  The exercise ends when both fighter elements have left TRA 34 A and COTAM3510 has been released from its support task. Participants then return to their airfields in accordance with their individual missions. The debrief focuses on identifications, radio calls, separation management and knock-it-off discipline rather than on a simple count of simulated kills.
+teams:
+  - name: MERCURE31
+    service: French Air and Space Force
+    department: Landes
+    type: RFAL Rafale
+    role: first BFM fighter element
+  - name: MERCURE41
+    service: French Air and Space Force
+    department: Landes
+    type: RFAL Rafale
+    role: second BFM fighter element
+  - name: COTAM3510
+    service: French Air and Space Force
+    department: Bouches-du-Rhône
+    type: A332 A330 MRTT Phénix
+    role: exercise tanker
+exercise:
+  h_hour: H
+  participants:
+    - callsign: MERCURE31
+      mission: A-001A
+      takeoff: H-20
+      role: first fighter element; refuelling then BFM sequence
+    - callsign: MERCURE41
+      mission: A-001B
+      takeoff: H-15
+      role: second fighter element; refuelling then BFM sequence
+    - callsign: COTAM3510
+      mission: A-001C
+      takeoff: H-55
+      role: set-up and refuelling support in D31D
+  tracks:
+    - id: TRACK-401
+      name: TRACK 401
+      nature: adversary training fighter
+      played: true
+      callsign: CHIFFON401
+      start: H+5
+      mission: A-001D
+      takeoff: H
+      aircraft_type: MIR2 Mirage 2000B
+      points:
+        - name: TRA 34 A — north-west sector
+          lat: 44.18
+          lon: -0.52
+        - name: TRA 34 A — central sector
+          lat: 44.05
+          lon: -0.35
+        - name: TRA 34 A — south-east sector
+          lat: 43.92
+          lon: -0.18
+      level: FL180–FL260
+      speed_kt: 420
+      task: establish the threat type, the approach geometry, the behaviour at the merge and the outcome of the engagement
+      conduct: |-
+        CHIFFON401 enters the sector at the given slot and flies a profile converging towards the centre of TRA 34 A. It remains non-cooperative until visual acquisition, then starts an aggressive defensive manoeuvre at the merge.
+
+        The bandit strictly respects the area, the announced levels and any separation instruction. On a knock-it-off call or on the exercise director's order, it immediately breaks off the engagement, stabilises its flight path and leaves the sector via the south-east leg.
+    - id: TRACK-402
+      name: TRACK 402
+      nature: low-energy adversary training fighter
+      played: true
+      callsign: CHIFFON402
+      start: H+25
+      mission: A-001E
+      takeoff: H+15mn
+      aircraft_type: MIR2 Mirage 2000B
+      points:
+        - name: TRA 34 A — east sector
+          lat: 44.1
+          lon: 0.12
+        - name: TRA 34 A — central-east sector
+          lat: 44.05
+          lon: -0.05
+        - name: TRA 34 A — north sector
+          lat: 44.22
+          lon: -0.15
+      level: FL160–FL240
+      speed_kt: 360
+      task: identify the difference in energy profile, keep visual and choose a suitable manoeuvre
+      conduct: |-
+        CHIFFON402 enters with less initial energy than TRACK 401 and tries to force a tighter engagement. After acquisition by MERCURE41, it may manoeuvre vertically within the announced limits without trying to leave the sector.
+
+        The bandit must maintain separation with MERCURE31 at all times if the latter is still in the TRA. Any knock-it-off triggers an immediate wings-level recovery, lateral separation and then an exit via the north sector.
+  events:
+    - id: EV-1
+      at: RDV-1
+      by: MERCURE31
+      delay_min: 0
+      kind: radio
+      from: COTAM3510
+      to:
+        - MERCURE31
+      title: Cleared to join — first receiver
+      text: COTAM3510 confirms to MERCURE31 the join-up sequence behind the tanker. MERCURE41 remains holding until the first receiver is released.
+      reveals: []
+    - id: EV-2
+      at: RDV-1
+      by: MERCURE41
+      delay_min: 8
+      kind: radio
+      from: COTAM3510
+      to:
+        - MERCURE41
+      title: Cleared to join — second receiver
+      text: After MERCURE31 has disconnected, COTAM3510 clears MERCURE41 to the contact position. The receiver must immediately report any unstabilised approach.
+      reveals: []
+    - id: EV-3
+      at: PT3
+      by: MERCURE31
+      delay_min: 2
+      kind: radio
+      from: DIRECTEUR
+      to:
+        - MERCURE31
+      title: First tactical contact
+      text: An exercise track is entering your sector from the north-west. Search, identify and engage under the exercise BFM rules; no further tactical information is given before acquisition.
+      reveals:
+        - TRACK-401
+    - id: EV-4
+      at: PT3
+      by: MERCURE41
+      delay_min: 5
+      kind: radio
+      from: DIRECTEUR
+      to:
+        - MERCURE41
+      title: Second tactical contact
+      text: A new exercise track is approaching your sector from the east with apparently lower energy. Establish visual contact, confirm the situation and fight the engagement without interfering with the first element.
+      reveals:
+        - TRACK-402
+    - id: EV-5
+      at: H+45
+      by: DIRECTEUR
+      delay_min: 0
+      kind: radio
+      from: DIRECTEUR
+      to:
+        - ALL
+      title: End of sequence
+      text: End of BFM engagements. All participants leave the sectors under their own procedures; the bandits cease all tactical manoeuvring and the DEFA elements proceed on their return routes.
+      reveals: []
+notes:
+  - Air simulation exercise.
+  - Both bandits are played, and each has its own callsign, departure time, route and instructions.
+  - The coordinates of the points inside TRA 34 A are working coordinates, to be adjusted to the applicable AIP boundaries.
+  - Missions A-001A, A-001B and A-001C remain the sources of truth for their individual routes and timings.
+meta:
+  received_at: '2026-09-30T20:04:36.076Z'
+  modified_at: '2026-09-30T20:04:36.076Z'
+  source: collage
+  versions: 0
+  history:
+    - at: '2026-09-30T20:04:36.076Z'
+      action: reçue
+      source: collage

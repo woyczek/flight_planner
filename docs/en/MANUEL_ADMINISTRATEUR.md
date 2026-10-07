@@ -1,6 +1,6 @@
 # Administrator manual
 
-This manual describes the DEFA Virtual suite for the **Centre** (planning and conduct of operations) and for the
+This manual describes the SO Group Virtual (Virtual Special Operation Group) suite for the **Centre** (planning and conduct of operations) and for the
 suite **administrators**: one chapter per page, one section per tab, section or block, then data
 synchronisation and the launcher. In the suite, the **“Help”** entry of the sidebar opens this manual
 at the chapter of the current page (Centre and settings pages). The pilot pages are described in the
@@ -20,7 +20,7 @@ The lock hides the Centre until it has been enabled in this browser.
 
 - Centre locked: the Centre pages disappear from the ☰ menu, from the sidebar (“Centre” separator and “Missions”, “Registry” and “ODV” entries) and from the home page.
 - A Centre page opened directly (bookmark, link) is covered by a “Restricted access” notice with the links “Enable the Centre…” and “Home”.
-- In Settings › Centre, only the “Centre access and settings” section stays visible; the others (“Users and rights”, “Availability categories”, “ODV planning (DEFA)”, “Report sending (web service)”) are hidden.
+- In Settings › Centre, only the “Centre access and settings” section stays visible; the others (“Users and rights”, “Availability categories”, “ODV planning”, “Report sending (web service)”) are hidden.
 - Activation is stored in this browser only: repeat it on each computer and after clearing the site data.
 
 Limit: this is a usage lock, not security. The pages remain files readable by anyone with access to the folder.
@@ -57,7 +57,7 @@ Management in Settings › Centre › “Users and rights”:
 - “Reset…” opens “Reset the password of TRI”: enter a temporary password (at least 8 characters), which the user must change at their next sign-in;
 - “Add a user”: trigram, display name, role, then “Add”.
 
-Tip: if the users folder is empty, the section creates one record per pilot of the DEFA reference.
+Tip: if the users folder is empty, the section creates one record per pilot of the reference.
 
 ### Develop mode and production mode
 
@@ -99,7 +99,7 @@ The two pages share a tab at the top and work on **the same mission**.
 - Every change is saved in this browser and read at once by the other open page (extents, maps added or deleted in the studio, for example). The generator then shows “Mission updated by the map studio”.
 
 The header also offers:
-- “Create the DEFA report →”: opens a new report of the family matching the mission type, pre-filled with the mission;
+- “Create the report →”: opens a new report of the family matching the mission type, pre-filled with the mission;
 - when an operation has several missions: ◀ and ▶ (“Previous mission”, “Next mission”) and a list to switch to another mission of the batch;
 - after opening from the registry: “← Registry (M-016)” to go back.
 
@@ -261,11 +261,11 @@ Output type (PNG, editable SVG) and PNG width: ☰ menu › “Map outputs”. T
 
 Block hidden by default: click “Show” in its header.
 - `data/sia` folder, stored like the other folders of the suite.
-- “Re-read the folder” after each AIRAC update; “Cancel” stops without changing the stored base.
+- “Rebuild the aeronautical database” after each AIRAC update; “Cancel” stops without changing the stored base.
 - “Purge the cache” clears the base kept in this browser (to be re-read afterwards).
 - The status line shows the stored base (folder, AIRAC cycle, date); “Files analysed” lists the XML files read.
 
-If the folder contains several cycles, only the most recent is read; the others are flagged, to be archived. This is the same block as Settings › Maintenance › Aeronautical data (step 4).
+If the folder contains several cycles, only the most recent is read; the others are flagged, to be archived. This is the same block as Settings › Maintenance › Aeronautical data (“Rebuild the aeronautical database”), which reads the active zones and their ticked sources.
 
 ## Mission registry
 <!-- page: apps/cpco/mission_registry.html -->
@@ -336,7 +336,7 @@ The follow-up is written to `suivi.yaml`, in the mission folder; it is shared wi
 Form shared with the generator.
 1. Set “Type”, “Subtype”, “Theatre” and “Second theatre” (“Country” for abroad), “Series” (empty = the next one).
 2. Check “Identifier” (computed, read-only).
-3. Set “DEFA flying teams”, “Rendezvous”, “Ground teams”, “Duration” (XS to XL), “Translations”, “Air refuelling”.
+3. Set “Flying teams”, “Rendezvous”, “Ground teams”, “Duration” (XS to XL), “Translations”, “Air refuelling”.
 4. Under “Aircraft of each flying team”, enter the aircraft of teams A, B… (empty = automatic).
 5. Click “Order: copy prompt and open ChatGPT”, paste into ChatGPT (Ctrl+V) then send.
 
@@ -360,7 +360,7 @@ This block loads the squadron's weekly workbook (`.xlsx`). It is **hidden by def
 - Anomalies (code not in the legend, duplicate trigram, offset timeline date…) are flagged by floating notifications, without ever blocking the reading.
 - If a pilot of the workbook has no mission-type preferences yet, the suite creates them from their codes (C → fighter, T → transport…) and writes them into their user record.
 - “Clear data” empties the page. The button stays greyed out as long as no workbook is loaded.
-- The link “Settings › Centre › ODV planning (DEFA)” leads to the settings of the slots and of the workbook reading.
+- The link “Settings › Centre › ODV planning” leads to the settings of the slots and of the workbook reading.
 - Personal data: do not publish the exports. Workbook format and reading rules: [ODV planning](../ODV_PLANNING.md).
 
 ### Availability grid
@@ -402,10 +402,14 @@ This planning details one day of the week.
 This block gathers the VATSIM / IVAO trainings, exams, events and bookings of the displayed week. They are saved in the shared data pool (`data/atc/<année>-W<semaine>.json`).
 - **Enter a session**: fill in the day, the start and the end (UTC times, in 15-min steps), the position (e.g. `LFBO_APP`, `LFMN_TWR`), the network (VATSIM or IVAO), the type (Training, Exam, Event, Booking) and an optional comment. Then click “Add”.
 - Both times must fall on the same day: the end must come after the start.
-- “Fetch VATSIM (metropolitan France)” imports the week's VATSIM bookings. Sessions already fetched are replaced (cancellations included); manual entries are kept.
-- IVAO is entered by hand: its bookings API requires authentication.
-- The “×” button of a row removes the session. The “Source” column shows “fetched” or “entered”.
+- “Fetch VATSIM (preferred country)” imports the week's VATSIM bookings. Sessions already fetched are replaced (cancellations included); manual entries are kept. Only positions of the preferred country are imported (Settings › Centre › ODV planning; metropolitan France by default); the button shows its name.
+- “Fetch IVAO (preferred country)” likewise imports the week's IVAO trainings, exams and bookings, with the installation's IVAO API key (Settings › Installation). These two buttons are the import shared with the Board: a single file, the same sessions on both pages.
+- The “×” button of a row removes the session. The “Source” column shows “fetched” or “entered”. The table first shows trainings, exams and events (exam and training marked in the margin); plain position bookings, numerous once imported, are folded under “n position booking(s)”.
 - **Effect on planning**: a session is counted in its slot (★). A training or an exam makes the airfield CTR unavailable for missions in that slot; the TMAs containing the airfield should be avoided if possible.
+
+### Area activations by network
+
+This block is the one of the Board (see “Area activations”): RTBA, R, D, TRA… activations of the displayed week, VATSIM and IVAO side by side, same data. Editing restricted as in the Board (Centre enabled; in production, administrator).
 
 ### Common slots
 
@@ -452,7 +456,7 @@ For each slot that reaches the “At least N pilot(s)” threshold, this block s
 
 - Click a row (outside the button) to expand its summary: slot, suggested crew, reinforcements, rule, score, context (ATC sessions, controllers, events), simulators, missions already assigned. The ▸ triangle does the same; only one row is expanded at a time.
 - “Family and score rules” expands under the table. Score = number of participants, + 2 per pilot with a restricted code used in their field, + 1 per online controller for TRAINING (2 at most). A family played often moves back a little (depending on the number of reports in the registry) to vary the missions.
-- The number of missions shown per slot and the order of preference at equal score are set in Settings › Centre › ODV planning (DEFA).
+- The number of missions shown per slot and the order of preference at equal score are set in Settings › Centre › ODV planning.
 - The table sorts by column. The roles taken from the FLOTTE sheet remain indicative: the planner validates.
 
 ### Export
@@ -468,6 +472,89 @@ This block saves files on this computer. They contain personal data: do not publ
 | “Summary (.txt)” | `<classeur>_dispo.txt` |
 
 If the browser refuses automatic copying, the text is selected: copy it with Ctrl+C.
+
+## Board
+<!-- page: apps/cpco/odv_orders.html -->
+
+The Board page builds the week's flight order: flight strips, control, miscellaneous items and notes placed on a timeline, with availability and area conflicts.
+To open it: sidebar › “Centre” section › “Board”. Like the rest of the Centre, it needs the Centre enabled; in production mode, you must also be logged in with the `admin_centre` role. Otherwise the page opens read-only.
+Everything is saved in the shared data pool: the week's order in `data/odv/<year>-W<week>.json`, the settings in `data/config/odv.json`. Availability stays the pilots' own, and the crew of a mission flight comes from the assignments.
+Times are in z (UTC). Data model: [Board](../technique/ODV_ORDRES.md).
+
+### Week
+
+- “◀” and “▶” change the week, “This week” goes back to the current week.
+- The day tabs show, in red, the number of items in conflict that day.
+- “Day”, “Week” and “Statistics” change the view.
+- “Duty officer” names the week's duty officer.
+- “Briefing” (or the F key) puts the order of the day in full screen; the ← and → arrows change the day.
+- The status line shows “Saved”, or “Saved in this browser” if the data folder is not authorised.
+
+### Order of the day
+
+On the left, the palette: flight, control and miscellaneous templates, the note, then the members (Staff, then Members) with the bar of their availability that day. On the right, the timeline:
+- dotted lines: morning, afternoon and evening slots of the ODV planning; red line: current time; dark areas: aeronautical night at the set airfield;
+- “RTBA · LL”: RTBA activity slots (activations entered or imported, otherwise the slots from the settings);
+- “Areas”: areas required by each flight (those of its mission, or those entered for a training flight), green if active on the flight's network, orange if requested, red otherwise;
+- “ATC”: the day's ATC sessions within the perimeter (country set in Settings › Centre › ODV planning, shown on hovering the label): trainings and exams in purple, events in blue, bookings faded; a session is outlined in red when it hinders a mission flight (its departure or arrival airfield during the flight);
+- “Available together”: ranges where at least two members can be assigned to a flight;
+- “Flights”, “Control”, “Miscellaneous”, “Notes” sections: items stack by themselves.
+
+Handling:
+- drag a template onto its section: the item is created at the drop time (in 5-minute steps) and its window opens;
+- double-click a palette card to place it automatically: at the synchronisation slot for another crew of a multi-crew mission (offset of the operation's exercise relative to H, otherwise time of the linked patrol already placed; tanker: 30 min before the refuelling, or before the patrol it serves), otherwise at the first consistent slot of the day (duty hours, not before the current time, crew assignable and free, or enough members available together);
+- drag a member from the palette onto a strip to add them, or a trigram from one strip to another to move them;
+- drag a strip to change its time, its right edge to change its duration; a single click opens its window;
+- in the palette, “Flight pool” keeps the strips removed from the timeline (dragged onto the palette, or “↩ Pool” in their window) and “Mission formations” offers what the placed mission flights call for: patrols of the other missions of the formation, tankers serving them, chiffons of the operation;
+- “Zoom” sets the timeline scale.
+
+On a strip: “⚠ n” counts its conflicts, “P” flags that no crew member is available in the hour and a half before the flight, “↻” a recurrence; a green (done) or orange (not done) bar underlines the status; a cancelled strip is struck through. Below the timeline, “Assignment problems” lists the day's conflicts: a click shows the strip.
+
+### Item window
+
+- **Flight**: label, callsign, registry mission (empty: training), network, start, duration, colour, areas of a training flight, track and offload of a tanker flight, tanker and refuelling time, aircraft (pilot, navigator, cancelled; eight at most), tasks (one per line, “name = TRI”), info, status, reason, report (ME, Bâché, MNE), partial, MNE causes.
+- A callsign entered suggests the mission of the assignment that carries this callsign that day.
+- “Registry mission and team”: one row per flying team of each mission (callsign, aircraft, role, family, airfields, operation, estimated duration), sorted by duration; “⚠” and a notification flag an estimated duration that differs from the requested one (gap of more than 15 min or 15 %). “Training (no mission)” leaves the strip without a mission.
+- “Refuelling”: a tanker mission (those of the same operation or on the same track first), whose strip is placed that day if it is not there yet, or a tanker flight already placed; the refuelling time is set next to it.
+- **PTA** (principal training audience): members the item trains first, ticked in the aircraft table (flight) or in the PTA list (control, miscellaneous); they are circled on the strip. **Configuration**: configurations loaded on the aircraft (KNON = gun, TALIOS = pod…), suggested from the settings. **DLO** (desired learning objectives): objectives of each member on the item, one line per member “TRI = objectives”; “◎” on the trigram, objectives on hover.
+- **Aircraft**: two places to start with (“+ Wingman” adds more, eight at most); for each, the aircraft (mission type suggested ★, not imposed, or an aircraft of the fleet), the pilot and the navigator. The suggested callsign is the mission's, otherwise those of the callsign table for that type; it follows the mission if the mission changes it. **Refuelling**: choose the track, then a tanker mission on that track; if its strip is not placed, it joins the palette and the flight hooks onto it when it is placed. The strip shows the mission (title, family, airfield), the track held by a tanker and, for a receiver, “⛽ tanker track time”.
+- **Posts and aircraft** (as in the ODV planning): for a mission flight, one row per post of the mission (callsign, type); the next wingman takes the next callsign. The aircraft list offers the compatible aircraft, on site first then from nearest to farthest (“ferry x h xx”); those already taken during the flight are greyed out. An aircraft based at another airfield than the departure makes a ferry strip “⇢” appear (aircraft, airfields, “to be assigned”), arriving 30 min before take-off and following the flight: drag the ferry pilot onto it. **Standby**: notice and end, carried into the mission order. The line under a trigram shows their qualification on the type (green: mastered; orange: owned or known; red: no); it is only a signal.
+- **Choosing a mission**: the list is limited to the callsign or label entered (“SAMU” → SAMU missions); once the mission is chosen, the ODV choice window opens and its rows (posts, aircraft, pilots, callsign, ferry pilot) fill the strip; pilots available and qualified on the type are offered first. The strip takes the take-off time of the assignment (warning if they differ); “Operation mission order (n)…” chains the mission orders of the operation's strips placed that day; a strip taken back from the pool or the formations is placed at its synchronisation slot. **Refuelling**: the chosen track limits the list to its tankers; “No specific mission” puts a generic tanker on the track in the pool. A ferry moved by hand keeps its place (it follows the flight by the same gap if the flight moves); if it arrives less than 30 min before take-off, it is flagged. An availability whose category does not open the mission family, and an ATC exam or training at the departure or arrival airfield during the flight, are flagged. Below the timeline, “Assignment log” shows the last 30 operations.
+- **Assignments and mission orders**: a mission assigned elsewhere (ODV planning, Registry) appears automatically as a strip on the timeline, at its take-off, with its aircraft, pilots, standby and ferry. Conversely, a mission flight with a crew but no assignment is flagged “mission order not issued” (the pilot sees nothing in My missions), and a crew that differs from the assignments “mission order to reissue”. Moving the strip of a flight that has its mission order (day, time, duration) reissues it automatically, without a window: same pilots, aircraft, callsigns and ferry pilots at the new time; an envelope already opened is sealed again so the pilot sees the change. If there is an assignment conflict (pilot, ferry pilot or aircraft taken elsewhere) or the missions folder is not authorised, the order is not reissued: the strip flags it (“mission order not reissued”, with the reason) and keeps its new time; “Mission order…” remains the way to change pilots or aircraft.
+- **Ferry order**: “Ferry order…” on a ferry strip opens the mission order of the flight served, ferry included (time and duration of the strip, even moved by hand); a ferry pilot other than the mission pilot, or a ferry to be assigned, receives their ferry order in My missions; flown by the mission pilot, the ferry is a line of their mission order.
+- Mission flight: the crew comes from the mission's assignments; “Mission order…” opens the Centre's assignment window, prefilled with the strip's aircraft (pilot, registration, patrol callsigns): the saved assignments are the mission order the pilots receive in My missions (“OM” badge on the strip). “Order a mission…” opens the generator's order form, preset from the strip (teams, aircraft types, duration, refuelling). The mission report is authoritative: when the week is opened, status and report are taken from it; with no report after the set delay, the flight becomes MNE (cause “no report”).
+- **Control**, **Miscellaneous**: label, position (control), start, duration, colour, status, reason, crew (member boxes), notes (miscellaneous).
+- **Note**: free text.
+- “Repeat” (every day, every week, every other week) and “Until” place the item on the following weeks when they are first opened, never before its date.
+- “Delete” removes the item.
+
+### Conflicts
+
+| Conflict | Meaning |
+|---|---|
+| week not declared | the member has not declared their availability for the week |
+| not available for the whole duration | no range covers the whole item |
+| not assignable (category) | a range of a category that does not open this kind of item overlaps the item |
+| already busy at that time | the member is on another item at the same time |
+| twice on the item | the same member holds two places |
+| area not activated, requested, prohibited | required area without an “active” activation of its network over the whole flight, or P area |
+
+A flight needs an available category; a control item, an available category or “SOG control”; a miscellaneous item also accepts “Available on the ground only”. Control and flight outside SOG, DCS, unavailable and time off can never be assigned.
+
+### Week and statistics
+
+- **Week**: one row per member, one cell per day with the bar of declared availability and the number of items they appear on. A click on a cell opens their ranges for the day: category, start, end, and “Time off from”, which sets time off until midnight. The ranges are written into the pilot's declaration.
+- **DLO and deadlines**: each member's permanent objectives (“＋” to add, click to edit), with an optional deadline (red at 3 working days or less, yellow at 10 or less); a DLO is closed automatically by a flight done that contains it (item DLO, label, mission) with the member in the crew. The palette shows “◎n” open DLO per member, and an item's window recalls those of the crew.
+- “Availability changes” lists the declarations changed since they were last noted; “Noted” and “Note all” mark them in this browser.
+- **Statistics**: planned flights, total duration, done, not done, cancelled, AAR, ME, Bâchés, MNE; per member: time available over duty hours, flight time, load (orange above 70 %, red above 100 % or with no availability).
+
+### Area activations
+
+This block enters the week's area activations (`data/atc/activations/<year>-W<week>.json`), in two side-by-side columns, VATSIM and IVAO: day, area, status (active, requested, refused), start, end, remark, network. A “both networks” activation appears in both columns; changing its network moves it. VATSIM does not publish activations: its column is entered by hand. In the IVAO column, “Import from IVAO” takes the schedules published by IVAO (installation API key), folded under the list, along with the week's IVAO trainings, exams and bookings (ATC sessions); entries made by hand stay. IVAO sessions are also imported automatically when a week is opened, at most once an hour, if the page can write. A change recomputes the flights' areas at once. The ODV planning shows the same block, on the same data.
+
+### Reservation requests
+
+This block lists the areas crossed by the week's mission flights (planned route and working areas of the mission, areas entered for a training flight) without an “active” activation of their network: day, area, network, slot, flights, status. “Record as requested” (or “Record all as requested”) adds them to the shared activations; the request itself is made on the network's site (“Copy the list”, link to the IVAO activation requests). A P area is flagged “to avoid”. When a week is opened, the page imports the IVAO ATC sessions (trainings, exams, bookings) automatically, at most once an hour, with the import shared with the ODV planning.
 
 ## Settings › Centre
 <!-- page: apps/settings/centre.html -->
@@ -503,7 +590,7 @@ This section manages the user records. There is one record per user (`data/utili
 - **“Reset…”**: enter a temporary password (at least 8 characters), then “Reset the password”. The user must change it at their next sign-in.
 - **“Impersonate”**: you act on behalf of the user. A banner recalls it on every page, each write is signed “ADM pour TOTO”, and the “End impersonation” button ends it.
 - **“Add a user”**: trigram, display name, role, then “Add”.
-- If the folder is empty, a record is created for each pilot of the DEFA reference.
+- If the folder is empty, a record is created for each pilot of the reference.
 - If some files could not yet be written to the data folder, click “Write to the data folder”.
 - In production mode, resetting a password, impersonation and changing the mode are reserved for a
   signed-in `admin_centre`; adding a user and editing a row (role, active) are only protected
@@ -516,7 +603,7 @@ This section defines what the pilots can declare as availability (`data/config/d
 | Column | Use |
 |---|---|
 | id | identifier, fixed once the category is saved; entered for a new category |
-| Group | group shown in the ODV (Available, DEFA exercise, Busy, Unavailable…) |
+| Group | group shown in the ODV (Available, SOG exercise, Busy, Unavailable…) |
 | Label, Colour | label **in French only**, cell colour |
 | Open themes | “every theme”, “none”, “domain …”, “… per preferences, among …”, or “theme list” (free field, themes separated by spaces) |
 | Type | available, control, busy, unavailable |
@@ -530,13 +617,14 @@ This section defines what the pilots can declare as availability (`data/config/d
 - “Default values” restores the original categories. Added categories are kept, but retired.
 See also [availability and reorganisation](../technique/DISPOS_ET_REORGANISATION.md).
 
-### ODV planning (DEFA)
+### ODV planning
 
-This section contains the DEFA-specific settings for the ODV planning page. They are kept in this browser and are not synchronised. An ODV page open in another tab applies them at once.
+This section contains the Settings of the ODV planning page. They are kept in this browser and are not synchronised. An ODV page open in another tab applies them at once.
 
 | Setting | Default |
 |---|---|
 | Slots (z hours): Morning, Afternoon, Evening | 8 to 12, 12 to 18, 18 to 23 (by half hour; the end must come after the start) |
+| Preferred country (ATC perimeter) | “metropolitan France”; ATC sessions (trainings, exams, bookings) imported and shown for this country only, ODV planning and the Board (the country's ICAO indicators: LF except LFV for France) |
 | Week dates | “ISO week (week number of the file)”; otherwise “Date entered on the timeline” |
 | Empty cell | “Not filled in” (never counted as available); otherwise “Unavailable” |
 | FLOTTE types kept for roles | “All but red (not mastered)”; “Green only”; “All” |
@@ -546,6 +634,25 @@ This section contains the DEFA-specific settings for the ODV planning page. They
 | Ignore a group row coloured all 7 days on a slot (decoration) | ticked |
 
 Each change is saved at once. “Default settings” restores all the values above.
+
+### Board
+
+This section sets the Board page (`data/config/odv.json`, synchronised).
+
+| Setting | Use |
+|---|---|
+| Airfield (ICAO) | aeronautical day and night on the timeline |
+| Default network of flights | IVAO or VATSIM, for the status of area activations |
+| Delay without report before MNE (hours) | 48 by default |
+| Days shown, duty hours | 7 days, 06:00 to 23:00 z; used by the timeline and the statistics |
+| Flight, miscellaneous and control templates | label, duration, colour, solid fill; “Callsign colour”: the strip takes the colour of its callsign |
+| Callsign colours | prefix (the longest one contained in the callsign wins), fill, outline |
+| Aircraft configurations | text (KNON, TALIOS…), colour; suggested in the aircraft table of a flight |
+| LL / RTBA slots (fallback) | name, start, end, days, colour, database area |
+| Personnel | Staff or Members group, colour, order in the palette |
+| Recurrences | repeated items; “✕” stops a recurrence |
+
+“Save” writes the settings; “Default values” restores the original settings, except personnel, callsign colours, LL slots and recurrences.
 
 ### Report sending (web service)
 
@@ -562,17 +669,19 @@ Details: [Operations manual](../MANUEL_EXPLOITATION.md), § 10.
 
 This page groups the one-time settings: first run, local folders, external sources and virtual airline.
 To open it: sidebar › “Settings”, then the “Installation” tab.
-The side menu has two groups. The “Installation” group contains “First run”; the “Folders and sources” group contains “Sources and folders”.
-These sections are assigned to the page by `config/repository_tree` (key `settings.sections`: `setup` and `sources` → installation). All the other maintenance sections open on the Maintenance page.
+The side menu has two groups. The “Installation” group contains “First run”; the “Folders and sources” group contains “Sources and folders”, “Aeronautical data” and “Aircraft types”.
+These sections are assigned to the page by `config/repository_tree` (key `settings.sections`: `setup` and `sources` → installation; `sia` and `types` → installation,maintenance, i.e. on both pages: set-up here, update in Maintenance, same blocks). All the other maintenance sections open on the Maintenance page.
 
 ### First run
 
 This section shows whether the first run is complete in this browser, and on what date.
-- “Open the first run” reopens the wizard (`premier_lancement.html?force`). It runs in four steps:
-  1. Data: “Fetch the data” (clone of the data repository) or “Data archive…”; optionally, “DEFA log (.html)…”.
-  2. Profile: “Save the profile”.
-  3. Folders: “Choose the application folder”, then the ODV workbook (“OneDrive folder…” or “or the Excel file…”).
-  4. “Finish and update the SIA data”.
+- “Open the first run” reopens the wizard (`premier_lancement.html?force`), also reachable through the “First run” tab of Settings and the home page card as long as something remains to be set. At the top, “Where the suite stands” takes stock; then six steps:
+  1. Folders: “Choose the application folder”, then the ODV workbook, optional (“OneDrive folder…” or “or the Excel file…”).
+  2. Data: “Fetch the data” (clone of the data repository) or “Data archive…”; git sync repository (optional); optionally, “Log (.html)…”.
+  3. Airline: name, short name, full name, airline website; the installation's IVAO API key (optional, kept by the launcher); “Save the airline”.
+  4. Profile and credentials: trigram, IVAO, VATSIM, SimBrief, airline website credentials; “Save the profile”.
+  5. Aeronautical data and aircraft types: the “Aeronautical data” and “Aircraft types” blocks (the same as here).
+  6. Centre (administrators): “Enable the Centre”, then fleet and log from the website (“Update now”), registry missions and links to the SO Group settings (Settings › Centre); finally “Finish”.
 - “Sources and folders, virtual airline” opens the next section.
 - “Update channel” opens Maintenance › Updates.
 - To start from scratch: “Clean and start again…”, at the bottom of the first run. This clears the settings of this browser, not the files.
@@ -594,8 +703,9 @@ This section is the only place to set the local folders and the addresses of the
 | X-Plane folder (landings), Performance folder, Local backup folder | CSV logs, `.lnmperf` / `.json` profiles, `defa_local_store.yaml` |
 
 - **External sources**: the default address is shown greyed out. An entered value applies to this browser only; “↺” goes back to the default value and “Open ↗” opens the address.
-- **Virtual airline**: “Name”, “Short name”, “Centre (short)”, “Centre (full name)”, and the site pages (“Home page”, “Flight log”, “Fleet”, “Aircraft page”). An empty field keeps the default value. “Back to DEFA Virtual” clears all these settings.
-- **First run**: “Reopen the first run”; “Clean and start over…” clears the stored folders, the copy of the ODV workbook, the DEFA site credentials and the profile. The files on disk are not touched.
+- **API keys (external services)**: suite keys, shared by all its users (IVAO: API key for the area activations and the ATC sessions — trainings, exams, bookings — of the ODV planning and the Board). “Save” hands them to the launcher (`secrets/` at the application root, excluded from git, outside the data and the backups); the page only sees their state and last 4 characters; “Clear” removes the key.
+- **Virtual airline**: “Name”, “Full name”, “Short name”, “Centre (short)”, “Centre (full name)”, and the site pages (“Home page”, “Flight log”, “Fleet”, “Aircraft page”). An empty field keeps the default value. “Back to SO Group Virtual” clears all these settings.
+- **First run**: “Reopen the first run”; “Clean and start over…” clears the stored folders, the copy of the ODV workbook, the airline site credentials and the profile. The files on disk are not touched.
 
 ## Settings › Maintenance
 <!-- page: apps/settings/maintenance.html -->
@@ -604,7 +714,7 @@ This page is used to maintain the suite: updates, versions, SIA data, caches, ba
 To open it: sidebar › “Settings”, then the “Maintenance” tab. The page opens on “Updates”.
 The side menu has two parts:
 - the “Maintenance” group: Updates, Versions and sync, References and dependencies, Aeronautical data, Caches, Disk space, Full backup, Journal;
-- the databases, arranged in the groups “Repository files”, “DEFA base”, “Missions” and “Browser data”.
+- the databases, arranged in the groups “Repository files”, “Base”, “Missions” and “Browser data”.
 
 ### Suite updates
 
@@ -622,7 +732,7 @@ This block sets where code updates come from and when the suite looks for them.
 This table gives the version and update date of each item, with a state (✓, ⚠, ✗) and the source or update tool.
 - Code: suite (`repository_tree`), script cache version, git, remote channel.
 - SIA / AIRAC: current cycle and next cycle, map studio base, SIA XML folder, `mora.csv`, AAR tracks (ENR 5.7).
-- Reference databases: ICAO types, APD performance, DEFA fleet, DEFA reference, callsigns.
+- Reference databases: ICAO types, APD performance, fleet, reference, callsigns.
 - User data: SimBrief flight plans, planner profiles, report ledger, generated mission registry, landing logs, local data, last full backup.
 - “Refresh” re-reads the git state and the SIA folder.
 - A warning is shown if the local data has not been backed up for more than 7 days, or if there has been no full backup for more than 30 days.
@@ -639,37 +749,40 @@ This block describes each reference of the suite:
 | Dependents | data that depend on it |
 | Check | consistency checked |
 
-References tracked: SIA XML, studio analysed base, MORA grid, AAR tracks, APD performance, DEFA fleet, planner profiles and mission prompt.
+References tracked: SIA XML, studio analysed base, MORA grid, AAR tracks, APD performance, fleet, planner profiles and mission prompt.
 Examples of checks: mixed cycles in the SIA base, MORA obstacles from another cycle, fleet types missing from the ICAO base, prompt to regenerate (`python tools/build_mission_prompt.py`).
 The “Check” button reruns the checks.
 
-### Aeronautical data: sources and SIA update (AIRAC)
+### Aeronautical data: world zones, sources and AIRAC cycles
 
-**Sources**: one line per data source, each ticked (read) or not; changes apply at the next rebuild of the base (“Re-read the folder”, step 4). The SIA keeps priority: within the French FIRs only its airspace counts; elsewhere, an airspace, aerodrome or navaid already read is not added a second time.
-- **SIA France** (AIXM 4.5, XML_SIA) and **DIRCAM / MILAIP** (RTBA / AZBA areas, ENR 5.7 refuelling tracks): the step by step below.
-- **AIXM 5.1** (other countries): `.xml` files in the `data/sia/aixm5/` folder. “ENAIRE (Spain): download” takes the latest published datasets (airspace, en route). United Kingdom (NATS): register on the site, drop the file by hand.
-- **GeoJSON**: `.geojson` or `.json` files (and OpenAir `.txt`) in `data/sia/geojson/`. “FAA (USA): special use airspace and military routes” downloads the special use airspace (MOA, R, W, A, P) and the MTR routes, read as corridors; “FAA: airspace classes” is a large file.
-- **openAIP**: two-letter country codes separated by spaces, then “openAIP: download the countries” (airspace, aerodromes, navaids, VFR points in `data/sia/openaip/`). Community data, non-commercial use (CC BY-NC 4.0).
-- **X-Plane**: button for the X-Plane installation folder; navaids, fixes, airways and MORA grid from the `earth_*.dat` files (“Custom Data” first), OpenAir airspace if any.
-- Downloads go through the launcher (`tools/aero_fetch.py`, also usable on the command line). Without the launcher: download the files by hand and drop them into the source's subfolder.
-- Outside France, the R, D, TRA, TSA, MOA, W, A areas and MTR routes crossed by a mission appear in its airspace to activate.
+**Zone map**: one zone per country (France groups mainland and overseas territories, the SIA coverage). Hovering it shows its sources in the right-hand panel. **One click adds the country to the selection, another removes it** (chosen countries in blue with a dark outline); the bar under the map lists them (to activate, to deactivate, “Cancel”). **“Activate”** applies the selection, then chains by itself, for all chosen countries still incomplete, everything the suite can do: downloads of their sources, latest ZIPs from Downloads (SIA, NATS…), a single database rebuild, then the MORA of each country that has none — only if the database was rebuilt (double gauge: step and detail; a failed source does not stop the others; summary in a notification). A country’s panel keeps “Activate the zone” / “Deactivate the zone” and, for an active zone, “Fetch and recompute everything”. What is left to do by hand (order on the SIA website, PDF to import, X-Plane folder, files to drop…) is listed under the map, “Actions to do”: one line per source, with its link and its button; downloads and the MORA, done by “Activate”, fit on a single “automatic” line.
+- Colours: outline only = inactive, no data; grey = inactive, with data; orange = active, incomplete data; green = active, all data of the ticked sources; light blue = hovered zone; blue with a dark blue outline = chosen country (“Activate” to apply).
+- Each source is ticked or unticked for its zone; only the ticked sources of the active zones go into the database. A “link” source (PDF or reference website) is not read by the suite.
+- Depending on the source, the panel offers:
+  - a direct download through the launcher (`tools/aero_fetch.py`): openAIP (each country), ENAIRE (Spain), FAA (United States: military areas and routes, airspace classes), UK military AIP (ENR 5.2, official PDF read by the launcher: low flying areas, VATA, TVAA avoidance area, AARA refuelling tracks added to the DIRCAM ones), NAV CANADA (Designated Airspace Handbook, current edition read by the launcher: Canadian danger, restricted and advisory areas, to download again every 56 days);
+  - an order or a registration, with the link and the instructions: SIA France (0 € order, to redo at each cycle), NATS (United Kingdom, file dropped into `data/sia/zones/gb/`);
+  - a PDF, with the link and the instructions: DIRCAM / MILAIP ENR 5.7 (refuelling tracks);
+    DIRCAM: “Import the MILAIP PDF…” reads the PDF of section ENR 5.7 (pdf.js, network at the first import), shows the number of tracks and the anomalies found, then “Write miam-enr-5-7-tracks.xml” stores the file in the SIA folder (old one in `_archives/`) and updates the database;
+  - a folder of the computer: X-Plane (navaids, fixes, airways, MORA grid, cut to the outlines of the active zones that ticked it);
+  - a calculation: the zone MORA. A very large zone (more than 1500 one-degree cells: United States, Canada…) takes the X-Plane MORA by default; “Full calculation…” computes it in 10° blocks, after a confirmation that states the volume (AWS open terrain tiles raised by 100 m, no OpenStreetMap query): each block is written to `mora.csv` at once, “Stop” between two blocks, “Resume the full calculation…” later.
+- SIA France (France zone): “Fetch the downloaded ZIP” (the launcher takes it from Downloads), “SIA export ZIP…”, “Extract …” if it is already in the folder, “Archive the old cycles” (`_archives/`); “SIA folder content” lists the cycle files.
+- The SIA keeps priority: inside the French FIRs only its airspace counts; elsewhere an airspace, aerodrome or navaid already read is not added twice. Outside France, R, D, TRA, TSA, MOA, W, A areas and MTR routes crossed by a mission appear in its airspace to activate.
+- Website addresses (SIA, DIRCAM, NATS, UK military AIP, NAV CANADA) are set in Settings › Installation › Sources and folders › External sources; the SIA and X-Plane folders there are the same as here.
 
-**SIA France: new AIRAC cycle step by step**
+**Aeronautical database: sources, cycles and rebuild**: cycle in force, next cycle and database cycle, then a table of all ticked sources of the active zones (zone, source, files, cycle or date, age, size, state). A click on a row pins its zone and updates the source (download, SIA ZIP, MILAIP PDF import, X-Plane folder, zone MORA). At the top of the table: the number of checks without issue, then the problems (missing sources) and the warnings (old ones); “Show the problems” keeps only them. The table is sorted by state (problems first) and can be sorted by column.
+“Recompute all” rebuilds the database with all active zones (a few seconds; the browser may ask to authorise the folder); “Purge the cache” empties it. It is the same block as in the map studio.
+Table states:
+- SIA: cycle read from the file names, “old” if it precedes the cycle in force;
+- X-Plane: “Custom Data” cycle;
+- downloaded files: “old” after 28 days (one AIRAC cycle).
 
-A new AIRAC cycle comes into force every 28 days. Six steps, in order; the badge of each step turns green when the step is done. The “How to” details each step.
-1. **AIRAC cycle**: note the current cycle, the next one and that of the studio base. Links lead to the SIA pages.
-2. **Download and extract the SIA export**:
-   - on the SIA website: account (free), “Add to cart” (€0), then “Checkout”, accepting the licence;
-   - back in the suite: “Fetch the downloaded ZIP” (the launcher takes it from Downloads), or “SIA export ZIP…” to choose it, or “Extract …” if it is already in the folder;
-   - choose the SIA folder if needed, then “Analyse”.
-3. **Old cycles**: “Archive into _archives/”.
-4. **Rebuild the SIA base**: “Re-read the folder”. Re-reading takes a few seconds; it is the same block as in the map studio.
-5. **Check the differences with the previous base**: go through the added or removed airspaces, then “Done”.
-6. **Recompute (MORA) and check consistency**:
-   - “Simple recalculation” (offline) or “Full calculation” (network, about one minute);
-   - if cells change: “Write mora.csv (old one archived)”, then commit the data repository;
-   - finally “Check” the consistency.
-The AIRAC XML files (about 80 MB per cycle) stay out of the repository, like the files of the other sources. The MORA values are computed, not certified.
+**MORA**: several sources.
+- The computed grid (`data/sia/mora.csv`) has priority. “Simple recalculation” takes the obstacles of the new cycle (offline); “Full calculation” redoes terrain and peaks (network, about one minute) for the theatres and missions; “Compute the zone MORA” (panel) does it over the extent of one zone, the other cells being kept.
+- If cells change: “Write mora.csv (old one archived)”, then commit the data repository.
+- Elsewhere, the X-Plane MORA grid completes it, if the X-Plane source is ticked.
+
+**Consistency**: “Check” verifies airspace, aircraft, fleet, performance and mission aerodromes.
+AIRAC XML files (about 80 MB per cycle) stay outside the repository, like the files of the other sources. MORA values are computed, not certified.
 
 ### Caches
 
@@ -691,6 +804,7 @@ Purge the “Data index” when a page shows outdated data after a file change m
 
 This block only appears if the Centre is enabled.
 - “Compute used space” measures the missions folder (`data/missions`): per mission, per file type and in total. It also shows the space used by the browser.
+- “Aeronautical data, by zone”: space of the SIA folder by zone (sources and number of files; mora.csv counts for all zones). A deactivated zone keeps its files: delete them by hand to free the space.
 - “Delete surplus maps” removes the maps that are no longer in their mission's list.
 - “Purge all generated maps” and “Purge PDFs” free up space; these files are regenerated from the YAML.
 - Each deletion asks for confirmation.
@@ -723,7 +837,7 @@ Operations logged:
 - MORA recalculation.
 As long as none of these operations has taken place, the journal is empty.
 
-### DEFA fleet (known aircraft)
+### fleet (known aircraft)
 
 This database (`data/references/aircraft_fleet.js`) lists the aircraft offered in the reports: “Operator”, “ICAO type”, “Variant”, “Registration”, “Code”, “Number”, “Callsigns” (comma-separated), “Base”, “Operational”.
 - **“Paste the website Fleet page…”**:
@@ -733,7 +847,11 @@ This database (`data/references/aircraft_fleet.js`) lists the aircraft offered i
 - An aircraft from the page replaces the one in the file (same registration) but keeps its extra callsigns. Aircraft missing from the page are kept.
 - The status line gives the number of aircraft updated, added and kept. Check, then “Save to repository”.
 - **Buttons common to the repository databases**: “Apply in this browser” (local changes take priority), “Save to repository” (writes the file to the Repository folder, to be committed), “Download”, “Discard changes”, “Back to repository file”.
-- Script method, instead of pasting: `python AircraftDB/update_fleet.py Flotte.html` (“Procedure”).
+- **Automatic**: the launcher itself reads the website's public Fleet and Flight log pages (no login), once a day when a page opens, with the same rules as pasting; it writes `data/references/aircraft_fleet.js` and `defa_reference.js`, to be sent with “Synchronise”. Setting and “Update now”: under the list of aircraft in the reporting (below). Pasting and the script (`python AircraftDB/update_fleet.py Flotte.html`) remain possible.
+- **Where**: Settings › Centre › “Fleet (known aircraft)”, restricted while the Centre is locked (previously in Maintenance).
+- **Aircraft in the reporting**: below the fleet, all the aircraft flying in the mission log (type, callsigns, operator, flights, last flight). “Personal” box, ticked by default: individual aircraft, outside the SOG fleet; unticking it adds it to the fleet (it becomes assignable), ticking it again removes it. Then “Save to repository”: the fleet and the index of individual aircraft (`data/references/aircraft_personal.js`) are written together. An aircraft on the website's Fleet page comes back into the fleet at the next update.
+- **Types and performance**: “Refresh types and performance” completes the types unknown to the database (fleet and reporting); the daily update from the website also does it, in the background, for the fleet, the log and the individual aircraft.
+- **Aircraft aerodrome (base)**: it only changes through the update from the website, or through a report issued from a mission order with a real landing aerodrome; a report outside a mission order or a landing report does not move the aircraft. An aircraft added from the reporting comes in without an aerodrome. The current aerodrome is the “Location” column of the website's Fleet page (kept with the date of its last change), unless a more recent report issued from a mission order gives an actual landing aerodrome (`missions/aircraft_positions.json`); ferries start from there (assignment, ODV planning, Board, aircraft sheet).
 
 ### Aircraft types (ICAO base)
 
@@ -741,7 +859,7 @@ This database (`AircraftDB/aircraft_db.js`) contains two tables:
 - “Types”: “Designator”, “Model”, “ICAO description”, “WTC”, “Wing”, “Source”;
 - “Aliases (common name → designator)”.
 Changes are also carried over to `aircraft_overrides.json`. The buttons are those of the repository databases.
-The “Procedure” gives the commands of the refresh script, to be run from `AircraftDB`: `python update_aircraft_db.py --no-network`, `--add <types>`, `--refresh-icao`. The database is not published with the suite (ICAO and EUROCONTROL data): the “Aircraft types and performance” card in Settings › Maintenance › References and dependencies completes it on this computer, type by type, never all at once — a code typed in (“Add / update”), the unknown types, the fleet types or the mission types (ODV, registry); it needs the launcher and the network, then reload the page.
+The “Procedure” gives the commands of the refresh script, to be run from `AircraftDB`: `python update_aircraft_db.py --no-network`, `--add <types>`, `--refresh-icao`. The database is not published with the suite (ICAO and EUROCONTROL data): the “Aircraft types and performance” card in Settings › Maintenance › References and dependencies completes it on this computer, type by type, never all at once — a code typed in (“Add / update”), the unknown types, the fleet types or the mission types (ODV, registry); it needs the launcher and the network, then reload the page (a button offers it at the end). The card is at the top of the block; with an empty database it is outlined, a notification says so and “Complete the database” takes the fleet and mission types in one click. The files written (`AircraftDB/aircraft_db.js`, `aircraft_perf.js`) need nothing: the pages read them; not versioned, they are completed on each computer or copied from one to another.
 Limit: a type deleted here may come back at the next refresh, if it is part of the script's base list.
 
 ### Callsign correspondence
@@ -750,35 +868,35 @@ This database (`data/references/callsigns.js`) links the full callsign (kept in 
 - “Callsigns” table: “Full callsign”, “Flight plan”, “Other forms”, “Organisation”, “OPR/”, “Types”, “Role”, “Generic”, “Telephony”, “Note”.
 - “Organisations → ICAO designator (OPR/)” table.
 - There is no script: this page (or the file, edited by hand) is the source.
-- To feed it: forms corrected in the reports arrive in “Learned callsigns”, and the series seen in the DEFA log arrive through “Add” or “Complete”.
+- To feed it: forms corrected in the reports arrive in “Learned callsigns”, and the series seen in the log arrive through “Add” or “Complete”.
 
-### DEFA reference (anonymised, in the repository)
+### reference (anonymised, in the repository)
 
-This database (`data/references/defa_reference.js`) lists the DEFA pilots (trigrams) and aircraft, without the flights or the missions. It is an input aid and is not exhaustive.
+This database (`data/references/defa_reference.js`) lists the pilots (trigrams) and aircraft, without the flights or the missions. It is an input aid and is not exhaustive.
 - “Aircraft” table: registration, type, variant, status, home base (editable), last known AD, entry into service, callsigns used, first and last flight, flights, fleet record, note.
 - “Pilots” table: trigram, first and last flight, flights, types, note.
 - Update:
   1. load the flight log (next section);
-  2. click “Update the DEFA reference (anonymised)”: nothing is deleted, and manual entries are kept;
+  2. click “Update the reference (anonymised)”: nothing is deleted, and manual entries are kept;
   3. “Save to repository”, then commit.
 - Script alternative: `tools/defa_reference.py`.
 
-### DEFA flight log (flights performed)
+### flight log (flights performed)
 
 This database is separate from the mission registry. It is kept only in this browser: out of the repository and out of the local backup, because it contains trigrams.
 - “Load / update the log…” accepts the “Log des vols” page copied or saved, or a CSV / JSON export. Flights are merged without duplicates.
 - “Callsign series”: “Add” creates the row in the callsign correspondence; “Complete” adds the forms and types seen to it.
 - “Flights”: full-text filter, 300 rows shown at most.
 - Actions:
-  - “Update the DEFA reference (anonymised)”;
+  - “Update the reference (anonymised)”;
   - “Export CSV”;
   - “Export JSON (reloadable)”;
-  - “Clear the DEFA base from this browser”.
+  - “Clear the base from this browser”.
 
 ### Merges and renames (pilots, aircraft)
 
 This table lists the equivalences created by “Merge with… / rename” from the records. Columns: “Type” (pilot or aircraft), “Old”, “Becomes”, “Result”.
-These equivalences apply to the reloaded DEFA log, to the reference and to the catalogue.
+These equivalences apply to the reloaded log, to the reference and to the catalogue.
 “Delete” removes an equivalence, after confirmation.
 A loop (A → B and B → A) is highlighted: it swaps the two names. Delete the faulty entry, then redo the merge from the record.
 
@@ -826,6 +944,7 @@ The shared data (availability, users, configuration, missions and assignments, r
   3. it fetches and merges the changes of the other computers, then pushes.
 - Without a trigram, synchronisation is refused: set it in Settings › My profile.
 - At the end, a notification gives the number of files sent and received, and the pages re-read the changed files.
+- **Gap with the backup**: the button turns orange (change not sent for more than 48 h, 20 or more files to send, 10 commits to receive, unsent commit, file changed outside the synchronised data) or red (`data/` without a git repository or without a remote, merge in progress, high thresholds: 100 files, 7 days, 50 commits); reasons in the tooltip, alert as a notification once per session. Without a git repository (except the trial data), a “⚠ Backup” button says so. Thresholds can be set in `data/config/suite.json`, key `sync`.
 
 ### First synchronisation
 

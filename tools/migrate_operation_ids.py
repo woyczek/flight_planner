@@ -37,6 +37,8 @@ def jeton(old, base):
 
 
 def famille(new_id, type_):
+    """Famille du dossier de rangement : type_ s'il est donné, sinon la famille de la lettre du nouvel identifiant
+    (MEDEVAC écartée : lettre M partagée avec HEMS) ; MISSION à défaut."""
     lettre = new_id[0]
     if type_:
         return type_
@@ -44,6 +46,8 @@ def famille(new_id, type_):
 
 
 def main():
+    """Migre l'ancien identifiant vers le nouveau : textes, noms de fichiers et dossiers, rangement dans la famille ;
+    trace ajoutée à RENUMEROTATION.md (rien n'est écrit avec --dry-run)."""
     args = [a for a in sys.argv[1:] if not a.startswith('--')]
     dry = '--dry-run' in sys.argv
     type_ = sys.argv[sys.argv.index('--type') + 1].upper() if '--type' in sys.argv else ''

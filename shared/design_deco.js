@@ -23,6 +23,7 @@
   /** URL d'une image de décor : DECO(design)(nom) → shared/deco/<design>/<nom>.webp */
   const DECO = d => n => new URL(`deco/${d}/${n}.webp${V}`, script.src).href;
   const html = document.documentElement;
+  /** Vrai en décor complet (html[data-decor="full"]) ; sinon décor sobre : ni panneaux, ni objets, ni décor de page. */
   const fullDecor = () => html.dataset.decor === 'full';
 
   // ------------------------------------------------------------------ libellés (voyant et radar de Durci)
@@ -34,13 +35,14 @@
       'Jetzt im Sicherungsordner sichern', 'Guardar ahora en la carpeta de copia'
     ]
   };
+  /** Libellé k de T dans la langue de la page. */
   const tr = k => window.RepositoryKit.t(T[k]); // shared/kit.js
 
   // ------------------------------------------------------------------ décor de page, par design
   // (tous facultatifs sauf foot)
   // foot     : frise du pied de page, liste de composants (FOOT) : 'strip' (image « footer » du design ; footTones :
   //            « footer-sombre » ou « footer-clair » selon le ton, tools/cut_banner.py), 'plate'
-  //            (plaque DEFA), 'radar' (écran de veille animé), 'status' (voyant de sauvegarde, fonction réelle) ;
+  //            (plaque), 'radar' (écran de veille animé), 'status' (voyant de sauvegarde, fonction réelle) ;
   // between  : objets entre les blocs, tour à tour : [image, largeur px, option] ; option : 'pair' (deux exemplaires)
   //            ou { x, y, rot } (décalage en px depuis le centre, inclinaison en degrés) ;
   // device   : appareil de page, un objet posé à côté d'un poste (radio, DME), côte à côte calés à droite et
@@ -49,12 +51,13 @@
   // sides    : objets des marges, alternativement à gauche et à droite : [image, largeur px maximale].
   // composants de la frise : img(nom) → adresse de l'image du design
   const FOOT = {
+    /** Bandeau du pied de page : image « footer » du design, ou sa variante du ton (footTones). */
     strip: (img, set) => `<img class="repo-deco-strip" src="${img(set?.footTones ? `footer-${html.dataset.tone === 'dark' ? 'sombre' : 'clair'}` : 'footer')}" alt="">`,
+    /** Plaque gravée du pied de page (image plate-defa). */
     plate: img => `<div class="repo-deco-plate-img"><img src="${img('plate-defa')}" alt=""></div>`,
     // plots du radar : position dans l'écran (%) et couleur ; délai d'allumage calculé au rendu (passage du balayage)
     radar: img => `<div class="repo-deco-radar" title="${tr('radar')}"><div class="repo-deco-radar-stage">` +
-      `<img src="${img('radar')}" alt=""><span class="repo-deco-sweep"></span>` +
-      [
+      `<img src="${img('radar')}" alt=""><span class="repo-deco-sweep"></span>` + [
         [30.7, 33.5, '#7dff8a'],
         [65.6, 59.6, '#7dff8a'],
         [72, 79.5, '#7dff8a'],
@@ -136,7 +139,7 @@
         ['gauge-alt', 120]
       ]
     },
-    // Durci : plaque DEFA, écran radar et voyant de sauvegarde en pied de page ; plaques, pochoirs et objets du pupitre
+    // Durci : plaque, écran radar et voyant de sauvegarde en pied de page ; plaques, pochoirs et objets du pupitre
     // (grille d'aération, lampe grillagée, plaque vierge, blindage riveté, interrupteur à capot, crayon, cadran) ; appareil
     // de page : câble et poste radio
     field: {
@@ -181,11 +184,17 @@
   const THEMES = [
     ['aircraft', /aircraft|appareil|avion|a[ée]ronef|plane|helico|h[ée]lico|flotte|fleet|perf|masse|\bmass|mtow|centrage/],
     ['airfield', /a[ée]rodrome|airfield|airport|terrain|piste|runway|landing|atterriss|d[ée]collage|takeoff|\bsia\b|oaci|icao/],
-    ['time', /day|night|jour|nuit|clock|heure|horaire|horodat|time|calendar|date|dur[ée]e|p[ée]riode|period|activit|planning|odv|m[ée]t[ée]o|weather/],
-    ['radio', /network|r[ée]seau|radio|comm|fr[ée]quen|link|send|sync|source|mise à jour|update|maintenance|database|base|sauvegarde|backup|import|export/],
+    ['time',
+      /day|night|jour|nuit|clock|heure|horaire|horodat|time|calendar|date|dur[ée]e|p[ée]riode|period|activit|planning|odv|m[ée]t[ée]o|weather/
+    ],
+    ['radio',
+      /network|r[ée]seau|radio|comm|fr[ée]quen|link|send|sync|source|mise à jour|update|maintenance|database|base|sauvegarde|backup|import|export/
+    ],
     ['nav', /map|carte|route|navig|profil|trajet|flight|\bvol\b|fuel|carbur|vent|wind|target|cible|layers/],
     ['gear', /[ée]quipement|mat[ée]riel|gear|\bbox\b|cargo|m[ée]dic|patient|hems|medevac|capabilit|capacit|charge|load|emport/],
-    ['awards', /outcome|r[ée]sultat|result|succ[eè]s|valid|award|m[ée]daille|summary|synth[eè]se|bilan|chart|statist|breakdown|r[ée]partition|calcul/],
+    ['awards',
+      /outcome|r[ée]sultat|result|succ[eè]s|valid|award|m[ée]daille|summary|synth[eè]se|bilan|chart|statist|breakdown|r[ée]partition|calcul/
+    ],
     ['families', /famil|s[ée]rie|series|type|mission|cat[ée]gor/],
     ['ops', /./]
   ];
@@ -247,6 +256,7 @@
   /** Bloc de premier niveau, affiché. */
   const topBlock = b => !b.hidden && b.offsetHeight > 0 && !b.parentElement.closest('.repo-block');
 
+  /** Feuille de registre (ton clair, décor complet) en fond des grands blocs de tableau reconnus par SHEETS[d]. */
   function sheets(d) {
     const re = SHEETS[d];
     if (!re || !fullDecor() || html.dataset.tone === 'dark') return;
@@ -257,12 +267,14 @@
       el.className = 'repo-deco-sheet';
       el.setAttribute('aria-hidden', 'true');
       // papier (dans le cadre), tranches répétées (arrêtées aux coins), coins et en-tête, puis accessoire du bord gauche
-      el.innerHTML = '<i class="sh-paper"></i><i class="sh-top"></i><i class="sh-bot"></i><i class="sh-left"></i><i class="sh-right"></i><i class="sh-frame"></i><i class="sh-acc"></i>';
+      el.innerHTML =
+        '<i class="sh-paper"></i><i class="sh-top"></i><i class="sh-bot"></i><i class="sh-left"></i><i class="sh-right"></i><i class="sh-frame"></i><i class="sh-acc"></i>';
       b.classList.add('repo-has-sheet', 'repo-has-bg');
       if (reuse(el, b) === el) b.prepend(el);
     });
   }
 
+  /** Objet posé (PROPS) dans le coin des grands blocs reconnus, sauf sur une feuille de registre. */
   function props(d) {
     const list = PROPS[d];
     if (!list || !fullDecor()) return;
@@ -288,6 +300,7 @@
    */
   function panelOf(b, set, prev) {
     const o = b.offsetWidth >= b.offsetHeight ? 'w' : 't';
+    /** Thèmes de THEMES reconnus dans un texte (« ops » toujours en dernier). */
     const hit = s => THEMES.filter(([, re]) => re.test(String(s || '').toLowerCase()));
     // titre, puis icône et identifiant, puis sous-titre : premier niveau qui reconnaît un thème autre que « ops »
     const themes = [b.querySelector('h2,h3')?.textContent, `${b.dataset.icon || ''} ${b.dataset.blockId || ''}`, b.dataset.subtitle]
@@ -316,7 +329,8 @@
     let prev = '';
     document.querySelectorAll('.repo-block').forEach(b => {
       // data-no-deco : bloc sans panneau (texte long, ex. la page Aide : un panneau couvrirait tout le document)
-      if (b.hidden || !b.offsetHeight || b.hasAttribute('data-no-deco') || b.classList.contains('repo-has-bg') || b.parentElement.closest('.repo-block.repo-has-bg')) return;
+      if (b.hidden || !b.offsetHeight || b.hasAttribute('data-no-deco') || b.classList.contains('repo-has-bg') || b.parentElement
+        .closest('.repo-block.repo-has-bg')) return;
       const f = prev = panelOf(b, set, prev);
       const el = document.createElement('div');
       el.className = 'repo-deco-bgimg repo-deco-panel';
@@ -354,13 +368,17 @@
   // de la place libre (0 : calé à droite, 1 : à gauche), valable quelle que soit la largeur de la page.
   const deviceKey = d => `repositoryDeviceX:${d}`;
 
+  /** Rend l'appareil de page dv déplaçable : position (fraction de la place libre) gardée par design dans le stockage
+   *  (repositoryDeviceX:<design>), réduit à la largeur de sa colonne si besoin. */
   function slideDevice(dv, d) {
     const set = dv.firstElementChild,
       K = window.RepositoryKit;
     // plus large que sa colonne : réduit à sa largeur (depuis le coin bas droit)
     const scale = () => Math.min(1, dv.clientWidth / (set.offsetWidth || 1));
+    /** Place libre (px) à gauche de l'appareil une fois réduit. */
     const room = () => Math.max(0, dv.clientWidth - set.offsetWidth * scale());
     let frac = Math.min(1, Math.max(0, +K.store.get(deviceKey(d), 0) || 0));
+    /** Applique la position et l'échelle ; gardée sur dv._place pour la recalculer quand le nœud est repris. */
     const place = dv._place = () => {
       set.style.transform = `translateX(${-Math.round(frac * room())}px) scale(${scale().toFixed(3)})`;
     };
@@ -376,10 +394,12 @@
       const x0 = e.clientX,
         f0 = frac,
         r = room() || 1;
+      /** Glissement : nouvelle fraction d'après le déplacement horizontal du pointeur. */
       const move = ev => {
         frac = Math.min(1, Math.max(0, f0 - (ev.clientX - x0) / r));
         place();
       };
+      /** Fin du glissement : position enregistrée pour ce design. */
       const up = () => {
         set.classList.remove('dragging');
         set.removeEventListener('pointermove', move);
@@ -395,6 +415,8 @@
     });
   }
 
+  /** Passe complète du décor : retire le décor de page, reconstruit, puis supprime les nœuds de l'ancienne passe
+   *  que reuse() n'a pas repris. */
   function render() {
     // décor de page retiré (mesures des écarts sans lui), fonds des blocs laissés en place ; repris s'ils reviennent
     keep = nodes.map(n => (n.remove(), n));
@@ -409,6 +431,8 @@
     }
   }
 
+  /** Construit le décor du design courant : fonds et objets des blocs, puis (décor complet) pied de page, objets
+   *  entre les blocs, appareil de page et objets des marges. */
   function build() {
     const d = html.dataset.design,
       set = SETS[d];
@@ -523,12 +547,14 @@
     // voyant actif : sauvegarde comme le bouton de l'en-tête (browser_store.js : dossier, sinon choix, sinon téléchargement)
     if (b && !b.onclick) {
       b.title = tr('saveNow');
+      /** Clic sur le voyant : même action que le bouton de sauvegarde de l'en-tête. */
       b.onclick = () => document.querySelector('.repo-backup-button')?.click();
     }
   }
 
   // ------------------------------------------------------------------ déclencheurs
   let timer = 0;
+  /** Recalcul différé (250 ms) : regroupe les changements rapprochés (redimensionnement, design, langue). */
   const later = () => {
     clearTimeout(timer);
     timer = setTimeout(render, 250);
@@ -551,8 +577,11 @@
   // premier niveau affichés (titre, icône, identifiant) a changé ; vérifiée une fois par image, sans lire la mise en page
   let shown = '',
     checking = false;
+
+  /** Signature des blocs de premier niveau affichés (titre, icône, identifiant) : détecte un changement. */
   function blocksShown() {
-    return [...document.querySelectorAll('.repo-block')].filter(b => !b.hidden && !b.parentElement.closest('.repo-block')).map(blockText).join('|');
+    return [...document.querySelectorAll('.repo-block')].filter(b => !b.hidden && !b.parentElement.closest('.repo-block')).map(blockText)
+      .join('|');
   }
   new MutationObserver(() => {
     if (checking) return;

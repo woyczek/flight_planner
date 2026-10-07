@@ -11,20 +11,25 @@
 (() => {
   'use strict';
   if (window.__perf) return;
+  /** Horloge haute résolution (ms depuis l'ouverture de la page). */
   const now = () => performance.now();
   const c = {};
+  /** Ajoute n au compteur k (créé à 0). */
   const add = (k, n = 1) => {
     c[k] = (c[k] || 0) + n;
   };
   const byObs = {}; // fichier créateur → { calls, ms }
   const byCaller = {}; // « compteur fichier:ligne » → appels (JSON.parse, IndexedDB.open)
   const byKey = {}; // clé du stockage → lectures
+  /** Compte un appel de nature kind par « fichier:ligne » appelant (hors perf_probe.js), relevé dans la pile. */
   const caller = kind => {
-    const f = (new Error().stack || '').split('\n').slice(3).map(s => /\/([\w.-]+\.(?:js|html))(?:\?[^:)\s]*)?:(\d+)/.exec(s)).find(m => m && m[1] !== 'perf_probe.js');
+    const f = (new Error().stack || '').split('\n').slice(3).map(s => /\/([\w.-]+\.(?:js|html))(?:\?[^:)\s]*)?:(\d+)/.exec(s)).find(m =>
+      m && m[1] !== 'perf_probe.js');
     const k = `${kind} ${f ? f[1] + ':' + f[2] : '?'}`;
     byCaller[k] = (byCaller[k] || 0) + 1;
   };
   let inflight = 0;
+  /** Mode sans serveur demandé (localStorage perfNoServer = « 1 »), lu une fois au chargement. */
   const noServer = (() => {
     try {
       return localStorage.getItem('perfNoServer') === '1';
@@ -36,6 +41,7 @@
 
   // ---- requêtes
   const realFetch = window.fetch.bind(window);
+  /** fetch compté : requêtes, données (data/), 404 / 304, requêtes en cours ; data/ refusé en mode sans serveur. */
   window.fetch = async (input, init) => {
     const url = String(input?.url || input);
     add('fetch');
@@ -59,6 +65,7 @@
   const SP = Storage.prototype,
     gi = SP.getItem,
     si = SP.setItem;
+  /** Lecture du stockage comptée (nombre, octets lus, lectures par clé). */
   SP.getItem = function(k) {
     const v = gi.call(this, k);
     add('storage.get');
@@ -66,12 +73,14 @@
     byKey[k] = (byKey[k] || 0) + 1;
     return v;
   };
+  /** Écriture du stockage comptée (nombre, octets écrits). */
   SP.setItem = function(k, v) {
     add('storage.set');
     add('storage.setBytes', String(v).length);
     return si.call(this, k, v);
   };
   const jp = JSON.parse;
+  /** JSON.parse compté : appels, caractères analysés et appelant. */
   JSON.parse = function(s, r) {
     add('json.parse');
     caller('json');
@@ -81,6 +90,7 @@
 
   // ---- IndexedDB
   const io = indexedDB.open.bind(indexedDB);
+  /** Ouverture IndexedDB comptée, avec l'appelant. */
   indexedDB.open = (...a) => {
     add('idb.open');
     caller('idb');
@@ -109,8 +119,10 @@
 
   // ---- observateurs : rappels comptés et chronométrés, par fichier créateur
   const MO = window.MutationObserver;
+  /** MutationObserver chronométré : chaque rappel est compté et sa durée cumulée pour le fichier qui l'a créé. */
   window.MutationObserver = function(cb) {
-    const where = (new Error().stack || '').split('\n').slice(2).map(s => /\/([\w.-]+\.(?:js|html))/.exec(s)?.[1]).find(f => f && f !== 'perf_probe.js') || '?';
+    const where = (new Error().stack || '').split('\n').slice(2).map(s => /\/([\w.-]+\.(?:js|html))/.exec(s)?.[1]).find(f => f && f !==
+      'perf_probe.js') || '?';
     const slot = byObs[where] ||= {
       calls: 0,
       ms: 0
@@ -131,6 +143,7 @@
 
   // ---- temps sans réponse : retard d'une minuterie de 20 ms (au-delà de 50 ms : « bloqué »)
   let last = now();
+  /** Échantillonneur : un retard de plus de 50 ms sur la minuterie de 20 ms est compté comme temps bloqué. */
   const tick = () => {
     const t = now(),
       lag = t - last - 20;
@@ -159,6 +172,7 @@
 
   // ---- mode sans serveur : dossiers autorisés simulés (lecture par le serveur, accès comptés)
   if (noServer) {
+    /** Lit un fichier du dépôt par le serveur (sans cache) ; NotFoundError comme un vrai dossier si absent. */
     const realFetchText = async path => {
       const r = await realFetch(new URL(path, ROOT).href, {
         cache: 'no-cache'
@@ -166,15 +180,19 @@
       if (!r.ok) throw new DOMException('absent', 'NotFoundError');
       return r;
     };
+    /** Liste d'un dossier servi : liens de la page d'index du serveur (noms relatifs, « / » final pour un dossier). */
     const listing = async path => {
       const r = await realFetch(new URL(path.replace(/\/?$/, '/'), ROOT).href);
       if (!r.ok) throw new DOMException('absent', 'NotFoundError');
       const html = await r.text();
-      return [...html.matchAll(/href="([^"?#]+)"/g)].map(m => decodeURIComponent(m[1])).filter(h => !h.startsWith('/') && !h.startsWith('..') && !h.startsWith('?'));
+      return [...html.matchAll(/href="([^"?#]+)"/g)].map(m => decodeURIComponent(m[1])).filter(h => !h.startsWith('/') && !h
+        .startsWith('..') && !h.startsWith('?'));
     };
+    /** Faux FileSystemFileHandle : lecture par le serveur, écriture simulée (seule la taille est comptée). */
     const fileH = (path, name) => ({
       kind: 'file',
       name,
+      /** Contenu du fichier lu sur le serveur, date de modification reprise de l'en-tête last-modified. */
       async getFile() {
         add('fs.getFile');
         const r = await realFetchText(path);
@@ -183,43 +201,58 @@
           lastModified: Date.parse(r.headers.get('last-modified') || '') || 0
         });
       },
+      /** Flux d'écriture factice : accumule le texte et compte les octets à la fermeture, rien n'est enregistré. */
       async createWritable() {
         add('fs.write');
         let data = '';
         return {
+          /** Accumule le texte écrit (les données binaires sont ignorées). */
           write: async d => {
             data += typeof d === 'string' ? d : '';
           },
+          /** Fermeture : compte les octets « écrits ». */
           close: async () => {
             add('fs.writeBytes', data.length); // écriture simulée : non enregistrée
           }
         };
       },
+      /** Même fichier si même nom (approximation suffisante pour la simulation). */
       isSameEntry: async o => o?.name === name,
+      /** Permission toujours accordée : aucun dialogue en mode sans serveur. */
       queryPermission: async () => 'granted',
+      /** Permission toujours accordée : aucun dialogue en mode sans serveur. */
       requestPermission: async () => 'granted'
     });
+    /** Faux FileSystemDirectoryHandle sur un dossier servi (path avec « / » final, name son nom affiché). */
     const dirH = (path, name) => ({
       kind: 'directory',
       name,
+      /** Poignée du fichier n ; sans create, vérifie qu'il existe sur le serveur (corps de la réponse abandonné). */
       async getFileHandle(n, o = {}) {
         add('fs.getFileHandle');
         if (!o.create) await realFetchText(path + n).then(r => r.body?.cancel?.());
         return fileH(path + n, n);
       },
+      /** Poignée du sous-dossier n (aucune vérification d'existence). */
       async getDirectoryHandle(n) {
         add('fs.getDirectoryHandle');
         return dirH(path + n + '/', n);
       },
+      /** Entrées [nom, poignée] du dossier d'après la page d'index du serveur. */
       async * entries() {
         add('fs.list');
-        for (const h of await listing(path)) yield h.endsWith('/') ? [h.slice(0, -1), dirH(path + h, h.slice(0, -1))] : [h, fileH(path + h, h)];
+        for (const h of await listing(path)) yield h.endsWith('/') ? [h.slice(0, -1), dirH(path + h, h.slice(0, -1))] : [h, fileH(
+          path + h, h)];
       },
+      /** Poignées seules, dans l'ordre de entries(). */
       async * values() {
         for await (const [, h] of this.entries()) yield h;
       },
+      /** Même dossier si même nom (approximation suffisante pour la simulation). */
       isSameEntry: async o => o?.name === name,
+      /** Permission toujours accordée : aucun dialogue en mode sans serveur. */
       queryPermission: async () => 'granted',
+      /** Permission toujours accordée : aucun dialogue en mode sans serveur. */
       requestPermission: async () => 'granted'
     });
     const FOLDERS = {
@@ -247,6 +280,7 @@
         permission: 'none',
         handle: null
       };
+      /** Pas de comparaison possible avec le dépôt servi en file:// : réponse « inconnu ». */
       FA.sameAsServed = async () => null; // file:// : pas de contrôle possible
       return true;
     };
@@ -255,6 +289,7 @@
 
   window.__perf = {
     noServer,
+    /** Nombre de requêtes fetch en cours. */
     inflight: () => inflight,
     add,
     /** Durée et nombre d'appels de fn sous le nom name (compteurs name.ms et name.n). */
@@ -267,6 +302,7 @@
         add(`${name}.n`);
       }
     },
+    /** Remet à zéro tous les compteurs (compteurs, appelants, clés de stockage, observateurs). */
     reset() {
       for (const k of Object.keys(c)) delete c[k];
       for (const k of Object.keys(byCaller)) delete byCaller[k];
@@ -276,6 +312,7 @@
         ms: 0
       };
     },
+    /** Relevé courant : compteurs, observateurs, 12 premiers appelants et clés, ressources, tas, nœuds DOM. */
     snapshot() {
       const res = performance.getEntriesByType('resource');
       return {

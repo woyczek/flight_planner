@@ -31,6 +31,7 @@ CC BY-SA 4.0, dans la mesure où des droits d'auteur s'y attachent.
 | Composant | Version | Licence | Emplacement | Titulaire |
 |---|---|---|---|---|
 | MapLibre GL JS (script et feuille de style) | 5.6.0 | BSD 3-Clause | `shared/carto/maplibre-gl.js`, `maplibre-gl.css` | © MapLibre contributors (et Mapbox pour le code d'origine) — <https://github.com/maplibre/maplibre-gl-js/blob/v5.6.0/LICENSE.txt> |
+| Natural Earth, Admin 0 – Countries 1:50m (contours simplifiés des zones de données aéronautiques) | 5.1.2 | domaine public | `shared/carto/aero_zones_geo.js` (généré par `tools/build_aero_zones.py`) | Made with Natural Earth — <https://www.naturalearthdata.com/about/terms-of-use/> |
 | jsPDF | 2.5.2 | MIT | `apps/cpco/jspdf.umd.min.js` | © James Hall, yWorks GmbH et contributeurs — <https://github.com/parallax/jsPDF> |
 | js-yaml | 4.1.0 | MIT | `shared/mission_core/vendor/js-yaml.min.js` (licence : `js-yaml.LICENSE`) | © 2011-2015 Vitaly Puzrin — <https://github.com/nodeca/js-yaml> |
 
@@ -46,6 +47,7 @@ Modules Python utilisés par certains outils, installés à part et non inclus :
 |---|---|---|
 | Textures photographiques (`shared/textures/*.webp`) | ambientCG — <https://ambientcg.com> (correspondance fichier par fichier : [shared/textures/CREDITS.md](shared/textures/CREDITS.md)) | CC0 1.0 (domaine public) |
 | Icônes de ligne (`shared/icons/repository_icons.js`) | dessinées pour le projet, dans le style de Lucide (<https://lucide.dev>) ; aucun tracé de Lucide n'est copié | celle du projet (section 1) |
+| Polices Inter et Orbitron (`shared/fonts/*.woff2`, design Tactique) | Inter : The Inter Project Authors (<https://github.com/rsms/inter>) ; Orbitron : The Orbitron Project Authors (<https://github.com/theleagueof/orbitron>) — sous-ensembles latins de Fontsource ; textes de licence : `shared/fonts/OFL-*.txt` | SIL Open Font License 1.1 |
 
 ## 4. Données incluses dans le dépôt
 

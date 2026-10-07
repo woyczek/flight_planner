@@ -31,7 +31,9 @@
       ident: yy + String(num).padStart(2, '0'),
       label: `${String(num).padStart(2, '0')}/${yy}`,
       // page du SIA de ce cycle (« Données aéronautiques XML AIRAC 10/26 »)
-      url: (window.RepositoryNav?.source?.('siaCycle') || 'https://www.sia.aviation-civile.gouv.fr/donnees-aeronautiques-xml-airac-{nn}-{yy}.html').replace('{nn}', String(num).padStart(2, '0')).replace('{yy}', yy)
+      url: (window.RepositoryNav?.source?.('siaCycle') ||
+        'https://www.sia.aviation-civile.gouv.fr/donnees-aeronautiques-xml-airac-{nn}-{yy}.html').replace('{nn}', String(num).padStart(
+        2, '0')).replace('{yy}', yy)
     };
   }
   /** Cycle en vigueur à la date d (défaut : aujourd'hui). */
@@ -62,7 +64,9 @@
     id: 'airspaces',
     re: /^sia-airspaces-(\d{4}-\d{2}-\d{2})\.xml$/i,
     need: false,
-    label: ['Contours dérivés (ancien format, facultatif : les contours sont lus dans XML-SIA)', 'Derived outlines (legacy, optional: outlines are read from XML-SIA)']
+    label: ['Contours dérivés (ancien format, facultatif : les contours sont lus dans XML-SIA)',
+      'Derived outlines (legacy, optional: outlines are read from XML-SIA)'
+    ]
   }, {
     id: 'zip',
     re: /^export_xml_bd_SIA_(\d{4}-\d{2}-\d{2})(?:-v(\d+))?\.zip$/i,

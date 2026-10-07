@@ -84,15 +84,18 @@
     stats: [{
       id: 'hoistCycles',
       label: L('Cycles de treuil', 'Hoist cycles', 'Windenzyklen', 'Ciclos de grúa'),
-      value: ms => ms.reduce((a, m) => a + (window.MissionModel.blockVisible(m, DEMO, 'demo-hoist') ? Number(m.missionData?.hoist?.cycles) || 0 : 0), 0)
+      value: ms => ms.reduce((a, m) => a + (window.MissionModel.blockVisible(m, DEMO, 'demo-hoist') ? Number(m.missionData?.hoist
+        ?.cycles) || 0 : 0), 0)
     }, {
       id: 'personsHoisted',
       label: L('Personnes treuillées', 'Persons hoisted', 'Gewindete Personen', 'Personas izadas'),
-      value: ms => ms.reduce((a, m) => a + (window.MissionModel.blockVisible(m, DEMO, 'demo-hoist') ? Number(m.missionData?.hoist?.personsHoisted) || 0 : 0), 0)
+      value: ms => ms.reduce((a, m) => a + (window.MissionModel.blockVisible(m, DEMO, 'demo-hoist') ? Number(m.missionData?.hoist
+        ?.personsHoisted) || 0 : 0), 0)
     }, {
       id: 'airdropKg',
       label: L('Charge larguée (kg)', 'Load dropped (kg)', 'Abgeworfene Last (kg)', 'Carga lanzada (kg)'),
-      value: ms => ms.reduce((a, m) => a + (window.MissionModel.blockVisible(m, DEMO, 'demo-airdrop') ? Number(m.missionData?.airdrop?.loadKg) || 0 : 0), 0)
+      value: ms => ms.reduce((a, m) => a + (window.MissionModel.blockVisible(m, DEMO, 'demo-airdrop') ? Number(m.missionData
+        ?.airdrop?.loadKg) || 0 : 0), 0)
     }],
     blocks: [{
       id: 'demo-hoist',
@@ -100,11 +103,14 @@
       when: ctx => ctx.categories.has('rotary') && ctx.capabilities.has('HOIST'),
       fields: [
         f('missionData.hoist.cycles', L('Cycles de treuil', 'Hoist cycles', 'Windenzyklen', 'Ciclos de grúa'), 'number'),
-        f('missionData.hoist.personsHoisted', L('Personnes treuillées', 'Persons hoisted', 'Gewindete Personen', 'Personas izadas'), 'number'),
-        f('missionData.hoist.maxHeightFt', L('Hauteur max. (ft)', 'Max. height (ft)', 'Max. Höhe (ft)', 'Altura máx. (ft)'), 'number'),
-        f('missionData.hoist.notes', L('Observations treuil', 'Hoist remarks', 'Bemerkungen Winde', 'Observaciones de grúa'), 'textarea', {
-          full: true
-        })
+        f('missionData.hoist.personsHoisted', L('Personnes treuillées', 'Persons hoisted', 'Gewindete Personen',
+          'Personas izadas'), 'number'),
+        f('missionData.hoist.maxHeightFt', L('Hauteur max. (ft)', 'Max. height (ft)', 'Max. Höhe (ft)', 'Altura máx. (ft)'),
+          'number'),
+        f('missionData.hoist.notes', L('Observations treuil', 'Hoist remarks', 'Bemerkungen Winde', 'Observaciones de grúa'),
+          'textarea', {
+            full: true
+          })
       ]
     }, {
       id: 'demo-airdrop',
@@ -112,7 +118,8 @@
       when: ctx => (ctx.categories.has('fixed') || ctx.categories.has('amphibious')) && ctx.capabilities.has('AIRDROP'),
       fields: [
         f('missionData.airdrop.dz', L('Zone de largage (DZ)', 'Drop zone (DZ)', 'Absetzzone (DZ)', 'Zona de lanzamiento (DZ)')),
-        f('missionData.airdrop.loadKg', L('Charge larguée (kg)', 'Load dropped (kg)', 'Abgeworfene Last (kg)', 'Carga lanzada (kg)'), 'number'),
+        f('missionData.airdrop.loadKg', L('Charge larguée (kg)', 'Load dropped (kg)', 'Abgeworfene Last (kg)',
+          'Carga lanzada (kg)'), 'number'),
         f('missionData.airdrop.passes', L('Passages', 'Passes', 'Überflüge', 'Pasadas'), 'number')
       ]
     }]

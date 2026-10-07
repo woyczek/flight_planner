@@ -7,13 +7,34 @@
   const message = values => values[window.RepositoryNav?.getLanguage?.() || 'fr'] || values.fr;
   const fmsSeed = [
     'LFTW_LFMP_GAAR_3H_MILAN.fms',
-    'cl415_gaar_fms_pack/circuits/JAUNE_01_Cevennes_Sud.fms', 'cl415_gaar_fms_pack/circuits/JAUNE_02_Luberon_Durance.fms', 'cl415_gaar_fms_pack/circuits/JAUNE_03_Etang_Berre_Cote_Bleue.fms',
-    'cl415_gaar_fms_pack/circuits/ORANGE_01_Corbières_Aude.fms', 'cl415_gaar_fms_pack/circuits/ORANGE_02_Haut_Var.fms', 'cl415_gaar_fms_pack/circuits/ORANGE_03_Maures_Ouest.fms',
-    'cl415_gaar_fms_pack/circuits/ROUGE_01_Maures_Esterel.fms', 'cl415_gaar_fms_pack/circuits/ROUGE_02_Corse_Preposition_Ajaccio.fms', 'cl415_gaar_fms_pack/circuits/ROUGE_03_Landes_Gironde_Convoy.fms',
-    'cl415_gaar_fms_pack/circuits/VERT_01_Camargue_Petite_Camargue.fms', 'cl415_gaar_fms_pack/circuits/VERT_02_Alpilles_Crau.fms', 'cl415_gaar_fms_pack/circuits/VERT_03_Garrigues_Gard.fms',
-    'cl415_gaar_fms_pack/deroutements/DIV_01_Aramon_Gard.fms', 'cl415_gaar_fms_pack/deroutements/DIV_02_Alpilles_Eygalieres.fms', 'cl415_gaar_fms_pack/deroutements/DIV_03_Camargue_Salin.fms', 'cl415_gaar_fms_pack/deroutements/DIV_04_Uzes_PontduGard.fms', 'cl415_gaar_fms_pack/deroutements/DIV_05_Aigoual_Vallee_Herault.fms', 'cl415_gaar_fms_pack/deroutements/DIV_06_Luberon_Bonnieux.fms', 'cl415_gaar_fms_pack/deroutements/DIV_07_Corbieres_Fitou.fms', 'cl415_gaar_fms_pack/deroutements/DIV_08_Minervois_Lezignan.fms', 'cl415_gaar_fms_pack/deroutements/DIV_09_HautVar_Aups.fms', 'cl415_gaar_fms_pack/deroutements/DIV_10_Maures_Collobrieres.fms', 'cl415_gaar_fms_pack/deroutements/DIV_11_Esterel_Theoule.fms', 'cl415_gaar_fms_pack/deroutements/DIV_12_Biscarrosse_Landes.fms',
-    'milan_gaar_pack/fms/circuits_gaar/JAUNE_04_CEVENNES.fms', 'milan_gaar_pack/fms/circuits_gaar/JAUNE_05_LUBERON.fms', 'milan_gaar_pack/fms/circuits_gaar/JAUNE_06_CORBIERES.fms', 'milan_gaar_pack/fms/circuits_gaar/ORANGE_07_VAR_OUEST.fms', 'milan_gaar_pack/fms/circuits_gaar/ORANGE_08_MAURES.fms', 'milan_gaar_pack/fms/circuits_gaar/ORANGE_09_AUDE_PO.fms', 'milan_gaar_pack/fms/circuits_gaar/ROUGE_10_MAURES_ESTEREL.fms', 'milan_gaar_pack/fms/circuits_gaar/ROUGE_11_CEVENNES_LOZERE.fms', 'milan_gaar_pack/fms/circuits_gaar/ROUGE_12_CORBIERES_CANIGOU.fms', 'milan_gaar_pack/fms/circuits_gaar/VERT_01_CAMARGUE.fms', 'milan_gaar_pack/fms/circuits_gaar/VERT_02_ALPILLES.fms', 'milan_gaar_pack/fms/circuits_gaar/VERT_03_GARRIGUES.fms',
-    'milan_gaar_pack/fms/deroutements/DIV_01_CAMARGUE_GALLO_LFTW.fms', 'milan_gaar_pack/fms/deroutements/DIV_02_ALPILLES_EYGAL_LFTW.fms', 'milan_gaar_pack/fms/deroutements/DIV_03_GARDON_COLLIAS_LFTW.fms', 'milan_gaar_pack/fms/deroutements/DIV_04_AIGOUAL_BREAU_LFTW.fms', 'milan_gaar_pack/fms/deroutements/DIV_05_LUBERON_ROUSS_LFTW.fms', 'milan_gaar_pack/fms/deroutements/DIV_06_MINERVOIS_BIZE_LFMK.fms', 'milan_gaar_pack/fms/deroutements/DIV_07_BRIGNOLES_LFTW.fms', 'milan_gaar_pack/fms/deroutements/DIV_08_COLLOBRIERES_LFTW.fms', 'milan_gaar_pack/fms/deroutements/DIV_09_SALSES_OPP_LFMP.fms', 'milan_gaar_pack/fms/deroutements/DIV_10_ESTEREL_AGAY_LFTW.fms', 'milan_gaar_pack/fms/deroutements/DIV_11_MENDE_CAUSSE_LFTW.fms', 'milan_gaar_pack/fms/deroutements/DIV_12_CANIGOU_CERET_LFMP.fms'
+    'cl415_gaar_fms_pack/circuits/JAUNE_01_Cevennes_Sud.fms', 'cl415_gaar_fms_pack/circuits/JAUNE_02_Luberon_Durance.fms',
+    'cl415_gaar_fms_pack/circuits/JAUNE_03_Etang_Berre_Cote_Bleue.fms',
+    'cl415_gaar_fms_pack/circuits/ORANGE_01_Corbières_Aude.fms', 'cl415_gaar_fms_pack/circuits/ORANGE_02_Haut_Var.fms',
+    'cl415_gaar_fms_pack/circuits/ORANGE_03_Maures_Ouest.fms',
+    'cl415_gaar_fms_pack/circuits/ROUGE_01_Maures_Esterel.fms', 'cl415_gaar_fms_pack/circuits/ROUGE_02_Corse_Preposition_Ajaccio.fms',
+    'cl415_gaar_fms_pack/circuits/ROUGE_03_Landes_Gironde_Convoy.fms',
+    'cl415_gaar_fms_pack/circuits/VERT_01_Camargue_Petite_Camargue.fms', 'cl415_gaar_fms_pack/circuits/VERT_02_Alpilles_Crau.fms',
+    'cl415_gaar_fms_pack/circuits/VERT_03_Garrigues_Gard.fms',
+    'cl415_gaar_fms_pack/deroutements/DIV_01_Aramon_Gard.fms', 'cl415_gaar_fms_pack/deroutements/DIV_02_Alpilles_Eygalieres.fms',
+    'cl415_gaar_fms_pack/deroutements/DIV_03_Camargue_Salin.fms', 'cl415_gaar_fms_pack/deroutements/DIV_04_Uzes_PontduGard.fms',
+    'cl415_gaar_fms_pack/deroutements/DIV_05_Aigoual_Vallee_Herault.fms',
+    'cl415_gaar_fms_pack/deroutements/DIV_06_Luberon_Bonnieux.fms', 'cl415_gaar_fms_pack/deroutements/DIV_07_Corbieres_Fitou.fms',
+    'cl415_gaar_fms_pack/deroutements/DIV_08_Minervois_Lezignan.fms', 'cl415_gaar_fms_pack/deroutements/DIV_09_HautVar_Aups.fms',
+    'cl415_gaar_fms_pack/deroutements/DIV_10_Maures_Collobrieres.fms', 'cl415_gaar_fms_pack/deroutements/DIV_11_Esterel_Theoule.fms',
+    'cl415_gaar_fms_pack/deroutements/DIV_12_Biscarrosse_Landes.fms',
+    'milan_gaar_pack/fms/circuits_gaar/JAUNE_04_CEVENNES.fms', 'milan_gaar_pack/fms/circuits_gaar/JAUNE_05_LUBERON.fms',
+    'milan_gaar_pack/fms/circuits_gaar/JAUNE_06_CORBIERES.fms', 'milan_gaar_pack/fms/circuits_gaar/ORANGE_07_VAR_OUEST.fms',
+    'milan_gaar_pack/fms/circuits_gaar/ORANGE_08_MAURES.fms', 'milan_gaar_pack/fms/circuits_gaar/ORANGE_09_AUDE_PO.fms',
+    'milan_gaar_pack/fms/circuits_gaar/ROUGE_10_MAURES_ESTEREL.fms', 'milan_gaar_pack/fms/circuits_gaar/ROUGE_11_CEVENNES_LOZERE.fms',
+    'milan_gaar_pack/fms/circuits_gaar/ROUGE_12_CORBIERES_CANIGOU.fms', 'milan_gaar_pack/fms/circuits_gaar/VERT_01_CAMARGUE.fms',
+    'milan_gaar_pack/fms/circuits_gaar/VERT_02_ALPILLES.fms', 'milan_gaar_pack/fms/circuits_gaar/VERT_03_GARRIGUES.fms',
+    'milan_gaar_pack/fms/deroutements/DIV_01_CAMARGUE_GALLO_LFTW.fms',
+    'milan_gaar_pack/fms/deroutements/DIV_02_ALPILLES_EYGAL_LFTW.fms',
+    'milan_gaar_pack/fms/deroutements/DIV_03_GARDON_COLLIAS_LFTW.fms', 'milan_gaar_pack/fms/deroutements/DIV_04_AIGOUAL_BREAU_LFTW.fms',
+    'milan_gaar_pack/fms/deroutements/DIV_05_LUBERON_ROUSS_LFTW.fms', 'milan_gaar_pack/fms/deroutements/DIV_06_MINERVOIS_BIZE_LFMK.fms',
+    'milan_gaar_pack/fms/deroutements/DIV_07_BRIGNOLES_LFTW.fms', 'milan_gaar_pack/fms/deroutements/DIV_08_COLLOBRIERES_LFTW.fms',
+    'milan_gaar_pack/fms/deroutements/DIV_09_SALSES_OPP_LFMP.fms', 'milan_gaar_pack/fms/deroutements/DIV_10_ESTEREL_AGAY_LFTW.fms',
+    'milan_gaar_pack/fms/deroutements/DIV_11_MENDE_CAUSSE_LFTW.fms', 'milan_gaar_pack/fms/deroutements/DIV_12_CANIGOU_CERET_LFMP.fms'
   ];
   /** Ajoute des colonnes à l'en-tête du registre en cache (nouveaux champs du CR). */
   const addHeaders = names => {
@@ -69,8 +90,10 @@
     try {
       const isHems = location.pathname.includes('/HEMS/'),
         configKey = isHems ? 'ledgerName' : 'gaarLedgerName';
-      const currentHeaders = isHems ? (typeof headers !== 'undefined' ? headers : null) : (typeof ledgerHeader !== 'undefined' ? ledgerHeader : null);
-      const currentRow = isHems ? (typeof row !== 'undefined' && typeof data !== 'undefined' ? row(data()) : null) : (typeof flattenRow !== 'undefined' ? flattenRow() : null);
+      const currentHeaders = isHems ? (typeof headers !== 'undefined' ? headers : null) : (typeof ledgerHeader !== 'undefined' ?
+        ledgerHeader : null);
+      const currentRow = isHems ? (typeof row !== 'undefined' && typeof data !== 'undefined' ? row(data()) : null) : (
+        typeof flattenRow !== 'undefined' ? flattenRow() : null);
       if (!currentHeaders || !currentRow || !window.MissionReportingConfig) return;
       const stored = window.MissionReportingConfig.cached(configKey),
         encoded = window.MissionLedgerDefaultsB64?.[configKey],
@@ -79,7 +102,8 @@
         oldHeaders = parsed.shift() || [];
       const records = parsed.map(values => Object.fromEntries(oldHeaders.map((name, index) => [name, values[index] || ''])));
       records.push(Object.fromEntries(currentHeaders.map((name, index) => [name, currentRow[index] ?? ''])));
-      const text = csvLine(currentHeaders) + '\n' + records.map(record => csvLine(currentHeaders.map(name => record[name] ?? ''))).join('\n') + '\n';
+      const text = csvLine(currentHeaders) + '\n' + records.map(record => csvLine(currentHeaders.map(name => record[name] ?? ''))).join(
+        '\n') + '\n';
       window.MissionReportingConfig.cacheText(configKey, document.getElementById('ledgerName')?.value || stored?.filename || '', text);
     } catch {
       /* The CR export remains authoritative if cache refresh is unavailable. */
@@ -110,11 +134,13 @@
     const list = document.createElement('div');
     list.className = 'mission-fms-picker';
     list.hidden = true;
-    list.style.cssText = 'position:absolute;z-index:30;background:#fff;border:1px solid #aaa;border-radius:8px;padding:6px;max-height:260px;overflow:auto;min-width:320px;box-shadow:0 8px 24px #0003';
+    list.style.cssText =
+      'position:absolute;z-index:30;background:#fff;border:1px solid #aaa;border-radius:8px;padding:6px;max-height:260px;overflow:auto;min-width:320px;box-shadow:0 8px 24px #0003';
     /** Suggestions FMS filtrées par le texte saisi. */
     const render = () => {
       const q = input.value.toLowerCase();
-      list.innerHTML = names.filter(name => !q || name.toLowerCase().includes(q)).map(name => `<button type="button" data-fms="${name.replace(/"/g,'&quot;')}" style="display:block;width:100%;text-align:left;background:#fff;padding:6px;border:0">${name}</button>`).join('') || '<span>Aucun fichier FMS.</span>';
+      list.innerHTML = names.filter(name => !q || name.toLowerCase().includes(q)).map(name => `<button type="button" data-fms="${name.replace(/"/g,'&quot;')}" style="display:block;width:100%;text-align:left;background:#fff;padding:6px;border:0">${name}</button>`).join('') ||
+        '<span>Aucun fichier FMS.</span>';
     };
     input.closest('div').style.position = 'relative';
     input.after(list);
@@ -195,14 +221,19 @@
     // réutilise au lieu de créer des champs homonymes (FormData garderait le dernier).
     const hasIvao = !!form.querySelector('[name="ivaoId"]'),
       hasVatsim = !!form.querySelector('[name="vatsimId"]');
-    section.innerHTML = '<h2>Trace réseau IVAO / VATSIM</h2><div class="grid"><div><label>Réseau</label><select name="onlineNetwork"><option value="">Hors réseau / non renseigné</option><option value="IVAO">IVAO</option><option value="VATSIM">VATSIM</option></select></div>' + (hasIvao ? '' : '<div><label>ID IVAO (VID)</label><input name="ivaoId" inputmode="numeric"></div>') + (hasVatsim ? '' : '<div><label>ID VATSIM (CID)</label><input name="vatsimId" inputmode="numeric"></div>') + '<div class="full"><label>URL de la trace</label><input name="trackerUrl" type="url" placeholder="https://tracker…"></div></div><div class="row" style="margin-top:8px"><a id="ivaoTrackerLink" class="secondary" target="_blank" rel="noopener">Ouvrir le tracker IVAO</a><a id="vatsimTrackerLink" class="secondary" target="_blank" rel="noopener">Ouvrir le tracker VATSIM</a><button type="button" class="secondary" id="findLiveTrack">Chercher le callsign actif</button></div><p class="small" id="trackStatus">La trace peut être saisie directement. La recherche automatique est limitée aux connexions VATSIM actuellement actives.</p>';
+    section.innerHTML =
+      '<h2>Trace réseau IVAO / VATSIM</h2><div class="grid"><div><label>Réseau</label><select name="onlineNetwork"><option value="">Hors réseau / non renseigné</option><option value="IVAO">IVAO</option><option value="VATSIM">VATSIM</option></select></div>' +
+      (hasIvao ? '' : '<div><label>ID IVAO (VID)</label><input name="ivaoId" inputmode="numeric"></div>') + (hasVatsim ? '' :
+        '<div><label>ID VATSIM (CID)</label><input name="vatsimId" inputmode="numeric"></div>') +
+      '<div class="full"><label>URL de la trace</label><input name="trackerUrl" type="url" placeholder="https://tracker…"></div></div><div class="row" style="margin-top:8px"><a id="ivaoTrackerLink" class="secondary" target="_blank" rel="noopener">Ouvrir le tracker IVAO</a><a id="vatsimTrackerLink" class="secondary" target="_blank" rel="noopener">Ouvrir le tracker VATSIM</a><button type="button" class="secondary" id="findLiveTrack">Chercher le callsign actif</button></div><p class="small" id="trackStatus">La trace peut être saisie directement. La recherche automatique est limitée aux connexions VATSIM actuellement actives.</p>';
     form.insertBefore(section, controls || null);
     addHeaders(['onlineNetwork', 'ivaoId', 'vatsimId', 'trackerUrl']);
     const ivao = form.querySelector('[name="ivaoId"]'),
       vatsim = form.querySelector('[name="vatsimId"]'),
       url = section.querySelector('[name="trackerUrl"]'),
       status = section.querySelector('#trackStatus');
-    section.querySelectorAll('a.secondary').forEach(link => link.style.cssText = 'display:inline-block;padding:9px 12px;border-radius:9px;text-decoration:none;color:inherit');
+    section.querySelectorAll('a.secondary').forEach(link => link.style.cssText =
+      'display:inline-block;padding:9px 12px;border-radius:9px;text-decoration:none;color:inherit');
     const links = () => {
       section.querySelector('#ivaoTrackerLink').href = 'https://tracker.ivao.aero/?userId=' + encodeURIComponent(ivao.value.trim());
       section.querySelector('#vatsimTrackerLink').href = 'https://stats.vatsim.net/stats/' + encodeURIComponent(vatsim.value.trim());
@@ -258,7 +289,7 @@
       if (!tracker && !density) return;
       const block = document.createElement('div');
       block.id = 'networkTraceReport';
-      block.innerHTML = `<h3>Compléments opérationnels</h3><div class="meta">${density ? `<div class="box"><span>Altitude-densité</span>${density}</div>` : ''}${safeTracker ? `<div class="box"><span>Trace réseau</span><a href="${safeTracker.replace(/"/g,'&quot;')}" target="_blank" rel="noopener">Ouvrir la trace</a></div>` : ''}</div>`;
+      block.innerHTML = `<h3>Compléments opérationnels</h3><div class="meta">${density ? `<div class="box"><span>Altitude-densité</span>${window.RepositoryKit.esc(density)}</div>` : ''}${safeTracker ? `<div class="box"><span>Trace réseau</span><a href="${safeTracker.replace(/"/g,'&quot;')}" target="_blank" rel="noopener">Ouvrir la trace</a></div>` : ''}</div>`;
       report.append(block);
     });
     form.addEventListener('input', syncReport);

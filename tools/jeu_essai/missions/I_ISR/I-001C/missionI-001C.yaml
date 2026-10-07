@@ -1,0 +1,327 @@
+# Mission I-001C — received in the brief generator on 29/09/2026 08:53:46
+schema: helo-xp-mission
+schema_version: '1.0'
+mission:
+  series: 1
+  number: 1
+  id: I-001C
+  type: ISR
+  subtype: RECON
+operation:
+  id: I-001
+  name: EYE OF SOLOGNE
+  missions:
+    - I-001A
+    - I-001B
+    - I-001C
+title: EYE OF SOLOGNE — two Rafales look for what the AWACS has already found
+summary: |-
+  A Rafale flight takes off from BA 113 Saint-Dizier to join Operation EYE OF SOLOGNE, refuel on the SIMONE track, then exploit the tracks passed by the E-3F CYRANO01 over the Brenne. The idea of the exercise is to have two fighters visually confirm what the aircraft with the biggest radar in the sector claims to have already seen.
+
+  RAFALE31 must join the Phénix COTAM3510 in its planned slot, continue to the Brenne, establish tactical contact with CYRANO01, then carry out a simulated reconnaissance of several tracks before returning to Saint-Dizier. Synchronisation with the tanker and the AWACS, fuel management and adherence to the transit levels are the main constraints.
+detailed_description: |-
+  Operation EYE OF SOLOGNE links the E-3F CYRANO01, the Phénix COTAM3510 and the RAFALE31 flight in a complete surveillance, support and exploitation chain. CYRANO01 builds the simulated air picture, COTAM3510 provides fuel support and RAFALE31 must find and identify the designated tracks. The training goal is to coordinate the three missions without turning the tactical frequency into a residents' association meeting.
+
+  RAFALE31 takes off from BA 113 Saint-Dizier-Robinson, climbs to FL260 and heads for central France on a transit of about 150 NM. The flight reaches the SIMONE ARIP at about 420 kt true airspeed and plans roughly 25 minutes from take-off to arrival in the refuelling area, excluding any holding. After contact with the Phénix, it continues to the Brenne at FL240.
+
+  At RDV-3, RAFALE31 joins COTAM3510 and completes its refuelling sequence after CYRANO01 has cleared. The flight then leaves SIMONE via the ARCP and proceeds to RDV-2 in the Brenne sector, where CYRANO01 passes it the simulated tracks to reconnoitre. RAFALE31 then flies a 25-minute sequence in ZONE-1, correlates the information received and reports the simulated identification of each requested track back to the airborne controller.
+
+  A refuelling delay, higher-than-planned fuel burn or a lasting loss of the link with CYRANO01 reduces the number of tracks worked. If the AAR sequence is cancelled, the flight continues only if its reserves allow the reconnaissance and the return to Saint-Dizier with the planned margin. BA 123 Orléans-Bricy is the primary diversion if the home base is unavailable.
+
+  Once the last track has been worked, RAFALE31 leaves the Brenne to the east, resumes its transit to Saint-Dizier and descends to recover at BA 113. The mission is complete after the flight has landed and the refuelling times, the tracks actually worked and any coordination discrepancies with CYRANO01 have been logged.
+aircraft:
+  - id: AC1
+    type: RFAL Rafale
+    callsign: RAFALE31
+    operator: French Air and Space Force
+    role: reconnaissance flight exploiting ISR tracks
+    cruise_speed_kt: 420
+    cruise_level: FL260
+origin:
+  name: BA 113 Saint-Dizier-Robinson (LFSI)
+  lat: 48.636111
+  lon: 4.899444
+destination:
+  name: BA 113 Saint-Dizier-Robinson (LFSI)
+  lat: 48.636111
+  lon: 4.899444
+target:
+  id: TARGET
+  name: Brenne Regional Nature Park
+  lat: 46.77
+  lon: 1.25
+  time_on_task_min: 0
+turning_points:
+  - id: PT1
+    name: Auxerre
+    lat: 47.797778
+    lon: 3.573333
+    role: transit point heading south-west
+    time_on_task_min: 0
+  - id: PT2
+    name: SIMONE ARIP
+    lat: 46.444167
+    lon: 1.486
+    role: entry to the SIMONE refuelling track
+    time_on_task_min: 0
+  - id: PT3
+    name: SIMONE ARCP
+    lat: 47.231833
+    lon: 1.689
+    role: track exit after refuelling
+    time_on_task_min: 0
+  - id: PT4
+    name: Châteauroux
+    lat: 46.811389
+    lon: 1.691111
+    role: reporting point before the reconnaissance sector
+    time_on_task_min: 0
+rendezvous:
+  - id: RDV-3
+    name: SIMONE ARIP
+    lat: 46.444167
+    lon: 1.486
+    participants:
+      - COTAM3510
+      - RAFALE31
+    role: join-up with the Phénix for the refuelling sequence
+    time_on_task_min: 5
+  - id: RDV-2
+    name: Brenne sector
+    lat: 46.77
+    lon: 1.25
+    participants:
+      - CYRANO01
+      - RAFALE31
+    role: tactical check-in and receipt of simulated tracks
+    time_on_task_min: 5
+zones:
+  - id: ZONE-1
+    name: Brenne surveillance area
+    centre:
+      lat: 46.77
+      lon: 1.25
+    radius_km: 35
+    role: reconnaissance and ISR track correlation area
+    time_on_task_min: 25
+route_order:
+  - ORIGIN
+  - PT1
+  - PT2
+  - RDV-3
+  - PT3
+  - PT4
+  - RDV-2
+  - TARGET
+  - ZONE-1
+  - DESTINATION
+return_options:
+  - name: BA 123 Orléans-Bricy (LFOJ)
+    lat: 47.987778
+    lon: 1.760556
+    condition: Saint-Dizier unavailable or fuel no longer sufficient for the planned return
+    time_on_task_min: 15
+    then_base: true
+timing:
+  estimated_flight_min: 125
+  estimated_block_min: 145
+teams:
+  - name: RAFALE31
+    service: French Air and Space Force
+    department: Haute-Marne
+    type: RFAL Rafale
+    role: reconnaissance flight exploiting simulated tracks
+  - name: CYRANO01
+    service: French Air and Space Force
+    department: Cher
+    type: E3CF E-3F AWACS
+    role: airborne surveillance and provision of tracks to reconnoitre
+  - name: COTAM3510
+    service: French Air and Space Force
+    department: Bouches-du-Rhône
+    type: A332 A330 MRTT Phénix
+    role: tanker for RAFALE31 on the SIMONE track
+payload:
+  category: SENSOR
+  description: On-board sensors and tactical datalink equipment used for the simulated reconnaissance
+  mass_kg: 0
+  passengers: 0
+  constraints:
+    - Maintain the tactical link with CYRANO01 throughout the exploitation phase.
+    - Limit time on station if reserves become incompatible with the return to Saint-Dizier.
+objectives:
+  primary: Refuel on SIMONE, then work the simulated tracks designated by CYRANO01 in the Brenne sector.
+  secondary:
+    - Meet the rendezvous slot with COTAM3510 after the CYRANO01 sequence.
+    - Establish contact with CYRANO01 at RDV-2 before entering the reconnaissance area.
+    - Report the simulated identification of the tracks worked before returning to Saint-Dizier.
+risks:
+  - hazard: Delay on SIMONE
+    consequence: Out of step with the tanker slot and less time available over the Brenne.
+    mitigation: Compute the time over PT2 from the climb onwards and adjust speed early enough.
+  - hazard: Fuel after AAR
+    consequence: Insufficient return margin if the transfer is incomplete.
+    mitigation: Recompute endurance immediately after the sequence and cut time on station if necessary.
+  - hazard: Tactical link loss
+    consequence: Unable to receive or correlate the tracks designated by CYRANO01.
+    mitigation: Apply the planned link recovery procedure and leave the area if coordination cannot be restored.
+  - hazard: Workload
+    consequence: Degraded formation keeping during the reconnaissance phase.
+    mitigation: Clearly split navigation, lookout and exploitation of tactical information within the flight.
+air_refueling:
+  capable: true
+  planned: true
+  role: receiver
+  track: SIMONE
+vertical_profile:
+  route: ORIGIN, FL260, PT1, PT2, RDV-3, PT3, FL240, PT4, RDV-2, TARGET, ZONE-1, FL260, DESTINATION
+  cruise: FL260
+maps:
+  - id: general
+    filename: generalI-001C.png
+    type: general
+    description: Overview covering Saint-Dizier, SIMONE, Châteauroux, the Brenne, the rendezvous points and the return
+    include:
+      origin: true
+      destination: true
+      turning_points: true
+      target: true
+      rendezvous: true
+      zones: true
+  - id: cible
+    filename: cibleI-001C.png
+    type: target
+    description: Local view centred on the reconnaissance sector in the Brenne
+    centre_ref: TARGET
+    range_km: 50
+  - id: detail_cible
+    filename: detail_cibleI-001C.png
+    type: detail
+    description: Detailed 8 × 5 km view around the centre of the reconnaissance sector
+    centre_ref: TARGET
+    width_km: 8
+    height_km: 5
+  - id: detail_rdv_1
+    filename: detail_rdvI-001C-1.png
+    type: detail_rdv
+    description: Detailed view of the rendezvous with the Phénix at SIMONE ARIP
+    centre_ref: RDV-3
+    width_km: 8
+    height_km: 5
+  - id: detail_rdv_2
+    filename: detail_rdvI-001C-2.png
+    type: detail_rdv
+    description: Detailed view of the tactical rendezvous with CYRANO01 in the Brenne
+    centre_ref: RDV-2
+    width_km: 8
+    height_km: 5
+  - id: zone_1
+    filename: zoneI-001C.png
+    type: zone
+    description: View of the reconnaissance and ISR track correlation area
+    centre_ref: ZONE-1
+    range_km: 70
+rendering:
+  north_up: true
+  draw_routes: false
+  add_markers: false
+  attribution_required: true
+notes:
+  - Air simulation exercise.
+  - The SIMONE ARIP and ARCP coordinates are identical to those used in the other missions of the operation.
+  - The centre of the Brenne area is a scenario point and does not represent a real facility.
+tracks:
+- id: TRACK-401
+  name: TRACK 401
+  nature: non-cooperative light traffic
+  points:
+  - name: Rosnay
+    lat: 46.701667
+    lon: 1.215278
+  - name: Mézières-en-Brenne
+    lat: 46.821667
+    lon: 1.211389
+  level: 3 500–5 000 ft
+  speed_kt: 120
+  task: general type, heading, behaviour, absence or presence of electronic identification
+- id: TRACK-402
+  name: TRACK 402
+  nature: simulated helicopter in low-level transit
+  points:
+  - name: Rosnay sector (approx.)
+    lat: 46.705
+    lon: 1.235
+  - name: Central Brenne (approx.)
+    lat: 46.745
+    lon: 1.245
+  - name: South of Mézières-en-Brenne (approx.)
+    lat: 46.795
+    lon: 1.215
+  level: 1 000–1 500 ft AGL
+  speed_kt: 100
+  task: rotary wing, approximate number of engines / rotors if visible, direction and speed of travel
+- id: TRACK-403
+  name: TRACK 403
+  nature: fast exercise aircraft
+  points:
+  - name: Châteauroux-Déols
+    lat: 46.86031
+    lon: 1.72113
+  - name: Brenne sector (approx.)
+    lat: 46.77
+    lon: 1.3
+  - name: North-east exit (approx.)
+    lat: 46.95
+    lon: 1.52
+  level: FL120 then descending to FL080
+  speed_kt: 385
+  task: category "fast jet", number of aircraft, heading, altitude, simulated tactical behaviour
+injects:
+- id: INJ-1
+  at: RDV-2
+  delay_min: 0
+  kind: info
+  from: CYRANO01
+  title: Tactical contact — TRACK 401
+  tracks:
+  - TRACK-401
+  text: 'CYRANO01 establishes tactical contact with RAFALE31 and announces three exercise tracks to reconnoitre in ZONE-1, presented one after another.
+
+
+    TRACK 401 — light traffic, position Rosnay (46.701667, 1.215278), heading 359, between 3 500 and 5 000 ft, about 120 kt, towards Mézières-en-Brenne. First acquisition: validate the AWACS–Rafale chain.
+
+
+    For each track: correlate the contact with on-board sensors, obtain a simulated visual identification if possible, then pass CYRANO01 the general type, number, heading, altitude and behaviour. A track that is correlated but not visually identified counts as "detected, not identified".'
+- id: INJ-2
+  at: RDV-2
+  delay_min: 8
+  kind: info
+  from: CYRANO01
+  title: TRACK 402 — low-level search
+  tracks:
+  - TRACK-402
+  text: 'TRACK 402 — simulated helicopter at low level in the southern Brenne, position Rosnay sector (46.705, 1.235), heading 010, 1 000 to 1 500 ft AGL, about 100 kt, towards central Brenne then south of Mézières-en-Brenne.
+
+
+    A trickier search: terrain and masking. Establish rotary wing, approximate number of engines or rotors if visible, direction and speed of travel.'
+- id: INJ-3
+  at: RDV-2
+  delay_min: 16
+  kind: info
+  from: CYRANO01
+  title: TRACK 403 — fast mover
+  tracks:
+  - TRACK-403
+  text: 'TRACK 403 — fast aircraft inbound from Châteauroux-Déols (46.860310, 1.721130), heading 253, FL120 then descending to FL080, 350 to 420 kt, entering ZONE-1 before exiting to the north-east.
+
+
+    Presented last: its speed and level change force the flight to anticipate the intercept. Establish "fast jet" category, number of aircraft, heading, altitude and simulated tactical behaviour.
+
+
+    End of sequence: the mission is complete when all three tracks have been correlated and at least two have received a simulated identification passed to CYRANO01.'
+meta:
+  received_at: '2026-09-29T06:53:46.000Z'
+  modified_at: '2026-09-29T07:19:53.000Z'
+  history:
+  - at: '2026-09-29T07:19:53.000Z'
+    action: 'déroulé ajouté : 3 pistes, 3 injects (données de Gaétan)'

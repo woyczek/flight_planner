@@ -10,11 +10,11 @@ Options : --week AAAA-MM-JJ (lundi ; défaut : semaine en cours), --pilots N (d�
 
 Écrit, marqué `phantom: true` (et `by: FANTOME`) :
 - data/disponibilites/<TRI>.json : déclaration de la semaine (grille horaire UTC, codes de la légende ODV), appareils
-  (types de la référence DEFA du pilote), simulateurs ; pilotes de la référence DEFA qui n'ont pas de déclaration
+  (types de la référence du pilote), simulateurs ; pilotes de la référence qui n'ont pas de déclaration
   réelle (un fichier non fantôme n'est jamais touché) ; index _index.json refait d'après le dossier ;
 - data/missions/<dossier>/affectations.yaml, data/missions/affectations.json (index), affectations_log.json
   (journal) : missions du registre qui ont un dossier et ne sont pas encore affectées, confiées à des pilotes fantômes
-  disponibles à l'heure du décollage et qui connaissent le type d'appareil (flotte DEFA), parfois en patrouille.
+  disponibles à l'heure du décollage et qui connaissent le type d'appareil (flotte), parfois en patrouille.
 Formats : ceux de shared/assignments.js (saveAvailability, writeAssignment, logEntries). Dépend de PyYAML.
 """
 import argparse
@@ -44,15 +44,18 @@ def read_js_json(path, pattern):
 
 
 def write_json(path, obj, indent=2):
+    """Écrit obj en JSON UTF-8 dans le chemin path (Path), saut de ligne final."""
     path.write_text(json.dumps(obj, ensure_ascii=False, indent=indent) + '\n', encoding='utf-8', newline='\n')
 
 
 def monday(s=None):
+    """Lundi de la semaine du jour « AAAA-MM-JJ » donné (aujourd'hui, UTC, à défaut)."""
     d = dt.date.fromisoformat(s) if s else dt.datetime.now(dt.timezone.utc).date()
     return d - dt.timedelta(days=d.weekday())
 
 
 def iso(t):
+    """Horodatage ISO 8601 UTC à la milliseconde (format des dates de la suite)."""
     return t.strftime('%Y-%m-%dT%H:%M:%S.000Z')
 
 
@@ -61,6 +64,7 @@ def grid_for(rng):
     g = [[''] * 24 for _ in range(DAYS)]
 
     def put(d, h0, h1, code):
+        """Code de la légende posé sur les heures [h0, h1[ du jour d (bornées à la journée)."""
         for h in range(max(0, h0), min(24, h1)):
             g[d][h] = code
 
@@ -126,6 +130,8 @@ def fleet_rows_for(mission, fleet):
 
 
 def clean(data, write):
+    """Compte, et retire avec write, tout ce qui est marqué fantôme : déclarations, affectations.yaml, lignes de l'index
+    et du journal des affectations ; index des disponibilités refait."""
     dis, mis = data / 'disponibilites', data / 'missions'
     n_decl = 0
     for f in sorted(dis.glob('*.json')):
@@ -167,6 +173,7 @@ def write_index(dis):
 
 
 def main():
+    """Aperçu ou écriture (--write) du jeu fantôme de la semaine, ou nettoyage (--clean)."""
     ap = argparse.ArgumentParser(description=__doc__.split('\n')[0])
     ap.add_argument('--data', default=str(ROOT / 'data'))
     ap.add_argument('--week')
@@ -190,6 +197,7 @@ def main():
 
     # ---- déclarations
     def real(tri):
+        """Vrai si le pilote a une déclaration réelle (fichier non fantôme, ou illisible : jamais touché)."""
         f = dis / f'{tri}.json'
         if not f.exists():
             return False

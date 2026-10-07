@@ -5,6 +5,58 @@ Une section par version publiée, la plus récente en tête, écrite à chaque r
 effectuer** (ce que chacun doit faire après la mise à jour), **notes** (limites connues, points d'attention, à venir).
 Entre deux versions, le pied de page affiche le commit en cours (`v4.6.0+abc1234`).
 
+## 4.10.0 — 7 octobre 2026
+
+### Synthèse
+
+- **SO Group Virtual.** La compagnie change de nom dans toute la suite (quatre langues, documents, PDF) : « SO Group
+  Virtual », nom long « Virtual Special Operation Group », sigle « SOG ». Le site de la compagnie se règle dans
+  Paramètres › Installation › Sources et dossiers.
+- **Tableau** (☰ › Centre, barre latérale « Tableau ») : l'ordre de vol de la semaine sur une frise du jour, plaquettes
+  de vol glissées, membres affectés par glisser-déposer, conflits signalés, briefing plein écran. Déplacer une plaquette
+  réémet l'ordre de mission à la nouvelle heure.
+- **Premier lancement repensé** : bilan « Où en est la suite » en tête ; le dossier de l'application d'abord — tout le
+  reste est grisé tant qu'il n'est pas choisi et cohérent avec la suite lancée (un dossier d'une autre copie est
+  signalé) ; puis données (jeu d'essai fictif ou dépôt de la compagnie), compagnie et clé IVAO, profil, données
+  aéronautiques, Centre. Onglet dans Paramètres ; bandeau sur l'accueil tant qu'il reste à faire.
+- **Données aéronautiques par pays** : cliquer les pays sur la carte, puis « Activer » — la suite télécharge leurs
+  sources, reconstruit la base et calcule la MORA ; sous la carte ne reste que ce qu'elle ne peut pas faire seule
+  (commande du SIA, PDF de la MILAIP, dossier X-Plane…). Nouveaux pays lus : Royaume-Uni (AIP militaire : zones de vol à
+  basse altitude, axes de ravitaillement) et Canada (NAV CANADA). Axes de ravitaillement français importés du PDF de la
+  MILAIP.
+- **MORA** : outre-mer compris, grandes zones par la MORA d'X-Plane ou par blocs ; sommets parasites du relief écartés
+  (La Réunion sortait à 20 100 ft au lieu de 12 400) ; tableau des changements replié.
+- **Sessions ATC et activations de zones** : trainings, examens et réservations IVAO importés (clé d'API IVAO,
+  facultative) ; activations VATSIM et IVAO côte à côte ; pays préféré.
+- **Flotte et terrain des appareils** lus chaque jour sur le site de la compagnie ; les convoyages partent du terrain
+  réel de l'appareil.
+- **Apparence** : design « Tactique », barre latérale réglable (taille des icônes, libellés).
+- **Sauvegarde des données** : le bouton « Synchroniser » vire à l'orange ou au rouge quand des modifications n'ont pas
+  été envoyées.
+- **Sécurité** : la suite ne répond plus aux autres sites, ne sert plus rien de privé, n'exécute que des fichiers de
+  données au format attendu ; changer de dépôt de données se confirme dans une fenêtre du système.
+
+### Actions à effectuer
+
+1. **Relancer le lanceur** (nouvel en-tête `X-SOG-Setup`, nouvelles routes, règles de sécurité), puis **recharger chaque
+   page** (Ctrl+F5).
+2. **Ouvrir la suite par le lanceur ou un favori** : un lien depuis un autre site (webmail, forum) est désormais refusé.
+3. **Ouvrir Paramètres › Premier lancement** : le bilan montre ce qui reste à régler ; rechoisir le dossier de
+   l'application s'il est signalé comme celui d'une autre copie.
+4. **Recalculer la MORA** : Paramètres › Maintenance › Données aéronautiques, pays France, « Activer » (ou « Tout
+   récupérer et recalculer »). Les grilles déjà calculées peuvent porter des sommets faux ou n'avoir que la métropole.
+5. **Clé d'API IVAO** (facultatif, pour importer les sessions ATC) : étape « Compagnie » du premier lancement.
+6. Un fichier `.js` de `data/` qui ne suit pas le format des données de la suite est refusé : les fichiers écrits par la
+   suite passent tous ; un fichier ajouté à la main n'est plus servi.
+
+### Notes
+
+- framagit est indisponible : le code est sur gitnet. Le contrôle des mises à jour (API de framagit) et le lien du
+  CHANGELOG en pied de page ne répondent pas tant que la configuration de publication pointe vers framagit.
+- Les zones de la carte sont des contours de pays (Natural Earth), sans valeur aéronautique (dette technique).
+- L'ancien en-tête `X-DEFA-Setup` est encore accepté pour cette version.
+- Les fichiers de données en `.js` seront remplacés par du JSON (rapport d'audit de sécurité du 7 octobre).
+
 ## 4.9.0 — 6 octobre 2026
 
 ### Synthèse

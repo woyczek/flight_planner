@@ -440,7 +440,7 @@ html:is([data-icons="brass"],[data-icons="avio"],[data-icons="steel"],[data-icon
 html:is([data-icons="brass"],[data-icons="avio"],[data-icons="steel"],[data-icons="gel"]) :is(button,.buttonLink,a.mc-button,a.headerButton,summary) .repo-svg[data-i]{--rs:1.9em}
 html:is([data-icons="brass"],[data-icons="avio"],[data-icons="steel"],[data-icons="gel"]) :is(button,.buttonLink,a.mc-button,a.headerButton) .repo-icon{height:1.25em;overflow:visible;align-items:center}
 html:is([data-icons="brass"],[data-icons="avio"],[data-icons="steel"],[data-icons="gel"]) .repo-sidenav-item .repo-svg[data-i] {
-  --rs:50px !important /* garder : taille en ligne (style="--rs:…") des icônes de la barre */
+  --rs:var(--repo-sn-ic-sk, 40px) !important /* garder : taille en ligne (style="--rs:…") des icônes de la barre */
 }
 html:is([data-icons="brass"],[data-icons="avio"],[data-icons="steel"],[data-icons="gel"]) .repo-dropzone-badge {
   background:none

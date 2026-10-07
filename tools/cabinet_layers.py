@@ -32,6 +32,7 @@ FRONT = [
 
 
 def mask(size, polys, feather=1.2):
+    """Masque (mode L) de la taille donnée : polygones pleins, bords adoucis par un flou de feather px."""
     m = Image.new('L', size, 0)
     d = ImageDraw.Draw(m)
     for p in polys:
@@ -40,6 +41,7 @@ def mask(size, polys, feather=1.2):
 
 
 def main():
+    """Découpe la couverture en trois calques (avant, liasse, fond) écrits dans shared/deco/cabinet/."""
     cover = Image.open(os.path.join(DECO, 'mission-cover.webp')).convert('RGBA')
     W, H = cover.size
     front_mask = mask((W, H), FRONT)

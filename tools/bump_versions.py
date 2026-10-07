@@ -11,7 +11,7 @@ Ce qui est versionné :
 - scripts : chargements « 'fichier.js?v=…' » / « "feuille.css?v=…" » écrits dans le code (chemin relatif au script) ;
 - repository_nav.js et config/repository_tree : table FILE_V des feuilles de design (designs.list[id].css) ;
   repository_tree : aussi « ../shared/designs.css?v=… » (feuilles posées dès l'en-tête) ;
-- feuilles des designs (designs_skeuo.css, block_icons.css) : images textures / deco / icons/skeuo.
+- feuilles des designs (designs_skeuo.css, block_icons.css) : images textures / deco / icons/skeuo, polices fonts/*.woff2.
 Un script qui versionne ses images avec son propre ?v= (DEPENDANCES) reçoit une empreinte qui couvre aussi ces images
 — seulement celles que git suit (index : image ajoutée par « git add »), par leur identifiant git : les images déposées
 dans un espace de travail et pas encore ajoutées ne changent rien, et l'empreinte est la même dans tous les espaces
@@ -39,10 +39,12 @@ _cache = {}
 
 
 def rel(path):
+    """Chemin relatif à la racine du dépôt, séparateurs « / »."""
     return os.path.relpath(path, ROOT).replace(os.sep, '/')
 
 
 def lire(path):
+    """Octets du fichier pour l'empreinte : fins de ligne ramenées à LF, sauf pour les binaires (images, polices)."""
     b = open(path, 'rb').read()
     return b if path.lower().endswith(BINAIRE) else b.replace(b'\r\n', b'\n')
 
@@ -84,6 +86,7 @@ def empreinte(path):
 
 
 def ecrire_si_change(path, avant, apres):
+    """Écrit le texte s'il diffère de l'original (et vide le cache des empreintes) ; vrai si le fichier a été écrit."""
     if apres != avant:
         io.open(path, 'w', encoding='utf-8', newline='').write(apres)
         _cache.clear()   # les empreintes qui en dépendent sont à recalculer
@@ -97,6 +100,7 @@ absents = set()
 def versionner(texte, base, motif):
     """Remplace chaque « chemin?v=… » du motif (groupe 2 : chemin) par l'empreinte du fichier (relatif à base)."""
     def sub(m):
+        """Référence avec l'empreinte du fichier visé ; fichier absent : laissée telle quelle et signalée (absents)."""
         cible = os.path.normpath(os.path.join(base, m.group(2)))
         if not os.path.isfile(cible):
             absents.add(f'{m.group(2)} (depuis {rel(base)})')
@@ -105,7 +109,7 @@ def versionner(texte, base, motif):
     return motif.sub(sub, texte)
 
 
-IMG = re.compile(r'(\(\s*["\']?)((?:textures|deco/[\w/]+|icons/skeuo/[\w/-]+)/[\w.-]+\.webp)\?v=\w+')  # noms à point compris (rail.vierge.webp)
+IMG = re.compile(r'(\(\s*["\']?)((?:textures|deco/[\w/]+|icons/skeuo/[\w/-]+)/[\w.-]+\.webp|fonts/[\w.-]+\.woff2)\?v=\w+')  # noms à point compris (rail.vierge.webp) ; polices des designs (Tactique)
 LIT = re.compile(r'(["\'`])((?:\.{1,2}/)?[\w./-]+\.(?:js|css))\?v=\w+')
 ATTR = re.compile(r'((?:src|href)=["\'])([^"\'?#:]+)\?v=\w+')
 IMPORT = re.compile(r'(@import url\(["\'])([^"\'?#:]+)\?v=\w+')   # feuilles importées dans une couche (tools/layer_pages.py)
@@ -137,7 +141,7 @@ COMPAT = '''/* ═════════════════════�
 
                       ___|___
           ===========(___o___)===========
-                  ____|_____|____             « DEFA 01, ici le Centre : vous êtes dans un fichier de
+                  ____|_____|____             « SOG 01, ici le Centre : vous êtes dans un fichier de
                  /  _    ___    _ \              compatibilité. Remettez les gaz, tour de piste à gauche,
             ====|  |_|  |___|  |_| |====          rappelez vent arrière config/. »
                  \_______________/

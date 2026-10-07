@@ -101,14 +101,17 @@ T = tempfile.mkdtemp()   # fichiers intermédiaires
 
 
 def run(*a):
+    """Lance ImageMagick (magick) avec ces arguments ; erreur si la commande échoue."""
     subprocess.run(['magick', *a], check=True)
 
 
 def size(path):
+    """Taille (largeur, hauteur) de l'image, lue par magick identify."""
     return tuple(map(int, subprocess.run(['magick', 'identify', '-format', '%w %h', path], capture_output=True, text=True).stdout.split()))
 
 
 def crop(src, box, out):
+    """Découpe box = (x, y, largeur, hauteur) de src dans out."""
     x, y, w, h = box
     run(src, '-crop', f'{w}x{h}+{x}+{y}', '+repage', out)
 
@@ -170,6 +173,8 @@ def seamless(src, box, out):
 
 
 def main(design, write=False):
+    """Écrit les morceaux sheet-*.webp du design et affiche les jetons de géométrie ; write : les inscrit aussi dans
+    shared/designs_skeuo.css."""
     c = CONFIGS[design]
     folder = os.path.join('shared', 'deco', design)
     src = os.path.join(folder, c['src'])

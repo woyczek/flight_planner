@@ -51,6 +51,44 @@
   small {
     color: #8a94a3
   }
+  h2 {
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    color: #8a94a3;
+    margin: 22px 0 8px
+  }
+  .subs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 10px;
+    padding: 6px 4px 0
+  }
+  .subs a {
+    display: inline;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: #71b7ff;
+    font-size: 13px
+  }
+  /* rappel du premier lancement : bandeau pleine largeur en tête de page */
+  .setup {
+    margin: 0 0 22px
+  }
+  .setup a {
+    border: 2px solid #f59e0b;
+    background: #3a2608;
+    padding: 16px 20px
+  }
+  .setup b {
+    color: #fcd34d !important;
+    font-size: 18px
+  }
+  .setup small {
+    color: #fde68a;
+    font-size: 14px
+  }
   .warn {
     border: 1px solid #b45309;
     border-radius: 10px;
@@ -59,28 +97,104 @@
     display: none
   }
 </style>
-<script src="config/repository_tree?v=2bea194f" data-no-design></script><script src="data/data_tree.js" onerror="window.DATA_TREE=false"></script>
+<script src="config/repository_tree?v=7b133f6e" data-no-design></script><script src="data/data_tree.js" onerror="window.DATA_TREE=false"></script>
 </head><body><main>
 <!-- Page d'accueil (v3) : les applications sont dans apps/ ; les données dans data/ (dépôt de données). -->
-<h1>XPlane Web Suite</h1><p id="rel"></p>
+<h1>XPlane Web Suite</h1><p>SO Group Virtual — Virtual Special Operation Group</p><p id="rel"></p>
 <p class="warn" id="noData">Dossier <code>data/</code> absent : les pages utilisent les exemples. Voir INSTALL.md (clone du dépôt de données).</p>
-<ul>
-  <li><a href="apps/cr/mission_operations_reporting.html"><b>Reporting missions</b><small>CR DEFA — toutes les familles</small></a></li>
-  <li><a href="apps/cr/mission_cr.html"><b>Nouveau compte rendu</b><small>CR DEFA</small></a></li>
-  <li class="cpco-only"><a href="apps/cpco/mission_editor.html"><b>Générateur de mission</b><small>Centre (CPCO)</small></a></li>
-  <li class="cpco-only"><a href="apps/cpco/mission_registry.html"><b>Registre des missions</b><small>Centre (CPCO)</small></a></li>
-  <li class="cpco-only"><a href="apps/cpco/map_parser.html"><b>Studio cartographique</b><small>Centre (CPCO)</small></a></li>
-  <li><a href="apps/planner/map_planner.html"><b>Cartes de vol</b><small>Planificateur</small></a></li>
-  <li><a href="apps/planner/flight_performance_planner.html"><b>Flight Performance &amp; Fuel Planner</b><small>Planificateur</small></a></li>
-  <li class="cpco-only"><a href="apps/cpco/odv_planning.html"><b>Planning ODV</b><small>Centre (CPCO) — disponibilités, créneaux communs, missions probables (lecture locale du classeur)</small></a></li>
-  <li><a href="apps/landing/LandingPerformance_Dashboard_MultiCSV_i18n.html"><b>Landing Performance Dashboard</b><small>Atterrissages</small></a></li>
-  <li><a href="apps/settings/profil.html"><b>Mon profil</b><small>Paramètres — trigramme, VATSIM, IVAO, SimBrief, site DEFA, mot de passe, préférences de thèmes, langue</small></a></li>
-  <li class="cpco-only"><a href="apps/settings/centre.html"><b>Paramètres du Centre</b><small>Centre (CPCO) — utilisateurs et droits, catégories de disponibilité, routage, envoi des CR</small></a></li>
-  <li><a href="apps/settings/installation.html"><b>Installation</b><small>Paramètres — premier lancement, dépôt de données, dossiers, compagnie virtuelle</small></a></li>
-  <li><a href="apps/settings/maintenance.html"><b>Maintenance</b><small>Paramètres — mises à jour, versions, SIA, caches, sauvegarde, fichiers de référence</small></a></li>
-  <li><a href="tools/index.html"><b>Outils de maintenance</b><small>Pages et scripts de tools/ : quand s'en servir et ce que fait chacun</small></a></li>
-</ul>
+<p class="setup" id="setup" hidden></p>
+<div id="apps"></div>
 <script>
+  // Accueil généré depuis repository_tree (barre latérale : entrées, séparateurs titrés ; onglets : pages sœurs), pour ne
+  // plus prendre de retard sur les pages ; pages du Centre masquées tant qu'il est verrouillé (html[data-cpco="off"]).
+  (() => {
+    const cfg = window.REPOSITORY_TREE || {},
+      langs = ['fr', 'en', 'de', 'es'];
+    let mode = '';
+    try {
+      mode = localStorage.getItem('repositoryLanguageMode') || '';
+    } catch {}
+    const nav = (navigator.languages?.[0] || navigator.language || 'en').slice(0, 2).toLowerCase(),
+      li = Math.max(0, langs.indexOf(langs.includes(mode) ? mode : langs.includes(nav) ? nav : 'en'));
+    document.documentElement.lang = langs[li];
+    const tr = v => Array.isArray(v) ? v[li] || v[0] || '' : String(v || '');
+    const esc = s => String(s).replace(/[&<>"]/g, c => ({
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;'
+    } [c]));
+    const known = new Set((cfg.pages || []).map(p => p.path)),
+      cpco = p => String(p).startsWith('apps/cpco/') || p === 'apps/settings/centre.html';
+    // description d'une entrée sans titre : libellé de la page (repository_tree.pages), traduit par repository_tree.labels
+    const pageLabel = path => {
+      const l = (cfg.pages || []).find(p => p.path === path)?.label || '';
+      return tr(cfg.labels?.[l] || l);
+    };
+    const groups = [{
+      title: ['Pilote', 'Pilot', 'Pilot', 'Piloto'],
+      items: []
+    }];
+    for (const e of cfg.sidebar || []) {
+      if (e.sep) {
+        groups.push({
+          title: e.title || ['Paramètres et aide', 'Settings and help', 'Einstellungen und Hilfe', 'Ajustes y ayuda'],
+          items: []
+        });
+        continue;
+      }
+      if (!known.has(e.path)) continue;
+      // pages sœurs (onglets) du bouton de la barre latérale
+      const tab = (cfg.tabs || []).find(g => g.pages.some(p => p.path === e.path));
+      const subs = (tab?.pages || []).filter(p => p.path !== e.path && known.has(p.path));
+      groups.at(-1).items.push({
+        path: e.path,
+        label: tr(e.label),
+        title: tr(e.title || '') || [pageLabel(e.path)].find(s => s && s !== tr(e.label)) || '',
+        subs,
+        cpco: cpco(e.path)
+      });
+    }
+    groups.push({
+      title: ['Outils', 'Tools', 'Werkzeuge', 'Herramientas'],
+      items: [{
+        path: 'tools/index.html',
+        label: tr(['Outils de maintenance', 'Maintenance tools', 'Wartungswerkzeuge', 'Herramientas de mantenimiento']),
+        title: tr(['Pages et scripts de tools/ : quand s’en servir et ce que fait chacun',
+          'Pages and scripts of tools/: when to use them and what each does',
+          'Seiten und Skripte von tools/: wann man sie nutzt und was sie tun',
+          'Páginas y scripts de tools/: cuándo usarlos y qué hace cada uno'
+        ]),
+        subs: []
+      }]
+    });
+    document.getElementById('apps').innerHTML = groups.filter(g => g.items.length).map(g => `<h2${g.items.every(x => x.cpco) ? ' class="cpco-only"' : ''}>${esc(tr(g.title))}</h2><ul>${g.items.map(x => `<li${x.cpco ? ' class="cpco-only"' : ''}><a href="${esc(x.path)}"><b>${esc(x.label)}</b>${x.title ? `<small>${esc(x.title)}</small>` : ''}</a>${x.subs.length ? `<span class="subs">${x.subs.map(s => `<a href="${esc(s.path)}"${cpco(s.path) ? ' class="cpco-only"' : ''}>${esc(tr(s.label))}</a>`).join('')}</span>` : ''}</li>`).join('')}</ul>`).join('');
+    // premier lancement : rappel tant que la suite n'est pas réglée (bilan mémorisé par la page)
+    let done = null,
+      st = null;
+    try {
+      done = localStorage.getItem('suiteSetup:v1');
+      st = JSON.parse(localStorage.getItem('suiteSetupState:v1') || 'null');
+    } catch {}
+    const box = document.getElementById('setup');
+    // « Terminer » d'une autre installation servie à la même adresse (réglages du navigateur liés à l'adresse) : le chemin
+    // réel de la suite servie (repère .defa_instance du lanceur, 2e ligne) diffère de celui noté au « Terminer »
+    const show = fresh => {
+      box.hidden = false;
+      box.innerHTML = `<a href="apps/settings/premier_lancement.html?force"><b>${esc(tr(['Premier lancement', 'First run', 'Erststart', 'Primer arranque']))}</b><small>${esc(fresh ? tr(['Nouvelle installation : régler la suite (dossier, données, compagnie, profil, données aéronautiques)', 'New installation: set up the suite (folder, data, airline, profile, aeronautical data)', 'Neue Installation: die Suite einrichten (Ordner, Daten, Fluggesellschaft, Profil, Luftfahrtdaten)', 'Nueva instalación: configurar la suite (carpeta, datos, aerolínea, perfil, datos aeronáuticos)']) : st?.todo ? tr(['{n} élément(s) à régler sur {t} — reprendre où vous en étiez', '{n} item(s) to set out of {t} — resume where you left off', '{n} von {t} Punkt(en) einzustellen — dort weitermachen, wo Sie waren', '{n} elemento(s) por ajustar de {t} — retomar donde lo dejó']).replace('{n}', st.todo).replace('{t}', st.total) : tr(['Régler la suite : dossier, données, compagnie, profil, données aéronautiques', 'Set up the suite: folder, data, airline, profile, aeronautical data', 'Die Suite einrichten: Ordner, Daten, Fluggesellschaft, Profil, Luftfahrtdaten', 'Configurar la suite: carpeta, datos, aerolínea, perfil, datos aeronáuticos']))}</small></a>`;
+    };
+    let fin = {};
+    try {
+      fin = JSON.parse(done || '{}') || {};
+    } catch {}
+    if (!done || st?.todo) show(false);
+    else fetch('.defa_instance', {
+      cache: 'no-store'
+    }).then(r => r.ok ? r.text() : '').then(t => {
+      const path = (String(t).split(/\r?\n/)[1] || '').trim();
+      if ((fin.path || '') !== path) show(true);
+    }, () => {});
+  })();
   const r = window.REPOSITORY_TREE?.release || {};
   document.getElementById('rel').textContent = `Version ${r.version || ''} (${r.date || ''})`;
   addEventListener('load', () => {

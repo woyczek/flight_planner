@@ -1,0 +1,730 @@
+{
+  "__meta": {
+    "schema": 1,
+    "note": "Manual overrides merged after Wikidata/Wikipedia lookup.",
+    "notes_aliases_defa": "E2C → E2 (E-2 Hawkeye) et RQ9P → Q9 (MQ-9 Reaper) : codes de la flotte DEFA ramenés aux désignateurs OACI (Doc 8643)."
+  },
+  "__aliases": {
+    "AS350": "AS50",
+    "AS350B": "AS50",
+    "AS350B2": "AS50",
+    "AS350B3": "AS50",
+    "H125": "AS50",
+    "EC135": "EC35",
+    "H135": "EC35",
+    "EC145": "EC45",
+    "H145": "EC45",
+    "BK117C2": "EC45",
+    "BK117D2": "EC45",
+    "BK117D3": "EC45",
+    "SA365": "AS65",
+    "AS365": "AS65",
+    "AS565": "AS65",
+    "Q400": "DH8D",
+    "DHC8400": "DH8D",
+    "DASH8Q400": "DH8D",
+    "CARAVELLE": "S210",
+    "SE210": "S210",
+    "CH47D": "CH47",
+    "CH47F": "CH47",
+    "DC3C": "DC3",
+    "C47": "DC3",
+    "C47A": "DC3",
+    "C47B": "DC3",
+    "ATR42": "AT42",
+    "ATR72": "AT72",
+    "ATR72-600": "AT76",
+    "ATR72600": "AT76",
+    "Q300": "DH8C",
+    "Q200": "DH8B",
+    "A400": "A4M",
+    "A400M": "A4M",
+    "CASA295": "C295",
+    "DORNIER228": "D228",
+    "DO228": "D228",
+    "LET410": "L410",
+    "SHORT360": "SH36",
+    "SHORT330": "SH33",
+    "PC12": "PC12",
+    "PC6": "PC6",
+    "C208B": "C208",
+    "C182": "C182",
+    "C206": "C206",
+    "C152": "C152",
+    "FOKKER50": "F50",
+    "F27": "F27",
+    "C212": "C212",
+    "CN235": "CN35",
+    "SAAB340": "SF34",
+    "SF340": "SF34",
+    "SF3": "SF34",
+    "E2C": "E2",
+    "RQ9P": "Q9"
+  },
+  "__records": {
+    "C152": {
+      "tdesig": "C152",
+      "model": "Cessna 152",
+      "description": "L1P",
+      "wtc": "L",
+      "source": "manual/common",
+      "wing_position": "high"
+    },
+    "C172": {
+      "tdesig": "C172",
+      "model": "Cessna 172",
+      "description": "L1P",
+      "wtc": "L",
+      "source": "ICAO",
+      "wing_position": "high"
+    },
+    "C182": {
+      "tdesig": "C182",
+      "model": "Cessna 182",
+      "description": "L1P",
+      "wtc": "L",
+      "source": "manual/common",
+      "wing_position": "high"
+    },
+    "C206": {
+      "tdesig": "C206",
+      "model": "Cessna 206",
+      "description": "L1P",
+      "wtc": "L",
+      "source": "manual/common",
+      "wing_position": "high"
+    },
+    "C208": {
+      "tdesig": "C208",
+      "model": "Cessna 208 Caravan",
+      "description": "L1T",
+      "wtc": "L",
+      "source": "manual/common",
+      "wing_position": "high"
+    },
+    "BN2P": {
+      "tdesig": "BN2P",
+      "model": "BN-2 Islander",
+      "description": "L2P",
+      "wtc": "L",
+      "source": "ICAO",
+      "wing_position": "high"
+    },
+    "AT42": {
+      "tdesig": "AT42",
+      "model": "ATR 42",
+      "description": "L2T",
+      "wtc": "M",
+      "source": "manual/common",
+      "wing_position": "high"
+    },
+    "AT45": {
+      "tdesig": "AT45",
+      "model": "ATR 42-500",
+      "description": "L2T",
+      "wtc": "M",
+      "source": "manual/common",
+      "wing_position": "high"
+    },
+    "AT46": {
+      "tdesig": "AT46",
+      "model": "ATR 42-600",
+      "description": "L2T",
+      "wtc": "M",
+      "source": "manual/common",
+      "wing_position": "high"
+    },
+    "AT72": {
+      "tdesig": "AT72",
+      "model": "ATR 72",
+      "description": "L2T",
+      "wtc": "M",
+      "source": "manual/common",
+      "wing_position": "high"
+    },
+    "AT75": {
+      "tdesig": "AT75",
+      "model": "ATR 72-500",
+      "description": "L2T",
+      "wtc": "M",
+      "source": "manual/common",
+      "wing_position": "high"
+    },
+    "AT76": {
+      "tdesig": "AT76",
+      "model": "ATR 72-600",
+      "description": "L2T",
+      "wtc": "M",
+      "source": "manual/common",
+      "wing_position": "high"
+    },
+    "DH8A": {
+      "tdesig": "DH8A",
+      "model": "DHC-8-100",
+      "description": "L2T",
+      "wtc": "M",
+      "source": "manual/common",
+      "wing_position": "high"
+    },
+    "DH8B": {
+      "tdesig": "DH8B",
+      "model": "DHC-8-200",
+      "description": "L2T",
+      "wtc": "M",
+      "source": "manual/common",
+      "wing_position": "high"
+    },
+    "DH8C": {
+      "tdesig": "DH8C",
+      "model": "DHC-8-300",
+      "description": "L2T",
+      "wtc": "M",
+      "source": "manual/common",
+      "wing_position": "high"
+    },
+    "DH8D": {
+      "tdesig": "DH8D",
+      "model": "DHC-8-400 / Q400",
+      "description": "L2T",
+      "wtc": "M",
+      "source": "ICAO",
+      "wing_position": "high"
+    },
+    "DHC6": {
+      "tdesig": "DHC6",
+      "model": "DHC-6 Twin Otter",
+      "description": "L2T",
+      "wtc": "M",
+      "source": "manual/common",
+      "wing_position": "high"
+    },
+    "DHC7": {
+      "tdesig": "DHC7",
+      "model": "DHC-7 Dash 7",
+      "description": "L4T",
+      "wtc": "M",
+      "source": "manual/common",
+      "wing_position": "high"
+    },
+    "L410": {
+      "tdesig": "L410",
+      "model": "Let L-410 Turbolet",
+      "description": "L2T",
+      "wtc": "L",
+      "source": "manual/common",
+      "wing_position": "high"
+    },
+    "D228": {
+      "tdesig": "D228",
+      "model": "Dornier 228",
+      "description": "L2T",
+      "wtc": "L",
+      "source": "manual/common",
+      "wing_position": "high"
+    },
+    "C212": {
+      "tdesig": "C212",
+      "model": "CASA C-212 Aviocar",
+      "description": "L2T",
+      "wtc": "M",
+      "source": "manual/common",
+      "wing_position": "high"
+    },
+    "CN35": {
+      "tdesig": "CN35",
+      "model": "CASA CN-235",
+      "description": "L2T",
+      "wtc": "M",
+      "source": "manual/common",
+      "wing_position": "high"
+    },
+    "C295": {
+      "tdesig": "C295",
+      "model": "Airbus C295",
+      "description": "L2T",
+      "wtc": "M",
+      "source": "manual/common",
+      "wing_position": "high"
+    },
+    "F27": {
+      "tdesig": "F27",
+      "model": "Fokker F27 Friendship",
+      "description": "L2T",
+      "wtc": "M",
+      "source": "manual/common",
+      "wing_position": "high"
+    },
+    "F50": {
+      "tdesig": "F50",
+      "model": "Fokker 50",
+      "description": "L2T",
+      "wtc": "M",
+      "source": "manual/common",
+      "wing_position": "high"
+    },
+    "SF34": {
+      "tdesig": "SF34",
+      "model": "Saab 340",
+      "description": "L2T",
+      "wtc": "M",
+      "source": "manual/common",
+      "wing_position": "high"
+    },
+    "SH33": {
+      "tdesig": "SH33",
+      "model": "Shorts 330",
+      "description": "L2T",
+      "wtc": "M",
+      "source": "manual/common",
+      "wing_position": "high"
+    },
+    "SH36": {
+      "tdesig": "SH36",
+      "model": "Shorts 360",
+      "description": "L2T",
+      "wtc": "M",
+      "source": "manual/common",
+      "wing_position": "high"
+    },
+    "A4M": {
+      "tdesig": "A4M",
+      "model": "Airbus A400M Atlas",
+      "description": "L4T",
+      "wtc": "H",
+      "source": "manual/common",
+      "wing_position": "high"
+    },
+    "A139": {
+      "tdesig": "A139",
+      "model": "AgustaWestland AW139",
+      "description": "H2T",
+      "wtc": "M",
+      "source": "manual/common",
+      "wing_position": "rotor"
+    },
+    "A30F": {
+      "tdesig": "A30F",
+      "model": "Airbus A300-600F",
+      "description": "L2J",
+      "wtc": "H",
+      "source": "manual/common",
+      "wing_position": "low"
+    },
+    "AN124": {
+      "tdesig": "AN124",
+      "model": "Antonov An-124 Ruslan",
+      "description": "L4J",
+      "wtc": "H",
+      "source": "manual/common",
+      "wing_position": "high"
+    },
+    "AT73": {
+      "tdesig": "AT73",
+      "model": "ATR 72-300",
+      "description": "L2T",
+      "wtc": "M",
+      "source": "manual/common",
+      "wing_position": "high"
+    },
+    "B36T": {
+      "tdesig": "B36T",
+      "model": "Beechcraft Bonanza B36TC",
+      "description": "L1P",
+      "wtc": "L",
+      "source": "manual/common",
+      "wing_position": "low"
+    },
+    "B48F": {
+      "tdesig": "B48F",
+      "model": "Boeing 747-8F",
+      "description": "L4J",
+      "wtc": "H",
+      "source": "manual/common",
+      "wing_position": "low"
+    },
+    "B58T": {
+      "tdesig": "B58T",
+      "model": "Beechcraft Baron 58TC",
+      "description": "L2P",
+      "wtc": "L",
+      "source": "manual/common",
+      "wing_position": "low"
+    },
+    "B60T": {
+      "tdesig": "B60T",
+      "model": "Beechcraft Duke B60",
+      "description": "L2P",
+      "wtc": "L",
+      "source": "manual/common",
+      "wing_position": "low"
+    },
+    "B721": {
+      "tdesig": "B721",
+      "model": "Boeing 727-100",
+      "description": "L3J",
+      "wtc": "M",
+      "source": "manual/common",
+      "wing_position": "low"
+    },
+    "B74F": {
+      "tdesig": "B74F",
+      "model": "Boeing 747 Freighter",
+      "description": "L4J",
+      "wtc": "H",
+      "source": "manual/common",
+      "wing_position": "low"
+    },
+    "B75F": {
+      "tdesig": "B75F",
+      "model": "Boeing 757-200F",
+      "description": "L2J",
+      "wtc": "M",
+      "source": "manual/common",
+      "wing_position": "low"
+    },
+    "B76F": {
+      "tdesig": "B76F",
+      "model": "Boeing 767-300F",
+      "description": "L2J",
+      "wtc": "H",
+      "source": "manual/common",
+      "wing_position": "low"
+    },
+    "B77F": {
+      "tdesig": "B77F",
+      "model": "Boeing 777F",
+      "description": "L2J",
+      "wtc": "H",
+      "source": "manual/common",
+      "wing_position": "low"
+    },
+    "BBJ1": {
+      "tdesig": "BBJ1",
+      "model": "Boeing Business Jet (737-700)",
+      "description": "L2J",
+      "wtc": "M",
+      "source": "manual/common",
+      "wing_position": "low"
+    },
+    "BBJ2": {
+      "tdesig": "BBJ2",
+      "model": "Boeing Business Jet 2 (737-800)",
+      "description": "L2J",
+      "wtc": "M",
+      "source": "manual/common",
+      "wing_position": "low"
+    },
+    "BBJ3": {
+      "tdesig": "BBJ3",
+      "model": "Boeing Business Jet 3 (737-900)",
+      "description": "L2J",
+      "wtc": "M",
+      "source": "manual/common",
+      "wing_position": "low"
+    },
+    "BE24": {
+      "tdesig": "BE24",
+      "model": "Beechcraft Musketeer / Sierra",
+      "description": "L1P",
+      "wtc": "L",
+      "source": "manual/common",
+      "wing_position": "low"
+    },
+    "C185": {
+      "tdesig": "C185",
+      "model": "Cessna 185 Skywagon",
+      "description": "L1P",
+      "wtc": "L",
+      "source": "manual/common",
+      "wing_position": "high"
+    },
+    "C510": {
+      "tdesig": "C510",
+      "model": "Cessna Citation Mustang",
+      "description": "L2J",
+      "wtc": "L",
+      "source": "manual/common",
+      "wing_position": "low"
+    },
+    "C700": {
+      "tdesig": "C700",
+      "model": "Cessna Citation Longitude",
+      "description": "L2J",
+      "wtc": "M",
+      "source": "manual/common",
+      "wing_position": "low"
+    },
+    "C919": {
+      "tdesig": "C919",
+      "model": "COMAC C919",
+      "description": "L2J",
+      "wtc": "M",
+      "source": "manual/common",
+      "wing_position": "low"
+    },
+    "CONI": {
+      "tdesig": "CONI",
+      "model": "Lockheed L-1049 Super Constellation",
+      "description": "L4P",
+      "wtc": "M",
+      "source": "manual/common",
+      "wing_position": "low"
+    },
+    "CONS": {
+      "tdesig": "CONS",
+      "model": "Lockheed L-749 Constellation",
+      "description": "L4P",
+      "wtc": "M",
+      "source": "manual/common",
+      "wing_position": "low"
+    },
+    "CRJ5": {
+      "tdesig": "CRJ5",
+      "model": "Bombardier CRJ-550",
+      "description": "L2J",
+      "wtc": "M",
+      "source": "manual/common",
+      "wing_position": "low"
+    },
+    "DA20": {
+      "tdesig": "DA20",
+      "model": "Diamond DA20 Katana",
+      "description": "L1P",
+      "wtc": "L",
+      "source": "manual/common",
+      "wing_position": "low"
+    },
+    "DA62": {
+      "tdesig": "DA62",
+      "model": "Diamond DA62",
+      "description": "L2P",
+      "wtc": "L",
+      "source": "manual/common",
+      "wing_position": "low"
+    },
+    "DC6": {
+      "tdesig": "DC6",
+      "model": "Douglas DC-6",
+      "description": "L4P",
+      "wtc": "M",
+      "source": "manual/common",
+      "wing_position": "low"
+    },
+    "E13L": {
+      "tdesig": "E13L",
+      "model": "Embraer Legacy 600",
+      "description": "L2J",
+      "wtc": "M",
+      "source": "manual/common",
+      "wing_position": "low"
+    },
+    "E140": {
+      "tdesig": "E140",
+      "model": "Embraer ERJ-140",
+      "description": "L2J",
+      "wtc": "M",
+      "source": "manual/common",
+      "wing_position": "low"
+    },
+    "E175": {
+      "tdesig": "E175",
+      "model": "Embraer 175",
+      "description": "L2J",
+      "wtc": "M",
+      "source": "manual/common",
+      "wing_position": "low"
+    },
+    "E19L": {
+      "tdesig": "E19L",
+      "model": "Embraer Lineage 1000",
+      "description": "L2J",
+      "wtc": "M",
+      "source": "manual/common",
+      "wing_position": "low"
+    },
+    "EA50": {
+      "tdesig": "EA50",
+      "model": "Eclipse 500",
+      "description": "L2J",
+      "wtc": "L",
+      "source": "manual/common",
+      "wing_position": "low"
+    },
+    "EVAL": {
+      "tdesig": "EVAL",
+      "model": "Eviation Alice",
+      "description": "L2E",
+      "wtc": "L",
+      "source": "manual/common",
+      "wing_position": "low"
+    },
+    "FA8X": {
+      "tdesig": "FA8X",
+      "model": "Dassault Falcon 8X",
+      "description": "L3J",
+      "wtc": "M",
+      "source": "manual/common",
+      "wing_position": "low"
+    },
+    "GLF6": {
+      "tdesig": "GLF6",
+      "model": "Gulfstream G650",
+      "description": "L2J",
+      "wtc": "M",
+      "source": "manual/common",
+      "wing_position": "low"
+    },
+    "KODI": {
+      "tdesig": "KODI",
+      "model": "Quest Kodiak",
+      "description": "L1T",
+      "wtc": "L",
+      "source": "manual/common",
+      "wing_position": "high"
+    },
+    "MD1F": {
+      "tdesig": "MD1F",
+      "model": "McDonnell Douglas MD-11F",
+      "description": "L3J",
+      "wtc": "H",
+      "source": "manual/common",
+      "wing_position": "low"
+    },
+    "MI24": {
+      "tdesig": "MI24",
+      "model": "Mil Mi-24 Hind",
+      "description": "H2T",
+      "wtc": "M",
+      "source": "manual/common",
+      "wing_position": "rotor"
+    },
+    "P06T": {
+      "tdesig": "P06T",
+      "model": "Tecnam P2006T",
+      "description": "L2P",
+      "wtc": "L",
+      "source": "manual/common",
+      "wing_position": "low"
+    },
+    "PA28": {
+      "tdesig": "PA28",
+      "model": "Piper PA-28 Cherokee",
+      "description": "L1P",
+      "wtc": "L",
+      "source": "manual/common",
+      "wing_position": "low"
+    },
+    "R182": {
+      "tdesig": "R182",
+      "model": "Cessna R182 Skylane RG",
+      "description": "L1P",
+      "wtc": "L",
+      "source": "manual/common",
+      "wing_position": "high"
+    },
+    "R22": {
+      "tdesig": "R22",
+      "model": "Robinson R22",
+      "description": "H1P",
+      "wtc": "L",
+      "source": "manual/common",
+      "wing_position": "rotor"
+    },
+    "RV10": {
+      "tdesig": "RV10",
+      "model": "Van's RV-10",
+      "description": "L1P",
+      "wtc": "L",
+      "source": "manual/common",
+      "wing_position": "low"
+    },
+    "UH60": {
+      "tdesig": "UH60",
+      "model": "Sikorsky UH-60 Black Hawk",
+      "description": "H2T",
+      "wtc": "M",
+      "source": "manual/common",
+      "wing_position": "rotor"
+    },
+    "YS11": {
+      "tdesig": "YS11",
+      "model": "NAMC YS-11",
+      "description": "L2T",
+      "wtc": "M",
+      "source": "manual/common",
+      "wing_position": "low"
+    },
+    "P212": {
+      "tdesig": "P212",
+      "model": "Tecnam P2012 Traveller",
+      "description": "L2P",
+      "wtc": "L",
+      "source": "manual/common",
+      "wing_position": "high"
+    },
+    "PA24": {
+      "tdesig": "PA24",
+      "model": "Piper PA-24 Comanche",
+      "description": "L1P",
+      "wtc": "L",
+      "source": "manual/common",
+      "wing_position": "low"
+    },
+    "PC24": {
+      "tdesig": "PC24",
+      "model": "Pilatus PC-24",
+      "description": "L2J",
+      "wtc": "M",
+      "source": "manual/common",
+      "wing_position": "low"
+    },
+    "R66": {
+      "tdesig": "R66",
+      "model": "Robinson R66",
+      "description": "H1T",
+      "wtc": "L",
+      "source": "manual/common",
+      "wing_position": "rotor"
+    },
+    "R722": {
+      "tdesig": "R722",
+      "model": "Boeing 727-200 (Raisbeck)",
+      "description": "L3J",
+      "wtc": "M",
+      "source": "manual/common",
+      "wing_position": "low"
+    },
+    "SF50": {
+      "tdesig": "SF50",
+      "model": "Cirrus Vision SF50",
+      "description": "L1J",
+      "wtc": "L",
+      "source": "manual/common",
+      "wing_position": "low"
+    },
+    "SR2T": {
+      "tdesig": "SR2T",
+      "model": "Cirrus SR22T",
+      "description": "L1P",
+      "wtc": "L",
+      "source": "manual/common",
+      "wing_position": "low"
+    },
+    "STAR": {
+      "tdesig": "STAR",
+      "model": "Beechcraft Starship",
+      "description": "L2T",
+      "wtc": "L",
+      "source": "manual/common",
+      "wing_position": "low"
+    },
+    "TBM9": {
+      "tdesig": "TBM9",
+      "model": "Daher TBM 900",
+      "description": "L1T",
+      "wtc": "L",
+      "source": "manual/common",
+      "wing_position": "low"
+    }
+  }
+}

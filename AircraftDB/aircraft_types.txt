@@ -1,5 +1,5 @@
 # Désignateurs de types OACI (Doc 8643) que la suite reconstruit sur chaque poste : AircraftDB/update_aircraft_db.py
-# --add-file aircraft_types.txt (lancé par le lanceur quand aircraft_db.js manque). La base elle-même (modèles,
+# --add-file aircraft_types.txt (à la main ; le lanceur, lui, complète type par type : Paramètres › Maintenance). La base elle-même (modèles,
 # descriptions, catégories de turbulence, performances EUROCONTROL) n'est pas publiée : voir LICENSE.md.
 A109
 A124

@@ -141,11 +141,11 @@
       }).join('')}${hasActions ? '<th class="st-actions"></th>' : ''}</tr>`;
       const span = columns.length + (hasActions ? 1 : 0);
       const body = view.length ? view.map(row => {
-        const on = hasDetail && open.has(dk(row)),
-          twisty = hasDetail ? `<span class="st-twisty" role="button" tabindex="0" aria-expanded="${on}" aria-label="${esc(opts.rowTitle || '▸')}">▸</span>` : '';
-        return `<tr data-id="${keyOf(row)}"${opts.onRowClick || hasDetail ? ` class="st-clickable" title="${esc(opts.rowTitle || 'Cliquer pour modifier')}"` : ''}>${columns.map((c, n) =>
+          const on = hasDetail && open.has(dk(row)),
+            twisty = hasDetail ? `<span class="st-twisty" role="button" tabindex="0" aria-expanded="${on}" aria-label="${esc(opts.rowTitle || '▸')}">▸</span>` : '';
+          return `<tr data-id="${keyOf(row)}"${opts.onRowClick || hasDetail ? ` class="st-clickable" title="${esc(opts.rowTitle || 'Cliquer pour modifier')}"` : ''}>${columns.map((c, n) =>
           `<td${c.type === 'number' ? ' class="st-num"' : ''}>${n ? '' : twisty}${cell(c, row)}</td>`).join('')}${hasActions ? `<td class="st-actions"><button type="button" class="st-delete">${esc(opts.deleteLabel || 'Supprimer')}</button></td>` : ''}</tr>${on ? `<tr class="st-detail"><td colspan="${span}">${opts.detail(row)}</td></tr>` : ''}`;
-      }).join('') :
+        }).join('') :
         `<tr><td colspan="${span}" class="st-empty">${esc(opts.emptyText || 'Aucune donnée pour la période sélectionnée.')}</td></tr>`;
       container.innerHTML = `<div class="st-wrap"><table class="st-table"><thead>${head}</thead><tbody>${body}</tbody></table></div>`;
       applyWidths();

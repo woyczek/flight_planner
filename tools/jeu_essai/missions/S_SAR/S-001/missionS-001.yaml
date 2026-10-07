@@ -1,0 +1,71 @@
+schema: helo-xp-mission
+schema_version: '2.0'
+mission:
+  series: 1
+  number: 1
+  id: 'S-001'
+  former_id: '41'
+  type: SAR
+  subtype: SAR-MARITIME
+  reconstructed_from_pdf: true
+
+title: "IROISE — the VHF takes a day off"
+
+summary: |-
+  An H160 from Flottille 32F takes off from BAN Lanvéoc-Poulmic to assist a sailboat disabled about 12 NM west of the Île de Sein. Two people are on board, one showing signs of mild hypothermia; the sailboat's VHF now allows only intermittent contact, but its distress beacon has clearly not been told to keep a low profile.
+
+  The crew must locate the sailboat, establish contact with CROSS Corsen, then winch up both occupants before returning to Lanvéoc-Poulmic. The main constraint is operating over the Iroise Sea in strong wind, rough sea and limited visual references.
+
+detailed_description: |-
+  CROSS Corsen receives an alert from a pleasure sailboat disabled west of the Île de Sein after rigging damage. Two people are reported on board, one of them showing signs consistent with mild hypothermia. The beacon position is accurate enough to task the Flottille 32F H160 directly, while the onboard VHF seems to have picked this exact moment to develop an independent streak.
+
+  RESCUE41 takes off from BAN Lanvéoc-Poulmic and reaches Pointe de Pen-Hir after about 7.4 NM. The transit continues towards the Île de Sein for about 15.8 NM, at an indicative altitude of 1500 ft suited to the weather and traffic. The Île de Sein is the last visual reporting point before the maritime area. The PT2 - TARGET leg adds about 12 NM further west. Approaching TARGET, the crew comes under CROSSCORSEN coordination and searches for the sailboat using electro-optical sensors and beacon data. Once BELLEETL is identified, RESCUE41 establishes RDV-1 over the position and reconnoitres ZONE-1 before winching. A rescue swimmer is lowered to the sailboat, then both occupants are winched up one after the other. The occupant showing signs of hypothermia is settled and monitored on board before the aircraft leaves the area.
+
+  Winching is postponed if the sailboat's position cannot be confirmed, if the hover becomes unstable or if the sea state makes the swimmer's approach dangerous. Fuel must allow the return to Lanvéoc-Poulmic with the planned reserve; an early return is decided if the search exceeds the margin set at the briefing. If the casualty's condition worsens, coordination may order a diversion to a suitable hospital.
+
+  After recovering both occupants, the aircraft flies to Pointe du Raz on a leg of about 16.7 NM, then continues to Lanvéoc-Poulmic for about 18.7 NM. The full route is about 71 NM and 50 to 65 minutes of flight, excluding search and winching time. The mission ends once both occupants have been landed, the casualty handed over to the emergency services and the aircraft returned to availability.
+
+target:
+  id: TARGET
+  name: "Sailboat BELLE ÉTOILE"
+  lat: 48.037160
+  lon: -5.152480
+
+turning_points: []
+
+aircraft:
+  - type: H160
+    variant: "H160"
+    callsign: RESCUE41
+
+rendezvous:
+  - id: RDV-1
+    name: "Sailboat BELLE ÉTOILE"
+    lat: 48.037160
+    lon: -5.152480
+    participants: "RESCUE41,BELLEETL"
+
+teams:
+  - name: "RESCUE41"
+    description: "French Navy Finistère H160 H160"
+  - name: "CROSSCORSEN"
+    description: "CROSS Corsen Finistère coordination centre"
+  - name: "BELLEETL"
+    description: "Civilian vessel  - pleasure sailboat"
+
+maps:
+  - id: general41
+    filename: generalS-001.png
+    type: general
+  - id: cible41
+    filename: cibleS-001.png
+    type: target
+  - id: carte_assemblage
+    filename: carte_assemblage.png
+    type: assemblage
+  - id: profil_vertical
+    filename: profil_vertical.png
+    type: profil_vertical
+
+notes:
+  - "Reconstructed from the PDF file S4-M41_SAR_IROISE_la_VHF_prend_un_jour_de_conge_dossier_mission (1).pdf (imported 2026-09-28): turning points and target coordinates to be completed (the target reuses the first rendezvous)."

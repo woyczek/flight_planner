@@ -1,4 +1,4 @@
-# Index documentaire — Suite DEFA Virtual
+# Index documentaire — Suite SO Group Virtual
 
 *[← Retour au dossier](../README.md)* · Dans la suite : entrée **« Aide »** de la barre latérale (ouverte au chapitre de
 la page en cours) ou ☰ › Aide.

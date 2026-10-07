@@ -28,8 +28,11 @@
     READ = 'assignmentsRead:v1',
     AVAIL = 'pilotAvailability:v1',
     PAGE = 'apps/pilot/mes_missions.html';
+  /** Texte d'une ligne [fr, en, de, es] dans la langue de la page (français si le kit n'est pas chargé). */
   const t = row => K?.t ? K.t(row) : row[0];
+  /** Comme t, avec valeurs {clé} remplacées. */
   const tf = (row, v) => K?.tf ? K.tf(row, v) : row[0].replace(/\{(\w+)\}/g, (_, k) => v[k] ?? '');
+  /** Adresse de la racine de la suite (bandeau commun, sinon dossier parent de ce script). */
   const root = () => window.RepositoryNav?.root || new URL('../', document.currentScript?.src || location.href).href;
   // lectures mémorisées (RepositoryKit.store.jsonCached) : analyse refaite seulement si le texte a changé — isRead,
   // pliState, disponibilités… sont lus à chaque ligne de la liste et à chaque case de la grille
@@ -40,6 +43,7 @@
       return d;
     }
   };
+  /** Écrit un objet JSON dans localStorage (stockage plein ou indisponible : ignoré). */
   const setJson = (k, v) => {
     try {
       localStorage.setItem(k, JSON.stringify(v));
@@ -67,6 +71,7 @@
     // seconde : un fichier réécrit dans la seconde de sa lecture répondait « 304, inchangé » et l'ancien contenu restait
     // — utilisateur ajouté absent de la liste, index des disponibilités d'avant l'enregistrement)
     const written = new Set();
+    /** Oublie les lectures gardées d'un fichier (toutes sans path), noté écrit : relu ensuite sans cache HTTP. */
     const drop = path => {
       if (!path) {
         mem.clear();
@@ -80,6 +85,7 @@
             }
       if (path) written.add(new URL(path, root()).href);
     };
+    /** Prévient la page (événement defa-data-change) qu'un fichier de données a changé. */
     const announce = path => window.dispatchEvent(new CustomEvent('defa-data-change', {
       detail: {
         path
@@ -101,6 +107,7 @@
         if (inflight.has(url)) return inflight.get(url);
         // lecture « fraîche » ou fichier écrit depuis : sans cache HTTP (pas de 304 sur une date à la seconde)
         const bypass = fresh || written.delete(url);
+        /** Lecture partagée : fetch du fichier (null si absent), dernière valeur connue si le lanceur ne répond pas. */
         const p = (async () => {
           let value = null;
           try {
@@ -141,6 +148,7 @@
   // annoncés (store.changed) ; sans dossier autorisé, gardés dans ce navigateur (boîte d'envoi suiteDataOutbox:v1, relue
   // en priorité tant qu'elle est plus récente que le fichier) et écrits au prochain flushData().
   const OUTBOX = 'suiteDataOutbox:v1';
+  /** Boîte d'envoi : fichiers en attente d'écriture dans le dossier des données (suiteDataOutbox:v1), par chemin. */
   const outbox = () => json(OUTBOX, {}) || {};
   /** Dossier des données autorisé en écriture (handle) ; erreur expliquée sinon. */
   async function dataDir() {
@@ -156,8 +164,12 @@
         dir = null; // sans geste de l'utilisateur, l'autorisation ne peut pas être demandée
       }
     }
-    if (!dir) throw new Error(t(['Dossier des données non autorisé : le choisir dans Paramètres › Installation › Sources et dossiers.', 'Data folder not authorised: choose it in Settings › Installation › Sources and folders.', 'Datenordner nicht freigegeben: unter Einstellungen › Installation › Quellen und Ordner wählen.', 'Carpeta de datos no autorizada: elegirla en Ajustes › Instalación › Fuentes y carpetas.']));
-    if (await FA.sameAsServed?.('__data', dir) === false) throw new Error(t(['Dossier des données d’une autre copie de la suite : rechoisir le dossier de l’application (Premier lancement).', 'Data folder of another copy of the suite: choose the application folder again (First run).', 'Datenordner einer anderen Kopie der Suite: Anwendungsordner neu wählen (Erststart).', 'Carpeta de datos de otra copia de la suite: volver a elegir la carpeta de la aplicación (Primer arranque).']));
+    if (!dir) throw new Error(t(['Dossier des données non autorisé : le choisir dans Paramètres › Installation › Sources et dossiers.',
+      'Data folder not authorised: choose it in Settings › Installation › Sources and folders.',
+      'Datenordner nicht freigegeben: unter Einstellungen › Installation › Quellen und Ordner wählen.',
+      'Carpeta de datos no autorizada: elegirla en Ajustes › Instalación › Fuentes y carpetas.'
+    ]));
+    if (await FA.sameAsServed?.('__data', dir) === false) throw new Error(await FA.otherText('__data', dir, 'other'));
     return dir;
   }
   /** Écrit value (JSON) dans data/<rel> du dossier autorisé ; null : supprime le fichier. */
@@ -182,6 +194,7 @@
   /** Dossier des données accordé et résultat du contrôle de copie : { dir, same } (mémorisé 5 s). */
   function poolSource() {
     if (srcMemo && Date.now() - srcMemo.at < 5e3) return srcMemo.p;
+    /** Lecture du dossier accordé et contrôle « même copie que la suite servie » (FileAccess.sameAsServed). */
     const p = (async () => {
       const FA = window.FileAccess,
         st = FA ? await FA.status('__data') : null;
@@ -207,14 +220,25 @@
     srcMemo = null;
   });
   const alerted = new Map(); // message → instant (une alerte identique toutes les 5 s au plus : fichier + index)
+  /** Alerte flottante, une seule fois par texte toutes les 5 s. */
   function alertOnce(text) {
     if (Date.now() - (alerted.get(text) || 0) < 5e3) return;
     alerted.set(text, Date.now());
     window.AppFramework?.notify?.(text, 'warn');
   }
-  const uncheckedText = name => tf(['Dossier des données « {n} » : impossible de vérifier qu’il est celui de la suite servie (lanceur absent ou d’une version antérieure). Les données sont lues et écrites dans ce dossier.', 'Data folder “{n}”: cannot check that it is the one of the served suite (launcher missing or from an earlier version). Data is read from and written to this folder.', 'Datenordner „{n}“: Es lässt sich nicht prüfen, ob er der der bereitgestellten Suite ist (Starter fehlt oder ist älter). Daten werden in diesem Ordner gelesen und geschrieben.', 'Carpeta de datos «{n}»: no se puede comprobar que sea la de la suite servida (lanzador ausente o de una versión anterior). Los datos se leen y escriben en esta carpeta.'], {
+  /** Avertissement : dossier des données dont on ne peut pas vérifier qu'il est celui de la suite servie. */
+  const uncheckedText = name => tf([
+    'Dossier des données « {n} » : impossible de vérifier qu’il est celui de la suite servie (lanceur absent ou d’une version antérieure). Les données sont lues et écrites dans ce dossier.',
+    'Data folder “{n}”: cannot check that it is the one of the served suite (launcher missing or from an earlier version). Data is read from and written to this folder.',
+    'Datenordner „{n}“: Es lässt sich nicht prüfen, ob er der der bereitgestellten Suite ist (Starter fehlt oder ist älter). Daten werden in diesem Ordner gelesen und geschrieben.',
+    'Carpeta de datos «{n}»: no se puede comprobar que sea la de la suite servida (lanzador ausente o de una versión anterior). Los datos se leen y escriben en esta carpeta.'
+  ], {
     n: name
   });
+  /** Avertissement d'un dossier des données lu et écrit directement : autre copie confirmée (« Suite lancée depuis… »),
+   *  sinon contrôle impossible. */
+  const directText = async dir => await window.FileAccess?.otherState?.('__data', dir) === 'accepted' ? window.FileAccess.otherText(
+    '__data', dir, 'accepted') : uncheckedText(dir.name);
   /** JSON de data/<rel> lu dans le dossier autorisé ; null s'il est absent ou illisible. */
   async function readFile(dir, rel) {
     const parts = rel.split('/'),
@@ -234,7 +258,7 @@
   } = {}) {
     const local = outbox()[rel],
       src = await poolSource();
-    if (src.dir && src.same === null) alertOnce(uncheckedText(src.dir.name));
+    if (src.dir && src.same === null) alertOnce(await directText(src.dir));
     const served = src.dir && src.same === null ? await readFile(src.dir, rel) : await store.read(`data/${rel}`, {
       fresh
     });
@@ -289,11 +313,13 @@
       setJson(OUTBOX, b);
       where = 'folder';
       srcMemo = null; // autorisation peut-être accordée à l'instant : relue
-      if ((await poolSource()).same === null) alertOnce(uncheckedText(dir.name));
+      if ((await poolSource()).same === null) alertOnce(await directText(dir));
     } catch (e) {
       error = e;
       // gardé dans ce navigateur : raison réelle (dossier non autorisé, autre copie de la suite…), pas seulement l'absence
-      alertOnce(tf(['Enregistré dans ce navigateur seulement : {e}', 'Saved in this browser only: {e}', 'Nur in diesem Browser gespeichert: {e}', 'Guardado solo en este navegador: {e}'], {
+      alertOnce(tf(['Enregistré dans ce navigateur seulement : {e}', 'Saved in this browser only: {e}',
+        'Nur in diesem Browser gespeichert: {e}', 'Guardado solo en este navegador: {e}'
+      ], {
         e: e?.message || String(e)
       }));
     }
@@ -343,6 +369,8 @@
   /** Index des affectations (data/missions/affectations.json) : { updatedAt, assignments: [...] } ; vide si absent. */
   let warned = false; // dossier autorisé ≠ fichiers servis : signalé une fois
   let warnedOther = false; // dossier autorisé d'une autre copie de la suite : signalé une fois
+  /** Index des affectations : data/missions/affectations.json servi, ou celui du dossier des missions autorisé
+   *  (prioritaire) quand la page ne peut pas vérifier qu'il est celui de la suite ; mémorisé sauf fresh. */
   async function index({
     fresh = false
   } = {}) {
@@ -357,15 +385,19 @@
       const src = await missionsSource();
       if (src.same === false && !warnedOther) {
         warnedOther = true;
-        window.AppFramework?.notify?.(t(['Affectations : le dossier des missions autorisé appartient à une autre copie de la suite — ignoré ; rechoisir data/missions de la suite (Premier lancement ou Paramètres).', 'Assignments: the authorised missions folder belongs to another copy of the suite — ignored; choose the suite’s data/missions again (First run or Settings).']), 'warn');
+        window.AppFramework?.notify?.(await window.FileAccess.otherText('__missions', src.handle, 'other'), 'warn');
       }
-      if (src.handle && src.same === null) local = JSON.parse(await (await (await src.handle.getFileHandle('affectations.json')).getFile()).text());
+      if (src.handle && src.same === null) local = JSON.parse(await (await (await src.handle.getFileHandle('affectations.json'))
+        .getFile()).text());
     } catch {
       local = null; // pas d'index dans le dossier autorisé, ou dossier déplacé
     }
     if (local && served && (local.updatedAt || '') !== (served.updatedAt || '') && !warned) {
       warned = true;
-      window.AppFramework?.notify?.(t(['Affectations : le dossier des missions autorisé et les fichiers servis par la page diffèrent (autre copie ?) — le dossier autorisé fait foi.', 'Assignments: the authorised missions folder and the files served by the page differ (another copy?) — the authorised folder prevails.']), 'warn');
+      window.AppFramework?.notify?.(t([
+        'Affectations : le dossier des missions autorisé et les fichiers servis par la page diffèrent (autre copie ?) — le dossier autorisé fait foi.',
+        'Assignments: the authorised missions folder and the files served by the page differ (another copy?) — the authorised folder prevails.'
+      ]), 'warn');
     }
     cache = local || served || {
       assignments: []
@@ -383,14 +415,18 @@
   } = {}) {
     const me = trigram(),
       now = Date.now() - 6 * 36e5; // une mission du jour reste visible quelques heures après son décollage
-    return (list || cache?.assignments || []).filter(a => me && String(a.pilot).toUpperCase() === me && a.status !== 'annulée' && (all || !when(a) || when(a) >= now)).sort((x, y) => when(x) - when(y));
+    return (list || cache?.assignments || []).filter(a => me && String(a.pilot).toUpperCase() === me && a.status !== 'annulée' && (all ||
+      !when(a) || when(a) >= now)).sort((x, y) => when(x) - when(y));
   }
+  /** Vrai si l'affectation a été ouverte par le pilote (marque locale assignmentsRead:v1). */
   const isRead = a => !!json(READ, {})[key(a)];
   /** État d'un pli d'exercice pour le pilote (clé de l'affectation + identifiant du pli) : { state: 'open' (scellé brisé)
    *  | 'sealed' (rescellé), at, logged (ouverture à l'heure déjà portée au journal) } ; {} : rien de fait. */
   const PLIS = 'pilotPlis:v2';
+  /** État noté d'un pli d'exercice (pilotPlis:v2) pour une affectation et un identifiant de pli. */
   const pliState = (a, id) => json(PLIS, {})[`${key(a)}|${id}`] || {};
 
+  /** Complète l'état d'un pli d'exercice (state, at, logged) dans pilotPlis:v2. */
   function setPliState(a, id, patch) {
     const r = json(PLIS, {}),
       k = `${key(a)}|${id}`;
@@ -408,6 +444,7 @@
     envelope();
   }
 
+  /** Marque une affectation lue (date de lecture) et met à jour le pli de l'en-tête. */
   function markRead(a) {
     const r = json(READ, {});
     r[key(a)] = new Date().toISOString();
@@ -416,7 +453,10 @@
   }
 
   // ---- pli cacheté de l'en-tête
-  const ENVELOPE_SVG = '<svg viewBox="0 0 40 28" aria-hidden="true"><rect x="1" y="1" width="38" height="26" rx="2" class="pa-paper"/><path d="M1 3 20 16 39 3" class="pa-fold"/><circle cx="20" cy="16" r="6.2" class="pa-seal"/><path d="M17 16h6M20 13v6" class="pa-seal-mark"/></svg>';
+  const ENVELOPE_SVG =
+    '<svg viewBox="0 0 40 28" aria-hidden="true"><rect x="1" y="1" width="38" height="26" rx="2" class="pa-paper"/><path d="M1 3 20 16 39 3" class="pa-fold"/><circle cx="20" cy="16" r="6.2" class="pa-seal"/><path d="M17 16h6M20 13v6" class="pa-seal-mark"/></svg>';
+  /** Pli cacheté de l'en-tête et pastille de « Mes missions » : affectations à venir non lues du pilote ; masqués
+   *  sans trigramme ou sans affectation non lue. */
   async function envelope() {
     const tools = document.querySelector('.repo-header-tools');
     if (!tools) return;
@@ -502,15 +542,27 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
     ["DISPO Transport FAF", "AVAILABLE FAF transport", "VERFÜGBAR FAF-Transport", "DISPONIBLE transporte FAF"],
     ["T : DISPO Transport FAF", "T: AVAILABLE FAF transport", "T: VERFÜGBAR FAF-Transport", "T: DISPONIBLE transporte FAF"],
     ["Exercice SO (IVAO / VATSIM)", "SO exercise (IVAO / VATSIM)", "SO-Übung (IVAO / VATSIM)", "Ejercicio SO (IVAO / VATSIM)"],
-    ["S : Exercice SO (IVAO / VATSIM)", "S: SO exercise (IVAO / VATSIM)", "S: SO-Übung (IVAO / VATSIM)", "S: Ejercicio SO (IVAO / VATSIM)"],
+    ["S : Exercice SO (IVAO / VATSIM)", "S: SO exercise (IVAO / VATSIM)", "S: SO-Übung (IVAO / VATSIM)",
+      "S: Ejercicio SO (IVAO / VATSIM)"
+    ],
     ["DISPO FNY", "AVAILABLE FNY", "VERFÜGBAR FNY", "DISPONIBLE FNY"],
     ["N : DISPO FNY", "N: AVAILABLE FNY", "N: VERFÜGBAR FNY", "N: DISPONIBLE FNY"],
-    ["Contrôle civil (IVAO / VATSIM)", "Civil ATC (IVAO / VATSIM)", "Zivile Flugsicherung (IVAO / VATSIM)", "Control civil (IVAO / VATSIM)"],
-    ["AT : Contrôle civil (IVAO / VATSIM)", "AT: Civil ATC (IVAO / VATSIM)", "AT: Zivile Flugsicherung (IVAO / VATSIM)", "AT: Control civil (IVAO / VATSIM)"],
+    ["Contrôle civil (IVAO / VATSIM)", "Civil ATC (IVAO / VATSIM)", "Zivile Flugsicherung (IVAO / VATSIM)",
+      "Control civil (IVAO / VATSIM)"
+    ],
+    ["AT : Contrôle civil (IVAO / VATSIM)", "AT: Civil ATC (IVAO / VATSIM)", "AT: Zivile Flugsicherung (IVAO / VATSIM)",
+      "AT: Control civil (IVAO / VATSIM)"
+    ],
     ["Contrôle SO (IVAO / VATSIM)", "SO ATC (IVAO / VATSIM)", "SO-Flugsicherung (IVAO / VATSIM)", "Control SO (IVAO / VATSIM)"],
-    ["AM : Contrôle SO (IVAO / VATSIM)", "AM: SO ATC (IVAO / VATSIM)", "AM: SO-Flugsicherung (IVAO / VATSIM)", "AM: Control SO (IVAO / VATSIM)"],
-    ["Vol hors SO (IVAO / VATSIM)", "Flight outside SO (IVAO / VATSIM)", "Flug außerhalb SO (IVAO / VATSIM)", "Vuelo fuera de SO (IVAO / VATSIM)"],
-    ["G : Vol hors SO (IVAO / VATSIM)", "G: Flight outside SO (IVAO / VATSIM)", "G: Flug außerhalb SO (IVAO / VATSIM)", "G: Vuelo fuera de SO (IVAO / VATSIM)"],
+    ["AM : Contrôle SO (IVAO / VATSIM)", "AM: SO ATC (IVAO / VATSIM)", "AM: SO-Flugsicherung (IVAO / VATSIM)",
+      "AM: Control SO (IVAO / VATSIM)"
+    ],
+    ["Vol hors SO (IVAO / VATSIM)", "Flight outside SO (IVAO / VATSIM)", "Flug außerhalb SO (IVAO / VATSIM)",
+      "Vuelo fuera de SO (IVAO / VATSIM)"
+    ],
+    ["G : Vol hors SO (IVAO / VATSIM)", "G: Flight outside SO (IVAO / VATSIM)", "G: Flug außerhalb SO (IVAO / VATSIM)",
+      "G: Vuelo fuera de SO (IVAO / VATSIM)"
+    ],
     ["Mission DCS", "DCS mission", "DCS-Mission", "Misión DCS"],
     ["DC : Mission DCS", "DC: DCS mission", "DC: DCS-Mission", "DC: Misión DCS"],
     ["MANIP IRL", "REAL-LIFE ACTIVITY", "TERMIN IM ECHTEN LEBEN", "ACTIVIDAD REAL"],
@@ -524,6 +576,7 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
     ["CONTRÔLE (marque de suivi)", "CHECK (tracking mark)", "KONTROLLE (Markierung)", "CONTROL (marca de seguimiento)"],
     ["A : CONTRÔLE (marque de suivi)", "A: CHECK (tracking mark)", "A: KONTROLLE (Markierung)", "A: CONTROL (marca de seguimiento)"],
   ];
+  /** Inscrit les libellés traduits de la légende auprès de la couche de traduction (shared/content_i18n.js). */
   const legendI18n = () => window.RepositoryContentI18n?.(LEGEND_I18N);
   /** Ligne [fr, en, de, es] d'un libellé de la légende (texte français exact), sinon null (Planning ODV). */
   const legendRow = label => LEGEND_I18N.find(r => r[0] === label) || null;
@@ -554,6 +607,7 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
     ['Sam', 'Sat', 'Sa', 'Sáb'],
     ['Dim', 'Sun', 'So', 'Dom']
   ];
+  /** Grille vide : 7 jours × 24 heures non renseignées. */
   const emptyGrid = () => DAYS.map(() => Array(24).fill(''));
   /** Grille normalisée : codes de la légende ('' : non renseigné) ; true → O, false → ''. */
   const normGrid = g => DAYS.map((_, d) => Array.from({
@@ -571,6 +625,7 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
   };
   /** Semaine décalée de n semaines (clé lundi ISO). */
   const addWeeks = (week, n) => new Date(Date.parse(`${week}T00:00:00Z`) + n * 7 * 864e5).toISOString().slice(0, 10);
+  /** Vrai si la déclaration a au moins une semaine au format weeks. */
   const hasWeeks = av => !!av?.weeks && Object.keys(av.weeks).length > 0;
   /** Semaine d'une déclaration de l'ancien format : celle de sa saisie. */
   const legacyWeek = av => weekKey(Date.parse(av?.updated_at || '') || Date.now());
@@ -595,7 +650,8 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
     const idx = await store.read('data/disponibilites/_index.json');
     const entry = idx?.pilots?.[tri];
     // ancien fichier : lu par l'index du navigateur tant que sa signature (legacy_at) n'a pas changé
-    if (!doc && (!idx?.pilots || entry === true || entry?.legacy)) doc = entry?.legacy_at ? await readIndexed(`disponibilites/${tri}.json`, entry.legacy_at) : await store.read(`data/disponibilites/${encodeURIComponent(tri)}.json`);
+    if (!doc && (!idx?.pilots || entry === true || entry?.legacy)) doc = entry?.legacy_at ? await readIndexed(`disponibilites/${tri}.json`, entry
+      .legacy_at) : await store.read(`data/disponibilites/${encodeURIComponent(tri)}.json`);
     // nouveau format (docs/technique/DISPOS_ET_REORGANISATION.md § 1.3, shared/dispos.js) : une déclaration par semaine ISO ;
     // préférences de thèmes du pilote (fiche utilisateur) pour calculer les thèmes ouverts
     const weeks2 = await window.SuiteDispos?.readPilot?.(tri).catch(() => ({})) || {};
@@ -655,9 +711,11 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
     if (dir && st.permission !== 'granted' && (await dir.requestPermission({
         mode: 'readwrite'
       })) !== 'granted') dir = null;
-    if (!dir) throw new Error(t(['Dossier des données non autorisé : le choisir dans Paramètres › Installation › Sources et dossiers.', 'Data folder not authorised: choose it in Settings › Installation › Sources and folders.']));
+    if (!dir) throw new Error(t(['Dossier des données non autorisé : le choisir dans Paramètres › Installation › Sources et dossiers.',
+      'Data folder not authorised: choose it in Settings › Installation › Sources and folders.'
+    ]));
     // dossier des données d'une autre copie de la suite : le Centre ne verrait pas la déclaration
-    if (await FA.sameAsServed?.('__data', dir) === false) throw new Error(t(['Dossier des données d’une autre copie de la suite : rechoisir le dossier de l’application (Premier lancement).', 'Data folder of another copy of the suite: choose the application folder again (First run).']));
+    if (await FA.sameAsServed?.('__data', dir) === false) throw new Error(await FA.otherText('__data', dir, 'other'));
     const path = `data/disponibilites/${tri}.json`;
     await store.lock(`disponibilites:${tri}`, async () => {
       const sub = await dir.getDirectoryHandle('disponibilites', {
@@ -751,7 +809,9 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
   }
   /** Pastilles des simulateurs (abréviation colorée, nom complet au survol). */
   function simChips(list) {
-    if (!document.getElementById('simChipCss')) document.head.insertAdjacentHTML('beforeend', '<style id="simChipCss">.sim-chip{display:inline-block;margin:0 3px 2px 0;padding:0 5px;border-radius:3px;font:700 10.5px/1.6 system-ui,sans-serif;letter-spacing:.03em;color:#fff;background:var(--sim);vertical-align:middle;white-space:nowrap}</style>');
+    if (!document.getElementById('simChipCss')) document.head.insertAdjacentHTML('beforeend',
+      '<style id="simChipCss">.sim-chip{display:inline-block;margin:0 3px 2px 0;padding:0 5px;border-radius:3px;font:700 10.5px/1.6 system-ui,sans-serif;letter-spacing:.03em;color:#fff;background:var(--sim);vertical-align:middle;white-space:nowrap}</style>'
+    );
     return (list || []).map(simTag).map(t => `<span class="sim-chip" style="--sim:${t.color}" title="${K.esc(t.name)}">${K.esc(t.abbr)}</span>`).join('');
   }
   /** Simulateurs du pilote (liste de la feuille FLOTTE) : gardés avec ses disponibilités, comme ses appareils. */
@@ -775,6 +835,7 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
     const c = '#' + (LEGEND[code]?.[3] || 'D9D9D9');
     return window.RepositoryNav?.chartColor?.(c) || c;
   };
+  /** Couleur d'encre lisible sur la couleur d'un code : blanc sur fond sombre, presque noir sinon. */
   const inkOf = code => {
     const L = K?.color?.luminance?.(colorOf(code));
     return L != null && L < .35 ? '#fff' : '#1b1b1b';
@@ -788,11 +849,13 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
     readOnly = false // ancienne grille montrée en lecture seule (saisie par plages : shared/dispos_editor.js)
   } = {}) {
     grid = normGrid(grid);
+    /** Libellé d'une ligne : celui fourni (days), sinon le jour de la semaine. */
     const dayLabel = i => days?.[i] || t(DAYS[i]);
     let brush = LEGEND[code] ? code : 'O';
     // couleur de la case : valeur propre à la case, posée avec !important (les designs rendent les cases de tableau
     // transparentes avec !important ; seul un style en ligne !important l'emporte)
     const cell = (d, h, v) => `<td data-d="${d}" data-h="${h}" title="${K.esc(dayLabel(d))} ${h}h–${h + 1}h UTC${v ? ' · ' + K.esc(LEGEND[v][0]) : ''}"${v ? ` data-code="${v}" style="background-color:${colorOf(v)} !important;color:${inkOf(v)} !important"` : ''}>${v}</td>`;
+    /** Lignes du tableau : une par jour, une case par heure. */
     const rows = () => DAYS.map((_, i) => `<tr><th>${K.esc(dayLabel(i))}</th>${grid[i].map((v, h) => cell(i, h, v)).join('')}</tr>`).join('');
     host.classList.add('pa-grid');
     host.classList.toggle('pa-readonly', readOnly);
@@ -814,6 +877,7 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
     let paint = null, // code posé pendant le geste ('' : effacement)
       anchor = null,
       before = null; // grille au début du geste
+    /** Peint le rectangle ancre → (d1, h1) avec le code du geste ; hors rectangle, la grille d'avant le geste. */
     const fill = (d1, h1) => {
       const [da, db] = [Math.min(anchor[0], d1), Math.max(anchor[0], d1)],
       [ha, hb] = [Math.min(anchor[1], h1), Math.max(anchor[1], h1)];
@@ -835,6 +899,7 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
       const td = e.target.closest('td[data-d]');
       if (td && paint !== null) fill(+td.dataset.d, +td.dataset.h);
     };
+    /** Fin du geste : la grille modifiée est remise à onChange. */
     const stop = () => {
       if (paint === null) return;
       paint = null;
@@ -928,6 +993,7 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
   // ---- géographie et appareils (communs au Centre, à l'ODV et à la page pilote)
   const TURN_MIN = 30, // remise en œuvre d'un appareil entre deux vols
     FERRY_SETUP_MIN = 20; // mise en œuvre d'un convoyage (en plus du vol)
+  /** Degrés → radians. */
   const rad = x => x * Math.PI / 180;
   const geo = {
     /** Distance orthodromique (NM). */
@@ -947,6 +1013,7 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
     icaoOf: p => /\(([A-Z]{4})\)/.exec(p?.name || '')?.[1] || '',
     /** Position en degrés et minutes pour une route de plan de vol : 4422N00052W. */
     coord: p => {
+      /** Valeur en degrés et minutes sur w chiffres, suivie de l'hémisphère (pos ou neg). */
       const f = (v, w, pos, neg) => {
         const a = Math.abs(v),
           d = Math.floor(a),
@@ -972,6 +1039,7 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
   const AP_KEY = 'missionAirports:v1';
   let airports = null,
     worldLoad = null;
+  /** Positions des terrains par code OACI : base SIA, puis départs et destinations du registre (lu une fois). */
   async function knownAirports() {
     if (airports) return airports;
     airports = {};
@@ -1066,7 +1134,8 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
         name: entry?.origin
       }),
       pos = code ? await coordsOf(code) : null;
-    const p = [o, ...(y?.turning_points || []), y?.target, entry?.estimate?.points?.[0]].find(q => q && Number.isFinite(+q.lat) && Number.isFinite(+q.lon) && (+q.lat || +q.lon));
+    const p = [o, ...(y?.turning_points || []), y?.target, entry?.estimate?.points?.[0]].find(q => q && Number.isFinite(+q.lat) &&
+      Number.isFinite(+q.lon) && (+q.lat || +q.lon));
     if (!pos && p) pos = {
       lat: +p.lat,
       lon: +p.lon
@@ -1115,13 +1184,15 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
     P: ['piston', ['Avions à pistons', 'Piston aircraft', 'Kolbenmotorflugzeuge', 'Aviones de pistón']],
     '?': ['other', ['Autres', 'Other', 'Andere', 'Otros']]
   };
+  /** Catégorie de la flotte d'après la description OACI (H / G : hélicoptère, sinon motorisation) : [id, libellés]. */
   const categoryOf = desc => {
     const d = String(desc || '').toUpperCase();
     return CATEGORY[d.startsWith('H') || d.startsWith('G') ? 'H' : d.charAt(2)] || CATEGORY['?'];
   };
   /** Nom lisible d'un modèle de la base OACI : « DASSAULT Rafale » → « Dassault Rafale ». */
   // (mots entiers de lettres seulement : « AS-365 », « EC135 » gardés en capitales)
-  const modelName = s => String(s || '').replace(/(^|[\s(])([A-Z]{3,})(?=$|[\s),])/g, (_, b, w) => b + w.charAt(0) + w.slice(1).toLowerCase());
+  const modelName = s => String(s || '').replace(/(^|[\s(])([A-Z]{3,})(?=$|[\s),])/g, (_, b, w) => b + w.charAt(0) + w.slice(1)
+    .toLowerCase());
   /** Types de la flotte, détaillés : désignateur OACI, modèle (base OACI), catégorie, variantes, nombre d'appareils
    *  (opérationnels), bases, opérateurs — pour le choix du pilote et le Centre. */
   function fleetTypes() {
@@ -1162,7 +1233,7 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
       };
     }).sort((a, b) => a.model.localeCompare(b.model));
   }
-  /** Qualification d'un pilote sur un type : déclaration (maîtrisé, possédé), sinon vols connus de la référence DEFA.
+  /** Qualification d'un pilote sur un type : déclaration (maîtrisé, possédé), sinon vols connus de la référence.
    *  { level: 'mastered' | 'owned' | 'flown' | 'none' | 'unknown', text } */
   function qualification(decl, tri, type) {
     if (type && typeof type === 'object') {
@@ -1233,6 +1304,7 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
       codes[a.code] = (codes[a.code] || 0) + 1;
       seen[a.code] ||= a;
     }
+    /** Vrai si le code est de catégorie « dispo » (déclaration par plages, sinon légende de l'ODV). */
     const isDispo = c => (seen[c].category || LEGEND[c]?.[1]) === 'dispo';
     const list = Object.entries(codes).sort((x, y) => isDispo(y[0]) - isDispo(x[0]) || y[1] - x[1]);
     if (!list.length) return null;
@@ -1257,12 +1329,14 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
       // convoyage par le pilote lui-même : il commence au décollage du convoyage ; confié à un autre ou à affecter : ligne
       // « convoyage » à part (son propre créneau), le pilote de la mission n'est pris qu'au décollage de la mission
       self = a.ferry && !a.ferry.open && (!a.ferry.pilot || a.ferry.pilot === a.pilot),
-      from = Math.min(t0 || Infinity, self ? Date.parse(a.ferry.takeoff || '') || Infinity : Infinity, Date.parse(a.alert?.ready_at_utc || '') || Infinity),
+      from = Math.min(t0 || Infinity, self ? Date.parse(a.ferry.takeoff || '') || Infinity : Infinity, Date.parse(a.alert?.ready_at_utc ||
+        '') || Infinity),
       to = Math.max(t0 + ((+a.block_min || 120) + TURN_MIN) * 6e4, Date.parse(a.alert?.window_end_utc || '') || 0);
     return Number.isFinite(from) ? [from, to] : [0, 0];
   }
   /** Affectations d'un pilote qui recouvrent une plage (un convoyeur a sa propre ligne « convoyage »). */
-  const assignedOver = (list, tri, start, end) => (list || []).filter(a => a.status !== 'annulée' && a.pilot === tri && (([f, l]) => f < end && l > start)(busyRange(a)));
+  const assignedOver = (list, tri, start, end) => (list || []).filter(a => a.status !== 'annulée' && a.pilot === tri && (([f, l]) => f <
+    end && l > start)(busyRange(a)));
   /** Conflits d'un participant (pilote, appareil, convoyeur) avec les autres affectations : textes. */
   function conflicts(list, {
     mission,
@@ -1293,7 +1367,6 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
     }));
     return Object.fromEntries([...new Set(tris)].map(tr => [tr, declCache[tr] ?? null]));
   }
-  /** Possède l'appareil (déclaré possédé ou maîtrisé) ; null si le pilote n'a rien déclaré. */
   // ---- postes d'une mission : un par équipage aérien, chacun son type (désignateur) ou, type générique du schéma
   // hélico (« Hélicoptère »), une catégorie et un service (« Gendarmerie » → appareils de la Gendarmerie nationale)
   /** Catégorie d'un désignateur (base OACI) : helico, jet, turboprop, piston, other. */
@@ -1301,8 +1374,11 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
     const db = window.AIRCRAFT_DB || {};
     return categoryOf((db[ty] || db[db.__aliases?.[ty]] || {}).description)[0];
   };
+  /** Texte en majuscules sans accents. */
   const fold = s => String(s ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().trim();
-  const kindOf = s => /h[ée]lico|helicopter|rotor/i.test(s) ? 'helico' : /avion|airplane|plane|jet/i.test(s) ? 'avion' : /a[ée]ronef|aircraft/i.test(s) ? 'any' : '';
+  /** Nature d'un type écrit en clair : helico, avion, any (aéronef) ou '' si rien n'est reconnu. */
+  const kindOf = s => /h[ée]lico|helicopter|rotor/i.test(s) ? 'helico' : /avion|airplane|plane|jet/i.test(s) ? 'avion' :
+    /a[ée]ronef|aircraft/i.test(s) ? 'any' : '';
   // ---- type écrit en clair dans une mission (« H225M Caracal », « Rafale », « E-3F / A400M ») → désignateurs de la
   // flotte, mot à mot : désignateur, alias de la base OACI (H135 → EC35), synonymes d'usage ci-dessous (noms militaires
   // absents des alias), mots de la variante (« Rafale B ») ou du modèle (« LOCKHEED C-130H Hercules ») d'un type de la
@@ -1320,6 +1396,7 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
     MRTT: 'A332',
     PHENIX: 'A332'
   };
+  /** Texte réduit à ses lettres et chiffres en majuscules (clé de l'index de la flotte). */
   const norm = s => fold(s).replace(/[^A-Z0-9]/g, '');
   let fleetKeys = null;
   /** Mot normalisé → désignateur de la flotte (construit une fois). */
@@ -1367,6 +1444,7 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
       label: String(rawType || '')
     };
   }
+  /** Vraie équipe aérienne : nom et type renseignés (pas de tirets seuls). */
   const isTeam = x => x && x.name && !/^[-\s]*$/.test(x.name) && !/^[-\s]*$/.test(String(x.type || ''));
   /** Postes d'une mission : yaml (aircraft[], ou teams[] du schéma hélico), sinon entrée du registre (teams,
    *  aircraftTypes) ; équipes au sol (type ni appareil ni hélicoptère/avion) écartées. Mission d'une opération à
@@ -1374,6 +1452,7 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
    *  (callsigns). */
   function postsOf(entry, y = {}) {
     let out = [];
+    /** Équipes qui sont les appareils propres de la mission (indicatifs de l'entrée), sinon toute la liste. */
     const own = list => {
       const cs = new Set((entry?.callsigns || []).map(c => String(c).trim().toUpperCase()));
       const mine = list.filter(x => cs.has(String(x.name || '').trim().toUpperCase()));
@@ -1393,7 +1472,11 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
     if (spec.type) return k === spec.type || !!spec.types?.includes(k);
     return spec.kind === 'helico' ? catOfType(k) === 'helico' : spec.kind === 'avion' ? catOfType(k) !== 'helico' : true;
   };
-  const specLabel = spec => typeof spec === 'string' ? typeOf(spec) : spec?.types?.join(' / ') || spec?.type || (spec?.kind === 'helico' ? t(['hélicoptère', 'helicopter']) : spec?.kind === 'avion' ? t(['avion', 'aircraft']) : spec?.kind === 'any' ? t(['aéronef', 'aircraft']) : '');
+  /** Libellé d'un poste : type(s), sinon sa catégorie (hélicoptère, avion, aéronef). */
+  const specLabel = spec => typeof spec === 'string' ? typeOf(spec) : spec?.types?.join(' / ') || spec?.type || (spec?.kind === 'helico' ?
+    t(['hélicoptère', 'helicopter']) : spec?.kind === 'avion' ? t(['avion', 'aircraft']) : spec?.kind === 'any' ? t(['aéronef',
+      'aircraft'
+    ]) : '');
   /** L'opérateur d'un appareil est-il le service du poste (« Gendarmerie » ↔ « Gendarmerie nationale ») ? */
   const serves = (svc, f) => {
     const o = fold(f.operator);
@@ -1405,10 +1488,14 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
     const svc = fold(spec?.service || '');
     let list = (window.DEFA_FLEET || []).filter(f => fits(spec, f.type) || (spec?.type && typeOf(f.variant) === spec.type));
     if (list.some(f => serves(svc, f))) list = list.filter(f => serves(svc, f));
-    return list.sort((a, b) => (b.base === departure) - (a.base === departure) || (b.operational !== false) - (a.operational !== false) || String(a.base).localeCompare(String(b.base)));
+    /** Terrain actuel de l'appareil (positions connues), sinon sa base. */
+    const at = f => window.AircraftPositions?.adOf?.(f) || f.base; // terrain actuel (site, ordre de mission), sinon la base
+    return list.sort((a, b) => (at(b) === departure) - (at(a) === departure) || (b.operational !== false) - (a.operational !== false) ||
+      String(a.base).localeCompare(String(b.base)));
   }
   /** Le pilote a-t-il un appareil pour ce poste (type, ou catégorie d'un poste générique) ? null : appareils non déclarés. */
-  const ownsType = (decl, spec) => decl?.aircraft ? [...(decl.aircraft.owned || []), ...(decl.aircraft.mastered || [])].some(ty => fits(spec, ty)) : null;
+  const ownsType = (decl, spec) => decl?.aircraft ? [...(decl.aircraft.owned || []), ...(decl.aircraft.mastered || [])].some(ty => fits(
+    spec, ty)) : null;
   /** Vivier pour un type et une heure : pilotes qui possèdent l'appareil et sont disponibles (code dispo) d'abord —
    *  maîtrisé avant possédé —, puis les autres (non déclarés, indisponibles), pour choisir quand même en connaissance de
    *  cause. [{ tri, qual, avail, owns, ok }] ; ok : possède le type et disponible. */
@@ -1418,7 +1505,9 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
     family = '',
     exclude = []
   }) {
-    const rank = c => (c.ok ? 0 : 10) + (c.qual.level === 'mastered' ? 0 : c.qual.level === 'owned' ? 1 : c.qual.level === 'flown' ? 2 : 3) + (c.avail ? (c.avail.ok ? 0 : 4) : 2);
+    /** Rang de tri d'un candidat : disponible et possesseur d'abord, puis maîtrise, puis disponibilité. */
+    const rank = c => (c.ok ? 0 : 10) + (c.qual.level === 'mastered' ? 0 : c.qual.level === 'owned' ? 1 : c.qual.level === 'flown' ? 2 :
+      3) + (c.avail ? (c.avail.ok ? 0 : 4) : 2);
     return [...new Set(tris)].filter(tr => tr && !exclude.includes(tr)).map(tr => {
       const d = decls[tr],
         qual = qualification(d, tr, type),
@@ -1456,6 +1545,7 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
         mission: m,
         post: p
       })));
+      /** Vrai si le pilote maîtrise un type qui convient au poste. */
       const masters = (tr, s) => (decls[tr]?.aircraft?.mastered || []).some(ty => fits(s.post, ty));
       // affectation gloutonne : postes les plus rares d'abord (moins de pilotes éligibles), maîtrisé avant possédé
       const elig = s => free.filter(tr => !(s.post.type || s.post.kind) || ownsType(decls[tr], s.post));
@@ -1509,6 +1599,7 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
   async function missionsDir() {
     const FA = window.FileAccess;
     if (!FA) throw new Error(t(['Module d’accès aux dossiers absent', 'Folder access module missing']));
+    /** Demande le dossier des missions à l'utilisateur ; erreur expliquée s'il refuse. */
     const pick = async () => {
       try {
         return await FA.pickFolder('__missions');
@@ -1520,12 +1611,19 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
     // ni par Mes missions ni par l'ODV, qui lisent les données de la suite lancée → rien n'est écrit sans le bon dossier
     const checked = async h => {
       if (await FA.sameAsServed?.('__missions', h) !== false) return h;
-      const ok = await window.AppFramework?.ask?.(K.tf(['Le dossier des missions autorisé (« {n} ») n’est pas celui de la suite lancée : l’affectation y serait écrite sans être vue par Mes missions ni par l’ODV. Choisir le dossier data/missions de la suite ?', 'The authorised missions folder (“{n}”) is not the one of the running suite: the assignment would be written there without being seen by My missions or the ODV. Choose the suite’s data/missions folder?', 'Der erlaubte Missionsordner („{n}“) gehört nicht zur gestarteten Suite: die Zuweisung würde dort geschrieben, ohne von Meine Missionen oder der ODV gesehen zu werden. Den Ordner data/missions der Suite wählen?', 'La carpeta de misiones autorizada («{n}») no es la de la suite iniciada: la asignación se escribiría allí sin que la vean Mis misiones ni el ODV. ¿Elegir la carpeta data/missions de la suite?'], {
+      const ok = await window.AppFramework?.ask?.(K.tf([
+        'Le dossier des missions autorisé (« {n} ») n’est pas celui de la suite lancée : l’affectation y serait écrite sans être vue par Mes missions ni par l’ODV. Choisir le dossier data/missions de la suite ?',
+        'The authorised missions folder (“{n}”) is not the one of the running suite: the assignment would be written there without being seen by My missions or the ODV. Choose the suite’s data/missions folder?',
+        'Der erlaubte Missionsordner („{n}“) gehört nicht zur gestarteten Suite: die Zuweisung würde dort geschrieben, ohne von Meine Missionen oder der ODV gesehen zu werden. Den Ordner data/missions der Suite wählen?',
+        'La carpeta de misiones autorizada («{n}») no es la de la suite iniciada: la asignación se escribiría allí sin que la vean Mis misiones ni el ODV. ¿Elegir la carpeta data/missions de la suite?'
+      ], {
         n: h.name
       }), {
         danger: true
       });
-      if (!ok) throw new Error(t(['Affectation non enregistrée : dossier des missions d’une autre copie de la suite.', 'Assignment not saved: missions folder of another copy of the suite.']));
+      if (!ok) throw new Error(t(['Affectation non enregistrée : dossier des missions d’une autre copie de la suite.',
+        'Assignment not saved: missions folder of another copy of the suite.'
+      ]));
       return pick();
     };
     const st = await FA.status('__missions');
@@ -1565,13 +1663,14 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
     dep ||= await departureOf(y);
     const departure = dep.code,
       blockMin = +y?.timing?.estimated_block_min || +y?.timing?.estimated_flight_min || 120,
-      out = [];
+      out = [],
+      unknown = []; // convoyages non calculés (terrain sans coordonnées) : signalés, plus abandonnés en silence
     for (const [i, r] of rows.entries()) {
       const plane = (window.DEFA_FLEET || []).find(f => f.registration === r.registration),
         tk = takeoff + i * 6e4;
       // départ sans terrain (mission en mer, sur un objectif) : l'appareil part de sa base, pas de convoyage
       const ferry = plane && departure ? await ferryOf({
-        base: plane.base,
+        base: window.AircraftPositions?.adOf?.(plane) || plane.base, // terrain actuel, sinon la base
         departure,
         to: dep.pos,
         type: plane.type,
@@ -1579,6 +1678,7 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
         pilot: r.ferryPilot === '__open' ? '' : r.ferryPilot || r.pilot
       }) : null;
       if (ferry && r.ferryPilot === '__open') ferry.open = true; // convoyage à affecter : une mission à part, sans pilote
+      if (ferry && !ferry.minutes) unknown.push(`${r.pilot || '?'} ${ferry.from} → ${ferry.to}`);
       out.push({
         pilot: r.pilot,
         callsign: r.callsign || '',
@@ -1595,6 +1695,14 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
         status: 'affectée'
       });
     }
+    if (unknown.length) window.AppFramework?.notify?.(tf([
+      'Convoyage non calculé (terrain sans coordonnées dans la base aéronautique) : {l}. À prévoir à la main (Ordre de mission).',
+      'Ferry flight not calculated (aerodrome without coordinates in the aeronautical database): {l}. To plan by hand (Mission order).',
+      'Überführung nicht berechnet (Flugplatz ohne Koordinaten in der Luftfahrtdatenbank): {l}. Von Hand planen (Einsatzbefehl).',
+      'Traslado no calculado (aeródromo sin coordenadas en la base aeronáutica): {l}. A prever a mano (Orden de misión).'
+    ], {
+      l: unknown.join(', ')
+    }), 'warn');
     return out;
   }
   // ---- journal des affectations : data/missions/affectations_log.json { entries: [{ at, by, action, mission, title,
@@ -1618,7 +1726,8 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
     for (const p of participants) {
       const old = before.find(a => a.pilot === p.pilot);
       if (!old) out.push(line('affecte', p));
-      else if ((old.aircraft?.registration || '') !== (p.aircraft?.registration || '') || (old.callsign || '') !== (p.callsign || '') || old.takeoff !== p.takeoff) out.push(line('modifie', p));
+      else if ((old.aircraft?.registration || '') !== (p.aircraft?.registration || '') || (old.callsign || '') !== (p.callsign || '') ||
+        old.takeoff !== p.takeoff) out.push(line('modifie', p));
       if (p.ferry?.pilot && p.ferry.pilot !== p.pilot && p.ferry.takeoff && !(old?.ferry?.pilot === p.ferry.pilot)) out.push({
         ...line('convoyage', {
           ...p,
@@ -1633,6 +1742,7 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
       if (!participants.some(p => p.pilot === a.pilot)) out.push(line('retire', a));
     return out;
   }
+  /** Ajoute des entrées au journal des affectations (affectations_log.json) du dossier des missions. */
   async function appendLog(dir, entries) {
     if (!entries.length) return;
     let log = {
@@ -1723,20 +1833,29 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
   }
   /** Phrase d'une entrée : « 01/10 10:35 · DCP affecte M-002 à RBR (H145 F-ZBPO, DRAGON05, décollage 30/09 08:00Z) ». */
   function logText(e) {
+    /** Date courte « JJ/MM hh:mm » d'un instant ISO, '' si absent. */
     const d = s => s ? new Date(s).toISOString().slice(5, 16).replace(/(\d\d)-(\d\d)T/, '$2/$1 ') : '';
     // langue de la page (fr, en, de, es) ; phrase composée ici, la couche de traduction ne la reconnaîtrait pas
     const li = Math.max(0, ['fr', 'en', 'de', 'es'].indexOf(window.RepositoryNav?.getLanguage?.() || 'fr'));
     const W = {
       affecte: ['affecte {m} à {p}', 'assigns {m} to {p}', 'weist {m} {p} zu', 'asigna {m} a {p}'],
       modifie: ['modifie {m} pour {p}', 'changes {m} for {p}', 'ändert {m} für {p}', 'modifica {m} para {p}'],
-      convoyage: ['confie le convoyage de {m} à {p}', 'gives the ferry of {m} to {p}', 'überträgt die Überführung für {m} an {p}', 'confía el traslado de {m} a {p}'],
+      convoyage: ['confie le convoyage de {m} à {p}', 'gives the ferry of {m} to {p}', 'überträgt die Überführung für {m} an {p}',
+        'confía el traslado de {m} a {p}'
+      ],
       retire: ['retire {p} de {m}', 'removes {p} from {m}', 'entfernt {p} aus {m}', 'retira a {p} de {m}'],
       pour: ['pour {x}', 'for {x}', 'für {x}', 'para {x}'],
       takeoff: ['décollage {x}', 'take-off {x}', 'Start {x}', 'despegue {x}']
     };
+    /** Verbe ou complément k dans la langue de la page, {lettre} remplacée par v. */
     const w = (k, v) => W[k][li].replace(/\{(\w)\}/g, (_, c) => v[c] ?? '');
-    const act = W[e.action] ? w(e.action, { m: e.mission, p: e.pilot }) : `${e.action} ${e.mission} ${e.pilot}`;
-    const detail = [e.aircraft, e.callsign, e.takeoff && w('takeoff', { x: `${d(e.takeoff)}Z` })].filter(Boolean).join(', ');
+    const act = W[e.action] ? w(e.action, {
+      m: e.mission,
+      p: e.pilot
+    }) : `${e.action} ${e.mission} ${e.pilot}`;
+    const detail = [e.aircraft, e.callsign, e.takeoff && w('takeoff', {
+      x: `${d(e.takeoff)}Z`
+    })].filter(Boolean).join(', ');
     if (e.action === 'retire') return `${d(e.at)} · ${e.by || '?'} ${act}`;
     return `${d(e.at)} · ${e.by || '?'} ${act}${e.for_pilot ? ` (${w('pour', { x: e.for_pilot })})` : ''}${detail ? ` (${detail})` : ''}`;
   }
@@ -1754,6 +1873,8 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
     store.changed(`data/missions/${LOG_FILE}`);
     return out;
   }
+  /** Écrit affectations.yaml de la mission, met à jour l'index affectations.json et le journal (appelé sous verrou
+   *  par writeAssignment) ; rend le chemin du fichier de la mission. */
   async function writeAssignmentLocked(dir, mission, participants, extra) {
     const at = new Date().toISOString();
     const doc = {

@@ -1,7 +1,7 @@
 # Prompt — générateur de série de missions (Helo XP)
 
 Prompt à donner à un assistant externe (ChatGPT…) pour produire une série de missions directement
-lisible par la suite : générateur de mission, studio cartographique, profil vertical, CR DEFA et
+lisible par la suite : générateur de mission, studio cartographique, profil vertical, CR et
 statistiques. Il décrit **exactement** ce que lisent `apps/cpco/mission_store.js` (YAML + Markdown),
 `apps/cpco/map_parser.html` (cartes, zones, profil vertical) et `shared/mission_core/core.js`
 (passerelle mission → CR : famille, appareils, terrains). À mettre à jour avec eux.
@@ -25,7 +25,7 @@ PARAMÈTRES DE CETTE EXÉCUTION
                                      Nouvelle-Calédonie, Polynésie…, ou « étranger (pays) », ex.
                                      « étranger (Japon) » ; plusieurs possibles, liés par « + »,
                                      ex. « Guyane + métropole » — voir § 5)
-  ÉQUIPES_DEFA    = 2                (1 à 5 : équipes DEFA en vol par opération ; UNE mission
+  ÉQUIPES_SOG    = 2                (1 à 5 : équipes en vol par opération ; UNE mission
                                      complète par équipe — voir § 3)
   SOUS_TYPE       = libre            (ou un code de sous-type du § 2 pour la famille TYPE)
   RENDEZ_VOUS     = libre            (avec : au moins un rendez-vous par mission ; sans : aucun)
@@ -50,7 +50,7 @@ le § 5 (unités, bases, théâtres) et sur le § 6 : si l'appareil semble peu a
 réelle, distances, tâche) et jamais l'appareil ; ne jamais le remplacer par un appareil « plus adapté » ;
 « automatique » : choisir un appareil adapté à la mission ; ÉQUIPES_SOL = nombre exact d'équipes au sol dans teams (en plus des équipes en vol) ;
 RAVITAILLEMENT = oui → air_refueling.planned: true avec son axe (§ 7), non → pas de bloc air_refueling planifié.
-DURÉE = durée de l'opération, du premier décollage au dernier atterrissage des équipes DEFA (organisation et attente
+DURÉE = durée de l'opération, du premier décollage au dernier atterrissage des équipes (organisation et attente
 au sol comprises pour un exercice), en tailles : XS ≈ 30 à 45 min · S ≈ 45 min à 1 h 30 · M ≈ 1 h 30 à 3 h ·
 L ≈ 3 à 5 h · XL ≈ 5 à 8 h. Repères et non bornes strictes : dimensionner distances, nombre de points, temps sur
 objectif (time_on_task_min), phases de l'exercice et ravitaillements pour que timing.estimated_block_min de chaque
@@ -128,7 +128,7 @@ SPECIAL   (VIP, essais, formation, convoyage) sous-type libre et court (ex. VIP,
 ────────────────────────────────────────────────────────────────────────────
 3. LIVRABLES ET NUMÉROTATION
 ────────────────────────────────────────────────────────────────────────────
-OPÉRATION ET MISSIONS. Chaque opération n (1 à NOMBRE_MISSIONS) engage ÉQUIPES_DEFA équipes DEFA en vol ; chaque
+OPÉRATION ET MISSIONS. Chaque opération n (1 à NOMBRE_MISSIONS) engage ÉQUIPES_SOG équipes en vol ; chaque
 équipe reçoit SA mission complète — son brief, son PDF, son compte rendu : propre aéronef, propre terrain de
 départ, propres points tournants, propres cartes de situation. Les missions d'une opération se coordonnent
 (rendez-vous communs, relèves, créneaux, commandement) et partagent le récit d'ensemble. Exemples : FIRE — un
@@ -160,7 +160,7 @@ livrée APRÈS les missions des équipes (missionNNZ.yaml puis summaryNNZ.md). E
     « joué » (played: true) quand un aéronef du simulateur peut tenir le rôle (trafic léger, hélicoptère, avion
     d'affaires, bateau suivi par un hélico…) : il reçoit sa route, son heure de départ et ses consignes ; sinon il
     n'est que dessiné (played: false). Choisir selon ce que l'exercice demande, les deux peuvent coexister.
-    Un chiffon joué est volé par un pilote DEFA : il a SA MISSION, comme une équipe (§ 4 complet : appareil avec
+    Un chiffon joué est volé par un pilote : il a SA MISSION, comme une équipe (§ 4 complet : appareil avec
     l'indicatif du chiffon, départ et retour sur un terrain réel proche de la piste, route = points de la piste,
     timing, cartes), lettre suivant celles des équipes (I-001D…), mission.role: chiffon, subtype: CHIFFON, citée dans
     operation.missions ; son brief dit ce que le joueur doit faire (consignes) et rien de ce que les équipages doivent
@@ -221,10 +221,10 @@ detailed_description: |-
 
   Retour et fin de mission (1 à 3 phrases) : retour, déroutement éventuel, ce qui marque la fin.
   Ne pas citer les zones réglementées à activer : le programme les calcule d'après la route et les zones.
-aircraft:                      # l'aéronef DEFA de CETTE mission (une équipe = un aéronef ; une patrouille de
-                               # deux appareils sous un même indicatif reste une équipe). Les autres équipes DEFA
+aircraft:                      # l'aéronef de CETTE mission (une équipe = un aéronef ; une patrouille de
+                               # deux appareils sous un même indicatif reste une équipe). Les autres équipes
                                # de l'opération et les autres acteurs (VSAV, SMUR, CROSS, PGHM, commandement
-                               # sol, aéronefs non DEFA) vont dans teams.
+                               # sol, aéronefs extérieurs) vont dans teams.
   - id: AC1
     type: "A332 A330 MRTT Phénix"   # COMMENCE par le désignateur OACI du § 6, puis le nom usuel
     callsign: COTAM3510        # sans espace, 3 à 9 caractères, lettres et chiffres
@@ -305,7 +305,7 @@ phases:                        # FACULTATIF (0 à 3) : briefs successifs prévus
 timing:                        # durées estimées par TOI d'après route_order, vitesses, niveaux et time_on_task_min
   estimated_flight_min: 95     # décollage → atterrissage, retour base compris (option principale)
   estimated_block_min: 110     # cales → cales (mise en route et roulage compris)
-teams:                         # tous les acteurs : les ÉQUIPES_DEFA aéronefs, plus autant d'équipes sol ou
+teams:                         # tous les acteurs : les ÉQUIPES_SOG aéronefs, plus autant d'équipes sol ou
                                # d'autres acteurs que la mission le demande
   - name: CERBERES51/52        # callsign ou nom d'équipe
     service: "Armée de l'Air et de l'Espace"   # ou SAMU, gendarmerie, douane, SDIS, Marine nationale…
@@ -420,7 +420,7 @@ prêt à … et attendez les ordres ») ; l'ordre et la phase retenue viennent d
 les phases. Pas de bloc alert pour une mission à heure fixe.
 
 Combat aérien (COMBAT) : chasseurs (RFAL, MIR2 ; PC21 en instruction), en patrouille contre un adversaire
-(plastron DEFA ou partenaire ; DACT : type différent — ex. Rafale contre Mirage 2000, ou chasseur étranger en
+(plastron ou partenaire ; DACT : type différent — ex. Rafale contre Mirage 2000, ou chasseur étranger en
 exercice). Le travail se fait dans une zone d'entraînement réelle au-dessus de la mer ou d'une région peu peuplée
 (TSA, CBA ou zone D des cartes, nommée dans role) : zone de kind mission, TARGET en son centre, bloc d'altitude
 annoncé (ex. FL150–FL350 ; BFM / ACM au-dessus d'un plancher de sécurité de 10 000 ft sauf zone prévue pour plus
@@ -466,7 +466,7 @@ exercise:
   h_hour: "H"                  # UNE seule heure de référence pour tout l'exercice : « H » (ou « T », « M » : le même
                                # instant), ou une heure réelle (« 14:00Z ») si le scénario l'impose. Tout décalage porte
                                # son unité : « H+2mn », « H-15mn », « H+1h », « H+1h30mn » ; jamais « H+50 » sans unité
-  participants:                # une ligne par équipe DEFA en vol (callsign = aircraft[0].callsign de sa mission)
+  participants:                # une ligne par équipe en vol (callsign = aircraft[0].callsign de sa mission)
     - { callsign: CYRANO01, mission: 'I-001A', takeoff: "H-15mn", role: "surveillance et fourniture des pistes" }
     - { callsign: RAFALE31, mission: 'I-001C', takeoff: "H", role: "reconnaissance des pistes" }
   tracks:                      # chiffons ; points réels, coordonnées vérifiables (§ 5)
@@ -543,7 +543,7 @@ aircraft_type, et sa mission est livrée avec celles des équipes (avant la Z) ;
   Dauphin / Panther de la Marine). Longitude négative à l'ouest de Greenwich (Antilles, Guyane,
   Polynésie, Saint-Pierre) ; latitude négative dans l'hémisphère sud (Réunion, Mayotte, Nouvelle-Calédonie,
   Polynésie, Wallis).
-- Théâtre étranger (« étranger (pays) », pays au choix du générateur s'il n'est pas donné) : mission DEFA hors de
+- Théâtre étranger (« étranger (pays) », pays au choix du générateur s'il n'est pas donné) : mission hors de
   France — détachement ou exercice multinational, coopération, évacuation de ressortissants, aide humanitaire, relais
   vers une base prépositionnée (Djibouti, Abou Dhabi, Niamey, Dakar, Libreville…) ou chez un partenaire. Départ d'une
   base française ou partenaire réellement utilisable, ou arrivée depuis la France avec escales réalistes ; terrains
@@ -740,11 +740,11 @@ liste des corrections faites :
   [ ] départ = base réelle de l'unité (Dragon, SMUR, pélicandrome, base militaire…)
   [ ] toutes les coordonnées dans le ou les théâtres (escales comprises), signes corrects (ouest / sud négatifs), 6 décimales,
       lieux réels, points en mer réellement en mer
-  [ ] aircraft : l'aéronef DEFA de la mission (une équipe), repris dans teams ; indicatifs distincts d'une mission
+  [ ] aircraft : l'aéronef de la mission (une équipe), repris dans teams ; indicatifs distincts d'une mission
       à l'autre ; rôle de chacun dans l'opération (pas de figurant)
-  [ ] ÉQUIPES_DEFA ≥ 2 : une mission complète par équipe (41A, 41B…), chacune avec son aéronef, son départ, ses
+  [ ] ÉQUIPES_SOG ≥ 2 : une mission complète par équipe (41A, 41B…), chacune avec son aéronef, son départ, ses
       points tournants et ses cartes ; bloc operation identique partout ; rendez-vous communs identiques
-      (id, nom, coordonnées) ; autres équipes DEFA dans teams ; section « Coordination de l'opération »
+      (id, nom, coordonnées) ; autres équipes dans teams ; section « Coordination de l'opération »
   [ ] TYPES_EQUIPES : chaque aéronef (IMPOSÉ) repris à l'identique (désignateur en tête de aircraft[0].type, indicatif
       exact) dans la mission de son équipe — aucun remplacement
   [ ] aéronefs : désignateur du § 6 en tête du type (sauf aéronef imposé : son désignateur) ; aéronef capable de la mission

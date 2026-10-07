@@ -19,6 +19,7 @@
         return {}
       }
     },
+    /** Mémorise la disposition des blocs de la page (localStorage, clé key()). */
     write = x => localStorage.setItem(key(), JSON.stringify(x));
 
   /** Transforme les sections de la page en blocs : en-tête avec poignée de déplacement ↕ et bouton Masquer / Afficher, glisser-déposer entre blocs frères, disposition mémorisée par page et réappliquée ; data-default-hidden="1" : bloc masqué tant que l'utilisateur ne l'a pas affiché. */
@@ -30,8 +31,10 @@
     const state = read();
     state.hidden ??= {};
     state.order ??= {};
-    const blocks = [...main.querySelectorAll("section,.panel,.format-note,.analysis-dock,.trend-card")].filter(el => !el.closest("section") || el.matches("section,.panel"));
+    const blocks = [...main.querySelectorAll("section,.panel,.format-note,.analysis-dock,.trend-card")].filter(el => !el.closest(
+      "section") || el.matches("section,.panel"));
     const parents = new Map();
+    let movingBlock = null; // bloc en cours de déplacement (poignée ↕), sinon null
     blocks.forEach((el, i) => {
       const id = el.dataset.blockId || el.id || `block-${i+1}`;
       el.dataset.blockId = id;
@@ -73,11 +76,18 @@
         };
         head.querySelector(".repo-drag").onpointerdown = () => el.draggable = true
       }
+      // déplacement d'un bloc (poignée ↕) seulement : les glissers des éléments du bloc (cartes, plaquettes, membres des
+      // Ordres de vols…) remontent jusqu'ici ; pris pour un déplacement du bloc, ils l'estompaient (« écran grisé ») et
+      // faisaient accepter un dépôt n'importe où
       el.ondragstart = e => {
+        if (e.target !== el) return;
+        movingBlock = el;
         el.classList.add("repo-block-dragging");
         e.dataTransfer.effectAllowed = "move"
       };
-      el.ondragend = () => {
+      el.ondragend = e => {
+        if (e.target !== el) return;
+        movingBlock = null;
         el.draggable = false;
         el.classList.remove("repo-block-dragging");
         document.querySelectorAll(".repo-block-drop-before").forEach(x => x.classList.remove("repo-block-drop-before"));
@@ -85,14 +95,15 @@
         write(state)
       };
       el.ondragover = e => {
+        if (!movingBlock) return;
         e.preventDefault();
         el.classList.add("repo-block-drop-before")
       };
       el.ondragleave = () => el.classList.remove("repo-block-drop-before");
       el.ondrop = e => {
+        if (!movingBlock) return;
         e.preventDefault();
-        const moving = el.parentElement.querySelector(".repo-block-dragging");
-        if (moving && moving !== el) el.parentElement.insertBefore(moving, el);
+        if (movingBlock !== el && movingBlock.parentElement === el.parentElement) el.parentElement.insertBefore(movingBlock, el);
         el.classList.remove("repo-block-drop-before")
       };
     });
@@ -121,7 +132,7 @@
       f = document.querySelector("footer") || document.createElement("footer");
     f.className = "repo-footer no-print";
     // licences : dernier lien (le premier est celui de la version, retouché plus bas)
-    f.innerHTML = `© RBR - DEFA Virtual - ${r.date||"2026-09-21"} - <a href="${r.changelog||"https://framagit.org/asr/flight_planner/-/blob/master/docs/CHANGELOG.md"}" target="_blank" rel="noopener" title="Changelog / notes de version">v${r.version||"2026.09"}</a> - <a href="https://framagit.org/asr/flight_planner">framagit.org/asr/flight_planner</a> - <a href="https://framagit.org/asr/flight_planner/-/blob/master/LICENSE.md" target="_blank" rel="noopener" title="Code : MPL 2.0 · contenu : CC BY-SA 4.0 · licences et crédits des composants et des données tiers">MPL 2.0 · CC BY-SA 4.0</a>`;
+    f.innerHTML = `© RBR - SO Group Virtual - ${r.date||"2026-09-21"} - <a href="${r.changelog||"https://framagit.org/asr/flight_planner/-/blob/master/docs/CHANGELOG.md"}" target="_blank" rel="noopener" title="Changelog / notes de version">v${r.version||"2026.09"}</a> - <a href="https://framagit.org/asr/flight_planner">framagit.org/asr/flight_planner</a> - <a href="https://framagit.org/asr/flight_planner/-/blob/master/LICENSE.md" target="_blank" rel="noopener" title="Code : MPL 2.0 · contenu : CC BY-SA 4.0 · licences et crédits des composants et des données tiers">MPL 2.0 · CC BY-SA 4.0</a>`;
     if (!f.isConnected) document.body.append(f);
     buildOf(r).then(b => {
       if (!b) return;
@@ -141,6 +152,7 @@
     const src = document.querySelector('script[src*="repository_tree"]')?.src;
     return src ? new URL(/\/config\/repository_tree/.test(src) ? ".." : ".", src).href : new URL(".", location.href).href;
   };
+  /** Texte d'un fichier du dossier .git servi (relu sans cache) ; null s'il est illisible. */
   const gitText = async path => {
     const res = await fetch(gitRoot() + ".git/" + path, {
       cache: "no-store"
@@ -288,7 +300,8 @@
     }
     return true;
   }
-  if (!document.getElementById("repoRevealStyle")) document.head.insertAdjacentHTML("beforeend", '<style id="repoRevealStyle">.repo-block-flash{outline:3px solid #f59e0b;outline-offset:3px;transition:outline-color 1.2s}</style>');
+  if (!document.getElementById("repoRevealStyle")) document.head.insertAdjacentHTML("beforeend",
+    '<style id="repoRevealStyle">.repo-block-flash{outline:3px solid #f59e0b;outline-offset:3px;transition:outline-color 1.2s}</style>');
   // Ancre « #id-du-bloc » : à l'ouverture de la page (une fois les blocs montés) et à chaque changement d'ancre.
   const revealHash = () => {
     const id = decodeURIComponent(location.hash.slice(1));
@@ -358,6 +371,7 @@
     d.append(p, foot);
     document.body.append(d);
     return new Promise(resolve => {
+      /** Ferme et retire la fenêtre, puis résout la promesse (true : confirmé). */
       const end = v => {
         d.close();
         d.remove();
@@ -377,11 +391,19 @@
     });
   }
 
+  /** Notification flottante (kind : info | ok | warn | err), effacée seule (err 12 s, warn 8 s, autres 5 s ; timeout
+   *  pour changer, 0 : reste) ; même texte remplacé, 4 au plus ; err et warn vont au journal. Retour : l'élément. */
   function notify(message, kind = "info", {
     timeout
   } = {}) {
     const text = String(message ?? "").trim();
     if (!text) return null;
+    // « error », « warning », « success » : synonymes courants des types attendus
+    kind = {
+      error: "err",
+      warning: "warn",
+      success: "ok"
+    } [kind] || kind;
     notifyCss();
     const box = notifyBox();
     if (kind === "err" || kind === "warn") record(text, kind);
@@ -427,12 +449,16 @@
   //   AppFramework.task(titre, { quiet: true }) : sans barre (la page a la sienne), garde de sortie seulement.
   const tasks = new Set();
   const TK = {
-    leave: ["Tâche en cours : {t}.\nQuitter la page l'interrompra. Quitter quand même ?", "Task in progress: {t}.\nLeaving the page will stop it. Leave anyway?",
-      "Aufgabe läuft: {t}.\nDas Verlassen der Seite bricht sie ab. Trotzdem verlassen?", "Tarea en curso: {t}.\nSalir de la página la interrumpirá. ¿Salir de todos modos?"
+    leave: ["Tâche en cours : {t}.\nQuitter la page l'interrompra. Quitter quand même ?",
+      "Task in progress: {t}.\nLeaving the page will stop it. Leave anyway?",
+      "Aufgabe läuft: {t}.\nDas Verlassen der Seite bricht sie ab. Trotzdem verlassen?",
+      "Tarea en curso: {t}.\nSalir de la página la interrumpirá. ¿Salir de todos modos?"
     ],
     cancelled: ["Annulé.", "Cancelled.", "Abgebrochen.", "Cancelado."]
   };
+  /** Libellé TK dans la langue de la page. */
   const tk = k => window.RepositoryKit.t(TK[k]);
+  /** Ajoute une fois la feuille de style des barres de tâches (#repoTaskCss). */
   const taskCss = () => {
     if (document.getElementById("repoTaskCss")) return;
     const s = document.createElement("style");
@@ -440,10 +466,13 @@
     s.textContent = `.repo-notify>div.task{display:grid;grid-template-columns:1fr auto;gap:4px 10px;border-left-color:#6fa8ff}
 .repo-notify>div.task b{font-weight:600}.repo-notify>div.task em{font-style:normal;opacity:.8;font-variant-numeric:tabular-nums}
 .repo-notify>div.task progress{grid-column:1/-1;width:100%;height:8px;accent-color:#6fa8ff}
-.repo-notify>div.task small{grid-column:1/-1;opacity:.75;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}`;
+.repo-notify>div.task small{grid-column:1/-1;opacity:.75;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.repo-notify>div.task progress.task-sub{height:5px;opacity:.75}`;
     document.head.append(s);
   };
 
+  /** Tâche longue : barre dans la pile des notifications (sauf quiet) et garde de sortie de page tant qu'elle tourne ;
+   *  total : nombre d'étapes (0 : indéterminé). Retour : { title, set, sub, end, fail }. */
   function task(title, {
     total = 0,
     quiet = false
@@ -454,11 +483,12 @@
     const item = document.createElement("div"),
       esc = window.RepositoryKit.esc;
     item.className = "task";
-    item.innerHTML = `<b>${esc(title)}</b><em></em><progress></progress><small></small>`;
+    item.innerHTML = `<b>${esc(title)}</b><em></em><progress></progress><progress class="task-sub" hidden></progress><small></small>`;
     if (!quiet) box.append(item); // quiet : la page garde sa propre jauge ; la tâche garde seulement la sortie de page
     const bar = item.querySelector("progress"),
       count = item.querySelector("em"),
-      step = item.querySelector("small");
+      step = item.querySelector("small"),
+      sub = item.querySelector("progress.task-sub");
     const job = {
       title,
       /** Avancement : fait / total (total 0 : indéterminé) ; texte de l'étape en cours. */
@@ -472,6 +502,18 @@
           bar.removeAttribute("value");
           count.textContent = "";
         }
+        if (text !== undefined) step.textContent = text;
+        return job;
+      },
+      /** Seconde jauge, l'étape en cours d'une tâche en plusieurs étapes (la première : les étapes faites / total) :
+       *  fait / total de l'étape (total 0 : indéterminée), texte facultatif ; sub(null) la masque. */
+      sub(done = 0, n = 0, text) {
+        sub.hidden = done === null;
+        if (done === null) return job;
+        if (n > 0) {
+          sub.max = n;
+          sub.value = Math.min(done, n);
+        } else sub.removeAttribute("value");
         if (text !== undefined) step.textContent = text;
         return job;
       },
@@ -490,6 +532,7 @@
     tasks.add(job);
     return job.set(0, total);
   }
+  /** Titres des tâches en cours entre « », pour la confirmation de sortie de page. */
   const busy = () => [...tasks].map(j => `« ${j.title} »`).join(", ");
   window.addEventListener("beforeunload", e => {
     if (!tasks.size) return;
@@ -502,7 +545,8 @@
     const a = e.target.closest?.("a[href]");
     if (!a || a.target === "_blank" || a.hasAttribute("download")) return;
     const url = new URL(a.href, location.href);
-    if (url.origin === location.origin && url.pathname === location.pathname && url.search === location.search) return; // ancre de la page
+    if (url.origin === location.origin && url.pathname === location.pathname && url.search === location.search)
+      return; // ancre de la page
     if (!window.confirm(tk("leave").replace("{t}", busy()))) {
       e.preventDefault();
       e.stopImmediatePropagation();
@@ -553,8 +597,11 @@
       tip: "Alertas de la página: releer y confirmar"
     }
   };
+  /** Libellé du journal des alertes dans la langue de la page (français à défaut). */
   const al = k => (AL[window.RepositoryNav?.getLanguage?.()] || AL.fr)[k];
 
+  /** Ajoute une alerte au journal (même texte non acquitté : compteur et heure mis à jour ; 50 au plus) et repeint
+   *  le témoin. */
   function record(text, kind) {
     const old = journal.find(e => e.text === text && !e.ack);
     if (old) {
@@ -573,6 +620,7 @@
     paintAlerts();
   }
 
+  /** Ajoute une fois la feuille de style du témoin et du panneau des alertes (#repoAlertsCss). */
   function alertsCss() {
     if (document.getElementById("repoAlertsCss")) return;
     const s = document.createElement("style");
@@ -617,12 +665,14 @@
     if (alertsPanel) fillAlerts();
   }
 
+  /** Remplit le panneau : alertes de la plus récente à la plus ancienne, ACK, « Tout acquitter », « Vider ». */
   function fillAlerts() {
     const hh = d => d.toTimeString().slice(0, 8),
       esc = window.RepositoryKit.esc;
     alertsPanel.innerHTML = `<h3>${al("title")}</h3>${journal.length ? `<ul>${[...journal].reverse().map(e => `<li class="${e.kind}${e.ack ? " ack" : ""}"><time>${hh(e.t)}</time><span>${esc(e.text)}${e.count > 1 ? ` (×${e.count})` : ""}</span>${e.ack ? `<em>${al("acked")}</em>` : `<button type="button" data-ack="${e.id}">${al("ack")}</button>`}</li>`).join("")}</ul><div class="bar"><button type="button" data-ackall>${al("ackAll")}</button><button type="button" data-clear>${al("clear")}</button></div>` : `<p>${al("none")}</p>`}`;
   }
 
+  /** Ouvre le panneau des alertes sous le témoin (ACK, tout acquitter, vider) ; refermé au clic suivant ailleurs. */
   function openAlerts() {
     alertsPanel = document.createElement("div");
     alertsPanel.className = "repo-alerts-panel no-print";
@@ -652,6 +702,7 @@
     }));
   }
 
+  /** Ferme le panneau des alertes. */
   function closeAlerts() {
     alertsPanel?.remove();
     alertsPanel = null;
@@ -666,6 +717,7 @@
   // Relais des zones d'état data-status : erreur / avertissement affiché → notification (une fois par texte).
   const watched = new WeakSet();
 
+  /** Observe les zones [data-status] de root (une fois chacune) : erreur ou avertissement affiché → notification. */
   function watchStatus(root = document) {
     for (const el of root.querySelectorAll("[data-status]")) {
       if (watched.has(el)) continue;
@@ -695,6 +747,7 @@
   else watchStatus();
   window.addEventListener("load", () => watchStatus());
   window.AppFramework = {
+    /** Remonte les blocs (init, root facultatif) et relaie les nouvelles zones d'état. */
     refresh: (...a) => {
       const r = init(...a);
       watchStatus();
@@ -705,9 +758,11 @@
     ask,
     /** Journal des alertes de la page (erreurs, avertissements) : liste, tout acquitter. */
     alerts: {
+      /** Copie des alertes du journal. */
       list: () => journal.map(e => ({
         ...e
       })),
+      /** Acquitte toutes les alertes. */
       ackAll() {
         journal.forEach(e => {
           e.ack = true;

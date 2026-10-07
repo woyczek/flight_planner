@@ -1,8 +1,8 @@
-"""Référence DEFA anonymisée (committée) à partir du journal des vols DEFA (non committé).
+"""Référence anonymisée (committée) à partir du journal des vols (non committé).
 
 Usage : python tools/defa_reference.py "Stub/Log des vols.html"  [--dry-run]
 
-Entrée : page « Log des vols » de la DEFA enregistrée (tableau à 9 colonnes : date, durée,
+Entrée : page « Log des vols » du site de la compagnie enregistrée (tableau à 9 colonnes : date, durée,
 trigramme, indicatif, immatriculation, appareil, départ, arrivée, mission).
 Sortie : data/references/defa_reference.js (format commun des fichiers de données, éditable dans
 Paramétrage › Bases de données) — seulement des informations agrégées :
@@ -10,7 +10,7 @@ Paramétrage › Bases de données) — seulement des informations agrégées :
   aircraft : immatriculation, type, variante, fiche flotte, indicatifs utilisés,
              première / dernière activité, nombre de vols, dernier terrain connu (lastAd),
              terrain de rattachement (homeAd : départ le plus fréquent).
-Ni les vols eux-mêmes, ni les missions (le journal reste dans le navigateur : Base DEFA).
+Ni les vols eux-mêmes, ni les missions (le journal reste dans le navigateur : Base).
 Les entrées existantes sont complétées, jamais supprimées (base « lâche », non exhaustive) ;
 les champs modifiés à la main (homeAd, notes…) sont conservés.
 """
@@ -26,12 +26,14 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'AircraftDB'))
 import datafile  # noqa: E402
 
-TARGET = ROOT / 'data' / 'references' / 'defa_reference.js'  # dépôt de données (v3)
+# --out=CHEMIN : fichier lu et écrit (le lanceur y met son dossier de données, --data) ; sinon le dépôt de données (v3)
+_OUT = next((a.split('=', 1)[1] for a in sys.argv[1:] if a.startswith('--out=')), '')
+TARGET = Path(_OUT).resolve() if _OUT else ROOT / 'data' / 'references' / 'defa_reference.js'
 OVERRIDE = 'dataOverride:defaReference:v1'
 COMMENT = [
-    "Référence DEFA anonymisée : pilotes (trigrammes), appareils (immatriculation, type, indicatifs",
+    "Référence anonymisée : pilotes (trigrammes), appareils (immatriculation, type, indicatifs",
     "utilisés, dernier terrain connu, terrain de rattachement), sans les vols ni les missions.",
-    "Générée par tools/defa_reference.py depuis le journal des vols DEFA (non committé) ; complétée",
+    "Générée par tools/defa_reference.py depuis le journal des vols (non committé) ; complétée",
     "à la main dans Paramétrage › Bases de données. Base « lâche » : aide à la saisie, non exhaustive.",
 ]
 
@@ -110,7 +112,7 @@ def main():
         return 0
     text = datafile.render(COMMENT, data, OVERRIDE, 'window.DEFA_REFERENCE = { META, pilots: data.pilots, aircraft: data.aircraft, file: fileData };')
     TARGET.write_text(text, encoding='utf-8', newline='\n')
-    print('écrit', TARGET.relative_to(ROOT))
+    print('écrit', TARGET.relative_to(ROOT) if TARGET.is_relative_to(ROOT) else TARGET)
     return 0
 
 

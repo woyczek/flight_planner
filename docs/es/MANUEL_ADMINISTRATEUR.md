@@ -1,6 +1,6 @@
 # Manual del administrador
 
-Este manual describe la suite DEFA Virtual para el **Centro** (planificación y conducción de las operaciones) y para los
+Este manual describe la suite SO Group Virtual (Virtual Special Operation Group) para el **Centro** (planificación y conducción de las operaciones) y para los
 **administradores** de la suite: un capítulo por página, una sección por pestaña, apartado o bloque, y después la
 sincronización de los datos y el lanzador. En la suite, la entrada **«Ayuda»** de la barra lateral abre este manual
 en el capítulo de la página actual (páginas del Centro y de los ajustes). Las páginas de los pilotos se describen en el
@@ -20,7 +20,7 @@ El bloqueo oculta el Centro mientras no se haya activado en este navegador.
 
 - Centro bloqueado: las páginas del Centro desaparecen del menú ☰, de la barra lateral (separador «Centro» y entradas «Misiones», «Registro», «ODV») y de la página de inicio.
 - Una página del Centro abierta directamente (favorito, enlace) queda cubierta por un aviso «Acceso reservado» con los enlaces «Activar el Centro…» e «Inicio».
-- En Ajustes › Centro solo queda visible el apartado «Acceso al Centro y ajustes»; los demás («Usuarios y derechos», «Categorías de disponibilidad», «Planificación ODV (DEFA)», «Envío de informes (servicio web)») quedan ocultos.
+- En Ajustes › Centro solo queda visible el apartado «Acceso al Centro y ajustes»; los demás («Usuarios y derechos», «Categorías de disponibilidad», «Planificación ODV», «Envío de informes (servicio web)») quedan ocultos.
 - La activación se guarda solo en este navegador: hay que repetirla en cada puesto y después de borrar los datos del sitio.
 
 Límite: es un bloqueo de uso, no una medida de seguridad. Las páginas siguen siendo archivos legibles por quien tenga acceso a la carpeta.
@@ -57,7 +57,7 @@ Gestión en Ajustes › Centro › «Usuarios y derechos»:
 - «Restablecer…» abre «Restablecer la contraseña de TRI»: introduzca una contraseña provisional (8 caracteres como mínimo), que el usuario deberá cambiar en su próxima conexión;
 - «Añadir un usuario»: trigrama, nombre mostrado, rol y después «Añadir».
 
-Consejo: si la carpeta de usuarios está vacía, el apartado crea una ficha por cada piloto de la referencia DEFA.
+Consejo: si la carpeta de usuarios está vacía, el apartado crea una ficha por cada piloto de la referencia.
 
 ### Modo develop y modo production
 
@@ -99,7 +99,7 @@ Las dos páginas comparten una pestaña en la cabecera y trabajan sobre **la mis
 - Todo cambio se guarda en este navegador y la otra página abierta lo vuelve a leer de inmediato (extensiones, mapas añadidos o eliminados en el estudio, por ejemplo). El generador muestra entonces «Misión actualizada por el estudio cartográfico».
 
 La cabecera ofrece además:
-- «Crear el informe DEFA →»: abre un nuevo informe de la familia que corresponde al tipo de misión, rellenado con la misión;
+- «Crear el informe →»: abre un nuevo informe de la familia que corresponde al tipo de misión, rellenado con la misión;
 - cuando una operación tiene varias misiones: ◀ y ▶ («Misión anterior», «Misión siguiente») y una lista para cambiar de misión dentro del lote;
 - tras abrir desde el registro: «← Registro (M-016)» para volver a él.
 
@@ -261,11 +261,11 @@ Tipo de salida (PNG, SVG editable) y anchura de los PNG: menú ☰ › «Salidas
 
 Bloque oculto por defecto: haga clic en «Mostrar» en su cabecera.
 - Carpeta `data/sia`, recordada como las demás carpetas de la suite.
-- «Releer la carpeta» después de cada actualización AIRAC; «Cancelar» interrumpe sin cambiar la base guardada.
+- «Reconstruir la base aeronáutica» después de cada actualización AIRAC; «Cancelar» interrumpe sin cambiar la base guardada.
 - «Vaciar la caché» borra la base guardada en este navegador (hay que releerla después).
 - La línea de estado indica la base guardada (carpeta, ciclo AIRAC, fecha); «Archivos analizados» lista los XML leídos.
 
-Si la carpeta contiene varios ciclos, solo se lee el más reciente; los demás se señalan para archivarlos. Es el mismo bloque que Ajustes › Mantenimiento › Datos aeronáuticos (paso 4).
+Si la carpeta contiene varios ciclos, solo se lee el más reciente; los demás se señalan para archivarlos. Es el mismo bloque que Ajustes › Mantenimiento › Datos aeronáuticos («Reconstruir la base aeronáutica»), que lee las zonas activas y sus fuentes marcadas.
 
 ## Registro de misiones
 <!-- page: apps/cpco/mission_registry.html -->
@@ -336,7 +336,7 @@ El seguimiento se escribe en `suivi.yaml`, en la carpeta de la misión; se compa
 Formulario común con el generador.
 1. Ajuste «Tipo», «Subtipo», «Teatro» y «Segundo teatro» («País» para el extranjero), «Serie» (vacío = la siguiente).
 2. Compruebe «Identificador» (calculado, de solo lectura).
-3. Ajuste «Equipos DEFA en vuelo», «Encuentro», «Equipos en tierra», «Duración» (XS a XL), «Traducciones», «Reabastecimiento en vuelo».
+3. Ajuste «Equipos en vuelo», «Encuentro», «Equipos en tierra», «Duración» (XS a XL), «Traducciones», «Reabastecimiento en vuelo».
 4. En «Aeronave de cada equipo», introduzca la aeronave de los equipos A, B… (vacío = automático).
 5. Haga clic en «Encargar: copiar el prompt y abrir ChatGPT», pegue en ChatGPT (Ctrl+V) y envíe.
 
@@ -360,7 +360,7 @@ Este bloque carga el libro semanal de la escuadrilla (`.xlsx`). Está **oculto p
 - Las anomalías (código fuera de la leyenda, trigrama duplicado, fecha de la cronología desfasada…) se señalan mediante notificaciones flotantes, sin bloquear nunca la lectura.
 - Si un piloto del libro aún no tiene preferencias de tipos de misión, la suite las crea a partir de sus códigos (C → caza, T → transporte…) y las escribe en su ficha de usuario.
 - «Borrar los datos» vacía la página. El botón sigue en gris mientras no haya ningún libro cargado.
-- El enlace «Ajustes › Centro › Planificación ODV (DEFA)» lleva a los ajustes de las franjas y de la lectura del libro.
+- El enlace «Ajustes › Centro › Planificación ODV» lleva a los ajustes de las franjas y de la lectura del libro.
 - Datos personales: no publique las exportaciones. Formato del libro y reglas de lectura: [Planificación ODV](../ODV_PLANNING.md).
 
 ### Cuadrícula de disponibilidad
@@ -402,10 +402,14 @@ Esta planificación detalla un día de la semana.
 Este bloque reúne los entrenamientos, exámenes, eventos y reservas de VATSIM / IVAO de la semana mostrada. Se guardan en el conjunto de datos compartido (`data/atc/<année>-W<semaine>.json`).
 - **Introducir una sesión**: indique el día, el inicio y el fin (horas UTC, en pasos de 15 min), la posición (p. ej. `LFBO_APP`, `LFMN_TWR`), la red (VATSIM o IVAO), el tipo (Entrenamiento, Examen, Evento, Reserva) y un comentario opcional. Después haga clic en «Añadir».
 - Las dos horas deben caer el mismo día: el fin debe ser posterior al inicio.
-- «Recuperar VATSIM (Francia metropolitana)» importa las reservas VATSIM de la semana. Las sesiones ya recuperadas se sustituyen (anulaciones incluidas); las introducidas a mano se conservan.
-- IVAO se introduce a mano: su API de reservas requiere autenticación.
-- El botón «×» de una línea quita la sesión. La columna «Fuente» indica «recuperada» o «introducida».
+- «Recuperar VATSIM (país preferido)» importa las reservas VATSIM de la semana. Las sesiones ya recuperadas se sustituyen (anulaciones incluidas); las introducidas a mano se conservan. Solo se importan las posiciones del país preferido (Ajustes › Centro › Planificación ODV; Francia metropolitana por defecto); el botón lleva su nombre.
+- «Recuperar IVAO (país preferido)» importa igualmente los entrenamientos, exámenes y reservas IVAO de la semana, con la clave de API IVAO de la instalación (Ajustes › Instalación). Estos dos botones son la importación común con el Tablero: un solo archivo, las mismas sesiones en ambas páginas.
+- El botón «×» de una línea quita la sesión. La columna «Fuente» indica «recuperada» o «introducida». La tabla muestra primero los entrenamientos, exámenes y eventos (examen y entrenamiento marcados en el margen); las simples reservas de posición, numerosas una vez importadas, se pliegan bajo «n reserva(s) de posición».
 - **Efecto en la planificación**: una sesión se cuenta en su franja (★). Un entrenamiento o un examen deja la CTR del aeródromo no disponible para las misiones de esa franja; las TMA que contienen el aeródromo deben evitarse en lo posible.
+
+### Activaciones de zonas por red
+
+Este bloque es el del Tablero (ver «Activaciones de zonas»): activaciones RTBA, R, D, TRA… de la semana mostrada, VATSIM e IVAO lado a lado, mismos datos. Edición restringida como en el Tablero (Centro activado; en producción, administrador).
 
 ### Franjas comunes
 
@@ -452,7 +456,7 @@ Este bloque propone, para cada franja que alcanza el umbral «Al menos N piloto(
 
 - Haga clic en una línea (fuera del botón) para desplegar su resumen: franja, tripulación propuesta, refuerzos, regla, puntuación, contexto (sesiones ATC, controladores, eventos), simuladores, misiones ya asignadas. El triángulo ▸ hace lo mismo; solo se despliega una fila a la vez.
 - «Reglas de las familias y de la puntuación» se despliega bajo la tabla. Puntuación = número de participantes, + 2 por cada piloto con código restringido empleado en su ámbito, + 1 por cada controlador en línea para TRAINING (2 como máximo). Una familia jugada a menudo retrocede un poco (según el número de informes del registro) para variar las misiones.
-- El número de misiones mostradas por franja y el orden de preferencia en caso de empate se ajustan en Ajustes › Centro › Planificación ODV (DEFA).
+- El número de misiones mostradas por franja y el orden de preferencia en caso de empate se ajustan en Ajustes › Centro › Planificación ODV.
 - La tabla se ordena por columna. Las funciones sacadas de la hoja FLOTTE son orientativas: el planificador valida.
 
 ### Exportación
@@ -468,6 +472,89 @@ Este bloque guarda archivos en este ordenador. Contienen datos nominativos: no l
 | «Resumen (.txt)» | `<classeur>_dispo.txt` |
 
 Si el navegador rechaza la copia automática, el texto queda seleccionado: cópielo con Ctrl+C.
+
+## Tablero
+<!-- page: apps/cpco/odv_orders.html -->
+
+La página Tablero construye la orden de vuelo de la semana: fichas de vuelo, control, varios y notas colocados en una cronología, con los conflictos de disponibilidad y de zonas.
+Para abrirla: barra lateral › sección «Centro» › «Tablero». Como el resto del Centro, requiere el Centro activado; en modo producción, también hay que estar conectado con el rol `admin_centre`. Si no, la página se abre en solo lectura.
+Todo se guarda en el pool de datos compartido: la orden de la semana en `data/odv/<año>-W<semana>.json`, los ajustes en `data/config/odv.json`. Las disponibilidades siguen siendo las de los pilotos, y la tripulación de un vuelo de misión la de las asignaciones.
+Las horas están en z (UTC). Modelo de datos: [Tablero](../technique/ODV_ORDRES.md).
+
+### Semana
+
+- «◀» y «▶» cambian de semana, «Esta semana» vuelve a la semana en curso.
+- Las pestañas de los días muestran, en rojo, el número de elementos en conflicto del día.
+- «Día», «Semana» y «Estadísticas» cambian de vista.
+- «Guardia» designa al oficial de guardia de la semana.
+- «Briefing» (o la tecla F) muestra la orden del día en pantalla completa; las flechas ← y → cambian de día.
+- La línea de estado indica «Guardado», o «Guardado en este navegador» si la carpeta de datos no está autorizada.
+
+### Orden del día
+
+A la izquierda, la paleta: plantillas de vuelos, de control y de varios, la nota, y luego los miembros (Staff, luego Miembros) con la barra de su disponibilidad del día. A la derecha, la cronología:
+- líneas de puntos: franjas de mañana, tarde y noche de la planificación ODV; línea roja: hora actual; zonas oscuras: noche aeronáutica del aeródromo configurado;
+- «RTBA · LL»: franjas de actividad del RTBA (activaciones introducidas o importadas, si no las franjas de los ajustes);
+- «Zonas»: zonas requeridas por cada vuelo (las de su misión, o las introducidas para un entrenamiento), en verde si están activas en la red del vuelo, en naranja si están solicitadas, en rojo si no;
+- «ATC»: sesiones ATC del día dentro del perímetro (país ajustado en Ajustes › Centro › Planificación ODV, al pasar sobre la etiqueta): entrenamientos y exámenes en violeta, eventos en azul, reservas atenuadas; una sesión se recuadra en rojo cuando molesta a un vuelo de misión (su aeródromo de salida o de llegada durante el vuelo);
+- «Disponibles juntos»: franjas en las que al menos dos miembros son asignables a un vuelo;
+- secciones «Vuelos», «Control», «Varios», «Notas»: los elementos se apilan solos.
+
+Manejo:
+- arrastre una plantilla a su sección: el elemento se crea a la hora de la colocación (en pasos de 5 min) y se abre su ventana;
+- haga doble clic en una tarjeta de la paleta para colocarla automáticamente: en la franja de sincronización para otra tripulación de una misión con varias tripulaciones (desfase del ejercicio de la operación respecto a H, si no hora de la patrulla vinculada ya colocada; cisterna: 30 min antes del reabastecimiento, o antes de la patrulla a la que sirve), si no en la primera franja coherente del día (horas de servicio, no antes de la hora actual, tripulación asignable y libre, o suficientes miembros disponibles juntos);
+- arrastre un miembro de la paleta a una ficha para añadirlo, o un trigrama de una ficha a otra para moverlo;
+- arrastre una ficha para cambiar su hora, su borde derecho para cambiar su duración; un simple clic abre su ventana;
+- en la paleta, «Reserva de vuelos» guarda las fichas quitadas de la cronología (arrastradas a la paleta, o «↩ Reserva» en su ventana) y «Formaciones de las misiones» propone lo que piden los vuelos de misión colocados: patrullas de las otras misiones de la formación, cisternas que las atienden, chiffons de la operación;
+- «Zoom» ajusta la escala de la cronología.
+
+En una ficha: «⚠ n» cuenta sus conflictos, «P» indica que ningún tripulante está disponible en la hora y media previa al vuelo, «↻» una recurrencia; una barra verde (hecho) o naranja (no hecho) subraya el estado; una ficha cancelada aparece tachada. Bajo la cronología, «Problemas de asignación» lista los conflictos del día: un clic muestra la ficha.
+
+### Ventana de un elemento
+
+- **Vuelo**: etiqueta, indicativo, misión del registro (vacío: entrenamiento), red, inicio, duración, color, zonas de un entrenamiento, eje y descarga de un vuelo cisterna, cisterna y hora del reabastecimiento, aeronaves (piloto, navegante, cancelado; ocho como máximo), tareas (una por línea, «nombre = TRI»), información, estado, motivo, informe (ME, Bâché, MNE), parcial, causas de MNE.
+- Un indicativo introducido propone la misión de la asignación que lleva ese indicativo ese día.
+- «Misión del registro y equipo»: una fila por equipo en vuelo de cada misión (indicativo, aeronave, función, familia, aeródromos, operación, duración estimada), ordenada por duración; «⚠» y una notificación señalan una duración estimada distinta de la solicitada (diferencia de más de 15 min o 15 %). «Entrenamiento (sin misión)» deja la ficha sin misión.
+- «Reabastecimiento»: una misión cisterna (primero las de la misma operación o del mismo eje), cuya ficha se coloca ese día si aún no está, o un vuelo cisterna ya colocado; la hora del reabastecimiento se ajusta al lado.
+- **PTA** (principal training audience): miembros a los que el elemento entrena en prioridad, marcados en la tabla de aeronaves (vuelo) o en la lista PTA (control, varios); aparecen rodeados en la ficha. **Configuración**: configuraciones cargadas en la aeronave (KNON = cañón, TALIOS = pod…), propuestas según los ajustes. **DLO** (desired learning objectives): objetivos de cada miembro en el elemento, una línea por miembro «TRI = objetivos»; «◎» en el trigrama, objetivos al pasar el ratón.
+- **Aeronaves**: dos plazas al principio («+ Punto» añade más, ocho como máximo); para cada una, la aeronave (tipo de la misión propuesto ★, sin imponerlo, o una aeronave de la flota), el piloto y el navegante. El indicativo propuesto es el de la misión, si no los de la tabla de indicativos para ese tipo; sigue a la misión si esta lo cambia. **Reabastecimiento**: elija el eje y luego una misión cisterna de ese eje; si su ficha no está colocada, pasa a la paleta y el vuelo se engancha a ella al colocarla. La ficha muestra la misión (título, familia, aeródromo), el eje que sostiene un cisterna y, para un receptor, «⛽ cisterna eje hora».
+- **Puestos y aeronaves** (como en la planificación ODV): para un vuelo de misión, una fila por puesto de la misión (indicativo, tipo); el siguiente punto toma el indicativo siguiente. La lista de aeronaves propone las compatibles, en el sitio primero y luego de la más cercana a la más lejana («traslado x h xx»); las ya ocupadas durante el vuelo aparecen en gris. Una aeronave basada en otro aeródromo que la salida hace aparecer una ficha de traslado «⇢» (aeronave, aeródromos, «por asignar»), que llega 30 min antes del despegue y sigue al vuelo: arrastre a ella al piloto del traslado. **Guardia**: preaviso y fin, trasladados a la orden de misión. La línea bajo un trigrama indica su cualificación en el tipo (verde: dominado; naranja: poseído o conocido; rojo: no); es solo una señal.
+- **Elegir una misión**: la lista se limita al indicativo o la etiqueta introducidos («SAMU» → misiones SAMU); elegida la misión, se abre la ventana de elección del ODV y sus filas (puestos, aeronaves, pilotos, indicativo, piloto del traslado) rellenan la ficha; se proponen primero los pilotos disponibles y cualificados en el tipo. La ficha toma la hora de despegue de la asignación (aviso si difieren); «Orden de misión de la operación (n)…» encadena las órdenes de misión de las fichas de la operación colocadas ese día; una ficha recuperada de la reserva o de las formaciones se coloca en su franja de sincronización. **Reabastecimiento**: el eje elegido limita la lista a sus cisternas; «Sin misión específica» pone en la reserva un cisterna genérico en el eje. Un traslado movido a mano conserva su lugar (sigue al vuelo con la misma diferencia si el vuelo se mueve); si llega menos de 30 min antes del despegue, se señala. Una disponibilidad cuya categoría no abre la familia de la misión, y un examen o entrenamiento ATC en el aeródromo de salida o de llegada durante el vuelo, se señalan. Bajo la cronología, «Registro de asignaciones» muestra las 30 últimas operaciones.
+- **Asignaciones y órdenes de misión**: una misión asignada en otro lugar (planificación ODV, Registro) aparece automáticamente como ficha en la cronología, a su despegue, con sus aeronaves, pilotos, guardia y traslado. A la inversa, un vuelo de misión con tripulación pero sin asignación se señala «orden de misión no emitida» (el piloto no ve nada en Mis misiones), y una tripulación distinta de las asignaciones «orden de misión que reemitir». Desplazar la ficha de un vuelo que tiene su orden de misión (día, hora, duración) la reemite automáticamente, sin ventana: mismos pilotos, aeronaves, indicativos y pilotos de traslado a la nueva hora; un sobre ya abierto vuelve a sellarse para que el piloto vea el cambio. En caso de conflicto de asignación (piloto, piloto de traslado o aeronave ocupados en otro lugar) o si la carpeta de misiones no está autorizada, la orden no se reemite: la ficha lo señala («orden de misión no reemitida», con el motivo) y conserva su nueva hora; «Orden de misión…» sigue siendo el modo de cambiar pilotos o aeronaves.
+- **Orden de traslado**: «Orden de traslado…» en una ficha de traslado abre la orden de misión del vuelo servido, traslado incluido (hora y duración de la ficha, aunque se haya movido a mano); un piloto de traslado distinto del piloto de la misión, o un traslado por asignar, recibe su orden de traslado en Mis misiones; hecho por el piloto de la misión, el traslado es una línea de su orden de misión.
+- Vuelo de misión: la tripulación viene de las asignaciones de la misión; «Orden de misión…» abre la ventana de asignación del Centro, prerrellenada con las aeronaves de la ficha (piloto, matrícula, indicativos de la patrulla): las asignaciones guardadas son la orden de misión que los pilotos reciben en Mis misiones (distintivo «OM» en la ficha). «Encargar una misión…» abre el formulario de encargo del generador, preajustado según la ficha (equipos, tipos de aeronave, duración, reabastecimiento). El informe de la misión es la referencia: al abrir la semana, estado e informe se toman de él; sin informe pasado el plazo configurado, el vuelo pasa a MNE (causa «sin informe»).
+- **Control**, **Varios**: etiqueta, posición (control), inicio, duración, color, estado, motivo, tripulación (casillas de los miembros), notas (varios).
+- **Nota**: texto libre.
+- «Repetir» (cada día, cada semana, cada dos semanas) y «Hasta» colocan el elemento en las semanas siguientes al abrirlas por primera vez, nunca antes de su fecha.
+- «Eliminar» quita el elemento.
+
+### Conflictos
+
+| Conflicto | Significado |
+|---|---|
+| semana no declarada | el miembro no ha declarado su disponibilidad de la semana |
+| no disponible durante toda la duración | ninguna franja cubre todo el elemento |
+| no asignable (categoría) | una franja de una categoría que no abre este tipo de elemento se solapa con el elemento |
+| ya ocupado a esa hora | el miembro está en otro elemento al mismo tiempo |
+| dos veces en el elemento | el mismo miembro ocupa dos puestos |
+| zona no activada, solicitada, prohibida | zona requerida sin activación «activa» de su red durante todo el vuelo, o zona P |
+
+Un vuelo requiere una categoría disponible; un control, una categoría disponible o «Control SOG»; un elemento varios acepta también «Disponible solo en tierra». Control y vuelo fuera de SOG, DCS, no disponible y descanso nunca son asignables.
+
+### Semana y estadísticas
+
+- **Semana**: una fila por miembro, una casilla por día con la barra de las disponibilidades declaradas y el número de elementos en los que figura. Un clic en una casilla abre sus franjas del día: categoría, inicio, fin, y «Descanso desde», que coloca un descanso hasta medianoche. Las franjas se escriben en la declaración del piloto.
+- **DLO y plazos**: objetivos permanentes de cada miembro («＋» para añadir, clic para modificar), con un plazo opcional (rojo a 3 días hábiles o menos, amarillo a 10 o menos); un DLO se cierra automáticamente con un vuelo hecho que lo contiene (DLO del elemento, etiqueta, misión) con el miembro en la tripulación. La paleta muestra «◎n» DLO abiertos por miembro, y la ventana de un elemento recuerda los de la tripulación.
+- «Cambios de disponibilidad» lista las declaraciones modificadas desde la última vez que se tuvieron en cuenta; «Tenido en cuenta» y «Tener todo en cuenta» las marcan en este navegador.
+- **Estadísticas**: vuelos previstos, duración total, hechos, no hechos, cancelados, AAR, ME, Bâchés, MNE; por miembro: tiempo disponible en las horas de servicio, tiempo de vuelo, carga (naranja por encima del 70 %, rojo por encima del 100 % o sin disponibilidad).
+
+### Activaciones de zonas
+
+Este bloque introduce las activaciones de zonas de la semana (`data/atc/activations/<año>-W<semana>.json`), en dos columnas lado a lado, VATSIM e IVAO: día, zona, estado (activa, solicitada, rechazada), inicio, fin, observación, red. Una activación «ambas redes» aparece en las dos columnas; cambiar su red la desplaza. VATSIM no publica activaciones: su columna se introduce a mano. En la columna IVAO, «Importar de IVAO» recoge los horarios publicados por IVAO (clave de API de la instalación), plegados bajo la lista, así como los entrenamientos, exámenes y reservas IVAO de la semana (sesiones ATC); las entradas a mano se conservan. Las sesiones IVAO también se importan solas al abrir una semana, como máximo una vez por hora, si la página puede escribir. Un cambio recalcula al instante las zonas de los vuelos. La planificación ODV muestra el mismo bloque, con los mismos datos.
+
+### Solicitudes de reserva
+
+Este bloque lista las zonas que atraviesan los vuelos de misión de la semana (ruta prevista y zonas de trabajo de la misión, zonas introducidas para un entrenamiento) sin activación «activa» de su red: día, zona, red, franja, vuelos, estado. «Inscribir como solicitada» (o «Inscribir todo como solicitado») las añade a las activaciones comunes; la solicitud se hace en el sitio de la red («Copiar la lista», enlace a las solicitudes de activación IVAO). Una zona P se señala «evitar». Al abrir una semana, la página importa automáticamente las sesiones ATC IVAO (entrenamientos, exámenes, reservas), como mucho una vez por hora, con la importación común con la planificación ODV.
 
 ## Ajustes › Centro
 <!-- page: apps/settings/centre.html -->
@@ -503,7 +590,7 @@ Este apartado gestiona las fichas de los usuarios. Hay una ficha por usuario (`d
 - **«Restablecer…»**: introduzca una contraseña provisional (8 caracteres como mínimo) y después «Restablecer la contraseña». El usuario deberá cambiarla en su próxima conexión.
 - **«Suplantar»**: usted actúa en nombre del usuario. Una banda lo recuerda en todas las páginas, cada escritura se firma «ADM pour TOTO» y el botón «Terminar la suplantación» le pone fin.
 - **«Añadir un usuario»**: trigrama, nombre mostrado, rol y después «Añadir».
-- Si la carpeta está vacía, se crea una ficha para cada piloto de la referencia DEFA.
+- Si la carpeta está vacía, se crea una ficha para cada piloto de la referencia.
 - Si todavía no se han podido escribir algunos archivos en la carpeta de datos, haga clic en «Escribir en la carpeta de datos».
 - En modo production, el restablecimiento de una contraseña, la suplantación y el cambio de modo están reservados a un
   `admin_centre` conectado; añadir un usuario y modificar una línea (rol, activo) solo están protegidos
@@ -516,7 +603,7 @@ Este apartado define lo que los pilotos pueden declarar como disponibilidades (`
 | Columna | Uso |
 |---|---|
 | id | identificador, fijo una vez guardada la categoría; se introduce para una categoría nueva |
-| Grupo | grupo mostrado en la ODV (Disponible, Ejercicio DEFA, Ocupado, No disponible…) |
+| Grupo | grupo mostrado en la ODV (Disponible, Ejercicio SOG, Ocupado, No disponible…) |
 | Etiqueta, Color | etiqueta **solo en francés**, color de la casilla |
 | Temas abiertos | «todos los temas», «ninguno», «dominio …», «… según preferencias, entre …» o «lista de temas» (campo libre, temas separados por espacios) |
 | Tipo | disponible, control, ocupado, no disponible |
@@ -530,13 +617,14 @@ Este apartado define lo que los pilotos pueden declarar como disponibilidades (`
 - «Valores por defecto» restablece las categorías de origen. Las categorías añadidas se conservan, pero retiradas.
 Véase también [disponibilidades y reorganización](../technique/DISPOS_ET_REORGANISATION.md).
 
-### Planificación ODV (DEFA)
+### Planificación ODV
 
-Este apartado contiene los ajustes propios de la DEFA para la página Planificación ODV. Se guardan en este navegador y no se sincronizan. Una página ODV abierta en otra pestaña los aplica de inmediato.
+Este apartado contiene los ajustes propios de la compagnie para la página Planificación ODV. Se guardan en este navegador y no se sincronizan. Una página ODV abierta en otra pestaña los aplica de inmediato.
 
 | Ajuste | Por defecto |
 |---|---|
 | Franjas (horas z): Mañana, Tarde, Noche | 8 a 12, 12 a 18, 18 a 23 (por medias horas; el fin debe ser posterior al inicio) |
+| País preferido (perímetro ATC) | «Francia metropolitana»; sesiones ATC (entrenamientos, exámenes, reservas) importadas y mostradas solo para este país, planificación ODV y el Tablero (indicadores OACI del país: LF salvo LFV para Francia) |
 | Fechas de la semana | «Semana ISO (n.º de semana del archivo)»; si no, «Fecha introducida en la cronología» |
 | Casilla vacía | «Sin rellenar» (nunca cuenta como disponible); si no, «No disponible» |
 | Tipos FLOTTE tenidos en cuenta para las funciones | «Todos salvo los rojos (no dominados)»; «Solo verdes»; «Todos» |
@@ -546,6 +634,25 @@ Este apartado contiene los ajustes propios de la DEFA para la página Planificac
 | Ignorar una línea de grupo coloreada los 7 días en una franja (decoración) | marcado |
 
 Cada cambio se guarda de inmediato. «Ajustes por defecto» restablece todos los valores anteriores.
+
+### Tablero
+
+Esta sección ajusta la página Tablero (`data/config/odv.json`, sincronizado).
+
+| Ajuste | Uso |
+|---|---|
+| Aeródromo (OACI) | día y noche aeronáuticos en la cronología |
+| Red por defecto de los vuelos | IVAO o VATSIM, para el estado de las activaciones de zonas |
+| Plazo sin informe antes de MNE (horas) | 48 por defecto |
+| Días mostrados, horas de servicio | 7 días, de 06:00 a 23:00 z; sirven a la cronología y a las estadísticas |
+| Plantillas de vuelos, de varios, de control | etiqueta, duración, color, relleno; «Color del indicativo»: la ficha toma el color de su indicativo |
+| Colores de los indicativos | prefijo (gana el más largo contenido en el indicativo), relleno, contorno |
+| Configuraciones de aeronave | texto (KNON, TALIOS…), color; propuestas en la tabla de aeronaves de un vuelo |
+| Franjas LL / RTBA (respaldo) | nombre, inicio, fin, días, color, zona de la base |
+| Personal | grupo Staff o Miembros, color, orden en la paleta |
+| Recurrencias | elementos repetidos; «✕» detiene una recurrencia |
+
+«Guardar» escribe los ajustes; «Valores por defecto» restablece los ajustes de origen, salvo el personal, los colores de los indicativos, las franjas LL y las recurrencias.
 
 ### Envío de informes (servicio web)
 
@@ -562,17 +669,19 @@ Detalles: [Manual de explotación](../MANUEL_EXPLOITATION.md), § 10.
 
 Esta página reúne los ajustes que se hacen una sola vez: primer arranque, carpetas locales, fuentes externas y aerolínea virtual.
 Para abrirla: barra lateral › «Ajustes» y después la pestaña «Instalación».
-El menú lateral tiene dos grupos. El grupo «Instalación» contiene «Primer arranque»; el grupo «Carpetas y fuentes» contiene «Fuentes y carpetas».
-Estos apartados se asignan a la página mediante `config/repository_tree` (clave `settings.sections`: `setup` y `sources` → installation). Todos los demás apartados de mantenimiento se abren en la página Mantenimiento.
+El menú lateral tiene dos grupos. El grupo «Instalación» contiene «Primer arranque»; el grupo «Carpetas y fuentes» contiene «Fuentes y carpetas», «Datos aeronáuticos» y «Tipos de aeronave».
+Estos apartados se asignan a la página mediante `config/repository_tree` (clave `settings.sections`: `setup` y `sources` → installation; `sia` y `types` → installation,maintenance, es decir, en las dos páginas: la puesta en marcha aquí, la actualización en Mantenimiento, mismos bloques). Todos los demás apartados de mantenimiento se abren en la página Mantenimiento.
 
 ### Primer arranque
 
 Este apartado indica si el primer arranque se ha completado en este navegador, y en qué fecha.
-- «Abrir el primer arranque» vuelve a abrir el asistente (`premier_lancement.html?force`). Se desarrolla en cuatro pasos:
-  1. Datos: «Obtener los datos» (clon del repositorio de datos) o «Archivo de datos…»; opcionalmente, «Diario DEFA (.html)…».
-  2. Perfil: «Guardar el perfil».
-  3. Carpetas: «Elegir la carpeta de la aplicación» y después el libro ODV («Carpeta OneDrive…» u «o el archivo Excel…»).
-  4. «Terminar y actualizar los datos SIA».
+- «Abrir el primer arranque» vuelve a abrir el asistente (`premier_lancement.html?force`), también accesible por la pestaña «Primer arranque» de Ajustes y por la tarjeta de la página de inicio mientras quede algo por ajustar. Arriba, «Estado de la suite» hace balance; luego seis pasos:
+  1. Carpetas: «Elegir la carpeta de la aplicación» y después el libro ODV, opcional («Carpeta OneDrive…» u «o el archivo Excel…»).
+  2. Datos: «Obtener los datos» (clon del repositorio de datos) o «Archivo de datos…»; repositorio git de sincronización (opcional); opcionalmente, «Diario (.html)…».
+  3. Aerolínea: nombre, sigla, nombre completo, sitio de la aerolínea; clave de API IVAO de la instalación (opcional, guardada por el lanzador); «Guardar la aerolínea».
+  4. Perfil y credenciales: trigrama, IVAO, VATSIM, SimBrief, credenciales del sitio de la aerolínea; «Guardar el perfil».
+  5. Datos aeronáuticos y tipos de aeronave: los bloques «Datos aeronáuticos» y «Tipos de aeronave» (los mismos que aquí).
+  6. Centro (administradores): «Activar el Centro», luego flota y registro del sitio («Actualizar ahora»), misiones del registro y enlaces a los ajustes del SO Group (Ajustes › Centro); por último «Terminar».
 - «Fuentes y carpetas, aerolínea virtual» abre el apartado siguiente.
 - «Canal de actualización» abre Mantenimiento › Actualizaciones.
 - Para empezar desde cero: «Limpiar y empezar de nuevo…», al pie del primer arranque. Esto borra los ajustes de este navegador, no los archivos.
@@ -594,8 +703,9 @@ Este apartado es el único lugar donde se ajustan las carpetas locales y las dir
 | Carpeta X-Plane (aterrizajes), Carpeta de rendimiento, Carpeta de copia local | registros CSV, perfiles `.lnmperf` / `.json`, `defa_local_store.yaml` |
 
 - **Fuentes externas**: la dirección por defecto aparece en gris. Un valor introducido solo vale para este navegador; «↺» vuelve al valor por defecto y «Abrir ↗» abre la dirección.
-- **Aerolínea virtual**: «Nombre», «Sigla», «Centro (sigla)», «Centro (nombre completo)» y las páginas del sitio («Página de inicio», «Registro de vuelos», «Flota», «Ficha de un avión»). Un campo vacío mantiene el valor por defecto. «Volver a DEFA Virtual» borra todos estos ajustes.
-- **Primer arranque**: «Reabrir el primer inicio»; «Limpiar y empezar de nuevo…» borra las carpetas recordadas, la copia del libro ODV, los identificadores del sitio DEFA y el perfil. Los archivos del disco no se tocan.
+- **Claves de API (servicios externos)**: claves de la suite, comunes a todos sus usuarios (IVAO: clave de API para las activaciones de zonas y las sesiones ATC — entrenamientos, exámenes, reservas — de la planificación ODV y del Tablero). «Guardar» las confía al lanzador (`secrets/` en la raíz de la aplicación, excluido de git, fuera de los datos y de las copias); la página solo ve su estado y los 4 últimos caracteres; «Borrar» la retira.
+- **Aerolínea virtual**: «Nombre», «Nombre completo», «Sigla», «Centro (sigla)», «Centro (nombre completo)» y las páginas del sitio («Página de inicio», «Registro de vuelos», «Flota», «Ficha de un avión»). Un campo vacío mantiene el valor por defecto. «Volver a SO Group Virtual» borra todos estos ajustes.
+- **Primer arranque**: «Reabrir el primer inicio»; «Limpiar y empezar de nuevo…» borra las carpetas recordadas, la copia del libro ODV, los identificadores del sitio de la aerolínea y el perfil. Los archivos del disco no se tocan.
 
 ## Ajustes › Mantenimiento
 <!-- page: apps/settings/maintenance.html -->
@@ -604,7 +714,7 @@ Esta página sirve para el mantenimiento de la suite: actualizaciones, versiones
 Para abrirla: barra lateral › «Ajustes» y después la pestaña «Mantenimiento». La página se abre en «Actualizaciones».
 El menú lateral tiene dos partes:
 - el grupo «Mantenimiento»: Actualizaciones, Versiones, Referencias y dependencias, Datos aeronáuticos, Cachés, Espacio en disco, Copia total, Registro;
-- las bases de datos, agrupadas en «Archivos del repositorio», «Base DEFA», «Misiones» y «Datos del navegador».
+- las bases de datos, agrupadas en «Archivos del repositorio», «Base», «Misiones» y «Datos del navegador».
 
 ### Actualizaciones de la suite
 
@@ -622,7 +732,7 @@ Este bloque define de dónde vienen las actualizaciones del código y cuándo la
 Esta tabla da la versión y la fecha de actualización de cada elemento, con un estado (✓, ⚠, ✗) y la fuente o la herramienta de actualización.
 - Código: suite (`repository_tree`), versión de caché de los scripts, git, canal remoto.
 - SIA / AIRAC: ciclo vigente y ciclo siguiente, base del estudio cartográfico, carpeta SIA XML, `mora.csv`, ejes AAR (ENR 5.7).
-- Bases de referencia: tipos OACI, rendimientos APD, flota DEFA, referencia DEFA, indicativos.
+- Bases de referencia: tipos OACI, rendimientos APD, flota, referencia, indicativos.
 - Datos de usuario: planes de vuelo SimBrief, perfiles del planificador, registro de informes, registro de misiones generadas, registros de aterrizaje, datos locales, última copia de seguridad total.
 - «Actualizar» vuelve a leer el estado git y la carpeta SIA.
 - Aparece un aviso si los datos locales no se han guardado desde hace más de 7 días, o si no ha habido una copia de seguridad total desde hace más de 30 días.
@@ -639,36 +749,39 @@ Este bloque describe cada referencia de la suite:
 | Dependientes | datos que dependen de ella |
 | Control | coherencia comprobada |
 
-Referencias seguidas: XML SIA, base analizada del estudio, cuadrícula MORA, ejes AAR, rendimientos APD, flota DEFA, perfiles del planificador y prompt de las misiones.
+Referencias seguidas: XML SIA, base analizada del estudio, cuadrícula MORA, ejes AAR, rendimientos APD, flota, perfiles del planificador y prompt de las misiones.
 Ejemplos de controles: ciclos mezclados en la base SIA, obstáculos MORA de otro ciclo, tipos de la flota ausentes de la base OACI, prompt que regenerar (`python tools/build_mission_prompt.py`).
 El botón «Comprobar» vuelve a lanzar los controles.
 
-### Datos aeronáuticos: fuentes y actualización SIA (AIRAC)
+### Datos aeronáuticos: zonas del mundo, fuentes y ciclos AIRAC
 
-**Fuentes**: una línea por fuente de datos, cada una marcada (leída) o no; los cambios se aplican en la próxima reconstrucción de la base («Releer la carpeta», paso 4). El SIA tiene prioridad: en las FIR francesas solo cuentan sus espacios; en otros lugares, un espacio, aeródromo o radioayuda ya leído no se añade una segunda vez.
-- **SIA Francia** (AIXM 4.5, XML_SIA) y **DIRCAM / MILAIP** (zonas RTBA / AZBA, ejes de reabastecimiento ENR 5.7): el paso a paso de abajo.
-- **AIXM 5.1** (otros países): archivos `.xml` de la carpeta `data/sia/aixm5/`. «ENAIRE (España): descargar» toma los últimos conjuntos publicados (espacios, en ruta). Reino Unido (NATS): registro en el sitio, archivo depositado a mano.
-- **GeoJSON**: archivos `.geojson` o `.json` (y OpenAir `.txt`) de `data/sia/geojson/`. «FAA (EE. UU.): espacios de uso especial y rutas militares» descarga los espacios de uso especial (MOA, R, W, A, P) y las rutas MTR, leídas como corredores; «FAA: clases de espacio» es un archivo grande.
-- **openAIP**: códigos de país de dos letras separados por espacios, luego «openAIP: descargar los países» (espacios, aeródromos, radioayudas, puntos VFR en `data/sia/openaip/`). Datos comunitarios, uso no comercial (CC BY-NC 4.0).
-- **X-Plane**: botón de la carpeta de instalación de X-Plane; radioayudas, puntos, aerovías y rejilla MORA de los archivos `earth_*.dat` («Custom Data» primero), espacios OpenAir si los hay.
-- Las descargas pasan por el lanzador (`tools/aero_fetch.py`, utilizable también en línea de comandos). Sin lanzador: descargar los archivos a mano y depositarlos en la subcarpeta de la fuente.
-- Fuera de Francia, las zonas R, D, TRA, TSA, MOA, W, A y las rutas MTR que cruza una misión aparecen en sus espacios a activar.
+**Mapa de zonas**: una zona por país (Francia agrupa la metrópoli y ultramar, cobertura del SIA). Al pasar el ratón se muestran sus fuentes en el panel derecho. **Un clic añade el país a la selección, otro lo quita** (países elegidos en azul con contorno oscuro); la barra bajo el mapa los enumera (por activar, por desactivar, «Cancelar»). **«Activar»** aplica la selección y luego encadena sola, para todos los países elegidos aún incompletos, todo lo que la suite puede hacer: descargas de sus fuentes, últimos ZIP de Descargas (SIA, NATS…), una sola reconstrucción de la base y después la MORA de cada país que no la tenga — solo si la base se ha reconstruido (doble indicador: paso y detalle; una fuente fallida no detiene las demás; resumen en una notificación). El panel de un país conserva «Activar la zona» / «Desactivar la zona» y, para una zona activa, «Obtener y recalcular todo». Lo que queda por hacer a mano (pedido en el sitio del SIA, PDF que importar, carpeta de X-Plane, archivos que depositar…) figura bajo el mapa, «Acciones pendientes»: una línea por fuente, con su enlace y su botón; las descargas y la MORA, que hace «Activar», caben en una sola línea «automático».
+- Colores: solo contorno = inactiva, sin datos; gris = inactiva, con datos; naranja = activa, datos incompletos; verde = activa, todos los datos de las fuentes marcadas; azul claro = zona bajo el ratón; azul con contorno azul oscuro = país elegido («Activar» para aplicar).
+- Cada fuente se marca o desmarca para su zona; solo las fuentes marcadas de las zonas activas entran en la base. Una fuente «enlace» (PDF o sitio de consulta) no la lee la suite.
+- Según la fuente, el panel ofrece:
+  - una descarga directa por el lanzador (`tools/aero_fetch.py`): openAIP (cada país), ENAIRE (España), FAA (Estados Unidos: zonas y rutas militares, clases de espacio), AIP militar británico (ENR 5.2, PDF oficial leído por el lanzador: zonas de vuelo a baja altura, VATA, zona de evitación TVAA, ejes de reabastecimiento AARA añadidos a los de la DIRCAM), NAV CANADA (Designated Airspace Handbook, edición vigente leída por el lanzador: zonas peligrosas, restringidas y de aviso de Canadá, a descargar de nuevo cada 56 días);
+  - un pedido o un registro, con el enlace y el modo de empleo: SIA Francia (pedido a 0 €, a repetir en cada ciclo), NATS (Reino Unido, archivo depositado en `data/sia/zones/gb/`);
+  - un PDF, con el enlace y el modo de empleo: DIRCAM / MILAIP ENR 5.7 (ejes de reabastecimiento);
+    DIRCAM: «Importar el PDF MILAIP…» lee el PDF de la sección ENR 5.7 (pdf.js, red en la primera importación), muestra el número de ejes y las anomalías encontradas, y luego «Escribir miam-enr-5-7-tracks.xml» guarda el archivo en la carpeta SIA (el anterior en `_archives/`) y actualiza la base;
+  - una carpeta del ordenador: X-Plane (radioayudas, puntos, aerovías, rejilla MORA, recortados a los contornos de las zonas activas que lo marcaron);
+  - un cálculo: la MORA de la zona. Una zona muy extensa (más de 1500 casillas de un grado: Estados Unidos, Canadá…) toma por defecto la MORA de X-Plane; «Cálculo completo…» la calcula por bloques de 10°, tras una confirmación que indica el volumen (teselas abiertas de relieve de AWS aumentadas en 100 m, sin consulta a OpenStreetMap): cada bloque se escribe enseguida en `mora.csv`, «Detener» entre dos bloques, «Reanudar el cálculo completo…» más tarde.
+- SIA Francia (zona Francia): «Recuperar el ZIP descargado» (el lanzador lo toma de Descargas), «ZIP de exportación…», «Extraer …» si ya está en la carpeta, «Archivar los ciclos antiguos» (`_archives/`); «Contenido de la carpeta SIA» lista los archivos del ciclo.
+- El SIA conserva la prioridad: dentro de las FIR francesas solo cuentan sus espacios; en otros lugares, un espacio, aeródromo o radioayuda ya leído no se añade dos veces. Fuera de Francia, las zonas R, D, TRA, TSA, MOA, W, A y las rutas MTR que cruza una misión figuran en sus espacios por activar.
+- Las direcciones de los sitios (SIA, DIRCAM, NATS, AIP militar británico, NAV CANADA) se ajustan en Ajustes › Instalación › Fuentes y carpetas › Fuentes externas; las carpetas SIA y X-Plane de allí son las mismas que aquí.
 
-**SIA Francia: nuevo ciclo AIRAC paso a paso**
+**Base aeronáutica: fuentes, ciclos y reconstrucción**: ciclo vigente, ciclo siguiente y ciclo de la base, y luego una tabla de todas las fuentes marcadas de las zonas activas (zona, fuente, archivos, ciclo o fecha, antigüedad, tamaño, estado). Un clic en una fila fija su zona y actualiza la fuente (descarga, ZIP del SIA, importación del PDF MILAIP, carpeta X-Plane, MORA de la zona). Al principio de la tabla: el número de controles sin problemas, luego los problemas (fuentes que faltan) y los avisos (antiguas); «Mostrar los problemas» conserva solo estos. La tabla está ordenada por estado (problemas primero) y se ordena por columna.
+«Recalcular todo» reconstruye la base con todas las zonas activas (unos segundos; el navegador puede pedir autorizar la carpeta); «Vaciar la caché» la vacía. Es el mismo bloque que en el estudio cartográfico.
+Estados de la tabla:
+- SIA: ciclo leído en el nombre de los archivos, «antiguo» si precede al ciclo vigente;
+- X-Plane: ciclo de «Custom Data»;
+- archivos descargados: «antiguo» pasados 28 días (un ciclo AIRAC).
 
-Cada 28 días entra en vigor un nuevo ciclo AIRAC. Seis pasos, en orden; el indicador de cada paso pasa a verde cuando el paso está hecho. El «Modo de empleo» detalla cada paso.
-1. **Ciclo AIRAC**: compruebe el ciclo vigente, el siguiente y el de la base del estudio. Hay enlaces a las páginas del SIA.
-2. **Descargar y extraer la exportación del SIA**:
-   - en el sitio del SIA: cuenta (gratuita), «Ajouter au panier» (0 €) y después «Passer commande» aceptando la licencia;
-   - de vuelta en la suite: «Recuperar el ZIP descargado» (el lanzador lo toma de Descargas), o «ZIP de exportación…» para elegirlo, o «Extraer …» si ya está en la carpeta;
-   - elija la carpeta SIA si es necesario y después «Analizar».
-3. **Ciclos antiguos**: «Archivar en _archives/».
-4. **Reconstruir la base SIA**: «Releer la carpeta». La relectura dura unos segundos; es el mismo bloque que en el estudio cartográfico.
-5. **Controlar las diferencias con la base anterior**: recorra los espacios añadidos o retirados y después «Hecho».
-6. **Recalcular (MORA) y controlar la coherencia**:
-   - «Recálculo simple» (sin conexión) o «Cálculo completo» (red, alrededor de un minuto);
-   - si cambian celdas: «Escribir mora.csv (anterior archivado)» y después haga commit del repositorio de datos;
-   - por último, «Comprobar» la coherencia.
+**MORA**: varias fuentes.
+- La rejilla calculada (`data/sia/mora.csv`) tiene prioridad. «Recálculo simple» toma los obstáculos del nuevo ciclo (sin red); «Cálculo completo» rehace relieve y cumbres (red, un minuto aproximadamente) para los teatros y las misiones; «Calcular la MORA de la zona» (panel) lo hace sobre la extensión de una zona, conservando las demás celdas.
+- Si cambian celdas: «Escribir mora.csv (antiguo archivado)», y luego hacer commit del repositorio de datos.
+- En otros lugares, la rejilla MORA de X-Plane completa, si la fuente X-Plane está marcada.
+
+**Coherencia**: «Comprobar» verifica espacios, aeronaves, flota, rendimientos y aeródromos de las misiones.
 Los XML AIRAC (unos 80 MB por ciclo) quedan fuera del repositorio, como los archivos de las demás fuentes. Los valores MORA son calculados, no certificados.
 
 ### Cachés
@@ -691,6 +804,7 @@ Purgue el «Índice de datos» cuando una página muestre un dato caducado tras 
 
 Este bloque solo aparece si el Centro está activado.
 - «Calcular el espacio usado» mide la carpeta de misiones (`data/missions`): por misión, por tipo de archivo y en total. Indica también el espacio usado por el navegador.
+- «Datos aeronáuticos, por zona»: espacio de la carpeta SIA por zona (fuentes y número de archivos; mora.csv cuenta para todas las zonas). Una zona desactivada conserva sus archivos: borrarlos a mano para liberar espacio.
 - «Eliminar los mapas sobrantes» quita los mapas que ya no figuran en la lista de su misión.
 - «Purgar todos los mapas generados» y «Purgar los PDF» liberan espacio; estos archivos se regeneran a partir del YAML.
 - Cada eliminación pide confirmación.
@@ -723,7 +837,7 @@ Operaciones registradas:
 - recálculo MORA.
 Mientras no haya tenido lugar ninguna de estas operaciones, el registro está vacío.
 
-### Flota DEFA (aeronaves conocidas)
+### Flota (aeronaves conocidas)
 
 Esta base (`data/references/aircraft_fleet.js`) lista las aeronaves propuestas en los informes: «Operador», «Tipo OACI», «Variante», «Matrícula», «Código», «Número», «Indicativos» (separados por comas), «Base», «Operativo».
 - **«Pegar la página Flota del sitio…»**:
@@ -733,7 +847,11 @@ Esta base (`data/references/aircraft_fleet.js`) lista las aeronaves propuestas e
 - Una aeronave de la página sustituye a la del archivo (misma matrícula) pero conserva sus indicativos adicionales. Las aeronaves ausentes de la página se conservan.
 - La línea de estado da el número de aeronaves actualizadas, añadidas y conservadas. Compruebe y después «Guardar en el repositorio».
 - **Botones comunes a las bases del repositorio**: «Aplicar en este navegador» (cambios locales prioritarios), «Guardar en el repositorio» (escribe el archivo en la Carpeta del repositorio, para hacer commit), «Descargar», «Descartar cambios», «Volver al archivo del repositorio».
-- Método por script, en lugar de pegar: `python AircraftDB/update_fleet.py Flotte.html` («Procedimiento»).
+- **Automático**: el lanzador lee él mismo las páginas públicas Flota y Diario de vuelos del sitio (sin conexión), una vez al día al abrir una página, con las mismas reglas que el pegado; escribe `data/references/aircraft_fleet.js` y `defa_reference.js`, que se envían con «Sincronizar». Ajuste y «Actualizar ahora»: bajo la lista de aeronaves del reporting (abajo). El pegado y el script (`python AircraftDB/update_fleet.py Flotte.html`) siguen siendo posibles.
+- **Dónde**: Ajustes › Centro › «Flota (aeronaves conocidas)», reservada mientras el Centro está bloqueado (antes en Mantenimiento).
+- **Aeronaves del reporting**: bajo la flota, todas las aeronaves que vuelan en el diario de misiones (tipo, indicativos, operador, vuelos, último vuelo). Casilla «personal», marcada por defecto: aeronave individual, fuera de la flota del SOG; desmarcarla la añade a la flota (pasa a ser asignable), volver a marcarla la retira. Luego «Guardar en el repositorio»: la flota y el índice de aeronaves individuales (`data/references/aircraft_personal.js`) se escriben juntos. Una aeronave de la página Flota del sitio vuelve a la flota en la siguiente actualización.
+- **Tipos y rendimientos**: «Actualizar tipos y rendimientos» completa los tipos desconocidos de la base (flota y reporting); la actualización diaria desde el sitio también lo hace, en segundo plano, para la flota, el diario y las aeronaves individuales.
+- **Aeródromo (base) de una aeronave**: solo cambia con la actualización desde el sitio o con un informe emitido desde una orden de misión con un aeródromo de aterrizaje real; un informe fuera de orden de misión o un landing report no desplaza la aeronave. Una aeronave añadida desde el reporting entra sin aeródromo. El aeródromo actual es la columna «Ubicación» de la página Flota del sitio (guardada con la fecha de su último cambio), salvo si un informe más reciente emitido desde una orden de misión da un aeródromo de aterrizaje real (`missions/aircraft_positions.json`); los traslados parten de ahí (asignación, planificación ODV, Tablero, ficha de aeronave).
 
 ### Tipos de aeronave (base OACI)
 
@@ -741,7 +859,7 @@ Esta base (`AircraftDB/aircraft_db.js`) contiene dos tablas:
 - «Tipos»: «Designador», «Modelo», «Descripción OACI», «WTC», «Ala», «Fuente»;
 - «Alias (nombre común → designador)».
 Los cambios también se trasladan a `aircraft_overrides.json`. Los botones son los de las bases del repositorio.
-El «Procedimiento» da los comandos del script de actualización, que se ejecuta desde `AircraftDB`: `python update_aircraft_db.py --no-network`, `--add <types>`, `--refresh-icao`. La base no se publica con la suite (datos de la OACI y de EUROCONTROL): la tarjeta «Tipos de aeronave y rendimientos» de Ajustes › Mantenimiento › Referencias y dependencias la completa en este equipo, tipo por tipo, nunca toda a la vez — un código introducido («Añadir / actualizar»), los tipos desconocidos, los de la flota o los de las misiones (ODV, registro); hacen falta el lanzador y la red, y después recargar la página.
+El «Procedimiento» da los comandos del script de actualización, que se ejecuta desde `AircraftDB`: `python update_aircraft_db.py --no-network`, `--add <types>`, `--refresh-icao`. La base no se publica con la suite (datos de la OACI y de EUROCONTROL): la tarjeta «Tipos de aeronave y rendimientos» de Ajustes › Mantenimiento › Referencias y dependencias la completa en este equipo, tipo por tipo, nunca toda a la vez — un código introducido («Añadir / actualizar»), los tipos desconocidos, los de la flota o los de las misiones (ODV, registro); hacen falta el lanzador y la red, y después recargar la página (un botón lo propone al final). La tarjeta está en cabeza del bloque; con la base vacía aparece enmarcada, una notificación lo indica y «Completar la base» toma de un clic los tipos de la flota y de las misiones. Los archivos escritos (`AircraftDB/aircraft_db.js`, `aircraft_perf.js`) no requieren nada: las páginas los leen; no versionados, se completan en cada equipo o se copian de uno a otro.
 Límite: un tipo eliminado aquí puede volver en la siguiente actualización si forma parte de la lista de base del script.
 
 ### Correspondencia de indicativos
@@ -750,35 +868,35 @@ Esta base (`data/references/callsigns.js`) relaciona el indicativo completo (con
 - Tabla «Indicativos»: «Indicativo completo», «Plan de vuelo», «Otras formas», «Organización», «OPR/», «Tipos», «Función», «Genérico», «Radiotelefonía», «Nota».
 - Tabla «Organizaciones → designador OACI (OPR/)».
 - No existe ningún script: esta página (o el archivo, editado a mano) es la fuente.
-- Para alimentarla: las formas corregidas en los informes llegan a «Indicativos aprendidos», y las series vistas en el diario DEFA llegan mediante «Añadir» o «Completar».
+- Para alimentarla: las formas corregidas en los informes llegan a «Indicativos aprendidos», y las series vistas en el diario llegan mediante «Añadir» o «Completar».
 
-### Referencia DEFA (anonimizada, en el repositorio)
+### Referencia (anonimizada, en el repositorio)
 
-Esta base (`data/references/defa_reference.js`) recoge los pilotos (trigramas) y las aeronaves de la DEFA, sin los vuelos ni las misiones. Sirve de ayuda a la introducción de datos y no es exhaustiva.
+Esta base (`data/references/defa_reference.js`) recoge los pilotos (trigramas) y las aeronaves de la compagnie, sin los vuelos ni las misiones. Sirve de ayuda a la introducción de datos y no es exhaustiva.
 - Tabla «Aeronaves»: matrícula, tipo, variante, estado, adscripción (modificable), último AD conocido, puesta en servicio, indicativos utilizados, primer y último vuelo, vuelos, ficha de flota, nota.
 - Tabla «Pilotos»: trigrama, primer y último vuelo, vuelos, tipos, nota.
 - Actualización:
   1. cargue el registro de vuelos (apartado siguiente);
-  2. haga clic en «Actualizar la referencia DEFA (anonimizada)»: no se elimina nada y se conservan las entradas manuales;
+  2. haga clic en «Actualizar la referencia (anonimizada)»: no se elimina nada y se conservan las entradas manuales;
   3. «Guardar en el repositorio» y después haga commit.
 - Alternativa por script: `tools/defa_reference.py`.
 
-### Registro de vuelos DEFA (vuelos realizados)
+### Registro de vuelos (vuelos realizados)
 
 Esta base es distinta del registro de misiones. Solo se guarda en este navegador: fuera del repositorio y fuera de la copia local, porque contiene trigramas.
 - «Cargar / actualizar el registro…» acepta la página «Log des vols» copiada o guardada, o una exportación CSV / JSON. Los vuelos se fusionan sin duplicados.
 - «Series de indicativos»: «Añadir» crea la línea en la correspondencia de indicativos; «Completar» le añade las formas y los tipos vistos.
 - «Vuelos»: filtro de texto completo, 300 líneas mostradas como máximo.
 - Acciones:
-  - «Actualizar la referencia DEFA (anonimizada)»;
+  - «Actualizar la referencia (anonimizada)»;
   - «Exportar CSV»;
   - «Exportar JSON (recargable)»;
-  - «Borrar la base DEFA de este navegador».
+  - «Borrar la base de este navegador».
 
 ### Fusiones y renombrados (pilotos, aeronaves)
 
 Esta tabla lista las equivalencias creadas con «Fusionar con… / renombrar» desde las fichas. Columnas: «Tipo» (piloto o aeronave), «Antiguo», «Pasa a ser», «Resultado».
-Estas equivalencias se aplican al diario DEFA recargado, a la referencia y al catálogo.
+Estas equivalencias se aplican al diario recargado, a la referencia y al catálogo.
 «Eliminar» quita una equivalencia, previa confirmación.
 Un bucle (A → B y B → A) aparece resaltado: intercambia los dos nombres. Elimine la entrada errónea y después vuelva a hacer la fusión desde la ficha.
 
@@ -826,6 +944,7 @@ Los datos compartidos (disponibilidades, usuarios, configuración, misiones y as
   3. recupera y fusiona los cambios de los demás puestos y después envía.
 - Sin trigrama, la sincronización se rechaza: ajústelo en Ajustes › Mi perfil.
 - Al terminar, una notificación da el número de archivos enviados y recibidos, y las páginas vuelven a leer los archivos modificados.
+- **Desfase con la copia**: el botón pasa a naranja (cambio sin enviar desde hace más de 48 h, 20 archivos o más por enviar, 10 commits por recibir, commit sin enviar, archivo modificado fuera de los datos sincronizados) o a rojo (`data/` sin repositorio git o sin remoto, fusión en curso, umbrales altos: 100 archivos, 7 días, 50 commits); motivos en la información emergente, alerta en notificación una vez por sesión. Sin repositorio git (salvo datos de prueba), un botón «⚠ Copia» lo indica. Umbrales ajustables: `data/config/suite.json`, clave `sync`.
 
 ### Primera sincronización
 

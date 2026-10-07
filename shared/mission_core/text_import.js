@@ -13,7 +13,7 @@
   // - l'historique des connexions VATSIM (JSON de api.vatsim.net) → délégué au suivi réseau ;
   // - un METAR.
   // Une page d'un autre site ne peut pas être lue par la page du CR (règle de même origine) :
-  // copier-coller, ou favori « → CR DEFA » (BOOKMARKLET) qui copie la page du tracker.
+  // copier-coller, ou favori « → CR » (BOOKMARKLET) qui copie la page du tracker.
   const M = window.MissionModel;
   /** Texte en majuscules sans blancs de bord. */
   const up = v => String(v ?? '').trim().toUpperCase();
@@ -63,7 +63,8 @@
       equipment: window.MissionFpl?.equipmentCodes(equip, transponder, rules) || [],
       dep: dep === 'ZZZZ' ? up(item18.DEP) : dep,
       eobt: hm(eobt),
-      speed: sl[1] ? (sl[1][0] === 'K' ? Math.round(Number(sl[1].slice(1)) / 1.852) : sl[1][0] === 'N' ? Number(sl[1].slice(1)) : null) : null,
+      speed: sl[1] ? (sl[1][0] === 'K' ? Math.round(Number(sl[1].slice(1)) / 1.852) : sl[1][0] === 'N' ? Number(sl[1].slice(1)) : null) :
+        null,
       altitude: sl[2] ? window.MissionFpl?.level(sl[2]) || sl[2] : '',
       route: route15.join(' '),
       waypoints: [...new Set(window.MissionAssist?.routePoints(route15.join(' ')) || [])],
@@ -187,7 +188,8 @@
   /** Liste de sessions copiée depuis le tracker IVAO : vols reconnus (indicatif, pilote, trajet, début, fin, durée). */
   function parseIvaoList(text) {
     const t = flat(text); // lignes reconnues à leur forme (indicatif, pilote (VID), trajet, début, fin, durée)
-    const re = /\b([A-Z0-9]{2,10}) ([^()\d]{2,40}?) \((\d{3,8})\) ([A-Z0-9]{3,4}) ?- ?([A-Z0-9]{3,4}) (\d{4}-\d{2}-\d{2}) (\d{2}:\d{2}:\d{2}) (\d{4}-\d{2}-\d{2}) (\d{2}:\d{2}:\d{2}) (\d{2}:\d{2})\b/g;
+    const re =
+      /\b([A-Z0-9]{2,10}) ([^()\d]{2,40}?) \((\d{3,8})\) ([A-Z0-9]{3,4}) ?- ?([A-Z0-9]{3,4}) (\d{4}-\d{2}-\d{2}) (\d{2}:\d{2}:\d{2}) (\d{4}-\d{2}-\d{2}) (\d{2}:\d{2}:\d{2}) (\d{2}:\d{2})\b/g;
     const out = [];
     let m;
     while ((m = re.exec(t))) out.push({
@@ -391,7 +393,9 @@
       if (result.takeoffTime) set('timeline.takeoff', clock(result.takeoffTime, tz));
       if (result.landingTime) set('timeline.landing', clock(result.landingTime, tz));
       const track = analyseTrack(result.samples, rotary);
-      if (result.tracksMissing) notes.push('table des positions absente (section « Tracks Table » repliée) : utilisez le favori « → CR DEFA », qui déplie tout, ou dépliez « Tracks Table » avant de copier');
+      if (result.tracksMissing) notes.push(
+        'table des positions absente (section « Tracks Table » repliée) : utilisez le favori « → CR », qui déplie tout, ou dépliez « Tracks Table » avant de copier'
+      );
       if (result.connected) setDate(day(result.connected, tz));
       // Début / fin de mission ≈ connexion / déconnexion (période volée sur le réseau).
       if (result.connected) set('timeline.missionStart', clock(result.connected, tz));
@@ -483,7 +487,7 @@
     const text = lines.join('\n');
     try {
       await navigator.clipboard.writeText(text);
-      alert('CR DEFA : page copiée (' + lines.length + ' éléments). Revenez sur le compte rendu.');
+      alert('CR : page copiée (' + lines.length + ' éléments). Revenez sur le compte rendu.');
     } catch (error) {
       const area = document.createElement('textarea');
       area.value = text;
@@ -491,7 +495,7 @@
       area.select();
       const ok = document.execCommand('copy');
       area.remove();
-      alert(ok ? 'CR DEFA : page copiée. Revenez sur le compte rendu.' : 'CR DEFA : copie impossible (' + error.message + ').');
+      alert(ok ? 'CR : page copiée. Revenez sur le compte rendu.' : 'CR : copie impossible (' + error.message + ').');
     }
   }
   const BOOKMARKLET = 'javascript:(' + trackerCopy.toString().replace(/\s*\n\s*/g, ' ') + ')()';

@@ -7,7 +7,7 @@
   // ajouté à la base locale lors de l'enregistrement au registre).
   //
   // Appareils connus (registre par immatriculation), sources par ordre d'ancienneté :
-  // flotte DEFA (data/references/aircraft_fleet.js), associations des CR HEMS/FIRE
+  // flotte (data/references/aircraft_fleet.js), associations des CR HEMS/FIRE
   // (missionAircraftDirectory:v1), registres HEMS/FIRE en cache, missions enregistrées
   // avec le Core (missionAircraftRegistry:v1, équipements compris). En cas de conflit,
   // la donnée la plus récente l'emporte, champ par champ.
@@ -72,7 +72,7 @@
     A: 'amphibious',
     S: 'amphibious'
   })[String(description || '').charAt(0).toUpperCase()] || '';
-  // Types de la flotte DEFA absents de la base OACI importée : catalogue commun
+  // Types de la flotte absents de la base OACI importée : catalogue commun
   // (shared/aircraft_catalog.js, aussi utilisé par le Landing Dashboard et le Planner).
   const SUPPLEMENT = window.AircraftCatalog?.SUPPLEMENT || {};
   /** Types ajoutés localement dans les CR (missionAircraftTypes:v1) et supplément. */
@@ -142,7 +142,7 @@
   }
 
   // ---- registre des appareils connus
-  /** Appareils connus de toutes les sources (flotte DEFA, annuaire local, registres HEMS / FIRE en cache, registre des missions…), chacun avec sa date pour départager. */
+  /** Appareils connus de toutes les sources (flotte, annuaire local, registres HEMS / FIRE en cache, registre des missions…), chacun avec sa date pour départager. */
   function sources() {
     const records = [];
     (window.DEFA_FLEET || []).forEach(e => records.push({
@@ -172,7 +172,7 @@
         });
       });
     });
-    // Base DEFA (journal des vols réalisés, Paramétrage › Base DEFA) : type, variante et
+    // Base (journal des vols réalisés, Paramétrage › Base) : type, variante et
     // indicatifs utilisés par immatriculation — sans indicatif par défaut (numéro propre au vol).
     ((read('defaFlightLog:v1') || {}).records || []).forEach(r => {
       if (r.registration) records.push({
@@ -183,7 +183,7 @@
         date: r.date
       });
     });
-    // Référence DEFA anonymisée (defa_reference.js) : type, indicatifs utilisés, terrains.
+    // Référence anonymisée (defa_reference.js) : type, indicatifs utilisés, terrains.
     (window.DEFA_REFERENCE?.aircraft || []).forEach(r => records.push({
       registration: r.registration,
       type: r.type,
@@ -215,30 +215,35 @@
     out.push(value);
     return out.map(v => v.trim());
   }
-  // base / operator / number : flotte DEFA (base d'attache, opérateur, numéro de l'appareil).
-  const FIELDS = ['registration', 'type', 'variant', 'category', 'callsign', 'tacticalNumber', 'configuration', 'equipment', 'base', 'operator', 'number'];
+  // base / operator / number : flotte (base d'attache, opérateur, numéro de l'appareil).
+  const FIELDS = ['registration', 'type', 'variant', 'category', 'callsign', 'tacticalNumber', 'configuration', 'equipment', 'base',
+    'operator', 'number'
+  ];
   // Fusion par immatriculation, du plus ancien au plus récent : chaque champ non vide
   // écrase la valeur précédente → « la dernière en date ».
   /** Registre des appareils connus : une entrée par immatriculation, la donnée la plus récente l'emporte. */
   function known() {
     const byReg = new Map();
-    sources().filter(r => regKey(r.registration)).sort((a, b) => String(a.date || '').localeCompare(String(b.date || ''))).forEach(record => {
-      const key = regKey(record.registration),
-        current = byReg.get(key) || {
-          registration: window.MissionModel.formatRegistration(record.registration),
-          callsigns: []
-        };
-      FIELDS.forEach(field => {
-        const value = record[field];
-        if (Array.isArray(value) ? value.length : value !== undefined && value !== null && String(value).trim() !== '') current[field] = field === 'registration' ? window.MissionModel.formatRegistration(value) : field === 'callsign' ? String(value).toUpperCase() : value;
+    sources().filter(r => regKey(r.registration)).sort((a, b) => String(a.date || '').localeCompare(String(b.date || ''))).forEach(
+      record => {
+        const key = regKey(record.registration),
+          current = byReg.get(key) || {
+            registration: window.MissionModel.formatRegistration(record.registration),
+            callsigns: []
+          };
+        FIELDS.forEach(field => {
+          const value = record[field];
+          if (Array.isArray(value) ? value.length : value !== undefined && value !== null && String(value).trim() !== '') current[
+            field] = field === 'registration' ? window.MissionModel.formatRegistration(value) : field === 'callsign' ? String(
+            value).toUpperCase() : value;
+        });
+        [record.callsign, ...(Array.isArray(record.callsigns) ? record.callsigns : [])].forEach(c => {
+          if (c && !current.callsigns.includes(String(c).toUpperCase())) current.callsigns.push(String(c).toUpperCase());
+        });
+        current.date = record.date || current.date;
+        if (!current.category && current.type) current.category = lookupType(current.type)?.category || '';
+        byReg.set(key, current);
       });
-      [record.callsign, ...(Array.isArray(record.callsigns) ? record.callsigns : [])].forEach(c => {
-        if (c && !current.callsigns.includes(String(c).toUpperCase())) current.callsigns.push(String(c).toUpperCase());
-      });
-      current.date = record.date || current.date;
-      if (!current.category && current.type) current.category = lookupType(current.type)?.category || '';
-      byReg.set(key, current);
-    });
     return [...byReg.values()].sort((a, b) => a.registration.localeCompare(b.registration));
   }
   // Type normalisé (alias OACI : H145 → EC45) pour comparer les séries d'appareils.
@@ -315,10 +320,13 @@
   // Désignateur OACI de l'exploitant (OPR/ de la case 18) d'après l'organisme.
   const designatorOf = operator => {
     const key = up(operator).replace(/[’`]/g, "'");
-    return Object.entries(window.MissionVocab?.operatorDesignators || {}).find(([name]) => up(name).replace(/[’`]/g, "'") === key)?.[1] || '';
+    return Object.entries(window.MissionVocab?.operatorDesignators || {}).find(([name]) => up(name).replace(/[’`]/g, "'") === key)?.[
+      1
+    ] || '';
   };
   /** Organisme d'un désignateur OACI d'exploitant (OPR/) ; « » si inconnu. */
-  const operatorOfDesignator = code => Object.entries(window.MissionVocab?.operatorDesignators || {}).find(([, d]) => d === clean(code))?.[0] || '';
+  const operatorOfDesignator = code => Object.entries(window.MissionVocab?.operatorDesignators || {}).find(([, d]) => d === clean(code))
+    ?.[0] || '';
   const canonicalPrefix = (prefix, map = abbreviations()) => map.get(up(prefix)) || up(prefix);
   const canonicalCallsign = (callsign, map = abbreviations()) => {
     const s = window.MissionModel.splitCallsign(callsign);
@@ -336,12 +344,13 @@
       return ((short + n).length <= FPL_MAX ? short : short.slice(0, Math.max(1, FPL_MAX - n.length))) + n;
     }
     if ((p + n).length <= FPL_MAX) return p + n;
-    const known = [...map].filter(([, full]) => full === p).map(([short]) => clean(short)).filter(s => (s + n).length <= FPL_MAX).sort((a, b) => b.length - a.length)[0];
+    const known = [...map].filter(([, full]) => full === p).map(([short]) => clean(short)).filter(s => (s + n).length <= FPL_MAX).sort((a,
+      b) => b.length - a.length)[0];
     return (known || p.slice(0, Math.max(1, FPL_MAX - n.length))) + n;
   }
 
   // Base des indicatifs connus : indicatif (DRAGON, PELICAN, SAMU…) → numéros, appareils,
-  // types et opérateurs associés (flotte DEFA + appareils des missions enregistrées) ;
+  // types et opérateurs associés (flotte + appareils des missions enregistrées) ;
   // les formes abrégées de plan de vol (DRAGO) sont rattachées à leur indicatif complet.
   function callsignSeries() {
     const split = window.MissionModel.splitCallsign,

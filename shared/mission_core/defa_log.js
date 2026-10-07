@@ -1,8 +1,8 @@
 (() => {
   'use strict';
-  // Base « DEFA » : journal des vols réalisés (page « Log des vols » de la DEFA enregistrée,
-  // ou export CSV / JSON), distincte du registre des missions CR DEFA. Chargée à la demande
-  // (Paramétrage › Base DEFA) et gardée dans ce navigateur (defaFlightLog:v1) — jamais dans le
+  // Base « DEFA » : journal des vols réalisés (page « Log des vols » du site de la compagnie enregistrée,
+  // ou export CSV / JSON), distincte du registre des missions CR. Chargée à la demande
+  // (Paramétrage › Base) et gardée dans ce navigateur (defaFlightLog:v1) — jamais dans le
   // dépôt (trigrammes des pilotes), ni dans la sauvegarde locale (rechargeable depuis le fichier).
   // Exploitée par les CR : appareils connus (immatriculation → type, indicatifs utilisés),
   // trigrammes proposés pour l'équipage, terrains ; et par l'analyse des séries d'indicatifs.
@@ -21,7 +21,7 @@
   };
   /** Texte en majuscules sans accents ni blancs de bord. */
   const up = v => String(v ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toUpperCase();
-  /** Journal DEFA mémorisé (defaFlightLog:v1) ; null sinon. */
+  /** Journal mémorisé (defaFlightLog:v1) ; null sinon. */
   const read = () => {
     try {
       return JSON.parse(localStorage.getItem(KEY) || 'null');
@@ -57,7 +57,8 @@
       durationMin: minutesOf(c.duration),
       trigram: up(c.trigram),
       callsign: up(c.callsign).replace(/\s+/g, ' '), // « LCAR C » : patrouille LCAR, élément C
-      registration: window.MissionModel?.formatRegistration ? window.MissionModel.formatRegistration(up(c.registration)) : up(c.registration),
+      registration: window.MissionModel?.formatRegistration ? window.MissionModel.formatRegistration(up(c.registration)) : up(c
+        .registration),
       type,
       variant,
       dep: up(c.dep),
@@ -75,7 +76,8 @@
       return list.filter(r => r && r.date);
     }
     // Page copiée (Ctrl+A, Ctrl+C sur « Log des vols ») : cellules séparées par des tabulations.
-    const tabbed = source.split(/\r?\n/).map(l => l.split('\t').map(c => c.trim())).filter(c => c.length >= 9 && /^\d{4}-\d{2}-\d{2}/.test(c[0]));
+    const tabbed = source.split(/\r?\n/).map(l => l.split('\t').map(c => c.trim())).filter(c => c.length >= 9 && /^\d{4}-\d{2}-\d{2}/
+      .test(c[0]));
     if (tabbed.length && !/<table|<tr/i.test(source)) return tabbed.map(c => record(c)).filter(r => /^\d{4}-\d{2}-\d{2}$/.test(r.date));
     if (/<table|<tr/i.test(source)) {
       const doc = new DOMParser().parseFromString(source, 'text/html');
@@ -100,7 +102,7 @@
   }
 
   // ---- stockage (navigateur uniquement)
-  /** Journal DEFA du navigateur ({ records, source, importedAt }) ; vide si absent. */
+  /** Journal du navigateur ({ records, source, importedAt }) ; vide si absent. */
   function load() {
     return read() || {
       importedAt: '',
@@ -112,7 +114,9 @@
   // d'une copie à l'autre ; ou remplacement.
   // Clé = ligne complète : seuls les vrais doublons (lignes identiques) sont fusionnés ; un aller /
   // retour à la même minute (départ / arrivée différents) reste deux vols.
-  const recordKey = r => [r.date, r.time, r.durationMin, r.callsign, r.registration, r.trigram, r.type, r.variant, r.dep, r.arr, r.mission].map(up).join('|');
+  const recordKey = r => [r.date, r.time, r.durationMin, r.callsign, r.registration, r.trigram, r.type, r.variant, r.dep, r.arr, r
+    .mission
+  ].map(up).join('|');
 
   /** Mémorise le journal (merge : fusion sans doublon — seules les lignes identiques sont fusionnées ; sinon remplacement), trié du plus récent, et prévient les pages (defa-log-change). Retourne { importedAt, source, records, added }. */
   function save(records, source, {
@@ -140,20 +144,21 @@
     return data;
   }
 
-  /** Efface le journal DEFA du navigateur. */
+  /** Efface le journal du navigateur. */
   function clear() {
     localStorage.removeItem(KEY);
     window.dispatchEvent(new CustomEvent('defa-log-change', {
       detail: null
     }));
   }
-  /** Vols du journal DEFA. */
+  /** Vols du journal. */
   const records = () => load().records || [];
 
   // ---- indicatifs : séries
   // Suffixes de patrouille / d'élément : alphabet OTAN, couleurs, lettre seule (QINA WHITE,
   // LCAR A, CONDOR B, GUEPARD YANKEE) ; tirets et barres parasites (DRAGO74-1, RUES/).
-  const SUFFIX = /(ALPHA|BRAVO|CHARLIE|DELTA|ECHO|FOXTROT|GOLF|HOTEL|INDIA|JULIETT?|KILO|LIMA|MIKE|NOVEMBER|OSCAR|PAPA|QUEBEC|ROMEO|SIERRA|TANGO|UNIFORM|VICTOR|WHISKEY|XRAY|YANKEE|ZULU|WHITE|BLANC|RED|ROUGE|BLUE|BLEU|ORANGE|YELLOW|JAUNE|GREEN|VERT|BLACK|NOIR|PIRATE)$/;
+  const SUFFIX =
+    /(ALPHA|BRAVO|CHARLIE|DELTA|ECHO|FOXTROT|GOLF|HOTEL|INDIA|JULIETT?|KILO|LIMA|MIKE|NOVEMBER|OSCAR|PAPA|QUEBEC|ROMEO|SIERRA|TANGO|UNIFORM|VICTOR|WHISKEY|XRAY|YANKEE|ZULU|WHITE|BLANC|RED|ROUGE|BLUE|BLEU|ORANGE|YELLOW|JAUNE|GREEN|VERT|BLACK|NOIR|PIRATE)$/;
   // Registration utilisée comme indicatif, champ vide ou parasite : pas une série.
   const NOISE = /^(\/+|F[A-Z]{4}|FNY\d\d[A-Z]\d|FMY?XX|FA)$/;
 
@@ -281,7 +286,9 @@
 
   // Export (CSV tableur, JSON rechargeable).
   const toCsv = (list = records()) => ['date;heure;duree_min;trigramme;indicatif;immatriculation;type;variante;depart;arrivee;mission']
-    .concat(list.map(r => [r.date, r.time, r.durationMin ?? '', r.trigram, r.callsign, r.registration, r.type, r.variant, r.dep, r.arr, r.mission].map(v => `"${String(v ?? '').replace(/"/g, '""')}"`).join(';'))).join('\n') + '\n';
+    .concat(list.map(r => [r.date, r.time, r.durationMin ?? '', r.trigram, r.callsign, r.registration, r.type, r.variant, r.dep, r.arr, r
+      .mission
+    ].map(v => `"${String(v ?? '').replace(/"/g, '""')}"`).join(';'))).join('\n') + '\n';
 
   // Référence anonymisée (committée) : pilotes et appareils agrégés, sans les vols. Complète
   // la référence existante sans rien supprimer ; le terrain de rattachement saisi est conservé.
@@ -389,7 +396,7 @@
     const t = (Number(m[1]) * 60 + Number(m[2]) + minutes) % 1440;
     return `${String(Math.floor(t / 60)).padStart(2, '0')}:${String(t % 60).padStart(2, '0')}`;
   };
-  /** Vols du journal convertis en missions du Core (reportings sur « journal DEFA ») : famille, heures, appareil, équipage, fusions / renommages appliqués. */
+  /** Vols du journal convertis en missions du Core (reportings sur « journal ») : famille, heures, appareil, équipage, fusions / renommages appliqués. */
   function toMissions(list = records()) {
     const M = window.MissionModel,
       G = window.MissionGridEdit;
@@ -450,7 +457,7 @@
       return mission;
     });
   }
-  // Source des reportings : registre des missions (défaut) ou journal DEFA.
+  // Source des reportings : registre des missions (défaut) ou journal.
   const SOURCE = 'missionReportingSource:v1';
   /** Source des reportings : « defa » (journal chargé et choisi) ou « ledger » (registre des missions). */
   const source = () => (localStorage.getItem(SOURCE) === 'defa' && records().length ? 'defa' : 'ledger');
@@ -462,28 +469,57 @@
     }));
   };
 
-  // ---- chargement / mise à jour (reportings, Paramétrage) : page DEFA copiée ou enregistrée
+  // ---- chargement / mise à jour (reportings, Paramétrage) : page copiée ou enregistrée
   const LOADER = {
-    title: ['Journal DEFA — charger / mettre à jour', 'DEFA log — load / update', 'DEFA-Journal — laden / aktualisieren', 'Diario DEFA — cargar / actualizar'],
-    step1: ['1. Ouvrir « Log des vols » sur le site de la DEFA (connexion DEFA) :', '1. Open “Log des vols” on the DEFA website (DEFA login):', '1. „Log des vols“ auf der DEFA-Website öffnen:', '1. Abrir «Log des vols» en el sitio DEFA:'],
-    step2: ['2. Sur cette page : un clic sur le favori ci-dessous copie toute la page (ou Ctrl+A puis Ctrl+C) ; revenir ici et coller (Ctrl+V ou « Coller depuis le presse-papiers ») — ou choisir la page enregistrée (Ctrl+S).', '2. On that page: one click on the bookmark below copies the whole page (or Ctrl+A then Ctrl+C); come back here and paste (Ctrl+V or “Paste from clipboard”) — or choose the saved page (Ctrl+S).', '2. Dort: ein Klick auf das Lesezeichen unten kopiert die ganze Seite (oder Strg+A, Strg+C); hierher zurück und einfügen (Strg+V oder „Aus der Zwischenablage einfügen“) — oder die gespeicherte Seite wählen.', '2. En esa página: un clic en el marcador de abajo copia toda la página (o Ctrl+A y Ctrl+C); volver aquí y pegar (Ctrl+V o «Pegar desde el portapapeles») — o elegir la página guardada.'],
-    bookmark: ['← à glisser dans la barre des favoris (une fois) : sur la page « Log des vols », un clic copie toute la page, tableau compris.', '← drag to the bookmarks bar (once): on the “Log des vols” page, one click copies the whole page, table included.', '← einmal in die Lesezeichenleiste ziehen: auf der Seite „Log des vols“ kopiert ein Klick die ganze Seite samt Tabelle.', '← arrastrar a la barra de marcadores (una vez): en la página «Log des vols», un clic copia toda la página, tabla incluida.'],
-    bookmarkHelp: ['Ce lien s’utilise depuis la barre des favoris, sur la page « Log des vols » (glisser-déposer le lien dans la barre).', 'Use this link from the bookmarks bar, on the “Log des vols” page (drag and drop the link to the bar).', 'Diesen Link aus der Lesezeichenleiste auf der Seite „Log des vols“ verwenden (in die Leiste ziehen).', 'Use este enlace desde la barra de marcadores, en la página «Log des vols» (arrastrarlo a la barra).'],
+    title: ['Journal — charger / mettre à jour', 'Log — load / update', 'Journal — laden / aktualisieren',
+      'Diario — cargar / actualizar'
+    ],
+    step1: ['1. Ouvrir « Log des vols » sur le site de la compagnie (connexion au site) :',
+      '1. Open “Log des vols” on the airline website (website login):',
+      '1. „Log des vols“ auf der Website der Fluggesellschaft öffnen:', '1. Abrir «Log des vols» en el sitio de la aerolínea:'
+    ],
+    step2: [
+      '2. Sur cette page : un clic sur le favori ci-dessous copie toute la page (ou Ctrl+A puis Ctrl+C) ; revenir ici et coller (Ctrl+V ou « Coller depuis le presse-papiers ») — ou choisir la page enregistrée (Ctrl+S).',
+      '2. On that page: one click on the bookmark below copies the whole page (or Ctrl+A then Ctrl+C); come back here and paste (Ctrl+V or “Paste from clipboard”) — or choose the saved page (Ctrl+S).',
+      '2. Dort: ein Klick auf das Lesezeichen unten kopiert die ganze Seite (oder Strg+A, Strg+C); hierher zurück und einfügen (Strg+V oder „Aus der Zwischenablage einfügen“) — oder die gespeicherte Seite wählen.',
+      '2. En esa página: un clic en el marcador de abajo copia toda la página (o Ctrl+A y Ctrl+C); volver aquí y pegar (Ctrl+V o «Pegar desde el portapapeles») — o elegir la página guardada.'
+    ],
+    bookmark: [
+      '← à glisser dans la barre des favoris (une fois) : sur la page « Log des vols », un clic copie toute la page, tableau compris.',
+      '← drag to the bookmarks bar (once): on the “Log des vols” page, one click copies the whole page, table included.',
+      '← einmal in die Lesezeichenleiste ziehen: auf der Seite „Log des vols“ kopiert ein Klick die ganze Seite samt Tabelle.',
+      '← arrastrar a la barra de marcadores (una vez): en la página «Log des vols», un clic copia toda la página, tabla incluida.'
+    ],
+    bookmarkHelp: [
+      'Ce lien s’utilise depuis la barre des favoris, sur la page « Log des vols » (glisser-déposer le lien dans la barre).',
+      'Use this link from the bookmarks bar, on the “Log des vols” page (drag and drop the link to the bar).',
+      'Diesen Link aus der Lesezeichenleiste auf der Seite „Log des vols“ verwenden (in die Leiste ziehen).',
+      'Use este enlace desde la barra de marcadores, en la página «Log des vols» (arrastrarlo a la barra).'
+    ],
     clip: ['Coller depuis le presse-papiers', 'Paste from clipboard', 'Aus der Zwischenablage einfügen', 'Pegar desde el portapapeles'],
-    clipFail: ['Presse-papiers illisible ici : coller avec Ctrl+V dans la zone.', 'Clipboard not readable here: paste with Ctrl+V in the box.', 'Zwischenablage hier nicht lesbar: mit Strg+V in das Feld einfügen.', 'Portapapeles no legible aquí: pegar con Ctrl+V en el cuadro.'],
-    merge: ['Mettre à jour (ajoute les nouveaux vols, garde l’historique)', 'Update (adds new flights, keeps history)', 'Aktualisieren (neue Flüge hinzufügen, Historie behalten)', 'Actualizar (añade vuelos nuevos, conserva el historial)'],
+    clipFail: ['Presse-papiers illisible ici : coller avec Ctrl+V dans la zone.',
+      'Clipboard not readable here: paste with Ctrl+V in the box.',
+      'Zwischenablage hier nicht lesbar: mit Strg+V in das Feld einfügen.',
+      'Portapapeles no legible aquí: pegar con Ctrl+V en el cuadro.'
+    ],
+    merge: ['Mettre à jour (ajoute les nouveaux vols, garde l’historique)', 'Update (adds new flights, keeps history)',
+      'Aktualisieren (neue Flüge hinzufügen, Historie behalten)', 'Actualizar (añade vuelos nuevos, conserva el historial)'
+    ],
     replace: ['Remplacer le journal', 'Replace the log', 'Journal ersetzen', 'Reemplazar el diario'],
     file: ['Page enregistrée…', 'Saved page…', 'Gespeicherte Seite…', 'Página guardada…'],
     load: ['Charger', 'Load', 'Laden', 'Cargar'],
     close: ['Fermer', 'Close', 'Schließen', 'Cerrar'],
-    done: ['{n} vols lus, {a} nouveaux — journal : {t} vols ({d1} → {d2})', '{n} flights read, {a} new — log: {t} flights ({d1} → {d2})', '{n} Flüge gelesen, {a} neu — Journal: {t} Flüge ({d1} → {d2})', '{n} vuelos leídos, {a} nuevos — diario: {t} vuelos ({d1} → {d2})'],
+    done: ['{n} vols lus, {a} nouveaux — journal : {t} vols ({d1} → {d2})',
+      '{n} flights read, {a} new — log: {t} flights ({d1} → {d2})', '{n} Flüge gelesen, {a} neu — Journal: {t} Flüge ({d1} → {d2})',
+      '{n} vuelos leídos, {a} nuevos — diario: {t} vuelos ({d1} → {d2})'
+    ],
     none: ['Aucun vol reconnu dans ce texte.', 'No flight recognised in this text.', 'Kein Flug erkannt.', 'Ningún vuelo reconocido.']
   };
-  // page « Log des vols » du site DEFA (adresse réglable : Paramètres › Installation › Sources et dossiers)
-  const defaUrl = () => window.RepositoryNav?.source?.('defa') || 'https://flotte.defa-virtual.fr';
-  const LOG_URL = window.RepositoryNav?.vaUrl?.('log') || defaUrl() + '/log_vols.php'; // page du log de la compagnie virtuelle
+  // page « Log des vols » du site de la compagnie (adresse réglable : Paramètres › Installation › Sources et dossiers ;
+  // par défaut seulement pour DEFA Virtual) ; adresse inconnue : lien vers ce réglage
+  const LOG_URL = window.RepositoryNav?.vaUrl?.('log') || ''; // page du log de la compagnie virtuelle
 
-  // Favori (bookmarklet) « → Journal DEFA », à glisser dans la barre des favoris : sur la page « Log des vols » du site,
+  // Favori (bookmarklet) « → Journal », à glisser dans la barre des favoris : sur la page « Log des vols » du site,
   // copie la page entière (son HTML : le tableau garde ses colonnes et les liens des appareils) ; la suite la lit comme
   // la page enregistrée. Le copier-coller ordinaire ne donne que du texte, souvent sans les colonnes.
   // Pas de commentaire de ligne ni de « % » dans cette fonction : elle devient une adresse javascript: sur une ligne.
@@ -492,7 +528,8 @@
     const rows = document.querySelectorAll('tr').length;
     try {
       await navigator.clipboard.writeText(html);
-      alert('Journal copié (' + rows + ' lignes) : revenez sur la suite et collez-le. / Log copied (' + rows + ' rows): go back to the suite and paste it.');
+      alert('Journal copié (' + rows + ' lignes) : revenez sur la suite et collez-le. / Log copied (' + rows +
+        ' rows): go back to the suite and paste it.');
     } catch (error) {
       const area = document.createElement('textarea');
       area.value = html;
@@ -500,11 +537,12 @@
       area.select();
       const ok = document.execCommand('copy');
       area.remove();
-      alert(ok ? 'Journal copié : revenez sur la suite et collez-le. / Log copied: go back to the suite and paste it.' : 'Copie impossible / Copy failed: ' + error.message);
+      alert(ok ? 'Journal copié : revenez sur la suite et collez-le. / Log copied: go back to the suite and paste it.' :
+        'Copie impossible / Copy failed: ' + error.message);
     }
   }
   const LOG_BOOKMARKLET = 'javascript:(' + defaLogCopy.toString().replace(/\s*\n\s*/g, ' ') + ')()';
-  /** Fenêtre de chargement du journal DEFA (fichier ou copier-coller de la page « Log des vols »), onLoaded appelé après chargement. */
+  /** Fenêtre de chargement du journal (fichier ou copier-coller de la page « Log des vols »), onLoaded appelé après chargement. */
   function loaderDialog({
     onLoaded
   } = {}) {
@@ -532,8 +570,14 @@
       e.preventDefault(); // depuis la barre des favoris seulement
       dialog.querySelector('.dl-result').textContent = T('bookmarkHelp');
     };
-    link.href = logUrl;
-    link.textContent = `${logUrl} ↗`;
+    link.href = logUrl || window.RepositoryNav?.settingsUrl?.('sources') || '#';
+    link.textContent = logUrl ? `${logUrl} ↗` : ([
+      'adresse du site de la compagnie à renseigner (Paramètres › Installation › Sources et dossiers)',
+      'airline website address to be set (Settings › Installation › Sources and folders)',
+      'Website-Adresse der Fluggesellschaft eintragen (Einstellungen › Installation › Quellen und Ordner)',
+      'dirección del sitio de la aerolínea por indicar (Ajustes › Instalación › Fuentes y carpetas)'
+    ])[lang];
+    if (!logUrl) link.removeAttribute('target');
     dialog.querySelectorAll('[data-t]').forEach(el => {
       el.textContent = T(el.dataset.t);
     });
@@ -558,7 +602,8 @@
         merge
       });
       const dates = data.records.map(r => r.date).sort();
-      result.textContent = T('done').replace('{n}', list.length).replace('{a}', merge ? data.added : list.length).replace('{t}', data.records.length).replace('{d1}', dates[0]).replace('{d2}', dates[dates.length - 1]);
+      result.textContent = T('done').replace('{n}', list.length).replace('{a}', merge ? data.added : list.length).replace('{t}', data
+        .records.length).replace('{d1}', dates[0]).replace('{d2}', dates[dates.length - 1]);
       area.value = '';
       panel?.done();
       onLoaded?.(data);
@@ -596,7 +641,9 @@
       if (f) run(await f.text(), f.name);
       file.value = '';
     };
-    if (!document.getElementById('defa-loader-style')) document.head.insertAdjacentHTML('beforeend', '<style id="defa-loader-style">.defa-loader{max-width:640px;width:calc(100vw - 32px);border:1px solid #cbd5e1;border-radius:12px;padding:16px;color:#111827;background:#fff}.defa-loader::backdrop{background:#0006}.defa-loader h3{margin:0 0 8px}.defa-loader textarea{width:100%;box-sizing:border-box;font:12px/1.4 ui-monospace,Consolas,monospace}.defa-loader .dl-row{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:8px 0}.defa-loader button,.defa-loader .dl-file{padding:6px 12px;border-radius:8px;border:1px solid #cbd5e1;background:#f1f5f9;cursor:pointer;font:inherit}.defa-loader button.primary{background:#2f3b52;color:#fff;border-color:#2f3b52}.defa-loader .dl-result{color:#047857;font-weight:600}</style>');
+    if (!document.getElementById('defa-loader-style')) document.head.insertAdjacentHTML('beforeend',
+      '<style id="defa-loader-style">.defa-loader{max-width:640px;width:calc(100vw - 32px);border:1px solid #cbd5e1;border-radius:12px;padding:16px;color:#111827;background:#fff}.defa-loader::backdrop{background:#0006}.defa-loader h3{margin:0 0 8px}.defa-loader textarea{width:100%;box-sizing:border-box;font:12px/1.4 ui-monospace,Consolas,monospace}.defa-loader .dl-row{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:8px 0}.defa-loader button,.defa-loader .dl-file{padding:6px 12px;border-radius:8px;border:1px solid #cbd5e1;background:#f1f5f9;cursor:pointer;font:inherit}.defa-loader button.primary{background:#2f3b52;color:#fff;border-color:#2f3b52}.defa-loader .dl-result{color:#047857;font-weight:600}</style>'
+    );
     dialog.addEventListener('close', () => dialog.remove());
     // « × », « Fermer », « Charger » désactivé si vide puis « Valider » (framework FileAccess).
     const panel = window.FileAccess?.pastePanel({

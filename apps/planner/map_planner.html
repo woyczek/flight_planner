@@ -4,8 +4,8 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Cartes de vol</title>
-<link rel="stylesheet" href="../../shared/repository_nav.css?v=bc0f3060">
-<script src="../../config/repository_tree?v=2bea194f"></script><script src="../../shared/kit.js?v=a819e6df"></script>
+<link rel="stylesheet" href="../../shared/repository_nav.css?v=f6a61e75">
+<script src="../../config/repository_tree?v=7b133f6e"></script><script src="../../shared/kit.js?v=7f07f523"></script>
 <style data-layer="lib">
 @import url("../../shared/carto/maplibre-gl.css") layer(lib);
 .volForm{display:grid;grid-template-columns:repeat(2,minmax(0,260px));gap:8px 12px;align-items:end}.volForm label{display:grid;gap:3px;font-size:13px}
@@ -16,9 +16,9 @@
 </style>
 <script src="../../shared/carto/maplibre-gl.js"></script>
 <script src="../../shared/mission_core/vendor/js-yaml.min.js"></script>
-<script>window.SIA_MISSION_NS='planner'</script><script src="../cpco/mission_store.js?v=bc7f59ef"></script>
-<script src="../../shared/carto/aero_symbols.js?v=50ad43df"></script><script src="../../shared/carto/vertical_profile.js?v=75163ccf"></script><script src="../../shared/carto/vprof_editor.js?v=e34b66fc"></script><script src="../../AircraftDB/aircraft_db.js"></script><script src="../../shared/flight_performance_model.js?v=9f9c9116"></script><script src="../../AircraftDB/aircraft_perf.js"></script><script src="../../shared/mission_routing.js?v=c23f4287"></script><script src="../../shared/mission_estimate.js?v=1e7731a5"></script><script src="../../shared/mission_exercise.js?v=6c6aed4f"></script>
-<script src="../../shared/sia_base.js?v=0872dd35"></script><script src="../../shared/aar_tracks.js?v=f4061047"></script><script src="../../shared/airac.js?v=6d1d8444"></script><script src="../../shared/sticky_frame.js?v=90db4df1"></script>
+<script>window.SIA_MISSION_NS='planner'</script><script src="../cpco/mission_store.js?v=559e3351"></script>
+<script src="../../shared/carto/aero_symbols.js?v=50ad43df"></script><script src="../../shared/carto/vertical_profile.js?v=75163ccf"></script><script src="../../shared/carto/vprof_editor.js?v=e34b66fc"></script><script src="../../AircraftDB/aircraft_db.js"></script><script src="../../shared/flight_performance_model.js?v=e12c839a"></script><script src="../../AircraftDB/aircraft_perf.js"></script><script src="../../shared/mission_routing.js?v=3cc1352c"></script><script src="../../shared/mission_estimate.js?v=e352037a"></script><script src="../../shared/mission_exercise.js?v=b68ac247"></script>
+<script src="../../shared/sia_base.js?v=0a1393f2"></script><script src="../../shared/aar_tracks.js?v=8f76a899"></script><script src="../../shared/airac.js?v=1fa4a088"></script><script src="../../shared/sticky_frame.js?v=90db4df1"></script>
 <style data-layer="app">
 @layer app {
   :root {
@@ -1499,15 +1499,37 @@ const {
 function renderSiaBaseLine(b) {
   const el = $('siaBaseLine');
   if (!el) return;
-  const upd = '<a href="../settings/maintenance.html?m=sia">Paramètres › Maintenance › Données aéronautiques</a>';
-  el.innerHTML = b ? `Base SIA${b.airac?` AIRAC ${esc(b.airac)}`:''} : ${(b.airspaces||[]).length} espaces, ${(b.moraCells||[]).length} cellules MORA${(b.moraCells||[]).length?'':' (grille absente)'} — mise à jour et calcul de la MORA : ${upd}.${b.outdated?' <span class="warn">Relire le dossier SIA pour les points de report VFR (format mis à jour).</span>':''}` : `Base SIA : absente de ce navigateur — la lire dans le bloc « Base de données SIA » (Afficher) ou dans ${upd}.`;
+  // « Construire la base maintenant » : le même traitement que le bloc commun (« Reconstruire la base aéronautique »,
+  // SiaBase.panel.reread) — sa jauge et son compte rendu, bloc déplié
+  el.onclick = e => {
+    if (!e.target.closest('[data-base-build]')) return;
+    window.AppFramework?.reveal?.('sia-base');
+    basePanel.reread(true)
+  };
+  // textes composés (nombres) : traduits ici, la traduction du texte exact de la page ne les reconnaît pas
+  const K = window.RepositoryKit,
+    T = row => K.t(row),
+    F = (row, v) => K.tf(row, v);
+  const upd = `<a href="../settings/maintenance.html?m=sia">${esc(T(['Paramètres › Maintenance › Données aéronautiques', 'Settings › Maintenance › Aeronautical data', 'Einstellungen › Wartung › Luftfahrtdaten', 'Ajustes › Mantenimiento › Datos aeronáuticos']))}</a>`;
+  const btn = `<button type="button" class="secondary" data-base-build data-icon="refresh">${esc(T(['Construire la base maintenant', 'Build the database now', 'Datenbank jetzt aufbauen', 'Construir la base ahora']))}</button>`;
+  const mora = (b?.moraCells || []).length;
+  el.innerHTML = b ? `${esc(F(['Base SIA{a} : {n} espaces, {m} cellules MORA{g}', 'SIA database{a}: {n} airspaces, {m} MORA cells{g}', 'SIA-Datenbank{a}: {n} Lufträume, {m} MORA-Felder{g}', 'Base SIA{a}: {n} espacios, {m} casillas MORA{g}'], {
+    a: b.airac ? ` AIRAC ${b.airac}` : '',
+    n: (b.airspaces || []).length,
+    m: mora,
+    g: mora ? '' : T([' (grille absente)', ' (no grid)', ' (kein Raster)', ' (sin cuadrícula)'])
+  }))} — ${esc(T(['mise à jour et calcul de la MORA :', 'update and MORA calculation:', 'Aktualisierung und MORA-Berechnung:', 'actualización y cálculo de la MORA:']))} ${upd}.${b.outdated ? ` <span class="warn">${esc(T(['Relire le dossier SIA pour les points de report VFR (format mis à jour).', 'Re-read the SIA folder for the VFR reporting points (updated format).', 'SIA-Ordner für die VFR-Meldepunkte neu lesen (Format aktualisiert).', 'Releer la carpeta SIA para los puntos de notificación VFR (formato actualizado).']))}</span>` : ''}` :
+    `${esc(T(['Base SIA : absente de ce navigateur — la construire ici, ou dans', 'SIA database: missing from this browser — build it here, or in', 'SIA-Datenbank: fehlt in diesem Browser — hier aufbauen oder unter', 'Base SIA: ausente de este navegador — constrúyala aquí o en']))} ${upd}. ${btn}`;
+  // ligne d'état masquée (Cartes de vol : pas de bloc Mission) : le bloc commun de la base est ouvert, son bouton
+  // « Reconstruire la base aéronautique » fait le même traitement
+  if (!b && el.closest('[hidden]')) window.AppFramework?.reveal?.('sia-base');
   if (!b) SiaBase.get({
     any: true
   }).then(o => {
     if (o && !aero) {
-      el.innerHTML = `Base SIA : à relire (format mis à jour : gestionnaires des zones, voies aériennes) — bloc « Base de données SIA » (Afficher, « Relire le dossier ») ou ${upd}.`;
-      window.AppFramework?.notify?.('Base SIA à relire (format mis à jour : gestionnaires des zones, voies aériennes) : bloc « Base de données SIA » ou Paramètres › Maintenance.', 'warn')
-    } else if (!o) window.AppFramework?.notify?.('Base SIA absente de ce navigateur : la lire dans le bloc « Base de données SIA » ou dans Paramètres › Maintenance.', 'warn')
+      el.innerHTML = `${esc(T(['Base SIA : à reconstruire (format mis à jour : gestionnaires des zones, voies aériennes) — ici, ou dans', 'SIA database: to rebuild (updated format: area managers, airways) — here, or in', 'SIA-Datenbank: neu aufbauen (Format aktualisiert: Zonenverwalter, Luftstraßen) — hier oder unter', 'Base SIA: a reconstruir (formato actualizado: gestores de zonas, aerovías) — aquí o en']))} ${upd}. ${btn}`;
+      window.AppFramework?.notify?.(T(['Base SIA à reconstruire (format mis à jour) : « Construire la base maintenant » ou Paramètres › Maintenance.', 'SIA database to rebuild (updated format): “Build the database now” or Settings › Maintenance.', 'SIA-Datenbank neu aufbauen (Format aktualisiert): „Datenbank jetzt aufbauen“ oder Einstellungen › Wartung.', 'Base SIA a reconstruir (formato actualizado): «Construir la base ahora» o Ajustes › Mantenimiento.']), 'warn')
+    } else if (!o) window.AppFramework?.notify?.(T(['Base SIA absente de ce navigateur : « Construire la base maintenant » (bloc Mission) ou Paramètres › Maintenance.', 'SIA database missing from this browser: “Build the database now” (Mission block) or Settings › Maintenance.', 'SIA-Datenbank fehlt in diesem Browser: „Datenbank jetzt aufbauen“ (Block Mission) oder Einstellungen › Wartung.', 'Base SIA ausente de este navegador: «Construir la base ahora» (bloque Misión) o Ajustes › Mantenimiento.']), 'warn')
   }).catch(() => {})
 }
 
@@ -1539,9 +1561,9 @@ const OPEN_PARAMS = new URLSearchParams(location.search),
   FROM_UPDATE = OPEN_PARAMS.has('retour');
 
 function showBackToUpdate() {
-  const url = '../settings/maintenance.html?m=sia#mt-step-5',
+  const url = '../settings/maintenance.html?m=sia#mt-aero-base',
     m = basePanel.el.querySelector('.sia-base-msg');
-  m.insertAdjacentHTML('beforeend', `<p class="actions"><a id="backToUpdate" class="buttonLink" href="${url}">↩ Retour à la mise à jour SIA (étape 5 : différences)</a></p>`);
+  m.insertAdjacentHTML('beforeend', `<p class="actions"><a id="backToUpdate" class="buttonLink" href="${url}">↩ Retour aux données aéronautiques</a></p>`);
   $('backToUpdate').onclick = e => {
     if (window.opener && !window.opener.closed) {
       e.preventDefault();
@@ -6790,7 +6812,7 @@ if(!new URLSearchParams(location.search).has('fpl')&&sharedDoc?.yaml?.mission?.i
 if(new URLSearchParams(location.search).has('fpl')){history.replaceState(null,'',location.pathname+location.hash);(async()=>{for(let i=0;i<100&&!baseReady();i++)await new Promise(r=>setTimeout(r,200));if(baseReady()&&$v('vprofRoute').value.trim())build(false)})()}
 })();
 </script>
-<script src="../../shared/repository_nav.js?v=6262a76e"></script>
-<script src="../../shared/app_framework.js?v=cc5e8c7b"></script>
-<script src="../../shared/content_i18n.js?v=7afecb78"></script><script src="../cpco/sia_i18n.js?v=3c5be361"></script>
+<script src="../../shared/repository_nav.js?v=dade04a4"></script>
+<script src="../../shared/app_framework.js?v=7a889fe5"></script>
+<script src="../../shared/content_i18n.js?v=499ea78f"></script><script src="../cpco/sia_i18n.js?v=e4046ef4"></script>
 </body></html>

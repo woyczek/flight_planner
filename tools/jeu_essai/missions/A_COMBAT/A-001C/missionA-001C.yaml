@@ -1,0 +1,207 @@
+# Mission A-001C — received — 30/09/2026 22:30:00
+schema: helo-xp-mission
+schema_version: '2.0'
+mission:
+  series: 1
+  number: 1
+  id: 'A-001C'
+  former_id: BFM-001C
+  type: COMBAT
+  subtype: BFM
+  theatre: métropole
+  country: FR
+operation:
+  id: 'A-001'
+  name: "BOXING GLOVES"
+  missions: ['A-001A', 'A-001B', 'A-001C', 'A-001D', 'A-001E']
+  organisation: 'A-001Z'
+title: "BOXING GLOVES — the bar is open"
+summary: |-
+  COTAM3510 provides fuel support for BOXING GLOVES by setting up the Phénix in D31D before MERCURE31 and MERCURE41 engage in TRA 34 A. The tanker must take the two Rafale elements in turn, deliver the planned fuel and then remain available during the initial phase of the exercise; for once, "the bar is open" mostly means you had better arrive stabilised.
+
+  The crew must hold the refuelling slot, sequence the two receivers and keep a reserve compatible with its own return to Istres. Any formation, fuel or area availability anomaly leads to immediate suspension of contacts.
+detailed_description: |-
+  COTAM3510 is the third DEFA element of BOXING GLOVES and provides the refuelling ahead of the two Rafale formations. Its mission is separate from the BFM sequences: it must set up a stable, predictable point in the formation before MERCURE31 and MERCURE41 proceed to TRA 34 A. The role is less spectacular than a merge, but a combat exercise without fuel very quickly becomes a lecture on the parking ramp.
+
+  The Phénix takes off from BA 125 Istres-Le Tubé with the planned transferable fuel for both receivers plus its own reserve. The set-up is synchronised with the Rafale departure times and the slot allocated in D31D. The crew remains responsible for sequencing the contacts and for terminating any unstabilised approach.
+
+  On arrival on the track, COTAM3510 establishes its refuelling pattern and receives MERCURE31 then MERCURE41 at the common rendezvous. Each receiver carries out its closure, contact and disconnect before the next one is cleared to join. The tanker then remains available during the planned window to allow a limited re-contact if a contact was interrupted, without delaying the BFM set-up.
+
+  Any deterioration in weather, airspace unavailability, technical anomaly or unfavourable fuel situation leads to shortening or cancelling the remaining contacts. An unstable receiver is sent back to the waiting position before any new attempt. Promised fuel is not a debt of honour: the Phénix minimums and the safety of the formation take priority.
+
+  Once both Rafales are finally released, COTAM3510 leaves D31D and returns to Istres-Le Tubé. If return conditions deteriorate, a suitable diversion may be chosen without needlessly extending the exercise support. The mission ends once the tanker has landed and the fuel balance has been established.
+aircraft:
+  - id: AC1
+    type: "A332 A330 MRTT Phénix"
+    callsign: COTAM3510
+    operator: "French Air and Space Force"
+    role: "exercise tanker"
+    cruise_speed_kt: 460
+    cruise_level: FL280
+origin:
+  name: "BA 125 Istres-Le Tubé (LFMI)"
+  lat: 43.522778
+  lon: 4.923889
+destination:
+  name: "BA 125 Istres-Le Tubé (LFMI)"
+  lat: 43.522778
+  lon: 4.923889
+target:
+  id: TARGET
+  name: "D31D — refuelling sector"
+  lat: 44.290000
+  lon: -1.500000
+  time_on_task_min: 35
+turning_points:
+  - id: PT1
+    name: "OCEANE ARIP"
+    lat: 44.333333
+    lon: -1.550000
+    role: "refuelling track entry"
+    time_on_task_min: 0
+  - id: PT2
+    name: "OCEANE ARCP"
+    lat: 44.250000
+    lon: -1.450000
+    role: "contact point and start of the AAR sequence"
+    time_on_task_min: 0
+  - id: PT3
+    name: "D31D — south leg"
+    lat: 44.150000
+    lon: -1.350000
+    role: "tanker pattern holding leg"
+    time_on_task_min: 10
+  - id: PT4
+    name: "D31D — east exit"
+    lat: 44.250000
+    lon: -1.150000
+    role: "exit from the set-up after the receivers are released"
+    time_on_task_min: 0
+rendezvous:
+  - id: RDV-1
+    name: "D31D — refuelling rendezvous"
+    lat: 44.333333
+    lon: -1.550000
+    participants: [MERCURE31, MERCURE41, COTAM3510]
+    role: "join-up with the two Rafale elements and sequencing"
+    time_on_task_min: 5
+zones:
+  - id: ZONE-1
+    name: "D31D — AAR area"
+    kind: mission
+    centre:
+      lat: 44.290000
+      lon: -1.500000
+    radius_km: 30
+    role: "tanker and refuelling working area"
+    time_on_task_min: 35
+route_order: [ORIGIN, PT1, RDV-1, PT2, ZONE-1, TARGET, PT3, PT4, DESTINATION]
+return_options:
+  - name: "BA 120 Cazaux (LFBC)"
+    lat: 44.533333
+    lon: -1.125000
+    condition: "diversion required after the AAR sequence or unable to continue to Istres"
+    time_on_task_min: 0
+    then_base: false
+timing:
+  estimated_flight_min: 165
+  estimated_block_min: 190
+teams:
+  - name: MERCURE31
+    service: "French Air and Space Force"
+    department: Landes
+    type: "RFAL Rafale"
+    role: "first receiver element, then BFM"
+  - name: MERCURE41
+    service: "French Air and Space Force"
+    department: Landes
+    type: "RFAL Rafale"
+    role: "second receiver element, then BFM"
+  - name: COTAM3510
+    service: "French Air and Space Force"
+    department: Bouches-du-Rhône
+    type: "A332 A330 MRTT Phénix"
+    role: "exercise tanker"
+payload:
+  category: FUEL
+  description: "Transferable fuel for the two Rafale elements taking part in BOXING GLOVES."
+  mass_kg: 18000
+  passengers: 0
+  constraints:
+    - "Keep at all times the Phénix's own reserve needed to return or divert."
+    - "Sequence the receivers so that only one element is cleared to the contact position at a time."
+objectives:
+  primary: "Refuel MERCURE31 and MERCURE41 in D31D before they engage in TRA 34 A, then return to Istres."
+  secondary:
+    - "Maintain a stable and predictable platform during each contact."
+    - "Allow a limited new attempt if a first contact is interrupted."
+    - "Release both fighter elements within the slot planned for the BFM phase."
+risks:
+  - hazard: "Unstable approach"
+    consequence: "Risk of dangerous closure between the tanker and the receiver."
+    mitigation: "Terminate the approach immediately and send the receiver back to the waiting position before any new attempt."
+  - hazard: "Sequencing conflict"
+    consequence: "Two receivers converge simultaneously on the contact area."
+    mitigation: "Explicitly assign the join-up order and clear only one element to the contact position."
+  - hazard: "Tanker fuel"
+    consequence: "Reduced margin for the return to Istres or a diversion."
+    mitigation: "Track the quantity transferred after each contact and stop offloading before reaching the minimum reserve."
+  - hazard: "Area unavailable"
+    consequence: "Unable to maintain the planned refuelling pattern."
+    mitigation: "Suspend contacts, keep the receivers clear of the set-up, then follow ATC instructions."
+air_refueling:
+  capable: true
+  planned: true
+  role: tanker
+  track: OCEANE
+vertical_profile:
+  route: "ORIGIN, FL280, PT1, RDV-1, PT2, FL240, TARGET, PT3, PT4, FL280, DESTINATION"
+  cruise: FL280
+maps:
+  - id: general
+    filename: generalA-001C.png
+    type: general
+    description: "Overview covering Istres, D31D, the refuelling track and the return leg."
+    include:
+      origin: true
+      destination: true
+      turning_points: true
+      target: true
+      rendezvous: true
+      zones: true
+  - id: cible
+    filename: cibleA-001C.png
+    type: target
+    description: "Local view of the refuelling sector used by COTAM3510 in D31D."
+    centre_ref: TARGET
+    range_km: 50
+  - id: detail_cible
+    filename: detail_cibleA-001C.png
+    type: detail
+    description: "Detailed 8 × 5 km view around the central point of the AAR set-up."
+    centre_ref: TARGET
+    width_km: 8
+    height_km: 5
+  - id: detail_rdv_1
+    filename: detail_rdvA-001C-1.png
+    type: detail_rdv
+    description: "Detailed 8 × 5 km view of the rendezvous with MERCURE31 and MERCURE41."
+    centre_ref: RDV-1
+    width_km: 8
+    height_km: 5
+  - id: zone_1
+    filename: zoneA-001C.png
+    type: zone
+    description: "View of the AAR working area in D31D."
+    centre_ref: ZONE-1
+    range_km: 60
+rendering:
+  north_up: true
+  draw_routes: false
+  add_markers: false
+  attribution_required: true
+notes:
+  - "Air simulation exercise."
+  - "TYPE BFM does not exist in the schema 2.0 families: mission.type stays SPECIAL and mission.subtype BFM."
+  - "The theatre stays metropolitan France to comply with the explicit TRA 34 A and D31D constraints."
+  - "OCEANE track coordinates to be adjusted to ENR 5.7."

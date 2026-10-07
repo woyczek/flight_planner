@@ -17,6 +17,8 @@ TEXT = re.compile(r'\.(ya?ml|md|txt|json|csv)$', re.I)
 
 
 def main():
+    """Passe au format avec tiret les missions de chaque dossier de famille : contenus des textes, puis noms de
+    fichiers et de dossiers (rien n'est écrit avec --dry-run)."""
     total = 0
     for d in sorted(os.listdir(M)):
         fm = FAMILY_DIR.match(d)

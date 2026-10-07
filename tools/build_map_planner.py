@@ -109,12 +109,15 @@ if(new URLSearchParams(location.search).has('fpl')){history.replaceState(null,''
 
 
 def main():
+    """Génère map_planner.html depuis le studio du Centre (remplacements successifs), fins de ligne du studio gardées."""
     src = open(SRC, encoding='utf-8', newline='').read()
     nl = '\r\n' if '\r\n' in src else '\n'
     s = src.replace('\r\n', '\n')
     rep = []
 
     def sub(pattern, repl, flags=0, count=1):
+        """Remplace le motif dans la page (repl littéral, sans références de groupes) ; arrêt si le motif est introuvable :
+        le studio a changé, l'outil est à mettre à jour."""
         nonlocal s
         new, n = re.subn(pattern, lambda m: repl, s, count=count, flags=flags)
         if n == 0:

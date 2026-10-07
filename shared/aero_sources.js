@@ -23,33 +23,46 @@
     id: 'sia',
     on: true,
     dir: null,
-    label: ['SIA France (AIXM 4.5, XML_SIA)', 'SIA France (AIXM 4.5, XML_SIA)', 'SIA Frankreich (AIXM 4.5, XML_SIA)', 'SIA Francia (AIXM 4.5, XML_SIA)']
+    label: ['SIA France (AIXM 4.5, XML_SIA)', 'SIA France (AIXM 4.5, XML_SIA)', 'SIA Frankreich (AIXM 4.5, XML_SIA)',
+      'SIA Francia (AIXM 4.5, XML_SIA)'
+    ]
   }, {
     id: 'dircam',
     on: true,
     dir: null,
-    label: ['DIRCAM / MILAIP (RTBA, AZBA, axes de ravitaillement ENR 5.7)', 'DIRCAM / MILAIP (RTBA, AZBA, ENR 5.7 refuelling tracks)', 'DIRCAM / MILAIP (RTBA, AZBA, Betankungsstrecken ENR 5.7)', 'DIRCAM / MILAIP (RTBA, AZBA, ejes de reabastecimiento ENR 5.7)']
+    label: ['DIRCAM / MILAIP (RTBA, AZBA, axes de ravitaillement ENR 5.7)', 'DIRCAM / MILAIP (RTBA, AZBA, ENR 5.7 refuelling tracks)',
+      'DIRCAM / MILAIP (RTBA, AZBA, Betankungsstrecken ENR 5.7)', 'DIRCAM / MILAIP (RTBA, AZBA, ejes de reabastecimiento ENR 5.7)'
+    ]
   }, {
     id: 'aixm5',
     on: true,
     dir: 'aixm5',
-    label: ['AIXM 5.1 (autres pays : NATS, ENAIRE, DFS, FAA…)', 'AIXM 5.1 (other countries: NATS, ENAIRE, DFS, FAA…)', 'AIXM 5.1 (andere Länder: NATS, ENAIRE, DFS, FAA…)', 'AIXM 5.1 (otros países: NATS, ENAIRE, DFS, FAA…)']
+    label: ['AIXM 5.1 (autres pays : NATS, ENAIRE, DFS, FAA…)', 'AIXM 5.1 (other countries: NATS, ENAIRE, DFS, FAA…)',
+      'AIXM 5.1 (andere Länder: NATS, ENAIRE, DFS, FAA…)', 'AIXM 5.1 (otros países: NATS, ENAIRE, DFS, FAA…)'
+    ]
   }, {
     id: 'geojson',
     on: true,
     dir: 'geojson',
-    label: ['GeoJSON (FAA ADDS, LVNL, autres)', 'GeoJSON (FAA ADDS, LVNL, others)', 'GeoJSON (FAA ADDS, LVNL, andere)', 'GeoJSON (FAA ADDS, LVNL, otros)']
+    label: ['GeoJSON (FAA ADDS, LVNL, autres)', 'GeoJSON (FAA ADDS, LVNL, others)', 'GeoJSON (FAA ADDS, LVNL, andere)',
+      'GeoJSON (FAA ADDS, LVNL, otros)'
+    ]
   }, {
     id: 'openaip',
     on: false,
     dir: 'openaip',
-    label: ['openAIP (exports par pays, CC BY-NC)', 'openAIP (country exports, CC BY-NC)', 'openAIP (Länderexporte, CC BY-NC)', 'openAIP (exportaciones por país, CC BY-NC)']
+    label: ['openAIP (exports par pays, CC BY-NC)', 'openAIP (country exports, CC BY-NC)', 'openAIP (Länderexporte, CC BY-NC)',
+      'openAIP (exportaciones por país, CC BY-NC)'
+    ]
   }, {
     id: 'xplane',
     on: false,
     dir: null,
-    label: ['X-Plane (données de navigation du simulateur)', 'X-Plane (simulator navigation data)', 'X-Plane (Navigationsdaten des Simulators)', 'X-Plane (datos de navegación del simulador)']
+    label: ['X-Plane (données de navigation du simulateur)', 'X-Plane (simulator navigation data)',
+      'X-Plane (Navigationsdaten des Simulators)', 'X-Plane (datos de navegación del simulador)'
+    ]
   }];
+  /** Réglages bruts de aeroSources:v1 ; {} s'ils sont absents ou illisibles. */
   const read = () => {
     try {
       return JSON.parse(localStorage.getItem(KEY) || '{}') || {};
@@ -57,6 +70,8 @@
       return {};
     }
   };
+  /** Réglages complétés : enabled { source: booléen } (valeur « on » de SOURCES par défaut), pays openAIP et couches FAA
+   *  (listes séparées par des espaces). */
   const settings = () => {
     const s = read();
     return {
@@ -65,6 +80,7 @@
       faaLayers: s.faaLayers ?? 'sua mtr'
     };
   };
+  /** Fusionne patch dans les réglages, les enregistre (erreur de stockage ignorée), émet « aero-sources-change » et les renvoie. */
   const save = patch => {
     const s = {
       ...settings(),
@@ -73,7 +89,8 @@
     try {
       localStorage.setItem(KEY, JSON.stringify(s));
     } catch {
-      /* stockage refusé */ }
+      /* stockage refusé */
+    }
     window.dispatchEvent(new CustomEvent('aero-sources-change', {
       detail: s
     }));
@@ -109,12 +126,15 @@
     const l2 = l1 + Math.atan2(Math.sin(t) * Math.sin(d) * Math.cos(p1), Math.cos(d) - Math.sin(p1) * Math.sin(p2));
     return [p2 * 180 / Math.PI, ((l2 * 180 / Math.PI + 540) % 360) - 180];
   }
+  /** Route vraie initiale (degrés, 0 à 360) du point [lat, lon] vers le second (orthodromie). */
   const bearing = ([a, b], [c, d]) => {
     const p1 = a * Math.PI / 180,
       p2 = c * Math.PI / 180,
       dl = (d - b) * Math.PI / 180;
-    return (Math.atan2(Math.sin(dl) * Math.cos(p2), Math.cos(p1) * Math.sin(p2) - Math.sin(p1) * Math.cos(p2) * Math.cos(dl)) * 180 / Math.PI + 360) % 360;
+    return (Math.atan2(Math.sin(dl) * Math.cos(p2), Math.cos(p1) * Math.sin(p2) - Math.sin(p1) * Math.cos(p2) * Math.cos(dl)) * 180 /
+      Math.PI + 360) % 360;
   };
+  /** Distance orthodromique (m) entre deux points [lat, lon] (haversine, sphère de rayon R_EARTH). */
   const distM = ([a, b], [c, d]) => {
     const p1 = a * Math.PI / 180,
       p2 = c * Math.PI / 180,
@@ -165,7 +185,9 @@
     rings: (z.rings || []).map(closed).filter(r => r.length > 3)
   });
   /** Types gardés (les autres — FIR, secteurs, parachutage, vol à voile… — n'apportent rien aux cartes de mission). */
-  const KEEP = new Set(['P', 'R', 'D', 'W', 'A', 'TRA', 'TSA', 'MOA', 'MTR', 'CTR', 'CTA', 'TMA', 'ATZ', 'MATZ', 'TMZ', 'RMZ', 'RMZ-TMZ', 'SIV', 'ADIZ', 'TIZ', 'TIA', 'MCTR', 'HTZ', 'LFA']);
+  const KEEP = new Set(['P', 'R', 'D', 'W', 'A', 'TRA', 'TSA', 'MOA', 'MTR', 'CTR', 'CTA', 'TMA', 'ATZ', 'MATZ', 'TMZ', 'RMZ', 'RMZ-TMZ',
+    'SIV', 'ADIZ', 'TIZ', 'TIA', 'MCTR', 'HTZ', 'LFA'
+  ]);
   /** Type d'un espace AIXM 5.1 / FAA / divers ramené au vocabulaire de la base. */
   function normType(t) {
     const u = String(t || '').toUpperCase().replace(/[\s-]+/g, '_');
@@ -194,6 +216,7 @@
   const kids = (el, name) => el ? [...el.getElementsByTagNameNS(NSX, name)] : [];
   const kid = (el, name) => kids(el, name)[0] || null;
   const text = (el, name) => kid(el, name)?.textContent.trim() || '';
+  /** Premier gml:pos sous el en [premier nombre, second nombre] (ordre du fichier, non permuté) ; null s'il manque ou est invalide. */
   const posOf = el => {
     const p = kid(el, 'pos');
     if (!p) return null;
@@ -202,12 +225,15 @@
   };
   /** Ordre des axes : EPSG:4326 (urn) = lat lon ; CRS84 = lon lat. */
   const lonFirst = el => /CRS84|OGC.*1\.3.*CRS84/i.test(el?.closest?.('[srsName]')?.getAttribute('srsName') || '');
+
+  /** Paires de nombres d'un gml:posList (ou gml:pos) en [lat, lon] ; swap : fichier en lon lat, paires inversées. */
   function posList(el, swap) {
     const v = el.textContent.trim().split(/\s+/).map(Number),
       out = [];
     for (let i = 0; i + 1 < v.length; i += 2) out.push(swap ? [v[i + 1], v[i]] : [v[i], v[i + 1]]);
     return out;
   }
+  /** Rayon (m) de l'élément radius sous el, selon son unité (NM par défaut, km, ft, sinon mètres) ; 0 s'il manque. */
   const radiusM = el => {
     const r = kid(el, 'radius');
     if (!r) return 0;
@@ -218,7 +244,8 @@
   /** Anneau d'une surface GML (segments : listes de points, arcs et cercles autour d'un centre). */
   function ringOf(ringEl) {
     const swap = lonFirst(ringEl),
-      out = [];
+      out = [],
+      half = [];
     for (const seg of ringEl.getElementsByTagNameNS(NSX, '*')) {
       const n = seg.localName;
       if (n === 'GeodesicString' || n === 'LineStringSegment' || n === 'LinearRing') {
@@ -232,22 +259,51 @@
         const c = posOf(seg);
         if (!c) continue;
         const a = +text(seg, 'startAngle'),
-          b = +text(seg, 'endAngle');
+          b = +text(seg, 'endAngle'),
+          center = swap ? [c[1], c[0]] : c;
         // angles AIXM : caps vrais ; sens : celui où l'on va de l'angle de départ à celui d'arrivée en croissant
-        // (b > a : horaire) ou en décroissant
-        out.push(...arc(swap ? [c[1], c[0]] : c, radiusM(seg), a, b, b >= a));
+        // (b > a : horaire) ou en décroissant (vérifié sur les arcs de l'AIXM de NATS). Demi-cercle : ce signe n'est
+        // pas fiable (NATS code parfois les deux demi-cercles d'un même contour en sens contraires) ; tranché plus bas
+        if (Math.abs(Math.abs(b - a) - 180) < 1) half.push({
+          at: out.length,
+          center,
+          r: radiusM(seg),
+          a,
+          b
+        });
+        else out.push(...arc(center, radiusM(seg), a, b, b >= a));
       }
     }
-    return out;
+    if (!half.length) return out;
+    // demi-cercles : bombés vers l'extérieur, donc parcourus dans le sens de l'anneau (aire signée des points connus et
+    // des extrémités des demi-cercles ; lon en x, lat en y : aire négative = sens horaire)
+    const pts = [...out];
+    half.forEach((h, i) => pts.splice(h.at + 2 * i, 0, dest(h.center, h.r, h.a), dest(h.center, h.r, h.b)));
+    let area = 0;
+    pts.forEach((p, i) => {
+      const q = pts[(i + 1) % pts.length];
+      area += p[1] * q[0] - q[1] * p[0];
+    });
+    const res = [];
+    let from = 0;
+    for (const h of half) {
+      res.push(...out.slice(from, h.at), ...arc(h.center, h.r, h.a, h.b, area < 0));
+      from = h.at;
+    }
+    return res.concat(out.slice(from));
   }
   /** TimeSlice BASELINE la plus récente d'un élément AIXM (les autres sont ignorées). */
   function slice(feat, name) {
     const all = kids(feat, name);
     return all.find(s => text(s, 'interpretation') === 'BASELINE') || all[0] || null;
   }
-  const idOf = feat => (kid(feat, 'identifier')?.textContent || feat.getAttributeNS?.('http://www.opengis.net/gml/3.2', 'id') || '').trim();
-  const href = el => (el?.getAttributeNS('http://www.w3.org/1999/xlink', 'href') || el?.getAttribute('xlink:href') || '').replace(/^.*?(urn:uuid:|#uuid\.|#)/, '');
+  const idOf = feat => (kid(feat, 'identifier')?.textContent || feat.getAttributeNS?.('http://www.opengis.net/gml/3.2', 'id') || '')
+    .trim();
+  const href = el => (el?.getAttributeNS('http://www.w3.org/1999/xlink', 'href') || el?.getAttribute('xlink:href') || '').replace(
+    /^.*?(urn:uuid:|#uuid\.|#)/, '');
 
+  /** Lit un fichier AIXM 5.1 : { airspaces (types de KEEP), aero { navaids, points, vrp, aerodromes, airways, obstacles },
+   *  obstacleMax par case d'un degré } ; lève une erreur si le XML est illisible. */
   function aixm5(txt) {
     const doc = new DOMParser().parseFromString(txt, 'application/xml');
     if (doc.querySelector('parsererror')) throw new Error('AIXM 5.1 illisible');
@@ -292,6 +348,7 @@
     }
     // balises : équipements (VOR, NDB, DME, TACAN) puis Navaid (type, nom) qui les regroupe
     const equip = new Map;
+    /** Fréquence de l'élément name en texte : entière en kHz, à deux décimales sinon ; '' si absente. */
     const freq = (s, name) => {
       const e = kid(s, name);
       return e ? (+e.textContent).toFixed(/K/i.test(e.getAttribute('uom') || '') ? 0 : 2) : '';
@@ -323,10 +380,12 @@
       const t = text(s, 'type').toUpperCase(),
         parts = kids(s, 'theNavaidEquipment').map(e => equip.get(href(e))).filter(Boolean);
       parts.forEach(p => used.add(p));
-      const main = parts.find(p => p.kind === 'VOR') || parts.find(p => p.kind === 'NDB') || parts.find(p => p.kind === 'TACAN') || parts[0];
+      const main = parts.find(p => p.kind === 'VOR') || parts.find(p => p.kind === 'NDB') || parts.find(p => p.kind === 'TACAN') || parts[
+        0];
       const p = posOf(kid(s, 'location') || s) || (main && [main.lat, main.lon]);
       if (!p || /^(ILS|LOC|LOC_DME|ILS_DME|MKR|GLS|MLS)/.test(t)) continue;
-      const kind = /VORTAC/.test(t) ? 'VOR' : /VOR/.test(t) ? 'VOR' : /NDB/.test(t) ? 'NDB' : /TACAN/.test(t) ? 'TACAN' : /DME/.test(t) ? 'DME' : main?.kind || 'VOR';
+      const kind = /VORTAC/.test(t) ? 'VOR' : /VOR/.test(t) ? 'VOR' : /NDB/.test(t) ? 'NDB' : /TACAN/.test(t) ? 'TACAN' : /DME/.test(t) ?
+        'DME' : main?.kind || 'VOR';
       const n = {
         kind,
         id: text(s, 'designator') || main?.id || '',
@@ -397,8 +456,10 @@
     const routes = new Map;
     for (const f of doc.getElementsByTagNameNS(NSX, 'Route')) {
       const s = slice(f, 'RouteTimeSlice');
-      if (s) routes.set(idOf(f), [text(s, 'designatorPrefix'), text(s, 'designatorSecondLetter'), text(s, 'designatorNumber')].join('') || text(s, 'name'));
+      if (s) routes.set(idOf(f), [text(s, 'designatorPrefix'), text(s, 'designatorSecondLetter'), text(s, 'designatorNumber')].join('') ||
+        text(s, 'name'));
     }
+    /** Extrémité d'un tronçon { id, lat, lon } : point ou balise référencé (déjà lu), sinon position propre (id vide) ; null. */
     const endOf = el => {
       if (!el) return null;
       for (const c of el.getElementsByTagNameNS(NSX, '*'))
@@ -425,7 +486,8 @@
       if (!a || !b) continue;
       const up = kid(s, 'upperLimit'),
         lo = kid(s, 'lowerLimit'),
-        ft = e => e ? (/FL/i.test(e.getAttribute('uom') || '') ? +e.textContent * 100 : /UNL/i.test(e.textContent) ? Infinity : toFt(+e.textContent, e.getAttribute('uom'))) : null;
+        ft = e => e ? (/FL/i.test(e.getAttribute('uom') || '') ? +e.textContent * 100 : /UNL/i.test(e.textContent) ? Infinity : toFt(+e
+          .textContent, e.getAttribute('uom'))) : null;
       out.aero.airways.push({
         route: routes.get(href(kid(s, 'routeFormed'))) || '',
         a,
@@ -512,6 +574,7 @@
     7: 'VOR',
     8: 'VOR'
   };
+  /** Limite verticale openAIP ({ value, unit, referenceDatum } codés) au format de la base ; '' si absente. */
   const oaLimit = l => l ? limit(l.value, {
     0: 'M',
     1: 'FT',
@@ -522,9 +585,12 @@
     2: 'STD'
   } [l.referenceDatum] || 'MSL') : '';
   /** Anneaux d'une géométrie GeoJSON (Polygon, MultiPolygon) en [lat, lon]. */
-  const ringsOf = g => !g ? [] : g.type === 'Polygon' ? g.coordinates.map(r => r.map(([x, y]) => [y, x])) : g.type === 'MultiPolygon' ? g.coordinates.flatMap(p => p.map(r => r.map(([x, y]) => [y, x]))) : [];
-  const linesOf = g => !g ? [] : g.type === 'LineString' ? [g.coordinates.map(([x, y]) => [y, x])] : g.type === 'MultiLineString' ? g.coordinates.map(l => l.map(([x, y]) => [y, x])) : [];
+  const ringsOf = g => !g ? [] : g.type === 'Polygon' ? g.coordinates.map(r => r.map(([x, y]) => [y, x])) : g.type === 'MultiPolygon' ? g
+    .coordinates.flatMap(p => p.map(r => r.map(([x, y]) => [y, x]))) : [];
+  const linesOf = g => !g ? [] : g.type === 'LineString' ? [g.coordinates.map(([x, y]) => [y, x])] : g.type === 'MultiLineString' ? g
+    .coordinates.map(l => l.map(([x, y]) => [y, x])) : [];
   const pointOf = g => g?.type === 'Point' ? [g.coordinates[1], g.coordinates[0]] : null;
+  /** Première propriété non vide de p parmi keys (essayées telles quelles, en majuscules puis en minuscules) ; '' sinon. */
   const pick = (p, ...keys) => {
     for (const k of keys)
       for (const q of [k, k.toUpperCase(), k.toLowerCase()])
@@ -532,6 +598,8 @@
     return '';
   };
 
+  /** Lit un GeoJSON (FeatureCollection ou Feature) : export openAIP (espaces, aérodromes, balises, points VFR), MTR et zones
+   *  FAA ADDS, sinon polygones à propriétés courantes ; name (nom du fichier) distingue la source openaip / geojson. */
   function geojson(obj, name = '') {
     const out = {
       airspaces: [],
@@ -551,7 +619,8 @@
       const p = f.properties || {},
         g = f.geometry;
       // openAIP (identifiant _id, limites en objets, codes numériques)
-      if (p._id && (p.upperLimit || p.icaoCode !== undefined || p.trafficType !== undefined || p.identifier !== undefined || p.compulsory !== undefined || typeof p.type === 'number')) {
+      if (p._id && (p.upperLimit || p.icaoCode !== undefined || p.trafficType !== undefined || p.identifier !== undefined || p
+          .compulsory !== undefined || typeof p.type === 'number')) {
         if (p.upperLimit && ringsOf(g).length) {
           const type = OA_ASP[p.type] || 'OTHER';
           if (!KEEP.has(type)) continue;
@@ -624,7 +693,8 @@
       if (rings.length) {
         // FAA ADDS (Special Use Airspace : TYPE_CODE ; Class Airspace : CLASS, LOCAL_TYPE), sinon propriétés courantes
         const faaClass = p.LOCAL_TYPE !== undefined && p.CLASS ? String(p.CLASS) : '';
-        let type = normType(p.TYPE_CODE || (faaClass ? (/CLASS_[BCD]/.test(p.LOCAL_TYPE) ? 'CTR' : 'CTA') : '') || pick(p, 'type', 'category', 'kind', 'airspace_type') || 'OTHER');
+        let type = normType(p.TYPE_CODE || (faaClass ? (/CLASS_[BCD]/.test(p.LOCAL_TYPE) ? 'CTR' : 'CTA') : '') || pick(p, 'type',
+          'category', 'kind', 'airspace_type') || 'OTHER');
         if (/^CLASS_?[A-G]$/.test(type)) type = 'CTA';
         if (!KEEP.has(type)) continue;
         out.airspaces.push(zone(src, {
@@ -632,8 +702,10 @@
           cls: faaClass || String(pick(p, 'class', 'icaoClass', 'airspace_class') || '').replace(/^CLASS_?/i, ''),
           name: pick(p, 'name', 'NAME', 'designator', 'ident', 'id'),
           key: pick(p, 'designator', 'ident', 'GLOBAL_ID', 'id', 'name'),
-          upper: p.UPPER_VAL !== undefined ? limit(p.UPPER_VAL, p.UPPER_UOM, p.UPPER_CODE) : String(pick(p, 'upper', 'upperLimit', 'ceiling', 'top') || ''),
-          lower: p.LOWER_VAL !== undefined ? limit(p.LOWER_VAL, p.LOWER_UOM, p.LOWER_CODE) : String(pick(p, 'lower', 'lowerLimit', 'floor', 'bottom') || ''),
+          upper: p.UPPER_VAL !== undefined ? limit(p.UPPER_VAL, p.UPPER_UOM, p.UPPER_CODE) : String(pick(p, 'upper', 'upperLimit',
+            'ceiling', 'top') || ''),
+          lower: p.LOWER_VAL !== undefined ? limit(p.LOWER_VAL, p.LOWER_UOM, p.LOWER_CODE) : String(pick(p, 'lower', 'lowerLimit',
+            'floor', 'bottom') || ''),
           act: /NOTAM/i.test(p.TIMESOFUSE || '') ? 'NOTAM' : activable(type) ? 'activable' : '',
           info: p.TIMESOFUSE ? String(p.TIMESOFUSE) : '',
           admin: p.CONT_AGENT || '',
@@ -676,6 +748,8 @@
   };
   // classes sans intérêt pour les cartes de mission : A (espaces supérieurs et océaniques), E, F, G ; W (fenêtre d'onde)
   const OPENAIR_SKIP = new Set(['A', 'E', 'F', 'G', 'W', 'GP', 'GSEC']);
+  /** Limite OpenAir (« FL95 », « 1500ft AMSL », « 300 m AGL », « GND », « UNLTD ») au format de la base ; texte brut si
+   *  non reconnue. */
   const oaLim = s => {
     const t = String(s || '').trim().toUpperCase();
     if (!t) return '';
@@ -687,11 +761,14 @@
     return n ? limit(n[1], n[2] === 'M' ? 'M' : 'FT', /AGL|GND|SFC|ASFC/.test(n[3] || '') ? 'SFC' : 'MSL') : t;
   };
 
+  /** Espaces d'un texte OpenAir (AC, AN, AH, AL, DP, V X= / D=, DC, DA, DB) au modèle de la base, marqués src ; classes
+   *  de OPENAIR_SKIP et types hors KEEP écartés. */
   function openair(txt, src = 'openair') {
     const out = [];
     let cur = null,
       center = null,
       cw = true;
+    /** Termine l'espace en cours (ajouté s'il a au moins 3 sommets et un type gardé) et remet centre et sens à zéro. */
     const flush = () => {
       if (cur?.ring.length > 2 && !OPENAIR_SKIP.has(cur.ac)) {
         const type = OPENAIR_TYPES[cur.ac] || normType(cur.ac);
@@ -772,6 +849,8 @@
   /** Lignes de données d'un fichier X-Plane (en-tête « I » / « A », ligne de version, « 99 » final). */
   const datLines = t => t.split(/\r?\n/).slice(2).map(l => l.trim()).filter(l => l && l !== '99');
 
+  /** Lit un fichier de navigation X-Plane selon son nom (earth_nav, earth_fix, earth_awy, earth_mora.dat) : { aero { navaids,
+   *  points, airways sans coordonnées (resolveAirways) }, moraCells } ; autre nom : résultat vide. */
   function xplane(name, txt) {
     const out = {
       aero: {
@@ -861,7 +940,8 @@
             mora: `${Math.floor(h / 10)}${'⁰¹²³⁴⁵⁶⁷⁸⁹' [h % 10]}`,
             moraFt: h * 100,
             latStep: 1,
-            lonStep: 1
+            lonStep: 1,
+            src: 'xplane' // reconnue par « MORA d'X-Plane → mora.csv » (Paramètres › Maintenance)
           });
         });
       }
@@ -925,9 +1005,11 @@
     W: 'D',
     A: 'D'
   };
+  /** Cadre [latMin, lonMin, latMax, lonMax] du premier anneau d'un espace ; null s'il n'en a pas. */
   const bbox = a => {
     let b = null;
-    for (const [la, lo] of a.rings?.[0] || []) b = b ? [Math.min(b[0], la), Math.min(b[1], lo), Math.max(b[2], la), Math.max(b[3], lo)] : [la, lo, la, lo];
+    for (const [la, lo] of a.rings?.[0] || []) b = b ? [Math.min(b[0], la), Math.min(b[1], lo), Math.max(b[2], la), Math.max(b[3],
+      lo)] : [la, lo, la, lo];
     return b;
   };
   /** Index des emprises par famille de type et case de 0,1° de leur centre : un espace d'une autre source qui a la même
@@ -936,6 +1018,7 @@
   function shapeIndex(list) {
     const grid = new Map;
     const key = (f, la, lo) => `${f}|${la}|${lo}`;
+    /** Range le cadre de l'espace a dans la case de sa famille et de son centre. */
     const add = a => {
       const b = bbox(a);
       if (!b) return;
@@ -945,6 +1028,7 @@
         k = key(f, la, lo);
       (grid.get(k) || grid.set(k, []).get(k)).push(b);
     };
+    /** Vrai si un cadre de même famille, dans la case du centre ou une case voisine, a ses quatre bords à moins de 0,05°. */
     const has = a => {
       const b = bbox(a);
       if (!b) return false;
@@ -954,7 +1038,8 @@
       for (let i = -1; i <= 1; i++)
         for (let j = -1; j <= 1; j++)
           for (const q of grid.get(key(f, la + i, lo + j)) || [])
-            if (Math.abs(q[0] - b[0]) < .05 && Math.abs(q[1] - b[1]) < .05 && Math.abs(q[2] - b[2]) < .05 && Math.abs(q[3] - b[3]) < .05) return true;
+            if (Math.abs(q[0] - b[0]) < .05 && Math.abs(q[1] - b[1]) < .05 && Math.abs(q[2] - b[2]) < .05 && Math.abs(q[3] - b[3]) <
+              .05) return true;
       return false;
     };
     list.forEach(add);
@@ -964,6 +1049,8 @@
     };
   }
 
+  /** Fusionne part dans base (modifiée en place et renvoyée) selon les règles anti-doublons décrites au-dessus de FAMILY ;
+   *  les MTR sont toujours ajoutées, voies et obstacles ajoutés sans contrôle. */
   function merge(base, part) {
     base.airspaces ||= [];
     const seenZ = new Set(base.airspaces.map(a => a.type + '|' + String(a.name).toUpperCase())),

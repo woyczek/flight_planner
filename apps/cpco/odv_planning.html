@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Planning ODV</title>
-<link rel="stylesheet" href="../../shared/repository_nav.css?v=bc0f3060">
-<script src="../../config/repository_tree?v=2bea194f"></script>
+<link rel="stylesheet" href="../../shared/repository_nav.css?v=f6a61e75">
+<script src="../../config/repository_tree?v=7b133f6e"></script>
 <style data-layer="app">
 @layer app {
   /* Couleurs : sombres par défaut (thème du planificateur), claires si le ton de la page est clair (Apparence). */
@@ -575,6 +575,18 @@
     text-align: left;
     border-bottom: 1px solid color-mix(in srgb, currentColor 12%, transparent)
   }
+  /* sessions ATC : examen et training repérés (CTR du terrain à éviter), réservations repliées */
+  .odv-atc tr.odv-atc-examen td:first-child {
+    box-shadow: inset 3px 0 #b91c1c
+  }
+  .odv-atc tr.odv-atc-training td:first-child {
+    box-shadow: inset 3px 0 #e39b1b
+  }
+  .odv-atc-resa summary {
+    cursor: pointer;
+    margin: 6px 0;
+    font-size: 12px
+  }
   .odv-d-note {
     margin: 4px 0 0;
     font-size: 11px
@@ -807,7 +819,7 @@ html[data-design="field"] .odv-heat button.sel {
 <main class="odv-page">
 <section data-block-id="import" data-default-hidden="1" data-icon="upload" data-subtitle="Classeur hebdomadaire de l'escadrille (.xlsx), lu dans ce navigateur."><h2>Classeur ODV</h2>
   <p class="odv-about">Le classeur ODV est le tableau Excel hebdomadaire de l'escadrille, rempli par les pilotes (feuille ODV : un code couleur par jour et par créneau matin, après-midi, soir ; feuille FLOTTE : appareils maîtrisés et simulateurs). La suite peut s'en passer : sans classeur, la semaine se construit à partir des disponibilités déclarées dans Mes missions. Chargé, il complète ces déclarations (pilotes qui ne déclarent pas dans la suite), fournit les rôles de la feuille FLOTTE et crée les préférences de thèmes des pilotes qui n'en ont pas.</p>
-  <p class="odv-about">Réglages des créneaux et de la lecture du classeur : <a href="../settings/centre.html?base=odv">Paramètres › Centre › Planning ODV (DEFA)</a>.</p>
+  <p class="odv-about">Réglages des créneaux et de la lecture du classeur : <a href="../settings/centre.html?base=odv">Paramètres › Centre › Planning ODV</a>.</p>
   <p class="odv-privacy repo-notice" data-icon="info">Données personnelles : le fichier est lu dans ce navigateur, rien n'est envoyé ni conservé (seuls les réglages sont mémorisés). Ne publiez pas les exports.</p>
   <div class="row"><input type="file" id="odvFile" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" data-dropzone><button type="button" id="odvClear" data-icon="trash" disabled>Effacer les données</button></div>
   <div id="odvReport" data-no-i18n></div>
@@ -818,8 +830,11 @@ html[data-design="field"] .odv-heat button.sel {
   <div class="odv-legend" id="odvLegend" data-no-i18n></div>
   <div id="odvGrid" data-no-i18n><p class="odv-empty">Chargez un classeur ODV.</p></div>
 </section>
-<section data-block-id="atc" data-icon="clock" data-subtitle="Trainings, examens, événements et réservations VATSIM / IVAO de la semaine : saisis à la main ou récupérés (VATSIM, France métropolitaine). Comptés dans les créneaux : ★, CTR du terrain à éviter en training ou examen."><h2>Sessions ATC des réseaux</h2>
+<section data-block-id="atc" data-icon="clock" data-subtitle="Trainings, examens, événements et réservations VATSIM / IVAO de la semaine : saisis à la main ou récupérés (VATSIM, IVAO : pays préféré, France par défaut ; même import que le Tableau). Comptés dans les créneaux : ★, CTR du terrain à éviter en training ou examen."><h2>Sessions ATC des réseaux</h2>
   <div id="odvAtc" data-no-i18n></div>
+</section>
+<section data-block-id="activations" data-icon="target" data-subtitle="Zones activées (RTBA, R, D, TRA…) par réseau, VATSIM et IVAO côte à côte : saisies à la main, import IVAO. Les mêmes que dans le Tableau."><h2>Activations des zones par réseau</h2>
+  <div id="odvActivations" data-no-i18n></div>
 </section>
 <section data-block-id="slots" data-icon="users" data-subtitle="Pilotes libres par créneau ; clic sur un créneau : modifier les missions affectées ou en planifier."><h2>Créneaux communs</h2>
   <div class="odv-filters" id="odvSlotFilters"></div>
@@ -834,69 +849,142 @@ html[data-design="field"] .odv-heat button.sel {
   <textarea id="odvRecapText" readonly placeholder="Récapitulatif DISPO MATIN / APREM / SOIR par jour (texte à coller, par exemple dans Discord)."></textarea>
 </section>
 </main>
-<script src="../../shared/kit.js?v=a819e6df"></script>
-<script src="../../shared/repository_nav.js?v=6262a76e"></script>
+<script src="../../shared/kit.js?v=7f07f523"></script>
+<script src="../../shared/repository_nav.js?v=dade04a4"></script>
 <script src="../../shared/zip_store.js?v=1b42107f"></script>
-<script src="../../shared/data_files.js?v=50601f47" data-file="references/defa_reference.js"></script>
-<script src="../../shared/mission_table.js?v=2ecaeba4"></script>
-<script src="../../shared/sia_base.js?v=0872dd35"></script><script src="odv_core.js?v=e1e7d2da"></script>
-<script src="../../AircraftDB/aircraft_db.js"></script><script src="../../AircraftDB/aircraft_perf.js"></script><script src="../../shared/mission_core/vendor/js-yaml.min.js"></script><script src="../../shared/data_files.js?v=50601f47" data-file="references/aircraft_fleet.js"></script><script src="../../AircraftDB/aircraft_perf.js"></script><script src="../../shared/assignments.js?v=9e7845c6"></script><script src="../../shared/assign_dialog.js?v=685b7192"></script><script src="odv_assign.js?v=b8e299e1"></script>
-<script src="../../shared/dispos_editor.js?v=53d09022"></script>
-<script src="odv_settings.js?v=e6309d00"></script>
-<script src="../../shared/atc_sessions.js?v=8ec73b13"></script>
-<script src="odv_planning.js?v=99fabc9e"></script>
-<script src="../../shared/app_framework.js?v=cc5e8c7b"></script>
-<script src="../../shared/content_i18n.js?v=7afecb78"></script>
+<script src="../../shared/data_files.js?v=dcb47c6a" data-file="references/defa_reference.js"></script>
+<script src="../../shared/mission_table.js?v=10fb25b7"></script>
+<script src="../../shared/sia_base.js?v=0a1393f2"></script><script src="odv_core.js?v=657ac39e"></script>
+<script src="../../AircraftDB/aircraft_db.js"></script><script src="../../AircraftDB/aircraft_perf.js"></script><script src="../../shared/mission_core/vendor/js-yaml.min.js"></script><script src="../../shared/data_files.js?v=dcb47c6a" data-file="references/aircraft_fleet.js"></script><script src="../../AircraftDB/aircraft_perf.js"></script><script src="../../shared/assignments.js?v=95fcb353"></script><script src="../../shared/assign_dialog.js?v=c2b23d27"></script><script src="odv_assign.js?v=4905a185"></script>
+<script src="../../shared/dispos_editor.js?v=4a8b0acf"></script>
+<script src="odv_settings.js?v=e2887fce"></script>
+<script src="../../shared/atc_sessions.js?v=53bdcc60"></script>
+<script src="../../shared/odv_airspace.js?v=0c32fe0e"></script>
+<script src="../../shared/odv_activations_editor.js?v=9e62217d"></script>
+<script src="odv_planning.js?v=fceb9f99"></script>
+<script src="../../shared/app_framework.js?v=7a889fe5"></script>
+<script src="../../shared/content_i18n.js?v=499ea78f"></script>
 <script>
 // Traductions des textes fixes de la page (les contenus calculés restent en français, zones data-no-i18n).
 RepositoryContentI18n([
   ["Planning ODV", "ODV planning", "ODV-Planung", "Planificación ODV"],
-  ["Le classeur ODV est le tableau Excel hebdomadaire de l'escadrille, rempli par les pilotes (feuille ODV : un code couleur par jour et par créneau matin, après-midi, soir ; feuille FLOTTE : appareils maîtrisés et simulateurs). La suite peut s'en passer : sans classeur, la semaine se construit à partir des disponibilités déclarées dans Mes missions. Chargé, il complète ces déclarations (pilotes qui ne déclarent pas dans la suite), fournit les rôles de la feuille FLOTTE et crée les préférences de thèmes des pilotes qui n'en ont pas.", "The ODV workbook is the squadron's weekly Excel sheet, filled in by the pilots (ODV sheet: a colour code per day and per morning, afternoon and evening slot; FLOTTE sheet: aircraft mastered and simulators). The suite can do without it: with no workbook, the week is built from the availability declared in My missions. When loaded, it completes those declarations (pilots who do not declare in the suite), provides the roles of the FLOTTE sheet and creates theme preferences for pilots who have none.", "Die ODV-Arbeitsmappe ist die wöchentliche Excel-Tabelle der Staffel, von den Piloten ausgefüllt (Blatt ODV: ein Farbcode pro Tag und Zeitfenster Morgen, Nachmittag, Abend; Blatt FLOTTE: beherrschte Luftfahrzeuge und Simulatoren). Die Suite kommt ohne sie aus: ohne Arbeitsmappe wird die Woche aus den in Meine Missionen angegebenen Verfügbarkeiten gebildet. Geladen ergänzt sie diese Angaben (Piloten, die nicht in der Suite angeben), liefert die Rollen des Blatts FLOTTE und legt Themenpräferenzen für Piloten ohne solche an.", "El libro ODV es la hoja Excel semanal de la escuadrilla, rellenada por los pilotos (hoja ODV: un código de color por día y por franja de mañana, tarde y noche; hoja FLOTTE: aeronaves dominadas y simuladores). La suite puede prescindir de él: sin libro, la semana se construye a partir de las disponibilidades declaradas en Mis misiones. Cargado, completa esas declaraciones (pilotos que no declaran en la suite), aporta los roles de la hoja FLOTTE y crea preferencias de temas para los pilotos que no las tienen."],
-  ["Réglages des créneaux et de la lecture du classeur :", "Slot and workbook reading settings:", "Einstellungen der Zeitfenster und des Lesens der Arbeitsmappe:", "Ajustes de las franjas y de la lectura del libro:"],
-  ["Paramètres › Centre › Planning ODV (DEFA)", "Settings › Centre › ODV planning (DEFA)", "Einstellungen › Zentrum › ODV-Planung (DEFA)", "Ajustes › Centro › Planificación ODV (DEFA)"],
-  ["Pilotes libres par créneau ; clic sur un créneau : modifier les missions affectées ou en planifier.", "Free pilots per slot; click a slot: edit the assigned missions or plan new ones.", "Freie Piloten pro Zeitfenster; Klick auf ein Zeitfenster: zugewiesene Missionen ändern oder neue planen.", "Pilotos libres por franja; clic en una franja: modificar las misiones asignadas o planificar otras."],
+  ["Le classeur ODV est le tableau Excel hebdomadaire de l'escadrille, rempli par les pilotes (feuille ODV : un code couleur par jour et par créneau matin, après-midi, soir ; feuille FLOTTE : appareils maîtrisés et simulateurs). La suite peut s'en passer : sans classeur, la semaine se construit à partir des disponibilités déclarées dans Mes missions. Chargé, il complète ces déclarations (pilotes qui ne déclarent pas dans la suite), fournit les rôles de la feuille FLOTTE et crée les préférences de thèmes des pilotes qui n'en ont pas.",
+    "The ODV workbook is the squadron's weekly Excel sheet, filled in by the pilots (ODV sheet: a colour code per day and per morning, afternoon and evening slot; FLOTTE sheet: aircraft mastered and simulators). The suite can do without it: with no workbook, the week is built from the availability declared in My missions. When loaded, it completes those declarations (pilots who do not declare in the suite), provides the roles of the FLOTTE sheet and creates theme preferences for pilots who have none.",
+    "Die ODV-Arbeitsmappe ist die wöchentliche Excel-Tabelle der Staffel, von den Piloten ausgefüllt (Blatt ODV: ein Farbcode pro Tag und Zeitfenster Morgen, Nachmittag, Abend; Blatt FLOTTE: beherrschte Luftfahrzeuge und Simulatoren). Die Suite kommt ohne sie aus: ohne Arbeitsmappe wird die Woche aus den in Meine Missionen angegebenen Verfügbarkeiten gebildet. Geladen ergänzt sie diese Angaben (Piloten, die nicht in der Suite angeben), liefert die Rollen des Blatts FLOTTE und legt Themenpräferenzen für Piloten ohne solche an.",
+    "El libro ODV es la hoja Excel semanal de la escuadrilla, rellenada por los pilotos (hoja ODV: un código de color por día y por franja de mañana, tarde y noche; hoja FLOTTE: aeronaves dominadas y simuladores). La suite puede prescindir de él: sin libro, la semana se construye a partir de las disponibilidades declaradas en Mis misiones. Cargado, completa esas declaraciones (pilotos que no declaran en la suite), aporta los roles de la hoja FLOTTE y crea preferencias de temas para los pilotos que no las tienen."
+  ],
+  ["Réglages des créneaux et de la lecture du classeur :", "Slot and workbook reading settings:",
+    "Einstellungen der Zeitfenster und des Lesens der Arbeitsmappe:", "Ajustes de las franjas y de la lectura del libro:"
+  ],
+  ["Paramètres › Centre › Planning ODV", "Settings › Centre › ODV planning", "Einstellungen › Zentrum › ODV-Planung",
+    "Ajustes › Centro › Planificación ODV"
+  ],
+  ["Pilotes libres par créneau ; clic sur un créneau : modifier les missions affectées ou en planifier.",
+    "Free pilots per slot; click a slot: edit the assigned missions or plan new ones.",
+    "Freie Piloten pro Zeitfenster; Klick auf ein Zeitfenster: zugewiesene Missionen ändern oder neue planen.",
+    "Pilotos libres por franja; clic en una franja: modificar las misiones asignadas o planificar otras."
+  ],
   ["Classeur ODV", "ODV workbook", "ODV-Arbeitsmappe", "Libro ODV"],
-  ["Classeur hebdomadaire de l'escadrille (.xlsx), lu dans ce navigateur.", "Squadron weekly workbook (.xlsx), read in this browser.", "Wöchentliche Arbeitsmappe der Staffel (.xlsx), in diesem Browser gelesen.", "Libro semanal de la escuadrilla (.xlsx), leído en este navegador."],
-  ["Données personnelles : le fichier est lu dans ce navigateur, rien n'est envoyé ni conservé (seuls les réglages sont mémorisés). Ne publiez pas les exports.", "Personal data: the file is read in this browser, nothing is sent or kept (only the settings are remembered). Do not publish the exports.", "Personenbezogene Daten: Die Datei wird in diesem Browser gelesen, nichts wird gesendet oder gespeichert (nur die Einstellungen). Exporte nicht veröffentlichen.", "Datos personales: el archivo se lee en este navegador, no se envía ni se guarda nada (solo los ajustes). No publique las exportaciones."],
+  ["Classeur hebdomadaire de l'escadrille (.xlsx), lu dans ce navigateur.", "Squadron weekly workbook (.xlsx), read in this browser.",
+    "Wöchentliche Arbeitsmappe der Staffel (.xlsx), in diesem Browser gelesen.",
+    "Libro semanal de la escuadrilla (.xlsx), leído en este navegador."
+  ],
+  ["Données personnelles : le fichier est lu dans ce navigateur, rien n'est envoyé ni conservé (seuls les réglages sont mémorisés). Ne publiez pas les exports.",
+    "Personal data: the file is read in this browser, nothing is sent or kept (only the settings are remembered). Do not publish the exports.",
+    "Personenbezogene Daten: Die Datei wird in diesem Browser gelesen, nichts wird gesendet oder gespeichert (nur die Einstellungen). Exporte nicht veröffentlichen.",
+    "Datos personales: el archivo se lee en este navegador, no se envía ni se guarda nada (solo los ajustes). No publique las exportaciones."
+  ],
   ["Effacer les données", "Clear data", "Daten löschen", "Borrar los datos"],
   ["Réglages", "Settings", "Einstellungen", "Ajustes"],
-  ["Heures des créneaux, lecture des dates et des cases, règles des missions.", "Slot hours, reading of dates and cells, mission rules.", "Zeitfenster, Lesen von Daten und Zellen, Missionsregeln.", "Horas de las franjas, lectura de fechas y casillas, reglas de misiones."],
+  ["Heures des créneaux, lecture des dates et des cases, règles des missions.",
+    "Slot hours, reading of dates and cells, mission rules.", "Zeitfenster, Lesen von Daten und Zellen, Missionsregeln.",
+    "Horas de las franjas, lectura de fechas y casillas, reglas de misiones."
+  ],
   ["Créneaux (heures z)", "Slots (z hours)", "Zeitfenster (Stunden z)", "Franjas (horas z)"],
   ["Dates de la semaine", "Week dates", "Daten der Woche", "Fechas de la semana"],
-  ["Semaine ISO (n° de semaine du fichier)", "ISO week (week number of the file)", "ISO-Woche (Wochennummer der Datei)", "Semana ISO (n.º de semana del archivo)"],
-  ["Date saisie sur la frise", "Date entered on the timeline", "Auf der Zeitleiste eingetragenes Datum", "Fecha indicada en la cronología"],
+  ["Semaine ISO (n° de semaine du fichier)", "ISO week (week number of the file)", "ISO-Woche (Wochennummer der Datei)",
+    "Semana ISO (n.º de semana del archivo)"
+  ],
+  ["Date saisie sur la frise", "Date entered on the timeline", "Auf der Zeitleiste eingetragenes Datum",
+    "Fecha indicada en la cronología"
+  ],
   ["Case vide", "Empty cell", "Leere Zelle", "Casilla vacía"],
   ["Non renseignée", "Not filled in", "Nicht ausgefüllt", "Sin rellenar"],
   ["Indisponible", "Unavailable", "Nicht verfügbar", "No disponible"],
-  ["Types FLOTTE retenus pour les rôles", "FLOTTE types used for roles", "FLOTTE-Typen für die Rollen", "Tipos FLOTTE usados para los roles"],
-  ["Tous sauf les rouges (non maîtrisés)", "All but red (not mastered)", "Alle außer rot (nicht beherrscht)", "Todos salvo los rojos (no dominados)"],
+  ["Types FLOTTE retenus pour les rôles", "FLOTTE types used for roles", "FLOTTE-Typen für die Rollen",
+    "Tipos FLOTTE usados para los roles"
+  ],
+  ["Tous sauf les rouges (non maîtrisés)", "All but red (not mastered)", "Alle außer rot (nicht beherrscht)",
+    "Todos salvo los rojos (no dominados)"
+  ],
   ["Verts seuls (maîtrisés)", "Green only (mastered)", "Nur grün (beherrscht)", "Solo verdes (dominados)"],
   ["Tous", "All", "Alle", "Todos"],
   ["Missions montrées par créneau", "Missions shown per slot", "Missionen pro Zeitfenster", "Misiones mostradas por franja"],
-  ["Ordre de préférence à score égal", "Preference order on equal score", "Rangfolge bei gleicher Punktzahl", "Orden de preferencia a igual puntuación"],
-  ["Code restreint (SC, C, T, N) : rôles de son domaine seulement", "Restricted code (SC, C, T, N): roles of its domain only", "Eingeschränkter Code (SC, C, T, N): nur Rollen seines Bereichs", "Código restringido (SC, C, T, N): solo roles de su ámbito"],
-  ["Ignorer une ligne de groupe colorée les 7 jours sur un créneau (habillage)", "Ignore a group row coloured on all 7 days for a slot (decoration)", "Gruppenzeile ignorieren, die an allen 7 Tagen gefärbt ist (Gestaltung)", "Ignorar una fila de grupo coloreada los 7 días en una franja (decoración)"],
+  ["Ordre de préférence à score égal", "Preference order on equal score", "Rangfolge bei gleicher Punktzahl",
+    "Orden de preferencia a igual puntuación"
+  ],
+  ["Code restreint (SC, C, T, N) : rôles de son domaine seulement", "Restricted code (SC, C, T, N): roles of its domain only",
+    "Eingeschränkter Code (SC, C, T, N): nur Rollen seines Bereichs", "Código restringido (SC, C, T, N): solo roles de su ámbito"
+  ],
+  ["Ignorer une ligne de groupe colorée les 7 jours sur un créneau (habillage)",
+    "Ignore a group row coloured on all 7 days for a slot (decoration)",
+    "Gruppenzeile ignorieren, die an allen 7 Tagen gefärbt ist (Gestaltung)",
+    "Ignorar una fila de grupo coloreada los 7 días en una franja (decoración)"
+  ],
   ["Réglages par défaut", "Default settings", "Standardeinstellungen", "Ajustes por defecto"],
   ["Grille de disponibilité", "Availability grid", "Verfügbarkeitsraster", "Cuadrícula de disponibilidad"],
-  ["Pilotes × jours × matin, après-midi, soir ; commentaires au survol.", "Pilots × days × morning, afternoon, evening; comments on hover.", "Piloten × Tage × Vormittag, Nachmittag, Abend; Kommentare beim Überfahren.", "Pilotos × días × mañana, tarde, noche; comentarios al pasar el ratón."],
+  ["Pilotes × jours × matin, après-midi, soir ; commentaires au survol.",
+    "Pilots × days × morning, afternoon, evening; comments on hover.",
+    "Piloten × Tage × Vormittag, Nachmittag, Abend; Kommentare beim Überfahren.",
+    "Pilotos × días × mañana, tarde, noche; comentarios al pasar el ratón."
+  ],
   ["Sessions ATC des réseaux", "Network ATC sessions", "ATC-Sitzungen der Netzwerke", "Sesiones ATC de las redes"],
-  ["Trainings, examens, événements et réservations VATSIM / IVAO de la semaine : saisis à la main ou récupérés (VATSIM, France métropolitaine). Comptés dans les créneaux : ★, CTR du terrain à éviter en training ou examen.", "VATSIM / IVAO trainings, exams, events and bookings of the week: entered by hand or fetched (VATSIM, metropolitan France). Counted in the slots: ★, airfield CTR to avoid during a training or exam.", "VATSIM-/IVAO-Trainings, Prüfungen, Veranstaltungen und Buchungen der Woche: manuell eingegeben oder abgerufen (VATSIM, Frankreich Mutterland). In den Zeitfenstern berücksichtigt: ★, CTR des Flugplatzes bei Training oder Prüfung meiden.", "Entrenamientos, exámenes, eventos y reservas VATSIM / IVAO de la semana: introducidos a mano o recuperados (VATSIM, Francia metropolitana). Contados en las franjas: ★, CTR del aeródromo que evitar durante un entrenamiento o examen."],
+  ["Trainings, examens, événements et réservations VATSIM / IVAO de la semaine : saisis à la main ou récupérés (VATSIM, IVAO : pays préféré, France par défaut ; même import que le Tableau). Comptés dans les créneaux : ★, CTR du terrain à éviter en training ou examen.",
+    "VATSIM / IVAO trainings, exams, events and bookings of the week: entered by hand or fetched (VATSIM, IVAO: preferred country, France by default; same import as the Board). Counted in the slots: ★, airfield CTR to avoid during a training or exam.",
+    "VATSIM-/IVAO-Trainings, Prüfungen, Veranstaltungen und Buchungen der Woche: manuell eingegeben oder abgerufen (VATSIM, IVAO: bevorzugtes Land, standardmäßig Frankreich; derselbe Import wie bei der Einsatztafel). In den Zeitfenstern berücksichtigt: ★, CTR des Flugplatzes bei Training oder Prüfung meiden.",
+    "Entrenamientos, exámenes, eventos y reservas VATSIM / IVAO de la semana: introducidos a mano o recuperados (VATSIM, IVAO: país preferido, Francia por defecto; misma importación que el Tablero). Contados en las franjas: ★, CTR del aeródromo que evitar durante un entrenamiento o examen."
+  ],
+  ["Activations des zones par réseau", "Area activations by network", "Gebietsaktivierungen nach Netzwerk",
+    "Activaciones de zonas por red"
+  ],
+  ["Zones activées (RTBA, R, D, TRA…) par réseau, VATSIM et IVAO côte à côte : saisies à la main, import IVAO. Les mêmes que dans le Tableau.",
+    "Activated areas (RTBA, R, D, TRA…) by network, VATSIM and IVAO side by side: entered by hand, IVAO import. The same as in the Board.",
+    "Aktivierte Gebiete (RTBA, R, D, TRA…) nach Netzwerk, VATSIM und IVAO nebeneinander: manuell eingegeben, IVAO-Import. Dieselben wie in der Einsatztafel.",
+    "Zonas activadas (RTBA, R, D, TRA…) por red, VATSIM e IVAO lado a lado: introducidas a mano, importación IVAO. Las mismas que en el Tablero."
+  ],
   ["Créneaux communs", "Common slots", "Gemeinsame Zeitfenster", "Franjas comunes"],
-  ["Nombre de pilotes disponibles par créneau, contrôleurs, rôles possibles.", "Available pilots per slot, controllers, possible roles.", "Verfügbare Piloten pro Zeitfenster, Lotsen, mögliche Rollen.", "Pilotos disponibles por franja, controladores, roles posibles."],
+  ["Nombre de pilotes disponibles par créneau, contrôleurs, rôles possibles.",
+    "Available pilots per slot, controllers, possible roles.", "Verfügbare Piloten pro Zeitfenster, Lotsen, mögliche Rollen.",
+    "Pilotos disponibles por franja, controladores, roles posibles."
+  ],
   ["Missions probables", "Likely missions", "Wahrscheinliche Missionen", "Misiones probables"],
-  ["Familles de missions compatibles avec chaque créneau, règle et calcul affichés.", "Mission families compatible with each slot, with rule and computation shown.", "Mit jedem Zeitfenster vereinbare Missionsfamilien, Regel und Berechnung angezeigt.", "Familias de misiones compatibles con cada franja, con la regla y el cálculo."],
+  ["Familles de missions compatibles avec chaque créneau, règle et calcul affichés.",
+    "Mission families compatible with each slot, with rule and computation shown.",
+    "Mit jedem Zeitfenster vereinbare Missionsfamilien, Regel und Berechnung angezeigt.",
+    "Familias de misiones compatibles con cada franja, con la regla y el cálculo."
+  ],
   ["Vols de la frise horaire", "Timeline flights", "Flüge der Zeitleiste", "Vuelos de la cronología"],
-  ["Vols posés sur la frise horaire (heures z à ±15 min) et contrôle des disponibilités.", "Flights placed on the timeline (z hours, ±15 min) and availability check.", "Auf der Zeitleiste eingetragene Flüge (Stunden z, ±15 min) und Verfügbarkeitsprüfung.", "Vuelos de la cronología (horas z, ±15 min) y control de disponibilidad."],
+  ["Vols posés sur la frise horaire (heures z à ±15 min) et contrôle des disponibilités.",
+    "Flights placed on the timeline (z hours, ±15 min) and availability check.",
+    "Auf der Zeitleiste eingetragene Flüge (Stunden z, ±15 min) und Verfügbarkeitsprüfung.",
+    "Vuelos de la cronología (horas z, ±15 min) y control de disponibilidad."
+  ],
   ["Contrôles et divers", "Control and miscellaneous", "Lotsendienst und Sonstiges", "Control y varios"],
   ["Export", "Export", "Export", "Exportación"],
-  ["Fichiers enregistrés sur cet ordinateur ; données nominatives : ne pas publier.", "Files saved on this computer; personal data: do not publish.", "Dateien auf diesem Computer gespeichert; personenbezogene Daten: nicht veröffentlichen.", "Archivos guardados en este equipo; datos personales: no publicar."],
+  ["Fichiers enregistrés sur cet ordinateur ; données nominatives : ne pas publier.",
+    "Files saved on this computer; personal data: do not publish.",
+    "Dateien auf diesem Computer gespeichert; personenbezogene Daten: nicht veröffentlichen.",
+    "Archivos guardados en este equipo; datos personales: no publicar."
+  ],
   ["Grille (CSV)", "Grid (CSV)", "Raster (CSV)", "Cuadrícula (CSV)"],
   ["Toutes les données (JSON)", "All data (JSON)", "Alle Daten (JSON)", "Todos los datos (JSON)"],
   ["Récapitulatif texte", "Text summary", "Textzusammenfassung", "Resumen de texto"],
   ["Copier", "Copy", "Kopieren", "Copiar"],
   ["Récapitulatif (.txt)", "Summary (.txt)", "Zusammenfassung (.txt)", "Resumen (.txt)"],
   ["Chargez un classeur ODV.", "Load an ODV workbook.", "ODV-Arbeitsmappe laden.", "Cargue un libro ODV."],
-  ["Centre de planification et de conduite des opérations", "Operations planning and command centre", "Einsatzplanungs- und Führungszentrum", "Centro de planificación y conducción de operaciones"],
+  ["Centre de planification et de conduite des opérations", "Operations planning and command centre",
+    "Einsatzplanungs- und Führungszentrum", "Centro de planificación y conducción de operaciones"
+  ],
   ["Matin", "Morning", "Morgen", "Mañana"],
   ["Après-midi", "Afternoon", "Nachmittag", "Tarde"],
   ["Soir", "Evening", "Abend", "Noche"],
@@ -907,18 +995,30 @@ RepositoryContentI18n([
   ["pilote(s)", "pilot(s)", "Pilot(en)", "piloto(s)"],
   ["Simulateur commun", "Common simulator", "Gemeinsamer Simulator", "Simulador común"],
   ["indifférent", "any", "beliebig", "indiferente"],
-  ["Pilotes : codes O, SC, C, T, N, S ; contrôleurs : AT, AM ; case vide = non comptée.", "Pilots: codes O, SC, C, T, N, S; controllers: AT, AM; empty cell = not counted.", "Piloten: Codes O, SC, C, T, N, S; Lotsen: AT, AM; leere Zelle = nicht gezählt.", "Pilotos: códigos O, SC, C, T, N, S; controladores: AT, AM; casilla vacía = no contada."],
+  ["Pilotes : codes O, SC, C, T, N, S ; contrôleurs : AT, AM ; case vide = non comptée.",
+    "Pilots: codes O, SC, C, T, N, S; controllers: AT, AM; empty cell = not counted.",
+    "Piloten: Codes O, SC, C, T, N, S; Lotsen: AT, AM; leere Zelle = nicht gezählt.",
+    "Pilotos: códigos O, SC, C, T, N, S; controladores: AT, AM; casilla vacía = no contada."
+  ],
   ["Non renseigné", "Not specified", "Nicht angegeben", "Sin indicar"],
-  ["Créneaux disponibles (+ contrôle)", "Available slots (+ ATC)", "Verfügbare Zeitfenster (+ Lotse)", "Franjas disponibles (+ control)"],
-  ["Cliquer pour affecter une mission sur ce créneau", "Click to assign a mission on this slot", "Klicken, um in diesem Zeitfenster eine Mission zuzuweisen", "Clic para asignar una misión en esta franja"],
+  ["Créneaux disponibles (+ contrôle)", "Available slots (+ ATC)", "Verfügbare Zeitfenster (+ Lotse)",
+    "Franjas disponibles (+ control)"
+  ],
+  ["Cliquer pour affecter une mission sur ce créneau", "Click to assign a mission on this slot",
+    "Klicken, um in diesem Zeitfenster eine Mission zuzuweisen", "Clic para asignar una misión en esta franja"
+  ],
   ["Pas de déclaration du pilote", "No declaration from the pilot", "Keine Angabe des Piloten", "Sin declaración del piloto"],
   ["Créneau", "Slot", "Zeitfenster", "Franja"],
   ["Contrôleurs", "Controllers", "Lotsen", "Controladores"],
   ["Rôles possibles", "Possible roles", "Mögliche Rollen", "Funciones posibles"],
   ["Simulateurs communs", "Common simulators", "Gemeinsame Simulatoren", "Simuladores comunes"],
   ["Mission probable", "Likely mission", "Wahrscheinliche Mission", "Misión probable"],
-  ["Planifier (missions du registre)", "Plan (registry missions)", "Planen (Missionen des Registers)", "Planificar (misiones del registro)"],
-  ["Contexte (vols posés, événements, horaires)", "Context (logged flights, events, times)", "Kontext (geflogene Flüge, Ereignisse, Zeiten)", "Contexto (vuelos realizados, eventos, horarios)"],
+  ["Planifier (missions du registre)", "Plan (registry missions)", "Planen (Missionen des Registers)",
+    "Planificar (misiones del registro)"
+  ],
+  ["Contexte (vols posés, événements, horaires)", "Context (logged flights, events, times)",
+    "Kontext (geflogene Flüge, Ereignisse, Zeiten)", "Contexto (vuelos realizados, eventos, horarios)"
+  ],
   ["Affectation proposée", "Proposed assignment", "Vorgeschlagene Zuweisung", "Asignación propuesta"],
   ["Règle", "Rule", "Regel", "Regla"],
   ["Appareil", "Aircraft", "Luftfahrzeug", "Aeronave"],
@@ -927,7 +1027,11 @@ RepositoryContentI18n([
   ["Élément", "Item", "Element", "Elemento"],
   ["Disponibles", "Available", "Verfügbar", "Disponibles"],
   ["Non renseigné pas de classeur", "Not specified, no workbook", "Nicht angegeben, keine Arbeitsmappe", "Sin indicar, sin libro"],
-  ["Récapitulatif DISPO MATIN / APREM / SOIR par jour (texte à coller, par exemple dans Discord).", "Summary AVAILABLE MORNING / AFTERNOON / EVENING per day (text to paste, e.g. into Discord).", "Übersicht VERFÜGBAR MORGEN / NACHMITTAG / ABEND pro Tag (Text zum Einfügen, z. B. in Discord).", "Resumen DISPONIBLE MAÑANA / TARDE / NOCHE por día (texto para pegar, p. ej. en Discord)."],
+  ["Récapitulatif DISPO MATIN / APREM / SOIR par jour (texte à coller, par exemple dans Discord).",
+    "Summary AVAILABLE MORNING / AFTERNOON / EVENING per day (text to paste, e.g. into Discord).",
+    "Übersicht VERFÜGBAR MORGEN / NACHMITTAG / ABEND pro Tag (Text zum Einfügen, z. B. in Discord).",
+    "Resumen DISPONIBLE MAÑANA / TARDE / NOCHE por día (texto para pegar, p. ej. en Discord)."
+  ],
 ]);
 </script>
 </body>

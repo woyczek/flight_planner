@@ -105,7 +105,8 @@
   function releaseOf(text) {
     const block = /release\s*:\s*\{([^}]*)\}/.exec(String(text || ''))?.[1] || '';
     return {
-      version: /version\s*:\s*"([^"]+)"/.exec(block)?.[1] || '',
+      // version distante : chiffres seulement (affichée dans l'en-tête de chaque page)
+      version: /^\d{1,4}(?:\.\d{1,4}){1,3}(?:-[\w.]{1,20})?$/.exec(/version\s*:\s*"([^"]+)"/.exec(block)?.[1] || '')?.[0] || '',
       date: /date\s*:\s*"([^"]+)"/.exec(block)?.[1] || ''
     };
   }
@@ -304,13 +305,14 @@
       }
     const orphanPacks = packs.pack.filter(p => !packs.idx.includes(p));
     // journal de tools/update_suite.py (une ligne JSON par opération)
-    const updLog = String((await readText(git, 'suite-update.log'))?.text || '').trim().split(/\r?\n/).filter(Boolean).slice(-20).map(l => {
-      try {
-        return JSON.parse(l);
-      } catch {
-        return null;
-      }
-    }).filter(Boolean).reverse();
+    const updLog = String((await readText(git, 'suite-update.log'))?.text || '').trim().split(/\r?\n/).filter(Boolean).slice(-20).map(
+      l => {
+        try {
+          return JSON.parse(l);
+        } catch {
+          return null;
+        }
+      }).filter(Boolean).reverse();
     const originUrl = config['remote "origin"']?.url || '';
     const info = {
       ok: true,
@@ -375,9 +377,17 @@
   // ---- pastille de l'en-tête (vers Paramètres › Maintenance)
   const T = {
     update: ['Mise à jour', 'Update', 'Update', 'Actualización'],
-    updateTitle: ['Nouvelle version sur le canal {c} : {v} — ouvrir Paramètres › Maintenance', 'New version on channel {c}: {v} — open Settings › Maintenance', 'Neue Version im Kanal {c}: {v} — Einstellungen › Wartung öffnen', 'Nueva versión en el canal {c}: {v} — abrir Ajustes › Mantenimiento'],
+    updateTitle: ['Nouvelle version sur le canal {c} : {v} — ouvrir Paramètres › Maintenance',
+      'New version on channel {c}: {v} — open Settings › Maintenance',
+      'Neue Version im Kanal {c}: {v} — Einstellungen › Wartung öffnen',
+      'Nueva versión en el canal {c}: {v} — abrir Ajustes › Mantenimiento'
+    ],
     airac: ['AIRAC', 'AIRAC', 'AIRAC', 'AIRAC'],
-    airacTitle: ['Cycle AIRAC {e} en vigueur ; base SIA du studio : {b} — mettre à jour les données SIA (Paramètres › Maintenance)', 'AIRAC cycle {e} in force; map studio SIA base: {b} — update SIA data (Settings › Maintenance)', 'AIRAC-Zyklus {e} gültig; SIA-Basis des Studios: {b} — SIA-Daten aktualisieren', 'Ciclo AIRAC {e} vigente; base SIA del estudio: {b} — actualizar los datos SIA']
+    airacTitle: ['Cycle AIRAC {e} en vigueur ; base SIA du studio : {b} — mettre à jour les données SIA (Paramètres › Maintenance)',
+      'AIRAC cycle {e} in force; map studio SIA base: {b} — update SIA data (Settings › Maintenance)',
+      'AIRAC-Zyklus {e} gültig; SIA-Basis des Studios: {b} — SIA-Daten aktualisieren',
+      'Ciclo AIRAC {e} vigente; base SIA del estudio: {b} — actualizar los datos SIA'
+    ]
   };
   const page = block => nav.settingsUrl?.(block) || new URL(`apps/settings/maintenance.html?m=${block}`, nav.root).href; // Paramètres › Maintenance
   let host = null;
@@ -389,7 +399,9 @@
       host = document.createElement('span');
       host.className = 'repo-update-badges no-print';
       tools.prepend(host);
-      if (!document.getElementById('repoUpdateStyle')) document.head.insertAdjacentHTML('beforeend', '<style id="repoUpdateStyle">.repo-update-badges{display:inline-flex;gap:6px;align-items:center}.repo-update-badge{height:28px;display:inline-flex;align-items:center;gap:4px;border-radius:7px;padding:3px 9px;font:600 12px/1 Inter,system-ui,Segoe UI,Arial,sans-serif;text-decoration:none;white-space:nowrap;background:#1d4ed8;color:#fff!important}.repo-update-badge.airac{background:#b45309}.repo-update-badge:hover{filter:brightness(1.1)}@media print{.repo-update-badges{display:none!important}}</style>');
+      if (!document.getElementById('repoUpdateStyle')) document.head.insertAdjacentHTML('beforeend',
+        '<style id="repoUpdateStyle">.repo-update-badges{display:inline-flex;gap:6px;align-items:center}.repo-update-badge{height:28px;display:inline-flex;align-items:center;gap:4px;border-radius:7px;padding:3px 9px;font:600 12px/1 Inter,system-ui,Segoe UI,Arial,sans-serif;text-decoration:none;white-space:nowrap;background:#1d4ed8;color:#fff!important}.repo-update-badge.airac{background:#b45309}.repo-update-badge:hover{filter:brightness(1.1)}@media print{.repo-update-badges{display:none!important}}</style>'
+      );
     }
     const s = settings(),
       r = last(),
@@ -398,7 +410,8 @@
     const onPage = /\/parametrage\.html$/.test(location.pathname) && new URLSearchParams(location.search).has('m');
     if (s.mode !== 'off' && r?.ok && r.available && r.channel === s.channel && !onPage) {
       const v = r.remote?.version && r.remote.version !== r.local?.version ? r.remote.version : (r.remote?.short || '');
-      parts.push(`<a class="repo-update-badge" href="${page('updates')}" title="${tr(T.updateTitle).replace('{c}', s.channel).replace('{v}', v)}">⬆ ${tr(T.update)}${v ? ' ' + v : ''}</a>`);
+      const e = window.RepositoryKit.esc; // version et canal : lus à distance ou gardés dans le navigateur
+      parts.push(`<a class="repo-update-badge" href="${page('updates')}" title="${e(tr(T.updateTitle).replace('{c}', s.channel).replace('{v}', v))}">⬆ ${e(tr(T.update))}${v ? ' ' + e(v) : ''}</a>`);
     }
     if (a.late && !onPage) parts.push(`<a class="repo-update-badge airac" href="${page('sia')}" title="${tr(T.airacTitle).replace('{e}', a.effective).replace('{b}', a.base)}">${tr(T.airac)} ${a.label}</a>`);
     host.innerHTML = parts.join('');

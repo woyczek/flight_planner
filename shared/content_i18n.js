@@ -35,7 +35,8 @@
   };
   // attributs (infobulles, indications) : traduits aussi dans les zones [data-no-i18n] — contenus calculés dont les
   // libellés d'infobulle restent fixes ; [data-no-i18n="all"] les exclut aussi
-  const attrExcluded = el => !!el?.closest('script,style,pre,[contenteditable],[data-no-i18n="all"],.repo-header-tools,.repo-block-tools');
+  const attrExcluded = el => !!el?.closest(
+    'script,style,pre,[contenteditable],[data-no-i18n="all"],.repo-header-tools,.repo-block-tools');
   const ATTRS = ['title', 'placeholder', 'aria-label'];
   // garde-fou : un même texte réécrit plus de 12 fois en 5 s, c'est qu'un autre code se le dispute — on cesse d'y
   // toucher (et on le signale une fois dans la console)
@@ -53,7 +54,8 @@
     w.n++;
     writes.set(node, w);
     if (w.n > 12) {
-      if (!w.warned) console.warn('content_i18n : texte réécrit en boucle, laissé tel quel :', (node.nodeValue || node.getAttribute?.('title') || '').slice(0, 80));
+      if (!w.warned) console.warn('content_i18n : texte réécrit en boucle, laissé tel quel :', (node.nodeValue || node.getAttribute?.(
+        'title') || '').slice(0, 80));
       w.warned = true;
       return true;
     }
@@ -61,7 +63,8 @@
   };
   // Typographie de la langue affichée, appliquée à l'affichage (nœuds texte et attributs), jamais aux sources où
   // le texte côtoie du code : voir RepositoryContentI18n.typography plus bas.
-  const frTypo = (value, lang, el) => !value || el?.closest?.('code,kbd,samp') ? value : window.RepositoryContentI18n.typography(value, lang);
+  const frTypo = (value, lang, el) => !value || el?.closest?.('code,kbd,samp') ? value : window.RepositoryContentI18n.typography(value,
+    lang);
 
   /** Traduction d'un texte (valeur d'un nœud ou d'un attribut key de owner) dans lang : ligne de traduction trouvée par le texte entier (espaces normalisés) ou par un préfixe connu suivi d'une fin libre ; espaces de tête et de queue conservés. Mémorise la ligne par nœud pour retraduire au changement de langue. Texte inconnu : inchangé. */
   function translate(value, owner, key, lang) {
@@ -158,7 +161,8 @@
     if (root.nodeType === 3) return doText(root, l);
     if (root.nodeType !== 1 && root.nodeType !== 11) return;
     const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
-    for (let n; (n = walker.nextNode());) doText(n, l);
+    for (let n;
+      (n = walker.nextNode());) doText(n, l);
     if (root.nodeType === 1 && (ATTRS.some(a => root.hasAttribute(a)) || root.tagName === 'INPUT')) doAttrs(root, l);
     root.querySelectorAll?.('[title],[placeholder],[aria-label],input[readonly][value]').forEach(el => doAttrs(el, l));
   }
@@ -205,6 +209,7 @@
     requestAnimationFrame(go);
     setTimeout(go, 150)
   };
+
   function start() {
     if (observer || !document.body) return;
     observer = new MutationObserver(list => {
@@ -234,7 +239,8 @@
     if (added) {
       version++;
       prefixKeys = new Map();
-      for (const item of [...index.keys()].filter(item => item.length >= 8 || /[.:→]$/.test(item)).sort((a, b) => b.length - a.length)) {
+      for (const item of [...index.keys()].filter(item => item.length >= 8 || /[.:→]$/.test(item)).sort((a, b) => b.length - a
+          .length)) {
         const w = item.split(' ', 1)[0];
         prefixKeys.has(w) ? prefixKeys.get(w).push(item) : prefixKeys.set(w, [item]);
       }

@@ -69,8 +69,10 @@
   const PALETTE = ['#67b6ff', '#bb8cff', '#65d394', '#fbbf24', '#f472b6', '#2dd4bf', '#fb923c', '#a3e635', '#818cf8', '#f87171'];
 
   const UI = {
-    title: L('Reporting missions — CR DEFA', 'Mission reporting — CR DEFA', 'Einsatzauswertung — CR DEFA', 'Informe de misiones — CR DEFA'),
-    subtitle: L('Toutes les familles de missions · registre unique data/cr/missions.yaml', 'All mission families · single ledger data/cr/missions.yaml', 'Alle Einsatzfamilien · zentrales Register data/cr/missions.yaml', 'Todas las familias de misiones · registro único data/cr/missions.yaml'),
+    title: L('Reporting missions — CR', 'Mission reporting — CR', 'Einsatzauswertung — CR', 'Informe de misiones — CR'),
+    subtitle: L('Toutes les familles de missions · registre unique data/cr/missions.yaml',
+      'All mission families · single ledger data/cr/missions.yaml', 'Alle Einsatzfamilien · zentrales Register data/cr/missions.yaml',
+      'Todas las familias de misiones · registro único data/cr/missions.yaml'),
     newReport: L('Nouveau compte rendu', 'New report', 'Neuer Bericht', 'Nuevo informe'),
     period: L('Période et filtres', 'Period and filters', 'Zeitraum und Filter', 'Periodo y filtros'),
     families: L('Familles', 'Families', 'Familien', 'Familias'),
@@ -112,24 +114,36 @@
     byContext: L('Exercice / opération réelle', 'Exercise / real operation', 'Übung / realer Einsatz', 'Ejercicio / operación real'),
     familyTable: L('Synthèse par famille', 'Summary by family', 'Übersicht nach Familie', 'Resumen por familia'),
     aircraftTable: L('Synthèse par appareil', 'Summary by aircraft', 'Übersicht nach Luftfahrzeug', 'Resumen por aeronave'),
-    crewTable: L('Synthèse par membre d’équipage', 'Summary by crew member', 'Übersicht nach Besatzungsmitglied', 'Resumen por tripulante'),
-    missionsTable: L('Missions (tri, clic pour modifier, suppression)', 'Missions (sort, click to edit, delete)', 'Einsätze (sortieren, zum Bearbeiten klicken, löschen)', 'Misiones (ordenar, clic para modificar, eliminar)'),
+    crewTable: L('Synthèse par membre d’équipage', 'Summary by crew member', 'Übersicht nach Besatzungsmitglied',
+      'Resumen por tripulante'),
+    missionsTable: L('Missions (tri, clic pour modifier, suppression)', 'Missions (sort, click to edit, delete)',
+      'Einsätze (sortieren, zum Bearbeiten klicken, löschen)', 'Misiones (ordenar, clic para modificar, eliminar)'),
     ledger: L('Registre des missions', 'Mission ledger', 'Einsatzregister', 'Registro de misiones'),
     exportYaml: L('Exporter le registre (YAML)', 'Export ledger (YAML)', 'Register exportieren (YAML)', 'Exportar registro (YAML)'),
-    exportCsv: L('Exporter en CSV (tableur)', 'Export CSV (spreadsheet)', 'CSV exportieren (Tabelle)', 'Exportar CSV (hoja de cálculo)'),
+    exportCsv: L('Exporter en CSV (tableur)', 'Export CSV (spreadsheet)', 'CSV exportieren (Tabelle)',
+      'Exportar CSV (hoja de cálculo)'),
     folder: L('Dossier du registre…', 'Ledger folder…', 'Registerordner…', 'Carpeta del registro…'),
     print: L('PDF / Imprimer', 'PDF / Print', 'PDF / Drucken', 'PDF / Imprimir'),
-    legacy: L('Importer un ancien registre CSV', 'Import a legacy CSV ledger', 'Altes CSV-Register importieren', 'Importar un registro CSV antiguo'),
-    legacyDone: L('missions importées ; déjà présentes :', 'missions imported; already present:', 'Einsätze importiert; bereits vorhanden:', 'misiones importadas; ya presentes:'),
+    legacy: L('Importer un ancien registre CSV', 'Import a legacy CSV ledger', 'Altes CSV-Register importieren',
+      'Importar un registro CSV antiguo'),
+    legacyDone: L('missions importées ; déjà présentes :', 'missions imported; already present:',
+      'Einsätze importiert; bereits vorhanden:', 'misiones importadas; ya presentes:'),
     saved: L('Registre enregistré', 'Ledger saved', 'Register gespeichert', 'Registro guardado'),
     browserOnly: L('navigateur uniquement', 'browser only', 'nur Browser', 'solo navegador'),
     folderLabel: L('Dossier', 'Folder', 'Ordner', 'Carpeta'),
-    unavailable: L('registre illisible (serveur ou fichier indisponible) — rechargez la page.', 'ledger unreadable (server or file unavailable) — reload the page.', 'Register nicht lesbar (Server oder Datei nicht verfügbar) — Seite neu laden.', 'registro ilegible (servidor o archivo no disponible) — recargue la página.'),
-    empty: L('Aucune mission pour la période et les familles sélectionnées.', 'No mission for the selected period and families.', 'Kein Einsatz für den gewählten Zeitraum und die gewählten Familien.', 'Ninguna misión para el periodo y las familias seleccionados.'),
+    unavailable: L('registre illisible (serveur ou fichier indisponible) — rechargez la page.',
+      'ledger unreadable (server or file unavailable) — reload the page.',
+      'Register nicht lesbar (Server oder Datei nicht verfügbar) — Seite neu laden.',
+      'registro ilegible (servidor o archivo no disponible) — recargue la página.'),
+    empty: L('Aucune mission pour la période et les familles sélectionnées.', 'No mission for the selected period and families.',
+      'Kein Einsatz für den gewählten Zeitraum und die gewählten Familien.',
+      'Ninguna misión para el periodo y las familias seleccionados.'),
     none: L('Non renseigné', 'Not provided', 'Nicht angegeben', 'No indicado'),
     offline: L('Hors réseau', 'Offline', 'Offline', 'Fuera de red'),
-    confirmDelete: L('Supprimer définitivement cette mission du registre ?', 'Permanently delete this mission from the ledger?', 'Diesen Einsatz endgültig aus dem Register löschen?', '¿Eliminar definitivamente esta misión del registro?'),
-    rowTitle: L('Cliquer pour modifier la mission', 'Click to edit the mission', 'Klicken, um den Einsatz zu bearbeiten', 'Clic para modificar la misión'),
+    confirmDelete: L('Supprimer définitivement cette mission du registre ?', 'Permanently delete this mission from the ledger?',
+      'Diesen Einsatz endgültig aus dem Register löschen?', '¿Eliminar definitivamente esta misión del registro?'),
+    rowTitle: L('Cliquer pour modifier la mission', 'Click to edit the mission', 'Klicken, um den Einsatz zu bearbeiten',
+      'Clic para modificar la misión'),
     // Colonnes
     colFamily: L('Famille', 'Family', 'Familie', 'Familia'),
     colId: L('N° mission', 'Mission ID', 'Einsatz-ID', 'ID de misión'),
@@ -153,13 +167,17 @@
     colName: L('Nom', 'Name', 'Name', 'Nombre'),
     colRoles: L('Fonctions', 'Roles', 'Funktionen', 'Funciones'),
     colReporting: L('Reporting', 'Reporting', 'Auswertung', 'Informe'),
-    openFamily: L('Cliquer pour ouvrir le reporting de la famille', 'Click to open the family reporting', 'Klicken, um die Familienauswertung zu öffnen', 'Clic para abrir el informe de la familia'),
-    openAircraft: L('Cliquer pour ouvrir la fiche de l’appareil', 'Click to open the aircraft sheet', 'Klicken, um das Luftfahrzeugblatt zu öffnen', 'Clic para abrir la ficha de la aeronave'),
-    openCrew: L('Cliquer pour ouvrir la fiche du membre d’équipage', 'Click to open the crew member sheet', 'Klicken, um das Besatzungsblatt zu öffnen', 'Clic para abrir la ficha del tripulante'),
+    openFamily: L('Cliquer pour ouvrir le reporting de la famille', 'Click to open the family reporting',
+      'Klicken, um die Familienauswertung zu öffnen', 'Clic para abrir el informe de la familia'),
+    openAircraft: L('Cliquer pour ouvrir la fiche de l’appareil', 'Click to open the aircraft sheet',
+      'Klicken, um das Luftfahrzeugblatt zu öffnen', 'Clic para abrir la ficha de la aeronave'),
+    openCrew: L('Cliquer pour ouvrir la fiche du membre d’équipage', 'Click to open the crew member sheet',
+      'Klicken, um das Besatzungsblatt zu öffnen', 'Clic para abrir la ficha del tripulante'),
     before: L('avant la période', 'before the period', 'vor dem Zeitraum', 'antes del periodo'),
     after: L('après la période', 'after the period', 'nach dem Zeitraum', 'después del periodo'),
     checks: L('Contrôle des données', 'Data checks', 'Datenprüfung', 'Control de datos'),
-    checksSub: L('missions à corriger (clic pour ouvrir le CR)', 'missions to correct (click to open the report)', 'zu korrigierende Einsätze (Klick öffnet den Bericht)', 'misiones por corregir (clic para abrir el informe)'),
+    checksSub: L('missions à corriger (clic pour ouvrir le CR)', 'missions to correct (click to open the report)',
+      'zu korrigierende Einsätze (Klick öffnet den Bericht)', 'misiones por corregir (clic para abrir el informe)'),
     colIssues: L('Anomalies', 'Issues', 'Auffälligkeiten', 'Anomalías')
   };
   const METRICS = [{
@@ -230,7 +248,7 @@
     }
   };
 
-  /** Reporting général (toutes familles) : période, puces de familles, cartes, graphiques d'activité, répartitions, tableau des missions (modifiable dans le tableau), source (registre ou journal DEFA), reprise des anciens registres. */
+  /** Reporting général (toutes familles) : période, puces de familles, cartes, graphiques d'activité, répartitions, tableau des missions (modifiable dans le tableau), source (registre ou journal), reprise des anciens registres. */
   function mount(root) {
     const rows = new Map(),
       tr = row => {
@@ -255,7 +273,8 @@
     const familyName = id => {
       const f = familyInfo(id),
         vocab = V.families.find(x => x.id === id);
-      return f?.title ? tr(f.title) : vocab?.labels ? vocab.labels[Math.max(0, ['fr', 'en', 'de', 'es'].indexOf(window.RepositoryNav?.getLanguage?.() || 'fr'))] || vocab.label : vocab?.label || id;
+      return f?.title ? tr(f.title) : vocab?.labels ? vocab.labels[Math.max(0, ['fr', 'en', 'de', 'es'].indexOf(window.RepositoryNav
+        ?.getLanguage?.() || 'fr'))] || vocab.label : vocab?.label || id;
     };
     /** Nom court d'une famille (puces, tableau). */
     const familyShort = id => id === 'FI' ? 'FI' : id;
@@ -327,8 +346,10 @@
     const GE = {
       toggle: L('✎ Modifier dans le tableau', '✎ Edit in the table', '✎ In der Tabelle bearbeiten', '✎ Modificar en la tabla'),
       done: L('✓ Terminer', '✓ Done', '✓ Fertig', '✓ Terminar'),
-      saved: L('Mission modifiée et enregistrée', 'Mission changed and saved', 'Einsatz geändert und gespeichert', 'Misión modificada y guardada'),
-      declared: L('durée déclarée (sans heures)', 'declared duration (no times)', 'angegebene Dauer (ohne Uhrzeiten)', 'duración declarada (sin horas)'),
+      saved: L('Mission modifiée et enregistrée', 'Mission changed and saved', 'Einsatz geändert und gespeichert',
+        'Misión modificada y guardada'),
+      declared: L('durée déclarée (sans heures)', 'declared duration (no times)', 'angegebene Dauer (ohne Uhrzeiten)',
+        'duración declarada (sin horas)'),
       error: L('Valeur refusée', 'Value rejected', 'Wert abgelehnt', 'Valor rechazado')
     };
     let editMode = false,
@@ -374,27 +395,29 @@
       return row;
     };
     // Position de la mission dans sa famille (adresse de modification du CR).
-    // Données des reportings : registre des missions (défaut) ou journal DEFA (vols réalisés,
-    // chargé dans Paramétrage › Base DEFA ; lecture seule). Choix commun à tous les reportings.
+    // Données des reportings : registre des missions (défaut) ou journal (vols réalisés,
+    // chargé dans Paramétrage › Base ; lecture seule). Choix commun à tous les reportings.
     const SRC = {
       label: L('Données', 'Data', 'Daten', 'Datos'),
       ledger: L('Mes missions (registre)', 'My missions (ledger)', 'Meine Einsätze (Register)', 'Mis misiones (registro)'),
-      defa: L('Journal DEFA (vols réalisés)', 'DEFA log (flights flown)', 'DEFA-Journal (durchgeführte Flüge)', 'Diario DEFA (vuelos realizados)'),
-      readOnly: L('Vol du journal DEFA : lecture seule (pas de CR à modifier).', 'DEFA log flight: read-only (no report to edit).', 'Flug aus dem DEFA-Journal: nur lesbar.', 'Vuelo del diario DEFA: solo lectura.')
+      defa: L('Journal (vols réalisés)', 'Log (flights flown)', 'Journal (durchgeführte Flüge)', 'Diario (vuelos realizados)'),
+      readOnly: L('Vol du journal : lecture seule (pas de CR à modifier).', 'Log flight: read-only (no report to edit).',
+        'Flug aus dem Journal: nur lesbar.', 'Vuelo del diario: solo lectura.')
     };
     let logMissions = null;
-    /** Vrai si le reporting lit le journal DEFA. */
+    /** Vrai si le reporting lit le journal. */
     const logSource = () => window.DefaFlightLog?.source?.() === 'defa';
-    /** Missions du journal DEFA (converties une fois), ou null si la source est le registre. */
+    /** Missions du journal (converties une fois), ou null si la source est le registre. */
     const sourceMissions = () => logSource() ? (logMissions ||= window.DefaFlightLog.toMissions()) : null;
     window.addEventListener('defa-log-change', () => {
       logMissions = null;
     });
-    // Menu « Données » toujours visible : registre, journal DEFA (s'il est chargé) et chargement /
-    // mise à jour du journal (page DEFA copiée ou enregistrée) sans passer par le Paramétrage.
-    const SRC_LOAD = L('Charger / mettre à jour le journal DEFA…', 'Load / update the DEFA log…', 'DEFA-Journal laden / aktualisieren…', 'Cargar / actualizar el diario DEFA…');
+    // Menu « Données » toujours visible : registre, journal (s'il est chargé) et chargement /
+    // mise à jour du journal (page copiée ou enregistrée) sans passer par le Paramétrage.
+    const SRC_LOAD = L('Charger / mettre à jour le journal…', 'Load / update the log…', 'Journal laden / aktualisieren…',
+      'Cargar / actualizar el diario…');
 
-    /** Choix de la source (registre / journal DEFA) et chargement du journal. */
+    /** Choix de la source (registre / journal) et chargement du journal. */
     function sourcePicker(host) {
       if (!host || !window.DefaFlightLog) return;
       const label = document.createElement('label');
@@ -431,7 +454,7 @@
       });
       host.append(label);
     }
-    /** Lignes de toutes les missions de la source (journal DEFA ou registre), avec leur rang dans leur famille. */
+    /** Lignes de toutes les missions de la source (journal ou registre), avec leur rang dans leur famille. */
     const allRows = () => {
       const seen = {};
       return (sourceMissions() || L2.store.missions).map(m => toRow(m, (seen[m.family] = (seen[m.family] ?? -1) + 1)));
@@ -490,7 +513,8 @@
       const visible = window.TimePeriod.filterRows(all, 'date').filter(r => !hidden.has(r.family));
       const missions = visible.map(r => r.mission),
         metric = METRICS.find(m => m.id === prefs.metric) || METRICS[0];
-      const familyIds = [...new Set(visible.map(r => r.family))].sort((a, b) => V.families.findIndex(f => f.id === a) - V.families.findIndex(f => f.id === b));
+      const familyIds = [...new Set(visible.map(r => r.family))].sort((a, b) => V.families.findIndex(f => f.id === a) - V.families
+        .findIndex(f => f.id === b));
       /** Valeur de l'indicateur choisi (missions, heures de vol, bloc, sur zone…) pour une ligne. */
       const metricOf = r => n(metric.value(r.mission, r.s));
       const emptyText = tr(UI.empty);
@@ -515,7 +539,8 @@
         card('success', c.missions ? `${Math.round(c.success * 100 / c.missions)} %` : '—', `${c.success} / ${c.missions}`, '#22c55e'),
         card('flight', hours(c.flightMinutes), avg(c.flightMinutes, 'flightMinutes'), '#bb8cff'),
         c.blockMinutes ? card('block', hours(c.blockMinutes), avg(c.blockMinutes, 'blockMinutes'), '#a78bfa') : '',
-        c.timeOnStationMinutes ? card('station', hours(c.timeOnStationMinutes), avg(c.timeOnStationMinutes, 'timeOnStationMinutes'), '#f472b6') : '',
+        c.timeOnStationMinutes ? card('station', hours(c.timeOnStationMinutes), avg(c.timeOnStationMinutes, 'timeOnStationMinutes'),
+          '#f472b6') : '',
         c.sorties > c.missions ? card('sorties', c.sorties, '', '#2dd4bf') : '',
         c.distanceNm ? card('distance', Math.round(c.distanceNm).toLocaleString(), '', '#38bdf8') : '',
         ...Object.entries(c.fuel).filter(([, v]) => v).map(([u, v]) => card('fuel', `${Math.round(v).toLocaleString()} ${u}`, '', '#fbbf24')),
@@ -583,7 +608,8 @@
         format: fmt,
         empty: emptyText
       });
-      $('#mcgOutcomes').innerHTML = C.hbars(items(sumBy(visible, r => r.outcome || '__none'), k => k === '__none' ? tr(UI.none) : opt(V.outcomes, k), k => OUTCOME_COLORS[k] || '#64748b'), {
+      $('#mcgOutcomes').innerHTML = C.hbars(items(sumBy(visible, r => r.outcome || '__none'), k => k === '__none' ? tr(UI.none) : opt(V
+        .outcomes, k), k => OUTCOME_COLORS[k] || '#64748b'), {
         format: fmt,
         empty: emptyText
       });
@@ -612,7 +638,8 @@
         NIGHT: '#6366f1',
         '': '#475569'
       };
-      $('#mcgDayNight').innerHTML = C.donut(items(sumBy(visible, r => r.dayNight), k => k ? opt(V.dayNight, k) : tr(UI.none), k => DN[k] || '#475569'), {
+      $('#mcgDayNight').innerHTML = C.donut(items(sumBy(visible, r => r.dayNight), k => k ? opt(V.dayNight, k) : tr(UI.none), k => DN[
+        k] || '#475569'), {
         format: fmt,
         empty: emptyText
       });
@@ -621,7 +648,8 @@
         VATSIM: '#22c55e',
         '': '#475569'
       };
-      $('#mcgNetwork').innerHTML = C.donut(items(sumBy(visible, r => r.network.onlineNetwork || ''), k => k || tr(UI.offline), k => NET[k] || '#475569'), {
+      $('#mcgNetwork').innerHTML = C.donut(items(sumBy(visible, r => r.network.onlineNetwork || ''), k => k || tr(UI.offline), k => NET[
+        k] || '#475569'), {
         format: fmt,
         empty: emptyText
       });
@@ -630,7 +658,8 @@
         EXERCISE: '#67b6ff',
         '': '#475569'
       };
-      $('#mcgContext').innerHTML = C.donut(items(sumBy(visible, r => r.mission.metadata?.context || ''), k => k ? opt(V.context, k) : tr(UI.none), k => CTX[k] || '#475569'), {
+      $('#mcgContext').innerHTML = C.donut(items(sumBy(visible, r => r.mission.metadata?.context || ''), k => k ? opt(V.context, k) : tr(
+        UI.none), k => CTX[k] || '#475569'), {
         format: fmt,
         empty: emptyText
       });

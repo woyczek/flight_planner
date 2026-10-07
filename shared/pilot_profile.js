@@ -1,6 +1,6 @@
 (() => {
   'use strict';
-  // Profil pilote partagé : trigramme DEFA (missions affectées : shared/assignments.js), ID IVAO (VID), ID VATSIM (CID)
+  // Profil pilote partagé : trigramme (missions affectées : shared/assignments.js), ID IVAO (VID), ID VATSIM (CID)
   // et identifiant SimBrief (import
   // du plan de vol dans les CR du Mission Report Core) saisis une seule fois dans
   // le menu du framework, disponibles sur toutes les pages (chargé par repository_nav.js).
@@ -33,28 +33,28 @@
   const TEXT = {
     fr: {
       title: 'Profil pilote',
-      trigram: 'Trigramme DEFA (missions affectées)',
+      trigram: 'Trigramme (missions affectées)',
       ivaoId: 'ID IVAO (VID)',
       vatsimId: 'ID VATSIM (CID)',
       simbriefUser: 'SimBrief (utilisateur ou ID)'
     },
     en: {
       title: 'Pilot profile',
-      trigram: 'DEFA trigram (assigned missions)',
+      trigram: 'Trigram (assigned missions)',
       ivaoId: 'IVAO ID (VID)',
       vatsimId: 'VATSIM ID (CID)',
       simbriefUser: 'SimBrief (username or ID)'
     },
     de: {
       title: 'Pilotenprofil',
-      trigram: 'DEFA-Kürzel (zugewiesene Missionen)',
+      trigram: 'Kürzel (zugewiesene Missionen)',
       ivaoId: 'IVAO-ID (VID)',
       vatsimId: 'VATSIM-ID (CID)',
       simbriefUser: 'SimBrief (Benutzer oder ID)'
     },
     es: {
       title: 'Perfil de piloto',
-      trigram: 'Trigrama DEFA (misiones asignadas)',
+      trigram: 'Trigrama (misiones asignadas)',
       ivaoId: 'ID IVAO (VID)',
       vatsimId: 'ID VATSIM (CID)',
       simbriefUser: 'SimBrief (usuario o ID)'
@@ -62,7 +62,8 @@
   };
 
   const style = document.createElement('style');
-  style.textContent = '.repo-profile-field{display:grid;grid-template-columns:1fr 120px;align-items:center;gap:8px;padding:5px 8px;font-size:12px}' +
+  style.textContent =
+    '.repo-profile-field{display:grid;grid-template-columns:1fr 120px;align-items:center;gap:8px;padding:5px 8px;font-size:12px}' +
     '.repo-profile-field input{width:100%;box-sizing:border-box;padding:5px 7px;border-radius:6px;border:1px solid color-mix(in srgb,var(--repo-bar-text) 25%,transparent);background:color-mix(in srgb,var(--repo-bar-text) 8%,transparent);color:inherit;font:inherit}';
   document.head.append(style);
 

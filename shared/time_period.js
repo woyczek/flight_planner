@@ -25,9 +25,11 @@
     end: L('Fin', 'End', 'Ende', 'Fin'),
     back: L('Reculer la période', 'Move period backward', 'Zeitraum zurück', 'Retroceder el periodo'),
     forward: L('Avancer la période', 'Move period forward', 'Zeitraum vor', 'Avanzar el periodo'),
-    zoomOut: L('Zoom arrière ×2 (double-clic sur un graphique : idem)', 'Zoom out ×2 (double-click on a chart: same)', 'Herauszoomen ×2 (Doppelklick auf ein Diagramm: ebenso)', 'Alejar ×2 (doble clic en un gráfico: igual)'),
+    zoomOut: L('Zoom arrière ×2 (double-clic sur un graphique : idem)', 'Zoom out ×2 (double-click on a chart: same)',
+      'Herauszoomen ×2 (Doppelklick auf ein Diagramm: ebenso)', 'Alejar ×2 (doble clic en un gráfico: igual)'),
     all: L('Toutes les dates', 'All dates', 'Alle Daten', 'Todas las fechas'),
-    hint: L('Glisser sur un graphique pour zoomer', 'Drag on a chart to zoom', 'Zum Zoomen im Diagramm ziehen', 'Arrastrar en un gráfico para ampliar')
+    hint: L('Glisser sur un graphique pour zoomer', 'Drag on a chart to zoom', 'Zum Zoomen im Diagramm ziehen',
+      'Arrastrar en un gráfico para ampliar')
   };
   const PRESETS = [{
     id: 'all',
@@ -59,7 +61,8 @@
     text: L('Période personnalisée', 'Custom period', 'Eigener Zeitraum', 'Periodo personalizado')
   }];
   /** Rang (0–3) de la langue de la page dans [fr, en, de, es]. */
-  const lang = () => Math.max(0, ['fr', 'en', 'de', 'es'].indexOf(window.RepositoryNav?.getLanguage?.() || document.documentElement.lang || 'fr'));
+  const lang = () => Math.max(0, ['fr', 'en', 'de', 'es'].indexOf(window.RepositoryNav?.getLanguage?.() || document.documentElement
+    .lang || 'fr'));
   /** Texte d'une ligne [fr, en, de, es] dans la langue de la page. */
   const tr = row => row[lang()] || row[0];
 
@@ -70,7 +73,8 @@
   // Instant (ms) → texte local ; jour entier quand l'instant tombe sur un début / une fin de jour.
   const text = (ms, edge) => {
     const d = new Date(ms);
-    const whole = edge === 'start' ? d.getHours() + d.getMinutes() + d.getSeconds() + d.getMilliseconds() === 0 : d.getHours() === 23 && d.getMinutes() === 59 && d.getSeconds() === 59;
+    const whole = edge === 'start' ? d.getHours() + d.getMinutes() + d.getSeconds() + d.getMilliseconds() === 0 : d.getHours() === 23 &&
+      d.getMinutes() === 59 && d.getSeconds() === 59;
     return whole ? iso(d) : `${iso(d)}T${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}.${pad(d.getMilliseconds(), 3)}`;
   };
   // Texte → instant (ms) : un jour seul couvre toute la journée.
@@ -174,7 +178,8 @@
     return rows.filter(row => {
       const value = String(row[dateField] || '');
       if (!value) return false;
-      const t = /^\d{4}-\d{2}-\d{2}$/.test(value.slice(0, 10)) && value.length <= 10 ? ms(value.slice(0, 10), 'start') : ms(value, 'start');
+      const t = /^\d{4}-\d{2}-\d{2}$/.test(value.slice(0, 10)) && value.length <= 10 ? ms(value.slice(0, 10), 'start') : ms(value,
+        'start');
       if (t == null) return false;
       // Un jour sans heure est retenu s'il chevauche la période.
       const tEnd = value.length <= 10 ? t + DAY - 1 : t;
@@ -325,7 +330,8 @@
         full = bounds.start == null || bounds.end == null;
       buttons.back.disabled = full || r.start == null || r.start <= bounds.start + eps;
       buttons.forward.disabled = full || r.end == null || r.end >= bounds.end - eps;
-      buttons.zoom.disabled = state.preset === 'all' || (!full && r.start != null && r.end != null && r.end - r.start >= bounds.end - bounds.start - eps);
+      buttons.zoom.disabled = state.preset === 'all' || (!full && r.start != null && r.end != null && r.end - r.start >= bounds.end -
+        bounds.start - eps);
       if (summary) {
         const precise = /T/.test(`${state.start}${state.end}`) && state.preset === 'custom';
         const f = t => new Date(t).toLocaleString(undefined, precise ? {
@@ -351,7 +357,8 @@
     const dayPrecision = () => !/T/.test(`${state.start || ''}${state.end || ''}`);
     const snap = (t, edge) => {
       const d = new Date(t);
-      return edge === 'start' ? new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime() : new Date(d.getFullYear(), d.getMonth(), d.getDate(), 23, 59, 59, 999).getTime();
+      return edge === 'start' ? new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime() : new Date(d.getFullYear(), d.getMonth(),
+        d.getDate(), 23, 59, 59, 999).getTime();
     };
     // Période personnalisée bornée aux données.
     const custom = (a, b, days = false) => {

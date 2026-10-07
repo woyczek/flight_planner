@@ -61,10 +61,12 @@ def disc(g):
 
 
 def folder(d):
+    """Dossier du jeu d'icônes skeuomorphes d (shared/icons/skeuo/<d>/)."""
     return os.path.join(ROOT, 'shared', 'icons', 'skeuo', d)
 
 
 def has(d, f):
+    """Vrai si le jeu d contient le fichier f."""
     return os.path.isfile(os.path.join(folder(d), f))
 
 

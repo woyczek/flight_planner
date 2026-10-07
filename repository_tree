@@ -8,7 +8,7 @@
 
                       ___|___
           ===========(___o___)===========
-                  ____|_____|____             « DEFA 01, ici le Centre : vous êtes dans un fichier de
+                  ____|_____|____             « SOG 01, ici le Centre : vous êtes dans un fichier de
                  /  _    ___    _ \              compatibilité. Remettez les gaz, tour de piste à gauche,
             ====|  |_|  |___|  |_| |====          rappelez vent arrière config/. »
                  \_______________/
@@ -19,4 +19,4 @@
 
    Vous en êtes venu à bout ? Alors vous lisez aussi les notices de montage. Respect.
    ═══════════════════════════════════════════════════════════════════════════════════════════════════════ */
-window.REPOSITORY_TREE_COMPAT = { release:{date:"2026-10-06",version:"4.9.0",id:"XPS-4.9.0"} };
+window.REPOSITORY_TREE_COMPAT = { release:{date:"2026-10-07",version:"4.10.0",id:"XPS-4.10.0"} };

@@ -10,6 +10,261 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ## [Non publié]
 
+## [4.10.0] — 2026-10-07
+
+La compagnie devient SO Group Virtual. Nouvelle page Tableau (ordre de vol de la semaine). Premier lancement repensé :
+bilan, dossier de l'application d'abord (tout grisé tant qu'il n'est pas cohérent avec la suite), jeu d'essai ; accueil
+généré. Données aéronautiques par pays : choix sur la carte et « Activer » qui télécharge, reconstruit la base et
+calcule la MORA ; Royaume-Uni (AIP militaire) et Canada (NAV CANADA) ; MORA de l'outre-mer et des grandes zones, sommets
+parasites du relief écartés. Sessions ATC et activations IVAO et VATSIM ; flotte et terrain des appareils lus sur le site
+de la compagnie ; design Tactique. Sécurité : lanceur fermé aux autres sites, fichiers de données au format imposé, git
+durci. Code commenté et remis en forme.
+
+### Ajouté
+
+- **Canada : manuel des espaces aériens désignés de NAV CANADA (DAH) téléchargé et lu** — source officielle cochée par
+  défaut (openAIP et X-Plane en repli) : le lanceur trouve l'édition en vigueur sur la page des guides opérationnels
+  (`aero_fetch.py navcan` → `tools/navcan_dah.py`, sans bibliothèque : polices CID décodées par leur table ToUnicode) ;
+  243 espaces de la partie 5 (`zones/ca/navcan_dah.geojson`) : 19 zones dangereuses, 142 réglementées, 26 consultatives
+  d'opérations militaires (MOA) et 56 autres consultatives, avec arcs, cercles, secteurs séparés, limites verticales,
+  horaires et organisme de contrôle. À retélécharger tous les 56 jours.
+- **Royaume-Uni : AIP militaire (UK Mil AIP ENR 5.2) téléchargée et lue** — source officielle cochée par défaut (openAIP et
+  X-Plane en repli) : le lanceur prend le PDF à son adresse fixe (`aero_fetch.py ukmil` → `tools/ukmil_aip.py`) ; 25 zones
+  de vol à basse altitude (sol à 2000 ft AGL), 30 secteurs de la Valley Aerial Tactics Area, zone d'évitement TVAA, et
+  14 zones de ravitaillement (AARA) en axes IP → CP ajoutés à ceux de la DIRCAM (`SiaBase` : `aarXmlExtra`,
+  `OdvAirspace.aarTracks`). Fichiers `zones/<zone>/<source>_…` rattachés à leur source par le préfixe ; lien NAV CANADA
+  corrigé.
+- **Site de la compagnie** : adresses par défaut (site, pages Flotte, Log des vols…) valables pour la compagnie par défaut de
+  la suite (SO Group Virtual, ou DEFA Virtual) — elles comptaient « non réglées » depuis le renommage ; le lanceur lit la
+  flotte et le journal à l'adresse réglée (transmise par la page), plus à une adresse écrite en dur ; compagnie sans
+  adresse réglée : rien n'est importé.
+- **MORA des grandes zones** (plus de 1500 cases : États-Unis, Canada…) : MORA d'X-Plane par défaut (panneau, actions à
+  faire, mise en place automatique) ; « Calcul complet… » par blocs de 10° sur confirmation (volume annoncé), chaque bloc
+  écrit aussitôt dans `mora.csv`, arrêt et reprise ; relief des tuiles ouvertes d'AWS majoré de 100 m, sans requête
+  OpenStreetMap (`computeMoraGrid` : options `peaks`, `fineMax`).
+- **Données aéronautiques : mise en place automatique d'une zone** à sa première activation (téléchargements, derniers
+  ZIP de Téléchargements, reconstruction de la base, MORA de la zone, double jauge) et bouton « Tout récupérer et
+  recalculer » ; « Actions à faire » sous la carte (une ligne par source des zones actives, lien et bouton) ; tableau
+  de la base en SortedTable (triable, problèmes d'abord), nombre de contrôles sans souci, mode « Afficher les problèmes ».
+- **Données aéronautiques et types d'aéronefs dans l'installation** : Paramètres › Installation montre les blocs
+  « Données aéronautiques » et « Types d'aéronefs » (mêmes blocs que Maintenance : un bloc peut être sur plusieurs pages,
+  `settings.sections` « installation,maintenance ») ; nouveau bloc « Types d'aéronefs (OACI et performances) » avec
+  « Compléter les types manquants de la flotte et des missions » ; premier lancement, étape 4 « Données aéronautiques
+  et types d'aéronefs » avec ces mêmes blocs (`<div id="maintenance" data-blocks="sia,types">`), « Terminer » ramène à
+  l'accueil ; « (facultatif) » sur le classeur ODV et le dépôt git de synchronisation.
+- **Terrain actuel des appareils** (`shared/aircraft_positions.js`) : emplacement de la page Flotte du site gardé
+  (`location`, `locationAt` : date du dernier changement ; script et collage), ou terrain d'atterrissage réel d'un CR
+  issu d'un ordre de mission, le plus récent l'emportant ; les convoyages en partent (fenêtre d'affectation, affectations,
+  Planning ODV, fiche appareil). CR : champ « Terrain d'atterrissage réel (OACI) » jamais prérempli, référence de l'ordre
+  (`metadata.orderRef`) posée depuis « Mes missions », départ et arrivée du convoyage pour un ordre de convoyage,
+  rédacteur (`metadata.reportedBy`). Mon profil › Mes appareils : CR rédigés comptés, décompte du journal affiché.
+- **Mon profil › Mes appareils (reporting)** : appareils pilotés ou reportés (CR où le trigramme figure dans l'équipage),
+  coche grisée « Flotte DEFA » ; la liste complète reste dans Centre › Flotte.
+- **Maintenance › Types d'aéronefs et performances** : codes OACI dans une zone de texte (un par ligne ou séparés par des
+  virgules), bouton « Télécharger types et performances ».
+- **Flotte dans Paramètres › Centre, avec les appareils du reporting** : sous la flotte connue, les appareils qui volent
+  dans le journal des missions (`shared/fleet_reporting.js`), case « personnel » (cochée par défaut : hors flotte ;
+  décochée : ajouté à la flotte, affectable) ; index des appareils individuels `data/references/aircraft_personal.js`
+  enregistré avec la flotte ; « Rafraîchir types et performances » ; mise à jour depuis le site déplacée sous la flotte.
+  Le lanceur complète en tâche de fond les types inconnus après la mise à jour quotidienne (`unknown_types`).
+- **Terrain d'un appareil** : il ne change que par la mise à jour depuis le site ou un CR issu d'un ordre de mission ;
+  la fiche appareil (« 📍 ») ne le déduit plus du dernier CR venu.
+- **Ordres de vols : ordre de mission réémis d'office au déplacement d'une plaquette** — mêmes pilotes, appareils,
+  indicatifs et convoyeurs à la nouvelle heure, sans fenêtre ; pli déjà ouvert rescellé. Conflit d'affectation ou dossier
+  non autorisé : non réémis, signalé sur la plaquette (`omAttente`, `omRaison`) qui garde sa nouvelle heure.
+- **Fenêtre d'affectation : convoyage repris des Ordres de vols** — option `departure` (terrain de départ de secours
+  quand le yaml de la mission n'en donne pas : le convoyage n'était alors ni calculé ni montré) et `rows[].ferry`
+  (plaquette de convoyage placée : heure et durée reprises telles quelles, marquées « plaquette de convoyage »).
+- **Flotte et référence DEFA automatiques depuis le site** : le lanceur lit les pages publiques Flotte et Log des vols de
+  flotte.defa-virtual.fr (sans connexion) une fois par jour, à l'ouverture d'une page (`shared/defa_site.js`,
+  `/__setup/defa-site`), et les passe aux scripts du collage (`update_fleet.py`, `defa_reference.py`) ; carte
+  « Flotte et journal DEFA (site) » dans Paramètres › Maintenance (réglage automatique, « Mettre à jour maintenant »).
+  Scripts : option `--out=` ; le lanceur écrit dans son dossier de données (`--data`), envoi du journal du premier
+  lancement compris. Procédure du manuel d'exploitation (§ 4.2) réécrite ; mentions périmées corrigées.
+- **Périmètre des sessions ATC : pays préféré** (Paramètres › Centre › Planning ODV, France métropolitaine par défaut ;
+  44 pays, préfixes OACI des indicatifs de terrain) : imports VATSIM et IVAO, positions en ligne et sessions montrées
+  limités à ce pays (`SuiteAtc.perimeter` / `inPerimeter`) ; le lanceur reçoit les préfixes (`/__setup/ivao-bookings?pre=`).
+- **Planning ODV, sessions ATC** : trainings, examens et événements en tête du tableau (repérés en marge), simples
+  réservations de position repliées ; message d'import détaillé (trainings, examens, autres sessions).
+- **« Importer d'IVAO » importe aussi les sessions ATC IVAO** (trainings, examens, réservations) ; import IVAO
+  automatique à l'ouverture d'une semaine, au plus une fois par heure, si la page peut écrire (`SuiteAtc.autoImport`,
+  commun au Planning ODV et aux Ordres de vols).
+- **Activations des zones par réseau, VATSIM et IVAO côte à côte** (Ordres de vols et Planning ODV, même éditeur,
+  mêmes données) : saisies de chaque réseau, activations « les deux réseaux » dans les deux colonnes, import IVAO replié
+  dans sa colonne ; VATSIM ne publie pas d'activations (saisie à la main).
+- **Sessions ATC : import IVAO** (trainings, examens, réservations de France métropolitaine, clé d'API de
+  l'installation, lanceur `/__setup/ivao-bookings`) ; un seul import par réseau pour toutes les pages
+  (`SuiteAtc.importNetwork`).
+- **Fenêtre d'affectation sans écriture** : `apply(lignes, { takeoff, h_hour, alert, block_min })` rend aussi l'heure
+  et l'astreinte choisies (Ordres de vols : plaquette remplie en entier).
+- **Données aéronautiques : un seul bloc « Base aéronautique : sources, cycles et reconstruction »** (fusion de
+  « Reconstruire la base aéronautique » et « Cycles AIRAC et âge des données ») : tableau de toutes les sources cochées des
+  zones actives (zone, source, fichiers, cycle ou date, âge, taille, état), ligne cliquable qui met la source à jour,
+  boutons « Tout recalculer » et « Purger le cache ».
+- **Axes de ravitaillement depuis le PDF de la MILAIP** : Données aéronautiques › zone France › DIRCAM › « Importer le
+  PDF MILAIP… » (pdf.js chargé à la demande, `AarTracks.parseEnr57`), anomalies à valider, édition repérée (AMDT),
+  écriture de `miam-enr-5-7-tracks.xml` dans le dossier SIA (ancien archivé) et mise à jour de la base.
+- **Espace disque : données aéronautiques par zone** (place du dossier SIA, sources, fichiers ; zones inactives signalées).
+- **Design « Tactique »** (Apparence) : repris de l'outil Ordres de vols — fond de nuit dégradé à halos, verre fumé
+  (flou, bord lumineux), accent cyan, texte Inter, titres Orbitron en capitales, liseré du thème en haut des blocs. Sans
+  image ni texture (aucun décor, logo et icônes plats) ; polices dans `shared/fonts/` (SIL OFL). Règles dans
+  `designs_skeuo.css` (jetons des composants communs), clé `logo` du registre des designs (logo plat d'un design à matières).
+- **Base des types d'aéronefs plus visible** : carte en tête de Références et dépendances, encadrée et signalée par une
+  notification quand la base est vide, bouton « Compléter la base » (types de la flotte et des missions), « Recharger la
+  page » à la fin d'une passe, fichiers écrits expliqués.
+- **Lanceur plus rapide sur `localhost`** : écoute aussi sur `::1` (sous Windows, chaque fichier attendait ≈ 0,2 s le repli
+  IPv6 → IPv4 : page et fond affichés en 1,5 s au lieu de 0,15 s).
+- **Clés d'API et identifiants des services externes** : Paramètres › Installation › Sources et dossiers › « Clés
+  d'API » (IVAO, commune à la suite) et Mon profil › « IVAO — client OAuth (personnel) » (client ID, secret, adresse de
+  redirection à déclarer) ; gardés par le lanceur (`secrets/`, exclu de git, hors des données et des sauvegardes ;
+  `GET` / `POST /__setup/secrets`), jamais renvoyés à la page (état et 4 derniers caractères).
+- **Carte des zones : épinglage** — un clic garde la zone au panneau (activation par « Activer la zone », sources) ;
+  nouveau clic, Échap ou « Libérer » la relâchent. Carte redimensionnée quand le bloc s'ouvre depuis le menu ; bouton
+  du dossier SIA en double retiré ; plus de rafraîchissement de la page à chaque survol ; panneau sans barre de défilement
+  propre (la page défile ; molette au-dessus de la carte : la page, zoom avec Ctrl) ; « Télécharger » : état et résultat
+  sous le bouton, avertissement si les fichiers écrits ne sont pas visibles (dossier SIA non autorisé ou autre).
+- **Écart entre `data/` et sa sauvegarde git** (`tools/data_sync.py` : `divergence`, `shared/sync.js`) : bouton
+  « Synchroniser » orange ou rouge selon les modifications non envoyées (nombre, âge), les commits à recevoir ou non
+  envoyés, les fichiers modifiés hors des données synchronisées, l'absence de dépôt git ou distant, une fusion en cours ;
+  raisons en infobulle, alerte en notification une fois par session ; bouton « ⚠ Sauvegarde » si `data/` n'est pas un
+  dépôt git (hors jeu d'essai) ; seuils dans `data/config/suite.json` (`sync`). `odv/` rejoint les données synchronisées.
+- **CR : « Causes »** (plusieurs cases) d'une mission non effectuée ou partielle : météo, technique, simulateur, pilote ou
+  équipage absent, contrôle absent, réseau, zone non activée, ravitailleur absent, manque de temps, opérationnel, autre
+  (`results.causes`, `MissionVocab.mneCauses`), affichées dans le compte rendu.
+- **Ordres de vols** (☰ › Centre — Ordres de vols ; barre latérale « Ordres ») : l'ordre de vol de la semaine, repris de
+  l'outil autonome « Ordres de vols V0 » dans le modèle de la suite ([ODV_ORDRES.md](technique/ODV_ORDRES.md)). Frise du
+  jour en heures z (tranches matin, après-midi, soir ; nuit aéronautique ; RTBA · LL ; zones des vols ; dispos ensemble),
+  plaquettes de vol (mission du registre ou entraînement), contrôle, divers et notes glissés depuis les modèles, membres
+  glissés sur les plaquettes, empilement automatique ; conflits (semaine non déclarée, non couvert, non affectable,
+  chevauchement, doublon, zone non activée), badge P ; états repris des CR ; récurrences datées ; vue semaine (dispos par
+  membre, récup, modifications prises en compte), statistiques, briefing plein écran. Données : `data/odv/<semaine>.json`,
+  réglages `data/config/odv.json` (Paramètres › Centre › Ordres de vols) ; dispos et affectations de la suite.
+  Catégorie de dispo « Disponible au sol seulement » (`sol`) et règle d'affectation par catégorie
+  (`SuiteDispos.affectable` : un contrôle n'est affectable qu'en contrôle).
+- **Ordres de vols : modules partagés** — `shared/odv_airspace.js` (activations de zones par réseau et par plage,
+  `data/atc/activations/<semaine>.json` ; zones requises d'une mission et leur état ; contrôle ouvert ; examens et
+  trainings), `shared/odv_activations_editor.js` (saisie des activations), `shared/odv_reports.js` (missions ravitailleur
+  liées ; CR → plaquette : succès = ME, succès partiel ou échec = MNE avec causes, annulée = BÂCHÉ, sans CR après le délai
+  = MNE « pas de CR »). Registre des missions : rôle et axe de ravitaillement (`aarRole`, `aarTrack`).
+- **Données aéronautiques : carte des zones du monde** (Paramètres › Maintenance › Données aéronautiques). Une zone par
+  pays (Natural Earth, domaine public ; la France regroupe métropole et outre-mer), activée d'un clic ; au survol, ses
+  sources dans le panneau : téléchargement (openAIP, ENAIRE, FAA), commande ou inscription avec lien et mode d'emploi
+  (SIA France, NATS), PDF (DIRCAM ENR 5.7, AIP militaire britannique, NAV CANADA), dossier (X-Plane), calcul (MORA de la
+  zone). États sur la carte : vierge, inactive avec données, active incomplète, active complète. « Reconstruire la base
+  aéronautique » ne lit que les sources cochées des zones actives (X-Plane découpé à leurs contours) ; tableau des cycles
+  AIRAC et de l'âge des données ; MORA par zone (cadres regroupés : métropole et chaque outre-mer). Le pas à pas SIA en
+  six étapes et le contrôle des différences disparaissent ; les adresses DIRCAM, NATS, AIP militaire britannique et
+  NAV CANADA rejoignent les Sources externes (Paramètres › Installation). Réglage `aeroZones:v1` (ancien `aeroSources:v1`
+  repris : pays openAIP).
+- **Barre latérale réglable** (Apparence › Icônes) : « Taille des icônes » (petite, moyenne, grande) et « Affichage »
+  (icône et libellé, icône seule — barre plus étroite, nom en infobulle —, libellé seul) ; barre resserrée par défaut.
+- **Premier lancement : jeu d’essai ou dépôt de données de la compagnie.** Étape « Données » : « Jeu d’essai »
+  (données fictives livrées avec la suite, `tools/jeu_essai.py`, lancé par le lanceur : `POST /__setup/jeu-essai`, refusé
+  si des données sont déjà là), « Dépôt de données » (adresse saisie, identifiants facultatifs), archive reçue par mail.
+  Plus aucune adresse de dépôt de données en dur : `sources.dataRepo` vide, pas de clone automatique sans adresse,
+  modèle `tools/data_template` sans adresse ; identifiants en double de la page corrigés (`plRepo`, `plRepoMsg`).
+  **Contenu du jeu d'essai** (`tools/jeu_essai/`, voir son README) : 12 missions générées traduites en anglais —
+  BOXING GLOVES (exercice A-001 : organisation, deux éléments Rafale, ravitailleur, deux chiffons révélés par radio à
+  l'heure dite), EYE OF SOLOGNE (I-001 : E-3F « le grand disque », ravitailleur, Rafale), S-001, N-001, T-001 — ; quatre
+  pilotes fictifs (ALF, BRV, CHL, DLT), flotte des types de ces missions, indicatifs, configuration SOG ; disponibilités
+  (semaine en cours et suivante) et cinq affectations datées à l'installation (exercice le lendemain, heure H 19:00Z).
+  `--force` ne réinstalle que par-dessus un jeu d'essai (dates remises à jour).
+
+### Modifié
+
+- **MORA : tableau des changements de hauteur replié par défaut** (« Voir le tableau des changements de hauteur (n
+  case(s)) ») ; ouvert ou fermé, il le reste quand le bloc se redessine.
+- **Données aéronautiques : pays choisis sur la carte, puis « Activer »** (Maintenance, Installation, premier lancement) :
+  un clic ajoute un pays à la sélection, un autre l'en retire (pays choisis en bleu, barre sous la carte : pays, à
+  activer, à désactiver, « Annuler ») ; « Activer » applique la sélection et enchaîne pour toutes les zones choisies
+  incomplètes les téléchargements, les derniers ZIP de Téléchargements, une seule reconstruction de la base, puis la
+  MORA de chaque zone qui en manque — seulement si la base a été reconstruite (sinon relief sans obstacles) ; une source
+  en échec n'arrête pas les autres ; résumé en notification. « Actions à faire » ne liste plus que le manuel (commande
+  du SIA, PDF, dossier X-Plane, fichiers à déposer) — téléchargements et MORA comptés sur une ligne « automatique » — et
+  ses boutons sont compacts (`aeroAutoZones`, `aeroSelShow`).
+
+- **Code source documenté et remis en forme** : fonctions du Tableau, des modules ODV partagés et du premier lancement
+  commentées, docstrings des scripts `tools/` ; `tools/format_sources.py` coupe les lignes au-delà de 140 caractères
+  (hors chaînes et gabarits), passé sur 122 fichiers et contrôlé par `tools/verify_format.html` (arbres syntaxiques
+  identiques, modules ES compris) : lignes de plus de 300 caractères 1 212 → 711 (gabarits HTML et chaînes).
+- **Premier lancement repensé** : bilan « Où en est la suite » en tête (données, git, dossier, compagnie, clé IVAO,
+  pilote, identifiants du site, données aéronautiques ; Centre : flotte et journal, missions, utilisateurs, envoi des CR),
+  six étapes (données, dossiers, compagnie, profil et identifiants, données aéronautiques, Centre pour les
+  administrateurs) ; onglet « Premier lancement » dans Paramètres, carte de rappel sur l'accueil tant qu'il reste à faire.
+- **Accueil généré depuis `repository_tree`** (barre latérale et onglets) : plus de liste écrite à la main qui prend du
+  retard ; pages du Centre masquées tant qu'il est verrouillé.
+- **« Ordres de vols » renommé « Tableau »** (EN Board, DE Einsatztafel, ES Tablero) : page, barre latérale, menu,
+  rubrique de Paramètres › Centre, manuels ; fichiers et clés inchangés (`odv_orders.html`, `data/odv/`, `odvOrders`).
+- **Renommage : DEFA Virtual → SO Group Virtual** (écriture statique dans les sources, les quatre langues et la
+  documentation) : nom de la compagnie « SO Group Virtual » (`repository_tree.va`, en-têtes, pieds de page, PDF, YAML,
+  sauvegardes) ; « DEFA » qualificatif retiré (« CR DEFA » → « CR » / « Report », flotte, référence, base, journal,
+  trigramme, équipes et aéronefs du générateur, Planning ODV) ; logo générique (cible) ; couche de renommage pour une
+  autre compagnie comparée désormais à la marque des sources. **Site de la compagnie** : réglage (Paramètres ›
+  Installation › Sources et dossiers) ; les adresses par défaut (flotte.defa-virtual.fr) ne valent que pour DEFA
+  Virtual — sinon aucun lien inventé, invitation à renseigner l'adresse (`RepositoryNav.siteLink`) ; libellés « site de
+  la compagnie ». **Catégories de disponibilité** : « Exercice SOG », « Vol hors SOG »… (4 langues). En-tête du lanceur
+  `X-SOG-Setup` (l'ancien `X-DEFA-Setup` reste accepté pour cette version : **relancer le lanceur** après la mise à
+  jour) ; constante du générateur `ÉQUIPES_SOG` (l'ancien nom reste lu). Noms : « SO Group Virtual », nom long
+  « Virtual Special Operation Group » (nouveau champ de Paramètres › Sources et dossiers, première mention de l'accueil,
+  du premier lancement, des présentations et des manuels), sigle « SOG » ; champ `va` des nouveaux fichiers de
+  données : le sigle réglé (les fichiers existants gardent « DEFA »). Couche de renommage pour une autre compagnie
+  réparée (expressions régulières abîmées par fc0f4408).
+- **Dossier d'une autre copie de la suite : confirmation explicite** : « Suite lancée depuis <dossier servi>, dossier
+  déclaré <dossier choisi>. Cela peut conduire à des incohérences. Confirmer ? » (4 langues ; chemin complet du dossier
+  choisi lu dans son repère `.defa_instance`, dont le lanceur écrit maintenant le chemin réel en 2e ligne — sinon son
+  nom). Confirmé, le dossier et ce qui s'en déduit (data/missions, cr, sia…) sont lus ET écrits directement, avec un
+  rappel du même message ; la confirmation est oubliée si le dossier est rechoisi sans elle. Non confirmé (choix
+  antérieur), rien n'y est écrit et le message dit pourquoi, au lieu de « Dossier des données d'une autre copie… ».
+
+### Corrigé
+
+- **Reconstruction de la base aéronautique en échec** (« Cannot access 'aarExtra' before initialization », depuis la
+  lecture de l'AIP militaire britannique) : la liste des axes de ravitaillement d'autres pays était utilisée avant sa
+  déclaration ; aucune base ne se construisait, la MORA d'une zone n'était pas calculée.
+
+- **MORA faussée par des pixels parasites du relief** : les tuiles de relief (Terrarium, AWS) portent des pixels isolés
+  faux (5 389 m au bord de mer de La Réunion, trou de la source mal comblé) ; la MORA gardant le point le plus haut de
+  chaque case, La Réunion sud sortait à 20 100 ft au lieu de 12 400 ft. Un pixel qui dépasse de plus de 1 000 m la
+  médiane de ses 8 voisins est désormais écarté (un vrai sommet : 390 m au plus en z9, 70 m en z12 ; relevé sur le
+  Mont Blanc, le Cervin, le Dru, l'Ossau et le Piton des Neiges). Les `mora.csv` déjà calculés gardent l'ancienne
+  valeur : recalculer la zone (Paramètres › Maintenance › Données aéronautiques).
+
+### Sécurité
+
+Suite de l'[audit du 7 octobre](technique/AUDIT_SECURITE_2026-10-07.md), lots 1 à 3.
+
+- **Lanceur fermé aux autres sites** : une page web quelconque lisait les fichiers `data/*.js` (trigrammes, vols,
+  configuration) par `<script src="http://127.0.0.1:8000/…">`. Toute requête venue d'un autre site (en-tête
+  `Sec-Fetch-Site`) est refusée, navigations comprises (page explicative et lien vers l'accueil). S'y ajoutent
+  `Cross-Origin-Resource-Policy`, `X-Frame-Options` et `frame-ancestors`.
+- **Plus rien de privé servi** : `secrets/` (clé IVAO, en clair), `data/local/`, fichiers et dossiers « . » (`.git` :
+  seulement ce que lit le pied de page), listes de dossiers. Contrôle sur le chemin demandé et sur le chemin réel
+  (casse, points finaux, flux NTFS, noms courts, liens).
+- **Fichiers de données exécutés : format imposé** (`tools/data_guard.py`). Un `.js` de `data/` n'est servi, et commité
+  par « Synchroniser », que s'il suit le format des fichiers de données (gabarit de `datafile.py` ou
+  `window.NOM = littéral;`, exportations en liste fermée). Les fichiers HTML, SVG ou XML de `data/` sont servis en bac à
+  sable.
+- **Téléchargements** : la page ne demande plus qu'un motif déclaré par une source (`aero_zones.js`). Avant, `*.*`
+  rendait tout le dossier.
+- **Dépôt distant de `data/`** : un autre dépôt que celui en place (ou celui de la configuration) se confirme dans une
+  fenêtre Oui / Non que le lanceur ouvre sur l'ordinateur. Elle montre l'adresse actuelle et la nouvelle, avec « Non »
+  par défaut, et aucune page ne peut y répondre. Sans cela, une page piégée pouvait faire envoyer toutes les données
+  ailleurs. Après un « Non », pas de nouvelle demande pendant 30 s. L'adresse ne peut plus contenir de mot de passe ou
+  de jeton, ni commencer par « - ».
+- **Git durci** : git pris par son chemin absolu hors du dossier de la suite ; `core.fsmonitor=false`,
+  `protocol.ext.allow=never`, `submodule.recurse=false` sur chaque appel ; `--` devant les adresses. `lancer.cmd` ne
+  lance plus un `py` ou un `git` déposé dans le dossier (`NoDefaultCurrentDirectoryInExePath`).
+- **Archive des données** : ni dossier `.git` (commande lancée par git) ni exécutable n'est extrait.
+- **XSS** :
+  - couleur d'une catégorie de disponibilité ou d'un groupe, et couleurs des modèles d'ODV : vraies couleurs
+    seulement (`RepositoryKit.cssColor`) ;
+  - statut d'une mission dans le registre ;
+  - profil de performance (nom, indicatif, immatriculation d'un appareil SimBrief, d'un `.lnmperf` ou d'un OFP) ;
+  - altitude-densité du CR ;
+  - version distante dans le badge de mise à jour (validée et échappée).
+- **Aide** : `?doc=` limité aux documents de `docs/` (un document d'un autre site s'y chargeait) ; liens limités à
+  `http(s)`, plus de `javascript:` ; messages à la page de la suite seulement.
+
 ## [4.9.0] — 2026-10-06
 
 Données aéronautiques d'autres pays : lecteurs AIXM 5.1, GeoJSON, OpenAir et X-Plane, téléchargements (openAIP, FAA,
@@ -48,6 +303,10 @@ d'aéronefs complétés sur chaque poste, type par type. Outil de livraison des 
 - `tools/publish_dist.py` (lanceurs `publish_dist.sh` / `.cmd`) : archive de livraison d’une version publiée,
   `dist/xplane-web-suite-<version>.zip` — le code seul au tag (ni `data/` ni `examples/`), vraies images LFS (pas de
   pointeurs), archive reproductible — empreinte SHA-256 et rubrique « Livraison » dans la section de la version.
+
+### Livraison
+
+- Archive de livraison : `xplane-web-suite-4.9.0.zip` — SHA-256 `0826c50f0764eb64b9913d3bf803593e331b9d6425fa00ecaad24185275b0da9` (code seul, hors dépôt : dossier `dist/`).
 
 ## [4.8.0] — 2026-10-05
 

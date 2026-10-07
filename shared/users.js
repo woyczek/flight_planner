@@ -18,22 +18,27 @@
   //   themePrefs(TRI), setThemePrefs(TRI, prefs), ROLES.
   if (window.SuiteUsers) return;
   const K = window.RepositoryKit;
+  /** Traduction d'une ligne [fr, en, de, es] par le kit (première colonne sans kit) ; tf : avec ses variables {x}. */
   const t = row => K?.t ? K.t(row) : row[0],
     tf = (row, v) => K?.tf ? K.tf(row, v) : row[0];
   const SESSION = 'suiteSession:v1',
     CONFIG = 'config/suite.json',
     DIR = 'utilisateurs',
     INDEX = 'utilisateurs/_index.json',
-    VA = () => window.RepositoryNav?.va?.().short || 'DEFA',
+    VA = () => window.RepositoryNav?.va?.().short || 'SOG',
     ITER = 310000; // PBKDF2-SHA256 : itérations (recommandation OWASP pour SHA-256 dans le navigateur)
   const ROLES = ['admin_centre', 'utilisateur'];
   /** Socle des fichiers du pool (shared/assignments.js, chargé avec ce script). */
   const A = () => window.MissionAssignments;
+  /** Horodatage ISO des écritures (updated_at, at). */
   const now = () => new Date().toISOString();
+  /** Trigramme normalisé (sans espaces, en majuscules). */
   const norm = tri => String(tri || '').trim().toUpperCase();
 
   // ---- configuration partagée (mode develop / production), lue une fois puis à chaque écriture d'un onglet
   let cfg = K?.store?.json('suiteConfigCache:v1', null) || null; // dernière valeur lue : mode connu dès le chargement
+  /** Lit data/config/suite.json (develop par défaut si absent), le garde en cache « suiteConfigCache:v1 » et émet
+   *  « suite-mode-change » si le mode a changé. fresh : relecture sans cache. */
   async function loadConfig(fresh = false) {
     const v = await A()?.readData?.(CONFIG, {
       fresh
@@ -52,10 +57,12 @@
     }));
     return cfg;
   }
+  /** Mode de la suite : « production » seulement s'il est écrit tel quel dans la configuration, sinon « develop ». */
   const mode = () => cfg?.mode === 'production' ? 'production' : 'develop';
 
   // ---- session de ce navigateur
   const session = () => K?.store?.json(SESSION, null) || null;
+  /** Écrit la session « suiteSession:v1 » (null : l'efface), émet « suite-session-change » et met à jour le bandeau. */
   const setSession = s => {
     if (s) K.store.setJson(SESSION, s);
     else K.store.remove(SESSION);
@@ -76,12 +83,16 @@
     const s = session();
     return s?.as ? `${s.tri} pour ${s.as}` : effective();
   };
+  /** Session d'un admin_centre (connecté, ou qui usurpe un utilisateur). */
   const isAdmin = () => session()?.role === 'admin_centre';
+  /** Trigramme non modifiable dans les pages : mode production, ou usurpation en cours. */
   const trigramLocked = () => mode() === 'production' || !!session()?.as;
 
   // ---- empreinte du mot de passe (PBKDF2-SHA256, sel aléatoire de 16 octets)
   const b64 = buf => btoa(String.fromCharCode(...new Uint8Array(buf)));
+  /** Base64 → octets (sel et empreinte lus dans les fiches). */
   const unb64 = s => Uint8Array.from(atob(s), c => c.charCodeAt(0));
+  /** Dérive 256 bits PBKDF2-SHA256 du mot de passe (sel en octets, nombre d'itérations). */
   async function derive(password, salt, iterations) {
     const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(String(password)), 'PBKDF2', false, ['deriveBits']);
     return crypto.subtle.deriveBits({
@@ -91,6 +102,7 @@
       iterations
     }, key, 256);
   }
+  /** Empreinte à ranger dans la fiche (mot_de_passe) : { algo, iterations, sel, empreinte }, sel neuf de 16 octets. */
   async function hashPassword(password) {
     const salt = crypto.getRandomValues(new Uint8Array(16));
     return {
@@ -146,7 +158,9 @@
   /** Enregistre une fiche (datée, signée) et son entrée d'index. Retour : { where, error } (writeData). */
   async function save(user) {
     const tri = norm(user.trigramme);
-    if (!/^[A-Z0-9]{2,5}$/.test(tri)) throw new Error(t(['Trigramme invalide.', 'Invalid trigram.', 'Ungültiges Kürzel.', 'Trigrama no válido.']));
+    if (!/^[A-Z0-9]{2,5}$/.test(tri)) throw new Error(t(['Trigramme invalide.', 'Invalid trigram.', 'Ungültiges Kürzel.',
+      'Trigrama no válido.'
+    ]));
     const doc = {
       schema: 1,
       va: VA(),
@@ -203,7 +217,7 @@
       preferences: {}
     });
   }
-  /** Dossier vide : une fiche « utilisateur » par pilote de la référence DEFA. Retour : trigrammes créés. */
+  /** Dossier vide : une fiche « utilisateur » par pilote de la référence. Retour : trigrammes créés. */
   async function seed() {
     if (Object.keys(await index(true)).length) return [];
     const ref = window.DEFA_REFERENCE || {},
@@ -227,14 +241,20 @@
     const u = await get(tri, {
       fresh: true
     });
+    /** Échec de connexion : lève l'erreur traduite. */
     const fail = row => {
       throw new Error(t(row));
     };
     if (!u) fail(['Utilisateur inconnu.', 'Unknown user.', 'Unbekannter Benutzer.', 'Usuario desconocido.']);
     if (u.actif === false) fail(['Utilisateur désactivé.', 'User deactivated.', 'Benutzer deaktiviert.', 'Usuario desactivado.']);
     if (u.mot_de_passe) {
-      if (!await verify(password, u.mot_de_passe)) fail(['Mot de passe incorrect.', 'Wrong password.', 'Falsches Passwort.', 'Contraseña incorrecta.']);
-    } else if (mode() === 'production') fail(['Aucun mot de passe défini : le demander à un administrateur du Centre.', 'No password set: ask a Centre administrator.', 'Kein Passwort gesetzt: einen Administrator des Zentrums fragen.', 'Ninguna contraseña definida: pedirla a un administrador del Centro.']);
+      if (!await verify(password, u.mot_de_passe)) fail(['Mot de passe incorrect.', 'Wrong password.', 'Falsches Passwort.',
+        'Contraseña incorrecta.'
+      ]);
+    } else if (mode() === 'production') fail(['Aucun mot de passe défini : le demander à un administrateur du Centre.',
+      'No password set: ask a Centre administrator.', 'Kein Passwort gesetzt: einen Administrator des Zentrums fragen.',
+      'Ninguna contraseña definida: pedirla a un administrador del Centro.'
+    ]);
     setSession({
       tri,
       role: u.role,
@@ -259,17 +279,25 @@
       mustChange: !!u.a_changer || !u.mot_de_passe
     };
   }
+  /** Déconnexion : session effacée (usurpation comprise). */
   const logout = () => setSession(null);
   /** Change le mot de passe de l'utilisateur connecté (l'ancien est exigé s'il en a un). */
   async function changePassword(oldPassword, newPassword) {
     const s = session();
-    if (!s?.tri || s.as) throw new Error(t(['Se connecter d’abord (hors usurpation).', 'Sign in first (not while impersonating).', 'Zuerst anmelden (nicht während einer Übernahme).', 'Conectarse primero (fuera de una suplantación).']));
-    if (String(newPassword || '').length < 8) throw new Error(t(['Nouveau mot de passe : 8 caractères au moins.', 'New password: at least 8 characters.', 'Neues Passwort: mindestens 8 Zeichen.', 'Nueva contraseña: 8 caracteres como mínimo.']));
+    if (!s?.tri || s.as) throw new Error(t(['Se connecter d’abord (hors usurpation).', 'Sign in first (not while impersonating).',
+      'Zuerst anmelden (nicht während einer Übernahme).', 'Conectarse primero (fuera de una suplantación).'
+    ]));
+    if (String(newPassword || '').length < 8) throw new Error(t(['Nouveau mot de passe : 8 caractères au moins.',
+      'New password: at least 8 characters.', 'Neues Passwort: mindestens 8 Zeichen.',
+      'Nueva contraseña: 8 caracteres como mínimo.'
+    ]));
     const u = await get(s.tri, {
       fresh: true
     });
     if (!u) throw new Error(t(['Fiche introuvable.', 'User file not found.', 'Benutzerdatei nicht gefunden.', 'Ficha no encontrada.']));
-    if (u.mot_de_passe && !await verify(oldPassword, u.mot_de_passe)) throw new Error(t(['Ancien mot de passe incorrect.', 'Wrong old password.', 'Altes Passwort falsch.', 'Contraseña anterior incorrecta.']));
+    if (u.mot_de_passe && !await verify(oldPassword, u.mot_de_passe)) throw new Error(t(['Ancien mot de passe incorrect.',
+      'Wrong old password.', 'Altes Passwort falsch.', 'Contraseña anterior incorrecta.'
+    ]));
     return save({
       ...u,
       mot_de_passe: await hashPassword(newPassword),
@@ -279,7 +307,10 @@
   /** Réinitialisation par un admin : mot de passe provisoire, à changer à la prochaine connexion. */
   async function resetPassword(tri, newPassword) {
     requireAdmin();
-    if (String(newPassword || '').length < 8) throw new Error(t(['Mot de passe provisoire : 8 caractères au moins.', 'Temporary password: at least 8 characters.', 'Vorläufiges Passwort: mindestens 8 Zeichen.', 'Contraseña provisional: 8 caracteres como mínimo.']));
+    if (String(newPassword || '').length < 8) throw new Error(t(['Mot de passe provisoire : 8 caractères au moins.',
+      'Temporary password: at least 8 characters.', 'Vorläufiges Passwort: mindestens 8 Zeichen.',
+      'Contraseña provisional: 8 caracteres como mínimo.'
+    ]));
     const u = await get(tri, {
       fresh: true
     });
@@ -292,7 +323,11 @@
   }
   /** Droits d'administration : imposés en mode production (admin_centre connecté) ; testés seulement en develop. */
   function requireAdmin() {
-    if (mode() === 'production' && !isAdmin()) throw new Error(t(['Réservé aux administrateurs du Centre (admin_centre connecté).', 'Reserved for Centre administrators (signed-in admin_centre).', 'Administratoren des Zentrums vorbehalten (angemeldeter admin_centre).', 'Reservado a los administradores del Centro (admin_centre conectado).']));
+    if (mode() === 'production' && !isAdmin()) throw new Error(t(['Réservé aux administrateurs du Centre (admin_centre connecté).',
+      'Reserved for Centre administrators (signed-in admin_centre).',
+      'Administratoren des Zentrums vorbehalten (angemeldeter admin_centre).',
+      'Reservado a los administradores del Centro (admin_centre conectado).'
+    ]));
   }
   /** Agir en tant qu'un autre utilisateur (admin) : bandeau sur toutes les pages, écritures signées « ADM pour TOTO ». */
   async function impersonate(tri) {
@@ -300,7 +335,10 @@
     tri = norm(tri);
     const s = session() || {};
     const me = s.tri || A()?.profileTrigram?.() || '';
-    if (!me) throw new Error(t(['Se connecter d’abord (ou régler son trigramme en mode develop).', 'Sign in first (or set your trigram in develop mode).', 'Zuerst anmelden (oder im develop-Modus das Kürzel setzen).', 'Conectarse primero (o definir el trigrama en modo develop).']));
+    if (!me) throw new Error(t(['Se connecter d’abord (ou régler son trigramme en mode develop).',
+      'Sign in first (or set your trigram in develop mode).', 'Zuerst anmelden (oder im develop-Modus das Kürzel setzen).',
+      'Conectarse primero (o definir el trigrama en modo develop).'
+    ]));
     if (tri === me) return stopImpersonation();
     if (!await get(tri)) throw new Error(t(['Utilisateur inconnu.', 'Unknown user.', 'Unbekannter Benutzer.', 'Usuario desconocido.']));
     // develop sans connexion : session d'usurpation seule (login: false), effacée à la fin de l'usurpation
@@ -331,7 +369,12 @@
     if (mode() === 'production') requireAdmin();
     if (m === 'production') {
       const admins = (await list(true)).filter(u => u.role === 'admin_centre' && u.actif !== false && u.mot_de_passe);
-      if (!admins.length) throw new Error(t(['Mode production : il faut d’abord un administrateur du Centre actif, avec un mot de passe.', 'Production mode: an active Centre administrator with a password is needed first.', 'Produktionsmodus: zuerst ist ein aktiver Administrator des Zentrums mit Passwort nötig.', 'Modo producción: primero hace falta un administrador del Centro activo con contraseña.']));
+      if (!admins.length) throw new Error(t([
+        'Mode production : il faut d’abord un administrateur du Centre actif, avec un mot de passe.',
+        'Production mode: an active Centre administrator with a password is needed first.',
+        'Produktionsmodus: zuerst ist ein aktiver Administrator des Zentrums mit Passwort nötig.',
+        'Modo producción: primero hace falta un administrador del Centro activo con contraseña.'
+      ]));
     }
     const doc = {
       schema: 1,
@@ -360,7 +403,9 @@
     if (!idx[norm(tri)]) return null;
     return A()?.readIndexed ? A().readIndexed(`${DIR}/${norm(tri)}.json`, idx[norm(tri)].updated_at, opts) : get(tri, opts);
   }
+  /** Préférences de thèmes d'un utilisateur (preferences.themes de sa fiche) ; null si aucune. */
   const themePrefs = async tri => (await getIndexed(tri))?.preferences?.themes || null;
+  /** Enregistre les préférences de thèmes dans la fiche (fiche « utilisateur » créée si absente). */
   async function setThemePrefs(tri, themes) {
     tri = norm(tri);
     const u = (await get(tri, {
@@ -400,11 +445,17 @@
       b.querySelector('button').onclick = () => stopImpersonation();
       document.body.append(b);
     }
-    b.querySelector('span').textContent = tf(['Usurpation : utilisateur {u} (par {a}, écritures signées « {a} pour {u} »)', 'Impersonation: user {u} (by {a}, writes signed “{a} pour {u}”)', 'Identitätsübernahme: Benutzer {u} (durch {a}, Schreibvorgänge signiert „{a} pour {u}“)', 'Suplantación: usuario {u} (por {a}, escrituras firmadas «{a} pour {u}»)'], {
+    b.querySelector('span').textContent = tf(['Usurpation : utilisateur {u} (par {a}, écritures signées « {a} pour {u} »)',
+      'Impersonation: user {u} (by {a}, writes signed “{a} pour {u}”)',
+      'Identitätsübernahme: Benutzer {u} (durch {a}, Schreibvorgänge signiert „{a} pour {u}“)',
+      'Suplantación: usuario {u} (por {a}, escrituras firmadas «{a} pour {u}»)'
+    ], {
       u: s.as,
       a: s.tri
     });
-    b.querySelector('button').textContent = t(['Terminer l’usurpation', 'End impersonation', 'Übernahme beenden', 'Terminar la suplantación']);
+    b.querySelector('button').textContent = t(['Terminer l’usurpation', 'End impersonation', 'Übernahme beenden',
+      'Terminar la suplantación'
+    ]);
   }
   /** Page qui exige une connexion en mode production : 'user' (Mes missions), 'admin' (Centre), '' sinon. */
   function gateOf() {
@@ -413,6 +464,9 @@
     if (p.startsWith('apps/cpco/') || p === 'apps/settings/centre.html') return 'admin';
     return '';
   }
+
+  /** Mode production sur une page protégée sans session suffisante : boîte de connexion par-dessus la page
+   *  (rôle admin_centre exigé pour le Centre), page rechargée après connexion. */
   function gate() {
     document.getElementById('suiteLogin')?.remove();
     const need = gateOf(),
@@ -429,7 +483,14 @@
     box.innerHTML = `<div><b></b><p></p><form><input name="tri" maxlength="5" autocomplete="username" spellcheck="false"><input name="pw" type="password" autocomplete="current-password"><button type="submit"></button><span class="suite-login-msg"></span></form><a href="${K.esc(new URL('index.html', window.RepositoryNav?.root || location.href).href)}"></a></div>`;
     const f = box.querySelector('form');
     box.querySelector('b').textContent = t(['Connexion', 'Sign in', 'Anmeldung', 'Conexión']);
-    box.querySelector('p').textContent = need === 'admin' ? t(['Mode production : le Centre est réservé aux administrateurs du Centre connectés.', 'Production mode: the Centre is reserved for signed-in Centre administrators.', 'Produktionsmodus: Das Zentrum ist angemeldeten Administratoren vorbehalten.', 'Modo producción: el Centro está reservado a los administradores conectados.']) : t(['Mode production : connectez-vous pour voir vos missions.', 'Production mode: sign in to see your missions.', 'Produktionsmodus: anmelden, um Ihre Missionen zu sehen.', 'Modo producción: conéctese para ver sus misiones.']);
+    box.querySelector('p').textContent = need === 'admin' ? t([
+      'Mode production : le Centre est réservé aux administrateurs du Centre connectés.',
+      'Production mode: the Centre is reserved for signed-in Centre administrators.',
+      'Produktionsmodus: Das Zentrum ist angemeldeten Administratoren vorbehalten.',
+      'Modo producción: el Centro está reservado a los administradores conectados.'
+    ]) : t(['Mode production : connectez-vous pour voir vos missions.', 'Production mode: sign in to see your missions.',
+      'Produktionsmodus: anmelden, um Ihre Missionen zu sehen.', 'Modo producción: conéctese para ver sus misiones.'
+    ]);
     f.tri.placeholder = t(['Trigramme', 'Trigram', 'Kürzel', 'Trigrama']);
     f.pw.placeholder = t(['Mot de passe', 'Password', 'Passwort', 'Contraseña']);
     f.querySelector('button').textContent = t(['Se connecter', 'Sign in', 'Anmelden', 'Conectarse']);
@@ -440,8 +501,16 @@
       msg.textContent = '…';
       try {
         const r = await login(f.tri.value, f.pw.value);
-        if (need === 'admin' && r.user.role !== 'admin_centre') throw new Error(t(['Compte sans droits d’administration du Centre.', 'Account without Centre administration rights.', 'Konto ohne Administrationsrechte für das Zentrum.', 'Cuenta sin derechos de administración del Centro.']));
-        if (r.mustChange) window.AppFramework?.notify?.(t(['Mot de passe provisoire : le changer dans Paramètres › Mon profil › Connexion.', 'Temporary password: change it in Settings › My profile › Sign-in.', 'Vorläufiges Passwort: unter Einstellungen › Mein Profil › Anmeldung ändern.', 'Contraseña provisional: cambiarla en Ajustes › Mi perfil › Conexión.']), 'warn');
+        if (need === 'admin' && r.user.role !== 'admin_centre') throw new Error(t(['Compte sans droits d’administration du Centre.',
+          'Account without Centre administration rights.', 'Konto ohne Administrationsrechte für das Zentrum.',
+          'Cuenta sin derechos de administración del Centro.'
+        ]));
+        if (r.mustChange) window.AppFramework?.notify?.(t([
+          'Mot de passe provisoire : le changer dans Paramètres › Mon profil › Connexion.',
+          'Temporary password: change it in Settings › My profile › Sign-in.',
+          'Vorläufiges Passwort: unter Einstellungen › Mein Profil › Anmeldung ändern.',
+          'Contraseña provisional: cambiarla en Ajustes › Mi perfil › Conexión.'
+        ]), 'warn');
         location.reload();
       } catch (err) {
         msg.textContent = err.message;
@@ -454,6 +523,7 @@
   window.SuiteUsers = {
     ROLES,
     mode,
+    /** Configuration partagée lue en dernier, avec le mode effectif. */
     config: () => ({
       ...(cfg || {}),
       mode: mode()

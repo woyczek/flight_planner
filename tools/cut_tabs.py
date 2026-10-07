@@ -80,6 +80,7 @@ LISERE_OF = {'cabinet': 'laiton', 'flightlog': 'acier', 'field': 'acier', 'aqua'
 
 
 def crop(im, box):
+    """Découpe de la planche ; box = (x0, y0, x1, y1) en pixels inclus (bornes mesurées sur la planche)."""
     x0, y0, x1, y1 = box
     return im.crop((x0, y0, x1 + 1, y1 + 1))
 
@@ -99,6 +100,8 @@ def band(im, bd, h):
 
 
 def rail_of(left, right, fill=None):
+    """Rail assemblé : embout gauche, milieu de FILL_W px (fill répété, transparent sans fill), embout droit.
+    Arrêt si les trois morceaux n'ont pas la même hauteur."""
     h = left.size[1]
     if right.size[1] != h or (fill and fill.size[1] != h):
         sys.exit('embouts et milieu du rail de hauteurs différentes')
@@ -156,6 +159,8 @@ def cells(im, c):
 
 
 def cut(design):
+    """Découpe les onglets du design (relâché, enfoncé, rail ; voyant en montage « montage ») selon son mode de CONFIG
+    et les écrit dans shared/deco/<design>/tabs/ ; images retouchées à la main gardées sauf --force."""
     c = CONFIG[design]
     im = Image.open(os.path.join(ROOT, 'docs', 'technique', 'planches', c['sheet'])).convert('RGBA')
     out = os.path.join(ROOT, 'shared', 'deco', design, 'tabs')
@@ -197,6 +202,7 @@ def cut(design):
 
 
 def lisere(design):
+    """Écrit le liseré des onglets du design (shared/deco/<design>/tabs/lisere.webp) depuis sa planche (LISERES)."""
     name, box = LISERES[LISERE_OF[design]]
     img = crop(Image.open(os.path.join(ROOT, 'docs', 'technique', 'planches', name)).convert('RGBA'), box)
     out = os.path.join(ROOT, 'shared', 'deco', design, 'tabs')

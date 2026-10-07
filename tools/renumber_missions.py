@@ -32,6 +32,7 @@ TODAY = dt.date.today().isoformat()
 
 
 def read(p):
+    """Texte du fichier (UTF-8, caractères illisibles remplacés)."""
     return open(p, encoding='utf-8', errors='replace').read()
 
 
@@ -81,6 +82,8 @@ def scan():
 
 
 def plan():
+    """Séries à renuméroter avec leurs nouveaux identifiants, à la suite des numéros et séries déjà au nouveau format :
+    chaque série reçoit letter, rank, newdir, mapping (ancien → nouvel identifiant) et op_map (opération → base)."""
     series, done = scan()
     num = {L: max(v['nums'] or [0]) for L, v in done.items()}
     rank = {L: max(v['series'] or [0]) for L, v in done.items()}
@@ -116,6 +119,7 @@ def rewrite(text, s, m=None):
     # operation.id et operation.missions
     text = re.sub(r"^(operation:\s*\n\s+id:\s*)['\"]?(\d+)['\"]?", lambda x: f"{x.group(1)}'{ops.get(x.group(2), x.group(2))}'", text, flags=re.M)
     def ids_list(x):
+        """Liste « missions: [...] » réécrite avec les nouveaux identifiants."""
         vals = [v.strip().strip('\'"') for v in x.group(2).split(',') if v.strip()]
         return x.group(1) + ', '.join("'" + mp.get(v.upper(), v) + "'" for v in vals) + ']'
     text = re.sub(r"^(\s+missions:\s*\[)([^\]]*)\]", ids_list, text, flags=re.M)
@@ -130,6 +134,7 @@ def rewrite(text, s, m=None):
 
 
 def move(src, dst, log):
+    """Déplace src vers dst ; si dst existe, src (doublon) va dans _remplaces/<date>/ (noté dans log). Rien en simulation."""
     if os.path.abspath(src) == os.path.abspath(dst):
         return
     if os.path.exists(dst):
@@ -145,6 +150,8 @@ def move(src, dst, log):
 
 
 def run():
+    """Renumérote les séries : fichiers rangés par mission, contenus réécrits, anciens dossiers vides retirés, table
+    ajoutée à RENUMEROTATION.md (simulation : journal seulement)."""
     series = plan()
     if not series:
         print('Rien à renuméroter.')

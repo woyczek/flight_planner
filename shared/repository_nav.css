@@ -341,7 +341,32 @@
   /* ---- barre latérale (construite par repository_nav.js dès son exécution, icônes posées par side_nav.js) : ici et non
    dans block_icons.css (chargé plus tard) pour que la barre et la marge du contenu paraissent avec l'en-tête ; préférence html[data-sidenav="on"] ou design « console » */
   :root {
-    --repo-sidenav-w: 84px
+    --repo-sidenav-w: 84px;
+    /* taille des icônes de la barre (Apparence : petite, moyenne, grande) : jeu de lignes / jeux à matières */
+    --repo-sn-ic: 22px;
+    --repo-sn-ic-sk: 40px
+  }
+  html[data-sidenav-size="s"] {
+    --repo-sn-ic: 18px;
+    --repo-sn-ic-sk: 32px
+  }
+  html[data-sidenav-size="l"] {
+    --repo-sn-ic: 28px;
+    --repo-sn-ic-sk: 50px
+  }
+  /* icône seule : barre plus étroite, libellé en infobulle (title des entrées) ; libellé seul : pas d'icône */
+  html[data-sidenav-show="icon"] {
+    --repo-sidenav-w: 64px
+  }
+  html[data-sidenav-size="l"][data-sidenav-show="icon"] {
+    --repo-sidenav-w: 72px
+  }
+  html[data-sidenav-show="icon"] .repo-sidenav-label,
+  html[data-sidenav-show="icon"] .repo-sidenav-sep-title {
+    display: none
+  }
+  html[data-sidenav-show="label"] .repo-sidenav-item .repo-sidenav-ic {
+    display: none
   }
   .repo-sidenav {
     display: none;
@@ -369,10 +394,10 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    min-height: 64px;
-    margin-top: 16px
+    min-height: 52px;
+    margin-top: 8px
   }
-  /* contenu de la barre un peu descendu : logo DEFA centré dans sa case */
+  /* contenu de la barre un peu descendu : logo centré dans sa case */
   /* modèle de boîte imposé : la barre ne dépend pas du CSS de la page (le studio n'a pas de box-sizing global :
    liens de 84 px + retrait + liseré = 95 px, icônes décalées) */
   .repo-sidenav,
@@ -386,7 +411,7 @@
   .repo-sidenav ul {
     list-style: none;
     margin: 0;
-    padding: 0 0 8px;
+    padding: 0 0 4px;
     flex: 1 1 auto;
     min-height: 0;
     overflow-y: auto;
@@ -419,15 +444,15 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 5px;
+    gap: 3px;
     width: 100%;
-    padding: 11px 4px;
+    padding: 6px 3px;
     border: 0;
     border-left: 3px solid transparent;
     border-radius: 0;
     background: transparent;
     color: inherit;
-    font: 600 11.5px/1.2 Inter, system-ui, "Segoe UI", Arial, sans-serif;
+    font: 600 10.5px/1.15 Inter, system-ui, "Segoe UI", Arial, sans-serif;
     text-align: center;
     text-decoration: none;
     cursor: pointer
@@ -446,14 +471,14 @@
   }
   .repo-sidenav-sep {
     height: 1px;
-    margin: 10px 14px;
+    margin: 6px 14px;
     background: color-mix(in srgb, var(--repo-bar-text) 20%, transparent)
   }
   /* séparateur titré (« Centre ») : filet surmonté d'un petit titre en capitales */
   .repo-sidenav-sep.repo-sidenav-titled {
     height: auto;
-    margin: 12px 6px 4px;
-    padding-top: 5px;
+    margin: 8px 6px 2px;
+    padding-top: 4px;
     background: none;
     border-top: 1px solid color-mix(in srgb, currentColor 22%, transparent);
     text-align: center
@@ -504,13 +529,13 @@
     }
   }
   .repo-sidenav .repo-svg {
-    --rs: 22px
+    --rs: var(--repo-sn-ic)
   }
   .repo-sidenav-ic {
     display: grid;
     place-items: center;
-    width: 22px;
-    height: 22px
+    width: var(--repo-sn-ic);
+    height: var(--repo-sn-ic)
   }
   .repo-sidenav-brand .repo-sidenav-ic {
     width: 30px;
@@ -634,13 +659,13 @@
     margin: 0;
     padding: 16px 18px 20px
   }
-  /* logo DEFA en haut de la barre latérale (lien vers le site de la flotte) */
+  /* logo en haut de la barre latérale (lien vers le site de la flotte) */
   a.repo-sidenav-brand {
     text-decoration: none
   }
   .repo-sidenav-logo {
-    width: 46px;
-    height: 46px;
+    width: 40px;
+    height: 40px;
     object-fit: contain;
     display: block;
     filter: drop-shadow(0 2px 3px rgba(0, 0, 0, .4));
@@ -780,21 +805,21 @@
   }
 }
 /* règles propres aux designs : hors couche (au-dessus de l'application) */
-/* jeux skeuomorphes (icônes de 50 px) : entrées resserrées, pour tenir dans une fenêtre de 800 px */
+/* jeux skeuomorphes (icônes de 40 px) : entrées resserrées, pour tenir dans une fenêtre de 800 px */
 html:is([data-icons="brass"], [data-icons="steel"], [data-icons="gel"], [data-icons="avio"]) .repo-sidenav-item {
-  padding: 5px 2px;
-  gap: 2px
+  padding: 2px 2px 3px;
+  gap: 1px
 }
 html:is([data-icons="brass"], [data-icons="steel"], [data-icons="gel"], [data-icons="avio"]) .repo-sidenav-brand {
-  min-height: 68px
+  min-height: 56px
 }
 html:is([data-icons="brass"], [data-icons="steel"], [data-icons="gel"], [data-icons="avio"]) .repo-sidenav-sep:not(.repo-sidenav-bottom):not(.repo-sidenav-titled):not(#imp) {
-  margin: 6px 14px
+  margin: 4px 14px
 }
 /* jeux skeuomorphes : images posées dès la construction de la barre (taille réservée : pas de décalage) ; tracé masqué */
 html:is([data-icons="brass"], [data-icons="steel"], [data-icons="gel"], [data-icons="avio"]) .repo-sidenav-ic {
-  width: 50px;
-  height: 50px
+  width: var(--repo-sn-ic-sk);
+  height: var(--repo-sn-ic-sk)
 }
 html:is([data-icons="brass"], [data-icons="steel"], [data-icons="gel"], [data-icons="avio"]) .repo-sidenav-brand .repo-sidenav-ic {
   width: 40px;
@@ -835,4 +860,9 @@ html:is([data-icons="brass"], [data-icons="steel"], [data-icons="gel"], [data-ic
   ::view-transition-new(root) {
     animation-duration: .16s
   }
+}
+/* barre latérale en « libellé seul » (Apparence) : entrées un peu plus hautes, aussi avec les jeux d'icônes à matières */
+html[data-sidenav-show="label"] .repo-sidenav-item:not(#imp) {
+  padding-top: 9px;
+  padding-bottom: 9px
 }

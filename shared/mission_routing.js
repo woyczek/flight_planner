@@ -125,7 +125,8 @@
       const pad = GAP / 60 * 1.5;
       if (a.box.n + pad < b.box.s || b.box.n + pad < a.box.s || a.box.e + pad < b.box.w || b.box.e + pad < a.box.w) return false;
       const k = 111.32 * Math.cos(rad((a.lat + b.lat) / 2));
-      const close = (x, y) => x.ring.some(p => p[0] >= y.box.s - pad && p[0] <= y.box.n + pad && p[1] >= y.box.w - pad && p[1] <= y.box.e + pad && y.ring.some((q, i) => segDist(p, q, y.ring[(i + 1) % y.ring.length], k) < KM));
+      const close = (x, y) => x.ring.some(p => p[0] >= y.box.s - pad && p[0] <= y.box.n + pad && p[1] >= y.box.w - pad && p[1] <= y.box
+        .e + pad && y.ring.some((q, i) => segDist(p, q, y.ring[(i + 1) % y.ring.length], k) < KM));
       return close(a, b) || close(b, a);
     };
     for (let i = 0; i < zones.length; i++)
@@ -157,7 +158,8 @@
   function shortest(graph, a, b, alt, reach = 60) {
     // entrée / sortie : nœuds proches portant au moins une voie ouverte à ce niveau
     const usable = n => n.out.some(e => alt >= e.lo - 100 && alt <= e.hi + 100);
-    const near = p => graph.nodes.filter(usable).map(n => [n, nm(p, n)]).filter(([, d]) => d <= reach).sort((x, y) => x[1] - y[1]).slice(0, 8);
+    const near = p => graph.nodes.filter(usable).map(n => [n, nm(p, n)]).filter(([, d]) => d <= reach).sort((x, y) => x[1] - y[1]).slice(
+      0, 8);
     const starts = near(a),
       ends = new Map(near(b).map(([n, d]) => [n.k, d]));
     if (!starts.length || !ends.size) return null;
@@ -226,7 +228,8 @@
   function settings() {
     let s = {};
     try {
-      s = (window.RepositoryKit?.store?.jsonCached ? window.RepositoryKit.store.jsonCached(SETTINGS_KEY, {}) : JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}')) || {}; // lecture mémorisée
+      s = (window.RepositoryKit?.store?.jsonCached ? window.RepositoryKit.store.jsonCached(SETTINGS_KEY, {}) : JSON.parse(localStorage
+        .getItem(SETTINGS_KEY) || '{}')) || {}; // lecture mémorisée
     } catch {
       s = {};
     }
@@ -371,7 +374,9 @@
     const vias = out.filter(p => p.kind === 'via').map(p => p.id);
     const how = !routed ? '' : ex.mode === 'airways' ? `transit par les voies aériennes (${[...used].slice(0, 6).join(', ')}${used.size > 6 ? '…' : ''})` : `transit à basse hauteur par le RTBA (${vias.slice(0, 6).join(' → ')}${vias.length > 6 ? '…' : ''})`;
     const S = settings(),
-      none = [why.has('hors') ? 'hors de la couverture des données SIA (France et outre-mer)' : '', why.has('court') ? `tronçons ≤ ${S.minNm} NM` : '', why.has('aucun') ? `pas de chemin par les ${LABEL[ex.mode]} à ce niveau` : '', why.has('detour') ? 'détour excessif' : ''].filter(Boolean).join(', ');
+      none = [why.has('hors') ? 'hors de la couverture des données SIA (France et outre-mer)' : '', why.has('court') ? `tronçons ≤ ${S.minNm} NM` : '', why
+        .has('aucun') ? `pas de chemin par les ${LABEL[ex.mode]} à ce niveau` : '', why.has('detour') ? 'détour excessif' : ''
+      ].filter(Boolean).join(', ');
     return {
       chain: routed ? out : chain,
       how,

@@ -18,14 +18,17 @@ SRC = sys.argv[sys.argv.index('--src') + 1] if '--src' in sys.argv else None
 
 class Handler(http.server.SimpleHTTPRequestHandler):
     def __init__(self, *a, **k):
+        """Gestionnaire servant la racine du dépôt."""
         super().__init__(*a, directory=ROOT, **k)
 
     def translate_path(self, path):
+        """Chemins /src/… servis depuis le dossier --src (nom de fichier seul) ; les autres depuis le dépôt."""
         if SRC and path.startswith('/src/'):
             return os.path.join(SRC, os.path.basename(path.split('?')[0]))
         return super().translate_path(path)
 
     def do_PUT(self):
+        """Écrit le .webp reçu sous shared/ (textures, icônes et décors des designs à matières) ; 403 hors de ces dossiers."""
         # textures, icônes et éléments décoratifs des designs à matières (tools/icons_from_sheets.html)
         m = re.fullmatch(r'/shared/((?:textures|icons/skeuo/(?:cabinet|field|aqua|flightlog)|icons/defa|deco/(?:cabinet|field|aqua|flightlog))/[a-z0-9-]+\.webp)', self.path)
         if not m:

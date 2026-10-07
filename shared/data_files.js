@@ -1,7 +1,7 @@
 (() => {
   'use strict';
   // Composant « DataFiles » : données de la suite hors du dépôt de l'application (version 3).
-  // Les données DEFA et recalculées (flotte, référence DEFA, indicatifs, registres, missions, MORA, axes ENR 5.7…)
+  // Les données de la compagnie et recalculées (flotte, référence, indicatifs, registres, missions, MORA, axes ENR 5.7…)
   // vivent dans le dossier data/ à la racine de l'application : clone du dépôt de données (privé), ignoré par git.
   // Sans data/ (installation publique), les pages lisent les petits jeux d'exemple d'examples/.
   //

@@ -3,7 +3,7 @@
 Ancien format : data/disponibilites/<TRI>.json, grille 7 jours × 24 heures (UTC) de codes de l'ODV, par semaine (weeks,
 clé : lundi ISO) ou une seule grille (grid) rattachée à la semaine de sa saisie (updated_at).
 Nouveau format : un fichier par pilote et par semaine ISO, data/disponibilites/<TRI>/<AAAA>-W<nn>.json :
-    { "schema": 2, "va": "DEFA", "pilote": "RBR", "semaine": "2026-W41", "updated_at": "…", "by": "conversion",
+    { "schema": 2, "va": "SOG", "pilote": "RBR", "semaine": "2026-W41", "updated_at": "…", "by": "conversion",
       "dispos": { "2026-10-06": [ { "debut": "19:00", "fin": "22:00", "categorie": "defense_perso" } ] },
       "appareils": { "possedes": [], "maitrises": [] }, "simulateurs": [] }
 Heures consécutives du même code → une plage ; journée entière → debut / fin null. Code → catégorie : champ « odv » des
@@ -36,7 +36,19 @@ DEFAULT_IMPORT = {'C': {'defense': ['COMBAT', 'ISR', 'COMMAND', 'AAR']}, 'T': {'
 NOW = datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
 
 
+def va_short():
+    """Sigle de la compagnie virtuelle (config/repository_tree, va.short), écrit dans le champ va des fichiers de données ;
+    repli : SOG."""
+    try:
+        with open(os.path.join(ROOT, 'config', 'repository_tree'), encoding='utf-8') as f:
+            m = re.search(r'\bva:\{[^}]*?\bshort:"([^"]+)"', f.read())
+        return m.group(1) if m else 'SOG'
+    except OSError:
+        return 'SOG'
+
+
 def load_json(path):
+    """Contenu JSON du fichier ; None s'il est absent ou illisible."""
     try:
         with open(path, encoding='utf-8') as f:
             return json.load(f)
@@ -45,6 +57,7 @@ def load_json(path):
 
 
 def write_json(path, value, indent=1):
+    """Écrit value en JSON UTF-8 (fins de ligne LF, saut de ligne final), dossiers créés au besoin."""
     os.makedirs(os.path.dirname(path), exist_ok=True)
     with open(path, 'w', encoding='utf-8', newline='\n') as f:
         json.dump(value, f, ensure_ascii=False, indent=indent)
@@ -52,11 +65,13 @@ def write_json(path, value, indent=1):
 
 
 def iso_week(monday):
+    """Semaine ISO du jour donné, au format « AAAA-Wnn »."""
     y, w, _ = monday.isocalendar()
     return f'{y}-W{w:02d}'
 
 
 def monday_of(day):
+    """Lundi de la semaine du jour donné."""
     return day - datetime.timedelta(days=day.weekday())
 
 
@@ -93,6 +108,8 @@ def ranges(row, codes):
 
 
 def main():
+    """Convertit les grilles de chaque pilote (aperçu, ou écriture avec --write) et refait les index.
+    Retourne le code de sortie (1 : dossier des disponibilités absent)."""
     ap = argparse.ArgumentParser(description='Conversion des disponibilités en grille vers le format par plages.')
     ap.add_argument('--data', default=os.path.join(ROOT, 'data'), help='dossier des données (défaut : data/ de la suite)')
     ap.add_argument('--write', action='store_true', help='écrire les fichiers (sinon : aperçu)')
@@ -110,7 +127,7 @@ def main():
         for code in c.get('odv') or []:
             codes[code] = c['id']
     imp = cfg.get('import') or DEFAULT_IMPORT
-    va = cfg.get('va') or 'DEFA'
+    va = cfg.get('va') or va_short()
     written, prefs_made = 0, 0
     for name in sorted(os.listdir(d)):
         m = re.match(r'^([A-Z0-9]{2,5})\.json$', name, re.I)

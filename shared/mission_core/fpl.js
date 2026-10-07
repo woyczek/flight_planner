@@ -184,7 +184,8 @@
     const data = await (await fetch('https://data.vatsim.net/v3/vatsim-data.json', {
       cache: 'no-store'
     })).json();
-    const pilot = (data.pilots || []).find(p => String(p.cid) === id && p.flight_plan) || (data.prefiles || []).find(p => String(p.cid) === id);
+    const pilot = (data.pilots || []).find(p => String(p.cid) === id && p.flight_plan) || (data.prefiles || []).find(p => String(p
+      .cid) === id);
     if (!pilot?.flight_plan) return null;
     const fp = pilot.flight_plan,
       ac = splitAircraft(fp.aircraft);

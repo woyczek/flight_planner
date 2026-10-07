@@ -14,6 +14,7 @@ OUT = os.path.join(ROOT, 'apps', 'aide', 'docs_bundle.js')
 
 
 def build(verbose=True):
+    """Écrit apps/aide/docs_bundle.js (tous les docs/**/*.md) seulement si son contenu change ; verbose : bilan affiché."""
     docs = {}
     for d, _, files in os.walk(DOCS):
         for f in files:

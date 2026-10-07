@@ -1,0 +1,86 @@
+# Mission A-001E — played bandit TRACK 402 of A-001Z, created by the brief generator on 03/10/2026
+schema: helo-xp-mission
+schema_version: '2.0'
+mission:
+  series: 1
+  number: 1
+  id: A-001E
+  type: COMBAT
+  subtype: CHIFFON
+  role: chiffon
+operation:
+  id: A-001
+  name: BOXING GLOVES
+  missions:
+    - A-001A
+    - A-001B
+    - A-001C
+    - A-001D
+    - A-001E
+  organisation: A-001Z
+title: BOXING GLOVES — bandit TRACK 402
+author: ''
+date: '2026-10-03'
+summary: |-
+  Played bandit of exercise BOXING GLOVES: CHIFFON402, low-energy adversary training fighter.
+
+  Track starts at H+25 at the first point, engagement in TRA 34 A until knock-it-off, exit via the last point, FL160–FL240, 360 kt; return to base.
+
+  Expected from the crews: identify the difference in energy profile, keep visual and choose a suitable manoeuvre.
+detailed_description: |-
+  CHIFFON402 enters with less initial energy than TRACK 401 and tries to force a tighter engagement. After acquisition by MERCURE41, it may manoeuvre vertically within the announced limits without trying to leave the sector.
+
+  The bandit must maintain separation with MERCURE31 at all times if the latter is still in the TRA. Any knock-it-off triggers an immediate wings-level recovery, lateral separation and then an exit via the north sector.
+aircraft:
+  - id: AC1
+    type: MIR2 Mirage 2000B
+    callsign: CHIFFON402
+    role: exercise bandit (TRACK 402)
+    cruise_speed_kt: 360
+    cruise_level: FL160–FL240
+origin:
+  name: BA 118 Mont-de-Marsan (LFBM)
+  lat: 43.911667
+  lon: -0.5075
+destination:
+  name: BA 118 Mont-de-Marsan (LFBM)
+  lat: 43.911667
+  lon: -0.5075
+turning_points:
+  - id: P1
+    name: TRA 34 A — east sector
+    lat: 44.1
+    lon: 0.12
+    role: track start (H+25)
+    time_on_task_min: 0
+  - id: P2
+    name: TRA 34 A — central-east sector
+    lat: 44.05
+    lon: -0.05
+    role: BFM engagement with the fighter elements, until knock-it-off
+    time_on_task_min: 20
+  - id: P3
+    name: TRA 34 A — north sector
+    lat: 44.22
+    lon: -0.15
+    role: sector exit
+    time_on_task_min: 0
+route_order:
+  - ORIGIN
+  - P1
+  - P2
+  - P3
+  - DESTINATION
+timing:
+  estimated_flight_min: 39
+  estimated_block_min: 69
+teams:
+  - name: CHIFFON402
+    service: French Air and Space Force
+    department: Landes
+    type: MIR2 Mirage 2000B
+    role: exercise bandit (TRACK 402)
+notes:
+  - 'Exercise bandit: track TRACK-402, held in organisation A-001Z (reveals to crews, map). Take-off H+15mn.'
+  - 'Air simulation exercise.'
+maps: []

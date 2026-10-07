@@ -8,17 +8,20 @@
   // sur une ligne, heure H commune et décalage par équipage ; « Modifier » rouvre les missions enregistrées du créneau ;
   // une mission par pilote et par tranche (convoyeurs compris). Textes : RepositoryKit.tf (4 langues).
   const C = window.OdvCore;
+  /** Élément de la page par son identifiant. */
   const $ = id => document.getElementById(id);
   const esc = window.RepositoryKit.esc; // échappement HTML commun (shared/kit.js)
   const L = window.RepositoryKit.tf; // phrase traduite, valeurs {clé} insérées (shared/kit.js)
+  /** Notification flottante (AppFramework.notify), console à défaut. */
   const notify = (msg, kind) => window.AppFramework?.notify ? window.AppFramework.notify(msg, kind) : console.warn(msg);
   const SHORT = ['M', 'A', 'S'];
 
   // ------------------------------------------------------------------ réglages (seules données mémorisées)
 
-  // réglages propres à la DEFA (créneaux, lecture du classeur, missions probables) : saisis dans Paramètres › Centre ›
-  // Planning ODV (DEFA), module commun apps/cpco/odv_settings.js ; ici, lus (et les filtres de la page enregistrés)
+  // réglages propres à la compagnie (créneaux, lecture du classeur, missions probables) : saisis dans Paramètres › Centre ›
+  // Planning ODV, module commun apps/cpco/odv_settings.js ; ici, lus (et les filtres de la page enregistrés)
   const loadSettings = () => window.OdvSettings.load();
+  /** Enregistre les réglages, filtres de la page compris (OdvSettings, odvPlanning:v1). */
   const saveSettings = () => window.OdvSettings.save(settings);
   let settings = loadSettings();
   // réglages changés dans un autre onglet (Paramètres) : relus, données recalculées
@@ -52,6 +55,7 @@
   } catch {
     /* stockage refusé ou illisible : valeurs par défaut */
   }
+  /** Mémorise l'affichage de la grille (odvPlanningView:v1) ; stockage refusé : ignoré. */
   const saveView = () => {
     try {
       localStorage.setItem(VIEW_KEY, JSON.stringify(view));
@@ -62,15 +66,17 @@
   const tables = {};
 
   // ------------------------------------------------------------------ semaine sans classeur
-  // Sans classeur, la grille reste affichée : pilotes de la référence DEFA, semaine en cours, ligne du classeur vide
+  // Sans classeur, la grille reste affichée : pilotes de la référence, semaine en cours, ligne du classeur vide
   // (« non renseigné »), déclarations des pilotes et affectations ; légende par défaut (OdvCore.LEGEND).
   let virtual = null;
+  /** Date AAAA-MM-JJ (UTC) d'un instant en ms. */
   const isoDay = ms => new Date(ms).toISOString().slice(0, 10);
   /** Lundi (UTC, ms) de la semaine qui contient ms. */
   const mondayOf = ms => {
     const d = new Date(ms);
     return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() - (d.getUTCDay() + 6) % 7);
   };
+  /** Lundi (UTC, ms) de la semaine du classeur lu ; null sans classeur. */
   const xlMonday = () => xl ? Date.parse(`${xl.dates[0]}T00:00:00Z`) : null;
   /** Lundi affiché : choisi (◀ ▶, classeur choisi à la main), sinon la semaine en cours. */
   const shownMonday = () => weekMon ?? mondayOf(Date.now());
@@ -81,13 +87,16 @@
     return 1 + Math.round((d - mondayOf(y)) / 6048e5);
   };
 
+  /** Semaine sans classeur du lundi affiché : pilotes de la référence, 21 cases « inconnu » chacun, légende par
+   *  défaut ; gardée dans virtual tant que la semaine affichée ne change pas. */
   function emptyWeek() {
     const mon = shownMonday();
     if (virtual && virtual.dates[0] === isoDay(mon)) return virtual;
     const dates = Array.from({
       length: 7
     }, (_, j) => new Date(mon + j * 864e5).toISOString().slice(0, 10));
-    const tris = [...new Set((window.DEFA_REFERENCE?.pilots || []).map(x => String(x.trigram || '').toUpperCase()).filter(Boolean))].sort();
+    const tris = [...new Set((window.DEFA_REFERENCE?.pilots || []).map(x => String(x.trigram || '').toUpperCase()).filter(Boolean))]
+      .sort();
     const pilotes = tris.map((tr, i) => ({
       trigramme: tr,
       ligne: i + 1,
@@ -188,7 +197,10 @@
         dep: a.departure || '',
         arr: a.destination || a.departure || '',
         appareil: [a.aircraft?.type, a.aircraft?.registration].filter(Boolean).join(' '),
-        objet: a.role === 'convoyage' ? L(['Convoyage {m}{s}', 'Ferry {m}{s}', 'Überführung {m}{s}', 'Traslado {m}{s}'], { m: a.mission, s: a.pilot ? '' : L([' (à affecter)', ' (to assign)', ' (zuzuweisen)', ' (por asignar)']) }) : [a.mission, a.title].filter(Boolean).join(' '),
+        objet: a.role === 'convoyage' ? L(['Convoyage {m}{s}', 'Ferry {m}{s}', 'Überführung {m}{s}', 'Traslado {m}{s}'], {
+          m: a.mission,
+          s: a.pilot ? '' : L([' (à affecter)', ' (to assign)', ' (zuzuweisen)', ' (por asignar)'])
+        }) : [a.mission, a.title].filter(Boolean).join(' '),
         indicatif: a.callsign || '',
         famille: a.role === 'convoyage' ? '' : a.type || '', // famille de la mission : contrôle des thèmes ouverts (checkFlights)
         equipage: [a.pilot].filter(Boolean),
@@ -211,6 +223,7 @@
   }
   /** Données de la grille : le classeur lu, sinon la semaine sans classeur. */
   const gridData = () => data || emptyWeek();
+  /** Nombre sur deux chiffres. */
   const pad2 = n => String(n).padStart(2, '0');
   /** Créneau (jour j, créneau k) : celui du plan, sinon un créneau vide (sans classeur) pour affecter quand même. */
   const slotOf = (j, k) => slots.find(x => x.jourIndex === j && x.creneauIndex === k) || {
@@ -229,7 +242,7 @@
   };
 
   // ------------------------------------------------------------------ outils d'affichage
-  /** Nom complet d'un pilote s'il est connu localement (référence DEFA, champ nom facultatif), sinon ''. */
+  /** Nom complet d'un pilote s'il est connu localement (référence, champ nom facultatif), sinon ''. */
   function fullName(t) {
     const p = (window.DEFA_REFERENCE?.pilots || []).find(x => String(x.trigram || x.trigramme || '').toUpperCase() === t);
     if (!p) return '';
@@ -238,7 +251,8 @@
   /** Texte lisible (noir ou blanc) sur un fond hexadécimal. */
   function inkOn(hex) {
     if (!/^[0-9A-F]{6}$/i.test(hex || '')) return 'inherit';
-    const [r, g, b] = [0, 2, 4].map(i => parseInt(hex.slice(i, i + 2), 16) / 255).map(v => v <= .03928 ? v / 12.92 : ((v + .055) / 1.055) ** 2.4);
+    const [r, g, b] = [0, 2, 4].map(i => parseInt(hex.slice(i, i + 2), 16) / 255).map(v => v <= .03928 ? v / 12.92 : ((v + .055) /
+      1.055) ** 2.4);
     return .2126 * r + .7152 * g + .0722 * b > .35 ? '#111' : '#fff';
   }
   /** Étiquette d'un trigramme (couleur de sa forme dans l'ODV) et nom complet éventuel. */
@@ -247,6 +261,7 @@
       n = withName ? fullName(t) : '';
     return `<span class="odv-tri" style="--c:${c ? '#' + c : '#556'};--t:${inkOn(c)}">${esc(t)}</span>${n ? `<span class="odv-name">${esc(n)}</span>` : ''}`;
   }
+  /** Date JJ/MM d'une date ISO ('' sans date). */
   const dateFr = iso => iso ? `${iso.slice(8, 10)}/${iso.slice(5, 7)}` : '';
   // jour et créneau du classeur (en français) dans la langue de la page
   const DAY_ROWS = {
@@ -261,38 +276,56 @@
     'après-midi': ['après-midi', 'afternoon', 'Nachmittag', 'tarde'],
     soir: ['soir', 'evening', 'Abend', 'noche']
   };
+  /** Jour ou créneau du classeur (en français) dans la langue de la page ; tel quel s'il est inconnu. */
   const wordL = w => DAY_ROWS[String(w || '').toLowerCase()] ? L(DAY_ROWS[String(w).toLowerCase()]) : w;
+  /** Jour ou créneau traduit, initiale en majuscule. */
   const capL = w => (s => s.charAt(0).toUpperCase() + s.slice(1))(String(wordL(w) ?? '')); // « Matin » → « Morning »
+  /** Abréviation du jour dans la langue de la page (2 lettres en allemand, 3 sinon). */
   const dayAbbr = d => String(wordL(d) ?? '').slice(0, +L(['3', '3', '2', '3'])); // Lun, Mon, Mo, Lun
   // initiale du créneau (SHORT : M / A / S) dans la langue de la page
-  const shortL = k => L([['M', 'M', 'M', 'M'], ['A', 'A', 'N', 'T'], ['S', 'E', 'A', 'N']][k] || [SHORT[k] || '']);
+  const shortL = k => L([
+    ['M', 'M', 'M', 'M'],
+    ['A', 'A', 'N', 'T'],
+    ['S', 'E', 'A', 'N']
+  ][k] || [SHORT[k] || '']);
   // catégories de disponibilité (OdvCore.CATEGORIES, en français), sens des codes et sources des cases, à l'affichage ;
   // phrases produites par odv_core.js (rapport, alertes, calcul, contexte) : C.say
   const catL = c => C.categoryLabel(c);
+  /** Sens d'un code de la légende dans la langue de la page. */
   const sensL = s => C.sensLabel(s);
   const SRC_ROWS = {
     'pas de classeur': ['pas de classeur', 'no workbook', 'keine Arbeitsmappe', 'sin libro'],
     'déclaration du pilote': ['déclaration du pilote', 'pilot declaration', 'Angabe des Piloten', 'declaración del piloto']
   };
+  /** Source d'une case (pas de classeur, déclaration du pilote) dans la langue de la page. */
   const srcL = s => SRC_ROWS[s] ? L(SRC_ROWS[s]) : s;
   /** « 3 grilles remplies » (pluriel à partir de 2, comme le texte français d'origine). */
-  const gridsL = n => L(n > 1 ? ['{n} grilles remplies', '{n} grids filled', '{n} Raster ausgefüllt', '{n} cuadrículas rellenadas'] : ['{n} grille remplie', '{n} grid filled', '{n} Raster ausgefüllt', '{n} cuadrícula rellenada'], {
+  const gridsL = n => L(n > 1 ? ['{n} grilles remplies', '{n} grids filled', '{n} Raster ausgefüllt', '{n} cuadrículas rellenadas'] : [
+    '{n} grille remplie', '{n} grid filled', '{n} Raster ausgefüllt', '{n} cuadrícula rellenada'
+  ], {
     n
   });
+  /** Titre d'un créneau : « Lundi 22/09 — matin (06-12z) ». */
   const slotTitle = s => `${wordL(s.jour)} ${dateFr(s.date)} — ${wordL(s.creneau)} (${s.heures})`;
   /** Case de la grille : code en couleur de la légende, commentaire au survol. */
   function codeCell(r) {
     const e = r.code ? gridData().legende[r.code] : null,
       col = e?.couleur || null;
-    const title = [r.code ? L(['{c} : {s}', '{c}: {s}', '{c}: {s}', '{c}: {s}'], { c: `${r.code}${r.marque ? ' + ' + r.marque : ''}`, s: sensL(r.sens) || catL(r.categorie) }) : catL(r.categorie), r.commentaire ? L(['« {c} »', '“{c}”', '„{c}“', '«{c}»'], { c: r.commentaire }) : '', srcL(r.source)].filter(Boolean).join('\n');
+    const title = [r.code ? L(['{c} : {s}', '{c}: {s}', '{c}: {s}', '{c}: {s}'], {
+      c: `${r.code}${r.marque ? ' + ' + r.marque : ''}`,
+      s: sensL(r.sens) || catL(r.categorie)
+    }) : catL(r.categorie), r.commentaire ? L(['« {c} »', '“{c}”', '„{c}“', '«{c}»'], {
+      c: r.commentaire
+    }) : '', srcL(r.source)].filter(Boolean).join('\n');
     const style = col ? ` style="background:#${col};color:${inkOn(col)}"` : '';
     const label = r.code ? r.code + (r.marque || '') : r.categorie === 'hors_legende' ? String(r.code_brut).trim() : '·';
     return `<span class="odv-code c-${r.categorie}${r.commentaire ? ' has-note' : ''}"${style} title="${esc(title)}">${esc(label)}</span>`;
   }
   /** Thèmes ouverts d'un pilote du créneau (catégorie + préférences) : « tous thèmes » ou la liste des libellés. */
-  const themeText = p => !p.themes ? '' : p.themes.includes('*') ? L(['tous thèmes', 'all themes', 'alle Themen', 'todos los temas']) : L(['thèmes : {t}', 'themes: {t}', 'Themen: {t}', 'temas: {t}'], {
-    t: p.themes.map(x => window.SuiteDispos?.themeLabel?.(x) || x).join(', ') || '—'
-  });
+  const themeText = p => !p.themes ? '' : p.themes.includes('*') ? L(['tous thèmes', 'all themes', 'alle Themen', 'todos los temas']) : L(
+    ['thèmes : {t}', 'themes: {t}', 'Themen: {t}', 'temas: {t}'], {
+      t: p.themes.map(x => window.SuiteDispos?.themeLabel?.(x) || x).join(', ') || '—'
+    });
   /** Téléchargement local d'un texte (Blob). */
   function download(name, text, type) {
     const url = URL.createObjectURL(new Blob([text], {
@@ -307,6 +340,7 @@
     a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 2000);
   }
+  /** Nom du classeur sans .xlsx (« ODV » sans classeur) : base des noms de fichiers exportés. */
   const baseName = () => (fileName || 'ODV').replace(/\.xlsx$/i, '');
   /** Tableau triable (créé une fois, puis lignes remplacées). */
   function table(id, opts, rows) {
@@ -317,6 +351,7 @@
     else tables[id].setRows(rows);
   }
 
+  /** Remplace le contenu d'un conteneur de tableau et oublie son SortedTable (recréé au prochain table()). */
   function resetTable(id, html) {
     delete tables[id];
     $(id).innerHTML = html;
@@ -329,7 +364,13 @@
   } = {}) {
     jumpToXl = jump;
     if (!file) return;
-    if (!/\.xlsx$/i.test(file.name)) notify(L(['« {f} » n’a pas l’extension .xlsx : lecture tentée quand même.', '“{f}” does not have the .xlsx extension: reading attempted anyway.', '„{f}“ hat nicht die Endung .xlsx: Lesen wird trotzdem versucht.', '«{f}» no tiene la extensión .xlsx: se intenta leer de todos modos.'], { f: file.name }), 'warn');
+    if (!/\.xlsx$/i.test(file.name)) notify(L(['« {f} » n’a pas l’extension .xlsx : lecture tentée quand même.',
+      '“{f}” does not have the .xlsx extension: reading attempted anyway.',
+      '„{f}“ hat nicht die Endung .xlsx: Lesen wird trotzdem versucht.',
+      '«{f}» no tiene la extensión .xlsx: se intenta leer de todos modos.'
+    ], {
+      f: file.name
+    }), 'warn');
     try {
       book = await C.openWorkbook(file);
       fileName = file.name;
@@ -339,7 +380,9 @@
       announce();
     } catch (e) {
       console.error(e);
-      notify(L(['Lecture impossible : {e}', 'Cannot read the file: {e}', 'Lesen nicht möglich: {e}', 'Lectura imposible: {e}'], { e: e.message }), 'err');
+      notify(L(['Lecture impossible : {e}', 'Cannot read the file: {e}', 'Lesen nicht möglich: {e}', 'Lectura imposible: {e}'], {
+        e: e.message
+      }), 'err');
     }
   }
   /** Relit le classeur selon les réglages, recalcule créneaux et contrôles, redessine tout. */
@@ -351,7 +394,11 @@
       jumpToXl = false;
     } catch (e) {
       console.error(e);
-      notify(L(['Analyse impossible : {e}', 'Cannot analyse the workbook: {e}', 'Analyse nicht möglich: {e}', 'Análisis imposible: {e}'], { e: e.message }), 'err');
+      notify(L(['Analyse impossible : {e}', 'Cannot analyse the workbook: {e}', 'Analyse nicht möglich: {e}',
+        'Análisis imposible: {e}'
+      ], {
+        e: e.message
+      }), 'err');
       xl = null;
     }
     await showWeek();
@@ -377,7 +424,11 @@
       }
     }
     if (!n) return;
-    notify(L(['Types de missions créés d’après le classeur pour {n} pilote(s) qui n’en avaient pas.', 'Mission types created from the workbook for {n} pilot(s) who had none.', 'Missionsarten aus der Arbeitsmappe für {n} Pilot(en) ohne Angaben erstellt.', 'Tipos de misión creados a partir del libro para {n} piloto(s) que no tenían.'], {
+    notify(L(['Types de missions créés d’après le classeur pour {n} pilote(s) qui n’en avaient pas.',
+      'Mission types created from the workbook for {n} pilot(s) who had none.',
+      'Missionsarten aus der Arbeitsmappe für {n} Pilot(en) ohne Angaben erstellt.',
+      'Tipos de misión creados a partir del libro para {n} piloto(s) que no tenían.'
+    ], {
       n
     }), 'ok');
     await showWeek(); // thèmes ouverts recalculés avec les nouvelles préférences
@@ -400,7 +451,11 @@
       xm = xlMonday();
     const src = xm === mon ? L(['classeur {f}', 'workbook {f}', 'Arbeitsmappe {f}', 'libro {f}'], {
       f: fileName
-    }) : L(['déclarations des pilotes et affectations (pas de classeur pour cette semaine)', 'pilot declarations and assignments (no workbook for this week)', 'Pilotenangaben und Zuweisungen (keine Arbeitsmappe für diese Woche)', 'declaraciones de los pilotos y asignaciones (sin libro para esta semana)']);
+    }) : L(['déclarations des pilotes et affectations (pas de classeur pour cette semaine)',
+      'pilot declarations and assignments (no workbook for this week)',
+      'Pilotenangaben und Zuweisungen (keine Arbeitsmappe für diese Woche)',
+      'declaraciones de los pilotos y asignaciones (sin libro para esta semana)'
+    ]);
     host.innerHTML = `<button type="button" class="secondary" data-wk="-1">◀ ${L(['Semaine précédente', 'Previous week', 'Vorherige Woche', 'Semana anterior'])}</button>
       <b>${L(['Semaine {n} — du {a} au {b}', 'Week {n} — from {a} to {b}', 'Woche {n} — vom {a} bis {b}', 'Semana {n} — del {a} al {b}'], { n: isoWeekNo(mon), a: esc(dateFr(isoDay(mon))), b: esc(dateFr(isoDay(mon + 6 * 864e5))) })}</b> <span class="mut">${esc(src)}</span>
       <button type="button" class="secondary" data-wk="1">${L(['Semaine suivante', 'Next week', 'Nächste Woche', 'Semana siguiente'])} ▶</button>${mon !== cur ? `<button type="button" class="ghost" data-wk="now">${L(['Cette semaine', 'This week', 'Diese Woche', 'Esta semana'])}</button>` : ''}${xm != null && xm !== mon ? `<button type="button" class="ghost" data-wk="xl">${L(['Semaine du classeur', 'Workbook week', 'Woche der Arbeitsmappe', 'Semana del libro'])}</button>` : ''}`;
@@ -415,6 +470,8 @@
   // CR par famille (registre des CR de ce navigateur, sinon data/cr/missions.yaml servi) : pondération des missions
   // probables (une famille souvent jouée recule un peu : odv_core.js, playWeight)
   let plays = null;
+  /** Compte les CR par famille dans plays : ReportIndex, sinon copie « missionCoreLedger:v2 », sinon
+   *  data/cr/missions.yaml servi (js-yaml chargé à la demande). */
   async function loadPlays() {
     // copie indexée du registre des CR (shared/data_index.js) : comptage sans analyse YAML
     const idx = await window.ReportIndex?.load?.();
@@ -489,22 +546,46 @@
   function announce() {
     if (!data) return;
     const filled = data.pilotes.filter(p => p.rempli).length;
-    notify(L(['{f} lu : S{w}, {n} pilotes ({g}), {v}.', '{f} read: week {w}, {n} pilots ({g}), {v}.', '{f} gelesen: KW {w}, {n} Piloten ({g}), {v}.', '{f} leído: semana {w}, {n} pilotos ({g}), {v}.'], {
+    notify(L(['{f} lu : S{w}, {n} pilotes ({g}), {v}.', '{f} read: week {w}, {n} pilots ({g}), {v}.',
+      '{f} gelesen: KW {w}, {n} Piloten ({g}), {v}.', '{f} leído: semana {w}, {n} pilotos ({g}), {v}.'
+    ], {
       f: fileName,
       w: data.semaine ?? '?',
       n: data.pilotes.length,
       g: gridsL(filled),
-      v: L(data.vols.length > 1 ? ['{n} vols sur la frise', '{n} flights on the timeline', '{n} Flüge auf der Zeitleiste', '{n} vuelos en la cronología'] : ['{n} vol sur la frise', '{n} flight on the timeline', '{n} Flug auf der Zeitleiste', '{n} vuelo en la cronología'], { n: data.vols.length })
+      v: L(data.vols.length > 1 ? ['{n} vols sur la frise', '{n} flights on the timeline', '{n} Flüge auf der Zeitleiste',
+        '{n} vuelos en la cronología'
+      ] : ['{n} vol sur la frise', '{n} flight on the timeline', '{n} Flug auf der Zeitleiste', '{n} vuelo en la cronología'], {
+        n: data.vols.length
+      })
     }), 'ok');
     const shift = data.anomalies.find(a => a.decalage);
     if (shift) notify(C.say(shift.texte), 'warn');
     const warns = data.anomalies.filter(a => a.niveau === 'warn' && !a.decalage);
     if (warns.length === 1) notify(C.say(warns[0].texte), 'warn');
-    else if (warns.length > 1) notify(L(['{n} avertissements de lecture : voir le rapport du bloc « Classeur ODV ».', '{n} reading warnings: see the report in the “ODV workbook” block.', '{n} Lesewarnungen: siehe Bericht im Block „ODV-Arbeitsmappe“.', '{n} avisos de lectura: vea el informe del bloque «Libro ODV».'], { n: warns.length }), 'warn');
+    else if (warns.length > 1) notify(L(['{n} avertissements de lecture : voir le rapport du bloc « Classeur ODV ».',
+      '{n} reading warnings: see the report in the “ODV workbook” block.',
+      '{n} Lesewarnungen: siehe Bericht im Block „ODV-Arbeitsmappe“.',
+      '{n} avisos de lectura: vea el informe del bloque «Libro ODV».'
+    ], {
+      n: warns.length
+    }), 'warn');
     const bad = flights.filter(f => f.alertes.length);
-    if (bad.length) notify(L(bad.length > 1 ? ['{n} vols de la frise à vérifier (équipier codé indisponible ou hors de son code) : voir « Vols de la frise horaire ».', '{n} timeline flights to check (crew member coded unavailable or outside their code): see “Timeline flights”.', '{n} Flüge der Zeitleiste zu prüfen (Besatzungsmitglied als nicht verfügbar oder außerhalb seines Codes eingetragen): siehe „Flüge der Zeitleiste“.', '{n} vuelos de la cronología por verificar (tripulante codificado no disponible o fuera de su código): vea «Vuelos de la cronología».'] : ['{n} vol de la frise à vérifier (équipier codé indisponible ou hors de son code) : voir « Vols de la frise horaire ».', '{n} timeline flight to check (crew member coded unavailable or outside their code): see “Timeline flights”.', '{n} Flug der Zeitleiste zu prüfen (Besatzungsmitglied als nicht verfügbar oder außerhalb seines Codes eingetragen): siehe „Flüge der Zeitleiste“.', '{n} vuelo de la cronología por verificar (tripulante codificado no disponible o fuera de su código): vea «Vuelos de la cronología».'], { n: bad.length }), 'warn');
+    if (bad.length) notify(L(bad.length > 1 ? [
+      '{n} vols de la frise à vérifier (équipier codé indisponible ou hors de son code) : voir « Vols de la frise horaire ».',
+      '{n} timeline flights to check (crew member coded unavailable or outside their code): see “Timeline flights”.',
+      '{n} Flüge der Zeitleiste zu prüfen (Besatzungsmitglied als nicht verfügbar oder außerhalb seines Codes eingetragen): siehe „Flüge der Zeitleiste“.',
+      '{n} vuelos de la cronología por verificar (tripulante codificado no disponible o fuera de su código): vea «Vuelos de la cronología».'
+    ] : ['{n} vol de la frise à vérifier (équipier codé indisponible ou hors de son code) : voir « Vols de la frise horaire ».',
+      '{n} timeline flight to check (crew member coded unavailable or outside their code): see “Timeline flights”.',
+      '{n} Flug der Zeitleiste zu prüfen (Besatzungsmitglied als nicht verfügbar oder außerhalb seines Codes eingetragen): siehe „Flüge der Zeitleiste“.',
+      '{n} vuelo de la cronología por verificar (tripulante codificado no disponible o fuera de su código): vea «Vuelos de la cronología».'
+    ], {
+      n: bad.length
+    }), 'warn');
   }
 
+  /** « Effacer les données » : classeur et calculs oubliés, retour à la semaine en cours sans classeur. */
   function clearAll() {
     book = null;
     xl = null;
@@ -520,7 +601,9 @@
     $('odvRecapText').value = '';
     render();
     window.OdvAssign?.load(emptyWeek(), settings).then(() => loadAtc()).then(refreshNoBook).catch(() => {});
-    notify(L(['Données effacées de la page.', 'Data cleared from the page.', 'Daten von der Seite gelöscht.', 'Datos borrados de la página.']), 'info');
+    notify(L(['Données effacées de la page.', 'Data cleared from the page.', 'Daten von der Seite gelöscht.',
+      'Datos borrados de la página.'
+    ]), 'info');
   }
 
   // ------------------------------------------------------------------ rendu
@@ -534,6 +617,7 @@
     renderWeekNav();
     renderGrid();
     renderAtc();
+    renderActivations();
     renderSlots();
     renderMissions();
     renderFlights();
@@ -541,12 +625,15 @@
 
   // ------------------------------------------------------------------ sessions ATC des réseaux (shared/atc_sessions.js)
   // trainings, examens, événements et réservations VATSIM / IVAO de la semaine affichée : saisis à la main ou récupérés
-  // (VATSIM, France métropolitaine) ; comptés dans les créneaux (★, CTR du terrain à éviter en training ou examen)
+  // (VATSIM, IVAO : périmètre du pays préféré, SuiteAtc.perimeter) ; comptés dans les créneaux (★, CTR du terrain à éviter
+  // en training ou examen)
   let atc = {
     week: '',
     list: []
   };
+  /** Identifiant de la semaine affichée pour les sessions ATC (SuiteAtc.weekId) ; '' sans module. */
   const atcWeek = () => window.SuiteAtc?.weekId(shownMonday()) || '';
+  /** Lit les sessions ATC de la semaine affichée (fresh : sans cache), puis lance l'import IVAO automatique. */
   async function loadAtc(fresh = false) {
     const S = window.SuiteAtc,
       w = atcWeek();
@@ -558,6 +645,21 @@
       week: w,
       list
     };
+    autoAtc(w);
+  }
+  /** Import IVAO automatique de la semaine ouverte (trainings, examens, réservations), au plus une fois par heure :
+   *  le même que celui du Tableau (SuiteAtc.autoImport), seulement si la page peut écrire ; sans alerte. */
+  function autoAtc(w) {
+    if (!window.SuiteAtc?.autoImport || !canEditActivations()) return;
+    window.SuiteAtc.autoImport(w, 'IVAO').then(r => {
+      if (r.skipped || r.error || w !== atcWeek()) return;
+      atc = {
+        week: w,
+        list: r.sessions
+      };
+      compute();
+      render();
+    });
   }
   /** Données du calcul complétées des sessions ATC de leur semaine. */
   function withAtc(d) {
@@ -570,6 +672,8 @@
       evenements: [...d.evenements, ...p.evenements]
     };
   }
+  /** Enregistre les sessions ATC de la semaine affichée (SuiteAtc.save) ; text : message de réussite, notifié si elles
+   *  sont écrites dans le dossier ; recalcule et redessine la page. */
   async function saveAtc(list, text) {
     const w = atcWeek();
     let r;
@@ -587,6 +691,9 @@
     compute();
     render();
   }
+
+  /** Bloc des sessions ATC de la semaine : trainings, examens et événements, réservations repliées, ajout et retrait
+   *  à la main, import VATSIM / IVAO. */
   function renderAtc() {
     const host = $('odvAtc'),
       S = window.SuiteAtc;
@@ -596,10 +703,19 @@
       return;
     }
     const dates = gridData().dates,
+      per = S.perimeter(),
       list = atc.week === atcWeek() ? atc.list : [];
     const dayOpt = dates.map((d, j) => `<option value="${d}">${esc(wordL(C.DAYS[j]))} ${esc(dateFr(d))}</option>`).join('');
-    const rows = list.map((x, i) => `<tr><td>${esc(wordL(C.DAYS[dates.indexOf(x.date)] || ''))} ${esc(dateFr(x.date))}</td><td>${esc(x.debut)}–${esc(x.fin)}z</td><td><b>${esc(x.position)}</b></td><td>${esc(x.reseau)}</td><td>${esc(S.typeLabel(x.type))}</td><td>${esc(x.texte || '')}</td><td class="mut">${x.source === 'vatsim' ? L(['récupérée', 'fetched', 'abgerufen', 'recuperada']) : L(['saisie', 'entered', 'eingegeben', 'introducida'])}</td><td><button type="button" class="ghost" data-atc-del="${i}" title="${esc(L(['Retirer cette session', 'Remove this session', 'Diese Sitzung entfernen', 'Quitar esta sesión']))}">×</button></td></tr>`).join('');
-    host.innerHTML = `${list.length ? `<table class="odv-week odv-atc"><thead><tr><th>${L(['Jour', 'Day', 'Tag', 'Día'])}</th><th>${L(['Heures (UTC)', 'Hours (UTC)', 'Uhrzeit (UTC)', 'Horas (UTC)'])}</th><th>${L(['Position', 'Position', 'Position', 'Posición'])}</th><th>${L(['Réseau', 'Network', 'Netzwerk', 'Red'])}</th><th>${L(['Type', 'Type', 'Art', 'Tipo'])}</th><th>${L(['Commentaire', 'Comment', 'Kommentar', 'Comentario'])}</th><th>${L(['Source', 'Source', 'Quelle', 'Fuente'])}</th><th></th></tr></thead><tbody>${rows}</tbody></table>` : `<p class="mut odv-d-note">${L(['Aucune session ATC enregistrée pour cette semaine.', 'No ATC session recorded for this week.', 'Für diese Woche keine ATC-Sitzung erfasst.', 'Ninguna sesión ATC registrada para esta semana.'])}</p>`}
+    // trainings, examens et événements en tête ; simples réservations (contexte ★, nombreuses une fois importées) repliées
+    const row = (x, i) => `<tr class="odv-atc-${esc(x.type)}"><td>${esc(wordL(C.DAYS[dates.indexOf(x.date)] || ''))} ${esc(dateFr(x.date))}</td><td>${esc(x.debut)}–${esc(x.fin)}z</td><td><b>${esc(x.position)}</b></td><td>${esc(x.reseau)}</td><td>${esc(S.typeLabel(x.type))}</td><td>${esc(x.texte || '')}</td><td class="mut">${x.source === 'vatsim' || x.source === 'ivao' ? L(['récupérée', 'fetched', 'abgerufen', 'recuperada']) : L(['saisie', 'entered', 'eingegeben', 'introducida'])}</td><td><button type="button" class="ghost" data-atc-del="${i}" title="${esc(L(['Retirer cette session', 'Remove this session', 'Diese Sitzung entfernen', 'Quitar esta sesión']))}">×</button></td></tr>`;
+    const indexed = list.map((x, i) => [x, i]),
+      key = indexed.filter(([x]) => x.type !== 'reservation'),
+      resa = indexed.filter(([x]) => x.type === 'reservation');
+    const head = `<thead><tr><th>${L(['Jour', 'Day', 'Tag', 'Día'])}</th><th>${L(['Heures (UTC)', 'Hours (UTC)', 'Uhrzeit (UTC)', 'Horas (UTC)'])}</th><th>${L(['Position', 'Position', 'Position', 'Posición'])}</th><th>${L(['Réseau', 'Network', 'Netzwerk', 'Red'])}</th><th>${L(['Type', 'Type', 'Art', 'Tipo'])}</th><th>${L(['Commentaire', 'Comment', 'Kommentar', 'Comentario'])}</th><th>${L(['Source', 'Source', 'Quelle', 'Fuente'])}</th><th></th></tr></thead>`;
+    /** Tableau des sessions données ([session, rang dans list]). */
+    const table = l => `<table class="odv-week odv-atc">${head}<tbody>${l.map(([x, i]) => row(x, i)).join('')}</tbody></table>`;
+    host.innerHTML = `${key.length ? table(key) : `<p class="mut odv-d-note">${list.length ? L(['Aucun training, examen ou événement ATC cette semaine.', 'No ATC training, exam or event this week.', 'Diese Woche kein ATC-Training, keine Prüfung, keine Veranstaltung.', 'Ningún entrenamiento, examen ni evento ATC esta semana.']) : L(['Aucune session ATC enregistrée pour cette semaine.', 'No ATC session recorded for this week.', 'Für diese Woche keine ATC-Sitzung erfasst.', 'Ninguna sesión ATC registrada para esta semana.'])}</p>`}
+      ${resa.length ? `<details class="odv-atc-resa"><summary class="mut">${L(['{n} réservation(s) de position (contexte ★ des créneaux)', '{n} position booking(s) (★ slot context)', '{n} Positionsbuchung(en) (★ Kontext der Zeitfenster)', '{n} reserva(s) de posición (contexto ★ de las franjas)'], { n: resa.length })}</summary>${table(resa)}</details>` : ''}
       <form class="row odv-atc-form" data-atc-form>
         <select data-atc="date" aria-label="${esc(L(['Jour', 'Day', 'Tag', 'Día']))}">${dayOpt}</select>
         <input type="time" data-atc="debut" value="18:00" step="900" required aria-label="${esc(L(['Début (UTC)', 'Start (UTC)', 'Beginn (UTC)', 'Inicio (UTC)']))}">
@@ -610,13 +726,16 @@
         <input type="text" data-atc="texte" placeholder="${esc(L(['Commentaire (facultatif)', 'Comment (optional)', 'Kommentar (optional)', 'Comentario (opcional)']))}">
         <button type="submit" class="secondary" data-icon="plus">${L(['Ajouter', 'Add', 'Hinzufügen', 'Añadir'])}</button>
       </form>
-      <div class="row"><button type="button" class="secondary" data-atc-vatsim data-icon="refresh">${L(['Récupérer VATSIM (France métropolitaine)', 'Fetch VATSIM (metropolitan France)', 'VATSIM abrufen (Frankreich, Mutterland)', 'Recuperar VATSIM (Francia metropolitana)'])}</button>
-      <span class="mut small">${L(['IVAO : saisie à la main (l’API des réservations IVAO demande une authentification).', 'IVAO: entered by hand (the IVAO bookings API requires authentication).', 'IVAO: manuelle Eingabe (die IVAO-Buchungs-API verlangt eine Anmeldung).', 'IVAO: introducción manual (la API de reservas de IVAO requiere autenticación).'])}</span></div>`;
+      <div class="row"><button type="button" class="secondary" data-atc-net="VATSIM" data-icon="refresh">${L(['Récupérer VATSIM ({p})', 'Fetch VATSIM ({p})', 'VATSIM abrufen ({p})', 'Recuperar VATSIM ({p})'], { p: esc(per.label) })}</button>
+      <button type="button" class="secondary" data-atc-net="IVAO" data-icon="refresh" title="${esc(L(['Trainings, examens et réservations IVAO ({p}) ; clé d’API IVAO de l’installation (Paramètres › Installation). Pays : Paramètres › Centre › Planning ODV.', 'IVAO trainings, exams and bookings ({p}); installation IVAO API key (Settings › Installation). Country: Settings › Centre › ODV planning.', 'IVAO-Trainings, -Prüfungen und -Buchungen ({p}); IVAO-API-Schlüssel der Installation (Einstellungen › Installation). Land: Einstellungen › Zentrum › ODV-Planung.', 'Entrenamientos, exámenes y reservas IVAO ({p}); clave de API IVAO de la instalación (Ajustes › Instalación). País: Ajustes › Centro › Planificación ODV.'], { p: per.label }))}">${L(['Récupérer IVAO ({p})', 'Fetch IVAO ({p})', 'IVAO abrufen ({p})', 'Recuperar IVAO ({p})'], { p: esc(per.label) })}</button></div>`;
     const f = host.querySelector('[data-atc-form]'),
       v = k => f.querySelector(`[data-atc="${k}"]`).value.trim();
     f.onsubmit = e => {
       e.preventDefault();
-      if (v('fin') <= v('debut')) return notify(L(['La fin doit suivre le début (même jour, heures UTC).', 'The end must follow the start (same day, UTC hours).', 'Das Ende muss nach dem Beginn liegen (gleicher Tag, UTC).', 'El fin debe seguir al inicio (mismo día, horas UTC).']), 'err');
+      if (v('fin') <= v('debut')) return notify(L(['La fin doit suivre le début (même jour, heures UTC).',
+        'The end must follow the start (same day, UTC hours).', 'Das Ende muss nach dem Beginn liegen (gleicher Tag, UTC).',
+        'El fin debe seguir al inicio (mismo día, horas UTC).'
+      ]), 'err');
       const s = {
         id: `manuel-${Date.now().toString(36)}`,
         date: v('date'),
@@ -634,29 +753,82 @@
     };
     host.querySelectorAll('[data-atc-del]').forEach(b => b.onclick = () => {
       const x = list[+b.dataset.atcDel];
-      saveAtc(list.filter(y => y !== x), L(['Session {p} retirée.', 'Session {p} removed.', 'Sitzung {p} entfernt.', 'Sesión {p} quitada.'], {
+      saveAtc(list.filter(y => y !== x), L(['Session {p} retirée.', 'Session {p} removed.', 'Sitzung {p} entfernt.',
+        'Sesión {p} quitada.'
+      ], {
         p: x.position
       }));
     });
-    host.querySelector('[data-atc-vatsim]').onclick = async e => {
-      const b = e.currentTarget,
+    // import d'un réseau : le même que celui du Tableau (SuiteAtc.importNetwork : récupérées remplacées,
+    // annulations comprises, saisies gardées)
+    host.querySelectorAll('[data-atc-net]').forEach(b => b.onclick = async () => {
+      const net = b.dataset.atcNet,
         w = atcWeek();
       b.disabled = true;
-      try {
-        const got = await S.fetchVatsim(w);
-        if (w !== atcWeek()) return;
-        // récupérées remplacées (annulations comprises), saisies gardées
-        await saveAtc([...list.filter(x => x.source !== 'vatsim'), ...got], L(['VATSIM : {n} session(s) de France métropolitaine cette semaine.', 'VATSIM: {n} session(s) in metropolitan France this week.', 'VATSIM: {n} Sitzung(en) in Frankreich (Mutterland) diese Woche.', 'VATSIM: {n} sesión(es) en Francia metropolitana esta semana.'], {
-          n: got.length
-        }));
-      } catch (err) {
-        notify(err.message, 'err');
-      } finally {
-        b.disabled = false;
-      }
-    };
+      const r = await S.importNetwork(w, net);
+      b.disabled = false;
+      if (r.error) return notify(r.error, 'err');
+      if (w !== atcWeek()) return;
+      atc = {
+        week: w,
+        list: r.sessions
+      };
+      const mine = r.sessions.filter(x => x.reseau === net && x.source !== 'manuel'),
+        tr = mine.filter(x => x.type === 'training').length,
+        ex = mine.filter(x => x.type === 'examen').length;
+      if (r.where === 'folder') notify(L(['{r} : {t} training(s), {e} examen(s) et {b} autre(s) session(s) cette semaine ({p}).',
+        '{r}: {t} training(s), {e} exam(s) and {b} other session(s) this week ({p}).',
+        '{r}: {t} Training(s), {e} Prüfung(en) und {b} weitere Sitzung(en) diese Woche ({p}).',
+        '{r}: {t} entrenamiento(s), {e} examen(es) y {b} otra(s) sesión(es) esta semana ({p}).'
+      ], {
+        p: S.perimeter().label,
+        r: net,
+        t: tr,
+        e: ex,
+        b: r.n - tr - ex
+      }), 'ok');
+      compute();
+      render();
+    });
   }
 
+  // ------------------------------------------------------------------ activations des zones par réseau
+  // même éditeur et même fichier que le Tableau (shared/odv_activations_editor.js, OdvAirspace :
+  // data/atc/activations/<semaine>.json) ; retouche réservée comme au Tableau (Centre activé, hors production : admin)
+  let activations = null;
+  /** Retouche des activations permise : Centre activé et, en mode production, admin connecté. */
+  const canEditActivations = () => !!window.RepositoryNav?.cpco?.enabled?.() && (window.SuiteUsers?.mode?.() !== 'production' || !!window
+    .SuiteUsers?.isAdmin?.());
+
+  /** Bloc des activations des zones (OdvActivationsEditor, monté une fois puis mis à la semaine affichée) ; un import
+   *  de sessions depuis l'éditeur recalcule la page. */
+  function renderActivations() {
+    const host = $('odvActivations'),
+      w = atcWeek();
+    if (!host || !window.OdvActivationsEditor || !w) return;
+    if (activations) return activations.set({
+      semaine: w,
+      readOnly: !canEditActivations()
+    });
+    activations = window.OdvActivationsEditor.mount(host, {
+      semaine: w,
+      readOnly: !canEditActivations(),
+      onImport: ({
+        sessions
+      }) => {
+        if (sessions?.error || atcWeek() !== w) return;
+        atc = {
+          week: w,
+          list: sessions.sessions
+        };
+        compute();
+        render();
+      }
+    });
+  }
+
+  /** Bloc « Classeur ODV » : fichier, semaine et source des dates, permanence, thème, pilotes, FLOTTE, frise et rapport
+   *  de lecture ; vide sans classeur. */
   function renderReport() {
     const host = $('odvReport');
     if (!data) {
@@ -667,13 +839,17 @@
       filled = d.pilotes.filter(p => p.rempli).length,
       flotteN = Object.keys(d.flotte).length;
     const week = d.semaine == null ? `<span class="odv-bad">${L(['introuvable', 'not found', 'nicht gefunden', 'no encontrada'])}</span>` :
-      L(['S{w} {y} — du lundi {a} au dimanche {b}/{z} ({s})', 'Week {w} {y} — from Monday {a} to Sunday {b}/{z} ({s})', 'KW {w} {y} — von Montag {a} bis Sonntag {b}/{z} ({s})', 'Semana {w} {y} — del lunes {a} al domingo {b}/{z} ({s})'], {
+      L(['S{w} {y} — du lundi {a} au dimanche {b}/{z} ({s})', 'Week {w} {y} — from Monday {a} to Sunday {b}/{z} ({s})',
+        'KW {w} {y} — von Montag {a} bis Sonntag {b}/{z} ({s})', 'Semana {w} {y} — del lunes {a} al domingo {b}/{z} ({s})'
+      ], {
         w: d.semaine,
         y: d.annee || '',
         a: esc(dateFr(d.dates[0])),
         b: esc(dateFr(d.dates[6])),
         z: esc((d.dates[6] || '').slice(0, 4)),
-        s: d.dateSource === 'frise' && d.friseLundi ? L(['dates de la frise', 'timeline dates', 'Daten der Zeitleiste', 'fechas de la cronología']) : L(['semaine ISO', 'ISO week', 'ISO-Woche', 'semana ISO'])
+        s: d.dateSource === 'frise' && d.friseLundi ? L(['dates de la frise', 'timeline dates', 'Daten der Zeitleiste',
+          'fechas de la cronología'
+        ]) : L(['semaine ISO', 'ISO week', 'ISO-Woche', 'semana ISO'])
       });
     const shift = d.decalageJours ? ` <span class="odv-bad">— ${L(['frise : lundi au {d} (écart {n} j)', 'timeline: Monday on {d} (offset {n} d)', 'Zeitleiste: Montag am {d} (Abweichung {n} T)', 'cronología: lunes el {d} (desfase {n} d)'], { d: esc(d.friseLundi.split('-').reverse().join('/')), n: `${d.decalageJours > 0 ? '+' : ''}${d.decalageJours}` })}</span>` : '';
     const warns = d.anomalies.filter(a => a.niveau === 'warn').length,
@@ -693,6 +869,8 @@
 
   // --- grille
 
+  /** Filtres de la grille (grilles vides, couleur, rôle, simulateur) d'après les données du calcul ; filtre devenu sans
+   *  objet levé ; choix mémorisés (odvPlanningView:v1). */
   function renderGridFilters() {
     const host = $('odvGridFilters'),
       data = basis;
@@ -707,6 +885,7 @@
     if (view.color && !colors.includes(view.color)) view.color = '';
     if (view.role && !roles.includes(view.role)) view.role = '';
     if (view.sim && !sims.includes(view.sim)) view.sim = '';
+    /** Option d'une liste, sélectionnée si v est la valeur courante. */
     const opt = (v, l, cur) => `<option value="${esc(v)}"${v === cur ? ' selected' : ''}>${esc(l)}</option>`;
     host.innerHTML = `<label><input type="checkbox" id="odvHideEmpty"${view.hideEmpty ? ' checked' : ''}> ${L(['Masquer les grilles vides', 'Hide empty grids', 'Leere Raster ausblenden', 'Ocultar las cuadrículas vacías'])}</label>
       ${colors.length ? `<label>${L(['Couleur du trigramme', 'Trigram colour', 'Farbe des Kürzels', 'Color del trigrama'])} <select id="odvColor">${opt('', L(['toutes', 'all', 'alle', 'todas']), view.color)}${colors.map(c => opt(c, `#${c} (${data.pilotes.filter(p => p.couleur === c).length})`, view.color)).join('')}</select></label>` : ''}
@@ -763,29 +942,41 @@
   /** Affectation enregistrée rouverte dans le dialogue complet (« Modifier ») ; mission absente du registre de ce
    *  navigateur : fenêtre du créneau. */
   async function editAssigned(missionId, takeoff) {
-    if (!centreOn()) return notify(L(['Centre verrouillé : l’activer dans Paramètres › Centre (CPCO).', 'Centre locked: enable it in Settings › Centre (CPCO).', 'Zentrum gesperrt: in Einstellungen › Zentrum (CPCO) aktivieren.', 'Centro bloqueado: actívelo en Ajustes › Centro (CPCO).']), 'warn');
+    if (!centreOn()) return notify(L(['Centre verrouillé : l’activer dans Paramètres › Centre (CPCO).',
+      'Centre locked: enable it in Settings › Centre (CPCO).',
+      'Zentrum gesperrt: in Einstellungen › Zentrum (CPCO) aktivieren.',
+      'Centro bloqueado: actívelo en Ajustes › Centro (CPCO).'
+    ]), 'warn');
     const m = regMissions().find(x => x.id === missionId),
       jk = slotOfAssign({
         takeoff
       }, gridData().dates);
     if (!m) {
       if (jk) return pickMission(slotOf(jk[0], jk[1]));
-      return notify(L(['{m} absente du registre de ce navigateur : relire le registre du Centre.', '{m} missing from this browser’s registry: re-read the Centre registry.', '{m} fehlt im Register dieses Browsers: das Register des Zentrums neu lesen.', '{m} ausente del registro de este navegador: vuelva a leer el registro del Centro.'], {
+      return notify(L(['{m} absente du registre de ce navigateur : relire le registre du Centre.',
+        '{m} missing from this browser’s registry: re-read the Centre registry.',
+        '{m} fehlt im Register dieses Browsers: das Register des Zentrums neu lesen.',
+        '{m} ausente del registro de este navegador: vuelva a leer el registro del Centro.'
+      ], {
         m: missionId
       }), 'warn');
     }
-    await window.OdvAssign.assign(m, [], Date.parse(takeoff), L(['Modification de l’affectation de {m}', 'Editing the assignment of {m}', 'Änderung der Zuweisung von {m}', 'Modificación de la asignación de {m}'], {
+    await window.OdvAssign.assign(m, [], Date.parse(takeoff), L(['Modification de l’affectation de {m}',
+      'Editing the assignment of {m}', 'Änderung der Zuweisung von {m}', 'Modificación de la asignación de {m}'
+    ], {
       m: m.id
     }));
   }
   // jour affiché dans le planning heure par heure (indice 0-6 de la semaine ; mémoire)
   let planDay = null;
   const PLAN_COLORS = ['#3b6fd8', '#d8763b', '#2f9e6e', '#a64fc4', '#c43f5a', '#2a9bb5', '#b59a2a', '#6a7a8c'];
+  /** Couleur stable d'une mission dans le planning (empreinte de son identifiant). */
   const planColor = id => PLAN_COLORS[[...String(id)].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 7) % PLAN_COLORS.length];
   /** Planning heure par heure d'un jour de la semaine (onglets : jours ayant des missions). */
   function planningHtml(week, dates) {
     const M = window.MissionAssignments;
     if (!week.length || !M?.busyRange) return '';
+    /** Jour (0-6) du début d'occupation d'une affectation ; -1 hors de la semaine. */
     const dayOf = a => dates.indexOf(new Date(M.busyRange(a)[0]).toISOString().slice(0, 10));
     const days = [...new Set(week.map(dayOf).filter(j => j >= 0))].sort((a, b) => a - b);
     if (!days.length) return '';
@@ -831,6 +1022,8 @@
       <div class="odv-plan"><div class="odv-plan-row odv-plan-head"><span></span><div class="odv-plan-track">${hours.map(h => `<span style="left:${x(d0 + h * 36e5)}%">${String(h).padStart(2, '0')}z</span>`).join('')}</div></div>${rows}</div>`;
   }
 
+  /** Grille dense de la semaine : légende, une ligne par pilote filtré (code du classeur, puis déclaration et
+   *  affectation par créneau), missions affectées de la semaine, planning heure par heure, journal des affectations. */
   function renderGrid() {
     renderGridFilters();
     const data = gridData(); // classeur lu, sinon semaine sans classeur (ligne du classeur vide)
@@ -838,16 +1031,18 @@
     const counts = {};
     for (const r of data.records)
       if (r.code) counts[r.code] = (counts[r.code] || 0) + 1;
-    $('odvLegend').innerHTML = (data.virtuel ? `<span class="odv-noxl">${L(['Pas de classeur : semaine du {a} au {b} ; déclarations des pilotes et affectations.', 'No workbook: week from {a} to {b}; pilot declarations and assignments.', 'Keine Arbeitsmappe: Woche vom {a} bis {b}; Pilotenangaben und Zuweisungen.', 'Sin libro: semana del {a} al {b}; declaraciones de los pilotos y asignaciones.'], { a: esc(dateFr(data.dates[0])), b: esc(dateFr(data.dates[6])) })}</span>` : '') + (data.virtuel ? [] : Object.values(data.legende)).map(e => `<span>${codeCell({ code: e.code, sens: e.sens, categorie: e.categorie, source: '' })} ${esc(sensL(e.sens))}${counts[e.code] ? ` <b>${counts[e.code]}</b>` : ''}</span>`).join('') +
+    $('odvLegend').innerHTML = (data.virtuel ? `<span class="odv-noxl">${L(['Pas de classeur : semaine du {a} au {b} ; déclarations des pilotes et affectations.', 'No workbook: week from {a} to {b}; pilot declarations and assignments.', 'Keine Arbeitsmappe: Woche vom {a} bis {b}; Pilotenangaben und Zuweisungen.', 'Sin libro: semana del {a} al {b}; declaraciones de los pilotos y asignaciones.'], { a: esc(dateFr(data.dates[0])), b: esc(dateFr(data.dates[6])) })}</span>` : '') + (data.virtuel ? [] : Object.values(data.legende)).map(e => `<span>${codeCell({ code: e.code, sens: e.sens, categorie: e.categorie, source: '' })} ${esc(sensL(e.sens))}${counts[e.code] ? ` <b>${counts[e.code]}</b>` : ''}</span>`)
+      .join('') +
       (data.virtuel ? '' : `<span>${codeCell({ categorie: 'inconnu', source: '' })} ${esc(catL('inconnu'))}</span>`) +
-      // déclarations des pilotes : regroupées (Disponible, Exercice DEFA, Occupé, Indisponible), détail au survol
+      // déclarations des pilotes : regroupées (Disponible, Exercice SOG, Occupé, Indisponible), détail au survol
       (window.DisposEditor?.legend ? `<div class="odv-legend-decl"><b>${L(['Déclarations des pilotes', 'Pilot declarations', 'Pilotenangaben', 'Declaraciones de los pilotos'])}</b>${window.DisposEditor.legend()}</div>` : ''); // même légende que Mes missions
     const byPilot = new Map(data.pilotes.map(p => [p.trigramme, []]));
     for (const r of data.records) byPilot.get(r.pilote)?.push(r);
     // grille non vide : cases du classeur, ou seconde ligne du pilote (déclaration faite dans la suite — copie de ce
     // navigateur ou data/disponibilites — ou mission affectée sur un créneau de la semaine)
     const O = window.OdvAssign,
-      declared = p => !!O && C.DAYS.some((_, j) => [0, 1, 2].some(k => O.declared(p.trigramme, j, k) || O.assigned(p.trigramme, j, k)?.length));
+      declared = p => !!O && C.DAYS.some((_, j) => [0, 1, 2].some(k => O.declared(p.trigramme, j, k) || O.assigned(p.trigramme, j, k)
+        ?.length));
     const rows = data.pilotes.filter(p => (!view.hideEmpty || p.rempli || declared(p)) && (!view.color || p.couleur === view.color) &&
         (!view.role || (p.profil?.roles || []).includes(view.role)) && (!view.sim || (p.profil?.sims || []).includes(view.sim)))
       .map(p => {
@@ -875,7 +1070,13 @@
     const head = `<thead><tr><th rowspan="2" class="odv-d-pil">${L(['Pilote', 'Pilot', 'Pilot', 'Piloto'])}</th><th rowspan="2" class="odv-d-n" title="${esc(L(['Créneaux disponibles (+ contrôle)', 'Available slots (+ ATC)', 'Verfügbare Zeitfenster (+ Lotse)', 'Franjas disponibles (+ control)']))}">${L(['Dispo', 'Avail.', 'Verf.', 'Disp.'])}</th>${C.DAYS.map((d, j) => `<th colspan="3" class="odv-d-day">${esc(dayAbbr(d))} ${esc(dateFr(data.dates[j]))}</th>`).join('')}</tr>
       <tr>${C.DAYS.map(() => SHORT.map((s, k) => `<th class="odv-d-slot" title="${esc(L([['matin', 'morning', 'Morgen', 'mañana'], ['après-midi', 'afternoon', 'Nachmittag', 'tarde'], ['soir', 'evening', 'Abend', 'noche']][k] || [s, s, s, s]))} (${esc(`${String(settings.hours[k][0]).padStart(2, '0')}-${String(settings.hours[k][1]).padStart(2, '0')}z`)})">${esc(shortL(k))}</th>`).join('')).join('')}</tr></thead>`;
     const body = rows.map(r => {
-      const tip = [r.roles && L(['Rôles : {x}', 'Roles: {x}', 'Rollen: {x}', 'Funciones: {x}'], { x: r.roles }), r.sims && L(['Simulateurs : {x}', 'Simulators: {x}', 'Simulatoren: {x}', 'Simuladores: {x}'], { x: r.sims }), L(['Ligne {n} du classeur', 'Workbook row {n}', 'Zeile {n} der Arbeitsmappe', 'Fila {n} del libro'], { n: r.ligne })].filter(Boolean).join('\n');
+      const tip = [r.roles && L(['Rôles : {x}', 'Roles: {x}', 'Rollen: {x}', 'Funciones: {x}'], {
+        x: r.roles
+      }), r.sims && L(['Simulateurs : {x}', 'Simulators: {x}', 'Simulatoren: {x}', 'Simuladores: {x}'], {
+        x: r.sims
+      }), L(['Ligne {n} du classeur', 'Workbook row {n}', 'Zeile {n} der Arbeitsmappe', 'Fila {n} del libro'], {
+        n: r.ligne
+      })].filter(Boolean).join('\n');
       return `<tr><th class="odv-d-pil" title="${esc(tip)}">${tri(r.pilote, r.couleur, false)}</th><td class="odv-d-n">${r.dispo}${r.atc ? `<small>+${r.atc}</small>` : ''}</td>${C.DAYS.map((_, j) => [0, 1, 2].map(k => {
         const v = r[`s${j}${k}`];
         return `<td class="odv-d-cell${k === 2 ? ' odv-d-end' : ''}">${data.virtuel && withDecl ? '' : codeCell(v)}${withDecl ? window.OdvAssign.line(r.pilote, j, k, v, codeCell) : ''}</td>`;
@@ -918,6 +1119,8 @@
     };
   }
 
+  /** Carte de chaleur des 21 créneaux (pilotes libres, contrôleurs, affectations ✎, événements ★) ; clic : fenêtre
+   *  d'affectation du créneau (pickMission). */
   function renderSlots() {
     renderSlotFilters();
     const data = basis;
@@ -933,7 +1136,9 @@
         const s = slots[j * 3 + k],
           key = `${j}${k}`,
           has = (window.OdvAssign?.inSlot(j, k) || []).some(a => a.role !== 'convoyage');
-        const bits = [s.atc.length ? L(['+{n} ctrl', '+{n} ATC', '+{n} ATC', '+{n} ctrl'], { n: s.atc.length }) : '', has ? '✎' : '', s.evenements.length ? '★' : ''].filter(Boolean).join(' · ');
+        const bits = [s.atc.length ? L(['+{n} ctrl', '+{n} ATC', '+{n} ATC', '+{n} ctrl'], {
+          n: s.atc.length
+        }) : '', has ? '✎' : '', s.evenements.length ? '★' : ''].filter(Boolean).join(' · ');
         html += `<button type="button" data-slot="${key}" class="repo-plain${has ? ' has' : ''}${s.n0 < settings.minPilots ? ' low' : ''}" style="--pct:${Math.round(s.n / max * 70)}%" title="${esc(L(s.n0 > s.n ? ['{t} : {n} pilote(s) libre(s) sur {m}, {a} contrôleur(s)', '{t}: {n} free pilot(s) of {m}, {a} controller(s)', '{t}: {n} freie(r) Pilot(en) von {m}, {a} Lotse(n)', '{t}: {n} piloto(s) libre(s) de {m}, {a} controlador(es)'] : ['{t} : {n} pilote(s) libre(s), {a} contrôleur(s)', '{t}: {n} free pilot(s), {a} controller(s)', '{t}: {n} freie(r) Pilot(en), {a} Lotse(n)', '{t}: {n} piloto(s) libre(s), {a} controlador(es)'], { t: slotTitle(s), n: s.n, m: s.n0, a: s.atc.length }) + ' — ' + L(has ? ['clic : modifier les missions affectées ou en planifier d’autres', 'click: edit the assigned missions or plan others', 'Klick: zugewiesene Missionen ändern oder weitere planen', 'clic: modificar las misiones asignadas o planificar otras'] : ['clic : planifier des missions du registre', 'click: plan registry missions', 'Klick: Missionen des Registers planen', 'clic: planificar misiones del registro']))}"><b>${s.n}</b><small>${esc(bits || ' ')}</small></button>`;
       }
     }
@@ -950,14 +1155,17 @@
   // (points du registre, tronçons échantillonnés) confrontée aux sessions ATC du créneau : CTR du terrain en examen ou
   // en training → écartée, TMA contenant le terrain → signalée. Ouverture dans le registre (?mission=…).
   const centreOn = () => !!window.RepositoryNav?.cpco?.enabled?.();
+  /** Texte sans accents, en majuscules (comparaison des familles). */
   const fold = s => String(s ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase();
   /** Opération d'une mission : tirée de l'identifiant (I-001A → I-001 : missions d'équipage d'une opération), sinon
    *  celle du registre (registres anciens ou incomplets : l'identifiant fait foi) ; '' sinon. */
   const opOf = m => (/^([A-Z]+-\d+)[A-Y]$/i.exec(String(m?.id || '')) || [])[1] || m?.operation?.id || '';
+  /** Missions du registre du navigateur (MissionIndex, sinon « missionRegistry:v1 ») ; [] si illisible. */
   const regMissions = () => {
     try {
       // registre des missions : copie en mémoire de l'index (shared/data_index.js)
-      return (window.MissionIndex ? window.MissionIndex.all() : (window.RepositoryKit?.store?.jsonCached ? window.RepositoryKit.store.jsonCached('missionRegistry:v1', null) : JSON.parse(localStorage.getItem('missionRegistry:v1') || 'null'))?.missions) || [];
+      return (window.MissionIndex ? window.MissionIndex.all() : (window.RepositoryKit?.store?.jsonCached ? window.RepositoryKit.store
+        .jsonCached('missionRegistry:v1', null) : JSON.parse(localStorage.getItem('missionRegistry:v1') || 'null'))?.missions) || [];
     } catch {
       return [];
     }
@@ -1017,7 +1225,9 @@
       inR = window.SiaBase?.inRing;
     if (!inR || !S.length) return S.length ? [] : [{
       grave: false,
-      texte: L(['route inconnue (registre à relire)', 'unknown route (registry to re-read)', 'Route unbekannt (Register neu einlesen)', 'ruta desconocida (volver a leer el registro)'])
+      texte: L(['route inconnue (registre à relire)', 'unknown route (registry to re-read)',
+        'Route unbekannt (Register neu einlesen)', 'ruta desconocida (volver a leer el registro)'
+      ])
     }];
     const first = list => list.find(a => S.some(p => (a.rings || []).some(r => inR(r, p.lat, p.lon))));
     const out = [];
@@ -1026,18 +1236,29 @@
       if (c) {
         out.push({
           grave: true,
-          texte: L(['traverse la CTR {n} ({z})', 'crosses the {n} CTR ({z})', 'durchquert die CTR {n} ({z})', 'atraviesa la CTR {n} ({z})'], { n: c.name, z: `${C.kindLabel(z.type)} ${z.position}` })
+          texte: L(['traverse la CTR {n} ({z})', 'crosses the {n} CTR ({z})', 'durchquert die CTR {n} ({z})',
+            'atraviesa la CTR {n} ({z})'
+          ], {
+            n: c.name,
+            z: `${C.kindLabel(z.type)} ${z.position}`
+          })
         });
         continue;
       }
       const t = first(z.tma);
       if (t) out.push({
         grave: false,
-        texte: L(['traverse la TMA {n} ({z})', 'crosses the {n} TMA ({z})', 'durchquert die TMA {n} ({z})', 'atraviesa la TMA {n} ({z})'], { n: t.name, z: `${C.kindLabel(z.type)} ${z.position}` })
+        texte: L(['traverse la TMA {n} ({z})', 'crosses the {n} TMA ({z})', 'durchquert die TMA {n} ({z})',
+          'atraviesa la TMA {n} ({z})'
+        ], {
+          n: t.name,
+          z: `${C.kindLabel(z.type)} ${z.position}`
+        })
       });
     }
     return out;
   }
+  /** Durée en minutes → « 1 h 05 » ; « — » si absente ou nulle. */
   const hmOf = min => Number.isFinite(+min) && +min > 0 ? `${Math.floor(min / 60)} h ${String(Math.round(min % 60)).padStart(2, '0')}` : '—';
   /** Fenêtre de choix : missions du registre pour le créneau s (famille fam, sinon familles probables du créneau). */
   async function pickMission(s, fam = '', {
@@ -1060,17 +1281,31 @@
       k = s.creneauIndex,
       range = O?.range(j, k);
     if (!centreOn()) {
-      notify(L(['Registre des missions : Centre verrouillé — l’activer dans Paramètres › Centre (CPCO).', 'Mission registry: Centre locked — enable it in Settings › Centre (CPCO).', 'Missionsregister: Zentrum gesperrt — in Einstellungen › Zentrum (CPCO) aktivieren.', 'Registro de misiones: Centro bloqueado — actívelo en Ajustes › Centro (CPCO).']), 'warn');
+      notify(L(['Registre des missions : Centre verrouillé — l’activer dans Paramètres › Centre (CPCO).',
+        'Mission registry: Centre locked — enable it in Settings › Centre (CPCO).',
+        'Missionsregister: Zentrum gesperrt — in Einstellungen › Zentrum (CPCO) aktivieren.',
+        'Registro de misiones: Centro bloqueado — actívelo en Ajustes › Centro (CPCO).'
+      ]), 'warn');
       return;
     }
     const all = regMissions();
     if (!all.length) {
-      notify(L(['Registre des missions vide dans ce navigateur : ouvrir le registre du Centre et relire le dossier des missions.', 'Mission registry empty in this browser: open the Centre registry and re-read the missions folder.', 'Missionsregister in diesem Browser leer: das Register des Zentrums öffnen und den Missionsordner neu einlesen.', 'Registro de misiones vacío en este navegador: abra el registro del Centro y vuelva a leer la carpeta de misiones.']), 'warn');
+      notify(L(['Registre des missions vide dans ce navigateur : ouvrir le registre du Centre et relire le dossier des missions.',
+        'Mission registry empty in this browser: open the Centre registry and re-read the missions folder.',
+        'Missionsregister in diesem Browser leer: das Register des Zentrums öffnen und den Missionsordner neu einlesen.',
+        'Registro de misiones vacío en este navegador: abra el registro del Centro y vuelva a leer la carpeta de misiones.'
+      ]), 'warn');
       return;
     }
-    if (!O?.write || !M?.postsOf || !AD?.frame) return notify(L(['Affectations : modules absents (assignments.js, odv_assign.js, assign_dialog.js).', 'Assignments: modules missing (assignments.js, odv_assign.js, assign_dialog.js).', 'Zuweisungen: Module fehlen (assignments.js, odv_assign.js, assign_dialog.js).', 'Asignaciones: faltan módulos (assignments.js, odv_assign.js, assign_dialog.js).']), 'err');
+    if (!O?.write || !M?.postsOf || !AD?.frame) return notify(L([
+      'Affectations : modules absents (assignments.js, odv_assign.js, assign_dialog.js).',
+      'Assignments: modules missing (assignments.js, odv_assign.js, assign_dialog.js).',
+      'Zuweisungen: Module fehlen (assignments.js, odv_assign.js, assign_dialog.js).',
+      'Asignaciones: faltan módulos (assignments.js, odv_assign.js, assign_dialog.js).'
+    ]), 'err');
     const zones = await zonesToAvoid(s.eviter);
-    const fams = [...new Set([...s.toutesMissions.map(m => m.famille), ...all.map(m => fold(m.family || m.type)).filter(Boolean)])].sort();
+    const fams = [...new Set([...s.toutesMissions.map(m => m.famille), ...all.map(m => fold(m.family || m.type)).filter(Boolean)])]
+      .sort();
     const chip = AD.chip,
       takeoff = range?.[0],
       title = `${esc(slotTitle(s))} — ${L(['affecter les pilotes libres', 'assign the free pilots', 'freie Piloten zuweisen', 'asignar los pilotos libres'])}`;
@@ -1078,7 +1313,10 @@
       ctx = null, // { free, decls, d: Map(id → { m, on, rows: [{ post, pilot, registration, callsign, ferryPilot }] }) }
       initial = '',
       dlg = null;
-    const snap = () => JSON.stringify([...ctx.d.values()].map(x => [x.m.id, x.on, x.takeoffSet ?? null, x.rows.map(r => [r.pilot, r.registration, r.callsign, r.ferryPilot || '', !!r.ferrySelf, !!r.ferryOpen])]));
+    /** Empreinte des choix de la matrice (missions cochées, décollages, postes) : modifications en attente. */
+    const snap = () => JSON.stringify([...ctx.d.values()].map(x => [x.m.id, x.on, x.takeoffSet ?? null, x.rows.map(r => [r.pilot, r
+      .registration, r.callsign, r.ferryPilot || '', !!r.ferrySelf, !!r.ferryOpen
+    ])]));
     const TURN = M.TURN_MIN,
       blockOf = m => +(m.estimate?.block ?? m.estimate?.flight) || 120,
       hm = ms => new Date(ms).toISOString().slice(11, 16) + 'Z',
@@ -1097,8 +1335,9 @@
           const pl = planeOf(r.registration),
             dep = r.dep || x.dep; // opération : départ de la mission du poste
           // départ sans terrain (mission en mer, sur un objectif) : l'appareil part de sa base, pas de convoyage
-          return pl && dep.code && dep.pos && pl.base && !(await atDeparture(pl.base, dep)) ? await M.ferryOf({
-            base: pl.base,
+          const at = adOf(pl);
+          return pl && dep.code && dep.pos && at && !(await atDeparture(at, dep)) ? await M.ferryOf({
+            base: at,
             departure: dep.code,
             to: dep.pos,
             type: pl.type,
@@ -1129,18 +1368,23 @@
               takeoff: a,
               land: b
             };
+            /** Type de l'appareil du poste possédé par le pilote (ownsType : true, false ou inconnu). */
             const owns = tr => M.ownsType(ctx.declsAll[tr], pl.type);
             // convoyeur : libre sur tout le convoyage et sans autre mission dans les créneaux qu'il touche (une mission
             // par pilote et par tranche, même si ses disponibilités déclarées sont plus larges)
-            const slotFree = tr => O.slotsOver(a, b).every(([jj, kk]) => !O.assigned(tr, jj, kk).some(l => !inWin.has(l.mission))); // missions de la fenêtre : en cours de modification
-            r.ferryCands = O.pilots().filter(tr => tr !== r.pilot && !(x.on && taken.has(tr)) && !used.has(tr) && owns(tr) !== false && O.freeOver(tr, a, b) && slotFree(tr))
+            const slotFree = tr => O.slotsOver(a, b).every(([jj, kk]) => !O.assigned(tr, jj, kk).some(l => !inWin.has(l
+              .mission))); // missions de la fenêtre : en cours de modification
+            r.ferryCands = O.pilots().filter(tr => tr !== r.pilot && !(x.on && taken.has(tr)) && !used.has(tr) && owns(tr) !==
+                false && O.freeOver(tr, a, b) && slotFree(tr))
               .map(tr => ({
                 tri: tr,
                 q: M.qualification(ctx.declsAll[tr], tr, pl.type)
               }))
-              .sort((p, q) => (q.q.level === 'mastered') - (p.q.level === 'mastered') || (owns(q.tri) === true) - (owns(p.tri) === true) || p.tri.localeCompare(q.tri));
+              .sort((p, q) => (q.q.level === 'mastered') - (p.q.level === 'mastered') || (owns(q.tri) === true) - (owns(p.tri) ===
+                true) || p.tri.localeCompare(q.tri));
             if (r.ferryOpen) return; // à affecter : mission de convoyage à part, le pilote de la mission n'en dépend pas
-            if (!r.ferrySelf) r.ferryBy = r.ferryCands.some(c => c.tri === r.ferryPilot) ? r.ferryPilot : r.ferryCands[0]?.tri || '';
+            if (!r.ferrySelf) r.ferryBy = r.ferryCands.some(c => c.tri === r.ferryPilot) ? r.ferryPilot : r.ferryCands[0]?.tri ||
+              '';
             if (r.ferryBy) {
               used.add(r.ferryBy);
               return;
@@ -1173,18 +1417,23 @@
         }
       }
     }
+    /** Choix modifiés depuis l'état de référence de la fenêtre (initial, pris à chaque build). */
     const dirty = () => !!ctx && snap() !== initial;
-    /** Proposition : missions des options (proposition d'abord), postes préremplis (pilote proposé, premier appareil libre). */
     /** L'appareil basé à base est-il au départ (même terrain, ou base à moins de 3 NM d'un départ donné par sa position) ? */
-    const atDeparture = async (base, dep) => !!base && ((!!dep.code && base === dep.code) || (!!dep.pos && (q => !!q && M.geo.nm(q, dep.pos) < 3)(await M.coordsOf(base))));
+    const atDeparture = async (base, dep) => !!base && ((!!dep.code && base === dep.code) || (!!dep.pos && (q => !!q && M.geo.nm(q, dep
+      .pos) < 3)(await M.coordsOf(base))));
+    /** Terrain actuel d'un appareil (site ou CR issu d'un ordre de mission : shared/aircraft_positions.js), sinon la base. */
+    const adOf = f => window.AircraftPositions?.adOf?.(f) || f?.base || '';
     /** Appareils compatibles d'un poste, du plus proche au plus lointain du terrain de départ : { f, nm, min }
      *  (min : convoyage en minutes, 0 sur place, null distance inconnue). */
     async function planeList(post, dep) {
+      await window.AircraftPositions?.load?.();
       const out = await Promise.all(M.planesFor(post, dep.code).map(async f => {
-        const from = f.base ? await M.coordsOf(f.base) : null,
-          here = await atDeparture(f.base, dep),
-          ferry = f.base && !here ? await M.ferryOf({
-            base: f.base,
+        const at = adOf(f),
+          from = at ? await M.coordsOf(at) : null,
+          here = await atDeparture(at, dep),
+          ferry = at && !here ? await M.ferryOf({
+            base: at,
             departure: dep.code,
             to: dep.pos,
             type: f.type
@@ -1193,10 +1442,19 @@
           f,
           nm: here ? 0 : dep.pos && from ? M.geo.nm(from, dep.pos) : null,
           min: here ? 0 : ferry?.minutes ?? null,
-          why: here ? '' : !f.base ? L(['base non renseignée dans la flotte', 'base not set in the fleet', 'Basis in der Flotte nicht angegeben', 'base sin indicar en la flota']) : !dep.pos ? L(['départ sans position', 'departure without position', 'Abflug ohne Position', 'salida sin posición']) : !from ? L(['position de {b} inconnue (base SIA à charger)', '{b} position unknown (SIA database to load)', 'Position von {b} unbekannt (SIA-Datenbank laden)', 'posición de {b} desconocida (cargar la base SIA)'], { b: f.base }) : ''
+          why: here ? '' : !at ? L(['base non renseignée dans la flotte', 'base not set in the fleet',
+            'Basis in der Flotte nicht angegeben', 'base sin indicar en la flota'
+          ]) : !dep.pos ? L(['départ sans position', 'departure without position', 'Abflug ohne Position',
+            'salida sin posición'
+          ]) : !from ? L(['position de {b} inconnue (base SIA à charger)', '{b} position unknown (SIA database to load)',
+            'Position von {b} unbekannt (SIA-Datenbank laden)', 'posición de {b} desconocida (cargar la base SIA)'
+          ], {
+            b: f.base
+          }) : ''
         };
       }));
-      return out.sort((a, b) => (a.nm ?? 1e9) - (b.nm ?? 1e9) || (b.f.operational !== false) - (a.f.operational !== false) || a.f.registration.localeCompare(b.f.registration));
+      return out.sort((a, b) => (a.nm ?? 1e9) - (b.nm ?? 1e9) || (b.f.operational !== false) - (a.f.operational !== false) || a.f
+        .registration.localeCompare(b.f.registration));
     }
     /** Missions proposées, rien de présélectionné : registre (famille choisie), sans les missions déjà affectées (semaine
      *  affichée ou passé) ; celles que les pilotes libres peuvent armer d'abord (MissionAssignments.planSlot), puis les
@@ -1212,12 +1470,14 @@
         hereIds = new Set(here.map(a => a.mission)),
         done = new Set([...O.missionsAssigned(weekEnd)].filter(id => !hereIds.has(id))),
         // mission d'organisation d'un exercice (…Z) : personne ne la vole, elle n'est pas affectée
-        entries = all.filter(m => !done.has(m.id) && !/Z$/.test(m.id) && !m.organisation && (!famSel || fold(m.family || m.type).startsWith(famSel))),
+        entries = all.filter(m => !done.has(m.id) && !/Z$/.test(m.id) && !m.organisation && (!famSel || fold(m.family || m.type)
+          .startsWith(famSel))),
         plan = M.planSlot(free, entries, decls, {
           focus
         }),
         first = [...new Set(plan.options.flatMap(o => o.missions))],
-        rest = entries.filter(m => !first.includes(m) && m.id && (m.status !== 'ordered' || hereIds.has(m.id)) && !/Z$/.test(m.id) && !m.organisation),
+        rest = entries.filter(m => !first.includes(m) && m.id && (m.status !== 'ordered' || hereIds.has(m.id)) && !/Z$/.test(m.id) &&
+          !m.organisation),
         mine = entries.filter(m => hereIds.has(m.id)),
         d = new Map();
       // opération à plusieurs missions (exercice) : une ligne, une coche, un poste par équipage de chaque mission
@@ -1241,7 +1501,8 @@
             mission: t.mission,
             takeoff: t.takeoff ?? t.start
           }))],
-          offOf = (cs, mid) => window.RepositoryKit.hOffset((parts.find(p => fold(p?.callsign) === fold(cs)) || parts.find(p => fold(p?.mission) === fold(mid)))?.takeoff) ?? 0;
+          offOf = (cs, mid) => window.RepositoryKit.hOffset((parts.find(p => fold(p?.callsign) === fold(cs)) || parts.find(p => fold(p
+            ?.mission) === fold(mid)))?.takeoff) ?? 0;
         for (const m of ms) {
           const dep = await M.departureOf(await O.yamlOf(m).catch(() => ({})), m);
           for (const post of M.postsOf(m)) {
@@ -1271,7 +1532,8 @@
         // repris (heure H d'une opération : décollage moins le décalage)
         let takeoffSet = null;
         for (const r of rows) {
-          const line = here.find(a => a.mission === r.mid && (!r.callsign || a.callsign === r.callsign) && !rows.some(o => o !== r && o.pilot === a.pilot)) ||
+          const line = here.find(a => a.mission === r.mid && (!r.callsign || a.callsign === r.callsign) && !rows.some(o => o !== r &&
+              o.pilot === a.pilot)) ||
             here.find(a => a.mission === r.mid && !rows.some(o => o !== r && o.pilot === a.pilot));
           if (!line) continue;
           Object.assign(r, {
@@ -1310,8 +1572,11 @@
       await timeAll();
       initial = snap();
     }
+    /** Appareil de la flotte (DEFA_FLEET) d'immatriculation donnée. */
     const planeOf = reg => (window.DEFA_FLEET || []).find(f => f.registration === reg);
 
+    /** Redessine la fenêtre du créneau : bande des trois créneaux du jour, matrice missions × postes, convoyages à
+     *  affecter, affectations en attente et enregistrées ; défilement et champ en cours de saisie gardés. */
     function render() {
       const {
         free,
@@ -1334,8 +1599,15 @@
         m: x.m,
         r
       })));
+      /** Affectation en attente d'un pilote (mission cochée, appareil choisi), sinon undefined. */
       const pendOf = tr => pend.find(p => p.r.pilot === tr);
-      const errs = r => [useP[r.pilot] > 1 && L(['pilote en double', 'pilot twice', 'Pilot doppelt', 'piloto duplicado']), useA[r.registration] > 1 && L(['appareil en double', 'aircraft twice', 'Luftfahrzeug doppelt', 'aeronave duplicada']), busy.has(r.registration) && L(['appareil déjà engagé sur le créneau', 'aircraft already engaged in the slot', 'Luftfahrzeug im Zeitfenster bereits eingesetzt', 'aeronave ya asignada en la franja'])].filter(Boolean);
+      /** Conflits d'un poste : pilote ou appareil en double, appareil déjà engagé sur le créneau. */
+      const errs = r => [useP[r.pilot] > 1 && L(['pilote en double', 'pilot twice', 'Pilot doppelt', 'piloto duplicado']), useA[r
+        .registration] > 1 && L(['appareil en double', 'aircraft twice', 'Luftfahrzeug doppelt', 'aeronave duplicada']), busy.has(r
+        .registration) && L(['appareil déjà engagé sur le créneau', 'aircraft already engaged in the slot',
+        'Luftfahrzeug im Zeitfenster bereits eingesetzt', 'aeronave ya asignada en la franja'
+      ])].filter(Boolean);
+      /** Types d'appareils déclarés par un pilote (maîtrisés en gras). */
       const types = tr => {
         const ac = decls[tr]?.aircraft;
         if (!ac) return `<small>${L(['appareils non déclarés', 'aircraft not declared', 'Luftfahrzeuge nicht angegeben', 'aeronaves no declaradas'])}</small>`;
@@ -1357,14 +1629,16 @@
       /** Appareils compatibles d'un poste, du plus proche au plus lointain du départ, temps de convoyage affiché. */
       const planeOpts = (x, i) => {
         const r = x.rows[i],
-          away = (min, why) => min === 0 ? L(['sur place', 'on site', 'vor Ort', 'en el lugar']) : min == null ? why : x.dep.code ? L(['convoyage {d}', 'ferry {d}', 'Überführung {d}', 'traslado {d}'], {
-            d: hmOf(min)
-          }) : L(['transit {d}', 'transit {d}', 'Transit {d}', 'tránsito {d}'], {
+          away = (min, why) => min === 0 ? L(['sur place', 'on site', 'vor Ort', 'en el lugar']) : min == null ? why : x.dep.code ? L(
+            ['convoyage {d}', 'ferry {d}', 'Überführung {d}', 'traslado {d}'], {
+              d: hmOf(min)
+            }) : L(['transit {d}', 'transit {d}', 'Transit {d}', 'tránsito {d}'], {
             d: hmOf(min)
           });
         // appareil déjà pris par un autre poste coché (équipier, autre mission) ou engagé ailleurs : grisé
-        const taken = reg => reg !== r.registration && (busy.has(reg) || on.some(y => y.rows.some(o => o !== r && o.registration === reg)));
-        return `<option value="">${L(['— appareil —', '— aircraft —', '— Luftfahrzeug —', '— aeronave —'])}</option>${x.planes[i].map(({ f, min, why }) => `<option value="${esc(f.registration)}"${f.registration === r.registration ? ' selected' : ''}${taken(f.registration) ? ' disabled' : ''}>${esc(f.registration)} · ${esc(f.variant || f.type)} · ${esc(f.base || '?')} — ${away(min, why)}${f.operational === false ? L([' — indisponible', ' — unavailable', ' — nicht verfügbar', ' — no disponible']) : ''}${busy.has(f.registration) ? L([' — engagé', ' — engaged', ' — eingesetzt', ' — asignada']) : taken(f.registration) ? L([' — déjà affecté', ' — already assigned', ' — bereits zugewiesen', ' — ya asignada']) : ''}</option>`).join('')}`;
+        const taken = reg => reg !== r.registration && (busy.has(reg) || on.some(y => y.rows.some(o => o !== r && o.registration ===
+          reg)));
+        return `<option value="">${L(['— appareil —', '— aircraft —', '— Luftfahrzeug —', '— aeronave —'])}</option>${x.planes[i].map(({ f, min, why }) => `<option value="${esc(f.registration)}"${f.registration === r.registration ? ' selected' : ''}${taken(f.registration) ? ' disabled' : ''}>${esc(f.registration)} · ${esc(f.variant || f.type)} · ${esc(adOf(f) || '?')} — ${away(min, why)}${f.operational === false ? L([' — indisponible', ' — unavailable', ' — nicht verfügbar', ' — no disponible']) : ''}${busy.has(f.registration) ? L([' — engagé', ' — engaged', ' — eingesetzt', ' — asignada']) : taken(f.registration) ? L([' — déjà affecté', ' — already assigned', ' — bereits zugewiesen', ' — ya asignada']) : ''}</option>`).join('')}`;
       };
       /** Convoyage d'un poste : trajet, heure, convoyeur (pilotes libres avant le créneau, ou le pilote : mission décalée). */
       const ferryLine = r => {
@@ -1374,9 +1648,14 @@
           opts = `${r.ferryCands.map(c => `<option value="${esc(c.tri)}"${c.tri === r.ferryBy ? ' selected' : ''}>${esc(c.tri)}${c.q.level === 'mastered' ? `${L([' (maîtrisé)', ' (mastered)', ' (beherrscht)', ' (dominado)'])}` : ''}</option>`).join('')}<option value="__self"${self ? ' selected' : ''}>${L(['{p} lui-même', '{p} himself', '{p} selbst', '{p} mismo'], { p: esc(r.pilot || L(['le pilote', 'the pilot', 'der Pilot', 'el piloto'])) })}</option><option value="__open"${r.ferryOpen ? ' selected' : ''}>${L(['à affecter (mission de convoyage)', 'to assign (ferry mission)', 'zuzuweisen (Überführungsmission)', 'por asignar (misión de traslado)'])}</option>`;
         return `<div class="ad-help">${L(['Convoyage', 'Ferry', 'Überführung', 'Traslado'])} <b>${esc(f.from)} → ${esc(f.to)}</b> <b>${hm(f.takeoff)} → ${hm(f.land)}</b> (≈ ${hmOf(f.minutes)})${r.ferryCands.length ? '' : L([' — aucun pilote libre à cette heure', ' — no pilot free at that time', ' — kein Pilot zu dieser Zeit frei', ' — ningún piloto libre a esa hora'])} · ${L(['par', 'by', 'durch', 'por'])} <select data-f="ferry">${opts}</select></div>`;
       };
+      /** Contrôles d'un poste en pastilles : pilote libre sur toute la plage, convoyage, qualification, conflits,
+       *  affectation prête. */
       const checks = (x, r) => {
         const c = [];
-        if (r.pilot && r.spanOk === false) c.push(chip(L(['{p} non déclaré libre sur toute la plage {a} → {b}', '{p} not declared free over the whole span {a} → {b}', '{p} nicht über die ganze Spanne {a} → {b} frei gemeldet', '{p} no declarado libre en todo el intervalo {a} → {b}'], {
+        if (r.pilot && r.spanOk === false) c.push(chip(L(['{p} non déclaré libre sur toute la plage {a} → {b}',
+          '{p} not declared free over the whole span {a} → {b}', '{p} nicht über die ganze Spanne {a} → {b} frei gemeldet',
+          '{p} no declarado libre en todo el intervalo {a} → {b}'
+        ], {
           p: esc(r.pilot),
           a: hm(r.ferry && !r.ferryBy && !r.ferryOpen ? r.ferry.takeoff : x.timing.takeoff),
           b: hm(x.timing.end)
@@ -1384,10 +1663,12 @@
         if (r.ferryBy) c.push(chip(L(['convoyage : {p}', 'ferry: {p}', 'Überführung: {p}', 'traslado: {p}'], {
           p: esc(r.ferryBy)
         }), 'ok'));
-        if (r.ferryOpen) c.push(chip(L(['convoyage à affecter', 'ferry to assign', 'Überführung zuzuweisen', 'traslado por asignar']), 'warn'));
+        if (r.ferryOpen) c.push(chip(L(['convoyage à affecter', 'ferry to assign', 'Überführung zuzuweisen', 'traslado por asignar']),
+          'warn'));
         if (r.pilot) {
           const q = M.qualification(decls[r.pilot], r.pilot, r.registration ? planeOf(r.registration)?.type || r.post : r.post);
-          if (q.text) c.push(chip(esc(q.text), q.level === 'mastered' ? 'ok' : q.level === 'owned' || q.level === 'flown' ? 'warn' : 'err'));
+          if (q.text) c.push(chip(esc(q.text), q.level === 'mastered' ? 'ok' : q.level === 'owned' || q.level === 'flown' ? 'warn' :
+            'err'));
         }
         for (const e of errs(r)) c.push(chip(e, 'err'));
         if (x.on && r.pilot && r.registration && !errs(r).length) c.push(chip(`${esc(r.pilot)} → ${esc(r.mid || x.m.id)} · ${esc(r.registration)}${r.callsign ? ` · ${esc(r.callsign)}` : ''}`, 'ok'));
@@ -1434,12 +1715,19 @@
       dlg = AD.frame('odvPick', {
         wide: true,
         title,
-        subtitle: L(['{f} pilote(s) libre(s) · {p} affectation(s) en attente · {a} enregistrée(s) sur le créneau', '{f} free pilot(s) · {p} pending assignment(s) · {a} saved in the slot', '{f} freie(r) Pilot(en) · {p} ausstehende Zuweisung(en) · {a} im Zeitfenster gespeichert', '{f} piloto(s) libre(s) · {p} asignación(es) pendiente(s) · {a} guardada(s) en la franja'], {
+        subtitle: L(['{f} pilote(s) libre(s) · {p} affectation(s) en attente · {a} enregistrée(s) sur le créneau',
+          '{f} free pilot(s) · {p} pending assignment(s) · {a} saved in the slot',
+          '{f} freie(r) Pilot(en) · {p} ausstehende Zuweisung(en) · {a} im Zeitfenster gespeichert',
+          '{f} piloto(s) libre(s) · {p} asignación(es) pendiente(s) · {a} guardada(s) en la franja'
+        ], {
           f: free.length,
           p: pend.length,
           a: assigned.length
         }),
-        beforeClose: () => !dirty() || confirm(L(['Abandonner les affectations en attente (non enregistrées) ?', 'Discard the pending (unsaved) assignments?', 'Ausstehende (nicht gespeicherte) Zuweisungen verwerfen?', '¿Descartar las asignaciones pendientes (no guardadas)?'])),
+        beforeClose: () => !dirty() || confirm(L(['Abandonner les affectations en attente (non enregistrées) ?',
+          'Discard the pending (unsaved) assignments?', 'Ausstehende (nicht gespeicherte) Zuweisungen verwerfen?',
+          '¿Descartar las asignaciones pendientes (no guardadas)?'
+        ])),
         body: `${dayStrip()}<p class="ad-help">${L(['Cocher la mission, choisir l’appareil (du plus proche au plus lointain du départ, temps de convoyage indiqué), puis le pilote. Missions déjà affectées (cette semaine ou avant) masquées{h}. Une mission plus longue que le créneau mobilise les suivants ; appareil basé ailleurs : convoyage confié à un pilote libre avant le créneau, sinon fait par le pilote de la mission, décalée d’autant.', 'Tick the mission, choose the aircraft (nearest to farthest from the departure, ferry time shown), then the pilot. Missions already assigned (this week or before) hidden{h}. A mission longer than the slot uses the following ones; aircraft based elsewhere: ferry given to a pilot free before the slot, otherwise flown by the mission pilot, the mission shifted accordingly.', 'Mission anhaken, Luftfahrzeug wählen (vom nächsten zum fernsten zum Abflug, Überführungszeit angegeben), dann den Piloten. Bereits zugewiesene Missionen (diese Woche oder früher) ausgeblendet{h}. Eine Mission, die länger als das Zeitfenster ist, belegt die folgenden; anderswo stationiertes Luftfahrzeug: Überführung durch einen vorher freien Piloten, sonst durch den Missionspiloten, Mission entsprechend verschoben.', 'Marque la misión, elija la aeronave (de la más cercana a la más lejana de la salida, tiempo de traslado indicado) y luego el piloto. Misiones ya asignadas (esta semana o antes) ocultas{h}. Una misión más larga que la franja ocupa las siguientes; aeronave basada en otro lugar: traslado confiado a un piloto libre antes de la franja, si no lo hace el piloto de la misión, desplazada en consecuencia.'], { h: ctx.hidden ? `: ${ctx.hidden}` : '' })}</p><p class="ad-facts">${free.length ? free.map(tr => pendOf(tr) ? chip(`${tri(tr, null, false)} → <b>${esc(pendOf(tr).m.id)}</b> · ${esc(pendOf(tr).r.registration)}${pendOf(tr).r.callsign ? ` · ${esc(pendOf(tr).r.callsign)}` : ''}`, 'ok') : chip(`${tri(tr, null, false)} ${types(tr)}`, tr === focus ? 'focus' : '')).join('') : chip(L(['aucun pilote libre (tous affectés ou indisponibles)', 'no free pilot (all assigned or unavailable)', 'kein freier Pilot (alle zugewiesen oder nicht verfügbar)', 'ningún piloto libre (todos asignados o no disponibles)']), 'warn')}</p>
         <p><label class="ad-inline">${L(['Famille', 'Family', 'Familie', 'Familia'])} <select data-fam><option value="">${L(['toutes', 'all', 'alle', 'todas'])}</option>${fams.map(f => `<option value="${esc(f)}"${f === famSel ? ' selected' : ''}>${esc(f)}${s.missions[0]?.famille === f ? L([' (proposée)', ' (suggested)', ' (vorgeschlagen)', ' (propuesta)']) : ''}</option>`).join('')}</select></label></p>
         ${zones.length ? `<p class="ad-note">${L(['À éviter :', 'To avoid:', 'Zu meiden:', 'A evitar:'])} ${zones.map(z => `<b>${esc(C.kindLabel(z.type))} ${esc(z.position)}</b> — CTR ${esc(z.ctr.map(a => a.name).join(', ') || '?')}${z.tma.length ? `, TMA ${esc(z.tma.map(a => a.name).join(', '))} ${L(['(si possible)', '(if possible)', '(wenn möglich)', '(si es posible)'])}` : ''}`).join(' · ')}</p>` : ''}
@@ -1469,7 +1757,11 @@
       }
       dlg.querySelector('[data-status]').innerHTML = status; // compte rendu du dernier enregistrement, gardé au redessin
       dlg.querySelector('[data-fam]').onchange = async e => {
-        if (dirty() && !await window.AppFramework.ask(L(['Changer de famille abandonne les affectations en attente. Continuer ?', 'Changing family discards the pending assignments. Continue?', 'Ein Familienwechsel verwirft die ausstehenden Zuweisungen. Fortfahren?', 'Cambiar de familia descarta las asignaciones pendientes. ¿Continuar?']))) return render();
+        if (dirty() && !await window.AppFramework.ask(L(['Changer de famille abandonne les affectations en attente. Continuer ?',
+            'Changing family discards the pending assignments. Continue?',
+            'Ein Familienwechsel verwirft die ausstehenden Zuweisungen. Fortfahren?',
+            'Cambiar de familia descarta las asignaciones pendientes. ¿Continuar?'
+          ]))) return render();
         famSel = e.target.value;
         await build();
         render();
@@ -1498,7 +1790,11 @@
       bodyEl.querySelectorAll('[data-goslot]').forEach(bt => bt.onclick = async () => {
         const kk = +bt.dataset.goslot;
         if (kk === k) return;
-        if (dirty() && !await window.AppFramework.ask(L(['Changer de créneau abandonne les affectations en attente. Continuer ?', 'Changing slot discards the pending assignments. Continue?', 'Ein Wechsel des Zeitfensters verwirft die ausstehenden Zuweisungen. Fortfahren?', 'Cambiar de franja descarta las asignaciones pendientes. ¿Continuar?']))) return;
+        if (dirty() && !await window.AppFramework.ask(L(['Changer de créneau abandonne les affectations en attente. Continuer ?',
+            'Changing slot discards the pending assignments. Continue?',
+            'Ein Wechsel des Zeitfensters verwirft die ausstehenden Zuweisungen. Fortfahren?',
+            'Cambiar de franja descarta las asignaciones pendientes. ¿Continuar?'
+          ]))) return;
         // même fenêtre, contenu remplacé (AssignDialog.frame) : la fermer puis la rouvrir faisait clignoter la page
         pickMission(slotOf(j, kk));
       });
@@ -1507,11 +1803,18 @@
         const ed = e.target.closest('[data-edit]');
         if (!ed) return;
         const m = all.find(x => x.id === ed.dataset.edit);
-        if (!m) return notify(L(['{m} absente du registre de ce navigateur : relire le registre du Centre.', '{m} missing from this browser’s registry: re-read the Centre registry.', '{m} fehlt im Register dieses Browsers: das Register des Zentrums neu einlesen.', '{m} falta en el registro de este navegador: volver a leer el registro del Centro.'], {
+        if (!m) return notify(L(['{m} absente du registre de ce navigateur : relire le registre du Centre.',
+          '{m} missing from this browser’s registry: re-read the Centre registry.',
+          '{m} fehlt im Register dieses Browsers: das Register des Zentrums neu einlesen.',
+          '{m} falta en el registro de este navegador: volver a leer el registro del Centro.'
+        ], {
           m: ed.dataset.edit
         }), 'warn');
         const line = O.inSlot(j, k).find(a => a.mission === m.id && a.role !== 'convoyage');
-        const d = await O.assign(m, [], Date.parse(line?.takeoff || '') || takeoff, L(['Créneau {s} — affectation enregistrée de {m}', 'Slot {s} — saved assignment of {m}', 'Zeitfenster {s} — gespeicherte Zuweisung von {m}', 'Franja {s} — asignación guardada de {m}'], {
+        const d = await O.assign(m, [], Date.parse(line?.takeoff || '') || takeoff, L([
+          'Créneau {s} — affectation enregistrée de {m}', 'Slot {s} — saved assignment of {m}',
+          'Zeitfenster {s} — gespeicherte Zuweisung von {m}', 'Franja {s} — asignación guardada de {m}'
+        ], {
           s: slotTitle(s),
           m: m.id
         }));
@@ -1544,7 +1847,8 @@
             block: base.block,
             pilot: '',
             registration: '',
-            callsign: String(prev.callsign || base.callsign || '').replace(/(\d+)(?!.*\d)/, d => String(+d + 1).padStart(d.length, '0')),
+            callsign: String(prev.callsign || base.callsign || '').replace(/(\d+)(?!.*\d)/, d => String(+d + 1).padStart(d
+              .length, '0')),
             ferryPilot: '',
             wing: true
           });
@@ -1565,11 +1869,15 @@
           a = ferries[+row.dataset.fy],
           tr = row.querySelector('[data-fy-pilot]').value,
           msg = dlg.querySelector('[data-status]');
-        if (!tr) return notify(L(['Choisir le convoyeur.', 'Choose the ferry pilot.', 'Überführungspiloten wählen.', 'Elija el piloto de traslado.']), 'warn');
+        if (!tr) return notify(L(['Choisir le convoyeur.', 'Choose the ferry pilot.', 'Überführungspiloten wählen.',
+          'Elija el piloto de traslado.'
+        ]), 'warn');
         try {
           await M.missionsDir();
           await O.assignFerry(a, tr);
-          notify(L(['Convoyage de {m} ({r}) confié à {p}.', 'Ferry of {m} ({r}) assigned to {p}.', 'Überführung von {m} ({r}) an {p} übertragen.', 'Traslado de {m} ({r}) confiado a {p}.'], {
+          notify(L(['Convoyage de {m} ({r}) confié à {p}.', 'Ferry of {m} ({r}) assigned to {p}.',
+            'Überführung von {m} ({r}) an {p} übertragen.', 'Traslado de {m} ({r}) confiado a {p}.'
+          ], {
             m: a.mission,
             r: a.aircraft?.registration || '',
             p: tr
@@ -1588,12 +1896,17 @@
         await AD.open(x.m, await O.yamlOf(x.m), {
           maps: x.m.images || [],
           takeoff: x.timing?.takeoff || takeoff,
-          note: L(['Créneau {s} — le résultat revient dans la fenêtre du créneau', 'Slot {s} — the result comes back to the slot window', 'Zeitfenster {s} — das Ergebnis kehrt in das Fenster des Zeitfensters zurück', 'Franja {s} — el resultado vuelve a la ventana de la franja'], {
+          note: L(['Créneau {s} — le résultat revient dans la fenêtre du créneau',
+            'Slot {s} — the result comes back to the slot window',
+            'Zeitfenster {s} — das Ergebnis kehrt in das Fenster des Zeitfensters zurück',
+            'Franja {s} — el resultado vuelve a la ventana de la franja'
+          ], {
             s: slotTitle(s)
           }),
           rows: x.rows,
           apply: async rows => {
-            x.planes = await Promise.all(rows.map((r, i) => x.rows[i] && x.rows[i].post === r.post ? x.planes[i] : planeList(r.post, x.dep)));
+            x.planes = await Promise.all(rows.map((r, i) => x.rows[i] && x.rows[i].post === r.post ? x.planes[i] :
+              planeList(r.post, x.dep)));
             x.rows = rows.map((r, i) => ({
               ...r,
               wing: i >= M.postsOf(x.m).length
@@ -1612,7 +1925,9 @@
           x.takeoffSet = back.find(b => b[0] === id)?.[2] ?? null;
           x.rows.length = Math.min(x.rows.length, rs.length); // équipiers ajoutés retirés
           x.planes.length = x.rows.length;
-          x.rows.forEach((r, i) => [r.pilot, r.registration, r.callsign, r.ferryPilot, r.ferrySelf, r.ferryOpen] = rs[i] || ['', '', r.post?.callsign || '', '', false, false]);
+          x.rows.forEach((r, i) => [r.pilot, r.registration, r.callsign, r.ferryPilot, r.ferrySelf, r.ferryOpen] = rs[i] || ['', '',
+            r.post?.callsign || '', '', false, false
+          ]);
         }
         await timeAll();
         render();
@@ -1638,7 +1953,9 @@
         }
         const ok = [],
           ko = [];
-        msg.textContent = L(['Enregistrement de {n} mission(s)…', 'Saving {n} mission(s)…', '{n} Mission(en) werden gespeichert…', 'Guardando {n} misión(es)…'], {
+        msg.textContent = L(['Enregistrement de {n} mission(s)…', 'Saving {n} mission(s)…', '{n} Mission(en) werden gespeichert…',
+          'Guardando {n} misión(es)…'
+        ], {
           n: todo.length
         });
         for (const x of todo)
@@ -1653,7 +1970,9 @@
           } catch (err) {
             ko.push(`${m.id} : ${err.message}`);
           }
-        if (ok.length) notify(L(['Affectations enregistrées : {l}.', 'Assignments saved: {l}.', 'Zuweisungen gespeichert: {l}.', 'Asignaciones guardadas: {l}.'], {
+        if (ok.length) notify(L(['Affectations enregistrées : {l}.', 'Assignments saved: {l}.', 'Zuweisungen gespeichert: {l}.',
+          'Asignaciones guardadas: {l}.'
+        ], {
           l: ok.join(' ; ')
         }), 'ok');
         for (const e of ko) notify(L(['Non enregistrée — {e}', 'Not saved — {e}', 'Nicht gespeichert — {e}', 'No guardada — {e}'], {
@@ -1663,7 +1982,9 @@
         await build();
         if (!ctx.free.length && !ko.length) {
           dlg.close();
-          notify(L(['Tous les pilotes libres du créneau sont affectés.', 'All free pilots of the slot are assigned.', 'Alle freien Piloten des Zeitfensters sind zugewiesen.', 'Todos los pilotos libres de la franja están asignados.']), 'ok');
+          notify(L(['Tous les pilotes libres du créneau sont affectés.', 'All free pilots of the slot are assigned.',
+            'Alle freien Piloten des Zeitfensters sind zugewiesen.', 'Todos los pilotos libres de la franja están asignados.'
+          ]), 'ok');
           return;
         }
         render();
@@ -1680,7 +2001,9 @@
     const has = (window.OdvAssign?.inSlot(s.jourIndex, s.creneauIndex) || []).some(a => a.role !== 'convoyage');
     if (s.n < 1 && !has) return '';
     const reg = L(['Missions du registre…', 'Registry missions…', 'Missionen des Registers…', 'Misiones del registro…']);
-    const label = has ? (short ? L(['Modifier', 'Edit', 'Ändern', 'Modificar']) : L(['Modifier la mission…', 'Edit the mission…', 'Mission ändern…', 'Modificar la misión…'])) : short ? L(['Planifier', 'Plan', 'Planen', 'Planificar']) : reg;
+    const label = has ? (short ? L(['Modifier', 'Edit', 'Ändern', 'Modificar']) : L(['Modifier la mission…', 'Edit the mission…',
+      'Mission ändern…', 'Modificar la misión…'
+    ])) : short ? L(['Planifier', 'Plan', 'Planen', 'Planificar']) : reg;
     return `<button type="button" class="odv-pick-btn" data-pick="${s.jourIndex}${s.creneauIndex}" data-fam="${esc(fam)}"${centreOn() ? ` title="${esc(has ? L(['Modifier les missions affectées sur ce créneau, ou en planifier d’autres', 'Edit the missions assigned in this slot, or plan others', 'Die in diesem Zeitfenster zugewiesenen Missionen ändern oder weitere planen', 'Modificar las misiones asignadas en esta franja o planificar otras']) : reg)}"` : ` disabled title="${esc(L(['Centre verrouillé : l’activer dans Paramètres › Centre (CPCO)', 'Centre locked: enable it in Settings › Centre (CPCO)', 'Zentrum gesperrt: in Einstellungen › Zentrum (CPCO) aktivieren', 'Centro bloqueado: actívelo en Ajustes › Centro (CPCO)']))}"`}>${esc(label)}</button>`;
   };
   document.addEventListener('click', e => {
@@ -1727,6 +2050,7 @@
     const s = r.slot,
       O = window.OdvAssign,
       assigned = [...new Set((O?.inSlot(s.jourIndex, s.creneauIndex) || []).filter(a => a.role !== 'convoyage').map(a => `${a.mission}${a.title ? ` ${a.title}` : ''}`))];
+    /** Ligne du résumé, omise si v est vide. */
     const row = (k, v) => v ? `<dt>${k}</dt><dd>${v}</dd>` : '';
     return `<dl class="odv-mp-sum">${[
       row(L(['Créneau', 'Slot', 'Zeitfenster', 'Franja']), `${esc(wordL(s.jour))} ${esc(dateFr(s.date))}, ${esc(wordL(s.creneau))} (${esc(s.heures)}) — ${esc(L(['{n} pilote(s) libre(s)', '{n} free pilot(s)', '{n} freie(r) Pilot(en)', '{n} piloto(s) libre(s)'], { n: s.n }))}`),
@@ -1739,6 +2063,9 @@
       row(L(['Déjà affecté sur le créneau', 'Already assigned in the slot', 'Im Zeitfenster bereits zugewiesen', 'Ya asignado en la franja']), esc(assigned.join(' · ')))
     ].join('')}</dl>`;
   }
+
+  /** Bloc des missions probables : règles des familles et du score, tableau des familles proposées par créneau
+   *  (créneaux d'au moins minPilots pilotes avant affectations), résumé déplié sous chaque ligne. */
   function renderMissions() {
     const rules = $('odvRules');
     rules.innerHTML = `<summary>${L(['Règles des familles et du score', 'Family and score rules', 'Regeln der Familien und der Punktzahl', 'Reglas de las familias y de la puntuación'])}</summary><ul>${Object.entries(C.FAMILIES).map(([f, d]) => `<li><span class="odv-fam">${esc(f)}</span> ${esc(C.familyRule(f) ?? d.rule)}</li>`).join('')}</ul>
@@ -1788,7 +2115,9 @@
         html: (v, r) => `<span title="${esc(C.say(r.calcul))}">${esc(L(['{c}', '{p}', '{c}', '{c}'], { c: String(v).replace('.', ','), p: String(v) }))}</span>`
       }, {
         key: 'registre',
-        label: L(['Planifier (missions du registre)', 'Plan (registry missions)', 'Planen (Missionen des Registers)', 'Planificar (misiones del registro)']),
+        label: L(['Planifier (missions du registre)', 'Plan (registry missions)', 'Planen (Missionen des Registers)',
+          'Planificar (misiones del registro)'
+        ]),
         icon: 'clipboard',
         sortValue: r => r.slot.n,
         html: (v, r) => pickButton(r.slot, r.famille, true) || '—'
@@ -1801,8 +2130,14 @@
       // clic sur la ligne (hors « Planifier » / « Modifier ») : résumé de la mission probable déplié sous elle
       detail: probableSummary,
       detailKey: r => `${r.slot.jourIndex}${r.slot.creneauIndex}-${r.famille}`,
-      rowTitle: L(['Cliquer pour déplier le résumé', 'Click to expand the summary', 'Klicken, um die Zusammenfassung aufzuklappen', 'Haga clic para desplegar el resumen']),
-      emptyText: L(['Aucun créneau avec au moins {n} pilote(s).', 'No slot with at least {n} pilot(s).', 'Kein Zeitfenster mit mindestens {n} Pilot(en).', 'Ninguna franja con al menos {n} piloto(s).'], { n: settings.minPilots }),
+      rowTitle: L(['Cliquer pour déplier le résumé', 'Click to expand the summary', 'Klicken, um die Zusammenfassung aufzuklappen',
+        'Haga clic para desplegar el resumen'
+      ]),
+      emptyText: L(['Aucun créneau avec au moins {n} pilote(s).', 'No slot with at least {n} pilot(s).',
+        'Kein Zeitfenster mit mindestens {n} Pilot(en).', 'Ninguna franja con al menos {n} piloto(s).'
+      ], {
+        n: settings.minPilots
+      }),
       storageKey: 'sortedTableWidths:odvPlanning#missions'
     }, rows);
   }
@@ -1870,7 +2205,12 @@
         }
       ],
       defaultSortKey: 'ordre',
-      emptyText: data.virtuel ? L(['Pas de classeur : aucune mission affectée cette semaine.', 'No workbook: no mission assigned this week.', 'Keine Arbeitsmappe: diese Woche keine Mission zugewiesen.', 'Sin libro: ninguna misión asignada esta semana.']) : L(['Aucun vol sur la frise.', 'No flight on the timeline.', 'Kein Flug auf der Zeitleiste.', 'Ningún vuelo en la cronología.']),
+      emptyText: data.virtuel ? L(['Pas de classeur : aucune mission affectée cette semaine.',
+        'No workbook: no mission assigned this week.', 'Keine Arbeitsmappe: diese Woche keine Mission zugewiesen.',
+        'Sin libro: ninguna misión asignada esta semana.'
+      ]) : L(['Aucun vol sur la frise.', 'No flight on the timeline.', 'Kein Flug auf der Zeitleiste.',
+        'Ningún vuelo en la cronología.'
+      ]),
       storageKey: 'sortedTableWidths:odvPlanning#flights'
     }, flights.map(f => ({
       ...f,
@@ -1959,6 +2299,7 @@
     download(`${baseName()}_planning.json`, JSON.stringify(out, null, 1), 'application/json');
   }
 
+  /** Branche les exports : CSV de la grille, JSON, récapitulatif texte (affiché, téléchargé ou copié). */
   function bindExports() {
     $('odvCsv').onclick = () => data && download(`${baseName()}_grille.csv`, C.toCsv(data), 'text/csv;charset=utf-8');
     $('odvJson').onclick = () => data && exportJson();
@@ -1973,10 +2314,16 @@
       if (!t) return;
       try {
         await navigator.clipboard.writeText(t);
-        notify(L(['Récapitulatif copié dans le presse-papiers.', 'Summary copied to the clipboard.', 'Zusammenfassung in die Zwischenablage kopiert.', 'Resumen copiado en el portapapeles.']), 'ok');
+        notify(L(['Récapitulatif copié dans le presse-papiers.', 'Summary copied to the clipboard.',
+          'Zusammenfassung in die Zwischenablage kopiert.', 'Resumen copiado en el portapapeles.'
+        ]), 'ok');
       } catch {
         $('odvRecapText').select();
-        notify(L(['Copie automatique refusée par le navigateur : texte sélectionné, Ctrl+C pour copier.', 'Automatic copy refused by the browser: text selected, press Ctrl+C to copy.', 'Automatisches Kopieren vom Browser verweigert: Text markiert, Strg+C zum Kopieren.', 'Copia automática rechazada por el navegador: texto seleccionado, Ctrl+C para copiar.']), 'warn');
+        notify(L(['Copie automatique refusée par le navigateur : texte sélectionné, Ctrl+C pour copier.',
+          'Automatic copy refused by the browser: text selected, press Ctrl+C to copy.',
+          'Automatisches Kopieren vom Browser verweigert: Text markiert, Strg+C zum Kopieren.',
+          'Copia automática rechazada por el navegador: texto seleccionado, Ctrl+C para copiar.'
+        ]), 'warn');
       }
     };
   }
@@ -1984,11 +2331,16 @@
   // ------------------------------------------------------------------ démarrage
   function start() {
     if (!C || !window.SortedTable) {
-      notify(L(['Planning ODV : composants manquants (odv_core.js, mission_table.js).', 'ODV planning: missing components (odv_core.js, mission_table.js).', 'ODV-Planung: fehlende Komponenten (odv_core.js, mission_table.js).', 'Planificación ODV: faltan componentes (odv_core.js, mission_table.js).']), 'err');
+      notify(L(['Planning ODV : composants manquants (odv_core.js, mission_table.js).',
+        'ODV planning: missing components (odv_core.js, mission_table.js).',
+        'ODV-Planung: fehlende Komponenten (odv_core.js, mission_table.js).',
+        'Planificación ODV: faltan componentes (odv_core.js, mission_table.js).'
+      ]), 'err');
       return;
     }
     bindExports();
-    window.OdvAssign?.load(emptyWeek(), settings).then(() => loadAtc()).then(refreshNoBook).catch(() => {}); // sans classeur : déclarations
+    window.OdvAssign?.load(emptyWeek(), settings).then(() => loadAtc()).then(refreshNoBook).catch(
+      () => {}); // sans classeur : déclarations
     loadPlays().then(() => {
       if (basis) {
         compute();
@@ -2043,15 +2395,19 @@
   // accès pour les tests (données en mémoire uniquement)
   window.OdvPlanning = {
     loadFile,
+    /** Données affichées : le classeur lu si la semaine affichée est la sienne, sinon null. */
     get data() {
       return data;
     },
+    /** Créneaux calculés (créneaux communs et missions probables). */
     get slots() {
       return slots;
     },
+    /** Vols de la frise et leurs contrôles. */
     get flights() {
       return flights;
     },
+    /** Réglages courants. */
     settings: () => settings
   };
 })();

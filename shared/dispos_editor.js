@@ -16,10 +16,13 @@
     esc = K.esc,
     t = K.t,
     tf = K.tf;
+  /** Modules chargés après celui-ci, lus à l'appel : SuiteDispos (shared/dispos.js) et MissionAssignments. */
   const SD = () => window.SuiteDispos,
     A = () => window.MissionAssignments;
+  /** Attend que window[name] existe (sondage toutes les 50 ms) ; rend l'objet, ou null après ms millisecondes. */
   const need = (name, ms = 6000) => new Promise(res => {
     const t0 = Date.now();
+    /** Un tour de sondage, relancé tant que l'objet manque et que le délai court. */
     (function poll() {
       if (window[name]) return res(window[name]);
       if (Date.now() - t0 > ms) return res(null);
@@ -35,8 +38,11 @@
     ['Sam', 'Sat', 'Sa', 'Sáb'],
     ['Dim', 'Sun', 'So', 'Dom']
   ];
+  /** Locale des dates selon la langue de la page (fr, en, de, es). */
   const loc = () => ['fr-FR', 'en-GB', 'de-DE', 'es-ES'][K.langIndex()] || 'fr-FR';
+  /** Date ISO « AAAA-MM-JJ » (UTC) d'un instant en millisecondes. */
   const isoDay = ms => new Date(ms).toISOString().slice(0, 10);
+  /** Libellé court d'un jour (« lun. 05/10 » sans point), en UTC dans la langue de la page. */
   const dayLabel = ms => new Date(ms).toLocaleDateString(loc(), {
     weekday: 'short',
     day: '2-digit',
@@ -45,10 +51,13 @@
   }).replace('.', '');
   /** « 07:30 » → minutes ; vide → null. */
   const mins = s => s ? +s.slice(0, 2) * 60 + +s.slice(3, 5) : null;
+  /** Couleur d'encre lisible sur le fond c : blanc sur fond sombre, presque noir sinon. */
   const ink = c => (K.color.luminance(c) ?? 1) < .4 ? '#fff' : '#1b1b1b';
   // lettre, couleur et libellé court d'une catégorie : communs avec le Planning ODV (shared/dispos.js)
   const colorOf = c => SD().color(c);
+  /** Libellé court d'une catégorie (shared/dispos.js). */
   const shortOf = c => SD().shortLabel(c);
+  /** Lettre de code ODV d'une catégorie (shared/dispos.js). */
   const codeOf = c => SD().code(c);
 
   /** Palette des catégories par groupe : pastilles lettre + libellé court sur la couleur de la catégorie ; boutons
@@ -63,6 +72,7 @@
     }).join('')}</div>`;
   }
 
+  /** Insère une fois la feuille de style de l'éditeur (disposEditorCss). */
   function css() {
     if (document.getElementById('disposEditorCss')) return;
     const s = document.createElement('style');
@@ -74,6 +84,8 @@
     document.head.append(s);
   }
 
+  /** Monte l'éditeur dans host ; nav : flèches et date de semaine (false : semaine imposée par la page hôte). Rend
+   *  { set({ tri, week }), refresh(), touch(), week }. */
   function mount(host, {
     nav = true
   } = {}) {
@@ -87,6 +99,7 @@
     host.classList.add('de-wrap');
     host.setAttribute('data-no-i18n', ''); // textes composés dans la langue courante (refaits au changement de langue)
     let last = ['', '']; // dernier message (gardé quand la frise est redessinée)
+    /** Message d'état sous l'éditeur (kind : ok, warn, err), gardé dans last pour survivre aux redessins. */
     const msg = (text, kind = '') => {
       last = [text || '', kind];
       const p = host.querySelector('.de-msg');
@@ -101,9 +114,12 @@
     // précédente, et la retouche suivante les enregistrait sous son nom, à la place de ses propres plages)
     let loadSeq = 0,
       docKey = ''; // pilote et semaine du document tenu (doc)
+    /** Vrai si le pilote t et la semaine w sont toujours ceux affichés (réponse arrivée après un changement). */
     const shownIs = (t, w) => t === tri && w === week;
     /** Document de la semaine affichée chargé : retouches permises (pas pendant la lecture d'une autre semaine). */
     const docReady = () => !!doc && docKey === `${tri}|${week}`;
+    /** Lit la semaine affichée du pilote (dossier des données), ses appareils et simulateurs, importe au besoin
+     *  l'ancienne grille horaire, puis redessine ; ignore une réponse dépassée (loadSeq). */
     async function load() {
       await need('SuiteDispos');
       if (!tri || !week) return render();
@@ -136,7 +152,9 @@
         simulateurs: av?.sims || []
       };
       render();
-      if (imported) await save(t(['Ancienne grille horaire importée dans la semaine.', 'Former hourly grid imported into the week.', 'Frühere Stundentabelle in die Woche übernommen.', 'Antigua cuadrícula horaria importada en la semana.']));
+      if (imported) await save(t(['Ancienne grille horaire importée dans la semaine.', 'Former hourly grid imported into the week.',
+        'Frühere Stundentabelle in die Woche übernommen.', 'Antigua cuadrícula horaria importada en la semana.'
+      ]));
     }
     /** Ancienne grille horaire de la semaine (ISO « 2026-W41 ») convertie en plages par jour ; null si elle est vide.
      *  Heures consécutives du même code → une plage (fin « 24:00 » : jusqu'à minuit), journée entière → debut / fin
@@ -146,6 +164,7 @@
         mon = D.weekMonday(w),
         grid = av && A()?.weekGrid?.(av, isoDay(mon));
       if (!grid?.some(r => r.some(Boolean))) return null;
+      /** Heure pleine « HH:00 ». */
       const hh = h => `${String(h).padStart(2, '0')}:00`,
         out = {};
       grid.forEach((row, j) => {
@@ -158,7 +177,7 @@
           let k = h;
           while (k < 24 && row[k] === code) k++;
           const cat = D.codeCategory(code);
-          if (cat) (out[isoDay(mon + j * 864e5)] ||= []).push(h === 0 && k === 24 ? {
+          if (cat)(out[isoDay(mon + j * 864e5)] ||= []).push(h === 0 && k === 24 ? {
             debut: null,
             fin: null,
             categorie: cat
@@ -176,6 +195,7 @@
     async function save(text) {
       const t0 = tri,
         w0 = week;
+      /** Prévient la page (événement dispos-week-saved) qu'une semaine du pilote a été enregistrée. */
       const saved = () => window.dispatchEvent(new CustomEvent('dispos-week-saved', {
         detail: {
           tri: t0,
@@ -197,10 +217,15 @@
         if (!shownIs(t0, w0)) return saved(); // semaine changée entre-temps : enregistrée, mais plus affichée
         doc = r.doc;
         // gardé dans ce navigateur : raison réelle (non autorisé, autre copie…) ; alerte donnée par writeData
-        if (r.where === 'local') msg(tf(['Gardé dans ce navigateur, le Centre ne le voit pas : {e}', 'Kept in this browser, the Centre cannot see it: {e}', 'In diesem Browser behalten, das Zentrum sieht es nicht: {e}', 'Guardado en este navegador, el Centro no lo ve: {e}'], {
+        if (r.where === 'local') msg(tf(['Gardé dans ce navigateur, le Centre ne le voit pas : {e}',
+          'Kept in this browser, the Centre cannot see it: {e}', 'In diesem Browser behalten, das Zentrum sieht es nicht: {e}',
+          'Guardado en este navegador, el Centro no lo ve: {e}'
+        ], {
           e: r.error?.message || ''
         }), 'warn');
-        else msg(text || t(['Enregistré dans le dossier des données.', 'Saved to the data folder.', 'Im Datenordner gespeichert.', 'Guardado en la carpeta de datos.']), 'ok');
+        else msg(text || t(['Enregistré dans le dossier des données.', 'Saved to the data folder.', 'Im Datenordner gespeichert.',
+          'Guardado en la carpeta de datos.'
+        ]), 'ok');
       } catch (e) {
         if (!shownIs(t0, w0)) return window.AppFramework?.notify?.(e.message, 'err');
         msg(e.message, 'err');
@@ -209,6 +234,8 @@
       saved();
     }
 
+    /** Redessine l'éditeur : navigation, grille heure par heure, formulaire « Plage précise », actions et message ;
+     *  garde les choix en cours du formulaire (groupe, catégorie, jours, horaires). */
     function render() {
       const D = SD();
       if (!D) return;
@@ -229,6 +256,7 @@
       const checked = new Set([...host.querySelectorAll('[data-day]:checked')].map(x => +x.dataset.day));
       const keepFrom = host.querySelector('[data-from]')?.value || '',
         keepTo = host.querySelector('[data-to]')?.value || '';
+      /** Options du choix de catégorie pour le groupe g. */
       const catOpts = g => cats.filter(c => c.groupe === g).map(c => `<option value="${esc(c.id)}"${c.id === selCat ? ' selected' : ''}>${esc(D.label(c.label))}</option>`).join('');
       // grille heure par heure (comme avant le passage aux catégories) : un jour par ligne, 24 cases UTC ; couleur de la
       // catégorie qui couvre l'heure (plusieurs : bandes ; partielle, saisie au quart d'heure : pâlie)
@@ -241,6 +269,7 @@
         const bg = cols.length === 1 ? cols[0] : `linear-gradient(135deg,${cols.map((c, n) => `${c} ${n * 100 / cols.length}% ${(n + 1) * 100 / cols.length}%`).join(',')})`;
         return ` style="background:${bg} !important;color:${ink(cols[0])} !important">${esc(cs.map(codeOf).filter(Boolean).join('/'))}`;
       };
+      /** Infobulle d'une case : jour, heure UTC et catégories qui la couvrent (minutes si partielle). */
       const tip = (day, h) => {
         const cs = [...cover(day)[h].entries()].map(([c, m]) => `${D.label(D.category(c)?.label || c)}${m < 60 ? ` (${m} min)` : ''}`);
         return `${dayLabel(Date.parse(`${day}T00:00:00Z`))} ${String(h).padStart(2, '0')}–${String(h + 1).padStart(2, '0')}h UTC${cs.length ? ' — ' + cs.join(', ') : ''}`;
@@ -273,9 +302,13 @@
       if (!p || !c) return;
       const prefs = await window.SuiteUsers?.themePrefs?.(tri).catch(() => null);
       const th = [...D.openThemes(c, prefs)];
-      const txt = th.includes('*') ? t(['Ouvre tous les thèmes de mission.', 'Opens every mission theme.', 'Öffnet alle Missionsthemen.', 'Abre todos los temas de misión.']) : th.length ? tf(['Thèmes ouverts : {t}', 'Open themes: {t}', 'Offene Themen: {t}', 'Temas abiertos: {t}'], {
+      const txt = th.includes('*') ? t(['Ouvre tous les thèmes de mission.', 'Opens every mission theme.',
+        'Öffnet alle Missionsthemen.', 'Abre todos los temas de misión.'
+      ]) : th.length ? tf(['Thèmes ouverts : {t}', 'Open themes: {t}', 'Offene Themen: {t}', 'Temas abiertos: {t}'], {
         t: th.map(D.themeLabel).join(', ')
-      }) : t(['Aucun thème de mission ouvert.', 'No mission theme open.', 'Kein Missionsthema offen.', 'Ningún tema de misión abierto.']);
+      }) : t(['Aucun thème de mission ouvert.', 'No mission theme open.', 'Kein Missionsthema offen.',
+        'Ningún tema de misión abierto.'
+      ]);
       const perso = /^prefs:/.test(String(c.ouverts || ''));
       p.innerHTML = `${esc(txt)}${perso ? ` <a href="${esc(window.RepositoryNav?.settingsUrl?.('themes') || '#')}">${esc(t(['Mes types de missions…', 'My mission types…', 'Meine Missionsarten…', 'Mis tipos de misión…']))}</a>` : ''}`;
     }
@@ -293,7 +326,13 @@
         fin: b
       };
     }
-    const badSpan = () => msg(t(['Horaires incohérents : la fin doit suivre le début (UTC, au quart d’heure).', 'Inconsistent times: the end must follow the start (UTC, quarter hours).', 'Unstimmige Zeiten: Das Ende muss nach dem Beginn liegen (UTC, Viertelstunden).', 'Horarios incoherentes: el fin debe seguir al inicio (UTC, cuartos de hora).']), 'err');
+    /** Message d'erreur des horaires incohérents. */
+    const badSpan = () => msg(t(['Horaires incohérents : la fin doit suivre le début (UTC, au quart d’heure).',
+      'Inconsistent times: the end must follow the start (UTC, quarter hours).',
+      'Unstimmige Zeiten: Das Ende muss nach dem Beginn liegen (UTC, Viertelstunden).',
+      'Horarios incoherentes: el fin debe seguir al inicio (UTC, cuartos de hora).'
+    ]), 'err');
+    /** Vrai si l'horaire (facultatif) tombe sur un quart d'heure. */
     const quarter = s => !s || mins(s) % 15 === 0;
 
     // ---- grille heure par heure : couverture des heures par les plages, peinture d'un rectangle de cases
@@ -362,6 +401,7 @@
     }
     // catégorie de la palette (pinceau), gardée dans ce navigateur
     const BRUSH = 'disposBrush:v1';
+    /** Catégorie du pinceau mémorisée (disposBrush:v1) si elle existe encore, sinon la première catégorie. */
     const brushOf = cats => {
       let b = '';
       try {
@@ -374,10 +414,14 @@
     // tracé : appui sur une case, glissé jusqu'à une autre, relâché → rectangle peint (ou effacé si la première case
     // portait déjà la catégorie)
     let drag = null;
+    /** [jour, heure] de la case de grille sous l'élément, null hors grille. */
     const cellAt = el => el?.closest?.('td[data-cell]')?.dataset.cell.split(':').map(Number) || null;
+    /** Aperçu du rectangle en cours de tracé : cases du rectangle repeintes (ou vidées), les autres rendues à leur état
+     *  d'origine. */
     const mark = () => host.querySelectorAll('td[data-cell]').forEach(td => {
       const [j, h] = td.dataset.cell.split(':').map(Number),
-        inRect = !!drag && j >= Math.min(drag.j0, drag.j1) && j <= Math.max(drag.j0, drag.j1) && h >= Math.min(drag.h0, drag.h1) && h <= Math.max(drag.h0, drag.h1);
+        inRect = !!drag && j >= Math.min(drag.j0, drag.j1) && j <= Math.max(drag.j0, drag.j1) && h >= Math.min(drag.h0, drag.h1) &&
+        h <= Math.max(drag.h0, drag.h1);
       if (!drag.orig.has(td)) drag.orig.set(td, [td.getAttribute('style') || '', td.textContent]);
       const [st, tx] = drag.orig.get(td);
       if (inRect) {
@@ -422,14 +466,18 @@
         mon = D.weekMonday(week);
       drag = null;
       if (!docReady()) return render(); // semaine changée pendant le tracé
-      for (let j = Math.min(d.j0, d.j1); j <= Math.max(d.j0, d.j1); j++) paintDay(isoDay(mon + j * 864e5), Math.min(d.h0, d.h1), Math.max(d.h0, d.h1), d.cat, d.erase);
+      for (let j = Math.min(d.j0, d.j1); j <= Math.max(d.j0, d.j1); j++) paintDay(isoDay(mon + j * 864e5), Math.min(d.h0, d.h1), Math
+        .max(d.h0, d.h1), d.cat, d.erase);
       render(); // grille redessinée tout de suite, puis enregistrement
-      save(d.erase ? t(['Cases effacées.', 'Cells cleared.', 'Zellen gelöscht.', 'Celdas borradas.']) : t(['Disponibilité enregistrée.', 'Availability saved.', 'Verfügbarkeit gespeichert.', 'Disponibilidad guardada.']));
+      save(d.erase ? t(['Cases effacées.', 'Cells cleared.', 'Zellen gelöscht.', 'Celdas borradas.']) : t([
+        'Disponibilité enregistrée.', 'Availability saved.', 'Verfügbarkeit gespeichert.', 'Disponibilidad guardada.'
+      ]));
     });
     host.addEventListener('change', e => {
       if (e.target.matches('[data-g]')) {
         const D = SD();
-        host.querySelector('[data-c]').innerHTML = D.categories().filter(c => c.groupe === e.target.value).map(c => `<option value="${esc(c.id)}">${esc(D.label(c.label))}</option>`).join('');
+        host.querySelector('[data-c]').innerHTML = D.categories().filter(c => c.groupe === e.target.value).map(c => `<option value="${esc(c.id)}">${esc(D.label(c.label))}</option>`).join(
+          '');
         themesHint();
       }
       if (e.target.matches('[data-c]')) themesHint();
@@ -450,12 +498,18 @@
       const wk = e.target.closest('[data-wk]');
       if (wk) return setWeek(+wk.dataset.wk ? D.addWeek(week, +wk.dataset.wk) : D.weekId(Date.now()));
       // ajout, recopie, effacement : seulement sur le document de la semaine affichée (pas pendant sa lecture)
-      if (e.target.closest('[data-add], [data-copy], [data-clear]') && !docReady()) return msg(t(['Semaine en cours de lecture : réessayer dans un instant.', 'Week still loading: try again in a moment.', 'Woche wird noch gelesen: gleich noch einmal versuchen.', 'Semana aún cargando: reintentar en un momento.']), 'warn');
+      if (e.target.closest('[data-add], [data-copy], [data-clear]') && !docReady()) return msg(t([
+        'Semaine en cours de lecture : réessayer dans un instant.', 'Week still loading: try again in a moment.',
+        'Woche wird noch gelesen: gleich noch einmal versuchen.', 'Semana aún cargando: reintentar en un momento.'
+      ]), 'warn');
       if (e.target.closest('[data-add]')) {
         const cat = host.querySelector('[data-c]').value,
           days = [...host.querySelectorAll('[data-day]:checked')].map(x => +x.dataset.day);
-        if (!cat) return msg(t(['Choisir une catégorie.', 'Choose a category.', 'Eine Kategorie wählen.', 'Elegir una categoría.']), 'err');
-        if (!days.length) return msg(t(['Cocher au moins un jour.', 'Tick at least one day.', 'Mindestens einen Tag ankreuzen.', 'Marcar al menos un día.']), 'err');
+        if (!cat) return msg(t(['Choisir une catégorie.', 'Choose a category.', 'Eine Kategorie wählen.', 'Elegir una categoría.']),
+          'err');
+        if (!days.length) return msg(t(['Cocher au moins un jour.', 'Tick at least one day.', 'Mindestens einen Tag ankreuzen.',
+          'Marcar al menos un día.'
+        ]), 'err');
         const from = host.querySelector('[data-from]').value,
           to = host.querySelector('[data-to]').value,
           s = span(from, to);
@@ -468,7 +522,9 @@
             categorie: cat
           });
         }
-        return save(tf(['{n} plage(s) ajoutée(s).', '{n} range(s) added.', '{n} Zeitraum/Zeiträume hinzugefügt.', '{n} intervalo(s) añadido(s).'], {
+        return save(tf(['{n} plage(s) ajoutée(s).', '{n} range(s) added.', '{n} Zeitraum/Zeiträume hinzugefügt.',
+          '{n} intervalo(s) añadido(s).'
+        ], {
           n: days.length
         }));
       }
@@ -480,18 +536,33 @@
             fresh: true
           }))[prevId];
         if (docKey !== key || !docReady()) return; // semaine changée pendant la lecture
-        if (!prev || !Object.keys(prev.dispos || {}).length) return msg(t(['Semaine précédente vide : rien à recopier.', 'Previous week empty: nothing to copy.', 'Vorwoche leer: nichts zu übernehmen.', 'Semana anterior vacía: nada que copiar.']), 'err');
-        if (Object.keys(doc.dispos || {}).length && !await window.AppFramework.ask(t(['Remplacer les plages de la semaine affichée par celles de la semaine précédente ?', 'Replace the ranges of the shown week by those of the previous week?', 'Die Zeiträume der angezeigten Woche durch die der Vorwoche ersetzen?', '¿Reemplazar los intervalos de la semana mostrada por los de la semana anterior?']))) return;
+        if (!prev || !Object.keys(prev.dispos || {}).length) return msg(t(['Semaine précédente vide : rien à recopier.',
+          'Previous week empty: nothing to copy.', 'Vorwoche leer: nichts zu übernehmen.',
+          'Semana anterior vacía: nada que copiar.'
+        ]), 'err');
+        if (Object.keys(doc.dispos || {}).length && !await window.AppFramework.ask(t([
+            'Remplacer les plages de la semaine affichée par celles de la semaine précédente ?',
+            'Replace the ranges of the shown week by those of the previous week?',
+            'Die Zeiträume der angezeigten Woche durch die der Vorwoche ersetzen?',
+            '¿Reemplazar los intervalos de la semana mostrada por los de la semana anterior?'
+          ]))) return;
         if (docKey !== key || !docReady()) return;
-        doc.dispos = Object.fromEntries(Object.entries(prev.dispos).map(([d, l]) => [isoDay(Date.parse(`${d}T00:00:00Z`) + 7 * 864e5), l.map(x => ({
-          ...x
-        }))]));
-        return save(t(['Semaine précédente recopiée.', 'Previous week copied.', 'Vorwoche übernommen.', 'Semana anterior copiada.']));
+        doc.dispos = Object.fromEntries(Object.entries(prev.dispos).map(([d, l]) => [isoDay(Date.parse(`${d}T00:00:00Z`) + 7 * 864e5), l
+          .map(x => ({
+            ...x
+          }))
+        ]));
+        return save(t(['Semaine précédente recopiée.', 'Previous week copied.', 'Vorwoche übernommen.',
+          'Semana anterior copiada.'
+        ]));
       }
       if (e.target.closest('[data-clear]')) {
         if (!Object.keys(doc.dispos || {}).length) return;
         const key = docKey;
-        if (!await window.AppFramework.ask(t(['Effacer toutes les plages de la semaine affichée ?', 'Clear every range of the shown week?', 'Alle Zeiträume der angezeigten Woche löschen?', '¿Borrar todos los intervalos de la semana mostrada?']), {
+        if (!await window.AppFramework.ask(t(['Effacer toutes les plages de la semaine affichée ?',
+            'Clear every range of the shown week?', 'Alle Zeiträume der angezeigten Woche löschen?',
+            '¿Borrar todos los intervalos de la semana mostrada?'
+          ]), {
             danger: true
           })) return;
         if (docKey !== key || !docReady()) return; // semaine changée pendant la question
@@ -501,7 +572,9 @@
       if (e.target.closest('[data-flush]')) {
         try {
           const done = await A().flushData();
-          msg(tf(['{n} fichier(s) écrit(s) dans le dossier des données.', '{n} file(s) written to the data folder.', '{n} Datei(en) in den Datenordner geschrieben.', '{n} archivo(s) escrito(s) en la carpeta de datos.'], {
+          msg(tf(['{n} fichier(s) écrit(s) dans le dossier des données.', '{n} file(s) written to the data folder.',
+            '{n} Datei(en) in den Datenordner geschrieben.', '{n} archivo(s) escrito(s) en la carpeta de datos.'
+          ], {
             n: done.length
           }), 'ok');
           render();
@@ -511,6 +584,7 @@
       }
     });
 
+    /** Change de semaine affichée : relecture, puis événement dispos-week pour la page hôte. */
     function setWeek(w) {
       if (!w || w === week) return;
       week = w;
@@ -534,6 +608,7 @@
         editing = null;
         return ready = load();
       },
+      /** Relit la semaine affichée. */
       refresh: () => ready = load(),
       /** Appareils et simulateurs changés (Mes missions) : relus et recopiés dans la semaine affichée si elle est déclarée. */
       async touch() {
@@ -549,6 +624,7 @@
         };
         await save();
       },
+      /** Semaine affichée (ISO « 2026-W41 »). */
       get week() {
         return week;
       }

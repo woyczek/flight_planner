@@ -329,7 +329,7 @@ Retenues par défaut (à contester si besoin) :
 - Sources impossibles depuis une page statique : aviationweather.gov (pas de CORS),
   plans de vol déposés IVAO (API authentifiée).
 
-## H. Étape 4 — flotte DEFA et données locales (2026-09-24)
+## H. Étape 4 — flotte et données locales (2026-09-24)
 
 - **Flotte** : `data/references/aircraft_fleet.js` généré depuis la page « Flotte virtuelle »
   (flotte.defa-virtual.fr) par `python AircraftDB/update_fleet.py Flotte.html` :
@@ -416,7 +416,7 @@ Retenues par défaut (à contester si besoin) :
 - À rendre éditables ensuite : profils d'événements / capacités et index des familles
   (vocab.js), listes des anciens CR (mission_values.js), icônes (aircraft_icons.js).
 
-## M. Réorganisation — dossier « CR DEFA » (2026-09-24)
+## M. Réorganisation — dossier « CR » (2026-09-24)
 
 - Toutes les pages de l'application (familles, anciens CR HEMS / GAAR, démonstration,
   « Nouveau compte rendu », reporting général, Paramétrage) et leurs registres sont dans
@@ -432,7 +432,7 @@ Retenues par défaut (à contester si besoin) :
 ## N. Étape 9 — registre unique, majuscules, disposition de la page de CR (2026-09-24)
 
 - **Registre unique** `data/cr/missions.yaml` (toutes familles ; `shared/mission_core/ledger.js`) :
-  vues par famille (même interface), une seule autorisation de dossier (« CR DEFA »), migration
+  vues par famille (même interface), une seule autorisation de dossier (« CR »), migration
   automatique et idempotente des anciens registres par famille (`legacyImported`).
 - **Majuscules** : champs de texte simple déclarés par les blocs communs et des familles
   (`MissionModel.registerUpperFields`, `isUpperField`, exception `keepCase` pour les URL) ;
@@ -447,7 +447,7 @@ Retenues par défaut (à contester si besoin) :
 - `shared/mission_core/text_import.js` (« Analyser / importer… » dans l'en-tête des CR) : plan de
   vol OACI (cases 7 à 19), page « détails » du tracker IVAO (plan de vol, connexion / déconnexion,
   trace → décollage, atterrissage, distance, altitude max ; heures converties en heure locale du
-  terrain), liste des connexions IVAO, historique VATSIM (JSON), METAR ; favori « → CR DEFA »
+  terrain), liste des connexions IVAO, historique VATSIM (JSON), METAR ; favori « → CR »
   (copie de la page du tracker, analysée au retour). Une page d'un autre site n'est pas lisible
   par la page du CR : copier-coller ou favori.
 - Menu ☰ : « Reporting missions » seul en tête ; « Nouveau compte rendu » par le bouton de
@@ -477,7 +477,7 @@ Retenues par défaut (à contester si besoin) :
 ## Q. Étape 12 — reporting général, effacement de l'appareil, robustesse du registre (2026-09-24)
 
 - `apps/cr/mission_operations_reporting.html` réécrite sur le registre unique
-  (`shared/mission_core/global_reporting.js`) : titre « Reporting missions — CR DEFA », puces de
+  (`shared/mission_core/global_reporting.js`) : titre « Reporting missions — CR », puces de
   familles colorées (`COLORS`), indicateurs, graphiques SVG autonomes (`charts.js` : barres
   empilées par période avec unité automatique ou choisie, anneaux, classements), synthèses par
   famille (indicateurs `family.stats`), appareil, équipage ; import des anciens CSV HEMS / GAAR.
@@ -531,13 +531,13 @@ Retenues par défaut (à contester si besoin) :
   (reprend et complète la section d'origine du README), `docs/LANDING_DASHBOARD.md`,
   `docs/FRAMEWORK.md`.
 
-## U. Étape 16 — base DEFA (journal des vols), séries d'indicatifs (2026-09-24)
+## U. Étape 16 — base (journal des vols), séries d'indicatifs (2026-09-24)
 
 - `shared/mission_core/defa_log.js` : lecture de la page « Log des vols » enregistrée (tableau
   à 9 colonnes, lien vers la fiche flotte), d'un CSV ou d'un JSON ; stockage navigateur
   `defaFlightLog:v1` (exclu de browser_store) ; séries d'indicatifs (suffixes de patrouille,
   parasites, variantes `ALIASES`) ; export CSV / JSON.
-- Paramétrage › Base DEFA : chargement, statistiques, séries (Ajouter / Compléter la
+- Paramétrage › Base : chargement, statistiques, séries (Ajouter / Compléter la
   correspondance), vols filtrables, export, effacement ; colonne « Autres formes » (`aliases`)
   dans la correspondance des indicatifs.
 - `aircraft.js` : le journal est une source d'appareils connus (sans indicatif par défaut) ;
@@ -565,37 +565,37 @@ Retenues par défaut (à contester si besoin) :
 - `browser_store.js` : compteur de modifications, bouton « Sauvegarder » dans l'en-tête à partir
   de 10, horodatage de la dernière sauvegarde.
 
-## W. Étape 18 — référence DEFA, catalogue commun, journal alternatif (2026-09-24)
+## W. Étape 18 — référence, catalogue commun, journal alternatif (2026-09-24)
 
 - `data/references/defa_reference.js` (committé) + `tools/defa_reference.py` + `DefaFlightLog.reference()` :
-  pilotes et appareils agrégés, sans vols ni missions ; jeu de données « Référence DEFA » dans
+  pilotes et appareils agrégés, sans vols ni missions ; jeu de données « Référence » dans
   Paramétrage (statut, rattachement, mise en service modifiables).
 - `shared/aircraft_catalog.js` (framework) : types communs (OACI + SUPPLEMENT déplacé depuis
-  aircraft.js + types locaux) fusionnés dans `AIRCRAFT_DB`, appareils et types DEFA ; chargé
+  aircraft.js + types locaux) fusionnés dans `AIRCRAFT_DB`, appareils et types ; chargé
   par les 16 pages CR / Paramétrage, le Landing Dashboard et le Planner.
-- Planner : types DEFA sans profil proposés (« DEFA, sans profil »). CR : référence comme source
+- Planner : types sans profil proposés (« flotte, sans profil »). CR : référence comme source
   d'appareils connus, trigrammes et terrains proposés.
-- Reportings : **Données** registre / journal DEFA (`DefaFlightLog.toMissions()`, familles par
+- Reportings : **Données** registre / journal (`DefaFlightLog.toMissions()`, familles par
   règles de libellé, lecture seule) ; `defa_log.js` chargé par les 16 pages de reporting.
 
 ## X. Étape 19 — fiches appareil / équipage, navigation des reportings (2026-09-24)
 
 - `shared/mission_core/sheets.js`, `apps/cr/appareil.html`, `apps/cr/equipage.html` : fiches
-  « lâches » (catalogue commun, registre, journal DEFA, profil du Flight Planner) ; saisie locale
+  « lâches » (catalogue commun, registre, journal, profil du Flight Planner) ; saisie locale
   (statut, rattachement, mise en service, événements, qualifications).
 - Reporting général : clic famille → reporting de famille, appareil → fiche, équipage → fiche.
 - `TimePeriod.zoomIn()`, `shift()`, `edges()` : repères avant / après et zoom sous les tableaux.
 - Flight Planner : `?aircraft=<type>` (alias OACI résolus), liens vers les fiches des appareils
-  DEFA du type actif.
+  Du type actif.
 
-## Y. Étape 20 — modification en grille, fusions, journal DEFA depuis les reportings (2026-09-24)
+## Y. Étape 20 — modification en grille, fusions, journal depuis les reportings (2026-09-24)
 
 - `shared/mission_core/grid_edit.js` : modification en grille (règles validées : fin déplacée,
   heure créée, durée déclarée `timeline.declared`, trace `mission.history`) ; fusion / renommage
   d'appareils et de pilotes (`missionMergeMap:v1`, fiches fusionnées). `computeStatistics` et
   `checkMission` prennent en compte les durées déclarées.
 - Reportings : bouton « ✎ Modifier dans le tableau » ; menu « Données » toujours visible avec
-  « Charger / mettre à jour le journal DEFA… » (`DefaFlightLog.loaderDialog` : copier-coller
+  « Charger / mettre à jour le journal… » (`DefaFlightLog.loaderDialog` : copier-coller
   tabulé ou page enregistrée, fusion sans doublon — clé = ligne complète).
 - `form.js` : collections en tableau compact (`layout: 'cards'` pour les appareils), lien
   « Fiche appareil » ; routes proposées pour le même trajet (départ / destination, couples
@@ -605,7 +605,7 @@ Retenues par défaut (à contester si besoin) :
 ## Z. Correctif — fenêtres de copier-coller (2026-09-24)
 
 `FileAccess.pastePanel` (framework) appliqué à « Analyse / import » (CR), à la fenêtre du journal
-DEFA et à la zone de l'historique VATSIM : × et « Fermer », bouton désactivé si vide, « Valider »
+Et à la zone de l'historique VATSIM : × et « Fermer », bouton désactivé si vide, « Valider »
 après chargement (ferme), retour à « Charger » à la saisie.
 
 ## AA. Version 2.1.0, changelog, période sur les fiches (2026-09-24)

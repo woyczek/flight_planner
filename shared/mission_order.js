@@ -5,20 +5,25 @@
   // « Créer une mission avec ChatGPT ») : mêmes paramètres, même prompt, mêmes réglages mémorisés.
   //
   //   · paramètres : type, sous-type (§ 2 du prompt), théâtre(s), série (vide = la suivante), identifiant calculé
-  //     (SiaMission.nextNumbering), équipes DEFA en vol et aéronef de chaque équipe (A, B, C… ; vide = automatique ;
-  //     complétion par les types courants et la flotte DEFA), rendez-vous, équipes au sol, ravitaillement en vol ;
+  //     (SiaMission.nextNumbering), équipes en vol et aéronef de chaque équipe (A, B, C… ; vide = automatique ;
+  //     complétion par les types courants et la flotte), rendez-vous, équipes au sol, ravitaillement en vol ;
   //   · prompt : window.MISSION_PROMPT (apps/cpco/mission_prompt.js, construit depuis docs/technique/PROMPT_GENERATEUR_MISSIONS.md
   //     par tools/build_mission_prompt.py), paramètres réglés en tête, copié puis ChatGPT ouvert dans un nouvel onglet ;
   //   · la commande est inscrite au registre (statut « commandée », missionRegistry:v1) puis rapprochée de la mission
   //     générée à la relecture du dossier (même série) ;
   //   · réglages du formulaire : localStorage missionRegistryOrder:v1 (partagés entre les deux pages).
   //
-  // API : MissionOrder.mount(host, { hint, onOrdered }) · sendPrompt(request, out) · families() · numbering(type)
+  // API : MissionOrder.mount(host, { hint, onOrdered, preset }) · sendPrompt(request, out) · families() · numbering(type)
+  //   preset : réglages imposés à l'ouverture (ordres de vols : plaquette sans mission) — { type, subtype, theatre, teams,
+  //   teamSlots: [aéronef de A, B…], duration: XS | S | M | L | XL, aar: oui | non | libre, rdv, ground } ; repris dans
+  //   les réglages mémorisés comme une saisie
   const ORDER_KEY = 'missionRegistryOrder:v1',
     REG_KEY = 'missionRegistry:v1';
-  const TEAM_PRESETS = ['A400M', 'C-130J', 'CASA CN235', 'A330 MRTT', 'E-3F', 'Rafale', 'Falcon 50M', 'Atlantique 2', 'Dash 8 (Milan)', 'CL-415', 'H225 Caracal', 'NH90', 'EC145 (Dragon)', 'H160', 'AS365 Dauphin', 'Beech 200 / TBM', 'drone', 'équipe au sol'];
+  const TEAM_PRESETS = ['A400M', 'C-130J', 'CASA CN235', 'A330 MRTT', 'E-3F', 'Rafale', 'Falcon 50M', 'Atlantique 2', 'Dash 8 (Milan)',
+    'CL-415', 'H225 Caracal', 'NH90', 'EC145 (Dragon)', 'H160', 'AS365 Dauphin', 'Beech 200 / TBM', 'drone', 'équipe au sol'
+  ];
   // mêmes noms que les théâtres reconnus par le registre (theatreOf) ; texte libre pour le prompt
-  // durée de l'opération en tailles de vêtement (premier décollage → dernier atterrissage des équipes DEFA) : repères
+  // durée de l'opération en tailles de vêtement (premier décollage → dernier atterrissage des équipes) : repères
   // pour le générateur (§ 3 du prompt), pas des bornes strictes ; de 30 min à 8 h
   const DURATIONS = [
     ['XS', '30–45 min'],
@@ -27,7 +32,9 @@
     ['L', '3 – 5 h'],
     ['XL', '5 – 8 h']
   ];
-  const THEATRE_LIST = ['aléatoire', 'métropole', 'Corse', 'Antilles', 'Guyane', 'Réunion', 'Mayotte', 'Nouvelle-Calédonie', 'Polynésie', 'Saint-Pierre-et-Miquelon', 'Wallis-et-Futuna', 'étranger'];
+  const THEATRE_LIST = ['aléatoire', 'métropole', 'Corse', 'Antilles', 'Guyane', 'Réunion', 'Mayotte', 'Nouvelle-Calédonie', 'Polynésie',
+    'Saint-Pierre-et-Miquelon', 'Wallis-et-Futuna', 'étranger'
+  ];
   // théâtre étranger : pays saisi (« étranger (Japon) ») ; vide = au choix du générateur
   const theatreText = (v, country) => v === 'étranger' ? `étranger (${String(country || '').trim() || 'pays au choix'})` : v;
 
@@ -113,11 +120,13 @@
   /** Aéronef choisi pour chaque équipe en vol (A, B, C…) ; '' = automatique. Anciens réglages (cases + « Autres ») repris une fois. */
   function teamSlots(o) {
     const n = Math.max(1, Math.min(5, +o.teams || 1));
-    if (!Array.isArray(o.teamSlots)) o.teamSlots = [...(o.teamTypes || []), ...String(o.teamTypesFree || '').split('+').map(x => x.trim()).filter(Boolean)];
+    if (!Array.isArray(o.teamSlots)) o.teamSlots = [...(o.teamTypes || []), ...String(o.teamTypesFree || '').split('+').map(x => x.trim())
+      .filter(Boolean)
+    ];
     while (o.teamSlots.length < n) o.teamSlots.push('');
     return o.teamSlots.slice(0, n);
   }
-  /** Propositions : types courants, puis chaque appareil de la flotte DEFA (« variante — indicatif »). */
+  /** Propositions : types courants, puis chaque appareil de la flotte (« variante — indicatif »). */
   function teamChoices() {
     // désignateur OACI en tête (le générateur l'emploie tel quel dans aircraft.type), puis la variante et l'indicatif
     const fleet = (window.DEFA_FLEET || []).filter(r => r.type).map(r => `${r.type}${r.variant && r.variant !== r.type ? ' ' + r.variant : ''} — ${r.callsign || r.registration || r.code || r.type}`);
@@ -182,7 +191,8 @@
     };
     if (window.MissionRegistry?.addOrder) return window.MissionRegistry.addOrder(entry);
     // registre non chargé sur cette page : index IndexedDB (shared/data_index.js), sinon ancienne copie du navigateur
-    if (window.MissionIndex) return window.MissionIndex.ready.then(() => window.MissionIndex.save([...window.MissionIndex.all(), entry], now));
+    if (window.MissionIndex) return window.MissionIndex.ready.then(() => window.MissionIndex.save([...window.MissionIndex.all(), entry],
+      now));
     const reg = readJson(REG_KEY, null) || {
       schema: 'mission-registry',
       version: 1,
@@ -210,14 +220,15 @@
     p = p.replace(/^(\s*PROCHAINS_NUMEROS\s*=\s*)auto\b/m, (_, a) => a + table.replace(/\$/g, '$$$$'));
     p = set(p, 'NOMBRE_MISSIONS', 1);
     p = set(p, 'THÉÂTRE', r.theatre || 'aléatoire');
-    p = set(p, 'ÉQUIPES_DEFA', r.teams);
+    p = set(set(p, 'ÉQUIPES_SOG', r.teams), 'ÉQUIPES_DEFA', r.teams); // ancien nom : prompts gardés d'avant le renommage
     p = set(p, 'SOUS_TYPE', r.subtype || 'libre');
     p = set(p, 'RENDEZ_VOUS', r.rdv || 'libre');
     p = set(p, 'TYPES_EQUIPES', r.teamTypes || 'libre');
     p = set(p, 'ÉQUIPES_SOL', r.ground ?? 'libre');
     p = set(p, 'RAVITAILLEMENT', r.aar || 'libre');
     p = set(p, 'DURÉE', r.duration || 'libre');
-    p = p.replace(/^(\s*TRADUCTIONS\s*=\s*)\S+/m, (_, a) => a + String(r.translations || 'en').replace(/\$/g, '$$$$')); // valeur à espaces (« en, de, es »)
+    p = p.replace(/^(\s*TRADUCTIONS\s*=\s*)\S+/m, (_, a) => a + String(r.translations || 'en').replace(/\$/g,
+      '$$$$')); // valeur à espaces (« en, de, es »)
     let copied = false;
     try {
       await navigator.clipboard.writeText(p);
@@ -227,11 +238,17 @@
     }
     window.open(p.length < 7000 ? `https://chatgpt.com/?q=${encodeURIComponent(p)}` : 'https://chatgpt.com/', '_blank', 'noopener');
     if (out) {
-      if (copied) out.textContent = t(['Prompt copié ({n} caractères) : dans ChatGPT, coller (Ctrl+V) puis envoyer.', 'Prompt copied ({n} characters): paste it in ChatGPT (Ctrl+V) and send.', 'Prompt kopiert ({n} Zeichen): in ChatGPT einfügen (Strg+V) und senden.', 'Prompt copiado ({n} caracteres): pegarlo en ChatGPT (Ctrl+V) y enviar.'], {
+      if (copied) out.textContent = t(['Prompt copié ({n} caractères) : dans ChatGPT, coller (Ctrl+V) puis envoyer.',
+        'Prompt copied ({n} characters): paste it in ChatGPT (Ctrl+V) and send.',
+        'Prompt kopiert ({n} Zeichen): in ChatGPT einfügen (Strg+V) und senden.',
+        'Prompt copiado ({n} caracteres): pegarlo en ChatGPT (Ctrl+V) y enviar.'
+      ], {
         n: p.length.toLocaleString()
       });
       else {
-        out.textContent = t(['Copie refusée par le navigateur : copier le texte ci-dessous puis le coller dans ChatGPT.', 'Copy refused by the browser: copy the text below and paste it in ChatGPT.']);
+        out.textContent = t(['Copie refusée par le navigateur : copier le texte ci-dessous puis le coller dans ChatGPT.',
+          'Copy refused by the browser: copy the text below and paste it in ChatGPT.'
+        ]);
         const ta = document.createElement('textarea');
         ta.value = p;
         ta.rows = 3;
@@ -262,16 +279,25 @@
   /** Monte le formulaire de commande dans host. hint : consigne après la commande (texte) ; onOrdered(request) : rappel. */
   function mount(host, {
     hint = '',
-    onOrdered = null
+    onOrdered = null,
+    preset = null
   } = {}) {
     if (!host) return;
     const o = load(),
       fam = families();
+    if (preset && typeof preset === 'object') {
+      const keys = ['type', 'subtype', 'theatre', 'theatre2', 'teams', 'teamSlots', 'duration', 'aar', 'rdv', 'ground', 'serie'];
+      for (const k of keys)
+        if (preset[k] != null && preset[k] !== '') o[k] = Array.isArray(preset[k]) ? [...preset[k]] : preset[k];
+      save(o);
+    }
     const draw = () => {
       const f = fam.find(x => x.id === o.type),
         nx = numbering(o.type);
       const opt = (v, l, cur) => `<option value="${esc(v)}" ${String(cur) === String(v) ? 'selected' : ''}>${esc(l)}</option>`;
-      const idText = nx.id ? `${nx.id} (${t(['série', 'series', 'Serie', 'serie'])} ${o.serie || nx.serie})` : t(['selon la famille tirée', 'per the drawn family', 'je nach gezogener Familie', 'según la familia sorteada']);
+      const idText = nx.id ? `${nx.id} (${t(['série', 'series', 'Serie', 'serie'])} ${o.serie || nx.serie})` : t(['selon la famille tirée', 'per the drawn family', 'je nach gezogener Familie',
+        'según la familia sorteada'
+      ]);
       host.classList.add('mo-form');
       host.innerHTML = `<div class="mo-grid">
         <label>${esc(t(['Type', 'Type', 'Typ', 'Tipo']))}<select data-o="type">${opt('aléatoire', t(['aléatoire', 'random', 'zufällig', 'aleatorio']), o.type)}${fam.map(x => opt(x.id, `${x.id} — ${x.label}`, o.type)).join('')}</select></label>
@@ -281,15 +307,15 @@
         ${[o.theatre, o.theatre2].includes('étranger') ? `<label title="${esc(t(['Pays du théâtre étranger (ex. Japon, Indonésie, Djibouti) ; vide = au choix du générateur', 'Country of the foreign theatre (e.g. Japan, Indonesia, Djibouti); empty = generator’s choice']))}">${esc(t(['Pays', 'Country', 'Land', 'País']))}<input data-o="country" value="${esc(o.country || '')}" placeholder="${esc(t(['au choix', 'any', 'beliebig', 'cualquiera']))}"></label>` : ''}
         <label>${esc(t(['Série', 'Series', 'Serie', 'Serie']))}<input type="number" min="1" data-o="serie" placeholder="auto" value="${esc(o.serie || '')}" title="${esc(t(['Série dans la famille ; vide = la suivante d’après le registre des missions', 'Series within the family; empty = the next one from the mission registry']))}"></label>
         <label>${esc(t(['Identifiant', 'Identifier', 'Kennung', 'Identificador']))}<input readonly value="${esc(idText)}" title="${esc(t(['Lettre de la famille + numéro suivant de la famille (registre) ; type aléatoire : selon la famille choisie par le générateur', 'Family letter + next family number (registry); random type: per the family picked by the generator']))}"></label>
-        <label title="${esc(t(['Aéronefs DEFA en vol ; les équipes au sol (VSAV, CROSS, commandement…) se règlent à part', 'DEFA aircraft in flight; ground teams (ambulance, CROSS, command…) are set separately']))}">${esc(t(['Équipes DEFA en vol', 'DEFA flying teams', 'DEFA-Besatzungen im Flug', 'Equipos DEFA en vuelo']))}<input type="number" min="1" max="5" data-o="teams" value="${esc(o.teams)}"></label>
+        <label title="${esc(t(['Aéronefs en vol ; les équipes au sol (VSAV, CROSS, commandement…) se règlent à part', 'Aircraft in flight; ground teams (ambulance, CROSS, command…) are set separately']))}">${esc(t(['Équipes en vol', 'Flying teams', 'Besatzungen im Flug', 'Equipos en vuelo']))}<input type="number" min="1" max="5" data-o="teams" value="${esc(o.teams)}"></label>
         <label>${esc(t(['Rendez-vous', 'Rendezvous', 'Treffpunkt', 'Encuentro']))}<select data-o="rdv">${opt('libre', t(['libre', 'free', 'frei', 'libre']), o.rdv)}${opt('avec', t(['avec', 'with', 'mit', 'con']), o.rdv)}${opt('sans', t(['sans', 'without', 'ohne', 'sin']), o.rdv)}</select></label>
         <label>${esc(t(['Équipes au sol', 'Ground teams', 'Bodenteams', 'Equipos en tierra']))}<select data-o="ground">${opt('libre', t(['libre', 'free', 'frei', 'libre']), o.ground)}${[0, 1, 2, 3].map(n => opt(n, n, o.ground)).join('')}</select></label>
-        <label title="${esc(t(['Durée de l’opération, du premier décollage au dernier atterrissage des équipes DEFA : repère pour le générateur, pas une borne stricte', 'Operation duration, first take-off to last landing of the DEFA teams: a guide for the generator, not a strict limit']))}">${esc(t(['Durée', 'Duration', 'Dauer', 'Duración']))}<select data-o="duration">${opt('libre', t(['libre', 'free', 'frei', 'libre']), o.duration)}${DURATIONS.map(([k, l]) => opt(k, `${k} — ${l}`, o.duration)).join('')}</select></label>
+        <label title="${esc(t(['Durée de l’opération, du premier décollage au dernier atterrissage des équipes : repère pour le générateur, pas une borne stricte', 'Operation duration, first take-off to last landing of the teams: a guide for the generator, not a strict limit']))}">${esc(t(['Durée', 'Duration', 'Dauer', 'Duración']))}<select data-o="duration">${opt('libre', t(['libre', 'free', 'frei', 'libre']), o.duration)}${DURATIONS.map(([k, l]) => opt(k, `${k} — ${l}`, o.duration)).join('')}</select></label>
         <label title="${esc(t(['Langues du brief traduit dans le YAML (bloc i18n), en plus du français : les pilotes le lisent dans leur langue', 'Languages of the translated brief in the YAML (i18n block), besides French: pilots read it in their language', 'Sprachen des übersetzten Briefings im YAML (i18n-Block), zusätzlich zum Französischen: Piloten lesen es in ihrer Sprache', 'Idiomas del brief traducido en el YAML (bloque i18n), además del francés: los pilotos lo leen en su idioma']))}">${esc(t(['Traductions', 'Translations', 'Übersetzungen', 'Traducciones']))}<select data-o="translations">${opt('en', 'en', o.translations)}${opt('en, de, es', 'en, de, es', o.translations)}${opt('aucune', t(['aucune', 'none', 'keine', 'ninguna']), o.translations)}</select></label>
         <label>${esc(t(['Ravitaillement en vol', 'Air refuelling', 'Luftbetankung', 'Reabastecimiento en vuelo']))}<select data-o="aar">${opt('libre', t(['libre', 'free', 'frei', 'libre']), o.aar)}${opt('oui', t(['oui', 'yes', 'ja', 'sí']), o.aar)}${opt('non', t(['non', 'no', 'nein', 'no']), o.aar)}</select></label>
       </div>
       <p><b>${esc(t(['Aéronef de chaque équipe en vol', 'Aircraft of each flying team', 'Luftfahrzeug jeder Besatzung', 'Aeronave de cada equipo']))}</b></p>
-      <p class="mo-small">${esc(t(['Laisser vide = automatique (le générateur choisit un appareil adapté à la mission). Saisir ou choisir dans la liste : types courants et appareils de la flotte DEFA avec leur indicatif ; un même type peut servir à plusieurs équipes (indicatifs différents).', 'Empty = automatic (the generator picks a suitable aircraft). Type or pick from the list: common types and DEFA fleet aircraft with their callsign; the same type may serve several teams (different callsigns).']))}</p>
+      <p class="mo-small">${esc(t(['Laisser vide = automatique (le générateur choisit un appareil adapté à la mission). Saisir ou choisir dans la liste : types courants et appareils de la flotte avec leur indicatif ; un même type peut servir à plusieurs équipes (indicatifs différents).', 'Empty = automatic (the generator picks a suitable aircraft). Type or pick from the list: common types and fleet aircraft with their callsign; the same type may serve several teams (different callsigns).']))}</p>
       <div class="mo-teams">${teamSlots(o).map((v, i) => `<label class="mo-team"><span>${esc(t(['Équipe', 'Team', 'Team', 'Equipo']))} ${String.fromCharCode(65 + i)}</span><input data-slot="${i}" list="moTeamList" value="${esc(v)}" placeholder="${esc(t(['automatique', 'automatic', 'automatisch', 'automático']))}"></label>`).join('')}</div>
       <datalist id="moTeamList">${teamChoices().map(x => `<option value="${esc(x)}">`).join('')}</datalist>
       <p class="mo-row"><button type="button" class="primary" data-mo="send" data-icon="sparkles">${esc(t(['Commander : copier le prompt et ouvrir ChatGPT', 'Order: copy prompt and open ChatGPT', 'Bestellen: Prompt kopieren und ChatGPT öffnen', 'Encargar: copiar el prompt y abrir ChatGPT']))}</button></p>

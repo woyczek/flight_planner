@@ -3,13 +3,13 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>CPCO — Générateur de mission</title>
-<link rel="stylesheet" href="../../shared/repository_nav.css?v=bc0f3060">
-<script src="../../config/repository_tree?v=2bea194f"></script><script src="../../shared/kit.js?v=a819e6df"></script>
+<link rel="stylesheet" href="../../shared/repository_nav.css?v=f6a61e75">
+<script src="../../config/repository_tree?v=7b133f6e"></script><script src="../../shared/kit.js?v=7f07f523"></script>
 <script src="../../shared/mission_core/vendor/js-yaml.min.js"></script>
-<script src="mission_prompt.js?v=2752a325"></script><script src="../../shared/data_files.js?v=50601f47" data-file="references/aircraft_fleet.js"></script><script src="../../shared/mission_order.js?v=73d33103"></script><script src="../../AircraftDB/aircraft_db.js"></script><script src="../../AircraftDB/aircraft_perf.js"></script><script src="../../shared/mission_core/model.js?v=0bb219f9"></script><script src="../../shared/mission_estimate.js?v=1e7731a5"></script><script src="../../shared/sia_base.js?v=0872dd35"></script><script src="../../shared/mission_routing.js?v=c23f4287"></script><script src="../../shared/mission_airspaces.js?v=3ab8db0c"></script><script src="../../shared/mission_exercise.js?v=6c6aed4f"></script><script src="../../shared/mission_registry.js?v=44e5efa9"></script>
-<script src="mission_store.js?v=bc7f59ef"></script>
-<script src="../../shared/aar_tracks.js?v=f4061047"></script>
-<script src="../../shared/mission_core/vocab.js?v=74550207"></script>
+<script src="mission_prompt.js?v=8774038d"></script><script src="../../shared/data_files.js?v=dcb47c6a" data-file="references/aircraft_fleet.js"></script><script src="../../shared/mission_order.js?v=10ea62d0"></script><script src="../../AircraftDB/aircraft_db.js"></script><script src="../../AircraftDB/aircraft_perf.js"></script><script src="../../shared/mission_core/model.js?v=88cf78c1"></script><script src="../../shared/mission_estimate.js?v=e352037a"></script><script src="../../shared/sia_base.js?v=0a1393f2"></script><script src="../../shared/mission_routing.js?v=3cc1352c"></script><script src="../../shared/mission_airspaces.js?v=e13e97bf"></script><script src="../../shared/mission_exercise.js?v=b68ac247"></script><script src="../../shared/mission_registry.js?v=f6f9c789"></script>
+<script src="mission_store.js?v=559e3351"></script>
+<script src="../../shared/aar_tracks.js?v=8f76a899"></script>
+<script src="../../shared/mission_core/vocab.js?v=8c65f5c2"></script>
 <script src="jspdf.umd.min.js"></script>
 <style data-layer="app">
 @layer app {
@@ -484,7 +484,7 @@ html[data-skeuo] .repo-block .mapCard.missing:not(#imp) {
 </style>
 </head>
 <body>
-<header><div class="header-row"><h1><span class="cpco-eyebrow">Centre de planification et de conduite des opérations</span>Générateur de mission</h1><button id="openCr" class="headerButton" type="button" title="Nouveau compte rendu CR DEFA pré-rempli (famille d’après le type de mission)">Créer le CR DEFA →</button></div></header>
+<header><div class="header-row"><h1><span class="cpco-eyebrow">Centre de planification et de conduite des opérations</span>Générateur de mission</h1><button id="openCr" class="headerButton" type="button" title="Nouveau compte rendu CR pré-rempli (famille d’après le type de mission)">Créer le CR →</button></div></header>
 
 <main>
 <section data-block-id="mission-import" data-deco-bg="import" data-icon="upload" data-subtitle="Mission chargée, enregistrement et brouillon ; importer une autre mission ou en commander une à ChatGPT."><h2>Mission</h2><div class="actions"><button id="newMission" data-icon="plus" class="ghost" type="button">Nouvelle mission</button><button id="orderGpt" data-icon="sparkles" class="secondary" type="button" title="Ouvrir le formulaire de commande : type, théâtre, équipes, aéronefs ; le prompt est copié et ChatGPT s’ouvre">Commander à ChatGPT…</button><button id="saveToFolder" data-icon="save" class="secondary" type="button" title="Enregistrer le YAML de la mission (modifications comprises) dans son dossier : data/missions/&lt;lettre&gt;_&lt;FAMILLE&gt;/&lt;ID&gt;/">Enregistrer dans le dossier</button><button id="saveDraft" data-icon="bookmark" class="secondary" type="button">Mémoriser le brouillon</button><button id="loadDraft" data-icon="refresh" class="secondary" type="button">Recharger le brouillon</button></div><div id="status" class="status" data-status>Aucune mission chargée.</div><p id="registryInfo" class="small" hidden><span></span> <button type="button" id="storeMission" class="secondary" data-icon="folder" hidden>Ranger dans le dossier des missions…</button> <a href="mission_registry.html">Ouvrir le registre ↗</a></p><details id="importMore" class="importMore"><summary>Importer une autre mission : fichiers, texte collé, commande ChatGPT</summary><div class="grid"><label>YAML et/ou Markdown<input id="missionFiles" type="file" accept=".yaml,.yml,.md,text/markdown,text/yaml" multiple data-dropzone><button id="openMissionPaste" data-icon="link" class="secondary" type="button" style="margin-top:6px">ou coller son contenu…</button></label><label>Cartes ou ZIP livré par le générateur<input id="mapFiles" type="file" accept=".zip,application/zip,image/png,image/jpeg,image/webp" multiple data-dropzone></label></div><div class="subBlocks"><details id="gptBox" class="pasteBox gptBox"><summary><strong>Commander une mission à ChatGPT</strong> <span class="small">type, théâtre, équipes, aéronefs : le prompt est copié et ChatGPT s’ouvre</span></summary><div id="gptOrder"></div></details><div id="missionPaste" class="pasteBox" hidden><strong>Coller le contenu Markdown ou YAML de la mission</strong><textarea id="missionText" placeholder="Colle ici le contenu Markdown ou YAML de la mission…"></textarea><div class="actions"><button id="parseMission" data-icon="eye" type="button">Lire la mission</button></div></div></div><p class="small">Tu peux sélectionner le YAML et le Markdown ensemble. Pour les cartes, sélectionne directement le ZIP produit par le générateur : les PNG, dont la carte d’assemblage, seront extraits et associés automatiquement.</p></details></section>
@@ -520,9 +520,14 @@ html[data-skeuo] .repo-block .mapCard.missing:not(#imp) {
 </main>
 
 <script>
+/** Raccourcis communs : élément par id, copie profonde (JSON), clé normalisée, échappement HTML. */
 const $ = id => document.getElementById(id),
+  /** Copie profonde d'une valeur sérialisable en JSON (YAML de mission). */
   deepClone = v => JSON.parse(JSON.stringify(v)),
-  norm = s => String(s ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, ''),
+  /** Clé normalisée : sans accents, minuscules, suites de caractères non alphanumériques → « _ ». */
+  norm = s => String(s ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g,
+    ''),
+  /** Texte échappé pour l'insertion dans du HTML (& < > " '). */
   esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({
     '&': '&amp;',
     '<': '&lt;',
@@ -609,7 +614,8 @@ let aarData = null;
 async function aarTracksData() {
   if (aarData) return aarData;
   try {
-    const text = await fetch('../../data/sia/miam-enr-5-7-tracks.xml').then(r => r.ok ? r.text() : '').catch(() => '') || await fetch('../../examples/sia/miam-enr-5-7-tracks.xml').then(r => r.ok ? r.text() : '').catch(() => '');
+    const text = await fetch('../../data/sia/miam-enr-5-7-tracks.xml').then(r => r.ok ? r.text() : '').catch(() => '') || await fetch(
+      '../../examples/sia/miam-enr-5-7-tracks.xml').then(r => r.ok ? r.text() : '').catch(() => '');
     aarData = text && window.AarTracks ? AarTracks.parseTrackXml(text).filter(t => t.kind === 'track' && t.ip && t.cp) : []
   } catch {
     aarData = []
@@ -636,6 +642,7 @@ async function autoNarrative(y) {
     notes = [].concat(y.notes || []).filter(Boolean),
     kind = [m.type, m.subtype].filter(Boolean).join(' — ');
   const all = [y.target, ...pts, ...rdv].filter(p => p && Number.isFinite(+p.lat)),
+    /** Vrai si deux points sont à 2 km au plus (distance plane approchée) : rapprochement avec les axes AAR. */
     near = (a, b) => Math.hypot((a.lat - b.lat) * 111.2, (a.lon - b.lon) * 111.2 * Math.cos(a.lat * Math.PI / 180)) <= 2;
   const aar = (await aarTracksData()).find(t => t.points.some(tp => all.some(p => near({
     lat: +p.lat,
@@ -649,9 +656,12 @@ async function autoNarrative(y) {
     aarText = `Axe de ravitaillement ${aar.name} (MILAIP ENR 5.7) : entrée ${aar.ip.name} (${coord(aar.ip)}), fin d’axe ${aar.cp.name} (${coord(aar.cp)}), route ${String(Math.round(r.heading)).padStart(3,'0')}°, branches de ${r.lengthNm} NM, ${r.widthNm} NM de large, ${aar.side?`virages par la ${aar.side==='L'?'gauche':'droite'}`:'côté du circuit non publié'}${aar.remark?` — ${aar.remark}`:''}.`
   }
   const who = [...new Set(rdv.flatMap(r => [].concat(r.participants || [])).map(String))].filter(Boolean),
+    /** Ligne de liste d'un rendez-vous : identifiant et nom, coordonnées, participants, rôle ou description. */
     rdvLine = r => `- ${[r.id,r.name].filter(Boolean).join(' ')} (${coord(r)})${[].concat(r.participants||[]).length?` — ${[].concat(r.participants).join(', ')}`:''}${r.role||r.description?` : ${r.role||r.description}`:''}`;
   const summary = [`${kind||'Mission'}${y.target?.name?` — ${y.target.name}`:''}.`, aar ? `Circuit de ravitaillement ${aar.name}.` : '', zone.name ? `Zone : ${zone.name}${zone.radius_km?` (rayon ${zone.radius_km} km)`:''}.` : '', who.length ? `Participants : ${who.join(', ')}.` : ''].filter(Boolean).join(' ');
-  const detailed = [aarText, pts.length ? 'Points tournants :\n' + pts.map(p => `- ${[p.id,p.name].filter(Boolean).join(' ')} (${coord(p)})${p.role||p.description?` : ${p.role||p.description}`:''}`).join('\n') : '', rdv.length ? 'Rendez-vous :\n' + rdv.map(rdvLine).join('\n') : '', notes.length ? 'Consignes :\n' + notes.map(n => `- ${n}`).join('\n') : ''].filter(Boolean).join('\n\n');
+  const detailed = [aarText, pts.length ? 'Points tournants :\n' + pts.map(p => `- ${[p.id,p.name].filter(Boolean).join(' ')} (${coord(p)})${p.role||p.description?` : ${p.role||p.description}`:''}`).join('\n') : '', rdv.length ?
+    'Rendez-vous :\n' + rdv.map(rdvLine).join('\n') : '', notes.length ? 'Consignes :\n' + notes.map(n => `- ${n}`).join('\n') : ''
+  ].filter(Boolean).join('\n\n');
   return {
     summary,
     detailed
@@ -660,7 +670,9 @@ async function autoNarrative(y) {
 // ===== Import =====
 // Fichiers de mission : YAML (données) et / ou Markdown exporté (textes + YAML intégré), images de cartes.
 async function importMissionFiles(files) {
-  const list = [...files].filter(f => !/\.(png|jpe?g|svg|pdf)$/i.test(f.name)); /* lecture commune : SiaMission.fromTexts (mission_store.js) — YAML + Markdown d'une mission, annexes ignorées */ /* plusieurs missions (opération à plusieurs équipes, ou réponse ChatGPT collée) : lot, navigation dans l'en-tête */
+  const list = [...files].filter(f => !/\.(png|jpe?g|svg|pdf)$/i.test(f
+    .name
+  )); /* lecture commune : SiaMission.fromTexts (mission_store.js) — YAML + Markdown d'une mission, annexes ignorées */ /* plusieurs missions (opération à plusieurs équipes, ou réponse ChatGPT collée) : lot, navigation dans l'en-tête */
   const inputs = await Promise.all(list.map(async f => ({
       name: f.name,
       text: await f.text()
@@ -673,7 +685,8 @@ async function importMissionFiles(files) {
     yaml = doc.yaml,
     narr = doc.narrative;
   let proposed = false;
-  if (!narr.summary && !narr.detailed && !narr.sections.length && !yaml.summary && !yaml.detailed_description && !yaml.description_detaillee) {
+  if (!narr.summary && !narr.detailed && !narr.sections.length && !yaml.summary && !yaml.detailed_description && !yaml
+    .description_detaillee) {
     const auto = await autoNarrative(yaml);
     narr.summary = auto.summary;
     narr.detailed = auto.detailed;
@@ -691,7 +704,8 @@ async function importMissionFiles(files) {
 async function inflateZipData(bytes, method) {
   if (method === 0) return bytes;
   if (method !== 8) throw Error(`Compression ZIP non prise en charge (${method}).`);
-  if (!('DecompressionStream' in window)) throw Error('Ce navigateur ne sait pas décompresser ce ZIP. Utilise le ZIP produit par le générateur de cartes.');
+  if (!('DecompressionStream' in window)) throw Error(
+    'Ce navigateur ne sait pas décompresser ce ZIP. Utilise le ZIP produit par le générateur de cartes.');
   const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream('deflate-raw'));
   return new Uint8Array(await new Response(stream).arrayBuffer())
 }
@@ -879,7 +893,8 @@ function renderYaml() {
 // ===== Cartes de la mission =====
 // Cartes déclarées dans le YAML (maps) ; mapFilename : nom du fichier image attendu.
 function mapEntries() {
-  return Array.isArray(state.yaml.maps) ? state.yaml.maps : state.yaml.maps && typeof state.yaml.maps === 'object' ? Object.values(state.yaml.maps) : []
+  return Array.isArray(state.yaml.maps) ? state.yaml.maps : state.yaml.maps && typeof state.yaml.maps === 'object' ? Object.values(state
+    .yaml.maps) : []
 }
 
 /** Nom du fichier image d'une carte déclarée (texte, filename, file ou output ; sinon carte_<n>.png). */
@@ -904,7 +919,8 @@ function pdfMapEntries() {
     type: 'assembly'
   });
   const profile = missionImage(/profil_vertical/i);
-  declared.sort((a, b) => (/assemblage|assembly/i.test(b.type + ' ' + b.file) ? 1 : 0) - (/assemblage|assembly/i.test(a.type + ' ' + a.file) ? 1 : 0));
+  declared.sort((a, b) => (/assemblage|assembly/i.test(b.type + ' ' + b.file) ? 1 : 0) - (/assemblage|assembly/i.test(a.type + ' ' + a
+    .file) ? 1 : 0));
   if (profile && !declared.some(x => x.file.toLowerCase() === profile.name.toLowerCase())) declared.push({
     map: {
       filename: profile.name,
@@ -932,6 +948,7 @@ function renderMaps() {
    dans le dossier des missions s'il est autorisé — data/missions/<lettre>_<FAMILLE>/<identifiant>/mission<ID>.yaml
    (YAML, source de vérité) et summary<ID>.md (Markdown reçu). Sans autorisation : bouton « Ranger dans le dossier ». */
 let lastInputs = null;
+/** inputs = [{ name, text }] reçus ; request : demander l'accès au dossier des missions si besoin. */
 async function registerDocs(inputs, request = false) {
   lastInputs = inputs;
   const C = window.MissionRegistryCore;
@@ -943,6 +960,7 @@ async function registerDocs(inputs, request = false) {
     docs = SiaMission.fromTextsBatch(inputs).docs,
     out = [];
   let missing = false;
+  /** Identifiant de mission lu dans le titre « # Mission … » d'un Markdown ; cur : celui de la mission affichée. */
   const mdId = f => SiaMission.parseId(/^#\s+Mission\s+([A-Z]?-?\d+[A-Z]?)/im.exec(f.text)?.[1] || '').id,
     cur = SiaMission.parseId(state.yaml?.mission?.id || '').id;
   for (const d of docs) {
@@ -990,7 +1008,8 @@ function renderAll() {
    cartes des chiffons) : définies d'office par le studio à l'ouverture de la mission, générées avec les autres cartes,
    jointes au PDF (carte de chaque message ou pli après les cartes de la mission). */
 function exerciseImage(file) {
-  return state.images.get(String(file || '').toLowerCase()) || [...state.images.values()].find(i => i.name.toLowerCase() === String(file || '').toLowerCase().replace(/\.png$/, '.jpg'))
+  return state.images.get(String(file || '').toLowerCase()) || [...state.images.values()].find(i => i.name.toLowerCase() === String(file ||
+    '').toLowerCase().replace(/\.png$/, '.jpg'))
 }
 
 /** Cartes d'exercice de la mission : état de chacune (chargée / à générer) et marche à suivre. */
@@ -1048,7 +1067,8 @@ function renderAirspaces() {
   const host = $('missionAirspaces');
   if (!host) return;
   if (!siaAirspaces) {
-    host.innerHTML = '<p class="small">Base SIA absente de ce navigateur : la lire une fois (studio cartographique, bloc « Base de données SIA », ou Paramètres › Maintenance › Données aéronautiques).</p>';
+    host.innerHTML =
+      '<p class="small">Base SIA absente de ce navigateur : la lire une fois (studio cartographique, bloc « Base de données SIA », ou Paramètres › Maintenance › Données aéronautiques).</p>';
     return
   }
   const list = airspaceList() || [],
@@ -1062,7 +1082,8 @@ function renderAirspaces() {
 /** Section « Zones à activer » d'un PDF (texte par gestionnaire) ; rien si la base SIA est absente ou la liste vide. */
 function addAirspacesSection(doc, y, list, note) {
   if (!list?.length) return y;
-  return addSection(doc, 'Zones à activer', [note || '', ...list.length ? [window.MissionAirspaces.byAdmin(list).map(g => g.prohibited ? `Zones interdites, à éviter : ${g.zones.map(z=>`${zoneLabel(z)} (${z.lower||'?'} – ${z.upper||'?'})`).join(', ')}` : `${g.admin==='—'?'Gestionnaire non indiqué':g.admin}${g.zones.some(z=>z.act)?` (${[...new Set(g.zones.map(z=>z.act).filter(Boolean))].join(', ')})`:''} : ${g.zones.map(z=>`${zoneLabel(z)} (${z.lower||'?'} – ${z.upper||'?'})${z.by?' — '+z.by.join(', '):''}`).join(', ')}`).join('\n')] : []].filter(Boolean).join('\n'), y)
+  return addSection(doc, 'Zones à activer', [note || '', ...list.length ? [window.MissionAirspaces.byAdmin(list).map(g => g.prohibited ?
+    `Zones interdites, à éviter : ${g.zones.map(z=>`${zoneLabel(z)} (${z.lower||'?'} – ${z.upper||'?'})`).join(', ')}` : `${g.admin==='—'?'Gestionnaire non indiqué':g.admin}${g.zones.some(z=>z.act)?` (${[...new Set(g.zones.map(z=>z.act).filter(Boolean))].join(', ')})`:''} : ${g.zones.map(z=>`${zoneLabel(z)} (${z.lower||'?'} – ${z.upper||'?'})${z.by?' — '+z.by.join(', '):''}`).join(', ')}`).join('\n')] : []].filter(Boolean).join('\n'), y)
 }
 /** Volet « Importer une autre mission » : ouvert sans mission chargée, replié sinon, jusqu'à ce que l'utilisateur l'ouvre ou le ferme. */
 $('orderGpt').onclick = () => {
@@ -1142,6 +1163,7 @@ function renderOperation() {
   const docs = opDocs(),
     zId = String(op.organisation || X.organisationId(op.id)).toUpperCase(),
     ids = [...new Set([...(op.missions || []).map(v => String(v).toUpperCase()), zId])],
+    /** Mission du lot portant cet identifiant (capitales), sinon undefined. */
     have = id => docs.find(d => String(d.mission?.id || '').toUpperCase() === id),
     cur = String(y.mission?.id || '').toUpperCase(),
     ex = X.of(y, docs);
@@ -1170,7 +1192,9 @@ function renderOperation() {
 /** Brief général proposé d'après les missions de l'opération : situation commune (premier paragraphe de chaque résumé),
  *  rôle de chaque équipage ; à reprendre par l'organisation. */
 function briefOfCrews(op, crews) {
+  /** Premier paragraphe d'un texte, ramené sur une ligne. */
   const first = v => String(v || '').split(/\n\s*\n/)[0].replace(/\s*\n\s*/g, ' ').trim(),
+    /** Mission courante prise avec son récit en cours d'édition (résumé, description détaillée). */
     docOf = d => d === state.yaml ? {
       ...d,
       summary: state.narrative.summary || d.summary,
@@ -1276,9 +1300,11 @@ function createChiffonMissions() {
     op = z.operation || {},
     crews = docs.filter(d => !X.isOrganisation(d) && d.origin),
     base = crews[0] || {},
-    taken = new Set([...docs.map(d => String(d.mission?.id || '').toUpperCase()), ...(op.missions || []).map(v => String(v).toUpperCase())]),
+    taken = new Set([...docs.map(d => String(d.mission?.id || '').toUpperCase()), ...(op.missions || []).map(v => String(v)
+      .toUpperCase())]),
     stem = String(op.id || z.mission?.id || '').replace(/Z$/i, '');
   let letter = 'A'.charCodeAt(0);
+  /** Prochain identifiant libre de l'opération : radical + lettre suivante (Z réservé à l'organisation). */
   const nextId = () => {
     while (taken.has(`${stem}${String.fromCharCode(letter)}`) || String.fromCharCode(letter) === 'Z') letter++;
     const id = `${stem}${String.fromCharCode(letter)}`;
@@ -1366,6 +1392,7 @@ function createChiffonMissions() {
     missions = [...new Set([...(op.missions || []).map(v => String(v).toUpperCase()), ...ids])];
   for (const y of made) y.operation.missions = missions;
   const b = SiaMission.loadBatch(),
+    /** Entrée du lot de la mission y (récit, sources), sinon entrée vide pour une mission créée ici. */
     docOf = y => b?.docs.find(d => String(d.yaml?.mission?.id || '').toUpperCase() === String(y.mission?.id || '').toUpperCase()) || {
       narrative: {
         summary: '',
@@ -1410,7 +1437,8 @@ function renderExercise() {
   sec.hidden = !org && !ex;
   if (sec.hidden) return;
   if (org) {
-    setBlock('mission-exercise', 'Exercice', 'Heure H et participants, chiffons, chronologie des messages radio et des plis scellés, et ce que reçoit chacun.');
+    setBlock('mission-exercise', 'Exercice',
+      'Heure H et participants, chiffons, chronologie des messages radio et des plis scellés, et ce que reçoit chacun.');
     X.editor(host, state.yaml, {
       docs,
       onChange: () => {
@@ -1423,7 +1451,8 @@ function renderExercise() {
       }
     })
   } else {
-    setBlock('mission-exercise', 'Exercice : ce que reçoit cet équipage', 'Plis scellés à ouvrir et messages radio attendus, d’après la chronologie de l’organisation de l’exercice.');
+    setBlock('mission-exercise', 'Exercice : ce que reçoit cet équipage',
+      'Plis scellés à ouvrir et messages radio attendus, d’après la chronologie de l’organisation de l’exercice.');
     X.crewPanel(host, state.yaml, docs)
   }
 }
@@ -1431,7 +1460,9 @@ function renderExercise() {
 function applyMode() {
   const org = isOrgDoc();
   document.querySelector('[data-block-id="mission-estimate"]').hidden = org;
-  setBlock('mission-texts', org ? 'Brief général' : 'Textes de mission', org ? 'Brief de la coordination, remis à tous : situation, objectifs communs, créneaux, critères de fin.' : 'Résumé, description détaillée et rubriques du brief.');
+  setBlock('mission-texts', org ? 'Brief général' : 'Textes de mission', org ?
+    'Brief de la coordination, remis à tous : situation, objectifs communs, créneaux, critères de fin.' :
+    'Résumé, description détaillée et rubriques du brief.');
   syncDocButtons()
 }
 /** Boutons des documents selon la mission et l'opération. */
@@ -1457,6 +1488,8 @@ function syncDocButtons() {
    MissionModel.computeStatistics). Liste lue une fois (puis à chaque CR enregistré ailleurs), pas à chaque modification
    du YAML. */
 let crReports = null;
+/** Liste des CR : index ReportIndex, sinon ancienne copie texte du navigateur (missionCoreLedger:v2) ;
+ *  l'estimation est redessinée ensuite. */
 async function loadCrReports() {
   const i = await window.ReportIndex?.load?.();
   if (i) crReports = i.missions;
@@ -1470,6 +1503,9 @@ async function loadCrReports() {
 if (typeof BroadcastChannel === 'function') new BroadcastChannel('defa-data').addEventListener('message', e => {
   if (e.data?.path === 'data/cr/missions.yaml') loadCrReports()
 });
+
+/** CR de la mission id, du plus récent au plus ancien : date et durées (vol, bloc, transits, sur zone) ;
+ *  le premier appel lance la lecture de la liste et renvoie une liste vide en attendant. */
 function missionReports(id) {
   const mid = window.MissionVocab?.missionIdOf?.(id);
   if (!mid) return [];
@@ -1493,7 +1529,8 @@ function missionReports(id) {
     }
   }).sort((a, b) => b.date.localeCompare(a.date))
 }
-let estimateTimer = 0; /* ===== Transit : mode de la mission (route_mode du YAML) et réglages du calcul (shared/mission_routing.js, navigateur) ===== */
+let estimateTimer =
+  0; /* ===== Transit : mode de la mission (route_mode du YAML) et réglages du calcul (shared/mission_routing.js, navigateur) ===== */
 const ROUTE_MODE_LABEL = {
   auto: 'automatique (selon l’appareil et le niveau)',
   airways: 'voies aériennes (IFR)',
@@ -1578,6 +1615,7 @@ function download(blob, name) {
 function safeStem() {
   const y = state.yaml || {},
     m = y.mission || {},
+    /** Texte sans accents, caractères spéciaux remplacés par « _ » (bords rognés). */
     slug = v => String(v ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/gi, '_').replace(/^_+|_+$/g, ''),
     id = m.id ?? m.number,
     num = id != null && id !== '' ? 'M' + String(id).padStart(2, '0') : '',
@@ -1604,7 +1642,8 @@ function markdownExport() {
 // ===== Brief PDF (jsPDF local) =====
 // Typographie remplacée (apostrophes, tirets, guillemets, œ) : police standard du PDF.
 function pdfSafe(s) {
-  return String(s ?? '').replace(/[’‘]/g, "'").replace(/[—–]/g, ' - ').replace(/…/g, '...').replace(/œ/g, 'oe').replace(/Œ/g, 'OE').replace(/[“”«»]/g, '"')
+  return String(s ?? '').replace(/[’‘]/g, "'").replace(/[—–]/g, ' - ').replace(/…/g, '...').replace(/œ/g, 'oe').replace(/Œ/g, 'OE').replace(
+    /[“”«»]/g, '"')
 }
 
 /** Texte Markdown rendu en texte simple pour le PDF (titres, citations, gras, code retirés). */
@@ -1631,7 +1670,8 @@ function usefulRecords(value) {
 function aircraftRecords() {
   const explicit = usefulRecords(state.yaml.aircraft || state.yaml.aircrafts || state.yaml.aeronefs);
   if (explicit.length) return explicit;
-  return usefulRecords(state.yaml.teams).filter(x => !/(?:equipe|team|terrestre|secours|maintenance|reception)/.test(norm(String(x.type || x.role || x.name || ''))))
+  return usefulRecords(state.yaml.teams).filter(x => !/(?:equipe|team|terrestre|secours|maintenance|reception)/.test(norm(String(x.type || x
+    .role || x.name || ''))))
 }
 
 /** « type - indicatif » du premier aéronef (fiche du PDF). */
@@ -1658,7 +1698,9 @@ function asArray(v) {
 /** Risques de la mission en lignes de texte : liste YAML (danger, conséquence, parade), sinon rubrique du récit. */
 function risksText() {
   const r = state.yaml.risks;
-  if (Array.isArray(r) && r.length) return r.map(x => typeof x === 'string' ? x : [x.hazard || x.risk || x.name, x.consequence, x.mitigation].filter(Boolean).join(' - '));
+  if (Array.isArray(r) && r.length) return r.map(x => typeof x === 'string' ? x : [x.hazard || x.risk || x.name, x.consequence, x
+    .mitigation
+  ].filter(Boolean).join(' - '));
   const s = findSection(['risques', 'risks', 'points_d_attention']);
   return s ? s.content.split(/\r?\n/).map(x => x.replace(/^\s*[-*•]\s*/, '')).filter(Boolean) : []
 }
@@ -1694,6 +1736,8 @@ function addMarkdownTable(doc, headers, rows, y) {
     widths = Array(count).fill(total / count),
     pad = 1.6,
     lineH = 4.2;
+  /** Ligne du tableau : texte replié par colonne, hauteur ajustée, page suivante si elle déborde ;
+   *  en-tête sur fond gris et en gras. */
   const drawRow = (cells, header = false) => {
     const wrapped = Array.from({
         length: count
@@ -1729,6 +1773,7 @@ function addMarkdownTable(doc, headers, rows, y) {
 function addMarkdownContent(doc, text, y) {
   const lines = String(text || '').split(/\r?\n/);
   let paragraph = [];
+  /** Écrit le paragraphe en attente, puis le vide. */
   const flush = () => {
     if (!paragraph.length) return;
     y = addWrapped(doc, paragraph.join('\n'), 20, y, 170, 5.2) + 2;
@@ -1809,7 +1854,9 @@ function addMissionFacts(doc, y) {
     aircraft = aircraftRecords(),
     type = common('mission.type', common('type', 'Non renseigné')),
     subtype = common('mission.subtype', common('subtype', 'Non renseigné')),
-    fleet = aircraft.map(a => [a.type || a.aircraft || a.model || 'Type non renseigné', a.callsign || a.registration || a.name || 'Sans callsign'].join(' - '));
+    fleet = aircraft.map(a => [a.type || a.aircraft || a.model || 'Type non renseigné', a.callsign || a.registration || a.name ||
+      'Sans callsign'
+    ].join(' - '));
   return addMarkdownTable(doc, ['Information', 'Valeur'], [
     ['Type de mission', String(type || 'Non renseigné')],
     ['Sous-type', String(subtype || 'Non renseigné')],
@@ -1828,7 +1875,9 @@ function rendezvousRecords() {
 function addRendezvous(doc, y) {
   const rows = rendezvousRecords();
   if (!rows.length) return y;
-  const table = rows.map(r => [r.id || r.code || '', r.name || r.nom || '', Number.isFinite(+r.lat) && Number.isFinite(+r.lon) ? `${(+r.lat).toFixed(5)}, ${(+r.lon).toFixed(5)}` : r.location || '', String(r.participants || r.teams || r.description || r.note || '').replace(/\|/g, ' / ')]);
+  const table = rows.map(r => [r.id || r.code || '', r.name || r.nom || '', Number.isFinite(+r.lat) && Number.isFinite(+r.lon) ? `${(+r.lat).toFixed(5)}, ${(+r.lon).toFixed(5)}` :
+    r.location || '', String(r.participants || r.teams || r.description || r.note || '').replace(/\|/g, ' / ')
+  ]);
   if (y > 235) {
     doc.addPage('a4', 'portrait');
     y = 20
@@ -1855,7 +1904,7 @@ function addPdfFooters(doc) {
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(7.5);
     doc.setTextColor(70, 79, 84);
-    doc.text(pdfSafe(`© DEFA Virtual - ${date} - Auteur : ${author}`), 12, ph - 6);
+    doc.text(pdfSafe(`© SO Group Virtual - ${date} - Auteur : ${author}`), 12, ph - 6);
     doc.text(`${page} / ${count}`, pw - 12, ph - 6, {
       align: 'right'
     });
@@ -1890,7 +1939,9 @@ function addCrewExercise(doc, y) {
     mine = X.eventsFor(c.tl, c.me.callsign),
     plis = mine.filter(e => e.kind === 'pli').length,
     radio = mine.length - plis;
-  return addSection(doc, 'Exercice', [`Heure H fixée par la direction d’exercice (${c.ex.h_hour}). Décollage prévu : ${X.hText(X.parseH(c.me.takeoff)??0)}.`, plis ? `Plis scellés remis avec ce dossier : ${plis}, à n’ouvrir qu’au moment indiqué sur chacun.` : '', radio ? 'Des messages vous seront passés en vol par l’organisation de l’exercice.' : ''].filter(Boolean).join('\n'), y)
+  return addSection(doc, 'Exercice', [`Heure H fixée par la direction d’exercice (${c.ex.h_hour}). Décollage prévu : ${X.hText(X.parseH(c.me.takeoff)??0)}.`, plis ? `Plis scellés remis avec ce dossier : ${plis}, à n’ouvrir qu’au moment indiqué sur chacun.` : '', radio ?
+    'Des messages vous seront passés en vol par l’organisation de l’exercice.' : ''
+  ].filter(Boolean).join('\n'), y)
 }
 /** Plis scellés adressés à l'équipage : une page chacun, après les cartes (les messages radio restent à l'organisation). */
 /** Plis scellés et cartes d'exercice de l'équipage, après les cartes de la mission : une page par pli (texte, pistes),
@@ -1901,6 +1952,7 @@ function addCrewPlis(doc) {
   if (!c) return;
   const X = window.MissionExercise,
     id = String(state.yaml.mission?.id || '');
+  /** Page A4 paysage : titre head puis image de la carte, la plus grande possible et centrée. */
   const mapPage = (img, head) => {
     doc.addPage('a4', 'landscape');
     const pw = doc.internal.pageSize.getWidth(),
@@ -1922,7 +1974,8 @@ function addCrewPlis(doc) {
       doc.text(pdfSafe(`PLI SCELLÉ — ${c.me.callsign} — à ouvrir : ${when}`), 20, y);
       y += 7;
       const known = c.ex.tracks.filter(k => e.reveals.includes(k.id));
-      addSection(doc, e.title || e.id, [e.from ? `De : ${e.from}` : '', e.text || '', known.length ? 'Pistes :\n' + known.map(trackText).join('\n\n') : ''].filter(Boolean).join('\n\n'), y);
+      addSection(doc, e.title || e.id, [e.from ? `De : ${e.from}` : '', e.text || '', known.length ? 'Pistes :\n' + known.map(trackText).join(
+        '\n\n') : ''].filter(Boolean).join('\n\n'), y);
       if (img) mapPage(img, `PLI SCELLÉ — ${e.title||e.id} — carte`)
     } else if (img) mapPage(img, `CARTE À REMETTRE À RÉCEPTION DU MESSAGE « ${e.title||e.id} » — ${c.me.callsign} — ${when}`)
   }
@@ -1946,7 +1999,8 @@ function addMapPages(doc) {
     doc.addPage('a4', landscape ? 'landscape' : 'portrait');
     const pw = doc.internal.pageSize.getWidth(),
       ph = doc.internal.pageSize.getHeight(),
-      heading = assembly ? 'Carte d’assemblage' : /general/i.test(key) ? 'Carte générale' : /detail|proxim/i.test(key) ? `Mission ${common('mission.id','')} - carte de proximité de la cible` : /cible|target/i.test(key) ? 'Carte cible' : file;
+      heading = assembly ? 'Carte d’assemblage' : /general/i.test(key) ? 'Carte générale' : /detail|proxim/i.test(key) ? `Mission ${common('mission.id','')} - carte de proximité de la cible` :
+      /cible|target/i.test(key) ? 'Carte cible' : file;
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(18);
     const headingLines = doc.splitTextToSize(pdfSafe(heading), pw - 24);
@@ -1996,7 +2050,7 @@ async function exportOrganisationPdf(zy, opts) {
   else doc.setProperties({
     title: pdfSafe(name),
     subject: 'Dossier organisation d’exercice',
-    author: pdfSafe(zy.author || 'DEFA Virtual')
+    author: pdfSafe(zy.author || 'SO Group Virtual')
   });
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(20);
@@ -2007,7 +2061,9 @@ async function exportOrganisationPdf(zy, opts) {
   let y = 22 + lines.length * 8 + 6;
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(10.5);
-  let texts = [zy === state.yaml ? state.narrative.summary : '', zy.summary || '', zy === state.yaml ? state.narrative.detailed : '', zy.detailed_description || ''].filter((v, i, a) => v && a.indexOf(v) === i);
+  let texts = [zy === state.yaml ? state.narrative.summary : '', zy.summary || '', zy === state.yaml ? state.narrative.detailed : '', zy
+    .detailed_description || ''
+  ].filter((v, i, a) => v && a.indexOf(v) === i);
   const cur = zy === state.yaml;
   if (!texts.length) {
     const b = briefOfCrews(op, docs.filter(d => !X.isOrganisation(d)));
@@ -2016,7 +2072,10 @@ async function exportOrganisationPdf(zy, opts) {
   y = addSection(doc, 'Brief général', texts.join('\n\n') || '—', y);
   y = addSection(doc, 'Heure H et participants', [`Heure H : ${ex.h_hour}`, ...ex.participants.map(p => `• ${p.callsign} — mission ${p.mission} — décollage ${X.hText(X.parseH(p.takeoff)??0)}${p.role?' — '+p.role:''}`)].join('\n'), y);
   if (ex.tracks.length) y = addSection(doc, 'Chiffons', ex.tracks.map(k => `${trackText(k)}\n  ${k.played?`Joué${k.callsign?' ('+k.callsign+')':''}, départ ${k.start||'—'}${k.conduct?' — consignes : '+k.conduct:''}`:'Simulé (dessiné seulement)'}`).join('\n\n'), y);
-  y = addAirspacesSection(doc, y, window.MissionAirspaces && siaAirspaces ? window.MissionAirspaces.crossedAll(docs.filter(d => !X.isOrganisation(d)), siaAirspaces) : null, 'Demandes d’activation à faire par l’organisation, auprès des gestionnaires (calcul indicatif : vérifier les cartes AZBA et les NOTAM).');
+  y = addAirspacesSection(doc, y, window.MissionAirspaces && siaAirspaces ? window.MissionAirspaces.crossedAll(docs.filter(d => !X
+      .isOrganisation(d)), siaAirspaces) : null,
+    'Demandes d’activation à faire par l’organisation, auprès des gestionnaires (calcul indicatif : vérifier les cartes AZBA et les NOTAM).'
+  );
   y = addSection(doc, 'Chronologie', tl.map(e => `• ${e.t==null?'H+?':X.hText(e.t)} — ${e.kind==='pli'?'PLI SCELLÉ':'RADIO'} — ${e.from||'—'} → ${e.to.join(', ')||'—'} : ${e.title||e.id}\n  Déclencheur : ${e.when}${e.reveals.length?' · pistes révélées : '+e.reveals.join(', '):''}${e.text?'\n  '+String(e.text).replace(/\n+/g,'\n  '):''}`).join('\n\n') || '—', y);
   const missing = cur ? addMapPages(doc) : [];
   if (!into) {
@@ -2095,7 +2154,7 @@ async function exportPdf(opts) {
   else doc.setProperties({
     title: pdfSafe(pdfTitle()),
     subject: 'Dossier de mission de simulation',
-    author: pdfSafe(common('author', 'DEFA Virtual'))
+    author: pdfSafe(common('author', 'SO Group Virtual'))
   });
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(20);
@@ -2130,6 +2189,7 @@ async function exportPdf(opts) {
   if (risks.length) y = addSection(doc, "Risques et points d'attention", risks.map(x => '• ' + x).join('\n'), y);
   y = addTeams(doc, y);
   y = addRendezvous(doc, y);
+  /** Section « Partie B… » (et suivantes) du récit : non reprise telle quelle dans ce PDF. */
   const isPart = s => /^partie\s+[b-z]\b/i.test(String(s.title || '').trim());
   for (const s of state.narrative.sections) {
     if (isPart(s) || /introduction|risque|equipe|rendez_vous|summary|description/i.test(norm(s.title))) continue;
@@ -2138,7 +2198,8 @@ async function exportPdf(opts) {
   y = addCrewExercise(doc, y);
   {
     const c = crewExercise();
-    if (!c && !isOrgDoc()) y = addAirspacesSection(doc, y, airspaceList(), 'Demandes d’activation à faire auprès des gestionnaires (calcul indicatif : vérifier les cartes AZBA et les NOTAM).')
+    if (!c && !isOrgDoc()) y = addAirspacesSection(doc, y, airspaceList(),
+      'Demandes d’activation à faire auprès des gestionnaires (calcul indicatif : vérifier les cartes AZBA et les NOTAM).')
   }
   if (y > 276) {
     doc.addPage('a4', 'portrait');
@@ -2209,7 +2270,7 @@ async function exportOperationPdf() {
   doc.setProperties({
     title: pdfSafe(name),
     subject: 'Dossier d’opération de simulation',
-    author: pdfSafe(first.author || 'DEFA Virtual')
+    author: pdfSafe(first.author || 'SO Group Virtual')
   });
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(20);
@@ -2220,7 +2281,7 @@ async function exportOperationPdf() {
   let y = 24 + tl.length * 8 + 4;
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(11);
-  doc.text(pdfSafe(`${b.docs.length} missions — une par équipe DEFA`), 105, y, {
+  doc.text(pdfSafe(`${b.docs.length} missions — une par équipe`), 105, y, {
     align: 'center'
   });
   y += 12;
@@ -2384,7 +2445,8 @@ $('exportPdfOperation').onclick = async () => {
     const m = await exportOperationPdf();
     $('exportStatus').textContent = `Dossier d’opération exporté (un PDF).${m.length?` Cartes non jointes — ${m.join(' ; ')}.`:''}`
   } catch (e) {
-    (window.AppFramework?.notify ? ($('exportStatus').textContent = '', window.AppFramework.notify(e.message, 'err')) : $('exportStatus').textContent = e.message)
+    (window.AppFramework?.notify ? ($('exportStatus').textContent = '', window.AppFramework.notify(e.message, 'err')) : $(
+      'exportStatus').textContent = e.message)
   } finally {
     bt.disabled = false
   }
@@ -2709,7 +2771,8 @@ $('exportYaml').onclick = () => {
     }), `${safeStem()}.yaml`);
     $('exportStatus').textContent = 'YAML exporté.'
   } catch (e) {
-    (window.AppFramework?.notify ? ($('exportStatus').textContent = '', window.AppFramework.notify(e.message, 'err')) : $('exportStatus').textContent = e.message)
+    (window.AppFramework?.notify ? ($('exportStatus').textContent = '', window.AppFramework.notify(e.message, 'err')) : $('exportStatus')
+      .textContent = e.message)
   }
 };
 $('exportMd').onclick = () => {
@@ -2747,6 +2810,7 @@ let shareTimer = 0;
 /** Mission courante partagée avec les autres pages (SiaMission.save) : tout de suite, ou 400 ms après la dernière saisie. */
 function shareMission(now) {
   clearTimeout(shareTimer);
+  /** Recopie le récit dans l'état puis publie la mission (source « generator ») ; erreur affichée dans l'état. */
   const run = () => {
     try {
       syncNarrative();
@@ -2777,7 +2841,7 @@ SiaMission.subscribe('generator', d => {
   renderAll();
   setStatus(`Mission mise à jour par le studio cartographique (révision ${d.rev}).`, 'ok')
 });
-// Passerelle vers CR DEFA : la mission (YAML) est confiée au CR de la famille correspondante.
+// Passerelle vers CR : la mission (YAML) est confiée au CR de la famille correspondante.
 $('openCr').onclick = () => {
   try {
     syncNarrative();
@@ -2786,11 +2850,12 @@ $('openCr').onclick = () => {
     localStorage.setItem('siaMissionToCr:v1', JSON.stringify(state.yaml));
     location.href = `../cr/${target.cr}?from=sia`
   } catch (e) {
-    (window.AppFramework?.notify ? ($('exportStatus').textContent = '', window.AppFramework.notify(e.message, 'err')) : $('exportStatus').textContent = e.message)
+    (window.AppFramework?.notify ? ($('exportStatus').textContent = '', window.AppFramework.notify(e.message, 'err')) : $('exportStatus')
+      .textContent = e.message)
   }
 };
 </script>
-<script src="../../shared/repository_nav.js?v=6262a76e"></script>
-<script src="../../shared/app_framework.js?v=cc5e8c7b"></script>
-<script src="../../shared/content_i18n.js?v=7afecb78"></script><script src="sia_i18n.js?v=3c5be361"></script>
+<script src="../../shared/repository_nav.js?v=dade04a4"></script>
+<script src="../../shared/app_framework.js?v=7a889fe5"></script>
+<script src="../../shared/content_i18n.js?v=499ea78f"></script><script src="sia_i18n.js?v=e4046ef4"></script>
 </body></html>

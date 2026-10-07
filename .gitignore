@@ -24,9 +24,13 @@ VERSION.json
 defa_local_store.yaml
 flight_performance_database_merged.fpdb.json
 tools/.assets_seen.json
+tools/.defa_site.json
 
 # Commit courant pour le pied de page (tools/write_build.sh, crochets git)
 config/build.js
 
 # Repère de l’installation lancée (tools/launch.py) : contrôle du dossier autorisé
 .defa_instance
+
+# secrets locaux (clé d’API IVAO… : secrets/ivao.json), jamais versionnés
+secrets/

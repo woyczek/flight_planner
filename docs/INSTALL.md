@@ -15,12 +15,12 @@ local. Rien à compiler.
 3. Dans la page **Premier lancement** qui s'ouvre (`apps/settings/premier_lancement.html`) :
    1. **Données** : identifiants framagit (mot de passe ou jeton ; « mémoriser » les confie au gestionnaire
       d'identifiants de Git) → clone de `data/` ; ou l'archive `.zip` reçue par mail. En option, le journal des vols
-      DEFA (page « Log des vols » enregistrée, `.html`) → référence DEFA (`tools/defa_reference.py`) ;
-   2. **Profil** : trigramme, ID IVAO, ID VATSIM, SimBrief ; identifiants du site DEFA, gardés dans ce navigateur et
+      DEFA (page « Log des vols » enregistrée, `.html`) → référence (`tools/defa_reference.py`) ;
+   2. **Profil** : trigramme, ID IVAO, ID VATSIM, SimBrief ; identifiants du site de la compagnie, gardés dans ce navigateur et
       exclus des sauvegardes ;
    3. **Dossiers** : dossier de l'application (données, registre, missions, SIA, performances et sauvegarde locale en
       sont déduits) ; classeur ODV : dossier OneDrive où l'escadrille le dépose, ou à défaut le fichier Excel ;
-   4. **Terminer** : mise à jour des données SIA (Paramètres › Maintenance › Mise à jour SIA, étapes guidées ; le
+   4. **Terminer** : mise à jour des données SIA (Paramètres › Maintenance › Données aéronautiques, zone France ; le
       téléchargement sur le site du SIA demande d'accepter sa licence Open Data).
 
    Une fois réglée, la suite s'ouvre sur l'accueil aux lancements suivants (la page reste accessible :
@@ -45,12 +45,15 @@ Depuis la version 3, **l'application et les données sont séparées** :
 | Dépôt | Contenu | Où |
 |---|---|---|
 | Application (public) — <https://framagit.org/asr/flight_planner> | pages, framework, bases OACI / APD générées, outils, docs, exemples | dossier de votre choix |
-| Données (privé) — <https://framagit.org/defa-virtual/missions-defa> | flotte et référence DEFA, indicatifs, registres et CR, missions générées, affectations, MORA, axes ENR 5.7, base de performances | `data/` **dans** le dossier de l'application (ignoré par git) |
+| Données (privé, propre à chaque compagnie ; adresse donnée par la compagnie) | flotte et référence, indicatifs, registres et CR, missions générées, affectations, MORA, axes ENR 5.7, base de performances | `data/` **dans** le dossier de l'application (ignoré par git) |
 
-Le dépôt des données est **privé** : si l'accès n'est pas encore donné (ou si Git ne s'authentifie pas tout de suite),
-la suite démarre sur les exemples d'`examples/`. Deux façons d'avoir les données :
+Le dépôt des données est **privé** et propre à chaque compagnie : aucune adresse n'est fournie avec la suite. Tant qu'il
+n'y a pas de données, la suite démarre sur les exemples d'`examples/`. Trois façons d'avoir les données, proposées par
+la page de premier lancement :
 
-- demander l'accès (compte framagit), puis relancer le lanceur, qui clone `data/` ;
+- le **jeu d'essai** livré avec la suite (données fictives, pour la découvrir ; `tools/jeu_essai.py`) ;
+- l'**adresse du dépôt de données** de votre compagnie (`https://…` ou `git@…`), avec au besoin vos identifiants :
+  le lanceur clone `data/` ;
 - demander **un jeu de données par mail** : déposer l'archive `.zip` reçue dans le dossier de l'application (à côté de
   `lancer.cmd`), relancer — elle est extraite dans `data/` (archive reconnue à son fichier `data_tree.js`).
 
@@ -83,7 +86,7 @@ restent lisibles. Le lanceur sert la suite pour éviter ce cas.
 ```bash
 git clone https://framagit.org/asr/flight_planner.git
 cd flight_planner
-git clone https://framagit.org/defa-virtual/missions-defa.git data
+git clone <adresse du dépôt de données de votre compagnie> data
 python -m http.server 8000 --bind 127.0.0.1
 ```
 
@@ -116,7 +119,7 @@ dossier sont lus en lecture seule.
 
 ## 5. Réglages suivants (5 minutes)
 
-1. **Profil pilote** — ☰ › Profil pilote : trigramme DEFA (page « Mes missions »), ID IVAO (VID), ID VATSIM (CID),
+1. **Profil pilote** — ☰ › Profil pilote : trigramme (page « Mes missions »), ID IVAO (VID), ID VATSIM (CID),
    identifiant SimBrief. Repris par toutes les pages.
 2. **Langue** — drapeau du bandeau : automatique, FR, EN, DE, ES.
 3. **Dossier X-Plane** (journaux d'atterrissage) — Paramètres › Sources et dossiers, si vous utilisez le Landing
@@ -141,10 +144,17 @@ Bibliothèque standard uniquement :
 ### Données SIA (Missions SIA)
 
 Le studio cartographique utilise les données AIRAC du SIA, **hors dépôt** (≈ 80 Mo par cycle) : Paramètres ›
-Maintenance › Mise à jour SIA, six étapes guidées. Le ZIP s'obtient sur la boutique du SIA, page du cycle : compte SIA
+Maintenance › Données aéronautiques, source SIA de la zone France. Le ZIP s'obtient sur la boutique du SIA, page du cycle : compte SIA
 (gratuit), « Ajouter au panier » (0 €), « Passer commande » en acceptant la licence, téléchargement depuis la
 confirmation ou « Mes commandes ». Puis **Récupérer le ZIP téléchargé** : le serveur du lanceur prend le dernier
 `export_xml_bd_SIA_*.zip` du dossier Téléchargements et la page l'extrait dans `data/sia/`. Détail : [SIA_MISSIONS.md](SIA_MISSIONS.md).
+
+### Clé d'API IVAO (ordres de vols)
+
+« Importer d'IVAO » (activations de zones des ordres de vols : horaires publiés des zones de France, dont le RTBA, et
+NOTAM de la division) passe par le lanceur, qui lit la clé d'API IVAO dans la variable d'environnement `IVAO_API_KEY`,
+sinon dans `secrets/ivao.json` à la racine de la suite, écrit par Paramètres › Installation › Sources et dossiers › « Clés d'API » (ou à la main : `{ "apiKey": "…" }`). Le dossier `secrets/` est exclu de git ;
+la clé n'est jamais envoyée à la page ni écrite dans les données. Sans clé, les activations se saisissent à la main.
 
 ## 7. Mise à jour
 
@@ -171,7 +181,7 @@ locales).
 ## Annexe — depuis une version 2
 
 Passer sur la version 3 (`python tools/update_suite.py update`), puis
-`python tools/migrate_v3.py --data-url https://framagit.org/defa-virtual/missions-defa.git` : `data/` est créé (clone,
+`python tools/migrate_v3.py --data-url <adresse du dépôt de données>` : `data/` est créé (clone,
 ou dépôt local à relier), les données y sont rangées, puis Paramètres › Sources et dossiers › **Dossier du dépôt**.
 Anciennes adresses : `CR DEFA/…` → `apps/cr/…`, `SIA XML/…` → `apps/cpco/…`, Paramétrage / Apparence / Maintenance →
 `apps/settings/…`, planificateur → `apps/planner/…`, Landing → `apps/landing/…` ; page d'accueil : `index.html`.

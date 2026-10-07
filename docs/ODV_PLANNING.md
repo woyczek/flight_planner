@@ -12,7 +12,7 @@ déjà posés sur la frise horaire. Lecture et règles : `apps/cpco/odv_core.js`
 - Rien n'est conservé : le classeur reste en mémoire (bouton « Effacer les données »). Seuls les **réglages** sont
   mémorisés (`localStorage` `odvPlanning:v1`) ; ils ne contiennent aucun trigramme.
 - Les commentaires de cellule sont affichés **sans le nom de leur auteur**.
-- Nom affiché : le trigramme ; un nom complet n'apparaît que s'il figure localement dans la référence DEFA
+- Nom affiché : le trigramme ; un nom complet n'apparaît que s'il figure localement dans la référence
   (`data/references/defa_reference.js`, champ `name` facultatif des pilotes).
 - Aucun classeur réel ni aucun trigramme réel dans le dépôt : les tests utilisent des trigrammes fictifs (AAA, BBB…).
 - Les exports (CSV, JSON, texte) sont des fichiers locaux nominatifs : ne pas les publier.

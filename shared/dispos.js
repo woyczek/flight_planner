@@ -3,7 +3,7 @@
   // Disponibilités en catégories configurables (docs/technique/DISPOS_ET_REORGANISATION.md § 1), chargé sur chaque page par
   // repository_nav.js.
   //   · configuration partagée data/config/disponibilites.json (synchronisée, datée, va) : groupes (affichés dans l'ODV :
-  //     Disponible, Exercice DEFA, Occupé, Indisponible), catégories (libellés [fr, en, de, es], couleur, thèmes ouverts,
+  //     Disponible, Exercice SOG, Occupé, Indisponible), catégories (libellés [fr, en, de, es], couleur, thèmes ouverts,
   //     codes ODV, type : dispo | atc | occupe | indispo, retirée), domaines et leurs thèmes (familles de mission),
   //     alias de familles ; sans fichier : DEFAULT ci-dessous ;
   //   · thèmes ouverts d'une catégorie : « all » (tous), « domain:<d> » (ceux du domaine), « prefs:<d> » (ceux du
@@ -15,7 +15,8 @@
   // API (window.SuiteDispos) : DEFAULT, config(), load(fresh), save(config), groups(), categories({ all }),
   //   category(id), domains(), themes(), label(ligne), themeLabel(id), codeCategory(code ODV), themeOfFamily(famille),
   //   openThemes(catégorie, préférences), opens(thèmes, famille), prefsFromCodes(codes), weekId(ms), weekMonday(id),
-  //   addWeek(id, n), readPilot(TRI, { weeks, fresh }), saveWeek(TRI, semaine, dispos, extra), entriesAt(semaines, ms).
+  //   addWeek(id, n), readPilot(TRI, { weeks, fresh }), saveWeek(TRI, semaine, dispos, extra), entriesAt(semaines, ms),
+  //   affectable(catégorie) (éléments d'un ordre de vol ouverts par la catégorie : vol, controle, divers).
   if (window.SuiteDispos) return;
   const K = window.RepositoryKit;
   const A = () => window.MissionAssignments;
@@ -25,19 +26,40 @@
   const L4 = (fr, en, de, es) => [fr, en, de, es];
   const DEFAULT = {
     schema: 1,
-    va: 'DEFA',
-    groupes: [
-      { id: 'dispo', label: L4('Disponible', 'Available', 'Verfügbar', 'Disponible'), court: 'D', couleur: '#00B050' },
-      { id: 'exercice', label: L4('Exercice DEFA', 'DEFA exercise', 'DEFA-Übung', 'Ejercicio DEFA'), court: 'E', couleur: '#E03C31' },
-      { id: 'occupe', label: L4('Occupé', 'Busy', 'Beschäftigt', 'Ocupado'), court: 'O', couleur: '#FFD966' },
-      { id: 'indispo', label: L4('Indisponible', 'Unavailable', 'Nicht verfügbar', 'No disponible'), court: 'I', couleur: '#BFBFBF' }
-    ],
-    domaines: [
-      { id: 'secu', label: L4('Sécurité civile', 'Civil security', 'Zivilschutz', 'Seguridad civil'), themes: ['HEMS', 'SAR', 'FIRE', 'LE', 'HADR'] },
-      { id: 'defense', label: L4('Défense', 'Defence', 'Verteidigung', 'Defensa'), themes: ['COMBAT', 'ISR', 'COMMAND', 'AAR', 'AIRLIFT', 'AIRBORNE', 'MARITIME', 'SPECIAL'] }
-    ],
+    va: window.RepositoryNav?.va?.().short || 'SOG', // sigle de la compagnie réglée
+    groupes: [{
+      id: 'dispo',
+      label: L4('Disponible', 'Available', 'Verfügbar', 'Disponible'),
+      court: 'D',
+      couleur: '#00B050'
+    }, {
+      id: 'exercice',
+      label: L4('Exercice SOG', 'SOG exercise', 'SOG-Übung', 'Ejercicio SOG'),
+      court: 'E',
+      couleur: '#E03C31'
+    }, {
+      id: 'occupe',
+      label: L4('Occupé', 'Busy', 'Beschäftigt', 'Ocupado'),
+      court: 'O',
+      couleur: '#FFD966'
+    }, {
+      id: 'indispo',
+      label: L4('Indisponible', 'Unavailable', 'Nicht verfügbar', 'No disponible'),
+      court: 'I',
+      couleur: '#BFBFBF'
+    }],
+    domaines: [{
+      id: 'secu',
+      label: L4('Sécurité civile', 'Civil security', 'Zivilschutz', 'Seguridad civil'),
+      themes: ['HEMS', 'SAR', 'FIRE', 'LE', 'HADR']
+    }, {
+      id: 'defense',
+      label: L4('Défense', 'Defence', 'Verteidigung', 'Defensa'),
+      themes: ['COMBAT', 'ISR', 'COMMAND', 'AAR', 'AIRLIFT', 'AIRBORNE', 'MARITIME', 'SPECIAL']
+    }],
     themes: {
-      HEMS: L4('Secours héliporté, medevac', 'Helicopter rescue, medevac', 'Hubschrauberrettung, Medevac', 'Rescate en helicóptero, medevac'),
+      HEMS: L4('Secours héliporté, medevac', 'Helicopter rescue, medevac', 'Hubschrauberrettung, Medevac',
+        'Rescate en helicóptero, medevac'),
       SAR: L4('Recherche et sauvetage', 'Search and rescue', 'Suche und Rettung', 'Búsqueda y rescate'),
       FIRE: L4('Feux', 'Firefighting', 'Brandbekämpfung', 'Incendios'),
       LE: L4('Police, douane', 'Law enforcement, customs', 'Polizei, Zoll', 'Policía, aduanas'),
@@ -50,46 +72,185 @@
       AIRBORNE: L4('Largage', 'Airdrop', 'Absetzen', 'Lanzamiento'),
       MARITIME: L4('Marine', 'Maritime', 'Marine', 'Marítimo'),
       SPECIAL: L4('Spécial', 'Special', 'Spezial', 'Especial'),
-      EXERCICE: L4('Exercice DEFA', 'DEFA exercise', 'DEFA-Übung', 'Ejercicio DEFA'),
+      EXERCICE: L4('Exercice SOG', 'SOG exercise', 'SOG-Übung', 'Ejercicio SOG'),
       CONTROLE: L4('Contrôleur d’exercice', 'Exercise controller', 'Übungslotse', 'Controlador de ejercicio')
     },
     // familles de mission sans thème propre → thème (TRAINING : ouvert à toute catégorie de type « dispo »)
-    alias: { MEDEVAC: 'HEMS', SOF: 'SPECIAL', FLIGHTINSPECTION: 'SPECIAL', SURVEY: 'SPECIAL', TRAINING: '*' },
-    categories: [
-      { id: 'tout', groupe: 'dispo', type: 'dispo', label: L4('Disponible pour tout', 'Available for everything', 'Für alles verfügbar', 'Disponible para todo'), couleur: '#00B050', ouverts: 'all', odv: ['O'] },
-      { id: 'secu', groupe: 'dispo', type: 'dispo', label: L4('Disponible sécurité civile', 'Available civil security', 'Verfügbar Zivilschutz', 'Disponible seguridad civil'), couleur: '#2F5597', ouverts: 'domain:secu', odv: ['SC'] },
-      { id: 'defense', groupe: 'dispo', type: 'dispo', label: L4('Disponible défense', 'Available defence', 'Verfügbar Verteidigung', 'Disponible defensa'), couleur: '#0070C0', ouverts: 'domain:defense', odv: [] },
-      { id: 'secu_perso', groupe: 'dispo', type: 'dispo', label: L4('Sécurité civile personnalisée', 'Custom civil security', 'Zivilschutz nach Wahl', 'Seguridad civil personalizada'), couleur: '#6C8EBF', ouverts: 'prefs:secu', odv: [] },
-      { id: 'defense_perso', groupe: 'dispo', type: 'dispo', label: L4('Défense personnalisée', 'Custom defence', 'Verteidigung nach Wahl', 'Defensa personalizada'), couleur: '#8693A0', ouverts: 'prefs:defense', odv: ['C', 'T', 'N'] },
-      { id: 'exercice_vol', groupe: 'exercice', type: 'dispo', label: L4('Vol en exercice DEFA', 'DEFA exercise flight', 'Flug in DEFA-Übung', 'Vuelo en ejercicio DEFA'), couleur: '#FF0000', ouverts: ['EXERCICE'], odv: ['S'] },
-      { id: 'exercice_ctrl', groupe: 'exercice', type: 'atc', label: L4('Contrôle DEFA', 'DEFA control', 'DEFA-Lotsendienst', 'Control DEFA'), couleur: '#C4BD97', ouverts: ['CONTROLE'], odv: ['AM'] },
-      { id: 'vol_hors', groupe: 'occupe', type: 'occupe', label: L4('Vol hors DEFA (IVAO / VATSIM)', 'Flight outside DEFA (IVAO / VATSIM)', 'Flug außerhalb DEFA (IVAO / VATSIM)', 'Vuelo fuera de DEFA (IVAO / VATSIM)'), couleur: '#FFD966', ouverts: 'none', odv: ['G'] },
-      { id: 'dcs', groupe: 'occupe', type: 'occupe', label: L4('DCS', 'DCS', 'DCS', 'DCS'), couleur: '#002060', ouverts: 'none', odv: ['DC'] },
-      { id: 'ctrl_hors', groupe: 'occupe', type: 'atc', label: L4('Contrôle hors DEFA (IVAO / VATSIM)', 'Control outside DEFA (IVAO / VATSIM)', 'Lotsendienst außerhalb DEFA (IVAO / VATSIM)', 'Control fuera de DEFA (IVAO / VATSIM)'), couleur: '#7030A0', ouverts: 'none', odv: ['AT'] },
-      { id: 'indispo', groupe: 'indispo', type: 'indispo', label: L4('Indisponible', 'Unavailable', 'Nicht verfügbar', 'No disponible'), couleur: '#BFBFBF', ouverts: 'none', odv: ['IN'] },
-      { id: 'conges', groupe: 'indispo', type: 'indispo', label: L4('Congés', 'Holidays', 'Urlaub', 'Vacaciones'), couleur: '#FFC000', ouverts: 'none', odv: ['V'] },
-      { id: 'recup', groupe: 'indispo', type: 'indispo', label: L4('Récupération', 'Time off', 'Ausgleich', 'Descanso'), couleur: '#D9D9D9', ouverts: 'none', odv: ['Q'] },
-      { id: 'irl', groupe: 'indispo', type: 'indispo', label: L4('Activité réelle', 'Real-life activity', 'Termin im echten Leben', 'Actividad real'), couleur: '#FFFF00', ouverts: 'none', odv: ['IR'] }
-    ],
+    alias: {
+      MEDEVAC: 'HEMS',
+      SOF: 'SPECIAL',
+      FLIGHTINSPECTION: 'SPECIAL',
+      SURVEY: 'SPECIAL',
+      TRAINING: '*'
+    },
+    categories: [{
+      id: 'tout',
+      groupe: 'dispo',
+      type: 'dispo',
+      label: L4('Disponible pour tout', 'Available for everything', 'Für alles verfügbar', 'Disponible para todo'),
+      couleur: '#00B050',
+      ouverts: 'all',
+      odv: ['O']
+    }, {
+      id: 'secu',
+      groupe: 'dispo',
+      type: 'dispo',
+      label: L4('Disponible sécurité civile', 'Available civil security', 'Verfügbar Zivilschutz', 'Disponible seguridad civil'),
+      couleur: '#2F5597',
+      ouverts: 'domain:secu',
+      odv: ['SC']
+    }, {
+      id: 'defense',
+      groupe: 'dispo',
+      type: 'dispo',
+      label: L4('Disponible défense', 'Available defence', 'Verfügbar Verteidigung', 'Disponible defensa'),
+      couleur: '#0070C0',
+      ouverts: 'domain:defense',
+      odv: []
+    }, {
+      id: 'secu_perso',
+      groupe: 'dispo',
+      type: 'dispo',
+      label: L4('Sécurité civile personnalisée', 'Custom civil security', 'Zivilschutz nach Wahl', 'Seguridad civil personalizada'),
+      couleur: '#6C8EBF',
+      ouverts: 'prefs:secu',
+      odv: []
+    }, {
+      id: 'defense_perso',
+      groupe: 'dispo',
+      type: 'dispo',
+      label: L4('Défense personnalisée', 'Custom defence', 'Verteidigung nach Wahl', 'Defensa personalizada'),
+      couleur: '#8693A0',
+      ouverts: 'prefs:defense',
+      odv: ['C', 'T', 'N']
+    }, {
+      id: 'exercice_vol',
+      groupe: 'exercice',
+      type: 'dispo',
+      label: L4('Vol en exercice SOG', 'SOG exercise flight', 'Flug in SOG-Übung', 'Vuelo en ejercicio SOG'),
+      couleur: '#FF0000',
+      ouverts: ['EXERCICE'],
+      odv: ['S']
+    }, {
+      id: 'exercice_ctrl',
+      groupe: 'exercice',
+      type: 'atc',
+      label: L4('Contrôle SOG', 'SOG control', 'SOG-Lotsendienst', 'Control SOG'),
+      couleur: '#C4BD97',
+      ouverts: ['CONTROLE'],
+      odv: ['AM']
+    }, {
+      id: 'vol_hors',
+      groupe: 'occupe',
+      type: 'occupe',
+      label: L4('Vol hors SOG (IVAO / VATSIM)', 'Flight outside SOG (IVAO / VATSIM)', 'Flug außerhalb SOG (IVAO / VATSIM)',
+        'Vuelo fuera de SOG (IVAO / VATSIM)'),
+      couleur: '#FFD966',
+      ouverts: 'none',
+      odv: ['G']
+    }, {
+      id: 'dcs',
+      groupe: 'occupe',
+      type: 'occupe',
+      label: L4('DCS', 'DCS', 'DCS', 'DCS'),
+      couleur: '#002060',
+      ouverts: 'none',
+      odv: ['DC']
+    }, {
+      id: 'sol',
+      groupe: 'occupe',
+      type: 'occupe',
+      label: L4('Disponible au sol seulement', 'Available on the ground only', 'Nur am Boden verfügbar',
+        'Disponible solo en tierra'),
+      couleur: '#A9D08E',
+      ouverts: 'none',
+      odv: [],
+      affectable: ['divers']
+    }, {
+      id: 'ctrl_hors',
+      groupe: 'occupe',
+      type: 'atc',
+      label: L4('Contrôle hors SOG (IVAO / VATSIM)', 'Control outside SOG (IVAO / VATSIM)',
+        'Lotsendienst außerhalb SOG (IVAO / VATSIM)', 'Control fuera de SOG (IVAO / VATSIM)'),
+      couleur: '#7030A0',
+      ouverts: 'none',
+      odv: ['AT']
+    }, {
+      id: 'indispo',
+      groupe: 'indispo',
+      type: 'indispo',
+      label: L4('Indisponible', 'Unavailable', 'Nicht verfügbar', 'No disponible'),
+      couleur: '#BFBFBF',
+      ouverts: 'none',
+      odv: ['IN']
+    }, {
+      id: 'conges',
+      groupe: 'indispo',
+      type: 'indispo',
+      label: L4('Congés', 'Holidays', 'Urlaub', 'Vacaciones'),
+      couleur: '#FFC000',
+      ouverts: 'none',
+      odv: ['V']
+    }, {
+      id: 'recup',
+      groupe: 'indispo',
+      type: 'indispo',
+      label: L4('Récupération', 'Time off', 'Ausgleich', 'Descanso'),
+      couleur: '#D9D9D9',
+      ouverts: 'none',
+      odv: ['Q']
+    }, {
+      id: 'irl',
+      groupe: 'indispo',
+      type: 'indispo',
+      label: L4('Activité réelle', 'Real-life activity', 'Termin im echten Leben', 'Actividad real'),
+      couleur: '#FFFF00',
+      ouverts: 'none',
+      odv: ['IR']
+    }],
     // classeur ODV (import) : préférences par défaut d'un pilote qui n'en a pas, d'après ses codes (réunion des thèmes)
     import: {
-      C: { defense: ['COMBAT', 'ISR', 'COMMAND', 'AAR'] },
-      T: { defense: ['AIRLIFT', 'AIRBORNE', 'AAR'] },
-      N: { defense: ['MARITIME'], secu: ['SAR'] }
+      C: {
+        defense: ['COMBAT', 'ISR', 'COMMAND', 'AAR']
+      },
+      T: {
+        defense: ['AIRLIFT', 'AIRBORNE', 'AAR']
+      },
+      N: {
+        defense: ['MARITIME'],
+        secu: ['SAR']
+      }
     }
   };
 
   // ---- configuration (fichier partagé, sinon défaut ; dernière lecture gardée : connue dès le chargement)
-  let cfg = K?.store?.json(CACHE, null) || DEFAULT;
+  /** Couleurs des catégories et des groupes réduites à de vraies couleurs : le fichier est partagé (dépôt de données),
+   *  une « couleur » piégée sortait de l'attribut style des grilles (XSS, audit du 7 octobre 2026). */
+  const clean = c => c && {
+    ...c,
+    ...(Array.isArray(c.categories) ? {
+      categories: c.categories.map(x => x && typeof x === 'object' ? {
+        ...x,
+        couleur: K.cssColor(x.couleur, '#BFBFBF')
+      } : x)
+    } : {}),
+    ...(Array.isArray(c.groupes) ? {
+      groupes: c.groupes.map(x => x && typeof x === 'object' && 'couleur' in x ? {
+        ...x,
+        couleur: K.cssColor(x.couleur, '#BFBFBF')
+      } : x)
+    } : {})
+  };
+  let cfg = clean(K?.store?.json(CACHE, null)) || DEFAULT;
   const config = () => cfg;
   async function load(fresh = false) {
     const v = await A()?.readData?.(CONFIG, {
       fresh
     }).catch(() => null);
-    cfg = v?.categories?.length ? {
+    cfg = v?.categories?.length ? clean({
       ...DEFAULT,
       ...v
-    } : DEFAULT;
+    }) : DEFAULT;
     K?.store?.setJson(CACHE, cfg);
     window.dispatchEvent(new CustomEvent('suite-dispos-config', {
       detail: cfg
@@ -101,7 +262,7 @@
     const doc = {
       ...next,
       schema: 1,
-      va: window.RepositoryNav?.va?.().short || 'DEFA',
+      va: window.RepositoryNav?.va?.().short || 'SOG',
       updated_at: new Date().toISOString(),
       by: window.SuiteUsers?.by?.() || A()?.trigram?.() || 'CPCO'
     };
@@ -127,6 +288,19 @@
     ...(cfg.themes || {})
   });
   const themeLabel = id => label(themes()[id] || id);
+  // Ordres de vols (docs/technique/ODV_ORDRES.md § 2) : éléments auxquels une catégorie rend un membre affectable — champ
+  // affectable de la catégorie, sinon d'après son type ; groupe « occupe » (vol, contrôle hors SOG, DCS) : jamais.
+  const AFFECTABLE = {
+    dispo: ['vol', 'controle', 'divers'],
+    atc: ['controle']
+  };
+
+  function affectable(id) {
+    const c = category(id);
+    if (!c) return [];
+    if (Array.isArray(c.affectable)) return c.affectable;
+    return c.groupe === 'occupe' ? [] : AFFECTABLE[c.type] || [];
+  }
   /** Catégorie d'un code du classeur ODV (champ odv) ; null si aucune. */
   const codeCategory = code => code ? (cfg.categories || []).find(c => (c.odv || []).includes(code))?.id || null : null;
   /** Thème d'une famille de mission ('*' : toute catégorie disponible) ; null si inconnue. */
@@ -240,14 +414,17 @@
   /** Enregistre une semaine (plages par jour) ; extra : appareils, simulateurs. Index des semaines tenu à jour. */
   async function saveWeek(tri, week, dispos, extra = {}) {
     tri = String(tri || '').toUpperCase();
-    const clean = Object.fromEntries(Object.entries(dispos || {}).map(([d, list]) => [d, (list || []).filter(x => x?.categorie).map(x => ({
-      debut: x.debut || null,
-      fin: x.fin || null,
-      categorie: x.categorie
-    })).sort((a, b) => String(a.debut ?? '').localeCompare(String(b.debut ?? '')))]).filter(([, l]) => l.length).sort(([a], [b]) => a.localeCompare(b)));
+    const clean = Object.fromEntries(Object.entries(dispos || {}).map(([d, list]) => [d, (list || []).filter(x => x?.categorie).map(x =>
+      ({
+        debut: x.debut || null,
+        fin: x.fin || null,
+        categorie: x.categorie
+      })).sort((a, b) => String(a.debut ?? '').localeCompare(String(b.debut ?? '')))]).filter(([, l]) => l.length).sort(([a], [
+      b
+    ]) => a.localeCompare(b)));
     const doc = {
       schema: 2,
-      va: window.RepositoryNav?.va?.().short || 'DEFA',
+      va: window.RepositoryNav?.va?.().short || 'SOG',
       pilote: tri,
       semaine: week,
       updated_at: new Date().toISOString(),
@@ -279,7 +456,8 @@
         else if (s && typeof s === 'object') idx.pilots[p] = {
           ...s,
           ...(typeof mine === 'object' ? mine : {}),
-          weeks: [...new Set([...(Array.isArray(s.weeks) ? s.weeks : []), ...(Array.isArray(mine?.weeks) ? mine.weeks : [])])].sort(),
+          weeks: [...new Set([...(Array.isArray(s.weeks) ? s.weeks : []), ...(Array.isArray(mine?.weeks) ? mine.weeks : [])])]
+            .sort(),
           at: {
             ...(s.at || {}),
             ...(typeof mine === 'object' ? mine.at || {} : {})
@@ -329,7 +507,10 @@
     defense_perso: 'D-'
   };
   const code = c => c?.lettre || (c?.odv?.length === 1 ? c.odv[0] : SHORT[c?.id]) || c?.odv?.[0] || '';
-  const color = c => window.RepositoryNav?.chartColor?.(c?.couleur || '#BFBFBF') || c?.couleur || '#BFBFBF';
+  const color = c => {
+    const v = K.cssColor(c?.couleur, '#BFBFBF');
+    return window.RepositoryNav?.chartColor?.(v) || v;
+  };
   /** Libellé court (palettes) : sans le nom du groupe en tête ni la précision entre parenthèses, mots longs abrégés. */
   function shortLabel(c) {
     const full = label(c.label),
@@ -358,6 +539,7 @@
     themes,
     themeLabel,
     codeCategory,
+    affectable,
     themeOfFamily,
     openThemes,
     opens,

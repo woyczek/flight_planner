@@ -16,13 +16,52 @@
   // stores et index secondaires (docs/technique/INDEX_DONNEES.md § 2) ; un store ajouté plus tard = VERSION + 1
   const STORES = {
     // enregistrement { k, m } : k = identifiant de la mission (ou dossier | titre pour une entrée sans identifiant)
-    missions: { keyPath: 'k', indexes: { id: 'm.id', family: 'm.type', status: 'm.status', folder: 'm.folder' } },
-    reports: { keyPath: 'key', indexes: { family: 'family', year: 'year', missionId: 'missionId', mission: 'mission', date: 'date' } },
-    assignments: { keyPath: 'k', indexes: { pilot: 'pilot', day: 'day', mission: 'mission', pilotDay: ['pilot', 'day'] } },
-    availability: { keyPath: ['pilot', 'week'], indexes: { week: 'week' } },
-    readMarks: { keyPath: 'k', indexes: { takeoff: 'takeoff' } },
-    files: { keyPath: 'path' },
-    meta: { keyPath: 'key' }
+    missions: {
+      keyPath: 'k',
+      indexes: {
+        id: 'm.id',
+        family: 'm.type',
+        status: 'm.status',
+        folder: 'm.folder'
+      }
+    },
+    reports: {
+      keyPath: 'key',
+      indexes: {
+        family: 'family',
+        year: 'year',
+        missionId: 'missionId',
+        mission: 'mission',
+        date: 'date'
+      }
+    },
+    assignments: {
+      keyPath: 'k',
+      indexes: {
+        pilot: 'pilot',
+        day: 'day',
+        mission: 'mission',
+        pilotDay: ['pilot', 'day']
+      }
+    },
+    availability: {
+      keyPath: ['pilot', 'week'],
+      indexes: {
+        week: 'week'
+      }
+    },
+    readMarks: {
+      keyPath: 'k',
+      indexes: {
+        takeoff: 'takeoff'
+      }
+    },
+    files: {
+      keyPath: 'path'
+    },
+    meta: {
+      keyPath: 'key'
+    }
   };
   let dbp = null;
   /** Connexion à la base (une par page, refermée si une autre page change de version). */
@@ -33,7 +72,9 @@
       q.onupgradeneeded = () => {
         const db = q.result;
         for (const [name, s] of Object.entries(STORES)) {
-          const os = db.objectStoreNames.contains(name) ? q.transaction.objectStore(name) : db.createObjectStore(name, { keyPath: s.keyPath });
+          const os = db.objectStoreNames.contains(name) ? q.transaction.objectStore(name) : db.createObjectStore(name, {
+            keyPath: s.keyPath
+          });
           for (const [i, path] of Object.entries(s.indexes || {}))
             if (!os.indexNames.contains(i)) os.createIndex(i, path); // index ajoutés d'une version à l'autre
         }
@@ -53,10 +94,12 @@
       q.onblocked = () => console.warn('defaIndex : mise à jour de la base en attente (autre onglet ouvert)');
     });
   }
+  /** Promesse du résultat d'une requête IndexedDB. */
   const req = r => new Promise((resolve, reject) => {
     r.onsuccess = () => resolve(r.result);
     r.onerror = () => reject(r.error);
   });
+  /** Promesse résolue à la fin de la transaction, rejetée sur erreur ou annulation. */
   const done = tx => new Promise((resolve, reject) => {
     tx.oncomplete = resolve;
     tx.onerror = () => reject(tx.error);
@@ -67,6 +110,7 @@
     const os = (await open()).transaction(store).objectStore(store);
     return req((index ? os.index(index) : os).getAll(query));
   }
+  /** Enregistrement d'un store par sa clé (undefined si absent). */
   async function get(store, key) {
     return req((await open()).transaction(store).objectStore(store).get(key));
   }
@@ -76,11 +120,13 @@
     for (const v of [].concat(values)) tx.objectStore(store).put(v);
     return done(tx);
   }
+  /** Supprime un ou plusieurs enregistrements par leur clé (une transaction). */
   async function del(store, keys) {
     const tx = (await open()).transaction(store, 'readwrite');
     for (const k of [].concat(keys)) tx.objectStore(store).delete(k);
     return done(tx);
   }
+  /** Vide un store. */
   async function clear(store) {
     const tx = (await open()).transaction(store, 'readwrite');
     tx.objectStore(store).clear();
@@ -106,21 +152,33 @@
     }
     dbp = null;
     await req(indexedDB.deleteDatabase(NAME));
-    channel?.postMessage({ index: '*' });
+    channel?.postMessage({
+      index: '*'
+    });
   }
 
   // ---- autres onglets
   const channel = typeof BroadcastChannel === 'function' ? new BroadcastChannel('defa-data') : null;
-  const changed = (store, detail = {}) => channel?.postMessage({ index: store, ...detail });
+  /** Prévient les autres onglets qu'un store a changé (BroadcastChannel « defa-data », détail facultatif). */
+  const changed = (store, detail = {}) => channel?.postMessage({
+    index: store,
+    ...detail
+  });
 
   // ---- registre des missions
   const LEGACY = 'missionRegistry:v1';
+  /** Registre des missions en mémoire, adossé au store « missions » (ou à l'ancienne clé sans IndexedDB). */
   const MissionIndex = (() => {
     let list = [],
-      meta = { key: 'missions', updatedAt: '', order: [] },
+      meta = {
+        key: 'missions',
+        updatedAt: '',
+        order: []
+      },
       fallback = false, // sans IndexedDB : ancienne copie du stockage du navigateur
       loaded = false, // index lu (ready résolu)
       saved = new Map(); // k → texte JSON de l'entrée telle que lue ou écrite en dernier : écritures limitées aux changements
+    /** Registre lu sous l'ancienne clé du navigateur « missionRegistry:v1 » ; null si absent ou illisible. */
     const legacy = () => {
       try {
         return JSON.parse(localStorage.getItem(LEGACY) || 'null');
@@ -150,9 +208,16 @@
     // copie de compatibilité sous l'ancienne clé, tant qu'elle reste petite : une version antérieure de la suite (autre
     // branche, autre onglet pas encore rechargé) voit le même registre ; au-delà, retirée (quota du stockage)
     const MIRROR_MAX = 2e6;
+
+    /** Écrit la copie de compatibilité, ou la retire si elle dépasse MIRROR_MAX ou le quota du stockage. */
     function mirror(missions, updatedAt) {
       try {
-        const text = JSON.stringify({ schema: 'mission-registry', version: 1, updatedAt, missions });
+        const text = JSON.stringify({
+          schema: 'mission-registry',
+          version: 1,
+          updatedAt,
+          missions
+        });
         if (text.length > MIRROR_MAX) localStorage.removeItem(LEGACY);
         else localStorage.setItem(LEGACY, text);
       } catch {
@@ -163,6 +228,7 @@
         }
       }
     }
+    /** Chargement à l'ouverture : index lu, ancienne clé reprise si plus récente ; sans IndexedDB : repli sur elle. */
     const ready = (async () => {
       try {
         list = await read();
@@ -181,18 +247,32 @@
     /** Enregistre le registre : seules les entrées ajoutées, modifiées ou retirées depuis la dernière lecture ou écriture
      *  de cette page sont écrites (une transaction) ; une entrée changée par un autre onglet et pas ici n'est pas
      *  écrasée. L'ordre est gardé dans meta.order. */
-    async function save(missions, updatedAt = new Date().toISOString(), { quiet = false } = {}) {
+    async function save(missions, updatedAt = new Date().toISOString(), {
+      quiet = false
+    } = {}) {
       list = missions;
       const seen = new Set();
       const rows = missions.filter(Boolean).map(m => {
         let k = m.id || `~${m.folder || ''}|${m.title || ''}`;
         while (seen.has(k)) k += '+'; // doublon : gardé, pas écrasé
         seen.add(k);
-        return { k, m };
+        return {
+          k,
+          m
+        };
       });
-      meta = { key: 'missions', updatedAt, order: rows.map(r => r.k) };
+      meta = {
+        key: 'missions',
+        updatedAt,
+        order: rows.map(r => r.k)
+      };
       if (fallback) {
-        localStorage.setItem(LEGACY, JSON.stringify({ schema: 'mission-registry', version: 1, updatedAt, missions }));
+        localStorage.setItem(LEGACY, JSON.stringify({
+          schema: 'mission-registry',
+          version: 1,
+          updatedAt,
+          missions
+        }));
       } else {
         const json = new Map(rows.map(r => [r.k, JSON.stringify(r.m)]));
         const tx = (await open()).transaction(['missions', 'meta'], 'readwrite'),
@@ -206,13 +286,20 @@
         saved = json;
         mirror(missions, updatedAt);
       }
-      if (!quiet) changed('missions', { updatedAt });
+      if (!quiet) changed('missions', {
+        updatedAt
+      });
     }
     // sauvegarde des données locales restaurée (menu ☰) : registre qu'elle contient repris s'il est plus récent
     window.addEventListener('local-store-restored', async () => {
       await ready;
-      if (await adoptLegacy().catch(() => false)) window.dispatchEvent(new CustomEvent('mission-index-change', { detail: { updatedAt: meta.updatedAt } }));
+      if (await adoptLegacy().catch(() => false)) window.dispatchEvent(new CustomEvent('mission-index-change', {
+        detail: {
+          updatedAt: meta.updatedAt
+        }
+      }));
     });
+    // registre écrit par un autre onglet : relu, puis « mission-index-change » (écho de sa propre écriture ignoré)
     channel?.addEventListener('message', async e => {
       if (e.data?.index !== 'missions' && e.data?.index !== '*') return;
       if (e.data.updatedAt && e.data.updatedAt === meta.updatedAt) return;
@@ -221,19 +308,28 @@
       } catch {
         return;
       }
-      window.dispatchEvent(new CustomEvent('mission-index-change', { detail: { updatedAt: meta.updatedAt } }));
+      window.dispatchEvent(new CustomEvent('mission-index-change', {
+        detail: {
+          updatedAt: meta.updatedAt
+        }
+      }));
     });
     return {
       ready,
+      /** true si le registre vit dans le stockage du navigateur (IndexedDB indisponible). */
       get fallback() {
         return fallback;
       },
+      /** true une fois le registre lu (ready résolu). */
       get loaded() {
         return loaded;
       },
       adoptLegacy,
+      /** Missions en mémoire, lecture synchrone (après ready). */
       all: () => list,
+      /** Mission d'identifiant donné, ou null. */
       byId: id => list.find(m => m.id === id) || null,
+      /** Date ISO de la dernière écriture du registre. */
       updatedAt: () => meta.updatedAt,
       save,
       /** Relit l'index (après une restauration de sauvegarde, par exemple). */
@@ -264,7 +360,10 @@
     /** Enregistre le registre (records : [{ key, family, year, missionId, mission, date, m }] dans l'ordre) et sa méta ;
      *  seuls les enregistrements changés sont écrits. */
     async function save(records, meta) {
-      const rows = records.map((r, pos) => ({ ...r, pos }));
+      const rows = records.map((r, pos) => ({
+        ...r,
+        pos
+      }));
       const json = new Map(rows.map(r => [r.key, JSON.stringify(r)]));
       const tx = (await open()).transaction(['reports', 'meta'], 'readwrite'),
         os = tx.objectStore('reports');
@@ -272,7 +371,10 @@
         if (saved.get(r.key) !== json.get(r.key)) os.put(r);
       for (const k of saved.keys())
         if (!json.has(k)) os.delete(k);
-      tx.objectStore('meta').put({ ...meta, key: 'reports' });
+      tx.objectStore('meta').put({
+        ...meta,
+        key: 'reports'
+      });
       await done(tx);
       saved = json;
     }
@@ -294,10 +396,28 @@
         return 0;
       }
     }
-    return { load, save, meta, ofMission, count };
+    return {
+      load,
+      save,
+      meta,
+      ofMission,
+      count
+    };
   })();
 
-  window.DataIndex = { NAME, STORES, open, all, get, put, del, clear, replace, rebuild, changed };
+  window.DataIndex = {
+    NAME,
+    STORES,
+    open,
+    all,
+    get,
+    put,
+    del,
+    clear,
+    replace,
+    rebuild,
+    changed
+  };
   window.MissionIndex = MissionIndex;
   window.ReportIndex = ReportIndex;
 })();

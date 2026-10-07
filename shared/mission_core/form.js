@@ -22,11 +22,15 @@
   // now(path, type) : valeur « maintenant » d'un champ date / heure (heure locale du terrain ou
   // UTC selon le champ), fournie par la page (fuseau du terrain de départ).
   const NOW_TITLE = {
-    time: ['Maintenant (heure locale du terrain ; à défaut, heure de Paris)', 'Now (aerodrome local time; otherwise Paris time)', 'Jetzt (Ortszeit des Flugplatzes; sonst Pariser Zeit)', 'Ahora (hora local del aeródromo; si no, hora de París)'],
+    time: ['Maintenant (heure locale du terrain ; à défaut, heure de Paris)', 'Now (aerodrome local time; otherwise Paris time)',
+      'Jetzt (Ortszeit des Flugplatzes; sonst Pariser Zeit)', 'Ahora (hora local del aeródromo; si no, hora de París)'
+    ],
     utc: ['Maintenant (UTC)', 'Now (UTC)', 'Jetzt (UTC)', 'Ahora (UTC)'],
     date: ['Aujourd’hui', 'Today', 'Heute', 'Hoy']
   };
-  const EMPTY_HINT = ['Aucun élément : « + » dans le titre pour en ajouter.', 'No item: “+” in the title to add one.', 'Kein Element: „+“ im Titel zum Hinzufügen.', 'Ningún elemento: «+» en el título para añadir.'];
+  const EMPTY_HINT = ['Aucun élément : « + » dans le titre pour en ajouter.', 'No item: “+” in the title to add one.',
+    'Kein Element: „+“ im Titel zum Hinzufügen.', 'Ningún elemento: «+» en el título para añadir.'
+  ];
 
   /** Formulaire de mission d'une famille dans form : blocs et collections rendus depuis leurs définitions, liés au modèle (data-path), conditions d'affichage, suggestions. Retourne { render, refresh, sync, hint, rerenderCollectionOf, context, i18nRows, txt }. */
   function create(form, {
@@ -56,7 +60,8 @@
     // Champ propre à certaines familles (only / hideFor du champ, hide de la famille).
     const hidden = new Set(family.hide || []);
     /** Vrai si le champ s'affiche pour la famille et n'est pas masqué par une condition. */
-    const shown = (field, key) => !(field.only && !field.only.includes(family.id)) && !(field.hideFor || []).includes(family.id) && !hidden.has(key);
+    const shown = (field, key) => !(field.only && !field.only.includes(family.id)) && !(field.hideFor || []).includes(family.id) && !
+      hidden.has(key);
 
     /** Options d'une liste : celles du champ, sinon vocabulaire commun ou de la famille. */
     const optionsFor = field => {
@@ -406,7 +411,8 @@
     }, true);
 
     // ---- valeurs proposées (datalist commune, remplie à la prise de focus et à la frappe)
-    const suggestible = el => (el.tagName === 'INPUT' && ['text', 'number', 'search', ''].includes(el.getAttribute('type') || '') && (el.dataset.path || el.dataset.append));
+    const suggestible = el => (el.tagName === 'INPUT' && ['text', 'number', 'search', ''].includes(el.getAttribute('type') || '') && (el
+      .dataset.path || el.dataset.append));
     let offering = null; // dernier champ servi (une réponse tardive d'un autre champ est ignorée)
     /** Propose les valeurs connues pour un champ (liste de suggestions commune), à la prise de focus et à la frappe. */
     function offer(el) {

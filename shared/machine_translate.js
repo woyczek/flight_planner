@@ -12,8 +12,10 @@
   if (window.MachineTranslate) return;
   const KEY = 'machineTranslate:v1',
     MAX = 3000;
+  /** Langue d'affichage de la page (RepositoryNav, sinon RepositoryKit), « fr » par défaut. */
   const lang = () => window.RepositoryNav?.getLanguage?.() || window.RepositoryKit?.lang?.() || 'fr';
   let cache = null;
+  /** Cache des traductions { langue: { empreinte: texte } }, lu une fois dans localStorage (machineTranslate:v1). */
   const load = () => {
     if (cache) return cache;
     try {
@@ -23,18 +25,21 @@
     }
     return cache;
   };
+  /** Enregistre le cache en ne gardant que les MAX dernières traductions par langue (les plus anciennes sautent). */
   const save = () => {
     try {
       const c = load();
       for (const l of Object.keys(c)) {
         const k = Object.keys(c[l]);
-        if (k.length > MAX) for (const x of k.slice(0, k.length - MAX)) delete c[l][x];
+        if (k.length > MAX)
+          for (const x of k.slice(0, k.length - MAX)) delete c[l][x];
       }
       localStorage.setItem(KEY, JSON.stringify(c));
     } catch {
       /* stockage plein ou indisponible : traductions de la session seulement */
     }
   };
+  /** Empreinte courte d'un texte (djb2 + longueur, base 36) : clé du cache. */
   const hash = s => {
     let h = 5381;
     for (let i = 0; i < s.length; i++) h = (h * 33 ^ s.charCodeAt(i)) >>> 0;
@@ -50,9 +55,13 @@
     queue.add(s);
     return s;
   }
+  /** Promesse p ou « timeout » au bout de ms millisecondes, pour ne pas attendre un traducteur muet. */
   const withTimeout = (p, ms) => Promise.race([p, new Promise(r => setTimeout(() => r('timeout'), ms))]);
+  /** Vrai si le navigateur offre l'API Translator (Chrome / Edge récents). */
   const supported = () => typeof self.Translator === 'function';
   const translators = {};
+  /** Traducteur fr → to, mis en commun par langue ; null si indisponible, « click » si le modèle doit être
+   *  téléchargé et que create est faux (le téléchargement exige un geste de l'utilisateur). */
   async function translator(to, create) {
     if (translators[to]) return translators[to];
     if (!supported()) return null;
@@ -66,6 +75,7 @@
     translators[to] = self.Translator.create(opts);
     return translators[to];
   }
+  /** Traduit la file des textes notés, paragraphe par paragraphe, les range dans le cache puis appelle onDone(n). */
   async function run(to, tr, onDone) {
     const list = [...queue];
     queue.clear();
@@ -118,11 +128,13 @@
     text,
     flush,
     supported,
+    /** Nombre de textes notés en attente de traduction. */
     pending: () => queue.size,
     /** Coupe (false) ou rétablit la traduction automatique (réglage de page). */
     enable: on => {
       enabled = !!on;
     },
+    /** Vide le cache des traductions (mémoire et localStorage). */
     clear: () => {
       cache = {};
       try {

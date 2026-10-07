@@ -10,7 +10,7 @@ Mission (YAML / Markdown) ──► Générateur de mission ──► Studio car
                                    │   ▲                                               │
                                    │   └─────────── ZIP des cartes ◄───────────────────┘
                                    ├──► PDF final du dossier (textes + cartes)
-                                   └──► Créer le CR DEFA (compte rendu pré-rempli)
+                                   └──► Créer le CR (compte rendu pré-rempli)
 ```
 
 Code : les deux pages, `shared/carto/aero_symbols.js` (lecture de l'AIXM : aérodromes, pistes,
@@ -38,7 +38,7 @@ déposent dans le dossier `apps/cpco/` ; `.gitignore` les tient hors du dépôt.
 
 **Un seul cycle** : quand le dossier contient plusieurs cycles, le studio ne lit que le plus récent (les autres sont
 signalés, à archiver) et mémorise le cycle dans la base (`airac`, résumé `siaBaseInfo:v1` pour la pastille « AIRAC » de
-l'en-tête). Procédure de mise à jour : ☰ › Paramètres › Maintenance › Données aéronautiques (SIA France : pas à pas) ; `map_parser.html?relire=1`
+l'en-tête). Procédure de mise à jour : ☰ › Paramètres › Maintenance › Données aéronautiques (carte des zones, source SIA de la zone France) ; `map_parser.html?relire=1`
 relit le dossier mémorisé.
 
 **Autres pays et autres sources** (`shared/aero_sources.js`, réglées dans Paramètres › Maintenance › Données
@@ -59,7 +59,7 @@ par une mission figurent dans ses espaces à activer (§ 2 sexies). Sources, for
 
 **Dossier mémorisé** : « Dossier SIA XML : … » (studio, bloc 1) choisit le dossier une fois ;
 il est retenu comme les autres dossiers de la suite (☰ › Paramétrage) et les sélecteurs de
-fichiers des deux pages s'y ouvrent. « Relire le dossier » après un nouveau cycle AIRAC. La base
+fichiers des deux pages s'y ouvrent. « Reconstruire la base aéronautique » après un nouveau cycle AIRAC. La base
 analysée (contours, villes, MORA, obstacles, axes ENR 5.7) est gardée dans le navigateur
 (IndexedDB `sia-map-parser`) : le studio s'ouvre sans relire les 80 Mo d'XML. Une base d'une
 version précédente est relue automatiquement si l'accès au dossier est déjà accordé.
@@ -99,7 +99,7 @@ Champs (en 2.0, la plupart facultatifs) :
 | `mission` | `id` (identifiant ci-dessus), `type` (famille), `subtype`, `series` (série de génération : une commande ChatGPT = une série dans la famille), `number` (numéro de l'opération, tiré de l'identifiant), `role` (`organisation` pour une mission Z), `theatre` (métropole, Corse, Antilles… ou « étranger »), `country` (code ISO 3166 : FR, JP, ID…), `former_id` |
 | `title`, `summary`, `detailed_description` | Titre et textes du brief (sans itinéraire, niveaux, durées ni zones à activer : calculés) |
 | `operation` | Opération à plusieurs équipes ou exercice : `id`, `name`, `missions` (une mission complète par équipe : M-016A, M-016B…), `organisation` (mission Z) |
-| `aircraft` | `type`, `callsign`, `operator`, `role`, `cruise_speed_kt`, `cruise_level` (l'aéronef DEFA de la mission) |
+| `aircraft` | `type`, `callsign`, `operator`, `role`, `cruise_speed_kt`, `cruise_level` (l'aéronef de la mission) |
 | `origin`, `destination`, `target` | `name` (code OACI entre parenthèses : « BA 123 Orléans-Bricy (LFOJ) »), `lat`, `lon` |
 | `turning_points`, `rendezvous` | `id`, `name`, `lat`, `lon`, `role`, `participants` |
 | `teams` | Équipes (nom, service, département, type — un aéronef connu devient appareil du CR) |
@@ -164,8 +164,8 @@ Page `apps/cpco/mission_registry.html` (☰ › Centre — Registre des missions
 - **Statuts** : commandée, générée, planifiée (ouverte dans le générateur ou le studio), volée, CR fait (CR du
   registre dont `metadata.missionNumber` est l'identifiant de la mission), abandonnée.
 - **Commander une mission** (bloc commun avec le générateur, `shared/mission_order.js`) : type, sous-type (liste du § 2 du prompt), théâtre(s), série (numéro, auto par défaut) et
-  **identifiant** calculé (`SiaMission.nextNumbering`), équipes DEFA en vol, types d'équipes (une ligne par équipe A, B,
-  C… ; vide = automatique ; complétion par les types courants et la flotte DEFA, un même type possible pour plusieurs
+  **identifiant** calculé (`SiaMission.nextNumbering`), équipes en vol, types d'équipes (une ligne par équipe A, B,
+  C… ; vide = automatique ; complétion par les types courants et la flotte, un même type possible pour plusieurs
   équipes), rendez-vous, équipes au sol, ravitaillement → prompt réglé (paramètres
   `PROCHAINS_NUMEROS`, `SOUS_TYPE`, `RENDEZ_VOUS`, `TYPES_EQUIPES`, `ÉQUIPES_SOL`, `RAVITAILLEMENT`) copié, ChatGPT ouvert ; la commande est
   rapprochée de la mission générée (même série) à la relecture du dossier.
@@ -337,7 +337,7 @@ Page `apps/cpco/mission_editor.html`.
 1. **Importer une mission** : YAML et / ou Markdown d'une mission, ou **collage** de son contenu ; sous-bloc
    **Créer une mission avec ChatGPT** à côté du collage : **même bloc que « Commander une mission » du registre**
    (`shared/mission_order.js`, § 2 bis) — type, sous-type, théâtre(s) (second théâtre : acheminement Guyane – métropole,
-   relève Corse – continent…), série, identifiant calculé, équipes DEFA en vol et aéronef de chaque équipe, rendez-vous,
+   relève Corse – continent…), série, identifiant calculé, équipes en vol et aéronef de chaque équipe, rendez-vous,
    équipes au sol, ravitaillement ; réglages partagés (`missionRegistryOrder:v1`) ; « Commander » inscrit la mission au
    registre (« commandée »), copie le prompt réglé pour une seule mission et ouvre ChatGPT dans un nouvel onglet (coller,
    envoyer, puis charger ou coller `mission<ID>.yaml` et `summary<ID>.md`). Le prompt vient de
@@ -368,7 +368,7 @@ l'autre page ouverte — emprises appliquées, cartes ajoutées ou supprimées d
 apparaissent dans le générateur (et dans ses exports YAML / Markdown / PDF), et inversement.
 
 En-tête : **Transmettre au studio cartographique →** (ouvre le studio sur la mission partagée) et **Créer le
-CR DEFA →** : nouveau compte rendu de la famille correspondant au type (MEDEVAC → HEMS,
+CR →** : nouveau compte rendu de la famille correspondant au type (MEDEVAC → HEMS,
 AIRLIFT → AIRLIFT, AIR-TO-AIR REFUELLING → AAR, TRAINING → SPECIAL…), pré-rempli : nom et numéro, objectif, terrains de
 départ / arrivée, points et coordonnées, appareils (type OACI du catalogue commun : A400M Atlas
 → A4M ; indicatif), exploitant, charge. Le CR demande confirmation avant de remplacer un
@@ -624,7 +624,7 @@ générateur ; l'image est ajoutée au ZIP (largeur des PNG) et le brief PDF la 
 |---|---|
 | `siaMissionShared:v1` | **Mission partagée** générateur ⇄ studio (YAML, textes, révision) ; copie dans `missionGeneratorDraft` pour les anciennes versions |
 | `siaOutput` | Sorties (PNG, SVG, largeur) |
-| `siaMissionToCr:v1` | Mission transmise au CR DEFA (effacée à la lecture) |
+| `siaMissionToCr:v1` | Mission transmise au CR (effacée à la lecture) |
 | `siaDisplayProfiles` | Profils d'affichage |
 | `siaZoneAliases` | Alias de zones |
 | `siaProfileTab`, `siaProfileSplit` | Onglet ouvert, rapport des colonnes |

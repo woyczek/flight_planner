@@ -15,7 +15,15 @@
   // arbre sans positions (start, end, loc, range) : seuls la structure et les littéraux comptent
   const tree = (src, type) => {
     const opts = { ecmaVersion: 'latest', sourceType: type === 'module' ? 'module' : 'script', allowReturnOutsideFunction: true, allowAwaitOutsideFunction: true, allowHashBang: true };
-    return JSON.stringify(acorn.parse(src, opts), (k, v) => (k === 'start' || k === 'end' || k === 'loc' || k === 'range') ? undefined : v);
+    // fichier .js à import / export (module ES, ex. shared/render_gate.js) : relu en module si la lecture en script échoue
+    let ast;
+    try {
+      ast = acorn.parse(src, opts);
+    } catch (e) {
+      if (opts.sourceType === 'module' || !/\b(import|export)\b/.test(src)) throw e;
+      ast = acorn.parse(src, { ...opts, sourceType: 'module' });
+    }
+    return JSON.stringify(ast, (k, v) => (k === 'start' || k === 'end' || k === 'loc' || k === 'range') ? undefined : v);
   };
   // règles lues par le navigateur ; espaces autour des virgules ignorés (sans effet en CSS ; le navigateur garde tel
   // quel le texte des valeurs à var() et des propriétés personnalisées)

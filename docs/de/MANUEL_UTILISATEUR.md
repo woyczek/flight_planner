@@ -1,6 +1,6 @@
 # Benutzerhandbuch
 
-Dieses Handbuch beschreibt die Suite DEFA Virtual für **Piloten**: ein Kapitel pro Seite, ein Abschnitt pro Registerkarte
+Dieses Handbuch beschreibt die Suite SO Group Virtual (Virtual Special Operation Group) für **Piloten**: ein Kapitel pro Seite, ein Abschnitt pro Registerkarte
 oder Block, in der Reihenfolge, in der sie erscheinen. In der Suite öffnet der Eintrag **„Hilfe“** der Seitenleiste dieses
 Handbuch beim Kapitel der aktuellen Seite. Das Zentrum und die Verwaltung der Suite sind im
 [Administratorhandbuch](MANUEL_ADMINISTRATEUR.md) beschrieben; für einen ersten Bericht Schritt für Schritt siehe das
@@ -9,10 +9,11 @@ Handbuch beim Kapitel der aktuellen Seite. Das Zentrum und die Verwaltung der Su
 ## Erste Schritte
 <!-- page: index.html -->
 
-Die Suite „DEFA Virtual“ vereint im Browser alles, was der Pilot braucht: vom Zentrum zugewiesene Missionen, Verfügbarkeit, Flugkarten, Kraftstoff, Berichte, Landungen und Auswertungen.
+Die Suite „SO Group Virtual“ vereint im Browser alles, was der Pilot braucht: vom Zentrum zugewiesene Missionen, Verfügbarkeit, Flugkarten, Kraftstoff, Berichte, Landungen und Auswertungen.
 Alle Seiten haben dieselben Orientierungspunkte: links eine Seitenleiste, oben eine Kopfzeile, manchmal Registerkarten, dann Blöcke.
 Dieses Kapitel beschreibt diese gemeinsamen Elemente; die folgenden Kapitel erklären jede Seite im Detail.
 Die Startseite (`index.html`) listet die Anwendungen als Karten auf und zeigt die Version der Suite.
+Öffnen Sie die Suite über den Starter oder ein Lesezeichen: Eine Seite der Suite, die über einen Link einer anderen Website (Webmail, Forum…) geöffnet wird, wird abgelehnt, damit diese Website darin nichts lesen oder auslösen kann.
 
 ### Die Seitenleiste
 
@@ -21,11 +22,11 @@ Die linke Spalte führt zu den Anwendungen. Der Eintrag der angezeigten Seite is
 | Eintrag | Was er öffnet |
 |---|---|
 | „Meine Missionen“ | Vom Zentrum zugewiesene Missionen und Verfügbarkeit (mit rotem Punkt: Anzahl ungelesener Missionen) |
-| „DEFA-Bericht“ | Eingabe eines neuen Missionsberichts |
+| „Bericht“ | Eingabe eines neuen Missionsberichts |
 | „Flugkarten“ | Flugkarten: Route, Topo, Anflug, Treffpunkt, Ziel |
 | „Kraftstoff“ | Leistungs- und Kraftstoffplaner |
 | „Landungen“ | Übersicht der Landungen |
-| „Berichte“ | Auswertungen der Missionen (DEFA-Berichte) |
+| „Berichte“ | Auswertungen der Missionen (Berichte) |
 
 - Die Gruppe **„Zentrum“** („Missionen“, „Register“, „ODV“) erscheint nur, wenn das Zentrum in diesem Browser freigeschaltet ist (Einstellungen › Zentrum). Für einen Piloten bleibt sie normalerweise verborgen.
 - Unten in der Spalte: „Darstellung“ (öffnet die Anzeigeeinstellungen in einem Fenster über der aktuellen Seite), „Einstellungen“ (Mein Profil und die anderen Einstellungsseiten) und **„Hilfe“**. Diese drei Einträge bleiben unten am Bildschirm fixiert: Nur die obere Liste scrollt, wenn es zu viele Symbole gibt (Fenster unter 460 px Höhe: Die ganze Leiste scrollt).
@@ -118,7 +119,7 @@ Die Suite bietet mehrere Designs. Sie ändern die Form der Seiten, nicht die Inf
 | Design | Kurz gesagt |
 |---|---|
 | Standard, Aero, Operativ, Konsole | „Flache“ Designs: Ecken, Dichte, Titel, Seitenleiste. |
-| Kabinett, Flugbuch, Robust, Aqua | Material-Designs (Leder, Holz, Messing, Aluminium, Stahl, Glas). Aqua ist das Design einer neuen Installation. |
+| Kabinett, Flugbuch, Robust, Aqua, Taktisch | Material-Designs (Leder, Holz, Messing, Aluminium, Stahl, Glas); Taktisch: Nacht, Rauchglas, Cyan-Akzent, Orbitron-Titel, ohne Bilder. Aqua ist das Design einer neuen Installation. |
 
 - In den Material-Designs wird die Missionsmappe von „Meine Missionen“ zu einem richtigen Buch, mit seinen Animationen.
 - Die Wahl erfolgt unter Darstellung: Jedes Design wird dort als Vorschaubild gezeigt und sofort angewendet. Siehe das Kapitel [Darstellung](#darstellung).
@@ -203,15 +204,15 @@ Der Knopf „⤢ Volle Breite“ im Blocktitel breitet die Mappe über die ganze
 
 Ihre Verfügbarkeit in der angezeigten Woche, in UTC-Stunden. Das Zentrum nutzt sie, um Ihnen Missionen zuzuweisen. Es ist derselbe Editor wie auf der Seite Meine Verfügbarkeit (nächstes Kapitel); hier ist die Woche die der Wochenleiste der Liste.
 
-**Palette**: Die Kategorien sind nach Gruppen geordnet („Verfügbar“, „DEFA-Übung“, „Beschäftigt“, „Nicht verfügbar“). Jeder Farbpunkt trägt den ODV-Codebuchstaben und eine kurze Beschriftung; der Tooltip zeigt die vollständige Beschriftung. Die gewählte Kategorie wird gespeichert.
+**Palette**: Die Kategorien sind nach Gruppen geordnet („Verfügbar“, „SOG-Übung“, „Beschäftigt“, „Nicht verfügbar“). Jeder Farbpunkt trägt den ODV-Codebuchstaben und eine kurze Beschriftung; der Tooltip zeigt die vollständige Beschriftung. Die gewählte Kategorie wird gespeichert.
 
 Standardkategorien (das Zentrum kann diese Liste ändern):
 
 | Gruppe | Kategorien (ODV-Code) |
 |---|---|
 | Verfügbar | Für alles verfügbar (O), Verfügbar Zivilschutz (SC), Verfügbar Verteidigung (D+), Zivilschutz nach Wahl (SC-), Verteidigung nach Wahl (D-) |
-| DEFA-Übung | Flug in DEFA-Übung (S), DEFA-Lotsendienst (AM) |
-| Beschäftigt | Flug außerhalb DEFA (IVAO / VATSIM) (G), DCS (DC), Lotsendienst außerhalb DEFA (IVAO / VATSIM) (AT) |
+| SOG-Übung | Flug in SOG-Übung (S), SOG-Lotsendienst (AM) |
+| Beschäftigt | Flug außerhalb SOG (IVAO / VATSIM) (G), DCS (DC), Lotsendienst außerhalb SOG (IVAO / VATSIM) (AT) |
 | Nicht verfügbar | Nicht verfügbar (IN), Urlaub (V), Ausgleich (Q), Termin im echten Leben (IR) |
 
 **Stundenraster**: eine Zeile pro Tag (heute hervorgehoben), eine Spalte pro Stunde von 0 bis 23 UTC.
@@ -271,15 +272,16 @@ Ihre Identität in der Suite, die alle Seiten übernehmen (☰ › Pilotenprofil
 
 | Karte | Felder |
 |---|---|
-| „Pilot“ | „DEFA-Kürzel“, „VATSIM-ID (CID)“, „IVAO-ID (VID)“, „SimBrief (Benutzer oder ID)“ |
-| „DEFA-Website“ | „Kennung“, „Passwort“ |
+| „Pilot“ | „Kürzel“, „VATSIM-ID (CID)“, „IVAO-ID (VID)“, „SimBrief (Benutzer oder ID)“ |
+| „Website der Fluggesellschaft“ | „Kennung“, „Passwort“ |
+| „IVAO — OAuth-Client (persönlich)“ | „Client-ID“, „Client-Geheimnis“, „Bei IVAO anzugebende Weiterleitungsadresse“ (auf developers.ivao.aero einzutragen); Schaltfläche „IVAO-Client speichern“: vom Starter dieses Rechners gehalten, das Geheimnis wird nie wieder angezeigt |
 | „Sprache“ | „Sprache der Suite“: Automatisch (Browsersprache), Français, English, Deutsch, Español |
 
 1. Füllen Sie die Felder aus.
 2. Klicken Sie auf „Speichern“. Die Statusmeldung bestätigt „Profil in diesem Browser gespeichert“.
 
 - Das Kürzel hat 2 bis 4 Buchstaben oder Ziffern; damit werden Ihre zugewiesenen Missionen gefunden.
-- Die Zugangsdaten der DEFA-Website bleiben nur in diesem Browser: Sie werden nie in eine Datei oder eine Sicherung geschrieben.
+- Die Zugangsdaten der Website der Fluggesellschaft bleiben nur in diesem Browser: Sie werden nie in eine Datei oder eine Sicherung geschrieben.
 - Die Sprache gilt, sobald sie gewählt ist, ohne „Speichern“.
 - Im Produktionsmodus ist das Kürzel das des angemeldeten Benutzers und lässt sich hier nicht ändern.
 
@@ -315,7 +317,7 @@ Die Typen der Flotte, die Sie besitzen und beherrschen, und Ihre Simulatoren. Da
 | Spalte | Inhalt |
 |---|---|
 | „Typ“ | Modell und ICAO-Kennung |
-| „Flottenvarianten“ | In der DEFA-Flotte vorhandene Varianten |
+| „Flottenvarianten“ | In der Flotte vorhandene Varianten |
 | „Luftfahrzeuge“ | Anzahl der Luftfahrzeuge im Dienst (von der Gesamtzahl) und ihre Basen |
 | „Besessen“ | Sie haben diesen Typ in Ihrem Simulator |
 | „Beherrscht“ | Sie fliegen ihn sicher |
@@ -337,6 +339,10 @@ Dieser Abschnitt (Gruppe „Kraftstoffplaner“) legt die Schwelle fest, oberhal
 Unter dem Feld angezeigte Richtwerte: 10.000 ft (übliche Praxis, EASA NCO), 12.500 ft (FAA, Besatzung über 30 Minuten), 14.000 ft (FAA, Besatzung ständig).
 Dies ist nur ein Hinweis: Die Berechnung wird nicht begrenzt. Die Einstellung wird in diesem Browser gespeichert.
 
+### Meine Luftfahrzeuge (Reporting)
+
+Die Luftfahrzeuge, die Sie geflogen oder berichtet haben: die der Berichte mit Ihrem Kürzel in der Besatzung oder die Sie verfasst haben (seit dieser Version gespeicherte Berichte) (das Luftfahrzeug Ihres Platzes, wenn der Bericht es angibt), mit Typ, Variante, Rufzeichen, Betreiber, Anzahl der Flüge und letztem Flug. Das graue Kästchen „Flotte“ zeigt, ob das Luftfahrzeug zur Flotte gehört (angehakt) oder nicht (nicht angehakt, Rufzeichen inbegriffen); es lässt sich hier nicht ändern. Die vollständige Liste mit dem Kästchen „Privat“ steht unter Einstellungen › Zentrum › Flotte (dem Zentrum vorbehalten). Oben die Zählung des Journals: Berichte insgesamt, Ihre Berichte, Berichte ohne erfasste Besatzung (sie zählen für niemanden).
+
 ## Darstellung
 <!-- page: apps/settings/apparence.html -->
 
@@ -349,9 +355,9 @@ Die Einstellungen werden in diesem Browser gespeichert und gelten für alle Seit
 
 Die Form der Seiten: Ecken, Dichte, Titel, Seitenleiste.
 
-- Jedes Design wird durch ein in seinem Stil gezeichnetes Vorschaubild dargestellt, mit Name und Beschreibung: Standard, Aero, Operativ, Konsole, Kabinett, Flugbuch, Robust, Aqua.
+- Jedes Design wird durch ein in seinem Stil gezeichnetes Vorschaubild dargestellt, mit Name und Beschreibung: Standard, Aero, Operativ, Konsole, Kabinett, Flugbuch, Robust, Aqua, Taktisch.
 - Ein Klick auf ein Vorschaubild wendet das Design sofort an. Das gewählte Vorschaubild ist umrahmt.
-- Kabinett, Flugbuch, Robust und Aqua bringen ihre Materialien mit; die Informationsfarben bleiben die des Themas.
+- Kabinett, Flugbuch, Robust und Aqua bringen ihre Materialien mit, Taktisch sein Rauchglas auf Nachthintergrund; die Informationsfarben bleiben die des Themas (Taktisch: Kante oben an den Blöcken).
 
 **„Dekor (Material-Designs)“**:
 - „Vollständig“ (Standard): illustrierte Blockflächen, Registerblätter, Schrauben, Radar;
@@ -379,13 +385,13 @@ Die Strichstärke der Symbole oder gar keine Symbole. Jede Zeile zeigt eine Vors
 | „Messing (Medaillons)“, „Stahl (Platten)“, „Gel (Blasen)“, „Avionik (Instrumente)“ | Material-Sätze |
 | „Keine Symbole“ | Keine Symbole |
 
-**„Seitenleiste“**: „Je nach Design“, „Immer“ oder „Nie“. Standardmäßig wird sie immer angezeigt (außer bei schmalem Bildschirm und beim Drucken).
+**„Seitenleiste“**: „Je nach Design“, „Immer“ oder „Nie“. Standardmäßig wird sie immer angezeigt (außer bei schmalem Bildschirm und beim Drucken). „Symbolgröße“: „Klein“, „Mittel“ (Standard) oder „Groß“. „Anzeige“: „Symbol und Beschriftung“ (Standard), „Nur Symbol“ (schmalere Leiste, Name des Eintrags als Tooltip) oder „Nur Beschriftung“.
 
 ### Themenfarben
 
 Jede Seite der Suite hat ein Farbthema (Leiste, Text der Leiste, Akzent). Für jedes Thema wählen Sie eine Farbfamilie und einen Ton; daraus werden die Farben berechnet, mit einer Lesbarkeitsprüfung.
 
-Die Themen werden als Karten dargestellt, in zwei Gruppen: „Anwendungen“ (Kraftstoff, Landungen, Zentrum, DEFA-Bericht) und „Berichtsfamilien“.
+Die Themen werden als Karten dargestellt, in zwei Gruppen: „Anwendungen“ (Kraftstoff, Landungen, Zentrum, Bericht) und „Berichtsfamilien“.
 
 Auf jeder Karte:
 1. Die Vorschau zeigt einen „Titel“ auf der Leiste, eine „Schaltfläche“ und einen „Link, Symbol“.
@@ -403,65 +409,91 @@ Jede Änderung wird sofort gespeichert.
 ## Erststart
 <!-- page: apps/settings/premier_lancement.html -->
 
-Diese Seite richtet die Suite bei der ersten Installation in vier Schritten ein. Der Starter (`lancer.cmd` unter Windows, `sh lancer.sh` unter macOS oder Linux) öffnet sie von selbst.
-Um zurückzukehren: Einstellungen › Registerkarte „Installation“ › „Erststart“ › „Erststart öffnen“.
-Ist die Suite eingerichtet, leitet die Seite zur Startseite weiter, außer wenn sie über diesen Knopf geöffnet wurde.
+Diese Seite richtet ein, was die Suite zum Arbeiten braucht. Der Starter (`lancer.cmd` unter Windows, `sh lancer.sh` unter macOS oder Linux) öffnet sie von selbst; jederzeit erreichbar über Einstellungen › Registerkarte „Erststart“ oder die Karte „Erststart“ der Startseite, die angezeigt wird, solange noch etwas einzustellen ist.
+Vom Starter geöffnet, leitet die Seite nur dann zur Startseite weiter, wenn „Abschließen“ für diese Installation erfolgt ist (derselbe Suite-Ordner) und nichts Verpflichtendes fehlt. Eine neue Installation unter derselben Adresse zeigt daher den Erststart, und die Startseite kündigt ihn als Banner an.
+
+Oben zieht **„Stand der Suite“** Bilanz, Zeile für Zeile, und jede Zeile führt zu ihrem Schritt: ✓ eingestellt, ○ zu erledigen, – optional, ? unbekannt (kein Starter).
+- Für alle: Daten, Git-Synchronisierungs-Repository (optional), Anwendungsordner, Fluggesellschaft und Website, IVAO-API-Schlüssel (optional), Pilot (Kürzel und mindestens ein Netzwerk), Zugangsdaten der Website, Luftfahrtdaten.
+- Zentrum: Aktivierung (Administratoren); ist das Zentrum aktiviert, Flotte und Flugbuch der Website, Missionen des Registers, Benutzer und Rechte (mindestens ein Administrator), Berichtsversand (optional).
+
 Die Nummer jedes Schritts wird grün, wenn er erledigt ist.
 
-### 1 Daten
-
-Dieser Schritt installiert die Daten der Fluggesellschaft (Missionen, Referenzen…). Er läuft über den Starter: Ohne ihn zeigt die Seite „Öffnen Sie für diesen Schritt die Suite mit dem Starter…“.
-
-Zwei Möglichkeiten:
-
-| Karte | Vorgehen |
-|---|---|
-| „Ich habe Zugang zum Repository (framagit)“ | Geben Sie „Kennung“ und „Passwort oder Token“ ein, kreuzen Sie bei Bedarf „im Anmeldeinformations-Manager von Git speichern“ an, dann „Daten abrufen“. Der erste Download dauert einige Minuten. |
-| „Ich habe die Daten per E-Mail erhalten“ | „Datenarchiv…“: Wählen Sie das erhaltene `.zip`-Archiv (es enthält `data_tree.js`). |
-
-- Konto mit Zwei-Faktor-Authentifizierung: Verwenden Sie ein Zugangstoken (framagit › Einstellungen › Zugangstoken, Recht `read_repository`).
-- Ist Git nicht installiert, ist nur das Archiv möglich (oder installieren Sie Git und starten Sie neu).
-- **„Git-Repository zur Datensynchronisierung“**: die Adresse des entfernten Repositorys von `data/`, das die Daten
-  zwischen den Rechnern teilt (Knopf „Synchronisieren“). SSH-Adresse `git@hôte:compte/dépôt.git` (SSH-Schlüssel des Computers) oder
-  HTTPS `https://hôte/compte/dépôt.git` (in Git gespeicherte Zugangsdaten). Die Karte zeigt das aktuelle Repository;
-  „Prüfen“ sagt, ob es von diesem Rechner aus antwortet (höchstens 30 s), „Speichern“ macht es zum entfernten Repository von `data/`
-  (sind noch keine Daten vorhanden, dient die Adresse dazu, sie zu holen). Nichts ist blockierend: Ein Repository, das nicht antwortet, wird gemeldet,
-  die Suite funktioniert ohne Teilen. Einzelheiten: [Synchronisierung](../technique/SYNCHRONISATION.md).
-- Sind die Daten vorhanden, bietet die optionale Karte „DEFA-Flugbuch“ den Knopf „DEFA-Journal (.html)…“: Die gespeicherte Seite „Log des vols“ der DEFA-Website füllt die Piloten und Luftfahrzeuge der DEFA-Referenz (Eingabehilfe).
-
-### 2 Profil
-
-Ihr Pilotenprofil, das alle Seiten übernehmen (☰ › Pilotenprofil).
-
-1. Füllen Sie die Karte „Pilot“ aus: „DEFA-Kürzel“, „IVAO-ID (VID)“, „VATSIM-ID (CID)“, „SimBrief“.
-2. Klicken Sie auf „Profil speichern“.
-
-Die Zugangsdaten der DEFA-Website, das Passwort und die Einstellungen werden danach in [Mein Profil](#mein-profil) eingestellt.
-
-### 3 Ordner
+### 1 Ordner
 
 Der Browser verlangt, jeden Ordner einmal anzugeben; danach merkt er ihn sich.
 
 - **„Anwendungsordner“**: „Anwendungsordner wählen“, dann geben Sie den Ordner an, der `lancer.cmd` und `lancer.sh` enthält. Die anderen Ordner (Daten, Register, Missionen, SIA, Leistungen, lokale Sicherung) werden daraus abgeleitet; die Meldung zeigt, wie viele eingestellt wurden.
-- **„ODV-Arbeitsmappe“**: „OneDrive-Ordner…“ gibt den synchronisierten Ordner an, in dem die Staffel die Arbeitsmappe ablegt (die ODV-Planung öffnet die neueste). Ohne OneDrive: „oder die Excel-Datei…“, in diesem Browser gespeichert.
+- Der Ordner muss der der vom Starter bereitgestellten Suite sein: gehört er zu einer anderen Kopie der Suite, bleibt der Schritt offen (✗ in der Übersicht) mit der Meldung „Suite gestartet aus …, angegebener Ordner …“; wählen Sie den richtigen Ordner neu.
+- **„ODV-Arbeitsmappe (optional)“**: „OneDrive-Ordner…“ gibt den synchronisierten Ordner an, in dem die Staffel die Arbeitsmappe ablegt (die ODV-Planung öffnet die neueste). Ohne OneDrive: „oder die Excel-Datei…“, in diesem Browser gespeichert.
 
 Dieser Schritt ist wichtig: Ohne freigegebenen Datenordner bleibt Ihre Verfügbarkeit im Browser und das Zentrum sieht sie nicht.
 
-### 4 SIA-Daten
+### 2 Daten
 
-Karten und Missionen nutzen die AIRAC-Daten des SIA (Zyklus von 28 Tagen).
+Dieser Schritt installiert die Daten der Fluggesellschaft (Missionen, Referenzen…). Er läuft über den Starter: Ohne ihn zeigt die Seite „Öffnen Sie für diesen Schritt die Suite mit dem Starter…“.
 
-1. Klicken Sie auf „Abschließen und SIA-Daten aktualisieren“. Die Suite wird als „eingerichtet“ vermerkt und die Seite Wartung öffnet sich bei der SIA-Aktualisierung.
-2. Folgen Sie den geführten Schritten: Auf der Website des SIA (kostenloses Konto) das Produkt des Zyklus (0 €) mit „Ajouter au panier“ in den Warenkorb legen, dann „Passer commande“ und die Lizenz akzeptieren.
-3. Übernehmen Sie das heruntergeladene ZIP mit „Heruntergeladenes ZIP holen“.
+Solange der Anwendungsordner (Schritt 1) nicht gewählt ist oder zu einer anderen Kopie der Suite gehört, sind dieser Schritt und die folgenden (Fluggesellschaft, Profil, Luftfahrtdaten, Zentrum) ausgegraut und inaktiv, mit dem Grund oben in jedem, ebenso „Abschließen“; die Übersicht bleibt lesbar.
 
-Der Link „Start“ führt ohne Abschluss zur Startseite zurück.
+Drei Möglichkeiten:
+
+| Karte | Vorgehen |
+|---|---|
+| „Testdatensatz“ | „Testdaten installieren“: fiktive Daten, mit der Suite geliefert (Missionen mit einer Übung, Piloten, Flotte, Verfügbarkeit und Zuweisungen der laufenden Woche), um die Suite kennenzulernen; später durch die Daten der Fluggesellschaft zu ersetzen. Abgelehnt, wenn bereits Daten vorhanden sind. |
+| „Daten-Repository“ | Geben Sie „Repository-Adresse“ ein (von Ihrer Fluggesellschaft: `https://…` oder `git@…`), bei Bedarf „Kennung (optional)“ und „Passwort oder Token (optional)“, haken Sie bei Bedarf „im Anmeldeinformations-Manager von Git speichern“ an, dann „Daten abrufen“. Das erste Herunterladen dauert einige Minuten. |
+| „Ich habe die Daten per E-Mail erhalten“ | „Datenarchiv…“: Wählen Sie das erhaltene `.zip`-Archiv (es enthält `data_tree.js`). |
+- Keine Adresse ist vorausgefüllt. Privates Repository über HTTPS: Kennung und Passwort, oder ein Lese-Zugriffstoken bei Zwei-Faktor-Authentifizierung; über SSH (`git@…`) der SSH-Schlüssel des Rechners.
+- Ist Git nicht installiert: Testdatensatz oder Archiv (oder installieren Sie Git und starten Sie neu).
+- **„Git-Repository zur Datensynchronisierung (optional)“**: die Adresse des entfernten Repositorys von `data/`, das die Daten
+  zwischen den Rechnern teilt (Knopf „Synchronisieren“). SSH-Adresse `git@hôte:compte/dépôt.git` (SSH-Schlüssel des Computers) oder
+  HTTPS `https://hôte/compte/dépôt.git` (in Git gespeicherte Zugangsdaten). Die Karte zeigt das aktuelle Repository;
+  „Prüfen“ sagt, ob es von diesem Rechner aus antwortet (höchstens 30 s), „Speichern“ macht es zum entfernten Repository von `data/`
+  (sind noch keine Daten vorhanden, dient die Adresse dazu, sie zu holen). Nichts ist blockierend: Ein Repository, das nicht antwortet, wird gemeldet,
+  Für ein anderes Repository als das aktuelle öffnet der Starter ein Bestätigungsfenster auf dem Computer (aktuelle und neue
+  Adresse, „Nein“ voreingestellt): mit „Ja“ antworten, um zu wechseln; keine Seite kann an Ihrer Stelle antworten. Nie ein Passwort oder Token in der Adresse.
+  die Suite funktioniert ohne Teilen. Einzelheiten: [Synchronisierung](../technique/SYNCHRONISATION.md).
+- Sind die Daten vorhanden, bietet die optionale Karte „Flugbuch“ den Knopf „Journal (.html)…“: Die gespeicherte Seite „Log des vols“ der Website der Fluggesellschaft füllt die Piloten und Luftfahrzeuge der Referenz (Eingabehilfe).
+
+### 3 Fluggesellschaft
+
+Die virtuelle Fluggesellschaft, deren Namen die Suite trägt, und die Adresse ihrer Website (Links, Flotte, Flugbuch); Einstellung dieses Browsers.
+
+1. Karte „Virtuelle Fluggesellschaft“: „Name“, „Kürzel“, „Vollständiger Name“, „Website der Fluggesellschaft“ (`https://…`).
+2. Karte „IVAO-API-Schlüssel (optional)“: der Schlüssel der Installation (Gebietsaktivierungen und IVAO-ATC-Sitzungen der Einsatztafel und der ODV-Planung). Er wird beim Starter gespeichert und nie wieder angezeigt: Die Karte sagt nur, dass ein Schlüssel gespeichert ist.
+3. „Fluggesellschaft speichern“.
+
+Die übrigen Felder (Zentrum, Seiten der Website, externe Quellen) stehen unter Einstellungen › Installation › Quellen und Ordner.
+
+### 4 Profil und Zugangsdaten
+
+1. Karte „Pilot“: „Kürzel“, „IVAO-ID (VID)“, „VATSIM-ID (CID)“, „SimBrief“. Im Produktionsmodus ist das Kürzel fest (es kommt vom Konto).
+2. Karte „Website der Fluggesellschaft“: „Kennung“ und „Passwort“ Ihres Kontos auf der Website, nur in diesem Browser gespeichert (nie in einer Datei oder Sicherung).
+3. „Profil speichern“.
+
+Die Suite fragt nie nach Ihren IVAO- oder VATSIM-Passwörtern: Ihre Kennungen (VID, CID) genügen. Das Konto der Suite (Passwort, Produktionsmodus), der persönliche IVAO-Client und die Einstellungen werden in [Mein Profil](#mein-profil) eingestellt.
+
+### 5 Luftfahrtdaten und Luftfahrzeugtypen
+
+Karten, Missionen und Planung nutzen die Luftfahrtdaten (AIRAC) und die Datenbank der Luftfahrzeugtypen. Der Schritt zeigt dieselben Blöcke wie Einstellungen › Installation:
+
+1. „Luftfahrtdaten“: Frankreich ist standardmäßig aktiv; ein Klick auf die Karte aktiviert eine andere Zone. Jede Quelle hat ihre Schaltfläche: SIA-ZIP (Link zum Shop, kostenloses Konto, Zyklusprodukt zu 0 €, dann „Heruntergeladene ZIP abrufen“), MORA der Zone, MILAIP-PDF (Betankungsstrecken), Datensätze anderer Länder. Die Datenbank baut sich selbst auf.
+2. „Luftfahrzeugtypen“: „Fehlende Typen der Flotte und der Missionen ergänzen“ lädt die Typen (ICAO) und ihre Leistungen (EUROCONTROL) herunter.
+
+### 6 Zentrum (Administratoren)
+
+Nur für Administratoren der SO Group: Piloten überspringen diesen Schritt.
+- Karte „Zentrum aktivieren“: „Passwort des Zentrums“, dann „Zentrum aktivieren“.
+- Ist das Zentrum aktiviert:
+  - „Flotte und Flugbuch“: letztes Lesen der Website durch den Starter (Flotte, Standort der Luftfahrzeuge, Flugbuch), „Jetzt aktualisieren“ und der Link zur Flotte (Einstellungen › Zentrum).
+  - „Missionen“: Zahl der Missionen im Register (sie kommen mit den Daten, Schritt 1) und der Link zum Register.
+  - „Einstellungen der SO Group“: Links zu den Rubriken unter Einstellungen › Zentrum — Benutzer und Rechte (Anzahl, Administratoren, Modus), Verfügbarkeitskategorien, ODV-Planung, Einsatztafel, Berichtsversand, Routenberechnung.
+
+„Abschließen“ vermerkt die Suite als „eingerichtet“ und öffnet die Startseite; der Link „Start“ führt ohne Abschluss dorthin zurück.
 
 ### Neu beginnen
 
 Um den Erststart von vorn zu beginnen, und nur in diesem Fall.
 
-- „Bereinigen und neu beginnen…“ löscht **in diesem Browser** die gespeicherten Ordner (Anwendung, Daten, Register, Missionen, SIA, ODV, X-Plane, Leistungen, lokale Sicherung), die Kopie der ODV-Arbeitsmappe, die Zugangsdaten der DEFA-Website, das Profil (Kürzel, IVAO, VATSIM, SimBrief) und den Vermerk „Suite eingerichtet“.
+- „Bereinigen und neu beginnen…“ löscht **in diesem Browser** die gespeicherten Ordner (Anwendung, Daten, Register, Missionen, SIA, ODV, X-Plane, Leistungen, lokale Sicherung), die Kopie der ODV-Arbeitsmappe, die Zugangsdaten der Website der Fluggesellschaft, das Profil (Kürzel, IVAO, VATSIM, SimBrief) und den Vermerk „Suite eingerichtet“.
 - Eine Bestätigung wird verlangt, dann lädt die Seite neu bei Schritt 1.
 - Die Dateien auf der Festplatte werden nicht berührt: Ordner `data/`, Register, Sicherung `defa_local_store.yaml`.
 
@@ -470,7 +502,7 @@ Um den Erststart von vorn zu beginnen, und nur in diesem Fall.
 
 Diese Seite ist der Einstieg für jeden Missionsbericht: Sie wählen hier die Familie der
 Mission, dann öffnet sich die Berichtsseite dieser Familie. Sie richtet sich an alle Piloten.
-Zugang: Seitenleiste › **DEFA-Bericht** oder der Knopf „Neuer Bericht“ in der Kopfzeile der
+Zugang: Seitenleiste › **Bericht** oder der Knopf „Neuer Bericht“ in der Kopfzeile der
 allgemeinen Auswertung. Ein Bericht kann sich auch direkt und bereits ausgefüllt öffnen, aus einer Mission, die Ihnen
 zugewiesen wurde (siehe unten). Vollständige Schritt-für-Schritt-Anleitung: [Tutorial](../TUTORIAL.md).
 
@@ -513,7 +545,7 @@ Hat Ihnen das Zentrum eine Mission zugewiesen, ist die Wahl der Familie unnötig
 |---|---|
 | **Meine Missionen** (Missionsmappe geöffnet) | „Bericht erstellen“ (ausgegraut, wenn die Mission keine Missionsdatei hat) |
 | **Register** der Missionen (Zentrum) | „Bericht erstellen“ oder „Neuer Bericht (Flug n)“, wenn die Mission bereits Berichte hat |
-| **Missionsgenerator** (Zentrum) | Knopf der Kopfzeile „DEFA-Bericht erstellen →“ |
+| **Missionsgenerator** (Zentrum) | Knopf der Kopfzeile „Bericht erstellen →“ |
 
 Was übernommen wird: Name der Übung / Operation (Titel der Mission), Kennung der Mission (Feld
 „Mission“), Ziel und Anweisungen (Block Auftrag), Abflug- und Zielflugplatz, Wegpunkte und
@@ -559,7 +591,7 @@ Die Kopfzeile bleibt oben auf der Seite fixiert. Von links nach rechts:
 |---|---|
 | „SAR · SAR an Land ▾“ (Familie · Untertyp) | Popup „Einsatzfamilie“ (öffnet die Seite der anderen Familie) und „Einsatz-Untertyp“ |
 | „Ins Register aufnehmen“ / „Änderungen speichern“ | legt die Mission im Register ab |
-| „Bericht senden“ | übermittelt den Bericht an den Webservice der DEFA (gestrichelt, solange er nicht eingerichtet ist) |
+| „Bericht senden“ | übermittelt den Bericht an den Webservice der (gestrichelt, solange er nicht eingerichtet ist) |
 | „Auswerten / importieren…“ ▾ | einen Flugplan, eine Tracker-Seite, ein METAR einfügen; eine Datei importieren |
 | „Netzwerk-Tracking“ ▾ | Live-Verfolgung IVAO / VATSIM, VATSIM-Historie |
 | „Einsatz“ ▾ | „Neue Mission“, „Einsatz exportieren (YAML)“, „Diesen Einsatz löschen“ (bei Bearbeitung) |
@@ -605,7 +637,7 @@ Ergebnis der Mission und Folgemaßnahmen (Block an 2. Stelle für das Lesen des 
 
 1. Wählen Sie das „Ergebnis“: Erfolgreich, Teilweise erfolgreich, Abgebrochen, Storniert, Umgeleitet, Kein Kontakt,
    Ziel nicht gefunden, Wetter, Technisch, Operativ, Andere.
-2. Bei jedem Ergebnis außer Erfolgreich oder Andere erscheint das Feld „Abbruchgrund“.
+2. Bei jedem Ergebnis außer Erfolgreich oder Andere erscheinen die Felder „Abbruchgrund“ und „Ursachen“; alle Ursachen ankreuzen (Wetter, Technik, Simulator, Pilot fehlt, keine Flugsicherung, Netz, Luftraum nicht aktiviert, Tanker fehlt, Zeitmangel…): sie erscheinen auf der Kachel des Flugbefehls (MNE).
 3. Ergänzen Sie bei Bedarf „Detailliertes Ergebnis“, „Vorfälle“ und „Technische Störungen“.
 
 Dieses Ergebnis speist die Erfolgsquote und das Diagramm „Ergebnisse“ der Auswertungen.
@@ -626,6 +658,7 @@ Eine Karte pro eingesetztem Luftfahrzeug; es gibt immer mindestens eines. Das �
 | „⟲ Leeren“ | leert das Luftfahrzeug, um die Suche neu zu starten (falsches Luftfahrzeug oder falscher Typ) |
 | „ICAO-Betreiber (OPR/, Feld 18)“ | abgeleitet aus der Organisation oder dem bekannten Luftfahrzeug |
 | „Startbasis“, „Rückkehrbasis“, Massen, „Verfügbare Flugdauer (min)“, „Missionskonfiguration“ | bei Bedarf ergänzen |
+| „Tatsächlicher Landeflugplatz (ICAO)“ | Flugplatz, auf dem das Luftfahrzeug wirklich gelandet ist, nie vorausgefüllt; in einem aus „Meine Missionen“ geöffneten Bericht (Missions- oder Überführungsbefehl) setzt er das Luftfahrzeug für die folgenden Überführungen auf diesen Flugplatz. Ein Bericht ohne Missionsbefehl verschiebt das Luftfahrzeug nicht |
 | „Ausrüstung / technische Fähigkeiten“ | zugeklappt; übernommen vom bekannten Luftfahrzeug oder aus dem Flugplan |
 
 Die Felder filtern sich gegenseitig (Bauart, Typ, Serie). Die Wahl eines anderen Luftfahrzeugs ersetzt, was
@@ -804,7 +837,7 @@ Menü der Kopfzeile, um den Bericht aus einem eingefügten Text zu füllen. **Nu
 3. Das Ergebnis zeigt die erkannte Quelle und die gefüllten Felder; der Knopf wird zu „✓ Übernehmen“.
 
 Die Links „↗ IVAO-Tracker (meine Verbindungen)“ und „↗ Meine StatSim-Flüge (VATSIM)“ öffnen Ihre Seiten. Der
-Link „→ DEFA-Bericht“, in die Lesezeichenleiste gezogen, kopiert die Tracker-Seite mit einem Klick. Unten
+Link „→ Bericht“, in die Lesezeichenleiste gezogen, kopiert die Tracker-Seite mit einem Klick. Unten
 lädt „Importieren (YAML / altes JSON)“ eine Missionsdatei. Einzelheiten: [Tutorial](../TUTORIAL.md), § 6.
 
 ### Netzwerk-Tracking
@@ -892,7 +925,7 @@ Der Titel zeigt Kennzeichen, Typ und Modell. Darunter drei Hinweise:
 
 - der **Status** (Verfügbar, Nicht verfügbar, In Wartung, Außer Dienst gestellt), farbig;
 - „📍 Derzeit in“: letzter bekannter Flugplatz (Ankunft der letzten Mission oder des letzten Flugs des
-  DEFA-Journals);
+  Journals);
 - „🏠 Heimatflugplatz“.
 
 Die **Zeitraum**-Leiste der Auswertungen (Voreinstellungen, Daten, ◀ − ▶) steht in der Kopfzeile: Aktivität,
@@ -907,7 +940,7 @@ Blatt füllt sich mit den Berichten“.
 | „Heimatflugplatz“ | ja | ICAO-Code, in Großbuchstaben |
 | „In Dienst gestellt“ | ja | Datum |
 | „Muster“, „Variante“, „Flügel“, „Wirbelschleppe“, „Betreiber“ | nein | übernommen aus der Flotte und der Typendatenbank |
-| „DEFA-Flottenblatt“ | nein | Link zum Blatt des Luftfahrzeugs auf der Flotten-Website |
+| „Flottenblatt“ | nein | Link zum Blatt des Luftfahrzeugs auf der Flotten-Website |
 | „Verwendete Rufzeichen“, „Ausrüstung“ | nein | aus den Missionen erfasst, mit ihrer Anzahl |
 | „Notizen“ | ja | freier Text |
 
@@ -946,15 +979,16 @@ Leistungsprofil des Flight Planner für diesen Luftfahrzeugtyp.
 - Kurve Drehzahl / Leistung → Verbrauch, wenn das Profil eine enthält (Überfahren für die Werte).
 - „Im Flight Planner öffnen ↗“ öffnet den Planer mit diesem Typ.
 
-Ohne Profil zeigt der Block „Noch kein Leistungsprofil für dieses Muster: im Flight Planner anlegen.“
+Ohne Profil zeigt der Block „Noch kein Leistungsprofil für dieses Muster: im
+Flight Planner anlegen.“
 
 ### Einsätze und Flüge
 
 Tabelle der Missionen und Flüge des Luftfahrzeugs im Zeitraum: Datum, Familie, Nr., Rufzeichen, Abflug →
-Ankunft, Besatzung, Flugstunden, Quelle („Register“ oder „DEFA-Flugbuch“).
+Ankunft, Besatzung, Flugstunden, Quelle („Register“ oder „Flugbuch“).
 
 - Klicken Sie auf einen Spaltentitel, um zu sortieren.
-- Klicken Sie auf eine Mission des Registers, um ihren Bericht zur Bearbeitung zu öffnen; die Flüge des DEFA-Journals sind
+- Klicken Sie auf eine Mission des Registers, um ihren Bericht zur Bearbeitung zu öffnen; die Flüge des Journals sind
   nur lesbar.
 - Unter der Tabelle, wenn ein Zeitraum gewählt ist: Knöpfe, um die Missionen vor oder nach dem
   Zeitraum zu sehen, und Zoom − / +.
@@ -987,13 +1021,13 @@ Karten des Zeitraums: „Einsätze / Flüge“, „Flugstunden“, „Erster Flu
 „Nach Muster“: Flugstunden pro Luftfahrzeugtyp. Das Diagramm stapelt die Stunden nach Familie; Ziehen
 oder Klicken zoomt, Doppelklicken zoomt heraus.
 
-Für einen Piloten ohne Mission im Register stammen die Zahlen aus der DEFA-Referenz, wenn sie ihn kennt.
+Für einen Piloten ohne Mission im Register stammen die Zahlen aus der Referenz, wenn sie ihn kennt.
 
 ### Einsätze und Flüge
 
 Dieselbe Tabelle wie beim Luftfahrzeugblatt, zusätzlich mit der Spalte „Kennz.“ (Link zum Blatt des
 Luftfahrzeugs) und dem Typ. Sortieren über den Spaltentitel; Klick auf eine Mission des Registers: Bericht zur
-Bearbeitung; Flüge des DEFA-Journals nur lesbar.
+Bearbeitung; Flüge des Journals nur lesbar.
 
 ## Auswertung
 <!-- page: apps/cr/mission_operations_reporting.html -->
@@ -1013,7 +1047,7 @@ Die Kopfzeile bleibt oben auf der Seite sichtbar.
 | „Familien“ | ein farbiger Chip pro Familie: Klick zum Aus- / Einblenden, Strg + Klick, um nur eine zu behalten, „Alle“, um alles umzuschalten |
 | „Gruppierung“ | Automatisch, Tag, Woche, Monat, Quartal, Jahr |
 | „Messgröße“ | Einsätze, Flugstunden, Blockstunden, Zeit im Einsatzraum, Missionsstunden, Einsätze (Flüge), Distanz (NM) |
-| „Daten“ | „Meine Einsätze (Register)“, „DEFA-Journal (durchgeführte Flüge)“ (nur lesbar) oder „DEFA-Journal laden / aktualisieren…“ |
+| „Daten“ | „Meine Einsätze (Register)“, „Journal (durchgeführte Flüge)“ (nur lesbar) oder „Journal laden / aktualisieren…“ |
 
 Der Zeitraum wird mit den Familienauswertungen und den Blättern geteilt. Familien, Gruppierung und Messgröße
 werden gespeichert.
@@ -1089,7 +1123,7 @@ Eine ohne Uhrzeiten eingegebene Dauer gilt als „angegeben“ (≈), wird gezä
 die Uhrzeiten im Bericht eingegeben sind.
 
 Unter der Tabelle, wenn ein Zeitraum gewählt ist: „◀ n vor dem Zeitraum“, „− / +“, „m nach dem
-Zeitraum ▶“. Die Flüge des DEFA-Journals sind nur lesbar.
+Zeitraum ▶“. Die Flüge des Journals sind nur lesbar.
 
 ### Einsatzregister
 
@@ -1135,7 +1169,7 @@ nach Familie“ der allgemeinen Auswertung oder über das Popup in der Kopfzeile
 | „+ Neuer Bericht“ | öffnet direkt die Berichtsseite der Familie |
 | Zeitraum | dieselbe Komponente und derselbe Zeitraum wie in der allgemeinen Auswertung |
 | „Gruppierung“, „Messgröße“ | Einstellungen des Aktivitätsdiagramms (Einsätze, Flugzeit, Blockzeit, Zeit im Einsatzraum), mit der allgemeinen Auswertung geteilt |
-| „Daten“ | Register oder DEFA-Journal, wie in der allgemeinen Auswertung |
+| „Daten“ | Register oder Journal, wie in der allgemeinen Auswertung |
 
 ### Einsatzregister
 
@@ -1284,7 +1318,7 @@ Die Knöpfe bleiben ausgegraut, solange keine Karte zu erstellen ist.
 Dieser Block ist standardmäßig ausgeblendet: Klicken Sie auf „Anzeigen“. Er liest den SIA-Ordner (AIXM) und hält ihn im Browser. Ohne ihn erkennt die Seite weder Flugplätze noch Funkfeuer noch Lufträume.
 
 - Knopf „SIA-Ordner: …“: den Ordner `data/sia` wählen (der Browser fragt nach dem Zugriff), dann Lesen.
-- „Ordner neu lesen“: nach jeder AIRAC-Aktualisierung auszuführen. Eine Anzeige verfolgt das Lesen; „Abbrechen“ unterbricht es, ohne die gespeicherte Datenbank zu berühren.
+- „Luftfahrtdatenbank neu aufbauen“: nach jeder AIRAC-Aktualisierung auszuführen; liest die aktiven Zonen unter Einstellungen › Wartung › Luftfahrtdaten. Eine Anzeige verfolgt das Lesen; „Abbrechen“ unterbricht es, ohne die gespeicherte Datenbank zu berühren.
 - „Cache leeren“: löscht die gespeicherte Datenbank (sie wird beim nächsten Neulesen wieder aufgebaut).
 - Die Statuszeile zeigt die gespeicherte Datenbank, ihren AIRAC-Zyklus und ihr Datum; „Zyklus veraltet“ erscheint, wenn ein neuerer Zyklus gilt. „Analysierte Dateien“ listet die gelesenen Dateien.
 
@@ -1301,7 +1335,7 @@ Kopfzeile: Menü „Flugzeug“, Knopf „Letzten SimBrief-FPL abrufen“, „Ei
 
 1. Klicken Sie auf den Flugzeugknopf der Kopfzeile (anfangs „Kein Flugzeug“).
 2. Wählen Sie ein Profil in der Liste, nach Kategorie gruppiert (Hubschrauber, Jets, einmotorige, Turboprops…).
-3. Ein als „DEFA, ohne Profil“ markierter Typ erzeugt ein leeres Profil: Seine Leistungsdaten sind einzutragen.
+3. Ein als „Flotte, ohne Profil“ markierter Typ erzeugt ein leeres Profil: Seine Leistungsdaten sind einzutragen.
 
 Die Leiste unten auf der Seite zeigt „Profil gespeichert — …“ oder „Nicht gespeicherte Änderungen — …“. Sie trägt „Lokale Datenbank neu laden“, „Profil speichern“ und „Dieses Flugzeug löschen“.
 Wechseln Sie das Flugzeug mit nicht gespeicherten Änderungen, bietet die Seite „Bleiben“, „Verwerfen und wechseln“ oder „Speichern und wechseln“ an.
@@ -1343,7 +1377,7 @@ Dieser Block in der rechten Spalte folgt der Seite, während Sie durch die Kurve
 - Berechnungsgrundlage: gewählte Flughöhe und gewähltes Steiggesetz.
 - Einzelheiten: Rollen, Steigflug, Reiseflug, Sinkflug, Unvorhergesehenes, Reserve; geplante Startmasse und MTOW, wenn Sie sie eingegeben haben (rot, wenn sie überschritten ist).
 - Karte des Cursors (⌖ beim Überfahren, 📌 angeheftet): Kraftstoff und Zeit der Strecke auf dieser Höhe, maximale Steigrate, Steiggeschwindigkeiten; „lösen“ entfernt die Anheftung.
-- Aufklappbare Gruppe „Flugphasen — Profil ↔ Kennfeld“: IAS, Steigrate, Triebwerksdrehzahl und Durchfluss pro Phase, verglichen mit dem Triebwerkskennfeld. Sie enthält auch das Feld „SimBrief Airframe Internal ID“ und die Links zu den Blättern der DEFA-Luftfahrzeuge dieses Typs.
+- Aufklappbare Gruppe „Flugphasen — Profil ↔ Kennfeld“: IAS, Steigrate, Triebwerksdrehzahl und Durchfluss pro Phase, verglichen mit dem Triebwerkskennfeld. Sie enthält auch das Feld „SimBrief Airframe Internal ID“ und die Links zu den Blättern der Luftfahrzeuge dieses Typs.
 
 „Anheften“ behält den ganzen Block, wenn er der Seite folgt; sonst klappt er zusammen. Unter dem Block gibt ein Feld pro Kurve die Optima, die Grenzen (Gipfelhöhe, angeforderte Flughöhe) und eine Lesehilfe an. Eine Instrumentenspalte zeigt IAS, Steigrate, Höhe, Kraftstoff und Flugzeit.
 

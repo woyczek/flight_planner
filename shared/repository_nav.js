@@ -92,10 +92,14 @@
   doc.dataset.cpco = cpcoOn() ? "on" : "off";
   /** Adresse d'une rubrique de Paramètres (REPOSITORY_TREE.settings : rubrique → page ; ?base= pour les rubriques de
    *  data_admin.js et settings_panels.js, ?m= pour les blocs de maintenance_page.js) ; sans rubrique : Mon profil. */
-  const MT_BLOCKS = ["updates", "sources", "versions", "deps", "sia", "caches", "storage", "backup", "journal"];
+  const MT_BLOCKS = ["updates", "sources", "versions", "deps", "sia", "types", "caches", "storage", "backup", "journal"];
+  /** Adresse complète (href) de la rubrique section de Paramètres, ancre hash en plus (« mt-aero-base »…). */
   const settingsUrl = (section, hash = "") => {
     const s = cfg.settings || {},
-      page = s.pages?.[s.sections?.[section]] || s.pages?.profile || "apps/settings/parametrage.html",
+      // bloc sur plusieurs pages (« installation,maintenance ») : la page courante si elle en est, sinon la première
+      pages = String(s.sections?.[section] || "").split(",").filter(Boolean),
+      here = pages.find(p => s.pages?.[p] && location.pathname.endsWith(s.pages[p])),
+      page = s.pages?.[here || pages[0]] || s.pages?.profile || "apps/settings/parametrage.html",
       u = new URL(page, root);
     if (section) u.search = `?${MT_BLOCKS.includes(section) ? "m" : "base"}=${encodeURIComponent(section)}`;
     if (hash) u.hash = hash;
@@ -106,7 +110,8 @@
     /** Active le Centre si le mot de passe est bon ; true si activé. */
     async unlock(password) {
       const bytes = new TextEncoder().encode(String(password || "").trim().toUpperCase());
-      const hex = [...new Uint8Array(await crypto.subtle.digest("SHA-256", bytes))].map(b => b.toString(16).padStart(2, "0")).join("");
+      const hex = [...new Uint8Array(await crypto.subtle.digest("SHA-256", bytes))].map(b => b.toString(16).padStart(2, "0")).join(
+        "");
       if (hex !== CPCO_HASH) return false;
       if (!K.store.set(CPCO_KEY, "on")) return false;
       doc.dataset.cpco = "on";
@@ -117,6 +122,7 @@
       }));
       return true;
     },
+    /** Verrouille le Centre dans ce navigateur (préférence effacée, html[data-cpco="off"]) ; événement « cpco-access-change ». */
     lock() {
       K.store.remove(CPCO_KEY);
       doc.dataset.cpco = "off";
@@ -128,14 +134,17 @@
     }
   };
   if (isCpco(page?.path || rel) && !cpcoOn()) {
+    /** Ajoute au corps de la page l'avis « Accès réservé » (liens vers l'activation du Centre et l'accueil), traduit. */
     const lockNotice = () => {
       const box = document.createElement("div");
       box.className = "cpco-lock";
       box.setAttribute("role", "alert");
-      box.innerHTML = `<div><b>Centre de planification et de conduite des opérations</b><p>Accès réservé. Le Centre s'active dans Paramètres › Centre (CPCO).</p><a href="${settingsUrl("cpco")}">Activer le Centre…</a> · <a href="${new URL("index.html", root).href}">Accueil</a></div>`;
+      const T = row => K.esc(K.t(row));
+      box.innerHTML = `<div><b>${T(["Centre de planification et de conduite des opérations", "Operations planning and command centre", "Einsatzplanungs- und Führungszentrum", "Centro de planificación y conducción de operaciones"])}</b><p>${T(["Accès réservé. Le Centre s'active dans Paramètres › Centre (CPCO).", "Restricted access. The Centre is enabled in Settings › Centre (CPCO).", "Zugang beschränkt. Das Zentrum wird unter Einstellungen › Zentrum (CPCO) aktiviert.", "Acceso restringido. El Centro se activa en Ajustes › Centro (CPCO)."])}</p><a href="${settingsUrl("cpco")}">${T(["Activer le Centre…", "Enable the Centre…", "Zentrum aktivieren…", "Activar el Centro…"])}</a> · <a href="${new URL("index.html", root).href}">${T(["Accueil", "Home", "Startseite", "Inicio"])}</a></div>`;
       document.body.append(box);
     };
-    if (document.body) lockNotice();
+    // après ce script : langue de la page réglée (RepositoryNav.getLanguage) avant la traduction du message
+    if (document.body) setTimeout(lockNotice);
     else document.addEventListener("DOMContentLoaded", lockNotice);
   }
   let currentTheme = themeName;
@@ -240,6 +249,7 @@
     attributeFilter: ["data-tone", "data-design"]
   });
 
+  /** Applique le thème name : variables CSS de l'en-tête et de l'accent, fond de page, ton (data-tone), surface et gel Aqua. */
   function applyTheme(name) {
     const t = themeColors(name);
     currentTheme = name;
@@ -271,6 +281,8 @@
     pink: [328, 60]
   };
 
+  /** Pose --aq-gel : teinte choisie (or sur les pages du Centre, accent si « app »), assombrie jusqu'au contraste 4,5:1
+   *  avec le texte blanc. accent : couleur d'accent du thème de la page. */
   function applyAqua(accent) {
     const v = readPref("repositoryAquaColor", "blue");
     // pages du Centre : gel or (galons de l'état-major), quel que soit le choix d'Apparence
@@ -287,6 +299,9 @@
     const sn = readPref("repositorySidenav", null);
     if (sn === "auto") delete doc.dataset.sidenav;
     else doc.dataset.sidenav = sn || "on";
+    // taille des icônes (s, m, l) et affichage (both : icône et libellé ; icon : icône seule ; label : libellé seul)
+    doc.dataset.sidenavSize = readPref("repositorySidenavSize", null) || "m";
+    doc.dataset.sidenavShow = readPref("repositorySidenavShow", null) || "both";
   } // barre latérale affichée par défaut ; « auto » : selon le design
   // Design graphique (REPOSITORY_TREE.designs, règles dans designs.css) : choix mémorisé (repositoryDesign),
   // posé dès le chargement sur <html data-design> pour éviter un changement visible.
@@ -329,7 +344,11 @@
   // Designs à matières (Cabinet, Durci, Aqua : textures, plaques, vis) : feuille propre (designs.list[id].css),
   // chargée seulement quand l'un d'eux est choisi, avec sa propre version (empreinte de son contenu, table FILE_V
   // écrite par tools/bump_versions.py).
-  const FILE_V = {"designs_skeuo.css": "884885bd"};
+  /* beautify preserve:start */
+  // ligne réécrite telle quelle par tools/bump_versions.py : le formateur n'y touche pas
+  const FILE_V = {"designs_skeuo.css": "f6dd1e62"};
+  /* beautify preserve:end */
+  /** Pour un design à feuille propre : pose sa feuille (une fois) et charge une fois design_deco.js (décor complet). */
   const designCss = id => {
     const f = designs[id]?.css;
     if (!f) return;
@@ -345,7 +364,7 @@
     if (document.getElementById("repoDesignDeco")) return;
     const d = document.createElement("script");
     d.id = "repoDesignDeco";
-    d.src = new URL("design_deco.js?v=c88277a2", script.src).href;
+    d.src = new URL("design_deco.js?v=fe6b89a2", script.src).href;
     document.head.append(d);
   };
   designCss(design);
@@ -391,6 +410,7 @@
   emblem.className = "repo-header-emblem";
   emblem.setAttribute("aria-hidden", "true");
   line.prepend(emblem);
+  /** Dessine l'emblème du design courant dans l'en-tête (RepositoryIcons.emblem) ; emplacement masqué sans emblème. */
   const renderEmblem = () => {
     const name = designs[design]?.emblem;
     emblem.hidden = !name;
@@ -408,7 +428,8 @@
   line.append(spacer);
   const tools = document.createElement("div");
   tools.className = "repo-header-tools";
-  tools.innerHTML = '<span class="repo-language-label">Language</span><div class="repo-language-popup"><button class="repo-language-button" type="button" aria-haspopup="menu" aria-expanded="false" title="Language"><span class="repo-language-flag"></span><span class="repo-caret">▼</span></button><div class="repo-language-menu" role="menu" hidden></div></div><div class="repo-menu-wrap"><button class="repo-menu-button" type="button" aria-label="Menu" aria-expanded="false">☰</button><div class="repo-menu" hidden></div></div>';
+  tools.innerHTML =
+    '<span class="repo-language-label">Language</span><div class="repo-language-popup"><button class="repo-language-button" type="button" aria-haspopup="menu" aria-expanded="false" title="Language"><span class="repo-language-flag"></span><span class="repo-caret">▼</span></button><div class="repo-language-menu" role="menu" hidden></div></div><div class="repo-menu-wrap"><button class="repo-menu-button" type="button" aria-label="Menu" aria-expanded="false">☰</button><div class="repo-menu" hidden></div></div>';
   line.append(tools);
   const names = {
       auto: "Auto",
@@ -480,7 +501,9 @@
   }
   // Apparence : page apps/settings/apparence.html (design, icônes, barre latérale, couleurs) ; le menu ☰ et la barre latérale y mènent.
   // Réglages en tête du menu, en boutons : Apparence (design, icônes, couleurs) et Paramètres (bases de données).
-  menu.insertAdjacentHTML("afterbegin", '<div class="repo-settings-row"><a class="repo-settings-button repo-appearance-link" data-label="Apparence"></a><a class="repo-settings-button repo-parametrage-link" data-label="Paramètres"></a></div>');
+  menu.insertAdjacentHTML("afterbegin",
+    '<div class="repo-settings-row"><a class="repo-settings-button repo-appearance-link" data-label="Apparence"></a><a class="repo-settings-button repo-parametrage-link" data-label="Paramètres"></a></div>'
+  );
   menu.querySelector(".repo-appearance-link").href = new URL("apps/settings/apparence.html", root).href;
   menu.querySelector(".repo-appearance-link").addEventListener("click", e => {
     if (openAppearance()) {
@@ -512,6 +535,7 @@
    *  demande. Sur la page Apparence elle-même : rien (false, le lien s'ouvre normalement). */
   let apDialog = null;
 
+  /** Ouvre la fenêtre Apparence décrite ci-dessus (créée une fois) ; renvoie true si elle s'ouvre, false sur la page Apparence. */
   function openAppearance() {
     if (document.getElementById("appearancePage")) return false;
     if (!apDialog) {
@@ -519,7 +543,8 @@
       apDialog.className = "repo-ap-dialog";
       apDialog.setAttribute("data-no-i18n", "");
       // en-tête et blocs du framework (habillés par le design courant comme ceux de la page)
-      apDialog.innerHTML = '<div class="repo-ap-head repo-header"><div class="repo-header-line1"><h1></h1><span class="repo-header-spacer"></span><button type="button" class="repo-ap-close repo-plain" aria-label="Fermer">✕</button></div></div><main class="ap-page"></main>';
+      apDialog.innerHTML =
+        '<div class="repo-ap-head repo-header"><div class="repo-header-line1"><h1></h1><span class="repo-header-spacer"></span><button type="button" class="repo-ap-close repo-plain" aria-label="Fermer">✕</button></div></div><main class="ap-page"></main>';
       document.body.append(apDialog);
       apDialog.querySelector(".repo-ap-close").onclick = () => apDialog.close();
       apDialog.addEventListener("click", e => {
@@ -529,6 +554,7 @@
     }
     apDialog.querySelector(".repo-ap-head h1").textContent = trLabel("Apparence");
     const host = apDialog.querySelector("main");
+    /** Monte l'interface Apparence dans la fenêtre et l'affiche en modale si elle ne l'est pas déjà. */
     const show = () => {
       window.RepositoryAppearance.mount(host);
       window.AppFramework?.refresh?.(host);
@@ -537,7 +563,7 @@
     if (window.RepositoryAppearance) show();
     else {
       const sc = document.createElement("script");
-      sc.src = new URL("appearance_page.js?v=8faa77a7", script.src).href;
+      sc.src = new URL("appearance_page.js?v=59118ff8", script.src).href;
       sc.onload = show;
       document.head.append(sc);
     }
@@ -552,6 +578,7 @@
   let helpDialog = null,
     helpAt = "";
 
+  /** Ouvre la fenêtre d'aide décrite ci-dessus ; href : lien cliqué (son ?doc= est suivi) ; true si ouverte, false sinon. */
   function openHelp(href = "") {
     if (rel === HELP || page?.path === HELP || doc.hasAttribute("data-help-frame")) return false;
     const base = new URL(HELP, root).href,
@@ -561,7 +588,8 @@
       helpDialog = document.createElement("dialog");
       helpDialog.className = "repo-ap-dialog repo-help-dialog";
       helpDialog.setAttribute("data-no-i18n", "");
-      helpDialog.innerHTML = '<div class="repo-ap-head repo-header"><div class="repo-header-line1"><h1></h1><span class="repo-header-spacer"></span><a class="repo-ap-close repo-help-page repo-plain">↗</a><button type="button" class="repo-ap-close repo-plain">✕</button></div></div><iframe name="repo-help" class="repo-help-frame"></iframe>';
+      helpDialog.innerHTML =
+        '<div class="repo-ap-head repo-header"><div class="repo-header-line1"><h1></h1><span class="repo-header-spacer"></span><a class="repo-ap-close repo-help-page repo-plain">↗</a><button type="button" class="repo-ap-close repo-plain">✕</button></div></div><iframe name="repo-help" class="repo-help-frame"></iframe>';
       document.body.append(helpDialog);
       const frame = helpDialog.querySelector("iframe");
       frame.src = helpAt = wanted || base + (from ? `?from=${encodeURIComponent(from)}` : "");
@@ -582,7 +610,9 @@
     } else if (wanted) helpDialog.querySelector("iframe").src = helpAt = wanted;
     const i = Math.max(0, ["fr", "en", "de", "es"].indexOf(language));
     helpDialog.querySelector("h1").textContent = ["Aide", "Help", "Hilfe", "Ayuda"][i];
-    helpDialog.querySelector(".repo-help-page").title = ["Ouvrir l'aide en page entière", "Open the help as a full page", "Hilfe als ganze Seite öffnen", "Abrir la ayuda en página completa"][i];
+    helpDialog.querySelector(".repo-help-page").title = ["Ouvrir l'aide en page entière", "Open the help as a full page",
+      "Hilfe als ganze Seite öffnen", "Abrir la ayuda en página completa"
+    ][i];
     helpDialog.querySelector("button.repo-ap-close").setAttribute("aria-label", ["Fermer", "Close", "Schließen", "Cerrar"][i]);
     if (!helpDialog.open) helpDialog.showModal();
     return true;
@@ -591,7 +621,8 @@
   // lien ordinaire
   document.addEventListener("click", e => {
     const a = e.target.closest?.("a[href]");
-    if (!a || e.defaultPrevented || e.button || e.ctrlKey || e.metaKey || e.shiftKey || e.altKey || (a.target && a.target !== "_self")) return;
+    if (!a || e.defaultPrevented || e.button || e.ctrlKey || e.metaKey || e.shiftKey || e.altKey || (a.target && a.target !==
+        "_self")) return;
     if (a.href.split(/[?#]/)[0] !== new URL(HELP, root).href) return;
     if (openHelp(a.getAttribute("href"))) {
       e.preventDefault();
@@ -654,20 +685,29 @@
   };
   document.body.style.backgroundColor = theme.page || "";
   /** Adresse d'une source externe : réglage local (suiteSources:v1, Paramètres › Maintenance) sinon repository_tree.sources. */
-  const source = key => String(K.store.json("suiteSources:v1", {})[key] || cfg.sources?.[key]?.url || "").replace(/\/+$/, "");
-  /** Compagnie virtuelle : repository_tree.va (DEFA Virtual par défaut) et réglage local (suiteVA:v1) ; url : site
-   *  (sources.defa). { name, short, centre, centreName, url, pages: { home, log, fleet, aircraft } }. */
+  // Site de la compagnie (source « defa », va.pages) : les adresses par défaut de repository_tree valent pour la
+  // compagnie par défaut de la suite (repository_tree.va.name : SO Group Virtual ; DEFA Virtual, son ancien nom) ;
+  // autre compagnie : adresses réglées (Paramètres › Installation › Sources et dossiers, premier lancement) ou aucune —
+  // jamais de lien inventé (siteLink : invitation à renseigner l'adresse)
+  const DEFAULT_SITE_FOR = [cfg.va?.name || "SO Group Virtual", "DEFA Virtual"];
+  const vaName = () => (K.store.json("suiteVA:v1", {}) || {}).name || cfg.va?.name || "SO Group Virtual";
+  const defaultVa = () => DEFAULT_SITE_FOR.includes(vaName());
+  const source = key => String(K.store.json("suiteSources:v1", {})[key] || (key === "defa" && !defaultVa() ? "" : cfg.sources?.[key]
+    ?.url) || "").replace(/\/+$/, "");
+  /** Compagnie virtuelle : repository_tree.va (SO Group Virtual par défaut) et réglage local (suiteVA:v1) ; url : site
+   *  (sources.defa). { name, fullName, short, centre, centreName, url, pages: { home, log, fleet, aircraft } }. */
   const va = () => {
     const d = cfg.va || {},
       o = K.store.json("suiteVA:v1", {}) || {};
     return {
-      name: o.name || d.name || "DEFA Virtual",
-      short: o.short || d.short || "DEFA",
+      name: o.name || d.name || "SO Group Virtual",
+      fullName: o.fullName || d.fullName || "",
+      short: o.short || d.short || "SOG",
       centre: o.centre || d.centre || "CPCO",
       centreName: o.centreName || d.centreName || "",
       url: source("defa"),
       pages: {
-        ...(d.pages || {}),
+        ...(defaultVa() ? d.pages || {} : {}),
         ...(o.pages || {})
       }
     };
@@ -676,7 +716,16 @@
   const vaUrl = (pageKey, vars = {}) => {
     const v = va(),
       p = String(v.pages[pageKey] ?? "").replace(/\{(\w+)\}/g, (_, k) => encodeURIComponent(vars[k] ?? ""));
-    return /^https?:/i.test(p) ? p : v.url + (p && !p.startsWith("/") ? "/" : "") + p;
+    if (/^https?:/i.test(p)) return p;
+    return v.url ? v.url + (p && !p.startsWith("/") ? "/" : "") + p : "";
+  };
+  /** Lien HTML vers une page du site de la compagnie (texte : celui donné, sinon l'adresse) ; adresse inconnue : lien
+   *  vers le réglage de l'adresse (Paramètres › Installation › Sources et dossiers). */
+  const siteLink = (pageKey, vars = {}, text = "") => {
+    const u = vaUrl(pageKey, vars),
+      i = Math.max(0, supported.indexOf(language));
+    return u ? `<a href="${K.esc(u)}" target="_blank" rel="noopener">${K.esc(text || u.replace(/^https?:\/\//, ""))} ↗</a>` :
+      `<a href="${K.esc(settingsUrl("sources"))}" title="${K.esc(["Paramètres › Installation › Sources et dossiers", "Settings › Installation › Sources and folders", "Einstellungen › Installation › Quellen und Ordner", "Ajustes › Instalación › Fuentes y carpetas"][i])}">${K.esc(["adresse du site de la compagnie à renseigner", "airline website address to be set", "Website-Adresse der Fluggesellschaft eintragen", "dirección del sitio de la aerolínea por indicar"][i])}</a>`;
   };
   /** Émet « repository-design-change » (detail : ce qui a changé) : décors, icônes, graphiques des pages se refont. */
   const designChanged = detail => window.dispatchEvent(new CustomEvent("repository-design-change", {
@@ -696,9 +745,11 @@
     source,
     va,
     vaUrl,
+    siteLink,
     /** Enregistre la surcharge locale de la compagnie virtuelle (objet vide : défauts) ; événement « suite-sources-change ». */
     setVa(o) {
-      const clean = Object.fromEntries(Object.entries(o || {}).filter(([k, v]) => k === "pages" ? v && Object.values(v).some(Boolean) : String(v || "").trim()));
+      const clean = Object.fromEntries(Object.entries(o || {}).filter(([k, v]) => k === "pages" ? v && Object.values(v).some(Boolean) :
+        String(v || "").trim()));
       if (clean.pages) clean.pages = Object.fromEntries(Object.entries(clean.pages).filter(([, v]) => String(v || "").trim()));
       if (Object.keys(clean).length) K.store.setJson("suiteVA:v1", clean);
       else K.store.remove("suiteVA:v1");
@@ -745,11 +796,15 @@
       designs,
       families: cfg.colorFamilies || {},
       themes: cfg.themes,
+      /** Réglages d'apparence en vigueur : design, icônes (effectives et choix mémorisé), barre latérale, décor, couleurs,
+       *  thème de la page. */
       current: () => ({
         design,
         icons: doc.dataset.icons || "line",
         iconsSaved: readPref("repositoryIcons", null),
         sidenav: doc.dataset.sidenav || "",
+        sidenavSize: doc.dataset.sidenavSize || "m",
+        sidenavShow: doc.dataset.sidenavShow || "both",
         decor: doc.dataset.decor,
         decorSaved: readPref("repositoryDecor", null),
         colors: readJson("repositoryColors") || {},
@@ -762,6 +817,7 @@
       /** Graphiques : palettes ("auto", "vivid", "brass", "khaki", "slate") et styles ("auto", "flat", "relief"). */
       chartPalettes: ["auto", "vivid", ...Object.keys(CHART)],
       chartStyles: ["auto", "flat", "relief"],
+      /** Palette et style des graphiques : choix mémorisés (« auto » par défaut) et valeurs effectives posées sur <html>. */
       chart: () => ({
         palette: readPref("repositoryChartPalette", "auto"),
         style: readPref("repositoryChartStyle", "auto"),
@@ -778,6 +834,8 @@
         doc.dataset.chartPalette = keep;
         return out;
       },
+      /** Mémorise la palette (kind « palette ») ou le style (kind « style ») des graphiques, « auto » ou vide = effacé ;
+       *  applique et émet « repository-design-change ». */
       setChart(kind, v) {
         writePref(kind === "style" ? "repositoryChartStyle" : "repositoryChartPalette", v && v !== "auto" ? v : null);
         applyChart();
@@ -787,10 +845,12 @@
       },
       aquaColors: Object.keys(AQUA),
       aquaColor: () => readPref("repositoryAquaColor", "blue"),
+      /** Échantillon (hexadécimal) de la teinte Aqua k, bleu si k est inconnue. */
       aquaSample: k => {
         const [h, s] = AQUA[k] || AQUA.blue;
         return hslHex(h, s, 48);
       },
+      /** Mémorise la couleur Aqua v (bleu ou vide = défaut, effacé), recalcule --aq-gel et émet « repository-design-change ». */
       setAqua(v) {
         writePref("repositoryAquaColor", v && v !== "blue" ? v : null);
         applyAqua(themeColors(currentTheme).accent);
@@ -829,6 +889,19 @@
           doc.dataset.sidenav = on ? "on" : "off";
           writePref("repositorySidenav", doc.dataset.sidenav);
         }
+      },
+      /** Taille des icônes de la barre latérale : "s", "m" (défaut, null), "l". */
+      setSidenavSize(v) {
+        v = ["s", "l"].includes(v) ? v : "m";
+        writePref("repositorySidenavSize", v === "m" ? null : v);
+        doc.dataset.sidenavSize = v;
+      },
+      /** Affichage des entrées de la barre latérale : "both" (défaut, null), "icon" (icône seule, libellé en infobulle),
+       *  "label" (libellé seul). */
+      setSidenavShow(v) {
+        v = ["icon", "label"].includes(v) ? v : "both";
+        writePref("repositorySidenavShow", v === "both" ? null : v);
+        doc.dataset.sidenavShow = v;
       },
       /** Couleurs du thème name : { family, tone } (famille de REPOSITORY_TREE.colorFamilies), ou null pour revenir à repository_tree. */
       setColor(name, v) {
@@ -889,7 +962,7 @@
         icon: "clipboard",
         path: "apps/cr/mission_cr.html",
         match: "apps/cr/",
-        label: ["CR DEFA", "DEFA report", "DEFA-Bericht", "Informe DEFA"]
+        label: ["CR", "Report", "Bericht", "Informe"]
       }, {
         icon: "map",
         path: "apps/planner/map_planner.html",
@@ -972,10 +1045,11 @@
       return `<img class="repo-sidenav-img" src="${new URL(`icons/skeuo/${d}/${name}.webp${ver}`, script.src).href}" alt="">`;
     };
     // haut de la barre : logo de la compagnie virtuelle décliné selon le design (<id du design à matières>.webp, sinon
-    // flat) — celui de la DEFA (shared/icons/defa) si la compagnie est DEFA Virtual, sinon le logo générique (cible,
-    // shared/icons/generic) ; lien vers le site de la compagnie (nouvel onglet : la page en cours reste ouverte)
-    const logoSrc = () => new URL(`icons/${/\bDEFA\b/i.test(`${va().short} ${va().name}`) ? "defa" : "generic"}/${designs[doc.dataset.design]?.skeuo ? doc.dataset.design : "flat"}.webp${ver}`, script.src).href;
-    side.innerHTML = `<a class="repo-sidenav-brand" href="${K.esc(vaUrl("home"))}" target="_blank" rel="noopener" title="${K.esc(va().name)} — ${K.esc(source("defa").replace(/^https?:\/\//, ""))}"><img class="repo-sidenav-logo" src="${logoSrc()}" alt="${K.esc(va().name)}"></a><ul></ul><ul class="repo-sidenav-foot"></ul>`;
+    // flat) — celui de la compagnie (shared/icons/defa : ailes) si la compagnie réglée est SO Group Virtual (sigle SOG) ou
+    // DEFA Virtual, son ancien nom, sinon le logo générique (cible, shared/icons/generic) ; lien vers le site de la
+    // compagnie (nouvel onglet : la page en cours reste ouverte)
+    const logoSrc = () => new URL(`icons/${/\b(?:SO Group|SOG|DEFA)\b/i.test(`${va().short} ${va().name}`) ? "defa" : "generic"}/${designs[doc.dataset.design]?.skeuo ? designs[doc.dataset.design].logo || doc.dataset.design : "flat"}.webp${ver}`, script.src).href;
+    side.innerHTML = `<a class="repo-sidenav-brand"${vaUrl("home") ? ` href="${K.esc(vaUrl("home"))}" target="_blank" rel="noopener"` : ""} title="${K.esc(va().name)} — ${K.esc(source("defa").replace(/^https?:\/\//, ""))}"><img class="repo-sidenav-logo" src="${logoSrc()}" alt="${K.esc(va().name)}"></a><ul></ul><ul class="repo-sidenav-foot"></ul>`;
     // entrées du bas (séparateur « bottom » et suivantes : Apparence, Paramètres, Aide) dans leur propre liste, fixée en
     // bas de la barre ; seule la liste du haut défile quand les entrées dépassent la hauteur de la fenêtre
     let ul = side.querySelector("ul");
@@ -1018,6 +1092,7 @@
       ul.append(li);
     });
     document.body.prepend(side);
+    /** Libellés et infobulles des entrées et titres de séparateurs de la barre latérale dans la langue courante. */
     const label = () => {
       const i = Math.max(0, supported.indexOf(language));
       side.querySelectorAll(".repo-sidenav-item").forEach(a => {
@@ -1076,6 +1151,7 @@
         bar.append(a);
       }
       header.after(bar);
+      /** Libellés des onglets dans la langue courante (premier libellé à défaut). */
       const tabLabels = () => bar.querySelectorAll(".repo-tab").forEach(a => {
         a.textContent = a._label[Math.max(0, supported.indexOf(language))] || a._label[0];
       });
@@ -1085,71 +1161,92 @@
   } {
     /* Profil pilote (ID IVAO / VATSIM) commun à toutes les pages */
     const profile = document.createElement("script");
-    profile.src = new URL("pilot_profile.js?v=78a8d79d", script.src).href;
+    profile.src = new URL("pilot_profile.js?v=fbe1241b", script.src).href;
     document.head.append(profile); /* Dossiers autorisés et ouverture des fichiers dans le dossier paramétré */
     const files = document.createElement("script");
-    files.src = new URL("file_access.js?v=85671199", script.src).href;
+    files.src = new URL("file_access.js?v=dbd43b8f", script.src).href;
     document.head.append(files); /* Données locales du navigateur ⇄ fichier de sauvegarde */
     /* Icônes, sous-titres de blocs, sous-cartes, zones de dépôt, icônes de la barre latérale (ordre conservé) */
-    for (const f of ["icons/repository_icons.js?v=27853364", "block_icons.js?v=c8ee7213", "side_nav.js?v=19f74efd"]) {
+    for (const f of ["icons/repository_icons.js?v=27853364", "block_icons.js?v=567b5128", "side_nav.js?v=19f74efd"]) {
       const sc = document.createElement("script");
       sc.src = new URL(f, script.src).href;
       sc.async = false;
       document.head.append(sc);
     }
     const store = document.createElement("script");
-    store.src = new URL("browser_store.js?v=7860c8db", script.src).href;
+    store.src = new URL("browser_store.js?v=1b114137", script.src).href;
     document.head.append(store); /* Canal et contrôle des mises à jour, pastilles « Mise à jour » / « AIRAC » de l'en-tête */
     const assign = document.createElement("script"); /* Missions affectées : pli cacheté de l'en-tête, « Mes missions » */
-    assign.src = new URL("assignments.js?v=9e7845c6", script.src).href;
+    assign.src = new URL("assignments.js?v=95fcb353", script.src).href;
     document.head.append(assign);
+    /* Terrain actuel des appareils : site (emplacement) ou CR issu d'un ordre de mission (après assignments.js) */
+    const positions = document.createElement("script");
+    positions.src = new URL("aircraft_positions.js?v=cc7e2381", script.src).href;
+    document.head.append(positions);
     /* Utilisateurs et droits : mode develop / production, connexion, usurpation (bandeau sur toutes les pages) */
     const users = document.createElement("script");
-    users.src = new URL("users.js?v=5d9d50a7", script.src).href;
+    users.src = new URL("users.js?v=1299f816", script.src).href;
     document.head.append(users);
     /* Synchronisation git du pool de données : bouton « Synchroniser » de l'en-tête (lanceur, data/ dépôt git) */
     const sync = document.createElement("script");
-    sync.src = new URL("sync.js?v=14aeb29b", script.src).href;
+    sync.src = new URL("sync.js?v=3b97ce23", script.src).href;
     document.head.append(sync);
+    /* Flotte et journal DEFA depuis le site : une fois par jour à l'ouverture d'une page (lanceur) */
+    const defaSite = document.createElement("script");
+    defaSite.src = new URL("defa_site.js?v=ceeb2b55", script.src).href;
+    document.head.append(defaSite);
     /* Disponibilités : catégories configurables, thèmes ouverts, déclarations par semaine */
     const dispos = document.createElement("script");
-    dispos.src = new URL("dispos.js?v=d99a8e23", script.src).href;
+    dispos.src = new URL("dispos.js?v=b93daed0", script.src).href;
     document.head.append(dispos);
     const update = document.createElement("script");
-    update.src = new URL("suite_update.js?v=a6f1e9d1", script.src).href;
+    update.src = new URL("suite_update.js?v=695e4c03", script.src).href;
     document.head.append(update)
-  }
-  {
-    /* Autre compagnie virtuelle que DEFA (Paramètres › Sources et dossiers) : « DEFA Virtual », « DEFA » et « CPCO »
-       des textes de la suite affichés avec le nom, le sigle et le centre réglés (nœuds texte et infobulles, pages et
-       contenus ajoutés ensuite). Rien n'est fait avec les réglages par défaut. */
+  } {
+    /* Autre compagnie virtuelle que celle écrite dans les sources (Paramètres › Sources et dossiers) : « SO Group
+       Virtual », « Virtual Special Operation Group », « SOG » et « CPCO » des textes de la suite affichés avec le nom, le
+       nom long, le sigle et le centre réglés (nœuds texte et infobulles, pages et contenus ajoutés ensuite).
+       Comparaison avec la marque des sources (et non avec repository_tree.va) : la couche agit dès que la compagnie
+       réglée en diffère. */
+    const SOURCE = {
+      name: "SO Group Virtual",
+      fullName: "Virtual Special Operation Group",
+      short: "SOG",
+      centre: "CPCO"
+    };
+    /** Remplace dans la page (textes, infobulles, titre) les noms de la marque des sources par ceux de la compagnie réglée,
+     *  puis suit les contenus ajoutés ou retraduits ; rien si la compagnie réglée ne diffère pas. */
     const rebrand = () => {
       const v = va(),
-        d = cfg.va || {},
         rules = [
-          [/\bDEFA Virtual\b/g, v.name, d.name || "DEFA Virtual"],
-          [/\bDEFA\b/g, v.short, d.short || "DEFA"],
-          [/\bCPCO\b/g, v.centre, d.centre || "CPCO"]
+          [/\bSO Group Virtual\b/g, v.name, SOURCE.name],
+          [/\bVirtual Special Operation Group\b/g, v.fullName || v.name, SOURCE.fullName],
+          [/\bSOG\b/g, v.short, SOURCE.short],
+          [/\bCPCO\b/g, v.centre, SOURCE.centre]
         ].filter(([, to, from]) => to && to !== from);
       if (!rules.length) return;
       const fix = s => rules.reduce((x, [re, to]) => x.replace(re, to), s);
       const skip = el => !el || el.closest("script,style,textarea,input,code,pre,[contenteditable],[data-no-rebrand]");
+      /** Corrige les nœuds texte et les attributs title sous root (hors zones exclues par skip). */
       const walk = root => {
         const w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
-        for (let n; (n = w.nextNode());)
-          if (!skip(n.parentElement) && /DEFA|CPCO/.test(n.nodeValue)) {
+        for (let n;
+          (n = w.nextNode());)
+          if (!skip(n.parentElement) && /SO Group|Special Operation|SOG|CPCO/.test(n.nodeValue)) {
             const s = fix(n.nodeValue);
             if (s !== n.nodeValue) n.nodeValue = s;
           }
         if (root.querySelectorAll)
           for (const el of root.querySelectorAll("[title]"))
-            if (/DEFA|CPCO/.test(el.title)) el.title = fix(el.title);
+            if (/SO Group|Special Operation|SOG|CPCO/.test(el.title)) el.title = fix(el.title);
       };
       walk(document.body);
       if (document.title) document.title = fix(document.title);
       new MutationObserver(list => {
         for (const m of list)
-          for (const n of m.type === "characterData" ? [m.target] : m.addedNodes) n.nodeType === 3 ? (!skip(n.parentElement) && /DEFA|CPCO/.test(n.nodeValue) && (n.nodeValue = fix(n.nodeValue))) : n.nodeType === 1 && !skip(n) && walk(n);
+          for (const n of m.type === "characterData" ? [m.target] : m.addedNodes) n.nodeType === 3 ? (!skip(n.parentElement) &&
+              /SO Group|Special Operation|SOG|CPCO/.test(n.nodeValue) && (n.nodeValue = fix(n.nodeValue))) : n.nodeType === 1 && !
+            skip(n) && walk(n);
       }).observe(document.body, {
         childList: true,
         characterData: true, // textes traduits ensuite (content_i18n.js)

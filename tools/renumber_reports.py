@@ -27,19 +27,23 @@ OLD_CR_FREE = re.compile(r'^CR([A-Z])-LIB(\d+)$')
 
 
 def mission_id(v):
+    """Identifiant de mission normalisé « L-NNN[équipe] » (M016A → M-016A) ; '' s'il n'en est pas un."""
     m = MISSION_ID.match(str(v or '').strip().upper())
     return f'{m.group(1)}-{int(m.group(2)):03d}{m.group(3)}' if m else ''
 
 
 def free_code(rank):
+    """Code de série d'un CR sans mission d'après son rang : 1 → A01, 99 → A99, 100 → B01."""
     return f'{chr(65 + (rank - 1) // 99)}{(rank - 1) % 99 + 1:02d}'
 
 
 def free_rank(series, nn):
+    """Rang d'un CR sans mission d'après sa lettre de série et son numéro (inverse de free_code)."""
     return (ord(series) - 65) * 99 + int(nn)
 
 
 def main():
+    """Renumérote les CR du registre ligne à ligne, ajoute la trace à RENUMEROTATION_CR.md (aperçu avec --dry-run)."""
     lines = open(PATH, encoding='utf-8').read().split('\n')
     starts = [i for i, l in enumerate(lines) if re.match(r'^  - ', l)]
     blocks = []

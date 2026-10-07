@@ -1,6 +1,6 @@
 # Manuel utilisateur
 
-Ce manuel décrit la suite DEFA Virtual pour les **pilotes** : un chapitre par page, une section par onglet ou par
+Ce manuel décrit la suite SO Group Virtual (Virtual Special Operation Group) pour les **pilotes** : un chapitre par page, une section par onglet ou par
 bloc, dans l'ordre où ils apparaissent. Dans la suite, l'entrée **« Aide »** de la barre latérale ouvre ce manuel au
 chapitre de la page en cours. Le Centre et l'administration de la suite sont décrits dans le
 [manuel administrateur](MANUEL_ADMINISTRATEUR.md) ; pour un premier compte rendu pas à pas, voir le
@@ -9,10 +9,11 @@ chapitre de la page en cours. Le Centre et l'administration de la suite sont dé
 ## Prise en main
 <!-- page: index.html -->
 
-La suite « DEFA Virtual » rassemble dans le navigateur tout ce dont le pilote a besoin : missions affectées par le Centre, disponibilités, cartes de vol, carburant, comptes rendus (CR), atterrissages et reportings.
+La suite « SO Group Virtual » rassemble dans le navigateur tout ce dont le pilote a besoin : missions affectées par le Centre, disponibilités, cartes de vol, carburant, comptes rendus (CR), atterrissages et reportings.
 Toutes les pages partagent les mêmes repères : une barre latérale à gauche, un en-tête en haut, parfois des onglets, puis des blocs.
 Ce chapitre décrit ces éléments communs ; les chapitres suivants détaillent chaque page.
 La page d'accueil (`index.html`) liste les applications sous forme de cartes et affiche la version de la suite.
+Ouvrez la suite par le lanceur ou un favori : une page de la suite ouverte depuis un lien d'un autre site (messagerie web, forum…) est refusée, pour que ce site ne puisse rien y lire ni y déclencher.
 
 ### La barre latérale
 
@@ -21,11 +22,11 @@ La colonne de gauche donne accès aux applications. L'entrée de la page affich�
 | Entrée | Ce qu'elle ouvre |
 |---|---|
 | « Mes missions » | Missions affectées par le Centre et disponibilités (avec une pastille rouge : nombre de missions non lues) |
-| « CR DEFA » | Saisie d'un nouveau compte rendu de mission |
+| « CR » | Saisie d'un nouveau compte rendu de mission |
 | « Cartes de vol » | Cartes de vol : route, topo, approche, rendez-vous, destination |
 | « Carburant » | Planificateur de performances et de carburant |
 | « Atterrissages » | Tableau de bord des atterrissages |
-| « Reporting » | Reportings des missions (CR DEFA) |
+| « Reporting » | Reportings des missions (CR) |
 
 - Le groupe **« Centre »** (« Missions », « Registre », « ODV ») n'apparaît que si le Centre est déverrouillé dans ce navigateur (Paramètres › Centre). Pour un pilote, il reste normalement caché.
 - En bas de la colonne : « Apparence » (ouvre les réglages d'affichage dans une fenêtre, au-dessus de la page en cours), « Paramètres » (Mon profil et les autres pages de réglage) et **« Aide »**. Ces trois entrées restent fixées en bas de l'écran : seule la liste du haut défile quand il y a trop d'icônes (fenêtre de moins de 460 px de haut : toute la barre défile).
@@ -118,7 +119,7 @@ La suite propose plusieurs designs. Ils changent la forme des pages, pas les inf
 | Design | En bref |
 |---|---|
 | Standard, Aéro, Opérationnel, Console | Designs « plats » : arrondis, densité, titres, barre latérale. |
-| Cabinet, Carnet de vol, Durci, Aqua | Designs à matières (cuir, bois, laiton, aluminium, acier, verre). Aqua est le design d'une nouvelle installation. |
+| Cabinet, Carnet de vol, Durci, Aqua, Tactique | Designs à matières (cuir, bois, laiton, aluminium, acier, verre) ; Tactique : nuit, verre fumé, accent cyan, titres Orbitron, sans image. Aqua est le design d'une nouvelle installation. |
 
 - Dans les designs à matières, le dossier de mission de « Mes missions » devient un véritable livre, avec ses animations.
 - Le choix se fait dans Apparence : chaque design y est montré en vignette et s'applique aussitôt. Voir le chapitre [Apparence](#apparence).
@@ -203,15 +204,15 @@ Le bouton « ⤢ Pleine largeur » du titre du bloc étale le dossier sur toute 
 
 Vos disponibilités de la semaine affichée, en heures UTC. Le Centre s'en sert pour vous affecter des missions. C'est le même éditeur que sur la page Mes disponibilités (chapitre suivant) ; ici, la semaine est celle de la barre de semaine de la liste.
 
-**Palette** : les catégories sont rangées par groupe (« Disponible », « Exercice DEFA », « Occupé », « Indisponible »). Chaque pastille porte la lettre de code ODV et un libellé court ; l'infobulle donne le libellé complet. La catégorie choisie est mémorisée.
+**Palette** : les catégories sont rangées par groupe (« Disponible », « Exercice SOG », « Occupé », « Indisponible »). Chaque pastille porte la lettre de code ODV et un libellé court ; l'infobulle donne le libellé complet. La catégorie choisie est mémorisée.
 
 Catégories par défaut (le Centre peut modifier cette liste) :
 
 | Groupe | Catégories (code ODV) |
 |---|---|
 | Disponible | Disponible pour tout (O), Disponible sécurité civile (SC), Disponible défense (D+), Sécurité civile personnalisée (SC-), Défense personnalisée (D-) |
-| Exercice DEFA | Vol en exercice DEFA (S), Contrôle DEFA (AM) |
-| Occupé | Vol hors DEFA (IVAO / VATSIM) (G), DCS (DC), Contrôle hors DEFA (IVAO / VATSIM) (AT) |
+| Exercice SOG | Vol en exercice SOG (S), Contrôle SOG (AM) |
+| Occupé | Vol hors SOG (IVAO / VATSIM) (G), DCS (DC), Contrôle hors SOG (IVAO / VATSIM) (AT) |
 | Indisponible | Indisponible (IN), Congés (V), Récupération (Q), Activité réelle (IR) |
 
 **Grille heure par heure** : une ligne par jour (aujourd'hui mis en évidence), une colonne par heure de 0 à 23 UTC.
@@ -271,15 +272,16 @@ Votre identité dans la suite, reprise par toutes les pages (☰ › Profil pilo
 
 | Carte | Champs |
 |---|---|
-| « Pilote » | « Trigramme DEFA », « ID VATSIM (CID) », « ID IVAO (VID) », « SimBrief (utilisateur ou ID) » |
-| « Site DEFA » | « Identifiant », « Mot de passe » |
+| « Pilote » | « Trigramme », « ID VATSIM (CID) », « ID IVAO (VID) », « SimBrief (utilisateur ou ID) » |
+| « Site de la compagnie » | « Identifiant », « Mot de passe » |
+| « IVAO — client OAuth (personnel) » | « Identifiant du client (client ID) », « Secret du client », « Adresse de redirection à déclarer chez IVAO » (à recopier sur developers.ivao.aero) ; bouton « Enregistrer le client IVAO » : gardé par le lanceur de ce poste, le secret n'est jamais réaffiché |
 | « Langue » | « Langue de la suite » : Automatique (langue du navigateur), Français, English, Deutsch, Español |
 
 1. Remplissez les champs.
 2. Cliquez sur « Enregistrer ». Le message d'état confirme « Profil enregistré dans ce navigateur ».
 
 - Le trigramme compte 2 à 4 lettres ou chiffres ; il sert à retrouver vos missions affectées.
-- Les identifiants du site DEFA restent dans ce navigateur seulement : ils ne sont jamais écrits dans un fichier ni dans une sauvegarde.
+- Les identifiants du site de la compagnie restent dans ce navigateur seulement : ils ne sont jamais écrits dans un fichier ni dans une sauvegarde.
 - La langue s'applique dès qu'on la choisit, sans « Enregistrer ».
 - En mode production, le trigramme est celui de l'utilisateur connecté et ne se modifie pas ici.
 
@@ -315,7 +317,7 @@ Les types de la flotte que vous possédez et maîtrisez, et vos simulateurs. Le 
 | Colonne | Contenu |
 |---|---|
 | « Type » | Modèle et désignateur OACI |
-| « Variantes de la flotte » | Variantes présentes dans la flotte DEFA |
+| « Variantes de la flotte » | Variantes présentes dans la flotte |
 | « Appareils » | Nombre d'appareils en service (sur le total) et leurs bases |
 | « Possédé » | Vous avez ce type dans votre simulateur |
 | « Maîtrisé » | Vous le pilotez avec aisance |
@@ -337,6 +339,10 @@ Cette rubrique (groupe « Planificateur carburant ») règle le seuil au-dessus 
 Repères rappelés sous le champ : 10 000 ft (usage courant, EASA NCO), 12 500 ft (FAA, équipage au-delà de 30 minutes), 14 000 ft (FAA, équipage en permanence).
 C'est une information seulement : le calcul n'est pas limité. Le réglage est gardé dans ce navigateur.
 
+### Mes appareils (reporting)
+
+Les appareils que vous avez pilotés ou reportés : ceux des comptes rendus où votre trigramme figure dans l'équipage, ou que vous avez rédigés (CR enregistrés depuis cette version) (l'appareil de votre poste quand le CR le précise), avec type, variante, indicatifs, exploitant, nombre de vols et dernier vol. La coche grisée « Flotte » indique si l'appareil appartient à la flotte (cochée) ou non (décochée, indicatif compris) ; elle ne se modifie pas ici. La liste complète, avec la case « personnel », est dans Paramètres › Centre › Flotte (réservée au Centre). En tête, le décompte du journal : CR au total, CR à vous, CR sans équipage saisi (ils ne comptent pour personne).
+
 ## Apparence
 <!-- page: apps/settings/apparence.html -->
 
@@ -349,9 +355,9 @@ Les réglages sont mémorisés dans ce navigateur et s'appliquent à toutes les 
 
 La forme des pages : arrondis, densité, titres, barre latérale.
 
-- Chaque design est présenté par une vignette dessinée dans son style, avec son nom et sa description : Standard, Aéro, Opérationnel, Console, Cabinet, Carnet de vol, Durci, Aqua.
+- Chaque design est présenté par une vignette dessinée dans son style, avec son nom et sa description : Standard, Aéro, Opérationnel, Console, Cabinet, Carnet de vol, Durci, Aqua, Tactique.
 - Un clic sur une vignette applique le design aussitôt. La vignette choisie est encadrée.
-- Cabinet, Carnet de vol, Durci et Aqua ajoutent leurs matières ; les couleurs d'information restent celles du thème.
+- Cabinet, Carnet de vol, Durci et Aqua ajoutent leurs matières, Tactique son verre fumé sur fond de nuit ; les couleurs d'information restent celles du thème (Tactique : liseré en haut des blocs).
 
 **« Décor (designs à matières) »** :
 - « Complet » (par défaut) : panneaux illustrés des blocs, feuilles de registre, vis, radar ;
@@ -379,13 +385,13 @@ L'épaisseur du trait des icônes, ou pas d'icônes du tout. Chaque rangée mont
 | « Laiton (médaillons) », « Acier (plaques) », « Gel (bulles) », « Avionique (cadrans) » | Jeux à matières |
 | « Aucune icône » | Pas d'icônes |
 
-**« Barre latérale »** : « Selon le design », « Toujours » ou « Jamais ». Par défaut, elle est toujours affichée (sauf écran étroit et impression).
+**« Barre latérale »** : « Selon le design », « Toujours » ou « Jamais ». Par défaut, elle est toujours affichée (sauf écran étroit et impression). « Taille des icônes » : « Petite », « Moyenne » (par défaut) ou « Grande ». « Affichage » : « Icône et libellé » (par défaut), « Icône seule » (barre plus étroite, nom de l'entrée en infobulle) ou « Libellé seul ».
 
 ### Couleurs des thèmes
 
 Chaque page de la suite a un thème de couleurs (bandeau, texte du bandeau, accent). Pour chaque thème, vous choisissez une famille de couleurs et un ton ; les couleurs en sont calculées, avec un contrôle de lisibilité.
 
-Les thèmes sont présentés en cartes, en deux groupes : « Applications » (Carburant, Atterrissages, Centre, CR DEFA) et « Familles de comptes rendus ».
+Les thèmes sont présentés en cartes, en deux groupes : « Applications » (Carburant, Atterrissages, Centre, CR) et « Familles de comptes rendus ».
 
 Sur chaque carte :
 1. L'aperçu montre un « Titre » sur le bandeau, un « Bouton » et un « Lien, icône ».
@@ -403,65 +409,91 @@ Chaque changement est enregistré aussitôt.
 ## Premier lancement
 <!-- page: apps/settings/premier_lancement.html -->
 
-Cette page règle la suite en quatre étapes lors de la première installation. Le lanceur (`lancer.cmd` sous Windows, `sh lancer.sh` sous macOS ou Linux) l'ouvre de lui-même.
-Pour y revenir : Paramètres › onglet « Installation » › « Premier lancement » › « Ouvrir le premier lancement ».
-Une fois la suite réglée, la page renvoie vers l'accueil, sauf si elle est ouverte par ce bouton.
+Cette page règle ce dont la suite a besoin pour travailler. Le lanceur (`lancer.cmd` sous Windows, `sh lancer.sh` sous macOS ou Linux) l'ouvre de lui-même ; on y revient à tout moment par Paramètres › onglet « Premier lancement », ou par la carte « Premier lancement » de l'accueil, affichée tant qu'il reste quelque chose à régler.
+Ouverte par le lanceur, la page ne renvoie vers l'accueil que si « Terminer » a été fait pour cette installation (même dossier de la suite) et que rien d'obligatoire ne manque. Une nouvelle installation servie à la même adresse affiche donc le premier lancement, et l'accueil l'annonce en bandeau.
+
+En tête, **« Où en est la suite »** fait le bilan, ligne par ligne, et chaque ligne mène à son étape : ✓ réglé, ○ à faire, – facultatif, ? inconnu (lanceur absent).
+- Pour tous : données, dépôt git de synchronisation (facultatif), dossier de l'application, compagnie et site, clé d'API IVAO (facultative), pilote (trigramme et au moins un réseau), identifiants du site de la compagnie, données aéronautiques.
+- Centre : activation (administrateurs) ; une fois le Centre activé, flotte et journal du site, missions du registre, utilisateurs et droits (au moins un administrateur), envoi des CR (facultatif).
+
 Le numéro de chaque étape passe au vert quand elle est faite.
 
-### 1 Données
-
-Cette étape installe les données de la compagnie (missions, références…). Elle passe par le lanceur : sans lui, la page affiche « Pour cette étape, ouvrez la suite avec le lanceur… ».
-
-Deux possibilités :
-
-| Carte | Marche à suivre |
-|---|---|
-| « J'ai un accès au dépôt (framagit) » | Saisissez « Identifiant » et « Mot de passe ou jeton », cochez au besoin « mémoriser dans le gestionnaire d'identifiants de Git », puis « Récupérer les données ». Le premier téléchargement prend quelques minutes. |
-| « J'ai reçu les données par mail » | « Archive des données… » : choisissez l'archive `.zip` reçue (elle contient `data_tree.js`). |
-
-- Compte avec double authentification : utilisez un jeton d'accès (framagit › Préférences › Jetons d'accès, droit `read_repository`).
-- Si Git n'est pas installé, seule l'archive est possible (ou installez Git, puis relancez).
-- **« Dépôt git de synchronisation des données »** : l'adresse du dépôt distant de `data/`, qui partage les données
-  entre les postes (bouton « Synchroniser »). Adresse SSH `git@hôte:compte/dépôt.git` (clé SSH de l'ordinateur) ou
-  HTTPS `https://hôte/compte/dépôt.git` (identifiants enregistrés dans Git). La carte affiche le dépôt actuel ;
-  « Vérifier » dit s'il répond depuis ce poste (30 s au plus), « Enregistrer » en fait le dépôt distant de `data/`
-  (sans données encore, l'adresse sert à les récupérer). Rien n'est bloquant : un dépôt qui ne répond pas est signalé,
-  la suite fonctionne sans partage. Détails : [synchronisation](technique/SYNCHRONISATION.md).
-- Une fois les données présentes, la carte facultative « Journal des vols DEFA » propose « Journal DEFA (.html)… » : la page « Log des vols » du site DEFA, enregistrée, remplit les pilotes et appareils de la référence DEFA (aide à la saisie).
-
-### 2 Profil
-
-Votre profil pilote, repris par toutes les pages (☰ › Profil pilote).
-
-1. Remplissez la carte « Pilote » : « Trigramme DEFA », « ID IVAO (VID) », « ID VATSIM (CID) », « SimBrief ».
-2. Cliquez sur « Enregistrer le profil ».
-
-Les identifiants du site DEFA, le mot de passe et les préférences se règlent ensuite dans [Mon profil](#mon-profil).
-
-### 3 Dossiers
+### 1 Dossiers
 
 Le navigateur demande de désigner chaque dossier une fois ; il s'en souvient ensuite.
 
 - **« Dossier de l'application »** : « Choisir le dossier de l'application », puis désignez le dossier qui contient `lancer.cmd` et `lancer.sh`. Les autres dossiers (données, registre, missions, SIA, performances, sauvegarde locale) en sont déduits ; le message indique combien ont été réglés.
-- **« Classeur ODV »** : « Dossier OneDrive… » désigne le dossier synchronisé où l'escadrille dépose le classeur (le Planning ODV ouvre le plus récent). Sans OneDrive : « ou le fichier Excel… », gardé dans ce navigateur.
+- Le dossier doit être celui de la suite servie par le lanceur : s'il appartient à une autre copie de la suite, l'étape reste à faire (✗ dans le bilan) avec le message « Suite lancée depuis …, dossier déclaré … » ; rechoisissez le bon dossier.
+- **« Classeur ODV (facultatif) »** : « Dossier OneDrive… » désigne le dossier synchronisé où l'escadrille dépose le classeur (le Planning ODV ouvre le plus récent). Sans OneDrive : « ou le fichier Excel… », gardé dans ce navigateur.
 
 Cette étape est importante : sans dossier des données autorisé, vos disponibilités restent dans le navigateur et le Centre ne les voit pas.
 
-### 4 Données SIA
+### 2 Données
 
-Cartes et missions utilisent les données AIRAC du SIA (cycle de 28 jours).
+Cette étape installe les données de la compagnie (missions, références…). Elle passe par le lanceur : sans lui, la page affiche « Pour cette étape, ouvrez la suite avec le lanceur… ».
 
-1. Cliquez sur « Terminer et mettre à jour les données SIA ». La suite est notée « réglée » et la page Maintenance s'ouvre sur la mise à jour SIA.
-2. Suivez les étapes guidées : sur le site du SIA (compte gratuit), « Ajouter au panier » le produit du cycle (0 €), puis « Passer commande » en acceptant la licence.
-3. Reprenez le ZIP téléchargé avec « Récupérer le ZIP téléchargé ».
+Tant que le dossier de l'application (étape 1) n'est pas choisi, ou s'il appartient à une autre copie de la suite, cette étape et les suivantes (compagnie, profil, données aéronautiques, Centre) sont grisées et inactives, la raison en tête de chacune, et « Terminer » aussi ; le bilan reste lisible.
 
-Le lien « Accueil » ramène à la page d'accueil sans terminer.
+Trois possibilités :
+
+| Carte | Marche à suivre |
+|---|---|
+| « Jeu d’essai » | « Installer le jeu d’essai » : données fictives livrées avec la suite (missions dont un exercice, pilotes, flotte, disponibilités et affectations de la semaine en cours), pour découvrir la suite ; à remplacer plus tard par les données de la compagnie. Refusé si des données sont déjà là. |
+| « Dépôt de données » | Saisissez « Adresse du dépôt » (donnée par votre compagnie : `https://…` ou `git@…`), au besoin « Identifiant (facultatif) » et « Mot de passe ou jeton (facultatif) », cochez au besoin « mémoriser dans le gestionnaire d’identifiants de Git », puis « Récupérer les données ». Le premier téléchargement prend quelques minutes. |
+| « J'ai reçu les données par mail » | « Archive des données… » : choisissez l'archive `.zip` reçue (elle contient `data_tree.js`). |
+- Aucune adresse n’est préremplie. Dépôt privé en HTTPS : identifiant et mot de passe, ou un jeton d’accès en lecture si le compte a la double authentification ; en SSH (`git@…`), la clé SSH de l’ordinateur.
+- Si Git n'est pas installé : jeu d’essai ou archive (ou installez Git, puis relancez).
+- **« Dépôt git de synchronisation des données (facultatif) »** : l'adresse du dépôt distant de `data/`, qui partage les données
+  entre les postes (bouton « Synchroniser »). Adresse SSH `git@hôte:compte/dépôt.git` (clé SSH de l'ordinateur) ou
+  HTTPS `https://hôte/compte/dépôt.git` (identifiants enregistrés dans Git). La carte affiche le dépôt actuel ;
+  « Vérifier » dit s'il répond depuis ce poste (30 s au plus), « Enregistrer » en fait le dépôt distant de `data/`
+  (sans données encore, l'adresse sert à les récupérer). Rien n'est bloquant : un dépôt qui ne répond pas est signalé,
+  Vers un autre dépôt que celui en place, le lanceur ouvre une fenêtre de confirmation sur l'ordinateur (adresse actuelle
+  et nouvelle, « Non » par défaut) : répondez « Oui » pour changer ; aucune page ne peut y répondre à votre place. Jamais de mot de passe ni de jeton dans l'adresse.
+  la suite fonctionne sans partage. Détails : [synchronisation](technique/SYNCHRONISATION.md).
+- Une fois les données présentes, la carte facultative « Journal des vols » propose « Journal (.html)… » : la page « Log des vols » du site de la compagnie, enregistrée, remplit les pilotes et appareils de la référence (aide à la saisie).
+
+### 3 Compagnie
+
+La compagnie virtuelle dont la suite porte le nom, et l'adresse de son site (liens, flotte, journal des vols) ; réglage de ce navigateur.
+
+1. Carte « Compagnie virtuelle » : « Nom », « Sigle », « Nom long », « Site de la compagnie » (`https://…`).
+2. Carte « Clé d’API IVAO (facultatif) » : la clé de l'installation (activations des zones et sessions ATC IVAO du Tableau et du Planning ODV). Gardée par le lanceur, elle n'est jamais réaffichée : la carte indique seulement qu'une clé est enregistrée.
+3. « Enregistrer la compagnie ».
+
+Les autres champs (centre, pages du site, sources externes) sont dans Paramètres › Installation › Sources et dossiers.
+
+### 4 Profil et identifiants
+
+1. Carte « Pilote » : « Trigramme », « ID IVAO (VID) », « ID VATSIM (CID) », « SimBrief ». Le trigramme est figé en mode production (il vient du compte).
+2. Carte « Site de la compagnie » : « Identifiant » et « Mot de passe » de votre compte sur le site, gardés dans ce navigateur seulement (jamais dans un fichier ni une sauvegarde).
+3. « Enregistrer le profil ».
+
+La suite ne demande jamais vos mots de passe IVAO ni VATSIM : vos identifiants (VID, CID) suffisent. Le compte de la suite (mot de passe, mode production), le client IVAO personnel et les préférences se règlent dans [Mon profil](#mon-profil).
+
+### 5 Données aéronautiques et types d’aéronefs
+
+Cartes, missions et planification utilisent les données aéronautiques (AIRAC) et la base des types d’aéronefs. L'étape montre les mêmes blocs que Paramètres › Installation :
+
+1. « Données aéronautiques » : la France est active par défaut ; un clic sur la carte active une autre zone. Chaque source a son bouton : ZIP du SIA (lien vers la boutique, compte gratuit, produit du cycle à 0 €, puis « Récupérer le ZIP téléchargé »), MORA de la zone, PDF MILAIP (axes de ravitaillement), jeux des autres pays. La base se construit seule.
+2. « Types d’aéronefs » : « Compléter les types manquants de la flotte et des missions » télécharge les types (OACI) et leurs performances (EUROCONTROL).
+
+### 6 Centre (administrateurs)
+
+Réservé aux administrateurs du SO Group : les pilotes passent cette étape.
+- Carte « Activer le Centre » : « Mot de passe du Centre », puis « Activer le Centre ».
+- Une fois le Centre activé :
+  - « Flotte et journal des vols » : dernière lecture du site par le lanceur (flotte, emplacement des appareils, journal), « Mettre à jour maintenant », et le lien vers la flotte (Paramètres › Centre).
+  - « Missions » : nombre de missions au registre (elles arrivent avec les données, étape 1) et le lien vers le registre.
+  - « Réglages du SO Group » : liens vers les rubriques de Paramètres › Centre — utilisateurs et droits (nombre, administrateurs, mode), catégories de disponibilité, Planning ODV, Tableau, envoi des CR, calcul des routes.
+
+« Terminer » note la suite « réglée » et ouvre l'accueil ; le lien « Accueil » y ramène sans terminer.
 
 ### Recommencer
 
 Pour reprendre le premier lancement de zéro, et seulement dans ce cas.
 
-- « Nettoyer et recommencer… » efface, **dans ce navigateur**, les dossiers mémorisés (application, données, registre, missions, SIA, ODV, X-Plane, performances, sauvegarde locale), la copie du classeur ODV, les identifiants du site DEFA, le profil (trigramme, IVAO, VATSIM, SimBrief) et l'indicateur « suite réglée ».
+- « Nettoyer et recommencer… » efface, **dans ce navigateur**, les dossiers mémorisés (application, données, registre, missions, SIA, ODV, X-Plane, performances, sauvegarde locale), la copie du classeur ODV, les identifiants du site de la compagnie, le profil (trigramme, IVAO, VATSIM, SimBrief) et l'indicateur « suite réglée ».
 - Une confirmation est demandée, puis la page se recharge à l'étape 1.
 - Les fichiers sur le disque ne sont pas touchés : dossier `data/`, registres, sauvegarde `defa_local_store.yaml`.
 
@@ -470,7 +502,7 @@ Pour reprendre le premier lancement de zéro, et seulement dans ce cas.
 
 Cette page est la porte d'entrée de tout compte rendu (CR) de mission : vous y choisissez la famille de
 mission, puis la page de CR de cette famille s'ouvre. Elle s'adresse à tous les pilotes.
-Pour y aller : barre latérale › **CR DEFA**, ou le bouton « Nouveau compte rendu » de l'en-tête du
+Pour y aller : barre latérale › **CR**, ou le bouton « Nouveau compte rendu » de l'en-tête du
 reporting général. Un CR peut aussi s'ouvrir directement, déjà rempli, depuis une mission qui vous a été
 affectée (voir plus bas). Pas à pas complet : [tutoriel](TUTORIAL.md).
 
@@ -513,7 +545,7 @@ s'ouvre directement dans la bonne famille, déjà rempli.
 |---|---|
 | **Mes missions** (dossier de la mission ouvert) | « Créer le CR » (grisé si la mission n'a pas de fichier de mission) |
 | **Registre** des missions (Centre) | « Créer le CR », ou « Nouveau CR (vol n) » si la mission a déjà des CR |
-| **Générateur de mission** (Centre) | bouton de l'en-tête « Créer le CR DEFA → » |
+| **Générateur de mission** (Centre) | bouton de l'en-tête « Créer le CR → » |
 
 Ce qui est repris : nom de l'exercice / opération (titre de la mission), identifiant de la mission (champ
 « Mission »), objectif et instructions (bloc Tâche), terrains de départ et d'arrivée, points tournants et
@@ -559,7 +591,7 @@ L'en-tête reste collé en haut de page. De gauche à droite :
 |---|---|
 | « SAR · SAR terrestre ▾ » (famille · sous-type) | popup « Famille de mission » (ouvre la page de l'autre famille) et « Sous-type de mission » |
 | « Ajouter au registre » / « Enregistrer les modifications » | range la mission dans le registre |
-| « Envoyer le CR » | transmet le CR au webservice de la DEFA (en pointillés tant qu'il n'est pas paramétré) |
+| « Envoyer le CR » | transmet le CR au webservice de la compagnie (en pointillés tant qu'il n'est pas paramétré) |
 | « Analyser / importer… » ▾ | coller un plan de vol, une page de tracker, un METAR ; importer un fichier |
 | « Suivi réseau » ▾ | suivi en direct IVAO / VATSIM, historique VATSIM |
 | « Mission » ▾ | « Nouvelle mission », « Exporter la mission (YAML) », « Supprimer cette mission » (en modification) |
@@ -605,7 +637,7 @@ Résultat de la mission et suites à donner (bloc placé en 2e position pour la 
 
 1. Choisissez le « Résultat » : Succès, Succès partiel, Interrompue, Annulée, Déroutée, Pas de contact,
    Objectif non trouvé, Météo, Technique, Opérationnel, Autre.
-2. Pour tout résultat autre que Succès ou Autre, le champ « Motif d'interruption » apparaît.
+2. Pour tout résultat autre que Succès ou Autre, les champs « Motif d'interruption » et « Causes » apparaissent ; cochez toutes les causes (météo, technique, simulateur, pilote absent, contrôle absent, réseau, zone non activée, ravitailleur absent, manque de temps…) : elles remontent sur la plaquette de l'ordre de vol (MNE).
 3. Complétez si besoin « Résultat détaillé », « Incidents » et « Anomalies techniques ».
 
 Ce résultat alimente le taux de réussite et le graphique « Résultats » des reportings.
@@ -626,6 +658,7 @@ Une carte par appareil engagé ; il y en a toujours au moins un. Le « + » du t
 | « ⟲ Effacer » | vide l'appareil pour relancer la recherche (mauvais appareil ou mauvais type) |
 | « Exploitant OACI (OPR/, case 18) » | déduit de l'organisme ou de l'appareil connu |
 | « Base de départ », « Base de retour », masses, « Endurance disponible (min) », « Configuration mission » | à compléter si utile |
+| « Terrain d'atterrissage réel (OACI) » | terrain où l'appareil s'est vraiment posé, jamais prérempli ; dans un CR ouvert depuis « Mes missions » (ordre de mission ou de convoyage), il place l'appareil à ce terrain pour les convoyages suivants. Un CR hors ordre de mission ne déplace pas l'appareil |
 | « Équipements / capacités techniques de l'appareil » | replié ; repris de l'appareil connu ou du plan de vol |
 
 Les champs se filtrent entre eux (voilure, type, série). Choisir un autre appareil remplace ce qui avait
@@ -804,7 +837,7 @@ Menu de l'en-tête pour remplir le CR à partir d'un texte collé. **Seuls les c
 3. Le résultat indique la source reconnue et les champs remplis ; le bouton devient « ✓ Valider ».
 
 Les liens « ↗ Tracker IVAO (mes connexions) » et « ↗ Mes vols StatSim (VATSIM) » ouvrent vos pages. Le
-lien « → CR DEFA », à glisser dans la barre des favoris, copie la page du tracker en un clic. En bas,
+lien « → CR », à glisser dans la barre des favoris, copie la page du tracker en un clic. En bas,
 « Importer (YAML / ancien JSON) » charge un fichier de mission. Détails : [tutoriel](TUTORIAL.md), § 6.
 
 ### Suivi réseau
@@ -892,7 +925,7 @@ Le titre affiche l'immatriculation, le type et le modèle. Dessous, trois pastil
 
 - le **statut** (Disponible, Indisponible, En maintenance, Retiré du service), en couleur ;
 - « 📍 Actuellement à » : dernier terrain connu (arrivée de la dernière mission ou du dernier vol du
-  journal DEFA) ;
+  journal) ;
 - « 🏠 Terrain de rattachement ».
 
 La barre de **période** des reportings (préréglages, dates, ◀ − ▶) est dans l'en-tête : activité,
@@ -907,7 +940,7 @@ fiche se remplira au fil des CR ».
 | « Terrain de rattachement » | oui | code OACI, en majuscules |
 | « Mise en service » | oui | date |
 | « Type », « Variante », « Voilure », « Turbulence de sillage », « Opérateur » | non | repris de la flotte et de la base des types |
-| « Fiche flotte DEFA » | non | lien vers la fiche de l'appareil sur le site de la flotte |
+| « Fiche flotte » | non | lien vers la fiche de l'appareil sur le site de la flotte |
 | « Indicatifs utilisés », « Équipements » | non | relevés dans les missions, avec leur nombre |
 | « Notes » | oui | texte libre |
 
@@ -952,10 +985,10 @@ Flight Planner. »
 ### Missions et vols
 
 Tableau des missions et vols de l'appareil sur la période : date, famille, n°, indicatif, départ →
-arrivée, équipage, heures de vol, source (« registre » ou « journal DEFA »).
+arrivée, équipage, heures de vol, source (« registre » ou « journal »).
 
 - Cliquez un titre de colonne pour trier.
-- Cliquez une mission du registre pour ouvrir son CR en modification ; les vols du journal DEFA sont en
+- Cliquez une mission du registre pour ouvrir son CR en modification ; les vols du journal sont en
   lecture seule.
 - Sous le tableau, quand une période est choisie : boutons pour voir les missions avant ou après la
   période, et zoom − / +.
@@ -988,13 +1021,13 @@ Cartes de la période : « Missions / vols », « Heures de vol », « Premier v
 « Par type » : heures de vol par type d'appareil. Le graphique empile les heures par famille ; glisser
 ou cliquer zoome, double-cliquer dézoome.
 
-Pour un pilote sans mission au registre, les chiffres viennent de la référence DEFA si elle le connaît.
+Pour un pilote sans mission au registre, les chiffres viennent de la référence si elle le connaît.
 
 ### Missions et vols
 
 Même tableau que la fiche appareil, avec en plus la colonne « Immat. » (lien vers la fiche de
 l'appareil) et le type. Tri par titre de colonne ; clic sur une mission du registre : CR en
-modification ; vols du journal DEFA en lecture seule.
+modification ; vols du journal en lecture seule.
 
 ## Reporting
 <!-- page: apps/cr/mission_operations_reporting.html -->
@@ -1014,7 +1047,7 @@ L'en-tête reste visible en haut de page.
 | « Familles » | une puce colorée par famille : clic pour masquer / afficher, Ctrl + clic pour n'en garder qu'une, « Toutes » pour tout basculer |
 | « Regroupement » | Automatique, Jour, Semaine, Mois, Trimestre, Année |
 | « Mesure » | Missions, Heures de vol, Heures bloc, Temps sur zone, Heures de mission, Sorties, Distance (NM) |
-| « Données » | « Mes missions (registre) », « Journal DEFA (vols réalisés) » (lecture seule) ou « Charger / mettre à jour le journal DEFA… » |
+| « Données » | « Mes missions (registre) », « Journal (vols réalisés) » (lecture seule) ou « Charger / mettre à jour le journal… » |
 
 La période est partagée avec les reportings de famille et les fiches. Familles, regroupement et mesure
 sont mémorisés.
@@ -1090,7 +1123,7 @@ Une durée saisie sans heures est « déclarée » (≈), comptée, et signalée
 la saisie des heures dans le CR.
 
 Sous le tableau, quand une période est choisie : « ◀ n avant la période », « − / + », « m après la
-période ▶ ». Les vols du journal DEFA sont en lecture seule.
+période ▶ ». Les vols du journal sont en lecture seule.
 
 ### Registre des missions
 
@@ -1136,7 +1169,7 @@ par famille » du reporting général, ou par la popup de l'en-tête d'une autre
 | « + Nouveau compte rendu » | ouvre directement la page de CR de la famille |
 | Période | même composant et même période que le reporting général |
 | « Regroupement », « Mesure » | réglages du graphique d'activité (Missions, Temps de vol, Temps bloc, Temps sur zone), partagés avec le reporting général |
-| « Données » | registre ou journal DEFA, comme au reporting général |
+| « Données » | registre ou journal, comme au reporting général |
 
 ### Registre des missions
 
@@ -1285,7 +1318,7 @@ Les boutons restent grisés tant qu'aucune carte n'est à produire.
 Ce bloc est masqué par défaut : cliquez sur « Afficher ». Il lit le dossier SIA (AIXM) et le garde dans le navigateur. Sans lui, la page ne reconnaît ni terrains, ni balises, ni espaces.
 
 - Bouton « Dossier SIA : … » : choisir le dossier `data/sia` (le navigateur demande l'accès), puis lecture.
-- « Relire le dossier » : à faire après chaque mise à jour AIRAC. Une jauge suit la lecture ; « Annuler » l'interrompt sans toucher à la base gardée.
+- « Reconstruire la base aéronautique » : à faire après chaque mise à jour AIRAC ; lit les zones actives de Paramètres › Maintenance › Données aéronautiques. Une jauge suit la lecture ; « Annuler » l'interrompt sans toucher à la base gardée.
 - « Purger le cache » : efface la base gardée (elle sera reconstruite à la prochaine relecture).
 - La ligne d'état indique la base gardée, son cycle AIRAC et sa date ; « cycle périmé » s'affiche si un cycle plus récent est en vigueur. « Fichiers analysés » liste les fichiers lus.
 
@@ -1302,7 +1335,7 @@ En-tête : menu « Avion », bouton « Récupérer dernier FPL SimBrief », « U
 
 1. Cliquez sur le bouton d'avion de l'en-tête (« Aucun avion » au départ).
 2. Choisissez un profil dans la liste, groupée par catégorie (hélicoptères, jets, monomoteurs, turboprops…).
-3. Un type marqué « DEFA, sans profil » crée un profil vide : ses performances sont à renseigner.
+3. Un type marqué « flotte, sans profil » crée un profil vide : ses performances sont à renseigner.
 
 La barre en bas de page indique « Profil enregistré — … » ou « Modifications non enregistrées — … ». Elle porte « Recharger la base locale », « Enregistrer le profil » et « Supprimer cet avion ».
 Si vous changez d'avion avec des modifications non enregistrées, la page propose « Rester », « Abandonner et changer » ou « Enregistrer et changer ».
@@ -1344,7 +1377,7 @@ Ce bloc, dans la colonne de droite, suit la page pendant que vous faites défile
 - Base du calcul : niveau et loi de montée retenus.
 - Détail : taxi, montée, croisière, descente, contingence, réserve ; masse au décollage prévue et MTOW si vous l'avez saisie (en rouge si elle est dépassée).
 - Fiche du curseur (⌖ au survol, 📌 épinglé) : carburant et temps du trajet à ce niveau, vario max, vitesses de montée ; « désépingler » retire l'épingle.
-- Groupe repliable « Régimes de vol — profil ↔ cartographie » : Badin, vario, régime moteur et débit par phase, comparés à la cartographie moteur. Il contient aussi le champ « SimBrief Airframe Internal ID » et les liens vers les fiches des appareils DEFA de ce type.
+- Groupe repliable « Régimes de vol — profil ↔ cartographie » : Badin, vario, régime moteur et débit par phase, comparés à la cartographie moteur. Il contient aussi le champ « SimBrief Airframe Internal ID » et les liens vers les fiches des appareils de ce type.
 
 « Épingler » garde le bloc entier quand il suit la page ; sinon, il se replie. Sous le bloc, un panneau par courbe donne les optimums, les limites (plafond, niveau demandé) et une aide à la lecture. Une colonne d'instruments reprend Badin, vario, altitude, carburant et temps de vol.
 

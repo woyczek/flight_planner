@@ -1,6 +1,6 @@
 # User manual
 
-This manual describes the DEFA Virtual suite for **pilots**: one chapter per page, one section per tab or per
+This manual describes the SO Group Virtual (Virtual Special Operation Group) suite for **pilots**: one chapter per page, one section per tab or per
 block, in the order in which they appear. In the suite, the **“Help”** entry of the side bar opens this manual at the
 chapter of the current page. The Centre and the administration of the suite are described in the
 [administrator manual](MANUEL_ADMINISTRATEUR.md); for a first step-by-step report, see the
@@ -9,10 +9,11 @@ chapter of the current page. The Centre and the administration of the suite are 
 ## Getting started
 <!-- page: index.html -->
 
-The “DEFA Virtual” suite brings together in the browser everything a pilot needs: missions assigned by the Centre, availability, flight maps, fuel, mission reports, landings and reporting.
+The “SO Group Virtual” suite brings together in the browser everything a pilot needs: missions assigned by the Centre, availability, flight maps, fuel, mission reports, landings and reporting.
 All pages share the same landmarks: a side bar on the left, a header at the top, sometimes tabs, then blocks.
 This chapter describes these common elements; the following chapters describe each page in detail.
 The home page (`index.html`) lists the applications as cards and shows the version of the suite.
+Open the suite from the launcher or a bookmark: a suite page opened from a link on another website (webmail, forum…) is refused, so that this website can neither read nor trigger anything in it.
 
 ### The side bar
 
@@ -21,11 +22,11 @@ The left-hand column gives access to the applications. The entry of the page on 
 | Entry | What it opens |
 |---|---|
 | “My missions” | Missions assigned by the Centre and availability (with a red badge: number of unread missions) |
-| “DEFA report” | Entry of a new mission report |
+| “Report” | Entry of a new mission report |
 | “Flight maps” | Flight maps: route, topo, approach, rendezvous, destination |
 | “Fuel” | Performance and fuel planner |
 | “Landings” | Landings dashboard |
-| “Reporting” | Mission reporting (DEFA reports) |
+| “Reporting” | Mission reporting (Reports) |
 
 - The **“Centre”** group (“Missions”, “Registry”, “ODV”) only appears if the Centre is unlocked in this browser (Settings › Centre). For a pilot, it normally stays hidden.
 - At the bottom of the column: “Appearance” (opens the display settings in a window, above the current page), “Settings” (My profile and the other settings pages) and **“Help”**. These three entries stay fixed at the bottom of the screen: only the upper list scrolls when there are too many icons (window less than 460 px high: the whole bar scrolls).
@@ -118,7 +119,7 @@ The suite offers several designs. They change the shape of the pages, not the in
 | Design | In short |
 |---|---|
 | Standard, Aero, Operational, Console | “Flat” designs: corners, density, titles, side bar. |
-| Cabinet, Flight log, Rugged, Aqua | Material designs (leather, wood, brass, aluminium, steel, glass). Aqua is the design of a new installation. |
+| Cabinet, Flight log, Rugged, Aqua, Tactical | Material designs (leather, wood, brass, aluminium, steel, glass); Tactical: night, smoked glass, cyan accent, Orbitron titles, no images. Aqua is the design of a new installation. |
 
 - In the material designs, the mission folder in “My missions” becomes a real book, with its animations.
 - You choose in Appearance: each design is shown as a thumbnail and applies at once. See the [Appearance](#appearance) chapter.
@@ -203,15 +204,15 @@ The “⤢ Full width” button in the block title spreads the folder across the
 
 Your availability for the week shown, in UTC. The Centre uses it to assign missions to you. It is the same editor as on the My availability page (next chapter); here, the week is the one of the week bar of the list.
 
-**Palette**: the categories are arranged by group (“Available”, “DEFA exercise”, “Busy”, “Unavailable”). Each badge carries the ODV code letter and a short label; the tooltip gives the full label. The chosen category is remembered.
+**Palette**: the categories are arranged by group (“Available”, “SOG exercise”, “Busy”, “Unavailable”). Each badge carries the ODV code letter and a short label; the tooltip gives the full label. The chosen category is remembered.
 
 Default categories (the Centre can change this list):
 
 | Group | Categories (ODV code) |
 |---|---|
 | Available | Available for everything (O), Available civil security (SC), Available defence (D+), Custom civil security (SC-), Custom defence (D-) |
-| DEFA exercise | DEFA exercise flight (S), DEFA control (AM) |
-| Busy | Flight outside DEFA (IVAO / VATSIM) (G), DCS (DC), Control outside DEFA (IVAO / VATSIM) (AT) |
+| SOG exercise | SOG exercise flight (S), SOG control (AM) |
+| Busy | Flight outside SOG (IVAO / VATSIM) (G), DCS (DC), Control outside SOG (IVAO / VATSIM) (AT) |
 | Unavailable | Unavailable (IN), Holidays (V), Time off (Q), Real-life activity (IR) |
 
 **Hour-by-hour grid**: one line per day (today highlighted), one column per hour from 0 to 23 UTC.
@@ -271,15 +272,16 @@ Your identity in the suite, used by all pages (☰ › Pilot profile, reports, r
 
 | Card | Fields |
 |---|---|
-| “Pilot” | “DEFA trigram”, “VATSIM ID (CID)”, “IVAO ID (VID)”, “SimBrief (username or ID)” |
-| “DEFA website” | “Login”, “Password” |
+| “Pilot” | “Trigram”, “VATSIM ID (CID)”, “IVAO ID (VID)”, “SimBrief (username or ID)” |
+| “Airline website” | “Login”, “Password” |
+| “IVAO — OAuth client (personal)” | “Client ID”, “Client secret”, “Redirect URL to declare at IVAO” (to copy on developers.ivao.aero); “Save the IVAO client” button: kept by this computer’s launcher, the secret is never shown again |
 | “Language” | “Suite language”: Automatic (browser language), Français, English, Deutsch, Español |
 
 1. Fill in the fields.
 2. Click “Save”. The status message confirms “Profile saved in this browser”.
 
 - The trigram has 2 to 4 letters or digits; it is used to find your assigned missions.
-- The DEFA website credentials stay in this browser only: they are never written to a file or to a backup.
+- The airline website credentials stay in this browser only: they are never written to a file or to a backup.
 - The language applies as soon as you choose it, without “Save”.
 - In production mode, the trigram is the one of the signed-in user and cannot be changed here.
 
@@ -315,7 +317,7 @@ The fleet types you own and master, and your simulators. The Centre uses them to
 | Column | Content |
 |---|---|
 | “Type” | Model and ICAO designator |
-| “Fleet variants” | Variants present in the DEFA fleet |
+| “Fleet variants” | Variants present in the fleet |
 | “Aircraft” | Number of aircraft in service (out of the total) and their bases |
 | “Owned” | You have this type in your simulator |
 | “Mastered” | You fly it with ease |
@@ -337,6 +339,10 @@ This section (“Fuel planner” group) sets the threshold above which the plann
 Reference values shown under the field: 10,000 ft (common practice, EASA NCO), 12,500 ft (FAA, crew beyond 30 minutes), 14,000 ft (FAA, crew at all times).
 This is information only: the calculation is not limited. The setting is kept in this browser.
 
+### My aircraft (reporting)
+
+The aircraft you flew or reported: those of the reports with your trigram in the crew, or that you wrote (reports saved since this version) (the aircraft of your seat when the report says so), with type, variant, callsigns, operator, number of flights and last flight. The greyed “Fleet” box shows whether the aircraft belongs to the fleet (ticked) or not (unticked, callsign included); it cannot be changed here. The full list, with the “personal” box, is in Settings › Centre › Fleet (restricted to the Centre). At the top, the log count: reports in total, your reports, reports with no crew entered (they count for nobody).
+
 ## Appearance
 <!-- page: apps/settings/apparence.html -->
 
@@ -349,9 +355,9 @@ The settings are remembered in this browser and apply to all pages; they do not 
 
 The shape of the pages: corners, density, titles, side bar.
 
-- Each design is presented by a thumbnail drawn in its style, with its name and description: Standard, Aero, Operational, Console, Cabinet, Flight log, Rugged, Aqua.
+- Each design is presented by a thumbnail drawn in its style, with its name and description: Standard, Aero, Operational, Console, Cabinet, Flight log, Rugged, Aqua, Tactical.
 - A click on a thumbnail applies the design at once. The chosen thumbnail is framed.
-- Cabinet, Flight log, Rugged and Aqua add their materials; the information colours stay those of the theme.
+- Cabinet, Flight log, Rugged and Aqua add their materials, Tactical its smoked glass on a night background; the information colours stay those of the theme (Tactical: edge at the top of the blocks).
 
 **“Decoration (material designs)”**:
 - “Full” (default): illustrated block panels, register sheets, screws, radar;
@@ -379,13 +385,13 @@ The stroke width of the icons, or no icons at all. Each row shows a preview of t
 | “Brass (medallions)”, “Steel (plates)”, “Gel (bubbles)”, “Avionics (dials)” | Material sets |
 | “No icons” | No icons |
 
-**“Side bar”**: “Depending on design”, “Always” or “Never”. By default, it is always shown (except on a narrow screen and when printing).
+**“Side bar”**: “Depending on design”, “Always” or “Never”. By default, it is always shown (except on a narrow screen and when printing). “Icon size”: “Small”, “Medium” (default) or “Large”. “Display”: “Icon and label” (default), “Icon only” (narrower bar, entry name as a tooltip) or “Label only”.
 
 ### Theme colours
 
 Each page of the suite has a colour theme (banner, banner text, accent). For each theme, you choose a colour family and a tone; the colours are calculated from them, with a readability check.
 
-The themes are shown as cards, in two groups: “Applications” (Fuel, Landings, Centre, DEFA report) and “Report families”.
+The themes are shown as cards, in two groups: “Applications” (Fuel, Landings, Centre, report) and “Report families”.
 
 On each card:
 1. The preview shows a “Title” on the banner, a “Button” and a “Link, icon”.
@@ -403,65 +409,91 @@ Each change is saved at once.
 ## First run
 <!-- page: apps/settings/premier_lancement.html -->
 
-This page sets up the suite in four steps at the first installation. The launcher (`lancer.cmd` on Windows, `sh lancer.sh` on macOS or Linux) opens it by itself.
-To come back to it: Settings › “Installation” tab › “First run” › “Open the first run”.
-Once the suite is set up, the page sends you to the home page, unless it was opened with this button.
+This page sets up what the suite needs to work. The launcher (`lancer.cmd` on Windows, `sh lancer.sh` on macOS or Linux) opens it by itself; you can come back at any time through Settings › “First run” tab, or the “First run” card of the home page, shown as long as something remains to be set.
+Opened by the launcher, the page only sends you to the home page if “Finish” was done for this installation (same suite folder) and nothing mandatory is missing. A new installation served at the same address therefore shows the first run, and the home page announces it in a banner.
+
+At the top, **“Where the suite stands”** takes stock, line by line, and each line leads to its step: ✓ set, ○ to do, – optional, ? unknown (no launcher).
+- For everyone: data, git sync repository (optional), application folder, airline and website, IVAO API key (optional), pilot (trigram and at least one network), airline website credentials, aeronautical data.
+- Centre: enabling (administrators); once the Centre is enabled, fleet and log from the website, registry missions, users and rights (at least one administrator), report sending (optional).
+
 The number of each step turns green when it is done.
 
-### 1 Data
-
-This step installs the airline's data (missions, references…). It goes through the launcher: without it, the page shows “For this step, open the suite with the launcher…”.
-
-Two options:
-
-| Card | How to proceed |
-|---|---|
-| “I have access to the repository (framagit)” | Enter “Login” and “Password or token”, tick “remember in Git’s credential manager” if needed, then “Fetch the data”. The first download takes a few minutes. |
-| “I received the data by e-mail” | “Data archive…”: choose the `.zip` archive you received (it contains `data_tree.js`). |
-
-- Account with two-factor authentication: use an access token (framagit › Preferences › Access tokens, `read_repository` right).
-- If Git is not installed, only the archive is possible (or install Git, then start again).
-- **“Git repository for data synchronisation”**: the address of the remote repository of `data/`, which shares the data
-  between computers (“Synchronise” button). SSH address `git@hôte:compte/dépôt.git` (the computer's SSH key) or
-  HTTPS `https://hôte/compte/dépôt.git` (credentials saved in Git). The card shows the current repository;
-  “Check” tells you whether it answers from this computer (30 s at most), “Save” makes it the remote repository of `data/`
-  (with no data yet, the address is used to fetch them). Nothing is blocking: a repository that does not answer is reported,
-  and the suite works without sharing. Details: [synchronisation](../technique/SYNCHRONISATION.md).
-- Once the data is present, the optional “DEFA flight log” card offers “DEFA log (.html)…”: the “Flight log” page of the DEFA website, saved, fills in the pilots and aircraft of the DEFA reference (entry help).
-
-### 2 Profile
-
-Your pilot profile, used by all pages (☰ › Pilot profile).
-
-1. Fill in the “Pilot” card: “DEFA trigram”, “IVAO ID (VID)”, “VATSIM ID (CID)”, “SimBrief”.
-2. Click “Save the profile”.
-
-The DEFA website credentials, the password and the preferences are set afterwards in [My profile](#my-profile).
-
-### 3 Folders
+### 1 Folders
 
 The browser asks you to point to each folder once; it remembers it afterwards.
 
 - **“Application folder”**: “Choose the application folder”, then point to the folder that contains `lancer.cmd` and `lancer.sh`. The other folders (data, registry, missions, SIA, performance, local backup) are deduced from it; the message tells you how many were set.
-- **“ODV workbook”**: “OneDrive folder…” points to the synchronised folder where the squadron drops the workbook (the ODV planning opens the most recent one). Without OneDrive: “or the Excel file…”, kept in this browser.
+- The folder must be the one of the suite served by the launcher: if it belongs to another copy of the suite, the step stays to do (✗ in the summary) with the message “Suite launched from …, declared folder …”; choose the right folder again.
+- **“ODV workbook (optional)”**: “OneDrive folder…” points to the synchronised folder where the squadron drops the workbook (the ODV planning opens the most recent one). Without OneDrive: “or the Excel file…”, kept in this browser.
 
 This step matters: without an allowed data folder, your availability stays in the browser and the Centre cannot see it.
 
-### 4 SIA data
+### 2 Data
 
-Maps and missions use the SIA AIRAC data (28-day cycle).
+This step installs the airline's data (missions, references…). It goes through the launcher: without it, the page shows “For this step, open the suite with the launcher…”.
 
-1. Click “Finish and update the SIA data”. The suite is marked as “set up” and the Maintenance page opens on the SIA update.
-2. Follow the guided steps: on the SIA website (free account), “Ajouter au panier” the cycle product (0 €), then “Passer commande” accepting the licence.
-3. Take the downloaded ZIP back with “Fetch the downloaded ZIP”.
+Until the application folder (step 1) is chosen, or if it belongs to another copy of the suite, this step and the following ones (airline, profile, aeronautical data, Centre) are greyed out and inactive, with the reason at the top of each, and so is “Finish”; the summary stays readable.
 
-The “Home” link takes you back to the home page without finishing.
+Three options:
+
+| Card | How to proceed |
+|---|---|
+| “Sample data set” | “Install the sample data”: fictitious data shipped with the suite (missions including an exercise, pilots, fleet, availability and assignments for the current week), to discover the suite; to be replaced later by the airline’s data. Refused if data is already there. |
+| “Data repository” | Enter “Repository address” (given by your airline: `https://…` or `git@…`), if needed “Login (optional)” and “Password or token (optional)”, tick “remember in Git’s credential manager” if needed, then “Fetch the data”. The first download takes a few minutes. |
+| “I received the data by e-mail” | “Data archive…”: choose the `.zip` archive you received (it contains `data_tree.js`). |
+- No address is prefilled. Private repository over HTTPS: login and password, or a read access token if the account uses two-factor authentication; over SSH (`git@…`), the computer’s SSH key.
+- If Git is not installed: sample data set or archive (or install Git, then start again).
+- **“Git repository for data synchronisation (optional)”**: the address of the remote repository of `data/`, which shares the data
+  between computers (“Synchronise” button). SSH address `git@hôte:compte/dépôt.git` (the computer's SSH key) or
+  HTTPS `https://hôte/compte/dépôt.git` (credentials saved in Git). The card shows the current repository;
+  “Check” tells you whether it answers from this computer (30 s at most), “Save” makes it the remote repository of `data/`
+  (with no data yet, the address is used to fetch them). Nothing is blocking: a repository that does not answer is reported,
+  For another repository than the current one, the launcher opens a confirmation window on the computer (current and new
+  address, “No” by default): answer “Yes” to change; no page can answer it for you. Never put a password or a token in the address.
+  and the suite works without sharing. Details: [synchronisation](../technique/SYNCHRONISATION.md).
+- Once the data is present, the optional “Flight log” card offers “Log (.html)…”: the “Flight log” page of the airline website, saved, fills in the pilots and aircraft of the reference (entry help).
+
+### 3 Airline
+
+The virtual airline whose name the suite bears, and its website address (links, fleet, flight log); setting of this browser.
+
+1. “Virtual airline” card: “Name”, “Short name”, “Full name”, “Airline website” (`https://…`).
+2. “IVAO API key (optional)” card: the installation's key (area activations and IVAO ATC sessions of the Board and the ODV planning). Kept by the launcher, it is never shown again: the card only says that a key is saved.
+3. “Save the airline”.
+
+The other fields (centre, website pages, external sources) are in Settings › Installation › Sources and folders.
+
+### 4 Profile and credentials
+
+1. “Pilot” card: “Trigram”, “IVAO ID (VID)”, “VATSIM ID (CID)”, “SimBrief”. The trigram is locked in production mode (it comes from the account).
+2. “Airline website” card: “Login” and “Password” of your account on the website, kept in this browser only (never in a file or a backup).
+3. “Save the profile”.
+
+The suite never asks for your IVAO or VATSIM passwords: your IDs (VID, CID) are enough. The suite account (password, production mode), the personal IVAO client and the preferences are set in [My profile](#my-profile).
+
+### 5 Aeronautical data and aircraft types
+
+Maps, missions and planning use the aeronautical data (AIRAC) and the aircraft type database. The step shows the same blocks as Settings › Installation:
+
+1. “Aeronautical data”: France is active by default; a click on the map activates another zone. Each source has its button: SIA ZIP (link to the shop, free account, cycle product at 0 €, then “Fetch the downloaded ZIP”), zone MORA, MILAIP PDF (refuelling tracks), datasets of other countries. The database builds itself.
+2. “Aircraft types”: “Complete the missing fleet and mission types” downloads the types (ICAO) and their performance (EUROCONTROL).
+
+### 6 Centre (administrators)
+
+For SO Group administrators only: pilots skip this step.
+- “Enable the Centre” card: “Centre password”, then “Enable the Centre”.
+- Once the Centre is enabled:
+  - “Fleet and flight log”: last reading of the website by the launcher (fleet, aircraft location, log), “Update now”, and the link to the fleet (Settings › Centre).
+  - “Missions”: number of missions in the registry (they come with the data, step 1) and the link to the registry.
+  - “SO Group settings”: links to the Settings › Centre sections — users and rights (number, administrators, mode), availability categories, ODV planning, Board, report sending, route calculation.
+
+“Finish” marks the suite as “set up” and opens the home page; the “Home” link goes back to it without finishing.
 
 ### Start again
 
 To restart the first run from scratch, and only in that case.
 
-- “Clean and start again…” clears, **in this browser**, the remembered folders (application, data, registry, missions, SIA, ODV, X-Plane, performance, local backup), the copy of the ODV workbook, the DEFA website credentials, the profile (trigram, IVAO, VATSIM, SimBrief) and the “suite set up” flag.
+- “Clean and start again…” clears, **in this browser**, the remembered folders (application, data, registry, missions, SIA, ODV, X-Plane, performance, local backup), the copy of the ODV workbook, the airline website credentials, the profile (trigram, IVAO, VATSIM, SimBrief) and the “suite set up” flag.
 - A confirmation is requested, then the page reloads at step 1.
 - Files on disk are not touched: `data/` folder, registries, `defa_local_store.yaml` backup.
 
@@ -470,7 +502,7 @@ To restart the first run from scratch, and only in that case.
 
 This page is the entry point of every mission report: you choose the mission family there,
 then the report page of that family opens. It is meant for all pilots.
-To go there: side bar › **DEFA report**, or the “New report” button in the header of the
+To go there: side bar › **Report**, or the “New report” button in the header of the
 general reporting. A report can also open directly, already filled in, from a mission assigned
 to you (see below). Full step by step: [tutorial](../TUTORIAL.md).
 
@@ -513,7 +545,7 @@ opens directly in the right family, already filled in.
 |---|---|
 | **My missions** (mission folder open) | “Create the report” (greyed out if the mission has no mission file) |
 | Mission **Registry** (Centre) | “Create report”, or “New report (flight n)” if the mission already has reports |
-| **Mission generator** (Centre) | header button “Create the DEFA report →” |
+| **Mission generator** (Centre) | header button “Create the report →” |
 
 What is carried over: exercise / operation name (mission title), mission identifier (“Mission”
 field), objective and instructions (Tasking block), departure and arrival airfields, waypoints and
@@ -559,7 +591,7 @@ The header stays fixed at the top of the page. From left to right:
 |---|---|
 | “SAR · Land SAR ▾” (family · sub-type) | “Mission family” popup (opens the page of the other family) and “Mission sub-type” |
 | “Add to ledger” / “Save changes” | files the mission in the ledger |
-| “Send report” | sends the report to the DEFA web service (dotted outline as long as it is not set up) |
+| “Send report” | sends the report to the web service (dotted outline as long as it is not set up) |
 | “Analyse / import…” ▾ | paste a flight plan, a tracker page, a METAR; import a file |
 | “Network tracking” ▾ | live IVAO / VATSIM tracking, VATSIM history |
 | “Mission” ▾ | “New mission”, “Export mission (YAML)”, “Delete this mission” (when editing) |
@@ -605,7 +637,7 @@ Result of the mission and follow-up (block placed in 2nd position for reading th
 
 1. Choose the “Outcome”: Success, Partial success, Aborted, Cancelled, Diverted, No contact,
    Target not found, Weather, Technical, Operational, Other.
-2. For any outcome other than Success or Other, the “Interruption reason” field appears.
+2. For any outcome other than Success or Other, the “Interruption reason” and “Causes” fields appear; tick every cause (weather, technical, simulator, pilot missing, no ATC, network, airspace not activated, tanker missing, lack of time…): they go up to the flight order tile (MNE).
 3. If needed, complete “Detailed result”, “Incidents” and “Technical anomalies”.
 
 This outcome feeds the success rate and the “Outcomes” chart of the reporting pages.
@@ -626,6 +658,7 @@ One card per aircraft involved; there is always at least one. The “+” in the
 | “⟲ Clear” | empties the aircraft to restart the search (wrong aircraft or wrong type) |
 | “ICAO operator (OPR/, item 18)” | deduced from the organisation or from the known aircraft |
 | “Departure base”, “Return base”, masses, “Available endurance (min)”, “Mission configuration” | to complete if useful |
+| “Actual landing aerodrome (ICAO)” | aerodrome where the aircraft really landed, never pre-filled; in a report opened from “My missions” (mission or ferry order), it places the aircraft at that aerodrome for the next ferries. A report outside a mission order does not move the aircraft |
 | “Aircraft equipment / technical capabilities” | collapsed; taken from the known aircraft or from the flight plan |
 
 The fields filter each other (wing type, type, series). Choosing another aircraft replaces what had
@@ -804,7 +837,7 @@ Header menu to fill in the report from a pasted text. **Only empty fields are fi
 3. The result shows the source recognised and the fields filled in; the button becomes “✓ Confirm”.
 
 The “↗ IVAO tracker (my connections)” and “↗ My StatSim flights (VATSIM)” links open your pages. The
-“→ CR DEFA” link, to drag into the bookmarks bar, copies the tracker page in one click. At the bottom,
+“→ CR” link, to drag into the bookmarks bar, copies the tracker page in one click. At the bottom,
 “Import (YAML / legacy JSON)” loads a mission file. Details: [tutorial](../TUTORIAL.md), § 6.
 
 ### Network tracking
@@ -892,7 +925,7 @@ The title shows the registration, the type and the model. Below it, three badges
 
 - the **status** (Available, Unavailable, In maintenance, Retired), in colour;
 - “📍 Currently at”: last known airfield (arrival of the last mission or of the last flight in the
-  DEFA log);
+  Log);
 - “🏠 Home aerodrome”.
 
 The reporting **period** bar (presets, dates, ◀ − ▶) is in the header: activity,
@@ -907,7 +940,7 @@ sheet will fill as reports come in”.
 | “Home aerodrome” | yes | ICAO code, in capitals |
 | “Commissioned” | yes | date |
 | “Type”, “Variant”, “Wing”, “Wake turbulence”, “Operator” | no | taken from the fleet and from the type database |
-| “DEFA fleet sheet” | no | link to the aircraft's sheet on the fleet website |
+| “Fleet sheet” | no | link to the aircraft's sheet on the fleet website |
 | “Callsigns used”, “Equipment” | no | collected from the missions, with their count |
 | “Notes” | yes | free text |
 
@@ -952,10 +985,10 @@ Flight Planner.”
 ### Missions and flights
 
 Table of the aircraft's missions and flights over the period: date, family, number, callsign, departure →
-arrival, crew, flight hours, source (“ledger” or “DEFA log”).
+arrival, crew, flight hours, source (“ledger” or “Log”).
 
 - Click a column title to sort.
-- Click a ledger mission to open its report for editing; flights from the DEFA log are
+- Click a ledger mission to open its report for editing; flights from the log are
   read-only.
 - Under the table, when a period is chosen: buttons to see the missions before or after the
   period, and zoom − / +.
@@ -988,13 +1021,13 @@ Cards for the period: “Missions / flights”, “Flight hours”, “First fli
 “By type”: flight hours per aircraft type. The chart stacks the hours by family; dragging
 or clicking zooms in, double-clicking zooms out.
 
-For a pilot with no mission in the ledger, the figures come from the DEFA reference if it knows the pilot.
+For a pilot with no mission in the ledger, the figures come from the reference if it knows the pilot.
 
 ### Missions and flights
 
 Same table as the aircraft sheet, with in addition the “Reg.” column (link to the
 aircraft's sheet) and the type. Sort by column title; click on a ledger mission: report in
-editing; flights from the DEFA log are read-only.
+editing; flights from the log are read-only.
 
 ## Reporting
 <!-- page: apps/cr/mission_operations_reporting.html -->
@@ -1014,7 +1047,7 @@ The header stays visible at the top of the page.
 | “Families” | one coloured chip per family: click to hide / show, Ctrl + click to keep only one, “All” to toggle everything |
 | “Grouping” | Automatic, Day, Week, Month, Quarter, Year |
 | “Measure” | Missions, Flight hours, Block hours, Time on station, Mission hours, Sorties, Distance (NM) |
-| “Data” | “My missions (ledger)”, “DEFA log (flights flown)” (read-only) or “Load / update the DEFA log…” |
+| “Data” | “My missions (ledger)”, “Log (flights flown)” (read-only) or “Load / update the log…” |
 
 The period is shared with the family reporting pages and the sheets. Families, grouping and measure
 are remembered.
@@ -1090,7 +1123,7 @@ A duration entered without times is “declared” (≈), counted, and flagged i
 the times are entered in the report.
 
 Under the table, when a period is chosen: “◀ n before the period”, “− / +”, “m after the
-period ▶”. Flights from the DEFA log are read-only.
+period ▶”. Flights from the log are read-only.
 
 ### Mission ledger
 
@@ -1136,7 +1169,7 @@ by family” in the general reporting, or from the header popup of another repor
 | “+ New report” | opens the family's report page directly |
 | Period | same component and same period as the general reporting |
 | “Grouping”, “Measure” | settings of the activity chart (Missions, Flight time, Block time, Time on station), shared with the general reporting |
-| “Data” | ledger or DEFA log, as in the general reporting |
+| “Data” | ledger or log, as in the general reporting |
 
 ### Mission ledger
 
@@ -1285,7 +1318,7 @@ The buttons stay greyed out as long as there is no map to produce.
 This block is hidden by default: click “Show”. It reads the SIA folder (AIXM) and keeps it in the browser. Without it, the page recognises no airfields, no beacons and no airspaces.
 
 - “SIA folder: …” button: choose the `data/sia` folder (the browser asks for access), then reading.
-- “Re-read the folder”: to do after each AIRAC update. A gauge follows the reading; “Cancel” interrupts it without touching the database kept.
+- “Rebuild the aeronautical database”: to do after each AIRAC update; reads the active zones of Settings › Maintenance › Aeronautical data. A gauge follows the reading; “Cancel” interrupts it without touching the database kept.
 - “Purge the cache”: clears the database kept (it will be rebuilt at the next reading).
 - The status line shows the database kept, its AIRAC cycle and its date; “outdated cycle” is shown if a more recent cycle is in force. “Files analysed” lists the files read.
 
@@ -1302,7 +1335,7 @@ Header: “Aircraft” menu, “Fetch latest SimBrief FPL” button, “Units: k
 
 1. Click the aircraft button in the header (“No aircraft” at the start).
 2. Choose a profile in the list, grouped by category (helicopters, jets, single-engines, turboprops…).
-3. A type marked “DEFA, no profile” creates an empty profile: its performance must be filled in.
+3. A type marked “fleet, no profile” creates an empty profile: its performance must be filled in.
 
 The bar at the bottom of the page shows “Profile saved — …” or “Unsaved changes — …”. It carries “Reload the local database”, “Save profile” and “Delete this aircraft”.
 If you change aircraft with unsaved changes, the page offers “Stay”, “Discard and switch” or “Save and switch”.
@@ -1344,7 +1377,7 @@ This block, in the right-hand column, follows the page while you scroll through 
 - Basis of the calculation: level and climb law used.
 - Detail: taxi, climb, cruise, descent, contingency, reserve; planned take-off mass and MTOW if you entered it (in red if it is exceeded).
 - Cursor card (⌖ on hover, 📌 pinned): fuel and time for the trip at that level, max climb rate, climb speeds; “unpin” removes the pin.
-- Collapsible group “Flight regimes — profile ↔ map”: IAS, climb rate, engine setting and flow per phase, compared with the engine map. It also contains the “SimBrief Airframe Internal ID” field and the links to the sheets of the DEFA aircraft of this type.
+- Collapsible group “Flight regimes — profile ↔ map”: IAS, climb rate, engine setting and flow per phase, compared with the engine map. It also contains the “SimBrief Airframe Internal ID” field and the links to the sheets of the aircraft of this type.
 
 “Pin” keeps the whole block when it follows the page; otherwise, it collapses. Under the block, one panel per curve gives the optimums, the limits (ceiling, requested level) and reading help. A column of instruments shows IAS, climb rate, altitude, fuel and flight time.
 

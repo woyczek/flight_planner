@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Landing Performance — Synthèse multi-CSV</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 64 64%27%3E%3Crect width=%2764%27 height=%2764%27 rx=%2712%27 fill=%27%230f1115%27/%3E%3Cpath d=%27M10 47h44%27 stroke=%27%236fa8ff%27 stroke-width=%275%27 stroke-linecap=%27round%27/%3E%3Cpath d=%27M17 16l14 23 16-9%27 fill=%27none%27 stroke=%27%23e8eaf0%27 stroke-width=%275%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27/%3E%3Ccircle cx=%2731%27 cy=%2747%27 r=%275%27 fill=%27%2344c06a%27/%3E%3C/svg%3E">
-<link rel="stylesheet" href="../../shared/repository_nav.css?v=bc0f3060">
-<script src="../../config/repository_tree?v=2bea194f"></script>
+<link rel="stylesheet" href="../../shared/repository_nav.css?v=f6a61e75">
+<script src="../../config/repository_tree?v=7b133f6e"></script>
 <style data-layer="app">
 @layer app {
   * {
@@ -1345,9 +1345,9 @@
 </main>
 <div id="tooltip" data-no-i18n class="tooltip"></div>
 
-<script src="../../shared/kit.js?v=a819e6df"></script>
-<script src="../../shared/time_period.js?v=167c7f94"></script>
-<script src="../../AircraftDB/aircraft_db.js"></script><script src="../../shared/data_files.js?v=50601f47" data-file="references/aircraft_fleet.js"></script><script src="../../shared/data_files.js?v=50601f47" data-file="references/defa_reference.js"></script><script src="../../shared/aircraft_catalog.js?v=69e8ef45"></script>
+<script src="../../shared/kit.js?v=7f07f523"></script>
+<script src="../../shared/time_period.js?v=9bf86116"></script>
+<script src="../../AircraftDB/aircraft_db.js"></script><script src="../../shared/data_files.js?v=dcb47c6a" data-file="references/aircraft_fleet.js"></script><script src="../../shared/data_files.js?v=dcb47c6a" data-file="references/defa_reference.js"></script><script src="../../shared/aircraft_catalog.js?v=53010467"></script>
 <script src="../../AircraftDB/aircraft_icons.js"></script>
 <script>
 const esc = window.RepositoryKit.esc; // échappement HTML commun (shared/kit.js, chargé avant ce script)
@@ -2634,21 +2634,25 @@ function loadPreferences() {
 }
 let prefs = loadPreferences();
 
+/** Enregistre l'objet « prefs » dans localStorage (clé PREF_KEY) ; erreurs de stockage ignorées. */
 function savePreferences() {
   try {
     localStorage.setItem(PREF_KEY, JSON.stringify(prefs))
   } catch (e) {}
 }
 
+/** Mémorise une préférence (clé, valeur) et l'enregistre aussitôt. */
 function rememberPreference(key, value) {
   prefs[key] = value;
   savePreferences();
 }
 
+/** Clé de préférence de la plage de dates du fichier chargé (« range::nom ») ; null sans fichier. */
 function rangePreferenceKey() {
   return sourceName ? `range::${sourceName}` : null;
 }
 
+/** Mémorise la plage de dates courante (début / fin en ms) pour le fichier chargé. */
 function persistCurrentRange() {
   const k = rangePreferenceKey();
   if (!k || rangeStartMs == null || rangeEndMs == null) return;
@@ -2659,6 +2663,8 @@ function persistCurrentRange() {
   savePreferences();
 }
 
+/** Restaure la plage mémorisée du fichier, bornée aux dates des atterrissages de l'appareil choisi. Renvoie false si
+ *  rien d'utilisable (pas de fichier, plage absente ou vide après bornage). */
 function restoreRangeForCurrentFile() {
   const k = rangePreferenceKey();
   const u = aircraftUniverseRows();
@@ -2678,6 +2684,7 @@ function restoreRangeForCurrentFile() {
   return true;
 }
 
+/** Mode de langue choisi : « auto » ou code de langue (préférences, puis ancienne clé landingLanguageModeV4). */
 let languageMode = (() => {
   try {
     return prefs.languageMode || localStorage.getItem("landingLanguageModeV4") || "auto"
@@ -2687,6 +2694,7 @@ let languageMode = (() => {
 })();
 let lang = languageMode === "auto" ? detectLanguage() : languageMode;
 
+/** Traduit la clé k dans la langue courante (repli en, puis fr, puis la clé) ; remplace les « {nom} » par vars. */
 function t(k, vars = {}) {
   let x = (TR[lang] && TR[lang][k]) || TR.en[k] || TR.fr[k] || k;
   for (const [a, b] of Object.entries(vars)) x = x.replaceAll("{" + a + "}", b);
@@ -2695,7 +2703,11 @@ function t(k, vars = {}) {
 // Lignes [fr, en, de, es] des libellés statiques pour RepositoryContentI18n : clés de TR, filtres crash et 95P.
 function landingI18nRows() {
   const L = ["fr", "en", "de", "es"],
-    keys = ["title", "language", "dataFile", "chooseFile", "noFile", "aircraft", "all", "options", "analysisSmaller", "analysisLarger", "exclude", "estimateMissing", "trendMode", "modeAsymptote", "modeFirstLast", "modeMoving", "smoothing", "print", "evolution", "summary", "quality", "landings", "choose", "stateUnknown"];
+    keys = ["title", "language", "dataFile", "chooseFile", "noFile", "aircraft", "all", "options", "analysisSmaller", "analysisLarger",
+      "exclude", "estimateMissing", "trendMode", "modeAsymptote", "modeFirstLast", "modeMoving", "smoothing", "print", "evolution",
+      "summary", "quality", "landings", "choose", "stateUnknown"
+    ];
+  /** Exécute fn avec la langue temporairement fixée à code (langue courante rétablie ensuite). */
   const inLang = (code, fn) => {
     const keep = lang;
     lang = code;
@@ -2710,18 +2722,31 @@ function landingI18nRows() {
   rows.push(L.map(c => inLang(c, () => p95Text("label"))));
   rows.push(["Options de l’analyse", "Analysis options", "Analyseoptionen", "Opciones del análisis"]); // groupe du menu ☰ (landing_ui.js)
   // sous-titres des blocs (icônes et sous-titres : block_icons.js)
-  rows.push(["Évolution des indicateurs d’atterrissage sur la période.", "Landing indicators over the period.", "Entwicklung der Landekennzahlen im Zeitraum.", "Evolución de los indicadores de aterrizaje en el periodo."]);
-  rows.push(["Par appareil : nombre, moyennes, meilleurs et moins bons atterrissages.", "Per aircraft: count, averages, best and worst landings.", "Je Luftfahrzeug: Anzahl, Mittelwerte, beste und schlechteste Landungen.", "Por aeronave: número, medias, mejores y peores aterrizajes."]);
-  rows.push(["Lignes écartées ou incomplètes des fichiers chargés.", "Rows discarded or incomplete in the loaded files.", "Verworfene oder unvollständige Zeilen der geladenen Dateien.", "Filas descartadas o incompletas de los archivos cargados."]);
-  rows.push(["Détail de chaque atterrissage chargé.", "Details of every loaded landing.", "Einzelheiten jeder geladenen Landung.", "Detalle de cada aterrizaje cargado."]);
+  rows.push(["Évolution des indicateurs d’atterrissage sur la période.", "Landing indicators over the period.",
+    "Entwicklung der Landekennzahlen im Zeitraum.", "Evolución de los indicadores de aterrizaje en el periodo."
+  ]);
+  rows.push(["Par appareil : nombre, moyennes, meilleurs et moins bons atterrissages.",
+    "Per aircraft: count, averages, best and worst landings.",
+    "Je Luftfahrzeug: Anzahl, Mittelwerte, beste und schlechteste Landungen.",
+    "Por aeronave: número, medias, mejores y peores aterrizajes."
+  ]);
+  rows.push(["Lignes écartées ou incomplètes des fichiers chargés.", "Rows discarded or incomplete in the loaded files.",
+    "Verworfene oder unvollständige Zeilen der geladenen Dateien.", "Filas descartadas o incompletas de los archivos cargados."
+  ]);
+  rows.push(["Détail de chaque atterrissage chargé.", "Details of every loaded landing.", "Einzelheiten jeder geladenen Landung.",
+    "Detalle de cada aterrizaje cargado."
+  ]);
   return rows.filter(r => !r.some(v => /\{\w+\}/.test(v)));
 }
 
+/** Affiche le choix de la fenêtre de moyenne mobile seulement en mode de tendance « moving ». */
 function updateTrendControls() {
   const moving = $("trendMode") && $("trendMode").value === "moving";
   if ($("movingWindowControl")) $("movingWindowControl").style.display = moving ? "flex" : "none";
 }
 
+/** Remet les options mémorisées (mode de tendance, fenêtre, filtres qualité / 95P / crash, seuils, estimations) dans
+ *  les contrôles, après validation de chaque valeur. */
 function restorePersistentControls() {
   if (["asymptote", "firstlast", "moving"].includes(prefs.trendMode)) {
     $("trendMode").value = prefs.trendMode;
@@ -2750,6 +2775,7 @@ function normalizeAircraftKey(s) {
   return String(s || "").toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^A-Z0-9]/g, "")
 }
 
+/** Base des types d'appareils (window.AIRCRAFT_DB, aircraft_db.js), lue une fois puis gardée en cache. */
 function aircraftDbCache() {
   if (!aircraftDbCache._v) {
     aircraftDbCache._v = window.AIRCRAFT_DB || {};
@@ -2757,6 +2783,7 @@ function aircraftDbCache() {
   return aircraftDbCache._v;
 }
 
+/** Fiche AircraftDB d'un nom d'appareil (clé normalisée, puis alias) ; fiche minimale « unknown » si introuvable. */
 function resolveAircraftInfo(name) {
   const key = normalizeAircraftKey(name),
     db = aircraftDbCache();
@@ -2773,6 +2800,8 @@ function resolveAircraftInfo(name) {
   return rec;
 }
 
+/** Genre d'appareil d'après le descriptif OACI (ex. « L2J ») : 1re lettre (hélico, autogire, hydravion,
+ *  convertible), sinon dernière lettre = motorisation (jet, turboprop, piston, électrique). */
 function aircraftKind(rec) {
   const d = String(rec?.description || "").toUpperCase();
   const c = d[0] || "?",
@@ -2788,6 +2817,8 @@ function aircraftKind(rec) {
   return "unknown";
 }
 
+/** Décompose le descriptif OACI : famille (1re lettre), nombre de moteurs, motorisation, catégorie de turbulence
+ *  (WTC) et clé normalisée type + modèle + nom. */
 function aircraftSpec(rec) {
   const d = String(rec?.description || "").toUpperCase();
   const family = d[0] || "?";
@@ -2804,6 +2835,7 @@ function aircraftSpec(rec) {
   };
 }
 
+/** Titre de la colonne « Type » du tableau des appareils dans la langue courante. */
 function aircraftTypeColumnTitle() {
   return ({
     fr: "Type",
@@ -2813,18 +2845,24 @@ function aircraftTypeColumnTitle() {
   })[lang] || "Type";
 }
 
+/** Position de l'aile (high, low, rotor, water, biplane, unknown) : champ wing_position de la fiche, sinon déduite
+ *  du type par listes de codes connus. */
 function aircraftWingPosition(rec) {
   const explicit = String(rec?.wing_position || "").toLowerCase();
   if (explicit) return explicit;
   const key = normalizeAircraftKey([rec?.tdesig || "", rec?.model || "", rec?.name || ""].join(" "));
   if (/EC35|H135|EC45|H145|AS50|H125|AS65|S76|CH47|SA342|ALOUETTE/.test(key)) return "rotor";
-  if (/DHC2|DHC3|DHC5|DHC6|DHC7|DH8|Q400|AT42|AT45|AT46|AT72|AT75|AT76|ATR|L410|D228|DO228|C212|CN35|C295|C208|C206|C182|C172|C152|BN2|ISLANDER|TRISLANDER|F27|F50|SF34|SH33|SH36|A4M|A400|XC47C/.test(key)) return "high";
+  if (
+    /DHC2|DHC3|DHC5|DHC6|DHC7|DH8|Q400|AT42|AT45|AT46|AT72|AT75|AT76|ATR|L410|D228|DO228|C212|CN35|C295|C208|C206|C182|C172|C152|BN2|ISLANDER|TRISLANDER|F27|F50|SF34|SH33|SH36|A4M|A400|XC47C/
+    .test(key)) return "high";
   if (/AMPHIB|FLOAT|HYDRA|SEAPLANE/.test(key)) return "water";
   if (/STEARMAN|TIGERMOTH|BIPLANE/.test(key) || String(rec?.tdesig || "").toUpperCase() === "AN2") return "biplane";
   if (/PC12|BE58|B350|BE9L|C750|S210|MD88|DC3|P51|EPIC/.test(key)) return "low";
   return "unknown";
 }
 
+/** Libellé de type traduit (ex. « Biréacteur M ») : famille et motorisation du descriptif, nombre de moteurs, aile
+ *  haute, suivi de la catégorie de turbulence. */
 function aircraftTypeLabel(name) {
   const rec = resolveAircraftInfo(name),
     s = aircraftSpec(rec),
@@ -2906,11 +2944,13 @@ function aircraftTypeLabel(name) {
   if (s.family === "H") type = L.heli;
   else if (s.family === "A" || s.family === "S") type = L.sea;
   else if (s.power === "T") type = n >= 4 ? L.quadP : (n === 2 && wing === "high" ? L.turboH : L.turbo);
-  else if (s.power === "P" || s.power === "E") type = n >= 4 ? L.quadP : (n === 2 && wing === "high" ? L.biPH : n === 2 ? L.biP : n === 1 && wing === "high" ? L.monoPH : n === 1 ? L.monoP : L.other);
+  else if (s.power === "P" || s.power === "E") type = n >= 4 ? L.quadP : (n === 2 && wing === "high" ? L.biPH : n === 2 ? L.biP : n === 1 &&
+    wing === "high" ? L.monoPH : n === 1 ? L.monoP : L.other);
   else if (s.power === "J") type = n === 1 ? L.monoJ : n === 2 ? L.biJ : n === 3 ? L.triJ : n >= 4 ? L.quadJ : L.jet;
   return `${type} ${size}`;
 }
 
+/** Rang de taille par catégorie de turbulence : L < M < H < J ; 9 si inconnue. */
 function aircraftSizeRank(name) {
   const w = aircraftSpec(resolveAircraftInfo(name)).wtc;
   return ({
@@ -2921,6 +2961,7 @@ function aircraftSizeRank(name) {
   })[w] ?? 9;
 }
 
+/** Rang de famille de motorisation : hélico, hydravion, hélice, turboprop, jet ; 9 sinon. */
 function aircraftTypeRank(name) {
   const rec = resolveAircraftInfo(name),
     s = aircraftSpec(rec);
@@ -2932,6 +2973,7 @@ function aircraftTypeRank(name) {
   return 9;
 }
 
+/** Rang de la silhouette (aircraftVisualKey) pour l'ordre du menu des appareils ; 99 si inconnue. */
 function aircraftFamilyRank(name) {
   const visual = aircraftVisualKey(resolveAircraftInfo(name));
   return ({
@@ -2954,6 +2996,7 @@ function aircraftFamilyRank(name) {
   })[visual] ?? 99;
 }
 
+/** Comparateur du menu des appareils : silhouette, puis taille (WTC), puis nom (tri numérique, sans casse). */
 function compareAircraftForMenu(a, b) {
   const fa = aircraftFamilyRank(a),
     fb = aircraftFamilyRank(b);
@@ -2967,6 +3010,8 @@ function compareAircraftForMenu(a, b) {
   });
 }
 
+/** Silhouette d'icône d'un appareil (heli, fighter, seaplane, biplane, twinJet, bizJet…) d'après descriptif OACI,
+ *  motorisation, nombre de moteurs, aile et codes de type connus. */
 function aircraftVisualKey(rec) {
   const s = aircraftSpec(rec),
     k = s.key,
@@ -2986,23 +3031,28 @@ function aircraftVisualKey(rec) {
           M: 1,
           H: 1,
           J: 1
-        })[s.wtc] || /ATR|AT42|AT45|AT46|AT72|AT75|AT76|DH8|Q400|L410|D228|DO228|C212|CN35|C295|DHC6|DHC7|F27|F50|SF34|SH33|SH36/.test(k))) return "twinHigh";
+        })[s.wtc] || /ATR|AT42|AT45|AT46|AT72|AT75|AT76|DH8|Q400|L410|D228|DO228|C212|CN35|C295|DHC6|DHC7|F27|F50|SF34|SH33|SH36/.test(k)))
+        return "twinHigh";
       return "twinProp";
     }
     if (s.engines === 1) return wing === "high" ? "monoHigh" : "monoProp";
   }
   if (s.power === "J") {
     if (s.engines >= 4) return "quadJet";
-    if (/CITATION|LEAR|GULFSTREAM|FALCON|CHALLENGER|PHENOM|HAWKER|GLOBAL|C750|LJ|GLF|FA[0-9]/.test(k) || /^(C25[ABC]|C50[01]|C510|C52[56]|C55[01]|C560|C56X|C650|C68[A]?|C700|C750|CL30|CL35|CL60|E50P|E55P|EA50|FA[0-9]X?|FA50|FA7X|FA8X|GALX|GLEX|GL[5-7]T|GLF[2-7]|H25[ABC]|HDJT|LJ[0-9]{2}|PRM1|SF50|BE40|PC24|ASTR|WW24)$/.test(String(rec?.tdesig || "").toUpperCase())) return "bizJet";
+    if (/CITATION|LEAR|GULFSTREAM|FALCON|CHALLENGER|PHENOM|HAWKER|GLOBAL|C750|LJ|GLF|FA[0-9]/.test(k) ||
+      /^(C25[ABC]|C50[01]|C510|C52[56]|C55[01]|C560|C56X|C650|C68[A]?|C700|C750|CL30|CL35|CL60|E50P|E55P|EA50|FA[0-9]X?|FA50|FA7X|FA8X|GALX|GLEX|GL[5-7]T|GLF[2-7]|H25[ABC]|HDJT|LJ[0-9]{2}|PRM1|SF50|BE40|PC24|ASTR|WW24)$/
+      .test(String(rec?.tdesig || "").toUpperCase())) return "bizJet";
     return "twinJet";
   }
   return "other";
 }
 
+/** SVG de la silhouette (AIRCRAFT_ICON_SVGS, aircraft_icons.js) ; silhouette « other », sinon « ✈ ». */
 function aircraftSvgForVisual(visual) {
   return window.AIRCRAFT_ICON_SVGS?.[visual] || window.AIRCRAFT_ICON_SVGS?.other || "✈";
 }
 
+/** Icône HTML d'un appareil, colorée par catégorie de turbulence, avec type, modèle et WTC en infobulle. */
 function aircraftIconHTML(name) {
   const rec = resolveAircraftInfo(name),
     visual = aircraftVisualKey(rec),
@@ -3011,14 +3061,17 @@ function aircraftIconHTML(name) {
   return `<span class="ac-icon ${visual==="other"?"unknown":""} wtc-${esc(wtc)}" title="${esc(label)}">${aircraftSvgForVisual(visual)}</span>`;
 }
 
+/** Icône HTML de l'entrée « Tous » du sélecteur d'appareil (silhouette biréacteur). */
 function aircraftAllIconHTML() {
   return `<span class="ac-icon wtc-M" title="${esc(t("all"))}">${aircraftSvgForVisual("twinJet")}</span>`;
 }
 
+/** Cellule de tableau : icône de l'appareil suivie de son nom. */
 function aircraftCellHTML(name) {
   return `<span class="ac-cell">${aircraftIconHTML(name)}<span>${esc(name)}</span></span>`
 }
 
+/** Aligne le bouton du sélecteur d'appareil (icône, libellé) et l'état coché du menu sur la valeur du select caché. */
 function syncAircraftPicker() {
   const select = $("aircraftSelect");
   const val = (select && select.value) || "__ALL__";
@@ -3033,11 +3086,13 @@ function syncAircraftPicker() {
   });
 }
 
+/** Ferme le menu des appareils. */
 function closeAircraftMenu() {
   $("aircraftMenu").hidden = true;
   $("aircraftCurrent").setAttribute("aria-expanded", "false");
 }
 
+/** Ouvre ou ferme le menu des appareils ; à l'ouverture, ferme les autres menus et reconstruit la liste. */
 function toggleAircraftMenu() {
   const willOpen = $("aircraftMenu").hidden;
   if (willOpen) {
@@ -3049,6 +3104,8 @@ function toggleAircraftMenu() {
   $("aircraftCurrent").setAttribute("aria-expanded", willOpen ? "true" : "false");
 }
 
+/** Choisit un appareil (« __ALL__ » si la valeur n'existe pas) ; déclenche « change » si fire et si la valeur
+ *  change. */
 function setAircraftSelection(value, fire = true) {
   const select = $("aircraftSelect");
   if (![...select.options].some(o => o.value === value)) value = "__ALL__";
@@ -3104,6 +3161,7 @@ const AIRCRAFT_PROFILE_TIP = {
   es: "Perfil de Flight Performance: ningún aterrizaje registrado para este avión"
 };
 
+/** Groupe d'un code d'appareil (Hélicoptères, Jets…) selon AircraftDBIcons.group ; « Autres » par défaut. */
 function aircraftGroupOf(code) {
   const g = window.AircraftDBIcons?.group?.({
     icao: code,
@@ -3121,6 +3179,7 @@ function profileOnlyAircraft(landingCodes) {
     profiles = Object.values(st?.profiles || {})
   } catch (e) {}
   const db = aircraftDbCache(),
+    /** Clés normalisées d'un nom d'appareil : la sienne et celle de son type OACI dans AircraftDB (alias compris). */
     resolveKey = n => {
       const k = normalizeAircraftKey(n),
         r = db[k] || db[db.__aliases?.[k]];
@@ -3141,6 +3200,8 @@ function profileOnlyAircraft(landingCodes) {
   return out;
 }
 
+/** Reconstruit le select caché et le menu des appareils : appareils des atterrissages puis ceux n'ayant qu'un profil
+ *  Flight Performance, regroupés par famille (« Autres » en dernier), sélection précédente conservée si possible. */
 function rebuildAircraftSelect() {
   const s = $("aircraftSelect"),
     menu = $("aircraftMenu"),
@@ -3173,28 +3234,35 @@ function rebuildAircraftSelect() {
 }
 // ===== Menus langue et options ; libellés P95 / crash =====
 function languageFlagSvg(code) {
-  if (code === "fr") return '<svg viewBox="0 0 60 36" aria-hidden="true"><rect width="20" height="36" x="0" fill="#0055A4"/><rect width="20" height="36" x="20" fill="#fff"/><rect width="20" height="36" x="40" fill="#EF4135"/></svg>';
-  if (code === "de") return '<svg viewBox="0 0 60 36" aria-hidden="true"><rect width="60" height="12" y="0" fill="#000"/><rect width="60" height="12" y="12" fill="#DD0000"/><rect width="60" height="12" y="24" fill="#FFCE00"/></svg>';
-  if (code === "es") return '<svg viewBox="0 0 60 36" aria-hidden="true"><rect width="60" height="9" y="0" fill="#AA151B"/><rect width="60" height="18" y="9" fill="#F1BF00"/><rect width="60" height="9" y="27" fill="#AA151B"/><rect x="17" y="14" width="4" height="8" rx="1" fill="#AA151B" opacity=".85"/></svg>';
+  if (code === "fr")
+    return '<svg viewBox="0 0 60 36" aria-hidden="true"><rect width="20" height="36" x="0" fill="#0055A4"/><rect width="20" height="36" x="20" fill="#fff"/><rect width="20" height="36" x="40" fill="#EF4135"/></svg>';
+  if (code === "de")
+    return '<svg viewBox="0 0 60 36" aria-hidden="true"><rect width="60" height="12" y="0" fill="#000"/><rect width="60" height="12" y="12" fill="#DD0000"/><rect width="60" height="12" y="24" fill="#FFCE00"/></svg>';
+  if (code === "es")
+    return '<svg viewBox="0 0 60 36" aria-hidden="true"><rect width="60" height="9" y="0" fill="#AA151B"/><rect width="60" height="18" y="9" fill="#F1BF00"/><rect width="60" height="9" y="27" fill="#AA151B"/><rect x="17" y="14" width="4" height="8" rx="1" fill="#AA151B" opacity=".85"/></svg>';
   return '<svg viewBox="0 0 60 36" aria-hidden="true"><rect width="60" height="36" fill="#012169"/><path d="M0 0L60 36M60 0L0 36" stroke="#fff" stroke-width="8"/><path d="M0 0L60 36M60 0L0 36" stroke="#C8102E" stroke-width="4"/><path d="M30 0V36M0 18H60" stroke="#fff" stroke-width="12"/><path d="M30 0V36M0 18H60" stroke="#C8102E" stroke-width="7"/></svg>';
 }
 
+/** Ferme le menu des langues. */
 function closeLanguageMenu() {
   $("languageMenu").hidden = true;
   $("languageCurrent").setAttribute("aria-expanded", "false");
 }
 
+/** Ouvre ou ferme le menu des langues. */
 function toggleLanguageMenu() {
   const willOpen = $("languageMenu").hidden;
   $("languageMenu").hidden = !willOpen;
   $("languageCurrent").setAttribute("aria-expanded", willOpen ? "true" : "false");
 }
 
+/** Ferme le menu ☰ des options. */
 function closeOptionsMenu() {
   $("optionsMenu").hidden = true;
   $("optionsButton").setAttribute("aria-expanded", "false");
 }
 
+/** Ouvre ou ferme le menu ☰ des options (ferme le menu des langues à l'ouverture). */
 function toggleOptionsMenu() {
   const willOpen = $("optionsMenu").hidden;
   if (willOpen) closeLanguageMenu();
@@ -3202,6 +3270,7 @@ function toggleOptionsMenu() {
   $("optionsButton").setAttribute("aria-expanded", willOpen ? "true" : "false");
 }
 
+/** Libellés du filtre 95P (exclusion des 5 % d'atterrissages les plus violents) dans la langue courante. */
 function p95Text(k) {
   const D = {
     en: {
@@ -3228,6 +3297,7 @@ function p95Text(k) {
   return (D[lang] || D.en)[k] || k;
 }
 
+/** Libellés du filtre crash (seuils FPM / G, logique de combinaison) dans la langue courante. */
 function crashText(k) {
   const D = {
     en: {
@@ -3282,6 +3352,7 @@ function crashText(k) {
   return (D[lang] || D.en)[k] || k;
 }
 
+/** Traduit les libellés et les choix de logique du filtre crash dans le menu des options. */
 function updateCrashOptionLanguage() {
   $("crashLabel").textContent = crashText("label");
   $("crashFpmLabel").textContent = crashText("fpm");
@@ -3331,6 +3402,7 @@ let allRows = [],
   formatMode = "";
 let rangeStartMs = null,
   rangeEndMs = null;
+/** Taille des graphiques de l'analyse, de 0 à 3 (préférences, puis ancienne clé) ; 1 par défaut. */
 let analysisSize = (() => {
   try {
     const pv = Number(prefs.analysisSize);
@@ -3351,6 +3423,7 @@ function applyAnalysisSize() {
   $("analysisLargerBtn").disabled = analysisSize >= 3;
 }
 
+/** Agrandit ou réduit les graphiques de l'analyse (delta ±1, borné à 0–3) et mémorise la taille. */
 function changeAnalysisSize(delta) {
   analysisSize = Math.max(0, Math.min(3, analysisSize + delta));
   rememberPreference("analysisSize", analysisSize);
@@ -3360,6 +3433,7 @@ function changeAnalysisSize(delta) {
   applyAnalysisSize();
 }
 
+/** Élément de la page par son id. */
 const $ = id => document.getElementById(id);
 $("languageCurrent").addEventListener("click", e => {
   e.stopPropagation();
@@ -3509,6 +3583,7 @@ function openCacheDb() {
     req.onerror = () => reject(req.error);
   });
 }
+/** Garde le jeu de données (nom, texte brut, date, taille) dans IndexedDB pour le recharger à la prochaine visite. */
 async function saveCachedDataset(record) {
   try {
     const db = await openCacheDb();
@@ -3521,6 +3596,7 @@ async function saveCachedDataset(record) {
     db.close();
   } catch (e) {}
 }
+/** Relit le dernier jeu de données gardé dans IndexedDB ; null si absent ou base indisponible. */
 async function readCachedDataset() {
   try {
     const db = await openCacheDb();
@@ -3537,6 +3613,8 @@ async function readCachedDataset() {
   }
 }
 
+/** Charge un texte CSV / LOG : nom affiché et mémorisé, analyse puis ingestion ; message d'erreur et tableau de bord
+ *  masqué si l'analyse échoue. */
 function loadDatasetText(name, rawText, meta = {}) {
   sourceName = name || "data";
   $("fileName").textContent = sourceName;
@@ -3554,6 +3632,7 @@ function loadDatasetText(name, rawText, meta = {}) {
     $("dashboard").classList.add("hidden");
   }
 }
+/** Recharge au démarrage le dernier jeu gardé en cache ; false si aucun. */
 async function restoreCachedDataset() {
   const cached = await readCachedDataset();
   if (!cached || typeof cached.text !== "string" || !cached.name) return false;
@@ -3573,6 +3652,8 @@ async function loadFiles(list) {
   if (files.length < 2) return files[0] && loadFile(files[0]);
   try {
     const tables = (await Promise.all(files.map(f => f.text()))).map(parseCSV);
+    /** Nom de colonne normalisé (sans BOM, espaces ni casse) ; en-tête reconnu par ses colonnes timestamp et
+     *  aircraft. */
     const key = h => String(h).trim().replace(/^\uFEFF/, "").toLowerCase(),
       isHead = r => r.map(key).includes("timestamp") && r.map(key).includes("aircraft");
     const head = isHead(tables[0][0]) ? tables[0][0] : null,
@@ -3590,6 +3671,8 @@ async function loadFiles(list) {
         }
       }
     }
+    /** Cellule CSV réécrite entre guillemets (guillemets doublés) si elle contient virgule, guillemet ou saut de
+     *  ligne. */
     const cellOut = v => /[",\n\r]/.test(v) ? `"${String(v).replace(/"/g, '""')}"` : v;
     const text = [...(head ? [head] : []), ...body].map(r => r.map(cellOut).join(",")).join("\n"),
       name = `${files[0].name} + ${files.length - 1}`,
@@ -3609,6 +3692,7 @@ async function loadFiles(list) {
   }
 }
 
+/** Lit un seul fichier CSV / LOG en UTF-8, le garde en cache IndexedDB puis le charge. */
 function loadFile(file) {
   sourceName = file.name;
   $("fileName").textContent = file.name;
@@ -3634,6 +3718,8 @@ function loadFile(file) {
   reader.readAsText(file, "utf-8");
 }
 
+/** Découpe un texte CSV en lignes de cellules (guillemets et "" doublés gérés, \r ignorés, lignes vides écartées).
+ *  Lève une erreur « fichier vide » si aucune ligne. */
 function parseCSV(text) {
   const rows = [];
   let row = [],
@@ -4026,12 +4112,14 @@ function loadLearnedCalibration() {
   }
 }
 
+/** Enregistre la calibration apprise dans localStorage, limitée aux 500 derniers couples CSV+LOG. */
 function saveLearnedCalibration() {
   try {
     localStorage.setItem(CALIBRATION_KEY, JSON.stringify(learnedCalibration.slice(-500)))
   } catch (e) {}
 }
 
+/** Échantillons de calibration : couples d'usine puis couples appris (le même id garde la version apprise). */
 function calibrationSamples() {
   const map = new Map();
   FACTORY_CALIBRATION.forEach(s => map.set(s.id, s));
@@ -4039,18 +4127,22 @@ function calibrationSamples() {
   return [...map.values()];
 }
 
+/** Nombre fini, sinon NaN. */
 function finiteNumber(v) {
   return Number.isFinite(Number(v)) ? Number(v) : NaN
 }
 
+/** log(1 + |v|) : écrase les grandes valeurs (FPM, nez) avant la régression. */
 function logAbs(v) {
   return Math.log1p(Math.abs(Number(v)))
 }
 
+/** log(1 + max(0, v)) : comme logAbs, valeurs négatives ramenées à 0 (durée de flottement). */
 function logPositive(v) {
   return Math.log1p(Math.max(0, Number(v)))
 }
 
+/** Résout A·x = b par élimination de Gauss-Jordan avec pivot partiel ; null si la matrice est singulière. */
 function solveLinearSystem(A, b) {
   const n = A.length;
   const M = A.map((r, i) => r.slice().concat([b[i]]));
@@ -4071,6 +4163,8 @@ function solveLinearSystem(A, b) {
   return M.map(r => r[n]);
 }
 
+/** Régression ridge : variables centrées-réduites, pénalité alpha hors constante ; null sous 4 échantillons valides.
+ *  Renvoie { n, mu, sd, beta, predict(obj), trainingMAE } (erreur absolue moyenne sur l'apprentissage). */
 function fitRidge(samples, featureFn, targetKey, alpha = 1) {
   const rows = [];
   for (const s of samples) {
@@ -4108,6 +4202,7 @@ function fitRidge(samples, featureFn, targetKey, alpha = 1) {
   const beta = solveLinearSystem(A, b);
   if (!beta) return null;
 
+  /** Prédit la cible pour un objet aux mêmes champs que les échantillons ; NaN si une variable manque. */
   const predictRaw = obj => {
     const x = featureFn(obj);
     if (!Array.isArray(x) || x.length !== p || x.some(v => !Number.isFinite(v))) return NaN;
@@ -4134,6 +4229,8 @@ function fitRidge(samples, featureFn, targetKey, alpha = 1) {
   };
 }
 
+/** Ajuste les modèles d'estimation : score, pic G et FPM au toucher d'après le LOG ; FPM, G, taux de rotation du nez
+ *  et flottement du LOG d'après le CSV riche. */
 function buildCalibrationModels() {
   const samples = calibrationSamples();
 
@@ -4177,6 +4274,8 @@ function buildCalibrationModels() {
   updateCalibrationInfo();
 }
 
+/** Couple de calibration tiré d'une ligne riche « CSV+LOG » mesurée (score, G, FPM non estimés) ; null si une valeur
+ *  est hors plage plausible (|FPM| > 5000, G hors 0,1–12, vitesse sol < 25 kt). */
 function calibrationSampleFromRichRow(r) {
   const estimated = new Set(r._estimatedFields || []);
   if (String(r.Source || "") !== "CSV+LOG") return null;
@@ -4211,6 +4310,8 @@ function calibrationSampleFromRichRow(r) {
   return s;
 }
 
+/** Ajoute à la calibration apprise les couples CSV+LOG du fichier riche chargé, puis réajuste les modèles. Renvoie
+ *  le nombre de nouveaux couples. */
 function learnCalibrationFromCurrentRows() {
   if (formatMode !== "rich") return 0;
   const incoming = allRows.map(calibrationSampleFromRichRow).filter(Boolean);
@@ -4228,6 +4329,8 @@ function learnCalibrationFromCurrentRows() {
   return added;
 }
 
+/** Niveau de confiance d'une estimation (high, medium, low, veryLow) selon le champ et le nombre d'échantillons du
+ *  même appareil (ou au total pour les FPM). */
 function confidenceForEstimate(field, aircraft) {
   const samples = calibrationSamples();
   const same = samples.filter(s => s.aircraft === aircraft).length;
@@ -4243,10 +4346,13 @@ function confidenceForEstimate(field, aircraft) {
   return same >= 8 ? "medium" : "low";
 }
 
+/** Libellé traduit d'un niveau de confiance. */
 function confidenceText(code) {
-  return t(code === "high" ? "confidenceHigh" : code === "medium" ? "confidenceMedium" : code === "low" ? "confidenceLow" : "confidenceVeryLow");
+  return t(code === "high" ? "confidenceHigh" : code === "medium" ? "confidenceMedium" : code === "low" ? "confidenceLow" :
+    "confidenceVeryLow");
 }
 
+/** Appréciation déduite d'un score estimé : ≥ 90 EXCELLENT, ≥ 85 VERY GOOD, ≥ 70 GOOD, ≥ 50 HARD, sinon VERY HARD. */
 function ratingFromEstimatedScore(score) {
   if (!Number.isFinite(score)) return "";
   if (score >= 90) return "EXCELLENT";
@@ -4256,6 +4362,8 @@ function ratingFromEstimatedScore(score) {
   return "VERY HARD";
 }
 
+/** Classe d'appareil (Rotorcraft, Transport, Business, General Aviation) d'après une liste de codes connus ; ""
+ *  sinon. */
 function estimateAircraftClass(aircraft) {
   const a = String(aircraft || "").toUpperCase();
   if (["AS50", "EC35", "S76", "EC45", "AS65", "ALOUETTE", "SA342", "H125", "CH47"].includes(a)) return "Rotorcraft";
@@ -4265,6 +4373,7 @@ function estimateAircraftClass(aircraft) {
   return "";
 }
 
+/** Ramène l'appréciation d'arrondi du LOG aux catégories du CSV riche : Very Good, Good, Early / Late. */
 function normalizeLogFlare(s) {
   const l = String(s || "").toLowerCase();
   if (l.includes("very good")) return "Very Good";
@@ -4273,6 +4382,8 @@ function normalizeLogFlare(s) {
   return s || "";
 }
 
+/** Marque un champ comme estimé sur la ligne r (modèle, confiance, erreur type) et ajoute l'avertissement
+ *  « estimé ». */
 function addEstimateMeta(r, field, model, confidence, maeText = "") {
   if (!r._estimatedFields) r._estimatedFields = [];
   if (!r._estimatedFields.includes(field)) r._estimatedFields.push(field);
@@ -4286,6 +4397,8 @@ function addEstimateMeta(r, field, model, confidence, maeText = "") {
   if (!r._warnings.includes("__estimated__")) r._warnings.push("__estimated__");
 }
 
+/** Complète une ligne au format hérité : FPM au toucher, pic G (0,1–12) et score (0–100, avec appréciation) prédits
+ *  d'après les mesures du LOG, classe d'appareil devinée ; arrondi ramené aux catégories riches. */
 function estimateLegacyRow(r) {
   if (!calibrationModels) buildCalibrationModels();
   const m = calibrationModels;
@@ -4337,6 +4450,7 @@ function estimateLegacyRow(r) {
   r.RichFlare = normalizeLogFlare(r.Flare);
 }
 
+/** Complète une ligne riche : valeurs du LOG manquantes (FPM, G, taux de nez, flottement) prédites d'après le CSV. */
 function estimateRichRow(r) {
   if (!calibrationModels) buildCalibrationModels();
   const m = calibrationModels;
@@ -4351,6 +4465,7 @@ function estimateRichRow(r) {
   if (!r._estimateMeta) r._estimateMeta = {};
   if (!r._estimatedLogFields) r._estimatedLogFields = [];
 
+  /** Écrit la valeur estimée dans la ligne et note le champ, le modèle, la confiance et l'erreur type. */
   function addLogEstimate(field, value, model, confidence, maeText) {
     r[field] = value;
     if (!r._estimatedLogFields.includes(field)) r._estimatedLogFields.push(field);
@@ -4363,22 +4478,27 @@ function estimateRichRow(r) {
 
   if (!Number.isFinite(Number(r.LogLandingRateFPM)) && m.logFpmFromRich) {
     const v = m.logFpmFromRich.predict(obj);
-    if (Number.isFinite(v)) addLogEstimate("LogLandingRateFPM", v, "modelLogFpmRich", confidenceForEstimate("LogLandingRateFPM", r.Aircraft), "≈12 FPM CV");
+    if (Number.isFinite(v)) addLogEstimate("LogLandingRateFPM", v, "modelLogFpmRich", confidenceForEstimate("LogLandingRateFPM", r
+      .Aircraft), "≈12 FPM CV");
   }
   if (!Number.isFinite(Number(r.LogLandingG)) && m.logGFromRich) {
     const v = m.logGFromRich.predict(obj);
-    if (Number.isFinite(v)) addLogEstimate("LogLandingG", v, "modelLogGRich", confidenceForEstimate("LogLandingG", r.Aircraft), "≈0.21 G CV");
+    if (Number.isFinite(v)) addLogEstimate("LogLandingG", v, "modelLogGRich", confidenceForEstimate("LogLandingG", r.Aircraft),
+      "≈0.21 G CV");
   }
   if (!Number.isFinite(Number(r.LogNoseRateDegSec)) && m.logNoseFromRich) {
     const v = m.logNoseFromRich.predict(obj);
-    if (Number.isFinite(v)) addLogEstimate("LogNoseRateDegSec", v, "calibratedEstimate", confidenceForEstimate("LogNoseRateDegSec", r.Aircraft), "");
+    if (Number.isFinite(v)) addLogEstimate("LogNoseRateDegSec", v, "calibratedEstimate", confidenceForEstimate("LogNoseRateDegSec", r
+      .Aircraft), "");
   }
   if (!Number.isFinite(Number(r.LogFloatSeconds)) && m.logFloatFromRich) {
     const v = m.logFloatFromRich.predict(obj);
-    if (Number.isFinite(v)) addLogEstimate("LogFloatSeconds", v, "calibratedEstimate", confidenceForEstimate("LogFloatSeconds", r.Aircraft), "");
+    if (Number.isFinite(v)) addLogEstimate("LogFloatSeconds", v, "calibratedEstimate", confidenceForEstimate("LogFloatSeconds", r.Aircraft),
+      "");
   }
 }
 
+/** Estime les champs manquants de toutes les lignes chargées selon le format (hérité ou riche). */
 function applyEstimatesToCurrentRows() {
   if (!calibrationModels) buildCalibrationModels();
   if (formatMode === "legacy") allRows.forEach(estimateLegacyRow);
@@ -4386,10 +4506,12 @@ function applyEstimatesToCurrentRows() {
   updateCalibrationInfo();
 }
 
+/** Option « estimer les valeurs manquantes » cochée (vrai si la case est absente). */
 function estimateEnabled() {
   return $("estimateMissing") ? $("estimateMissing").checked : true;
 }
 
+/** Vrai si la mesure (score, fpm, g) de la ligne est une estimation et que les estimations sont affichées. */
 function metricIsEstimated(r, key) {
   if (!estimateEnabled()) return false;
   const e = new Set(r._estimatedFields || []);
@@ -4399,6 +4521,7 @@ function metricIsEstimated(r, key) {
   return false;
 }
 
+/** Affiche dans les options le nombre de couples de calibration d'usine et appris, avec la note sur les estimations. */
 function updateCalibrationInfo() {
   const el = $("calibrationInfo");
   if (!el) return;
@@ -4445,6 +4568,8 @@ function ingest(rows) {
   render();
 }
 
+/** Lit le format riche (en-tête nommé) : code OACI en majuscules (PLANE_ICAO, ICAO ou Aircraft), mesures numériques,
+ *  date, n° de ligne, champs déjà estimés, défauts bloquants et avertissements ; lignes sans date écartées. */
 function ingestRich(rows) {
   const h = rows[0].map(s => s.trim().replace(/^\uFEFF/, ""));
   allRows = rows.slice(1).map((r, n) => {
@@ -4465,6 +4590,8 @@ function ingestRich(rows) {
   }).filter(r => r._date);
 }
 
+/** Lit le format hérité (LOG Lua v1.83, colonnes par position) : mesures du LOG, score / G / FPM au toucher à
+ *  estimer, classe d'atterrissage déduite de la vitesse verticale ; lignes sans date ou sans appareil écartées. */
 function ingestLegacy(rows, hasHeader) {
   let data = rows;
 
@@ -4504,6 +4631,7 @@ function ingestLegacy(rows, hasHeader) {
   }).filter(r => r._date && r.Aircraft);
 }
 
+/** Nombre lu dans une cellule ; NaN pour vide, « inf », « nan » ou texte non numérique. */
 function num(x) {
   if (x == null) return NaN;
   const s = String(x).trim().toLowerCase();
@@ -4512,12 +4640,15 @@ function num(x) {
   return Number.isFinite(v) ? v : NaN;
 }
 
+/** Date locale tirée d'un horodatage « AAAA-MM-JJ hh:mm:ss » (ou séparateur T) ; null si non reconnu. */
 function parseTimestamp(s) {
   const m = String(s).match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2}):(\d{2})/);
   if (!m) return null;
   return new Date(+m[1], +m[2] - 1, +m[3], +m[4], +m[5], +m[6]);
 }
 
+/** Défauts de plausibilité d'une ligne riche (codes de message) : FPM au toucher absent ou |FPM| > 5000, G mesuré
+ *  hors 0,1–12, vitesse sol hors 25–250 kt, assiette > 40°, inclinaison > 45°. Une ligne avec défaut est suspecte. */
 function qualityIssuesRich(r) {
   const a = [];
   const estimated = new Set(r._estimatedFields || []);
@@ -4544,6 +4675,8 @@ function qualityIssuesRich(r) {
   return a;
 }
 
+/** Avertissements non bloquants d'une ligne riche : télémétrie optionnelle absente (fichier fusionné), valeurs
+ *  estimées ou ligne « LOG_ONLY » partielle. */
 function qualityWarningsRich(r) {
   const a = [];
   const estimated = r._estimatedFields || [];
@@ -4563,6 +4696,8 @@ function qualityWarningsRich(r) {
   return a;
 }
 
+/** Défauts de plausibilité d'une ligne héritée : vitesse verticale absente ou > 5000 FPM, G absent ou hors 0,1–12,
+ *  taux de rotation du nez > 50 °/s, flottement > 60 s. */
 function qualityIssuesLegacy(r) {
   const a = [];
   if (!Number.isFinite(r.LandingRateFPM)) a.push("issueRateMissing");
@@ -4579,16 +4714,21 @@ function qualityIssuesLegacy(r) {
   return a;
 }
 
+/** Texte traduit d'un code de défaut. */
 function issueText(key) {
   return t(key)
 }
 
+/** Date au format « AAAA-MM-JJ » d'un champ date ; "" sans date. */
 function toDateInputValue(d) {
   if (!d) return "";
+  /** Nombre sur deux chiffres. */
   const p = n => String(n).padStart(2, "0");
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`;
 }
 
+/** Horodatage (ms) d'une date « AAAA-MM-JJ » : début du jour, ou fin du jour (23:59:59.999) si endOfDay ; null
+ *  sinon. */
 function parseDateInputValue(value, endOfDay = false) {
   const m = String(value || "").match(/^(\d{4})-(\d{2})-(\d{2})$/);
   if (!m) return null;
@@ -4607,6 +4747,8 @@ function landingRatingRaw(r) {
   return logRating || "UNKNOWN";
 }
 
+/** Catégorie de note d'un atterrissage (crash, butter, excellent, great, good, acceptable, hard, veryhard,
+ *  unknown) : seuils de crash d'abord, puis mots-clés de l'appréciation du LOG ou du CSV. */
 function landingRatingKey(r) {
   // A crash trigger has priority when the crash filter is disabled and the point remains visible.
   if (isCrashTriggered(r)) return "crash";
@@ -4622,6 +4764,7 @@ function landingRatingKey(r) {
   return "unknown";
 }
 
+/** Libellé traduit d'une catégorie de note. */
 function landingRatingLabel(key) {
   const labels = {
     en: {
@@ -4672,6 +4815,7 @@ function landingRatingLabel(key) {
   return (labels[lang] || labels.en)[key] || key;
 }
 
+/** Légende HTML des catégories de note présentes dans les lignes, de la meilleure (butter) à la pire. */
 function ratingLegendHTML(rows) {
   const order = ["butter", "excellent", "great", "good", "acceptable", "hard", "veryhard", "crash", "unknown"];
   const seen = new Set(rows.map(landingRatingKey));
@@ -4679,6 +4823,7 @@ function ratingLegendHTML(rows) {
   return items ? `<span class="rating-legend">${items}</span>` : "";
 }
 
+/** Seuils du filtre crash lus dans les options : FPM (−1000 par défaut), G (5 par défaut), logique (or par défaut). */
 function crashThresholds() {
   const fpm = Number($("crashFpm")?.value);
   const g = Number($("crashG")?.value);
@@ -4689,6 +4834,7 @@ function crashThresholds() {
   };
 }
 
+/** Vrai si l'atterrissage déclenche le crash : FPM ≤ seuil et / ou G ≥ seuil selon la logique choisie. */
 function isCrashTriggered(r) {
   const {
     fpm,
@@ -4705,11 +4851,14 @@ function isCrashTriggered(r) {
   return hitF || hitG;
 }
 
+/** Retire les atterrissages déclenchant le crash si le filtre est actif (copie des lignes sinon). */
 function applyCrashFilter(rows) {
   if (!$("crashFilter") || !$("crashFilter").checked) return rows.slice();
   return rows.filter(r => !isCrashTriggered(r));
 }
 
+/** Filtre 95P : par appareil, retire les 5 % d'atterrissages les plus violents (rang centile max de |FPM| et du G) ;
+ *  rien n'est retiré sous 20 atterrissages. Renvoie les lignes gardées par ordre chronologique. */
 function applyP95AccidentFilter(rows) {
   if (!$("p95Filter") || !$("p95Filter").checked) return rows.slice();
   const groups = groupBy(rows, r => r.Aircraft || "");
@@ -4733,6 +4882,7 @@ function applyP95AccidentFilter(rows) {
     });
     const fs = impacts.map(x => x.f).filter(Number.isFinite).sort((a, b) => a - b);
     const gs = impacts.map(x => x.g).filter(Number.isFinite).sort((a, b) => a - b);
+    /** Rang centile de v dans le tableau trié arr (recherche dichotomique) : part des valeurs ≤ v ; 0 si v absent. */
     const rank = (arr, v) => {
       if (!Number.isFinite(v) || !arr.length) return 0;
       let lo = 0,
@@ -4758,6 +4908,7 @@ function applyP95AccidentFilter(rows) {
   return kept.sort((a, b) => a._date - b._date);
 }
 
+/** Filtres de l'analyse dans l'ordre : lignes suspectes (si filtre qualité), crash, puis 95P. */
 function applyAnalysisFilters(rows) {
   const quality = $("qualityFilter").checked;
   const plausible = rows.filter(r => !quality || !r._suspect);
@@ -4770,10 +4921,14 @@ function aircraftUniverseRows() {
   return allRows.filter(r => a === "__ALL__" || r.Aircraft === a);
 }
 
+/** Atterrissages de l'appareil choisi, filtres de l'analyse appliqués, toutes dates confondues (fond des
+ *  graphiques). */
 function chartUniverseRows() {
   return applyAnalysisFilters(aircraftUniverseRows());
 }
 
+/** Reporte la plage courante dans le composant de période : préréglage « all » si elle couvre toutes les données de
+ *  l'appareil (à 1 s près), sinon dates personnalisées. */
 function syncDateInputs() {
   if (typeof periodCtrl === "undefined" || rangeStartMs == null || rangeEndMs == null) return;
   const u = aircraftUniverseRows(),
@@ -4810,12 +4965,14 @@ function applyPeriodState(state) {
   render();
 }
 
+/** Borne le composant de période aux dates du premier et du dernier atterrissage de l'appareil choisi. */
 function updateDateInputLimits() {
   const u = aircraftUniverseRows();
   if (!u.length || typeof periodCtrl === "undefined") return;
   periodCtrl.setBounds(u[0]._date.getTime(), u[u.length - 1]._date.getTime());
 }
 
+/** Plage initiale après chargement : du premier au dernier atterrissage du fichier. */
 function initializeDateRange() {
   if (!allRows.length) return;
   rangeStartMs = allRows[0]._date.getTime();
@@ -4824,6 +4981,7 @@ function initializeDateRange() {
   syncDateInputs();
 }
 
+/** Plage réglée sur toutes les dates de l'appareil choisi. */
 function setRangeToFull() {
   const u = aircraftUniverseRows();
   if (!u.length) return;
@@ -4833,6 +4991,7 @@ function setRangeToFull() {
   syncDateInputs();
 }
 
+/** Plage choisie en objets Date (null si non définie). */
 function selectedRange() {
   return {
     start: rangeStartMs == null ? null : new Date(rangeStartMs),
@@ -4840,11 +4999,13 @@ function selectedRange() {
   };
 }
 
+/** Zoome la période sur l'intervalle [a, b] en ms, dans l'ordre croissant. */
 function setSelectedRangeMs(a, b) {
   // Zoom par glisser sur le graphique : même composant que les boutons et les reportings.
   periodCtrl.zoomTo(Math.min(a, b), Math.max(a, b));
 }
 
+/** Ramène la plage dans les dates de l'appareil choisi ; toute la période si elle est hors données ou devient vide. */
 function ensureRangeForAircraft() {
   const u = aircraftUniverseRows();
   if (!u.length) return;
@@ -4864,20 +5025,24 @@ function ensureRangeForAircraft() {
   syncDateInputs();
 }
 
+/** Décale la période d'un cran (direction −1 ou +1) via le composant de période. */
 function shiftRange(direction) {
   periodCtrl.shift(direction)
 }
 
+/** Élargit la période (zoom arrière) via le composant de période. */
 function zoomOutRange() {
   periodCtrl.zoomOut()
 }
 
+/** Met à jour les bornes et la période affichée du composant (il gère l'état des boutons). */
 function updateRangeButtons() {
   // États des boutons ◀ / zoom / ▶ : tenus par le composant TimePeriod (bornes = données).
   updateDateInputLimits();
   syncDateInputs();
 }
 
+/** Atterrissages de l'appareil choisi dans la plage de dates, sans les filtres de l'analyse. */
 function scopeRows() {
   const a = $("aircraftSelect").value;
   const range = selectedRange();
@@ -4888,6 +5053,7 @@ function scopeRows() {
   );
 }
 
+/** Atterrissages analysés : appareil et plage choisis, filtres qualité / crash / 95P appliqués. */
 function currentRows() {
   return applyAnalysisFilters(scopeRows());
 }
@@ -4899,7 +5065,8 @@ function render() {
     p95 = $("p95Filter").checked,
     crash = $("crashFilter").checked;
   updateRangeButtons();
-  $("statusText").textContent = `${sourceName} — ${rows.length} ${t("used")}` + (selected === "__ALL__" ? ` — ${t("allAircraft")}` : ` — ${selected}`) + (filter ? ` — ${t("filterOn")}` : ` — ${t("filterOff")}`) + (crash ? ` — ${crashText("on")}` : "") + (p95 ? ` — ${p95Text("on")}` : "") + ` — ${t("selectedPeriod")}`;
+  $("statusText").textContent = `${sourceName} — ${rows.length} ${t("used")}` + (selected === "__ALL__" ? ` — ${t("allAircraft")}` : ` — ${selected}`) + (filter ? ` — ${t("filterOn")}` : ` — ${t("filterOff")}`) + (crash ?
+    ` — ${crashText("on")}` : "") + (p95 ? ` — ${p95Text("on")}` : "") + ` — ${t("selectedPeriod")}`;
   updateGeneralTrendIndicator(rows);
 
   if (!rows.length) {
@@ -4930,6 +5097,8 @@ function render() {
   renderQuality();
 }
 
+/** En-tête traduit d'une colonne de 95e centile (score, fpm, g, landing, legacyG, nose, float) du tableau des
+ *  appareils. */
 function p95ColumnLabel(metric) {
   const labels = {
     en: {
@@ -4990,11 +5159,14 @@ function renderCardsRich(rows) {
   cardsHTML(cards);
 }
 
+/** Indicateur de tendance du format riche, calculé sur les scores de la période. */
 function renderTrendRich(rows) {
   const s = finite(rows.map(r => r.Score));
   renderTrendByMode(s, t("scoreMain"));
 }
 
+/** Valeur d'une mesure (score, fpm, g, nose) d'un atterrissage : mesure du CSV riche ; en format hérité, valeur
+ *  estimée si les estimations sont actives, sinon mesure du LOG (pas de score sans estimation). */
 function metricValue(r, key) {
   const useEst = estimateEnabled();
   if (key === "score") {
@@ -5013,6 +5185,8 @@ function metricValue(r, key) {
   return NaN;
 }
 
+/** Graphiques communs aux deux formats : courbes chronologiques du score (0–100), du FPM, du G (0–12) et du taux de
+ *  rotation du nez (±50 °/s), puis nuage FPM / G. */
 function renderCommonCharts(rows) {
   $("chartGrid").innerHTML = `
     ${chartBox("c1",t("scoreGraph"))}
@@ -5054,10 +5228,13 @@ function renderCommonCharts(rows) {
   scatter("c5", rows);
 }
 
+/** Graphiques du format riche (mêmes que le format hérité). */
 function renderChartsRich(rows) {
   renderCommonCharts(rows);
 }
 
+/** Tableau des appareils (format riche) sur la période, filtres appliqués : N, P95 et σ du score, min / max, P95 et
+ *  σ du FPM et du G, pente de Theil-Sen du score, ρ de Spearman et état de tendance. */
 function renderAircraftTableRich() {
   const range = selectedRange();
   const ranged = allRows.filter(r =>
@@ -5066,7 +5243,9 @@ function renderAircraftTableRich() {
   );
   const data = applyAnalysisFilters(ranged),
     groups = groupBy(data, r => r.Aircraft);
-  const heads = [t("aircraft"), aircraftTypeColumnTitle(), "N", p95ColumnLabel("score"), t("scoreSigma"), t("min"), t("max"), p95ColumnLabel("fpm"), "σ FPM", p95ColumnLabel("g"), "σ G", t("scoreSlope"), "ρ", t("conclusion")];
+  const heads = [t("aircraft"), aircraftTypeColumnTitle(), "N", p95ColumnLabel("score"), t("scoreSigma"), t("min"), t("max"),
+    p95ColumnLabel("fpm"), "σ FPM", p95ColumnLabel("g"), "σ G", t("scoreSlope"), "ρ", t("conclusion")
+  ];
   let body = "";
   for (const [a, rs] of [...groups.entries()].sort()) {
     const s = finite(rs.map(r => r.Score)),
@@ -5080,6 +5259,8 @@ function renderAircraftTableRich() {
   tableHTML("aircraftTable", heads, body);
 }
 
+/** Tableau des atterrissages (format riche), du plus récent au plus ancien ; colonnes FPM / G du LOG estimées et
+ *  colonnes source / champs estimés seulement si présentes dans les données. */
 function renderLandingTableRich(rows) {
   const merged = allRows.some(r => r._isMerged);
   const showReverse = estimateEnabled() && allRows.some(r => r._estimatedLogFields && r._estimatedLogFields.length);
@@ -5122,6 +5303,7 @@ function sourceLandingRating(rate) {
   return "UNKNOWN";
 }
 
+/** Indice ordinal 0–100 tiré des cinq classes FPM du LOG (BUTTER 100 … WASTED 0) ; null si vitesse inconnue. */
 function sourceLandingClassIndex(rate) {
   // Ordinal visualization only. It reproduces the Lua's five FPM bands;
   // it is NOT a score produced by Landing Rate for Lua.
@@ -5135,6 +5317,8 @@ function sourceLandingClassIndex(rate) {
   })[r] ?? null;
 }
 
+/** Note d'arrondi entre 0 et 1 d'après le texte du LOG (very good 1, good 0,7, poor 0,25, sinon 0,5 ; −0,2 si
+ *  « aggressive »). */
 function flareGrade(s) {
   s = (s || "").toLowerCase();
   let v = .50;
@@ -5145,10 +5329,13 @@ function flareGrade(s) {
   return v;
 }
 
+/** Libellé traduit d'une classe d'atterrissage du LOG (BUTTER, GREAT…). */
 function translateSourceRating(s) {
   return t("rating_" + String(s || "UNKNOWN").toLowerCase());
 }
 
+/** Appréciation d'arrondi du LOG traduite (bonne / mauvaise, précoce / tardive), mention « agressive » ajoutée ;
+ *  texte d'origine si non reconnu. */
 function translateFlare(s) {
   const raw = String(s || "");
   const lower = raw.toLowerCase();
@@ -5165,6 +5352,8 @@ function translateFlare(s) {
   return base;
 }
 
+/** Cartes de synthèse du format hérité : nombre, score estimé (si actif), indice de classe, vitesse verticale et G
+ *  moyens, min / max FPM, |taux de nez|, flottement, part d'atterrissages ACCEPTABLE ou mieux. */
 function renderCardsLegacy(rows) {
   const lr = finite(rows.map(r => r.LandingRateFPM));
   const g = finite(rows.map(r => r.LandingG));
@@ -5189,12 +5378,15 @@ function renderCardsLegacy(rows) {
   cardsHTML(cards);
 }
 
+/** Indicateur de tendance du format hérité : scores estimés s'il y en a au moins 4, sinon indice de classe FPM. */
 function renderTrendLegacy(rows) {
   const s = estimateEnabled() ? finite(rows.map(r => r.Score)) : [];
   if (s.length >= 4) renderTrendByMode(s, t("modelScoreLog"));
   else renderTrendByMode(finite(rows.map(r => r._sourceClassIndex)), t("legacyTrendMethod"));
 }
 
+/** Sens de la tendance d'une série : +1 si pente de Theil-Sen > 0 et ρ > 0,12 ; −1 dans le cas inverse ; 0 sinon ou
+ *  sous 4 valeurs. */
 function trendDirection(a) {
   a = finite(a);
   if (a.length < 4) return 0;
@@ -5205,10 +5397,13 @@ function trendDirection(a) {
   return 0;
 }
 
+/** Graphiques du format hérité (mêmes que le format riche). */
 function renderChartsLegacy(rows) {
   renderCommonCharts(rows);
 }
 
+/** Tableau des appareils (format hérité) sur la période, filtres appliqués : indice de classe, P95 et σ des mesures
+ *  du LOG, part ACCEPTABLE ou mieux, pente et ρ (scores estimés si au moins 4, sinon indice) et état de tendance. */
 function renderAircraftTableLegacy() {
   const range = selectedRange();
   const ranged = allRows.filter(r =>
@@ -5247,6 +5442,8 @@ function renderAircraftTableLegacy() {
   tableHTML("aircraftTable", heads, body);
 }
 
+/** Tableau des atterrissages (format hérité), du plus récent au plus ancien ; colonnes estimées si les estimations
+ *  sont actives. */
 function renderLandingTableLegacy(rows) {
   const useEst = estimateEnabled();
   const heads = [
@@ -5306,6 +5503,9 @@ function linearRegressionXY(x, y) {
   };
 }
 
+/** Ajuste y = C + A·e^(−k·i) (i = rang de l'atterrissage) : k balayé en 220 pas log de 0,002 à 2, C et A par
+ *  moindres carrés, asymptote C bornée par bounds (sinon ±2 étendues). null sous 6 valeurs ; renvoie aussi gain et
+ *  reste à gagner. */
 function exponentialAsymptoteFit(series, bounds = null) {
   const y = finite(series),
     n = y.length;
@@ -5347,6 +5547,8 @@ function exponentialAsymptoteFit(series, bounds = null) {
   };
 }
 
+/** Compare le premier et le dernier quart chronologiques de la série (moyennes, médianes, écart des moyennes) ; null
+ *  sous 2 valeurs. */
 function chronologicalQuartiles(series) {
   const y = finite(series);
   if (y.length < 2) return null;
@@ -5365,6 +5567,7 @@ function chronologicalQuartiles(series) {
   };
 }
 
+/** Moyenne mobile sur w valeurs ; null tant que la fenêtre n'est pas pleine. */
 function movingAverage(series, w) {
   const y = finite(series),
     out = new Array(y.length).fill(null);
@@ -5378,6 +5581,7 @@ function movingAverage(series, w) {
   return out;
 }
 
+/** Verdict d'un écart (hausse, baisse, stable) : seuil = max(3, 12 % de l'écart type de la série). */
 function classifyDelta(delta, series) {
   const spread = stdev(series) || 1;
   const tol = Math.max(3, spread * .12);
@@ -5395,6 +5599,8 @@ function classifyDelta(delta, series) {
   };
 }
 
+/** État de tendance (icône flèche, classe, libellé) : forte hausse au-delà de max(8, 30 % σ), hausse au-delà de
+ *  max(3, 12 % σ), symétrique en baisse, stable sinon ; « inconnu » si l'écart n'est pas calculable. */
 function classifyTrendState(delta, series) {
   const y = finite(series);
   if (y.length < 2 || !Number.isFinite(delta)) {
@@ -5441,6 +5647,8 @@ function classifyTrendState(delta, series) {
   };
 }
 
+/** État de tendance d'une série selon le mode choisi : gain de l'asymptote, écart premier / dernier quart, ou écart
+ *  entre première et dernière moyenne mobile. */
 function trendStateForSeries(series, bounds = [0, 100]) {
   const y = finite(series);
   const mode = $("trendMode") ? $("trendMode").value : "asymptote";
@@ -5484,15 +5692,19 @@ function trendStateForSeries(series, bounds = [0, 100]) {
   return classifyTrendState(ma[ma.length - 1] - ma[0], ma);
 }
 
+/** Pastille HTML de l'état de tendance (icône, libellé en infobulle) ; version réduite si small. */
 function trendStateHtml(state, small = false) {
   const size = small ? " small" : "";
   return `<span class="trend-state ${esc(state.cls)}${size}" title="${esc(state.label)}" aria-label="${esc(state.label)}">${esc(state.icon)}</span>`;
 }
 
+/** Flèche d'état de tendance en ligne, pour la colonne de conclusion des tableaux. */
 function trendStateInlineHtml(state) {
   return `<span class="trend-inline ${esc(state.cls)}" title="${esc(state.label)}" aria-label="${esc(state.label)}">${esc(state.icon)}</span>`;
 }
 
+/** Pastille de tendance générale de l'en-tête : scores (riche, ou estimés s'il y en a au moins 4), sinon indice de
+ *  classe FPM du LOG. */
 function updateGeneralTrendIndicator(rows) {
   const series = formatMode === "rich" ?
     finite(rows.map(r => r.Score)) :
@@ -5507,6 +5719,8 @@ function updateGeneralTrendIndicator(rows) {
   el.setAttribute("aria-label", state.label);
 }
 
+/** Carte de tendance détaillée selon le mode : asymptote (valeur, gain, reste, R²), premier / dernier quart ou
+ *  moyenne mobile (écart, pente de Theil-Sen par atterrissage) ; note = méthode / série utilisée. */
 function renderTrendByMode(series, note) {
   const y = finite(series);
   const mode = $("trendMode").value;
@@ -5572,10 +5786,13 @@ function renderTrendByMode(series, note) {
     ` <span class="small">${esc(t("movingMethod",{n:w}))} ${esc(note||"")}</span></div>`;
 }
 
+/** Carte de tendance « données insuffisantes » (au moins 4 atterrissages requis). */
 function trendInsufficient() {
   $("trendCard").innerHTML = `<div class="trend-title warn">${esc(t("insufficient"))}</div><div class="trend-text">${esc(t("need4"))}</div>`;
 }
 
+/** Conclusion courte de tendance d'une série pour les tableaux, selon le mode choisi ; sl et rho ne sont pas
+ *  utilisés. */
 function trendShort(sl, rho, s) {
   const y = finite(s);
   if (y.length < 2) return t("insufficientShort");
@@ -5637,6 +5854,8 @@ function chartBox(id, title, showHint = true) {
   return `<div class="chart-box"><div class="chart-title">${esc(title)}${showHint?`<span class="chart-hint">${esc(t("dragSelect"))}</span>`:""}</div><div id="${id}_summary" class="chart-summary"></div><svg id="${id}" class="${showHint?"timeline-chart":""}"></svg></div>`;
 }
 
+/** Résumé de tendance placé sous un graphique selon le mode (asymptote, quarts, moyenne mobile) ; opts.asymBounds
+ *  borne l'asymptote, opts.digits fixe les décimales. */
 function chartTrendSummary(values, opts = {}) {
   const y = finite(values),
     mode = $("trendMode").value;
@@ -5674,6 +5893,9 @@ function chartTrendSummary(values, opts = {}) {
   });
 }
 
+/** Courbe chronologique d'une mesure (get) : un créneau par atterrissage de la période, points colorés par note,
+ *  losange si estimé, axe Y robuste ou zéro inclus, tendance, et bandeau de navigation sur toutes les dates
+ *  (sélection de plage à la souris). */
 function timeline(id, rows, get, opts = {}) {
   const svg = $(id);
   clearSVG(svg);
@@ -5718,6 +5940,7 @@ function timeline(id, rows, get, opts = {}) {
   const tMin = dateUniverse[0]._date.getTime(),
     tMax0 = dateUniverse[dateUniverse.length - 1]._date.getTime();
   const tMax = tMax0 === tMin ? tMin + 1000 : tMax0;
+  /** Abscisse SVG d'un instant (ms) sur le bandeau de navigation, de la première à la dernière date de l'appareil. */
   const sxTime = t => L + (t - tMin) / (tMax - tMin) * (W - L - R);
 
   const range = selectedRange();
@@ -5761,11 +5984,13 @@ function timeline(id, rows, get, opts = {}) {
     if (yMax < 0 && -yMax < span * .35) yMax = 0;
   }
 
+  /** Ordonnée SVG d'une valeur dans le graphique principal (yMin en bas, yMax en haut). */
   const sy = y => T + (yMax - y) / (yMax - yMin) * (MAIN_BOTTOM - T);
   drawGridCustom(svg, W, L, R, T, MAIN_BOTTOM, yMin, yMax);
 
   // Equal observation spacing in the main graph.
   const slotCount = Math.max(1, selectedRows.length);
+  /** Abscisse SVG du créneau i : atterrissages régulièrement espacés (axe ordinal) ; centré s'il n'y en a qu'un. */
   const sxObs = i => slotCount <= 1 ? (L + W - R) / 2 : L + i / (slotCount - 1) * (W - L - R);
 
   if (opts.zero && yMin < 0 && yMax > 0) line(svg, L, sy(0), W - R, sy(0), "zero");
@@ -5874,6 +6099,7 @@ function timeline(id, rows, get, opts = {}) {
     const npad = (navMax - navMin) * .05 || 1;
     navMin -= npad;
     navMax += npad;
+    /** Ordonnée SVG d'une valeur dans le bandeau de navigation (marge de 3 unités en haut et en bas). */
     const nsy = y => NAV_TOP + 3 + (navMax - y) / (navMax - navMin) * (NAV_BOTTOM - NAV_TOP - 6);
     const nd = allPts.map((p, i) => `${i?"L":"M"}${sxTime(p.t)},${nsy(clamp(p.y,navMin,navMax))}`).join(" ");
     pathEl(svg, nd, "navigator-series");
@@ -5923,6 +6149,7 @@ function timeline(id, rows, get, opts = {}) {
   });
 }
 
+/** Quadrillage horizontal en 4 bandes avec graduations Y (2 décimales si l'étendue est < 20), puis axes X et Y. */
 function drawGridCustom(svg, W, L, R, T, B, yMin, yMax) {
   for (let i = 0; i <= 4; i++) {
     const y = T + i * (B - T) / 4;
@@ -5933,14 +6160,20 @@ function drawGridCustom(svg, W, L, R, T, B, yMin, yMax) {
   line(svg, L, B, W - R, B);
 }
 
+/** Date courte « JJ/MM/AA ». */
 function dateCompact(d) {
+  /** Nombre sur deux chiffres. */
   const p = n => String(n).padStart(2, "0");
   return `${p(d.getDate())}/${p(d.getMonth()+1)}/${String(d.getFullYear()).slice(-2)}`;
 }
 
+/** Sélection de plage par glisser sur un graphique chronologique (glissé d'au moins 5 unités SVG) : dans le bandeau,
+ *  plage par dates ; dans le graphique principal, plage du premier au dernier atterrissage couverts (seconde
+ *  incluse). */
 function installRangeDrag(svg, cfg) {
   let drag = null,
     preview = null;
+  /** Position du pointeur convertie en coordonnées du viewBox SVG. */
   const toSvg = e => {
     const r = svg.getBoundingClientRect();
     return {
@@ -5948,12 +6181,15 @@ function installRangeDrag(svg, cfg) {
       y: (e.clientY - r.top) / r.height * cfg.H
     };
   };
+  /** Instant (ms) correspondant à une abscisse du bandeau de navigation. */
   const xToTime = x => cfg.tMin + (clamp(x, cfg.L, cfg.W - cfg.R) - cfg.L) / (cfg.W - cfg.R - cfg.L) * (cfg.tMax - cfg.tMin);
+  /** Zone sous l'ordonnée : « main » (graphique), « nav » (bandeau) ou null hors zones. */
   const regionFor = y => {
     if (y >= cfg.T && y <= cfg.MAIN_BOTTOM) return "main";
     if (y >= cfg.NAV_TOP && y <= cfg.NAV_BOTTOM) return "nav";
     return null;
   };
+  /** Bornes verticales [haut, bas] de la zone pour dessiner l'aperçu de sélection. */
   const regionBounds = region => region === "main" ? [cfg.T, cfg.MAIN_BOTTOM] : [cfg.NAV_TOP, cfg.NAV_BOTTOM];
 
   svg.addEventListener("pointerdown", e => {
@@ -5988,6 +6224,7 @@ function installRangeDrag(svg, cfg) {
     preview.setAttribute("width", Math.max(1, Math.abs(x - drag.startX)));
   });
 
+  /** Fin du glisser : retire l'aperçu et applique la plage si le glissé est assez long. */
   const finish = e => {
     if (!drag) return;
     const p = toSvg(e),
@@ -6000,6 +6237,7 @@ function installRangeDrag(svg, cfg) {
         setSelectedRangeMs(xToTime(drag.startX), xToTime(x));
       } else if (cfg.selectedRows && cfg.selectedRows.length) {
         const n = cfg.selectedRows.length;
+        /** Rang de l'atterrissage le plus proche d'une abscisse du graphique principal. */
         const xToIndex = xx => {
           if (n <= 1) return 0;
           const f = (clamp(xx, cfg.L, cfg.W - cfg.R) - cfg.L) / (cfg.W - cfg.R - cfg.L);
@@ -6030,6 +6268,8 @@ function installRangeDrag(svg, cfg) {
   });
 }
 
+/** Nuage FPM (axe X) / G (axe Y) des atterrissages de la période, axes bornés aux centiles 3–97 avec 10 % de marge ;
+ *  taille du point selon le score, couleur selon la note, losange si FPM ou G estimé. */
 function scatter(id, rows) {
   const svg = $(id);
   clearSVG(svg);
@@ -6085,7 +6325,9 @@ function scatter(id, rows) {
   setView(svg, W, H);
   drawGrid2D(svg, W, H, L, R, T, B, xMin, xMax, yMin, yMax);
 
+  /** Abscisse SVG d'une vitesse verticale (FPM), bornée à l'étendue affichée. */
   const sx = x => L + (clamp(x, xMin, xMax) - xMin) / (xMax - xMin) * (W - L - R);
+  /** Ordonnée SVG d'un facteur de charge (G), borné à l'étendue affichée. */
   const sy = y => T + (yMax - clamp(y, yMin, yMax)) / (yMax - yMin) * (H - T - B);
 
   pts.forEach(p => {
@@ -6110,21 +6352,25 @@ function finite(a) {
   return a.filter(Number.isFinite)
 }
 
+/** Moyenne des valeurs finies ; null si aucune. */
 function mean(a) {
   a = finite(a);
   return a.length ? a.reduce((x, y) => x + y, 0) / a.length : null
 }
 
+/** Minimum des valeurs finies ; null si aucune. */
 function min(a) {
   a = finite(a);
   return a.length ? Math.min(...a) : null
 }
 
+/** Maximum des valeurs finies ; null si aucune. */
 function max(a) {
   a = finite(a);
   return a.length ? Math.max(...a) : null
 }
 
+/** Médiane des valeurs finies ; null si aucune. */
 function median(a) {
   a = finite(a).slice().sort((x, y) => x - y);
   if (!a.length) return null;
@@ -6132,6 +6378,7 @@ function median(a) {
   return a.length % 2 ? a[m] : (a[m - 1] + a[m]) / 2
 }
 
+/** Quantile q (0–1) des valeurs finies par interpolation linéaire entre rangs ; null si aucune. */
 function quantile(a, q) {
   a = finite(a).slice().sort((x, y) => x - y);
   if (!a.length) return null;
@@ -6141,6 +6388,7 @@ function quantile(a, q) {
   return l === h ? a[l] : a[l] + (a[h] - a[l]) * (p - l)
 }
 
+/** Écart type d'échantillon (n − 1) ; 0 pour une seule valeur, null si aucune. */
 function stdev(a) {
   a = finite(a);
   if (a.length < 2) return a.length ? 0 : null;
@@ -6148,6 +6396,8 @@ function stdev(a) {
   return Math.sqrt(a.reduce((s, x) => s + (x - m) ** 2, 0) / (a.length - 1))
 }
 
+/** Pente de Theil-Sen : médiane des pentes entre toutes les paires (par atterrissage), robuste aux valeurs
+ *  extrêmes ; 0 sous 2 valeurs. */
 function theilSen(y) {
   y = finite(y);
   if (y.length < 2) return 0;
@@ -6157,6 +6407,7 @@ function theilSen(y) {
   return median(s)
 }
 
+/** Rangs (à partir de 1) des valeurs, ex æquo au rang moyen. */
 function rank(a) {
   const p = a.map((v, i) => ({
       v,
@@ -6174,6 +6425,7 @@ function rank(a) {
   return r
 }
 
+/** Coefficient de corrélation de Pearson de deux séries de même longueur ; 0 si non calculable. */
 function pearson(a, b) {
   if (a.length < 2) return 0;
   const ma = mean(a),
@@ -6191,6 +6443,7 @@ function pearson(a, b) {
   return da && db ? n / Math.sqrt(da * db) : 0
 }
 
+/** ρ de Spearman entre l'ordre chronologique et la série : tendance monotone, de −1 à 1 ; 0 sous 2 valeurs. */
 function spearman(y) {
   y = finite(y);
   return y.length < 2 ? 0 : pearson(rank(y.map((_, i) => i)), rank(y))
@@ -6207,6 +6460,8 @@ function cardsHTML(cards) {
 // de référence au composant MissionTable des reportings HEMS/GAAR/général).
 const tableSortState = {};
 
+/** Clé de tri d'une cellule : nombre si le texte commence par un nombre (signe moins typographique et virgule
+ *  décimale acceptés), sinon texte en minuscules. */
 function aircraftSortValue(s) {
   const raw = String(s ?? "").trim(),
     normalized = raw.replace(/\u2212/g, "-").replace(/\s/g, "").replace(",", ".");
@@ -6224,10 +6479,13 @@ function aircraftSortValue(s) {
   };
 }
 
+/** Texte de tri d'une cellule : attribut data-sort-value, sinon texte affiché. */
 function aircraftCellSortValue(cell) {
   return cell?.dataset?.sortValue || cell?.textContent || ""
 }
 
+/** Trie les lignes du tableau selon la colonne et le sens mémorisés (numérique ou alphabétique naturel) et met à
+ *  jour les flèches et aria-sort des en-têtes. */
 function applyAircraftTableSort(id) {
   const table = $(id);
   if (!table || !table.tBodies.length) return;
@@ -6258,6 +6516,8 @@ function applyAircraftTableSort(id) {
   });
 }
 
+/** Rend les en-têtes du tableau triables (flèche, clic : nouvelle colonne croissante ou inversion du sens), puis
+ *  trie. */
 function initAircraftTableSort(id) {
   const table = $(id);
   if (!table || !table.tHead) return;
@@ -6283,11 +6543,15 @@ function initAircraftTableSort(id) {
   applyAircraftTableSort(id);
 }
 
+/** Écrit le tableau (en-têtes échappés, corps HTML déjà construit) ; tri par colonne pour les tableaux appareils et
+ *  atterrissages. */
 function tableHTML(id, heads, body) {
   $(id).innerHTML = `<thead><tr>${heads.map(h=>`<th>${esc(h)}</th>`).join("")}</tr></thead><tbody>${body}</tbody>`;
   if (id === "aircraftTable" || id === "landingTable") initAircraftTableSort(id)
 }
 
+/** Pastille de qualité d'un atterrissage : invraisemblable (défauts), estimé (champs), partiel (avertissements) ou
+ *  OK. */
 function qualityPill(r) {
   if (r._suspect) {
     return `<span class="pill bad">${esc(t("implausible"))}: ${esc(r._issues.map(issueText).join(", "))}</span>`;
@@ -6307,6 +6571,7 @@ function period(rows) {
   return rows.length ? `${dateShort(rows[0]._date)} → ${dateShort(rows[rows.length-1]._date)}` : "—"
 }
 
+/** Regroupe les éléments par clé fn(x) dans une Map, ordre d'apparition conservé. */
 function groupBy(a, fn) {
   const m = new Map();
   a.forEach(x => {
@@ -6317,20 +6582,24 @@ function groupBy(a, fn) {
   return m
 }
 
+/** Vide un élément SVG. */
 function clearSVG(s) {
   while (s.firstChild) s.removeChild(s.firstChild)
 }
 
+/** Fixe le viewBox SVG à 0 0 w h. */
 function setView(s, w, h) {
   s.setAttribute("viewBox", `0 0 ${w} ${h}`)
 }
 
+/** Crée un élément SVG n avec les attributs a. */
 function svgEl(n, a = {}) {
   const e = document.createElementNS("http://www.w3.org/2000/svg", n);
   Object.entries(a).forEach(([k, v]) => e.setAttribute(k, v));
   return e
 }
 
+/** Ajoute une ligne SVG de classe c (axe par défaut) ; renvoie l'élément. */
 function line(s, x1, y1, x2, y2, c = "axis") {
   const e = svgEl("line", {
     x1,
@@ -6343,6 +6612,7 @@ function line(s, x1, y1, x2, y2, c = "axis") {
   return e
 }
 
+/** Ajoute un texte d'axe SVG aligné selon anchor (fin par défaut) ; renvoie l'élément. */
 function txt(s, x, y, v, anchor = "end") {
   const e = svgEl("text", {
     x,
@@ -6355,6 +6625,7 @@ function txt(s, x, y, v, anchor = "end") {
   return e
 }
 
+/** Ajoute un point rond SVG de rayon r et de classe c ; renvoie l'élément. */
 function circle(s, cx, cy, r, c) {
   const e = svgEl("circle", {
     cx,
@@ -6366,6 +6637,7 @@ function circle(s, cx, cy, r, c) {
   return e
 }
 
+/** Ajoute un losange SVG (marque des valeurs estimées) de demi-diagonale r ; renvoie l'élément. */
 function diamond(s, cx, cy, r, c) {
   const e = svgEl("polygon", {
     points: `${cx},${cy-r} ${cx+r},${cy} ${cx},${cy+r} ${cx-r},${cy}`,
@@ -6375,6 +6647,7 @@ function diamond(s, cx, cy, r, c) {
   return e
 }
 
+/** Ajoute un tracé SVG d (courbe, tendance) de classe c ; renvoie l'élément. */
 function pathEl(s, d, c) {
   const e = svgEl("path", {
     d,
@@ -6384,6 +6657,7 @@ function pathEl(s, d, c) {
   return e
 }
 
+/** Quadrillage horizontal en 4 bandes avec graduations Y de y0 à y1, puis axes ; marges L, R, T, B. */
 function drawGrid(s, W, H, L, R, T, B, y0, y1) {
   for (let i = 0; i <= 4; i++) {
     const y = T + i * (H - T - B) / 4;
@@ -6394,6 +6668,7 @@ function drawGrid(s, W, H, L, R, T, B, y0, y1) {
   line(s, L, H - B, W - R, H - B)
 }
 
+/** Quadrillage 4 × 4 avec graduations X (entières) et Y (2 décimales), puis axes ; utilisé par le nuage FPM / G. */
 function drawGrid2D(s, W, H, L, R, T, B, x0, x1, y0, y1) {
   for (let i = 0; i <= 4; i++) {
     const y = T + i * (H - T - B) / 4;
@@ -6407,15 +6682,20 @@ function drawGrid2D(s, W, H, L, R, T, B, x0, x1, y0, y1) {
   line(s, L, H - B, W - R, H - B)
 }
 
+/** Dates des premier, médian et dernier points p sous l'axe X (abscisse via sx). */
 function drawXAxisDates(s, p, W, H, L, R, B, sx) {
-  [0, Math.floor((p.length - 1) / 2), p.length - 1].filter((v, i, a) => a.indexOf(v) === i).forEach(i => txt(s, sx(p[i].x), H - B + 17, dateShort(p[i].r._date), "middle"))
+  [0, Math.floor((p.length - 1) / 2), p.length - 1].filter((v, i, a) => a.indexOf(v) === i).forEach(i => txt(s, sx(p[i].x), H - B + 17,
+    dateShort(p[i].r._date), "middle"))
 }
 
+/** Message « aucune donnée » centré dans un graphique vide. */
 function drawNoData(s) {
   setView(s, 640, 270);
   txt(s, 320, 135, t("noData"), "middle")
 }
 
+/** Lignes HTML d'infobulle décrivant les champs estimés d'un atterrissage (modèle, confiance, erreur type) ; "" si
+ *  les estimations sont désactivées. */
 function estimateMetaLines(r) {
   if (!estimateEnabled() || !r._estimateMeta) return "";
   const fields = Object.entries(r._estimateMeta);
@@ -6435,6 +6715,8 @@ function estimateMetaLines(r) {
   }).join("<br>");
 }
 
+/** Infobulle d'un point de graphique qui suit la souris : titre, date, appareil, mesures selon le format et détail
+ *  des estimations. */
 function attachTooltip(el, r, headline) {
   const tip = $("tooltip");
   el.addEventListener("mousemove", e => {
@@ -6467,6 +6749,7 @@ function clamp(v, a, b) {
   return Math.max(a, Math.min(b, v))
 }
 
+/** Code de locale Intl de la langue courante (fr-FR, en-GB, de-DE, es-ES). */
 function localeCode() {
   return {
     fr: "fr-FR",
@@ -6476,6 +6759,7 @@ function localeCode() {
   } [lang] || "en-GB"
 }
 
+/** Nombre formaté dans la langue courante avec n décimales, sans séparateur de milliers ; « — » si absent. */
 function fmt(v, n = 1) {
   return v == null || !Number.isFinite(v) ? "—" : new Intl.NumberFormat(localeCode(), {
     minimumFractionDigits: n,
@@ -6484,15 +6768,18 @@ function fmt(v, n = 1) {
   }).format(Number(v))
 }
 
+/** Nombre formaté avec signe « + » explicite si positif ; « — » si absent. */
 function signed(v, n = 1) {
   if (v == null || !Number.isFinite(v)) return "—";
   return (v >= 0 ? "+" : "") + fmt(v, n)
 }
 
+/** Pourcentage a / b arrondi à l'unité (« 12 % ») ; « — » si b est nul. */
 function pct(a, b) {
   return b ? `${fmt(100*a/b,0)} %` : "—"
 }
 
+/** Date courte JJ/MM/AAAA dans la langue courante. */
 function dateShort(d) {
   return new Intl.DateTimeFormat(localeCode(), {
     day: "2-digit",
@@ -6514,12 +6801,12 @@ if (prefs.lastFileName && !$("fileName").textContent.trim()) {
 
 restoreCachedDataset();
 </script>
-<footer class="repo-footer no-print">© RBR - DEFA Virtual - 2026-09-21 - 2.0.4 - <a href="https://framagit.org/asr/flight_planner">framagit.org/asr/flight_planner</a></footer>
-<script src="../../shared/repository_nav.js?v=6262a76e"></script>
-<script src="../../shared/landing_ui.js?v=fa91623d"></script>
-<script src="../../shared/app_framework.js?v=cc5e8c7b"></script>
+<footer class="repo-footer no-print">© RBR - SO Group Virtual - 2026-09-21 - 2.0.4 - <a href="https://framagit.org/asr/flight_planner">framagit.org/asr/flight_planner</a></footer>
+<script src="../../shared/repository_nav.js?v=dade04a4"></script>
+<script src="../../shared/landing_ui.js?v=22c11978"></script>
+<script src="../../shared/app_framework.js?v=7a889fe5"></script>
 <!-- Traducteur commun de la suite (libellés statiques + typographie) : mêmes règles que les autres pages -->
-<script src="../../shared/content_i18n.js?v=7afecb78"></script><script>
+<script src="../../shared/content_i18n.js?v=499ea78f"></script><script>
 RepositoryContentI18n(landingI18nRows())
 </script>
 </body>

@@ -4,7 +4,7 @@ Notes de conception de l'intégration (2026-09-24 / 25). **Documentation de l'ap
 [SIA_MISSIONS.md](../SIA_MISSIONS.md).** Tout le plan du § 2 est réalisé : en-tête et menu communs,
 blocs, thème `sia` et `assets/favicon-sia.svg`, js-yaml commun, dossier SIA mémorisé
 (`FileAccess`, `__sia`), collage de mission et de listes de zones (`pastePanel`), couche des
-hippodromes, passerelle vers CR DEFA (`?from=sia`, `siaMissionToCr:v1`,
+hippodromes, passerelle vers CR (`?from=sia`, `siaMissionToCr:v1`,
 `MissionVocab.familyForType`, `fromSia` dans `core.js`). Évolutions ensuite : profils d'affichage
 (onglets, carte de contrôle), sélection des zones (listes, groupes, alias RTBA), grille MORA
 calculée (l'import de la carte ENR 6.1 est abandonné : elle n'a pas de grille), générateur
@@ -45,7 +45,7 @@ produites : général, cible, détail cible, zone, assemblage).
 5. **Hippodromes de ravitaillement** (voir § 3) : dans le studio, couche « Axes AAR (ENR 5.7) »
    dessinée depuis `miam-enr-5-7-coordinates.xml` avec `AarTracks` ; dans une mission, l'axe
    désigné (SIMONE, point SIMIP / S1…) est retrouvé par proximité et tracé exactement.
-6. **Passerelles avec CR DEFA** : la mission générée (`helo-xp-mission`) pré-remplit un CR
+6. **Passerelles avec CR** : la mission générée (`helo-xp-mission`) pré-remplit un CR
    (famille d'après `mission.type`, terrains, points tournants, appareils / indicatifs) ; le
    catalogue commun fournit appareils et indicatifs (VAILLANT, MISTRAL…).
 7. Documentation (`docs/SIA_XML.md`, README, changelog) et version.
