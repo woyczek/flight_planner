@@ -432,7 +432,7 @@ Dieser Schritt ist wichtig: Ohne freigegebenen Datenordner bleibt Ihre Verfügba
 
 Dieser Schritt installiert die Daten der Fluggesellschaft (Missionen, Referenzen…). Er läuft über den Starter: Ohne ihn zeigt die Seite „Öffnen Sie für diesen Schritt die Suite mit dem Starter…“.
 
-Die Schaltflächen dieses Schritts bleiben inaktiv, bis der Anwendungsordner (Schritt 1) gewählt ist: die Daten werden in der bereitgestellten Suite installiert.
+Solange der Anwendungsordner (Schritt 1) nicht gewählt ist oder zu einer anderen Kopie der Suite gehört, sind dieser Schritt und die folgenden (Fluggesellschaft, Profil, Luftfahrtdaten, Zentrum) ausgegraut und inaktiv, mit dem Grund oben in jedem, ebenso „Abschließen“; die Übersicht bleibt lesbar.
 
 Drei Möglichkeiten:
 

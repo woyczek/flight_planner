@@ -114,6 +114,15 @@
   .pl-warn b {
     color: #7a1f2b
   }
+  /* étapes 2 à 6 verrouillées tant que le dossier de l'application (étape 1) n'est pas réglé : grisées, inertes */
+  main.pl-page>section.pl-locked>*:not(h2):not(.pl-lockmsg):not(.repo-block-heading):not(.repo-deco-bgimg) {
+    opacity: .45;
+    filter: grayscale(.6)
+  }
+  .pl-lockmsg {
+    font-weight: 600;
+    margin: 4px 0 10px
+  }
   button.pl-danger {
     background: #7a1f2b;
     border-color: #5c1520;
@@ -449,6 +458,7 @@
    *  le nombre de besoins obligatoires restant à faire.
    */
   function checklist() {
+    lockSteps();
     const p = read(PROFILE),
       c = read(DEFA),
       va = window.RepositoryNav?.va?.() || {},
@@ -513,23 +523,50 @@
   // 2. données : installées par le lanceur dans la suite servie ; seulement une fois le dossier de l'application réglé
   // (étape 1), qui doit être celui de cette suite (sinon les pages liraient et écriraient ailleurs)
   /** Boutons de l'étape « Données » actifs seulement si le dossier de l'application est réglé (raison affichée sinon). */
+  /** Étapes 2 à 6 et « Terminer » : actives seulement quand le dossier de l'application (étape 1) est réglé et cohérent
+   *  avec la suite servie (otherState ≠ 'other' ; 'accepted' et sans contrôle passent). Sinon : section inerte (champs,
+   *  boutons, blocs embarqués), grisée, raison en tête. Le bilan reste lisible ; le verrou du Centre n'est pas touché. */
+  function lockSteps() {
+    const ok = !!S.folder;
+    const why = S.folderOther ? L(
+      'Le dossier de l’application choisi est celui d’une autre copie de la suite : le rechoisir à l’étape 1.',
+      'The chosen application folder belongs to another copy of the suite: choose it again at step 1.',
+      'Der gewählte Anwendungsordner gehört zu einer anderen Kopie der Suite: in Schritt 1 neu wählen.',
+      'La carpeta de la aplicación elegida es la de otra copia de la suite: volver a elegirla en el paso 1.') : L(
+      'Choisir d’abord le dossier de l’application (étape 1).', 'First choose the application folder (step 1).',
+      'Zuerst den Anwendungsordner wählen (Schritt 1).', 'Elegir primero la carpeta de la aplicación (paso 1).');
+    for (const id of ['plData', 'plCompany', 'plProfile', 'plSia', 'plCentre']) {
+      const sec = $(id);
+      if (!sec) continue;
+      sec.inert = !ok;
+      sec.classList.toggle('pl-locked', !ok);
+      let m = sec.querySelector(':scope>.pl-lockmsg');
+      if (!ok && !m) {
+        m = document.createElement('p');
+        m.className = 'pl-msg warn pl-lockmsg';
+        // titre enveloppé par le framework (.repo-block-heading) ou tel quel
+        const head = sec.querySelector(':scope>.repo-block-heading') || sec.querySelector(':scope>h2');
+        if (head) head.after(m);
+        else sec.prepend(m);
+      }
+      if (m) {
+        m.hidden = ok;
+        m.textContent = ok ? '' : `🔒 ${why}`;
+      }
+    }
+    const fin = $('plFinish');
+    if (fin) fin.disabled = !ok;
+  }
+  /** Boutons de l'étape « Données » : dossier réglé (étape 1), et Git installé pour le dépôt de données. */
   function dataGate() {
+    lockSteps();
     const ok = !!S.folder;
     $('plSample').disabled = !ok;
     $('plClone').disabled = !ok || !S.hasGit;
     const zip = document.querySelector('[data-pick="plZip"]');
     if (zip) zip.disabled = !ok;
-    $('plDataNeed').hidden = ok;
-    $('plDataNeed').textContent = ok ? '' : S.folderOther ? L(
-        'Le dossier de l’application choisi est celui d’une autre copie de la suite : le rechoisir (étape 1) avant d’installer les données.',
-        'The chosen application folder belongs to another copy of the suite: choose it again (step 1) before installing the data.',
-        'Der gewählte Anwendungsordner gehört zu einer anderen Kopie der Suite: vor dem Installieren der Daten neu wählen (Schritt 1).',
-        'La carpeta de la aplicación elegida es la de otra copia de la suite: volver a elegirla (paso 1) antes de instalar los datos.') :
-      L(
-        'Choisir d’abord le dossier de l’application (étape 1) : les données s’installent dans cette suite.',
-        'First choose the application folder (step 1): the data are installed in this suite.',
-        'Zuerst den Anwendungsordner wählen (Schritt 1): die Daten werden in dieser Suite installiert.',
-        'Elegir primero la carpeta de la aplicación (paso 1): los datos se instalan en esta suite.');
+    // raison affichée par lockSteps en tête de l'étape
+    $('plDataNeed').hidden = true;
   }
   async function dataState() {
     let st;

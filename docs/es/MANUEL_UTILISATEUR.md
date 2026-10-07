@@ -432,7 +432,7 @@ Este paso es importante: sin carpeta de datos autorizada, su disponibilidad se q
 
 Este paso instala los datos de la aerolínea (misiones, referencias…). Pasa por el lanzador: sin él, la página muestra «Para este paso, abra la suite con el lanzador…».
 
-Los botones de este paso quedan inactivos mientras no se elija la carpeta de la aplicación (paso 1): los datos se instalan en la suite servida.
+Mientras no se elija la carpeta de la aplicación (paso 1), o si pertenece a otra copia de la suite, este paso y los siguientes (aerolínea, perfil, datos aeronáuticos, Centro) aparecen en gris e inactivos, con el motivo arriba de cada uno, igual que «Terminar»; el balance sigue legible.
 
 Tres posibilidades:
 

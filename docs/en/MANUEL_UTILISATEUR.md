@@ -432,7 +432,7 @@ This step matters: without an allowed data folder, your availability stays in th
 
 This step installs the airline's data (missions, references…). It goes through the launcher: without it, the page shows “For this step, open the suite with the launcher…”.
 
-The buttons of this step stay inactive until the application folder (step 1) is chosen: the data are installed in the served suite.
+Until the application folder (step 1) is chosen, or if it belongs to another copy of the suite, this step and the following ones (airline, profile, aeronautical data, Centre) are greyed out and inactive, with the reason at the top of each, and so is “Finish”; the summary stays readable.
 
 Three options:
 

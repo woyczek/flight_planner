@@ -432,7 +432,7 @@ Cette étape est importante : sans dossier des données autorisé, vos disponibi
 
 Cette étape installe les données de la compagnie (missions, références…). Elle passe par le lanceur : sans lui, la page affiche « Pour cette étape, ouvrez la suite avec le lanceur… ».
 
-Les boutons de cette étape restent inactifs tant que le dossier de l'application (étape 1) n'est pas choisi : les données s'installent dans la suite servie.
+Tant que le dossier de l'application (étape 1) n'est pas choisi, ou s'il appartient à une autre copie de la suite, cette étape et les suivantes (compagnie, profil, données aéronautiques, Centre) sont grisées et inactives, la raison en tête de chacune, et « Terminer » aussi ; le bilan reste lisible.
 
 Trois possibilités :
 
