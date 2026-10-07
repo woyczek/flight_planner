@@ -45,4 +45,5 @@ ou maintient la suite. Les manuels et guides d'utilisation sont au [premier nive
 | [Mission Report Core](mission_report_core_audit.md) | audit et plan d'intégration du socle des comptes rendus |
 | [Audit du 28 septembre 2026](AUDIT_2026-09-28.md) | entrées SIA, installation, git |
 | [Audit de sécurité du 2 octobre 2026](AUDIT_SECURITE_2026-10-02.md) | pages, scripts, lanceur |
+| [Audit de sécurité du 7 octobre 2026](AUDIT_SECURITE_2026-10-07.md) | évasion de données, surface locale, code étranger (« zombie »), préparation du mode client/serveur ; plan de correction par lots |
 | [Performances : synthèse](perf/SYNTHESE.md) · [rapport](perf/RAPPORT_PERF.md) · [plan](perf/PLAN_PERF_2026-10-04.md) | audit de performance avant / après, extrapolation |
