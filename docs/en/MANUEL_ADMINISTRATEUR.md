@@ -753,7 +753,7 @@ The “Check” button reruns the checks.
 
 ### Aeronautical data: world zones, sources and AIRAC cycles
 
-**Zone map**: one zone per country (France groups mainland and overseas territories, the SIA coverage). Hovering it shows its sources in the right-hand panel; a click pins it: the panel stays on it while you activate it (“Activate the zone”) and set its sources. Clicking the zone again, Esc or “📌 Release” let it go.
+**Zone map**: one zone per country (France groups mainland and overseas territories, the SIA coverage). Hovering it shows its sources in the right-hand panel; a click pins it: the panel stays on it while you activate it (“Activate the zone”) and set its sources. Clicking the zone again, Esc or “📌 Release” let it go. When a zone is activated for the first time, the suite chains by itself everything it can do: downloads of its sources, latest ZIPs from Downloads (SIA, NATS…), database rebuild, zone MORA (double gauge: step and detail); “Fetch and recompute everything”, in the panel of an active zone, runs this set-up again. What is left to do by hand (order on the SIA website, PDF to import, X-Plane folder…) is listed under the map, “Actions to do”: one line per source of the active zones, with its link and its button.
 - Colours: outline only = inactive, no data; grey = inactive, with data; orange = active, incomplete data; green = active, all data of the ticked sources; blue = hovered zone.
 - Each source is ticked or unticked for its zone; only the ticked sources of the active zones go into the database. A “link” source (PDF or reference website) is not read by the suite.
 - Depending on the source, the panel offers:
@@ -767,7 +767,7 @@ The “Check” button reruns the checks.
 - The SIA keeps priority: inside the French FIRs only its airspace counts; elsewhere an airspace, aerodrome or navaid already read is not added twice. Outside France, R, D, TRA, TSA, MOA, W, A areas and MTR routes crossed by a mission appear in its airspace to activate.
 - Website addresses (SIA, DIRCAM, NATS, UK military AIP, NAV CANADA) are set in Settings › Installation › Sources and folders › External sources; the SIA and X-Plane folders there are the same as here.
 
-**Aeronautical database: sources, cycles and rebuild**: cycle in force, next cycle and database cycle, then a table of all ticked sources of the active zones (zone, source, files, cycle or date, age, size, state). A click on a row pins its zone and updates the source (download, SIA ZIP, MILAIP PDF import, X-Plane folder, zone MORA).
+**Aeronautical database: sources, cycles and rebuild**: cycle in force, next cycle and database cycle, then a table of all ticked sources of the active zones (zone, source, files, cycle or date, age, size, state). A click on a row pins its zone and updates the source (download, SIA ZIP, MILAIP PDF import, X-Plane folder, zone MORA). At the top of the table: the number of checks without issue, then the problems (missing sources) and the warnings (old ones); “Show the problems” keeps only them. The table is sorted by state (problems first) and can be sorted by column.
 “Recompute all” rebuilds the database with all active zones (a few seconds; the browser may ask to authorise the folder); “Purge the cache” empties it. It is the same block as in the map studio.
 Table states:
 - SIA: cycle read from the file names, “old” if it precedes the cycle in force;
