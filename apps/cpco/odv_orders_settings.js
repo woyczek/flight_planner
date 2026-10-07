@@ -1,7 +1,7 @@
 (() => {
   'use strict';
-  // Paramètres › Centre › Ordres de vols (docs/technique/ODV_ORDRES.md § 4.1) : réglages partagés de la page Ordres de
-  // vols, data/config/odv.json (OdvOrders.loadConfig / saveConfig, shared/odv_orders_store.js) — terrain, réseau par
+  // Paramètres › Centre › Tableau (docs/technique/ODV_ORDRES.md § 4.1) : réglages partagés de la page Tableau,
+  // data/config/odv.json (OdvOrders.loadConfig / saveConfig, shared/odv_orders_store.js) — terrain, réseau par
   // défaut, délai des CR avant MNE, jours affichés et heures de service, modèles de plaquettes (vols, divers, contrôle),
   // couleurs des indicatifs, créneaux LL / RTBA de repli, personnel (Staff / Membres, couleur, ordre), récurrences.
   // Rubrique inscrite auprès de SettingsPanels (shared/settings_panels.js), page REPOSITORY_TREE.settings.sections.odvOrders.
@@ -78,8 +78,8 @@
   SP.add({
     id: 'odvOrders',
     group: L('Centre (CPCO)', 'Centre (CPCO)', 'Zentrum (CPCO)', 'Centro (CPCO)'),
-    title: L('Ordres de vols', 'Flight orders', 'Flugbefehle', 'Órdenes de vuelo'),
-    intro: L('Réglages partagés de la page Ordres de vols (data/config/odv.json, synchronisé) : terrain, réseau par défaut, délai des CR, heures de service, modèles de plaquettes, couleurs des indicatifs, créneaux LL / RTBA de repli, personnel, récurrences.', 'Shared settings of the Flight orders page (data/config/odv.json, synchronised): airfield, default network, report delay, duty hours, strip templates, callsign colours, fallback LL / RTBA slots, personnel, recurrences.', 'Gemeinsame Einstellungen der Seite Flugbefehle (data/config/odv.json, synchronisiert): Flugplatz, Standardnetzwerk, Berichtsfrist, Dienstzeiten, Streifenvorlagen, Rufzeichenfarben, Ersatz-LL-/RTBA-Zeitfenster, Personal, Wiederholungen.', 'Ajustes compartidos de la página Órdenes de vuelo (data/config/odv.json, sincronizado): aeródromo, red por defecto, plazo de informes, horas de servicio, plantillas de fichas, colores de indicativos, franjas LL / RTBA de respaldo, personal, recurrencias.'),
+    title: L('Tableau', 'Board', 'Einsatztafel', 'Tablero'),
+    intro: L('Réglages partagés de la page Tableau (data/config/odv.json, synchronisé) : terrain, réseau par défaut, délai des CR, heures de service, modèles de plaquettes, couleurs des indicatifs, créneaux LL / RTBA de repli, personnel, récurrences.', 'Shared settings of the Board page (data/config/odv.json, synchronised): airfield, default network, report delay, duty hours, strip templates, callsign colours, fallback LL / RTBA slots, personnel, recurrences.', 'Gemeinsame Einstellungen der Seite Einsatztafel (data/config/odv.json, synchronisiert): Flugplatz, Standardnetzwerk, Berichtsfrist, Dienstzeiten, Streifenvorlagen, Rufzeichenfarben, Ersatz-LL-/RTBA-Zeitfenster, Personal, Wiederholungen.', 'Ajustes compartidos de la página Tablero (data/config/odv.json, sincronizado): aeródromo, red por defecto, plazo de informes, horas de servicio, plantillas de fichas, colores de indicativos, franjas LL / RTBA de respaldo, personal, recurrencias.'),
     async render(body, api) {
       if (!O()) {
         body.textContent = 'OdvOrders ?';
@@ -236,7 +236,7 @@
           api.status(r?.where === 'folder' ? K.t(['Réglages enregistrés.', 'Settings saved.', 'Einstellungen gespeichert.', 'Ajustes guardados.']) : K.t(['Réglages enregistrés dans ce navigateur.', 'Settings saved in this browser.', 'Einstellungen in diesem Browser gespeichert.', 'Ajustes guardados en este navegador.']));
         }, 'primary'],
         [L('Valeurs par défaut', 'Default values', 'Standardwerte', 'Valores por defecto'), async () => {
-          if (!await window.AppFramework.ask(K.t(['Revenir aux réglages par défaut des ordres de vols ? (personnel, couleurs des indicatifs, créneaux LL et récurrences gardés)', 'Back to the default flight-order settings? (personnel, callsign colours, LL slots and recurrences kept)', 'Zu den Standardeinstellungen der Flugbefehle zurück? (Personal, Rufzeichenfarben, LL-Zeitfenster und Wiederholungen bleiben)', '¿Volver a los ajustes por defecto de las órdenes de vuelo? (personal, colores de indicativos, franjas LL y recurrencias conservados)']))) return;
+          if (!await window.AppFramework.ask(K.t(['Revenir aux réglages par défaut du Tableau ? (personnel, couleurs des indicatifs, créneaux LL et récurrences gardés)', 'Back to the default Board settings? (personnel, callsign colours, LL slots and recurrences kept)', 'Zu den Standardeinstellungen der Einsatztafel zurück? (Personal, Rufzeichenfarben, LL-Zeitfenster und Wiederholungen bleiben)', '¿Volver a los ajustes por defecto del Tablero? (personal, colores de indicativos, franjas LL y recurrencias conservados)']))) return;
           const d = structuredClone(O().DEFAULT_CONFIG);
           cfg = {
             ...d,

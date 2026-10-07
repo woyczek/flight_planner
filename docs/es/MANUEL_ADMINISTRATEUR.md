@@ -403,13 +403,13 @@ Este bloque reúne los entrenamientos, exámenes, eventos y reservas de VATSIM /
 - **Introducir una sesión**: indique el día, el inicio y el fin (horas UTC, en pasos de 15 min), la posición (p. ej. `LFBO_APP`, `LFMN_TWR`), la red (VATSIM o IVAO), el tipo (Entrenamiento, Examen, Evento, Reserva) y un comentario opcional. Después haga clic en «Añadir».
 - Las dos horas deben caer el mismo día: el fin debe ser posterior al inicio.
 - «Recuperar VATSIM (país preferido)» importa las reservas VATSIM de la semana. Las sesiones ya recuperadas se sustituyen (anulaciones incluidas); las introducidas a mano se conservan. Solo se importan las posiciones del país preferido (Ajustes › Centro › Planificación ODV; Francia metropolitana por defecto); el botón lleva su nombre.
-- «Recuperar IVAO (país preferido)» importa igualmente los entrenamientos, exámenes y reservas IVAO de la semana, con la clave de API IVAO de la instalación (Ajustes › Instalación). Estos dos botones son la importación común con las órdenes de vuelo: un solo archivo, las mismas sesiones en ambas páginas.
+- «Recuperar IVAO (país preferido)» importa igualmente los entrenamientos, exámenes y reservas IVAO de la semana, con la clave de API IVAO de la instalación (Ajustes › Instalación). Estos dos botones son la importación común con el Tablero: un solo archivo, las mismas sesiones en ambas páginas.
 - El botón «×» de una línea quita la sesión. La columna «Fuente» indica «recuperada» o «introducida». La tabla muestra primero los entrenamientos, exámenes y eventos (examen y entrenamiento marcados en el margen); las simples reservas de posición, numerosas una vez importadas, se pliegan bajo «n reserva(s) de posición».
 - **Efecto en la planificación**: una sesión se cuenta en su franja (★). Un entrenamiento o un examen deja la CTR del aeródromo no disponible para las misiones de esa franja; las TMA que contienen el aeródromo deben evitarse en lo posible.
 
 ### Activaciones de zonas por red
 
-Este bloque es el de las órdenes de vuelo (ver «Activaciones de zonas»): activaciones RTBA, R, D, TRA… de la semana mostrada, VATSIM e IVAO lado a lado, mismos datos. Edición restringida como en las órdenes de vuelo (Centro activado; en producción, administrador).
+Este bloque es el del Tablero (ver «Activaciones de zonas»): activaciones RTBA, R, D, TRA… de la semana mostrada, VATSIM e IVAO lado a lado, mismos datos. Edición restringida como en el Tablero (Centro activado; en producción, administrador).
 
 ### Franjas comunes
 
@@ -473,13 +473,13 @@ Este bloque guarda archivos en este ordenador. Contienen datos nominativos: no l
 
 Si el navegador rechaza la copia automática, el texto queda seleccionado: cópielo con Ctrl+C.
 
-## Órdenes de vuelo
+## Tablero
 <!-- page: apps/cpco/odv_orders.html -->
 
-La página Órdenes de vuelo construye la orden de vuelo de la semana: fichas de vuelo, control, varios y notas colocados en una cronología, con los conflictos de disponibilidad y de zonas.
-Para abrirla: barra lateral › sección «Centro» › «Órdenes». Como el resto del Centro, requiere el Centro activado; en modo producción, también hay que estar conectado con el rol `admin_centre`. Si no, la página se abre en solo lectura.
+La página Tablero construye la orden de vuelo de la semana: fichas de vuelo, control, varios y notas colocados en una cronología, con los conflictos de disponibilidad y de zonas.
+Para abrirla: barra lateral › sección «Centro» › «Tablero». Como el resto del Centro, requiere el Centro activado; en modo producción, también hay que estar conectado con el rol `admin_centre`. Si no, la página se abre en solo lectura.
 Todo se guarda en el pool de datos compartido: la orden de la semana en `data/odv/<año>-W<semana>.json`, los ajustes en `data/config/odv.json`. Las disponibilidades siguen siendo las de los pilotos, y la tripulación de un vuelo de misión la de las asignaciones.
-Las horas están en z (UTC). Modelo de datos: [Órdenes de vuelo](../technique/ODV_ORDRES.md).
+Las horas están en z (UTC). Modelo de datos: [Tablero](../technique/ODV_ORDRES.md).
 
 ### Semana
 
@@ -624,7 +624,7 @@ Este apartado contiene los ajustes propios de la compagnie para la página Plani
 | Ajuste | Por defecto |
 |---|---|
 | Franjas (horas z): Mañana, Tarde, Noche | 8 a 12, 12 a 18, 18 a 23 (por medias horas; el fin debe ser posterior al inicio) |
-| País preferido (perímetro ATC) | «Francia metropolitana»; sesiones ATC (entrenamientos, exámenes, reservas) importadas y mostradas solo para este país, planificación ODV y órdenes de vuelo (indicadores OACI del país: LF salvo LFV para Francia) |
+| País preferido (perímetro ATC) | «Francia metropolitana»; sesiones ATC (entrenamientos, exámenes, reservas) importadas y mostradas solo para este país, planificación ODV y el Tablero (indicadores OACI del país: LF salvo LFV para Francia) |
 | Fechas de la semana | «Semana ISO (n.º de semana del archivo)»; si no, «Fecha introducida en la cronología» |
 | Casilla vacía | «Sin rellenar» (nunca cuenta como disponible); si no, «No disponible» |
 | Tipos FLOTTE tenidos en cuenta para las funciones | «Todos salvo los rojos (no dominados)»; «Solo verdes»; «Todos» |
@@ -635,9 +635,9 @@ Este apartado contiene los ajustes propios de la compagnie para la página Plani
 
 Cada cambio se guarda de inmediato. «Ajustes por defecto» restablece todos los valores anteriores.
 
-### Órdenes de vuelo
+### Tablero
 
-Esta sección ajusta la página Órdenes de vuelo (`data/config/odv.json`, sincronizado).
+Esta sección ajusta la página Tablero (`data/config/odv.json`, sincronizado).
 
 | Ajuste | Uso |
 |---|---|
@@ -701,7 +701,7 @@ Este apartado es el único lugar donde se ajustan las carpetas locales y las dir
 | Carpeta X-Plane (aterrizajes), Carpeta de rendimiento, Carpeta de copia local | registros CSV, perfiles `.lnmperf` / `.json`, `defa_local_store.yaml` |
 
 - **Fuentes externas**: la dirección por defecto aparece en gris. Un valor introducido solo vale para este navegador; «↺» vuelve al valor por defecto y «Abrir ↗» abre la dirección.
-- **Claves de API (servicios externos)**: claves de la suite, comunes a todos sus usuarios (IVAO: clave de API para las activaciones de zonas y las sesiones ATC — entrenamientos, exámenes, reservas — de la planificación ODV y de las órdenes de vuelo). «Guardar» las confía al lanzador (`secrets/` en la raíz de la aplicación, excluido de git, fuera de los datos y de las copias); la página solo ve su estado y los 4 últimos caracteres; «Borrar» la retira.
+- **Claves de API (servicios externos)**: claves de la suite, comunes a todos sus usuarios (IVAO: clave de API para las activaciones de zonas y las sesiones ATC — entrenamientos, exámenes, reservas — de la planificación ODV y del Tablero). «Guardar» las confía al lanzador (`secrets/` en la raíz de la aplicación, excluido de git, fuera de los datos y de las copias); la página solo ve su estado y los 4 últimos caracteres; «Borrar» la retira.
 - **Aerolínea virtual**: «Nombre», «Nombre completo», «Sigla», «Centro (sigla)», «Centro (nombre completo)» y las páginas del sitio («Página de inicio», «Registro de vuelos», «Flota», «Ficha de un avión»). Un campo vacío mantiene el valor por defecto. «Volver a SO Group Virtual» borra todos estos ajustes.
 - **Primer arranque**: «Reabrir el primer inicio»; «Limpiar y empezar de nuevo…» borra las carpetas recordadas, la copia del libro ODV, los identificadores del sitio de la aerolínea y el perfil. Los archivos del disco no se tocan.
 
@@ -849,7 +849,7 @@ Esta base (`data/references/aircraft_fleet.js`) lista las aeronaves propuestas e
 - **Dónde**: Ajustes › Centro › «Flota (aeronaves conocidas)», reservada mientras el Centro está bloqueado (antes en Mantenimiento).
 - **Aeronaves del reporting**: bajo la flota, todas las aeronaves que vuelan en el diario de misiones (tipo, indicativos, operador, vuelos, último vuelo). Casilla «personal», marcada por defecto: aeronave individual, fuera de la flota del SOG; desmarcarla la añade a la flota (pasa a ser asignable), volver a marcarla la retira. Luego «Guardar en el repositorio»: la flota y el índice de aeronaves individuales (`data/references/aircraft_personal.js`) se escriben juntos. Una aeronave de la página Flota del sitio vuelve a la flota en la siguiente actualización.
 - **Tipos y rendimientos**: «Actualizar tipos y rendimientos» completa los tipos desconocidos de la base (flota y reporting); la actualización diaria desde el sitio también lo hace, en segundo plano, para la flota, el diario y las aeronaves individuales.
-- **Aeródromo (base) de una aeronave**: solo cambia con la actualización desde el sitio o con un informe emitido desde una orden de misión con un aeródromo de aterrizaje real; un informe fuera de orden de misión o un landing report no desplaza la aeronave. Una aeronave añadida desde el reporting entra sin aeródromo. El aeródromo actual es la columna «Ubicación» de la página Flota del sitio (guardada con la fecha de su último cambio), salvo si un informe más reciente emitido desde una orden de misión da un aeródromo de aterrizaje real (`missions/aircraft_positions.json`); los traslados parten de ahí (asignación, planificación ODV, órdenes de vuelo, ficha de aeronave).
+- **Aeródromo (base) de una aeronave**: solo cambia con la actualización desde el sitio o con un informe emitido desde una orden de misión con un aeródromo de aterrizaje real; un informe fuera de orden de misión o un landing report no desplaza la aeronave. Una aeronave añadida desde el reporting entra sin aeródromo. El aeródromo actual es la columna «Ubicación» de la página Flota del sitio (guardada con la fecha de su último cambio), salvo si un informe más reciente emitido desde una orden de misión da un aeródromo de aterrizaje real (`missions/aircraft_positions.json`); los traslados parten de ahí (asignación, planificación ODV, Tablero, ficha de aeronave).
 
 ### Tipos de aeronave (base OACI)
 

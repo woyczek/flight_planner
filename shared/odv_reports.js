@@ -1,6 +1,6 @@
 (() => {
   'use strict';
-  // Ordres de vols (ODV) : lien entre les plaquettes de vol, le registre des missions et les CR (lot L5).
+  // Tableau (ODV) : lien entre les plaquettes de vol, le registre des missions et les CR (lot L5).
   // Missions ravitailleur liées à une mission (plaquette AAR = vol d'une mission tanker du registre) :
   //   tankersFor(id) → [{ id, title, type, callsigns, aircraftTypes, track, folder, lien: "operation" | "axe" }]
   //     · « operation » : mission de la même opération (même préfixe A-001 de A-001A, ou operation.id) au rôle tanker

@@ -1,6 +1,6 @@
 (() => {
   'use strict';
-  // Page « Ordres de vols » du Centre (apps/cpco/odv_orders.html, docs/technique/ODV_ORDRES.md) : ordre de vol de la
+  // Page « Tableau » du Centre (apps/cpco/odv_orders.html, docs/technique/ODV_ORDRES.md) : ordre de vol de la
   // semaine sur une frise horaire (heures z), plaquettes glissées depuis les modèles, membres glissés sur les plaquettes,
   // conflits de dispo (shared/odv_orders_store.js, OdvOrders), zones et activations (shared/odv_airspace.js,
   // OdvAirspace ; shared/odv_activations_editor.js), états repris des CR (shared/odv_reports.js, OdvReports), vue de la
@@ -551,7 +551,7 @@
    *  réservations ; mêmes fichiers data/atc que le Planning ODV. */
   async function loadAtcDay(date) {
     try {
-      if (!window.SuiteAtc) await loadScript('../../shared/atc_sessions.js?v=b49318e3');
+      if (!window.SuiteAtc) await loadScript('../../shared/atc_sessions.js?v=d93553c4');
     } catch {
       return;
     }
@@ -686,7 +686,7 @@
   async function autoImportAtc() {
     if (!canEdit()) return;
     try {
-      if (!window.SuiteAtc) await loadScript('../../shared/atc_sessions.js?v=b49318e3');
+      if (!window.SuiteAtc) await loadScript('../../shared/atc_sessions.js?v=d93553c4');
     } catch {
       return;
     }
@@ -769,7 +769,7 @@
       date: r.date,
       debut: hhmm(r.debut),
       fin: hhmm(Math.min(1440, r.fin)),
-      texte: `${t(L4('Ordres de vols', 'Flight orders', 'Flugbefehle', 'Órdenes de vuelo'))} : ${r.vols.join(', ')}`
+      texte: `${t(L4('Tableau', 'Board', 'Einsatztafel', 'Tablero'))} : ${r.vols.join(', ')}`
     });
     const res = await A.saveActivations(S.week, list).catch(err => ({
       error: err

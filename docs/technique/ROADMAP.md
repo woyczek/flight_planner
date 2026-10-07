@@ -103,9 +103,9 @@ Le site n'a **pas d'API** : on récupère ses données par **copier-coller** de 
 Si le site ouvre un jour une API : reprendre ce tableau (lecture automatique, puis envoi des CR et des affectations
 avec les identifiants saisis au premier lancement, jamais écrits dans un fichier).
 
-## Ordres de vols (Centre, en cours)
+## Tableau (Centre, en cours)
 
-L'éditeur hebdomadaire des ordres de vols ([ODV_ORDRES.md](ODV_ORDRES.md)), repris de l'outil autonome « Ordres de vols
+L'éditeur hebdomadaire des ordres de vols ([ODV_ORDRES.md](ODV_ORDRES.md)), repris de l'outil autonome « Tableau
 V0 » dans le modèle de la suite (dispos, affectations, zones de mission, CR). Lots L2-L3 : session Ordres de vols ;
 L4-L5 : session Features SOG. Ensuite, sur cette feuille de route :
 

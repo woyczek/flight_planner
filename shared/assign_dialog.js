@@ -13,9 +13,9 @@
   //   convoyage à affecter (ferry.open, comme la matrice du Planning ODV) ;
   //   { rows, apply } : lignes préremplies, résultat rendu à apply(lignes, { takeoff: ms, h_hour: ms|null,
   //   alert: { notice_min, window_h }|null, block_min }) au lieu d'être écrit (matrice d'un créneau) ;
-  //   departure : terrain de départ de secours (OACI) quand le yaml de la mission n'en donne pas (Ordres de vols : celui
+  //   departure : terrain de départ de secours (OACI) quand le yaml de la mission n'en donne pas (Tableau : celui
   //   du registre) ; rows[].ferry { registration, from, minutes, takeoff (ms) } : convoyage déjà placé (plaquette de
-  //   convoyage des Ordres de vols), repris tel quel tant que l'appareil de la ligne est le même (sinon recalculé) ;
+  //   convoyage du Tableau), repris tel quel tant que l'appareil de la ligne est le même (sinon recalculé) ;
   //   frame(id, { title, subtitle, body, foot, wide, beforeClose }) : fenêtre au même gabarit ; chip(texte, ok|warn|err|focus).
   const K = window.RepositoryKit,
     esc = K.esc,
@@ -235,7 +235,7 @@ dialog.ad-dialog{overflow:hidden;max-height:92vh}dialog.ad-dialog[open]{display:
           tk = t + i * 6e4,
           notes = [];
         const type = plane?.type || r.post?.type || '';
-        // convoyage déjà placé (plaquette des Ordres de vols) pour cet appareil : repris tel quel ; sinon calculé
+        // convoyage déjà placé (plaquette du Tableau) pour cet appareil : repris tel quel ; sinon calculé
         const fp = r.ferryPreset && (!r.ferryPreset.registration || r.ferryPreset.registration === r.registration) ? r.ferryPreset : null;
         const ferry = fp ? {
           from: String(fp.from).toUpperCase(),

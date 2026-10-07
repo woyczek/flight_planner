@@ -1,4 +1,4 @@
-// Ordres de vols (ODV) : espaces de la base aéronautique (shared/sia_base.js) pour la section « Zones » de la grille.
+// Tableau (ODV) : espaces de la base aéronautique (shared/sia_base.js) pour la section « Zones » de la grille.
 // Chargé en option par la page des ordres de vols (après sia_base.js) : rien ne casse si ce module ou la base manquent.
 // Quatre familles, toutes asynchrones (window.OdvAirspace) :
 //  1. RTBA (et toute zone) activé par réseau, avec ses plages : aucun flux public (IVAO : demandes sous connexion,

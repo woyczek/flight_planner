@@ -403,13 +403,13 @@ This block gathers the VATSIM / IVAO trainings, exams, events and bookings of th
 - **Enter a session**: fill in the day, the start and the end (UTC times, in 15-min steps), the position (e.g. `LFBO_APP`, `LFMN_TWR`), the network (VATSIM or IVAO), the type (Training, Exam, Event, Booking) and an optional comment. Then click “Add”.
 - Both times must fall on the same day: the end must come after the start.
 - “Fetch VATSIM (preferred country)” imports the week's VATSIM bookings. Sessions already fetched are replaced (cancellations included); manual entries are kept. Only positions of the preferred country are imported (Settings › Centre › ODV planning; metropolitan France by default); the button shows its name.
-- “Fetch IVAO (preferred country)” likewise imports the week's IVAO trainings, exams and bookings, with the installation's IVAO API key (Settings › Installation). These two buttons are the import shared with the flight orders: a single file, the same sessions on both pages.
+- “Fetch IVAO (preferred country)” likewise imports the week's IVAO trainings, exams and bookings, with the installation's IVAO API key (Settings › Installation). These two buttons are the import shared with the Board: a single file, the same sessions on both pages.
 - The “×” button of a row removes the session. The “Source” column shows “fetched” or “entered”. The table first shows trainings, exams and events (exam and training marked in the margin); plain position bookings, numerous once imported, are folded under “n position booking(s)”.
 - **Effect on planning**: a session is counted in its slot (★). A training or an exam makes the airfield CTR unavailable for missions in that slot; the TMAs containing the airfield should be avoided if possible.
 
 ### Area activations by network
 
-This block is the one of the flight orders (see “Area activations”): RTBA, R, D, TRA… activations of the displayed week, VATSIM and IVAO side by side, same data. Editing restricted as in the flight orders (Centre enabled; in production, administrator).
+This block is the one of the Board (see “Area activations”): RTBA, R, D, TRA… activations of the displayed week, VATSIM and IVAO side by side, same data. Editing restricted as in the Board (Centre enabled; in production, administrator).
 
 ### Common slots
 
@@ -473,13 +473,13 @@ This block saves files on this computer. They contain personal data: do not publ
 
 If the browser refuses automatic copying, the text is selected: copy it with Ctrl+C.
 
-## Flight orders
+## Board
 <!-- page: apps/cpco/odv_orders.html -->
 
-The Flight orders page builds the week's flight order: flight strips, control, miscellaneous items and notes placed on a timeline, with availability and area conflicts.
-To open it: sidebar › “Centre” section › “Orders”. Like the rest of the Centre, it needs the Centre enabled; in production mode, you must also be logged in with the `admin_centre` role. Otherwise the page opens read-only.
+The Board page builds the week's flight order: flight strips, control, miscellaneous items and notes placed on a timeline, with availability and area conflicts.
+To open it: sidebar › “Centre” section › “Board”. Like the rest of the Centre, it needs the Centre enabled; in production mode, you must also be logged in with the `admin_centre` role. Otherwise the page opens read-only.
 Everything is saved in the shared data pool: the week's order in `data/odv/<year>-W<week>.json`, the settings in `data/config/odv.json`. Availability stays the pilots' own, and the crew of a mission flight comes from the assignments.
-Times are in z (UTC). Data model: [Flight orders](../technique/ODV_ORDRES.md).
+Times are in z (UTC). Data model: [Board](../technique/ODV_ORDRES.md).
 
 ### Week
 
@@ -624,7 +624,7 @@ This section contains the Settings of the ODV planning page. They are kept in th
 | Setting | Default |
 |---|---|
 | Slots (z hours): Morning, Afternoon, Evening | 8 to 12, 12 to 18, 18 to 23 (by half hour; the end must come after the start) |
-| Preferred country (ATC perimeter) | “metropolitan France”; ATC sessions (trainings, exams, bookings) imported and shown for this country only, ODV planning and flight orders (the country's ICAO indicators: LF except LFV for France) |
+| Preferred country (ATC perimeter) | “metropolitan France”; ATC sessions (trainings, exams, bookings) imported and shown for this country only, ODV planning and the Board (the country's ICAO indicators: LF except LFV for France) |
 | Week dates | “ISO week (week number of the file)”; otherwise “Date entered on the timeline” |
 | Empty cell | “Not filled in” (never counted as available); otherwise “Unavailable” |
 | FLOTTE types kept for roles | “All but red (not mastered)”; “Green only”; “All” |
@@ -635,9 +635,9 @@ This section contains the Settings of the ODV planning page. They are kept in th
 
 Each change is saved at once. “Default settings” restores all the values above.
 
-### Flight orders
+### Board
 
-This section sets the Flight orders page (`data/config/odv.json`, synchronised).
+This section sets the Board page (`data/config/odv.json`, synchronised).
 
 | Setting | Use |
 |---|---|
@@ -701,7 +701,7 @@ This section is the only place to set the local folders and the addresses of the
 | X-Plane folder (landings), Performance folder, Local backup folder | CSV logs, `.lnmperf` / `.json` profiles, `defa_local_store.yaml` |
 
 - **External sources**: the default address is shown greyed out. An entered value applies to this browser only; “↺” goes back to the default value and “Open ↗” opens the address.
-- **API keys (external services)**: suite keys, shared by all its users (IVAO: API key for the area activations and the ATC sessions — trainings, exams, bookings — of the ODV planning and the flight orders). “Save” hands them to the launcher (`secrets/` at the application root, excluded from git, outside the data and the backups); the page only sees their state and last 4 characters; “Clear” removes the key.
+- **API keys (external services)**: suite keys, shared by all its users (IVAO: API key for the area activations and the ATC sessions — trainings, exams, bookings — of the ODV planning and the Board). “Save” hands them to the launcher (`secrets/` at the application root, excluded from git, outside the data and the backups); the page only sees their state and last 4 characters; “Clear” removes the key.
 - **Virtual airline**: “Name”, “Full name”, “Short name”, “Centre (short)”, “Centre (full name)”, and the site pages (“Home page”, “Flight log”, “Fleet”, “Aircraft page”). An empty field keeps the default value. “Back to SO Group Virtual” clears all these settings.
 - **First run**: “Reopen the first run”; “Clean and start over…” clears the stored folders, the copy of the ODV workbook, the airline site credentials and the profile. The files on disk are not touched.
 
@@ -849,7 +849,7 @@ This database (`data/references/aircraft_fleet.js`) lists the aircraft offered i
 - **Where**: Settings › Centre › “Fleet (known aircraft)”, restricted while the Centre is locked (previously in Maintenance).
 - **Aircraft in the reporting**: below the fleet, all the aircraft flying in the mission log (type, callsigns, operator, flights, last flight). “Personal” box, ticked by default: individual aircraft, outside the SOG fleet; unticking it adds it to the fleet (it becomes assignable), ticking it again removes it. Then “Save to repository”: the fleet and the index of individual aircraft (`data/references/aircraft_personal.js`) are written together. An aircraft on the website's Fleet page comes back into the fleet at the next update.
 - **Types and performance**: “Refresh types and performance” completes the types unknown to the database (fleet and reporting); the daily update from the website also does it, in the background, for the fleet, the log and the individual aircraft.
-- **Aircraft aerodrome (base)**: it only changes through the update from the website, or through a report issued from a mission order with a real landing aerodrome; a report outside a mission order or a landing report does not move the aircraft. An aircraft added from the reporting comes in without an aerodrome. The current aerodrome is the “Location” column of the website's Fleet page (kept with the date of its last change), unless a more recent report issued from a mission order gives an actual landing aerodrome (`missions/aircraft_positions.json`); ferries start from there (assignment, ODV planning, flight orders, aircraft sheet).
+- **Aircraft aerodrome (base)**: it only changes through the update from the website, or through a report issued from a mission order with a real landing aerodrome; a report outside a mission order or a landing report does not move the aircraft. An aircraft added from the reporting comes in without an aerodrome. The current aerodrome is the “Location” column of the website's Fleet page (kept with the date of its last change), unless a more recent report issued from a mission order gives an actual landing aerodrome (`missions/aircraft_positions.json`); ferries start from there (assignment, ODV planning, Board, aircraft sheet).
 
 ### Aircraft types (ICAO base)
 

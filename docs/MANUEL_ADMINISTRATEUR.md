@@ -403,13 +403,13 @@ Ce bloc rassemble les trainings, examens, événements et réservations VATSIM /
 - **Saisir une session** : renseignez le jour, le début et la fin (heures UTC, par pas de 15 min), la position (ex. `LFBO_APP`, `LFMN_TWR`), le réseau (VATSIM ou IVAO), le type (Training, Examen, Événement, Réservation) et un commentaire facultatif. Cliquez ensuite sur « Ajouter ».
 - Les deux heures doivent tomber le même jour : la fin doit suivre le début.
 - « Récupérer VATSIM (pays préféré) » importe les réservations VATSIM de la semaine. Les sessions déjà récupérées sont remplacées (annulations comprises) ; les saisies manuelles sont gardées. Seules les positions du pays préféré sont importées (Paramètres › Centre › Planning ODV ; France métropolitaine par défaut) ; le bouton porte son nom.
-- « Récupérer IVAO (pays préféré) » importe de même les trainings, examens et réservations IVAO de la semaine, avec la clé d'API IVAO de l'installation (Paramètres › Installation). Ces deux boutons sont l'import commun aux Ordres de vols : un seul fichier, mêmes sessions sur les deux pages.
+- « Récupérer IVAO (pays préféré) » importe de même les trainings, examens et réservations IVAO de la semaine, avec la clé d'API IVAO de l'installation (Paramètres › Installation). Ces deux boutons sont l'import commun au Tableau : un seul fichier, mêmes sessions sur les deux pages.
 - Le bouton « × » d'une ligne retire la session. La colonne « Source » indique « récupérée » ou « saisie ». Le tableau montre d'abord les trainings, examens et événements (examen et training repérés en marge) ; les simples réservations de position, nombreuses une fois importées, sont repliées sous « n réservation(s) de position ».
 - **Effet sur la planification** : une session est comptée dans son créneau (★). Un training ou un examen rend la CTR du terrain indisponible pour les missions de ce créneau ; les TMA qui contiennent le terrain sont à éviter si possible.
 
 ### Activations des zones par réseau
 
-Ce bloc est celui des Ordres de vols (voir « Activations des zones ») : activations RTBA, R, D, TRA… de la semaine affichée, VATSIM et IVAO côte à côte, mêmes données. Saisie réservée comme aux Ordres (Centre activé ; en production, administrateur).
+Ce bloc est celui du Tableau (voir « Activations des zones ») : activations RTBA, R, D, TRA… de la semaine affichée, VATSIM et IVAO côte à côte, mêmes données. Saisie réservée comme au Tableau (Centre activé ; en production, administrateur).
 
 ### Créneaux communs
 
@@ -473,13 +473,13 @@ Ce bloc enregistre des fichiers sur cet ordinateur. Ils contiennent des données
 
 Si le navigateur refuse la copie automatique, le texte est sélectionné : copiez-le avec Ctrl+C.
 
-## Ordres de vols
+## Tableau
 <!-- page: apps/cpco/odv_orders.html -->
 
-La page Ordres de vols construit l'ordre de vol de la semaine : plaquettes de vol, contrôle, divers et notes posés sur une frise horaire, avec les conflits de disponibilité et de zones.
-Pour l'ouvrir : barre latérale › rubrique « Centre » › « Ordres ». Comme le reste du Centre, elle demande le Centre activé ; en mode production, il faut aussi être connecté avec le rôle `admin_centre`. Sinon, la page s'ouvre en lecture seule.
+La page Tableau construit l'ordre de vol de la semaine : plaquettes de vol, contrôle, divers et notes posés sur une frise horaire, avec les conflits de disponibilité et de zones.
+Pour l'ouvrir : barre latérale › rubrique « Centre » › « Tableau ». Comme le reste du Centre, elle demande le Centre activé ; en mode production, il faut aussi être connecté avec le rôle `admin_centre`. Sinon, la page s'ouvre en lecture seule.
 Tout est enregistré dans le pool de données partagé : l'ordre de la semaine dans `data/odv/<année>-W<semaine>.json`, les réglages dans `data/config/odv.json`. Les dispos restent celles des pilotes, l'équipage d'un vol de mission celui des affectations.
-Les heures sont en z (UTC). Modèle de données : [Ordres de vols](technique/ODV_ORDRES.md).
+Les heures sont en z (UTC). Modèle de données : [Tableau](technique/ODV_ORDRES.md).
 
 ### Semaine
 
@@ -624,7 +624,7 @@ Cette rubrique contient les réglages propres à la compagnie pour la page Plann
 | Réglage | Défaut |
 |---|---|
 | Créneaux (heures z) : Matin, Après-midi, Soir | 8 à 12, 12 à 18, 18 à 23 (par demi-heure ; la fin doit suivre le début) |
-| Pays préféré (périmètre ATC) | « France métropolitaine » ; sessions ATC (trainings, examens, réservations) importées et montrées pour ce pays seul, Planning ODV et Ordres de vols (indicatifs OACI du pays : LF hors LFV pour la France) |
+| Pays préféré (périmètre ATC) | « France métropolitaine » ; sessions ATC (trainings, examens, réservations) importées et montrées pour ce pays seul, Planning ODV et le Tableau (indicatifs OACI du pays : LF hors LFV pour la France) |
 | Dates de la semaine | « Semaine ISO (n° de semaine du fichier) » ; sinon « Date saisie sur la frise » |
 | Case vide | « Non renseignée » (jamais comptée disponible) ; sinon « Indisponible » |
 | Types FLOTTE retenus pour les rôles | « Tous sauf les rouges (non maîtrisés) » ; « Verts seuls » ; « Tous » |
@@ -635,9 +635,9 @@ Cette rubrique contient les réglages propres à la compagnie pour la page Plann
 
 Chaque modification est enregistrée aussitôt. « Réglages par défaut » rétablit toutes les valeurs ci-dessus.
 
-### Ordres de vols
+### Tableau
 
-Cette rubrique règle la page Ordres de vols (`data/config/odv.json`, synchronisé).
+Cette rubrique règle la page Tableau (`data/config/odv.json`, synchronisé).
 
 | Réglage | Usage |
 |---|---|
@@ -849,7 +849,7 @@ Cette base (`data/references/aircraft_fleet.js`) liste les appareils proposés d
 - **Où** : Paramètres › Centre › « Flotte (appareils connus) », réservée tant que le Centre est verrouillé (auparavant dans Maintenance).
 - **Appareils du reporting** : sous la flotte, tous les appareils qui volent dans le journal des missions (type, indicatifs, exploitant, vols, dernier vol). Case « personnel », cochée par défaut : appareil individuel, hors de la flotte du SOG ; la décocher l'ajoute à la flotte (il devient affectable), la recocher l'en retire. Puis « Enregistrer dans le dépôt » : la flotte et l'index des appareils individuels (`data/references/aircraft_personal.js`) sont écrits ensemble. Un appareil de la page Flotte du site revient dans la flotte à la mise à jour suivante.
 - **Types et performances** : « Rafraîchir types et performances » complète les types inconnus de la base (flotte et reporting) ; la mise à jour quotidienne depuis le site le fait aussi, en tâche de fond, pour la flotte, le journal et les appareils individuels.
-- **Terrain (base) d'un appareil** : il ne change que par la mise à jour depuis le site, ou par un CR issu d'un ordre de mission avec un vrai terrain d'atterrissage ; un CR hors ordre de mission ou un landing report ne déplace pas l'appareil. Un appareil ajouté depuis le reporting entre sans terrain. Le terrain actuel est la colonne « Emplacement » de la page Flotte du site (gardée avec la date de son dernier changement), sauf si un CR issu d'un ordre de mission, plus récent, donne un terrain d'atterrissage réel (`missions/aircraft_positions.json`) ; les convoyages partent de là (affectation, Planning ODV, Ordres de vols, fiche appareil).
+- **Terrain (base) d'un appareil** : il ne change que par la mise à jour depuis le site, ou par un CR issu d'un ordre de mission avec un vrai terrain d'atterrissage ; un CR hors ordre de mission ou un landing report ne déplace pas l'appareil. Un appareil ajouté depuis le reporting entre sans terrain. Le terrain actuel est la colonne « Emplacement » de la page Flotte du site (gardée avec la date de son dernier changement), sauf si un CR issu d'un ordre de mission, plus récent, donne un terrain d'atterrissage réel (`missions/aircraft_positions.json`) ; les convoyages partent de là (affectation, Planning ODV, Tableau, fiche appareil).
 
 ### Types d'aéronefs (base OACI)
 

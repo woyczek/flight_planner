@@ -8,7 +8,7 @@
   //   · saisie à la main (Planning ODV) ; réservations récupérées par le lanceur, positions du périmètre :
   //     VATSIM (/__setup/vatsim-bookings : l'API publique n'autorise pas la lecture directe depuis une page), IVAO
   //     (/__setup/ivao-bookings : API sous clé, Paramètres › Installation ; trainings, examens et réservations) ;
-  //   · un seul import par réseau pour toutes les pages (Planning ODV, Ordres de vols) : importNetwork lit le fichier,
+  //   · un seul import par réseau pour toutes les pages (Planning ODV, Tableau) : importNetwork lit le fichier,
   //     remplace les sessions déjà récupérées de ce réseau (annulations comprises), garde les saisies, enregistre.
   // API (window.SuiteAtc) : TYPES, NETWORKS, typeLabel(type), weekId(ms), read(semaine, { fresh }), save(semaine,
   //   sessions), fetchVatsim(semaine), fetchIvao(semaine), importNetwork(semaine, "VATSIM" | "IVAO") → { sessions,

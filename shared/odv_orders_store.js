@@ -1,6 +1,6 @@
 (() => {
   'use strict';
-  // Ordres de vols (docs/technique/ODV_ORDRES.md) : données et règles, sans interface.
+  // Tableau (docs/technique/ODV_ORDRES.md) : données et règles, sans interface.
   //   · réglages partagés data/config/odv.json (terrain, réseau par défaut, délai des CR, heures de service, personnel,
   //     modèles de plaquettes, couleurs des indicatifs, repli LL, récurrences) ; sans fichier : DEFAULT_CONFIG ;
   //   · ordre de vol d'une semaine data/odv/<AAAA>-W<nn>.json { schema: 1, va, semaine, updated_at, by, permanence,

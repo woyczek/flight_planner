@@ -1,9 +1,9 @@
-# Ordres de vols (Centre) — modèle de données et branchement
+# Tableau (Centre) — modèle de données et branchement
 
-Page du Centre `apps/cpco/odv_orders.html` (☰ › Centre — Ordres de vols) : l'éditeur hebdomadaire des ordres de vols
+Page du Centre `apps/cpco/odv_orders.html` (☰ › Centre — Tableau) : l'éditeur hebdomadaire des ordres de vols
 (plaquettes de vol posées sur une frise horaire, zones, contrôle, divers, notes). Chaîne : **mission → ordre de vol →
 exécution → CR**. La page **produit** l'ordre de vol ; le Planning ODV (`apps/cpco/odv_planning.html`,
-`docs/ODV_PLANNING.md`) l'**analyse** (créneaux communs, missions probables). Origine : l'outil autonome « Ordres de vols
+`docs/ODV_PLANNING.md`) l'**analyse** (créneaux communs, missions probables). Origine : l'outil autonome « Tableau
 V0 » (HTML monofichier, `localStorage`), repris dans le modèle de la suite ; son format de fichier n'est pas importé
 (format provisoire).
 
@@ -177,7 +177,7 @@ présentation des vols de mission.
 | Lot | Contenu | Qui |
 |---|---|---|
 | L2 | ce modèle ; catégorie `sol` et `SuiteDispos.affectable` ; `shared/odv_orders_store.js` (lecture, écriture, récurrences, conflits) | Ordres de vols |
-| L3 | page `apps/cpco/odv_orders.html` : vue jour (frise, glisser-déposer), vue semaine, statistiques, briefing ; rubrique Paramètres › Centre › Ordres de vols | Ordres de vols |
+| L3 | page `apps/cpco/odv_orders.html` : vue jour (frise, glisser-déposer), vue semaine, statistiques, briefing ; rubrique Paramètres › Centre › Tableau | Ordres de vols |
 | L4 | `shared/odv_airspace.js` (`OdvAirspace`), `shared/odv_activations_editor.js` — faits | Features SOG |
 | L5 | `etat` / `cr` ↔ registre des CR, délai MNE ; missions ravitailleur liées ; officier de permanence hors de la page | Features SOG |
 | L6 | manuels (4 langues), CHANGELOG ; puis stabilisation | ensemble |

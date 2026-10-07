@@ -403,13 +403,13 @@ Dieser Block sammelt die Trainings, Prüfungen, Events und Buchungen von VATSIM 
 - **Sitzung erfassen**: Geben Sie Tag, Beginn und Ende (UTC-Zeiten, in 15-Minuten-Schritten), Position (z. B. `LFBO_APP`, `LFMN_TWR`), Netzwerk (VATSIM oder IVAO), Art (Training, Prüfung, Event, Buchung) und einen optionalen Kommentar ein. Klicken Sie dann auf „Hinzufügen“.
 - Beide Zeiten müssen auf denselben Tag fallen: Das Ende muss nach dem Beginn liegen.
 - „VATSIM abrufen (bevorzugtes Land)“ importiert die VATSIM-Buchungen der Woche. Bereits abgerufene Sitzungen werden ersetzt (einschließlich Stornierungen); manuelle Eingaben bleiben erhalten. Nur Positionen des bevorzugten Landes werden importiert (Einstellungen › Zentrum › ODV-Planung; standardmäßig Frankreich, Mutterland); die Schaltfläche trägt seinen Namen.
-- „IVAO abrufen (bevorzugtes Land)“ importiert ebenso die IVAO-Trainings, -Prüfungen und -Buchungen der Woche, mit dem IVAO-API-Schlüssel der Installation (Einstellungen › Installation). Diese beiden Schaltflächen sind der mit den Flugbefehlen gemeinsame Import: eine Datei, dieselben Sitzungen auf beiden Seiten.
+- „IVAO abrufen (bevorzugtes Land)“ importiert ebenso die IVAO-Trainings, -Prüfungen und -Buchungen der Woche, mit dem IVAO-API-Schlüssel der Installation (Einstellungen › Installation). Diese beiden Schaltflächen sind der mit der Einsatztafel gemeinsame Import: eine Datei, dieselben Sitzungen auf beiden Seiten.
 - Die Schaltfläche „×“ einer Zeile entfernt die Sitzung. Die Spalte „Quelle“ zeigt „abgerufen“ oder „eingegeben“. Die Tabelle zeigt zuerst Trainings, Prüfungen und Veranstaltungen (Prüfung und Training am Rand markiert); einfache Positionsbuchungen, nach dem Import zahlreich, sind unter „n Positionsbuchung(en)“ eingeklappt.
 - **Wirkung auf die Planung**: Eine Sitzung wird in ihrem Zeitfenster gezählt (★). Ein Training oder eine Prüfung macht die CTR des Flugplatzes für die Missionen dieses Zeitfensters unverfügbar; die TMA, die den Flugplatz enthalten, sind möglichst zu meiden.
 
 ### Gebietsaktivierungen nach Netzwerk
 
-Dieser Block ist der der Flugbefehle (siehe „Gebietsaktivierungen“): RTBA-, R-, D-, TRA-Aktivierungen… der angezeigten Woche, VATSIM und IVAO nebeneinander, dieselben Daten. Bearbeitung wie bei den Flugbefehlen beschränkt (Centre aktiviert; im Produktivbetrieb Administrator).
+Dieser Block ist der der Einsatztafel (siehe „Gebietsaktivierungen“): RTBA-, R-, D-, TRA-Aktivierungen… der angezeigten Woche, VATSIM und IVAO nebeneinander, dieselben Daten. Bearbeitung wie bei der Einsatztafel beschränkt (Centre aktiviert; im Produktivbetrieb Administrator).
 
 ### Gemeinsame Zeitfenster
 
@@ -473,13 +473,13 @@ Dieser Block speichert Dateien auf diesem Computer. Sie enthalten personenbezoge
 
 Verweigert der Browser das automatische Kopieren, wird der Text markiert: Kopieren Sie ihn mit Strg+C.
 
-## Flugbefehle
+## Einsatztafel
 <!-- page: apps/cpco/odv_orders.html -->
 
-Die Seite Flugbefehle erstellt den Flugbefehl der Woche: Flugstreifen, Lotsendienst, Sonstiges und Notizen auf einer Zeitleiste, mit Verfügbarkeits- und Gebietskonflikten.
-Zum Öffnen: Seitenleiste › Rubrik „Zentrum“ › „Befehle“. Wie das übrige Zentrum setzt sie das aktivierte Zentrum voraus; im Produktionsmodus muss man zudem mit der Rolle `admin_centre` angemeldet sein. Sonst öffnet sich die Seite schreibgeschützt.
+Die Seite Einsatztafel erstellt den Flugbefehl der Woche: Flugstreifen, Lotsendienst, Sonstiges und Notizen auf einer Zeitleiste, mit Verfügbarkeits- und Gebietskonflikten.
+Zum Öffnen: Seitenleiste › Rubrik „Zentrum“ › „Einsatztafel“. Wie das übrige Zentrum setzt sie das aktivierte Zentrum voraus; im Produktionsmodus muss man zudem mit der Rolle `admin_centre` angemeldet sein. Sonst öffnet sich die Seite schreibgeschützt.
 Alles wird im gemeinsamen Datenpool gespeichert: der Befehl der Woche in `data/odv/<Jahr>-W<Woche>.json`, die Einstellungen in `data/config/odv.json`. Die Verfügbarkeiten bleiben die der Piloten, die Besatzung eines Missionsflugs die der Zuweisungen.
-Die Zeiten sind in z (UTC). Datenmodell: [Flugbefehle](../technique/ODV_ORDRES.md).
+Die Zeiten sind in z (UTC). Datenmodell: [Einsatztafel](../technique/ODV_ORDRES.md).
 
 ### Woche
 
@@ -624,7 +624,7 @@ Diese Rubrik enthält die spezifischen Einstellungen der Seite ODV-Planung. Sie 
 | Einstellung | Standard |
 |---|---|
 | Zeitfenster (Uhrzeit z): Morgen, Nachmittag, Abend | 8 bis 12, 12 bis 18, 18 bis 23 (in halben Stunden; das Ende muss nach dem Beginn liegen) |
-| Bevorzugtes Land (ATC-Bereich) | „Frankreich (Mutterland)“; ATC-Sitzungen (Trainings, Prüfungen, Buchungen) nur für dieses Land importiert und gezeigt, ODV-Planung und Flugbefehle (ICAO-Kennungen des Landes: LF außer LFV für Frankreich) |
+| Bevorzugtes Land (ATC-Bereich) | „Frankreich (Mutterland)“; ATC-Sitzungen (Trainings, Prüfungen, Buchungen) nur für dieses Land importiert und gezeigt, ODV-Planung und Einsatztafel (ICAO-Kennungen des Landes: LF außer LFV für Frankreich) |
 | Daten der Woche | „ISO-Woche (Wochennummer der Datei)“; sonst „Auf der Zeitleiste eingetragenes Datum“ |
 | Leeres Feld | „Nicht ausgefüllt“ (nie als verfügbar gezählt); sonst „Nicht verfügbar“ |
 | Für die Rollen berücksichtigte FLOTTE-Typen | „Alle außer rot (nicht beherrscht)“; „Nur grün (beherrscht)“; „Alle“ |
@@ -635,9 +635,9 @@ Diese Rubrik enthält die spezifischen Einstellungen der Seite ODV-Planung. Sie 
 
 Jede Änderung wird sofort gespeichert. „Standardeinstellungen“ stellt alle obigen Werte wieder her.
 
-### Flugbefehle
+### Einsatztafel
 
-Diese Rubrik stellt die Seite Flugbefehle ein (`data/config/odv.json`, synchronisiert).
+Diese Rubrik stellt die Seite Einsatztafel ein (`data/config/odv.json`, synchronisiert).
 
 | Einstellung | Verwendung |
 |---|---|
@@ -701,7 +701,7 @@ Diese Rubrik ist der einzige Ort, an dem die lokalen Ordner und die Adressen der
 | Ordner X-Plane (Landungen), Ordner Leistungsdaten, Ordner der lokalen Sicherung | CSV-Protokolle, Profile `.lnmperf` / `.json`, `defa_local_store.yaml` |
 
 - **Externe Quellen**: Die Standardadresse wird grau angezeigt. Ein eingegebener Wert gilt nur für diesen Browser; „↺“ kehrt zum Standardwert zurück, und „Öffnen ↗“ öffnet die Adresse.
-- **API-Schlüssel (externe Dienste)**: Schlüssel der Suite, für alle ihre Benutzer (IVAO: API-Schlüssel für die Gebietsaktivierungen und die ATC-Sitzungen — Trainings, Prüfungen, Buchungen — der ODV-Planung und der Flugbefehle). „Speichern“ übergibt sie dem Starter (`secrets/` im Anwendungsordner, von Git ausgeschlossen, außerhalb der Daten und Sicherungen); die Seite sieht nur ihren Status und die letzten 4 Zeichen; „Löschen“ entfernt den Schlüssel.
+- **API-Schlüssel (externe Dienste)**: Schlüssel der Suite, für alle ihre Benutzer (IVAO: API-Schlüssel für die Gebietsaktivierungen und die ATC-Sitzungen — Trainings, Prüfungen, Buchungen — der ODV-Planung und der Einsatztafel). „Speichern“ übergibt sie dem Starter (`secrets/` im Anwendungsordner, von Git ausgeschlossen, außerhalb der Daten und Sicherungen); die Seite sieht nur ihren Status und die letzten 4 Zeichen; „Löschen“ entfernt den Schlüssel.
 - **Virtuelle Fluggesellschaft**: „Name“, „Vollständiger Name“, „Kürzel“, „Zentrum (Kürzel)“, „Zentrum (voller Name)“, und die Seiten der Website („Startseite“, „Flugbuch“, „Flotte“, „Flugzeugseite“). Ein leeres Feld behält den Standardwert. „Zurück zu SO Group Virtual“ löscht alle diese Einstellungen.
 - **Erststart**: „Ersten Start erneut öffnen“; „Bereinigen und neu beginnen…“ löscht die gespeicherten Ordner, die Kopie der ODV-Arbeitsmappe, die Zugangsdaten der Website der Fluggesellschaft und das Profil. Die Dateien auf der Festplatte bleiben unberührt.
 
@@ -849,7 +849,7 @@ Diese Datenbank (`data/references/aircraft_fleet.js`) listet die in den Berichte
 - **Wo**: Einstellungen › Zentrum › „Flotte (bekannte Luftfahrzeuge)“, gesperrt, solange das Zentrum gesperrt ist (vorher unter Wartung).
 - **Luftfahrzeuge im Reporting**: unter der Flotte alle Luftfahrzeuge, die im Missionsjournal fliegen (Typ, Rufzeichen, Betreiber, Flüge, letzter Flug). Kästchen „Privat“, standardmäßig angehakt: einzelnes Luftfahrzeug, außerhalb der SOG-Flotte; Abhaken nimmt es in die Flotte auf (es wird zuweisbar), erneutes Anhaken nimmt es wieder heraus. Dann „Im Repository speichern“: Die Flotte und der Index der einzelnen Luftfahrzeuge (`data/references/aircraft_personal.js`) werden zusammen geschrieben. Ein Luftfahrzeug der Flotte-Seite der Website kommt bei der nächsten Aktualisierung in die Flotte zurück.
 - **Typen und Leistungen**: „Typen und Leistungen aktualisieren“ ergänzt die in der Datenbank unbekannten Typen (Flotte und Reporting); die tägliche Aktualisierung von der Website tut es ebenfalls, im Hintergrund, für die Flotte, das Flugbuch und die einzelnen Luftfahrzeuge.
-- **Flugplatz (Basis) eines Luftfahrzeugs**: Er ändert sich nur durch die Aktualisierung von der Website oder durch einen Bericht aus einem Missionsbefehl mit einem tatsächlichen Landeflugplatz; ein Bericht ohne Missionsbefehl oder ein Landing-Report verschiebt das Luftfahrzeug nicht. Ein aus dem Reporting hinzugefügtes Luftfahrzeug kommt ohne Flugplatz. Der aktuelle Flugplatz ist die Spalte „Standort“ der Flotte-Seite der Website (mit dem Datum ihrer letzten Änderung gespeichert), außer wenn ein neuerer Bericht aus einem Missionsbefehl einen tatsächlichen Landeflugplatz angibt (`missions/aircraft_positions.json`); von dort starten die Überführungen (Zuweisung, ODV-Planung, Flugbefehle, Luftfahrzeugblatt).
+- **Flugplatz (Basis) eines Luftfahrzeugs**: Er ändert sich nur durch die Aktualisierung von der Website oder durch einen Bericht aus einem Missionsbefehl mit einem tatsächlichen Landeflugplatz; ein Bericht ohne Missionsbefehl oder ein Landing-Report verschiebt das Luftfahrzeug nicht. Ein aus dem Reporting hinzugefügtes Luftfahrzeug kommt ohne Flugplatz. Der aktuelle Flugplatz ist die Spalte „Standort“ der Flotte-Seite der Website (mit dem Datum ihrer letzten Änderung gespeichert), außer wenn ein neuerer Bericht aus einem Missionsbefehl einen tatsächlichen Landeflugplatz angibt (`missions/aircraft_positions.json`); von dort starten die Überführungen (Zuweisung, ODV-Planung, Einsatztafel, Luftfahrzeugblatt).
 
 ### Luftfahrzeugmuster (ICAO-Datenbank)
 

@@ -563,7 +563,7 @@
     autoAtc(w);
   }
   /** Import IVAO automatique de la semaine ouverte (trainings, examens, réservations), au plus une fois par heure :
-   *  le même que celui des Ordres de vols (SuiteAtc.autoImport), seulement si la page peut écrire ; sans alerte. */
+   *  le même que celui du Tableau (SuiteAtc.autoImport), seulement si la page peut écrire ; sans alerte. */
   function autoAtc(w) {
     if (!window.SuiteAtc?.autoImport || !canEditActivations()) return;
     window.SuiteAtc.autoImport(w, 'IVAO').then(r => {
@@ -663,7 +663,7 @@
         p: x.position
       }));
     });
-    // import d'un réseau : le même que celui des Ordres de vols (SuiteAtc.importNetwork : récupérées remplacées,
+    // import d'un réseau : le même que celui du Tableau (SuiteAtc.importNetwork : récupérées remplacées,
     // annulations comprises, saisies gardées)
     host.querySelectorAll('[data-atc-net]').forEach(b => b.onclick = async () => {
       const net = b.dataset.atcNet,
@@ -693,8 +693,8 @@
   }
 
   // ------------------------------------------------------------------ activations des zones par réseau
-  // même éditeur et même fichier que les Ordres de vols (shared/odv_activations_editor.js, OdvAirspace :
-  // data/atc/activations/<semaine>.json) ; retouche réservée comme aux Ordres (Centre activé, hors production : admin)
+  // même éditeur et même fichier que le Tableau (shared/odv_activations_editor.js, OdvAirspace :
+  // data/atc/activations/<semaine>.json) ; retouche réservée comme au Tableau (Centre activé, hors production : admin)
   let activations = null;
   const canEditActivations = () => !!window.RepositoryNav?.cpco?.enabled?.() && (window.SuiteUsers?.mode?.() !== 'production' || !!window.SuiteUsers?.isAdmin?.());
   function renderActivations() {

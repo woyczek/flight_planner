@@ -2,12 +2,12 @@
 <html data-tool="dark" lang="fr">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Ordres de vols</title>
+<title>Tableau</title>
 <link rel="stylesheet" href="../../shared/repository_nav.css?v=f6a61e75">
-<script src="../../config/repository_tree?v=2ce4d5f5"></script>
+<script src="../../config/repository_tree?v=9222689c"></script>
 <style data-layer="app">
 @layer app {
-  /* Ordres de vols : frise horaire (heures z) ; angles droits partout (frise, plaquettes, barres). */
+  /* Tableau : frise horaire (heures z) ; angles droits partout (frise, plaquettes, barres). */
   :root {
     font-family: Inter, system-ui, Segoe UI, Arial, sans-serif;
     color-scheme: dark;
@@ -804,7 +804,7 @@
 </style>
 </head>
 <body>
-<header><h1>Ordres de vols</h1><div class="mut">Centre de planification et de conduite des opérations</div></header>
+<header><h1>Tableau</h1><div class="mut">Centre de planification et de conduite des opérations</div></header>
 <main class="odvo-page">
 <section data-block-id="semaine" data-icon="calendar" data-subtitle="Semaine ISO, jours (nombre d'éléments en conflit), vue, officier de permanence. Heures en z (UTC).">
   <h2>Semaine</h2>
@@ -844,21 +844,21 @@
 <script src="../../shared/mission_core/vocab.js?v=51b46b47"></script>
 <script src="../../shared/sia_base.js?v=efa3366e"></script>
 <script src="../../shared/assignments.js?v=cbeb62aa"></script>
-<script src="../../shared/assign_dialog.js?v=504d64c0"></script>
+<script src="../../shared/assign_dialog.js?v=eb8aaeff"></script>
 <script src="../../shared/mission_core/assist.js?v=6742e451"></script>
 <script src="odv_core.js?v=0bf35b41"></script>
-<script src="odv_settings.js?v=3f700fe5"></script>
-<script src="../../shared/odv_airspace.js?v=b9c75e90"></script>
+<script src="odv_settings.js?v=4d28e6a0"></script>
+<script src="../../shared/odv_airspace.js?v=4e88923e"></script>
 <script src="../../shared/odv_activations_editor.js?v=1e9f18fd"></script>
-<script src="../../shared/odv_reports.js?v=c059b0de"></script>
-<script src="../../shared/odv_orders_store.js?v=6013ff33"></script>
-<script src="odv_orders.js?v=11205399"></script>
+<script src="../../shared/odv_reports.js?v=d1967f6d"></script>
+<script src="../../shared/odv_orders_store.js?v=f90d68b9"></script>
+<script src="odv_orders.js?v=85bdfa2a"></script>
 <script src="../../shared/app_framework.js?v=003108e7"></script>
 <script src="../../shared/content_i18n.js?v=7afecb78"></script>
 <script>
 // Traductions des textes fixes de la page (contenus calculés : zones data-no-i18n, traduits par le script).
 RepositoryContentI18n([
-  ["Ordres de vols", "Flight orders", "Flugbefehle", "Órdenes de vuelo"],
+  ["Tableau", "Board", "Einsatztafel", "Tablero"],
   ["Centre de planification et de conduite des opérations", "Operations planning and command centre", "Einsatzplanungs- und Führungszentrum", "Centro de planificación y conducción de operaciones"],
   ["Semaine", "Week", "Woche", "Semana"],
   ["Semaine ISO, jours (nombre d'éléments en conflit), vue, officier de permanence. Heures en z (UTC).", "ISO week, days (number of items in conflict), view, duty officer. Times in z (UTC).", "ISO-Woche, Tage (Anzahl der Elemente im Konflikt), Ansicht, Diensthabender. Zeiten in z (UTC).", "Semana ISO, días (número de elementos en conflicto), vista, oficial de guardia. Horas en z (UTC)."],
