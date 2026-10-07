@@ -19,13 +19,18 @@
   };
   /** Données et règles du Tableau (shared/odv_orders_store.js), lues à l'usage. */
   const O = () => window.OdvOrders;
-  const DAYS = [L('Lundi', 'Monday', 'Montag', 'Lunes'), L('Mardi', 'Tuesday', 'Dienstag', 'Martes'), L('Mercredi', 'Wednesday', 'Mittwoch', 'Miércoles'), L('Jeudi', 'Thursday', 'Donnerstag', 'Jueves'), L('Vendredi', 'Friday', 'Freitag', 'Viernes'), L('Samedi', 'Saturday', 'Samstag', 'Sábado'), L('Dimanche', 'Sunday', 'Sonntag', 'Domingo')];
+  const DAYS = [L('Lundi', 'Monday', 'Montag', 'Lunes'), L('Mardi', 'Tuesday', 'Dienstag', 'Martes'), L('Mercredi', 'Wednesday',
+    'Mittwoch', 'Miércoles'), L('Jeudi', 'Thursday', 'Donnerstag', 'Jueves'), L('Vendredi', 'Friday', 'Freitag', 'Viernes'), L(
+    'Samedi', 'Saturday', 'Samstag', 'Sábado'), L('Dimanche', 'Sunday', 'Sonntag', 'Domingo')];
   const SHORT = ['L', 'M', 'M', 'J', 'V', 'S', 'D'];
   const H = {
     general: L('Général', 'General', 'Allgemein', 'General'),
-    terrain: L('Terrain (OACI) : jour et nuit aéronautiques', 'Airfield (ICAO): aeronautical day and night', 'Flugplatz (ICAO): Luftfahrttag und -nacht', 'Aeródromo (OACI): día y noche aeronáuticos'),
-    reseau: L('Réseau par défaut des vols', 'Default network of flights', 'Standardnetzwerk der Flüge', 'Red por defecto de los vuelos'),
-    delai: L('Délai sans CR avant MNE (heures)', 'Delay without report before MNE (hours)', 'Frist ohne Bericht bis MNE (Stunden)', 'Plazo sin informe antes de MNE (horas)'),
+    terrain: L('Terrain (OACI) : jour et nuit aéronautiques', 'Airfield (ICAO): aeronautical day and night',
+      'Flugplatz (ICAO): Luftfahrttag und -nacht', 'Aeródromo (OACI): día y noche aeronáuticos'),
+    reseau: L('Réseau par défaut des vols', 'Default network of flights', 'Standardnetzwerk der Flüge',
+      'Red por defecto de los vuelos'),
+    delai: L('Délai sans CR avant MNE (heures)', 'Delay without report before MNE (hours)', 'Frist ohne Bericht bis MNE (Stunden)',
+      'Plazo sin informe antes de MNE (horas)'),
     nbJours: L('Jours affichés', 'Days shown', 'Angezeigte Tage', 'Días mostrados'),
     jours: L('Heures de service (z)', 'Duty hours (z)', 'Dienstzeiten (z)', 'Horas de servicio (z)'),
     debut: L('Début', 'Start', 'Beginn', 'Inicio'),
@@ -38,7 +43,8 @@
     couleur: L('Couleur', 'Colour', 'Farbe', 'Color'),
     fond: L('Fond plein', 'Solid fill', 'Gefüllt', 'Relleno'),
     parIndicatif: L('Couleur de l’indicatif', 'Callsign colour', 'Farbe des Rufzeichens', 'Color del indicativo'),
-    configs: L('Configurations d’avion (KNON, TALIOS…)', 'Aircraft configurations (KNON, TALIOS…)', 'Luftfahrzeugkonfigurationen (KNON, TALIOS…)', 'Configuraciones de aeronave (KNON, TALIOS…)'),
+    configs: L('Configurations d’avion (KNON, TALIOS…)', 'Aircraft configurations (KNON, TALIOS…)',
+      'Luftfahrzeugkonfigurationen (KNON, TALIOS…)', 'Configuraciones de aeronave (KNON, TALIOS…)'),
     texte: L('Texte', 'Text', 'Text', 'Texto'),
     indicatifs: L('Couleurs des indicatifs', 'Callsign colours', 'Farben der Rufzeichen', 'Colores de los indicativos'),
     prefixe: L('Préfixe', 'Prefix', 'Präfix', 'Prefijo'),
@@ -90,7 +96,12 @@
     id: 'odvOrders',
     group: L('Centre (CPCO)', 'Centre (CPCO)', 'Zentrum (CPCO)', 'Centro (CPCO)'),
     title: L('Tableau', 'Board', 'Einsatztafel', 'Tablero'),
-    intro: L('Réglages partagés de la page Tableau (data/config/odv.json, synchronisé) : terrain, réseau par défaut, délai des CR, heures de service, modèles de plaquettes, couleurs des indicatifs, créneaux LL / RTBA de repli, personnel, récurrences.', 'Shared settings of the Board page (data/config/odv.json, synchronised): airfield, default network, report delay, duty hours, strip templates, callsign colours, fallback LL / RTBA slots, personnel, recurrences.', 'Gemeinsame Einstellungen der Seite Einsatztafel (data/config/odv.json, synchronisiert): Flugplatz, Standardnetzwerk, Berichtsfrist, Dienstzeiten, Streifenvorlagen, Rufzeichenfarben, Ersatz-LL-/RTBA-Zeitfenster, Personal, Wiederholungen.', 'Ajustes compartidos de la página Tablero (data/config/odv.json, sincronizado): aeródromo, red por defecto, plazo de informes, horas de servicio, plantillas de fichas, colores de indicativos, franjas LL / RTBA de respaldo, personal, recurrencias.'),
+    intro: L(
+      'Réglages partagés de la page Tableau (data/config/odv.json, synchronisé) : terrain, réseau par défaut, délai des CR, heures de service, modèles de plaquettes, couleurs des indicatifs, créneaux LL / RTBA de repli, personnel, récurrences.',
+      'Shared settings of the Board page (data/config/odv.json, synchronised): airfield, default network, report delay, duty hours, strip templates, callsign colours, fallback LL / RTBA slots, personnel, recurrences.',
+      'Gemeinsame Einstellungen der Seite Einsatztafel (data/config/odv.json, synchronisiert): Flugplatz, Standardnetzwerk, Berichtsfrist, Dienstzeiten, Streifenvorlagen, Rufzeichenfarben, Ersatz-LL-/RTBA-Zeitfenster, Personal, Wiederholungen.',
+      'Ajustes compartidos de la página Tablero (data/config/odv.json, sincronizado): aeródromo, red por defecto, plazo de informes, horas de servicio, plantillas de fichas, colores de indicativos, franjas LL / RTBA de respaldo, personal, recurrencias.'
+      ),
     /** Construit la rubrique d'après les réglages relus (fresh) ;
      *  api (SettingsPanels) : changed, saved, status, actions. */
     async render(body, api) {
@@ -182,10 +193,12 @@
             divers: tpl('divers'),
             controle: tpl('controle')
           },
-          indicatifs: Object.fromEntries([...body.querySelectorAll('[data-cs] tr')].map(tr => [val(tr, 'prefixe').value.trim().toUpperCase(), {
-            fond: val(tr, 'fond').value,
-            contour: val(tr, 'contour').value
-          }]).filter(([p]) => p)),
+          indicatifs: Object.fromEntries([...body.querySelectorAll('[data-cs] tr')].map(tr => [val(tr, 'prefixe').value.trim()
+            .toUpperCase(), {
+              fond: val(tr, 'fond').value,
+              contour: val(tr, 'contour').value
+            }
+          ]).filter(([p]) => p)),
           configs: [...body.querySelectorAll('[data-cfgs] tr')].map(tr => ({
             texte: val(tr, 'texte').value.trim().toUpperCase(),
             couleur: val(tr, 'couleur').value
@@ -246,7 +259,9 @@
         draw();
         api.changed();
       };
-      api.status(tf(['{v} modèle(s), {l} créneau(x) LL, {r} récurrence(s)', '{v} template(s), {l} LL slot(s), {r} recurrence(s)', '{v} Vorlage(n), {l} LL-Zeitfenster, {r} Wiederholung(en)', '{v} plantilla(s), {l} franja(s) LL, {r} recurrencia(s)'], {
+      api.status(tf(['{v} modèle(s), {l} créneau(x) LL, {r} récurrence(s)', '{v} template(s), {l} LL slot(s), {r} recurrence(s)',
+        '{v} Vorlage(n), {l} LL-Zeitfenster, {r} Wiederholung(en)', '{v} plantilla(s), {l} franja(s) LL, {r} recurrencia(s)'
+      ], {
         v: ['vols', 'divers', 'controle'].reduce((n, k) => n + (cfg.modeles?.[k]?.length || 0), 0),
         l: (cfg.ll || []).length,
         r: (cfg.recurrences || []).length
@@ -261,11 +276,20 @@
           if (r?.error && r.where !== 'local') return api.status(String(r.error?.message || r.error));
           cfg = structuredClone(next);
           api.saved();
-          api.status(r?.where === 'folder' ? K.t(['Réglages enregistrés.', 'Settings saved.', 'Einstellungen gespeichert.', 'Ajustes guardados.']) : K.t(['Réglages enregistrés dans ce navigateur.', 'Settings saved in this browser.', 'Einstellungen in diesem Browser gespeichert.', 'Ajustes guardados en este navegador.']));
+          api.status(r?.where === 'folder' ? K.t(['Réglages enregistrés.', 'Settings saved.', 'Einstellungen gespeichert.',
+            'Ajustes guardados.'
+          ]) : K.t(['Réglages enregistrés dans ce navigateur.', 'Settings saved in this browser.',
+            'Einstellungen in diesem Browser gespeichert.', 'Ajustes guardados en este navegador.'
+          ]));
         }, 'primary'],
         // défauts affichés, écrits par « Enregistrer » ; personnel, indicatifs, LL et récurrences gardés
         [L('Valeurs par défaut', 'Default values', 'Standardwerte', 'Valores por defecto'), async () => {
-          if (!await window.AppFramework.ask(K.t(['Revenir aux réglages par défaut du Tableau ? (personnel, couleurs des indicatifs, créneaux LL et récurrences gardés)', 'Back to the default Board settings? (personnel, callsign colours, LL slots and recurrences kept)', 'Zu den Standardeinstellungen der Einsatztafel zurück? (Personal, Rufzeichenfarben, LL-Zeitfenster und Wiederholungen bleiben)', '¿Volver a los ajustes por defecto del Tablero? (personal, colores de indicativos, franjas LL y recurrencias conservados)']))) return;
+          if (!await window.AppFramework.ask(K.t([
+              'Revenir aux réglages par défaut du Tableau ? (personnel, couleurs des indicatifs, créneaux LL et récurrences gardés)',
+              'Back to the default Board settings? (personnel, callsign colours, LL slots and recurrences kept)',
+              'Zu den Standardeinstellungen der Einsatztafel zurück? (Personal, Rufzeichenfarben, LL-Zeitfenster und Wiederholungen bleiben)',
+              '¿Volver a los ajustes por defecto del Tablero? (personal, colores de indicativos, franjas LL y recurrencias conservados)'
+            ]))) return;
           const d = structuredClone(O().DEFAULT_CONFIG);
           cfg = {
             ...d,

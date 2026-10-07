@@ -16,9 +16,16 @@
   const P = 'missionData.airborne.';
   /** Nombre d'une saisie (0, ou null selon la famille, si vide ou invalide). */
   const num = v => Number(v) || 0;
-  const dropTypes = [opt('PERSONNEL', L('Personnel', 'Personnel', 'Personal', 'Personal')), opt('CARGO', L('Matériel', 'Cargo', 'Material', 'Carga')), opt('MIXED', L('Mixte', 'Mixed', 'Gemischt', 'Mixto'))];
-  const results = [opt('ON_DZ', L('Sur la DZ', 'On DZ', 'In der DZ', 'En la DZ')), opt('OFF_DZ', L('Hors DZ', 'Off DZ', 'Außerhalb der DZ', 'Fuera de la DZ')), opt('NOT_OBSERVED', L('Non observé', 'Not observed', 'Nicht beobachtet', 'No observado')), opt('NO_DROP', L('Pas de largage (passage à vide)', 'No drop (dry pass)', 'Kein Abwurf (Leeranflug)', 'Sin lanzamiento (pasada en seco)'))];
-  const recovered = [opt('', L('—', '—')), opt('YES', L('Récupéré', 'Recovered', 'Geborgen', 'Recuperado')), opt('NO', L('Non récupéré', 'Not recovered', 'Nicht geborgen', 'No recuperado')), opt('NOT_OBSERVED', L('Non observé', 'Not observed', 'Nicht beobachtet', 'No observado'))];
+  const dropTypes = [opt('PERSONNEL', L('Personnel', 'Personnel', 'Personal', 'Personal')), opt('CARGO', L('Matériel', 'Cargo',
+    'Material', 'Carga')), opt('MIXED', L('Mixte', 'Mixed', 'Gemischt', 'Mixto'))];
+  const results = [opt('ON_DZ', L('Sur la DZ', 'On DZ', 'In der DZ', 'En la DZ')), opt('OFF_DZ', L('Hors DZ', 'Off DZ',
+      'Außerhalb der DZ', 'Fuera de la DZ')), opt('NOT_OBSERVED', L('Non observé', 'Not observed', 'Nicht beobachtet', 'No observado')),
+    opt('NO_DROP', L('Pas de largage (passage à vide)', 'No drop (dry pass)', 'Kein Abwurf (Leeranflug)',
+      'Sin lanzamiento (pasada en seco)'))
+  ];
+  const recovered = [opt('', L('—', '—')), opt('YES', L('Récupéré', 'Recovered', 'Geborgen', 'Recuperado')), opt('NO', L('Non récupéré',
+    'Not recovered', 'Nicht geborgen', 'No recuperado')), opt('NOT_OBSERVED', L('Non observé', 'Not observed', 'Nicht beobachtet',
+    'No observado'))];
   const passes = m => (m.missionData?.airborne?.passes || []).filter(p => p.time || p.jumpers || p.loadKg || p.result);
   const dropped = p => p.result !== 'NO_DROP';
 
@@ -50,7 +57,8 @@
       value: 'TRAINING_DROP',
       label: L('Largage d’entraînement', 'Training drop', 'Übungsabwurf', 'Lanzamiento de instrucción')
     }],
-    events: [opt('RUN_IN', L('Axe d’approche', 'Run-in', 'Anflug', 'Aproximación')), opt('GREEN_LIGHT', L('Feu vert', 'Green light', 'Grünes Licht', 'Luz verde')), opt('RELEASE', L('Largage', 'Release', 'Absetzen', 'Lanzamiento'))],
+    events: [opt('RUN_IN', L('Axe d’approche', 'Run-in', 'Anflug', 'Aproximación')), opt('GREEN_LIGHT', L('Feu vert', 'Green light',
+      'Grünes Licht', 'Luz verde')), opt('RELEASE', L('Largage', 'Release', 'Absetzen', 'Lanzamiento'))],
     blocks: [{
       id: 'airborne-dz',
       title: L('Zone de largage (DZ)', 'Drop zone (DZ)', 'Absetzzone (DZ)', 'Zona de lanzamiento (DZ)'),
@@ -58,13 +66,16 @@
         f(P + 'dz', L('DZ', 'DZ'), 'text', {
           upper: true
         }), f(P + 'coordinates', L('Coordonnées', 'Coordinates', 'Koordinaten', 'Coordenadas')),
-        f(P + 'elevationFt', L('Altitude de la DZ (ft)', 'DZ elevation (ft)', 'DZ-Höhe (ft)', 'Elevación de la DZ (ft)'), 'number'),
+        f(P + 'elevationFt', L('Altitude de la DZ (ft)', 'DZ elevation (ft)', 'DZ-Höhe (ft)', 'Elevación de la DZ (ft)'),
+          'number'),
         f(P + 'dimensions', L('Dimensions (m)', 'Dimensions (m)', 'Abmessungen (m)', 'Dimensiones (m)'), 'text', {
           placeholder: L('1200 × 400', '1200 × 400')
         }),
-        f(P + 'marking', L('Balisage', 'Marking', 'Markierung', 'Balizamiento')), f(P + 'controller', L('Contrôle DZ (indicatif)', 'DZ controller (callsign)', 'DZ-Kontrolle (Rufzeichen)', 'Control de DZ (indicativo)'), 'text', {
-          upper: true
-        })
+        f(P + 'marking', L('Balisage', 'Marking', 'Markierung', 'Balizamiento')), f(P + 'controller', L(
+            'Contrôle DZ (indicatif)', 'DZ controller (callsign)', 'DZ-Kontrolle (Rufzeichen)', 'Control de DZ (indicativo)'),
+          'text', {
+            upper: true
+          })
       ]
     }, {
       id: 'airborne-passes',
@@ -94,19 +105,28 @@
           recovered: ''
         }),
         fields: [
-          f('time', L('Heure de largage', 'Release time', 'Absetzzeit', 'Hora de lanzamiento'), 'time'), f('dropType', L('Largage', 'Drop', 'Abwurf', 'Lanzamiento'), 'select', {
+          f('time', L('Heure de largage', 'Release time', 'Absetzzeit', 'Hora de lanzamiento'), 'time'), f('dropType', L(
+            'Largage', 'Drop', 'Abwurf', 'Lanzamiento'), 'select', {
             options: dropTypes
           }),
-          f('jumpers', L('Parachutistes', 'Jumpers', 'Springer', 'Paracaidistas'), 'number'), f('load', L('Charge', 'Load', 'Last', 'Carga')),
-          f('loadKg', L('Masse (kg)', 'Mass (kg)', 'Masse (kg)', 'Masa (kg)'), 'number'), f('parachute', L('Type de parachute', 'Parachute type', 'Fallschirmtyp', 'Tipo de paracaídas')),
-          f('plannedAltFt', L('Altitude prévue (ft)', 'Planned altitude (ft)', 'Geplante Höhe (ft)', 'Altitud prevista (ft)'), 'number'), f('actualAltFt', L('Altitude réelle (ft)', 'Actual altitude (ft)', 'Tatsächliche Höhe (ft)', 'Altitud real (ft)'), 'number'),
-          f('plannedRunIn', L('Axe prévu (°)', 'Planned run-in (°)', 'Geplanter Anflug (°)', 'Eje previsto (°)'), 'number'), f('actualRunIn', L('Axe réel (°)', 'Actual run-in (°)', 'Tatsächlicher Anflug (°)', 'Eje real (°)'), 'number'),
-          f('wind', L('Vent', 'Wind', 'Wind', 'Viento')), f('releasePosition', L('Point de largage', 'Release position', 'Absetzpunkt', 'Punto de lanzamiento')),
+          f('jumpers', L('Parachutistes', 'Jumpers', 'Springer', 'Paracaidistas'), 'number'), f('load', L('Charge', 'Load',
+            'Last', 'Carga')),
+          f('loadKg', L('Masse (kg)', 'Mass (kg)', 'Masse (kg)', 'Masa (kg)'), 'number'), f('parachute', L('Type de parachute',
+            'Parachute type', 'Fallschirmtyp', 'Tipo de paracaídas')),
+          f('plannedAltFt', L('Altitude prévue (ft)', 'Planned altitude (ft)', 'Geplante Höhe (ft)', 'Altitud prevista (ft)'),
+            'number'), f('actualAltFt', L('Altitude réelle (ft)', 'Actual altitude (ft)', 'Tatsächliche Höhe (ft)',
+            'Altitud real (ft)'), 'number'),
+          f('plannedRunIn', L('Axe prévu (°)', 'Planned run-in (°)', 'Geplanter Anflug (°)', 'Eje previsto (°)'), 'number'), f(
+            'actualRunIn', L('Axe réel (°)', 'Actual run-in (°)', 'Tatsächlicher Anflug (°)', 'Eje real (°)'), 'number'),
+          f('wind', L('Vent', 'Wind', 'Wind', 'Viento')), f('releasePosition', L('Point de largage', 'Release position',
+            'Absetzpunkt', 'Punto de lanzamiento')),
           f('result', L('Résultat', 'Result', 'Ergebnis', 'Resultado'), 'select', {
             options: results,
             blank: true
-          }), f('landingPosition', L('Point d’impact observé', 'Observed landing position', 'Beobachteter Landepunkt', 'Punto de impacto observado')),
-          f('dispersionM', L('Dispersion (m)', 'Dispersion (m)', 'Streuung (m)', 'Dispersión (m)'), 'number'), f('recovered', L('Récupération', 'Recovery', 'Bergung', 'Recuperación'), 'select', {
+          }), f('landingPosition', L('Point d’impact observé', 'Observed landing position', 'Beobachteter Landepunkt',
+            'Punto de impacto observado')),
+          f('dispersionM', L('Dispersion (m)', 'Dispersion (m)', 'Streuung (m)', 'Dispersión (m)'), 'number'), f('recovered', L(
+            'Récupération', 'Recovery', 'Bergung', 'Recuperación'), 'select', {
             options: recovered
           })
         ]

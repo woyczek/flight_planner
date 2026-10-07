@@ -288,7 +288,12 @@
     const btn = fig.querySelector(".fp-fuel-mode");
     btn.textContent = name;
     btn.style.color = col;
-    btn.title = tl("Lecture (clic pour changer) : loi réglée → profil → croisière économique → montée rapide → Vy → montée économique ; couleur de la courbe correspondante", "Reading (click to change): set law → profile → economy cruise → fast climb → Vy → economy climb; colour of the matching curve", "Anzeige (Klick zum Wechseln): eingestelltes Gesetz → Profil → Sparflug → schneller Steigflug → Vy → sparsamer Steigflug; Farbe der Kurve", "Lectura (clic para cambiar): ley ajustada → perfil → crucero económico → ascenso rápido → Vy → ascenso económico; color de la curva");
+    btn.title = tl(
+      "Lecture (clic pour changer) : loi réglée → profil → croisière économique → montée rapide → Vy → montée économique ; couleur de la courbe correspondante",
+      "Reading (click to change): set law → profile → economy cruise → fast climb → Vy → economy climb; colour of the matching curve",
+      "Anzeige (Klick zum Wechseln): eingestelltes Gesetz → Profil → Sparflug → schneller Steigflug → Vy → sparsamer Steigflug; Farbe der Kurve",
+      "Lectura (clic para cambiar): ley ajustada → perfil → crucero económico → ascenso rápido → Vy → ascenso económico; color de la curva"
+      );
     if (!x) {
       fig.querySelector("svg").innerHTML = frame(hub);
       fig.querySelector("figcaption").textContent = `${tl("Carburant trajet", "Trip fuel", "Streckenkraftstoff", "Combustible del trayecto")} —`;
@@ -371,10 +376,12 @@
       drawAlt(s);
       drawFuel(s);
       drawTime(s);
-      host.title = tl("Instruments de la loi réglée à l’altitude courante (survolée, épinglée, sinon niveau du plan). Badin et vario : glisser ou molette pour régler.",
+      host.title = tl(
+        "Instruments de la loi réglée à l’altitude courante (survolée, épinglée, sinon niveau du plan). Badin et vario : glisser ou molette pour régler.",
         "Instruments of the set law at the current altitude (hovered, pinned, otherwise plan level). IAS and V/S: drag or scroll to adjust.",
         "Instrumente des eingestellten Gesetzes auf der aktuellen Höhe (überfahren, angeheftet, sonst Planhöhe). IAS und Steigrate: ziehen oder Mausrad zum Einstellen.",
-        "Instrumentos de la ley ajustada a la altitud actual (sobrevolada, fijada o nivel del plan). IAS y régimen: arrastrar o rueda para ajustar.");
+        "Instrumentos de la ley ajustada a la altitud actual (sobrevolada, fijada o nivel del plan). IAS y régimen: arrastrar o rueda para ajustar."
+        );
     }
   };
   window.FlightInstruments = api;

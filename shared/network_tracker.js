@@ -17,7 +17,8 @@
   // exposés sous les mêmes noms grâce aux alias des blocs communs).
   const form = document.getElementById('missionForm') || document.getElementById('missionCoreForm');
   if (!form) return;
-  const KIND = document.body.dataset.family ? document.body.dataset.family.toLowerCase() : location.pathname.includes('/FIRE/') ? 'gaar' : 'hems';
+  const KIND = document.body.dataset.family ? document.body.dataset.family.toLowerCase() : location.pathname.includes('/FIRE/') ? 'gaar' :
+    'hems';
   const STORE = `networkWatch:v1:${KIND}`;
   const POLL_MS = 20000,
     MAX_AGE_MS = 14 * 3600 * 1000;
@@ -229,7 +230,8 @@
       cache: 'no-store'
     })).json();
     if (network === 'IVAO') {
-      const pilot = (Array.isArray(data) ? data : []).find(p => String(p.userId) === id) || (callsign && data.find(p => String(p.callsign).toUpperCase() === callsign));
+      const pilot = (Array.isArray(data) ? data : []).find(p => String(p.userId) === id) || (callsign && data.find(p => String(p
+        .callsign).toUpperCase() === callsign));
       if (!pilot) return {
         connected: false
       };
@@ -243,7 +245,8 @@
         callsign: pilot.callsign
       };
     }
-    const pilot = (data.pilots || []).find(p => String(p.cid) === id) || (callsign && data.pilots.find(p => String(p.callsign).toUpperCase() === callsign));
+    const pilot = (data.pilots || []).find(p => String(p.cid) === id) || (callsign && data.pilots.find(p => String(p.callsign)
+      .toUpperCase() === callsign));
     if (!pilot) return {
       connected: false
     };
@@ -407,7 +410,8 @@
     const utc = s => new Date(/[zZ]|[+-]\d\d:?\d\d$/.test(s) ? s : s + 'Z');
     const localDay = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
     let day = sessions.filter(s => Number(s.type ?? 1) === 1 && (!date || localDay(utc(s.start)) === date));
-    if (callsign && day.some(s => String(s.callsign).toUpperCase() === callsign)) day = day.filter(s => String(s.callsign).toUpperCase() === callsign);
+    if (callsign && day.some(s => String(s.callsign).toUpperCase() === callsign)) day = day.filter(s => String(s.callsign)
+    .toUpperCase() === callsign);
     if (!day.length) {
       status(t('noSession', {
         date: date || '—',
@@ -518,7 +522,8 @@
       <a class="secondary nt-link" data-kind="statsim" target="_blank" rel="noopener">${esc(t('statsim'))}</a></div>
       <div class="nt-paste" hidden style="margin-top:8px"><label>${esc(t('paste'))}</label><textarea rows="4" style="width:100%"></textarea><div class="row" style="margin-top:6px"><button type="button" class="primary nt-clip">${esc(t('clip'))}</button><button type="button" class="secondary nt-parse">${esc(t('parse'))}</button></div></div>
       <p class="small nt-status" style="margin-top:8px"></p><details class="nt-logbox"${watch?.log?.length ? '' : ' hidden'}><summary class="small">${esc(t('log'))}</summary><pre class="small nt-log" style="white-space:pre-wrap;margin:6px 0 0"></pre></details>`;
-    panel.querySelectorAll('.nt-link').forEach(link => link.style.cssText = 'display:inline-block;padding:9px 12px;border-radius:9px;text-decoration:none;color:inherit');
+    panel.querySelectorAll('.nt-link').forEach(link => link.style.cssText =
+      'display:inline-block;padding:9px 12px;border-radius:9px;text-decoration:none;color:inherit');
     bind();
   }
 
@@ -544,7 +549,8 @@
     });
     panel.querySelector('.nt-clip').onclick = () => readClipboard(false);
     // Ctrl+V dans la zone : analyse immédiate.
-    panel.querySelector('.nt-paste textarea').addEventListener('paste', event => setTimeout(() => applyVatsimHistory(event.target.value)));
+    panel.querySelector('.nt-paste textarea').addEventListener('paste', event => setTimeout(() => applyVatsimHistory(event.target
+    .value)));
     panel.querySelectorAll('.nt-link').forEach(link => link.onclick = event => {
       const kind = link.dataset.kind,
         id = kind === 'ivao' ? value('ivaoId') : value('vatsimId');
@@ -553,7 +559,8 @@
         status(t('askId'));
         return;
       }
-      link.href = kind === 'ivao' ? HISTORY.ivaoTracker(id) : kind === 'vatsim' ? HISTORY.vatsimStats(id) : HISTORY.statsimFlights(id);
+      link.href = kind === 'ivao' ? HISTORY.ivaoTracker(id) : kind === 'vatsim' ? HISTORY.vatsimStats(id) : HISTORY.statsimFlights(
+      id);
     });
     paintLog();
   }
@@ -579,7 +586,8 @@
   function mount() {
     if (panel.isConnected) return true;
     // Hôtes : section des anciens CR, barre d'outils de l'en-tête (Core), bloc « Trace réseau ».
-    const host = document.getElementById('networkTracking') || document.getElementById('mc-header-tracker') || document.getElementById('mc-network');
+    const host = document.getElementById('networkTracking') || document.getElementById('mc-header-tracker') || document.getElementById(
+      'mc-network');
     if (!host) return false;
     host.append(panel);
     paint();

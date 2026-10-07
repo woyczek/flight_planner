@@ -23,7 +23,8 @@
     STORE = 'handles';
   /** Base IndexedDB « missionCore » (magasin handles) : dossier du registre. */
   // connexion partagée par la page (RepositoryKit.idb) : plus une ouverture par lecture
-  const idb = () => window.RepositoryKit?.idb ? window.RepositoryKit.idb(DB, 1, db => db.objectStoreNames.contains(STORE) || db.createObjectStore(STORE)) : new Promise((resolve, reject) => {
+  const idb = () => window.RepositoryKit?.idb ? window.RepositoryKit.idb(DB, 1, db => db.objectStoreNames.contains(STORE) || db
+    .createObjectStore(STORE)) : new Promise((resolve, reject) => {
     const request = indexedDB.open(DB, 1);
     request.onupgradeneeded = () => request.result.createObjectStore(STORE);
     request.onsuccess = () => resolve(request.result);
@@ -377,7 +378,8 @@
       } catch {
         unavailable = !candidates.length;
       }
-      else if (!candidates.length) unavailable = served.status !== 404 && served.status !== 304; // erreur réseau / serveur : registre inconnu, pas « vide »
+      else if (!candidates.length) unavailable = served.status !== 404 && served.status !==
+      304; // erreur réseau / serveur : registre inconnu, pas « vide »
       // Registre illisible : rien n'est migré ni enregistré (sinon une copie partielle
       // remplacerait le registre complet) ; nouvel essai au prochain chargement / enregistrement.
       if (unavailable) {
@@ -425,7 +427,8 @@
         request: false
       });
       // copie indexée à jour : registre relu d'un fichier, ou signatures changées
-      else if (window.ReportIndex && (!best?.indexed || JSON.stringify(sig) !== JSON.stringify(idx?.meta?.sig || {}))) await writeIndex().catch(() => {});
+      else if (window.ReportIndex && (!best?.indexed || JSON.stringify(sig) !== JSON.stringify(idx?.meta?.sig || {})))
+        await writeIndex().catch(() => {});
       store.migrated = migrated;
       return store;
     })();
@@ -472,10 +475,11 @@
     missions: store.missions
   });
   /** Texte YAML du registre (ou d'une sélection de missions). */
-  const yaml = (missions = store.missions, title = 'Registre des missions — toutes familles — Mission Report — SO Group Virtual') => M.toYaml({
-    ...doc(),
-    missions
-  }, title);
+  const yaml = (missions = store.missions, title = 'Registre des missions — toutes familles — Mission Report — SO Group Virtual') => M
+    .toYaml({
+      ...doc(),
+      missions
+    }, title);
   // Écrit la copie navigateur et, si autorisé, data/cr/missions.yaml (à la suite des autres enregistrements et
   // relectures de la page).
   const save = options => serial(() => saveNow(options));
@@ -508,7 +512,9 @@
         store.missions.splice(0, store.missions.length, ...merged.missions); // même tableau : les vues par famille le gardent
         conflicts = merged.conflicts;
         // anciens registres déjà repris : réunion, la date la plus récente de chaque côté
-        const mineImported = { ...store.legacyImported };
+        const mineImported = {
+          ...store.legacyImported
+        };
         for (const [fam, stamp] of Object.entries(now.legacyImported || {}))
           if (!mineImported[fam] || String(stamp) > String(mineImported[fam])) mineImported[fam] = stamp;
         store.legacyImported = mineImported;
@@ -598,9 +604,19 @@
       updatedAt: result.updatedAt // date posée sous le verrou
     });
     const tf = window.RepositoryKit?.tf || (row => row[0]);
-    if (result.conflicts.length) window.AppFramework?.notify?.(result.written ? tf(['{n} compte(s) rendu(s) modifié(s) en même temps ailleurs : votre version est gardée, l’autre est rangée dans data/cr/_conflits.', '{n} report(s) changed elsewhere at the same time: your version is kept, the other one is stored in data/cr/_conflits.', '{n} Bericht(e) gleichzeitig anderswo geändert: Ihre Fassung bleibt, die andere liegt in data/cr/_conflits.', '{n} informe(s) modificado(s) a la vez en otro lugar: se conserva su versión, la otra se guarda en data/cr/_conflits.'], {
+    if (result.conflicts.length) window.AppFramework?.notify?.(result.written ? tf([
+      '{n} compte(s) rendu(s) modifié(s) en même temps ailleurs : votre version est gardée, l’autre est rangée dans data/cr/_conflits.',
+      '{n} report(s) changed elsewhere at the same time: your version is kept, the other one is stored in data/cr/_conflits.',
+      '{n} Bericht(e) gleichzeitig anderswo geändert: Ihre Fassung bleibt, die andere liegt in data/cr/_conflits.',
+      '{n} informe(s) modificado(s) a la vez en otro lugar: se conserva su versión, la otra se guarda en data/cr/_conflits.'
+    ], {
       n: result.conflicts.length
-    }) : tf(['{n} compte(s) rendu(s) modifié(s) en même temps ailleurs : votre version est gardée, l’autre est conservée dans ce navigateur.', '{n} report(s) changed elsewhere at the same time: your version is kept, the other one is kept in this browser.', '{n} Bericht(e) gleichzeitig anderswo geändert: Ihre Fassung bleibt, die andere wird in diesem Browser aufbewahrt.', '{n} informe(s) modificado(s) a la vez en otro lugar: se conserva su versión, la otra se guarda en este navegador.'], {
+    }) : tf([
+      '{n} compte(s) rendu(s) modifié(s) en même temps ailleurs : votre version est gardée, l’autre est conservée dans ce navigateur.',
+      '{n} report(s) changed elsewhere at the same time: your version is kept, the other one is kept in this browser.',
+      '{n} Bericht(e) gleichzeitig anderswo geändert: Ihre Fassung bleibt, die andere wird in diesem Browser aufbewahrt.',
+      '{n} informe(s) modificado(s) a la vez en otro lugar: se conserva su versión, la otra se guarda en este navegador.'
+    ], {
       n: result.conflicts.length
     }), 'warn');
     return {
@@ -617,7 +633,8 @@
       loading = null;
       return picked.name;
     }
-    if (!window.showDirectoryPicker) throw new Error(window.RepositoryKit?.noFolderAccess?.() || 'API dossier local indisponible (Chrome / Edge requis)');
+    if (!window.showDirectoryPicker) throw new Error(window.RepositoryKit?.noFolderAccess?.() ||
+      'API dossier local indisponible (Chrome / Edge requis)');
     const current = handle || await idbGet(HANDLE);
     const picked = await window.showDirectoryPicker({
       mode: 'readwrite',
@@ -670,7 +687,8 @@
     ['trackerUrl', m => m.network?.trackerUrl]
   ];
   /** Registre en CSV « ; » (colonnes CSV_COLUMNS). */
-  const csv = missions => [CSV_COLUMNS.map(c => c[0]).join(';')].concat(missions.map(m => CSV_COLUMNS.map(([, get]) => `"${String(get(m) ?? '').replace(/"/g, '""')}"`).join(';'))).join('\n') + '\n';
+  const csv = missions => [CSV_COLUMNS.map(c => c[0]).join(';')].concat(missions.map(m => CSV_COLUMNS.map(([, get]) => `"${String(get(m) ?? '').replace(/"/g, '""')}"`).join(
+    ';'))).join('\n') + '\n';
   /** N° de mission normalisé (majuscules, sans blancs). */
   const normId = v => String(v ?? '').trim().toUpperCase();
 

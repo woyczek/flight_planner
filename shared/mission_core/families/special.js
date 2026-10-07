@@ -19,8 +19,10 @@
   const group = series => String(series || '').split('-')[0];
   const inGroup = g => ctx => group(ctx.series) === g;
   const yesNo = [opt('', L('—', '—')), opt('YES', L('Oui', 'Yes', 'Ja', 'Sí')), opt('NO', L('Non', 'No', 'Nein', 'No'))];
-  const passFail = [opt('PASS', L('Conforme', 'Pass', 'Bestanden', 'Conforme')), opt('FAIL', L('Non conforme', 'Fail', 'Nicht bestanden', 'No conforme')), opt('NOT_FLOWN', L('Non réalisé', 'Not flown', 'Nicht geflogen', 'No realizado'))];
-  const completion = [opt('COMPLETED', L('Réalisé', 'Completed', 'Absolviert', 'Completado')), opt('PARTIAL', L('Partiel', 'Partial', 'Teilweise', 'Parcial')), opt('NOT_COMPLETED', L('Non réalisé', 'Not completed', 'Nicht absolviert', 'No completado'))];
+  const passFail = [opt('PASS', L('Conforme', 'Pass', 'Bestanden', 'Conforme')), opt('FAIL', L('Non conforme', 'Fail', 'Nicht bestanden',
+    'No conforme')), opt('NOT_FLOWN', L('Non réalisé', 'Not flown', 'Nicht geflogen', 'No realizado'))];
+  const completion = [opt('COMPLETED', L('Réalisé', 'Completed', 'Absolviert', 'Completado')), opt('PARTIAL', L('Partiel', 'Partial',
+    'Teilweise', 'Parcial')), opt('NOT_COMPLETED', L('Non réalisé', 'Not completed', 'Nicht absolviert', 'No completado'))];
   const sp = m => m.missionData?.special || {};
   const points = m => (sp(m).testPoints || []).filter(p => p.id || p.result);
   const exercises = m => (sp(m).exercises || []).filter(e => e.exercise || e.completed);
@@ -36,42 +38,68 @@
       cr: 'special_cr.html',
       reporting: 'special_reporting.html'
     },
-    title: L('Transport spécial / essais / formation', 'Special transport / test / training', 'Sondertransport / Erprobung / Ausbildung', 'Transporte especial / ensayos / formación'),
+    title: L('Transport spécial / essais / formation', 'Special transport / test / training',
+      'Sondertransport / Erprobung / Ausbildung', 'Transporte especial / ensayos / formación'),
     series: [
-      s('VIP-VIP', 'VIP — transport VIP', 'VIP — VIP transport', 'VIP — VIP-Transport', 'VIP — transporte VIP'), s('VIP-VVIP', 'VIP — transport VVIP', 'VIP — VVIP transport', 'VIP — VVIP-Transport', 'VIP — transporte VVIP'),
-      s('VIP-STATE', 'VIP — vol d’État', 'VIP — state flight', 'VIP — Staatsflug', 'VIP — vuelo de Estado'), s('VIP-GOVERNMENT', 'VIP — mission gouvernementale', 'VIP — government mission', 'VIP — Regierungsflug', 'VIP — misión gubernamental'),
-      s('FERRY-TRANSFER', 'Convoyage — transfert d’appareil', 'Ferry — aircraft transfer', 'Überführung — Luftfahrzeugtransfer', 'Traslado — transferencia de aeronave'), s('FERRY-MAINTENANCE', 'Convoyage — mise en place maintenance', 'Ferry — maintenance positioning', 'Überführung — Wartungspositionierung', 'Traslado — posicionamiento para mantenimiento'),
-      s('FERRY-DELIVERY', 'Convoyage — livraison', 'Ferry — delivery', 'Überführung — Auslieferung', 'Traslado — entrega'), s('FERRY-RTB', 'Convoyage — retour base', 'Ferry — return to base', 'Überführung — Rückkehr zur Basis', 'Traslado — regreso a la base'),
-      s('TEST-DEVELOPMENT', 'Essai — développement', 'Test — development', 'Erprobung — Entwicklung', 'Ensayo — desarrollo'), s('TEST-ACCEPTANCE', 'Essai — réception', 'Test — acceptance', 'Erprobung — Abnahme', 'Ensayo — aceptación'),
-      s('TEST-MCF', 'Essai — vol de contrôle maintenance', 'Test — maintenance check flight', 'Erprobung — Werkstattflug', 'Ensayo — vuelo de control de mantenimiento'), s('TEST-FCF', 'Essai — vol de contrôle fonctionnel', 'Test — functional check flight', 'Erprobung — Funktionsprüfflug', 'Ensayo — vuelo de control funcional'),
+      s('VIP-VIP', 'VIP — transport VIP', 'VIP — VIP transport', 'VIP — VIP-Transport', 'VIP — transporte VIP'), s('VIP-VVIP',
+        'VIP — transport VVIP', 'VIP — VVIP transport', 'VIP — VVIP-Transport', 'VIP — transporte VVIP'),
+      s('VIP-STATE', 'VIP — vol d’État', 'VIP — state flight', 'VIP — Staatsflug', 'VIP — vuelo de Estado'), s('VIP-GOVERNMENT',
+        'VIP — mission gouvernementale', 'VIP — government mission', 'VIP — Regierungsflug', 'VIP — misión gubernamental'),
+      s('FERRY-TRANSFER', 'Convoyage — transfert d’appareil', 'Ferry — aircraft transfer', 'Überführung — Luftfahrzeugtransfer',
+        'Traslado — transferencia de aeronave'), s('FERRY-MAINTENANCE', 'Convoyage — mise en place maintenance',
+        'Ferry — maintenance positioning', 'Überführung — Wartungspositionierung', 'Traslado — posicionamiento para mantenimiento'),
+      s('FERRY-DELIVERY', 'Convoyage — livraison', 'Ferry — delivery', 'Überführung — Auslieferung', 'Traslado — entrega'), s(
+        'FERRY-RTB', 'Convoyage — retour base', 'Ferry — return to base', 'Überführung — Rückkehr zur Basis',
+        'Traslado — regreso a la base'),
+      s('TEST-DEVELOPMENT', 'Essai — développement', 'Test — development', 'Erprobung — Entwicklung', 'Ensayo — desarrollo'), s(
+        'TEST-ACCEPTANCE', 'Essai — réception', 'Test — acceptance', 'Erprobung — Abnahme', 'Ensayo — aceptación'),
+      s('TEST-MCF', 'Essai — vol de contrôle maintenance', 'Test — maintenance check flight', 'Erprobung — Werkstattflug',
+        'Ensayo — vuelo de control de mantenimiento'), s('TEST-FCF', 'Essai — vol de contrôle fonctionnel',
+        'Test — functional check flight', 'Erprobung — Funktionsprüfflug', 'Ensayo — vuelo de control funcional'),
       s('TEST-CERTIFICATION', 'Essai — certification', 'Test — certification', 'Erprobung — Zulassung', 'Ensayo — certificación'),
-      s('TRAINING-IFR', 'Formation — IFR', 'Training — IFR', 'Ausbildung — IFR', 'Formación — IFR'), s('TRAINING-VFR', 'Formation — VFR', 'Training — VFR', 'Ausbildung — VFR', 'Formación — VFR'),
-      s('TRAINING-NIGHT', 'Formation — vol de nuit', 'Training — night', 'Ausbildung — Nachtflug', 'Formación — vuelo nocturno'), s('TRAINING-NVG', 'Formation — NVG', 'Training — NVG', 'Ausbildung — NVG', 'Formación — NVG'),
-      s('TRAINING-SAR', 'Formation — SAR', 'Training — SAR', 'Ausbildung — SAR', 'Formación — SAR'), s('TRAINING-HOIST', 'Formation — treuillage', 'Training — hoist', 'Ausbildung — Winde', 'Formación — grúa'),
-      s('TRAINING-SHIPBOARD', 'Formation — appontage', 'Training — shipboard', 'Ausbildung — Bordlandung', 'Formación — operaciones embarcadas'), s('TRAINING-PARADROP', 'Formation — largage de personnel', 'Training — paradrop', 'Ausbildung — Personenabsetzen', 'Formación — lanzamiento de personal'),
-      s('TRAINING-AIRDROP', 'Formation — largage de matériel', 'Training — airdrop', 'Ausbildung — Lastenabwurf', 'Formación — lanzamiento de carga'), s('TRAINING-LOW_LEVEL', 'Formation — très basse altitude', 'Training — low level', 'Ausbildung — Tiefflug', 'Formación — baja cota'),
-      s('TRAINING-FORMATION', 'Formation — vol en patrouille', 'Training — formation flying', 'Ausbildung — Formationsflug', 'Formación — vuelo en formación'), s('TRAINING-INSTRUMENT', 'Formation — instruments', 'Training — instrument', 'Ausbildung — Instrumentenflug', 'Formación — instrumental'),
-      s('TRAINING-CHECKRIDE', 'Formation — contrôle en vol (checkride)', 'Training — checkride', 'Ausbildung — Überprüfungsflug', 'Formación — vuelo de verificación')
+      s('TRAINING-IFR', 'Formation — IFR', 'Training — IFR', 'Ausbildung — IFR', 'Formación — IFR'), s('TRAINING-VFR',
+        'Formation — VFR', 'Training — VFR', 'Ausbildung — VFR', 'Formación — VFR'),
+      s('TRAINING-NIGHT', 'Formation — vol de nuit', 'Training — night', 'Ausbildung — Nachtflug', 'Formación — vuelo nocturno'), s(
+        'TRAINING-NVG', 'Formation — NVG', 'Training — NVG', 'Ausbildung — NVG', 'Formación — NVG'),
+      s('TRAINING-SAR', 'Formation — SAR', 'Training — SAR', 'Ausbildung — SAR', 'Formación — SAR'), s('TRAINING-HOIST',
+        'Formation — treuillage', 'Training — hoist', 'Ausbildung — Winde', 'Formación — grúa'),
+      s('TRAINING-SHIPBOARD', 'Formation — appontage', 'Training — shipboard', 'Ausbildung — Bordlandung',
+        'Formación — operaciones embarcadas'), s('TRAINING-PARADROP', 'Formation — largage de personnel', 'Training — paradrop',
+        'Ausbildung — Personenabsetzen', 'Formación — lanzamiento de personal'),
+      s('TRAINING-AIRDROP', 'Formation — largage de matériel', 'Training — airdrop', 'Ausbildung — Lastenabwurf',
+        'Formación — lanzamiento de carga'), s('TRAINING-LOW_LEVEL', 'Formation — très basse altitude', 'Training — low level',
+        'Ausbildung — Tiefflug', 'Formación — baja cota'),
+      s('TRAINING-FORMATION', 'Formation — vol en patrouille', 'Training — formation flying', 'Ausbildung — Formationsflug',
+        'Formación — vuelo en formación'), s('TRAINING-INSTRUMENT', 'Formation — instruments', 'Training — instrument',
+        'Ausbildung — Instrumentenflug', 'Formación — instrumental'),
+      s('TRAINING-CHECKRIDE', 'Formation — contrôle en vol (checkride)', 'Training — checkride', 'Ausbildung — Überprüfungsflug',
+        'Formación — vuelo de verificación')
     ],
     flags: mission => ({
       maritime: mission.series === 'TRAINING-SHIPBOARD'
     }),
     blocks: [{
       id: 'special-vip',
-      title: L('Transport VIP / gouvernemental', 'VIP / government transport', 'VIP- / Regierungstransport', 'Transporte VIP / gubernamental'),
+      title: L('Transport VIP / gouvernemental', 'VIP / government transport', 'VIP- / Regierungstransport',
+        'Transporte VIP / gubernamental'),
       when: inGroup('VIP'),
       fields: [
-        f(P + 'passengers', L('Passagers', 'Passengers', 'Passagiere', 'Pasajeros'), 'number'), f(P + 'authority', L('Autorité', 'Authority', 'Behörde', 'Autoridad')),
-        f(P + 'passengerDetail', L('Délégation (détail)', 'Delegation (detail)', 'Delegation (Details)', 'Delegación (detalle)'), 'text', {
-          sensitive: true
-        }),
+        f(P + 'passengers', L('Passagers', 'Passengers', 'Passagiere', 'Pasajeros'), 'number'), f(P + 'authority', L('Autorité',
+          'Authority', 'Behörde', 'Autoridad')),
+        f(P + 'passengerDetail', L('Délégation (détail)', 'Delegation (detail)', 'Delegation (Details)',
+          'Delegación (detalle)'), 'text', {
+            sensitive: true
+          }),
         f(P + 'origin', L('Origine', 'Origin', 'Start', 'Origen'), 'text', {
           upper: true
         }), f(P + 'destination', L('Destination', 'Destination', 'Ziel', 'Destino'), 'text', {
           upper: true
         }),
-        f(P + 'schedule', L('Horaire prévu', 'Planned schedule', 'Geplanter Zeitplan', 'Horario previsto')), f(P + 'delayMinutes', L('Retard (min)', 'Delay (min)', 'Verspätung (min)', 'Retraso (min)'), 'number'),
-        f(P + 'diversions', L('Déroutements', 'Diversions', 'Umleitungen', 'Desvíos')), f(P + 'handling', L('Traitement particulier / protocole', 'Special handling / protocol', 'Sonderbehandlung / Protokoll', 'Tratamiento especial / protocolo'), 'text', {
+        f(P + 'schedule', L('Horaire prévu', 'Planned schedule', 'Geplanter Zeitplan', 'Horario previsto')), f(P +
+          'delayMinutes', L('Retard (min)', 'Delay (min)', 'Verspätung (min)', 'Retraso (min)'), 'number'),
+        f(P + 'diversions', L('Déroutements', 'Diversions', 'Umleitungen', 'Desvíos')), f(P + 'handling', L(
+          'Traitement particulier / protocole', 'Special handling / protocol', 'Sonderbehandlung / Protokoll',
+          'Tratamiento especial / protocolo'), 'text', {
           full: true,
           sensitive: true
         })
@@ -86,10 +114,12 @@
         }), f(P + 'destination', L('Destination', 'Destination', 'Ziel', 'Destino'), 'text', {
           upper: true
         }),
-        f(P + 'reason', L('Motif', 'Reason', 'Grund', 'Motivo')), f(P + 'technicalStatus', L('État technique', 'Technical status', 'Technischer Zustand', 'Estado técnico')),
+        f(P + 'reason', L('Motif', 'Reason', 'Grund', 'Motivo')), f(P + 'technicalStatus', L('État technique',
+          'Technical status', 'Technischer Zustand', 'Estado técnico')),
         f(P + 'stops', L('Escales', 'Stops', 'Zwischenlandungen', 'Escalas'), 'text', {
           upper: true
-        }), f(P + 'defects', L('Défauts constatés', 'Defects found', 'Festgestellte Mängel', 'Defectos detectados'), 'textarea', {
+        }), f(P + 'defects', L('Défauts constatés', 'Defects found', 'Festgestellte Mängel', 'Defectos detectados'),
+        'textarea', {
           full: true
         })
       ]
@@ -101,9 +131,10 @@
         f(P + 'testCard', L('Carte d’essai', 'Test card', 'Testkarte', 'Tarjeta de ensayo'), 'text', {
           upper: true
         }), f(P + 'configuration', L('Configuration', 'Configuration', 'Konfiguration', 'Configuración')),
-        f(P + 'repeatRequired', L('Reprise nécessaire', 'Repeat required', 'Wiederholung nötig', 'Repetición necesaria'), 'select', {
-          options: yesNo
-        })
+        f(P + 'repeatRequired', L('Reprise nécessaire', 'Repeat required', 'Wiederholung nötig', 'Repetición necesaria'),
+          'select', {
+            options: yesNo
+          })
       ]
     }, {
       id: 'special-points',
@@ -126,10 +157,14 @@
         }),
         fields: [f('id', L('Point', 'Point', 'Punkt', 'Punto'), 'text', {
           upper: true
-        }), f('altitudeFt', L('Altitude (ft)', 'Altitude (ft)', 'Höhe (ft)', 'Altitud (ft)'), 'number'), f('speedKt', L('Vitesse (kt)', 'Speed (kt)', 'Geschwindigkeit (kt)', 'Velocidad (kt)'), 'number'), f('config', L('Configuration', 'Configuration', 'Konfiguration', 'Configuración')), f('pass', L('Résultat', 'Result', 'Ergebnis', 'Resultado'), 'select', {
-          options: passFail,
-          blank: true
-        }), f('result', L('Mesure / observation', 'Measurement / observation', 'Messung / Beobachtung', 'Medida / observación')), f('anomaly', L('Anomalie', 'Anomaly', 'Abweichung', 'Anomalía'), 'text', {
+        }), f('altitudeFt', L('Altitude (ft)', 'Altitude (ft)', 'Höhe (ft)', 'Altitud (ft)'), 'number'), f('speedKt', L(
+          'Vitesse (kt)', 'Speed (kt)', 'Geschwindigkeit (kt)', 'Velocidad (kt)'), 'number'), f('config', L('Configuration',
+          'Configuration', 'Konfiguration', 'Configuración')), f('pass', L('Résultat', 'Result', 'Ergebnis', 'Resultado'),
+          'select', {
+            options: passFail,
+            blank: true
+          }), f('result', L('Mesure / observation', 'Measurement / observation', 'Messung / Beobachtung',
+          'Medida / observación')), f('anomaly', L('Anomalie', 'Anomaly', 'Abweichung', 'Anomalía'), 'text', {
           full: true
         })]
       }
@@ -138,7 +173,8 @@
       title: L('Formation', 'Training', 'Ausbildung', 'Formación'),
       when: inGroup('TRAINING'),
       fields: [
-        f(P + 'instructor', L('Instructeur', 'Instructor', 'Lehrer', 'Instructor')), f(P + 'trainee', L('Stagiaire', 'Trainee', 'Schüler', 'Alumno')),
+        f(P + 'instructor', L('Instructeur', 'Instructor', 'Lehrer', 'Instructor')), f(P + 'trainee', L('Stagiaire', 'Trainee',
+          'Schüler', 'Alumno')),
         f(P + 'grading', L('Évaluation globale', 'Overall grading', 'Gesamtbewertung', 'Evaluación global'))
       ]
     }, {
@@ -159,10 +195,13 @@
           grade: '',
           observations: ''
         }),
-        fields: [f('exercise', L('Exercice', 'Exercise', 'Übung', 'Ejercicio')), f('objective', L('Objectif', 'Objective', 'Ziel', 'Objetivo')), f('repetitions', L('Répétitions', 'Repetitions', 'Wiederholungen', 'Repeticiones'), 'number'), f('completed', L('Réalisation', 'Completion', 'Durchführung', 'Realización'), 'select', {
-          options: completion,
-          blank: true
-        }), f('grade', L('Note', 'Grade', 'Note', 'Nota')), f('observations', L('Observations', 'Observations', 'Beobachtungen', 'Observaciones'), 'text', {
+        fields: [f('exercise', L('Exercice', 'Exercise', 'Übung', 'Ejercicio')), f('objective', L('Objectif', 'Objective', 'Ziel',
+          'Objetivo')), f('repetitions', L('Répétitions', 'Repetitions', 'Wiederholungen', 'Repeticiones'), 'number'), f(
+          'completed', L('Réalisation', 'Completion', 'Durchführung', 'Realización'), 'select', {
+            options: completion,
+            blank: true
+          }), f('grade', L('Note', 'Grade', 'Note', 'Nota')), f('observations', L('Observations', 'Observations',
+          'Beobachtungen', 'Observaciones'), 'text', {
           full: true
         })]
       }
@@ -177,7 +216,8 @@
       value: ms => ms.filter(m => group(m.series) === 'FERRY').length
     }, {
       id: 'testPoints',
-      label: L('Points d’essai conformes / réalisés', 'Test points passed / flown', 'Testpunkte bestanden / geflogen', 'Puntos de ensayo conformes / realizados'),
+      label: L('Points d’essai conformes / réalisés', 'Test points passed / flown', 'Testpunkte bestanden / geflogen',
+        'Puntos de ensayo conformes / realizados'),
       value: ms => {
         const p = ms.filter(m => group(m.series) === 'TEST').flatMap(points),
           flown = p.filter(x => x.pass && x.pass !== 'NOT_FLOWN');
@@ -186,7 +226,8 @@
     }, {
       id: 'exercises',
       label: L('Exercices réalisés', 'Exercises completed', 'Absolvierte Übungen', 'Ejercicios completados'),
-      value: ms => ms.filter(m => group(m.series) === 'TRAINING').flatMap(exercises).filter(e => e.completed === 'COMPLETED').length
+      value: ms => ms.filter(m => group(m.series) === 'TRAINING').flatMap(exercises).filter(e => e.completed === 'COMPLETED')
+        .length
     }],
     // Résumé propre à chaque sous-module (VIP, convoyage, essai, formation).
     summary: (() => {
@@ -199,7 +240,9 @@
           head = [`${h.series}${h.date ? ` ${w.on} ${h.date}` : ''}`, h.aircraft.length && `${w.by} ${h.list(h.aircraft, w.and)}`];
         const route = [d.origin && `${w.from} ${d.origin}`, d.destination && `${w.to} ${d.destination}`];
         let body = [];
-        if (g === 'VIP') body = [...route, '.', d.passengers && `${w.pax(num(d.passengers))}.`, d.delayMinutes ? `${w.delay(num(d.delayMinutes))}.` : `${w.onTime}.`, d.diversions && `${w.diversions} ${d.diversions}.`];
+        if (g === 'VIP') body = [...route, '.', d.passengers && `${w.pax(num(d.passengers))}.`, d.delayMinutes ? `${w.delay(num(d.delayMinutes))}.` : `${w.onTime}.`, d.diversions &&
+          `${w.diversions} ${d.diversions}.`
+        ];
         if (g === 'FERRY') body = [...route, d.stops && `${w.via} ${d.stops}`, '.', d.reason && `${w.reason} ${d.reason}.`, d.defects && `${w.defects} ${d.defects}.`];
         if (g === 'TEST') {
           const p = points(m),

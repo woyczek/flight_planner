@@ -36,7 +36,9 @@
     }
     if (value || row.length) push();
     const head = data.shift() || [];
-    return data.map(values => Object.fromEntries(head.map((name, index) => [String(name).replace(/^\uFEFF/, '').trim(), values[index] || ''])));
+    return data.map(values => Object.fromEntries(head.map((name, index) => [String(name).replace(/^\uFEFF/, '').trim(), values[index] ||
+      ''
+    ])));
   };
   /** Recopie une mission du registre dans le formulaire (valeurs de référence converties) et signale le changement. */
   const apply = record => {

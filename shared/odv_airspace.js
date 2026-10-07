@@ -34,7 +34,8 @@
   const TYPES = new Set(['R', 'D', 'TRA', 'TSA', 'MOA', 'W', 'A']);
   const NETWORKS = ['VATSIM', 'IVAO'];
   const ETATS = ['active', 'demandee', 'refusee'];
-  const settingsUrl = () => window.RepositoryNav?.settingsUrl?.('sia', 'mt-aero-base') || new URL('../apps/settings/maintenance.html?m=sia#mt-aero-base', SCRIPT).href;
+  const settingsUrl = () => window.RepositoryNav?.settingsUrl?.('sia', 'mt-aero-base') || new URL(
+    '../apps/settings/maintenance.html?m=sia#mt-aero-base', SCRIPT).href;
   const missing = raison => ({
     missing: true,
     raison,
@@ -139,6 +140,7 @@
     const d = await window.MissionAssignments?.readData?.(activationsFile(week)).catch(() => null);
     return Array.isArray(d?.activations) ? d.activations : [];
   }
+
   function saveActivations(week, list) {
     const A = window.MissionAssignments;
     if (!A?.writeData) return Promise.resolve({
@@ -324,7 +326,8 @@
         conflit: true
       };
       const mine = list.filter(x => x.zone === z.id && (!reseau || !x.reseau || x.reseau === reseau));
-      const etat = mine.some(x => x.etat === 'active' && covers(x)) ? 'active' : mine.some(x => x.etat === 'demandee') ? 'demandee' : 'absente';
+      const etat = mine.some(x => x.etat === 'active' && covers(x)) ? 'active' : mine.some(x => x.etat === 'demandee') ?
+        'demandee' : 'absente';
       return {
         ...z,
         etat,
@@ -351,17 +354,20 @@
     const types = /^(APP|DEP)$/.test(suffix) ? ['CTR', 'TMA'] : ['CTR'];
     return {
       icao,
-      espaces: (b.airspaces || []).filter(a => types.includes(a.type) && (a.rings || []).some(r => window.SiaBase.inRing(r, ad.lat, ad.lon))).map(a => a.name || a.key)
+      espaces: (b.airspaces || []).filter(a => types.includes(a.type) && (a.rings || []).some(r => window.SiaBase.inRing(r, ad.lat, ad
+        .lon))).map(a => a.name || a.key)
     };
   }
-  const metro = pos => window.SuiteAtc?.inPerimeter ? window.SuiteAtc.inPerimeter(pos) : /^LF(?!V)[A-Z]{2}_/.test(String(pos || '').toUpperCase());
+  const metro = pos => window.SuiteAtc?.inPerimeter ? window.SuiteAtc.inPerimeter(pos) : /^LF(?!V)[A-Z]{2}_/.test(String(pos || '')
+    .toUpperCase());
   /** Positions en ligne maintenant (flux publics, CORS ouvert) : [{ position, reseau, debut }]. */
   async function online() {
     const out = [];
     const get = url => fetch(url, {
       cache: 'no-store'
     }).then(r => r.ok ? r.json() : null).catch(() => null);
-    const [v, i] = await Promise.all([get('https://data.vatsim.net/v3/vatsim-data.json'), get('https://api.ivao.aero/v2/tracker/whazzup')]);
+    const [v, i] = await Promise.all([get('https://data.vatsim.net/v3/vatsim-data.json'), get(
+      'https://api.ivao.aero/v2/tracker/whazzup')]);
     for (const c of v?.controllers || [])
       if (metro(c.callsign)) out.push({
         position: String(c.callsign).toUpperCase(),

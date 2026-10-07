@@ -50,16 +50,48 @@
     jours: Object.fromEntries([1, 2, 3, 4, 5, 6, 7].map(d => [d, day(6)])),
     personnel: {},
     modeles: {
-      vols: [
-        { id: 'blue', libelle: 'BLUE', duree: 105, couleur: '#1a5898', fond: '#1a5898', parIndicatif: false },
-        { id: 'red', libelle: 'RED', duree: 105, couleur: '#9a3010', fond: '#9a3010', parIndicatif: false },
-        { id: 'indicatif', libelle: 'INDICATIF', duree: 105, couleur: '#64748b', fond: null, parIndicatif: true }
-      ],
-      divers: [
-        { id: 'cours', libelle: 'COURS AU SOL', duree: 60, couleur: '#8a6010', fond: null },
-        { id: 'reunion', libelle: 'RÉUNION', duree: 60, couleur: '#787808', fond: null }
-      ],
-      controle: [{ id: 'controle', libelle: 'CONTRÔLE', duree: 120, couleur: '#7300ff', fond: '#7300ff' }]
+      vols: [{
+        id: 'blue',
+        libelle: 'BLUE',
+        duree: 105,
+        couleur: '#1a5898',
+        fond: '#1a5898',
+        parIndicatif: false
+      }, {
+        id: 'red',
+        libelle: 'RED',
+        duree: 105,
+        couleur: '#9a3010',
+        fond: '#9a3010',
+        parIndicatif: false
+      }, {
+        id: 'indicatif',
+        libelle: 'INDICATIF',
+        duree: 105,
+        couleur: '#64748b',
+        fond: null,
+        parIndicatif: true
+      }],
+      divers: [{
+        id: 'cours',
+        libelle: 'COURS AU SOL',
+        duree: 60,
+        couleur: '#8a6010',
+        fond: null
+      }, {
+        id: 'reunion',
+        libelle: 'RÉUNION',
+        duree: 60,
+        couleur: '#787808',
+        fond: null
+      }],
+      controle: [{
+        id: 'controle',
+        libelle: 'CONTRÔLE',
+        duree: 120,
+        couleur: '#7300ff',
+        fond: '#7300ff'
+      }]
     },
     indicatifs: {},
     // configurations d'avion affichées sur la plaquette (KNON : canon chargé, TALIOS : pod de désignation…)
@@ -155,7 +187,8 @@
       va: VA(),
       updated_at: new Date().toISOString(),
       by: by(),
-      membres: Object.fromEntries(Object.entries(doc.membres || {}).map(([k, l]) => [k, (l || []).filter(x => x?.texte)]).filter(([, l]) => l.length))
+      membres: Object.fromEntries(Object.entries(doc.membres || {}).map(([k, l]) => [k, (l || []).filter(x => x?.texte)]).filter(([,
+        l]) => l.length))
     };
     const r = await A().writeData(DLO_FILE, out);
     return {
@@ -624,7 +657,7 @@
       };
     }
     for (const e of live)
-      for (const tri of new Set(crewOf(e, affectations))) (membres[tri] ||= {
+      for (const tri of new Set(crewOf(e, affectations)))(membres[tri] ||= {
         dispo: 0,
         vol: 0
       }).vol += e.duree;

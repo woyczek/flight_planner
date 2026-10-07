@@ -34,7 +34,8 @@
     s8: L('8. Exécution de la mission', '8. Mission execution', '8. Einsatzdurchführung', '8. Ejecución de la misión'),
     s9: L('9. Données spécifiques', '9. Mission-specific data', '9. Einsatzspezifische Daten', '9. Datos específicos'),
     s10: L('10. Résultats', '10. Results', '10. Ergebnisse', '10. Resultados'),
-    s11: L('11. Carburant / statistiques de vol', '11. Fuel / flight statistics', '11. Kraftstoff / Flugstatistik', '11. Combustible / estadísticas de vuelo'),
+    s11: L('11. Carburant / statistiques de vol', '11. Fuel / flight statistics', '11. Kraftstoff / Flugstatistik',
+      '11. Combustible / estadísticas de vuelo'),
     s12: L('12. Incidents / technique', '12. Incidents / technical', '12. Vorfälle / Technik', '12. Incidentes / técnica'),
     s13: L('13. Remarques', '13. Remarks', '13. Bemerkungen', '13. Observaciones'),
     s14: L('14. Enseignements', '14. Lessons learned', '14. Erkenntnisse', '14. Lecciones aprendidas'),
@@ -44,7 +45,9 @@
     trace: L('Trace réseau', 'Network track', 'Netzwerkspur', 'Traza de red'),
     openTrace: L('Ouvrir la trace', 'Open track', 'Spur öffnen', 'Abrir traza'),
     family: L('Famille', 'Family', 'Familie', 'Familia'),
-    footer: L('Généré localement dans le navigateur — aucune donnée transmise.', 'Generated locally in the browser — no data transmitted.', 'Lokal im Browser erzeugt — keine Datenübertragung.', 'Generado localmente en el navegador — ningún dato transmitido.'),
+    footer: L('Généré localement dans le navigateur — aucune donnée transmise.',
+      'Generated locally in the browser — no data transmitted.', 'Lokal im Browser erzeugt — keine Datenübertragung.',
+      'Generado localmente en el navegador — ningún dato transmitido.'),
     equipment: L('Équipements', 'Equipment', 'Ausrüstung', 'Equipamiento')
   };
   const KPI = [
@@ -78,7 +81,8 @@
       return o ? label(o.label) : String(value);
     }
     if (field.type === 'checkgroup') return value.map(code => {
-      const o = (field.groups && !field.groups.some(g => V.capabilityGroups.includes(g)) ? field.groups.flatMap(g => g.items) : allCapabilityItems).find(x => x.value === code);
+      const o = (field.groups && !field.groups.some(g => V.capabilityGroups.includes(g)) ? field.groups.flatMap(g => g.items) :
+        allCapabilityItems).find(x => x.value === code);
       return o ? label(o.label) : code;
     }).join(', ');
     if (field.type === 'number' && unit) return `${value} ${unit}`;
@@ -95,10 +99,11 @@
     /** Case « libellé : valeur » du compte rendu (omise si vide). */
     const box = (labelArr, value) => value === '' || value == null ? '' : `<div class="box"><span>${esc(t(labelArr))}</span>${esc(value)}</div>`;
     /** Cases des champs renseignés d'un bloc (conditions when respectées). */
-    const fieldsBoxes = (fields, base = mission, prefix = '', unit = '') => fields.filter(f => f.label && (!f.when || f.when(ctx))).map(f => {
-      const value = M.get(base, prefix + f.path);
-      return box(f.label, display(f, value, family, rows, f.path.startsWith('fuel.') && f.path !== 'fuel.unit' ? unit : ''));
-    }).join('');
+    const fieldsBoxes = (fields, base = mission, prefix = '', unit = '') => fields.filter(f => f.label && (!f.when || f.when(ctx))).map(
+      f => {
+        const value = M.get(base, prefix + f.path);
+        return box(f.label, display(f, value, family, rows, f.path.startsWith('fuel.') && f.path !== 'fuel.unit' ? unit : ''));
+      }).join('');
     /** Section titrée du compte rendu (omise si son contenu est vide). */
     const section = (titleArr, body) => body && body.replace(/<[^>]+>/g, '').trim() ? `<h3>${esc(t(titleArr))}</h3>${body}` : '';
     /** Bandeau d'informations en tête du compte rendu. */
@@ -122,10 +127,13 @@
     const seriesLabel = (family.series || []).find(s => s.value === mission.series);
 
     // 1. Identification
-    const s1 = meta(box(S.family, family.id) + (seriesLabel ? box(['Série', 'Series', 'Serie', 'Serie'], t(seriesLabel.label)) : '') + fieldsBoxes(B.identification.fields.filter(f => f.path !== 'series')));
+    const s1 = meta(box(S.family, family.id) + (seriesLabel ? box(['Série', 'Series', 'Serie', 'Serie'], t(seriesLabel.label)) : '') +
+      fieldsBoxes(B.identification.fields.filter(f => f.path !== 'series')));
     // 3. Appareils : tableau + équipements
     const aircraftTable = table(B.aircraft.collection, mission.aircraft || []);
-    const equipment = (mission.aircraft || []).filter(a => a.equipment?.length).map(a => box(['Équipements', 'Equipment', 'Ausrüstung', 'Equipamiento'], `${a.registration || a.type || ''} : ${display({ type: 'checkgroup' }, a.equipment, family, rows)}`)).join('');
+    const equipment = (mission.aircraft || []).filter(a => a.equipment?.length).map(a => box(['Équipements', 'Equipment', 'Ausrüstung',
+      'Equipamiento'
+    ], `${a.registration || a.type || ''} : ${display({ type: 'checkgroup' }, a.equipment, family, rows)}`)).join('');
     // 7. Chronologie + durées calculées
     const durations = KPI.map(([key, label]) => box(label, duration(stats[key]))).join('');
     // 8. Exécution : navigation, capacités employées, événements, étapes
@@ -141,8 +149,14 @@
       return body ? `<h4>${esc(t(b.title))}</h4>${body}` : '';
     }).join('');
     // 10–14
-    const results = meta(fieldsBoxes(B.results.fields.filter(f => ['results.outcome', 'results.interruptionReason', 'results.causes', 'results.detail'].includes(f.path))));
-    const fuel = meta(fieldsBoxes(B.fuel.fields.filter(f => f.path !== 'fuel.unit'), mission, '', unit) + box(['Carburant consommé', 'Fuel used', 'Kraftstoffverbrauch', 'Combustible consumido'], stats.fuelUsed == null ? '' : `${stats.fuelUsed} ${unit}`) + box(['Carburant sur zone', 'Fuel on station', 'Kraftstoff im Einsatzraum', 'Combustible en zona'], stats.fuelOnStation == null ? '' : `${stats.fuelOnStation} ${unit}`));
+    const results = meta(fieldsBoxes(B.results.fields.filter(f => ['results.outcome', 'results.interruptionReason', 'results.causes',
+      'results.detail'
+    ].includes(f.path))));
+    const fuel = meta(fieldsBoxes(B.fuel.fields.filter(f => f.path !== 'fuel.unit'), mission, '', unit) + box(['Carburant consommé',
+      'Fuel used', 'Kraftstoffverbrauch', 'Combustible consumido'
+    ], stats.fuelUsed == null ? '' : `${stats.fuelUsed} ${unit}`) + box(['Carburant sur zone', 'Fuel on station', 'Kraftstoff im Einsatzraum',
+      'Combustible en zona'
+    ], stats.fuelOnStation == null ? '' : `${stats.fuelOnStation} ${unit}`));
     const incidents = meta(fieldsBoxes(B.results.fields.filter(f => ['results.incidents', 'results.anomalies'].includes(f.path))));
     const remarks = mission.remarks?.observations ? `<div class="box">${esc(mission.remarks.observations)}</div>` : '';
     const lessons = mission.remarks?.lessonsLearned ? `<div class="box">${esc(mission.remarks.lessonsLearned)}</div>` : '';
@@ -184,7 +198,8 @@
     const outcome = V.outcomes.find(o => o.value === mission.results?.outcome);
     const caps = (mission.capabilities || []).map(code => pick(allCapabilityItems.find(x => x.value === code)?.label) || code);
     const lead = mission.aircraft?.[0] || {};
-    const aircraft = (mission.aircraft || []).filter(a => a.type || a.registration).map(a => [a.type, a.registration && `(${a.registration})`].filter(Boolean).join(' '));
+    const aircraft = (mission.aircraft || []).filter(a => a.type || a.registration).map(a => [a.type, a.registration && `(${a.registration})`].filter(
+      Boolean).join(' '));
     /** Énumération « a, b et c » dans la langue du résumé. */
     const list = (items, and) => items.length <= 1 ? items.join('') : `${items.slice(0, -1).join(', ')} ${and} ${items[items.length - 1]}`;
     /** Date AAAA-MM-JJ en toutes lettres dans la langue du résumé. */

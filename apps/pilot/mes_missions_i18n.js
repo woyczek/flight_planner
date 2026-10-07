@@ -4,37 +4,75 @@
 RepositoryContentI18n([
   // page et blocs
   ['Mes missions', 'My missions', 'Meine Missionen', 'Mis misiones'],
-  ['Missions affectées par le Centre, disponibilités', 'Missions assigned by the Centre, availability', 'Vom Zentrum zugewiesene Missionen, Verfügbarkeit', 'Misiones asignadas por el Centro, disponibilidad'],
+  ['Missions affectées par le Centre, disponibilités', 'Missions assigned by the Centre, availability',
+    'Vom Zentrum zugewiesene Missionen, Verfügbarkeit', 'Misiones asignadas por el Centro, disponibilidad'
+  ],
   ['Pilote', 'Pilot', 'Pilot', 'Piloto'],
   ['Appareils maîtrisés', 'Aircraft mastered', 'Beherrschte Luftfahrzeuge', 'Aeronaves dominadas'],
   ['Simulateurs', 'Simulators', 'Simulatoren', 'Simuladores'],
-  ['Trigramme, réseaux, langue : Paramètres › Mon profil', 'Trigram, networks, language: Settings › My profile', 'Kürzel, Netzwerke, Sprache: Einstellungen › Mein Profil', 'Trigrama, redes, idioma: Ajustes › Mi perfil'],
-  ['Types de la flotte possédés et maîtrisés : Paramètres › Mon profil', 'Fleet types owned and mastered: Settings › My profile', 'Besessene und beherrschte Flottentypen: Einstellungen › Mein Profil', 'Tipos de la flota poseídos y dominados: Ajustes › Mi perfil'],
-  ['Simulateurs installés : Paramètres › Mon profil', 'Installed simulators: Settings › My profile', 'Installierte Simulatoren: Einstellungen › Mein Profil', 'Simuladores instalados: Ajustes › Mi perfil'],
+  ['Trigramme, réseaux, langue : Paramètres › Mon profil', 'Trigram, networks, language: Settings › My profile',
+    'Kürzel, Netzwerke, Sprache: Einstellungen › Mein Profil', 'Trigrama, redes, idioma: Ajustes › Mi perfil'
+  ],
+  ['Types de la flotte possédés et maîtrisés : Paramètres › Mon profil', 'Fleet types owned and mastered: Settings › My profile',
+    'Besessene und beherrschte Flottentypen: Einstellungen › Mein Profil', 'Tipos de la flota poseídos y dominados: Ajustes › Mi perfil'
+  ],
+  ['Simulateurs installés : Paramètres › Mon profil', 'Installed simulators: Settings › My profile',
+    'Installierte Simulatoren: Einstellungen › Mein Profil', 'Simuladores instalados: Ajustes › Mi perfil'
+  ],
   ['Mes missions de la semaine', 'My missions this week', 'Meine Missionen der Woche', 'Mis misiones de la semana'],
-  ['Missions de la semaine affichée, par heure de décollage (UTC) ; ● : nouvelle, pas encore ouverte.', 'Missions of the week shown, by take-off time (UTC); ●: new, not opened yet.', 'Missionen der angezeigten Woche, nach Startzeit (UTC); ●: neu, noch nicht geöffnet.', 'Misiones de la semana mostrada, por hora de despegue (UTC); ●: nueva, aún no abierta.'],
+  ['Missions de la semaine affichée, par heure de décollage (UTC) ; ● : nouvelle, pas encore ouverte.',
+    'Missions of the week shown, by take-off time (UTC); ●: new, not opened yet.',
+    'Missionen der angezeigten Woche, nach Startzeit (UTC); ●: neu, noch nicht geöffnet.',
+    'Misiones de la semana mostrada, por hora de despegue (UTC); ●: nueva, aún no abierta.'
+  ],
   ['Chargement…', 'Loading…', 'Wird geladen…', 'Cargando…'],
   ['Chargement de la mission…', 'Loading the mission…', 'Mission wird geladen…', 'Cargando la misión…'],
-  ['afficher aussi les missions passées', 'also show past missions', 'auch vergangene Missionen anzeigen', 'mostrar también las misiones pasadas'],
+  ['afficher aussi les missions passées', 'also show past missions', 'auch vergangene Missionen anzeigen',
+    'mostrar también las misiones pasadas'
+  ],
   ['Mission', 'Mission', 'Mission', 'Misión'],
-  ['Mission affectée, en lecture seule : ce qui vous est demandé, la route, les cartes fournies.', 'Assigned mission, read-only: what is asked of you, the route, the maps supplied.', 'Zugewiesene Mission, nur lesbar: was von Ihnen verlangt wird, die Route, die gelieferten Karten.', 'Misión asignada, solo lectura: lo que se le pide, la ruta, los mapas facilitados.'],
+  ['Mission affectée, en lecture seule : ce qui vous est demandé, la route, les cartes fournies.',
+    'Assigned mission, read-only: what is asked of you, the route, the maps supplied.',
+    'Zugewiesene Mission, nur lesbar: was von Ihnen verlangt wird, die Route, die gelieferten Karten.',
+    'Misión asignada, solo lectura: lo que se le pide, la ruta, los mapas facilitados.'
+  ],
   ['Mes disponibilités', 'My availability', 'Meine Verfügbarkeit', 'Mi disponibilidad'],
-  ['Semaine affichée, heures UTC, codes de l’ODV : choisir un code, puis cliquer ou tracer un rectangle sur les cases ; un second clic sur une case de ce code l’efface. Le Centre s’en sert pour affecter les missions.', 'Week shown, UTC hours, ODV codes: pick a code, then click or draw a rectangle over the cells; a second click on a cell with that code clears it. The Centre uses it to assign missions.', 'Angezeigte Woche, UTC-Stunden, ODV-Codes: Code wählen, dann Zellen anklicken oder ein Rechteck ziehen; ein zweiter Klick auf eine Zelle dieses Codes löscht sie. Das Zentrum nutzt dies für die Zuweisung.', 'Semana mostrada, horas UTC, códigos de la ODV: elija un código y haga clic o trace un rectángulo sobre las casillas; un segundo clic en una casilla de ese código la borra. El Centro lo usa para asignar misiones.'],
+  ['Semaine affichée, heures UTC, codes de l’ODV : choisir un code, puis cliquer ou tracer un rectangle sur les cases ; un second clic sur une case de ce code l’efface. Le Centre s’en sert pour affecter les missions.',
+    'Week shown, UTC hours, ODV codes: pick a code, then click or draw a rectangle over the cells; a second click on a cell with that code clears it. The Centre uses it to assign missions.',
+    'Angezeigte Woche, UTC-Stunden, ODV-Codes: Code wählen, dann Zellen anklicken oder ein Rechteck ziehen; ein zweiter Klick auf eine Zelle dieses Codes löscht sie. Das Zentrum nutzt dies für die Zuweisung.',
+    'Semana mostrada, horas UTC, códigos de la ODV: elija un código y haga clic o trace un rectángulo sobre las casillas; un segundo clic en una casilla de ese código la borra. El Centro lo usa para asignar misiones.'
+  ],
   ['Enregistrer dans le dossier des données', 'Save to the data folder', 'Im Datenordner speichern', 'Guardar en la carpeta de datos'],
-  ['Recopier les disponibilités de la semaine précédente', 'Copy the previous week’s availability', 'Verfügbarkeit der Vorwoche übernehmen', 'Copiar la disponibilidad de la semana anterior'],
+  ['Recopier les disponibilités de la semaine précédente', 'Copy the previous week’s availability',
+    'Verfügbarkeit der Vorwoche übernehmen', 'Copiar la disponibilidad de la semana anterior'
+  ],
   ['Tout effacer', 'Clear all', 'Alles löschen', 'Borrar todo'],
   ['Mes appareils', 'My aircraft', 'Meine Luftfahrzeuge', 'Mis aeronaves'],
-  ['Types de la flotte que vous possédez dans votre simulateur et ceux que vous maîtrisez : le Centre s’en sert pour vous affecter un appareil.', 'Fleet types you own in your simulator and those you master: the Centre uses it to assign you an aircraft.', 'Flottentypen, die Sie im Simulator besitzen, und die, die Sie beherrschen: das Zentrum weist Ihnen danach ein Luftfahrzeug zu.', 'Tipos de la flota que posee en su simulador y los que domina: el Centro lo usa para asignarle una aeronave.'],
-  ['Enregistré dans ce navigateur, et avec vos disponibilités (« Enregistrer dans le dossier des données »).', 'Saved in this browser, and with your availability (“Save to the data folder”).', 'In diesem Browser gespeichert, und mit Ihrer Verfügbarkeit („Im Datenordner speichern“).', 'Guardado en este navegador, y con su disponibilidad («Guardar en la carpeta de datos»).'],
+  ['Types de la flotte que vous possédez dans votre simulateur et ceux que vous maîtrisez : le Centre s’en sert pour vous affecter un appareil.',
+    'Fleet types you own in your simulator and those you master: the Centre uses it to assign you an aircraft.',
+    'Flottentypen, die Sie im Simulator besitzen, und die, die Sie beherrschen: das Zentrum weist Ihnen danach ein Luftfahrzeug zu.',
+    'Tipos de la flota que posee en su simulador y los que domina: el Centro lo usa para asignarle una aeronave.'
+  ],
+  ['Enregistré dans ce navigateur, et avec vos disponibilités (« Enregistrer dans le dossier des données »).',
+    'Saved in this browser, and with your availability (“Save to the data folder”).',
+    'In diesem Browser gespeichert, und mit Ihrer Verfügbarkeit („Im Datenordner speichern“).',
+    'Guardado en este navegador, y con su disponibilidad («Guardar en la carpeta de datos»).'
+  ],
   ['Mes simulateurs', 'My simulators', 'Meine Simulatoren', 'Mis simuladores'],
-  ['Simulateurs et outils installés (colonnes de la feuille FLOTTE du classeur ODV) : le Centre s’en sert pour réunir des pilotes sur un simulateur commun.', 'Simulators and tools installed (columns of the FLOTTE sheet of the ODV workbook): the Centre uses it to bring pilots together on a common simulator.', 'Installierte Simulatoren und Werkzeuge (Spalten des Blatts FLOTTE der ODV-Arbeitsmappe): das Zentrum bringt damit Piloten auf einem gemeinsamen Simulator zusammen.', 'Simuladores y herramientas instalados (columnas de la hoja FLOTTE del libro ODV): el Centro lo usa para reunir pilotos en un simulador común.'],
+  ['Simulateurs et outils installés (colonnes de la feuille FLOTTE du classeur ODV) : le Centre s’en sert pour réunir des pilotes sur un simulateur commun.',
+    'Simulators and tools installed (columns of the FLOTTE sheet of the ODV workbook): the Centre uses it to bring pilots together on a common simulator.',
+    'Installierte Simulatoren und Werkzeuge (Spalten des Blatts FLOTTE der ODV-Arbeitsmappe): das Zentrum bringt damit Piloten auf einem gemeinsamen Simulator zusammen.',
+    'Simuladores y herramientas instalados (columnas de la hoja FLOTTE del libro ODV): el Centro lo usa para reunir pilotos en un simulador común.'
+  ],
   ['Aucun trigramme réglé.', 'No trigram set.', 'Kein Kürzel eingestellt.', 'Ningún trigrama configurado.'],
   ['Trigramme non réglé.', 'Trigram not set.', 'Kürzel nicht eingestellt.', 'Trigrama no configurado.'],
   ['Flotte non chargée.', 'Fleet not loaded.', 'Flotte nicht geladen.', 'Flota no cargada.'],
   ['Possédé', 'Owned', 'Besessen', 'Poseído'],
   ['Maîtrisé', 'Mastered', 'Beherrscht', 'Dominado'],
   ['Variantes de la flotte', 'Fleet variants', 'Flottenvarianten', 'Variantes de la flota'],
-  ['Semaine précédente vide : rien à recopier.', 'Previous week empty: nothing to copy.', 'Vorwoche leer: nichts zu übernehmen.', 'Semana anterior vacía: nada que copiar.'],
+  ['Semaine précédente vide : rien à recopier.', 'Previous week empty: nothing to copy.', 'Vorwoche leer: nichts zu übernehmen.',
+    'Semana anterior vacía: nada que copiar.'
+  ],
   // liste
   ['Décollage (UTC)', 'Take-off (UTC)', 'Start (UTC)', 'Despegue (UTC)'],
   ['Titre', 'Title', 'Titel', 'Título'],
@@ -48,15 +86,21 @@ RepositoryContentI18n([
   ['Décollage', 'Take-off', 'Start', 'Despegue'],
   ['Ouvrir la mission', 'Open the mission', 'Mission öffnen', 'Abrir la misión'],
   ['Ouvrir le dossier', 'Open the folder', 'Mappe öffnen', 'Abrir la carpeta'],
-  ['Ouvrir la mission (briser le sceau)', 'Open the mission (break the seal)', 'Mission öffnen (Siegel brechen)', 'Abrir la misión (romper el sello)'],
+  ['Ouvrir la mission (briser le sceau)', 'Open the mission (break the seal)', 'Mission öffnen (Siegel brechen)',
+    'Abrir la misión (romper el sello)'
+  ],
   ['Refermer le dossier', 'Close the folder', 'Mappe schließen', 'Cerrar la carpeta'],
   ['Page précédente', 'Previous page', 'Vorherige Seite', 'Página anterior'],
   ['Page suivante', 'Next page', 'Nächste Seite', 'Página siguiente'],
   ['Signet : fin du dossier', 'Bookmark: end of the folder', 'Lesezeichen: Ende der Mappe', 'Marcapáginas: fin de la carpeta'],
-  ['Signet : ouvrir les plis scellés', 'Bookmark: open the sealed envelopes', 'Lesezeichen: versiegelte Umschläge öffnen', 'Marcapáginas: abrir los sobres sellados'],
+  ['Signet : ouvrir les plis scellés', 'Bookmark: open the sealed envelopes', 'Lesezeichen: versiegelte Umschläge öffnen',
+    'Marcapáginas: abrir los sobres sellados'
+  ],
   ['Signet : retour au début', 'Bookmark: back to the start', 'Lesezeichen: zurück zum Anfang', 'Marcapáginas: volver al principio'],
   ['Diffusion restreinte', 'Restricted', 'Verschlusssache', 'Difusión restringida'],
-  ['Centre de planification et de conduite des opérations', 'Operations planning and command centre', 'Planungs- und Führungszentrum der Einsätze', 'Centro de planificación y conducción de operaciones'],
+  ['Centre de planification et de conduite des opérations', 'Operations planning and command centre',
+    'Planungs- und Führungszentrum der Einsätze', 'Centro de planificación y conducción de operaciones'
+  ],
   // ordre
   ['Ordre de mission —', 'Mission order —', 'Einsatzbefehl —', 'Orden de misión —'],
   ['Ordre de convoyage —', 'Ferry order —', 'Überführungsbefehl —', 'Orden de traslado —'],
@@ -73,7 +117,9 @@ RepositoryContentI18n([
   ['Carburant (planificateur)', 'Fuel (planner)', 'Kraftstoff (Planer)', 'Combustible (planificador)'],
   ['Créer le CR', 'Create the report', 'Bericht erstellen', 'Crear el informe'],
   ['Resceller', 'Reseal', 'Neu versiegeln', 'Volver a sellar'],
-  ['Canal develop : remettre la mission sous scellés (non lue)', 'Develop channel: seal the mission again (unread)', 'Kanal develop: Mission wieder versiegeln (ungelesen)', 'Canal develop: volver a sellar la misión (no leída)'],
+  ['Canal develop : remettre la mission sous scellés (non lue)', 'Develop channel: seal the mission again (unread)',
+    'Kanal develop: Mission wieder versiegeln (ungelesen)', 'Canal develop: volver a sellar la misión (no leída)'
+  ],
   ['Cible / secteur', 'Target / sector', 'Ziel / Sektor', 'Objetivo / sector'],
   ['Description détaillée', 'Detailed description', 'Ausführliche Beschreibung', 'Descripción detallada'],
   ['Risques et points d’attention', 'Risks and points of attention', 'Risiken und Hinweise', 'Riesgos y puntos de atención'],
@@ -82,7 +128,9 @@ RepositoryContentI18n([
   ['Introduction', 'Introduction', 'Einleitung', 'Introducción'],
   ['Aéronef concerné', 'Aircraft concerned', 'Betroffenes Luftfahrzeug', 'Aeronave afectada'],
   ['Rendez-vous / coordination', 'Rendezvous / coordination', 'Treffpunkt / Koordination', 'Encuentro / coordinación'],
-  ['Scénario de simulation — ne pas utiliser pour une mission réelle.', 'Simulation scenario — not for use on a real mission.', 'Simulationsszenario — nicht für einen realen Einsatz verwenden.', 'Escenario de simulación — no utilizar en una misión real.'],
+  ['Scénario de simulation — ne pas utiliser pour une mission réelle.', 'Simulation scenario — not for use on a real mission.',
+    'Simulationsszenario — nicht für einen realen Einsatz verwenden.', 'Escenario de simulación — no utilizar en una misión real.'
+  ],
   ['Risques à prendre en compte', 'Risks to take into account', 'Zu berücksichtigende Risiken', 'Riesgos a tener en cuenta'],
   ['Objectifs secondaires', 'Secondary objectives', 'Nebenziele', 'Objetivos secundarios'],
   ['Charge / personnel', 'Load / personnel', 'Ladung / Personal', 'Carga / personal'],
@@ -105,7 +153,11 @@ RepositoryContentI18n([
   ['Rôle', 'Role', 'Rolle', 'Función'],
   ['Position', 'Position', 'Position', 'Posición'],
   ['Cartes fournies', 'Maps supplied', 'Gelieferte Karten', 'Mapas facilitados'],
-  ['Aucune carte fournie avec la mission (les Cartes de vol les génèrent depuis la route).', 'No map supplied with the mission (the flight maps generate them from the route).', 'Keine Karte zur Mission geliefert (die Flugkarten erzeugen sie aus der Route).', 'Ningún mapa facilitado con la misión (los mapas de vuelo los generan a partir de la ruta).'],
+  ['Aucune carte fournie avec la mission (les Cartes de vol les génèrent depuis la route).',
+    'No map supplied with the mission (the flight maps generate them from the route).',
+    'Keine Karte zur Mission geliefert (die Flugkarten erzeugen sie aus der Route).',
+    'Ningún mapa facilitado con la misión (los mapas de vuelo los generan a partir de la ruta).'
+  ],
   ['Objectifs', 'Objectives', 'Ziele', 'Objetivos'],
   ['Objectif principal', 'Main objective', 'Hauptziel', 'Objetivo principal'],
   ['Objectif secondaire', 'Secondary objective', 'Nebenziel', 'Objetivo secundario'],
@@ -121,7 +173,9 @@ RepositoryContentI18n([
   ['Message radio', 'Radio message', 'Funkspruch', 'Mensaje de radio'],
   ['Pli', 'Envelope', 'Umschlag', 'Sobre'],
   ['Briser le scellé', 'Break the seal', 'Siegel brechen', 'Romper el sello'],
-  ['Confirmer : ouvrir avant l’heure', 'Confirm: open before the time', 'Bestätigen: vor der Zeit öffnen', 'Confirmar: abrir antes de la hora'],
+  ['Confirmer : ouvrir avant l’heure', 'Confirm: open before the time', 'Bestätigen: vor der Zeit öffnen',
+    'Confirmar: abrir antes de la hora'
+  ],
   ['À ouvrir :', 'To open:', 'Zu öffnen:', 'A abrir:'],
   ['Piste', 'Track', 'Spur', 'Pista'],
   ['Nature', 'Nature', 'Art', 'Naturaleza'],
@@ -179,7 +233,11 @@ RepositoryContentI18n([
   ['Immatriculation', 'Registration', 'Kennzeichen', 'Matrícula'],
   ['Base', 'Base', 'Basis', 'Base'],
   ['Notes', 'Notes', 'Notizen', 'Notas'],
-  ["Saisir votre trigramme (ex. RBR) pour voir les missions qui vous sont affectées.", "Enter your trigram (e.g. RBR) to see the missions assigned to you.", "Trigramm eingeben (z. B. RBR), um Ihre zugewiesenen Missionen zu sehen.", "Introduzca su trigrama (p. ej. RBR) para ver las misiones que tiene asignadas."],
+  ["Saisir votre trigramme (ex. RBR) pour voir les missions qui vous sont affectées.",
+    "Enter your trigram (e.g. RBR) to see the missions assigned to you.",
+    "Trigramm eingeben (z. B. RBR), um Ihre zugewiesenen Missionen zu sehen.",
+    "Introduzca su trigrama (p. ej. RBR) para ver las misiones que tiene asignadas."
+  ],
   ["Semaine précédente", "Previous week", "Vorherige Woche", "Semana anterior"],
   ["Semaine suivante", "Next week", "Nächste Woche", "Semana siguiente"],
   ["Aller à la semaine d’une date", "Go to the week of a date", "Zur Woche eines Datums", "Ir a la semana de una fecha"],
@@ -188,12 +246,34 @@ RepositoryContentI18n([
   ['oui', 'yes', 'ja', 'sí'],
   ['non', 'no', 'nein', 'no'],
   // disponibilités par plages (shared/dispos_editor.js), page seule apps/pilot/disponibilites.html
-  ['Semaine affichée, heures UTC : choisir une catégorie dans la palette, puis cliquer sur une case ou tracer un rectangle ; un second clic efface ; « Plage précise » pour des minutes. Le Centre s’en sert pour affecter les missions.', 'Shown week, UTC hours: pick a category in the palette, then click a cell or draw a rectangle; a second click clears; “Precise range” for minutes. The Centre uses it to assign missions.', 'Angezeigte Woche, UTC-Stunden: eine Kategorie in der Palette wählen, dann eine Zelle anklicken oder ein Rechteck ziehen; ein zweiter Klick löscht; „Genauer Zeitraum“ für Minuten. Das Zentrum nutzt sie zur Zuweisung der Missionen.', 'Semana mostrada, horas UTC: elegir una categoría en la paleta y luego hacer clic en una celda o trazar un rectángulo; un segundo clic borra; «Intervalo preciso» para minutos. El Centro lo usa para asignar las misiones.'],
-  ['Choisir une catégorie dans la palette, puis cliquer sur une case ou tracer un rectangle (heures UTC) ; un second clic efface ; « Plage précise » pour des minutes. Le Centre s’en sert pour affecter les missions.', 'Pick a category in the palette, then click a cell or draw a rectangle (UTC hours); a second click clears; “Precise range” for minutes. The Centre uses it to assign missions.', 'Eine Kategorie in der Palette wählen, dann eine Zelle anklicken oder ein Rechteck ziehen (UTC-Stunden); ein zweiter Klick löscht; „Genauer Zeitraum“ für Minuten. Das Zentrum nutzt sie zur Zuweisung der Missionen.', 'Elegir una categoría en la paleta y luego hacer clic en una celda o trazar un rectángulo (horas UTC); un segundo clic borra; «Intervalo preciso» para minutos. El Centro lo usa para asignar las misiones.'],
-  ['Ancienne grille horaire (lecture seule)', 'Former hourly grid (read only)', 'Frühere Stundenrasterung (nur lesen)', 'Antigua cuadrícula horaria (solo lectura)'],
-  ['Ouvrir la saisie des disponibilités seule', 'Open the availability entry on its own', 'Verfügbarkeitseingabe einzeln öffnen', 'Abrir solo la introducción de disponibilidad'],
+  ['Semaine affichée, heures UTC : choisir une catégorie dans la palette, puis cliquer sur une case ou tracer un rectangle ; un second clic efface ; « Plage précise » pour des minutes. Le Centre s’en sert pour affecter les missions.',
+    'Shown week, UTC hours: pick a category in the palette, then click a cell or draw a rectangle; a second click clears; “Precise range” for minutes. The Centre uses it to assign missions.',
+    'Angezeigte Woche, UTC-Stunden: eine Kategorie in der Palette wählen, dann eine Zelle anklicken oder ein Rechteck ziehen; ein zweiter Klick löscht; „Genauer Zeitraum“ für Minuten. Das Zentrum nutzt sie zur Zuweisung der Missionen.',
+    'Semana mostrada, horas UTC: elegir una categoría en la paleta y luego hacer clic en una celda o trazar un rectángulo; un segundo clic borra; «Intervalo preciso» para minutos. El Centro lo usa para asignar las misiones.'
+  ],
+  ['Choisir une catégorie dans la palette, puis cliquer sur une case ou tracer un rectangle (heures UTC) ; un second clic efface ; « Plage précise » pour des minutes. Le Centre s’en sert pour affecter les missions.',
+    'Pick a category in the palette, then click a cell or draw a rectangle (UTC hours); a second click clears; “Precise range” for minutes. The Centre uses it to assign missions.',
+    'Eine Kategorie in der Palette wählen, dann eine Zelle anklicken oder ein Rechteck ziehen (UTC-Stunden); ein zweiter Klick löscht; „Genauer Zeitraum“ für Minuten. Das Zentrum nutzt sie zur Zuweisung der Missionen.',
+    'Elegir una categoría en la paleta y luego hacer clic en una celda o trazar un rectángulo (horas UTC); un segundo clic borra; «Intervalo preciso» para minutos. El Centro lo usa para asignar las misiones.'
+  ],
+  ['Ancienne grille horaire (lecture seule)', 'Former hourly grid (read only)', 'Frühere Stundenrasterung (nur lesen)',
+    'Antigua cuadrícula horaria (solo lectura)'
+  ],
+  ['Ouvrir la saisie des disponibilités seule', 'Open the availability entry on its own', 'Verfügbarkeitseingabe einzeln öffnen',
+    'Abrir solo la introducción de disponibilidad'
+  ],
   ['Mes disponibilités', 'My availability', 'Meine Verfügbarkeit', 'Mi disponibilidad'],
-  ['Enregistré dans ce navigateur, et avec la semaine affichée de vos disponibilités (pour le Centre).', 'Saved in this browser, and with the shown week of your availability (for the Centre).', 'In diesem Browser gespeichert und mit der angezeigten Woche Ihrer Verfügbarkeit (für das Zentrum).', 'Guardado en este navegador y con la semana mostrada de su disponibilidad (para el Centro).'],
-  ['Gardé dans ce navigateur et recopié dans la semaine affichée de vos disponibilités.', 'Kept in this browser and copied into the shown week of your availability.', 'In diesem Browser behalten und in die angezeigte Woche Ihrer Verfügbarkeit übernommen.', 'Guardado en este navegador y copiado en la semana mostrada de su disponibilidad.'],
-  ['Plages de la semaine, par catégorie (heures UTC)', 'Ranges of the week, by category (UTC hours)', 'Zeiträume der Woche, nach Kategorie (UTC-Stunden)', 'Intervalos de la semana, por categoría (horas UTC)']
+  ['Enregistré dans ce navigateur, et avec la semaine affichée de vos disponibilités (pour le Centre).',
+    'Saved in this browser, and with the shown week of your availability (for the Centre).',
+    'In diesem Browser gespeichert und mit der angezeigten Woche Ihrer Verfügbarkeit (für das Zentrum).',
+    'Guardado en este navegador y con la semana mostrada de su disponibilidad (para el Centro).'
+  ],
+  ['Gardé dans ce navigateur et recopié dans la semaine affichée de vos disponibilités.',
+    'Kept in this browser and copied into the shown week of your availability.',
+    'In diesem Browser behalten und in die angezeigte Woche Ihrer Verfügbarkeit übernommen.',
+    'Guardado en este navegador y copiado en la semana mostrada de su disponibilidad.'
+  ],
+  ['Plages de la semaine, par catégorie (heures UTC)', 'Ranges of the week, by category (UTC hours)',
+    'Zeiträume der Woche, nach Kategorie (UTC-Stunden)', 'Intervalos de la semana, por categoría (horas UTC)'
+  ]
 ]);

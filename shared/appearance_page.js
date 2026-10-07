@@ -11,11 +11,24 @@
   const VER = new URL(document.currentScript?.src || location.href).search; // version des images (celle de ce script)
   const K = window.RepositoryKit; // utilitaires communs (shared/kit.js)
   const T = {
-    sub: ['SO Group Virtual — design, icônes, barre latérale et couleurs, pour toutes les pages de la suite', 'SO Group Virtual — design, icons, side bar and colours, for every page of the suite', 'SO Group Virtual — Design, Symbole, Seitenleiste und Farben für alle Seiten der Suite', 'SO Group Virtual — diseño, iconos, barra lateral y colores, para todas las páginas'],
+    sub: ['SO Group Virtual — design, icônes, barre latérale et couleurs, pour toutes les pages de la suite',
+      'SO Group Virtual — design, icons, side bar and colours, for every page of the suite',
+      'SO Group Virtual — Design, Symbole, Seitenleiste und Farben für alle Seiten der Suite',
+      'SO Group Virtual — diseño, iconos, barra lateral y colores, para todas las páginas'
+    ],
     design: ['Design', 'Design', 'Design', 'Diseño'],
-    designSub: ['La forme des pages : arrondis, densité, titres, barre latérale. Cabinet, Durci et Aqua ajoutent leurs matières (cuir, bois, laiton, acier, verre) ; les couleurs d’information restent celles du thème.', 'The shape of the pages: corners, density, titles, side bar. Cabinet, Rugged and Aqua add their materials (leather, wood, brass, steel, glass); information colours stay those of the theme.', 'Die Form der Seiten: Ecken, Dichte, Titel, Seitenleiste. Kabinett, Robust und Aqua bringen eigene Materialien (Leder, Holz, Messing, Stahl, Glas); Informationsfarben bleiben die des Themas.', 'La forma de las páginas: esquinas, densidad, títulos, barra lateral. Gabinete, Robusto y Aqua añaden sus materiales (cuero, madera, latón, acero, vidrio); los colores de información siguen siendo los del tema.'],
+    designSub: [
+      'La forme des pages : arrondis, densité, titres, barre latérale. Cabinet, Durci et Aqua ajoutent leurs matières (cuir, bois, laiton, acier, verre) ; les couleurs d’information restent celles du thème.',
+      'The shape of the pages: corners, density, titles, side bar. Cabinet, Rugged and Aqua add their materials (leather, wood, brass, steel, glass); information colours stay those of the theme.',
+      'Die Form der Seiten: Ecken, Dichte, Titel, Seitenleiste. Kabinett, Robust und Aqua bringen eigene Materialien (Leder, Holz, Messing, Stahl, Glas); Informationsfarben bleiben die des Themas.',
+      'La forma de las páginas: esquinas, densidad, títulos, barra lateral. Gabinete, Robusto y Aqua añaden sus materiales (cuero, madera, latón, acero, vidrio); los colores de información siguen siendo los del tema.'
+    ],
     charts: ['Graphiques', 'Charts', 'Diagramme', 'Gráficos'],
-    chartsSub: ['Palette de couleurs et style des graphiques (reportings, indicateurs) ; « Automatique » suit le design.', 'Colour palette and style of the charts (reports, indicators); “Automatic” follows the design.', 'Farbpalette und Stil der Diagramme (Berichte, Kennzahlen); „Automatisch“ folgt dem Design.', 'Paleta de colores y estilo de los gráficos (informes, indicadores); «Automático» sigue el diseño.'],
+    chartsSub: ['Palette de couleurs et style des graphiques (reportings, indicateurs) ; « Automatique » suit le design.',
+      'Colour palette and style of the charts (reports, indicators); “Automatic” follows the design.',
+      'Farbpalette und Stil der Diagramme (Berichte, Kennzahlen); „Automatisch“ folgt dem Design.',
+      'Paleta de colores y estilo de los gráficos (informes, indicadores); «Automático» sigue el diseño.'
+    ],
     chartStyle: ['Style', 'Style', 'Stil', 'Estilo'],
     chartStyleSet: {
       auto: ['Automatique', 'Automatic', 'Automatisch', 'Automático'],
@@ -30,7 +43,9 @@
       khaki: ['Kaki et olive', 'Khaki and olive', 'Khaki und Oliv', 'Caqui y oliva']
     },
     icons: ['Icônes', 'Icons', 'Symbole', 'Iconos'],
-    iconsSub: ['Épaisseur du trait des icônes, ou pas d’icônes du tout.', 'Stroke width of the icons, or no icons at all.', 'Strichstärke der Symbole oder gar keine Symbole.', 'Grosor del trazo de los iconos, o ningún icono.'],
+    iconsSub: ['Épaisseur du trait des icônes, ou pas d’icônes du tout.', 'Stroke width of the icons, or no icons at all.',
+      'Strichstärke der Symbole oder gar keine Symbole.', 'Grosor del trazo de los iconos, o ningún icono.'
+    ],
     iconSet: {
       auto: ['Selon le design', 'Depending on design', 'Je nach Design', 'Según el diseño'],
       fine: ['Trait fin', 'Thin stroke', 'Dünne Linie', 'Trazo fino'],
@@ -55,13 +70,24 @@
       pink: ['Rose', 'Pink', 'Rosa', 'Rosa'],
       app: ['Couleur de chaque application', 'Colour of each application', 'Farbe jeder Anwendung', 'Color de cada aplicación']
     },
-    aquaHelp: ['Boutons et icônes du design Aqua (icônes d’état : couleurs d’origine).', 'Buttons and icons of the Aqua design (status icons keep their colours).', 'Schaltflächen und Symbole des Aqua-Designs (Statussymbole behalten ihre Farben).', 'Botones e iconos del diseño Aqua (los iconos de estado conservan sus colores).'],
-    decor: ['Décor (designs à matières)', 'Decoration (material designs)', 'Dekor (Material-Designs)', 'Decoración (diseños con materiales)'],
+    aquaHelp: ['Boutons et icônes du design Aqua (icônes d’état : couleurs d’origine).',
+      'Buttons and icons of the Aqua design (status icons keep their colours).',
+      'Schaltflächen und Symbole des Aqua-Designs (Statussymbole behalten ihre Farben).',
+      'Botones e iconos del diseño Aqua (los iconos de estado conservan sus colores).'
+    ],
+    decor: ['Décor (designs à matières)', 'Decoration (material designs)', 'Dekor (Material-Designs)',
+      'Decoración (diseños con materiales)'
+    ],
     decorSet: {
       full: ['Complet', 'Full', 'Vollständig', 'Completo'],
       sober: ['Sobre', 'Plain', 'Schlicht', 'Sobrio']
     },
-    decorHelp: ['Complet (par défaut) : panneaux illustrés des blocs, feuilles de registre, vis, poignées, radar. Sobre : matières et plaques seulement, sur toutes les pages.', 'Full (default): illustrated block panels, register sheets, screws, handles, radar. Plain: materials and plates only, on every page.', 'Vollständig (Standard): illustrierte Blockfelder, Registerblätter, Schrauben, Griffe, Radar. Schlicht: nur Materialien und Schilder, auf allen Seiten.', 'Completo (por defecto): paneles ilustrados, hojas de registro, tornillos, asas, radar. Sobrio: solo materiales y placas, en todas las páginas.'],
+    decorHelp: [
+      'Complet (par défaut) : panneaux illustrés des blocs, feuilles de registre, vis, poignées, radar. Sobre : matières et plaques seulement, sur toutes les pages.',
+      'Full (default): illustrated block panels, register sheets, screws, handles, radar. Plain: materials and plates only, on every page.',
+      'Vollständig (Standard): illustrierte Blockfelder, Registerblätter, Schrauben, Griffe, Radar. Schlicht: nur Materialien und Schilder, auf allen Seiten.',
+      'Completo (por defecto): paneles ilustrados, hojas de registro, tornillos, asas, radar. Sobrio: solo materiales y placas, en todas las páginas.'
+    ],
     sideSet: {
       auto: ['Selon le design', 'Depending on design', 'Je nach Design', 'Según el diseño'],
       on: ['Toujours', 'Always', 'Immer', 'Siempre'],
@@ -80,7 +106,12 @@
       label: ['Libellé seul', 'Label only', 'Nur Beschriftung', 'Solo etiqueta']
     },
     colors: ['Couleurs des thèmes', 'Theme colours', 'Themenfarben', 'Colores de los temas'],
-    colorsSub: ['Pour chaque thème : une famille de couleurs et un ton. Bandeau, texte et accent en sont calculés ; les contrastes WCAG sont vérifiés en direct.', 'For each theme: a colour family and a tone. Bar, text and accent are derived from them; WCAG contrast is checked live.', 'Je Thema: eine Farbfamilie und ein Ton. Leiste, Text und Akzent werden daraus berechnet; der WCAG-Kontrast wird live geprüft.', 'Para cada tema: una familia de colores y un tono. Barra, texto y acento se calculan a partir de ellos; el contraste WCAG se comprueba en directo.'],
+    colorsSub: [
+      'Pour chaque thème : une famille de couleurs et un ton. Bandeau, texte et accent en sont calculés ; les contrastes WCAG sont vérifiés en direct.',
+      'For each theme: a colour family and a tone. Bar, text and accent are derived from them; WCAG contrast is checked live.',
+      'Je Thema: eine Farbfamilie und ein Ton. Leiste, Text und Akzent werden daraus berechnet; der WCAG-Kontrast wird live geprüft.',
+      'Para cada tema: una familia de colores y un tono. Barra, texto y acento se calculan a partir de ellos; el contraste WCAG se comprueba en directo.'
+    ],
     groupPages: ['Applications', 'Applications', 'Anwendungen', 'Aplicaciones'],
     groupCr: ['Familles de comptes rendus', 'Report families', 'Berichtsfamilien', 'Familias de informes'],
     origin: ['Couleurs d’origine', 'Original colours', 'Ursprungsfarben', 'Colores originales'],
@@ -97,15 +128,23 @@
     link: ['Lien, icône', 'Link, icon', 'Link, Symbol', 'Enlace, icono'],
     demoBtn: ['Démonstration complète', 'Full demonstration', 'Vollständige Demo', 'Demostración completa'],
     reset: ['Tout réinitialiser', 'Reset everything', 'Alles zurücksetzen', 'Restablecer todo'],
-    demo: ['Démonstration complète (maquette du générateur, catalogue d’icônes, contrastes de tous les thèmes)', 'Full demonstration (generator mock-up, icon catalogue, contrast of every theme)', 'Vollständige Demo (Generator-Entwurf, Symbolkatalog, Kontraste aller Themen)', 'Demostración completa (maqueta del generador, catálogo de iconos, contrastes de todos los temas)'],
+    demo: ['Démonstration complète (maquette du générateur, catalogue d’icônes, contrastes de tous les thèmes)',
+      'Full demonstration (generator mock-up, icon catalogue, contrast of every theme)',
+      'Vollständige Demo (Generator-Entwurf, Symbolkatalog, Kontraste aller Themen)',
+      'Demostración completa (maqueta del generador, catálogo de iconos, contrastes de todos los temas)'
+    ],
     thumbBlock: ['Importer une mission', 'Import a mission', 'Mission importieren', 'Importar una misión']
   };
   // Libellé court de chaque thème de repository_tree (sinon le nom du thème)
   const NAMES = {
     flight: ['Carburant (planificateur)', 'Fuel (planner)', 'Kraftstoff (Planer)', 'Combustible (planificador)'],
     landing: ['Atterrissages', 'Landings', 'Landungen', 'Aterrizajes'],
-    sia: ['Missions SIA (générateur, studio)', 'SIA missions (generator, studio)', 'SIA-Missionen (Generator, Studio)', 'Misiones SIA (generador, estudio)'],
-    cpco: ['Centre (CPCO : générateur, studio, registre)', 'Centre (CPCO: generator, studio, registry)', 'Zentrum (CPCO: Generator, Studio, Register)', 'Centro (CPCO: generador, estudio, registro)'],
+    sia: ['Missions SIA (générateur, studio)', 'SIA missions (generator, studio)', 'SIA-Missionen (Generator, Studio)',
+      'Misiones SIA (generador, estudio)'
+    ],
+    cpco: ['Centre (CPCO : générateur, studio, registre)', 'Centre (CPCO: generator, studio, registry)',
+      'Zentrum (CPCO: Generator, Studio, Register)', 'Centro (CPCO: generador, estudio, registro)'
+    ],
     core: ['CR (pages communes)', 'Reports (common pages)', 'Berichte (gemeinsame Seiten)', 'Informes (páginas comunes)']
   };
   const APPS = ['flight', 'landing', 'cpco', 'core'];
@@ -146,7 +185,9 @@
         bg = c.disc ? `${img},${c.disc} center/contain no-repeat` : img;
       return `<span class="ap-ic" style="display:inline-grid;place-items:center;width:34px;height:34px;background:${bg};background-blend-mode:${c.disc ? 'overlay,normal' : 'normal'};-webkit-mask:${img};mask:${img};color:${c.glyph}"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="filter:drop-shadow(.5px 1px .6px rgba(0,0,0,.55))">${window.RepositoryIcons?.paths(n) || ''}</svg></span>`;
     };
-    const sampleOf = id => id === 'off' ? '' : id === 'auto' ? sampleOf(a.designs[cur.design]?.icons || 'line') : COMP[id] ? sample.map(n => composedIc(COMP[id], n)).join('') : a.iconFolder(id) ? sample.map(n => `<img class="ap-ic" src="${ICO}${a.iconFolder(id)}/${n}.webp${VER}" alt="" width="34" height="34">`).join('') : sample.map(n => `<span class="ap-ic">${stroke(n)}</span>`).join('');
+    const sampleOf = id => id === 'off' ? '' : id === 'auto' ? sampleOf(a.designs[cur.design]?.icons || 'line') : COMP[id] ? sample.map(
+      n => composedIc(COMP[id], n)).join('') : a.iconFolder(id) ? sample.map(n => `<img class="ap-ic" src="${ICO}${a.iconFolder(id)}/${n}.webp${VER}" alt="" width="34" height="34">`).join('') : sample.map(n => `<span class="ap-ic">${stroke(n)}</span>`).join(
+      '');
     const iconSel = cur.iconsSaved && cur.iconsSaved !== 'matter' ? cur.iconsSaved : 'auto';
     const iconRows = Object.entries(T.iconSet).map(([id, row]) => `<button type="button" class="ap-iconrow repo-plain" data-icons="${id}" aria-pressed="${id === iconSel}"><b>${esc(t(row))}</b><span class="ap-iconset" data-set="${id}">${sampleOf(id)}</span></button>`).join('');
     const decor = cur.decorSaved || 'full',
@@ -237,7 +278,8 @@
     }
     styled = true;
     const TX = new URL('shared/textures/', nav().root).href,
-      TV = new URL(document.querySelector('script[src*="appearance_page.js"]')?.src || location.href).search; // textures des vignettes : version de ce script (son empreinte couvre les textures, tools/bump_versions.py)
+      TV = new URL(document.querySelector('script[src*="appearance_page.js"]')?.src || location.href)
+      .search; // textures des vignettes : version de ce script (son empreinte couvre les textures, tools/bump_versions.py)
     const css = document.createElement('style');
     css.textContent = `
 .ap-page>section{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px 20px;margin:0 0 16px}.ap-page h2{font-size:17px;margin:0 0 4px}

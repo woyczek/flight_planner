@@ -24,9 +24,11 @@ try {
 // Index des données (shared/data_index.js : registre des missions en IndexedDB, docs/technique/INDEX_DONNEES.md) : inséré de même,
 // avant les scripts de la page ; kit chargé après coup (page déjà lue) : ajouté à la fin du document.
 if (!window.DataIndex) {
-  const src = new URL('data_index.js?v=1d9fdbb3', document.currentScript?.src || location.href).href;
+  const src = new URL('data_index.js?v=bfda095e', document.currentScript?.src || location.href).href;
   if (document.readyState === 'loading') document.write(`<script src="${src}"></scr` + 'ipt>');
-  else document.head.append(Object.assign(document.createElement('script'), { src }));
+  else document.head.append(Object.assign(document.createElement('script'), {
+    src
+  }));
 }
 (() => {
   'use strict';
@@ -97,7 +99,8 @@ if (!window.DataIndex) {
       imp = [];
     for (const d of splitTop(body, ';').filter(x => x.trim())) {
       const m = /\s*!important\s*$/.exec(d);
-      if (m && !/display\s*:\s*none\s*$/i.test(d.slice(0, m.index).trim()) && !/\/\*\s*garder/.test(d)) imp.push(d.slice(0, m.index).trim());
+      if (m && !/display\s*:\s*none\s*$/i.test(d.slice(0, m.index).trim()) && !/\/\*\s*garder/.test(d)) imp.push(d.slice(0, m.index)
+        .trim());
       else keep.push(d.trim());
     }
     if (!imp.length) return b;
@@ -318,8 +321,17 @@ if (!window.DataIndex) {
    *  désactive par défaut (réglage à activer) ; page en http hors localhost (contexte non sécurisé) ; Firefox, Safari. */
   const noFolderAccess = () =>
     !window.isSecureContext ? t([`Choix d’un dossier impossible : page servie en http depuis ${location.host}. Ouvrir la suite par http://127.0.0.1 ou http://localhost (ou en https).`, `Cannot choose a folder: page served over http from ${location.host}. Open the suite via http://127.0.0.1 or http://localhost (or https).`, `Ordnerwahl nicht möglich: Seite per http von ${location.host}. Die Suite über http://127.0.0.1 oder http://localhost (oder https) öffnen.`, `No se puede elegir una carpeta: página servida por http desde ${location.host}. Abrir la suite con http://127.0.0.1 o http://localhost (o https).`]) :
-    navigator.brave ? t(['Brave désactive l’accès aux dossiers locaux. Pour l’activer : ouvrir brave://flags/#file-system-access-api, passer « File System Access API » à Enabled, puis relancer Brave. Ou utiliser Chrome / Edge.', 'Brave disables local folder access. To enable it: open brave://flags/#file-system-access-api, set “File System Access API” to Enabled, then restart Brave. Or use Chrome / Edge.', 'Brave deaktiviert den Zugriff auf lokale Ordner. Aktivieren: brave://flags/#file-system-access-api öffnen, „File System Access API“ auf Enabled setzen, Brave neu starten. Oder Chrome / Edge verwenden.', 'Brave desactiva el acceso a carpetas locales. Para activarlo: abrir brave://flags/#file-system-access-api, poner «File System Access API» en Enabled y reiniciar Brave. O usar Chrome / Edge.']) :
-    t(['Ce navigateur ne permet pas de choisir un dossier local (File System Access API) : utiliser Chrome ou Edge.', 'This browser cannot choose a local folder (File System Access API): use Chrome or Edge.', 'Dieser Browser kann keinen lokalen Ordner wählen (File System Access API): Chrome oder Edge verwenden.', 'Este navegador no permite elegir una carpeta local (File System Access API): usar Chrome o Edge.']);
+    navigator.brave ? t([
+      'Brave désactive l’accès aux dossiers locaux. Pour l’activer : ouvrir brave://flags/#file-system-access-api, passer « File System Access API » à Enabled, puis relancer Brave. Ou utiliser Chrome / Edge.',
+      'Brave disables local folder access. To enable it: open brave://flags/#file-system-access-api, set “File System Access API” to Enabled, then restart Brave. Or use Chrome / Edge.',
+      'Brave deaktiviert den Zugriff auf lokale Ordner. Aktivieren: brave://flags/#file-system-access-api öffnen, „File System Access API“ auf Enabled setzen, Brave neu starten. Oder Chrome / Edge verwenden.',
+      'Brave desactiva el acceso a carpetas locales. Para activarlo: abrir brave://flags/#file-system-access-api, poner «File System Access API» en Enabled y reiniciar Brave. O usar Chrome / Edge.'
+    ]) :
+    t(['Ce navigateur ne permet pas de choisir un dossier local (File System Access API) : utiliser Chrome ou Edge.',
+      'This browser cannot choose a local folder (File System Access API): use Chrome or Edge.',
+      'Dieser Browser kann keinen lokalen Ordner wählen (File System Access API): Chrome oder Edge verwenden.',
+      'Este navegador no permite elegir una carpeta local (File System Access API): usar Chrome o Edge.'
+    ]);
 
   // heure d'un exercice : une seule référence (H, T ou M : le même instant) et un décalage avec son unité : « H+2mn »,
   // « T-20mn », « H+1h », « H+1h30mn », « M+39mn » ; sans unité (anciens fichiers : « H-20 », « H+60 ») : minutes
@@ -343,10 +355,13 @@ if (!window.DataIndex) {
   function viewer() {
     let d = document.getElementById('repoImageViewer');
     if (d) return d;
-    document.head.insertAdjacentHTML('beforeend', '<style id="repoImageViewerCss">#repoImageViewer{width:min(96vw,1400px);max-height:94vh;padding:0;border:0;border-radius:calc(10px * var(--repo-round, 1));background:#111;color:#eee;overflow:hidden}#repoImageViewer::backdrop{background:rgba(0,0,0,.7)}#repoImageViewer header{display:flex;align-items:center;gap:10px;padding:6px 10px;background:#1c1c1c}#repoImageViewer header b{flex:1;font:600 13px system-ui,sans-serif;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}#repoImageViewer header button{all:unset;cursor:pointer;font:600 22px/1 system-ui,sans-serif;padding:2px 8px;color:#eee}#repoImageViewer header button:hover{color:#fff;background:#c0392b}#repoImageViewer .rv-body{overflow:auto;max-height:calc(94vh - 40px);display:grid;place-items:center}#repoImageViewer .rv-body>img{display:block;max-width:100%;max-height:calc(94vh - 40px);cursor:zoom-in}#repoImageViewer.rv-full .rv-body>img{max-width:none;max-height:none;cursor:zoom-out}#repoImageViewer.rv-doc{width:min(96vw,1100px);background:var(--repo-page, #f4f6f8);color:var(--repo-ink, #1d2633)}#repoImageViewer.rv-doc header{background:color-mix(in srgb,currentColor 8%,transparent)}#repoImageViewer.rv-doc header button{color:inherit}#repoImageViewer.rv-doc .rv-body{display:block;padding:12px 16px}#repoImageViewer.rv-doc pre{white-space:pre-wrap;font:12px ui-monospace,monospace}#repoImageViewer.rv-doc table{border-collapse:collapse}#repoImageViewer.rv-doc :is(td,th){border:1px solid color-mix(in srgb,currentColor 25%,transparent);padding:2px 6px}#repoImageViewer.rv-doc img{max-width:100%}</style>');
+    document.head.insertAdjacentHTML('beforeend',
+      '<style id="repoImageViewerCss">#repoImageViewer{width:min(96vw,1400px);max-height:94vh;padding:0;border:0;border-radius:calc(10px * var(--repo-round, 1));background:#111;color:#eee;overflow:hidden}#repoImageViewer::backdrop{background:rgba(0,0,0,.7)}#repoImageViewer header{display:flex;align-items:center;gap:10px;padding:6px 10px;background:#1c1c1c}#repoImageViewer header b{flex:1;font:600 13px system-ui,sans-serif;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}#repoImageViewer header button{all:unset;cursor:pointer;font:600 22px/1 system-ui,sans-serif;padding:2px 8px;color:#eee}#repoImageViewer header button:hover{color:#fff;background:#c0392b}#repoImageViewer .rv-body{overflow:auto;max-height:calc(94vh - 40px);display:grid;place-items:center}#repoImageViewer .rv-body>img{display:block;max-width:100%;max-height:calc(94vh - 40px);cursor:zoom-in}#repoImageViewer.rv-full .rv-body>img{max-width:none;max-height:none;cursor:zoom-out}#repoImageViewer.rv-doc{width:min(96vw,1100px);background:var(--repo-page, #f4f6f8);color:var(--repo-ink, #1d2633)}#repoImageViewer.rv-doc header{background:color-mix(in srgb,currentColor 8%,transparent)}#repoImageViewer.rv-doc header button{color:inherit}#repoImageViewer.rv-doc .rv-body{display:block;padding:12px 16px}#repoImageViewer.rv-doc pre{white-space:pre-wrap;font:12px ui-monospace,monospace}#repoImageViewer.rv-doc table{border-collapse:collapse}#repoImageViewer.rv-doc :is(td,th){border:1px solid color-mix(in srgb,currentColor 25%,transparent);padding:2px 6px}#repoImageViewer.rv-doc img{max-width:100%}</style>'
+      );
     d = document.createElement('dialog');
     d.id = 'repoImageViewer';
-    d.innerHTML = '<header><b></b><button type="button" class="repo-plain" aria-label="Fermer" title="Fermer">×</button></header><div class="rv-body"></div>';
+    d.innerHTML =
+      '<header><b></b><button type="button" class="repo-plain" aria-label="Fermer" title="Fermer">×</button></header><div class="rv-body"></div>';
     d.querySelector('button').onclick = () => d.close();
     d.addEventListener('click', e => {
       if (e.target === d) d.close(); // clic sur le fond

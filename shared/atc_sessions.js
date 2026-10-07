@@ -59,15 +59,139 @@
   /** Préfixes OACI des indicatifs de terrain par pays (code ISO des zones, shared/aero_zones.js) : table de départ ; un
    *  pays absent n'est pas proposé. France : métropole et Corse (LF), sans Saint-Pierre-et-Miquelon (LFV…). */
   const PREFIXES = {
-    fr: { p: ['LF'], x: ['LFV'] },
-    be: { p: ['EB'] }, nl: { p: ['EH'] }, lu: { p: ['EL'] }, de: { p: ['ED', 'ET'] }, ch: { p: ['LS'] },
-    at: { p: ['LO'] }, it: { p: ['LI'] }, es: { p: ['LE', 'GC', 'GE'] }, pt: { p: ['LP'] }, gb: { p: ['EG'] },
-    ie: { p: ['EI'] }, dk: { p: ['EK'] }, no: { p: ['EN'] }, se: { p: ['ES'] }, fi: { p: ['EF'] }, is: { p: ['BI'] },
-    pl: { p: ['EP'] }, cz: { p: ['LK'] }, sk: { p: ['LZ'] }, hu: { p: ['LH'] }, si: { p: ['LJ'] }, hr: { p: ['LD'] },
-    gr: { p: ['LG'] }, bg: { p: ['LB'] }, ro: { p: ['LR'] }, lt: { p: ['EY'] }, lv: { p: ['EV'] }, ee: { p: ['EE'] },
-    tr: { p: ['LT'] }, cy: { p: ['LC'] }, mt: { p: ['LM'] }, ma: { p: ['GM'] }, tn: { p: ['DT'] }, dz: { p: ['DA'] },
-    il: { p: ['LL'] }, us: { p: ['K', 'PA', 'PH'] }, ca: { p: ['C'] }, au: { p: ['Y'] }, nz: { p: ['NZ'] },
-    jp: { p: ['RJ', 'RO'] }, br: { p: ['SB', 'SD', 'SI', 'SJ', 'SN', 'SS', 'SW'] }, mx: { p: ['MM'] }, za: { p: ['FA'] }
+    fr: {
+      p: ['LF'],
+      x: ['LFV']
+    },
+    be: {
+      p: ['EB']
+    },
+    nl: {
+      p: ['EH']
+    },
+    lu: {
+      p: ['EL']
+    },
+    de: {
+      p: ['ED', 'ET']
+    },
+    ch: {
+      p: ['LS']
+    },
+    at: {
+      p: ['LO']
+    },
+    it: {
+      p: ['LI']
+    },
+    es: {
+      p: ['LE', 'GC', 'GE']
+    },
+    pt: {
+      p: ['LP']
+    },
+    gb: {
+      p: ['EG']
+    },
+    ie: {
+      p: ['EI']
+    },
+    dk: {
+      p: ['EK']
+    },
+    no: {
+      p: ['EN']
+    },
+    se: {
+      p: ['ES']
+    },
+    fi: {
+      p: ['EF']
+    },
+    is: {
+      p: ['BI']
+    },
+    pl: {
+      p: ['EP']
+    },
+    cz: {
+      p: ['LK']
+    },
+    sk: {
+      p: ['LZ']
+    },
+    hu: {
+      p: ['LH']
+    },
+    si: {
+      p: ['LJ']
+    },
+    hr: {
+      p: ['LD']
+    },
+    gr: {
+      p: ['LG']
+    },
+    bg: {
+      p: ['LB']
+    },
+    ro: {
+      p: ['LR']
+    },
+    lt: {
+      p: ['EY']
+    },
+    lv: {
+      p: ['EV']
+    },
+    ee: {
+      p: ['EE']
+    },
+    tr: {
+      p: ['LT']
+    },
+    cy: {
+      p: ['LC']
+    },
+    mt: {
+      p: ['LM']
+    },
+    ma: {
+      p: ['GM']
+    },
+    tn: {
+      p: ['DT']
+    },
+    dz: {
+      p: ['DA']
+    },
+    il: {
+      p: ['LL']
+    },
+    us: {
+      p: ['K', 'PA', 'PH']
+    },
+    ca: {
+      p: ['C']
+    },
+    au: {
+      p: ['Y']
+    },
+    nz: {
+      p: ['NZ']
+    },
+    jp: {
+      p: ['RJ', 'RO']
+    },
+    br: {
+      p: ['SB', 'SD', 'SI', 'SJ', 'SN', 'SS', 'SW']
+    },
+    mx: {
+      p: ['MM']
+    },
+    za: {
+      p: ['FA']
+    }
   };
   const LANG = ['fr', 'en', 'de', 'es'];
   /** Nom d'un pays dans la langue de la page (contours des zones, sinon Intl) ; France : la métropole. */
@@ -145,7 +269,12 @@
         cache: 'no-store'
       })).json();
     } catch {
-      throw new Error(t(['Récupération impossible : la suite doit être ouverte par son lanceur (tools/launch.py, relancé depuis cette version).', 'Cannot fetch: the suite must be opened through its launcher (tools/launch.py, restarted since this version).', 'Abruf nicht möglich: Die Suite muss über ihren Starter geöffnet werden (tools/launch.py, seit dieser Version neu gestartet).', 'No se puede recuperar: la suite debe abrirse con su lanzador (tools/launch.py, reiniciado desde esta versión).']));
+      throw new Error(t([
+        'Récupération impossible : la suite doit être ouverte par son lanceur (tools/launch.py, relancé depuis cette version).',
+        'Cannot fetch: the suite must be opened through its launcher (tools/launch.py, restarted since this version).',
+        'Abruf nicht möglich: Die Suite muss über ihren Starter geöffnet werden (tools/launch.py, seit dieser Version neu gestartet).',
+        'No se puede recuperar: la suite debe abrirse con su lanzador (tools/launch.py, reiniciado desde esta versión).'
+      ]));
     }
   }
   /** Lundi (ms, UTC) d'une semaine ISO « AAAA-Www ». */
@@ -177,7 +306,9 @@
   async function fetchVatsim(week) {
     const per = perimeter();
     const r = await launcher('__setup/vatsim-bookings');
-    if (!Array.isArray(r?.bookings)) throw new Error(tf(['VATSIM injoignable : {e}', 'VATSIM unreachable: {e}', 'VATSIM nicht erreichbar: {e}', 'VATSIM inaccesible: {e}'], {
+    if (!Array.isArray(r?.bookings)) throw new Error(tf(['VATSIM injoignable : {e}', 'VATSIM unreachable: {e}',
+      'VATSIM nicht erreichbar: {e}', 'VATSIM inaccesible: {e}'
+    ], {
       e: r?.error || '?'
     }));
     return r.bookings.filter(b => inPerimeter(b.callsign, per)).map(b => {
@@ -202,7 +333,9 @@
     const per = perimeter();
     const day = ms => new Date(ms).toISOString().slice(0, 10);
     const r = await launcher(`__setup/ivao-bookings?from=${day(m0)}&to=${day(m0 + 6 * 864e5)}&pre=${per.p.join(',')}`);
-    if (!Array.isArray(r?.bookings)) throw new Error(tf(['IVAO injoignable : {e}', 'IVAO unreachable: {e}', 'IVAO nicht erreichbar: {e}', 'IVAO inaccesible: {e}'], {
+    if (!Array.isArray(r?.bookings)) throw new Error(tf(['IVAO injoignable : {e}', 'IVAO unreachable: {e}',
+      'IVAO nicht erreichbar: {e}', 'IVAO inaccesible: {e}'
+    ], {
       e: r?.error || '?'
     }));
     const seen = new Set();

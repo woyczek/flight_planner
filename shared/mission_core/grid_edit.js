@@ -77,7 +77,8 @@
   // Indicatif complet d'après la table de correspondance (forme plan de vol, autres formes).
   const canonical = prefix => {
     if (window.MissionAircraft?.canonicalPrefix) return window.MissionAircraft.canonicalPrefix(prefix);
-    const entry = (window.MissionVocab?.callsignTable || []).find(e => [e.prefix, e.fpl, ...(e.aliases || [])].map(key).includes(key(prefix)));
+    const entry = (window.MissionVocab?.callsignTable || []).find(e => [e.prefix, e.fpl, ...(e.aliases || [])].map(key).includes(key(
+      prefix)));
     return entry ? entry.prefix : up(prefix);
   };
   const EDITABLE = ['date', 'missionId', 'series', 'registration', 'callsign', 'outcome', 'dep', 'arr', 'flight', 'block'];
@@ -244,7 +245,8 @@
   /** Missions du registre qui citent l'appareil ou le membre d'équipage from. */
   function affected(kind, from) {
     const missions = window.MissionLedger?.store?.missions || [];
-    return missions.filter(m => kind === 'aircraft' ? (m.aircraft || []).some(a => key(a.registration) === key(from)) : (m.crew || []).some(c => up(c.name) === up(from)));
+    return missions.filter(m => kind === 'aircraft' ? (m.aircraft || []).some(a => key(a.registration) === key(from)) : (m.crew || [])
+      .some(c => up(c.name) === up(from)));
   }
   /** Renomme un appareil ou un membre d'équipage dans tout le registre et mémorise l'équivalence (from → to) ; enregistre le registre. */
   async function rename(kind, from, to) {
@@ -360,7 +362,9 @@
     return `<input class="ge-input" ${at} value="${esc(v)}" size="${field === 'missionId' ? 12 : 8}">`;
   }
   // Style commun des cellules éditables (injecté une fois).
-  if (!document.getElementById('ge-style')) document.head.insertAdjacentHTML('beforeend', '<style id="ge-style">.ge-input{font:inherit;font-size:12px;padding:3px 5px;border:1px solid #f59e0b;border-radius:6px;background:#fffbeb;color:#111827;max-width:150px}.ge-input.ge-dur{width:62px}.ge-declared{border-style:dashed;font-style:italic}.ge-toggle{margin-left:10px;font-size:12px;padding:3px 10px;border-radius:7px;border:1px solid #f59e0b;background:transparent;color:inherit;cursor:pointer}.ge-toggle.on{background:#f59e0b;color:#111827}.ge-route{display:inline-flex;gap:3px;align-items:center}</style>');
+  if (!document.getElementById('ge-style')) document.head.insertAdjacentHTML('beforeend',
+    '<style id="ge-style">.ge-input{font:inherit;font-size:12px;padding:3px 5px;border:1px solid #f59e0b;border-radius:6px;background:#fffbeb;color:#111827;max-width:150px}.ge-input.ge-dur{width:62px}.ge-declared{border-style:dashed;font-style:italic}.ge-toggle{margin-left:10px;font-size:12px;padding:3px 10px;border-radius:7px;border:1px solid #f59e0b;background:transparent;color:inherit;cursor:pointer}.ge-toggle.on{background:#f59e0b;color:#111827}.ge-route{display:inline-flex;gap:3px;align-items:center}</style>'
+    );
 
   window.MissionGridEdit = {
     input,

@@ -76,7 +76,9 @@
   // ---- CR → plaquette
   // MissionVocab (shared/mission_core/vocab.js) peut être chargé après ce module : liste lue à l'usage
   const causes = () => Object.assign(Object.fromEntries((window.MissionVocab?.mneCauses || []).map(o => [o.value, o.label])), {
-    NO_REPORT: ['Pas de CR dans le délai', 'No report within the deadline', 'Kein Bericht innerhalb der Frist', 'Sin informe en el plazo'],
+    NO_REPORT: ['Pas de CR dans le délai', 'No report within the deadline', 'Kein Bericht innerhalb der Frist',
+      'Sin informe en el plazo'
+    ],
     OTHER: window.MissionVocab?.mneCauses?.find(o => o.value === 'OTHER')?.label || ['Autre', 'Other', 'Andere', 'Otro']
   });
   // résultats du CR qui sont aussi une cause
@@ -143,7 +145,8 @@
     const m = norm(vol?.mission);
     if (!m) return null;
     const mine = list.filter(r => crMission(r) === m && (!crDate(r) || !vol.date || crDate(r) === vol.date));
-    const r = mine.sort((a, b) => String(crDate(b) || b?.metadata?.missionId || '').localeCompare(String(crDate(a) || a?.metadata?.missionId || '')))[0];
+    const r = mine.sort((a, b) => String(crDate(b) || b?.metadata?.missionId || '').localeCompare(String(crDate(a) || a?.metadata
+      ?.missionId || '')))[0];
     if (r) {
       const o = outcomeOf(r.results?.outcome, r.results?.causes);
       // CR sans résultat renseigné : vol fait (le CR existe), résultat à compléter dans le CR
@@ -195,7 +198,8 @@
     const cs = norm(indicatif).replace(/\s+/g, '');
     if (!cs) return '';
     const idx = await window.MissionAssignments?.index?.().catch(() => null);
-    const a = (idx?.assignments || []).find(x => norm(x.callsign).replace(/\s+/g, '') === cs && x.status !== 'annulée' && (!date || String(x.takeoff || '').slice(0, 10) === date));
+    const a = (idx?.assignments || []).find(x => norm(x.callsign).replace(/\s+/g, '') === cs && x.status !== 'annulée' && (!date ||
+      String(x.takeoff || '').slice(0, 10) === date));
     return a ? String(a.mission || '') : '';
   }
 
@@ -220,7 +224,8 @@
         document.head.append(sc);
       });
       const bare = key.replace('-', ''),
-        f = await A.missionFirst(m.folder, [...(m.files || []).filter(n => /\.ya?ml$/i.test(n)), `mission${key}.yaml`, `mission${bare}.yaml`]).catch(() => null);
+        f = await A.missionFirst(m.folder, [...(m.files || []).filter(n => /\.ya?ml$/i.test(n)), `mission${key}.yaml`, `mission${bare}.yaml`]).catch(() =>
+          null);
       try {
         return f && window.jsyaml ? norm(window.jsyaml.load(f.value.replace(/^#.*\n/, ''))?.air_refueling?.track) : '';
       } catch {

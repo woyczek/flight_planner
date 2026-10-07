@@ -25,7 +25,9 @@
   const FRAMED = document.documentElement.hasAttribute('data-help-frame');
   const tell = msg => FRAMED && window.parent.postMessage(msg, '*');
   if (FRAMED) document.addEventListener('keydown', e => {
-    if (e.key === 'Escape' && !e.defaultPrevented) tell({ repoHelp: 'close' });
+    if (e.key === 'Escape' && !e.defaultPrevented) tell({
+      repoHelp: 'close'
+    });
   });
   const headerOffset = () => document.documentElement.style.setProperty('--repo-header-h', `${FRAMED ? 0 : document.querySelector('.repo-header')?.offsetHeight || 84}px`);
   headerOffset();
@@ -36,7 +38,9 @@
   // libellés fixes de la page (couche de traduction commune)
   window.RepositoryContentI18n?.([
     ['Aide', 'Help', 'Hilfe', 'Ayuda'],
-    ['Manuels, guides et documentation de la suite', 'Manuals, guides and documentation of the suite', 'Handbücher, Anleitungen und Dokumentation der Suite', 'Manuales, guías y documentación de la suite'],
+    ['Manuels, guides et documentation de la suite', 'Manuals, guides and documentation of the suite',
+      'Handbücher, Anleitungen und Dokumentation der Suite', 'Manuales, guías y documentación de la suite'
+    ],
     ['Rechercher dans les manuels…', 'Search the manuals…', 'In den Handbüchern suchen…', 'Buscar en los manuales…'],
     ['Dans ce document', 'In this document', 'In diesem Dokument', 'En este documento'],
     ['Chargement de la documentation…', 'Loading the documentation…', 'Dokumentation wird geladen…', 'Cargando la documentación…']
@@ -46,7 +50,12 @@
   const failed = new Map();
   // page ouverte en fichier local (file://, sans le lanceur) : le navigateur interdit la lecture des documents
   const LOCAL = location.protocol === 'file:';
-  const localText = () => window.RepositoryKit.t(['Page ouverte en fichier local (file://) : le navigateur interdit d’y lire les documents. Ouvrir la suite par son lanceur — lancer.cmd (Windows) ou lancer.sh, à la racine de la suite — puis l’Aide depuis la barre latérale.', 'Page opened as a local file (file://): the browser does not allow reading the documents there. Open the suite through its launcher — lancer.cmd (Windows) or lancer.sh, at the root of the suite — then Help from the sidebar.', 'Seite als lokale Datei geöffnet (file://): Der Browser erlaubt dort nicht, die Dokumente zu lesen. Die Suite über ihren Starter öffnen — lancer.cmd (Windows) oder lancer.sh im Stammordner der Suite — dann die Hilfe über die Seitenleiste.', 'Página abierta como archivo local (file://): el navegador no permite leer allí los documentos. Abrir la suite con su lanzador — lancer.cmd (Windows) o lancer.sh, en la raíz de la suite — y luego la Ayuda desde la barra lateral.']);
+  const localText = () => window.RepositoryKit.t([
+    'Page ouverte en fichier local (file://) : le navigateur interdit d’y lire les documents. Ouvrir la suite par son lanceur — lancer.cmd (Windows) ou lancer.sh, à la racine de la suite — puis l’Aide depuis la barre latérale.',
+    'Page opened as a local file (file://): the browser does not allow reading the documents there. Open the suite through its launcher — lancer.cmd (Windows) or lancer.sh, at the root of the suite — then Help from the sidebar.',
+    'Seite als lokale Datei geöffnet (file://): Der Browser erlaubt dort nicht, die Dokumente zu lesen. Die Suite über ihren Starter öffnen — lancer.cmd (Windows) oder lancer.sh im Stammordner der Suite — dann die Hilfe über die Seitenleiste.',
+    'Página abierta como archivo local (file://): el navegador no permite leer allí los documentos. Abrir la suite con su lanzador — lancer.cmd (Windows) o lancer.sh, en la raíz de la suite — y luego la Ayuda desde la barra lateral.'
+  ]);
   // documents intégrés (apps/aide/docs_bundle.js, refait par tools/bump_versions.py) : lus en fichier local, ou si le
   // lanceur ne répond plus ; servie par le lanceur, la page lit les fichiers eux-mêmes (un document absent, HTTP 404,
   // ne fait pas charger le paquet)
@@ -64,7 +73,8 @@
     if (!cache.has(name)) {
       const p = LOCAL ? fromBundle(name) : fetch(new URL(name, DOCS), {
         cache: 'no-cache'
-      }).then(r => r.ok ? r.text() : (failed.set(name, `HTTP ${r.status}`), null)).catch(async e => (await fromBundle(name)) ?? (failed.set(name, e.message || 'réseau'), null));
+      }).then(r => r.ok ? r.text() : (failed.set(name, `HTTP ${r.status}`), null)).catch(async e => (await fromBundle(name)) ?? (failed.set(
+        name, e.message || 'réseau'), null));
       cache.set(name, p);
       p.then(v => {
         if (v == null && cache.get(name) === p) cache.delete(name);
@@ -142,7 +152,10 @@
   let shown = '', // fichier affiché (langue comprise)
     current = INDEX; // document affiché (sans langue)
   async function show(name, hash = '') {
-    tell({ repoHelp: 'at', href: location.href });
+    tell({
+      repoHelp: 'at',
+      href: location.href
+    });
     const file = await localized(name),
       md = await text(file);
     if (md == null && LOCAL) {

@@ -17,62 +17,103 @@
   const FOLDERS = {
     __repo: {
       label: L('Dossier du dépôt', 'Repository folder', 'Repository-Ordner', 'Carpeta del repositorio'),
-      expect: L('racine de l’application : le dossier qui contient lancer.cmd, lancer.sh, apps/, config/, shared/ (et data/)', 'application root: the folder containing lancer.cmd, lancer.sh, apps/, config/, shared/ (and data/)', 'Repository-Wurzel: Ordner „Documentation“ (mit repository_tree, shared/, apps/cr/…)', 'raíz del repositorio: la carpeta «Documentation» (con repository_tree, shared/, apps/cr/…)'),
+      expect: L('racine de l’application : le dossier qui contient lancer.cmd, lancer.sh, apps/, config/, shared/ (et data/)',
+        'application root: the folder containing lancer.cmd, lancer.sh, apps/, config/, shared/ (and data/)',
+        'Repository-Wurzel: Ordner „Documentation“ (mit repository_tree, shared/, apps/cr/…)',
+        'raíz del repositorio: la carpeta «Documentation» (con repository_tree, shared/, apps/cr/…)'),
       check: 'config/repository_tree'
     },
     __data: {
       label: L('Dossier des données', 'Data folder', 'Datenordner', 'Carpeta de datos'),
-      expect: L('dossier data/ de l’application : clone du dépôt de données (contient data_tree.js) ; registre, missions et SIA en sont déduits', 'the application data/ folder: clone of the data repository (contains data_tree.js); ledger, missions and SIA are derived from it', 'Ordner data/ der Anwendung: Klon des Daten-Repositorys (mit data_tree.js)', 'carpeta data/ de la aplicación: clon del repositorio de datos (contiene data_tree.js)'),
+      expect: L(
+        'dossier data/ de l’application : clone du dépôt de données (contient data_tree.js) ; registre, missions et SIA en sont déduits',
+        'the application data/ folder: clone of the data repository (contains data_tree.js); ledger, missions and SIA are derived from it',
+        'Ordner data/ der Anwendung: Klon des Daten-Repositorys (mit data_tree.js)',
+        'carpeta data/ de la aplicación: clon del repositorio de datos (contiene data_tree.js)'),
       check: 'data_tree.js'
     },
     __ledger: {
       label: L('Dossier du registre', 'Ledger folder', 'Registerordner', 'Carpeta del registro'),
-      expect: L('data/cr (registre unique missions.yaml, registres CSV historiques, CR) — déduit du dossier des données', 'data/cr (single ledger missions.yaml, historical CSV ledgers, reports) — derived from the data folder', 'data/cr (Register missions.yaml) — aus dem Datenordner abgeleitet', 'data/cr (registro missions.yaml) — deducida de la carpeta de datos')
+      expect: L('data/cr (registre unique missions.yaml, registres CSV historiques, CR) — déduit du dossier des données',
+        'data/cr (single ledger missions.yaml, historical CSV ledgers, reports) — derived from the data folder',
+        'data/cr (Register missions.yaml) — aus dem Datenordner abgeleitet',
+        'data/cr (registro missions.yaml) — deducida de la carpeta de datos')
     },
     __store: {
       label: L('Dossier de sauvegarde locale', 'Local backup folder', 'Ordner der lokalen Sicherung', 'Carpeta de copia local'),
-      expect: L('dossier de votre choix, idéalement synchronisé (defa_local_store.yaml y est écrit)', 'folder of your choice, ideally synchronised (defa_local_store.yaml is written there)', 'Ordner Ihrer Wahl, idealerweise synchronisiert (defa_local_store.yaml)', 'carpeta a su elección, idealmente sincronizada (defa_local_store.yaml)')
+      expect: L('dossier de votre choix, idéalement synchronisé (defa_local_store.yaml y est écrit)',
+        'folder of your choice, ideally synchronised (defa_local_store.yaml is written there)',
+        'Ordner Ihrer Wahl, idealerweise synchronisiert (defa_local_store.yaml)',
+        'carpeta a su elección, idealmente sincronizada (defa_local_store.yaml)')
     },
     __sia: {
       label: L('Dossier SIA XML', 'SIA XML folder', 'SIA-XML-Ordner', 'Carpeta SIA XML'),
-      expect: L('data/sia (XML AIRAC du cycle, mora.csv, axes ENR 5.7 ; fond et villes livrés avec l’application) — déduit du dossier des données', 'data/sia (AIRAC XML, mora.csv, ENR 5.7 tracks; background and cities ship with the application) — derived from the data folder', 'data/sia (AIRAC-XML, mora.csv, ENR 5.7) — aus dem Datenordner abgeleitet', 'data/sia (XML AIRAC, mora.csv, ENR 5.7) — deducida de la carpeta de datos')
+      expect: L(
+        'data/sia (XML AIRAC du cycle, mora.csv, axes ENR 5.7 ; fond et villes livrés avec l’application) — déduit du dossier des données',
+        'data/sia (AIRAC XML, mora.csv, ENR 5.7 tracks; background and cities ship with the application) — derived from the data folder',
+        'data/sia (AIRAC-XML, mora.csv, ENR 5.7) — aus dem Datenordner abgeleitet',
+        'data/sia (XML AIRAC, mora.csv, ENR 5.7) — deducida de la carpeta de datos')
     },
     __missions: {
       label: L('Dossier des missions', 'Missions folder', 'Missionsordner', 'Carpeta de misiones'),
-      expect: L('data/missions (séries générées : missionNN.yaml, summaryNN.md ; mission_registry.yaml) — déduit du dossier des données', 'data/missions (generated series; mission_registry.yaml) — derived from the data folder', 'data/missions (erzeugte Serien) — aus dem Datenordner abgeleitet', 'data/missions (series generadas) — deducida de la carpeta de datos')
+      expect: L(
+        'data/missions (séries générées : missionNN.yaml, summaryNN.md ; mission_registry.yaml) — déduit du dossier des données',
+        'data/missions (generated series; mission_registry.yaml) — derived from the data folder',
+        'data/missions (erzeugte Serien) — aus dem Datenordner abgeleitet',
+        'data/missions (series generadas) — deducida de la carpeta de datos')
     },
     __xplane: {
-      label: L('Dossier X-Plane (atterrissages)', 'X-Plane folder (landings)', 'X-Plane-Ordner (Landungen)', 'Carpeta X-Plane (aterrizajes)'),
-      expect: L('dossier où le plugin d’atterrissage d’X-Plane écrit ses journaux CSV (Landing Performance Dashboard)', 'folder where the X-Plane landing plugin writes its CSV logs (Landing Performance Dashboard)', 'Ordner, in den das X-Plane-Landungs-Plugin seine CSV-Protokolle schreibt', 'carpeta donde el plugin de aterrizaje de X-Plane escribe sus registros CSV')
+      label: L('Dossier X-Plane (atterrissages)', 'X-Plane folder (landings)', 'X-Plane-Ordner (Landungen)',
+        'Carpeta X-Plane (aterrizajes)'),
+      expect: L('dossier où le plugin d’atterrissage d’X-Plane écrit ses journaux CSV (Landing Performance Dashboard)',
+        'folder where the X-Plane landing plugin writes its CSV logs (Landing Performance Dashboard)',
+        'Ordner, in den das X-Plane-Landungs-Plugin seine CSV-Protokolle schreibt',
+        'carpeta donde el plugin de aterrizaje de X-Plane escribe sus registros CSV')
     },
     __xpnav: {
-      label: L('Dossier du simulateur X-Plane (données de navigation)', 'X-Plane simulator folder (navigation data)', 'X-Plane-Simulatorordner (Navigationsdaten)', 'Carpeta del simulador X-Plane (datos de navegación)'),
-      expect: L('dossier d’installation d’X-Plane (Custom Data, Resources/default data : earth_nav.dat, earth_fix.dat, earth_awy.dat, earth_mora.dat), lu seulement si une zone active de Données aéronautiques a coché la source « X-Plane »', 'X-Plane installation folder (Custom Data, Resources/default data: earth_nav.dat, earth_fix.dat, earth_awy.dat, earth_mora.dat), read only when an active zone of Aeronautical data has the “X-Plane” source ticked', 'X-Plane-Installationsordner (Custom Data, Resources/default data: earth_*.dat), nur gelesen, wenn eine aktive Zone unter Luftfahrtdaten die Quelle „X-Plane“ angehakt hat', 'carpeta de instalación de X-Plane (Custom Data, Resources/default data: earth_*.dat), leída solo si una zona activa de Datos aeronáuticos tiene marcada la fuente «X-Plane»')
+      label: L('Dossier du simulateur X-Plane (données de navigation)', 'X-Plane simulator folder (navigation data)',
+        'X-Plane-Simulatorordner (Navigationsdaten)', 'Carpeta del simulador X-Plane (datos de navegación)'),
+      expect: L(
+        'dossier d’installation d’X-Plane (Custom Data, Resources/default data : earth_nav.dat, earth_fix.dat, earth_awy.dat, earth_mora.dat), lu seulement si une zone active de Données aéronautiques a coché la source « X-Plane »',
+        'X-Plane installation folder (Custom Data, Resources/default data: earth_nav.dat, earth_fix.dat, earth_awy.dat, earth_mora.dat), read only when an active zone of Aeronautical data has the “X-Plane” source ticked',
+        'X-Plane-Installationsordner (Custom Data, Resources/default data: earth_*.dat), nur gelesen, wenn eine aktive Zone unter Luftfahrtdaten die Quelle „X-Plane“ angehakt hat',
+        'carpeta de instalación de X-Plane (Custom Data, Resources/default data: earth_*.dat), leída solo si una zona activa de Datos aeronáuticos tiene marcada la fuente «X-Plane»'
+        )
     },
     __odv: {
       label: L('Dossier du classeur ODV', 'ODV workbook folder', 'Ordner der ODV-Arbeitsmappe', 'Carpeta del libro ODV'),
-      expect: L('dossier synchronisé (OneDrive…) où l’escadrille dépose le classeur ODV (.xlsx) : le Planning ODV ouvre le plus récent ; sans OneDrive, le classeur choisi est gardé dans le navigateur', 'synchronised folder (OneDrive…) where the squadron puts the ODV workbook (.xlsx): ODV planning opens the latest; without OneDrive, the chosen workbook is kept in the browser', 'synchronisierter Ordner (OneDrive…) mit der ODV-Arbeitsmappe (.xlsx)', 'carpeta sincronizada (OneDrive…) con el libro ODV (.xlsx)')
+      expect: L(
+        'dossier synchronisé (OneDrive…) où l’escadrille dépose le classeur ODV (.xlsx) : le Planning ODV ouvre le plus récent ; sans OneDrive, le classeur choisi est gardé dans le navigateur',
+        'synchronised folder (OneDrive…) where the squadron puts the ODV workbook (.xlsx): ODV planning opens the latest; without OneDrive, the chosen workbook is kept in the browser',
+        'synchronisierter Ordner (OneDrive…) mit der ODV-Arbeitsmappe (.xlsx)',
+        'carpeta sincronizada (OneDrive…) con el libro ODV (.xlsx)')
     },
     __perf: {
       label: L('Dossier performances', 'Performance folder', 'Leistungsordner', 'Carpeta de rendimiento'),
-      expect: L('dossier des profils de performance (.lnmperf, .json ; la base flight_performance_database.fpdb.json y est écrite)', 'performance profiles folder (.lnmperf, .json; flight_performance_database.fpdb.json is written there)', 'Ordner der Leistungsprofile (.lnmperf, .json)', 'carpeta de perfiles de rendimiento (.lnmperf, .json)')
+      expect: L('dossier des profils de performance (.lnmperf, .json ; la base flight_performance_database.fpdb.json y est écrite)',
+        'performance profiles folder (.lnmperf, .json; flight_performance_database.fpdb.json is written there)',
+        'Ordner der Leistungsprofile (.lnmperf, .json)', 'carpeta de perfiles de rendimiento (.lnmperf, .json)')
     }
   };
   const STATE = {
     none: L('non choisi', 'not chosen', 'nicht gewählt', 'no elegida'),
     granted: L('autorisé', 'authorised', 'erlaubt', 'autorizada'),
-    prompt: L('à ré-autoriser au prochain accès', 'to be re-authorised at next access', 'beim nächsten Zugriff erneut erlauben', 'a reautorizar en el próximo acceso'),
+    prompt: L('à ré-autoriser au prochain accès', 'to be re-authorised at next access', 'beim nächsten Zugriff erneut erlauben',
+      'a reautorizar en el próximo acceso'),
     expected: L('Attendu', 'Expected', 'Erwartet', 'Esperado'),
     current: L('Actuel', 'Current', 'Aktuell', 'Actual'),
-    notExpected: L('ne contient pas « {f} » : est-ce bien le dossier attendu ?', 'does not contain “{f}”: is it the expected folder?', 'enthält „{f}“ nicht: ist es der erwartete Ordner?', 'no contiene «{f}»: ¿es la carpeta esperada?'),
+    notExpected: L('ne contient pas « {f} » : est-ce bien le dossier attendu ?', 'does not contain “{f}”: is it the expected folder?',
+      'enthält „{f}“ nicht: ist es der erwartete Ordner?', 'no contiene «{f}»: ¿es la carpeta esperada?'),
     opensIn: L('Ouvre directement', 'Opens directly in', 'Öffnet direkt', 'Abre directamente'),
-    lastUsed: L('le dernier dossier utilisé pour ce bouton', 'the last folder used for this button', 'den zuletzt verwendeten Ordner', 'la última carpeta usada')
+    lastUsed: L('le dernier dossier utilisé pour ce bouton', 'the last folder used for this button', 'den zuletzt verwendeten Ordner',
+      'la última carpeta usada')
   };
 
   // ---- dossiers mémorisés (même base que ledger.js, data_admin.js, browser_store.js)
   /** Base IndexedDB « missionCore » (magasin handles) : dossiers mémorisés, partagée avec ledger.js, data_admin.js et browser_store.js. */
   // connexion partagée par la page (RepositoryKit.idb) : plus une ouverture par lecture
-  const idb = () => window.RepositoryKit.idb('missionCore', 1, db => db.objectStoreNames.contains('handles') || db.createObjectStore('handles'));
+  const idb = () => window.RepositoryKit.idb('missionCore', 1, db => db.objectStoreNames.contains('handles') || db.createObjectStore(
+    'handles'));
   // dossiers mémorisés gardés 10 s en mémoire (une page en lit des dizaines par écran) ; oubliés quand un dossier est
   // rechoisi (ici ou par une autre page : file-access-change)
   const handleMemo = new Map();
@@ -151,6 +192,7 @@
   // Autre copie confirmée (clé → nom du dossier) : ce dossier est alors lu ET écrit directement, comme sans lanceur
   // (sameAsServed : null) — lecture et écriture au même endroit ; avertissement rappelé (otherState : 'accepted')
   const OK = 'fileAccessOtherOk:v1';
+
   function okMap() {
     try {
       return JSON.parse(localStorage.getItem(OK) || '{}') || {};
@@ -206,9 +248,20 @@
     cache: 'no-store'
   }).then(r => r.json()).then(j => j.root || '', () => '');
   const OTHER = {
-    ask: L('Suite lancée depuis {root}, dossier déclaré {dir}. Cela peut conduire à des incohérences. Confirmer ?', 'Suite launched from {root}, declared folder {dir}. This may lead to inconsistencies. Confirm?', 'Suite gestartet aus {root}, angegebener Ordner {dir}. Das kann zu Inkonsistenzen führen. Bestätigen?', 'Suite iniciada desde {root}, carpeta declarada {dir}. Esto puede provocar incoherencias. ¿Confirmar?'),
-    accepted: L('Suite lancée depuis {root}, dossier déclaré {dir} (confirmé) : les données sont lues et écrites dans ce dossier.', 'Suite launched from {root}, declared folder {dir} (confirmed): data is read from and written to this folder.', 'Suite gestartet aus {root}, angegebener Ordner {dir} (bestätigt): Daten werden in diesem Ordner gelesen und geschrieben.', 'Suite iniciada desde {root}, carpeta declarada {dir} (confirmada): los datos se leen y escriben en esta carpeta.'),
-    other: L('Suite lancée depuis {root}, dossier déclaré {dir} : rien n’y est écrit tant que ce choix n’est pas confirmé (rechoisir le dossier).', 'Suite launched from {root}, declared folder {dir}: nothing is written there until this choice is confirmed (choose the folder again).', 'Suite gestartet aus {root}, angegebener Ordner {dir}: dort wird nichts geschrieben, solange diese Wahl nicht bestätigt ist (Ordner neu wählen).', 'Suite iniciada desde {root}, carpeta declarada {dir}: no se escribe nada allí mientras no se confirme esta elección (volver a elegir la carpeta).')
+    ask: L('Suite lancée depuis {root}, dossier déclaré {dir}. Cela peut conduire à des incohérences. Confirmer ?',
+      'Suite launched from {root}, declared folder {dir}. This may lead to inconsistencies. Confirm?',
+      'Suite gestartet aus {root}, angegebener Ordner {dir}. Das kann zu Inkonsistenzen führen. Bestätigen?',
+      'Suite iniciada desde {root}, carpeta declarada {dir}. Esto puede provocar incoherencias. ¿Confirmar?'),
+    accepted: L('Suite lancée depuis {root}, dossier déclaré {dir} (confirmé) : les données sont lues et écrites dans ce dossier.',
+      'Suite launched from {root}, declared folder {dir} (confirmed): data is read from and written to this folder.',
+      'Suite gestartet aus {root}, angegebener Ordner {dir} (bestätigt): Daten werden in diesem Ordner gelesen und geschrieben.',
+      'Suite iniciada desde {root}, carpeta declarada {dir} (confirmada): los datos se leen y escriben en esta carpeta.'),
+    other: L(
+      'Suite lancée depuis {root}, dossier déclaré {dir} : rien n’y est écrit tant que ce choix n’est pas confirmé (rechoisir le dossier).',
+      'Suite launched from {root}, declared folder {dir}: nothing is written there until this choice is confirmed (choose the folder again).',
+      'Suite gestartet aus {root}, angegebener Ordner {dir}: dort wird nichts geschrieben, solange diese Wahl nicht bestätigt ist (Ordner neu wählen).',
+      'Suite iniciada desde {root}, carpeta declarada {dir}: no se escribe nada allí mientras no se confirme esta elección (volver a elegir la carpeta).'
+      )
   };
   /** Message « Suite lancée depuis …, dossier déclaré … » ; kind : ask (question), accepted, other. Chemin du dossier
    *  déclaré : celui de son repère (lanceur de cette version), sinon son nom seul. */
@@ -339,7 +392,8 @@
   async function pickFolder(key, {
     mode = 'readwrite'
   } = {}) {
-    if (!window.showDirectoryPicker) throw new Error(window.RepositoryKit?.noFolderAccess?.() || 'File System Access API (Chrome / Edge)');
+    if (!window.showDirectoryPicker) throw new Error(window.RepositoryKit?.noFolderAccess?.() ||
+      'File System Access API (Chrome / Edge)');
     const info = FOLDERS[key] || {},
       current = await get(key);
     const handle = await window.showDirectoryPicker({
@@ -473,7 +527,8 @@
   if (window.showOpenFilePicker) {
     document.addEventListener('click', event => {
       const input = event.target;
-      if (!(input instanceof HTMLInputElement) || input.type !== 'file' || input.dataset.nativePicker || input.webkitdirectory) return;
+      if (!(input instanceof HTMLInputElement) || input.type !== 'file' || input.dataset.nativePicker || input.webkitdirectory)
+    return;
       event.preventDefault();
       openFiles(input).catch(error => {
         if (error?.name !== 'AbortError') {
@@ -513,7 +568,9 @@
   }) {
     if (!root || !area || !run || root.dataset.pastePanel) return null;
     root.dataset.pastePanel = '1';
-    if (!document.getElementById('fa-paste-style')) document.head.insertAdjacentHTML('beforeend', '<style id="fa-paste-style">.fa-x{position:absolute;top:6px;right:8px;width:28px;height:28px;border:0!important;border-radius:50%!important;background:transparent!important;color:inherit!important;font-size:20px!important;line-height:1;cursor:pointer;opacity:.7;padding:0!important;min-width:0!important}.fa-x:hover{opacity:1;background:#0000001a!important}.fa-valid{background:#16a34a!important;border-color:#16a34a!important;color:#fff!important}button.fa-run:disabled{opacity:.45;cursor:not-allowed}</style>');
+    if (!document.getElementById('fa-paste-style')) document.head.insertAdjacentHTML('beforeend',
+      '<style id="fa-paste-style">.fa-x{position:absolute;top:6px;right:8px;width:28px;height:28px;border:0!important;border-radius:50%!important;background:transparent!important;color:inherit!important;font-size:20px!important;line-height:1;cursor:pointer;opacity:.7;padding:0!important;min-width:0!important}.fa-x:hover{opacity:1;background:#0000001a!important}.fa-valid{background:#16a34a!important;border-color:#16a34a!important;color:#fff!important}button.fa-run:disabled{opacity:.45;cursor:not-allowed}</style>'
+      );
     // « × » positionné dans le panneau (sans toucher à un panneau déjà positionné : popup absolue).
     if (getComputedStyle(root).position === 'static') root.style.position = 'relative';
     const x = document.createElement('button');

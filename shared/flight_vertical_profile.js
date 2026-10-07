@@ -6,7 +6,8 @@
 (() => {
   const $ = id => document.getElementById(id);
   if (!$('vpDraw') || !window.SiaProfile) return;
-  const tl = (...r) => r[Math.max(0, ['fr', 'en', 'de', 'es'].indexOf(window.RepositoryNav?.getLanguage?.() || 'fr'))] || r[0]; // texte dans la langue de la page
+  const tl = (...r) => r[Math.max(0, ['fr', 'en', 'de', 'es'].indexOf(window.RepositoryNav?.getLanguage?.() || 'fr'))] || r[
+  0]; // texte dans la langue de la page
   const KEY = 'flightPerfVerticalProfile',
     esc = v => String(v ?? '').replace(/[&<>"]/g, c => ({
       '&': '&amp;',
@@ -17,7 +18,8 @@
   const ALL_ZONES = {
     id: 'vprof',
     get name() {
-      return tl('Profil vertical (toutes les zones)', 'Vertical profile (all airspaces)', 'Vertikalprofil (alle Lufträume)', 'Perfil vertical (todos los espacios)');
+      return tl('Profil vertical (toutes les zones)', 'Vertical profile (all airspaces)', 'Vertikalprofil (alle Lufträume)',
+        'Perfil vertical (todos los espacios)');
     },
     zones: ['R', 'D', 'P', 'CTR', 'TMA', 'CTA', 'SIV', 'TRA', 'RMZ', 'TMZ', 'PJE'],
     elements: {}
@@ -89,9 +91,15 @@
     const want = keep || studio.profileId;
     sel.value = studio.list.some(p => p.id === want) ? want : studio.list[0].id;
     const b = studio.base;
-    const n = [b?.airspaces?.length || 0, b?.aero?.aerodromes?.length || 0, b?.aero?.navaids?.length || 0, b?.aero?.points?.length || 0];
+    const n = [b?.airspaces?.length || 0, b?.aero?.aerodromes?.length || 0, b?.aero?.navaids?.length || 0, b?.aero?.points?.length ||
+    0];
     status(b ? tl(`Base SIA du studio : ${n[0]} espaces, ${n[1]} aérodromes, ${n[2]} balises, ${n[3]} points RNAV.`, `Studio SIA database: ${n[0]} airspaces, ${n[1]} aerodromes, ${n[2]} navaids, ${n[3]} RNAV points.`, `SIA-Datenbank des Studios: ${n[0]} Lufträume, ${n[1]} Flugplätze, ${n[2]} Funkfeuer, ${n[3]} RNAV-Punkte.`, `Base SIA del estudio: ${n[0]} espacios, ${n[1]} aeródromos, ${n[2]} radioayudas, ${n[3]} puntos RNAV.`) :
-      tl('Base SIA absente : ouvrir le studio cartographique (Missions SIA) dans ce navigateur et y charger le dossier SIA une fois. Sans elle, route en coordonnées ou SimBrief, sans espaces aériens.', 'No SIA database: open the map studio (SIA missions) in this browser and load the SIA folder once. Without it, routes in coordinates or from SimBrief only, with no airspaces.', 'Keine SIA-Datenbank: das Kartenstudio (SIA-Missionen) in diesem Browser öffnen und den SIA-Ordner einmal laden. Ohne sie nur Routen in Koordinaten oder aus SimBrief, ohne Lufträume.', 'Sin base SIA: abra el estudio cartográfico (misiones SIA) en este navegador y cargue la carpeta SIA una vez. Sin ella, solo rutas en coordenadas o de SimBrief, sin espacios aéreos.'));
+      tl(
+        'Base SIA absente : ouvrir le studio cartographique (Missions SIA) dans ce navigateur et y charger le dossier SIA une fois. Sans elle, route en coordonnées ou SimBrief, sans espaces aériens.',
+        'No SIA database: open the map studio (SIA missions) in this browser and load the SIA folder once. Without it, routes in coordinates or from SimBrief only, with no airspaces.',
+        'Keine SIA-Datenbank: das Kartenstudio (SIA-Missionen) in diesem Browser öffnen und den SIA-Ordner einmal laden. Ohne sie nur Routen in Koordinaten oder aus SimBrief, ohne Lufträume.',
+        'Sin base SIA: abra el estudio cartográfico (misiones SIA) en este navegador y cargue la carpeta SIA una vez. Sin ella, solo rutas en coordenadas o de SimBrief, sin espacios aéreos.'
+        ));
   }
 
   // Route d'un OFP SimBrief : départ, groupe vitesse / niveau initial (TAS de croisière, niveau initial),
@@ -129,7 +137,9 @@
       }
     }
     if (dst) point(dst.icao_code, dst.pos_lat, dst.pos_long);
-    if (items.filter(x => !/^N\d{4}F/.test(x)).length < 2) throw Error(tl('OFP sans points de navigation exploitables.', 'OFP without usable navigation points.', 'OFP ohne verwertbare Navigationspunkte.', 'OFP sin puntos de navegación utilizables.'));
+    if (items.filter(x => !/^N\d{4}F/.test(x)).length < 2) throw Error(tl('OFP sans points de navigation exploitables.',
+      'OFP without usable navigation points.', 'OFP ohne verwertbare Navigationspunkte.',
+      'OFP sin puntos de navegación utilizables.'));
     return items.join(',\n');
   }
 
@@ -179,10 +189,19 @@
     } = SiaProfile.parseRoute($('vpRoute').value, SiaProfile.resolver({
       aero
     }));
-    if (unknown.length) throw Error(tl('Point(s) inconnu(s) : ', 'Unknown point(s): ', 'Unbekannte(r) Punkt(e): ', 'Punto(s) desconocido(s): ') + unknown.join(', ') + (studio.base ? '' : tl(' (base SIA absente : seuls les points en coordonnées sont reconnus)', ' (no SIA database: only coordinate points are recognised)', ' (keine SIA-Datenbank: nur Koordinatenpunkte werden erkannt)', ' (sin base SIA: solo se reconocen puntos en coordenadas)')));
+    if (unknown.length) throw Error(tl('Point(s) inconnu(s) : ', 'Unknown point(s): ', 'Unbekannte(r) Punkt(e): ',
+      'Punto(s) desconocido(s): ') + unknown.join(', ') + (studio.base ? '' : tl(
+      ' (base SIA absente : seuls les points en coordonnées sont reconnus)',
+      ' (no SIA database: only coordinate points are recognised)',
+      ' (keine SIA-Datenbank: nur Koordinatenpunkte werden erkannt)', ' (sin base SIA: solo se reconocen puntos en coordenadas)'
+      )));
     terrain ??= SiaProfile.terrainSampler();
-    status(tl('Calcul du profil (relief, espaces, obstacles, trajectoire)…', 'Computing the profile (terrain, airspaces, obstacles, trajectory)…', 'Profil wird berechnet (Gelände, Lufträume, Hindernisse, Flugbahn)…', 'Calculando el perfil (relieve, espacios, obstáculos, trayectoria)…'));
-    const obstacles = SiaProfile.opt(profile, 'obstacles', false) ? (aero.obstacles || []).filter(o => (o.hgt || 0) >= (+SiaProfile.opt(profile, 'obstacleMin', 300) || 0)) : [];
+    status(tl('Calcul du profil (relief, espaces, obstacles, trajectoire)…',
+      'Computing the profile (terrain, airspaces, obstacles, trajectory)…',
+      'Profil wird berechnet (Gelände, Lufträume, Hindernisse, Flugbahn)…',
+      'Calculando el perfil (relieve, espacios, obstáculos, trayectoria)…'));
+    const obstacles = SiaProfile.opt(profile, 'obstacles', false) ? (aero.obstacles || []).filter(o => (o.hgt || 0) >= (+SiaProfile.opt(
+      profile, 'obstacleMin', 300) || 0)) : [];
     const r = rates(),
       data = await SiaProfile.build({
         points,
@@ -217,10 +236,13 @@
       d = (data.total / 1852).toFixed(1),
       prof = profile.name;
     const climb = p ? (p.climb.at ? tl(`montée selon le modèle de performances de ${p.climb.name}`, `climb according to the performance model of ${p.climb.name}`, `Steigflug nach dem Leistungsmodell von ${p.climb.name}`, `ascenso según el modelo de rendimiento de ${p.climb.name}`) :
-      tl(`montée ${p.climb.fpm} ft/min à ${p.climb.kt} kt`, `climb ${p.climb.fpm} ft/min at ${p.climb.kt} kt`, `Steigflug ${p.climb.fpm} ft/min mit ${p.climb.kt} kt`, `ascenso ${p.climb.fpm} ft/min a ${p.climb.kt} kt`) + (r.climb.fpm > 0 ? '' : tl(' (valeurs par défaut : profil avion incomplet)', ' (default values: incomplete aircraft profile)', ' (Standardwerte: Flugzeugprofil unvollständig)', ' (valores por defecto: perfil de avión incompleto)'))) : '';
+      tl(`montée ${p.climb.fpm} ft/min à ${p.climb.kt} kt`, `climb ${p.climb.fpm} ft/min at ${p.climb.kt} kt`, `Steigflug ${p.climb.fpm} ft/min mit ${p.climb.kt} kt`, `ascenso ${p.climb.fpm} ft/min a ${p.climb.kt} kt`) + (r.climb.fpm > 0 ? '' : tl(' (valeurs par défaut : profil avion incomplet)',
+        ' (default values: incomplete aircraft profile)', ' (Standardwerte: Flugzeugprofil unvollständig)',
+        ' (valores por defecto: perfil de avión incompleto)'))) : '';
     status(tl(`${d} NM, ${data.crossed.length} traversée(s) d’espace, ${data.obstacles.length} obstacle(s) — profil « ${prof} »`, `${d} NM, ${data.crossed.length} airspace crossing(s), ${data.obstacles.length} obstacle(s) — profile “${prof}”`, `${d} NM, ${data.crossed.length} Luftraumdurchquerung(en), ${data.obstacles.length} Hindernis(se) — Profil „${prof}“`, `${d} NM, ${data.crossed.length} cruce(s) de espacio, ${data.obstacles.length} obstáculo(s) — perfil «${prof}»`) +
       (p ? ` ; ${climb}, ${tl('descente', 'descent', 'Sinkflug', 'descenso')} ${p.descent.fpm} ft/min ${tl('à', 'at', 'mit', 'a')} ${p.descent.kt} kt ; TOC ${nm(p.toc.s)} NM, TOD ${nm(p.tod.s)} NM.` :
-        tl(' ; pas de niveau indiqué (VFR) : trajectoire non tracée.', '; no level given (VFR): no trajectory drawn.', '; keine Flughöhe angegeben (VFR): keine Flugbahn gezeichnet.', '; sin nivel indicado (VFR): trayectoria no trazada.')));
+        tl(' ; pas de niveau indiqué (VFR) : trajectoire non tracée.', '; no level given (VFR): no trajectory drawn.',
+          '; keine Flughöhe angegeben (VFR): keine Flugbahn gezeichnet.', '; sin nivel indicado (VFR): trayectoria no trazada.')));
   }
 
   // L'OFP importé par le bouton d'en-tête (« Récupérer dernier FPL SimBrief ») ou le fichier OFP donne la
@@ -273,12 +295,14 @@
       return;
     }
     const r = Math.PI / 180,
-      nm = (a, b) => 2 * 3440.065 * Math.asin(Math.sqrt(Math.sin((b.lat - a.lat) * r / 2) ** 2 + Math.cos(a.lat * r) * Math.cos(b.lat * r) * Math.sin((b.lon - a.lon) * r / 2) ** 2));
+      nm = (a, b) => 2 * 3440.065 * Math.asin(Math.sqrt(Math.sin((b.lat - a.lat) * r / 2) ** 2 + Math.cos(a.lat * r) * Math.cos(b.lat *
+        r) * Math.sin((b.lon - a.lon) * r / 2) ** 2));
     let d = 0;
     for (let i = 1; i < points.length; i++) d += nm(points[i - 1], points[i]);
     const a = points[0],
       b = points[points.length - 1],
-      trk = (Math.atan2(Math.sin((b.lon - a.lon) * r) * Math.cos(b.lat * r), Math.cos(a.lat * r) * Math.sin(b.lat * r) - Math.sin(a.lat * r) * Math.cos(b.lat * r) * Math.cos((b.lon - a.lon) * r)) / r + 360) % 360;
+      trk = (Math.atan2(Math.sin((b.lon - a.lon) * r) * Math.cos(b.lat * r), Math.cos(a.lat * r) * Math.sin(b.lat * r) - Math.sin(a
+        .lat * r) * Math.cos(b.lat * r) * Math.cos((b.lon - a.lon) * r)) / r + 360) % 360;
     const lvl = points.find(p => p.lvl?.ft)?.lvl?.ft;
     $('dist').value = Math.round(d);
     $('trk').value = Math.round(trk);
@@ -307,7 +331,8 @@
    *  plannerHandoff:v1, ?handoff=1) : route OACI, distance, niveau, route vraie ; calcul et profil relancés. */
   function takeHandoff() {
     if (!new URLSearchParams(location.search).has('handoff')) return false;
-    history.replaceState(null, '', location.pathname + location.search.replace(/([?&])handoff=1&?/, '$1').replace(/[?&]$/, '') + location.hash);
+    history.replaceState(null, '', location.pathname + location.search.replace(/([?&])handoff=1&?/, '$1').replace(/[?&]$/, '') + location
+      .hash);
     let h = null;
     try {
       h = JSON.parse(localStorage.getItem('plannerHandoff:v1') || 'null');

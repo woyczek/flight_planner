@@ -13,7 +13,8 @@
     FILTERS = 'missionRegistryFilters:v1';
   const LANGS = ['fr', 'en', 'de', 'es'];
   const li = () => Math.max(0, LANGS.indexOf(window.RepositoryNav?.getLanguage?.() || 'fr'));
-  const t = (row, vars = {}) => (Array.isArray(row) ? (row[li()] || row[1] || row[0]) : String(row ?? '')).replace(/\{(\w+)\}/g, (_, k) => vars[k] ?? '');
+  const t = (row, vars = {}) => (Array.isArray(row) ? (row[li()] || row[1] || row[0]) : String(row ?? '')).replace(/\{(\w+)\}/g, (_, k) =>
+    vars[k] ?? '');
   const esc = window.RepositoryKit.esc; // échappement HTML commun (shared/kit.js)
   const readJson = (k, d = null) => {
     try {
@@ -78,9 +79,11 @@
       }
       return `étranger — ${name}`;
     }
-    return /étranger|foreign/i.test(String(meta?.theatre || '')) || (Number.isFinite(+pt?.lat) && Number.isFinite(+pt?.lon)) ? 'étranger' : '';
+    return /étranger|foreign/i.test(String(meta?.theatre || '')) || (Number.isFinite(+pt?.lat) && Number.isFinite(+pt?.lon)) ?
+      'étranger' : '';
   }
-  const theatreOf = (lat, lon) => (Number.isFinite(+lat) && Number.isFinite(+lon) && THEATRES.find(([, s, n, w, e]) => lat >= s && lat <= n && lon >= w && lon <= e)?.[0]) || '';
+  const theatreOf = (lat, lon) => (Number.isFinite(+lat) && Number.isFinite(+lon) && THEATRES.find(([, s, n, w, e]) => lat >= s && lat <=
+    n && lon >= w && lon <= e)?.[0]) || '';
 
   // ---- familles et sous-types : § 2 du prompt de génération (source unique : docs/technique/PROMPT_GENERATEUR_MISSIONS.md)
   /** Familles et sous-types (§ 2 du prompt) : MissionOrder.families (shared/mission_order.js). */
@@ -106,7 +109,10 @@
 
   function persist() {
     reg.updatedAt = new Date().toISOString();
-    if (IDX) IDX.save(reg.missions, reg.updatedAt).catch(e => window.AppFramework?.notify?.(t(['Registre des missions non enregistré dans le navigateur : {e}', 'Mission registry not saved in the browser: {e}', 'Missionsregister im Browser nicht gespeichert: {e}', 'Registro de misiones no guardado en el navegador: {e}'], {
+    if (IDX) IDX.save(reg.missions, reg.updatedAt).catch(e => window.AppFramework?.notify?.(t([
+      'Registre des missions non enregistré dans le navigateur : {e}', 'Mission registry not saved in the browser: {e}',
+      'Missionsregister im Browser nicht gespeichert: {e}', 'Registro de misiones no guardado en el navegador: {e}'
+    ], {
       e: e?.message || e
     }), 'err'));
     else writeJson(KEY, reg);
@@ -183,7 +189,12 @@
     };
     try {
       const clash = await (navigator.locks?.request ? navigator.locks.request(`defa:suivi:${m.id}`, run) : run());
-      if (clash.length) window.AppFramework?.notify?.(t(['{id} : suivi modifié en même temps sur un autre poste ({k}) ; votre saisie est gardée.', '{id}: tracking changed at the same time on another computer ({k}); your entry is kept.', '{id}: Verfolgung gleichzeitig auf einem anderen Rechner geändert ({k}); Ihre Eingabe bleibt.', '{id}: seguimiento modificado a la vez en otro equipo ({k}); se conserva su entrada.'], {
+      if (clash.length) window.AppFramework?.notify?.(t([
+        '{id} : suivi modifié en même temps sur un autre poste ({k}) ; votre saisie est gardée.',
+        '{id}: tracking changed at the same time on another computer ({k}); your entry is kept.',
+        '{id}: Verfolgung gleichzeitig auf einem anderen Rechner geändert ({k}); Ihre Eingabe bleibt.',
+        '{id}: seguimiento modificado a la vez en otro equipo ({k}); se conserva su entrada.'
+      ], {
         id: m.id,
         k: clash.join(', ')
       }), 'warn');
@@ -212,7 +223,10 @@
   async function missionsDir(request = false) {
     const FA = await waitFor('FileAccess');
     if (!FA) {
-      if (request) throw new Error(t(['Dossier des missions : module d’accès aux dossiers (shared/file_access.js) non chargé dans cette page.', 'Missions folder: folder access module (shared/file_access.js) not loaded in this page.']));
+      if (request) throw new Error(t([
+        'Dossier des missions : module d’accès aux dossiers (shared/file_access.js) non chargé dans cette page.',
+        'Missions folder: folder access module (shared/file_access.js) not loaded in this page.'
+      ]));
       return null;
     }
     const st = await FA.status('__missions');
@@ -251,7 +265,8 @@
     try {
       return await FA.pickFolder('__missions');
     } catch (e) {
-      if (e?.name === 'AbortError') throw fail('Dossier des missions « {d} » non autorisé : choix du dossier annulé.', 'Missions folder “{d}” not authorised: folder choice cancelled.', why || e);
+      if (e?.name === 'AbortError') throw fail('Dossier des missions « {d} » non autorisé : choix du dossier annulé.',
+        'Missions folder “{d}” not authorised: folder choice cancelled.', why || e);
       throw fail('Dossier des missions « {d} » non autorisé ({e}).', 'Missions folder “{d}” not authorised ({e}).', e);
     }
   }
@@ -271,13 +286,16 @@
     const teams = (Array.isArray(y.teams) ? y.teams : []).filter(x => x && typeof x === 'object');
     const aircraft = (Array.isArray(y.aircraft) ? y.aircraft : y.aircraft ? [y.aircraft] : []).filter(Boolean);
     const rdv = Array.isArray(y.rendezvous) ? y.rendezvous : [];
-    const flying = teams.filter(tm => /\b(A\d{3}|H\d{3}|EC|AS|NH|E-?3|Rafale|Mirage|Falcon|Atlantique|DH8|CL-?415|Dash|TBM|BE20|King|C-?130|C-?160|A400|Caracal|Puma|Dauphin|Panther|Tigre|Cougar|avion|hélico|drone|patrouille|aéronef|MRTT|Phénix|Hawkeye|Reaper)/i.test(`${tm.type || ''} ${tm.role || ''}`));
+    const flying = teams.filter(tm =>
+      /\b(A\d{3}|H\d{3}|EC|AS|NH|E-?3|Rafale|Mirage|Falcon|Atlantique|DH8|CL-?415|Dash|TBM|BE20|King|C-?130|C-?160|A400|Caracal|Puma|Dauphin|Panther|Tigre|Cougar|avion|hélico|drone|patrouille|aéronef|MRTT|Phénix|Hawkeye|Reaper)/i
+      .test(`${tm.type || ''} ${tm.role || ''}`));
     const pt = y.origin || y.target || {};
     const opMissions = Array.isArray(y.operation?.missions) ? y.operation.missions : [];
     const ex = y.exercise && typeof y.exercise === 'object' ? y.exercise : null,
       arr = v => Array.isArray(v) ? v : [];
     return {
-      id: normMissionId(String(meta.id ?? meta.number ?? '').trim() || (/([A-Z]?-?\d+[A-Z]?)(?=\.\w+$)/i.exec(files[0] || '')?.[1] || '')),
+      id: normMissionId(String(meta.id ?? meta.number ?? '').trim() || (/([A-Z]?-?\d+[A-Z]?)(?=\.\w+$)/i.exec(files[0] || '')?.[1] ||
+        '')),
       formerId: String(meta.former_id ?? '').trim().toUpperCase(), // identifiant d'avant renumérotation (tools/renumber_missions.py)
       series: meta.series ?? '',
       number: meta.number ?? '',
@@ -291,7 +309,8 @@
         missions: opMissions.length,
         organisation: String(y.operation.organisation || '')
       } : null,
-      organisation: !!ex || /organi/i.test(String(meta.role || '')) || /\d[A-Z]?Z$/i.test(String(meta.id || '').trim()), // mission d'organisation d'un exercice (…Z)
+      organisation: !!ex || /organi/i.test(String(meta.role || '')) || /\d[A-Z]?Z$/i.test(String(meta.id || '')
+    .trim()), // mission d'organisation d'un exercice (…Z)
       exercise: ex ? {
         participants: arr(ex.participants).length,
         tracks: arr(ex.tracks).length,
@@ -356,7 +375,8 @@
     // même mission reçue dans le générateur (sans dossier) puis relue dans le dossier, ou l'inverse
     if (i < 0 && e.id) i = reg.missions.findIndex(m => m.id === e.id && m.status !== 'ordered' && (!m.folder || !e.folder));
     // mission commandée : même série et même identifiant (ou même numéro d'opération) → la commande devient la mission
-    const j = i < 0 ? reg.missions.findIndex(m => m.status === 'ordered' && m.request && String(m.request.serie) === String(e.series) && (!m.id || String(e.id).startsWith(String(m.id)))) : -1;
+    const j = i < 0 ? reg.missions.findIndex(m => m.status === 'ordered' && m.request && String(m.request.serie) === String(e.series) && (
+      !m.id || String(e.id).startsWith(String(m.id)))) : -1;
     const prev = i >= 0 ? reg.missions[i] : j >= 0 ? reg.missions[j] : null;
     const merged = {
       ...prev,
@@ -400,7 +420,8 @@
   };
   const stamp = () => new Date().toISOString().slice(0, 19).replace(/:/g, '-');
   /** Données comparables d'un YAML (sans meta ni réglages du studio), clés triées. */
-  const canon = y => JSON.stringify(y, (k, v) => ['meta', 'profile', 'view', 'trace', 'generated_at'].includes(k) ? undefined : v && typeof v === 'object' && !Array.isArray(v) ? Object.fromEntries(Object.keys(v).sort().map(x => [x, v[x]])) : v);
+  const canon = y => JSON.stringify(y, (k, v) => ['meta', 'profile', 'view', 'trace', 'generated_at'].includes(k) ? undefined : v &&
+    typeof v === 'object' && !Array.isArray(v) ? Object.fromEntries(Object.keys(v).sort().map(x => [x, v[x]])) : v);
   /** Différences lisibles entre deux YAML : clés de premier niveau changées (nombre d'éléments pour les listes). */
   function diffOf(a, b) {
     const out = [],
@@ -408,7 +429,8 @@
     for (const k of keys) {
       if (canon(a?.[k]) === canon(b?.[k])) continue;
       const n = v => Array.isArray(v) ? v.length : null;
-      out.push(a?.[k] === undefined ? `+ ${k}` : b?.[k] === undefined ? `− ${k}` : n(a[k]) != null && n(b[k]) != null && n(a[k]) !== n(b[k]) ? `${k} (${n(a[k])} → ${n(b[k])})` : k);
+      out.push(a?.[k] === undefined ? `+ ${k}` : b?.[k] === undefined ? `− ${k}` : n(a[k]) != null && n(b[k]) != null && n(a[k]) !== n(
+        b[k]) ? `${k} (${n(a[k])} → ${n(b[k])})` : k);
     }
     return out;
   }
@@ -466,7 +488,10 @@
       // lecture : dossier absent → null ; écriture : dossier autorisé mais inaccessible (fichiers en ligne seulement,
       // client de synchronisation arrêté, droits du système…) → erreur explicite, et non « non autorisé »
       if (!create) return null;
-      throw new Error(t(['Dossier des missions autorisé mais inaccessible en écriture ({m}) : vérifier que le client de synchronisation tourne et que data/ est gardé sur cet appareil.', 'Missions folder authorised but not writable ({m}): check the sync client is running and data/ is kept on this device.'], {
+      throw new Error(t([
+        'Dossier des missions autorisé mais inaccessible en écriture ({m}) : vérifier que le client de synchronisation tourne et que data/ est gardé sur cet appareil.',
+        'Missions folder authorised but not writable ({m}): check the sync client is running and data/ is kept on this device.'
+      ], {
         m: e?.message || e?.name || '?'
       }));
     }
@@ -490,7 +515,10 @@
       letter = L[type] || L[window.MissionVocab?.familyForType?.(type)] || '',
       m = /(\d{1,3})([A-Z]?)$/.exec(raw),
       guess = letter && m ? `${letter}-${m[1].padStart(3, '0')}${m[2]}` : '';
-    if (guess && request && confirm(t(['Identifiant « {r} » hors format (lettre de la famille + numéro). Enregistrer la mission sous « {g} » ? (l’ancien identifiant est gardé dans mission.former_id)', 'ID “{r}” is not in the expected format (family letter + number). Save the mission as “{g}”? (the old ID is kept in mission.former_id)'], {
+    if (guess && request && confirm(t([
+        'Identifiant « {r} » hors format (lettre de la famille + numéro). Enregistrer la mission sous « {g} » ? (l’ancien identifiant est gardé dans mission.former_id)',
+        'ID “{r}” is not in the expected format (family letter + number). Save the mission as “{g}”? (the old ID is kept in mission.former_id)'
+      ], {
         r: raw || '—',
         g: guess
       }))) {
@@ -498,7 +526,10 @@
       y.mission.id = guess;
       return;
     }
-    throw new Error(t(['Identifiant de mission « {r} » hors format : lettre de la famille + numéro sur 3 chiffres (+ lettre d’équipe), ex. « {g} ». Corriger mission.id.', 'Mission ID “{r}” not in the expected format: family letter + 3-digit number (+ team letter), e.g. “{g}”. Fix mission.id.'], {
+    throw new Error(t([
+      'Identifiant de mission « {r} » hors format : lettre de la famille + numéro sur 3 chiffres (+ lettre d’équipe), ex. « {g} ». Corriger mission.id.',
+      'Mission ID “{r}” not in the expected format: family letter + 3-digit number (+ team letter), e.g. “{g}”. Fix mission.id.'
+    ], {
       r: raw || '—',
       g: guess || 'M-016A'
     }));
@@ -681,7 +712,8 @@
   /** Taille lisible : « 850 ko », « 3,4 Mo ». */
   const fmtBytes = b => b >= 1e6 ? `${(b / 1e6).toFixed(1).replace('.', ',')} Mo` : `${Math.max(1, Math.round(b / 1e3))} ko`;
   /** Cartes attendues d'une mission : maps[] du YAML, carte d'assemblage et profil vertical (produits par le studio). */
-  const wantedMaps = y => new Set([...(Array.isArray(y?.maps) ? y.maps : []).map(mp => String(typeof mp === 'object' ? mp?.filename || mp?.file || '' : mp).toLowerCase()), 'carte_assemblage.png', 'profil_vertical.png'].filter(Boolean));
+  const wantedMaps = y => new Set([...(Array.isArray(y?.maps) ? y.maps : []).map(mp => String(typeof mp === 'object' ? mp?.filename || mp
+    ?.file || '' : mp).toLowerCase()), 'carte_assemblage.png', 'profil_vertical.png'].filter(Boolean));
   /** Fichiers d'un dossier de mission avec leur taille et leur catégorie : data (YAML, Markdown…), maps (cartes), pdf,
    *  versions, recu ; cartes surnuméraires (absentes du YAML). { files, sizes: { data, maps, versions, recu, total },
    *  surplus: [fichiers] }. y : YAML de la mission (lu dans le dossier si absent). */
@@ -715,7 +747,8 @@
     await walk(mh.h, '');
     for (const s of [SUB.maps, SUB.versions, SUB.received]) await walk(mh.h, s);
     const img = n => /\.(png|jpe?g|webp)$/i.test(n);
-    for (const f of files) f.kind = f.sub === SUB.maps || (!f.sub && img(f.name)) ? 'maps' : f.sub === SUB.versions ? 'versions' : f.sub === SUB.received ? 'recu' : /\.pdf$/i.test(f.name) ? 'pdf' : 'data';
+    for (const f of files) f.kind = f.sub === SUB.maps || (!f.sub && img(f.name)) ? 'maps' : f.sub === SUB.versions ? 'versions' : f
+      .sub === SUB.received ? 'recu' : /\.pdf$/i.test(f.name) ? 'pdf' : 'data';
     const surplus = y ? files.filter(f => f.kind === 'maps' && !want.has(f.name.toLowerCase())) : [];
     const sizes = {
       data: 0,
@@ -773,7 +806,8 @@
       title = String(old.title || '').trim().toLowerCase();
     const team = v => /\d([A-Z])$/.exec(String(v || '').toUpperCase())?.[1] || ''; // lettre d'équipe (M-016B → B)
     return live.find(m => id && (m.formerId === id || m.id === id)) ||
-      (title && live.find(m => String(m.title || '').trim().toLowerCase() === title && (!old.type || !m.type || m.type === old.type) && team(m.id) === team(old.id))) ||
+      (title && live.find(m => String(m.title || '').trim().toLowerCase() === title && (!old.type || !m.type || m.type === old.type) &&
+        team(m.id) === team(old.id))) ||
       null;
   }
   /** Retire les entrées « fichier absent » ; statut, notes, date de vol, commande et CR passent à la mission qui les remplace
@@ -803,7 +837,9 @@
   /** Parcourt le dossier des missions (sous-dossiers de séries) : YAML et Markdown groupés par mission. */
   async function scan(request = true) {
     const dir = await missionsDir(request);
-    if (!dir) throw new Error(t(['Choisir le dossier « Missions » du dépôt (bouton ci-dessus).', 'Choose the repository “Missions” folder (button above).']));
+    if (!dir) throw new Error(t(['Choisir le dossier « Missions » du dépôt (bouton ci-dessus).',
+      'Choose the repository “Missions” folder (button above).'
+    ]));
     await waitFor('SiaMission');
     const found = [],
       problems = [];
@@ -815,7 +851,9 @@
       before = JSON.stringify(reg.missions);
     let reused = 0;
     // barre indéterminée (nombre de dossiers inconnu d'avance) : dossier en cours et missions trouvées
-    const job = window.AppFramework?.task?.(t(['Lecture du dossier des missions', 'Reading the missions folder', 'Missionsordner wird gelesen', 'Leyendo la carpeta de misiones']));
+    const job = window.AppFramework?.task?.(t(['Lecture du dossier des missions', 'Reading the missions folder',
+      'Missionsordner wird gelesen', 'Leyendo la carpeta de misiones'
+    ]));
     async function walk(h, path, depth) {
       job?.set(0, 0, `${path || dir.name} — ${found.length}`);
       const files = [],
@@ -830,7 +868,8 @@
           } else if (depth < 3 && !/^(_|\.)/.test(name)) subs.push([name, x]);
         } else if (/\.(png|jpe?g|webp)$/i.test(name)) images.push(name);
         else if (name === SUIVI) suiviFile = x;
-        else if (/\.(ya?ml|md)$/i.test(name) && name !== FILE && !/^(maps_manifest|AAR_TRACKS_REFERENCE|OSM_WORK_PROMPT|README|VALIDATION)/i.test(name)) files.push(x);
+        else if (/\.(ya?ml|md)$/i.test(name) && name !== FILE && !
+          /^(maps_manifest|AAR_TRACKS_REFERENCE|OSM_WORK_PROMPT|README|VALIDATION)/i.test(name)) files.push(x);
       }
       if (files.length) {
         const got = await Promise.all(files.map(fh => fh.getFile()));
@@ -901,7 +940,8 @@
     await waitFor('SiaMission');
     const groups = new Map();
     for (const f of list) {
-      if (!/\.(ya?ml|md)$/i.test(f.name) || /^(maps_manifest|AAR_TRACKS_REFERENCE|OSM_WORK_PROMPT|README|VALIDATION)/i.test(f.name) || f.name === FILE) continue;
+      if (!/\.(ya?ml|md)$/i.test(f.name) || /^(maps_manifest|AAR_TRACKS_REFERENCE|OSM_WORK_PROMPT|README|VALIDATION)/i.test(f.name) || f
+        .name === FILE) continue;
       const folder = (f.webkitRelativePath || '').split('/').slice(0, -1).join('/') || f.folder || '';
       if (!groups.has(folder)) groups.set(folder, []);
       groups.get(folder).push(f);
@@ -958,7 +998,8 @@
         r,
         index: (rank[r.family] = (rank[r.family] ?? -1) + 1)
       }));
-    const crMission = r => window.MissionVocab?.parseCrId?.(r?.metadata?.missionId)?.mission || normMissionId(r?.metadata?.missionNumber || '');
+    const crMission = r => window.MissionVocab?.parseCrId?.(r?.metadata?.missionId)?.mission || normMissionId(r?.metadata
+      ?.missionNumber || '');
     for (const m of reg.missions) {
       const mine = m.id ? all.filter(({
         r
@@ -1022,7 +1063,8 @@
     (!filters.aar || (filters.aar === 'yes') === !!m.aar) &&
     (!filters.theatre || m.theatre === filters.theatre) &&
     (!filters.status || m.status === filters.status) &&
-    (!filters.q || JSON.stringify([m.id, m.title, m.origin, m.destination, m.callsigns, m.operation?.name, m.notes]).toLowerCase().includes(filters.q.toLowerCase()));
+    (!filters.q || JSON.stringify([m.id, m.title, m.origin, m.destination, m.callsigns, m.operation?.name, m.notes]).toLowerCase()
+      .includes(filters.q.toLowerCase()));
   const uniq = arr => [...new Set(arr.filter(Boolean))].sort((a, b) => String(a).localeCompare(String(b), 'fr', {
     numeric: true
   }));
@@ -1044,7 +1086,8 @@
     const fam = families(),
       rows = reg.missions.filter(matches);
     const types = uniq([...reg.missions.map(m => m.type), ...fam.map(f => f.id)]);
-    const subtypes = uniq([...reg.missions.filter(m => !filters.type || m.type === filters.type).map(m => m.subtype), ...(fam.find(f => f.id === filters.type)?.subtypes || [])]);
+    const subtypes = uniq([...reg.missions.filter(m => !filters.type || m.type === filters.type).map(m => m.subtype), ...(fam.find(f => f
+      .id === filters.type)?.subtypes || [])]);
     const teamTypes = uniq(reg.missions.flatMap(m => [...m.teamTypes, ...m.aircraftTypes]));
     const opt = (v, l, cur) => `<option value="${esc(v)}" ${String(cur) === String(v) ? 'selected' : ''}>${esc(l)}</option>`;
     const counts = Object.keys(STATUS).map(k => [k, reg.missions.filter(m => m.status === k).length]).filter(([, n]) => n);
@@ -1124,7 +1167,8 @@
     wb.textContent = t(['Écrire mission_registry.yaml', 'Write mission_registry.yaml']);
     wb.onclick = async () => {
       try {
-        msg = (await writeFile(true)) ? pill('generated', t(['mission_registry.yaml écrit', 'mission_registry.yaml written'])) : pill('ordered', t(['dossier non autorisé', 'folder not authorised']));
+        msg = (await writeFile(true)) ? pill('generated', t(['mission_registry.yaml écrit', 'mission_registry.yaml written'])) : pill(
+          'ordered', t(['dossier non autorisé', 'folder not authorised']));
       } catch (e) {
         msg = pill('cancelled', e.message);
       }
@@ -1135,24 +1179,35 @@
     cb.type = 'button';
     cb.className = 'secondary';
     cb.dataset.icon = 'trash';
-    cb.textContent = t(['Nettoyer le registre ({n})', 'Clean up the registry ({n})', 'Register bereinigen ({n})', 'Limpiar el registro ({n})'], {
+    cb.textContent = t(['Nettoyer le registre ({n})', 'Clean up the registry ({n})', 'Register bereinigen ({n})',
+      'Limpiar el registro ({n})'
+    ], {
       n: missing
     });
-    cb.title = t(['Retirer les missions « fichier absent » (après renumérotation ou suppression) ; statut, notes et date de vol passent à la mission renumérotée. Relire le dossier avant.', 'Remove “missing file” missions (after renumbering or deletion); status, notes and flight date move to the renumbered mission. Re-read the folder first.']);
+    cb.title = t([
+      'Retirer les missions « fichier absent » (après renumérotation ou suppression) ; statut, notes et date de vol passent à la mission renumérotée. Relire le dossier avant.',
+      'Remove “missing file” missions (after renumbering or deletion); status, notes and flight date move to the renumbered mission. Re-read the folder first.'
+    ]);
     cb.disabled = !missing;
     cb.onclick = async () => {
       if (!await doScan()) return; // état « fichier absent » à jour avant de retirer quoi que ce soit
       const n = reg.missions.filter(m => m.missingFile).length;
       if (!n) {
-        msg = pill('generated', t(['Rien à nettoyer : toutes les missions ont leur fichier.', 'Nothing to clean up: every mission has its file.']));
+        msg = pill('generated', t(['Rien à nettoyer : toutes les missions ont leur fichier.',
+          'Nothing to clean up: every mission has its file.'
+        ]));
         render();
         return;
       }
-      if (!confirm(t(['Retirer {n} mission(s) dont le fichier n’existe plus du registre ?', 'Remove {n} mission(s) whose file no longer exists from the registry?'], {
+      if (!confirm(t(['Retirer {n} mission(s) dont le fichier n’existe plus du registre ?',
+          'Remove {n} mission(s) whose file no longer exists from the registry?'
+        ], {
           n
         }))) return;
       const r = cleanup();
-      msg = pill('generated', t(['{r} entrée(s) retirée(s) ; statut ou notes reportés sur {m} mission(s) renumérotée(s).', '{r} entry(ies) removed; status or notes carried over to {m} renumbered mission(s).'], {
+      msg = pill('generated', t(['{r} entrée(s) retirée(s) ; statut ou notes reportés sur {m} mission(s) renumérotée(s).',
+        '{r} entry(ies) removed; status or notes carried over to {m} renumbered mission(s).'
+      ], {
         r: r.removed,
         m: r.moved
       }));
@@ -1305,7 +1360,10 @@
       columns: COLUMNS(),
       defaultSortKey: 'id',
       defaultDir: 1,
-      emptyText: reg.missions.length ? t(['Aucune mission ne correspond aux filtres.', 'No mission matches the filters.']) : t(['Registre vide : choisir le dossier « Missions » puis « Relire le dossier ».', 'Empty registry: choose the “Missions” folder then “Re-read folder”.']),
+      emptyText: reg.missions.length ? t(['Aucune mission ne correspond aux filtres.', 'No mission matches the filters.']) : t([
+        'Registre vide : choisir le dossier « Missions » puis « Relire le dossier ».',
+        'Empty registry: choose the “Missions” folder then “Re-read folder”.'
+      ]),
       onRowClick: m => {
         select(keyOf(m));
         renderDetail();
@@ -1319,7 +1377,9 @@
         return true;
       },
       deleteLabel: '✕',
-      deleteMessage: m => t(['Retirer « {m} » du registre ? (les fichiers ne sont pas supprimés)', 'Remove “{m}” from the registry? (files are not deleted)'], {
+      deleteMessage: m => t(['Retirer « {m} » du registre ? (les fichiers ne sont pas supprimés)',
+        'Remove “{m}” from the registry? (files are not deleted)'
+      ], {
         m: `${m.id} ${m.title}`
       })
     });
@@ -1404,7 +1464,9 @@
   const MAPSTATE = {
     complete: ['complète', 'complete', 'vollständig', 'completa'],
     partial: ['partielle : cartes à compléter', 'partial: maps missing', 'teilweise', 'parcial'],
-    none: ['partielle : cartes non générées (régénérables)', 'partial: maps not generated (can be regenerated)', 'ohne Karten', 'sin mapas']
+    none: ['partielle : cartes non générées (régénérables)', 'partial: maps not generated (can be regenerated)', 'ohne Karten',
+      'sin mapas'
+    ]
   };
   // ---- fichiers de la mission : YAML, Markdown (lisible), cartes, versions, textes reçus ; PDF à la demande (générateur)
   /** Styles de la visionneuse et des vignettes de cartes, injectés une fois (dès l'affichage des fichiers). */
@@ -1430,7 +1492,8 @@
     if (document.getElementById('rgViewerCss')) return;
     const css = document.createElement('style');
     css.id = 'rgViewerCss';
-    css.textContent = '.rg-thumbs{display:flex;flex-wrap:wrap;gap:8px;margin:6px 0}.rg-thumbs figure{margin:0;width:160px}.rg-thumbs img{width:160px;height:100px;object-fit:cover;border-radius:6px;cursor:zoom-in;border:1px solid #ccd}.rg-thumbs figcaption{font-size:11px;word-break:break-all}.rg-thumbs .rg-surplus img{opacity:.55;outline:2px dashed #c0392b;outline-offset:-2px}.rg-thumbs figure{position:relative}.rg-thumbs .rg-del{position:absolute;top:4px;right:4px;border:0;background:#c0392b;color:#fff;border-radius:50%;width:22px;height:22px;line-height:20px;padding:0;cursor:pointer;font-size:15px;box-shadow:0 1px 4px #0006;opacity:.85}.rg-thumbs .rg-del:hover{opacity:1}';
+    css.textContent =
+      '.rg-thumbs{display:flex;flex-wrap:wrap;gap:8px;margin:6px 0}.rg-thumbs figure{margin:0;width:160px}.rg-thumbs img{width:160px;height:100px;object-fit:cover;border-radius:6px;cursor:zoom-in;border:1px solid #ccd}.rg-thumbs figcaption{font-size:11px;word-break:break-all}.rg-thumbs .rg-surplus img{opacity:.55;outline:2px dashed #c0392b;outline-offset:-2px}.rg-thumbs figure{position:relative}.rg-thumbs .rg-del{position:absolute;top:4px;right:4px;border:0;background:#c0392b;color:#fff;border-radius:50%;width:22px;height:22px;line-height:20px;padding:0;cursor:pointer;font-size:15px;box-shadow:0 1px 4px #0006;opacity:.85}.rg-thumbs .rg-del:hover{opacity:1}';
     document.head.append(css);
   }
 
@@ -1441,7 +1504,8 @@
   };
   /** Markdown → HTML (titres, paragraphes, listes, tableaux, gras, italique, code). */
   function mdHtml(md) {
-    const inline = x => esc(x).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>').replace(/(^|\W)\*(.+?)\*(?=\W|$)/g, '$1<i>$2</i>').replace(/`(.+?)`/g, '<code>$1</code>');
+    const inline = x => esc(x).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>').replace(/(^|\W)\*(.+?)\*(?=\W|$)/g, '$1<i>$2</i>').replace(
+      /`(.+?)`/g, '<code>$1</code>');
     const out = [],
       lines = String(md || '').replace(/\r/g, '').split('\n');
     for (let i = 0; i < lines.length; i++) {
@@ -1484,7 +1548,11 @@
         folder: m.folder
       }) : null;
     if (!mh) {
-      host.textContent = m.folder ? t(['Dossier des missions non autorisé : choisir le dossier ci-dessus.', 'Missions folder not authorised: choose it above.']) : t(['Mission non rangée dans le dossier des missions (commande, ou reçue sans autorisation du dossier).', 'Mission not stored in the missions folder.']);
+      host.textContent = m.folder ? t(['Dossier des missions non autorisé : choisir le dossier ci-dessus.',
+        'Missions folder not authorised: choose it above.'
+      ]) : t(['Mission non rangée dans le dossier des missions (commande, ou reçue sans autorisation du dossier).',
+        'Mission not stored in the missions folder.'
+      ]);
       return;
     }
     const list = async (h, sub) => {
@@ -1532,7 +1600,8 @@
     for (const f of mapFiles) {
       const file = await f.dir.getFileHandle(f.name).then(h => h.getFile()),
         fig = document.createElement('figure'),
-        extra = f.sub && surplus.has(f.name.toLowerCase()) || !f.sub && !inMaps.has(f.name.toLowerCase()) && surplus.has(f.name.toLowerCase()),
+        extra = f.sub && surplus.has(f.name.toLowerCase()) || !f.sub && !inMaps.has(f.name.toLowerCase()) && surplus.has(f.name
+          .toLowerCase()),
         dup = !f.sub && inMaps.has(f.name.toLowerCase());
       fig.className = extra || dup ? 'rg-surplus' : '';
       fig.innerHTML = `<img alt="" loading="lazy"><figcaption>${esc(f.sub ? `${f.sub}/${f.name}` : f.name)}${f.sub ? '' : pill2('rg-planned', t(['racine', 'root', 'Wurzel', 'raíz']))}${dup ? pill2('rg-cancelled', t(['doublon', 'duplicate', 'Duplikat', 'duplicado'])) : extra ? pill2('rg-cancelled', t(['surnuméraire', 'surplus', 'überzählig', 'sobrante'])) : ''} · ${esc(B(f.size))} <button type="button" class="rg-del" title="${esc(t(['Supprimer cette carte du dossier de la mission', 'Delete this map from the mission folder', 'Diese Karte aus dem Missionsordner löschen', 'Borrar este mapa de la carpeta de la misión']))}">×</button></figcaption>`;
@@ -1543,8 +1612,12 @@
       };
       fig.querySelector('.rg-del').addEventListener('click', async () => {
         const label = f.sub ? `${f.sub}/${f.name}` : f.name,
-          why = dup ? t(['doublon : la même carte reste dans cartes/', 'duplicate: the same map stays in cartes/']) : extra ? t(['absente de la liste des cartes de la mission', 'not in the mission’s map list']) : t(['carte de la mission : le studio pourra la régénérer', 'mission map: the studio can regenerate it']);
-        if (!confirm(t(['Supprimer « {f} » ({s}) du dossier de la mission ?\n{w}', 'Delete “{f}” ({s}) from the mission folder?\n{w}'], {
+          why = dup ? t(['doublon : la même carte reste dans cartes/', 'duplicate: the same map stays in cartes/']) : extra ? t([
+            'absente de la liste des cartes de la mission', 'not in the mission’s map list'
+          ]) : t(['carte de la mission : le studio pourra la régénérer', 'mission map: the studio can regenerate it']);
+        if (!confirm(t(['Supprimer « {f} » ({s}) du dossier de la mission ?\n{w}',
+            'Delete “{f}” ({s}) from the mission folder?\n{w}'
+          ], {
             f: label,
             s: B(f.size),
             w: why
@@ -1562,7 +1635,9 @@
     if (dupRoot.length) {
       thumbs.insertAdjacentHTML('afterend', `<p class="rg-small">${esc(t(['{n} carte(s) en double à la racine du dossier (la même carte est dans cartes/).', '{n} duplicate map(s) at the folder root (same map in cartes/).'], { n: dupRoot.length }))} <button type="button" class="secondary" id="rgDelDup" data-icon="trash">${esc(t(['Supprimer les doublons à la racine ({n}, {s})', 'Delete root duplicates ({n}, {s})'], { n: dupRoot.length, s: B(dupRoot.reduce((a, f) => a + f.size, 0)) }))}</button></p>`);
       host.querySelector('#rgDelDup').addEventListener('click', async () => {
-        if (!confirm(t(['Supprimer {n} carte(s) en double à la racine du dossier ? Les exemplaires de cartes/ sont gardés.', 'Delete {n} duplicate map(s) at the folder root? The copies in cartes/ are kept.'], {
+        if (!confirm(t(['Supprimer {n} carte(s) en double à la racine du dossier ? Les exemplaires de cartes/ sont gardés.',
+            'Delete {n} duplicate map(s) at the folder root? The copies in cartes/ are kept.'
+          ], {
             n: dupRoot.length
           }))) return;
         const n = await C.removeFiles(dupRoot);
@@ -1575,7 +1650,10 @@
     const sz = usage.sizes;
     thumbs.insertAdjacentHTML('afterend', `<p class="rg-small">${esc(t(['Place : {t} — données {d}, cartes {c}, versions {v}, textes reçus {r}.', 'Space: {t} — data {d}, maps {c}, versions {v}, received texts {r}.'], { t: B(sz.total), d: B(sz.data), c: B(sz.maps), v: B(sz.versions), r: B(sz.recu) }))}${sz.pdf ? esc(t([' PDF : {p}.', ' PDF: {p}.'], { p: B(sz.pdf) })) : ''}${usage.surplus.length ? ` <button type="button" class="secondary" id="rgDelSurplus" data-icon="trash">${esc(t(['Supprimer les cartes surnuméraires ({n}, {s})', 'Delete surplus maps ({n}, {s})'], { n: usage.surplus.length, s: B(usage.surplusSize) }))}</button>` : ''}</p>`);
     host.querySelector('#rgDelSurplus')?.addEventListener('click', async () => {
-      if (!confirm(t(['Supprimer {n} carte(s) surnuméraire(s) ({s}) du dossier de la mission ? Elles ne figurent plus dans sa liste de cartes.', 'Delete {n} surplus map(s) ({s}) from the mission folder?'], {
+      if (!confirm(t([
+          'Supprimer {n} carte(s) surnuméraire(s) ({s}) du dossier de la mission ? Elles ne figurent plus dans sa liste de cartes.',
+          'Delete {n} surplus map(s) ({s}) from the mission folder?'
+        ], {
           n: usage.surplus.length,
           s: B(usage.surplusSize)
         }))) return;
@@ -1640,9 +1718,10 @@
   /** Missions du registre de la même opération que m (triées, organisation en dernier). */
   const operationMembers = m => {
     const op = m.operation?.id;
-    return op ? reg.missions.filter(x => x.operation?.id === op && x.files?.length).sort((a, b) => (a.organisation - b.organisation) || String(a.id).localeCompare(String(b.id), 'fr', {
-      numeric: true
-    })) : [];
+    return op ? reg.missions.filter(x => x.operation?.id === op && x.files?.length).sort((a, b) => (a.organisation - b.organisation) ||
+      String(a.id).localeCompare(String(b.id), 'fr', {
+        numeric: true
+      })) : [];
   };
   /** Bloc « Opération » de la fiche : membres (cliquables), résumé de l'exercice, ouverture de toute l'opération. */
   function operationHtml(m) {
@@ -1701,7 +1780,8 @@
       const b = window.SiaMission.loadBatch(),
         i = b ? b.docs.findIndex(d => String(d.yaml?.mission?.id || '').toUpperCase() === String(m.id).toUpperCase()) : -1;
       if (i >= 0) window.SiaMission.go(i, 'registry');
-      location.href = new URL(where === 'studio' ? 'apps/cpco/map_parser.html' : 'apps/cpco/mission_editor.html', window.RepositoryNav.root).href;
+      location.href = new URL(where === 'studio' ? 'apps/cpco/map_parser.html' : 'apps/cpco/mission_editor.html', window.RepositoryNav
+        .root).href;
     } catch (e) {
       if (window.AppFramework?.notify) window.AppFramework.notify(e.message, 'err');
       else if (out) out.textContent = e.message;
@@ -1715,7 +1795,8 @@
         await sendPrompt(m.request);
         return;
       }
-      if ((where === 'editor' || where === 'studio') && operationMembers(m).length > 1) return goOperation(m, where); // mission d'opération : tout le lot
+      if ((where === 'editor' || where === 'studio') && operationMembers(m).length > 1) return goOperation(m,
+      where); // mission d'opération : tout le lot
       select(keyOf(m));
       // lien « ← Registre » du générateur et du studio (même onglet) : SiaMission.mountNav
       try {
@@ -1769,7 +1850,8 @@
         persist();
         await writeSuivi(m); // avant de quitter la page
       }
-      location.href = new URL(where === 'studio' ? 'apps/cpco/map_parser.html' : 'apps/cpco/mission_editor.html', window.RepositoryNav.root).href;
+      location.href = new URL(where === 'studio' ? 'apps/cpco/map_parser.html' : 'apps/cpco/mission_editor.html', window.RepositoryNav
+        .root).href;
     } catch (e) {
       if (window.AppFramework?.notify) window.AppFramework.notify(e.message, 'err');
       else if (out) out.textContent = e.message;
@@ -1786,7 +1868,9 @@
   const sendPrompt = r => window.MissionOrder?.sendPrompt(r, document.getElementById('rgGoMsg'));
 
   function exportCsv() {
-    const cols = ['id', 'series', 'type', 'subtype', 'title', 'teamCount', 'teamTypes', 'aircraftTypes', 'callsigns', 'rdv', 'aar', 'theatre', 'origin', 'destination', 'status', 'flownAt', 'folder', 'notes'];
+    const cols = ['id', 'series', 'type', 'subtype', 'title', 'teamCount', 'teamTypes', 'aircraftTypes', 'callsigns', 'rdv', 'aar',
+      'theatre', 'origin', 'destination', 'status', 'flownAt', 'folder', 'notes'
+    ];
     const cell = v => {
       const s = Array.isArray(v) ? v.join(' + ') : String(v ?? '');
       return /[";\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;

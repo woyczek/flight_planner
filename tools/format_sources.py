@@ -20,13 +20,15 @@ import io, json, os, re, subprocess, sys
 import cssbeautifier, jsbeautifier
 
 ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
-EXCLUS = re.compile(r'(\.min\.js$|/maplibre|/jspdf|^AircraftDB/|^data/|/carto/|^apps/planner/map_planner\.html$|^apps/cpco/mission_prompt\.js$|^tools/|^docs/)')
+EXCLUS = re.compile(r'(\.min\.js$|^apps/aide/docs_bundle\.js$|/maplibre|/jspdf|^AircraftDB/|^data/|/carto/|^apps/planner/map_planner\.html$|^apps/cpco/mission_prompt\.js$|^tools/|^docs/)')
 
 JS_OPTS = jsbeautifier.default_options()
 JS_OPTS.indent_size = 2
 JS_OPTS.preserve_newlines = True
 JS_OPTS.max_preserve_newlines = 2
-JS_OPTS.wrap_line_length = 0
+# lignes coupées au-delà de 140 caractères, hors chaînes et gabarits (protégés) : pas de JS « compressé » sur une ligne ;
+# les appels [fr, en, de, es] passent à une langue par ligne
+JS_OPTS.wrap_line_length = 140
 JS_OPTS.brace_style = 'collapse'
 JS_OPTS.templating = ['none']
 JS_OPTS.end_with_newline = False

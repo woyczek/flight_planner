@@ -28,7 +28,8 @@
       const c = load();
       for (const l of Object.keys(c)) {
         const k = Object.keys(c[l]);
-        if (k.length > MAX) for (const x of k.slice(0, k.length - MAX)) delete c[l][x];
+        if (k.length > MAX)
+          for (const x of k.slice(0, k.length - MAX)) delete c[l][x];
       }
       localStorage.setItem(KEY, JSON.stringify(c));
     } catch {

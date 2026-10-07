@@ -107,7 +107,8 @@
   /** Niveau de travail d'une mission (ft) : croisière de l'appareil, sinon profil vertical, sinon estimation. */
   function workFt(y) {
     const ac = (Array.isArray(y.aircraft) ? y.aircraft : [y.aircraft]).find(Boolean) || {};
-    return levelFt(ac.cruise_level) ?? levelFt(y.vertical_profile?.cruise) ?? window.MissionEstimate?.estimate?.(y)?.aircraft?.alt ?? 3000;
+    return levelFt(ac.cruise_level) ?? levelFt(y.vertical_profile?.cruise) ?? window.MissionEstimate?.estimate?.(y)?.aircraft?.alt ??
+    3000;
   }
 
   /** Espaces recoupés par une mission : [{ key, name, type, lower, upper, admin, act, info, azba, where: [texte] }]. */
@@ -146,9 +147,10 @@
         if (lo <= top && pts.some(p => inside(a, p))) hit(a, `zone ${z.name || z.id || ''}`.trim());
       }
     }
-    return [...hits.values()].sort((a, b) => (a.type === 'P') - (b.type === 'P') || String(a.admin).localeCompare(String(b.admin)) || String(a.name).localeCompare(String(b.name), 'fr', {
-      numeric: true
-    }));
+    return [...hits.values()].sort((a, b) => (a.type === 'P') - (b.type === 'P') || String(a.admin).localeCompare(String(b.admin)) ||
+      String(a.name).localeCompare(String(b.name), 'fr', {
+        numeric: true
+      }));
   }
   /** Espaces de plusieurs missions (opération) : même forme, avec by (identifiants des missions). */
   function crossedAll(docs, airspaces) {

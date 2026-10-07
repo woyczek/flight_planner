@@ -80,7 +80,8 @@ function fpVisual(profile) {
     }
     if (s.engines === 1) return wing === "high" ? "monoHigh" : "monoProp"
   }
-  if (s.power === "J") return s.engines >= 4 ? "quadJet" : /CITATION|LEAR|GULFSTREAM|FALCON|CHALLENGER|PHENOM|HAWKER/.test(k) ? "bizJet" : "twinJet";
+  if (s.power === "J") return s.engines >= 4 ? "quadJet" : /CITATION|LEAR|GULFSTREAM|FALCON|CHALLENGER|PHENOM|HAWKER/.test(k) ? "bizJet" :
+    "twinJet";
   return "other"
 }
 
@@ -100,7 +101,8 @@ function fpIcon(profile) {
     visual = fpVisual(profile),
     wtc = String(rec.wtc || "L").replace(/[^A-Z]/g, "") || "L";
   const label = [rec.tdesig, rec.model, rec.description, rec.wtc ? "WTC " + rec.wtc : ""].filter(Boolean).join(" · ");
-  return '<span class="ac-icon ' + (visual === "other" ? "unknown " : "") + 'wtc-' + wtc + '" title="' + label.replace(/"/g, "&quot;") + '">' + aircraftSvgForVisual(visual) + '</span>'
+  return '<span class="ac-icon ' + (visual === "other" ? "unknown " : "") + 'wtc-' + wtc + '" title="' + label.replace(/"/g, "&quot;") +
+    '">' + aircraftSvgForVisual(visual) + '</span>'
 }
 window.AircraftDBIcons = {
   resolve: fpResolve,

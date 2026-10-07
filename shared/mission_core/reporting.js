@@ -19,10 +19,12 @@
     data: L('Registre des missions', 'Mission ledger', 'Einsatzregister', 'Registro de misiones'),
     summary: L('Synthèse', 'Summary', 'Übersicht', 'Resumen'),
     breakdowns: L('Répartition détaillée', 'Detailed breakdown', 'Detaillierte Aufschlüsselung', 'Desglose detallado'),
-    missionsTitle: L('Missions (tri, clic pour modifier, suppression)', 'Missions (sort, click to edit, delete)', 'Einsätze (sortieren, zum Bearbeiten klicken, löschen)', 'Misiones (ordenar, clic para modificar, eliminar)'),
+    missionsTitle: L('Missions (tri, clic pour modifier, suppression)', 'Missions (sort, click to edit, delete)',
+      'Einsätze (sortieren, zum Bearbeiten klicken, löschen)', 'Misiones (ordenar, clic para modificar, eliminar)'),
     newReport: L('Nouveau compte rendu', 'New report', 'Neuer Bericht', 'Nuevo informe'),
     exportYaml: L('Exporter le registre (YAML)', 'Export ledger (YAML)', 'Register exportieren (YAML)', 'Exportar registro (YAML)'),
-    exportCsv: L('Exporter en CSV (tableur)', 'Export CSV (spreadsheet)', 'CSV exportieren (Tabelle)', 'Exportar CSV (hoja de cálculo)'),
+    exportCsv: L('Exporter en CSV (tableur)', 'Export CSV (spreadsheet)', 'CSV exportieren (Tabelle)',
+      'Exportar CSV (hoja de cálculo)'),
     importYaml: L('Importer des missions (YAML)', 'Import missions (YAML)', 'Einsätze importieren (YAML)', 'Importar misiones (YAML)'),
     folder: L('Dossier du registre…', 'Ledger folder…', 'Registerordner…', 'Carpeta del registro…'),
     print: L('PDF / Imprimer', 'PDF / Print', 'PDF / Drucken', 'PDF / Imprimir'),
@@ -48,11 +50,17 @@
     colBlock: L('Bloc', 'Block', 'Block', 'Calzo'),
     colStation: L('Sur zone', 'On station', 'Im Einsatz', 'En zona'),
     colTrace: L('Trace', 'Track', 'Spur', 'Traza'),
-    empty: L('Aucune mission pour la période sélectionnée.', 'No mission for the selected period.', 'Kein Einsatz im gewählten Zeitraum.', 'Ninguna misión en el periodo seleccionado.'),
-    confirmDelete: L('Supprimer définitivement cette mission du registre ?', 'Permanently delete this mission from the ledger?', 'Diesen Einsatz endgültig aus dem Register löschen?', '¿Eliminar definitivamente esta misión del registro?'),
-    rowTitle: L('Cliquer pour modifier la mission', 'Click to edit the mission', 'Klicken, um den Einsatz zu bearbeiten', 'Clic para modificar la misión'),
+    empty: L('Aucune mission pour la période sélectionnée.', 'No mission for the selected period.',
+      'Kein Einsatz im gewählten Zeitraum.', 'Ninguna misión en el periodo seleccionado.'),
+    confirmDelete: L('Supprimer définitivement cette mission du registre ?', 'Permanently delete this mission from the ledger?',
+      'Diesen Einsatz endgültig aus dem Register löschen?', '¿Eliminar definitivamente esta misión del registro?'),
+    rowTitle: L('Cliquer pour modifier la mission', 'Click to edit the mission', 'Klicken, um den Einsatz zu bearbeiten',
+      'Clic para modificar la misión'),
     saved: L('Registre enregistré', 'Ledger saved', 'Register gespeichert', 'Registro guardado'),
-    browserOnly: L('enregistré dans le navigateur (choisir le dossier pour écrire le fichier)', 'saved in the browser (choose the folder to write the file)', 'im Browser gespeichert (Ordner wählen, um die Datei zu schreiben)', 'guardado en el navegador (elija la carpeta para escribir el archivo)'),
+    browserOnly: L('enregistré dans le navigateur (choisir le dossier pour écrire le fichier)',
+      'saved in the browser (choose the folder to write the file)',
+      'im Browser gespeichert (Ordner wählen, um die Datei zu schreiben)',
+      'guardado en el navegador (elija la carpeta para escribir el archivo)'),
     importedN: L('missions importées', 'missions imported', 'Einsätze importiert', 'misiones importadas'),
     folderLabel: L('Dossier', 'Folder', 'Ordner', 'Carpeta'),
     browser: L('navigateur uniquement', 'browser only', 'nur Browser', 'solo navegador'),
@@ -67,8 +75,14 @@
     quarter: L('Trimestre', 'Quarter', 'Quartal', 'Trimestre'),
     year: L('Année', 'Year', 'Jahr', 'Año'),
     colIssues: L('Contrôle', 'Check', 'Prüfung', 'Control'),
-    legacyUseCache: L('Utiliser l’ancien registre déjà chargé dans le navigateur ? (Annuler pour choisir un fichier CSV)', 'Use the legacy ledger already loaded in the browser? (Cancel to choose a CSV file)', 'Das bereits im Browser geladene alte Register verwenden? (Abbrechen, um eine CSV-Datei zu wählen)', '¿Usar el registro antiguo ya cargado en el navegador? (Cancelar para elegir un archivo CSV)'),
-    legacyDone: L('missions importées de l’ancien registre ; déjà présentes (même n° et date) :', 'missions imported from the legacy ledger; already present (same ID and date):', 'Einsätze aus dem alten Register importiert; bereits vorhanden (gleiche ID und Datum):', 'misiones importadas del registro antiguo; ya presentes (mismo ID y fecha):')
+    legacyUseCache: L('Utiliser l’ancien registre déjà chargé dans le navigateur ? (Annuler pour choisir un fichier CSV)',
+      'Use the legacy ledger already loaded in the browser? (Cancel to choose a CSV file)',
+      'Das bereits im Browser geladene alte Register verwenden? (Abbrechen, um eine CSV-Datei zu wählen)',
+      '¿Usar el registro antiguo ya cargado en el navegador? (Cancelar para elegir un archivo CSV)'),
+    legacyDone: L('missions importées de l’ancien registre ; déjà présentes (même n° et date) :',
+      'missions imported from the legacy ledger; already present (same ID and date):',
+      'Einsätze aus dem alten Register importiert; bereits vorhanden (gleiche ID und Datum):',
+      'misiones importadas del registro antiguo; ya presentes (mismo ID y fecha):')
   };
 
   /** Page de reporting d'une famille : période, statistiques, graphiques, tableau des missions (modifiable dans le tableau), import / export, source (registre ou journal). */
@@ -224,8 +238,10 @@
     const GE = {
       toggle: L('✎ Modifier dans le tableau', '✎ Edit in the table', '✎ In der Tabelle bearbeiten', '✎ Modificar en la tabla'),
       done: L('✓ Terminer', '✓ Done', '✓ Fertig', '✓ Terminar'),
-      saved: L('Mission modifiée et enregistrée', 'Mission changed and saved', 'Einsatz geändert und gespeichert', 'Misión modificada y guardada'),
-      declared: L('durée déclarée (sans heures)', 'declared duration (no times)', 'angegebene Dauer (ohne Uhrzeiten)', 'duración declarada (sin horas)'),
+      saved: L('Mission modifiée et enregistrée', 'Mission changed and saved', 'Einsatz geändert und gespeichert',
+        'Misión modificada y guardada'),
+      declared: L('durée déclarée (sans heures)', 'declared duration (no times)', 'angegebene Dauer (ohne Uhrzeiten)',
+        'duración declarada (sin horas)'),
       error: L('Valeur refusée', 'Value rejected', 'Wert abgelehnt', 'Valor rechazado')
     };
     let editMode = false,
@@ -301,7 +317,8 @@
       label: L('Données', 'Data', 'Daten', 'Datos'),
       ledger: L('Mes missions (registre)', 'My missions (ledger)', 'Meine Einsätze (Register)', 'Mis misiones (registro)'),
       defa: L('Journal (vols réalisés)', 'Log (flights flown)', 'Journal (durchgeführte Flüge)', 'Diario (vuelos realizados)'),
-      readOnly: L('Vol du journal : lecture seule (pas de CR à modifier).', 'Log flight: read-only (no report to edit).', 'Flug aus dem Journal: nur lesbar.', 'Vuelo del diario: solo lectura.')
+      readOnly: L('Vol du journal : lecture seule (pas de CR à modifier).', 'Log flight: read-only (no report to edit).',
+        'Flug aus dem Journal: nur lesbar.', 'Vuelo del diario: solo lectura.')
     };
     let logMissions = null;
     /** Vrai si les reportings lisent le journal. */
@@ -313,7 +330,8 @@
     });
     // Menu « Données » toujours visible : registre, journal (s'il est chargé) et chargement /
     // mise à jour du journal (page copiée ou enregistrée) sans passer par le Paramétrage.
-    const SRC_LOAD = L('Charger / mettre à jour le journal…', 'Load / update the log…', 'Journal laden / aktualisieren…', 'Cargar / actualizar el diario…');
+    const SRC_LOAD = L('Charger / mettre à jour le journal…', 'Load / update the log…', 'Journal laden / aktualisieren…',
+      'Cargar / actualizar el diario…');
 
     /** Choix de la source des reportings (registre / journal) et chargement du journal. */
     function sourcePicker(host) {
@@ -357,7 +375,8 @@
     /** Rendu du reporting pour la période et le sous-type : cartes, graphiques, répartitions, tableau. */
     function render() {
       const source = sourceMissions(),
-        all = (source ? source.filter(m => m.family === family.id) : ledger.missions).map(toRow).filter(r => !seriesFilter || r.series === seriesFilter);
+        all = (source ? source.filter(m => m.family === family.id) : ledger.missions).map(toRow).filter(r => !seriesFilter || r.series ===
+          seriesFilter);
       const visible = window.TimePeriod ? window.TimePeriod.filterRows(all, 'date') : all;
       // Statistiques communes (§20) + statistiques spécialisées de la famille (stats.js).
       root.querySelector('#mcCards').innerHTML = window.MissionStats.cards(visible.map(r => r.mission), family).map(card => {
@@ -566,7 +585,8 @@
     }) || null;
     window.addEventListener('repository-language-change', () => setTimeout(render));
     window.addEventListener('repository-design-change', () => setTimeout(render)); // palette, style des graphiques
-    window.addEventListener('load', () => window.RepositoryNav?.addAction?.(UI.newReport.map(s => `${s} ${family.id}`), () => { // libellé des 4 langues : le menu le traduit
+    window.addEventListener('load', () => window.RepositoryNav?.addAction?.(UI.newReport.map(s => `${s} ${family.id}`),
+  () => { // libellé des 4 langues : le menu le traduit
       location.href = family.pages.cr;
     }));
     const ready = ledger.load().then(render);

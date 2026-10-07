@@ -11,7 +11,8 @@
     LEGACY = 'missionGeneratorDraft' + NS,
     BATCH = NS ? 'siaMissionBatch' + NS : 'siaMissionBatch:v1'; // lot de missions (opération à plusieurs équipes) : { docs, index }
   /** Clé de texte : minuscules sans accents, mots séparés par « _ ». */
-  const norm = s => String(s ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
+  const norm = s => String(s ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(
+    /^_|_$/g, '');
   /** Copie profonde : valeurs simples telles quelles (la copie JSON de chaque nombre ou texte coûtait des milliers
    *  d'analyses par relecture du dossier des missions), objets par structuredClone. */
   const deepClone = v => v === null || typeof v !== 'object' ? v : structuredClone(v);
@@ -57,7 +58,8 @@
   /** Texte d'un bloc de l'ancien format (de start au titre suivant). */
   function legacyBlock(text, start, endNames) {
     const ends = endNames.map(x => x.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|'),
-      re = new RegExp('^' + start.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\s*:\\s*\\r?\\n([\\s\\S]*?)(?=^(?:' + ends + ')\\s*:\\s*$|(?![\\s\\S]))', 'mi'),
+      re = new RegExp('^' + start.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\s*:\\s*\\r?\\n([\\s\\S]*?)(?=^(?:' + ends +
+        ')\\s*:\\s*$|(?![\\s\\S]))', 'mi'),
       m = text.match(re);
     return m ? m[1].trim() : ''
   }
@@ -65,7 +67,8 @@
   /** Points tournants de l'ancien format (nom, position). */
   function parseLegacyPoints(block) {
     const out = [];
-    for (const m of block.matchAll(/^\s*-\s*([^|\n]+)\|\s*([^|\n]+)\|\s*(-?\d+(?:[.,]\d+)?)\s*\|\s*(-?\d+(?:[.,]\d+)?)(?:\s*\|\s*([^\n]+))?/gm)) out.push({
+    for (const m of block.matchAll(
+        /^\s*-\s*([^|\n]+)\|\s*([^|\n]+)\|\s*(-?\d+(?:[.,]\d+)?)\s*\|\s*(-?\d+(?:[.,]\d+)?)(?:\s*\|\s*([^\n]+))?/gm)) out.push({
       id: m[1].trim(),
       name: m[2].trim(),
       lat: +m[3].replace(',', '.'),
@@ -98,15 +101,18 @@
   }
   /** Tableau Markdown d'une section → lignes { colonne normalisée : valeur }. */
   function mdTable(block) {
-    const rows = String(block).split('\n').filter(l => /^\s*\|/.test(l)).map(l => l.trim().replace(/^\||\|$/g, '').split('|').map(c => c.trim()));
+    const rows = String(block).split('\n').filter(l => /^\s*\|/.test(l)).map(l => l.trim().replace(/^\||\|$/g, '').split('|').map(c => c
+      .trim()));
     if (rows.length < 2) return [];
     const head = rows[0].map(norm);
-    return rows.slice(1).filter(r => !r.every(c => /^:?-{2,}:?$/.test(c))).map(r => Object.fromEntries(head.map((h, i) => [h, r[i] ?? ''])));
+    return rows.slice(1).filter(r => !r.every(c => /^:?-{2,}:?$/.test(c))).map(r => Object.fromEntries(head.map((h, i) => [h, r[i] ??
+      ''])));
   }
   /** Éléments de liste « - … » d'une section. */
   const mdList = block => String(block).split('\n').map(l => /^\s*-\s+(.*)$/.exec(l)?.[1]?.trim()).filter(Boolean);
   /** Valeur de liste typée : True / False (vrai / faux, oui / non), nombre, sinon texte. */
-  const mdValue = v => /^(true|vrai|oui)$/i.test(v) ? true : /^(false|faux|non)$/i.test(v) ? false : /^-?\d+(?:[.,]\d+)?$/.test(v) ? Number(v.replace(',', '.')) : v;
+  const mdValue = v => /^(true|vrai|oui)$/i.test(v) ? true : /^(false|faux|non)$/i.test(v) ? false : /^-?\d+(?:[.,]\d+)?$/.test(v) ?
+    Number(v.replace(',', '.')) : v;
   /** « Nom (OACI) — lat, lon » → { name, icao?, lat?, lon? } ; null si vide. */
   function mdPlace(text) {
     const m = /^(.*?)(?:\s*—\s*([-+]?\d+(?:\.\d+)?)\s*,\s*([-+]?\d+(?:\.\d+)?))?\s*$/.exec(String(text || '').trim());
@@ -161,7 +167,9 @@
     if (tps.length) y.turning_points = tps;
     // rendez-vous : « - **RDV-1 — Nom** — lat, lon — participants : A, B — rôle »
     const rdv = mdList(mdSection(text, /^rendez_vous/)).map(item => {
-      const m = /^\*\*(.+?)\*\*\s*—\s*([-+]?\d+(?:\.\d+)?)\s*,\s*([-+]?\d+(?:\.\d+)?)\s*(?:—\s*participants?\s*:\s*(.+?))?(?:\s*—\s*(.+))?$/i.exec(item);
+      const m =
+        /^\*\*(.+?)\*\*\s*—\s*([-+]?\d+(?:\.\d+)?)\s*,\s*([-+]?\d+(?:\.\d+)?)\s*(?:—\s*participants?\s*:\s*(.+?))?(?:\s*—\s*(.+))?$/i
+        .exec(item);
       if (!m) return null;
       const [id, ...name] = m[1].split(/\s+—\s+/);
       return {
@@ -186,7 +194,8 @@
     // charge / personnel
     const loadBlock = mdSection(text, /^charge/);
     if (loadBlock) {
-      const [head, tail = ''] = loadBlock.split(/contraintes\s*:/i), kv = mdPairs(head), mass = kv.masse || kv.masse_fret || kv.masse_totale, list = mdList(tail);
+      const [head, tail = ''] = loadBlock.split(/contraintes\s*:/i), kv = mdPairs(head), mass = kv.masse || kv.masse_fret || kv
+        .masse_totale, list = mdList(tail);
       y.payload = {
         category: kv.categorie || '',
         description: kv.description || ''
@@ -245,7 +254,9 @@
         }
       }
     }
-    const targetBlock = legacyBlock(text, 'TARGET', ['TURNING POINTS', 'POINTS TOURNANTS', 'RDV', 'ZONE', 'MAPS TO PRODUCE', 'MAPS', 'NOTES']),
+    const targetBlock = legacyBlock(text, 'TARGET', ['TURNING POINTS', 'POINTS TOURNANTS', 'RDV', 'ZONE', 'MAPS TO PRODUCE', 'MAPS',
+        'NOTES'
+      ]),
       target = {
         id: 'TARGET',
         name: legacyValue(targetBlock, 'NAME') || legacyValue(targetBlock, 'NOM') || 'Cible',
@@ -253,7 +264,8 @@
         lon: legacyNumber(legacyValue(targetBlock, 'LON'))
       };
     if (Number.isFinite(target.lat) && Number.isFinite(target.lon)) y.target = target;
-    const tpBlock = legacyBlock(text, 'TURNING POINTS', ['RDV', 'ZONE', 'MAPS TO PRODUCE', 'MAPS', 'NOTES']) || legacyBlock(text, 'POINTS TOURNANTS', ['RDV', 'ZONE', 'MAPS TO PRODUCE', 'MAPS', 'NOTES']),
+    const tpBlock = legacyBlock(text, 'TURNING POINTS', ['RDV', 'ZONE', 'MAPS TO PRODUCE', 'MAPS', 'NOTES']) || legacyBlock(text,
+        'POINTS TOURNANTS', ['RDV', 'ZONE', 'MAPS TO PRODUCE', 'MAPS', 'NOTES']),
       turning = parseLegacyPoints(tpBlock);
     if (turning.length) y.turning_points = turning;
     const rdv = parseLegacyPoints(legacyBlock(text, 'RDV', ['ZONE', 'MAPS TO PRODUCE', 'MAPS', 'NOTES']));
@@ -273,14 +285,16 @@
         description = (m[2] || '').trim();
       maps.push({
         filename,
-        type: /general/i.test(filename) ? 'general' : /detail/i.test(filename) ? 'detail' : /cible|target/i.test(filename) ? 'target' : /zone/i.test(filename) ? 'zone' : 'map',
+        type: /general/i.test(filename) ? 'general' : /detail/i.test(filename) ? 'detail' : /cible|target/i.test(filename) ?
+          'target' : /zone/i.test(filename) ? 'zone' : 'map',
         description
       })
     }
     if (!maps.length)
       for (const filename of new Set([...text.matchAll(/\b([\wÀ-ÿ.-]+\.(?:png|jpe?g|svg))\b/gi)].map(m => m[1]))) maps.push({
         filename,
-        type: /general/i.test(filename) ? 'general' : /detail/i.test(filename) ? 'detail' : /cible|target/i.test(filename) ? 'target' : 'map'
+        type: /general/i.test(filename) ? 'general' : /detail/i.test(filename) ? 'detail' : /cible|target/i.test(filename) ?
+          'target' : 'map'
       });
     if (maps.length) y.maps = maps;
     const notes = legacyBlock(text, 'NOTES', ['$']).split(/\r?\n/).map(x => x.replace(/^\s*-\s*/, '').trim()).filter(Boolean);
@@ -294,7 +308,8 @@
     if (Array.isArray(extra)) return extra;
     if (typeof extra !== 'object') return extra;
     const out = base && typeof base === 'object' && !Array.isArray(base) ? base : {};
-    for (const [k, v] of Object.entries(extra)) out[k] = v && typeof v === 'object' && !Array.isArray(v) ? mergeYaml(out[k], v) : deepClone(v);
+    for (const [k, v] of Object.entries(extra)) out[k] = v && typeof v === 'object' && !Array.isArray(v) ? mergeYaml(out[k], v) :
+      deepClone(v);
     return out
   }
 
@@ -302,9 +317,11 @@
   // Fichiers d'une mission : YAML (données) et / ou Markdown (textes, plus les données du format actuel).
   // Fichiers annexes d'une série ignorés (manifeste des cartes, références, consignes, VALIDATION.txt) ;
   // une sélection qui contient plusieurs missions (dossier de série entier) est refusée avec un message clair.
-  const isYaml = f => /\.ya?ml$/i.test(f.name) || /^\s*[\[{]/.test(f.text) || /^\s*(schema|mission)\s*:/m.test(f.text) && !/^\s*#/.test(f.text);
+  const isYaml = f => /\.ya?ml$/i.test(f.name) || /^\s*[\[{]/.test(f.text) || /^\s*(schema|mission)\s*:/m.test(f.text) && !/^\s*#/.test(f
+    .text);
   /** Vrai pour le Markdown d'une mission (ancien format TYPE: / TURNING POINTS:, ou format actuel ## Introduction / ## Summary). */
-  const isMissionMd = f => (/\.(md|markdown|txt)$/i.test(f.name) || /^\s*#/.test(f.text)) && (/^##\s+(introduction|summary|résumé|resume)\b/im.test(f.text) || /^\s*(TYPE|TURNING POINTS|POINTS TOURNANTS)\s*:/m.test(f.text));
+  const isMissionMd = f => (/\.(md|markdown|txt)$/i.test(f.name) || /^\s*#/.test(f.text)) && (
+    /^##\s+(introduction|summary|résumé|resume)\b/im.test(f.text) || /^\s*(TYPE|TURNING POINTS|POINTS TOURNANTS)\s*:/m.test(f.text));
   /** Missions distinctes d'une sélection : identifiant du YAML (mission.id) ou n° du titre Markdown (« Mission 51 »). */
   /** Identifiant de mission normalisé (M-016, m-16 → M-016 ; 041A → 41A) : regroupement des fichiers d'une même mission. */
   const normId = v => parseId(v).id;
@@ -342,7 +359,9 @@
     }) => /\.ya?ml$/i.test(f.name) || ['schema', 'mission', 'turning_points', 'target', 'aircraft'].some(k => k in parsed);
     const yamls = parsedYamls.filter(isMission);
     const mds = files.filter(f => !isYaml(f) && isMissionMd(f));
-    const ignored = [...parsedYamls.filter(y => !isMission(y)).map(y => y.f.name), ...files.filter(f => !isYaml(f) && !isMissionMd(f)).map(f => f.name)];
+    const ignored = [...parsedYamls.filter(y => !isMission(y)).map(y => y.f.name), ...files.filter(f => !isYaml(f) && !isMissionMd(f))
+      .map(f => f.name)
+    ];
     if (!yamls.length && !mds.length) throw Error(`Aucun fichier de mission (YAML ou Markdown de mission) dans : ${files.map(f => f.name).join(', ')}.`);
     const ids = missionIds(yamls, mds);
     if (ids.length > 1) throw Error(`La sélection contient ${ids.length} missions (${ids.join(', ')}) : choisir les fichiers d'une seule mission (missionNN.yaml et summaryNN.md).`);
@@ -365,7 +384,8 @@
       narrative.sections.push(...p.sections);
     }
     // ligne de séparation d'un tableau Markdown recopiée comme équipe par certains générateurs (« --- », « ---: »)
-    if (Array.isArray(yaml.teams)) yaml.teams = yaml.teams.filter(t => !t || typeof t !== 'object' || !Object.values(t).every(v => /^\s*:?-{2,}:?\s*$/.test(String(v ?? ''))));
+    if (Array.isArray(yaml.teams)) yaml.teams = yaml.teams.filter(t => !t || typeof t !== 'object' || !Object.values(t).every(v =>
+      /^\s*:?-{2,}:?\s*$/.test(String(v ?? ''))));
     return {
       yaml: upgradeSchema(yaml),
       narrative,
@@ -377,7 +397,8 @@
    *  seul son repère change (même règle que tools/migrate_missions_schema.py) ; appliqué à la lecture (fichiers,
    *  mission partagée et lot mémorisés dans le navigateur). */
   function upgradeSchema(y) {
-    if (y && typeof y === 'object' && (y.schema || 'helo-xp-mission') === 'helo-xp-mission' && String(y.schema_version ?? '1.0') === '1.0' && /^[A-Z]-\d{3}[A-Z]?$/.test(String(y.mission?.id || '').trim().toUpperCase())) y.schema_version = '2.0';
+    if (y && typeof y === 'object' && (y.schema || 'helo-xp-mission') === 'helo-xp-mission' && String(y.schema_version ?? '1.0') ===
+      '1.0' && /^[A-Z]-\d{3}[A-Z]?$/.test(String(y.mission?.id || '').trim().toUpperCase())) y.schema_version = '2.0';
     return y;
   }
 
@@ -472,7 +493,9 @@
   /** Ancien identifiant comme jeton (lettre d'équipe capturée pour une base d'opération) : pas « BFM-0012 ». */
   const idToken = (old, base) => new RegExp(`(?<![A-Z0-9-])${old.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}${base ? '([A-Z]?)' : '()'}(?![A-Z0-9])`, 'g');
   /** Valeurs texte d'un document (clés comprises), parcours profond ; fn(texte) → texte. */
-  const mapStrings = (v, fn) => Array.isArray(v) ? v.map(x => mapStrings(x, fn)) : v && typeof v === 'object' ? Object.fromEntries(Object.entries(v).map(([k, x]) => [k, k === 'former_id' ? x : mapStrings(x, fn)])) : typeof v === 'string' ? fn(v) : v; // former_id : trace, gardé tel quel
+  const mapStrings = (v, fn) => Array.isArray(v) ? v.map(x => mapStrings(x, fn)) : v && typeof v === 'object' ? Object.fromEntries(Object
+    .entries(v).map(([k, x]) => [k, k === 'former_id' ? x : mapStrings(x, fn)])) : typeof v === 'string' ? fn(v) :
+  v; // former_id : trace, gardé tel quel
   /** Missions du lot (et courante) qui citent un identifiant ailleurs que dans leur propre mission.id : [{ id, count }]. */
   function idRelations(id) {
     const old = idNorm(id);
@@ -519,7 +542,8 @@
         narrative = mapStrings(d.narrative, sub);
       const m = y.mission || (y.mission = {});
       // identifiant propre déjà changé dans la page (saisie) : l'ancien est retrouvé d'après la règle
-      const own = [...JSON.stringify(d.yaml).matchAll(rx)].map(x => old + x[1]).find(o => sub(o) === idNorm(m.id)) || (was !== idNorm(m.id) ? was : '');
+      const own = [...JSON.stringify(d.yaml).matchAll(rx)].map(x => old + x[1]).find(o => sub(o) === idNorm(m.id)) || (was !== idNorm(m
+        .id) ? was : '');
       if (own && own !== idNorm(m.id) && !m.former_id) m.former_id = own;
       if (type) m.type = type; // mission d'organisation comprise (même famille que ses missions)
       if (JSON.stringify([y, narrative]) !== before) n++;
@@ -552,7 +576,8 @@
     return n;
   }
   /** Missions annoncées par l'opération d'un lot (operation.missions de ses documents), normalisées. */
-  const plannedIds = docs => [...new Set(docs.flatMap(d => (Array.isArray(d?.yaml?.operation?.missions) ? d.yaml.operation.missions : []).map(x => String(x).trim().toUpperCase().replace(/^0+(?=\d)/, ''))))];
+  const plannedIds = docs => [...new Set(docs.flatMap(d => (Array.isArray(d?.yaml?.operation?.missions) ? d.yaml.operation.missions : [])
+    .map(x => String(x).trim().toUpperCase().replace(/^0+(?=\d)/, ''))))];
   /** Lot mémorisé { docs: [{ yaml, narrative, sourceNames }], index } (plusieurs missions, ou une mission d'une
    *  opération dont les autres restent à charger) ; null sans lot. */
   function loadBatch() {
@@ -634,7 +659,8 @@
   function splitBundle(text) {
     const src = String(text || '').replace(/\r\n/g, '\n'),
       out = [];
-    const re = /^[ \t>*_-]*(?:fichier|file|datei|archivo)\s*:?\s*[*_`]*\s*([\w.\-]+\.(?:ya?ml|md|markdown))\s*[*_`]*\s*\n+\s*```[\w-]*\n([\s\S]*?)\n\s*```/gim;
+    const re =
+      /^[ \t>*_-]*(?:fichier|file|datei|archivo)\s*:?\s*[*_`]*\s*([\w.\-]+\.(?:ya?ml|md|markdown))\s*[*_`]*\s*\n+\s*```[\w-]*\n([\s\S]*?)\n\s*```/gim;
     for (let m;
       (m = re.exec(src));) out.push({
       name: m[1],
@@ -642,7 +668,8 @@
     });
     if (out.length) return out;
     // 2. repères « Fichier : nom » sans blocs de code : un segment par repère, nettoyé
-    const marks = [...src.matchAll(/^[ \t>*_#-]*(?:fichier|file|datei|archivo)\s*:?\s*[*_`]*\s*([\w.\-]+\.(?:ya?ml|md|markdown))\s*[*_`]*\s*$/gim)];
+    const marks = [...src.matchAll(
+      /^[ \t>*_#-]*(?:fichier|file|datei|archivo)\s*:?\s*[*_`]*\s*([\w.\-]+\.(?:ya?ml|md|markdown))\s*[*_`]*\s*$/gim)];
     if (marks.length > 1) return marks.map((m, k) => ({
       name: m[1],
       text: cleanSegment(src.slice(m.index + m[0].length, marks[k + 1]?.index ?? src.length))
@@ -668,9 +695,12 @@
    *  « markdown », « Copier le code », ```), puis coupe au bloc VALIDATION ou à « Mission suivante ». */
   function cleanSegment(seg) {
     const lines = String(seg).split('\n');
-    while (lines.length && /^\s*(?:```[\w-]*|yaml|yml|markdown|md|text|plaintext|copier(?: le code)?|copy(?: code)?|code copié|copied!?)?\s*$/i.test(lines[0])) lines.shift();
+    while (lines.length &&
+      /^\s*(?:```[\w-]*|yaml|yml|markdown|md|text|plaintext|copier(?: le code)?|copy(?: code)?|code copié|copied!?)?\s*$/i.test(lines[0]))
+      lines.shift();
     // arrêt : titre seul « VALIDATION » (pas une phrase qui commence par « Validation de… »), ou « Mission suivante »
-    const stop = lines.findIndex(l => /^\s*(?:#+\s*)?(?:\*\*)?\s*(?:\d+\.\s*)?(?:bloc\s+)?validation\s*(?:\*\*)?\s*:?\s*$/i.test(l) || /^\s*(?:\*\*)?\s*(?:mission suivante|next mission)\b/i.test(l));
+    const stop = lines.findIndex(l => /^\s*(?:#+\s*)?(?:\*\*)?\s*(?:\d+\.\s*)?(?:bloc\s+)?validation\s*(?:\*\*)?\s*:?\s*$/i.test(l) ||
+      /^\s*(?:\*\*)?\s*(?:mission suivante|next mission)\b/i.test(l));
     const kept = stop >= 0 ? lines.slice(0, stop) : lines;
     while (kept.length && /^\s*(?:```|copier(?: le code)?|copy(?: code)?)?\s*$/i.test(kept[kept.length - 1])) kept.pop();
     return kept.join('\n').trim();
@@ -780,7 +810,8 @@
       nav.id = 'siaBatchNav';
       nav.className = 'sia-batch-nav';
       nav.hidden = true;
-      nav.innerHTML = '<button type="button" data-step="-1" title="Mission précédente">◀</button><select title="Mission du lot"></select><button type="button" data-step="1" title="Mission suivante">▶</button>';
+      nav.innerHTML =
+        '<button type="button" data-step="-1" title="Mission précédente">◀</button><select title="Mission du lot"></select><button type="button" data-step="1" title="Mission suivante">▶</button>';
       const title = line.querySelector('h1');
       title ? title.after(nav) : line.prepend(nav);
       // arrivée depuis le registre des missions (même onglet) : lien de retour vers la mission dans le registre
@@ -800,7 +831,8 @@
         nav.before(back);
       }
       const css = document.createElement('style');
-      css.textContent = '.sia-back{display:inline-flex;align-items:center;margin:0 6px 0 10px;padding:3px 10px;border-radius:999px;border:1px solid currentColor;color:inherit;text-decoration:none;font-size:13px;font-weight:600;white-space:nowrap;opacity:.9}.sia-back:hover{opacity:1}.sia-batch-nav{display:inline-flex;align-items:center;gap:4px;margin:0 10px}.sia-batch-nav[hidden]{display:none}.sia-batch-nav select{max-width:320px;padding:3px 6px;border-radius:6px;font:inherit;font-size:13px}.sia-batch-nav button{padding:3px 9px;border-radius:6px;font-size:13px;cursor:pointer}';
+      css.textContent =
+        '.sia-back{display:inline-flex;align-items:center;margin:0 6px 0 10px;padding:3px 10px;border-radius:999px;border:1px solid currentColor;color:inherit;text-decoration:none;font-size:13px;font-weight:600;white-space:nowrap;opacity:.9}.sia-back:hover{opacity:1}.sia-batch-nav{display:inline-flex;align-items:center;gap:4px;margin:0 10px}.sia-batch-nav[hidden]{display:none}.sia-batch-nav select{max-width:320px;padding:3px 6px;border-radius:6px;font:inherit;font-size:13px}.sia-batch-nav button{padding:3px 9px;border-radius:6px;font-size:13px;cursor:pointer}';
       document.head.append(css);
       const sel = nav.querySelector('select');
       const render = () => {
@@ -914,7 +946,8 @@
     let reg = [];
     try {
       // registre des missions : copie en mémoire de l'index (shared/data_index.js), lue à l'ouverture de la page
-      reg = (window.MissionIndex ? window.MissionIndex.all() : (window.RepositoryKit?.store?.jsonCached ? window.RepositoryKit.store.jsonCached('missionRegistry:v1', null) : JSON.parse(localStorage.getItem('missionRegistry:v1') || 'null'))?.missions) || [];
+      reg = (window.MissionIndex ? window.MissionIndex.all() : (window.RepositoryKit?.store?.jsonCached ? window.RepositoryKit.store
+        .jsonCached('missionRegistry:v1', null) : JSON.parse(localStorage.getItem('missionRegistry:v1') || 'null'))?.missions) || [];
     } catch {
       /* registre illisible */
     }
@@ -959,7 +992,9 @@
       if (txt(body)) out.push(`## ${title}\n\n${txt(body)}`);
     };
     const teams = arr(y.teams).filter(t => t && typeof t === 'object');
-    const teamTable = teams.length ? ['| Nom / callsign | Arme / service | Département | Type | Rôle |', '|---|---|---|---|---|', ...teams.map(t => `| ${cell(t.name)} | ${cell(t.service)} | ${cell(t.department)} | ${cell(t.type)} | ${cell(t.role)} |`)].join('\n') : '';
+    const teamTable = teams.length ? ['| Nom / callsign | Arme / service | Département | Type | Rôle |', '|---|---|---|---|---|', ...teams
+      .map(t => `| ${cell(t.name)} | ${cell(t.service)} | ${cell(t.department)} | ${cell(t.type)} | ${cell(t.role)} |`)
+    ].join('\n') : '';
     if (ex && typeof ex === 'object') {
       // mission d'organisation
       out.push(`# Organisation ${id} — « ${txt(y.title)} »`);
@@ -967,8 +1002,11 @@
       sec('Summary', para(y.summary));
       sec('Description détaillée', para(y.detailed_description));
       sec('Équipes engagées', teamTable);
-      sec('Heure H et participants', [`Heure H : ${txt(ex.h_hour) || 'H'}`, '', '| Indicatif | Mission | Décollage | Rôle |', '|---|---|---|---|', ...arr(ex.participants).map(p => `| ${cell(p.callsign)} | ${cell(p.mission)} | ${cell(p.takeoff)} | ${cell(p.role)} |`)].join('\n'));
-      if (arr(ex.tracks).length) sec('Chiffons', ['| Piste | Joué | Indicatif | Départ | Nature | Points | Niveau | Vitesse | À établir | Consignes |', '|---|---|---|---|---|---|---|---:|---|---|',
+      sec('Heure H et participants', [`Heure H : ${txt(ex.h_hour) || 'H'}`, '', '| Indicatif | Mission | Décollage | Rôle |', '|---|---|---|---|', ...arr(ex
+        .participants).map(p => `| ${cell(p.callsign)} | ${cell(p.mission)} | ${cell(p.takeoff)} | ${cell(p.role)} |`)].join('\n'));
+      if (arr(ex.tracks).length) sec('Chiffons', [
+        '| Piste | Joué | Indicatif | Départ | Nature | Points | Niveau | Vitesse | À établir | Consignes |',
+        '|---|---|---|---|---|---|---|---:|---|---|',
         ...arr(ex.tracks).map(k => `| ${cell(k.name || k.id)} | ${k.played ? 'oui' : 'non'} | ${cell(k.callsign)} | ${cell(k.start)} | ${cell(k.nature)} | ${cell(arr(k.points).map(p => `${txt(p.name)} ${num(p.lat)}, ${num(p.lon)}`).join(' → '))} | ${cell(k.level)} | ${cell(k.speed_kt)} | ${cell(k.task)} | ${cell(k.conduct)} |`)
       ].join('\n'));
       if (arr(ex.events).length) sec('Chronologie', arr(ex.events).map(e => `- **${txt(e.id)} — ${txt(e.at)}${e.by ? ` (${txt(e.by)})` : ''}${+e.delay_min ? ` +${+e.delay_min} min` : ''}** — ${/pli/i.test(e.kind || '') ? 'pli' : 'radio'} — ${txt(e.from)} → ${arr(e.to).join(', ')} : ${txt(e.title)}${arr(e.reveals).length ? ` — pistes ${arr(e.reveals).join(', ')}` : ''}${txt(e.text) ? '\n  ' + para(e.text).replace(/\n\n/g, '\n  ') : ''}`).join('\n'));
@@ -980,12 +1018,17 @@
       sec('Équipes engagées', teamTable);
       if (arr(op.missions).length > 1) sec('Coordination de l\'opération', `Opération : ${txt(op.name)} — missions ${arr(op.missions).join(', ')}`);
       const pl = y.payload;
-      if (pl && typeof pl === 'object') sec('Charge / personnel', [`Catégorie : ${txt(pl.category)}`, `Description : ${txt(pl.description)}`, pl.mass_kg != null ? `Masse : ${pl.mass_kg} kg` : '', pl.passengers != null ? `Passagers : ${pl.passengers}` : '', arr(pl.constraints).length ? `\nContraintes :\n${arr(pl.constraints).map(c => `- ${txt(c)}`).join('\n')}` : ''].filter(Boolean).join('\n'));
+      if (pl && typeof pl === 'object') sec('Charge / personnel', [`Catégorie : ${txt(pl.category)}`, `Description : ${txt(pl.description)}`, pl.mass_kg != null ? `Masse : ${pl.mass_kg} kg` : '', pl
+        .passengers != null ? `Passagers : ${pl.passengers}` : '', arr(pl.constraints).length ? `\nContraintes :\n${arr(pl.constraints).map(c => `- ${txt(c)}`).join('\n')}` : ''
+      ].filter(Boolean).join('\n'));
       sec('Objectif principal', txt(y.objectives?.primary));
       sec('Objectifs secondaires', arr(y.objectives?.secondary).map(o => `- ${txt(o)}`).join('\n'));
-      if (arr(y.turning_points).length) sec('Points tournants', ['| ID | Nom | Latitude | Longitude | Rôle |', '|---|---|---:|---:|---|', ...arr(y.turning_points).map(p => `| ${cell(p.id)} | ${cell(p.name)} | ${num(p.lat)} | ${num(p.lon)} | ${cell(p.role)} |`)].join('\n'));
+      if (arr(y.turning_points).length) sec('Points tournants', ['| ID | Nom | Latitude | Longitude | Rôle |', '|---|---|---:|---:|---|',
+        ...arr(y.turning_points).map(p => `| ${cell(p.id)} | ${cell(p.name)} | ${num(p.lat)} | ${num(p.lon)} | ${cell(p.role)} |`)
+      ].join('\n'));
       if (arr(y.rendezvous).length) sec('Rendez-vous', arr(y.rendezvous).map(r => `- **${txt(r.id)} — ${txt(r.name)}** — ${num(r.lat)}, ${num(r.lon)}${arr(r.participants).length ? ` — participants : ${arr(r.participants).join(', ')}` : ''}${r.role ? ` — ${txt(r.role)}` : ''}`).join('\n'));
-      if (y.air_refueling && typeof y.air_refueling === 'object') sec('Ravitaillement en vol', Object.entries(y.air_refueling).map(([k, v]) => `- ${k}: ${Array.isArray(v) ? v.join(', ') : v}`).join('\n'));
+      if (y.air_refueling && typeof y.air_refueling === 'object') sec('Ravitaillement en vol', Object.entries(y.air_refueling).map(([k,
+        v]) => `- ${k}: ${Array.isArray(v) ? v.join(', ') : v}`).join('\n'));
       sec('Risques à prendre en compte', arr(y.risks).map(r => typeof r === 'object' ? `- **${txt(r.hazard)}** — conséquence : ${txt(r.consequence)} — mesure : ${txt(r.mitigation)}` : `- ${txt(r)}`).join('\n'));
       sec('Cartographie prévue', arr(y.maps).map(mp => typeof mp === 'object' ? `- \`${txt(mp.filename || mp.file)}\` — ${txt(mp.description)}` : `- \`${txt(mp)}\``).join('\n'));
       // exercice : organisation de l'opération (docs) ; plis comptés, pas leur contenu

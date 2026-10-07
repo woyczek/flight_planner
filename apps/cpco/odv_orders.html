@@ -4,7 +4,7 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Tableau</title>
 <link rel="stylesheet" href="../../shared/repository_nav.css?v=f6a61e75">
-<script src="../../config/repository_tree?v=cc94a4d8"></script>
+<script src="../../config/repository_tree?v=2a75a8a5"></script>
 <style data-layer="app">
 @layer app {
   /* Tableau : frise horaire (heures z) ; angles droits partout (frise, plaquettes, barres). */
@@ -835,40 +835,58 @@
   <div id="odvoRequests" data-no-i18n></div>
 </section>
 </main>
-<script src="../../shared/kit.js?v=a819e6df"></script>
-<script src="../../shared/repository_nav.js?v=eceaf3f4"></script>
+<script src="../../shared/kit.js?v=d084129f"></script>
+<script src="../../shared/repository_nav.js?v=ad188ce2"></script>
 <script src="../../shared/mission_core/vendor/js-yaml.min.js?v=64052ae4"></script>
 <script src="../../shared/data_files.js?v=dcb47c6a" data-file="references/callsigns.js"></script>
 <script src="../../shared/data_files.js?v=dcb47c6a" data-file="references/defa_reference.js"></script>
 <script src="../../shared/data_files.js?v=dcb47c6a" data-file="references/aircraft_fleet.js"></script>
-<script src="../../shared/mission_core/vocab.js?v=51b46b47"></script>
-<script src="../../shared/sia_base.js?v=31c2e30c"></script>
-<script src="../../shared/assignments.js?v=cbeb62aa"></script>
-<script src="../../shared/assign_dialog.js?v=657295e8"></script>
-<script src="../../shared/mission_core/assist.js?v=6742e451"></script>
-<script src="odv_core.js?v=0bf35b41"></script>
-<script src="odv_settings.js?v=4d28e6a0"></script>
-<script src="../../shared/odv_airspace.js?v=4e88923e"></script>
-<script src="../../shared/odv_activations_editor.js?v=1e9f18fd"></script>
-<script src="../../shared/odv_reports.js?v=386b30b4"></script>
-<script src="../../shared/odv_orders_store.js?v=72c83719"></script>
-<script src="odv_orders.js?v=518bd749"></script>
-<script src="../../shared/app_framework.js?v=003108e7"></script>
-<script src="../../shared/content_i18n.js?v=7afecb78"></script>
+<script src="../../shared/mission_core/vocab.js?v=b1e809ba"></script>
+<script src="../../shared/sia_base.js?v=0f91238f"></script>
+<script src="../../shared/assignments.js?v=f927a24e"></script>
+<script src="../../shared/assign_dialog.js?v=7839842f"></script>
+<script src="../../shared/mission_core/assist.js?v=c443ac86"></script>
+<script src="odv_core.js?v=a18cfb2e"></script>
+<script src="odv_settings.js?v=ed5ac7d7"></script>
+<script src="../../shared/odv_airspace.js?v=223b8f78"></script>
+<script src="../../shared/odv_activations_editor.js?v=ea8187ed"></script>
+<script src="../../shared/odv_reports.js?v=d66272b9"></script>
+<script src="../../shared/odv_orders_store.js?v=f02e4e93"></script>
+<script src="odv_orders.js?v=a5320157"></script>
+<script src="../../shared/app_framework.js?v=5653237c"></script>
+<script src="../../shared/content_i18n.js?v=efa62576"></script>
 <script>
 // Traductions des textes fixes de la page (contenus calculés : zones data-no-i18n, traduits par le script).
 RepositoryContentI18n([
   ["Tableau", "Board", "Einsatztafel", "Tablero"],
-  ["Centre de planification et de conduite des opérations", "Operations planning and command centre", "Einsatzplanungs- und Führungszentrum", "Centro de planificación y conducción de operaciones"],
+  ["Centre de planification et de conduite des opérations", "Operations planning and command centre",
+    "Einsatzplanungs- und Führungszentrum", "Centro de planificación y conducción de operaciones"
+  ],
   ["Semaine", "Week", "Woche", "Semana"],
-  ["Semaine ISO, jours (nombre d'éléments en conflit), vue, officier de permanence. Heures en z (UTC).", "ISO week, days (number of items in conflict), view, duty officer. Times in z (UTC).", "ISO-Woche, Tage (Anzahl der Elemente im Konflikt), Ansicht, Diensthabender. Zeiten in z (UTC).", "Semana ISO, días (número de elementos en conflicto), vista, oficial de guardia. Horas en z (UTC)."],
+  ["Semaine ISO, jours (nombre d'éléments en conflit), vue, officier de permanence. Heures en z (UTC).",
+    "ISO week, days (number of items in conflict), view, duty officer. Times in z (UTC).",
+    "ISO-Woche, Tage (Anzahl der Elemente im Konflikt), Ansicht, Diensthabender. Zeiten in z (UTC).",
+    "Semana ISO, días (número de elementos en conflicto), vista, oficial de guardia. Horas en z (UTC)."
+  ],
   ["Ordre du jour", "Order of the day", "Tagesbefehl", "Orden del día"],
-  ["Glisser un modèle sur sa section, un membre sur une plaquette ; clic : modifier ; bord droit : durée. Tranches matin, après-midi, soir du Planning ODV.", "Drag a template onto its section, a member onto a flight strip; click: edit; right edge: duration. Morning, afternoon, evening slots of the ODV planning.", "Vorlage auf ihren Abschnitt ziehen, Mitglied auf einen Streifen; Klick: bearbeiten; rechter Rand: Dauer. Zeitfenster Morgen, Nachmittag, Abend der ODV-Planung.", "Arrastrar una plantilla a su sección, un miembro a una ficha; clic: modificar; borde derecho: duración. Franjas mañana, tarde, noche de la planificación ODV."],
+  ["Glisser un modèle sur sa section, un membre sur une plaquette ; clic : modifier ; bord droit : durée. Tranches matin, après-midi, soir du Planning ODV.",
+    "Drag a template onto its section, a member onto a flight strip; click: edit; right edge: duration. Morning, afternoon, evening slots of the ODV planning.",
+    "Vorlage auf ihren Abschnitt ziehen, Mitglied auf einen Streifen; Klick: bearbeiten; rechter Rand: Dauer. Zeitfenster Morgen, Nachmittag, Abend der ODV-Planung.",
+    "Arrastrar una plantilla a su sección, un miembro a una ficha; clic: modificar; borde derecho: duración. Franjas mañana, tarde, noche de la planificación ODV."
+  ],
   ["Zoom", "Zoom", "Zoom", "Zoom"],
   ["Activations des zones", "Area activations", "Gebietsaktivierungen", "Activaciones de zonas"],
   ["Demandes de réservation", "Reservation requests", "Reservierungsanträge", "Solicitudes de reserva"],
-  ["Zones que traversent les vols de mission de la semaine (route prévue, zones de travail) sans activation « active » de leur réseau : à demander sur le site du réseau, puis à inscrire comme demandées.", "Areas crossed by the week’s mission flights (planned route, working areas) without an “active” activation of their network: to be requested on the network’s site, then recorded as requested.", "Von den Missionsflügen der Woche durchflogene Gebiete (geplante Route, Arbeitsgebiete) ohne „aktive“ Aktivierung ihres Netzwerks: auf der Seite des Netzwerks beantragen, dann als beantragt eintragen.", "Zonas que atraviesan los vuelos de misión de la semana (ruta prevista, zonas de trabajo) sin activación «activa» de su red: solicitarlas en el sitio de la red y luego inscribirlas como solicitadas."],
-  ["Activations des zones par réseau (VATSIM, IVAO), saisies à la main : une zone requise par un vol sans activation « active » de son réseau sur toute sa durée est en conflit.", "Area activations per network (VATSIM, IVAO), entered by hand: an area required by a flight without an “active” activation of its network over its whole duration is in conflict.", "Gebietsaktivierungen je Netzwerk (VATSIM, IVAO), manuell eingegeben: ein von einem Flug benötigtes Gebiet ohne „aktive“ Aktivierung seines Netzwerks über die ganze Dauer steht im Konflikt.", "Activaciones de zonas por red (VATSIM, IVAO), introducidas a mano: una zona requerida por un vuelo sin activación «activa» de su red durante toda su duración está en conflicto."],
+  ["Zones que traversent les vols de mission de la semaine (route prévue, zones de travail) sans activation « active » de leur réseau : à demander sur le site du réseau, puis à inscrire comme demandées.",
+    "Areas crossed by the week’s mission flights (planned route, working areas) without an “active” activation of their network: to be requested on the network’s site, then recorded as requested.",
+    "Von den Missionsflügen der Woche durchflogene Gebiete (geplante Route, Arbeitsgebiete) ohne „aktive“ Aktivierung ihres Netzwerks: auf der Seite des Netzwerks beantragen, dann als beantragt eintragen.",
+    "Zonas que atraviesan los vuelos de misión de la semana (ruta prevista, zonas de trabajo) sin activación «activa» de su red: solicitarlas en el sitio de la red y luego inscribirlas como solicitadas."
+  ],
+  ["Activations des zones par réseau (VATSIM, IVAO), saisies à la main : une zone requise par un vol sans activation « active » de son réseau sur toute sa durée est en conflit.",
+    "Area activations per network (VATSIM, IVAO), entered by hand: an area required by a flight without an “active” activation of its network over its whole duration is in conflict.",
+    "Gebietsaktivierungen je Netzwerk (VATSIM, IVAO), manuell eingegeben: ein von einem Flug benötigtes Gebiet ohne „aktive“ Aktivierung seines Netzwerks über die ganze Dauer steht im Konflikt.",
+    "Activaciones de zonas por red (VATSIM, IVAO), introducidas a mano: una zona requerida por un vuelo sin activación «activa» de su red durante toda su duración está en conflicto."
+  ],
 ]);
 </script>
 </body>

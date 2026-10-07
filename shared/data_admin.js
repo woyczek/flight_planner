@@ -46,7 +46,8 @@
     return fr;
   };
   // sous-titre de la page Paramètres (« SO Group Virtual — … » : la couche de traduction traduit la partie après le tiret)
-  T('bases de données (flotte, types, indicatifs, registres…) et maintenance (mises à jour, sources et dossiers, données SIA, sauvegarde)', 'databases (fleet, types, callsigns, ledgers…) and maintenance (updates, sources and folders, SIA data, backup)');
+  T('bases de données (flotte, types, indicatifs, registres…) et maintenance (mises à jour, sources et dossiers, données SIA, sauvegarde)',
+    'databases (fleet, types, callsigns, ledgers…) and maintenance (updates, sources and folders, SIA data, backup)');
 
   // ---- format commun des fichiers de données (identique à AircraftDB/datafile.py)
   /** Texte d'un fichier de données du dépôt, au format commun (identique à AircraftDB/datafile.py) : commentaire d'en-tête, méta (updatedAt), une ligne JSON par élément, clé de surcharge locale, variable exportée. */
@@ -72,7 +73,8 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
   // ---- dossier du dépôt (IndexedDB partagée avec les registres du Core)
   /** Base IndexedDB « missionCore » (magasin handles) : dossiers autorisés. */
   // connexion partagée par la page (RepositoryKit.idb) : plus une ouverture par lecture
-  const idb = () => window.RepositoryKit.idb('missionCore', 1, db => db.objectStoreNames.contains('handles') || db.createObjectStore('handles'));
+  const idb = () => window.RepositoryKit.idb('missionCore', 1, db => db.objectStoreNames.contains('handles') || db.createObjectStore(
+    'handles'));
   /** Valeur d'une clé du magasin handles ; null si absente. */
   const idbGet = async key => {
     try {
@@ -111,7 +113,9 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
     }
     if (!request) return null;
     if (window.FileAccess) return window.FileAccess.pickFolder('__repo');
-    if (!window.showDirectoryPicker) throw new Error(T('Écriture directe impossible dans ce navigateur (Chrome / Edge requis) : utilisez « Télécharger ».', 'Direct writing unavailable in this browser (Chrome / Edge required): use “Download”.'));
+    if (!window.showDirectoryPicker) throw new Error(T(
+      'Écriture directe impossible dans ce navigateur (Chrome / Edge requis) : utilisez « Télécharger ».',
+      'Direct writing unavailable in this browser (Chrome / Edge required): use “Download”.'));
     handle = await window.showDirectoryPicker({
       id: 'defa-repository',
       mode: 'readwrite'
@@ -119,7 +123,9 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
     try {
       await (await handle.getDirectoryHandle('config')).getFileHandle('repository_tree');
     } catch {
-      if (!await window.AppFramework.ask(T('Ce dossier ne contient pas « config/repository_tree » : est-ce bien la racine du dépôt ?', 'This folder has no “config/repository_tree”: is it really the repository root?'))) throw new Error(T('Dossier refusé', 'Folder rejected'));
+      if (!await window.AppFramework.ask(T('Ce dossier ne contient pas « config/repository_tree » : est-ce bien la racine du dépôt ?',
+          'This folder has no “config/repository_tree”: is it really the repository root?'))) throw new Error(T('Dossier refusé',
+        'Folder rejected'));
     }
     await idbSet('folder:__repo', handle);
     return handle;
@@ -179,7 +185,8 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
         }))
         .filter(({
           row
-        }) => !text || columns.some(c => String(c.type === 'list' ? (row[c.key] || []).join(' ') : row[c.key] ?? '').toLowerCase().includes(text)))
+        }) => !text || columns.some(c => String(c.type === 'list' ? (row[c.key] || []).join(' ') : row[c.key] ?? '').toLowerCase()
+          .includes(text)))
         .sort((a, b) => String(a.row[sort.key] ?? '').localeCompare(String(b.row[sort.key] ?? ''), undefined, {
           numeric: true
         }) * sort.dir);
@@ -220,7 +227,9 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
       if (index == null) return;
       const col = columns.find(c => c.key === el.dataset.key),
         row = data[Number(index)];
-      row[col.key] = col.type === 'bool' ? el.checked : col.type === 'number' ? (el.value === '' ? null : Number(el.value)) : col.type === 'list' ? el.value.split(',').map(s => s.trim()).filter(Boolean) : col.upper ? el.value.trim().toUpperCase() : el.value;
+      row[col.key] = col.type === 'bool' ? el.checked : col.type === 'number' ? (el.value === '' ? null : Number(el.value)) : col
+        .type === 'list' ? el.value.split(',').map(s => s.trim()).filter(Boolean) : col.upper ? el.value.trim().toUpperCase() : el
+        .value;
       if (col.upper && el.value !== row[col.key]) el.value = row[col.key];
       onChange();
     });
@@ -267,7 +276,8 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
     'H145 D3': 'H145 D3'
   };
   // en-têtes de colonnes et menu du site : jamais pris pour un nom d'opérateur (copie en texte)
-  const FLEET_NOISE = /^(appareil|immatriculation|code|numéro|callsign|base|emplacement|heures de vol|op[ée]rationn?el|▲\s*▼|accueil|enregistrer mon vol|log des vols|flotte virtuelle|maintenance|statistiques|connexion)$/i;
+  const FLEET_NOISE =
+    /^(appareil|immatriculation|code|numéro|callsign|base|emplacement|heures de vol|op[ée]rationn?el|▲\s*▼|accueil|enregistrer mon vol|log des vols|flotte virtuelle|maintenance|statistiques|connexion)$/i;
   /** Appareils d'une page Flotte collée : HTML (tableaux, titres d'opérateur) ou texte (colonnes séparées par des
    *  tabulations, titre d'opérateur seul sur sa ligne). */
   function parseFleetPage(text) {
@@ -279,7 +289,8 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
       };
     const row = (operator, cells) => {
       if (cells.length < 9) return;
-      const [name, registration, code, number, callsign, base, location, , operational] = cells.map(c => String(c).replace(/\s+/g, ' ').trim());
+      const [name, registration, code, number, callsign, base, location, , operational] = cells.map(c => String(c).replace(/\s+/g, ' ')
+        .trim());
       if (!name || !registration || FLEET_NOISE.test(name)) return;
       out.push({
         operator: FLEET_OPERATORS[operator] || operator,
@@ -321,7 +332,8 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
       const r = old.registration;
       if (known.has(r)) {
         const a = known.get(r);
-        for (const c of [].concat(old.callsigns || [])) if (c && !a.callsigns.includes(c)) a.callsigns.push(c);
+        for (const c of [].concat(old.callsigns || []))
+          if (c && !a.callsigns.includes(c)) a.callsigns.push(c);
         // même emplacement : sa date est gardée (l'appareil n'a pas bougé sur le site) — toutes les lignes de
         // l'immatriculation (une immatriculation peut figurer deux fois sur la page)
         if (old.locationAt) page.forEach(x => {
@@ -365,7 +377,8 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
     const run = text => {
       const list = parseFleetPage(text || '');
       if (!list.length) {
-        result.textContent = T('Aucun appareil reconnu : copier toute la page « Flotte virtuelle » (tableaux compris).', 'No aircraft recognised: copy the whole “Virtual fleet” page (tables included).');
+        result.textContent = T('Aucun appareil reconnu : copier toute la page « Flotte virtuelle » (tableaux compris).',
+          'No aircraft recognised: copy the whole “Virtual fleet” page (tables included).');
         return;
       }
       dialog.close();
@@ -390,7 +403,8 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
         }
         run(text || await navigator.clipboard.readText());
       } catch {
-        result.textContent = T('Presse-papiers illisible ici : coller avec Ctrl+V dans la zone.', 'Clipboard unreadable here: paste with Ctrl+V into the box.');
+        result.textContent = T('Presse-papiers illisible ici : coller avec Ctrl+V dans la zone.',
+          'Clipboard unreadable here: paste with Ctrl+V into the box.');
       }
     };
     const file = dialog.querySelector('input[type=file]');
@@ -416,7 +430,8 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
     dialog.showModal();
     area.focus();
   }
-  const operatorNames = () => [...(work.callsigns?.operatorRows || []).map(r => r.name), ...Object.keys(work.callsigns?.data?.operators || {}),
+  const operatorNames = () => [...(work.callsigns?.operatorRows || []).map(r => r.name), ...Object.keys(work.callsigns?.data?.operators ||
+    {}),
     ...(work.callsigns?.data?.table || []).map(r => r.operator), 'SAMU'
   ].filter((v, i, a) => v && a.indexOf(v) === i).sort((a, b) => a.localeCompare(b, 'fr'));
   const FLEET_COMMENT = ['Flotte SO Group Virtual : base commune des appareils connus (CR HEMS / FIRE, Mission Report Core).',
@@ -430,13 +445,16 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
     'de la série), role (indicatif de fonction : pas de choix automatique), generic (désignateur générique),',
     'telephony, note. operators : organisme → désignateur OACI (OPR/).'
   ];
-  const FLEET_COLS = ['operator', 'type', 'variant', 'registration', 'tacticalNumber', 'number', 'callsigns', 'base', 'operational', 'location', 'locationAt'];
+  const FLEET_COLS = ['operator', 'type', 'variant', 'registration', 'tacticalNumber', 'number', 'callsigns', 'base', 'operational',
+    'location', 'locationAt'
+  ];
   const work = {};
 
   /** Copie de travail de chaque base éditable (flotte, indicatifs, types OACI, référence) : fichier ou modification locale plus récente. */
   function loadWork() {
     const fleetFile = {
-      rows: (window.DEFA_FLEET_FILE || window.DEFA_FLEET || []).map(r => Object.fromEntries(FLEET_COLS.map(k => [k, r[k] ?? (k === 'callsigns' ? [] : '')])))
+      rows: (window.DEFA_FLEET_FILE || window.DEFA_FLEET || []).map(r => Object.fromEntries(FLEET_COLS.map(k => [k, r[k] ?? (k ===
+        'callsigns' ? [] : '')])))
     };
     work.fleet = effective(fleetFile, 'dataOverride:fleet:v1', window.DEFA_FLEET_META?.updatedAt || '');
     const cs = window.MISSION_CALLSIGNS || {},
@@ -495,7 +513,9 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
           ...(base.__meta || {}),
           admin_saved: stamp
         },
-        __aliases: Object.fromEntries(work.aircraftDb.aliases.filter(r => r.alias && r.tdesig).map(r => [r.alias.toUpperCase(), r.tdesig.toUpperCase()]))
+        __aliases: Object.fromEntries(work.aircraftDb.aliases.filter(r => r.alias && r.tdesig).map(r => [r.alias.toUpperCase(), r.tdesig
+          .toUpperCase()
+        ]))
       };
     Object.keys(base).filter(k => k.startsWith('__') && !out[k]).forEach(k => {
       out[k] = base[k];
@@ -529,7 +549,8 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
       __records: {}
     };
     try {
-      const r = await fetch(new URL('data/references/aircraft_overrides.json', window.RepositoryNav?.root || new URL('../', location.href)), {
+      const r = await fetch(new URL('data/references/aircraft_overrides.json', window.RepositoryNav?.root || new URL('../', location
+        .href)), {
         cache: 'no-store'
       });
       if (r.ok) overrides = await r.json();
@@ -560,7 +581,10 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
       title: T('Flotte (appareils connus)', 'Fleet (known aircraft)'),
       file: 'data/references/aircraft_fleet.js',
       overrideKey: 'dataOverride:fleet:v1',
-      intro: T('Flotte du SOG : appareils affectables et proposés dans les CR (immatriculation, type, indicatifs, base, opérateur ; plusieurs indicatifs séparés par des virgules). Dessous : les appareils qui volent dans le reporting, avec la case « personnel » (hors flotte).', 'SOG fleet: assignable aircraft offered in reports (registration, type, callsigns, base, operator; several callsigns comma-separated). Below: the aircraft flying in the reporting, with the “personal” box (outside the fleet).'),
+      intro: T(
+        'Flotte du SOG : appareils affectables et proposés dans les CR (immatriculation, type, indicatifs, base, opérateur ; plusieurs indicatifs séparés par des virgules). Dessous : les appareils qui volent dans le reporting, avec la case « personnel » (hors flotte).',
+        'SOG fleet: assignable aircraft offered in reports (registration, type, callsigns, base, operator; several callsigns comma-separated). Below: the aircraft flying in the reporting, with the “personal” box (outside the fleet).'
+        ),
       tables: () => [{
         columns: [{
           key: 'operator',
@@ -607,7 +631,9 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
       files: async stamp => [
         // index des appareils individuels (reporting hors flotte), recalculé à chaque enregistrement de la flotte
         ...(window.FleetReporting ? [await window.FleetReporting.personalFile(render, work.fleet.data.rows)] : []),
-        ['data/references/aircraft_fleet.js', render(FLEET_COMMENT, fleetData(), 'dataOverride:fleet:v1', "window.DEFA_FLEET = data.rows.map(row => ({ ...row, callsign: (row.callsigns || [])[0] || '' })); window.DEFA_FLEET_META = META; window.DEFA_FLEET_FILE = fileData.rows;", stamp)]
+        ['data/references/aircraft_fleet.js', render(FLEET_COMMENT, fleetData(), 'dataOverride:fleet:v1',
+          "window.DEFA_FLEET = data.rows.map(row => ({ ...row, callsign: (row.callsigns || [])[0] || '' })); window.DEFA_FLEET_META = META; window.DEFA_FLEET_FILE = fileData.rows;",
+          stamp)]
       ],
       overlay: () => fleetData(),
       howto: `<p>${T('Mise à jour depuis le site : automatique une fois par jour (lanceur, réglage sous la liste des appareils du reporting) ; à la main, « Coller la page Flotte du site… » (copier-coller de la page « Flotte virtuelle »), vérifier, puis « Enregistrer dans le dépôt ». Ou, avec le script :', 'Update from the website: “Paste the website Fleet page…” (copy-paste of the “Virtual fleet” page), check, then “Save to repository”. Or, with the script:')}</p>
@@ -621,7 +647,10 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
       title: T('Types d’aéronefs (base OACI)', 'Aircraft types (ICAO base)'),
       file: 'AircraftDB/aircraft_db.js',
       overrideKey: 'dataOverride:aircraftDb:v1',
-      intro: T('Désignateur OACI (Doc 8643), modèle, description (L2J, H1T…), catégorie de turbulence, position de l’aile. Les modifications sont aussi reportées dans aircraft_overrides.json.', 'ICAO designator (Doc 8643), model, description (L2J, H1T…), wake category, wing position. Changes are also written to aircraft_overrides.json.'),
+      intro: T(
+        'Désignateur OACI (Doc 8643), modèle, description (L2J, H1T…), catégorie de turbulence, position de l’aile. Les modifications sont aussi reportées dans aircraft_overrides.json.',
+        'ICAO designator (Doc 8643), model, description (L2J, H1T…), wake category, wing position. Changes are also written to aircraft_overrides.json.'
+        ),
       tables: () => [{
         title: T('Types', 'Types'),
         columns: [{
@@ -684,7 +713,10 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
       title: T('Correspondance des indicatifs', 'Callsign correspondence'),
       file: 'data/references/callsigns.js',
       overrideKey: 'dataOverride:callsigns:v1',
-      intro: T('Indicatif complet (conservé dans les CR) ↔ forme plan de vol (case 7, 7 caractères avec le numéro) ↔ exploitant OACI (OPR/, case 18). Types : types OACI de la série, séparés par des virgules.', 'Full callsign (kept in reports) ↔ flight plan form (item 7, 7 characters with the number) ↔ ICAO operator (OPR/, item 18). Types: ICAO types of the series, comma-separated.'),
+      intro: T(
+        'Indicatif complet (conservé dans les CR) ↔ forme plan de vol (case 7, 7 caractères avec le numéro) ↔ exploitant OACI (OPR/, case 18). Types : types OACI de la série, séparés par des virgules.',
+        'Full callsign (kept in reports) ↔ flight plan form (item 7, 7 characters with the number) ↔ ICAO operator (OPR/, item 18). Types: ICAO types of the series, comma-separated.'
+        ),
       tables: () => [{
         title: T('Indicatifs', 'Callsigns'),
         columns: [{
@@ -745,7 +777,8 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
         data: work.callsigns.operatorRows
       }],
       files: stamp => [
-        ['data/references/callsigns.js', render(CALLSIGN_COMMENT, callsignData(), 'dataOverride:callsigns:v1', 'window.MISSION_CALLSIGNS = { META, table: data.table, operators: data.operators, file: fileData };', stamp)]
+        ['data/references/callsigns.js', render(CALLSIGN_COMMENT, callsignData(), 'dataOverride:callsigns:v1',
+          'window.MISSION_CALLSIGNS = { META, table: data.table, operators: data.operators, file: fileData };', stamp)]
       ],
       overlay: () => callsignData(),
       howto: `<p>${T('Pas de script : cette page (ou le fichier, à la main) est la source. Les formes corrigées dans les CR apparaissent dans « Indicatifs appris » ci-dessous, à intégrer ici.', 'No script: this page (or the file, by hand) is the source. Forms corrected in reports appear in “Learned callsigns” below, to integrate here.')}</p>`
@@ -757,7 +790,8 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
       title: T('Appareils des missions enregistrées', 'Aircraft from recorded missions'),
       key: 'missionAircraftRegistry:v1',
       byKey: r => String(r.registration || '').toUpperCase().replace(/[^A-Z0-9]/g, ''),
-      intro: T('Mémorisés à chaque enregistrement d’une mission (la donnée la plus récente l’emporte sur la flotte).', 'Remembered each time a mission is saved (latest data wins over the fleet).'),
+      intro: T('Mémorisés à chaque enregistrement d’une mission (la donnée la plus récente l’emporte sur la flotte).',
+        'Remembered each time a mission is saved (latest data wins over the fleet).'),
       columns: [{
         key: 'registration',
         label: T('Immatriculation', 'Registration'),
@@ -794,7 +828,8 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
       title: T('Types ajoutés localement', 'Locally added types'),
       key: 'missionAircraftTypes:v1',
       byKey: r => String(r.tdesig || '').toUpperCase(),
-      intro: T('Types inconnus saisis dans des missions. « Intégrer » les copie dans la base OACI (à enregistrer ensuite).', 'Unknown types entered in missions. “Integrate” copies them into the ICAO base (save it afterwards).'),
+      intro: T('Types inconnus saisis dans des missions. « Intégrer » les copie dans la base OACI (à enregistrer ensuite).',
+        'Unknown types entered in missions. “Integrate” copies them into the ICAO base (save it afterwards).'),
       columns: [{
         key: 'tdesig',
         label: T('Désignateur', 'Designator'),
@@ -834,7 +869,9 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
       title: T('Indicatifs appris (formes plan de vol corrigées)', 'Learned callsigns (corrected flight plan forms)'),
       key: 'missionCallsignTable:v1',
       array: true,
-      intro: T('Formes plan de vol corrigées à la main dans les CR. « Intégrer » les ajoute à la table de correspondance (à enregistrer ensuite).', 'Flight plan forms corrected by hand in reports. “Integrate” adds them to the correspondence table (save it afterwards).'),
+      intro: T(
+        'Formes plan de vol corrigées à la main dans les CR. « Intégrer » les ajoute à la table de correspondance (à enregistrer ensuite).',
+        'Flight plan forms corrected by hand in reports. “Integrate” adds them to the correspondence table (save it afterwards).'),
       columns: [{
         key: 'prefix',
         label: T('Indicatif complet', 'Full callsign'),
@@ -867,7 +904,8 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
       title: T('Aérodromes utilisés (cache)', 'Aerodromes used (cache)'),
       key: 'missionAirports:v1',
       byKey: r => String(r.icao || '').toUpperCase(),
-      intro: T('Coordonnées et fuseaux des terrains utilisés (lever / coucher du soleil, météo).', 'Coordinates and time zones of aerodromes used (sunrise / sunset, weather).'),
+      intro: T('Coordonnées et fuseaux des terrains utilisés (lever / coucher du soleil, météo).',
+        'Coordinates and time zones of aerodromes used (sunrise / sunset, weather).'),
       columns: [{
         key: 'icao',
         label: 'OACI',
@@ -901,7 +939,10 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
       title: T('Référence (anonymisée, dans le dépôt)', 'Reference (anonymised, in the repository)'),
       file: 'data/references/defa_reference.js',
       overrideKey: 'dataOverride:defaReference:v1',
-      intro: T('Pilotes (trigrammes) et appareils de la compagnie — immatriculation, type, indicatifs utilisés, terrain de rattachement (modifiable), dernier terrain connu, statut — sans les vols ni les missions. Utilisée par les trois applications (CR, Landing Dashboard, Flight Planner). Base « lâche » : aide à la saisie, non exhaustive. Mise à jour : « Base » › « Mettre à jour la référence », ou tools/defa_reference.py.', 'Pilots (trigrams) and aircraft — registration, type, callsigns used, home aerodrome (editable), last known aerodrome, status — without flights or missions. Used by the three applications. Loose base: input aid, not exhaustive.'),
+      intro: T(
+        'Pilotes (trigrammes) et appareils de la compagnie — immatriculation, type, indicatifs utilisés, terrain de rattachement (modifiable), dernier terrain connu, statut — sans les vols ni les missions. Utilisée par les trois applications (CR, Landing Dashboard, Flight Planner). Base « lâche » : aide à la saisie, non exhaustive. Mise à jour : « Base » › « Mettre à jour la référence », ou tools/defa_reference.py.',
+        'Pilots (trigrams) and aircraft — registration, type, callsigns used, home aerodrome (editable), last known aerodrome, status — without flights or missions. Used by the three applications. Loose base: input aid, not exhaustive.'
+        ),
       tables: () => [{
         title: T('Appareils', 'Aircraft'),
         columns: [{
@@ -985,10 +1026,16 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
         data: work.defaReference.data.pilots
       }],
       files: stamp => [
-        ['data/references/defa_reference.js', render(['Référence anonymisée : pilotes (trigrammes), appareils (immatriculation, type, indicatifs', 'utilisés, dernier terrain connu, terrain de rattachement), sans les vols ni les missions.', 'Générée par tools/defa_reference.py ou Paramétrage › Base ; complétée à la main.', 'Base « lâche » : aide à la saisie, non exhaustive.'], {
-          pilots: work.defaReference.data.pilots.filter(p => p.trigram),
-          aircraft: work.defaReference.data.aircraft.filter(a => a.registration)
-        }, 'dataOverride:defaReference:v1', 'window.DEFA_REFERENCE = { META, pilots: data.pilots, aircraft: data.aircraft, file: fileData };', stamp)]
+        ['data/references/defa_reference.js', render([
+            'Référence anonymisée : pilotes (trigrammes), appareils (immatriculation, type, indicatifs',
+            'utilisés, dernier terrain connu, terrain de rattachement), sans les vols ni les missions.',
+            'Générée par tools/defa_reference.py ou Paramétrage › Base ; complétée à la main.',
+            'Base « lâche » : aide à la saisie, non exhaustive.'
+          ], {
+            pilots: work.defaReference.data.pilots.filter(p => p.trigram),
+            aircraft: work.defaReference.data.aircraft.filter(a => a.registration)
+          }, 'dataOverride:defaReference:v1',
+          'window.DEFA_REFERENCE = { META, pilots: data.pilots, aircraft: data.aircraft, file: fileData };', stamp)]
       ],
       overlay: () => ({
         pilots: work.defaReference.data.pilots.filter(p => p.trigram),
@@ -1000,37 +1047,55 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
       group: T('Base', 'Base'),
       title: T('Journal des vols (vols réalisés)', 'Flight log (flights flown)'),
       custom: true,
-      intro: T('Base distincte du registre des missions : page « Log des vols » du site de la compagnie enregistrée (Ctrl+S, page web complète ou HTML seul), ou export CSV / JSON de cette base. Chargée à la demande, gardée dans ce navigateur seulement (hors dépôt et hors sauvegarde locale : trigrammes des pilotes). Les CR s’en servent pour les appareils connus (immatriculation → type, indicatifs utilisés), les trigrammes d’équipage et les terrains ; l’analyse des indicatifs alimente la table de correspondance.', 'Separate from the mission ledger: “Log des vols” page saved (Ctrl+S), or CSV / JSON export of this base. Loaded on demand, kept in this browser only (not in the repository nor the local backup: pilot trigrams). Reports use it for known aircraft, crew trigrams and aerodromes; the callsign analysis feeds the correspondence table.')
+      intro: T(
+        'Base distincte du registre des missions : page « Log des vols » du site de la compagnie enregistrée (Ctrl+S, page web complète ou HTML seul), ou export CSV / JSON de cette base. Chargée à la demande, gardée dans ce navigateur seulement (hors dépôt et hors sauvegarde locale : trigrammes des pilotes). Les CR s’en servent pour les appareils connus (immatriculation → type, indicatifs utilisés), les trigrammes d’équipage et les terrains ; l’analyse des indicatifs alimente la table de correspondance.',
+        'Separate from the mission ledger: “Log des vols” page saved (Ctrl+S), or CSV / JSON export of this base. Loaded on demand, kept in this browser only (not in the repository nor the local backup: pilot trigrams). Reports use it for known aircraft, crew trigrams and aerodromes; the callsign analysis feeds the correspondence table.'
+        )
     }, {
       id: 'merges',
       group: T('Base', 'Base'),
       title: T('Fusions et renommages (pilotes, appareils)', 'Merges and renames (pilots, aircraft)'),
       custom: true,
-      intro: T('Équivalences mémorisées par « Fusionner avec… / renommer » des fiches : appliquées au journal rechargé, à la référence et au catalogue. Une boucle (A → B et B → A) échange les deux noms : supprime l’entrée fautive, puis refais la fusion depuis la fiche.', 'Equivalences stored by the sheets’ “Merge with… / rename”: applied to the reloaded log, the reference and the catalogue. A loop (A → B and B → A) swaps both names: delete the wrong entry, then redo the merge from the sheet.')
+      intro: T(
+        'Équivalences mémorisées par « Fusionner avec… / renommer » des fiches : appliquées au journal rechargé, à la référence et au catalogue. Une boucle (A → B et B → A) échange les deux noms : supprime l’entrée fautive, puis refais la fusion depuis la fiche.',
+        'Equivalences stored by the sheets’ “Merge with… / rename”: applied to the reloaded log, the reference and the catalogue. A loop (A → B and B → A) swaps both names: delete the wrong entry, then redo the merge from the sheet.'
+        )
     }, {
       id: 'send',
       group: T('Centre (CPCO)', 'Centre (CPCO)'),
       title: T('Envoi des comptes rendus (webservice)', 'Report sending (web service)'),
       custom: true,
-      intro: T('Bouton « Envoyer le CR » des pages de saisie : POST JSON (mission, CR HTML et texte, calculs) vers l’adresse ci-dessous. La clef reste dans ce navigateur (missionSendKey:v1), hors sauvegarde locale. Le service doit accepter les appels de cette origine (CORS).', '“Send report” button of the entry pages: JSON POST (mission, report HTML and text, calculations) to the address below. The key stays in this browser (missionSendKey:v1), outside the local backup. The service must accept calls from this origin (CORS).')
+      intro: T(
+        'Bouton « Envoyer le CR » des pages de saisie : POST JSON (mission, CR HTML et texte, calculs) vers l’adresse ci-dessous. La clef reste dans ce navigateur (missionSendKey:v1), hors sauvegarde locale. Le service doit accepter les appels de cette origine (CORS).',
+        '“Send report” button of the entry pages: JSON POST (mission, report HTML and text, calculations) to the address below. The key stays in this browser (missionSendKey:v1), outside the local backup. The service must accept calls from this origin (CORS).'
+        )
     }, {
       id: 'cpco',
       group: T('Centre (CPCO)', 'Centre (CPCO)'),
       title: T('Accès au Centre et réglages', 'Centre access and settings'),
       custom: true,
-      intro: T('Le Centre de planification et de conduite des opérations (générateur de mission, studio cartographique, registre des missions) est réservé : il s’active ici par un mot de passe, gardé dans ce navigateur. Centre verrouillé : ses pages sont absentes des menus et ses réglages (calcul des routes, espace disque des missions) sont verrouillés.', 'The planning and operations command centre (mission generator, map studio, mission registry) is restricted: it is enabled here with a password, kept in this browser. Locked centre: its pages are hidden from menus and its settings (route calculation, missions disk space) are locked.')
+      intro: T(
+        'Le Centre de planification et de conduite des opérations (générateur de mission, studio cartographique, registre des missions) est réservé : il s’active ici par un mot de passe, gardé dans ce navigateur. Centre verrouillé : ses pages sont absentes des menus et ses réglages (calcul des routes, espace disque des missions) sont verrouillés.',
+        'The planning and operations command centre (mission generator, map studio, mission registry) is restricted: it is enabled here with a password, kept in this browser. Locked centre: its pages are hidden from menus and its settings (route calculation, missions disk space) are locked.'
+        )
     }, {
       id: 'planner',
       group: T('Planificateur carburant', 'Fuel planner'),
       title: T('Altitude sans oxygène (avions non pressurisés)', 'Altitude without oxygen (unpressurised aircraft)'),
       custom: true,
-      intro: T('Au-dessus de cette altitude, le graphique d’altitude optimale du planificateur signale « oxygène requis » pour les avions à cabine non pressurisée (champ « Cabine pressurisée » du profil ; non renseigné : piston non pressurisé). Information seulement : le calcul n’est pas limité. Réglage gardé dans ce navigateur.', 'Above this altitude, the planner’s optimum altitude chart shows “oxygen required” for aircraft with an unpressurised cabin (profile field “Pressurised cabin”; not set: piston unpressurised). Information only: the computation is not limited. Setting kept in this browser.')
+      intro: T(
+        'Au-dessus de cette altitude, le graphique d’altitude optimale du planificateur signale « oxygène requis » pour les avions à cabine non pressurisée (champ « Cabine pressurisée » du profil ; non renseigné : piston non pressurisé). Information seulement : le calcul n’est pas limité. Réglage gardé dans ce navigateur.',
+        'Above this altitude, the planner’s optimum altitude chart shows “oxygen required” for aircraft with an unpressurised cabin (profile field “Pressurised cabin”; not set: piston unpressurised). Information only: the computation is not limited. Setting kept in this browser.'
+        )
     }, {
       id: 'ledgers',
       group: T('Missions', 'Missions'),
       title: T('Registres des missions (base des opérations)', 'Mission ledgers (operations base)'),
       custom: true,
-      intro: T('Registre unique data/cr/missions.yaml (toutes familles, source de vérité des reportings). Édition directe du YAML, complète ou par famille, avec contrôle avant enregistrement ; pour une mission, préférer le CR (clic sur la ligne du reporting).', 'Single ledger data/cr/missions.yaml (all families, source of truth of the reportings). Direct YAML editing, full or per family, checked before saving; for a single mission, prefer the report (click its reporting row).')
+      intro: T(
+        'Registre unique data/cr/missions.yaml (toutes familles, source de vérité des reportings). Édition directe du YAML, complète ou par famille, avec contrôle avant enregistrement ; pour une mission, préférer le CR (clic sur la ligne du reporting).',
+        'Single ledger data/cr/missions.yaml (all families, source of truth of the reportings). Direct YAML editing, full or per family, checked before saving; for a single mission, prefer the report (click its reporting row).'
+        )
     }
   ];
 
@@ -1067,7 +1132,8 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
       <section class="da-main" data-icon="database"><h2></h2><p class="small da-intro"></p><div class="row da-actions"></div><p class="small da-status"></p><div class="da-body"></div><details class="da-howto"><summary>${esc(T('Mode opératoire', 'Procedure'))}</summary><div></div></details></section>`;
     // Dossiers mémorisés et sources externes : réglés dans Paramètres › Maintenance (bloc « Sources et dossiers »).
     root.querySelectorAll('[data-set]').forEach(b => b.onclick = async () => {
-      if (dirty && !await window.AppFramework.ask(T('Modifications non enregistrées : changer de base quand même ?', 'Unsaved changes: switch anyway?'))) return;
+      if (dirty && !await window.AppFramework.ask(T('Modifications non enregistrées : changer de base quand même ?',
+          'Unsaved changes: switch anyway?'))) return;
       dirty = false;
       current.id = b.dataset.set;
       history.replaceState(null, '', `?base=${current.id}`);
@@ -1132,6 +1198,7 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
       if (locked(SETS.find(d => d.id === current.id) || {})) current.id = 'cpco';
       if (!root.querySelector('.da-main').hidden) show();
     });
+
     function show() {
       let set = SETS.find(d => d.id === current.id) || SETS[0];
       if (locked(set)) set = SETS.find(d => d.id === 'cpco') || set;
@@ -1167,7 +1234,8 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
           show();
         }
       });
-      if (set.custom) return set.id === 'cpco' ? cpcoSettings(body) : set.id === 'planner' ? plannerSettings(body) : set.id === 'send' ? sendSettings(body) : set.id === 'defaLog' ? defaLog(body) : set.id === 'merges' ? merges(body) : ledgers(body);
+      if (set.custom) return set.id === 'cpco' ? cpcoSettings(body) : set.id === 'planner' ? plannerSettings(body) : set.id === 'send' ?
+        sendSettings(body) : set.id === 'defaLog' ? defaLog(body) : set.id === 'merges' ? merges(body) : ledgers(body);
       if (set.file) {
         const w = work[set.id];
         status(w.local ? `${T('Modifications locales du', 'Local changes from')} ${new Date(w.local).toLocaleString()} (${T('prioritaires dans ce navigateur, pas encore dans le dépôt', 'active in this browser, not yet in the repository')})` : T('Contenu du fichier du dépôt', 'Repository file content'));
@@ -1228,7 +1296,8 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
           }],
           [T('Télécharger', 'Download'), async () => {
             const files = await set.files(now());
-            files.forEach(([path, text]) => download(path.split('/').pop(), text, path.endsWith('.json') ? 'application/json' : 'text/javascript'));
+            files.forEach(([path, text]) => download(path.split('/').pop(), text, path.endsWith('.json') ? 'application/json' :
+              'text/javascript'));
           }],
           [T('Annuler les modifications', 'Discard changes'), () => {
             loadWork();
@@ -1236,7 +1305,8 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
             show();
           }],
           [T('Revenir au fichier du dépôt', 'Back to repository file'), async () => {
-            if (!await window.AppFramework.ask(T('Supprimer les modifications locales de cette base ?', 'Delete local changes of this base?'))) return;
+            if (!await window.AppFramework.ask(T('Supprimer les modifications locales de cette base ?',
+                'Delete local changes of this base?'))) return;
             localStorage.removeItem(set.overrideKey);
             loadWork();
             dirty = false;
@@ -1262,7 +1332,8 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
       });
       const buttons = [
         [T('Enregistrer', 'Save'), () => {
-          const value = set.array ? list.filter(r => Object.values(r).some(Boolean)) : Object.fromEntries(list.filter(r => set.byKey(r)).map(r => [set.byKey(r), {
+          const value = set.array ? list.filter(r => Object.values(r).some(Boolean)) : Object.fromEntries(list.filter(r => set.byKey(
+            r)).map(r => [set.byKey(r), {
             ...(raw[set.byKey(r)] || {}),
             ...r
           }]));
@@ -1310,7 +1381,8 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
         }
       });
       if (!list.length) {
-        body.querySelector('.da-defa-stats').textContent = T('Aucun journal chargé dans ce navigateur.', 'No log loaded in this browser.');
+        body.querySelector('.da-defa-stats').textContent = T('Aucun journal chargé dans ce navigateur.',
+        'No log loaded in this browser.');
         actions([]);
         return;
       }
@@ -1321,7 +1393,8 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
       body.querySelector('.da-defa-stats').textContent = `${data.source || '—'} · ${T('chargé le', 'loaded on')} ${new Date(data.importedAt).toLocaleString()} · ${list.length} ${T('vols', 'flights')} · ${dates[0]} → ${dates[dates.length - 1]} · ${hours(minutes)} · ${count('trigram')} ${T('pilotes', 'pilots')} · ${count('registration')} ${T('appareils', 'aircraft')} · ${count('type')} types`;
       // Séries : état dans la table de correspondance (indicatif, forme plan de vol ou autre forme).
       const table = () => work.callsigns.data.table;
-      const entryOf = s => table().find(e => [e.prefix, e.fpl, ...(e.aliases || [])].map(clean).some(f => f === s.prefix || s.forms.has(f)));
+      const entryOf = s => table().find(e => [e.prefix, e.fpl, ...(e.aliases || [])].map(clean).some(f => f === s.prefix || s.forms.has(
+        f)));
       const series = D.series(list);
       // Types réellement employés par la série : au moins 2 vols ou 20 % des vols.
       const topTypes = s => {
@@ -1353,7 +1426,9 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
         history.replaceState(null, '', '?base=callsigns');
         show();
         changed();
-        status(T('Correspondance des indicatifs modifiée : vérifier, puis « Appliquer dans ce navigateur » ou « Enregistrer dans le dépôt ».', 'Callsign correspondence changed: check, then apply or save.'));
+        status(T(
+          'Correspondance des indicatifs modifiée : vérifier, puis « Appliquer dans ce navigateur » ou « Enregistrer dans le dépôt ».',
+          'Callsign correspondence changed: check, then apply or save.'));
       };
       body.querySelectorAll('[data-defa-add]').forEach(b => b.onclick = () => {
         const s = series.find(x => x.prefix === b.dataset.defaAdd),
@@ -1373,7 +1448,8 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
       body.querySelectorAll('[data-defa-fill]').forEach(b => b.onclick = () => {
         const s = series.find(x => x.prefix === b.dataset.defaFill),
           e = entryOf(s);
-        e.aliases = [...new Set([...(e.aliases || []), ...[...s.forms.keys()].filter(f => ![e.prefix, e.fpl].map(clean).includes(f))])];
+        e.aliases = [...new Set([...(e.aliases || []), ...[...s.forms.keys()].filter(f => ![e.prefix, e.fpl].map(clean).includes(
+          f))])];
         e.types = [...new Set([...(e.types || []).map(up), ...topTypes(s)])];
         toCallsigns();
       });
@@ -1394,7 +1470,9 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
           history.replaceState(null, '', '?base=defaReference');
           show();
           changed();
-          status(T('Référence complétée depuis le journal : vérifier, puis « Enregistrer dans le dépôt » (data/references/defa_reference.js).', 'Reference completed from the log: check, then save to repository.'));
+          status(T(
+            'Référence complétée depuis le journal : vérifier, puis « Enregistrer dans le dépôt » (data/references/defa_reference.js).',
+            'Reference completed from the log: check, then save to repository.'));
         }, 'primary'],
         [T('Exporter en CSV', 'Export CSV'), () => download('defa_log_des_vols.csv', D.toCsv(list), 'text/csv')],
         [T('Exporter en JSON (rechargeable)', 'Export JSON (reloadable)'), () => download('defa_log_des_vols.json', JSON.stringify({
@@ -1403,7 +1481,8 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
           records: list
         }, null, 1), 'application/json')],
         [T('Effacer la base de ce navigateur', 'Clear the base from this browser'), async () => {
-          if (!await window.AppFramework.ask(T('Effacer le journal des vols de ce navigateur ? (rechargeable depuis le fichier)', 'Clear the flight log from this browser? (reloadable from the file)'))) return;
+          if (!await window.AppFramework.ask(T('Effacer le journal des vols de ce navigateur ? (rechargeable depuis le fichier)',
+              'Clear the flight log from this browser? (reloadable from the file)'))) return;
           D.clear();
           status(T('Base effacée', 'Base cleared'));
           defaLog(body);
@@ -1444,7 +1523,8 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
     function cpcoSettings(body) {
       const access = window.RepositoryNav?.cpco;
       if (!access) {
-        body.textContent = T('Accès au Centre indisponible (menu commun non chargé).', 'Centre access unavailable (common menu not loaded).');
+        body.textContent = T('Accès au Centre indisponible (menu commun non chargé).',
+          'Centre access unavailable (common menu not loaded).');
         return;
       }
       if (!access.enabled()) {
@@ -1537,7 +1617,8 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
           }
           // la clef d'envoi part dans un en-tête : https obligatoire, sauf sur cette machine (essais)
           if (/^http:\/\//i.test(url) && !/^http:\/\/(localhost|127\.0\.0\.1|\[::1\])(:\d+)?(\/|$)/i.test(url)) {
-            status(T('Adresse en https:// obligatoire (la clef d’envoi passerait en clair).', 'https:// address required (the sending key would travel in clear).'));
+            status(T('Adresse en https:// obligatoire (la clef d’envoi passerait en clair).',
+              'https:// address required (the sending key would travel in clear).'));
             return;
           }
           write('missionSendConfig:v1', {
@@ -1647,7 +1728,8 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
             return;
           }
           if (!familyId && missions.some(m => !m?.family)) {
-            status(T('Registre complet : chaque mission doit avoir sa famille (family).', 'Full ledger: each mission needs its family.'));
+            status(T('Registre complet : chaque mission doit avoir sa famille (family).',
+              'Full ledger: each mission needs its family.'));
             return;
           }
           const parsed = missions.map(m => M.migrate(m, m.family || familyId));
@@ -1693,7 +1775,10 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
         [T('Télécharger le registre (YAML)', 'Download the ledger (YAML)'), () => L.downloadAll()],
         [T('Exporter en CSV (tableur)', 'Export CSV (spreadsheet)'), () => L.downloadAllCsv()]
       ]);
-      status(T('Registre unique : dossier autorisé, sinon copie du navigateur, sinon fichier du dépôt ; anciens registres par famille repris automatiquement.', 'Single ledger: authorised folder, else browser copy, else repository file; legacy per-family ledgers merged automatically.'));
+      status(T(
+        'Registre unique : dossier autorisé, sinon copie du navigateur, sinon fichier du dépôt ; anciens registres par famille repris automatiquement.',
+        'Single ledger: authorised folder, else browser copy, else repository file; legacy per-family ledgers merged automatically.'
+        ));
     }
 
     show();

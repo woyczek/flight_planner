@@ -23,32 +23,44 @@
     id: 'sia',
     on: true,
     dir: null,
-    label: ['SIA France (AIXM 4.5, XML_SIA)', 'SIA France (AIXM 4.5, XML_SIA)', 'SIA Frankreich (AIXM 4.5, XML_SIA)', 'SIA Francia (AIXM 4.5, XML_SIA)']
+    label: ['SIA France (AIXM 4.5, XML_SIA)', 'SIA France (AIXM 4.5, XML_SIA)', 'SIA Frankreich (AIXM 4.5, XML_SIA)',
+      'SIA Francia (AIXM 4.5, XML_SIA)'
+    ]
   }, {
     id: 'dircam',
     on: true,
     dir: null,
-    label: ['DIRCAM / MILAIP (RTBA, AZBA, axes de ravitaillement ENR 5.7)', 'DIRCAM / MILAIP (RTBA, AZBA, ENR 5.7 refuelling tracks)', 'DIRCAM / MILAIP (RTBA, AZBA, Betankungsstrecken ENR 5.7)', 'DIRCAM / MILAIP (RTBA, AZBA, ejes de reabastecimiento ENR 5.7)']
+    label: ['DIRCAM / MILAIP (RTBA, AZBA, axes de ravitaillement ENR 5.7)', 'DIRCAM / MILAIP (RTBA, AZBA, ENR 5.7 refuelling tracks)',
+      'DIRCAM / MILAIP (RTBA, AZBA, Betankungsstrecken ENR 5.7)', 'DIRCAM / MILAIP (RTBA, AZBA, ejes de reabastecimiento ENR 5.7)'
+    ]
   }, {
     id: 'aixm5',
     on: true,
     dir: 'aixm5',
-    label: ['AIXM 5.1 (autres pays : NATS, ENAIRE, DFS, FAA…)', 'AIXM 5.1 (other countries: NATS, ENAIRE, DFS, FAA…)', 'AIXM 5.1 (andere Länder: NATS, ENAIRE, DFS, FAA…)', 'AIXM 5.1 (otros países: NATS, ENAIRE, DFS, FAA…)']
+    label: ['AIXM 5.1 (autres pays : NATS, ENAIRE, DFS, FAA…)', 'AIXM 5.1 (other countries: NATS, ENAIRE, DFS, FAA…)',
+      'AIXM 5.1 (andere Länder: NATS, ENAIRE, DFS, FAA…)', 'AIXM 5.1 (otros países: NATS, ENAIRE, DFS, FAA…)'
+    ]
   }, {
     id: 'geojson',
     on: true,
     dir: 'geojson',
-    label: ['GeoJSON (FAA ADDS, LVNL, autres)', 'GeoJSON (FAA ADDS, LVNL, others)', 'GeoJSON (FAA ADDS, LVNL, andere)', 'GeoJSON (FAA ADDS, LVNL, otros)']
+    label: ['GeoJSON (FAA ADDS, LVNL, autres)', 'GeoJSON (FAA ADDS, LVNL, others)', 'GeoJSON (FAA ADDS, LVNL, andere)',
+      'GeoJSON (FAA ADDS, LVNL, otros)'
+    ]
   }, {
     id: 'openaip',
     on: false,
     dir: 'openaip',
-    label: ['openAIP (exports par pays, CC BY-NC)', 'openAIP (country exports, CC BY-NC)', 'openAIP (Länderexporte, CC BY-NC)', 'openAIP (exportaciones por país, CC BY-NC)']
+    label: ['openAIP (exports par pays, CC BY-NC)', 'openAIP (country exports, CC BY-NC)', 'openAIP (Länderexporte, CC BY-NC)',
+      'openAIP (exportaciones por país, CC BY-NC)'
+    ]
   }, {
     id: 'xplane',
     on: false,
     dir: null,
-    label: ['X-Plane (données de navigation du simulateur)', 'X-Plane (simulator navigation data)', 'X-Plane (Navigationsdaten des Simulators)', 'X-Plane (datos de navegación del simulador)']
+    label: ['X-Plane (données de navigation du simulateur)', 'X-Plane (simulator navigation data)',
+      'X-Plane (Navigationsdaten des Simulators)', 'X-Plane (datos de navegación del simulador)'
+    ]
   }];
   const read = () => {
     try {
@@ -73,7 +85,8 @@
     try {
       localStorage.setItem(KEY, JSON.stringify(s));
     } catch {
-      /* stockage refusé */ }
+      /* stockage refusé */
+    }
     window.dispatchEvent(new CustomEvent('aero-sources-change', {
       detail: s
     }));
@@ -113,7 +126,8 @@
     const p1 = a * Math.PI / 180,
       p2 = c * Math.PI / 180,
       dl = (d - b) * Math.PI / 180;
-    return (Math.atan2(Math.sin(dl) * Math.cos(p2), Math.cos(p1) * Math.sin(p2) - Math.sin(p1) * Math.cos(p2) * Math.cos(dl)) * 180 / Math.PI + 360) % 360;
+    return (Math.atan2(Math.sin(dl) * Math.cos(p2), Math.cos(p1) * Math.sin(p2) - Math.sin(p1) * Math.cos(p2) * Math.cos(dl)) * 180 /
+      Math.PI + 360) % 360;
   };
   const distM = ([a, b], [c, d]) => {
     const p1 = a * Math.PI / 180,
@@ -165,7 +179,9 @@
     rings: (z.rings || []).map(closed).filter(r => r.length > 3)
   });
   /** Types gardés (les autres — FIR, secteurs, parachutage, vol à voile… — n'apportent rien aux cartes de mission). */
-  const KEEP = new Set(['P', 'R', 'D', 'W', 'A', 'TRA', 'TSA', 'MOA', 'MTR', 'CTR', 'CTA', 'TMA', 'ATZ', 'MATZ', 'TMZ', 'RMZ', 'RMZ-TMZ', 'SIV', 'ADIZ', 'TIZ', 'TIA', 'MCTR', 'HTZ', 'LFA']);
+  const KEEP = new Set(['P', 'R', 'D', 'W', 'A', 'TRA', 'TSA', 'MOA', 'MTR', 'CTR', 'CTA', 'TMA', 'ATZ', 'MATZ', 'TMZ', 'RMZ', 'RMZ-TMZ',
+    'SIV', 'ADIZ', 'TIZ', 'TIA', 'MCTR', 'HTZ', 'LFA'
+  ]);
   /** Type d'un espace AIXM 5.1 / FAA / divers ramené au vocabulaire de la base. */
   function normType(t) {
     const u = String(t || '').toUpperCase().replace(/[\s-]+/g, '_');
@@ -202,6 +218,7 @@
   };
   /** Ordre des axes : EPSG:4326 (urn) = lat lon ; CRS84 = lon lat. */
   const lonFirst = el => /CRS84|OGC.*1\.3.*CRS84/i.test(el?.closest?.('[srsName]')?.getAttribute('srsName') || '');
+
   function posList(el, swap) {
     const v = el.textContent.trim().split(/\s+/).map(Number),
       out = [];
@@ -245,8 +262,10 @@
     const all = kids(feat, name);
     return all.find(s => text(s, 'interpretation') === 'BASELINE') || all[0] || null;
   }
-  const idOf = feat => (kid(feat, 'identifier')?.textContent || feat.getAttributeNS?.('http://www.opengis.net/gml/3.2', 'id') || '').trim();
-  const href = el => (el?.getAttributeNS('http://www.w3.org/1999/xlink', 'href') || el?.getAttribute('xlink:href') || '').replace(/^.*?(urn:uuid:|#uuid\.|#)/, '');
+  const idOf = feat => (kid(feat, 'identifier')?.textContent || feat.getAttributeNS?.('http://www.opengis.net/gml/3.2', 'id') || '')
+  .trim();
+  const href = el => (el?.getAttributeNS('http://www.w3.org/1999/xlink', 'href') || el?.getAttribute('xlink:href') || '').replace(
+    /^.*?(urn:uuid:|#uuid\.|#)/, '');
 
   function aixm5(txt) {
     const doc = new DOMParser().parseFromString(txt, 'application/xml');
@@ -323,10 +342,12 @@
       const t = text(s, 'type').toUpperCase(),
         parts = kids(s, 'theNavaidEquipment').map(e => equip.get(href(e))).filter(Boolean);
       parts.forEach(p => used.add(p));
-      const main = parts.find(p => p.kind === 'VOR') || parts.find(p => p.kind === 'NDB') || parts.find(p => p.kind === 'TACAN') || parts[0];
+      const main = parts.find(p => p.kind === 'VOR') || parts.find(p => p.kind === 'NDB') || parts.find(p => p.kind === 'TACAN') || parts[
+        0];
       const p = posOf(kid(s, 'location') || s) || (main && [main.lat, main.lon]);
       if (!p || /^(ILS|LOC|LOC_DME|ILS_DME|MKR|GLS|MLS)/.test(t)) continue;
-      const kind = /VORTAC/.test(t) ? 'VOR' : /VOR/.test(t) ? 'VOR' : /NDB/.test(t) ? 'NDB' : /TACAN/.test(t) ? 'TACAN' : /DME/.test(t) ? 'DME' : main?.kind || 'VOR';
+      const kind = /VORTAC/.test(t) ? 'VOR' : /VOR/.test(t) ? 'VOR' : /NDB/.test(t) ? 'NDB' : /TACAN/.test(t) ? 'TACAN' : /DME/.test(t) ?
+        'DME' : main?.kind || 'VOR';
       const n = {
         kind,
         id: text(s, 'designator') || main?.id || '',
@@ -397,7 +418,8 @@
     const routes = new Map;
     for (const f of doc.getElementsByTagNameNS(NSX, 'Route')) {
       const s = slice(f, 'RouteTimeSlice');
-      if (s) routes.set(idOf(f), [text(s, 'designatorPrefix'), text(s, 'designatorSecondLetter'), text(s, 'designatorNumber')].join('') || text(s, 'name'));
+      if (s) routes.set(idOf(f), [text(s, 'designatorPrefix'), text(s, 'designatorSecondLetter'), text(s, 'designatorNumber')].join('') ||
+        text(s, 'name'));
     }
     const endOf = el => {
       if (!el) return null;
@@ -425,7 +447,8 @@
       if (!a || !b) continue;
       const up = kid(s, 'upperLimit'),
         lo = kid(s, 'lowerLimit'),
-        ft = e => e ? (/FL/i.test(e.getAttribute('uom') || '') ? +e.textContent * 100 : /UNL/i.test(e.textContent) ? Infinity : toFt(+e.textContent, e.getAttribute('uom'))) : null;
+        ft = e => e ? (/FL/i.test(e.getAttribute('uom') || '') ? +e.textContent * 100 : /UNL/i.test(e.textContent) ? Infinity : toFt(+e
+          .textContent, e.getAttribute('uom'))) : null;
       out.aero.airways.push({
         route: routes.get(href(kid(s, 'routeFormed'))) || '',
         a,
@@ -522,8 +545,10 @@
     2: 'STD'
   } [l.referenceDatum] || 'MSL') : '';
   /** Anneaux d'une géométrie GeoJSON (Polygon, MultiPolygon) en [lat, lon]. */
-  const ringsOf = g => !g ? [] : g.type === 'Polygon' ? g.coordinates.map(r => r.map(([x, y]) => [y, x])) : g.type === 'MultiPolygon' ? g.coordinates.flatMap(p => p.map(r => r.map(([x, y]) => [y, x]))) : [];
-  const linesOf = g => !g ? [] : g.type === 'LineString' ? [g.coordinates.map(([x, y]) => [y, x])] : g.type === 'MultiLineString' ? g.coordinates.map(l => l.map(([x, y]) => [y, x])) : [];
+  const ringsOf = g => !g ? [] : g.type === 'Polygon' ? g.coordinates.map(r => r.map(([x, y]) => [y, x])) : g.type === 'MultiPolygon' ? g
+    .coordinates.flatMap(p => p.map(r => r.map(([x, y]) => [y, x]))) : [];
+  const linesOf = g => !g ? [] : g.type === 'LineString' ? [g.coordinates.map(([x, y]) => [y, x])] : g.type === 'MultiLineString' ? g
+    .coordinates.map(l => l.map(([x, y]) => [y, x])) : [];
   const pointOf = g => g?.type === 'Point' ? [g.coordinates[1], g.coordinates[0]] : null;
   const pick = (p, ...keys) => {
     for (const k of keys)
@@ -551,7 +576,8 @@
       const p = f.properties || {},
         g = f.geometry;
       // openAIP (identifiant _id, limites en objets, codes numériques)
-      if (p._id && (p.upperLimit || p.icaoCode !== undefined || p.trafficType !== undefined || p.identifier !== undefined || p.compulsory !== undefined || typeof p.type === 'number')) {
+      if (p._id && (p.upperLimit || p.icaoCode !== undefined || p.trafficType !== undefined || p.identifier !== undefined || p
+          .compulsory !== undefined || typeof p.type === 'number')) {
         if (p.upperLimit && ringsOf(g).length) {
           const type = OA_ASP[p.type] || 'OTHER';
           if (!KEEP.has(type)) continue;
@@ -624,7 +650,8 @@
       if (rings.length) {
         // FAA ADDS (Special Use Airspace : TYPE_CODE ; Class Airspace : CLASS, LOCAL_TYPE), sinon propriétés courantes
         const faaClass = p.LOCAL_TYPE !== undefined && p.CLASS ? String(p.CLASS) : '';
-        let type = normType(p.TYPE_CODE || (faaClass ? (/CLASS_[BCD]/.test(p.LOCAL_TYPE) ? 'CTR' : 'CTA') : '') || pick(p, 'type', 'category', 'kind', 'airspace_type') || 'OTHER');
+        let type = normType(p.TYPE_CODE || (faaClass ? (/CLASS_[BCD]/.test(p.LOCAL_TYPE) ? 'CTR' : 'CTA') : '') || pick(p, 'type',
+          'category', 'kind', 'airspace_type') || 'OTHER');
         if (/^CLASS_?[A-G]$/.test(type)) type = 'CTA';
         if (!KEEP.has(type)) continue;
         out.airspaces.push(zone(src, {
@@ -632,8 +659,10 @@
           cls: faaClass || String(pick(p, 'class', 'icaoClass', 'airspace_class') || '').replace(/^CLASS_?/i, ''),
           name: pick(p, 'name', 'NAME', 'designator', 'ident', 'id'),
           key: pick(p, 'designator', 'ident', 'GLOBAL_ID', 'id', 'name'),
-          upper: p.UPPER_VAL !== undefined ? limit(p.UPPER_VAL, p.UPPER_UOM, p.UPPER_CODE) : String(pick(p, 'upper', 'upperLimit', 'ceiling', 'top') || ''),
-          lower: p.LOWER_VAL !== undefined ? limit(p.LOWER_VAL, p.LOWER_UOM, p.LOWER_CODE) : String(pick(p, 'lower', 'lowerLimit', 'floor', 'bottom') || ''),
+          upper: p.UPPER_VAL !== undefined ? limit(p.UPPER_VAL, p.UPPER_UOM, p.UPPER_CODE) : String(pick(p, 'upper', 'upperLimit',
+            'ceiling', 'top') || ''),
+          lower: p.LOWER_VAL !== undefined ? limit(p.LOWER_VAL, p.LOWER_UOM, p.LOWER_CODE) : String(pick(p, 'lower', 'lowerLimit',
+            'floor', 'bottom') || ''),
           act: /NOTAM/i.test(p.TIMESOFUSE || '') ? 'NOTAM' : activable(type) ? 'activable' : '',
           info: p.TIMESOFUSE ? String(p.TIMESOFUSE) : '',
           admin: p.CONT_AGENT || '',
@@ -928,7 +957,8 @@
   };
   const bbox = a => {
     let b = null;
-    for (const [la, lo] of a.rings?.[0] || []) b = b ? [Math.min(b[0], la), Math.min(b[1], lo), Math.max(b[2], la), Math.max(b[3], lo)] : [la, lo, la, lo];
+    for (const [la, lo] of a.rings?.[0] || []) b = b ? [Math.min(b[0], la), Math.min(b[1], lo), Math.max(b[2], la), Math.max(b[3],
+      lo)] : [la, lo, la, lo];
     return b;
   };
   /** Index des emprises par famille de type et case de 0,1° de leur centre : un espace d'une autre source qui a la même
@@ -955,7 +985,8 @@
       for (let i = -1; i <= 1; i++)
         for (let j = -1; j <= 1; j++)
           for (const q of grid.get(key(f, la + i, lo + j)) || [])
-            if (Math.abs(q[0] - b[0]) < .05 && Math.abs(q[1] - b[1]) < .05 && Math.abs(q[2] - b[2]) < .05 && Math.abs(q[3] - b[3]) < .05) return true;
+            if (Math.abs(q[0] - b[0]) < .05 && Math.abs(q[1] - b[1]) < .05 && Math.abs(q[2] - b[2]) < .05 && Math.abs(q[3] - b[3]) <
+              .05) return true;
       return false;
     };
     list.forEach(add);

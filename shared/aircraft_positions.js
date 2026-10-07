@@ -88,7 +88,8 @@
         a,
         k,
         ad
-      } of marks) {
+      }
+      of marks) {
       if (cur[k]?.at && cur[k].at > at) continue;
       cur[k] = {
         registration: String(a.registration).toUpperCase().trim(),

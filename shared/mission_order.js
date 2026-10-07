@@ -19,7 +19,9 @@
   //   les réglages mémorisés comme une saisie
   const ORDER_KEY = 'missionRegistryOrder:v1',
     REG_KEY = 'missionRegistry:v1';
-  const TEAM_PRESETS = ['A400M', 'C-130J', 'CASA CN235', 'A330 MRTT', 'E-3F', 'Rafale', 'Falcon 50M', 'Atlantique 2', 'Dash 8 (Milan)', 'CL-415', 'H225 Caracal', 'NH90', 'EC145 (Dragon)', 'H160', 'AS365 Dauphin', 'Beech 200 / TBM', 'drone', 'équipe au sol'];
+  const TEAM_PRESETS = ['A400M', 'C-130J', 'CASA CN235', 'A330 MRTT', 'E-3F', 'Rafale', 'Falcon 50M', 'Atlantique 2', 'Dash 8 (Milan)',
+    'CL-415', 'H225 Caracal', 'NH90', 'EC145 (Dragon)', 'H160', 'AS365 Dauphin', 'Beech 200 / TBM', 'drone', 'équipe au sol'
+  ];
   // mêmes noms que les théâtres reconnus par le registre (theatreOf) ; texte libre pour le prompt
   // durée de l'opération en tailles de vêtement (premier décollage → dernier atterrissage des équipes) : repères
   // pour le générateur (§ 3 du prompt), pas des bornes strictes ; de 30 min à 8 h
@@ -30,7 +32,9 @@
     ['L', '3 – 5 h'],
     ['XL', '5 – 8 h']
   ];
-  const THEATRE_LIST = ['aléatoire', 'métropole', 'Corse', 'Antilles', 'Guyane', 'Réunion', 'Mayotte', 'Nouvelle-Calédonie', 'Polynésie', 'Saint-Pierre-et-Miquelon', 'Wallis-et-Futuna', 'étranger'];
+  const THEATRE_LIST = ['aléatoire', 'métropole', 'Corse', 'Antilles', 'Guyane', 'Réunion', 'Mayotte', 'Nouvelle-Calédonie', 'Polynésie',
+    'Saint-Pierre-et-Miquelon', 'Wallis-et-Futuna', 'étranger'
+  ];
   // théâtre étranger : pays saisi (« étranger (Japon) ») ; vide = au choix du générateur
   const theatreText = (v, country) => v === 'étranger' ? `étranger (${String(country || '').trim() || 'pays au choix'})` : v;
 
@@ -116,7 +120,9 @@
   /** Aéronef choisi pour chaque équipe en vol (A, B, C…) ; '' = automatique. Anciens réglages (cases + « Autres ») repris une fois. */
   function teamSlots(o) {
     const n = Math.max(1, Math.min(5, +o.teams || 1));
-    if (!Array.isArray(o.teamSlots)) o.teamSlots = [...(o.teamTypes || []), ...String(o.teamTypesFree || '').split('+').map(x => x.trim()).filter(Boolean)];
+    if (!Array.isArray(o.teamSlots)) o.teamSlots = [...(o.teamTypes || []), ...String(o.teamTypesFree || '').split('+').map(x => x.trim())
+      .filter(Boolean)
+    ];
     while (o.teamSlots.length < n) o.teamSlots.push('');
     return o.teamSlots.slice(0, n);
   }
@@ -185,7 +191,8 @@
     };
     if (window.MissionRegistry?.addOrder) return window.MissionRegistry.addOrder(entry);
     // registre non chargé sur cette page : index IndexedDB (shared/data_index.js), sinon ancienne copie du navigateur
-    if (window.MissionIndex) return window.MissionIndex.ready.then(() => window.MissionIndex.save([...window.MissionIndex.all(), entry], now));
+    if (window.MissionIndex) return window.MissionIndex.ready.then(() => window.MissionIndex.save([...window.MissionIndex.all(), entry],
+      now));
     const reg = readJson(REG_KEY, null) || {
       schema: 'mission-registry',
       version: 1,
@@ -220,7 +227,8 @@
     p = set(p, 'ÉQUIPES_SOL', r.ground ?? 'libre');
     p = set(p, 'RAVITAILLEMENT', r.aar || 'libre');
     p = set(p, 'DURÉE', r.duration || 'libre');
-    p = p.replace(/^(\s*TRADUCTIONS\s*=\s*)\S+/m, (_, a) => a + String(r.translations || 'en').replace(/\$/g, '$$$$')); // valeur à espaces (« en, de, es »)
+    p = p.replace(/^(\s*TRADUCTIONS\s*=\s*)\S+/m, (_, a) => a + String(r.translations || 'en').replace(/\$/g,
+    '$$$$')); // valeur à espaces (« en, de, es »)
     let copied = false;
     try {
       await navigator.clipboard.writeText(p);
@@ -230,11 +238,17 @@
     }
     window.open(p.length < 7000 ? `https://chatgpt.com/?q=${encodeURIComponent(p)}` : 'https://chatgpt.com/', '_blank', 'noopener');
     if (out) {
-      if (copied) out.textContent = t(['Prompt copié ({n} caractères) : dans ChatGPT, coller (Ctrl+V) puis envoyer.', 'Prompt copied ({n} characters): paste it in ChatGPT (Ctrl+V) and send.', 'Prompt kopiert ({n} Zeichen): in ChatGPT einfügen (Strg+V) und senden.', 'Prompt copiado ({n} caracteres): pegarlo en ChatGPT (Ctrl+V) y enviar.'], {
+      if (copied) out.textContent = t(['Prompt copié ({n} caractères) : dans ChatGPT, coller (Ctrl+V) puis envoyer.',
+        'Prompt copied ({n} characters): paste it in ChatGPT (Ctrl+V) and send.',
+        'Prompt kopiert ({n} Zeichen): in ChatGPT einfügen (Strg+V) und senden.',
+        'Prompt copiado ({n} caracteres): pegarlo en ChatGPT (Ctrl+V) y enviar.'
+      ], {
         n: p.length.toLocaleString()
       });
       else {
-        out.textContent = t(['Copie refusée par le navigateur : copier le texte ci-dessous puis le coller dans ChatGPT.', 'Copy refused by the browser: copy the text below and paste it in ChatGPT.']);
+        out.textContent = t(['Copie refusée par le navigateur : copier le texte ci-dessous puis le coller dans ChatGPT.',
+          'Copy refused by the browser: copy the text below and paste it in ChatGPT.'
+        ]);
         const ta = document.createElement('textarea');
         ta.value = p;
         ta.rows = 3;
@@ -281,7 +295,9 @@
       const f = fam.find(x => x.id === o.type),
         nx = numbering(o.type);
       const opt = (v, l, cur) => `<option value="${esc(v)}" ${String(cur) === String(v) ? 'selected' : ''}>${esc(l)}</option>`;
-      const idText = nx.id ? `${nx.id} (${t(['série', 'series', 'Serie', 'serie'])} ${o.serie || nx.serie})` : t(['selon la famille tirée', 'per the drawn family', 'je nach gezogener Familie', 'según la familia sorteada']);
+      const idText = nx.id ? `${nx.id} (${t(['série', 'series', 'Serie', 'serie'])} ${o.serie || nx.serie})` : t(['selon la famille tirée', 'per the drawn family', 'je nach gezogener Familie',
+        'según la familia sorteada'
+      ]);
       host.classList.add('mo-form');
       host.innerHTML = `<div class="mo-grid">
         <label>${esc(t(['Type', 'Type', 'Typ', 'Tipo']))}<select data-o="type">${opt('aléatoire', t(['aléatoire', 'random', 'zufällig', 'aleatorio']), o.type)}${fam.map(x => opt(x.id, `${x.id} — ${x.label}`, o.type)).join('')}</select></label>

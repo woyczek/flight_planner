@@ -43,19 +43,54 @@
     texte: ['Remarque', 'Remark', 'Bemerkung', 'Observación'],
     ajouter: ['Ajouter une activation', 'Add an activation', 'Aktivierung hinzufügen', 'Añadir una activación'],
     retirer: ['Retirer', 'Remove', 'Entfernen', 'Quitar'],
-    vide: ['Aucune activation saisie pour cette semaine.', 'No activation entered for this week.', 'Keine Aktivierung für diese Woche erfasst.', 'Ninguna activación introducida para esta semana.'],
-    absent: ['Saisie des activations indisponible : shared/odv_airspace.js n’est pas chargé.', 'Activation entry unavailable: shared/odv_airspace.js is not loaded.', 'Erfassung der Aktivierungen nicht verfügbar: shared/odv_airspace.js nicht geladen.', 'Introducción de activaciones no disponible: shared/odv_airspace.js no está cargado.'],
-    base: ['Base aéronautique absente ou zone France inactive : zones à saisir par leur nom.', 'Aeronautical database missing or France zone inactive: enter zones by name.', 'Luftfahrtdatenbank fehlt oder Zone Frankreich inaktiv: Zonen mit Namen eingeben.', 'Base aeronáutica ausente o zona Francia inactiva: introducir las zonas por su nombre.'],
-    erreur: ['Activations non enregistrées : {e}', 'Activations not saved: {e}', 'Aktivierungen nicht gespeichert: {e}', 'Activaciones no guardadas: {e}'],
+    vide: ['Aucune activation saisie pour cette semaine.', 'No activation entered for this week.',
+      'Keine Aktivierung für diese Woche erfasst.', 'Ninguna activación introducida para esta semana.'
+    ],
+    absent: ['Saisie des activations indisponible : shared/odv_airspace.js n’est pas chargé.',
+      'Activation entry unavailable: shared/odv_airspace.js is not loaded.',
+      'Erfassung der Aktivierungen nicht verfügbar: shared/odv_airspace.js nicht geladen.',
+      'Introducción de activaciones no disponible: shared/odv_airspace.js no está cargado.'
+    ],
+    base: ['Base aéronautique absente ou zone France inactive : zones à saisir par leur nom.',
+      'Aeronautical database missing or France zone inactive: enter zones by name.',
+      'Luftfahrtdatenbank fehlt oder Zone Frankreich inaktiv: Zonen mit Namen eingeben.',
+      'Base aeronáutica ausente o zona Francia inactiva: introducir las zonas por su nombre.'
+    ],
+    erreur: ['Activations non enregistrées : {e}', 'Activations not saved: {e}', 'Aktivierungen nicht gespeichert: {e}',
+      'Activaciones no guardadas: {e}'
+    ],
     ivao: ['Importer d’IVAO', 'Import from IVAO', 'Von IVAO importieren', 'Importar de IVAO'],
-    ivaoTitre: ['Zones spéciales de France actives cette semaine sur IVAO (horaires publiés, dont le RTBA, et NOTAM) : remplacent l’import précédent ; les saisies à la main restent. Lanceur et clé d’API IVAO requis.', 'French special areas active this week on IVAO (published schedules, RTBA included, and NOTAMs): replace the previous import; manual entries stay. Launcher and IVAO API key required.', 'Auf IVAO diese Woche aktive französische Sondergebiete (veröffentlichte Zeiten, inkl. RTBA, und NOTAM): ersetzen den vorigen Import; manuelle Einträge bleiben. Starter und IVAO-API-Schlüssel nötig.', 'Zonas especiales de Francia activas esta semana en IVAO (horarios publicados, RTBA incluido, y NOTAM): sustituyen la importación anterior; las entradas manuales se conservan. Requiere el lanzador y la clave de API de IVAO.'],
-    ivaoOk: ['{n} activation(s) IVAO importée(s).', '{n} IVAO activation(s) imported.', '{n} IVAO-Aktivierung(en) importiert.', '{n} activación(es) IVAO importada(s).'],
-    atcOk: ['{n} session(s) ATC IVAO (trainings, examens, réservations) importée(s).', '{n} IVAO ATC session(s) (trainings, exams, bookings) imported.', '{n} IVAO-ATC-Sitzung(en) (Trainings, Prüfungen, Buchungen) importiert.', '{n} sesión(es) ATC IVAO (entrenamientos, exámenes, reservas) importada(s).'],
-    atcErr: ['Sessions ATC IVAO non importées : {e}', 'IVAO ATC sessions not imported: {e}', 'IVAO-ATC-Sitzungen nicht importiert: {e}', 'Sesiones ATC IVAO no importadas: {e}'],
-    ivaoErr: ['Import IVAO impossible : {e}', 'IVAO import failed: {e}', 'IVAO-Import fehlgeschlagen: {e}', 'Importación IVAO imposible: {e}'],
-    ivaoListe: ['{n} activation(s) importée(s) d’IVAO (remplacées au prochain import)', '{n} activation(s) imported from IVAO (replaced at the next import)', '{n} von IVAO importierte Aktivierung(en) (beim nächsten Import ersetzt)', '{n} activación(es) importada(s) de IVAO (sustituidas en la próxima importación)'],
-    videNet: ['Aucune activation saisie pour {r} cette semaine.', 'No activation entered for {r} this week.', 'Keine Aktivierung für {r} diese Woche erfasst.', 'Ninguna activación introducida para {r} esta semana.'],
-    vatsimNote: ['VATSIM ne publie pas d’activations : saisie à la main.', 'VATSIM does not publish activations: entered by hand.', 'VATSIM veröffentlicht keine Aktivierungen: manuelle Eingabe.', 'VATSIM no publica activaciones: introducción manual.'],
+    ivaoTitre: [
+      'Zones spéciales de France actives cette semaine sur IVAO (horaires publiés, dont le RTBA, et NOTAM) : remplacent l’import précédent ; les saisies à la main restent. Lanceur et clé d’API IVAO requis.',
+      'French special areas active this week on IVAO (published schedules, RTBA included, and NOTAMs): replace the previous import; manual entries stay. Launcher and IVAO API key required.',
+      'Auf IVAO diese Woche aktive französische Sondergebiete (veröffentlichte Zeiten, inkl. RTBA, und NOTAM): ersetzen den vorigen Import; manuelle Einträge bleiben. Starter und IVAO-API-Schlüssel nötig.',
+      'Zonas especiales de Francia activas esta semana en IVAO (horarios publicados, RTBA incluido, y NOTAM): sustituyen la importación anterior; las entradas manuales se conservan. Requiere el lanzador y la clave de API de IVAO.'
+    ],
+    ivaoOk: ['{n} activation(s) IVAO importée(s).', '{n} IVAO activation(s) imported.', '{n} IVAO-Aktivierung(en) importiert.',
+      '{n} activación(es) IVAO importada(s).'
+    ],
+    atcOk: ['{n} session(s) ATC IVAO (trainings, examens, réservations) importée(s).',
+      '{n} IVAO ATC session(s) (trainings, exams, bookings) imported.',
+      '{n} IVAO-ATC-Sitzung(en) (Trainings, Prüfungen, Buchungen) importiert.',
+      '{n} sesión(es) ATC IVAO (entrenamientos, exámenes, reservas) importada(s).'
+    ],
+    atcErr: ['Sessions ATC IVAO non importées : {e}', 'IVAO ATC sessions not imported: {e}', 'IVAO-ATC-Sitzungen nicht importiert: {e}',
+      'Sesiones ATC IVAO no importadas: {e}'
+    ],
+    ivaoErr: ['Import IVAO impossible : {e}', 'IVAO import failed: {e}', 'IVAO-Import fehlgeschlagen: {e}',
+      'Importación IVAO imposible: {e}'
+    ],
+    ivaoListe: ['{n} activation(s) importée(s) d’IVAO (remplacées au prochain import)',
+      '{n} activation(s) imported from IVAO (replaced at the next import)',
+      '{n} von IVAO importierte Aktivierung(en) (beim nächsten Import ersetzt)',
+      '{n} activación(es) importada(s) de IVAO (sustituidas en la próxima importación)'
+    ],
+    videNet: ['Aucune activation saisie pour {r} cette semaine.', 'No activation entered for {r} this week.',
+      'Keine Aktivierung für {r} diese Woche erfasst.', 'Ninguna activación introducida para {r} esta semana.'
+    ],
+    vatsimNote: ['VATSIM ne publie pas d’activations : saisie à la main.', 'VATSIM does not publish activations: entered by hand.',
+      'VATSIM veröffentlicht keine Aktivierungen: manuelle Eingabe.', 'VATSIM no publica activaciones: introducción manual.'
+    ],
     deux: ['les deux réseaux', 'both networks', 'beide Netze', 'ambas redes']
   };
   const ETAT = {

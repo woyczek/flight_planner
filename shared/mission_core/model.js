@@ -163,7 +163,8 @@
   const fillDefaults = (target, defaults) => {
     Object.entries(defaults).forEach(([key, value]) => {
       if (target[key] === undefined) target[key] = structuredClone(value);
-      else if (value && typeof value === 'object' && !Array.isArray(value) && target[key] && typeof target[key] === 'object' && !Array.isArray(target[key])) fillDefaults(target[key], value);
+      else if (value && typeof value === 'object' && !Array.isArray(value) && target[key] && typeof target[key] === 'object' && !
+        Array.isArray(target[key])) fillDefaults(target[key], value);
     });
     return target;
   };
@@ -200,7 +201,8 @@
       // Durée « déclarée » (modifiée depuis un reporting, sans les heures) : à défaut des heures.
       blockMinutes: between(t.offBlock, t.onBlock) ?? between(t.engineStart, t.shutdown) ?? num(t.declared?.blockMinutes),
       flightMinutes: flight ?? num(t.declared?.flightMinutes),
-      declared: t.declared && (flight == null && num(t.declared.flightMinutes) != null || between(t.offBlock, t.onBlock) == null && between(t.engineStart, t.shutdown) == null && num(t.declared.blockMinutes) != null) ? true : null,
+      declared: t.declared && (flight == null && num(t.declared.flightMinutes) != null || between(t.offBlock, t.onBlock) == null &&
+        between(t.engineStart, t.shutdown) == null && num(t.declared.blockMinutes) != null) ? true : null,
       transitOutMinutes: part(t.takeoff, t.zoneEntry),
       timeOnStationMinutes: part(t.zoneEntry, t.zoneExit),
       transitInMinutes: part(t.zoneExit, t.landing),
@@ -351,7 +353,9 @@
   // Immatriculation affichée et enregistrée avec le tiret de la marque de nationalité :
   // FZBMM → F-ZBMM, HBJVE → HB-JVE, 9HABC → 9H-ABC ; N123AB (États-Unis) et saisies déjà
   // tirées inchangées. La recherche ignore le tiret (MissionAircraft.regKey).
-  const TWO_LETTER_MARKS = new Set(('HB OO OE OK OM PH EC EI ES LX LY LZ SE SP SX TC UR YL YR YU OH OY LN CS TF HA S5 9A 9H 4X VH ZS ZK VT HS PK RP 9M 9V A6 A7 HZ SU CN EP YI JY OD 5B 5Y ZP LV CC HK YV OB CX HP TG TI XA XB XC EW ER UK UN EX EY EZ 4K 4L EK RA RF PP PR PT PU HI T7 3A HL').split(' '));
+  const TWO_LETTER_MARKS = new Set((
+    'HB OO OE OK OM PH EC EI ES LX LY LZ SE SP SX TC UR YL YR YU OH OY LN CS TF HA S5 9A 9H 4X VH ZS ZK VT HS PK RP 9M 9V A6 A7 HZ SU CN EP YI JY OD 5B 5Y ZP LV CC HK YV OB CX HP TG TI XA XB XC EW ER UK UN EX EY EZ 4K 4L EK RA RF PP PR PT PU HI T7 3A HL'
+    ).split(' '));
 
   /** Immatriculation normalisée (majuscules, tiret après la marque de nationalité : F-HABC). */
   function formatRegistration(value) {
@@ -520,7 +524,8 @@
     (family.blocks || []).forEach(block => {
       if (block.collection) {
         const list = get(copy, block.collection.path) || [];
-        block.collection.fields.filter(f => block.sensitive || f.sensitive).forEach(f => list.forEach(item => set(item, f.path, null)));
+        block.collection.fields.filter(f => block.sensitive || f.sensitive).forEach(f => list.forEach(item => set(item, f.path,
+          null)));
       } else(block.fields || []).filter(f => block.sensitive || f.sensitive).forEach(f => {
         if (get(copy, f.path) !== undefined) set(copy, f.path, null);
       });
@@ -529,7 +534,8 @@
     return copy;
   }
   /** Vrai si la famille a des champs ou blocs sensibles (masqués à l'export public). */
-  const hasSensitive = (family = {}) => (family.blocks || []).some(b => b.sensitive || (b.collection ? b.collection.fields : b.fields || []).some(f => f.sensitive));
+  const hasSensitive = (family = {}) => (family.blocks || []).some(b => b.sensitive || (b.collection ? b.collection.fields : b.fields ||
+  []).some(f => f.sensitive));
 
   // Lecture d'un CSV « ; » (guillemets doublés) en objets { colonne: valeur }.
   function parseCsv(text) {

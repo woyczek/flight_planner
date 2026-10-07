@@ -27,7 +27,8 @@
         ...d,
         ...s
       };
-    if (!Array.isArray(out.hours) || out.hours.length !== 3 || out.hours.some(h => !Array.isArray(h) || h.length !== 2)) out.hours = d.hours;
+    if (!Array.isArray(out.hours) || out.hours.length !== 3 || out.hours.some(h => !Array.isArray(h) || h.length !== 2)) out.hours = d
+      .hours;
     if (!Array.isArray(out.preference)) out.preference = d.preference;
     return out;
   }
@@ -84,7 +85,11 @@
         h[k][e] = Math.max(0, Math.min(24, +x.value || 0));
       });
       if (h.some(([a, b]) => b <= a)) {
-        notify(L(['Créneau invalide : l’heure de fin doit suivre l’heure de début.', 'Invalid slot: the end time must follow the start time.', 'Ungültiges Zeitfenster: Die Endzeit muss nach der Startzeit liegen.', 'Franja no válida: la hora de fin debe seguir a la de inicio.']), 'warn');
+        notify(L(['Créneau invalide : l’heure de fin doit suivre l’heure de début.',
+          'Invalid slot: the end time must follow the start time.',
+          'Ungültiges Zeitfenster: Die Endzeit muss nach der Startzeit liegen.',
+          'Franja no válida: la hora de fin debe seguir a la de inicio.'
+        ]), 'warn');
         render(host, {
           onChange
         });
@@ -103,7 +108,9 @@
         const fam = C()?.FAMILIES || {},
           list = el.value.toUpperCase().split(/[\s,;]+/).filter(Boolean),
           bad = list.filter(f => !fam[f]);
-        if (bad.length) notify(L(['Familles inconnues ignorées : {b} (connues : {k}).', 'Unknown families ignored: {b} (known: {k}).', 'Unbekannte Familien ignoriert: {b} (bekannt: {k}).', 'Familias desconocidas ignoradas: {b} (conocidas: {k}).'], {
+        if (bad.length) notify(L(['Familles inconnues ignorées : {b} (connues : {k}).', 'Unknown families ignored: {b} (known: {k}).',
+          'Unbekannte Familien ignoriert: {b} (bekannt: {k}).', 'Familias desconocidas ignoradas: {b} (conocidas: {k}).'
+        ], {
           b: bad.join(', '),
           k: Object.keys(fam).join(', ')
         }), 'warn');
@@ -119,7 +126,9 @@
       render(host, {
         onChange
       });
-      notify(L(['Réglages par défaut rétablis.', 'Default settings restored.', 'Standardeinstellungen wiederhergestellt.', 'Ajustes por defecto restablecidos.']), 'info');
+      notify(L(['Réglages par défaut rétablis.', 'Default settings restored.', 'Standardeinstellungen wiederhergestellt.',
+        'Ajustes por defecto restablecidos.'
+      ]), 'info');
     };
   }
 
@@ -134,7 +143,12 @@
     id: 'odv',
     group: window.SettingsPanels.L('Centre (CPCO)', 'Centre (CPCO)', 'Zentrum (CPCO)', 'Centro (CPCO)'),
     title: window.SettingsPanels.L('Planning ODV', 'ODV planning', 'ODV-Planung', 'Planificación ODV'),
-    intro: window.SettingsPanels.L('Réglages de la page Planning ODV : heures des créneaux matin, après-midi et soir, pays préféré (périmètre des sessions ATC, aussi pour le Tableau), lecture du classeur (dates de la semaine, case vide, types FLOTTE), missions probables. Gardés dans ce navigateur.', 'Settings of the ODV planning page: morning, afternoon and evening slot hours, preferred country (ATC session perimeter, also for the Board), workbook reading (dates of the week, empty cell, FLOTTE types), likely missions. Kept in this browser.', 'Einstellungen für die ODV-Planung: Stunden der Zeitfenster Morgen, Nachmittag und Abend, bevorzugtes Land (Bereich der ATC-Sitzungen, auch für die Einsatztafel), Lesen der Arbeitsmappe (Daten der Woche, leere Zelle, FLOTTE-Typen), wahrscheinliche Missionen. In diesem Browser gespeichert.', 'Ajustes de la página de planificación ODV: horas de las franjas de mañana, tarde y noche, país preferido (perímetro de las sesiones ATC, también para el Tablero), lectura del libro (fechas de la semana, celda vacía, tipos FLOTTE), misiones probables. Guardados en este navegador.'),
+    intro: window.SettingsPanels.L(
+      'Réglages de la page Planning ODV : heures des créneaux matin, après-midi et soir, pays préféré (périmètre des sessions ATC, aussi pour le Tableau), lecture du classeur (dates de la semaine, case vide, types FLOTTE), missions probables. Gardés dans ce navigateur.',
+      'Settings of the ODV planning page: morning, afternoon and evening slot hours, preferred country (ATC session perimeter, also for the Board), workbook reading (dates of the week, empty cell, FLOTTE types), likely missions. Kept in this browser.',
+      'Einstellungen für die ODV-Planung: Stunden der Zeitfenster Morgen, Nachmittag und Abend, bevorzugtes Land (Bereich der ATC-Sitzungen, auch für die Einsatztafel), Lesen der Arbeitsmappe (Daten der Woche, leere Zelle, FLOTTE-Typen), wahrscheinliche Missionen. In diesem Browser gespeichert.',
+      'Ajustes de la página de planificación ODV: horas de las franjas de mañana, tarde y noche, país preferido (perímetro de las sesiones ATC, también para el Tablero), lectura del libro (fechas de la semana, celda vacía, tipos FLOTTE), misiones probables. Guardados en este navegador.'
+      ),
     render(body) {
       render(body);
     }

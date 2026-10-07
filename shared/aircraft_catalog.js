@@ -130,7 +130,8 @@
     while (n < words.length - 1 && /^[A-Z][A-Z&.'-]*$/.test(words[n]) && !/\d/.test(words[n])) n++;
     if (!n && words.length > 1 && /^[A-Z][a-z]+$/.test(words[0]) && /\d/.test(words[1])) n = 1;
     if (!n) return s;
-    const pretty = w => /^(?:[A-Z]{2,3}|[A-Z]+&[A-Z]+)$/.test(w) && !/^(?:DE|LA|DU|DI|EL)$/.test(w) ? w : w.charAt(0) + w.slice(1).toLowerCase();
+    const pretty = w => /^(?:[A-Z]{2,3}|[A-Z]+&[A-Z]+)$/.test(w) && !/^(?:DE|LA|DU|DI|EL)$/.test(w) ? w : w.charAt(0) + w.slice(1)
+      .toLowerCase();
     const maker = words.slice(0, n).map(pretty).join(' '),
       rest = words.slice(n).join(' ');
     return /^\d/.test(rest) ? `${maker} ${rest}` : `${rest} — ${maker}`;

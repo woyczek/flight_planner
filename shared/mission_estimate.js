@@ -93,7 +93,8 @@
   /** Classe d'un type : description OACI (H… hélicoptère, …J réacteur, …T turbopropulseur, …P pistons). */
   function classOf(code, text) {
     const d = String(window.AIRCRAFT_DB?.[code]?.description || '');
-    if (d[0] === 'H' || d[0] === 'G' || /hélico|helico|caracal|puma|dauphin|panther|cougar|tigre|NH90|EC1|H1[2-7]\d|H225/i.test(text)) return 'heli';
+    if (d[0] === 'H' || d[0] === 'G' || /hélico|helico|caracal|puma|dauphin|panther|cougar|tigre|NH90|EC1|H1[2-7]\d|H225/i.test(text))
+      return 'heli';
     if (d[2] === 'J') return 'jet';
     if (d[2] === 'T') return 'turboprop';
     if (d[2] === 'P') return 'piston';
@@ -104,7 +105,8 @@
   function plannerProfile(code) {
     if (!code) return null;
     try {
-      const all = Object.values((window.RepositoryKit?.store?.jsonCached ? window.RepositoryKit.store.jsonCached('flightPerfState', {}) : JSON.parse(localStorage.getItem('flightPerfState') || '{}'))?.profiles || {});
+      const all = Object.values((window.RepositoryKit?.store?.jsonCached ? window.RepositoryKit.store.jsonCached('flightPerfState', {}) :
+        JSON.parse(localStorage.getItem('flightPerfState') || '{}'))?.profiles || {});
       return all.find(p => String(p.icao || p.type || '').toUpperCase() === code) || null;
     } catch {
       return null;
@@ -185,7 +187,8 @@
     const fam = String(y.mission?.type || '').toUpperCase(),
       role = `${p.role} ${p.name}`.toLowerCase();
     if (p.kind === 'target') return FAMILY_TASK[fam] ?? 15;
-    if (p.kind === 'zone') return /recherche|search|surveill|patrouille/.test(role) ? 45 : /aar|ravitaill|hippodrome/.test(role) ? 30 : 20;
+    if (p.kind === 'zone') return /recherche|search|surveill|patrouille/.test(role) ? 45 : /aar|ravitaill|hippodrome/.test(role) ? 30 :
+    20;
     if (p.kind === 'rdv') return /poser|posé|largage|treuil|héliport|relève|embarq|débarq/.test(role) ? 10 : 5;
     if (/poser|posé|treuil|largage|drop|hélistation|hôpital|chu\b/.test(role)) return 10;
     return 0;
@@ -300,7 +303,8 @@
 
   /** Tronçons, phases et durées d'une route (départ, points, arrivée). */
   function fly(chain, P, y) {
-    const workIdx = chain.map((p, i) => p.kind !== 'return' && (p.kind === 'target' || p.kind === 'rdv' || p.kind === 'zone' || (p.task ?? 0) > 0) && i > 0 && i < chain.length - 1 ? i : -1).filter(i => i >= 0);
+    const workIdx = chain.map((p, i) => p.kind !== 'return' && (p.kind === 'target' || p.kind === 'rdv' || p.kind === 'zone' || (p.task ??
+      0) > 0) && i > 0 && i < chain.length - 1 ? i : -1).filter(i => i >= 0);
     const first = workIdx.length ? workIdx[0] : 1,
       last = workIdx.length ? workIdx[workIdx.length - 1] : chain.length - 2;
     const mid = P.cls === 'heli' ? 0 : P.alt * 0.3; // entre deux points de travail, avion : descente partielle
@@ -313,7 +317,8 @@
       const a = chain[i],
         b = chain[i + 1],
         nm = distNm(a, b);
-      const L = legMinutes(nm, i === 0 ? 0 : a.kind === 'via' ? P.alt : mid, i === chain.length - 2 ? 0 : b.kind === 'via' ? P.alt : mid, P);
+      const L = legMinutes(nm, i === 0 ? 0 : a.kind === 'via' ? P.alt : mid, i === chain.length - 2 ? 0 : b.kind === 'via' ? P.alt : mid,
+        P);
       const task = i + 1 < chain.length - 1 ? (b.task ?? defaultTask(b, y)) : 0;
       const phase = i < first ? 'aller' : i < last ? 'sur zone' : 'retour';
       legs.push({
@@ -356,7 +361,8 @@
     let reg = [];
     try {
       // registre des missions : copie en mémoire de l'index (shared/data_index.js), rien à analyser par estimation
-      reg = (window.MissionIndex ? window.MissionIndex.all() : (window.RepositoryKit?.store?.jsonCached ? window.RepositoryKit.store.jsonCached('missionRegistry:v1', null) : JSON.parse(localStorage.getItem('missionRegistry:v1') || 'null'))?.missions) || [];
+      reg = (window.MissionIndex ? window.MissionIndex.all() : (window.RepositoryKit?.store?.jsonCached ? window.RepositoryKit.store
+        .jsonCached('missionRegistry:v1', null) : JSON.parse(localStorage.getItem('missionRegistry:v1') || 'null'))?.missions) || [];
     } catch {
       return {};
     }
@@ -413,7 +419,8 @@
     return (Array.isArray(y.return_options) ? y.return_options : []).filter(ok).map((o, k) => {
       const p = {
         ...pt(o, 'return', o.id || `RET-${k + 1}`),
-        task: Number.isFinite(+o.time_on_task_min) ? +o.time_on_task_min : (/hôpital|hopital|chu|ch\b|hélistation|smur/i.test(`${o.name} ${o.role || ''}`) ? 10 : 0)
+        task: Number.isFinite(+o.time_on_task_min) ? +o.time_on_task_min : (/hôpital|hopital|chu|ch\b|hélistation|smur/i.test(
+          `${o.name} ${o.role || ''}`) ? 10 : 0)
       };
       const toBase = o.then_base !== false && base && distNm(p, base) > 1;
       return {
@@ -623,7 +630,8 @@
     if (!document.getElementById('missionEstimateCss')) {
       const css = document.createElement('style');
       css.id = 'missionEstimateCss';
-      css.textContent = '.me-box .me-kpi{display:flex;flex-wrap:wrap;gap:6px 14px;margin:4px 0}.me-box .me-kpi span{white-space:nowrap}.me-box .me-kpi b{font-size:1.05em}.me-box table{border-collapse:collapse;font-size:13px;margin:6px 0}.me-box td,.me-box th{padding:2px 8px;border-bottom:1px solid rgba(127,127,127,.25);text-align:left}.me-box .me-sketch{width:100%;max-width:560px;height:auto;display:block;margin:6px 0}.me-box .me-routecols{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));gap:4px 16px;align-items:start}.me-box .me-routecols table{width:100%}.me-box .me-small{font-size:12px;opacity:.8}.me-box .me-toggle{display:flex!important;flex-direction:row;gap:6px;align-items:center;justify-content:flex-start;width:auto;margin:6px 0}.me-box .me-toggle input{width:auto;margin:0}.me-box .me-up{color:#b45309}.me-box .me-down{color:#15803d}';
+      css.textContent =
+        '.me-box .me-kpi{display:flex;flex-wrap:wrap;gap:6px 14px;margin:4px 0}.me-box .me-kpi span{white-space:nowrap}.me-box .me-kpi b{font-size:1.05em}.me-box table{border-collapse:collapse;font-size:13px;margin:6px 0}.me-box td,.me-box th{padding:2px 8px;border-bottom:1px solid rgba(127,127,127,.25);text-align:left}.me-box .me-sketch{width:100%;max-width:560px;height:auto;display:block;margin:6px 0}.me-box .me-routecols{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));gap:4px 16px;align-items:start}.me-box .me-routecols table{width:100%}.me-box .me-small{font-size:12px;opacity:.8}.me-box .me-toggle{display:flex!important;flex-direction:row;gap:6px;align-items:center;justify-content:flex-start;width:auto;margin:6px 0}.me-box .me-toggle input{width:auto;margin:0}.me-box .me-up{color:#b45309}.me-box .me-down{color:#15803d}';
       document.head.append(css);
     }
     const phase = `aller ${hm(sum.transitOut)} · sur zone ${hm(sum.onStation)} · retour ${hm(sum.transitIn)}`;

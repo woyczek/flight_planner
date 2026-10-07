@@ -111,7 +111,8 @@
     SECU: ['Sécu civile (code SC)', 'Civil security (code SC)', 'Zivilschutz (Code SC)', 'Seguridad civil (código SC)'],
     FNY: ['FNY (code N)', 'FNY (code N)', 'FNY (Code N)', 'FNY (código N)'],
     MARITIME: ['Maritime', 'Maritime', 'Seefahrt', 'Marítimo'],
-    EXERCICE: ['Exercice SO (IVAO / VATSIM)', 'SO exercise (IVAO / VATSIM)', 'SO-Übung (IVAO / VATSIM)', 'Ejercicio SO (IVAO / VATSIM)'],
+    EXERCICE: ['Exercice SO (IVAO / VATSIM)', 'SO exercise (IVAO / VATSIM)', 'SO-Übung (IVAO / VATSIM)',
+      'Ejercicio SO (IVAO / VATSIM)'],
     TOUT: ['Tout rôle (code O)', 'Any role (code O)', 'Jede Rolle (Code O)', 'Cualquier función (código O)']
   };
   /** Libellé d'un rôle dans la langue de la page (rôle inconnu : tel quel). */
@@ -191,7 +192,9 @@
     [/A400|C-?130|C160|CN-?35|CN235|A33\d|A332|TBM|DHC6|EMB121|E121|XINGU/, 'TRANSPORT'],
     [/A400|C-?130|C160/, 'PARA'],
     [/E3|AWACS|E2[CD]|MQ9|REAPER|B350|B300|B200|BE20|FA50/, 'DETECTION'],
-    [/H1[2-6]\d|EC1[34]5|EC35|EC45|EC25|EC725|AS5\d|AS65|AS365|AS565|PANTHER|DAUPHIN|GAZL|NH90|PUMA|SA330|TIGR|ECUREUIL|ECUREIL|FENNEC|AS530|SA342|H160|H225|CHINOOK|CH47/, 'HELICO'],
+    [/H1[2-6]\d|EC1[34]5|EC35|EC45|EC25|EC725|AS5\d|AS65|AS365|AS565|PANTHER|DAUPHIN|GAZL|NH90|PUMA|SA330|TIGR|ECUREUIL|ECUREIL|FENNEC|AS530|SA342|H160|H225|CHINOOK|CH47/,
+      'HELICO'
+    ],
     [/CL2T|CL415|CL 415|DH8D|DH8Q|DASHQ8|DASH 8|PELICAN|AT802/, 'SECU_AVION'],
     [/PC21|CAP10|CP10|AJET|SR2[02]|PC6/, 'ECOLE']
   ];
@@ -264,16 +267,44 @@
   };
   // règles des familles dans les 4 langues (le français est celui de FAMILIES[f].rule)
   const FAMILY_RULE_I18N = {
-    SAR: ['2 pilotes hélico distincts ; peuvent rejoindre : sécu civile, détection', '2 separate helicopter pilots; can join: civil security, airborne early warning', '2 verschiedene Hubschrauberpiloten; können dazukommen: Zivilschutz, Luftraumüberwachung', '2 pilotos de helicóptero distintos; pueden unirse: seguridad civil, alerta temprana'],
-    FIRE: ['1 pilote bombardier d’eau ou avion sécu (CL415, CL2T, DH8) ; peuvent rejoindre : sécu civile, hélico', '1 water bomber or civil security aircraft pilot (CL415, CL2T, DH8); can join: civil security, helicopter', '1 Pilot eines Löschflugzeugs oder Zivilschutzflugzeugs (CL415, CL2T, DH8); können dazukommen: Zivilschutz, Hubschrauber', '1 piloto de avión anfibio de extinción o de seguridad civil (CL415, CL2T, DH8); pueden unirse: seguridad civil, helicóptero'],
+    SAR: ['2 pilotes hélico distincts ; peuvent rejoindre : sécu civile, détection',
+      '2 separate helicopter pilots; can join: civil security, airborne early warning',
+      '2 verschiedene Hubschrauberpiloten; können dazukommen: Zivilschutz, Luftraumüberwachung',
+      '2 pilotos de helicóptero distintos; pueden unirse: seguridad civil, alerta temprana'
+    ],
+    FIRE: ['1 pilote bombardier d’eau ou avion sécu (CL415, CL2T, DH8) ; peuvent rejoindre : sécu civile, hélico',
+      '1 water bomber or civil security aircraft pilot (CL415, CL2T, DH8); can join: civil security, helicopter',
+      '1 Pilot eines Löschflugzeugs oder Zivilschutzflugzeugs (CL415, CL2T, DH8); können dazukommen: Zivilschutz, Hubschrauber',
+      '1 piloto de avión anfibio de extinción o de seguridad civil (CL415, CL2T, DH8); pueden unirse: seguridad civil, helicóptero'
+    ],
     HEMS: ['1 pilote hélico', '1 helicopter pilot', '1 Hubschrauberpilot', '1 piloto de helicóptero'],
-    MARITIME: ['1 pilote FNY (code N) ; peuvent rejoindre : hélico, détection', '1 FNY pilot (code N); can join: helicopter, airborne early warning', '1 FNY-Pilot (Code N); können dazukommen: Hubschrauber, Luftraumüberwachung', '1 piloto FNY (código N); pueden unirse: helicóptero, alerta temprana'],
-    AAR: ['1 chasse + 1 ravitailleur (MRTT) ; peuvent rejoindre : chasse, détection', '1 fighter + 1 tanker (MRTT); can join: fighter, airborne early warning', '1 Jagdflugzeug + 1 Tanker (MRTT); können dazukommen: Jagd, Luftraumüberwachung', '1 caza + 1 avión cisterna (MRTT); pueden unirse: caza, alerta temprana'],
-    ISR: ['1 détection (E-3, MQ-9, B350, FA50) + 1 chasse', '1 airborne early warning (E-3, MQ-9, B350, FA50) + 1 fighter', '1 Luftraumüberwachung (E-3, MQ-9, B350, FA50) + 1 Jagdflugzeug', '1 alerta temprana (E-3, MQ-9, B350, FA50) + 1 caza'],
-    SPECIAL: ['patrouille de 2 chasseurs (RTBA)', 'patrol of 2 fighters (RTBA)', 'Rotte aus 2 Jagdflugzeugen (RTBA)', 'patrulla de 2 cazas (RTBA)'],
-    AIRBORNE: ['1 A400M ou C130 + 1 autre pilote ; peuvent rejoindre : transport, chasse (escorte), hélico', '1 A400M or C130 + 1 other pilot; can join: transport, fighter (escort), helicopter', '1 A400M oder C130 + 1 weiterer Pilot; können dazukommen: Transport, Jagd (Eskorte), Hubschrauber', '1 A400M o C130 + 1 otro piloto; pueden unirse: transporte, caza (escolta), helicóptero'],
+    MARITIME: ['1 pilote FNY (code N) ; peuvent rejoindre : hélico, détection',
+      '1 FNY pilot (code N); can join: helicopter, airborne early warning',
+      '1 FNY-Pilot (Code N); können dazukommen: Hubschrauber, Luftraumüberwachung',
+      '1 piloto FNY (código N); pueden unirse: helicóptero, alerta temprana'
+    ],
+    AAR: ['1 chasse + 1 ravitailleur (MRTT) ; peuvent rejoindre : chasse, détection',
+      '1 fighter + 1 tanker (MRTT); can join: fighter, airborne early warning',
+      '1 Jagdflugzeug + 1 Tanker (MRTT); können dazukommen: Jagd, Luftraumüberwachung',
+      '1 caza + 1 avión cisterna (MRTT); pueden unirse: caza, alerta temprana'
+    ],
+    ISR: ['1 détection (E-3, MQ-9, B350, FA50) + 1 chasse', '1 airborne early warning (E-3, MQ-9, B350, FA50) + 1 fighter',
+      '1 Luftraumüberwachung (E-3, MQ-9, B350, FA50) + 1 Jagdflugzeug', '1 alerta temprana (E-3, MQ-9, B350, FA50) + 1 caza'
+    ],
+    SPECIAL: ['patrouille de 2 chasseurs (RTBA)', 'patrol of 2 fighters (RTBA)', 'Rotte aus 2 Jagdflugzeugen (RTBA)',
+      'patrulla de 2 cazas (RTBA)'
+    ],
+    AIRBORNE: ['1 A400M ou C130 + 1 autre pilote ; peuvent rejoindre : transport, chasse (escorte), hélico',
+      '1 A400M or C130 + 1 other pilot; can join: transport, fighter (escort), helicopter',
+      '1 A400M oder C130 + 1 weiterer Pilot; können dazukommen: Transport, Jagd (Eskorte), Hubschrauber',
+      '1 A400M o C130 + 1 otro piloto; pueden unirse: transporte, caza (escolta), helicóptero'
+    ],
     AIRLIFT: ['1 pilote transport', '1 transport pilot', '1 Transportpilot', '1 piloto de transporte'],
-    TRAINING: ['entraînement : 1 pilote et au moins 1 contrôleur en ligne (approches, PAR, FI), ou 1 pilote déclarant un type École', 'training: 1 pilot and at least 1 online controller (approaches, PAR, FI), or 1 pilot declaring a Training type', 'Training: 1 Pilot und mindestens 1 Lotse online (Anflüge, PAR, FI), oder 1 Pilot mit einem Ausbildungstyp', 'entrenamiento: 1 piloto y al menos 1 controlador en línea (aproximaciones, PAR, FI), o 1 piloto que declara un tipo Escuela']
+    TRAINING: ['entraînement : 1 pilote et au moins 1 contrôleur en ligne (approches, PAR, FI), ou 1 pilote déclarant un type École',
+      'training: 1 pilot and at least 1 online controller (approaches, PAR, FI), or 1 pilot declaring a Training type',
+      'Training: 1 Pilot und mindestens 1 Lotse online (Anflüge, PAR, FI), oder 1 Pilot mit einem Ausbildungstyp',
+      'entrenamiento: 1 piloto y al menos 1 controlador en línea (aproximaciones, PAR, FI), o 1 piloto que declara un tipo Escuela'
+    ]
   };
   /** Règle d'une famille dans la langue de la page. */
   const familyRule = f => say(FAMILY_RULE_I18N[f] ? phrase(FAMILY_RULE_I18N[f]) : FAMILIES[f]?.rule);
@@ -330,7 +361,9 @@
   };
   const parseXml = text => {
     const doc = new DOMParser().parseFromString(text, 'application/xml');
-    if (doc.getElementsByTagName('parsererror').length) throw new Error(window.RepositoryKit.tf(['XML illisible dans le classeur', 'Unreadable XML in the workbook', 'Unlesbares XML in der Arbeitsmappe', 'XML ilegible en el libro']));
+    if (doc.getElementsByTagName('parsererror').length) throw new Error(window.RepositoryKit.tf(['XML illisible dans le classeur',
+      'Unreadable XML in the workbook', 'Unlesbares XML in der Arbeitsmappe', 'XML ilegible en el libro'
+    ]));
     return doc;
   };
   /** Enfants directs d'un élément par nom local (sans se soucier des espaces de noms). */
@@ -347,7 +380,8 @@
   };
 
   function hexToHsl(hex) {
-    const [r, g, b] = [0, 2, 4].map(i => parseInt(hex.slice(i, i + 2), 16) / 255), mx = Math.max(r, g, b), mn = Math.min(r, g, b), d = mx - mn, l = (mx + mn) / 2;
+    const [r, g, b] = [0, 2, 4].map(i => parseInt(hex.slice(i, i + 2), 16) / 255), mx = Math.max(r, g, b), mn = Math.min(r, g, b), d =
+      mx - mn, l = (mx + mn) / 2;
     const s = d ? d / (1 - Math.abs(2 * l - 1)) : 0,
       h = !d ? 0 : (mx === r ? ((g - b) / d + 6) % 6 : mx === g ? (b - r) / d + 2 : (r - g) / d + 4) * 60;
     return [h, s, l];
@@ -357,7 +391,9 @@
     const c = (1 - Math.abs(2 * l - 1)) * s,
       x = c * (1 - Math.abs((h / 60) % 2 - 1)),
       m = l - c / 2;
-    const [r, g, b] = h < 60 ? [c, x, 0] : h < 120 ? [x, c, 0] : h < 180 ? [0, c, x] : h < 240 ? [0, x, c] : h < 300 ? [x, 0, c] : [c, 0, x];
+    const [r, g, b] = h < 60 ? [c, x, 0] : h < 120 ? [x, c, 0] : h < 180 ? [0, c, x] : h < 240 ? [0, x, c] : h < 300 ? [x, 0, c] : [c, 0,
+      x
+    ];
     return [r, g, b].map(v => Math.round((v + m) * 255).toString(16).padStart(2, '0')).join('').toUpperCase();
   }
   /** Teinte Excel (tint ∈ [-1, 1]) appliquée à une couleur. */
@@ -380,12 +416,20 @@
   // ------------------------------------------------------------------ lecture du classeur
   /** Ouvre un classeur .xlsx (Blob, File, ArrayBuffer) : feuilles, textes partagés, styles, formes, commentaires. */
   async function openWorkbook(input) {
-    if (!window.ZipStore) throw new Error(window.RepositoryKit.tf(['Lecteur ZIP absent (shared/zip_store.js).', 'ZIP reader missing (shared/zip_store.js).', 'ZIP-Leser fehlt (shared/zip_store.js).', 'Falta el lector ZIP (shared/zip_store.js).']));
+    if (!window.ZipStore) throw new Error(window.RepositoryKit.tf(['Lecteur ZIP absent (shared/zip_store.js).',
+      'ZIP reader missing (shared/zip_store.js).', 'ZIP-Leser fehlt (shared/zip_store.js).',
+      'Falta el lector ZIP (shared/zip_store.js).'
+    ]));
     let entries;
     try {
       entries = await window.ZipStore.read(input);
     } catch (e) {
-      throw new Error(window.RepositoryKit.tf(['Ce fichier n’est pas un classeur .xlsx lisible ({e}).', 'This file is not a readable .xlsx workbook ({e}).', 'Diese Datei ist keine lesbare .xlsx-Arbeitsmappe ({e}).', 'Este archivo no es un libro .xlsx legible ({e}).'], { e: e.message }));
+      throw new Error(window.RepositoryKit.tf(['Ce fichier n’est pas un classeur .xlsx lisible ({e}).',
+        'This file is not a readable .xlsx workbook ({e}).', 'Diese Datei ist keine lesbare .xlsx-Arbeitsmappe ({e}).',
+        'Este archivo no es un libro .xlsx legible ({e}).'
+      ], {
+        e: e.message
+      }));
     }
     const files = new Map(entries.map(e => [e.name.replace(/^\/+/, ''), e]));
     const cache = new Map();
@@ -418,7 +462,11 @@
         })) : [];
     };
     const wb = await xml('xl/workbook.xml');
-    if (!wb) throw new Error(window.RepositoryKit.tf(['Ce fichier n’est pas un classeur Excel (.xlsx) : xl/workbook.xml absent.', 'This file is not an Excel workbook (.xlsx): xl/workbook.xml missing.', 'Diese Datei ist keine Excel-Arbeitsmappe (.xlsx): xl/workbook.xml fehlt.', 'Este archivo no es un libro Excel (.xlsx): falta xl/workbook.xml.']));
+    if (!wb) throw new Error(window.RepositoryKit.tf(['Ce fichier n’est pas un classeur Excel (.xlsx) : xl/workbook.xml absent.',
+      'This file is not an Excel workbook (.xlsx): xl/workbook.xml missing.',
+      'Diese Datei ist keine Excel-Arbeitsmappe (.xlsx): xl/workbook.xml fehlt.',
+      'Este archivo no es un libro Excel (.xlsx): falta xl/workbook.xml.'
+    ]));
     const wbRels = await rels('xl/workbook.xml');
 
     // textes partagés, avec les passages en couleur (texte enrichi)
@@ -502,7 +550,8 @@
           value = x ? x.text : '';
           rich = x && x.runs.length ? x.runs : null;
         } else if (t === 'inlineStr') value = textOf(kid(c, 'is'));
-        else if (v) value = t === 'str' || t === 'e' ? v.textContent : t === 'b' ? v.textContent === '1' : (isFinite(+v.textContent) ? +v.textContent : v.textContent);
+        else if (v) value = t === 'str' || t === 'e' ? v.textContent : t === 'b' ? v.textContent === '1' : (isFinite(+v.textContent) ?
+          +v.textContent : v.textContent);
         cells.set(`${p.row},${p.col}`, {
           value,
           rich,
@@ -523,7 +572,8 @@
       const fmt = kid(root, 'sheetFormatPr');
       const defRow = +(fmt?.getAttribute('defaultRowHeight') || 15),
         defCol = +(fmt?.getAttribute('defaultColWidth') || fmt?.getAttribute('baseColWidth') || 8.43);
-      const rowHt = new Map(all(root, 'row').filter(r => r.getAttribute('ht')).map(r => [+r.getAttribute('r'), +r.getAttribute('ht')]));
+      const rowHt = new Map(all(root, 'row').filter(r => r.getAttribute('ht')).map(r => [+r.getAttribute('r'), +r.getAttribute(
+        'ht')]));
       const cols = all(root, 'col').map(c => ({
         min: +c.getAttribute('min'),
         max: +c.getAttribute('max'),
@@ -571,7 +621,8 @@
           if (!from) continue;
           let to = pos(kid(anc, 'to'));
           const ext = kid(anc, 'ext');
-          const paras = [...anc.getElementsByTagNameNS(NS_A, 'p')].map(p => [...p.getElementsByTagNameNS(NS_A, 't')].map(t => t.textContent).join('').trim());
+          const paras = [...anc.getElementsByTagNameNS(NS_A, 'p')].map(p => [...p.getElementsByTagNameNS(NS_A, 't')].map(t => t
+            .textContent).join('').trim());
           const spPr = all(anc, 'spPr')[0],
             solid = spPr && kid(spPr, 'solidFill');
           const clr = (solid || anc).getElementsByTagNameNS(NS_A, 'srgbClr')[0];
@@ -705,7 +756,8 @@
           continue;
         }
         const f = fold(sens);
-        const cat = /INDISPO|VACANCE|RECUP|IRL|ABSENT/.test(f) ? 'indispo' : /^DISPO/.test(f) ? 'dispo' : /CONTROLE/.test(f) ? 'atc' : 'occupe';
+        const cat = /INDISPO|VACANCE|RECUP|IRL|ABSENT/.test(f) ? 'indispo' : /^DISPO/.test(f) ? 'dispo' : /CONTROLE/.test(f) ? 'atc' :
+          'occupe';
         legend[code] = {
           code,
           sens: sens || code,
@@ -716,12 +768,24 @@
         };
         notes.push({
           niveau: 'info',
-          texte: phrase(['Légende : code « {c} » ({s}) ajouté au fichier, lu comme « {k} ».', 'Legend: code “{c}” ({s}) added in the file, read as “{k}”.', 'Legende: Code „{c}“ ({s}) in der Datei ergänzt, gelesen als „{k}“.', 'Leyenda: código «{c}» ({s}) añadido en el archivo, leído como «{k}».'], { c: code, s: sens ? sensRow(sens) : ['sans libellé', 'no label', 'ohne Bezeichnung', 'sin etiqueta'], k: catRow(cat) })
+          texte: phrase(['Légende : code « {c} » ({s}) ajouté au fichier, lu comme « {k} ».',
+            'Legend: code “{c}” ({s}) added in the file, read as “{k}”.',
+            'Legende: Code „{c}“ ({s}) in der Datei ergänzt, gelesen als „{k}“.',
+            'Leyenda: código «{c}» ({s}) añadido en el archivo, leído como «{k}».'
+          ], {
+            c: code,
+            s: sens ? sensRow(sens) : ['sans libellé', 'no label', 'ohne Bezeichnung', 'sin etiqueta'],
+            k: catRow(cat)
+          })
         });
       }
     } else notes.push({
       niveau: 'warn',
-      texte: phrase(['Légende « Code couleur » introuvable : légende par défaut appliquée.', 'Legend “Code couleur” not found: default legend applied.', 'Legende „Code couleur“ nicht gefunden: Standardlegende verwendet.', 'Leyenda «Code couleur» no encontrada: se aplica la leyenda por defecto.'])
+      texte: phrase(['Légende « Code couleur » introuvable : légende par défaut appliquée.',
+        'Legend “Code couleur” not found: default legend applied.',
+        'Legende „Code couleur“ nicht gefunden: Standardlegende verwendet.',
+        'Leyenda «Code couleur» no encontrada: se aplica la leyenda por defecto.'
+      ])
     });
     // couleurs réelles de la grille : règles « commence par » / « contient » de la mise en forme conditionnelle
     for (const f of sh.cf)
@@ -780,7 +844,11 @@
     if (!sh) {
       notes.push({
         niveau: 'warn',
-        texte: phrase(['Feuille FLOTTE absente : rôles et simulateurs inconnus (seuls les codes de la grille comptent).', 'FLOTTE sheet missing: roles and simulators unknown (only the grid codes count).', 'Blatt FLOTTE fehlt: Rollen und Simulatoren unbekannt (nur die Codes des Rasters zählen).', 'Falta la hoja FLOTTE: roles y simuladores desconocidos (solo cuentan los códigos de la cuadrícula).'])
+        texte: phrase(['Feuille FLOTTE absente : rôles et simulateurs inconnus (seuls les codes de la grille comptent).',
+          'FLOTTE sheet missing: roles and simulators unknown (only the grid codes count).',
+          'Blatt FLOTTE fehlt: Rollen und Simulatoren unbekannt (nur die Codes des Rasters zählen).',
+          'Falta la hoja FLOTTE: roles y simuladores desconocidos (solo cuentan los códigos de la cuadrícula).'
+        ])
       });
       return profiles;
     }
@@ -797,7 +865,11 @@
     if (!head) {
       notes.push({
         niveau: 'warn',
-        texte: phrase(['FLOTTE : en-tête « Avions disponibles » introuvable, feuille ignorée.', 'FLOTTE: header “Avions disponibles” not found, sheet ignored.', 'FLOTTE: Kopfzeile „Avions disponibles“ nicht gefunden, Blatt ignoriert.', 'FLOTTE: encabezado «Avions disponibles» no encontrado, hoja ignorada.'])
+        texte: phrase(['FLOTTE : en-tête « Avions disponibles » introuvable, feuille ignorée.',
+          'FLOTTE: header “Avions disponibles” not found, sheet ignored.',
+          'FLOTTE: Kopfzeile „Avions disponibles“ nicht gefunden, Blatt ignoriert.',
+          'FLOTTE: encabezado «Avions disponibles» no encontrado, hoja ignorada.'
+        ])
       });
       return profiles;
     }
@@ -827,7 +899,15 @@
       if (row <= head.row || row > end) continue;
       if (rows.has(row)) notes.push({
         niveau: 'warn',
-        texte: phrase(['FLOTTE ligne {r} : deux trigrammes ({a}, {b}) ; le premier est gardé.', 'FLOTTE row {r}: two trigrams ({a}, {b}); the first one is kept.', 'FLOTTE Zeile {r}: zwei Kürzel ({a}, {b}); das erste wird behalten.', 'FLOTTE fila {r}: dos trigramas ({a}, {b}); se conserva el primero.'], { r: row, a: rows.get(row), b: s.text })
+        texte: phrase(['FLOTTE ligne {r} : deux trigrammes ({a}, {b}) ; le premier est gardé.',
+          'FLOTTE row {r}: two trigrams ({a}, {b}); the first one is kept.',
+          'FLOTTE Zeile {r}: zwei Kürzel ({a}, {b}); das erste wird behalten.',
+          'FLOTTE fila {r}: dos trigramas ({a}, {b}); se conserva el primero.'
+        ], {
+          r: row,
+          a: rows.get(row),
+          b: s.text
+        })
       });
       else rows.set(row, s.text);
     }
@@ -838,14 +918,29 @@
       if (!tri) {
         if (text.trim() && text.trim() !== '///') notes.push({
           niveau: 'info',
-          texte: phrase(['FLOTTE ligne {r} : types déclarés sans trigramme ({c}), ligne ignorée.', 'FLOTTE row {r}: types declared without a trigram ({c}), row ignored.', 'FLOTTE Zeile {r}: Typen ohne Kürzel angegeben ({c}), Zeile ignoriert.', 'FLOTTE fila {r}: tipos declarados sin trigrama ({c}), fila ignorada.'], { r: row, c: ref(row, head.col) })
+          texte: phrase(['FLOTTE ligne {r} : types déclarés sans trigramme ({c}), ligne ignorée.',
+            'FLOTTE row {r}: types declared without a trigram ({c}), row ignored.',
+            'FLOTTE Zeile {r}: Typen ohne Kürzel angegeben ({c}), Zeile ignoriert.',
+            'FLOTTE fila {r}: tipos declarados sin trigrama ({c}), fila ignorada.'
+          ], {
+            r: row,
+            c: ref(row, head.col)
+          })
         });
         continue;
       }
       if (profiles[tri]) {
         notes.push({
           niveau: 'warn',
-          texte: phrase(['FLOTTE : trigramme {t} en double (lignes {a} et {b}) ; la première ligne est gardée.', 'FLOTTE: trigram {t} duplicated (rows {a} and {b}); the first row is kept.', 'FLOTTE: Kürzel {t} doppelt (Zeilen {a} und {b}); die erste Zeile wird behalten.', 'FLOTTE: trigrama {t} duplicado (filas {a} y {b}); se conserva la primera fila.'], { t: tri, a: profiles[tri].ligne, b: row })
+          texte: phrase(['FLOTTE : trigramme {t} en double (lignes {a} et {b}) ; la première ligne est gardée.',
+            'FLOTTE: trigram {t} duplicated (rows {a} and {b}); the first row is kept.',
+            'FLOTTE: Kürzel {t} doppelt (Zeilen {a} und {b}); die erste Zeile wird behalten.',
+            'FLOTTE: trigrama {t} duplicado (filas {a} y {b}); se conserva la primera fila.'
+          ], {
+            t: tri,
+            a: profiles[tri].ligne,
+            b: row
+          })
         });
         continue;
       }
@@ -869,7 +964,8 @@
         const l = levels[tok];
         return settings.flotteLevel === 'all' ? true : settings.flotteLevel === 'green' ? !l || l === 'vert' : l !== 'rouge';
       };
-      const tokens = [...new Set([...text.split(/[\/,;+\n]+/).map(fold), ...Object.values(rubrics).flat()].filter(t => t && t !== '///' && t.length > 1))];
+      const tokens = [...new Set([...text.split(/[\/,;+\n]+/).map(fold), ...Object.values(rubrics).flat()].filter(t => t && t !== '///' &&
+        t.length > 1))];
       const kept = tokens.filter(keep);
       const roles = rolesOfTypes(kept.join(' / '));
       for (const [key, list] of Object.entries(rubrics))
@@ -897,7 +993,12 @@
       };
       if (!tokens.length) notes.push({
         niveau: 'info',
-        texte: phrase(['FLOTTE : {t} n’a déclaré aucun type (rôles inconnus).', 'FLOTTE: {t} declared no type (roles unknown).', 'FLOTTE: {t} hat keinen Typ angegeben (Rollen unbekannt).', 'FLOTTE: {t} no ha declarado ningún tipo (roles desconocidos).'], { t: tri })
+        texte: phrase(['FLOTTE : {t} n’a déclaré aucun type (rôles inconnus).', 'FLOTTE: {t} declared no type (roles unknown).',
+          'FLOTTE: {t} hat keinen Typ angegeben (Rollen unbekannt).',
+          'FLOTTE: {t} no ha declarado ningún tipo (roles desconocidos).'
+        ], {
+          t: tri
+        })
       });
     }
     return profiles;
@@ -911,7 +1012,10 @@
     };
     const notes = [];
     const odv = await book.sheet(n => /^ODV/i.test(n.trim())) || await book.sheet(book.sheets[0]?.name);
-    if (!odv) throw new Error(window.RepositoryKit.tf(['Feuille ODV introuvable dans le classeur.', 'ODV sheet not found in the workbook.', 'Blatt ODV in der Arbeitsmappe nicht gefunden.', 'Hoja ODV no encontrada en el libro.']));
+    if (!odv) throw new Error(window.RepositoryKit.tf(['Feuille ODV introuvable dans le classeur.',
+      'ODV sheet not found in the workbook.', 'Blatt ODV in der Arbeitsmappe nicht gefunden.',
+      'Hoja ODV no encontrada en el libro.'
+    ]));
     const flotte = await book.sheet(n => /FLOTTE/i.test(n));
     const legend = readLegend(odv, notes);
 
@@ -933,7 +1037,11 @@
       dayRow = 4;
       notes.push({
         niveau: 'warn',
-        texte: phrase(['Ligne des jours (LUNDI…DIMANCHE) introuvable : grille supposée en D4:X (3 colonnes par jour).', 'Row of days (LUNDI…DIMANCHE) not found: grid assumed at D4:X (3 columns per day).', 'Zeile der Tage (LUNDI…DIMANCHE) nicht gefunden: Raster in D4:X angenommen (3 Spalten pro Tag).', 'Fila de los días (LUNDI…DIMANCHE) no encontrada: cuadrícula supuesta en D4:X (3 columnas por día).'])
+        texte: phrase(['Ligne des jours (LUNDI…DIMANCHE) introuvable : grille supposée en D4:X (3 colonnes par jour).',
+          'Row of days (LUNDI…DIMANCHE) not found: grid assumed at D4:X (3 columns per day).',
+          'Zeile der Tage (LUNDI…DIMANCHE) nicht gefunden: Raster in D4:X angenommen (3 Spalten pro Tag).',
+          'Fila de los días (LUNDI…DIMANCHE) no encontrada: cuadrícula supuesta en D4:X (3 columnas por día).'
+        ])
       });
     }
     const dayStart = DAYS.map((_, j) => dayCols[j] ?? (dayCols[0] ? dayCols[0] + 3 * j : 4 + 3 * j));
@@ -960,13 +1068,21 @@
         week = +m[1];
         notes.push({
           niveau: 'warn',
-          texte: phrase(['N° de semaine absent de la feuille : S{w} pris dans le nom du fichier.', 'Week number missing from the sheet: week {w} taken from the file name.', 'Wochennummer fehlt im Blatt: KW {w} aus dem Dateinamen übernommen.', 'N.º de semana ausente de la hoja: semana {w} tomada del nombre del archivo.'], { w: week })
+          texte: phrase(['N° de semaine absent de la feuille : S{w} pris dans le nom du fichier.',
+            'Week number missing from the sheet: week {w} taken from the file name.',
+            'Wochennummer fehlt im Blatt: KW {w} aus dem Dateinamen übernommen.',
+            'N.º de semana ausente de la hoja: semana {w} tomada del nombre del archivo.'
+          ], {
+            w: week
+          })
         });
       }
     }
     if (week == null) notes.push({
       niveau: 'warn',
-      texte: phrase(['N° de semaine introuvable : dates non calculées.', 'Week number not found: dates not computed.', 'Wochennummer nicht gefunden: Daten nicht berechnet.', 'N.º de semana no encontrado: fechas no calculadas.'])
+      texte: phrase(['N° de semaine introuvable : dates non calculées.', 'Week number not found: dates not computed.',
+        'Wochennummer nicht gefunden: Daten nicht berechnet.', 'N.º de semana no encontrado: fechas no calculadas.'
+      ])
     });
 
     // frise horaire : blocs « VOLS » (un par jour), heures en ligne sous-jacente
@@ -988,7 +1104,16 @@
       offset = 0;
     if (week != null && !friseDate) notes.push({
       niveau: 'info',
-      texte: phrase(['Pas de date sur la frise : année de la semaine S{w} déduite {s} (semaine la plus proche).', 'No date on the timeline: year of week {w} deduced {s} (nearest week).', 'Kein Datum auf der Zeitleiste: Jahr der KW {w} {s} abgeleitet (nächstgelegene Woche).', 'Sin fecha en la cronología: año de la semana {w} deducido {s} (semana más cercana).'], { w: week, s: modified && !isNaN(modified) ? ['de la date d’enregistrement du fichier', 'from the file save date', 'aus dem Speicherdatum der Datei', 'de la fecha de guardado del archivo'] : ['de la date du jour', 'from today’s date', 'aus dem heutigen Datum', 'de la fecha de hoy'] })
+      texte: phrase(['Pas de date sur la frise : année de la semaine S{w} déduite {s} (semaine la plus proche).',
+        'No date on the timeline: year of week {w} deduced {s} (nearest week).',
+        'Kein Datum auf der Zeitleiste: Jahr der KW {w} {s} abgeleitet (nächstgelegene Woche).',
+        'Sin fecha en la cronología: año de la semana {w} deducido {s} (semana más cercana).'
+      ], {
+        w: week,
+        s: modified && !isNaN(modified) ? ['de la date d’enregistrement du fichier', 'from the file save date',
+          'aus dem Speicherdatum der Datei', 'de la fecha de guardado del archivo'
+        ] : ['de la date du jour', 'from today’s date', 'aus dem heutigen Datum', 'de la fecha de hoy']
+      })
     });
     if (week != null) {
       const y = refDate.getUTCFullYear();
@@ -1006,12 +1131,24 @@
           notes.push({
             niveau: 'warn',
             decalage: true,
-            texte: phrase(['Date décalée : la frise indique « LUNDI » au {f}, alors que la semaine ISO {w} commence le {m} (écart de {o} j). Dates retenues : {d} (réglable).', 'Shifted date: the timeline shows “LUNDI” (Monday) on {f}, while ISO week {w} starts on {m} (offset {o} d). Dates used: {d} (adjustable).', 'Verschobenes Datum: Die Zeitleiste zeigt „LUNDI“ (Montag) am {f}, während die ISO-Woche {w} am {m} beginnt (Abweichung {o} T). Verwendete Daten: {d} (einstellbar).', 'Fecha desplazada: la cronología indica «LUNDI» (lunes) el {f}, mientras que la semana ISO {w} empieza el {m} (desfase de {o} d). Fechas usadas: {d} (ajustable).'], {
+            texte: phrase([
+              'Date décalée : la frise indique « LUNDI » au {f}, alors que la semaine ISO {w} commence le {m} (écart de {o} j). Dates retenues : {d} (réglable).',
+              'Shifted date: the timeline shows “LUNDI” (Monday) on {f}, while ISO week {w} starts on {m} (offset {o} d). Dates used: {d} (adjustable).',
+              'Verschobenes Datum: Die Zeitleiste zeigt „LUNDI“ (Montag) am {f}, während die ISO-Woche {w} am {m} beginnt (Abweichung {o} T). Verwendete Daten: {d} (einstellbar).',
+              'Fecha desplazada: la cronología indica «LUNDI» (lunes) el {f}, mientras que la semana ISO {w} empieza el {m} (desfase de {o} d). Fechas usadas: {d} (ajustable).'
+            ], {
               f: fr,
               w: week,
-              m: dateRow(monday, { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'UTC' }),
+              m: dateRow(monday, {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+                timeZone: 'UTC'
+              }),
               o: `${offset > 0 ? '+' : ''}${offset}`,
-              d: settings.dateSource === 'frise' ? ['celles de la frise', 'those of the timeline', 'die der Zeitleiste', 'las de la cronología'] : ['semaine ISO', 'ISO week', 'ISO-Woche', 'semana ISO']
+              d: settings.dateSource === 'frise' ? ['celles de la frise', 'those of the timeline', 'die der Zeitleiste',
+                'las de la cronología'
+              ] : ['semaine ISO', 'ISO week', 'ISO-Woche', 'semana ISO']
             })
           });
         }
@@ -1035,7 +1172,15 @@
       if (byRow.has(row)) {
         notes.push({
           niveau: 'warn',
-          texte: phrase(['Ligne {r} : deux trigrammes superposés ({a}, {b}) ; le premier est gardé.', 'Row {r}: two overlapping trigrams ({a}, {b}); the first one is kept.', 'Zeile {r}: zwei übereinanderliegende Kürzel ({a}, {b}); das erste wird behalten.', 'Fila {r}: dos trigramas superpuestos ({a}, {b}); se conserva el primero.'], { r: row, a: byRow.get(row).trigramme, b: s.text })
+          texte: phrase(['Ligne {r} : deux trigrammes superposés ({a}, {b}) ; le premier est gardé.',
+            'Row {r}: two overlapping trigrams ({a}, {b}); the first one is kept.',
+            'Zeile {r}: zwei übereinanderliegende Kürzel ({a}, {b}); das erste wird behalten.',
+            'Fila {r}: dos trigramas superpuestos ({a}, {b}); se conserva el primero.'
+          ], {
+            r: row,
+            a: byRow.get(row).trigramme,
+            b: s.text
+          })
         });
         continue;
       }
@@ -1050,7 +1195,15 @@
       if (seen.has(p.trigramme)) {
         notes.push({
           niveau: 'warn',
-          texte: phrase(['Trigramme {t} en double (lignes {a} et {b}) : seule la première ligne est lue.', 'Trigram {t} duplicated (rows {a} and {b}): only the first row is read.', 'Kürzel {t} doppelt (Zeilen {a} und {b}): nur die erste Zeile wird gelesen.', 'Trigrama {t} duplicado (filas {a} y {b}): solo se lee la primera fila.'], { t: p.trigramme, a: seen.get(p.trigramme), b: p.ligne })
+          texte: phrase(['Trigramme {t} en double (lignes {a} et {b}) : seule la première ligne est lue.',
+            'Trigram {t} duplicated (rows {a} and {b}): only the first row is read.',
+            'Kürzel {t} doppelt (Zeilen {a} und {b}): nur die erste Zeile wird gelesen.',
+            'Trigrama {t} duplicado (filas {a} y {b}): solo se lee la primera fila.'
+          ], {
+            t: p.trigramme,
+            a: seen.get(p.trigramme),
+            b: p.ligne
+          })
         });
         return false;
       }
@@ -1059,7 +1212,12 @@
     });
     if (!pilots.length) notes.push({
       niveau: 'warn',
-      texte: phrase(['Aucun trigramme trouvé (zones de texte des colonnes A:C) : le fichier a peut-être perdu ses formes (enregistrement LibreOffice ou Google Sheets).', 'No trigram found (text boxes in columns A:C): the file may have lost its shapes (saved with LibreOffice or Google Sheets).', 'Kein Kürzel gefunden (Textfelder der Spalten A:C): Die Datei hat vielleicht ihre Formen verloren (mit LibreOffice oder Google Sheets gespeichert).', 'Ningún trigrama encontrado (cuadros de texto de las columnas A:C): puede que el archivo haya perdido sus formas (guardado con LibreOffice o Google Sheets).'])
+      texte: phrase([
+        'Aucun trigramme trouvé (zones de texte des colonnes A:C) : le fichier a peut-être perdu ses formes (enregistrement LibreOffice ou Google Sheets).',
+        'No trigram found (text boxes in columns A:C): the file may have lost its shapes (saved with LibreOffice or Google Sheets).',
+        'Kein Kürzel gefunden (Textfelder der Spalten A:C): Die Datei hat vielleicht ihre Formen verloren (mit LibreOffice oder Google Sheets gespeichert).',
+        'Ningún trigrama encontrado (cuadros de texto de las columnas A:C): puede que el archivo haya perdido sus formas (guardado con LibreOffice o Google Sheets).'
+      ])
     });
     const firstPilotRow = pilots.length ? pilots[0].ligne : dayRow + 5,
       lastShapeRow = Math.max(dayRow, ...byRow.keys());
@@ -1069,7 +1227,13 @@
       const any = DAYS.some((_, j) => [0, 1, 2].some(k => normCode(odv.value(r, dayStart[j] + k))));
       if (any) notes.push({
         niveau: 'warn',
-        texte: phrase(['Ligne {r} : codes saisis sans trigramme, ligne ignorée.', 'Row {r}: codes entered without a trigram, row ignored.', 'Zeile {r}: Codes ohne Kürzel eingetragen, Zeile ignoriert.', 'Fila {r}: códigos introducidos sin trigrama, fila ignorada.'], { r })
+        texte: phrase(['Ligne {r} : codes saisis sans trigramme, ligne ignorée.',
+          'Row {r}: codes entered without a trigram, row ignored.',
+          'Zeile {r}: Codes ohne Kürzel eingetragen, Zeile ignoriert.',
+          'Fila {r}: códigos introducidos sin trigrama, fila ignorada.'
+        ], {
+          r
+        })
       });
     }
 
@@ -1085,11 +1249,25 @@
           const r = resolveCode(raw, legend, settings);
           if (raw != null && String(raw).length && r.vide) notes.push({
             niveau: 'info',
-            texte: phrase(['{t} {a} : case qui paraît vide mais contient {v} (lue comme vide).', '{t} {a}: cell that looks empty but contains {v} (read as empty).', '{t} {a}: Zelle sieht leer aus, enthält aber {v} (als leer gelesen).', '{t} {a}: casilla que parece vacía pero contiene {v} (leída como vacía).'], { t: p.trigramme, a, v: JSON.stringify(String(raw)) })
+            texte: phrase(['{t} {a} : case qui paraît vide mais contient {v} (lue comme vide).',
+              '{t} {a}: cell that looks empty but contains {v} (read as empty).',
+              '{t} {a}: Zelle sieht leer aus, enthält aber {v} (als leer gelesen).',
+              '{t} {a}: casilla que parece vacía pero contiene {v} (leída como vacía).'
+            ], {
+              t: p.trigramme,
+              a,
+              v: JSON.stringify(String(raw))
+            })
           });
           if (r.categorie === 'hors_legende') notes.push({
             niveau: 'warn',
-            texte: phrase(['{t} {a} : code hors légende « {v} ».', '{t} {a}: code not in the legend “{v}”.', '{t} {a}: Code nicht in der Legende „{v}“.', '{t} {a}: código fuera de la leyenda «{v}».'], { t: p.trigramme, a, v: raw })
+            texte: phrase(['{t} {a} : code hors légende « {v} ».', '{t} {a}: code not in the legend “{v}”.',
+              '{t} {a}: Code nicht in der Legende „{v}“.', '{t} {a}: código fuera de la leyenda «{v}».'
+            ], {
+              t: p.trigramme,
+              a,
+              v: raw
+            })
           });
           if (!r.vide) filled++;
           records.push({
@@ -1152,7 +1330,8 @@
     }
 
     // officier de permanence (zone de texte de trois lettres en haut de la feuille) et thème de la semaine
-    const duty = odv.shapes.find(s => /^[A-Z]{3}$/.test(s.text) && s.from.row < dayRow - 1 && s.from.col >= firstGridCol - 1 && s.from.col < firstGridCol + 21)?.text || null;
+    const duty = odv.shapes.find(s => /^[A-Z]{3}$/.test(s.text) && s.from.row < dayRow - 1 && s.from.col >= firstGridCol - 1 && s.from
+      .col < firstGridCol + 21)?.text || null;
     const themeShape = odv.shapes.find(s => /^TH[EÈ]ME/i.test(fold(s.text)));
     const theme = themeShape ? themeShape.paras.join('\n') : null;
 
@@ -1164,7 +1343,11 @@
     };
     if (!frise) notes.push({
       niveau: 'info',
-      texte: phrase(['Frise horaire (blocs « VOLS ») introuvable : pas de vols planifiés.', 'Timeline (“VOLS” blocks) not found: no planned flights.', 'Zeitleiste (Blöcke „VOLS“) nicht gefunden: keine geplanten Flüge.', 'Cronología (bloques «VOLS») no encontrada: ningún vuelo planificado.'])
+      texte: phrase(['Frise horaire (blocs « VOLS ») introuvable : pas de vols planifiés.',
+        'Timeline (“VOLS” blocks) not found: no planned flights.',
+        'Zeitleiste (Blöcke „VOLS“) nicht gefunden: keine geplanten Flüge.',
+        'Cronología (bloques «VOLS») no encontrada: ningún vuelo planificado.'
+      ])
     });
 
     // FLOTTE : profils, puis concordance des trigrammes
@@ -1175,11 +1358,19 @@
         onlyFl = Object.keys(profiles).filter(t => !odvSet.has(t));
       if (onlyOdv.length) notes.push({
         niveau: 'info',
-        texte: phrase(['Présents dans ODV mais pas dans FLOTTE : {l}.', 'In ODV but not in FLOTTE: {l}.', 'In ODV, aber nicht in FLOTTE: {l}.', 'Presentes en ODV pero no en FLOTTE: {l}.'], { l: onlyOdv.join(', ') })
+        texte: phrase(['Présents dans ODV mais pas dans FLOTTE : {l}.', 'In ODV but not in FLOTTE: {l}.',
+          'In ODV, aber nicht in FLOTTE: {l}.', 'Presentes en ODV pero no en FLOTTE: {l}.'
+        ], {
+          l: onlyOdv.join(', ')
+        })
       });
       if (onlyFl.length) notes.push({
         niveau: 'info',
-        texte: phrase(['Présents dans FLOTTE mais pas dans ODV : {l}.', 'In FLOTTE but not in ODV: {l}.', 'In FLOTTE, aber nicht in ODV: {l}.', 'Presentes en FLOTTE pero no en ODV: {l}.'], { l: onlyFl.join(', ') })
+        texte: phrase(['Présents dans FLOTTE mais pas dans ODV : {l}.', 'In FLOTTE but not in ODV: {l}.',
+          'In FLOTTE, aber nicht in ODV: {l}.', 'Presentes en FLOTTE pero no en ODV: {l}.'
+        ], {
+          l: onlyFl.join(', ')
+        })
       });
     }
     for (const p of pilots) p.profil = profiles[p.trigramme] || null;
@@ -1299,7 +1490,8 @@
     const tags = items.filter(isTag),
       calls = items.filter(isCallsign);
     const laneOf = r => f.lanes.find(l => r >= l.r0 && r <= l.r1)?.label || '';
-    const crewOf = it => [...new Set(tags.filter(t => t.jourIndex === it.jourIndex && t.r0 >= it.r0 - 1 && t.r0 <= it.r1 && t.h0 >= it.h0 - 1.5 && t.h0 <= it.h1).map(t => t.text))].sort();
+    const crewOf = it => [...new Set(tags.filter(t => t.jourIndex === it.jourIndex && t.r0 >= it.r0 - 1 && t.r0 <= it.r1 && t.h0 >= it
+      .h0 - 1.5 && t.h0 <= it.h1).map(t => t.text))].sort();
     const vols = [],
       autres = [];
     for (const it of items) {
@@ -1308,7 +1500,8 @@
       if (it.text.includes('|') && /^[A-Za-z]{4}\s*-/.test(it.text)) {
         const parts = it.text.split('|').map(s => s.trim()).filter(Boolean);
         const [dep, arr] = parts[0].split('-').map(s => s.trim().toUpperCase());
-        const indicatif = calls.filter(c => c.jourIndex === it.jourIndex && c.r0 >= it.r0 - 1 && c.r0 <= it.r1 + 2 && c.h0 >= it.h0 - 1 && c.h0 <= it.h1 + 1.5).map(c => c.text.replace(/\s+/g, ' '));
+        const indicatif = calls.filter(c => c.jourIndex === it.jourIndex && c.r0 >= it.r0 - 1 && c.r0 <= it.r1 + 2 && c.h0 >= it.h0 - 1 &&
+          c.h0 <= it.h1 + 1.5).map(c => c.text.replace(/\s+/g, ' '));
         vols.push({
           jourIndex: it.jourIndex,
           jour: DAYS[it.jourIndex],
@@ -1430,7 +1623,8 @@
       ...DEFAULTS,
       ...settings
     };
-    const pref = [...settings.preference.filter(f => FAMILIES[f]), ...Object.keys(FAMILIES).filter(f => !settings.preference.includes(f))];
+    const pref = [...settings.preference.filter(f => FAMILIES[f]), ...Object.keys(FAMILIES).filter(f => !settings.preference.includes(
+    f))];
     const profile = t => data.flotte[t] || null;
     const hasSim = t => !settings.sim || (profile(t)?.sims || []).includes(settings.sim);
     const order = new Map(data.pilotes.map((p, i) => [p.trigramme, i]));
@@ -1439,7 +1633,8 @@
     // catégorie du code du classeur avec les préférences du pilote (settings.prefsOf) ; null : anciennes règles (rôle
     // imposé par le code, DOMAIN)
     const SD = settings.dispos || window.SuiteDispos;
-    const themesOf = r => Array.isArray(r.themes) ? new Set(r.themes) : SD && r.code && SD.codeCategory(r.code) ? SD.openThemes(SD.codeCategory(r.code), settings.prefsOf?.(r.pilote)) : null;
+    const themesOf = r => Array.isArray(r.themes) ? new Set(r.themes) : SD && r.code && SD.codeCategory(r.code) ? SD.openThemes(SD
+      .codeCategory(r.code), settings.prefsOf?.(r.pilote)) : null;
     const opensFam = (p, fam) => !p.themes || (fam === 'TRAINING' ? p.themes.size > 0 : SD.opens(p.themes, fam));
     const slots = [];
     for (let j = 0; j < 7; j++)
@@ -1461,14 +1656,16 @@
             };
           })
           // pilotes restreints (code restreint, thèmes choisis) en tête : affectés en priorité à leurs thèmes
-          .sort((a, b) => (a.themes ? a.themes.has('*') : a.code === 'O') - (b.themes ? b.themes.has('*') : b.code === 'O') || order.get(a.trigramme) - order.get(b.trigramme));
+          .sort((a, b) => (a.themes ? a.themes.has('*') : a.code === 'O') - (b.themes ? b.themes.has('*') : b.code === 'O') || order.get(a
+            .trigramme) - order.get(b.trigramme));
         const atc = recs.filter(r => r.categorie === 'atc').map(r => ({
           trigramme: r.pilote,
           code: r.code,
           commentaire: r.commentaire
         }));
         const horsSim = settings.sim ? recs.filter(r => r.categorie === 'dispo' && !hasSim(r.pilote)).map(r => r.pilote) : [];
-        const events = data.evenements.filter(e => e.jourIndex === j && e.creneauIndex === k && !(settings.ignoreRecurring && e.recurrent));
+        const events = data.evenements.filter(e => e.jourIndex === j && e.creneauIndex === k && !(settings.ignoreRecurring && e
+          .recurrent));
         const vols = data.vols.filter(v => v.jourIndex === j && slotsOfSpan(v.h_debut, v.h_fin, settings.hours).includes(k));
         const autres = data.frise.filter(v => v.jourIndex === j && slotsOfSpan(v.h_debut, v.h_fin, settings.hours).includes(k));
         // missions probables
@@ -1486,28 +1683,56 @@
           const a = pool.length ? assign(needs, pool) : null;
           if (!a) continue;
           const taken = new Set(a.map(x => x.pilote));
-          const part = pool.filter(p => taken.has(p.trigramme) || joins.includes('*') || joins.some(r => p.roles.has(r))).map(p => p.trigramme);
+          const part = pool.filter(p => taken.has(p.trigramme) || joins.includes('*') || joins.some(r => p.roles.has(r))).map(p => p
+            .trigramme);
           // bonus : pilote restreint employé dans ses thèmes (thèmes choisis), ou code restreint dans son domaine (ancien)
           const inDomain = part.filter(t => {
             const p = dispo.find(x => x.trigramme === t);
-            return p.themes ? !p.themes.has('*') && fam !== 'TRAINING' && SD.opens(p.themes, fam) : (DOMAIN[p.code] || []).includes(fam);
+            return p.themes ? !p.themes.has('*') && fam !== 'TRAINING' && SD.opens(p.themes, fam) : (DOMAIN[p.code] || []).includes(
+              fam);
           });
           const ctrl = fam === 'TRAINING' ? Math.min(2, atc.length) : 0;
           // famille déjà jouée (CR) : léger recul, pour varier ; log : chaque CR de plus pèse moins
           const played = +settings.plays?.[fam] || 0,
             malus = played ? Math.round(settings.playWeight * Math.log2(1 + played) * 10) / 10 : 0;
           const score = Math.round((part.length + 2 * inDomain.length + ctrl - malus) * 10) / 10;
-          const why = [rowOf(part.length > 1 ? ['{n} participants', '{n} participants', '{n} Teilnehmer', '{n} participantes'] : ['{n} participant', '{n} participant', '{n} Teilnehmer', '{n} participante'], { n: part.length })];
-          if (inDomain.length) why.push(rowOf(['+2 × {n} (pilote employé dans ses thèmes : {l})', '+2 × {n} (pilot used within their themes: {l})', '+2 × {n} (Pilot in seinen Themen eingesetzt: {l})', '+2 × {n} (piloto empleado en sus temas: {l})'], { n: inDomain.length, l: inDomain.map(t => `${t} ${dispo.find(p => p.trigramme === t).code}`).join(', ') }));
-          if (ctrl) why.push(rowOf(ctrl > 1 ? ['+{n} (contrôleurs en ligne : {l})', '+{n} (online controllers: {l})', '+{n} (Lotsen online: {l})', '+{n} (controladores en línea: {l})'] : ['+{n} (contrôleur en ligne : {l})', '+{n} (online controller: {l})', '+{n} (Lotse online: {l})', '+{n} (controlador en línea: {l})'], { n: ctrl, l: atc.map(x => x.trigramme).join(', ') }));
-          if (malus) why.push(rowOf(['{s} {m} (déjà jouée : {p} CR)', '{s} {m} (already flown: {p} CR)', '{s} {m} (bereits geflogen: {p} CR)', '{s} {m} (ya volada: {p} CR)'], { s: malus > 0 ? '−' : '+', m: num(Math.abs(malus)), p: played }));
+          const why = [rowOf(part.length > 1 ? ['{n} participants', '{n} participants', '{n} Teilnehmer', '{n} participantes'] : [
+            '{n} participant', '{n} participant', '{n} Teilnehmer', '{n} participante'
+          ], {
+            n: part.length
+          })];
+          if (inDomain.length) why.push(rowOf(['+2 × {n} (pilote employé dans ses thèmes : {l})',
+            '+2 × {n} (pilot used within their themes: {l})', '+2 × {n} (Pilot in seinen Themen eingesetzt: {l})',
+            '+2 × {n} (piloto empleado en sus temas: {l})'
+          ], {
+            n: inDomain.length,
+            l: inDomain.map(t => `${t} ${dispo.find(p => p.trigramme === t).code}`).join(', ')
+          }));
+          if (ctrl) why.push(rowOf(ctrl > 1 ? ['+{n} (contrôleurs en ligne : {l})', '+{n} (online controllers: {l})',
+            '+{n} (Lotsen online: {l})', '+{n} (controladores en línea: {l})'
+          ] : ['+{n} (contrôleur en ligne : {l})', '+{n} (online controller: {l})', '+{n} (Lotse online: {l})',
+            '+{n} (controlador en línea: {l})'
+          ], {
+            n: ctrl,
+            l: atc.map(x => x.trigramme).join(', ')
+          }));
+          if (malus) why.push(rowOf(['{s} {m} (déjà jouée : {p} CR)', '{s} {m} (already flown: {p} CR)',
+            '{s} {m} (bereits geflogen: {p} CR)', '{s} {m} (ya volada: {p} CR)'
+          ], {
+            s: malus > 0 ? '−' : '+',
+            m: num(Math.abs(malus)),
+            p: played
+          }));
           cands.push({
             famille: fam,
             affectation: a,
             participants: part,
             renforts: part.filter(t => !taken.has(t)),
             score,
-            calcul: phrase(['score {s} = {w}', 'score {s} = {w}', 'Punktzahl {s} = {w}', 'puntuación {s} = {w}'], { s: num(score), w: joinRows(why, ' ') }),
+            calcul: phrase(['score {s} = {w}', 'score {s} = {w}', 'Punktzahl {s} = {w}', 'puntuación {s} = {w}'], {
+              s: num(score),
+              w: joinRows(why, ' ')
+            }),
             regle: FAMILY_RULE_I18N[fam] && FAMILY_RULE_I18N[fam][0] === rule ? phrase(FAMILY_RULE_I18N[fam]) : rule
           });
         }
@@ -1532,14 +1757,45 @@
         }
         // contexte (affichage seulement) : contrôleurs, événements, thème de la semaine
         const contexte = [];
-        for (const e of eviter) contexte.push(phrase(['{t} {p} : pas de mission dans la CTR de {i}, et si possible hors de ses TMA', '{t} {p}: no mission in the {i} CTR, and if possible outside its TMAs', '{t} {p}: keine Mission in der CTR von {i}, und möglichst außerhalb ihrer TMAs', '{t} {p}: ninguna misión en la CTR de {i} y, si es posible, fuera de sus TMA'], { t: KIND_I18N[e.type] || e.type, p: e.position, i: e.icao }));
-        if (atc.length) contexte.push(phrase(atc.length > 1 ? ['contrôleurs en ligne ({l}) : vol « avec contrôle » possible (approches, PAR, FI)', 'online controllers ({l}): flight “with ATC” possible (approaches, PAR, FI)', 'Lotsen online ({l}): Flug „mit Lotsendienst“ möglich (Anflüge, PAR, FI)', 'controladores en línea ({l}): vuelo «con control» posible (aproximaciones, PAR, FI)'] : ['contrôleur en ligne ({l}) : vol « avec contrôle » possible (approches, PAR, FI)', 'online controller ({l}): flight “with ATC” possible (approaches, PAR, FI)', 'Lotse online ({l}): Flug „mit Lotsendienst“ möglich (Anflüge, PAR, FI)', 'controlador en línea ({l}): vuelo «con control» posible (aproximaciones, PAR, FI)'], { l: atc.map(x => `${x.trigramme} ${x.code}`).join(', ') }));
-        for (const e of events) contexte.push(phrase(e.commentaire ? ['événement {g} : {c}', 'event {g}: {c}', 'Ereignis {g}: {c}', 'evento {g}: {c}'] : ['événement {g}', 'event {g}', 'Ereignis {g}', 'evento {g}'], { g: e.groupe, c: e.commentaire }));
-        if (/PARA|LARGAGE/.test(themeText) && cands.some(c => c.famille === 'AIRBORNE')) contexte.push(phrase(['thème de la semaine : activité para → AIRBORNE', 'theme of the week: parachuting activity → AIRBORNE', 'Thema der Woche: Fallschirmaktivität → AIRBORNE', 'tema de la semana: actividad paracaidista → AIRBORNE']));
-        if (/OPEX/.test(themeText) && cands.some(c => c.famille === 'AIRLIFT' || c.famille === 'AIRBORNE')) contexte.push(phrase(['thème de la semaine : OPEX → AIRLIFT / AIRBORNE', 'theme of the week: OPEX → AIRLIFT / AIRBORNE', 'Thema der Woche: OPEX → AIRLIFT / AIRBORNE', 'tema de la semana: OPEX → AIRLIFT / AIRBORNE']));
+        for (const e of eviter) contexte.push(phrase(['{t} {p} : pas de mission dans la CTR de {i}, et si possible hors de ses TMA',
+          '{t} {p}: no mission in the {i} CTR, and if possible outside its TMAs',
+          '{t} {p}: keine Mission in der CTR von {i}, und möglichst außerhalb ihrer TMAs',
+          '{t} {p}: ninguna misión en la CTR de {i} y, si es posible, fuera de sus TMA'
+        ], {
+          t: KIND_I18N[e.type] || e.type,
+          p: e.position,
+          i: e.icao
+        }));
+        if (atc.length) contexte.push(phrase(atc.length > 1 ? [
+          'contrôleurs en ligne ({l}) : vol « avec contrôle » possible (approches, PAR, FI)',
+          'online controllers ({l}): flight “with ATC” possible (approaches, PAR, FI)',
+          'Lotsen online ({l}): Flug „mit Lotsendienst“ möglich (Anflüge, PAR, FI)',
+          'controladores en línea ({l}): vuelo «con control» posible (aproximaciones, PAR, FI)'
+        ] : ['contrôleur en ligne ({l}) : vol « avec contrôle » possible (approches, PAR, FI)',
+          'online controller ({l}): flight “with ATC” possible (approaches, PAR, FI)',
+          'Lotse online ({l}): Flug „mit Lotsendienst“ möglich (Anflüge, PAR, FI)',
+          'controlador en línea ({l}): vuelo «con control» posible (aproximaciones, PAR, FI)'
+        ], {
+          l: atc.map(x => `${x.trigramme} ${x.code}`).join(', ')
+        }));
+        for (const e of events) contexte.push(phrase(e.commentaire ? ['événement {g} : {c}', 'event {g}: {c}', 'Ereignis {g}: {c}',
+          'evento {g}: {c}'
+        ] : ['événement {g}', 'event {g}', 'Ereignis {g}', 'evento {g}'], {
+          g: e.groupe,
+          c: e.commentaire
+        }));
+        if (/PARA|LARGAGE/.test(themeText) && cands.some(c => c.famille === 'AIRBORNE')) contexte.push(phrase([
+          'thème de la semaine : activité para → AIRBORNE', 'theme of the week: parachuting activity → AIRBORNE',
+          'Thema der Woche: Fallschirmaktivität → AIRBORNE', 'tema de la semana: actividad paracaidista → AIRBORNE'
+        ]));
+        if (/OPEX/.test(themeText) && cands.some(c => c.famille === 'AIRLIFT' || c.famille === 'AIRBORNE')) contexte.push(phrase([
+          'thème de la semaine : OPEX → AIRLIFT / AIRBORNE', 'theme of the week: OPEX → AIRLIFT / AIRBORNE',
+          'Thema der Woche: OPEX → AIRLIFT / AIRBORNE', 'tema de la semana: OPEX → AIRLIFT / AIRBORNE'
+        ]));
         // simulateurs communs à tous les pilotes disponibles (profils FLOTTE connus)
         const withProfile = dispo.filter(p => profile(p.trigramme)?.sims?.length);
-        const common = withProfile.length ? withProfile.map(p => profile(p.trigramme).sims).reduce((a, b) => a.filter(x => b.includes(x))) : [];
+        const common = withProfile.length ? withProfile.map(p => profile(p.trigramme).sims).reduce((a, b) => a.filter(x => b.includes(
+          x))) : [];
         slots.push({
           jourIndex: j,
           jour: DAYS[j],
@@ -1592,19 +1848,53 @@
         when = ks.map(x => SLOTS[x]).join(' / '),
         whenRow = joinRows(ks.map(x => SLOT_I18N[x] || SLOTS[x]), ' / ');
       for (const t of v.equipage) {
-        const recs = ks.map(x => data.records.find(r => r.pilote === t && r.jourIndex === v.jourIndex && r.creneauIndex === x)).filter(Boolean);
+        const recs = ks.map(x => data.records.find(r => r.pilote === t && r.jourIndex === v.jourIndex && r.creneauIndex === x))
+          .filter(Boolean);
         if (!recs.length) {
-          alerts.push(phrase(['{t} : absent de la grille', '{t}: not in the grid', '{t}: nicht im Raster', '{t}: ausente de la cuadrícula'], { t }));
+          alerts.push(phrase(['{t} : absent de la grille', '{t}: not in the grid', '{t}: nicht im Raster',
+            '{t}: ausente de la cuadrícula'
+          ], {
+            t
+          }));
           continue;
         }
-        const r = recs.find(x => x.categorie === 'dispo') || recs.find(x => x.categorie === 'atc') || recs.find(x => x.categorie !== 'inconnu') || recs[0];
-        if (r.categorie === 'inconnu') alerts.push(phrase(['{t} : grille non renseignée ({w})', '{t}: grid not filled in ({w})', '{t}: Raster nicht ausgefüllt ({w})', '{t}: cuadrícula sin rellenar ({w})'], { t, w: whenRow }));
-        else if (r.categorie !== 'dispo') alerts.push(phrase(['{t} : codé {c} ({s}) — {w}', '{t}: coded {c} ({s}) — {w}', '{t}: codiert {c} ({s}) — {w}', '{t}: codificado {c} ({s}) — {w}'], { t, c: recs.map(x => x.code || '·').join(' / '), s: r.sens ? sensRow(r.sens) : catRow(r.categorie), w: whenRow }));
+        const r = recs.find(x => x.categorie === 'dispo') || recs.find(x => x.categorie === 'atc') || recs.find(x => x.categorie !==
+          'inconnu') || recs[0];
+        if (r.categorie === 'inconnu') alerts.push(phrase(['{t} : grille non renseignée ({w})', '{t}: grid not filled in ({w})',
+          '{t}: Raster nicht ausgefüllt ({w})', '{t}: cuadrícula sin rellenar ({w})'
+        ], {
+          t,
+          w: whenRow
+        }));
+        else if (r.categorie !== 'dispo') alerts.push(phrase(['{t} : codé {c} ({s}) — {w}', '{t}: coded {c} ({s}) — {w}',
+          '{t}: codiert {c} ({s}) — {w}', '{t}: codificado {c} ({s}) — {w}'
+        ], {
+          t,
+          c: recs.map(x => x.code || '·').join(' / '),
+          s: r.sens ? sensRow(r.sens) : catRow(r.categorie),
+          w: whenRow
+        }));
         else if (SD && v.famille && (Array.isArray(r.themes) || SD.codeCategory(r.code))) {
           // thèmes ouverts du pilote (déclaration, sinon catégorie du code et préférences) : famille du vol couverte ?
           const th = Array.isArray(r.themes) ? new Set(r.themes) : SD.openThemes(SD.codeCategory(r.code), settings.prefsOf?.(t));
-          if (!SD.opens(th, v.famille)) alerts.push(phrase(['{t} : {s} — {f} hors de ses thèmes ouverts', '{t}: {s} — {f} outside their open themes', '{t}: {s} — {f} außerhalb seiner offenen Themen', '{t}: {s} — {f} fuera de sus temas abiertos'], { t, s: r.sens ? (sensRow(r.sens) ?? String(r.sens)) : r.code, f: v.famille }));
-        } else if (CODE_ROLES[r.code] && v.roles_type.length && !v.roles_type.some(x => CODE_ROLES[r.code].includes(x))) alerts.push(phrase(['{t} : code {c} ({s}) mais appareil {a} ({r})', '{t}: code {c} ({s}) but aircraft {a} ({r})', '{t}: Code {c} ({s}), aber Luftfahrzeug {a} ({r})', '{t}: código {c} ({s}) pero aeronave {a} ({r})'], { t, c: r.code, s: sensRow(r.sens) ?? String(r.sens), a: v.appareil, r: joinRows(v.roles_type.map(roleRow), ', ') }));
+          if (!SD.opens(th, v.famille)) alerts.push(phrase(['{t} : {s} — {f} hors de ses thèmes ouverts',
+            '{t}: {s} — {f} outside their open themes', '{t}: {s} — {f} außerhalb seiner offenen Themen',
+            '{t}: {s} — {f} fuera de sus temas abiertos'
+          ], {
+            t,
+            s: r.sens ? (sensRow(r.sens) ?? String(r.sens)) : r.code,
+            f: v.famille
+          }));
+        } else if (CODE_ROLES[r.code] && v.roles_type.length && !v.roles_type.some(x => CODE_ROLES[r.code].includes(x))) alerts.push(
+          phrase(['{t} : code {c} ({s}) mais appareil {a} ({r})', '{t}: code {c} ({s}) but aircraft {a} ({r})',
+            '{t}: Code {c} ({s}), aber Luftfahrzeug {a} ({r})', '{t}: código {c} ({s}) pero aeronave {a} ({r})'
+          ], {
+            t,
+            c: r.code,
+            s: sensRow(r.sens) ?? String(r.sens),
+            a: v.appareil,
+            r: joinRows(v.roles_type.map(roleRow), ', ')
+          }));
       }
       return {
         ...v,
@@ -1622,7 +1912,9 @@
   };
   /** CSV (séparateur « ; », UTF-8 avec BOM pour Excel) du schéma normalisé : une ligne par pilote, jour et créneau. */
   function toCsv(data) {
-    const cols = ['semaine', 'date', 'jour', 'creneau', 'pilote', 'couleur_pilote', 'code_brut', 'code', 'marque', 'sens', 'categorie', 'role_impose', 'commentaire', 'source'];
+    const cols = ['semaine', 'date', 'jour', 'creneau', 'pilote', 'couleur_pilote', 'code_brut', 'code', 'marque', 'sens', 'categorie',
+      'role_impose', 'commentaire', 'source'
+    ];
     return '﻿' + [cols.join(';'), ...data.records.map(r => cols.map(c => csvCell(r[c])).join(';'))].join('\r\n') + '\r\n';
   }
   /** Récapitulatif texte « DISPO MATIN / APREM / SOIR » par jour (remplace la saisie manuelle des encadrés de la frise). */

@@ -104,12 +104,15 @@
   if (draft) {
     const banner = document.createElement('section');
     banner.id = 'missionEditBanner';
-    banner.innerHTML = '<h2>Modification d’une mission du registre</h2><div class="note" id="missionEditInfo"></div><div class="row"><button type="button" class="primary" id="saveEditBtn">Générer / actualiser les modifications</button><button type="button" class="secondary" id="backToReportingBtn">Retour au reporting</button><button type="button" class="secondary" id="leaveEditBtn">Nouvelle mission (quitter la modification)</button><button type="button" class="danger" id="deleteEditBtn">Supprimer cette mission</button></div><p class="small" id="missionEditStatus"></p>';
+    banner.innerHTML =
+      '<h2>Modification d’une mission du registre</h2><div class="note" id="missionEditInfo"></div><div class="row"><button type="button" class="primary" id="saveEditBtn">Générer / actualiser les modifications</button><button type="button" class="secondary" id="backToReportingBtn">Retour au reporting</button><button type="button" class="secondary" id="leaveEditBtn">Nouvelle mission (quitter la modification)</button><button type="button" class="danger" id="deleteEditBtn">Supprimer cette mission</button></div><p class="small" id="missionEditStatus"></p>';
     form.prepend(banner);
     /** Bandeau du mode modification : mission, ligne et registre modifiés. */
     const info = () => {
       $('missionEditInfo').textContent = `Mission ${draft.record?.missionId || '—'} — ligne ${draft.index + 1} du registre ${draft.filename || ''}. ` +
-        (draft.configKey ? 'Les modifications remplacent cette ligne dans la copie locale du registre ; utilisez ensuite « Exporter le registre modifié » depuis le reporting pour mettre à jour le fichier CSV.' : 'Données d’exemple : les modifications ne peuvent pas être réenregistrées dans un registre.');
+        (draft.configKey ?
+          'Les modifications remplacent cette ligne dans la copie locale du registre ; utilisez ensuite « Exporter le registre modifié » depuis le reporting pour mettre à jour le fichier CSV.' :
+          'Données d’exemple : les modifications ne peuvent pas être réenregistrées dans un registre.');
     };
     info();
     /** Message d'état du mode modification. */
@@ -155,7 +158,8 @@
     const ledgerTarget = () => {
       const stored = window.MissionReportingConfig?.cached?.(draft.configKey);
       if (!stored?.text) {
-        alert('Copie locale du registre introuvable : rouvrez le reporting, rechargez le registre puis cliquez à nouveau sur la mission.');
+        alert(
+          'Copie locale du registre introuvable : rouvrez le reporting, rechargez le registre puis cliquez à nouveau sur la mission.');
         return null;
       }
       const {

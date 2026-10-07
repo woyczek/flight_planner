@@ -58,8 +58,10 @@
     crew: L('Fiche équipage', 'Crew sheet', 'Besatzungsblatt', 'Ficha de tripulante'),
     identity: L('Identité', 'Identity', 'Identität', 'Identidad'),
     activity: L('Activité', 'Activity', 'Aktivität', 'Actividad'),
-    events: L('Vie de l’appareil (maintenance, inspections, incidents…)', 'Aircraft life (maintenance, inspections, incidents…)', 'Lebenslauf (Wartung, Inspektionen, Vorfälle…)', 'Vida de la aeronave (mantenimiento, inspecciones, incidentes…)'),
-    perf: L('Performances et consommation (Flight Planner)', 'Performance and fuel burn (Flight Planner)', 'Leistung und Verbrauch (Flight Planner)', 'Rendimiento y consumo (Flight Planner)'),
+    events: L('Vie de l’appareil (maintenance, inspections, incidents…)', 'Aircraft life (maintenance, inspections, incidents…)',
+      'Lebenslauf (Wartung, Inspektionen, Vorfälle…)', 'Vida de la aeronave (mantenimiento, inspecciones, incidentes…)'),
+    perf: L('Performances et consommation (Flight Planner)', 'Performance and fuel burn (Flight Planner)',
+      'Leistung und Verbrauch (Flight Planner)', 'Rendimiento y consumo (Flight Planner)'),
     missions: L('Missions et vols', 'Missions and flights', 'Einsätze und Flüge', 'Misiones y vuelos'),
     status: L('Statut', 'Status', 'Status', 'Estado'),
     home: L('Terrain de rattachement', 'Home aerodrome', 'Heimatflugplatz', 'Aeródromo de base'),
@@ -75,7 +77,8 @@
     equipment: L('Équipements', 'Equipment', 'Ausrüstung', 'Equipamiento'),
     notes: L('Notes', 'Notes', 'Notizen', 'Notas'),
     save: L('Enregistrer la fiche', 'Save sheet', 'Blatt speichern', 'Guardar ficha'),
-    saved: L('Fiche enregistrée dans ce navigateur', 'Sheet saved in this browser', 'Blatt im Browser gespeichert', 'Ficha guardada en este navegador'),
+    saved: L('Fiche enregistrée dans ce navigateur', 'Sheet saved in this browser', 'Blatt im Browser gespeichert',
+      'Ficha guardada en este navegador'),
     flights: L('Missions / vols', 'Missions / flights', 'Einsätze / Flüge', 'Misiones / vuelos'),
     flightTime: L('Heures de vol', 'Flight hours', 'Flugstunden', 'Horas de vuelo'),
     blockTime: L('Heures bloc', 'Block hours', 'Blockstunden', 'Horas calzo'),
@@ -87,8 +90,12 @@
     ad: L('Terrain', 'Aerodrome', 'Flugplatz', 'Aeródromo'),
     addEvent: L('+ Ajouter un événement', '+ Add event', '+ Ereignis hinzufügen', '+ Añadir evento'),
     none: L('—', '—'),
-    noProfile: L('Pas encore de profil de performance pour ce type : le créer dans le Flight Planner.', 'No performance profile for this type yet: create it in the Flight Planner.', 'Noch kein Leistungsprofil für dieses Muster: im Flight Planner anlegen.', 'Aún no hay perfil de rendimiento para este tipo: créelo en el Flight Planner.'),
-    openPlanner: L('Ouvrir dans le Flight Planner', 'Open in the Flight Planner', 'Im Flight Planner öffnen', 'Abrir en el Flight Planner'),
+    noProfile: L('Pas encore de profil de performance pour ce type : le créer dans le Flight Planner.',
+      'No performance profile for this type yet: create it in the Flight Planner.',
+      'Noch kein Leistungsprofil für dieses Muster: im Flight Planner anlegen.',
+      'Aún no hay perfil de rendimiento para este tipo: créelo en el Flight Planner.'),
+    openPlanner: L('Ouvrir dans le Flight Planner', 'Open in the Flight Planner', 'Im Flight Planner öffnen',
+      'Abrir en el Flight Planner'),
     source: L('Source', 'Source', 'Quelle', 'Fuente'),
     ledger: L('registre', 'ledger', 'Register', 'registro'),
     log: L('journal', 'Log', 'Journal', 'diario'),
@@ -98,14 +105,24 @@
     pilot: L('Équipage', 'Crew', 'Besatzung', 'Tripulación'),
     aircraftCol: L('Appareil', 'Aircraft', 'Luftfahrzeug', 'Aeronave'),
     name: L('Nom', 'Name', 'Name', 'Nombre'),
-    qualifications: L('Qualifications (une par ligne)', 'Qualifications (one per line)', 'Qualifikationen (eine pro Zeile)', 'Calificaciones (una por línea)'),
+    qualifications: L('Qualifications (une par ligne)', 'Qualifications (one per line)', 'Qualifikationen (eine pro Zeile)',
+      'Calificaciones (una por línea)'),
     roles: L('Fonctions tenues', 'Roles held', 'Ausgeübte Funktionen', 'Funciones ejercidas'),
     byType: L('Par type', 'By type', 'Nach Muster', 'Por tipo'),
-    unknown: L('Inconnu dans les bases : la fiche se remplira au fil des CR (base « lâche »).', 'Unknown in the bases: the sheet will fill as reports come in (loose base).', 'In den Datenbanken unbekannt: das Blatt füllt sich mit den Berichten.', 'Desconocido en las bases: la ficha se completará con los informes.'),
+    unknown: L('Inconnu dans les bases : la fiche se remplira au fil des CR (base « lâche »).',
+      'Unknown in the bases: the sheet will fill as reports come in (loose base).',
+      'In den Datenbanken unbekannt: das Blatt füllt sich mit den Berichten.',
+      'Desconocido en las bases: la ficha se completará con los informes.'),
     merge: L('Fusionner avec… / renommer', 'Merge with… / rename', 'Zusammenführen mit… / umbenennen', 'Fusionar con… / renombrar'),
-    mergeHint: L('Les missions du registre qui portent cette valeur prennent la nouvelle (trace dans chaque mission) ; cette fiche complète celle de la cible ; le journal rechargé suivra.', 'Ledger missions carrying this value take the new one (traced in each mission); this sheet completes the target one; the reloaded log will follow.', 'Einsätze mit diesem Wert übernehmen den neuen (Spur im Einsatz); dieses Blatt ergänzt das Ziel.', 'Las misiones con este valor toman el nuevo (traza en cada misión); esta ficha completa la de destino.'),
+    mergeHint: L(
+      'Les missions du registre qui portent cette valeur prennent la nouvelle (trace dans chaque mission) ; cette fiche complète celle de la cible ; le journal rechargé suivra.',
+      'Ledger missions carrying this value take the new one (traced in each mission); this sheet completes the target one; the reloaded log will follow.',
+      'Einsätze mit diesem Wert übernehmen den neuen (Spur im Einsatz); dieses Blatt ergänzt das Ziel.',
+      'Las misiones con este valor toman el nuevo (traza en cada misión); esta ficha completa la de destino.'),
     mergeGo: L('Fusionner', 'Merge', 'Zusammenführen', 'Fusionar'),
-    mergeConfirm: L('{n} mission(s) du registre passeront de {a} à {b}. Continuer ?', '{n} ledger mission(s) will change from {a} to {b}. Continue?', '{n} Einsatz/Einsätze wechseln von {a} zu {b}. Fortfahren?', '{n} misión(es) pasarán de {a} a {b}. ¿Continuar?'),
+    mergeConfirm: L('{n} mission(s) du registre passeront de {a} à {b}. Continuer ?',
+      '{n} ledger mission(s) will change from {a} to {b}. Continue?', '{n} Einsatz/Einsätze wechseln von {a} zu {b}. Fortfahren?',
+      '{n} misión(es) pasarán de {a} a {b}. ¿Continuar?'),
     back: L('← Reporting missions', '← Mission reporting', '← Einsatzauswertung', '← Informe de misiones')
   };
   const STATUS = [
@@ -314,7 +331,8 @@
         ...(sheets[reg] || {})
       };
     const typeInfo = window.MissionAircraft?.lookupType?.(known.type) || (window.AIRCRAFT_DB || {})[key(known.type)] || null;
-    const all = (await missions()).filter(x => (x.m.aircraft || []).some(a => key(a.registration) === reg)).sort((a, b) => String(b.m.metadata?.date).localeCompare(String(a.m.metadata?.date)));
+    const all = (await missions()).filter(x => (x.m.aircraft || []).some(a => key(a.registration) === reg)).sort((a, b) => String(b.m
+      .metadata?.date).localeCompare(String(a.m.metadata?.date)));
     // terrain actuel : il ne change que par la mise à jour depuis le site (emplacement de la page Flotte, sinon le journal
     // des vols : lastAd) ou par un CR issu d'un ordre de mission avec un terrain d'atterrissage réel
     // (shared/aircraft_positions.js) ; un CR quelconque (hors ordre de mission, landing report) ne déplace pas l'appareil
@@ -332,14 +350,16 @@
       if (!callsigns.has(c)) callsigns.set(c, 0);
     });
     const equipment = new Set();
-    all.forEach(x => (x.m.aircraft || []).filter(a => key(a.registration) === reg).forEach(a => (a.equipment || []).forEach(e => equipment.add(e))));
+    all.forEach(x => (x.m.aircraft || []).filter(a => key(a.registration) === reg).forEach(a => (a.equipment || []).forEach(e =>
+      equipment.add(e))));
     const category = typeInfo?.category || known.category || '',
       catLabel = (V.aircraftCategories || []).find(o => o.value === category);
     document.title = `${known.registration} — ${tr(UI.aircraft)}`;
     const h1 = document.querySelector('header h1');
     if (h1) h1.textContent = `${known.registration} — ${[known.type, typeInfo?.model].filter(Boolean).join(' · ') || tr(UI.aircraft)}`;
     const status = sheet.status || known.status || '';
-    const regs = [...new Set(catalog.map(a => a.registration).concat((window.MissionLedger?.store?.missions || []).flatMap(m => (m.aircraft || []).map(a => a.registration)).filter(Boolean)))].sort();
+    const regs = [...new Set(catalog.map(a => a.registration).concat((window.MissionLedger?.store?.missions || []).flatMap(m => (m
+      .aircraft || []).map(a => a.registration)).filter(Boolean)))].sort();
     const merger = mergeBox('aircraft', known.registration, regs, target => `appareil.html?reg=${encodeURIComponent(target)}`);
     root.innerHTML = `
       <section class="sh-head"><div class="sh-badges">
@@ -416,7 +436,8 @@
       state = read('flightPerfState') || {},
       t = key(known.type),
       resolved = key(typeInfo?.tdesig || t);
-    const profile = Object.values(state.profiles || {}).find(p => [p.id, p.icao, p.type].map(key).some(k => k && (k === t || k === resolved)));
+    const profile = Object.values(state.profiles || {}).find(p => [p.id, p.icao, p.type].map(key).some(k => k && (k === t || k ===
+      resolved)));
     const planner = new URL(`apps/planner/flight_performance_planner.html?aircraft=${encodeURIComponent(profile?.id || resolved || t)}`, window.RepositoryNav?.root || new URL('../../', location.href)).href;
     if (!profile) perf.innerHTML = `<p class="small">${esc(tr(UI.noProfile))}</p><a class="mc-button" href="${esc(planner)}">${esc(tr(UI.openPlanner))} ↗</a>`;
     else {
@@ -490,7 +511,8 @@
         ...(sheets[id] || {})
       };
     const ref = (window.DEFA_REFERENCE?.pilots || []).find(p => p.trigram === id);
-    const all = (await missions()).filter(x => (x.m.crew || []).some(c => String(c.name || '').trim().toUpperCase() === id)).sort((a, b) => String(b.m.metadata?.date).localeCompare(String(a.m.metadata?.date)));
+    const all = (await missions()).filter(x => (x.m.crew || []).some(c => String(c.name || '').trim().toUpperCase() === id)).sort((a,
+      b) => String(b.m.metadata?.date).localeCompare(String(a.m.metadata?.date)));
     const flight = all.reduce((a, x) => a + (x.s.flightMinutes || 0), 0);
     const byType = new Map(),
       roles = new Map();
@@ -501,7 +523,8 @@
         if (c.role) roles.set(c.role, (roles.get(c.role) || 0) + 1);
       });
     });
-    const names = [...new Set((window.DEFA_REFERENCE?.pilots || []).map(p => p.trigram).concat((window.MissionLedger?.store?.missions || []).flatMap(m => (m.crew || []).map(c => String(c.name || '').trim().toUpperCase())).filter(Boolean)))].sort();
+    const names = [...new Set((window.DEFA_REFERENCE?.pilots || []).map(p => p.trigram).concat((window.MissionLedger?.store?.missions ||
+      []).flatMap(m => (m.crew || []).map(c => String(c.name || '').trim().toUpperCase())).filter(Boolean)))].sort();
     const merger = mergeBox('crew', id, names, target => `equipage.html?name=${encodeURIComponent(target)}`);
     document.title = `${id} — ${tr(UI.crew)}`;
     const h1 = document.querySelector('header h1');

@@ -147,7 +147,10 @@
       de = profile.descent || {};
     const tasRef = num(cr.tasKt),
       ffRef = num(cr.fuelFlowPerHour);
-    if (!(tasRef > 0) || !(ffRef > 0)) throw Object.assign(Error(tl('Profil incomplet : TAS et fuel flow de croisière nécessaires.', 'Incomplete profile: cruise TAS and fuel flow required.', 'Profil unvollständig: Reiseflug-TAS und -Verbrauch erforderlich.', 'Perfil incompleto: se requieren TAS y flujo de crucero.')), {
+    if (!(tasRef > 0) || !(ffRef > 0)) throw Object.assign(Error(tl('Profil incomplet : TAS et fuel flow de croisière nécessaires.',
+      'Incomplete profile: cruise TAS and fuel flow required.',
+      'Profil unvollständig: Reiseflug-TAS und -Verbrauch erforderlich.',
+      'Perfil incompleto: se requieren TAS y flujo de crucero.')), {
       fields: [!(tasRef > 0) && 'cruise.tasKt', !(ffRef > 0) && 'cruise.fuelFlowPerHour'].filter(Boolean)
     }); // champs manquants (liens de la page)
     // Fiche EUROCONTROL APD du type (AircraftDB/aircraft_perf.js), si fournie : plafond pratique (FL) et Mach de
@@ -316,10 +319,12 @@
     // Altitude de référence du point de croisière.
     let estimated = false;
     let hRef = num(cr.refAltFt),
-      refSrc = tl('profil (altitude de référence)', 'profile (reference altitude)', 'Profil (Bezugshöhe)', 'perfil (altitud de referencia)');
+      refSrc = tl('profil (altitude de référence)', 'profile (reference altitude)', 'Profil (Bezugshöhe)',
+        'perfil (altitud de referencia)');
     if (!(hRef > 0) && num(cr.iasKt) > 0 && tasRef > num(cr.iasKt)) {
       hRef = altFromSigma((num(cr.iasKt) / tasRef) ** 2);
-      refSrc = tl('déduite du Badin et de la TAS de croisière', 'derived from cruise IAS and TAS', 'aus Reiseflug-IAS und -TAS abgeleitet', 'deducida de la IAS y la TAS de crucero');
+      refSrc = tl('déduite du Badin et de la TAS de croisière', 'derived from cruise IAS and TAS',
+        'aus Reiseflug-IAS und -TAS abgeleitet', 'deducida de la IAS y la TAS de crucero');
     }
     if (!(hRef > 0) && jet && apdMach) {
       // réacteur : altitude où le Mach de croisière APD donne la TAS de croisière du profil (au-dessus de la
@@ -358,7 +363,8 @@
       M = dIsa ? make(hRef, C.ld, M0.p0, atm) : M0,
       modelCeil = ceilingOf(M),
       ceiling = ceilGiven ? Math.min(modelCeil, ceilGiven) : modelCeil;
-    if (ceilGiven && ceilGiven < modelCeil) notes.push(ceilSrc === 'apd' ? tl(`Plafond limité au plafond EUROCONTROL du type : ${Math.round(ceilGiven)} ft (le modèle atteindrait ${Math.round(modelCeil)} ft à ${rocCeil} ft/min).`, `Ceiling limited to the type’s EUROCONTROL ceiling: ${Math.round(ceilGiven)} ft (the model would reach ${Math.round(modelCeil)} ft at ${rocCeil} ft/min).`, `Gipfelhöhe auf die EUROCONTROL-Gipfelhöhe des Typs begrenzt: ${Math.round(ceilGiven)} ft (das Modell erreichte ${Math.round(modelCeil)} ft bei ${rocCeil} ft/min).`, `Techo limitado al techo EUROCONTROL del tipo: ${Math.round(ceilGiven)} ft (el modelo alcanzaría ${Math.round(modelCeil)} ft a ${rocCeil} ft/min).`) : tl(`Plafond limité par le profil : ${Math.round(ceilGiven)} ft (le modèle atteindrait ${Math.round(modelCeil)} ft à ${rocCeil} ft/min).`, `Ceiling limited by the profile: ${Math.round(ceilGiven)} ft (the model would reach ${Math.round(modelCeil)} ft at ${rocCeil} ft/min).`, `Gipfelhöhe durch das Profil begrenzt: ${Math.round(ceilGiven)} ft (das Modell erreichte ${Math.round(modelCeil)} ft bei ${rocCeil} ft/min).`, `Techo limitado por el perfil: ${Math.round(ceilGiven)} ft (el modelo alcanzaría ${Math.round(modelCeil)} ft a ${rocCeil} ft/min).`));
+    if (ceilGiven && ceilGiven < modelCeil) notes.push(ceilSrc === 'apd' ? tl(`Plafond limité au plafond EUROCONTROL du type : ${Math.round(ceilGiven)} ft (le modèle atteindrait ${Math.round(modelCeil)} ft à ${rocCeil} ft/min).`, `Ceiling limited to the type’s EUROCONTROL ceiling: ${Math.round(ceilGiven)} ft (the model would reach ${Math.round(modelCeil)} ft at ${rocCeil} ft/min).`, `Gipfelhöhe auf die EUROCONTROL-Gipfelhöhe des Typs begrenzt: ${Math.round(ceilGiven)} ft (das Modell erreichte ${Math.round(modelCeil)} ft bei ${rocCeil} ft/min).`, `Techo limitado al techo EUROCONTROL del tipo: ${Math.round(ceilGiven)} ft (el modelo alcanzaría ${Math.round(modelCeil)} ft a ${rocCeil} ft/min).`) : tl(`Plafond limité par le profil : ${Math.round(ceilGiven)} ft (le modèle atteindrait ${Math.round(modelCeil)} ft à ${rocCeil} ft/min).`,
+      `Ceiling limited by the profile: ${Math.round(ceilGiven)} ft (the model would reach ${Math.round(modelCeil)} ft at ${rocCeil} ft/min).`, `Gipfelhöhe durch das Profil begrenzt: ${Math.round(ceilGiven)} ft (das Modell erreichte ${Math.round(modelCeil)} ft bei ${rocCeil} ft/min).`, `Techo limitado por el perfil: ${Math.round(ceilGiven)} ft (el modelo alcanzaría ${Math.round(modelCeil)} ft a ${rocCeil} ft/min).`));
     if (ceilGiven && ceilGiven > modelCeil + 1000) notes.push(tl(`Plafond du profil (${Math.round(ceilGiven)} ft) au-dessus du plafond de performance du modèle (${Math.round(modelCeil)} ft à ${rocCeil} ft/min).`, `Profile ceiling (${Math.round(ceilGiven)} ft) above the model’s performance ceiling (${Math.round(modelCeil)} ft at ${rocCeil} ft/min).`, `Gipfelhöhe des Profils (${Math.round(ceilGiven)} ft) über der Leistungsgipfelhöhe des Modells (${Math.round(modelCeil)} ft bei ${rocCeil} ft/min).`, `Techo del perfil (${Math.round(ceilGiven)} ft) por encima del techo de rendimiento del modelo (${Math.round(modelCeil)} ft a ${rocCeil} ft/min).`));
     // Facteur de débit en montée : débit moyen de montée du profil / débit du modèle (borné 0,5–2).
     let climbFactor = 1;
@@ -395,7 +401,8 @@
       const at = atm(h),
         s = Math.sqrt(at.sigma);
       let ve;
-      if (mode === 'eco') ve = jet ? Math.min(Math.pow(3, .25) * M.veMd, M.mRef * at.a * s, veCap) : M.veMd; // jamais plus rapide que la croisière du profil
+      if (mode === 'eco') ve = jet ? Math.min(Math.pow(3, .25) * M.veMd, M.mRef * at.a * s, veCap) : M
+      .veMd; // jamais plus rapide que la croisière du profil
       else if (jet) ve = Math.min(M.mRef * at.a * s, veCap);
       else ve = powerSpeed(h, Math.min(M.pRef, .98 * M.avail(h)));
       // hélice : si la puissance de croisière du profil ne tient plus le palier (air moins dense), l'équipage remet juste

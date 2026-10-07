@@ -70,9 +70,11 @@
         let text = m[3];
         i++;
         // suite de l'élément : lignes indentées sans puce
-        while (i < lines.length && lines[i].trim() && !/^\s*([-*+]|\d+[.)])\s/.test(lines[i]) && /^\s+/.test(lines[i])) text += ' ' + lines[i++].trim();
+        while (i < lines.length && lines[i].trim() && !/^\s*([-*+]|\d+[.)])\s/.test(lines[i]) && /^\s+/.test(lines[i])) text += ' ' +
+          lines[i++].trim();
         items.push(inline(text, opt));
-        if (i < lines.length && !lines[i].trim() && /^\s*([-*+]|\d+[.)])\s/.test(lines[i + 1] || '') && (/^(\s*)/.exec(lines[i + 1])[1].length >= ind)) i++; // ligne vide entre éléments
+        if (i < lines.length && !lines[i].trim() && /^\s*([-*+]|\d+[.)])\s/.test(lines[i + 1] || '') && (/^(\s*)/.exec(lines[i + 1])[1]
+            .length >= ind)) i++; // ligne vide entre éléments
       }
       const tag = ordered ? 'ol' : 'ul';
       return `<${tag}>${items.map(x => `<li>${x}</li>`).join('')}</${tag}>`;

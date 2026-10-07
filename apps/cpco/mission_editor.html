@@ -4,12 +4,12 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>CPCO — Générateur de mission</title>
 <link rel="stylesheet" href="../../shared/repository_nav.css?v=f6a61e75">
-<script src="../../config/repository_tree?v=cc94a4d8"></script><script src="../../shared/kit.js?v=a819e6df"></script>
+<script src="../../config/repository_tree?v=2a75a8a5"></script><script src="../../shared/kit.js?v=d084129f"></script>
 <script src="../../shared/mission_core/vendor/js-yaml.min.js"></script>
-<script src="mission_prompt.js?v=8774038d"></script><script src="../../shared/data_files.js?v=dcb47c6a" data-file="references/aircraft_fleet.js"></script><script src="../../shared/mission_order.js?v=ac4119b1"></script><script src="../../AircraftDB/aircraft_db.js"></script><script src="../../AircraftDB/aircraft_perf.js"></script><script src="../../shared/mission_core/model.js?v=3b998a94"></script><script src="../../shared/mission_estimate.js?v=1e7731a5"></script><script src="../../shared/sia_base.js?v=31c2e30c"></script><script src="../../shared/mission_routing.js?v=c23f4287"></script><script src="../../shared/mission_airspaces.js?v=3ab8db0c"></script><script src="../../shared/mission_exercise.js?v=6c6aed4f"></script><script src="../../shared/mission_registry.js?v=86c9b0de"></script>
-<script src="mission_store.js?v=bc7f59ef"></script>
-<script src="../../shared/aar_tracks.js?v=f4061047"></script>
-<script src="../../shared/mission_core/vocab.js?v=51b46b47"></script>
+<script src="mission_prompt.js?v=8774038d"></script><script src="../../shared/data_files.js?v=dcb47c6a" data-file="references/aircraft_fleet.js"></script><script src="../../shared/mission_order.js?v=f0b5d1a2"></script><script src="../../AircraftDB/aircraft_db.js"></script><script src="../../AircraftDB/aircraft_perf.js"></script><script src="../../shared/mission_core/model.js?v=dc3aef83"></script><script src="../../shared/mission_estimate.js?v=44ce871f"></script><script src="../../shared/sia_base.js?v=0f91238f"></script><script src="../../shared/mission_routing.js?v=3cc1352c"></script><script src="../../shared/mission_airspaces.js?v=2347985e"></script><script src="../../shared/mission_exercise.js?v=32a1ef21"></script><script src="../../shared/mission_registry.js?v=96cd68c2"></script>
+<script src="mission_store.js?v=4b918511"></script>
+<script src="../../shared/aar_tracks.js?v=32606456"></script>
+<script src="../../shared/mission_core/vocab.js?v=b1e809ba"></script>
 <script src="jspdf.umd.min.js"></script>
 <style data-layer="app">
 @layer app {
@@ -522,7 +522,8 @@ html[data-skeuo] .repo-block .mapCard.missing:not(#imp) {
 <script>
 const $ = id => document.getElementById(id),
   deepClone = v => JSON.parse(JSON.stringify(v)),
-  norm = s => String(s ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, ''),
+  norm = s => String(s ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g,
+    ''),
   esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({
     '&': '&amp;',
     '<': '&lt;',
@@ -609,7 +610,8 @@ let aarData = null;
 async function aarTracksData() {
   if (aarData) return aarData;
   try {
-    const text = await fetch('../../data/sia/miam-enr-5-7-tracks.xml').then(r => r.ok ? r.text() : '').catch(() => '') || await fetch('../../examples/sia/miam-enr-5-7-tracks.xml').then(r => r.ok ? r.text() : '').catch(() => '');
+    const text = await fetch('../../data/sia/miam-enr-5-7-tracks.xml').then(r => r.ok ? r.text() : '').catch(() => '') || await fetch(
+      '../../examples/sia/miam-enr-5-7-tracks.xml').then(r => r.ok ? r.text() : '').catch(() => '');
     aarData = text && window.AarTracks ? AarTracks.parseTrackXml(text).filter(t => t.kind === 'track' && t.ip && t.cp) : []
   } catch {
     aarData = []
@@ -651,7 +653,9 @@ async function autoNarrative(y) {
   const who = [...new Set(rdv.flatMap(r => [].concat(r.participants || [])).map(String))].filter(Boolean),
     rdvLine = r => `- ${[r.id,r.name].filter(Boolean).join(' ')} (${coord(r)})${[].concat(r.participants||[]).length?` — ${[].concat(r.participants).join(', ')}`:''}${r.role||r.description?` : ${r.role||r.description}`:''}`;
   const summary = [`${kind||'Mission'}${y.target?.name?` — ${y.target.name}`:''}.`, aar ? `Circuit de ravitaillement ${aar.name}.` : '', zone.name ? `Zone : ${zone.name}${zone.radius_km?` (rayon ${zone.radius_km} km)`:''}.` : '', who.length ? `Participants : ${who.join(', ')}.` : ''].filter(Boolean).join(' ');
-  const detailed = [aarText, pts.length ? 'Points tournants :\n' + pts.map(p => `- ${[p.id,p.name].filter(Boolean).join(' ')} (${coord(p)})${p.role||p.description?` : ${p.role||p.description}`:''}`).join('\n') : '', rdv.length ? 'Rendez-vous :\n' + rdv.map(rdvLine).join('\n') : '', notes.length ? 'Consignes :\n' + notes.map(n => `- ${n}`).join('\n') : ''].filter(Boolean).join('\n\n');
+  const detailed = [aarText, pts.length ? 'Points tournants :\n' + pts.map(p => `- ${[p.id,p.name].filter(Boolean).join(' ')} (${coord(p)})${p.role||p.description?` : ${p.role||p.description}`:''}`).join('\n') : '', rdv.length ?
+    'Rendez-vous :\n' + rdv.map(rdvLine).join('\n') : '', notes.length ? 'Consignes :\n' + notes.map(n => `- ${n}`).join('\n') : ''
+  ].filter(Boolean).join('\n\n');
   return {
     summary,
     detailed
@@ -660,7 +664,8 @@ async function autoNarrative(y) {
 // ===== Import =====
 // Fichiers de mission : YAML (données) et / ou Markdown exporté (textes + YAML intégré), images de cartes.
 async function importMissionFiles(files) {
-  const list = [...files].filter(f => !/\.(png|jpe?g|svg|pdf)$/i.test(f.name)); /* lecture commune : SiaMission.fromTexts (mission_store.js) — YAML + Markdown d'une mission, annexes ignorées */ /* plusieurs missions (opération à plusieurs équipes, ou réponse ChatGPT collée) : lot, navigation dans l'en-tête */
+  const list = [...files].filter(f => !/\.(png|jpe?g|svg|pdf)$/i.test(f
+  .name)); /* lecture commune : SiaMission.fromTexts (mission_store.js) — YAML + Markdown d'une mission, annexes ignorées */ /* plusieurs missions (opération à plusieurs équipes, ou réponse ChatGPT collée) : lot, navigation dans l'en-tête */
   const inputs = await Promise.all(list.map(async f => ({
       name: f.name,
       text: await f.text()
@@ -673,7 +678,8 @@ async function importMissionFiles(files) {
     yaml = doc.yaml,
     narr = doc.narrative;
   let proposed = false;
-  if (!narr.summary && !narr.detailed && !narr.sections.length && !yaml.summary && !yaml.detailed_description && !yaml.description_detaillee) {
+  if (!narr.summary && !narr.detailed && !narr.sections.length && !yaml.summary && !yaml.detailed_description && !yaml
+    .description_detaillee) {
     const auto = await autoNarrative(yaml);
     narr.summary = auto.summary;
     narr.detailed = auto.detailed;
@@ -691,7 +697,8 @@ async function importMissionFiles(files) {
 async function inflateZipData(bytes, method) {
   if (method === 0) return bytes;
   if (method !== 8) throw Error(`Compression ZIP non prise en charge (${method}).`);
-  if (!('DecompressionStream' in window)) throw Error('Ce navigateur ne sait pas décompresser ce ZIP. Utilise le ZIP produit par le générateur de cartes.');
+  if (!('DecompressionStream' in window)) throw Error(
+    'Ce navigateur ne sait pas décompresser ce ZIP. Utilise le ZIP produit par le générateur de cartes.');
   const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream('deflate-raw'));
   return new Uint8Array(await new Response(stream).arrayBuffer())
 }
@@ -879,7 +886,8 @@ function renderYaml() {
 // ===== Cartes de la mission =====
 // Cartes déclarées dans le YAML (maps) ; mapFilename : nom du fichier image attendu.
 function mapEntries() {
-  return Array.isArray(state.yaml.maps) ? state.yaml.maps : state.yaml.maps && typeof state.yaml.maps === 'object' ? Object.values(state.yaml.maps) : []
+  return Array.isArray(state.yaml.maps) ? state.yaml.maps : state.yaml.maps && typeof state.yaml.maps === 'object' ? Object.values(state
+    .yaml.maps) : []
 }
 
 /** Nom du fichier image d'une carte déclarée (texte, filename, file ou output ; sinon carte_<n>.png). */
@@ -904,7 +912,8 @@ function pdfMapEntries() {
     type: 'assembly'
   });
   const profile = missionImage(/profil_vertical/i);
-  declared.sort((a, b) => (/assemblage|assembly/i.test(b.type + ' ' + b.file) ? 1 : 0) - (/assemblage|assembly/i.test(a.type + ' ' + a.file) ? 1 : 0));
+  declared.sort((a, b) => (/assemblage|assembly/i.test(b.type + ' ' + b.file) ? 1 : 0) - (/assemblage|assembly/i.test(a.type + ' ' + a
+    .file) ? 1 : 0));
   if (profile && !declared.some(x => x.file.toLowerCase() === profile.name.toLowerCase())) declared.push({
     map: {
       filename: profile.name,
@@ -990,7 +999,8 @@ function renderAll() {
    cartes des chiffons) : définies d'office par le studio à l'ouverture de la mission, générées avec les autres cartes,
    jointes au PDF (carte de chaque message ou pli après les cartes de la mission). */
 function exerciseImage(file) {
-  return state.images.get(String(file || '').toLowerCase()) || [...state.images.values()].find(i => i.name.toLowerCase() === String(file || '').toLowerCase().replace(/\.png$/, '.jpg'))
+  return state.images.get(String(file || '').toLowerCase()) || [...state.images.values()].find(i => i.name.toLowerCase() === String(file ||
+    '').toLowerCase().replace(/\.png$/, '.jpg'))
 }
 
 /** Cartes d'exercice de la mission : état de chacune (chargée / à générer) et marche à suivre. */
@@ -1048,7 +1058,8 @@ function renderAirspaces() {
   const host = $('missionAirspaces');
   if (!host) return;
   if (!siaAirspaces) {
-    host.innerHTML = '<p class="small">Base SIA absente de ce navigateur : la lire une fois (studio cartographique, bloc « Base de données SIA », ou Paramètres › Maintenance › Données aéronautiques).</p>';
+    host.innerHTML =
+      '<p class="small">Base SIA absente de ce navigateur : la lire une fois (studio cartographique, bloc « Base de données SIA », ou Paramètres › Maintenance › Données aéronautiques).</p>';
     return
   }
   const list = airspaceList() || [],
@@ -1062,7 +1073,8 @@ function renderAirspaces() {
 /** Section « Zones à activer » d'un PDF (texte par gestionnaire) ; rien si la base SIA est absente ou la liste vide. */
 function addAirspacesSection(doc, y, list, note) {
   if (!list?.length) return y;
-  return addSection(doc, 'Zones à activer', [note || '', ...list.length ? [window.MissionAirspaces.byAdmin(list).map(g => g.prohibited ? `Zones interdites, à éviter : ${g.zones.map(z=>`${zoneLabel(z)} (${z.lower||'?'} – ${z.upper||'?'})`).join(', ')}` : `${g.admin==='—'?'Gestionnaire non indiqué':g.admin}${g.zones.some(z=>z.act)?` (${[...new Set(g.zones.map(z=>z.act).filter(Boolean))].join(', ')})`:''} : ${g.zones.map(z=>`${zoneLabel(z)} (${z.lower||'?'} – ${z.upper||'?'})${z.by?' — '+z.by.join(', '):''}`).join(', ')}`).join('\n')] : []].filter(Boolean).join('\n'), y)
+  return addSection(doc, 'Zones à activer', [note || '', ...list.length ? [window.MissionAirspaces.byAdmin(list).map(g => g.prohibited ?
+    `Zones interdites, à éviter : ${g.zones.map(z=>`${zoneLabel(z)} (${z.lower||'?'} – ${z.upper||'?'})`).join(', ')}` : `${g.admin==='—'?'Gestionnaire non indiqué':g.admin}${g.zones.some(z=>z.act)?` (${[...new Set(g.zones.map(z=>z.act).filter(Boolean))].join(', ')})`:''} : ${g.zones.map(z=>`${zoneLabel(z)} (${z.lower||'?'} – ${z.upper||'?'})${z.by?' — '+z.by.join(', '):''}`).join(', ')}`).join('\n')] : []].filter(Boolean).join('\n'), y)
 }
 /** Volet « Importer une autre mission » : ouvert sans mission chargée, replié sinon, jusqu'à ce que l'utilisateur l'ouvre ou le ferme. */
 $('orderGpt').onclick = () => {
@@ -1276,7 +1288,8 @@ function createChiffonMissions() {
     op = z.operation || {},
     crews = docs.filter(d => !X.isOrganisation(d) && d.origin),
     base = crews[0] || {},
-    taken = new Set([...docs.map(d => String(d.mission?.id || '').toUpperCase()), ...(op.missions || []).map(v => String(v).toUpperCase())]),
+    taken = new Set([...docs.map(d => String(d.mission?.id || '').toUpperCase()), ...(op.missions || []).map(v => String(v)
+  .toUpperCase())]),
     stem = String(op.id || z.mission?.id || '').replace(/Z$/i, '');
   let letter = 'A'.charCodeAt(0);
   const nextId = () => {
@@ -1410,7 +1423,8 @@ function renderExercise() {
   sec.hidden = !org && !ex;
   if (sec.hidden) return;
   if (org) {
-    setBlock('mission-exercise', 'Exercice', 'Heure H et participants, chiffons, chronologie des messages radio et des plis scellés, et ce que reçoit chacun.');
+    setBlock('mission-exercise', 'Exercice',
+      'Heure H et participants, chiffons, chronologie des messages radio et des plis scellés, et ce que reçoit chacun.');
     X.editor(host, state.yaml, {
       docs,
       onChange: () => {
@@ -1423,7 +1437,8 @@ function renderExercise() {
       }
     })
   } else {
-    setBlock('mission-exercise', 'Exercice : ce que reçoit cet équipage', 'Plis scellés à ouvrir et messages radio attendus, d’après la chronologie de l’organisation de l’exercice.');
+    setBlock('mission-exercise', 'Exercice : ce que reçoit cet équipage',
+      'Plis scellés à ouvrir et messages radio attendus, d’après la chronologie de l’organisation de l’exercice.');
     X.crewPanel(host, state.yaml, docs)
   }
 }
@@ -1431,7 +1446,9 @@ function renderExercise() {
 function applyMode() {
   const org = isOrgDoc();
   document.querySelector('[data-block-id="mission-estimate"]').hidden = org;
-  setBlock('mission-texts', org ? 'Brief général' : 'Textes de mission', org ? 'Brief de la coordination, remis à tous : situation, objectifs communs, créneaux, critères de fin.' : 'Résumé, description détaillée et rubriques du brief.');
+  setBlock('mission-texts', org ? 'Brief général' : 'Textes de mission', org ?
+    'Brief de la coordination, remis à tous : situation, objectifs communs, créneaux, critères de fin.' :
+    'Résumé, description détaillée et rubriques du brief.');
   syncDocButtons()
 }
 /** Boutons des documents selon la mission et l'opération. */
@@ -1470,6 +1487,7 @@ async function loadCrReports() {
 if (typeof BroadcastChannel === 'function') new BroadcastChannel('defa-data').addEventListener('message', e => {
   if (e.data?.path === 'data/cr/missions.yaml') loadCrReports()
 });
+
 function missionReports(id) {
   const mid = window.MissionVocab?.missionIdOf?.(id);
   if (!mid) return [];
@@ -1493,7 +1511,8 @@ function missionReports(id) {
     }
   }).sort((a, b) => b.date.localeCompare(a.date))
 }
-let estimateTimer = 0; /* ===== Transit : mode de la mission (route_mode du YAML) et réglages du calcul (shared/mission_routing.js, navigateur) ===== */
+let estimateTimer =
+0; /* ===== Transit : mode de la mission (route_mode du YAML) et réglages du calcul (shared/mission_routing.js, navigateur) ===== */
 const ROUTE_MODE_LABEL = {
   auto: 'automatique (selon l’appareil et le niveau)',
   airways: 'voies aériennes (IFR)',
@@ -1604,7 +1623,8 @@ function markdownExport() {
 // ===== Brief PDF (jsPDF local) =====
 // Typographie remplacée (apostrophes, tirets, guillemets, œ) : police standard du PDF.
 function pdfSafe(s) {
-  return String(s ?? '').replace(/[’‘]/g, "'").replace(/[—–]/g, ' - ').replace(/…/g, '...').replace(/œ/g, 'oe').replace(/Œ/g, 'OE').replace(/[“”«»]/g, '"')
+  return String(s ?? '').replace(/[’‘]/g, "'").replace(/[—–]/g, ' - ').replace(/…/g, '...').replace(/œ/g, 'oe').replace(/Œ/g, 'OE').replace(
+    /[“”«»]/g, '"')
 }
 
 /** Texte Markdown rendu en texte simple pour le PDF (titres, citations, gras, code retirés). */
@@ -1631,7 +1651,8 @@ function usefulRecords(value) {
 function aircraftRecords() {
   const explicit = usefulRecords(state.yaml.aircraft || state.yaml.aircrafts || state.yaml.aeronefs);
   if (explicit.length) return explicit;
-  return usefulRecords(state.yaml.teams).filter(x => !/(?:equipe|team|terrestre|secours|maintenance|reception)/.test(norm(String(x.type || x.role || x.name || ''))))
+  return usefulRecords(state.yaml.teams).filter(x => !/(?:equipe|team|terrestre|secours|maintenance|reception)/.test(norm(String(x.type || x
+    .role || x.name || ''))))
 }
 
 /** « type - indicatif » du premier aéronef (fiche du PDF). */
@@ -1658,7 +1679,8 @@ function asArray(v) {
 /** Risques de la mission en lignes de texte : liste YAML (danger, conséquence, parade), sinon rubrique du récit. */
 function risksText() {
   const r = state.yaml.risks;
-  if (Array.isArray(r) && r.length) return r.map(x => typeof x === 'string' ? x : [x.hazard || x.risk || x.name, x.consequence, x.mitigation].filter(Boolean).join(' - '));
+  if (Array.isArray(r) && r.length) return r.map(x => typeof x === 'string' ? x : [x.hazard || x.risk || x.name, x.consequence, x
+    .mitigation].filter(Boolean).join(' - '));
   const s = findSection(['risques', 'risks', 'points_d_attention']);
   return s ? s.content.split(/\r?\n/).map(x => x.replace(/^\s*[-*•]\s*/, '')).filter(Boolean) : []
 }
@@ -1809,7 +1831,9 @@ function addMissionFacts(doc, y) {
     aircraft = aircraftRecords(),
     type = common('mission.type', common('type', 'Non renseigné')),
     subtype = common('mission.subtype', common('subtype', 'Non renseigné')),
-    fleet = aircraft.map(a => [a.type || a.aircraft || a.model || 'Type non renseigné', a.callsign || a.registration || a.name || 'Sans callsign'].join(' - '));
+    fleet = aircraft.map(a => [a.type || a.aircraft || a.model || 'Type non renseigné', a.callsign || a.registration || a.name ||
+      'Sans callsign'
+    ].join(' - '));
   return addMarkdownTable(doc, ['Information', 'Valeur'], [
     ['Type de mission', String(type || 'Non renseigné')],
     ['Sous-type', String(subtype || 'Non renseigné')],
@@ -1828,7 +1852,9 @@ function rendezvousRecords() {
 function addRendezvous(doc, y) {
   const rows = rendezvousRecords();
   if (!rows.length) return y;
-  const table = rows.map(r => [r.id || r.code || '', r.name || r.nom || '', Number.isFinite(+r.lat) && Number.isFinite(+r.lon) ? `${(+r.lat).toFixed(5)}, ${(+r.lon).toFixed(5)}` : r.location || '', String(r.participants || r.teams || r.description || r.note || '').replace(/\|/g, ' / ')]);
+  const table = rows.map(r => [r.id || r.code || '', r.name || r.nom || '', Number.isFinite(+r.lat) && Number.isFinite(+r.lon) ? `${(+r.lat).toFixed(5)}, ${(+r.lon).toFixed(5)}` :
+    r.location || '', String(r.participants || r.teams || r.description || r.note || '').replace(/\|/g, ' / ')
+  ]);
   if (y > 235) {
     doc.addPage('a4', 'portrait');
     y = 20
@@ -1890,7 +1916,9 @@ function addCrewExercise(doc, y) {
     mine = X.eventsFor(c.tl, c.me.callsign),
     plis = mine.filter(e => e.kind === 'pli').length,
     radio = mine.length - plis;
-  return addSection(doc, 'Exercice', [`Heure H fixée par la direction d’exercice (${c.ex.h_hour}). Décollage prévu : ${X.hText(X.parseH(c.me.takeoff)??0)}.`, plis ? `Plis scellés remis avec ce dossier : ${plis}, à n’ouvrir qu’au moment indiqué sur chacun.` : '', radio ? 'Des messages vous seront passés en vol par l’organisation de l’exercice.' : ''].filter(Boolean).join('\n'), y)
+  return addSection(doc, 'Exercice', [`Heure H fixée par la direction d’exercice (${c.ex.h_hour}). Décollage prévu : ${X.hText(X.parseH(c.me.takeoff)??0)}.`, plis ? `Plis scellés remis avec ce dossier : ${plis}, à n’ouvrir qu’au moment indiqué sur chacun.` : '', radio ?
+    'Des messages vous seront passés en vol par l’organisation de l’exercice.' : ''
+  ].filter(Boolean).join('\n'), y)
 }
 /** Plis scellés adressés à l'équipage : une page chacun, après les cartes (les messages radio restent à l'organisation). */
 /** Plis scellés et cartes d'exercice de l'équipage, après les cartes de la mission : une page par pli (texte, pistes),
@@ -1922,7 +1950,8 @@ function addCrewPlis(doc) {
       doc.text(pdfSafe(`PLI SCELLÉ — ${c.me.callsign} — à ouvrir : ${when}`), 20, y);
       y += 7;
       const known = c.ex.tracks.filter(k => e.reveals.includes(k.id));
-      addSection(doc, e.title || e.id, [e.from ? `De : ${e.from}` : '', e.text || '', known.length ? 'Pistes :\n' + known.map(trackText).join('\n\n') : ''].filter(Boolean).join('\n\n'), y);
+      addSection(doc, e.title || e.id, [e.from ? `De : ${e.from}` : '', e.text || '', known.length ? 'Pistes :\n' + known.map(trackText).join(
+        '\n\n') : ''].filter(Boolean).join('\n\n'), y);
       if (img) mapPage(img, `PLI SCELLÉ — ${e.title||e.id} — carte`)
     } else if (img) mapPage(img, `CARTE À REMETTRE À RÉCEPTION DU MESSAGE « ${e.title||e.id} » — ${c.me.callsign} — ${when}`)
   }
@@ -1946,7 +1975,8 @@ function addMapPages(doc) {
     doc.addPage('a4', landscape ? 'landscape' : 'portrait');
     const pw = doc.internal.pageSize.getWidth(),
       ph = doc.internal.pageSize.getHeight(),
-      heading = assembly ? 'Carte d’assemblage' : /general/i.test(key) ? 'Carte générale' : /detail|proxim/i.test(key) ? `Mission ${common('mission.id','')} - carte de proximité de la cible` : /cible|target/i.test(key) ? 'Carte cible' : file;
+      heading = assembly ? 'Carte d’assemblage' : /general/i.test(key) ? 'Carte générale' : /detail|proxim/i.test(key) ? `Mission ${common('mission.id','')} - carte de proximité de la cible` :
+      /cible|target/i.test(key) ? 'Carte cible' : file;
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(18);
     const headingLines = doc.splitTextToSize(pdfSafe(heading), pw - 24);
@@ -2007,7 +2037,9 @@ async function exportOrganisationPdf(zy, opts) {
   let y = 22 + lines.length * 8 + 6;
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(10.5);
-  let texts = [zy === state.yaml ? state.narrative.summary : '', zy.summary || '', zy === state.yaml ? state.narrative.detailed : '', zy.detailed_description || ''].filter((v, i, a) => v && a.indexOf(v) === i);
+  let texts = [zy === state.yaml ? state.narrative.summary : '', zy.summary || '', zy === state.yaml ? state.narrative.detailed : '', zy
+    .detailed_description || ''
+  ].filter((v, i, a) => v && a.indexOf(v) === i);
   const cur = zy === state.yaml;
   if (!texts.length) {
     const b = briefOfCrews(op, docs.filter(d => !X.isOrganisation(d)));
@@ -2016,7 +2048,10 @@ async function exportOrganisationPdf(zy, opts) {
   y = addSection(doc, 'Brief général', texts.join('\n\n') || '—', y);
   y = addSection(doc, 'Heure H et participants', [`Heure H : ${ex.h_hour}`, ...ex.participants.map(p => `• ${p.callsign} — mission ${p.mission} — décollage ${X.hText(X.parseH(p.takeoff)??0)}${p.role?' — '+p.role:''}`)].join('\n'), y);
   if (ex.tracks.length) y = addSection(doc, 'Chiffons', ex.tracks.map(k => `${trackText(k)}\n  ${k.played?`Joué${k.callsign?' ('+k.callsign+')':''}, départ ${k.start||'—'}${k.conduct?' — consignes : '+k.conduct:''}`:'Simulé (dessiné seulement)'}`).join('\n\n'), y);
-  y = addAirspacesSection(doc, y, window.MissionAirspaces && siaAirspaces ? window.MissionAirspaces.crossedAll(docs.filter(d => !X.isOrganisation(d)), siaAirspaces) : null, 'Demandes d’activation à faire par l’organisation, auprès des gestionnaires (calcul indicatif : vérifier les cartes AZBA et les NOTAM).');
+  y = addAirspacesSection(doc, y, window.MissionAirspaces && siaAirspaces ? window.MissionAirspaces.crossedAll(docs.filter(d => !X
+      .isOrganisation(d)), siaAirspaces) : null,
+    'Demandes d’activation à faire par l’organisation, auprès des gestionnaires (calcul indicatif : vérifier les cartes AZBA et les NOTAM).'
+    );
   y = addSection(doc, 'Chronologie', tl.map(e => `• ${e.t==null?'H+?':X.hText(e.t)} — ${e.kind==='pli'?'PLI SCELLÉ':'RADIO'} — ${e.from||'—'} → ${e.to.join(', ')||'—'} : ${e.title||e.id}\n  Déclencheur : ${e.when}${e.reveals.length?' · pistes révélées : '+e.reveals.join(', '):''}${e.text?'\n  '+String(e.text).replace(/\n+/g,'\n  '):''}`).join('\n\n') || '—', y);
   const missing = cur ? addMapPages(doc) : [];
   if (!into) {
@@ -2138,7 +2173,8 @@ async function exportPdf(opts) {
   y = addCrewExercise(doc, y);
   {
     const c = crewExercise();
-    if (!c && !isOrgDoc()) y = addAirspacesSection(doc, y, airspaceList(), 'Demandes d’activation à faire auprès des gestionnaires (calcul indicatif : vérifier les cartes AZBA et les NOTAM).')
+    if (!c && !isOrgDoc()) y = addAirspacesSection(doc, y, airspaceList(),
+      'Demandes d’activation à faire auprès des gestionnaires (calcul indicatif : vérifier les cartes AZBA et les NOTAM).')
   }
   if (y > 276) {
     doc.addPage('a4', 'portrait');
@@ -2384,7 +2420,8 @@ $('exportPdfOperation').onclick = async () => {
     const m = await exportOperationPdf();
     $('exportStatus').textContent = `Dossier d’opération exporté (un PDF).${m.length?` Cartes non jointes — ${m.join(' ; ')}.`:''}`
   } catch (e) {
-    (window.AppFramework?.notify ? ($('exportStatus').textContent = '', window.AppFramework.notify(e.message, 'err')) : $('exportStatus').textContent = e.message)
+    (window.AppFramework?.notify ? ($('exportStatus').textContent = '', window.AppFramework.notify(e.message, 'err')) : $(
+      'exportStatus').textContent = e.message)
   } finally {
     bt.disabled = false
   }
@@ -2709,7 +2746,8 @@ $('exportYaml').onclick = () => {
     }), `${safeStem()}.yaml`);
     $('exportStatus').textContent = 'YAML exporté.'
   } catch (e) {
-    (window.AppFramework?.notify ? ($('exportStatus').textContent = '', window.AppFramework.notify(e.message, 'err')) : $('exportStatus').textContent = e.message)
+    (window.AppFramework?.notify ? ($('exportStatus').textContent = '', window.AppFramework.notify(e.message, 'err')) : $('exportStatus')
+      .textContent = e.message)
   }
 };
 $('exportMd').onclick = () => {
@@ -2786,11 +2824,12 @@ $('openCr').onclick = () => {
     localStorage.setItem('siaMissionToCr:v1', JSON.stringify(state.yaml));
     location.href = `../cr/${target.cr}?from=sia`
   } catch (e) {
-    (window.AppFramework?.notify ? ($('exportStatus').textContent = '', window.AppFramework.notify(e.message, 'err')) : $('exportStatus').textContent = e.message)
+    (window.AppFramework?.notify ? ($('exportStatus').textContent = '', window.AppFramework.notify(e.message, 'err')) : $('exportStatus')
+      .textContent = e.message)
   }
 };
 </script>
-<script src="../../shared/repository_nav.js?v=eceaf3f4"></script>
-<script src="../../shared/app_framework.js?v=003108e7"></script>
-<script src="../../shared/content_i18n.js?v=7afecb78"></script><script src="sia_i18n.js?v=79f7a92e"></script>
+<script src="../../shared/repository_nav.js?v=ad188ce2"></script>
+<script src="../../shared/app_framework.js?v=5653237c"></script>
+<script src="../../shared/content_i18n.js?v=efa62576"></script><script src="sia_i18n.js?v=e4046ef4"></script>
 </body></html>

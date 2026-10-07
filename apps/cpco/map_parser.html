@@ -4,15 +4,15 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>CPCO — Studio cartographique</title>
 <link rel="stylesheet" href="../../shared/repository_nav.css?v=f6a61e75">
-<script src="../../config/repository_tree?v=cc94a4d8"></script><script src="../../shared/kit.js?v=a819e6df"></script>
+<script src="../../config/repository_tree?v=2a75a8a5"></script><script src="../../shared/kit.js?v=d084129f"></script>
 <style data-layer="lib">
 @import url("../../shared/carto/maplibre-gl.css") layer(lib);
 </style>
 <script src="../../shared/carto/maplibre-gl.js"></script>
 <script src="../../shared/mission_core/vendor/js-yaml.min.js"></script>
-<script src="mission_store.js?v=bc7f59ef"></script>
-<script src="../../shared/carto/aero_symbols.js?v=50ad43df"></script><script src="../../shared/carto/vertical_profile.js?v=75163ccf"></script><script src="../../shared/carto/vprof_editor.js?v=e34b66fc"></script><script src="../../AircraftDB/aircraft_db.js"></script><script src="../../shared/flight_performance_model.js?v=9f9c9116"></script><script src="../../AircraftDB/aircraft_perf.js"></script><script src="../../shared/mission_routing.js?v=c23f4287"></script><script src="../../shared/mission_estimate.js?v=1e7731a5"></script><script src="../../shared/mission_exercise.js?v=6c6aed4f"></script><script src="../../shared/mission_registry.js?v=86c9b0de"></script>
-<script src="../../shared/sia_base.js?v=31c2e30c"></script><script src="../../shared/aar_tracks.js?v=f4061047"></script><script src="../../shared/airac.js?v=6d1d8444"></script><script src="../../shared/sticky_frame.js?v=90db4df1"></script>
+<script src="mission_store.js?v=4b918511"></script>
+<script src="../../shared/carto/aero_symbols.js?v=50ad43df"></script><script src="../../shared/carto/vertical_profile.js?v=75163ccf"></script><script src="../../shared/carto/vprof_editor.js?v=e34b66fc"></script><script src="../../AircraftDB/aircraft_db.js"></script><script src="../../shared/flight_performance_model.js?v=55d82d9b"></script><script src="../../AircraftDB/aircraft_perf.js"></script><script src="../../shared/mission_routing.js?v=3cc1352c"></script><script src="../../shared/mission_estimate.js?v=44ce871f"></script><script src="../../shared/mission_exercise.js?v=32a1ef21"></script><script src="../../shared/mission_registry.js?v=96cd68c2"></script>
+<script src="../../shared/sia_base.js?v=0f91238f"></script><script src="../../shared/aar_tracks.js?v=32606456"></script><script src="../../shared/airac.js?v=1fa4a088"></script><script src="../../shared/sticky_frame.js?v=90db4df1"></script>
 <style data-layer="app">
 @layer app {
   :root {
@@ -1370,7 +1370,14 @@ function applyProfileToUi() {
   syncElementBoxes();
   renderZonePick()
 }
-const PROFILE_ELEMENTS = ['airwaysLow', 'airwaysHigh', 'airwayLabels', 'vrpPoints', 'vrpLabels', 'zoneAbbrev', 'cityLabelMin', 'urbanStyle', 'urbanMin', 'agglos', 'sites', 'reserves', 'zoneLabelsShow', 'zoneOpacity', 'adLabels', 'navLabels', 'roseSize', 'navIls', 'zoneLimitsShow', 'zoneSmallCross', 'adPublic', 'adRestricted', 'adState', 'adHeli', 'adStrip', 'adControl', 'navVor', 'navTacan', 'navDme', 'navNdb', 'icaoStyle', 'zoneFloor', 'zoneCeil', 'aerodromes', 'navaids', 'obstacles', 'obstacleMin', 'turningPoints', 'aarTracks', 'missionZones', 'graticule', 'graticuleLabels', 'graticuleFont', 'graticuleColor', 'mora', 'zoneFont', 'zoneColor', 'pointFont', 'pointColor', 'pointFill', 'pointMarker', 'cityFont', 'cityColor', 'moraFont', 'moraColor', 'moraOpacity', 'moraSpacing', 'summitFont', 'summitColor'];
+const PROFILE_ELEMENTS = ['airwaysLow', 'airwaysHigh', 'airwayLabels', 'vrpPoints', 'vrpLabels', 'zoneAbbrev', 'cityLabelMin', 'urbanStyle',
+  'urbanMin', 'agglos', 'sites', 'reserves', 'zoneLabelsShow', 'zoneOpacity', 'adLabels', 'navLabels', 'roseSize', 'navIls',
+  'zoneLimitsShow', 'zoneSmallCross', 'adPublic', 'adRestricted', 'adState', 'adHeli', 'adStrip', 'adControl', 'navVor', 'navTacan',
+  'navDme', 'navNdb', 'icaoStyle', 'zoneFloor', 'zoneCeil', 'aerodromes', 'navaids', 'obstacles', 'obstacleMin', 'turningPoints',
+  'aarTracks', 'missionZones', 'graticule', 'graticuleLabels', 'graticuleFont', 'graticuleColor', 'mora', 'zoneFont', 'zoneColor',
+  'pointFont', 'pointColor', 'pointFill', 'pointMarker', 'cityFont', 'cityColor', 'moraFont', 'moraColor', 'moraOpacity', 'moraSpacing',
+  'summitFont', 'summitColor'
+];
 // Élément d'affichage d'une carte : valeur enregistrée dans son profil, sinon valeur par défaut de la page.
 function el(def, id) {
   const v = profileForMap(def)?.elements?.[id],
@@ -1378,7 +1385,8 @@ function el(def, id) {
   if (v !== undefined) return v;
   return defaultOf(input)
 }
-const defaultOf = input => input.type === 'checkbox' ? input.defaultChecked : input.tagName === 'SELECT' ? ([...input.options].find(o => o.defaultSelected) || input.options[0])?.value : input.defaultValue;
+const defaultOf = input => input.type === 'checkbox' ? input.defaultChecked : input.tagName === 'SELECT' ? ([...input.options].find(o => o
+  .defaultSelected) || input.options[0])?.value : input.defaultValue;
 // Coche d'une famille de zones : toutes / aucune / partielle (état intermédiaire).
 function syncElementBoxes() {
   for (const box of document.querySelectorAll('.elemBox[data-elem]')) box.classList.toggle('off', !$(box.dataset.elem).checked);
@@ -1507,8 +1515,18 @@ function renderSiaBaseLine(b) {
   }).then(o => {
     if (o && !aero) {
       el.innerHTML = `${esc(T(['Base SIA : à reconstruire (format mis à jour : gestionnaires des zones, voies aériennes) — ici, ou dans', 'SIA database: to rebuild (updated format: area managers, airways) — here, or in', 'SIA-Datenbank: neu aufbauen (Format aktualisiert: Zonenverwalter, Luftstraßen) — hier oder unter', 'Base SIA: a reconstruir (formato actualizado: gestores de zonas, aerovías) — aquí o en']))} ${upd}. ${btn}`;
-      window.AppFramework?.notify?.(T(['Base SIA à reconstruire (format mis à jour) : « Construire la base maintenant » ou Paramètres › Maintenance.', 'SIA database to rebuild (updated format): “Build the database now” or Settings › Maintenance.', 'SIA-Datenbank neu aufbauen (Format aktualisiert): „Datenbank jetzt aufbauen“ oder Einstellungen › Wartung.', 'Base SIA a reconstruir (formato actualizado): «Construir la base ahora» o Ajustes › Mantenimiento.']), 'warn')
-    } else if (!o) window.AppFramework?.notify?.(T(['Base SIA absente de ce navigateur : « Construire la base maintenant » (bloc Mission) ou Paramètres › Maintenance.', 'SIA database missing from this browser: “Build the database now” (Mission block) or Settings › Maintenance.', 'SIA-Datenbank fehlt in diesem Browser: „Datenbank jetzt aufbauen“ (Block Mission) oder Einstellungen › Wartung.', 'Base SIA ausente de este navegador: «Construir la base ahora» (bloque Misión) o Ajustes › Mantenimiento.']), 'warn')
+      window.AppFramework?.notify?.(T([
+        'Base SIA à reconstruire (format mis à jour) : « Construire la base maintenant » ou Paramètres › Maintenance.',
+        'SIA database to rebuild (updated format): “Build the database now” or Settings › Maintenance.',
+        'SIA-Datenbank neu aufbauen (Format aktualisiert): „Datenbank jetzt aufbauen“ oder Einstellungen › Wartung.',
+        'Base SIA a reconstruir (formato actualizado): «Construir la base ahora» o Ajustes › Mantenimiento.'
+      ]), 'warn')
+    } else if (!o) window.AppFramework?.notify?.(T([
+      'Base SIA absente de ce navigateur : « Construire la base maintenant » (bloc Mission) ou Paramètres › Maintenance.',
+      'SIA database missing from this browser: “Build the database now” (Mission block) or Settings › Maintenance.',
+      'SIA-Datenbank fehlt in diesem Browser: „Datenbank jetzt aufbauen“ (Block Mission) oder Einstellungen › Wartung.',
+      'Base SIA ausente de este navegador: «Construir la base ahora» (bloque Misión) o Ajustes › Mantenimiento.'
+    ]), 'warn')
   }).catch(() => {})
 }
 
@@ -1580,7 +1598,9 @@ async function relireOnOpen() {
   }, {
     once: true
   });
-  basePanel.setMessage('<span class="err">Cliquer « Relire le dossier » : le navigateur demande de confirmer l’accès au dossier SIA, puis la base est relue (quelques secondes).</span>')
+  basePanel.setMessage(
+    '<span class="err">Cliquer « Relire le dossier » : le navigateur demande de confirmer l’accès au dossier SIA, puis la base est relue (quelques secondes).</span>'
+    )
 }
 const txt = (node, local) => {
   const e = node.getElementsByTagNameNS('*', local)[0];
@@ -1593,7 +1613,8 @@ function after(text, key, start = 0) {
     m = r.exec(text.slice(start));
   return m ? m[1].trim() : ''
 }
-const keyNorm = s => String(s ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
+const keyNorm = s => String(s ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(
+  /^_|_$/g, '');
 const looseNumber = v => {
   if (typeof v === 'number') return v;
   const m = String(v ?? '').replace(/\s/g, '').replace(',', '.').match(/[-+]?\d+(?:\.\d+)?/);
@@ -1693,7 +1714,9 @@ function stripMarkdown(s) {
 function parseMission(text) {
   const title = stripMarkdown((text.match(/^#{1,2}\s+(.+)$/m) || [, 'Mission'])[1]),
     points = [];
-  const targetBlock = (text.match(/^\s*TARGET\s*:\s*\r?\n([\s\S]*?)(?=^\s*(?:TURNING POINTS|POINTS TOURNANTS|RDV|ZONE|MAPS TO PRODUCE|MAPS|NOTES)\s*:\s*$|(?![\s\S]))/mi) || [])[1] || '';
+  const targetBlock = (text.match(
+    /^\s*TARGET\s*:\s*\r?\n([\s\S]*?)(?=^\s*(?:TURNING POINTS|POINTS TOURNANTS|RDV|ZONE|MAPS TO PRODUCE|MAPS|NOTES)\s*:\s*$|(?![\s\S]))/mi
+    ) || [])[1] || '';
   if (targetBlock) addPoint(points, {
     id: 'TARGET',
     name: after(targetBlock, 'NAME') || after(targetBlock, 'NOM') || 'Cible',
@@ -1764,7 +1787,8 @@ function parseMission(text) {
         type: keyNorm(file)
       })
     }
-  const target = points.find(p => /^(?:TARGET|CIBLE)$/i.test(p.id)) || points.find(p => /^DESTINATION/i.test(p.id)) || points.find(p => /destination|arriv/i.test(p.name));
+  const target = points.find(p => /^(?:TARGET|CIBLE)$/i.test(p.id)) || points.find(p => /^DESTINATION/i.test(p.id)) || points.find(p =>
+    /destination|arriv/i.test(p.name));
   for (const map of maps)
     if (!map.center && target && /(?:cible|target|detail|destination)/i.test(map.file + ' ' + map.type)) map.center = {
       lat: target.lat,
@@ -1799,7 +1823,8 @@ function missionZones(root, meta) {
       c = addPoint([], z.centre ?? z.center ?? z),
       r = looseNumber(z.radius_km ?? z.rayon_km ?? z.radius),
       role = String(z.role || ''),
-      kind = String(z.kind || (/recherche|search/i.test(role + ' ' + (z.name || '')) ? 'search' : /interdi|exclu|évit/i.test(role) ? 'exclusion' : 'mission')).toLowerCase(),
+      kind = String(z.kind || (/recherche|search/i.test(role + ' ' + (z.name || '')) ? 'search' : /interdi|exclu|évit/i.test(role) ?
+        'exclusion' : 'mission')).toLowerCase(),
       lat = c?.lat ?? (poly.length ? poly.reduce((a, q) => a + q.lat, 0) / poly.length : NaN),
       lon = c?.lon ?? (poly.length ? poly.reduce((a, q) => a + q.lon, 0) / poly.length : NaN);
     if (!Number.isFinite(lat) || !Number.isFinite(lon) || (poly.length < 3 && !(r > 0))) return null;
@@ -1854,7 +1879,8 @@ function parseMissionYaml(text) {
     if (z.id && !refs.has(keyNorm(z.id))) refs.set(keyNorm(z.id), z);
     if (z.name && !refs.has(keyNorm(z.name))) refs.set(keyNorm(z.name), z)
   }
-  const fallback = refs.get('target') || refs.get('cible') || refs.get('destination') || points.find(p => /^TARGET|CIBLE$/i.test(p.id)) || points[points.length - 1] || null;
+  const fallback = refs.get('target') || refs.get('cible') || refs.get('destination') || points.find(p => /^TARGET|CIBLE$/i.test(p.id)) ||
+    points[points.length - 1] || null;
   let rawMaps = root.maps ?? root.cartes ?? root.map_outputs ?? meta.maps ?? meta.cartes ?? [];
   rawMaps = asList(rawMaps);
   const maps = rawMaps.map((value, i) => {
@@ -1880,7 +1906,8 @@ function parseMissionYaml(text) {
   const zoneRaw = root.zone ?? root.mission_zone ?? meta.zone ?? {},
     zonePoint = addPoint([], zoneRaw),
     radius = looseNumber(zoneRaw.radius_km ?? zoneRaw.rayon_km ?? zoneRaw.radius ?? zoneRaw.rayon),
-    title = String(root.title ?? root.titre ?? meta.title ?? meta.titre ?? [meta.type, meta.id ?? meta.number].filter(v => v !== undefined && v !== '').join(' ') ?? 'Mission YAML');
+    title = String(root.title ?? root.titre ?? meta.title ?? meta.titre ?? [meta.type, meta.id ?? meta.number].filter(v => v !==
+      undefined && v !== '').join(' ') ?? 'Mission YAML');
   return {
     title: title || 'Mission YAML',
     points,
@@ -1904,7 +1931,8 @@ function parseMissionYaml(text) {
 }
 
 function parseMissionInput(text) {
-  const yamlLike = /^\s*[\[{]/.test(text) || (!/^\s*#/m.test(text) && /^\s*(?:---\s*$|schema(?:_version)?\s*:|mission\s*:|turning_points\s*:|maps\s*:|cartes\s*:)/m.test(text));
+  const yamlLike = /^\s*[\[{]/.test(text) || (!/^\s*#/m.test(text) &&
+    /^\s*(?:---\s*$|schema(?:_version)?\s*:|mission\s*:|turning_points\s*:|maps\s*:|cartes\s*:)/m.test(text));
   return yamlLike ? parseMissionYaml(text) : parseMission(text)
 }
 let obstacleMax = {};
@@ -1938,7 +1966,8 @@ const zoneNorm = v => String(v ?? '').normalize('NFD').replace(/[\u0300-\u036f]/
 // ===== Sélection des zones, aérodromes et balises =====
 // Liste blanche / noire d'un profil (ancien format texte accepté).
 function zoneListOf(p) {
-  return Array.isArray(p?.zoneList) ? p.zoneList : (p?.allZones === false ? String(p?.zoneList || '').split(/\r?\n|,/).map(x => x.trim()).filter(Boolean) : [])
+  return Array.isArray(p?.zoneList) ? p.zoneList : (p?.allZones === false ? String(p?.zoneList || '').split(/\r?\n|,/).map(x => x.trim())
+    .filter(Boolean) : [])
 }
 // Identifiant de base d'une zone : numéro de tête (« 166 A1 » → 166, « 1 /2 » → 1) ou nom sans son numéro
 // final (« BEZIERS 2 » → BEZIERS). « R 166 * » : toutes les zones R 166 (A1, A2, B, C…), pas R 1660 ;
@@ -2070,7 +2099,8 @@ function renderZonePick() {
     black = zoneModeValue === 'black';
   $('zoneMode').textContent = black ? 'Liste noire' : 'Liste blanche';
   $('zoneMode').classList.toggle('black', black);
-  $('zoneModeHelp').textContent = black ? 'Toutes les zones des familles cochées, sauf celles de la liste.' : zoneItems.length ? 'Seules les zones de la liste sont tracées.' : 'Liste vide : toutes les zones des familles cochées.';
+  $('zoneModeHelp').textContent = black ? 'Toutes les zones des familles cochées, sauf celles de la liste.' : zoneItems.length ?
+    'Seules les zones de la liste sont tracées.' : 'Liste vide : toutes les zones des familles cochées.';
   zoneItems.sort(zoneSort);
   $('zoneChips').innerHTML = zoneItems.map((q, i) => {
     const hits = airspaces.filter(a => zoneHit(a, q)),
@@ -2165,14 +2195,16 @@ function renderPick(list) {
   const mode = box.querySelector('[data-pick-mode]');
   mode.textContent = black ? 'Liste noire' : 'Liste blanche';
   mode.classList.toggle('black', black);
-  box.querySelector('[data-pick-help]').textContent = black ? 'Tous sauf ceux de la liste.' : st.items.length ? 'Seulement ceux de la liste.' : 'Liste vide : tous (catégories cochées).';
+  box.querySelector('[data-pick-help]').textContent = black ? 'Tous sauf ceux de la liste.' : st.items.length ?
+    'Seulement ceux de la liste.' : 'Liste vide : tous (catégories cochées).';
   box.querySelector('[data-pick-chips]').innerHTML = st.items.map((q, i) => {
     const n = pool.filter(x => pickHit(list, x, q)).length;
     return`<li class="${n?'':'none'}">${esc(q)} <span class="small">${n}</span><button type="button" data-pick-remove="${i}">×</button></li>`
   }).join('');
-  $(list + 'Options').innerHTML = pool.filter(x => !st.items.some(q => pickHit(list, x, q))).map(pickLabel[list]).sort((a, b) => a.localeCompare(b, 'fr', {
-    numeric: true
-  })).map(v => `<option value="${esc(v)}">`).join('')
+  $(list + 'Options').innerHTML = pool.filter(x => !st.items.some(q => pickHit(list, x, q))).map(pickLabel[list]).sort((a, b) => a
+    .localeCompare(b, 'fr', {
+      numeric: true
+    })).map(v => `<option value="${esc(v)}">`).join('')
 }
 
 function pickCommit(list) {
@@ -2213,7 +2245,8 @@ document.addEventListener('keydown', e => {
   }
 });
 document.addEventListener('input', e => {
-  if (e.target.matches?.('[data-pick-input]') && e.inputType === 'insertReplacementText') setTimeout(() => e.target.closest('.pickList').querySelector('[data-pick-add]').click())
+  if (e.target.matches?.('[data-pick-input]') && e.inputType === 'insertReplacementText') setTimeout(() => e.target.closest('.pickList')
+    .querySelector('[data-pick-add]').click())
 });
 
 function zoneCommit() {
@@ -2266,7 +2299,8 @@ function fitGeo(pts, margin = .12, minKm = 10) {
       lon: (Math.min(...lo) + Math.max(...lo)) / 2
     },
     k = 111.32 * Math.cos(c.lat * Math.PI / 180);
-  return geoBoxAround(c, Math.max(minKm, (Math.max(...lo) - Math.min(...lo)) * k * (1 + 2 * margin)), Math.max(minKm / OUT_RATIO, (Math.max(...la) - Math.min(...la)) * 111.32 * (1 + 2 * margin)))
+  return geoBoxAround(c, Math.max(minKm, (Math.max(...lo) - Math.min(...lo)) * k * (1 + 2 * margin)), Math.max(minKm / OUT_RATIO, (Math.max(
+    ...la) - Math.min(...la)) * 111.32 * (1 + 2 * margin)))
 }
 /** Points d'emprise d'une zone de mission (sommets du polygone, ou bords du cercle). */
 const zoneExtent = z => z.points?.length ? z.points : z.radiusKm ? [{
@@ -2314,7 +2348,8 @@ function mapGeoBbox(map) {
 // ===== Fonds de carte MapLibre =====
 // Chargement paresseux de la bibliothèque (fichier local).
 function ensureMapLibre() {
-  return window.maplibregl ? Promise.resolve(window.maplibregl) : Promise.reject(Error('Moteur MapLibre local absent : vérifie que maplibre-gl.js et maplibre-gl.css se trouvent à côté de map_parser.html.'))
+  return window.maplibregl ? Promise.resolve(window.maplibregl) : Promise.reject(Error(
+    'Moteur MapLibre local absent : vérifie que maplibre-gl.js et maplibre-gl.css se trouvent à côté de map_parser.html.'))
 }
 
 function mapSourceFor(mapDef) {
@@ -2393,7 +2428,8 @@ function applyLayerGroups(map, mapDef) {
     if (!src) continue;
     let group = Object.keys(layerGroups).find(g => layerGroups[g].test(src));
     if (group === 'land' && /residential|urban|built|settlement/i.test(layer.id)) group = 'urban';
-    if (group === 'urban' && !/residential|urban|built|settlement|landuse/i.test(layer.id + ' ' + JSON.stringify(layer.filter || ''))) group = 'land';
+    if (group === 'urban' && !/residential|urban|built|settlement|landuse/i.test(layer.id + ' ' + JSON.stringify(layer.filter || '')))
+      group = 'land';
     if (/^(poi|pois|addresses|housenumber)$/.test(src)) map.setLayoutProperty(layer.id, 'visibility', 'none');
     else if (group) map.setLayoutProperty(layer.id, 'visibility', group !== 'urban' && osmGroupEnabled(group, mapDef) ? 'visible' : 'none')
   }
@@ -2429,7 +2465,9 @@ function addExtraLayers(map, mapDef) {
   if (osmGroupEnabled('contours', mapDef) && !map.getSource('contours')) {
     map.addSource('contours', {
       type: 'raster',
-      tiles: ['https://a.tile.opentopomap.org/{z}/{x}/{y}.png', 'https://b.tile.opentopomap.org/{z}/{x}/{y}.png', 'https://c.tile.opentopomap.org/{z}/{x}/{y}.png'],
+      tiles: ['https://a.tile.opentopomap.org/{z}/{x}/{y}.png', 'https://b.tile.opentopomap.org/{z}/{x}/{y}.png',
+        'https://c.tile.opentopomap.org/{z}/{x}/{y}.png'
+      ],
       tileSize: 256,
       maxzoom: 17
     });
@@ -2501,7 +2539,9 @@ function osmStyleBase(mapDef) {
     sources: {
       topo: {
         type: 'raster',
-        tiles: ['https://a.tile.opentopomap.org/{z}/{x}/{y}.png', 'https://b.tile.opentopomap.org/{z}/{x}/{y}.png', 'https://c.tile.opentopomap.org/{z}/{x}/{y}.png'],
+        tiles: ['https://a.tile.opentopomap.org/{z}/{x}/{y}.png', 'https://b.tile.opentopomap.org/{z}/{x}/{y}.png',
+          'https://c.tile.opentopomap.org/{z}/{x}/{y}.png'
+        ],
         tileSize: 256,
         maxzoom: 17,
         attribution: '© OpenStreetMap contributors, SRTM | © OpenTopoMap (CC-BY-SA)'
@@ -2551,7 +2591,9 @@ function osmStyleBase(mapDef) {
   if (osmGroupEnabled('contours', mapDef)) {
     sources.contours = {
       type: 'raster',
-      tiles: ['https://a.tile.opentopomap.org/{z}/{x}/{y}.png', 'https://b.tile.opentopomap.org/{z}/{x}/{y}.png', 'https://c.tile.opentopomap.org/{z}/{x}/{y}.png'],
+      tiles: ['https://a.tile.opentopomap.org/{z}/{x}/{y}.png', 'https://b.tile.opentopomap.org/{z}/{x}/{y}.png',
+        'https://c.tile.opentopomap.org/{z}/{x}/{y}.png'
+      ],
       tileSize: 256,
       maxzoom: 17,
       attribution: '© OpenTopoMap (CC-BY-SA)'
@@ -2642,7 +2684,9 @@ function osmStyleBase(mapDef) {
     source,
     'source-layer': 'streets',
     paint: {
-      'line-color': ['match', ['get', 'kind'], 'motorway', '#ed956e', 'trunk', '#eeb07a', 'primary', '#f0c58c', 'rail', '#8d8580', '#ffffff'],
+      'line-color': ['match', ['get', 'kind'], 'motorway', '#ed956e', 'trunk', '#eeb07a', 'primary', '#f0c58c', 'rail', '#8d8580',
+        '#ffffff'
+      ],
       'line-width': ['interpolate', ['linear'],
         ['zoom'], 5, .2, 10, .8, 14, 2.6
       ]
@@ -2729,7 +2773,8 @@ function addInteractiveMissionMarkers(map, mapDef) {
     const size = +el(mapDef, 'pointMarker') || 8,
       font = +el(mapDef, 'pointFont') || 11,
       color = el(mapDef, 'pointColor'),
-      fill = el(mapDef, 'pointFill'); /* points déjà portés par la route éditable (bloc Route, même position à ~100 m près) : pas de second marqueur */
+      fill = el(mapDef,
+      'pointFill'); /* points déjà portés par la route éditable (bloc Route, même position à ~100 m près) : pas de second marqueur */
     const onRoute = (() => {
       let r = [];
       try {
@@ -2812,7 +2857,8 @@ let aarXml = '';
 async function loadAarTracks() {
   if (!window.AarTracks) return;
   try {
-    if (!aarXml) aarXml = await fetch('../../data/sia/miam-enr-5-7-tracks.xml').then(r => r.ok ? r.text() : '').catch(() => '') || await fetch('../../examples/sia/miam-enr-5-7-tracks.xml').then(r => r.ok ? r.text() : '').catch(() => '')
+    if (!aarXml) aarXml = await fetch('../../data/sia/miam-enr-5-7-tracks.xml').then(r => r.ok ? r.text() : '').catch(() => '') ||
+      await fetch('../../examples/sia/miam-enr-5-7-tracks.xml').then(r => r.ok ? r.text() : '').catch(() => '')
   } catch {}
   aarData = aarXml ? AarTracks.parseTrackXml(aarXml).filter(t => t.kind === 'track' && t.ip && t.cp) : [];
   fillAarChoice();
@@ -2864,7 +2910,8 @@ function fillAarChoice() {
   $('aarOptions').innerHTML = `<label class="check"><input type="checkbox" data-aar="__auto"${pick.auto?' checked':''}> Automatique${auto?` (${esc(auto.t.name)})`:' (aucun axe détecté)'}</label>` + aarData.map(t => `<label class="check"><input type="checkbox" data-aar="${esc(t.name)}"${(pick.names||[]).includes(t.name)?' checked':''}> ${esc(t.name)} — ${head(t)}</label>`).join('');
   const chosen = mission ? aarSelected().map(t => t.name) : [];
   $('aarSummary').textContent = chosen.length ? chosen.join(', ') : 'Aucun hippodrome';
-  $('aarStatus').textContent = !aarData.length ? 'Axes ENR 5.7 introuvables : relis le dossier SIA XML (miam-enr-5-7-tracks.xml).' : pick.auto ? (auto ? `Automatique : ${auto.t.name}${auto.hits.length?` (${auto.hits.join(', ')} à moins de 2 km des points de la mission)`:' (nommé dans la mission)'}.` : 'Aucun axe à proximité des points de la mission.') : ''
+  $('aarStatus').textContent = !aarData.length ? 'Axes ENR 5.7 introuvables : relis le dossier SIA XML (miam-enr-5-7-tracks.xml).' : pick
+    .auto ? (auto ? `Automatique : ${auto.t.name}${auto.hits.length?` (${auto.hits.join(', ')} à moins de 2 km des points de la mission)`:' (nommé dans la mission)'}.` : 'Aucun axe à proximité des points de la mission.') : ''
 }
 
 function missionAar(def) {
@@ -3051,7 +3098,9 @@ function addInteractiveAirspaces(map, mapDef) {
     type: 'fill',
     source: 'sia-airspaces',
     paint: {
-      'fill-color': ['match', ['get', 'type'], 'R', '#e45b16', 'D', '#d39b00', 'P', '#c71f37', 'CTR', '#136bb4', 'TMA', '#7354b5', 'SIV', '#188b75', '#555'],
+      'fill-color': ['match', ['get', 'type'], 'R', '#e45b16', 'D', '#d39b00', 'P', '#c71f37', 'CTR', '#136bb4', 'TMA', '#7354b5',
+        'SIV', '#188b75', '#555'
+      ],
       'fill-opacity': .10
     }
   });
@@ -3060,7 +3109,9 @@ function addInteractiveAirspaces(map, mapDef) {
     type: 'line',
     source: 'sia-airspaces',
     paint: {
-      'line-color': ['match', ['get', 'type'], 'R', '#e45b16', 'D', '#d39b00', 'P', '#c71f37', 'CTR', '#136bb4', 'TMA', '#7354b5', 'SIV', '#188b75', '#555'],
+      'line-color': ['match', ['get', 'type'], 'R', '#e45b16', 'D', '#d39b00', 'P', '#c71f37', 'CTR', '#136bb4', 'TMA', '#7354b5',
+        'SIV', '#188b75', '#555'
+      ],
       'line-width': 2
     }
   })
@@ -3388,7 +3439,8 @@ function drawCitiesCanvas(ctx, mapDef, list, scale, W, H) {
     }
     of list) {
     if (q.x < 0 || q.y < 0 || q.x > W || q.y > H) continue;
-    const r = agg ? SiaAero.drawCity(ctx, c.population, q, scale) : (ctx.beginPath(), ctx.arc(q.x, q.y, radius, 0, Math.PI * 2), ctx.fillStyle = color, ctx.fill(), radius);
+    const r = agg ? SiaAero.drawCity(ctx, c.population, q, scale) : (ctx.beginPath(), ctx.arc(q.x, q.y, radius, 0, Math.PI * 2), ctx
+      .fillStyle = color, ctx.fill(), radius);
     if (label) drawHaloText(ctx, c.name, q.x + r + 3 * scale, q.y - r - 3 * scale, font, color)
   }
 }
@@ -3437,8 +3489,11 @@ function drawAeroCanvas(ctx, mapDef, toC, W, H, scale, b, pl) {
     on = id => !!el(mapDef, id),
     ctl = el(mapDef, 'adControl') || 'all';
   // Filtres : catégories d'aérodromes (CAP, restreints, État, hélistations, bandes), contrôle (TWR), types de balises.
-  const adOk = a => inBox(t, a.lat, a.lon) && (a.type === 'HP' ? on('adHeli') : a.type === 'LS' || (!a.hardLen && !a.water) ? on('adStrip') : a.state ? on('adState') : a.public ? on('adPublic') : on('adRestricted')) && (ctl === 'all' || (ctl === 'ctl') === !!a.controlled) && pickOk('ad', a, mapDef);
-  const navOk = n => inBox(t, n.lat, n.lon) && (n.kind === 'ILS' ? on('navIls') : n.kind === 'NDB' ? on('navNdb') : n.kind === 'DME' ? on('navDme') : n.kind === 'TACAN' || n.tacan ? on('navTacan') : on('navVor')) && pickOk('nav', n, mapDef);
+  const adOk = a => inBox(t, a.lat, a.lon) && (a.type === 'HP' ? on('adHeli') : a.type === 'LS' || (!a.hardLen && !a.water) ? on(
+    'adStrip') : a.state ? on('adState') : a.public ? on('adPublic') : on('adRestricted')) && (ctl === 'all' || (ctl === 'ctl') === !!a
+    .controlled) && pickOk('ad', a, mapDef);
+  const navOk = n => inBox(t, n.lat, n.lon) && (n.kind === 'ILS' ? on('navIls') : n.kind === 'NDB' ? on('navNdb') : n.kind === 'DME' ? on(
+    'navDme') : n.kind === 'TACAN' || n.tacan ? on('navTacan') : on('navVor')) && pickOk('nav', n, mapDef);
   const data = {
     aerodromes: ad ? aero.aerodromes.filter(adOk) : [],
     navaids: nv ? aero.navaids.filter(navOk) : [],
@@ -3687,7 +3742,8 @@ function drawUrbanCanvas(ctx, map, mapDef, toC, scale = 1) {
   }
   const min = +el(mapDef, 'urbanMin') || 0,
     b = map.getBounds(),
-    big = cities.filter(c => c.population >= min && c.lat > b.getSouth() - .3 && c.lat < b.getNorth() + .3 && c.lon > b.getWest() - .4 && c.lon < b.getEast() + .4).map(c => ({
+    big = cities.filter(c => c.population >= min && c.lat > b.getSouth() - .3 && c.lat < b.getNorth() + .3 && c.lon > b.getWest() - .4 && c
+      .lon < b.getEast() + .4).map(c => ({
       lat: c.lat,
       lon: c.lon,
       pop: c.population,
@@ -3848,7 +3904,8 @@ function saveVprof() {
         descent_fpm: +$('vprofDesc').value || 800,
         descent_kt: +$('vprofDescKt').value || 160
       };
-      if (!y.vertical_profile.route && !y.vertical_profile.cruise && !y.vertical_profile.ceiling_ft && !y.vertical_profile.floor_ft && !y.vertical_profile.output && vprofDef._profileId === 'vprof') delete y.vertical_profile
+      if (!y.vertical_profile.route && !y.vertical_profile.cruise && !y.vertical_profile.ceiling_ft && !y.vertical_profile.floor_ft && !
+        y.vertical_profile.output && vprofDef._profileId === 'vprof') delete y.vertical_profile
     }, 'Profil vertical enregistré dans la mission.')
   } catch (e) {
     $('vprofStatus').textContent = e.message
@@ -4077,7 +4134,8 @@ function studioExercise() {
   const y = sharedDoc?.yaml,
     X = window.MissionExercise;
   if (!y || !X) return null;
-  const docs = [y, ...(SiaMission.loadBatch()?.docs || []).map(d => d.yaml).filter(d => d && String(d.mission?.id || '') !== String(y.mission?.id || ''))],
+  const docs = [y, ...(SiaMission.loadBatch()?.docs || []).map(d => d.yaml).filter(d => d && String(d.mission?.id || '') !== String(y
+      .mission?.id || ''))],
     ex = X.of(y, docs);
   if (!ex) return null;
   const org = X.isOrganisation(y),
@@ -4133,7 +4191,8 @@ function exerciseLayer(layer) {
   }
 }
 /** Route d'une mission (départ, points tournants, arrivée) en lat/lon. */
-const missionSeq = y => [y?.origin, ...(y?.turning_points || []), y?.destination].filter(p => p && Number.isFinite(+p.lat) && Number.isFinite(+p.lon)).map(p => ({
+const missionSeq = y => [y?.origin, ...(y?.turning_points || []), y?.destination].filter(p => p && Number.isFinite(+p.lat) && Number
+  .isFinite(+p.lon)).map(p => ({
   lat: +p.lat,
   lon: +p.lon
 }));
@@ -4287,7 +4346,9 @@ function drawTracksCanvas(ctx, toC, scale, pl, mapDef) {
     ctx.beginPath();
     ctx.arc(pts[0].x, pts[0].y, 3.5 * scale, 0, Math.PI * 2);
     ctx.fill();
-    const text = [chiffon && t.callsign ? t.callsign : t.name || t.id, chiffon && t.start ? 'départ ' + t.start : '', t.level, t.speed_kt ? '~' + t.speed_kt + ' kt' : ''].filter(Boolean).join(' · '),
+    const text = [chiffon && t.callsign ? t.callsign : t.name || t.id, chiffon && t.start ? 'départ ' + t.start : '', t.level, t.speed_kt ?
+        '~' + t.speed_kt + ' kt' : ''
+      ].filter(Boolean).join(' · '),
       w = text.length * f * .6,
       r = {
         x0: pts[0].x + 6 * scale,
@@ -4417,7 +4478,8 @@ async function renderVerticalProfile(W, H) {
       elevation: terrainAt,
       ...vprofRates(),
       airspaces: selectedAirspaces(vprofDef),
-      obstacles: el(vprofDef, 'obstacles') ? (aero?.obstacles || []).filter(o => (o.hgt || 0) >= (+el(vprofDef, 'obstacleMin') || 0)) : []
+      obstacles: el(vprofDef, 'obstacles') ? (aero?.obstacles || []).filter(o => (o.hgt || 0) >= (+el(vprofDef, 'obstacleMin') || 0)) :
+        []
     }),
     c = document.createElement('canvas');
   c.width = W;
@@ -4476,7 +4538,9 @@ async function drawVprofPreview() {
     ensureVprofEditor();
     vprofEditor?.update(data);
     $('vprofStatus').textContent = `${(data.total/1852).toFixed(1)} NM, ${data.crossed.length} traversée(s) d’espace, ${data.obstacles.length} obstacle(s) à moins de 1 NM.`;
-    if (!data.plan) $('vprofStatus').insertAdjacentHTML('beforeend', ' <span class="err">Trajectoire non tracée : ni niveau de croisière, ni altitude dans le cheminement (« /3000 », « /FL65 » ou « N0450F350 »).</span>')
+    if (!data.plan) $('vprofStatus').insertAdjacentHTML('beforeend',
+      ' <span class="err">Trajectoire non tracée : ni niveau de croisière, ni altitude dans le cheminement (« /3000 », « /FL65 » ou « N0450F350 »).</span>'
+      )
   } catch (e) {
     $('vprofStatus').innerHTML = `<span class="err">${esc(e.message)}</span>`
   }
@@ -4496,7 +4560,9 @@ function exerciseMapDefs() {
     id = String(y.mission?.id || 'mission'),
     T = c.ex.tracks,
     box = (ids, ctx = true, minKm = 15) => {
-      const pts = [...T.filter(t => ids.includes(t.id)).flatMap(t => t.points || []), ...(ctx ? (c.me ? [y] : c.docs).flatMap(d => [...(d.zones || []).map(z => z.centre || z.center), ...(d.rendezvous || [])]) : [])].filter(p => p && Number.isFinite(+p.lat) && Number.isFinite(+p.lon));
+      const pts = [...T.filter(t => ids.includes(t.id)).flatMap(t => t.points || []), ...(ctx ? (c.me ? [y] : c.docs).flatMap(d => [...(d
+        .zones || []).map(z => z.centre || z.center), ...(d.rendezvous || [])]) : [])].filter(p => p && Number.isFinite(+p.lat) && Number
+        .isFinite(+p.lon));
       if (!pts.length) return {};
       const la = pts.map(p => +p.lat),
         lo = pts.map(p => +p.lon),
@@ -4504,7 +4570,8 @@ function exerciseMapDefs() {
           lat: (Math.min(...la) + Math.max(...la)) / 2,
           lon: (Math.min(...lo) + Math.max(...lo)) / 2
         },
-        span = Math.max((Math.max(...la) - Math.min(...la)) * 111, (Math.max(...lo) - Math.min(...lo)) * 111 * Math.cos(m.lat * Math.PI / 180));
+        span = Math.max((Math.max(...la) - Math.min(...la)) * 111, (Math.max(...lo) - Math.min(...lo)) * 111 * Math.cos(m.lat * Math.PI /
+          180));
       return {
         center: {
           lat: +m.lat.toFixed(5),
@@ -4623,7 +4690,8 @@ $('saveStudio').onclick = async () => {
       if (kind === 'ok') window.AppFramework?.notify?.(text, 'ok') // échec : relayé en notification par la zone d'état
     };
   if (!y) return report('Aucune mission chargée dans le studio : rien à enregistrer (ouvrir ou coller une mission).', 'err');
-  if (!C) return report('Enregistrement impossible : registre des missions non chargé dans cette page (shared/mission_registry.js).', 'err');
+  if (!C) return report('Enregistrement impossible : registre des missions non chargé dans cette page (shared/mission_registry.js).',
+    'err');
   const btn = $('saveStudio');
   btn.disabled = true;
   try {
@@ -4686,7 +4754,8 @@ $('vprofToPlanner').onclick = () => {
     window.AppFramework?.notify?.('Route non transmise : ' + e.message, 'err');
     return
   }
-  window.open(new URL('../planner/flight_performance_planner.html?handoff=1' + (ac ? '&aircraft=' + encodeURIComponent(ac) : ''), location.href).href, '_blank')
+  window.open(new URL('../planner/flight_performance_planner.html?handoff=1' + (ac ? '&aircraft=' + encodeURIComponent(ac) : ''), location
+    .href).href, '_blank')
 };
 $('vprofIcaoCopy').onclick = () => {
   const r = vprofIcao();
@@ -4694,7 +4763,8 @@ $('vprofIcaoCopy').onclick = () => {
     window.AppFramework?.notify?.('Route : au moins deux points connus de la base SIA.', 'warn');
     return
   }
-  navigator.clipboard?.writeText(r.full).then(() => window.AppFramework?.notify?.(`Plan de vol OACI copié : ${r.full}`, 'ok'), () => window.prompt('Plan de vol OACI', r.full))
+  navigator.clipboard?.writeText(r.full).then(() => window.AppFramework?.notify?.(`Plan de vol OACI copié : ${r.full}`, 'ok'), () => window.prompt(
+    'Plan de vol OACI', r.full))
 };
 /* Route du dernier OFP SimBrief (identifiant du profil pilote commun) : départ, groupe vitesse / niveau, route ATC (case 15), destination. */
 $('routeSimbrief').onclick = async () => {
@@ -4865,7 +4935,8 @@ setTimeout(ensureVprofProfile);
   fillPreviewMaps = function() {
     const keep = $('previewMap').value;
     fill.apply(this, arguments);
-    if (mission && !$('previewMap').querySelector('option[value=vprof]')) $('previewMap').insertAdjacentHTML('beforeend', '<option value="vprof">profil_vertical.png</option>');
+    if (mission && !$('previewMap').querySelector('option[value=vprof]')) $('previewMap').insertAdjacentHTML('beforeend',
+      '<option value="vprof">profil_vertical.png</option>');
     if (keep === 'vprof') $('previewMap').value = 'vprof'
   }
 } {
@@ -5097,7 +5168,8 @@ function assemblyMapDef() {
     file: 'carte_assemblage',
     type: 'assembly',
     _profileId: general?._profileId || $('activeProfile').value,
-    bbox: [Math.min(...boxes.map(b => b.w)), Math.min(...boxes.map(b => b.s)), Math.max(...boxes.map(b => b.e)), Math.max(...boxes.map(b => b.n))]
+    bbox: [Math.min(...boxes.map(b => b.w)), Math.min(...boxes.map(b => b.s)), Math.max(...boxes.map(b => b.e)), Math.max(...boxes.map(b =>
+      b.n))]
   }
 }
 const crcTable = (() => {
@@ -5190,7 +5262,8 @@ function download(blob, name) {
 async function refreshOsmAssemblyPreview() {
   if (!(mission && outputMaps().length)) return;
   const def = assemblyMapDef(),
-    key = mapSourceFor(def) + '|' + mission.title + '|' + outputMaps().map(m => m.file + ':' + m._profileId).join('|') + '|' + JSON.stringify(profileForMap(def));
+    key = mapSourceFor(def) + '|' + mission.title + '|' + outputMaps().map(m => m.file + ':' + m._profileId).join('|') + '|' + JSON
+    .stringify(profileForMap(def));
   if (key === assemblyRenderKey) return;
   assemblyRenderKey = key;
   $('assemblyStatus').textContent = 'Création de la carte d’assemblage…';
@@ -5220,7 +5293,8 @@ function updateGenerate() {
   $('previewAll').disabled = !ready;
   if (hasMission) refreshOsmAssemblyPreview();
   else $('assemblyStatus').textContent = 'Elle s’affichera automatiquement dès que le fond et la mission seront disponibles.';
-  $('result').textContent = hasMission ? 'Chaque carte utilise son profil sauvegardé ; la carte d’assemblage reprend le profil de la carte générale.' : '';
+  $('result').textContent = hasMission ?
+    'Chaque carte utilise son profil sauvegardé ; la carte d’assemblage reprend le profil de la carte générale.' : '';
 }
 // Mission partagée : document commun au générateur et au studio (mission_store.js). Les réglages propres
 // au studio (profil par carte, emprise en cours de modification, hippodromes) sont conservés par nom de carte.
@@ -5284,7 +5358,8 @@ const currentMap = () => $('previewMap').value === 'vprof' ? vprofDef : mission?
 // ===== Cartes de la mission : carte choisie, vue, ajout / suppression, emprise =====
 function syncActiveToMap() {
   const m = currentMap();
-  if (m && m._profileId && m._profileId !== 'off' && displayProfiles.some(p => p.id === m._profileId) && $('activeProfile').value !== m._profileId) {
+  if (m && m._profileId && m._profileId !== 'off' && displayProfiles.some(p => p.id === m._profileId) && $('activeProfile').value !== m
+    ._profileId) {
     readProfileFromUi();
     $('activeProfile').value = m._profileId;
     applyProfileToUi()
@@ -5593,7 +5668,8 @@ function drawOperationCanvas(ctx, toC, scale, pl) {
   const f = Math.max(10, 11 * scale),
     pad = 6 * scale,
     lh = f * 1.45,
-    w = Math.max(...operationOverlay.routes.map(r => ctx.measureText ? (ctx.font = `600 ${f}px Arial`, ctx.measureText(r.label).width) : r.label.length * f * .6)) + pad * 3 + 18 * scale,
+    w = Math.max(...operationOverlay.routes.map(r => ctx.measureText ? (ctx.font = `600 ${f}px Arial`, ctx.measureText(r.label).width) : r.label
+      .length * f * .6)) + pad * 3 + 18 * scale,
     h = operationOverlay.routes.length * lh + pad * 2 + lh;
   ctx.fillStyle = 'rgba(255,255,255,.92)';
   ctx.strokeStyle = '#44525b';
@@ -5640,7 +5716,8 @@ function operationContext() {
       }
     }
     const y = d.yaml || {},
-      seq = [y.origin, ...(y.turning_points || []), y.destination].filter(p => p && Number.isFinite(+p.lat) && Number.isFinite(+p.lon)).map(p => ({
+      seq = [y.origin, ...(y.turning_points || []), y.destination].filter(p => p && Number.isFinite(+p.lat) && Number.isFinite(+p.lon))
+      .map(p => ({
         lat: +p.lat,
         lon: +p.lon
       })),
@@ -5954,7 +6031,8 @@ $('profileEditor').addEventListener('change', e => {
         ...aarPickOf()
       };
       if (e.target.dataset.aar === '__auto') pick.auto = e.target.checked;
-      else pick.names = e.target.checked ? [...new Set([...(pick.names || []), e.target.dataset.aar])] : (pick.names || []).filter(n => n !== e.target.dataset.aar);
+      else pick.names = e.target.checked ? [...new Set([...(pick.names || []), e.target.dataset.aar])] : (pick.names || []).filter(n =>
+        n !== e.target.dataset.aar);
       mission._aar = pick
     }
     fillAarChoice();
@@ -5963,7 +6041,8 @@ $('profileEditor').addEventListener('change', e => {
     schedulePreview();
     return
   }
-  if (e.target.id === 'activeProfile' || e.target.id === 'previewMap' || e.target.id === 'zoneInput' || e.target.closest('#zoneAliases,#zonePaste,.pickList')) return;
+  if (e.target.id === 'activeProfile' || e.target.id === 'previewMap' || e.target.id === 'zoneInput' || e.target.closest(
+      '#zoneAliases,#zonePaste,.pickList')) return;
   syncLayerAvailability();
   readProfileFromUi();
   renderZonePick();
@@ -5980,7 +6059,8 @@ $('zoneInput').addEventListener('keydown', e => {
 });
 // Choix dans la liste de complétion : ajout direct.
 $('zoneInput').addEventListener('input', e => {
-  if (e.inputType === 'insertReplacementText' || e.inputType === undefined && [...$('zoneOptions').options].some(o => o.value === e.target.value)) zoneAdd()
+  if (e.inputType === 'insertReplacementText' || e.inputType === undefined && [...$('zoneOptions').options].some(o => o.value === e
+      .target.value)) zoneAdd()
 });
 $('zoneChips').addEventListener('click', e => {
   const i = e.target.dataset?.zoneRemove;
@@ -6339,7 +6419,8 @@ function offerStoreMaps() {
   b.className = 'primary';
   b.dataset.icon = 'folder';
   b.textContent = 'Ranger les cartes dans le dossier';
-  b.title = 'Enregistrer les cartes générées dans data/missions/…/cartes/ (visibles dans le registre) ; demande l’accès au dossier des missions si besoin';
+  b.title =
+    'Enregistrer les cartes générées dans data/missions/…/cartes/ (visibles dans le registre) ; demande l’accès au dossier des missions si besoin';
   b.onclick = async () => {
     b.disabled = true;
     try {
@@ -6516,7 +6597,8 @@ $('generate').onclick = async () => {
         }
       }
     }
-    $('result').innerHTML = (files.length ? `<span class="ok">${report.length-failed.length}/${report.length} carte(s) générée(s)${failed.length||partial.length?' — rapport_generation.txt joint au ZIP':''}.</span>` : '<span class="err">Aucune carte générée.</span>') + (failed.length || partial.length ? '<ul>' + report.filter(r => !r.ok || r.warning).map(r => `<li class="${r.ok?'':'err'}">${esc(r.file)} : ${esc(r.ok?'fond partiel — '+r.warning:r.error)}${r.ok||r.file==='dossier de la mission'?'':' — <button type="button" data-retry="'+esc(r.file)+'">Réessayer seule</button>'}</li>`).join('') + '</ul>' : '');
+    $('result').innerHTML = (files.length ? `<span class="ok">${report.length-failed.length}/${report.length} carte(s) générée(s)${failed.length||partial.length?' — rapport_generation.txt joint au ZIP':''}.</span>` : '<span class="err">Aucune carte générée.</span>') + (failed.length || partial
+      .length ? '<ul>' + report.filter(r => !r.ok || r.warning).map(r => `<li class="${r.ok?'':'err'}">${esc(r.file)} : ${esc(r.ok?'fond partiel — '+r.warning:r.error)}${r.ok||r.file==='dossier de la mission'?'':' — <button type="button" data-retry="'+esc(r.file)+'">Réessayer seule</button>'}</li>`).join('') + '</ul>' : '');
     if (storeResult) {
       $('result').insertAdjacentHTML('beforeend', `<p class="${storeResult.ok?'ok':'err'}">Dossier de la mission : ${esc(storeResult.text)}</p>`);
       if (storeResult.ok) window.AppFramework?.notify?.(`Cartes rangées ${storeResult.text}`, 'ok');
@@ -6524,7 +6606,8 @@ $('generate').onclick = async () => {
         offerStoreMaps();
         window.AppFramework?.notify?.(`Cartes générées mais pas rangées dans le dossier de la mission (${storeResult.text}) : bouton « Ranger les cartes » dans le pied de page.`, 'warn')
       }
-    } else if (files.length && !window.MissionRegistryCore && !window.SIA_MISSION_NS) window.AppFramework?.notify?.('Cartes générées (ZIP) : module du registre absent, pas de rangement dans le dossier de la mission.', 'warn')
+    } else if (files.length && !window.MissionRegistryCore && !window.SIA_MISSION_NS) window.AppFramework?.notify?.(
+      'Cartes générées (ZIP) : module du registre absent, pas de rangement dans le dossier de la mission.', 'warn')
   } catch (e) {
     $('result').innerHTML = `<span class="err">${esc(e.message)}</span>`
   } finally {
@@ -6569,13 +6652,16 @@ function enlargePreview(src, alt) {
   $('previewDialog').showModal()
 }
 $('previewGallery').addEventListener('click', e => {
-  if (e.target.matches('img')) return enlargePreview(e.target.src, e.target.alt); /* designs à cadre : clic sur le carnet (fermé, ou marge du carnet ouvert) = actualiser les aperçus */
-  if (document.documentElement.dataset.skeuo === 'frame' && (e.target === e.currentTarget || e.target.matches('.previewCard')) && !$('previewAll').disabled) $('previewAll').click()
+  if (e.target.matches('img')) return enlargePreview(e.target.src, e.target
+  .alt); /* designs à cadre : clic sur le carnet (fermé, ou marge du carnet ouvert) = actualiser les aperçus */
+  if (document.documentElement.dataset.skeuo === 'frame' && (e.target === e.currentTarget || e.target.matches('.previewCard')) && !$(
+      'previewAll').disabled) $('previewAll').click()
 });
 $('generalPreview').addEventListener('click', e => enlargePreview(e.target.src, e.target.alt));
 $('assemblyPreview').addEventListener('click', e => enlargePreview(e.target.src, e.target.alt));
 $('closePreview').onclick = () => $('previewDialog').close();
-$('previewDialog').addEventListener('click', () => $('previewDialog').close()); /* un clic sur la carte agrandie (ou autour) la ferme */ ; // Sorties (PNG / SVG, largeur) : menu ☰ › Page ; choix mémorisés.
+$('previewDialog').addEventListener('click', () => $('previewDialog')
+.close()); /* un clic sur la carte agrandie (ou autour) la ferme */ ; // Sorties (PNG / SVG, largeur) : menu ☰ › Page ; choix mémorisés.
 const outputPrefs = (() => {
     try {
       return {
@@ -6615,7 +6701,8 @@ function addOutputActions(nav) {
       width: ['Largeur PNG (px)', 'PNG width (px)', 'PNG-Breite (px)', 'Ancho PNG (px)']
     },
     li = () => Math.max(0, ['fr', 'en', 'de', 'es'].indexOf(window.RepositoryNav?.getLanguage?.() || 'fr'));
-  box.innerHTML = '<div class="repo-sep"></div><div class="repo-group" data-t="group"></div><label class="repo-profile-field"><span>PNG</span><input type="checkbox" data-out="png"></label><label class="repo-profile-field"><span data-t="svg"></span><input type="checkbox" data-out="svg"></label><label class="repo-profile-field"><span data-t="width"></span><input type="number" min="400" max="5000" step="100" data-out="width" inputmode="numeric"></label>';
+  box.innerHTML =
+    '<div class="repo-sep"></div><div class="repo-group" data-t="group"></div><label class="repo-profile-field"><span>PNG</span><input type="checkbox" data-out="png"></label><label class="repo-profile-field"><span data-t="svg"></span><input type="checkbox" data-out="svg"></label><label class="repo-profile-field"><span data-t="width"></span><input type="number" min="400" max="5000" step="100" data-out="width" inputmode="numeric"></label>';
   const paintTxt = () => box.querySelectorAll('[data-t]').forEach(e => {
     e.textContent = TXT[e.dataset.t][li()]
   });
@@ -6727,7 +6814,7 @@ applyOutputPrefs();;
   }
 })();
 </script>
-<script src="../../shared/repository_nav.js?v=eceaf3f4"></script>
-<script src="../../shared/app_framework.js?v=003108e7"></script>
-<script src="../../shared/content_i18n.js?v=7afecb78"></script><script src="sia_i18n.js?v=79f7a92e"></script>
+<script src="../../shared/repository_nav.js?v=ad188ce2"></script>
+<script src="../../shared/app_framework.js?v=5653237c"></script>
+<script src="../../shared/content_i18n.js?v=efa62576"></script><script src="sia_i18n.js?v=e4046ef4"></script>
 </body></html>

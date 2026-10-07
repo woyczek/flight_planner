@@ -62,7 +62,8 @@
   };
 
   const style = document.createElement('style');
-  style.textContent = '.repo-profile-field{display:grid;grid-template-columns:1fr 120px;align-items:center;gap:8px;padding:5px 8px;font-size:12px}' +
+  style.textContent =
+    '.repo-profile-field{display:grid;grid-template-columns:1fr 120px;align-items:center;gap:8px;padding:5px 8px;font-size:12px}' +
     '.repo-profile-field input{width:100%;box-sizing:border-box;padding:5px 7px;border-radius:6px;border:1px solid color-mix(in srgb,var(--repo-bar-text) 25%,transparent);background:color-mix(in srgb,var(--repo-bar-text) 8%,transparent);color:inherit;font:inherit}';
   document.head.append(style);
 

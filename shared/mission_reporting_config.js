@@ -67,7 +67,9 @@
     // v3 : registres dans data/cr/ (dépôt de données) ; puis à côté de la page (anciennes installations)
     const data = new URL('../data/cr/', moduleUrl).href,
       sub = (configKey === 'gaarLedgerName' ? 'FIRE/' : 'HEMS/') + leaf;
-    return [...new Set([configured && new URL(configured, data).href, name && new URL(name, data).href, new URL(sub, data).href, configured, name, sub].filter(Boolean))];
+    return [...new Set([configured && new URL(configured, data).href, name && new URL(name, data).href, new URL(sub, data).href,
+      configured, name, sub
+    ].filter(Boolean))];
   };
   /** Met en cache le registre lu, le transmet à la page (événement mission-ledger-autoload), propose le prochain n° de mission (hors mode modification) et relance le rendu du rapport. */
   const publish = (configKey, filename, text, source) => {
@@ -84,7 +86,8 @@
     // En mode modification (mission_edit.js), le n° de la mission éditée est conservé.
     if (mission && !window.MissionEditMode && (!mission.value || /-001$/.test(mission.value))) {
       const prefix = configKey === 'gaarLedgerName' ? 'GAAR' : 'HEMS';
-      const numbers = [...String(text).matchAll(new RegExp('(?:^|[\\r\\n])"?' + prefix + '-(\\d+)', 'g'))].map(match => Number(match[1]));
+      const numbers = [...String(text).matchAll(new RegExp('(?:^|[\\r\\n])"?' + prefix + '-(\\d+)', 'g'))].map(match => Number(match[
+        1]));
       if (numbers.length) {
         mission.value = prefix + '-' + String(Math.max(...numbers) + 1).padStart(3, '0');
         mission.dispatchEvent(new Event('input', {
@@ -103,7 +106,8 @@
     const config = read(),
       name = config[configKey],
       stored = cached(configKey);
-    if (stored?.text && (!name || stored.filename === name || stored.filename?.endsWith('/' + String(name).replace(/^.*[\\/]/, '')))) {
+    if (stored?.text && (!name || stored.filename === name || stored.filename?.endsWith('/' + String(name).replace(/^.*[\\/]/,
+      '')))) {
       publish(configKey, stored.filename || name, stored.text, 'cache');
       return true;
     }
@@ -156,8 +160,10 @@
     if (/^https?:\/\//i.test(row.trackerUrl || '')) return link(row.trackerUrl, 'Trace');
     const network = String(row.onlineNetwork || '').toUpperCase(),
       prefs = read();
-    if ((network === 'IVAO' || (!network && row.ivaoId)) && (row.ivaoId || prefs.ivaoId)) return link(ivaoTrackerUrl(row.ivaoId || prefs.ivaoId), 'Trace IVAO');
-    if ((network === 'VATSIM' || (!network && row.vatsimId)) && (row.vatsimId || prefs.vatsimId)) return link(vatsimTrackerUrl(row.vatsimId || prefs.vatsimId), 'Trace VATSIM');
+    if ((network === 'IVAO' || (!network && row.ivaoId)) && (row.ivaoId || prefs.ivaoId)) return link(ivaoTrackerUrl(row.ivaoId || prefs
+      .ivaoId), 'Trace IVAO');
+    if ((network === 'VATSIM' || (!network && row.vatsimId)) && (row.vatsimId || prefs.vatsimId)) return link(vatsimTrackerUrl(row
+      .vatsimId || prefs.vatsimId), 'Trace VATSIM');
     return '—';
   };
   // Registre CSV (séparateur ;) à partir d'un en-tête et de lignes objets.
@@ -207,7 +213,8 @@
     const config = read();
     const ledger = document.getElementById('ledgerName');
     if (ledger) {
-      if (!ledger.dataset.missionConfig) ledger.dataset.missionConfig = location.pathname.includes('/FIRE/') ? 'gaarLedgerName' : 'ledgerName';
+      if (!ledger.dataset.missionConfig) ledger.dataset.missionConfig = location.pathname.includes('/FIRE/') ? 'gaarLedgerName' :
+        'ledgerName';
       const ledgerKey = ledger.dataset.missionConfig;
       if (config[ledgerKey]) ledger.value = config[ledgerKey];
       ledger.addEventListener('input', () => {
@@ -235,7 +242,8 @@
       input.addEventListener('change', save);
     });
     // Seuls les noms de registre désignent un fichier à charger (pas les ID IVAO / VATSIM).
-    const keys = [...new Set([...document.querySelectorAll('[data-mission-config]')].map(input => input.dataset.missionConfig))].filter(isLedgerKey);
+    const keys = [...new Set([...document.querySelectorAll('[data-mission-config]')].map(input => input.dataset.missionConfig))]
+      .filter(isLedgerKey);
     keys.forEach(load);
   });
 })();

@@ -98,7 +98,8 @@
     }
   };
   /** Texte de l'interface (TEXT) dans la langue de la page, variables {x} remplacées. */
-  const t = (key, vars = {}) => String((TEXT[nav.getLanguage?.()] || TEXT.fr)[key] || TEXT.fr[key]).replace(/\{(\w+)\}/g, (_, k) => vars[k] ?? '');
+  const t = (key, vars = {}) => String((TEXT[nav.getLanguage?.()] || TEXT.fr)[key] || TEXT.fr[key]).replace(/\{(\w+)\}/g, (_, k) => vars[
+    k] ?? '');
 
   // ---- js-yaml (livré avec le site) chargé à la demande
   /** Bibliothèque js-yaml, chargée à la demande (livrée avec le site). */
@@ -160,7 +161,8 @@
   // Choix du dossier : sélecteur ouvert sur le dossier actuel (composant FileAccess).
   async function chooseFolder() {
     if (window.FileAccess) return window.FileAccess.pickFolder('__store');
-    if (!window.showDirectoryPicker) throw new Error(window.RepositoryKit?.noFolderAccess?.() || 'File System Access API (Chrome / Edge)');
+    if (!window.showDirectoryPicker) throw new Error(window.RepositoryKit?.noFolderAccess?.() ||
+      'File System Access API (Chrome / Edge)');
     const current = await idbGet('folder:__store');
     const handle = await window.showDirectoryPicker({
       id: 'defa-local-store',
@@ -574,7 +576,9 @@
   // ---- menu ☰ › Données locales
   const box = document.createElement('div');
   box.id = 'repoLocalStore';
-  box.innerHTML = '<div class="repo-sep"></div><div class="repo-group" data-store-text="title"></div>' + ['save', 'restore', 'folder', 'download', 'file'].map(k => `<button type="button" class="repo-action" data-store="${k}" data-store-text="${k}"></button>`).join('') +
+  box.innerHTML = '<div class="repo-sep"></div><div class="repo-group" data-store-text="title"></div>' + ['save', 'restore', 'folder',
+      'download', 'file'
+    ].map(k => `<button type="button" class="repo-action" data-store="${k}" data-store-text="${k}"></button>`).join('') +
     '<div class="repo-store-status" style="padding:4px 8px;font-size:11px;opacity:.8"></div><input type="file" accept=".yaml,.yml,text/yaml" hidden>';
   const actions = nav.menu.querySelector('.repo-page-actions');
   nav.menu.insertBefore(box, actions || null);
@@ -668,7 +672,8 @@
   // Préférences d'affichage (disposition, design, icônes, couleurs, langue, onglets, séparateurs, colonnes, cadrans,
   // formats de sortie, copie automatique de l'état du planificateur) : sauvegardées, mais sans compter comme des
   // modifications à sauvegarder.
-  const DISPLAY = /^(?:repositoryFramework:|missionReportingPeriod:|missionGlobalReporting:|missionReportingSource:|repositoryDesign$|repositoryIcons$|repositoryColors$|repositorySidenav$|repositoryDecor$|repositoryLanguageMode$|landingLanguageModeV\d+$|LandingPerformanceDashboardPrefsV\d+$|landingAnalysisSize$|flightPerfColumns$|flightPerfFuelGauge$|flightPerfState\.backup$|siaProfileTab$|siaProfileSplit$|siaOutput$|missionCoreLastFamily:|suiteBackupLog:|suiteUpdateCheck:|suiteGitInfo:|siaBaseInfo:)/;
+  const DISPLAY =
+    /^(?:repositoryFramework:|missionReportingPeriod:|missionGlobalReporting:|missionReportingSource:|repositoryDesign$|repositoryIcons$|repositoryColors$|repositorySidenav$|repositoryDecor$|repositoryLanguageMode$|landingLanguageModeV\d+$|LandingPerformanceDashboardPrefsV\d+$|landingAnalysisSize$|flightPerfColumns$|flightPerfFuelGauge$|flightPerfState\.backup$|siaProfileTab$|siaProfileSplit$|siaOutput$|missionCoreLastFamily:|suiteBackupLog:|suiteUpdateCheck:|suiteGitInfo:|siaBaseInfo:)/;
   const tracked = key => key && key !== META && key !== PENDING && !SKIP.some(re => re.test(key)) && !DISPLAY.test(key);
   const lastHit = new Map(),
     pending = () => Number(localStorage.getItem(PENDING) || 0);
@@ -694,10 +699,17 @@
     if (had) hit(key);
   };
   const BTN = {
-    fr: ['Sauvegarder dans le dossier', '{n} modifications depuis la dernière sauvegarde ({last}) — écrire les données locales dans le dossier de sauvegarde', 'dernière :'],
+    fr: ['Sauvegarder dans le dossier',
+      '{n} modifications depuis la dernière sauvegarde ({last}) — écrire les données locales dans le dossier de sauvegarde',
+      'dernière :'
+    ],
     en: ['Save to folder', '{n} changes since the last backup ({last}) — write local data to the backup folder', 'last:'],
-    de: ['Im Ordner sichern', '{n} Änderungen seit der letzten Sicherung ({last}) — lokale Daten in den Sicherungsordner schreiben', 'letzte:'],
-    es: ['Guardar en la carpeta', '{n} cambios desde la última copia ({last}) — escribir los datos locales en la carpeta de copia', 'última:']
+    de: ['Im Ordner sichern', '{n} Änderungen seit der letzten Sicherung ({last}) — lokale Daten in den Sicherungsordner schreiben',
+      'letzte:'
+    ],
+    es: ['Guardar en la carpeta', '{n} cambios desde la última copia ({last}) — escribir los datos locales en la carpeta de copia',
+      'última:'
+    ]
   };
   const button = document.createElement('button');
   button.type = 'button';
@@ -705,7 +717,9 @@
   button.hidden = true;
   const tools = document.querySelector('.repo-header-tools');
   if (tools) tools.prepend(button);
-  if (!document.getElementById('repoBackupStyle')) document.head.insertAdjacentHTML('beforeend', '<style id="repoBackupStyle">.repo-backup-button{display:inline-flex;align-items:center;gap:5px;white-space:nowrap;cursor:pointer}.repo-backup-button:not([hidden]){display:inline-flex}.repo-backup-button[hidden]{display:none}.repo-backup-button .repo-svg{flex:none;display:block}html:not([data-skeuo]) .repo-backup-button{height:32px;border:0!important;border-radius:7px!important;padding:4px 10px!important;background:#dc2626!important;color:#fff!important;font:600 12px/1 Inter,system-ui,Segoe UI,Arial,sans-serif}html:not([data-skeuo]) .repo-backup-button:hover{background:#b91c1c!important}@media print{.repo-backup-button{display:none!important}}</style>');
+  if (!document.getElementById('repoBackupStyle')) document.head.insertAdjacentHTML('beforeend',
+    '<style id="repoBackupStyle">.repo-backup-button{display:inline-flex;align-items:center;gap:5px;white-space:nowrap;cursor:pointer}.repo-backup-button:not([hidden]){display:inline-flex}.repo-backup-button[hidden]{display:none}.repo-backup-button .repo-svg{flex:none;display:block}html:not([data-skeuo]) .repo-backup-button{height:32px;border:0!important;border-radius:7px!important;padding:4px 10px!important;background:#dc2626!important;color:#fff!important;font:600 12px/1 Inter,system-ui,Segoe UI,Arial,sans-serif}html:not([data-skeuo]) .repo-backup-button:hover{background:#b91c1c!important}@media print{.repo-backup-button{display:none!important}}</style>'
+    );
 
   /** Bouton rouge « Sauvegarder (n) · dernière : … » de l'en-tête : affiché à partir de REMIND modifications non sauvegardées. */
   function reminder() {

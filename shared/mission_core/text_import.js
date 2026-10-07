@@ -63,7 +63,8 @@
       equipment: window.MissionFpl?.equipmentCodes(equip, transponder, rules) || [],
       dep: dep === 'ZZZZ' ? up(item18.DEP) : dep,
       eobt: hm(eobt),
-      speed: sl[1] ? (sl[1][0] === 'K' ? Math.round(Number(sl[1].slice(1)) / 1.852) : sl[1][0] === 'N' ? Number(sl[1].slice(1)) : null) : null,
+      speed: sl[1] ? (sl[1][0] === 'K' ? Math.round(Number(sl[1].slice(1)) / 1.852) : sl[1][0] === 'N' ? Number(sl[1].slice(1)) : null) :
+        null,
       altitude: sl[2] ? window.MissionFpl?.level(sl[2]) || sl[2] : '',
       route: route15.join(' '),
       waypoints: [...new Set(window.MissionAssist?.routePoints(route15.join(' ')) || [])],
@@ -187,7 +188,8 @@
   /** Liste de sessions copiée depuis le tracker IVAO : vols reconnus (indicatif, pilote, trajet, début, fin, durée). */
   function parseIvaoList(text) {
     const t = flat(text); // lignes reconnues à leur forme (indicatif, pilote (VID), trajet, début, fin, durée)
-    const re = /\b([A-Z0-9]{2,10}) ([^()\d]{2,40}?) \((\d{3,8})\) ([A-Z0-9]{3,4}) ?- ?([A-Z0-9]{3,4}) (\d{4}-\d{2}-\d{2}) (\d{2}:\d{2}:\d{2}) (\d{4}-\d{2}-\d{2}) (\d{2}:\d{2}:\d{2}) (\d{2}:\d{2})\b/g;
+    const re =
+      /\b([A-Z0-9]{2,10}) ([^()\d]{2,40}?) \((\d{3,8})\) ([A-Z0-9]{3,4}) ?- ?([A-Z0-9]{3,4}) (\d{4}-\d{2}-\d{2}) (\d{2}:\d{2}:\d{2}) (\d{4}-\d{2}-\d{2}) (\d{2}:\d{2}:\d{2}) (\d{2}:\d{2})\b/g;
     const out = [];
     let m;
     while ((m = re.exec(t))) out.push({
@@ -391,7 +393,9 @@
       if (result.takeoffTime) set('timeline.takeoff', clock(result.takeoffTime, tz));
       if (result.landingTime) set('timeline.landing', clock(result.landingTime, tz));
       const track = analyseTrack(result.samples, rotary);
-      if (result.tracksMissing) notes.push('table des positions absente (section « Tracks Table » repliée) : utilisez le favori « → CR », qui déplie tout, ou dépliez « Tracks Table » avant de copier');
+      if (result.tracksMissing) notes.push(
+        'table des positions absente (section « Tracks Table » repliée) : utilisez le favori « → CR », qui déplie tout, ou dépliez « Tracks Table » avant de copier'
+        );
       if (result.connected) setDate(day(result.connected, tz));
       // Début / fin de mission ≈ connexion / déconnexion (période volée sur le réseau).
       if (result.connected) set('timeline.missionStart', clock(result.connected, tz));

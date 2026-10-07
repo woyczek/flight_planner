@@ -110,8 +110,9 @@
       ...a
     }) => a);
     return [PERSONAL, render(PERSONAL_COMMENT, {
-      rows: list
-    }, 'dataOverride:personalAircraft:v1', 'window.DEFA_PERSONAL_AIRCRAFT = data.rows; window.DEFA_PERSONAL_AIRCRAFT_META = META;')];
+        rows: list
+      }, 'dataOverride:personalAircraft:v1',
+      'window.DEFA_PERSONAL_AIRCRAFT = data.rows; window.DEFA_PERSONAL_AIRCRAFT_META = META;')];
   }
 
   // ---- types d'aéronefs : base OACI (AircraftDB/aircraft_db.js) et alias (H145 → EC45…)
@@ -160,7 +161,11 @@
       const D = window.DefaSite,
         s = D ? await D.status() : null;
       if (!s) {
-        el.innerHTML = esc(t(['Mise à jour depuis le site : lanceur absent — « Coller la page Flotte du site… » ci-dessus.', 'Update from the website: no launcher — “Paste the website Fleet page…” above.', 'Aktualisierung von der Website: kein Starter — „Flotte-Seite der Website einfügen…“ oben.', 'Actualización desde el sitio: sin lanzador — «Pegar la página Flota del sitio…» arriba.']));
+        el.innerHTML = esc(t(['Mise à jour depuis le site : lanceur absent — « Coller la page Flotte du site… » ci-dessus.',
+          'Update from the website: no launcher — “Paste the website Fleet page…” above.',
+          'Aktualisierung von der Website: kein Starter — „Flotte-Seite der Website einfügen…“ oben.',
+          'Actualización desde el sitio: sin lanzador — «Pegar la página Flota del sitio…» arriba.'
+        ]));
         return;
       }
       const page = (p, def) => {
@@ -179,7 +184,10 @@
         const r = await D.refresh({
           force: true
         });
-        if (r?.busy) notify(t(['Une mise à jour depuis le site est déjà en cours.', 'An update from the website is already running.', 'Eine Aktualisierung von der Website läuft bereits.', 'Ya hay una actualización desde el sitio en curso.']), 'info');
+        if (r?.busy) notify(t(['Une mise à jour depuis le site est déjà en cours.',
+          'An update from the website is already running.', 'Eine Aktualisierung von der Website läuft bereits.',
+          'Ya hay una actualización desde el sitio en curso.'
+        ]), 'info');
         else if (r?.error) notify(r.error, 'error');
         siteLine();
       };
@@ -189,7 +197,8 @@
       const el = host.querySelector('[data-fr-types]');
       if (!el?.isConnected) return;
       clearTimeout(acTimer);
-      const codes = [...new Set([...rows.map(r => r.type), ...list.map(a => a.type)].map(c => String(c || '').toUpperCase().trim()).filter(c => /^[A-Z0-9]{2,4}$/.test(c)))],
+      const codes = [...new Set([...rows.map(r => r.type), ...list.map(a => a.type)].map(c => String(c || '').toUpperCase().trim())
+          .filter(c => /^[A-Z0-9]{2,4}$/.test(c)))],
         unknown = codes.filter(c => !known(c));
       const s = await acApi();
       const running = s?.state === 'running',
@@ -290,8 +299,14 @@
   window.SettingsPanels?.add({
     id: 'myAircraft',
     group: window.SettingsPanels.L('Mon profil', 'My profile', 'Mein Profil', 'Mi perfil'),
-    title: window.SettingsPanels.L('Mes appareils (reporting)', 'My aircraft (reporting)', 'Meine Luftfahrzeuge (Reporting)', 'Mis aeronaves (reporting)'),
-    intro: window.SettingsPanels.L('Appareils que vous avez pilotés ou reportés (CR où votre trigramme figure dans l’équipage) ; coche grisée : appareil de la flotte DEFA ou non.', 'Aircraft you flew or reported (reports with your trigram in the crew); greyed box: DEFA fleet aircraft or not.', 'Luftfahrzeuge, die Sie geflogen oder berichtet haben (Berichte mit Ihrem Kürzel in der Besatzung); grau: Luftfahrzeug der DEFA-Flotte oder nicht.', 'Aeronaves que ha pilotado o reportado (informes con su trigrama en la tripulación); casilla gris: aeronave de la flota DEFA o no.'),
+    title: window.SettingsPanels.L('Mes appareils (reporting)', 'My aircraft (reporting)', 'Meine Luftfahrzeuge (Reporting)',
+      'Mis aeronaves (reporting)'),
+    intro: window.SettingsPanels.L(
+      'Appareils que vous avez pilotés ou reportés (CR où votre trigramme figure dans l’équipage) ; coche grisée : appareil de la flotte DEFA ou non.',
+      'Aircraft you flew or reported (reports with your trigram in the crew); greyed box: DEFA fleet aircraft or not.',
+      'Luftfahrzeuge, die Sie geflogen oder berichtet haben (Berichte mit Ihrem Kürzel in der Besatzung); grau: Luftfahrzeug der DEFA-Flotte oder nicht.',
+      'Aeronaves que ha pilotado o reportado (informes con su trigrama en la tripulación); casilla gris: aeronave de la flota DEFA o no.'
+      ),
     render(body) {
       mountMine(body);
     }

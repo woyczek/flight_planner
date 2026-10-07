@@ -23,11 +23,14 @@
     id: 'flight',
     title: L('Vol', 'Flight', 'Flug', 'Vuelo'),
     items: [
-      opt('IFR', L('IFR', 'IFR')), opt('VFR', L('VFR', 'VFR')), opt('SVFR', L('VFR spécial', 'Special VFR', 'Sonder-VFR', 'VFR especial')),
-      opt('NIGHT', L('Nuit', 'Night', 'Nacht', 'Noche')), opt('NVG', L('NVG (jumelles de vision nocturne)', 'NVG (night vision goggles)', 'NVG (Nachtsichtbrillen)', 'NVG (gafas de visión nocturna)')),
+      opt('IFR', L('IFR', 'IFR')), opt('VFR', L('VFR', 'VFR')), opt('SVFR', L('VFR spécial', 'Special VFR', 'Sonder-VFR',
+        'VFR especial')),
+      opt('NIGHT', L('Nuit', 'Night', 'Nacht', 'Noche')), opt('NVG', L('NVG (jumelles de vision nocturne)',
+        'NVG (night vision goggles)', 'NVG (Nachtsichtbrillen)', 'NVG (gafas de visión nocturna)')),
       opt('IMC', L('IMC', 'IMC')), opt('LOW_LEVEL', L('Très basse altitude', 'Low level', 'Tiefflug', 'Baja cota')),
       opt('TERRAIN_FOLLOWING', L('Suivi de terrain', 'Terrain following', 'Geländefolgeflug', 'Seguimiento del terreno')),
-      opt('STOL', L('STOL (décollage/atterrissage courts)', 'STOL (short take-off and landing)', 'STOL (Kurzstart und -landung)', 'STOL (despegue y aterrizaje cortos)')),
+      opt('STOL', L('STOL (décollage/atterrissage courts)', 'STOL (short take-off and landing)', 'STOL (Kurzstart und -landung)',
+        'STOL (despegue y aterrizaje cortos)')),
       opt('UNPREPARED_STRIP', L('Terrain non préparé', 'Unprepared strip', 'Unbefestigte Piste', 'Pista no preparada')),
       opt('MOUNTAIN', L('Montagne', 'Mountain', 'Gebirge', 'Montaña')), opt('POLAR', L('Polaire', 'Polar', 'Polar', 'Polar'))
     ]
@@ -36,8 +39,10 @@
     title: L('Voilure tournante', 'Rotary wing', 'Drehflügler', 'Ala rotatoria'),
     when: ctx => ctx.categories.has('rotary'),
     items: [
-      opt('HOIST', L('Treuillage (HOIST)', 'Hoist', 'Winde (HOIST)', 'Grúa (HOIST)')), opt('RAPPEL', L('Descente en rappel', 'Rappel', 'Abseilen', 'Rápel')),
-      opt('FAST_ROPE', L('Corde lisse (fast rope)', 'Fast rope', 'Fast Rope', 'Cuerda rápida')), opt('SLING', L('Élingue (charge sous élingue)', 'Sling load', 'Außenlast', 'Carga en eslinga')),
+      opt('HOIST', L('Treuillage (HOIST)', 'Hoist', 'Winde (HOIST)', 'Grúa (HOIST)')), opt('RAPPEL', L('Descente en rappel',
+        'Rappel', 'Abseilen', 'Rápel')),
+      opt('FAST_ROPE', L('Corde lisse (fast rope)', 'Fast rope', 'Fast Rope', 'Cuerda rápida')), opt('SLING', L(
+        'Élingue (charge sous élingue)', 'Sling load', 'Außenlast', 'Carga en eslinga')),
       opt('HOVER_EXIT', L('Sortie en stationnaire', 'Hover exit', 'Ausstieg im Schwebeflug', 'Salida en estacionario')),
       opt('SHIPBOARD', L('Appontage', 'Shipboard operations', 'Bordbetrieb', 'Operaciones embarcadas')),
       opt('CONFINED_AREA', L('Zone exiguë', 'Confined area', 'Beengter Landeplatz', 'Zona confinada'))
@@ -49,22 +54,29 @@
     items: [
       opt('PARADROP', L('Largage de personnel', 'Personnel paradrop', 'Personenabsetzen', 'Lanzamiento de personal')),
       opt('AIRDROP', L('Largage de matériel', 'Cargo airdrop', 'Lastenabwurf', 'Lanzamiento de carga')),
-      opt('LAPES', L('LAPES (extraction à très basse altitude)', 'LAPES (low-altitude extraction)', 'LAPES (Tiefflug-Lastenabsetzen)', 'LAPES (extracción a baja altura)')),
-      opt('SHORT_FIELD', L('Piste courte', 'Short field', 'Kurzpiste', 'Pista corta')), opt('ROUGH_FIELD', L('Piste sommaire', 'Rough field', 'Behelfspiste', 'Pista irregular')),
+      opt('LAPES', L('LAPES (extraction à très basse altitude)', 'LAPES (low-altitude extraction)',
+        'LAPES (Tiefflug-Lastenabsetzen)', 'LAPES (extracción a baja altura)')),
+      opt('SHORT_FIELD', L('Piste courte', 'Short field', 'Kurzpiste', 'Pista corta')), opt('ROUGH_FIELD', L('Piste sommaire',
+        'Rough field', 'Behelfspiste', 'Pista irregular')),
       opt('MARITIME_LOW_LEVEL', L('Très basse altitude maritime', 'Maritime low level', 'Seetiefflug', 'Baja cota marítima'))
     ]
   }, {
     id: 'sensors',
     title: L('Capteurs', 'Sensors', 'Sensoren', 'Sensores'),
     items: [
-      opt('EO', L('EO (électro-optique)', 'EO (electro-optical)', 'EO (elektrooptisch)', 'EO (electroóptico)')), opt('IR', L('IR (infrarouge)', 'IR (infrared)', 'IR (Infrarot)', 'IR (infrarrojo)')),
-      opt('EO_IR', L('Boule EO/IR', 'EO/IR turret', 'EO/IR-Turm', 'Torreta EO/IR')), opt('RADAR', L('Radar', 'Radar', 'Radar', 'Radar')),
-      opt('WEATHER_RADAR', L('Radar météo', 'Weather radar', 'Wetterradar', 'Radar meteorológico')), opt('MARITIME_RADAR', L('Radar maritime', 'Maritime radar', 'Seeradar', 'Radar marítimo')),
-      opt('SAR_RADAR', L('Radar à synthèse d’ouverture', 'Synthetic aperture radar', 'Radar mit synthetischer Apertur', 'Radar de apertura sintética')),
+      opt('EO', L('EO (électro-optique)', 'EO (electro-optical)', 'EO (elektrooptisch)', 'EO (electroóptico)')), opt('IR', L(
+        'IR (infrarouge)', 'IR (infrared)', 'IR (Infrarot)', 'IR (infrarrojo)')),
+      opt('EO_IR', L('Boule EO/IR', 'EO/IR turret', 'EO/IR-Turm', 'Torreta EO/IR')), opt('RADAR', L('Radar', 'Radar', 'Radar',
+        'Radar')),
+      opt('WEATHER_RADAR', L('Radar météo', 'Weather radar', 'Wetterradar', 'Radar meteorológico')), opt('MARITIME_RADAR', L(
+        'Radar maritime', 'Maritime radar', 'Seeradar', 'Radar marítimo')),
+      opt('SAR_RADAR', L('Radar à synthèse d’ouverture', 'Synthetic aperture radar', 'Radar mit synthetischer Apertur',
+        'Radar de apertura sintética')),
       opt('AIS', L('AIS', 'AIS')), opt('DF', L('Radiogoniométrie', 'Direction finding', 'Funkpeilung', 'Radiogoniometría')),
       opt('LIDAR', L('LiDAR', 'LiDAR')), opt('CAMERA', L('Caméra', 'Camera', 'Kamera', 'Cámara')),
       opt('MULTISPECTRAL', L('Multispectral', 'Multispectral', 'Multispektral', 'Multiespectral')),
-      opt('MISSION_SENSOR', L('Capteur de mission (générique)', 'Mission sensor (generic)', 'Missionssensor (allgemein)', 'Sensor de misión (genérico)'))
+      opt('MISSION_SENSOR', L('Capteur de mission (générique)', 'Mission sensor (generic)', 'Missionssensor (allgemein)',
+        'Sensor de misión (genérico)'))
     ]
   }];
 
@@ -81,13 +93,19 @@
     {
       id: 'fpl',
       unfiltered: true,
-      title: L('Équipements plan de vol (OACI, case 10)', 'Flight plan equipment (ICAO item 10)', 'Flugplanausrüstung (ICAO Feld 10)', 'Equipos del plan de vuelo (OACI, casilla 10)'),
+      title: L('Équipements plan de vol (OACI, case 10)', 'Flight plan equipment (ICAO item 10)', 'Flugplanausrüstung (ICAO Feld 10)',
+        'Equipos del plan de vuelo (OACI, casilla 10)'),
       items: [
-        opt('FPL_VOR_ILS', L('VHF / VOR / ILS (S)', 'VHF / VOR / ILS (S)')), opt('FPL_DME', L('DME (D)', 'DME (D)')), opt('FPL_ADF', L('ADF (F)', 'ADF (F)')),
-        opt('FPL_GNSS', L('GNSS (G)', 'GNSS (G)')), opt('FPL_PBN', L('PBN (R)', 'PBN (R)')), opt('FPL_RVSM', L('RVSM (W)', 'RVSM (W)')),
-        opt('FPL_833', L('VHF 8,33 kHz (Y)', 'VHF 8.33 kHz (Y)')), opt('FPL_HF', L('HF (H)', 'HF (H)')), opt('FPL_UHF', L('UHF (U)', 'UHF (U)')),
-        opt('FPL_CPDLC', L('CPDLC (J)', 'CPDLC (J)')), opt('FPL_ACARS', L('ACARS (E)', 'ACARS (E)')), opt('FPL_SATCOM', L('SATCOM (M)', 'SATCOM (M)')),
-        opt('FPL_MODE_S', L('Transpondeur mode S', 'Mode S transponder', 'Mode-S-Transponder', 'Transpondedor modo S')), opt('FPL_ADSB', L('ADS-B', 'ADS-B')), opt('FPL_ADSC', L('ADS-C', 'ADS-C'))
+        opt('FPL_VOR_ILS', L('VHF / VOR / ILS (S)', 'VHF / VOR / ILS (S)')), opt('FPL_DME', L('DME (D)', 'DME (D)')), opt('FPL_ADF',
+          L('ADF (F)', 'ADF (F)')),
+        opt('FPL_GNSS', L('GNSS (G)', 'GNSS (G)')), opt('FPL_PBN', L('PBN (R)', 'PBN (R)')), opt('FPL_RVSM', L('RVSM (W)',
+          'RVSM (W)')),
+        opt('FPL_833', L('VHF 8,33 kHz (Y)', 'VHF 8.33 kHz (Y)')), opt('FPL_HF', L('HF (H)', 'HF (H)')), opt('FPL_UHF', L('UHF (U)',
+          'UHF (U)')),
+        opt('FPL_CPDLC', L('CPDLC (J)', 'CPDLC (J)')), opt('FPL_ACARS', L('ACARS (E)', 'ACARS (E)')), opt('FPL_SATCOM', L(
+          'SATCOM (M)', 'SATCOM (M)')),
+        opt('FPL_MODE_S', L('Transpondeur mode S', 'Mode S transponder', 'Mode-S-Transponder', 'Transpondedor modo S')), opt(
+          'FPL_ADSB', L('ADS-B', 'ADS-B')), opt('FPL_ADSC', L('ADS-C', 'ADS-C'))
       ]
     }
   ];
@@ -101,40 +119,121 @@
   // en français, anglais, allemand et espagnol (sans accents). Libellés des familles dans les 4 langues.
   const familyLabels = {
     HEMS: ['HEMS / MEDEVAC', 'HEMS / MEDEVAC', 'HEMS / MEDEVAC', 'HEMS / MEDEVAC'],
-    FIRE: ['FIRE / GAAR — sécurité civile', 'FIRE / aerial firefighting', 'FIRE / Waldbrandbekämpfung', 'FIRE / extinción de incendios'],
+    FIRE: ['FIRE / GAAR — sécurité civile', 'FIRE / aerial firefighting', 'FIRE / Waldbrandbekämpfung',
+      'FIRE / extinción de incendios'],
     SAR: ['SAR / récupération de personnel', 'SAR / personnel recovery', 'SAR / Personenbergung', 'SAR / recuperación de personal'],
     AIRLIFT: ['Transport aérien / logistique', 'Airlift / logistics', 'Lufttransport / Logistik', 'Transporte aéreo / logística'],
     AAR: ['Ravitaillement en vol', 'Air-to-air refuelling', 'Luftbetankung', 'Reabastecimiento en vuelo'],
     MARITIME: ['Surveillance maritime', 'Maritime surveillance', 'Seeüberwachung', 'Vigilancia marítima'],
-    HADR: ['Aide humanitaire / évacuation', 'Humanitarian aid / evacuation', 'Humanitäre Hilfe / Evakuierung', 'Ayuda humanitaria / evacuación'],
+    HADR: ['Aide humanitaire / évacuation', 'Humanitarian aid / evacuation', 'Humanitäre Hilfe / Evakuierung',
+      'Ayuda humanitaria / evacuación'
+    ],
     AIRBORNE: ['Largage / aéroporté', 'Airdrop / airborne', 'Abwurf / Luftlande', 'Lanzamiento / aerotransportado'],
-    FI: ['Contrôle en vol des aides radio', 'Flight inspection (navaids)', 'Flugvermessung (Navigationsanlagen)', 'Inspección en vuelo (radioayudas)'],
-    SURVEY: ['Levés / missions scientifiques', 'Survey / scientific missions', 'Vermessung / Forschungsflüge', 'Levantamientos / misiones científicas'],
+    FI: ['Contrôle en vol des aides radio', 'Flight inspection (navaids)', 'Flugvermessung (Navigationsanlagen)',
+      'Inspección en vuelo (radioayudas)'
+    ],
+    SURVEY: ['Levés / missions scientifiques', 'Survey / scientific missions', 'Vermessung / Forschungsflüge',
+      'Levantamientos / misiones científicas'
+    ],
     LE: ['Police / douane / sécurité', 'Police / customs / security', 'Polizei / Zoll / Sicherheit', 'Policía / aduana / seguridad'],
-    ISR: ['Renseignement / reconnaissance', 'Intelligence / reconnaissance', 'Aufklärung / Nachrichtengewinnung', 'Inteligencia / reconocimiento'],
-    COMMAND: ['Commandement / police du ciel / guet aérien', 'Command / air policing / early warning', 'Führung / Luftpolizeidienst / Frühwarnung', 'Mando / policía aérea / alerta temprana'],
-    COMBAT: ['Combat aérien / entraînement chasse', 'Air combat / fighter training', 'Luftkampf / Jagdflugausbildung', 'Combate aéreo / entrenamiento de caza'],
-    SOF: ['Opérations spéciales / tactiques', 'Special / tactical operations', 'Spezial- / taktische Operationen', 'Operaciones especiales / tácticas'],
-    SPECIAL: ['Transport spécial / essais / formation', 'Special transport / trials / training', 'Sondertransport / Erprobung / Ausbildung', 'Transporte especial / ensayos / formación']
+    ISR: ['Renseignement / reconnaissance', 'Intelligence / reconnaissance', 'Aufklärung / Nachrichtengewinnung',
+      'Inteligencia / reconocimiento'
+    ],
+    COMMAND: ['Commandement / police du ciel / guet aérien', 'Command / air policing / early warning',
+      'Führung / Luftpolizeidienst / Frühwarnung', 'Mando / policía aérea / alerta temprana'
+    ],
+    COMBAT: ['Combat aérien / entraînement chasse', 'Air combat / fighter training', 'Luftkampf / Jagdflugausbildung',
+      'Combate aéreo / entrenamiento de caza'
+    ],
+    SOF: ['Opérations spéciales / tactiques', 'Special / tactical operations', 'Spezial- / taktische Operationen',
+      'Operaciones especiales / tácticas'
+    ],
+    SPECIAL: ['Transport spécial / essais / formation', 'Special transport / trials / training',
+      'Sondertransport / Erprobung / Ausbildung', 'Transporte especial / ensayos / formación'
+    ]
   };
   // Description de chaque famille (sous-titre des pages de CR / reporting, survol dans « Nouveau compte rendu »).
   const familyDescriptions = {
-    HEMS: ['Hélicoptère sanitaire : secours primaire, transferts entre hôpitaux, évacuations médicales.', 'Medical helicopter: primary rescue, inter-hospital transfers, medical evacuations.', 'Rettungshubschrauber: Primäreinsätze, Verlegungen zwischen Kliniken, medizinische Evakuierungen.', 'Helicóptero sanitario: rescate primario, traslados entre hospitales, evacuaciones médicas.'],
-    FIRE: ['Lutte contre les feux de forêt : guet armé, largages d’eau ou de retardant, écopages.', 'Aerial firefighting: armed watch, water or retardant drops, scooping.', 'Waldbrandbekämpfung aus der Luft: bewaffnete Beobachtung, Wasser- oder Retardantabwürfe, Wasseraufnahme.', 'Extinción de incendios forestales: vigilancia armada, descargas de agua o retardante, cargas.'],
-    SAR: ['Recherche et sauvetage, récupération de personnel (y compris en milieu hostile).', 'Search and rescue, personnel recovery (including in hostile areas).', 'Suche und Rettung, Personenbergung (auch in feindlichem Gebiet).', 'Búsqueda y salvamento, recuperación de personal (incluso en zona hostil).'],
-    AIRLIFT: ['Transport de passagers et de fret, liaisons, logistique (stratégique, tactique, isolée).', 'Passenger and cargo transport, liaison, logistics (strategic, tactical, remote).', 'Passagier- und Frachttransport, Verbindungsflüge, Logistik (strategisch, taktisch, abgelegen).', 'Transporte de pasajeros y carga, enlaces, logística (estratégica, táctica, aislada).'],
-    AAR: ['Ravitaillement en vol : missions de ravitailleur ou de ravitaillé, hippodromes, carburant transféré.', 'Air-to-air refuelling: tanker or receiver missions, tracks, fuel offloaded.', 'Luftbetankung: Tanker- oder Empfängereinsätze, Racetracks, abgegebener Kraftstoff.', 'Reabastecimiento en vuelo: misiones de cisterna o receptor, circuitos, combustible transferido.'],
-    MARITIME: ['Surveillance et patrouille maritimes : navires, pollution, pêche, lutte sous la mer.', 'Maritime surveillance and patrol: vessels, pollution, fisheries, anti-submarine warfare.', 'Seeüberwachung und Seepatrouille: Schiffe, Verschmutzung, Fischerei, U-Boot-Abwehr.', 'Vigilancia y patrulla marítimas: buques, contaminación, pesca, lucha antisubmarina.'],
-    HADR: ['Aide humanitaire et secours aux populations, évacuation de ressortissants.', 'Humanitarian aid and disaster relief, evacuation of nationals.', 'Humanitäre Hilfe und Katastrophenhilfe, Evakuierung von Staatsangehörigen.', 'Ayuda humanitaria y socorro en catástrofes, evacuación de nacionales.'],
-    AIRBORNE: ['Largage de parachutistes ou de matériel, opérations aéroportées.', 'Paratrooper or cargo drops, airborne operations.', 'Absetzen von Fallschirmjägern oder Material, Luftlandeoperationen.', 'Lanzamiento de paracaidistas o carga, operaciones aerotransportadas.'],
-    FI: ['Contrôle en vol des aides radio (ILS, VOR, DME…) et validation des procédures — pas le contrôle aérien.', 'Flight inspection of navaids (ILS, VOR, DME…) and procedure validation — not air traffic control.', 'Flugvermessung von Navigationsanlagen (ILS, VOR, DME…) und Verfahrensvalidierung — nicht Flugverkehrskontrolle.', 'Inspección en vuelo de radioayudas (ILS, VOR, DME…) y validación de procedimientos — no el control aéreo.'],
-    SURVEY: ['Levés et missions scientifiques : photographie aérienne, cartographie, mesures.', 'Survey and scientific missions: aerial photography, mapping, measurements.', 'Vermessung und Forschungsflüge: Luftbild, Kartierung, Messungen.', 'Levantamientos y misiones científicas: fotografía aérea, cartografía, mediciones.'],
-    LE: ['Missions de police, de douane et de gendarmerie : surveillance, poursuite, frontières.', 'Police, customs and gendarmerie missions: surveillance, pursuit, borders.', 'Polizei-, Zoll- und Gendarmerieeinsätze: Überwachung, Verfolgung, Grenzen.', 'Misiones de policía, aduana y guardia civil: vigilancia, persecución, fronteras.'],
-    ISR: ['Renseignement, surveillance et reconnaissance (y compris drones).', 'Intelligence, surveillance and reconnaissance (including drones).', 'Aufklärung, Überwachung und Nachrichtengewinnung (einschließlich Drohnen).', 'Inteligencia, vigilancia y reconocimiento (incluidos drones).'],
-    COMMAND: ['Commandement aéroporté, guet aérien (AEW), relais, et police du ciel : interception, identification, QRA.', 'Airborne command, early warning (AEW), relay, and air policing: interception, identification, QRA.', 'Luftgestützte Führung, Frühwarnung (AEW), Relais und Luftpolizeidienst: Abfangen, Identifizierung, QRA.', 'Mando aerotransportado, alerta temprana (AEW), relé y policía aérea: interceptación, identificación, QRA.'],
-    COMBAT: ['Entraînement au combat aérien : combat rapproché (BFM), combat manœuvrant (ACM), adversaire dissemblable (DACT), interceptions d’entraînement.', 'Air combat training: basic fighter manoeuvres (BFM), air combat manoeuvring (ACM), dissimilar adversary (DACT), training intercepts.', 'Luftkampfausbildung: Grundmanöver (BFM), Luftkampfmanöver (ACM), ungleicher Gegner (DACT), Übungsabfangen.', 'Entrenamiento de combate aéreo: maniobras básicas (BFM), combate maniobrado (ACM), adversario disimilar (DACT), interceptaciones de entrenamiento.'],
-    SOF: ['Opérations spéciales et tactiques : infiltration, exfiltration, appui des forces spéciales.', 'Special and tactical operations: infiltration, exfiltration, special forces support.', 'Spezial- und taktische Operationen: Infiltration, Exfiltration, Unterstützung von Spezialkräften.', 'Operaciones especiales y tácticas: infiltración, exfiltración, apoyo a fuerzas especiales.'],
-    SPECIAL: ['Transports spéciaux, vols d’essais, formation et toutes les missions hors des autres familles.', 'Special transport, test flights, training and any mission outside the other families.', 'Sondertransporte, Testflüge, Ausbildung und alle Einsätze außerhalb der anderen Familien.', 'Transportes especiales, vuelos de prueba, formación y cualquier misión fuera de las demás familias.']
+    HEMS: ['Hélicoptère sanitaire : secours primaire, transferts entre hôpitaux, évacuations médicales.',
+      'Medical helicopter: primary rescue, inter-hospital transfers, medical evacuations.',
+      'Rettungshubschrauber: Primäreinsätze, Verlegungen zwischen Kliniken, medizinische Evakuierungen.',
+      'Helicóptero sanitario: rescate primario, traslados entre hospitales, evacuaciones médicas.'
+    ],
+    FIRE: ['Lutte contre les feux de forêt : guet armé, largages d’eau ou de retardant, écopages.',
+      'Aerial firefighting: armed watch, water or retardant drops, scooping.',
+      'Waldbrandbekämpfung aus der Luft: bewaffnete Beobachtung, Wasser- oder Retardantabwürfe, Wasseraufnahme.',
+      'Extinción de incendios forestales: vigilancia armada, descargas de agua o retardante, cargas.'
+    ],
+    SAR: ['Recherche et sauvetage, récupération de personnel (y compris en milieu hostile).',
+      'Search and rescue, personnel recovery (including in hostile areas).',
+      'Suche und Rettung, Personenbergung (auch in feindlichem Gebiet).',
+      'Búsqueda y salvamento, recuperación de personal (incluso en zona hostil).'
+    ],
+    AIRLIFT: ['Transport de passagers et de fret, liaisons, logistique (stratégique, tactique, isolée).',
+      'Passenger and cargo transport, liaison, logistics (strategic, tactical, remote).',
+      'Passagier- und Frachttransport, Verbindungsflüge, Logistik (strategisch, taktisch, abgelegen).',
+      'Transporte de pasajeros y carga, enlaces, logística (estratégica, táctica, aislada).'
+    ],
+    AAR: ['Ravitaillement en vol : missions de ravitailleur ou de ravitaillé, hippodromes, carburant transféré.',
+      'Air-to-air refuelling: tanker or receiver missions, tracks, fuel offloaded.',
+      'Luftbetankung: Tanker- oder Empfängereinsätze, Racetracks, abgegebener Kraftstoff.',
+      'Reabastecimiento en vuelo: misiones de cisterna o receptor, circuitos, combustible transferido.'
+    ],
+    MARITIME: ['Surveillance et patrouille maritimes : navires, pollution, pêche, lutte sous la mer.',
+      'Maritime surveillance and patrol: vessels, pollution, fisheries, anti-submarine warfare.',
+      'Seeüberwachung und Seepatrouille: Schiffe, Verschmutzung, Fischerei, U-Boot-Abwehr.',
+      'Vigilancia y patrulla marítimas: buques, contaminación, pesca, lucha antisubmarina.'
+    ],
+    HADR: ['Aide humanitaire et secours aux populations, évacuation de ressortissants.',
+      'Humanitarian aid and disaster relief, evacuation of nationals.',
+      'Humanitäre Hilfe und Katastrophenhilfe, Evakuierung von Staatsangehörigen.',
+      'Ayuda humanitaria y socorro en catástrofes, evacuación de nacionales.'
+    ],
+    AIRBORNE: ['Largage de parachutistes ou de matériel, opérations aéroportées.', 'Paratrooper or cargo drops, airborne operations.',
+      'Absetzen von Fallschirmjägern oder Material, Luftlandeoperationen.',
+      'Lanzamiento de paracaidistas o carga, operaciones aerotransportadas.'
+    ],
+    FI: ['Contrôle en vol des aides radio (ILS, VOR, DME…) et validation des procédures — pas le contrôle aérien.',
+      'Flight inspection of navaids (ILS, VOR, DME…) and procedure validation — not air traffic control.',
+      'Flugvermessung von Navigationsanlagen (ILS, VOR, DME…) und Verfahrensvalidierung — nicht Flugverkehrskontrolle.',
+      'Inspección en vuelo de radioayudas (ILS, VOR, DME…) y validación de procedimientos — no el control aéreo.'
+    ],
+    SURVEY: ['Levés et missions scientifiques : photographie aérienne, cartographie, mesures.',
+      'Survey and scientific missions: aerial photography, mapping, measurements.',
+      'Vermessung und Forschungsflüge: Luftbild, Kartierung, Messungen.',
+      'Levantamientos y misiones científicas: fotografía aérea, cartografía, mediciones.'
+    ],
+    LE: ['Missions de police, de douane et de gendarmerie : surveillance, poursuite, frontières.',
+      'Police, customs and gendarmerie missions: surveillance, pursuit, borders.',
+      'Polizei-, Zoll- und Gendarmerieeinsätze: Überwachung, Verfolgung, Grenzen.',
+      'Misiones de policía, aduana y guardia civil: vigilancia, persecución, fronteras.'
+    ],
+    ISR: ['Renseignement, surveillance et reconnaissance (y compris drones).',
+      'Intelligence, surveillance and reconnaissance (including drones).',
+      'Aufklärung, Überwachung und Nachrichtengewinnung (einschließlich Drohnen).',
+      'Inteligencia, vigilancia y reconocimiento (incluidos drones).'
+    ],
+    COMMAND: ['Commandement aéroporté, guet aérien (AEW), relais, et police du ciel : interception, identification, QRA.',
+      'Airborne command, early warning (AEW), relay, and air policing: interception, identification, QRA.',
+      'Luftgestützte Führung, Frühwarnung (AEW), Relais und Luftpolizeidienst: Abfangen, Identifizierung, QRA.',
+      'Mando aerotransportado, alerta temprana (AEW), relé y policía aérea: interceptación, identificación, QRA.'
+    ],
+    COMBAT: [
+      'Entraînement au combat aérien : combat rapproché (BFM), combat manœuvrant (ACM), adversaire dissemblable (DACT), interceptions d’entraînement.',
+      'Air combat training: basic fighter manoeuvres (BFM), air combat manoeuvring (ACM), dissimilar adversary (DACT), training intercepts.',
+      'Luftkampfausbildung: Grundmanöver (BFM), Luftkampfmanöver (ACM), ungleicher Gegner (DACT), Übungsabfangen.',
+      'Entrenamiento de combate aéreo: maniobras básicas (BFM), combate maniobrado (ACM), adversario disimilar (DACT), interceptaciones de entrenamiento.'
+    ],
+    SOF: ['Opérations spéciales et tactiques : infiltration, exfiltration, appui des forces spéciales.',
+      'Special and tactical operations: infiltration, exfiltration, special forces support.',
+      'Spezial- und taktische Operationen: Infiltration, Exfiltration, Unterstützung von Spezialkräften.',
+      'Operaciones especiales y tácticas: infiltración, exfiltración, apoyo a fuerzas especiales.'
+    ],
+    SPECIAL: ['Transports spéciaux, vols d’essais, formation et toutes les missions hors des autres familles.',
+      'Special transport, test flights, training and any mission outside the other families.',
+      'Sondertransporte, Testflüge, Ausbildung und alle Einsätze außerhalb der anderen Familien.',
+      'Transportes especiales, vuelos de prueba, formación y cualquier misión fuera de las demás familias.'
+    ]
   };
   const familyKeywords = {
     HEMS: 'hems medevac evasan evacuation sanitaire samu smur helismur secours medical blesse malade patient hopital transfert inter hospitalier helico helicoptere dragon ambulance casevac urgence air ambulance medical evacuation hospital injured casualty emergency rescue helicopter rettungshubschrauber luftrettung krankenhaus verletzter patient notarzt intensivtransport evacuacion medica ambulancia aerea hospital herido urgencia helicoptero sanitario',
@@ -296,42 +395,63 @@
   }
 
   const outcomes = [
-    opt('SUCCESS', L('Succès', 'Success', 'Erfolgreich', 'Éxito')), opt('PARTIAL_SUCCESS', L('Succès partiel', 'Partial success', 'Teilweise erfolgreich', 'Éxito parcial')),
-    opt('ABORTED', L('Interrompue', 'Aborted', 'Abgebrochen', 'Abortada')), opt('CANCELLED', L('Annulée', 'Cancelled', 'Storniert', 'Cancelada')),
-    opt('DIVERTED', L('Déroutée', 'Diverted', 'Umgeleitet', 'Desviada')), opt('NO_CONTACT', L('Pas de contact', 'No contact', 'Kein Kontakt', 'Sin contacto')),
+    opt('SUCCESS', L('Succès', 'Success', 'Erfolgreich', 'Éxito')), opt('PARTIAL_SUCCESS', L('Succès partiel', 'Partial success',
+      'Teilweise erfolgreich', 'Éxito parcial')),
+    opt('ABORTED', L('Interrompue', 'Aborted', 'Abgebrochen', 'Abortada')), opt('CANCELLED', L('Annulée', 'Cancelled', 'Storniert',
+      'Cancelada')),
+    opt('DIVERTED', L('Déroutée', 'Diverted', 'Umgeleitet', 'Desviada')), opt('NO_CONTACT', L('Pas de contact', 'No contact',
+      'Kein Kontakt', 'Sin contacto')),
     opt('TARGET_NOT_FOUND', L('Objectif non trouvé', 'Target not found', 'Ziel nicht gefunden', 'Objetivo no encontrado')),
-    opt('WEATHER', L('Météo', 'Weather', 'Wetter', 'Meteorología')), opt('TECHNICAL', L('Technique', 'Technical', 'Technisch', 'Técnico')),
+    opt('WEATHER', L('Météo', 'Weather', 'Wetter', 'Meteorología')), opt('TECHNICAL', L('Technique', 'Technical', 'Technisch',
+      'Técnico')),
     opt('OPERATIONAL', L('Opérationnel', 'Operational', 'Operativ', 'Operacional')), opt('OTHER', L('Autre', 'Other', 'Andere', 'Otro'))
   ];
   // Causes d'une mission non effectuée ou partiellement effectuée (CR : results.causes, plusieurs cases ; ordres de
   // vols : MNE de la plaquette, shared/odv_reports.js).
   const mneCauses = [
-    opt('WEATHER', L('Météo', 'Weather', 'Wetter', 'Meteorología')), opt('TECHNICAL', L('Technique (appareil)', 'Technical (aircraft)', 'Technisch (Luftfahrzeug)', 'Técnico (aeronave)')),
-    opt('SIMULATOR', L('Simulateur', 'Simulator', 'Simulator', 'Simulador')), opt('CREW', L('Pilote ou équipage absent', 'Pilot or crew missing', 'Pilot oder Besatzung fehlt', 'Piloto o tripulación ausente')),
-    opt('ATC', L('Contrôle absent', 'No ATC', 'Keine Flugsicherung', 'Sin control')), opt('NETWORK', L('Réseau (déconnexion, panne)', 'Network (disconnection, outage)', 'Netz (Trennung, Ausfall)', 'Red (desconexión, caída)')),
-    opt('AIRSPACE', L('Zone non activée', 'Airspace not activated', 'Luftraum nicht aktiviert', 'Zona no activada')), opt('TANKER', L('Ravitailleur absent', 'Tanker missing', 'Tanker fehlt', 'Cisterna ausente')),
-    opt('TIME', L('Manque de temps', 'Lack of time', 'Zeitmangel', 'Falta de tiempo')), opt('OPERATIONAL', L('Opérationnel', 'Operational', 'Operativ', 'Operacional')),
+    opt('WEATHER', L('Météo', 'Weather', 'Wetter', 'Meteorología')), opt('TECHNICAL', L('Technique (appareil)', 'Technical (aircraft)',
+      'Technisch (Luftfahrzeug)', 'Técnico (aeronave)')),
+    opt('SIMULATOR', L('Simulateur', 'Simulator', 'Simulator', 'Simulador')), opt('CREW', L('Pilote ou équipage absent',
+      'Pilot or crew missing', 'Pilot oder Besatzung fehlt', 'Piloto o tripulación ausente')),
+    opt('ATC', L('Contrôle absent', 'No ATC', 'Keine Flugsicherung', 'Sin control')), opt('NETWORK', L('Réseau (déconnexion, panne)',
+      'Network (disconnection, outage)', 'Netz (Trennung, Ausfall)', 'Red (desconexión, caída)')),
+    opt('AIRSPACE', L('Zone non activée', 'Airspace not activated', 'Luftraum nicht aktiviert', 'Zona no activada')), opt('TANKER', L(
+      'Ravitailleur absent', 'Tanker missing', 'Tanker fehlt', 'Cisterna ausente')),
+    opt('TIME', L('Manque de temps', 'Lack of time', 'Zeitmangel', 'Falta de tiempo')), opt('OPERATIONAL', L('Opérationnel',
+      'Operational', 'Operativ', 'Operacional')),
     opt('OTHER', L('Autre', 'Other', 'Andere', 'Otro'))
   ];
   // Résultats qui appellent un motif d'interruption.
-  const interruptedOutcomes = new Set(['PARTIAL_SUCCESS', 'ABORTED', 'CANCELLED', 'DIVERTED', 'NO_CONTACT', 'TARGET_NOT_FOUND', 'WEATHER', 'TECHNICAL', 'OPERATIONAL']);
+  const interruptedOutcomes = new Set(['PARTIAL_SUCCESS', 'ABORTED', 'CANCELLED', 'DIVERTED', 'NO_CONTACT', 'TARGET_NOT_FOUND', 'WEATHER',
+    'TECHNICAL', 'OPERATIONAL'
+  ]);
 
   // Événements de la chronologie (briefing, mise en route, cales…) : créés automatiquement
   // depuis les heures du bloc Chronologie ; proposés dans toutes les familles.
   const TIMELINE_EVENTS = ['BRIEFING', 'ENGINE_START', 'OFF_BLOCK', 'MISSION_START', 'MISSION_END', 'ON_BLOCK', 'SHUTDOWN'];
   const eventTypes = [
-    opt('BRIEFING', L('Briefing', 'Briefing', 'Briefing', 'Briefing')), opt('ENGINE_START', L('Mise en route', 'Engine start', 'Anlassen', 'Puesta en marcha')),
-    opt('OFF_BLOCK', L('Départ des cales', 'Off-block', 'Off-Block', 'Fuera calzos')), opt('MISSION_START', L('Début mission', 'Mission start', 'Missionsbeginn', 'Inicio de misión')),
-    opt('MISSION_END', L('Fin mission', 'Mission end', 'Missionsende', 'Fin de misión')), opt('ON_BLOCK', L('Arrivée aux cales', 'On-block', 'On-Block', 'En calzos')),
+    opt('BRIEFING', L('Briefing', 'Briefing', 'Briefing', 'Briefing')), opt('ENGINE_START', L('Mise en route', 'Engine start',
+      'Anlassen', 'Puesta en marcha')),
+    opt('OFF_BLOCK', L('Départ des cales', 'Off-block', 'Off-Block', 'Fuera calzos')), opt('MISSION_START', L('Début mission',
+      'Mission start', 'Missionsbeginn', 'Inicio de misión')),
+    opt('MISSION_END', L('Fin mission', 'Mission end', 'Missionsende', 'Fin de misión')), opt('ON_BLOCK', L('Arrivée aux cales',
+      'On-block', 'On-Block', 'En calzos')),
     opt('SHUTDOWN', L('Arrêt moteurs', 'Shutdown', 'Abstellen', 'Parada de motores')),
-    opt('TAKEOFF', L('Décollage', 'Take-off', 'Start', 'Despegue')), opt('LANDING', L('Atterrissage', 'Landing', 'Landung', 'Aterrizaje')),
-    opt('ON_TASK', L('Début de tâche', 'On task', 'Auftragsbeginn', 'En tarea')), opt('OFF_TASK', L('Fin de tâche', 'Off task', 'Auftragsende', 'Fin de tarea')),
-    opt('CONTACT', L('Contact', 'Contact', 'Kontakt', 'Contacto')), opt('SIGHTING', L('Observation visuelle', 'Sighting', 'Sichtung', 'Avistamiento')),
+    opt('TAKEOFF', L('Décollage', 'Take-off', 'Start', 'Despegue')), opt('LANDING', L('Atterrissage', 'Landing', 'Landung',
+      'Aterrizaje')),
+    opt('ON_TASK', L('Début de tâche', 'On task', 'Auftragsbeginn', 'En tarea')), opt('OFF_TASK', L('Fin de tâche', 'Off task',
+      'Auftragsende', 'Fin de tarea')),
+    opt('CONTACT', L('Contact', 'Contact', 'Kontakt', 'Contacto')), opt('SIGHTING', L('Observation visuelle', 'Sighting', 'Sichtung',
+      'Avistamiento')),
     opt('PICKUP', L('Prise en charge', 'Pickup', 'Aufnahme', 'Recogida')), opt('DROP', L('Largage', 'Drop', 'Abwurf', 'Lanzamiento')),
-    opt('HOIST', L('Treuillage', 'Hoist', 'Windeneinsatz', 'Izado')), opt('INSERTION', L('Insertion', 'Insertion', 'Absetzen', 'Inserción')),
-    opt('EXTRACTION', L('Extraction', 'Extraction', 'Aufnahme (Extraktion)', 'Extracción')), opt('DIVERSION', L('Déroutement', 'Diversion', 'Umleitung', 'Desvío')),
-    opt('REFUEL', L('Ravitaillement', 'Refuel', 'Betankung', 'Repostaje')), opt('TECHNICAL', L('Technique', 'Technical', 'Technisch', 'Técnico')),
-    opt('WEATHER', L('Météo', 'Weather', 'Wetter', 'Meteorología')), opt('ABORT', L('Interruption', 'Abort', 'Abbruch', 'Interrupción')),
+    opt('HOIST', L('Treuillage', 'Hoist', 'Windeneinsatz', 'Izado')), opt('INSERTION', L('Insertion', 'Insertion', 'Absetzen',
+      'Inserción')),
+    opt('EXTRACTION', L('Extraction', 'Extraction', 'Aufnahme (Extraktion)', 'Extracción')), opt('DIVERSION', L('Déroutement',
+      'Diversion', 'Umleitung', 'Desvío')),
+    opt('REFUEL', L('Ravitaillement', 'Refuel', 'Betankung', 'Repostaje')), opt('TECHNICAL', L('Technique', 'Technical', 'Technisch',
+      'Técnico')),
+    opt('WEATHER', L('Météo', 'Weather', 'Wetter', 'Meteorología')), opt('ABORT', L('Interruption', 'Abort', 'Abbruch',
+    'Interrupción')),
     opt('OTHER', L('Autre', 'Other', 'Andere', 'Otro'))
   ];
 
@@ -365,7 +485,9 @@
     FIRE: [...FLIGHT, 'SLING', 'SHORT_FIELD', 'ROUGH_FIELD', 'IR', 'CAMERA', 'WEATHER_RADAR'],
     HEMS: [...FLIGHT, 'NVG', 'HOIST', 'RAPPEL', 'SLING', 'HOVER_EXIT', 'SHIPBOARD', 'CONFINED_AREA', 'IR', 'EO_IR', 'WEATHER_RADAR'],
     FI: [...FLIGHT, 'MISSION_SENSOR', 'CAMERA'],
-    SURVEY: [...FLIGHT, 'TERRAIN_FOLLOWING', 'POLAR', 'SHORT_FIELD', 'UNPREPARED_STRIP', 'EO', 'IR', 'EO_IR', 'RADAR', 'SAR_RADAR', 'LIDAR', 'CAMERA', 'MULTISPECTRAL', 'MISSION_SENSOR']
+    SURVEY: [...FLIGHT, 'TERRAIN_FOLLOWING', 'POLAR', 'SHORT_FIELD', 'UNPREPARED_STRIP', 'EO', 'IR', 'EO_IR', 'RADAR', 'SAR_RADAR',
+      'LIDAR', 'CAMERA', 'MULTISPECTRAL', 'MISSION_SENSOR'
+    ]
   };
   /** Types d'événements de chronologie proposés pour une famille (communs + profil de la famille). */
   const eventTypesFor = familyId => {
@@ -375,24 +497,36 @@
 
   const crewRoles = [
     opt('PIC', L('Commandant de bord (PIC)', 'Aircraft commander (PIC)', 'Kommandant (PIC)', 'Comandante (PIC)')),
-    opt('COPILOT', L('Copilote', 'Copilot', 'Kopilot', 'Copiloto')), opt('FLIGHT_ENGINEER', L('Mécanicien navigant', 'Flight engineer', 'Flugingenieur', 'Ingeniero de vuelo')),
-    opt('NAVIGATOR', L('Navigateur', 'Navigator', 'Navigator', 'Navegante')), opt('TACCO', L('Coordinateur tactique', 'Tactical coordinator', 'Taktischer Koordinator', 'Coordinador táctico')),
-    opt('SENSOR_OPERATOR', L('Opérateur capteurs', 'Sensor operator', 'Sensorbediener', 'Operador de sensores')), opt('LOADMASTER', L('Chef de soute', 'Loadmaster', 'Lademeister', 'Jefe de carga')),
-    opt('CREW_CHIEF', L('Chef mécanicien', 'Crew chief', 'Crew Chief', 'Jefe de tripulación')), opt('WINCH_OPERATOR', L('Treuilliste', 'Winch operator', 'Windenbediener', 'Operador de grúa')),
-    opt('RESCUE_SWIMMER', L('Nageur-sauveteur', 'Rescue swimmer', 'Rettungsschwimmer', 'Nadador de rescate')), opt('MISSION_COMMANDER', L('Chef de mission', 'Mission commander', 'Missionskommandant', 'Jefe de misión')),
-    opt('JUMPMASTER', L('Largueur', 'Jumpmaster', 'Absetzer', 'Jefe de salto')), opt('DOCTOR', L('Médecin', 'Doctor', 'Arzt', 'Médico')),
-    opt('NURSE', L('Infirmier', 'Nurse', 'Pflegekraft', 'Enfermero')), opt('OBSERVER', L('Observateur', 'Observer', 'Beobachter', 'Observador')),
+    opt('COPILOT', L('Copilote', 'Copilot', 'Kopilot', 'Copiloto')), opt('FLIGHT_ENGINEER', L('Mécanicien navigant', 'Flight engineer',
+      'Flugingenieur', 'Ingeniero de vuelo')),
+    opt('NAVIGATOR', L('Navigateur', 'Navigator', 'Navigator', 'Navegante')), opt('TACCO', L('Coordinateur tactique',
+      'Tactical coordinator', 'Taktischer Koordinator', 'Coordinador táctico')),
+    opt('SENSOR_OPERATOR', L('Opérateur capteurs', 'Sensor operator', 'Sensorbediener', 'Operador de sensores')), opt('LOADMASTER', L(
+      'Chef de soute', 'Loadmaster', 'Lademeister', 'Jefe de carga')),
+    opt('CREW_CHIEF', L('Chef mécanicien', 'Crew chief', 'Crew Chief', 'Jefe de tripulación')), opt('WINCH_OPERATOR', L('Treuilliste',
+      'Winch operator', 'Windenbediener', 'Operador de grúa')),
+    opt('RESCUE_SWIMMER', L('Nageur-sauveteur', 'Rescue swimmer', 'Rettungsschwimmer', 'Nadador de rescate')), opt('MISSION_COMMANDER',
+      L('Chef de mission', 'Mission commander', 'Missionskommandant', 'Jefe de misión')),
+    opt('JUMPMASTER', L('Largueur', 'Jumpmaster', 'Absetzer', 'Jefe de salto')), opt('DOCTOR', L('Médecin', 'Doctor', 'Arzt',
+    'Médico')),
+    opt('NURSE', L('Infirmier', 'Nurse', 'Pflegekraft', 'Enfermero')), opt('OBSERVER', L('Observateur', 'Observer', 'Beobachter',
+      'Observador')),
     opt('TECHNICIAN', L('Technicien', 'Technician', 'Techniker', 'Técnico')), opt('OTHER', L('Autre', 'Other', 'Andere', 'Otro'))
   ];
 
-  const context = [opt('EXERCISE', L('Exercice / simulation', 'Exercise / simulation', 'Übung / Simulation', 'Ejercicio / simulación')), opt('REAL', L('Opération réelle', 'Real operation', 'Realer Einsatz', 'Operación real'))];
+  const context = [opt('EXERCISE', L('Exercice / simulation', 'Exercise / simulation', 'Übung / Simulation', 'Ejercicio / simulación')),
+    opt('REAL', L('Opération réelle', 'Real operation', 'Realer Einsatz', 'Operación real'))
+  ];
   const classification = [
     opt('UNCLASSIFIED', L('Non classifié', 'Unclassified', 'Offen', 'No clasificado')),
-    opt('RESTRICTED', L('Diffusion restreinte (simulation)', 'Restricted (simulation)', 'Eingeschränkt (Simulation)', 'Difusión limitada (simulación)'))
+    opt('RESTRICTED', L('Diffusion restreinte (simulation)', 'Restricted (simulation)', 'Eingeschränkt (Simulation)',
+      'Difusión limitada (simulación)'))
   ];
-  const dayNight = [opt('DAY', L('Jour', 'Day', 'Tag', 'Día')), opt('NIGHT', L('Nuit', 'Night', 'Nacht', 'Noche')), opt('TWILIGHT', L('Crépuscule / aube', 'Twilight', 'Dämmerung', 'Crepúsculo'))];
+  const dayNight = [opt('DAY', L('Jour', 'Day', 'Tag', 'Día')), opt('NIGHT', L('Nuit', 'Night', 'Nacht', 'Noche')), opt('TWILIGHT', L(
+    'Crépuscule / aube', 'Twilight', 'Dämmerung', 'Crepúsculo'))];
   const fuelUnits = [opt('kg', L('kg', 'kg')), opt('lb', L('lb', 'lb')), opt('L', L('L', 'L')), opt('USG', L('US gal', 'US gal'))];
-  const networks = [opt('', L('Hors réseau / non renseigné', 'Offline / not provided', 'Offline / nicht angegeben', 'Fuera de red / no indicado')), opt('IVAO', L('IVAO', 'IVAO')), opt('VATSIM', L('VATSIM', 'VATSIM'))];
+  const networks = [opt('', L('Hors réseau / non renseigné', 'Offline / not provided', 'Offline / nicht angegeben',
+    'Fuera de red / no indicado')), opt('IVAO', L('IVAO', 'IVAO')), opt('VATSIM', L('VATSIM', 'VATSIM'))];
 
   // Départements (indicatifs numérotés par département : DRAGON74, CHOUCAS74).
   const departments = {
@@ -544,7 +678,11 @@
     ['AAR / RAVITAILLEMENT EN VOL', 'AAR / AIR-TO-AIR REFUELLING', 'AAR / LUFTBETANKUNG', 'AAR / REABASTECIMIENTO EN VUELO'],
     ['Heures de mission', 'Mission hours', 'Einsatzstunden', 'Horas de misión'],
     ['Cliquer pour modifier', 'Click to edit', 'Zum Bearbeiten klicken', 'Clic para editar'],
-    ['Glisser pour élargir ou réduire la colonne (double-clic : largeur automatique)', 'Drag to widen or narrow the column (double-click: automatic width)', 'Ziehen, um die Spalte zu verbreitern oder zu verkleinern (Doppelklick: automatische Breite)', 'Arrastrar para ensanchar o estrechar la columna (doble clic: ancho automático)'],
+    ['Glisser pour élargir ou réduire la colonne (double-clic : largeur automatique)',
+      'Drag to widen or narrow the column (double-click: automatic width)',
+      'Ziehen, um die Spalte zu verbreitern oder zu verkleinern (Doppelklick: automatische Breite)',
+      'Arrastrar para ensanchar o estrechar la columna (doble clic: ancho automático)'
+    ],
     ['Non renseigné', 'Not specified', 'Nicht angegeben', 'Sin indicar']
   ];
   const reg = () => window.RepositoryContentI18n?.(rows);

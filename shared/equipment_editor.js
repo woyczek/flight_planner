@@ -79,7 +79,10 @@
       piston: 'propeller',
       other: 'plane'
     };
-    const summary = () => tf(['{m} type(s) maîtrisé(s), {o} possédé(s) sur {n} types de la flotte.', '{m} type(s) mastered, {o} owned out of {n} fleet types.', '{m} Typ(en) beherrscht, {o} besessen von {n} Flottentypen.', '{m} tipo(s) dominado(s), {o} poseído(s) de {n} tipos de la flota.'], {
+    const summary = () => tf(['{m} type(s) maîtrisé(s), {o} possédé(s) sur {n} types de la flotte.',
+      '{m} type(s) mastered, {o} owned out of {n} fleet types.', '{m} Typ(en) beherrscht, {o} besessen von {n} Flottentypen.',
+      '{m} tipo(s) dominado(s), {o} poseído(s) de {n} tipos de la flota.'
+    ], {
       m: mastered.size,
       o: owned.size,
       n: types.length
@@ -96,7 +99,9 @@
         <div class="eq-sims" data-eq-sims>${sims.map(s => `<label><input type="checkbox" data-sim="${esc(s)}"${mine.has(s) ? ' checked' : ''}> ${M.simChips([s])}${esc(s)}</label>`).join('')}</div></div>
       <p class="small" data-eq-msg>${esc(t(['Gardé dans ce navigateur et recopié dans vos semaines de disponibilités déclarées, à partir de la semaine en cours (pour le Centre).', 'Kept in this browser and copied into your declared availability weeks, from the current week on (for the Centre).', 'In diesem Browser gespeichert und in Ihre angegebenen Verfügbarkeitswochen ab der aktuellen Woche übernommen (für das Zentrum).', 'Guardado en este navegador y copiado en sus semanas de disponibilidad declaradas, a partir de la semana actual (para el Centro).']))}</p>`;
     // lien vers une carte (#eqTypes, #eqSims : boutons de Mes missions) : carte amenée à l'écran une fois dessinée
-    if (/^#eq(Types|Sims)$/.test(location.hash)) host.querySelector(location.hash)?.scrollIntoView({ block: 'start' });
+    if (/^#eq(Types|Sims)$/.test(location.hash)) host.querySelector(location.hash)?.scrollIntoView({
+      block: 'start'
+    });
     const msg = host.querySelector('[data-eq-msg]');
     host.onchange = e => {
       const x = e.target;
@@ -119,9 +124,17 @@
       clearTimeout(timer);
       timer = setTimeout(() => {
         chain = chain.then(() => syncWeeks(tri)).then(n => {
-          msg.textContent = n ? tf(['Gardé dans ce navigateur et recopié dans {n} semaine(s) de disponibilités déclarée(s).', 'Kept in this browser and copied into {n} declared availability week(s).', 'In diesem Browser gespeichert und in {n} angegebene Verfügbarkeitswoche(n) übernommen.', 'Guardado en este navegador y copiado en {n} semana(s) de disponibilidad declarada(s).'], {
+          msg.textContent = n ? tf(['Gardé dans ce navigateur et recopié dans {n} semaine(s) de disponibilités déclarée(s).',
+            'Kept in this browser and copied into {n} declared availability week(s).',
+            'In diesem Browser gespeichert und in {n} angegebene Verfügbarkeitswoche(n) übernommen.',
+            'Guardado en este navegador y copiado en {n} semana(s) de disponibilidad declarada(s).'
+          ], {
             n
-          }) : t(['Gardé dans ce navigateur ; recopié avec votre prochaine semaine de disponibilités déclarée.', 'Kept in this browser; copied with your next declared availability week.', 'In diesem Browser gespeichert; mit Ihrer nächsten angegebenen Verfügbarkeitswoche übernommen.', 'Guardado en este navegador; copiado con su próxima semana de disponibilidad declarada.']);
+          }) : t(['Gardé dans ce navigateur ; recopié avec votre prochaine semaine de disponibilités déclarée.',
+            'Kept in this browser; copied with your next declared availability week.',
+            'In diesem Browser gespeichert; mit Ihrer nächsten angegebenen Verfügbarkeitswoche übernommen.',
+            'Guardado en este navegador; copiado con su próxima semana de disponibilidad declarada.'
+          ]);
         }, err => {
           msg.textContent = err?.message || String(err);
         });

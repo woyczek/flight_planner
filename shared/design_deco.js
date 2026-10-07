@@ -53,8 +53,7 @@
     plate: img => `<div class="repo-deco-plate-img"><img src="${img('plate-defa')}" alt=""></div>`,
     // plots du radar : position dans l'écran (%) et couleur ; délai d'allumage calculé au rendu (passage du balayage)
     radar: img => `<div class="repo-deco-radar" title="${tr('radar')}"><div class="repo-deco-radar-stage">` +
-      `<img src="${img('radar')}" alt=""><span class="repo-deco-sweep"></span>` +
-      [
+      `<img src="${img('radar')}" alt=""><span class="repo-deco-sweep"></span>` + [
         [30.7, 33.5, '#7dff8a'],
         [65.6, 59.6, '#7dff8a'],
         [72, 79.5, '#7dff8a'],
@@ -181,11 +180,17 @@
   const THEMES = [
     ['aircraft', /aircraft|appareil|avion|a[ée]ronef|plane|helico|h[ée]lico|flotte|fleet|perf|masse|\bmass|mtow|centrage/],
     ['airfield', /a[ée]rodrome|airfield|airport|terrain|piste|runway|landing|atterriss|d[ée]collage|takeoff|\bsia\b|oaci|icao/],
-    ['time', /day|night|jour|nuit|clock|heure|horaire|horodat|time|calendar|date|dur[ée]e|p[ée]riode|period|activit|planning|odv|m[ée]t[ée]o|weather/],
-    ['radio', /network|r[ée]seau|radio|comm|fr[ée]quen|link|send|sync|source|mise à jour|update|maintenance|database|base|sauvegarde|backup|import|export/],
+    ['time',
+      /day|night|jour|nuit|clock|heure|horaire|horodat|time|calendar|date|dur[ée]e|p[ée]riode|period|activit|planning|odv|m[ée]t[ée]o|weather/
+    ],
+    ['radio',
+      /network|r[ée]seau|radio|comm|fr[ée]quen|link|send|sync|source|mise à jour|update|maintenance|database|base|sauvegarde|backup|import|export/
+    ],
     ['nav', /map|carte|route|navig|profil|trajet|flight|\bvol\b|fuel|carbur|vent|wind|target|cible|layers/],
     ['gear', /[ée]quipement|mat[ée]riel|gear|\bbox\b|cargo|m[ée]dic|patient|hems|medevac|capabilit|capacit|charge|load|emport/],
-    ['awards', /outcome|r[ée]sultat|result|succ[eè]s|valid|award|m[ée]daille|summary|synth[eè]se|bilan|chart|statist|breakdown|r[ée]partition|calcul/],
+    ['awards',
+      /outcome|r[ée]sultat|result|succ[eè]s|valid|award|m[ée]daille|summary|synth[eè]se|bilan|chart|statist|breakdown|r[ée]partition|calcul/
+    ],
     ['families', /famil|s[ée]rie|series|type|mission|cat[ée]gor/],
     ['ops', /./]
   ];
@@ -257,7 +262,8 @@
       el.className = 'repo-deco-sheet';
       el.setAttribute('aria-hidden', 'true');
       // papier (dans le cadre), tranches répétées (arrêtées aux coins), coins et en-tête, puis accessoire du bord gauche
-      el.innerHTML = '<i class="sh-paper"></i><i class="sh-top"></i><i class="sh-bot"></i><i class="sh-left"></i><i class="sh-right"></i><i class="sh-frame"></i><i class="sh-acc"></i>';
+      el.innerHTML =
+        '<i class="sh-paper"></i><i class="sh-top"></i><i class="sh-bot"></i><i class="sh-left"></i><i class="sh-right"></i><i class="sh-frame"></i><i class="sh-acc"></i>';
       b.classList.add('repo-has-sheet', 'repo-has-bg');
       if (reuse(el, b) === el) b.prepend(el);
     });
@@ -316,7 +322,8 @@
     let prev = '';
     document.querySelectorAll('.repo-block').forEach(b => {
       // data-no-deco : bloc sans panneau (texte long, ex. la page Aide : un panneau couvrirait tout le document)
-      if (b.hidden || !b.offsetHeight || b.hasAttribute('data-no-deco') || b.classList.contains('repo-has-bg') || b.parentElement.closest('.repo-block.repo-has-bg')) return;
+      if (b.hidden || !b.offsetHeight || b.hasAttribute('data-no-deco') || b.classList.contains('repo-has-bg') || b.parentElement
+        .closest('.repo-block.repo-has-bg')) return;
       const f = prev = panelOf(b, set, prev);
       const el = document.createElement('div');
       el.className = 'repo-deco-bgimg repo-deco-panel';
@@ -551,8 +558,10 @@
   // premier niveau affichés (titre, icône, identifiant) a changé ; vérifiée une fois par image, sans lire la mise en page
   let shown = '',
     checking = false;
+
   function blocksShown() {
-    return [...document.querySelectorAll('.repo-block')].filter(b => !b.hidden && !b.parentElement.closest('.repo-block')).map(blockText).join('|');
+    return [...document.querySelectorAll('.repo-block')].filter(b => !b.hidden && !b.parentElement.closest('.repo-block')).map(blockText)
+      .join('|');
   }
   new MutationObserver(() => {
     if (checking) return;

@@ -164,7 +164,8 @@
   }
   /** Équipages en vol : participants, puis chiffons joués qui ont leur propre mission (traités comme des participants :
    *  indicatif, mission, décollage — takeoff, sinon start —, rôle « chiffon », track : id de la piste). */
-  const crews = ex => ex ? [...ex.participants, ...ex.tracks.filter(t => t.played && t.mission && !ex.participants.some(p => p.mission === t.mission)).map(t => ({
+  const crews = ex => ex ? [...ex.participants, ...ex.tracks.filter(t => t.played && t.mission && !ex.participants.some(p => p.mission ===
+    t.mission)).map(t => ({
     callsign: t.callsign || t.id,
     mission: t.mission,
     takeoff: t.takeoff ?? t.start ?? 'H',
@@ -208,14 +209,16 @@
     const ys = arr(docs).map(yamlOf),
       missionYaml = id => ys.find(d => up(d.mission?.id) === up(id));
     const offset = p => parseH(p?.takeoff) ?? 0;
-    const hasPoint = (y, id) => [...arr(y?.turning_points), ...arr(y?.rendezvous), ...arr(y?.zones), y?.target].some(q => q && up(q.id) === up(id));
+    const hasPoint = (y, id) => [...arr(y?.turning_points), ...arr(y?.rendezvous), ...arr(y?.zones), y?.target].some(q => q && up(q
+      .id) === up(id));
     return ex.events.map(x => {
       const h = parseH(x.at);
       let t = null;
       if (h != null) t = h;
       else {
         const all = crews(ex),
-          p = all.find(q => q.callsign === x.by) || all.find(q => hasPoint(missionYaml(q.mission), x.at)) || (ex.legacy ? ex.participants[0] : null);
+          p = all.find(q => q.callsign === x.by) || all.find(q => hasPoint(missionYaml(q.mission), x.at)) || (ex.legacy ? ex
+            .participants[0] : null);
         const y = p && missionYaml(p.mission),
           s = y && passage(y, x.at);
         if (s != null) t = offset(p) + s + (+x.delay_min || 0);
@@ -228,7 +231,8 @@
     }).sort((a, b) => (a.t ?? 1e9) - (b.t ?? 1e9));
   }
   /** Événements d'un destinataire : organisation → tous ; sinon ceux qui lui sont adressés (ou à tous). */
-  const eventsFor = (tl, audience) => audience === 'ORG' ? tl : tl.filter(x => x.to.includes(up(audience)) || x.to.includes('ALL') || x.to.includes('TOUS'));
+  const eventsFor = (tl, audience) => audience === 'ORG' ? tl : tl.filter(x => x.to.includes(up(audience)) || x.to.includes('ALL') || x.to
+    .includes('TOUS'));
   /** Pistes connues d'un destinataire après l'événement upTo ('all' : toutes celles qui lui sont révélées ; 'ORG' voit tout). */
   function revealedFor(ex, tl, audience, upTo = 'all') {
     if (!ex) return [];
@@ -269,14 +273,16 @@
     if (!ex) return [];
     const tl = timeline(ex, [yamlOf(y), ...arr(docs)]),
       me = participantOf(ex, yamlOf(y).mission?.id);
-    return upTo === 'all' || !upTo ? (isOrganisation(yamlOf(y)) || !me ? ex.tracks.map(t => t.id) : revealedFor(ex, tl, me.callsign)) : revealedFor(ex, tl, me && !isOrganisation(yamlOf(y)) ? me.callsign : 'ORG', upTo);
+    return upTo === 'all' || !upTo ? (isOrganisation(yamlOf(y)) || !me ? ex.tracks.map(t => t.id) : revealedFor(ex, tl, me.callsign)) :
+      revealedFor(ex, tl, me && !isOrganisation(yamlOf(y)) ? me.callsign : 'ORG', upTo);
   }
 
   // ---- saisie
   /** Tableau Markdown des pistes → tracks. Colonnes reconnues : piste, nature, route / points (« Nom `lat, lon` → … »),
    *  niveau / vitesse (« 3 500–5 000 ft, ~120 kt »), ce qu'il faut établir. */
   function parseTracksTable(md) {
-    const rows = String(md || '').split('\n').filter(l => /^\s*\|/.test(l) && !/^\s*\|[\s:|-]+\|\s*$/.test(l)).map(l => l.trim().replace(/^\||\|$/g, '').split('|').map(c => c.trim()));
+    const rows = String(md || '').split('\n').filter(l => /^\s*\|/.test(l) && !/^\s*\|[\s:|-]+\|\s*$/.test(l)).map(l => l.trim().replace(
+      /^\||\|$/g, '').split('|').map(c => c.trim()));
     if (rows.length < 2) return [];
     const head = rows[0].map(h => h.toLowerCase()),
       col = re => head.findIndex(h => re.test(h));
@@ -314,7 +320,8 @@
     });
   }
   /** Points d'une piste en texte : « Rosnay 46.701667, 1.215278 ; Mézières-en-Brenne 46.821667, 1.211389 ». */
-  const pointsText = pts => arr(pts).map(p => [p.name, Number.isFinite(+p.lat) && p.lat !== undefined ? `${p.lat}, ${p.lon}` : ''].filter(Boolean).join(' ')).join(' ; ');
+  const pointsText = pts => arr(pts).map(p => [p.name, Number.isFinite(+p.lat) && p.lat !== undefined ? `${p.lat}, ${p.lon}` : ''].filter(Boolean)
+    .join(' ')).join(' ; ');
   const parsePoints = txt => String(txt || '').split(';').map(s => s.trim()).filter(Boolean).map(s => {
     const m = /(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*$/.exec(s);
     return m ? {
@@ -566,16 +573,28 @@
   // ---- traductions des libellés fixes (fr / en / de / es) : couche commune (content_i18n.js), chargée après ce module
   const ROWS = ([
     ['Heure H et participants', 'H-hour and participants', 'Stunde H und Teilnehmer', 'Hora H y participantes'],
-    ['Heure de référence commune à toute l’opération ; chaque participant décolle à H plus ou moins un délai. Une seule heure H (T ou M) ; décalages avec leur unité : H+2mn, H-20mn, H+1h, H+1h30mn. Les événements se placent à H+… ou au passage d’un point par un participant.', 'Reference time common to the whole operation; each participant takes off at H plus or minus a delay. A single H-hour (T or M); offsets with their unit: H+2mn, H-20mn, H+1h, H+1h30mn. Events are placed at H+… or when a participant passes a point.', 'Gemeinsame Bezugszeit der ganzen Operation; jeder Teilnehmer startet bei H plus oder minus einer Verzögerung. Eine einzige Stunde H (T oder M); Versätze mit Einheit: H+2mn, H-20mn, H+1h, H+1h30mn. Ereignisse liegen bei H+… oder beim Überflug eines Punktes durch einen Teilnehmer.', 'Hora de referencia común a toda la operación; cada participante despega a H más o menos un retraso. Una sola hora H (T o M); desfases con su unidad: H+2mn, H-20mn, H+1h, H+1h30mn. Los eventos se sitúan en H+… o al paso de un participante por un punto.'],
-    ['Heure H (libellé ou heure réelle)', 'H-hour (label or real time)', 'Stunde H (Bezeichnung oder Uhrzeit)', 'Hora H (etiqueta u hora real)'],
+    ['Heure de référence commune à toute l’opération ; chaque participant décolle à H plus ou moins un délai. Une seule heure H (T ou M) ; décalages avec leur unité : H+2mn, H-20mn, H+1h, H+1h30mn. Les événements se placent à H+… ou au passage d’un point par un participant.',
+      'Reference time common to the whole operation; each participant takes off at H plus or minus a delay. A single H-hour (T or M); offsets with their unit: H+2mn, H-20mn, H+1h, H+1h30mn. Events are placed at H+… or when a participant passes a point.',
+      'Gemeinsame Bezugszeit der ganzen Operation; jeder Teilnehmer startet bei H plus oder minus einer Verzögerung. Eine einzige Stunde H (T oder M); Versätze mit Einheit: H+2mn, H-20mn, H+1h, H+1h30mn. Ereignisse liegen bei H+… oder beim Überflug eines Punktes durch einen Teilnehmer.',
+      'Hora de referencia común a toda la operación; cada participante despega a H más o menos un retraso. Una sola hora H (T o M); desfases con su unidad: H+2mn, H-20mn, H+1h, H+1h30mn. Los eventos se sitúan en H+… o al paso de un participante por un punto.'
+    ],
+    ['Heure H (libellé ou heure réelle)', 'H-hour (label or real time)', 'Stunde H (Bezeichnung oder Uhrzeit)',
+      'Hora H (etiqueta u hora real)'
+    ],
     ['Indicatif', 'Callsign', 'Rufzeichen', 'Indicativo'],
     ['Mission', 'Mission', 'Mission', 'Misión'],
     ['Décollage (H-20mn, H+1h)', 'Take-off (H-20mn, H+1h)', 'Start (H-20mn, H+1h)', 'Despegue (H-20mn, H+1h)'],
     ['Rôle', 'Role', 'Rolle', 'Función'],
     ['+ Participant', '+ Participant', '+ Teilnehmer', '+ Participante'],
-    ['Reprendre les missions de l’opération', 'Take the operation’s missions', 'Missionen der Operation übernehmen', 'Tomar las misiones de la operación'],
+    ['Reprendre les missions de l’opération', 'Take the operation’s missions', 'Missionen der Operation übernehmen',
+      'Tomar las misiones de la operación'
+    ],
     ['Chiffons', 'Exercise targets', 'Übungsziele', 'Blancos de ejercicio'],
-    ['Pistes d’exercice que les équipages doivent reconnaître, intercepter ou escorter. Un chiffon « joué » est piloté par un joueur : il reçoit sa carte, son heure de départ et ses consignes ; un chiffon simulé n’est que dessiné.', 'Exercise tracks the crews must identify, intercept or escort. A “played” target is flown by a player: it gets its map, departure time and instructions; a simulated target is only drawn.', 'Übungsspuren, die die Besatzungen aufklären, abfangen oder begleiten sollen. Ein „gespieltes“ Ziel wird von einem Spieler geflogen: Es erhält Karte, Startzeit und Anweisungen; ein simuliertes Ziel wird nur gezeichnet.', 'Pistas de ejercicio que las tripulaciones deben reconocer, interceptar o escoltar. Un blanco «jugado» lo pilota un jugador: recibe su mapa, su hora de salida y sus consignas; un blanco simulado solo se dibuja.'],
+    ['Pistes d’exercice que les équipages doivent reconnaître, intercepter ou escorter. Un chiffon « joué » est piloté par un joueur : il reçoit sa carte, son heure de départ et ses consignes ; un chiffon simulé n’est que dessiné.',
+      'Exercise tracks the crews must identify, intercept or escort. A “played” target is flown by a player: it gets its map, departure time and instructions; a simulated target is only drawn.',
+      'Übungsspuren, die die Besatzungen aufklären, abfangen oder begleiten sollen. Ein „gespieltes“ Ziel wird von einem Spieler geflogen: Es erhält Karte, Startzeit und Anweisungen; ein simuliertes Ziel wird nur gezeichnet.',
+      'Pistas de ejercicio que las tripulaciones deben reconocer, interceptar o escoltar. Un blanco «jugado» lo pilota un jugador: recibe su mapa, su hora de salida y sus consignas; un blanco simulado solo se dibuja.'
+    ],
     ['Nom', 'Name', 'Name', 'Nombre'],
     ['Joué', 'Played', 'Gespielt', 'Jugado'],
     ['Départ (H+5mn, H+1h)', 'Departure (H+5mn, H+1h)', 'Abflug (H+5mn, H+1h)', 'Salida (H+5mn, H+1h)'],
@@ -583,13 +602,23 @@
     ['Points (« Nom lat, lon ; … »)', 'Points (“Name lat, lon; …”)', 'Punkte („Name lat, lon; …“)', 'Puntos («Nombre lat, lon; …»)'],
     ['Niveau', 'Level', 'Höhe', 'Nivel'],
     ['Vitesse (kt)', 'Speed (kt)', 'Geschwindigkeit (kt)', 'Velocidad (kt)'],
-    ['À établir par les équipages', 'To establish by the crews', 'Von den Besatzungen festzustellen', 'A establecer por las tripulaciones'],
+    ['À établir par les équipages', 'To establish by the crews', 'Von den Besatzungen festzustellen',
+      'A establecer por las tripulaciones'
+    ],
     ['Consignes du chiffon', 'Target instructions', 'Anweisungen des Ziels', 'Consignas del blanco'],
     ['+ Chiffon', '+ Target', '+ Ziel', '+ Blanco'],
-    ['Importer un tableau Markdown de pistes', 'Import a Markdown table of tracks', 'Markdown-Tabelle der Spuren importieren', 'Importar una tabla Markdown de pistas'],
-    ['Importer (remplace les pistes de même nom)', 'Import (replaces tracks of the same name)', 'Importieren (ersetzt gleichnamige Spuren)', 'Importar (sustituye las pistas del mismo nombre)'],
+    ['Importer un tableau Markdown de pistes', 'Import a Markdown table of tracks', 'Markdown-Tabelle der Spuren importieren',
+      'Importar una tabla Markdown de pistas'
+    ],
+    ['Importer (remplace les pistes de même nom)', 'Import (replaces tracks of the same name)',
+      'Importieren (ersetzt gleichnamige Spuren)', 'Importar (sustituye las pistas del mismo nombre)'
+    ],
     ['Chronologie', 'Timeline', 'Zeitablauf', 'Cronología'],
-    ['Ce qui arrive au fil de l’exercice, dans l’ordre des heures estimées. Message radio : passé par l’émetteur au moment indiqué. Pli scellé : remis avant le vol, ouvert par le destinataire au moment indiqué.', 'What happens during the exercise, in order of estimated time. Radio message: passed by the sender at the given moment. Sealed envelope: handed out before the flight, opened by the recipient at the given moment.', 'Was im Laufe der Übung geschieht, nach geschätzter Zeit geordnet. Funkspruch: vom Absender zum angegebenen Zeitpunkt übermittelt. Versiegelter Umschlag: vor dem Flug übergeben, vom Empfänger zum angegebenen Zeitpunkt geöffnet.', 'Lo que ocurre durante el ejercicio, por orden de hora estimada. Mensaje de radio: transmitido por el emisor en el momento indicado. Sobre sellado: entregado antes del vuelo, abierto por el destinatario en el momento indicado.'],
+    ['Ce qui arrive au fil de l’exercice, dans l’ordre des heures estimées. Message radio : passé par l’émetteur au moment indiqué. Pli scellé : remis avant le vol, ouvert par le destinataire au moment indiqué.',
+      'What happens during the exercise, in order of estimated time. Radio message: passed by the sender at the given moment. Sealed envelope: handed out before the flight, opened by the recipient at the given moment.',
+      'Was im Laufe der Übung geschieht, nach geschätzter Zeit geordnet. Funkspruch: vom Absender zum angegebenen Zeitpunkt übermittelt. Versiegelter Umschlag: vor dem Flug übergeben, vom Empfänger zum angegebenen Zeitpunkt geöffnet.',
+      'Lo que ocurre durante el ejercicio, por orden de hora estimada. Mensaje de radio: transmitido por el emisor en el momento indicado. Sobre sellado: entregado antes del vuelo, abierto por el destinatario en el momento indicado.'
+    ],
     ['Déclencheur', 'Trigger', 'Auslöser', 'Disparador'],
     ['Heure (H+…)', 'Time (H+…)', 'Zeit (H+…)', 'Hora (H+…)'],
     ['Passage d’un point', 'Passing a point', 'Überflug eines Punktes', 'Paso por un punto'],
@@ -614,10 +643,16 @@
     ['PLI SCELLÉ', 'SEALED ENVELOPE', 'VERSIEGELT', 'SOBRE SELLADO'],
     ['RADIO', 'RADIO', 'FUNK', 'RADIO'],
     ['Ce que reçoit chacun', 'What each one receives', 'Was jeder erhält', 'Lo que recibe cada uno'],
-    ['sa route, son heure de départ, ses consignes, sa carte', 'its route, departure time, instructions and map', 'seine Route, Startzeit, Anweisungen und Karte', 'su ruta, su hora de salida, sus consignas y su mapa'],
-    ['Aucun message ni pli adressé à cet équipage.', 'No message or envelope addressed to this crew.', 'Keine Nachricht und kein Umschlag an diese Besatzung.', 'Ningún mensaje ni sobre dirigido a esta tripulación.'],
+    ['sa route, son heure de départ, ses consignes, sa carte', 'its route, departure time, instructions and map',
+      'seine Route, Startzeit, Anweisungen und Karte', 'su ruta, su hora de salida, sus consignas y su mapa'
+    ],
+    ['Aucun message ni pli adressé à cet équipage.', 'No message or envelope addressed to this crew.',
+      'Keine Nachricht und kein Umschlag an diese Besatzung.', 'Ningún mensaje ni sobre dirigido a esta tripulación.'
+    ],
     ['CONSIGNES DU CHIFFON', 'TARGET INSTRUCTIONS', 'ANWEISUNGEN DES ZIELS', 'CONSIGNAS DEL BLANCO'],
-    ['Cette mission n’est pas encore déclarée parmi les participants.', 'This mission is not yet declared among the participants.', 'Diese Mission ist noch nicht unter den Teilnehmern eingetragen.', 'Esta misión aún no figura entre los participantes.']
+    ['Cette mission n’est pas encore déclarée parmi les participants.', 'This mission is not yet declared among the participants.',
+      'Diese Mission ist noch nicht unter den Teilnehmern eingetragen.', 'Esta misión aún no figura entre los participantes.'
+    ]
   ]);
   const register = () => {
     if (!window.RepositoryContentI18n) return false;

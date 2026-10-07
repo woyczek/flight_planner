@@ -20,7 +20,8 @@
     FOLDER_NAME = 'siaFolderName';
   /** Version du format de la base mémorisée : une base d'une autre version est ignorée (à relire). */
   const COMPAT = 14; // plus ancien format encore utilisable tel quel (15 n'ajoute que aero.vrp)
-  const VERSION = 16; // 13 : gestionnaire (admin) et mode d'activation (act) des espaces AIXM ; 14 : voies aériennes (aero.airways) ; 15 : points de report VFR (aero.vrp) ; 16 : sources (src) et données d'autres pays (shared/aero_sources.js)
+  const VERSION =
+  16; // 13 : gestionnaire (admin) et mode d'activation (act) des espaces AIXM ; 14 : voies aériennes (aero.airways) ; 15 : points de report VFR (aero.vrp) ; 16 : sources (src) et données d'autres pays (shared/aero_sources.js)
   const SCRIPT_URL = document.currentScript?.src || location.href;
   /** URL d'un fichier de l'application (chemin depuis la racine : « shared/carto/… »). */
   const appUrl = path => new URL('../' + path, SCRIPT_URL).href;
@@ -28,7 +29,7 @@
   let aeroLoad = null;
   const needAero = () => aeroLoad ||= window.AeroSources ? Promise.resolve(window.AeroSources) : new Promise(res => {
     const sc = document.createElement('script');
-    sc.src = new URL('aero_sources.js?v=8898b924', SCRIPT_URL).href;
+    sc.src = new URL('aero_sources.js?v=d5cffeb9', SCRIPT_URL).href;
     sc.onload = () => res(window.AeroSources || null);
     sc.onerror = () => res(null);
     document.head.append(sc);
@@ -45,7 +46,7 @@
   });
   const needZones = () => zonesLoad ||= (async () => {
     if (!window.AERO_ZONES_GEO) await loadScript('carto/aero_zones_geo.js?v=6e9678c4');
-    if (!window.AeroZones) await loadScript('aero_zones.js?v=53fb67e8');
+    if (!window.AeroZones) await loadScript('aero_zones.js?v=ad85da06');
     return window.AeroZones || null;
   })();
   /** Sous-dossiers du dossier SIA par source (fichiers d'autres pays rangés à part) ; zones/<zone>/ : fichiers déposés
@@ -64,14 +65,18 @@
       } catch {
         return resolve(null);
       }
-      const guard = setTimeout(() => reject(new Error('La base du navigateur (IndexedDB) ne répond pas : fermer les autres onglets du studio et de Paramètres, puis relancer.')), 15000);
+      const guard = setTimeout(() => reject(new Error(
+        'La base du navigateur (IndexedDB) ne répond pas : fermer les autres onglets du studio et de Paramètres, puis relancer.'
+        )), 15000);
       const done = f => (...a) => {
         clearTimeout(guard);
         f(...a);
       };
       resolve = done(resolve);
       reject = done(reject);
-      r.onblocked = () => reject(new Error('La base du navigateur est bloquée par un autre onglet : fermer les autres onglets du studio et de Paramètres, puis relancer.'));
+      r.onblocked = () => reject(new Error(
+        'La base du navigateur est bloquée par un autre onglet : fermer les autres onglets du studio et de Paramètres, puis relancer.'
+        ));
       r.onupgradeneeded = () => {
         if (create) r.result.createObjectStore(STORE);
         else {
@@ -182,7 +187,8 @@
   }
 
   // ===================================================================== résumé (siaBaseInfo:v1)
-  const cycleDate = b => b?.airac || (b?.xmlInventoryData || []).map(x => /(\d{4}-\d{2}-\d{2})/.exec(x.name)?.[1]).filter(Boolean).sort().pop() || '';
+  const cycleDate = b => b?.airac || (b?.xmlInventoryData || []).map(x => /(\d{4}-\d{2}-\d{2})/.exec(x.name)?.[1]).filter(Boolean).sort()
+    .pop() || '';
   /** Résumé d'une base : cycle, date, fichiers, nombres (par type d'espace), noms d'espaces (comparaison de deux bases). */
   function summarize(b) {
     if (!b) return null;
@@ -245,7 +251,9 @@
     };
     // résumé inchangé : pas de réécriture (chaque écriture réveille les autres onglets, événement storage)
     const cur = info();
-    if (cur && JSON.stringify([cur.airac, cur.mixed, cur.cachedAt, cur.folderName, cur.counts]) === JSON.stringify([next.airac, next.mixed, next.cachedAt, next.folderName, JSON.parse(JSON.stringify(next.counts))])) return;
+    if (cur && JSON.stringify([cur.airac, cur.mixed, cur.cachedAt, cur.folderName, cur.counts]) === JSON.stringify([next.airac, next
+        .mixed, next.cachedAt, next.folderName, JSON.parse(JSON.stringify(next.counts))
+      ])) return;
     try {
       localStorage.setItem(INFO, JSON.stringify({
         ...next,
@@ -312,7 +320,8 @@
     const rows = csvRows(text),
       h = (rows.shift() || []).map(x => x.trim().toLowerCase()),
       ix = n => h.indexOf(n);
-    if (['name', 'lat', 'lon', 'population'].some(n => ix(n) < 0)) throw new Error('CSV villes : colonnes name,lat,lon,population requises.');
+    if (['name', 'lat', 'lon', 'population'].some(n => ix(n) < 0)) throw new Error(
+      'CSV villes : colonnes name,lat,lon,population requises.');
     return rows.filter(c => c.length >= h.length).map(c => ({
         name: c[ix('name')],
         lat: +c[ix('lat')],
@@ -354,7 +363,8 @@
         obstacleFt: ix('obstacle_ft') >= 0 && c[ix('obstacle_ft')] !== '' ? +c[ix('obstacle_ft')] : null,
         source: ix('source') >= 0 ? c[ix('source')] || '' : ''
       };
-      if (Number.isFinite(cell.lat) && Number.isFinite(cell.lon) && cell.mora && !unique.has(cell.lat + '|' + cell.lon)) unique.set(cell.lat + '|' + cell.lon, cell);
+      if (Number.isFinite(cell.lat) && Number.isFinite(cell.lon) && cell.mora && !unique.has(cell.lat + '|' + cell.lon)) unique.set(cell
+        .lat + '|' + cell.lon, cell);
     }
     return [...unique.values()];
   }
@@ -365,10 +375,13 @@
   function moraCsv(cells, {
     airac = ''
   } = {}) {
-    const source = MORA_SOURCE + (cells.peaksOk === false ? ' (sommets OSM indisponibles : relief majoré de 100 m)' : '') + (airac ? ` — obstacles AIRAC ${airac}` : '');
+    const source = MORA_SOURCE + (cells.peaksOk === false ? ' (sommets OSM indisponibles : relief majoré de 100 m)' : '') + (airac ?
+      ` — obstacles AIRAC ${airac}` : '');
     return '﻿' + ['lat,lon,mora,mora_ft,lat_step,lon_step,terrain_ft,obstacle_ft,source',
       // source propre à la case (relue de mora.csv, MORA d'X-Plane) gardée ; sinon celle du calcul
-      ...cells.map(m => [m.lat.toFixed(1), m.lon.toFixed(1), m.mora, m.moraFt, 1, 1, m.terrainFt ?? '', m.obstacleFt ?? '', m.keepSource && m.source ? m.source : source].map(csvField).join(','))
+      ...cells.map(m => [m.lat.toFixed(1), m.lon.toFixed(1), m.mora, m.moraFt, 1, 1, m.terrainFt ?? '', m.obstacleFt ?? '', m
+        .keepSource && m.source ? m.source : source
+      ].map(csvField).join(','))
     ].join('\r\n') + '\r\n';
   }
   /** Recalcul simple : obstacles obstacleMax ({ 'lat|lon' : ft }) d'un nouveau cycle, relief (terrain_ft) du mora.csv existant.
@@ -377,7 +390,8 @@
     const rows = csvRows(text),
       head = (rows.shift() || []).map(h => h.trim().toLowerCase()),
       ix = n => head.indexOf(n);
-    if (['lat', 'lon', 'mora_ft', 'terrain_ft'].some(n => ix(n) < 0)) throw new Error('mora.csv : colonnes lat, lon, mora_ft, terrain_ft requises (fichier produit par le calcul complet).');
+    if (['lat', 'lon', 'mora_ft', 'terrain_ft'].some(n => ix(n) < 0)) throw new Error(
+      'mora.csv : colonnes lat, lon, mora_ft, terrain_ft requises (fichier produit par le calcul complet).');
     if (ix('obstacle_ft') < 0) head.push('obstacle_ft');
     if (ix('source') < 0) head.push('source');
     const changes = [],
@@ -409,7 +423,8 @@
       line[head.indexOf('mora')] = moraLabel(after);
       line[head.indexOf('mora_ft')] = after;
       line[head.indexOf('obstacle_ft')] = obst;
-      line[head.indexOf('source')] = String(line[head.indexOf('source')] || '').replace(/ — obstacles AIRAC [\d-]+( \(recalcul simple\))?$/, '') + tag;
+      line[head.indexOf('source')] = String(line[head.indexOf('source')] || '').replace(
+        / — obstacles AIRAC [\d-]+( \(recalcul simple\))?$/, '') + tag;
       cells.push({
         lat,
         lon,
@@ -640,11 +655,13 @@
       progress?.(++done, tiles.length, 'relief');
     });
     // Sommets lissés à ~200 m : relecture à ~25 m (z12) des tuiles proches du maximum de chaque cellule (8 au plus).
-    const jobs = Object.entries(spots).flatMap(([key, sp]) => Object.entries(sp).filter(([, h]) => h >= cell[key] - 100).sort((a, b) => b[1] - a[1]).slice(0, fineMax).map(([t]) => [key, t]));
+    const jobs = Object.entries(spots).flatMap(([key, sp]) => Object.entries(sp).filter(([, h]) => h >= cell[key] - 100).sort((a, b) =>
+      b[1] - a[1]).slice(0, fineMax).map(([t]) => [key, t]));
     const cache = {};
     let fineDone = 0;
     await pool(jobs, async ([key, t]) => {
-      const [x, y] = t.split('/').map(Number), [cl, co] = key.split('|').map(Number), d = await (cache[t] ??= terrariumTile(fine, x, y));
+      const [x, y] = t.split('/').map(Number), [cl, co] = key.split('|').map(Number), d = await (cache[t] ??= terrariumTile(fine,
+        x, y));
       scanTile(d, fine, x, y, {
         s: cl,
         n: cl + 1,
@@ -681,7 +698,8 @@
       peaksOk = false;
     }
     const cells = Object.entries(cell).map(([key, m]) => {
-      const [lat, lon] = key.split('|').map(Number), terrainFt = Math.max(0, m > 0 && !peaksOk ? m + 100 : m, peak[key] || 0) * 3.28084,
+      const [lat, lon] = key.split('|').map(Number), terrainFt = Math.max(0, m > 0 && !peaksOk ? m + 100 : m, peak[key] || 0) *
+        3.28084,
         obstacleFt = obstacleMax[key] || 0, moraFt = moraOf(Math.max(terrainFt, obstacleFt));
       return {
         lat,
@@ -744,8 +762,10 @@
   function activationOf(rmk) {
     // remarque sans séparateur (« Administrator : CCER Bordeaux Airspace defined… ») : nom arrêté au début de la phrase suivante
     const r = String(rmk || ''),
-      admin = (/(?:Administrator|Gestionnaire)\s*:\s*([^#\n\r.]+)/i.exec(r)?.[1] || '').split(/\s+(?=(?:Airspace|Area|Zone|Activ\w*|Avoidance|Espace|Except\w*|Excluding|When|Lorsque)\b)/)[0].trim(),
-      info = /(?:Activity known on|Actual activity provided by|Renseignements?\s*(?:sur l'activité)?)\s*:?\s*#?\s*-?\s*([^#\n\r]+)/i.exec(r)?.[1]?.trim().replace(/[.,;:]+$/, '') || '',
+      admin = (/(?:Administrator|Gestionnaire)\s*:\s*([^#\n\r.]+)/i.exec(r)?.[1] || '').split(
+        /\s+(?=(?:Airspace|Area|Zone|Activ\w*|Avoidance|Espace|Except\w*|Excluding|When|Lorsque)\b)/)[0].trim(),
+      info = /(?:Activity known on|Actual activity provided by|Renseignements?\s*(?:sur l'activité)?)\s*:?\s*#?\s*-?\s*([^#\n\r]+)/i.exec(
+        r)?.[1]?.trim().replace(/[.,;:]+$/, '') || '',
       act = /AZBA/i.test(r) ? 'AZBA' : /NOTAM/i.test(r) ? 'NOTAM' : /without notice|sans préavis/i.test(r) ? 'sans préavis' : '';
     return {
       admin,
@@ -807,7 +827,8 @@
       vx.forEach((v, i) => {
         ring.push(v.pt);
         const next = vx[(i + 1) % vx.length];
-        if ((v.kind === 'CWA' || v.kind === 'CCA') && vx.length > 1 && Number.isFinite(v.center[0]) && Number.isFinite(v.center[1])) ring.push(...expandAixmArc(v.pt, next.pt, v.center, v.kind === 'CWA').slice(0, -1));
+        if ((v.kind === 'CWA' || v.kind === 'CCA') && vx.length > 1 && Number.isFinite(v.center[0]) && Number.isFinite(v.center[1]))
+          ring.push(...expandAixmArc(v.pt, next.pt, v.center, v.kind === 'CWA').slice(0, -1));
       });
       const circle = abd.getElementsByTagName('Circle')[0];
       if (circle && !vx.length) {
@@ -920,7 +941,8 @@
       root = (head.match(/<([\w.-]+:)?([\w.-]+)(?:\s|>)/) || [])[2] || 'XML';
     let role = 'XML SIA annexe';
     if (/AirspaceDataset/i.test(root + head)) role = 'Contours dérivés (ancien format) — ignorés quand XML_SIA est présent';
-    else if (/AIXM-Snapshot|AIXMBasicMessage/i.test(root + head) || /AIXM4\.5/i.test(file.name)) role = 'AIXM complet — espaces, aérodromes, balises, obstacles';
+    else if (/AIXM-Snapshot|AIXMBasicMessage/i.test(root + head) || /AIXM4\.5/i.test(file.name)) role =
+      'AIXM complet — espaces, aérodromes, balises, obstacles';
     else if (/CoordinateDataset|miam/i.test(root + head)) role = 'Coordonnées ENR / MIAM';
     else if (/XML_SIA/i.test(file.name)) role = 'Export XML-SIA complet — contours d’espaces (SIV, RMZ/TMZ, AP…)';
     return {
@@ -1032,7 +1054,8 @@
           out.push(await (await d.getFileHandle(n)).getFile());
           seen.add(n);
         } catch {
-          /* absent */ }
+          /* absent */
+        }
       for (const a of ['airspace', 'airspaces']) {
         const sd = await subDir(d, a);
         // espaces OpenAir (airspace.txt ; pas borders.txt) : ceux de « Custom Data » d'abord, un seul de chaque nom
@@ -1066,10 +1089,10 @@
     const zd = await subDir(dir, 'zones');
     if (zd)
       for await (const h of zd.values())
-        if (h.kind === 'directory')
-          for (const f of (await filesOf(h)).filter(ok))(out.aixm5 ||= []).push(Object.assign(f, {
-            __rel: `zones/${h.name}/${f.name}`
-          })); // lecteur choisi par l'extension
+    if (h.kind === 'directory')
+      for (const f of (await filesOf(h)).filter(ok))(out.aixm5 ||= []).push(Object.assign(f, {
+        __rel: `zones/${h.name}/${f.name}`
+      })); // lecteur choisi par l'extension
     const s = Z?.settings(),
       xp = !Z || Object.keys(s.on).some(id => Z.isOn(id, s) && Z.srcOn(id, 'xplane', s));
     if (xp) {
@@ -1141,7 +1164,9 @@
     const extraOk = (id, f) => id === 'xplane' ? !xpZones || xpZones.length > 0 : wanted(f.__rel || `${id}/${f.name}`);
     let xmlFiles = files.filter(f => /\.xml$/i.test(f.name) && !/^miam-enr-5-7-/i.test(f.name) && wanted(f.name));
     const extraCount = Object.entries(extra).reduce((n, [id, l]) => n + l.filter(f => extraOk(id, f)).length, 0);
-    if (!xmlFiles.length && !extraCount) throw new Error(Z && !Object.values(zs.on).some(Boolean) ? 'Aucune zone active : Paramètres › Maintenance › Données aéronautiques, cliquer les zones voulues sur la carte.' : 'Aucun fichier pour les zones actives et leurs sources cochées : Paramètres › Maintenance › Données aéronautiques.');
+    if (!xmlFiles.length && !extraCount) throw new Error(Z && !Object.values(zs.on).some(Boolean) ?
+      'Aucune zone active : Paramètres › Maintenance › Données aéronautiques, cliquer les zones voulues sur la carte.' :
+      'Aucun fichier pour les zones actives et leurs sources cochées : Paramètres › Maintenance › Données aéronautiques.');
     const airacOf = f => AIRAC_NAME.exec(f.name)?.[1] || '',
       dates = [...new Set(xmlFiles.map(airacOf).filter(Boolean))].sort(),
       airac = dates[dates.length - 1] || '';
@@ -1153,7 +1178,8 @@
     // Jauge : chaque octet lu compte 1 ; analyse de l'AIXM (DOM) ≈ 0,8 × sa taille ; enregistrement ≈ 15 % du total lu.
     const moraFile = wanted('mora.csv') ? files.find(f => /^mora\.csv$/i.test(f.name)) : null,
       tracks = wanted('miam-enr-5-7-tracks.xml') ? files.find(f => /^miam-enr-5-7-tracks\.xml$/i.test(f.name)) : null;
-    const extraSize = Object.entries(extra).reduce((n, [id, l]) => n + l.filter(f => extraOk(id, f)).reduce((m, f) => m + f.size, 0), 0);
+    const extraSize = Object.entries(extra).reduce((n, [id, l]) => n + l.filter(f => extraOk(id, f)).reduce((m, f) => m + f.size, 0),
+    0);
     const readSize = xmlFiles.reduce((n, f) => n + f.size, 0) + (moraFile?.size || 0) + (tracks?.size || 0) + 2.5e6 + 1.5 * extraSize;
     const total = readSize + 0.8 * xmlFiles.filter(isAixm).reduce((n, f) => n + f.size, 0) + 0.15 * readSize;
     let doneUnits = 0,
@@ -1257,7 +1283,8 @@
     // (les autres sources découpent et nomment les mêmes espaces autrement)
     const bySource = {};
     const FR_FIR = /^(PARIS|REIMS|BREST|BORDEAUX|MARSEILLE|CAYENNE)$/i,
-      cover = base.airspaces.filter(a => a.type === 'FIR' && a.src === 'sia' && FR_FIR.test(a.name)).map(a => a.rings[0]).filter(Boolean);
+      cover = base.airspaces.filter(a => a.type === 'FIR' && a.src === 'sia' && FR_FIR.test(a.name)).map(a => a.rings[0]).filter(
+        Boolean);
     const inFrance = a => {
       let la0 = 90,
         la1 = -90,
@@ -1387,7 +1414,8 @@
   } = {}) {
     if (!dir) {
       const st = await window.FileAccess?.status?.('__sia');
-      if (!st?.handle) throw new Error('Dossier SIA non choisi : Paramètres › Installation › Sources et dossiers (dossier des données).');
+      if (!st?.handle) throw new Error(
+        'Dossier SIA non choisi : Paramètres › Installation › Sources et dossiers (dossier des données).');
       dir = st.handle;
       if (st.permission !== 'granted') {
         if (!request || await dir.requestPermission({
@@ -1415,19 +1443,34 @@
   const esc = window.RepositoryKit.esc; // échappement HTML commun (shared/kit.js)
   const T = {
     folder: ['Dossier SIA', 'SIA folder', 'SIA-Ordner', 'Carpeta SIA'],
-    reread: ['Reconstruire la base aéronautique', 'Rebuild the aeronautical database', 'Luftfahrtdatenbank neu aufbauen', 'Reconstruir la base aeronáutica'],
+    reread: ['Reconstruire la base aéronautique', 'Rebuild the aeronautical database', 'Luftfahrtdatenbank neu aufbauen',
+      'Reconstruir la base aeronáutica'
+    ],
     purge: ['Purger le cache', 'Purge the cache', 'Cache leeren', 'Vaciar la caché'],
     pick: ['Choisir le dossier SIA…', 'Choose the SIA folder…', 'SIA-Ordner wählen…', 'Elegir la carpeta SIA…'],
     none: ['Aucune base mémorisée.', 'No stored base.', 'Keine gespeicherte Basis.', 'Ninguna base guardada.'],
     reading: ['Relecture en cours…', 'Re-reading…', 'Wird eingelesen…', 'Releyendo…'],
-    confirmPurge: ['Purger la base aéronautique mémorisée dans ce navigateur ? Elle sera reconstruite à la prochaine reconstruction.', 'Purge the aeronautical database stored in this browser? It is rebuilt at the next rebuild.', 'Die in diesem Browser gespeicherte Luftfahrtdatenbank leeren? Sie wird beim nächsten Neuaufbau wiederhergestellt.', '¿Vaciar la base aeronáutica guardada en este navegador? Se reconstruirá en la próxima reconstrucción.'],
-    purged: ['Cache purgé : reconstruire la base aéronautique.', 'Cache purged: rebuild the aeronautical database.', 'Cache geleert: Luftfahrtdatenbank neu aufbauen.', 'Caché vaciada: reconstruir la base aeronáutica.'],
+    confirmPurge: ['Purger la base aéronautique mémorisée dans ce navigateur ? Elle sera reconstruite à la prochaine reconstruction.',
+      'Purge the aeronautical database stored in this browser? It is rebuilt at the next rebuild.',
+      'Die in diesem Browser gespeicherte Luftfahrtdatenbank leeren? Sie wird beim nächsten Neuaufbau wiederhergestellt.',
+      '¿Vaciar la base aeronáutica guardada en este navegador? Se reconstruirá en la próxima reconstrucción.'
+    ],
+    purged: ['Cache purgé : reconstruire la base aéronautique.', 'Cache purged: rebuild the aeronautical database.',
+      'Cache geleert: Luftfahrtdatenbank neu aufbauen.', 'Caché vaciada: reconstruir la base aeronáutica.'
+    ],
     empty: ['Cache déjà vide.', 'Cache already empty.'],
-    old: ['Base mémorisée d’une version précédente : reconstruire la base aéronautique.', 'Stored base from an earlier version: rebuild the aeronautical database.', 'Gespeicherte Basis einer früheren Version: Luftfahrtdatenbank neu aufbauen.', 'Base guardada de una versión anterior: reconstruir la base aeronáutica.'],
+    old: ['Base mémorisée d’une version précédente : reconstruire la base aéronautique.',
+      'Stored base from an earlier version: rebuild the aeronautical database.',
+      'Gespeicherte Basis einer früheren Version: Luftfahrtdatenbank neu aufbauen.',
+      'Base guardada de una versión anterior: reconstruir la base aeronáutica.'
+    ],
     files: ['Fichiers analysés', 'Analysed files', 'Analysierte Dateien', 'Archivos analizados'],
     cancel: ['Annuler', 'Cancel', 'Abbrechen', 'Cancelar'],
     cancelled: ['Relecture annulée : la base mémorisée n’a pas changé.', 'Re-read cancelled: the stored base is unchanged.'],
-    stall: ['Aucun avancement depuis {s} s sur « {p} ». Causes possibles : onglet en arrière-plan (le laisser au premier plan), fichier en cours de téléchargement par Synology Drive (fichier « à la demande » : le rendre disponible hors ligne), autre onglet du studio ou de Paramètres ouvert. Annuler puis relancer si cela persiste.', 'No progress for {s} s on “{p}”. Possible causes: background tab, file being downloaded by the sync client (on-demand file), another studio / Settings tab open. Cancel and retry if it persists.'],
+    stall: [
+      'Aucun avancement depuis {s} s sur « {p} ». Causes possibles : onglet en arrière-plan (le laisser au premier plan), fichier en cours de téléchargement par Synology Drive (fichier « à la demande » : le rendre disponible hors ligne), autre onglet du studio ou de Paramètres ouvert. Annuler puis relancer si cela persiste.',
+      'No progress for {s} s on “{p}”. Possible causes: background tab, file being downloaded by the sync client (on-demand file), another studio / Settings tab open. Cancel and retry if it persists.'
+    ],
     durations: ['Durées', 'Durations', 'Dauer', 'Duraciones']
   };
   /** Ligne d'état de la base mémorisée (cycle, date, périmé ?). */
@@ -1442,7 +1485,9 @@
   function reportHtml(base, r) {
     const warn = [];
     if (r.skipped.length) warn.push(L([`Autre(s) cycle(s) écarté(s) : ${r.skipped.join(', ')} — à archiver (Paramètres › Maintenance).`, `Other cycle(s) skipped: ${r.skipped.join(', ')} — archive them.`]));
-    if (r.noCities) warn.push(L(['villes_geonames.csv introuvable (shared/carto/) : noms de villes indisponibles.', 'villes_geonames.csv not found: no city names.']));
+    if (r.noCities) warn.push(L(['villes_geonames.csv introuvable (shared/carto/) : noms de villes indisponibles.',
+      'villes_geonames.csv not found: no city names.'
+    ]));
     return `<span class="ok">✓ ${esc(L(['Base chargée et mémorisée', 'Base loaded and stored', 'Basis geladen und gespeichert', 'Base cargada y guardada']))}${r.airac ? ` (AIRAC ${esc(r.airac)})` : ''} : ${r.xmlCount} XML, ${base.airspaces.length} ${esc(L(['espaces', 'airspaces']))}, ${(base.aero?.aerodromes || []).length} ${esc(L(['aérodromes', 'aerodromes']))}, ${Object.keys(base.obstacleMax || {}).length} ${esc(L(['cellules d’obstacles', 'obstacle cells']))}, ${base.cities.length} ${esc(L(['villes', 'cities']))}.</span>${Object.keys(r.bySource || {}).length ? `<br><span class="small">${esc(L(['Autres sources', 'Other sources', 'Weitere Quellen', 'Otras fuentes']))} : ${Object.entries(r.bySource).map(([k, v]) => `${esc(k)} ${v.files} ${esc(L(['fichier(s)', 'file(s)', 'Datei(en)', 'archivo(s)']))}, +${v.airspaces} ${esc(L(['espaces', 'airspaces', 'Lufträume', 'espacios']))}`).join(' · ')}</span>` : ''}${warn.map(w => `<br><span class="err">${esc(w)}</span>`).join('')}`;
   }
   /** Bloc « Base de données SIA » : dossier (bouton FileAccess), Relire, Purger, état, compte rendu, fichiers analysés.
@@ -1627,7 +1672,9 @@
       setMessage
     };
   }
-  if (!document.getElementById('siaBaseStyle')) document.head.insertAdjacentHTML('beforeend', '<style id="siaBaseStyle">.sia-base-actions{display:flex;flex-wrap:wrap;gap:.5rem;align-items:center}.sia-base-msg{margin:.4rem 0}.sia-base-state{margin:.4rem 0}.sia-base-progress{margin:.5rem 0;display:flex;flex-wrap:wrap;gap:.3rem .6rem;align-items:center}.sia-base-progress progress{flex:1 1 240px;height:14px}.sia-base-progress .sia-base-step,.sia-base-progress .sia-base-stall{flex-basis:100%}</style>');
+  if (!document.getElementById('siaBaseStyle')) document.head.insertAdjacentHTML('beforeend',
+    '<style id="siaBaseStyle">.sia-base-actions{display:flex;flex-wrap:wrap;gap:.5rem;align-items:center}.sia-base-msg{margin:.4rem 0}.sia-base-state{margin:.4rem 0}.sia-base-progress{margin:.5rem 0;display:flex;flex-wrap:wrap;gap:.3rem .6rem;align-items:center}.sia-base-progress progress{flex:1 1 240px;height:14px}.sia-base-progress .sia-base-step,.sia-base-progress .sia-base-stall{flex-basis:100%}</style>'
+    );
 
   window.SiaBase = {
     VERSION,

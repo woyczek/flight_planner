@@ -19,20 +19,34 @@
     sia: {
       kind: 'manual',
       readable: true,
-      label: L4('SIA France — AIXM 4.5 et XML_SIA (cycle AIRAC)', 'SIA France — AIXM 4.5 and XML_SIA (AIRAC cycle)', 'SIA Frankreich — AIXM 4.5 und XML_SIA (AIRAC-Zyklus)', 'SIA Francia — AIXM 4.5 y XML_SIA (ciclo AIRAC)'),
-      gives: L4('espaces, zones RTBA / AZBA, aérodromes, balises, obstacles, points VFR', 'airspace, RTBA / AZBA areas, aerodromes, navaids, obstacles, VFR points', 'Lufträume, RTBA-/AZBA-Gebiete, Flugplätze, Funkfeuer, Hindernisse, VFR-Punkte', 'espacios, zonas RTBA / AZBA, aeródromos, radioayudas, obstáculos, puntos VFR'),
-      howto: L4('Commande gratuite (0 €) sur le site du SIA, à refaire à chaque cycle AIRAC : compte SIA, « Ajouter au panier », « Passer commande » en acceptant la licence, télécharger le ZIP ; puis « Récupérer le ZIP téléchargé » (le lanceur le prend dans Téléchargements) ou « ZIP d’export du SIA… ».', 'Free order (0 €) on the SIA website, to redo at each AIRAC cycle: SIA account, “Add to cart”, “Place order” accepting the licence, download the ZIP; then “Fetch the downloaded ZIP” (the launcher takes it from Downloads) or “SIA export ZIP…”.', 'Kostenlose Bestellung (0 €) auf der SIA-Website, bei jedem AIRAC-Zyklus erneut: SIA-Konto, „In den Warenkorb“, „Bestellen“ mit Annahme der Lizenz, ZIP herunterladen; dann „Heruntergeladenes ZIP holen“ (der Starter nimmt es aus dem Download-Ordner) oder „SIA-Export-ZIP…“.', 'Pedido gratuito (0 €) en el sitio del SIA, a repetir en cada ciclo AIRAC: cuenta SIA, «Añadir al carrito», «Realizar pedido» aceptando la licencia, descargar el ZIP; luego «Recuperar el ZIP descargado» (el lanzador lo toma de Descargas) o «ZIP de exportación del SIA…».'),
+      label: L4('SIA France — AIXM 4.5 et XML_SIA (cycle AIRAC)', 'SIA France — AIXM 4.5 and XML_SIA (AIRAC cycle)',
+        'SIA Frankreich — AIXM 4.5 und XML_SIA (AIRAC-Zyklus)', 'SIA Francia — AIXM 4.5 y XML_SIA (ciclo AIRAC)'),
+      gives: L4('espaces, zones RTBA / AZBA, aérodromes, balises, obstacles, points VFR',
+        'airspace, RTBA / AZBA areas, aerodromes, navaids, obstacles, VFR points',
+        'Lufträume, RTBA-/AZBA-Gebiete, Flugplätze, Funkfeuer, Hindernisse, VFR-Punkte',
+        'espacios, zonas RTBA / AZBA, aeródromos, radioayudas, obstáculos, puntos VFR'),
+      howto: L4(
+        'Commande gratuite (0 €) sur le site du SIA, à refaire à chaque cycle AIRAC : compte SIA, « Ajouter au panier », « Passer commande » en acceptant la licence, télécharger le ZIP ; puis « Récupérer le ZIP téléchargé » (le lanceur le prend dans Téléchargements) ou « ZIP d’export du SIA… ».',
+        'Free order (0 €) on the SIA website, to redo at each AIRAC cycle: SIA account, “Add to cart”, “Place order” accepting the licence, download the ZIP; then “Fetch the downloaded ZIP” (the launcher takes it from Downloads) or “SIA export ZIP…”.',
+        'Kostenlose Bestellung (0 €) auf der SIA-Website, bei jedem AIRAC-Zyklus erneut: SIA-Konto, „In den Warenkorb“, „Bestellen“ mit Annahme der Lizenz, ZIP herunterladen; dann „Heruntergeladenes ZIP holen“ (der Starter nimmt es aus dem Download-Ordner) oder „SIA-Export-ZIP…“.',
+        'Pedido gratuito (0 €) en el sitio del SIA, a repetir en cada ciclo AIRAC: cuenta SIA, «Añadir al carrito», «Realizar pedido» aceptando la licencia, descargar el ZIP; luego «Recuperar el ZIP descargado» (el lanzador lo toma de Descargas) o «ZIP de exportación del SIA…».'
+        ),
       licence: 'Licence ouverte du SIA',
       age: 'airac'
     },
     dircam: {
       kind: 'pdf',
       readable: true,
-      label: L4('DIRCAM — MILAIP ENR 5.7 (axes de ravitaillement en vol)', 'DIRCAM — MILAIP ENR 5.7 (air refuelling tracks)', 'DIRCAM — MILAIP ENR 5.7 (Luftbetankungsstrecken)', 'DIRCAM — MILAIP ENR 5.7 (ejes de reabastecimiento en vuelo)'),
-      gives: L4('axes AAR nommés (studio, CR AAR)', 'named AAR tracks (studio, AAR reports)', 'benannte AAR-Strecken', 'ejes AAR con nombre'),
+      label: L4('DIRCAM — MILAIP ENR 5.7 (axes de ravitaillement en vol)', 'DIRCAM — MILAIP ENR 5.7 (air refuelling tracks)',
+        'DIRCAM — MILAIP ENR 5.7 (Luftbetankungsstrecken)', 'DIRCAM — MILAIP ENR 5.7 (ejes de reabastecimiento en vuelo)'),
+      gives: L4('axes AAR nommés (studio, CR AAR)', 'named AAR tracks (studio, AAR reports)', 'benannte AAR-Strecken',
+        'ejes AAR con nombre'),
       src: 'dircamMilaip',
       link: 'https://www.dircam.dsae.defense.gouv.fr/fr/milaip',
-      howto: L4('PDF de la MILAIP (section ENR 5.7) à télécharger sur le site de la DIRCAM, puis extraction des axes (procédure : MANUEL_EXPLOITATION § 9.1) vers data/sia/miam-enr-5-7-tracks.xml. Réutilisation non commerciale, en citant l’amendement.', 'MILAIP PDF (section ENR 5.7) to download from the DIRCAM website, then track extraction (procedure: MANUEL_EXPLOITATION § 9.1) into data/sia/miam-enr-5-7-tracks.xml. Non-commercial reuse, citing the amendment.'),
+      howto: L4(
+        'PDF de la MILAIP (section ENR 5.7) à télécharger sur le site de la DIRCAM, puis extraction des axes (procédure : MANUEL_EXPLOITATION § 9.1) vers data/sia/miam-enr-5-7-tracks.xml. Réutilisation non commerciale, en citant l’amendement.',
+        'MILAIP PDF (section ENR 5.7) to download from the DIRCAM website, then track extraction (procedure: MANUEL_EXPLOITATION § 9.1) into data/sia/miam-enr-5-7-tracks.xml. Non-commercial reuse, citing the amendment.'
+        ),
       licence: 'DIRCAM (non commercial)',
       age: 'file'
     },
@@ -41,7 +55,10 @@
       readable: true,
       provider: 'openaip',
       label: L4('openAIP — export du pays', 'openAIP — country export', 'openAIP — Länderexport', 'openAIP — exportación del país'),
-      gives: L4('espaces, aérodromes, balises, points VFR (données communautaires)', 'airspace, aerodromes, navaids, VFR points (community data)', 'Lufträume, Flugplätze, Funkfeuer, VFR-Punkte (Gemeinschaftsdaten)', 'espacios, aeródromos, radioayudas, puntos VFR (datos comunitarios)'),
+      gives: L4('espaces, aérodromes, balises, points VFR (données communautaires)',
+        'airspace, aerodromes, navaids, VFR points (community data)',
+        'Lufträume, Flugplätze, Funkfeuer, VFR-Punkte (Gemeinschaftsdaten)',
+        'espacios, aeródromos, radioayudas, puntos VFR (datos comunitarios)'),
       licence: 'CC BY-NC 4.0 (© openAIP)',
       age: 'file'
     },
@@ -49,8 +66,10 @@
       kind: 'download',
       readable: true,
       provider: 'enaire',
-      label: L4('ENAIRE — AIP Espagne (AIXM 5.1)', 'ENAIRE — Spain AIP (AIXM 5.1)', 'ENAIRE — AIP Spanien (AIXM 5.1)', 'ENAIRE — AIP España (AIXM 5.1)'),
-      gives: L4('espaces (R, D, P, TRA, TSA…), balises, points, routes', 'airspace (R, D, P, TRA, TSA…), navaids, points, routes', 'Lufträume, Funkfeuer, Punkte, Strecken', 'espacios, radioayudas, puntos, rutas'),
+      label: L4('ENAIRE — AIP Espagne (AIXM 5.1)', 'ENAIRE — Spain AIP (AIXM 5.1)', 'ENAIRE — AIP Spanien (AIXM 5.1)',
+        'ENAIRE — AIP España (AIXM 5.1)'),
+      gives: L4('espaces (R, D, P, TRA, TSA…), balises, points, routes', 'airspace (R, D, P, TRA, TSA…), navaids, points, routes',
+        'Lufträume, Funkfeuer, Punkte, Strecken', 'espacios, radioayudas, puntos, rutas'),
       licence: 'ENAIRE (usage personnel)',
       age: 'file'
     },
@@ -59,7 +78,8 @@
       readable: true,
       provider: 'faa',
       args: ['sua', 'mtr'],
-      label: L4('FAA — zones à usage spécial et routes militaires', 'FAA — special use airspace and military routes', 'FAA — Sonderlufträume und Militärrouten', 'FAA — espacios de uso especial y rutas militares'),
+      label: L4('FAA — zones à usage spécial et routes militaires', 'FAA — special use airspace and military routes',
+        'FAA — Sonderlufträume und Militärrouten', 'FAA — espacios de uso especial y rutas militares'),
       gives: L4('MOA, R, W, A, P ; routes MTR (IR, VR, SR)', 'MOA, R, W, A, P; MTR routes (IR, VR, SR)'),
       licence: 'domaine public',
       age: 'file'
@@ -69,8 +89,10 @@
       readable: true,
       provider: 'faa',
       args: ['class'],
-      label: L4('FAA — classes d’espace (B, C, D, E)', 'FAA — airspace classes (B, C, D, E)', 'FAA — Luftraumklassen (B, C, D, E)', 'FAA — clases de espacio (B, C, D, E)'),
-      gives: L4('espaces contrôlés (gros fichier)', 'controlled airspace (large file)', 'kontrollierte Lufträume (große Datei)', 'espacios controlados (archivo grande)'),
+      label: L4('FAA — classes d’espace (B, C, D, E)', 'FAA — airspace classes (B, C, D, E)', 'FAA — Luftraumklassen (B, C, D, E)',
+        'FAA — clases de espacio (B, C, D, E)'),
+      gives: L4('espaces contrôlés (gros fichier)', 'controlled airspace (large file)', 'kontrollierte Lufträume (große Datei)',
+        'espacios controlados (archivo grande)'),
       licence: 'domaine public',
       age: 'file',
       off: true
@@ -78,23 +100,33 @@
     nats: {
       kind: 'manual',
       readable: true,
-      label: L4('NATS — AIP Royaume-Uni (AIXM 5.1)', 'NATS — UK AIP (AIXM 5.1)', 'NATS — AIP Vereinigtes Königreich (AIXM 5.1)', 'NATS — AIP Reino Unido (AIXM 5.1)'),
-      gives: L4('espaces, balises, points, aérodromes', 'airspace, navaids, points, aerodromes', 'Lufträume, Funkfeuer, Punkte, Flugplätze', 'espacios, radioayudas, puntos, aeródromos'),
+      label: L4('NATS — AIP Royaume-Uni (AIXM 5.1)', 'NATS — UK AIP (AIXM 5.1)', 'NATS — AIP Vereinigtes Königreich (AIXM 5.1)',
+        'NATS — AIP Reino Unido (AIXM 5.1)'),
+      gives: L4('espaces, balises, points, aérodromes', 'airspace, navaids, points, aerodromes',
+        'Lufträume, Funkfeuer, Punkte, Flugplätze', 'espacios, radioayudas, puntos, aeródromos'),
       src: 'natsData',
       link: 'https://nats-uk.ead-it.com/cms-nats/opencms/en/Publications/digital-datasets/',
       downloads: 'EG_*_DS_*_XML.zip', // ZIP NATS (AIP, obstacles, zones drones) pris dans Téléchargements par « Déposer les fichiers… »
-      howto: L4('Inscription gratuite sur le site de NATS, puis télécharger le « UK ICAO AIP Dataset » (AIXM 5.1) et le déposer dans data/sia/zones/gb/. À refaire à chaque cycle AIRAC.', 'Free registration on the NATS website, then download the “UK ICAO AIP Dataset” (AIXM 5.1) and drop it into data/sia/zones/gb/. To redo at each AIRAC cycle.', 'Kostenlose Registrierung auf der NATS-Website, dann das „UK ICAO AIP Dataset“ (AIXM 5.1) herunterladen und in data/sia/zones/gb/ ablegen. Bei jedem AIRAC-Zyklus erneut.', 'Registro gratuito en el sitio de NATS, luego descargar el «UK ICAO AIP Dataset» (AIXM 5.1) y depositarlo en data/sia/zones/gb/. A repetir en cada ciclo AIRAC.'),
+      howto: L4(
+        'Inscription gratuite sur le site de NATS, puis télécharger le « UK ICAO AIP Dataset » (AIXM 5.1) et le déposer dans data/sia/zones/gb/. À refaire à chaque cycle AIRAC.',
+        'Free registration on the NATS website, then download the “UK ICAO AIP Dataset” (AIXM 5.1) and drop it into data/sia/zones/gb/. To redo at each AIRAC cycle.',
+        'Kostenlose Registrierung auf der NATS-Website, dann das „UK ICAO AIP Dataset“ (AIXM 5.1) herunterladen und in data/sia/zones/gb/ ablegen. Bei jedem AIRAC-Zyklus erneut.',
+        'Registro gratuito en el sitio de NATS, luego descargar el «UK ICAO AIP Dataset» (AIXM 5.1) y depositarlo en data/sia/zones/gb/. A repetir en cada ciclo AIRAC.'
+        ),
       licence: 'NATS (usage personnel)',
       age: 'file'
     },
     ukmil: {
       kind: 'pdf',
       readable: false,
-      label: L4('UK Mil AIP — zones de vol à basse altitude (PDF)', 'UK Mil AIP — low flying areas (PDF)', 'UK Mil AIP — Tiefluggebiete (PDF)', 'UK Mil AIP — zonas de vuelo a baja altura (PDF)'),
-      gives: L4('zones d’exercice (ENR 5.2), zones de vol à basse altitude (ENR 6) — lecture par la suite à venir', 'exercise areas (ENR 5.2), low flying areas (ENR 6) — reading by the suite to come'),
+      label: L4('UK Mil AIP — zones de vol à basse altitude (PDF)', 'UK Mil AIP — low flying areas (PDF)',
+        'UK Mil AIP — Tiefluggebiete (PDF)', 'UK Mil AIP — zonas de vuelo a baja altura (PDF)'),
+      gives: L4('zones d’exercice (ENR 5.2), zones de vol à basse altitude (ENR 6) — lecture par la suite à venir',
+        'exercise areas (ENR 5.2), low flying areas (ENR 6) — reading by the suite to come'),
       src: 'ukMilAip',
       link: 'https://www.aidu.mod.uk/aip/aipVolumes.html',
-      howto: L4('PDF en libre accès (Open Government Licence v3.0). La suite ne lit pas encore ces PDF : lien gardé pour consultation.', 'Freely available PDFs (Open Government Licence v3.0). The suite does not read these PDFs yet: link kept for reference.'),
+      howto: L4('PDF en libre accès (Open Government Licence v3.0). La suite ne lit pas encore ces PDF : lien gardé pour consultation.',
+        'Freely available PDFs (Open Government Licence v3.0). The suite does not read these PDFs yet: link kept for reference.'),
       licence: 'OGL v3.0',
       age: 'file',
       off: true
@@ -102,11 +134,18 @@
     navcan: {
       kind: 'pdf',
       readable: false,
-      label: L4('NAV CANADA — AIP Canada et manuel des espaces aériens désignés (PDF)', 'NAV CANADA — AIP Canada and Designated Airspace Handbook (PDF)', 'NAV CANADA — AIP Kanada und Designated Airspace Handbook (PDF)', 'NAV CANADA — AIP Canadá y Designated Airspace Handbook (PDF)'),
-      gives: L4('espaces réglementés et désignés — lecture par la suite à venir', 'restricted and designated airspace — reading by the suite to come'),
+      label: L4('NAV CANADA — AIP Canada et manuel des espaces aériens désignés (PDF)',
+        'NAV CANADA — AIP Canada and Designated Airspace Handbook (PDF)',
+        'NAV CANADA — AIP Kanada und Designated Airspace Handbook (PDF)',
+        'NAV CANADA — AIP Canadá y Designated Airspace Handbook (PDF)'),
+      gives: L4('espaces réglementés et désignés — lecture par la suite à venir',
+        'restricted and designated airspace — reading by the suite to come'),
       src: 'navcanAip',
       link: 'https://www.navcanada.ca/en/aeronautical-information/operational-guides-and-products.aspx',
-      howto: L4('Publications gratuites en PDF ; les données numériques de NAV CANADA sont vendues sous licence. La suite ne lit pas encore ces PDF : lien gardé pour consultation ; openAIP et X-Plane couvrent le Canada.', 'Free PDF publications; NAV CANADA digital data are sold under licence. The suite does not read these PDFs yet: link kept for reference; openAIP and X-Plane cover Canada.'),
+      howto: L4(
+        'Publications gratuites en PDF ; les données numériques de NAV CANADA sont vendues sous licence. La suite ne lit pas encore ces PDF : lien gardé pour consultation ; openAIP et X-Plane couvrent le Canada.',
+        'Free PDF publications; NAV CANADA digital data are sold under licence. The suite does not read these PDFs yet: link kept for reference; openAIP and X-Plane cover Canada.'
+        ),
       licence: 'NAV CANADA',
       age: 'file',
       off: true
@@ -115,17 +154,26 @@
       kind: 'local',
       global: true,
       readable: true,
-      label: L4('X-Plane — données de navigation du simulateur', 'X-Plane — simulator navigation data', 'X-Plane — Navigationsdaten des Simulators', 'X-Plane — datos de navegación del simulador'),
-      gives: L4('espaces (OpenAir), balises, points, voies aériennes, grille MORA ; découpés aux contours de la zone', 'airspace (OpenAir), navaids, fixes, airways, MORA grid; cut to the zone outline', 'Lufträume (OpenAir), Funkfeuer, Punkte, Luftstraßen, MORA-Gitter; auf die Zone zugeschnitten', 'espacios (OpenAir), radioayudas, puntos, aerovías, rejilla MORA; recortados al contorno de la zona'),
-      howto: L4('Choisir une fois le dossier d’installation d’X-Plane (bouton ci-dessous). Données Navigraph de « Custom Data » : licence personnelle, jamais copiées.', 'Choose the X-Plane installation folder once (button below). Navigraph data in “Custom Data”: personal licence, never copied.'),
+      label: L4('X-Plane — données de navigation du simulateur', 'X-Plane — simulator navigation data',
+        'X-Plane — Navigationsdaten des Simulators', 'X-Plane — datos de navegación del simulador'),
+      gives: L4('espaces (OpenAir), balises, points, voies aériennes, grille MORA ; découpés aux contours de la zone',
+        'airspace (OpenAir), navaids, fixes, airways, MORA grid; cut to the zone outline',
+        'Lufträume (OpenAir), Funkfeuer, Punkte, Luftstraßen, MORA-Gitter; auf die Zone zugeschnitten',
+        'espacios (OpenAir), radioayudas, puntos, aerovías, rejilla MORA; recortados al contorno de la zona'),
+      howto: L4(
+        'Choisir une fois le dossier d’installation d’X-Plane (bouton ci-dessous). Données Navigraph de « Custom Data » : licence personnelle, jamais copiées.',
+        'Choose the X-Plane installation folder once (button below). Navigraph data in “Custom Data”: personal licence, never copied.'
+        ),
       licence: 'GPL (Laminar) / Navigraph (personnel)',
       age: 'xplane'
     },
     mora: {
       kind: 'computed',
       readable: true,
-      label: L4('MORA calculée (relief, sommets OpenStreetMap, obstacles)', 'Computed MORA (terrain, OpenStreetMap peaks, obstacles)', 'Berechnete MORA (Relief, OSM-Gipfel, Hindernisse)', 'MORA calculada (relieve, cumbres OSM, obstáculos)'),
-      gives: L4('grille MORA de la zone (mora.csv) ; ODbL pour la part OpenStreetMap', 'MORA grid of the zone (mora.csv); ODbL for the OpenStreetMap part'),
+      label: L4('MORA calculée (relief, sommets OpenStreetMap, obstacles)', 'Computed MORA (terrain, OpenStreetMap peaks, obstacles)',
+        'Berechnete MORA (Relief, OSM-Gipfel, Hindernisse)', 'MORA calculada (relieve, cumbres OSM, obstáculos)'),
+      gives: L4('grille MORA de la zone (mora.csv) ; ODbL pour la part OpenStreetMap',
+        'MORA grid of the zone (mora.csv); ODbL for the OpenStreetMap part'),
       licence: 'ODbL (part OSM)',
       age: 'file'
     }
@@ -184,7 +232,8 @@
     try {
       old = JSON.parse(localStorage.getItem('aeroSources:v1') || 'null');
     } catch {
-      /* illisible */ }
+      /* illisible */
+    }
     const on = {
       fr: old?.enabled?.sia !== false
     };
@@ -200,7 +249,8 @@
     try {
       localStorage.setItem(KEY, JSON.stringify(s));
     } catch {
-      /* stockage refusé */ }
+      /* stockage refusé */
+    }
     window.dispatchEvent(new CustomEvent('aero-zones-change', {
       detail: s
     }));
@@ -315,17 +365,19 @@
     return (lat, lon) => parts.some(({
       r,
       b
-    }) => lon >= b.w - margin && lon <= b.e + margin && lat >= b.s - margin && lat <= b.n + margin && (inRing(r, lon, lat) || margin > 0 && [
-      [margin, 0],
-      [-margin, 0],
-      [0, margin],
-      [0, -margin]
-    ].some(([dx, dy]) => inRing(r, lon + dx, lat + dy))));
+    }) => lon >= b.w - margin && lon <= b.e + margin && lat >= b.s - margin && lat <= b.n + margin && (inRing(r, lon, lat) || margin >
+      0 && [
+        [margin, 0],
+        [-margin, 0],
+        [0, margin],
+        [0, -margin]
+      ].some(([dx, dy]) => inRing(r, lon + dx, lat + dy))));
   }
   /** Cases d'un degré d'une zone (centre de la case dans un de ses contours) : Set « lat|lon » (degrés entiers du
    *  coin sud-ouest), par balayage des lignes (intersections des arêtes avec chaque parallèle à mi-degré) — coût du
    *  nombre de sommets, pas du nombre de cases ; gardé par zone. */
   const cellsCache = new Map();
+
   function cellsOf(id) {
     if (cellsCache.has(id)) return cellsCache.get(id);
     const out = new Set();
@@ -334,7 +386,8 @@
       for (let i = 0, j = r.length - 1; i < r.length; j = i++) {
         const [x1, y1] = r[j], [x2, y2] = r[i];
         if (y1 === y2) continue;
-        const lo = Math.min(y1, y2), hi = Math.max(y1, y2);
+        const lo = Math.min(y1, y2),
+          hi = Math.max(y1, y2);
         for (let la = Math.ceil(lo - .5); la + .5 < hi; la++) {
           const y = la + .5;
           if (y < lo) continue;

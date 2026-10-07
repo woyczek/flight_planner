@@ -30,7 +30,8 @@
     const state = read();
     state.hidden ??= {};
     state.order ??= {};
-    const blocks = [...main.querySelectorAll("section,.panel,.format-note,.analysis-dock,.trend-card")].filter(el => !el.closest("section") || el.matches("section,.panel"));
+    const blocks = [...main.querySelectorAll("section,.panel,.format-note,.analysis-dock,.trend-card")].filter(el => !el.closest(
+      "section") || el.matches("section,.panel"));
     const parents = new Map();
     let movingBlock = null; // bloc en cours de déplacement (poignée ↕), sinon null
     blocks.forEach((el, i) => {
@@ -297,7 +298,8 @@
     }
     return true;
   }
-  if (!document.getElementById("repoRevealStyle")) document.head.insertAdjacentHTML("beforeend", '<style id="repoRevealStyle">.repo-block-flash{outline:3px solid #f59e0b;outline-offset:3px;transition:outline-color 1.2s}</style>');
+  if (!document.getElementById("repoRevealStyle")) document.head.insertAdjacentHTML("beforeend",
+    '<style id="repoRevealStyle">.repo-block-flash{outline:3px solid #f59e0b;outline-offset:3px;transition:outline-color 1.2s}</style>');
   // Ancre « #id-du-bloc » : à l'ouverture de la page (une fois les blocs montés) et à chaque changement d'ancre.
   const revealHash = () => {
     const id = decodeURIComponent(location.hash.slice(1));
@@ -436,8 +438,10 @@
   //   AppFramework.task(titre, { quiet: true }) : sans barre (la page a la sienne), garde de sortie seulement.
   const tasks = new Set();
   const TK = {
-    leave: ["Tâche en cours : {t}.\nQuitter la page l'interrompra. Quitter quand même ?", "Task in progress: {t}.\nLeaving the page will stop it. Leave anyway?",
-      "Aufgabe läuft: {t}.\nDas Verlassen der Seite bricht sie ab. Trotzdem verlassen?", "Tarea en curso: {t}.\nSalir de la página la interrumpirá. ¿Salir de todos modos?"
+    leave: ["Tâche en cours : {t}.\nQuitter la page l'interrompra. Quitter quand même ?",
+      "Task in progress: {t}.\nLeaving the page will stop it. Leave anyway?",
+      "Aufgabe läuft: {t}.\nDas Verlassen der Seite bricht sie ab. Trotzdem verlassen?",
+      "Tarea en curso: {t}.\nSalir de la página la interrumpirá. ¿Salir de todos modos?"
     ],
     cancelled: ["Annulé.", "Cancelled.", "Abgebrochen.", "Cancelado."]
   };
@@ -525,7 +529,8 @@
     const a = e.target.closest?.("a[href]");
     if (!a || a.target === "_blank" || a.hasAttribute("download")) return;
     const url = new URL(a.href, location.href);
-    if (url.origin === location.origin && url.pathname === location.pathname && url.search === location.search) return; // ancre de la page
+    if (url.origin === location.origin && url.pathname === location.pathname && url.search === location.search)
+  return; // ancre de la page
     if (!window.confirm(tk("leave").replace("{t}", busy()))) {
       e.preventDefault();
       e.stopImmediatePropagation();

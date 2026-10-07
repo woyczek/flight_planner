@@ -109,7 +109,8 @@
     /** Active le Centre si le mot de passe est bon ; true si activé. */
     async unlock(password) {
       const bytes = new TextEncoder().encode(String(password || "").trim().toUpperCase());
-      const hex = [...new Uint8Array(await crypto.subtle.digest("SHA-256", bytes))].map(b => b.toString(16).padStart(2, "0")).join("");
+      const hex = [...new Uint8Array(await crypto.subtle.digest("SHA-256", bytes))].map(b => b.toString(16).padStart(2, "0")).join(
+      "");
       if (hex !== CPCO_HASH) return false;
       if (!K.store.set(CPCO_KEY, "on")) return false;
       doc.dataset.cpco = "on";
@@ -337,7 +338,7 @@
   // Designs à matières (Cabinet, Durci, Aqua : textures, plaques, vis) : feuille propre (designs.list[id].css),
   // chargée seulement quand l'un d'eux est choisi, avec sa propre version (empreinte de son contenu, table FILE_V
   // écrite par tools/bump_versions.py).
-  const FILE_V = {"designs_skeuo.css": "4779cbac"};
+  const FILE_V = {"designs_skeuo.css": "f6dd1e62"};
   const designCss = id => {
     const f = designs[id]?.css;
     if (!f) return;
@@ -353,7 +354,7 @@
     if (document.getElementById("repoDesignDeco")) return;
     const d = document.createElement("script");
     d.id = "repoDesignDeco";
-    d.src = new URL("design_deco.js?v=d2aeb44d", script.src).href;
+    d.src = new URL("design_deco.js?v=b236a7e0", script.src).href;
     document.head.append(d);
   };
   designCss(design);
@@ -416,7 +417,8 @@
   line.append(spacer);
   const tools = document.createElement("div");
   tools.className = "repo-header-tools";
-  tools.innerHTML = '<span class="repo-language-label">Language</span><div class="repo-language-popup"><button class="repo-language-button" type="button" aria-haspopup="menu" aria-expanded="false" title="Language"><span class="repo-language-flag"></span><span class="repo-caret">▼</span></button><div class="repo-language-menu" role="menu" hidden></div></div><div class="repo-menu-wrap"><button class="repo-menu-button" type="button" aria-label="Menu" aria-expanded="false">☰</button><div class="repo-menu" hidden></div></div>';
+  tools.innerHTML =
+    '<span class="repo-language-label">Language</span><div class="repo-language-popup"><button class="repo-language-button" type="button" aria-haspopup="menu" aria-expanded="false" title="Language"><span class="repo-language-flag"></span><span class="repo-caret">▼</span></button><div class="repo-language-menu" role="menu" hidden></div></div><div class="repo-menu-wrap"><button class="repo-menu-button" type="button" aria-label="Menu" aria-expanded="false">☰</button><div class="repo-menu" hidden></div></div>';
   line.append(tools);
   const names = {
       auto: "Auto",
@@ -488,7 +490,9 @@
   }
   // Apparence : page apps/settings/apparence.html (design, icônes, barre latérale, couleurs) ; le menu ☰ et la barre latérale y mènent.
   // Réglages en tête du menu, en boutons : Apparence (design, icônes, couleurs) et Paramètres (bases de données).
-  menu.insertAdjacentHTML("afterbegin", '<div class="repo-settings-row"><a class="repo-settings-button repo-appearance-link" data-label="Apparence"></a><a class="repo-settings-button repo-parametrage-link" data-label="Paramètres"></a></div>');
+  menu.insertAdjacentHTML("afterbegin",
+    '<div class="repo-settings-row"><a class="repo-settings-button repo-appearance-link" data-label="Apparence"></a><a class="repo-settings-button repo-parametrage-link" data-label="Paramètres"></a></div>'
+    );
   menu.querySelector(".repo-appearance-link").href = new URL("apps/settings/apparence.html", root).href;
   menu.querySelector(".repo-appearance-link").addEventListener("click", e => {
     if (openAppearance()) {
@@ -527,7 +531,8 @@
       apDialog.className = "repo-ap-dialog";
       apDialog.setAttribute("data-no-i18n", "");
       // en-tête et blocs du framework (habillés par le design courant comme ceux de la page)
-      apDialog.innerHTML = '<div class="repo-ap-head repo-header"><div class="repo-header-line1"><h1></h1><span class="repo-header-spacer"></span><button type="button" class="repo-ap-close repo-plain" aria-label="Fermer">✕</button></div></div><main class="ap-page"></main>';
+      apDialog.innerHTML =
+        '<div class="repo-ap-head repo-header"><div class="repo-header-line1"><h1></h1><span class="repo-header-spacer"></span><button type="button" class="repo-ap-close repo-plain" aria-label="Fermer">✕</button></div></div><main class="ap-page"></main>';
       document.body.append(apDialog);
       apDialog.querySelector(".repo-ap-close").onclick = () => apDialog.close();
       apDialog.addEventListener("click", e => {
@@ -545,7 +550,7 @@
     if (window.RepositoryAppearance) show();
     else {
       const sc = document.createElement("script");
-      sc.src = new URL("appearance_page.js?v=092dabae", script.src).href;
+      sc.src = new URL("appearance_page.js?v=59118ff8", script.src).href;
       sc.onload = show;
       document.head.append(sc);
     }
@@ -569,7 +574,8 @@
       helpDialog = document.createElement("dialog");
       helpDialog.className = "repo-ap-dialog repo-help-dialog";
       helpDialog.setAttribute("data-no-i18n", "");
-      helpDialog.innerHTML = '<div class="repo-ap-head repo-header"><div class="repo-header-line1"><h1></h1><span class="repo-header-spacer"></span><a class="repo-ap-close repo-help-page repo-plain">↗</a><button type="button" class="repo-ap-close repo-plain">✕</button></div></div><iframe name="repo-help" class="repo-help-frame"></iframe>';
+      helpDialog.innerHTML =
+        '<div class="repo-ap-head repo-header"><div class="repo-header-line1"><h1></h1><span class="repo-header-spacer"></span><a class="repo-ap-close repo-help-page repo-plain">↗</a><button type="button" class="repo-ap-close repo-plain">✕</button></div></div><iframe name="repo-help" class="repo-help-frame"></iframe>';
       document.body.append(helpDialog);
       const frame = helpDialog.querySelector("iframe");
       frame.src = helpAt = wanted || base + (from ? `?from=${encodeURIComponent(from)}` : "");
@@ -590,7 +596,9 @@
     } else if (wanted) helpDialog.querySelector("iframe").src = helpAt = wanted;
     const i = Math.max(0, ["fr", "en", "de", "es"].indexOf(language));
     helpDialog.querySelector("h1").textContent = ["Aide", "Help", "Hilfe", "Ayuda"][i];
-    helpDialog.querySelector(".repo-help-page").title = ["Ouvrir l'aide en page entière", "Open the help as a full page", "Hilfe als ganze Seite öffnen", "Abrir la ayuda en página completa"][i];
+    helpDialog.querySelector(".repo-help-page").title = ["Ouvrir l'aide en page entière", "Open the help as a full page",
+      "Hilfe als ganze Seite öffnen", "Abrir la ayuda en página completa"
+    ][i];
     helpDialog.querySelector("button.repo-ap-close").setAttribute("aria-label", ["Fermer", "Close", "Schließen", "Cerrar"][i]);
     if (!helpDialog.open) helpDialog.showModal();
     return true;
@@ -599,7 +607,8 @@
   // lien ordinaire
   document.addEventListener("click", e => {
     const a = e.target.closest?.("a[href]");
-    if (!a || e.defaultPrevented || e.button || e.ctrlKey || e.metaKey || e.shiftKey || e.altKey || (a.target && a.target !== "_self")) return;
+    if (!a || e.defaultPrevented || e.button || e.ctrlKey || e.metaKey || e.shiftKey || e.altKey || (a.target && a.target !==
+      "_self")) return;
     if (a.href.split(/[?#]/)[0] !== new URL(HELP, root).href) return;
     if (openHelp(a.getAttribute("href"))) {
       e.preventDefault();
@@ -669,7 +678,8 @@
   const DEFAULT_SITE_FOR = [cfg.va?.name || "SO Group Virtual", "DEFA Virtual"];
   const vaName = () => (K.store.json("suiteVA:v1", {}) || {}).name || cfg.va?.name || "SO Group Virtual";
   const defaultVa = () => DEFAULT_SITE_FOR.includes(vaName());
-  const source = key => String(K.store.json("suiteSources:v1", {})[key] || (key === "defa" && !defaultVa() ? "" : cfg.sources?.[key]?.url) || "").replace(/\/+$/, "");
+  const source = key => String(K.store.json("suiteSources:v1", {})[key] || (key === "defa" && !defaultVa() ? "" : cfg.sources?.[key]
+    ?.url) || "").replace(/\/+$/, "");
   /** Compagnie virtuelle : repository_tree.va (SO Group Virtual par défaut) et réglage local (suiteVA:v1) ; url : site
    *  (sources.defa). { name, fullName, short, centre, centreName, url, pages: { home, log, fleet, aircraft } }. */
   const va = () => {
@@ -724,7 +734,8 @@
     siteLink,
     /** Enregistre la surcharge locale de la compagnie virtuelle (objet vide : défauts) ; événement « suite-sources-change ». */
     setVa(o) {
-      const clean = Object.fromEntries(Object.entries(o || {}).filter(([k, v]) => k === "pages" ? v && Object.values(v).some(Boolean) : String(v || "").trim()));
+      const clean = Object.fromEntries(Object.entries(o || {}).filter(([k, v]) => k === "pages" ? v && Object.values(v).some(Boolean) :
+        String(v || "").trim()));
       if (clean.pages) clean.pages = Object.fromEntries(Object.entries(clean.pages).filter(([, v]) => String(v || "").trim()));
       if (Object.keys(clean).length) K.store.setJson("suiteVA:v1", clean);
       else K.store.remove("suiteVA:v1");
@@ -1126,49 +1137,48 @@
   } {
     /* Profil pilote (ID IVAO / VATSIM) commun à toutes les pages */
     const profile = document.createElement("script");
-    profile.src = new URL("pilot_profile.js?v=60bc0e70", script.src).href;
+    profile.src = new URL("pilot_profile.js?v=fbe1241b", script.src).href;
     document.head.append(profile); /* Dossiers autorisés et ouverture des fichiers dans le dossier paramétré */
     const files = document.createElement("script");
-    files.src = new URL("file_access.js?v=235a1c37", script.src).href;
+    files.src = new URL("file_access.js?v=c9c20745", script.src).href;
     document.head.append(files); /* Données locales du navigateur ⇄ fichier de sauvegarde */
     /* Icônes, sous-titres de blocs, sous-cartes, zones de dépôt, icônes de la barre latérale (ordre conservé) */
-    for (const f of ["icons/repository_icons.js?v=27853364", "block_icons.js?v=2a7d496a", "side_nav.js?v=19f74efd"]) {
+    for (const f of ["icons/repository_icons.js?v=27853364", "block_icons.js?v=5002d2f9", "side_nav.js?v=19f74efd"]) {
       const sc = document.createElement("script");
       sc.src = new URL(f, script.src).href;
       sc.async = false;
       document.head.append(sc);
     }
     const store = document.createElement("script");
-    store.src = new URL("browser_store.js?v=1e959067", script.src).href;
+    store.src = new URL("browser_store.js?v=1cb639ca", script.src).href;
     document.head.append(store); /* Canal et contrôle des mises à jour, pastilles « Mise à jour » / « AIRAC » de l'en-tête */
     const assign = document.createElement("script"); /* Missions affectées : pli cacheté de l'en-tête, « Mes missions » */
-    assign.src = new URL("assignments.js?v=cbeb62aa", script.src).href;
+    assign.src = new URL("assignments.js?v=f927a24e", script.src).href;
     document.head.append(assign);
     /* Terrain actuel des appareils : site (emplacement) ou CR issu d'un ordre de mission (après assignments.js) */
     const positions = document.createElement("script");
-    positions.src = new URL("aircraft_positions.js?v=2d298903", script.src).href;
+    positions.src = new URL("aircraft_positions.js?v=72ee36c7", script.src).href;
     document.head.append(positions);
     /* Utilisateurs et droits : mode develop / production, connexion, usurpation (bandeau sur toutes les pages) */
     const users = document.createElement("script");
-    users.src = new URL("users.js?v=3d869bdc", script.src).href;
+    users.src = new URL("users.js?v=edfa017b", script.src).href;
     document.head.append(users);
     /* Synchronisation git du pool de données : bouton « Synchroniser » de l'en-tête (lanceur, data/ dépôt git) */
     const sync = document.createElement("script");
-    sync.src = new URL("sync.js?v=cb7ad0ea", script.src).href;
+    sync.src = new URL("sync.js?v=4972ad19", script.src).href;
     document.head.append(sync);
     /* Flotte et journal DEFA depuis le site : une fois par jour à l'ouverture d'une page (lanceur) */
     const defaSite = document.createElement("script");
-    defaSite.src = new URL("defa_site.js?v=03889892", script.src).href;
+    defaSite.src = new URL("defa_site.js?v=deca269e", script.src).href;
     document.head.append(defaSite);
     /* Disponibilités : catégories configurables, thèmes ouverts, déclarations par semaine */
     const dispos = document.createElement("script");
-    dispos.src = new URL("dispos.js?v=d6965971", script.src).href;
+    dispos.src = new URL("dispos.js?v=388eb443", script.src).href;
     document.head.append(dispos);
     const update = document.createElement("script");
-    update.src = new URL("suite_update.js?v=a6f1e9d1", script.src).href;
+    update.src = new URL("suite_update.js?v=1dab870e", script.src).href;
     document.head.append(update)
-  }
-  {
+  } {
     /* Autre compagnie virtuelle que celle écrite dans les sources (Paramètres › Sources et dossiers) : « SO Group
        Virtual », « Virtual Special Operation Group », « SOG » et « CPCO » des textes de la suite affichés avec le nom, le
        nom long, le sigle et le centre réglés (nœuds texte et infobulles, pages et contenus ajoutés ensuite).
@@ -1193,7 +1203,8 @@
       const skip = el => !el || el.closest("script,style,textarea,input,code,pre,[contenteditable],[data-no-rebrand]");
       const walk = root => {
         const w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
-        for (let n; (n = w.nextNode());)
+        for (let n;
+          (n = w.nextNode());)
           if (!skip(n.parentElement) && /SO Group|Special Operation|SOG|CPCO/.test(n.nodeValue)) {
             const s = fix(n.nodeValue);
             if (s !== n.nodeValue) n.nodeValue = s;
@@ -1206,7 +1217,9 @@
       if (document.title) document.title = fix(document.title);
       new MutationObserver(list => {
         for (const m of list)
-          for (const n of m.type === "characterData" ? [m.target] : m.addedNodes) n.nodeType === 3 ? (!skip(n.parentElement) && /SO Group|Special Operation|SOG|CPCO/.test(n.nodeValue) && (n.nodeValue = fix(n.nodeValue))) : n.nodeType === 1 && !skip(n) && walk(n);
+          for (const n of m.type === "characterData" ? [m.target] : m.addedNodes) n.nodeType === 3 ? (!skip(n.parentElement) &&
+              /SO Group|Special Operation|SOG|CPCO/.test(n.nodeValue) && (n.nodeValue = fix(n.nodeValue))) : n.nodeType === 1 && !
+            skip(n) && walk(n);
       }).observe(document.body, {
         childList: true,
         characterData: true, // textes traduits ensuite (content_i18n.js)

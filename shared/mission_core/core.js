@@ -35,89 +35,200 @@
     none: L('aucune', 'none', 'keine', 'ninguna'),
     ledgerTitle: L('Registre des missions', 'Mission ledger', 'Einsatzregister', 'Registro de misiones'),
     newMission: L('Nouvelle mission', 'New mission', 'Neuer Einsatz', 'Nueva misión'),
-    importFile: L('Importer (YAML / ancien JSON)', 'Import (YAML / legacy JSON)', 'Importieren (YAML / altes JSON)', 'Importar (YAML / JSON antiguo)'),
+    importFile: L('Importer (YAML / ancien JSON)', 'Import (YAML / legacy JSON)', 'Importieren (YAML / altes JSON)',
+      'Importar (YAML / JSON antiguo)'),
     exportYaml: L('Exporter la mission (YAML)', 'Export mission (YAML)', 'Einsatz exportieren (YAML)', 'Exportar misión (YAML)'),
     addToLedger: L('Ajouter au registre', 'Add to ledger', 'Ins Register aufnehmen', 'Añadir al registro'),
     saveChanges: L('Enregistrer les modifications', 'Save changes', 'Änderungen speichern', 'Guardar cambios'),
     deleteMission: L('Supprimer cette mission', 'Delete this mission', 'Diesen Einsatz löschen', 'Eliminar esta misión'),
     viewReporting: L('Voir le reporting', 'View reporting', 'Auswertung anzeigen', 'Ver informe'),
     chooseFolder: L('Dossier du registre…', 'Ledger folder…', 'Registerordner…', 'Carpeta del registro…'),
-    downloadLedger: L('Télécharger le registre (YAML)', 'Download ledger (YAML)', 'Register herunterladen (YAML)', 'Descargar registro (YAML)'),
-    confirmNew: L('Effacer le brouillon en cours et commencer une nouvelle mission ?', 'Discard the current draft and start a new mission?', 'Aktuellen Entwurf verwerfen und neuen Einsatz beginnen?', '¿Descartar el borrador actual y empezar una nueva misión?'),
-    otherFamily: L('Ce fichier appartient à une autre famille de missions. L’importer quand même ?', 'This file belongs to another mission family. Import anyway?', 'Diese Datei gehört zu einer anderen Einsatzfamilie. Trotzdem importieren?', 'Este archivo pertenece a otra familia de misiones. ¿Importarlo de todos modos?'),
-    duplicate: L('Ce n° de mission figure déjà dans le registre. L’ajouter quand même (doublon) ? Annuler pour corriger le n° de mission.', 'This mission ID is already in the ledger. Add it anyway (duplicate)? Cancel to correct the mission ID.', 'Diese Einsatz-ID ist bereits im Register. Trotzdem hinzufügen (Duplikat)? Abbrechen, um die ID zu korrigieren.', 'Este ID de misión ya figura en el registro. ¿Añadirlo de todos modos (duplicado)? Cancelar para corregir el ID.'),
-    confirmDelete: L('Supprimer définitivement cette mission du registre ?', 'Permanently delete this mission from the ledger?', 'Diesen Einsatz endgültig aus dem Register löschen?', '¿Eliminar definitivamente esta misión del registro?'),
-    editBanner: L('Modification d’une mission du registre', 'Editing a ledger mission', 'Bearbeitung eines Registereinsatzes', 'Modificación de una misión del registro'),
+    downloadLedger: L('Télécharger le registre (YAML)', 'Download ledger (YAML)', 'Register herunterladen (YAML)',
+      'Descargar registro (YAML)'),
+    confirmNew: L('Effacer le brouillon en cours et commencer une nouvelle mission ?',
+      'Discard the current draft and start a new mission?', 'Aktuellen Entwurf verwerfen und neuen Einsatz beginnen?',
+      '¿Descartar el borrador actual y empezar una nueva misión?'),
+    otherFamily: L('Ce fichier appartient à une autre famille de missions. L’importer quand même ?',
+      'This file belongs to another mission family. Import anyway?',
+      'Diese Datei gehört zu einer anderen Einsatzfamilie. Trotzdem importieren?',
+      'Este archivo pertenece a otra familia de misiones. ¿Importarlo de todos modos?'),
+    duplicate: L(
+      'Ce n° de mission figure déjà dans le registre. L’ajouter quand même (doublon) ? Annuler pour corriger le n° de mission.',
+      'This mission ID is already in the ledger. Add it anyway (duplicate)? Cancel to correct the mission ID.',
+      'Diese Einsatz-ID ist bereits im Register. Trotzdem hinzufügen (Duplikat)? Abbrechen, um die ID zu korrigieren.',
+      'Este ID de misión ya figura en el registro. ¿Añadirlo de todos modos (duplicado)? Cancelar para corregir el ID.'),
+    confirmDelete: L('Supprimer définitivement cette mission du registre ?', 'Permanently delete this mission from the ledger?',
+      'Diesen Einsatz endgültig aus dem Register löschen?', '¿Eliminar definitivamente esta misión del registro?'),
+    editBanner: L('Modification d’une mission du registre', 'Editing a ledger mission', 'Bearbeitung eines Registereinsatzes',
+      'Modificación de una misión del registro'),
     estimated: L('vol estimé', 'estimated flight', 'geschätzter Flug', 'vuelo estimado'),
     thisFlight: L('ce vol', 'this flight', 'dieser Flug', 'este vuelo'),
-    inRegistry: L('voir la mission dans le registre', 'see the mission in the registry', 'Einsatz im Register ansehen', 'ver la misión en el registro'),
-    flightsOf: L('{n} CR de cette mission dans le registre des CR', '{n} report(s) of this mission in the report registry', '{n} Bericht(e) dieses Einsatzes', '{n} informe(s) de esta misión'),
-    fromSia: L('Mission générée (SIA XML) reprise', 'Generated mission (SIA XML) imported', 'Generierte Mission (SIA XML) übernommen', 'Misión generada (SIA XML) importada'),
-    fromSiaReplace: L('Remplacer le brouillon en cours par la mission générée (SIA XML) ?', 'Replace the current draft with the generated mission (SIA XML)?', 'Aktuellen Entwurf durch die generierte Mission (SIA XML) ersetzen?', '¿Reemplazar el borrador actual por la misión generada (SIA XML)?'),
-    editGone: L('La mission demandée n’existe plus à cette position du registre (modifié entre-temps) : ouverture d’une nouvelle mission.', 'The requested mission is no longer at this ledger position (changed meanwhile): opening a new mission.', 'Der angeforderte Einsatz ist nicht mehr an dieser Registerposition (zwischenzeitlich geändert): neuer Einsatz wird geöffnet.', 'La misión solicitada ya no está en esta posición del registro (modificado mientras tanto): se abre una nueva misión.'),
-    draftSaved: L('Brouillon enregistré dans le navigateur', 'Draft saved in the browser', 'Entwurf im Browser gespeichert', 'Borrador guardado en el navegador'),
-    stored: L('Mission enregistrée dans le registre', 'Mission saved to the ledger', 'Einsatz im Register gespeichert', 'Misión guardada en el registro'),
-    storedBrowserOnly: L('Enregistrée dans le navigateur — choisissez le dossier du registre pour écrire le fichier, ou téléchargez-le.', 'Saved in the browser — choose the ledger folder to write the file, or download it.', 'Im Browser gespeichert — Registerordner wählen, um die Datei zu schreiben, oder herunterladen.', 'Guardada en el navegador — elija la carpeta del registro para escribir el archivo, o descárguelo.'),
-    deleted: L('Mission supprimée du registre', 'Mission deleted from the ledger', 'Einsatz aus dem Register gelöscht', 'Misión eliminada del registro'),
+    inRegistry: L('voir la mission dans le registre', 'see the mission in the registry', 'Einsatz im Register ansehen',
+      'ver la misión en el registro'),
+    flightsOf: L('{n} CR de cette mission dans le registre des CR', '{n} report(s) of this mission in the report registry',
+      '{n} Bericht(e) dieses Einsatzes', '{n} informe(s) de esta misión'),
+    fromSia: L('Mission générée (SIA XML) reprise', 'Generated mission (SIA XML) imported', 'Generierte Mission (SIA XML) übernommen',
+      'Misión generada (SIA XML) importada'),
+    fromSiaReplace: L('Remplacer le brouillon en cours par la mission générée (SIA XML) ?',
+      'Replace the current draft with the generated mission (SIA XML)?',
+      'Aktuellen Entwurf durch die generierte Mission (SIA XML) ersetzen?',
+      '¿Reemplazar el borrador actual por la misión generada (SIA XML)?'),
+    editGone: L(
+      'La mission demandée n’existe plus à cette position du registre (modifié entre-temps) : ouverture d’une nouvelle mission.',
+      'The requested mission is no longer at this ledger position (changed meanwhile): opening a new mission.',
+      'Der angeforderte Einsatz ist nicht mehr an dieser Registerposition (zwischenzeitlich geändert): neuer Einsatz wird geöffnet.',
+      'La misión solicitada ya no está en esta posición del registro (modificado mientras tanto): se abre una nueva misión.'),
+    draftSaved: L('Brouillon enregistré dans le navigateur', 'Draft saved in the browser', 'Entwurf im Browser gespeichert',
+      'Borrador guardado en el navegador'),
+    stored: L('Mission enregistrée dans le registre', 'Mission saved to the ledger', 'Einsatz im Register gespeichert',
+      'Misión guardada en el registro'),
+    storedBrowserOnly: L(
+      'Enregistrée dans le navigateur — choisissez le dossier du registre pour écrire le fichier, ou téléchargez-le.',
+      'Saved in the browser — choose the ledger folder to write the file, or download it.',
+      'Im Browser gespeichert — Registerordner wählen, um die Datei zu schreiben, oder herunterladen.',
+      'Guardada en el navegador — elija la carpeta del registro para escribir el archivo, o descárguelo.'),
+    deleted: L('Mission supprimée du registre', 'Mission deleted from the ledger', 'Einsatz aus dem Register gelöscht',
+      'Misión eliminada del registro'),
     folder: L('Dossier', 'Folder', 'Ordner', 'Carpeta'),
     browserOnly: L('navigateur uniquement', 'browser only', 'nur Browser', 'solo navegador'),
     missions: L('missions', 'missions', 'Einsätze', 'misiones'),
     imported: L('Mission importée', 'Mission imported', 'Einsatz importiert', 'Misión importada'),
     exported: L('Mission exportée', 'Mission exported', 'Einsatz exportiert', 'Misión exportada'),
     importError: L('Import impossible', 'Import failed', 'Import fehlgeschlagen', 'Importación imposible'),
-    knownAircraft: L('Appareil connu : type, catégorie, indicatif et équipements repris (dernier enregistrement)', 'Known aircraft: type, category, callsign and equipment filled in (latest record)', 'Bekanntes Luftfahrzeug: Muster, Kategorie, Rufzeichen und Ausrüstung übernommen (letzter Eintrag)', 'Aeronave conocida: tipo, categoría, indicativo y equipamiento completados (último registro)'),
-    unknownType: L('Type inconnu : il sera ajouté à la base locale lors de l’enregistrement', 'Unknown type: it will be added to the local base when saved', 'Unbekanntes Muster: wird beim Speichern der lokalen Datenbank hinzugefügt', 'Tipo desconocido: se añadirá a la base local al guardar'),
-    publicVersion: L('Version publique (données sensibles masquées : CR, impression, export)', 'Public version (sensitive data hidden: report, print, export)', 'Öffentliche Fassung (sensible Daten ausgeblendet: Bericht, Druck, Export)', 'Versión pública (datos sensibles ocultos: informe, impresión, exportación)'),
+    knownAircraft: L('Appareil connu : type, catégorie, indicatif et équipements repris (dernier enregistrement)',
+      'Known aircraft: type, category, callsign and equipment filled in (latest record)',
+      'Bekanntes Luftfahrzeug: Muster, Kategorie, Rufzeichen und Ausrüstung übernommen (letzter Eintrag)',
+      'Aeronave conocida: tipo, categoría, indicativo y equipamiento completados (último registro)'),
+    unknownType: L('Type inconnu : il sera ajouté à la base locale lors de l’enregistrement',
+      'Unknown type: it will be added to the local base when saved',
+      'Unbekanntes Muster: wird beim Speichern der lokalen Datenbank hinzugefügt',
+      'Tipo desconocido: se añadirá a la base local al guardar'),
+    publicVersion: L('Version publique (données sensibles masquées : CR, impression, export)',
+      'Public version (sensitive data hidden: report, print, export)',
+      'Öffentliche Fassung (sensible Daten ausgeblendet: Bericht, Druck, Export)',
+      'Versión pública (datos sensibles ocultos: informe, impresión, exportación)'),
     reportTitle: L('Compte rendu', 'Report', 'Bericht', 'Informe'),
     switchFamily: L('Famille de mission', 'Mission family', 'Einsatzfamilie', 'Familia de misión'),
     switchSeries: L('Sous-type de mission', 'Mission sub-type', 'Einsatz-Untertyp', 'Subtipo de misión'),
     allSeries: L('Tous les sous-types', 'All sub-types', 'Alle Untertypen', 'Todos los subtipos'),
     fplTitle: L('Plan de vol déposé', 'Filed flight plan', 'Aufgegebener Flugplan', 'Plan de vuelo presentado'),
-    fplIntro: L('Remplit les champs vides : appareil, équipements OACI, route, points tournants, niveaux, terrains, METAR / TAF (SimBrief), masses et carburant prévus (SimBrief). Identifiants : menu ☰ › Profil pilote.', 'Fills empty fields: aircraft, ICAO equipment, route, waypoints, levels, aerodromes, METAR / TAF (SimBrief), planned masses and fuel (SimBrief). IDs: menu ☰ › Pilot profile.', 'Füllt leere Felder: Luftfahrzeug, ICAO-Ausrüstung, Route, Wegpunkte, Flughöhen, Flugplätze, METAR / TAF (SimBrief), geplante Massen und Kraftstoff (SimBrief). Kennungen: Menü ☰ › Pilotenprofil.', 'Rellena los campos vacíos: aeronave, equipos OACI, ruta, puntos, niveles, aeródromos, METAR / TAF (SimBrief), masas y combustible previstos (SimBrief). Identificadores: menú ☰ › Perfil de piloto.'),
+    fplIntro: L(
+      'Remplit les champs vides : appareil, équipements OACI, route, points tournants, niveaux, terrains, METAR / TAF (SimBrief), masses et carburant prévus (SimBrief). Identifiants : menu ☰ › Profil pilote.',
+      'Fills empty fields: aircraft, ICAO equipment, route, waypoints, levels, aerodromes, METAR / TAF (SimBrief), planned masses and fuel (SimBrief). IDs: menu ☰ › Pilot profile.',
+      'Füllt leere Felder: Luftfahrzeug, ICAO-Ausrüstung, Route, Wegpunkte, Flughöhen, Flugplätze, METAR / TAF (SimBrief), geplante Massen und Kraftstoff (SimBrief). Kennungen: Menü ☰ › Pilotenprofil.',
+      'Rellena los campos vacíos: aeronave, equipos OACI, ruta, puntos, niveles, aeródromos, METAR / TAF (SimBrief), masas y combustible previstos (SimBrief). Identificadores: menú ☰ › Perfil de piloto.'
+      ),
     fplSimbrief: L('Dernier OFP SimBrief', 'Latest SimBrief OFP', 'Letzter SimBrief-OFP', 'Último OFP de SimBrief'),
-    fplIvao: L('Plan de vol IVAO (vol en cours)', 'IVAO flight plan (current flight)', 'IVAO-Flugplan (laufender Flug)', 'Plan de vuelo IVAO (vuelo en curso)'),
-    fplVatsim: L('Plan de vol VATSIM (en cours ou déposé)', 'VATSIM flight plan (current or prefiled)', 'VATSIM-Flugplan (laufend oder vorab)', 'Plan de vuelo VATSIM (en curso o presentado)'),
-    fplNone: L('Aucun plan de vol trouvé pour cet identifiant (vol terminé ou non déposé).', 'No flight plan found for this ID (flight ended or not filed).', 'Kein Flugplan für diese Kennung gefunden (Flug beendet oder nicht aufgegeben).', 'No se encontró ningún plan de vuelo para este identificador (vuelo terminado o no presentado).'),
-    fplNeedId: L('Renseignez votre identifiant dans le menu ☰ › Profil pilote (ou dans le bloc « Trace réseau »).', 'Enter your ID in menu ☰ › Pilot profile (or in the “Network track” block).', 'Kennung im Menü ☰ › Pilotenprofil (oder im Block „Netzwerkspur“) eingeben.', 'Indique su identificador en el menú ☰ › Perfil de piloto (o en el bloque «Traza de red»).'),
-    fplLearned: L('Forme plan de vol mémorisée pour cet indicatif', 'Flight plan form remembered for this callsign', 'Flugplanform für dieses Rufzeichen gespeichert', 'Forma de plan de vuelo memorizada para este indicativo'),
+    fplIvao: L('Plan de vol IVAO (vol en cours)', 'IVAO flight plan (current flight)', 'IVAO-Flugplan (laufender Flug)',
+      'Plan de vuelo IVAO (vuelo en curso)'),
+    fplVatsim: L('Plan de vol VATSIM (en cours ou déposé)', 'VATSIM flight plan (current or prefiled)',
+      'VATSIM-Flugplan (laufend oder vorab)', 'Plan de vuelo VATSIM (en curso o presentado)'),
+    fplNone: L('Aucun plan de vol trouvé pour cet identifiant (vol terminé ou non déposé).',
+      'No flight plan found for this ID (flight ended or not filed).',
+      'Kein Flugplan für diese Kennung gefunden (Flug beendet oder nicht aufgegeben).',
+      'No se encontró ningún plan de vuelo para este identificador (vuelo terminado o no presentado).'),
+    fplNeedId: L('Renseignez votre identifiant dans le menu ☰ › Profil pilote (ou dans le bloc « Trace réseau »).',
+      'Enter your ID in menu ☰ › Pilot profile (or in the “Network track” block).',
+      'Kennung im Menü ☰ › Pilotenprofil (oder im Block „Netzwerkspur“) eingeben.',
+      'Indique su identificador en el menú ☰ › Perfil de piloto (o en el bloque «Traza de red»).'),
+    fplLearned: L('Forme plan de vol mémorisée pour cet indicatif', 'Flight plan form remembered for this callsign',
+      'Flugplanform für dieses Rufzeichen gespeichert', 'Forma de plan de vuelo memorizada para este indicativo'),
     importTitle: L('Analyser / importer…', 'Analyse / import…', 'Auswerten / importieren…', 'Analizar / importar…'),
-    importIntro: L('Collez un plan de vol OACI « (FPL-…) », une page du tracker IVAO (détails d’un vol ou liste des connexions : Ctrl+A, Ctrl+C sur la page), la page d’un vol StatSim (VATSIM), l’historique VATSIM (JSON) ou un METAR : les champs vides sont remplis. Heures du tracker converties en heure locale du terrain de départ.', 'Paste an ICAO flight plan “(FPL-…)”, an IVAO tracker page (flight details or connection list: Ctrl+A, Ctrl+C on the page), a StatSim flight page (VATSIM), the VATSIM history (JSON) or a METAR: empty fields are filled. Tracker times converted to local time at the departure aerodrome.', 'Einen ICAO-Flugplan „(FPL-…)“, eine IVAO-Tracker-Seite (Flugdetails oder Verbindungsliste: Strg+A, Strg+C auf der Seite), die VATSIM-Historie (JSON) oder ein METAR einfügen: leere Felder werden ausgefüllt. Tracker-Zeiten in Ortszeit des Startflugplatzes umgerechnet.', 'Pegue un plan de vuelo OACI «(FPL-…)», una página del tracker IVAO (detalle de un vuelo o lista de conexiones: Ctrl+A, Ctrl+C en la página), el historial VATSIM (JSON) o un METAR: se rellenan los campos vacíos. Horas del tracker convertidas a hora local del aeródromo de salida.'),
+    importIntro: L(
+      'Collez un plan de vol OACI « (FPL-…) », une page du tracker IVAO (détails d’un vol ou liste des connexions : Ctrl+A, Ctrl+C sur la page), la page d’un vol StatSim (VATSIM), l’historique VATSIM (JSON) ou un METAR : les champs vides sont remplis. Heures du tracker converties en heure locale du terrain de départ.',
+      'Paste an ICAO flight plan “(FPL-…)”, an IVAO tracker page (flight details or connection list: Ctrl+A, Ctrl+C on the page), a StatSim flight page (VATSIM), the VATSIM history (JSON) or a METAR: empty fields are filled. Tracker times converted to local time at the departure aerodrome.',
+      'Einen ICAO-Flugplan „(FPL-…)“, eine IVAO-Tracker-Seite (Flugdetails oder Verbindungsliste: Strg+A, Strg+C auf der Seite), die VATSIM-Historie (JSON) oder ein METAR einfügen: leere Felder werden ausgefüllt. Tracker-Zeiten in Ortszeit des Startflugplatzes umgerechnet.',
+      'Pegue un plan de vuelo OACI «(FPL-…)», una página del tracker IVAO (detalle de un vuelo o lista de conexiones: Ctrl+A, Ctrl+C en la página), el historial VATSIM (JSON) o un METAR: se rellenan los campos vacíos. Horas del tracker convertidas a hora local del aeródromo de salida.'
+      ),
     importRun: L('Analyser et remplir', 'Analyse and fill', 'Auswerten und ausfüllen', 'Analizar y rellenar'),
-    importClip: L('Coller depuis le presse-papiers', 'Paste from clipboard', 'Aus Zwischenablage einfügen', 'Pegar desde el portapapeles'),
-    importBookmarklet: L('← à glisser dans la barre des favoris : un clic sur la page d’un vol (tracker IVAO, ou StatSim pour VATSIM) la copie ; revenez ici, elle est analysée.', '← drag to the bookmarks bar: one click on a flight page (IVAO tracker, or StatSim for VATSIM) copies it; come back here, it is analysed.', '← in die Lesezeichenleiste ziehen: ein Klick auf einer Flugseite (IVAO-Tracker, oder StatSim für VATSIM) kopiert sie; hierher zurückkehren, sie wird ausgewertet.', '← arrastre a la barra de marcadores: un clic en la página de un vuelo (tracker IVAO, o StatSim para VATSIM) la copia; vuelva aquí, se analiza.'),
-    ledgerUnavailable: L('registre illisible (serveur ou fichier indisponible) — mission conservée en brouillon, réessayez.', 'ledger unreadable (server or file unavailable) — mission kept as a draft, try again.', 'Register nicht lesbar (Server oder Datei nicht verfügbar) — Einsatz als Entwurf behalten, erneut versuchen.', 'registro ilegible (servidor o archivo no disponible) — misión conservada como borrador, reinténtelo.'),
+    importClip: L('Coller depuis le presse-papiers', 'Paste from clipboard', 'Aus Zwischenablage einfügen',
+      'Pegar desde el portapapeles'),
+    importBookmarklet: L(
+      '← à glisser dans la barre des favoris : un clic sur la page d’un vol (tracker IVAO, ou StatSim pour VATSIM) la copie ; revenez ici, elle est analysée.',
+      '← drag to the bookmarks bar: one click on a flight page (IVAO tracker, or StatSim for VATSIM) copies it; come back here, it is analysed.',
+      '← in die Lesezeichenleiste ziehen: ein Klick auf einer Flugseite (IVAO-Tracker, oder StatSim für VATSIM) kopiert sie; hierher zurückkehren, sie wird ausgewertet.',
+      '← arrastre a la barra de marcadores: un clic en la página de un vuelo (tracker IVAO, o StatSim para VATSIM) la copia; vuelva aquí, se analiza.'
+      ),
+    ledgerUnavailable: L('registre illisible (serveur ou fichier indisponible) — mission conservée en brouillon, réessayez.',
+      'ledger unreadable (server or file unavailable) — mission kept as a draft, try again.',
+      'Register nicht lesbar (Server oder Datei nicht verfügbar) — Einsatz als Entwurf behalten, erneut versuchen.',
+      'registro ilegible (servidor o archivo no disponible) — misión conservada como borrador, reinténtelo.'),
     menuNetwork: L('Suivi réseau', 'Network tracking', 'Netzwerk-Tracking', 'Seguimiento de red'),
     menuMission: L('Mission', 'Mission', 'Einsatz', 'Misión'),
-    sendSettings: L('Paramétrer l’envoi des CR (webservice)…', 'Report sending settings (web service)…', 'Berichtversand einrichten (Webservice)…', 'Configurar el envío de informes (servicio web)…'),
-    settingsPage: L('Paramétrage — bases de données…', 'Settings — databases…', 'Einstellungen — Datenbanken…', 'Configuración — bases de datos…'),
-    sendSetupNow: L('Le webservice d’envoi des CR n’est pas encore paramétré (adresse, clef). Ouvrir le paramétrage ?', 'The report web service is not set up yet (address, key). Open the settings?', 'Der Webservice für den Berichtversand ist noch nicht eingerichtet (Adresse, Schlüssel). Einstellungen öffnen?', 'El servicio web de envío de informes aún no está configurado (dirección, clave). ¿Abrir la configuración?'),
+    sendSettings: L('Paramétrer l’envoi des CR (webservice)…', 'Report sending settings (web service)…',
+      'Berichtversand einrichten (Webservice)…', 'Configurar el envío de informes (servicio web)…'),
+    settingsPage: L('Paramétrage — bases de données…', 'Settings — databases…', 'Einstellungen — Datenbanken…',
+      'Configuración — bases de datos…'),
+    sendSetupNow: L('Le webservice d’envoi des CR n’est pas encore paramétré (adresse, clef). Ouvrir le paramétrage ?',
+      'The report web service is not set up yet (address, key). Open the settings?',
+      'Der Webservice für den Berichtversand ist noch nicht eingerichtet (Adresse, Schlüssel). Einstellungen öffnen?',
+      'El servicio web de envío de informes aún no está configurado (dirección, clave). ¿Abrir la configuración?'),
     sendReport: L('Envoyer le CR', 'Send report', 'Bericht senden', 'Enviar informe'),
-    sendNotConfigured: L('Envoi du CR : webservice non configuré (Paramétrage → Envoi des comptes rendus).', 'Report sending: web service not configured (Settings → Report sending).', 'Berichtversand: Webservice nicht konfiguriert (Einstellungen → Berichtversand).', 'Envío del informe: servicio web no configurado (Configuración → Envío de informes).'),
-    sendUnsaved: L('Cette mission n’est pas enregistrée dans le registre (ou a des modifications non enregistrées). L’envoyer quand même ?', 'This mission is not saved in the ledger (or has unsaved changes). Send it anyway?', 'Dieser Einsatz ist nicht im Register gespeichert (oder hat ungespeicherte Änderungen). Trotzdem senden?', 'Esta misión no está guardada en el registro (o tiene cambios sin guardar). ¿Enviarla de todos modos?'),
-    sendConfirm: L('Envoyer ce compte rendu au webservice', 'Send this report to the web service', 'Diesen Bericht an den Webservice senden', 'Enviar este informe al servicio web'),
+    sendNotConfigured: L('Envoi du CR : webservice non configuré (Paramétrage → Envoi des comptes rendus).',
+      'Report sending: web service not configured (Settings → Report sending).',
+      'Berichtversand: Webservice nicht konfiguriert (Einstellungen → Berichtversand).',
+      'Envío del informe: servicio web no configurado (Configuración → Envío de informes).'),
+    sendUnsaved: L(
+      'Cette mission n’est pas enregistrée dans le registre (ou a des modifications non enregistrées). L’envoyer quand même ?',
+      'This mission is not saved in the ledger (or has unsaved changes). Send it anyway?',
+      'Dieser Einsatz ist nicht im Register gespeichert (oder hat ungespeicherte Änderungen). Trotzdem senden?',
+      'Esta misión no está guardada en el registro (o tiene cambios sin guardar). ¿Enviarla de todos modos?'),
+    sendConfirm: L('Envoyer ce compte rendu au webservice', 'Send this report to the web service',
+      'Diesen Bericht an den Webservice senden', 'Enviar este informe al servicio web'),
     sending: L('Envoi du CR…', 'Sending report…', 'Bericht wird gesendet…', 'Enviando informe…'),
     sent: L('CR envoyé', 'Report sent', 'Bericht gesendet', 'Informe enviado'),
     sendFailed: L('Échec de l’envoi du CR', 'Report sending failed', 'Berichtversand fehlgeschlagen', 'Error al enviar el informe'),
-    sendCors: L('service injoignable ou appel refusé par le navigateur (CORS : le service doit autoriser cette origine)', 'service unreachable or call blocked by the browser (CORS: the service must allow this origin)', 'Dienst nicht erreichbar oder vom Browser blockiert (CORS: der Dienst muss diese Herkunft erlauben)', 'servicio inaccesible o llamada bloqueada por el navegador (CORS: el servicio debe permitir este origen)'),
+    sendCors: L('service injoignable ou appel refusé par le navigateur (CORS : le service doit autoriser cette origine)',
+      'service unreachable or call blocked by the browser (CORS: the service must allow this origin)',
+      'Dienst nicht erreichbar oder vom Browser blockiert (CORS: der Dienst muss diese Herkunft erlauben)',
+      'servicio inaccesible o llamada bloqueada por el navegador (CORS: el servicio debe permitir este origen)'),
     sentBefore: L('Déjà envoyé le', 'Already sent on', 'Bereits gesendet am', 'Ya enviado el'),
-    importBookmarkletHelp: L('Ce lien s’utilise depuis la barre des favoris, sur la page du tracker (glisser-déposer le lien dans la barre).', 'Use this link from the bookmarks bar, on the tracker page (drag and drop the link into the bar).', 'Diesen Link aus der Lesezeichenleiste auf der Tracker-Seite verwenden (Link in die Leiste ziehen).', 'Use este enlace desde la barra de marcadores, en la página del tracker (arrastre el enlace a la barra).'),
+    importBookmarkletHelp: L(
+      'Ce lien s’utilise depuis la barre des favoris, sur la page du tracker (glisser-déposer le lien dans la barre).',
+      'Use this link from the bookmarks bar, on the tracker page (drag and drop the link into the bar).',
+      'Diesen Link aus der Lesezeichenleiste auf der Tracker-Seite verwenden (Link in die Leiste ziehen).',
+      'Use este enlace desde la barra de marcadores, en la página del tracker (arrastre el enlace a la barra).'),
     importFpl: L('Plan de vol OACI', 'ICAO flight plan', 'ICAO-Flugplan', 'Plan de vuelo OACI'),
-    importIvaoDetails: L('Tracker IVAO — détails du vol', 'IVAO tracker — flight details', 'IVAO-Tracker — Flugdetails', 'Tracker IVAO — detalle del vuelo'),
-    importIvaoList: L('Tracker IVAO — connexions', 'IVAO tracker — connections', 'IVAO-Tracker — Verbindungen', 'Tracker IVAO — conexiones'),
+    importIvaoDetails: L('Tracker IVAO — détails du vol', 'IVAO tracker — flight details', 'IVAO-Tracker — Flugdetails',
+      'Tracker IVAO — detalle del vuelo'),
+    importIvaoList: L('Tracker IVAO — connexions', 'IVAO tracker — connections', 'IVAO-Tracker — Verbindungen',
+      'Tracker IVAO — conexiones'),
     importMetar: L('METAR', 'METAR'),
-    importVatsim: L('Historique VATSIM analysé (voir le suivi réseau dans l’en-tête).', 'VATSIM history analysed (see network tracking in the header).', 'VATSIM-Historie ausgewertet (siehe Netzwerk-Tracking in der Kopfzeile).', 'Historial VATSIM analizado (ver el seguimiento de red en la cabecera).'),
-    importUnknown: L('Texte non reconnu : plan de vol « (FPL-…) », page du tracker IVAO, historique VATSIM (JSON) ou METAR attendus.', 'Text not recognised: flight plan “(FPL-…)”, IVAO tracker page, VATSIM history (JSON) or METAR expected.', 'Text nicht erkannt: Flugplan „(FPL-…)“, IVAO-Tracker-Seite, VATSIM-Historie (JSON) oder METAR erwartet.', 'Texto no reconocido: se espera un plan de vuelo «(FPL-…)», una página del tracker IVAO, el historial VATSIM (JSON) o un METAR.'),
-    importClipDenied: L('Lecture du presse-papiers refusée : collez dans la zone (Ctrl+V).', 'Clipboard access denied: paste into the box (Ctrl+V).', 'Zugriff auf die Zwischenablage verweigert: in das Feld einfügen (Strg+V).', 'Acceso al portapapeles denegado: pegue en el cuadro (Ctrl+V).'),
-    importPasteHint: L('Collez avec Ctrl+V dans la zone (analyse immédiate). « Coller depuis le presse-papiers » demande l’autorisation une fois ; ensuite, le retour depuis le tracker (favori « → CR ») est analysé automatiquement.', 'Paste with Ctrl+V in the box (immediate analysis). “Paste from clipboard” asks for permission once; then returning from the tracker (“→ CR” bookmark) is analysed automatically.', 'Mit Strg+V in das Feld einfügen (sofortige Auswertung). „Aus Zwischenablage einfügen“ fragt einmal nach der Erlaubnis; danach wird die Rückkehr vom Tracker (Lesezeichen „→ CR“) automatisch ausgewertet.', 'Pegue con Ctrl+V en el cuadro (análisis inmediato). «Pegar desde el portapapeles» pide permiso una vez; después, la vuelta desde el tracker (marcador «→ CR») se analiza automáticamente.'),
-    importStatsim: L('StatSim (VATSIM) — détails du vol', 'StatSim (VATSIM) — flight details', 'StatSim (VATSIM) — Flugdetails', 'StatSim (VATSIM) — detalle del vuelo'),
-    importOpenIvao: L('↗ Tracker IVAO (mes connexions)', '↗ IVAO tracker (my connections)', '↗ IVAO-Tracker (meine Verbindungen)', '↗ Tracker IVAO (mis conexiones)'),
-    importOpenStatsim: L('↗ Mes vols StatSim (VATSIM)', '↗ My StatSim flights (VATSIM)', '↗ Meine StatSim-Flüge (VATSIM)', '↗ Mis vuelos StatSim (VATSIM)'),
+    importVatsim: L('Historique VATSIM analysé (voir le suivi réseau dans l’en-tête).',
+      'VATSIM history analysed (see network tracking in the header).',
+      'VATSIM-Historie ausgewertet (siehe Netzwerk-Tracking in der Kopfzeile).',
+      'Historial VATSIM analizado (ver el seguimiento de red en la cabecera).'),
+    importUnknown: L('Texte non reconnu : plan de vol « (FPL-…) », page du tracker IVAO, historique VATSIM (JSON) ou METAR attendus.',
+      'Text not recognised: flight plan “(FPL-…)”, IVAO tracker page, VATSIM history (JSON) or METAR expected.',
+      'Text nicht erkannt: Flugplan „(FPL-…)“, IVAO-Tracker-Seite, VATSIM-Historie (JSON) oder METAR erwartet.',
+      'Texto no reconocido: se espera un plan de vuelo «(FPL-…)», una página del tracker IVAO, el historial VATSIM (JSON) o un METAR.'
+      ),
+    importClipDenied: L('Lecture du presse-papiers refusée : collez dans la zone (Ctrl+V).',
+      'Clipboard access denied: paste into the box (Ctrl+V).',
+      'Zugriff auf die Zwischenablage verweigert: in das Feld einfügen (Strg+V).',
+      'Acceso al portapapeles denegado: pegue en el cuadro (Ctrl+V).'),
+    importPasteHint: L(
+      'Collez avec Ctrl+V dans la zone (analyse immédiate). « Coller depuis le presse-papiers » demande l’autorisation une fois ; ensuite, le retour depuis le tracker (favori « → CR ») est analysé automatiquement.',
+      'Paste with Ctrl+V in the box (immediate analysis). “Paste from clipboard” asks for permission once; then returning from the tracker (“→ CR” bookmark) is analysed automatically.',
+      'Mit Strg+V in das Feld einfügen (sofortige Auswertung). „Aus Zwischenablage einfügen“ fragt einmal nach der Erlaubnis; danach wird die Rückkehr vom Tracker (Lesezeichen „→ CR“) automatisch ausgewertet.',
+      'Pegue con Ctrl+V en el cuadro (análisis inmediato). «Pegar desde el portapapeles» pide permiso una vez; después, la vuelta desde el tracker (marcador «→ CR») se analiza automáticamente.'
+      ),
+    importStatsim: L('StatSim (VATSIM) — détails du vol', 'StatSim (VATSIM) — flight details', 'StatSim (VATSIM) — Flugdetails',
+      'StatSim (VATSIM) — detalle del vuelo'),
+    importOpenIvao: L('↗ Tracker IVAO (mes connexions)', '↗ IVAO tracker (my connections)', '↗ IVAO-Tracker (meine Verbindungen)',
+      '↗ Tracker IVAO (mis conexiones)'),
+    importOpenStatsim: L('↗ Mes vols StatSim (VATSIM)', '↗ My StatSim flights (VATSIM)', '↗ Meine StatSim-Flüge (VATSIM)',
+      '↗ Mis vuelos StatSim (VATSIM)'),
     importTrackerUrl: L('Adresse de la trace IVAO', 'IVAO track address', 'Adresse der IVAO-Spur', 'Dirección de la traza IVAO'),
     importLocal: L('heures locales', 'local times', 'Ortszeiten', 'horas locales'),
     fplFilled: L('champs renseignés depuis', 'fields filled from', 'Felder ausgefüllt aus', 'campos rellenados desde'),
-    render: L('Générer / actualiser le CR', 'Generate / refresh report', 'Bericht erzeugen / aktualisieren', 'Generar / actualizar el informe'),
+    render: L('Générer / actualiser le CR', 'Generate / refresh report', 'Bericht erzeugen / aktualisieren',
+      'Generar / actualizar el informe'),
     print: L('PDF / Imprimer', 'PDF / Print', 'PDF / Drucken', 'PDF / Imprimir'),
-    leave: L('La mission n’a pas été enregistrée dans le registre. Quitter quand même ?', 'The mission has not been saved to the ledger. Leave anyway?', 'Der Einsatz wurde nicht im Register gespeichert. Trotzdem verlassen?', 'La misión no se ha guardado en el registro. ¿Salir de todos modos?')
+    leave: L('La mission n’a pas été enregistrée dans le registre. Quitter quand même ?',
+      'The mission has not been saved to the ledger. Leave anyway?',
+      'Der Einsatz wurde nicht im Register gespeichert. Trotzdem verlassen?',
+      'La misión no se ha guardado en el registro. ¿Salir de todos modos?')
   };
 
   /** Enregistre une famille de mission (id, blocs, séries, pages, résumé…) ; ses champs de texte simple passent en majuscules. Lève une erreur sans identifiant. Retourne la définition complétée. */
@@ -407,7 +518,8 @@
       fplAssist(item, auto);
       // Flotte : base d'attache et opérateur, si non renseignés.
       if (known.base && (!item.baseDeparture || item.baseDeparture === auto.baseDeparture)) take('baseDeparture', known.base);
-      if (known.operator && index === 0 && (!mission.organisation.organisation || mission.organisation.organisation === autoOperator)) mission.organisation.organisation = autoOperator = String(known.operator).toUpperCase();
+      if (known.operator && index === 0 && (!mission.organisation.organisation || mission.organisation.organisation === autoOperator))
+        mission.organisation.organisation = autoOperator = String(known.operator).toUpperCase();
       autoFilled.set(item, auto);
       operatorAssist(index, known);
       if (known.equipment?.length) item.equipment = [...new Set([...(item.equipment || []), ...known.equipment])];
@@ -495,7 +607,8 @@
       return (Date.UTC(+p.year, +p.month - 1, +p.day, +p.hour, +p.minute) - Math.floor(ms / 60000) * 60000) / 60000;
     };
     /** Date de la mission (sinon aujourd'hui). */
-    const missionDate = () => /^\d{4}-\d{2}-\d{2}$/.test(mission.metadata?.date || '') ? mission.metadata.date : nowFor('metadata.date', 'date');
+    const missionDate = () => /^\d{4}-\d{2}-\d{2}$/.test(mission.metadata?.date || '') ? mission.metadata.date : nowFor('metadata.date',
+      'date');
 
     /** Heure locale ⇄ UTC dans le fuseau du terrain, à la date de la mission (changement d'heure pris en compte). */
     function convert(time, toUtc) {
@@ -564,7 +677,8 @@
       if (sig === timelineSig) return;
       timelineSig = sig;
       const list = mission.events || (mission.events = []);
-      const touchedByHand = e => ['position', 'description', 'result'].some(k => e[k]) || ['altitude', 'speed', 'heading', 'fuel'].some(k => e[k] != null && e[k] !== '');
+      const touchedByHand = e => ['position', 'description', 'result'].some(k => e[k]) || ['altitude', 'speed', 'heading', 'fuel'].some(
+        k => e[k] != null && e[k] !== '');
       Object.entries(TIMELINE_EVENT).forEach(([key, type]) => {
         const time = mission.timeline?.[key] || '',
           source = `timeline.${key}`,
@@ -617,9 +731,12 @@
           o[k] = autoAuthority[k] = String(v).toUpperCase();
         }
       };
-      const history = (window.MissionLedger?.store?.missions || []).slice().sort((a, b) => String(b.metadata?.date).localeCompare(String(a.metadata?.date)));
-      const sameCallsign = history.find(m => m !== mission && item.callsign && String(m.aircraft?.[0]?.callsign || '').toUpperCase() === String(item.callsign).toUpperCase() && (m.organisation?.requestingAuthority || m.organisation?.controllingAuthority));
-      const sameOrg = history.find(m => m !== mission && o.organisation && String(m.organisation?.organisation || '').toUpperCase() === String(o.organisation).toUpperCase() && (m.organisation?.requestingAuthority || m.organisation?.controllingAuthority));
+      const history = (window.MissionLedger?.store?.missions || []).slice().sort((a, b) => String(b.metadata?.date).localeCompare(String(a
+        .metadata?.date)));
+      const sameCallsign = history.find(m => m !== mission && item.callsign && String(m.aircraft?.[0]?.callsign || '').toUpperCase() ===
+        String(item.callsign).toUpperCase() && (m.organisation?.requestingAuthority || m.organisation?.controllingAuthority));
+      const sameOrg = history.find(m => m !== mission && o.organisation && String(m.organisation?.organisation || '').toUpperCase() ===
+        String(o.organisation).toUpperCase() && (m.organisation?.requestingAuthority || m.organisation?.controllingAuthority));
       const source = sameCallsign || sameOrg;
       if (source) {
         set('requestingAuthority', source.organisation.requestingAuthority);
@@ -627,7 +744,8 @@
         return;
       }
       const number = String(item.callsignNumber || '').toUpperCase(),
-        dept = /d[ée]partement/i.test(entry?.note || '') ? (V.departments[number] ? number : V.departments[number.slice(0, 2)] ? number.slice(0, 2) : '') : '';
+        dept = /d[ée]partement/i.test(entry?.note || '') ? (V.departments[number] ? number : V.departments[number.slice(0, 2)] ? number
+          .slice(0, 2) : '') : '';
       if (!dept) return;
       const name = V.departments[dept],
         op = String(entry.operator || o.organisation || '').toUpperCase();
@@ -640,7 +758,8 @@
       const item = mission.aircraft[index],
         entry = item?.callsignPrefix && A.table().find(e => e.prefix === A.canonicalPrefix(item.callsignPrefix));
       if (!entry) return;
-      if (index === 0 && entry.operator && (!mission.organisation.organisation || mission.organisation.organisation === autoOperator)) mission.organisation.organisation = autoOperator = String(entry.operator).toUpperCase();
+      if (index === 0 && entry.operator && (!mission.organisation.organisation || mission.organisation.organisation === autoOperator))
+        mission.organisation.organisation = autoOperator = String(entry.operator).toUpperCase();
       const auto = autoFilled.get(item) || {};
       if ((entry.types || []).length === 1 && (!item.type || item.type === auto.type)) {
         item.type = entry.types[0];
@@ -660,7 +779,8 @@
       const auto = autoFilled.get(item) || {};
       if (item.operatorCode && item.operatorCode !== auto.operatorCode) return false;
       const series = item.callsignPrefix && A.table().find(e => e.prefix === A.canonicalPrefix(item.callsignPrefix));
-      const code = A.designatorOf(index === 0 && mission.organisation.organisation) || A.designatorOf(known?.operator) || series?.designator || '';
+      const code = A.designatorOf(index === 0 && mission.organisation.organisation) || A.designatorOf(known?.operator) || series
+        ?.designator || '';
       if (code === item.operatorCode) return false;
       item.operatorCode = code;
       auto.operatorCode = code;
@@ -714,7 +834,8 @@
         autoFilled.set(item, own); // saisie valable pour cet indicatif
         // Forme plan de vol corrigée (KETOU12 pour KETOUPA12) : table de correspondance enrichie.
         const number = String(item.callsignNumber || '').replace(/[^A-Z0-9]/gi, '').toUpperCase();
-        if (item.callsignPrefix && number && item.callsignFpl.endsWith(number) && A.learnFpl(item.callsignPrefix, item.callsignFpl.slice(0, -number.length)))
+        if (item.callsignPrefix && number && item.callsignFpl.endsWith(number) && A.learnFpl(item.callsignPrefix, item.callsignFpl.slice(
+            0, -number.length)))
           view.hint(`aircraft.${index}.callsignFpl`, inLanguage(UI.fplLearned));
         view.sync('aircraft.');
         return;
@@ -747,7 +868,8 @@
       }
       // Valeurs reprises d'un appareil précédemment choisi : effacées pour laisser place au nouveau choix.
       const auto = autoFilled.get(item) || {};
-      if (field !== 'variant')['registration', ...CALLSIGN, 'type', 'variant', 'category', 'tacticalNumber', 'configuration', 'baseDeparture'].forEach(k => {
+      if (field !== 'variant')['registration', ...CALLSIGN, 'type', 'variant', 'category', 'tacticalNumber', 'configuration',
+        'baseDeparture'].forEach(k => {
         if (k !== field && !(CALLSIGN.includes(field) && CALLSIGN.includes(k)) && item[k] && item[k] === auto[k]) {
           item[k] = '';
           delete auto[k];
@@ -758,14 +880,16 @@
       const regPath = `aircraft.${index}.registration`;
       // Appareil connu choisi par son immatriculation (ou par un indicatif complet qui lui est
       // propre) : son identité l'emporte sur un indicatif / une immatriculation incompatible.
-      const picked = field === 'registration' ? A.find(value) : CALLSIGN.includes(field) && item.callsignNumber ? A.findByCallsign(item.callsign) : null;
+      const picked = field === 'registration' ? A.find(value) : CALLSIGN.includes(field) && item.callsignNumber ? A.findByCallsign(item
+        .callsign) : null;
       if (picked) {
         if (field === 'registration' && item.callsign && !picked.callsigns.includes(String(item.callsign).toUpperCase())) {
           item.callsign = '';
           item.callsignPrefix = '';
           item.callsignNumber = '';
         }
-        if (CALLSIGN.includes(field) && item.registration && A.regKey(item.registration) !== A.regKey(picked.registration)) item.registration = '';
+        if (CALLSIGN.includes(field) && item.registration && A.regKey(item.registration) !== A.regKey(picked.registration)) item
+          .registration = '';
         if (item.type && picked.type && item.type.toUpperCase() !== String(picked.type).toUpperCase()) item.type = '';
         applyKnown(index, picked);
         return;
@@ -842,7 +966,8 @@
         el?.focus();
       });
       const flagged = new Set(issues.map(x => x.path));
-      form.querySelectorAll('[data-path^="timeline."],[data-path^="fuel."],[data-path="metadata.date"]').forEach(el => el.classList.toggle('mc-invalid', flagged.has(el.dataset.path)));
+      form.querySelectorAll('[data-path^="timeline."],[data-path^="fuel."],[data-path="metadata.date"]').forEach(el => el.classList
+        .toggle('mc-invalid', flagged.has(el.dataset.path)));
     }
 
     /** Bandeau du registre : dossier, nombre de missions, source. */
@@ -907,7 +1032,9 @@
       let est = null;
       try {
         const IDX = window.MissionIndex; // registre des missions : index IndexedDB (shared/data_index.js)
-        est = ((IDX ? IDX.all() : (window.RepositoryKit?.store?.jsonCached ? window.RepositoryKit.store.jsonCached('missionRegistry:v1', null) : JSON.parse(localStorage.getItem('missionRegistry:v1') || 'null'))?.missions) || []).find(x => x.id === id)?.estimate || null;
+        est = ((IDX ? IDX.all() : (window.RepositoryKit?.store?.jsonCached ? window.RepositoryKit.store.jsonCached('missionRegistry:v1',
+            null) : JSON.parse(localStorage.getItem('missionRegistry:v1') || 'null'))?.missions) || []).find(x => x.id === id)
+          ?.estimate || null;
         if (IDX && !IDX.loaded && !missionLink.waiting) { // index pas encore lu : lien refait dès qu'il l'est
           missionLink.waiting = true;
           IDX.ready.then(() => {
@@ -949,7 +1076,8 @@
         const source = button.dataset.fpl,
           p = prefs(),
           F = window.MissionFpl;
-        const id = source === 'simbrief' ? p.simbriefUser : source === 'ivao' ? (mission.network.ivaoId || p.ivaoId) : (mission.network.vatsimId || p.vatsimId);
+        const id = source === 'simbrief' ? p.simbriefUser : source === 'ivao' ? (mission.network.ivaoId || p.ivaoId) : (mission
+          .network.vatsimId || p.vatsimId);
         if (!id) {
           note.textContent = inLanguage(UI.fplNeedId);
           return;
@@ -1041,7 +1169,8 @@
         if (!silent) importResult.textContent = inLanguage(UI.importUnknown);
         return false;
       }
-      const dep = result.fpl?.dep || result.dep || result.sessions?.[0]?.dep || mission.navigation.dep || mission.aircraft[0]?.baseDeparture;
+      const dep = result.fpl?.dep || result.dep || result.sessions?.[0]?.dep || mission.navigation.dep || mission.aircraft[0]
+        ?.baseDeparture;
       const ad = dep && !/^ZZZZ$/.test(dep) ? await assist.airport(dep) : null;
       const rotary = mission.aircraft[0]?.category === 'rotary' || A.lookupType(result.fpl?.type)?.category === 'rotary';
       const {
@@ -1202,11 +1331,16 @@
         history.replaceState(null, '', `?edit=${index}&id=${encodeURIComponent(mission.metadata.missionId)}`);
       }
       // rédacteur du CR (trigramme connecté), gardé à la première écriture : « Mes appareils » de Mon profil
-      if (!mission.metadata.reportedBy) mission.metadata.reportedBy = window.SuiteUsers?.effective?.() || window.MissionAssignments?.trigram?.() || '';
+      if (!mission.metadata.reportedBy) mission.metadata.reportedBy = window.SuiteUsers?.effective?.() || window.MissionAssignments
+        ?.trigram?.() || '';
       A.recordMission(mission);
       // CR issu d'un ordre de mission : appareils au terrain d'atterrissage réel saisi (shared/aircraft_positions.js)
       Promise.resolve(window.AircraftPositions?.recordFromCr?.(mission)).then(n => {
-        if (n) window.AppFramework?.notify?.(window.RepositoryKit.t(L('Terrain actuel de l’appareil mis à jour (terrain d’atterrissage réel, ordre de mission).', 'Aircraft current aerodrome updated (actual landing aerodrome, mission order).', 'Aktueller Flugplatz des Luftfahrzeugs aktualisiert (tatsächlicher Landeflugplatz, Missionsbefehl).', 'Aeródromo actual de la aeronave actualizado (aeródromo de aterrizaje real, orden de misión).')), 'ok');
+        if (n) window.AppFramework?.notify?.(window.RepositoryKit.t(L(
+          'Terrain actuel de l’appareil mis à jour (terrain d’atterrissage réel, ordre de mission).',
+          'Aircraft current aerodrome updated (actual landing aerodrome, mission order).',
+          'Aktueller Flugplatz des Luftfahrzeugs aktualisiert (tatsächlicher Landeflugplatz, Missionsbefehl).',
+          'Aeródromo actual de la aeronave actualizado (aeródromo de aterrizaje real, orden de misión).')), 'ok');
       }).catch(() => {});
       await persist('stored');
       dirty = false;
@@ -1496,7 +1630,8 @@
         if (sia) {
           mission = fresh();
           fromSia(mission, sia);
-          mission.metadata.missionId = ledger.nextId(prefix, mission.metadata.missionNumber); // CR<mission>-<essai> : CRM-016-1, CRM-016-2 si rejouée
+          mission.metadata.missionId = ledger.nextId(prefix, mission.metadata
+          .missionNumber); // CR<mission>-<essai> : CRM-016-1, CRM-016-2 si rejouée
           dirty = true;
           localStorage.removeItem(SIA_KEY);
         }
@@ -1577,7 +1712,8 @@
     }
     const points = y.turning_points || [];
     m.navigation.waypoints = points.map(p => p.name || p.id).join(' ');
-    m.navigation.coordinates = [y.origin, ...points, ...(y.rendezvous || []), y.target, y.destination].map(place).filter(Boolean).filter((v, i, all) => all.indexOf(v) === i).join('\n');
+    m.navigation.coordinates = [y.origin, ...points, ...(y.rendezvous || []), y.target, y.destination].map(place).filter(Boolean).filter((
+      v, i, all) => all.indexOf(v) === i).join('\n');
     if (y.target?.name) m.navigation.area = y.target.name;
     // Appareils : bloc aircraft, sinon équipes dont le type est un aéronef connu (indicatif = nom de l'équipe).
     let aircraft = (y.aircraft || []).filter(a => a && (a.type || a.callsign));
@@ -1602,7 +1738,9 @@
       });
     });
     m.organisation.organisation = aircraft[0]?.operator || m.organisation.organisation;
-    const payload = y.payload ? [y.payload.category, y.payload.description, y.payload.mass_kg ? `${y.payload.mass_kg} kg` : '', y.payload.passengers ? `${y.payload.passengers} PAX` : ''].filter(Boolean).join(' — ') : '';
+    const payload = y.payload ? [y.payload.category, y.payload.description, y.payload.mass_kg ? `${y.payload.mass_kg} kg` : '', y.payload.passengers ?
+      `${y.payload.passengers} PAX` : ''
+    ].filter(Boolean).join(' — ') : '';
     m.remarks.observations = [`Mission générée (SIA XML) : ${[meta.type, meta.subtype].filter(Boolean).join(' / ')} — ${y.title || ''}`, payload && `Charge : ${payload}`].filter(Boolean).join('\n');
   }
 

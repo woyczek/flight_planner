@@ -146,7 +146,9 @@
   /** Enregistre une fiche (datée, signée) et son entrée d'index. Retour : { where, error } (writeData). */
   async function save(user) {
     const tri = norm(user.trigramme);
-    if (!/^[A-Z0-9]{2,5}$/.test(tri)) throw new Error(t(['Trigramme invalide.', 'Invalid trigram.', 'Ungültiges Kürzel.', 'Trigrama no válido.']));
+    if (!/^[A-Z0-9]{2,5}$/.test(tri)) throw new Error(t(['Trigramme invalide.', 'Invalid trigram.', 'Ungültiges Kürzel.',
+      'Trigrama no válido.'
+    ]));
     const doc = {
       schema: 1,
       va: VA(),
@@ -233,8 +235,13 @@
     if (!u) fail(['Utilisateur inconnu.', 'Unknown user.', 'Unbekannter Benutzer.', 'Usuario desconocido.']);
     if (u.actif === false) fail(['Utilisateur désactivé.', 'User deactivated.', 'Benutzer deaktiviert.', 'Usuario desactivado.']);
     if (u.mot_de_passe) {
-      if (!await verify(password, u.mot_de_passe)) fail(['Mot de passe incorrect.', 'Wrong password.', 'Falsches Passwort.', 'Contraseña incorrecta.']);
-    } else if (mode() === 'production') fail(['Aucun mot de passe défini : le demander à un administrateur du Centre.', 'No password set: ask a Centre administrator.', 'Kein Passwort gesetzt: einen Administrator des Zentrums fragen.', 'Ninguna contraseña definida: pedirla a un administrador del Centro.']);
+      if (!await verify(password, u.mot_de_passe)) fail(['Mot de passe incorrect.', 'Wrong password.', 'Falsches Passwort.',
+        'Contraseña incorrecta.'
+      ]);
+    } else if (mode() === 'production') fail(['Aucun mot de passe défini : le demander à un administrateur du Centre.',
+      'No password set: ask a Centre administrator.', 'Kein Passwort gesetzt: einen Administrator des Zentrums fragen.',
+      'Ninguna contraseña definida: pedirla a un administrador del Centro.'
+    ]);
     setSession({
       tri,
       role: u.role,
@@ -263,13 +270,20 @@
   /** Change le mot de passe de l'utilisateur connecté (l'ancien est exigé s'il en a un). */
   async function changePassword(oldPassword, newPassword) {
     const s = session();
-    if (!s?.tri || s.as) throw new Error(t(['Se connecter d’abord (hors usurpation).', 'Sign in first (not while impersonating).', 'Zuerst anmelden (nicht während einer Übernahme).', 'Conectarse primero (fuera de una suplantación).']));
-    if (String(newPassword || '').length < 8) throw new Error(t(['Nouveau mot de passe : 8 caractères au moins.', 'New password: at least 8 characters.', 'Neues Passwort: mindestens 8 Zeichen.', 'Nueva contraseña: 8 caracteres como mínimo.']));
+    if (!s?.tri || s.as) throw new Error(t(['Se connecter d’abord (hors usurpation).', 'Sign in first (not while impersonating).',
+      'Zuerst anmelden (nicht während einer Übernahme).', 'Conectarse primero (fuera de una suplantación).'
+    ]));
+    if (String(newPassword || '').length < 8) throw new Error(t(['Nouveau mot de passe : 8 caractères au moins.',
+      'New password: at least 8 characters.', 'Neues Passwort: mindestens 8 Zeichen.',
+      'Nueva contraseña: 8 caracteres como mínimo.'
+    ]));
     const u = await get(s.tri, {
       fresh: true
     });
     if (!u) throw new Error(t(['Fiche introuvable.', 'User file not found.', 'Benutzerdatei nicht gefunden.', 'Ficha no encontrada.']));
-    if (u.mot_de_passe && !await verify(oldPassword, u.mot_de_passe)) throw new Error(t(['Ancien mot de passe incorrect.', 'Wrong old password.', 'Altes Passwort falsch.', 'Contraseña anterior incorrecta.']));
+    if (u.mot_de_passe && !await verify(oldPassword, u.mot_de_passe)) throw new Error(t(['Ancien mot de passe incorrect.',
+      'Wrong old password.', 'Altes Passwort falsch.', 'Contraseña anterior incorrecta.'
+    ]));
     return save({
       ...u,
       mot_de_passe: await hashPassword(newPassword),
@@ -279,7 +293,10 @@
   /** Réinitialisation par un admin : mot de passe provisoire, à changer à la prochaine connexion. */
   async function resetPassword(tri, newPassword) {
     requireAdmin();
-    if (String(newPassword || '').length < 8) throw new Error(t(['Mot de passe provisoire : 8 caractères au moins.', 'Temporary password: at least 8 characters.', 'Vorläufiges Passwort: mindestens 8 Zeichen.', 'Contraseña provisional: 8 caracteres como mínimo.']));
+    if (String(newPassword || '').length < 8) throw new Error(t(['Mot de passe provisoire : 8 caractères au moins.',
+      'Temporary password: at least 8 characters.', 'Vorläufiges Passwort: mindestens 8 Zeichen.',
+      'Contraseña provisional: 8 caracteres como mínimo.'
+    ]));
     const u = await get(tri, {
       fresh: true
     });
@@ -292,7 +309,11 @@
   }
   /** Droits d'administration : imposés en mode production (admin_centre connecté) ; testés seulement en develop. */
   function requireAdmin() {
-    if (mode() === 'production' && !isAdmin()) throw new Error(t(['Réservé aux administrateurs du Centre (admin_centre connecté).', 'Reserved for Centre administrators (signed-in admin_centre).', 'Administratoren des Zentrums vorbehalten (angemeldeter admin_centre).', 'Reservado a los administradores del Centro (admin_centre conectado).']));
+    if (mode() === 'production' && !isAdmin()) throw new Error(t(['Réservé aux administrateurs du Centre (admin_centre connecté).',
+      'Reserved for Centre administrators (signed-in admin_centre).',
+      'Administratoren des Zentrums vorbehalten (angemeldeter admin_centre).',
+      'Reservado a los administradores del Centro (admin_centre conectado).'
+    ]));
   }
   /** Agir en tant qu'un autre utilisateur (admin) : bandeau sur toutes les pages, écritures signées « ADM pour TOTO ». */
   async function impersonate(tri) {
@@ -300,7 +321,10 @@
     tri = norm(tri);
     const s = session() || {};
     const me = s.tri || A()?.profileTrigram?.() || '';
-    if (!me) throw new Error(t(['Se connecter d’abord (ou régler son trigramme en mode develop).', 'Sign in first (or set your trigram in develop mode).', 'Zuerst anmelden (oder im develop-Modus das Kürzel setzen).', 'Conectarse primero (o definir el trigrama en modo develop).']));
+    if (!me) throw new Error(t(['Se connecter d’abord (ou régler son trigramme en mode develop).',
+      'Sign in first (or set your trigram in develop mode).', 'Zuerst anmelden (oder im develop-Modus das Kürzel setzen).',
+      'Conectarse primero (o definir el trigrama en modo develop).'
+    ]));
     if (tri === me) return stopImpersonation();
     if (!await get(tri)) throw new Error(t(['Utilisateur inconnu.', 'Unknown user.', 'Unbekannter Benutzer.', 'Usuario desconocido.']));
     // develop sans connexion : session d'usurpation seule (login: false), effacée à la fin de l'usurpation
@@ -331,7 +355,12 @@
     if (mode() === 'production') requireAdmin();
     if (m === 'production') {
       const admins = (await list(true)).filter(u => u.role === 'admin_centre' && u.actif !== false && u.mot_de_passe);
-      if (!admins.length) throw new Error(t(['Mode production : il faut d’abord un administrateur du Centre actif, avec un mot de passe.', 'Production mode: an active Centre administrator with a password is needed first.', 'Produktionsmodus: zuerst ist ein aktiver Administrator des Zentrums mit Passwort nötig.', 'Modo producción: primero hace falta un administrador del Centro activo con contraseña.']));
+      if (!admins.length) throw new Error(t([
+        'Mode production : il faut d’abord un administrateur du Centre actif, avec un mot de passe.',
+        'Production mode: an active Centre administrator with a password is needed first.',
+        'Produktionsmodus: zuerst ist ein aktiver Administrator des Zentrums mit Passwort nötig.',
+        'Modo producción: primero hace falta un administrador del Centro activo con contraseña.'
+      ]));
     }
     const doc = {
       schema: 1,
@@ -400,11 +429,17 @@
       b.querySelector('button').onclick = () => stopImpersonation();
       document.body.append(b);
     }
-    b.querySelector('span').textContent = tf(['Usurpation : utilisateur {u} (par {a}, écritures signées « {a} pour {u} »)', 'Impersonation: user {u} (by {a}, writes signed “{a} pour {u}”)', 'Identitätsübernahme: Benutzer {u} (durch {a}, Schreibvorgänge signiert „{a} pour {u}“)', 'Suplantación: usuario {u} (por {a}, escrituras firmadas «{a} pour {u}»)'], {
+    b.querySelector('span').textContent = tf(['Usurpation : utilisateur {u} (par {a}, écritures signées « {a} pour {u} »)',
+      'Impersonation: user {u} (by {a}, writes signed “{a} pour {u}”)',
+      'Identitätsübernahme: Benutzer {u} (durch {a}, Schreibvorgänge signiert „{a} pour {u}“)',
+      'Suplantación: usuario {u} (por {a}, escrituras firmadas «{a} pour {u}»)'
+    ], {
       u: s.as,
       a: s.tri
     });
-    b.querySelector('button').textContent = t(['Terminer l’usurpation', 'End impersonation', 'Übernahme beenden', 'Terminar la suplantación']);
+    b.querySelector('button').textContent = t(['Terminer l’usurpation', 'End impersonation', 'Übernahme beenden',
+      'Terminar la suplantación'
+    ]);
   }
   /** Page qui exige une connexion en mode production : 'user' (Mes missions), 'admin' (Centre), '' sinon. */
   function gateOf() {
@@ -413,6 +448,7 @@
     if (p.startsWith('apps/cpco/') || p === 'apps/settings/centre.html') return 'admin';
     return '';
   }
+
   function gate() {
     document.getElementById('suiteLogin')?.remove();
     const need = gateOf(),
@@ -429,7 +465,14 @@
     box.innerHTML = `<div><b></b><p></p><form><input name="tri" maxlength="5" autocomplete="username" spellcheck="false"><input name="pw" type="password" autocomplete="current-password"><button type="submit"></button><span class="suite-login-msg"></span></form><a href="${K.esc(new URL('index.html', window.RepositoryNav?.root || location.href).href)}"></a></div>`;
     const f = box.querySelector('form');
     box.querySelector('b').textContent = t(['Connexion', 'Sign in', 'Anmeldung', 'Conexión']);
-    box.querySelector('p').textContent = need === 'admin' ? t(['Mode production : le Centre est réservé aux administrateurs du Centre connectés.', 'Production mode: the Centre is reserved for signed-in Centre administrators.', 'Produktionsmodus: Das Zentrum ist angemeldeten Administratoren vorbehalten.', 'Modo producción: el Centro está reservado a los administradores conectados.']) : t(['Mode production : connectez-vous pour voir vos missions.', 'Production mode: sign in to see your missions.', 'Produktionsmodus: anmelden, um Ihre Missionen zu sehen.', 'Modo producción: conéctese para ver sus misiones.']);
+    box.querySelector('p').textContent = need === 'admin' ? t([
+      'Mode production : le Centre est réservé aux administrateurs du Centre connectés.',
+      'Production mode: the Centre is reserved for signed-in Centre administrators.',
+      'Produktionsmodus: Das Zentrum ist angemeldeten Administratoren vorbehalten.',
+      'Modo producción: el Centro está reservado a los administradores conectados.'
+    ]) : t(['Mode production : connectez-vous pour voir vos missions.', 'Production mode: sign in to see your missions.',
+      'Produktionsmodus: anmelden, um Ihre Missionen zu sehen.', 'Modo producción: conéctese para ver sus misiones.'
+    ]);
     f.tri.placeholder = t(['Trigramme', 'Trigram', 'Kürzel', 'Trigrama']);
     f.pw.placeholder = t(['Mot de passe', 'Password', 'Passwort', 'Contraseña']);
     f.querySelector('button').textContent = t(['Se connecter', 'Sign in', 'Anmelden', 'Conectarse']);
@@ -440,8 +483,16 @@
       msg.textContent = '…';
       try {
         const r = await login(f.tri.value, f.pw.value);
-        if (need === 'admin' && r.user.role !== 'admin_centre') throw new Error(t(['Compte sans droits d’administration du Centre.', 'Account without Centre administration rights.', 'Konto ohne Administrationsrechte für das Zentrum.', 'Cuenta sin derechos de administración del Centro.']));
-        if (r.mustChange) window.AppFramework?.notify?.(t(['Mot de passe provisoire : le changer dans Paramètres › Mon profil › Connexion.', 'Temporary password: change it in Settings › My profile › Sign-in.', 'Vorläufiges Passwort: unter Einstellungen › Mein Profil › Anmeldung ändern.', 'Contraseña provisional: cambiarla en Ajustes › Mi perfil › Conexión.']), 'warn');
+        if (need === 'admin' && r.user.role !== 'admin_centre') throw new Error(t(['Compte sans droits d’administration du Centre.',
+          'Account without Centre administration rights.', 'Konto ohne Administrationsrechte für das Zentrum.',
+          'Cuenta sin derechos de administración del Centro.'
+        ]));
+        if (r.mustChange) window.AppFramework?.notify?.(t([
+          'Mot de passe provisoire : le changer dans Paramètres › Mon profil › Connexion.',
+          'Temporary password: change it in Settings › My profile › Sign-in.',
+          'Vorläufiges Passwort: unter Einstellungen › Mein Profil › Anmeldung ändern.',
+          'Contraseña provisional: cambiarla en Ajustes › Mi perfil › Conexión.'
+        ]), 'warn');
         location.reload();
       } catch (err) {
         msg.textContent = err.message;

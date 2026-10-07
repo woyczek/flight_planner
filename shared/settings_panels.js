@@ -34,10 +34,22 @@
   const nav = () => window.RepositoryNav;
 
   // sous-titres des en-têtes des quatre pages (« SO Group Virtual — … » : la couche de traduction traduit la partie après le tiret)
-  L('trigramme, identifiants VATSIM, IVAO, SimBrief et du site de la compagnie, connexion et mot de passe, types de missions, langue, appareils et simulateurs', 'trigram, VATSIM, IVAO, SimBrief and airline website credentials, sign-in and password, mission types, language, aircraft and simulators', 'Kürzel, VATSIM-, IVAO-, SimBrief- und Website-Zugangsdaten der Fluggesellschaft, Anmeldung und Passwort, Missionsarten, Sprache, Luftfahrzeuge und Simulatoren', 'trigrama, credenciales de VATSIM, IVAO, SimBrief y del sitio de la aerolínea, conexión y contraseña, tipos de misión, idioma, aeronaves y simuladores');
-  L('accès au Centre, utilisateurs et droits, catégories de disponibilité, réglages du routage, envoi des comptes rendus', 'Centre access, users and rights, availability categories, routing settings, report sending', 'Zugang zum Zentrum, Benutzer und Rechte, Verfügbarkeitskategorien, Routing-Einstellungen, Berichtsversand', 'acceso al Centro, usuarios y derechos, categorías de disponibilidad, ajustes de rutas, envío de informes');
-  L('premier lancement, dépôt de données, dossiers, compagnie virtuelle', 'first run, data repository, folders, virtual airline', 'Erststart, Datenrepository, Ordner, virtuelle Fluggesellschaft', 'primer arranque, repositorio de datos, carpetas, aerolínea virtual');
-  L('mises à jour, versions, dépendances, base SIA, caches, stockage, sauvegarde, journal, fichiers de référence', 'updates, versions, dependencies, SIA base, caches, storage, backup, journal, reference files', 'Aktualisierungen, Versionen, Abhängigkeiten, SIA-Basis, Caches, Speicher, Sicherung, Protokoll, Referenzdateien', 'actualizaciones, versiones, dependencias, base SIA, cachés, almacenamiento, copia, registro, archivos de referencia');
+  L('trigramme, identifiants VATSIM, IVAO, SimBrief et du site de la compagnie, connexion et mot de passe, types de missions, langue, appareils et simulateurs',
+    'trigram, VATSIM, IVAO, SimBrief and airline website credentials, sign-in and password, mission types, language, aircraft and simulators',
+    'Kürzel, VATSIM-, IVAO-, SimBrief- und Website-Zugangsdaten der Fluggesellschaft, Anmeldung und Passwort, Missionsarten, Sprache, Luftfahrzeuge und Simulatoren',
+    'trigrama, credenciales de VATSIM, IVAO, SimBrief y del sitio de la aerolínea, conexión y contraseña, tipos de misión, idioma, aeronaves y simuladores'
+    );
+  L('accès au Centre, utilisateurs et droits, catégories de disponibilité, réglages du routage, envoi des comptes rendus',
+    'Centre access, users and rights, availability categories, routing settings, report sending',
+    'Zugang zum Zentrum, Benutzer und Rechte, Verfügbarkeitskategorien, Routing-Einstellungen, Berichtsversand',
+    'acceso al Centro, usuarios y derechos, categorías de disponibilidad, ajustes de rutas, envío de informes');
+  L('premier lancement, dépôt de données, dossiers, compagnie virtuelle', 'first run, data repository, folders, virtual airline',
+    'Erststart, Datenrepository, Ordner, virtuelle Fluggesellschaft',
+    'primer arranque, repositorio de datos, carpetas, aerolínea virtual');
+  L('mises à jour, versions, dépendances, base SIA, caches, stockage, sauvegarde, journal, fichiers de référence',
+    'updates, versions, dependencies, SIA base, caches, storage, backup, journal, reference files',
+    'Aktualisierungen, Versionen, Abhängigkeiten, SIA-Basis, Caches, Speicher, Sicherung, Protokoll, Referenzdateien',
+    'actualizaciones, versiones, dependencias, base SIA, cachés, almacenamiento, copia, registro, archivos de referencia');
   L('Mon profil', 'My profile', 'Mein Profil', 'Mi perfil');
   L('Installation', 'Installation', 'Installation', 'Instalación');
   L('Paramètres — Centre', 'Settings — Centre', 'Einstellungen — Zentrum', 'Ajustes — Centro');
@@ -54,14 +66,20 @@
     id: 'identity',
     group: GROUP_PROFILE,
     title: L('Identité et réseaux', 'Identity and networks', 'Identität und Netzwerke', 'Identidad y redes'),
-    intro: L('Trigramme, identifiants des réseaux (VATSIM, IVAO), SimBrief et du site de la compagnie, langue de la suite. Repris par toutes les pages (☰ › Profil pilote, comptes rendus, reportings).', 'Trigram, network IDs (VATSIM, IVAO), SimBrief and airline website credentials, suite language. Used by every page (☰ › Pilot profile, reports, reportings).', 'Kürzel, Netzwerk-IDs (VATSIM, IVAO), SimBrief- und Website-Zugangsdaten der Fluggesellschaft, Sprache der Suite. Von allen Seiten verwendet (☰ › Pilotenprofil, Berichte).', 'Trigrama, identificadores de redes (VATSIM, IVAO), SimBrief y del sitio de la aerolínea, idioma de la suite. Usado por todas las páginas (☰ › Perfil de piloto, informes).'),
+    intro: L(
+      'Trigramme, identifiants des réseaux (VATSIM, IVAO), SimBrief et du site de la compagnie, langue de la suite. Repris par toutes les pages (☰ › Profil pilote, comptes rendus, reportings).',
+      'Trigram, network IDs (VATSIM, IVAO), SimBrief and airline website credentials, suite language. Used by every page (☰ › Pilot profile, reports, reportings).',
+      'Kürzel, Netzwerk-IDs (VATSIM, IVAO), SimBrief- und Website-Zugangsdaten der Fluggesellschaft, Sprache der Suite. Von allen Seiten verwendet (☰ › Pilotenprofil, Berichte).',
+      'Trigrama, identificadores de redes (VATSIM, IVAO), SimBrief y del sitio de la aerolínea, idioma de la suite. Usado por todas las páginas (☰ › Perfil de piloto, informes).'
+      ),
     render(body, api) {
       const p = read(PROFILE),
         d = read(DEFA),
         U = window.SuiteUsers,
         triLocked = !!U?.trigramLocked?.();
       const LANG = [
-        ['auto', L('Automatique (langue du navigateur)', 'Automatic (browser language)', 'Automatisch (Browsersprache)', 'Automático (idioma del navegador)')],
+        ['auto', L('Automatique (langue du navigateur)', 'Automatic (browser language)', 'Automatisch (Browsersprache)',
+          'Automático (idioma del navegador)')],
         ['fr', 'Français'],
         ['en', 'English'],
         ['de', 'Deutsch'],
@@ -109,7 +127,10 @@
             if (i.dataset.f === 'trigram' && triLocked) return;
             next[i.dataset.f] = i.dataset.f === 'trigram' ? i.value.trim().toUpperCase() : i.value.trim();
           });
-          if (next.trigram && !/^[A-Z0-9]{2,4}$/.test(next.trigram)) return api.status(K.t(['Trigramme : 2 à 4 lettres ou chiffres.', 'Trigram: 2 to 4 letters or digits.', 'Kürzel: 2 bis 4 Buchstaben oder Ziffern.', 'Trigrama: de 2 a 4 letras o cifras.']));
+          if (next.trigram && !/^[A-Z0-9]{2,4}$/.test(next.trigram)) return api.status(K.t([
+            'Trigramme : 2 à 4 lettres ou chiffres.', 'Trigram: 2 to 4 letters or digits.',
+            'Kürzel: 2 bis 4 Buchstaben oder Ziffern.', 'Trigrama: de 2 a 4 letras o cifras.'
+          ]));
           K.store.setJson(PROFILE, next);
           const login = body.querySelector('[data-defa="login"]').value.trim(),
             password = body.querySelector('[data-defa="password"]').value;
@@ -124,7 +145,9 @@
             detail: next
           }));
           if (next.trigram !== cur.trigram) window.MissionAssignments?.envelope?.();
-          api.status(K.t(['Profil enregistré dans ce navigateur', 'Profile saved in this browser', 'Profil in diesem Browser gespeichert', 'Perfil guardado en este navegador']));
+          api.status(K.t(['Profil enregistré dans ce navigateur', 'Profile saved in this browser',
+            'Profil in diesem Browser gespeichert', 'Perfil guardado en este navegador'
+          ]));
         }, 'primary']
       ]);
     }
@@ -150,16 +173,27 @@
     const draw = st => {
       const v = st?.user?.ivao;
       card.querySelectorAll('input[data-ivc], button').forEach(e => e.disabled = !st || !tri);
-      if (!st) return say(K.t(['Lanceur absent : ouvrez la suite avec lancer.cmd / lancer.sh.', 'No launcher: open the suite with lancer.cmd / lancer.sh.', 'Kein Starter: Suite mit lancer.cmd / lancer.sh öffnen.', 'Sin lanzador: abra la suite con lancer.cmd / lancer.sh.']));
-      if (!tri) return say(K.t(['Trigramme non réglé : le régler ci-dessus.', 'Trigram not set: set it above.', 'Kürzel nicht gesetzt: oben festlegen.', 'Trigrama no definido: definirlo arriba.']));
+      if (!st) return say(K.t(['Lanceur absent : ouvrez la suite avec lancer.cmd / lancer.sh.',
+        'No launcher: open the suite with lancer.cmd / lancer.sh.', 'Kein Starter: Suite mit lancer.cmd / lancer.sh öffnen.',
+        'Sin lanzador: abra la suite con lancer.cmd / lancer.sh.'
+      ]));
+      if (!tri) return say(K.t(['Trigramme non réglé : le régler ci-dessus.', 'Trigram not set: set it above.',
+        'Kürzel nicht gesetzt: oben festlegen.', 'Trigrama no definido: definirlo arriba.'
+      ]));
       $('[data-ivc="clientId"]').value = v?.clientId || '';
       $('[data-ivc="clientSecret"]').value = '';
-      $('[data-ivc="clientSecret"]').placeholder = v?.clientSecret?.set ? K.t(['(inchangé)', '(unchanged)', '(unverändert)', '(sin cambios)']) : '';
+      $('[data-ivc="clientSecret"]').placeholder = v?.clientSecret?.set ? K.t(['(inchangé)', '(unchanged)', '(unverändert)',
+        '(sin cambios)'
+      ]) : '';
       $('[data-ivc-clear]').hidden = !(v?.clientId || v?.clientSecret?.set);
-      say(v?.clientSecret?.set ? tf(['Client de {t} enregistré, secret {h}.', 'Client of {t} saved, secret {h}.', 'Client von {t} gespeichert, Geheimnis {h}.', 'Cliente de {t} guardado, secreto {h}.'], {
+      say(v?.clientSecret?.set ? tf(['Client de {t} enregistré, secret {h}.', 'Client of {t} saved, secret {h}.',
+        'Client von {t} gespeichert, Geheimnis {h}.', 'Cliente de {t} guardado, secreto {h}.'
+      ], {
         t: tri,
         h: v.clientSecret.hint
-      }) : tf(['Aucun client IVAO pour {t}.', 'No IVAO client for {t}.', 'Kein IVAO-Client für {t}.', 'Ningún cliente IVAO para {t}.'], {
+      }) : tf(['Aucun client IVAO pour {t}.', 'No IVAO client for {t}.', 'Kein IVAO-Client für {t}.',
+        'Ningún cliente IVAO para {t}.'
+      ], {
         t: tri
       }));
     };
@@ -170,7 +204,9 @@
         service: 'ivao',
         values
       });
-      if (!r?.ok) window.AppFramework?.notify?.(tf(['Client IVAO non enregistré : {e}', 'IVAO client not saved: {e}', 'IVAO-Client nicht gespeichert: {e}', 'Cliente IVAO no guardado: {e}'], {
+      if (!r?.ok) window.AppFramework?.notify?.(tf(['Client IVAO non enregistré : {e}', 'IVAO client not saved: {e}',
+        'IVAO-Client nicht gespeichert: {e}', 'Cliente IVAO no guardado: {e}'
+      ], {
         e: r?.message || '?'
       }), 'error');
       draw(r?.ok ? r : await api());
@@ -184,7 +220,10 @@
       send(values);
     };
     $('[data-ivc-clear]').onclick = async () => {
-      if (await window.AppFramework?.ask?.(K.t(['Effacer le client IVAO de ce poste ?', 'Remove the IVAO client from this computer?', 'IVAO-Client von diesem Rechner entfernen?', '¿Borrar el cliente IVAO de este equipo?']), {
+      if (await window.AppFramework?.ask?.(K.t(['Effacer le client IVAO de ce poste ?',
+          'Remove the IVAO client from this computer?', 'IVAO-Client von diesem Rechner entfernen?',
+          '¿Borrar el cliente IVAO de este equipo?'
+        ]), {
           danger: true
         }) === false) return;
       send({
@@ -200,11 +239,16 @@
     id: 'equipment',
     group: GROUP_PROFILE,
     title: L('Appareils et simulateurs', 'Aircraft and simulators', 'Luftfahrzeuge und Simulatoren', 'Aeronaves y simuladores'),
-    intro: L('Types de la flotte possédés et maîtrisés, simulateurs installés : le Centre s’en sert pour vous affecter un appareil et réunir des pilotes sur un simulateur commun. Recopiés dans vos semaines de disponibilités déclarées.', 'Fleet types owned and mastered, installed simulators: the Centre uses them to assign you an aircraft and to gather pilots on a common simulator. Copied into your declared availability weeks.', 'Besessene und beherrschte Flottentypen, installierte Simulatoren: Das Zentrum nutzt sie für die Zuweisung eines Luftfahrzeugs und um Piloten auf einem gemeinsamen Simulator zusammenzubringen. In Ihre angegebenen Verfügbarkeitswochen übernommen.', 'Tipos de la flota poseídos y dominados, simuladores instalados: el Centro los usa para asignarle una aeronave y reunir a pilotos en un simulador común. Copiados en sus semanas de disponibilidad declaradas.'),
+    intro: L(
+      'Types de la flotte possédés et maîtrisés, simulateurs installés : le Centre s’en sert pour vous affecter un appareil et réunir des pilotes sur un simulateur commun. Recopiés dans vos semaines de disponibilités déclarées.',
+      'Fleet types owned and mastered, installed simulators: the Centre uses them to assign you an aircraft and to gather pilots on a common simulator. Copied into your declared availability weeks.',
+      'Besessene und beherrschte Flottentypen, installierte Simulatoren: Das Zentrum nutzt sie für die Zuweisung eines Luftfahrzeugs und um Piloten auf einem gemeinsamen Simulator zusammenzubringen. In Ihre angegebenen Verfügbarkeitswochen übernommen.',
+      'Tipos de la flota poseídos y dominados, simuladores instalados: el Centro los usa para asignarle una aeronave y reunir a pilotos en un simulador común. Copiados en sus semanas de disponibilidad declaradas.'
+      ),
     async render(body, api) {
       // éditeur (shared/equipment_editor.js) : avant, blocs « Mes appareils » et « Mes simulateurs » de Mes missions
       const [A, E] = [await need('MissionAssignments'), await need('EquipmentEditor')],
-        tri = A?.trigram?.() || '';
+      tri = A?.trigram?.() || '';
       api.actions([]);
       if (!A || !E || !tri) {
         body.innerHTML = `<p>${esc(!tri && A ? L('Trigramme non réglé : le régler dans « Identité et réseaux ».', 'Trigram not set: set it in “Identity and networks”.', 'Kürzel nicht gesetzt: unter „Identität und Netzwerke“ festlegen.', 'Trigrama no definido: definirlo en «Identidad y redes».') : K.t(['Composant manquant (shared/equipment_editor.js, shared/assignments.js).', 'Missing component (shared/equipment_editor.js, shared/assignments.js).', 'Fehlende Komponente (shared/equipment_editor.js, shared/assignments.js).', 'Falta un componente (shared/equipment_editor.js, shared/assignments.js).']))}</p>`;
@@ -222,7 +266,12 @@
     id: 'setup',
     group: L('Installation', 'Installation', 'Installation', 'Instalación'),
     title: L('Premier lancement', 'First run', 'Erststart', 'Primer arranque'),
-    intro: L('Réglages faits une fois : données (dépôt framagit ou archive), profil, dossier de l’application, classeur ODV, puis données SIA. La compagnie virtuelle (SO Group Virtual par défaut) et les dossiers se règlent dans « Sources et dossiers », le canal de mise à jour dans Maintenance › Mises à jour.', 'One-time settings: data (framagit repository or archive), profile, application folder, ODV workbook, then SIA data. The virtual airline (SO Group Virtual by default) and folders are set in “Sources and folders”, the update channel in Maintenance › Updates.', 'Einmalige Einstellungen: Daten (framagit-Repository oder Archiv), Profil, Anwendungsordner, ODV-Arbeitsmappe, dann SIA-Daten. Virtuelle Fluggesellschaft (standardmäßig SO Group Virtual) und Ordner unter „Quellen und Ordner“, Update-Kanal unter Wartung › Updates.', 'Ajustes hechos una vez: datos (repositorio framagit o archivo), perfil, carpeta de la aplicación, libro ODV y luego datos SIA. La aerolínea virtual (SO Group Virtual por defecto) y las carpetas se ajustan en «Fuentes y carpetas», el canal de actualización en Mantenimiento › Actualizaciones.'),
+    intro: L(
+      'Réglages faits une fois : données (dépôt framagit ou archive), profil, dossier de l’application, classeur ODV, puis données SIA. La compagnie virtuelle (SO Group Virtual par défaut) et les dossiers se règlent dans « Sources et dossiers », le canal de mise à jour dans Maintenance › Mises à jour.',
+      'One-time settings: data (framagit repository or archive), profile, application folder, ODV workbook, then SIA data. The virtual airline (SO Group Virtual by default) and folders are set in “Sources and folders”, the update channel in Maintenance › Updates.',
+      'Einmalige Einstellungen: Daten (framagit-Repository oder Archiv), Profil, Anwendungsordner, ODV-Arbeitsmappe, dann SIA-Daten. Virtuelle Fluggesellschaft (standardmäßig SO Group Virtual) und Ordner unter „Quellen und Ordner“, Update-Kanal unter Wartung › Updates.',
+      'Ajustes hechos una vez: datos (repositorio framagit o archivo), perfil, carpeta de la aplicación, libro ODV y luego datos SIA. La aerolínea virtual (SO Group Virtual por defecto) y las carpetas se ajustan en «Fuentes y carpetas», el canal de actualización en Mantenimiento › Actualizaciones.'
+      ),
     render(body, api) {
       const done = K.store.json('suiteSetup:v1', null);
       body.innerHTML = `<p data-no-i18n>${esc(done?.at ? tf(['Premier lancement terminé le {d}.', 'First run completed on {d}.', 'Erststart abgeschlossen am {d}.', 'Primer arranque terminado el {d}.'], {
@@ -258,21 +307,36 @@
     utilisateur: ['Utilisateur', 'User', 'Benutzer', 'Usuario']
   };
   const MODE_NOTE = {
-    develop: L('Mode develop : la sécurité est testée, pas imposée (trigramme libre, connexion facultative).', 'Develop mode: security is tested, not enforced (free trigram, optional sign-in).', 'Develop-Modus: Sicherheit wird getestet, nicht erzwungen (freies Kürzel, Anmeldung optional).', 'Modo develop: la seguridad se prueba, no se impone (trigrama libre, conexión opcional).'),
-    production: L('Mode production : connexion exigée pour Mes missions et le Centre, trigramme fixé par la connexion.', 'Production mode: sign-in required for My missions and the Centre, trigram set by the sign-in.', 'Produktionsmodus: Anmeldung für Meine Missionen und das Zentrum erforderlich, Kürzel durch die Anmeldung festgelegt.', 'Modo producción: conexión obligatoria para Mis misiones y el Centro, trigrama fijado por la conexión.')
+    develop: L('Mode develop : la sécurité est testée, pas imposée (trigramme libre, connexion facultative).',
+      'Develop mode: security is tested, not enforced (free trigram, optional sign-in).',
+      'Develop-Modus: Sicherheit wird getestet, nicht erzwungen (freies Kürzel, Anmeldung optional).',
+      'Modo develop: la seguridad se prueba, no se impone (trigrama libre, conexión opcional).'),
+    production: L('Mode production : connexion exigée pour Mes missions et le Centre, trigramme fixé par la connexion.',
+      'Production mode: sign-in required for My missions and the Centre, trigram set by the sign-in.',
+      'Produktionsmodus: Anmeldung für Meine Missionen und das Zentrum erforderlich, Kürzel durch die Anmeldung festgelegt.',
+      'Modo producción: conexión obligatoria para Mis misiones y el Centro, trigrama fijado por la conexión.')
   };
-  L('Les contrôles se font dans le navigateur : ils ne protègent pas vraiment tant que la vérification ne passe pas par le serveur (webservice).', 'Checks run in the browser: they do not really protect until verification goes through the server (web service).', 'Die Prüfungen laufen im Browser: Sie schützen erst wirklich, wenn die Prüfung über den Server läuft (Webservice).', 'Los controles se hacen en el navegador: no protegen de verdad hasta que la verificación pase por el servidor (webservice).');
+  L('Les contrôles se font dans le navigateur : ils ne protègent pas vraiment tant que la vérification ne passe pas par le serveur (webservice).',
+    'Checks run in the browser: they do not really protect until verification goes through the server (web service).',
+    'Die Prüfungen laufen im Browser: Sie schützen erst wirklich, wenn die Prüfung über den Server läuft (Webservice).',
+    'Los controles se hacen en el navegador: no protegen de verdad hasta que la verificación pase por el servidor (webservice).');
 
   // ---------------------------------------------------------------- Mon profil › Connexion et mot de passe
   const account = {
     id: 'account',
     group: GROUP_PROFILE,
     title: L('Connexion et mot de passe', 'Sign-in and password', 'Anmeldung und Passwort', 'Conexión y contraseña'),
-    intro: L('Fiche utilisateur partagée (data/utilisateurs/<TRI>.json) : rôle, mot de passe (empreinte PBKDF2 salée, jamais en clair).', 'Shared user file (data/utilisateurs/<TRI>.json): role, password (salted PBKDF2 hash, never in clear).', 'Gemeinsame Benutzerdatei (data/utilisateurs/<TRI>.json): Rolle, Passwort (gesalzener PBKDF2-Hash, nie im Klartext).', 'Ficha de usuario compartida (data/utilisateurs/<TRI>.json): rol, contraseña (huella PBKDF2 con sal, nunca en claro).'),
+    intro: L(
+      'Fiche utilisateur partagée (data/utilisateurs/<TRI>.json) : rôle, mot de passe (empreinte PBKDF2 salée, jamais en clair).',
+      'Shared user file (data/utilisateurs/<TRI>.json): role, password (salted PBKDF2 hash, never in clear).',
+      'Gemeinsame Benutzerdatei (data/utilisateurs/<TRI>.json): Rolle, Passwort (gesalzener PBKDF2-Hash, nie im Klartext).',
+      'Ficha de usuario compartida (data/utilisateurs/<TRI>.json): rol, contraseña (huella PBKDF2 con sal, nunca en claro).'),
     async render(body, api) {
       const U = await need('SuiteUsers');
       if (!U) {
-        body.textContent = K.t(['Module des utilisateurs non chargé.', 'Users module not loaded.', 'Benutzermodul nicht geladen.', 'Módulo de usuarios no cargado.']);
+        body.textContent = K.t(['Module des utilisateurs non chargé.', 'Users module not loaded.', 'Benutzermodul nicht geladen.',
+          'Módulo de usuarios no cargado.'
+        ]);
         return;
       }
       await U.loadConfig(true);
@@ -301,7 +365,11 @@
           e.preventDefault();
           try {
             const r = await U.login(login.tri.value, login.pw.value);
-            if (r.mustChange) notify(K.t(['Définir maintenant un mot de passe (ou changer le mot de passe provisoire).', 'Set a password now (or change the temporary password).', 'Jetzt ein Passwort festlegen (oder das vorläufige ändern).', 'Definir ahora una contraseña (o cambiar la provisional).']), 'warn');
+            if (r.mustChange) notify(K.t(['Définir maintenant un mot de passe (ou changer le mot de passe provisoire).',
+              'Set a password now (or change the temporary password).',
+              'Jetzt ein Passwort festlegen (oder das vorläufige ändern).',
+              'Definir ahora una contraseña (o cambiar la provisional).'
+            ]), 'warn');
             api.show();
           } catch (err) {
             api.status(err.message);
@@ -310,7 +378,9 @@
       }
       if (pw) pw.onsubmit = async e => {
         e.preventDefault();
-        if (pw.pw.value !== pw.pw2.value) return api.status(K.t(['Les deux saisies diffèrent.', 'The two entries differ.', 'Die beiden Eingaben unterscheiden sich.', 'Las dos entradas difieren.']));
+        if (pw.pw.value !== pw.pw2.value) return api.status(K.t(['Les deux saisies diffèrent.', 'The two entries differ.',
+          'Die beiden Eingaben unterscheiden sich.', 'Las dos entradas difieren.'
+        ]));
         try {
           wrote(await U.changePassword(pw.old.value, pw.pw.value));
           pw.reset();
@@ -336,18 +406,26 @@
     id: 'users',
     group: GROUP_CENTRE,
     title: L('Utilisateurs et droits', 'Users and rights', 'Benutzer und Rechte', 'Usuarios y derechos'),
-    intro: L('Une fiche par utilisateur (data/utilisateurs/<TRI>.json, synchronisée) : rôle admin_centre ou utilisateur, actif, mot de passe. Mode develop / production pour toute la compagnie (data/config/suite.json). Un administrateur peut agir en tant qu’un autre utilisateur : un bandeau le rappelle sur toutes les pages et chaque écriture porte « ADM pour TOTO ».', 'One file per user (data/utilisateurs/<TRI>.json, synchronised): role admin_centre or user, active, password. Develop / production mode for the whole airline (data/config/suite.json). An administrator can act as another user: a banner shows it on every page and every write is signed “ADM pour TOTO”.', 'Eine Datei pro Benutzer (data/utilisateurs/<TRI>.json, synchronisiert): Rolle admin_centre oder Benutzer, aktiv, Passwort. Modus develop / production für die ganze Gesellschaft (data/config/suite.json). Ein Administrator kann als anderer Benutzer handeln: ein Banner zeigt es auf allen Seiten, jede Schreibung trägt „ADM pour TOTO“.', 'Una ficha por usuario (data/utilisateurs/<TRI>.json, sincronizada): rol admin_centre o usuario, activo, contraseña. Modo develop / production para toda la compañía (data/config/suite.json). Un administrador puede actuar como otro usuario: una banda lo recuerda en todas las páginas y cada escritura lleva «ADM pour TOTO».'),
+    intro: L(
+      'Une fiche par utilisateur (data/utilisateurs/<TRI>.json, synchronisée) : rôle admin_centre ou utilisateur, actif, mot de passe. Mode develop / production pour toute la compagnie (data/config/suite.json). Un administrateur peut agir en tant qu’un autre utilisateur : un bandeau le rappelle sur toutes les pages et chaque écriture porte « ADM pour TOTO ».',
+      'One file per user (data/utilisateurs/<TRI>.json, synchronised): role admin_centre or user, active, password. Develop / production mode for the whole airline (data/config/suite.json). An administrator can act as another user: a banner shows it on every page and every write is signed “ADM pour TOTO”.',
+      'Eine Datei pro Benutzer (data/utilisateurs/<TRI>.json, synchronisiert): Rolle admin_centre oder Benutzer, aktiv, Passwort. Modus develop / production für die ganze Gesellschaft (data/config/suite.json). Ein Administrator kann als anderer Benutzer handeln: ein Banner zeigt es auf allen Seiten, jede Schreibung trägt „ADM pour TOTO“.',
+      'Una ficha por usuario (data/utilisateurs/<TRI>.json, sincronizada): rol admin_centre o usuario, activo, contraseña. Modo develop / production para toda la compañía (data/config/suite.json). Un administrador puede actuar como otro usuario: una banda lo recuerda en todas las páginas y cada escritura lleva «ADM pour TOTO».'
+      ),
     async render(body, api) {
       const U = await need('SuiteUsers');
       if (!U) {
-        body.textContent = K.t(['Module des utilisateurs non chargé.', 'Users module not loaded.', 'Benutzermodul nicht geladen.', 'Módulo de usuarios no cargado.']);
+        body.textContent = K.t(['Module des utilisateurs non chargé.', 'Users module not loaded.', 'Benutzermodul nicht geladen.',
+          'Módulo de usuarios no cargado.'
+        ]);
         return;
       }
       // relecture des fiches (une par utilisateur) : texte d'attente dans le panneau et barre de progression du framework
       body.innerHTML = `<p class="sp-hint">${esc(L('Lecture des fiches utilisateurs…', 'Reading user files…', 'Benutzerdateien werden gelesen…', 'Leyendo las fichas de usuario…'))}</p>`;
       const readAll = async () => {
         const tris = Object.keys(await U.index(true)).sort();
-        const job = window.AppFramework?.task?.(L('Relecture des fiches utilisateurs', 'Reading user files', 'Benutzerdateien lesen', 'Lectura de las fichas de usuario'), {
+        const job = window.AppFramework?.task?.(L('Relecture des fiches utilisateurs', 'Reading user files',
+          'Benutzerdateien lesen', 'Lectura de las fichas de usuario'), {
           total: tris.length
         });
         let done = 0;
@@ -372,7 +450,9 @@
       if (!list.length && (window.DEFA_REFERENCE?.file || window.DEFA_REFERENCE)?.pilots?.length) {
         const made = await U.seed();
         if (made.length) {
-          notify(tf(['{n} fiches créées d’après la référence.', '{n} user files created from the reference.', '{n} Benutzerdateien aus der Referenz erstellt.', '{n} fichas creadas a partir de la referencia.'], {
+          notify(tf(['{n} fiches créées d’après la référence.', '{n} user files created from the reference.',
+            '{n} Benutzerdateien aus der Referenz erstellt.', '{n} fichas creadas a partir de la referencia.'
+          ], {
             n: made.length
           }), 'ok');
           if ((A()?.pendingData?.() || []).some(p => p.startsWith('utilisateurs/'))) wrote({
@@ -383,7 +463,8 @@
       }
       const s = U.session(),
         pending = (A()?.pendingData?.() || []).filter(p => /^(utilisateurs|config)\//.test(p));
-      const pwState = u => u.mot_de_passe ? (u.a_changer ? L('provisoire', 'temporary', 'vorläufig', 'provisional') : L('défini', 'set', 'gesetzt', 'definida')) : L('aucun', 'none', 'keins', 'ninguna');
+      const pwState = u => u.mot_de_passe ? (u.a_changer ? L('provisoire', 'temporary', 'vorläufig', 'provisional') : L('défini',
+        'set', 'gesetzt', 'definida')) : L('aucun', 'none', 'keins', 'ninguna');
       body.innerHTML = `<div class="sp-card"><h3>${esc(L('Mode de la compagnie', 'Airline mode', 'Modus der Gesellschaft', 'Modo de la compañía'))}</h3>
           <div class="sp-form"><label>${esc(L('Mode', 'Mode', 'Modus', 'Modo'))}</label><select data-mode><option value="develop">develop</option><option value="production">production</option></select></div>
           <p class="sp-hint">${esc(MODE_NOTE[U.mode()])}</p><p class="sp-hint">${esc('Les contrôles se font dans le navigateur : ils ne protègent pas vraiment tant que la vérification ne passe pas par le serveur (webservice).')}</p>
@@ -416,7 +497,9 @@
       body.querySelector('[data-flush]')?.addEventListener('click', async () => {
         try {
           const done = await A().flushData();
-          notify(tf(['{n} fichier(s) écrit(s) dans le dossier des données.', '{n} file(s) written to the data folder.', '{n} Datei(en) in den Datenordner geschrieben.', '{n} archivo(s) escrito(s) en la carpeta de datos.'], {
+          notify(tf(['{n} fichier(s) écrit(s) dans le dossier des données.', '{n} file(s) written to the data folder.',
+            '{n} Datei(en) in den Datenordner geschrieben.', '{n} archivo(s) escrito(s) en la carpeta de datos.'
+          ], {
             n: done.length
           }), 'ok');
           api.show();
@@ -462,7 +545,9 @@
           resetFor = tr.dataset.u;
           const box = body.querySelector('[data-reset-box]');
           box.hidden = false;
-          box.querySelector('h3').textContent = tf(['Réinitialiser le mot de passe de {t}', 'Reset the password of {t}', 'Passwort von {t} zurücksetzen', 'Restablecer la contraseña de {t}'], {
+          box.querySelector('h3').textContent = tf(['Réinitialiser le mot de passe de {t}', 'Reset the password of {t}',
+            'Passwort von {t} zurücksetzen', 'Restablecer la contraseña de {t}'
+          ], {
             t: resetFor
           });
           box.querySelector('input').focus();
@@ -472,7 +557,11 @@
         e.preventDefault();
         try {
           wrote(await U.resetPassword(resetFor, e.target.pw.value));
-          notify(tf(['Mot de passe provisoire de {t} enregistré : à changer à sa prochaine connexion.', 'Temporary password of {t} saved: to be changed at the next sign-in.', 'Vorläufiges Passwort von {t} gespeichert: bei der nächsten Anmeldung zu ändern.', 'Contraseña provisional de {t} guardada: a cambiar en la próxima conexión.'], {
+          notify(tf(['Mot de passe provisoire de {t} enregistré : à changer à sa prochaine connexion.',
+            'Temporary password of {t} saved: to be changed at the next sign-in.',
+            'Vorläufiges Passwort von {t} gespeichert: bei der nächsten Anmeldung zu ändern.',
+            'Contraseña provisional de {t} guardada: a cambiar en la próxima conexión.'
+          ], {
             t: resetFor
           }), 'ok');
           api.show();
@@ -507,14 +596,21 @@
   // ---------------------------------------------------------------- Mon profil › Préférences de thèmes
   const MODES = [
     ['tous', L('Tous les thèmes du domaine', 'Every theme of the domain', 'Alle Themen des Bereichs', 'Todos los temas del dominio')],
-    ['blanche', L('Liste blanche : seulement ces thèmes', 'Allow list: only these themes', 'Positivliste: nur diese Themen', 'Lista blanca: solo estos temas')],
-    ['noire', L('Liste noire : tous sauf ces thèmes', 'Block list: all but these themes', 'Negativliste: alle außer diesen Themen', 'Lista negra: todos menos estos temas')]
+    ['blanche', L('Liste blanche : seulement ces thèmes', 'Allow list: only these themes', 'Positivliste: nur diese Themen',
+      'Lista blanca: solo estos temas')],
+    ['noire', L('Liste noire : tous sauf ces thèmes', 'Block list: all but these themes', 'Negativliste: alle außer diesen Themen',
+      'Lista negra: todos menos estos temas')]
   ];
   const themesPanel = {
     id: 'themes',
     group: GROUP_PROFILE,
     title: L('Types de missions', 'Mission types', 'Missionsarten', 'Tipos de misión'),
-    intro: L('Thèmes de mission ouverts par les catégories personnalisées (« sécurité civile personnalisée », « défense personnalisée ») de vos disponibilités : pour chaque domaine, une liste blanche (seulement ces thèmes) ou une liste noire (tous sauf ces thèmes). Gardées dans votre fiche utilisateur, synchronisée.', 'Mission themes opened by the custom categories (“custom civil security”, “custom defence”) of your availability: for each domain, an allow list (only these themes) or a block list (all but these themes). Kept in your user file, synchronised.', 'Missionsthemen, die die Kategorien nach Wahl („Zivilschutz nach Wahl“, „Verteidigung nach Wahl“) Ihrer Verfügbarkeit öffnen: je Bereich eine Positivliste (nur diese Themen) oder eine Negativliste (alle außer diesen). In Ihrer synchronisierten Benutzerdatei gespeichert.', 'Temas de misión abiertos por las categorías personalizadas («seguridad civil personalizada», «defensa personalizada») de su disponibilidad: por dominio, una lista blanca (solo estos temas) o una lista negra (todos menos estos). Guardadas en su ficha de usuario, sincronizada.'),
+    intro: L(
+      'Thèmes de mission ouverts par les catégories personnalisées (« sécurité civile personnalisée », « défense personnalisée ») de vos disponibilités : pour chaque domaine, une liste blanche (seulement ces thèmes) ou une liste noire (tous sauf ces thèmes). Gardées dans votre fiche utilisateur, synchronisée.',
+      'Mission themes opened by the custom categories (“custom civil security”, “custom defence”) of your availability: for each domain, an allow list (only these themes) or a block list (all but these themes). Kept in your user file, synchronised.',
+      'Missionsthemen, die die Kategorien nach Wahl („Zivilschutz nach Wahl“, „Verteidigung nach Wahl“) Ihrer Verfügbarkeit öffnen: je Bereich eine Positivliste (nur diese Themen) oder eine Negativliste (alle außer diesen). In Ihrer synchronisierten Benutzerdatei gespeichert.',
+      'Temas de misión abiertos por las categorías personalizadas («seguridad civil personalizada», «defensa personalizada») de su disponibilidad: por dominio, una lista blanca (solo estos temas) o una lista negra (todos menos estos). Guardadas en su ficha de usuario, sincronizada.'
+      ),
     async render(body, api) {
       const [U, SD] = [await need('SuiteUsers'), await need('SuiteDispos')];
       const tri = A()?.trigram?.() || '';
@@ -547,7 +643,9 @@
           }).find(x => x.ouverts === `prefs:${c.dataset.dom}`);
           const open = cat ? [...SD.openThemes(cat, p)] : [];
           c.querySelector('[data-list]').style.opacity = p[c.dataset.dom].mode === 'tous' ? '.7' : '';
-          c.querySelector('[data-open]').textContent = cat ? tf(['« {c} » ouvre : {t}', '“{c}” opens: {t}', '„{c}“ öffnet: {t}', '«{c}» abre: {t}'], {
+          c.querySelector('[data-open]').textContent = cat ? tf(['« {c} » ouvre : {t}', '“{c}” opens: {t}', '„{c}“ öffnet: {t}',
+            '«{c}» abre: {t}'
+          ], {
             c: SD.label(cat.label),
             t: open.map(SD.themeLabel).join(', ') || '—'
           }) : '';
@@ -568,15 +666,21 @@
           const themes = Object.fromEntries(Object.entries(p).filter(([, v]) => v.mode !== 'tous'));
           wrote(await U.setThemePrefs(tri, themes));
           api.saved();
-          api.status(K.t(['Préférences enregistrées.', 'Preferences saved.', 'Präferenzen gespeichert.', 'Preferencias guardadas.']));
+          api.status(K.t(['Préférences enregistrées.', 'Preferences saved.', 'Präferenzen gespeichert.',
+            'Preferencias guardadas.'
+          ]));
         }, 'primary']
       ]);
     }
   };
   const rowOf = m => ({
     tous: ['Tous les thèmes du domaine', 'Every theme of the domain', 'Alle Themen des Bereichs', 'Todos los temas del dominio'],
-    blanche: ['Liste blanche : seulement ces thèmes', 'Allow list: only these themes', 'Positivliste: nur diese Themen', 'Lista blanca: solo estos temas'],
-    noire: ['Liste noire : tous sauf ces thèmes', 'Block list: all but these themes', 'Negativliste: alle außer diesen Themen', 'Lista negra: todos menos estos temas']
+    blanche: ['Liste blanche : seulement ces thèmes', 'Allow list: only these themes', 'Positivliste: nur diese Themen',
+      'Lista blanca: solo estos temas'
+    ],
+    noire: ['Liste noire : tous sauf ces thèmes', 'Block list: all but these themes', 'Negativliste: alle außer diesen Themen',
+      'Lista negra: todos menos estos temas'
+    ]
   })[m];
 
   // ---------------------------------------------------------------- Centre › Catégories de disponibilité
@@ -594,11 +698,18 @@
     id: 'dispoCategories',
     group: GROUP_CENTRE,
     title: L('Catégories de disponibilité', 'Availability categories', 'Verfügbarkeitskategorien', 'Categorías de disponibilidad'),
-    intro: L('Ce que les pilotes déclarent (data/config/disponibilites.json, synchronisé) : groupes affichés dans l’ODV, catégories (libellés, couleur, thèmes ouverts, type, codes du classeur ODV), thèmes par domaine. Une catégorie qui a servi se retire (cachée des listes, gardée pour l’historique), elle ne s’efface pas.', 'What pilots declare (data/config/disponibilites.json, synchronised): groups shown in the ODV, categories (labels, colour, open themes, type, ODV workbook codes), themes per domain. A category that has been used is retired (hidden from lists, kept for history), never deleted.', 'Was die Piloten angeben (data/config/disponibilites.json, synchronisiert): in der ODV angezeigte Gruppen, Kategorien (Bezeichnungen, Farbe, offene Themen, Typ, Codes der ODV-Arbeitsmappe), Themen je Bereich. Eine benutzte Kategorie wird zurückgezogen (in Listen ausgeblendet, für den Verlauf behalten), nie gelöscht.', 'Lo que declaran los pilotos (data/config/disponibilites.json, sincronizado): grupos mostrados en el ODV, categorías (etiquetas, color, temas abiertos, tipo, códigos del libro ODV), temas por dominio. Una categoría usada se retira (oculta en las listas, guardada para el historial), nunca se borra.'),
+    intro: L(
+      'Ce que les pilotes déclarent (data/config/disponibilites.json, synchronisé) : groupes affichés dans l’ODV, catégories (libellés, couleur, thèmes ouverts, type, codes du classeur ODV), thèmes par domaine. Une catégorie qui a servi se retire (cachée des listes, gardée pour l’historique), elle ne s’efface pas.',
+      'What pilots declare (data/config/disponibilites.json, synchronised): groups shown in the ODV, categories (labels, colour, open themes, type, ODV workbook codes), themes per domain. A category that has been used is retired (hidden from lists, kept for history), never deleted.',
+      'Was die Piloten angeben (data/config/disponibilites.json, synchronisiert): in der ODV angezeigte Gruppen, Kategorien (Bezeichnungen, Farbe, offene Themen, Typ, Codes der ODV-Arbeitsmappe), Themen je Bereich. Eine benutzte Kategorie wird zurückgezogen (in Listen ausgeblendet, für den Verlauf behalten), nie gelöscht.',
+      'Lo que declaran los pilotos (data/config/disponibilites.json, sincronizado): grupos mostrados en el ODV, categorías (etiquetas, color, temas abiertos, tipo, códigos del libro ODV), temas por dominio. Una categoría usada se retira (oculta en las listas, guardada para el historial), nunca se borra.'
+      ),
     async render(body, api) {
       const SD = await need('SuiteDispos');
       if (!SD) {
-        body.textContent = K.t(['Module des disponibilités non chargé.', 'Availability module not loaded.', 'Verfügbarkeitsmodul nicht geladen.', 'Módulo de disponibilidad no cargado.']);
+        body.textContent = K.t(['Module des disponibilités non chargé.', 'Availability module not loaded.',
+          'Verfügbarkeitsmodul nicht geladen.', 'Módulo de disponibilidad no cargado.'
+        ]);
         return;
       }
       const cfg = structuredClone(await SD.load(true));
@@ -637,7 +748,8 @@
           return fr === old[0] ? [fr, ...[1, 2, 3].map(i => old[i] || '')] : [fr, '', '', ''];
         };
         const cats = [...body.querySelectorAll('[data-cats] tr')].map(tr => {
-          const id = known.has(tr.dataset.id) ? tr.dataset.id : val(tr, 'id').value.trim().toLowerCase().replace(/[^a-z0-9_]+/g, '_');
+          const id = known.has(tr.dataset.id) ? tr.dataset.id : val(tr, 'id').value.trim().toLowerCase().replace(/[^a-z0-9_]+/g,
+            '_');
           const o = val(tr, 'ouverts').value;
           const prev = cfg.categories.find(c => c.id === tr.dataset.id) || {};
           return {
@@ -696,7 +808,9 @@
           api.changed();
         }
       };
-      api.status(tf(['{n} catégorie(s), {r} retirée(s)', '{n} categor(y/ies), {r} retired', '{n} Kategorie(n), {r} zurückgezogen', '{n} categoría(s), {r} retirada(s)'], {
+      api.status(tf(['{n} catégorie(s), {r} retirée(s)', '{n} categor(y/ies), {r} retired', '{n} Kategorie(n), {r} zurückgezogen',
+        '{n} categoría(s), {r} retirada(s)'
+      ], {
         n: cfg.categories.length,
         r: cfg.categories.filter(c => c.retiree).length
       }));
@@ -704,15 +818,29 @@
         [L('Enregistrer', 'Save', 'Speichern', 'Guardar'), async () => {
           const next = collect();
           const ids = next.categories.map(c => c.id);
-          if (ids.some(x => !x) || new Set(ids).size !== ids.length) return api.status(K.t(['Identifiants vides ou en double.', 'Empty or duplicate ids.', 'Leere oder doppelte Kennungen.', 'Identificadores vacíos o duplicados.']));
-          if (next.categories.some(c => !c.label[0])) return api.status(K.t(['Chaque catégorie a besoin au moins d’un libellé français.', 'Each category needs at least a French label.', 'Jede Kategorie braucht mindestens eine französische Bezeichnung.', 'Cada categoría necesita al menos una etiqueta en francés.']));
+          if (ids.some(x => !x) || new Set(ids).size !== ids.length) return api.status(K.t([
+            'Identifiants vides ou en double.', 'Empty or duplicate ids.', 'Leere oder doppelte Kennungen.',
+            'Identificadores vacíos o duplicados.'
+          ]));
+          if (next.categories.some(c => !c.label[0])) return api.status(K.t([
+            'Chaque catégorie a besoin au moins d’un libellé français.',
+            'Each category needs at least a French label.',
+            'Jede Kategorie braucht mindestens eine französische Bezeichnung.',
+            'Cada categoría necesita al menos una etiqueta en francés.'
+          ]));
           wrote(await SD.save(next));
           api.saved();
           api.show();
-          api.status(K.t(['Catégories enregistrées.', 'Categories saved.', 'Kategorien gespeichert.', 'Categorías guardadas.']));
+          api.status(K.t(['Catégories enregistrées.', 'Categories saved.', 'Kategorien gespeichert.',
+            'Categorías guardadas.']));
         }, 'primary'],
         [L('Valeurs par défaut', 'Default values', 'Standardwerte', 'Valores por defecto'), async () => {
-          if (!await window.AppFramework.ask(K.t(['Revenir aux catégories par défaut ? (les catégories ajoutées sont gardées, retirées)', 'Back to the default categories? (added categories are kept, retired)', 'Zu den Standardkategorien zurück? (hinzugefügte bleiben, zurückgezogen)', '¿Volver a las categorías por defecto? (las añadidas se conservan, retiradas)']))) return;
+          if (!await window.AppFramework.ask(K.t([
+              'Revenir aux catégories par défaut ? (les catégories ajoutées sont gardées, retirées)',
+              'Back to the default categories? (added categories are kept, retired)',
+              'Zu den Standardkategorien zurück? (hinzugefügte bleiben, zurückgezogen)',
+              '¿Volver a las categorías por defecto? (las añadidas se conservan, retiradas)'
+            ]))) return;
           const def = structuredClone(SD.DEFAULT),
             extra = cfg.categories.filter(c => !def.categories.some(d => d.id === c.id)).map(c => ({
               ...c,

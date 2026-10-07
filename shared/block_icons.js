@@ -31,7 +31,8 @@
     pickOne: ['Choisir un fichier', 'Choose a file', 'Datei auswählen', 'Elegir un archivo'],
     drop: ['ou glisser-déposer ici', 'or drag and drop here', 'oder hierher ziehen', 'o arrastrar y soltar aquí'],
     none: ['Aucun fichier choisi', 'No file chosen', 'Keine Datei ausgewählt', 'Ningún archivo elegido'],
-    refused: ['Type de fichier non accepté : ', 'File type not accepted: ', 'Dateityp nicht zulässig: ', 'Tipo de archivo no aceptado: ']
+    refused: ['Type de fichier non accepté : ', 'File type not accepted: ', 'Dateityp nicht zulässig: ',
+      'Tipo de archivo no aceptado: ']
   };
   const tr = row => K.t(row);
 
@@ -116,7 +117,8 @@
   /** Icône d'un élément quelconque (bouton, libellé, titre, bandeau) : avant le texte, ou après (data-icon-end). */
   function decorateInline(el) {
     // blocs (et futurs blocs : panneaux, éléments à data-block-id — app_framework.js peut passer après) : icône de bloc, pas en ligne
-    if (el.dataset.iconDone || el.matches('section,.repo-block,.repo-card,.panel,[data-block-id],.format-note,.analysis-dock,.trend-card,input,select,textarea')) return;
+    if (el.dataset.iconDone || el.matches(
+        'section,.repo-block,.repo-card,.panel,[data-block-id],.format-note,.analysis-dock,.trend-card,input,select,textarea')) return;
     el.dataset.iconDone = '1';
     // bouton sans texte (icône seule, libellé en title / aria-label) : l'icône reste affichée même en jeu « aucune icône »
     if (el.matches('button') && !el.textContent.trim()) el.classList.add('repo-icon-only');
@@ -164,7 +166,8 @@
     if (input.closest('.repo-dropzone')) return input.closest('.repo-dropzone');
     const zone = document.createElement('div');
     zone.className = 'repo-dropzone';
-    zone.innerHTML = '<span class="repo-dropzone-badge"></span><span class="repo-dropzone-text"><span class="repo-dropzone-line"><span class="repo-dropzone-pick"></span> <span class="repo-dropzone-or"></span></span><span class="repo-dropzone-state" aria-live="polite"></span></span>';
+    zone.innerHTML =
+      '<span class="repo-dropzone-badge"></span><span class="repo-dropzone-text"><span class="repo-dropzone-line"><span class="repo-dropzone-pick"></span> <span class="repo-dropzone-or"></span></span><span class="repo-dropzone-state" aria-live="polite"></span></span>';
     zone.setAttribute('data-no-i18n', ''); // textes composés ici dans la langue courante
     const ic = icon('upload');
     if (ic) zone.querySelector('.repo-dropzone-badge').append(ic);

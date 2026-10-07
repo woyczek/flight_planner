@@ -20,7 +20,8 @@
   const byCaller = {}; // « compteur fichier:ligne » → appels (JSON.parse, IndexedDB.open)
   const byKey = {}; // clé du stockage → lectures
   const caller = kind => {
-    const f = (new Error().stack || '').split('\n').slice(3).map(s => /\/([\w.-]+\.(?:js|html))(?:\?[^:)\s]*)?:(\d+)/.exec(s)).find(m => m && m[1] !== 'perf_probe.js');
+    const f = (new Error().stack || '').split('\n').slice(3).map(s => /\/([\w.-]+\.(?:js|html))(?:\?[^:)\s]*)?:(\d+)/.exec(s)).find(m =>
+      m && m[1] !== 'perf_probe.js');
     const k = `${kind} ${f ? f[1] + ':' + f[2] : '?'}`;
     byCaller[k] = (byCaller[k] || 0) + 1;
   };
@@ -110,7 +111,8 @@
   // ---- observateurs : rappels comptés et chronométrés, par fichier créateur
   const MO = window.MutationObserver;
   window.MutationObserver = function(cb) {
-    const where = (new Error().stack || '').split('\n').slice(2).map(s => /\/([\w.-]+\.(?:js|html))/.exec(s)?.[1]).find(f => f && f !== 'perf_probe.js') || '?';
+    const where = (new Error().stack || '').split('\n').slice(2).map(s => /\/([\w.-]+\.(?:js|html))/.exec(s)?.[1]).find(f => f && f !==
+      'perf_probe.js') || '?';
     const slot = byObs[where] ||= {
       calls: 0,
       ms: 0
@@ -170,7 +172,8 @@
       const r = await realFetch(new URL(path.replace(/\/?$/, '/'), ROOT).href);
       if (!r.ok) throw new DOMException('absent', 'NotFoundError');
       const html = await r.text();
-      return [...html.matchAll(/href="([^"?#]+)"/g)].map(m => decodeURIComponent(m[1])).filter(h => !h.startsWith('/') && !h.startsWith('..') && !h.startsWith('?'));
+      return [...html.matchAll(/href="([^"?#]+)"/g)].map(m => decodeURIComponent(m[1])).filter(h => !h.startsWith('/') && !h
+        .startsWith('..') && !h.startsWith('?'));
     };
     const fileH = (path, name) => ({
       kind: 'file',
@@ -213,7 +216,8 @@
       },
       async * entries() {
         add('fs.list');
-        for (const h of await listing(path)) yield h.endsWith('/') ? [h.slice(0, -1), dirH(path + h, h.slice(0, -1))] : [h, fileH(path + h, h)];
+        for (const h of await listing(path)) yield h.endsWith('/') ? [h.slice(0, -1), dirH(path + h, h.slice(0, -1))] : [h, fileH(
+          path + h, h)];
       },
       async * values() {
         for await (const [, h] of this.entries()) yield h;

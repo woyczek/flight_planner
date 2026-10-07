@@ -16,7 +16,8 @@
   const P = 'missionData.fire.';
   /** Nombre d'une saisie (0, ou null selon la famille, si vide ou invalide). */
   const num = v => (v === '' || v == null || !Number.isFinite(Number(v)) ? null : Number(v));
-  const risks = [opt('Green', L('Vert', 'Green', 'Grün', 'Verde')), opt('Yellow', L('Jaune', 'Yellow', 'Gelb', 'Amarillo')), opt('Orange', L('Orange', 'Orange', 'Orange', 'Naranja')), opt('Red', L('Rouge', 'Red', 'Rot', 'Rojo'))];
+  const risks = [opt('Green', L('Vert', 'Green', 'Grün', 'Verde')), opt('Yellow', L('Jaune', 'Yellow', 'Gelb', 'Amarillo')), opt('Orange',
+    L('Orange', 'Orange', 'Orange', 'Naranja')), opt('Red', L('Rouge', 'Red', 'Rot', 'Rojo'))];
   const LEGACY = {
     'Vert': 'Green',
     'Jaune': 'Yellow',
@@ -60,7 +61,8 @@
       cr: 'fire_cr.html',
       reporting: 'fire_reporting.html'
     },
-    title: L('FIRE / GAAR — feux de forêt', 'FIRE / GAAR — wildfires', 'FIRE / GAAR — Waldbrände', 'FIRE / GAAR — incendios forestales'),
+    title: L('FIRE / GAAR — feux de forêt', 'FIRE / GAAR — wildfires', 'FIRE / GAAR — Waldbrände',
+      'FIRE / GAAR — incendios forestales'),
     series: [{
       value: 'GAAR',
       label: L('GAAR', 'GAAR')
@@ -75,7 +77,8 @@
       label: L('Entraînement', 'Training', 'Training', 'Entrenamiento')
     }],
     events: [
-      opt('FIRE_ALERT', L('Alerte feu', 'Fire alert', 'Brandalarm', 'Alerta de incendio')), opt('RELOAD', L('Rechargement', 'Reload', 'Nachladen', 'Recarga')), opt('SCOOPING', L('Écopage', 'Scooping', 'Wasseraufnahme', 'Amerizaje'))
+      opt('FIRE_ALERT', L('Alerte feu', 'Fire alert', 'Brandalarm', 'Alerta de incendio')), opt('RELOAD', L('Rechargement',
+        'Reload', 'Nachladen', 'Recarga')), opt('SCOOPING', L('Écopage', 'Scooping', 'Wasseraufnahme', 'Amerizaje'))
     ],
     blocks: [{
       id: 'fire-order',
@@ -86,27 +89,35 @@
           blank: true
         }),
         f(P + 'sector', L('Circuit / secteur', 'Circuit / sector', 'Route / Sektor', 'Circuito / sector')),
-        f(P + 'reloadBase', L('Base rechargement / écopage', 'Reload / scooping base', 'Nachlade- / Schöpfbasis', 'Base de recarga / amerizaje'), 'text', {
+        f(P + 'reloadBase', L('Base rechargement / écopage', 'Reload / scooping base', 'Nachlade- / Schöpfbasis',
+          'Base de recarga / amerizaje'), 'text', {
           upper: true,
           pool: 'aerodrome'
         }),
-        f(P + 'fms', L('Fichier FMS', 'FMS file', 'FMS-Datei', 'Archivo FMS')), f(P + 'altitude', L('Altitude prévue', 'Planned altitude', 'Geplante Höhe', 'Altitud prevista')),
-        f(P + 'weatherRemarks', L('Vent / météo synthétique', 'Wind / weather summary', 'Wind / Wetterlage', 'Viento / meteorología')), f(P + 'load', L('Charge eau / retardant', 'Water / retardant load', 'Wasser- / Retardantlast', 'Carga de agua / retardante'))
+        f(P + 'fms', L('Fichier FMS', 'FMS file', 'FMS-Datei', 'Archivo FMS')), f(P + 'altitude', L('Altitude prévue',
+          'Planned altitude', 'Geplante Höhe', 'Altitud prevista')),
+        f(P + 'weatherRemarks', L('Vent / météo synthétique', 'Wind / weather summary', 'Wind / Wetterlage',
+          'Viento / meteorología')), f(P + 'load', L('Charge eau / retardant', 'Water / retardant load',
+          'Wasser- / Retardantlast', 'Carga de agua / retardante'))
       ]
     }, {
       id: 'fire-times',
       title: L('Horaires feux de forêt', 'Wildfire times', 'Waldbrandzeiten', 'Horarios de incendio'),
       fields: [
-        f(P + 'patrolStart', L('Début patrouille', 'Patrol start', 'Patrouillenbeginn', 'Inicio de patrulla'), 'time'), f(P + 'fireAlert', L('Alerte feu', 'Fire alert', 'Brandalarm', 'Alerta de incendio'), 'time'),
-        f(P + 'firstDrop', L('Premier largage', 'First drop', 'Erster Abwurf', 'Primer lanzamiento'), 'time'), f(P + 'endIntervention', L('Fin intervention', 'End of intervention', 'Einsatzende', 'Fin de la intervención'), 'time')
+        f(P + 'patrolStart', L('Début patrouille', 'Patrol start', 'Patrouillenbeginn', 'Inicio de patrulla'), 'time'), f(P +
+          'fireAlert', L('Alerte feu', 'Fire alert', 'Brandalarm', 'Alerta de incendio'), 'time'),
+        f(P + 'firstDrop', L('Premier largage', 'First drop', 'Erster Abwurf', 'Primer lanzamiento'), 'time'), f(P +
+          'endIntervention', L('Fin intervention', 'End of intervention', 'Einsatzende', 'Fin de la intervención'), 'time')
       ]
     }, {
       id: 'fire-drops',
       title: L('Largages et rechargements', 'Drops and reloads', 'Abwürfe und Nachladungen', 'Lanzamientos y recargas'),
       fields: [
         f(P + 'drops', L('Nb largages (manuel)', 'Drops (manual)', 'Abwürfe (manuell)', 'Lanzamientos (manual)'), 'number'),
-        f(P + 'reloads', L('Nb rechargements / écopages (manuel)', 'Reloads / scoopings (manual)', 'Nachladungen / Schöpfvorgänge (manuell)', 'Recargas / amerizajes (manual)'), 'number'),
-        f(P + 'reloadTime', L('Temps moyen rechargement', 'Average reload time', 'Mittlere Nachladezeit', 'Tiempo medio de recarga'))
+        f(P + 'reloads', L('Nb rechargements / écopages (manuel)', 'Reloads / scoopings (manual)',
+          'Nachladungen / Schöpfvorgänge (manuell)', 'Recargas / amerizajes (manual)'), 'number'),
+        f(P + 'reloadTime', L('Temps moyen rechargement', 'Average reload time', 'Mittlere Nachladezeit',
+          'Tiempo medio de recarga'))
       ]
     }],
     stats: [{
@@ -202,7 +213,8 @@
     })(),
     legacy: {
       configKey: 'gaarLedgerName',
-      label: L('Importer l’ancien registre FIRE / GAAR (CSV)', 'Import legacy FIRE / GAAR ledger (CSV)', 'Altes FIRE / GAAR-Register importieren (CSV)', 'Importar el registro FIRE / GAAR antiguo (CSV)'),
+      label: L('Importer l’ancien registre FIRE / GAAR (CSV)', 'Import legacy FIRE / GAAR ledger (CSV)',
+        'Altes FIRE / GAAR-Register importieren (CSV)', 'Importar el registro FIRE / GAAR antiguo (CSV)'),
       fromRecord(r, {
         emptyMission
       }) {

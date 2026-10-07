@@ -78,7 +78,8 @@
               const o = toLocal(s1, s2),
                 cross = (axis[0] * o[1] - axis[1] * o[0]) / L,
                 along = (axis[0] * o[0] + axis[1] * o[1]) / L;
-              if (Math.abs(along) <= perpendicularTolerance * Math.abs(cross) && Math.abs(cross) < L) offset = cross; // + : à gauche de l'axe
+              if (Math.abs(along) <= perpendicularTolerance * Math.abs(cross) && Math.abs(cross) < L) offset =
+              cross; // + : à gauche de l'axe
             }
             const used = offset == null ? 3 : 4;
             out.push({
@@ -146,7 +147,8 @@
     // Contour : IP → CP, virage autour du milieu CP–CP', CP' → IP', virage autour du milieu IP'–IP.
     const cEnd = [(b[0] + cp2[0]) / 2, (b[1] + cp2[1]) / 2],
       cStart = [(a[0] + ip2[0]) / 2, (a[1] + ip2[1]) / 2];
-    const ring = [a, b, ...turn(cEnd, angle([-n[0], -n[1]])).slice(1, -1), cp2, ip2, ...turn(cStart, angle(n)).slice(1, -1), a].map(p => toGeo(o, p));
+    const ring = [a, b, ...turn(cEnd, angle([-n[0], -n[1]])).slice(1, -1), cp2, ip2, ...turn(cStart, angle(n)).slice(1, -1), a].map(p =>
+      toGeo(o, p));
     return {
       id: axis.id,
       name: axis.name || '',
@@ -230,7 +232,9 @@
   /** Distance (NM) entre deux points. */
   const distNm = (a, b) => Math.hypot(...toLocal(a, b)) / NM;
   // Mots du tableau qui ne sont pas des noms de circuits.
-  const NOT_NAMES = new Set(['FLB', 'TRA', 'UNL', 'SFC', 'ASML', 'AMSL', 'NORD', 'SUD', 'EST', 'OUEST', 'AARA', 'ARIP', 'ARCP', 'NOM', 'NAME', 'ATC', 'AAR', 'LF', 'FL']);
+  const NOT_NAMES = new Set(['FLB', 'TRA', 'UNL', 'SFC', 'ASML', 'AMSL', 'NORD', 'SUD', 'EST', 'OUEST', 'AARA', 'ARIP', 'ARCP', 'NOM',
+    'NAME', 'ATC', 'AAR', 'LF', 'FL'
+  ]);
   /** Milieu de deux points. */
   const middle = (a, b) => ({
     lat: (a.lat + b.lat) / 2,
@@ -252,9 +256,11 @@
     const texts = pagesText.map(raw => raw.replace(/\s+/g, ' '));
     // Renvois communs à toutes les pages (définis p2) : « 3 Branches de 30 Nm… », « 5 Axe limité à 40 Nm… ».
     texts.forEach(text => {
-      for (const m of text.matchAll(/(?:^|\s)(\d{1,2})\s+((?:Branches|Ne pas|Axe limité|Axe non|Sous r[ée]serve|Points pouvant)[^.]*\.)/g))
+      for (const m of text.matchAll(
+          /(?:^|\s)(\d{1,2})\s+((?:Branches|Ne pas|Axe limité|Axe non|Sous r[ée]serve|Points pouvant)[^.]*\.)/g))
         if (!notes[m[1]]) notes[m[1]] = {
-          text: m[2].replace(/\s+Zones de ravitaillement.*$/, '.').split(/\s(?=\d{1,2}\s+(?!Nm\b)[A-ZÉ])/)[0].replace(/([^.])$/, '$1.'),
+          text: m[2].replace(/\s+Zones de ravitaillement.*$/, '.').split(/\s(?=\d{1,2}\s+(?!Nm\b)[A-ZÉ])/)[0].replace(/([^.])$/,
+            '$1.'),
           lengthNm: Number((m[2].match(/(\d{2})\s*Nm/) || [])[1]) || null
         };
     });
@@ -301,7 +307,8 @@
         note: m[2] || ''
       })).filter(w => !NOT_NAMES.has(w.word) && !pointNames.has(w.word) && !/(IP|CP)$/.test(w.word));
       /** Nom complet d'un circuit à partir de son préfixe (mots du tableau). */
-      const fullName = prefix => words.find(w => w.word.startsWith(prefix)) || words.find(w => w.word[0] === prefix[0] && new RegExp('^' + prefix.split('').join('.*')).test(w.word)) || null;
+      const fullName = prefix => words.find(w => w.word.startsWith(prefix)) || words.find(w => w.word[0] === prefix[0] && new RegExp(
+        '^' + prefix.split('').join('.*')).test(w.word)) || null;
       // Axes « heavy » : branches FOXnn → ROMnn, deux branches consécutives = un circuit.
       const heavy = named.filter(p => /^(FOX?|ROM?)\d/.test(p.name));
       if (heavy.length) {

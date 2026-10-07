@@ -216,29 +216,34 @@
     return out.map(v => v.trim());
   }
   // base / operator / number : flotte (base d'attache, opérateur, numéro de l'appareil).
-  const FIELDS = ['registration', 'type', 'variant', 'category', 'callsign', 'tacticalNumber', 'configuration', 'equipment', 'base', 'operator', 'number'];
+  const FIELDS = ['registration', 'type', 'variant', 'category', 'callsign', 'tacticalNumber', 'configuration', 'equipment', 'base',
+    'operator', 'number'
+  ];
   // Fusion par immatriculation, du plus ancien au plus récent : chaque champ non vide
   // écrase la valeur précédente → « la dernière en date ».
   /** Registre des appareils connus : une entrée par immatriculation, la donnée la plus récente l'emporte. */
   function known() {
     const byReg = new Map();
-    sources().filter(r => regKey(r.registration)).sort((a, b) => String(a.date || '').localeCompare(String(b.date || ''))).forEach(record => {
-      const key = regKey(record.registration),
-        current = byReg.get(key) || {
-          registration: window.MissionModel.formatRegistration(record.registration),
-          callsigns: []
-        };
-      FIELDS.forEach(field => {
-        const value = record[field];
-        if (Array.isArray(value) ? value.length : value !== undefined && value !== null && String(value).trim() !== '') current[field] = field === 'registration' ? window.MissionModel.formatRegistration(value) : field === 'callsign' ? String(value).toUpperCase() : value;
+    sources().filter(r => regKey(r.registration)).sort((a, b) => String(a.date || '').localeCompare(String(b.date || ''))).forEach(
+      record => {
+        const key = regKey(record.registration),
+          current = byReg.get(key) || {
+            registration: window.MissionModel.formatRegistration(record.registration),
+            callsigns: []
+          };
+        FIELDS.forEach(field => {
+          const value = record[field];
+          if (Array.isArray(value) ? value.length : value !== undefined && value !== null && String(value).trim() !== '') current[
+            field] = field === 'registration' ? window.MissionModel.formatRegistration(value) : field === 'callsign' ? String(
+            value).toUpperCase() : value;
+        });
+        [record.callsign, ...(Array.isArray(record.callsigns) ? record.callsigns : [])].forEach(c => {
+          if (c && !current.callsigns.includes(String(c).toUpperCase())) current.callsigns.push(String(c).toUpperCase());
+        });
+        current.date = record.date || current.date;
+        if (!current.category && current.type) current.category = lookupType(current.type)?.category || '';
+        byReg.set(key, current);
       });
-      [record.callsign, ...(Array.isArray(record.callsigns) ? record.callsigns : [])].forEach(c => {
-        if (c && !current.callsigns.includes(String(c).toUpperCase())) current.callsigns.push(String(c).toUpperCase());
-      });
-      current.date = record.date || current.date;
-      if (!current.category && current.type) current.category = lookupType(current.type)?.category || '';
-      byReg.set(key, current);
-    });
     return [...byReg.values()].sort((a, b) => a.registration.localeCompare(b.registration));
   }
   // Type normalisé (alias OACI : H145 → EC45) pour comparer les séries d'appareils.
@@ -315,10 +320,12 @@
   // Désignateur OACI de l'exploitant (OPR/ de la case 18) d'après l'organisme.
   const designatorOf = operator => {
     const key = up(operator).replace(/[’`]/g, "'");
-    return Object.entries(window.MissionVocab?.operatorDesignators || {}).find(([name]) => up(name).replace(/[’`]/g, "'") === key)?.[1] || '';
+    return Object.entries(window.MissionVocab?.operatorDesignators || {}).find(([name]) => up(name).replace(/[’`]/g, "'") === key)?.[
+      1] || '';
   };
   /** Organisme d'un désignateur OACI d'exploitant (OPR/) ; « » si inconnu. */
-  const operatorOfDesignator = code => Object.entries(window.MissionVocab?.operatorDesignators || {}).find(([, d]) => d === clean(code))?.[0] || '';
+  const operatorOfDesignator = code => Object.entries(window.MissionVocab?.operatorDesignators || {}).find(([, d]) => d === clean(code))
+    ?.[0] || '';
   const canonicalPrefix = (prefix, map = abbreviations()) => map.get(up(prefix)) || up(prefix);
   const canonicalCallsign = (callsign, map = abbreviations()) => {
     const s = window.MissionModel.splitCallsign(callsign);
@@ -336,7 +343,8 @@
       return ((short + n).length <= FPL_MAX ? short : short.slice(0, Math.max(1, FPL_MAX - n.length))) + n;
     }
     if ((p + n).length <= FPL_MAX) return p + n;
-    const known = [...map].filter(([, full]) => full === p).map(([short]) => clean(short)).filter(s => (s + n).length <= FPL_MAX).sort((a, b) => b.length - a.length)[0];
+    const known = [...map].filter(([, full]) => full === p).map(([short]) => clean(short)).filter(s => (s + n).length <= FPL_MAX).sort((a,
+      b) => b.length - a.length)[0];
     return (known || p.slice(0, Math.max(1, FPL_MAX - n.length))) + n;
   }
 

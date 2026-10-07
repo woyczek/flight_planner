@@ -6,7 +6,7 @@
 <title>Landing Performance — Synthèse multi-CSV</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 64 64%27%3E%3Crect width=%2764%27 height=%2764%27 rx=%2712%27 fill=%27%230f1115%27/%3E%3Cpath d=%27M10 47h44%27 stroke=%27%236fa8ff%27 stroke-width=%275%27 stroke-linecap=%27round%27/%3E%3Cpath d=%27M17 16l14 23 16-9%27 fill=%27none%27 stroke=%27%23e8eaf0%27 stroke-width=%275%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27/%3E%3Ccircle cx=%2731%27 cy=%2747%27 r=%275%27 fill=%27%2344c06a%27/%3E%3C/svg%3E">
 <link rel="stylesheet" href="../../shared/repository_nav.css?v=f6a61e75">
-<script src="../../config/repository_tree?v=cc94a4d8"></script>
+<script src="../../config/repository_tree?v=2a75a8a5"></script>
 <style data-layer="app">
 @layer app {
   * {
@@ -1345,9 +1345,9 @@
 </main>
 <div id="tooltip" data-no-i18n class="tooltip"></div>
 
-<script src="../../shared/kit.js?v=a819e6df"></script>
-<script src="../../shared/time_period.js?v=167c7f94"></script>
-<script src="../../AircraftDB/aircraft_db.js"></script><script src="../../shared/data_files.js?v=dcb47c6a" data-file="references/aircraft_fleet.js"></script><script src="../../shared/data_files.js?v=dcb47c6a" data-file="references/defa_reference.js"></script><script src="../../shared/aircraft_catalog.js?v=3731594c"></script>
+<script src="../../shared/kit.js?v=d084129f"></script>
+<script src="../../shared/time_period.js?v=9bf86116"></script>
+<script src="../../AircraftDB/aircraft_db.js"></script><script src="../../shared/data_files.js?v=dcb47c6a" data-file="references/aircraft_fleet.js"></script><script src="../../shared/data_files.js?v=dcb47c6a" data-file="references/defa_reference.js"></script><script src="../../shared/aircraft_catalog.js?v=53010467"></script>
 <script src="../../AircraftDB/aircraft_icons.js"></script>
 <script>
 const esc = window.RepositoryKit.esc; // échappement HTML commun (shared/kit.js, chargé avant ce script)
@@ -2695,7 +2695,10 @@ function t(k, vars = {}) {
 // Lignes [fr, en, de, es] des libellés statiques pour RepositoryContentI18n : clés de TR, filtres crash et 95P.
 function landingI18nRows() {
   const L = ["fr", "en", "de", "es"],
-    keys = ["title", "language", "dataFile", "chooseFile", "noFile", "aircraft", "all", "options", "analysisSmaller", "analysisLarger", "exclude", "estimateMissing", "trendMode", "modeAsymptote", "modeFirstLast", "modeMoving", "smoothing", "print", "evolution", "summary", "quality", "landings", "choose", "stateUnknown"];
+    keys = ["title", "language", "dataFile", "chooseFile", "noFile", "aircraft", "all", "options", "analysisSmaller", "analysisLarger",
+      "exclude", "estimateMissing", "trendMode", "modeAsymptote", "modeFirstLast", "modeMoving", "smoothing", "print", "evolution",
+      "summary", "quality", "landings", "choose", "stateUnknown"
+    ];
   const inLang = (code, fn) => {
     const keep = lang;
     lang = code;
@@ -2710,10 +2713,20 @@ function landingI18nRows() {
   rows.push(L.map(c => inLang(c, () => p95Text("label"))));
   rows.push(["Options de l’analyse", "Analysis options", "Analyseoptionen", "Opciones del análisis"]); // groupe du menu ☰ (landing_ui.js)
   // sous-titres des blocs (icônes et sous-titres : block_icons.js)
-  rows.push(["Évolution des indicateurs d’atterrissage sur la période.", "Landing indicators over the period.", "Entwicklung der Landekennzahlen im Zeitraum.", "Evolución de los indicadores de aterrizaje en el periodo."]);
-  rows.push(["Par appareil : nombre, moyennes, meilleurs et moins bons atterrissages.", "Per aircraft: count, averages, best and worst landings.", "Je Luftfahrzeug: Anzahl, Mittelwerte, beste und schlechteste Landungen.", "Por aeronave: número, medias, mejores y peores aterrizajes."]);
-  rows.push(["Lignes écartées ou incomplètes des fichiers chargés.", "Rows discarded or incomplete in the loaded files.", "Verworfene oder unvollständige Zeilen der geladenen Dateien.", "Filas descartadas o incompletas de los archivos cargados."]);
-  rows.push(["Détail de chaque atterrissage chargé.", "Details of every loaded landing.", "Einzelheiten jeder geladenen Landung.", "Detalle de cada aterrizaje cargado."]);
+  rows.push(["Évolution des indicateurs d’atterrissage sur la période.", "Landing indicators over the period.",
+    "Entwicklung der Landekennzahlen im Zeitraum.", "Evolución de los indicadores de aterrizaje en el periodo."
+  ]);
+  rows.push(["Par appareil : nombre, moyennes, meilleurs et moins bons atterrissages.",
+    "Per aircraft: count, averages, best and worst landings.",
+    "Je Luftfahrzeug: Anzahl, Mittelwerte, beste und schlechteste Landungen.",
+    "Por aeronave: número, medias, mejores y peores aterrizajes."
+  ]);
+  rows.push(["Lignes écartées ou incomplètes des fichiers chargés.", "Rows discarded or incomplete in the loaded files.",
+    "Verworfene oder unvollständige Zeilen der geladenen Dateien.", "Filas descartadas o incompletas de los archivos cargados."
+  ]);
+  rows.push(["Détail de chaque atterrissage chargé.", "Details of every loaded landing.", "Einzelheiten jeder geladenen Landung.",
+    "Detalle de cada aterrizaje cargado."
+  ]);
   return rows.filter(r => !r.some(v => /\{\w+\}/.test(v)));
 }
 
@@ -2818,7 +2831,9 @@ function aircraftWingPosition(rec) {
   if (explicit) return explicit;
   const key = normalizeAircraftKey([rec?.tdesig || "", rec?.model || "", rec?.name || ""].join(" "));
   if (/EC35|H135|EC45|H145|AS50|H125|AS65|S76|CH47|SA342|ALOUETTE/.test(key)) return "rotor";
-  if (/DHC2|DHC3|DHC5|DHC6|DHC7|DH8|Q400|AT42|AT45|AT46|AT72|AT75|AT76|ATR|L410|D228|DO228|C212|CN35|C295|C208|C206|C182|C172|C152|BN2|ISLANDER|TRISLANDER|F27|F50|SF34|SH33|SH36|A4M|A400|XC47C/.test(key)) return "high";
+  if (
+    /DHC2|DHC3|DHC5|DHC6|DHC7|DH8|Q400|AT42|AT45|AT46|AT72|AT75|AT76|ATR|L410|D228|DO228|C212|CN35|C295|C208|C206|C182|C172|C152|BN2|ISLANDER|TRISLANDER|F27|F50|SF34|SH33|SH36|A4M|A400|XC47C/
+    .test(key)) return "high";
   if (/AMPHIB|FLOAT|HYDRA|SEAPLANE/.test(key)) return "water";
   if (/STEARMAN|TIGERMOTH|BIPLANE/.test(key) || String(rec?.tdesig || "").toUpperCase() === "AN2") return "biplane";
   if (/PC12|BE58|B350|BE9L|C750|S210|MD88|DC3|P51|EPIC/.test(key)) return "low";
@@ -2906,7 +2921,8 @@ function aircraftTypeLabel(name) {
   if (s.family === "H") type = L.heli;
   else if (s.family === "A" || s.family === "S") type = L.sea;
   else if (s.power === "T") type = n >= 4 ? L.quadP : (n === 2 && wing === "high" ? L.turboH : L.turbo);
-  else if (s.power === "P" || s.power === "E") type = n >= 4 ? L.quadP : (n === 2 && wing === "high" ? L.biPH : n === 2 ? L.biP : n === 1 && wing === "high" ? L.monoPH : n === 1 ? L.monoP : L.other);
+  else if (s.power === "P" || s.power === "E") type = n >= 4 ? L.quadP : (n === 2 && wing === "high" ? L.biPH : n === 2 ? L.biP : n === 1 &&
+    wing === "high" ? L.monoPH : n === 1 ? L.monoP : L.other);
   else if (s.power === "J") type = n === 1 ? L.monoJ : n === 2 ? L.biJ : n === 3 ? L.triJ : n >= 4 ? L.quadJ : L.jet;
   return `${type} ${size}`;
 }
@@ -2986,14 +3002,17 @@ function aircraftVisualKey(rec) {
           M: 1,
           H: 1,
           J: 1
-        })[s.wtc] || /ATR|AT42|AT45|AT46|AT72|AT75|AT76|DH8|Q400|L410|D228|DO228|C212|CN35|C295|DHC6|DHC7|F27|F50|SF34|SH33|SH36/.test(k))) return "twinHigh";
+        })[s.wtc] || /ATR|AT42|AT45|AT46|AT72|AT75|AT76|DH8|Q400|L410|D228|DO228|C212|CN35|C295|DHC6|DHC7|F27|F50|SF34|SH33|SH36/.test(k)))
+        return "twinHigh";
       return "twinProp";
     }
     if (s.engines === 1) return wing === "high" ? "monoHigh" : "monoProp";
   }
   if (s.power === "J") {
     if (s.engines >= 4) return "quadJet";
-    if (/CITATION|LEAR|GULFSTREAM|FALCON|CHALLENGER|PHENOM|HAWKER|GLOBAL|C750|LJ|GLF|FA[0-9]/.test(k) || /^(C25[ABC]|C50[01]|C510|C52[56]|C55[01]|C560|C56X|C650|C68[A]?|C700|C750|CL30|CL35|CL60|E50P|E55P|EA50|FA[0-9]X?|FA50|FA7X|FA8X|GALX|GLEX|GL[5-7]T|GLF[2-7]|H25[ABC]|HDJT|LJ[0-9]{2}|PRM1|SF50|BE40|PC24|ASTR|WW24)$/.test(String(rec?.tdesig || "").toUpperCase())) return "bizJet";
+    if (/CITATION|LEAR|GULFSTREAM|FALCON|CHALLENGER|PHENOM|HAWKER|GLOBAL|C750|LJ|GLF|FA[0-9]/.test(k) ||
+      /^(C25[ABC]|C50[01]|C510|C52[56]|C55[01]|C560|C56X|C650|C68[A]?|C700|C750|CL30|CL35|CL60|E50P|E55P|EA50|FA[0-9]X?|FA50|FA7X|FA8X|GALX|GLEX|GL[5-7]T|GLF[2-7]|H25[ABC]|HDJT|LJ[0-9]{2}|PRM1|SF50|BE40|PC24|ASTR|WW24)$/
+      .test(String(rec?.tdesig || "").toUpperCase())) return "bizJet";
     return "twinJet";
   }
   return "other";
@@ -3173,9 +3192,12 @@ function rebuildAircraftSelect() {
 }
 // ===== Menus langue et options ; libellés P95 / crash =====
 function languageFlagSvg(code) {
-  if (code === "fr") return '<svg viewBox="0 0 60 36" aria-hidden="true"><rect width="20" height="36" x="0" fill="#0055A4"/><rect width="20" height="36" x="20" fill="#fff"/><rect width="20" height="36" x="40" fill="#EF4135"/></svg>';
-  if (code === "de") return '<svg viewBox="0 0 60 36" aria-hidden="true"><rect width="60" height="12" y="0" fill="#000"/><rect width="60" height="12" y="12" fill="#DD0000"/><rect width="60" height="12" y="24" fill="#FFCE00"/></svg>';
-  if (code === "es") return '<svg viewBox="0 0 60 36" aria-hidden="true"><rect width="60" height="9" y="0" fill="#AA151B"/><rect width="60" height="18" y="9" fill="#F1BF00"/><rect width="60" height="9" y="27" fill="#AA151B"/><rect x="17" y="14" width="4" height="8" rx="1" fill="#AA151B" opacity=".85"/></svg>';
+  if (code === "fr")
+  return '<svg viewBox="0 0 60 36" aria-hidden="true"><rect width="20" height="36" x="0" fill="#0055A4"/><rect width="20" height="36" x="20" fill="#fff"/><rect width="20" height="36" x="40" fill="#EF4135"/></svg>';
+  if (code === "de")
+  return '<svg viewBox="0 0 60 36" aria-hidden="true"><rect width="60" height="12" y="0" fill="#000"/><rect width="60" height="12" y="12" fill="#DD0000"/><rect width="60" height="12" y="24" fill="#FFCE00"/></svg>';
+  if (code === "es")
+  return '<svg viewBox="0 0 60 36" aria-hidden="true"><rect width="60" height="9" y="0" fill="#AA151B"/><rect width="60" height="18" y="9" fill="#F1BF00"/><rect width="60" height="9" y="27" fill="#AA151B"/><rect x="17" y="14" width="4" height="8" rx="1" fill="#AA151B" opacity=".85"/></svg>';
   return '<svg viewBox="0 0 60 36" aria-hidden="true"><rect width="60" height="36" fill="#012169"/><path d="M0 0L60 36M60 0L0 36" stroke="#fff" stroke-width="8"/><path d="M0 0L60 36M60 0L0 36" stroke="#C8102E" stroke-width="4"/><path d="M30 0V36M0 18H60" stroke="#fff" stroke-width="12"/><path d="M30 0V36M0 18H60" stroke="#C8102E" stroke-width="7"/></svg>';
 }
 
@@ -4244,7 +4266,8 @@ function confidenceForEstimate(field, aircraft) {
 }
 
 function confidenceText(code) {
-  return t(code === "high" ? "confidenceHigh" : code === "medium" ? "confidenceMedium" : code === "low" ? "confidenceLow" : "confidenceVeryLow");
+  return t(code === "high" ? "confidenceHigh" : code === "medium" ? "confidenceMedium" : code === "low" ? "confidenceLow" :
+    "confidenceVeryLow");
 }
 
 function ratingFromEstimatedScore(score) {
@@ -4363,19 +4386,23 @@ function estimateRichRow(r) {
 
   if (!Number.isFinite(Number(r.LogLandingRateFPM)) && m.logFpmFromRich) {
     const v = m.logFpmFromRich.predict(obj);
-    if (Number.isFinite(v)) addLogEstimate("LogLandingRateFPM", v, "modelLogFpmRich", confidenceForEstimate("LogLandingRateFPM", r.Aircraft), "≈12 FPM CV");
+    if (Number.isFinite(v)) addLogEstimate("LogLandingRateFPM", v, "modelLogFpmRich", confidenceForEstimate("LogLandingRateFPM", r
+      .Aircraft), "≈12 FPM CV");
   }
   if (!Number.isFinite(Number(r.LogLandingG)) && m.logGFromRich) {
     const v = m.logGFromRich.predict(obj);
-    if (Number.isFinite(v)) addLogEstimate("LogLandingG", v, "modelLogGRich", confidenceForEstimate("LogLandingG", r.Aircraft), "≈0.21 G CV");
+    if (Number.isFinite(v)) addLogEstimate("LogLandingG", v, "modelLogGRich", confidenceForEstimate("LogLandingG", r.Aircraft),
+      "≈0.21 G CV");
   }
   if (!Number.isFinite(Number(r.LogNoseRateDegSec)) && m.logNoseFromRich) {
     const v = m.logNoseFromRich.predict(obj);
-    if (Number.isFinite(v)) addLogEstimate("LogNoseRateDegSec", v, "calibratedEstimate", confidenceForEstimate("LogNoseRateDegSec", r.Aircraft), "");
+    if (Number.isFinite(v)) addLogEstimate("LogNoseRateDegSec", v, "calibratedEstimate", confidenceForEstimate("LogNoseRateDegSec", r
+      .Aircraft), "");
   }
   if (!Number.isFinite(Number(r.LogFloatSeconds)) && m.logFloatFromRich) {
     const v = m.logFloatFromRich.predict(obj);
-    if (Number.isFinite(v)) addLogEstimate("LogFloatSeconds", v, "calibratedEstimate", confidenceForEstimate("LogFloatSeconds", r.Aircraft), "");
+    if (Number.isFinite(v)) addLogEstimate("LogFloatSeconds", v, "calibratedEstimate", confidenceForEstimate("LogFloatSeconds", r.Aircraft),
+      "");
   }
 }
 
@@ -4899,7 +4926,8 @@ function render() {
     p95 = $("p95Filter").checked,
     crash = $("crashFilter").checked;
   updateRangeButtons();
-  $("statusText").textContent = `${sourceName} — ${rows.length} ${t("used")}` + (selected === "__ALL__" ? ` — ${t("allAircraft")}` : ` — ${selected}`) + (filter ? ` — ${t("filterOn")}` : ` — ${t("filterOff")}`) + (crash ? ` — ${crashText("on")}` : "") + (p95 ? ` — ${p95Text("on")}` : "") + ` — ${t("selectedPeriod")}`;
+  $("statusText").textContent = `${sourceName} — ${rows.length} ${t("used")}` + (selected === "__ALL__" ? ` — ${t("allAircraft")}` : ` — ${selected}`) + (filter ? ` — ${t("filterOn")}` : ` — ${t("filterOff")}`) + (crash ?
+    ` — ${crashText("on")}` : "") + (p95 ? ` — ${p95Text("on")}` : "") + ` — ${t("selectedPeriod")}`;
   updateGeneralTrendIndicator(rows);
 
   if (!rows.length) {
@@ -5066,7 +5094,9 @@ function renderAircraftTableRich() {
   );
   const data = applyAnalysisFilters(ranged),
     groups = groupBy(data, r => r.Aircraft);
-  const heads = [t("aircraft"), aircraftTypeColumnTitle(), "N", p95ColumnLabel("score"), t("scoreSigma"), t("min"), t("max"), p95ColumnLabel("fpm"), "σ FPM", p95ColumnLabel("g"), "σ G", t("scoreSlope"), "ρ", t("conclusion")];
+  const heads = [t("aircraft"), aircraftTypeColumnTitle(), "N", p95ColumnLabel("score"), t("scoreSigma"), t("min"), t("max"),
+    p95ColumnLabel("fpm"), "σ FPM", p95ColumnLabel("g"), "σ G", t("scoreSlope"), "ρ", t("conclusion")
+  ];
   let body = "";
   for (const [a, rs] of [...groups.entries()].sort()) {
     const s = finite(rs.map(r => r.Score)),
@@ -6408,7 +6438,8 @@ function drawGrid2D(s, W, H, L, R, T, B, x0, x1, y0, y1) {
 }
 
 function drawXAxisDates(s, p, W, H, L, R, B, sx) {
-  [0, Math.floor((p.length - 1) / 2), p.length - 1].filter((v, i, a) => a.indexOf(v) === i).forEach(i => txt(s, sx(p[i].x), H - B + 17, dateShort(p[i].r._date), "middle"))
+  [0, Math.floor((p.length - 1) / 2), p.length - 1].filter((v, i, a) => a.indexOf(v) === i).forEach(i => txt(s, sx(p[i].x), H - B + 17,
+    dateShort(p[i].r._date), "middle"))
 }
 
 function drawNoData(s) {
@@ -6515,11 +6546,11 @@ if (prefs.lastFileName && !$("fileName").textContent.trim()) {
 restoreCachedDataset();
 </script>
 <footer class="repo-footer no-print">© RBR - SO Group Virtual - 2026-09-21 - 2.0.4 - <a href="https://framagit.org/asr/flight_planner">framagit.org/asr/flight_planner</a></footer>
-<script src="../../shared/repository_nav.js?v=eceaf3f4"></script>
-<script src="../../shared/landing_ui.js?v=fa91623d"></script>
-<script src="../../shared/app_framework.js?v=003108e7"></script>
+<script src="../../shared/repository_nav.js?v=ad188ce2"></script>
+<script src="../../shared/landing_ui.js?v=22c11978"></script>
+<script src="../../shared/app_framework.js?v=5653237c"></script>
 <!-- Traducteur commun de la suite (libellés statiques + typographie) : mêmes règles que les autres pages -->
-<script src="../../shared/content_i18n.js?v=7afecb78"></script><script>
+<script src="../../shared/content_i18n.js?v=efa62576"></script><script>
 RepositoryContentI18n(landingI18nRows())
 </script>
 </body>

@@ -46,13 +46,24 @@
     const all = Object.entries(s.pages || {}).filter(([p]) => PAGES[p]),
       ok = all.filter(([, r]) => r.ok),
       bad = all.filter(([, r]) => !r.ok);
-    if (ok.length) notify(tf(['Mis à jour depuis le site DEFA : {l}. Recharger la page pour les lire ; « Synchroniser » pour les envoyer.', 'Updated from the DEFA website: {l}. Reload the page to read them; “Synchronise” to send them.', 'Von der DEFA-Website aktualisiert: {l}. Seite neu laden, um sie zu lesen; „Synchronisieren“, um sie zu senden.', 'Actualizado desde el sitio DEFA: {l}. Recargar la página para leerlos; «Sincronizar» para enviarlos.'], {
+    if (ok.length) notify(tf([
+      'Mis à jour depuis le site DEFA : {l}. Recharger la page pour les lire ; « Synchroniser » pour les envoyer.',
+      'Updated from the DEFA website: {l}. Reload the page to read them; “Synchronise” to send them.',
+      'Von der DEFA-Website aktualisiert: {l}. Seite neu laden, um sie zu lesen; „Synchronisieren“, um sie zu senden.',
+      'Actualizado desde el sitio DEFA: {l}. Recargar la página para leerlos; «Sincronizar» para enviarlos.'
+    ], {
       l: ok.map(([p, r]) => `${t(PAGES[p].name)} (${last(r)})`).join(' ; ')
     }), 'ok');
-    if (bad.length) notify(tf(['Mise à jour depuis le site DEFA impossible : {l}.', 'Update from the DEFA website failed: {l}.', 'Aktualisierung von der DEFA-Website fehlgeschlagen: {l}.', 'Actualización desde el sitio DEFA imposible: {l}.'], {
+    if (bad.length) notify(tf(['Mise à jour depuis le site DEFA impossible : {l}.', 'Update from the DEFA website failed: {l}.',
+      'Aktualisierung von der DEFA-Website fehlgeschlagen: {l}.', 'Actualización desde el sitio DEFA imposible: {l}.'
+    ], {
       l: bad.map(([p, r]) => `${t(PAGES[p].name)} — ${last(r)}`).join(' ; ')
     }), 'warn');
-    if (s.types?.started) notify(tf(['Types d’aéronefs inconnus ({l}) : passe lancée en tâche de fond (OACI, EUROCONTROL).', 'Unknown aircraft types ({l}): pass started in the background (ICAO, EUROCONTROL).', 'Unbekannte Luftfahrzeugtypen ({l}): Durchlauf im Hintergrund gestartet (ICAO, EUROCONTROL).', 'Tipos de aeronave desconocidos ({l}): pasada iniciada en segundo plano (OACI, EUROCONTROL).'], {
+    if (s.types?.started) notify(tf(['Types d’aéronefs inconnus ({l}) : passe lancée en tâche de fond (OACI, EUROCONTROL).',
+      'Unknown aircraft types ({l}): pass started in the background (ICAO, EUROCONTROL).',
+      'Unbekannte Luftfahrzeugtypen ({l}): Durchlauf im Hintergrund gestartet (ICAO, EUROCONTROL).',
+      'Tipos de aeronave desconocidos ({l}): pasada iniciada en segundo plano (OACI, EUROCONTROL).'
+    ], {
       l: s.types.codes.slice(0, 12).join(' ') + (s.types.codes.length > 12 ? '…' : '')
     }), 'info');
     // une version appliquée dans ce navigateur (Paramétrage › Bases de données) masque le fichier mis à jour
@@ -61,7 +72,12 @@
       try {
         shadow = !!localStorage.getItem(PAGES[p].override);
       } catch {}
-      if (shadow) notify(tf(['{f} : une version appliquée dans ce navigateur (Paramétrage › Bases de données) masque la mise à jour ; la retirer pour lire le fichier.', '{f}: a version applied in this browser (Configuration › Databases) hides the update; remove it to read the file.', '{f}: Eine in diesem Browser angewandte Version (Konfiguration › Datenbanken) verdeckt die Aktualisierung; entfernen, um die Datei zu lesen.', '{f}: una versión aplicada en este navegador (Configuración › Bases de datos) oculta la actualización; quitarla para leer el archivo.'], {
+      if (shadow) notify(tf([
+        '{f} : une version appliquée dans ce navigateur (Paramétrage › Bases de données) masque la mise à jour ; la retirer pour lire le fichier.',
+        '{f}: a version applied in this browser (Configuration › Databases) hides the update; remove it to read the file.',
+        '{f}: Eine in diesem Browser angewandte Version (Konfiguration › Datenbanken) verdeckt die Aktualisierung; entfernen, um die Datei zu lesen.',
+        '{f}: una versión aplicada en este navegador (Configuración › Bases de datos) oculta la actualización; quitarla para leer el archivo.'
+      ], {
         f: t(PAGES[p].name)
       }), 'warn');
     }

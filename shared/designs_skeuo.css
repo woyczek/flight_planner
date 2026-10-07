@@ -2903,7 +2903,8 @@ html[data-design="aqua"] {
 html[data-skeuo] .repo-tabs:not(#imp) {
   position: relative;
   gap: 8px;
-  margin: 8px 16px 0; /* rail sur toute la largeur de la page */
+  margin: 8px 16px 0;
+  /* rail sur toute la largeur de la page */
   padding: 8px 30px;
   border: 0;
   border-radius: 0;
@@ -3093,7 +3094,7 @@ html[data-design="flightlog"] .repo-tab:last-child::after {
   background: url("deco/flightlog/tabs/tab.webp?v=7d2ddfc4") left -0.16px center/auto 100% no-repeat
 }
 /* plaques serrées d'1 px : colonnes transparentes des bords (1 + 2 px d'image) sans fente entre deux demi-pattes */
-html[data-design="flightlog"] .repo-tab + .repo-tab:not(#imp) {
+html[data-design="flightlog"] .repo-tab+.repo-tab:not(#imp) {
   margin-left: -1px
 }
 html[data-design="flightlog"] .repo-tab:not(#imp) {
@@ -3186,7 +3187,7 @@ html[data-design="field"] .repo-tab:not([aria-current="page"]):is(:hover, :focus
 /* Liseré du bloc à onglets : le bloc qui suit la barre d'onglets (main) est entouré d'un liseré — laiton (Cabinet,
    Carnet de vol), acier (Durci, Aqua) — qui le désigne comme la page des onglets. Liseré : cadre à coins arrondis de
    la planche (tools/cut_tabs.py, docs/technique/planches/lisere_*.webp), trait d'environ 6 px ; découpe 75 (laiton) / 85 (acier). */
-html[data-skeuo] .repo-tabs + main:not(#imp) {
+html[data-skeuo] .repo-tabs+main:not(#imp) {
   margin-top: 8px;
   padding-top: 10px;
   border: 6px solid transparent;

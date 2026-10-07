@@ -30,7 +30,9 @@
   /** Libellé en quatre langues (fr, en, de, es), traduit par t() et tf() selon la langue de la suite. */
   const L4 = (fr, en, de, es) => [fr, en, de, es];
   const TX = {
-    days: [L4('Lun', 'Mon', 'Mo', 'Lun'), L4('Mar', 'Tue', 'Di', 'Mar'), L4('Mer', 'Wed', 'Mi', 'Mié'), L4('Jeu', 'Thu', 'Do', 'Jue'), L4('Ven', 'Fri', 'Fr', 'Vie'), L4('Sam', 'Sat', 'Sa', 'Sáb'), L4('Dim', 'Sun', 'So', 'Dom')],
+    days: [L4('Lun', 'Mon', 'Mo', 'Lun'), L4('Mar', 'Tue', 'Di', 'Mar'), L4('Mer', 'Wed', 'Mi', 'Mié'), L4('Jeu', 'Thu', 'Do', 'Jue'),
+      L4('Ven', 'Fri', 'Fr', 'Vie'), L4('Sam', 'Sat', 'Sa', 'Sáb'), L4('Dim', 'Sun', 'So', 'Dom')
+    ],
     tranches: {
       matin: L4('Matin', 'Morning', 'Morgen', 'Mañana'),
       apres_midi: L4('Après-midi', 'Afternoon', 'Nachmittag', 'Tarde'),
@@ -55,34 +57,58 @@
     cr: {
       ME: L4('ME — mission effectuée', 'ME — mission flown', 'ME — Mission durchgeführt', 'ME — misión efectuada'),
       BACHE: L4('Bâché — mission annulée', 'Bâché — mission cancelled', 'Bâché — Mission abgesagt', 'Bâché — misión cancelada'),
-      MNE: L4('MNE — non effectuée ou partielle', 'MNE — not flown or partial', 'MNE — nicht oder teilweise durchgeführt', 'MNE — no efectuada o parcial')
+      MNE: L4('MNE — non effectuée ou partielle', 'MNE — not flown or partial', 'MNE — nicht oder teilweise durchgeführt',
+        'MNE — no efectuada o parcial')
     },
     conflicts: {
-      non_declare: L4('{tri} : semaine non déclarée', '{tri}: week not declared', '{tri}: Woche nicht angegeben', '{tri}: semana no declarada'),
-      non_couvert: L4('{tri} : pas disponible sur toute la durée', '{tri}: not available for the whole duration', '{tri}: nicht für die ganze Dauer verfügbar', '{tri}: no disponible durante toda la duración'),
-      ferry_late: L4('Convoyage {tri} : arrive à {arr}z, après {lim}z (30 min avant le décollage)', 'Ferry {tri}: arrives at {arr}z, after {lim}z (30 min before take-off)', 'Überführung {tri}: Ankunft {arr}z, nach {lim}z (30 min vor dem Start)', 'Traslado {tri}: llega a las {arr}z, después de las {lim}z (30 min antes del despegue)'),
-      theme: L4('{tri} : dispo « {cat} » sans la famille {fam}', '{tri}: availability “{cat}” without family {fam}', '{tri}: Verfügbarkeit „{cat}“ ohne Familie {fam}', '{tri}: disponibilidad «{cat}» sin la familia {fam}'),
-      non_affectable: L4('{tri} : non affectable ({cat})', '{tri}: not assignable ({cat})', '{tri}: nicht einsetzbar ({cat})', '{tri}: no asignable ({cat})'),
-      om_attente: L4('Ordre de mission non réémis après le déplacement ({cat}) : « Ordre de mission… »', 'Mission order not reissued after the move ({cat}): “Mission order…”', 'Missionsbefehl nach dem Verschieben nicht neu erteilt ({cat}): „Missionsbefehl…“', 'Orden de misión no reemitida tras el desplazamiento ({cat}): «Orden de misión…»'),
-      om_absent: L4('Ordre de mission non émis : {tri} ne voit pas la mission dans Mes missions (« Ordre de mission… »)', 'Mission order not issued: {tri} does not see the mission in My missions (“Mission order…”)', 'Missionsbefehl nicht erteilt: {tri} sieht die Mission nicht in Meine Missionen („Missionsbefehl…“)', 'Orden de misión no emitida: {tri} no ve la misión en Mis misiones («Orden de misión…»)'),
-      om_ecart: L4('Ordre de mission à réémettre : plaquette {tri}, affectations {cat}', 'Mission order to reissue: strip {tri}, assignments {cat}', 'Missionsbefehl neu erteilen: Streifen {tri}, Zuweisungen {cat}', 'Orden de misión que reemitir: ficha {tri}, asignaciones {cat}'),
-      chevauchement: L4('{tri} : déjà pris à cette heure', '{tri}: already busy at that time', '{tri}: zu dieser Zeit schon eingeteilt', '{tri}: ya ocupado a esa hora'),
-      doublon: L4('{tri} : deux fois sur l’élément', '{tri}: twice on the item', '{tri}: zweimal im Element', '{tri}: dos veces en el elemento'),
+      non_declare: L4('{tri} : semaine non déclarée', '{tri}: week not declared', '{tri}: Woche nicht angegeben',
+        '{tri}: semana no declarada'),
+      non_couvert: L4('{tri} : pas disponible sur toute la durée', '{tri}: not available for the whole duration',
+        '{tri}: nicht für die ganze Dauer verfügbar', '{tri}: no disponible durante toda la duración'),
+      ferry_late: L4('Convoyage {tri} : arrive à {arr}z, après {lim}z (30 min avant le décollage)',
+        'Ferry {tri}: arrives at {arr}z, after {lim}z (30 min before take-off)',
+        'Überführung {tri}: Ankunft {arr}z, nach {lim}z (30 min vor dem Start)',
+        'Traslado {tri}: llega a las {arr}z, después de las {lim}z (30 min antes del despegue)'),
+      theme: L4('{tri} : dispo « {cat} » sans la famille {fam}', '{tri}: availability “{cat}” without family {fam}',
+        '{tri}: Verfügbarkeit „{cat}“ ohne Familie {fam}', '{tri}: disponibilidad «{cat}» sin la familia {fam}'),
+      non_affectable: L4('{tri} : non affectable ({cat})', '{tri}: not assignable ({cat})', '{tri}: nicht einsetzbar ({cat})',
+        '{tri}: no asignable ({cat})'),
+      om_attente: L4('Ordre de mission non réémis après le déplacement ({cat}) : « Ordre de mission… »',
+        'Mission order not reissued after the move ({cat}): “Mission order…”',
+        'Missionsbefehl nach dem Verschieben nicht neu erteilt ({cat}): „Missionsbefehl…“',
+        'Orden de misión no reemitida tras el desplazamiento ({cat}): «Orden de misión…»'),
+      om_absent: L4('Ordre de mission non émis : {tri} ne voit pas la mission dans Mes missions (« Ordre de mission… »)',
+        'Mission order not issued: {tri} does not see the mission in My missions (“Mission order…”)',
+        'Missionsbefehl nicht erteilt: {tri} sieht die Mission nicht in Meine Missionen („Missionsbefehl…“)',
+        'Orden de misión no emitida: {tri} no ve la misión en Mis misiones («Orden de misión…»)'),
+      om_ecart: L4('Ordre de mission à réémettre : plaquette {tri}, affectations {cat}',
+        'Mission order to reissue: strip {tri}, assignments {cat}', 'Missionsbefehl neu erteilen: Streifen {tri}, Zuweisungen {cat}',
+        'Orden de misión que reemitir: ficha {tri}, asignaciones {cat}'),
+      chevauchement: L4('{tri} : déjà pris à cette heure', '{tri}: already busy at that time', '{tri}: zu dieser Zeit schon eingeteilt',
+        '{tri}: ya ocupado a esa hora'),
+      doublon: L4('{tri} : deux fois sur l’élément', '{tri}: twice on the item', '{tri}: zweimal im Element',
+        '{tri}: dos veces en el elemento'),
       zone: L4('Zone {z} : {e}', 'Area {z}: {e}', 'Gebiet {z}: {e}', 'Zona {z}: {e}')
     },
-    ptaTip: L4('PTA — principal training audience : membre que l’élément entraîne en priorité (entouré)', 'PTA — principal training audience: member the item trains first (circled)', 'PTA — principal training audience: Mitglied, das das Element vorrangig trainiert (eingekreist)', 'PTA — principal training audience: miembro al que el elemento entrena en prioridad (rodeado)'),
+    ptaTip: L4('PTA — principal training audience : membre que l’élément entraîne en priorité (entouré)',
+      'PTA — principal training audience: member the item trains first (circled)',
+      'PTA — principal training audience: Mitglied, das das Element vorrangig trainiert (eingekreist)',
+      'PTA — principal training audience: miembro al que el elemento entrena en prioridad (rodeado)'),
     types: {
       vol: L4('Vol', 'Flight', 'Flug', 'Vuelo'),
       divers: L4('Divers', 'Miscellaneous', 'Sonstiges', 'Varios'),
       controle: L4('Contrôle', 'Control', 'Lotsendienst', 'Control'),
       note: L4('Note', 'Note', 'Notiz', 'Nota')
     },
-    durWarn: L4('⚠ Durée estimée de la mission différente de la durée demandée', '⚠ Estimated mission duration differs from the requested duration', '⚠ Geschätzte Missionsdauer weicht von der gewünschten Dauer ab', '⚠ Duración estimada de la misión distinta de la solicitada'),
+    durWarn: L4('⚠ Durée estimée de la mission différente de la durée demandée',
+      '⚠ Estimated mission duration differs from the requested duration',
+      '⚠ Geschätzte Missionsdauer weicht von der gewünschten Dauer ab', '⚠ Duración estimada de la misión distinta de la solicitada'),
     zoneEtats: {
       active: L4('active', 'active', 'aktiv', 'activa'),
       demandee: L4('demandée', 'requested', 'beantragt', 'solicitada'),
       absente: L4('non activée', 'not activated', 'nicht aktiviert', 'no activada'),
-      atc: L4('à éviter (examen ou training ATC)', 'to avoid (ATC exam or training)', 'meiden (ATC-Prüfung oder -Training)', 'evitar (examen o entrenamiento ATC)'),
+      atc: L4('à éviter (examen ou training ATC)', 'to avoid (ATC exam or training)', 'meiden (ATC-Prüfung oder -Training)',
+        'evitar (examen o entrenamiento ATC)'),
       interdite: L4('interdite (P)', 'prohibited (P)', 'verboten (P)', 'prohibida (P)')
     }
   };
@@ -150,14 +176,16 @@
         nom: u.nom || ''
       });
     const idx = await MA()?.readData?.('disponibilites/_index.json').catch(() => null);
-    for (const tri of Object.keys(idx?.pilots || {})) if (!out.has(tri)) out.set(tri, {
-      tri,
-      nom: ''
-    });
-    for (const tri of Object.keys(S.cfg?.personnel || {})) if (!out.has(tri)) out.set(tri, {
-      tri,
-      nom: ''
-    });
+    for (const tri of Object.keys(idx?.pilots || {}))
+      if (!out.has(tri)) out.set(tri, {
+        tri,
+        nom: ''
+      });
+    for (const tri of Object.keys(S.cfg?.personnel || {}))
+      if (!out.has(tri)) out.set(tri, {
+        tri,
+        nom: ''
+      });
     const pers = S.cfg?.personnel || {};
     return [...out.values()].map(m => ({
       ...m,
@@ -203,7 +231,9 @@
     S.log = await MA()?.readLog?.().catch(() => []) || [];
     S.decls = await MA()?.declarations?.(tris).catch(() => ({})) || {};
     const tr = await window.OdvAirspace?.aarTracks?.().catch(() => []);
-    S.tracks = [...new Set([...(Array.isArray(tr) ? tr.map(x => x.nom || x.id) : []), ...S.registry.filter(isTankerMission).map(trackOf).filter(Boolean)])].sort();
+    S.tracks = [...new Set([...(Array.isArray(tr) ? tr.map(x => x.nom || x.id) : []), ...S.registry.filter(isTankerMission).map(trackOf)
+      .filter(Boolean)
+    ])].sort();
     syncCallsigns();
     fromAssignments();
     syncTakeoffs();
@@ -287,11 +317,16 @@
         }))
       }));
       // convoyeur de l'affectation repris par la plaquette de convoyage (tiers, pilote de la mission, ou à affecter)
-      S.doc.elements[S.doc.elements.length - 1]._ferryChoice = Object.fromEntries(list.filter(x => x.ferry && x.aircraft?.registration).map(x => [x.aircraft.registration, x.ferry.open ? '__open' : !x.ferry.pilot || x.ferry.pilot === x.pilot ? '' : x.ferry.pilot]));
+      S.doc.elements[S.doc.elements.length - 1]._ferryChoice = Object.fromEntries(list.filter(x => x.ferry && x.aircraft?.registration)
+        .map(x => [x.aircraft.registration, x.ferry.open ? '__open' : !x.ferry.pilot || x.ferry.pilot === x.pilot ? '' : x.ferry.pilot])
+        );
       made.push(`${a0.callsign || mid} ${date.slice(8, 10)}/${date.slice(5, 7)} ${String(a0.takeoff).slice(11, 16)}z`);
     }
     if (!made.length) return;
-    notify(tf(L4('Plaquettes créées depuis les affectations (missions affectées ailleurs) : {l}', 'Strips created from the assignments (missions assigned elsewhere): {l}', 'Streifen aus den Zuweisungen erstellt (anderswo zugewiesene Missionen): {l}', 'Fichas creadas a partir de las asignaciones (misiones asignadas en otro lugar): {l}'), {
+    notify(tf(L4('Plaquettes créées depuis les affectations (missions affectées ailleurs) : {l}',
+      'Strips created from the assignments (missions assigned elsewhere): {l}',
+      'Streifen aus den Zuweisungen erstellt (anderswo zugewiesene Missionen): {l}',
+      'Fichas creadas a partir de las asignaciones (misiones asignadas en otro lugar): {l}'), {
       l: made.join(', ')
     }), 'info');
     if (canEdit()) queueSave();
@@ -322,7 +357,8 @@
       fresh: true
     }).catch(() => null);
     const all = idx?.assignments || S.affect;
-    const old = all.filter(a => a.mission === v.mission && a.role !== 'convoyage' && a.status !== 'annulée').sort((a, b) => String(a.takeoff).localeCompare(String(b.takeoff)));
+    const old = all.filter(a => a.mission === v.mission && a.role !== 'convoyage' && a.status !== 'annulée').sort((a, b) => String(a
+      .takeoff).localeCompare(String(b.takeoff)));
     if (!old.length) return;
     const t0 = Date.parse(`${v.date}T${v.debut}:00Z`);
     const rows = old.map(a => ({
@@ -354,7 +390,8 @@
       recompute();
       render();
       queueSave();
-      notify(tf(L4('Ordre de mission de {v} non réémis : {r}', 'Mission order of {v} not reissued: {r}', 'Missionsbefehl von {v} nicht neu erteilt: {r}', 'Orden de misión de {v} no reemitida: {r}'), {
+      notify(tf(L4('Ordre de mission de {v} non réémis : {r}', 'Mission order of {v} not reissued: {r}',
+        'Missionsbefehl von {v} nicht neu erteilt: {r}', 'Orden de misión de {v} no reemitida: {r}'), {
         v: v.indicatif || v.mission,
         r: reason
       }), 'warn');
@@ -406,7 +443,9 @@
     recompute();
     render();
     queueSave();
-    notify(tf(L4('Ordre de mission réémis : {v} {d} {h}z (pli rescellé)', 'Mission order reissued: {v} {d} {h}z (envelope resealed)', 'Missionsbefehl neu erteilt: {v} {d} {h}z (Umschlag neu versiegelt)', 'Orden de misión reemitida: {v} {d} {h}z (sobre resellado)'), {
+    notify(tf(L4('Ordre de mission réémis : {v} {d} {h}z (pli rescellé)', 'Mission order reissued: {v} {d} {h}z (envelope resealed)',
+      'Missionsbefehl neu erteilt: {v} {d} {h}z (Umschlag neu versiegelt)',
+      'Orden de misión reemitida: {v} {d} {h}z (sobre resellado)'), {
       v: v.indicatif || v.mission,
       d: `${v.date.slice(8, 10)}/${v.date.slice(5, 7)}`,
       h: v.debut
@@ -424,7 +463,10 @@
       v.debut = hm;
     }
     if (!moved.length) return;
-    notify(tf(L4('Heure des plaquettes reprise des affectations (ordre de mission) : {l}', 'Strip times taken from the assignments (mission order): {l}', 'Streifenzeiten aus den Zuweisungen übernommen (Missionsbefehl): {l}', 'Horas de las fichas tomadas de las asignaciones (orden de misión): {l}'), {
+    notify(tf(L4('Heure des plaquettes reprise des affectations (ordre de mission) : {l}',
+      'Strip times taken from the assignments (mission order): {l}',
+      'Streifenzeiten aus den Zuweisungen übernommen (Missionsbefehl): {l}',
+      'Horas de las fichas tomadas de las asignaciones (orden de misión): {l}'), {
       l: moved.join(', ')
     }), 'warn');
     if (canEdit()) queueSave();
@@ -497,7 +539,7 @@
         arr: hhmm(Math.min(1440, arr)),
         lim: hhmm(Math.max(0, lim))
       };
-      for (const id of [c.id, v.id]) (S.conf.get(id) || S.conf.set(id, []).get(id)).push(item);
+      for (const id of [c.id, v.id])(S.conf.get(id) || S.conf.set(id, []).get(id)).push(item);
     }
     // famille de la mission : la catégorie de dispo du membre doit l'ouvrir (thèmes, préférences) — conflit souple
     for (const e of S.doc.elements.filter(x => x.type === 'vol' && x.mission && x.etat !== 'annule')) {
@@ -506,7 +548,8 @@
       const s = min(e.debut),
         f = s + e.duree;
       for (const tri of new Set(O().crewOf(e, S.affect))) {
-        const cats = (S.dispos[tri]?.[e.date] || []).filter(p => (p.debut ? min(p.debut) : 0) < f && s < (p.fin ? min(p.fin) : 1440) && (SD().affectable(p.categorie) || []).includes('vol')).map(p => p.categorie);
+        const cats = (S.dispos[tri]?.[e.date] || []).filter(p => (p.debut ? min(p.debut) : 0) < f && s < (p.fin ? min(p.fin) : 1440) && (
+          SD().affectable(p.categorie) || []).includes('vol')).map(p => p.categorie);
         // mission d'un exercice (opération avec organisation) : ouverte aussi par les catégories « exercice »
         const fams = reg(e.mission)?.operation?.organisation || reg(e.mission)?.exercise ? [fam, 'EXERCICE'] : [fam];
         if (!cats.length || cats.some(c => fams.some(fm => SD().opens(SD().openThemes(c, S.decls?.[tri]?.prefs), fm)))) continue;
@@ -543,7 +586,8 @@
       ...r.doc,
       elements: r.doc.elements.map(O().normalize)
     };
-    setStatus(r.where === 'folder' ? t(L4('Enregistré', 'Saved', 'Gespeichert', 'Guardado')) : t(L4('Enregistré dans ce navigateur', 'Saved in this browser', 'In diesem Browser gespeichert', 'Guardado en este navegador')));
+    setStatus(r.where === 'folder' ? t(L4('Enregistré', 'Saved', 'Gespeichert', 'Guardado')) : t(L4('Enregistré dans ce navigateur',
+      'Saved in this browser', 'In diesem Browser gespeichert', 'Guardado en este navegador')));
     if (r.error && r.where !== 'local') notify(String(r.error?.message || r.error), 'error');
   }
   /** Texte d'état de l'enregistrement dans la barre (#odvoStatus). */
@@ -554,12 +598,16 @@
   /** Applique une modification fn(doc) de l'ordre de vol puis enchaîne : réémission des ordres de mission des vols
    *  déplacés, convoyages, DLO, demandes de zones, conflits, rendu, zones, enregistrement. Refusée en lecture seule. */
   function mutate(fn) {
-    if (!S.editable) return notify(t(L4('Lecture seule : déverrouillez le Centre (et connectez-vous en admin_centre en mode production).', 'Read only: unlock the Centre (and log in as admin_centre in production mode).', 'Nur lesen: Zentrum entsperren (im Produktionsmodus als admin_centre anmelden).', 'Solo lectura: desbloquee el Centro (y conéctese como admin_centre en modo producción).')), 'warn');
+    if (!S.editable) return notify(t(L4('Lecture seule : déverrouillez le Centre (et connectez-vous en admin_centre en mode production).',
+      'Read only: unlock the Centre (and log in as admin_centre in production mode).',
+      'Nur lesen: Zentrum entsperren (im Produktionsmodus als admin_centre anmelden).',
+      'Solo lectura: desbloquee el Centro (y conéctese como admin_centre en modo producción).')), 'warn');
     const slot = v => `${v.date} ${v.debut} ${v.duree}`;
     const before = new Map(S.doc.elements.filter(x => x.type === 'vol' && x.mission && !x.convoyage).map(v => [v.id, slot(v)]));
     fn(S.doc);
     // vol de mission déplacé (jour, heure, durée) : son ordre de mission est réémis d'office s'il en a un
-    for (const v of S.doc.elements.filter(x => x.type === 'vol' && x.mission && !x.convoyage && before.has(x.id) && before.get(x.id) !== slot(x)))
+    for (const v of S.doc.elements.filter(x => x.type === 'vol' && x.mission && !x.convoyage && before.has(x.id) && before.get(x.id) !==
+        slot(x)))
       if (S.affect.some(a => a.mission === v.mission && a.role !== 'convoyage' && a.status !== 'annulée')) omSoon(v.id);
     S.rev = (S.rev || 0) + 1;
     clearTimeout(ferryRun);
@@ -578,7 +626,7 @@
    *  réservations ; mêmes fichiers data/atc que le Planning ODV. */
   async function loadAtcDay(date) {
     try {
-      if (!window.SuiteAtc) await loadScript('../../shared/atc_sessions.js?v=d93553c4');
+      if (!window.SuiteAtc) await loadScript('../../shared/atc_sessions.js?v=996ad1ea');
     } catch {
       return;
     }
@@ -716,7 +764,7 @@
   async function autoImportAtc() {
     if (!canEdit()) return;
     try {
-      if (!window.SuiteAtc) await loadScript('../../shared/atc_sessions.js?v=d93553c4');
+      if (!window.SuiteAtc) await loadScript('../../shared/atc_sessions.js?v=996ad1ea');
     } catch {
       return;
     }
@@ -728,7 +776,8 @@
     }));
     if (r?.skipped) return;
     if (r?.error) {
-      if (!S.atcWarned) notify(tf(L4('Import IVAO des sessions ATC impossible : {e}', 'IVAO import of ATC sessions failed: {e}', 'IVAO-Import der ATC-Sitzungen fehlgeschlagen: {e}', 'Importación IVAO de las sesiones ATC imposible: {e}'), {
+      if (!S.atcWarned) notify(tf(L4('Import IVAO des sessions ATC impossible : {e}', 'IVAO import of ATC sessions failed: {e}',
+        'IVAO-Import der ATC-Sitzungen fehlgeschlagen: {e}', 'Importación IVAO de las sesiones ATC imposible: {e}'), {
         e: String(r.error?.message || r.error)
       }), 'warn');
       S.atcWarned = true;
@@ -743,7 +792,8 @@
     if (!A?.missionZones || !A?.check) return null;
     const out = new Map();
     for (const date of dates())
-      for (const v of S.doc.elements.filter(x => x.type === 'vol' && x.date === date && x.mission && !x.convoyage && x.etat !== 'annule')) {
+      for (const v of S.doc.elements.filter(x => x.type === 'vol' && x.date === date && x.mission && !x.convoyage && x.etat !==
+          'annule')) {
         const ref = missionRef(v);
         const mz = ref ? await A.missionZones(ref).catch(() => null) : null;
         if (mz?.missing) return mz;
@@ -812,7 +862,10 @@
       error: err
     }));
     if (res?.error && res.where !== 'local') return notify(String(res.error?.message || res.error), 'error');
-    notify(tf(L4('{n} demande(s) inscrite(s) dans les activations : à faire sur le site du réseau.', '{n} request(s) recorded in the activations: to be made on the network’s site.', '{n} Antrag/Anträge in den Aktivierungen eingetragen: auf der Seite des Netzwerks stellen.', '{n} solicitud(es) inscrita(s) en las activaciones: hay que hacerla(s) en el sitio de la red.'), {
+    notify(tf(L4('{n} demande(s) inscrite(s) dans les activations : à faire sur le site du réseau.',
+      '{n} request(s) recorded in the activations: to be made on the network’s site.',
+      '{n} Antrag/Anträge in den Aktivierungen eingetragen: auf der Seite des Netzwerks stellen.',
+      '{n} solicitud(es) inscrita(s) en las activaciones: hay que hacerla(s) en el sitio de la red.'), {
       n: rows.length
     }), 'info');
     activations?.refresh?.();
@@ -823,7 +876,10 @@
   function missingBase(r) {
     if (!S.airMissing) {
       S.airMissing = r;
-      notify(t(L4('Zones : base aéronautique absente ou zone France inactive — Paramètres › Maintenance › Données aéronautiques.', 'Areas: aeronautical database missing or France zone inactive — Settings › Maintenance › Aeronautical data.', 'Gebiete: Luftfahrtdatenbank fehlt oder Zone Frankreich inaktiv — Einstellungen › Wartung › Luftfahrtdaten.', 'Zonas: base aeronáutica ausente o zona Francia inactiva — Ajustes › Mantenimiento › Datos aeronáuticos.')), 'warn');
+      notify(t(L4('Zones : base aéronautique absente ou zone France inactive — Paramètres › Maintenance › Données aéronautiques.',
+        'Areas: aeronautical database missing or France zone inactive — Settings › Maintenance › Aeronautical data.',
+        'Gebiete: Luftfahrtdatenbank fehlt oder Zone Frankreich inaktiv — Einstellungen › Wartung › Luftfahrtdaten.',
+        'Zonas: base aeronáutica ausente o zona Francia inactiva — Ajustes › Mantenimiento › Datos aeronáuticos.')), 'warn');
     }
     paintZones();
   }
@@ -996,7 +1052,8 @@
     const av = e.type === 'vol' ? (e.avions || []).find(a => a.pilote === tri || a.nav === tri) : null;
     const ty = av?.appareil?.type || av?.poste?.type || '';
     const q = ty && MA()?.qualification ? MA().qualification(S.decls?.[tri], tri, ty) : null;
-    const tip = [memberName(tri), pta ? 'PTA' : '', dlo ? `DLO : ${dlo}` : '', q?.text || '', c ? conflictText(c) : ''].filter(Boolean).join(' — ');
+    const tip = [memberName(tri), pta ? 'PTA' : '', dlo ? `DLO : ${dlo}` : '', q?.text || '', c ? conflictText(c) : ''].filter(Boolean).join(
+      ' — ');
     return `<span class="odvo-tri${q ? ' q-' + q.level : ''}${c ? ' bad' : ''}${pta ? ' pta' : ''}" data-tri="${esc(tri)}" draggable="${S.editable && !locked}" title="${esc(tip)}"${col ? ` style="border-color:${esc(tint(col))}"` : ''}>${esc(tri)}${dlo ? '<i class="odvo-dlo">◎</i>' : ''}</span>`;
   }
   /** Configurations chargées d'un avion (KNON, TALIOS…), couleurs des réglages. */
@@ -1023,7 +1080,8 @@
     let body = '';
     if (e.type === 'vol') {
       const aff = O().missionCrew(e, S.affect);
-      const crew = aff.length ? aff.map(a => a.pilot) : e.avions.filter(a => a.pilote || a.nav).flatMap(a => [a.pilote, a.nav].filter(Boolean));
+      const crew = aff.length ? aff.map(a => a.pilot) : e.avions.filter(a => a.pilote || a.nav).flatMap(a => [a.pilote, a.nav].filter(
+        Boolean));
       // un avion : pilote, navigateur, configurations ; vol de mission : pilotes des affectations, configurations saisies
       const planes = aff.length ? aff.map(a => ({
         locked: true,
@@ -1098,7 +1156,8 @@
       const pct = Math.min(100, 40 + 15 * zones.length);
       const tip = [`${hhmm(a)}–${hhmm(b)}z · ${tf(L4('{n} zone(s)', '{n} area(s)', '{n} Gebiet(e)', '{n} zona(s)'), {
         n: zones.length
-      })}`, ...zones.map(r => [r.nom, r.reseau || t(L4('tous réseaux', 'all networks', 'alle Netzwerke', 'todas las redes')), t(TX.zoneEtats[r.etat || 'active'] || [r.etat, r.etat, r.etat, r.etat])].join(' · '))].join('\n');
+      })}`, ...zones.map(r => [r.nom, r.reseau || t(L4('tous réseaux', 'all networks', 'alle Netzwerke',
+        'todas las redes')), t(TX.zoneEtats[r.etat || 'active'] || [r.etat, r.etat, r.etat, r.etat])].join(' · '))].join('\n');
       const w = (b - a) * P;
       const label = w > 90 ? zones.map(r => r.nom).join(', ') : w > 22 ? String(zones.length) : '';
       out.push(`<div class="odvo-ll${worst !== 'active' ? ' odvo-ll-' + esc(worst) : ''}" style="left:${X(a)}px;width:${w}px;background:color-mix(in srgb, ${esc(tint(zones[0].couleur || '#4ADE80'))} ${pct}%, transparent)" title="${esc(tip)}">${esc(label)}</div>`);
@@ -1138,7 +1197,8 @@
       const lane = at.closest('.odvo-lane');
       if (lane) lane.style.height = `${Math.max(26, 4 + n * hh)}px`;
       const lbl = $('.odvo-sec-atc .odvo-lbl');
-      if (lbl) lbl.title = tf(L4('Sessions ATC du jour — périmètre : {p}', 'ATC sessions of the day — perimeter: {p}', 'ATC-Sitzungen des Tages — Bereich: {p}', 'Sesiones ATC del día — perímetro: {p}'), {
+      if (lbl) lbl.title = tf(L4('Sessions ATC du jour — périmètre : {p}', 'ATC sessions of the day — perimeter: {p}',
+        'ATC-Sitzungen des Tages — Bereich: {p}', 'Sesiones ATC del día — perímetro: {p}'), {
         p: S.atcLabel || '—'
       });
       at.innerHTML = placed.map(([s, i]) => `<div class="odvo-atc odvo-atc-${esc(s.type || 'reservation')}${hit.has(String(s.position)) ? ' conflit' : ''}" style="left:${X(Math.max(s.a, s0))}px;width:${Math.max(6, (s.b - Math.max(s.a, s0)) * P)}px;top:${2 + i * hh}px;height:${hh - 1}px" title="${esc([`${s.position} · ${t(window.SuiteAtc?.TYPES?.[s.type] || [s.type, s.type, s.type, s.type])} · ${s.reseau || ''}`, `${s.debut}–${s.fin}z`, s.texte || '', hit.has(String(s.position)) ? t(L4('Gêne un vol de mission (CTR du terrain à éviter)', 'Hinders a mission flight (airfield CTR to avoid)', 'Behindert einen Missionsflug (CTR des Flugplatzes meiden)', 'Molesta un vuelo de misión (CTR del aeródromo que evitar)')) : '', S.atcLabel ? tf(L4('Périmètre : {p}', 'Perimeter: {p}', 'Bereich: {p}', 'Perímetro: {p}'), {
@@ -1338,7 +1398,8 @@
     const rel = vols.find(v => {
       const vm = reg(v.mission);
       if (!vm) return false;
-      return (m.operation?.id && vm.operation?.id === m.operation.id) || (vm.teams || []).some(x => x.name === ownCs(m)) || (m.teams || []).some(x => x.name === ownCs(vm) || x.name === v.indicatif);
+      return (m.operation?.id && vm.operation?.id === m.operation.id) || (vm.teams || []).some(x => x.name === ownCs(m)) || (m
+        .teams || []).some(x => x.name === ownCs(vm) || x.name === v.indicatif);
     });
     if (!rel) return null;
     // ravitailleur sans ravitaillement saisi : 30 min avant la patrouille qu'il sert
@@ -1358,7 +1419,8 @@
     const crew = O().crewOf(el, S.affect);
     const need = crew.length ? 0 : el.type === 'vol' ? Math.max(1, el.avions.length) : 1;
     // membre déjà pris par un autre élément actif du jour sur [a, b[
-    const busy = (tri, a, b) => S.doc.elements.some(x => x.id !== el.id && x.date === date && x.etat !== 'annule' && O().kindOf(x) && O().crewOf(x, S.affect).includes(tri) && min(x.debut) < b && a < min(x.debut) + x.duree);
+    const busy = (tri, a, b) => S.doc.elements.some(x => x.id !== el.id && x.date === date && x.etat !== 'annule' && O().kindOf(x) && O()
+      .crewOf(x, S.affect).includes(tri) && min(x.debut) < b && a < min(x.debut) + x.duree);
     // membre libre sur [a, b[ : semaine déclarée, dispo valable pour ce genre d'élément (memberState), pas déjà pris
     const free = (tri, a, b) => S.dispos[tri] && O().memberState(S.dispos[tri][date] || [], kind, a, b).ok && !busy(tri, a, b);
     for (let a = s0; a + el.duree <= Math.max(e0, s0 + el.duree); a += 5) {
@@ -1417,7 +1479,10 @@
   function addMember(e, tri) {
     if (e.type === 'vol') {
       if (e.mission && O().missionCrew(e, S.affect).length) {
-        notify(t(L4('Vol de mission : l’équipage se modifie par « Affecter… » (affectations de la mission).', 'Mission flight: the crew is changed with “Assign…” (mission assignments).', 'Missionsflug: Besatzung über „Zuweisen…“ ändern (Zuweisungen der Mission).', 'Vuelo de misión: la tripulación se cambia con «Asignar…» (asignaciones de la misión).')), 'warn');
+        notify(t(L4('Vol de mission : l’équipage se modifie par « Affecter… » (affectations de la mission).',
+          'Mission flight: the crew is changed with “Assign…” (mission assignments).',
+          'Missionsflug: Besatzung über „Zuweisen…“ ändern (Zuweisungen der Mission).',
+          'Vuelo de misión: la tripulación se cambia con «Asignar…» (asignaciones de la misión).')), 'warn');
         return false;
       }
       if (e.avions.some(a => a.pilote === tri || a.nav === tri)) return false;
@@ -1429,7 +1494,8 @@
         annule: false
       });
       else {
-        notify(t(L4('Huit avions au plus', 'Eight aircraft at most', 'Höchstens acht Luftfahrzeuge', 'Ocho aeronaves como máximo')), 'warn');
+        notify(t(L4('Huit avions au plus', 'Eight aircraft at most', 'Höchstens acht Luftfahrzeuge', 'Ocho aeronaves como máximo')),
+          'warn');
         return false;
       }
       return true;
@@ -1735,7 +1801,8 @@
   /** Code de type d'aéronef : premier mot, en majuscules. */
   const typeCode = s => String(s || '').trim().split(/\s+/)[0].toUpperCase();
   /** Mission ravitailleur : rôle AAR « tanker », rôle de sa patrouille, ou type (tanker, MRTT). */
-  const isTankerMission = m => !!m && (m.aarRole === 'tanker' || /tanker|ravitaill|refuel/i.test(ownTeam(m).role || '') || /tanker|MRTT/i.test((m.aircraftTypes || []).join(' ')));
+  const isTankerMission = m => !!m && (m.aarRole === 'tanker' || /tanker|ravitaill|refuel/i.test(ownTeam(m).role || '') || /tanker|MRTT/i
+    .test((m.aircraftTypes || []).join(' ')));
   /** Mission du registre d'après son identifiant (null si absente). */
   const reg = id => (S.registry || []).find(m => m.id === id) || null;
   /** Axe AAR d'une mission : aarTrack, axe lu dans son yaml (fillTracks), sinon « sur <AXE> » en fin de titre. */
@@ -1749,7 +1816,8 @@
       if (isTankerMission(m) && !m.aarTrack) ids.add(m.id);
     for (const e of [...S.doc.elements, ...(S.doc.reserve || [])]) {
       if (e.mission && isTankerMission(reg(e.mission))) ids.add(e.mission);
-      for (const r of e.ravitaillements || []) if (r.mission) ids.add(r.mission);
+      for (const r of e.ravitaillements || [])
+        if (r.mission) ids.add(r.mission);
     }
     let found = false;
     await Promise.all([...ids].filter(id => !(id in S.trackCache)).map(async id => {
@@ -1760,9 +1828,12 @@
     if (found && S.view === 'jour') renderDay();
   }
   /** Mission qui fait voler une patrouille de ce nom : de la même opération d'abord. */
-  const ownerOf = (name, near) => (S.registry || []).find(x => (x.callsigns || []).includes(name) && near?.operation?.id && x.operation?.id === near.operation.id) || (S.registry || []).find(x => (x.callsigns || []).includes(name)) || null;
+  const ownerOf = (name, near) => (S.registry || []).find(x => (x.callsigns || []).includes(name) && near?.operation?.id && x.operation
+    ?.id === near.operation.id) || (S.registry || []).find(x => (x.callsigns || []).includes(name)) || null;
   /** Types d'aéronefs connus (flotte, table des indicatifs) : une équipe d'un autre type (VSAV, navire…) est au sol. */
-  const knownTypes = () => new Set([...(window.DEFA_FLEET || []).map(f => typeCode(f.type)), ...(window.MISSION_CALLSIGNS?.table || []).flatMap(x => x.types || []).map(typeCode)]);
+  const knownTypes = () => new Set([...(window.DEFA_FLEET || []).map(f => typeCode(f.type)), ...(window.MISSION_CALLSIGNS?.table || [])
+    .flatMap(x => x.types || []).map(typeCode)
+  ]);
   /** Équipe volante : patrouille d'une mission du registre, ravitailleur, ou type d'aéronef connu. */
   const isAirTeam = tm => !!ownerOf(tm.name) || isTanker(tm) || knownTypes().has(typeCode(tm.type));
   /** Plaquettes générées pour un jour : formation complémentaire des vols de mission posés (patrouilles des autres
@@ -1837,7 +1908,8 @@
       });
     }
     const gap = r => r.block == null ? 1e6 : Math.abs(r.block - duree);
-    return rows.sort((a, b) => (!!b.lien - !!a.lien) || ((a.fit === false) - (b.fit === false)) || gap(a) - gap(b) || a.key.localeCompare(b.key));
+    return rows.sort((a, b) => (!!b.lien - !!a.lien) || ((a.fit === false) - (b.fit === false)) || gap(a) - gap(b) || a.key.localeCompare(
+      b.key));
   }
   // classe d'appareil de l'estimation (MissionEstimate : libellé français gardé au registre) dans la langue de la page
   const CLASS_LABELS = {
@@ -1856,14 +1928,16 @@
       n: Math.round(x.flight)
     }) : '', x.onStation ? tf(L4('sur zone {n} min', 'on station {n} min', 'im Einsatzgebiet {n} min', 'en zona {n} min'), {
       n: Math.round(x.onStation)
-    }) : '', x.transitOut || x.transitIn ? tf(L4('transits {a} + {b} min', 'transits {a} + {b} min', 'Transit {a} + {b} min', 'tránsitos {a} + {b} min'), {
+    }) : '', x.transitOut || x.transitIn ? tf(L4('transits {a} + {b} min', 'transits {a} + {b} min', 'Transit {a} + {b} min',
+      'tránsitos {a} + {b} min'), {
       a: Math.round(x.transitOut || 0),
       b: Math.round(x.transitIn || 0)
     }) : '', x.min && x.max ? tf(L4('fourchette {a}–{b} min', 'range {a}–{b} min', 'Spanne {a}–{b} min', 'horquilla {a}–{b} min'), {
       a: Math.round(x.min),
       b: Math.round(x.max)
     }) : '', classLabel(x.label)].filter(Boolean).join(', ');
-    return tf(L4('Estimation : bloc {b} min ({p}) ; demandée : {d} min', 'Estimate: block {b} min ({p}); requested: {d} min', 'Schätzung: Block {b} min ({p}); gewünscht: {d} min', 'Estimación: bloque {b} min ({p}); solicitada: {d} min'), {
+    return tf(L4('Estimation : bloc {b} min ({p}) ; demandée : {d} min', 'Estimate: block {b} min ({p}); requested: {d} min',
+      'Schätzung: Block {b} min ({p}); gewünscht: {d} min', 'Estimación: bloque {b} min ({p}); solicitada: {d} min'), {
       b: blockOf(m),
       p: parts || '—',
       d: duree
@@ -1875,9 +1949,13 @@
     const m = r.m,
       tm = r.team;
     const where = [m.origin, m.destination].filter(Boolean).join(' → ');
-    const lien = r.lien === 'operation' ? t(L4('même opération', 'same operation', 'gleiche Operation', 'misma operación')) : r.lien === 'axe' ? t(L4('même axe', 'same track', 'gleiche Strecke', 'mismo eje')) : '';
+    const lien = r.lien === 'operation' ? t(L4('même opération', 'same operation', 'gleiche Operation', 'misma operación')) : r.lien ===
+      'axe' ? t(L4('même axe', 'same track', 'gleiche Strecke', 'mismo eje')) : '';
     const avec = (m.teams || []).filter(x => x.name !== tm?.name && isAirTeam(x)).map(x => x.name);
-    const line2 = [tm?.name ? [tm.name, tm.type, tm.role].filter(Boolean).join(' · ') : '', [m.family, m.subtype].filter(Boolean).join(' / '), where, m.operation?.name ? `op. ${m.operation.name}` : '', trackOf(m) ? `AAR ${trackOf(m)}` : m.aar ? 'AAR' : '', avec.length ? `${t(L4('avec', 'with', 'mit', 'con'))} ${avec.join(', ')}` : '', lien, m.status || ''].filter(Boolean).join(' · ');
+    const line2 = [tm?.name ? [tm.name, tm.type, tm.role].filter(Boolean).join(' · ') : '', [m.family, m.subtype].filter(Boolean).join(
+        ' / '), where, m.operation?.name ? `op. ${m.operation.name}` : '', trackOf(m) ? `AAR ${trackOf(m)}` : m.aar ? 'AAR' : '', avec.length ? `${t(L4('avec', 'with', 'mit', 'con'))} ${avec.join(', ')}` : '',
+      lien, m.status || ''
+    ].filter(Boolean).join(' · ');
     return `<div role="option" tabindex="0" class="odvo-mp-row${r.fit === false ? ' warn' : ''}" data-cs="${esc(ownCs(m))}" data-est="${esc(estText(m, r.duree))}" data-v="${esc(r.key)}" data-axe="${esc(trackOf(m))}" data-q="${esc(`${m.id} ${m.title} ${line2}`.toLowerCase())}"><span><b>${esc(m.id)}</b> ${esc(m.title || '')}</span><span class="odvo-mp-d" title="${esc(t(L4('Durée bloc estimée de la mission', 'Estimated block time of the mission', 'Geschätzte Blockzeit der Mission', 'Tiempo bloque estimado de la misión')))}">${r.block != null ? `${r.block} min` : '—'}${r.fit === false ? ' ⚠' : ''}</span><small>${esc(line2)}</small></div>`;
   }
   /** Liste de choix déroulante (champ caché name) : lignes détaillées, filtre. */
@@ -1980,17 +2058,22 @@
   async function openEdit(id) {
     const e = S.doc.elements.find(x => x.id === id);
     if (!e) return;
-    const common = field(L4('Début (z)', 'Start (z)', 'Beginn (z)', 'Inicio (z)'), `<input name="debut" type="time" step="300" value="${esc(e.debut)}">`) + field(L4('Durée (min)', 'Duration (min)', 'Dauer (min)', 'Duración (min)'), `<input name="duree" type="number" min="5" step="1" value="${e.duree}">`);
-    const etat = (e.type !== 'note') ? field(L4('État', 'Status', 'Status', 'Estado'), `<select name="etat">${O().ETATS.map(x => opt(x, e.etat, t(TX.etats[x]))).join('')}</select>`) + field(L4('Motif', 'Reason', 'Grund', 'Motivo'), `<input name="motif" value="${esc(e.motif || '')}">`) : '';
-    const colors = e.type !== 'note' ? field(L4('Couleur', 'Colour', 'Farbe', 'Color'), `<input name="couleur" type="color" value="${esc(e.couleur || '#64748b')}">`) + field(L4('Fond plein', 'Solid fill', 'Gefüllt', 'Relleno'), `<input name="fondOn" type="checkbox"${e.fond ? ' checked' : ''}>`) : '';
+    const common = field(L4('Début (z)', 'Start (z)', 'Beginn (z)', 'Inicio (z)'), `<input name="debut" type="time" step="300" value="${esc(e.debut)}">`) + field(L4('Durée (min)',
+      'Duration (min)', 'Dauer (min)', 'Duración (min)'), `<input name="duree" type="number" min="5" step="1" value="${e.duree}">`);
+    const etat = (e.type !== 'note') ? field(L4('État', 'Status', 'Status', 'Estado'), `<select name="etat">${O().ETATS.map(x => opt(x, e.etat, t(TX.etats[x]))).join('')}</select>`) + field(L4('Motif', 'Reason', 'Grund',
+      'Motivo'), `<input name="motif" value="${esc(e.motif || '')}">`) : '';
+    const colors = e.type !== 'note' ? field(L4('Couleur', 'Colour', 'Farbe', 'Color'), `<input name="couleur" type="color" value="${esc(e.couleur || '#64748b')}">`) + field(L4('Fond plein',
+      'Solid fill', 'Gefüllt', 'Relleno'), `<input name="fondOn" type="checkbox"${e.fond ? ' checked' : ''}>`) : '';
     let body = '',
       extra = '';
     if (e.type === 'vol') {
       const aff = O().missionCrew(e, S.affect);
       // ravitailleurs : vols ravitailleurs posés ce jour, puis missions ravitailleur, celles liées à la mission (même
       // opération, même axe : OdvReports.tankersFor) en tête
-      const tankerFlights = S.doc.elements.filter(x => x.type === 'vol' && x.id !== e.id && x.date === e.date && (x.axe || isTankerMission(reg(x.mission))));
-      const linked = Object.fromEntries((e.mission && REP()?.tankersFor ? await REP().tankersFor(e.mission).catch(() => []) : []).map(x => [x.id, x.lien || 'operation']));
+      const tankerFlights = S.doc.elements.filter(x => x.type === 'vol' && x.id !== e.id && x.date === e.date && (x.axe ||
+        isTankerMission(reg(x.mission))));
+      const linked = Object.fromEntries((e.mission && REP()?.tankersFor ? await REP().tankersFor(e.mission).catch(() => []) : []).map(
+        x => [x.id, x.lien || 'operation']));
       const causes = REP()?.CAUSES || {};
       body = `<div class="odvo-grid2">
         ${field(L4('Libellé', 'Label', 'Bezeichnung', 'Etiqueta'), `<input name="libelle" value="${esc(e.libelle)}">`)}
@@ -2026,7 +2109,8 @@
       ${Object.keys(causes).length ? `<fieldset class="odvo-causes"><legend>${esc(t(L4('Causes (MNE)', 'Causes (MNE)', 'Ursachen (MNE)', 'Causas (MNE)')))}</legend>${Object.entries(causes).filter(([k]) => k !== 'NO_REPORT' || e.causes.includes(k)).map(([k, row]) => `<label><input type="checkbox" name="cause" value="${esc(k)}"${e.causes.includes(k) ? ' checked' : ''}> ${esc(t(row))}</label>`).join('')}</fieldset>` : ''}
       ${e.mission ? `<p class="mut">${esc(t(L4('Le CR de la mission fait foi : état et CR sont repris à l’ouverture de la semaine.', 'The mission report is authoritative: status and report are taken over when the week is opened.', 'Der Missionsbericht ist maßgeblich: Status und Bericht werden beim Öffnen der Woche übernommen.', 'El informe de la misión es la referencia: estado e informe se recogen al abrir la semana.')))}</p>` : ''}
       ${repeatFields(e)}`;
-      const opVols = e.mission && reg(e.mission)?.operation?.id ? S.doc.elements.filter(x => x.type === 'vol' && x.date === e.date && x.mission && reg(x.mission)?.operation?.id === reg(e.mission).operation.id) : [];
+      const opVols = e.mission && reg(e.mission)?.operation?.id ? S.doc.elements.filter(x => x.type === 'vol' && x.date === e.date && x
+        .mission && reg(x.mission)?.operation?.id === reg(e.mission).operation.id) : [];
       if (opVols.length > 1 && window.AssignDialog) extra += `<button type="button" data-assignop title="${esc(t(L4('Ordre de mission de chaque plaquette de l’opération posée ce jour, l’une après l’autre', 'Mission order for each strip of the operation placed that day, one after the other', 'Missionsbefehl für jeden an diesem Tag gesetzten Streifen der Operation, nacheinander', 'Orden de misión de cada ficha de la operación colocada ese día, una tras otra')))}">${esc(tf(L4('Ordre de mission de l’opération ({n})…', 'Operation mission order ({n})…', 'Missionsbefehl der Operation ({n})…', 'Orden de misión de la operación ({n})…'), {
         n: opVols.length
       }))}</button>`;
@@ -2050,32 +2134,37 @@
       divers: L4('Divers', 'Miscellaneous', 'Sonstiges', 'Varios'),
       controle: L4('Contrôle', 'Control', 'Lotsendienst', 'Control'),
       note: L4('Note', 'Note', 'Notiz', 'Nota')
-    }[e.type];
+    } [e.type];
     const d = dialog(`${t(title)} · ${t(TX.days[S.day])} ${e.date}`, body, {
       extra,
       onOk: dl => applyEdit(e.id, new FormData(dl.querySelector('form'))),
       onDelete: () => mutate(doc => {
         doc.elements = doc.elements.filter(x => x.id !== e.id);
-        for (const v of doc.elements) if (v.type === 'vol') v.ravitaillements = v.ravitaillements.filter(r => r.vol !== e.id);
+        for (const v of doc.elements)
+          if (v.type === 'vol') v.ravitaillements = v.ravitaillements.filter(r => r.vol !== e.id);
       })
     });
     d.querySelector('[data-assign]')?.addEventListener('click', () => assignMission(e));
     d.querySelector('[data-assignop]')?.addEventListener('click', async () => {
       d.close('cancel');
       const op = reg(e.mission)?.operation?.id;
-      const vols = S.doc.elements.filter(x => x.type === 'vol' && x.date === e.date && x.mission && reg(x.mission)?.operation?.id === op).sort((a, b) => min(a.debut) - min(b.debut));
+      const vols = S.doc.elements.filter(x => x.type === 'vol' && x.date === e.date && x.mission && reg(x.mission)?.operation
+        ?.id === op).sort((a, b) => min(a.debut) - min(b.debut));
       for (const v of vols) await assignMission(v);
     });
     d.querySelector('[data-ferryorder]')?.addEventListener('click', () => {
       const v = S.doc.elements.find(x => x.id === e.convoyage?.pour);
-      if (!v) return notify(t(L4('Vol servi introuvable.', 'Flight served not found.', 'Versorgter Flug nicht gefunden.', 'Vuelo servido no encontrado.')), 'warn');
+      if (!v) return notify(t(L4('Vol servi introuvable.', 'Flight served not found.', 'Versorgter Flug nicht gefunden.',
+        'Vuelo servido no encontrado.')), 'warn');
       d.close('cancel');
       assignMission(v);
     });
     d.querySelector('[data-selfferry]')?.addEventListener('click', () => {
       const v = S.doc.elements.find(x => x.id === e.convoyage?.pour);
       const pil = v?.avions.find(a => a.appareil?.immat === e.convoyage.immat)?.pilote;
-      if (!pil) return notify(t(L4('Pas encore de pilote sur cet appareil dans la mission.', 'No pilot on this aircraft in the mission yet.', 'Noch kein Pilot auf diesem Luftfahrzeug in der Mission.', 'Aún no hay piloto en esta aeronave en la misión.')), 'warn');
+      if (!pil) return notify(t(L4('Pas encore de pilote sur cet appareil dans la mission.',
+        'No pilot on this aircraft in the mission yet.', 'Noch kein Pilot auf diesem Luftfahrzeug in der Mission.',
+        'Aún no hay piloto en esta aeronave en la misión.')), 'warn');
       d.close('cancel');
       mutate(() => {
         e.avions[0].pilote = pil;
@@ -2107,10 +2196,12 @@
       if (ev.target.closest('[data-wing]')) d.querySelector('.odvo-av-wrap tr[data-more][hidden]')?.removeAttribute('hidden');
     });
     // axe choisi : seules ses missions ravitailleur restent dans la liste
-    d.querySelector('[name=rvAxe]')?.addEventListener('change', ev => d.querySelectorAll('[data-mp=rv] .odvo-mp-row[data-axe]').forEach(b => (b.hidden = !!ev.target.value && b.dataset.axe !== ev.target.value)));
+    d.querySelector('[name=rvAxe]')?.addEventListener('change', ev => d.querySelectorAll('[data-mp=rv] .odvo-mp-row[data-axe]').forEach(
+      b => (b.hidden = !!ev.target.value && b.dataset.axe !== ev.target.value)));
     // libellé ou indicatif saisi (« SAMU ») : seules les missions dont la patrouille porte cet indicatif restent proposées
     const filterByCs = () => {
-      const q = String(d.querySelector('[name=indicatif]')?.value || d.querySelector('[name=libelle]')?.value || '').trim().toUpperCase();
+      const q = String(d.querySelector('[name=indicatif]')?.value || d.querySelector('[name=libelle]')?.value || '').trim()
+        .toUpperCase();
       const rows = [...d.querySelectorAll('[data-mp=mission] .odvo-mp-row[data-cs]')];
       const hit = q ? rows.filter(r => r.dataset.cs.toUpperCase().startsWith(q)) : [];
       rows.forEach(r => (r.hidden = !!hit.length && !hit.includes(r)));
@@ -2165,12 +2256,14 @@
     const list = spec && MA()?.planesFor ? MA().planesFor(spec, dep) : [...(window.DEFA_FLEET || [])];
     const s = min(e.debut),
       f = s + e.duree;
-    const taken = new Set(S.doc.elements.filter(x => x.type === 'vol' && x.id !== e.id && x.date === e.date && min(x.debut) < f && s < min(x.debut) + x.duree).flatMap(x => x.avions.map(a => a.appareil?.immat)).filter(Boolean));
+    const taken = new Set(S.doc.elements.filter(x => x.type === 'vol' && x.id !== e.id && x.date === e.date && min(x.debut) < f && s <
+      min(x.debut) + x.duree).flatMap(x => x.avions.map(a => a.appareil?.immat)).filter(Boolean));
     const rows = await Promise.all(list.filter(x => x.registration).map(async x => ({
       x,
       fm: await ferryMin(adOf(x), dep, x.type)
     })));
-    rows.sort((a, b) => (a.fm ?? 1e6) - (b.fm ?? 1e6) || (b.x.operational !== false) - (a.x.operational !== false) || String(a.x.registration).localeCompare(String(b.x.registration)));
+    rows.sort((a, b) => (a.fm ?? 1e6) - (b.fm ?? 1e6) || (b.x.operational !== false) - (a.x.operational !== false) || String(a.x
+      .registration).localeCompare(String(b.x.registration)));
     const want = typeCode(spec?.type || '');
     const types = [...new Set([want, cur?.type].filter(Boolean))];
     const curV = cur ? `${cur.type || ''}|${cur.immat || ''}` : want ? `${want}|` : '';
@@ -2246,13 +2339,15 @@
         f,
         dep,
         fm
-      } of want) {
+      }
+      of want) {
       const s0 = Math.max(0, min(v.debut) - 30 - fm);
       let c = doc.elements.find(x => x.convoyage?.pour === v.id && x.convoyage.immat === f.registration);
       if (!c) {
         // convoyeur choisi dans la fenêtre de l'ODV : tiers, le pilote de la mission (''), ou à affecter
         const fc = v._ferryChoice?.[f.registration];
-        const fp = fc === '' ? v.avions.find(a => a.appareil?.immat === f.registration)?.pilote || null : fc && fc !== '__open' ? fc : null;
+        const fp = fc === '' ? v.avions.find(a => a.appareil?.immat === f.registration)?.pilote || null : fc && fc !== '__open' ? fc :
+          null;
         c = O().normalize({
           type: 'vol',
           date: v.date,
@@ -2283,7 +2378,8 @@
         // le vol a bougé : le convoyage le suit du même écart ; sinon il garde sa place (déplacement à la main)
         const shift = c.convoyage.volDebut ? min(v.debut) - min(c.convoyage.volDebut) : 0;
         const nd = c.convoyage.volDebut ? Math.max(0, Math.min(1440 - Math.max(5, fm), min(c.debut) + shift)) : s0;
-        if (hhmm(nd) !== c.debut || c.duree !== Math.max(5, fm) || c.date !== v.date || c.convoyage.from !== adOf(f) || c.convoyage.to !== dep || c.convoyage.volDebut !== v.debut) {
+        if (hhmm(nd) !== c.debut || c.duree !== Math.max(5, fm) || c.date !== v.date || c.convoyage.from !== adOf(f) || c.convoyage
+          .to !== dep || c.convoyage.volDebut !== v.debut) {
           Object.assign(c, {
             date: v.date,
             debut: hhmm(nd),
@@ -2307,9 +2403,11 @@
     if (unknown.length) {
       (S.ferryWarned ||= new Set());
       unknown.forEach(u => S.ferryWarned.add(u));
-      notify(tf(L4('Convoyage non calculé (terrain sans coordonnées) : {l}', 'Ferry not computed (airfield without coordinates): {l}', 'Überführung nicht berechnet (Flugplatz ohne Koordinaten): {l}', 'Traslado no calculado (aeródromo sin coordenadas): {l}'), {
-        l: unknown.join(', ')
-      }), 'warn');
+      notify(tf(L4('Convoyage non calculé (terrain sans coordonnées) : {l}', 'Ferry not computed (airfield without coordinates): {l}',
+          'Überführung nicht berechnet (Flugplatz ohne Koordinaten): {l}', 'Traslado no calculado (aeródromo sin coordenadas): {l}'
+          ), {
+          l: unknown.join(', ')
+        }), 'warn');
     }
     if (!changed) return;
     S.rev = (S.rev || 0) + 1;
@@ -2321,7 +2419,9 @@
   function planeOptions(e, a) {
     const want = typeCode(ownTeam(reg(e.mission)).type);
     const curV = a?.appareil ? `${a.appareil.type}|${a.appareil.immat || ''}` : want ? `${want}|` : '';
-    const fleet = [...(window.DEFA_FLEET || [])].filter(f => f.operational !== false).sort((x, y) => (typeCode(y.type) === want) - (typeCode(x.type) === want) || String(x.type).localeCompare(String(y.type)) || String(x.registration).localeCompare(String(y.registration)));
+    const fleet = [...(window.DEFA_FLEET || [])].filter(f => f.operational !== false).sort((x, y) => (typeCode(y.type) === want) - (
+      typeCode(x.type) === want) || String(x.type).localeCompare(String(y.type)) || String(x.registration).localeCompare(String(y
+      .registration)));
     const types = [...new Set([want, a?.appareil?.type, ...fleet.map(f => typeCode(f.type))].filter(Boolean))];
     return `<option value="">—</option>${types.map(ty => opt(`${ty}|`, curV, `${ty}${ty === want ? ' ★' : ''}`)).join('')}${fleet.map(f => opt(`${typeCode(f.type)}|${f.registration}`, curV, `${f.registration} · ${f.variant || f.type}${adOf(f) ? ' · ' + adOf(f) : ''}${typeCode(f.type) === want ? ' ★' : ''}`)).join('')}`;
   }
@@ -2415,7 +2515,10 @@
     });
   }
   /** Champ DLO d'un élément (« TRI = objectifs » par ligne), avec en rappel les DLO ouvertes de son équipage. */
-  const dloField = e => field(L4('DLO — objectifs de chaque membre sur cet élément (une ligne par membre : TRI = objectifs)', 'DLO — objectives of each member on this item (one line per member: TRI = objectives)', 'DLO — Ziele jedes Mitglieds für dieses Element (eine Zeile pro Mitglied: TRI = Ziele)', 'DLO — objetivos de cada miembro en este elemento (una línea por miembro: TRI = objetivos)'), `<textarea name="dlo" rows="2" placeholder="RBR = FULL COMMS no L16">${esc(Object.entries(e.dlo || {}).map(([k, v]) => `${k} = ${v}`).join('\n'))}</textarea>${(() => {
+  const dloField = e => field(L4('DLO — objectifs de chaque membre sur cet élément (une ligne par membre : TRI = objectifs)',
+    'DLO — objectives of each member on this item (one line per member: TRI = objectives)',
+    'DLO — Ziele jedes Mitglieds für dieses Element (eine Zeile pro Mitglied: TRI = Ziele)',
+    'DLO — objetivos de cada miembro en este elemento (una línea por miembro: TRI = objetivos)'), `<textarea name="dlo" rows="2" placeholder="RBR = FULL COMMS no L16">${esc(Object.entries(e.dlo || {}).map(([k, v]) => `${k} = ${v}`).join('\n'))}</textarea>${(() => {
     const open = [...new Set(O().crewOf(e, S.affect))].map(tri => [tri, openDlo(tri)]).filter(([, l]) => l.length);
     return open.length ? `<small class="mut">${esc(t(L4('DLO en cours de l’équipage :', 'Crew’s open DLO:', 'Offene DLO der Besatzung:', 'DLO abiertos de la tripulación:')))} ${esc(open.map(([tri, l]) => `${tri} : ${l.map(dloLabel).join(', ')}`).join(' · '))}</small>` : '';
   })()}`, true);
@@ -2516,7 +2619,8 @@
           }
         }
         const tankMission = rv === 'generic' ? null : tankId ? doc.elements.find(x => x.id === tankId)?.mission || null : rv || null;
-        if (!tankId && tankMission) tankId = doc.elements.find(x => x.type === 'vol' && x.date === e.date && x.mission === tankMission)?.id || null;
+        if (!tankId && tankMission) tankId = doc.elements.find(x => x.type === 'vol' && x.date === e.date && x.mission ===
+          tankMission)?.id || null;
         const tank = [...doc.elements, ...(doc.reserve || [])].find(x => x.id === tankId);
         if (rv === 'generic' && tank && g('rvAxe')) tank.axe = g('rvAxe');
         e.ravitaillements = rv ? [{
@@ -2538,7 +2642,7 @@
           ME: 'fait',
           BACHE: 'annule',
           MNE: e.partiel ? 'fait' : 'non_fait'
-        }[e.cr];
+        } [e.cr];
         resolveZones(e);
       } else if (e.type !== 'note') {
         e.equipage = f.getAll('eq');
@@ -2641,7 +2745,8 @@
    *  plus), classe de durée XS à XL, ravitaillement ; la mission générée se lie ensuite à la plaquette. */
   async function orderMission(e) {
     try {
-      for (const src of ['mission_store.js?v=bc7f59ef', 'mission_prompt.js?v=8774038d', '../../shared/mission_order.js?v=ac4119b1']) await loadScript(src);
+      for (const src of ['mission_store.js?v=4b918511', 'mission_prompt.js?v=8774038d', '../../shared/mission_order.js?v=f0b5d1a2'])
+        await loadScript(src);
     } catch (err) {
       return notify(String(err?.message || err), 'error');
     }
@@ -2668,8 +2773,14 @@
     dl.addEventListener('close', () => dl.remove());
     window.MissionOrder.mount(dl.querySelector('#odvoOrder'), {
       preset,
-      hint: t(L4('Enregistrez les fichiers dans le dossier des missions, puis « Relire le dossier » dans le Registre.', 'Save the files in the missions folder, then “Read the folder again” in the Registry.', 'Dateien im Missionsordner speichern, dann im Register „Ordner neu lesen“.', 'Guarde los archivos en la carpeta de misiones y luego «Releer la carpeta» en el Registro.')),
-      onOrdered: () => notify(t(L4('Mission commandée : elle apparaît au registre (« commandée »).', 'Mission ordered: it appears in the registry (“ordered”).', 'Mission bestellt: sie erscheint im Register („bestellt“).', 'Misión encargada: aparece en el registro («encargada»).')), 'info')
+      hint: t(L4('Enregistrez les fichiers dans le dossier des missions, puis « Relire le dossier » dans le Registre.',
+        'Save the files in the missions folder, then “Read the folder again” in the Registry.',
+        'Dateien im Missionsordner speichern, dann im Register „Ordner neu lesen“.',
+        'Guarde los archivos en la carpeta de misiones y luego «Releer la carpeta» en el Registro.')),
+      onOrdered: () => notify(t(L4('Mission commandée : elle apparaît au registre (« commandée »).',
+        'Mission ordered: it appears in the registry (“ordered”).',
+        'Mission bestellt: sie erscheint im Register („bestellt“).', 'Misión encargada: aparece en el registro («encargada»).'
+        )), 'info')
     });
     dl.showModal();
   }
@@ -2704,7 +2815,8 @@
           tr.hidden = false;
           const po = r.post || {};
           tr.querySelector(`[name=po${i}]`).value = `${r.callsign || po.callsign || ''}|${po.type || ''}|${po.label || ''}`;
-          tr.cells[1].querySelector('small').textContent = [r.callsign || po.callsign, po.label || po.type].filter(Boolean).join(' · ');
+          tr.cells[1].querySelector('small').textContent = [r.callsign || po.callsign, po.label || po.type].filter(Boolean)
+            .join(' · ');
           const sel = tr.querySelector(`[name=a${i}]`);
           const ov = [...sel.options].find(o => o.value.endsWith(`|${r.registration}`) && r.registration);
           if (ov) sel.value = ov.value;
@@ -2715,7 +2827,8 @@
         });
         const ind = d.querySelector('[name=indicatif]');
         if (rows[0]?.callsign) ind.value = rows[0].callsign;
-        if (Number.isFinite(extra.takeoff)) d.querySelector('[name=debut]').value = new Date(extra.takeoff).toISOString().slice(11, 16);
+        if (Number.isFinite(extra.takeoff)) d.querySelector('[name=debut]').value = new Date(extra.takeoff).toISOString().slice(
+          11, 16);
         if (Number.isFinite(extra.block_min)) d.querySelector('[name=duree]').value = Math.round(extra.block_min);
         if (extra.alert) {
           d.querySelector('[name=astreinte]').checked = true;
@@ -2742,7 +2855,8 @@
    *  Retourne une promesse résolue à la fermeture (ordres de l'opération enchaînés). */
   async function assignMission(e) {
     const m = reg(e.mission) || (window.MissionIndex?.all?.() || []).find(x => x.id === e.mission);
-    if (!m) return notify(tf(L4('Mission {m} absente du registre', 'Mission {m} not in the registry', 'Mission {m} nicht im Register', 'Misión {m} ausente del registro'), {
+    if (!m) return notify(tf(L4('Mission {m} absente du registre', 'Mission {m} not in the registry', 'Mission {m} nicht im Register',
+      'Misión {m} ausente del registro'), {
       m: e.mission
     }), 'warn');
     const file = (m.files || []).find(f => /\.ya?ml$/i.test(f) && !/^affectations/i.test(f));
@@ -2800,13 +2914,15 @@
   function renderWeekView() {
     const ds = dates();
     // éléments actifs du jour où le membre est d'équipage (nombre dans la case, détail en infobulle)
-    const occ = (tri, date) => S.doc.elements.filter(e => e.date === date && e.etat !== 'annule' && O().crewOf(e, S.affect).includes(tri));
+    const occ = (tri, date) => S.doc.elements.filter(e => e.date === date && e.etat !== 'annule' && O().crewOf(e, S.affect).includes(
+    tri));
     const row = m => `<tr><th title="${esc(m.nom)}">${esc(m.tri)}</th>${ds.map((d, i) => {
       const o = occ(m.tri, d);
       return `<td data-cell="${esc(m.tri)}|${esc(d)}" title="${esc(o.map(e => `${e.debut}z ${e.indicatif || e.libelle || t(TX.types[e.type] || TX.types.note)}`).join('\n'))}">${dispoBar(S.dispos[m.tri]?.[d] ?? (S.dispos[m.tri] ? [] : null), 0, 1440)}${o.length ? `<span class="odvo-occ">${o.length}</span>` : ''}</td>`;
     }).join('')}</tr>`;
     const seen = K.store.json(SEEN, {}) || {};
-    const changes = Object.entries(S.disposDocs).filter(([tri, d]) => d.updated_at && String(d.updated_at) > String(seen[`${tri}|${S.week}`] || '')).sort((a, b) => String(b[1].updated_at).localeCompare(String(a[1].updated_at)));
+    const changes = Object.entries(S.disposDocs).filter(([tri, d]) => d.updated_at && String(d.updated_at) > String(seen[`${tri}|${S.week}`] ||
+      '')).sort((a, b) => String(b[1].updated_at).localeCompare(String(a[1].updated_at)));
     $('#odvoWeekView').innerHTML = `
       <table class="odvo-wk"><thead><tr><th></th>${ds.map((d, i) => `<th>${esc(t(TX.days[i]))} ${esc(d.slice(8, 10))}/${esc(d.slice(5, 7))}</th>`).join('')}</tr></thead>
       <tbody>${['staff', 'autre'].map(g => S.members.filter(m => m.groupe === g).map(row).join('')).join('')}</tbody></table>
@@ -2875,7 +2991,8 @@
         vol: 0,
         charge: 0
       };
-      const pct = Number.isFinite(x.charge) ? Math.round(x.charge * 100) + ' %' : t(L4('sans dispo !', 'no availability!', 'keine Verfügbarkeit!', '¡sin disponibilidad!'));
+      const pct = Number.isFinite(x.charge) ? Math.round(x.charge * 100) + ' %' : t(L4('sans dispo !', 'no availability!',
+        'keine Verfügbarkeit!', '¡sin disponibilidad!'));
       const cls = !Number.isFinite(x.charge) || x.charge > 1 ? 'bad' : x.charge > .7 ? 'warn' : '';
       return `<tr><th>${esc(m.tri)}</th><td>${h(x.dispo)}</td><td>${h(x.vol)}</td><td class="${cls}">${esc(pct)}</td></tr>`;
     }).join('');
@@ -2933,7 +3050,8 @@
       const b = ev.target.closest('[data-req]');
       if (!b || !S.requests) return;
       const v = b.dataset.req;
-      if (v === 'copy') return navigator.clipboard?.writeText(S.requests.map(reqLine).join('\n')).then(() => notify(t(L4('Liste copiée.', 'List copied.', 'Liste kopiert.', 'Lista copiada.')), 'info'));
+      if (v === 'copy') return navigator.clipboard?.writeText(S.requests.map(reqLine).join('\n')).then(() => notify(t(L4(
+        'Liste copiée.', 'List copied.', 'Liste kopiert.', 'Lista copiada.')), 'info'));
       const rows = v === 'all' ? S.requests.filter(r => r.etat === 'absente' && r.zone) : [S.requests[+v]].filter(Boolean);
       if (rows.length) recordRequests(rows);
     });
