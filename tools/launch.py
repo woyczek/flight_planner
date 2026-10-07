@@ -15,7 +15,7 @@
 Usage : python tools/launch.py [--port 8000] [--page apps/…] [--no-browser] [--no-data]
 Arrêt : fermer la fenêtre, ou Ctrl+C.
 """
-import argparse, datetime, glob, http.server, io, json, os, re, secrets, shutil, socket, subprocess, sys, tempfile, threading, time
+import argparse, datetime, fnmatch, glob, http.server, io, json, os, re, secrets, shutil, socket, subprocess, sys, tempfile, threading, time
 import urllib.parse, urllib.request, webbrowser, zipfile
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import data_sync  # synchronisation git du pool de données (bouton « Synchroniser »)
@@ -326,6 +326,33 @@ class Setup(http.server.SimpleHTTPRequestHandler):
             if not self._allowed():
                 return self._json({'error': 'refusé'}, 403)
             return self._json({**AIRCRAFT, **aircraft_files()})
+        if self.path.split('?')[0] == '/__setup/downloads':
+            # derniers fichiers téléchargés d'une source (motif sans chemin, ex. EG_*_DS_*_XML.zip pour NATS) :
+            # ?glob=…&info → [{ name, size, mtime }] (le plus récent de chaque jeu : nom sans ses dates) ;
+            # ?glob=…&name=… → le fichier, seulement s'il suit le motif et se trouve dans Téléchargements
+            if not self._allowed():
+                return self._json({'error': 'refusé'}, 403)
+            q = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query, keep_blank_values=True)  # « &info » sans valeur
+            pattern = (q.get('glob') or [''])[0]
+            if not re.fullmatch(r'[A-Za-z0-9_*.\-]{3,80}', pattern) or '*' not in pattern:
+                return self._json({'error': 'motif invalide'}, 400)
+            latest = downloads_matching(pattern)
+            if 'info' in q:
+                return self._json({'files': [{'name': os.path.basename(p), 'size': os.path.getsize(p), 'mtime': os.path.getmtime(p)} for p in latest],
+                                   'where': [os.path.basename(d) or d for d in downloads_dirs()]})
+            name = (q.get('name') or [''])[0]
+            path = next((p for p in latest if os.path.basename(p) == name), None)
+            if not path:
+                return self._json({'error': 'fichier absent'}, 404)
+            with open(path, 'rb') as f:
+                body = f.read()
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/octet-stream')
+            self.send_header('Content-Length', str(len(body)))
+            self.send_header('Cache-Control', 'no-store')
+            self.end_headers()
+            self.wfile.write(body)
+            return None
         if self.path.split('?')[0] == '/__setup/sia-zip':
             # ZIP du SIA téléchargé : ?info → nom, taille, date ; sinon le fichier lui-même
             if not self._allowed():
@@ -516,6 +543,19 @@ def tools_inventory():
                 item['head'] = '\n'.join(lines)
         out.append(item)
     return out
+
+
+def downloads_matching(pattern):
+    """Fichiers de Téléchargements qui suivent le motif (fnmatch, sans chemin) : le plus récent de chaque jeu (nom privé
+    de ses dates AAAAMMJJ et des suffixes de doublon « (1) »), triés par nom."""
+    found = [p for d in downloads_dirs() for p in glob.glob(os.path.join(d, '*'))
+             if os.path.isfile(p) and fnmatch.fnmatch(os.path.basename(p), pattern)]
+    best = {}
+    for p in found:
+        key = re.sub(r'\s*\(\d+\)', '', re.sub(r'\d{8}', '', os.path.basename(p)))
+        if key not in best or os.path.getmtime(p) > os.path.getmtime(best[key]):
+            best[key] = p
+    return sorted(best.values(), key=os.path.basename)
 
 
 def sia_zip():

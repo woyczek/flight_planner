@@ -1215,7 +1215,9 @@
       if (S.kind === 'computed') return `<p class="row"><button type="button" class="secondary" data-mora-zone="${esc(id)}"${moraBusy ? ' disabled' : ''} data-icon="chart" title="${esc(t(['Relief Terrarium, sommets OpenStreetMap et obstacles de la base, sur l’emprise de la zone (réseau)', 'Terrarium terrain, OpenStreetMap peaks and base obstacles, over the zone extent (network)']))}">${esc(t(['Calculer la MORA de la zone', 'Compute the zone MORA', 'MORA der Zone berechnen', 'Calcular la MORA de la zona']))}</button></p><p class="mt-small">${esc(t(['Autre source de MORA : X-Plane (grille mondiale, si la source X-Plane est cochée) ; la grille calculée a la priorité.', 'Other MORA source: X-Plane (world grid, if the X-Plane source is ticked); the computed grid has priority.']))}</p>`;
       // source à fournir par l'utilisateur (NATS…) et lisible par la base : bouton de dépôt (sélecteur ouvert sur
       // Téléchargements, fichiers rangés dans data/sia/zones/<zone>/, base reconstruite) — plus de dépôt à la main
-      const drop = (S.kind === 'manual' || S.kind === 'pdf') && S.readable ? ` <button type="button" class="secondary" data-aero-drop="${esc(src)}" data-icon="upload" title="${esc(t(['Choisir les fichiers téléchargés (le sélecteur s’ouvre sur Téléchargements) : rangés dans data/sia/zones/{z}/, puis base reconstruite', 'Choose the downloaded files (the picker opens on Downloads): stored in data/sia/zones/{z}/, then database rebuilt', 'Heruntergeladene Dateien wählen (Auswahl öffnet „Downloads“): abgelegt in data/sia/zones/{z}/, dann Datenbank neu aufgebaut', 'Elegir los archivos descargados (el selector se abre en Descargas): guardados en data/sia/zones/{z}/ y base reconstruida']).replace(/\{z\}/g, id))}">${esc(t(['Déposer les fichiers…', 'Drop the files…', 'Dateien ablegen…', 'Depositar los archivos…']))}</button>` : '';
+      const drop = (S.kind === 'manual' || S.kind === 'pdf') && S.readable ? ` <button type="button" class="secondary" data-aero-drop="${esc(src)}" data-icon="upload" title="${esc(t(S.downloads ? ['Derniers ZIP de la source dans Téléchargements ({g}) ouverts, XML complets'.replace('{g}', S.downloads) + ' rangés dans data/sia/zones/{z}/, puis base reconstruite ; sans eux, choix des fichiers', 'Latest ZIPs of the source in Downloads ({g}) opened, full XMLs'.replace('{g}', S.downloads) + ' stored in data/sia/zones/{z}/, then database rebuilt; without them, file choice', 'Neueste ZIPs der Quelle in „Downloads“ ({g}) geöffnet, vollständige XML'.replace('{g}', S.downloads) + ' in data/sia/zones/{z}/ abgelegt, dann Datenbank neu aufgebaut', 'Últimos ZIP de la fuente en Descargas ({g}) abiertos, XML completos'.replace('{g}', S.downloads) + ' guardados en data/sia/zones/{z}/ y base reconstruida'] : ['Choisir les fichiers téléchargés (le sélecteur s’ouvre sur Téléchargements) : rangés dans data/sia/zones/{z}/, puis base reconstruite', 'Choose the downloaded files (the picker opens on Downloads): stored in data/sia/zones/{z}/, then database rebuilt', 'Heruntergeladene Dateien wählen (Auswahl öffnet „Downloads“): abgelegt in data/sia/zones/{z}/, dann Datenbank neu aufgebaut', 'Elegir los archivos descargados (el selector se abre en Descargas): guardados en data/sia/zones/{z}/ y base reconstruida'], {
+        z: id
+      }))}">${esc(t(S.downloads ? ['Prendre les derniers ZIP de Téléchargements', 'Take the latest ZIPs from Downloads', 'Neueste ZIPs aus „Downloads“ übernehmen', 'Tomar los últimos ZIP de Descargas'] : ['Déposer les fichiers…', 'Drop the files…', 'Dateien ablegen…', 'Depositar los archivos…']))}</button>` : '';
       return `<p class="mt-small">${esc(t(S.howto || ['', '']))}</p>${link || drop ? `<p class="row">${link}${drop}</p>` : ''}`;
     };
     const rows = z.sources.map(src => {
@@ -1709,43 +1711,81 @@
     enr57Show();
   }
   /** Téléchargement d'une source par le lanceur (tools/aero_fetch.py) ; état et résultat sous le bouton. */
-  /** Fichiers d'une source fournis par l'utilisateur (NATS…) : choisis (sélecteur ouvert sur Téléchargements), copiés dans
-   *  data/sia/zones/<zone>/ du dossier SIA autorisé, puis base reconstruite par le bloc commun (« Tout recalculer »). */
+  /** Fichiers d'une source fournis par l'utilisateur (NATS…) : les derniers ZIP de la source pris dans Téléchargements par
+   *  le lanceur (motif SOURCES[src].downloads), sinon choisis (sélecteur ouvert sur Téléchargements) ; ZIP ouverts, XML
+   *  complets gardés (différentiels, filtres d'export, métadonnées écartés), rangés dans data/sia/zones/<zone>/ du dossier
+   *  SIA autorisé, puis base reconstruite par le bloc commun (« Tout recalculer »). */
   async function aeroDrop(zone, src) {
-    const say = (m, k) => window.AppFramework?.notify?.(m, k);
-    let handles = [];
-    try {
-      if (window.showOpenFilePicker) handles = await window.showOpenFilePicker({
+    const say = (m, k) => window.AppFramework?.notify?.(m, k),
+      S = window.AeroZones?.SOURCES?.[src] || {};
+    let files = [];
+    if (S.downloads) try {
+      const H = {
+          headers: {
+            'X-SOG-Setup': '1'
+          },
+          cache: 'no-store'
+        },
+        q = `/__setup/downloads?glob=${encodeURIComponent(S.downloads)}`,
+        r = await (await fetch(`${q}&info`, H)).json();
+      for (const f of r.files || []) files.push(new File([await (await fetch(`${q}&name=${encodeURIComponent(f.name)}`, H)).blob()], f.name, {
+        lastModified: f.mtime * 1000
+      }));
+    } catch {
+      files = []; // lanceur absent ou ancien : sélecteur
+    }
+    if (!files.length) try {
+      if (window.showOpenFilePicker) files = await Promise.all((await window.showOpenFilePicker({
         multiple: true,
         startIn: 'downloads'
-      });
-      else {
-        // sans l'API (Firefox…) : sélecteur classique
-        handles = await new Promise(res => {
-          const i = Object.assign(document.createElement('input'), {
-            type: 'file',
-            multiple: true
-          });
-          i.onchange = () => res([...i.files].map(f => ({
-            getFile: async () => f
-          })));
-          i.click();
+      })).map(h => h.getFile()));
+      else files = await new Promise(res => {
+        const i = Object.assign(document.createElement('input'), {
+          type: 'file',
+          multiple: true
         });
-      }
+        i.onchange = () => res([...i.files]);
+        i.click();
+      });
     } catch {
       return; // sélection annulée
     }
-    if (!handles.length) return;
+    if (!files.length) return;
+    const keep = n => /\.xml$/i.test(n) && !/(DIFF|DELTA|export-filter|METADATA)/i.test(n),
+      out = [],
+      ignored = [];
     try {
+      for (const f of files) {
+        if (/\.zip$/i.test(f.name))
+          for (const e of await window.ZipStore.read(f)) {
+            const leaf = e.name.split('/').pop();
+            if (keep(leaf)) out.push({
+              name: leaf,
+              data: await e.bytes()
+            });
+            else if (leaf) ignored.push(leaf);
+          }
+        else if (keep(f.name)) out.push({
+          name: f.name,
+          data: await f.arrayBuffer()
+        });
+        else ignored.push(f.name);
+      }
+      if (!out.length) throw new Error(t(['aucun XML complet dans {l}', 'no full XML in {l}', 'kein vollständiges XML in {l}', 'ningún XML completo en {l}'], {
+        l: files.map(f => f.name).join(', ')
+      }));
       const dir = await folder('__sia', true);
       if (!dir) throw new Error(t(['dossier SIA non autorisé : Installation › Sources et dossiers', 'SIA folder not authorised: Installation › Sources and folders', 'SIA-Ordner nicht freigegeben: Installation › Quellen und Ordner', 'carpeta SIA no autorizada: Instalación › Fuentes y carpetas']));
-      const names = [];
-      for (const h of handles) {
-        const f = await h.getFile();
-        await writeAt(dir, `zones/${zone}/${f.name}`, await f.arrayBuffer());
-        names.push(f.name);
-      }
-      say(t(['{n} fichier(s) {s} rangé(s) dans data/sia/zones/{z}/ : {l} — reconstruction de la base…', '{n} {s} file(s) stored in data/sia/zones/{z}/: {l} — rebuilding the database…', '{n} {s}-Datei(en) in data/sia/zones/{z}/ abgelegt: {l} — Datenbank wird neu aufgebaut…', '{n} archivo(s) {s} guardado(s) en data/sia/zones/{z}/: {l} — reconstruyendo la base…']).replace('{n}', names.length).replace('{s}', t(window.AeroZones?.SOURCES?.[src]?.label || [src, src])).replace('{z}', zone).replace('{l}', names.join(', ')), 'ok');
+      for (const o of out) await writeAt(dir, `zones/${zone}/${o.name}`, o.data);
+      say(t(['{n} fichier(s) {s} rangé(s) dans data/sia/zones/{z}/ : {l}{i} — reconstruction de la base…', '{n} {s} file(s) stored in data/sia/zones/{z}/: {l}{i} — rebuilding the database…', '{n} {s}-Datei(en) in data/sia/zones/{z}/ abgelegt: {l}{i} — Datenbank wird neu aufgebaut…', '{n} archivo(s) {s} guardado(s) en data/sia/zones/{z}/: {l}{i} — reconstruyendo la base…'], {
+        n: out.length,
+        s: t(S.label || [src, src]),
+        z: zone,
+        l: out.map(o => o.name).join(', '),
+        i: ignored.length ? t([' (écartés : {l})', ' (left out: {l})', ' (ausgelassen: {l})', ' (descartados: {l})'], {
+          l: ignored.join(', ')
+        }) : ''
+      }), 'ok');
       await scanSiaFolder(false);
       renderSia();
       await new Promise(r => setTimeout(r, 50));

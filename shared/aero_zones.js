@@ -82,6 +82,7 @@
       gives: L4('espaces, balises, points, aérodromes', 'airspace, navaids, points, aerodromes', 'Lufträume, Funkfeuer, Punkte, Flugplätze', 'espacios, radioayudas, puntos, aeródromos'),
       src: 'natsData',
       link: 'https://nats-uk.ead-it.com/cms-nats/opencms/en/Publications/digital-datasets/',
+      downloads: 'EG_*_DS_*_XML.zip', // ZIP NATS (AIP, obstacles, zones drones) pris dans Téléchargements par « Déposer les fichiers… »
       howto: L4('Inscription gratuite sur le site de NATS, puis télécharger le « UK ICAO AIP Dataset » (AIXM 5.1) et le déposer dans data/sia/zones/gb/. À refaire à chaque cycle AIRAC.', 'Free registration on the NATS website, then download the “UK ICAO AIP Dataset” (AIXM 5.1) and drop it into data/sia/zones/gb/. To redo at each AIRAC cycle.', 'Kostenlose Registrierung auf der NATS-Website, dann das „UK ICAO AIP Dataset“ (AIXM 5.1) herunterladen und in data/sia/zones/gb/ ablegen. Bei jedem AIRAC-Zyklus erneut.', 'Registro gratuito en el sitio de NATS, luego descargar el «UK ICAO AIP Dataset» (AIXM 5.1) y depositarlo en data/sia/zones/gb/. A repetir en cada ciclo AIRAC.'),
       licence: 'NATS (usage personnel)',
       age: 'file'
