@@ -7,7 +7,8 @@ Suite de l'[audit du 2 octobre](AUDIT_SECURITE_2026-10-02.md). Quatre questions 
 3. comment éviter que la suite fasse du poste un **zombie** (code étranger exécuté, poste piloté de l'extérieur) ;
 4. comment préparer un **mode client/serveur**, avec les données nominatives derrière un webservice authentifié.
 
-Périmètre : `develop` au commit `e230773a` (pages `apps/`, scripts `shared/`, lanceur `tools/launch.py`,
+Périmètre : `develop` au commit `e230773a`, plus le premier lancement repensé (`43a33d89`) pour les identifiants
+(pages `apps/`, scripts `shared/`, lanceur `tools/launch.py`,
 synchronisation `tools/data_sync.py`, mise à jour `tools/update_suite.py` et `shared/suite_update.js`, `lancer.cmd` /
 `lancer.sh`). Méthode : lecture du code, traces des sources non fiables jusqu'aux points d'insertion HTML, essais du
 lanceur sur un jeu d'essai (requêtes forgées, page hostile servie depuis une autre origine). Aucune donnée réelle lue.
@@ -485,6 +486,10 @@ Recommandation : **A** d'abord, puis **B** si un usage « sans installation » e
   - `secrets/*.json` (JSON clair, copié avec le dossier : Synology, « DEFA - Copy ») ; une source de sauvegarde posée
     sur la racine l'emporte aussi (`maintenance_page.js:129` n'exclut pas `secrets/`).
   - localStorage : `missionSendKey:v1`, profil réseau.
+  - **Identifiant et mot de passe du site DEFA** : `defaCredentials:v1` est de nouveau écrit en clair depuis le
+    premier lancement repensé (`43a33d89`, `premier_lancement.html`, étape 4). Le site n'a pas d'API (feuille de route,
+    étape 4), donc ce mot de passe ne sert à rien aujourd'hui, et tout script de l'origine peut le lire. À ne plus
+    garder, ou à confier au lanceur (`secrets/users/<TRI>.json`, puis trousseau) le jour où une API existera.
   - `REMOTE_RE` accepte `https://utilisateur:jeton@…`, qui finit dans `data/.git/config` (servi, E1).
   - `INSTALL.md` propose le **mot de passe** framagit plutôt qu'un jeton limité au projet.
   - Corrections :
