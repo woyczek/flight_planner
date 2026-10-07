@@ -559,8 +559,10 @@
     if (Number.isFinite(box?.s)) return computeMoraBox(obstacleMax, box, progress);
     const all = [];
     let peaksOk = true;
-    for (const zone of [...MORA_ZONES, ...extra]) {
-      const cells = await computeMoraBox(obstacleMax, zone, (d, n, step) => progress?.(d, n, `${zone.name} — ${step}`));
+    const zones = [...MORA_ZONES, ...extra];
+    for (const [zi, zone] of zones.entries()) {
+      // progression : étape de l'emprise (d / n) et rang de l'emprise (zi / nombre) pour une jauge à deux niveaux
+      const cells = await computeMoraBox(obstacleMax, zone, (d, n, step) => progress?.(d, n, `${zone.name} — ${step}`, zi, zones.length));
       peaksOk = peaksOk && cells.peaksOk;
       all.push(...cells);
     }
@@ -1423,6 +1425,18 @@
     host.classList.add('sia-base-panel');
     host.innerHTML = `<div class="sia-base-actions"><span class="sia-base-folder"></span><button type="button" class="primary sia-base-reread" data-icon="refresh">${esc(L(opts.rereadLabel || T.reread))}</button><button type="button" class="secondary sia-base-purge" data-icon="trash">${esc(L(T.purge))}</button><label class="secondary sia-base-native" hidden>${esc(L(T.pick))}<input type="file" webkitdirectory directory multiple hidden></label></div>
       <p class="sia-base-state small"></p><div class="sia-base-progress" hidden><progress max="1" value="0"></progress><span class="sia-base-pct"></span><button type="button" class="secondary sia-base-cancel">${esc(L(T.cancel))}</button><div class="sia-base-step small"></div><div class="sia-base-stall small err" hidden></div></div><div class="sia-base-msg" aria-live="polite" data-status></div><details class="sia-base-files small" hidden><summary>${esc(L(T.files))}</summary><ul></ul></details>`;
+    // libellés des boutons repris une fois la langue de la page réglée (le bloc peut être créé avant : ils restaient en
+    // français), puis à chaque changement de langue ; l'icône du bouton est gardée (seul le nœud texte change)
+    const relabel = () => [
+      ['.sia-base-reread', opts.rereadLabel || T.reread],
+      ['.sia-base-purge', T.purge]
+    ].forEach(([sel, row]) => {
+      const b = host.querySelector(sel),
+        tn = b && [...b.childNodes].find(n => n.nodeType === 3 && n.textContent.trim());
+      if (tn) tn.textContent = L(row);
+    });
+    setTimeout(relabel);
+    window.addEventListener('repository-language-change', relabel);
     const $ = s => host.querySelector(s),
       msg = $('.sia-base-msg'),
       state = $('.sia-base-state');

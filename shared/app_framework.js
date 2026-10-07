@@ -449,7 +449,8 @@
     s.textContent = `.repo-notify>div.task{display:grid;grid-template-columns:1fr auto;gap:4px 10px;border-left-color:#6fa8ff}
 .repo-notify>div.task b{font-weight:600}.repo-notify>div.task em{font-style:normal;opacity:.8;font-variant-numeric:tabular-nums}
 .repo-notify>div.task progress{grid-column:1/-1;width:100%;height:8px;accent-color:#6fa8ff}
-.repo-notify>div.task small{grid-column:1/-1;opacity:.75;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}`;
+.repo-notify>div.task small{grid-column:1/-1;opacity:.75;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.repo-notify>div.task progress.task-sub{height:5px;opacity:.75}`;
     document.head.append(s);
   };
 
@@ -463,11 +464,12 @@
     const item = document.createElement("div"),
       esc = window.RepositoryKit.esc;
     item.className = "task";
-    item.innerHTML = `<b>${esc(title)}</b><em></em><progress></progress><small></small>`;
+    item.innerHTML = `<b>${esc(title)}</b><em></em><progress></progress><progress class="task-sub" hidden></progress><small></small>`;
     if (!quiet) box.append(item); // quiet : la page garde sa propre jauge ; la tâche garde seulement la sortie de page
     const bar = item.querySelector("progress"),
       count = item.querySelector("em"),
-      step = item.querySelector("small");
+      step = item.querySelector("small"),
+      sub = item.querySelector("progress.task-sub");
     const job = {
       title,
       /** Avancement : fait / total (total 0 : indéterminé) ; texte de l'étape en cours. */
@@ -481,6 +483,18 @@
           bar.removeAttribute("value");
           count.textContent = "";
         }
+        if (text !== undefined) step.textContent = text;
+        return job;
+      },
+      /** Seconde jauge, l'étape en cours d'une tâche en plusieurs étapes (la première : les étapes faites / total) :
+       *  fait / total de l'étape (total 0 : indéterminée), texte facultatif ; sub(null) la masque. */
+      sub(done = 0, n = 0, text) {
+        sub.hidden = done === null;
+        if (done === null) return job;
+        if (n > 0) {
+          sub.max = n;
+          sub.value = Math.min(done, n);
+        } else sub.removeAttribute("value");
         if (text !== undefined) step.textContent = text;
         return job;
       },

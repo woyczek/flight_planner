@@ -950,6 +950,7 @@
     moraPlan = null,
     moraMsg = '',
     basePanelEl = null;
+  let basePanelApi = null; // bloc commun de la base (SiaBase.panel) : reread() = « Tout recalculer »
   async function scanSiaFolder(request = false) {
     const dir = await folder('__sia', request);
     if (!dir) return (siaFolderState = null);
@@ -1504,10 +1505,19 @@
     moraBusy = true;
     moraButtons();
     try {
-      return await fn(...args);
+      await fn(...args);
+      // calcul réussi : mora.csv écrit aussitôt (l'ancien part dans _archives/) — la zone passait à 14/14 sans rien
+      // écrire, la source restait « absente » tant qu'on ne trouvait pas « Écrire mora.csv » plus bas
+      if (moraPlan && !moraPlan.written) await writeMora();
     } finally {
       moraBusy = false;
       moraButtons();
+      // résultat ou erreur aussi en notification : le message de la carte MORA est loin de la zone cliquée
+      if (moraMsg) {
+        const d = document.createElement('div');
+        d.innerHTML = moraMsg;
+        window.AppFramework?.notify?.(d.textContent.replace(/^[✓⚠✗ℹ]\s*/, ''), /mt-err/.test(moraMsg) ? 'err' : /mt-warn/.test(moraMsg) ? 'warn' : 'ok');
+      }
     }
   }
   /** MORA calculée sur l'emprise d'une zone, fusionnée avec mora.csv (cases de la zone remplacées), à écrire ensuite. */
@@ -1540,8 +1550,17 @@
           ...box,
           name: `${id}-${i + 1}`
         }, (d, n, step) => {
-          say(`<span class="mt-small">${esc(id.toUpperCase())} ${i + 1}/${boxes.length} — ${esc(step || '')} : ${d}/${n}…</span>`);
-          job?.set(d, n, step);
+          const frame = t(['cadre {i}/{n} ({s}…{N}° / {w}…{e}°)', 'frame {i}/{n} ({s}…{N}° / {w}…{e}°)', 'Rahmen {i}/{n} ({s}…{N}° / {w}…{e}°)', 'marco {i}/{n} ({s}…{N}° / {w}…{e}°)'], {
+            i: i + 1,
+            n: boxes.length,
+            s: box.s,
+            N: box.n,
+            w: box.w,
+            e: box.e
+          });
+          say(`<span class="mt-small">${esc(id.toUpperCase())} — ${esc(frame)} — ${esc(step || '')} : ${d}/${n}…</span>`);
+          job?.set(i, boxes.length, `${id.toUpperCase()} — ${frame}`);
+          job?.sub?.(d, n, `${id.toUpperCase()} — ${frame} — ${step || ''} ${d}/${n}`);
         });
         cells.push(...part);
         if (part.peaksOk === false) cells.peaksOk = false;
@@ -1813,7 +1832,8 @@
     // Bloc commun (SiaBase.panel) créé une fois, replacé à chaque rendu : ses messages restent affichés.
     basePanelEl ??= (() => {
       const el = document.createElement('div');
-      window.SiaBase.panel(el, {
+      // gardé : la construction enchaînée après l'extraction du ZIP passe par lui (même traitement que « Tout recalculer »)
+      basePanelApi = window.SiaBase.panel(el, {
         rereadLabel: ['Tout recalculer', 'Recompute all', 'Alles neu berechnen', 'Recalcular todo'],
         onLoaded: () => baseChanged(true),
         onPurged: () => baseChanged(false)
@@ -1948,6 +1968,12 @@
     renderSia();
     renderVersions();
     renderDeps();
+    // XML extraits : base reconstruite aussitôt, par le même traitement que « Tout recalculer » (l'extraction seule
+    // laissait la base vide : rien dans le studio ni les cartes tant qu'on ne trouvait pas le bouton)
+    if (/mt-ok/.test(extractMsg)) {
+      await new Promise(r => setTimeout(r, 50)); // bloc redessiné
+      basePanelApi?.reread(true);
+    }
   }
   async function archiveOld() {
     const f = siaFolderState;
@@ -2099,9 +2125,10 @@
         text = mf ? await mf.file.text() : '';
       // théâtres couverts, plus les emprises des missions du registre situées ailleurs (relief et sommets seulement : pas d'obstacles hors AIXM)
       const extra = window.SiaBase.moraZonesOfMissions?.((await regIndex())?.missions || []) || [];
-      const cells = await window.SiaBase.computeMoraGrid(b.obstacleMax, {}, (d, n, step) => {
-        say(`<span class="mt-small">${esc(step)} : ${d}/${n}…</span>`);
-        job?.set(d, n, step);
+      const cells = await window.SiaBase.computeMoraGrid(b.obstacleMax, {}, (d, n, step, zi = 0, zn = 0) => {
+        say(`<span class="mt-small">${zn ? `${zi + 1}/${zn} — ` : ''}${esc(step)} : ${d}/${n}…</span>`);
+        if (zn) job?.set(zi, zn, step);
+        job?.sub?.(d, n, `${zn ? `${zi + 1}/${zn} — ` : ''}${step} ${d}/${n}`);
       }, extra);
       cells.extraZones = extra.map(z => `${z.name} (${z.s}…${z.n}° / ${z.w}…${z.e}°)`);
       const before = new Map((text ? window.SiaBase.parseMora(text) : []).map(c => [c.lat + '|' + c.lon, c]));
@@ -2155,8 +2182,11 @@
       const old = await fileAt(dir, 'mora.csv');
       if (old) await writeAt(dir, `_archives/mora_${moraPlan.previousCycle || new Date(old.lastModified).toISOString().slice(0, 10)}.csv`, await old.arrayBuffer());
       await writeAt(dir, 'mora.csv', moraPlan.csv);
+      const key = c => `${Math.floor(c.lat)}|${Math.floor(c.lon)}`,
+        inCsv = new Set(moraPlan.cells.map(key)),
+        xp = ((await window.SiaBase.get())?.moraCells || []).filter(c => c.src === 'xplane' && !inCsv.has(key(c)));
       const patched = await window.SiaBase.patch({
-        moraCells: moraPlan.cells
+        moraCells: moraPlan.cells.concat(xp) // cases d'X-Plane hors mora.csv gardées
       });
       moraPlan.written = true;
       moraMsg = pill('ok', t(['mora.csv écrit{b} — à committer', 'mora.csv written{b} — commit it'], {
