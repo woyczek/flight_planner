@@ -16,9 +16,10 @@ Usage : python tools/launch.py [--port 8000] [--page apps/…] [--no-browser] [-
 Arrêt : fermer la fenêtre, ou Ctrl+C.
 """
 import argparse, datetime, fnmatch, glob, http.server, io, json, os, re, secrets, shutil, socket, subprocess, sys, tempfile, threading, time
-import urllib.parse, urllib.request, webbrowser, zipfile
+import posixpath, urllib.parse, urllib.request, webbrowser, zipfile
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-import data_sync  # synchronisation git du pool de données (bouton « Synchroniser »)
+import data_sync  # synchronisation git du pool de données (bouton « Synchroniser ») ; git durci (data_sync.git_cmd)
+import data_guard  # .js de data/ : servis seulement s'ils suivent le format des fichiers de données
 import aero_fetch  # données aéronautiques d'autres pays (Paramètres › Maintenance › Données aéronautiques)
 
 ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
@@ -71,8 +72,15 @@ def has_data():
     return os.path.isfile(os.path.join(DATA, 'data_tree.js'))
 
 
+# archive des données : jamais extraits — un .git/ reçu ferait lancer une commande par git (core.fsmonitor, crochets),
+# un exécutable n'a rien à faire dans des données
+SKIP_EXT = ('.exe', '.dll', '.xpl', '.so', '.dylib', '.bat', '.cmd', '.com', '.scr', '.ps1', '.psm1', '.vbs', '.vbe',
+            '.wsf', '.hta', '.lnk', '.msi', '.jar', '.sh', '.py', '.pyw')
+
+
 def extract_data(z, quiet=False):
-    """Archive des données (.zip contenant data_tree.js) extraite dans data/ ; faux si ce n'en est pas une."""
+    """Archive des données (.zip contenant data_tree.js) extraite dans data/ ; faux si ce n'en est pas une. Dossiers
+    .git et exécutables ignorés (SKIP_EXT)."""
     try:
         with zipfile.ZipFile(z) as zf:
             marker = next((n for n in zf.namelist() if n.endswith('data_tree.js')), None)
@@ -81,8 +89,13 @@ def extract_data(z, quiet=False):
             prefix = marker[:-len('data_tree.js')]
             if not quiet:
                 say(f'  Archive des données : {os.path.basename(z)} → data/')
+            skipped = []
             for info in zf.infolist():
                 if info.is_dir() or not info.filename.startswith(prefix):
+                    continue
+                parts = info.filename[len(prefix):].replace('\\', '/').split('/')
+                if any(x.lower().rstrip('. ') == '.git' for x in parts) or parts[-1].lower().rstrip('. ').endswith(SKIP_EXT):
+                    skipped.append(info.filename[len(prefix):])
                     continue
                 target = os.path.normpath(os.path.join(DATA, info.filename[len(prefix):]))
                 if not target.startswith(DATA + os.sep):
@@ -90,6 +103,8 @@ def extract_data(z, quiet=False):
                 os.makedirs(os.path.dirname(target), exist_ok=True)
                 with zf.open(info) as src, open(target, 'wb') as dst:
                     shutil.copyfileobj(src, dst)
+            if skipped:
+                say(f'  {len(skipped)} fichier(s) ignoré(s) (dossier .git ou exécutable) : ' + ', '.join(skipped[:5]) + ('…' if len(skipped) > 5 else ''))
             return True
     except (zipfile.BadZipFile, OSError):
         return False
@@ -108,7 +123,7 @@ def git_env():
 def clone(user=None, secret=None, remember=False, url=None):
     """Clone du dépôt de données ; identifiants : ceux de la page (le temps du clone), sinon ceux que Git connaît.
     Retourne (ok, journal)."""
-    git = shutil.which('git')
+    git = data_sync.git_exe()
     if not git:
         return False, 'Git n’est pas installé (https://git-scm.com) : utilisez l’archive des données.'
     if os.path.isdir(DATA) and os.listdir(DATA):
@@ -119,9 +134,9 @@ def clone(user=None, secret=None, remember=False, url=None):
     if not url:
         return False, 'Adresse du dépôt de données à préciser.'
     if not data_sync.REMOTE_RE.match(url):
-        return False, 'Adresse du dépôt invalide.'
+        return False, data_sync.REMOTE_HELP
     env = git_env()
-    cmd = [git]
+    cmd = data_sync.git_cmd()
     if user and secret:
         # assistant d'identifiants le temps de cette commande : rien n'est écrit dans .git/config ni dans l'adresse
         env.update(DEFA_GIT_U=user, DEFA_GIT_P=secret)
@@ -129,7 +144,7 @@ def clone(user=None, secret=None, remember=False, url=None):
     if run([git, 'lfs', 'version'], capture_output=True) == 0:
         run([git, 'lfs', 'install'], capture_output=True)
     try:
-        r = subprocess.run(cmd + ['clone', url, DATA], cwd=ROOT, env=env, capture_output=True, text=True,
+        r = subprocess.run(cmd + ['clone', '--', url, DATA], cwd=ROOT, env=env, capture_output=True, text=True,
                            encoding='utf-8', errors='replace', timeout=1800)
     except (OSError, subprocess.SubprocessError) as e:
         return False, str(e)
@@ -149,11 +164,11 @@ def clone(user=None, secret=None, remember=False, url=None):
 
 def ensure_data():
     say('1. Données (dossier data/)')
-    git = shutil.which('git')
+    git = data_sync.git_exe()
     if has_data():
         if git and os.path.isdir(os.path.join(DATA, '.git')):
             say('  Données présentes : mise à jour (git pull)…')
-            if run([git, '-C', DATA, 'pull', '--ff-only'], timeout=180, env=git_env()) != 0:
+            if run(data_sync.git_cmd('-C', DATA, 'pull', '--ff-only'), timeout=180, env=git_env()) != 0:
                 say('  Mise à jour impossible pour l’instant (réseau, accès ou modifications locales) : données actuelles gardées.')
         else:
             say('  Données présentes.')
@@ -188,6 +203,25 @@ def sample_data():
     return r.returncode == 0 and has_data(), log or ('Jeu d’essai installé.' if r.returncode == 0 else 'Échec du jeu d’essai.')
 
 
+# ---- ce que le serveur ne sert pas (docs/technique/AUDIT_SECURITE_2026-10-07.md) : secrets/, data/local/ (copie du
+# stockage du navigateur), fichiers et dossiers « . » (.git, .defa_site.json…) sauf le repère .defa_instance et, dans le
+# .git de la suite, ce que lit le pied de page (HEAD, références, objets : numéro de commit) ; listes de dossiers
+GIT_FOOTER = re.compile(r'HEAD|packed-refs|refs/[\w./-]+|objects/[0-9a-f]{2}/[0-9a-f]{38}')
+# fichiers de data/ qu'un navigateur exécuterait s'ils étaient ouverts directement : servis en bac à sable
+SANDBOXED = ('.html', '.htm', '.xhtml', '.svg', '.xml', '.xsl', '.xslt')
+
+
+def hidden(parts):
+    """Vrai si un chemin (segments depuis la racine servie, minuscules) n'est pas à servir."""
+    if not parts:
+        return False
+    if parts[0] == 'secrets' or parts[:2] == ['data', 'local']:
+        return True
+    if parts[0] == '.git':
+        return not GIT_FOOTER.fullmatch('/'.join(parts[1:]))
+    return any(x.startswith('.') and not (i == len(parts) - 1 and x == '.defa_instance') for i, x in enumerate(parts))
+
+
 # ---- interface de la page de premier lancement (/__setup/…) : seulement depuis la page servie ici (adresse
 # 127.0.0.1:<port> exigée, en-tête X-SOG-Setup : une autre page web ne peut pas l'envoyer sans pré-vérification CORS,
 # à laquelle ce serveur ne répond pas)
@@ -203,8 +237,75 @@ class Setup(http.server.SimpleHTTPRequestHandler):
         (« DNS rebinding ») envoie son propre nom et se voit refuser tout le dossier, données comprises."""
         return self.headers.get('Host') in (f'127.0.0.1:{self.port}', f'localhost:{self.port}', f'[::1]:{self.port}')
 
+    def _same_origin(self):
+        """Requête de la suite elle-même : en-tête Sec-Fetch-Site du navigateur « same-origin » ou « none » (adresse
+        tapée, favori, ouverture par le lanceur) ; absent pour un programme (curl, le lanceur). Un autre site (même
+        une autre copie sur un autre port) ne lit rien : sans ce contrôle, <script src="http://127.0.0.1:8000/data/…">
+        depuis n'importe quelle page web lisait les données (window.DATA_TREE, DEFA_REFERENCE…)."""
+        return self.headers.get('Sec-Fetch-Site') in (None, 'same-origin', 'none')
+
+    def _refused(self):
+        """Raison de refuser la requête ('' : servie) — hôte, origine, chemin caché."""
+        if not self._local_host():
+            return 'hôte'
+        if not self._same_origin():
+            return 'autre site'
+        path = self.path.split('?', 1)[0].split('#', 1)[0]
+        if path.startswith('/__setup/'):
+            return ''
+        rel = posixpath.normpath(urllib.parse.unquote(path))
+        parts = [x for x in rel.split('/') if x not in ('', '.')]
+        if any(':' in x or '\\' in x for x in parts):
+            return 'chemin'  # flux NTFS (fichier::$DATA), séparateur Windows
+        if hidden([x.lower().rstrip('. ') for x in parts]):  # Windows ignore la casse et les points ou espaces finaux
+            return 'chemin'
+        # même contrôle sur le chemin réel (noms courts 8.3, liens, dossier --data) : ce qui est réellement lu
+        real = os.path.normcase(os.path.realpath(self.translate_path(self.path)))
+        for base, prefix in ((DATA, ['data']), (ROOT, [])):
+            b = os.path.normcase(os.path.realpath(base))
+            if real == b or real.startswith(b + os.sep):
+                rest = [x for x in real[len(b):].split(os.sep) if x]
+                if hidden(prefix + rest):
+                    return 'chemin'
+                break
+        return ''
+
+    def _deny(self, why):
+        if why == 'chemin':
+            return self._json({'error': 'introuvable'}, 404)
+        if why == 'autre site' and self.headers.get('Sec-Fetch-Mode') == 'navigate':
+            # lien suivi depuis un autre site (messagerie web, forum…) : explication et lien vers l'accueil seulement,
+            # jamais vers l'adresse demandée (ses paramètres viennent de l'autre site)
+            body = ('<!doctype html><meta charset="utf-8"><title>SOG</title><body style="font:16px system-ui;margin:3em">'
+                    '<p>Page de la suite ouverte depuis un autre site : refusée, pour que ce site ne puisse rien lire ni '
+                    'déclencher.<br><i>Suite page opened from another website: refused.</i></p>'
+                    '<p><a href="/">Ouvrir l’accueil de la suite · Open the suite home page</a></p>').encode('utf-8')
+            self.send_response(403)
+            self.send_header('Content-Type', 'text/html; charset=utf-8')
+            self.send_header('Content-Length', str(len(body)))
+            self.send_header('Cache-Control', 'no-store')
+            self.end_headers()
+            self.wfile.write(body)
+            return None
+        return self._json({'error': 'refusé'}, 403)
+
     def _allowed(self):
-        return self._local_host() and (self.headers.get('X-SOG-Setup') == '1' or self.headers.get('X-DEFA-Setup') == '1')
+        return (self._local_host() and self._same_origin()
+                and (self.headers.get('X-SOG-Setup') == '1' or self.headers.get('X-DEFA-Setup') == '1'))
+
+    def list_directory(self, path):
+        """Pas de liste de dossier (contenu de data/, de secrets/… : rien à découvrir) ; index.html servi s'il existe."""
+        self.send_error(404)
+        return None
+
+    def _data_script(self):
+        """Chemin d'un .js du dossier de données, '' sinon."""
+        path = self.path.split('?', 1)[0].split('#', 1)[0]
+        if not path.lower().endswith('.js'):
+            return ''
+        real = os.path.realpath(self.translate_path(self.path))
+        b = os.path.normcase(os.path.realpath(DATA))
+        return real if os.path.normcase(real).startswith(b + os.sep) else ''
 
     def translate_path(self, path):
         """/data/… : dossier de données choisi (--data), s'il n'est pas celui de la suite."""
@@ -226,6 +327,13 @@ class Setup(http.server.SimpleHTTPRequestHandler):
             self.send_header('Clear-Site-Data', '"cache"')
             Setup.purge = False
         self.send_header('X-Content-Type-Options', 'nosniff')
+        # rien d'ici n'est utilisable par une autre origine : ni encadré (« Synchroniser » cliqué à l'insu du pilote),
+        # ni chargé comme script ou image par un autre site (en plus du contrôle Sec-Fetch-Site)
+        self.send_header('X-Frame-Options', 'SAMEORIGIN')
+        self.send_header('Cross-Origin-Resource-Policy', 'same-origin')
+        path = (self.path or '').split('?', 1)[0].lower()
+        sandbox = path.startswith('/data/') and path.endswith(SANDBOXED)
+        self.send_header('Content-Security-Policy', ("sandbox; " if sandbox else '') + "frame-ancestors 'self'")
         # fichier versionné par son empreinte (?v=…, tools/bump_versions.py : elle change avec le contenu) : gardé tel
         # quel, sans revalidation — une quarantaine d'allers-retours de moins par page, qui retardaient la fin de
         # l'analyse et laissaient voir la page à moitié construite ; le reste (pages, données) : revalidé à chaque fois,
@@ -250,14 +358,29 @@ class Setup(http.server.SimpleHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body)
 
+    def _data_script_refused(self):
+        """Raison de refuser un .js de data/ hors format (tools/data_guard.py) ; '' s'il est servi."""
+        js = self._data_script()
+        if not js or not os.path.isfile(js):
+            return ''
+        ok, why = data_guard.check_file(js)
+        if ok:
+            return ''
+        say(f'  ⚠ Fichier de données refusé (pas au format des données, voir tools/data_guard.py) : {js} — {why}')
+        return why
+
     def do_HEAD(self):
-        if not self._local_host():
-            return self._json({'error': 'refusé'}, 403)
+        why = self._refused()
+        if why:
+            return self._deny(why)
         return super().do_HEAD()
 
     def do_GET(self):
-        if not self._local_host():
-            return self._json({'error': 'refusé'}, 403)
+        why = self._refused()
+        if why:
+            return self._deny(why)
+        if self._data_script_refused():
+            return self._json({'error': 'fichier de données refusé (format)'}, 403)
         # index du pool demandés : refaits d'abord (fichiers changés depuis le démarrage : git, autre poste, éditeur),
         # leurs signatures doivent dire vrai — une page sert sa copie d'un fichier tant que sa signature n'a pas changé
         idx = self.path.split('?')[0]
@@ -271,7 +394,7 @@ class Setup(http.server.SimpleHTTPRequestHandler):
         if self.path.split('?')[0] == '/__setup/status':
             if not self._allowed():
                 return self._json({'error': 'refusé'}, 403)
-            git = shutil.which('git')
+            git = data_sync.git_exe()
             return self._json({'server': True, 'root': ROOT, 'git': bool(git), 'data': has_data(),
                                'dataGit': os.path.isdir(os.path.join(DATA, '.git')), 'dataRepo': data_repo_url()})
         if self.path.split('?')[0] == '/__setup/sync-remote':
@@ -334,8 +457,8 @@ class Setup(http.server.SimpleHTTPRequestHandler):
                 return self._json({'error': 'refusé'}, 403)
             q = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query, keep_blank_values=True)  # « &info » sans valeur
             pattern = (q.get('glob') or [''])[0]
-            if not re.fullmatch(r'[A-Za-z0-9_*.\-]{3,80}', pattern) or '*' not in pattern:
-                return self._json({'error': 'motif invalide'}, 400)
+            if pattern not in download_patterns():  # motifs des sources déclarées seulement, jamais « *.* »
+                return self._json({'error': 'motif inconnu'}, 400)
             latest = downloads_matching(pattern)
             if 'info' in q:
                 return self._json({'files': [{'name': os.path.basename(p), 'size': os.path.getsize(p), 'mtime': os.path.getmtime(p)} for p in latest],
@@ -399,8 +522,9 @@ class Setup(http.server.SimpleHTTPRequestHandler):
                 f.write(body)
             return self._json({'ok': True, 'file': f'docs/technique/perf/runs/{name}.json'})
         if path == '/__setup/sync-remote':
-            # dépôt git de synchronisation de data/ (premier lancement) : vérifié (git ls-remote), enregistré si demandé ;
-            # jamais bloquant : le compte rendu dit seulement si le dépôt répond
+            # dépôt git de synchronisation de data/ (premier lancement) : vérifié (git ls-remote), enregistré si demandé
+            # et si c'est le dépôt actuel ou celui de la configuration (autre dépôt : dans un terminal) ; jamais
+            # bloquant : le compte rendu dit seulement si le dépôt répond
             try:
                 a = json.loads(body or b'{}')
             except ValueError:
@@ -408,7 +532,7 @@ class Setup(http.server.SimpleHTTPRequestHandler):
             url = str(a.get('url') or '').strip()
             r = {'check': data_sync.check_remote(url)}
             if a.get('save'):
-                r['saved'] = data_sync.set_remote(DATA, url)
+                r['saved'] = data_sync.set_remote(DATA, url, allowed=[data_repo_url()])
             return self._json(r)
         if path == '/__setup/sync':
             # un passage de synchronisation (commit au nom du trigramme, fusion fiche par fiche, envoi), un à la fois
@@ -544,6 +668,22 @@ def tools_inventory():
                 item['head'] = '\n'.join(lines)
         out.append(item)
     return out
+
+
+_patterns = []
+
+
+def download_patterns():
+    """Motifs de fichiers que la page peut demander à Téléchargements : ceux des sources déclarées dans
+    shared/aero_zones.js (« downloads: 'EG_*_DS_*_XML.zip' »), lus une fois."""
+    if not _patterns:
+        try:
+            with open(os.path.join(ROOT, 'shared', 'aero_zones.js'), encoding='utf-8') as f:
+                found = re.findall(r"\bdownloads:\s*'([A-Za-z0-9_*.\-]{3,80})'", f.read())
+        except OSError:
+            found = []
+        _patterns.append({x for x in found if '*' in x and x.strip('*.') and not re.fullmatch(r'[*.]+', x)})
+    return _patterns[0]
 
 
 def downloads_matching(pattern):

@@ -13,6 +13,7 @@ La suite «SO Group Virtual» reúne en el navegador todo lo que el piloto neces
 Todas las páginas comparten las mismas referencias: una barra lateral a la izquierda, una cabecera arriba, a veces pestañas y, después, bloques.
 Este capítulo describe estos elementos comunes; los capítulos siguientes detallan cada página.
 La página de inicio (`index.html`) muestra las aplicaciones en forma de tarjetas y la versión de la suite.
+Abra la suite con el lanzador o un marcador: una página de la suite abierta desde un enlace de otro sitio (correo web, foro…) se rechaza, para que ese sitio no pueda leer ni activar nada en ella.
 
 ### La barra lateral
 
@@ -447,6 +448,8 @@ Tres posibilidades:
   HTTPS `https://hôte/compte/dépôt.git` (identificadores registrados en Git). La tarjeta muestra el repositorio actual;
   «Comprobar» dice si responde desde este equipo (30 s como máximo), «Guardar» lo convierte en el repositorio remoto de `data/`
   (si aún no hay datos, la dirección sirve para obtenerlos). Nada es bloqueante: un repositorio que no responde se señala,
+  Aquí solo se guarda el repositorio ya configurado (o el de la configuración de la suite); para otro repositorio,
+  el comando se escribe en un terminal (`git -C data remote set-url origin <dirección>`), para que ninguna página pueda enviar los datos a otro lugar. Nunca ponga una contraseña ni un token en la dirección.
   y la suite funciona sin compartir. Detalles: [sincronización](../technique/SYNCHRONISATION.md).
 - Una vez presentes los datos, la tarjeta opcional «Registro de vuelos» ofrece «Registro (.html)…»: la página «Log des vols» del sitio de la aerolínea, guardada, rellena los pilotos y las aeronaves de la referencia (ayuda a la introducción).
 

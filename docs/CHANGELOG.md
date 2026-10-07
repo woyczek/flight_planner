@@ -217,6 +217,40 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   Mont Blanc, le Cervin, le Dru, l'Ossau et le Piton des Neiges). Les `mora.csv` déjà calculés gardent l'ancienne
   valeur : recalculer la zone (Paramètres › Maintenance › Données aéronautiques).
 
+### Sécurité
+
+Suite de l'[audit du 7 octobre](technique/AUDIT_SECURITE_2026-10-07.md), lots 1 à 3.
+
+- **Lanceur fermé aux autres sites** : une page web quelconque lisait les fichiers `data/*.js` (trigrammes, vols,
+  configuration) par `<script src="http://127.0.0.1:8000/…">`. Toute requête venue d'un autre site (en-tête
+  `Sec-Fetch-Site`) est refusée, navigations comprises (page explicative et lien vers l'accueil). S'y ajoutent
+  `Cross-Origin-Resource-Policy`, `X-Frame-Options` et `frame-ancestors`.
+- **Plus rien de privé servi** : `secrets/` (clé IVAO, en clair), `data/local/`, fichiers et dossiers « . » (`.git` :
+  seulement ce que lit le pied de page), listes de dossiers. Contrôle sur le chemin demandé et sur le chemin réel
+  (casse, points finaux, flux NTFS, noms courts, liens).
+- **Fichiers de données exécutés : format imposé** (`tools/data_guard.py`). Un `.js` de `data/` n'est servi, et commité
+  par « Synchroniser », que s'il suit le format des fichiers de données (gabarit de `datafile.py` ou
+  `window.NOM = littéral;`, exportations en liste fermée). Les fichiers HTML, SVG ou XML de `data/` sont servis en bac à
+  sable.
+- **Téléchargements** : la page ne demande plus qu'un motif déclaré par une source (`aero_zones.js`). Avant, `*.*`
+  rendait tout le dossier.
+- **Dépôt distant de `data/`** : la page n'enregistre plus que le dépôt en place ou celui de la configuration. Un autre
+  dépôt se règle dans un terminal, sinon une page piégée pouvait faire envoyer toutes les données ailleurs. L'adresse
+  ne peut plus contenir de mot de passe ou de jeton, ni commencer par « - ».
+- **Git durci** : git pris par son chemin absolu hors du dossier de la suite ; `core.fsmonitor=false`,
+  `protocol.ext.allow=never`, `submodule.recurse=false` sur chaque appel ; `--` devant les adresses. `lancer.cmd` ne
+  lance plus un `py` ou un `git` déposé dans le dossier (`NoDefaultCurrentDirectoryInExePath`).
+- **Archive des données** : ni dossier `.git` (commande lancée par git) ni exécutable n'est extrait.
+- **XSS** :
+  - couleur d'une catégorie de disponibilité ou d'un groupe, et couleurs des modèles d'ODV : vraies couleurs
+    seulement (`RepositoryKit.cssColor`) ;
+  - statut d'une mission dans le registre ;
+  - profil de performance (nom, indicatif, immatriculation d'un appareil SimBrief, d'un `.lnmperf` ou d'un OFP) ;
+  - altitude-densité du CR ;
+  - version distante dans le badge de mise à jour (validée et échappée).
+- **Aide** : `?doc=` limité aux documents de `docs/` (un document d'un autre site s'y chargeait) ; liens limités à
+  `http(s)`, plus de `javascript:` ; messages à la page de la suite seulement.
+
 ## [4.9.0] — 2026-10-06
 
 Données aéronautiques d'autres pays : lecteurs AIXM 5.1, GeoJSON, OpenAir et X-Plane, téléchargements (openAIP, FAA,

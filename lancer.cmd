@@ -3,6 +3,9 @@ rem Lanceur de la suite DEFA (Windows) : double-cliquer.
 rem Trouve Python (l'installe au besoin), recupere les donnees (data/), demarre le serveur local et ouvre la page
 rem des parametres. Tout le reste est dans tools\launch.py.
 setlocal
+rem programmes (py, python, git) cherches dans le PATH seulement, jamais dans ce dossier : un py.cmd ou un git.exe
+rem depose ici ne serait pas lance
+set "NoDefaultCurrentDirectoryInExePath=1"
 cd /d "%~dp0"
 chcp 65001 >nul
 

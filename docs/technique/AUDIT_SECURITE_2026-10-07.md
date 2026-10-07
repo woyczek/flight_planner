@@ -53,6 +53,30 @@ fichiers `data/*.js` par simple `<script src>`.
 | [M6](#m6) | Moyen | Secrets en clair (fichiers, localStorage), identifiants possibles dans l'adresse du dépôt | évasion |
 | [F](#faible) | Faible | SSH `accept-new`, `--` manquant devant les adresses, `git lfs install` global, aide en `postMessage('*')`… | — |
 
+## État des corrections
+
+**Lots 1 à 3 faits le 7 octobre** (détail : [changelog](../CHANGELOG.md), section Sécurité du « Non publié »).
+Vérifiés par la même page hostile, des requêtes forgées et le chargement des 60 pages de la suite.
+
+| Constat | État |
+|---|---|
+| C2, E1, E2, E3, E5, M5 | **corrigés** |
+| M1 | **corrigé** (couleurs, statut, profil de performance, aide, altitude-densité, couleurs d'ODV) |
+| C1 | **palliatif** : `.js` de `data/` servis et commités seulement au format des données (`tools/data_guard.py`) ; le fond (données en JSON, lot 6) reste à faire |
+| C3 | **corrigé** à l'extraction (ni `.git` ni exécutable) ; git durci (`core.fsmonitor`, `ext::`, sous-modules) |
+| M2 | **partiel** : protection contre l'encadrement en place ; la CSP qui ferme les sorties (`connect-src`) reste au lot 4 |
+| M6 | **partiel** : plus de mot de passe ni de jeton dans l'adresse du dépôt, `secrets/` plus servi ; secrets toujours en clair sur le disque et dans le stockage du navigateur (lot 8) |
+| E4, E6, E7, M3, M4 | à faire (lots 4, 5, 7, 9) |
+
+Choix faits en corrigeant :
+
+- **Crochets git conservés.** `core.hooksPath` n'est pas neutralisé : les crochets de Git LFS en ont besoin pour
+  envoyer les fichiers. Le danger venait du `.git/` reçu dans une archive, qui n'est plus extrait.
+- **Navigations venues d'un autre site refusées.** Le lanceur rend une page explicative avec un lien vers l'accueil,
+  jamais vers l'adresse demandée.
+- **Changement de dépôt distant par terminal seulement.** La page n'enregistre que le dépôt en place ou celui de la
+  configuration.
+
 ## Qui attaque
 
 | Attaquant | Ce qu'il contrôle | Constats qui le servent |

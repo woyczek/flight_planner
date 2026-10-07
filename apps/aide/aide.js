@@ -23,7 +23,7 @@
   // dans la fenêtre d'aide d'une autre page (cadre de shared/repository_nav.js, openHelp) : pas d'en-tête ; la fenêtre
   // est prévenue de l'adresse lue (bouton « ↗ ») et fermée par Échap
   const FRAMED = document.documentElement.hasAttribute('data-help-frame');
-  const tell = msg => FRAMED && window.parent.postMessage(msg, '*');
+  const tell = msg => FRAMED && window.parent.postMessage(msg, location.origin); // la page de la suite qui encadre l'aide, seulement
   if (FRAMED) document.addEventListener('keydown', e => {
     if (e.key === 'Escape' && !e.defaultPrevented) tell({
       repoHelp: 'close'
@@ -63,7 +63,7 @@
   const loadBundle = () => bundle ||= new Promise(res => {
     if (window.DOC_BUNDLE) return res(window.DOC_BUNDLE);
     const sc = document.createElement('script');
-    sc.src = new URL('docs_bundle.js?v=e5d47e1a', HERE).href;
+    sc.src = new URL('docs_bundle.js?v=97547188', HERE).href;
     sc.onload = () => res(window.DOC_BUNDLE || {});
     sc.onerror = () => res({});
     document.head.append(sc);
@@ -101,7 +101,7 @@
     const u = new URL(href, new URL(from, DOCS));
     const rel = u.href.startsWith(DOCS.href) ? u.href.slice(DOCS.href.length).replace(/^(en|de|es)\//, '') : '';
     if (rel && /\.md$/i.test(u.pathname)) return `?doc=${encodeURIComponent(rel.split('#')[0])}${u.hash}`;
-    return u.href;
+    return /^https?:$/.test(u.protocol) ? u.href : '#'; // ni javascript:, ni data:, ni blob:
   };
   const render = (md, name) => window.DocMarkdown.render(md, {
     link: h => link(h, name),
@@ -152,6 +152,9 @@
   let shown = '', // fichier affiché (langue comprise)
     current = INDEX; // document affiché (sans langue)
   async function show(name, hash = '') {
+    // un document de docs/ seulement (chemin relatif .md) : ?doc=https://… chargeait le texte d'un autre site, dont
+    // les liens s'ouvraient ensuite dans la suite
+    if (!/^(?:[\w-]+\/)*[\w.-]+\.md$/i.test(String(name || '')) || /(?:^|\/)\.\.?\//.test(name)) name = INDEX;
     tell({
       repoHelp: 'at',
       href: location.href

@@ -289,7 +289,7 @@
       if (!tracker && !density) return;
       const block = document.createElement('div');
       block.id = 'networkTraceReport';
-      block.innerHTML = `<h3>Compléments opérationnels</h3><div class="meta">${density ? `<div class="box"><span>Altitude-densité</span>${density}</div>` : ''}${safeTracker ? `<div class="box"><span>Trace réseau</span><a href="${safeTracker.replace(/"/g,'&quot;')}" target="_blank" rel="noopener">Ouvrir la trace</a></div>` : ''}</div>`;
+      block.innerHTML = `<h3>Compléments opérationnels</h3><div class="meta">${density ? `<div class="box"><span>Altitude-densité</span>${window.RepositoryKit.esc(density)}</div>` : ''}${safeTracker ? `<div class="box"><span>Trace réseau</span><a href="${safeTracker.replace(/"/g,'&quot;')}" target="_blank" rel="noopener">Ouvrir la trace</a></div>` : ''}</div>`;
       report.append(block);
     });
     form.addEventListener('input', syncReport);

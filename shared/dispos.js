@@ -224,16 +224,33 @@
   };
 
   // ---- configuration (fichier partagé, sinon défaut ; dernière lecture gardée : connue dès le chargement)
-  let cfg = K?.store?.json(CACHE, null) || DEFAULT;
+  /** Couleurs des catégories et des groupes réduites à de vraies couleurs : le fichier est partagé (dépôt de données),
+   *  une « couleur » piégée sortait de l'attribut style des grilles (XSS, audit du 7 octobre 2026). */
+  const clean = c => c && {
+    ...c,
+    ...(Array.isArray(c.categories) ? {
+      categories: c.categories.map(x => x && typeof x === 'object' ? {
+        ...x,
+        couleur: K.cssColor(x.couleur, '#BFBFBF')
+      } : x)
+    } : {}),
+    ...(Array.isArray(c.groupes) ? {
+      groupes: c.groupes.map(x => x && typeof x === 'object' && 'couleur' in x ? {
+        ...x,
+        couleur: K.cssColor(x.couleur, '#BFBFBF')
+      } : x)
+    } : {})
+  };
+  let cfg = clean(K?.store?.json(CACHE, null)) || DEFAULT;
   const config = () => cfg;
   async function load(fresh = false) {
     const v = await A()?.readData?.(CONFIG, {
       fresh
     }).catch(() => null);
-    cfg = v?.categories?.length ? {
+    cfg = v?.categories?.length ? clean({
       ...DEFAULT,
       ...v
-    } : DEFAULT;
+    }) : DEFAULT;
     K?.store?.setJson(CACHE, cfg);
     window.dispatchEvent(new CustomEvent('suite-dispos-config', {
       detail: cfg
@@ -489,7 +506,10 @@
     defense_perso: 'D-'
   };
   const code = c => c?.lettre || (c?.odv?.length === 1 ? c.odv[0] : SHORT[c?.id]) || c?.odv?.[0] || '';
-  const color = c => window.RepositoryNav?.chartColor?.(c?.couleur || '#BFBFBF') || c?.couleur || '#BFBFBF';
+  const color = c => {
+    const v = K.cssColor(c?.couleur, '#BFBFBF');
+    return window.RepositoryNav?.chartColor?.(v) || v;
+  };
   /** Libellé court (palettes) : sans le nom du groupe en tête ni la précision entre parenthèses, mots longs abrégés. */
   function shortLabel(c) {
     const full = label(c.label),

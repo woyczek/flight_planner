@@ -13,6 +13,7 @@ The “SO Group Virtual” suite brings together in the browser everything a pil
 All pages share the same landmarks: a side bar on the left, a header at the top, sometimes tabs, then blocks.
 This chapter describes these common elements; the following chapters describe each page in detail.
 The home page (`index.html`) lists the applications as cards and shows the version of the suite.
+Open the suite from the launcher or a bookmark: a suite page opened from a link on another website (webmail, forum…) is refused, so that this website can neither read nor trigger anything in it.
 
 ### The side bar
 
@@ -447,6 +448,8 @@ Three options:
   HTTPS `https://hôte/compte/dépôt.git` (credentials saved in Git). The card shows the current repository;
   “Check” tells you whether it answers from this computer (30 s at most), “Save” makes it the remote repository of `data/`
   (with no data yet, the address is used to fetch them). Nothing is blocking: a repository that does not answer is reported,
+  Only the repository already in place (or the one in the suite configuration) can be saved here; for another repository,
+  type the command in a terminal (`git -C data remote set-url origin <address>`), so that no page can send the data elsewhere. Never put a password or a token in the address.
   and the suite works without sharing. Details: [synchronisation](../technique/SYNCHRONISATION.md).
 - Once the data is present, the optional “Flight log” card offers “Log (.html)…”: the “Flight log” page of the airline website, saved, fills in the pilots and aircraft of the reference (entry help).
 

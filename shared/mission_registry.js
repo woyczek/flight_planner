@@ -1115,7 +1115,7 @@
     writeJson(SEL_KEY, k);
   };
   /** Pastille de statut ou de message (classe rg-<niveau>). */
-  const pill = (level, text) => `<span class="rg-pill rg-${level}">${esc(text)}</span>`;
+  const pill = (level, text) => `<span class="rg-pill rg-${esc(String(level ?? '').replace(/[^\w-]/g, ''))}">${esc(text)}</span>`;
 
   /** Construit la page : source (dossier, relecture, ajout, écriture du YAML, nettoyage), filtres et tirage au sort,
    *  tableau, fiche de la mission choisie, bloc de commande ; branche les boutons. */

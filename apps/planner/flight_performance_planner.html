@@ -1078,8 +1078,8 @@ html[data-skeuo] .repo-block-tools .fp-result-pin[aria-pressed="true"]:not(#imp)
 <dialog id="dlg"><div class="row"><h2 style="flex:1">Choisir l’avion</h2><button onclick="dlg.close()">Fermer</button></div><input id="search" placeholder="Rechercher ICAO / nom…" style="width:100%;margin-bottom:8px"><div id="airlist" class="airlist"></div></dialog>
 
 <!-- navigation (en-tête, barre latérale) avant les scripts de calcul : la barre et la marge du contenu paraissent tout de suite -->
-<script src="../../shared/kit.js?v=2e1b2340"></script>
-<script src="../../shared/repository_nav.js?v=d97f2433"></script>
+<script src="../../shared/kit.js?v=9c953900"></script>
+<script src="../../shared/repository_nav.js?v=eb1231d4"></script>
 <script src="../../AircraftDB/aircraft_db.js"></script><script src="../../shared/data_files.js?v=dcb47c6a" data-file="references/aircraft_fleet.js"></script><script src="../../shared/data_files.js?v=dcb47c6a" data-file="references/defa_reference.js"></script><script src="../../shared/aircraft_catalog.js?v=53010467"></script>
 <script src="../../AircraftDB/aircraft_icons.js"></script>
 <script src="../../AircraftDB/aircraft_perf.js"></script>
@@ -1681,7 +1681,7 @@ function renderProfile() {
     ["Descente", `${active.descent.rateFpm||"—"} ft/min · ${phaseFuelDisplay("descent")}`],
     ["TOD", `${active.tod.gradientFtPerNm||300} ft/NM + ${active.tod.bufferNm||0} NM`]
   ];
-  $("profile").innerHTML = vals.map(x => `<div>${x[0]}</div><div>${x[1]}</div>`).join("");
+  $("profile").innerHTML = vals.map(x => `<div>${x[0]}</div><div>${window.RepositoryKit.esc(x[1])}</div>`).join("");
   $("curve").innerHTML = (active.rpmFuelCurve || []).sort((a, b) => a.rpm - b.rpm).map(x => `<tr><td>${x.rpm}</td><td>${showFuel(x.fuelFlowMin??x.fuelFlowPerHour)}</td><td>${showFuel(x.fuelFlowPerHour)}</td><td>${showFuel(x.fuelFlowMax??x.fuelFlowPerHour)}</td><td>${fuelUnit()}/h</td><td>${window.RepositoryKit.esc(x.comment||"")}</td></tr>`).join("") ||
     '<tr><td colspan="6">Pas de courbe RPM dans ce profil.</td></tr>';
   renderProfileEditor();
@@ -2844,7 +2844,7 @@ $("sbAirframeBtn").onclick = async () => {
     });
     const hasPerf = p.cruise?.fuelFlowPerHour && p.climb?.fuelFlowPerHour && p.descent?.fuelFlowPerHour;
     if (res.partial) {
-      $("sbStatus").innerHTML = `Internal ID accepté : <b>${id}</b>. Il est utilisable comme <code>type</code> par l’API Dispatch SimBrief. SimBrief ne documente toutefois pas d’endpoint public permettant de lire les données complètes d’un airframe personnel à partir de cet ID seul. ${hasPerf?"Les performances LNM locales correspondantes ont été conservées.":"Charge un .lnmperf correspondant pour les performances LNM."}`;
+      $("sbStatus").innerHTML = `Internal ID accepté : <b>${window.RepositoryKit.esc(id)}</b>. Il est utilisable comme <code>type</code> par l’API Dispatch SimBrief. SimBrief ne documente toutefois pas d’endpoint public permettant de lire les données complètes d’un airframe personnel à partir de cet ID seul. ${hasPerf?"Les performances LNM locales correspondantes ont été conservées.":"Charge un .lnmperf correspondant pour les performances LNM."}`;
     } else {
       $("sbStatus").textContent = `Airframe importé (${res.source}). ${hasPerf?"Performances LNM disponibles.":"Charge un .lnmperf correspondant pour compléter TAS, vario et débits."}`;
     }
@@ -3080,7 +3080,7 @@ function renderCalibration(c) {
     ["Airframe SimBrief", c.airframeId || "non associé"],
     ["Provenance", c.ofpTimestamp || "timestamp absent"],
     ["TAS", Object.values(c.phases).some(p => p.tasKt) ? "distance air navlog" : "non disponible — aucune TAS écrite"]
-  ].map(x => `<div>${x[0]}</div><div>${x[1]}</div>`).join("");
+  ].map(x => `<div>${x[0]}</div><div>${window.RepositoryKit.esc(x[1])}</div>`).join("");
 }
 // Ouvre le sélecteur d'OFP JSON.
 $("ofpFileBtn").onclick = () => $("ofpFile").click();

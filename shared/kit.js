@@ -126,6 +126,13 @@ if (!window.DataIndex) {
 
   const LANGS = ['fr', 'en', 'de', 'es'];
 
+  /** Couleur venue des données (fichier partagé, classeur…) avant de l'écrire dans un attribut style : « #rgb »,
+   *  « #rrggbb » (avec ou sans opacité) ou « rgb(a)(…) », sinon fallback — esc n'empêche pas « red;background:url(…) »
+   *  ni, sans guillemets, de sortir de l'attribut. */
+  const cssColor = (v, fallback = '') => {
+    const s = String(v ?? '').trim();
+    return /^#(?:[0-9a-f]{3,4}|[0-9a-f]{6}|[0-9a-f]{8})$/i.test(s) || /^rgba?\(\s*\d{1,3}(?:\s*[,\s]\s*\d{1,3}){2}(?:\s*[,/]\s*(?:0|1|0?\.\d+|\d{1,3}%))?\s*\)$/i.test(s) ? s : fallback;
+  };
   /** Échappe un texte pour HTML (& < > " '). */
   const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({
     '&': '&amp;',
@@ -390,6 +397,7 @@ if (!window.DataIndex) {
     hOffset,
     hText,
     esc,
+    cssColor,
     lang,
     langIndex,
     t,

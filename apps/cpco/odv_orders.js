@@ -154,8 +154,12 @@
   const dow = date => (new Date(`${date}T12:00:00Z`).getUTCDay() + 6) % 7 + 1;
   /** Encre lisible (blanc ou noir) sur un fond de couleur c. */
   const ink = c => (K.color?.luminance?.(c) ?? 1) < .45 ? '#fff' : '#111';
-  /** Couleur adaptée au design courant (RepositoryNav.chartColor), sinon telle quelle. */
-  const tint = c => window.RepositoryNav?.chartColor?.(c) || c;
+  /** Couleur adaptée au design courant (RepositoryNav.chartColor), sinon telle quelle ; jamais autre chose qu'une
+   *  couleur (fichiers partagés : « red;background:url(…) » passait l'échappement). */
+  const tint = c => {
+    const v = window.RepositoryKit.cssColor(c, '#64748b');
+    return window.RepositoryNav?.chartColor?.(v) || v;
+  };
   /** Nom d'un membre d'après son trigramme (le trigramme s'il n'a pas de nom). */
   const memberName = tri => S.members.find(m => m.tri === tri)?.nom || tri;
 

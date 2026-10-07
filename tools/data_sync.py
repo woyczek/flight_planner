@@ -18,6 +18,9 @@ temporaire, modifications croisées, conflits, vérifications).
 """
 import json, os, re, shutil, subprocess, sys, tempfile, time
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import data_guard  # .js du pool : format des fichiers de données seulement (jamais de code commité)
+
 # chemins synchronisés (relatifs à data/) ; index régénérés et repère du lanceur exclus
 POOL = ['disponibilites', 'utilisateurs', 'config', 'missions', 'cr', 'atc', 'odv']
 EXCLUDE = [':(exclude,glob)**/_index.json', ':(exclude,glob)**/_conflits/**', ':(exclude).defa_instance']
@@ -29,6 +32,30 @@ except ImportError:  # pragma: no cover
     yaml = None
 
 
+ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
+# exécutables cherchés dans le PATH seulement, jamais dans le dossier courant (un git.exe déposé dans la suite)
+os.environ['NoDefaultCurrentDirectoryInExePath'] = '1'
+# options de chaque appel : rien de ce que contiendrait un .git/config reçu d'ailleurs ne lance de commande
+# (core.fsmonitor), pas de transport « ext:: » (commande arbitraire), pas de sous-module suivi
+HARDEN = ['-c', 'core.fsmonitor=false', '-c', 'protocol.ext.allow=never', '-c', 'submodule.recurse=false']
+_git = []
+
+
+def git_exe():
+    """Chemin absolu de git, pris dans le PATH hors du dossier de la suite ; '' s'il est absent."""
+    if not _git:
+        root = os.path.normcase(os.path.realpath(ROOT))
+        dirs = [d for d in os.environ.get('PATH', '').split(os.pathsep)
+                if d.strip() and os.path.isabs(d) and not (os.path.normcase(os.path.realpath(d)) + os.sep).startswith(root + os.sep)]
+        _git.append(shutil.which('git', path=os.pathsep.join(dirs)) or '')
+    return _git[0]
+
+
+def git_cmd(*args):
+    """git durci (HARDEN) avec ses arguments ; git absent : 'git' (l'appel échoue proprement)."""
+    return [git_exe() or 'git', *HARDEN, *args]
+
+
 def git_env():
     """Git sans question dans le terminal ni fenêtre d'identifiants ; SSH sans question non plus (clé ou rien ; hôte
     inconnu accepté à la première connexion, refusé s'il a changé)."""
@@ -37,7 +64,20 @@ def git_env():
 
 
 # ---- dépôt distant de synchronisation (premier lancement : adresse précisée, vérifiée, jamais bloquante)
-REMOTE_RE = re.compile(r'^(?:[\w.-]+@[\w.-]+:[\w./~-]+|ssh://\S+|https?://\S+)$')
+# git@hôte:chemin, ssh://[utilisateur@]hôte[:port]/chemin, http(s)://[utilisateur@]hôte[:port]/chemin : jamais de
+# mot de passe ni de jeton dans l'adresse (il finirait en clair dans data/.git/config), jamais de « - » en tête
+REMOTE_RE = re.compile(r'^(?:\w[\w.-]*@\w[\w.-]*:[\w./~-]+'
+                       r'|ssh://(?:\w[\w.-]*@)?\w[\w.-]*(?::\d+)?/[\w./~-]+'
+                       r'|https?://(?:\w[\w.-]*@)?\w[\w.-]*(?::\d+)?(?:/[^\s@]*)?)$')
+REMOTE_HELP = 'Adresse invalide : git@hôte:compte/dépôt.git ou https://hôte/compte/dépôt.git (sans mot de passe ni jeton dans l’adresse).'
+
+
+def same_repo(a, b):
+    """Même dépôt, quelle que soit la forme de l'adresse (https, ssh, git@hôte:…, .git final, utilisateur)."""
+    def norm(u):
+        u = re.sub(r'^(?:[a-z+]+://)?(?:[^@/]+@)?', '', (u or '').strip().lower())
+        return re.sub(r'(?:\.git)?/*$', '', u.replace(':', '/', 1))
+    return bool(a and b) and norm(a) == norm(b)
 
 
 def remote_info(data):
@@ -53,11 +93,11 @@ def check_remote(url):
     """Le dépôt répond-il ? git ls-remote, sans question (identifiants, clé SSH) ; rend { ok, message, branches }."""
     url = (url or '').strip()
     if not REMOTE_RE.match(url):
-        return {'ok': False, 'message': 'Adresse invalide : git@hôte:compte/dépôt.git ou https://hôte/compte/dépôt.git.', 'branches': []}
-    if not shutil.which('git'):
+        return {'ok': False, 'message': REMOTE_HELP, 'branches': []}
+    if not git_exe():
         return {'ok': False, 'message': 'Git n’est pas installé sur cet ordinateur.', 'branches': []}
     try:
-        r = subprocess.run(['git', 'ls-remote', '--heads', url], capture_output=True, text=True, encoding='utf-8',
+        r = subprocess.run(git_cmd('ls-remote', '--heads', '--', url), capture_output=True, text=True, encoding='utf-8',
                            errors='replace', env=git_env(), timeout=30)
     except subprocess.TimeoutExpired:
         return {'ok': False, 'message': 'Pas de réponse en 30 s (réseau, adresse, pare-feu).', 'branches': []}
@@ -78,23 +118,29 @@ def check_remote(url):
     return {'ok': True, 'message': f'Le dépôt répond : {len(branches)} branche(s).', 'branches': branches}
 
 
-def set_remote(data, url):
-    """Adresse du dépôt distant de data/ (dépôt distant de la branche, sinon origin, créé au besoin)."""
+def set_remote(data, url, allowed=()):
+    """Adresse du dépôt distant de data/ (dépôt distant de la branche, sinon origin, créé au besoin). Depuis une page,
+    seulement vers le dépôt actuel ou l'un des dépôts admis (allowed : celui de la configuration) : une page piégée
+    enverrait sinon toutes les données ailleurs au « Synchroniser » suivant ; un autre dépôt se règle dans un terminal."""
     url = (url or '').strip()
     if not REMOTE_RE.match(url):
-        return {'ok': False, 'message': 'Adresse invalide.'}
+        return {'ok': False, 'message': REMOTE_HELP}
     if not is_repo(data):
         return {'ok': False, 'message': 'data/ n’est pas encore un dépôt git : l’adresse servira à récupérer les données.'}
     info = remote_info(data)
     name = info['remote'] or 'origin'
-    code, out = git(data, 'remote', 'set-url', name, url) if info['remote'] else git(data, 'remote', 'add', name, url)
+    if not any(same_repo(url, u) for u in (info['url'], *allowed)):
+        return {'ok': False, 'refused': True,
+                'message': 'Autre dépôt que celui des données : pour qu’aucune page ne puisse envoyer les données ailleurs, '
+                           f'ce changement se fait dans un terminal : git -C data remote set-url {name} {url}'}
+    code, out = git(data, 'remote', 'set-url', '--', name, url) if info['remote'] else git(data, 'remote', 'add', '--', name, url)
     return {'ok': code == 0, 'message': f'Dépôt distant « {name} » : {url}' if code == 0 else out}
 
 
 def git(data, *args, env=None, check=False):
     """git -C data … ; rend (code, sortie texte)."""
     try:
-        r = subprocess.run(['git', '-C', data, *args], capture_output=True, text=True, encoding='utf-8', errors='replace',
+        r = subprocess.run(git_cmd('-C', data, *args), capture_output=True, text=True, encoding='utf-8', errors='replace',
                            env=env or git_env(), timeout=TIMEOUT)
     except (OSError, subprocess.SubprocessError) as e:
         if check:
@@ -109,14 +155,14 @@ def git(data, *args, env=None, check=False):
 def blob(data, stage, path):
     """Contenu d'une version d'un fichier en conflit (1 base, 2 la nôtre, 3 la leur) ; None si absente."""
     try:
-        r = subprocess.run(['git', '-C', data, 'show', f':{stage}:{path}'], capture_output=True, env=git_env(), timeout=TIMEOUT)
+        r = subprocess.run(git_cmd('-C', data, 'show', f':{stage}:{path}'), capture_output=True, env=git_env(), timeout=TIMEOUT)
     except (OSError, subprocess.SubprocessError):
         return None
     return r.stdout if r.returncode == 0 else None
 
 
 def is_repo(data):
-    return os.path.isdir(os.path.join(data, '.git')) and shutil.which('git') is not None
+    return os.path.isdir(os.path.join(data, '.git')) and bool(git_exe())
 
 
 def branch_info(data):
@@ -134,7 +180,7 @@ def branch_info(data):
 def pool_changes(data, spec=None):
     """Fichiers du pool (ou d'autres chemins : spec) modifiés, ajoutés ou supprimés sur ce poste (non commités)."""
     try:  # sortie brute, -z : l'espace de tête du code d'état compte (pas de strip) ; chemins sans guillemets
-        out = subprocess.run(['git', '-C', data, 'status', '--porcelain', '-z', '-uall', '--', *(spec or [*POOL, *EXCLUDE])],
+        out = subprocess.run(git_cmd('-C', data, 'status', '--porcelain', '-z', '-uall', '--', *(spec or [*POOL, *EXCLUDE])),
                              capture_output=True, env=git_env(), timeout=TIMEOUT).stdout.decode('utf-8', errors='replace')
     except (OSError, subprocess.SubprocessError):
         return []
@@ -204,7 +250,7 @@ def divergence(data, st):
     if not st.get('repo'):
         if is_trial(data):
             return {'level': 'none', 'reasons': [{'code': 'trial'}]}
-        return {'level': 'alert', 'reasons': [{'code': 'no_repo' if shutil.which('git') else 'no_git'}]}
+        return {'level': 'alert', 'reasons': [{'code': 'no_repo' if git_exe() else 'no_git'}]}
     reasons, level = [], 'ok'
     rank = {'ok': 0, 'warn': 1, 'alert': 2}
 
@@ -263,7 +309,7 @@ def last_sync(data):
 def remember(data, result):
     os.makedirs(os.path.join(data, 'local'), exist_ok=True)  # local/ : propre au poste, ignoré par git
     with open(os.path.join(data, 'local', 'sync.json'), 'w', encoding='utf-8', newline='\n') as f:
-        json.dump({k: result.get(k) for k in ('at', 'author', 'committed', 'received', 'pushed', 'conflicts', 'ok')}, f,
+        json.dump({k: result.get(k) for k in ('at', 'author', 'committed', 'received', 'pushed', 'conflicts', 'refused', 'ok')}, f,
                   ensure_ascii=False, indent=1)
 
 
@@ -371,10 +417,16 @@ def resolve(data, path):
     return {'path': path, 'how': 'la plus récente', 'copy': copy}
 
 
+def refused_note(res):
+    """Fichiers .js refusés à l'envoi (format des données, tools/data_guard.py), pour le compte rendu."""
+    r = res.get('refused') or []
+    return f" {len(r)} fichier(s) .js refusé(s), pas au format des données : {', '.join(x['path'] for x in r)}." if r else ''
+
+
 def run(data, author, name=''):
     """Un passage de synchronisation ; rend le compte rendu (ok, committed, received, pushed, conflicts, message)."""
     res = {'ok': False, 'at': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()), 'author': author, 'committed': 0,
-           'received': 0, 'pushed': False, 'conflicts': []}
+           'received': 0, 'pushed': False, 'conflicts': [], 'refused': []}
     if not is_repo(data):
         res['message'] = 'data/ n’est pas un dépôt git (ou git est absent).'
         return res
@@ -389,6 +441,13 @@ def run(data, author, name=''):
     try:
         # 1. modifications de ce poste
         changes = pool_changes(data)
+        # .js hors du format des fichiers de données (tools/data_guard.py) : jamais commités, jamais envoyés — un script
+        # glissé dans data/ (page piégée, dossier autorisé) ne se propage pas aux autres postes
+        for p in [c for c in changes if c.lower().endswith('.js') and os.path.isfile(os.path.join(data, *c.split('/')))]:
+            ok, why = data_guard.check_file(os.path.join(data, *p.split('/')))
+            if not ok:
+                changes.remove(p)
+                res['refused'].append({'path': p, 'why': why})
         if changes:
             git(data, 'add', '-A', '--', *changes, check=True)  # fichiers modifiés seuls (dossier du pool absent : pas d'erreur)
             code, _ = git(data, 'diff', '--cached', '--quiet')
@@ -397,7 +456,7 @@ def run(data, author, name=''):
                 res['committed'] = len(changes)
         br, up, remote = branch_info(data)
         if not remote:
-            res.update(ok=True, message='Commit local seulement : pas de dépôt distant.')
+            res.update(ok=True, message='Commit local seulement : pas de dépôt distant.' + refused_note(res))
             return res
         # 2. branche distante
         git(data, 'fetch', remote, env=env, check=True)
@@ -422,7 +481,7 @@ def run(data, author, name=''):
         git(data, 'push', *([] if up else ['-u']), remote, f'HEAD:{br}', env=env, check=True)
         res['pushed'] = True
         res['ok'] = True
-        res['message'] = 'Synchronisé.'
+        res['message'] = 'Synchronisé.' + refused_note(res)
     except RuntimeError as e:
         res['message'] = str(e)[-800:]
         if os.path.exists(os.path.join(data, '.git', 'MERGE_HEAD')):

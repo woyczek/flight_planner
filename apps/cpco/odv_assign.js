@@ -195,7 +195,7 @@
       K = window.RepositoryKit,
       g = SD.group(d.groupe) || {},
       name = SD.label(g.label || d.groupe),
-      col = window.RepositoryNav?.chartColor?.(g.couleur || '#BFBFBF') || g.couleur || '#BFBFBF',
+      col = window.RepositoryNav?.chartColor?.(K.cssColor(g.couleur, '#BFBFBF')) || K.cssColor(g.couleur, '#BFBFBF'),
       ink = (K.color.luminance(col) ?? 1) < .35 ? '#fff' : '#1b1b1b';
     const tip = [name, ...(d.details || [d]).map(x => `· ${x.label}`), K.t(['déclaration du pilote (Mes missions)',
       'pilot declaration (My missions)', 'Pilotenangabe (Meine Missionen)', 'declaración del piloto (Mis misiones)'

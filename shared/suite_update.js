@@ -105,7 +105,8 @@
   function releaseOf(text) {
     const block = /release\s*:\s*\{([^}]*)\}/.exec(String(text || ''))?.[1] || '';
     return {
-      version: /version\s*:\s*"([^"]+)"/.exec(block)?.[1] || '',
+      // version distante : chiffres seulement (affichée dans l'en-tête de chaque page)
+      version: /^\d{1,4}(?:\.\d{1,4}){1,3}(?:-[\w.]{1,20})?$/.exec(/version\s*:\s*"([^"]+)"/.exec(block)?.[1] || '')?.[0] || '',
       date: /date\s*:\s*"([^"]+)"/.exec(block)?.[1] || ''
     };
   }
@@ -409,7 +410,8 @@
     const onPage = /\/parametrage\.html$/.test(location.pathname) && new URLSearchParams(location.search).has('m');
     if (s.mode !== 'off' && r?.ok && r.available && r.channel === s.channel && !onPage) {
       const v = r.remote?.version && r.remote.version !== r.local?.version ? r.remote.version : (r.remote?.short || '');
-      parts.push(`<a class="repo-update-badge" href="${page('updates')}" title="${tr(T.updateTitle).replace('{c}', s.channel).replace('{v}', v)}">⬆ ${tr(T.update)}${v ? ' ' + v : ''}</a>`);
+      const e = window.RepositoryKit.esc; // version et canal : lus à distance ou gardés dans le navigateur
+      parts.push(`<a class="repo-update-badge" href="${page('updates')}" title="${e(tr(T.updateTitle).replace('{c}', s.channel).replace('{v}', v))}">⬆ ${e(tr(T.update))}${v ? ' ' + e(v) : ''}</a>`);
     }
     if (a.late && !onPage) parts.push(`<a class="repo-update-badge airac" href="${page('sia')}" title="${tr(T.airacTitle).replace('{e}', a.effective).replace('{b}', a.base)}">${tr(T.airac)} ${a.label}</a>`);
     host.innerHTML = parts.join('');
