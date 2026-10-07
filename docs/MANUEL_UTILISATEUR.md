@@ -408,9 +408,13 @@ Chaque changement est enregistré aussitôt.
 ## Premier lancement
 <!-- page: apps/settings/premier_lancement.html -->
 
-Cette page règle la suite en quatre étapes lors de la première installation. Le lanceur (`lancer.cmd` sous Windows, `sh lancer.sh` sous macOS ou Linux) l'ouvre de lui-même.
-Pour y revenir : Paramètres › onglet « Installation » › « Premier lancement » › « Ouvrir le premier lancement ».
-Une fois la suite réglée, la page renvoie vers l'accueil, sauf si elle est ouverte par ce bouton.
+Cette page règle ce dont la suite a besoin pour travailler. Le lanceur (`lancer.cmd` sous Windows, `sh lancer.sh` sous macOS ou Linux) l'ouvre de lui-même ; on y revient à tout moment par Paramètres › onglet « Premier lancement », ou par la carte « Premier lancement » de l'accueil, affichée tant qu'il reste quelque chose à régler.
+Une fois la suite réglée, la page ouverte par le lanceur renvoie vers l'accueil.
+
+En tête, **« Où en est la suite »** fait le bilan, ligne par ligne, et chaque ligne mène à son étape : ✓ réglé, ○ à faire, – facultatif, ? inconnu (lanceur absent).
+- Pour tous : données, dépôt git de synchronisation (facultatif), dossier de l'application, compagnie et site, clé d'API IVAO (facultative), pilote (trigramme et au moins un réseau), identifiants du site de la compagnie, données aéronautiques.
+- Centre : activation (administrateurs) ; une fois le Centre activé, flotte et journal du site, missions du registre, utilisateurs et droits (au moins un administrateur), envoi des CR (facultatif).
+
 Le numéro de chaque étape passe au vert quand elle est faite.
 
 ### 1 Données
@@ -434,16 +438,7 @@ Trois possibilités :
   la suite fonctionne sans partage. Détails : [synchronisation](technique/SYNCHRONISATION.md).
 - Une fois les données présentes, la carte facultative « Journal des vols » propose « Journal (.html)… » : la page « Log des vols » du site de la compagnie, enregistrée, remplit les pilotes et appareils de la référence (aide à la saisie).
 
-### 2 Profil
-
-Votre profil pilote, repris par toutes les pages (☰ › Profil pilote).
-
-1. Remplissez la carte « Pilote » : « Trigramme », « ID IVAO (VID) », « ID VATSIM (CID) », « SimBrief ».
-2. Cliquez sur « Enregistrer le profil ».
-
-Les identifiants du site de la compagnie, le mot de passe et les préférences se règlent ensuite dans [Mon profil](#mon-profil).
-
-### 3 Dossiers
+### 2 Dossiers
 
 Le navigateur demande de désigner chaque dossier une fois ; il s'en souvient ensuite.
 
@@ -452,15 +447,41 @@ Le navigateur demande de désigner chaque dossier une fois ; il s'en souvient en
 
 Cette étape est importante : sans dossier des données autorisé, vos disponibilités restent dans le navigateur et le Centre ne les voit pas.
 
-### 4 Données aéronautiques et types d’aéronefs
+### 3 Compagnie
+
+La compagnie virtuelle dont la suite porte le nom, et l'adresse de son site (liens, flotte, journal des vols) ; réglage de ce navigateur.
+
+1. Carte « Compagnie virtuelle » : « Nom », « Sigle », « Nom long », « Site de la compagnie » (`https://…`).
+2. Carte « Clé d’API IVAO (facultatif) » : la clé de l'installation (activations des zones et sessions ATC IVAO du Tableau et du Planning ODV). Gardée par le lanceur, elle n'est jamais réaffichée : la carte indique seulement qu'une clé est enregistrée.
+3. « Enregistrer la compagnie ».
+
+Les autres champs (centre, pages du site, sources externes) sont dans Paramètres › Installation › Sources et dossiers.
+
+### 4 Profil et identifiants
+
+1. Carte « Pilote » : « Trigramme », « ID IVAO (VID) », « ID VATSIM (CID) », « SimBrief ». Le trigramme est figé en mode production (il vient du compte).
+2. Carte « Site de la compagnie » : « Identifiant » et « Mot de passe » de votre compte sur le site, gardés dans ce navigateur seulement (jamais dans un fichier ni une sauvegarde).
+3. « Enregistrer le profil ».
+
+La suite ne demande jamais vos mots de passe IVAO ni VATSIM : vos identifiants (VID, CID) suffisent. Le compte de la suite (mot de passe, mode production), le client IVAO personnel et les préférences se règlent dans [Mon profil](#mon-profil).
+
+### 5 Données aéronautiques et types d’aéronefs
 
 Cartes, missions et planification utilisent les données aéronautiques (AIRAC) et la base des types d’aéronefs. L'étape montre les mêmes blocs que Paramètres › Installation :
 
 1. « Données aéronautiques » : la France est active par défaut ; un clic sur la carte active une autre zone. Chaque source a son bouton : ZIP du SIA (lien vers la boutique, compte gratuit, produit du cycle à 0 €, puis « Récupérer le ZIP téléchargé »), MORA de la zone, PDF MILAIP (axes de ravitaillement), jeux des autres pays. La base se construit seule.
 2. « Types d’aéronefs » : « Compléter les types manquants de la flotte et des missions » télécharge les types (OACI) et leurs performances (EUROCONTROL).
-3. « Terminer » : la suite est notée « réglée » et l'accueil s'ouvre.
 
-Le lien « Accueil » ramène à la page d'accueil sans terminer.
+### 6 Centre (administrateurs)
+
+Réservé aux administrateurs du SO Group : les pilotes passent cette étape.
+- Carte « Activer le Centre » : « Mot de passe du Centre », puis « Activer le Centre ».
+- Une fois le Centre activé :
+  - « Flotte et journal des vols » : dernière lecture du site par le lanceur (flotte, emplacement des appareils, journal), « Mettre à jour maintenant », et le lien vers la flotte (Paramètres › Centre).
+  - « Missions » : nombre de missions au registre (elles arrivent avec les données, étape 1) et le lien vers le registre.
+  - « Réglages du SO Group » : liens vers les rubriques de Paramètres › Centre — utilisateurs et droits (nombre, administrateurs, mode), catégories de disponibilité, Planning ODV, Tableau, envoi des CR, calcul des routes.
+
+« Terminer » note la suite « réglée » et ouvre l'accueil ; le lien « Accueil » y ramène sans terminer.
 
 ### Recommencer
 

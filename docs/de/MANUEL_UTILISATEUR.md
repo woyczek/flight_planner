@@ -408,9 +408,13 @@ Jede Änderung wird sofort gespeichert.
 ## Erststart
 <!-- page: apps/settings/premier_lancement.html -->
 
-Diese Seite richtet die Suite bei der ersten Installation in vier Schritten ein. Der Starter (`lancer.cmd` unter Windows, `sh lancer.sh` unter macOS oder Linux) öffnet sie von selbst.
-Um zurückzukehren: Einstellungen › Registerkarte „Installation“ › „Erststart“ › „Erststart öffnen“.
-Ist die Suite eingerichtet, leitet die Seite zur Startseite weiter, außer wenn sie über diesen Knopf geöffnet wurde.
+Diese Seite richtet ein, was die Suite zum Arbeiten braucht. Der Starter (`lancer.cmd` unter Windows, `sh lancer.sh` unter macOS oder Linux) öffnet sie von selbst; jederzeit erreichbar über Einstellungen › Registerkarte „Erststart“ oder die Karte „Erststart“ der Startseite, die angezeigt wird, solange noch etwas einzustellen ist.
+Ist die Suite eingerichtet, leitet die vom Starter geöffnete Seite zur Startseite weiter.
+
+Oben zieht **„Stand der Suite“** Bilanz, Zeile für Zeile, und jede Zeile führt zu ihrem Schritt: ✓ eingestellt, ○ zu erledigen, – optional, ? unbekannt (kein Starter).
+- Für alle: Daten, Git-Synchronisierungs-Repository (optional), Anwendungsordner, Fluggesellschaft und Website, IVAO-API-Schlüssel (optional), Pilot (Kürzel und mindestens ein Netzwerk), Zugangsdaten der Website, Luftfahrtdaten.
+- Zentrum: Aktivierung (Administratoren); ist das Zentrum aktiviert, Flotte und Flugbuch der Website, Missionen des Registers, Benutzer und Rechte (mindestens ein Administrator), Berichtsversand (optional).
+
 Die Nummer jedes Schritts wird grün, wenn er erledigt ist.
 
 ### 1 Daten
@@ -434,16 +438,7 @@ Drei Möglichkeiten:
   die Suite funktioniert ohne Teilen. Einzelheiten: [Synchronisierung](../technique/SYNCHRONISATION.md).
 - Sind die Daten vorhanden, bietet die optionale Karte „Flugbuch“ den Knopf „Journal (.html)…“: Die gespeicherte Seite „Log des vols“ der Website der Fluggesellschaft füllt die Piloten und Luftfahrzeuge der Referenz (Eingabehilfe).
 
-### 2 Profil
-
-Ihr Pilotenprofil, das alle Seiten übernehmen (☰ › Pilotenprofil).
-
-1. Füllen Sie die Karte „Pilot“ aus: „Kürzel“, „IVAO-ID (VID)“, „VATSIM-ID (CID)“, „SimBrief“.
-2. Klicken Sie auf „Profil speichern“.
-
-Die Zugangsdaten der Website der Fluggesellschaft, das Passwort und die Einstellungen werden danach in [Mein Profil](#mein-profil) eingestellt.
-
-### 3 Ordner
+### 2 Ordner
 
 Der Browser verlangt, jeden Ordner einmal anzugeben; danach merkt er ihn sich.
 
@@ -452,15 +447,41 @@ Der Browser verlangt, jeden Ordner einmal anzugeben; danach merkt er ihn sich.
 
 Dieser Schritt ist wichtig: Ohne freigegebenen Datenordner bleibt Ihre Verfügbarkeit im Browser und das Zentrum sieht sie nicht.
 
-### 4 Luftfahrtdaten und Luftfahrzeugtypen
+### 3 Fluggesellschaft
+
+Die virtuelle Fluggesellschaft, deren Namen die Suite trägt, und die Adresse ihrer Website (Links, Flotte, Flugbuch); Einstellung dieses Browsers.
+
+1. Karte „Virtuelle Fluggesellschaft“: „Name“, „Kürzel“, „Vollständiger Name“, „Website der Fluggesellschaft“ (`https://…`).
+2. Karte „IVAO-API-Schlüssel (optional)“: der Schlüssel der Installation (Gebietsaktivierungen und IVAO-ATC-Sitzungen der Einsatztafel und der ODV-Planung). Er wird beim Starter gespeichert und nie wieder angezeigt: Die Karte sagt nur, dass ein Schlüssel gespeichert ist.
+3. „Fluggesellschaft speichern“.
+
+Die übrigen Felder (Zentrum, Seiten der Website, externe Quellen) stehen unter Einstellungen › Installation › Quellen und Ordner.
+
+### 4 Profil und Zugangsdaten
+
+1. Karte „Pilot“: „Kürzel“, „IVAO-ID (VID)“, „VATSIM-ID (CID)“, „SimBrief“. Im Produktionsmodus ist das Kürzel fest (es kommt vom Konto).
+2. Karte „Website der Fluggesellschaft“: „Kennung“ und „Passwort“ Ihres Kontos auf der Website, nur in diesem Browser gespeichert (nie in einer Datei oder Sicherung).
+3. „Profil speichern“.
+
+Die Suite fragt nie nach Ihren IVAO- oder VATSIM-Passwörtern: Ihre Kennungen (VID, CID) genügen. Das Konto der Suite (Passwort, Produktionsmodus), der persönliche IVAO-Client und die Einstellungen werden in [Mein Profil](#mein-profil) eingestellt.
+
+### 5 Luftfahrtdaten und Luftfahrzeugtypen
 
 Karten, Missionen und Planung nutzen die Luftfahrtdaten (AIRAC) und die Datenbank der Luftfahrzeugtypen. Der Schritt zeigt dieselben Blöcke wie Einstellungen › Installation:
 
 1. „Luftfahrtdaten“: Frankreich ist standardmäßig aktiv; ein Klick auf die Karte aktiviert eine andere Zone. Jede Quelle hat ihre Schaltfläche: SIA-ZIP (Link zum Shop, kostenloses Konto, Zyklusprodukt zu 0 €, dann „Heruntergeladene ZIP abrufen“), MORA der Zone, MILAIP-PDF (Betankungsstrecken), Datensätze anderer Länder. Die Datenbank baut sich selbst auf.
 2. „Luftfahrzeugtypen“: „Fehlende Typen der Flotte und der Missionen ergänzen“ lädt die Typen (ICAO) und ihre Leistungen (EUROCONTROL) herunter.
-3. „Abschließen“: Die Suite wird als „eingerichtet“ vermerkt und die Startseite öffnet sich.
 
-Der Link „Start“ führt ohne Abschluss zur Startseite zurück.
+### 6 Zentrum (Administratoren)
+
+Nur für Administratoren der SO Group: Piloten überspringen diesen Schritt.
+- Karte „Zentrum aktivieren“: „Passwort des Zentrums“, dann „Zentrum aktivieren“.
+- Ist das Zentrum aktiviert:
+  - „Flotte und Flugbuch“: letztes Lesen der Website durch den Starter (Flotte, Standort der Luftfahrzeuge, Flugbuch), „Jetzt aktualisieren“ und der Link zur Flotte (Einstellungen › Zentrum).
+  - „Missionen“: Zahl der Missionen im Register (sie kommen mit den Daten, Schritt 1) und der Link zum Register.
+  - „Einstellungen der SO Group“: Links zu den Rubriken unter Einstellungen › Zentrum — Benutzer und Rechte (Anzahl, Administratoren, Modus), Verfügbarkeitskategorien, ODV-Planung, Einsatztafel, Berichtsversand, Routenberechnung.
+
+„Abschließen“ vermerkt die Suite als „eingerichtet“ und öffnet die Startseite; der Link „Start“ führt ohne Abschluss dorthin zurück.
 
 ### Neu beginnen
 

@@ -675,11 +675,13 @@ Ces rubriques sont attribuées à la page par `config/repository_tree` (clé `se
 ### Premier lancement
 
 Cette rubrique indique si le premier lancement est terminé dans ce navigateur, et à quelle date.
-- « Ouvrir le premier lancement » rouvre l'assistant (`premier_lancement.html?force`). Il se déroule en quatre étapes :
-  1. Données : « Récupérer les données » (clone du dépôt de données) ou « Archive des données… » ; en option, « Journal (.html)… ».
-  2. Profil : « Enregistrer le profil ».
-  3. Dossiers : « Choisir le dossier de l'application », puis le classeur ODV, facultatif (« Dossier OneDrive… » ou « ou le fichier Excel… »).
-  4. Données aéronautiques et types d’aéronefs : les blocs « Données aéronautiques » et « Types d’aéronefs » (les mêmes qu'ici), puis « Terminer ».
+- « Ouvrir le premier lancement » rouvre l'assistant (`premier_lancement.html?force`), aussi accessible par l'onglet « Premier lancement » de Paramètres et par la carte de l'accueil tant qu'il reste quelque chose à régler. En tête, « Où en est la suite » fait le bilan ; puis six étapes :
+  1. Données : « Récupérer les données » (clone du dépôt de données) ou « Archive des données… » ; dépôt git de synchronisation (facultatif) ; en option, « Journal (.html)… ».
+  2. Dossiers : « Choisir le dossier de l'application », puis le classeur ODV, facultatif (« Dossier OneDrive… » ou « ou le fichier Excel… »).
+  3. Compagnie : nom, sigle, nom long, site de la compagnie ; clé d'API IVAO de l'installation (facultative, gardée par le lanceur) ; « Enregistrer la compagnie ».
+  4. Profil et identifiants : trigramme, IVAO, VATSIM, SimBrief, identifiants du site de la compagnie ; « Enregistrer le profil ».
+  5. Données aéronautiques et types d’aéronefs : les blocs « Données aéronautiques » et « Types d’aéronefs » (les mêmes qu'ici).
+  6. Centre (administrateurs) : « Activer le Centre », puis flotte et journal du site (« Mettre à jour maintenant »), missions du registre et liens vers les réglages du SO Group (Paramètres › Centre) ; enfin « Terminer ».
 - « Sources et dossiers, compagnie virtuelle » ouvre la rubrique suivante.
 - « Canal de mise à jour » ouvre Maintenance › Mises à jour.
 - Pour repartir de zéro : « Nettoyer et recommencer… », en bas du premier lancement. Cela efface les réglages de ce navigateur, pas les fichiers.

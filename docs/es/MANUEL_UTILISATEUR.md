@@ -408,9 +408,13 @@ Cada cambio se guarda al instante.
 ## Primer arranque
 <!-- page: apps/settings/premier_lancement.html -->
 
-Esta página configura la suite en cuatro pasos durante la primera instalación. El lanzador (`lancer.cmd` en Windows, `sh lancer.sh` en macOS o Linux) la abre por sí mismo.
-Para volver a ella: Ajustes › pestaña «Instalación» › «Primer arranque» › «Abrir el primer arranque».
-Una vez configurada la suite, la página remite a la página de inicio, salvo si se abre con ese botón.
+Esta página configura lo que la suite necesita para trabajar. El lanzador (`lancer.cmd` en Windows, `sh lancer.sh` en macOS o Linux) la abre por sí mismo; se vuelve a ella en cualquier momento por Ajustes › pestaña «Primer arranque», o por la tarjeta «Primer arranque» de la página de inicio, mostrada mientras quede algo por ajustar.
+Una vez configurada la suite, la página abierta por el lanzador remite a la página de inicio.
+
+Arriba, **«Estado de la suite»** hace balance, línea por línea, y cada línea lleva a su paso: ✓ ajustado, ○ por hacer, – opcional, ? desconocido (sin lanzador).
+- Para todos: datos, repositorio git de sincronización (opcional), carpeta de la aplicación, aerolínea y sitio, clave de API IVAO (opcional), piloto (trigrama y al menos una red), credenciales del sitio de la aerolínea, datos aeronáuticos.
+- Centro: activación (administradores); con el Centro activado, flota y registro del sitio, misiones del registro, usuarios y derechos (al menos un administrador), envío de informes (opcional).
+
 El número de cada paso se pone en verde cuando está hecho.
 
 ### 1 Datos
@@ -434,16 +438,7 @@ Tres posibilidades:
   y la suite funciona sin compartir. Detalles: [sincronización](../technique/SYNCHRONISATION.md).
 - Una vez presentes los datos, la tarjeta opcional «Registro de vuelos» ofrece «Registro (.html)…»: la página «Log des vols» del sitio de la aerolínea, guardada, rellena los pilotos y las aeronaves de la referencia (ayuda a la introducción).
 
-### 2 Perfil
-
-Su perfil de piloto, que usan todas las páginas (☰ › Perfil de piloto).
-
-1. Rellene la tarjeta «Piloto»: «Trigrama», «ID IVAO (VID)», «ID VATSIM (CID)», «SimBrief».
-2. Haga clic en «Guardar el perfil».
-
-Los identificadores del sitio de la aerolínea, la contraseña y las preferencias se configuran después en [Mi perfil](#mi-perfil).
-
-### 3 Carpetas
+### 2 Carpetas
 
 El navegador pide designar cada carpeta una vez; después la recuerda.
 
@@ -452,15 +447,41 @@ El navegador pide designar cada carpeta una vez; después la recuerda.
 
 Este paso es importante: sin carpeta de datos autorizada, su disponibilidad se queda en el navegador y el Centro no la ve.
 
-### 4 Datos aeronáuticos y tipos de aeronave
+### 3 Aerolínea
+
+La aerolínea virtual cuyo nombre lleva la suite, y la dirección de su sitio (enlaces, flota, registro de vuelos); ajuste de este navegador.
+
+1. Tarjeta «Aerolínea virtual»: «Nombre», «Sigla», «Nombre completo», «Sitio de la aerolínea» (`https://…`).
+2. Tarjeta «Clave de API IVAO (opcional)»: la clave de la instalación (activaciones de zonas y sesiones ATC IVAO del Tablero y de la planificación ODV). Guardada por el lanzador, nunca se vuelve a mostrar: la tarjeta solo indica que hay una clave guardada.
+3. «Guardar la aerolínea».
+
+Los demás campos (centro, páginas del sitio, fuentes externas) están en Ajustes › Instalación › Fuentes y carpetas.
+
+### 4 Perfil y credenciales
+
+1. Tarjeta «Piloto»: «Trigrama», «ID IVAO (VID)», «ID VATSIM (CID)», «SimBrief». En modo producción el trigrama queda fijo (viene de la cuenta).
+2. Tarjeta «Sitio de la aerolínea»: «Identificador» y «Contraseña» de su cuenta en el sitio, guardados solo en este navegador (nunca en un archivo ni en una copia).
+3. «Guardar el perfil».
+
+La suite nunca pide sus contraseñas IVAO ni VATSIM: sus identificadores (VID, CID) bastan. La cuenta de la suite (contraseña, modo producción), el cliente IVAO personal y las preferencias se ajustan en [Mi perfil](#mi-perfil).
+
+### 5 Datos aeronáuticos y tipos de aeronave
 
 Mapas, misiones y planificación usan los datos aeronáuticos (AIRAC) y la base de tipos de aeronave. El paso muestra los mismos bloques que Ajustes › Instalación:
 
 1. «Datos aeronáuticos»: Francia está activa por defecto; un clic en el mapa activa otra zona. Cada fuente tiene su botón: ZIP del SIA (enlace a la tienda, cuenta gratuita, producto del ciclo a 0 €, luego «Obtener el ZIP descargado»), MORA de la zona, PDF MILAIP (ejes de reabastecimiento), conjuntos de otros países. La base se construye sola.
 2. «Tipos de aeronave»: «Completar los tipos que faltan de la flota y las misiones» descarga los tipos (OACI) y sus rendimientos (EUROCONTROL).
-3. «Terminar»: la suite se marca como «configurada» y se abre la página de inicio.
 
-El enlace «Inicio» lleva a la página de inicio sin terminar.
+### 6 Centro (administradores)
+
+Reservado a los administradores del SO Group: los pilotos se saltan este paso.
+- Tarjeta «Activar el Centro»: «Contraseña del Centro», luego «Activar el Centro».
+- Con el Centro activado:
+  - «Flota y registro de vuelos»: última lectura del sitio por el lanzador (flota, ubicación de las aeronaves, registro), «Actualizar ahora» y el enlace a la flota (Ajustes › Centro).
+  - «Misiones»: número de misiones en el registro (llegan con los datos, paso 1) y el enlace al registro.
+  - «Ajustes del SO Group»: enlaces a las rúbricas de Ajustes › Centro — usuarios y derechos (número, administradores, modo), categorías de disponibilidad, planificación ODV, Tablero, envío de informes, cálculo de rutas.
+
+«Terminar» marca la suite como «configurada» y abre la página de inicio; el enlace «Inicio» vuelve a ella sin terminar.
 
 ### Empezar de nuevo
 

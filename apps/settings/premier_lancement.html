@@ -2,7 +2,7 @@
 <html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Premier lancement</title>
 <link rel="stylesheet" href="../../shared/repository_nav.css?v=f6a61e75"><link rel="stylesheet" href="../../shared/mission_core/core.css?v=8594d3c0"><link rel="stylesheet" href="../../shared/maintenance.css?v=3661acc0">
-<script src="../../config/repository_tree?v=9222689c"></script>
+<script src="../../config/repository_tree?v=cc94a4d8"></script>
 <style>
   main.pl-page {
     max-width: 980px;
@@ -118,17 +118,72 @@
     border-color: #5c1520;
     color: #fff
   }
+  /* bilan : ce que la suite a et ce qui manque, chaque ligne mène à son étape */
+  .pl-check {
+    list-style: none;
+    padding: 0;
+    margin: 8px 0 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 4px 18px
+  }
+  .pl-check li {
+    display: flex;
+    gap: 8px;
+    align-items: baseline;
+    font-size: 13.5px
+  }
+  .pl-check li>b {
+    flex: none;
+    width: 1.2em;
+    text-align: center
+  }
+  .pl-check li.ok>b {
+    color: var(--ok, #2e9d5b)
+  }
+  .pl-check li.todo>b {
+    color: var(--warn, #b26a00)
+  }
+  .pl-check li.opt>b,
+  .pl-check li.unknown>b {
+    opacity: .6
+  }
+  .pl-check li small {
+    opacity: .75
+  }
+  .pl-check h4 {
+    grid-column: 1/-1;
+    margin: 10px 0 2px;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    opacity: .8
+  }
+  .pl-links {
+    margin: 0;
+    padding: 0 0 0 18px;
+    font-size: 13px
+  }
+  .pl-links li {
+    margin: 3px 0
+  }
 </style>
 </head><body>
-<!-- Premier lancement : page ouverte par le lanceur (lancer.cmd / lancer.sh → tools/launch.py). Quatre étapes :
-     données (jeu d'essai livré avec la suite, dépôt de données dont l'utilisateur donne l'adresse → clone par le serveur du
-     lanceur, ou archive reçue par mail ; journal en
-     option → référence), profil (trigramme, IVAO, VATSIM, SimBrief ; identifiants du site de la compagnie : Paramètres › Mon profil), dossiers (dossier de l'application : tous les dossiers déduits ; classeur ODV : dossier OneDrive
-     ou, à défaut, le fichier Excel gardé dans le navigateur), puis la mise à jour SIA. Les étapes « données » passent par
-     l'interface locale du lanceur (/__setup/…) ; sans lanceur, la page le dit. Une fois terminé (suiteSetup:v1), le
-     lanceur renvoie vers l'accueil. -->
-<header class="mc-header"><h1>Premier lancement</h1><p>SO Group Virtual (Virtual Special Operation Group) — régler la suite en quatre étapes</p></header>
+<!-- Premier lancement : page ouverte par le lanceur (lancer.cmd / lancer.sh → tools/launch.py), et à tout moment depuis
+     Paramètres (onglet « Premier lancement ») ou l'accueil. En tête, le bilan de ce dont la suite a besoin (chaque ligne
+     mène à son étape) ; puis les étapes : données et dépôt git de synchronisation (facultatif), dossiers, compagnie,
+     profil et identifiants, données aéronautiques et types d'aéronefs ; pour un administrateur, le Centre (activation,
+     flotte et journal du site, missions du registre, réglages du SO Group). Les étapes « données » passent par
+     l'interface locale du lanceur (/__setup/…) ; sans lanceur, la page le dit. Les mots de passe du site de la compagnie
+     restent dans le navigateur (defaCredentials:v1), la clé d'API IVAO chez le lanceur (secrets/, jamais renvoyée à la
+     page). Bilan mémorisé (suiteSetupState:v1) pour l'accueil ; « Terminer » : suiteSetup:v1, puis l'accueil. -->
+<header class="mc-header"><h1>Premier lancement</h1><p>SO Group Virtual (Virtual Special Operation Group) — ce dont la suite a besoin pour travailler, étape par étape</p></header>
 <main class="pl-page">
+  <section id="plSummary"><h2>Où en est la suite</h2>
+    <p class="pl-hint">À reprendre à tout moment : Paramètres › Premier lancement. Chaque ligne mène à son étape.</p>
+    <ul class="pl-check" id="plChecklist"></ul>
+  </section>
+
   <section id="plData"><h2><span class="pl-n">1</span>Données</h2>
     <p class="pl-state" id="plDataState">Vérification…</p>
     <div class="pl-grid" id="plDataForms" hidden>
@@ -168,22 +223,7 @@
     </div>
   </section>
 
-  <section id="plProfile"><h2><span class="pl-n">2</span>Profil</h2>
-    <p class="pl-hint">Repris par toutes les pages (☰ › Profil pilote). Les identifiants du site de la compagnie, le mot de passe et les préférences se règlent ensuite dans <a href="profil.html">Paramètres › Mon profil</a>.</p>
-    <div class="pl-grid">
-      <div class="pl-card"><h3>Pilote</h3>
-        <div class="pl-form">
-          <label for="plTri">Trigramme</label><input type="text" id="plTri" maxlength="4" spellcheck="false">
-          <label for="plIvao">ID IVAO (VID)</label><input type="text" id="plIvao" inputmode="numeric">
-          <label for="plVatsim">ID VATSIM (CID)</label><input type="text" id="plVatsim" inputmode="numeric">
-          <label for="plSimbrief">SimBrief</label><input type="text" id="plSimbrief" spellcheck="false">
-        </div>
-      </div>
-    </div>
-    <div class="pl-row"><button type="button" class="primary" id="plSaveProfile">Enregistrer le profil</button><span class="pl-msg" id="plProfileMsg"></span></div>
-  </section>
-
-  <section id="plFolders"><h2><span class="pl-n">3</span>Dossiers</h2>
+  <section id="plFolders"><h2><span class="pl-n">2</span>Dossiers</h2>
     <p class="pl-hint">Le navigateur demande de désigner chaque dossier une fois (il le mémorise).</p>
     <div class="pl-grid">
       <div class="pl-card"><h3>Dossier de l’application</h3>
@@ -200,15 +240,81 @@
     </div>
   </section>
 
-  <section id="plSia"><h2><span class="pl-n">4</span>Données aéronautiques et types d’aéronefs</h2>
+  <section id="plCompany"><h2><span class="pl-n">3</span>Compagnie</h2>
+    <p class="pl-hint">La compagnie virtuelle dont la suite porte le nom, et l’adresse de son site (liens, flotte, journal des vols). Réglage de ce navigateur ; tous les champs (centre, pages du site, sources externes) : <a id="plSourcesLink" href="installation.html?m=sources">Paramètres › Installation › Sources et dossiers</a>.</p>
+    <div class="pl-grid">
+      <div class="pl-card"><h3>Compagnie virtuelle</h3>
+        <div class="pl-form">
+          <label for="plVaName">Nom</label><input type="text" id="plVaName" spellcheck="false">
+          <label for="plVaShort">Sigle</label><input type="text" id="plVaShort" spellcheck="false" maxlength="12">
+          <label for="plVaFull">Nom long</label><input type="text" id="plVaFull" spellcheck="false">
+          <label for="plVaSite">Site de la compagnie</label><input type="url" id="plVaSite" spellcheck="false" placeholder="https://…">
+        </div>
+      </div>
+      <div class="pl-card"><h3>Clé d’API IVAO (facultatif)</h3>
+        <p class="pl-hint">Pour toute l’installation : activations des zones et sessions ATC IVAO (trainings, examens, réservations) du Tableau et du Planning ODV. Gardée par le lanceur, jamais renvoyée à la page.</p>
+        <div class="pl-form"><label for="plIvaoKey">Clé</label><input type="password" id="plIvaoKey" autocomplete="off" spellcheck="false"></div>
+        <p class="pl-hint" id="plIvaoKeyNow"></p>
+      </div>
+    </div>
+    <div class="pl-row"><button type="button" class="primary" id="plSaveCompany">Enregistrer la compagnie</button><span class="pl-msg" id="plCompanyMsg"></span></div>
+  </section>
+
+  <section id="plProfile"><h2><span class="pl-n">4</span>Profil et identifiants</h2>
+    <p class="pl-hint">Repris par toutes les pages (☰ › Profil pilote). La suite ne demande jamais vos mots de passe IVAO ni VATSIM : vos identifiants (VID, CID) suffisent. Compte de la suite (mot de passe, mode production), client IVAO personnel et préférences : <a href="profil.html">Paramètres › Mon profil</a>.</p>
+    <div class="pl-grid">
+      <div class="pl-card"><h3>Pilote</h3>
+        <div class="pl-form">
+          <label for="plTri">Trigramme</label><input type="text" id="plTri" maxlength="4" spellcheck="false">
+          <label for="plIvao">ID IVAO (VID)</label><input type="text" id="plIvao" inputmode="numeric">
+          <label for="plVatsim">ID VATSIM (CID)</label><input type="text" id="plVatsim" inputmode="numeric">
+          <label for="plSimbrief">SimBrief</label><input type="text" id="plSimbrief" spellcheck="false">
+        </div>
+      </div>
+      <div class="pl-card"><h3>Site de la compagnie</h3>
+        <p class="pl-hint">Identifiants de votre compte sur le site de la compagnie, gardés dans ce navigateur seulement (jamais dans un fichier ni une sauvegarde).</p>
+        <div class="pl-form">
+          <label for="plSiteLogin">Identifiant</label><input type="text" id="plSiteLogin" autocomplete="username" spellcheck="false">
+          <label for="plSitePass">Mot de passe</label><input type="password" id="plSitePass" autocomplete="current-password">
+        </div>
+      </div>
+    </div>
+    <div class="pl-row"><button type="button" class="primary" id="plSaveProfile">Enregistrer le profil</button><span class="pl-msg" id="plProfileMsg"></span></div>
+  </section>
+
+  <section id="plSia"><h2><span class="pl-n">5</span>Données aéronautiques et types d’aéronefs</h2>
     <p class="pl-hint">Cartes, missions et planification utilisent les données aéronautiques (AIRAC) et la base des types d’aéronefs. Ci-dessous, les mêmes blocs que dans Paramètres › Installation : choisir les zones (France active par défaut) et, pour chacune, le bouton de chaque source (ZIP du SIA : lien vers la boutique, compte gratuit, produit du cycle à 0 €, puis « Récupérer le ZIP téléchargé » ; MORA ; axes de ravitaillement : PDF MILAIP ; autres pays) — la base se construit seule ; puis « Compléter les types… » pour les types d’aéronefs et leurs performances.</p>
     <!-- blocs de shared/maintenance_page.js (page autonome réduite) : mêmes composants qu'Installation et Maintenance -->
     <div id="maintenance" class="pl-mt" data-blocks="sia,types"></div>
-    <div class="pl-row"><button type="button" class="primary" id="plFinish">Terminer</button>
-      <a class="secondary" href="../../index.html">Accueil</a></div>
   </section>
 
-  <section id="plReset"><h2>Recommencer</h2>
+  <section id="plCentre"><h2><span class="pl-n">6</span>Centre (administrateurs)</h2>
+    <p class="pl-hint">Réservé aux administrateurs du SO Group : les pilotes passent cette étape.</p>
+    <div class="pl-card" id="plCentreLock"><h3>Activer le Centre</h3>
+      <div class="pl-form"><label for="plCpcoPass">Mot de passe du Centre</label><input type="password" id="plCpcoPass" autocomplete="off"></div>
+      <div class="pl-row"><button type="button" class="primary" id="plCpcoOn">Activer le Centre</button><span class="pl-msg" id="plCpcoMsg"></span></div>
+    </div>
+    <div class="pl-grid" id="plCentreOn" hidden>
+      <div class="pl-card"><h3>Flotte et journal des vols</h3>
+        <p class="pl-hint">Lus sur le site de la compagnie par le lanceur (une fois par jour, et à la demande) : flotte, emplacement des appareils, journal des vols ; types inconnus complétés ensuite.</p>
+        <p class="pl-msg" id="plFleetNow"></p>
+        <div class="pl-row"><button type="button" class="primary" id="plFleetGo">Mettre à jour maintenant</button><a class="secondary" id="plFleetLink" href="centre.html?base=fleet">Flotte</a></div>
+      </div>
+      <div class="pl-card"><h3>Missions</h3>
+        <p class="pl-hint">Les missions arrivent avec les données (étape 1, registre <code>data/missions</code>) ; le registre se relit depuis sa page.</p>
+        <p class="pl-msg" id="plMissionsNow"></p>
+        <div class="pl-row"><a class="secondary" href="../cpco/mission_registry.html">Registre des missions</a></div>
+      </div>
+      <div class="pl-card"><h3>Réglages du SO Group</h3>
+        <ul class="pl-links" id="plSogLinks"></ul>
+      </div>
+    </div>
+  </section>
+
+  <div class="pl-row"><button type="button" class="primary" id="plFinish">Terminer</button>
+    <a class="secondary" href="../../index.html">Accueil</a></div>
+
+  <section id="plReset" style="margin-top:16px"><h2>Recommencer</h2>
     <div class="pl-warn"><b>⚠ Nettoyer efface les réglages de ce navigateur</b> : dossiers mémorisés (application, données,
       registre, missions, SIA, ODV, X-Plane, performances, sauvegarde locale), copie du classeur ODV, identifiants du site
       de la compagnie, profil (trigramme, IVAO, VATSIM, SimBrief) et l’indicateur « suite réglée ». Les fichiers sur le disque —
@@ -219,7 +325,7 @@
 </main>
 <script src="../../shared/kit.js?v=a819e6df"></script>
 <script src="../../shared/repository_nav.js?v=a96548cc"></script>
-<script src="../../shared/content_i18n.js?v=7afecb78"></script><script src="premier_lancement_i18n.js?v=f3dd77de"></script>
+<script src="../../shared/content_i18n.js?v=7afecb78"></script><script src="premier_lancement_i18n.js?v=7f9606b2"></script>
 <!-- blocs « Données aéronautiques » et « Types d'aéronefs » (shared/maintenance_page.js) et leurs dépendances -->
 <script src="../../AircraftDB/aircraft_db.js"></script><script src="../../shared/data_files.js?v=dcb47c6a" data-file="references/aircraft_fleet.js"></script>
 <script src="../../shared/mission_core/vendor/js-yaml.min.js"></script>
@@ -232,8 +338,11 @@
 (() => {
   'use strict';
   const $ = id => document.getElementById(id);
+  const K = window.RepositoryKit;
+  const L = (fr, en, de, es) => K.t([fr, en, de, es]);
   const notify = (m, k) => window.AppFramework?.notify ? window.AppFramework.notify(m, k) : alert(m);
   const DONE = 'suiteSetup:v1',
+    STATE = 'suiteSetupState:v1',
     PROFILE = 'missionReportingConfig:v1',
     DEFA = 'defaCredentials:v1';
   const api = (path, opts = {}) => fetch(`/__setup/${path}`, {
@@ -245,11 +354,28 @@
       cache: 'no-store'
     })
     .then(r => r.ok ? r.json() : Promise.reject(new Error(r.status === 404 ? 'lanceur absent' : `${r.status}`)));
+  const post = (path, body) => api(path, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(body)
+  });
   const msg = (id, text, kind) => {
     const el = $(id);
     el.textContent = text || '';
     el.className = `pl-msg ${kind || ''}`;
   };
+  /** Composant chargé par repository_nav.js (FileAccess, SuiteUsers, DefaSite…) : attendu jusqu'à 3 s. */
+  const wait = name => new Promise(res => {
+    let n = 0;
+    const t = setInterval(() => {
+      if (window[name] || ++n > 60) {
+        clearInterval(t);
+        res(window[name]);
+      }
+    }, 50);
+  });
   // actions par délégation : le framework reconstruit les blocs (disposition mémorisée), les nœuds d'origine disparaissent
   const handlers = {
     click: {},
@@ -272,6 +398,53 @@
       return {};
     }
   };
+  const cpcoOn = () => !!window.RepositoryNav?.cpco?.enabled?.();
+
+  // bilan : état de chaque besoin de la suite (true : réglé, false : à faire, null : inconnu), relu après chaque action
+  const S = {};
+  function checklist() {
+    const p = read(PROFILE),
+      c = read(DEFA),
+      va = window.RepositoryNav?.va?.() || {},
+      sia = window.SiaBase?.info?.();
+    const item = (id, ok, label, step, opt, detail) => ({
+      id,
+      ok,
+      label,
+      step,
+      opt,
+      detail
+    });
+    const nets = [p.ivaoId && `IVAO ${p.ivaoId}`, p.vatsimId && `VATSIM ${p.vatsimId}`, p.simbriefUser && `SimBrief ${p.simbriefUser}`].filter(Boolean);
+    const suite = [
+      item('data', S.data ?? null, L('Données', 'Data', 'Daten', 'Datos'), 'plData'),
+      item('git', S.git ?? null, L('Dépôt git de synchronisation', 'Git sync repository', 'Git-Synchronisierungs-Repository', 'Repositorio git de sincronización'), 'plRepoCard', true, S.gitUrl || ''),
+      item('folder', S.folder ?? null, L('Dossier de l’application', 'Application folder', 'Anwendungsordner', 'Carpeta de la aplicación'), 'plFolders', false, S.folderName || ''),
+      item('company', !!(va.name && va.url), L('Compagnie et site', 'Airline and website', 'Fluggesellschaft und Website', 'Aerolínea y sitio'), 'plCompany', false, [va.name, va.url && va.url.replace(/^https?:\/\//, '')].filter(Boolean).join(' — ')),
+      item('ivaoKey', S.ivaoKey ?? null, L('Clé d’API IVAO', 'IVAO API key', 'IVAO-API-Schlüssel', 'Clave de API IVAO'), 'plCompany', true),
+      item('pilot', !!(p.trigram && (p.ivaoId || p.vatsimId)), L('Pilote : trigramme et réseaux', 'Pilot: trigram and networks', 'Pilot: Kürzel und Netzwerke', 'Piloto: trigrama y redes'), 'plProfile', false, [p.trigram, ...nets].filter(Boolean).join(' · ')),
+      item('site', !!(c.login && c.password), L('Identifiants du site de la compagnie', 'Airline website credentials', 'Zugangsdaten der Website', 'Credenciales del sitio de la aerolínea'), 'plProfile', false, c.login || ''),
+      item('aero', sia ? (sia.counts?.airspaces || 0) > 0 : false, L('Données aéronautiques', 'Aeronautical data', 'Luftfahrtdaten', 'Datos aeronáuticos'), 'plSia', false, sia?.airac ? `AIRAC ${sia.airac}` : '')
+    ];
+    const centre = !cpcoOn() ? [item('cpco', false, L('Centre activé (administrateurs)', 'Centre enabled (administrators)', 'Zentrum aktiviert (Administratoren)', 'Centro activado (administradores)'), 'plCentre', true)] : [
+      item('cpco', true, L('Centre activé', 'Centre enabled', 'Zentrum aktiviert', 'Centro activado'), 'plCentre'),
+      item('fleet', S.fleet ?? null, L('Flotte et journal du site', 'Fleet and log from the website', 'Flotte und Flugbuch der Website', 'Flota y registro del sitio'), 'plCentreOn', false, S.fleetAt || ''),
+      item('missions', S.missions == null ? null : S.missions > 0, L('Missions du registre', 'Registry missions', 'Missionen des Registers', 'Misiones del registro'), 'plCentreOn', false, S.missions ? String(S.missions) : ''),
+      item('users', S.admins == null ? null : S.admins > 0, L('Utilisateurs et droits (un administrateur)', 'Users and rights (one administrator)', 'Benutzer und Rechte (ein Administrator)', 'Usuarios y derechos (un administrador)'), 'plCentreOn', false, S.users == null ? '' : `${S.users}`),
+      item('send', !!read('missionSendConfig:v1').url, L('Envoi des CR', 'Report sending', 'Berichtsversand', 'Envío de informes'), 'plCentreOn', true)
+    ];
+    const li = x => `<li class="${x.ok === true ? 'ok' : x.ok === null ? 'unknown' : x.opt ? 'opt' : 'todo'}"><b>${x.ok === true ? '✓' : x.ok === null ? '?' : x.opt ? '–' : '○'}</b><span><a href="#${x.step}">${K.esc(x.label)}</a>${x.opt ? ` <small>(${K.esc(L('facultatif', 'optional', 'optional', 'opcional'))})</small>` : ''}${x.detail ? ` <small>${K.esc(x.detail)}</small>` : ''}</span></li>`;
+    $('plChecklist').innerHTML = `<h4>${K.esc(L('Pour tous', 'For everyone', 'Für alle', 'Para todos'))}</h4>${suite.map(li).join('')}<h4>${K.esc(L('Centre', 'Centre', 'Zentrum', 'Centro'))}</h4>${centre.map(li).join('')}`;
+    // mémorisé pour l'accueil : reste à faire (obligatoire seulement)
+    const need = [...suite, ...centre].filter(x => !x.opt);
+    try {
+      localStorage.setItem(STATE, JSON.stringify({
+        at: new Date().toISOString(),
+        todo: need.filter(x => x.ok !== true).length,
+        total: need.length
+      }));
+    } catch {}
+  }
 
   // 1. données
   async function dataState() {
@@ -282,12 +455,14 @@
       $('plDataState').textContent = 'Pour cette étape, ouvrez la suite avec le lanceur (lancer.cmd sous Windows, sh lancer.sh sous macOS / Linux).';
       return;
     }
+    S.data = !!st.data;
     done('plData', st.data);
     $('plLogCard').hidden = !st.data;
     $('plDataForms').hidden = st.data;
     $('plDataState').textContent = st.data ? `Données présentes${st.dataGit ? ' (dépôt git : reçu à chaque lancement, envoyé et partagé par le bouton « Synchroniser » de l’en-tête)' : ''}.` :
       st.git ? 'Pas encore de données : jeu d’essai, dépôt de données de votre compagnie, ou archive reçue par mail.' : 'Pas encore de données : jeu d’essai, ou archive reçue par mail (Git n’est pas installé : pour un dépôt de données, installer Git, puis relancer).';
     $('plClone').disabled = !st.git;
+    checklist();
   }
   // jeu d'essai livré avec la suite (tools/jeu_essai.py, lancé par le lanceur : POST /__setup/jeu-essai)
   on('click', 'plSample', async () => {
@@ -317,17 +492,11 @@
     $('plClone').disabled = true;
     msg('plCloneMsg', 'Téléchargement des données… (quelques minutes la première fois)');
     try {
-      const r = await api('clone', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          user,
-          secret,
-          remember: $('plRemember').checked,
-          url
-        })
+      const r = await post('clone', {
+        user,
+        secret,
+        remember: $('plRemember').checked,
+        url
       });
       msg('plCloneMsg', r.message, r.ok ? 'ok' : 'err');
       if (r.ok) {
@@ -355,7 +524,10 @@
       repo.url ? `Actuel : dépôt distant « ${repo.remote} » — ${repo.url} (branche ${repo.branch}).` :
       'data/ est un dépôt git sans dépôt distant : rien n’est partagé tant qu’aucune adresse n’est enregistrée.';
     $('plRepoSave').disabled = !repo.repo;
-    done('plRepoCard', repo.repo && !!repo.url);
+    S.git = !!(repo.repo && repo.url);
+    S.gitUrl = repo.url || '';
+    done('plRepoCard', S.git);
+    checklist();
   }
   const repoCheck = async save => {
     const url = $('plSyncUrl').value.trim();
@@ -363,15 +535,9 @@
     $('plRepoCheck').disabled = $('plRepoSave').disabled = true;
     msg('plSyncMsg', save ? 'Enregistrement, puis vérification…' : 'Vérification… (jusqu’à 30 s)');
     try {
-      const r = await api('sync-remote', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          url,
-          save
-        })
+      const r = await post('sync-remote', {
+        url,
+        save
       });
       const c = r.check || {};
       let text = c.message || '';
@@ -407,40 +573,21 @@
   upload('plZip', 'data', 'plZipMsg', dataState);
   upload('plLog', 'log', 'plLogMsg');
 
-  // 2. profil
-  function profileLoad() {
-    const p = read(PROFILE);
-    $('plTri').value = p.trigram || '';
-    $('plIvao').value = p.ivaoId || '';
-    $('plVatsim').value = p.vatsimId || '';
-    $('plSimbrief').value = p.simbriefUser || '';
-    done('plProfile', p.trigram);
-  }
-  on('click', 'plSaveProfile', () => {
-    const p = read(PROFILE);
-    Object.assign(p, {
-      trigram: $('plTri').value.trim().toUpperCase(),
-      ivaoId: $('plIvao').value.trim(),
-      vatsimId: $('plVatsim').value.trim(),
-      simbriefUser: $('plSimbrief').value.trim()
-    });
-    localStorage.setItem(PROFILE, JSON.stringify(p));
-    msg('plProfileMsg', 'Profil enregistré.', 'ok');
-    done('plProfile', p.trigram);
-  });
-
-  // 3. dossiers
+  // 2. dossiers
   async function foldersState() {
     const FA = window.FileAccess;
     if (!FA) return;
     const repo = await FA.status('__repo'),
       odvDir = await FA.status('__odv'),
       odvFile = await FA.get('__odvFile');
+    S.folder = !!repo.handle;
+    S.folderName = repo.handle ? repo.name : '';
     done('plFolders', repo.handle);
     msg('plRepoMsg', repo.handle ? `Choisi : ${repo.name}` : '', repo.handle ? 'ok' : '');
     msg('plOdvMsg', odvDir.handle ? `Dossier : ${odvDir.name}` : odvFile ? `Classeur gardé : ${odvFile.name || 'classeur'}` : '', odvDir.handle || odvFile ? 'ok' : '');
+    checklist();
   }
-  const pick = (key, out, labels) => async () => {
+  const pick = (key, out) => async () => {
     try {
       const h = await window.FileAccess.pickFolder(key);
       const derived = (h.derived || []).length;
@@ -460,7 +607,191 @@
     msg('plOdvMsg', `Classeur gardé : ${f.name}`, 'ok');
   });
 
-  // 4. fin : mise à jour SIA
+  // 3. compagnie : nom, sigle, nom long (suiteVA:v1, autres champs gardés), site (source « defa ») ; clé d'API IVAO de
+  // l'installation (lanceur, POST /__setup/secrets scope app : la clé n'est jamais relue, seulement son indice)
+  function companyLoad() {
+    const nav = window.RepositoryNav,
+      va = nav?.va?.() || {};
+    $('plVaName').value = va.name || '';
+    $('plVaShort').value = va.short || '';
+    $('plVaFull').value = va.fullName || '';
+    $('plVaSite').value = va.url || '';
+    $('plSourcesLink').href = nav?.settingsUrl?.('sources') || 'installation.html?m=sources';
+    done('plCompany', va.name && va.url);
+  }
+  async function ivaoKeyState() {
+    try {
+      const k = (await api('secrets'))?.app?.ivao?.apiKey || {};
+      S.ivaoKey = !!k.set;
+      $('plIvaoKeyNow').textContent = k.set ? `${L('Clé enregistrée', 'Key saved', 'Schlüssel gespeichert', 'Clave guardada')} (${k.hint || '…'})${k.env ? ` — ${L('variable d’environnement IVAO_API_KEY', 'IVAO_API_KEY environment variable', 'Umgebungsvariable IVAO_API_KEY', 'variable de entorno IVAO_API_KEY')}` : ''}.` : L('Aucune clé : les données IVAO sont saisies à la main.', 'No key: IVAO data are entered by hand.', 'Kein Schlüssel: IVAO-Daten werden von Hand eingegeben.', 'Sin clave: los datos IVAO se introducen a mano.');
+    } catch {
+      S.ivaoKey = null;
+      $('plIvaoKeyNow').textContent = L('Clé gardée par le lanceur : ouvrir la suite avec le lanceur.', 'Key kept by the launcher: open the suite with the launcher.', 'Schlüssel beim Starter: die Suite mit dem Starter öffnen.', 'Clave guardada por el lanzador: abrir la suite con el lanzador.');
+      $('plIvaoKey').disabled = true;
+    }
+    checklist();
+  }
+  on('click', 'plSaveCompany', async () => {
+    const nav = window.RepositoryNav;
+    if (!nav?.setVa) return;
+    const name = $('plVaName').value.trim(),
+      site = $('plVaSite').value.trim();
+    if (site && !/^https?:\/\/\S+$/i.test(site)) return msg('plCompanyMsg', L('Adresse du site : https://…', 'Website address: https://…', 'Website-Adresse: https://…', 'Dirección del sitio: https://…'), 'err');
+    nav.setVa({
+      ...read('suiteVA:v1'),
+      name,
+      short: $('plVaShort').value.trim(),
+      fullName: $('plVaFull').value.trim()
+    });
+    nav.setSource('defa', site);
+    const key = $('plIvaoKey').value.trim();
+    let extra = '';
+    if (key) {
+      const r = await post('secrets', {
+        scope: 'app',
+        service: 'ivao',
+        values: {
+          apiKey: key
+        }
+      }).catch(e => ({
+        ok: false,
+        message: e.message
+      }));
+      $('plIvaoKey').value = '';
+      extra = r.ok === false ? ` ${L('Clé IVAO non enregistrée', 'IVAO key not saved', 'IVAO-Schlüssel nicht gespeichert', 'Clave IVAO no guardada')} : ${r.message}` : ` ${L('Clé IVAO enregistrée.', 'IVAO key saved.', 'IVAO-Schlüssel gespeichert.', 'Clave IVAO guardada.')}`;
+      ivaoKeyState();
+    }
+    msg('plCompanyMsg', `${L('Compagnie enregistrée.', 'Airline saved.', 'Fluggesellschaft gespeichert.', 'Aerolínea guardada.')}${extra}`, /non enregistrée|not saved|nicht gespeichert|no guardada/.test(extra) ? 'warn' : 'ok');
+    companyLoad();
+    checklist();
+  });
+
+  // 4. profil et identifiants : profil pilote (missionReportingConfig:v1), identifiants du site (defaCredentials:v1)
+  function profileLoad() {
+    const p = read(PROFILE),
+      c = read(DEFA);
+    $('plTri').value = p.trigram || '';
+    $('plIvao').value = p.ivaoId || '';
+    $('plVatsim').value = p.vatsimId || '';
+    $('plSimbrief').value = p.simbriefUser || '';
+    $('plSiteLogin').value = c.login || '';
+    $('plSitePass').value = c.password || '';
+    // trigramme figé en production (ou en agissant pour un autre utilisateur) : réglé par le compte
+    $('plTri').readOnly = !!window.SuiteUsers?.trigramLocked?.();
+    done('plProfile', p.trigram && c.login && c.password);
+  }
+  on('click', 'plSaveProfile', () => {
+    const tri = $('plTri').value.trim().toUpperCase();
+    if (tri && !/^[A-Z0-9]{2,4}$/.test(tri)) return msg('plProfileMsg', L('Trigramme : 2 à 4 lettres ou chiffres.', 'Trigram: 2 to 4 letters or digits.', 'Kürzel: 2 bis 4 Buchstaben oder Ziffern.', 'Trigrama: de 2 a 4 letras o cifras.'), 'err');
+    const p = read(PROFILE);
+    Object.assign(p, {
+      trigram: tri,
+      ivaoId: $('plIvao').value.trim(),
+      vatsimId: $('plVatsim').value.trim(),
+      simbriefUser: $('plSimbrief').value.trim()
+    });
+    localStorage.setItem(PROFILE, JSON.stringify(p));
+    const c = read(DEFA);
+    Object.assign(c, {
+      login: $('plSiteLogin').value.trim(),
+      password: $('plSitePass').value
+    });
+    if (c.login || c.password) localStorage.setItem(DEFA, JSON.stringify(c));
+    else localStorage.removeItem(DEFA);
+    window.dispatchEvent(new CustomEvent('pilot-profile-change'));
+    msg('plProfileMsg', 'Profil enregistré.', 'ok');
+    profileLoad();
+    checklist();
+  });
+
+  // 6. Centre : activation (mot de passe du Centre), puis flotte et journal du site (lanceur), missions du registre,
+  // réglages du SO Group (Paramètres › Centre)
+  on('click', 'plCpcoOn', async () => {
+    const ok = await window.RepositoryNav?.cpco?.unlock?.($('plCpcoPass').value);
+    $('plCpcoPass').value = '';
+    if (!ok) return msg('plCpcoMsg', L('Mot de passe refusé.', 'Password refused.', 'Passwort abgelehnt.', 'Contraseña rechazada.'), 'err');
+    msg('plCpcoMsg', '');
+    centreState();
+  });
+  const when = iso => iso ? new Date(iso).toLocaleString(K.lang?.() || undefined, {
+    dateStyle: 'short',
+    timeStyle: 'short'
+  }) : '';
+  async function fleetState() {
+    const DS = await wait('DefaSite');
+    const st = await DS?.status?.().catch(() => null);
+    const f = st?.pages?.flotte,
+      g = st?.pages?.log;
+    S.fleet = st ? !!f?.ok : null;
+    S.fleetAt = f?.at ? when(f.at) : '';
+    msg('plFleetNow', !st ? L('Mise à jour par le lanceur : ouvrir la suite avec le lanceur.', 'Updated by the launcher: open the suite with the launcher.', 'Aktualisierung durch den Starter: die Suite mit dem Starter öffnen.', 'Actualización por el lanzador: abrir la suite con el lanzador.') : [
+      `${L('Flotte', 'Fleet', 'Flotte', 'Flota')} : ${f ? `${f.ok ? '✓' : '✗'} ${when(f.at)}${f.ok ? '' : ` — ${String(f.message || '').split('\n')[0]}`}` : L('jamais lue', 'never read', 'nie gelesen', 'nunca leída')}`,
+      `${L('Journal', 'Log', 'Flugbuch', 'Registro')} : ${g ? `${g.ok ? '✓' : '✗'} ${when(g.at)}${g.ok ? '' : ` — ${String(g.message || '').split('\n')[0]}`}` : L('jamais lu', 'never read', 'nie gelesen', 'nunca leído')}`
+    ].join('\n'), !st ? 'warn' : f?.ok ? 'ok' : 'warn');
+    $('plFleetGo').disabled = !st;
+    checklist();
+  }
+  on('click', 'plFleetGo', async () => {
+    $('plFleetGo').disabled = true;
+    msg('plFleetNow', L('Lecture du site…', 'Reading the website…', 'Website wird gelesen…', 'Leyendo el sitio…'));
+    await window.DefaSite?.refresh?.({
+      force: true
+    })?.catch?.(() => null);
+    fleetState();
+  });
+  async function missionsState() {
+    let n = null;
+    try {
+      const r = await fetch('../../data/missions/mission_registry.yaml', {
+        cache: 'no-store'
+      });
+      n = r.ok ? ((await r.text()).match(/^ {2}- id:/gm) || []).length : 0;
+    } catch {
+      n = null;
+    }
+    S.missions = n;
+    msg('plMissionsNow', n == null ? '' : n ? K.tf(['{n} mission(s) au registre.', '{n} mission(s) in the registry.', '{n} Mission(en) im Register.', '{n} misión(es) en el registro.'], {
+      n
+    }) : L('Registre vide ou absent : récupérer les données (étape 1), puis relire le registre.', 'Registry empty or missing: fetch the data (step 1), then reread the registry.', 'Register leer oder fehlt: Daten abrufen (Schritt 1), dann das Register neu lesen.', 'Registro vacío o ausente: obtener los datos (paso 1) y releer el registro.'), n ? 'ok' : 'warn');
+    checklist();
+  }
+  async function sogState() {
+    const nav = window.RepositoryNav,
+      U = await wait('SuiteUsers');
+    const users = await U?.list?.().catch(() => null);
+    S.users = users ? users.length : null;
+    S.admins = users ? users.filter(u => u.role === 'admin_centre' && u.actif !== false).length : null;
+    const send = read('missionSendConfig:v1').url;
+    const rows = [
+      ['users', L('Utilisateurs et droits', 'Users and rights', 'Benutzer und Rechte', 'Usuarios y derechos'), users ? K.tf(['{n} utilisateur(s), {a} administrateur(s) ; mode {m}', '{n} user(s), {a} administrator(s); {m} mode', '{n} Benutzer, {a} Administrator(en); Modus {m}', '{n} usuario(s), {a} administrador(es); modo {m}'], {
+        n: users.length,
+        a: S.admins,
+        m: U?.mode?.() || ''
+      }) : ''],
+      ['dispoCategories', L('Catégories de disponibilité', 'Availability categories', 'Verfügbarkeitskategorien', 'Categorías de disponibilidad'), ''],
+      ['odv', L('Planning ODV', 'ODV planning', 'ODV-Planung', 'Planificación ODV'), ''],
+      ['odvOrders', L('Tableau', 'Board', 'Einsatztafel', 'Tablero'), ''],
+      ['send', L('Envoi des CR', 'Report sending', 'Berichtsversand', 'Envío de informes'), send ? send.replace(/^https?:\/\//, '') : L('pas d’adresse', 'no address', 'keine Adresse', 'sin dirección')],
+      ['cpco', L('Calcul des routes', 'Route calculation', 'Routenberechnung', 'Cálculo de rutas'), '']
+    ];
+    $('plSogLinks').innerHTML = rows.map(([id, label, note]) => `<li><a href="${K.esc(nav?.settingsUrl?.(id) || `centre.html?base=${id}`)}">${K.esc(label)}</a>${note ? ` <small>— ${K.esc(note)}</small>` : ''}</li>`).join('');
+    checklist();
+  }
+  function centreState() {
+    const onC = cpcoOn();
+    $('plCentreLock').hidden = onC;
+    $('plCentreOn').hidden = !onC;
+    done('plCentre', onC);
+    checklist();
+    if (!onC) return;
+    $('plFleetLink').href = window.RepositoryNav?.settingsUrl?.('fleet') || 'centre.html?base=fleet';
+    fleetState();
+    missionsState();
+    sogState();
+  }
+  window.addEventListener('cpco-access-change', centreState);
+
+  // fin
   on('click', 'plFinish', () => {
     localStorage.setItem(DONE, JSON.stringify({
       at: new Date().toISOString()
@@ -475,6 +806,7 @@
     if (FA)
       for (const key of [...Object.keys(FA.FOLDERS), '__odvFile']) await FA.set(key, null);
     localStorage.removeItem(DONE);
+    localStorage.removeItem(STATE);
     localStorage.removeItem(DEFA);
     const p = read(PROFILE);
     for (const f of ['trigram', 'ivaoId', 'vatsimId', 'simbriefUser']) delete p[f];
@@ -484,23 +816,22 @@
 
   // déjà réglée : l'accueil (lanceur relancé), sauf ?force
   async function start() {
-    const FA = await new Promise(res => {
-      let n = 0;
-      const t = setInterval(() => {
-        if (window.FileAccess || ++n > 40) {
-          clearInterval(t);
-          res(window.FileAccess);
-        }
-      }, 50);
-    });
+    const FA = await wait('FileAccess');
     if (localStorage.getItem(DONE) && !new URLSearchParams(location.search).has('force') && FA && (await FA.status('__repo')).handle) {
       location.replace('../../index.html');
       return;
     }
+    checklist();
     dataState();
     repoState();
-    profileLoad();
     foldersState();
+    companyLoad();
+    ivaoKeyState();
+    profileLoad();
+    centreState();
+    // données aéronautiques construites par les blocs : bilan relu quand la base change
+    window.addEventListener('storage', e => e.key === 'siaBaseInfo:v1' && checklist());
+    setInterval(checklist, 15000);
     // Paramètres › Sources et dossiers › « Nettoyer et recommencer… » : même nettoyage, confirmé ici
     if (new URLSearchParams(location.search).has('clean')) {
       history.replaceState(null, '', 'premier_lancement.html?force');

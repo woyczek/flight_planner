@@ -408,9 +408,13 @@ Each change is saved at once.
 ## First run
 <!-- page: apps/settings/premier_lancement.html -->
 
-This page sets up the suite in four steps at the first installation. The launcher (`lancer.cmd` on Windows, `sh lancer.sh` on macOS or Linux) opens it by itself.
-To come back to it: Settings › “Installation” tab › “First run” › “Open the first run”.
-Once the suite is set up, the page sends you to the home page, unless it was opened with this button.
+This page sets up what the suite needs to work. The launcher (`lancer.cmd` on Windows, `sh lancer.sh` on macOS or Linux) opens it by itself; you can come back at any time through Settings › “First run” tab, or the “First run” card of the home page, shown as long as something remains to be set.
+Once the suite is set up, the page opened by the launcher sends you to the home page.
+
+At the top, **“Where the suite stands”** takes stock, line by line, and each line leads to its step: ✓ set, ○ to do, – optional, ? unknown (no launcher).
+- For everyone: data, git sync repository (optional), application folder, airline and website, IVAO API key (optional), pilot (trigram and at least one network), airline website credentials, aeronautical data.
+- Centre: enabling (administrators); once the Centre is enabled, fleet and log from the website, registry missions, users and rights (at least one administrator), report sending (optional).
+
 The number of each step turns green when it is done.
 
 ### 1 Data
@@ -434,16 +438,7 @@ Three options:
   and the suite works without sharing. Details: [synchronisation](../technique/SYNCHRONISATION.md).
 - Once the data is present, the optional “Flight log” card offers “Log (.html)…”: the “Flight log” page of the airline website, saved, fills in the pilots and aircraft of the reference (entry help).
 
-### 2 Profile
-
-Your pilot profile, used by all pages (☰ › Pilot profile).
-
-1. Fill in the “Pilot” card: “Trigram”, “IVAO ID (VID)”, “VATSIM ID (CID)”, “SimBrief”.
-2. Click “Save the profile”.
-
-The airline website credentials, the password and the preferences are set afterwards in [My profile](#my-profile).
-
-### 3 Folders
+### 2 Folders
 
 The browser asks you to point to each folder once; it remembers it afterwards.
 
@@ -452,15 +447,41 @@ The browser asks you to point to each folder once; it remembers it afterwards.
 
 This step matters: without an allowed data folder, your availability stays in the browser and the Centre cannot see it.
 
-### 4 Aeronautical data and aircraft types
+### 3 Airline
+
+The virtual airline whose name the suite bears, and its website address (links, fleet, flight log); setting of this browser.
+
+1. “Virtual airline” card: “Name”, “Short name”, “Full name”, “Airline website” (`https://…`).
+2. “IVAO API key (optional)” card: the installation's key (area activations and IVAO ATC sessions of the Board and the ODV planning). Kept by the launcher, it is never shown again: the card only says that a key is saved.
+3. “Save the airline”.
+
+The other fields (centre, website pages, external sources) are in Settings › Installation › Sources and folders.
+
+### 4 Profile and credentials
+
+1. “Pilot” card: “Trigram”, “IVAO ID (VID)”, “VATSIM ID (CID)”, “SimBrief”. The trigram is locked in production mode (it comes from the account).
+2. “Airline website” card: “Login” and “Password” of your account on the website, kept in this browser only (never in a file or a backup).
+3. “Save the profile”.
+
+The suite never asks for your IVAO or VATSIM passwords: your IDs (VID, CID) are enough. The suite account (password, production mode), the personal IVAO client and the preferences are set in [My profile](#my-profile).
+
+### 5 Aeronautical data and aircraft types
 
 Maps, missions and planning use the aeronautical data (AIRAC) and the aircraft type database. The step shows the same blocks as Settings › Installation:
 
 1. “Aeronautical data”: France is active by default; a click on the map activates another zone. Each source has its button: SIA ZIP (link to the shop, free account, cycle product at 0 €, then “Fetch the downloaded ZIP”), zone MORA, MILAIP PDF (refuelling tracks), datasets of other countries. The database builds itself.
 2. “Aircraft types”: “Complete the missing fleet and mission types” downloads the types (ICAO) and their performance (EUROCONTROL).
-3. “Finish”: the suite is marked as “set up” and the home page opens.
 
-The “Home” link takes you back to the home page without finishing.
+### 6 Centre (administrators)
+
+For SO Group administrators only: pilots skip this step.
+- “Enable the Centre” card: “Centre password”, then “Enable the Centre”.
+- Once the Centre is enabled:
+  - “Fleet and flight log”: last reading of the website by the launcher (fleet, aircraft location, log), “Update now”, and the link to the fleet (Settings › Centre).
+  - “Missions”: number of missions in the registry (they come with the data, step 1) and the link to the registry.
+  - “SO Group settings”: links to the Settings › Centre sections — users and rights (number, administrators, mode), availability categories, ODV planning, Board, report sending, route calculation.
+
+“Finish” marks the suite as “set up” and opens the home page; the “Home” link goes back to it without finishing.
 
 ### Start again
 

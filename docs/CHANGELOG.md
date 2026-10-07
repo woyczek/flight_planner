@@ -146,6 +146,12 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Modifié
 
+- **Premier lancement repensé** : bilan « Où en est la suite » en tête (données, git, dossier, compagnie, clé IVAO,
+  pilote, identifiants du site, données aéronautiques ; Centre : flotte et journal, missions, utilisateurs, envoi des CR),
+  six étapes (données, dossiers, compagnie, profil et identifiants, données aéronautiques, Centre pour les
+  administrateurs) ; onglet « Premier lancement » dans Paramètres, carte de rappel sur l'accueil tant qu'il reste à faire.
+- **Accueil généré depuis `repository_tree`** (barre latérale et onglets) : plus de liste écrite à la main qui prend du
+  retard ; pages du Centre masquées tant qu'il est verrouillé.
 - **« Ordres de vols » renommé « Tableau »** (EN Board, DE Einsatztafel, ES Tablero) : page, barre latérale, menu,
   rubrique de Paramètres › Centre, manuels ; fichiers et clés inchangés (`odv_orders.html`, `data/odv/`, `odvOrders`).
 - **Renommage : DEFA Virtual → SO Group Virtual** (écriture statique dans les sources, les quatre langues et la

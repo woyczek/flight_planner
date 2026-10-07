@@ -675,11 +675,13 @@ These sections are assigned to the page by `config/repository_tree` (key `settin
 ### First run
 
 This section shows whether the first run is complete in this browser, and on what date.
-- “Open the first run” reopens the wizard (`premier_lancement.html?force`). It runs in four steps:
-  1. Data: “Fetch the data” (clone of the data repository) or “Data archive…”; optionally, “Log (.html)…”.
-  2. Profile: “Save the profile”.
-  3. Folders: “Choose the application folder”, then the ODV workbook, optional (“OneDrive folder…” or “or the Excel file…”).
-  4. Aeronautical data and aircraft types: the “Aeronautical data” and “Aircraft types” blocks (the same as here), then “Finish”.
+- “Open the first run” reopens the wizard (`premier_lancement.html?force`), also reachable through the “First run” tab of Settings and the home page card as long as something remains to be set. At the top, “Where the suite stands” takes stock; then six steps:
+  1. Data: “Fetch the data” (clone of the data repository) or “Data archive…”; git sync repository (optional); optionally, “Log (.html)…”.
+  2. Folders: “Choose the application folder”, then the ODV workbook, optional (“OneDrive folder…” or “or the Excel file…”).
+  3. Airline: name, short name, full name, airline website; the installation's IVAO API key (optional, kept by the launcher); “Save the airline”.
+  4. Profile and credentials: trigram, IVAO, VATSIM, SimBrief, airline website credentials; “Save the profile”.
+  5. Aeronautical data and aircraft types: the “Aeronautical data” and “Aircraft types” blocks (the same as here).
+  6. Centre (administrators): “Enable the Centre”, then fleet and log from the website (“Update now”), registry missions and links to the SO Group settings (Settings › Centre); finally “Finish”.
 - “Sources and folders, virtual airline” opens the next section.
 - “Update channel” opens Maintenance › Updates.
 - To start from scratch: “Clean and start again…”, at the bottom of the first run. This clears the settings of this browser, not the files.

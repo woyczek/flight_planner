@@ -161,7 +161,8 @@ window.REPOSITORY_TREE={
       {path:"apps/settings/profil.html",label:["Mon profil","My profile","Mein Profil","Mi perfil"]},
       {path:"apps/settings/centre.html",label:["Centre","Centre","Zentrum","Centro"]},
       {path:"apps/settings/installation.html",label:["Installation","Installation","Installation","Instalación"]},
-      {path:"apps/settings/maintenance.html",label:["Maintenance","Maintenance","Wartung","Mantenimiento"]}]}
+      {path:"apps/settings/maintenance.html",label:["Maintenance","Maintenance","Wartung","Mantenimiento"]},
+      {path:"apps/settings/premier_lancement.html",label:["Premier lancement","First run","Erststart","Primer arranque"]}]}
   ],
   // Paramètres en quatre pages (docs/technique/DISPOS_ET_REORGANISATION.md § 2) : rubrique (?base=<id> de shared/data_admin.js et
   // shared/settings_panels.js, ?m=<id> de shared/maintenance_page.js) → page. Les anciennes adresses
