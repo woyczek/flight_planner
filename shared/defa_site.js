@@ -1,6 +1,7 @@
 (() => {
   'use strict';
-  // Flotte et journal DEFA depuis le site (pages publiques de flotte.defa-virtual.fr, lues sans connexion) : à l'ouverture
+  // Flotte et journal depuis le site de la compagnie (pages publiques Flotte et Log des vols, lues sans connexion ;
+  // adresses réglées au premier lancement ou dans Installation › Sources et dossiers, transmises au lanceur) : à l'ouverture
   // d'une page servie par le lanceur, une demande au lanceur (tools/launch.py, /__setup/defa-site) qui, au plus une fois
   // par jour calendaire et si le réglage « automatique » le permet, télécharge la page Flotte et le Log des vols et les
   // passe aux mêmes scripts que le collage (AircraftDB/update_fleet.py, tools/defa_reference.py) : data/references/
@@ -65,6 +66,12 @@
       }), 'warn');
     }
   }
+  /** Adresses des pages Flotte et Log des vols du site de la compagnie réglé (RepositoryNav.vaUrl : réglage local, sinon
+   *  défaut de la compagnie de la suite) ; '' : adresse non réglée (le lanceur n'importe rien pour cette page). */
+  const pageUrls = () => ({
+    flotte: window.RepositoryNav?.vaUrl?.('fleet') || '',
+    log: window.RepositoryNav?.vaUrl?.('log') || ''
+  });
   /** Une passe (force : même déjà faite aujourd'hui ou réglage coupé) ; état du lanceur, null sans lanceur. */
   async function refresh({
     force = false,
@@ -73,7 +80,8 @@
     const s = await api({
       refresh: true,
       force,
-      auto
+      auto,
+      pages: pageUrls()
     });
     report(s);
     return s;

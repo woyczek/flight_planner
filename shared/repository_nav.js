@@ -662,12 +662,14 @@
   };
   document.body.style.backgroundColor = theme.page || "";
   /** Adresse d'une source externe : réglage local (suiteSources:v1, Paramètres › Maintenance) sinon repository_tree.sources. */
-  // Site de la compagnie (source « defa », va.pages) : les adresses par défaut de repository_tree sont celles de DEFA
-  // Virtual et ne valent que pour elle ; autre compagnie : adresses réglées (Paramètres › Installation › Sources et
-  // dossiers) ou aucune — jamais de lien inventé (siteLink : invitation à renseigner l'adresse)
-  const DEFAULT_SITE_FOR = "DEFA Virtual";
+  // Site de la compagnie (source « defa », va.pages) : les adresses par défaut de repository_tree valent pour la
+  // compagnie par défaut de la suite (repository_tree.va.name : SO Group Virtual ; DEFA Virtual, son ancien nom) ;
+  // autre compagnie : adresses réglées (Paramètres › Installation › Sources et dossiers, premier lancement) ou aucune —
+  // jamais de lien inventé (siteLink : invitation à renseigner l'adresse)
+  const DEFAULT_SITE_FOR = [cfg.va?.name || "SO Group Virtual", "DEFA Virtual"];
   const vaName = () => (K.store.json("suiteVA:v1", {}) || {}).name || cfg.va?.name || "SO Group Virtual";
-  const source = key => String(K.store.json("suiteSources:v1", {})[key] || (key === "defa" && vaName() !== DEFAULT_SITE_FOR ? "" : cfg.sources?.[key]?.url) || "").replace(/\/+$/, "");
+  const defaultVa = () => DEFAULT_SITE_FOR.includes(vaName());
+  const source = key => String(K.store.json("suiteSources:v1", {})[key] || (key === "defa" && !defaultVa() ? "" : cfg.sources?.[key]?.url) || "").replace(/\/+$/, "");
   /** Compagnie virtuelle : repository_tree.va (SO Group Virtual par défaut) et réglage local (suiteVA:v1) ; url : site
    *  (sources.defa). { name, fullName, short, centre, centreName, url, pages: { home, log, fleet, aircraft } }. */
   const va = () => {
@@ -681,7 +683,7 @@
       centreName: o.centreName || d.centreName || "",
       url: source("defa"),
       pages: {
-        ...(vaName() === DEFAULT_SITE_FOR ? d.pages || {} : {}),
+        ...(defaultVa() ? d.pages || {} : {}),
         ...(o.pages || {})
       }
     };
@@ -1156,7 +1158,7 @@
     document.head.append(sync);
     /* Flotte et journal DEFA depuis le site : une fois par jour à l'ouverture d'une page (lanceur) */
     const defaSite = document.createElement("script");
-    defaSite.src = new URL("defa_site.js?v=9903c8d6", script.src).href;
+    defaSite.src = new URL("defa_site.js?v=03889892", script.src).href;
     document.head.append(defaSite);
     /* Disponibilités : catégories configurables, thèmes ouverts, déclarations par semaine */
     const dispos = document.createElement("script");

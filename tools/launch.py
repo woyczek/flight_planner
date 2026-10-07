@@ -438,7 +438,8 @@ class Setup(http.server.SimpleHTTPRequestHandler):
                 a = {}
             if 'auto_enabled' in a:
                 return self._json(defa_set_auto(bool(a['auto_enabled'])))
-            return self._json(defa_refresh(force=bool(a.get('force')), auto=bool(a.get('auto'))))
+            pages = a.get('pages') if isinstance(a.get('pages'), dict) else None
+            return self._json(defa_refresh(force=bool(a.get('force')), auto=bool(a.get('auto')), pages=pages))
         if path == '/__setup/secrets':
             try:
                 a = json.loads(body or b'{}')
@@ -812,9 +813,11 @@ def defa_set_auto(on):
     return s
 
 
-def defa_refresh(force=False, auto=False):
+def defa_refresh(force=False, auto=False, pages=None):
     """Télécharge les pages Flotte et Log des vols et les passe aux scripts ; auto : seulement si le réglage le permet
-    et qu'aucune tentative n'a eu lieu aujourd'hui (échec compris) ; une passe à la fois."""
+    et qu'aucune tentative n'a eu lieu aujourd'hui (échec compris) ; une passe à la fois. pages : adresses réglées par la
+    page ({ flotte, log } : site de la compagnie, RepositoryNav.vaUrl) ; adresse vide : page non importée (compagnie sans
+    site réglé : jamais la flotte d'une autre) ; sans pages (page ancienne) : adresses par défaut de DEFA_SITE."""
     s = defa_state()
     if auto and not force and (not s['auto'] or s['last'][:10] == datetime.date.today().isoformat()):
         return {**s, 'skipped': True}
@@ -828,6 +831,12 @@ def defa_refresh(force=False, auto=False):
         for page, (url, script, out) in DEFA_SITE.items():
             r = {'at': s['last']}
             tmp = ''
+            if pages is not None:
+                url = str(pages.get(page) or '').strip()
+                if not re.match(r'https?://', url):
+                    s['pages'][page] = {**r, 'ok': False, 'message': 'adresse du site de la compagnie non réglée (Paramètres › Installation › Sources et dossiers)'}
+                    continue
+            r['url'] = url
             try:
                 req = urllib.request.Request(url, headers={'User-Agent': 'SOG-suite (flotte et journal)'})
                 with urllib.request.urlopen(req, timeout=30) as f:
