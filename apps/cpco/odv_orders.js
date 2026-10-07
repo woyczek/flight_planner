@@ -955,8 +955,11 @@
         ends[i] = s.b;
         return [s, i];
       });
+      // rangées de hauteur fixe (lisibles) ; la ligne grandit avec le nombre de sessions simultanées
       const n = Math.max(1, ends.length),
-        hh = 22 / n;
+        hh = 14;
+      const lane = at.closest('.odvo-lane');
+      if (lane) lane.style.height = `${Math.max(26, 4 + n * hh)}px`;
       const lbl = $('.odvo-sec-atc .odvo-lbl');
       if (lbl) lbl.title = tf(L4('Sessions ATC du jour — périmètre : {p}', 'ATC sessions of the day — perimeter: {p}', 'ATC-Sitzungen des Tages — Bereich: {p}', 'Sesiones ATC del día — perímetro: {p}'), {
         p: S.atcLabel || '—'
