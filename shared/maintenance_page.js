@@ -1235,9 +1235,10 @@
   // ===== 4. Données aéronautiques : carte des zones du monde (shared/aero_zones.js), sources de chaque zone,
   // reconstruction de la base aéronautique (zones actives, sources cochées), cycles AIRAC et âge des données, MORA.
   // États d'une zone sur la carte : vierge, survolée (sources dans le panneau), active incomplète, active complète,
-  // inactive avec des données (grisée). Un clic active ou désactive la zone ; le panneau montre la zone choisie, ou la
-  // zone survolée.
+  // inactive avec des données (grisée). Un clic ajoute la zone à la sélection ou l'en retire ; « Activer » applique la
+  // sélection et enchaîne tout ce qui se fait seul (aeroAutoZones). Le panneau montre la zone survolée.
   let aeroMapEl = null,
+    aeroSel = null, // sélection en cours (Set d'identifiants de zones) ; null : celle des zones actives
     aeroMap = null,
     aeroPinned = 'fr',
     aeroLocked = false, // zone épinglée d'un clic : le panneau reste sur elle malgré le survol
@@ -1539,10 +1540,12 @@
         type: 'fill',
         source: 'zones',
         paint: {
-          'fill-color': ['case', ['boolean', ['feature-state', 'hover'], false], '#1e6fd9', color],
-          'fill-opacity': ['case', ['boolean', ['feature-state', 'hover'], false], .35, ['match', ['get', 'state'], 'blank', .02,
-            'data', .35, 'partial', .5, 'complete', .55, .02
-          ]]
+          'fill-color': ['case', ['boolean', ['feature-state', 'sel'], false], '#1e6fd9', ['boolean', ['feature-state', 'hover'],
+            false
+          ], '#1e6fd9', color],
+          'fill-opacity': ['case', ['boolean', ['feature-state', 'sel'], false], .55, ['boolean', ['feature-state', 'hover'], false],
+            .2, ['match', ['get', 'state'], 'blank', .02, 'data', .35, 'partial', .5, 'complete', .55, .02]
+          ]
         }
       });
       aeroMap.addLayer({
@@ -1550,11 +1553,14 @@
         type: 'line',
         source: 'zones',
         paint: {
-          'line-color': ['case', ['boolean', ['feature-state', 'pinned'], false], '#0b2f6b', ['boolean', ['feature-state',
-            'hover'], false], '#1e6fd9', ['match', ['get', 'state'], 'blank', '#9aa3ad', color]],
-          'line-width': ['case', ['boolean', ['feature-state', 'pinned'], false], 3.2, ['boolean', ['feature-state', 'hover'],
+          'line-color': ['case', ['boolean', ['feature-state', 'sel'], false], '#0b2f6b', ['boolean', ['feature-state', 'pinned'],
             false
-          ], 2.4, ['match', ['get', 'state'], 'blank', .5, 1.2]]
+          ], '#0b2f6b', ['boolean', ['feature-state', 'hover'], false], '#1e6fd9', ['match', ['get', 'state'], 'blank', '#9aa3ad',
+            color
+          ]],
+          'line-width': ['case', ['boolean', ['feature-state', 'sel'], false], 2.6, ['boolean', ['feature-state', 'pinned'], false],
+            3.2, ['boolean', ['feature-state', 'hover'], false], 2.4, ['match', ['get', 'state'], 'blank', .5, 1.2]
+          ]
         }
       });
       let hovered = null;
@@ -1596,11 +1602,15 @@
         hovered = aeroHover = null;
         aeroMap.getCanvas().style.cursor = '';
       });
-      // clic : épingle la zone (activation et sources dans le panneau) ; second clic sur elle : relâchée
+      // clic : la zone entre dans la sélection ou en sort (« Activer » sous la carte l'applique)
       aeroMap.on('click', 'zones-fill', e => {
         const id = e.features?.[0]?.properties?.zone;
-        if (id) aeroPin(Z, aeroLocked && aeroPinned === id ? null : id);
+        if (!id) return;
+        const sel = aeroSelection(Z);
+        sel.has(id) ? sel.delete(id) : sel.add(id);
+        aeroSelShow(Z);
       });
+      aeroSelPaint(Z);
       if (aeroLocked) aeroMap.setFeatureState({
         source: 'zones',
         id: aeroPinned
@@ -1612,6 +1622,59 @@
     aeroMap.on('load', setup);
     if (aeroMap.style?._loaded) setup();
     return aeroMapEl;
+  }
+  /** Sélection en cours (créée depuis les zones actives au premier clic). */
+  const aeroSelection = Z => aeroSel ??= new Set(Z.zones().filter(z => Z.isOn(z.id)).map(z => z.id));
+  /** Zones sélectionnées peintes sur la carte (état « sel »). */
+  function aeroSelPaint(Z) {
+    if (!aeroMap?.getSource?.('zones')) return;
+    const sel = aeroSelection(Z);
+    for (const z of Z.zones()) aeroMap.setFeatureState({
+      source: 'zones',
+      id: z.id
+    }, {
+      sel: sel.has(z.id)
+    });
+  }
+  /** Barre de la sélection sous la carte : pays choisis, « Activer » (appliquer et tout récupérer), « Annuler ». */
+  function aeroSelShow(Z) {
+    aeroSelPaint(Z);
+    const el = document.getElementById('mtAeroSel');
+    if (!el) return;
+    const sel = aeroSelection(Z),
+      active = new Set(Z.zones().filter(z => Z.isOn(z.id)).map(z => z.id)),
+      add = [...sel].filter(id => !active.has(id)),
+      del = [...active].filter(id => !sel.has(id)),
+      names = ids => ids.map(id => zName(Z.byId(id))).sort((a, b) => a.localeCompare(b)).join(', '),
+      todo = [...sel].filter(id => aeroZoneState(Z, Z.byId(id)) !== 'complete');
+    const what = [add.length && t(['à activer : {z}', 'to activate: {z}', 'zu aktivieren: {z}', 'por activar: {z}'], {
+      z: names(add)
+    }), del.length && t(['à désactiver : {z}', 'to deactivate: {z}', 'zu deaktivieren: {z}', 'por desactivar: {z}'], {
+      z: names(del)
+    })].filter(Boolean).join(' · ');
+    const tip = t([
+      'Active les pays choisis (désactive les autres), télécharge toutes leurs sources, reconstruit la base, calcule la MORA si la base est bonne ; ce qui reste à faire à la main est listé dessous',
+      'Activates the chosen countries (deactivates the others), downloads all their sources, rebuilds the database, computes the MORA if the database is good; what is left to do by hand is listed below',
+      'Aktiviert die gewählten Länder (deaktiviert die anderen), lädt alle Quellen, baut die Datenbank neu auf, berechnet die MORA, wenn die Datenbank in Ordnung ist; was von Hand bleibt, steht darunter',
+      'Activa los países elegidos (desactiva los demás), descarga todas sus fuentes, reconstruye la base y calcula la MORA si la base es correcta; lo que queda a mano figura debajo'
+    ]);
+    el.innerHTML = `<p class="mt-small"><b>${esc(t(['Pays choisis', 'Chosen countries', 'Gewählte Länder', 'Países elegidos']))} (${sel.size})</b> : ${esc(sel.size ? names([...sel]) : t(['aucun — cliquer sur un pays de la carte', 'none — click a country on the map', 'keines — ein Land auf der Karte anklicken', 'ninguno — hacer clic en un país del mapa']))}${what ? ` — ${esc(what)}` : ''}</p>
+      <p class="row"><button type="button" class="primary" data-sel-apply data-icon="download"${aeroAutoBusy || !(add.length || del.length || todo.length) ? ' disabled' : ''} title="${esc(tip)}">${esc(t(['Activer', 'Activate', 'Aktivieren', 'Activar']))}</button>${add.length || del.length ? ` <button type="button" class="secondary" data-sel-cancel>${esc(t(['Annuler', 'Cancel', 'Abbrechen', 'Cancelar']))}</button>` : ''}</p>`;
+    el.onclick = e => {
+      if (e.target.closest('[data-sel-cancel]')) {
+        aeroSel = null;
+        aeroSelShow(Z);
+      } else if (e.target.closest('[data-sel-apply]')) aeroSelApply(Z);
+    };
+  }
+  /** « Activer » : zones actives = sélection, puis mise en place enchaînée des zones choisies incomplètes. */
+  async function aeroSelApply(Z) {
+    const sel = aeroSelection(Z);
+    for (const z of Z.zones())
+      if (Z.isOn(z.id) !== sel.has(z.id)) Z.setZone(z.id, sel.has(z.id));
+    aeroSel = null;
+    aeroRefresh(Z);
+    await aeroAutoZones(Z, [...sel].filter(id => aeroZoneState(Z, Z.byId(id)) !== 'complete'));
   }
   /** Ligne du tableau des sources : zone épinglée au panneau, source mise en vue et son action principale lancée
    *  (téléchargement, ZIP du SIA, import du PDF MILAIP, choix du dossier X-Plane, MORA de la zone) ; dans le geste de
@@ -1683,6 +1746,7 @@
     aeroPanelShow(Z, aeroShown());
     aeroAges(Z);
     aeroTodo(Z);
+    aeroSelShow(Z);
   }
   /** Cycles AIRAC et âge des données des zones actives. */
   /** Fichiers d'une source d'une zone (inventaire du dossier SIA) : [{ rel, at, size }] ; mora.csv pour la MORA. */
@@ -1815,12 +1879,18 @@
     const el = document.getElementById('mtAeroTodo');
     if (!el) return;
     const eff = window.Airac.cycle();
+    // téléchargements et MORA : faits par « Activer » (aeroAutoZones), comptés sur une seule ligne, pas listés un à un
+    let auto = 0;
     const lines = Z.zones().filter(z => Z.isOn(z.id)).flatMap(z => z.sources.filter(s => Z.srcOn(z.id, s) && Z.SOURCES[s].readable).map(
       s => {
         const S = Z.SOURCES[s],
           st = aeroSourceStatus(Z, z.id, s),
           age = aeroAge(S, st);
         if (age === 'ok') return '';
+        if (S.kind === 'download' || S.kind === 'computed') {
+          auto++;
+          return '';
+        }
         const url = s === 'sia' ? eff.url : Z.linkOf(s);
         const what = s === 'sia' ? [t(['commander le cycle {c} sur le site du SIA', 'order cycle {c} on the SIA website',
             'Zyklus {c} auf der SIA-Website bestellen', 'pedir el ciclo {c} en el sitio del SIA'
@@ -1840,7 +1910,7 @@
           S.kind === 'local' ? ['', t(['Choisir le dossier…', 'Choose the folder…', 'Ordner wählen…', 'Elegir la carpeta…'])] : [t([
             'télécharger les fichiers', 'download the files', 'Dateien herunterladen', 'descargar los archivos'
           ]), t(['Déposer les fichiers…', 'Drop the files…', 'Dateien ablegen…', 'Depositar los archivos…'])];
-        return `<li>${pill(age === 'none' ? 'err' : 'warn', age === 'none' ? t(['manquant', 'missing', 'fehlt', 'falta']) : t(['ancien', 'old', 'alt', 'antiguo']))} <b>${esc(zName(z))} — ${esc(t(S.label).split(/ — | \(/)[0])}</b> : ${url && what[0] ? `<a class="mt-link" href="${esc(url)}" target="_blank" rel="noopener">${esc(what[0])} ↗</a> / ` : ''}<button type="button" class="secondary" data-todo-zone="${esc(z.id)}" data-todo-src="${esc(s)}">${esc(what[1])}</button></li>`;
+        return `<li>${pill(age === 'none' ? 'err' : 'warn', age === 'none' ? t(['manquant', 'missing', 'fehlt', 'falta']) : t(['ancien', 'old', 'alt', 'antiguo']))} <b>${esc(zName(z))} — ${esc(t(S.label).split(/ — | \(/)[0])}</b> : ${url && what[0] ? `<a class="mt-link" href="${esc(url)}" target="_blank" rel="noopener">${esc(what[0])} ↗</a> / ` : ''}<button type="button" class="secondary mt-btn-sm" data-todo-zone="${esc(z.id)}" data-todo-src="${esc(s)}">${esc(what[1])}</button></li>`;
       })).filter(Boolean);
     el.dataset.subtitle = t([
       'Ce que la suite ne peut pas faire seule : commandes, téléchargements à la main, dossiers à choisir — une ligne par source des zones actives',
@@ -1848,6 +1918,7 @@
       'Was die Suite nicht allein kann: Bestellungen, manuelle Downloads, zu wählende Ordner — eine Zeile pro Quelle der aktiven Zonen',
       'Lo que la suite no puede hacer sola: pedidos, descargas manuales, carpetas que elegir — una línea por fuente de las zonas activas'
     ]);
+    if (auto) lines.unshift(`<li>${pill('info', t(['automatique', 'automatic', 'automatisch', 'automático']))} ${esc(t(['{n} source(s) téléchargée(s) ou calculée(s) par « Activer » sous la carte (téléchargements, MORA)', '{n} source(s) downloaded or computed by “Activate” under the map (downloads, MORA)', '{n} Quelle(n), die „Aktivieren“ unter der Karte lädt oder berechnet (Downloads, MORA)', '{n} fuente(s) descargada(s) o calculada(s) por «Activar» bajo el mapa (descargas, MORA)'], { n: auto }))}</li>`);
     el.innerHTML = `<h3>${esc(t(['Actions à faire', 'Actions to do', 'Zu erledigen', 'Acciones pendientes']))}</h3>${lines.length ? `<ul class="mt-aero-todo">${lines.join('')}</ul>` : `<p class="mt-small">${pill('ok', t(['rien à faire : toutes les sources des zones actives sont présentes et à jour', 'nothing to do: all sources of the active zones are present and up to date', 'nichts zu tun: alle Quellen der aktiven Zonen sind vorhanden und aktuell', 'nada que hacer: todas las fuentes de las zonas activas están presentes y al día']))}</p>`}`;
     el.onclick = e => {
       const b = e.target.closest('[data-todo-src]');
@@ -1867,86 +1938,114 @@
     }
   };
   let aeroAutoBusy = false;
-  async function aeroAutoZone(Z, id) {
-    if (aeroAutoBusy) return;
-    const z = Z.byId(id);
-    if (!z || !Z.isOn(id)) return;
+  const aeroAutoZone = (Z, id) => aeroAutoZones(Z, [id]);
+  /** Mise en place de zones actives : téléchargements de leurs sources, derniers ZIP de Téléchargements, une seule
+   *  reconstruction de la base, puis MORA de chaque zone qui en manque — seulement si la base a été reconstruite (relief
+   *  sans obstacles sinon) ; résumé en notification, reliquat sous la carte (aeroTodo). */
+  async function aeroAutoZones(Z, ids) {
+    ids = ids.filter(id => Z.byId(id) && Z.isOn(id));
+    if (aeroAutoBusy || !ids.length) return;
     aeroAutoBusy = true;
-    const steps = [];
+    aeroSelShow(Z);
+    const steps = [],
+      moras = [];
     let rebuilt = false,
-      fetched = false;
-    for (const s of z.sources) {
-      const S = Z.SOURCES[s];
-      if (!Z.srcOn(id, s) || !S?.readable) continue;
-      const fresh = aeroAge(S, aeroSourceStatus(Z, id, s)) === 'ok';
-      if (S.kind === 'download') steps.push([t(S.label), async () => {
-        await aeroFetch(S.provider, S.args || [id], null, id, s);
-        fetched = true;
-      }]);
-      else if (s === 'sia' && !fresh) steps.push(['SIA', async () => {
-        if (await siaFetchZip({
-            quiet: true
-          })) rebuilt = true;
-      }]);
-      else if (S.downloads && !fresh) steps.push([t(S.label), async () => {
-        if (await aeroDrop(id, s, {
-            auto: true
-          })) rebuilt = true;
-      }]);
+      fetched = false,
+      sia = false;
+    const xpMora = ((await window.SiaBase.get())?.moraCells || []).some(c => c.src === 'xplane');
+    for (const id of ids) {
+      const z = Z.byId(id),
+        many = ids.length > 1 ? `${zName(z)} — ` : '';
+      for (const s of z.sources) {
+        const S = Z.SOURCES[s];
+        if (!Z.srcOn(id, s) || !S?.readable) continue;
+        const fresh = aeroAge(S, aeroSourceStatus(Z, id, s)) === 'ok';
+        if (S.kind === 'download') steps.push([many + t(S.label), async () => {
+          await aeroFetch(S.provider, S.args || [id], null, id, s);
+          fetched = true;
+        }]);
+        // le ZIP du SIA vaut pour toute la France : une seule fois
+        else if (s === 'sia' && !fresh && !sia) {
+          sia = true;
+          steps.push(['SIA', async () => {
+            if (await siaFetchZip({
+                quiet: true
+              })) rebuilt = true;
+          }]);
+        } else if (S.downloads && !fresh) steps.push([many + t(S.label), async () => {
+          if (await aeroDrop(id, s, {
+              auto: true
+            })) rebuilt = true;
+        }]);
+      }
+      // MORA : calculée pour une zone ordinaire ; grande zone : celle d'X-Plane, si la base en a
+      if (z.sources.includes('mora') && Z.srcOn(id, 'mora') && !aeroSourceStatus(Z, id, 'mora').has && (!moraTooLarge(Z, id) || xpMora))
+        moras.push(id);
     }
-    // MORA : calculée pour une zone ordinaire ; grande zone : celle d'X-Plane (option A), si la base en a
-    const moraWanted = z.sources.includes('mora') && Z.srcOn(id, 'mora') && !aeroSourceStatus(Z, id, 'mora').has,
-      moraLarge = moraTooLarge(Z, id),
-      moraOn = moraWanted && (!moraLarge || ((await window.SiaBase.get())?.moraCells || []).some(c => c.src === 'xplane'));
-    const total = steps.length + 1 + (moraOn ? 1 : 0);
-    const job = window.AppFramework?.task?.(t(['Mise en place de la zone {z}', 'Setting up zone {z}', 'Einrichtung der Zone {z}',
-      'Puesta en marcha de la zona {z}'
+    const total = steps.length + 1 + moras.length;
+    const job = window.AppFramework?.task?.(ids.length > 1 ? t(['Mise en place de {n} zones', 'Setting up {n} zones',
+      'Einrichtung von {n} Zonen', 'Puesta en marcha de {n} zonas'
     ], {
-      z: zName(z)
+      n: ids.length
+    }) : t(['Mise en place de la zone {z}', 'Setting up zone {z}', 'Einrichtung der Zone {z}', 'Puesta en marcha de la zona {z}'], {
+      z: zName(Z.byId(ids[0]))
     }));
     const before = window.SiaBase.info()?.cachedAt || '';
+    const zones = names => names.map(id => zName(Z.byId(id))).join(', ');
     try {
       for (const [i, [label, fn]] of steps.entries()) {
         job?.set?.(i, total, label);
-        await fn();
+        try {
+          await fn();
+        } catch (e) {
+          // une source en échec n'arrête pas les autres : elle reste dans « Actions à faire »
+          window.AppFramework?.notify?.(`${label} : ${e.message}`, 'warn');
+        }
       }
       job?.set?.(steps.length, total, t(['Base aéronautique', 'Aeronautical database', 'Luftfahrtdatenbank', 'Base aeronáutica']));
       if (!rebuilt || fetched) await basePanelApi?.reread(true);
-      if (moraOn) {
-        job?.set?.(steps.length + 1, total, 'MORA');
-        await moraExclusive(moraLarge ? planMoraXplane : planMoraZone, id);
-      }
+      // base vraiment relue ? (dossier SIA non choisi, lecture annulée : le bloc de la base le dit)
+      const built = (window.SiaBase.info()?.cachedAt || '') !== before;
+      const moraDone = [];
+      if (built)
+        for (const [i, id] of moras.entries()) {
+          job?.set?.(steps.length + 1 + i, total, `MORA — ${zName(Z.byId(id))}`);
+          await moraExclusive(moraTooLarge(Z, id) ? planMoraXplane : planMoraZone, id);
+          moraDone.push(id);
+        }
       const done = aeroAutoDone();
-      done.add(id);
+      ids.forEach(id => done.add(id));
       try {
         localStorage.setItem(AERO_AUTO_KEY, JSON.stringify([...done]));
       } catch {}
       aeroInv = await aeroInventory();
       aeroRefresh(Z);
-      // base vraiment relue ? (dossier SIA non choisi, lecture annulée : le bloc de la base le dit)
-      const built = (window.SiaBase.info()?.cachedAt || '') !== before;
-      if (!built) window.AppFramework?.notify?.(t([
-        'Zone {z} : sources récupérées, mais la base n’a pas été reconstruite (voir le bloc « Base aéronautique »).',
-        'Zone {z}: sources fetched, but the database was not rebuilt (see the “Aeronautical database” block).',
-        'Zone {z}: Quellen abgerufen, aber die Datenbank wurde nicht neu aufgebaut (siehe Block „Luftfahrtdatenbank“).',
-        'Zona {z}: fuentes obtenidas, pero la base no se ha reconstruido (ver el bloque «Base aeronáutica»).'
-      ], {
-        z: zName(z)
-      }), 'warn');
-      else window.AppFramework?.notify?.(t([
-        'Zone {z} : sources récupérées, base reconstruite{m}. Ce qui reste à faire est listé sous la carte.',
-        'Zone {z}: sources fetched, database rebuilt{m}. What is left to do is listed under the map.',
-        'Zone {z}: Quellen abgerufen, Datenbank neu aufgebaut{m}. Was noch zu tun ist, steht unter der Karte.',
-        'Zona {z}: fuentes obtenidas, base reconstruida{m}. Lo que queda por hacer figura bajo el mapa.'
-      ], {
-        z: zName(z),
-        m: moraOn ? t([', MORA calculée', ', MORA computed', ', MORA berechnet', ', MORA calculada']) : ''
-      }), 'ok');
+      const left = document.querySelectorAll('#mtAeroTodo .mt-aero-todo>li [data-todo-src]').length;
+      const parts = [built ? t(['base reconstruite', 'database rebuilt', 'Datenbank neu aufgebaut', 'base reconstruida']) : t([
+          'base non reconstruite (voir « Base aéronautique ») : MORA non calculée',
+          'database not rebuilt (see “Aeronautical database”): MORA not computed',
+          'Datenbank nicht neu aufgebaut (siehe „Luftfahrtdatenbank“): MORA nicht berechnet',
+          'base no reconstruida (ver «Base aeronáutica»): MORA no calculada'
+        ]), moraDone.length && t(['MORA : {z}', 'MORA: {z}', 'MORA: {z}', 'MORA: {z}'], {
+          z: zones(moraDone)
+        }),
+        left ? t(['{n} action(s) à faire à la main, listées sous la carte', '{n} action(s) to do by hand, listed under the map',
+          '{n} Aufgabe(n) von Hand, unter der Karte aufgeführt', '{n} acción(es) que hacer a mano, listadas bajo el mapa'
+        ], {
+          n: left
+        }) : t(['rien d’autre à faire', 'nothing else to do', 'nichts weiter zu tun', 'nada más que hacer'])
+      ].filter(Boolean);
+      window.AppFramework?.notify?.(`${zones(ids)} : ${parts.join(' ; ')}.`, built ? 'ok' : 'warn');
+      if (left) document.getElementById('mtAeroTodo')?.scrollIntoView({
+        block: 'center',
+        behavior: 'smooth'
+      });
     } catch (e) {
       window.AppFramework?.notify?.(e.message, 'error');
     } finally {
       job?.end?.();
       aeroAutoBusy = false;
+      aeroSelShow(Z);
     }
   }
   // un seul calcul de MORA à la fois (zone, simple, complet) : boutons désactivés pendant le calcul, un clic de plus
@@ -2544,11 +2643,11 @@
     }
     aeroInv = await aeroInventory();
     if (!siaFolderState) await scanSiaFolder(false);
-    const legend = Object.entries(AERO_STATE).map(([k, row]) => `<span><i class="mt-aero-dot" style="background:${AERO_COLOR[k]}${k === 'blank' ? ';opacity:.25' : ''}"></i>${esc(t(row))}</span>`).join('') + `<span><i class="mt-aero-dot" style="background:#1e6fd9"></i>${esc(t(['survol : sources de la zone dans le panneau', 'hover: zone sources in the panel', 'Überfahren: Quellen der Zone im Feld', 'al pasar: fuentes de la zona en el panel']))}</span>`;
+    const legend = Object.entries(AERO_STATE).map(([k, row]) => `<span><i class="mt-aero-dot" style="background:${AERO_COLOR[k]}${k === 'blank' ? ';opacity:.25' : ''}"></i>${esc(t(row))}</span>`).join('') + `<span><i class="mt-aero-dot" style="background:#1e6fd9"></i>${esc(t(['survol : sources de la zone dans le panneau', 'hover: zone sources in the panel', 'Überfahren: Quellen der Zone im Feld', 'al pasar: fuentes de la zona en el panel']))}</span><span><i class="mt-aero-dot" style="background:#1e6fd9;outline:2px solid #0b2f6b"></i>${esc(t(['choisi (« Activer » pour appliquer)', 'chosen (“Activate” to apply)', 'gewählt („Aktivieren“ zum Übernehmen)', 'elegido («Activar» para aplicar)']))}</span>`;
     host.innerHTML = `
-      <p class="mt-small">${esc(t(['Survoler une zone montre ses sources à droite ; un clic l’épingle (le panneau reste sur elle : « Activer la zone », sources) — nouveau clic, Échap ou « Libérer » pour la relâcher. Cocher les sources voulues, les récupérer (téléchargement, commande, PDF ou dossier), puis « Reconstruire la base aéronautique ».', 'Hovering a zone shows its sources on the right; a click pins it (the panel stays on it: “Activate the zone”, sources) — click again, Esc or “Release” to let it go. Tick the wanted sources, get them (download, order, PDF or folder), then “Rebuild the aeronautical database”.', 'Beim Überfahren einer Zone erscheinen ihre Quellen rechts; ein Klick heftet sie an (das Feld bleibt bei ihr: „Zone aktivieren“, Quellen) — erneuter Klick, Esc oder „Lösen“ gibt sie frei. Gewünschte Quellen anhaken, beschaffen (Download, Bestellung, PDF oder Ordner), dann „Luftfahrtdatenbank neu aufbauen“.', 'Al pasar el ratón por una zona se muestran sus fuentes a la derecha; un clic la fija (el panel se queda en ella: «Activar la zona», fuentes) — nuevo clic, Esc o «Soltar» para liberarla. Marque las fuentes deseadas, obténgalas (descarga, pedido, PDF o carpeta) y luego «Reconstruir la base aeronáutica».']))}</p>
+      <p class="mt-small">${esc(t(['Cliquer sur les pays voulus (un clic les ajoute, un autre les retire), puis « Activer » : la suite télécharge leurs sources, reconstruit la base et calcule la MORA ; ce qu’elle ne peut pas faire seule est listé sous la carte. Survoler un pays montre ses sources à droite.', 'Click the wanted countries (one click adds, another removes), then “Activate”: the suite downloads their sources, rebuilds the database and computes the MORA; what it cannot do on its own is listed under the map. Hovering a country shows its sources on the right.', 'Die gewünschten Länder anklicken (ein Klick fügt hinzu, ein weiterer entfernt), dann „Aktivieren“: die Suite lädt ihre Quellen, baut die Datenbank neu auf und berechnet die MORA; was sie nicht allein kann, steht unter der Karte. Beim Überfahren eines Landes erscheinen seine Quellen rechts.', 'Hacer clic en los países deseados (un clic los añade, otro los quita) y luego «Activar»: la suite descarga sus fuentes, reconstruye la base y calcula la MORA; lo que no puede hacer sola figura bajo el mapa. Al pasar el ratón por un país se muestran sus fuentes a la derecha.']))}</p>
       <div class="mt-aero">
-        <div class="mt-aero-left"><div id="mtAeroMapSlot"></div><div class="mt-aero-legend mt-small">${legend}</div>
+        <div class="mt-aero-left"><div id="mtAeroMapSlot"></div><div class="mt-aero-legend mt-small">${legend}</div><div class="mt-aero-sel" id="mtAeroSel"></div>
 </div>
         <aside class="mt-aero-panel" id="mtAeroPanel" data-no-i18n></aside>
       </div>
@@ -2560,6 +2659,7 @@
       <div class="repo-card" data-icon="plane" data-subtitle="${esc(t(['Espaces, appareils, flotte, performances, terrains des missions', 'Airspace, aircraft, fleet, performance, mission aerodromes']))}"><h3>${esc(t(['Cohérence', 'Consistency', 'Konsistenz', 'Coherencia']))}</h3><div id="mtUsage"><p class="row"><button type="button" class="secondary" id="mtUsageRun" data-icon="search">${esc(t(['Contrôler', 'Check', 'Prüfen', 'Comprobar']))}</button></p></div></div>`;
     aeroAges(Z);
     aeroTodo(Z);
+    aeroSelShow(Z);
     host.querySelector('#mtAeroMapSlot').replaceWith(await aeroMapInit(Z));
     setTimeout(() => aeroMap?.resize?.(), 50);
     aeroPanelShow(Z, aeroShown());

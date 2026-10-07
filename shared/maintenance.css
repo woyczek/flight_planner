@@ -432,3 +432,24 @@ html[data-design="field"] .mt-block :is(button.secondary, .mt-file):not(#imp) {
     margin-left: 4px
   }
 }
+
+/* Données aéronautiques : barre de la sélection des pays sous la carte ; boutons compacts de « Actions à faire »
+   (hors couche, deux #imp : passe devant les boutons des designs à matières, qui en ont un) */
+@layer app {
+  .mt-aero-sel {
+    margin-top: 8px;
+    padding-top: 6px;
+    border-top: 1px solid color-mix(in srgb, currentColor 12%, transparent)
+  }
+  .mt-aero-sel p {
+    margin: 4px 0
+  }
+}
+.mt-aero-todo>li>button.mt-btn-sm:not(#imp):not(#imp) {
+  min-height: 0;
+  height: auto;
+  padding: 1px 9px;
+  font-size: .82rem;
+  line-height: 1.45;
+  vertical-align: baseline
+}

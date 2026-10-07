@@ -1260,6 +1260,9 @@
     const moraCells = moraFile ? parseMora(await text('Grille MORA (mora.csv)', moraFile)) : [];
     const aarXml = tracks ? await text('Axes de ravitaillement (ENR 5.7)', tracks) : '';
     await step('Enregistrement dans le navigateur…');
+    // axes de ravitaillement d'autres pays (zones/<zone>/…-tracks.xml, format de la MILAIP française : UK Mil AIP AARA),
+    // déclarés avant la base qui les référence
+    const aarExtra = [];
     const base = {
       parserVersion: VERSION,
       airac,
@@ -1299,8 +1302,7 @@
       }
       return la0 <= la1 && cover.some(r => inRing(r, (la0 + la1) / 2, (lo0 + lo1) / 2));
     };
-    // axes de ravitaillement d'autres pays (zones/<zone>/…-tracks.xml, format de la MILAIP française : UK Mil AIP AARA)
-    const aarExtra = [];
+    // axes de ravitaillement d'autres pays : remplis plus bas (même tableau que base.aarXmlExtra)
     if (AS)
       for (const src of AS.SOURCES.filter(x => x.dir || x.id === 'xplane')) {
         const list = (extra[src.id] || []).filter(f => extraOk(src.id, f));
