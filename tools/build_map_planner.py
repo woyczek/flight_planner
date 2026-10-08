@@ -7,6 +7,10 @@ La page publique ajoute, après le bloc Route, un bloc « Cartes du vol » : ren
 du navigateur (SIA_MISSION_NS = 'planner') d'après la route du champ : la mission du générateur et du studio du Centre
 n'est jamais touchée.
 
+v2 (niveaux d'utilisation) : aux niveaux 1 à 3, la page se limite au champ de route, au niveau, à SimBrief, à l'aperçu
+(« Agrandir »), au bloc « Cartes du vol » et au bouton « Générer » du pied de page ; le reste du studio (recherche de
+route, tracé, réglages des profils, « Cartes à produire », aperçus, base SIA) porte data-min-level="4" ici seulement.
+
 À relancer après chaque modification du studio (la page publique n'est pas éditée à la main) :
     python tools/build_map_planner.py
 """
@@ -47,7 +51,7 @@ VOL_SCRIPT = r'''<script>
 // navigateur : aérodromes, balises, points RNAV, voies aériennes) ; mission locale (espace « planner ») envoyée au
 // moteur du studio (useDoc) : points de la route, cartes topographique, approche, rendez-vous, destination, profil.
 (()=>{
-const FORM_KEY='mapPlannerForm:v1',$v=id=>document.getElementById(id);
+const FORM_KEY='mapPlannerForm:v1',$v=id=>document.getElementById(id),K=window.RepositoryKit;
 const say=(html,kind)=>{$v('volStatus').innerHTML=kind?`<span class="${kind}">${html}</span>`:html};
 const levelFt=t=>{const m=/^(FL)?(\d{1,5})(FT)?$/.exec(String(t||'').toUpperCase().replace(/\s+/g,''));return m?(m[1]?+m[2]*100:+m[2]):null};
 const coord=t=>{const m=/^\s*(-?\d+(?:\.\d+)?)\s*[,;| ]\s*(-?\d+(?:\.\d+)?)\s*$/.exec(t||'');return m&&Math.abs(+m[1])<=90&&Math.abs(+m[2])<=180?{lat:+m[1],lon:+m[2]}:null};
@@ -58,7 +62,7 @@ function saveForm(){const route=$v('vprofRoute').value.trim();try{localStorage.s
 function loadForm(){try{const f=JSON.parse(localStorage.getItem(FORM_KEY)||'null')||{},sh=readFpl(),route=sh?.route&&(sh.at||0)>(f.at||0)?sh.route:f.route;if(route&&(!$v('vprofRoute').value.trim()||sh?.route===route))$v('vprofRoute').value=route;$v('volRdv').value=f.rdv||'';if(f.level&&!$v('vprofCruise').value)$v('vprofCruise').value=f.level;if(Array.isArray(f.maps))document.querySelectorAll('[data-volmap]').forEach(i=>{i.checked=f.maps.includes(i.dataset.volmap)})}catch{}}
 /** Points de la route du champ (sans les points intermédiaires des voies aériennes) ; null et message si impossible. */
 function routePoints(){
- if(!baseReady()){say('Base SIA absente de ce navigateur : bloc « Base de données SIA » (menu ☰ › blocs) → « Relire le dossier ».','err');return null}
+ if(!baseReady()){say(esc(K.t(['Base SIA absente de ce navigateur : bloc « Base de données SIA », « Reconstruire la base aéronautique », ou Paramètres › Maintenance.','SIA database missing from this browser: “SIA database” block, “Rebuild the aeronautical database”, or Settings › Maintenance.','SIA-Datenbank fehlt in diesem Browser: Block „SIA-Datenbank“, „Luftfahrtdatenbank neu aufbauen“, oder Einstellungen › Wartung.','Base SIA ausente de este navegador: bloque «Base de datos SIA», «Reconstruir la base aeronáutica», o Ajustes › Mantenimiento.'])),'err');return null}
  const{points,unknown}=SiaProfile.parseRoute($v('vprofRoute').value.trim(),SiaProfile.resolver({aero:aero||{}}));
  if(unknown.length){say(`Route : inconnu(s) dans la base SIA : ${esc(unknown.join(', '))}.`,'err');return null}
  const pts=points.filter(p=>!p.awy);
@@ -87,7 +91,8 @@ function build(quiet){
  for(const m of maps){const u=userProfile.get(m.filename);if(u)m.profile=u;const v=views.get(m.filename);if(v)m.view=v}
  try{const doc=SiaMission.save({yaml,narrative:{summary:'',detailed:'',sections:[]},sourceNames:[]},'planner');routeCache={};useDoc(doc,true,true);saveForm()}catch(e){say(esc(e.message),'err');return false}
  setTimeout(()=>{drawVprofPreview();if(!quiet&&!$v('refreshPreview').disabled)$v('refreshPreview').click()},400);
- if(!quiet){say(`${maps.length} carte(s) prête(s) : ${esc(maps.map(m=>m.description).join(', '))}, et le profil vertical de la route. Réglages et aperçus dans « Cartes à produire », fichiers dans « Aperçus et génération ».`,'ok')}
+ // suite indiquée selon le niveau : « Cartes à produire » et les aperçus n'existent qu'au niveau 4
+ if(!quiet){const full=(window.RepositoryNav?.levels?.get?.()||+document.documentElement.dataset.level||4)>=4;say(K.tf(full?['{n} carte(s) prête(s) : {list}, et le profil vertical de la route. Réglages et aperçus dans « Cartes à produire », fichiers dans « Aperçus et génération ».','{n} map(s) ready: {list}, and the vertical profile of the route. Settings and previews in “Maps to produce”, files in “Previews and generation”.','{n} Karte(n) bereit: {list}, und das Höhenprofil der Route. Einstellungen und Vorschauen unter „Zu erstellende Karten“, Dateien unter „Vorschauen und Erzeugung“.','{n} mapa(s) listo(s): {list}, y el perfil vertical de la ruta. Ajustes y vistas previas en «Mapas que producir», archivos en «Vistas previas y generación».']:['{n} carte(s) prête(s) : {list}, et le profil vertical de la route. Fichiers : « Générer les cartes et le ZIP », en bas de page.','{n} map(s) ready: {list}, and the vertical profile of the route. Files: “Generate the maps and the ZIP”, at the bottom of the page.','{n} Karte(n) bereit: {list}, und das Höhenprofil der Route. Dateien: „Karten und ZIP erzeugen“, unten auf der Seite.','{n} mapa(s) listo(s): {list}, y el perfil vertical de la ruta. Archivos: «Generar los mapas y el ZIP», al pie de la página.'],{n:maps.length,list:esc(maps.map(m=>m.description).join(', '))}),'ok')}
  return true;
 }
 $v('volBuild').onclick=()=>build(false);
@@ -139,6 +144,40 @@ def main():
     # route probable et cartes d'exercice : propres aux missions du Centre
     sub(r'<button type="button" id="vprofFromProbable"', '<button type="button" id="vprofFromProbable" hidden')
     sub(r'<button type="button" id="addExerciseMaps"', '<button type="button" id="addExerciseMaps" hidden')
+
+    def lit(old, new):
+        """Remplacement d'un morceau exact du studio (sans motif)."""
+        sub(re.escape(old), new)
+
+    # v2 : page simple aux niveaux 1 à 3 (route, niveau, SimBrief, aperçu et « Agrandir », bloc « Cartes du vol »,
+    # « Générer » du pied de page) ; le reste, rangé au niveau 4 (data-min-level, repository_nav.css), y est complet.
+    # Le studio du Centre n'est pas touché.
+    lit('<span class="routeInline"><select id="routeMode"', '<span class="routeInline" data-min-level="4"><select id="routeMode"')
+    lit('<div class="routeGroup"><button type="button" id="vprofDraw"', '<div class="routeGroup" data-min-level="4"><button type="button" id="vprofDraw"')
+    # liste « Carte » gardée à tout niveau (une mission de plusieurs cartes se parcourt dans l'aperçu) ; « Profil » : niveau 4
+    lit('<label class="routeInline">Profil <select id="routeMapProfile"', '<label class="routeInline" data-min-level="4">Profil <select id="routeMapProfile"')
+    # réglages du profil d'affichage (déplacés sous l'aperçu par le studio) et de la coupe
+    lit('<div class="profileLeft routeProfileEdit">', '<div class="profileLeft routeProfileEdit" data-min-level="4">')
+    lit('<details id="profileEdit" class="profileEdit">', '<details id="profileEdit" class="profileEdit" data-min-level="4">')
+    lit('<details class="vprofSettings">', '<details class="vprofSettings" data-min-level="4">')
+    # barre de l'aperçu : seul « Agrandir » reste aux niveaux 1 à 3
+    lit('<label class="mapZip previewZip"', '<label class="mapZip previewZip" data-min-level="4"')
+    lit('<button id="refreshPreview"', '<button id="refreshPreview" data-min-level="4"')
+    for v in ('keep', 'home', 'auto'):
+        lit(f'<button type="button" data-view="{v}"', f'<button type="button" data-view="{v}" data-min-level="4"')
+    lit('<button id="previewWindow"', '<button id="previewWindow" data-min-level="4"')
+    lit('<section data-block-id="sia-profiles"', '<section data-block-id="sia-profiles" data-min-level="4"')
+    # base SIA : niveau 4 ; montrée à tout niveau tant qu'elle manque (renderSiaBaseLine du studio)
+    lit('<section data-block-id="sia-base"', '<section data-block-id="sia-base" data-min-level="4"')
+    # « Aperçus et génération » : « Générer » une seule fois, dans le pied de page (generateSticky, qui clique celui-ci,
+    # gardé masqué) ; aux niveaux 1 à 3, seul le résultat de la génération reste
+    lit('<div class="box"><div class="actions"><button id="previewAll"', '<div class="box"><div class="actions" data-min-level="4"><button id="previewAll"')
+    lit('<button id="generate" data-icon="download" disabled>', '<button id="generate" data-icon="download" disabled hidden>')
+    lit('<p id="outputSummary"', '<p id="outputSummary" data-min-level="4"')
+    lit('<p id="galleryStatus"', '<p id="galleryStatus" data-min-level="4"')
+    lit('<div id="previewGallery"', '<div id="previewGallery" data-min-level="4"')
+    lit('<h3>Carte d’assemblage</h3><img id="assemblyPreview"', '<h3 data-min-level="4">Carte d’assemblage</h3><img id="assemblyPreview" data-min-level="4"')
+    lit('<p id="assemblyStatus"', '<p id="assemblyStatus" data-min-level="4"')
     i = s.rfind('</script>\n<script src="../../shared/repository_nav.js')
     if i < 0:
         raise SystemExit('fin du script du studio introuvable')

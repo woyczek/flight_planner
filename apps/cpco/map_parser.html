@@ -1520,20 +1520,37 @@ function renderSiaBaseLine(b) {
   }))} — ${esc(T(['mise à jour et calcul de la MORA :', 'update and MORA calculation:', 'Aktualisierung und MORA-Berechnung:', 'actualización y cálculo de la MORA:']))} ${upd}.${b.outdated ? ` <span class="warn">${esc(T(['Relire le dossier SIA pour les points de report VFR (format mis à jour).', 'Re-read the SIA folder for the VFR reporting points (updated format).', 'SIA-Ordner für die VFR-Meldepunkte neu lesen (Format aktualisiert).', 'Releer la carpeta SIA para los puntos de notificación VFR (formato actualizado).']))}</span>` : ''}` :
     `${esc(T(['Base SIA : absente de ce navigateur — la construire ici, ou dans', 'SIA database: missing from this browser — build it here, or in', 'SIA-Datenbank: fehlt in diesem Browser — hier aufbauen oder unter', 'Base SIA: ausente de este navegador — constrúyala aquí o en']))} ${upd}. ${btn}`;
   // ligne d'état masquée (Cartes de vol : pas de bloc Mission) : le bloc commun de la base est ouvert, son bouton
-  // « Reconstruire la base aéronautique » fait le même traitement
-  if (!b && el.closest('[hidden]')) window.AppFramework?.reveal?.('sia-base');
+  // « Reconstruire la base aéronautique » fait le même traitement ; ce bloc, rangé au niveau 4 dans Cartes de vol
+  // (data-min-level), est montré à tout niveau tant que la base manque : la page n'a rien à tracer sans elle
+  const away = !!el.closest('[hidden]');
+  if (!b && away) {
+    const blk = document.querySelector('[data-block-id="sia-base"]');
+    if (blk?.dataset.minLevel) delete blk.dataset.minLevel;
+    window.AppFramework?.reveal?.('sia-base')
+  }
   if (!b) SiaBase.get({
     any: true
   }).then(o => {
     if (o && !aero) {
       el.innerHTML = `${esc(T(['Base SIA : à reconstruire (format mis à jour : gestionnaires des zones, voies aériennes) — ici, ou dans', 'SIA database: to rebuild (updated format: area managers, airways) — here, or in', 'SIA-Datenbank: neu aufbauen (Format aktualisiert: Zonenverwalter, Luftstraßen) — hier oder unter', 'Base SIA: a reconstruir (formato actualizado: gestores de zonas, aerovías) — aquí o en']))} ${upd}. ${btn}`;
-      window.AppFramework?.notify?.(T([
+      // notification : le bouton nommé est celui que la page montre (Cartes de vol : bloc commun de la base)
+      window.AppFramework?.notify?.(T(away ? [
+        'Base SIA à reconstruire (format mis à jour) : bloc « Base de données SIA », « Reconstruire la base aéronautique », ou Paramètres › Maintenance.',
+        'SIA database to rebuild (updated format): “SIA database” block, “Rebuild the aeronautical database”, or Settings › Maintenance.',
+        'SIA-Datenbank neu aufbauen (Format aktualisiert): Block „SIA-Datenbank“, „Luftfahrtdatenbank neu aufbauen“, oder Einstellungen › Wartung.',
+        'Base SIA a reconstruir (formato actualizado): bloque «Base de datos SIA», «Reconstruir la base aeronáutica», o Ajustes › Mantenimiento.'
+      ] : [
         'Base SIA à reconstruire (format mis à jour) : « Construire la base maintenant » ou Paramètres › Maintenance.',
         'SIA database to rebuild (updated format): “Build the database now” or Settings › Maintenance.',
         'SIA-Datenbank neu aufbauen (Format aktualisiert): „Datenbank jetzt aufbauen“ oder Einstellungen › Wartung.',
         'Base SIA a reconstruir (formato actualizado): «Construir la base ahora» o Ajustes › Mantenimiento.'
       ]), 'warn')
-    } else if (!o) window.AppFramework?.notify?.(T([
+    } else if (!o) window.AppFramework?.notify?.(T(away ? [
+      'Base SIA absente de ce navigateur : bloc « Base de données SIA », « Reconstruire la base aéronautique », ou Paramètres › Maintenance.',
+      'SIA database missing from this browser: “SIA database” block, “Rebuild the aeronautical database”, or Settings › Maintenance.',
+      'SIA-Datenbank fehlt in diesem Browser: Block „SIA-Datenbank“, „Luftfahrtdatenbank neu aufbauen“, oder Einstellungen › Wartung.',
+      'Base SIA ausente de este navegador: bloque «Base de datos SIA», «Reconstruir la base aeronáutica», o Ajustes › Mantenimiento.'
+    ] : [
       'Base SIA absente de ce navigateur : « Construire la base maintenant » (bloc Mission) ou Paramètres › Maintenance.',
       'SIA database missing from this browser: “Build the database now” (Mission block) or Settings › Maintenance.',
       'SIA-Datenbank fehlt in diesem Browser: „Datenbank jetzt aufbauen“ (Block Mission) oder Einstellungen › Wartung.',

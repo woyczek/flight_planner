@@ -1117,17 +1117,17 @@
 <section data-block-id="sia-route" data-icon="trending-up" data-subtitle="Plan de vol, carte et coupe verticale liés : survol commun, points déplaçables sur la carte et dans la coupe."><h2>Route</h2><div id="vprofBox" class="routeBlock">
 <textarea id="vprofRoute" class="routeText" rows="2" spellcheck="false" aria-label="Route (case 15 du plan de vol)" placeholder="LFBO N0160A055 DCT TOU UN460 NTS DCT 4419N00316E/A035 DCT LFRN — vide : route de la mission"></textarea>
 <div class="routeBar">
-<div class="routeGroup"><label class="routeInline" title="Niveau de croisière (profil vertical, recherche de route, cartes) : FL65 ou 6500">Niveau <input id="vprofCruise" type="text" placeholder="FL65" size="6"></label><span class="routeInline"><select id="routeMode" title="Réseau de la recherche de route"><option value="airways">Voies aériennes</option><option value="rtba">RTBA (basse hauteur)</option></select><button type="button" id="routeSearch" class="secondary" data-icon="search" title="Chercher une route entre les points du champ par ce réseau ; le résultat remplace la route">Chercher</button></span><button type="button" id="routeSimbrief" class="secondary" title="Reprendre la route du dernier OFP SimBrief (identifiant : ☰ › Profil pilote)">SimBrief</button><button type="button" id="vprofFromProbable" hidden class="secondary" title="Remplacer la route par la route probable de la mission (ordre donné par la mission, sinon calculé), retour base compris">↺ Route probable</button></div>
-<div class="routeGroup"><button type="button" id="vprofDraw" data-icon="trending-up" title="Tracer la coupe verticale de la route">Tracer</button><button type="button" id="vprofToPlanner" class="secondary" data-icon="fuel" title="Ouvrir le planificateur carburant avec cette route (plan de vol OACI, distance, niveau, route vraie, appareil)">Carburant</button><button type="button" id="vprofIcaoCopy" class="secondary" title="Copier le plan de vol OACI strict : points non publiés en coordonnées, altitudes en groupes vitesse / niveau">Copier OACI</button></div>
+<div class="routeGroup"><label class="routeInline" title="Niveau de croisière (profil vertical, recherche de route, cartes) : FL65 ou 6500">Niveau <input id="vprofCruise" type="text" placeholder="FL65" size="6"></label><span class="routeInline" data-min-level="4"><select id="routeMode" title="Réseau de la recherche de route"><option value="airways">Voies aériennes</option><option value="rtba">RTBA (basse hauteur)</option></select><button type="button" id="routeSearch" class="secondary" data-icon="search" title="Chercher une route entre les points du champ par ce réseau ; le résultat remplace la route">Chercher</button></span><button type="button" id="routeSimbrief" class="secondary" title="Reprendre la route du dernier OFP SimBrief (identifiant : ☰ › Profil pilote)">SimBrief</button><button type="button" id="vprofFromProbable" hidden class="secondary" title="Remplacer la route par la route probable de la mission (ordre donné par la mission, sinon calculé), retour base compris">↺ Route probable</button></div>
+<div class="routeGroup" data-min-level="4"><button type="button" id="vprofDraw" data-icon="trending-up" title="Tracer la coupe verticale de la route">Tracer</button><button type="button" id="vprofToPlanner" class="secondary" data-icon="fuel" title="Ouvrir le planificateur carburant avec cette route (plan de vol OACI, distance, niveau, route vraie, appareil)">Carburant</button><button type="button" id="vprofIcaoCopy" class="secondary" title="Copier le plan de vol OACI strict : points non publiés en coordonnées, altitudes en groupes vitesse / niveau">Copier OACI</button></div>
 </div>
 <p id="routeInfo" class="small"></p>
 <details class="small route-help"><summary>Syntaxe et utilisation</summary><p>Case 15 du plan de vol OACI (séparée par des espaces) ou liste à virgules. Points : terrains (OACI), balises, points RNAV, points de report VFR (« MM-CV »), points de la mission (ORIGIN, TARGET…), « REN300010 » (radiale / distance), coordonnées « 4330N00125E » ou « lat lon » ; voies aériennes entre deux points (« TOU UN460 NTS ») suivies point par point ; « DCT » : direct. Niveaux : « N0450F350 » groupe vitesse / niveau (au départ ou après un point : « NTS/N0440F370 »), « FL105 » ou « 5500 ft » seul : montée ou descente après le point précédent, « /A035 », « /F065 » ou « /3000 » après un point : altitude à atteindre au point, « VFR » : pas de niveau. Le même plan de vol est repris par le planificateur carburant (Cartes de vol).</p><p>Survol d’un point du texte, de la carte ou de la coupe : les deux autres s’illuminent. Carte : glisser un point (aimanté sur balises, points de report, terrains), clic sur la route pour insérer un point, clic droit pour supprimer un point (double-clic : un point ajouté). Coupe : clic pour un point à cette altitude, glisser pour l’altitude, clic droit pour supprimer.</p></details>
 <div id="vprofPtsBox" class="small" hidden><span>Points de la mission (clic : ajouter au cheminement) :</span> <span id="vprofPts"></span></div>
-<aside class="profilePreview routeMap box"><div class="routeMapBar"><label class="routeInline">Carte <select id="routeMapSel" title="Carte affichée (par défaut : la carte générale de la route)"></select></label><label class="routeInline">Profil <select id="routeMapProfile" title="Profil d’affichage de cette carte (même réglage que dans « Cartes à produire »)"></select></label></div><div class="profileLeft routeProfileEdit"></div><select id="previewMap" hidden><option value="">Aucune mission chargée</option></select><img id="generalPreview" alt="Carte de contrôle" hidden><div id="osmLivePreview" hidden></div><div class="viewBar"><label class="mapZip previewZip" title="Mettre cette carte dans le ZIP (décocher pour ne pas la générer)"><input type="checkbox" id="previewZip" checked disabled> ZIP</label><button id="refreshPreview" data-icon="refresh" type="button" disabled title="Redessiner l’aperçu avec les réglages en cours">Actualiser</button><button type="button" data-view="keep" data-icon="check" title="La carte générée reprendra exactement le cadre affiché (zoom et déplacement à la souris) ; écrit dans la mission">Garder ce cadrage</button><button type="button" data-view="home" class="secondary" title="Revenir au cadrage enregistré de cette carte">Recentrer</button><button type="button" data-view="auto" class="secondary" title="Oublier le cadrage enregistré : cadre calculé d’après la mission (points, zones, pistes) et le type de carte">Cadrage automatique</button><span class="viewSpacer"></span><button id="previewWindow" type="button" class="buttonLink" title="Ouvrir la carte dans une fenêtre séparée, synchronisée avec les réglages">⧉ Fenêtre</button><button id="previewPop" type="button" class="buttonLink" title="Agrandir la carte (Échap pour revenir)">⤢ Agrandir</button></div>
+<aside class="profilePreview routeMap box"><div class="routeMapBar"><label class="routeInline">Carte <select id="routeMapSel" title="Carte affichée (par défaut : la carte générale de la route)"></select></label><label class="routeInline" data-min-level="4">Profil <select id="routeMapProfile" title="Profil d’affichage de cette carte (même réglage que dans « Cartes à produire »)"></select></label></div><div class="profileLeft routeProfileEdit" data-min-level="4"></div><select id="previewMap" hidden><option value="">Aucune mission chargée</option></select><img id="generalPreview" alt="Carte de contrôle" hidden><div id="osmLivePreview" hidden></div><div class="viewBar"><label class="mapZip previewZip" data-min-level="4" title="Mettre cette carte dans le ZIP (décocher pour ne pas la générer)"><input type="checkbox" id="previewZip" checked disabled> ZIP</label><button id="refreshPreview" data-min-level="4" data-icon="refresh" type="button" disabled title="Redessiner l’aperçu avec les réglages en cours">Actualiser</button><button type="button" data-view="keep" data-min-level="4" data-icon="check" title="La carte générée reprendra exactement le cadre affiché (zoom et déplacement à la souris) ; écrit dans la mission">Garder ce cadrage</button><button type="button" data-view="home" data-min-level="4" class="secondary" title="Revenir au cadrage enregistré de cette carte">Recentrer</button><button type="button" data-view="auto" data-min-level="4" class="secondary" title="Oublier le cadrage enregistré : cadre calculé d’après la mission (points, zones, pistes) et le type de carte">Cadrage automatique</button><span class="viewSpacer"></span><button id="previewWindow" data-min-level="4" type="button" class="buttonLink" title="Ouvrir la carte dans une fenêtre séparée, synchronisée avec les réglages">⧉ Fenêtre</button><button id="previewPop" type="button" class="buttonLink" title="Agrandir la carte (Échap pour revenir)">⤢ Agrandir</button></div>
 <p id="previewStatus" data-status class="small">Carte choisie, dessinée avec le profil en cours de modification ; actualisée à chaque réglage.</p></aside>
 <img id="vprofImg" alt="Profil vertical" hidden style="width:100%;border:1px solid #c8d6dd;border-radius:8px;margin-top:6px">
 <p id="vprofStatus" data-status class="small">Relief (tuiles d’altitude, ± 1 km) ; espaces et obstacles (à moins de 1 NM) selon le profil d’affichage de <code>profil_vertical.png</code> (liste des cartes).</p>
-<details class="vprofSettings"><summary>Réglages du profil : coupe, appareil, vario, sorties</summary><div class="profileBar"><label>Plancher de la coupe (ft)<input id="vprofFloor" type="number" min="0" step="500" value="0"></label><label>Plafond de la coupe (ft, 0 = auto)<input id="vprofCeil" type="number" min="0" step="500" value="0"></label><label>Appareil (profils du planificateur)<select id="vprofAircraft"><option value="">— taux ci-dessous —</option></select></label><label>Montée (ft/min · kt)<span style="display:flex;gap:4px"><input id="vprofClimb" type="number" min="100" step="100" value="1000"><input id="vprofClimbKt" type="number" min="40" step="10" value="140"></span></label><label>Descente (ft/min · kt)<span style="display:flex;gap:4px"><input id="vprofDesc" type="number" min="100" step="100" value="800"><input id="vprofDescKt" type="number" min="40" step="10" value="160"></span></label><label class="check"><input id="vprofOut" type="checkbox" checked> Image <code>profil_vertical.png</code> dans les sorties</label><label class="check"><input id="vprofMap" type="checkbox" checked> Par défaut, tracer le cheminement sur les cartes (réglable carte par carte)</label></div></details>
+<details class="vprofSettings" data-min-level="4"><summary>Réglages du profil : coupe, appareil, vario, sorties</summary><div class="profileBar"><label>Plancher de la coupe (ft)<input id="vprofFloor" type="number" min="0" step="500" value="0"></label><label>Plafond de la coupe (ft, 0 = auto)<input id="vprofCeil" type="number" min="0" step="500" value="0"></label><label>Appareil (profils du planificateur)<select id="vprofAircraft"><option value="">— taux ci-dessous —</option></select></label><label>Montée (ft/min · kt)<span style="display:flex;gap:4px"><input id="vprofClimb" type="number" min="100" step="100" value="1000"><input id="vprofClimbKt" type="number" min="40" step="10" value="140"></span></label><label>Descente (ft/min · kt)<span style="display:flex;gap:4px"><input id="vprofDesc" type="number" min="100" step="100" value="800"><input id="vprofDescKt" type="number" min="40" step="10" value="160"></span></label><label class="check"><input id="vprofOut" type="checkbox" checked> Image <code>profil_vertical.png</code> dans les sorties</label><label class="check"><input id="vprofMap" type="checkbox" checked> Par défaut, tracer le cheminement sur les cartes (réglable carte par carte)</label></div></details>
 </div></section>
 
 <section data-block-id="vol" data-icon="plane" data-subtitle="Rendez-vous facultatif et cartes à produire d’après la route du bloc « Route ».">
@@ -1145,9 +1145,9 @@
 <div class="actions"><button id="volBuild" type="button" data-icon="map">Créer les cartes</button></div>
 </section>
 
-<section data-block-id="sia-profiles" data-icon="map" data-subtitle="Cartes de la mission, cadrage de chacune et profil d’affichage (fond, espaces, symboles, éléments)."><h2>Cartes à produire</h2>
+<section data-block-id="sia-profiles" data-min-level="4" data-icon="map" data-subtitle="Cartes de la mission, cadrage de chacune et profil d’affichage (fond, espaces, symboles, éléments)."><h2>Cartes à produire</h2>
 <div class="profileLayout" id="profileEditor">
-<div class="profileLeft"><div class="mapsHead"><strong>Cartes de la mission</strong><span class="small">clic : afficher · profil d’affichage · tracé · destinataire (exercice) · ZIP</span></div><p id="viewStatus" data-status class="small"></p><div id="mapProfiles" class="mapList"></div><div class="mapAdd"><input id="newMapName" placeholder="nouvelle_carte.png"><select id="newMapType"><option value="general">générale</option><option value="target">cible</option><option value="detail">détail</option><option value="zone">zone</option></select><button type="button" id="addExerciseMaps" hidden title="Organisation de l’exercice (…Z) : carte organisation et une carte par chiffon joué ; équipage : une carte par message ou pli qui lui révèle des pistes">+ Cartes d’exercice</button><button type="button" id="addMap" title="Ajouter une carte à la mission (emprise : vue affichée)">+ Carte</button></div><details id="profileEdit" class="profileEdit"><summary>Réglages du profil <b id="profileEditName"></b> : fond de carte, zones, symboles OACI, éléments</summary><div id="profileSettings" class="box osmLayers"><strong>Profil de la carte choisie</strong><div class="profileBar"><label hidden>Profil<select id="activeProfile"></select></label><label>Nom du profil<input id="profileName"></label><label>Fond de carte<select id="mapSource"><optgroup label="Raster"><option value="osmLive">OSM standard</option><option value="topo">OpenTopoMap — relief et courbes</option></optgroup><optgroup label="Vectoriel"><option value="vector">OSM Shortbread — couches réglables</option><option value="ofm-liberty">OpenFreeMap Liberty</option><option value="ofm-bright">OpenFreeMap Bright</option><option value="ofm-positron">OpenFreeMap Positron (clair)</option><option value="vt-colorful">VersaTiles Colorful</option><option value="vt-graybeard">VersaTiles Graybeard (gris)</option><option value="vt-shadow">VersaTiles Shadow (gris neutre)</option><option value="vt-eclipse">VersaTiles Eclipse (sombre)</option></optgroup></select></label><div class="actions"><button id="saveProfile" type="button">Sauvegarder</button><button id="addProfile" class="buttonLink" type="button">Nouveau</button><button id="newProfile" class="buttonLink" type="button">Dupliquer</button><button id="deleteProfile" class="danger" type="button">Supprimer</button></div></div></div>
+<div class="profileLeft"><div class="mapsHead"><strong>Cartes de la mission</strong><span class="small">clic : afficher · profil d’affichage · tracé · destinataire (exercice) · ZIP</span></div><p id="viewStatus" data-status class="small"></p><div id="mapProfiles" class="mapList"></div><div class="mapAdd"><input id="newMapName" placeholder="nouvelle_carte.png"><select id="newMapType"><option value="general">générale</option><option value="target">cible</option><option value="detail">détail</option><option value="zone">zone</option></select><button type="button" id="addExerciseMaps" hidden title="Organisation de l’exercice (…Z) : carte organisation et une carte par chiffon joué ; équipage : une carte par message ou pli qui lui révèle des pistes">+ Cartes d’exercice</button><button type="button" id="addMap" title="Ajouter une carte à la mission (emprise : vue affichée)">+ Carte</button></div><details id="profileEdit" class="profileEdit" data-min-level="4"><summary>Réglages du profil <b id="profileEditName"></b> : fond de carte, zones, symboles OACI, éléments</summary><div id="profileSettings" class="box osmLayers"><strong>Profil de la carte choisie</strong><div class="profileBar"><label hidden>Profil<select id="activeProfile"></select></label><label>Nom du profil<input id="profileName"></label><label>Fond de carte<select id="mapSource"><optgroup label="Raster"><option value="osmLive">OSM standard</option><option value="topo">OpenTopoMap — relief et courbes</option></optgroup><optgroup label="Vectoriel"><option value="vector">OSM Shortbread — couches réglables</option><option value="ofm-liberty">OpenFreeMap Liberty</option><option value="ofm-bright">OpenFreeMap Bright</option><option value="ofm-positron">OpenFreeMap Positron (clair)</option><option value="vt-colorful">VersaTiles Colorful</option><option value="vt-graybeard">VersaTiles Graybeard (gris)</option><option value="vt-shadow">VersaTiles Shadow (gris neutre)</option><option value="vt-eclipse">VersaTiles Eclipse (sombre)</option></optgroup></select></label><div class="actions"><button id="saveProfile" type="button">Sauvegarder</button><button id="addProfile" class="buttonLink" type="button">Nouveau</button><button id="newProfile" class="buttonLink" type="button">Dupliquer</button><button id="deleteProfile" class="danger" type="button">Supprimer</button></div></div></div>
 <div class="profileTabs" role="tablist"><button type="button" data-tab="fond" class="on">Fond de carte</button><button type="button" data-tab="zones">Zones</button><button type="button" data-tab="aero">Symboles OACI</button><button type="button" data-tab="elements">Éléments</button></div>
 <div class="tabPanel box" data-panel="fond"><strong>Couches OSM</strong><div class="denseGrid"><label class="check"><input class="osmLayer" value="land" type="checkbox"> Sol</label><label class="check"><input class="osmLayer" value="water" type="checkbox"> Hydrographie</label><label class="check"><input class="osmLayer" value="transport" type="checkbox"> Routes / rail</label><label class="check"><input class="osmLayer" value="buildings" type="checkbox"> Bâtiments</label><label class="check"><input class="osmLayer" value="boundaries" type="checkbox"> Frontières</label><label class="check"><input class="osmLayer" value="relief" type="checkbox"> Relief ombré</label><label class="check"><input class="osmLayer" value="contours" type="checkbox"> Courbes de niveau</label><label class="check"><input class="osmLayer" value="summits" type="checkbox"> Sommets et labels</label></div><div class="grid"><div class="colorRow"><label>Libellés des sommets : <output id="summitFontValue">7</output> pt<input id="summitFont" type="range" min="7" max="32" value="7"></label><input id="summitColor" type="color" value="#6b3515" title="Couleur des sommets"></div></div><div class="box"><strong>Villes et agglomérations</strong><div class="logRow"><label class="check"><input id="agglos" type="checkbox" checked> Villes en symboles OACI</label><label class="logSlider">≥ <output id="populationValue">200 000</output> hab.<input type="range" data-log="population"><input id="population" type="hidden" value="200000"></label></div><span class="small">Grande ville (≥ 100 000 hab.) tache orange, ville (≥ 20 000) jaune cerclée d’orange, localité point jaune.</span><div class="logRow"><label class="check"><input id="cities" type="checkbox"> Libellés de villes</label><label class="logSlider">≥ <output id="cityLabelMinValue">20 000</output> hab.<input type="range" data-log="cityLabelMin"><input id="cityLabelMin" type="hidden" value="20000"></label></div><div class="logRow"><label>Surfaces bâties <select id="urbanStyle"><option value="none">aucune</option><option value="line">contour</option><option value="fill">remplissage</option><option value="both" selected>contour + remplissage</option></select></label><label class="logSlider">villes ≥ <output id="urbanMinValue">20 000</output> hab.<input type="range" data-log="urbanMin"><input id="urbanMin" type="hidden" value="20000"></label></div><span class="small">Contour orange (villes ≥ 100 000 hab.) ou jaune (autres), remplissage jaune (OACI) : surfaces bâties OpenMapTiles (OSM) autour des villes assez peuplées ; les fichiers du SIA ne donnent pas de contour d’agglomération.</span></div><p id="osmLayerHelp" class="small">Profils communs à toutes les missions et mémorisés dans le navigateur. Fond topographique : <a href="https://www.opentopomap.org/about" target="_blank" rel="noopener">OpenTopoMap</a> (OSM + SRTM). Sommets : données OSM interrogées par <a href="https://overpass-api.de/" target="_blank" rel="noopener">Overpass API</a>.</p></div>
 <div class="tabPanel" data-panel="zones" hidden>
@@ -1203,13 +1203,13 @@
 </div>
 </section>
 
-<section data-block-id="sia-outputs" data-deco-bg="maps" data-icon="layers" data-subtitle="Aperçus de toutes les cartes, génération des cartes et du ZIP."><h2>Aperçus et génération</h2><div class="box"><div class="actions"><button id="previewAll" data-icon="eye" type="button" disabled>Afficher toutes les cartes</button><button id="generate" data-icon="download" disabled>Générer les cartes et le ZIP</button><button id="generateAll" data-icon="layers" type="button" hidden>Générer toutes les missions</button></div><p id="outputSummary" class="small"></p><div id="result" data-status></div></div>
-<div hidden><input id="svg" type="checkbox"><input id="png" type="checkbox" checked><input id="pngWidth" type="number" value="1600"></div><p id="galleryStatus" data-status class="small">Les aperçus ne créent aucun fichier.</p>
-<div id="previewGallery" class="repo-notebooks"></div>
-<h3>Carte d’assemblage</h3><img id="assemblyPreview" alt="Carte d’assemblage" hidden><p id="assemblyStatus" data-status class="small">Elle s’affichera automatiquement dès que le fond et la mission seront disponibles.</p>
+<section data-block-id="sia-outputs" data-deco-bg="maps" data-icon="layers" data-subtitle="Aperçus de toutes les cartes, génération des cartes et du ZIP."><h2>Aperçus et génération</h2><div class="box"><div class="actions" data-min-level="4"><button id="previewAll" data-icon="eye" type="button" disabled>Afficher toutes les cartes</button><button id="generate" data-icon="download" disabled hidden>Générer les cartes et le ZIP</button><button id="generateAll" data-icon="layers" type="button" hidden>Générer toutes les missions</button></div><p id="outputSummary" data-min-level="4" class="small"></p><div id="result" data-status></div></div>
+<div hidden><input id="svg" type="checkbox"><input id="png" type="checkbox" checked><input id="pngWidth" type="number" value="1600"></div><p id="galleryStatus" data-min-level="4" data-status class="small">Les aperçus ne créent aucun fichier.</p>
+<div id="previewGallery" data-min-level="4" class="repo-notebooks"></div>
+<h3 data-min-level="4">Carte d’assemblage</h3><img id="assemblyPreview" data-min-level="4" alt="Carte d’assemblage" hidden><p id="assemblyStatus" data-min-level="4" data-status class="small">Elle s’affichera automatiquement dès que le fond et la mission seront disponibles.</p>
 </section>
 
-<section data-block-id="sia-base" data-default-hidden="1" data-icon="database" data-subtitle="Dossier SIA (AIXM) lu et gardé dans le navigateur."><h2>Base de données SIA</h2>
+<section data-block-id="sia-base" data-min-level="4" data-default-hidden="1" data-icon="database" data-subtitle="Dossier SIA (AIXM) lu et gardé dans le navigateur."><h2>Base de données SIA</h2>
 <p class="small">Dossier <code>data/sia</code> (mémorisé comme les autres dossiers de la suite) : « Relire le dossier » après une mise à jour AIRAC. Le fond de carte et les villes sont livrés avec l’application. Même bloc que Paramètres › Maintenance › Mise à jour SIA (étape 4).</p>
 <div id="siaBasePanel"></div></section>
 </main>
@@ -1234,6 +1234,8 @@ let mission = null,
 const esc = window.RepositoryKit.esc; // échappement HTML commun (shared/kit.js)
 const layerNames = ['land', 'urban', 'water', 'transport', 'buildings', 'boundaries', 'relief', 'contours', 'summits'],
   zoneNames = ['R', 'D', 'P', 'CTR', 'TMA', 'SIV'];
+/** Profils d'affichage livrés : IFR, VFR détaillé, AIRWAYS (voies aériennes, balises, aérodromes),
+ *  VFR simplifié — couches OSM, familles de zones et seuil de population des villes ; nouvelle copie à chaque appel. */
 const defaultProfiles = () => [{
   id: 'ifr',
   name: 'IFR',
@@ -1346,14 +1348,17 @@ function loadProfiles() {
 }
 let displayProfiles = loadProfiles();
 
+/** Profil choisi dans la liste « Profil » de l'éditeur (le premier si la valeur ne correspond à aucun). */
 function activeProfile() {
   return displayProfiles.find(p => p.id === $('activeProfile').value) || displayProfiles[0]
 }
 
+/** Profil d'affichage d'une carte de la mission (_profileId), sinon le profil actif de l'éditeur. */
 function profileForMap(mapDef) {
   return displayProfiles.find(p => p.id === (mapDef?._profileId || mapDef?.profileId)) || activeProfile()
 }
 
+/** Remplit la liste des profils (choix conservé s'il existe encore) puis rafraîchit la liste des cartes. */
 function fillProfileSelects() {
   fillPreviewMaps();
   const current = $('activeProfile').value || displayProfiles[0]?.id;
@@ -1362,6 +1367,8 @@ function fillProfileSelects() {
   renderMapProfiles()
 }
 
+/** Profil actif → interface : source de fond, couches OSM, villes, familles et listes de zones,
+ *  listes d'aérodromes et de balises, éléments d'affichage (PROFILE_ELEMENTS). */
 function applyProfileToUi() {
   const p = activeProfile();
   if (!p) return;
@@ -1391,7 +1398,14 @@ function applyProfileToUi() {
   syncElementBoxes();
   renderZonePick()
 }
-const PROFILE_ELEMENTS = ['airwaysLow', 'airwaysHigh', 'airwayLabels', 'vrpPoints', 'vrpLabels', 'zoneAbbrev', 'cityLabelMin', 'urbanStyle', 'urbanMin', 'agglos', 'sites', 'reserves', 'zoneLabelsShow', 'zoneOpacity', 'adLabels', 'navLabels', 'roseSize', 'navIls', 'zoneLimitsShow', 'zoneSmallCross', 'adPublic', 'adRestricted', 'adState', 'adHeli', 'adStrip', 'adControl', 'navVor', 'navTacan', 'navDme', 'navNdb', 'icaoStyle', 'zoneFloor', 'zoneCeil', 'aerodromes', 'navaids', 'obstacles', 'obstacleMin', 'turningPoints', 'aarTracks', 'missionZones', 'graticule', 'graticuleLabels', 'graticuleFont', 'graticuleColor', 'mora', 'zoneFont', 'zoneColor', 'pointFont', 'pointColor', 'pointFill', 'pointMarker', 'cityFont', 'cityColor', 'moraFont', 'moraColor', 'moraOpacity', 'moraSpacing', 'summitFont', 'summitColor'];
+const PROFILE_ELEMENTS = ['airwaysLow', 'airwaysHigh', 'airwayLabels', 'vrpPoints', 'vrpLabels', 'zoneAbbrev', 'cityLabelMin', 'urbanStyle',
+  'urbanMin', 'agglos', 'sites', 'reserves', 'zoneLabelsShow', 'zoneOpacity', 'adLabels', 'navLabels', 'roseSize', 'navIls',
+  'zoneLimitsShow', 'zoneSmallCross', 'adPublic', 'adRestricted', 'adState', 'adHeli', 'adStrip', 'adControl', 'navVor', 'navTacan',
+  'navDme', 'navNdb', 'icaoStyle', 'zoneFloor', 'zoneCeil', 'aerodromes', 'navaids', 'obstacles', 'obstacleMin', 'turningPoints',
+  'aarTracks', 'missionZones', 'graticule', 'graticuleLabels', 'graticuleFont', 'graticuleColor', 'mora', 'zoneFont', 'zoneColor',
+  'pointFont', 'pointColor', 'pointFill', 'pointMarker', 'cityFont', 'cityColor', 'moraFont', 'moraColor', 'moraOpacity', 'moraSpacing',
+  'summitFont', 'summitColor'
+];
 // Élément d'affichage d'une carte : valeur enregistrée dans son profil, sinon valeur par défaut de la page.
 function el(def, id) {
   const v = profileForMap(def)?.elements?.[id],
@@ -1399,7 +1413,9 @@ function el(def, id) {
   if (v !== undefined) return v;
   return defaultOf(input)
 }
-const defaultOf = input => input.type === 'checkbox' ? input.defaultChecked : input.tagName === 'SELECT' ? ([...input.options].find(o => o.defaultSelected) || input.options[0])?.value : input.defaultValue;
+/** Valeur par défaut d'un réglage telle qu'écrite dans la page (case cochée, option sélectionnée, valeur initiale). */
+const defaultOf = input => input.type === 'checkbox' ? input.defaultChecked : input.tagName === 'SELECT' ? ([...input.options].find(o => o
+  .defaultSelected) || input.options[0])?.value : input.defaultValue;
 // Coche d'une famille de zones : toutes / aucune / partielle (état intermédiaire).
 function syncElementBoxes() {
   for (const box of document.querySelectorAll('.elemBox[data-elem]')) box.classList.toggle('off', !$(box.dataset.elem).checked);
@@ -1407,6 +1423,7 @@ function syncElementBoxes() {
   if (lab) lab.style.opacity = $('graticule').checked ? '' : '.4'
 }
 
+/** Case d'une famille de zones : cochée si toutes ses sous-cases le sont, intermédiaire si une partie seulement. */
 function syncZoneGroups() {
   for (const g of document.querySelectorAll('.zoneGroup')) {
     const items = [...g.closest('.box').querySelectorAll('.zoneType')],
@@ -1447,6 +1464,7 @@ function readProfileFromUi() {
   }
 }
 
+/** Enregistre les profils (localStorage siaDisplayProfiles) d'après l'interface ; assemblage à redessiner. */
 function saveProfiles() {
   readProfileFromUi();
   localStorage.setItem('siaDisplayProfiles', JSON.stringify(displayProfiles));
@@ -1464,6 +1482,8 @@ function defaultProfileForMap(map, i = -1) {
 // Cartes à produire : profil « Désactivé » (off) = carte ni générée, ni prévisualisée, ni sur l'assemblage.
 const outputMaps = () => (mission?.maps || []).filter(m => m._profileId !== 'off');
 
+/** Liste des cartes de la mission avec le profil de chacune (« off » = carte désactivée) et l'état du ZIP ;
+ *  attribue le profil par défaut aux cartes qui n'en ont pas, ouvre le bloc Mission tant qu'aucune n'est chargée. */
 function renderMapProfiles() {
   syncPreviewZip();
   {
@@ -1521,18 +1541,47 @@ function renderSiaBaseLine(b) {
   }))} — ${esc(T(['mise à jour et calcul de la MORA :', 'update and MORA calculation:', 'Aktualisierung und MORA-Berechnung:', 'actualización y cálculo de la MORA:']))} ${upd}.${b.outdated ? ` <span class="warn">${esc(T(['Relire le dossier SIA pour les points de report VFR (format mis à jour).', 'Re-read the SIA folder for the VFR reporting points (updated format).', 'SIA-Ordner für die VFR-Meldepunkte neu lesen (Format aktualisiert).', 'Releer la carpeta SIA para los puntos de notificación VFR (formato actualizado).']))}</span>` : ''}` :
     `${esc(T(['Base SIA : absente de ce navigateur — la construire ici, ou dans', 'SIA database: missing from this browser — build it here, or in', 'SIA-Datenbank: fehlt in diesem Browser — hier aufbauen oder unter', 'Base SIA: ausente de este navegador — constrúyala aquí o en']))} ${upd}. ${btn}`;
   // ligne d'état masquée (Cartes de vol : pas de bloc Mission) : le bloc commun de la base est ouvert, son bouton
-  // « Reconstruire la base aéronautique » fait le même traitement
-  if (!b && el.closest('[hidden]')) window.AppFramework?.reveal?.('sia-base');
+  // « Reconstruire la base aéronautique » fait le même traitement ; ce bloc, rangé au niveau 4 dans Cartes de vol
+  // (data-min-level), est montré à tout niveau tant que la base manque : la page n'a rien à tracer sans elle
+  const away = !!el.closest('[hidden]');
+  if (!b && away) {
+    const blk = document.querySelector('[data-block-id="sia-base"]');
+    if (blk?.dataset.minLevel) delete blk.dataset.minLevel;
+    window.AppFramework?.reveal?.('sia-base')
+  }
   if (!b) SiaBase.get({
     any: true
   }).then(o => {
     if (o && !aero) {
       el.innerHTML = `${esc(T(['Base SIA : à reconstruire (format mis à jour : gestionnaires des zones, voies aériennes) — ici, ou dans', 'SIA database: to rebuild (updated format: area managers, airways) — here, or in', 'SIA-Datenbank: neu aufbauen (Format aktualisiert: Zonenverwalter, Luftstraßen) — hier oder unter', 'Base SIA: a reconstruir (formato actualizado: gestores de zonas, aerovías) — aquí o en']))} ${upd}. ${btn}`;
-      window.AppFramework?.notify?.(T(['Base SIA à reconstruire (format mis à jour) : « Construire la base maintenant » ou Paramètres › Maintenance.', 'SIA database to rebuild (updated format): “Build the database now” or Settings › Maintenance.', 'SIA-Datenbank neu aufbauen (Format aktualisiert): „Datenbank jetzt aufbauen“ oder Einstellungen › Wartung.', 'Base SIA a reconstruir (formato actualizado): «Construir la base ahora» o Ajustes › Mantenimiento.']), 'warn')
-    } else if (!o) window.AppFramework?.notify?.(T(['Base SIA absente de ce navigateur : « Construire la base maintenant » (bloc Mission) ou Paramètres › Maintenance.', 'SIA database missing from this browser: “Build the database now” (Mission block) or Settings › Maintenance.', 'SIA-Datenbank fehlt in diesem Browser: „Datenbank jetzt aufbauen“ (Block Mission) oder Einstellungen › Wartung.', 'Base SIA ausente de este navegador: «Construir la base ahora» (bloque Misión) o Ajustes › Mantenimiento.']), 'warn')
+      // notification : le bouton nommé est celui que la page montre (Cartes de vol : bloc commun de la base)
+      window.AppFramework?.notify?.(T(away ? [
+        'Base SIA à reconstruire (format mis à jour) : bloc « Base de données SIA », « Reconstruire la base aéronautique », ou Paramètres › Maintenance.',
+        'SIA database to rebuild (updated format): “SIA database” block, “Rebuild the aeronautical database”, or Settings › Maintenance.',
+        'SIA-Datenbank neu aufbauen (Format aktualisiert): Block „SIA-Datenbank“, „Luftfahrtdatenbank neu aufbauen“, oder Einstellungen › Wartung.',
+        'Base SIA a reconstruir (formato actualizado): bloque «Base de datos SIA», «Reconstruir la base aeronáutica», o Ajustes › Mantenimiento.'
+      ] : [
+        'Base SIA à reconstruire (format mis à jour) : « Construire la base maintenant » ou Paramètres › Maintenance.',
+        'SIA database to rebuild (updated format): “Build the database now” or Settings › Maintenance.',
+        'SIA-Datenbank neu aufbauen (Format aktualisiert): „Datenbank jetzt aufbauen“ oder Einstellungen › Wartung.',
+        'Base SIA a reconstruir (formato actualizado): «Construir la base ahora» o Ajustes › Mantenimiento.'
+      ]), 'warn')
+    } else if (!o) window.AppFramework?.notify?.(T(away ? [
+      'Base SIA absente de ce navigateur : bloc « Base de données SIA », « Reconstruire la base aéronautique », ou Paramètres › Maintenance.',
+      'SIA database missing from this browser: “SIA database” block, “Rebuild the aeronautical database”, or Settings › Maintenance.',
+      'SIA-Datenbank fehlt in diesem Browser: Block „SIA-Datenbank“, „Luftfahrtdatenbank neu aufbauen“, oder Einstellungen › Wartung.',
+      'Base SIA ausente de este navegador: bloque «Base de datos SIA», «Reconstruir la base aeronáutica», o Ajustes › Mantenimiento.'
+    ] : [
+      'Base SIA absente de ce navigateur : « Construire la base maintenant » (bloc Mission) ou Paramètres › Maintenance.',
+      'SIA database missing from this browser: “Build the database now” (Mission block) or Settings › Maintenance.',
+      'SIA-Datenbank fehlt in diesem Browser: „Datenbank jetzt aufbauen“ (Block Mission) oder Einstellungen › Wartung.',
+      'Base SIA ausente de este navegador: «Construir la base ahora» (bloque Misión) o Ajustes › Mantenimiento.'
+    ]), 'warn')
   }).catch(() => {})
 }
 
+/** Base SIA lue ou mémorisée → état du studio : espaces, villes, MORA, obstacles, base aéro, axes AAR, routage ;
+ *  invalide l'assemblage et redessine la carte interactive. */
 function applyBase(b) {
   if (!b) return;
   window.MissionRouting?.setData({
@@ -1560,6 +1609,8 @@ const OPEN_PARAMS = new URLSearchParams(location.search),
   RELIRE_ON_OPEN = OPEN_PARAMS.has('relire'),
   FROM_UPDATE = OPEN_PARAMS.has('retour');
 
+/** Bouton « Retour aux données aéronautiques » après la relecture demandée depuis Maintenance :
+ *  referme l'onglet s'il a été ouvert par cette page, sinon lien vers elle. */
 function showBackToUpdate() {
   const url = '../settings/maintenance.html?m=sia#mt-aero-base',
     m = basePanel.el.querySelector('.sia-base-msg');
@@ -1583,6 +1634,8 @@ const basePanel = SiaBase.panel($('siaBasePanel'), {
     if (FROM_UPDATE) showBackToUpdate()
   }
 });
+/** Relecture demandée par l'URL (?relire) : relit le dossier SIA si l'accès est déjà accordé,
+ *  sinon met en évidence « Relire le dossier » (le navigateur exige un clic pour l'autorisation). */
 async function relireOnOpen() {
   if (!RELIRE_ON_OPEN) return;
   history.replaceState(null, '', location.pathname + location.hash);
@@ -1601,8 +1654,11 @@ async function relireOnOpen() {
   }, {
     once: true
   });
-  basePanel.setMessage('<span class="err">Cliquer « Relire le dossier » : le navigateur demande de confirmer l’accès au dossier SIA, puis la base est relue (quelques secondes).</span>')
+  basePanel.setMessage(
+    '<span class="err">Cliquer « Relire le dossier » : le navigateur demande de confirmer l’accès au dossier SIA, puis la base est relue (quelques secondes).</span>'
+  )
 }
+/** Texte du premier élément XML de nom local donné (espace de noms ignoré) ; chaîne vide s'il manque. */
 const txt = (node, local) => {
   const e = node.getElementsByTagNameNS('*', local)[0];
   return e ? e.textContent.trim() : ''
@@ -1614,7 +1670,10 @@ function after(text, key, start = 0) {
     m = r.exec(text.slice(start));
   return m ? m[1].trim() : ''
 }
-const keyNorm = s => String(s ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
+/** Clé normalisée : sans accents, minuscules, suites de caractères non alphanumériques → « _ ». */
+const keyNorm = s => String(s ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(
+  /^_|_$/g, '');
+/** Nombre lu dans une saisie libre (espaces ignorés, virgule décimale, unité tolérée) ; NaN si aucun. */
 const looseNumber = v => {
   if (typeof v === 'number') return v;
   const m = String(v ?? '').replace(/\s/g, '').replace(',', '.').match(/[-+]?\d+(?:\.\d+)?/);
@@ -1654,6 +1713,8 @@ function asList(value) {
   return value == null ? [] : [value]
 }
 
+/** Emprise [ouest, sud, est, nord] d'une carte YAML : bbox explicite (liste ou objet), sinon points de la référence,
+ *  sinon rayon ou largeur / hauteur en km autour de la référence ; null si rien ne permet de la calculer. */
 function mapBbox(raw, ref) {
   const box = raw.bbox ?? raw.bounding_box ?? raw.bounds;
   if (Array.isArray(box) && box.length >= 4) return box.slice(0, 4).map(looseNumber);
@@ -1684,11 +1745,13 @@ function mapBbox(raw, ref) {
   return halfLat && halfLon ? [ref.lon - halfLon, ref.lat - halfLat, ref.lon + halfLon, ref.lat + halfLat] : null
 }
 
+/** Tableaux Markdown d'un texte (ligne d'en-tête suivie d'un séparateur ---) : [{ headers, rows }]. */
 function markdownTables(text) {
   const lines = text.split(/\r?\n/),
     tables = [];
   for (let i = 0; i < lines.length - 1; i++) {
     if (!lines[i].includes('|') || !/^\s*\|?\s*:?-{3,}/.test(lines[i + 1])) continue;
+    /** Cellules d'une ligne de tableau (barres de bord retirées, espaces rognés). */
     const split = line => line.trim().replace(/^\||\|$/g, '').split('|').map(x => x.trim()),
       headers = split(lines[i]),
       rows = [];
@@ -1707,14 +1770,19 @@ function markdownTables(text) {
   return tables
 }
 
+/** Texte sans balisage Markdown (emphase, code, titres, liens réduits à leur libellé, puce de tête). */
 function stripMarkdown(s) {
   return String(s ?? '').replace(/[*_`#[\]]/g, '').replace(/\[([^\]]+)\]\([^)]*\)/g, '$1').replace(/^\s*[-+]\s*/, '').trim()
 }
 
+/** Mission au format Markdown du générateur : titre, cible (bloc TARGET), points (tableaux, listes, coordonnées
+ *  dans le texte), cartes à produire (fichiers .png / .svg cités, emprise et centre des sections) et zone (ZONE). */
 function parseMission(text) {
   const title = stripMarkdown((text.match(/^#{1,2}\s+(.+)$/m) || [, 'Mission'])[1]),
     points = [];
-  const targetBlock = (text.match(/^\s*TARGET\s*:\s*\r?\n([\s\S]*?)(?=^\s*(?:TURNING POINTS|POINTS TOURNANTS|RDV|ZONE|MAPS TO PRODUCE|MAPS|NOTES)\s*:\s*$|(?![\s\S]))/mi) || [])[1] || '';
+  const targetBlock = (text.match(
+    /^\s*TARGET\s*:\s*\r?\n([\s\S]*?)(?=^\s*(?:TURNING POINTS|POINTS TOURNANTS|RDV|ZONE|MAPS TO PRODUCE|MAPS|NOTES)\s*:\s*$|(?![\s\S]))/mi
+  ) || [])[1] || '';
   if (targetBlock) addPoint(points, {
     id: 'TARGET',
     name: after(targetBlock, 'NAME') || after(targetBlock, 'NOM') || 'Cible',
@@ -1785,7 +1853,8 @@ function parseMission(text) {
         type: keyNorm(file)
       })
     }
-  const target = points.find(p => /^(?:TARGET|CIBLE)$/i.test(p.id)) || points.find(p => /^DESTINATION/i.test(p.id)) || points.find(p => /destination|arriv/i.test(p.name));
+  const target = points.find(p => /^(?:TARGET|CIBLE)$/i.test(p.id)) || points.find(p => /^DESTINATION/i.test(p.id)) || points.find(p =>
+    /destination|arriv/i.test(p.name));
   for (const map of maps)
     if (!map.center && target && /(?:cible|target|detail|destination)/i.test(map.file + ' ' + map.type)) map.center = {
       lat: target.lat,
@@ -1820,7 +1889,8 @@ function missionZones(root, meta) {
       c = addPoint([], z.centre ?? z.center ?? z),
       r = looseNumber(z.radius_km ?? z.rayon_km ?? z.radius),
       role = String(z.role || ''),
-      kind = String(z.kind || (/recherche|search/i.test(role + ' ' + (z.name || '')) ? 'search' : /interdi|exclu|évit/i.test(role) ? 'exclusion' : 'mission')).toLowerCase(),
+      kind = String(z.kind || (/recherche|search/i.test(role + ' ' + (z.name || '')) ? 'search' : /interdi|exclu|évit/i.test(role) ?
+        'exclusion' : 'mission')).toLowerCase(),
       lat = c?.lat ?? (poly.length ? poly.reduce((a, q) => a + q.lat, 0) / poly.length : NaN),
       lon = c?.lon ?? (poly.length ? poly.reduce((a, q) => a + q.lon, 0) / poly.length : NaN);
     if (!Number.isFinite(lat) || !Number.isFinite(lon) || (poly.length < 3 && !(r > 0))) return null;
@@ -1837,6 +1907,8 @@ function missionZones(root, meta) {
   }).filter(Boolean)
 }
 
+/** Mission YAML : points (départ, arrivée, cible, points tournants, RDV), zones[], cartes (emprise d'après
+ *  centre_ref ou bbox) et zone de mission ; erreur explicite si le YAML est invalide ou vide. */
 function parseMissionYaml(text) {
   if (!window.jsyaml) throw Error('Lecteur YAML absent : vérifie shared/mission_core/vendor/js-yaml.min.js.');
   let root;
@@ -1875,7 +1947,8 @@ function parseMissionYaml(text) {
     if (z.id && !refs.has(keyNorm(z.id))) refs.set(keyNorm(z.id), z);
     if (z.name && !refs.has(keyNorm(z.name))) refs.set(keyNorm(z.name), z)
   }
-  const fallback = refs.get('target') || refs.get('cible') || refs.get('destination') || points.find(p => /^TARGET|CIBLE$/i.test(p.id)) || points[points.length - 1] || null;
+  const fallback = refs.get('target') || refs.get('cible') || refs.get('destination') || points.find(p => /^TARGET|CIBLE$/i.test(p.id)) ||
+    points[points.length - 1] || null;
   let rawMaps = root.maps ?? root.cartes ?? root.map_outputs ?? meta.maps ?? meta.cartes ?? [];
   rawMaps = asList(rawMaps);
   const maps = rawMaps.map((value, i) => {
@@ -1901,7 +1974,8 @@ function parseMissionYaml(text) {
   const zoneRaw = root.zone ?? root.mission_zone ?? meta.zone ?? {},
     zonePoint = addPoint([], zoneRaw),
     radius = looseNumber(zoneRaw.radius_km ?? zoneRaw.rayon_km ?? zoneRaw.radius ?? zoneRaw.rayon),
-    title = String(root.title ?? root.titre ?? meta.title ?? meta.titre ?? [meta.type, meta.id ?? meta.number].filter(v => v !== undefined && v !== '').join(' ') ?? 'Mission YAML');
+    title = String(root.title ?? root.titre ?? meta.title ?? meta.titre ?? [meta.type, meta.id ?? meta.number].filter(v => v !==
+      undefined && v !== '').join(' ') ?? 'Mission YAML');
   return {
     title: title || 'Mission YAML',
     points,
@@ -1924,8 +1998,10 @@ function parseMissionYaml(text) {
   };
 }
 
+/** Aiguille le texte collé ou chargé : YAML / JSON (clés schema, mission, maps…) ou Markdown du générateur. */
 function parseMissionInput(text) {
-  const yamlLike = /^\s*[\[{]/.test(text) || (!/^\s*#/m.test(text) && /^\s*(?:---\s*$|schema(?:_version)?\s*:|mission\s*:|turning_points\s*:|maps\s*:|cartes\s*:)/m.test(text));
+  const yamlLike = /^\s*[\[{]/.test(text) || (!/^\s*#/m.test(text) &&
+    /^\s*(?:---\s*$|schema(?:_version)?\s*:|mission\s*:|turning_points\s*:|maps\s*:|cartes\s*:)/m.test(text));
   return yamlLike ? parseMissionYaml(text) : parseMission(text)
 }
 let obstacleMax = {};
@@ -1959,7 +2035,8 @@ const zoneNorm = v => String(v ?? '').normalize('NFD').replace(/[\u0300-\u036f]/
 // ===== Sélection des zones, aérodromes et balises =====
 // Liste blanche / noire d'un profil (ancien format texte accepté).
 function zoneListOf(p) {
-  return Array.isArray(p?.zoneList) ? p.zoneList : (p?.allZones === false ? String(p?.zoneList || '').split(/\r?\n|,/).map(x => x.trim()).filter(Boolean) : [])
+  return Array.isArray(p?.zoneList) ? p.zoneList : (p?.allZones === false ? String(p?.zoneList || '').split(/\r?\n|,/).map(x => x.trim())
+    .filter(Boolean) : [])
 }
 // Identifiant de base d'une zone : numéro de tête (« 166 A1 » → 166, « 1 /2 » → 1) ou nom sans son numéro
 // final (« BEZIERS 2 » → BEZIERS). « R 166 * » : toutes les zones R 166 (A1, A2, B, C…), pas R 1660 ;
@@ -1978,24 +2055,31 @@ try {
 } catch {
   zoneAliases = {}
 }
+/** Mémorise les alias de zones (localStorage siaZoneAliases) ; échec de stockage ignoré. */
 const saveAliases = () => {
   try {
     localStorage.setItem('siaZoneAliases', JSON.stringify(zoneAliases))
   } catch {}
 };
+/** Nom de l'alias existant désigné par une saisie « @NOM » (comparaison normalisée), sinon null. */
 const aliasOf = q => /^@/.test(String(q).trim()) ? Object.keys(zoneAliases).find(k => zoneNorm(k) === zoneNorm(q)) : null;
 // Ordre d'affichage : famille (R, P, D, CTR, TMA, SIV), puis numéro (12 avant 118).
 const ZONE_ORDER = ['R', 'P', 'D', 'CTR', 'TMA', 'SIV'],
+  /** Rang d'une étiquette de zone : alias en tête (-1), puis familles de ZONE_ORDER, autres familles à la fin. */
   zoneRank = label => {
     const t = String(label).replace(/^@.*/, '').replace(/^LF-?\s*/i, '').split(/\s+/)[0].toUpperCase(),
       i = ZONE_ORDER.indexOf(t);
     return /^@/.test(label) ? -1 : i < 0 ? ZONE_ORDER.length : i
   };
+/** Tri des étiquettes de zones : famille (zoneRank) puis ordre naturel des numéros. */
 const zoneSort = (a, b) => zoneRank(a) - zoneRank(b) || String(a).localeCompare(String(b), 'fr', {
   numeric: true
 });
+/** Vrai si l'espace a correspond à la saisie q (nom, groupe « R 166 * » ou alias, résolus par SiaProfile). */
 const zoneHit = (a, q, depth = 0) => SiaProfile.zones.hit(a, q, zoneAliases, depth);
+/** Libellé d'une pastille : « R 166 * » affiché « R 166 (toutes) ». */
 const zoneChipLabel = q => /\*\s*$/.test(q) ? q.replace(/\s*\*\s*$/, ' (toutes)') : q;
+/** Plancher – plafond publiés d'un espace (« ? » pour une limite inconnue), vide si aucune n'est connue. */
 const zoneLimits = a => a.lower || a.upper ? `${a.lower||'?'} – ${a.upper||'?'}` : '';
 // Territoire : emprise des points de la mission élargie (8° × 10°), sinon métropole et Corse —
 // les espaces, aérodromes et balises d'outre-mer ne sortent pas sur une mission en métropole.
@@ -2017,11 +2101,14 @@ function territory() {
     e: Math.max(...lo) + 10
   }
 }
+/** Vrai si le point (lat, lon) est dans l'emprise b { s, n, w, e } (degrés). */
 const inBox = (b, lat, lon) => lat >= b.s && lat <= b.n && lon >= b.w && lon <= b.e;
+/** Centre approché d'un espace : moyenne des sommets de son plus long contour ; mémorisé dans a._c. */
 const zoneCentre = a => a._c ??= (() => {
   const r = a.rings.reduce((best, x) => x.length > best.length ? x : best, []);
   return r.length ? r.reduce((m, q) => [m[0] + q[0] / r.length, m[1] + q[1] / r.length], [0, 0]) : [NaN, NaN]
 })();
+/** Vrai si le centre de l'espace est dans le territoire de la mission (voir territory). */
 const inTerritory = a => {
   const c = zoneCentre(a);
   return inBox(territory(), c[0], c[1])
@@ -2046,12 +2133,15 @@ const zoneBox = a => a._bb ??= (() => {
     e
   }
 })();
+/** Vrai si l'emprise de l'espace recoupe la vue b (marges 2° en latitude, 3° en longitude) ; sans vue : vrai. */
 const zoneInView = (a, b) => {
   if (!b) return true;
   const z = zoneBox(a);
   return z.n >= b.s - 2 && z.s <= b.n + 2 && z.e >= b.w - 3 && z.w <= b.e + 3
 };
+/** Vrai si le type t est parmi les familles cochées ; « RMZ-TMZ » retenu si RMZ ou TMZ l'est. */
 const zoneFamily = (types, t) => types.has(t) || (t === 'RMZ-TMZ' && (types.has('RMZ') || types.has('TMZ')));
+/** Plancher et plafond d'un espace en pieds (SiaAero.limitFt), mémorisés sur l'objet (a._lo, a._hi). */
 const zoneFloorFt = a => a._lo ??= SiaAero.limitFt(a.lower, false),
   zoneCeilFt = a => a._hi ??= SiaAero.limitFt(a.upper, true);
 // Zones retenues pour une carte : types cochés, plancher / plafond, liste blanche ou noire, alias (@RTBA…).
@@ -2082,16 +2172,20 @@ function renderAliases() {
   }).join('') || '<p class="small">Aucun alias.</p>'
 }
 
+/** Liste blanche / noire des zones du profil actif : pastilles avec le nombre de contours retenus,
+ *  complétion (zones, groupes « R 166 * », alias) et liste des alias. */
 function renderZonePick() {
   const p = activeProfile();
   if (!p) return;
   ensureRtbaAlias();
   const types = new Set(p.zones || []),
+    /** Vrai si l'espace appartient à une famille cochée (aucune cochée : toutes). */
     inTypes = a => !types.size || types.has(a.type),
     black = zoneModeValue === 'black';
   $('zoneMode').textContent = black ? 'Liste noire' : 'Liste blanche';
   $('zoneMode').classList.toggle('black', black);
-  $('zoneModeHelp').textContent = black ? 'Toutes les zones des familles cochées, sauf celles de la liste.' : zoneItems.length ? 'Seules les zones de la liste sont tracées.' : 'Liste vide : toutes les zones des familles cochées.';
+  $('zoneModeHelp').textContent = black ? 'Toutes les zones des familles cochées, sauf celles de la liste.' : zoneItems.length ?
+    'Seules les zones de la liste sont tracées.' : 'Liste vide : toutes les zones des familles cochées.';
   zoneItems.sort(zoneSort);
   $('zoneChips').innerHTML = zoneItems.map((q, i) => {
     const hits = airspaces.filter(a => zoneHit(a, q)),
@@ -2177,6 +2271,8 @@ function pickOk(list, x, def) {
   return p[list + 'Mode'] === 'black' ? !hit : hit
 }
 
+/** Liste blanche / noire des aérodromes (list = 'ad') ou des balises ('nav') : bouton de mode, aide,
+ *  pastilles avec le nombre d'éléments désignés, complétion limitée aux éléments pas encore listés. */
 function renderPick(list) {
   const box = document.querySelector(`.pickList[data-list="${list}"]`);
   if (!box) return;
@@ -2186,16 +2282,19 @@ function renderPick(list) {
   const mode = box.querySelector('[data-pick-mode]');
   mode.textContent = black ? 'Liste noire' : 'Liste blanche';
   mode.classList.toggle('black', black);
-  box.querySelector('[data-pick-help]').textContent = black ? 'Tous sauf ceux de la liste.' : st.items.length ? 'Seulement ceux de la liste.' : 'Liste vide : tous (catégories cochées).';
+  box.querySelector('[data-pick-help]').textContent = black ? 'Tous sauf ceux de la liste.' : st.items.length ?
+    'Seulement ceux de la liste.' : 'Liste vide : tous (catégories cochées).';
   box.querySelector('[data-pick-chips]').innerHTML = st.items.map((q, i) => {
     const n = pool.filter(x => pickHit(list, x, q)).length;
     return`<li class="${n?'':'none'}">${esc(q)} <span class="small">${n}</span><button type="button" data-pick-remove="${i}">×</button></li>`
   }).join('');
-  $(list + 'Options').innerHTML = pool.filter(x => !st.items.some(q => pickHit(list, x, q))).map(pickLabel[list]).sort((a, b) => a.localeCompare(b, 'fr', {
-    numeric: true
-  })).map(v => `<option value="${esc(v)}">`).join('')
+  $(list + 'Options').innerHTML = pool.filter(x => !st.items.some(q => pickHit(list, x, q))).map(pickLabel[list]).sort((a, b) => a
+    .localeCompare(b, 'fr', {
+      numeric: true
+    })).map(v => `<option value="${esc(v)}">`).join('')
 }
 
+/** Après modification d'une liste d'aérodromes ou de balises : profil relu, liste redessinée, aperçu relancé. */
 function pickCommit(list) {
   readProfileFromUi();
   renderPick(list);
@@ -2234,9 +2333,11 @@ document.addEventListener('keydown', e => {
   }
 });
 document.addEventListener('input', e => {
-  if (e.target.matches?.('[data-pick-input]') && e.inputType === 'insertReplacementText') setTimeout(() => e.target.closest('.pickList').querySelector('[data-pick-add]').click())
+  if (e.target.matches?.('[data-pick-input]') && e.inputType === 'insertReplacementText') setTimeout(() => e.target.closest('.pickList')
+    .querySelector('[data-pick-add]').click())
 });
 
+/** Après modification de la liste de zones : profil relu, sélection redessinée, assemblage et aperçu relancés. */
 function zoneCommit() {
   readProfileFromUi();
   renderZonePick();
@@ -2245,6 +2346,7 @@ function zoneCommit() {
   schedulePreview()
 }
 
+/** Ajoute des entrées à la liste de zones (doublons écartés : même nom normalisé, alias ou non). */
 function zoneAddValues(values) {
   for (const raw of values) {
     const v = String(raw).trim();
@@ -2253,6 +2355,7 @@ function zoneAddValues(values) {
   zoneCommit()
 }
 
+/** Ajoute la zone saisie dans le champ de la liste, puis vide le champ. */
 function zoneAdd() {
   const v = $('zoneInput').value.trim();
   if (!v) return;
@@ -2287,7 +2390,8 @@ function fitGeo(pts, margin = .12, minKm = 10) {
       lon: (Math.min(...lo) + Math.max(...lo)) / 2
     },
     k = 111.32 * Math.cos(c.lat * Math.PI / 180);
-  return geoBoxAround(c, Math.max(minKm, (Math.max(...lo) - Math.min(...lo)) * k * (1 + 2 * margin)), Math.max(minKm / OUT_RATIO, (Math.max(...la) - Math.min(...la)) * 111.32 * (1 + 2 * margin)))
+  return geoBoxAround(c, Math.max(minKm, (Math.max(...lo) - Math.min(...lo)) * k * (1 + 2 * margin)), Math.max(minKm / OUT_RATIO, (Math.max(
+    ...la) - Math.min(...la)) * 111.32 * (1 + 2 * margin)))
 }
 /** Points d'emprise d'une zone de mission (sommets du polygone, ou bords du cercle). */
 const zoneExtent = z => z.points?.length ? z.points : z.radiusKm ? [{
@@ -2301,6 +2405,8 @@ const zoneExtent = z => z.points?.length ? z.points : z.radiusKm ? [{
   lon: z.lon
 }];
 
+/** Emprise {w,s,e,n} d'une carte : vue réglée (_view) ou bbox du YAML, sinon cadrage automatique selon le type —
+ *  générale (points et zones), zone, détail (8 × 5 km), cible (100 × 62 km), autres (220 × 140 km). */
 function mapGeoBbox(map) {
   const bb = map._view || map.bbox;
   if (bb) return {
@@ -2335,13 +2441,16 @@ function mapGeoBbox(map) {
 // ===== Fonds de carte MapLibre =====
 // Chargement paresseux de la bibliothèque (fichier local).
 function ensureMapLibre() {
-  return window.maplibregl ? Promise.resolve(window.maplibregl) : Promise.reject(Error('Moteur MapLibre local absent : vérifie que maplibre-gl.js et maplibre-gl.css se trouvent à côté de map_parser.html.'))
+  return window.maplibregl ? Promise.resolve(window.maplibregl) : Promise.reject(Error(
+    'Moteur MapLibre local absent : vérifie que maplibre-gl.js et maplibre-gl.css se trouvent à côté de map_parser.html.'))
 }
 
+/** Fond de carte d'une carte : choix propre (_base), sinon celui de son profil ; l'ancien « raster » → vectoriel. */
 function mapSourceFor(mapDef) {
   const b = mapDef?._base || profileForMap(mapDef).base || 'vector';
   return b === 'raster' ? 'vector' : b
 } // ancien fond local PNG : fond vectoriel
+/** Vrai si le groupe de couches OSM (land, water, relief…) est coché dans le profil de la carte. */
 function osmGroupEnabled(name, mapDef) {
   return !!profileForMap(mapDef).layers?.[name]
 }
@@ -2387,6 +2496,7 @@ function syncLayerAvailability() {
   }
 }
 
+/** Mention des sources du fond (OSM, OpenFreeMap / VersaTiles, SRTM et OpenTopoMap si relief topographique). */
 function mapCredit(mapDef) {
   const base = mapSourceFor(mapDef),
     parts = [vectorStyles[base]?.credit || '© OpenStreetMap contributors'];
@@ -2414,7 +2524,8 @@ function applyLayerGroups(map, mapDef) {
     if (!src) continue;
     let group = Object.keys(layerGroups).find(g => layerGroups[g].test(src));
     if (group === 'land' && /residential|urban|built|settlement/i.test(layer.id)) group = 'urban';
-    if (group === 'urban' && !/residential|urban|built|settlement|landuse/i.test(layer.id + ' ' + JSON.stringify(layer.filter || ''))) group = 'land';
+    if (group === 'urban' && !/residential|urban|built|settlement|landuse/i.test(layer.id + ' ' + JSON.stringify(layer.filter || '')))
+      group = 'land';
     if (/^(poi|pois|addresses|housenumber)$/.test(src)) map.setLayoutProperty(layer.id, 'visibility', 'none');
     else if (group) map.setLayoutProperty(layer.id, 'visibility', group !== 'urban' && osmGroupEnabled(group, mapDef) ? 'visible' : 'none')
   }
@@ -2450,7 +2561,9 @@ function addExtraLayers(map, mapDef) {
   if (osmGroupEnabled('contours', mapDef) && !map.getSource('contours')) {
     map.addSource('contours', {
       type: 'raster',
-      tiles: ['https://a.tile.opentopomap.org/{z}/{x}/{y}.png', 'https://b.tile.opentopomap.org/{z}/{x}/{y}.png', 'https://c.tile.opentopomap.org/{z}/{x}/{y}.png'],
+      tiles: ['https://a.tile.opentopomap.org/{z}/{x}/{y}.png', 'https://b.tile.opentopomap.org/{z}/{x}/{y}.png',
+        'https://c.tile.opentopomap.org/{z}/{x}/{y}.png'
+      ],
       tileSize: 256,
       maxzoom: 17
     });
@@ -2484,6 +2597,8 @@ function flatProjection(map) {
   })
 }
 
+/** Style MapLibre d'une carte : fond choisi (osmStyleBase), plus la couche des zones urbaines OpenMapTiles
+ *  quand le profil demande un style urbain et que le fond est un style construit ici (objet, pas une URL). */
 function osmStyle(mapDef) {
   const st = osmStyleBase(mapDef);
   if (st && typeof st === 'object' && urbanOn(mapDef)) {
@@ -2497,6 +2612,8 @@ function osmStyle(mapDef) {
   return st
 }
 
+/** Style de fond selon la source : URL d'un style publié (OpenFreeMap, VersaTiles), raster OSM ou OpenTopoMap,
+ *  sinon style vectoriel Shortbread construit d'après les groupes de couches cochés (relief, courbes, eau…). */
 function osmStyleBase(mapDef) {
   const base = mapSourceFor(mapDef);
   if (vectorStyles[base]) return vectorStyles[base].url;
@@ -2522,7 +2639,9 @@ function osmStyleBase(mapDef) {
     sources: {
       topo: {
         type: 'raster',
-        tiles: ['https://a.tile.opentopomap.org/{z}/{x}/{y}.png', 'https://b.tile.opentopomap.org/{z}/{x}/{y}.png', 'https://c.tile.opentopomap.org/{z}/{x}/{y}.png'],
+        tiles: ['https://a.tile.opentopomap.org/{z}/{x}/{y}.png', 'https://b.tile.opentopomap.org/{z}/{x}/{y}.png',
+          'https://c.tile.opentopomap.org/{z}/{x}/{y}.png'
+        ],
         tileSize: 256,
         maxzoom: 17,
         attribution: '© OpenStreetMap contributors, SRTM | © OpenTopoMap (CC-BY-SA)'
@@ -2572,7 +2691,9 @@ function osmStyleBase(mapDef) {
   if (osmGroupEnabled('contours', mapDef)) {
     sources.contours = {
       type: 'raster',
-      tiles: ['https://a.tile.opentopomap.org/{z}/{x}/{y}.png', 'https://b.tile.opentopomap.org/{z}/{x}/{y}.png', 'https://c.tile.opentopomap.org/{z}/{x}/{y}.png'],
+      tiles: ['https://a.tile.opentopomap.org/{z}/{x}/{y}.png', 'https://b.tile.opentopomap.org/{z}/{x}/{y}.png',
+        'https://c.tile.opentopomap.org/{z}/{x}/{y}.png'
+      ],
       tileSize: 256,
       maxzoom: 17,
       attribution: '© OpenTopoMap (CC-BY-SA)'
@@ -2663,7 +2784,9 @@ function osmStyleBase(mapDef) {
     source,
     'source-layer': 'streets',
     paint: {
-      'line-color': ['match', ['get', 'kind'], 'motorway', '#ed956e', 'trunk', '#eeb07a', 'primary', '#f0c58c', 'rail', '#8d8580', '#ffffff'],
+      'line-color': ['match', ['get', 'kind'], 'motorway', '#ed956e', 'trunk', '#eeb07a', 'primary', '#f0c58c', 'rail', '#8d8580',
+        '#ffffff'
+      ],
       'line-width': ['interpolate', ['linear'],
         ['zoom'], 5, .2, 10, .8, 14, 2.6
       ]
@@ -2697,6 +2820,7 @@ function waitForMap(map, timeout = 30000) {
     map.once('style.load', () => {
       styleReady = true
     });
+    /** Résout une seule fois : vide si toutes les tuiles sont là, avertissement « tuiles incomplètes » sinon. */
     const finish = partial => {
       if (done) return;
       done = true;
@@ -2719,8 +2843,10 @@ function waitForMap(map, timeout = 30000) {
     }, timeout)
   })
 }
+/** Attend que la carte soit au repos (tuiles chargées) ; au-delà du délai, résout avec un avertissement. */
 const waitForIdle = (map, timeout = 15000) => new Promise(ok => {
   let done = false;
+  /** Résout la promesse une seule fois (repos ou délai, le premier arrivé). */
   const finish = v => {
     if (!done) {
       done = true;
@@ -2744,13 +2870,16 @@ function clearOsmMarkers() {
   osmMarkers = []
 }
 
+/** Marqueurs HTML des points de la mission sur l'aperçu interactif (taille, police et couleurs du
+ *  profil) ; les points déjà portés par la route éditable ne sont pas doublés. */
 function addInteractiveMissionMarkers(map, mapDef) {
   clearOsmMarkers();
   if (el(mapDef, 'turningPoints')) {
     const size = +el(mapDef, 'pointMarker') || 8,
       font = +el(mapDef, 'pointFont') || 11,
       color = el(mapDef, 'pointColor'),
-      fill = el(mapDef, 'pointFill'); /* points déjà portés par la route éditable (bloc Route, même position à ~100 m près) : pas de second marqueur */
+      fill = el(mapDef,
+        'pointFill'); /* points déjà portés par la route éditable (bloc Route, même position à ~100 m près) : pas de second marqueur */
     const onRoute = (() => {
       let r = [];
       try {
@@ -2801,6 +2930,7 @@ async function fetchPeaks(bounds) {
     return []
   }
 }
+/** Sommets OSM (▲ nom, altitude) en marqueurs sur l'aperçu interactif, si la couche « sommets » est cochée. */
 async function addInteractivePeaks(map, mapDef) {
   if (!osmGroupEnabled('summits', mapDef)) return;
   const peaks = await fetchPeaks(mapGeoBbox(mapDef)),
@@ -2833,7 +2963,8 @@ let aarXml = '';
 async function loadAarTracks() {
   if (!window.AarTracks) return;
   try {
-    if (!aarXml) aarXml = await fetch('../../data/sia/miam-enr-5-7-tracks.xml').then(r => r.ok ? r.text() : '').catch(() => '') || await fetch('../../examples/sia/miam-enr-5-7-tracks.xml').then(r => r.ok ? r.text() : '').catch(() => '')
+    if (!aarXml) aarXml = await fetch('../../data/sia/miam-enr-5-7-tracks.xml').then(r => r.ok ? r.text() : '').catch(() => '') ||
+      await fetch('../../examples/sia/miam-enr-5-7-tracks.xml').then(r => r.ok ? r.text() : '').catch(() => '')
   } catch {}
   aarData = aarXml ? AarTracks.parseTrackXml(aarXml).filter(t => t.kind === 'track' && t.ip && t.cp) : [];
   fillAarChoice();
@@ -2843,6 +2974,7 @@ async function loadAarTracks() {
 // moins de 2 km d'un point de la mission, ou dont le nom figure dans la mission (« Axe SIMONE »).
 function aarAuto() {
   if (!mission || !aarData.length) return null;
+  /** Vrai si deux points sont à 2 km au plus (distance plane approchée, km par degré). */
   const near = (a, b) => Math.hypot((a.lat - b.lat) * 111.2, (a.lon - b.lon) * 111.2 * Math.cos(a.lat * Math.PI / 180)) <= 2,
     words = ` ${[mission.title,mission.zone?.name,...mission.points.map(p=>p.name)].join(' ').toUpperCase()} `;
   let best = null;
@@ -2859,11 +2991,13 @@ function aarAuto() {
   }
   return best
 }
+/** Choix des hippodromes AAR mémorisé dans la mission (_aar), sinon { auto: true, names: [] }. */
 const aarPickOf = () => mission?._aar && typeof mission._aar === 'object' ? mission._aar : {
   auto: true,
   names: []
 };
 
+/** Axes AAR retenus : l'axe détecté automatiquement (si « Automatique ») plus ceux cochés par leur nom. */
 function aarSelected() {
   const pick = aarPickOf(),
     out = [];
@@ -2878,16 +3012,21 @@ function aarSelected() {
   return out
 }
 
+/** Cases du choix des hippodromes AAR (Automatique + un par axe, avec cap et longueur), résumé et état. */
 function fillAarChoice() {
   const pick = aarPickOf(),
     auto = aarAuto(),
+    /** Cap (3 chiffres) et longueur en NM d'un axe, pour son libellé. */
     head = t => `${String(Math.round(AarTracks.trackRacetrack(t).heading)).padStart(3,'0')}°, ${t.lengthNm} NM`;
   $('aarOptions').innerHTML = `<label class="check"><input type="checkbox" data-aar="__auto"${pick.auto?' checked':''}> Automatique${auto?` (${esc(auto.t.name)})`:' (aucun axe détecté)'}</label>` + aarData.map(t => `<label class="check"><input type="checkbox" data-aar="${esc(t.name)}"${(pick.names||[]).includes(t.name)?' checked':''}> ${esc(t.name)} — ${head(t)}</label>`).join('');
   const chosen = mission ? aarSelected().map(t => t.name) : [];
   $('aarSummary').textContent = chosen.length ? chosen.join(', ') : 'Aucun hippodrome';
-  $('aarStatus').textContent = !aarData.length ? 'Axes ENR 5.7 introuvables : relis le dossier SIA XML (miam-enr-5-7-tracks.xml).' : pick.auto ? (auto ? `Automatique : ${auto.t.name}${auto.hits.length?` (${auto.hits.join(', ')} à moins de 2 km des points de la mission)`:' (nommé dans la mission)'}.` : 'Aucun axe à proximité des points de la mission.') : ''
+  $('aarStatus').textContent = !aarData.length ? 'Axes ENR 5.7 introuvables : relis le dossier SIA XML (miam-enr-5-7-tracks.xml).' : pick
+    .auto ? (auto ? `Automatique : ${auto.t.name}${auto.hits.length?` (${auto.hits.join(', ')} à moins de 2 km des points de la mission)`:' (nommé dans la mission)'}.` : 'Aucun axe à proximité des points de la mission.') : ''
 }
 
+/** Hippodromes AAR à dessiner sur une carte (si l'élément « aarTracks » est coché) : géométrie calculée par
+ *  AarTracks.trackRacetrack (côté droit par défaut), nom et sideKnown (côté publié ou supposé). */
 function missionAar(def) {
   return el(def, 'aarTracks') && mission ? aarSelected().map(t => ({
     ...AarTracks.trackRacetrack(t, {
@@ -2898,6 +3037,7 @@ function missionAar(def) {
   })) : []
 }
 
+/** Hippodromes AAR en GeoJSON pour MapLibre : contour (dashed = 1 si côté non publié) et axe IP → CP. */
 function aarGeoJson(def) {
   return {
     type: 'FeatureCollection',
@@ -2933,6 +3073,7 @@ function addLiveGridMora(map, mapDef) {
   c.style.cssText = 'position:absolute;left:0;top:0;pointer-events:none';
   map.getCanvas().after(c);
   let pending = false;
+  /** Redessine toute la surcouche à la taille du conteneur (densité de pixels comprise), dans l'ordre du PNG. */
   const draw = () => {
       pending = false;
       const box = map.getContainer(),
@@ -2953,6 +3094,7 @@ function addLiveGridMora(map, mapDef) {
           s: b.getSouth(),
           n: b.getNorth()
         },
+        /** Projection de la carte affichée : lat / lon → pixels du conteneur. */
         toC = (lat, lon) => map.project([lon, lat]);
       const pl = SiaAero.placer();
       drawUrbanCanvas(ctx, map, mapDef, toC, 1);
@@ -2969,6 +3111,7 @@ function addLiveGridMora(map, mapDef) {
       drawGridMora(ctx, mapDef, toC, bb, W, H, 1, pl);
       drawCitiesCanvas(ctx, mapDef, cityList || [], 1, W, H)
     },
+    /** Redessin regroupé à la prochaine image (un seul par frame, quels que soient les événements reçus). */
     later = () => {
       if (!pending) {
         pending = true;
@@ -2982,6 +3125,7 @@ function addLiveGridMora(map, mapDef) {
   draw()
 }
 
+/** Hippodromes AAR sur l'aperçu interactif : remplissage vert léger, contour plein ou pointillé, axe. */
 function addInteractiveAar(map, def) {
   const data = aarGeoJson(def);
   if (!data.features.length) return;
@@ -3035,8 +3179,10 @@ function addInteractiveAar(map, def) {
     }
   })
 }
+/** Libellé d'un hippodrome AAR : nom, cap, longueur × largeur en NM, mention si le côté n'est pas publié. */
 const aarLabel = r => `${r.name} ${String(Math.round(r.heading)).padStart(3,'0')}° ${r.lengthNm} NM × ${r.widthNm} NM${r.sideKnown?'':' (côté non publié)'}`;
 
+/** Espaces retenus pour la carte en GeoJSON (un polygone fermé par contour, coordonnées [lon, lat]). */
 function airspaceGeoJson(mapDef) {
   const features = [];
   for (const a of selectedAirspaces(mapDef))
@@ -3060,6 +3206,7 @@ function airspaceGeoJson(mapDef) {
   }
 }
 
+/** Espaces aériens en couches MapLibre (remplissage léger et contour) colorés selon leur type. */
 function addInteractiveAirspaces(map, mapDef) {
   const data = airspaceGeoJson(mapDef);
   if (!data.features.length) return;
@@ -3072,7 +3219,9 @@ function addInteractiveAirspaces(map, mapDef) {
     type: 'fill',
     source: 'sia-airspaces',
     paint: {
-      'fill-color': ['match', ['get', 'type'], 'R', '#e45b16', 'D', '#d39b00', 'P', '#c71f37', 'CTR', '#136bb4', 'TMA', '#7354b5', 'SIV', '#188b75', '#555'],
+      'fill-color': ['match', ['get', 'type'], 'R', '#e45b16', 'D', '#d39b00', 'P', '#c71f37', 'CTR', '#136bb4', 'TMA', '#7354b5',
+        'SIV', '#188b75', '#555'
+      ],
       'fill-opacity': .10
     }
   });
@@ -3081,7 +3230,9 @@ function addInteractiveAirspaces(map, mapDef) {
     type: 'line',
     source: 'sia-airspaces',
     paint: {
-      'line-color': ['match', ['get', 'type'], 'R', '#e45b16', 'D', '#d39b00', 'P', '#c71f37', 'CTR', '#136bb4', 'TMA', '#7354b5', 'SIV', '#188b75', '#555'],
+      'line-color': ['match', ['get', 'type'], 'R', '#e45b16', 'D', '#d39b00', 'P', '#c71f37', 'CTR', '#136bb4', 'TMA', '#7354b5',
+        'SIV', '#188b75', '#555'
+      ],
       'line-width': 2
     }
   })
@@ -3099,6 +3250,8 @@ function explainMapError(e, mapDef) {
   return`erreur inattendue du studio (${m})`
 }
 
+/** Message d'erreur de fond de carte (HTML) avec bouton de copie ; mémorise le rapport technique
+ *  (message, pile, carte, fond, profil, navigateur) dans lastMapError. */
 function mapErrorHtml(e, mapDef, prefix) {
   lastMapError = {
     when: new Date().toISOString(),
@@ -3232,6 +3385,7 @@ function drawZoneLabel(ctx, a, p, font, color, limits = true, pl = null) {
   if (lim) drawHaloText(ctx, lim, p.x, p.y + font * 1.05, font * .8, color, 'center')
 }
 
+/** Texte gras avec halo blanc (lisible sur tout fond), centré verticalement sur y ; alpha pour le remplissage. */
 function drawHaloText(ctx, text, x, y, size, color, align = 'left', alpha = 1) {
   ctx.save();
   ctx.font = `700 ${size}px Arial,sans-serif`;
@@ -3264,6 +3418,8 @@ const zoneArea = a => a._area ??= (() => {
 // Zones (symbologie OACI ou couleurs simples) ; part = 'shapes', 'labels' ou 'all'.
 let zoneAbbrevNow = false;
 
+/** Espaces aériens retenus sur un canvas : symbologie OACI (SiaAero.drawAirspaces) ou couleurs par type ;
+ *  part = 'shapes' (contours), 'labels' (cartouches, du plus grand espace au plus petit) ou 'all' ; b = vue. */
 function drawZonesCanvas(ctx, mapDef, toC, W, H, scale, pl, part = 'all', b = null) {
   zoneAbbrevNow = !!el(mapDef, 'zoneAbbrev');
   const showLabels = !!el(mapDef, 'zoneLabelsShow');
@@ -3352,6 +3508,8 @@ const cityLabelsOn = def => !!profileForMap(def)?.cities,
 // leur propre seuil (si « Libellés de villes ») ; sans symboles OACI, un point sous chaque libellé.
 let citiesSorted = null;
 
+/** Villes à afficher dans la vue b (marge comprise), des plus peuplées aux moins peuplées, sans recouvrement :
+ *  [{ c, q, r, label }] — ville, position canvas, rectangle occupé, libellé écrit ou symbole seul. */
 function declutterCities(mapDef, toC, b, font, scale = 1) {
   if (!citiesOn(mapDef) || !cities.length) return [];
   if (citiesSorted?.src !== cities) {
@@ -3409,7 +3567,8 @@ function drawCitiesCanvas(ctx, mapDef, list, scale, W, H) {
     }
     of list) {
     if (q.x < 0 || q.y < 0 || q.x > W || q.y > H) continue;
-    const r = agg ? SiaAero.drawCity(ctx, c.population, q, scale) : (ctx.beginPath(), ctx.arc(q.x, q.y, radius, 0, Math.PI * 2), ctx.fillStyle = color, ctx.fill(), radius);
+    const r = agg ? SiaAero.drawCity(ctx, c.population, q, scale) : (ctx.beginPath(), ctx.arc(q.x, q.y, radius, 0, Math.PI * 2), ctx
+      .fillStyle = color, ctx.fill(), radius);
     if (label) drawHaloText(ctx, c.name, q.x + r + 3 * scale, q.y - r - 3 * scale, font, color)
   }
 }
@@ -3419,6 +3578,7 @@ function reserveMarkerLabels(pl, mapDef, toC, scale, b, live = false) {
   const pf = (+el(mapDef, 'pointFont') || 11) * 4 / 3 * scale,
     cf = (+el(mapDef, 'cityFont') || 7) * 4 / 3 * scale,
     ms = (+el(mapDef, 'pointMarker') || 8) * scale,
+    /** Largeur approchée d'un texte de t caractères en police f (pixels). */
     w = (t, f) => String(t).length * f * .62;
   if (el(mapDef, 'turningPoints'))
     for (const p of mission?.points || []) {
@@ -3455,11 +3615,16 @@ function drawAeroCanvas(ctx, mapDef, toC, W, H, scale, b, pl) {
       w: b.w - 3,
       e: b.e + 3
     },
+    /** Vrai si l'élément d'affichage id est coché dans le profil de la carte. */
     on = id => !!el(mapDef, id),
     ctl = el(mapDef, 'adControl') || 'all';
   // Filtres : catégories d'aérodromes (CAP, restreints, État, hélistations, bandes), contrôle (TWR), types de balises.
-  const adOk = a => inBox(t, a.lat, a.lon) && (a.type === 'HP' ? on('adHeli') : a.type === 'LS' || (!a.hardLen && !a.water) ? on('adStrip') : a.state ? on('adState') : a.public ? on('adPublic') : on('adRestricted')) && (ctl === 'all' || (ctl === 'ctl') === !!a.controlled) && pickOk('ad', a, mapDef);
-  const navOk = n => inBox(t, n.lat, n.lon) && (n.kind === 'ILS' ? on('navIls') : n.kind === 'NDB' ? on('navNdb') : n.kind === 'DME' ? on('navDme') : n.kind === 'TACAN' || n.tacan ? on('navTacan') : on('navVor')) && pickOk('nav', n, mapDef);
+  const adOk = a => inBox(t, a.lat, a.lon) && (a.type === 'HP' ? on('adHeli') : a.type === 'LS' || (!a.hardLen && !a.water) ? on(
+    'adStrip') : a.state ? on('adState') : a.public ? on('adPublic') : on('adRestricted')) && (ctl === 'all' || (ctl === 'ctl') === !!a
+    .controlled) && pickOk('ad', a, mapDef);
+  /** Balises retenues : dans l'emprise, type coché (ILS, NDB, DME, TACAN, VOR) et liste du profil. */
+  const navOk = n => inBox(t, n.lat, n.lon) && (n.kind === 'ILS' ? on('navIls') : n.kind === 'NDB' ? on('navNdb') : n.kind === 'DME' ? on(
+    'navDme') : n.kind === 'TACAN' || n.tacan ? on('navTacan') : on('navVor')) && pickOk('nav', n, mapDef);
   const data = {
     aerodromes: ad ? aero.aerodromes.filter(adOk) : [],
     navaids: nv ? aero.navaids.filter(navOk) : [],
@@ -3675,8 +3840,11 @@ const URBAN_SOURCE = {
       'fill-opacity': 0
     }
   },
+  /** Vrai si le profil de la carte demande les agglomérations (style urbain autre que « none »). */
   urbanOn = def => (el(def, 'urbanStyle') || 'none') !== 'none';
 
+/** Ajoute à la carte la source OpenMapTiles et sa couche invisible « urban-src » (polygones landuse) ;
+ *  style pas encore prêt : nouvel essai au prochain styledata. Faux si les agglomérations sont désactivées. */
 function ensureUrbanSource(map, mapDef) {
   if (!urbanOn(mapDef)) return false;
   if (map.getLayer?.('urban-src')) return true;
@@ -3694,6 +3862,8 @@ function ensureUrbanSource(map, mapDef) {
   }
 }
 
+/** Agglomérations sur le canvas : polygones landuse proches d'une ville d'au moins urbanMin habitants,
+ *  remplis en jaune et / ou cernés (orange au-delà de 100 000 hab., jaune sinon) selon le style choisi. */
 function drawUrbanCanvas(ctx, map, mapDef, toC, scale = 1) {
   const mode = el(mapDef, 'urbanStyle') || 'none';
   if (mode === 'none' || !map?.getSource?.('omt') || !cities.length) return;
@@ -3708,7 +3878,8 @@ function drawUrbanCanvas(ctx, map, mapDef, toC, scale = 1) {
   }
   const min = +el(mapDef, 'urbanMin') || 0,
     b = map.getBounds(),
-    big = cities.filter(c => c.population >= min && c.lat > b.getSouth() - .3 && c.lat < b.getNorth() + .3 && c.lon > b.getWest() - .4 && c.lon < b.getEast() + .4).map(c => ({
+    big = cities.filter(c => c.population >= min && c.lat > b.getSouth() - .3 && c.lat < b.getNorth() + .3 && c.lon > b.getWest() - .4 && c
+      .lon < b.getEast() + .4).map(c => ({
       lat: c.lat,
       lon: c.lon,
       pop: c.population,
@@ -3788,8 +3959,10 @@ function drawUrbanCanvas(ctx, map, mapDef, toC, scale = 1) {
 // Curseurs de population logarithmiques (1 000, 2 000, 5 000, 10 000…) : le curseur donne un rang, la
 // valeur est dans le champ caché du même id (lu par les profils) ; resynchronisés après chaque profil.
 const POP_STEPS = [1000, 2000, 5000, 10000, 20000, 50000, 100000, 200000, 500000, 1000000, 2000000],
+  /** Population en clair, séparateurs de milliers à la française. */
   popText = v => (+v).toLocaleString('fr-FR');
 
+/** Recale chaque curseur logarithmique sur le palier POP_STEPS le plus proche de la valeur de son champ caché. */
 function syncLogSliders() {
   for (const r of document.querySelectorAll('input[data-log]')) {
     const v = Math.max(1, +$(r.dataset.log).value || POP_STEPS[0]);
@@ -3835,6 +4008,8 @@ StickyFrame.stick(document.querySelector('.profilePreview'), {
 // partagés avec le générateur ; coupe dessinée par SiaProfile (vertical_profile.js).
 const vprofOf = () => sharedDoc?.yaml?.vertical_profile || {};
 
+/** vertical_profile du YAML → réglages du profil vertical (cheminement, croisière, plafond, plancher, sorties,
+ *  appareil, taux de montée et de descente, profil d'affichage). */
 function syncVprofUi() {
   const v = vprofOf();
   if (document.activeElement !== $('vprofRoute')) $('vprofRoute').value = v.route || vprofDefaultRoute();
@@ -3852,6 +4027,8 @@ function syncVprofUi() {
   vprofDef._profileId = v.profile && displayProfiles.some(p => p.id === v.profile) ? v.profile : 'vprof'
 }
 
+/** Réglages du profil vertical → vertical_profile du YAML de la mission (bloc retiré s'il ne contient
+ *  que des valeurs par défaut) ; erreur affichée sous le bloc. */
 function saveVprof() {
   try {
     editDoc(y => {
@@ -3869,7 +4046,8 @@ function saveVprof() {
         descent_fpm: +$('vprofDesc').value || 800,
         descent_kt: +$('vprofDescKt').value || 160
       };
-      if (!y.vertical_profile.route && !y.vertical_profile.cruise && !y.vertical_profile.ceiling_ft && !y.vertical_profile.floor_ft && !y.vertical_profile.output && vprofDef._profileId === 'vprof') delete y.vertical_profile
+      if (!y.vertical_profile.route && !y.vertical_profile.cruise && !y.vertical_profile.ceiling_ft && !y.vertical_profile.floor_ft && !
+        y.vertical_profile.output && vprofDef._profileId === 'vprof') delete y.vertical_profile
     }, 'Profil vertical enregistré dans la mission.')
   } catch (e) {
     $('vprofStatus').textContent = e.message
@@ -3879,10 +4057,12 @@ function saveVprof() {
 // puis base SIA (aérodromes, balises, points RNAV, radiale / distance) — SiaProfile.resolver.
 function vprofBrief() {
   const out = new Map(),
+    /** Ajoute le point sous la clé k en capitales (premier arrivé conservé). */
     add = (k, p) => {
       k = String(k ?? '').trim().toUpperCase();
       if (k && !out.has(k)) out.set(k, p)
     },
+    /** Parcourt récursivement le YAML et retient tout objet portant lat / lon valides, sous son id et son nom. */
     walk = o => {
       if (Array.isArray(o)) return o.forEach(walk);
       if (!o || typeof o !== 'object') return;
@@ -3932,6 +4112,8 @@ function vprofBrief() {
   return out
 }
 
+/** Résolveur des noms du cheminement (SiaProfile.resolver) : points du brief, base aéronautique, référence
+ *  (centre de la zone de mission ou premier point) pour les radiales / distances. */
 function vprofResolver() {
   return SiaProfile.resolver({
     brief: vprofBrief(),
@@ -3949,6 +4131,7 @@ let routeCache = {
 // (rendez-vous et cible restent proposés dans la liste des points de la mission).
 function vprofDefaultRoute() {
   const ps = mission?.points || [],
+    /** Point de la mission d'identifiant donné. */
     by = id => ps.find(p => p.id === id),
     tps = ps.filter(p => !/^(ORIGIN|DESTINATION|TARGET)$/.test(p.id) && !/^RDV/i.test(p.id)),
     dest = by('DESTINATION') || (sharedDoc?.yaml?.destination ? {
@@ -3973,6 +4156,8 @@ function vprofCruiseFt() {
   return m[1] ? v * 100 : v
 }
 
+/** Points du cheminement (vertical_profile.route, sinon cheminement par défaut) résolus en lat / lon ;
+ *  mis en cache tant que le texte, la révision du document et la base aéro n'ont pas changé. */
 function vprofRoutePts() {
   if (!mission) return [];
   const v = vprofOf(),
@@ -3985,6 +4170,7 @@ function vprofRoutePts() {
   return routeCache.pts
 }
 
+/** Cheminement tracé sur les cartes : celui du profil vertical. */
 function routePoints() {
   return vprofRoutePts()
 }
@@ -3998,10 +4184,13 @@ const TRACES = [
   ['both', 'Cheminement + route probable']
 ];
 
+/** Entrée maps[] du YAML correspondant à une carte du studio (même nom de fichier), sinon null. */
 function yamlMapOf(m) {
   return (sharedDoc?.yaml?.maps || []).find(x => x && typeof x === 'object' && String(x.filename ?? x.file ?? '') === m?.file) || null
 }
 
+/** Tracé demandé pour une carte (maps[].trace : none, route, probable, both) ; à défaut, le cheminement si
+ *  la case « Tracer le cheminement » est cochée et qu'il compte au moins deux points. */
 function traceOf(m) {
   if (m === vprofDef) return 'route';
   const t = yamlMapOf(m)?.trace;
@@ -4014,6 +4203,8 @@ let probableCache = {
   v: null
 };
 
+/** Route probable de la mission (MissionEstimate.estimate), recalculée seulement quand le YAML change ;
+ *  null si l'estimation échoue ou si le module manque. */
 function probableRoute() {
   const y = sharedDoc?.yaml;
   if (!y || !window.MissionEstimate) return null;
@@ -4031,11 +4222,14 @@ function probableRoute() {
   return probableCache.v
 }
 
+/** Route probable en orange : trajet aller, retours possibles en tireté avec heure de vol jusqu'au terrain,
+ *  durée totale au milieu du trajet ; libellés placés sans recouvrement (pl). */
 function drawProbableCanvas(ctx, toC, scale, pl) {
   const e = probableRoute();
   if (!e) return;
   const col = '#e65100',
     f = 10 * scale,
+    /** Ligne brisée reliant les points, avec le motif de tirets donné. */
     line = (pts, dash) => {
       ctx.setLineDash(dash);
       ctx.beginPath();
@@ -4098,7 +4292,8 @@ function studioExercise() {
   const y = sharedDoc?.yaml,
     X = window.MissionExercise;
   if (!y || !X) return null;
-  const docs = [y, ...(SiaMission.loadBatch()?.docs || []).map(d => d.yaml).filter(d => d && String(d.mission?.id || '') !== String(y.mission?.id || ''))],
+  const docs = [y, ...(SiaMission.loadBatch()?.docs || []).map(d => d.yaml).filter(d => d && String(d.mission?.id || '') !== String(y
+      .mission?.id || ''))],
     ex = X.of(y, docs);
   if (!ex) return null;
   const org = X.isOrganisation(y),
@@ -4114,6 +4309,8 @@ function studioExercise() {
   }
 }
 
+/** Couches d'exercice proposées pour une carte : [valeur, libellé] — sans pistes, organisation (toutes, chiffons
+ *  joués), ou pour un équipage : pistes connues après chaque événement qui en révèle, puis toutes ses pistes. */
 function exerciseChoices() {
   const c = studioExercise();
   if (!c || !c.ex.tracks.length) return [
@@ -4132,6 +4329,7 @@ function exerciseChoices() {
   return out
 }
 
+/** Couche d'exercice d'une carte (maps[].exercise) si elle fait partie des choix possibles, sinon « none ». */
 function exerciseOf(m) {
   const v = yamlMapOf(m)?.exercise;
   return exerciseChoices().some(([k]) => k === v) ? v : 'none'
@@ -4154,7 +4352,8 @@ function exerciseLayer(layer) {
   }
 }
 /** Route d'une mission (départ, points tournants, arrivée) en lat/lon. */
-const missionSeq = y => [y?.origin, ...(y?.turning_points || []), y?.destination].filter(p => p && Number.isFinite(+p.lat) && Number.isFinite(+p.lon)).map(p => ({
+const missionSeq = y => [y?.origin, ...(y?.turning_points || []), y?.destination].filter(p => p && Number.isFinite(+p.lat) && Number
+  .isFinite(+p.lon)).map(p => ({
   lat: +p.lat,
   lon: +p.lon
 }));
@@ -4167,6 +4366,8 @@ const ZONE_STYLE = {
   mission: ['#6a1b9a', 'rgba(106,27,154,.08)']
 };
 
+/** Zones de la mission sur le canvas (style ZONE_STYLE selon kind) : fond et hachures, liseré blanc,
+ *  trait tireté, nom au-dessus ; option « missionZones » du profil. */
 function drawMissionZonesCanvas(ctx, mapDef, toC, scale, pl) {
   if (!mission?.zones?.length || !el(mapDef, 'missionZones')) return;
   const f = 10 * scale;
@@ -4231,6 +4432,8 @@ function drawMissionZonesCanvas(ctx, mapDef, toC, scale, pl) {
   ctx.restore()
 }
 
+/** Pistes d'exercice de la couche choisie (trait bleu fléché, libellé au départ) ; organisation : routes
+ *  des participants en couleurs ; chiffon : trait épais et nom de chaque point. */
 function drawTracksCanvas(ctx, toC, scale, pl, mapDef) {
   const layer = exerciseOf(mapDef);
   if (layer === 'none') return;
@@ -4308,7 +4511,9 @@ function drawTracksCanvas(ctx, toC, scale, pl, mapDef) {
     ctx.beginPath();
     ctx.arc(pts[0].x, pts[0].y, 3.5 * scale, 0, Math.PI * 2);
     ctx.fill();
-    const text = [chiffon && t.callsign ? t.callsign : t.name || t.id, chiffon && t.start ? 'départ ' + t.start : '', t.level, t.speed_kt ? '~' + t.speed_kt + ' kt' : ''].filter(Boolean).join(' · '),
+    const text = [chiffon && t.callsign ? t.callsign : t.name || t.id, chiffon && t.start ? 'départ ' + t.start : '', t.level, t.speed_kt ?
+        '~' + t.speed_kt + ' kt' : ''
+      ].filter(Boolean).join(' · '),
       w = text.length * f * .6,
       r = {
         x0: pts[0].x + 6 * scale,
@@ -4321,6 +4526,8 @@ function drawTracksCanvas(ctx, toC, scale, pl, mapDef) {
   ctx.restore()
 }
 
+/** Tracés d'une carte : pistes d'exercice, route probable si demandée, puis cheminement en tireté violet
+ *  (points, nom des points hors brief, altitude prévue en ft ou FL). */
 function drawRouteCanvas(ctx, toC, scale, pl, mapDef) {
   drawTracksCanvas(ctx, toC, scale, pl, mapDef);
   const tr = traceOf(mapDef);
@@ -4377,6 +4584,7 @@ const planeProfiles = () => {
   }
 };
 
+/** Liste des appareils du Flight Performance Planner (option vide = taux saisis), sel présélectionné s'il existe. */
 function fillVprofAircraft(sel) {
   const list = planeProfiles(),
     box = $('vprofAircraft');
@@ -4384,6 +4592,8 @@ function fillVprofAircraft(sel) {
   box.value = list.some(p => p.id === sel) ? sel : ''
 }
 
+/** Taux de montée et de descente du profil vertical : modèle de performances de l'appareil choisi
+ *  (climbAt selon l'altitude), sinon valeurs saisies (ft/min, kt). */
 function vprofRates() {
   const manual = {
       climb: {
@@ -4418,6 +4628,8 @@ function vprofRates() {
 }
 // Relief le long du cheminement : tuiles Terrarium z10 (module partagé, tuiles gardées en mémoire).
 const terrainAt = SiaProfile.terrainSampler();
+/** Coupe verticale W × H du cheminement : relief, espaces retenus, obstacles, niveau de croisière ;
+ *  renvoie { canvas, data } ; erreur si un point du cheminement est inconnu. */
 async function renderVerticalProfile(W, H) {
   const v = vprofOf(),
     text = $('vprofRoute').value.trim() || v.route || vprofDefaultRoute(),
@@ -4438,7 +4650,8 @@ async function renderVerticalProfile(W, H) {
       elevation: terrainAt,
       ...vprofRates(),
       airspaces: selectedAirspaces(vprofDef),
-      obstacles: el(vprofDef, 'obstacles') ? (aero?.obstacles || []).filter(o => (o.hgt || 0) >= (+el(vprofDef, 'obstacleMin') || 0)) : []
+      obstacles: el(vprofDef, 'obstacles') ? (aero?.obstacles || []).filter(o => (o.hgt || 0) >= (+el(vprofDef, 'obstacleMin') || 0)) :
+        []
     }),
     c = document.createElement('canvas');
   c.width = W;
@@ -4463,6 +4676,8 @@ async function renderVerticalProfile(W, H) {
    le cheminement réécrit est enregistré et la coupe redessinée ; « vprof-route-edited » prévient la page (Cartes de vol). */
 let vprofEditor = null;
 
+/** Attache une fois l'éditeur de coupe à la souris (SiaRouteEdit) à l'image du profil vertical ;
+ *  chaque modification enregistre le cheminement et redessine la coupe. */
 function ensureVprofEditor() {
   if (vprofEditor || !window.SiaRouteEdit) return;
   if (!$('vprofRoute').value.trim()) $('vprofRoute').value = vprofOf().route || vprofDefaultRoute();
@@ -4481,6 +4696,7 @@ function ensureVprofEditor() {
     }
   })
 }
+/** Recalcule et affiche la coupe verticale (1200 × 420) avec son bilan : distance, espaces traversés, obstacles. */
 async function drawVprofPreview() {
   if (!mission) {
     $('vprofStatus').textContent = 'Aucune mission chargée.';
@@ -4497,7 +4713,9 @@ async function drawVprofPreview() {
     ensureVprofEditor();
     vprofEditor?.update(data);
     $('vprofStatus').textContent = `${(data.total/1852).toFixed(1)} NM, ${data.crossed.length} traversée(s) d’espace, ${data.obstacles.length} obstacle(s) à moins de 1 NM.`;
-    if (!data.plan) $('vprofStatus').insertAdjacentHTML('beforeend', ' <span class="err">Trajectoire non tracée : ni niveau de croisière, ni altitude dans le cheminement (« /3000 », « /FL65 » ou « N0450F350 »).</span>')
+    if (!data.plan) $('vprofStatus').insertAdjacentHTML('beforeend',
+      ' <span class="err">Trajectoire non tracée : ni niveau de croisière, ni altitude dans le cheminement (« /3000 », « /FL65 » ou « N0450F350 »).</span>'
+    )
   } catch (e) {
     $('vprofStatus').innerHTML = `<span class="err">${esc(e.message)}</span>`
   }
@@ -4516,8 +4734,12 @@ function exerciseMapDefs() {
   const y = c.y,
     id = String(y.mission?.id || 'mission'),
     T = c.ex.tracks,
+    /** Centre et rayon (range_km) englobant les pistes ids, plus zones et rendez-vous si ctx ;
+     *  rayon d'au moins minKm, majoré d'une marge. */
     box = (ids, ctx = true, minKm = 15) => {
-      const pts = [...T.filter(t => ids.includes(t.id)).flatMap(t => t.points || []), ...(ctx ? (c.me ? [y] : c.docs).flatMap(d => [...(d.zones || []).map(z => z.centre || z.center), ...(d.rendezvous || [])]) : [])].filter(p => p && Number.isFinite(+p.lat) && Number.isFinite(+p.lon));
+      const pts = [...T.filter(t => ids.includes(t.id)).flatMap(t => t.points || []), ...(ctx ? (c.me ? [y] : c.docs).flatMap(d => [...(d
+        .zones || []).map(z => z.centre || z.center), ...(d.rendezvous || [])]) : [])].filter(p => p && Number.isFinite(+p.lat) && Number
+        .isFinite(+p.lon));
       if (!pts.length) return {};
       const la = pts.map(p => +p.lat),
         lo = pts.map(p => +p.lon),
@@ -4525,7 +4747,8 @@ function exerciseMapDefs() {
           lat: (Math.min(...la) + Math.max(...la)) / 2,
           lon: (Math.min(...lo) + Math.max(...lo)) / 2
         },
-        span = Math.max((Math.max(...la) - Math.min(...la)) * 111, (Math.max(...lo) - Math.min(...lo)) * 111 * Math.cos(m.lat * Math.PI / 180));
+        span = Math.max((Math.max(...la) - Math.min(...la)) * 111, (Math.max(...lo) - Math.min(...lo)) * 111 * Math.cos(m.lat * Math.PI /
+          180));
       return {
         center: {
           lat: +m.lat.toFixed(5),
@@ -4604,6 +4827,8 @@ $('addExerciseMaps').onclick = () => {
 // de l'équipage par message ou pli) ; « Enregistrer dans le dossier » les garde dans le YAML.
 var exerciseMapTimer = 0;
 
+/** Ajoute, une demi-seconde après l'ouverture, les cartes d'exercice manquantes et prévient qu'il faut
+ *  enregistrer la mission ; un exercice incomplet est ignoré sans message. */
 function scheduleExerciseMaps() {
   clearTimeout(exerciseMapTimer);
   exerciseMapTimer = setTimeout(() => {
@@ -4638,13 +4863,15 @@ function studioToYaml() {
 $('saveStudio').onclick = async () => {
   const C = window.MissionRegistryCore,
     y = studioToYaml(),
+    /** Affiche le résultat sous le bouton ; un succès est aussi notifié en flottant. */
     report = (text, kind) => {
       $('missionStatus').textContent = text;
       $('missionStatus').className = `small ${kind === 'ok' ? 'ok' : 'err'}`;
       if (kind === 'ok') window.AppFramework?.notify?.(text, 'ok') // échec : relayé en notification par la zone d'état
     };
   if (!y) return report('Aucune mission chargée dans le studio : rien à enregistrer (ouvrir ou coller une mission).', 'err');
-  if (!C) return report('Enregistrement impossible : registre des missions non chargé dans cette page (shared/mission_registry.js).', 'err');
+  if (!C) return report('Enregistrement impossible : registre des missions non chargé dans cette page (shared/mission_registry.js).',
+    'err');
   const btn = $('saveStudio');
   btn.disabled = true;
   try {
@@ -4707,7 +4934,8 @@ $('vprofToPlanner').onclick = () => {
     window.AppFramework?.notify?.('Route non transmise : ' + e.message, 'err');
     return
   }
-  window.open(new URL('../planner/flight_performance_planner.html?handoff=1' + (ac ? '&aircraft=' + encodeURIComponent(ac) : ''), location.href).href, '_blank')
+  window.open(new URL('../planner/flight_performance_planner.html?handoff=1' + (ac ? '&aircraft=' + encodeURIComponent(ac) : ''), location
+    .href).href, '_blank')
 };
 $('vprofIcaoCopy').onclick = () => {
   const r = vprofIcao();
@@ -4715,7 +4943,8 @@ $('vprofIcaoCopy').onclick = () => {
     window.AppFramework?.notify?.('Route : au moins deux points connus de la base SIA.', 'warn');
     return
   }
-  navigator.clipboard?.writeText(r.full).then(() => window.AppFramework?.notify?.(`Plan de vol OACI copié : ${r.full}`, 'ok'), () => window.prompt('Plan de vol OACI', r.full))
+  navigator.clipboard?.writeText(r.full).then(() => window.AppFramework?.notify?.(`Plan de vol OACI copié : ${r.full}`, 'ok'), () => window.prompt(
+    'Plan de vol OACI', r.full))
 };
 /* Route du dernier OFP SimBrief (identifiant du profil pilote commun) : départ, groupe vitesse / niveau, route ATC (case 15), destination. */
 $('routeSimbrief').onclick = async () => {
@@ -4856,6 +5085,8 @@ const vprofDef = {
   }
 };
 
+/** Crée une fois le profil d'affichage « Profil vertical » (fond vectoriel sans couches ni éléments,
+ *  toutes les familles de zones) utilisé par la carte du cheminement, puis l'enregistre. */
 function ensureVprofProfile() {
   if (displayProfiles.some(p => p.id === 'vprof')) return;
   const elements = {
@@ -4886,7 +5117,8 @@ setTimeout(ensureVprofProfile);
   fillPreviewMaps = function() {
     const keep = $('previewMap').value;
     fill.apply(this, arguments);
-    if (mission && !$('previewMap').querySelector('option[value=vprof]')) $('previewMap').insertAdjacentHTML('beforeend', '<option value="vprof">profil_vertical.png</option>');
+    if (mission && !$('previewMap').querySelector('option[value=vprof]')) $('previewMap').insertAdjacentHTML('beforeend',
+      '<option value="vprof">profil_vertical.png</option>');
     if (keep === 'vprof') $('previewMap').value = 'vprof'
   }
 } {
@@ -4934,6 +5166,7 @@ function drawOsmOverlays(ctx, mapInstance, mapDef, W, H, assemblyMaps = [], peak
     moraColor = el(mapDef, 'moraColor'),
     gridColor = el(mapDef, 'graticuleColor'),
     summitColor = el(mapDef, 'summitColor'),
+    /** Projection MapLibre → pixels du PNG de sortie (rapport entre la taille de sortie et la carte hors écran). */
     toCanvas = (lat, lon) => {
       const p = mapInstance.project([lon, lat]);
       return {
@@ -4941,6 +5174,7 @@ function drawOsmOverlays(ctx, mapInstance, mapDef, W, H, assemblyMaps = [], peak
         y: p.y * sy
       }
     },
+    /** Vrai si le point projeté est dans l'image de sortie. */
     inside = p => p.x >= 0 && p.y >= 0 && p.x <= W && p.y <= H;
   const colors = {
     R: '#e45b16',
@@ -5118,9 +5352,11 @@ function assemblyMapDef() {
     file: 'carte_assemblage',
     type: 'assembly',
     _profileId: general?._profileId || $('activeProfile').value,
-    bbox: [Math.min(...boxes.map(b => b.w)), Math.min(...boxes.map(b => b.s)), Math.max(...boxes.map(b => b.e)), Math.max(...boxes.map(b => b.n))]
+    bbox: [Math.min(...boxes.map(b => b.w)), Math.min(...boxes.map(b => b.s)), Math.max(...boxes.map(b => b.e)), Math.max(...boxes.map(b =>
+      b.n))]
   }
 }
+/** Table du CRC-32 (polynôme 0xEDB88320) calculée une fois pour l'écriture des ZIP. */
 const crcTable = (() => {
   let t = [];
   for (let n = 0; n < 256; n++) {
@@ -5137,10 +5373,13 @@ function crc32(a) {
   return (c ^ 0xffffffff) >>> 0
 }
 
+/** Archive ZIP sans compression : files = [{ name, data: Uint8Array }] → Blob application/zip
+ *  (en-têtes locaux, répertoire central, fin d'archive). */
 function zipStore(files) {
   let local = [],
     central = [],
     offset = 0;
+  /** Entiers 16 et 32 bits ajoutés en petit-boutiste au tableau d'octets a. */
   const u16 = (v, a) => {
       a.push(v & 255, v >>> 8 & 255)
     },
@@ -5200,6 +5439,7 @@ function zipStore(files) {
   })
 }
 
+/** Fait télécharger un Blob sous le nom donné (lien temporaire, URL libérée après 2 s). */
 function download(blob, name) {
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
@@ -5211,7 +5451,8 @@ function download(blob, name) {
 async function refreshOsmAssemblyPreview() {
   if (!(mission && outputMaps().length)) return;
   const def = assemblyMapDef(),
-    key = mapSourceFor(def) + '|' + mission.title + '|' + outputMaps().map(m => m.file + ':' + m._profileId).join('|') + '|' + JSON.stringify(profileForMap(def));
+    key = mapSourceFor(def) + '|' + mission.title + '|' + outputMaps().map(m => m.file + ':' + m._profileId).join('|') + '|' + JSON
+    .stringify(profileForMap(def));
   if (key === assemblyRenderKey) return;
   assemblyRenderKey = key;
   $('assemblyStatus').textContent = 'Création de la carte d’assemblage…';
@@ -5241,7 +5482,8 @@ function updateGenerate() {
   $('previewAll').disabled = !ready;
   if (hasMission) refreshOsmAssemblyPreview();
   else $('assemblyStatus').textContent = 'Elle s’affichera automatiquement dès que le fond et la mission seront disponibles.';
-  $('result').textContent = hasMission ? 'Chaque carte utilise son profil sauvegardé ; la carte d’assemblage reprend le profil de la carte générale.' : '';
+  $('result').textContent = hasMission ?
+    'Chaque carte utilise son profil sauvegardé ; la carte d’assemblage reprend le profil de la carte générale.' : '';
 }
 // Mission partagée : document commun au générateur et au studio (mission_store.js). Les réglages propres
 // au studio (profil par carte, emprise en cours de modification, hippodromes) sont conservés par nom de carte.
@@ -5251,6 +5493,8 @@ let sharedDoc = null;
 /* Réglages des cartes (profil, emprise, case ZIP) par nom de fichier, en mémoire : gardés pendant les modifications et d'une mission du lot à l'autre ; effacés à un nouveau chargement (fresh). */
 const mapPrefs = new Map();
 
+/** Adopte une mission partagée : relit son YAML, réapplique les réglages de chaque carte (mémoire mapPrefs, sinon
+ *  profile / view du YAML) et l'axe AAR ; keepIndex garde la carte affichée, fresh oublie les réglages en mémoire. */
 function useDoc(doc, keepIndex = true, fresh = false) {
   sharedDoc = doc;
   scheduleExerciseMaps();
@@ -5288,6 +5532,8 @@ function useDoc(doc, keepIndex = true, fresh = false) {
   }, 0)
 }
 
+/** Modifie le YAML de la mission partagée (change reçoit le YAML), le republie (SiaMission.save, source « studio »),
+ *  l'adopte et affiche message avec le numéro de révision ; erreur si aucune mission n'est partagée. */
 function editDoc(change, message) {
   const doc = SiaMission.load() || sharedDoc;
   if (!doc) throw Error('Aucune mission partagée.');
@@ -5301,17 +5547,20 @@ function editDoc(change, message) {
 }
 // Emprise : zoom, déplacement, vue affichée ; « Appliquer » l'écrit dans la mission (bbox [O, S, E, N]).
 let lastCamKey = null;
+/** Carte choisie dans la liste d'aperçu : carte de la mission par son rang, ou la carte du profil vertical. */
 const currentMap = () => $('previewMap').value === 'vprof' ? vprofDef : mission?.maps?.[+$('previewMap').value || 0];
 // ===== Cartes de la mission : carte choisie, vue, ajout / suppression, emprise =====
 function syncActiveToMap() {
   const m = currentMap();
-  if (m && m._profileId && m._profileId !== 'off' && displayProfiles.some(p => p.id === m._profileId) && $('activeProfile').value !== m._profileId) {
+  if (m && m._profileId && m._profileId !== 'off' && displayProfiles.some(p => p.id === m._profileId) && $('activeProfile').value !== m
+    ._profileId) {
     readProfileFromUi();
     $('activeProfile').value = m._profileId;
     applyProfileToUi()
   }
 }
 
+/** Emprise de la carte choisie (O, S, E, N en degrés) sous l'aperçu, avec mention si le cadrage a été modifié. */
 function updateViewStatus() {
   const m = currentMap();
   if (!m) {
@@ -5319,10 +5568,13 @@ function updateViewStatus() {
     return
   }
   const b = mapGeoBbox(m),
+    /** Degrés à trois décimales. */
     f = v => v.toFixed(3);
   $('viewStatus').innerHTML = `${esc(m.file)} : O ${f(b.w)} · S ${f(b.s)} · E ${f(b.e)} · N ${f(b.n)}${m._view?' — <strong>modifiée</strong> (« Garder ce cadrage » pour l’écrire dans la mission)':m.bbox?' — cadrage enregistré':' — cadrage automatique (mission et type de carte)'}`
 }
 
+/** Commandes de cadrage : zoom (in / out), décalage d'un quart (n, s, e, w), retour (home), « keep » écrit la vue
+ *  affichée en bbox dans le YAML, « auto » efface bbox et vue (cadrage automatique). */
 function viewOp(op) {
   const m = currentMap();
   if (!m) return;
@@ -5402,6 +5654,7 @@ function viewOp(op) {
   $('refreshPreview').click()
 }
 
+/** Supprime la carte de rang i du YAML de la mission, après confirmation. */
 async function deleteMap(i) {
   const m = mission?.maps?.[i];
   if (!m || !await window.AppFramework.ask(`Supprimer la carte « ${m.file} » de la mission ?`)) return;
@@ -5414,6 +5667,8 @@ async function deleteMap(i) {
   }
 }
 
+/** Ajoute une carte au YAML : type et nom saisis (extension .png imposée), emprise de l'aperçu affiché
+ *  ou, à défaut, celle de la carte choisie. */
 function addMap() {
   const type = $('newMapType').value,
     n = (mission?.maps?.length || 0) + 1,
@@ -5537,6 +5792,7 @@ function syncPreviewZip() {
   box.checked = !real || m._zip !== false
 }
 
+/** Met la carte dans le ZIP généré ou l'en retire (m._zip = false), case de la galerie comprise. */
 function setMapZip(m, on) {
   if (!m) return;
   m._zip = on ? undefined : false;
@@ -5565,6 +5821,7 @@ $('previewMap').addEventListener('change', syncPreviewZip);
 {
   const g = $('generate'),
     g2 = $('generateSticky'),
+    /** Recopie état et texte de « Générer » sur le doublon du pied de page, avec le nombre de cartes du ZIP. */
     sync = () => {
       g2.disabled = g.disabled;
       g2.textContent = g.textContent;
@@ -5589,6 +5846,8 @@ $('previewMap').addEventListener('change', syncPreviewZip);
 let operationOverlay = null;
 const OP_COLORS = ['#d62828', '#1d4ed8', '#2a9d8f', '#e76f51', '#7b2cbf', '#b08900'];
 
+/** Carte d'opération : trajet de chaque équipe dans sa couleur (sur liseré blanc) et légende en haut à gauche ;
+ *  sans effet hors du rendu de cette carte (operationOverlay nul). */
 function drawOperationCanvas(ctx, toC, scale, pl) {
   if (!operationOverlay) return;
   ctx.save();
@@ -5614,7 +5873,8 @@ function drawOperationCanvas(ctx, toC, scale, pl) {
   const f = Math.max(10, 11 * scale),
     pad = 6 * scale,
     lh = f * 1.45,
-    w = Math.max(...operationOverlay.routes.map(r => ctx.measureText ? (ctx.font = `600 ${f}px Arial`, ctx.measureText(r.label).width) : r.label.length * f * .6)) + pad * 3 + 18 * scale,
+    w = Math.max(...operationOverlay.routes.map(r => ctx.measureText ? (ctx.font = `600 ${f}px Arial`, ctx.measureText(r.label).width) : r.label
+      .length * f * .6)) + pad * 3 + 18 * scale,
     h = operationOverlay.routes.length * lh + pad * 2 + lh;
   ctx.fillStyle = 'rgba(255,255,255,.92)';
   ctx.strokeStyle = '#44525b';
@@ -5661,7 +5921,8 @@ function operationContext() {
       }
     }
     const y = d.yaml || {},
-      seq = [y.origin, ...(y.turning_points || []), y.destination].filter(p => p && Number.isFinite(+p.lat) && Number.isFinite(+p.lon)).map(p => ({
+      seq = [y.origin, ...(y.turning_points || []), y.destination].filter(p => p && Number.isFinite(+p.lat) && Number.isFinite(+p.lon))
+      .map(p => ({
         lat: +p.lat,
         lon: +p.lon
       })),
@@ -5721,16 +5982,20 @@ async function renderOperationMap(width) {
    en un ZIP (un dossier par mission, avec sa carte d'assemblage). Chaque mission est affichée tour à tour, puis
    retour à la mission de départ. */
 let outputCapture = null;
+/** Nombre de missions du lot chargé (0 sans lot) ; sleep : pause de ms millisecondes. */
 const batchSize = () => SiaMission.loadBatch()?.docs.length || 0,
   sleep = ms => new Promise(r => setTimeout(r, ms));
 /* tâche longue : barre de progression flottante et avertissement avant de quitter la page (app_framework.js) */
 const longTask = (title, opts) => window.AppFramework?.task?.(title, opts) || {
+  /** Repli sans framework : tâche muette (set chaînable, end et fail sans effet). */
   set() {
     return this
   },
   end() {},
   fail() {}
 };
+/** Affiche tour à tour chaque mission du lot et attend fn(doc, rang, total) pour chacune,
+ *  puis revient à la mission de départ, même en cas d'erreur. */
 async function forEachMission(fn) {
   const b = SiaMission.loadBatch();
   if (!b) return;
@@ -5747,6 +6012,8 @@ async function forEachMission(fn) {
     await sleep(60)
   }
 }
+/** Aperçus de tout le lot : carte d'opération commune, puis cartes de chaque mission sous un titre,
+ *  avec barre de progression. */
 async function previewAllMissions() {
   const gallery = $('previewGallery');
   for (const u of previewUrls) URL.revokeObjectURL(u);
@@ -5795,6 +6062,8 @@ async function previewAllMissions() {
   }
   $('galleryStatus').innerHTML = `<span class="ok">${n} aperçus, ${batchSize()} missions (groupés par mission).</span>`
 }
+/** Génère les cartes de toutes les missions du lot et les télécharge en un ZIP (un dossier par mission,
+ *  carte d'opération en tête) ; les échecs sont listés sous le résultat. */
 async function generateAllMissions() {
   const btns = [$('generateAll'), $('generateAllSticky')];
   btns.forEach(b => b.disabled = true);
@@ -5844,6 +6113,7 @@ async function generateAllMissions() {
   }
 }
 
+/** Boutons « Générer les N missions » visibles seulement pour un lot de plusieurs missions ; libellé des aperçus. */
 function syncAllButtons() {
   const n = batchSize(),
     on = n > 1;
@@ -5860,6 +6130,7 @@ setTimeout(syncAllButtons, 0);
 /* Lot de missions (opération à plusieurs équipes) : navigation dans l'en-tête, message après import. */
 SiaMission.mountNav('studio', d => useDoc(d, false));
 
+/** Après import : nombre de missions de l'opération et missions encore à charger, ajoutés à l'état de la mission. */
 function batchNote(r) {
   if (r.batchSize < 2 && !r.missing.length) return;
   setTimeout(() => $('missionStatus').insertAdjacentHTML('beforeend', ` <span class="ok">${r.batchSize>1?`Opération : ${r.batchSize} mission(s) chargée(s) (◀ ▶ dans l’en-tête).`:''}${r.missing.length?` À charger : ${esc(r.missing.join(', '))} (elles rejoindront l’opération).`:''}</span>`), 50)
@@ -5975,7 +6246,8 @@ $('profileEditor').addEventListener('change', e => {
         ...aarPickOf()
       };
       if (e.target.dataset.aar === '__auto') pick.auto = e.target.checked;
-      else pick.names = e.target.checked ? [...new Set([...(pick.names || []), e.target.dataset.aar])] : (pick.names || []).filter(n => n !== e.target.dataset.aar);
+      else pick.names = e.target.checked ? [...new Set([...(pick.names || []), e.target.dataset.aar])] : (pick.names || []).filter(n =>
+        n !== e.target.dataset.aar);
       mission._aar = pick
     }
     fillAarChoice();
@@ -5984,7 +6256,8 @@ $('profileEditor').addEventListener('change', e => {
     schedulePreview();
     return
   }
-  if (e.target.id === 'activeProfile' || e.target.id === 'previewMap' || e.target.id === 'zoneInput' || e.target.closest('#zoneAliases,#zonePaste,.pickList')) return;
+  if (e.target.id === 'activeProfile' || e.target.id === 'previewMap' || e.target.id === 'zoneInput' || e.target.closest(
+      '#zoneAliases,#zonePaste,.pickList')) return;
   syncLayerAvailability();
   readProfileFromUi();
   renderZonePick();
@@ -6001,7 +6274,8 @@ $('zoneInput').addEventListener('keydown', e => {
 });
 // Choix dans la liste de complétion : ajout direct.
 $('zoneInput').addEventListener('input', e => {
-  if (e.inputType === 'insertReplacementText' || e.inputType === undefined && [...$('zoneOptions').options].some(o => o.value === e.target.value)) zoneAdd()
+  if (e.inputType === 'insertReplacementText' || e.inputType === undefined && [...$('zoneOptions').options].some(o => o.value === e
+      .target.value)) zoneAdd()
 });
 $('zoneChips').addEventListener('click', e => {
   const i = e.target.dataset?.zoneRemove;
@@ -6227,6 +6501,7 @@ const store = {
   }
 };
 
+/** Affiche l'onglet de réglages choisi (fond, zones, éléments…) et le mémorise. */
 function showTab(tab) {
   for (const b of document.querySelectorAll('.profileTabs button')) b.classList.toggle('on', b.dataset.tab === tab);
   for (const p of document.querySelectorAll('.tabPanel')) p.hidden = p.dataset.panel !== tab;
@@ -6238,6 +6513,7 @@ document.querySelector('.profileTabs').addEventListener('click', e => {
 });
 showTab(store.get('siaProfileTab') || 'fond');
 
+/** Partage réglages / aperçu en pourcentage (25 à 80, 60 par défaut), mémorisé ; la carte suit la nouvelle taille. */
 function setSplit(pct) {
   pct = Math.min(80, Math.max(25, +pct || 60));
   const l = $('profileEditor');
@@ -6256,6 +6532,7 @@ setSplit(store.get('siaProfileSplit') || 60);
       sp.setPointerCapture(e.pointerId);
       sp.classList.add('drag');
       const box = $('profileEditor').getBoundingClientRect(),
+        /** Glissement de la séparation : position du pointeur → pourcentage ; up la relâche. */
         move = ev => setSplit((ev.clientX - box.left) / box.width * 100),
         up = () => {
           sp.classList.remove('drag');
@@ -6268,6 +6545,7 @@ setSplit(store.get('siaProfileSplit') || 60);
   }
 }
 
+/** Agrandit l'aperçu par-dessus la page (on = true) ou le remet en place ; la carte est redimensionnée ensuite. */
 function popPreview(on) {
   const a = document.querySelector('.profilePreview');
   a.classList.toggle('popped', on);
@@ -6298,6 +6576,8 @@ $('refreshPreview').onclick = async () => {
     $('previewStatus').innerHTML = `<span class="err">${esc(e.message)}</span>`
   }
 };
+/** Relance l'aperçu 0,7 s après le dernier réglage (si un aperçu est déjà affiché) ; état publié à la fenêtre
+ *  de contrôle. */
 const schedulePreview = () => {
   pushPreviewState();
   if (!previewShown || $('refreshPreview').disabled) return;
@@ -6328,6 +6608,8 @@ $('addMap').onclick = addMap;
    registre) : après la génération, sans demander l'accès (le navigateur ne l'accorde qu'à la suite d'un clic) ; sinon
    bouton « Ranger les cartes dans le dossier » (demande l'accès), cartes gardées en mémoire jusque-là. */
 var lastMapPngs = [];
+/** Range les PNG générés dans data/missions/…/cartes/ (request : demander l'accès au dossier si besoin) ;
+ *  { ok, text } décrit le résultat. */
 async function storeMapPngs(request) {
   if (!lastMapPngs.length) return {
     ok: false,
@@ -6352,6 +6634,8 @@ async function storeMapPngs(request) {
   }
 }
 
+/** Bouton « Ranger les cartes dans le dossier » (pied de page) quand le rangement automatique n'a pas eu
+ *  l'accès : le clic permet au navigateur de demander l'autorisation. */
 function offerStoreMaps() {
   if (!lastMapPngs.length || document.getElementById('storeMapsBtn')) return;
   const b = document.createElement('button');
@@ -6360,7 +6644,8 @@ function offerStoreMaps() {
   b.className = 'primary';
   b.dataset.icon = 'folder';
   b.textContent = 'Ranger les cartes dans le dossier';
-  b.title = 'Enregistrer les cartes générées dans data/missions/…/cartes/ (visibles dans le registre) ; demande l’accès au dossier des missions si besoin';
+  b.title =
+    'Enregistrer les cartes générées dans data/missions/…/cartes/ (visibles dans le registre) ; demande l’accès au dossier des missions si besoin';
   b.onclick = async () => {
     b.disabled = true;
     try {
@@ -6537,7 +6822,8 @@ $('generate').onclick = async () => {
         }
       }
     }
-    $('result').innerHTML = (files.length ? `<span class="ok">${report.length-failed.length}/${report.length} carte(s) générée(s)${failed.length||partial.length?' — rapport_generation.txt joint au ZIP':''}.</span>` : '<span class="err">Aucune carte générée.</span>') + (failed.length || partial.length ? '<ul>' + report.filter(r => !r.ok || r.warning).map(r => `<li class="${r.ok?'':'err'}">${esc(r.file)} : ${esc(r.ok?'fond partiel — '+r.warning:r.error)}${r.ok||r.file==='dossier de la mission'?'':' — <button type="button" data-retry="'+esc(r.file)+'">Réessayer seule</button>'}</li>`).join('') + '</ul>' : '');
+    $('result').innerHTML = (files.length ? `<span class="ok">${report.length-failed.length}/${report.length} carte(s) générée(s)${failed.length||partial.length?' — rapport_generation.txt joint au ZIP':''}.</span>` : '<span class="err">Aucune carte générée.</span>') + (failed.length || partial
+      .length ? '<ul>' + report.filter(r => !r.ok || r.warning).map(r => `<li class="${r.ok?'':'err'}">${esc(r.file)} : ${esc(r.ok?'fond partiel — '+r.warning:r.error)}${r.ok||r.file==='dossier de la mission'?'':' — <button type="button" data-retry="'+esc(r.file)+'">Réessayer seule</button>'}</li>`).join('') + '</ul>' : '');
     if (storeResult) {
       $('result').insertAdjacentHTML('beforeend', `<p class="${storeResult.ok?'ok':'err'}">Dossier de la mission : ${esc(storeResult.text)}</p>`);
       if (storeResult.ok) window.AppFramework?.notify?.(`Cartes rangées ${storeResult.text}`, 'ok');
@@ -6545,7 +6831,8 @@ $('generate').onclick = async () => {
         offerStoreMaps();
         window.AppFramework?.notify?.(`Cartes générées mais pas rangées dans le dossier de la mission (${storeResult.text}) : bouton « Ranger les cartes » dans le pied de page.`, 'warn')
       }
-    } else if (files.length && !window.MissionRegistryCore && !window.SIA_MISSION_NS) window.AppFramework?.notify?.('Cartes générées (ZIP) : module du registre absent, pas de rangement dans le dossier de la mission.', 'warn')
+    } else if (files.length && !window.MissionRegistryCore && !window.SIA_MISSION_NS) window.AppFramework?.notify?.(
+      'Cartes générées (ZIP) : module du registre absent, pas de rangement dans le dossier de la mission.', 'warn')
   } catch (e) {
     $('result').innerHTML = `<span class="err">${esc(e.message)}</span>`
   } finally {
@@ -6583,6 +6870,7 @@ $('result').addEventListener('click', async e => {
   }
 });
 
+/** Ouvre une image d'aperçu en grand dans la boîte de dialogue. */
 function enlargePreview(src, alt) {
   if (!src) return;
   $('largePreview').src = src;
@@ -6590,13 +6878,17 @@ function enlargePreview(src, alt) {
   $('previewDialog').showModal()
 }
 $('previewGallery').addEventListener('click', e => {
-  if (e.target.matches('img')) return enlargePreview(e.target.src, e.target.alt); /* designs à cadre : clic sur le carnet (fermé, ou marge du carnet ouvert) = actualiser les aperçus */
-  if (document.documentElement.dataset.skeuo === 'frame' && (e.target === e.currentTarget || e.target.matches('.previewCard')) && !$('previewAll').disabled) $('previewAll').click()
+  if (e.target.matches('img')) return enlargePreview(e.target.src, e.target
+    .alt); /* designs à cadre : clic sur le carnet (fermé, ou marge du carnet ouvert) = actualiser les aperçus */
+  if (document.documentElement.dataset.skeuo === 'frame' && (e.target === e.currentTarget || e.target.matches('.previewCard')) && !$(
+      'previewAll').disabled) $('previewAll').click()
 });
 $('generalPreview').addEventListener('click', e => enlargePreview(e.target.src, e.target.alt));
 $('assemblyPreview').addEventListener('click', e => enlargePreview(e.target.src, e.target.alt));
 $('closePreview').onclick = () => $('previewDialog').close();
-$('previewDialog').addEventListener('click', () => $('previewDialog').close()); /* un clic sur la carte agrandie (ou autour) la ferme */ ; // Sorties (PNG / SVG, largeur) : menu ☰ › Page ; choix mémorisés.
+$('previewDialog').addEventListener('click', () => $('previewDialog')
+  .close()); /* un clic sur la carte agrandie (ou autour) la ferme */ ; // Sorties (PNG / SVG, largeur) : menu ☰ › Page ; choix mémorisés.
+/** Préférences de sortie (localStorage siaOutput) : PNG, SVG éditable, largeur des PNG ; défauts si illisibles. */
 const outputPrefs = (() => {
     try {
       return {
@@ -6614,6 +6906,7 @@ const outputPrefs = (() => {
     }
   })(),
   outputButtons = {};
+/** Libellé d'une préférence de sortie avec sa valeur (png, svg, ou largeur). */
 const outputLabel = k => k === 'png' ? `Sortie PNG : ${outputPrefs.png?'oui':'non'}` : k === 'svg' ? `Sortie SVG éditable : ${outputPrefs.svg?'oui':'non'}` : `Largeur PNG : ${outputPrefs.width} px…`;
 // Menu ☰ › Sorties des cartes : PNG / SVG, largeur des PNG (localStorage siaOutput).
 function applyOutputPrefs() {
@@ -6626,6 +6919,7 @@ function applyOutputPrefs() {
   } catch {}
 }
 
+/** Ajoute une fois au menu ☰ le bloc « Sorties des cartes » (PNG, SVG, largeur), traduit selon la langue. */
 function addOutputActions(nav) {
   if (outputButtons.box || !nav?.menu) return;
   const box = document.createElement('div');
@@ -6635,8 +6929,11 @@ function addOutputActions(nav) {
       svg: ['SVG éditable', 'Editable SVG', 'Bearbeitbares SVG', 'SVG editable'],
       width: ['Largeur PNG (px)', 'PNG width (px)', 'PNG-Breite (px)', 'Ancho PNG (px)']
     },
+    /** Rang de la langue de l'interface (fr, en, de, es). */
     li = () => Math.max(0, ['fr', 'en', 'de', 'es'].indexOf(window.RepositoryNav?.getLanguage?.() || 'fr'));
-  box.innerHTML = '<div class="repo-sep"></div><div class="repo-group" data-t="group"></div><label class="repo-profile-field"><span>PNG</span><input type="checkbox" data-out="png"></label><label class="repo-profile-field"><span data-t="svg"></span><input type="checkbox" data-out="svg"></label><label class="repo-profile-field"><span data-t="width"></span><input type="number" min="400" max="5000" step="100" data-out="width" inputmode="numeric"></label>';
+  box.innerHTML =
+    '<div class="repo-sep"></div><div class="repo-group" data-t="group"></div><label class="repo-profile-field"><span>PNG</span><input type="checkbox" data-out="png"></label><label class="repo-profile-field"><span data-t="svg"></span><input type="checkbox" data-out="svg"></label><label class="repo-profile-field"><span data-t="width"></span><input type="number" min="400" max="5000" step="100" data-out="width" inputmode="numeric"></label>';
+  /** Réécrit les libellés du bloc dans la langue courante. */
   const paintTxt = () => box.querySelectorAll('[data-t]').forEach(e => {
     e.textContent = TXT[e.dataset.t][li()]
   });
@@ -6754,7 +7051,7 @@ applyOutputPrefs();;
 // navigateur : aérodromes, balises, points RNAV, voies aériennes) ; mission locale (espace « planner ») envoyée au
 // moteur du studio (useDoc) : points de la route, cartes topographique, approche, rendez-vous, destination, profil.
 (()=>{
-const FORM_KEY='mapPlannerForm:v1',$v=id=>document.getElementById(id);
+const FORM_KEY='mapPlannerForm:v1',$v=id=>document.getElementById(id),K=window.RepositoryKit;
 const say=(html,kind)=>{$v('volStatus').innerHTML=kind?`<span class="${kind}">${html}</span>`:html};
 const levelFt=t=>{const m=/^(FL)?(\d{1,5})(FT)?$/.exec(String(t||'').toUpperCase().replace(/\s+/g,''));return m?(m[1]?+m[2]*100:+m[2]):null};
 const coord=t=>{const m=/^\s*(-?\d+(?:\.\d+)?)\s*[,;| ]\s*(-?\d+(?:\.\d+)?)\s*$/.exec(t||'');return m&&Math.abs(+m[1])<=90&&Math.abs(+m[2])<=180?{lat:+m[1],lon:+m[2]}:null};
@@ -6765,7 +7062,7 @@ function saveForm(){const route=$v('vprofRoute').value.trim();try{localStorage.s
 function loadForm(){try{const f=JSON.parse(localStorage.getItem(FORM_KEY)||'null')||{},sh=readFpl(),route=sh?.route&&(sh.at||0)>(f.at||0)?sh.route:f.route;if(route&&(!$v('vprofRoute').value.trim()||sh?.route===route))$v('vprofRoute').value=route;$v('volRdv').value=f.rdv||'';if(f.level&&!$v('vprofCruise').value)$v('vprofCruise').value=f.level;if(Array.isArray(f.maps))document.querySelectorAll('[data-volmap]').forEach(i=>{i.checked=f.maps.includes(i.dataset.volmap)})}catch{}}
 /** Points de la route du champ (sans les points intermédiaires des voies aériennes) ; null et message si impossible. */
 function routePoints(){
- if(!baseReady()){say('Base SIA absente de ce navigateur : bloc « Base de données SIA » (menu ☰ › blocs) → « Relire le dossier ».','err');return null}
+ if(!baseReady()){say(esc(K.t(['Base SIA absente de ce navigateur : bloc « Base de données SIA », « Reconstruire la base aéronautique », ou Paramètres › Maintenance.','SIA database missing from this browser: “SIA database” block, “Rebuild the aeronautical database”, or Settings › Maintenance.','SIA-Datenbank fehlt in diesem Browser: Block „SIA-Datenbank“, „Luftfahrtdatenbank neu aufbauen“, oder Einstellungen › Wartung.','Base SIA ausente de este navegador: bloque «Base de datos SIA», «Reconstruir la base aeronáutica», o Ajustes › Mantenimiento.'])),'err');return null}
  const{points,unknown}=SiaProfile.parseRoute($v('vprofRoute').value.trim(),SiaProfile.resolver({aero:aero||{}}));
  if(unknown.length){say(`Route : inconnu(s) dans la base SIA : ${esc(unknown.join(', '))}.`,'err');return null}
  const pts=points.filter(p=>!p.awy);
@@ -6794,7 +7091,8 @@ function build(quiet){
  for(const m of maps){const u=userProfile.get(m.filename);if(u)m.profile=u;const v=views.get(m.filename);if(v)m.view=v}
  try{const doc=SiaMission.save({yaml,narrative:{summary:'',detailed:'',sections:[]},sourceNames:[]},'planner');routeCache={};useDoc(doc,true,true);saveForm()}catch(e){say(esc(e.message),'err');return false}
  setTimeout(()=>{drawVprofPreview();if(!quiet&&!$v('refreshPreview').disabled)$v('refreshPreview').click()},400);
- if(!quiet){say(`${maps.length} carte(s) prête(s) : ${esc(maps.map(m=>m.description).join(', '))}, et le profil vertical de la route. Réglages et aperçus dans « Cartes à produire », fichiers dans « Aperçus et génération ».`,'ok')}
+ // suite indiquée selon le niveau : « Cartes à produire » et les aperçus n'existent qu'au niveau 4
+ if(!quiet){const full=(window.RepositoryNav?.levels?.get?.()||+document.documentElement.dataset.level||4)>=4;say(K.tf(full?['{n} carte(s) prête(s) : {list}, et le profil vertical de la route. Réglages et aperçus dans « Cartes à produire », fichiers dans « Aperçus et génération ».','{n} map(s) ready: {list}, and the vertical profile of the route. Settings and previews in “Maps to produce”, files in “Previews and generation”.','{n} Karte(n) bereit: {list}, und das Höhenprofil der Route. Einstellungen und Vorschauen unter „Zu erstellende Karten“, Dateien unter „Vorschauen und Erzeugung“.','{n} mapa(s) listo(s): {list}, y el perfil vertical de la ruta. Ajustes y vistas previas en «Mapas que producir», archivos en «Vistas previas y generación».']:['{n} carte(s) prête(s) : {list}, et le profil vertical de la route. Fichiers : « Générer les cartes et le ZIP », en bas de page.','{n} map(s) ready: {list}, and the vertical profile of the route. Files: “Generate the maps and the ZIP”, at the bottom of the page.','{n} Karte(n) bereit: {list}, und das Höhenprofil der Route. Dateien: „Karten und ZIP erzeugen“, unten auf der Seite.','{n} mapa(s) listo(s): {list}, y el perfil vertical de la ruta. Archivos: «Generar los mapas y el ZIP», al pie de la página.'],{n:maps.length,list:esc(maps.map(m=>m.description).join(', '))}),'ok')}
  return true;
 }
 $v('volBuild').onclick=()=>build(false);
