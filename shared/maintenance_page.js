@@ -246,6 +246,7 @@
     ]
   }, {
     id: 'caches',
+    group: 'store',
     icon: 'trash',
     title: ['Caches', 'Caches', 'Caches', 'Cachés'],
     sub: [
@@ -256,6 +257,7 @@
     ]
   }, {
     id: 'storage',
+    group: 'store',
     icon: 'database',
     title: ['Espace disque', 'Disk space', 'Speicherplatz', 'Espacio en disco'],
     sub: [
@@ -266,6 +268,7 @@
     ]
   }, {
     id: 'backup',
+    group: 'store',
     icon: 'save',
     title: ['Sauvegarde totale', 'Full backup', 'Vollständige Sicherung', 'Copia de seguridad total'],
     sub: [
@@ -276,6 +279,7 @@
     ]
   }, {
     id: 'journal',
+    group: 'store',
     icon: 'clock',
     title: ['Journal des sauvegardes et rechargements', 'Backup and reload journal',
       'Protokoll der Sicherungen und Wiederherstellungen', 'Registro de copias y recargas'
@@ -331,12 +335,17 @@
   };
   let navHost = null;
 
-  /** Traduit la rubrique du menu latéral (titre « Maintenance » ou « Dossiers et sources » sur Installation, une entrée par bloc). */
+  /** Traduit la rubrique du menu latéral (titre « Maintenance » ou « Dossiers et sources » sur Installation, puis
+   *  « Stockage et sauvegarde » pour les blocs du groupe store ; une entrée par bloc). */
   function navLabels() {
     if (!navHost) return;
-    navHost.querySelector('h3').textContent = PAGE === 'installation' ? t(['Dossiers et sources', 'Folders and sources',
-      'Ordner und Quellen', 'Carpetas y fuentes'
-    ]) : t(['Maintenance', 'Maintenance', 'Wartung', 'Mantenimiento']);
+    navHost.querySelectorAll('h3').forEach(h => {
+      h.textContent = h.dataset.mtGroup === 'store' ? t(['Stockage et sauvegarde', 'Storage and backup', 'Speicher und Sicherung',
+        'Almacenamiento y copia'
+      ]) : PAGE === 'installation' ? t(['Dossiers et sources', 'Folders and sources', 'Ordner und Quellen',
+        'Carpetas y fuentes'
+      ]) : t(['Maintenance', 'Maintenance', 'Wartung', 'Mantenimiento']);
+    });
     navHost.querySelectorAll('[data-mt]').forEach(b => {
       b.textContent = t(NAV[b.dataset.mt]);
     });
@@ -384,7 +393,11 @@
     if (nav) {
       navHost = document.createElement('div');
       navHost.className = 'da-mt-nav';
-      navHost.innerHTML = `<h3></h3>${BLOCKS.filter(b => onPage(b.id)).map(b => `<button type="button" data-mt="${b.id}"></button>`).join('')}`;
+      // v2 : au plus sept entrées par groupe — mises à jour et données d'un côté, stockage et sauvegarde (group: 'store') de l'autre
+      navHost.innerHTML = ['', 'store'].map(g => {
+        const list = BLOCKS.filter(b => onPage(b.id) && (b.group || '') === g);
+        return list.length ? `<h3 data-mt-group="${g}"></h3>${list.map(b => `<button type="button" data-mt="${b.id}"></button>`).join('')}` : '';
+      }).join('');
       if (PAGE === 'maintenance') nav.prepend(navHost); // page Maintenance : les blocs d'abord, les fichiers de référence ensuite
       else nav.append(navHost);
       navHost.querySelectorAll('[data-mt]').forEach(b => b.onclick = () => showBlock(b.dataset.mt));
@@ -701,8 +714,7 @@
       <table class="mt-table mt-wide mt-va"><tbody>${vaRows()}</tbody></table>
       <p class="row"><button type="button" class="secondary" id="mtVaReset" data-icon="refresh">${esc(t(['Revenir à SO Group Virtual', 'Back to SO Group Virtual', 'Zurück zu SO Group Virtual', 'Volver a SO Group Virtual']))}</button></p>
       <h3>${esc(t(['Premier lancement', 'First run', 'Erster Start', 'Primer inicio']))}</h3>
-      <div class="mt-reset"><b>⚠ ${esc(t(['« Nettoyer » efface les réglages de ce navigateur', '“Clean” erases this browser’s settings', '„Bereinigen“ löscht die Einstellungen dieses Browsers', '«Limpiar» borra los ajustes de este navegador']))}</b> : ${esc(t(['dossiers mémorisés, copie du classeur ODV, identifiants du site de la compagnie, profil et l’indicateur « suite réglée » (confirmation sur la page du premier lancement). Les fichiers sur le disque ne sont pas touchés.', 'remembered folders, ODV workbook copy, airline site credentials, profile and the “suite set up” flag (confirmed on the first-run page). Files on disk are not touched.']))}</div>
-      <p class="row"><button type="button" class="secondary" id="mtSetupOpen" data-icon="refresh">${esc(t(['Rouvrir le premier lancement', 'Reopen the first run', 'Ersten Start erneut öffnen', 'Reabrir el primer inicio']))}</button> <button type="button" class="mt-danger" id="mtSetupClean">${esc(t(['Nettoyer et recommencer…', 'Clean and start over…', 'Bereinigen und neu beginnen…', 'Limpiar y empezar de nuevo…']))}</button></p>`;
+      <p class="row"><button type="button" class="secondary" id="mtSetupOpen" data-icon="refresh">${esc(t(['Rouvrir le premier lancement', 'Reopen the first run', 'Ersten Start erneut öffnen', 'Reabrir el primer inicio']))}</button></p>`;
     // compagnie virtuelle : un champ modifié → réglage local (RepositoryNav.setVa), défauts de repository_tree sinon
     host.querySelectorAll('.mt-va [data-va]').forEach(input => input.onchange = () => {
       const o = JSON.parse(localStorage.getItem('suiteVA:v1') || '{}') || {},
@@ -721,8 +733,8 @@
       renderSources();
     };
     secretsRows(host);
+    // « Nettoyer et recommencer… » : sur la page du premier lancement seulement (v2, une seule occurrence)
     host.querySelector('#mtSetupOpen').onclick = () => location.assign('premier_lancement.html?force');
-    host.querySelector('#mtSetupClean').onclick = () => location.assign('premier_lancement.html?force&clean');
     if (setup && !repo.handle) host.querySelector('tr[data-key="__repo"]')?.classList.add('mt-setup-row');
     host.querySelectorAll('tr[data-key]').forEach(tr => tr.querySelector('.mt-fcell').append(folderButton(tr.dataset.key, () => {
       renderSources();
@@ -4530,6 +4542,11 @@
       if (NAV[want]) showBlock(want);
       else if (inBlock) showBlock(inBlock);
       else if (PAGE === 'maintenance' && !new URLSearchParams(location.search).get('base')) showBlock('updates');
+      // aucune rubrique de data_admin.js ouverte (Installation) : premier bloc de la page
+      else if (main.querySelector('.da-main')?.hidden && !main.querySelector('.mt-block:not([hidden])')) {
+        const first = BLOCKS.find(b => NAV[b.id] && onPage(b.id) && !cpcoLocked(b.id));
+        if (first) showBlock(first.id);
+      }
     } else {
       const target = want && document.getElementById(want);
       if (target) setTimeout(() => target.scrollIntoView({

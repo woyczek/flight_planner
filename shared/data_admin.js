@@ -1154,11 +1154,26 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
       location.replace(window.RepositoryNav.settingsUrl(wanted));
       return;
     }
+    // v2 : niveau minimal de chaque rubrique (REPOSITORY_TREE.settings.levels ; rubrique d'un outil facultatif,
+    // settings.modules : niveau 4 tant que l'outil n'est pas coché) → data-min-level sur l'entrée et sur le titre du groupe
+    const N = window.RepositoryNav?.levels,
+      lvl = N?.get?.() || 4,
+      LV = window.REPOSITORY_TREE?.settings?.levels || {},
+      MOD = window.REPOSITORY_TREE?.settings?.modules || {};
+    /** Niveau d'utilisation à partir duquel la rubrique d figure dans la colonne (1 à 4). */
+    const minLevel = d => MOD[d.id] && !(N?.modules?.() || []).includes(MOD[d.id]) ? 4 : LV[d.id] || 1;
+    /** Attribut data-min-level d'un niveau n (rien au niveau 1). */
+    const minAttr = n => n > 1 ? ` data-min-level="${n}"` : '';
+    // rubrique ouverte : celle de l'adresse, sinon la première visible au niveau courant ; aucune (Installation : blocs de
+    // shared/maintenance_page.js seulement) → éditeur masqué, maintenance_page.js ouvre son premier bloc
     const current = {
-      id: SETS.some(d => d.id === wanted) ? wanted : SETS[0]?.id || 'fleet'
+      id: SETS.some(d => d.id === wanted) ? wanted : SETS.find(d => minLevel(d) <= lvl)?.id || ''
     };
     const groups = [...new Set(SETS.map(d => d.group))];
-    root.innerHTML = `<aside class="da-nav">${groups.map(g => `<h3>${esc(g)}</h3>${SETS.filter(d => d.group === g).map(d => `<button type="button" data-set="${d.id}">${esc(d.title)}</button>`).join('')}`).join('')}</aside>
+    root.innerHTML = `<aside class="da-nav">${groups.map(g => {
+      const list = SETS.filter(d => d.group === g);
+      return `<h3${minAttr(Math.min(...list.map(minLevel)))}>${esc(g)}</h3>${list.map(d => `<button type="button" data-set="${d.id}"${minAttr(minLevel(d))}>${esc(d.title)}</button>`).join('')}`;
+    }).join('')}</aside>
       <section class="da-main" data-icon="database"><h2></h2><p class="small da-intro"></p><div class="row da-actions"></div><p class="small da-status"></p><div class="da-body"></div><details class="da-howto"><summary>${esc(T('Mode opératoire', 'Procedure'))}</summary><div></div></details></section>`;
     // Dossiers mémorisés et sources externes : réglés dans Paramètres › Maintenance (bloc « Sources et dossiers »).
     root.querySelectorAll('[data-set]').forEach(b => b.onclick = async () => {
@@ -1868,7 +1883,12 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
       ));
     }
 
-    show();
+    if (current.id) show();
+    else {
+      // aucune rubrique à ouvrir à ce niveau : les blocs de maintenance_page.js prennent la place
+      root.querySelector('.da-main').hidden = true;
+      lockNav();
+    }
     window.RepositoryContentI18n?.(rows);
     registered = true;
   }

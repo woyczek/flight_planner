@@ -17,6 +17,7 @@
       '{SOG_NOM} — diseño, iconos, barra lateral y colores, para todas las páginas'
     ],
     design: ['Design', 'Design', 'Design', 'Diseño'],
+    moreDesigns: ['Plus de designs', 'More designs', 'Weitere Designs', 'Más diseños'],
     designSub: [
       'La forme des pages : arrondis, densité, titres, barre latérale. Cabinet, Durci et Aqua ajoutent leurs matières (cuir, bois, laiton, acier, verre) ; les couleurs d’information restent celles du thème.',
       'The shape of the pages: corners, density, titles, side bar. Cabinet, Rugged and Aqua add their materials (leather, wood, brass, steel, glass); information colours stay those of the theme.',
@@ -148,6 +149,9 @@
     core: ['CR (pages communes)', 'Reports (common pages)', 'Berichte (gemeinsame Seiten)', 'Informes (páginas comunes)']
   };
   const APPS = ['flight', 'landing', 'cpco', 'core'];
+  // v2 : designs montrés d'emblée (au plus sept avec le design courant) ; les déclinaisons (Aéro, Opérationnel, Carnet de
+  // vol…) sous « Plus de designs », repliées
+  const MAIN_DESIGNS = ['standard', 'console', 'cabinet', 'field', 'aqua', 'tactique'];
   const nav = () => window.RepositoryNav,
     AP = () => nav().appearance;
   const li = K.langIndex;
@@ -162,8 +166,8 @@
   let host = null,
     previewTheme = null;
 
-  /** Section-bloc du framework (icône, sous-titre) ; html : contenu. */
-  const block = (id, ic, title, sub, html) => `<section data-block-id="${id}" data-icon="${ic}" data-no-i18n><h2>${esc(title)}</h2><p class="repo-block-subtitle">${esc(sub)}</p>${html}</section>`;
+  /** Section-bloc du framework (icône, sous-titre) ; html : contenu ; min : niveau d'utilisation minimal (v2). */
+  const block = (id, ic, title, sub, html, min = 1) => `<section data-block-id="${id}" data-icon="${ic}"${min > 1 ? ` data-min-level="${min}"` : ''} data-no-i18n><h2>${esc(title)}</h2><p class="repo-block-subtitle">${esc(sub)}</p>${html}</section>`;
 
   function render() {
     const a = AP(),
@@ -171,9 +175,14 @@
       i = li(),
       fam = Object.entries(a.families);
     // --- design : vignettes dessinées dans chaque design
-    const thumbs = Object.entries(a.designs).map(([id, d]) => `<button type="button" class="ap-thumb repo-plain" data-design="${esc(id)}" aria-pressed="${id === cur.design}">
+    const thumb = ([id, d]) => `<button type="button" class="ap-thumb repo-plain" data-design="${esc(id)}" aria-pressed="${id === cur.design}">
       <span class="ap-mini" data-d="${esc(id)}" aria-hidden="true"><span class="ap-mini-side"></span><span class="ap-mini-body"><span class="ap-mini-bar"></span><span class="ap-mini-block"><span class="ap-mini-ic"></span><span class="ap-mini-title">${esc(t(T.thumbBlock))}</span><span class="ap-mini-line"></span><span class="ap-mini-line s"></span><span class="ap-mini-btn"></span></span></span></span>
-      <b>${esc(d.label?.[i] || d.label?.[0] || id)}</b><small>${esc(typo(d.title?.[i] || d.title?.[0] || ''))}</small></button>`).join('');
+      <b>${esc(d.label?.[i] || d.label?.[0] || id)}</b><small>${esc(typo(d.title?.[i] || d.title?.[0] || ''))}</small></button>`;
+    const shown = ([id]) => MAIN_DESIGNS.includes(id) || id === cur.design,
+      designList = Object.entries(a.designs),
+      more = designList.filter(x => !shown(x)),
+      thumbs = designList.filter(shown).map(thumb).join('');
+    const moreThumbs = more.length ? `<details class="ap-more"><summary>${esc(t(T.moreDesigns))}</summary><div class="ap-thumbs">${more.map(thumb).join('')}</div></details>` : '';
     // --- icônes : une rangée d'aperçu par variante
     const sample = ['target', 'map', 'upload', 'fuel', 'plane', 'clipboard', 'chart', 'settings'];
     const ICO = new URL('shared/icons/skeuo/', nav().root).href;
@@ -189,7 +198,8 @@
       n => composedIc(COMP[id], n)).join('') : a.iconFolder(id) ? sample.map(n => `<img class="ap-ic" src="${ICO}${a.iconFolder(id)}/${n}.webp${VER}" alt="" width="34" height="34">`).join('') : sample.map(n => `<span class="ap-ic">${stroke(n)}</span>`).join(
       '');
     const iconSel = cur.iconsSaved && cur.iconsSaved !== 'matter' ? cur.iconsSaved : 'auto';
-    const iconRows = Object.entries(T.iconSet).map(([id, row]) => `<button type="button" class="ap-iconrow repo-plain" data-icons="${id}" aria-pressed="${id === iconSel}"><b>${esc(t(row))}</b><span class="ap-iconset" data-set="${id}">${sampleOf(id)}</span></button>`).join('');
+    // v2 : jeux d'icônes au niveau 4, sauf le jeu courant
+    const iconRows = Object.entries(T.iconSet).map(([id, row]) => `<button type="button" class="ap-iconrow repo-plain" data-icons="${id}" aria-pressed="${id === iconSel}"${id === iconSel ? '' : ' data-min-level="4"'}><b>${esc(t(row))}</b><span class="ap-iconset" data-set="${id}">${sampleOf(id)}</span></button>`).join('');
     const decor = cur.decorSaved || 'full',
       decorBtns = Object.entries(T.decorSet).map(([id, row]) => `<button type="button" class="ap-seg repo-seg repo-plain" data-decor="${id}" aria-pressed="${id === decor}">${esc(t(row))}</button>`).join('');
     const aq = a.aquaColor?.() || 'blue',
@@ -222,11 +232,11 @@
     const names = Object.keys(a.themes),
       crs = names.filter(n => !APPS.includes(n));
     host.innerHTML =
-      block('ap-design', 'layers', t(T.design), t(T.designSub), `<div class="ap-thumbs">${thumbs}</div><div class="ap-sidebar"><b>${esc(t(T.decor))}</b><span class="ap-segs repo-segs" role="group">${decorBtns}</span><small class="ap-help">${esc(t(T.decorHelp))}</small></div>${a.aquaColors ? `<div class="ap-sidebar"><b>${esc(t(T.aqua))}</b><span class="repo-plain ap-dots" role="group" aria-label="${esc(t(T.aqua))}">${aquaDots}</span><small class="ap-help">${esc(t(T.aquaHelp))}</small></div>` : ''}`) +
-      (ch ? block('ap-charts', 'chart', t(T.charts), t(T.chartsSub), `<div class="ap-iconrows">${chRows}</div><div class="ap-sidebar"><b>${esc(t(T.chartStyle))}</b><span class="ap-segs repo-segs" role="group">${chStyle}</span></div>`) : '') +
-      block('ap-icons', 'box', t(T.icons), t(T.iconsSub), `<div class="ap-iconrows">${iconRows}</div><div class="ap-sidebar"><b>${esc(t(T.side))}</b><span class="ap-segs repo-segs" role="group">${sideBtns}</span></div><div class="ap-sidebar"><b>${esc(t(T.sideSize))}</b><span class="ap-segs repo-segs" role="group">${sizeBtns}</span></div><div class="ap-sidebar"><b>${esc(t(T.sideShow))}</b><span class="ap-segs repo-segs" role="group">${showBtns}</span></div>`) +
-      block('ap-colors', 'eye', t(T.colors), t(T.colorsSub), `<h3>${esc(t(T.groupPages))}</h3><div class="ap-cards">${APPS.filter(n => a.themes[n]).map(card).join('')}</div><h3>${esc(t(T.groupCr))}</h3><div class="ap-cards">${crs.map(card).join('')}</div>`) +
-      `<p class="ap-foot"><button type="button" id="apDemo" class="repo-plain" data-icon="eye" title="${esc(t(T.demo))}">${esc(t(T.demoBtn))}</button><button type="button" id="apReset" class="repo-plain" data-icon="refresh">${esc(t(T.reset))}</button></p>`;
+      block('ap-design', 'layers', t(T.design), t(T.designSub), `<div class="ap-thumbs">${thumbs}</div>${moreThumbs}<div class="ap-sidebar" data-min-level="4"><b>${esc(t(T.decor))}</b><span class="ap-segs repo-segs" role="group">${decorBtns}</span><small class="ap-help">${esc(t(T.decorHelp))}</small></div>${a.aquaColors ? `<div class="ap-sidebar" data-min-level="4"><b>${esc(t(T.aqua))}</b><span class="repo-plain ap-dots" role="group" aria-label="${esc(t(T.aqua))}">${aquaDots}</span><small class="ap-help">${esc(t(T.aquaHelp))}</small></div>` : ''}`) +
+      (ch ? block('ap-charts', 'chart', t(T.charts), t(T.chartsSub), `<div class="ap-iconrows">${chRows}</div><div class="ap-sidebar"><b>${esc(t(T.chartStyle))}</b><span class="ap-segs repo-segs" role="group">${chStyle}</span></div>`, 4) : '') +
+      block('ap-icons', 'box', t(T.icons), t(T.iconsSub), `<div class="ap-iconrows">${iconRows}</div><div class="ap-sidebar"><b>${esc(t(T.side))}</b><span class="ap-segs repo-segs" role="group">${sideBtns}</span></div><div class="ap-sidebar"><b>${esc(t(T.sideSize))}</b><span class="ap-segs repo-segs" role="group">${sizeBtns}</span></div><div class="ap-sidebar" data-min-level="4"><b>${esc(t(T.sideShow))}</b><span class="ap-segs repo-segs" role="group">${showBtns}</span></div>`) +
+      block('ap-colors', 'eye', t(T.colors), t(T.colorsSub), `<h3>${esc(t(T.groupPages))}</h3><div class="ap-cards">${APPS.filter(n => a.themes[n]).map(card).join('')}</div><h3>${esc(t(T.groupCr))}</h3><div class="ap-cards">${crs.map(card).join('')}</div>`, 4) +
+      `<p class="ap-foot"><button type="button" id="apDemo" class="repo-plain" data-icon="eye" data-min-level="4" title="${esc(t(T.demo))}">${esc(t(T.demoBtn))}</button><button type="button" id="apReset" class="repo-plain" data-icon="refresh">${esc(t(T.reset))}</button></p>`;
     host.querySelectorAll('.ap-card').forEach(paint);
     window.AppFramework?.refresh?.(host); // blocs du framework dans l'hôte (page Apparence ou fenêtre modale)
   }
@@ -329,6 +339,7 @@ html[data-design="tactique"] main.ap-page .ap-mini:not([data-d="tactique"]) .ap-
 .ap-mini[data-d="tactique"]{background:radial-gradient(120px 60px at 15% 0,rgba(56,189,248,.18),transparent 70%),linear-gradient(#0d131d,#090d14)}.ap-mini[data-d="tactique"] .ap-mini-bar{margin:0;height:18px;background:linear-gradient(rgba(17,25,38,.95),rgba(11,16,24,.9));border-bottom:1px solid rgba(120,160,210,.2)}.ap-mini[data-d="tactique"] .ap-mini-block{border-radius:9px;border:1px solid rgba(120,160,210,.2);background:linear-gradient(rgba(24,34,50,.9),rgba(18,26,39,.9));box-shadow:inset 0 2px 0 var(--repo-accent),0 6px 14px rgba(0,0,0,.5)}.ap-mini[data-d="tactique"] .ap-mini-title{color:#e6eef8;font-family:Orbitron,Inter,sans-serif;text-transform:uppercase;font-size:9px;letter-spacing:.08em}.ap-mini[data-d="tactique"] .ap-mini-line{background:rgba(142,167,194,.35)}.ap-mini[data-d="tactique"] .ap-mini-btn{border-radius:6px;background:rgba(56,189,248,.25);box-shadow:inset 0 0 0 1px rgba(56,189,248,.6),0 0 8px rgba(56,189,248,.35)}
 .ap-mini[data-d="console"] .ap-mini-side{width:22px}.ap-mini[data-d="console"] .ap-mini-ic{display:inline-block}.ap-mini[data-d="console"] .ap-mini-title{grid-column:auto;text-transform:uppercase;font-weight:800}.ap-mini[data-d="console"] .ap-mini-block{border-radius:8px;padding:10px 12px}.ap-mini[data-d="console"] .ap-mini-btn{height:14px;border-radius:5px}
 .ap-iconrows{display:grid;gap:8px;margin-top:12px}
+.ap-more>summary{margin-top:12px;cursor:pointer;font-weight:600}
 .ap-swatches{display:flex;gap:5px;flex-wrap:wrap}.ap-swatches i{width:26px;height:14px;border-radius:4px;box-shadow:inset 0 0 0 1px rgba(0,0,0,.25)}
 .ap-iconrow{display:grid;grid-template-columns:150px 1fr;align-items:center;gap:12px;padding:8px 12px;border:2px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink);cursor:pointer;font:inherit;text-align:left}
 .ap-iconrow[aria-pressed="true"]{border-color:var(--repo-accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--repo-accent) 25%,transparent)}

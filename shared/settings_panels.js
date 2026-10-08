@@ -4,7 +4,7 @@
   //   · Mon profil — identité (trigramme, IVAO, VATSIM, SimBrief, identifiants du site de la compagnie, langue), connexion et mot de
   //     passe, préférences de thèmes (listes blanches / noires par domaine), appareils et simulateurs ;
   //   · Centre — utilisateurs et droits (shared/users.js), catégories de disponibilité (shared/dispos.js) ;
-  //   · Installation — premier lancement.
+  //   · Installation — premier lancement (v2 : plus placé, l'onglet Premier lancement le remplace).
   // Chaque rubrique : { id, group, title, intro, render(body, api) } dans window.SettingsPanels.list, lue par
   // DataAdmin.mount (page : REPOSITORY_TREE.settings.sections) ; api : status(texte), actions([[libellé, fn, classe]]),
   // changed() (modifié, non enregistré), saved(), show(), open(id).
@@ -91,6 +91,7 @@
         ['es', 'Español']
       ];
       const mode = nav()?.getLanguageMode?.() || 'auto';
+      // v2 : client OAuth IVAO (réglage technique) et langue (doublon du sélecteur de l'en-tête) au niveau 4 seulement
       body.innerHTML = `<div class="sp-card"><h3>${esc(L('Pilote', 'Pilot', 'Pilot', 'Piloto'))}</h3><div class="sp-form">
           ${field(L('Trigramme', 'Trigram', 'Kürzel', 'Trigrama'), `data-f="trigram" maxlength="4" style="text-transform:uppercase"${triLocked ? ' readonly' : ''}`)}
           ${field(L('ID VATSIM (CID)', 'VATSIM ID (CID)', 'VATSIM-ID (CID)', 'ID VATSIM (CID)'), 'data-f="vatsimId" inputmode="numeric"')}
@@ -101,13 +102,13 @@
           ${field(L('Identifiant', 'Login', 'Kennung', 'Identificador'), 'data-defa="login"')}
           <label>${esc(L('Mot de passe', 'Password', 'Passwort', 'Contraseña'))}</label><span class="repo-inop-field"><input type="password" data-defa="password" disabled autocomplete="off"><span class="repo-inop" title="${esc(K.t(['Hors service : le {SOG} n’a pas encore de webservice. Ce mot de passe n’est ni demandé ni gardé ; un accès futur passera probablement par une clé d’API.', 'Inoperative: the {SOG} has no web service yet. This password is neither asked for nor kept; future access will probably use an API key.', 'Außer Betrieb: Die {SOG} hat noch keinen Webdienst. Dieses Passwort wird weder abgefragt noch gespeichert; ein künftiger Zugang läuft wahrscheinlich über einen API-Schlüssel.', 'Fuera de servicio: el {SOG} aún no tiene servicio web. Esta contraseña no se pide ni se guarda; un acceso futuro usará probablemente una clave de API.']))}" data-no-i18n>INOP</span></span>
         </div><p class="sp-hint">${esc(L('Gardés dans ce navigateur seulement : jamais écrits dans un fichier ni dans une sauvegarde.', 'Kept in this browser only: never written to a file or a backup.', 'Nur in diesem Browser gespeichert: nie in eine Datei oder Sicherung geschrieben.', 'Guardadas solo en este navegador: nunca escritas en un archivo ni en una copia.'))}</p></div>
-        <div class="sp-card" data-ivc-card><h3>${esc(L('IVAO — client OAuth (personnel)', 'IVAO — OAuth client (personal)', 'IVAO — OAuth-Client (persönlich)', 'IVAO — cliente OAuth (personal)'))}</h3><div class="sp-form">
+        <div class="sp-card" data-ivc-card data-min-level="4"><h3>${esc(L('IVAO — client OAuth (personnel)', 'IVAO — OAuth client (personal)', 'IVAO — OAuth-Client (persönlich)', 'IVAO — cliente OAuth (personal)'))}</h3><div class="sp-form">
           ${field(L('Identifiant du client (client ID)', 'Client ID', 'Client-ID', 'Identificador del cliente (client ID)'), 'data-ivc="clientId" autocomplete="off" spellcheck="false"')}
           <label>${esc(L('Secret du client', 'Client secret', 'Client-Geheimnis', 'Secreto del cliente'))}</label><input type="password" data-ivc="clientSecret" autocomplete="off" spellcheck="false">
           <label>${esc(L('Adresse de redirection à déclarer chez IVAO', 'Redirect URL to declare at IVAO', 'Bei IVAO anzugebende Weiterleitungsadresse', 'Dirección de redirección a declarar en IVAO'))}</label><input type="text" data-ivc-redirect readonly>
         </div><p class="sp-hint">${esc(L('Client créé sur developers.ivao.aero, à votre nom. Gardé par le lanceur de ce poste (secrets/users/<trigramme>.json, exclu de git, hors des données et des sauvegardes) ; le secret n’est jamais renvoyé à la page. La clé d’API de la suite se règle dans Paramètres › Installation.', 'Client created on developers.ivao.aero, in your name. Kept by this computer’s launcher (secrets/users/<trigram>.json, excluded from git, outside the data and the backups); the secret is never sent back to the page. The suite API key is set in Settings › Installation.', 'Auf developers.ivao.aero auf Ihren Namen angelegter Client. Vom Starter dieses Rechners gehalten (secrets/users/<Kürzel>.json, von Git ausgeschlossen, außerhalb der Daten und Sicherungen); das Geheimnis wird nie an die Seite zurückgegeben. Der API-Schlüssel der Suite wird unter Einstellungen › Installation eingestellt.', 'Cliente creado en developers.ivao.aero, a su nombre. Guardado por el lanzador de este equipo (secrets/users/<trigrama>.json, excluido de git, fuera de los datos y de las copias); el secreto nunca se devuelve a la página. La clave de API de la suite se ajusta en Ajustes › Instalación.'))}</p>
         <p class="row"><button type="button" class="secondary" data-ivc-save>${esc(L('Enregistrer le client IVAO', 'Save the IVAO client', 'IVAO-Client speichern', 'Guardar el cliente IVAO'))}</button> <button type="button" class="secondary" data-ivc-clear hidden>${esc(L('Effacer', 'Clear', 'Löschen', 'Borrar'))}</button> <span class="sp-hint" data-ivc-state data-no-i18n></span></p></div>
-        <div class="sp-card"><h3>${esc(L('Langue', 'Language', 'Sprache', 'Idioma'))}</h3><div class="sp-form"><label>${esc(L('Langue de la suite', 'Suite language', 'Sprache der Suite', 'Idioma de la suite'))}</label>
+        <div class="sp-card" data-min-level="4"><h3>${esc(L('Langue', 'Language', 'Sprache', 'Idioma'))}</h3><div class="sp-form"><label>${esc(L('Langue de la suite', 'Suite language', 'Sprache der Suite', 'Idioma de la suite'))}</label>
           <select data-lang>${LANG.map(([v, l]) => `<option value="${v}"${v === mode ? ' selected' : ''}>${esc(l)}</option>`).join('')}</select></div></div>`;
       body.querySelectorAll('[data-f]').forEach(i => {
         i.value = p[i.dataset.f] || '';
@@ -344,6 +345,9 @@
   };
 
   // ---------------------------------------------------------------- Installation › Premier lancement
+  // v2 : rubrique faite de liens, plus placée sur une page (REPOSITORY_TREE.settings.sections) : l'onglet Premier
+  // lancement de Réglages et le bloc « Sources et dossiers » d'Installation la remplacent (rubrique gardée : page sans
+  // data-settings, ou nouvelle place à lui donner dans la table)
   const setup = {
     id: 'setup',
     group: L('Installation', 'Installation', 'Installation', 'Instalación'),

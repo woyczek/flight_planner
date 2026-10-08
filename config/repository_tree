@@ -175,11 +175,17 @@ window.REPOSITORY_TREE={
     sections:{
       level:"profile",identity:"profile",myAircraft:"profile",account:"profile",themes:"profile",equipment:"profile",planner:"profile",
       cpco:"centre",users:"centre",dispoCategories:"centre",odv:"centre",odvOrders:"centre",send:"centre",
-      setup:"installation",sources:"installation",
+      // « setup » (Premier lancement, rubrique faite de liens) n'est plus placée : l'onglet Premier lancement la remplace
+      sources:"installation",
       fleet:"centre",aircraftDb:"maintenance",callsigns:"maintenance",defaReference:"maintenance",defaLog:"maintenance",merges:"maintenance",ledgers:"maintenance",
       registry:"maintenance",localTypes:"maintenance",learned:"maintenance",airports:"maintenance",
       updates:"maintenance",versions:"maintenance",deps:"maintenance",types:"installation,maintenance",sia:"installation,maintenance",caches:"maintenance",storage:"maintenance",backup:"maintenance",journal:"maintenance"
-    }
+    },
+    // v2 : niveau d'utilisation minimal d'une rubrique dans la colonne de gauche (1 par défaut ; data-min-level posé par
+    // shared/data_admin.js sur l'entrée et sur le titre de son groupe) ; une adresse ?base= directe l'ouvre à tout niveau
+    levels:{myAircraft:2,aircraftDb:4,callsigns:4,defaReference:4,defaLog:4,merges:4,ledgers:4,registry:4,localTypes:4,learned:4,airports:4},
+    // rubrique d'un outil facultatif (RepositoryNav.levels.MODULES) : visible si l'outil est coché, sinon au niveau 4
+    modules:{planner:"fuel"}
   },
   pages:[
     {path:"apps/cr/FIRE/fire_cr.html",menu:false,label:"FIRE / GAAR — Compte rendu de mission"},
@@ -223,8 +229,8 @@ window.REPOSITORY_TREE={
     {path:"apps/settings/parametrage.html",menu:false,label:"Paramètres",theme:"core",favicon:"assets/favicon-flight.svg"},
     {path:"apps/settings/profil.html",menu:false,slot:"settings",label:"Mon profil",theme:"core",favicon:"assets/favicon-flight.svg"},
     {path:"apps/settings/centre.html",level:2,menu:false,slot:"settings",label:"Paramètres — Centre",theme:"core",favicon:"assets/favicon-flight.svg"},
-    {path:"apps/settings/installation.html",menu:false,slot:"settings",label:"Paramètres — Installation",theme:"core",favicon:"assets/favicon-flight.svg"},
-    {path:"apps/settings/maintenance.html",menu:false,slot:"settings",label:"Paramètres — Maintenance",theme:"core",favicon:"assets/favicon-flight.svg"},
+    {path:"apps/settings/installation.html",level:2,menu:false,slot:"settings",label:"Paramètres — Installation",theme:"core",favicon:"assets/favicon-flight.svg"},
+    {path:"apps/settings/maintenance.html",level:4,menu:false,slot:"settings",label:"Paramètres — Maintenance",theme:"core",favicon:"assets/favicon-flight.svg"},
     {path:"apps/settings/apparence.html",menu:false,slot:"settings",label:"Apparence",theme:"core",favicon:"assets/favicon-flight.svg"},
     {path:"apps/aide/aide.html",menu:"Aide",label:"Aide — manuels et documentation de la suite",theme:"core",favicon:"assets/favicon-flight.svg"},
     {path:"apps/settings/premier_lancement.html",menu:false,slot:"settings",label:"Premier lancement",theme:"core",favicon:"assets/favicon-flight.svg"},
@@ -232,8 +238,8 @@ window.REPOSITORY_TREE={
     {path:"apps/cpco/mission_editor.html",level:3,menu:"Centre — Générateur de mission",label:"Générateur de mission — Centre de planification et de conduite des opérations"},
     {path:"apps/cpco/map_parser.html",level:4,menu:"Centre — Studio cartographique",label:"Studio cartographique — Centre de planification et de conduite des opérations"},
     {path:"apps/cpco/mission_registry.html",level:3,menu:"Centre — Registre des missions",label:"Registre des missions — Centre de planification et de conduite des opérations"},
-    {path:"apps/planner/flight_performance_planner.html",module:"fuel",menu:"Flight Performance & Fuel Planner",label:"Flight Performance & Fuel Planner"},
-    {path:"apps/pilot/disponibilites.html",menu:false,label:"Mes disponibilités — saisie par plages, par catégorie"},
+    {path:"apps/planner/flight_performance_planner.html",module:"fuel",menu:"Carburant",label:"Carburant — performances et devis carburant"},
+    {path:"apps/pilot/disponibilites.html",level:4,menu:false,label:"Mes disponibilités — saisie par plages, par catégorie"},
     {path:"apps/pilot/mes_missions.html",menu:"Mes missions",label:"Mes missions — missions affectées par le Centre, disponibilités"},
     {path:"apps/planner/map_planner.html",module:"maps",menu:"Cartes de vol",label:"Cartes de vol — route, cartes topographiques, approche, rendez-vous, destination"},
     {path:"apps/cpco/odv_planning.html",level:2,menu:"Centre — Planning ODV",label:"Planning ODV — Centre de planification et de conduite des opérations"},
@@ -249,6 +255,8 @@ window.REPOSITORY_TREE={
     "Paramétrage — bases de données":["Paramétrage — bases de données","Settings — databases","Einstellungen — Datenbanken","Configuración — bases de datos"],
     "Paramètres — bases de données et maintenance":["Paramètres — bases de données et maintenance","Settings — databases and maintenance","Einstellungen — Datenbanken und Wartung","Ajustes — bases de datos y mantenimiento"],
     "Cartes de vol":["Cartes de vol","Flight maps","Flugkarten","Mapas de vuelo"],
+    "Carburant":["Carburant","Fuel","Kraftstoff","Combustible"],
+    "Carburant — performances et devis carburant":["Carburant — performances et devis carburant","Fuel — performance and fuel estimate","Kraftstoff — Leistung und Kraftstoffschätzung","Combustible — rendimiento y estimación de combustible"],
     "Mes missions":["Mes missions","My missions","Meine Missionen","Mis misiones"],
     "Centre — Planning ODV":["Centre — Planning ODV","Centre — ODV planning","Zentrum — ODV-Planung","Centro — Planificación ODV"],
     "Centre — Tableau":["Centre — Tableau","Centre — Board","Zentrum — Einsatztafel","Centro — Tablero"],
