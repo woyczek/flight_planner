@@ -478,6 +478,9 @@ If the browser refuses automatic copying, the text is selected: copy it with Ctr
 
 The Board page builds the week's flight order: flight strips, control, miscellaneous items and notes placed on a timeline, with availability and area conflicts.
 To open it: sidebar › “Centre” section › “Board”. Unlike the rest of the Centre, it can be viewed without it: without the Centre enabled (or, in production mode, without being logged in with the `admin_centre` role), it opens read-only: the schedule only, the day's timeline with its flights, control duties, miscellaneous and notes — no palette, areas, ATC, common availability, problems, log, week and statistics views, area activations or requests, no drag and drop or mission order; a floating notice says so. Changing it needs the Centre enabled and, in production mode or as soon as a user is signed in, the `admin_centre` role (a `utilisateur` account stays read-only even with the Centre open; likewise in ODV planning: ATC sessions, activations, assignments).
+
+- **Hide unavailable pilots** (box of the palette and of the week view, taken from the ODV page): only members who declared an available or control range that day remain (the week: at least one day); kept in this browser.
+- **Expert level** (My profile › Usage level, 4): “Common slots and likely missions” block, taken from the ODV page — slots where several pilots are available (click: slot window, missions × positions matrix) and compatible mission families.
 Everything is saved in the shared data pool: the week's order in `data/odv/<year>-W<week>.json`, the settings in `data/config/odv.json`. Availability stays the pilots' own, and the crew of a mission flight comes from the assignments.
 Times are in z (UTC). Data model: [Board](../technique/ODV_ORDRES.md).
 

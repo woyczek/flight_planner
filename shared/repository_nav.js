@@ -12,7 +12,9 @@
     doc = document.documentElement;
   // page ouverte dans la fenêtre d'aide d'une autre page (cadre « repo-help », voir openHelp) : sans en-tête ni barre
   // latérale (repository_nav.css, html[data-help-frame])
-  if (window.name === "repo-help" && window.top !== window.self) doc.setAttribute("data-help-frame", "");
+  // même chose pour une page montrée dans un bloc d'une autre page (cadre « repo-embed » : blocs Expert du Planning)
+  if ((window.name === "repo-help" || window.name === "repo-embed") && window.top !== window.self) doc.setAttribute("data-help-frame",
+    "");
   const folderPath = (page?.path || rel).split("/").slice(0, -1),
     folderSettings = {};
   Object.assign(folderSettings, cfg.folders?.[""] || {});

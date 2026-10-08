@@ -135,6 +135,17 @@
   .odvo-ro .odvo-day {
     grid-template-columns: minmax(0, 1fr)
   }
+  /* bloc Expert : page ODV réduite à ses blocs, sans bordure, hauteur posée par odv_orders.js */
+  .odvo-expert {
+    width: 100%;
+    min-height: 240px;
+    border: 0;
+    display: block
+  }
+  .odvo-hideunav {
+    display: block;
+    margin: 8px 0 4px
+  }
   /* jour : palette + frise */
   .odvo-day {
     display: grid;
@@ -846,6 +857,10 @@
   <div id="odvoWeekView" data-no-i18n hidden></div>
   <div id="odvoStats" data-no-i18n hidden></div>
 </section>
+<section data-block-id="expert" data-icon="users" data-subtitle="Niveau Expert : créneaux où plusieurs pilotes sont disponibles (clic : fenêtre du créneau) et missions probables, repris de la page ODV.">
+  <h2>Créneaux communs et missions probables</h2>
+  <iframe name="repo-embed" class="odvo-expert" title="Planning ODV" loading="lazy"></iframe>
+</section>
 <section data-block-id="zones" data-icon="map" data-subtitle="Activations des zones par réseau (VATSIM, IVAO), saisies à la main : une zone requise par un vol sans activation « active » de son réseau sur toute sa durée est en conflit.">
   <h2>Activations des zones</h2>
   <div id="odvoActivations"></div>
@@ -856,7 +871,7 @@
 </section>
 </main>
 <script src="../../shared/kit.js?v=d74cff80"></script>
-<script src="../../shared/repository_nav.js?v=389db1da"></script>
+<script src="../../shared/repository_nav.js?v=9ce9e3d8"></script>
 <script src="../../shared/mission_core/vendor/js-yaml.min.js?v=64052ae4"></script>
 <script src="../../shared/data_files.js?v=dcb47c6a" data-file="references/callsigns.js"></script>
 <script src="../../shared/data_files.js?v=dcb47c6a" data-file="references/defa_reference.js"></script>
@@ -872,7 +887,7 @@
 <script src="../../shared/odv_activations_editor.js?v=9e62217d"></script>
 <script src="../../shared/odv_reports.js?v=d66272b9"></script>
 <script src="../../shared/odv_orders_store.js?v=078bd145"></script>
-<script src="odv_orders.js?v=a3d8c050"></script>
+<script src="odv_orders.js?v=3f80d438"></script>
 <script src="../../shared/app_framework.js?v=90445249"></script>
 <script src="../../shared/content_i18n.js?v=515ea16b"></script>
 <script>

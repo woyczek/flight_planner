@@ -15,6 +15,16 @@
   /** Notification flottante (AppFramework.notify), console à défaut. */
   const notify = (msg, kind) => window.AppFramework?.notify ? window.AppFramework.notify(msg, kind) : console.warn(msg);
   const SHORT = ['M', 'A', 'S'];
+  // ?blocks=grid,slots,missions : seuls ces blocs (page montrée dans le bloc Expert du Planning) ; règle CSS posée ici,
+  // avant le rendu des blocs, pour qu'aucun autre bloc ne paraisse
+  {
+    const only = (new URLSearchParams(location.search).get('blocks') || '').split(',').filter(x => /^[a-z]+$/.test(x));
+    if (only.length) {
+      const st = document.createElement('style');
+      st.textContent = `[data-block-id]${only.map(b => `:not([data-block-id="${b}"])`).join('')}{display:none!important}`;
+      document.head.append(st);
+    }
+  }
 
   // ------------------------------------------------------------------ réglages (seules données mémorisées)
 

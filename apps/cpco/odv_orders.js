@@ -903,6 +903,33 @@
     if (S.view === 'jour') renderDay();
   }
 
+  // ---- bloc Expert (niveau 4, page modifiable) : créneaux communs (plusieurs pilotes disponibles) et missions probables de la page ODV dans un
+  // cadre « repo-embed » (sans en-tête) ; chargé une fois, hauteur ajustée à son contenu
+  let expertObs = null;
+  /** Montre ou masque le bloc Expert ; charge la page ODV réduite à ses blocs à la première ouverture. */
+  function renderExpert() {
+    const sec = document.querySelector('[data-block-id="expert"]'),
+      fr = sec?.querySelector('iframe');
+    if (!sec || !fr) return;
+    const on = S.editable && (window.RepositoryNav?.levels?.get?.() || 1) >= 4;
+    if (sec.style.display !== (on ? '' : 'none')) sec.style.display = on ? '' : 'none';
+    if (!on || fr.src) return;
+    fr.addEventListener('load', () => {
+      const d = fr.contentDocument;
+      if (!d?.body) return;
+      expertObs?.disconnect();
+      // observateur du cadre lui-même (son contenu y vit) : hauteur du cadre = hauteur de sa page, posée si elle change
+      const fit = () => {
+        const h = `${d.documentElement.scrollHeight}px`;
+        if (fr.style.height !== h) fr.style.height = h;
+      };
+      expertObs = new d.defaultView.ResizeObserver(fit);
+      expertObs.observe(d.body);
+      fit(); // tout de suite aussi : l'observateur n'est appelé qu'au prochain rendu de la page
+    });
+    fr.src = 'odv_planning.html?blocks=slots,missions';
+  }
+
   // ---- rendu
   function render() {
     S.editable = canEdit();
@@ -910,6 +937,7 @@
     // lecture seule (pilote, Centre fermé ou compte sans droits) : le planning seul, vue du jour ; la semaine (dispos
     // et DLO des membres) et les statistiques restent au Centre
     if (!S.editable) S.view = 'jour';
+    renderExpert();
     renderBar();
     $('#odvoDay').hidden = S.view !== 'jour';
     $('#odvoWeekView').hidden = S.view !== 'semaine';
@@ -1252,7 +1280,7 @@
     const tpl = (type, list) => (list || []).map(m => `<div class="odvo-tpl" draggable="${S.editable}" data-tpl="${esc(type)}:${esc(m.id)}" style="border-color:${esc(tint(m.couleur || '#64748b'))}${m.fond ? `;background:${esc(tint(m.fond))};color:${ink(tint(m.fond))}` : ''}" title="${esc(t(L4('Glisser sur la frise', 'Drag onto the timeline', 'Auf die Zeitleiste ziehen', 'Arrastrar a la cronología')))}">${esc(m.libelle)} <small>${esc(String(m.duree))}′</small></div>`).join('');
     const note = `<div class="odvo-tpl" draggable="${S.editable}" data-tpl="note:note">${esc(t(L4('Note', 'Note', 'Notiz', 'Nota')))}</div>`;
     // cartes des membres d'un groupe (staff ou autre) : barre de dispo du jour, DLO ouvertes
-    const mem = grp => S.members.filter(m => m.groupe === grp).map(m => {
+    const mem = grp => S.members.filter(m => m.groupe === grp && (!hideUnav() || availableOn(m.tri, date))).map(m => {
       const day = S.dispos[m.tri]?.[date];
       const bar = dispoBar(day, 0, 1440);
       const od = openDlo(m.tri),
@@ -1273,8 +1301,23 @@
       ${gen ? `<h3>${esc(t(L4('Formations des missions', 'Mission formations', 'Formationen der Missionen', 'Formaciones de las misiones')))}</h3>${gen}` : ''}
       <h3>${esc(t(TX.sections.controle))}</h3>${tpl('controle', M.controle)}
       <h3>${esc(t(TX.sections.divers))}</h3>${tpl('divers', M.divers)}${note}
+      ${hideUnavBox()}
       <h3>${esc(t(L4('Staff', 'Staff', 'Stab', 'Staff')))}</h3>${mem('staff')}
       <h3>${esc(t(L4('Membres', 'Members', 'Mitglieder', 'Miembros')))}</h3>${mem('autre')}`;
+  }
+  // ---- pilotes indisponibles masqués (case de la palette et de la vue semaine, préférence de ce navigateur)
+  const HIDE_UNAV = 'odvoHideUnavailable:v1';
+  const hideUnav = () => K.store.get(HIDE_UNAV, '') === '1';
+  /** Membre disponible ce jour : au moins une plage déclarée d'une catégorie « disponible » ou « contrôle ». */
+  const availableOn = (tri, date) => (S.dispos[tri]?.[date] || []).some(p => ['dispo', 'atc'].includes(SD()?.category?.(p.categorie)
+    ?.type));
+  /** Case « Masquer les pilotes indisponibles » (cochée selon la préférence) ; data-hideunav : bascule. */
+  const hideUnavBox = () => `<label class="odvo-hideunav"><input type="checkbox" data-hideunav${hideUnav() ? ' checked' : ''}> ${esc(t(L4(
+    'Masquer les pilotes indisponibles', 'Hide unavailable pilots', 'Nicht verfügbare Piloten ausblenden', 'Ocultar los pilotos no disponibles')))}</label>`;
+  /** Bascule la préférence et redessine la page. */
+  function toggleHideUnav(on) {
+    K.store.set(HIDE_UNAV, on ? '1' : '');
+    render();
   }
   /** Barre de dispo d'un jour (plages colorées par catégorie) entre s0 et e0 (minutes). */
   function dispoBar(plages, s0, e0) {
@@ -2069,7 +2112,8 @@
     if (!e) return;
     const common = field(L4('Début (z)', 'Start (z)', 'Beginn (z)', 'Inicio (z)'), `<input name="debut" type="time" step="300" value="${esc(e.debut)}">`) + field(L4('Durée (min)',
       'Duration (min)', 'Dauer (min)', 'Duración (min)'), `<input name="duree" type="number" min="5" step="1" value="${e.duree}">`);
-    const etat = (e.type !== 'note') ? field(L4('État', 'Status', 'Status', 'Estado'), `<select name="etat">${O().ETATS.map(x => opt(x, e.etat, t(TX.etats[x]))).join('')}</select>`) + field(L4('Motif', 'Reason', 'Grund',
+    const etat = (e.type !== 'note') ? field(L4('État', 'Status', 'Status', 'Estado'), `<select name="etat">${O().ETATS.map(x => opt(x, e.etat, t(TX.etats[x]))).join('')}</select>`) + field(L4('Motif', 'Reason',
+      'Grund',
       'Motivo'), `<input name="motif" value="${esc(e.motif || '')}">`) : '';
     const colors = e.type !== 'note' ? field(L4('Couleur', 'Colour', 'Farbe', 'Color'), `<input name="couleur" type="color" value="${esc(e.couleur || '#64748b')}">`) + field(L4('Fond plein',
       'Solid fill', 'Gefüllt', 'Relleno'), `<input name="fondOn" type="checkbox"${e.fond ? ' checked' : ''}>`) : '';
@@ -2934,7 +2978,8 @@
       '')).sort((a, b) => String(b[1].updated_at).localeCompare(String(a[1].updated_at)));
     $('#odvoWeekView').innerHTML = `
       <table class="odvo-wk"><thead><tr><th></th>${ds.map((d, i) => `<th>${esc(t(TX.days[i]))} ${esc(d.slice(8, 10))}/${esc(d.slice(5, 7))}</th>`).join('')}</tr></thead>
-      <tbody>${['staff', 'autre'].map(g => S.members.filter(m => m.groupe === g).map(row).join('')).join('')}</tbody></table>
+      <tbody>${['staff', 'autre'].map(g => S.members.filter(m => m.groupe === g && (!hideUnav() || ds.some(d => availableOn(m.tri, d)))).map(row).join('')).join('')}</tbody></table>
+      ${hideUnavBox()}
       <p class="mut">${esc(t(L4('Clic sur une case : plages déclarées du membre ce jour-là (récup comprise).', 'Click a cell: the member’s declared ranges that day (time off included).', 'Klick auf eine Zelle: angegebene Zeiträume des Mitglieds an diesem Tag (Ausgleich inklusive).', 'Clic en una casilla: franjas declaradas por el miembro ese día (descanso incluido).')))}</p>
       <h3>${esc(t(L4('DLO et butées', 'DLO and deadlines', 'DLO und Fristen', 'DLO y plazos')))}</h3>
       <p class="mut">${esc(t(L4('Objectifs de chaque membre, d’une semaine à l’autre ; butée : date limite (rouge à 3 jours ouvrés ou moins, jaune à 10 ou moins) ; fermés d’office par un vol fait qui les contient.', 'Each member’s objectives, from one week to the next; deadline: red at 3 working days or less, yellow at 10 or less; closed automatically by a flight done that contains them.', 'Ziele jedes Mitglieds über die Wochen; Frist: rot bei höchstens 3 Arbeitstagen, gelb bei höchstens 10; durch einen erledigten Flug, der sie enthält, automatisch geschlossen.', 'Objetivos de cada miembro de una semana a otra; plazo: rojo a 3 días hábiles o menos, amarillo a 10 o menos; cerrados automáticamente por un vuelo hecho que los contiene.')))}</p>
@@ -3034,6 +3079,9 @@
     });
     $('#odvoBar').addEventListener('change', ev => {
       if (ev.target.dataset.act === 'perm') mutate(doc => (doc.permanence = ev.target.value));
+    });
+    for (const id of ['#odvoWeekView', '#odvoPalette']) $(id).addEventListener('change', ev => {
+      if (ev.target.matches('[data-hideunav]')) toggleHideUnav(ev.target.checked);
     });
     $('#odvoWeekView').addEventListener('click', ev => {
       const dl = ev.target.closest('[data-dlo]');
