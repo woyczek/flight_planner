@@ -60,6 +60,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 - **v2 : même largeur pour toutes les pages** — contenu sur toute la largeur disponible à côté de la barre latérale, marge
   commune de 16 px (`--repo-main-pad`, une règle dans `repository_nav.css`) ; textes longs de l'aide limités dans l'article ;
   la fenêtre détachée du studio reste bord à bord.
+- **v2, Cartes de vol** : blocs « Route » et « Cartes » ; aux niveaux 1 à 3, un seul bouton « Générer les cartes et le ZIP »
+  dans le bloc des cartes, sous leur choix (crée les cartes puis lance la génération), progression et compte rendu juste
+  dessous, plus de pied de page ni de bloc « Aperçus et génération » ; au niveau 4, « Préparer les cartes » puis la
+  génération du pied de page.
 - **Pages de démonstration du moteur des CR hors des comptes rendus** : `apps/cr/MissionCore/` → `tools/demo/mission_core/`
   (outils de développement, niveau Expert) ; plus rien dans le dossier des CR qui ne soit une famille.
 - **Clés de poste et signatures** (`shared/sog_keys.js`, lot L2 de [COMPTES_SIGNES.md](technique/COMPTES_SIGNES.md)) : par
