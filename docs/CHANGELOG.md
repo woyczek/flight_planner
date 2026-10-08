@@ -36,6 +36,17 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 - **v2, lot S0 : niveaux dans les pages** — `<html data-level>` posé dès l'en-tête (repository_tree), `data-min-level="n"`
   (élément visible à partir du niveau n) et `data-max-level="n"` (jusqu'au niveau n) appliqués par `repository_nav.css`,
   sans réécriture de la page : blocs, champs et boutons se marquent à la source.
+- **v2, lots S1 à S5 : pages simplifiées par niveau** (tout reste au niveau Expert) —
+  **Cartes de vol** aux niveaux 1 à 3 : route, niveau, SimBrief, liste des cartes, « Cartes du vol », un seul
+  « Générer les cartes et le ZIP » ; **Carburant** (nouveau titre) : avion, plan de vol ou dernier FPL SimBrief,
+  « Paramètres du vol » repliés, Calculer, Résultat ; **Mes missions** : dossier réduit à l'essentiel au niveau 1, boutons
+  Cartes de vol et Carburant selon les outils cochés, une seule barre de semaine, « Plage précise » repliée ; **CR court**
+  aux niveaux 1-2 (identification, résultat, appareil, équipage, 4 heures, carburant, blocs de la famille, remarques) et
+  bouton « CR détaillé » ; **Réglages** : Installation au niveau 2, Maintenance au niveau Expert, sept entrées au plus par
+  groupe, doublons retirés de la vue (langue, client OAuth IVAO, rubrique « Premier lancement » d'Installation, second
+  « Nettoyer et recommencer »), Apparence réduite aux designs courants et aux icônes ; **Générateur et Registre**
+  (niveau 3) : sept blocs, commande à six réglages et « Plus d'options », quatre filtres et « Plus de filtres », sept
+  colonnes.
 - **Clés de poste et signatures** (`shared/sog_keys.js`, lot L2 de [COMPTES_SIGNES.md](technique/COMPTES_SIGNES.md)) : par
   poste, une paire de signature ECDSA P-256 et une paire d'échange ECDH P-256, non exportables, gardées dans la base
   `sogKeys` du navigateur (hors sauvegarde) ; empreinte courte `7F3A-91C2-04BE-D85E` ; JSON canonique (RFC 8785) ;
