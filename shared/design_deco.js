@@ -429,7 +429,23 @@
       keep.forEach(n => n.remove());
       keep = [];
     }
+    lastLayout = layoutSig();
   }
+  // passes de fin de chargement (chargement complet, une seconde après) : refaites seulement si la mise en page a changé
+  // depuis la dernière passe — design, ton, largeur, hauteur, blocs de premier niveau à leur place ; sinon trois passes
+  // identiques à chaque ouverture de page (jusqu'à 80 ms chacune)
+  let lastLayout = '';
+  /** Signature de la mise en page qui porte le décor (lue après la passe, décor en place). */
+  function layoutSig() {
+    const blocks = [...document.querySelectorAll('.repo-block')].filter(b => !b.hidden && !b.parentElement.closest('.repo-block'));
+    return [html.dataset.design, html.dataset.tone, innerWidth, document.body.scrollHeight, ...blocks.map(b => {
+      const r = b.getBoundingClientRect();
+      return `${blockText(b)}@${Math.round(r.left)},${Math.round(r.top + scrollY)},${Math.round(r.width)},${Math.round(r.height)}`;
+    })].join('|');
+  }
+  const renderIfMoved = () => {
+    if (layoutSig() !== lastLayout) render();
+  };
 
   /** Construit le décor du design courant : fonds et objets des blocs, puis (décor complet) pied de page, objets
    *  entre les blocs, appareil de page et objets des marges. */
@@ -614,9 +630,10 @@
     // jusque-là, config/repository_tree) au lieu d'attendre la fin du chargement, qui le faisait apparaître après coup
     if (document.readyState === 'interactive') setTimeout(render);
     else document.addEventListener('DOMContentLoaded', () => setTimeout(render));
+    // chargement complet : passe regroupée avec celles des changements de hauteur qui l'entourent (images, polices)
     window.addEventListener('load', () => {
-      render();
-      setTimeout(render, 1200);
+      if (layoutSig() !== lastLayout) later();
+      setTimeout(renderIfMoved, 1200);
     });
   }
   window.RepositoryDeco = {

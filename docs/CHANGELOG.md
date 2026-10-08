@@ -152,6 +152,11 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Modifié
 
+- **Décor des designs à matières : passes inutiles du chargement supprimées** : en plus des recalculs déclenchés par
+  les changements de hauteur et de blocs, le décor était refait sans condition au chargement complet puis une seconde
+  après (jusqu'à 80 ms chacune). La passe du chargement complet est regroupée avec celles des changements de hauteur
+  qui l'entourent ; celle d'une seconde après n'a lieu que si la mise en page a changé (design, ton, largeur, hauteur,
+  place des blocs).
 - **Activations de zones (Tableau, Planning) plus légères** : le tableau des activations importées (IVAO), replié,
   était construit en entier à l'ouverture de la page (des centaines de lignes) et la liste des zones proposées portait
   une option par zone de la base — près de 8 000 éléments pour ce bloc dans le Tableau. Le tableau des importées est

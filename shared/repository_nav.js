@@ -514,7 +514,7 @@
     if (document.getElementById("repoDesignDeco")) return;
     const d = document.createElement("script");
     d.id = "repoDesignDeco";
-    d.src = new URL("design_deco.js?v=fe6b89a2", script.src).href;
+    d.src = new URL("design_deco.js?v=50e933f4", script.src).href;
     document.head.append(d);
   };
   designCss(design);
