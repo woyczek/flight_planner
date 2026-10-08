@@ -477,7 +477,7 @@ If the browser refuses automatic copying, the text is selected: copy it with Ctr
 <!-- page: apps/cpco/odv_orders.html -->
 
 The Board page builds the week's flight order: flight strips, control, miscellaneous items and notes placed on a timeline, with availability and area conflicts.
-To open it: sidebar › “Centre” section › “Board”. Like the rest of the Centre, it needs the Centre enabled; in production mode, you must also be logged in with the `admin_centre` role. Otherwise the page opens read-only.
+To open it: sidebar › “Centre” section › “Board”. Unlike the rest of the Centre, it can be viewed without it: without the Centre enabled (or, in production mode, without being logged in with the `admin_centre` role), it opens read-only — timeline, strips and conflicts visible, no palette, no drag and drop or mission order; a floating notice says so. Changing it needs the Centre enabled, and in production mode the `admin_centre` role.
 Everything is saved in the shared data pool: the week's order in `data/odv/<year>-W<week>.json`, the settings in `data/config/odv.json`. Availability stays the pilots' own, and the crew of a mission flight comes from the assignments.
 Times are in z (UTC). Data model: [Board](../technique/ODV_ORDRES.md).
 

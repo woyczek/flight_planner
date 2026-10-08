@@ -28,7 +28,7 @@ The left-hand column gives access to the applications. The entry of the page on 
 | “Landings” | Landings dashboard |
 | “Reporting” | Mission reporting (Reports) |
 
-- The **“Centre”** group (“Missions”, “Registry”, “ODV”) only appears if the Centre is unlocked in this browser (Settings › Centre). For a pilot, it normally stays hidden.
+- The **“Centre”** group (“Missions”, “Registry”, “ODV”) only appears if the Centre is unlocked in this browser (Settings › Centre). For a pilot, it only shows **“Board”**: the week's order schedule, read-only.
 - At the bottom of the column: “Appearance” (opens the display settings in a window, above the current page), “Settings” (My profile and the other settings pages) and **“Help”**. These three entries stay fixed at the bottom of the screen: only the upper list scrolls when there are too many icons (window less than 460 px high: the whole bar scrolls).
 - “Help” opens the documentation in a window, above the current page, directly at the chapter of that page. The window closes with ✕, Esc or a click beside it; reopened, it resumes where you were. “↗” opens it as a full page (Ctrl-click on “Help”: in a new tab). It replaces the old “Menu” entry. It also works when the suite is opened from the disk, without the launcher: the documents are built into the page.
 - The logo at the top of the column opens the virtual airline's website in a new tab.

@@ -477,7 +477,7 @@ Verweigert der Browser das automatische Kopieren, wird der Text markiert: Kopier
 <!-- page: apps/cpco/odv_orders.html -->
 
 Die Seite Einsatztafel erstellt den Flugbefehl der Woche: Flugstreifen, Lotsendienst, Sonstiges und Notizen auf einer Zeitleiste, mit Verfügbarkeits- und Gebietskonflikten.
-Zum Öffnen: Seitenleiste › Rubrik „Zentrum“ › „Einsatztafel“. Wie das übrige Zentrum setzt sie das aktivierte Zentrum voraus; im Produktionsmodus muss man zudem mit der Rolle `admin_centre` angemeldet sein. Sonst öffnet sich die Seite schreibgeschützt.
+Zum Öffnen: Seitenleiste › Rubrik „Zentrum“ › „Einsatztafel“. Anders als das übrige Zentrum ist sie ohne es einsehbar: ohne aktiviertes Zentrum (oder im Produktionsmodus ohne Anmeldung mit der Rolle `admin_centre`) öffnet sie sich schreibgeschützt — Zeitleiste, Streifen und Konflikte sichtbar, ohne Palette, ohne Ziehen und Ablegen oder Missionsbefehl; ein schwebender Hinweis erinnert daran. Änderungen erfordern das aktivierte Zentrum und im Produktionsmodus die Rolle `admin_centre`.
 Alles wird im gemeinsamen Datenpool gespeichert: der Befehl der Woche in `data/odv/<Jahr>-W<Woche>.json`, die Einstellungen in `data/config/odv.json`. Die Verfügbarkeiten bleiben die der Piloten, die Besatzung eines Missionsflugs die der Zuweisungen.
 Die Zeiten sind in z (UTC). Datenmodell: [Einsatztafel](../technique/ODV_ORDRES.md).
 

@@ -477,7 +477,7 @@ Si le navigateur refuse la copie automatique, le texte est sélectionné : copie
 <!-- page: apps/cpco/odv_orders.html -->
 
 La page Tableau construit l'ordre de vol de la semaine : plaquettes de vol, contrôle, divers et notes posés sur une frise horaire, avec les conflits de disponibilité et de zones.
-Pour l'ouvrir : barre latérale › rubrique « Centre » › « Tableau ». Comme le reste du Centre, elle demande le Centre activé ; en mode production, il faut aussi être connecté avec le rôle `admin_centre`. Sinon, la page s'ouvre en lecture seule.
+Pour l'ouvrir : barre latérale › rubrique « Centre » › « Tableau ». Contrairement au reste du Centre, elle se consulte sans lui : sans le Centre activé (ou, en mode production, sans être connecté avec le rôle `admin_centre`), elle s'ouvre en lecture seule — frise, plaquettes et conflits visibles, sans palette, sans glisser-déposer ni ordre de mission ; un avis flottant le rappelle. La modifier demande le Centre activé, et en mode production le rôle `admin_centre`.
 Tout est enregistré dans le pool de données partagé : l'ordre de la semaine dans `data/odv/<année>-W<semaine>.json`, les réglages dans `data/config/odv.json`. Les dispos restent celles des pilotes, l'équipage d'un vol de mission celui des affectations.
 Les heures sont en z (UTC). Modèle de données : [Tableau](technique/ODV_ORDRES.md).
 

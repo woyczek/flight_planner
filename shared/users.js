@@ -472,6 +472,9 @@
     const need = gateOf(),
       s = session();
     if (mode() !== 'production' || !need || (s?.tri && (need === 'user' || s.role === 'admin_centre'))) return;
+    // page du Centre consultable (view:true, le Tableau) : ouverte sans connexion, en lecture seule (la page n'écrit que
+    // pour un admin_centre connecté, cf. canEdit d'odv_orders.js)
+    if (need === 'admin' && window.RepositoryNav?.cpco?.viewOnly?.()) return;
     if (!document.body) return document.addEventListener('DOMContentLoaded', gate, {
       once: true
     });

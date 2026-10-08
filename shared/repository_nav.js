@@ -121,7 +121,12 @@
   /** Mot de passe comparé sans tenir compte des blancs autour ni de la casse (comme avant : « defa » = « DEFA »). */
   const samePassword = (a, b) => String(a ?? "").trim().toUpperCase() === String(b ?? "").trim().toUpperCase();
   const cpcoOn = () => readPref(CPCO_KEY, "") === "on",
-    isCpco = p => String(p || "").startsWith("apps/cpco/");
+    isCpco = p => String(p || "").startsWith("apps/cpco/"),
+    // page du Centre consultable sans le Centre (repository_tree.pages : view:true, le Tableau) : visible et ouverte en
+    // lecture seule ; la page décide seule de ce qu'elle peut écrire (Centre activé, rôle en mode production)
+    cpcoView = p => !!cfg.pages.find(x => x.path === p)?.view,
+    // page du Centre masquée tant que le Centre est verrouillé (classe cpco-only)
+    cpcoHidden = p => isCpco(p) && !cpcoView(p);
   doc.dataset.cpco = cpcoOn() ? "on" : "off";
   /** Adresse d'une rubrique de Paramètres (REPOSITORY_TREE.settings : rubrique → page ; ?base= pour les rubriques de
    *  data_admin.js et settings_panels.js, ?m= pour les blocs de maintenance_page.js) ; sans rubrique : Mon profil. */
@@ -140,6 +145,8 @@
   };
   const cpco = {
     enabled: cpcoOn,
+    /** Page du Centre consultable en lecture seule sans le Centre (view:true dans repository_tree) ; page courante par défaut. */
+    viewOnly: (p = page?.path || rel) => cpcoView(p),
     /** Réglages du Centre { motDePasse, mode } (data/config/centre.json, sinon DEFA et standalone). */
     config: centreConfig,
     /** Active le Centre si le mot de passe est celui de data/config/centre.json ; true si activé. */
@@ -187,7 +194,21 @@
       }));
     }
   };
-  if (isCpco(page?.path || rel) && !cpcoOn()) {
+  if (cpcoView(page?.path || rel) && !cpcoOn()) {
+    /** Page consultable : simple avis flottant (lecture seule, lien vers l'activation du Centre), pas de voile. */
+    const viewNotice = () => window.AppFramework?.notify?.(K.t([
+      "Lecture seule : le planning se consulte sans le Centre ; le modifier demande le Centre activé (Paramètres › Centre).",
+      "Read-only: the schedule can be viewed without the Centre; changing it requires the Centre enabled (Settings › Centre).",
+      "Nur Lesen: Die Planung ist ohne das Zentrum einsehbar; Änderungen erfordern das aktivierte Zentrum (Einstellungen › Zentrum).",
+      "Solo lectura: la planificación se consulta sin el Centro; modificarla requiere el Centro activado (Ajustes › Centro)."
+    ]), "info", {
+      timeout: 8000
+    });
+    if (document.readyState === "complete") setTimeout(viewNotice, 300);
+    else window.addEventListener("load", () => setTimeout(viewNotice, 300), {
+      once: true
+    });
+  } else if (isCpco(page?.path || rel) && !cpcoOn()) {
     /** Ajoute au corps de la page l'avis « Accès réservé » (liens vers l'activation du Centre et l'accueil), traduit. */
     const lockNotice = () => {
       const box = document.createElement("div");
@@ -540,14 +561,14 @@
       details.className = "repo-tree-group";
       details.open = pages.some(p => p.path === page?.path);
       details.innerHTML = `<summary>${esc(group)}</summary>`;
-      if (pages.every(p => isCpco(p.path))) details.classList.add("cpco-only");
+      if (pages.every(p => cpcoHidden(p.path))) details.classList.add("cpco-only");
       menu.append(details);
       host = details
     }
     for (const p of pages) {
       const a = document.createElement("a");
       a.href = new URL(p.path, root).href;
-      a.className = `repo-link ${p.path===page?.path?"active":""} ${group!=="Pages"?"repo-sub":""}${isCpco(p.path)?" cpco-only":""}`;
+      a.className = `repo-link ${p.path===page?.path?"active":""} ${group!=="Pages"?"repo-sub":""}${cpcoHidden(p.path)?" cpco-only":""}`;
       a.dataset.label = p.navLabel;
       a.textContent = trLabel(p.navLabel);
       host.append(a)
@@ -1118,13 +1139,13 @@
           li.innerHTML = '<span class="repo-sidenav-sep-title"></span>';
           const next = items.slice(i + 1),
             group = next.slice(0, (next.findIndex(x => x.sep) + 1 || next.length + 1) - 1).filter(x => x.path);
-          if (group.length && group.every(x => isCpco(x.path))) li.classList.add("cpco-only");
+          if (group.length && group.every(x => cpcoHidden(x.path))) li.classList.add("cpco-only");
         }
         ul.append(li);
         return;
       }
       if (it.path && !known.has(it.path)) return;
-      if (isCpco(it.path)) li.classList.add("cpco-only"); // masquée tant que le Centre est verrouillé
+      if (cpcoHidden(it.path)) li.classList.add("cpco-only"); // masquée tant que le Centre est verrouillé (sauf view:true)
       const a = document.createElement(it.menu ? "button" : "a");
       a.className = "repo-sidenav-item" + (isCpco(it.path) ? " repo-sidenav-cpco" : "");
       if (it.menu) {
@@ -1187,7 +1208,7 @@
       bar.setAttribute("aria-label", group.id);
       for (const p of group.pages) {
         const a = document.createElement("a");
-        a.className = "repo-tab" + (isCpco(p.path) && !isCpco(current) ? " cpco-only" : "");
+        a.className = "repo-tab" + (cpcoHidden(p.path) && !isCpco(current) ? " cpco-only" : "");
         a.href = new URL(p.path, root).href;
         a._label = p.label;
         if (p.path === current) a.setAttribute("aria-current", "page");
@@ -1239,7 +1260,7 @@
     document.head.append(positions);
     /* Utilisateurs et droits : mode develop / production, connexion, usurpation (bandeau sur toutes les pages) */
     const users = document.createElement("script");
-    users.src = new URL("users.js?v=1299f816", script.src).href;
+    users.src = new URL("users.js?v=cba465ca", script.src).href;
     document.head.append(users);
     /* Synchronisation git du pool de données : bouton « Synchroniser » de l'en-tête (lanceur, data/ dépôt git) */
     const sync = document.createElement("script");

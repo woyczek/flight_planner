@@ -4,7 +4,7 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Tableau</title>
 <link rel="stylesheet" href="../../shared/repository_nav.css?v=975c4b32">
-<script src="../../config/repository_tree?v=c3698338"></script>
+<script src="../../config/repository_tree?v=b7e63bc4"></script>
 <style data-layer="app">
 @layer app {
   /* Tableau : frise horaire (heures z) ; angles droits partout (frise, plaquettes, barres). */
@@ -114,6 +114,13 @@
   }
   .odvo-ro .odvo-rsz {
     display: none
+  }
+  /* lecture seule : pas de palette (modèles, réserve, membres à glisser) ; la frise prend toute la largeur */
+  .odvo-ro .odvo-palette {
+    display: none
+  }
+  .odvo-ro .odvo-day {
+    grid-template-columns: minmax(0, 1fr)
   }
   /* jour : palette + frise */
   .odvo-day {
@@ -836,7 +843,7 @@
 </section>
 </main>
 <script src="../../shared/kit.js?v=7f07f523"></script>
-<script src="../../shared/repository_nav.js?v=55b5672e"></script>
+<script src="../../shared/repository_nav.js?v=90bbbabc"></script>
 <script src="../../shared/mission_core/vendor/js-yaml.min.js?v=64052ae4"></script>
 <script src="../../shared/data_files.js?v=dcb47c6a" data-file="references/callsigns.js"></script>
 <script src="../../shared/data_files.js?v=dcb47c6a" data-file="references/defa_reference.js"></script>
@@ -852,7 +859,7 @@
 <script src="../../shared/odv_activations_editor.js?v=9e62217d"></script>
 <script src="../../shared/odv_reports.js?v=d66272b9"></script>
 <script src="../../shared/odv_orders_store.js?v=078bd145"></script>
-<script src="odv_orders.js?v=2449ef24"></script>
+<script src="odv_orders.js?v=d1fdea0a"></script>
 <script src="../../shared/app_framework.js?v=b2adf17c"></script>
 <script src="../../shared/content_i18n.js?v=266f3261"></script>
 <script>

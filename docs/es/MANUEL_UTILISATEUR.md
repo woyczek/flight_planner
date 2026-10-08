@@ -28,7 +28,7 @@ La columna de la izquierda da acceso a las aplicaciones. La entrada de la págin
 | «Aterrizajes» | Panel de los aterrizajes |
 | «Informes» | Informes de las misiones (Informe) |
 
-- El grupo **«Centro»** («Misiones», «Registro», «ODV») solo aparece si el Centro está desbloqueado en este navegador (Ajustes › Centro). Para un piloto, normalmente permanece oculto.
+- El grupo **«Centro»** («Misiones», «Registro», «ODV») solo aparece si el Centro está desbloqueado en este navegador (Ajustes › Centro). Para un piloto, solo muestra **«Tablero»**: la planificación de órdenes de la semana, en solo lectura.
 - Al pie de la columna: «Apariencia» (abre los ajustes de visualización en una ventana, encima de la página actual), «Ajustes» (Mi perfil y las demás páginas de ajustes) y **«Ayuda»**. Estas tres entradas permanecen fijas al pie de la pantalla: solo la lista superior se desplaza cuando hay demasiados iconos (ventana de menos de 460 px de alto: se desplaza toda la barra).
 - «Ayuda» abre la documentación en una ventana, encima de la página actual, directamente en el capítulo de esa página. La ventana se cierra con ✕, Esc o un clic al lado; al reabrirla, continúa donde se quedó. «↗» la abre en página completa (Ctrl-clic en «Ayuda»: en una pestaña nueva). Sustituye a la antigua entrada «Menú». También funciona cuando la suite se abre desde el disco, sin el lanzador: los documentos están integrados en la página.
 - El logotipo de la parte superior de la columna abre el sitio de la aerolínea virtual en una nueva pestaña.
