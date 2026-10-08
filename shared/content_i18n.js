@@ -183,6 +183,11 @@
         full = false;
         dirty.clear();
         doTree(document.body, l);
+        // titre de l'onglet (hors du corps de la page) : même table, texte d'origine gardé comme pour un nœud
+        if (document.title) {
+          const t = translate(document.title, document.documentElement, 'document-title', l);
+          if (t !== document.title) document.title = t;
+        }
       } else {
         const list = [...dirty];
         dirty.clear();

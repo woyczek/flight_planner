@@ -19,6 +19,8 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Corrigé
 
+- **Titres restés en français** : titre de la page Premier lancement (entrée de traduction manquante) et titres d'onglet
+  du navigateur de toutes les pages (`document.title` désormais traduit par la couche commune, `shared/content_i18n.js`).
 - **Premier lancement : dossiers SIA, missions et registre jamais réglés** quand les données arrivent après le choix du
   dossier de l'application (nouvel ordre des étapes : jeu d'essai, dépôt ou archive installés ensuite) — « dossier SIA
   non autorisé » à l'étape des données aéronautiques. Ils se déduisent dès que les données sont là, et à la demande

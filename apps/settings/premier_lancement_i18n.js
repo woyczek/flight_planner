@@ -1,6 +1,7 @@
 // Traductions de la page « Premier lancement » (fr, en, de, es) : textes fixes, y compris les morceaux de phrase coupés
 // par un nom de fichier ou de dossier ; appliquées par la couche commune (shared/content_i18n.js).
 RepositoryContentI18n([
+  ['Premier lancement', 'First run', 'Erststart', 'Primer arranque'],
   ['Données', 'Data', 'Daten', 'Datos'],
   ['Pour cette étape, ouvrez la suite avec le lanceur (lancer.cmd sous Windows, sh lancer.sh sous macOS / Linux).',
     'For this step, open the suite with the launcher (lancer.cmd on Windows, sh lancer.sh on macOS / Linux).',
