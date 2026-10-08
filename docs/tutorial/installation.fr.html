@@ -30,11 +30,14 @@ th,td{border:1px solid var(--line);padding:7px 9px;text-align:left;vertical-alig
 th{background:var(--th)}
 nav.toc{font-size:14px;background:var(--code);border-radius:8px;padding:10px 16px;margin:18px 0}
 nav.toc ul{margin:4px 0;padding-left:18px}
+.langbar{display:flex;justify-content:flex-end;align-items:center;gap:8px;font-size:14px;color:var(--sub);margin-bottom:6px}
+.langbar select{font:inherit;padding:3px 6px;border:1px solid var(--line);border-radius:6px;background:var(--paper);color:var(--ink)}
 @media (max-width:640px){main{padding:18px 16px 40px}h1{font-size:25px}}
 </style>
 </head>
 <body>
 <main>
+<div class="langbar"><label for="lang">Langue</label><select id="lang" onchange="location.href=this.value"><option value="installation.fr.html" selected>Français</option><option value="installation.en.html">English</option></select></div>
 <h1>Installer la suite SOG — tutoriel</h1>
 <p class="lead"><em>SO Group Virtual (Virtual Special Operation Group) · version 4.10 · <a href="installation.en.html">English version</a></em></p>
 <p>Dix minutes suffisent  on lance la suite, on suit les six étapes de la page <strong>Premier lancement</strong>, et chaque étape se coche dans le bilan en tête de page. Les captures de ce tutoriel viennent d'une installation neuve avec le jeu d'essai (pilote fictif ALF).</p>

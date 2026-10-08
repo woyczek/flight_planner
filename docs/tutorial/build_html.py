@@ -32,6 +32,8 @@ th,td{border:1px solid var(--line);padding:7px 9px;text-align:left;vertical-alig
 th{background:var(--th)}
 nav.toc{font-size:14px;background:var(--code);border-radius:8px;padding:10px 16px;margin:18px 0}
 nav.toc ul{margin:4px 0;padding-left:18px}
+.langbar{display:flex;justify-content:flex-end;align-items:center;gap:8px;font-size:14px;color:var(--sub);margin-bottom:6px}
+.langbar select{font:inherit;padding:3px 6px;border:1px solid var(--line);border-radius:6px;background:var(--paper);color:var(--ink)}
 @media (max-width:640px){main{padding:18px 16px 40px}h1{font-size:25px}}
 """
 
@@ -148,6 +150,12 @@ def page(md_path, lang):
     # sommaire après l'introduction (titre et ligne d'en-tête)
     k = next((j for j, b in enumerate(body) if b.startswith('<h2')), len(body))
     body = body[:k] + [nav] + body[k:]
+    # menu de langue (en plus du lien de la ligne d'en-tête) : page de l'autre langue
+    opts = ''.join(f'<option value="installation.{c}.html"{" selected" if c == lang else ""}>{n}</option>'
+                   for c, n in (('fr', 'Français'), ('en', 'English')))
+    bar = (f'<div class="langbar"><label for="lang">{"Langue" if lang == "fr" else "Language"}</label>'
+           f'<select id="lang" onchange="location.href=this.value">{opts}</select></div>')
+    body = [bar] + body
     return (f'<!doctype html>\n<html lang="{lang}">\n<head>\n<meta charset="utf-8">\n'
             f'<meta name="viewport" content="width=device-width, initial-scale=1">\n<title>{html.escape(re.sub(r" — .*", "", title))}</title>\n'
             f'<style>{CSS}</style>\n</head>\n<body>\n<main>\n' + '\n'.join(body) + '\n</main>\n</body>\n</html>\n')

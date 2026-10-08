@@ -30,11 +30,14 @@ th,td{border:1px solid var(--line);padding:7px 9px;text-align:left;vertical-alig
 th{background:var(--th)}
 nav.toc{font-size:14px;background:var(--code);border-radius:8px;padding:10px 16px;margin:18px 0}
 nav.toc ul{margin:4px 0;padding-left:18px}
+.langbar{display:flex;justify-content:flex-end;align-items:center;gap:8px;font-size:14px;color:var(--sub);margin-bottom:6px}
+.langbar select{font:inherit;padding:3px 6px;border:1px solid var(--line);border-radius:6px;background:var(--paper);color:var(--ink)}
 @media (max-width:640px){main{padding:18px 16px 40px}h1{font-size:25px}}
 </style>
 </head>
 <body>
 <main>
+<div class="langbar"><label for="lang">Language</label><select id="lang" onchange="location.href=this.value"><option value="installation.fr.html">Français</option><option value="installation.en.html" selected>English</option></select></div>
 <h1>Installing the SOG suite — tutorial</h1>
 <p class="lead"><em>SO Group Virtual (Virtual Special Operation Group) · version 4.10 · <a href="installation.fr.html">Version française</a></em></p>
 <p>Ten minutes are enough: start the suite, follow the six steps of the <strong>First run</strong> page, and each step gets ticked in the summary at the top of the page. The screenshots come from a fresh installation with the sample data (fictitious pilot ALF).</p>

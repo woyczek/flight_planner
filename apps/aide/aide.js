@@ -63,7 +63,7 @@
   const loadBundle = () => bundle ||= new Promise(res => {
     if (window.DOC_BUNDLE) return res(window.DOC_BUNDLE);
     const sc = document.createElement('script');
-    sc.src = new URL('docs_bundle.js?v=458a5781', HERE).href;
+    sc.src = new URL('docs_bundle.js?v=6332e9e0', HERE).href;
     sc.onload = () => res(window.DOC_BUNDLE || {});
     sc.onerror = () => res({});
     document.head.append(sc);
@@ -89,8 +89,18 @@
     return LANGS.includes(l) ? l : 'fr';
   };
   /** Fichier à lire pour un document : sa traduction dans la langue de la suite si elle existe, sinon le français. */
+  // documents nommés par langue (« tutorial/installation.fr.md », « ….en.md ») : celui de la langue de la suite, sinon
+  // l'anglais (allemand, espagnol), sinon le français — le menu de langue fait basculer le document affiché
+  const LANG_SUFFIX = /\.(fr|en|de|es)\.md$/i;
   async function localized(name) {
     const l = lang();
+    if (LANG_SUFFIX.test(name)) {
+      for (const c of [l, 'en', 'fr']) {
+        const n = name.replace(LANG_SUFFIX, `.${c}.md`);
+        if ((await text(n)) != null) return n;
+      }
+      return name;
+    }
     if (l === 'fr' || name.includes('/')) return name;
     return (await text(`${l}/${name}`)) != null ? `${l}/${name}` : name;
   }
@@ -243,6 +253,12 @@
     } else if (href.startsWith('?doc=')) {
       e.preventDefault();
       history.pushState(null, '', href);
+      // lien vers la version d'une autre langue (« English version ») : même effet que le menu de langue de la suite
+      const want = LANG_SUFFIX.exec(new URLSearchParams(href.slice(1)).get('doc') || '')?.[1]?.toLowerCase();
+      if (want && want !== (window.RepositoryNav?.getLanguage?.() || 'fr') && window.RepositoryNav?.setLanguage) {
+        window.RepositoryNav.setLanguage(want); // « repository-language-change » : document relu dans la langue choisie
+        return;
+      }
       route();
     }
   });
