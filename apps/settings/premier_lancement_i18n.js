@@ -14,6 +14,7 @@ RepositoryContentI18n([
     'Datos ficticios entregados con la suite, para descubrirla: misiones (incluido un ejercicio), pilotos, flota, disponibilidad y asignaciones de la semana en curso. Para sustituir más adelante por los datos de su aerolínea.'
   ],
   ['Installer le jeu d’essai', 'Install the sample data', 'Testdaten installieren', 'Instalar el conjunto de prueba'],
+  ['Autoriser à nouveau', 'Grant access again', 'Erneut erlauben', 'Autorizar de nuevo'],
   ['Enregistrement, puis vérification… Autre dépôt que l’actuel : confirmez dans la fenêtre que le lanceur ouvre sur l’ordinateur.',
     'Saving, then checking… Another repository than the current one: confirm in the window the launcher opens on the computer.',
     'Speichern, dann Prüfung… Anderes Repository als das aktuelle: im Fenster bestätigen, das der Starter auf dem Computer öffnet.',

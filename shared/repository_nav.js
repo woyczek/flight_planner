@@ -1164,7 +1164,7 @@
     profile.src = new URL("pilot_profile.js?v=fbe1241b", script.src).href;
     document.head.append(profile); /* Dossiers autorisés et ouverture des fichiers dans le dossier paramétré */
     const files = document.createElement("script");
-    files.src = new URL("file_access.js?v=dbd43b8f", script.src).href;
+    files.src = new URL("file_access.js?v=1dd74d8c", script.src).href;
     document.head.append(files); /* Données locales du navigateur ⇄ fichier de sauvegarde */
     /* Icônes, sous-titres de blocs, sous-cartes, zones de dépôt, icônes de la barre latérale (ordre conservé) */
     for (const f of ["icons/repository_icons.js?v=27853364", "block_icons.js?v=567b5128", "side_nav.js?v=19f74efd"]) {

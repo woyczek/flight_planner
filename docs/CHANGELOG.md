@@ -19,6 +19,16 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Corrigé
 
+- **Premier lancement : dossiers SIA, missions et registre jamais réglés** quand les données arrivent après le choix du
+  dossier de l'application (nouvel ordre des étapes : jeu d'essai, dépôt ou archive installés ensuite) — « dossier SIA
+  non autorisé » à l'étape des données aéronautiques. Ils se déduisent dès que les données sont là, et à la demande
+  (`FileAccess.get` : dossier déduit absent → déduit du dossier de l'application déjà autorisé, un essai toutes les 10 s).
+- **Même dossier annoncé comme « autre copie »** (« Suite lancée depuis E:\…, dossier déclaré …/même dossier ») après un
+  rechargement ou un redémarrage : le navigateur retire l'accès au dossier, son repère était illisible et pris pour
+  celui d'une autre copie. Sans accès, le contrôle est désormais « impossible pour l'instant » ; l'étape 1 propose
+  « Autoriser à nouveau » (accès redonné d'un clic, dossiers de `data/` déduits aussitôt).
+- **Case « mémoriser dans le gestionnaire d'identifiants de Git »** seule sur sa ligne, libellé trop grand : case et
+  libellé sur une ligne, à la taille des libellés.
 - **Villes absentes de la base aéronautique (« villes_geonames.csv not found »)** : la lecture de
   `shared/carto/villes_geonames.csv` est tentée deux fois (un lanceur occupé par un téléchargement peut refuser ou couper
   une requête) ; en cas d'échec, le compte rendu de la relecture donne l'adresse et la raison (code HTTP, erreur réseau,

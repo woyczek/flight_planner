@@ -65,6 +65,19 @@
   .pl-form label {
     font-size: 13px
   }
+  /* case à cocher et son libellé sur une ligne (« mémoriser… ») : la case garde sa taille, le texte celle des libellés */
+  label.pl-tick {
+    display: flex;
+    font-size: 13px;
+    align-items: center;
+    gap: 6px;
+    margin: 4px 0
+  }
+  label.pl-tick>input {
+    flex: none;
+    width: auto;
+    margin: 0
+  }
   /* carte étroite (dépôt de données) : libellés au-dessus des champs, champs sur toute la largeur */
   .pl-form.pl-stack {
     grid-template-columns: minmax(0, 1fr);
@@ -220,7 +233,7 @@
     <div class="pl-grid">
       <div class="pl-card"><h3>Dossier de l’application</h3>
         <p class="pl-hint">Le dossier qui contient <code>lancer.cmd</code> et <code>lancer.sh</code> : données, registre, missions, SIA, performances et sauvegarde locale en sont déduits.</p>
-        <div class="pl-row"><button type="button" class="primary" id="plRepo" data-icon="folder">Choisir le dossier de l’application</button></div>
+        <div class="pl-row"><button type="button" class="primary" id="plRepo" data-icon="folder">Choisir le dossier de l’application</button><button type="button" class="secondary" id="plRepoGrant" data-icon="check" hidden>Autoriser à nouveau</button></div>
         <p class="pl-msg" id="plRepoMsg"></p>
       </div>
       <div class="pl-card"><h3>Classeur ODV (facultatif)</h3>
@@ -247,7 +260,7 @@
           <label for="plUser">Identifiant (facultatif)</label><input type="text" id="plUser" autocomplete="username" spellcheck="false">
           <label for="plSecret">Mot de passe ou jeton (facultatif)</label><input type="password" id="plSecret" autocomplete="current-password">
         </div>
-        <label class="pl-row"><input type="checkbox" id="plRemember"> mémoriser dans le gestionnaire d’identifiants de Git</label>
+        <label class="pl-tick"><input type="checkbox" id="plRemember"> mémoriser dans le gestionnaire d’identifiants de Git</label>
         <p class="pl-hint">Adresse HTTPS <code>https://hôte/compte/dépôt.git</code> ou SSH <code>git@hôte:compte/dépôt.git</code>, donnée par votre compagnie. Dépôt privé en HTTPS : identifiant et mot de passe, ou un jeton d’accès en lecture si le compte a la double authentification. En SSH : la clé SSH de cet ordinateur. Les identifiants servent au téléchargement, sur cet ordinateur seulement.</p>
         <div class="pl-row"><button type="button" class="primary" id="plClone">Récupérer les données</button></div>
         <p class="pl-msg" id="plCloneMsg"></p>
@@ -356,8 +369,8 @@
   </section>
 </main>
 <script src="../../shared/kit.js?v=7f07f523"></script>
-<script src="../../shared/repository_nav.js?v=dade04a4"></script>
-<script src="../../shared/content_i18n.js?v=499ea78f"></script><script src="premier_lancement_i18n.js?v=394a45ab"></script>
+<script src="../../shared/repository_nav.js?v=a456cbc5"></script>
+<script src="../../shared/content_i18n.js?v=499ea78f"></script><script src="premier_lancement_i18n.js?v=a3a4a19f"></script>
 <!-- blocs « Données aéronautiques » et « Types d'aéronefs » (shared/maintenance_page.js) et leurs dépendances -->
 <script src="../../AircraftDB/aircraft_db.js"></script><script src="../../shared/data_files.js?v=dcb47c6a" data-file="references/aircraft_fleet.js"></script>
 <script src="../../shared/mission_core/vendor/js-yaml.min.js"></script>
@@ -579,6 +592,9 @@
       return;
     }
     S.data = !!st.data;
+    // données arrivées après le choix du dossier de l'application (jeu d'essai, dépôt, archive) : leurs dossiers (SIA,
+    // missions, registre) se déduisent maintenant, tant que l'accès au dossier est ouvert
+    if (st.data) await rederive();
     done('plData', st.data);
     $('plLogCard').hidden = !st.data;
     $('plDataForms').hidden = st.data;
@@ -724,11 +740,39 @@
     done('plFolders', S.folder);
     if (repo.handle && (state === 'other' || state === 'accepted')) msg('plRepoMsg', await FA.otherText('__repo', repo.handle, state),
       state === 'other' ? 'err' : 'warn');
+    else if (repo.handle && repo.permission !== 'granted') msg('plRepoMsg', L(
+      `Choisi : ${repo.name} — accès à redonner (le navigateur le redemande après un redémarrage) : « Autoriser à nouveau ».`,
+      `Chosen: ${repo.name} — access to grant again (the browser asks again after a restart): “Grant access again”.`,
+      `Gewählt: ${repo.name} — Zugriff erneut erteilen (der Browser fragt nach einem Neustart erneut): „Erneut erlauben“.`,
+      `Elegida: ${repo.name} — acceso que volver a conceder (el navegador lo pide de nuevo tras un reinicio): «Autorizar de nuevo».`), 'warn');
     else msg('plRepoMsg', repo.handle ? `Choisi : ${repo.name}` : '', repo.handle ? 'ok' : '');
+    $('plRepoGrant').hidden = !(repo.handle && repo.permission !== 'granted' && state !== 'other');
     msg('plOdvMsg', odvDir.handle ? `Dossier : ${odvDir.name}` : odvFile ? `Classeur gardé : ${odvFile.name || 'classeur'}` : '', odvDir.handle || odvFile ? 'ok' : '');
     dataGate();
     checklist();
   }
+  /** Dossiers déduits de data/ (FileAccess.deriveFromRepo), si l'accès au dossier de l'application est ouvert. */
+  async function rederive() {
+    const FA = window.FileAccess,
+      repo = await FA?.status?.('__repo');
+    if (repo?.handle && repo.permission === 'granted') await FA.deriveFromRepo(repo.handle, {
+      accepted: (await FA.otherState?.('__repo', repo.handle).catch(() => null)) === 'accepted'
+    }).catch(() => []);
+  }
+  // accès retiré par le navigateur (redémarrage) : redonné d'un clic, puis dossiers de data/ déduits
+  on('click', 'plRepoGrant', async () => {
+    const h = (await window.FileAccess.status('__repo')).handle;
+    if (!h) return;
+    try {
+      await h.requestPermission({
+        mode: 'readwrite'
+      });
+    } catch {
+      /* refus : l'état le dit */
+    }
+    await rederive();
+    foldersState();
+  });
   /** Action d'un bouton « Choisir le dossier » (FileAccess.pickFolder) ; un refus ou une annulation est silencieux. */
   const pick = (key, out) => async () => {
     try {

@@ -138,8 +138,33 @@
       at: Date.now(),
       value
     });
+    // dossier déduit de data/ encore absent : data/ a pu arriver après le choix du dossier de l'application (jeu
+    // d'essai, dépôt ou archive installés ensuite) — déduit à la demande depuis ce dossier, déjà autorisé ; un essai
+    // toutes les 10 s au plus, jamais en cascade (deriveFromRepo relit d'autres clés)
+    if (!value && LAZY_KEYS.includes(key) && !lazyBusy && Date.now() - lazyAt > 10e3) {
+      lazyAt = Date.now();
+      lazyBusy = true;
+      try {
+        const repo = await get('__repo');
+        if (repo && await repo.queryPermission?.({
+            mode: 'readwrite'
+          }) === 'granted' && (await deriveFromRepo(repo, {
+            accepted: okMap().__repo === repo.name
+          })).includes(key)) {
+          handleMemo.delete(key);
+          return await get(key);
+        }
+      } catch {
+        /* dossier de l'application illisible : rien à déduire */
+      } finally {
+        lazyBusy = false;
+      }
+    }
     return value;
   }
+  const LAZY_KEYS = ['__data', '__ledger', '__missions', '__sia'];
+  let lazyAt = 0,
+    lazyBusy = false;
   /** Mémorise le dossier handle sous la clé key ; accepted : dossier d'une autre copie de la suite choisi en
    *  connaissance de cause (confirmation de pickFolder) — sinon une confirmation précédente pour cette clé est oubliée. */
   async function set(key, handle, {
@@ -207,6 +232,15 @@
   window.addEventListener('file-access-change', () => sameMemo.clear());
   async function compare(key, handle) {
     if (!(key in REL) || !handle || !/^https?:$/.test(location.protocol)) return null;
+    // accès au dossier pas (encore) redonné après un redémarrage du navigateur : repère illisible — contrôle impossible
+    // pour l'instant, et non « autre copie » (le même dossier était annoncé comme celui d'une autre copie) ; pas mémorisé
+    try {
+      if (await handle.queryPermission?.({
+          mode: 'read'
+        }) !== 'granted') return null;
+    } catch {
+      return null;
+    }
     const memoKey = `${key}|${handle.name}`,
       hit = sameMemo.get(memoKey);
     if (hit && Date.now() - hit.at < 30e3) return hit.value;
