@@ -1,6 +1,16 @@
 // Traductions allemandes et espagnoles de la page Paramétrage (shared/data_admin.js), repérées par le texte
 // français de chaque T(fr, en) : T() les ajoute aux lignes [fr, en, de, es] de la couche de traduction.
 window.DataAdminI18n = {
+  "Activer le Centre": ["Zentrum aktivieren", "Activar el Centro"],
+  "Centre verrouillé": ["Zentrum gesperrt", "Centro bloqueado"],
+  "Mot de passe incorrect": ["Falsches Passwort", "Contraseña incorrecta"],
+  "Centre activé dans ce navigateur": ["Zentrum in diesem Browser aktiviert", "Centro activado en este navegador"],
+  "Verrouiller le Centre": ["Zentrum sperren", "Bloquear el Centro"],
+  "Mot de passe du Centre": ["Passwort des Zentrums", "Contraseña del Centro"],
+  "Le Centre de planification et de conduite des opérations (générateur de mission, studio cartographique, registre des missions) est réservé : il s’active ici avec le mot de passe du SO Group, partagé avec les données (data/config/centre.json) et affiché à côté du bouton ; seule l’activation est gardée dans ce navigateur. Centre verrouillé : ses pages sont absentes des menus et ses réglages (calcul des routes, espace disque des missions) sont verrouillés.": [
+    "Das Einsatzplanungs- und Führungszentrum (Missionsgenerator, Kartenstudio, Missionsregister) ist reserviert: Es wird hier mit dem Passwort der SO Group aktiviert, das mit den Daten geteilt (data/config/centre.json) und neben dem Knopf angezeigt wird; nur die Aktivierung bleibt in diesem Browser gespeichert. Gesperrtes Zentrum: Seine Seiten fehlen in den Menüs, und seine Einstellungen (Routenberechnung, Speicherplatz der Missionen) sind gesperrt.",
+    "El Centro de planificación y conducción de operaciones (generador de misiones, estudio cartográfico, registro de misiones) está reservado: se activa aquí con la contraseña del SO Group, compartida con los datos (data/config/centre.json) y mostrada junto al botón; solo la activación se guarda en este navegador. Centro bloqueado: sus páginas no aparecen en los menús y sus ajustes (cálculo de rutas, espacio en disco de las misiones) están bloqueados."
+  ],
   "Mode groupe : accès au Centre par le rôle d’administrateur du registre signé.": [
     "Gruppenmodus: Zugang zum Zentrum über die Administratorrolle des signierten Registers.",
     "Modo grupo: acceso al Centro por el rol de administrador del registro firmado."

@@ -23,12 +23,12 @@ Die Sperre blendet das Zentrum aus, solange es in diesem Browser nicht aktiviert
 - Unter Einstellungen › Zentrum bleibt nur die Rubrik „Zugang zum Zentrum und Einstellungen“ sichtbar; die anderen („Benutzer und Rechte“, „Verfügbarkeitskategorien“, „ODV-Planung“, „Berichtsversand (Webdienst)“) sind ausgeblendet.
 - Die Aktivierung wird nur in diesem Browser gespeichert: Sie ist auf jedem Rechner und nach dem Löschen der Websitedaten erneut vorzunehmen.
 
-Grenze: Dies ist eine Nutzungssperre, keine Sicherheitsmaßnahme. Das Passwort steht im Klartext in `data/config/centre.json`, wird mit den Daten geteilt (`DEFA` voreingestellt) und unter dem Feld angezeigt: Das ist der **eigenständige Modus**. Der Gruppenmodus (signiertes Register, Zugang über die Administratorrolle) folgt ([Konzept](../technique/COMPTES_SIGNES.md)).
+Grenze: Dies ist eine Nutzungssperre, keine Sicherheitsmaßnahme. Das Passwort steht im Klartext in `data/config/centre.json`, wird mit den Daten geteilt (`DEFA` voreingestellt) und neben dem Knopf „Zentrum aktivieren“ angezeigt: Das ist der **eigenständige Modus**. Der Gruppenmodus (signiertes Register, Zugang über die Administratorrolle) folgt ([Konzept](../technique/COMPTES_SIGNES.md)).
 
 ### Zentrum aktivieren oder sperren
 
 1. Öffnen Sie ☰ › Einstellungen, Reiter „Zentrum“, Rubrik „Zugang zum Zentrum und Einstellungen“.
-2. Geben Sie das unter dem Feld angezeigte Passwort („Passwort: DEFA“ voreingestellt) in „Passwort des Zentrums“ ein (Groß- und Kleinschreibung egal).
+2. Geben Sie das neben dem Knopf angezeigte Passwort („Passwort: DEFA“ voreingestellt) in „Passwort des Zentrums“ ein (Groß- und Kleinschreibung egal).
 3. Klicken Sie auf „Zentrum aktivieren“ oder drücken Sie die Eingabetaste. Die Statuszeile zeigt „Zentrum in diesem Browser aktiviert“.
 
 Die Einträge des Zentrums erscheinen sofort, ohne die Seite neu zu laden. Die Rubrik zeigt dann „Modus und Zugang“ (Modus des Zentrums; „Passwort des Zentrums (mit den Daten geteilt)“ und „Passwort speichern“: in `data/config/centre.json` geschrieben, geht es beim nächsten „Synchronisieren“ hinaus), dann die Einstellungen „Berechnung der Transitrouten“:
@@ -566,7 +566,7 @@ Solange das Zentrum gesperrt ist, ist nur die Zugangsrubrik sichtbar. Im Modus p
 ### Zugang zum Zentrum und Einstellungen
 
 Diese Rubrik aktiviert das Zentrum in diesem Browser: Missionsgenerator, Kartenstudio, Register und ODV-Planung.
-1. Geben Sie das „Passwort des Zentrums“ ein, das unter dem Feld angezeigt wird (`DEFA` voreingestellt; Groß- und Kleinschreibung egal).
+1. Geben Sie das „Passwort des Zentrums“ ein, das neben dem Knopf angezeigt wird (`DEFA` voreingestellt; Groß- und Kleinschreibung egal).
 2. Klicken Sie auf „Zentrum aktivieren“ oder drücken Sie die Eingabetaste. Die Meldung „Zentrum in diesem Browser aktiviert“ bestätigt die Aktivierung.
 
 Ist das Zentrum aktiviert, zeigt die Rubrik „Modus und Zugang“ (Modus, Änderung des geteilten Passworts), dann „Berechnung der Transitrouten“:

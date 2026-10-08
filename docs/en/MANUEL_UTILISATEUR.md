@@ -483,7 +483,7 @@ Maps, missions and planning use the aeronautical data (AIRAC) and the aircraft t
 ### 6 Centre (administrators)
 
 For SO Group administrators only: pilots skip this step.
-- “Enable the Centre” card: “Centre password” (shown under the button, `DEFA` by default), then “Enable the Centre”. The summary shows the Centre mode (standalone: password).
+- “Enable the Centre” card: “Centre password” (shown next to the button, `DEFA` by default), then “Enable the Centre”. The summary shows the Centre mode (standalone: password).
 - Once the Centre is enabled:
   - “Fleet and flight log”: last reading of the website by the launcher (fleet, aircraft location, log), “Update now”, and the link to the fleet (Settings › Centre).
   - “Missions”: number of missions in the registry (they come with the data, step 1) and the link to the registry.

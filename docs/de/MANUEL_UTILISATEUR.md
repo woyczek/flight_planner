@@ -483,7 +483,7 @@ Karten, Missionen und Planung nutzen die Luftfahrtdaten (AIRAC) und die Datenban
 ### 6 Zentrum (Administratoren)
 
 Nur für Administratoren der SO Group: Piloten überspringen diesen Schritt.
-- Karte „Zentrum aktivieren“: „Passwort des Zentrums“ (unter dem Knopf angezeigt, `DEFA` voreingestellt), dann „Zentrum aktivieren“. Die Übersicht zeigt den Modus des Zentrums (eigenständig: Passwort).
+- Karte „Zentrum aktivieren“: „Passwort des Zentrums“ (neben dem Knopf angezeigt, `DEFA` voreingestellt), dann „Zentrum aktivieren“. Die Übersicht zeigt den Modus des Zentrums (eigenständig: Passwort).
 - Ist das Zentrum aktiviert:
   - „Flotte und Flugbuch“: letztes Lesen der Website durch den Starter (Flotte, Standort der Luftfahrzeuge, Flugbuch), „Jetzt aktualisieren“ und der Link zur Flotte (Einstellungen › Zentrum).
   - „Missionen“: Zahl der Missionen im Register (sie kommen mit den Daten, Schritt 1) und der Link zum Register.

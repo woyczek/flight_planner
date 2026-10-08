@@ -58,6 +58,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   coup est supprimé (pages de Paramètres figées, nom réglé contenant l'ancien). Données inchangées.
   « SO Group » seul (premier lancement, mode autonome du Centre) et libellés de catégories du jeu d'essai en jetons aussi.
   Voir `docs/technique/FRAMEWORK.md` § 4 bis.
+- **Carte « Accès au Centre » remise en ordre** (Centre verrouillé) : champ du mot de passe, puis bouton « Activer le
+  Centre » avec « Mot de passe : DEFA » sur la même ligne (premier lancement compris) ; texte d'introduction à jour (le
+  mot de passe vient des données, seule l'activation reste dans le navigateur), traduit en allemand et en espagnol.
 
 
 ## [4.11.0] — 2026-10-08

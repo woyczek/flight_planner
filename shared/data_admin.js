@@ -1102,8 +1102,8 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
       title: T('Accès au Centre et réglages', 'Centre access and settings'),
       custom: true,
       intro: T(
-        'Le Centre de planification et de conduite des opérations (générateur de mission, studio cartographique, registre des missions) est réservé : il s’active ici par un mot de passe, gardé dans ce navigateur. Centre verrouillé : ses pages sont absentes des menus et ses réglages (calcul des routes, espace disque des missions) sont verrouillés.',
-        'The planning and operations command centre (mission generator, map studio, mission registry) is restricted: it is enabled here with a password, kept in this browser. Locked centre: its pages are hidden from menus and its settings (route calculation, missions disk space) are locked.'
+        'Le Centre de planification et de conduite des opérations (générateur de mission, studio cartographique, registre des missions) est réservé : il s’active ici avec le mot de passe du SO Group, partagé avec les données (data/config/centre.json) et affiché à côté du bouton ; seule l’activation est gardée dans ce navigateur. Centre verrouillé : ses pages sont absentes des menus et ses réglages (calcul des routes, espace disque des missions) sont verrouillés.',
+        'The planning and operations command centre (mission generator, map studio, mission registry) is restricted: it is enabled here with the SO Group password, shared with the data (data/config/centre.json) and shown next to the button; only the activation is kept in this browser. Locked centre: its pages are hidden from menus and its settings (route calculation, missions disk space) are locked.'
       )
     }, {
       id: 'planner',
@@ -1577,7 +1577,7 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
         if (i && !i.value) i.value = c.motDePasse || '';
       };
       if (!access.enabled()) {
-        body.innerHTML = `<p class="small" data-cpco-mode></p><div class="da-form"><label>${esc(T('Mot de passe du Centre', 'Centre password'))}<input type="password" autocomplete="off" data-cpco-pwd></label></div><p class="small">${esc(T('Mot de passe :', 'Password:'))} <b data-cpco-shown></b> — <span>${esc(T('partagé avec les données (data/config/centre.json), modifiable une fois le Centre activé.', 'shared with the data (data/config/centre.json), can be changed once the Centre is enabled.'))}</span></p>`;
+        body.innerHTML = `<p class="small" data-cpco-mode></p><div class="da-form"><label>${esc(T('Mot de passe du Centre', 'Centre password'))}<input type="password" autocomplete="off" data-cpco-pwd></label></div><p><button type="button" class="primary" data-cpco-go>${esc(T('Activer le Centre', 'Enable the Centre'))}</button> <span class="small">${esc(T('Mot de passe :', 'Password:'))} <b data-cpco-shown></b></span></p><p class="small">${esc(T('partagé avec les données (data/config/centre.json), modifiable une fois le Centre activé.', 'shared with the data (data/config/centre.json), can be changed once the Centre is enabled.'))}</p>`;
         centreInfo();
         const input = body.querySelector('[data-cpco-pwd]');
         /** Déverrouille le Centre avec le mot de passe saisi, sinon message et nouvelle saisie. */
@@ -1594,10 +1594,9 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
         input.onkeydown = e => {
           if (e.key === 'Enter') go();
         };
+        body.querySelector('[data-cpco-go]').onclick = go;
         status(T('Centre verrouillé', 'Centre locked'));
-        actions([
-          [T('Activer le Centre', 'Enable the Centre'), go, 'primary']
-        ]);
+        actions([]); // bouton sous le champ, mot de passe sur sa ligne (pas dans la barre d'actions, au-dessus du champ)
         return;
       }
       const R = window.MissionRouting,

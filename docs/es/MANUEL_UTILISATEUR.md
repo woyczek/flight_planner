@@ -483,7 +483,7 @@ Mapas, misiones y planificación usan los datos aeronáuticos (AIRAC) y la base 
 ### 6 Centro (administradores)
 
 Reservado a los administradores del SO Group: los pilotos se saltan este paso.
-- Tarjeta «Activar el Centro»: «Contraseña del Centro» (mostrada bajo el botón, `DEFA` por defecto), luego «Activar el Centro». El resumen indica el modo del Centro (autónomo: contraseña).
+- Tarjeta «Activar el Centro»: «Contraseña del Centro» (mostrada junto al botón, `DEFA` por defecto), luego «Activar el Centro». El resumen indica el modo del Centro (autónomo: contraseña).
 - Con el Centro activado:
   - «Flota y registro de vuelos»: última lectura del sitio por el lanzador (flota, ubicación de las aeronaves, registro), «Actualizar ahora» y el enlace a la flota (Ajustes › Centro).
   - «Misiones»: número de misiones en el registro (llegan con los datos, paso 1) y el enlace al registro.
