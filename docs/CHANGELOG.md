@@ -10,6 +10,13 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ## [Non publié]
 
+### Modifié
+
+- **Mot de passe du site du SOG hors service (INOP)** tant que le SOG n'a pas de webservice (un accès futur passera
+  probablement par une clé d'API) : champ grisé avec une étiquette façon bande DYMO (composant commun `.repo-inop`,
+  `shared/repository_nav.css`) dans Mon profil et au premier lancement ; ce mot de passe n'est plus ni lu ni gardé (un
+  ancien est retiré à l'enregistrement). Bilan et étape Profil : l'identifiant suffit.
+
 ### Corrigé
 
 - **Villes absentes de la base aéronautique (« villes_geonames.csv not found »)** : la lecture de

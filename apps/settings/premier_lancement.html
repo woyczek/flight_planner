@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Premier lancement</title>
-<link rel="stylesheet" href="../../shared/repository_nav.css?v=f6a61e75"><link rel="stylesheet" href="../../shared/mission_core/core.css?v=8594d3c0"><link rel="stylesheet" href="../../shared/maintenance.css?v=844a5c68">
+<link rel="stylesheet" href="../../shared/repository_nav.css?v=975c4b32"><link rel="stylesheet" href="../../shared/mission_core/core.css?v=8594d3c0"><link rel="stylesheet" href="../../shared/maintenance.css?v=844a5c68">
 <script src="../../config/repository_tree?v=7b133f6e"></script>
 <style>
   main.pl-page {
@@ -307,7 +307,7 @@
         <p class="pl-hint">Identifiants de votre compte sur le site de la compagnie, gardés dans ce navigateur seulement (jamais dans un fichier ni une sauvegarde).</p>
         <div class="pl-form">
           <label for="plSiteLogin">Identifiant</label><input type="text" id="plSiteLogin" autocomplete="username" spellcheck="false">
-          <label for="plSitePass">Mot de passe</label><input type="password" id="plSitePass" autocomplete="current-password">
+          <label for="plSitePass">Mot de passe</label><span class="repo-inop-field"><input type="password" id="plSitePass" disabled autocomplete="off"><span class="repo-inop" id="plSitePassInop" data-no-i18n>INOP</span></span>
         </div>
       </div>
     </div>
@@ -486,8 +486,9 @@
       item('pilot', !!(p.trigram && (p.ivaoId || p.vatsimId)), L('Pilote : trigramme et réseaux', 'Pilot: trigram and networks',
         'Pilot: Kürzel und Netzwerke', 'Piloto: trigrama y redes'), 'plProfile', false, [p.trigram, ...nets].filter(Boolean).join(
         ' · ')),
-      item('site', !!(c.login && c.password), L('Identifiants du site de la compagnie', 'Airline website credentials',
-        'Zugangsdaten der Website', 'Credenciales del sitio de la aerolínea'), 'plProfile', false, c.login || ''),
+      // mot de passe du site hors service (INOP, pas de webservice du SOG) : l'identifiant suffit
+      item('site', !!c.login, L('Identifiant du site de la compagnie', 'Airline website login',
+        'Kennung der Website', 'Identificador del sitio de la aerolínea'), 'plProfile', false, c.login || ''),
       item('aero', sia ? (sia.counts?.airspaces || 0) > 0 : false, L('Données aéronautiques', 'Aeronautical data', 'Luftfahrtdaten',
         'Datos aeronáuticos'), 'plSia', false, sia?.airac ? `AIRAC ${sia.airac}` : '')
     ];
@@ -825,10 +826,15 @@
     $('plVatsim').value = p.vatsimId || '';
     $('plSimbrief').value = p.simbriefUser || '';
     $('plSiteLogin').value = c.login || '';
-    $('plSitePass').value = c.password || '';
+    $('plSitePassInop').title = L(
+      'Hors service : le SOG n’a pas encore de webservice. Ce mot de passe n’est ni demandé ni gardé ; un accès futur passera probablement par une clé d’API.',
+      'Inoperative: the SOG has no web service yet. This password is neither asked for nor kept; future access will probably use an API key.',
+      'Außer Betrieb: Die SOG hat noch keinen Webdienst. Dieses Passwort wird weder abgefragt noch gespeichert; ein künftiger Zugang läuft wahrscheinlich über einen API-Schlüssel.',
+      'Fuera de servicio: el SOG aún no tiene servicio web. Esta contraseña no se pide ni se guarda; un acceso futuro usará probablemente una clave de API.'
+    );
     // trigramme figé en production (ou en agissant pour un autre utilisateur) : réglé par le compte
     $('plTri').readOnly = !!window.SuiteUsers?.trigramLocked?.();
-    done('plProfile', p.trigram && c.login && c.password);
+    done('plProfile', p.trigram && c.login);
   }
   // profil et identifiants (vides : clé defaCredentials:v1 retirée), puis événement pilot-profile-change
   on('click', 'plSaveProfile', () => {
@@ -844,12 +850,11 @@
       simbriefUser: $('plSimbrief').value.trim()
     });
     localStorage.setItem(PROFILE, JSON.stringify(p));
-    const c = read(DEFA);
-    Object.assign(c, {
-      login: $('plSiteLogin').value.trim(),
-      password: $('plSitePass').value
-    });
-    if (c.login || c.password) localStorage.setItem(DEFA, JSON.stringify(c));
+    // identifiant seul : le mot de passe (INOP) n'est plus gardé, un ancien est retiré
+    const c = {
+      login: $('plSiteLogin').value.trim()
+    };
+    if (c.login) localStorage.setItem(DEFA, JSON.stringify(c));
     else localStorage.removeItem(DEFA);
     window.dispatchEvent(new CustomEvent('pilot-profile-change'));
     msg('plProfileMsg', 'Profil enregistré.', 'ok');

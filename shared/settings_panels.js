@@ -99,7 +99,7 @@
         </div>${triLocked ? `<p class="sp-hint">${esc(L('Mode production : le trigramme est celui de l’utilisateur connecté.', 'Production mode: the trigram is the signed-in user’s.', 'Produktionsmodus: Das Kürzel ist das des angemeldeten Benutzers.', 'Modo producción: el trigrama es el del usuario conectado.'))}</p>` : ''}</div>
         <div class="sp-card"><h3>${esc(L('Site de la compagnie', 'Airline website', 'Website der Fluggesellschaft', 'Sitio de la aerolínea'))}</h3><div class="sp-form">
           ${field(L('Identifiant', 'Login', 'Kennung', 'Identificador'), 'data-defa="login"')}
-          <label>${esc(L('Mot de passe', 'Password', 'Passwort', 'Contraseña'))}</label><input type="password" data-defa="password" autocomplete="off">
+          <label>${esc(L('Mot de passe', 'Password', 'Passwort', 'Contraseña'))}</label><span class="repo-inop-field"><input type="password" data-defa="password" disabled autocomplete="off"><span class="repo-inop" title="${esc(K.t(['Hors service : le SOG n’a pas encore de webservice. Ce mot de passe n’est ni demandé ni gardé ; un accès futur passera probablement par une clé d’API.', 'Inoperative: the SOG has no web service yet. This password is neither asked for nor kept; future access will probably use an API key.', 'Außer Betrieb: Die SOG hat noch keinen Webdienst. Dieses Passwort wird weder abgefragt noch gespeichert; ein künftiger Zugang läuft wahrscheinlich über einen API-Schlüssel.', 'Fuera de servicio: el SOG aún no tiene servicio web. Esta contraseña no se pide ni se guarda; un acceso futuro usará probablemente una clave de API.']))}" data-no-i18n>INOP</span></span>
         </div><p class="sp-hint">${esc(L('Gardés dans ce navigateur seulement : jamais écrits dans un fichier ni dans une sauvegarde.', 'Kept in this browser only: never written to a file or a backup.', 'Nur in diesem Browser gespeichert: nie in eine Datei oder Sicherung geschrieben.', 'Guardadas solo en este navegador: nunca escritas en un archivo ni en una copia.'))}</p></div>
         <div class="sp-card" data-ivc-card><h3>${esc(L('IVAO — client OAuth (personnel)', 'IVAO — OAuth client (personal)', 'IVAO — OAuth-Client (persönlich)', 'IVAO — cliente OAuth (personal)'))}</h3><div class="sp-form">
           ${field(L('Identifiant du client (client ID)', 'Client ID', 'Client-ID', 'Identificador del cliente (client ID)'), 'data-ivc="clientId" autocomplete="off" spellcheck="false"')}
@@ -114,7 +114,6 @@
         if (i.dataset.f === 'trigram' && triLocked) i.value = U.effective?.() || i.value;
       });
       body.querySelector('[data-defa="login"]').value = d.login || '';
-      body.querySelector('[data-defa="password"]').value = d.password || '';
       body.querySelectorAll('input:not([data-ivc]):not([data-ivc-redirect])').forEach(i => i.oninput = api.changed);
       ivaoClient(body, (U?.effective?.() || p.trigram || '').toUpperCase());
       // langue : appliquée tout de suite (comme le sélecteur de l'en-tête)
@@ -137,11 +136,10 @@
             'Kürzel: 2 bis 4 Buchstaben oder Ziffern.', 'Trigrama: de 2 a 4 letras o cifras.'
           ]));
           K.store.setJson(PROFILE, next);
-          const login = body.querySelector('[data-defa="login"]').value.trim(),
-            password = body.querySelector('[data-defa="password"]').value;
-          if (login || password) K.store.setJson(DEFA, {
-            login,
-            password
+          // identifiant seul : le mot de passe du site est hors service (INOP, pas de webservice du SOG)
+          const login = body.querySelector('[data-defa="login"]').value.trim();
+          if (login) K.store.setJson(DEFA, {
+            login
           });
           else K.store.remove(DEFA);
           api.saved();
