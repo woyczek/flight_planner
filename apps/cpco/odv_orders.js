@@ -1308,9 +1308,9 @@
   // ---- pilotes indisponibles masqués (case de la palette et de la vue semaine, préférence de ce navigateur)
   const HIDE_UNAV = 'odvoHideUnavailable:v1';
   const hideUnav = () => K.store.get(HIDE_UNAV, '') === '1';
-  /** Membre disponible ce jour : au moins une plage déclarée d'une catégorie « disponible » ou « contrôle ». */
-  const availableOn = (tri, date) => (S.dispos[tri]?.[date] || []).some(p => ['dispo', 'atc'].includes(SD()?.category?.(p.categorie)
-    ?.type));
+  /** Membre disponible ce jour pour voler : au moins une plage dont la catégorie le rend affectable à un vol (même règle
+   *  que les conflits : SuiteDispos.affectable ; sol, récup, contrôle hors SOG et contrôle seul ne comptent pas). */
+  const availableOn = (tri, date) => (S.dispos[tri]?.[date] || []).some(p => (SD()?.affectable?.(p.categorie) || []).includes('vol'));
   /** Case « Masquer les pilotes indisponibles » (cochée selon la préférence) ; data-hideunav : bascule. */
   const hideUnavBox = () => `<label class="odvo-hideunav"><input type="checkbox" data-hideunav${hideUnav() ? ' checked' : ''}> ${esc(t(L4(
     'Masquer les pilotes indisponibles', 'Hide unavailable pilots', 'Nicht verfügbare Piloten ausblenden', 'Ocultar los pilotos no disponibles')))}</label>`;

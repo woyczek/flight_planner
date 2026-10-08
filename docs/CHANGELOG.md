@@ -22,7 +22,8 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 - **v2 : studio cartographique dans Missions** (onglet, niveau 4) ; « Outils » ne garde que les outils facultatifs, sans
   rien du Centre. L'icône du Centre ne marque Planning et Missions que pour qui s'en sert (Centre ouvert, niveau 2 ou
   plus, pas un compte sans le rôle `admin_centre`) ; sinon icône ordinaire.
-- **Planning : « Masquer les pilotes indisponibles »** (palette et vue semaine du Tableau, reprise de la page ODV) ; au
+- **Planning : « Masquer les pilotes indisponibles »** (palette et vue semaine du Tableau, reprise de la page ODV ; même
+  règle que les conflits : plage qui rend affectable à un vol) ; au
   **niveau Expert**, bloc « Créneaux communs et missions probables » repris de la page ODV (cadre sans en-tête,
   `odv_planning.html?blocks=slots,missions`, hauteur ajustée à son contenu).
 - **Clés de poste et signatures** (`shared/sog_keys.js`, lot L2 de [COMPTES_SIGNES.md](technique/COMPTES_SIGNES.md)) : par
