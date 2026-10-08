@@ -43,7 +43,7 @@ The header shows the page title and its subtitle. On the right are the tools, wh
 | Element | Role |
 |---|---|
 | Sealed envelope (red envelope with a number) | Missions assigned to you have not been read yet. A click opens “My missions”. |
-| “Synchronise (n)” | Exchanges the shared data with the common repository. N = changes to send + updates to receive. |
+| “Synchronise (n)” | Exchanges the shared data with the common repository. N = changes to send + updates to receive. At levels 1 and 2 a dot replaces the number (it stays at the top of the tooltip); the “(n)” counter is shown at levels 3 and 4. |
 | “Save to folder (n) · last: …” (red button) | Reminder to back up the local data, shown from 10 unsaved changes. |
 | “⚠ n” | Page alerts already cleared from the screen: a click shows them again. |
 | “Language” flag | Choice of language: “Auto” (browser language), Français, English, Deutsch, Español. |
@@ -98,7 +98,9 @@ Messages from the suite (success, warnings, errors) appear at the bottom centre 
 - At most four messages stay on screen.
 - A repetitive reminder (for example “SIA database missing from this browser…” of the Map studio and the Flight maps) is shown only **once per session** of the browser. Some messages are reserved for higher usage levels: below them they are not shown, but warnings and errors stay in the log of the “⚠ n” indicator.
 - Cleared warnings and errors can still be read through the “⚠ n” indicator in the header: “ACK” acknowledges an alert, “Acknowledge all” acknowledges them all, “Clear” empties the list. This log is lost when you change page.
-- A long task (reading, generation…) shows a progress bar in the same stack. Leaving the page during the task asks for confirmation. When the task can be interrupted (setting up the zones in Maintenance), the bar carries a **“Stop”** button: the step in progress finishes, the next ones are not started, then the bubble says “Cancelled.”.
+- A long task (reading, generation…) shows a progress bar in the same stack. Leaving the page during the task asks for confirmation. When the task can be interrupted, the bar carries a **“Stop”** button: the step in progress finishes, the next ones are not started, then the bubble says “Cancelled.”. The button exists for the generation and previews of the maps (Map studio and Flight maps: stop between two maps), the MORA calculation (of a zone, of the full grid or by blocks), the MILAIP ENR 5.7 import and the setting up of the zones (Maintenance), and the reading of the missions folder (Registry).
+- A stopped task says what remains partial. Maps: a stopped generation downloads no ZIP and files nothing in the mission folder (a batch of missions says how many are finished); the previews already shown stay. MORA by blocks (button “Stop (resume later)”): the blocks already computed are written to `mora.csv` (partial grid), “Resume the full calculation…” continues later. MORA of a zone, MORA grid and MILAIP import: nothing is written. Reading of the missions folder: the registry stays unchanged.
+- Error messages say what failed and what to do, instead of a bare code. Examples: “the server does not answer — check that the suite is opened by the launcher (lancer.cmd / lancer.sh), restart it if needed, then try again”; “file missing — check that it is in the expected folder (or create it again), then try again”; “browser storage full — free some space (Settings › Maintenance › Disk space), then try again”. Other cases: online service not answering, server error, access denied by the browser, timeout; an unexpected error is shown as “failed” followed by the technical detail in brackets.
 - Questions (“Clear…?”) open in a small window with “Confirm” and “Cancel”.
 
 ### Sign-in, develop or production mode, impersonation
@@ -1349,7 +1351,7 @@ This collapsible panel, placed under the control map, sets the display profile o
 - “ICAO symbols” tab: aerodromes (by category, controlled or not, allow list), radio navigation, low and high airways, VFR reporting points, overflight prohibited, parks and reserves, obstacles.
 - “Elements” tab: waypoints, meridians and parallels, MORA grid, town labels, refuelling racetrack, mission and search areas.
 
-Remember to click “Save” to keep a changed profile.
+Remember to click “Save” to keep a changed profile. The suggestion lists of the input fields (zones, aerodromes, waypoints) are filled only when you click in the field concerned: the page opens faster, and the list appears at the click or the first keystroke.
 
 ### Maps of the flight
 
@@ -1393,7 +1395,7 @@ At levels 1 to 3, the block only shows the generation report (maps generated, fa
 The “Index map” appears by itself under the previews; it uses the profile of the general map.
 Formats: ☰ menu › Map outputs (PNG, editable SVG, PNG width from 400 to 5000 px; 1600 px by default).
 If a map fails (base map unavailable, timeout), the ZIP contains `rapport_generation.txt` and the list offers “Retry this one”.
-The buttons stay greyed out as long as there is no map to produce.
+The buttons stay greyed out as long as there is no map to produce. During the previews and the generation, the progress bar carries a “Stop” button: the map in progress is completed, the next ones are not made. A stopped generation downloads no ZIP (it would be incomplete); the previews already shown stay. Run “Generate the maps and the ZIP” again for all the maps.
 
 ### SIA database
 

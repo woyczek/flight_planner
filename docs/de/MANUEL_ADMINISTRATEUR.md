@@ -246,7 +246,7 @@ Kontrollkarte: Listen „Karte“ und „Profil“, Kästchen „ZIP“, „Aktu
 - Kästchen „ZIP“ (nicht angehakt: Karte nicht erzeugt; Wahl nicht in der Mission gespeichert) und × zum Löschen.
 
 Hinzufügen: Name, Typ („Übersicht“, „Ziel“, „Detail“, „Gebiet“), dann „+ Karte“ (Ausdehnung = angezeigte Ansicht); „+ Übungskarten“ fügt die Karten der Übungsleitung, der gespielten Übungsziele oder der Besatzung hinzu.
-„Einstellungen des Profils …“ (eingeklappt): „Profilname“, „Hintergrundkarte“, „Speichern“, „Neu“, „Duplizieren“, „Löschen“, dann vier Reiter: „Hintergrundkarte“, „Lufträume“, „ICAO-Symbole“, „Elemente“. Geändert wird immer das Profil der gewählten Karte; die Profile gelten für alle Missionen und bleiben in diesem Browser.
+„Einstellungen des Profils …“ (eingeklappt): „Profilname“, „Hintergrundkarte“, „Speichern“, „Neu“, „Duplizieren“, „Löschen“, dann vier Reiter: „Hintergrundkarte“, „Lufträume“, „ICAO-Symbole“, „Elemente“. Geändert wird immer das Profil der gewählten Karte; die Profile gelten für alle Missionen und bleiben in diesem Browser. Die Vorschlagslisten der Eingabefelder (Zonen, Flugplätze, Funkfeuer: bis zu 13 000 Einträge aus der SIA-Datenbank) werden erst gefüllt, wenn Sie in das betreffende Feld klicken, nicht beim Öffnen der Seite.
 
 ### Vorschauen und Erzeugung
 
@@ -255,6 +255,7 @@ Hinzufügen: Name, Typ („Übersicht“, „Ziel“, „Detail“, „Gebiet“
 - Die PNGs werden in `cartes/` des Missionsordners abgelegt (im Register sichtbar). Andernfalls verwenden Sie „Karten im Ordner ablegen“ in der Fußleiste.
 - Eine fehlgeschlagene Karte hält die anderen nicht auf: Das ZIP enthält `rapport_generation.txt`, und „Einzeln wiederholen“ startet die Karte erneut. „Hintergrund unvollständig“ meldet eine langsame Hintergrundkarte.
 - Paket aus mehreren Missionen: „Die n Missionen erzeugen“ erstellt ein einziges ZIP, einen Ordner pro Mission, mit der Karte der Operation.
+- „Abbrechen“ (Fortschrittsbalken, bei Vorschauen wie bei der Erzeugung): Die laufende Karte wird fertiggestellt, die folgenden werden nicht erstellt. Eine abgebrochene Erzeugung lädt kein ZIP herunter und legt nichts im Missionsordner ab; ein abgebrochener Stapel nennt, wie viele Missionen fertig sind (ihre Karten liegen bereits in ihrem Ordner); die bereits angezeigten Vorschauen bleiben.
 
 Ausgabeart (PNG, bearbeitbares SVG) und Breite der PNGs: Menü ☰ › „Kartenausgaben“. Die Übersichtskarte ist immer enthalten; sie erscheint unten im Block.
 
@@ -288,7 +289,7 @@ Am Kopf: Anzahl der Missionen, Verteilung nach Status und Aktualisierungsdatum.
 | „mission_registry.yaml schreiben“ (Stufe Experte) | Schreibt das Register in den Missionsordner |
 | „Register bereinigen (n)“ (Stufe Experte) | Entfernt die Missionen „Datei fehlt“ nach dem Neueinlesen |
 
-Der Ordner wird beim Öffnen automatisch neu gelesen, wenn er bereits erlaubt ist.
+Der Ordner wird beim Öffnen automatisch neu gelesen, wenn er bereits erlaubt ist. Das Lesen zeigt einen Fortschrittsbalken mit „Abbrechen“: Das Register bleibt unverändert.
 Beim Bereinigen gehen Status, Notizen und Flugdatum auf die Mission über, die eine umnummerierte Mission ersetzt.
 
 ### Mission wählen
@@ -774,7 +775,7 @@ Die Schaltfläche „Prüfen“ startet die Prüfungen erneut.
   - einen direkten Download über den Starter (`tools/aero_fetch.py`): openAIP (jedes Land), ENAIRE (Spanien), FAA (USA: Militärgebiete und -routen, Luftraumklassen), britisches Militär-AIP (ENR 5.2, offizielles PDF, vom Starter gelesen: Tieffluggebiete, VATA, Ausweichgebiet TVAA, Betankungsstrecken AARA zusätzlich zu denen der DIRCAM), NAV CANADA (Designated Airspace Handbook, gültige Ausgabe vom Starter gelesen: Gefahren-, Beschränkungs- und Advisory-Gebiete Kanadas, alle 56 Tage neu herunterzuladen);
   - eine Bestellung oder Registrierung, mit Link und Anleitung: SIA Frankreich (Bestellung zu 0 €, bei jedem Zyklus erneut), NATS (Vereinigtes Königreich, Datei in `data/sia/zones/gb/` abgelegt);
   - ein PDF, mit Link und Anleitung: DIRCAM / MILAIP ENR 5.7 (Betankungsstrecken);
-    DIRCAM: „MILAIP-PDF importieren…“ liest das PDF des Abschnitts ENR 5.7 (pdf.js, Netz beim ersten Import), zeigt die Zahl der Strecken und die gefundenen Auffälligkeiten, dann legt „miam-enr-5-7-tracks.xml schreiben“ die Datei im SIA-Ordner ab (alte in `_archives/`) und aktualisiert die Datenbank;
+    DIRCAM: „MILAIP-PDF importieren…“ liest das PDF des Abschnitts ENR 5.7 (pdf.js, Netz beim ersten Import), zeigt die Zahl der Strecken und die gefundenen Auffälligkeiten, dann legt „miam-enr-5-7-tracks.xml schreiben“ die Datei im SIA-Ordner ab (alte in `_archives/`) und aktualisiert die Datenbank („Abbrechen“ während des Lesens: nichts wird behalten oder geschrieben);
   - einen Ordner des Rechners: X-Plane (Funkfeuer, Punkte, Luftstraßen, MORA-Gitter, zugeschnitten auf die aktiven Zonen, die es angehakt haben);
   - eine Berechnung: die MORA der Zone. Eine sehr große Zone (mehr als 1500 Ein-Grad-Felder: Vereinigte Staaten, Kanada…) nimmt standardmäßig die MORA von X-Plane; „Vollständige Berechnung…“ berechnet sie in 10°-Blöcken nach einer Bestätigung, die den Umfang nennt (offene AWS-Reliefkacheln, um 100 m erhöht, ohne OpenStreetMap-Abfrage): Jeder Block wird sofort in `mora.csv` geschrieben, „Anhalten“ zwischen zwei Blöcken, später „Vollständige Berechnung fortsetzen…“.
 - SIA Frankreich (Zone Frankreich): „Heruntergeladenes ZIP holen“ (der Starter nimmt es aus dem Download-Ordner), „SIA-Export-ZIP…“, „… entpacken“, wenn es schon im Ordner liegt, „Alte Zyklen archivieren“ (`_archives/`); „Inhalt des SIA-Ordners“ listet die Dateien des Zyklus.

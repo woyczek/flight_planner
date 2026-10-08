@@ -43,7 +43,7 @@ La cabecera muestra el título de la página y su subtítulo. A la derecha está
 | Elemento | Función |
 |---|---|
 | Sobre sellado (sobre rojo con un número) | Hay misiones asignadas a usted que aún no ha leído. Un clic abre «Mis misiones». |
-| «Sincronizar (n)» | Intercambia los datos compartidos con el repositorio común. N = cambios por enviar + actualizaciones por recibir. |
+| «Sincronizar (n)» | Intercambia los datos compartidos con el repositorio común. N = cambios por enviar + actualizaciones por recibir. En los niveles 1 y 2, un punto sustituye al número (sigue en cabeza del texto emergente); el contador «(n)» se muestra en los niveles 3 y 4. |
 | «Guardar en la carpeta (n) · última: …» (botón rojo) | Recordatorio de copia de seguridad de los datos locales, mostrado a partir de 10 cambios sin guardar. |
 | «⚠ n» | Alertas de la página ya borradas de la pantalla: un clic las vuelve a mostrar. |
 | Bandera «Idioma» | Elección del idioma: «Auto» (idioma del navegador), Français, English, Deutsch, Español. |
@@ -98,7 +98,9 @@ Los mensajes de la suite (éxitos, advertencias, errores) aparecen en la parte i
 - Quedan como máximo cuatro mensajes en pantalla.
 - Un recordatorio repetitivo (por ejemplo «Base SIA ausente de este navegador…» del estudio cartográfico y de los mapas de vuelo) solo se muestra **una vez por sesión** del navegador. Algunos mensajes están reservados a los niveles de uso superiores: por debajo no se muestran, pero las advertencias y los errores quedan en el registro del indicador «⚠ n».
 - Las advertencias y los errores borrados siguen disponibles en el indicador «⚠ n» de la cabecera: «ACK» confirma una alerta, «Confirmar todas» las confirma todas, «Vaciar» borra la lista. Este registro se pierde al cambiar de página.
-- Una tarea larga (lectura, generación…) muestra una barra de progreso en la misma pila. Salir de la página durante la tarea pide una confirmación. Cuando la tarea puede interrumpirse (puesta a punto de las zonas en Mantenimiento), la barra lleva un botón **«Detener»**: el paso en curso termina, los siguientes no se inician y la burbuja dice «Cancelado.».
+- Una tarea larga (lectura, generación…) muestra una barra de progreso en la misma pila. Salir de la página durante la tarea pide una confirmación. Cuando la tarea puede interrumpirse, la barra lleva un botón **«Detener»**: el paso en curso termina, los siguientes no se inician y la burbuja dice «Cancelado.». El botón existe para la generación y las vistas previas de los mapas (estudio cartográfico y mapas de vuelo: parada entre dos mapas), el cálculo de la MORA (de una zona, de la cuadrícula completa o por bloques), la importación de la MILAIP ENR 5.7 y la puesta a punto de las zonas (Mantenimiento), y la lectura de la carpeta de misiones (Registro).
+- Una tarea detenida dice qué queda parcial. Mapas: una generación detenida no descarga ningún ZIP y no guarda nada en la carpeta de la misión (un lote de misiones indica cuántas están terminadas); las vistas previas ya mostradas se quedan. MORA por bloques (botón «Detener (reanudar más tarde)»): los bloques ya calculados se escriben en `mora.csv` (cuadrícula parcial), «Reanudar el cálculo completo…» continúa más tarde. MORA de una zona, cuadrícula MORA e importación de la MILAIP: no se escribe nada. Lectura de la carpeta de misiones: el registro queda sin cambios.
+- Los mensajes de error dicen qué ha fallado y qué hacer, en lugar de un código solo. Ejemplos: «el servidor no responde — comprobar que la suite se abre con el lanzador (lancer.cmd / lancer.sh), reiniciarlo si hace falta y volver a intentarlo»; «archivo ausente — comprobar que está en la carpeta esperada (o volver a crearlo) y volver a intentarlo»; «almacenamiento del navegador lleno — liberar espacio (Ajustes › Mantenimiento › Espacio en disco) y volver a intentarlo». Otros casos: servicio en línea que no responde, error del servidor, acceso denegado por el navegador, tiempo agotado; un error inesperado se muestra como «error» seguido del detalle técnico entre paréntesis.
 - Las preguntas («¿Borrar…?») se abren en una pequeña ventana con «Confirmar» y «Cancelar».
 
 ### Conexión, modo develop o producción, suplantación
@@ -1349,7 +1351,7 @@ Este panel plegable, situado bajo el mapa de control, configura el perfil de vis
 - Pestaña «Símbolos OACI»: aeródromos (por categoría, controlados o no, lista blanca), radionavegación, aerovías inferiores y superiores, puntos de notificación VFR, sobrevuelo prohibido, parques y reservas, obstáculos.
 - Pestaña «Elementos»: puntos de ruta, meridianos y paralelos, cuadrícula MORA, nombres de las ciudades, circuito de reabastecimiento, zonas de misión y de búsqueda.
 
-Recuerde hacer clic en «Guardar» para conservar un perfil modificado.
+Recuerde hacer clic en «Guardar» para conservar un perfil modificado. Las listas de sugerencias de los campos de entrada (zonas, aeródromos, balizas) solo se rellenan cuando hace clic en el campo correspondiente: la página se abre así más deprisa y la lista aparece con el clic o la primera pulsación.
 
 ### Mapas del vuelo
 
@@ -1393,7 +1395,7 @@ En los niveles 1 a 3, el bloque solo muestra el informe de la generación (mapas
 El «Mapa de conjunto» aparece por sí solo bajo las vistas previas; toma el perfil del mapa general.
 Formatos: menú ☰ › Salidas de mapas (PNG, SVG editable, ancho PNG de 400 a 5000 px; 1600 px por defecto).
 Si un mapa falla (fondo no disponible, tiempo agotado), el ZIP contiene `rapport_generation.txt` y la lista ofrece «Reintentar solo este».
-Los botones permanecen en gris mientras no haya ningún mapa que producir.
+Los botones permanecen en gris mientras no haya ningún mapa que producir. Durante las vistas previas y la generación, la barra de progreso lleva un botón «Detener»: el mapa en curso se termina y los siguientes no se hacen. Una generación detenida no descarga ningún ZIP (estaría incompleto); las vistas previas ya mostradas se quedan. Vuelva a lanzar «Generar los mapas y el ZIP» para todos los mapas.
 
 ### Base de datos SIA
 

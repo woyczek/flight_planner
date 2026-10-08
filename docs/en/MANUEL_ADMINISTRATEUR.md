@@ -246,7 +246,7 @@ Control map: “Map” and “Profile” lists, “ZIP” box, “Refresh”, �
 - “ZIP” box (unticked: map not generated; choice not saved in the mission) and × to delete.
 
 Adding: name, type (“general”, “target”, “detail”, “zone”) then “+ Map” (extent = displayed view); “+ Exercise maps” adds the maps of the organisation, of the played exercise targets or of the crew.
-“Settings of profile …” (collapsed): “Profile name”, “Base map”, “Save”, “New”, “Duplicate”, “Delete”, then four tabs: “Base map”, “Airspaces”, “ICAO symbols”, “Elements”. The profile edited is always that of the chosen map; profiles are common to all missions and kept in this browser.
+“Settings of profile …” (collapsed): “Profile name”, “Base map”, “Save”, “New”, “Duplicate”, “Delete”, then four tabs: “Base map”, “Airspaces”, “ICAO symbols”, “Elements”. The profile edited is always that of the chosen map; profiles are common to all missions and kept in this browser. The suggestion lists of the input fields (zones, aerodromes, waypoints: up to 13,000 entries from the SIA database) are filled only when you click in the field concerned, not when the page opens.
 
 ### Previews and generation
 
@@ -255,6 +255,7 @@ Adding: name, type (“general”, “target”, “detail”, “zone”) then 
 - The PNGs are filed in `cartes/` of the mission folder (visible in the registry). Otherwise, use “File the maps in the folder” in the footer.
 - A failed map does not stop the others: the ZIP contains `rapport_generation.txt` and “Retry alone” relaunches the map. “partial base map” flags a slow base map.
 - Batch of several missions: “Generate the n missions” produces a single ZIP, one folder per mission, with the operation map.
+- “Stop” (progress bar, previews as well as generation): the map in progress is completed, the next ones are not made. A stopped generation downloads no ZIP and files nothing in the mission folder; a stopped batch says how many missions are finished (their maps are already filed in their folder); the previews already shown stay.
 
 Output type (PNG, editable SVG) and PNG width: ☰ menu › “Map outputs”. The overview map is always included; it is shown at the bottom of the block.
 
@@ -288,7 +289,7 @@ At the top: number of missions, breakdown by status and update date.
 | “Write mission_registry.yaml” (Expert level) | Writes the registry to the missions folder |
 | “Clean up the registry (n)” (Expert level) | Removes the “file missing” missions after re-reading |
 
-The folder is re-read automatically on opening if it is already authorised.
+The folder is re-read automatically on opening if it is already authorised. The reading shows a progress bar with “Stop”: the registry stays unchanged.
 On clean-up, the status, notes and flight date move to the mission that replaces a renumbered mission.
 
 ### Choose a mission
@@ -774,7 +775,7 @@ The “Check” button reruns the checks.
   - a direct download through the launcher (`tools/aero_fetch.py`): openAIP (each country), ENAIRE (Spain), FAA (United States: military areas and routes, airspace classes), UK military AIP (ENR 5.2, official PDF read by the launcher: low flying areas, VATA, TVAA avoidance area, AARA refuelling tracks added to the DIRCAM ones), NAV CANADA (Designated Airspace Handbook, current edition read by the launcher: Canadian danger, restricted and advisory areas, to download again every 56 days);
   - an order or a registration, with the link and the instructions: SIA France (0 € order, to redo at each cycle), NATS (United Kingdom, file dropped into `data/sia/zones/gb/`);
   - a PDF, with the link and the instructions: DIRCAM / MILAIP ENR 5.7 (refuelling tracks);
-    DIRCAM: “Import the MILAIP PDF…” reads the PDF of section ENR 5.7 (pdf.js, network at the first import), shows the number of tracks and the anomalies found, then “Write miam-enr-5-7-tracks.xml” stores the file in the SIA folder (old one in `_archives/`) and updates the database;
+    DIRCAM: “Import the MILAIP PDF…” reads the PDF of section ENR 5.7 (pdf.js, network at the first import), shows the number of tracks and the anomalies found, then “Write miam-enr-5-7-tracks.xml” stores the file in the SIA folder (old one in `_archives/`) and updates the database (“Stop” during the reading: nothing is kept or written);
   - a folder of the computer: X-Plane (navaids, fixes, airways, MORA grid, cut to the outlines of the active zones that ticked it);
   - a calculation: the zone MORA. A very large zone (more than 1500 one-degree cells: United States, Canada…) takes the X-Plane MORA by default; “Full calculation…” computes it in 10° blocks, after a confirmation that states the volume (AWS open terrain tiles raised by 100 m, no OpenStreetMap query): each block is written to `mora.csv` at once, “Stop” between two blocks, “Resume the full calculation…” later.
 - SIA France (France zone): “Fetch the downloaded ZIP” (the launcher takes it from Downloads), “SIA export ZIP…”, “Extract …” if it is already in the folder, “Archive the old cycles” (`_archives/`); “SIA folder content” lists the cycle files.

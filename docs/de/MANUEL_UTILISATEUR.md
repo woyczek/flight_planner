@@ -43,7 +43,7 @@ Die Kopfzeile trägt den Titel der Seite und ihren Untertitel. Rechts befinden s
 | Element | Funktion |
 |---|---|
 | Versiegelter Umschlag (roter Umschlag mit einer Zahl) | Ihnen zugewiesene Missionen sind noch nicht gelesen. Ein Klick öffnet „Meine Missionen“. |
-| „Synchronisieren (n)“ | Tauscht die gemeinsamen Daten mit dem gemeinsamen Repository aus. N = zu sendende Änderungen + zu empfangende Aktualisierungen. |
+| „Synchronisieren (n)“ | Tauscht die gemeinsamen Daten mit dem gemeinsamen Repository aus. N = zu sendende Änderungen + zu empfangende Aktualisierungen. Auf den Stufen 1 und 2 ersetzt ein Punkt die Zahl (sie steht weiterhin am Anfang des Tooltips); der Zähler „(n)“ erscheint auf den Stufen 3 und 4. |
 | „Im Ordner sichern (n) · letzte: …“ (roter Knopf) | Erinnerung an die Sicherung der lokalen Daten, angezeigt ab 10 nicht gesicherten Änderungen. |
 | „⚠ n“ | Bereits vom Bildschirm verschwundene Warnungen der Seite: ein Klick zeigt sie wieder an. |
 | Flagge „Sprache“ | Wahl der Sprache: „Auto“ (Sprache des Browsers), Français, English, Deutsch, Español. |
@@ -98,7 +98,9 @@ Die Meldungen der Suite (Erfolg, Warnungen, Fehler) erscheinen unten in der Mitt
 - Höchstens vier Meldungen bleiben auf dem Bildschirm.
 - Eine sich wiederholende Erinnerung (zum Beispiel „SIA-Datenbank fehlt in diesem Browser…“ im Kartenstudio und bei den Flugkarten) erscheint nur **einmal pro Sitzung** des Browsers. Manche Meldungen sind höheren Nutzungsstufen vorbehalten: Darunter werden sie nicht angezeigt, Warnungen und Fehler bleiben aber im Protokoll der Anzeige „⚠ n“.
 - Ausgeblendete Warnungen und Fehler bleiben über die Anzeige „⚠ n“ der Kopfzeile abrufbar: „OK“ bestätigt eine Warnung, „Alle bestätigen“ bestätigt alle, „Leeren“ löscht die Liste. Dieses Protokoll geht beim Seitenwechsel verloren.
-- Eine lange Aufgabe (Lesen, Erzeugen…) zeigt einen Fortschrittsbalken im selben Stapel. Das Verlassen der Seite während der Aufgabe erfordert eine Bestätigung. Lässt sich die Aufgabe unterbrechen (Einrichten der Zonen in der Wartung), trägt der Balken einen Knopf **„Abbrechen“**: Der laufende Schritt wird beendet, die folgenden werden nicht gestartet, dann meldet die Blase „Abgebrochen.“.
+- Eine lange Aufgabe (Lesen, Erzeugen…) zeigt einen Fortschrittsbalken im selben Stapel. Das Verlassen der Seite während der Aufgabe erfordert eine Bestätigung. Lässt sich die Aufgabe unterbrechen, trägt der Balken einen Knopf **„Abbrechen“**: Der laufende Schritt wird beendet, die folgenden werden nicht gestartet, dann meldet die Blase „Abgebrochen.“. Den Knopf gibt es für die Erzeugung und die Vorschauen der Karten (Kartenstudio und Flugkarten: Halt zwischen zwei Karten), die MORA-Berechnung (einer Zone, des vollständigen Rasters oder blockweise), den Import der MILAIP ENR 5.7 und das Einrichten der Zonen (Wartung) sowie das Lesen des Missionsordners (Register).
+- Eine angehaltene Aufgabe sagt, was nur teilweise vorliegt. Karten: Eine abgebrochene Erzeugung lädt kein ZIP herunter und legt nichts im Missionsordner ab (ein Stapel aus mehreren Missionen nennt, wie viele fertig sind); die bereits angezeigten Vorschauen bleiben. Blockweise MORA (Knopf „Anhalten (später fortsetzen)“): Die bereits berechneten Blöcke werden in `mora.csv` geschrieben (Teilraster), „Vollständige Berechnung fortsetzen…“ führt sie später fort. MORA einer Zone, MORA-Raster und MILAIP-Import: Es wird nichts geschrieben. Lesen des Missionsordners: Das Register bleibt unverändert.
+- Fehlermeldungen sagen, was fehlgeschlagen ist und was zu tun ist, statt nur eines Codes. Beispiele: „der Server antwortet nicht — prüfen, dass die Suite über den Starter geöffnet ist (lancer.cmd / lancer.sh), ihn bei Bedarf neu starten und es erneut versuchen“; „Datei fehlt — prüfen, ob sie im erwarteten Ordner liegt (oder neu erstellen), und es erneut versuchen“; „Browserspeicher voll — Platz schaffen (Einstellungen › Wartung › Speicherplatz) und es erneut versuchen“. Weitere Fälle: Online-Dienst antwortet nicht, Serverfehler, vom Browser verweigerter Zugriff, Zeitüberschreitung; ein unerwarteter Fehler erscheint als „fehlgeschlagen“ mit dem technischen Detail in Klammern.
 - Fragen („Löschen… ?“) öffnen sich in einem kleinen Fenster mit „Bestätigen“ und „Abbrechen“.
 
 ### Anmeldung, develop- oder Produktionsmodus, Identitätsübernahme
@@ -1349,7 +1351,7 @@ Dieses aufklappbare Feld unter der Kontrollkarte stellt das Anzeigeprofil der ge
 - Registerkarte „ICAO-Symbole“: Flugplätze (nach Kategorie, kontrolliert oder nicht, Positivliste), Funknavigation, untere und obere Luftstraßen, VFR-Meldepunkte, Überflugverbot, Parks und Schutzgebiete, Hindernisse.
 - Registerkarte „Elemente“: Wegpunkte, Meridiane und Breitenkreise, MORA-Gitter, Städtenamen, Betankungs-Racetrack, Missions- und Suchgebiete.
 
-Denken Sie daran, auf „Speichern“ zu klicken, um ein geändertes Profil zu behalten.
+Denken Sie daran, auf „Speichern“ zu klicken, um ein geändertes Profil zu behalten. Die Vorschlagslisten der Eingabefelder (Zonen, Flugplätze, Funkfeuer) werden erst gefüllt, wenn Sie in das betreffende Feld klicken: Die Seite öffnet sich so schneller, und die Liste erscheint beim Klick oder beim ersten Tastenanschlag.
 
 ### Karten des Flugs
 
@@ -1393,7 +1395,7 @@ Auf den Stufen 1 bis 3 zeigt der Block nur den Bericht der Erzeugung (erzeugte K
 Die „Übersichtskarte“ erscheint von selbst unter den Vorschauen; sie übernimmt das Profil der Übersichtskarte der Route.
 Formate: Menü ☰ › Kartenausgaben (PNG, bearbeitbares SVG, PNG-Breite von 400 bis 5000 px; standardmäßig 1600 px).
 Schlägt eine Karte fehl (Hintergrund nicht verfügbar, Zeitüberschreitung), enthält das ZIP `rapport_generation.txt` und die Liste bietet „Einzeln erneut versuchen“ an.
-Die Knöpfe bleiben ausgegraut, solange keine Karte zu erstellen ist.
+Die Knöpfe bleiben ausgegraut, solange keine Karte zu erstellen ist. Während der Vorschauen und der Erzeugung trägt der Fortschrittsbalken einen Knopf „Abbrechen“: Die laufende Karte wird fertiggestellt, die folgenden werden nicht erstellt. Eine abgebrochene Erzeugung lädt kein ZIP herunter (es wäre unvollständig); die bereits angezeigten Vorschauen bleiben. Starten Sie „Karten und ZIP erzeugen“ erneut für alle Karten.
 
 ### SIA-Datenbank
 

@@ -246,7 +246,7 @@ Mapa de control: listas «Mapa» y «Perfil», casilla «ZIP», «Actualizar», 
 - Casilla «ZIP» (desmarcada: mapa no generado; elección no guardada en la misión) y × para eliminar.
 
 Para añadir: nombre, tipo («general», «objetivo», «detalle», «zona») y después «+ Mapa» (extensión = vista mostrada); «+ Mapas de ejercicio» añade los mapas de la organización, de los blancos jugados o de la tripulación.
-«Ajustes del perfil …» (plegado): «Nombre del perfil», «Mapa de fondo», «Guardar», «Nuevo», «Duplicar», «Eliminar» y después cuatro pestañas: «Mapa de fondo», «Espacios», «Símbolos OACI», «Elementos». El perfil modificado es siempre el del mapa elegido; los perfiles son comunes a todas las misiones y se guardan en este navegador.
+«Ajustes del perfil …» (plegado): «Nombre del perfil», «Mapa de fondo», «Guardar», «Nuevo», «Duplicar», «Eliminar» y después cuatro pestañas: «Mapa de fondo», «Espacios», «Símbolos OACI», «Elementos». El perfil modificado es siempre el del mapa elegido; los perfiles son comunes a todas las misiones y se guardan en este navegador. Las listas de sugerencias de los campos de entrada (zonas, aeródromos, balizas: hasta 13 000 entradas de la base SIA) solo se rellenan cuando hace clic en el campo correspondiente, no al abrir la página.
 
 ### Vistas previas y generación
 
@@ -255,6 +255,7 @@ Para añadir: nombre, tipo («general», «objetivo», «detalle», «zona») y 
 - Los PNG se guardan en `cartes/` de la carpeta de la misión (visibles en el registro). Si no, use «Archivar los mapas en la carpeta» en el pie de página.
 - Un mapa que falla no detiene los demás: el ZIP contiene `rapport_generation.txt` y «Reintentar solo este» vuelve a lanzar ese mapa. «fondo parcial» señala un mapa de fondo lento.
 - Lote de varias misiones: «Generar las n misiones» produce un único ZIP, con una carpeta por misión y el mapa de la operación.
+- «Detener» (barra de progreso, tanto en las vistas previas como en la generación): el mapa en curso se termina y los siguientes no se hacen. Una generación detenida no descarga ningún ZIP y no guarda nada en la carpeta de la misión; un lote detenido indica cuántas misiones están terminadas (sus mapas ya están guardados en su carpeta); las vistas previas ya mostradas se quedan.
 
 Tipo de salida (PNG, SVG editable) y anchura de los PNG: menú ☰ › «Salidas de mapas». El mapa de conjunto siempre se incluye; aparece al pie del bloque.
 
@@ -288,7 +289,7 @@ En la cabecera: número de misiones, reparto por estado y fecha de actualizació
 | «Escribir mission_registry.yaml» (nivel Experto) | Escribe el registro en la carpeta de misiones |
 | «Limpiar el registro (n)» (nivel Experto) | Quita las misiones con «archivo ausente» tras releer |
 
-La carpeta se relee automáticamente al abrir la página si ya está autorizada.
+La carpeta se relee automáticamente al abrir la página si ya está autorizada. La lectura muestra una barra de progreso con «Detener»: el registro queda sin cambios.
 Al limpiar, el estado, las notas y la fecha de vuelo pasan a la misión que sustituye a una misión renumerada.
 
 ### Elegir una misión
@@ -774,7 +775,7 @@ El botón «Comprobar» vuelve a lanzar los controles.
   - una descarga directa por el lanzador (`tools/aero_fetch.py`): openAIP (cada país), ENAIRE (España), FAA (Estados Unidos: zonas y rutas militares, clases de espacio), AIP militar británico (ENR 5.2, PDF oficial leído por el lanzador: zonas de vuelo a baja altura, VATA, zona de evitación TVAA, ejes de reabastecimiento AARA añadidos a los de la DIRCAM), NAV CANADA (Designated Airspace Handbook, edición vigente leída por el lanzador: zonas peligrosas, restringidas y de aviso de Canadá, a descargar de nuevo cada 56 días);
   - un pedido o un registro, con el enlace y el modo de empleo: SIA Francia (pedido a 0 €, a repetir en cada ciclo), NATS (Reino Unido, archivo depositado en `data/sia/zones/gb/`);
   - un PDF, con el enlace y el modo de empleo: DIRCAM / MILAIP ENR 5.7 (ejes de reabastecimiento);
-    DIRCAM: «Importar el PDF MILAIP…» lee el PDF de la sección ENR 5.7 (pdf.js, red en la primera importación), muestra el número de ejes y las anomalías encontradas, y luego «Escribir miam-enr-5-7-tracks.xml» guarda el archivo en la carpeta SIA (el anterior en `_archives/`) y actualiza la base;
+    DIRCAM: «Importar el PDF MILAIP…» lee el PDF de la sección ENR 5.7 (pdf.js, red en la primera importación), muestra el número de ejes y las anomalías encontradas, y luego «Escribir miam-enr-5-7-tracks.xml» guarda el archivo en la carpeta SIA (el anterior en `_archives/`) y actualiza la base («Detener» durante la lectura: no se guarda ni se escribe nada);
   - una carpeta del ordenador: X-Plane (radioayudas, puntos, aerovías, rejilla MORA, recortados a los contornos de las zonas activas que lo marcaron);
   - un cálculo: la MORA de la zona. Una zona muy extensa (más de 1500 casillas de un grado: Estados Unidos, Canadá…) toma por defecto la MORA de X-Plane; «Cálculo completo…» la calcula por bloques de 10°, tras una confirmación que indica el volumen (teselas abiertas de relieve de AWS aumentadas en 100 m, sin consulta a OpenStreetMap): cada bloque se escribe enseguida en `mora.csv`, «Detener» entre dos bloques, «Reanudar el cálculo completo…» más tarde.
 - SIA Francia (zona Francia): «Recuperar el ZIP descargado» (el lanzador lo toma de Descargas), «ZIP de exportación…», «Extraer …» si ya está en la carpeta, «Archivar los ciclos antiguos» (`_archives/`); «Contenido de la carpeta SIA» lista los archivos del ciclo.

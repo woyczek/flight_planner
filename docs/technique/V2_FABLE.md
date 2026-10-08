@@ -76,9 +76,33 @@ sont produits dans la langue de la page (`K.t`, `K.tf`), en quatre langues.
 | `shared/icons/repository_icons.js` | icône `today` |
 | `config/repository_tree` | entrée « Aujourd'hui », page, libellés |
 
-## 5. Suite possible (non faite)
+## 5. Fait ensuite (8 octobre, soir)
 
-- Compteur « Synchroniser (n) » de l'en-tête réduit à une pastille aux niveaux 1-2.
-- Messages d'erreur des pages relus (pas de code seul) : passage en revue par page.
-- Bouton Arrêter branché sur chaque tâche longue des pages (cartes, import SIA) : le socle est prêt, les boucles
-  restent à faire vérifier `job.cancelled`.
+- **Pastille de synchronisation** : le bouton « Synchroniser » de l'en-tête porte une pastille aux niveaux 1-2 (le nombre
+  reste dans l'infobulle, le compteur « (n) » aux niveaux 3-4) — fait, voir CHANGELOG « v2-fable, lot 2 ».
+- **Messages d'erreur relus** : `AppFramework.explain` dit ce qui a échoué et quoi faire, en quatre langues, appliqué
+  aux pages concernées — fait, voir CHANGELOG « v2-fable, lot 2 ».
+- **Bouton « Arrêter »** branché sur les tâches longues (cartes du Studio et des Cartes de vol, MORA, import MILAIP,
+  lecture du dossier des missions ; l'état partiel est annoncé) — fait, voir CHANGELOG « v2-fable, lot 2 ».
+
+## 6. Performance
+
+Mesures du 8 octobre dans le Chrome de l'utilisateur (onglet visible, design Aqua) : détail et chiffres dans le
+[rapport](perf/RAPPORT_2026-10-08.md).
+
+**Ce que les mesures ont montré.** Les pages ordinaires sont saines (scripts chargés en 150 à 370 ms, aucune tâche
+longue, traduction après coup de 6 à 28 ms, observateurs < 1 ms). Deux pages dérogent : le **Planning** (206 requêtes
+dont 48 en 404, 1 902 `JSON.parse`) et les **Cartes de vol** (15 073 éléments du DOM dont 13 552 `<option>`, page figée
+≈ 1,5 s au chargement par trois tâches longues de 600, 655 et 264 ms). Dans un onglet en arrière-plan Chrome suspend
+l'affichage : les mesures de temps ne valent qu'onglet visible.
+
+| Lot | Correction | Effet mesuré |
+|---|---|---|
+| (1) Planning | semaines demandées filtrées par l'index des disponibilités ; réglages lus par analyse mémorisée (`jsonCached`) | 206 → 19 requêtes (404 : 48 → 4) ; 1 902 → 157 `JSON.parse` |
+| (2) Cartes de vol, Studio | listes de complétion (zones, aérodromes, balises) construites au focus du champ | 15 073 → 1 555 éléments ; tâches longues 600 + 655 + 264 → 268 + 294 ms |
+| (3) Base SIA | villes (≈ 70 000) rangées sous leur propre clé (`SiaBase.cities()`), lues à l'inactivité ; axes AAR à l'inactivité | `SiaBase.get()` 212 → 116 ms, `applyBase` 140 → 84-94 ms ; tâches longues au chargement 200 + 211 ms |
+
+**Restes.** `shared/browser_store.js` `snapshot()` analyse toutes les clés du `localStorage` à chaque page (41
+`JSON.parse`, 409 Ko) : signalé à la session BUGS SOG (socle), non touché. Non faits : `renderZonePick` (≈ 100 ms,
+`selectedAirspaces` sur 7 000 espaces à chaque rendu), géométrie des espaces en tableaux compacts, DOM du Planning
+(7 700 éléments).

@@ -43,7 +43,7 @@ L'en-tête porte le titre de la page et son sous-titre. À droite se trouvent le
 | Élément | Rôle |
 |---|---|
 | Pli cacheté (enveloppe rouge avec un nombre) | Des missions qui vous sont affectées ne sont pas encore lues. Un clic ouvre « Mes missions ». |
-| « Synchroniser (n) » | Échange les données partagées avec le dépôt commun. N = modifications à envoyer + mises à jour à recevoir. |
+| « Synchroniser (n) » | Échange les données partagées avec le dépôt commun. N = modifications à envoyer + mises à jour à recevoir. Aux niveaux 1 et 2, une pastille remplace le nombre (il reste en tête de l'infobulle) ; le compteur « (n) » s'affiche aux niveaux 3 et 4. |
 | « Sauvegarder dans le dossier (n) · dernière : … » (bouton rouge) | Rappel de sauvegarde des données locales, affiché à partir de 10 modifications non sauvegardées. |
 | « ⚠ n » | Alertes de la page déjà effacées de l'écran : un clic les relit. |
 | Drapeau « Langue » | Choix de la langue : « Auto » (langue du navigateur), Français, English, Deutsch, Español. |
@@ -98,7 +98,9 @@ Les messages de la suite (succès, avertissements, erreurs) s'affichent en bas d
 - Quatre messages au plus restent à l'écran.
 - Un rappel répétitif (par exemple « Base SIA absente de ce navigateur… » du Studio cartographique et des Cartes de vol) ne s'affiche qu'**une fois par session** du navigateur. Certains messages sont réservés aux niveaux d'utilisation supérieurs : en dessous, ils ne s'affichent pas, mais les avertissements et erreurs restent au journal du témoin « ⚠ n ».
 - Les avertissements et erreurs effacés restent consultables par le témoin « ⚠ n » de l'en-tête : « ACK » acquitte une alerte, « Tout acquitter » les acquitte toutes, « Vider » efface la liste. Ce journal est perdu au changement de page.
-- Une tâche longue (lecture, génération…) affiche une barre de progression dans la même pile. Quitter la page pendant la tâche demande une confirmation. Quand la tâche peut être interrompue (mise en place des zones dans Maintenance), la barre porte un bouton **« Arrêter »** : l'étape en cours se termine, les suivantes ne sont pas lancées, puis la bulle dit « Annulé. ».
+- Une tâche longue (lecture, génération…) affiche une barre de progression dans la même pile. Quitter la page pendant la tâche demande une confirmation. Quand la tâche peut être interrompue, la barre porte un bouton **« Arrêter »** : l'étape en cours se termine, les suivantes ne sont pas lancées, puis la bulle dit « Annulé. ». Le bouton existe pour la génération et les aperçus des cartes (Studio cartographique et Cartes de vol : arrêt entre deux cartes), le calcul de la MORA (d'une zone, de la grille complète ou par blocs), l'import de la MILAIP ENR 5.7 et la mise en place des zones (Maintenance), et la lecture du dossier des missions (Registre).
+- Une tâche arrêtée dit ce qui reste partiel. Cartes : une génération arrêtée ne télécharge aucun ZIP et ne range rien dans le dossier de la mission (un lot de missions dit combien sont terminées) ; les aperçus déjà affichés restent. MORA par blocs (bouton « Arrêter (reprise plus tard) ») : les blocs déjà calculés sont écrits dans `mora.csv` (grille partielle), « Reprendre le calcul complet… » poursuit plus tard. MORA d'une zone, grille MORA et import de la MILAIP : rien n'est écrit. Lecture du dossier des missions : le registre reste inchangé.
+- Les messages d'erreur disent ce qui a échoué et quoi faire, au lieu d'un code seul. Exemples : « le serveur ne répond pas — vérifier que la suite est ouverte par le lanceur (lancer.cmd / lancer.sh), le relancer au besoin, puis réessayer » ; « fichier absent — vérifier qu'il est bien dans le dossier attendu (ou le recréer), puis réessayer » ; « espace du navigateur saturé — libérer de la place (Paramètres › Maintenance › Espace disque), puis réessayer ». Autres cas : service en ligne muet, erreur du serveur, accès refusé par le navigateur, délai dépassé ; une erreur inattendue s'affiche « échec » suivi du détail technique entre parenthèses.
 - Les questions (« Effacer… ? ») s'ouvrent dans une petite fenêtre avec « Confirmer » et « Annuler ».
 
 ### Connexion, mode develop ou production, usurpation
@@ -1349,7 +1351,7 @@ Ce panneau repliable, placé sous la carte de contrôle, règle le profil d'affi
 - Onglet « Symboles OACI » : aérodromes (par catégorie, contrôlés ou non, liste blanche), radionavigation, voies aériennes basses et hautes, points de report VFR, survol interdit, parcs et réserves, obstacles.
 - Onglet « Éléments » : points tournants, méridiens et parallèles, grille MORA, libellés des villes, hippodrome de ravitaillement, zones de mission et de recherche.
 
-Pensez à cliquer sur « Sauvegarder » pour garder un profil modifié.
+Pensez à cliquer sur « Sauvegarder » pour garder un profil modifié. Les listes de suggestions de la saisie (zones, aérodromes, balises) ne se remplissent que lorsque vous cliquez dans le champ concerné : la page s'ouvre ainsi plus vite, et la liste apparaît dès le clic ou la première frappe.
 
 ### Cartes du vol
 
@@ -1393,7 +1395,7 @@ Aux niveaux 1 à 3, le bloc ne montre que le compte rendu de la génération (ca
 La « Carte d'assemblage » s'affiche d'elle-même sous les aperçus ; elle reprend le profil de la carte générale.
 Formats : menu ☰ › Sorties des cartes (PNG, SVG éditable, largeur PNG de 400 à 5000 px ; 1600 px par défaut).
 Si une carte échoue (fond indisponible, délai dépassé), le ZIP contient `rapport_generation.txt` et la liste propose « Réessayer seule ».
-Les boutons restent grisés tant qu'aucune carte n'est à produire.
+Les boutons restent grisés tant qu'aucune carte n'est à produire. Pendant les aperçus et la génération, la barre de progression porte un bouton « Arrêter » : la carte en cours s'achève, les suivantes ne sont pas faites. Une génération arrêtée ne télécharge aucun ZIP (il serait incomplet) ; les aperçus déjà affichés restent. Relancez « Générer les cartes et le ZIP » pour toutes les cartes.
 
 ### Base de données SIA
 
