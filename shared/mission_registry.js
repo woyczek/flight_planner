@@ -1114,6 +1114,13 @@
     selected = k;
     writeJson(SEL_KEY, k);
   };
+  // v2 : filtres secondaires dans « Plus de filtres » (sous-type, rendez-vous, équipes, type d'équipe, ravitaillement) ;
+  // état du repli choisi par l'utilisateur (null : pas encore touché), gardé quand la page est redessinée
+  let moreFilters = null;
+  /** Repli « Plus de filtres » ouvert : choix de l'utilisateur, sinon niveau Expert ou l'un de ses filtres actif. */
+  const moreFiltersOpen = () => moreFilters ?? ((window.RepositoryNav?.levels?.get?.() || 4) >= 4 || ['subtype', 'rdv', 'teamsMin',
+    'teamsMax', 'teamType', 'aar'
+  ].some(k => filters[k] !== '' && filters[k] != null));
   /** Pastille de statut ou de message (classe rg-<niveau>). */
   const pill = (level, text) => `<span class="rg-pill rg-${esc(String(level ?? '').replace(/[^\w-]/g, ''))}">${esc(text)}</span>`;
 
@@ -1139,15 +1146,19 @@
         <h2>${esc(t(['Choisir une mission', 'Choose a mission', 'Mission wählen', 'Elegir una misión']))}</h2>
         <div class="rg-filters">
           <label>${esc(t(['Type', 'Type', 'Typ', 'Tipo']))}<select data-f="type">${opt('', t(['tous', 'all', 'alle', 'todos']), filters.type)}${types.map(x => opt(x, x, filters.type)).join('')}</select></label>
+          <label>${esc(t(['Statut', 'Status', 'Status', 'Estado']))}<select data-f="status">${opt('', t(['tous', 'all']), filters.status)}${Object.keys(STATUS).map(k => opt(k, t(STATUS[k]), filters.status)).join('')}</select></label>
+          <label>${esc(t(['Théâtre', 'Theatre', 'Schauplatz', 'Teatro']))}<select data-f="theatre">${opt('', t(['tous', 'all']), filters.theatre)}${uniq(reg.missions.map(m => m.theatre)).map(x => opt(x, x, filters.theatre)).join('')}</select></label>
+          <label>${esc(t(['Recherche', 'Search', 'Suche', 'Buscar']))}<input type="search" data-f="q" value="${esc(filters.q)}"></label>
+        </div>
+        <details class="rg-more" data-rg-more ${moreFiltersOpen() ? 'open' : ''} style="margin:-6px 0 8px"><summary style="cursor:pointer;font-size:12px;font-weight:600;color:var(--muted)">${esc(t(['Plus de filtres', 'More filters', 'Weitere Filter', 'Más filtros']))}</summary>
+        <div class="rg-filters">
           <label>${esc(t(['Sous-type', 'Subtype', 'Untertyp', 'Subtipo']))}<select data-f="subtype">${opt('', t(['tous', 'all', 'alle', 'todos']), filters.subtype)}${subtypes.map(x => opt(x, x, filters.subtype)).join('')}</select></label>
           <label>${esc(t(['Rendez-vous', 'Rendezvous', 'Treffpunkt', 'Encuentro']))}<select data-f="rdv">${opt('', t(['indifférent', 'any', 'egal', 'indiferente']), filters.rdv)}${opt('with', t(['avec', 'with', 'mit', 'con']), filters.rdv)}${opt('without', t(['sans', 'without', 'ohne', 'sin']), filters.rdv)}</select></label>
           <label>${esc(t(['Équipes engagées', 'Teams engaged', 'Beteiligte Teams', 'Equipos']))}<span class="rg-range"><input type="number" min="0" max="20" data-f="teamsMin" value="${esc(filters.teamsMin)}" placeholder="min"> – <input type="number" min="0" max="20" data-f="teamsMax" value="${esc(filters.teamsMax)}" placeholder="max"></span></label>
           <label>${esc(t(['Type d’équipe / d’aéronef', 'Team / aircraft type', 'Team- / Luftfahrzeugtyp', 'Tipo de equipo / aeronave']))}<input list="rgTeamTypes" data-f="teamType" value="${esc(filters.teamType)}"><datalist id="rgTeamTypes">${teamTypes.map(x => `<option value="${esc(x)}">`).join('')}</datalist></label>
           <label>${esc(t(['Ravitaillement en vol', 'Air refuelling', 'Luftbetankung', 'Reabastecimiento']))}<select data-f="aar">${opt('', t(['indifférent', 'any']), filters.aar)}${opt('yes', t(['oui', 'yes', 'ja', 'sí']), filters.aar)}${opt('no', t(['non', 'no', 'nein', 'no']), filters.aar)}</select></label>
-          <label>${esc(t(['Théâtre', 'Theatre', 'Schauplatz', 'Teatro']))}<select data-f="theatre">${opt('', t(['tous', 'all']), filters.theatre)}${uniq(reg.missions.map(m => m.theatre)).map(x => opt(x, x, filters.theatre)).join('')}</select></label>
-          <label>${esc(t(['Statut', 'Status', 'Status', 'Estado']))}<select data-f="status">${opt('', t(['tous', 'all']), filters.status)}${Object.keys(STATUS).map(k => opt(k, t(STATUS[k]), filters.status)).join('')}</select></label>
-          <label>${esc(t(['Recherche', 'Search', 'Suche', 'Buscar']))}<input type="search" data-f="q" value="${esc(filters.q)}"></label>
         </div>
+        </details>
         <p class="row"><button type="button" class="primary" id="rgDraw" data-icon="sparkles" ${rows.length ? '' : 'disabled'}>${esc(t(['Tirer au sort ({n})', 'Draw at random ({n})', 'Zufällig wählen ({n})', 'Sortear ({n})'], { n: rows.length }))}</button><button type="button" class="secondary" id="rgReset">${esc(t(['Effacer les filtres', 'Clear filters', 'Filter löschen', 'Borrar filtros']))}</button><button type="button" class="secondary" id="rgCsv" data-icon="download">CSV</button></p>
         <div id="rgTable"></div>
         <div class="rg-resize" role="separator" aria-orientation="horizontal" title="${esc(t(['Glisser pour agrandir ou réduire le tableau (double-clic : hauteur par défaut)', 'Drag to enlarge or shrink the table (double-click: default height)', 'Ziehen, um die Tabelle zu vergrößern oder zu verkleinern (Doppelklick: Standardhöhe)', 'Arrastrar para ampliar o reducir la tabla (doble clic: altura por defecto)']))}"><span></span></div>
@@ -1163,6 +1174,7 @@
     b.type = 'button';
     b.className = 'secondary';
     b.dataset.icon = 'folder';
+    b.dataset.minLevel = '4'; // v2 : choix du dossier au niveau Expert (« Relire le dossier » le demande s'il manque)
     b.onclick = async () => {
       try {
         await window.FileAccess.pickFolder('__missions');
@@ -1201,6 +1213,7 @@
     wb.type = 'button';
     wb.className = 'secondary';
     wb.dataset.icon = 'save';
+    wb.dataset.minLevel = '4'; // v2 : niveau Expert
     wb.textContent = t(['Écrire mission_registry.yaml', 'Write mission_registry.yaml']);
     wb.onclick = async () => {
       try {
@@ -1216,6 +1229,7 @@
     cb.type = 'button';
     cb.className = 'secondary';
     cb.dataset.icon = 'trash';
+    cb.dataset.minLevel = '4'; // v2 : niveau Expert
     cb.textContent = t(['Nettoyer le registre ({n})', 'Clean up the registry ({n})', 'Register bereinigen ({n})',
       'Limpiar el registro ({n})'
     ], {
@@ -1252,6 +1266,9 @@
     };
     fb.append(b, sb, wb, cb);
     // filtres
+    host.querySelector('[data-rg-more]').addEventListener('toggle', e => {
+      moreFilters = e.target.open;
+    });
     host.querySelectorAll('[data-f]').forEach(el => el.addEventListener(el.tagName === 'SELECT' ? 'change' : 'input', () => {
       filters[el.dataset.f] = el.value;
       if (el.dataset.f === 'type') filters.subtype = '';
@@ -1288,7 +1305,9 @@
   }
   /** Texte coupé à la largeur de la colonne, complet au survol (title). */
   const cut = (v, cls) => `<span class="rg-cut ${cls}" title="${esc(v || '')}">${esc(v || '')}</span>`;
-  /** Colonnes du tableau des missions (SortedTable), libellés dans la langue de la page. */
+  /** Colonnes du tableau des missions (SortedTable), libellés dans la langue de la page ; v2 : colonnes minLevel 4
+   *  (équipes, RDV, AAR, théâtre) au niveau Expert seulement, retirées à la source (SortedTable ne pose pas d'attribut
+   *  par colonne) : sept colonnes aux niveaux inférieurs. */
   const COLUMNS = () => [{
       key: 'id',
       label: t(['Mission', 'Mission', 'Mission', 'Misión']),
@@ -1306,6 +1325,7 @@
       html: (v, m) => `${m.organisation ? `<span class="rg-pill rg-planned">${esc(t(['organisation', 'organisation', 'Leitung', 'organización']))}</span> ` : ''}${cut(v, 'rg-cut-l')}${m.missingFile ? ' <span class="rg-pill rg-cancelled">fichier absent</span>' : ''}`
     }, {
       key: 'teamCount',
+      minLevel: 4,
       label: t(['Équipes', 'Teams', 'Teams', 'Equipos']),
       html: (v, m) => {
         const k = [...(m.aircraftTypes || []), ...(m.teamTypes || [])].filter((x, i, a) => a.indexOf(x) === i).join(', ');
@@ -1314,14 +1334,17 @@
       sortValue: m => m.teamCount || 0
     }, {
       key: 'rdv',
+      minLevel: 4,
       label: 'RDV',
       type: 'number'
     }, {
       key: 'aar',
+      minLevel: 4,
       label: 'AAR',
       format: v => v ? '✓' : ''
     }, {
       key: 'theatre',
+      minLevel: 4,
       label: t(['Théâtre', 'Theatre', 'Schauplatz', 'Teatro'])
     }, {
       key: 'status',
@@ -1344,7 +1367,7 @@
       format: v => fmtDate(v),
       sortValue: m => m.generatedAt || m.addedAt || ''
     }
-  ];
+  ].filter(c => !c.minLevel || (window.RepositoryNav?.levels?.get?.() || 4) >= c.minLevel);
 
   /** Tableau des missions filtrées (SortedTable) : hauteur réglable (missionRegistryTableHeight:v1), clic : fiche,
    *  ✕ : retrait du registre (fichiers gardés) ; met à jour le bouton de tirage au sort. */
@@ -1472,7 +1495,7 @@
         <label>${esc(t(['Volée le', 'Flown on', 'Geflogen am', 'Volada el']))}<input type="date" id="rgFlown" value="${esc(m.flownAt || '')}"></label>
         <label class="rg-notes">${esc(t(['Notes', 'Notes', 'Notizen', 'Notas']))}<input id="rgNotes" value="${esc(m.notes || '')}"></label>
       </div>
-      <p class="row">${m.files?.length ? `<button type="button" class="primary" data-go="editor" data-icon="edit">${esc(t(['Ouvrir dans le générateur', 'Open in generator', 'Im Generator öffnen', 'Abrir en el generador']))}</button><button type="button" class="secondary" data-go="studio" data-icon="map">${esc(t(['Ouvrir dans le studio', 'Open in map studio', 'Im Kartenstudio öffnen', 'Abrir en el estudio']))}</button>${/Z$/.test(m.id || '') ? '' : `<button type="button" class="secondary" data-go="assign" data-icon="users" title="${esc(t(['Affecter la mission à un ou plusieurs pilotes : heure, appareils, astreinte (docs/technique/AFFECTATION_MISSIONS.md)', 'Assign the mission to one or more pilots: time, aircraft, standby']))}">${esc(t(['Affecter…', 'Assign…', 'Zuweisen…', 'Asignar…']))}</button>`}<button type="button" class="secondary" data-go="cr" data-icon="clipboard" title="${esc(t(['Nouveau CR de cette mission : n° de vol suivant', 'New report for this mission: next flight number']))}">${esc(m.reports?.length ? t(['Nouveau CR (vol {n})', 'New report (flight {n})', 'Neuer Bericht (Flug {n})', 'Nuevo informe (vuelo {n})'], { n: m.reports.length + 1 }) : t(['Créer le CR', 'Create report', 'Bericht erstellen', 'Crear informe']))}</button>` : ''}${m.status === 'ordered' ? `<button type="button" class="secondary" data-go="prompt" data-icon="send">${esc(t(['Recopier le prompt', 'Copy prompt again']))}</button>` : ''}<span class="rg-small">${esc((m.files || []).join(', '))}</span></p>
+      <p class="row">${m.files?.length ? `<button type="button" class="primary" data-go="editor" data-icon="edit">${esc(t(['Ouvrir dans le générateur', 'Open in generator', 'Im Generator öffnen', 'Abrir en el generador']))}</button><button type="button" class="secondary" data-go="studio" data-icon="map" data-min-level="4">${esc(t(['Ouvrir dans le studio', 'Open in map studio', 'Im Kartenstudio öffnen', 'Abrir en el estudio']))}</button>${/Z$/.test(m.id || '') ? '' : `<button type="button" class="secondary" data-go="assign" data-icon="users" title="${esc(t(['Affecter la mission à un ou plusieurs pilotes : heure, appareils, astreinte (docs/technique/AFFECTATION_MISSIONS.md)', 'Assign the mission to one or more pilots: time, aircraft, standby']))}">${esc(t(['Affecter…', 'Assign…', 'Zuweisen…', 'Asignar…']))}</button>`}<button type="button" class="secondary" data-go="cr" data-icon="clipboard" title="${esc(t(['Nouveau CR de cette mission : n° de vol suivant', 'New report for this mission: next flight number']))}">${esc(m.reports?.length ? t(['Nouveau CR (vol {n})', 'New report (flight {n})', 'Neuer Bericht (Flug {n})', 'Nuevo informe (vuelo {n})'], { n: m.reports.length + 1 }) : t(['Créer le CR', 'Create report', 'Bericht erstellen', 'Crear informe']))}</button>` : ''}${m.status === 'ordered' ? `<button type="button" class="secondary" data-go="prompt" data-icon="send" data-min-level="4">${esc(t(['Recopier le prompt', 'Copy prompt again']))}</button>` : ''}<span class="rg-small">${esc((m.files || []).join(', '))}</span></p>
       <p class="rg-small" id="rgGoMsg"></p></div>`;
     box.querySelector('#rgStatus').onchange = e => {
       m.status = e.target.value;
@@ -1625,8 +1648,9 @@
     const yaml = root.find(f => /^mission.*\.ya?ml$/i.test(f.name)),
       md = root.find(f => /\.md$/i.test(f.name));
     /** Bouton d'un fichier de la mission (data-f : clé traitée par le gestionnaire de clics plus bas). */
-    const btn = (k, label, icon) => `<button type="button" class="secondary" data-f="${k}" data-icon="${icon}">${esc(label)}</button>`;
-    host.innerHTML = `<p class="row">${yaml ? btn('yaml', `YAML — ${yaml.name}`, 'file-text') : ''}${md ? btn('md', t(['Markdown (lisible)', 'Markdown (readable)']), 'book') : yaml ? btn('mdgen', t(['Markdown (généré depuis le YAML)', 'Markdown (generated from the YAML)', 'Markdown (aus dem YAML erzeugt)', 'Markdown (generado desde el YAML)']), 'book') : ''}${btn('pdf', t(['PDF (générateur)', 'PDF (generator)']), 'file')}${btn('edit', t(['Modifier (générateur)', 'Edit (generator)']), 'edit')}${btn('studio', t(['Cartes (studio)', 'Maps (studio)']), 'map')}</p>
+    // v2 : studio cartographique au niveau Expert (minLevel 4), comme sa page
+    const btn = (k, label, icon, minLevel) => `<button type="button" class="secondary" data-f="${k}" data-icon="${icon}"${minLevel ? ` data-min-level="${minLevel}"` : ''}>${esc(label)}</button>`;
+    host.innerHTML = `<p class="row">${yaml ? btn('yaml', `YAML — ${yaml.name}`, 'file-text') : ''}${md ? btn('md', t(['Markdown (lisible)', 'Markdown (readable)']), 'book') : yaml ? btn('mdgen', t(['Markdown (généré depuis le YAML)', 'Markdown (generated from the YAML)', 'Markdown (aus dem YAML erzeugt)', 'Markdown (generado desde el YAML)']), 'book') : ''}${btn('pdf', t(['PDF (générateur)', 'PDF (generator)']), 'file')}${btn('edit', t(['Modifier (générateur)', 'Edit (generator)']), 'edit')}${btn('studio', t(['Cartes (studio)', 'Maps (studio)']), 'map', 4)}</p>
       <p>${esc(t(['Dossier', 'Folder']))} : <code>data/missions/${esc(mh.folder)}/</code>${m.receivedAt ? ` · ${esc(t(['reçue le', 'received']))} ${esc(fmtDate(m.receivedAt))}` : ''}${m.modifiedAt ? ` · ${esc(t(['modifiée le', 'modified']))} ${esc(fmtDate(m.modifiedAt))}` : ''}</p>
       <div class="rg-thumbs">${maps.length ? '' : `<span>${esc(m.mapsWanted ? t(['Aucune carte générée : ouvrir le studio (les définitions de cartes du YAML suffisent à les régénérer).', 'No map generated yet: open the studio.']) : t(['Pas de carte prévue.', 'No map planned.']))}</span>`}</div>
       ${vers.length ? `<p><b>${esc(t(['Versions précédentes', 'Previous versions']))}</b> : ${vers.map((f, i) => `<a href="#" data-v="${i}">${esc(f.name.replace(/^mission.*?_/, '').replace(/\.ya?ml$/, ''))}</a>`).join(' · ')}</p>` : ''}

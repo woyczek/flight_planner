@@ -11,7 +11,10 @@
   //     par tools/build_mission_prompt.py), paramètres réglés en tête, copié puis ChatGPT ouvert dans un nouvel onglet ;
   //   · la commande est inscrite au registre (statut « commandée », missionRegistry:v1) puis rapprochée de la mission
   //     générée à la relecture du dossier (même série) ;
-  //   · réglages du formulaire : localStorage missionRegistryOrder:v1 (partagés entre les deux pages).
+  //   · réglages du formulaire : localStorage missionRegistryOrder:v1 (partagés entre les deux pages) ;
+  //   · formulaire (v2) : six réglages essentiels visibles, les autres (second théâtre, série, identifiant, rendez-vous,
+  //     traductions, ravitaillement, aéronef de chaque équipe) dans le repli « Plus d'options », ouvert au niveau Expert
+  //     ou quand l'un d'eux s'écarte du défaut.
   //
   // API : MissionOrder.mount(host, { hint, onOrdered, preset }) · sendPrompt(request, out) · families() · numbering(type)
   //   preset : réglages imposés à l'ouverture (ordres de vols : plaquette sans mission) — { type, subtype, theatre, teams,
@@ -109,6 +112,12 @@
   };
   const save = o => writeJson(ORDER_KEY, o);
   let lastMsg = null; // message de la dernière commande (gardé si l'hôte redessine le bloc)
+  // repli « Plus d'options » (v2) : état choisi par l'utilisateur (null : pas encore touché), gardé quand le bloc est redessiné
+  let moreOpen = null;
+  /** Réglage du repli « Plus d'options » qui s'écarte du défaut (second théâtre, série, rendez-vous, traductions,
+   *  ravitaillement, aéronef imposé) : le repli s'ouvre pour que rien de réglé ne reste caché. */
+  const moreSet = o => !!(o.theatre2 || o.serie || o.rdv !== 'libre' || o.aar !== 'libre' || (o.translations || 'en') !== 'en' ||
+    teamSlots(o).some(Boolean));
 
   /** Numérotation par famille (lettre + 3 chiffres, série dans la famille) : SiaMission.nextNumbering. */
   const numbering = type => window.SiaMission?.nextNumbering?.(type) || {
@@ -272,7 +281,8 @@
 .mo-form .mo-teams{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:6px 12px;margin:4px 0 8px}
 .mo-form .mo-team{display:flex;gap:8px;align-items:center}.mo-form .mo-team span{flex:none;font-weight:700;min-width:5.5em}
 .mo-form .mo-small{font-size:12px;opacity:.8}.mo-form .mo-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-.mo-form .mo-copy{width:100%;margin-top:6px;font:11px ui-monospace,monospace;max-height:7em}.mo-form p{margin:4px 0}`;
+.mo-form .mo-copy{width:100%;margin-top:6px;font:11px ui-monospace,monospace;max-height:7em}.mo-form p{margin:4px 0}
+.mo-form .mo-more{margin:0 0 8px}.mo-form .mo-more>summary{cursor:pointer;font-size:12px;font-weight:600;opacity:.85;margin:2px 0 4px}`;
     document.head.append(css);
   }
 
@@ -298,30 +308,43 @@
       const idText = nx.id ? `${nx.id} (${t(['série', 'series', 'Serie', 'serie'])} ${o.serie || nx.serie})` : t(['selon la famille tirée', 'per the drawn family', 'je nach gezogener Familie',
         'según la familia sorteada'
       ]);
+      // pays du théâtre étranger : à côté du théâtre principal, sinon dans le repli avec le second théâtre
+      const country = `<label title="${esc(t(['Pays du théâtre étranger (ex. Japon, Indonésie, Djibouti) ; vide = au choix du générateur', 'Country of the foreign theatre (e.g. Japan, Indonesia, Djibouti); empty = generator’s choice']))}">${esc(t(['Pays', 'Country', 'Land', 'País']))}<input data-o="country" value="${esc(o.country || '')}" placeholder="${esc(t(['au choix', 'any', 'beliebig', 'cualquiera']))}"></label>`;
+      // v2 : six réglages essentiels du prompt visibles (type, sous-type, théâtre, équipes en vol, équipes au sol, durée) ;
+      // les autres dans « Plus d'options », ouvert au niveau Expert ou quand l'un d'eux s'écarte du défaut
+      const more = moreOpen ?? ((window.RepositoryNav?.levels?.get?.() || 4) >= 4 || moreSet(o));
       host.classList.add('mo-form');
       host.innerHTML = `<div class="mo-grid">
         <label>${esc(t(['Type', 'Type', 'Typ', 'Tipo']))}<select data-o="type">${opt('aléatoire', t(['aléatoire', 'random', 'zufällig', 'aleatorio']), o.type)}${fam.map(x => opt(x.id, `${x.id} — ${x.label}`, o.type)).join('')}</select></label>
         <label>${esc(t(['Sous-type', 'Subtype', 'Untertyp', 'Subtipo']))}<select data-o="subtype" ${f ? '' : 'disabled'}>${opt('libre', t(['libre', 'free', 'frei', 'libre']), o.subtype)}${(f?.subtypes || []).map(x => opt(x, x, o.subtype)).join('')}</select></label>
         <label>${esc(t(['Théâtre', 'Theatre', 'Schauplatz', 'Teatro']))}<select data-o="theatre">${THEATRE_LIST.map(x => opt(x, x, o.theatre)).join('')}</select></label>
-        <label title="${esc(t(['Facultatif : second théâtre relié par la mission (acheminement, relève, évacuation…)', 'Optional: second theatre linked by the mission (transit, relief, evacuation…)']))}">${esc(t(['Second théâtre', 'Second theatre', 'Zweiter Schauplatz', 'Segundo teatro']))}<select data-o="theatre2">${opt('', '—', o.theatre2)}${THEATRE_LIST.slice(1).map(x => opt(x, x, o.theatre2)).join('')}</select></label>
-        ${[o.theatre, o.theatre2].includes('étranger') ? `<label title="${esc(t(['Pays du théâtre étranger (ex. Japon, Indonésie, Djibouti) ; vide = au choix du générateur', 'Country of the foreign theatre (e.g. Japan, Indonesia, Djibouti); empty = generator’s choice']))}">${esc(t(['Pays', 'Country', 'Land', 'País']))}<input data-o="country" value="${esc(o.country || '')}" placeholder="${esc(t(['au choix', 'any', 'beliebig', 'cualquiera']))}"></label>` : ''}
-        <label>${esc(t(['Série', 'Series', 'Serie', 'Serie']))}<input type="number" min="1" data-o="serie" placeholder="auto" value="${esc(o.serie || '')}" title="${esc(t(['Série dans la famille ; vide = la suivante d’après le registre des missions', 'Series within the family; empty = the next one from the mission registry']))}"></label>
-        <label>${esc(t(['Identifiant', 'Identifier', 'Kennung', 'Identificador']))}<input readonly value="${esc(idText)}" title="${esc(t(['Lettre de la famille + numéro suivant de la famille (registre) ; type aléatoire : selon la famille choisie par le générateur', 'Family letter + next family number (registry); random type: per the family picked by the generator']))}"></label>
+        ${o.theatre === 'étranger' ? country : ''}
         <label title="${esc(t(['Aéronefs en vol ; les équipes au sol (VSAV, CROSS, commandement…) se règlent à part', 'Aircraft in flight; ground teams (ambulance, CROSS, command…) are set separately']))}">${esc(t(['Équipes en vol', 'Flying teams', 'Besatzungen im Flug', 'Equipos en vuelo']))}<input type="number" min="1" max="5" data-o="teams" value="${esc(o.teams)}"></label>
-        <label>${esc(t(['Rendez-vous', 'Rendezvous', 'Treffpunkt', 'Encuentro']))}<select data-o="rdv">${opt('libre', t(['libre', 'free', 'frei', 'libre']), o.rdv)}${opt('avec', t(['avec', 'with', 'mit', 'con']), o.rdv)}${opt('sans', t(['sans', 'without', 'ohne', 'sin']), o.rdv)}</select></label>
         <label>${esc(t(['Équipes au sol', 'Ground teams', 'Bodenteams', 'Equipos en tierra']))}<select data-o="ground">${opt('libre', t(['libre', 'free', 'frei', 'libre']), o.ground)}${[0, 1, 2, 3].map(n => opt(n, n, o.ground)).join('')}</select></label>
         <label title="${esc(t(['Durée de l’opération, du premier décollage au dernier atterrissage des équipes : repère pour le générateur, pas une borne stricte', 'Operation duration, first take-off to last landing of the teams: a guide for the generator, not a strict limit']))}">${esc(t(['Durée', 'Duration', 'Dauer', 'Duración']))}<select data-o="duration">${opt('libre', t(['libre', 'free', 'frei', 'libre']), o.duration)}${DURATIONS.map(([k, l]) => opt(k, `${k} — ${l}`, o.duration)).join('')}</select></label>
+      </div>
+      <details class="mo-more" data-mo="more" ${more ? 'open' : ''}><summary>${esc(t(['Plus d’options', 'More options', 'Weitere Optionen', 'Más opciones']))}</summary>
+      <div class="mo-grid">
+        <label title="${esc(t(['Facultatif : second théâtre relié par la mission (acheminement, relève, évacuation…)', 'Optional: second theatre linked by the mission (transit, relief, evacuation…)']))}">${esc(t(['Second théâtre', 'Second theatre', 'Zweiter Schauplatz', 'Segundo teatro']))}<select data-o="theatre2">${opt('', '—', o.theatre2)}${THEATRE_LIST.slice(1).map(x => opt(x, x, o.theatre2)).join('')}</select></label>
+        ${o.theatre !== 'étranger' && o.theatre2 === 'étranger' ? country : ''}
+        <label>${esc(t(['Série', 'Series', 'Serie', 'Serie']))}<input type="number" min="1" data-o="serie" placeholder="auto" value="${esc(o.serie || '')}" title="${esc(t(['Série dans la famille ; vide = la suivante d’après le registre des missions', 'Series within the family; empty = the next one from the mission registry']))}"></label>
+        <label>${esc(t(['Identifiant', 'Identifier', 'Kennung', 'Identificador']))}<input readonly value="${esc(idText)}" title="${esc(t(['Lettre de la famille + numéro suivant de la famille (registre) ; type aléatoire : selon la famille choisie par le générateur', 'Family letter + next family number (registry); random type: per the family picked by the generator']))}"></label>
+        <label>${esc(t(['Rendez-vous', 'Rendezvous', 'Treffpunkt', 'Encuentro']))}<select data-o="rdv">${opt('libre', t(['libre', 'free', 'frei', 'libre']), o.rdv)}${opt('avec', t(['avec', 'with', 'mit', 'con']), o.rdv)}${opt('sans', t(['sans', 'without', 'ohne', 'sin']), o.rdv)}</select></label>
         <label title="${esc(t(['Langues du brief traduit dans le YAML (bloc i18n), en plus du français : les pilotes le lisent dans leur langue', 'Languages of the translated brief in the YAML (i18n block), besides French: pilots read it in their language', 'Sprachen des übersetzten Briefings im YAML (i18n-Block), zusätzlich zum Französischen: Piloten lesen es in ihrer Sprache', 'Idiomas del brief traducido en el YAML (bloque i18n), además del francés: los pilotos lo leen en su idioma']))}">${esc(t(['Traductions', 'Translations', 'Übersetzungen', 'Traducciones']))}<select data-o="translations">${opt('en', 'en', o.translations)}${opt('en, de, es', 'en, de, es', o.translations)}${opt('aucune', t(['aucune', 'none', 'keine', 'ninguna']), o.translations)}</select></label>
         <label>${esc(t(['Ravitaillement en vol', 'Air refuelling', 'Luftbetankung', 'Reabastecimiento en vuelo']))}<select data-o="aar">${opt('libre', t(['libre', 'free', 'frei', 'libre']), o.aar)}${opt('oui', t(['oui', 'yes', 'ja', 'sí']), o.aar)}${opt('non', t(['non', 'no', 'nein', 'no']), o.aar)}</select></label>
       </div>
       <p><b>${esc(t(['Aéronef de chaque équipe en vol', 'Aircraft of each flying team', 'Luftfahrzeug jeder Besatzung', 'Aeronave de cada equipo']))}</b></p>
       <p class="mo-small">${esc(t(['Laisser vide = automatique (le générateur choisit un appareil adapté à la mission). Saisir ou choisir dans la liste : types courants et appareils de la flotte avec leur indicatif ; un même type peut servir à plusieurs équipes (indicatifs différents).', 'Empty = automatic (the generator picks a suitable aircraft). Type or pick from the list: common types and fleet aircraft with their callsign; the same type may serve several teams (different callsigns).']))}</p>
       <div class="mo-teams">${teamSlots(o).map((v, i) => `<label class="mo-team"><span>${esc(t(['Équipe', 'Team', 'Team', 'Equipo']))} ${String.fromCharCode(65 + i)}</span><input data-slot="${i}" list="moTeamList" value="${esc(v)}" placeholder="${esc(t(['automatique', 'automatic', 'automatisch', 'automático']))}"></label>`).join('')}</div>
+      </details>
       <datalist id="moTeamList">${teamChoices().map(x => `<option value="${esc(x)}">`).join('')}</datalist>
       <p class="mo-row"><button type="button" class="primary" data-mo="send" data-icon="sparkles">${esc(t(['Commander : copier le prompt et ouvrir ChatGPT', 'Order: copy prompt and open ChatGPT', 'Bestellen: Prompt kopieren und ChatGPT öffnen', 'Encargar: copiar el prompt y abrir ChatGPT']))}</button></p>
       <div class="mo-small" data-mo="msg"></div>
       <p class="mo-small">${esc(hint || t(['La mission apparaît dans le registre avec le statut « commandée » ; enregistrer ensuite mission<ID>.yaml et summary<ID>.md dans le dossier Missions puis « Relire le dossier » (registre) : la commande est rapprochée de la mission générée (même série).', 'The mission appears in the registry as “ordered”; then save mission<ID>.yaml and summary<ID>.md into the Missions folder and “Re-read folder” (registry): the order is matched with the generated mission (same series).']))}</p>`;
       if (lastMsg) host.querySelector('[data-mo="msg"]').append(...lastMsg.map(n => n.cloneNode(true)));
+      host.querySelector('[data-mo="more"]').addEventListener('toggle', e => {
+        moreOpen = e.target.open;
+      });
       host.querySelectorAll('[data-o]').forEach(el => el.addEventListener('change', () => {
         o[el.dataset.o] = el.value;
         if (el.dataset.o === 'type') o.subtype = 'libre';

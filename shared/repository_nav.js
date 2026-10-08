@@ -716,7 +716,7 @@
     if (window.RepositoryAppearance) show();
     else {
       const sc = document.createElement("script");
-      sc.src = new URL("appearance_page.js?v=c4fe4fed", script.src).href;
+      sc.src = new URL("appearance_page.js?v=a9050e2b", script.src).href;
       sc.onload = show;
       document.head.append(sc);
     }
