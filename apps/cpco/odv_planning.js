@@ -15,16 +15,6 @@
   /** Notification flottante (AppFramework.notify), console à défaut. */
   const notify = (msg, kind) => window.AppFramework?.notify ? window.AppFramework.notify(msg, kind) : console.warn(msg);
   const SHORT = ['M', 'A', 'S'];
-  // ?blocks=grid,slots,missions : seuls ces blocs (page montrée dans le bloc Expert du Planning) ; règle CSS posée ici,
-  // avant le rendu des blocs, pour qu'aucun autre bloc ne paraisse
-  {
-    const only = (new URLSearchParams(location.search).get('blocks') || '').split(',').filter(x => /^[a-z]+$/.test(x));
-    if (only.length) {
-      const st = document.createElement('style');
-      st.textContent = `[data-block-id]${only.map(b => `:not([data-block-id="${b}"])`).join('')}{display:none!important}`;
-      document.head.append(st);
-    }
-  }
 
   // ------------------------------------------------------------------ réglages (seules données mémorisées)
 
@@ -620,10 +610,11 @@
   // ------------------------------------------------------------------ rendu
   function render() {
     const has = !!data;
+    // page hôte (Planning) : seuls les blocs créneaux et missions probables y sont ; les autres sont ignorés
     ['odvClear', 'odvCsv', 'odvJson', 'odvRecap', 'odvTxt'].forEach(id => {
-      $(id).disabled = !has;
+      if ($(id)) $(id).disabled = !has;
     });
-    $('odvCopy').disabled = !has || !$('odvRecapText').value;
+    if ($('odvCopy')) $('odvCopy').disabled = !has || !$('odvRecapText')?.value;
     renderReport();
     renderWeekNav();
     renderGrid();
@@ -855,6 +846,7 @@
    *  de lecture ; vide sans classeur. */
   function renderReport() {
     const host = $('odvReport');
+    if (!host) return;
     if (!data) {
       host.innerHTML = '';
       return;
@@ -1050,6 +1042,7 @@
   /** Grille dense de la semaine : légende, une ligne par pilote filtré (code du classeur, puis déclaration et
    *  affectation par créneau), missions affectées de la semaine, planning heure par heure, journal des affectations. */
   function renderGrid() {
+    if (!$('odvGrid')) return; // bloc absent (Planning)
     renderGridFilters();
     const data = gridData(); // classeur lu, sinon semaine sans classeur (ligne du classeur vide)
     // légende : codes de la légende et nombre de cases
@@ -1147,6 +1140,7 @@
   /** Carte de chaleur des 21 créneaux (pilotes libres, contrôleurs, affectations ✎, événements ★) ; clic : fenêtre
    *  d'affectation du créneau (pickMission). */
   function renderSlots() {
+    if (!$('odvHeat')) return;
     renderSlotFilters();
     const data = basis;
     if (!data) {
@@ -2095,6 +2089,7 @@
    *  (créneaux d'au moins minPilots pilotes avant affectations), résumé déplié sous chaque ligne. */
   function renderMissions() {
     const rules = $('odvRules');
+    if (!rules || !$('odvMissions')) return;
     rules.innerHTML = `<summary>${L(['Règles des familles et du score', 'Family and score rules', 'Regeln der Familien und der Punktzahl', 'Reglas de las familias y de la puntuación'])}</summary><ul>${Object.entries(C.FAMILIES).map(([f, d]) => `<li><span class="odv-fam">${esc(f)}</span> ${esc(C.familyRule(f) ?? d.rule)}</li>`).join('')}</ul>
       <p class="mut">${L(['Rôles d\'un pilote : le code impose le rôle (SC → sécu civile + hélico / avion sécu d\'après FLOTTE, C → chasse, T → transport + ravitailleur / largage, N → FNY / maritime, S → exercice + rôles FLOTTE) ; O → tous les rôles que FLOTTE lui attribue. Score = participants + 2 par pilote à code restreint employé dans son domaine (SC : SAR, FIRE, HEMS ; N : MARITIME ; C : AAR, ISR, SPECIAL ; T : AIRLIFT, AIRBORNE, AAR) + 1 par contrôleur en ligne (2 au plus) pour TRAINING. Famille déjà jouée : − {wc} × log2(1 + nombre de CR) (1 CR : − 0,5 ; 7 CR : − 1,5), pour varier. À score égal : ordre de préférence des réglages ({p}). Les rôles FLOTTE restent indicatifs : le planificateur valide.', 'Pilot roles: the code sets the role (SC → civil security + helicopter / civil security aircraft according to FLOTTE, C → fighter, T → transport + tanker / airdrop, N → FNY / maritime, S → exercise + FLOTTE roles); O → all the roles FLOTTE gives the pilot. Score = participants + 2 per restricted-code pilot used in their domain (SC: SAR, FIRE, HEMS; N: MARITIME; C: AAR, ISR, SPECIAL; T: AIRLIFT, AIRBORNE, AAR) + 1 per online controller (2 at most) for TRAINING. Family already flown: − {wp} × log2(1 + number of CRs) (1 CR: − 0.5; 7 CRs: − 1.5), for variety. On equal score: preference order from the settings ({p}). FLOTTE roles are only indicative: the planner validates.', 'Rollen eines Piloten: Der Code legt die Rolle fest (SC → Zivilschutz + Hubschrauber / Zivilschutzflugzeug laut FLOTTE, C → Jagd, T → Transport + Tanker / Absetzen, N → FNY / maritim, S → Übung + FLOTTE-Rollen); O → alle Rollen, die FLOTTE ihm zuweist. Punktzahl = Teilnehmer + 2 je Pilot mit eingeschränktem Code, der in seinem Bereich eingesetzt wird (SC: SAR, FIRE, HEMS; N: MARITIME; C: AAR, ISR, SPECIAL; T: AIRLIFT, AIRBORNE, AAR) + 1 je Lotse online (höchstens 2) für TRAINING. Bereits geflogene Familie: − {wc} × log2(1 + Anzahl der CR) (1 CR: − 0,5; 7 CR: − 1,5), zur Abwechslung. Bei gleicher Punktzahl: Rangfolge aus den Einstellungen ({p}). Die FLOTTE-Rollen sind nur Richtwerte: der Planer entscheidet.', 'Roles de un piloto: el código impone el rol (SC → seguridad civil + helicóptero / avión de seguridad civil según FLOTTE, C → caza, T → transporte + cisterna / lanzamiento, N → FNY / marítimo, S → ejercicio + roles FLOTTE); O → todos los roles que FLOTTE le atribuye. Puntuación = participantes + 2 por piloto de código restringido empleado en su ámbito (SC: SAR, FIRE, HEMS; N: MARITIME; C: AAR, ISR, SPECIAL; T: AIRLIFT, AIRBORNE, AAR) + 1 por controlador en línea (2 como máximo) para TRAINING. Familia ya volada: − {wc} × log2(1 + número de CR) (1 CR: − 0,5; 7 CR: − 1,5), para variar. A igual puntuación: orden de preferencia de los ajustes ({p}). Los roles FLOTTE son solo orientativos: el planificador valida.'], { wc: esc(String(settings.playWeight ?? 0.5).replace('.', ',')), wp: esc(String(settings.playWeight ?? 0.5)), p: esc(settings.preference.join(', ')) })}</p>`;
     if (!basis) {
@@ -2328,6 +2323,7 @@
 
   /** Branche les exports : CSV de la grille, JSON, récapitulatif texte (affiché, téléchargé ou copié). */
   function bindExports() {
+    if (!$('odvCsv')) return; // bloc Export absent (Planning)
     $('odvCsv').onclick = () => data && download(`${baseName()}_grille.csv`, C.toCsv(data), 'text/csv;charset=utf-8');
     $('odvJson').onclick = () => data && exportJson();
     $('odvRecap').onclick = () => {
@@ -2356,6 +2352,7 @@
   }
 
   // ------------------------------------------------------------------ démarrage
+  let started = false; // démarré (page ODV, ou Planning au niveau Expert) : sinon rien n'est calculé
   function start() {
     if (!C || !window.SortedTable) {
       notify(L(['Planning ODV : composants manquants (odv_core.js, mission_table.js).',
@@ -2365,6 +2362,9 @@
       ]), 'err');
       return;
     }
+    // dans le Planning (pas de grille : page hôte) : seulement au niveau Expert, et la semaine suit celle du Planning
+    if (!$('odvGrid') && (window.RepositoryNav?.levels?.get?.() || 4) < 4) return;
+    started = true;
     bindExports();
     window.OdvAssign?.load(emptyWeek(), settings).then(() => loadAtc()).then(refreshNoBook).catch(
       () => {}); // sans classeur : déclarations
@@ -2374,13 +2374,13 @@
         render();
       }
     });
-    $('odvFile').addEventListener('change', e => {
+    $('odvFile')?.addEventListener('change', e => {
       const f = e.target.files?.[0];
       if (f) loadFile(f, {
         jump: true
       }); // choisi à la main : sa semaine affichée
     });
-    $('odvClear').onclick = clearAll;
+    if ($('odvClear')) $('odvClear').onclick = clearAll;
     // langue changée : zones calculées redessinées dans la nouvelle langue (classeur gardé en mémoire, non relu) ;
     // tableaux recréés (libellés des colonnes posés à leur création)
     window.addEventListener('repository-language-change', () => setTimeout(() => {
@@ -2435,6 +2435,15 @@
       return flights;
     },
     /** Réglages courants. */
-    settings: () => settings
+    settings: () => settings,
+    /** Semaine imposée par la page hôte (Planning) : lundi « AAAA-MM-JJ » ; créneaux et missions recalculés. */
+    setMonday(iso) {
+      if (!started) return;
+      const ms = Date.parse(`${iso}T00:00:00Z`);
+      if (!Number.isFinite(ms) || ms === weekMon) return;
+      weekMon = ms;
+      selected = null;
+      return showWeek();
+    }
   };
 })();

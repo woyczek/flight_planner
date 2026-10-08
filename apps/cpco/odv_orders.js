@@ -261,6 +261,7 @@
     loadSun();
     requestsSoon();
     autoImportAtc();
+    syncOdvWeek(); // créneaux communs et missions probables de la même semaine (niveau Expert)
   }
   /** Indicatif des vols de mission tenu à jour : celui que la mission donne à sa patrouille (registre), s'il a changé. */
   function syncCallsigns() {
@@ -947,36 +948,30 @@
     if (S.view === 'jour') renderDay();
   }
 
-  // ---- bloc Expert (niveau 4, page modifiable) : créneaux communs (plusieurs pilotes disponibles) et missions probables de la page ODV dans un
-  // cadre « repo-embed » (sans en-tête) ; chargé une fois, hauteur ajustée à son contenu
-  let expertObs = null;
-  /** Montre ou masque le bloc Expert ; charge la page ODV réduite à ses blocs à la première ouverture. */
-  function renderExpert() {
-    const sec = $('#odvoExpert'),
-      fr = sec?.querySelector('iframe');
-    if (!sec || !fr) return;
-    const on = S.editable && (window.RepositoryNav?.levels?.get?.() || 1) >= 4;
-    if (sec.style.display !== (on ? '' : 'none')) sec.style.display = on ? '' : 'none';
-    const link = sec.querySelector('[data-odv-link]'),
-      lt = t(L4('Page ODV complète : classeur, grille, export…', 'Full ODV page: workbook, grid, export…',
-        'Vollständige ODV-Seite: Arbeitsmappe, Raster, Export…', 'Página ODV completa: libro, cuadrícula, exportación…'));
-    if (link && link.textContent !== lt) link.textContent = lt;
-    if (!on || fr.src) return;
-    fr.addEventListener('load', () => {
-      const d = fr.contentDocument;
-      if (!d?.body) return;
-      expertObs?.disconnect();
-      // observateur du cadre lui-même (son contenu y vit) : hauteur du cadre = hauteur de sa page, posée si elle change
-      const fit = () => {
-        const h = `${d.documentElement.scrollHeight}px`;
-        if (fr.style.height !== h) fr.style.height = h;
-      };
-      expertObs = new d.defaultView.ResizeObserver(fit);
-      expertObs.observe(d.body);
-      fit(); // tout de suite aussi : l'observateur n'est appelé qu'au prochain rendu de la page
-    });
-    fr.src = 'odv_planning.html?blocks=slots,missions';
+  // ---- titres des blocs (posés à la source, dans la langue de la page ; écrits seulement s'ils changent)
+  const BLOCK_TITLES = {
+    '#odvoCrewSection > h2': L4('Équipage de la semaine', 'Crew of the week', 'Besatzung der Woche', 'Tripulación de la semana'),
+    '#odvoZonesSection > h2': L4('Zones', 'Areas', 'Gebiete', 'Zonas'),
+    '#odvoZonesSection [data-title="requests"]': L4('Demandes de réservation', 'Reservation requests', 'Reservierungsanträge',
+      'Solicitudes de reserva'),
+    '#odvoSlotsSection > h2': L4('Créneaux communs', 'Common slots', 'Gemeinsame Zeitfenster', 'Franjas comunes'),
+    '#odvoMissionsSection > h2': L4('Missions probables', 'Likely missions', 'Wahrscheinliche Missionen', 'Misiones probables'),
+    '#odvoStatsSection > h2': L4('Statistiques', 'Statistics', 'Statistik', 'Estadísticas'),
+    '[data-odv-link]': L4('Page ODV complète : classeur, grille, export…', 'Full ODV page: workbook, grid, export…',
+      'Vollständige ODV-Seite: Arbeitsmappe, Raster, Export…', 'Página ODV completa: libro, cuadrícula, exportación…')
+  };
+  /** Titres des blocs dans la langue courante. */
+  function blockTitles() {
+    for (const [sel, row] of Object.entries(BLOCK_TITLES)) {
+      const el = document.querySelector(sel),
+        v = t(row);
+      if (el && el.textContent !== v) el.textContent = v;
+    }
   }
+  blockTitles(); // avant que le framework ne construise les cartes (il lit les titres)
+  window.addEventListener('repository-language-change', blockTitles);
+  /** Créneaux communs et missions probables (odv_planning.js, niveau Expert) : semaine du Planning. */
+  const syncOdvWeek = () => window.OdvPlanning?.setMonday?.(dates()[0])?.catch?.(() => {});
 
   // ---- rendu
   function render() {
@@ -984,15 +979,13 @@
     document.documentElement.classList.toggle('odvo-ro', !S.editable);
     // lecture seule (pilote, Centre fermé ou compte sans droits) : le planning seul, vue du jour ; la semaine (dispos
     // et DLO des membres) et les statistiques restent au Centre
-    if (!S.editable) S.view = 'jour';
-    renderExpert();
+    S.view = 'jour'; // une seule vue : la semaine des membres et les statistiques sont des blocs de la page
     renderBar();
-    $('#odvoDay').hidden = S.view !== 'jour';
-    $('#odvoWeekView').hidden = S.view !== 'semaine';
-    $('#odvoStats').hidden = S.view !== 'stats';
-    if (S.view === 'jour') renderDay();
-    if (S.view === 'semaine') renderWeekView();
-    if (S.view === 'stats') renderStats();
+    renderDay();
+    if (S.editable) {
+      renderWeekView();
+      renderStats();
+    }
   }
   /** Nombre d'éléments du jour en conflit (dispos ou zones) : pastille du bouton du jour. */
   function confCount(date) {
@@ -1014,12 +1007,6 @@
         <span class="mut">${esc(fmt(ds[0] || ''))} – ${esc(fmt(ds[ds.length - 1] || ''))}</span>
         <button type="button" data-act="next" title="${esc(t(L4('Semaine suivante', 'Next week', 'Nächste Woche', 'Semana siguiente')))}">▶</button>
         <button type="button" data-act="today">${esc(t(L4('Cette semaine', 'This week', 'Diese Woche', 'Esta semana')))}</button>
-        <span class="odvo-sep"></span>
-        ${['jour', 'semaine', 'stats'].map(v => `<button type="button" data-view="${v}" class="${S.view === v ? 'on' : ''}">${esc(t({
-          jour: L4('Jour', 'Day', 'Tag', 'Día'),
-          semaine: L4('Semaine', 'Week', 'Woche', 'Semana'),
-          stats: L4('Statistiques', 'Statistics', 'Statistik', 'Estadísticas')
-        }[v]))}</button>`).join('')}
         <span class="odvo-sep"></span>
         <label>${esc(t(L4('Permanence', 'Duty officer', 'Dienst', 'Guardia')))} <select data-act="perm"${S.editable ? '' : ' disabled'}><option value="">—</option>${S.members.map(m => `<option${m.tri === perm ? ' selected' : ''}>${esc(m.tri)}</option>`).join('')}</select></label>
         <button type="button" data-act="brief" title="${esc(t(L4('Plein écran (F), jours : ← →', 'Full screen (F), days: ← →', 'Vollbild (F), Tage: ← →', 'Pantalla completa (F), días: ← →')))}">${esc(t(L4('Briefing', 'Briefing', 'Briefing', 'Briefing')))}</button>

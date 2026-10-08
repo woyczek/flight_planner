@@ -3,8 +3,9 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Tableau</title>
-<link rel="stylesheet" href="../../shared/repository_nav.css?v=77f1206c">
+<link rel="stylesheet" href="../../shared/repository_nav.css?v=c20491fc">
 <script src="../../config/repository_tree?v=536db72a"></script>
+<link rel="stylesheet" href="odv_blocks.css">
 <style data-layer="app">
 @layer app {
   /* Tableau : frise horaire (heures z) ; angles droits partout (frise, plaquettes, barres). */
@@ -127,20 +128,15 @@
   .odvo-ro .odvo-sec-ensemble,
   .odvo-ro #odvoProblems,
   .odvo-ro #odvoLog,
-  .odvo-ro [data-view],
+  .odvo-ro [data-block-id="equipe"],
   .odvo-ro [data-block-id="zones"],
-  .odvo-ro [data-block-id="demandes"] {
+  .odvo-ro [data-block-id="slots"],
+  .odvo-ro [data-block-id="missions"],
+  .odvo-ro [data-block-id="stats"] {
     display: none !important
   }
   .odvo-ro .odvo-day {
     grid-template-columns: minmax(0, 1fr)
-  }
-  /* bloc Expert : page ODV réduite à ses blocs, sans bordure, hauteur posée par odv_orders.js */
-  .odvo-expert {
-    width: 100%;
-    min-height: 240px;
-    border: 0;
-    display: block
   }
   .odvo-hideunav {
     display: block;
@@ -853,26 +849,37 @@
       </div>
     </div>
   </div>
-  <div id="odvoWeekView" data-no-i18n hidden></div>
-  <div id="odvoStats" data-no-i18n hidden></div>
 </section>
-<!-- niveau Expert : blocs « Créneaux communs » et « Missions probables » de la page ODV, à plat (le cadre montre ses
-     propres cartes, sans en-tête, barre ni onglets) ; page ODV complète (classeur, export) par le lien -->
-<div id="odvoExpert" class="odvo-expert-host" style="display:none">
-  <iframe name="repo-embed" class="odvo-expert" title="Planning ODV" loading="lazy"></iframe>
-  <p class="mut"><a href="odv_planning.html" data-odv-link></a></p>
-</div>
-<section data-block-id="zones" data-icon="map" data-subtitle="Activations des zones par réseau (VATSIM, IVAO), saisies à la main : une zone requise par un vol sans activation « active » de son réseau sur toute sa durée est en conflit.">
-  <h2>Activations des zones</h2>
+<!-- blocs suivants : titres posés à la source par odv_orders.js (4 langues) ; niveaux : data-min-level ; lecture seule
+     (pilote, Centre fermé, compte sans droits) : l'ordre du jour seul -->
+<section id="odvoCrewSection" data-block-id="equipe" data-icon="users" data-min-level="2">
+  <h2 data-no-i18n></h2>
+  <div id="odvoWeekView" data-no-i18n></div>
+</section>
+<section id="odvoZonesSection" data-block-id="zones" data-icon="map" data-min-level="2">
+  <h2 data-no-i18n></h2>
   <div id="odvoActivations"></div>
-</section>
-<section data-block-id="demandes" data-icon="send" data-subtitle="Zones que traversent les vols de mission de la semaine (route prévue, zones de travail) sans activation « active » de leur réseau : à demander sur le site du réseau, puis à inscrire comme demandées.">
-  <h2>Demandes de réservation</h2>
+  <h3 data-no-i18n data-title="requests"></h3>
   <div id="odvoRequests" data-no-i18n></div>
+</section>
+<section id="odvoSlotsSection" data-block-id="slots" data-icon="users" data-min-level="4" class="odv-page">
+  <h2 data-no-i18n></h2>
+  <div class="odv-filters" id="odvSlotFilters" data-no-i18n></div>
+  <div id="odvHeat" data-no-i18n></div>
+</section>
+<section id="odvoMissionsSection" data-block-id="missions" data-icon="target" data-min-level="4" class="odv-page">
+  <h2 data-no-i18n></h2>
+  <div id="odvMissions" data-no-i18n></div>
+  <details class="odv-rules" id="odvRules" data-no-i18n></details>
+  <p class="mut"><a href="odv_planning.html" data-odv-link data-no-i18n></a></p>
+</section>
+<section id="odvoStatsSection" data-block-id="stats" data-icon="chart" data-min-level="2">
+  <h2 data-no-i18n></h2>
+  <div id="odvoStats" data-no-i18n></div>
 </section>
 </main>
 <script src="../../shared/kit.js?v=d74cff80"></script>
-<script src="../../shared/repository_nav.js?v=0b802879"></script>
+<script src="../../shared/repository_nav.js?v=d0e3af67"></script>
 <script src="../../shared/mission_core/vendor/js-yaml.min.js?v=64052ae4"></script>
 <script src="../../shared/data_files.js?v=dcb47c6a" data-file="references/callsigns.js"></script>
 <script src="../../shared/data_files.js?v=dcb47c6a" data-file="references/defa_reference.js"></script>
@@ -888,7 +895,14 @@
 <script src="../../shared/odv_activations_editor.js?v=9e62217d"></script>
 <script src="../../shared/odv_reports.js?v=d66272b9"></script>
 <script src="../../shared/odv_orders_store.js?v=078bd145"></script>
-<script src="odv_orders.js?v=f1ea2c19"></script>
+<script src="../../shared/zip_store.js?v=1b42107f"></script>
+<script src="../../shared/mission_table.js?v=10fb25b7"></script>
+<script src="../../AircraftDB/aircraft_db.js"></script><script src="../../AircraftDB/aircraft_perf.js"></script>
+<script src="../../shared/dispos_editor.js?v=9e198a77"></script>
+<script src="../../shared/atc_sessions.js?v=53bdcc60"></script>
+<script src="odv_assign.js?v=4905a185"></script>
+<script src="odv_orders.js?v=c830031d"></script>
+<script src="odv_planning.js?v=0327714a"></script>
 <script src="../../shared/app_framework.js?v=90445249"></script>
 <script src="../../shared/content_i18n.js?v=515ea16b"></script>
 <script>

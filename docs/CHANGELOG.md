@@ -47,6 +47,11 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   « Nettoyer et recommencer »), Apparence réduite aux designs courants et aux icônes ; **Générateur et Registre**
   (niveau 3) : sept blocs, commande à six réglages et « Plus d'options », quatre filtres et « Plus de filtres », sept
   colonnes.
+- **v2, Planning refait** : six blocs natifs, déplaçables et repliables, sans cadre : Ordre du jour (barre de la semaine
+  et frise, tous niveaux), Équipage de la semaine (dispos et DLO, ancienne vue « Semaine »), Zones (activations et demandes
+  réunies), Statistiques (ancienne vue) au niveau 2 ; Créneaux communs et Missions probables au niveau Expert, servis par
+  le script de la page ODV dans la page (même semaine que le Planning, `OdvPlanning.setMonday`) ; styles des blocs ODV
+  partagés (`apps/cpco/odv_blocks.css`) ; plus de choix de vue ; lien vers la page ODV complète (classeur, export).
 - **Pages de démonstration du moteur des CR hors des comptes rendus** : `apps/cr/MissionCore/` → `tools/demo/mission_core/`
   (outils de développement, niveau Expert) ; plus rien dans le dossier des CR qui ne soit une famille.
 - **Clés de poste et signatures** (`shared/sog_keys.js`, lot L2 de [COMPTES_SIGNES.md](technique/COMPTES_SIGNES.md)) : par
