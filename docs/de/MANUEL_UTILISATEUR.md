@@ -26,8 +26,8 @@ Was sie zeigt, hängt von Ihrer **Nutzungsstufe** ab (Mein Profil › „Nutzung
 | „Meine Missionen“ | Vom Zentrum zugewiesene Missionen und Verfügbarkeit (roter Punkt: ungelesene Missionen) | 1 |
 | „Bericht“ | Eingabe eines Missionsberichts | 1 |
 | „Planung“ | Befehlsplanung der Woche (Einsatztafel, ohne Zentrum schreibgeschützt); ODV-Planung als Registerkarte ab Stufe 2 | 1 |
-| „Missionen“ | Missionsgenerator und Register, als Registerkarten | 3 |
-| „Werkzeuge“ | Flugkarten, Kraftstoff, Landungen, Missionsanalyse (in Mein Profil angehakte Werkzeuge, auf Stufe 4 alle); Kartenstudio auf Stufe 4 | 1 bis 4 |
+| „Missionen“ | Missionsgenerator und Register, als Registerkarten; Kartenstudio auf Stufe 4 | 3 |
+| „Werkzeuge“ | Flugkarten, Kraftstoff, Landungen, Missionsanalyse (in Mein Profil angehakte Werkzeuge, auf Stufe 4 alle) | 1 bis 4 |
 
 - Die Stufe ordnet die Oberfläche, sie gewährt keine Rechte: die Seiten des Zentrums (Missionen, ODV-Planung, Ändern der Einsatztafel) erfordern weiterhin das aktivierte Zentrum.
 - Unten in der Spalte: „Einstellungen“ (Mein Profil, Darstellung, Zentrum, Installation, Wartung, Erststart, als Registerkarten) und **„Hilfe“**. Diese beiden Einträge bleiben unten am Bildschirm fixiert: nur die obere Liste rollt, wenn es zu viele Symbole gibt (Fenster unter 460 px Höhe: die ganze Leiste rollt).

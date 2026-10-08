@@ -43,7 +43,7 @@ supérieur au rôle autorisé reste proposé en lecture seule (comme le Tableau 
 | Compte rendu | Compte rendu | Compte rendu | Compte rendu |
 | Planning (lecture) | **Planifier** (Tableau, ODV) | Planifier | Planifier |
 | — | — | **Missions** (générateur, registre) | Missions |
-| — | — | — | **Atelier** (studio, cartes, analyses) |
+| — | — | — | Missions + **studio cartographique** |
 | Réglages · Aide | Réglages · Aide | Réglages · Aide | Réglages · Aide |
 
 Réglages et Aide forment le groupe du bas (2 éléments). Les modules facultatifs cochés s'ajoutent sous un
@@ -60,8 +60,8 @@ seul élément « Outils » pour ne jamais dépasser 7. Apparence passe dans Ré
 - **Planning / Planifier** : niveau 1 = frise de la semaine en lecture seule, ses vols mis en évidence ; niveau 2 =
   le Tableau actuel, épuré (palette repliée, ≤ 7 commandes visibles), l'ODV en onglet.
 - **Missions** (niveau 3) : générateur en assistant pas à pas (≤ 7 étapes), registre en onglet.
-- **Atelier** (niveau 4) : studio cartographique, cartes de vol avancées (profils), carburant, atterrissages,
-  reporting — tels qu'aujourd'hui, regroupés.
+- **Outils** : cartes de vol, carburant, atterrissages, analyse des missions — facultatifs, tous au niveau 4 ; rien du
+  Centre. Le **studio cartographique** (cartes avancées, profils) est un onglet de Missions, au niveau 4.
 - **Réglages** : profil, niveau et modules, apparence, Centre, installation, maintenance ; chaque page ≤ 7 blocs,
   les blocs techniques repliés.
 

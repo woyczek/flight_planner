@@ -26,8 +26,8 @@ Lo que muestra depende de su **nivel de uso** (Mi perfil › «Nivel de uso»): 
 | «Mis misiones» | Misiones asignadas por el Centro y disponibilidad (pastilla roja: misiones no leídas) | 1 |
 | «Informe» | Introducción de un informe de misión | 1 |
 | «Planificación» | Planificación de órdenes de la semana (Tablero, en solo lectura sin el Centro); planificación ODV en pestaña desde el nivel 2 | 1 |
-| «Misiones» | Generador de misiones y registro, en pestañas | 3 |
-| «Herramientas» | Mapas de vuelo, combustible, aterrizajes, análisis de misiones (herramientas marcadas en Mi perfil, todas en el nivel 4); estudio cartográfico en el nivel 4 | 1 a 4 |
+| «Misiones» | Generador de misiones y registro, en pestañas; estudio cartográfico en el nivel 4 | 3 |
+| «Herramientas» | Mapas de vuelo, combustible, aterrizajes, análisis de misiones (herramientas marcadas en Mi perfil, todas en el nivel 4) | 1 a 4 |
 
 - El nivel ordena la interfaz, no da ningún derecho: las páginas del Centro (Misiones, planificación ODV, modificación del Tablero) siguen requiriendo el Centro activado.
 - Al pie de la columna: «Ajustes» (Mi perfil, Apariencia, Centro, Instalación, Mantenimiento, Primer arranque, en pestañas) y **«Ayuda»**. Estas dos entradas quedan fijas al pie de la pantalla: solo la lista de arriba se desplaza cuando hay demasiados iconos (ventana de menos de 460 px de alto: toda la barra se desplaza).

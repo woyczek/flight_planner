@@ -147,6 +147,12 @@
     const d = cfg.pages.find(x => x.path === p);
     return !d || (d.level || 1) <= level() && (!d.module || modules().includes(d.module));
   };
+  /** Utilisateur du Centre : Centre ouvert dans ce navigateur, niveau 2 ou plus, et pas un compte connecté sans le rôle
+   *  admin_centre ; seul lui voit les entrées du Centre avec leur icône propre. */
+  const centreUser = () => {
+    const s = window.SuiteUsers?.session?.();
+    return cpcoOn() && level() >= 2 && !(s?.tri && s.role !== "admin_centre");
+  };
   /** Pages visibles d'un groupe d'onglets (repository_tree.tabs, id). */
   const tabPages = id => ((cfg.tabs || []).find(g => g.id === id)?.pages || []).filter(p => visible(p.path));
   doc.dataset.cpco = cpcoOn() ? "on" : "off";
@@ -1207,7 +1213,7 @@
       if (it.tabs && !it.path) return; // groupe sans page visible à ce niveau
       if (it.path && (!known.has(it.path) || !visible(it.path))) return;
       const a = document.createElement(it.menu ? "button" : "a");
-      a.className = "repo-sidenav-item" + (isCpco(it.path) ? " repo-sidenav-cpco" : "");
+      a.className = "repo-sidenav-item" + (centreUser() && isCpco(it.path) ? " repo-sidenav-cpco" : "");
       if (it.menu) {
         a.type = "button";
         a.onclick = e => {

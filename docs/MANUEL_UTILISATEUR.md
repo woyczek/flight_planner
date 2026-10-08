@@ -26,8 +26,8 @@ Ce qu'elle montre dépend de votre **niveau d'utilisation** (Mon profil › « N
 | « Mes missions » | Missions affectées par le Centre et disponibilités (pastille rouge : missions non lues) | 1 |
 | « Compte rendu » | Saisie d'un compte rendu de mission | 1 |
 | « Planning » | Planning des ordres de la semaine (Tableau, en lecture seule sans le Centre) ; Planning ODV en onglet au niveau 2 | 1 |
-| « Missions » | Générateur de mission et registre, en onglets | 3 |
-| « Outils » | Cartes de vol, carburant, atterrissages, analyse des missions (outils cochés dans Mon profil, tous au niveau 4) ; studio cartographique au niveau 4 | 1 à 4 |
+| « Missions » | Générateur de mission et registre, en onglets ; studio cartographique au niveau 4 | 3 |
+| « Outils » | Cartes de vol, carburant, atterrissages, analyse des missions (outils cochés dans Mon profil, tous au niveau 4) | 1 à 4 |
 
 - Le niveau range l'interface, il ne donne aucun droit : les pages du Centre (Missions, Planning ODV, modification du Tableau) demandent toujours le Centre activé.
 - En bas de la colonne : « Réglages » (Mon profil, Apparence, Centre, Installation, Maintenance, Premier lancement, en onglets) et **« Aide »**. Ces deux entrées restent fixées en bas de l'écran : seule la liste du haut défile quand il y a trop d'icônes (fenêtre de moins de 460 px de haut : toute la barre défile).

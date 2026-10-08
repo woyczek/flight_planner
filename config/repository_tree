@@ -135,8 +135,8 @@ window.REPOSITORY_TREE={
     {icon:"send",path:"apps/pilot/mes_missions.html",match:"apps/pilot/",label:["Mes missions","My missions","Meine Missionen","Mis misiones"],title:["Missions qui vous sont affectées, disponibilités","Missions assigned to you, availability","Ihnen zugewiesene Missionen, Verfügbarkeit","Misiones que le han asignado, disponibilidad"]},
     {icon:"clipboard",path:"apps/cr/mission_cr.html",match:"_cr.html",label:["Compte rendu","Report","Bericht","Informe"],title:["Écrire le compte rendu d’une mission","Write a mission report","Einen Missionsbericht schreiben","Escribir el informe de una misión"]},
     {icon:"calendar",tabs:"planning",label:["Planning","Schedule","Planung","Planificación"],title:["Planning des ordres de la semaine (Tableau) ; ODV au niveau 2","Weekly order schedule (Board); ODV from level 2","Befehlsplanung der Woche (Einsatztafel); ODV ab Stufe 2","Planificación de órdenes de la semana (Tablero); ODV desde el nivel 2"]},
-    {icon:"target",tabs:"missions",label:["Missions","Missions","Missionen","Misiones"],title:["Générer, modifier et registrer les missions (niveau 3)","Generate, edit and register missions (level 3)","Missionen erzeugen, ändern und registrieren (Stufe 3)","Generar, modificar y registrar misiones (nivel 3)"]},
-    {icon:"wrench",tabs:"tools",label:["Outils","Tools","Werkzeuge","Herramientas"],title:["Cartes de vol, carburant, atterrissages, analyse des missions, studio cartographique","Flight maps, fuel, landings, mission analysis, map studio","Flugkarten, Kraftstoff, Landungen, Missionsanalyse, Kartenstudio","Mapas de vuelo, combustible, aterrizajes, análisis de misiones, estudio cartográfico"]},
+    {icon:"target",tabs:"missions",label:["Missions","Missions","Missionen","Misiones"],title:["Générer, modifier et registrer les missions (niveau 3) ; studio cartographique au niveau 4","Generate, edit and register missions (level 3); map studio at level 4","Missionen erzeugen, ändern und registrieren (Stufe 3); Kartenstudio auf Stufe 4","Generar, modificar y registrar misiones (nivel 3); estudio cartográfico en el nivel 4"]},
+    {icon:"wrench",tabs:"tools",label:["Outils","Tools","Werkzeuge","Herramientas"],title:["Cartes de vol, carburant, atterrissages, analyse des missions","Flight maps, fuel, landings, mission analysis","Flugkarten, Kraftstoff, Landungen, Missionsanalyse","Mapas de vuelo, combustible, aterrizajes, análisis de misiones"]},
     {sep:true,bottom:true},
     {icon:"settings",path:"apps/settings/profil.html",match:"apps/settings/",label:["Réglages","Settings","Einstellungen","Ajustes"],title:["Mon profil, niveau d’utilisation, apparence, Centre, installation, maintenance","My profile, usage level, appearance, Centre, installation, maintenance","Mein Profil, Nutzungsstufe, Darstellung, Zentrum, Installation, Wartung","Mi perfil, nivel de uso, apariencia, Centro, instalación, mantenimiento"]},
     {icon:"help",path:"apps/aide/aide.html",label:["Aide","Help","Hilfe","Ayuda"],title:["Aide : manuels et documentation, au chapitre de la page en cours","Help: manuals and documentation, at the chapter of the current page","Hilfe: Handbücher und Dokumentation, beim Kapitel der aktuellen Seite","Ayuda: manuales y documentación, en el capítulo de la página actual"]}
@@ -153,13 +153,13 @@ window.REPOSITORY_TREE={
       {path:"apps/cpco/odv_planning.html",label:["Planning ODV","ODV planning","ODV-Planung","Planificación ODV"]}]},
     {id:"missions",pages:[
       {path:"apps/cpco/mission_editor.html",label:["Générateur","Generator","Generator","Generador"]},
-      {path:"apps/cpco/mission_registry.html",label:["Registre","Registry","Register","Registro"]}]},
+      {path:"apps/cpco/mission_registry.html",label:["Registre","Registry","Register","Registro"]},
+      {path:"apps/cpco/map_parser.html",label:["Studio cartographique","Map studio","Kartenstudio","Estudio cartográfico"]}]},
     {id:"tools",pages:[
       {path:"apps/planner/map_planner.html",label:["Cartes de vol","Flight maps","Flugkarten","Mapas de vuelo"]},
       {path:"apps/planner/flight_performance_planner.html",label:["Carburant","Fuel","Kraftstoff","Combustible"]},
       {path:"apps/landing/LandingPerformance_Dashboard_MultiCSV_i18n.html",label:["Atterrissages","Landings","Landungen","Aterrizajes"]},
-      {path:"apps/cr/mission_operations_reporting.html",label:["Analyse des missions","Mission analysis","Missionsanalyse","Análisis de misiones"]},
-      {path:"apps/cpco/map_parser.html",label:["Studio cartographique","Map studio","Kartenstudio","Estudio cartográfico"]}]},
+      {path:"apps/cr/mission_operations_reporting.html",label:["Analyse des missions","Mission analysis","Missionsanalyse","Análisis de misiones"]}]},
     {id:"settings",pages:[
       {path:"apps/settings/profil.html",label:["Mon profil","My profile","Mein Profil","Mi perfil"]},
       {path:"apps/settings/apparence.html",label:["Apparence","Appearance","Darstellung","Apariencia"]},

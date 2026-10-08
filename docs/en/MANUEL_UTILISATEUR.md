@@ -26,8 +26,8 @@ What it shows depends on your **usage level** (My profile › “Usage level”)
 | “My missions” | Missions assigned by the Centre and availability (red badge: unread missions) | 1 |
 | “Report” | Entry of a mission report | 1 |
 | “Schedule” | Weekly order schedule (Board, read-only without the Centre); ODV planning as a tab from level 2 | 1 |
-| “Missions” | Mission generator and registry, as tabs | 3 |
-| “Tools” | Flight maps, fuel, landings, mission analysis (tools ticked in My profile, all at level 4); map studio at level 4 | 1 to 4 |
+| “Missions” | Mission generator and registry, as tabs; map studio at level 4 | 3 |
+| “Tools” | Flight maps, fuel, landings, mission analysis (tools ticked in My profile, all at level 4) | 1 to 4 |
 
 - The level arranges the interface, it grants no rights: the Centre pages (Missions, ODV planning, changing the Board) still require the Centre enabled.
 - At the bottom of the column: “Settings” (My profile, Appearance, Centre, Installation, Maintenance, First run, as tabs) and **“Help”**. These two entries stay fixed at the bottom of the screen: only the upper list scrolls when there are too many icons (window under 460 px high: the whole bar scrolls).
