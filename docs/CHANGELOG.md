@@ -81,6 +81,10 @@ d'une zone correct.
   une requête) ; en cas d'échec, le compte rendu de la relecture donne l'adresse et la raison (code HTTP, erreur réseau,
   dossier de l'application) ; message en 4 langues.
 
+### Livraison
+
+- Archive de livraison : `xplane-web-suite-4.11.0.zip` — SHA-256 `36197cbd531c616c52e1fdf634f46b871ba06540b9410244b44aaab35b8d6c24` (code seul, hors dépôt : dossier `dist/`).
+
 ## [4.10.0] — 2026-10-07
 
 La compagnie devient SO Group Virtual. Nouvelle page Tableau (ordre de vol de la semaine). Premier lancement repensé :
