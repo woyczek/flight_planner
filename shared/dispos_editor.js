@@ -8,7 +8,8 @@
   //     les préférences (Paramètres › Mon profil) ;
   //   · grille heure par heure (comme avant les catégories) : palette des catégories, clic sur une case ou rectangle
   //     tracé pour la colorier, second clic sur une case de la catégorie pour l'effacer ; plages précises (au quart
-  //     d'heure) par le formulaire « Plage précise », qui colorient aussi la grille ;
+  //     d'heure) par le formulaire « Plage précise », qui colorient aussi la grille — formulaire replié (ouvert d'office
+  //     au niveau d'utilisation 4), ouvert ou fermé gardé d'un redessin à l'autre ;
   //   · « ⧉ semaine précédente », « Tout effacer » ;
   //   · chaque retouche est enregistrée (SuiteDispos.saveWeek : dossier des données, sinon ce navigateur).
   // API (window.DisposEditor) : mount(hôte, { nav = true }) → { set({ tri, week }), refresh() } ; legend() : palette.
@@ -80,6 +81,7 @@
     s.textContent = `.de-wrap{display:grid;gap:10px}.de-nav,.de-add,.de-actions{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center}
 .de-add label{display:inline-flex;gap:5px;align-items:center;font-size:13px}.de-add select,.de-add input[type=time],.de-edit select,.de-edit input[type=time]{padding:4px 6px;font:inherit}
 .de-days{display:inline-flex;flex-wrap:wrap;gap:2px 8px}.de-days label{font-size:12.5px}.de-themes{margin:0;font-size:12.5px;opacity:.85}
+.de-precise>summary{cursor:pointer;font-size:12.5px;opacity:.85}.de-precise[open]>summary{margin-bottom:6px}.de-precise .de-themes{margin-top:6px}
 .de-pal{display:grid;grid-template-columns:max-content 1fr;gap:3px 6px;align-items:center}.de-pal-r{display:flex;flex-wrap:wrap;gap:2px}.de-pal-n{font:400 10.5px/1.2 system-ui,sans-serif;color:inherit;opacity:.85;white-space:nowrap}.de-pal-g{font:400 10px/1 system-ui,sans-serif;opacity:.65;margin-left:6px}.de-brush{padding:0 3px !important;min-height:0 !important;height:auto !important;border:1px solid rgba(0,0,0,.3) !important;background:var(--c) !important;color:var(--k) !important;font:400 9.5px/1.45 system-ui,sans-serif !important;border-radius:0 !important;white-space:nowrap;letter-spacing:0 !important;text-transform:none !important;text-shadow:none !important;box-shadow:none;cursor:pointer}.de-legend .de-brush{cursor:default}.de-brush.on{box-shadow:0 0 0 2px #fff,0 0 0 4px var(--c) !important}.de-gridwrap{overflow-x:auto}.de-grid{border-collapse:collapse;user-select:none;touch-action:none;font:11px/1 system-ui,sans-serif}.de-grid th{padding:2px 4px;font-weight:400;white-space:nowrap}.de-grid thead th{font-weight:500;opacity:.7}.de-grid td{width:22px;min-width:22px;height:22px;padding:0;border:1px solid color-mix(in srgb,currentColor 18%,transparent);cursor:crosshair;text-align:center;font:700 9px/1 system-ui,sans-serif;overflow:hidden;white-space:nowrap;outline:none}.de-grid td.part{opacity:.55}.de-grid tr.today th{color:var(--repo-accent,#69a7ff)}.de-help{margin:0}.de-msg{margin:0}`;
     document.head.append(s);
   }
@@ -256,6 +258,9 @@
       const checked = new Set([...host.querySelectorAll('[data-day]:checked')].map(x => +x.dataset.day));
       const keepFrom = host.querySelector('[data-from]')?.value || '',
         keepTo = host.querySelector('[data-to]')?.value || '';
+      // « Plage précise » repliée (v2) ; ouverte d'office au niveau 4 (comme avant) ; état gardé au redessin
+      const prec = host.querySelector('.de-precise'),
+        precOpen = prec ? prec.open : (window.RepositoryNav?.levels?.get?.() || 4) >= 4;
       /** Options du choix de catégorie pour le groupe g. */
       const catOpts = g => cats.filter(c => c.groupe === g).map(c => `<option value="${esc(c.id)}"${c.id === selCat ? ' selected' : ''}>${esc(D.label(c.label))}</option>`).join('');
       // grille heure par heure (comme avant le passage aux catégories) : un jour par ligne, 24 cases UTC ; couleur de la
@@ -282,12 +287,13 @@
         <p class="small de-help">${esc(t(['Choisir une catégorie, puis cliquer sur une case ou tracer un rectangle (heures UTC) ; un second clic sur une case de cette catégorie l’efface.', 'Choose a category, then click a cell or draw a rectangle (UTC hours); a second click on a cell of that category clears it.', 'Eine Kategorie wählen, dann eine Zelle anklicken oder ein Rechteck ziehen (UTC-Stunden); ein zweiter Klick auf eine Zelle dieser Kategorie löscht sie.', 'Elegir una categoría y luego hacer clic en una celda o trazar un rectángulo (horas UTC); un segundo clic en una celda de esa categoría la borra.']))}</p>`;
       const pending = (A()?.pendingData?.() || []).filter(p => p.startsWith(`disponibilites/${tri}/`)).length;
       host.innerHTML = `${navHtml}${gridHtml}
-        <div class="de-add"><span class="de-pal-g">${esc(t(['Plage précise', 'Precise range', 'Genauer Zeitraum', 'Intervalo preciso']))}</span><label>${esc(t(['Groupe', 'Group', 'Gruppe', 'Grupo']))} <select data-g>${groups.map(g => `<option value="${esc(g.id)}"${g.id === sel ? ' selected' : ''}>${esc(D.label(g.label))}</option>`).join('')}</select></label>
+        <details class="de-precise"${precOpen ? ' open' : ''}><summary>${esc(t(['Plage précise', 'Precise range', 'Genauer Zeitraum', 'Intervalo preciso']))}</summary>
+        <div class="de-add"><label>${esc(t(['Groupe', 'Group', 'Gruppe', 'Grupo']))} <select data-g>${groups.map(g => `<option value="${esc(g.id)}"${g.id === sel ? ' selected' : ''}>${esc(D.label(g.label))}</option>`).join('')}</select></label>
           <label>${esc(t(['Catégorie', 'Category', 'Kategorie', 'Categoría']))} <select data-c>${catOpts(sel)}</select></label>
           <span class="de-days">${DAYS.map((d, j) => `<label><input type="checkbox" data-day="${j}"${checked.has(j) ? ' checked' : ''}> ${esc(t(d))}</label>`).join('')}</span>
           <label>${esc(t(['de', 'from', 'von', 'de']))} <input type="time" step="900" data-from value="${esc(keepFrom)}"></label><label>${esc(t(['à', 'to', 'bis', 'a']))} <input type="time" step="900" data-to value="${esc(keepTo)}"></label>
           <span class="small">UTC</span><button type="button" class="primary" data-add>${esc(t(['Ajouter', 'Add', 'Hinzufügen', 'Añadir']))}</button></div>
-        <p class="de-themes"></p>
+        <p class="de-themes"></p></details>
         <div class="de-actions"><button type="button" class="secondary" data-copy title="${esc(t(['Recopier les plages de la semaine précédente (remplace la semaine affichée)', 'Copy the ranges of the previous week (replaces the shown week)', 'Zeiträume der Vorwoche übernehmen (ersetzt die angezeigte Woche)', 'Copiar los intervalos de la semana anterior (reemplaza la semana mostrada)']))}">⧉ ${esc(t(['Semaine précédente', 'Previous week', 'Vorherige Woche', 'Semana anterior']))}</button>
           <button type="button" class="ghost" data-clear>${esc(t(['Tout effacer', 'Clear all', 'Alles löschen', 'Borrar todo']))}</button>
           ${pending ? `<button type="button" class="secondary" data-flush data-icon="save">${esc(tf(['Écrire dans le dossier des données ({n})', 'Write to the data folder ({n})', 'In den Datenordner schreiben ({n})', 'Escribir en la carpeta de datos ({n})'], { n: pending }))}</button>` : ''}</div>
