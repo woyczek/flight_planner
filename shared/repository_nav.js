@@ -23,7 +23,19 @@
     Object.assign(folderSettings, cfg.folders?.[path] || {});
     return path
   }, "");
-  const themeName = page?.theme || folderSettings.theme || cfg.defaults.theme,
+  // page du Centre consultable (view:true, le Planning) vue par qui ne s'en sert pas — niveau 1, Centre fermé dans ce
+  // navigateur ou compte connecté sans le rôle admin_centre : thème ordinaire, pas celui du Centre (lu ici, avant le
+  // premier rendu, comme le script de tête de repository_tree)
+  const centreViewer = !!page?.view && (() => {
+    try {
+      const lv = +localStorage.getItem("suiteLevel:v1"),
+        s = JSON.parse(localStorage.getItem("suiteSession:v1") || "null");
+      return localStorage.getItem("cpcoAccess:v1") !== "on" || lv === 1 || !!(s?.tri && s.role !== "admin_centre");
+    } catch {
+      return false;
+    }
+  })();
+  const themeName = (centreViewer ? "" : page?.theme || folderSettings.theme) || cfg.defaults.theme,
     theme = cfg.themes[themeName] || {};
   const config = {
     ...(cfg.defaults.config || {}),

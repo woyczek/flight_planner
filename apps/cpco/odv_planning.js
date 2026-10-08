@@ -820,6 +820,7 @@
     const U = window.SuiteUsers;
     if (!window.RepositoryNav?.cpco?.enabled?.()) return false;
     if (U?.session?.()?.tri && !U.isAdmin?.()) return false;
+    if ((window.RepositoryNav?.levels?.get?.() || 2) < 2) return false; // niveau 1 : consultation seulement
     return U?.mode?.() !== 'production' || !!U?.isAdmin?.();
   };
 

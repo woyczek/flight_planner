@@ -26,6 +26,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   règle que les conflits : plage qui rend affectable à un vol) ; au
   **niveau Expert**, bloc « Créneaux communs et missions probables » repris de la page ODV (cadre sans en-tête,
   `odv_planning.html?blocks=slots,missions`, hauteur ajustée à son contenu).
+- **v2, niveau 1 : Planning en consultation seule**, quels que soient les droits (Centre ouvert compris) : ni DLO et
+  butées, ni activations de zones, ni modification ; thème ordinaire au lieu de celui du Centre pour qui ne fait que
+  consulter (niveau 1, Centre fermé, compte sans le rôle `admin_centre`).
 - **Clés de poste et signatures** (`shared/sog_keys.js`, lot L2 de [COMPTES_SIGNES.md](technique/COMPTES_SIGNES.md)) : par
   poste, une paire de signature ECDSA P-256 et une paire d'échange ECDH P-256, non exportables, gardées dans la base
   `sogKeys` du navigateur (hors sauvegarde) ; empreinte courte `7F3A-91C2-04BE-D85E` ; JSON canonique (RFC 8785) ;

@@ -169,6 +169,8 @@
     if (!window.RepositoryNav?.cpco?.enabled?.()) return false;
     const U = window.SuiteUsers;
     if (U?.session?.()?.tri && !U.isAdmin?.()) return false;
+    // niveau 1 (équipage) : le planning se consulte, il ne se modifie pas, quels que soient les droits
+    if ((window.RepositoryNav?.levels?.get?.() || 2) < 2) return false;
     return U?.mode?.() !== 'production' || !!U?.isAdmin?.();
   }
 
