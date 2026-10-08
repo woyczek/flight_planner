@@ -152,6 +152,11 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Modifié
 
+- **Activations de zones (Tableau, Planning) plus légères** : le tableau des activations importées (IVAO), replié,
+  était construit en entier à l'ouverture de la page (des centaines de lignes) et la liste des zones proposées portait
+  une option par zone de la base — près de 8 000 éléments pour ce bloc dans le Tableau. Le tableau des importées est
+  construit à l'ouverture de son volet, la liste des zones au premier passage dans un champ « zone ». Audit
+  `tools/perf_audit.html` : parcours mis à jour (pages de CR renommées, Aujourd'hui, Tableau, accueil).
 - **Sauvegarde automatique des données du navigateur allégée** : au départ de chaque page (et toutes les 5 minutes),
   elle analysait tout le stockage du navigateur et refaisait le texte YAML complet, puis constatait qu'il n'avait pas
   changé — des dizaines de ms à chaque changement de page avec un stockage de 400 Ko. Au départ d'une page, une

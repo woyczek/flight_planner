@@ -186,6 +186,8 @@
     /** Redessine host : note sur la base, liste des zones proposées et une colonne par réseau. */
     function render() {
       const days = daysOf(week);
+      lazy.clear();
+      listFilled = false;
       const head = [T.jour, T.zone, T.etat, T.de, T.a, T.texte, T.reseau].map(x => `<th>${esc(t(x))}</th>`).join('');
       const sel = (name, value, opts) => `<select data-k="${name}"${ro ? ' disabled' : ''}>${opts.map(([v, l]) => `<option value="${esc(v)}"${v === value ? ' selected' : ''}>${esc(l)}</option>`).join('')}</select>`;
       /** Ligne de tableau modifiable d'une saisie r (rang i dans rows) : jour, zone, état, plage UTC, remarque, réseau, retrait. */
@@ -203,18 +205,37 @@
         const mine = rows.map((r, i) => [r, i]).filter(([r]) => !imported(r) && (!r.reseau || r.reseau === net)),
           got = rows.filter(r => imported(r) && r.reseau === net).sort(byTime);
         const ivao = net === 'IVAO';
+        if (got.length) lazy.set(net, () => `<div class="odv-act-scroll"><table><thead><tr>${head}</tr></thead><tbody>${got.map(r => `<tr data-etat="${esc(r.etat)}"><td>${esc(dayLabel(r.date))}</td><td>${esc(zoneName(r.zone))}</td><td>${esc(t(ETAT[r.etat] || [r.etat]))}</td><td>${esc(r.debut)}</td><td>${esc(r.fin)}</td><td>${esc(r.texte || '')}</td><td>${esc(r.reseau)}</td></tr>`).join('')}</tbody></table></div>`);
         return `<section class="odv-act-net" data-net="${esc(net)}"><h4>${esc(net)}</h4>
           ${ivao ? '' : `<p class="odv-act-note">${esc(t(T.vatsimNote))}</p>`}
           ${mine.length ? `<div class="odv-act-scroll"><table><thead><tr>${head}<th></th></tr></thead><tbody>${mine.map(([r, i]) => line(r, i)).join('')}</tbody></table></div>` : `<p class="odv-act-note">${esc(tf(T.videNet, { r: net }))}</p>`}
-          ${got.length ? `<details class="odv-act-ivao"><summary>${esc(tf(T.ivaoListe, { n: got.length }))}</summary><div class="odv-act-scroll"><table><thead><tr>${head}</tr></thead><tbody>${got.map(r => `<tr data-etat="${esc(r.etat)}"><td>${esc(dayLabel(r.date))}</td><td>${esc(zoneName(r.zone))}</td><td>${esc(t(ETAT[r.etat] || [r.etat]))}</td><td>${esc(r.debut)}</td><td>${esc(r.fin)}</td><td>${esc(r.texte || '')}</td><td>${esc(r.reseau)}</td></tr>`).join('')}</tbody></table></div></details>` : ''}
+          ${got.length ? `<details class="odv-act-ivao" data-net="${esc(net)}"><summary>${esc(tf(T.ivaoListe, { n: got.length }))}</summary></details>` : ''}
           ${ro ? '' : `<p class="row"><button type="button" class="secondary" data-add="${esc(net)}" data-icon="plus">${esc(t(T.ajouter))}</button>${ivao ? ` <button type="button" class="secondary" data-ivao data-icon="download" title="${esc(t(T.ivaoTitre))}">${esc(t(T.ivao))}</button>` : ''}</p>`}
         </section>`;
       };
       host.innerHTML = `${zonesNote ? `<p class="odv-act-note">${esc(zonesNote)}</p>` : ''}
-        <datalist id="${listId}">${zones.map(z => `<option value="${esc(z.nom)}">${esc(`${z.type} · ${z.plancher || '?'} – ${z.plafond || '?'}`)}</option>`).join('')}</datalist>
+        <datalist id="${listId}"></datalist>
         <div class="odv-act-cols">${O().NETWORKS.map(column).join('')}</div>`;
       window.AppFramework?.refresh?.(host);
     }
+
+    // construits à la demande : liste des zones proposées (une option par zone de la base) au premier passage dans un champ
+    // « zone », tableau des activations importées (des centaines de lignes) à l'ouverture de son volet — le Tableau
+    // portait près de 8 000 éléments pour ce bloc, volets fermés compris
+    const lazy = new Map(); // réseau → HTML du tableau des activations importées
+    let listFilled = false;
+    host.addEventListener('focusin', e => {
+      if (listFilled || !e.target.matches?.('input[data-k="zone"]')) return;
+      listFilled = true;
+      const list = host.querySelector(`#${listId}`);
+      if (list) list.innerHTML = zones.map(z => `<option value="${esc(z.nom)}">${esc(`${z.type} · ${z.plancher || '?'} – ${z.plafond || '?'}`)}</option>`).join('');
+    });
+    host.addEventListener('toggle', e => {
+      const d = e.target;
+      if (!d.matches?.('details.odv-act-ivao') || !d.open || d.dataset.filled) return;
+      d.dataset.filled = '1';
+      d.insertAdjacentHTML('beforeend', lazy.get(d.dataset.net)?.() || '');
+    }, true); // « toggle » ne remonte pas : écouté à la descente
 
     /** Après une retouche : copie des lignes à onChange, enregistrement programmé 600 ms après la dernière retouche. */
     function changed() {
