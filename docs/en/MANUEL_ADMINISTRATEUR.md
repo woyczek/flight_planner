@@ -18,7 +18,7 @@ The settings are in ☰ › Settings, “Centre” tab.
 
 The lock hides the Centre until it has been enabled in this browser.
 
-- Centre locked: the Centre pages disappear from the ☰ menu, from the sidebar (“Centre” separator and “Missions”, “Registry” and “ODV” entries) and from the home page.
+- Centre locked: the sidebar, the ☰ menu and the home page follow the usage level, not the lock; a Centre page opened without it shows the “Restricted access” notice, except the Board (“Schedule” entry), viewable read-only.
 - A Centre page opened directly (bookmark, link) is covered by a “Restricted access” notice with the links “Enable the Centre…” and “Home”.
 - In Settings › Centre, only the “Centre access and settings” section stays visible; the others (“Users and rights”, “Availability categories”, “ODV planning”, “Report sending (web service)”) are hidden.
 - Activation is stored in this browser only: repeat it on each computer and after clearing the site data.
@@ -346,9 +346,10 @@ The mission appears in the registry with the status “ordered”. Then save the
 <!-- page: apps/cpco/odv_planning.html -->
 
 The ODV planning page brings together the week's availability, the common slots, the likely missions and the assignments. The Centre (CPCO) uses it to plan missions and give them to free pilots.
-To open it: sidebar › “Centre” section › “ODV”. The page is part of the Centre: as long as the Centre is locked, a notice points to Settings › Centre (see the next chapter). In production mode, you must also be signed in with the `admin_centre` role.
+To open it: the “Full ODV page: workbook, grid, export…” link of the “Likely missions” block of the Board (Expert level), or the ☰ menu (Centre pages); the page has no tab and belongs to the Planning usage level (2). The page is part of the Centre: as long as the Centre is locked, a notice points to Settings › Centre (see the next chapter). In production mode, you must also be signed in with the `admin_centre` role.
 The squadron's Excel workbook is optional: without it, the week is built from the availability declared by the pilots in My missions and from the assignments already saved.
 Each block can be moved (↕ handle) or hidden (“Hide” / “Show”); the layout is stored for the page.
+The “Common slots” and “Likely missions” blocks also appear in the Board, at the Expert level, following the week it shows (see the next chapter).
 
 ### ODV workbook
 
@@ -409,7 +410,7 @@ This block gathers the VATSIM / IVAO trainings, exams, events and bookings of th
 
 ### Area activations by network
 
-This block is the one of the Board (see “Area activations”): RTBA, R, D, TRA… activations of the displayed week, VATSIM and IVAO side by side, same data. Editing restricted as in the Board (Centre enabled; in production, administrator).
+This block is the one of the Board (see “Areas”): RTBA, R, D, TRA… activations of the displayed week, VATSIM and IVAO side by side, same data. Editing restricted as in the Board (Centre enabled; in production, administrator).
 
 ### Common slots
 
@@ -477,12 +478,20 @@ If the browser refuses automatic copying, the text is selected: copy it with Ctr
 <!-- page: apps/cpco/odv_orders.html -->
 
 The Board page builds the week's flight order: flight strips, control, miscellaneous items and notes placed on a timeline, with availability and area conflicts.
-To open it: sidebar › “Centre” section › “Board”. Unlike the rest of the Centre, it can be viewed without it: without the Centre enabled (or, in production mode, without being logged in with the `admin_centre` role), it opens read-only: the schedule only, the day's timeline with its flights, control duties, miscellaneous and notes — no palette, areas, ATC, common availability, problems, log, week and statistics views, area activations or requests, no drag and drop or mission order; a floating notice says so. Changing it needs the Centre enabled and, in production mode or as soon as a user is signed in, the `admin_centre` role (a `utilisateur` account stays read-only even with the Centre open; likewise in ODV planning: ATC sessions, activations, assignments).
+To open it: sidebar › “Schedule” (“Board” tab). Unlike the rest of the Centre, it can be viewed without it: at usage level 1, or without the Centre enabled (or, in production mode, without being logged in with the `admin_centre` role), it opens read-only: the “Order of the day” block only, with the day’s timeline and its flights, control, miscellaneous and notes rows — no palette, areas, ATC, common availability, problems, log, no drag and drop or mission order; without the Centre, a floating notice says so. Changing it needs the Centre enabled and, in production mode or as soon as a user is signed in, the `admin_centre` role (a `utilisateur` account stays read-only even with the Centre open; likewise in ODV planning: ATC sessions, activations, assignments).
 
-- **Hide unavailable pilots** (box of the palette and of the week view, taken from the ODV page): only members that a range declared that day makes assignable to a flight remain (same rule as conflicts: ground, time off, control outside SOG or control only do not count) (the week: at least one day); kept in this browser.
-- **Undo** (week bar, or Ctrl+Z): reverts the last ten changes to the flight order (strip moved, item placed or changed…), reissues and saving included; cleared when the week changes.
-- **Withdraw the request** (Reservation requests): an area recorded as requested by mistake goes back to “missing”.
-- **Expert level** (My profile › Usage level, 4): “Common slots and likely missions” block, taken from the ODV page — slots where several pilots are available (click: slot window, missions × positions matrix) and compatible mission families, flat in the page; “Full ODV page” opens the ODV page (workbook, grid, export), which no longer has its own tab.
+The page has six blocks, with no choice of view. What each one shows depends on the usage level (My profile › “Usage level”):
+
+| Block | Content | Level |
+|---|---|---|
+| “Order of the day” | week bar, then the day’s timeline (only block in read-only mode) | 1 |
+| “Crew of the week” | members’ availability day by day, DLO and deadlines, availability changes | 2 |
+| “Areas” | area activations by network, then reservation requests | 2 |
+| “Common slots” | slots where several pilots are available; a click opens the slot window | 4 (Expert) |
+| “Likely missions” | compatible mission families per slot, link to the ODV page | 4 (Expert) |
+| “Statistics” | the week’s flights and members’ load | 2 |
+
+- **Hide unavailable pilots** (box of the palette and of the “Crew of the week” block, taken from the ODV page): only members that a range declared that day makes assignable to a flight remain (same rule as conflicts: ground, time off, control outside SOG or control only do not count) (the week: at least one day); kept in this browser.
 Everything is saved in the shared data pool: the week's order in `data/odv/<year>-W<week>.json`, the settings in `data/config/odv.json`. Availability stays the pilots' own, and the crew of a mission flight comes from the assignments.
 Times are in z (UTC). Data model: [Board](../technique/ODV_ORDRES.md).
 
@@ -490,8 +499,8 @@ Times are in z (UTC). Data model: [Board](../technique/ODV_ORDRES.md).
 
 - “◀” and “▶” change the week, “This week” goes back to the current week.
 - The day tabs show, in red, the number of items in conflict that day.
-- “Day”, “Week” and “Statistics” change the view.
 - “Duty officer” names the week's duty officer.
+- “↶ Undo” (or Ctrl+Z): reverts the last ten changes to the flight order (strip moved, item placed or changed…), reissues and saving included; cleared when the week changes.
 - “Briefing” (or the F key) puts the order of the day in full screen; the ← and → arrows change the day.
 - The status line shows “Saved”, or “Saved in this browser” if the data folder is not authorised.
 
@@ -546,20 +555,31 @@ On a strip: “⚠ n” counts its conflicts, “P” flags that no crew member 
 
 A flight needs an available category; a control item, an available category or “SOG control”; a miscellaneous item also accepts “Available on the ground only”. Control and flight outside SOG, DCS, unavailable and time off can never be assigned.
 
-### Week and statistics
+### Crew of the week
 
-- **Week**: one row per member, one cell per day with the bar of declared availability and the number of items they appear on. A click on a cell opens their ranges for the day: category, start, end, and “Time off from”, which sets time off until midnight. The ranges are written into the pilot's declaration.
+Level 2 block: one row per member, one cell per day with the bar of declared availability and the number of items they appear on. A click on a cell opens their ranges for the day: category, start, end, and “Time off from”, which sets time off until midnight. The ranges are written into the pilot's declaration.
 - **DLO and deadlines**: each member's permanent objectives (“＋” to add, click to edit), with an optional deadline (red at 3 working days or less, yellow at 10 or less); a DLO is closed automatically by a flight done that contains it (item DLO, label, mission) with the member in the crew. The palette shows “◎n” open DLO per member, and an item's window recalls those of the crew.
 - “Availability changes” lists the declarations changed since they were last noted; “Noted” and “Note all” mark them in this browser.
-- **Statistics**: planned flights, total duration, done, not done, cancelled, AAR, ME, Bâchés, MNE; per member: time available over duty hours, flight time, load (orange above 70 %, red above 100 % or with no availability).
 
-### Area activations
+### Areas
 
-This block enters the week's area activations (`data/atc/activations/<year>-W<week>.json`), in two side-by-side columns, VATSIM and IVAO: day, area, status (active, requested, refused), start, end, remark, network. A “both networks” activation appears in both columns; changing its network moves it. VATSIM does not publish activations: its column is entered by hand. In the IVAO column, “Import from IVAO” takes the schedules published by IVAO (installation API key), folded under the list, along with the week's IVAO trainings, exams and bookings (ATC sessions); entries made by hand stay. IVAO sessions are also imported automatically when a week is opened, at most once an hour, if the page can write. A change recomputes the flights' areas at once. The ODV planning shows the same block, on the same data.
+Level 2 block, in two parts: area activations by network, then reservation requests.
 
-### Reservation requests
+**Area activations by network**: the first part enters the week's area activations (`data/atc/activations/<year>-W<week>.json`), in two side-by-side columns, VATSIM and IVAO: day, area, status (active, requested, refused), start, end, remark, network. A “both networks” activation appears in both columns; changing its network moves it. VATSIM does not publish activations: its column is entered by hand. In the IVAO column, “Import from IVAO” takes the schedules published by IVAO (installation API key), folded under the list, along with the week's IVAO trainings, exams and bookings (ATC sessions); entries made by hand stay. IVAO sessions are also imported automatically when a week is opened, at most once an hour, if the page can write. A change recomputes the flights' areas at once. The ODV planning shows the same block, on the same data.
 
-This block lists the areas crossed by the week's mission flights (planned route and working areas of the mission, areas entered for a training flight) without an “active” activation of their network: day, area, network, slot, flights, status. “Record as requested” (or “Record all as requested”) adds them to the shared activations; the request itself is made on the network's site (“Copy the list”, link to the IVAO activation requests). A P area is flagged “to avoid”. When a week is opened, the page imports the IVAO ATC sessions (trainings, exams, bookings) automatically, at most once an hour, with the import shared with the ODV planning.
+**Reservation requests**: the second part lists the areas crossed by the week's mission flights (planned route and working areas of the mission, areas entered for a training flight) without an “active” activation of their network: day, area, network, slot, flights, status. “Record as requested” (or “Record all as requested”) adds them to the shared activations; the request itself is made on the network's site (“Copy the list”, link to the IVAO activation requests). A P area is flagged “to avoid”. When a week is opened, the page imports the IVAO ATC sessions (trainings, exams, bookings) automatically, at most once an hour, with the import shared with the ODV planning. “Withdraw the request”: an area recorded as requested by mistake goes back to “missing”.
+
+### Common slots
+
+Expert level block, taken from the ODV page and following the week shown by the Board: the 7 days × 3 slots, with the number of free pilots per cell and the “At least N pilot(s)” and “Common simulator” filters. A click on a cell opens the slot window (missions × positions matrix). Details: ODV planning chapter, “Common slots” and “‘Assign the free pilots’ window”.
+
+### Likely missions
+
+Expert level block, also following the week of the Board: compatible mission families per slot, with the table and the rules of the ODV page (see ODV planning, “Likely missions”). At the bottom, the “Full ODV page: workbook, grid, export…” link opens the ODV page, which has no tab.
+
+### Statistics
+
+Level 2 block: planned flights, total duration, done, not done, cancelled, AAR, ME, Bâchés, MNE; per member: time available over duty hours, flight time, load (orange above 70 %, red above 100 % or with no availability).
 
 ## Settings › Centre
 <!-- page: apps/settings/centre.html -->

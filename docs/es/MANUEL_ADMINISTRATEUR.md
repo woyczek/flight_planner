@@ -18,7 +18,7 @@ Los ajustes se encuentran en ☰ › Ajustes, pestaña «Centro».
 
 El bloqueo oculta el Centro mientras no se haya activado en este navegador.
 
-- Centro bloqueado: las páginas del Centro desaparecen del menú ☰, de la barra lateral (separador «Centro» y entradas «Misiones», «Registro», «ODV») y de la página de inicio.
+- Centro bloqueado: la barra lateral, el menú ☰ y la página de inicio siguen el nivel de uso, no el bloqueo; una página del Centro abierta sin él muestra el aviso «Acceso restringido», salvo el Tablero (entrada «Planificación»), consultable en solo lectura.
 - Una página del Centro abierta directamente (favorito, enlace) queda cubierta por un aviso «Acceso reservado» con los enlaces «Activar el Centro…» e «Inicio».
 - En Ajustes › Centro solo queda visible el apartado «Acceso al Centro y ajustes»; los demás («Usuarios y derechos», «Categorías de disponibilidad», «Planificación ODV», «Envío de informes (servicio web)») quedan ocultos.
 - La activación se guarda solo en este navegador: hay que repetirla en cada puesto y después de borrar los datos del sitio.
@@ -346,9 +346,10 @@ La misión aparece en el registro con el estado «encargada». Guarde después l
 <!-- page: apps/cpco/odv_planning.html -->
 
 La página Planificación ODV reúne las disponibilidades de la semana, las franjas comunes, las misiones probables y las asignaciones. El Centro (CPCO) la utiliza para planificar las misiones y confiarlas a los pilotos libres.
-Para abrirla: barra lateral › sección «Centro» › «ODV». La página forma parte del Centro: mientras el Centro esté bloqueado, un aviso remite a Ajustes › Centro (véase el capítulo siguiente). En modo production, además hay que estar conectado con el rol `admin_centre`.
+Para abrirla: enlace «Página ODV completa: libro, cuadrícula, exportación…» del bloque «Misiones probables» del Tablero (nivel Experto), o el menú ☰ (páginas del Centro); la página no tiene pestaña y corresponde al nivel de uso Planificación (2). La página forma parte del Centro: mientras el Centro esté bloqueado, un aviso remite a Ajustes › Centro (véase el capítulo siguiente). En modo production, además hay que estar conectado con el rol `admin_centre`.
 El libro Excel de la escuadrilla es opcional: sin él, la semana se construye a partir de las disponibilidades declaradas por los pilotos en Mis misiones y de las asignaciones ya guardadas.
 Cada bloque se puede mover (asa ↕) u ocultar («Ocultar» / «Mostrar»); la disposición se recuerda para la página.
+Los bloques «Franjas comunes» y «Misiones probables» figuran también en el Tablero, en el nivel Experto, ajustados a la semana que muestra (véase el capítulo siguiente).
 
 ### Libro ODV
 
@@ -409,7 +410,7 @@ Este bloque reúne los entrenamientos, exámenes, eventos y reservas de VATSIM /
 
 ### Activaciones de zonas por red
 
-Este bloque es el del Tablero (ver «Activaciones de zonas»): activaciones RTBA, R, D, TRA… de la semana mostrada, VATSIM e IVAO lado a lado, mismos datos. Edición restringida como en el Tablero (Centro activado; en producción, administrador).
+Este bloque es el del Tablero (ver «Zonas»): activaciones RTBA, R, D, TRA… de la semana mostrada, VATSIM e IVAO lado a lado, mismos datos. Edición restringida como en el Tablero (Centro activado; en producción, administrador).
 
 ### Franjas comunes
 
@@ -477,12 +478,20 @@ Si el navegador rechaza la copia automática, el texto queda seleccionado: cópi
 <!-- page: apps/cpco/odv_orders.html -->
 
 La página Tablero construye la orden de vuelo de la semana: fichas de vuelo, control, varios y notas colocados en una cronología, con los conflictos de disponibilidad y de zonas.
-Para abrirla: barra lateral › sección «Centro» › «Tablero». A diferencia del resto del Centro, se consulta sin él: sin el Centro activado (o, en modo producción, sin estar conectado con el rol `admin_centre`), se abre en solo lectura: solo la planificación, la cronología del día con sus vuelos, controles, varios y notas — sin paleta, zonas, ATC, disponibilidad común, problemas, registro, vistas semana y estadísticas, activaciones o solicitudes de zonas, sin arrastrar y soltar ni orden de misión; un aviso flotante lo recuerda. Modificarla requiere el Centro activado y, en modo producción o en cuanto un usuario está conectado, el rol `admin_centre` (una cuenta `utilisateur` sigue en solo lectura incluso con el Centro abierto; igual en la planificación ODV: sesiones ATC, activaciones, asignaciones).
+Para abrirla: barra lateral › «Planificación» (pestaña «Tablero»). A diferencia del resto del Centro, se consulta sin él: en el nivel de uso 1, o sin el Centro activado (o, en modo producción, sin estar conectado con el rol `admin_centre`), se abre en solo lectura: solo el bloque «Orden del día», con la cronología del día y sus líneas de vuelos, control, varios y notas — sin paleta, zonas, ATC, disponibilidad común, problemas, registro, sin arrastrar y soltar ni orden de misión; sin el Centro, un aviso flotante lo recuerda. Modificarla requiere el Centro activado y, en modo producción o en cuanto un usuario está conectado, el rol `admin_centre` (una cuenta `utilisateur` sigue en solo lectura incluso con el Centro abierto; igual en la planificación ODV: sesiones ATC, activaciones, asignaciones).
 
-- **Ocultar los pilotos no disponibles** (casilla de la paleta y de la vista semana, tomada de la página ODV): solo quedan los miembros que una franja declarada ese día hace asignables a un vuelo (misma regla que los conflictos: suelo, recuperación, control fuera de SOG o solo control no cuentan) (la semana: al menos un día); guardada en este navegador.
-- **Deshacer** (barra de la semana, o Ctrl+Z): revierte los diez últimos cambios de la orden de vuelo (ficha movida, elemento colocado o modificado…), reemisiones y guardado incluidos; se vacía al cambiar de semana.
-- **Retirar la solicitud** (Solicitudes de reserva): una zona inscrita como solicitada por error vuelve a «ausente».
-- **Nivel Experto** (Mi perfil › Nivel de uso, 4): bloque «Franjas comunes y misiones probables», tomado de la página ODV — franjas en las que varios pilotos están disponibles (clic: ventana de la franja, matriz misiones × puestos) y familias de misiones compatibles, integradas en la página; «Página ODV completa» abre la página ODV (libro, cuadrícula, exportación), que ya no tiene pestaña propia.
+La página tiene seis bloques, sin elección de vista. Lo que muestra cada uno depende del nivel de uso (Mi perfil › «Nivel de uso»):
+
+| Bloque | Contenido | Nivel |
+|---|---|---|
+| «Orden del día» | barra de la semana y, después, la cronología del día (único bloque en solo lectura) | 1 |
+| «Tripulación de la semana» | disponibilidades de los miembros día a día, DLO y plazos, cambios de disponibilidad | 2 |
+| «Zonas» | activaciones de zonas por red y, después, solicitudes de reserva | 2 |
+| «Franjas comunes» | franjas en las que varios pilotos están disponibles; un clic abre la ventana de la franja | 4 (Experto) |
+| «Misiones probables» | familias de misiones compatibles por franja, enlace a la página ODV | 4 (Experto) |
+| «Estadísticas» | vuelos de la semana y carga de los miembros | 2 |
+
+- **Ocultar los pilotos no disponibles** (casilla de la paleta y del bloque «Tripulación de la semana», tomada de la página ODV): solo quedan los miembros que una franja declarada ese día hace asignables a un vuelo (misma regla que los conflictos: suelo, recuperación, control fuera de SOG o solo control no cuentan) (la semana: al menos un día); guardada en este navegador.
 Todo se guarda en el pool de datos compartido: la orden de la semana en `data/odv/<año>-W<semana>.json`, los ajustes en `data/config/odv.json`. Las disponibilidades siguen siendo las de los pilotos, y la tripulación de un vuelo de misión la de las asignaciones.
 Las horas están en z (UTC). Modelo de datos: [Tablero](../technique/ODV_ORDRES.md).
 
@@ -490,8 +499,8 @@ Las horas están en z (UTC). Modelo de datos: [Tablero](../technique/ODV_ORDRES.
 
 - «◀» y «▶» cambian de semana, «Esta semana» vuelve a la semana en curso.
 - Las pestañas de los días muestran, en rojo, el número de elementos en conflicto del día.
-- «Día», «Semana» y «Estadísticas» cambian de vista.
 - «Guardia» designa al oficial de guardia de la semana.
+- «↶ Deshacer» (o Ctrl+Z): revierte los diez últimos cambios de la orden de vuelo (ficha movida, elemento colocado o modificado…), reemisiones y guardado incluidos; se vacía al cambiar de semana.
 - «Briefing» (o la tecla F) muestra la orden del día en pantalla completa; las flechas ← y → cambian de día.
 - La línea de estado indica «Guardado», o «Guardado en este navegador» si la carpeta de datos no está autorizada.
 
@@ -546,20 +555,31 @@ En una ficha: «⚠ n» cuenta sus conflictos, «P» indica que ningún tripulan
 
 Un vuelo requiere una categoría disponible; un control, una categoría disponible o «Control SOG»; un elemento varios acepta también «Disponible solo en tierra». Control y vuelo fuera de SOG, DCS, no disponible y descanso nunca son asignables.
 
-### Semana y estadísticas
+### Tripulación de la semana
 
-- **Semana**: una fila por miembro, una casilla por día con la barra de las disponibilidades declaradas y el número de elementos en los que figura. Un clic en una casilla abre sus franjas del día: categoría, inicio, fin, y «Descanso desde», que coloca un descanso hasta medianoche. Las franjas se escriben en la declaración del piloto.
+Bloque del nivel 2: una fila por miembro, una casilla por día con la barra de las disponibilidades declaradas y el número de elementos en los que figura. Un clic en una casilla abre sus franjas del día: categoría, inicio, fin, y «Descanso desde», que coloca un descanso hasta medianoche. Las franjas se escriben en la declaración del piloto.
 - **DLO y plazos**: objetivos permanentes de cada miembro («＋» para añadir, clic para modificar), con un plazo opcional (rojo a 3 días hábiles o menos, amarillo a 10 o menos); un DLO se cierra automáticamente con un vuelo hecho que lo contiene (DLO del elemento, etiqueta, misión) con el miembro en la tripulación. La paleta muestra «◎n» DLO abiertos por miembro, y la ventana de un elemento recuerda los de la tripulación.
 - «Cambios de disponibilidad» lista las declaraciones modificadas desde la última vez que se tuvieron en cuenta; «Tenido en cuenta» y «Tener todo en cuenta» las marcan en este navegador.
-- **Estadísticas**: vuelos previstos, duración total, hechos, no hechos, cancelados, AAR, ME, Bâchés, MNE; por miembro: tiempo disponible en las horas de servicio, tiempo de vuelo, carga (naranja por encima del 70 %, rojo por encima del 100 % o sin disponibilidad).
 
-### Activaciones de zonas
+### Zonas
 
-Este bloque introduce las activaciones de zonas de la semana (`data/atc/activations/<año>-W<semana>.json`), en dos columnas lado a lado, VATSIM e IVAO: día, zona, estado (activa, solicitada, rechazada), inicio, fin, observación, red. Una activación «ambas redes» aparece en las dos columnas; cambiar su red la desplaza. VATSIM no publica activaciones: su columna se introduce a mano. En la columna IVAO, «Importar de IVAO» recoge los horarios publicados por IVAO (clave de API de la instalación), plegados bajo la lista, así como los entrenamientos, exámenes y reservas IVAO de la semana (sesiones ATC); las entradas a mano se conservan. Las sesiones IVAO también se importan solas al abrir una semana, como máximo una vez por hora, si la página puede escribir. Un cambio recalcula al instante las zonas de los vuelos. La planificación ODV muestra el mismo bloque, con los mismos datos.
+Bloque del nivel 2, en dos partes: activaciones de zonas por red y, después, solicitudes de reserva.
 
-### Solicitudes de reserva
+**Activaciones de zonas por red**: la primera parte introduce las activaciones de zonas de la semana (`data/atc/activations/<año>-W<semana>.json`), en dos columnas lado a lado, VATSIM e IVAO: día, zona, estado (activa, solicitada, rechazada), inicio, fin, observación, red. Una activación «ambas redes» aparece en las dos columnas; cambiar su red la desplaza. VATSIM no publica activaciones: su columna se introduce a mano. En la columna IVAO, «Importar de IVAO» recoge los horarios publicados por IVAO (clave de API de la instalación), plegados bajo la lista, así como los entrenamientos, exámenes y reservas IVAO de la semana (sesiones ATC); las entradas a mano se conservan. Las sesiones IVAO también se importan solas al abrir una semana, como máximo una vez por hora, si la página puede escribir. Un cambio recalcula al instante las zonas de los vuelos. La planificación ODV muestra el mismo bloque, con los mismos datos.
 
-Este bloque lista las zonas que atraviesan los vuelos de misión de la semana (ruta prevista y zonas de trabajo de la misión, zonas introducidas para un entrenamiento) sin activación «activa» de su red: día, zona, red, franja, vuelos, estado. «Inscribir como solicitada» (o «Inscribir todo como solicitado») las añade a las activaciones comunes; la solicitud se hace en el sitio de la red («Copiar la lista», enlace a las solicitudes de activación IVAO). Una zona P se señala «evitar». Al abrir una semana, la página importa automáticamente las sesiones ATC IVAO (entrenamientos, exámenes, reservas), como mucho una vez por hora, con la importación común con la planificación ODV.
+**Solicitudes de reserva**: la segunda parte lista las zonas que atraviesan los vuelos de misión de la semana (ruta prevista y zonas de trabajo de la misión, zonas introducidas para un entrenamiento) sin activación «activa» de su red: día, zona, red, franja, vuelos, estado. «Inscribir como solicitada» (o «Inscribir todo como solicitado») las añade a las activaciones comunes; la solicitud se hace en el sitio de la red («Copiar la lista», enlace a las solicitudes de activación IVAO). Una zona P se señala «evitar». Al abrir una semana, la página importa automáticamente las sesiones ATC IVAO (entrenamientos, exámenes, reservas), como mucho una vez por hora, con la importación común con la planificación ODV. «Retirar la solicitud»: una zona inscrita como solicitada por error vuelve a «ausente».
+
+### Franjas comunes
+
+Bloque del nivel Experto, tomado de la página ODV y ajustado a la semana mostrada por el Tablero: los 7 días × 3 franjas, con el número de pilotos libres por casilla y los filtros «Al menos N piloto(s)» y «Simulador común». Un clic en una casilla abre la ventana de la franja (matriz misiones × puestos). Detalle: capítulo Planificación ODV, «Franjas comunes» y «Ventana “Asignar los pilotos libres”».
+
+### Misiones probables
+
+Bloque del nivel Experto, ajustado también a la semana del Tablero: familias de misiones compatibles por franja, con la tabla y las reglas de la página ODV (véase Planificación ODV, «Misiones probables»). Abajo, el enlace «Página ODV completa: libro, cuadrícula, exportación…» abre la página ODV, que no tiene pestaña.
+
+### Estadísticas
+
+Bloque del nivel 2: vuelos previstos, duración total, hechos, no hechos, cancelados, AAR, ME, Bâchés, MNE; por miembro: tiempo disponible en las horas de servicio, tiempo de vuelo, carga (naranja por encima del 70 %, rojo por encima del 100 % o sin disponibilidad).
 
 ## Ajustes › Centro
 <!-- page: apps/settings/centre.html -->

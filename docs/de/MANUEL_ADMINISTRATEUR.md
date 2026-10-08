@@ -18,7 +18,7 @@ Die Einstellungen finden Sie unter ☰ › Einstellungen, Reiter „Zentrum“.
 
 Die Sperre blendet das Zentrum aus, solange es in diesem Browser nicht aktiviert wurde.
 
-- Zentrum gesperrt: Die Seiten des Zentrums verschwinden aus dem Menü ☰, aus der Seitenleiste (Trenner „Zentrum“ und Einträge „Missionen“, „Register“, „ODV“) und von der Startseite.
+- Zentrum gesperrt: Seitenleiste, Menü ☰ und Startseite folgen der Nutzungsstufe, nicht der Sperre; eine ohne Zentrum geöffnete Seite des Zentrums zeigt den Hinweis „Zugang beschränkt“, außer der Einsatztafel (Eintrag „Planung“), schreibgeschützt einsehbar.
 - Eine direkt geöffnete Seite des Zentrums (Lesezeichen, Link) wird von einem Hinweis „Zugang beschränkt“ mit den Links „Zentrum aktivieren…“ und „Startseite“ überdeckt.
 - Unter Einstellungen › Zentrum bleibt nur die Rubrik „Zugang zum Zentrum und Einstellungen“ sichtbar; die anderen („Benutzer und Rechte“, „Verfügbarkeitskategorien“, „ODV-Planung“, „Berichtsversand (Webdienst)“) sind ausgeblendet.
 - Die Aktivierung wird nur in diesem Browser gespeichert: Sie ist auf jedem Rechner und nach dem Löschen der Websitedaten erneut vorzunehmen.
@@ -346,9 +346,10 @@ Die Mission erscheint im Register mit dem Status „bestellt“. Speichern Sie d
 <!-- page: apps/cpco/odv_planning.html -->
 
 Die Seite ODV-Planung vereint die Verfügbarkeiten der Woche, die gemeinsamen Zeitfenster, die wahrscheinlichen Missionen und die Zuweisungen. Das Zentrum (CPCO) plant damit die Missionen und vergibt sie an freie Piloten.
-Zum Öffnen: Seitenleiste › Bereich „Zentrum“ › „ODV“. Die Seite gehört zum Zentrum: Solange das Zentrum gesperrt ist, verweist ein Hinweis auf Einstellungen › Zentrum (siehe nächstes Kapitel). Im Modus production ist außerdem eine Anmeldung mit der Rolle `admin_centre` nötig.
+Zum Öffnen: Link „Vollständige ODV-Seite: Arbeitsmappe, Raster, Export…“ im Block „Wahrscheinliche Missionen“ der Einsatztafel (Stufe Experte) oder Menü ☰ (Seiten des Zentrums); die Seite hat keinen Reiter und gehört zur Nutzungsstufe Planung (2). Die Seite gehört zum Zentrum: Solange das Zentrum gesperrt ist, verweist ein Hinweis auf Einstellungen › Zentrum (siehe nächstes Kapitel). Im Modus production ist außerdem eine Anmeldung mit der Rolle `admin_centre` nötig.
 Die Excel-Arbeitsmappe der Staffel ist freiwillig: Ohne sie wird die Woche aus den von den Piloten in Meine Missionen angegebenen Verfügbarkeiten und den bereits gespeicherten Zuweisungen aufgebaut.
 Jeder Block kann verschoben (Griff ↕) oder ausgeblendet („Ausblenden“ / „Anzeigen“) werden; die Anordnung wird für die Seite gespeichert.
+Die Blöcke „Gemeinsame Zeitfenster“ und „Wahrscheinliche Missionen“ stehen auch in der Einsatztafel, auf der Stufe Experte, abgestimmt auf die dort angezeigte Woche (siehe nächstes Kapitel).
 
 ### ODV-Arbeitsmappe
 
@@ -409,7 +410,7 @@ Dieser Block sammelt die Trainings, Prüfungen, Events und Buchungen von VATSIM 
 
 ### Gebietsaktivierungen nach Netzwerk
 
-Dieser Block ist der der Einsatztafel (siehe „Gebietsaktivierungen“): RTBA-, R-, D-, TRA-Aktivierungen… der angezeigten Woche, VATSIM und IVAO nebeneinander, dieselben Daten. Bearbeitung wie bei der Einsatztafel beschränkt (Centre aktiviert; im Produktivbetrieb Administrator).
+Dieser Block ist der der Einsatztafel (siehe „Gebiete“): RTBA-, R-, D-, TRA-Aktivierungen… der angezeigten Woche, VATSIM und IVAO nebeneinander, dieselben Daten. Bearbeitung wie bei der Einsatztafel beschränkt (Centre aktiviert; im Produktivbetrieb Administrator).
 
 ### Gemeinsame Zeitfenster
 
@@ -477,12 +478,20 @@ Verweigert der Browser das automatische Kopieren, wird der Text markiert: Kopier
 <!-- page: apps/cpco/odv_orders.html -->
 
 Die Seite Einsatztafel erstellt den Flugbefehl der Woche: Flugstreifen, Lotsendienst, Sonstiges und Notizen auf einer Zeitleiste, mit Verfügbarkeits- und Gebietskonflikten.
-Zum Öffnen: Seitenleiste › Rubrik „Zentrum“ › „Einsatztafel“. Anders als das übrige Zentrum ist sie ohne es einsehbar: ohne aktiviertes Zentrum (oder im Produktionsmodus ohne Anmeldung mit der Rolle `admin_centre`) öffnet sie sich schreibgeschützt: nur die Planung, die Zeitleiste des Tages mit ihren Flügen, Lotsendiensten, Sonstigem und Notizen — ohne Palette, Gebiete, ATC, gemeinsame Verfügbarkeit, Probleme, Protokoll, Wochen- und Statistikansicht, Gebietsaktivierungen oder -anträge, ohne Ziehen und Ablegen oder Missionsbefehl; ein schwebender Hinweis erinnert daran. Änderungen erfordern das aktivierte Zentrum und, im Produktionsmodus oder sobald ein Benutzer angemeldet ist, die Rolle `admin_centre` (ein Konto `utilisateur` bleibt auch bei geöffnetem Zentrum schreibgeschützt; ebenso in der ODV-Planung: ATC-Sitzungen, Aktivierungen, Zuweisungen).
+Zum Öffnen: Seitenleiste › „Planung“ (Reiter „Einsatztafel“). Anders als das übrige Zentrum ist sie ohne es einsehbar: auf Nutzungsstufe 1 oder ohne aktiviertes Zentrum (oder im Produktionsmodus ohne Anmeldung mit der Rolle `admin_centre`) öffnet sie sich schreibgeschützt: nur der Block „Tagesbefehl“, mit der Zeitleiste des Tages und ihren Zeilen Flüge, Lotsendienst, Sonstiges und Notizen — ohne Palette, Gebiete, ATC, gemeinsame Verfügbarkeit, Probleme, Protokoll, ohne Ziehen und Ablegen oder Missionsbefehl; ohne Zentrum erinnert ein schwebender Hinweis daran. Änderungen erfordern das aktivierte Zentrum und, im Produktionsmodus oder sobald ein Benutzer angemeldet ist, die Rolle `admin_centre` (ein Konto `utilisateur` bleibt auch bei geöffnetem Zentrum schreibgeschützt; ebenso in der ODV-Planung: ATC-Sitzungen, Aktivierungen, Zuweisungen).
 
-- **Nicht verfügbare Piloten ausblenden** (Kästchen der Palette und der Wochenansicht, von der ODV-Seite übernommen): nur Mitglieder, die ein an diesem Tag angegebener Zeitraum für einen Flug zuweisbar macht, bleiben (gleiche Regel wie die Konflikte: Boden, Ausgleich, Lotsendienst außerhalb SOG oder nur Lotsendienst zählen nicht) (Woche: mindestens ein Tag); in diesem Browser gespeichert.
-- **Rückgängig** (Wochenleiste oder Strg+Z): nimmt die letzten zehn Änderungen des Flugbefehls zurück (Streifen verschoben, Element gesetzt oder geändert…), Neuausgaben und Speichern inbegriffen; beim Wochenwechsel geleert.
-- **Antrag zurückziehen** (Reservierungsanträge): ein irrtümlich als beantragt eingetragenes Gebiet wird wieder „fehlend“.
-- **Stufe Experte** (Mein Profil › Nutzungsstufe, 4): Block „Gemeinsame Zeitfenster und wahrscheinliche Missionen“, von der ODV-Seite übernommen — Zeitfenster, in denen mehrere Piloten verfügbar sind (Klick: Fenster des Zeitfensters, Matrix Missionen × Posten) und passende Missionsfamilien, flach in der Seite; „Vollständige ODV-Seite“ öffnet die ODV-Seite (Arbeitsmappe, Raster, Export), die keine eigene Registerkarte mehr hat.
+Die Seite hat sechs Blöcke, ohne Wahl der Ansicht. Was jeder zeigt, hängt von der Nutzungsstufe ab (Mein Profil › „Nutzungsstufe“):
+
+| Block | Inhalt | Stufe |
+|---|---|---|
+| „Tagesbefehl“ | Wochenleiste, dann die Zeitleiste des Tages (einziger Block im schreibgeschützten Modus) | 1 |
+| „Besatzung der Woche“ | Verfügbarkeiten der Mitglieder Tag für Tag, DLO und Fristen, Verfügbarkeitsänderungen | 2 |
+| „Gebiete“ | Gebietsaktivierungen nach Netzwerk, dann Reservierungsanträge | 2 |
+| „Gemeinsame Zeitfenster“ | Zeitfenster, in denen mehrere Piloten verfügbar sind; ein Klick öffnet das Fenster des Zeitfensters | 4 (Experte) |
+| „Wahrscheinliche Missionen“ | passende Missionsfamilien je Zeitfenster, Link zur ODV-Seite | 4 (Experte) |
+| „Statistik“ | Flüge der Woche und Auslastung der Mitglieder | 2 |
+
+- **Nicht verfügbare Piloten ausblenden** (Kästchen der Palette und des Blocks „Besatzung der Woche“, von der ODV-Seite übernommen): nur Mitglieder, die ein an diesem Tag angegebener Zeitraum für einen Flug zuweisbar macht, bleiben (gleiche Regel wie die Konflikte: Boden, Ausgleich, Lotsendienst außerhalb SOG oder nur Lotsendienst zählen nicht) (Woche: mindestens ein Tag); in diesem Browser gespeichert.
 Alles wird im gemeinsamen Datenpool gespeichert: der Befehl der Woche in `data/odv/<Jahr>-W<Woche>.json`, die Einstellungen in `data/config/odv.json`. Die Verfügbarkeiten bleiben die der Piloten, die Besatzung eines Missionsflugs die der Zuweisungen.
 Die Zeiten sind in z (UTC). Datenmodell: [Einsatztafel](../technique/ODV_ORDRES.md).
 
@@ -490,8 +499,8 @@ Die Zeiten sind in z (UTC). Datenmodell: [Einsatztafel](../technique/ODV_ORDRES.
 
 - „◀“ und „▶“ wechseln die Woche, „Diese Woche“ kehrt zur laufenden Woche zurück.
 - Die Tagesreiter zeigen in Rot die Zahl der Elemente im Konflikt an diesem Tag.
-- „Tag“, „Woche“ und „Statistik“ wechseln die Ansicht.
 - „Dienst“ bestimmt den Diensthabenden der Woche.
+- „↶ Rückgängig“ (oder Strg+Z): nimmt die letzten zehn Änderungen des Flugbefehls zurück (Streifen verschoben, Element gesetzt oder geändert…), Neuausgaben und Speichern inbegriffen; beim Wochenwechsel geleert.
 - „Briefing“ (oder die Taste F) zeigt den Tagesbefehl im Vollbild; die Pfeile ← und → wechseln den Tag.
 - Die Statuszeile zeigt „Gespeichert“ oder „In diesem Browser gespeichert“, wenn der Datenordner nicht freigegeben ist.
 
@@ -546,20 +555,31 @@ Auf einem Streifen: „⚠ n“ zählt seine Konflikte, „P“ zeigt an, dass i
 
 Ein Flug verlangt eine verfügbare Kategorie; ein Lotsendienst eine verfügbare Kategorie oder „SOG-Lotsendienst“; Sonstiges akzeptiert auch „Nur am Boden verfügbar“. Lotsendienst und Flug außerhalb SOG, DCS, nicht verfügbar und Ausgleich sind nie einsetzbar.
 
-### Woche und Statistik
+### Besatzung der Woche
 
-- **Woche**: eine Zeile pro Mitglied, eine Zelle pro Tag mit dem Balken der angegebenen Verfügbarkeiten und der Zahl der Elemente, auf denen es steht. Ein Klick auf eine Zelle öffnet seine Zeiträume des Tages: Kategorie, Beginn, Ende und „Ausgleich ab“, der einen Ausgleich bis Mitternacht setzt. Die Zeiträume werden in die Angabe des Piloten geschrieben.
+Block der Stufe 2: eine Zeile pro Mitglied, eine Zelle pro Tag mit dem Balken der angegebenen Verfügbarkeiten und der Zahl der Elemente, auf denen es steht. Ein Klick auf eine Zelle öffnet seine Zeiträume des Tages: Kategorie, Beginn, Ende und „Ausgleich ab“, der einen Ausgleich bis Mitternacht setzt. Die Zeiträume werden in die Angabe des Piloten geschrieben.
 - **DLO und Fristen**: dauerhafte Ziele jedes Mitglieds („＋“ zum Hinzufügen, Klick zum Ändern), mit optionaler Frist (rot bei höchstens 3 Arbeitstagen, gelb bei höchstens 10); eine DLO wird durch einen erledigten Flug, der sie enthält (DLO des Elements, Bezeichnung, Mission), mit dem Mitglied in der Besatzung automatisch geschlossen. Die Palette zeigt „◎n“ offene DLO je Mitglied, und das Fenster eines Elements erinnert an die der Besatzung.
 - „Verfügbarkeitsänderungen“ listet die seit ihrer letzten Berücksichtigung geänderten Angaben; „Berücksichtigt“ und „Alle berücksichtigen“ markieren sie in diesem Browser.
-- **Statistik**: geplante Flüge, Gesamtdauer, erledigt, nicht erledigt, abgesagt, AAR, ME, Bâchés, MNE; je Mitglied: verfügbare Zeit in den Dienstzeiten, Flugzeit, Auslastung (orange über 70 %, rot über 100 % oder ohne Verfügbarkeit).
 
-### Gebietsaktivierungen
+### Gebiete
 
-Dieser Block erfasst die Gebietsaktivierungen der Woche (`data/atc/activations/<Jahr>-W<Woche>.json`) in zwei Spalten nebeneinander, VATSIM und IVAO: Tag, Gebiet, Status (aktiv, beantragt, abgelehnt), Beginn, Ende, Bemerkung, Netzwerk. Eine Aktivierung „beide Netze“ erscheint in beiden Spalten; ein Wechsel des Netzwerks verschiebt sie. VATSIM veröffentlicht keine Aktivierungen: Seine Spalte wird von Hand erfasst. In der IVAO-Spalte übernimmt „Von IVAO importieren“ die von IVAO veröffentlichten Zeiten (API-Schlüssel der Installation), unter der Liste eingeklappt, sowie die IVAO-Trainings, -Prüfungen und -Buchungen der Woche (ATC-Sitzungen); manuelle Eingaben bleiben. IVAO-Sitzungen werden beim Öffnen einer Woche auch automatisch importiert, höchstens einmal pro Stunde, wenn die Seite schreiben darf. Eine Änderung berechnet die Gebiete der Flüge sofort neu. Die ODV-Planung zeigt denselben Block mit denselben Daten.
+Block der Stufe 2, in zwei Teilen: Gebietsaktivierungen nach Netzwerk, dann Reservierungsanträge.
 
-### Reservierungsanträge
+**Gebietsaktivierungen nach Netzwerk**: Der erste Teil erfasst die Gebietsaktivierungen der Woche (`data/atc/activations/<Jahr>-W<Woche>.json`) in zwei Spalten nebeneinander, VATSIM und IVAO: Tag, Gebiet, Status (aktiv, beantragt, abgelehnt), Beginn, Ende, Bemerkung, Netzwerk. Eine Aktivierung „beide Netze“ erscheint in beiden Spalten; ein Wechsel des Netzwerks verschiebt sie. VATSIM veröffentlicht keine Aktivierungen: Seine Spalte wird von Hand erfasst. In der IVAO-Spalte übernimmt „Von IVAO importieren“ die von IVAO veröffentlichten Zeiten (API-Schlüssel der Installation), unter der Liste eingeklappt, sowie die IVAO-Trainings, -Prüfungen und -Buchungen der Woche (ATC-Sitzungen); manuelle Eingaben bleiben. IVAO-Sitzungen werden beim Öffnen einer Woche auch automatisch importiert, höchstens einmal pro Stunde, wenn die Seite schreiben darf. Eine Änderung berechnet die Gebiete der Flüge sofort neu. Die ODV-Planung zeigt denselben Block mit denselben Daten.
 
-Dieser Block listet die von den Missionsflügen der Woche durchflogenen Gebiete (geplante Route und Arbeitsgebiete der Mission, für einen Übungsflug eingegebene Gebiete) ohne „aktive“ Aktivierung ihres Netzwerks: Tag, Gebiet, Netzwerk, Zeitfenster, Flüge, Status. „Als beantragt eintragen“ (oder „Alle als beantragt eintragen“) fügt sie den gemeinsamen Aktivierungen hinzu; der Antrag selbst wird auf der Seite des Netzwerks gestellt („Liste kopieren“, Link zu den IVAO-Aktivierungsanträgen). Ein P-Gebiet wird als „meiden“ gemeldet. Beim Öffnen einer Woche importiert die Seite die IVAO-ATC-Sitzungen (Trainings, Prüfungen, Buchungen) automatisch, höchstens einmal pro Stunde, mit dem gemeinsamen Import der ODV-Planung.
+**Reservierungsanträge**: Der zweite Teil listet die von den Missionsflügen der Woche durchflogenen Gebiete (geplante Route und Arbeitsgebiete der Mission, für einen Übungsflug eingegebene Gebiete) ohne „aktive“ Aktivierung ihres Netzwerks: Tag, Gebiet, Netzwerk, Zeitfenster, Flüge, Status. „Als beantragt eintragen“ (oder „Alle als beantragt eintragen“) fügt sie den gemeinsamen Aktivierungen hinzu; der Antrag selbst wird auf der Seite des Netzwerks gestellt („Liste kopieren“, Link zu den IVAO-Aktivierungsanträgen). Ein P-Gebiet wird als „meiden“ gemeldet. Beim Öffnen einer Woche importiert die Seite die IVAO-ATC-Sitzungen (Trainings, Prüfungen, Buchungen) automatisch, höchstens einmal pro Stunde, mit dem gemeinsamen Import der ODV-Planung. „Antrag zurückziehen“: Ein irrtümlich als beantragt eingetragenes Gebiet wird wieder „fehlend“.
+
+### Gemeinsame Zeitfenster
+
+Block der Stufe Experte, von der ODV-Seite übernommen und auf die von der Einsatztafel angezeigte Woche abgestimmt: die 7 Tage × 3 Zeitfenster, mit der Zahl der freien Piloten je Feld und den Filtern „Mindestens N Pilot(en)“ und „Gemeinsamer Simulator“. Ein Klick auf ein Feld öffnet das Fenster des Zeitfensters (Matrix Missionen × Posten). Einzelheiten: Kapitel ODV-Planung, „Gemeinsame Zeitfenster“ und „Fenster ‚Freie Piloten zuweisen‘“.
+
+### Wahrscheinliche Missionen
+
+Block der Stufe Experte, ebenfalls auf die Woche der Einsatztafel abgestimmt: passende Missionsfamilien je Zeitfenster, mit der Tabelle und den Regeln der ODV-Seite (siehe ODV-Planung, „Wahrscheinliche Missionen“). Unten öffnet der Link „Vollständige ODV-Seite: Arbeitsmappe, Raster, Export…“ die ODV-Seite, die keinen Reiter hat.
+
+### Statistik
+
+Block der Stufe 2: geplante Flüge, Gesamtdauer, erledigt, nicht erledigt, abgesagt, AAR, ME, Bâchés, MNE; je Mitglied: verfügbare Zeit in den Dienstzeiten, Flugzeit, Auslastung (orange über 70 %, rot über 100 % oder ohne Verfügbarkeit).
 
 ## Einstellungen › Zentrum
 <!-- page: apps/settings/centre.html -->

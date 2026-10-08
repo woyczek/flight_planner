@@ -604,13 +604,11 @@ en las Observaciones. Después se aplican las ayudas habituales (aeronave conoci
 <!-- page: apps/cr/SOF/sof_cr.html -->
 <!-- page: apps/cr/SPECIAL/special_cr.html -->
 <!-- page: apps/cr/SURVEY/survey_cr.html -->
-<!-- page: apps/cr/MissionCore/demo_cr.html -->
 
 Todas las familias comparten la misma página de introducción: los mismos bloques comunes, más algunos bloques propios
 de la familia. En ella redacta el informe de un vuelo realizado y, después, lo guarda en el registro de misiones.
 Se llega a ella por la página «Nuevo informe», por una misión asignada, o haciendo clic en una misión
-en un informe estadístico o en una ficha (la misión se abre entonces en modo de modificación). La página `demo_cr.html` es una
-demostración del motor, fuera de la lista de familias.
+en un informe estadístico o en una ficha (la misión se abre entonces en modo de modificación).
 
 **Según el nivel de uso: informe breve o detallado.** En los niveles 1 (Tripulación) y 2 (Planificación), el formulario solo muestra lo esencial del informe:
 - identificación (misión, n.º de informe, fecha, serie) y resultado;
@@ -946,7 +944,6 @@ da los indicadores propios de la familia, que se recogen en los informes estadí
 | COMBAT | Dispositivo y zona · Interceptación (serie «Interceptación / identificación (VID)») · Enfrentamientos · Balance de la sesión | enfrentamientos, victorias, disparos válidos, paradas de seguridad (KIO) |
 | SOF | Unidad apoyada · Zonas (PZ / LZ / DZ) · Perfil y métodos · Personal | personal desplegado, personal recuperado, zonas utilizadas, misiones nocturnas con NVG |
 | SPECIAL | Transporte VIP / gubernamental (series VIP) · Traslado (series de traslado) · Ensayo en vuelo y Puntos de ensayo (series de ensayo) · Formación y Ejercicios (series de formación) | pasajeros VIP, vuelos de traslado, puntos de ensayo conformes / realizados, ejercicios completados |
-| DEMO (demostración) | Izado (helicóptero + grúa marcada) · Lanzamiento (avión o anfibio + lanzamiento marcado) | ciclos de grúa, personas izadas, carga lanzada (kg) |
 
 Las familias HEMS y FIRE pueden recuperar su antiguo registro CSV: consulte
 [Informes de una familia](#informes-de-una-familia).
@@ -1196,7 +1193,6 @@ navegador»).
 <!-- page: apps/cr/SOF/sof_reporting.html -->
 <!-- page: apps/cr/SPECIAL/special_reporting.html -->
 <!-- page: apps/cr/SURVEY/survey_reporting.html -->
-<!-- page: apps/cr/MissionCore/demo_reporting.html -->
 
 El informe de una familia solo muestra las misiones de esa familia, con sus propios indicadores.
 Se llega a él por «Registro de misiones ▾ › Ver informe» en un informe de misión, por una línea de «Resumen

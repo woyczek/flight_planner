@@ -604,13 +604,11 @@ in den Bemerkungen. Danach gelten die üblichen Hilfen (bekanntes Luftfahrzeug, 
 <!-- page: apps/cr/SOF/sof_cr.html -->
 <!-- page: apps/cr/SPECIAL/special_cr.html -->
 <!-- page: apps/cr/SURVEY/survey_cr.html -->
-<!-- page: apps/cr/MissionCore/demo_cr.html -->
 
 Alle Familien teilen dieselbe Eingabeseite: dieselben gemeinsamen Blöcke, dazu einige Blöcke, die der
 Familie eigen sind. Sie verfassen hier den Bericht eines durchgeführten Flugs und speichern ihn dann im Einsatzregister.
 Sie erreichen sie über die Seite „Neuer Bericht“, über eine zugewiesene Mission oder durch Klick auf eine Mission
-in einer Auswertung oder einem Blatt (die Mission öffnet sich dann zur Bearbeitung). Die Seite `demo_cr.html` ist eine
-Demonstration der Engine, außerhalb der Liste der Familien.
+in einer Auswertung oder einem Blatt (die Mission öffnet sich dann zur Bearbeitung).
 
 **Je nach Nutzungsstufe: kurzer oder ausführlicher Bericht.** Auf den Stufen 1 (Besatzung) und 2 (Planung) zeigt das Formular nur das Wesentliche des Berichts:
 - Identifikation (Mission, Berichtsnummer, Datum, Serie) und Ergebnis;
@@ -946,7 +944,6 @@ nennt die Kennzahlen der Familie, die in die Auswertungen übernommen werden.
 | COMBAT | Aufstellung und Gebiet · Abfangen (Serie „Abfangen / Identifizierung (VID)“) · Gefechte · Bilanz der Übung | Gefechte, Abschüsse, gültige Schüsse, Sicherheitsabbrüche (KIO) |
 | SOF | Unterstützte Einheit · Zonen (PZ / LZ / DZ) · Profil und Methoden · Personal | abgesetztes Personal, aufgenommenes Personal, genutzte Zonen, Nachtmissionen unter NVG |
 | SPECIAL | VIP- / Regierungstransport (VIP-Serien) · Überführung (Überführungsserien) · Flugerprobung und Testpunkte (Erprobungsserien) · Ausbildung und Übungen (Ausbildungsserien) | VIP-Passagiere, Überführungen, konforme / durchgeführte Testpunkte, durchgeführte Übungen |
-| DEMO (Demonstration) | Windeneinsatz (Hubschrauber + Winde angekreuzt) · Abwurf (Flugzeug oder Amphibienflugzeug + Abwurf angekreuzt) | Windenzyklen, gewinschte Personen, abgeworfene Last (kg) |
 
 Die Familien HEMS und FIRE können ihr altes CSV-Register übernehmen: siehe
 [Auswertung einer Familie](#auswertung-einer-familie).
@@ -1196,7 +1193,6 @@ Browser“).
 <!-- page: apps/cr/SOF/sof_reporting.html -->
 <!-- page: apps/cr/SPECIAL/special_reporting.html -->
 <!-- page: apps/cr/SURVEY/survey_reporting.html -->
-<!-- page: apps/cr/MissionCore/demo_reporting.html -->
 
 Die Auswertung einer Familie zeigt nur die Missionen dieser Familie, mit ihren eigenen Kennzahlen.
 Sie erreichen sie über „Einsatzregister ▾ › Auswertung anzeigen“ in einem Bericht, über eine Zeile von „Übersicht

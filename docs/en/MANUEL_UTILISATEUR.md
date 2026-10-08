@@ -604,13 +604,11 @@ in the Remarks. The usual helpers then apply (known aircraft, airfield, weather)
 <!-- page: apps/cr/SOF/sof_cr.html -->
 <!-- page: apps/cr/SPECIAL/special_cr.html -->
 <!-- page: apps/cr/SURVEY/survey_cr.html -->
-<!-- page: apps/cr/MissionCore/demo_cr.html -->
 
 All families share the same entry page: the same common blocks, plus a few blocks specific
 to the family. You write the report of a flight you have flown there, then save it in the mission ledger.
 You reach it from the “New report” page, from an assigned mission, or by clicking a mission
-in a reporting page or a sheet (the mission then opens for editing). The `demo_cr.html` page is a
-demonstration of the engine, outside the list of families.
+in a reporting page or a sheet (the mission then opens for editing).
 
 **Depending on the usage level: short or detailed report.** At levels 1 (Crew) and 2 (Planning), the form only shows the essentials of the report:
 - identification (mission, report no., date, series) and result;
@@ -946,7 +944,6 @@ gives the family's own indicators, used in the reporting pages.
 | COMBAT | Setup and area · Interception (“Interception / identification (VID)” series) · Engagements · Session debrief | engagements, wins, valid shots, knock-it-offs (KIO) |
 | SOF | Supported unit · Zones (PZ / LZ / DZ) · Profile and methods · Personnel | personnel delivered, personnel recovered, zones used, night NVG missions |
 | SPECIAL | VIP / government transport (VIP series) · Ferry (ferry series) · Flight test and Test points (test series) · Training and Exercises (training series) | VIP passengers, ferry flights, test points passed / flown, exercises completed |
-| DEMO (demonstration) | Hoist (helicopter + hoist ticked) · Airdrop (aeroplane or amphibian + drop ticked) | hoist cycles, persons hoisted, cargo dropped (kg) |
 
 The HEMS and FIRE families can take over their old CSV ledger: see
 [Family reporting](#family-reporting).
@@ -1196,7 +1193,6 @@ only”).
 <!-- page: apps/cr/SOF/sof_reporting.html -->
 <!-- page: apps/cr/SPECIAL/special_reporting.html -->
 <!-- page: apps/cr/SURVEY/survey_reporting.html -->
-<!-- page: apps/cr/MissionCore/demo_reporting.html -->
 
 The reporting of a family only shows the missions of that family, with its own indicators.
 You reach it from “Mission ledger ▾ › View reporting” in a report, from a line of “Summary

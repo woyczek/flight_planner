@@ -604,13 +604,11 @@ dans les Remarques. Les aides habituelles s'appliquent ensuite (appareil connu, 
 <!-- page: apps/cr/SOF/sof_cr.html -->
 <!-- page: apps/cr/SPECIAL/special_cr.html -->
 <!-- page: apps/cr/SURVEY/survey_cr.html -->
-<!-- page: apps/cr/MissionCore/demo_cr.html -->
 
 Toutes les familles partagent la même page de saisie : mêmes blocs communs, plus quelques blocs propres
 à la famille. Vous y rédigez le CR d'un vol réalisé, puis l'enregistrez dans le registre des missions.
 On y arrive par la page « Nouveau compte rendu », par une mission affectée, ou en cliquant une mission
-dans un reporting ou une fiche (la mission s'ouvre alors en modification). La page `demo_cr.html` est une
-démonstration du moteur, hors liste des familles.
+dans un reporting ou une fiche (la mission s'ouvre alors en modification).
 
 **Selon le niveau d'utilisation : CR court ou CR détaillé.** Aux niveaux 1 (Équipage) et 2 (Planification), le formulaire ne montre que l'essentiel du compte rendu :
 - identification (mission, n° de CR, date, série) et résultat ;
@@ -946,7 +944,6 @@ donne les indicateurs propres à la famille, repris dans les reportings.
 | COMBAT | Dispositif et zone · Interception (série « Interception / identification (VID) ») · Engagements · Bilan de la séance | engagements, victoires, tirs valides, arrêts de sécurité (KIO) |
 | SOF | Unité appuyée · Zones (PZ / LZ / DZ) · Profil et méthodes · Personnels | personnels déposés, personnels récupérés, zones utilisées, missions de nuit sous NVG |
 | SPECIAL | Transport VIP / gouvernemental (séries VIP) · Convoyage (séries convoyage) · Essai en vol et Points d'essai (séries essai) · Formation et Exercices (séries formation) | passagers VIP, convoyages, points d'essai conformes / réalisés, exercices réalisés |
-| DEMO (démonstration) | Treuillage (hélicoptère + treuil coché) · Largage (avion ou amphibie + largage coché) | cycles de treuil, personnes treuillées, charge larguée (kg) |
 
 Les familles HEMS et FIRE peuvent reprendre leur ancien registre CSV : voir
 [Reporting d'une famille](#reporting-dune-famille).
@@ -1196,7 +1193,6 @@ uniquement »).
 <!-- page: apps/cr/SOF/sof_reporting.html -->
 <!-- page: apps/cr/SPECIAL/special_reporting.html -->
 <!-- page: apps/cr/SURVEY/survey_reporting.html -->
-<!-- page: apps/cr/MissionCore/demo_reporting.html -->
 
 Le reporting d'une famille ne montre que les missions de cette famille, avec ses indicateurs propres.
 On y arrive par « Registre des missions ▾ › Voir le reporting » dans un CR, par une ligne de « Synthèse
