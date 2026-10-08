@@ -948,6 +948,20 @@
     if (S.view === 'jour') renderDay();
   }
 
+  // ---- disposition des blocs : celle mémorisée pour l'ancienne page (vues, bloc « Semaine », cadre Expert) est oubliée
+  // une fois, avant que le framework ne la relise — sinon les blocs qu'elle cite passent après les nouveaux et l'ordre du
+  // jour n'est plus en tête, ou reste masqué ; repère v2 gardé dans l'état (le framework réécrit l'objet entier)
+  try {
+    const k = `repositoryFramework:${window.RepositoryNav?.page?.path || location.pathname}`,
+      st = JSON.parse(localStorage.getItem(k) || 'null');
+    if (st && st.v2 !== 1) {
+      delete st.order;
+      delete st.layout;
+      if (st.hidden) delete st.hidden.jour;
+      st.v2 = 1;
+      localStorage.setItem(k, JSON.stringify(st));
+    }
+  } catch {}
   // ---- titres des blocs (posés à la source, dans la langue de la page ; écrits seulement s'ils changent)
   const BLOCK_TITLES = {
     '#odvoCrewSection > h2': L4('Équipage de la semaine', 'Crew of the week', 'Besatzung der Woche', 'Tripulación de la semana'),
@@ -3000,6 +3014,9 @@
   }
 
   // ---- vue de la semaine : dispos par membre et modifications
+  // DLO et butées : tableau repliable (triangle), ouvert ou fermé selon le dernier choix (préférence de ce navigateur)
+  const DLO_OPEN = 'odvoDloOpen:v1';
+
   function renderWeekView() {
     const ds = dates();
     // éléments actifs du jour où le membre est d'équipage (nombre dans la case, détail en infobulle)
@@ -3017,9 +3034,9 @@
       <tbody>${['staff', 'autre'].map(g => S.members.filter(m => m.groupe === g && (!hideUnav() || ds.some(d => availableOn(m.tri, d)))).map(row).join('')).join('')}</tbody></table>
       ${hideUnavBox()}
       <p class="mut">${esc(t(L4('Clic sur une case : plages déclarées du membre ce jour-là (récup comprise).', 'Click a cell: the member’s declared ranges that day (time off included).', 'Klick auf eine Zelle: angegebene Zeiträume des Mitglieds an diesem Tag (Ausgleich inklusive).', 'Clic en una casilla: franjas declaradas por el miembro ese día (descanso incluido).')))}</p>
-      <h3>${esc(t(L4('DLO et butées', 'DLO and deadlines', 'DLO und Fristen', 'DLO y plazos')))}</h3>
+      <details class="odvo-dlo"${K.store.get(DLO_OPEN, '1') === '1' ? ' open' : ''}><summary><h3>${esc(t(L4('DLO et butées', 'DLO and deadlines', 'DLO und Fristen', 'DLO y plazos')))}</h3></summary>
       <p class="mut">${esc(t(L4('Objectifs de chaque membre, d’une semaine à l’autre ; butée : date limite (rouge à 3 jours ouvrés ou moins, jaune à 10 ou moins) ; fermés d’office par un vol fait qui les contient.', 'Each member’s objectives, from one week to the next; deadline: red at 3 working days or less, yellow at 10 or less; closed automatically by a flight done that contains them.', 'Ziele jedes Mitglieds über die Wochen; Frist: rot bei höchstens 3 Arbeitstagen, gelb bei höchstens 10; durch einen erledigten Flug, der sie enthält, automatisch geschlossen.', 'Objetivos de cada miembro de una semana a otra; plazo: rojo a 3 días hábiles o menos, amarillo a 10 o menos; cerrados automáticamente por un vuelo hecho que los contiene.')))}</p>
-      <table class="odvo-wk odvo-dlotab"><tbody>${S.members.map(m => `<tr><th>${esc(m.tri)}</th><td>${dloChips(m.tri)}${S.editable ? `<button type="button" class="odvo-dloadd" data-dlo="${esc(m.tri)}|" title="${esc(t(L4('Ajouter une DLO', 'Add a DLO', 'DLO hinzufügen', 'Añadir un DLO')))}">＋</button>` : ''}</td></tr>`).join('')}</tbody></table>
+      <table class="odvo-wk odvo-dlotab"><tbody>${S.members.map(m => `<tr><th>${esc(m.tri)}</th><td>${dloChips(m.tri)}${S.editable ? `<button type="button" class="odvo-dloadd" data-dlo="${esc(m.tri)}|" title="${esc(t(L4('Ajouter une DLO', 'Add a DLO', 'DLO hinzufügen', 'Añadir un DLO')))}">＋</button>` : ''}</td></tr>`).join('')}</tbody></table></details>
       <h3>${esc(t(L4('Modifications de dispo', 'Availability changes', 'Verfügbarkeitsänderungen', 'Cambios de disponibilidad')))}</h3>
       ${changes.length ? `<ul class="odvo-chg">${changes.map(([tri, d]) => `<li><b>${esc(tri)}</b> ${esc(String(d.updated_at).slice(0, 16).replace('T', ' '))}z ${d.by && d.by !== tri ? `(${esc(d.by)})` : ''} <button type="button" data-seen="${esc(tri)}">${esc(t(L4('Pris en compte', 'Noted', 'Berücksichtigt', 'Tenido en cuenta')))}</button></li>`).join('')}</ul><button type="button" data-seen="*">${esc(t(L4('Tout prendre en compte', 'Note all', 'Alle berücksichtigen', 'Tener todo en cuenta')))}</button>` : `<p class="mut">${esc(t(L4('Aucune modification depuis la dernière prise en compte.', 'No change since last noted.', 'Keine Änderung seit der letzten Berücksichtigung.', 'Ningún cambio desde la última vez.')))}</p>`}`;
   }
@@ -3117,6 +3134,9 @@
     $('#odvoBar').addEventListener('change', ev => {
       if (ev.target.dataset.act === 'perm') mutate(doc => (doc.permanence = ev.target.value));
     });
+    $('#odvoWeekView').addEventListener('toggle', ev => {
+      if (ev.target.matches('.odvo-dlo')) K.store.set(DLO_OPEN, ev.target.open ? '1' : '0');
+    }, true);
     for (const id of ['#odvoWeekView', '#odvoPalette']) $(id).addEventListener('change', ev => {
       if (ev.target.matches('[data-hideunav]')) toggleHideUnav(ev.target.checked);
     });
