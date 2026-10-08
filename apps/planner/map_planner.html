@@ -19,7 +19,7 @@
 <script src="../../shared/mission_core/vendor/js-yaml.min.js"></script>
 <script>window.SIA_MISSION_NS='planner'</script><script src="../cpco/mission_store.js?v=559e3351"></script>
 <script src="../../shared/carto/aero_symbols.js?v=50ad43df"></script><script src="../../shared/carto/vertical_profile.js?v=75163ccf"></script><script src="../../shared/carto/vprof_editor.js?v=e34b66fc"></script><script src="../../AircraftDB/aircraft_db.js"></script><script src="../../shared/flight_performance_model.js?v=e12c839a"></script><script src="../../AircraftDB/aircraft_perf.js"></script><script src="../../shared/mission_routing.js?v=3cc1352c"></script><script src="../../shared/mission_estimate.js?v=e352037a"></script><script src="../../shared/mission_exercise.js?v=b68ac247"></script>
-<script src="../../shared/sia_base.js?v=3ab938f8"></script><script src="../../shared/aar_tracks.js?v=8f76a899"></script><script src="../../shared/airac.js?v=1fa4a088"></script><script src="../../shared/sticky_frame.js?v=90db4df1"></script>
+<script src="../../shared/sia_base.js?v=4fe9f369"></script><script src="../../shared/aar_tracks.js?v=8f76a899"></script><script src="../../shared/airac.js?v=1fa4a088"></script><script src="../../shared/sticky_frame.js?v=90db4df1"></script>
 <style data-layer="app">
 @layer app {
   :root {
@@ -1591,6 +1591,9 @@ function renderSiaBaseLine(b) {
 
 /** Base SIA lue ou mémorisée → état du studio : espaces, villes, MORA, obstacles, base aéro, axes AAR, routage ;
  *  invalide l'assemblage et redessine la carte interactive. */
+/** Exécute f quand le navigateur est inactif (après le premier affichage), sinon après un court délai. */
+const idle = f => (window.requestIdleCallback || (g => setTimeout(g, 50)))(f);
+
 function applyBase(b) {
   if (!b) return;
   window.MissionRouting?.setData({
@@ -1599,15 +1602,23 @@ function applyBase(b) {
   });
   ({
     airspaces,
-    cities,
     moraCells,
     xmlInventoryData
   } = b);
+  // villes (≈ 70 000) rangées à part dans la base du navigateur (SiaBase.cities) : lues une fois la page affichée, hors du
+  // chemin critique, puis la carte à l'écran se redessine ; base d'avant la séparation : ses villes telles quelles
+  cities = Array.isArray(b.cities) ? b.cities : [];
+  if (!cities.length && b.citiesCount && SiaBase.cities) idle(() => SiaBase.cities().then(c => {
+    if (!c?.length || cities.length) return;
+    cities = c;
+    citiesSorted = null;
+    osmMap?._siaRedraw?.()
+  }));
   obstacleMax = b.obstacleMax || {};
   aero = b.aero || aero;
   aarXml = b.aarXml || aarXml;
   window.siaAirac = b.airac || '';
-  loadAarTracks();
+  idle(loadAarTracks); // analyse du XML des axes de ravitaillement : à l'inactivité, après le premier affichage
   renderSiaBaseLine(b);
   assemblyRenderKey = '';
   updateGenerate();
@@ -2202,34 +2213,37 @@ function renderZonePick() {
       off = hits.length - n;
     return`<li class="${n?'':'none'}" title="${n} contour(s) retenu(s)${off?` ; ${off} dans une famille non cochée`:''}">${esc(zoneChipLabel(q))} <span class="small">${n}${off?`+${off}`:''}</span><button type="button" data-zone-remove="${i}" aria-label="Retirer ${esc(q)}">×</button></li>`
   }).join('');
-  // Complétion : toutes les familles (R, P, D, CTR, TMA, SIV), groupes « R 166 * » et alias ; déjà ajoutées exclues.
-  const free = airspaces.filter(a => a.name && !zoneItems.some(q => zoneHit(a, q))),
-    options = new Map,
-    groups = new Map;
-  for (const a of free) {
-    const label = `${a.type} ${a.name}`;
-    options.set(label, {
-      value: label,
-      label: `${label}${zoneLimits(a)?` — ${zoneLimits(a)}`:''}`
-    });
-    const base = `${a.type} ${zoneCore(a.name)}`;
-    (groups.get(base) ?? groups.set(base, new Set).get(base)).add(a.name.slice(zoneCore(a.name).length).trim() || zoneCore(a.name))
-  }
-  for (const [base, parts] of groups) {
-    const l = [...parts].sort((x, y) => x.localeCompare(y, 'fr', {
-      numeric: true
-    }));
-    if (l.length > 1) options.set(base + ' *', {
-      value: base + ' *',
-      label: `${base} — ${l.length} zones (${l.slice(0,6).join(', ')}${l.length>6?'…':''})`
-    })
-  }
-  for (const k of Object.keys(zoneAliases))
-    if (!zoneItems.some(q => aliasOf(q) === k)) options.set('@' + k, {
-      value: '@' + k,
-      label: `@${k} — alias, ${(zoneAliases[k]||[]).length} entrée(s)`
-    });
-  lazyOptions('zoneOptions', () => [...options.values()].sort((a, b) => zoneSort(a.value, b.value)).map(o => `<option value="${esc(o.value)}" label="${esc(o.label)}">`).join(''));
+  // Complétion : toutes les familles (R, P, D, CTR, TMA, SIV), groupes « R 166 * » et alias ; déjà ajoutées exclues —
+  // calculée seulement quand le champ reçoit le focus (lazyOptions) : parcourir 7 000 espaces coûtait 100 ms par rendu
+  lazyOptions('zoneOptions', () => {
+    const free = airspaces.filter(a => a.name && !zoneItems.some(q => zoneHit(a, q))),
+      options = new Map,
+      groups = new Map;
+    for (const a of free) {
+      const label = `${a.type} ${a.name}`;
+      options.set(label, {
+        value: label,
+        label: `${label}${zoneLimits(a)?` — ${zoneLimits(a)}`:''}`
+      });
+      const base = `${a.type} ${zoneCore(a.name)}`;
+      (groups.get(base) ?? groups.set(base, new Set).get(base)).add(a.name.slice(zoneCore(a.name).length).trim() || zoneCore(a.name))
+    }
+    for (const [base, parts] of groups) {
+      const l = [...parts].sort((x, y) => x.localeCompare(y, 'fr', {
+        numeric: true
+      }));
+      if (l.length > 1) options.set(base + ' *', {
+        value: base + ' *',
+        label: `${base} — ${l.length} zones (${l.slice(0,6).join(', ')}${l.length>6?'…':''})`
+      })
+    }
+    for (const k of Object.keys(zoneAliases))
+      if (!zoneItems.some(q => aliasOf(q) === k)) options.set('@' + k, {
+        value: '@' + k,
+        label: `@${k} — alias, ${(zoneAliases[k]||[]).length} entrée(s)`
+      });
+    return [...options.values()].sort((a, b) => zoneSort(a.value, b.value)).map(o => `<option value="${esc(o.value)}" label="${esc(o.label)}">`).join('');
+  });
   const kept = selectedAirspaces({
       _profileId: p.id
     }),
@@ -6856,6 +6870,7 @@ $('generate').onclick = async () => {
     task = null,
     stopped = '';
   try {
+    if (outputMaps().some(citiesOn) && !cities.length && SiaBase.cities) cities = await SiaBase.cities().catch(() => []) || [];
     if (outputMaps().some(citiesOn) && !cities.length) throw Error(tl([
       'Villes absentes de la base aéronautique (villes_geonames.csv non trouvé à sa construction) : décocher « Libellés de villes » dans le profil, ou reconstruire la base (Paramètres › Maintenance › Données aéronautiques).',
       'Cities missing from the aeronautical database (villes_geonames.csv not found when it was built): untick “City labels” in the profile, or rebuild the database (Settings › Maintenance › Aeronautical data).',
