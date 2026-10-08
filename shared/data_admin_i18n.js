@@ -70,7 +70,7 @@ window.DataAdminI18n = {
     "Indicativos"
   ],
   "Base": [
-    "Basis",
+    "Datenbank",
     "Base"
   ],
   "Opérationnel": [
@@ -288,10 +288,6 @@ window.DataAdminI18n = {
   "Fuseau": [
     "Zeitzone",
     "Zona horaria"
-  ],
-  "Base": [
-    "Datenbank",
-    "Base"
   ],
   "Référence (anonymisée, dans le dépôt)": [
     "Referenz (anonymisiert, im Repository)",
@@ -892,5 +888,89 @@ window.DataAdminI18n = {
   "Mise à jour depuis le site : « Coller la page Flotte du site… » (copier-coller de la page « Flotte virtuelle »), vérifier, puis « Enregistrer dans le dépôt ». Ou, avec le script :": [
     "Aktualisierung von der Website: „Flottenseite der Website einfügen…“ (Kopieren und Einfügen der Seite „Virtuelle Flotte“), prüfen, dann „Im Repository speichern“. Oder mit dem Skript:",
     "Actualización desde el sitio: «Pegar la página Flota del sitio…» (copiar y pegar la página «Flota virtual»), comprobar y luego «Guardar en el repositorio». O, con el script:"
+  ],
+  "Flotte du {SOG} : appareils affectables et proposés dans les CR (immatriculation, type, indicatifs, base, opérateur ; plusieurs indicatifs séparés par des virgules). Dessous : les appareils qui volent dans le reporting, avec la case « personnel » (hors flotte).": [
+    "Flotte des {SOG}: zuweisbare Luftfahrzeuge, in den Berichten angeboten (Kennzeichen, Typ, Rufzeichen, Basis, Betreiber; mehrere Rufzeichen durch Kommas getrennt). Darunter: die Luftfahrzeuge, die im Reporting fliegen, mit dem Feld „persönlich“ (außerhalb der Flotte).",
+    "Flota de {SOG}: aeronaves asignables propuestas en los informes (matrícula, tipo, indicativos, base, operador; varios indicativos separados por comas). Debajo: las aeronaves que vuelan en el reporting, con la casilla «personal» (fuera de la flota)."
+  ],
+  "Emplacement (site)": [
+    "Standort (Website)",
+    "Ubicación (sitio web)"
+  ],
+  "Mise à jour depuis le site : automatique une fois par jour (lanceur, réglage sous la liste des appareils du reporting) ; à la main, « Coller la page Flotte du site… » (copier-coller de la page « Flotte virtuelle »), vérifier, puis « Enregistrer dans le dépôt ». Ou, avec le script :": [
+    "Aktualisierung von der Website: automatisch einmal am Tag (Starter, Einstellung unter der Liste der Luftfahrzeuge des Reportings); von Hand „Flottenseite der Website einfügen…“ (Kopieren und Einfügen der Seite „Virtuelle Flotte“), prüfen, dann „Im Repository speichern“. Oder mit dem Skript:",
+    "Actualización desde el sitio web: automática una vez al día (lanzador, ajuste bajo la lista de aeronaves del reporting); a mano, «Pegar la página Flota del sitio…» (copiar y pegar la página «Flota virtual»), comprobar y luego «Guardar en el repositorio». O, con el script:"
+  ],
+  "Flotte virtuelle": [
+    "Virtuelle Flotte",
+    "Flota virtual"
+  ],
+  "(relit la liste OACI sans attendre 30 jours),": [
+    "(liest die ICAO-Liste neu, ohne 30 Tage zu warten),",
+    "(relee la lista OACI sin esperar 30 días),"
+  ],
+  "Centre ({CENTRE})": [
+    "Zentrum ({CENTRE})",
+    "Centro ({CENTRE})"
+  ],
+  "Accès au Centre et réglages": [
+    "Zugang zum Zentrum und Einstellungen",
+    "Acceso al Centro y ajustes"
+  ],
+  "Accès au Centre indisponible (menu commun non chargé).": [
+    "Zugang zum Zentrum nicht verfügbar (gemeinsames Menü nicht geladen).",
+    "Acceso al Centro no disponible (menú común no cargado)."
+  ],
+  "Tronçon routé à partir de (NM)": [
+    "Gerouteter Abschnitt ab (NM)",
+    "Tramo enrutado a partir de (NM)"
+  ],
+  "Voies aériennes à partir de (ft)": [
+    "Luftstraßen ab (ft)",
+    "Aerovías a partir de (ft)"
+  ],
+  "Basse hauteur jusqu’à (ft)": [
+    "Tiefflug bis (ft)",
+    "Baja altura hasta (ft)"
+  ],
+  "Entrée / sortie des voies (NM)": [
+    "Ein- / Ausflug Luftstraßen (NM)",
+    "Entrada / salida de las aerovías (NM)"
+  ],
+  "Entrée / sortie du RTBA (NM)": [
+    "Ein- / Ausflug RTBA (NM)",
+    "Entrada / salida del RTBA (NM)"
+  ],
+  "Détour admis, voies (%)": [
+    "Zulässiger Umweg, Luftstraßen (%)",
+    "Desvío admitido, aerovías (%)"
+  ],
+  "Détour admis, RTBA (%)": [
+    "Zulässiger Umweg, RTBA (%)",
+    "Desvío admitido, RTBA (%)"
+  ],
+  "Calcul des routes de transit": [
+    "Berechnung der Transitrouten",
+    "Cálculo de las rutas de tránsito"
+  ],
+  "Calcul des routes non chargé.": [
+    "Routenberechnung nicht geladen.",
+    "Cálculo de rutas no cargado."
+  ],
+  "Centre activé dans ce navigateur": [
+    "Zentrum in diesem Browser aktiviert",
+    "Centro activado en este navegador"
+  ],
+  "Réglages enregistrés dans ce navigateur": [
+    "Einstellungen in diesem Browser gespeichert",
+    "Ajustes guardados en este navegador"
+  ],
+  "Valeurs par défaut": [
+    "Standardwerte",
+    "Valores por defecto"
+  ],
+  "Adresse en https:// obligatoire (la clef d’envoi passerait en clair).": [
+    "https://-Adresse erforderlich (der Sendeschlüssel würde im Klartext übertragen).",
+    "Dirección https:// obligatoria (la clave de envío viajaría en claro)."
   ]
 };

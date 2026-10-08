@@ -119,6 +119,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Corrigé
 
+- **Paramètres › Maintenance (bases) : 21 libellés affichés en anglais en allemand et en espagnol** (flotte, accès au
+  Centre, calcul des routes de transit, valeurs par défaut…) : traductions ajoutées (`shared/data_admin_i18n.js`) ;
+  l'anglais de la mise à jour de la flotte depuis le site mentionne la mise à jour automatique quotidienne.
 - **Tableau : plaquette de convoyage réinitialisée à la modification d'une mission** : le recalcul des convoyages
   retirait toute plaquette qu'il ne savait pas recalculer à cet instant (mission absente du registre le temps d'une
   relecture, appareil hors flotte, terrain sans coordonnées ou liste des aéroports non téléchargée), puis la recréait
