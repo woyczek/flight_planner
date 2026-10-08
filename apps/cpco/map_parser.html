@@ -2222,14 +2222,24 @@ function renderZonePick() {
       });
     return [...options.values()].sort((a, b) => zoneSort(a.value, b.value)).map(o => `<option value="${esc(o.value)}" label="${esc(o.label)}">`).join('');
   });
-  const kept = selectedAirspaces({
-      _profileId: p.id
-    }),
-    label = [...new Map(kept.map(a => [`${a.type} ${a.name}`, `${a.type} ${a.name}${a.key?` (${a.key})`:''}${zoneLimits(a)?` — ${zoneLimits(a)}`:''}`])).entries()].sort((a, b) => zoneSort(a[0], b[0])).map(e => e[1]);
-  $('zoneMatched').querySelector('summary').textContent = `Zones retenues : ${label.length}${airspaces.length?'':' (base SIA non chargée)'}`;
-  $('zoneMatched').querySelector('ul').innerHTML = label.slice(0, 400).map(x => `<li>${esc(x)}</li>`).join('') + (label.length > 400 ? `<li>… ${label.length-400} autres</li>` : '');
+  // résumé « Zones retenues » : 7 000 espaces à filtrer et jusqu'à 400 lignes à écrire — refait seulement si le profil
+  // (listes, mode, familles) ou la base ont changé depuis le dernier rendu
+  const matchedKey = `${JSON.stringify(p)}|${airspaces.length}|${window.siaAirac || ''}`;
+  if (matchedKey !== zoneMatchedKey || zoneMatchedRef !== airspaces) {
+    const kept = selectedAirspaces({
+        _profileId: p.id
+      }),
+      label = [...new Map(kept.map(a => [`${a.type} ${a.name}`, `${a.type} ${a.name}${a.key?` (${a.key})`:''}${zoneLimits(a)?` — ${zoneLimits(a)}`:''}`])).entries()].sort((a, b) => zoneSort(a[0], b[0])).map(e => e[1]);
+    $('zoneMatched').querySelector('summary').textContent = `Zones retenues : ${label.length}${airspaces.length?'':' (base SIA non chargée)'}`;
+    $('zoneMatched').querySelector('ul').innerHTML = label.slice(0, 400).map(x => `<li>${esc(x)}</li>`).join('') + (label.length > 400 ? `<li>… ${label.length-400} autres</li>` :
+      '');
+    zoneMatchedKey = matchedKey;
+    zoneMatchedRef = airspaces;
+  }
   if ($('zoneAliases').open) renderAliases()
 }
+let zoneMatchedKey = '', // clé du dernier résumé « Zones retenues » écrit (profil, taille de la base, AIRAC)
+  zoneMatchedRef = null; // base (tableau des espaces) de ce résumé
 // Listes d'aérodromes et de balises (blanche / noire), comme les zones : indicatif exact, préfixe « LFR* »,
 // ou fragment du nom ; liste vide = tous (selon les catégories cochées).
 const pickState = {

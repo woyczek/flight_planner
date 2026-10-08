@@ -12,6 +12,8 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Ajouté
 
+- **v2-fable, performance (4) : Studio et Cartes de vol** — le résumé « Zones retenues » (7 000 espaces filtrés, jusqu'à
+  400 lignes) n'est recalculé que si le profil ou la base ont changé : 123 ms → 0 à chaque autre rendu du profil.
 - **v2-fable, performance (3) : base SIA plus légère à l'ouverture** — les villes (GeoNames, ≈ 70 000 entrées) sont rangées
   sous leur propre clé de la base du navigateur (`SiaBase.cities()`, migration silencieuse d'une base existante) : la
   base se lit en 115 ms au lieu de 210 ; le Studio et les Cartes de vol les lisent après le premier affichage et avant
