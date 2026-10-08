@@ -2,14 +2,15 @@
 
 Lues par toutes les sessions qui travaillent sur ce dépôt. Elles priment sur les habitudes de chacune.
 
-## Règle de codage : la valeur à la source, jamais de retouche après coup
+## Règle de codage : la valeur à la source, le moins possible de retouches après coup
 
 - Un texte, un nom ou une valeur variable (nom de la compagnie, sigle, centre, langue, adresse, version, état) est
   écrit **avec sa valeur au moment où le code le produit** : variable, jeton résolu par la fonction de rendu ou de
   traduction (`K.t`, `K.tf`), attribut posé par le code qui crée l'élément.
-- **Interdit : corriger la page après coup.** Pas de `MutationObserver` qui réécrit des textes, pas de remplacement
-  global dans le DOM, pas de minuteur de rattrapage. Un observateur n'est admis que pour réagir à un événement (taille,
-  visibilité, ajout d'un bloc à initialiser), jamais pour réécrire ce que du code vient d'écrire.
+- **Corriger la page après coup, le moins possible.** Éviter les `MutationObserver` qui réécrivent des textes, les
+  remplacements globaux dans le DOM et les minuteurs de rattrapage : un observateur sert d'abord à réagir à un événement
+  (taille, visibilité, ajout d'un bloc à initialiser). S'il faut vraiment réécrire après coup, le justifier en
+  commentaire et le protéger contre ses propres écritures.
 - Une écriture dans le DOM n'a lieu **que si la valeur change** (sinon un observateur, même légitime, se relance).
 - Dette connue : le renommage de la compagnie par observateur (en cours de remplacement par des jetons résolus à la
   source) et la traduction des textes fixes par `shared/content_i18n.js`. Ne rien ajouter qui s'appuie dessus : un
