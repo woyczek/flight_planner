@@ -151,8 +151,8 @@ window.REPOSITORY_TREE={
     {id:"planning",pages:[
       {path:"apps/cpco/odv_orders.html",label:["Tableau","Board","Einsatztafel","Tablero"]}]},
     {id:"missions",pages:[
-      {path:"apps/cpco/mission_editor.html",label:["Générateur","Generator","Generator","Generador"]},
       {path:"apps/cpco/mission_registry.html",label:["Registre","Registry","Register","Registro"]},
+      {path:"apps/cpco/mission_editor.html",label:["Générateur","Generator","Generator","Generador"]},
       {path:"apps/cpco/map_parser.html",label:["Studio cartographique","Map studio","Kartenstudio","Estudio cartográfico"]}]},
     {id:"tools",pages:[
       {path:"apps/planner/map_planner.html",label:["Cartes de vol","Flight maps","Flugkarten","Mapas de vuelo"]},
@@ -239,7 +239,7 @@ window.REPOSITORY_TREE={
     {path:"apps/cpco/map_parser.html",level:4,menu:"Centre — Studio cartographique",label:"Studio cartographique — Centre de planification et de conduite des opérations"},
     {path:"apps/cpco/mission_registry.html",level:3,menu:"Centre — Registre des missions",label:"Registre des missions — Centre de planification et de conduite des opérations"},
     {path:"apps/planner/flight_performance_planner.html",module:"fuel",menu:"Carburant",label:"Carburant — performances et devis carburant"},
-    {path:"apps/pilot/disponibilites.html",level:4,menu:false,label:"Mes disponibilités — saisie par plages, par catégorie"},
+    {path:"apps/pilot/disponibilites.html",menu:false,label:"Mes disponibilités — saisie par plages, par catégorie"},
     {path:"apps/pilot/mes_missions.html",menu:"Mes missions",label:"Mes missions — missions affectées par le Centre, disponibilités"},
     {path:"apps/planner/map_planner.html",module:"maps",menu:"Cartes de vol",label:"Cartes de vol — route, cartes topographiques, approche, rendez-vous, destination"},
     {path:"apps/cpco/odv_planning.html",level:2,menu:"Centre — Planning ODV",label:"Planning ODV — Centre de planification et de conduite des opérations"},

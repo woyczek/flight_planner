@@ -1186,7 +1186,7 @@
     waitFor('FileAccess').then(FA => FA?.decorate(b, '__missions'));
     const sb = document.createElement('button');
     sb.type = 'button';
-    sb.className = 'primary';
+    sb.className = 'secondary'; // action principale : « Générer une mission »
     sb.dataset.icon = 'refresh';
     sb.textContent = t(['Relire le dossier', 'Re-read folder', 'Ordner neu lesen', 'Releer la carpeta']);
     sb.onclick = doScan;
@@ -1209,6 +1209,16 @@
       render();
     };
     fb.append(ab);
+    // v2 : Missions s'ouvre sur le registre ; « Générer une mission » mène au générateur (mission vierge), en tête de barre
+    const gb = document.createElement('button');
+    gb.type = 'button';
+    gb.className = 'primary';
+    gb.dataset.icon = 'plus';
+    gb.textContent = t(['Générer une mission', 'Generate a mission', 'Eine Mission erzeugen', 'Generar una misión']);
+    gb.onclick = () => {
+      location.href = new URL('mission_editor.html', location.href).href;
+    };
+    fb.prepend(gb);
     const wb = document.createElement('button');
     wb.type = 'button';
     wb.className = 'secondary';

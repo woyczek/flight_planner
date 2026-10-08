@@ -52,6 +52,11 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   réunies), Statistiques (ancienne vue) au niveau 2 ; Créneaux communs et Missions probables au niveau Expert, servis par
   le script de la page ODV dans la page (même semaine que le Planning, `OdvPlanning.setMonday`) ; styles des blocs ODV
   partagés (`apps/cpco/odv_blocks.css`) ; plus de choix de vue ; lien vers la page ODV complète (classeur, export).
+- **v2, retouches** : Missions s'ouvre sur le registre, bouton « Générer une mission » vers le générateur ; onglet
+  « Mes disponibilités » de nouveau à tous les niveaux ; « Commander à ChatGPT » : copie du prompt et ouverture de ChatGPT
+  dans le geste de l'utilisateur, avant l'inscription au registre (la copie était refusée) ; échec SimBrief du Carburant
+  aussi en notification flottante (détail visible à tout niveau) ; note « Clés d'API » : client OAuth IVAO dans Mon
+  profil au niveau Expert.
 - **Pages de démonstration du moteur des CR hors des comptes rendus** : `apps/cr/MissionCore/` → `tools/demo/mission_core/`
   (outils de développement, niveau Expert) ; plus rien dans le dossier des CR qui ne soit une famille.
 - **Clés de poste et signatures** (`shared/sog_keys.js`, lot L2 de [COMPTES_SIGNES.md](technique/COMPTES_SIGNES.md)) : par

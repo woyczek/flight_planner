@@ -238,14 +238,17 @@
     p = set(p, 'DURÉE', r.duration || 'libre');
     p = p.replace(/^(\s*TRADUCTIONS\s*=\s*)\S+/m, (_, a) => a + String(r.translations || 'en').replace(/\$/g,
       '$$$$')); // valeur à espaces (« en, de, es »)
+    // copie et ouverture de ChatGPT lancées tout de suite, dans le geste de l'utilisateur (sans attente avant) : le
+    // navigateur ne les autorise que tant que le clic est « frais » ; le résultat de la copie est attendu ensuite
+    const copy = navigator.clipboard?.writeText(p) || Promise.reject(new Error('clipboard'));
+    window.open(p.length < 7000 ? `https://chatgpt.com/?q=${encodeURIComponent(p)}` : 'https://chatgpt.com/', '_blank', 'noopener');
     let copied = false;
     try {
-      await navigator.clipboard.writeText(p);
+      await copy;
       copied = true;
     } catch {
       /* refus du navigateur */
     }
-    window.open(p.length < 7000 ? `https://chatgpt.com/?q=${encodeURIComponent(p)}` : 'https://chatgpt.com/', '_blank', 'noopener');
     if (out) {
       if (copied) out.textContent = t(['Prompt copié ({n} caractères) : dans ChatGPT, coller (Ctrl+V) puis envoyer.',
         'Prompt copied ({n} characters): paste it in ChatGPT (Ctrl+V) and send.',
@@ -359,8 +362,10 @@
       host.querySelector('[data-mo="send"]').onclick = async () => {
         const request = requestOf(o),
           out = host.querySelector('[data-mo="msg"]');
+        // prompt copié et ChatGPT ouvert d'abord (geste de l'utilisateur), commande inscrite au registre ensuite
+        const sent = sendPrompt(request, out);
         record(request, o);
-        await sendPrompt(request, out);
+        await sent;
         lastMsg = [...out.childNodes].map(n => n.cloneNode(true));
         onOrdered?.(request);
       };

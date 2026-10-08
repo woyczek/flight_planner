@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Carburant</title>
 <link rel="stylesheet" href="../../shared/repository_nav.css?v=c20491fc">
-<script src="../../config/repository_tree?v=536db72a"></script>
+<script src="../../config/repository_tree?v=12f9355a"></script>
 <style data-layer="app">
 @layer app {
   :root {
@@ -3210,7 +3210,9 @@ $("simBtn").onclick = async () => {
   } catch (e) {
     $("source").textContent = e.simbrief || "SimBrief : FPL illisible";
     $("ofpStatus").textContent = "Récupération directe impossible : " + e.message +
-      ". Sinon, importe le JSON OFP téléchargé depuis SimBrief."
+      ". Sinon, importe le JSON OFP téléchargé depuis SimBrief.";
+    // aussi en notification flottante : le bloc Calibration (où s'affiche ce détail) n'existe qu'au niveau Expert
+    window.AppFramework?.notify?.("SimBrief — " + e.message, "warn")
   } finally {
     $("simBtn").disabled = false
   }
