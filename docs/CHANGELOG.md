@@ -10,6 +10,14 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ## [Non publié]
 
+### Ajouté
+
+- **Clés de poste et signatures** (`shared/sog_keys.js`, lot L2 de [COMPTES_SIGNES.md](technique/COMPTES_SIGNES.md)) : par
+  poste, une paire de signature ECDSA P-256 et une paire d'échange ECDH P-256, non exportables, gardées dans la base
+  `sogKeys` du navigateur (hors sauvegarde) ; empreinte courte `7F3A-91C2-04BE-D85E` ; JSON canonique (RFC 8785) ;
+  enveloppes et fiches signées ; clé de secours chiffrée par mot de passe (PBKDF2 600 000, AES-GCM). Pas encore branché
+  sur les pages (registre et enrôlement : lots suivants). Banc d'essai : `tools/crypto_banc.html`.
+
 ### Corrigé
 
 - **Déplacement des blocs (poignée ↕)** : le bloc visé s'illumine dans tous les designs (contour d'accent et trait
@@ -32,6 +40,7 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 - **Tableau en lecture seule** : le planning seul (frise du jour : vols, contrôles, divers, notes) ; zones, ATC, dispos
   communes, problèmes, journal, vues semaine et statistiques, activations et demandes de zones réservés au Centre.
 
+
 ### Modifié
 
 - **État de la synchronisation servi tout de suite** : le lanceur relançait ses commandes git (1 à 3 s sur un gros
@@ -49,6 +58,7 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   coup est supprimé (pages de Paramètres figées, nom réglé contenant l'ancien). Données inchangées.
   « SO Group » seul (premier lancement, mode autonome du Centre) et libellés de catégories du jeu d'essai en jetons aussi.
   Voir `docs/technique/FRAMEWORK.md` § 4 bis.
+
 
 ## [4.11.0] — 2026-10-08
 

@@ -1,0 +1,353 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Banc d'essai des clés de poste et des signatures (shared/sog_keys.js) : JSON canonique, empreintes, signature et vérification, enveloppes, fiches, clé de secours, non-exportabilité, mesures. Base séparée : les clés réelles du poste ne sont jamais touchées.">
+<title>Banc des signatures</title>
+<style>
+  body { font: 14px/1.45 system-ui, sans-serif; margin: 16px; color: #1b1f24; background: #fff; }
+  h1 { font-size: 20px; margin: 0 0 6px; }
+  table { border-collapse: collapse; margin-top: 6px; font-size: 13px; }
+  th, td { border: 1px solid #d5d9df; padding: 3px 8px; text-align: left; vertical-align: top; }
+  th { background: #f2f4f7; }
+  .ok { color: #1a7f37; font-weight: 600; }
+  .ko { color: #c62828; font-weight: 600; }
+  .mut { color: #5b6470; }
+  button { font: inherit; padding: 4px 12px; }
+</style>
+</head>
+<body>
+<h1>Banc des signatures</h1>
+<p class="mut">Clés de poste et signatures de <code>shared/sog_keys.js</code> (docs/technique/COMPTES_SIGNES.md, lot L2).
+Base IndexedDB séparée <code>sogKeysBanc</code>, effacée au début et à la fin : les clés réelles du poste
+(<code>sogKeys</code>) ne sont jamais lues ni écrites.</p>
+<p><button type="button" id="go">Relancer</button> <span id="sum" class="mut"></span></p>
+<table>
+  <thead><tr><th>Essai</th><th>Résultat</th><th>Détail</th></tr></thead>
+  <tbody id="out"></tbody>
+</table>
+<script src="../shared/sog_keys.js"></script>
+<script>
+  'use strict';
+  const S = window.SogKeys,
+    out = document.getElementById('out'),
+    rows = [];
+  /** Ligne du tableau : nom de l'essai, réussite, détail (texte). */
+  function row(name, ok, detail = '') {
+    rows.push(ok);
+    const tr = document.createElement('tr');
+    for (const [i, v] of [name, ok ? 'réussi' : 'ÉCHEC', detail].entries()) {
+      const td = document.createElement('td');
+      td.textContent = v;
+      if (i === 1) td.className = ok ? 'ok' : 'ko';
+      tr.append(td);
+    }
+    out.append(tr);
+  }
+  /** Lance un essai (fonction asynchrone rendant [réussite, détail]) ; une exception compte comme un échec. */
+  async function test(name, fn) {
+    try {
+      const [ok, detail] = await fn();
+      row(name, !!ok, detail || '');
+    } catch (e) {
+      row(name, false, `exception : ${e?.message || e}`);
+    }
+  }
+  /** Efface la base du banc (avant et après les essais). */
+  const wipe = () => new Promise(r => {
+    const q = indexedDB.deleteDatabase('sogKeysBanc');
+    q.onsuccess = q.onerror = q.onblocked = () => r();
+  });
+  /** Durée moyenne (ms) de n appels de fn. */
+  async function time(n, fn) {
+    const t0 = performance.now();
+    for (let i = 0; i < n; i++) await fn(i);
+    return (performance.now() - t0) / n;
+  }
+
+  async function run() {
+    out.textContent = '';
+    rows.length = 0;
+    await wipe();
+    const B = S.create({
+      db: 'sogKeysBanc'
+    });
+
+    await test('Contexte sûr et algorithmes', async () => {
+      const s = await S.supports();
+      return [s.contexte && s.ES256, `ES256 : ${s.ES256 ? 'oui' : 'non'} ; Ed25519 : ${s.Ed25519 ? 'oui' : 'non'}`];
+    });
+    await test('JSON canonique : clés triées, sans blancs, imbrication', async () => {
+      const a = S.canonical({
+        b: 1,
+        a: [3, {
+          z: 'é',
+          y: null
+        }],
+        c: undefined
+      });
+      return [a === '{"a":[3,{"y":null,"z":"é"}],"b":1}', a];
+    });
+    await test('JSON canonique : même valeur, ordre d’écriture différent → même texte', async () => [
+      S.canonical({
+        x: 1,
+        y: {
+          b: 2,
+          a: 1
+        }
+      }) === S.canonical({
+        y: {
+          a: 1,
+          b: 2
+        },
+        x: 1
+      })
+    ]);
+    await test('JSON canonique : NaN et Infinity refusés', async () => {
+      let refused = 0;
+      for (const v of [NaN, Infinity]) try {
+        S.canonical({
+          v
+        });
+      } catch {
+        refused++;
+      }
+      return [refused === 2];
+    });
+    await test('Empreinte courte : format 7F3A-91C2-04BE-D85E', async () => {
+      const c = S.shortOf('7f3a91c204bed85e0123');
+      return [c === '7F3A-91C2-04BE-D85E', c];
+    });
+
+    let id1;
+    await test('Paires du poste créées (ES256 + ECDH), identité publique', async () => {
+      id1 = await B.identity();
+      return [id1 && id1.alg === 'ES256' && /^[0-9a-f]{64}$/.test(id1.kid) && /^[0-9A-F]{4}(-[0-9A-F]{4}){3}$/.test(id1.court) && id1.pub && id1.ecdh,
+        `kid ${id1?.court}`
+      ];
+    });
+    await test('Empreinte = SHA-256 de la clé publique', async () => [(await S.fingerprint(id1.pub)).kid === id1.kid]);
+    await test('Clés relues de la base : même kid (nouvelle instance)', async () => {
+      const again = await S.create({
+        db: 'sogKeysBanc'
+      }).identity({
+        create: false
+      });
+      return [again?.kid === id1.kid];
+    });
+    await test('Clés privées non exportables (signature et échange)', async () => {
+      const k = await B.posteKeys();
+      let refused = 0;
+      for (const key of [k.sign.privateKey, k.echange.privateKey]) {
+        try {
+          await crypto.subtle.exportKey('pkcs8', key);
+        } catch {
+          refused++;
+        }
+      }
+      return [refused === 2 && k.sign.privateKey.extractable === false && k.echange.privateKey.extractable === false];
+    });
+
+    const doc = {
+      type: 'essai',
+      version: 3,
+      utilisateurs: {
+        ALF: {
+          role: 'admin_centre',
+          nom: 'Alpha'
+        }
+      },
+      liste: [1, 2.5, 'trois']
+    };
+    let sig;
+    await test('Signature et vérification d’une valeur', async () => {
+      sig = await B.sign(doc);
+      const r = await S.verify(doc, sig.sig, id1.pub, sig.alg);
+      return [r.ok && sig.kid === id1.kid && S.unb64url(sig.sig).length === 64, `signature ${S.unb64url(sig.sig).length} octets`];
+    });
+    await test('Vérification indépendante de l’ordre des clés', async () => {
+      const r = await S.verify({
+        liste: [1, 2.5, 'trois'],
+        utilisateurs: {
+          ALF: {
+            nom: 'Alpha',
+            role: 'admin_centre'
+          }
+        },
+        version: 3,
+        type: 'essai'
+      }, sig.sig, id1.pub, sig.alg);
+      return [r.ok];
+    });
+    await test('Contenu modifié → refusé (raison « signature »)', async () => {
+      const r = await S.verify({
+        ...doc,
+        version: 4
+      }, sig.sig, id1.pub, sig.alg);
+      return [!r.ok && r.raison === 'signature', r.raison];
+    });
+    await test('Autre clé → refusée', async () => {
+      const other = S.create({
+        db: 'sogKeysBanc2'
+      });
+      const id2 = await other.identity();
+      const r = await S.verify(doc, sig.sig, id2.pub, sig.alg);
+      await other.reset();
+      indexedDB.deleteDatabase('sogKeysBanc2');
+      return [!r.ok && r.raison === 'signature', r.raison];
+    });
+    await test('Algorithme inconnu → refusé (raison « alg »)', async () => {
+      const r = await S.verify(doc, sig.sig, id1.pub, 'RS256');
+      return [!r.ok && r.raison === 'alg', r.raison];
+    });
+    await test('Signature illisible → refusée (raison « format »)', async () => {
+      const r = await S.verify(doc, '%%%', id1.pub, sig.alg);
+      return [!r.ok && r.raison === 'format', r.raison];
+    });
+
+    const resolve = kid => kid === id1.kid ? {
+      pub: id1.pub,
+      alg: id1.alg
+    } : null;
+    await test('Enveloppe : signée, vérifiée', async () => {
+      const env = await S.addSignature(S.envelope(doc), B.sign);
+      const r = await S.verifyEnvelope(env, resolve);
+      return [r.ok && r.valides[0] === id1.kid && env.signatures.length === 1];
+    });
+    await test('Enveloppe : contenu altéré après signature → refusée', async () => {
+      const env = await S.addSignature(S.envelope(structuredClone(doc)), B.sign);
+      env.contenu.utilisateurs.ALF.role = 'utilisateur';
+      const r = await S.verifyEnvelope(env, resolve);
+      return [!r.ok && r.erreurs[0]?.raison === 'signature'];
+    });
+    await test('Enveloppe : signataire inconnu → refusé (raison « inconnue »)', async () => {
+      const env = await S.addSignature(S.envelope(doc), B.sign);
+      const r = await S.verifyEnvelope(env, () => null);
+      return [!r.ok && r.erreurs[0]?.raison === 'inconnue'];
+    });
+    await test('Enveloppe : relue après passage par JSON (fichier)', async () => {
+      const env = await S.addSignature(S.envelope(doc), B.sign);
+      const r = await S.verifyEnvelope(JSON.parse(JSON.stringify(env, null, 1)), resolve);
+      return [r.ok];
+    });
+
+    const aff = {
+      mission: 'M-12',
+      pilot: 'BRV',
+      role: 'mission',
+      updated_at: '2026-10-08T10:00:00Z'
+    };
+    await test('Fiche signée (affectation) : vérifiée', async () => {
+      const s = await S.signRecord(aff, B.sign);
+      const r = await S.verifyRecord(s, resolve);
+      return [r.ok && s.sig?.kid === id1.kid];
+    });
+    await test('Fiche : pilote changé après signature → refusée', async () => {
+      const s = await S.signRecord(aff, B.sign);
+      const r = await S.verifyRecord({
+        ...s,
+        pilot: 'ALF'
+      }, resolve);
+      return [!r.ok && r.raison === 'signature'];
+    });
+    await test('Fiche non signée → refusée (raison « absente »)', async () => {
+      const r = await S.verifyRecord(aff, resolve);
+      return [!r.ok && r.raison === 'absente'];
+    });
+    await test('Fiche re-signée : l’ancienne signature est remplacée', async () => {
+      const s = await S.signRecord(await S.signRecord(aff, B.sign), B.sign);
+      return [(await S.verifyRecord(s, resolve)).ok];
+    });
+
+    await test('Ed25519 accepté en vérification (si le navigateur le connaît)', async () => {
+      if (!(await S.supports()).Ed25519) return [true, 'non pris en charge par ce navigateur : essai sauté'];
+      const pair = await crypto.subtle.generateKey({
+        name: 'Ed25519'
+      }, false, ['sign', 'verify']);
+      const pub = S.b64url(await crypto.subtle.exportKey('spki', pair.publicKey));
+      const s = S.b64url(await crypto.subtle.sign({
+        name: 'Ed25519'
+      }, pair.privateKey, new TextEncoder().encode(S.canonical(doc))));
+      return [(await S.verify(doc, s, pub, 'Ed25519')).ok];
+    });
+
+    let rec;
+    await test('Clé de secours : créée, fichier chiffré', async () => {
+      rec = await S.createRecovery('secours-du-banc');
+      const f = rec.fichier;
+      return [f.sog === 'cle-secours/1' && f.kid === rec.kid && f.chiffrement.iterations === 600000 && !JSON.stringify(f).includes('PRIVATE'),
+        `kid ${rec.court}`
+      ];
+    });
+    await test('Clé de secours : réimportée avec le bon mot de passe, sa signature se vérifie', async () => {
+      const k = await S.openRecovery(JSON.stringify(rec.fichier), 'secours-du-banc');
+      const s = await k.signer(doc);
+      return [k.kid === rec.kid && (await S.verify(doc, s.sig, rec.pub, s.alg)).ok];
+    });
+    await test('Clé de secours : mauvais mot de passe → refusée', async () => {
+      try {
+        await S.openRecovery(rec.fichier, 'faux');
+        return [false];
+      } catch (e) {
+        return [e.message === 'mot-de-passe', e.message];
+      }
+    });
+    await test('Clé de secours : fichier altéré → refusé', async () => {
+      try {
+        await S.openRecovery({
+          ...rec.fichier,
+          kid: '00'.repeat(32)
+        }, 'secours-du-banc');
+        return [false];
+      } catch (e) {
+        return [e.message === 'cle', e.message];
+      }
+    });
+    await test('Clé de secours : mot de passe trop court refusé', async () => {
+      try {
+        await S.createRecovery('court');
+        return [false];
+      } catch (e) {
+        return [e.message === 'mot-de-passe-court'];
+      }
+    });
+
+    await test('Mesures (500 fiches signées puis vérifiées)', async () => {
+      const recs = [];
+      const tSign = await time(500, async i => recs.push(await S.signRecord({
+        ...aff,
+        mission: `M-${i}`
+      }, B.sign)));
+      const t0 = performance.now();
+      let good = 0;
+      for (const r of recs) good += (await S.verifyRecord(r, resolve)).ok ? 1 : 0;
+      const tAll = performance.now() - t0;
+      return [good === 500, `signature ${tSign.toFixed(3)} ms ; vérification de 500 fiches ${tAll.toFixed(0)} ms (${(tAll / 500).toFixed(3)} ms par fiche)`];
+    });
+
+    await test('Réinitialisation du poste : clés effacées, nouvelle identité', async () => {
+      await B.reset();
+      const none = await S.create({
+        db: 'sogKeysBanc'
+      }).identity({
+        create: false
+      });
+      const fresh = await B.identity();
+      return [none === null && fresh.kid !== id1.kid];
+    });
+
+    await wipe();
+    const ok = rows.filter(Boolean).length;
+    document.getElementById('sum').textContent = `${ok} / ${rows.length} réussis`;
+    document.title = `${ok === rows.length ? 'OK' : 'ÉCHEC'} ${ok}/${rows.length} — Banc des signatures`;
+    window.DONE = {
+      ok,
+      total: rows.length
+    };
+  }
+  document.getElementById('go').onclick = run;
+  run();
+</script>
+</body>
+</html>

@@ -1249,7 +1249,7 @@
       document.head.append(sc);
     }
     const store = document.createElement("script");
-    store.src = new URL("browser_store.js?v=1b114137", script.src).href;
+    store.src = new URL("browser_store.js?v=47ec965e", script.src).href;
     document.head.append(store); /* Canal et contrôle des mises à jour, pastilles « Mise à jour » / « AIRAC » de l'en-tête */
     const assign = document.createElement("script"); /* Missions affectées : pli cacheté de l'en-tête, « Mes missions » */
     assign.src = new URL("assignments.js?v=95fcb353", script.src).href;

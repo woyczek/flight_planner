@@ -177,7 +177,8 @@
 
   // ---- bases IndexedDB de données utilisateur, sauvegardées avec le localStorage
   // Les autres bases IndexedDB sont reconstructibles et restent hors sauvegarde : « sia-map-parser » (base SIA,
-  // relue depuis le dossier SIA officiel), « missionCore / handles » (autorisations de dossiers, non exportables).
+  // relue depuis le dossier SIA officiel), « missionCore / handles » (autorisations de dossiers, non exportables),
+  // « sogKeys » (clés du poste, non exportables, propres à ce navigateur : shared/sog_keys.js).
   const IDB_SAVED = [{
       db: 'FlightPerfCache',
       store: 'cache'

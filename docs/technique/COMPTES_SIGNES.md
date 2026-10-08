@@ -98,8 +98,9 @@ Le coût est négligeable dans le navigateur. Le mode dégradé par le lanceur e
 
 ## 4. Format signé
 
-**JSON canonique** : clés triées, sans espaces, chaînes JSON standard, nombres entiers seulement (les dates sont des
-chaînes ISO). La signature porte sur les octets UTF-8 de ce texte.
+**JSON canonique** (JCS, RFC 8785) : clés triées par unités UTF-16, sans espaces, chaînes et nombres sérialisés comme
+le fait `JSON.stringify` (déterministe d'un navigateur à l'autre ; seuls des navigateurs signent et vérifient) ;
+`NaN` et `Infinity` refusés. La signature porte sur les octets UTF-8 de ce texte.
 
 ```json
 {
