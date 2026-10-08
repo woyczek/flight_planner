@@ -1,0 +1,98 @@
+<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1240 930' width='1240' height='930' role='img' aria-label='What the suite exchanges, and with whom'>
+<defs><marker id='a-read' viewBox='0 0 10 10' refX='9' refY='5' markerWidth='7' markerHeight='7' orient='auto-start-reverse'><path d='M0,0 L10,5 L0,10 z' fill='#2563eb'/></marker><marker id='a-send' viewBox='0 0 10 10' refX='9' refY='5' markerWidth='7' markerHeight='7' orient='auto-start-reverse'><path d='M0,0 L10,5 L0,10 z' fill='#dc2626'/></marker><marker id='a-both' viewBox='0 0 10 10' refX='9' refY='5' markerWidth='7' markerHeight='7' orient='auto-start-reverse'><path d='M0,0 L10,5 L0,10 z' fill='#7c3aed'/></marker><marker id='a-manual' viewBox='0 0 10 10' refX='9' refY='5' markerWidth='7' markerHeight='7' orient='auto-start-reverse'><path d='M0,0 L10,5 L0,10 z' fill='#6b7280'/></marker><marker id='a-both-s' viewBox='0 0 10 10' refX='9' refY='5' markerWidth='7' markerHeight='7' orient='auto-start-reverse'><path d='M0,0 L10,5 L0,10 z' fill='#7c3aed'/></marker></defs>
+<rect width='1240' height='930' fill='#ffffff'/>
+<text x='24' y='36' font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size='22' font-weight='bold' fill='#111827' text-anchor='start'>What the suite exchanges, and with whom</text>
+<rect x='20' y='60' width='560' height='600' rx='14' fill='#eef3f8' stroke='#5b6b7c' stroke-width='1.3'/>
+<text x='40' y='88' font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size='16' font-weight='bold' fill='#5b6b7c' text-anchor='start'>Your computer</text>
+<rect x='40' y='104' width='520' height='170' rx='8' fill='#dbeafe' stroke='#94a3b8' stroke-width='1.3'/>
+<text x='58' y='132' font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size='16' font-weight='bold' fill='#111827' text-anchor='start'>Browser (Chrome, Edge)</text>
+<text x='58' y='156' font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size='12.5' font-weight='normal' fill='#4b5563' text-anchor='start'>suite pages · profile and settings (localStorage)</text>
+<text x='58' y='176' font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size='12.5' font-weight='normal' fill='#4b5563' text-anchor='start'>authorised folders (direct read and write)</text>
+<rect x='300' y='330' width='260' height='190' rx='8' fill='#fde68a' stroke='#94a3b8' stroke-width='1.3'/>
+<text x='316' y='358' font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size='16' font-weight='bold' fill='#111827' text-anchor='start'>Launcher (lancer.cmd)</text>
+<text x='316' y='382' font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size='12.5' font-weight='normal' fill='#4b5563' text-anchor='start'>local server http://127.0.0.1:8000</text>
+<text x='316' y='404' font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size='12.5' font-weight='normal' fill='#4b5563' text-anchor='start'>secrets/: IVAO key and client</text>
+<text x='316' y='426' font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size='12.5' font-weight='normal' fill='#4b5563' text-anchor='start'>git: SOG data</text>
+<rect x='40' y='330' width='240' height='190' rx='8' fill='#dcfce7' stroke='#94a3b8' stroke-width='1.3'/>
+<text x='56' y='358' font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size='16' font-weight='bold' fill='#111827' text-anchor='start'>Application folder</text>
+<text x='56' y='382' font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size='12.5' font-weight='normal' fill='#4b5563' text-anchor='start'>suite code</text>
+<text x='56' y='404' font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size='12.5' font-weight='normal' fill='#4b5563' text-anchor='start'>data/: missions, ODV, reports,</text>
+<text x='56' y='424' font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size='12.5' font-weight='normal' fill='#4b5563' text-anchor='start'>assignments, availability · data/sia/</text>
+<rect x='300' y='560' width='260' height='74' rx='8' fill='#ffffff' stroke='#9ca3af' stroke-width='1.3' stroke-dasharray="6 4"/>
+<text x='316' y='588' font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size='14' font-weight='bold' fill='#111827' text-anchor='start'>Downloads</text>
+<text x='316' y='610' font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size='12' font-weight='normal' fill='#4b5563' text-anchor='start'>SIA and NATS ZIPs (by hand)</text>
+<path d='M430,274 C430.0,274 430.0,330 430,330' fill='none' stroke='#7c3aed' stroke-width='2' marker-start='url(#a-both-s)' marker-end='url(#a-both)'/>
+<path d='M160,274 C160.0,274 160.0,330 160,330' fill='none' stroke='#7c3aed' stroke-width='2' marker-start='url(#a-both-s)' marker-end='url(#a-both)'/>
+<path d='M300,425 C290.0,425 290.0,425 280,425' fill='none' stroke='#7c3aed' stroke-width='2' marker-start='url(#a-both-s)' marker-end='url(#a-both)'/>
+<path d='M430,520 C430.0,520 430.0,560 430,560' fill='none' stroke='#2563eb' stroke-width='2' marker-start='url(#a-read)'/>
+<text x='680' y='62' font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size='13' font-weight='bold' fill='#2563eb' text-anchor='start'>called by the browser</text>
+<rect x='680' y='70' width='540' height='56' rx='8' fill='#e0e7ff' stroke='#94a3b8' stroke-width='1.3'/>
+<text x='694' y='90' font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size='14' font-weight='bold' fill='#111827' text-anchor='start'>IVAO, VATSIM — public data</text>
+<text x='694' y='107' font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size='12' font-weight='normal' fill='#4b5563' text-anchor='start'>online traffic, flight plans, METAR</text>
+<text x='694' y='121' font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size='11' font-weight='normal' fill='#4b5563' text-anchor='start' font-style="italic">no credential (VID / CID matched on the computer)</text>
+<path d='M560,120 C620.0,120 620.0,98.0 680,98.0' fill='none' stroke='#2563eb' stroke-width='2' marker-start='url(#a-read)'/>
+<rect x='680' y='136' width='540' height='56' rx='8' fill='#f3f4f6' stroke='#94a3b8' stroke-width='1.3'/>
+<text x='694' y='156' font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size='14' font-weight='bold' fill='#111827' text-anchor='start'>SimBrief</text>
+<text x='694' y='173' font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size='12' font-weight='normal' fill='#4b5563' text-anchor='start'>latest flight plan (OFP), airframes</text>
+<text x='694' y='187' font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size='11' font-weight='normal' fill='#4b5563' text-anchor='start' font-style="italic">SimBrief user name</text>
+<path d='M560,132 C620.0,132 620.0,164.0 680,164.0' fill='none' stroke='#2563eb' stroke-width='2' marker-start='url(#a-read)'/>
+<rect x='680' y='202' width='540' height='56' rx='8' fill='#f3f4f6' stroke='#94a3b8' stroke-width='1.3'/>
+<text x='694' y='222' font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size='14' font-weight='bold' fill='#111827' text-anchor='start'>Maps, terrain, peaks</text>
+<text x='694' y='239' font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size='12' font-weight='normal' fill='#4b5563' text-anchor='start'>OpenStreetMap, AWS Terrain, Overpass</text>
+<text x='694' y='253' font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size='11' font-weight='normal' fill='#4b5563' text-anchor='start' font-style="italic">no credential (visible area sent)</text>
+<path d='M560,144 C620.0,144 620.0,230.0 680,230.0' fill='none' stroke='#2563eb' stroke-width='2' marker-start='url(#a-read)'/>
+<rect x='680' y='268' width='540' height='56' rx='8' fill='#f3f4f6' stroke='#94a3b8' stroke-width='1.3'/>
+<text x='694' y='288' font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size='14' font-weight='bold' fill='#111827' text-anchor='start'>Weather (Open-Meteo)</text>
+<text x='694' y='305' font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size='12' font-weight='normal' fill='#4b5563' text-anchor='start'>forecast and archive at the mission point</text>
+<text x='694' y='319' font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size='11' font-weight='normal' fill='#4b5563' text-anchor='start' font-style="italic">no credential (position, date)</text>
+<path d='M560,156 C620.0,156 620.0,296.0 680,296.0' fill='none' stroke='#2563eb' stroke-width='2' marker-start='url(#a-read)'/>
+<rect x='680' y='334' width='540' height='56' rx='8' fill='#fee2e2' stroke='#94a3b8' stroke-width='1.3'/>
+<text x='694' y='354' font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size='14' font-weight='bold' fill='#111827' text-anchor='start'>SOG web service (report sending)</text>
+<text x='694' y='371' font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size='12' font-weight='normal' fill='#4b5563' text-anchor='start'>mission report, as JSON</text>
+<text x='694' y='385' font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size='11' font-weight='normal' fill='#4b5563' text-anchor='start' font-style="italic">web service key (Centre) — optional</text>
+<path d='M560,168 C620.0,168 620.0,362.0 680,362.0' fill='none' stroke='#dc2626' stroke-width='2' marker-end='url(#a-send)'/>
+<rect x='680' y='400' width='540' height='56' rx='8' fill='#f3f4f6' stroke='#94a3b8' stroke-width='1.3'/>
+<text x='694' y='420' font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size='14' font-weight='bold' fill='#111827' text-anchor='start'>Suite repository (framagit)</text>
+<text x='694' y='437' font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size='12' font-weight='normal' fill='#4b5563' text-anchor='start'>update check</text>
+<text x='694' y='451' font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size='11' font-weight='normal' fill='#4b5563' text-anchor='start' font-style="italic">no credential</text>
+<path d='M560,180 C620.0,180 620.0,428.0 680,428.0' fill='none' stroke='#2563eb' stroke-width='2' marker-start='url(#a-read)'/>
+<text x='680' y='480' font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size='13' font-weight='bold' fill='#a16207' text-anchor='start'>called by the launcher</text>
+<rect x='680' y='488' width='540' height='56' rx='8' fill='#e0e7ff' stroke='#94a3b8' stroke-width='1.3'/>
+<text x='694' y='508' font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size='14' font-weight='bold' fill='#111827' text-anchor='start'>IVAO — API</text>
+<text x='694' y='525' font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size='12' font-weight='normal' fill='#4b5563' text-anchor='start'>zone activations, NOTAMs, ATC sessions</text>
+<text x='694' y='539' font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size='11' font-weight='normal' fill='#4b5563' text-anchor='start' font-style="italic">IVAO API key (group-wide)</text>
+<path d='M560,440 C620.0,440 620.0,516.0 680,516.0' fill='none' stroke='#2563eb' stroke-width='2' marker-start='url(#a-read)'/>
+<rect x='680' y='554' width='540' height='56' rx='8' fill='#e0e7ff' stroke='#94a3b8' stroke-width='1.3'/>
+<text x='694' y='574' font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size='14' font-weight='bold' fill='#111827' text-anchor='start'>VATSIM — ATC bookings</text>
+<text x='694' y='591' font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size='12' font-weight='normal' fill='#4b5563' text-anchor='start'>booked ATC sessions</text>
+<text x='694' y='605' font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size='11' font-weight='normal' fill='#4b5563' text-anchor='start' font-style="italic">no credential</text>
+<path d='M560,454 C620.0,454 620.0,582.0 680,582.0' fill='none' stroke='#2563eb' stroke-width='2' marker-start='url(#a-read)'/>
+<rect x='680' y='620' width='540' height='56' rx='8' fill='#fee2e2' stroke='#94a3b8' stroke-width='1.3'/>
+<text x='694' y='640' font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size='14' font-weight='bold' fill='#111827' text-anchor='start'>SOG website</text>
+<text x='694' y='657' font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size='12' font-weight='normal' fill='#4b5563' text-anchor='start'>Fleet and Flight log pages, once a day</text>
+<text x='694' y='671' font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size='11' font-weight='normal' fill='#4b5563' text-anchor='start' font-style="italic">no login (password: INOP)</text>
+<path d='M560,468 C620.0,468 620.0,648.0 680,648.0' fill='none' stroke='#2563eb' stroke-width='2' marker-start='url(#a-read)'/>
+<rect x='680' y='686' width='540' height='56' rx='8' fill='#fee2e2' stroke='#94a3b8' stroke-width='1.3'/>
+<text x='694' y='706' font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size='14' font-weight='bold' fill='#111827' text-anchor='start'>SOG data git repository</text>
+<text x='694' y='723' font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size='12' font-weight='normal' fill='#4b5563' text-anchor='start'>missions, ODV, assignments, reports, availability</text>
+<text x='694' y='737' font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size='11' font-weight='normal' fill='#4b5563' text-anchor='start' font-style="italic">SSH key or token (Git credential manager)</text>
+<path d='M560,482 C620.0,482 620.0,714.0 680,714.0' fill='none' stroke='#7c3aed' stroke-width='2' marker-start='url(#a-both-s)' marker-end='url(#a-both)'/>
+<rect x='680' y='752' width='540' height='56' rx='8' fill='#ccfbf1' stroke='#94a3b8' stroke-width='1.3'/>
+<text x='694' y='772' font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size='14' font-weight='bold' fill='#111827' text-anchor='start'>Aeronautical sources</text>
+<text x='694' y='789' font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size='12' font-weight='normal' fill='#4b5563' text-anchor='start'>openAIP, FAA, ENAIRE, UK military AIP, NAV CANADA</text>
+<text x='694' y='803' font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size='11' font-weight='normal' fill='#4b5563' text-anchor='start' font-style="italic">no credential</text>
+<path d='M560,496 C620.0,496 620.0,780.0 680,780.0' fill='none' stroke='#2563eb' stroke-width='2' marker-start='url(#a-read)'/>
+<rect x='680' y='830' width='540' height='56' rx='8' fill='#ccfbf1' stroke='#94a3b8' stroke-width='1.3' stroke-dasharray="6 4"/>
+<text x='694' y='850' font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size='14' font-weight='bold' fill='#111827' text-anchor='start'>SIA, NATS</text>
+<text x='694' y='867' font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size='12' font-weight='normal' fill='#4b5563' text-anchor='start'>ZIP downloaded by hand, taken by the launcher</text>
+<text x='694' y='881' font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size='11' font-weight='normal' fill='#4b5563' text-anchor='start' font-style="italic">free SIA account · NATS registration</text>
+<path d='M680,858.0 C620.0,858.0 620.0,597 560,597' fill='none' stroke='#6b7280' stroke-width='2' stroke-dasharray='5 4' marker-end='url(#a-manual)'/>
+<line x1='24' y1='896' x2='64' y2='896' stroke='#2563eb' stroke-width='2.5'/>
+<text x='72' y='900' font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size='13' font-weight='normal' fill='#111827' text-anchor='start'>read (downloaded)</text>
+<line x1='254' y1='896' x2='294' y2='896' stroke='#dc2626' stroke-width='2.5'/>
+<text x='302' y='900' font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size='13' font-weight='normal' fill='#111827' text-anchor='start'>sent</text>
+<line x1='484' y1='896' x2='524' y2='896' stroke='#7c3aed' stroke-width='2.5'/>
+<text x='532' y='900' font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size='13' font-weight='normal' fill='#111827' text-anchor='start'>both ways</text>
+<line x1='714' y1='896' x2='754' y2='896' stroke='#6b7280' stroke-width='2.5' stroke-dasharray="5 4"/>
+<text x='762' y='900' font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size='13' font-weight='normal' fill='#111827' text-anchor='start'>by hand</text>
+</svg>

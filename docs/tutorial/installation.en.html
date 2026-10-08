@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Installing the SOG suite</title>
+<style>
+:root{--bg:#f6f8fb;--paper:#fff;--ink:#1f2937;--sub:#4b5563;--line:#e5e7eb;--accent:#1d4ed8;--code:#f1f5f9;--th:#eef2f7}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#0f141b;--paper:#161d27;--ink:#e5e7eb;--sub:#9ca3af;
+--line:#2a3442;--accent:#7aa7ff;--code:#1e2733;--th:#1c2533}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.6 "Segoe UI",Helvetica,Arial,sans-serif}
+main{max-width:1000px;margin:0 auto;padding:28px 20px 60px;background:var(--paper);min-height:100vh}
+h1{font-size:30px;line-height:1.25;margin:0 0 6px}
+h2{font-size:23px;margin:38px 0 10px;padding-top:12px;border-top:1px solid var(--line)}
+h3{font-size:18px;margin:26px 0 8px}
+p,li{color:var(--ink)}
+.lead{color:var(--sub);margin-top:0}
+a{color:var(--accent)}
+code{background:var(--code);padding:1px 5px;border-radius:4px;font-size:.9em}
+pre{background:var(--code);padding:12px 14px;border-radius:8px;overflow:auto;font-size:13.5px;line-height:1.45}
+pre code{background:none;padding:0}
+figure{margin:16px 0 22px}
+figure img{display:block;max-width:100%;height:auto;border:1px solid var(--line);border-radius:8px;background:#fff;
+box-shadow:0 2px 10px rgba(0,0,0,.08)}
+figcaption{font-size:13px;color:var(--sub);margin-top:6px}
+.tbl{overflow-x:auto;margin:12px 0 20px}
+table{border-collapse:collapse;width:100%;font-size:14.5px}
+th,td{border:1px solid var(--line);padding:7px 9px;text-align:left;vertical-align:top}
+th{background:var(--th)}
+nav.toc{font-size:14px;background:var(--code);border-radius:8px;padding:10px 16px;margin:18px 0}
+nav.toc ul{margin:4px 0;padding-left:18px}
+@media (max-width:640px){main{padding:18px 16px 40px}h1{font-size:25px}}
+</style>
+</head>
+<body>
+<main>
+<h1>Installing the SOG suite — tutorial</h1>
+<p class="lead"><em>SO Group Virtual (Virtual Special Operation Group) · version 4.10 · <a href="installation.fr.html">Version française</a></em></p>
+<p>Ten minutes are enough: start the suite, follow the six steps of the <strong>First run</strong> page, and each step gets ticked in the summary at the top of the page. The screenshots come from a fresh installation with the sample data (fictitious pilot ALF).</p>
+<nav class="toc"><strong>Contents</strong><ul><li><a href="#1-how-it-works">1. How it works</a></li><li><a href="#2-before-you-start">2. Before you start</a></li><li><a href="#3-step-by-step-installation">3. Step-by-step installation</a></li><li><a href="#4-further-settings">4. Further settings</a></li><li><a href="#5-troubleshooting">5. Troubleshooting</a></li></ul></nav>
+<h2 id="1-how-it-works">1. How it works</h2>
+<p>The suite runs <strong>entirely on your computer</strong>. Nothing is hosted by a third party:</p>
+<ul><li>the <strong>browser</strong> (Chrome or Edge) displays the pages and keeps your profile and settings;</li><li>the <strong>launcher</strong> (<code>lancer.cmd</code>, or <code>lancer.sh</code> on macOS and Linux) serves these pages on <code>http://127.0.0.1</code> and does what the browser cannot do alone: query a service that needs a key, read a file from Downloads, synchronise the data with git;</li><li>the <strong>application folder</strong> holds the suite code and, in <code>data/</code>, the SOG data (missions, ODV, assignments, reports, availability) and the aeronautical data (<code>data/sia/</code>).</li></ul>
+<figure><a href="img/schema_echanges.en.svg"><img src="img/schema_echanges.en.svg" alt="What the suite exchanges, and with whom" loading="lazy"></a><figcaption>What the suite exchanges, and with whom</figcaption></figure>
+<p>A few services are queried <strong>directly by the browser</strong>: they are public and need no credential (IVAO and VATSIM traffic, map backgrounds, terrain, weather, SimBrief). The others go <strong>through the launcher</strong>: the IVAO API (with the group key), VATSIM ATC bookings, the Fleet and Flight log pages of the SOG website (read once a day, without logging in), the SOG data git repository, and the downloadable aeronautical sources (openAIP, FAA, ENAIRE, UK military AIP, NAV CANADA). Two sources are downloaded by hand because they require an account: the <strong>SIA</strong> (free) and <strong>NATS</strong>; the launcher then takes their ZIPs from the Downloads folder.</p>
+<h3 id="your-credentials-stay-with-you">Your credentials stay with you</h3>
+<figure><a href="img/schema_identifiants.en.svg"><img src="img/schema_identifiants.en.svg" alt="Credentials: where you enter them, where they stay, where they go" loading="lazy"></a><figcaption>Credentials: where you enter them, where they stay, where they go</figcaption></figure>
+<ul><li><strong>Passwords are kept on your computer and sent nowhere.</strong> The Centre password is checked in the browser; your suite account password is never kept in clear (only its hash is); the SOG website password is <strong>out of service</strong> (INOP) until the SOG has a web service.</li><li><strong>A key only goes to its own service</strong>: the IVAO API key to <code>api.ivao.aero</code>, git access to the repository server, the SOG web service key to that web service. IVAO keys are kept by the launcher (<code>secrets/</code>, never in git, never in backups, never sent back to the page); git access by Git's credential manager, if you tick “remember”.</li><li>Your network IDs (IVAO VID, VATSIM CID) and SimBrief name are <strong>public</strong>: they are used to find your flights and flight plans.</li></ul>
+<h2 id="2-before-you-start">2. Before you start</h2>
+<p>Nothing is required to discover the suite with the sample data. To use it within the SOG, gather the following — <strong>ask the SOG administrators</strong> for what is marked “provided by the admins”.</p>
+<h3 id="user">User</h3>
+<div class="tbl"><table><thead><tr><th>Item</th><th>Where to get it</th><th>Where to enter it</th><th></th></tr></thead><tbody><tr><td><strong>Trigram</strong> (your SOG user name)</td><td>provided by the SOG admins</td><td>First run › Profile</td><td>recommended</td></tr><tr><td><strong>SOG git repository address</strong> and your access (SSH key or token)</td><td>provided by the admins; an SSH key is created with <code>ssh-keygen</code> and declared on the repository server</td><td>First run › Data</td><td>recommended</td></tr><tr><td><strong>IVAO VID</strong> and <strong>VATSIM CID</strong></td><td>your IVAO and VATSIM accounts</td><td>First run › Profile</td><td>recommended</td></tr><tr><td><strong>SimBrief user name</strong></td><td>your SimBrief account</td><td>First run › Profile</td><td>optional</td></tr><tr><td><strong>Personal IVAO client</strong> (Client Credentials: <em>client ID</em> and <em>client secret</em>)</td><td>to create on <a href="https://developers.ivao.aero" rel="noopener">developers.ivao.aero</a>, in your name</td><td>Settings › My profile › IVAO</td><td>optional (upcoming feature)</td></tr><tr><td><strong>SIA account</strong></td><td>free, on the SIA website (shop)</td><td>— (ZIP download)</td><td>recommended</td></tr><tr><td><strong>X-Plane folder</strong></td><td>your X-Plane installation</td><td>Aeronautical data › X-Plane</td><td>optional</td></tr></tbody></table></div>
+<h3 id="sog-administrator-once-for-the-whole-group">SOG administrator (once for the whole group)</h3>
+<div class="tbl"><table><thead><tr><th>Item</th><th>How to create it</th><th>Where to enter it</th><th></th></tr></thead><tbody><tr><td>Group <strong>IVAO API key</strong></td><td>on <a href="https://developers.ivao.aero" rel="noopener">developers.ivao.aero</a>, signed in with an SOG IVAO account: create an application and get its <em>API key</em>; pass it on to members</td><td>First run › Airline, or Settings › Installation › API keys</td><td>recommended</td></tr><tr><td><strong>SOG data git repository</strong></td><td><strong>private</strong> repository (framagit, gitnet…) created by an admin; push <code>data/</code> to it; give each member read and write access (SSH key or token)</td><td>First run › Data</td><td>recommended</td></tr><tr><td>SOG website <strong>“Fleet” page</strong> and <strong>“Flight log” page</strong></td><td>website addresses (by default <code>https://flotte.defa-virtual.fr/flotte.php</code> and <code>/log_vols.php</code>)</td><td>Settings › Installation › Virtual airline</td><td>set by default</td></tr><tr><td><strong>Centre password</strong></td><td>provided by the SOG admins</td><td>First run › Centre</td><td>admins only</td></tr><tr><td><strong>SOG web service</strong> (report sending)</td><td>does not exist yet; when it does, an address and an API key</td><td>Settings › Centre › Report sending</td><td>upcoming</td></tr></tbody></table></div>
+<p>At IVAO, the key and the client are created from the developer portal, which requires an IVAO account: its screens may change. For a personal client, declare at IVAO the <strong>redirect URL</strong> the suite shows in My profile (for example <code>http://127.0.0.1:8000/__setup/ivao-callback</code>).</p>
+<p><strong>Browser</strong>: recent Chrome or Edge. Brave works after one setting (see <a href="../INSTALL.md">INSTALL.md</a>); Firefox and Safari cannot write to a folder.</p>
+<h2 id="3-step-by-step-installation">3. Step-by-step installation</h2>
+<h3 id="3-1-start-the-suite">3.1 Start the suite</h3>
+<p>Unzip the suite archive wherever you like (for example <code>E:\SOG</code>), then double-click **<code>lancer.cmd</code>** (Windows) — or <code>sh lancer.sh</code> in a terminal (macOS, Linux). The launcher installs Python if it is missing (with your agreement), starts the local server and opens the <strong>First run</strong> page. Its console messages are in French:</p>
+<pre><code>X-Plane Web Suite — lanceur
+Dossier : E:\SOG
+
+1. Données (dossier data/)
+  Données pas encore là : la page de premier lancement propose le jeu d’essai, l’adresse de votre dépôt de données
+  ou l’archive reçue.
+2. Serveur local
+  Suite servie sur http://127.0.0.1:8000/
+3. Navigateur
+  http://127.0.0.1:8000/apps/settings/premier_lancement.html</code></pre>
+<p>Keep this window open while you use the suite: closing it stops the suite.</p>
+<figure><a href="img/01_page.en.png"><img src="img/01_page.en.png" alt="First run page" loading="lazy"></a><figcaption>First run page</figcaption></figure>
+<p>The <strong>summary</strong> at the top of the page shows what is done (✓), what is left (○) and what is optional (–). Each line leads to its step; you can come back at any time through Settings › First run.</p>
+<figure><a href="img/02_bilan.en.png"><img src="img/02_bilan.en.png" alt="Summary" loading="lazy"></a><figcaption>Summary</figcaption></figure>
+<h3 id="3-2-step-1-application-folder">3.2 Step 1 — Application folder</h3>
+<p>Everything else stays greyed out until this folder is chosen: the suite must be able to read and write its data.</p>
+<figure><a href="img/04_verrou.en.png"><img src="img/04_verrou.en.png" alt="Locked steps" loading="lazy"></a><figcaption>Locked steps</figcaption></figure>
+<p>Click <strong>Choose the application folder</strong> and pick the folder that contains <code>lancer.cmd</code>. Chrome asks for permission to edit the files in that folder: <strong>Allow</strong> (choose “Allow on every visit” if Chrome offers it: it will not ask again).</p>
+<figure><a href="img/03_dossiers.en.png"><img src="img/03_dossiers.en.png" alt="Choose the folder" loading="lazy"></a><figcaption>Choose the folder</figcaption></figure>
+<figure><a href="img/05_autorisation_chrome.png"><img src="img/05_autorisation_chrome.png" alt="Chrome permission" loading="lazy"></a><figcaption>Chrome permission</figcaption></figure>
+<figure><a href="img/06_dossier_ok.en.png"><img src="img/06_dossier_ok.en.png" alt="Folder chosen" loading="lazy"></a><figcaption>Folder chosen</figcaption></figure>
+<p>If the folder you pick belongs to <strong>another copy</strong> of the suite, the page says so (“Suite launched from …, declared folder …”): pick the folder of the copy you have just started. After a restart, Chrome may ask for access again: one click on <strong>Grant access again</strong> is enough.</p>
+<h3 id="3-3-step-2-data">3.3 Step 2 — Data</h3>
+<figure><a href="img/07_donnees.en.png"><img src="img/07_donnees.en.png" alt="Data" loading="lazy"></a><figcaption>Data</figcaption></figure>
+<p>Three options:</p>
+<ul><li><strong>Sample data</strong>: fictitious data to discover the suite (12 missions, 4 pilots, dated availability and assignments). To be replaced later by the SOG's data.</li><li><strong>Data repository</strong>: the address of the SOG git repository (<code>https://…</code> or <code>git@…</code>), provided by the admins, then <strong>Fetch the data</strong>. Over HTTPS, the login and the password or token are only used for the download; “remember” hands them to Git's credential manager. Over SSH, the computer's SSH key is used.</li><li><strong>Archive received by e-mail</strong>: the data <code>.zip</code>.</li></ul>
+<figure><a href="img/08_donnees_ok.en.png"><img src="img/08_donnees_ok.en.png" alt="Data installed" loading="lazy"></a><figcaption>Data installed</figcaption></figure>
+<p>The <strong>sync git repository</strong> (optional) then shares the data between computers, through the <strong>Synchronise</strong> button in the header.</p>
+<h3 id="3-4-step-3-airline">3.4 Step 3 — Airline</h3>
+<figure><a href="img/09_compagnie.en.png"><img src="img/09_compagnie.en.png" alt="Airline" loading="lazy"></a><figcaption>Airline</figcaption></figure>
+<p>The airline name and website address are already set for the SOG. The <strong>IVAO API key</strong> (provided by the admins) lets the suite import IVAO zone activations and ATC sessions into the Board and the ODV planning; without it, they are entered by hand. It is kept by the launcher and never shown again (only its last 4 characters).</p>
+<h3 id="3-5-step-4-profile">3.5 Step 4 — Profile</h3>
+<figure><a href="img/11_profil_rempli.en.png"><img src="img/11_profil_rempli.en.png" alt="Profile filled in" loading="lazy"></a><figcaption>Profile filled in</figcaption></figure>
+<p>Your <strong>trigram</strong>, <strong>IVAO VID</strong>, <strong>VATSIM CID</strong>, <strong>SimBrief</strong> user name, and your <strong>login</strong> on the SOG website. The suite never asks for your IVAO or VATSIM passwords. The <strong>SOG website password</strong> is out of service (<strong>INOP</strong>): it is neither asked for nor kept until the SOG has a web service.</p>
+<h3 id="3-6-step-5-aeronautical-data">3.6 Step 5 — Aeronautical data</h3>
+<p>Maps, the studio and planning use the aeronautical data (AIRAC cycle). On the map, <strong>click the countries you want</strong> (one click adds, another removes), then <strong>Activate</strong>: the suite downloads their sources, rebuilds the aeronautical database and computes the MORA. France is chosen by default.</p>
+<figure><a href="img/14_aero_carte.en.png"><img src="img/14_aero_carte.en.png" alt="Country map" loading="lazy"></a><figcaption>Country map</figcaption></figure>
+<p>What cannot be done automatically is listed under the map, <strong>Actions to do</strong>:</p>
+<figure><a href="img/18_aero_reste.en.png"><img src="img/18_aero_reste.en.png" alt="Actions to do" loading="lazy"></a><figcaption>Actions to do</figcaption></figure>
+<ul><li><strong>SIA</strong>: order the current cycle on the SIA shop (free account, €0 product), download the ZIP, then <strong>Take the latest ZIP</strong> — the launcher takes it from Downloads (if it is already there, “Activate” takes it by itself);</li><li><strong>DIRCAM</strong> (air refuelling tracks): download the MILAIP PDF (ENR 5.7), then <strong>Import the PDF</strong>;</li><li><strong>X-Plane</strong> (optional): <strong>Choose the folder</strong> of your X-Plane installation.</li></ul>
+<figure><a href="img/19_aero_base.en.png"><img src="img/19_aero_base.en.png" alt="Aeronautical database" loading="lazy"></a><figcaption>Aeronautical database</figcaption></figure>
+<h3 id="3-7-step-6-centre-administrators">3.7 Step 6 — Centre (administrators)</h3>
+<p>The Centre (mission generation, map studio, registry, Board, ODV planning) is restricted: it is enabled with the Centre password, provided by the admins.</p>
+<figure><a href="img/12_centre.en.png"><img src="img/12_centre.en.png" alt="Centre locked" loading="lazy"></a><figcaption>Centre locked</figcaption></figure>
+<figure><a href="img/35_centre_acces.en.png"><img src="img/35_centre_acces.en.png" alt="Enable the Centre" loading="lazy"></a><figcaption>Enable the Centre</figcaption></figure>
+<p>Once enabled, the step offers the fleet and flight log update from the SOG website, the registry missions and the SOG settings.</p>
+<figure><a href="img/21_centre_etape.en.png"><img src="img/21_centre_etape.en.png" alt="Centre enabled" loading="lazy"></a><figcaption>Centre enabled</figcaption></figure>
+<h3 id="3-8-finish">3.8 Finish</h3>
+<p>When the summary is green for what concerns you, click <strong>Finish</strong>: from then on the suite opens on the home page, with a banner as long as something is left to set.</p>
+<figure><a href="img/22_bilan_fin.en.png"><img src="img/22_bilan_fin.en.png" alt="Final summary" loading="lazy"></a><figcaption>Final summary</figcaption></figure>
+<h2 id="4-further-settings">4. Further settings</h2>
+<h3 id="my-profile">My profile</h3>
+<p>The SOG website account (login; password INOP) and the <strong>personal IVAO client</strong>: <em>client ID</em>, <em>client secret</em>, and the redirect URL to declare at IVAO.</p>
+<figure><a href="img/30_profil_site.en.png"><img src="img/30_profil_site.en.png" alt="SOG website" loading="lazy"></a><figcaption>SOG website</figcaption></figure>
+<figure><a href="img/31_profil_ivao.en.png"><img src="img/31_profil_ivao.en.png" alt="IVAO client" loading="lazy"></a><figcaption>IVAO client</figcaption></figure>
+<h3 id="installation">Installation</h3>
+<p><strong>External sources</strong> (addresses of the SOG website, the SIA, the DIRCAM…), <strong>API keys</strong> (IVAO, for the whole installation) and <strong>Virtual airline</strong> (names and website pages: Fleet, Flight log).</p>
+<figure><a href="img/32_install_sources.en.png"><img src="img/32_install_sources.en.png" alt="External sources" loading="lazy"></a><figcaption>External sources</figcaption></figure>
+<figure><a href="img/33_install_cles.en.png"><img src="img/33_install_cles.en.png" alt="API keys" loading="lazy"></a><figcaption>API keys</figcaption></figure>
+<figure><a href="img/34_install_compagnie.en.png"><img src="img/34_install_compagnie.en.png" alt="Virtual airline" loading="lazy"></a><figcaption>Virtual airline</figcaption></figure>
+<h3 id="centre-administrators">Centre (administrators)</h3>
+<p><strong>Users and rights</strong>, <strong>Report sending</strong> (address and key of the SOG web service, once it exists) and <strong>Fleet</strong>.</p>
+<figure><a href="img/36_centre_utilisateurs.en.png"><img src="img/36_centre_utilisateurs.en.png" alt="Users" loading="lazy"></a><figcaption>Users</figcaption></figure>
+<figure><a href="img/37_centre_envoi.en.png"><img src="img/37_centre_envoi.en.png" alt="Report sending" loading="lazy"></a><figcaption>Report sending</figcaption></figure>
+<h2 id="5-troubleshooting">5. Troubleshooting</h2>
+<div class="tbl"><table><thead><tr><th>Symptom</th><th>What to do</th></tr></thead><tbody><tr><td>Everything is greyed out</td><td>Step 1: choose the application folder, or <strong>Grant access again</strong></td></tr><tr><td>“Suite launched from …, declared folder …”</td><td>The folder belongs to another copy: choose the one of the suite you started</td></tr><tr><td>“SIA folder not authorised”</td><td>Give access to the application folder again (step 1)</td></tr><tr><td>The page does not open</td><td>Check that the launcher window is open; open the address it shows</td></tr><tr><td>An old version is still displayed</td><td>Ctrl+F5</td></tr></tbody></table></div>
+<p>Further reading: <a href="../en/MANUEL_UTILISATEUR.md">User manual</a>, <a href="../en/MANUEL_ADMINISTRATEUR.md">Administrator manual</a>, <a href="../INSTALL.md">detailed installation</a> (in French).</p>
+</main>
+</body>
+</html>

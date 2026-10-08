@@ -5,6 +5,10 @@
 La suite est un ensemble de fichiers statiques (HTML, JavaScript, CSS, données YAML / JS) servis par un petit serveur
 local. Rien à compiler.
 
+**Première installation : suivre le [tutoriel d'installation](tutorial/installation.fr.md)** (captures d'écran, schémas
+des échanges et des identifiants, prérequis ; [version HTML](tutorial/installation.fr.html),
+[English](tutorial/installation.en.md)). Ce document-ci détaille le fonctionnement et les cas avancés.
+
 ## 1. Installation en un lancement
 
 1. Récupérer le dossier de l'application : archive zip (framagit › Code › Télécharger) décompressée où vous voulez, ou
@@ -12,16 +16,18 @@ local. Rien à compiler.
 2. Lancer, depuis ce dossier :
    - **Windows** : double-clic sur `lancer.cmd` ;
    - **macOS / Linux** : `sh lancer.sh` dans un terminal (ou `./lancer.sh`).
-3. Dans la page **Premier lancement** qui s'ouvre (`apps/settings/premier_lancement.html`) :
-   1. **Données** : identifiants framagit (mot de passe ou jeton ; « mémoriser » les confie au gestionnaire
-      d'identifiants de Git) → clone de `data/` ; ou l'archive `.zip` reçue par mail. En option, le journal des vols
-      DEFA (page « Log des vols » enregistrée, `.html`) → référence (`tools/defa_reference.py`) ;
-   2. **Profil** : trigramme, ID IVAO, ID VATSIM, SimBrief ; identifiants du site de la compagnie, gardés dans ce navigateur et
-      exclus des sauvegardes ;
-   3. **Dossiers** : dossier de l'application (données, registre, missions, SIA, performances et sauvegarde locale en
-      sont déduits) ; classeur ODV : dossier OneDrive où l'escadrille le dépose, ou à défaut le fichier Excel ;
-   4. **Terminer** : mise à jour des données SIA (Paramètres › Maintenance › Données aéronautiques, zone France ; le
-      téléchargement sur le site du SIA demande d'accepter sa licence Open Data).
+3. Dans la page **Premier lancement** qui s'ouvre (`apps/settings/premier_lancement.html`), six étapes, tout le reste
+   grisé tant que la première n'est pas faite :
+   1. **Dossiers** : dossier de l'application (données, registre, missions, SIA, performances et sauvegarde locale en
+      sont déduits ; un dossier d'une autre copie de la suite est signalé) ; classeur ODV (facultatif) ;
+   2. **Données** : jeu d'essai, adresse du dépôt de données du SOG (identifiants facultatifs ; « mémoriser » les
+      confie au gestionnaire d'identifiants de Git), ou archive `.zip` reçue par mail ;
+   3. **Compagnie** : nom et site de la compagnie, clé d'API IVAO (gardée par le lanceur) ;
+   4. **Profil** : trigramme, ID IVAO, ID VATSIM, SimBrief, identifiant sur le site de la compagnie (mot de passe hors
+      service, INOP, tant qu'il n'y a pas de webservice) ;
+   5. **Données aéronautiques** : pays choisis sur la carte, « Activer » (téléchargements, base, MORA), puis ce qui
+      reste à la main (ZIP du SIA, PDF de la MILAIP, dossier X-Plane) ;
+   6. **Centre** (administrateurs) : mot de passe du Centre ; puis **Terminer**.
 
    Une fois réglée, la suite s'ouvre sur l'accueil aux lancements suivants (la page reste accessible :
    `premier_lancement.html?force`).

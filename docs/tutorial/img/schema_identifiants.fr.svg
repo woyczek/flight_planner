@@ -1,0 +1,65 @@
+<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1240 582' width='1240' height='582' role='img' aria-label='Identifiants : où on les saisit, où ils restent, vers qui ils partent'>
+<defs><marker id='a-read' viewBox='0 0 10 10' refX='9' refY='5' markerWidth='7' markerHeight='7' orient='auto-start-reverse'><path d='M0,0 L10,5 L0,10 z' fill='#2563eb'/></marker><marker id='a-send' viewBox='0 0 10 10' refX='9' refY='5' markerWidth='7' markerHeight='7' orient='auto-start-reverse'><path d='M0,0 L10,5 L0,10 z' fill='#dc2626'/></marker><marker id='a-both' viewBox='0 0 10 10' refX='9' refY='5' markerWidth='7' markerHeight='7' orient='auto-start-reverse'><path d='M0,0 L10,5 L0,10 z' fill='#7c3aed'/></marker><marker id='a-manual' viewBox='0 0 10 10' refX='9' refY='5' markerWidth='7' markerHeight='7' orient='auto-start-reverse'><path d='M0,0 L10,5 L0,10 z' fill='#6b7280'/></marker><marker id='a-both-s' viewBox='0 0 10 10' refX='9' refY='5' markerWidth='7' markerHeight='7' orient='auto-start-reverse'><path d='M0,0 L10,5 L0,10 z' fill='#7c3aed'/></marker></defs>
+<rect width='1240' height='582' fill='#ffffff'/>
+<text x='24' y='36' font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size='22' font-weight='bold' fill='#111827' text-anchor='start'>Identifiants : où on les saisit, où ils restent, vers qui ils partent</text>
+<text x='30' y='82' font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size='14' font-weight='bold' fill='#4b5563' text-anchor='start'>Identifiant</text>
+<text x='306' y='82' font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size='14' font-weight='bold' fill='#4b5563' text-anchor='start'>Saisi dans</text>
+<text x='546' y='82' font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size='14' font-weight='bold' fill='#4b5563' text-anchor='start'>Reste sur votre ordinateur, dans…</text>
+<text x='926' y='82' font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size='14' font-weight='bold' fill='#4b5563' text-anchor='start'>Part vers</text>
+<rect x='20' y='96' width='1200' height='46' rx='6' fill='#ffffff' stroke='#e5e7eb' stroke-width='1.3'/>
+<text x='30' y='124' font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size='13.5' font-weight='bold' fill='#111827' text-anchor='start'>Mot de passe du Centre</text>
+<text x='306' y='124' font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size='12.5' font-weight='normal' fill='#4b5563' text-anchor='start'>Premier lancement › Centre</text>
+<rect x='540' y='104' width='350' height='30' rx='6' fill='#dbeafe' stroke='#cbd5e1' stroke-width='1.3'/>
+<text x='550' y='124' font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size='12.5' font-weight='normal' fill='#111827' text-anchor='start'>le navigateur (empreinte comparée sur place)</text>
+<circle cx='904' cy='119' r='9' fill='none' stroke='#16a34a' stroke-width='2'/><line x1='898' y1='125' x2='910' y2='113' stroke='#16a34a' stroke-width='2'/>
+<text x='928' y='124' font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size='12.5' font-weight='bold' fill='#16a34a' text-anchor='start'>nulle part</text>
+<rect x='20' y='150' width='1200' height='46' rx='6' fill='#f8fafc' stroke='#e5e7eb' stroke-width='1.3'/>
+<text x='30' y='178' font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size='13.5' font-weight='bold' fill='#111827' text-anchor='start'>Mot de passe du compte de la suite</text>
+<text x='306' y='178' font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size='12.5' font-weight='normal' fill='#4b5563' text-anchor='start'>Mon profil › Connexion</text>
+<rect x='540' y='158' width='350' height='30' rx='6' fill='#dcfce7' stroke='#cbd5e1' stroke-width='1.3'/>
+<text x='550' y='178' font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size='12.5' font-weight='normal' fill='#111827' text-anchor='start'>data/utilisateurs (empreinte PBKDF2 seulement)</text>
+<circle cx='904' cy='173' r='9' fill='none' stroke='#16a34a' stroke-width='2'/><line x1='898' y1='179' x2='910' y2='167' stroke='#16a34a' stroke-width='2'/>
+<text x='928' y='178' font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size='12.5' font-weight='bold' fill='#16a34a' text-anchor='start'>en clair : nulle part (empreinte : dépôt des données)</text>
+<rect x='20' y='204' width='1200' height='46' rx='6' fill='#ffffff' stroke='#e5e7eb' stroke-width='1.3'/>
+<text x='30' y='232' font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size='13.5' font-weight='bold' fill='#111827' text-anchor='start'>Mot de passe du site du SOG</text>
+<text x='306' y='232' font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size='12.5' font-weight='normal' fill='#4b5563' text-anchor='start'>— (INOP)</text>
+<rect x='540' y='212' width='350' height='30' rx='6' fill='#dbeafe' stroke='#cbd5e1' stroke-width='1.3'/>
+<text x='550' y='232' font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size='12.5' font-weight='normal' fill='#111827' text-anchor='start'>plus gardé : hors service</text>
+<circle cx='904' cy='227' r='9' fill='none' stroke='#16a34a' stroke-width='2'/><line x1='898' y1='233' x2='910' y2='221' stroke='#16a34a' stroke-width='2'/>
+<text x='928' y='232' font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size='12.5' font-weight='bold' fill='#16a34a' text-anchor='start'>nulle part</text>
+<rect x='20' y='258' width='1200' height='46' rx='6' fill='#f8fafc' stroke='#e5e7eb' stroke-width='1.3'/>
+<text x='30' y='286' font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size='13.5' font-weight='bold' fill='#111827' text-anchor='start'>Clé d'API IVAO (groupe)</text>
+<text x='306' y='286' font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size='12.5' font-weight='normal' fill='#4b5563' text-anchor='start'>Premier lancement › Compagnie</text>
+<rect x='540' y='266' width='350' height='30' rx='6' fill='#fde68a' stroke='#cbd5e1' stroke-width='1.3'/>
+<text x='550' y='286' font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size='12.5' font-weight='normal' fill='#111827' text-anchor='start'>le lanceur : secrets/ivao.json (hors git)</text>
+<path d='M892,281 C906.0,281 906.0,281 920,281' fill='none' stroke='#dc2626' stroke-width='2' marker-end='url(#a-send)'/>
+<text x='928' y='286' font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size='12.5' font-weight='bold' fill='#dc2626' text-anchor='start'>api.ivao.aero, seulement</text>
+<rect x='20' y='312' width='1200' height='46' rx='6' fill='#ffffff' stroke='#e5e7eb' stroke-width='1.3'/>
+<text x='30' y='340' font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size='13.5' font-weight='bold' fill='#111827' text-anchor='start'>Client IVAO : ID et secret (personnel)</text>
+<text x='306' y='340' font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size='12.5' font-weight='normal' fill='#4b5563' text-anchor='start'>Mon profil › IVAO</text>
+<rect x='540' y='320' width='350' height='30' rx='6' fill='#fde68a' stroke='#cbd5e1' stroke-width='1.3'/>
+<text x='550' y='340' font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size='12.5' font-weight='normal' fill='#111827' text-anchor='start'>le lanceur : secrets/users/&lt;TRI&gt;.json</text>
+<circle cx='904' cy='335' r='9' fill='none' stroke='#16a34a' stroke-width='2'/><line x1='898' y1='341' x2='910' y2='329' stroke='#16a34a' stroke-width='2'/>
+<text x='928' y='340' font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size='12.5' font-weight='bold' fill='#16a34a' text-anchor='start'>rien : pas encore utilisé</text>
+<rect x='20' y='366' width='1200' height='46' rx='6' fill='#f8fafc' stroke='#e5e7eb' stroke-width='1.3'/>
+<text x='30' y='394' font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size='13.5' font-weight='bold' fill='#111827' text-anchor='start'>Accès au dépôt git du SOG</text>
+<text x='306' y='394' font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size='12.5' font-weight='normal' fill='#4b5563' text-anchor='start'>Premier lancement › Données</text>
+<rect x='540' y='374' width='350' height='30' rx='6' fill='#dcfce7' stroke='#cbd5e1' stroke-width='1.3'/>
+<text x='550' y='394' font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size='12.5' font-weight='normal' fill='#111827' text-anchor='start'>gestionnaire de Git (si « mémoriser ») ou clé SSH</text>
+<path d='M892,389 C906.0,389 906.0,389 920,389' fill='none' stroke='#dc2626' stroke-width='2' marker-end='url(#a-send)'/>
+<text x='928' y='394' font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size='12.5' font-weight='bold' fill='#dc2626' text-anchor='start'>le serveur du dépôt, seulement</text>
+<rect x='20' y='420' width='1200' height='46' rx='6' fill='#ffffff' stroke='#e5e7eb' stroke-width='1.3'/>
+<text x='30' y='448' font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size='13.5' font-weight='bold' fill='#111827' text-anchor='start'>Clé du webservice du SOG</text>
+<text x='306' y='448' font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size='12.5' font-weight='normal' fill='#4b5563' text-anchor='start'>Paramètres › Centre › Envoi des CR</text>
+<rect x='540' y='428' width='350' height='30' rx='6' fill='#dbeafe' stroke='#cbd5e1' stroke-width='1.3'/>
+<text x='550' y='448' font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size='12.5' font-weight='normal' fill='#111827' text-anchor='start'>le navigateur (hors sauvegardes)</text>
+<path d='M892,443 C906.0,443 906.0,443 920,443' fill='none' stroke='#dc2626' stroke-width='2' marker-end='url(#a-send)'/>
+<text x='928' y='448' font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size='12.5' font-weight='bold' fill='#dc2626' text-anchor='start'>le webservice du SOG, seulement</text>
+<rect x='20' y='474' width='1200' height='46' rx='6' fill='#f8fafc' stroke='#e5e7eb' stroke-width='1.3'/>
+<text x='30' y='502' font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size='13.5' font-weight='bold' fill='#111827' text-anchor='start'>Trigramme, VID IVAO, CID VATSIM, SimBrief</text>
+<text x='306' y='502' font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size='12.5' font-weight='normal' fill='#4b5563' text-anchor='start'>Premier lancement › Profil</text>
+<rect x='540' y='482' width='350' height='30' rx='6' fill='#dbeafe' stroke='#cbd5e1' stroke-width='1.3'/>
+<text x='550' y='502' font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size='12.5' font-weight='normal' fill='#111827' text-anchor='start'>le navigateur (profil pilote)</text>
+<path d='M892,497 C906.0,497 906.0,497 920,497' fill='none' stroke='#dc2626' stroke-width='2' marker-end='url(#a-send)'/>
+<text x='928' y='502' font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size='12.5' font-weight='bold' fill='#dc2626' text-anchor='start'>SimBrief, CR envoyés (identifiants publics)</text>
+</svg>

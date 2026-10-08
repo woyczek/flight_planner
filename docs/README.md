@@ -14,6 +14,7 @@ la page en cours) ou ☰ › Aide.
 
 | Document | Pour |
 |---|---|
+| [Tutoriel d'installation](tutorial/installation.fr.md) ([HTML](tutorial/installation.fr.html), [English](tutorial/installation.en.md)) | installer et régler la suite en quelques minutes, captures à l'appui ; échanges avec les services extérieurs et identifiants (schémas) ; prérequis utilisateur et administrateur |
 | [Installation](INSTALL.md) | installer et lancer la suite (lanceur, données, navigateur, mises à jour) |
 | [Présentation](PRESENTATION.md) · [Presentation (English)](PRESENTATION_en.md) | ce que contient la suite, application par application |
 
