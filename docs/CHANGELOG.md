@@ -152,6 +152,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Modifié
 
+- **Icônes des blocs : passe limitée à l'élément remonté** : `AppFramework.refresh(racine)` (éditeur d'activations,
+  panneaux remontés dans un bloc) relançait la passe des icônes sur toute la page ; elle se limite désormais à cette
+  racine, `refresh()` sans racine gardant la passe complète.
 - **Décor des designs à matières : passes inutiles du chargement supprimées** : en plus des recalculs déclenchés par
   les changements de hauteur et de blocs, le décor était refait sans condition au chargement complet puis une seconde
   après (jusqu'à 80 ms chacune). La passe du chargement complet est regroupée avec celles des changements de hauteur

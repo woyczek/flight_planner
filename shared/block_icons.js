@@ -274,9 +274,11 @@
     const f = window.AppFramework;
     if (!f || f.__blockIcons) return;
     const r = f.refresh;
+    // refresh(racine) : passe limitée à cette racine (un éditeur remonté dans un bloc) ; refresh() : passe complète
     f.refresh = (...a) => {
       const x = r(...a);
-      decorate();
+      if (a[0] instanceof Element && a[0] !== document.body) decorateIn(a[0]);
+      else decorate();
       return x;
     };
     f.__blockIcons = true;
