@@ -3338,6 +3338,8 @@
     if (e.target.classList?.contains('mt-mora-changes')) moraChangesOpen = e.target.open;
   }, true);
 
+  /** Compte rendu d'un plan de MORA (p.changes : cellules avant / après) : nombre de cellules en hausse, en baisse ou
+   *  dont seul l'obstacle change, et tableau des changements replié. */
   function moraHtml(p) {
     const up = p.changes.filter(c => c.after > c.before),
       down = p.changes.filter(c => c.after < c.before),

@@ -162,6 +162,7 @@ def blob(data, stage, path):
 
 
 def is_repo(data):
+    """Vrai si data/ est un dépôt git et que git est disponible sur ce poste."""
     return os.path.isdir(os.path.join(data, '.git')) and bool(git_exe())
 
 
@@ -209,6 +210,7 @@ DIVERGENCE = {
 
 
 def thresholds(data):
+    """Seuils d'alerte de divergence (DIVERGENCE), surchargés par config/suite.json › sync s'ils sont bien formés."""
     t = {k: list(v) for k, v in DIVERGENCE.items()}
     try:
         with open(os.path.join(data, 'config', 'suite.json'), encoding='utf-8') as f:
@@ -236,6 +238,7 @@ def outside_changes(data):
 
 
 def oldest_age_h(data, files):
+    """Âge en heures du plus ancien des fichiers donnés (modifications locales en attente) ; 0 sans fichier lisible."""
     now, ages = time.time(), []
     for p in files:
         try:
@@ -300,6 +303,7 @@ def status(data, fetch=False):
 
 
 def last_sync(data):
+    """Résultat du dernier passage de synchronisation de ce poste (data/local/sync.json) ; None s'il n'y en a pas."""
     try:
         return json.load(open(os.path.join(data, 'local', 'sync.json'), encoding='utf-8'))
     except (OSError, ValueError):
@@ -307,6 +311,7 @@ def last_sync(data):
 
 
 def remember(data, result):
+    """Garde le résultat d'un passage de synchronisation dans data/local/sync.json (propre au poste, ignoré par git)."""
     os.makedirs(os.path.join(data, 'local'), exist_ok=True)  # local/ : propre au poste, ignoré par git
     with open(os.path.join(data, 'local', 'sync.json'), 'w', encoding='utf-8', newline='\n') as f:
         json.dump({k: result.get(k) for k in ('at', 'author', 'committed', 'received', 'pushed', 'conflicts', 'refused', 'ok')}, f,

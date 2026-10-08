@@ -611,8 +611,6 @@
     const el = $('#odvoStatus');
     if (el) el.textContent = s;
   };
-  /** Applique une modification fn(doc) de l'ordre de vol puis enchaîne : réémission des ordres de mission des vols
-   *  déplacés, convoyages, DLO, demandes de zones, conflits, rendu, zones, enregistrement. Refusée en lecture seule. */
   // annulation : dix états précédents de l'ordre de vol (copies), repris par « ↶ Annuler » ou Ctrl+Z ; vidée au
   // changement de semaine
   const UNDO_MAX = 10;
@@ -629,6 +627,9 @@
     });
   }
 
+  /** Applique une modification fn(doc) de l'ordre de vol puis enchaîne : réémission des ordres de mission des vols
+   *  déplacés, convoyages, DLO, demandes de zones, conflits, rendu, zones, enregistrement. Refusée en lecture seule.
+   *  undo : modification venue de « Annuler » (pas de nouvel état mis de côté). */
   function mutate(fn, {
     undo = false
   } = {}) {
@@ -3048,6 +3049,8 @@
   // DLO et butées : tableau repliable (triangle), ouvert ou fermé selon le dernier choix (préférence de ce navigateur)
   const DLO_OPEN = 'odvoDloOpen:v1';
 
+  /** Vue de la semaine : grille membres × jours (dispos, éléments où le membre est d'équipage), DLO et butées,
+   *  modifications de dispo pas encore prises en compte. */
   function renderWeekView() {
     const ds = dates();
     // éléments actifs du jour où le membre est d'équipage (nombre dans la case, détail en infobulle)
