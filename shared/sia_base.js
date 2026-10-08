@@ -1130,12 +1130,22 @@
   }
   /** Fichier livré avec l'application (shared/carto/) : fetch (page servie en http), sinon dossier de l'application
    *  mémorisé (__repo) s'il est déjà autorisé — jamais d'invite en pleine lecture (en file://, fetch est refusé). */
+  // raison du dernier échec d'appAsset (code HTTP, erreur réseau, dossier) : montrée dans le compte rendu de la relecture
+  let appAssetWhy = '';
   async function appAsset(name) {
-    try {
-      const r = await fetch(appUrl('shared/carto/' + encodeURIComponent(name)));
-      if (r.ok) return new File([await r.blob()], name);
-    } catch {
-      /* file:// */
+    const why = [];
+    // deux essais : un lanceur occupé (téléchargement en cours) peut refuser ou couper une requête
+    for (let i = 0; i < 2; i++) {
+      try {
+        const r = await fetch(appUrl('shared/carto/' + encodeURIComponent(name)), {
+          cache: i ? 'reload' : 'default'
+        });
+        if (r.ok) return new File([await r.blob()], name);
+        why.push(`HTTP ${r.status}`);
+      } catch (e) {
+        why.push(e?.message || String(e)); // file://, réseau
+      }
+      if (!i) await new Promise(res => setTimeout(res, 800));
     }
     try {
       const st = await window.FileAccess?.status?.('__repo');
@@ -1144,9 +1154,15 @@
         for (const part of ['shared', 'carto']) d = await d.getDirectoryHandle(part);
         return await (await d.getFileHandle(name)).getFile();
       }
-    } catch {
-      /* absent */
+      why.push(L(['dossier de l’application non autorisé', 'application folder not authorised', 'Anwendungsordner nicht erlaubt',
+        'carpeta de la aplicación no autorizada'
+      ]));
+    } catch (e) {
+      why.push(L(['absent du dossier de l’application', 'missing from the application folder', 'fehlt im Anwendungsordner',
+        'ausente de la carpeta de la aplicación'
+      ]));
     }
+    appAssetWhy = `${appUrl('shared/carto/' + name)} : ${[...new Set(why)].join(' ; ')}`;
     return null;
   }
   const AIRAC_NAME = /^(?:AIXM4\.5_all_FR_OM_|XML_SIA_|sia-airspaces-)(\d{4}-\d{2}-\d{2})\.xml$/i;
@@ -1427,6 +1443,7 @@
       xmlCount: inventory.length,
       aixmAirspaces: aixmAirspaces.length,
       noCities: !city,
+      citiesWhy: city ? '' : appAssetWhy,
       noMora: !moraFile,
       bySource,
       timings
@@ -1524,8 +1541,9 @@
     const warn = [];
     if (r.skipped.length) warn.push(L([`Autre(s) cycle(s) écarté(s) : ${r.skipped.join(', ')} — à archiver (Paramètres › Maintenance).`, `Other cycle(s) skipped: ${r.skipped.join(', ')} — archive them.`]));
     if (r.noCities) warn.push(L(['villes_geonames.csv introuvable (shared/carto/) : noms de villes indisponibles.',
-      'villes_geonames.csv not found: no city names.'
-    ]));
+      'villes_geonames.csv not found: no city names.', 'villes_geonames.csv nicht gefunden (shared/carto/): keine Städtenamen.',
+      'villes_geonames.csv no encontrado (shared/carto/): sin nombres de ciudades.'
+    ]) + (r.citiesWhy ? ` (${r.citiesWhy})` : ''));
     return `<span class="ok">✓ ${esc(L(['Base chargée et mémorisée', 'Base loaded and stored', 'Basis geladen und gespeichert', 'Base cargada y guardada']))}${r.airac ? ` (AIRAC ${esc(r.airac)})` : ''} : ${r.xmlCount} XML, ${base.airspaces.length} ${esc(L(['espaces', 'airspaces']))}, ${(base.aero?.aerodromes || []).length} ${esc(L(['aérodromes', 'aerodromes']))}, ${Object.keys(base.obstacleMax || {}).length} ${esc(L(['cellules d’obstacles', 'obstacle cells']))}, ${base.cities.length} ${esc(L(['villes', 'cities']))}.</span>${Object.keys(r.bySource || {}).length ? `<br><span class="small">${esc(L(['Autres sources', 'Other sources', 'Weitere Quellen', 'Otras fuentes']))} : ${Object.entries(r.bySource).map(([k, v]) => `${esc(k)} ${v.files} ${esc(L(['fichier(s)', 'file(s)', 'Datei(en)', 'archivo(s)']))}, +${v.airspaces} ${esc(L(['espaces', 'airspaces', 'Lufträume', 'espacios']))}`).join(' · ')}</span>` : ''}${warn.map(w => `<br><span class="err">${esc(w)}</span>`).join('')}`;
   }
   /** Bloc « Base de données SIA » : dossier (bouton FileAccess), Relire, Purger, état, compte rendu, fichiers analysés.

@@ -416,6 +416,8 @@ En tête, **« Où en est la suite »** fait le bilan, ligne par ligne, et chaqu
 - Pour tous : données, dépôt git de synchronisation (facultatif), dossier de l'application, compagnie et site, clé d'API IVAO (facultative), pilote (trigramme et au moins un réseau), identifiants du site de la compagnie, données aéronautiques.
 - Centre : activation (administrateurs) ; une fois le Centre activé, flotte et journal du site, missions du registre, utilisateurs et droits (au moins un administrateur), envoi des CR (facultatif).
 
+Au-dessus du bilan, « 📘 Tutoriel d’installation, pas à pas » ouvre dans l'Aide le [tutoriel d'installation](tutorial/installation.fr.md), dans la langue de la suite.
+
 Le numéro de chaque étape passe au vert quand elle est faite.
 
 ### 1 Dossiers
@@ -481,7 +483,7 @@ Cartes, missions et planification utilisent les données aéronautiques (AIRAC) 
 ### 6 Centre (administrateurs)
 
 Réservé aux administrateurs du SO Group : les pilotes passent cette étape.
-- Carte « Activer le Centre » : « Mot de passe du Centre », puis « Activer le Centre ».
+- Carte « Activer le Centre » : « Mot de passe du Centre » (affiché sous le bouton, `DEFA` par défaut), puis « Activer le Centre ». Le bilan indique le mode du Centre (autonome : mot de passe).
 - Une fois le Centre activé :
   - « Flotte et journal des vols » : dernière lecture du site par le lanceur (flotte, emplacement des appareils, journal), « Mettre à jour maintenant », et le lien vers la flotte (Paramètres › Centre).
   - « Missions » : nombre de missions au registre (elles arrivent avec les données, étape 1) et le lien vers le registre.

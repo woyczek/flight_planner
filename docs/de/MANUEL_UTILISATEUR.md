@@ -416,6 +416,8 @@ Oben zieht **„Stand der Suite“** Bilanz, Zeile für Zeile, und jede Zeile f�
 - Für alle: Daten, Git-Synchronisierungs-Repository (optional), Anwendungsordner, Fluggesellschaft und Website, IVAO-API-Schlüssel (optional), Pilot (Kürzel und mindestens ein Netzwerk), Zugangsdaten der Website, Luftfahrtdaten.
 - Zentrum: Aktivierung (Administratoren); ist das Zentrum aktiviert, Flotte und Flugbuch der Website, Missionen des Registers, Benutzer und Rechte (mindestens ein Administrator), Berichtsversand (optional).
 
+Über der Übersicht öffnet „📘 Installationsanleitung, Schritt für Schritt“ die [Installationsanleitung](../tutorial/installation.en.md) in der Hilfe, in der Sprache der Suite (sonst Englisch).
+
 Die Nummer jedes Schritts wird grün, wenn er erledigt ist.
 
 ### 1 Ordner
@@ -481,7 +483,7 @@ Karten, Missionen und Planung nutzen die Luftfahrtdaten (AIRAC) und die Datenban
 ### 6 Zentrum (Administratoren)
 
 Nur für Administratoren der SO Group: Piloten überspringen diesen Schritt.
-- Karte „Zentrum aktivieren“: „Passwort des Zentrums“, dann „Zentrum aktivieren“.
+- Karte „Zentrum aktivieren“: „Passwort des Zentrums“ (unter dem Knopf angezeigt, `DEFA` voreingestellt), dann „Zentrum aktivieren“. Die Übersicht zeigt den Modus des Zentrums (eigenständig: Passwort).
 - Ist das Zentrum aktiviert:
   - „Flotte und Flugbuch“: letztes Lesen der Website durch den Starter (Flotte, Standort der Luftfahrzeuge, Flugbuch), „Jetzt aktualisieren“ und der Link zur Flotte (Einstellungen › Zentrum).
   - „Missionen“: Zahl der Missionen im Register (sie kommen mit den Daten, Schritt 1) und der Link zum Register.

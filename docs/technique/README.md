@@ -19,6 +19,7 @@ ou maintient la suite. Les manuels et guides d'utilisation sont au [premier nive
 | Document | Pour |
 |---|---|
 | [Affectation des missions](AFFECTATION_MISSIONS.md) | conception de l'affectation des missions aux pilotes et de « Mes missions » |
+| [Comptes et données signés](COMPTES_SIGNES.md) | modes standalone et groupe, clés de poste, registre signé, enrôlement, clé de secours, affectations signées (conception) |
 | [Disponibilités et réorganisation](DISPOS_ET_REORGANISATION.md) | catégories de disponibilité, paramètres en quatre pages, utilisateurs et droits (décisions du 5 octobre 2026) |
 | [Prompt du générateur de missions](PROMPT_GENERATEUR_MISSIONS.md) | prompt de génération des missions (source de `apps/cpco/mission_prompt.js`) |
 

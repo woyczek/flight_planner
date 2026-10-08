@@ -1,8 +1,8 @@
 <!doctype html>
 <html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Premier lancement</title>
-<link rel="stylesheet" href="../../shared/repository_nav.css?v=f6a61e75"><link rel="stylesheet" href="../../shared/mission_core/core.css?v=8594d3c0"><link rel="stylesheet" href="../../shared/maintenance.css?v=844a5c68">
-<script src="../../config/repository_tree?v=7b133f6e"></script>
+<link rel="stylesheet" href="../../shared/repository_nav.css?v=975c4b32"><link rel="stylesheet" href="../../shared/mission_core/core.css?v=8594d3c0"><link rel="stylesheet" href="../../shared/maintenance.css?v=844a5c68">
+<script src="../../config/repository_tree?v=c3698338"></script>
 <style>
   main.pl-page {
     max-width: 980px;
@@ -64,6 +64,19 @@
   }
   .pl-form label {
     font-size: 13px
+  }
+  /* case à cocher et son libellé sur une ligne (« mémoriser… ») : la case garde sa taille, le texte celle des libellés */
+  label.pl-tick {
+    display: flex;
+    font-size: 13px;
+    align-items: center;
+    gap: 6px;
+    margin: 4px 0
+  }
+  label.pl-tick>input {
+    flex: none;
+    width: auto;
+    margin: 0
   }
   /* carte étroite (dépôt de données) : libellés au-dessus des champs, champs sur toute la largeur */
   .pl-form.pl-stack {
@@ -211,6 +224,9 @@
 <header class="mc-header"><h1>Premier lancement</h1><p>SO Group Virtual (Virtual Special Operation Group) — ce dont la suite a besoin pour travailler, étape par étape</p></header>
 <main class="pl-page">
   <section id="plSummary"><h2>Où en est la suite</h2>
+    <!-- tutoriel d'installation (docs/tutorial) : ouvert dans l'Aide, qui prend la version de la langue de la suite
+         (.fr en français, .en sinon) -->
+    <p class="pl-row pl-tuto"><a class="primary" id="plTuto" href="../aide/aide.html?doc=tutorial/installation.fr.md">📘 Tutoriel d’installation, pas à pas</a></p>
     <p class="pl-hint">À reprendre à tout moment : Paramètres › Premier lancement. Chaque ligne mène à son étape.</p>
     <ul class="pl-check" id="plChecklist"></ul>
   </section>
@@ -220,7 +236,7 @@
     <div class="pl-grid">
       <div class="pl-card"><h3>Dossier de l’application</h3>
         <p class="pl-hint">Le dossier qui contient <code>lancer.cmd</code> et <code>lancer.sh</code> : données, registre, missions, SIA, performances et sauvegarde locale en sont déduits.</p>
-        <div class="pl-row"><button type="button" class="primary" id="plRepo" data-icon="folder">Choisir le dossier de l’application</button></div>
+        <div class="pl-row"><button type="button" class="primary" id="plRepo" data-icon="folder">Choisir le dossier de l’application</button><button type="button" class="secondary" id="plRepoGrant" data-icon="check" hidden>Autoriser à nouveau</button></div>
         <p class="pl-msg" id="plRepoMsg"></p>
       </div>
       <div class="pl-card"><h3>Classeur ODV (facultatif)</h3>
@@ -247,7 +263,7 @@
           <label for="plUser">Identifiant (facultatif)</label><input type="text" id="plUser" autocomplete="username" spellcheck="false">
           <label for="plSecret">Mot de passe ou jeton (facultatif)</label><input type="password" id="plSecret" autocomplete="current-password">
         </div>
-        <label class="pl-row"><input type="checkbox" id="plRemember"> mémoriser dans le gestionnaire d’identifiants de Git</label>
+        <label class="pl-tick"><input type="checkbox" id="plRemember"> mémoriser dans le gestionnaire d’identifiants de Git</label>
         <p class="pl-hint">Adresse HTTPS <code>https://hôte/compte/dépôt.git</code> ou SSH <code>git@hôte:compte/dépôt.git</code>, donnée par votre compagnie. Dépôt privé en HTTPS : identifiant et mot de passe, ou un jeton d’accès en lecture si le compte a la double authentification. En SSH : la clé SSH de cet ordinateur. Les identifiants servent au téléchargement, sur cet ordinateur seulement.</p>
         <div class="pl-row"><button type="button" class="primary" id="plClone">Récupérer les données</button></div>
         <p class="pl-msg" id="plCloneMsg"></p>
@@ -307,7 +323,7 @@
         <p class="pl-hint">Identifiants de votre compte sur le site de la compagnie, gardés dans ce navigateur seulement (jamais dans un fichier ni une sauvegarde).</p>
         <div class="pl-form">
           <label for="plSiteLogin">Identifiant</label><input type="text" id="plSiteLogin" autocomplete="username" spellcheck="false">
-          <label for="plSitePass">Mot de passe</label><input type="password" id="plSitePass" autocomplete="current-password">
+          <label for="plSitePass">Mot de passe</label><span class="repo-inop-field"><input type="password" id="plSitePass" disabled autocomplete="off"><span class="repo-inop" id="plSitePassInop" data-no-i18n>INOP</span></span>
         </div>
       </div>
     </div>
@@ -325,6 +341,7 @@
     <div class="pl-card" id="plCentreLock"><h3>Activer le Centre</h3>
       <div class="pl-form"><label for="plCpcoPass">Mot de passe du Centre</label><input type="password" id="plCpcoPass" autocomplete="off"></div>
       <div class="pl-row"><button type="button" class="primary" id="plCpcoOn">Activer le Centre</button><span class="pl-msg" id="plCpcoMsg"></span></div>
+      <p class="pl-hint">Mot de passe : <b id="plCpcoShown"></b> — <span>partagé avec les données (data/config/centre.json), modifiable dans Paramètres › Centre une fois le Centre activé. Verrou d’usage, pas une protection.</span></p>
     </div>
     <div class="pl-grid" id="plCentreOn" hidden>
       <div class="pl-card"><h3>Flotte et journal des vols</h3>
@@ -356,16 +373,16 @@
   </section>
 </main>
 <script src="../../shared/kit.js?v=7f07f523"></script>
-<script src="../../shared/repository_nav.js?v=dade04a4"></script>
-<script src="../../shared/content_i18n.js?v=499ea78f"></script><script src="premier_lancement_i18n.js?v=394a45ab"></script>
+<script src="../../shared/repository_nav.js?v=55b5672e"></script>
+<script src="../../shared/content_i18n.js?v=266f3261"></script><script src="premier_lancement_i18n.js?v=cd4978ec"></script>
 <!-- blocs « Données aéronautiques » et « Types d'aéronefs » (shared/maintenance_page.js) et leurs dépendances -->
 <script src="../../AircraftDB/aircraft_db.js"></script><script src="../../shared/data_files.js?v=dcb47c6a" data-file="references/aircraft_fleet.js"></script>
 <script src="../../shared/mission_core/vendor/js-yaml.min.js"></script>
 <script src="../../AircraftDB/aircraft_perf.js"></script><script src="../cpco/mission_prompt.js?v=8774038d"></script>
-<script src="../../shared/zip_store.js?v=1b42107f"></script><script src="../../shared/airac.js?v=1fa4a088"></script><script src="../../shared/carto/aero_symbols.js?v=50ad43df"></script><script src="../../shared/sia_base.js?v=0a1393f2"></script>
+<script src="../../shared/zip_store.js?v=1b42107f"></script><script src="../../shared/airac.js?v=1fa4a088"></script><script src="../../shared/carto/aero_symbols.js?v=50ad43df"></script><script src="../../shared/sia_base.js?v=014ef61f"></script>
 <script src="../../shared/mission_table.js?v=10fb25b7"></script><script src="../cpco/mission_store.js?v=559e3351"></script><script src="../../shared/mission_routing.js?v=3cc1352c"></script><script src="../../shared/mission_registry.js?v=f6f9c789"></script>
-<script src="../../shared/maintenance_page.js?v=167a0534"></script>
-<script src="../../shared/app_framework.js?v=7a889fe5"></script>
+<script src="../../shared/maintenance_page.js?v=42980118"></script>
+<script src="../../shared/app_framework.js?v=b2adf17c"></script>
 <script>
 (() => {
   'use strict';
@@ -486,13 +503,19 @@
       item('pilot', !!(p.trigram && (p.ivaoId || p.vatsimId)), L('Pilote : trigramme et réseaux', 'Pilot: trigram and networks',
         'Pilot: Kürzel und Netzwerke', 'Piloto: trigrama y redes'), 'plProfile', false, [p.trigram, ...nets].filter(Boolean).join(
         ' · ')),
-      item('site', !!(c.login && c.password), L('Identifiants du site de la compagnie', 'Airline website credentials',
-        'Zugangsdaten der Website', 'Credenciales del sitio de la aerolínea'), 'plProfile', false, c.login || ''),
+      // mot de passe du site hors service (INOP, pas de webservice du SOG) : l'identifiant suffit
+      item('site', !!c.login, L('Identifiant du site de la compagnie', 'Airline website login',
+        'Kennung der Website', 'Identificador del sitio de la aerolínea'), 'plProfile', false, c.login || ''),
       item('aero', sia ? (sia.counts?.airspaces || 0) > 0 : false, L('Données aéronautiques', 'Aeronautical data', 'Luftfahrtdaten',
         'Datos aeronáuticos'), 'plSia', false, sia?.airac ? `AIRAC ${sia.airac}` : '')
     ];
-    const centre = !cpcoOn() ? [item('cpco', false, L('Centre activé (administrateurs)', 'Centre enabled (administrators)',
-      'Zentrum aktiviert (Administratoren)', 'Centro activado (administradores)'), 'plCentre', true)] : [
+    // mode du Centre : autonome (mot de passe, data/config/centre.json) ; groupe (registre signé) à venir
+    const mode = item('mode', true, L('Mode du Centre', 'Centre mode', 'Modus des Zentrums', 'Modo del Centro'), 'plCentre', false,
+      S.centreMode === 'groupe' ? L('groupe (registre signé)', 'group (signed registry)', 'Gruppe (signiertes Register)',
+        'grupo (registro firmado)') : L('autonome (mot de passe)', 'standalone (password)', 'eigenständig (Passwort)',
+        'autónomo (contraseña)'));
+    const centre = !cpcoOn() ? [mode, item('cpco', false, L('Centre activé (administrateurs)', 'Centre enabled (administrators)',
+      'Zentrum aktiviert (Administratoren)', 'Centro activado (administradores)'), 'plCentre', true)] : [mode,
       item('cpco', true, L('Centre activé', 'Centre enabled', 'Zentrum aktiviert', 'Centro activado'), 'plCentre'),
       item('fleet', S.fleet ?? null, L('Flotte et journal du site', 'Fleet and log from the website', 'Flotte und Flugbuch der Website',
         'Flota y registro del sitio'), 'plCentreOn', false, S.fleetAt || ''),
@@ -578,6 +601,9 @@
       return;
     }
     S.data = !!st.data;
+    // données arrivées après le choix du dossier de l'application (jeu d'essai, dépôt, archive) : leurs dossiers (SIA,
+    // missions, registre) se déduisent maintenant, tant que l'accès au dossier est ouvert
+    if (st.data) await rederive();
     done('plData', st.data);
     $('plLogCard').hidden = !st.data;
     $('plDataForms').hidden = st.data;
@@ -723,11 +749,39 @@
     done('plFolders', S.folder);
     if (repo.handle && (state === 'other' || state === 'accepted')) msg('plRepoMsg', await FA.otherText('__repo', repo.handle, state),
       state === 'other' ? 'err' : 'warn');
+    else if (repo.handle && repo.permission !== 'granted') msg('plRepoMsg', L(
+      `Choisi : ${repo.name} — accès à redonner (le navigateur le redemande après un redémarrage) : « Autoriser à nouveau ».`,
+      `Chosen: ${repo.name} — access to grant again (the browser asks again after a restart): “Grant access again”.`,
+      `Gewählt: ${repo.name} — Zugriff erneut erteilen (der Browser fragt nach einem Neustart erneut): „Erneut erlauben“.`,
+      `Elegida: ${repo.name} — acceso que volver a conceder (el navegador lo pide de nuevo tras un reinicio): «Autorizar de nuevo».`), 'warn');
     else msg('plRepoMsg', repo.handle ? `Choisi : ${repo.name}` : '', repo.handle ? 'ok' : '');
+    $('plRepoGrant').hidden = !(repo.handle && repo.permission !== 'granted' && state !== 'other');
     msg('plOdvMsg', odvDir.handle ? `Dossier : ${odvDir.name}` : odvFile ? `Classeur gardé : ${odvFile.name || 'classeur'}` : '', odvDir.handle || odvFile ? 'ok' : '');
     dataGate();
     checklist();
   }
+  /** Dossiers déduits de data/ (FileAccess.deriveFromRepo), si l'accès au dossier de l'application est ouvert. */
+  async function rederive() {
+    const FA = window.FileAccess,
+      repo = await FA?.status?.('__repo');
+    if (repo?.handle && repo.permission === 'granted') await FA.deriveFromRepo(repo.handle, {
+      accepted: (await FA.otherState?.('__repo', repo.handle).catch(() => null)) === 'accepted'
+    }).catch(() => []);
+  }
+  // accès retiré par le navigateur (redémarrage) : redonné d'un clic, puis dossiers de data/ déduits
+  on('click', 'plRepoGrant', async () => {
+    const h = (await window.FileAccess.status('__repo')).handle;
+    if (!h) return;
+    try {
+      await h.requestPermission({
+        mode: 'readwrite'
+      });
+    } catch {
+      /* refus : l'état le dit */
+    }
+    await rederive();
+    foldersState();
+  });
   /** Action d'un bouton « Choisir le dossier » (FileAccess.pickFolder) ; un refus ou une annulation est silencieux. */
   const pick = (key, out) => async () => {
     try {
@@ -825,10 +879,15 @@
     $('plVatsim').value = p.vatsimId || '';
     $('plSimbrief').value = p.simbriefUser || '';
     $('plSiteLogin').value = c.login || '';
-    $('plSitePass').value = c.password || '';
+    $('plSitePassInop').title = L(
+      'Hors service : le SOG n’a pas encore de webservice. Ce mot de passe n’est ni demandé ni gardé ; un accès futur passera probablement par une clé d’API.',
+      'Inoperative: the SOG has no web service yet. This password is neither asked for nor kept; future access will probably use an API key.',
+      'Außer Betrieb: Die SOG hat noch keinen Webdienst. Dieses Passwort wird weder abgefragt noch gespeichert; ein künftiger Zugang läuft wahrscheinlich über einen API-Schlüssel.',
+      'Fuera de servicio: el SOG aún no tiene servicio web. Esta contraseña no se pide ni se guarda; un acceso futuro usará probablemente una clave de API.'
+    );
     // trigramme figé en production (ou en agissant pour un autre utilisateur) : réglé par le compte
     $('plTri').readOnly = !!window.SuiteUsers?.trigramLocked?.();
-    done('plProfile', p.trigram && c.login && c.password);
+    done('plProfile', p.trigram && c.login);
   }
   // profil et identifiants (vides : clé defaCredentials:v1 retirée), puis événement pilot-profile-change
   on('click', 'plSaveProfile', () => {
@@ -844,12 +903,11 @@
       simbriefUser: $('plSimbrief').value.trim()
     });
     localStorage.setItem(PROFILE, JSON.stringify(p));
-    const c = read(DEFA);
-    Object.assign(c, {
-      login: $('plSiteLogin').value.trim(),
-      password: $('plSitePass').value
-    });
-    if (c.login || c.password) localStorage.setItem(DEFA, JSON.stringify(c));
+    // identifiant seul : le mot de passe (INOP) n'est plus gardé, un ancien est retiré
+    const c = {
+      login: $('plSiteLogin').value.trim()
+    };
+    if (c.login) localStorage.setItem(DEFA, JSON.stringify(c));
     else localStorage.removeItem(DEFA);
     window.dispatchEvent(new CustomEvent('pilot-profile-change'));
     msg('plProfileMsg', 'Profil enregistré.', 'ok');
@@ -953,6 +1011,14 @@
   /** Étape 6 : verrou ou, Centre activé, flotte, missions et réglages du SO Group. */
   function centreState() {
     const onC = cpcoOn();
+    // mot de passe du Centre affiché (verrou d'usage, data/config/centre.json) et mode pour le bilan
+    window.RepositoryNav?.cpco?.config?.(true).then(c => {
+      $('plCpcoShown').textContent = c.motDePasse || '';
+      if (S.centreMode !== c.mode) {
+        S.centreMode = c.mode;
+        checklist();
+      }
+    });
     $('plCentreLock').hidden = onC;
     $('plCentreOn').hidden = !onC;
     done('plCentre', onC);

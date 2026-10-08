@@ -10,6 +10,77 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ## [Non publié]
 
+## [4.11.0] — 2026-10-08
+
+La suite s'installe avec un tutoriel illustré (captures, schémas des échanges et des identifiants, prérequis
+utilisateur et administrateur), en français et en anglais, suivi par le menu de langue de l'aide. Centre en mode
+autonome : mot de passe lu dans les données (`data/config/centre.json`, DEFA par défaut), affiché et modifiable ;
+conception des comptes et données signés par git. Mot de passe du site du SOG hors service (INOP). Premier lancement
+plus sûr (dossiers de `data/` déduits quand les données arrivent, accès à redonner, faux « autre copie » supprimé) ;
+contrôle des mises à jour juste (commit servi, filiation demandée au dépôt) ; titres traduits ; nombre de cases MORA
+d'une zone correct.
+
+### Ajouté
+
+- **Tutoriel d'installation** (`docs/tutorial/`, français et anglais, Markdown et HTML) : installation en quelques
+  minutes, captures d'écran d'une installation neuve à chaque étape du premier lancement ; schémas des échanges de la
+  suite avec les services extérieurs (lu, envoyé, par le navigateur ou par le lanceur) et des identifiants (où on les
+  saisit, où ils restent, vers qui ils partent) ; prérequis distingués entre utilisateur et administrateur du SOG, avec
+  ce que fournissent les admins et comment le créer. Schémas et pages HTML régénérables
+  (`docs/tutorial/build_diagrams.py`, `build_html.py`) ; repris par l'aide intégrée ; `INSTALL.md` y renvoie et décrit
+  les six étapes actuelles. Visible dès le début : encadré « Start here » en tête du README du dépôt, première ligne
+  des sommaires de la documentation (4 langues), bouton « 📘 Tutoriel d'installation, pas à pas » en tête du premier
+  lancement, adresse affichée dans la fenêtre du lanceur ; l'ancien `TUTORIAL.md` y renvoie.
+
+### Modifié
+
+- **Mot de passe du Centre dans les données** : le verrou d'usage du Centre ne compare plus le mot de passe à une
+  empreinte écrite dans le code. Il lit `data/config/centre.json` (`{ "motDePasse": "DEFA" }`), qui est partagé avec les
+  données. Le mot de passe est affiché à côté du bouton « Activer le Centre » (premier lancement, Paramètres › Centre).
+  Il se change dans Paramètres › Centre › « Mode et accès », une fois le Centre activé, et part au prochain
+  « Synchroniser ». Le jeu d'essai et le modèle des données livrent le fichier.
+- **Mode du Centre affiché** : mode autonome (mot de passe) dans le bilan du premier lancement et dans Paramètres ›
+  Centre. Le mode groupe (registre signé, accès par le rôle) est en conception
+  ([COMPTES_SIGNES.md](technique/COMPTES_SIGNES.md)).
+- **Aide : documents nommés par langue** (`….fr.md`, `….en.md`, comme le tutoriel d'installation) affichés dans la
+  langue de la suite (allemand, espagnol : l'anglais) ; le menu de langue fait basculer le document, et un lien vers la
+  version d'une autre langue change la langue de la suite, comme le menu. Pages HTML du tutoriel : menu de langue.
+- **Mot de passe du site du SOG hors service (INOP)** tant que le SOG n'a pas de webservice (un accès futur passera
+  probablement par une clé d'API) : champ grisé avec une étiquette façon bande DYMO (composant commun `.repo-inop`,
+  `shared/repository_nav.css`) dans Mon profil et au premier lancement ; ce mot de passe n'est plus ni lu ni gardé (un
+  ancien est retiré à l'enregistrement). Bilan et étape Profil : l'identifiant suffit.
+
+### Corrigé
+
+- **« Dossier des données : impossible de vérifier qu'il est celui de la suite servie »** après une installation neuve :
+  le lanceur n'écrivait ses repères (`.defa_instance`) qu'au démarrage, avant que `data/` existe ; ils sont désormais
+  écrits aussi après le jeu d'essai, le clone du dépôt ou l'archive des données (même jeton pour toute la vie du lanceur).
+- **« Mise à jour disponible » alors que la version locale est en avance** : le commit local venait d'un relevé du
+  dossier mémorisé par le navigateur (parfois vieux de plusieurs jours), et de la branche `develop` du dépôt même quand
+  une autre branche est extraite (`develop-local`) ; « en retard » était décidé par les dates. Désormais : commit local =
+  commit servi, relu à chaque contrôle (`AppFramework.servedCommit`) ; le dépôt distant dit s'il manque des commits en
+  local (API `repository/compare`). Nouveaux états : « En avance sur … » (le local contient déjà le canal) et
+  « Commits locaux non publiés » (commit local inconnu du dépôt).
+- **Nombre de cases MORA d'une zone sous-compté** (« 74 case(s) dans mora.csv » pour la France au lieu de 133) : le
+  panneau comptait les seules cases dont le centre tombe dans le contour du pays ; les petites îles (La Réunion,
+  Mayotte, Antilles…) sont désormais comptées, comme dans le calcul (`zoneCellKeys`).
+- **Titres restés en français** : titre de la page Premier lancement (entrée de traduction manquante) et titres d'onglet
+  du navigateur de toutes les pages (`document.title` désormais traduit par la couche commune, `shared/content_i18n.js`).
+- **Premier lancement : dossiers SIA, missions et registre jamais réglés** quand les données arrivent après le choix du
+  dossier de l'application (nouvel ordre des étapes : jeu d'essai, dépôt ou archive installés ensuite) — « dossier SIA
+  non autorisé » à l'étape des données aéronautiques. Ils se déduisent dès que les données sont là, et à la demande
+  (`FileAccess.get` : dossier déduit absent → déduit du dossier de l'application déjà autorisé, un essai toutes les 10 s).
+- **Même dossier annoncé comme « autre copie »** (« Suite lancée depuis E:\…, dossier déclaré …/même dossier ») après un
+  rechargement ou un redémarrage : le navigateur retire l'accès au dossier, son repère était illisible et pris pour
+  celui d'une autre copie. Sans accès, le contrôle est désormais « impossible pour l'instant » ; l'étape 1 propose
+  « Autoriser à nouveau » (accès redonné d'un clic, dossiers de `data/` déduits aussitôt).
+- **Case « mémoriser dans le gestionnaire d'identifiants de Git »** seule sur sa ligne, libellé trop grand : case et
+  libellé sur une ligne, à la taille des libellés.
+- **Villes absentes de la base aéronautique (« villes_geonames.csv not found »)** : la lecture de
+  `shared/carto/villes_geonames.csv` est tentée deux fois (un lanceur occupé par un téléchargement peut refuser ou couper
+  une requête) ; en cas d'échec, le compte rendu de la relecture donne l'adresse et la raison (code HTTP, erreur réseau,
+  dossier de l'application) ; message en 4 langues.
+
 ## [4.10.0] — 2026-10-07
 
 La compagnie devient SO Group Virtual. Nouvelle page Tableau (ordre de vol de la semaine). Premier lancement repensé :
@@ -264,6 +335,10 @@ Suite de l'[audit du 7 octobre](technique/AUDIT_SECURITE_2026-10-07.md), lots 1 
   - version distante dans le badge de mise à jour (validée et échappée).
 - **Aide** : `?doc=` limité aux documents de `docs/` (un document d'un autre site s'y chargeait) ; liens limités à
   `http(s)`, plus de `javascript:` ; messages à la page de la suite seulement.
+
+### Livraison
+
+- Archive de livraison : `xplane-web-suite-4.10.0.zip` — SHA-256 `d39a524833076d541ce746d280a8f0a5cd0a11dda34fac548ebf3a414cecf756` (code seul, hors dépôt : dossier `dist/`).
 
 ## [4.9.0] — 2026-10-06
 

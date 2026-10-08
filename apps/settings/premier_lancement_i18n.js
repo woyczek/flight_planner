@@ -1,6 +1,7 @@
 // Traductions de la page « Premier lancement » (fr, en, de, es) : textes fixes, y compris les morceaux de phrase coupés
 // par un nom de fichier ou de dossier ; appliquées par la couche commune (shared/content_i18n.js).
 RepositoryContentI18n([
+  ['Premier lancement', 'First run', 'Erststart', 'Primer arranque'],
   ['Données', 'Data', 'Daten', 'Datos'],
   ['Pour cette étape, ouvrez la suite avec le lanceur (lancer.cmd sous Windows, sh lancer.sh sous macOS / Linux).',
     'For this step, open the suite with the launcher (lancer.cmd on Windows, sh lancer.sh on macOS / Linux).',
@@ -14,6 +15,13 @@ RepositoryContentI18n([
     'Datos ficticios entregados con la suite, para descubrirla: misiones (incluido un ejercicio), pilotos, flota, disponibilidad y asignaciones de la semana en curso. Para sustituir más adelante por los datos de su aerolínea.'
   ],
   ['Installer le jeu d’essai', 'Install the sample data', 'Testdaten installieren', 'Instalar el conjunto de prueba'],
+  ['Mot de passe :', 'Password:', 'Passwort:', 'Contraseña:'],
+  ['partagé avec les données (data/config/centre.json), modifiable dans Paramètres › Centre une fois le Centre activé. Verrou d’usage, pas une protection.',
+    'shared with the data (data/config/centre.json), can be changed in Settings › Centre once the Centre is enabled. A usage lock, not a protection.',
+    'mit den Daten geteilt (data/config/centre.json), in Einstellungen › Zentrum änderbar, sobald das Zentrum aktiviert ist. Eine Nutzungssperre, kein Schutz.',
+    'compartida con los datos (data/config/centre.json), modificable en Ajustes › Centro una vez activado el Centro. Un bloqueo de uso, no una protección.'
+  ],
+  ['Autoriser à nouveau', 'Grant access again', 'Erneut erlauben', 'Autorizar de nuevo'],
   ['Enregistrement, puis vérification… Autre dépôt que l’actuel : confirmez dans la fenêtre que le lanceur ouvre sur l’ordinateur.',
     'Saving, then checking… Another repository than the current one: confirm in the window the launcher opens on the computer.',
     'Speichern, dann Prüfung… Anderes Repository als das aktuelle: im Fenster bestätigen, das der Starter auf dem Computer öffnet.',
@@ -244,5 +252,8 @@ RepositoryContentI18n([
   ['https://hôte/compte/dépôt.git', 'https://host/account/repository.git', 'https://host/konto/repository.git',
     'https://host/cuenta/repositorio.git'
   ],
-  ['git@hôte:compte/dépôt.git', 'git@host:account/repository.git', 'git@host:konto/repository.git', 'git@host:cuenta/repositorio.git']
+  ['git@hôte:compte/dépôt.git', 'git@host:account/repository.git', 'git@host:konto/repository.git', 'git@host:cuenta/repositorio.git'],
+  ['📘 Tutoriel d’installation, pas à pas', '📘 Installation tutorial, step by step', '📘 Installationsanleitung, Schritt für Schritt',
+    '📘 Tutorial de instalación, paso a paso'
+  ]
 ]);

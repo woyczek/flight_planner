@@ -1,5 +1,8 @@
 # Documentation index — SO Group Virtual suite
 
+> **First installation: start with the [installation tutorial](../tutorial/installation.en.md)**
+> ([HTML](../tutorial/installation.en.html) · [français](../tutorial/installation.fr.md)).
+
 *[← Back to the folder](../../README.md)* · In the suite: **“Help”** entry of the sidebar (opened at the chapter of the
 current page) or ☰ › Help. Documents not yet translated open in French.
 
@@ -14,6 +17,7 @@ current page) or ☰ › Help. Documents not yet translated open in French.
 
 | Document | For |
 |---|---|
+| **[Installation tutorial](../tutorial/installation.en.md)** ([HTML](../tutorial/installation.en.html) · [français](../tutorial/installation.fr.md)) | **start here**: install and set up the suite in a few minutes, step by step with screenshots; exchanges with outside services and credentials (diagrams); user and administrator prerequisites |
 | [Installation](../INSTALL.md) | install and start the suite (launcher, data, browser, updates) — in French |
 | [Presentation](../PRESENTATION_en.md) | what the suite contains, application by application |
 

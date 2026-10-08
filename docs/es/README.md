@@ -1,5 +1,8 @@
 # Índice de la documentación — Suite SO Group Virtual
 
+> **Primera instalación: empezar por el [tutorial de instalación](../tutorial/installation.en.md)**
+> ([HTML](../tutorial/installation.en.html) · [français](../tutorial/installation.fr.md)) — en inglés.
+
 *[← Volver a la carpeta](../../README.md)* · En la suite: entrada **«Ayuda»** de la barra lateral (abierta en el
 capítulo de la página actual) o ☰ › Ayuda. Los documentos aún no traducidos se abren en francés.
 
@@ -14,6 +17,7 @@ capítulo de la página actual) o ☰ › Ayuda. Los documentos aún no traducid
 
 | Documento | Para |
 |---|---|
+| **[Tutorial de instalación](../tutorial/installation.en.md)** ([HTML](../tutorial/installation.en.html) · [français](../tutorial/installation.fr.md)) | **empezar aquí**: instalar y configurar la suite en pocos minutos, paso a paso con capturas — en inglés |
 | [Instalación](../INSTALL.md) | instalar e iniciar la suite (lanzador, datos, navegador, actualizaciones) — en francés |
 | [Presentación](../PRESENTATION_en.md) | contenido de la suite, aplicación por aplicación — en inglés |
 

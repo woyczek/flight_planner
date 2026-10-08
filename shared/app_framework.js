@@ -194,6 +194,26 @@
     s.onerror = () => done(null);
     document.head.append(s);
   });
+  /** Commit servi (dépôt d'où la page est servie) : { sha, branch } ; null sans .git lisible ni config/build.js. Relu à
+   *  chaque appel : c'est le code qui tourne, à la différence d'un relevé du dossier mémorisé par le navigateur. */
+  async function servedCommit() {
+    const viaBuild = async () => {
+      const b = await buildFile();
+      return /^[0-9a-f]{40}$/.test(b?.sha || "") ? {
+        sha: b.sha,
+        branch: b.branch || ""
+      } : null;
+    };
+    if (!/^https?:$/.test(location.protocol)) return viaBuild();
+    const head = (await gitText("HEAD").catch(() => null))?.trim();
+    if (!head) return viaBuild();
+    const ref = head.startsWith("ref: ") ? head.slice(5) : "",
+      sha = ref ? await gitRef(ref) : head;
+    return /^[0-9a-f]{40}$/.test(sha || "") ? {
+      sha,
+      branch: ref.replace(/^refs\/heads\//, "")
+    } : viaBuild();
+  }
   /** { sha, short, branch } si le commit courant n'est pas celui de la version publiée ; null sinon (ou sans .git). */
   async function buildOf(r) {
     if (!r.version) return null;
@@ -747,6 +767,7 @@
   else watchStatus();
   window.addEventListener("load", () => watchStatus());
   window.AppFramework = {
+    servedCommit,
     /** Remonte les blocs (init, root facultatif) et relaie les nouvelles zones d'état. */
     refresh: (...a) => {
       const r = init(...a);

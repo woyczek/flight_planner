@@ -416,6 +416,8 @@ At the top, **“Where the suite stands”** takes stock, line by line, and each
 - For everyone: data, git sync repository (optional), application folder, airline and website, IVAO API key (optional), pilot (trigram and at least one network), airline website credentials, aeronautical data.
 - Centre: enabling (administrators); once the Centre is enabled, fleet and log from the website, registry missions, users and rights (at least one administrator), report sending (optional).
 
+Above the summary, “📘 Installation tutorial, step by step” opens the [installation tutorial](../tutorial/installation.en.md) in the Help, in the suite's language.
+
 The number of each step turns green when it is done.
 
 ### 1 Folders
@@ -481,7 +483,7 @@ Maps, missions and planning use the aeronautical data (AIRAC) and the aircraft t
 ### 6 Centre (administrators)
 
 For SO Group administrators only: pilots skip this step.
-- “Enable the Centre” card: “Centre password”, then “Enable the Centre”.
+- “Enable the Centre” card: “Centre password” (shown under the button, `DEFA` by default), then “Enable the Centre”. The summary shows the Centre mode (standalone: password).
 - Once the Centre is enabled:
   - “Fleet and flight log”: last reading of the website by the launcher (fleet, aircraft location, log), “Update now”, and the link to the fleet (Settings › Centre).
   - “Missions”: number of missions in the registry (they come with the data, step 1) and the link to the registry.

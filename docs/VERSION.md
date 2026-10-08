@@ -5,6 +5,42 @@ Une section par version publiée, la plus récente en tête, écrite à chaque r
 effectuer** (ce que chacun doit faire après la mise à jour), **notes** (limites connues, points d'attention, à venir).
 Entre deux versions, le pied de page affiche le commit en cours (`v4.6.0+abc1234`).
 
+## 4.11.0 — 8 octobre 2026
+
+### Synthèse
+
+- **Tutoriel d'installation** illustré, en français et en anglais (`docs/tutorial/`, aussi dans l'aide et en pages
+  HTML) : l'installation pas à pas avec captures, deux schémas — ce que la suite échange avec chaque service extérieur,
+  et où vivent vos identifiants (les mots de passe ne partent nulle part ; une clé ne part que vers son service) — et
+  les prérequis, en distinguant l'utilisateur et l'administrateur du SOG. Dans l'aide, le menu de langue fait basculer
+  le tutoriel.
+- **Centre en mode autonome** : son mot de passe est lu dans les données, `data/config/centre.json` (« DEFA » par
+  défaut), affiché à côté du verrou et modifiable dans Paramètres › Centre ; il part aux autres postes avec
+  « Synchroniser ». Le mode groupe (comptes signés par git, accès au Centre par le rôle) est conçu
+  (`docs/technique/COMPTES_SIGNES.md`) et viendra dans une prochaine version.
+- **Mot de passe du site du SOG hors service (INOP)** tant que le SOG n'a pas de webservice : il n'est plus demandé ni
+  gardé.
+- **Premier lancement plus sûr** : les dossiers des données (SIA, missions, registre) se règlent dès que les données
+  arrivent ; quand le navigateur a retiré l'accès au dossier, « Autoriser à nouveau » le redonne, au lieu d'annoncer à
+  tort une « autre copie ».
+- **Contrôle des mises à jour juste** : il compare le code réellement servi au canal, et ne dit plus « mise à jour
+  disponible » quand la version locale est en avance.
+
+### Actions à effectuer
+
+1. **Relancer le lanceur**, puis **recharger chaque page** (Ctrl+F5).
+2. **Mot de passe du Centre** : il vient désormais de `data/config/centre.json` (« DEFA » si le fichier est absent).
+   Pour un autre mot de passe : Paramètres › Centre › « Mode et accès », puis « Synchroniser ».
+3. Si un dossier est signalé « accès à redonner » : Paramètres › Premier lancement, étape 1, « Autoriser à nouveau »
+   (choisir « Autoriser à chaque visite » si le navigateur le propose).
+4. Le mot de passe du site du SOG enregistré auparavant est retiré au prochain enregistrement du profil : rien à faire.
+
+### Notes
+
+- Comptes et données signés : conception publiée (`docs/technique/COMPTES_SIGNES.md`) ; le mode groupe ne sera
+  activable qu'après le durcissement CSP. La clé de signature des postes est prête mais pas encore dans cette version.
+- Les zones de la carte sont toujours des contours de pays (Natural Earth), sans valeur aéronautique.
+
 ## 4.10.0 — 7 octobre 2026
 
 ### Synthèse

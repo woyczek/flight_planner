@@ -416,6 +416,8 @@ Arriba, **«Estado de la suite»** hace balance, línea por línea, y cada líne
 - Para todos: datos, repositorio git de sincronización (opcional), carpeta de la aplicación, aerolínea y sitio, clave de API IVAO (opcional), piloto (trigrama y al menos una red), credenciales del sitio de la aerolínea, datos aeronáuticos.
 - Centro: activación (administradores); con el Centro activado, flota y registro del sitio, misiones del registro, usuarios y derechos (al menos un administrador), envío de informes (opcional).
 
+Encima del balance, «📘 Tutorial de instalación, paso a paso» abre en la Ayuda el [tutorial de instalación](../tutorial/installation.en.md), en el idioma de la suite (si no, en inglés).
+
 El número de cada paso se pone en verde cuando está hecho.
 
 ### 1 Carpetas
@@ -481,7 +483,7 @@ Mapas, misiones y planificación usan los datos aeronáuticos (AIRAC) y la base 
 ### 6 Centro (administradores)
 
 Reservado a los administradores del SO Group: los pilotos se saltan este paso.
-- Tarjeta «Activar el Centro»: «Contraseña del Centro», luego «Activar el Centro».
+- Tarjeta «Activar el Centro»: «Contraseña del Centro» (mostrada bajo el botón, `DEFA` por defecto), luego «Activar el Centro». El resumen indica el modo del Centro (autónomo: contraseña).
 - Con el Centro activado:
   - «Flota y registro de vuelos»: última lectura del sitio por el lanzador (flota, ubicación de las aeronaves, registro), «Actualizar ahora» y el enlace a la flota (Ajustes › Centro).
   - «Misiones»: número de misiones en el registro (llegan con los datos, paso 1) y el enlace al registro.

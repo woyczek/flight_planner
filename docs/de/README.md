@@ -1,5 +1,8 @@
 # Dokumentationsverzeichnis — Suite SO Group Virtual
 
+> **Erstinstallation: mit der [Installationsanleitung](../tutorial/installation.en.md) beginnen**
+> ([HTML](../tutorial/installation.en.html) · [français](../tutorial/installation.fr.md)) — auf Englisch.
+
 *[← Zurück zum Ordner](../../README.md)* · In der Suite: Eintrag **„Hilfe“** der Seitenleiste (beim Kapitel der
 aktuellen Seite geöffnet) oder ☰ › Hilfe. Noch nicht übersetzte Dokumente öffnen sich auf Französisch.
 
@@ -14,6 +17,7 @@ aktuellen Seite geöffnet) oder ☰ › Hilfe. Noch nicht übersetzte Dokumente 
 
 | Dokument | Für |
 |---|---|
+| **[Installationsanleitung](../tutorial/installation.en.md)** ([HTML](../tutorial/installation.en.html) · [français](../tutorial/installation.fr.md)) | **hier beginnen**: die Suite in wenigen Minuten installieren und einrichten, Schritt für Schritt mit Bildschirmfotos — auf Englisch |
 | [Installation](../INSTALL.md) | die Suite installieren und starten (Starter, Daten, Browser, Aktualisierungen) — auf Französisch |
 | [Präsentation](../PRESENTATION_en.md) | Inhalt der Suite, Anwendung für Anwendung — auf Englisch |
 

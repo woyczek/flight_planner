@@ -1560,8 +1560,25 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
           'Centre access unavailable (common menu not loaded).');
         return;
       }
+      /** Ligne du mode (autonome : mot de passe ; groupe : à venir) et mot de passe affiché, posés dans les éléments
+       *  [data-cpco-mode] et [data-cpco-shown] du panneau (textContent : la valeur vient du dépôt partagé). */
+      const centreInfo = async () => {
+        const c = await access.config?.(true) || {};
+        const m = body.querySelector('[data-cpco-mode]'),
+          s = body.querySelector('[data-cpco-shown]');
+        if (m) m.textContent = c.mode === 'groupe' ?
+          T('Mode groupe : accès au Centre par le rôle d’administrateur du registre signé.',
+            'Group mode: Centre access through the administrator role of the signed registry.') :
+          T('Mode autonome : accès au Centre par le mot de passe du SO Group (verrou d’usage, pas une protection). Mode groupe (registre signé, accès par le rôle) : à venir.',
+            'Standalone mode: Centre access through the SO Group password (a usage lock, not a protection). Group mode (signed registry, access by role): coming.'
+          );
+        if (s) s.textContent = c.motDePasse || '';
+        const i = body.querySelector('[data-cpco-new]');
+        if (i && !i.value) i.value = c.motDePasse || '';
+      };
       if (!access.enabled()) {
-        body.innerHTML = `<div class="da-form"><label>${esc(T('Mot de passe du Centre', 'Centre password'))}<input type="password" autocomplete="off" data-cpco-pwd></label></div>`;
+        body.innerHTML = `<p class="small" data-cpco-mode></p><div class="da-form"><label>${esc(T('Mot de passe du Centre', 'Centre password'))}<input type="password" autocomplete="off" data-cpco-pwd></label></div><p class="small">${esc(T('Mot de passe :', 'Password:'))} <b data-cpco-shown></b> — <span>${esc(T('partagé avec les données (data/config/centre.json), modifiable une fois le Centre activé.', 'shared with the data (data/config/centre.json), can be changed once the Centre is enabled.'))}</span></p>`;
+        centreInfo();
         const input = body.querySelector('[data-cpco-pwd]');
         /** Déverrouille le Centre avec le mot de passe saisi, sinon message et nouvelle saisie. */
         const go = async () => {
@@ -1594,8 +1611,21 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
         ['detourPct', T('Détour admis, voies (%)', 'Allowed detour, airways (%)')],
         ['detourRtbaPct', T('Détour admis, RTBA (%)', 'Allowed detour, RTBA (%)')]
       ];
-      body.innerHTML = R ? `<h3>${esc(T('Calcul des routes de transit', 'Transit route calculation'))}</h3><div class="da-form">${FIELDS.map(([k, l]) => `<label>${esc(l)}<input type="number" min="0" step="any" data-rs="${k}" value="${esc(S[k] ?? '')}" placeholder="${esc(R.DEFAULTS[k])}"></label>`).join('')}</div>` : `<p class="small">${esc(T('Calcul des routes non chargé.', 'Route calculation not loaded.'))}</p>`;
+      const modeHtml = `<h3>${esc(T('Mode et accès', 'Mode and access'))}</h3><p class="small" data-cpco-mode></p><div class="da-form"><label>${esc(T('Mot de passe du Centre (partagé avec les données)', 'Centre password (shared with the data)'))}<input type="text" autocomplete="off" spellcheck="false" data-cpco-new></label></div><p><button type="button" data-cpco-save>${esc(T('Enregistrer le mot de passe', 'Save the password'))}</button></p>`;
+      body.innerHTML = modeHtml + (R ? `<h3>${esc(T('Calcul des routes de transit', 'Transit route calculation'))}</h3><div class="da-form">${FIELDS.map(([k, l]) => `<label>${esc(l)}<input type="number" min="0" step="any" data-rs="${k}" value="${esc(S[k] ?? '')}" placeholder="${esc(R.DEFAULTS[k])}"></label>`).join('')}</div>` : `<p class="small">${esc(T('Calcul des routes non chargé.', 'Route calculation not loaded.'))}</p>`);
       body.querySelectorAll('[data-rs]').forEach(i => i.oninput = changed);
+      centreInfo();
+      body.querySelector('[data-cpco-save]').onclick = async () => {
+        const v = body.querySelector('[data-cpco-new]').value.trim();
+        if (!v) return status(T('Mot de passe vide : non enregistré', 'Empty password: not saved'));
+        const r = await access.setPassword(v);
+        status(!r.ok ? T('Mot de passe non enregistré', 'Password not saved') : r.where === 'data' ?
+          T('Mot de passe enregistré dans les données : il part au prochain « Synchroniser »',
+            'Password saved in the data: it goes out at the next “Synchronise”') :
+          T('Mot de passe gardé dans ce navigateur : dossier des données à autoriser pour l’écrire',
+            'Password kept in this browser: authorise the data folder to write it'));
+        centreInfo();
+      };
       status(T('Centre activé dans ce navigateur', 'Centre enabled in this browser'));
       actions([
         ...(R ? [
