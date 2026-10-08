@@ -407,7 +407,7 @@ class Setup(http.server.SimpleHTTPRequestHandler):
             # sur le dépôt distant (commits à recevoir)
             if not self._allowed():
                 return self._json({'error': 'refusé'}, 403)
-            return self._json(data_sync.status(DATA, fetch='fetch=1' in self.path))
+            return self._json(sync_status(fetch='fetch=1' in self.path))
         if self.path.split('?')[0] == '/__setup/tools':
             # outils de tools/ (sommaire tools/index.html) : nom, sorte, titre et en-tête de chaque fichier
             if not self._allowed():
@@ -551,6 +551,7 @@ class Setup(http.server.SimpleHTTPRequestHandler):
                 a = {}
             with SYNC_LOCK:
                 r = data_sync.run(DATA, str(a.get('author') or '').upper(), str(a.get('name') or '')[:60])
+            sync_status_reset()  # état relu au prochain appel : le bouton reflète le passage qui vient d'avoir lieu
             if r.get('received'):
                 with INDEX_LOCK:
                     index_availability()
@@ -1151,6 +1152,42 @@ INSTANCE_DIRS = ('', 'data', os.path.join('data', 'missions'), os.path.join('dat
 
 
 INDEX_LOCK = threading.Lock()
+
+# État de synchronisation (bouton « Synchroniser » de chaque page) : git status, rev-list… prennent 1 à 3 s sur un gros
+# dossier data/, et chaque page le demande à l'ouverture. Réponse immédiate avec le dernier état connu ; relu en tâche de
+# fond s'il a plus de SYNC_TTL secondes (un seul relevé à la fois) ; relu tout de suite au premier appel, avec
+# ?fetch=1 (dépôt distant) et après un passage de synchronisation.
+SYNC_TTL = 20
+_sync = {'at': 0.0, 'value': None, 'busy': False}
+_sync_lock = threading.Lock()
+
+
+def _sync_refresh(fetch=False):
+    try:
+        value = data_sync.status(DATA, fetch=fetch)
+        with _sync_lock:
+            _sync.update(at=time.time(), value=value)
+    finally:
+        with _sync_lock:
+            _sync['busy'] = False
+
+
+def sync_status(fetch=False):
+    with _sync_lock:
+        value, age, busy = _sync['value'], time.time() - _sync['at'], _sync['busy']
+        if value is not None and not fetch:
+            if age > SYNC_TTL and not busy:
+                _sync['busy'] = True
+                threading.Thread(target=_sync_refresh, daemon=True).start()
+            return value
+        _sync['busy'] = True
+    _sync_refresh(fetch)
+    return _sync['value']
+
+
+def sync_status_reset():
+    with _sync_lock:
+        _sync.update(at=0.0, value=None)
 # ---- base des types d'aéronefs (OACI Doc 8643, performances EUROCONTROL) : non publiée, complétée sur chaque poste,
 # type par type, par AircraftDB/update_aircraft_db.py (--only CODES, puis --apd CODES) : un nouvel appareil, ou une liste
 # (flotte, missions de l'ODV et du registre) — Paramètres › Maintenance › Références et dépendances, /__setup/aircraft-db.

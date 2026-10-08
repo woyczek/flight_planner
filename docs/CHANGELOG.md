@@ -26,6 +26,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Modifié
 
+- **État de la synchronisation servi tout de suite** : le lanceur relançait ses commandes git (1 à 3 s sur un gros
+  dossier `data/`) à chaque ouverture de page, deux fois. Il répond désormais avec le dernier état connu et le relit en
+  tâche de fond s'il a plus de 20 s (relu tout de suite au premier appel, avec le dépôt distant, et après un passage de
+  synchronisation).
 - **Nom de la compagnie par jetons résolus à la source** : `{SOG}`, `{SOG_NOM}`, `{SOG_NOM_LONG}`, `{CENTRE}` dans les
   textes (quatre langues, HTML fixe et titres d'onglet compris), résolus par `K.t` / `K.tf` / `K.brand` et par la
   traduction des textes fixes, de nouveau quand la compagnie réglée change ; l'observateur qui renommait la page après
