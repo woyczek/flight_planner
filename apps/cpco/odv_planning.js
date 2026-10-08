@@ -407,6 +407,7 @@
   /** Classeur importé (secondaire) : un pilote sans préférences de thèmes en reçoit par défaut d'après ses codes (C →
    *  chasse…, T → transport…, N → marine et SAR : SuiteDispos.prefsFromCodes), écrites dans sa fiche utilisateur. */
   async function importPrefs(x) {
+    if (!canEditActivations()) return;
     const SD = window.SuiteDispos,
       U = window.SuiteUsers,
       O = window.OdvAssign;
@@ -675,6 +676,7 @@
   /** Enregistre les sessions ATC de la semaine affichée (SuiteAtc.save) ; text : message de réussite, notifié si elles
    *  sont écrites dans le dossier ; recalcule et redessine la page. */
   async function saveAtc(list, text) {
+    if (!canEditActivations()) return;
     const w = atcWeek();
     let r;
     try {
@@ -761,7 +763,12 @@
     });
     // import d'un réseau : le même que celui du Tableau (SuiteAtc.importNetwork : récupérées remplacées,
     // annulations comprises, saisies gardées)
+    // lecture seule : ni ajout, ni retrait, ni import
+    // (style posé ici : la mise en page des formulaires et boutons l'emporte sur l'attribut hidden)
+    if (!canEditActivations()) host.querySelectorAll('[data-atc-form], [data-atc-del], [data-atc-net]').forEach(b => b.style.display =
+      'none');
     host.querySelectorAll('[data-atc-net]').forEach(b => b.onclick = async () => {
+      if (!canEditActivations()) return;
       const net = b.dataset.atcNet,
         w = atcWeek();
       b.disabled = true;
@@ -797,8 +804,14 @@
   // data/atc/activations/<semaine>.json) ; retouche réservée comme au Tableau (Centre activé, hors production : admin)
   let activations = null;
   /** Retouche des activations permise : Centre activé et, en mode production, admin connecté. */
-  const canEditActivations = () => !!window.RepositoryNav?.cpco?.enabled?.() && (window.SuiteUsers?.mode?.() !== 'production' || !!window
-    .SuiteUsers?.isAdmin?.());
+  /** Écritures permises (activations, sessions ATC, préférences importées) : Centre déverrouillé, et admin_centre en mode
+   *  production ou dès qu'un utilisateur est connecté (même règle que canEdit du Tableau). */
+  const canEditActivations = () => {
+    const U = window.SuiteUsers;
+    if (!window.RepositoryNav?.cpco?.enabled?.()) return false;
+    if (U?.session?.()?.tri && !U.isAdmin?.()) return false;
+    return U?.mode?.() !== 'production' || !!U?.isAdmin?.();
+  };
 
   /** Bloc des activations des zones (OdvActivationsEditor, monté une fois puis mis à la semaine affichée) ; un import
    *  de sessions depuis l'éditeur recalcule la page. */
@@ -942,10 +955,11 @@
   /** Affectation enregistrée rouverte dans le dialogue complet (« Modifier ») ; mission absente du registre de ce
    *  navigateur : fenêtre du créneau. */
   async function editAssigned(missionId, takeoff) {
-    if (!centreOn()) return notify(L(['Centre verrouillé : l’activer dans Paramètres › Centre ({CENTRE}).',
-      'Centre locked: enable it in Settings › Centre ({CENTRE}).',
-      'Zentrum gesperrt: in Einstellungen › Zentrum ({CENTRE}) aktivieren.',
-      'Centro bloqueado: actívelo en Ajustes › Centro ({CENTRE}).'
+    if (!centreOn()) return notify(L([
+      'Réservé au Centre : l’activer dans Paramètres › Centre ({CENTRE}) ; un compte connecté doit avoir le rôle admin_centre.',
+      'Reserved for the Centre: enable it in Settings › Centre ({CENTRE}); a signed-in account needs the admin_centre role.',
+      'Dem Zentrum vorbehalten: in Einstellungen › Zentrum ({CENTRE}) aktivieren; ein angemeldetes Konto braucht die Rolle admin_centre.',
+      'Reservado al Centro: actívelo en Ajustes › Centro ({CENTRE}); una cuenta conectada necesita el rol admin_centre.'
     ]), 'warn');
     const m = regMissions().find(x => x.id === missionId),
       jk = slotOfAssign({
@@ -1154,7 +1168,9 @@
   // plusieurs équipes, famille du créneau, pas plus d'équipes en l'air que de pilotes disponibles ; route estimée
   // (points du registre, tronçons échantillonnés) confrontée aux sessions ATC du créneau : CTR du terrain en examen ou
   // en training → écartée, TMA contenant le terrain → signalée. Ouverture dans le registre (?mission=…).
-  const centreOn = () => !!window.RepositoryNav?.cpco?.enabled?.();
+  // affectations possibles (fenêtre du créneau, choix des pilotes) : mêmes droits que les autres écritures de la page
+  // (Centre déverrouillé ; admin_centre en production ou dès qu'un utilisateur est connecté)
+  const centreOn = () => canEditActivations();
   /** Texte sans accents, en majuscules (comparaison des familles). */
   const fold = s => String(s ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase();
   /** Opération d'une mission : tirée de l'identifiant (I-001A → I-001 : missions d'équipage d'une opération), sinon

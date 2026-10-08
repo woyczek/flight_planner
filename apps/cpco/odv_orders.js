@@ -163,10 +163,12 @@
   /** Nom d'un membre d'après son trigramme (le trigramme s'il n'a pas de nom). */
   const memberName = tri => S.members.find(m => m.tri === tri)?.nom || tri;
 
-  /** Page modifiable : Centre déverrouillé et, en mode production, utilisateur administrateur (admin_centre). */
+  /** Page modifiable : Centre déverrouillé, et administrateur (admin_centre) en mode production ou dès qu'un
+   *  utilisateur est connecté (un compte sans ce rôle ne planifie pas, même Centre ouvert en mode develop). */
   function canEdit() {
     if (!window.RepositoryNav?.cpco?.enabled?.()) return false;
     const U = window.SuiteUsers;
+    if (U?.session?.()?.tri && !U.isAdmin?.()) return false;
     return U?.mode?.() !== 'production' || !!U?.isAdmin?.();
   }
 
@@ -905,6 +907,9 @@
   function render() {
     S.editable = canEdit();
     document.documentElement.classList.toggle('odvo-ro', !S.editable);
+    // lecture seule (pilote, Centre fermé ou compte sans droits) : le planning seul, vue du jour ; la semaine (dispos
+    // et DLO des membres) et les statistiques restent au Centre
+    if (!S.editable) S.view = 'jour';
     renderBar();
     $('#odvoDay').hidden = S.view !== 'jour';
     $('#odvoWeekView').hidden = S.view !== 'semaine';

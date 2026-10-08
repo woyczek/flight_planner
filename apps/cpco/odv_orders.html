@@ -119,6 +119,19 @@
   .odvo-ro .odvo-palette {
     display: none
   }
+  /* lecture seule : le planning seul — lignes RTBA/LL, zones, ATC et dispos communes, problèmes, journal des
+     affectations, choix de la vue (jour seul), activations et demandes de zones masqués */
+  .odvo-ro .odvo-sec-ll,
+  .odvo-ro .odvo-sec-zones,
+  .odvo-ro .odvo-sec-atc,
+  .odvo-ro .odvo-sec-ensemble,
+  .odvo-ro #odvoProblems,
+  .odvo-ro #odvoLog,
+  .odvo-ro [data-view],
+  .odvo-ro [data-block-id="zones"],
+  .odvo-ro [data-block-id="demandes"] {
+    display: none !important
+  }
   .odvo-ro .odvo-day {
     grid-template-columns: minmax(0, 1fr)
   }
@@ -859,7 +872,7 @@
 <script src="../../shared/odv_activations_editor.js?v=9e62217d"></script>
 <script src="../../shared/odv_reports.js?v=d66272b9"></script>
 <script src="../../shared/odv_orders_store.js?v=078bd145"></script>
-<script src="odv_orders.js?v=d1fdea0a"></script>
+<script src="odv_orders.js?v=a3d8c050"></script>
 <script src="../../shared/app_framework.js?v=2fbc9957"></script>
 <script src="../../shared/content_i18n.js?v=515ea16b"></script>
 <script>
