@@ -2,6 +2,13 @@
 
 *[Sommaire de la documentation](README.md) · [Présentation](PRESENTATION.md) · [Tutoriel](TUTORIAL.md) · [Manuel d'exploitation](MANUEL_EXPLOITATION.md)*
 
+DEPRECATED.
+
+--> [New tutorial](tutorial/installation.en.md)
+--> [Nouveau tutoriel](tutorial/installation.fr.md)
+
+######################################################################################################################
+
 La suite est un ensemble de fichiers statiques (HTML, JavaScript, CSS, données YAML / JS) servis par un petit serveur
 local. Rien à compiler.
 

@@ -22,6 +22,11 @@ A shared pilot profile, four interface languages and connected tools reduce repe
 
 ## Getting started (one-time setup)
 
+Lets have a look on [the tutorial](docs/tutorial/installation.en.md) or [it is better in HTML](docs/tutorial/installation.en.html)
+All steps are detailed, one step at a time.
+
+----------------------------------
+
 1. **Download the folder**: click **“Code › Download ZIP”** at  
    <https://framagit.org/asr/flight_planner>, then extract the ZIP wherever you want (Documents, etc.).  
    *(With Git: `git clone https://framagit.org/asr/flight_planner.git`.)*

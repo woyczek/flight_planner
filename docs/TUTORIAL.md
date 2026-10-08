@@ -1,6 +1,13 @@
 # Tutoriel — votre premier compte rendu de mission
 
-*[Sommaire](README.md) · [Présentation](PRESENTATION.md) · [Installation](INSTALL.md) · [Manuel d'exploitation](MANUEL_EXPLOITATION.md)*
+*[Sommaire](README.md) · [Présentation](PRESENTATION.md) · [Installation](tutorial/installation.en.md) · [Manuel d'exploitation](MANUEL_EXPLOITATION.md)*
+
+DEPRECATED.
+
+--> [New tutorial](tutorial/installation.en.md)
+--> [Nouveau tutoriel](tutorial/installation.fr.md)
+
+######################################################################################################################
 
 Exemple suivi de bout en bout : une mission **FIRE / GAAR** (guet aérien armé) sur
 Canadair, préparée avec SimBrief, volée sur IVAO ou VATSIM, puis enregistrée et retrouvée
