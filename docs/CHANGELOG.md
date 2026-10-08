@@ -29,7 +29,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   saisit, où ils restent, vers qui ils partent) ; prérequis distingués entre utilisateur et administrateur du SOG, avec
   ce que fournissent les admins et comment le créer. Schémas et pages HTML régénérables
   (`docs/tutorial/build_diagrams.py`, `build_html.py`) ; repris par l'aide intégrée ; `INSTALL.md` y renvoie et décrit
-  les six étapes actuelles.
+  les six étapes actuelles. Visible dès le début : encadré « Start here » en tête du README du dépôt, première ligne
+  des sommaires de la documentation (4 langues), bouton « 📘 Tutoriel d'installation, pas à pas » en tête du premier
+  lancement, adresse affichée dans la fenêtre du lanceur ; l'ancien `TUTORIAL.md` y renvoie.
 
 ### Modifié
 
