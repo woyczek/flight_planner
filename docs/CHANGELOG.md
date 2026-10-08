@@ -72,6 +72,7 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   l'ordre des blocs » (ordre d'origine de la page, blocs masqués gardés), 4 langues.
 
   dispositions déjà mémorisées (`order`) restent lues.
+
 - **« Suite lancée depuis …, dossier déclaré …/planner/ » alors que le dossier de l'application est le bon** : le
   dossier des profils de performance (et celui de la sauvegarde locale) était gardé d'une installation à l'autre, pour
   respecter un choix personnel — y compris quand il venait d'une autre copie de la suite. À la déduction des dossiers,
