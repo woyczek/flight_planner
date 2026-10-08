@@ -695,6 +695,17 @@
     left: var(--repo-sidenav-w)
   }
 
+  /* v2 : niveau d'utilisation (html[data-level], 1 à 4) ; un élément data-min-level="n" n'existe qu'à partir du niveau n
+     (blocs, champs, boutons, rubriques : marqués à la source, dans le HTML ou le gabarit qui les crée) ; data-max-level="n" :
+     seulement jusqu'au niveau n (raccourcis des niveaux simples) */
+  html[data-level="1"] :is([data-min-level="2"], [data-min-level="3"], [data-min-level="4"]),
+  html[data-level="2"] :is([data-min-level="3"], [data-min-level="4"]),
+  html[data-level="3"] [data-min-level="4"],
+  html[data-level="2"] [data-max-level="1"],
+  html[data-level="3"] :is([data-max-level="1"], [data-max-level="2"]),
+  html[data-level="4"] :is([data-max-level="1"], [data-max-level="2"], [data-max-level="3"]) {
+    display: none !important
+  }
   /* Centre (CPCO) verrouillé : entrées masquées, page du Centre recouverte d'un avis (shared/repository_nav.js) */
   html[data-cpco="off"] .cpco-only {
     display: none !important

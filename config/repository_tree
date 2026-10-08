@@ -267,7 +267,7 @@ window.REPOSITORY_TREE.iconComposed={"brass":{"normal":"cabinet/vierge.webp","ce
 // Préférences d'affichage posées dès l'en-tête (ce fichier est chargé dans le <head> de chaque page) : barre latérale et
 // design sur <html>, pour que la marge du contenu et le design paraissent avant les scripts de calcul de la page ;
 // shared/repository_nav.js les revalide ensuite (design inconnu : défaut) et construit la barre.
-(function(){try{var d=document.documentElement,s=localStorage.getItem("repositorySidenav"),g=localStorage.getItem("repositoryDesign");if(s!=="auto")d.dataset.sidenav=s||"on";d.dataset.cpco=localStorage.getItem("cpcoAccess:v1")==="on"?"on":"off";if(g&&window.REPOSITORY_TREE.designs&&window.REPOSITORY_TREE.designs.list&&window.REPOSITORY_TREE.designs.list[g])d.dataset.design=g}catch(e){}})();
+(function(){try{var d=document.documentElement,s=localStorage.getItem("repositorySidenav"),g=localStorage.getItem("repositoryDesign");if(s!=="auto")d.dataset.sidenav=s||"on";d.dataset.cpco=localStorage.getItem("cpcoAccess:v1")==="on"?"on":"off";var lv=+localStorage.getItem("suiteLevel:v1");d.dataset.level=lv>=1&&lv<=4?lv:d.dataset.cpco==="on"?4:1;if(g&&window.REPOSITORY_TREE.designs&&window.REPOSITORY_TREE.designs.list&&window.REPOSITORY_TREE.designs.list[g])d.dataset.design=g}catch(e){}})();
 // Feuilles du design écrites dès l'en-tête (designs.css, et celle du design à matières choisi) : liens posés par le
 // parseur, la page attend leur chargement avant de s'afficher — plus de passage par le style de base avant le design
 // (repository_nav.js, chargé en fin de page, posait ces feuilles après un premier affichage). Design par défaut si

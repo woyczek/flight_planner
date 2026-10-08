@@ -155,6 +155,12 @@
     const v = +readPref(LEVEL_KEY, "");
     return v >= 1 && v <= 4 ? v : cpcoOn() ? 4 : 1;
   };
+  // niveau sur <html data-level> (posé dès l'en-tête par repository_tree, revalidé ici) : les éléments marqués
+  // data-min-level="n" (blocs, champs, boutons) sont masqués sous le niveau n par repository_nav.css — rien n'est réécrit
+  {
+    const lv = String(level());
+    if (doc.dataset.level !== lv) doc.dataset.level = lv;
+  }
   /** Modules facultatifs affichés (tous au niveau 4). */
   const modules = () => level() >= 4 ? MODULES.slice() : (K.store.json(MODULES_KEY, []) || []).filter(m => MODULES.includes(m));
   /** Page visible au niveau et avec les modules courants (page non déclarée : visible). */

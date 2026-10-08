@@ -33,6 +33,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   missions probables à plat dans la page (cadre sans en-tête, onglets ni pied ; « Page ODV complète » pour le classeur
   et l'export) ; **Annuler** (dix pas, Ctrl+Z) ; **Retirer la demande** d'une zone inscrite comme demandée ; l'ordre du
   jour en premier bloc, sa barre (semaine, jours, vue, annuler, briefing) au-dessus de la frise.
+- **v2, lot S0 : niveaux dans les pages** — `<html data-level>` posé dès l'en-tête (repository_tree), `data-min-level="n"`
+  (élément visible à partir du niveau n) et `data-max-level="n"` (jusqu'au niveau n) appliqués par `repository_nav.css`,
+  sans réécriture de la page : blocs, champs et boutons se marquent à la source.
 - **Clés de poste et signatures** (`shared/sog_keys.js`, lot L2 de [COMPTES_SIGNES.md](technique/COMPTES_SIGNES.md)) : par
   poste, une paire de signature ECDSA P-256 et une paire d'échange ECDH P-256, non exportables, gardées dans la base
   `sogKeys` du navigateur (hors sauvegarde) ; empreinte courte `7F3A-91C2-04BE-D85E` ; JSON canonique (RFC 8785) ;
