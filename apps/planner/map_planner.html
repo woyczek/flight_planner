@@ -2229,7 +2229,7 @@ function renderZonePick() {
       value: '@' + k,
       label: `@${k} — alias, ${(zoneAliases[k]||[]).length} entrée(s)`
     });
-  $('zoneOptions').innerHTML = [...options.values()].sort((a, b) => zoneSort(a.value, b.value)).map(o => `<option value="${esc(o.value)}" label="${esc(o.label)}">`).join('');
+  lazyOptions('zoneOptions', () => [...options.values()].sort((a, b) => zoneSort(a.value, b.value)).map(o => `<option value="${esc(o.value)}" label="${esc(o.label)}">`).join(''));
   const kept = selectedAirspaces({
       _profileId: p.id
     }),
@@ -2280,6 +2280,30 @@ function pickOk(list, x, def) {
   return p[list + 'Mode'] === 'black' ? !hit : hit
 }
 
+// Listes de complétion (<datalist> des zones, aérodromes, balises : jusqu'à 13 000 <option> d'après la base SIA) :
+// construites seulement quand leur champ reçoit le focus, et une fois par rendu — au chargement, les écrire toutes
+// coûtait 1,5 s de tâches longues (page figée après le premier affichage, bloc profil replié compris).
+const lazyLists = new Map(); // id du datalist → fonction qui produit son HTML (null : déjà écrit)
+/** Enregistre la construction différée du datalist id ; écrite tout de suite si son champ est déjà actif. */
+function lazyOptions(id, build) {
+  const active = document.activeElement,
+    hot = active?.getAttribute?.('list') === id;
+  if (hot) {
+    $(id).innerHTML = build();
+    lazyLists.set(id, null);
+  } else lazyLists.set(id, build);
+}
+/** Construit à la demande le datalist d'un champ (focus, ou saisie qui lit les options). */
+function fillLazyList(id) {
+  const build = lazyLists.get(id);
+  if (!build) return;
+  $(id).innerHTML = build();
+  lazyLists.set(id, null);
+}
+document.addEventListener('focusin', e => {
+  const id = e.target?.getAttribute?.('list');
+  if (id) fillLazyList(id);
+});
 /** Liste blanche / noire des aérodromes (list = 'ad') ou des balises ('nav') : bouton de mode, aide,
  *  pastilles avec le nombre d'éléments désignés, complétion limitée aux éléments pas encore listés. */
 function renderPick(list) {
@@ -2297,10 +2321,10 @@ function renderPick(list) {
     const n = pool.filter(x => pickHit(list, x, q)).length;
     return`<li class="${n?'':'none'}">${esc(q)} <span class="small">${n}</span><button type="button" data-pick-remove="${i}">×</button></li>`
   }).join('');
-  $(list + 'Options').innerHTML = pool.filter(x => !st.items.some(q => pickHit(list, x, q))).map(pickLabel[list]).sort((a, b) => a
+  lazyOptions(list + 'Options', () => pool.filter(x => !st.items.some(q => pickHit(list, x, q))).map(pickLabel[list]).sort((a, b) => a
     .localeCompare(b, 'fr', {
       numeric: true
-    })).map(v => `<option value="${esc(v)}">`).join('')
+    })).map(v => `<option value="${esc(v)}">`).join(''))
 }
 
 /** Après modification d'une liste d'aérodromes ou de balises : profil relu, liste redessinée, aperçu relancé. */
@@ -6363,7 +6387,9 @@ $('zoneInput').addEventListener('keydown', e => {
 });
 // Choix dans la liste de complétion : ajout direct.
 $('zoneInput').addEventListener('input', e => {
-  if (e.inputType === 'insertReplacementText' || e.inputType === undefined && [...$('zoneOptions').options].some(o => o.value === e
+  if (e.inputType === 'insertReplacementText' || e.inputType === undefined && (fillLazyList('zoneOptions'), [...$('zoneOptions')
+      .options
+    ]).some(o => o.value === e
       .target.value)) zoneAdd()
 });
 $('zoneChips').addEventListener('click', e => {

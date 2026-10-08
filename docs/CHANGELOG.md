@@ -12,6 +12,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Ajouté
 
+- **v2-fable, performance (2) : Cartes de vol et Studio cartographique** — les listes de complétion des zones, aérodromes
+  et balises (jusqu'à 13 000 `<option>` d'après la base SIA) ne sont plus écrites au chargement mais quand leur champ
+  reçoit le focus : page de 15 000 à 1 500 éléments, tâches longues après le premier rendu de 1,5 s à 0,55 s (mesuré en
+  Aqua, Chrome).
 - **v2-fable, lot 2** (`docs/technique/V2_FABLE.md` § 5) — **pastille de synchronisation** : aux niveaux 1 et 2, le
   bouton « Synchroniser » de l'en-tête garde son libellé et porte une pastille quand il y a quelque chose à envoyer ou à
   recevoir, au lieu du compteur « (n) » (règle `html[data-level]` de `repository_nav.css` ; le nombre reste dans le
