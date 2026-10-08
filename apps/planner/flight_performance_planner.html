@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Carburant</title>
-<link rel="stylesheet" href="../../shared/repository_nav.css?v=c20491fc">
+<link rel="stylesheet" href="../../shared/repository_nav.css?v=58a1131c">
 <script src="../../config/repository_tree?v=12f9355a"></script>
 <style data-layer="app">
 @layer app {
@@ -69,10 +69,9 @@
     background: #173a5c;
     border-color: #2d6fa9
   }
+  /* contenu (pas de main) : pleine largeur, marge latérale commune (repository_nav.css : --repo-main-pad) */
   .wrap {
-    max-width: 1180px;
-    margin: auto;
-    padding: 16px
+    padding: 16px var(--repo-main-pad, 16px)
   }
   .grid {
     display: grid;

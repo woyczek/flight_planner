@@ -390,6 +390,25 @@
   html[data-design="console"]:not([data-sidenav="off"]) {
     padding-left: var(--repo-sidenav-w)
   }
+  /* largeur des pages : une seule règle pour toute la suite. La zone de contenu (body > main) occupe toute la largeur
+     à côté de la barre latérale, même marge intérieure partout (--repo-main-pad) ; pas de plafond de page. Un texte de
+     lecture longue limite sa ligne dans son bloc (ex. aide : paragraphes en ch), pas la page. :not(#imp) : l'emporte sur
+     les main.<classe> { max-width; margin: auto } des feuilles de page en couche app (mission_core/core.css,
+     settings_page.css). Marges verticales : celles de chaque page ; impression : règles de la page (core.css) ;
+     fenêtre détachée de la carte (studio cartographique, body.previewWindow) : carte bord à bord, sans marge. */
+  :root {
+    --repo-main-pad: 16px
+  }
+  @media screen {
+    body:not(.previewWindow)>main:not(#imp) {
+      box-sizing: border-box;
+      max-width: none;
+      margin-left: 0;
+      margin-right: 0;
+      padding-left: var(--repo-main-pad);
+      padding-right: var(--repo-main-pad)
+    }
+  }
   .repo-sidenav-brand {
     display: flex;
     align-items: center;
@@ -495,7 +514,7 @@
     display: flex;
     flex-wrap: wrap;
     gap: 2px;
-    padding: 6px 16px 0;
+    padding: 6px var(--repo-main-pad) 0;
     border-bottom: 1px solid color-mix(in srgb, currentColor 18%, transparent)
   }
   .repo-tab {

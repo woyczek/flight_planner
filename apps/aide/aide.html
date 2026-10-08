@@ -1,13 +1,16 @@
 <!doctype html>
 <html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Aide</title>
-<link rel="stylesheet" href="../../shared/repository_nav.css?v=c20491fc"><link rel="stylesheet" href="../../shared/mission_core/core.css?v=8594d3c0">
+<link rel="stylesheet" href="../../shared/repository_nav.css?v=58a1131c"><link rel="stylesheet" href="../../shared/mission_core/core.css?v=8594d3c0">
 <script src="../../config/repository_tree?v=12f9355a"></script>
 <style>
+  /* largeur : pleine page, marges latérales communes (repository_nav.css, body>main) ; ici le vertical seulement.
+     La ligne de lecture est limitée dans l'article (article.doc-body : paragraphes et listes en ch), pas la page. */
   main.doc-page {
-    max-width: 1400px;
-    margin: 18px auto;
-    padding: 0 16px 48px;
+    margin-top: 18px;
+    margin-bottom: 18px;
+    padding-top: 0;
+    padding-bottom: 48px;
     display: grid;
     grid-template-columns: minmax(220px, 300px) minmax(0, 1fr);
     gap: 18px;
@@ -78,6 +81,10 @@
     min-width: 0;
     line-height: 1.55;
     font-size: 15px
+  }
+  /* ligne de lecture : le texte courant garde une longueur lisible ; tableaux, code et images prennent toute la largeur */
+  article.doc-body :is(p, ul, ol, dl, blockquote) {
+    max-width: 100ch
   }
   article.doc-body h1 {
     margin-top: 0

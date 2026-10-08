@@ -57,6 +57,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   dans le geste de l'utilisateur, avant l'inscription au registre (la copie était refusée) ; échec SimBrief du Carburant
   aussi en notification flottante (détail visible à tout niveau) ; note « Clés d'API » : client OAuth IVAO dans Mon
   profil au niveau Expert.
+- **v2 : même largeur pour toutes les pages** — contenu sur toute la largeur disponible à côté de la barre latérale, marge
+  commune de 16 px (`--repo-main-pad`, une règle dans `repository_nav.css`) ; textes longs de l'aide limités dans l'article ;
+  la fenêtre détachée du studio reste bord à bord.
 - **Pages de démonstration du moteur des CR hors des comptes rendus** : `apps/cr/MissionCore/` → `tools/demo/mission_core/`
   (outils de développement, niveau Expert) ; plus rien dans le dossier des CR qui ne soit une famille.
 - **Clés de poste et signatures** (`shared/sog_keys.js`, lot L2 de [COMPTES_SIGNES.md](technique/COMPTES_SIGNES.md)) : par
