@@ -558,6 +558,92 @@
     }
     return item;
   }
+  // ---- Erreurs expliquées : ce qui a échoué et quoi faire, dans la langue de la page, au lieu d'un message technique
+  // seul (« Failed to fetch », « 404 », « TypeError… ») ; le détail technique reste entre parenthèses quand il aide.
+  //   AppFramework.explain(err, "Lecture du registre")  →  « Lecture du registre : le serveur ne répond pas — … »
+  // Une erreur levée par la page avec une phrase déjà claire (Error simple, pas un code) est gardée telle quelle.
+  const EX = {
+    join: ["{c} : {m}", "{c}: {m}", "{c}: {m}", "{c}: {m}"],
+    network: [
+      "le serveur ne répond pas — vérifier que la suite est ouverte par le lanceur (lancer.cmd / lancer.sh), le relancer au besoin, puis réessayer",
+      "the server does not answer — check that the suite is opened by the launcher (lancer.cmd / lancer.sh), restart it if needed, then try again",
+      "der Server antwortet nicht — prüfen, dass die Suite über den Starter geöffnet ist (lancer.cmd / lancer.sh), ihn bei Bedarf neu starten und es erneut versuchen",
+      "el servidor no responde — comprobar que la suite se abre con el lanzador (lancer.cmd / lancer.sh), reiniciarlo si hace falta y volver a intentarlo"
+    ],
+    // service en ligne (SimBrief, réseaux, fonds de carte…) : le lanceur n'y est pour rien
+    remote: ["le service en ligne ne répond pas — vérifier la connexion Internet, puis réessayer plus tard",
+      "the online service does not answer — check the Internet connection, then try again later",
+      "der Online-Dienst antwortet nicht — Internetverbindung prüfen und es später erneut versuchen",
+      "el servicio en línea no responde — comprobar la conexión a Internet y volver a intentarlo más tarde"
+    ],
+    remoteServer: ["le service en ligne a renvoyé une erreur ({d}) — réessayer plus tard",
+      "the online service returned an error ({d}) — try again later",
+      "der Online-Dienst hat einen Fehler gemeldet ({d}) — später erneut versuchen",
+      "el servicio en línea devolvió un error ({d}) — volver a intentarlo más tarde"
+    ],
+    server: ["le serveur a renvoyé une erreur ({d}) — relancer le lanceur, puis réessayer",
+      "the server returned an error ({d}) — restart the launcher, then try again",
+      "der Server hat einen Fehler gemeldet ({d}) — den Starter neu starten und es erneut versuchen",
+      "el servidor devolvió un error ({d}) — reiniciar el lanzador y volver a intentarlo"
+    ],
+    missing: ["fichier absent{f} — vérifier qu’il est bien dans le dossier attendu (ou le recréer), puis réessayer",
+      "file missing{f} — check that it is in the expected folder (or create it again), then try again",
+      "Datei fehlt{f} — prüfen, ob sie im erwarteten Ordner liegt (oder neu erstellen), und es erneut versuchen",
+      "archivo ausente{f} — comprobar que está en la carpeta esperada (o volver a crearlo) y volver a intentarlo"
+    ],
+    quota: ["espace du navigateur saturé — libérer de la place (Paramètres › Maintenance › Espace disque), puis réessayer",
+      "browser storage full — free some space (Settings › Maintenance › Disk space), then try again",
+      "Browserspeicher voll — Platz schaffen (Einstellungen › Wartung › Speicherplatz) und es erneut versuchen",
+      "almacenamiento del navegador lleno — liberar espacio (Ajustes › Mantenimiento › Espacio en disco) y volver a intentarlo"
+    ],
+    denied: ["accès refusé par le navigateur — autoriser le dossier ou le fichier demandé, puis réessayer",
+      "access denied by the browser — allow the requested folder or file, then try again",
+      "Zugriff vom Browser verweigert — den angefragten Ordner oder die Datei freigeben und es erneut versuchen",
+      "acceso denegado por el navegador — autorizar la carpeta o el archivo solicitado y volver a intentarlo"
+    ],
+    timeout: ["délai dépassé, le service ne répond pas assez vite — réessayer plus tard",
+      "timed out, the service does not answer fast enough — try again later",
+      "Zeitüberschreitung, der Dienst antwortet nicht schnell genug — später erneut versuchen",
+      "tiempo agotado, el servicio no responde lo bastante rápido — volver a intentarlo más tarde"
+    ],
+    aborted: ["annulé", "cancelled", "abgebrochen", "cancelado"],
+    failed: ["échec ({d})", "failed ({d})", "fehlgeschlagen ({d})", "error ({d})"]
+  };
+  /** Message lisible pour l'erreur err (Error, DOMException, réponse { status }, texte), précédé du contexte (ce qui a
+   *  échoué, déjà traduit par l'appelant) : réseau, serveur, fichier absent, stockage plein, accès refusé, délai,
+   *  annulation ; sinon une phrase claire levée par la page est gardée, et un message technique devient « échec (…) ».
+   *  remote : la requête visait un service en ligne (pas le lanceur) — réseau et erreurs du serveur le disent. */
+  function explain(err, context = "", {
+    remote = false
+  } = {}) {
+    const K = window.RepositoryKit,
+      name = err?.name || "",
+      status = +err?.status || 0,
+      msg = String(err?.message ?? err?.statusText ?? err ?? "").trim(),
+      file = /^[\w./-]+\.(?:js|mjs|json|csv|xml|txt|png|svg|zip|ya?ml|md|html|pdf)$/i.test(msg) ? msg : "";
+    let kind = "";
+    if (name === "AbortError") kind = "aborted";
+    else if (name === "TimeoutError" || /\btime ?out\b|timed out/i.test(msg)) kind = "timeout";
+    else if (name === "QuotaExceededError" || /quota/i.test(msg)) kind = "quota";
+    else if (name === "NotAllowedError" || name === "SecurityError") kind = "denied";
+    else if (name === "NotFoundError" || status === 404 || /^(?:HTTP )?404\b/.test(msg) || file) kind = "missing";
+    else if (/Failed to fetch|NetworkError|Load failed|ERR_(?:CONNECTION|NAME|INTERNET)|ECONNREFUSED|net::/i.test(msg))
+      kind = remote ? "remote" : "network";
+    else if (status >= 500 || /^(?:HTTP )?5\d\d\b/.test(msg)) kind = remote ? "remoteServer" : "server";
+    // erreur technique du navigateur (TypeError…), code seul ou message vide : « échec (détail) » ; phrase de la page gardée
+    else if ((name && name !== "Error") || !msg || /^(?:HTTP )?\d{3}$/.test(msg)) kind = "failed";
+    const text = kind ? K.tf(EX[kind], {
+      d: msg || status || name || "?",
+      f: file ? ` (${file})` : ""
+    }) : msg;
+    // phrase terminée par un point (sauf si elle a déjà sa ponctuation finale)
+    const end = s => /[.!?…]$/.test(s) ? s : `${s}.`;
+    if (context) return end(K.tf(EX.join, {
+      c: context,
+      m: text
+    }));
+    return end(text.charAt(0).toUpperCase() + text.slice(1));
+  }
   // ---- Tâches longues (aperçus, génération, lecture de dossiers, calculs) : barre de progression flottante dans la pile
   // des notifications, et avertissement avant de quitter la page tant qu'une tâche tourne (fermeture, rechargement :
   // fenêtre du navigateur ; lien interne : confirmation qui nomme la tâche). Les erreurs restent signalées par la page
@@ -670,17 +756,19 @@
         if (text !== undefined) step.textContent = text;
         return job;
       },
-      /** Fin de tâche ; message facultatif (notification, kind ok | info | warn | err). */
+      /** Fin de tâche ; message facultatif (notification, kind ok | info | warn | err) ; sans message, une tâche
+       *  arrêtée notifie « Annulé. », sauf end(false) (l'arrêt est dit ailleurs : tâche d'un lot qui fait son bilan). */
       end(message, kind = "ok") {
         if (!tasks.delete(job)) return;
         item.remove();
         if (message) notify(message, kind);
-        else if (job.cancelled) notify(tk("cancelled"), "info");
+        else if (job.cancelled && message !== false) notify(tk("cancelled"), "info");
       },
-      /** Échec : notification d'erreur (annulation : simple information). */
-      fail(error) {
+      /** Échec : notification d'erreur expliquée (explain : ce qui a échoué et quoi faire ; contexte : le titre de la
+       *  tâche, sauf autre contexte donné) ; annulation : simple information. */
+      fail(error, context = title) {
         const aborted = error?.name === "AbortError";
-        job.end(aborted ? tk("cancelled") : error?.message || String(error || ""), aborted ? "info" : "err");
+        job.end(aborted ? tk("cancelled") : explain(error, context), aborted ? "info" : "err");
       }
     };
     tasks.add(job);
@@ -932,6 +1020,9 @@
     guardUnsavedChanges,
     /** Tâche longue : barre de progression flottante et garde de sortie de page (voir task()). */
     task,
+    /** Message d'erreur lisible (ce qui a échoué et quoi faire, 4 langues) : explain(erreur, contexte, { remote }) ;
+     *  remote : service en ligne plutôt que lanceur. */
+    explain,
     /** Tâches en cours (titres). */
     busyTasks: () => [...tasks].map(j => j.title)
   };

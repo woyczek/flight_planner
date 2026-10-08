@@ -14,6 +14,9 @@
   const L = window.RepositoryKit.tf; // phrase traduite, valeurs {clé} insérées (shared/kit.js)
   /** Notification flottante (AppFramework.notify), console à défaut. */
   const notify = (msg, kind) => window.AppFramework?.notify ? window.AppFramework.notify(msg, kind) : console.warn(msg);
+  /** Message d'erreur lisible : ce qui a échoué (contexte traduit, facultatif) et quoi faire (AppFramework.explain :
+   *  réseau, fichier absent, stockage plein…) ; repli : contexte et message. */
+  const explain = (err, context = '') => window.AppFramework?.explain?.(err, context) || `${context ? context + ' : ' : ''}${err?.message || err}`;
   const SHORT = ['M', 'A', 'S'];
 
   // ------------------------------------------------------------------ réglages (seules données mémorisées)
@@ -380,9 +383,10 @@
       announce();
     } catch (e) {
       console.error(e);
-      notify(L(['Lecture impossible : {e}', 'Cannot read the file: {e}', 'Lesen nicht möglich: {e}', 'Lectura imposible: {e}'], {
-        e: e.message
-      }), 'err');
+      notify(explain(e, L(['Classeur des ordres de vols non lu', 'Flight-order workbook not read',
+        'Flugbefehl-Arbeitsmappe nicht gelesen',
+        'Libro de órdenes de vuelo no leído'
+      ])), 'err');
     }
   }
   /** Relit le classeur selon les réglages, recalcule créneaux et contrôles, redessine tout. */
@@ -394,11 +398,9 @@
       jumpToXl = false;
     } catch (e) {
       console.error(e);
-      notify(L(['Analyse impossible : {e}', 'Cannot analyse the workbook: {e}', 'Analyse nicht möglich: {e}',
-        'Análisis imposible: {e}'
-      ], {
-        e: e.message
-      }), 'err');
+      notify(explain(e, L(['Analyse du classeur impossible', 'Cannot analyse the workbook', 'Analyse der Arbeitsmappe nicht möglich',
+        'Análisis del libro imposible'
+      ])), 'err');
       xl = null;
     }
     await showWeek();
@@ -683,7 +685,9 @@
     try {
       r = await window.SuiteAtc.save(w, list);
     } catch (e) {
-      return notify(e.message, 'err');
+      return notify(explain(e, L(['Sessions ATC non enregistrées', 'ATC sessions not saved', 'ATC-Sitzungen nicht gespeichert',
+        'Sesiones ATC no guardadas'
+      ])), 'err');
     }
     if (w !== atcWeek()) return;
     atc = {
@@ -775,7 +779,11 @@
       b.disabled = true;
       const r = await S.importNetwork(w, net);
       b.disabled = false;
-      if (r.error) return notify(r.error, 'err');
+      if (r.error) return notify(explain(r.error, L(['Import {n} des sessions ATC impossible', '{n} import of ATC sessions failed',
+        '{n}-Import der ATC-Sitzungen fehlgeschlagen', 'Importación {n} de las sesiones ATC imposible'
+      ], {
+        n: net
+      })), 'err');
       if (w !== atcWeek()) return;
       atc = {
         week: w,
@@ -1319,10 +1327,10 @@
       return;
     }
     if (!O?.write || !M?.postsOf || !AD?.frame) return notify(L([
-      'Affectations : modules absents (assignments.js, odv_assign.js, assign_dialog.js).',
-      'Assignments: modules missing (assignments.js, odv_assign.js, assign_dialog.js).',
-      'Zuweisungen: Module fehlen (assignments.js, odv_assign.js, assign_dialog.js).',
-      'Asignaciones: faltan módulos (assignments.js, odv_assign.js, assign_dialog.js).'
+      'Affectations impossibles : modules non chargés (assignments.js, odv_assign.js, assign_dialog.js) — recharger la page.',
+      'Assignments impossible: modules not loaded (assignments.js, odv_assign.js, assign_dialog.js) — reload the page.',
+      'Zuweisungen unmöglich: Module nicht geladen (assignments.js, odv_assign.js, assign_dialog.js) — Seite neu laden.',
+      'Asignaciones imposibles: módulos no cargados (assignments.js, odv_assign.js, assign_dialog.js) — recargar la página.'
     ]), 'err');
     const zones = await zonesToAvoid(s.eviter);
     const fams = [...new Set([...s.toutesMissions.map(m => m.famille), ...all.map(m => fold(m.family || m.type)).filter(Boolean)])]
@@ -1907,7 +1915,7 @@
           await build();
           render();
         } catch (err) {
-          msg.innerHTML = `<span class="err">${L(['Convoyage non confié : {e}', 'Ferry not assigned: {e}', 'Überführung nicht übertragen: {e}', 'Traslado no confiado: {e}'], { e: esc(err.message) })}</span>`;
+          msg.innerHTML = `<span class="err">${esc(explain(err, L(['Convoyage non confié', 'Ferry not assigned', 'Überführung nicht übertragen', 'Traslado no confiado'])))}</span>`;
         }
       });
       bodyEl.addEventListener('click', async e => {
@@ -1989,7 +1997,7 @@
             })), rows[0].takeoff || x.timing?.takeoff || takeoff, rows[0].dep || x.dep);
             ok.push(`${m.id} (${rows.map(r => r.pilot).join(', ')})`);
           } catch (err) {
-            ko.push(`${m.id} : ${err.message}`);
+            ko.push(explain(err, m.id));
           }
         if (ok.length) notify(L(['Affectations enregistrées : {l}.', 'Assignments saved: {l}.', 'Zuweisungen gespeichert: {l}.',
           'Asignaciones guardadas: {l}.'
@@ -2355,10 +2363,10 @@
   let started = false; // démarré (page ODV, ou Planning au niveau Expert) : sinon rien n'est calculé
   function start() {
     if (!C || !window.SortedTable) {
-      notify(L(['Planning ODV : composants manquants (odv_core.js, mission_table.js).',
-        'ODV planning: missing components (odv_core.js, mission_table.js).',
-        'ODV-Planung: fehlende Komponenten (odv_core.js, mission_table.js).',
-        'Planificación ODV: faltan componentes (odv_core.js, mission_table.js).'
+      notify(L(['Planning ODV : composants non chargés (odv_core.js, mission_table.js) — recharger la page.',
+        'ODV planning: components not loaded (odv_core.js, mission_table.js) — reload the page.',
+        'ODV-Planung: Komponenten nicht geladen (odv_core.js, mission_table.js) — Seite neu laden.',
+        'Planificación ODV: componentes no cargados (odv_core.js, mission_table.js) — recargar la página.'
       ]), 'err');
       return;
     }

@@ -3,10 +3,10 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>{CENTRE} — Générateur de mission</title>
-<link rel="stylesheet" href="../../shared/repository_nav.css?v=54118a6e">
+<link rel="stylesheet" href="../../shared/repository_nav.css?v=dd0730c4">
 <script src="../../config/repository_tree?v=c680ce8f"></script><script src="../../shared/kit.js?v=d74cff80"></script>
 <script src="../../shared/mission_core/vendor/js-yaml.min.js"></script>
-<script src="mission_prompt.js?v=8774038d"></script><script src="../../shared/data_files.js?v=dcb47c6a" data-file="references/aircraft_fleet.js"></script><script src="../../shared/mission_order.js?v=6cf0c650"></script><script src="../../AircraftDB/aircraft_db.js"></script><script src="../../AircraftDB/aircraft_perf.js"></script><script src="../../shared/mission_core/model.js?v=88cf78c1"></script><script src="../../shared/mission_estimate.js?v=e352037a"></script><script src="../../shared/sia_base.js?v=014ef61f"></script><script src="../../shared/mission_routing.js?v=3cc1352c"></script><script src="../../shared/mission_airspaces.js?v=e13e97bf"></script><script src="../../shared/mission_exercise.js?v=b68ac247"></script><script src="../../shared/mission_registry.js?v=31c17b5a"></script>
+<script src="mission_prompt.js?v=8774038d"></script><script src="../../shared/data_files.js?v=dcb47c6a" data-file="references/aircraft_fleet.js"></script><script src="../../shared/mission_order.js?v=6cf0c650"></script><script src="../../AircraftDB/aircraft_db.js"></script><script src="../../AircraftDB/aircraft_perf.js"></script><script src="../../shared/mission_core/model.js?v=88cf78c1"></script><script src="../../shared/mission_estimate.js?v=e352037a"></script><script src="../../shared/sia_base.js?v=014ef61f"></script><script src="../../shared/mission_routing.js?v=3cc1352c"></script><script src="../../shared/mission_airspaces.js?v=e13e97bf"></script><script src="../../shared/mission_exercise.js?v=b68ac247"></script><script src="../../shared/mission_registry.js?v=d3a09fa5"></script>
 <script src="mission_store.js?v=559e3351"></script>
 <script src="../../shared/aar_tracks.js?v=8f76a899"></script>
 <script src="../../shared/mission_core/vocab.js?v=8c65f5c2"></script>
@@ -796,6 +796,22 @@ async function importImages(files) {
   renderMaps();
   setStatus(`${expanded.length} image(s) extraite(s) et associée(s), dont ${missionImage(/assemblage|assembly/i)?'la carte d’assemblage':'aucune carte d’assemblage'}.`, 'ok')
 }
+/** Texte [fr, en, de, es] dans la langue de la page (shared/kit.js). */
+const trl = row => window.RepositoryKit?.t ? window.RepositoryKit.t(row) : row[0];
+/** Message d'erreur lisible : ce qui a échoué (contexte : ligne [fr, en, de, es] ou texte) et quoi faire
+ *  (AppFramework.explain : réseau, fichier absent, stockage plein…) ; repli : contexte et message. */
+function explainErr(e, context) {
+  const c = Array.isArray(context) ? trl(context) : context || '';
+  return window.AppFramework?.explain?.(e, c) || `${c ? c + ' : ' : ''}${e?.message || e}`
+}
+/** Erreur d'un export (zone #exportStatus ou st) : notification flottante si le cadre est là, sinon dans la zone. */
+function exportError(e, context, st = $('exportStatus')) {
+  const text = explainErr(e, context);
+  if (window.AppFramework?.notify) {
+    st.textContent = '';
+    window.AppFramework.notify(text, 'err')
+  } else st.textContent = text
+}
 // ===== Rendu de la page =====
 function setStatus(message, kind = '') {
   $('status').dataset.set = '1';
@@ -985,7 +1001,7 @@ async function registerDocs(inputs, request = false) {
         out.push(`${id} → registre seulement${r.error ? ` (${r.error})` : ""}`)
       } else out.push(`${id} → data/missions/${r.folder}/ — ${r.status==='same'?'identique à la version rangée (rien remplacé)':r.status==='version'?`nouvelle version (différences : ${r.diff.join(', ')||'mineures'} ; l’ancienne est dans versions/)`:'nouvelle mission'}`)
     } catch (e) {
-      out.push(`${id} : ${e.message}`)
+      out.push(explainErr(e, id))
     }
   }
   if (!out.length) return;
@@ -2397,7 +2413,9 @@ $('exportPdfOrg').onclick = async () => {
     await exportOrganisationPdf(z || state.yaml);
     st.textContent = 'Dossier organisation exporté.'
   } catch (e) {
-    (window.AppFramework?.notify ? (st.textContent = '', window.AppFramework.notify(e.message, 'err')) : st.textContent = e.message)
+    exportError(e, ['Dossier organisation non exporté', 'Organisation file not exported', 'Organisationsdossier nicht exportiert',
+      'Dossier de organización no exportado'
+    ], st)
   }
 };
 $('exportPdfChiffons').onclick = () => {
@@ -2406,7 +2424,9 @@ $('exportPdfChiffons').onclick = () => {
     const n = exportChiffonPdfs();
     st.textContent = `${n} fiche(s) de chiffon exportée(s).`
   } catch (e) {
-    (window.AppFramework?.notify ? (st.textContent = '', window.AppFramework.notify(e.message, 'err')) : st.textContent = e.message)
+    exportError(e, ['Fiches de chiffon non exportées', 'Track sheets not exported', 'Spurblätter nicht exportiert',
+      'Fichas de pista no exportadas'
+    ], st)
   }
 };
 /* Tous les documents de l'exercice : dossier organisation, brief de chaque équipage (avec ses plis), fiche de chaque chiffon joué. */
@@ -2437,7 +2457,9 @@ $('exportPdfExercise').onclick = async () => {
     }
     st.textContent = `${n} document(s) de l’exercice exporté(s).`
   } catch (e) {
-    (window.AppFramework?.notify ? (st.textContent = '', window.AppFramework.notify(e.message, 'err')) : st.textContent = e.message)
+    exportError(e, ['Documents de l’exercice non exportés', 'Exercise documents not exported', 'Übungsdokumente nicht exportiert',
+      'Documentos del ejercicio no exportados'
+    ], st)
   } finally {
     applyBatchDoc(SiaMission.go(start, 'generator'));
     bt.disabled = false
@@ -2450,8 +2472,9 @@ $('exportPdfOperation').onclick = async () => {
     const m = await exportOperationPdf();
     $('exportStatus').textContent = `Dossier d’opération exporté (un PDF).${m.length?` Cartes non jointes — ${m.join(' ; ')}.`:''}`
   } catch (e) {
-    (window.AppFramework?.notify ? ($('exportStatus').textContent = '', window.AppFramework.notify(e.message, 'err')) : $(
-      'exportStatus').textContent = e.message)
+    exportError(e, ['Dossier d’opération non exporté', 'Operation file not exported', 'Operationsdossier nicht exportiert',
+      'Dossier de operación no exportado'
+    ])
   } finally {
     bt.disabled = false
   }
@@ -2475,7 +2498,9 @@ $('exportPdfAll').onclick = async () => {
     }
     st.textContent = `${b.docs.length} PDF exportés.${miss.length?` Cartes non jointes — ${miss.join(' ; ')}.`:''}`
   } catch (e) {
-    (window.AppFramework?.notify ? (st.textContent = '', window.AppFramework.notify(e.message, 'err')) : st.textContent = e.message)
+    exportError(e, ['PDF des missions non exportés', 'Mission PDFs not exported', 'Missions-PDFs nicht exportiert',
+      'PDF de las misiones no exportados'
+    ], st)
   } finally {
     applyBatchDoc(SiaMission.go(start, 'generator'));
     $('exportPdfAll').disabled = false
@@ -2495,7 +2520,9 @@ $('parseMission').addEventListener('click', async () => {
     await importMissionFiles([new File([text], md ? 'mission collée.md' : 'mission collée.yaml')]);
     missionPaste?.done()
   } catch (error) {
-    setStatus(error.message, 'err')
+    setStatus(explainErr(error, ['Mission collée non importée', 'Pasted mission not imported', 'Eingefügte Mission nicht importiert',
+      'Misión pegada no importada'
+    ]), 'err')
   }
 });
 (function attachPaste(tries = 0) {
@@ -2517,7 +2544,9 @@ $('missionFiles').addEventListener('change', async e => {
   try {
     await importMissionFiles(e.target.files)
   } catch (error) {
-    setStatus(error.message, 'err')
+    setStatus(explainErr(error, ['Fichiers de mission non importés', 'Mission files not imported', 'Missionsdateien nicht importiert',
+      'Archivos de misión no importados'
+    ]), 'err')
   } finally {
     e.target.value = ''
   }
@@ -2526,7 +2555,8 @@ $('mapFiles').addEventListener('change', async e => {
   try {
     await importImages(e.target.files)
   } catch (error) {
-    setStatus(error.message, 'err')
+    setStatus(explainErr(error, ['Images non importées', 'Images not imported', 'Bilder nicht importiert', 'Imágenes no importadas']),
+      'err')
   } finally {
     e.target.value = ''
   }
@@ -2698,7 +2728,12 @@ $('saveToFolder').onclick = async () => {
       action: 'modifiée dans le générateur',
       request: true
     });
-    setStatus(f ? `Mission enregistrée : data/missions/${f}/ (ancienne version remplacée ; historique dans meta.history).` : 'Dossier des missions non autorisé.', f ? 'ok' : 'err');
+    setStatus(f ? `Mission enregistrée : data/missions/${f}/ (ancienne version remplacée ; historique dans meta.history).` : trl([
+      'Mission non enregistrée : dossier des missions non autorisé — l’autoriser (Paramètres › Installation › Sources et dossiers), puis réessayer.',
+      'Mission not saved: missions folder not authorised — allow it (Settings › Installation › Sources and folders), then try again.',
+      'Mission nicht gespeichert: Missionsordner nicht freigegeben — freigeben (Einstellungen › Installation › Quellen und Ordner) und es erneut versuchen.',
+      'Misión no guardada: carpeta de misiones no autorizada — autorizarla (Ajustes › Instalación › Fuentes y carpetas) y volver a intentarlo.'
+    ]), f ? 'ok' : 'err');
     if (f) {
       const d = SiaMission.load();
       if (d) SiaMission.save({
@@ -2707,7 +2742,7 @@ $('saveToFolder').onclick = async () => {
       }, 'generator')
     }
   } catch (e) {
-    setStatus(e.message, 'err')
+    setStatus(explainErr(e, ['Mission non enregistrée', 'Mission not saved', 'Mission nicht gespeichert', 'Misión no guardada']), 'err')
   }
 };
 $('newMission').onclick = () => {
@@ -2759,7 +2794,8 @@ $('loadDraft').onclick = () => {
     renderAll();
     setStatus('Brouillon rechargé.', 'ok')
   } catch (e) {
-    setStatus(e.message, 'err')
+    setStatus(explainErr(e, ['Brouillon non rechargé', 'Draft not reloaded', 'Entwurf nicht neu geladen', 'Borrador no recargado']),
+      'err')
   }
 };
 // onglet « Studio cartographique » (en tête de page, repository_nav.js) : la mission courante part avec
@@ -2776,8 +2812,7 @@ $('exportYaml').onclick = () => {
     }), `${safeStem()}.yaml`);
     $('exportStatus').textContent = 'YAML exporté.'
   } catch (e) {
-    (window.AppFramework?.notify ? ($('exportStatus').textContent = '', window.AppFramework.notify(e.message, 'err')) : $('exportStatus')
-      .textContent = e.message)
+    exportError(e, ['YAML non exporté', 'YAML not exported', 'YAML nicht exportiert', 'YAML no exportado'])
   }
 };
 $('exportMd').onclick = () => {
@@ -2793,7 +2828,7 @@ $('exportPdf').onclick = async () => {
     const missing = await exportPdf();
     $('exportStatus').textContent = missing.length ? `PDF exporté. Cartes non jointes : ${missing.join(', ')}.` : 'PDF final exporté avec toutes les cartes.'
   } catch (e) {
-    $('exportStatus').textContent = 'Export PDF en échec : ' + e.message
+    $('exportStatus').textContent = explainErr(e, ['PDF non exporté', 'PDF not exported', 'PDF nicht exportiert', 'PDF no exportado'])
   } finally {
     $('exportPdf').disabled = false
   }
@@ -2825,7 +2860,9 @@ function shareMission(now) {
         sourceNames: state.sourceNames
       }, 'generator')
     } catch (e) {
-      setStatus(e.message, 'err')
+      setStatus(explainErr(e, ['Mission non transmise aux autres pages', 'Mission not passed to the other pages',
+        'Mission nicht an die anderen Seiten übergeben', 'Misión no transmitida a las demás páginas'
+      ]), 'err')
     }
   };
   if (now) run();
@@ -2855,12 +2892,11 @@ $('openCr').onclick = () => {
     localStorage.setItem('siaMissionToCr:v1', JSON.stringify(state.yaml));
     location.href = `../cr/${target.cr}?from=sia`
   } catch (e) {
-    (window.AppFramework?.notify ? ($('exportStatus').textContent = '', window.AppFramework.notify(e.message, 'err')) : $('exportStatus')
-      .textContent = e.message)
+    exportError(e, ['Compte rendu non commencé', 'Report not started', 'Bericht nicht begonnen', 'Informe no iniciado'])
   }
 };
 </script>
-<script src="../../shared/repository_nav.js?v=ac264f5f"></script>
-<script src="../../shared/app_framework.js?v=0ee38931"></script>
+<script src="../../shared/repository_nav.js?v=a92d26be"></script>
+<script src="../../shared/app_framework.js?v=0a2fa96b"></script>
 <script src="../../shared/content_i18n.js?v=515ea16b"></script><script src="sia_i18n.js?v=e4046ef4"></script>
 </body></html>

@@ -273,7 +273,10 @@
           const r = await O().saveConfig(next).catch(err => ({
             error: err
           }));
-          if (r?.error && r.where !== 'local') return api.status(String(r.error?.message || r.error));
+          if (r?.error && r.where !== 'local') return api.status(window.AppFramework?.explain?.(r.error, K.t([
+            'Réglages non enregistrés',
+            'Settings not saved', 'Einstellungen nicht gespeichert', 'Ajustes no guardados'
+          ])) || String(r.error?.message || r.error));
           cfg = structuredClone(next);
           api.saved();
           api.status(r?.where === 'folder' ? K.t(['Réglages enregistrés.', 'Settings saved.', 'Einstellungen gespeichert.',

@@ -12,6 +12,22 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Ajouté
 
+- **v2-fable, lot 2** (`docs/technique/V2_FABLE.md` § 5) — **pastille de synchronisation** : aux niveaux 1 et 2, le
+  bouton « Synchroniser » de l'en-tête garde son libellé et porte une pastille quand il y a quelque chose à envoyer ou à
+  recevoir, au lieu du compteur « (n) » (règle `html[data-level]` de `repository_nav.css` ; le nombre reste dans le
+  bouton pour les niveaux 3-4 et en tête de l'infobulle, quatre langues ; contenu du bouton réécrit seulement s'il
+  change). **Bouton « Arrêter » sur les tâches longues** : Studio cartographique et Cartes de vol (aperçus et génération
+  des cartes, aperçus et génération de toutes les missions d'un lot : arrêt entre deux cartes, ni ZIP ni rangement d'une
+  génération incomplète, bilan du lot arrêté), Maintenance (MORA d'une zone, calcul complet de la grille, MORA par blocs
+  — le bloc en cours est écrit, mora.csv partiel signalé —, import de la MILAIP ENR 5.7), lecture du dossier du registre
+  des missions (registre inchangé) ; `job.end(false)` : fin sans notification (tâche d'un lot qui fait son bilan).
+  **Messages d'erreur clairs** : `AppFramework.explain(erreur, contexte, { remote })` dit ce qui a échoué et quoi faire,
+  en quatre langues (serveur du lanceur muet, service en ligne muet, erreur du serveur, fichier absent, espace du
+  navigateur saturé, accès refusé, délai dépassé, annulé ; sinon « échec (détail technique) ») et sert à `job.fail` ;
+  appliqué aux erreurs de Mes missions (affectations illisibles, fichier de mission introuvable ou illisible), Tableau
+  et Planning ODV, Studio cartographique (villes ou MORA absentes de la base, SimBrief, enregistrement, exports),
+  Générateur de mission (exports PDF et YAML, imports, enregistrement), registre des missions, Maintenance (dossier SIA,
+  ZIP du SIA, MORA, sauvegarde totale, blocs de la page) et compte rendu (plan de vol, import, dossier du registre).
 - **v2-fable, performance (1)** : Planning — plus de requête par pilote et par semaine quand l'index des déclarations ne
   connaît pas la semaine (`SuiteDispos.readPilot` filtre les semaines demandées par `data/disponibilites/_index.json` ;
   48 réponses 404 par ouverture avant) ; réglages de compagnie et de sources (`suiteVA:v1`, `suiteSources:v1`) et outils

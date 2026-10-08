@@ -139,6 +139,20 @@
     notify(`${d.level === 'alert' ? t(['Sauvegarde des données en alerte', 'Data backup alert', 'Datensicherung: Warnung', 'Alerta de copia de los datos']) : t(['Données à synchroniser', 'Data to synchronise', 'Daten zu synchronisieren', 'Datos por sincronizar'])} — ${reasons().join(' ')}`, d.level === 'alert' ? 'error' : 'warn');
   }
 
+  // contenu du bouton dernièrement écrit (libellé, compteur, pastille) : réécrit seulement s'il change
+  let drawn = '';
+  /** Pose le contenu du bouton (HTML) et son infobulle, seulement s'ils changent. */
+  const paint = (html, title) => {
+    if (html !== drawn) {
+      button.innerHTML = html;
+      drawn = html;
+    }
+    if (button.title !== title) button.title = title;
+  };
+
+  /** Dessine le bouton d'après l'état connu : alerte sans dépôt, sinon « Synchroniser » ; le nombre d'éléments à
+   *  synchroniser est dans son propre élément (.repo-sync-count), doublé d'une pastille (.repo-sync-dot) : aux niveaux
+   *  d'utilisation 1 et 2, repository_nav.css montre la pastille au lieu du nombre, qui reste dans l'infobulle. */
   function draw() {
     place();
     const level = state?.divergence?.level || 'ok';
@@ -148,24 +162,26 @@
     button.classList.toggle('repo-sync-alert', level === 'alert');
     if (button.hidden) return;
     if (!state.repo) {
-      button.textContent = `⚠ ${t(['Sauvegarde', 'Backup', 'Sicherung', 'Copia'])}`;
-      button.title = reasons().join('\n');
+      paint(K.esc(`⚠ ${t(['Sauvegarde', 'Backup', 'Sicherung', 'Copia'])}`), reasons().join('\n'));
       button.disabled = false;
       return;
     }
     const pending = (state.changes || 0) + (A()?.pendingData?.() || []).length,
       n = pending + (state.behind || 0) + (state.ahead || 0);
-    const label = `${t(['Synchroniser', 'Synchronise', 'Synchronisieren', 'Sincronizar'])}${n ? ` (${n})` : ''}`,
-      icon = window.RepositoryIcons?.svg('refresh');
-    button.textContent = icon ? label : '⟳ ' + label;
-    if (icon) button.insertAdjacentHTML('afterbegin', icon);
+    const icon = window.RepositoryIcons?.svg('refresh');
+    const html = `${icon || '⟳ '}<span class="repo-sync-label">${K.esc(t(['Synchroniser', 'Synchronise', 'Synchronisieren', 'Sincronizar']))}</span>${n ? `<span class="repo-sync-count">(${n})</span><span class="repo-sync-dot" aria-hidden="true"></span>` : ''}`;
     button.classList.toggle('busy', busy);
     button.disabled = busy;
     const last = state.last?.at ? new Date(state.last.at).toLocaleString(undefined, {
       dateStyle: 'short',
       timeStyle: 'short'
     }) : t(['jamais', 'never', 'nie', 'nunca']);
-    button.title = tf([
+    // nombre total en tête de l'infobulle : seul endroit où il se lit aux niveaux 1 et 2 (pastille)
+    paint(html, (n ? tf(['{n} élément(s) à synchroniser', '{n} item(s) to synchronise', '{n} Element(e) zu synchronisieren',
+      '{n} elemento(s) por sincronizar'
+    ], {
+      n
+    }) + '\n' : '') + tf([
       'Données partagées (dépôt git {b}) : {p} modification(s) de ce poste à envoyer, {r} commit(s) à recevoir — dernière synchronisation : {l}',
       'Shared data (git repository {b}): {p} change(s) from this computer to send, {r} commit(s) to receive — last synchronisation: {l}',
       'Gemeinsame Daten (Git-Repository {b}): {p} Änderung(en) dieses Rechners zu senden, {r} Commit(s) zu empfangen — letzte Synchronisierung: {l}',
@@ -175,7 +191,7 @@
       p: pending + (state.ahead || 0),
       r: state.behind || 0,
       l: last
-    }) + (RANK[level] ? `\n${reasons().join('\n')}` : '');
+    }) + (RANK[level] ? `\n${reasons().join('\n')}` : ''));
   }
   /** État relu au lanceur (fetch : aussi le dépôt distant, pour les commits à recevoir ; sinon relevé local, refait par
    *  le lanceur) ; gardé avec sa date (dernier état connu). */

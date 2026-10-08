@@ -19,6 +19,9 @@
   const normId = v => String(v ?? '').trim().toUpperCase();
   // Libellé [fr,en,de,es] dans la langue courante du framework (messages dynamiques).
   const inLanguage = row => row[['fr', 'en', 'de', 'es'].indexOf(window.RepositoryNav?.getLanguage?.() || 'fr')] || row[0];
+  /** Message d'erreur lisible (AppFramework.explain : ce qui a échoué et quoi faire, contexte facultatif) ; repli : le
+   *  message de l'erreur. */
+  const explain = (error, context = '') => window.AppFramework?.explain?.(error, context) || `${context ? context + ' : ' : ''}${error?.message || error}`;
   const UI = {
     kpiTitle: L('Calculs automatiques', 'Automatic calculations', 'Automatische Berechnungen', 'Cálculos automáticos'),
     block: L('Temps bloc', 'Block time', 'Blockzeit', 'Tiempo calzo a calzo'),
@@ -95,6 +98,9 @@
     imported: L('Mission importée', 'Mission imported', 'Einsatz importiert', 'Misión importada'),
     exported: L('Mission exportée', 'Mission exported', 'Einsatz exportiert', 'Misión exportada'),
     importError: L('Import impossible', 'Import failed', 'Import fehlgeschlagen', 'Importación imposible'),
+    folderError: L('Dossier du registre des CR non choisi', 'Report ledger folder not chosen',
+      'Ordner des Berichtsregisters nicht gewählt',
+      'Carpeta del registro de informes no elegida'),
     knownAircraft: L('Appareil connu : type, catégorie, indicatif et équipements repris (dernier enregistrement)',
       'Known aircraft: type, category, callsign and equipment filled in (latest record)',
       'Bekanntes Luftfahrzeug: Muster, Kategorie, Rufzeichen und Ausrüstung übernommen (letzter Eintrag)',
@@ -1169,7 +1175,7 @@
       section.querySelector('h2').after(bar);
     }
     /** Message d'erreur d'import de plan de vol (identifiant manquant traduit). */
-    const fplError = error => /-id$/.test(error.message) ? inLanguage(UI.fplNeedId) : error.message;
+    const fplError = error => /-id$/.test(error?.message) ? inLanguage(UI.fplNeedId) : explain(error);
 
     // ---- analyse d'un texte collé : plan de vol OACI, tracker IVAO (détails / liste),
     // historique VATSIM (JSON), METAR (shared/mission_core/text_import.js)
@@ -1549,7 +1555,7 @@
         ledgerInfo();
         await persist('stored');
       } catch (error) {
-        status.textContent = error.message;
+        status.textContent = explain(error, inLanguage(UI.folderError));
       }
     };
     $a('download').onclick = () => ledger.downloadYaml();
@@ -1571,7 +1577,7 @@
           saveDraft();
           say('imported', file.name);
         } catch (error) {
-          say('importError', error.message);
+          say('importError', explain(error));
         }
         picker.value = '';
       };

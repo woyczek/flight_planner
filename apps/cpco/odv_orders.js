@@ -29,6 +29,9 @@
     PPH = 96; // pixels par heure au zoom 1
   /** Libellé en quatre langues (fr, en, de, es), traduit par t() et tf() selon la langue de la suite. */
   const L4 = (fr, en, de, es) => [fr, en, de, es];
+  /** Message d'erreur lisible : ce qui a échoué (ligne [fr, en, de, es], facultative) et quoi faire
+   *  (AppFramework.explain : réseau, fichier absent, stockage plein…) ; repli : contexte et message. */
+  const explain = (err, row) => window.AppFramework?.explain?.(err, row ? t(row) : '') || `${row ? t(row) + ' : ' : ''}${err?.message || err}`;
   const TX = {
     days: [L4('Lun', 'Mon', 'Mo', 'Lun'), L4('Mar', 'Tue', 'Di', 'Mar'), L4('Mer', 'Wed', 'Mi', 'Mié'), L4('Jeu', 'Thu', 'Do', 'Jue'),
       L4('Ven', 'Fri', 'Fr', 'Vie'), L4('Sam', 'Sat', 'Sa', 'Sáb'), L4('Dim', 'Sun', 'So', 'Dom')
@@ -353,7 +356,8 @@
     omTimer = setTimeout(async () => {
       const ids = [...omQueue];
       omQueue.clear();
-      for (const vid of ids) await reissueOm(vid).catch(err => notify(String(err?.message || err), 'error'));
+      for (const vid of ids) await reissueOm(vid).catch(err => notify(explain(err, L4('Ordre de mission non réémis',
+        'Mission order not reissued', 'Missionsbefehl nicht neu erteilt', 'Orden de misión no reemitida')), 'error'));
     }, 900);
   }
   /** Réémission silencieuse de l'ordre de mission d'un vol déplacé : mêmes pilotes, appareils, indicatifs et convoyeurs, à
@@ -441,7 +445,7 @@
         alert
       });
     } catch (err) {
-      return hold(String(err?.message || err));
+      return hold(explain(err));
     }
     v.omAttente = false;
     delete v.omRaison;
@@ -598,7 +602,9 @@
     };
     setStatus(r.where === 'folder' ? t(L4('Enregistré', 'Saved', 'Gespeichert', 'Guardado')) : t(L4('Enregistré dans ce navigateur',
       'Saved in this browser', 'In diesem Browser gespeichert', 'Guardado en este navegador')));
-    if (r.error && r.where !== 'local') notify(String(r.error?.message || r.error), 'error');
+    if (r.error && r.where !== 'local') notify(explain(r.error, L4('Ordres de vols non enregistrés dans le dossier des données',
+      'Flight orders not saved in the data folder', 'Flugbefehle nicht im Datenordner gespeichert',
+      'Órdenes de vuelo no guardadas en la carpeta de datos')), 'error');
   }
   /** Texte d'état de l'enregistrement dans la barre (#odvoStatus). */
   const setStatus = s => {
@@ -808,10 +814,8 @@
     }));
     if (r?.skipped) return;
     if (r?.error) {
-      if (!S.atcWarned) notify(tf(L4('Import IVAO des sessions ATC impossible : {e}', 'IVAO import of ATC sessions failed: {e}',
-        'IVAO-Import der ATC-Sitzungen fehlgeschlagen: {e}', 'Importación IVAO de las sesiones ATC imposible: {e}'), {
-        e: String(r.error?.message || r.error)
-      }), 'warn');
+      if (!S.atcWarned) notify(explain(r.error, L4('Import IVAO des sessions ATC impossible', 'IVAO import of ATC sessions failed',
+        'IVAO-Import der ATC-Sitzungen fehlgeschlagen', 'Importación IVAO de las sesiones ATC imposible')), 'warn');
       S.atcWarned = true;
       return;
     }
@@ -893,7 +897,9 @@
     const res = await A.saveActivations(S.week, list).catch(err => ({
       error: err
     }));
-    if (res?.error && res.where !== 'local') return notify(String(res.error?.message || res.error), 'error');
+    if (res?.error && res.where !== 'local') return notify(explain(res.error, L4('Demandes non inscrites dans les activations',
+      'Requests not entered in the activations', 'Anträge nicht in die Aktivierungen eingetragen',
+      'Solicitudes no inscritas en las activaciones')), 'error');
     notify(tf(L4('{n} demande(s) inscrite(s) dans les activations : à faire sur le site du réseau.',
       '{n} request(s) recorded in the activations: to be made on the network’s site.',
       '{n} Antrag/Anträge in den Aktivierungen eingetragen: auf der Seite des Netzwerks stellen.',
@@ -915,7 +921,9 @@
     const res = await A.saveActivations(S.week, keep).catch(err => ({
       error: err
     }));
-    if (res?.error && res.where !== 'local') return notify(String(res.error?.message || res.error), 'err');
+    if (res?.error && res.where !== 'local') return notify(explain(res.error, L4('Demande non retirée des activations',
+      'Request not withdrawn from the activations', 'Antrag nicht aus den Aktivierungen entfernt',
+      'Solicitud no retirada de las activaciones')), 'err');
     notify(tf(L4('Demande retirée : {z}.', 'Request withdrawn: {z}.', 'Antrag zurückgezogen: {z}.', 'Solicitud retirada: {z}.'), {
       z: r.nom || r.zone
     }), 'info');
@@ -2585,7 +2593,9 @@
         error: err
       }));
       if (r?.doc) S.dlo = r.doc;
-      if (r?.error && r.where !== 'local') notify(String(r.error?.message || r.error), 'error');
+      if (r?.error && r.where !== 'local') notify(explain(r.error, L4('DLO non enregistrées', 'DLO not saved',
+        'DLO nicht gespeichert',
+        'DLO no guardadas')), 'error');
     }, 400);
   }
   /** Boutons des DLO d'un membre (état et urgence en classes) ; un clic ouvre la DLO (data-dlo « TRI|id »). */
@@ -2845,7 +2855,8 @@
     }).then(() => (S.cfg = {
       ...cfg,
       recurrences: list
-    })).catch(err => notify(String(err?.message || err), 'error'));
+    })).catch(err => notify(explain(err, L4('Récurrence non enregistrée', 'Recurrence not saved', 'Wiederholung nicht gespeichert',
+      'Recurrencia no guardada')), 'error'));
   }
   // commande d'une mission (générateur, MissionOrder) préremplie d'après la plaquette ; scripts chargés à la demande
   const SELF = document.currentScript?.src || location.href;
@@ -2867,7 +2878,10 @@
       for (const src of ['mission_store.js?v=559e3351', 'mission_prompt.js?v=8774038d', '../../shared/mission_order.js?v=6cf0c650'])
         await loadScript(src);
     } catch (err) {
-      return notify(String(err?.message || err), 'error');
+      return notify(explain(err, L4('Commande de mission impossible : générateur non chargé (recharger la page)',
+        'Mission order impossible: generator not loaded (reload the page)',
+        'Missionsbestellung unmöglich: Generator nicht geladen (Seite neu laden)',
+        'Pedido de misión imposible: generador no cargado (recargar la página)')), 'error');
     }
     if (!window.MissionOrder?.mount) return notify('MissionOrder ?', 'error');
     const planes = e.avions.filter(a => a.pilote || a.appareil);
@@ -2956,7 +2970,8 @@
         }
         e._ferryChoice = Object.fromEntries(rows.filter(r => r.registration).map(r => [r.registration, r.ferryPilot || '']));
       }
-    }).catch(err => notify(String(err?.message || err), 'error'));
+    }).catch(err => notify(explain(err, L4('Choix dans l’ODV impossible', 'Choice in the flight order impossible',
+      'Auswahl im Flugbefehl unmöglich', 'Elección en la orden de vuelo imposible')), 'error'));
   }
   /** Plaquette de convoyage d'un appareil du vol, transmise à la fenêtre d'affectation : heure, durée, terrain (gardée telle
    *  quelle, déplacement à la main compris, tant que l'appareil ne change pas). */
@@ -3087,7 +3102,8 @@
         const r = await O().setDispos(tri, S.week, date, out).catch(err => ({
           error: err
         }));
-        if (r?.error && r.where !== 'local') return notify(String(r.error?.message || r.error), 'error');
+        if (r?.error && r.where !== 'local') return notify(explain(r.error, L4('Disponibilités non enregistrées',
+          'Availability not saved', 'Verfügbarkeiten nicht gespeichert', 'Disponibilidades no guardadas')), 'error');
         S.dispos[tri] = {
           ...(S.dispos[tri] || {}),
           [date]: out

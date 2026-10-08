@@ -18,6 +18,15 @@
   const t = (row, vars = {}) => (Array.isArray(row) ? (row[li()] || row[1] || row[0]) : String(row ?? '')).replace(/\{(\w+)\}/g, (_, k) =>
     vars[k] ?? '');
   const esc = window.RepositoryKit.esc; // échappement HTML commun (shared/kit.js)
+  /** Message d'erreur lisible : ce qui a échoué (contexte, traduit) et quoi faire (AppFramework.explain) ; repli : contexte
+   *  et message. */
+  const explain = (e, context = '') => window.AppFramework?.explain?.(e, context) || `${context ? context + ' : ' : ''}${e?.message || e}`;
+  // dossier des missions non autorisé (ouverture d'une mission ou d'une opération) : ce qu'il faut faire
+  const NO_DIR = ['dossier des missions non autorisé : l’autoriser avec « Relire le dossier », puis réessayer',
+    'missions folder not authorised: allow it with “Re-read folder”, then try again',
+    'Missionsordner nicht freigegeben: mit „Ordner neu lesen“ freigeben und es erneut versuchen',
+    'carpeta de misiones no autorizada: autorizarla con «Releer la carpeta» y volver a intentarlo'
+  ];
   /** Valeur JSON du stockage du navigateur ; d si absente ou illisible. */
   const readJson = (k, d = null) => {
     try {
@@ -862,8 +871,10 @@
   /** Parcourt le dossier des missions (sous-dossiers de séries) : YAML et Markdown groupés par mission. */
   async function scan(request = true) {
     const dir = await missionsDir(request);
-    if (!dir) throw new Error(t(['Choisir le dossier « Missions » du dépôt (bouton ci-dessus).',
-      'Choose the repository “Missions” folder (button above).'
+    if (!dir) throw new Error(t(['Dossier des missions non choisi : choisir le dossier « Missions » du dépôt (bouton ci-dessus).',
+      'Missions folder not chosen: choose the repository “Missions” folder (button above).',
+      'Missionsordner nicht gewählt: den Ordner „Missions“ des Repositorys wählen (Schaltfläche oben).',
+      'Carpeta de misiones no elegida: elegir la carpeta «Missions» del repositorio (botón de arriba).'
     ]));
     await waitFor('SiaMission');
     const found = [],
@@ -878,10 +889,14 @@
     // barre indéterminée (nombre de dossiers inconnu d'avance) : dossier en cours et missions trouvées
     const job = window.AppFramework?.task?.(t(['Lecture du dossier des missions', 'Reading the missions folder',
       'Missionsordner wird gelesen', 'Leyendo la carpeta de misiones'
-    ]));
+    ]), {
+      // « Arrêter » : lecture interrompue entre deux dossiers ; le registre n'est pas touché (relecture incomplète écartée)
+      cancel: () => {}
+    });
     /** Parcourt un dossier (3 niveaux au plus, dossiers « _… » et « .… » ignorés) : missions lues, ou reprises du
      *  registre si la signature du dossier (fichiers, cartes, suivi.yaml) n'a pas changé depuis la dernière lecture. */
     async function walk(h, path, depth) {
+      if (job?.cancelled) throw new DOMException('Arrêt demandé', 'AbortError');
       job?.set(0, 0, `${path || dir.name} — ${found.length}`);
       const files = [],
         subs = [],
@@ -936,7 +951,7 @@
             found.push(e);
           }
         } catch (e) {
-          problems.push(`${path || '.'} : ${e.message}`);
+          problems.push(explain(e, path || '.'));
         }
       }
       for (const [name, x] of subs) await walk(x, path ? `${path}/${name}` : name, depth + 1);
@@ -1180,7 +1195,10 @@
         await window.FileAccess.pickFolder('__missions');
         await doScan();
       } catch (e) {
-        if (e?.name !== 'AbortError' && e?.message !== 'Dossier refusé') alert(e.message);
+        if (e?.name !== 'AbortError' && e?.message !== 'Dossier refusé') window.AppFramework?.notify?.(explain(e, t([
+          'Dossier des missions non choisi', 'Missions folder not chosen', 'Missionsordner nicht gewählt',
+          'Carpeta de misiones no elegida'
+        ])), 'err');
       }
     };
     waitFor('FileAccess').then(FA => FA?.decorate(b, '__missions'));
@@ -1204,7 +1222,9 @@
           n
         }));
       } catch (err) {
-        msg = pill('cancelled', err.message);
+        msg = pill('cancelled', explain(err, t(['Fichiers non ajoutés', 'Files not added', 'Dateien nicht hinzugefügt',
+          'Archivos no añadidos'
+        ])));
       }
       render();
     };
@@ -1230,7 +1250,9 @@
         msg = (await writeFile(true)) ? pill('generated', t(['mission_registry.yaml écrit', 'mission_registry.yaml written'])) : pill(
           'ordered', t(['dossier non autorisé', 'folder not authorised']));
       } catch (e) {
-        msg = pill('cancelled', e.message);
+        msg = pill('cancelled', explain(e, t(['mission_registry.yaml non écrit', 'mission_registry.yaml not written',
+          'mission_registry.yaml nicht geschrieben', 'mission_registry.yaml no escrito'
+        ])));
       }
       render();
     };
@@ -1849,10 +1871,15 @@
     const out = document.getElementById('rgGoMsg');
     try {
       const dir = await missionsDir(true);
-      if (!dir) throw new Error(t(['dossier des missions non autorisé', 'missions folder not authorised']));
+      if (!dir) throw new Error(t(NO_DIR));
       const files = [];
       for (const x of operationMembers(m)) files.push(...await missionFiles(dir, x));
-      if (!files.length) throw new Error(t(['fichiers de l’opération introuvables', 'operation files not found']));
+      if (!files.length) throw new Error(t([
+        'fichiers de l’opération introuvables dans son dossier : « Relire le dossier », puis réessayer',
+        'operation files not found in its folder: “Re-read folder”, then try again',
+        'Dateien der Operation nicht in ihrem Ordner gefunden: „Ordner neu lesen“ und es erneut versuchen',
+        'archivos de la operación no encontrados en su carpeta: «Releer la carpeta» y volver a intentarlo'
+      ]));
       try {
         sessionStorage.setItem('siaFromRegistry:v1', JSON.stringify({
           id: m.id,
@@ -1870,8 +1897,13 @@
       location.href = new URL(where === 'studio' ? 'apps/cpco/map_parser.html' : 'apps/cpco/mission_editor.html', window.RepositoryNav
         .root).href;
     } catch (e) {
-      if (window.AppFramework?.notify) window.AppFramework.notify(e.message, 'err');
-      else if (out) out.textContent = e.message;
+      const text = explain(e, t(['Mission {m} non ouverte', 'Mission {m} not opened', 'Mission {m} nicht geöffnet',
+        'Misión {m} no abierta'
+      ], {
+        m: m.id
+      }));
+      if (window.AppFramework?.notify) window.AppFramework.notify(text, 'err');
+      else if (out) out.textContent = text;
     }
   }
   /** Ouvre la mission : générateur / studio (mission partagée), CR (passerelle ?from=sia), prompt de commande. */
@@ -1897,9 +1929,14 @@
         /* stockage indisponible */
       }
       const dir = await missionsDir(true);
-      if (!dir) throw new Error(t(['dossier des missions non autorisé', 'missions folder not authorised']));
+      if (!dir) throw new Error(t(NO_DIR));
       const files = await missionFiles(dir, m);
-      if (!files.length) throw new Error(t(['fichiers de la mission introuvables', 'mission files not found']));
+      if (!files.length) throw new Error(t([
+        'fichiers de la mission introuvables dans son dossier : « Relire le dossier », puis réessayer',
+        'mission files not found in its folder: “Re-read folder”, then try again',
+        'Dateien der Mission nicht in ihrem Ordner gefunden: „Ordner neu lesen“ und es erneut versuchen',
+        'archivos de la misión no encontrados en su carpeta: «Releer la carpeta» y volver a intentarlo'
+      ]));
       if (where === 'assign') {
         // affectation aux pilotes (shared/assign_dialog.js) : yaml de la mission et cartes rangées (cartes/)
         const maps = [];
@@ -1940,8 +1977,13 @@
       location.href = new URL(where === 'studio' ? 'apps/cpco/map_parser.html' : 'apps/cpco/mission_editor.html', window.RepositoryNav
         .root).href;
     } catch (e) {
-      if (window.AppFramework?.notify) window.AppFramework.notify(e.message, 'err');
-      else if (out) out.textContent = e.message;
+      const text = explain(e, t(['Mission {m} non ouverte', 'Mission {m} not opened', 'Mission {m} nicht geöffnet',
+        'Misión {m} no abierta'
+      ], {
+        m: m.id
+      }));
+      if (window.AppFramework?.notify) window.AppFramework.notify(text, 'err');
+      else if (out) out.textContent = text;
     }
   }
 
@@ -1984,7 +2026,13 @@
         n: r.found
       })) + (r.problems.length ? `<br><span class="rg-small">${esc(r.problems.join(' · '))}</span>` : '');
     } catch (e) {
-      msg = pill('cancelled', e.message);
+      // arrêt demandé : rien n'a changé ; autre échec : ce qui a échoué et quoi faire
+      msg = pill('cancelled', e?.name === 'AbortError' ? t(['Lecture arrêtée : registre inchangé.',
+        'Reading stopped: registry unchanged.',
+        'Lesen abgebrochen: Register unverändert.', 'Lectura detenida: registro sin cambios.'
+      ]) : explain(e, t(['Lecture du dossier des missions', 'Reading the missions folder', 'Lesen des Missionsordners',
+        'Lectura de la carpeta de misiones'
+      ])));
       render();
       return false;
     }

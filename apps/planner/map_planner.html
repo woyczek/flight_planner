@@ -4,7 +4,7 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Cartes de vol</title>
-<link rel="stylesheet" href="../../shared/repository_nav.css?v=54118a6e">
+<link rel="stylesheet" href="../../shared/repository_nav.css?v=dd0730c4">
 <script src="../../config/repository_tree?v=c680ce8f"></script><script src="../../shared/kit.js?v=d74cff80"></script>
 <style data-layer="lib">
 @import url("../../shared/carto/maplibre-gl.css") layer(lib);
@@ -1233,6 +1233,12 @@ let mission = null,
   assemblyRenderKey = '',
   peakCache = new Map;
 const esc = window.RepositoryKit.esc; // échappement HTML commun (shared/kit.js)
+/** Texte [fr, en, de, es] dans la langue de la page (shared/kit.js) ; tlf : valeurs {clé} insérées. */
+const tl = row => window.RepositoryKit?.t ? window.RepositoryKit.t(row) : row[0],
+  tlf = (row, v) => window.RepositoryKit?.tf ? window.RepositoryKit.tf(row, v) : row[0];
+/** Message d'erreur lisible : ce qui a échoué (contexte) et quoi faire (AppFramework.explain ; opts.remote : service en
+ *  ligne, pas le lanceur), repli : contexte et message. */
+const explainErr = (e, context, opts) => window.AppFramework?.explain?.(e, context, opts) || `${context} : ${e?.message || e}`;
 const layerNames = ['land', 'urban', 'water', 'transport', 'buildings', 'boundaries', 'relief', 'contours', 'summits'],
   zoneNames = ['R', 'D', 'P', 'CTR', 'TMA', 'SIV'];
 /** Profils d'affichage livrés : IFR, VFR détaillé, AIRWAYS (voies aériennes, balises, aérodromes),
@@ -4720,7 +4726,9 @@ async function drawVprofPreview() {
       ' <span class="err">Trajectoire non tracée : ni niveau de croisière, ni altitude dans le cheminement (« /3000 », « /FL65 » ou « N0450F350 »).</span>'
     )
   } catch (e) {
-    $('vprofStatus').innerHTML = `<span class="err">${esc(e.message)}</span>`
+    $('vprofStatus').innerHTML = `<span class="err">${esc(explainErr(e, tl(['Profil vertical non calculé', 'Vertical profile not computed',
+      'Vertikalprofil nicht berechnet', 'Perfil vertical no calculado'
+    ])))}</span>`
   }
 }
 $('vprofDraw').onclick = () => {
@@ -4890,7 +4898,8 @@ $('saveStudio').onclick = async () => {
       report(`Mission et réglages enregistrés : data/missions/${f}/`, 'ok')
     } else report('Mission non enregistrée : dossier des missions introuvable pour cet identifiant.', 'err')
   } catch (e) {
-    report(`Mission non enregistrée : ${e.message}`, 'err')
+    report(explainErr(e, tl(['Mission non enregistrée', 'Mission not saved', 'Mission nicht gespeichert', 'Misión no guardada'])),
+      'err')
   } finally {
     btn.disabled = false
   }
@@ -4934,7 +4943,9 @@ $('vprofToPlanner').onclick = () => {
       at: Date.now()
     }))
   } catch (e) {
-    window.AppFramework?.notify?.('Route non transmise : ' + e.message, 'err');
+    window.AppFramework?.notify?.(explainErr(e, tl(['Route non transmise au planificateur', 'Route not passed to the planner',
+      'Route nicht an den Planer übergeben', 'Ruta no transmitida al planificador'
+    ])), 'err');
     return
   }
   window.open(new URL('../planner/flight_performance_planner.html?handoff=1' + (ac ? '&aircraft=' + encodeURIComponent(ac) : ''), location
@@ -4965,7 +4976,15 @@ $('routeSimbrief').onclick = async () => {
     const d = await (await fetch(`https://www.simbrief.com/api/xml.fetcher.php?${/^\d+$/.test(id)?'userid':'username'}=${encodeURIComponent(id)}&json=1`, {
       cache: 'no-store'
     })).json();
-    if (!d?.origin?.icao_code) throw Error(d?.fetch?.status || 'aucun OFP');
+    // aucun plan de vol : le dernier OFP de ce compte SimBrief est à créer d'abord (le statut de SimBrief en second plan)
+    if (!d?.origin?.icao_code) throw Error(tlf([
+      'aucun plan de vol (OFP) trouvé pour cet identifiant : créer d’abord le vol sur simbrief.com, puis réessayer{s}',
+      'no flight plan (OFP) found for this ID: create the flight on simbrief.com first, then try again{s}',
+      'kein Flugplan (OFP) für diese Kennung gefunden: zuerst den Flug auf simbrief.com anlegen und es erneut versuchen{s}',
+      'ningún plan de vuelo (OFP) para este identificador: crear primero el vuelo en simbrief.com y volver a intentarlo{s}'
+    ], {
+      s: d?.fetch?.status ? ` (${d.fetch.status})` : ''
+    }));
     const g = d.general || {},
       tas = Math.round(+g.cruise_tas || 0),
       ft = +g.initial_altitude || 0,
@@ -4983,7 +5002,11 @@ $('routeSimbrief').onclick = async () => {
       }
     }))
   } catch (e) {
-    window.AppFramework?.notify?.('SimBrief indisponible : ' + e.message, 'err')
+    window.AppFramework?.notify?.(explainErr(e, tl(['Route SimBrief non lue', 'SimBrief route not read', 'SimBrief-Route nicht gelesen',
+      'Ruta de SimBrief no leída'
+    ]), {
+      remote: true
+    }), 'err')
   } finally {
     b.disabled = false
   }
@@ -5013,7 +5036,11 @@ $('routeSearch').onclick = async () => {
       route_mode: mode
     });
   if (!ex) {
-    window.AppFramework?.notify?.('Calcul des routes non chargé.', 'err');
+    window.AppFramework?.notify?.(tl(['Calcul des routes non chargé dans cette page : recharger la page, puis réessayer.',
+      'Route calculation not loaded in this page: reload the page, then try again.',
+      'Routenberechnung auf dieser Seite nicht geladen: Seite neu laden und es erneut versuchen.',
+      'Cálculo de rutas no cargado en esta página: recargar la página y volver a intentarlo.'
+    ]), 'err');
     return
   }
   if (ex.mode === 'direct') {
@@ -5470,7 +5497,9 @@ async function refreshOsmAssemblyPreview() {
     $('assemblyPreview').hidden = false;
     $('assemblyStatus').innerHTML = `<span class="ok">${outputMaps().length} emprises positionnées — profil ${esc(profileForMap(def).name)}.</span>`
   } catch (e) {
-    if (key === assemblyRenderKey) $('assemblyStatus').innerHTML = `<span class="err">Carte d’assemblage en échec : ${esc(e.message)}</span>`
+    if (key === assemblyRenderKey) $('assemblyStatus').innerHTML = `<span class="err">${esc(explainErr(e, tl(['Carte d’assemblage en échec',
+      'Assembly map failed', 'Übersichtskarte fehlgeschlagen', 'Mapa de conjunto fallido'
+    ])))}</span>`
   }
 }
 // Tout ce qui dépend de la mission et des profils : listes, aperçus, bouton Générer.
@@ -5732,7 +5761,7 @@ function loadMissionMarkdown(text) {
     return true
   } catch (e) {
     mission = null;
-    $('missionStatus').innerHTML = `<span class="err">${esc(e.message)}</span>`;
+    $('missionStatus').innerHTML = `<span class="err">${esc(explainErr(e, tl(['Mission non chargée', 'Mission not loaded', 'Mission nicht geladen', 'Misión no cargada'])))}</span>`;
     renderMapProfiles();
     updateGenerate();
     return false
@@ -5749,7 +5778,7 @@ $('missionFile').addEventListener('change', async e => {
     useDoc(r.doc, false, true);
     batchNote(r)
   } catch (err) {
-    $('missionStatus').innerHTML = `<span class="err">${esc(err.message)}</span>`
+    $('missionStatus').innerHTML = `<span class="err">${esc(explainErr(err, tl(['Mission non chargée', 'Mission not loaded', 'Mission nicht geladen', 'Misión no cargada'])))}</span>`
   } finally {
     e.target.value = ''
   }
@@ -5771,7 +5800,7 @@ $('parseMission').addEventListener('click', () => {
     }
     if (mission) missionPaste?.done()
   } catch (err) {
-    $('missionStatus').innerHTML = `<span class="err">${esc(err.message)}</span>`
+    $('missionStatus').innerHTML = `<span class="err">${esc(explainErr(err, tl(['Mission non chargée', 'Mission not loaded', 'Mission nicht geladen', 'Misión no cargada'])))}</span>`
   }
 });
 // Fenêtre de copier-coller commune (× / Fermer / Lire la mission → Valider).
@@ -5988,23 +6017,31 @@ let outputCapture = null;
 /** Nombre de missions du lot chargé (0 sans lot) ; sleep : pause de ms millisecondes. */
 const batchSize = () => SiaMission.loadBatch()?.docs.length || 0,
   sleep = ms => new Promise(r => setTimeout(r, ms));
-/* tâche longue : barre de progression flottante et avertissement avant de quitter la page (app_framework.js) */
+/* tâche longue : barre de progression flottante, bouton « Arrêter » (opts.cancel) et avertissement avant de quitter la
+   page (app_framework.js) */
 const longTask = (title, opts) => window.AppFramework?.task?.(title, opts) || {
-  /** Repli sans framework : tâche muette (set chaînable, end et fail sans effet). */
+  /** Repli sans framework : tâche muette (set chaînable, jamais arrêtée, end et fail sans effet). */
+  cancelled: false,
+  cancel() {},
   set() {
     return this
   },
   end() {},
   fail() {}
 };
-/** Affiche tour à tour chaque mission du lot et attend fn(doc, rang, total) pour chacune,
- *  puis revient à la mission de départ, même en cas d'erreur. */
-async function forEachMission(fn) {
+// tâches en cours : lot de missions (aperçus ou génération) et cartes de la mission affichée ; « Arrêter » sur l'une
+// arrête aussi l'autre (job.cancel ne fait rien de plus une fois l'arrêt demandé)
+let batchTask = null,
+  mapTask = null;
+/** Affiche tour à tour chaque mission du lot et attend fn(doc, rang, total) pour chacune (jusqu'à l'arrêt de la tâche
+ *  task, s'il est demandé), puis revient à la mission de départ, même en cas d'erreur. */
+async function forEachMission(fn, task) {
   const b = SiaMission.loadBatch();
   if (!b) return;
   const start = b.index;
   try {
     for (let i = 0; i < b.docs.length; i++) {
+      if (task?.cancelled) break;
       const d = SiaMission.go(i, 'studio');
       useDoc(d, false);
       await sleep(120);
@@ -6023,10 +6060,17 @@ async function previewAllMissions() {
   previewUrls = [];
   gallery.innerHTML = '';
   galleryAppend = true;
-  let n = 0;
-  const task = longTask('Aperçus de toutes les missions', {
-    total: batchSize()
+  let n = 0,
+    missions = 0,
+    stopped = '';
+  const task = longTask(tl(['Aperçus de toutes les missions', 'Previews of all missions', 'Vorschauen aller Missionen',
+    'Vistas previas de todas las misiones'
+  ]), {
+    total: batchSize(),
+    // « Arrêter » : la mission affichée s'arrête après sa carte en cours, les suivantes ne sont pas affichées
+    cancel: () => mapTask?.cancel()
   });
+  batchTask = task;
   try {
     {
       const h = document.createElement('h4');
@@ -6047,7 +6091,9 @@ async function previewAllMissions() {
           card.insertAdjacentHTML('beforeend', `${r.warning?`<span class="small err">fond partiel — ${esc(r.warning)}</span>`:''}<img alt="Aperçu carte_operation.png" src="${url}">`)
         }
       } catch (e) {
-        card.insertAdjacentHTML('beforeend', `<span class="small err">échec — ${esc(e.message)}</span>`)
+        card.insertAdjacentHTML('beforeend', `<span class="small err">${esc(explainErr(e, tl(['Carte de l’opération non rendue',
+          'Operation map not rendered', 'Operationskarte nicht erstellt', 'Mapa de la operación no generado'
+        ])))}</span>`)
       }
     }
     await forEachMission(async (d, i, total) => {
@@ -6057,13 +6103,25 @@ async function previewAllMissions() {
       gallery.appendChild(h);
       task.set(i, total, d.yaml?.mission?.id || '');
       await $('previewAll').onclick();
-      n += outputMaps().length
-    })
+      n += outputMaps().length;
+      missions = i + 1
+    }, task)
   } finally {
     galleryAppend = false;
-    task.end()
+    batchTask = null;
+    // arrêt : les aperçus déjà affichés restent (rien n'est écrit)
+    if (task.cancelled) stopped = tlf(['Aperçus arrêtés : {m}/{t} mission(s) affichée(s) ; les aperçus déjà faits restent ci-dessous.',
+      'Previews stopped: {m}/{t} mission(s) shown; the previews already made stay below.',
+      'Vorschauen abgebrochen: {m}/{t} Mission(en) angezeigt; die fertigen Vorschauen bleiben unten.',
+      'Vistas previas detenidas: {m}/{t} misión(es) mostrada(s); las vistas ya hechas quedan abajo.'
+    ], {
+      m: missions,
+      t: batchSize()
+    });
+    task.end(stopped, 'info')
   }
-  $('galleryStatus').innerHTML = `<span class="ok">${n} aperçus, ${batchSize()} missions (groupés par mission).</span>`
+  $('galleryStatus').innerHTML = stopped ? `<span class="small">${esc(stopped)}</span>` :
+    `<span class="ok">${n} aperçus, ${batchSize()} missions (groupés par mission).</span>`
 }
 /** Génère les cartes de toutes les missions du lot et les télécharge en un ZIP (un dossier par mission,
  *  carte d'opération en tête) ; les échecs sont listés sous le résultat. */
@@ -6071,15 +6129,37 @@ async function generateAllMissions() {
   const btns = [$('generateAll'), $('generateAllSticky')];
   btns.forEach(b => b.disabled = true);
   outputCapture = [];
-  const task = longTask('Génération de toutes les missions', {
-    total: batchSize()
+  let missions = 0,
+    stopped = '';
+  const task = longTask(tl(['Génération de toutes les missions', 'Generating all missions', 'Erstellung aller Missionen',
+    'Generación de todas las misiones'
+  ]), {
+    total: batchSize(),
+    // « Arrêter » : la mission en cours s'arrête après sa carte en cours, les suivantes ne sont pas générées
+    cancel: () => mapTask?.cancel()
   });
+  batchTask = task;
   try {
     await forEachMission(async (d, i, total) => {
       $('result').textContent = `Mission ${d.yaml?.mission?.id||i+1} (${i+1}/${total})…`;
       task.set(i, total, d.yaml?.mission?.id || '');
-      await $('generate').onclick()
-    });
+      await $('generate').onclick();
+      if (!task.cancelled) missions = i + 1
+    }, task);
+    // arrêt : pas de ZIP du lot (il serait incomplet) ; les missions terminées ont déjà leurs cartes rangées dans leur dossier
+    if (task.cancelled) {
+      stopped = tlf([
+        'Génération du lot arrêtée après {m}/{t} mission(s) : aucun ZIP téléchargé. Les missions terminées ont rangé leurs cartes dans leur dossier (dossier des missions autorisé) ; relancer « Générer les {t} missions » pour un ZIP complet.',
+        'Batch generation stopped after {m}/{t} mission(s): no ZIP downloaded. The finished missions stored their maps in their folders (missions folder allowed); run “Generate the {t} missions” again for a complete ZIP.',
+        'Stapelerstellung nach {m}/{t} Mission(en) abgebrochen: kein ZIP heruntergeladen. Die fertigen Missionen haben ihre Karten in ihrem Ordner abgelegt (Missionsordner freigegeben); „{t} Missionen erstellen“ erneut starten für ein vollständiges ZIP.',
+        'Generación del lote detenida tras {m}/{t} misión(es): ningún ZIP descargado. Las misiones terminadas guardaron sus mapas en su carpeta (carpeta de misiones autorizada); volver a lanzar «Generar las {t} misiones» para un ZIP completo.'
+      ], {
+        m: missions,
+        t: batchSize()
+      });
+      $('result').innerHTML = `<span class="small">${esc(stopped)}</span>`;
+      return
+    }
     const files = outputCapture.flatMap(c => c.files.map(f => ({
       name: `${c.id.replace(/[^A-Za-z0-9_-]+/g,'_')}/${f.name}`,
       data: f.data
@@ -6103,15 +6183,21 @@ async function generateAllMissions() {
       })
     }
     const op = SiaMission.loadBatch()?.docs[0]?.yaml?.operation?.name || 'operation';
-    if (!files.length) throw Error('Aucune carte générée.');
+    if (!files.length) throw Error(tl([
+      'Aucune carte générée pour le lot : vérifier que chaque mission a des cartes cochées « ZIP », puis relancer.',
+      'No map generated for the batch: check that each mission has maps ticked “ZIP”, then run it again.',
+      'Keine Karte für den Stapel erstellt: prüfen, dass jede Mission mit „ZIP“ angehakte Karten hat, dann erneut starten.',
+      'Ningún mapa generado para el lote: comprobar que cada misión tiene mapas marcados «ZIP» y volver a lanzar.'
+    ]));
     download(zipStore(files), op.replace(/[^a-z0-9_-]+/gi, '_') + '_cartes.zip');
     const bad = outputCapture.flatMap(c => c.report.filter(r => !r.ok).map(r => `${c.id} : ${r.file}`));
     $('result').innerHTML = `<span class="ok">${outputCapture.length} missions, ${files.length} fichier(s) dans un ZIP (un dossier par mission).</span>` + (bad.length ? `<br><span class="err">En échec : ${esc(bad.join(', '))} (générer la mission seule pour réessayer).</span>` : '')
   } catch (e) {
-    $('result').innerHTML = `<span class="err">${esc(e.message)}</span>`
+    $('result').innerHTML = `<span class="err">${esc(explainErr(e, task.title))}</span>`
   } finally {
     outputCapture = null;
-    task.end();
+    batchTask = null;
+    task.end(stopped, 'warn');
     btns.forEach(b => b.disabled = false)
   }
 }
@@ -6576,7 +6662,9 @@ $('refreshPreview').onclick = async () => {
     previewShown = true;
     await showOsmLive(def)
   } catch (e) {
-    $('previewStatus').innerHTML = `<span class="err">${esc(e.message)}</span>`
+    $('previewStatus').innerHTML = `<span class="err">${esc(explainErr(e, tl(['Aperçu de la carte non affiché', 'Map preview not shown',
+      'Kartenvorschau nicht angezeigt', 'Vista previa del mapa no mostrada'
+    ])))}</span>`
   }
 };
 /** Relance l'aperçu 0,7 s après le dernier réglage (si un aperçu est déjà affiché) ; état publié à la fenêtre
@@ -6663,7 +6751,10 @@ function offerStoreMaps() {
       }
     } catch (e) {
       b.disabled = false;
-      window.AppFramework?.notify?.(e.message, 'err')
+      window.AppFramework?.notify?.(explainErr(e, tl(['Cartes non rangées dans le dossier de la mission',
+        'Maps not stored in the mission folder', 'Karten nicht im Missionsordner abgelegt',
+        'Mapas no guardados en la carpeta de la misión'
+      ])), 'err')
     }
   };
   $('studioStoreSlot').append(b)
@@ -6680,11 +6771,15 @@ $('previewAll').onclick = async () => {
     }
     let done = 0,
       failed = 0;
-    const task = longTask('Aperçus des cartes', {
-      total: outputMaps().length
+    const task = longTask(tl(['Aperçus des cartes', 'Map previews', 'Kartenvorschauen', 'Vistas previas de los mapas']), {
+      total: outputMaps().length,
+      // « Arrêter » : la carte en cours s'achève, les suivantes ne sont pas rendues (le lot de missions s'arrête aussi)
+      cancel: () => batchTask?.cancel()
     });
+    mapTask = task;
     try {
       for (const m of outputMaps()) {
+        if (task.cancelled) break;
         $('galleryStatus').textContent = `Création des aperçus : ${done}/${outputMaps().length}…`;
         task.set(done, outputMaps().length, m.file);
         let url, problem = '';
@@ -6695,7 +6790,7 @@ $('previewAll').onclick = async () => {
             type: 'image/png'
           }))
         } catch (e) {
-          problem = 'échec — ' + e.message;
+          problem = 'échec — ' + explainMapError(e, m);
           failed++
         }
         const card = document.createElement('div');
@@ -6709,11 +6804,19 @@ $('previewAll').onclick = async () => {
         done++
       }
     } finally {
-      task.end()
+      mapTask = null;
+      // dans un lot, l'arrêt est dit par le lot (false : fin sans notification)
+      task.end(task.cancelled && galleryAppend ? false : '', 'info')
     }
-    $('galleryStatus').innerHTML = failed ? `<span class="err">${outputMaps().length-failed}/${outputMaps().length} aperçus ; ${failed} en échec (détail sur chaque carte).</span>` : `<span class="ok">${outputMaps().length} aperçus actualisés avec leurs profils.</span>`
+    $('galleryStatus').innerHTML = task.cancelled ? `<span class="small">${esc(tlf(['Aperçus arrêtés : {d}/{n} carte(s) affichée(s).',
+      'Previews stopped: {d}/{n} map(s) shown.', 'Vorschauen abgebrochen: {d}/{n} Karte(n) angezeigt.',
+      'Vistas previas detenidas: {d}/{n} mapa(s) mostrado(s).'
+    ], {
+      d: done,
+      n: outputMaps().length
+    }))}</span>` : failed ? `<span class="err">${outputMaps().length-failed}/${outputMaps().length} aperçus ; ${failed} en échec (détail sur chaque carte).</span>` : `<span class="ok">${outputMaps().length} aperçus actualisés avec leurs profils.</span>`
   } catch (e) {
-    $('galleryStatus').innerHTML = `<span class="err">${esc(e.message)}</span>`
+    $('galleryStatus').innerHTML = `<span class="err">${esc(explainErr(e, tl(['Aperçus des cartes', 'Map previews', 'Kartenvorschauen', 'Vistas previas de los mapas'])))}</span>`
   }
 };
 $('generate').onclick = async () => {
@@ -6724,11 +6827,24 @@ $('generate').onclick = async () => {
     report = [],
     files = [];
   let storeResult = null,
-    task = null;
+    task = null,
+    stopped = '';
   try {
-    if (outputMaps().some(citiesOn) && !cities.length) throw Error('Le fichier villes_geonames.csv est absent du dossier.');
-    if (outputMaps().some(m => el(m, 'mora')) && !moraCells.length) throw Error('Le fichier mora.csv est absent du dossier.');
-    if (!$('png').checked && !$('svg').checked) throw Error('Choisis au moins SVG ou PNG.');
+    if (outputMaps().some(citiesOn) && !cities.length) throw Error(tl([
+      'Villes absentes de la base aéronautique (villes_geonames.csv non trouvé à sa construction) : décocher « Libellés de villes » dans le profil, ou reconstruire la base (Paramètres › Maintenance › Données aéronautiques).',
+      'Cities missing from the aeronautical database (villes_geonames.csv not found when it was built): untick “City labels” in the profile, or rebuild the database (Settings › Maintenance › Aeronautical data).',
+      'Städte fehlen in der Luftfahrtdatenbank (villes_geonames.csv beim Aufbau nicht gefunden): „Städtenamen“ im Profil abwählen oder die Datenbank neu aufbauen (Einstellungen › Wartung › Luftfahrtdaten).',
+      'Ciudades ausentes de la base aeronáutica (villes_geonames.csv no encontrado al construirla): desmarcar «Nombres de ciudades» en el perfil, o reconstruir la base (Ajustes › Mantenimiento › Datos aeronáuticos).'
+    ]));
+    if (outputMaps().some(m => el(m, 'mora')) && !moraCells.length) throw Error(tl([
+      'Grille MORA absente de la base aéronautique : décocher la couche MORA dans le profil, ou calculer la MORA (Paramètres › Maintenance › Données aéronautiques, carte MORA).',
+      'MORA grid missing from the aeronautical database: untick the MORA layer in the profile, or compute the MORA (Settings › Maintenance › Aeronautical data, MORA card).',
+      'MORA-Raster fehlt in der Luftfahrtdatenbank: MORA-Ebene im Profil abwählen oder die MORA berechnen (Einstellungen › Wartung › Luftfahrtdaten, Karte MORA).',
+      'Cuadrícula MORA ausente de la base aeronáutica: desmarcar la capa MORA en el perfil, o calcular la MORA (Ajustes › Mantenimiento › Datos aeronáuticos, tarjeta MORA).'
+    ]));
+    if (!$('png').checked && !$('svg').checked) throw Error(tl(['Choisis au moins SVG ou PNG.', 'Choose at least SVG or PNG.',
+      'Mindestens SVG oder PNG wählen.', 'Elige al menos SVG o PNG.'
+    ]));
     const width = +$('pngWidth').value || 1600,
       jobs = [...outputMaps().filter(m => m._zip !== false).map(m => ({
         def: m,
@@ -6741,10 +6857,14 @@ $('generate').onclick = async () => {
     $('generate').disabled = true;
     p.max = jobs.length;
     p.value = 0;
-    task = longTask('Génération des cartes', {
-      total: jobs.length
+    task = longTask(tl(['Génération des cartes', 'Map generation', 'Kartenerstellung', 'Generación de los mapas']), {
+      total: jobs.length,
+      // « Arrêter » : la carte en cours s'achève, les suivantes ne sont pas générées (le lot de missions s'arrête aussi)
+      cancel: () => batchTask?.cancel()
     });
+    mapTask = task;
     for (const job of jobs) {
+      if (task.cancelled) break;
       $('result').textContent = `Génération ${p.value+1}/${jobs.length} : ${job.stem}…`;
       task.set(p.value, jobs.length, job.stem);
       try {
@@ -6770,6 +6890,20 @@ $('generate').onclick = async () => {
         })
       }
       p.value++
+    }
+    // arrêt : ni ZIP ni rangement dans le dossier de la mission (cartes incomplètes) ; dans un lot, le lot le dit
+    if (task.cancelled) {
+      stopped = tlf([
+        'Génération arrêtée après {d}/{n} carte(s) : aucun ZIP téléchargé, rien rangé dans le dossier de la mission. Relancer « Générer » pour toutes les cartes.',
+        'Generation stopped after {d}/{n} map(s): no ZIP downloaded, nothing stored in the mission folder. Run “Generate” again for all the maps.',
+        'Erstellung nach {d}/{n} Karte(n) abgebrochen: kein ZIP heruntergeladen, nichts im Missionsordner abgelegt. „Erstellen“ erneut starten für alle Karten.',
+        'Generación detenida tras {d}/{n} mapa(s): ningún ZIP descargado, nada guardado en la carpeta de la misión. Volver a lanzar «Generar» para todos los mapas.'
+      ], {
+        d: p.value,
+        n: jobs.length
+      });
+      $('result').innerHTML = `<span class="small">${esc(stopped)}</span>`;
+      return
     }
     if (vprofOf().output) {
       $('result').textContent = 'Profil vertical…';
@@ -6837,9 +6971,11 @@ $('generate').onclick = async () => {
     } else if (files.length && !window.MissionRegistryCore && !window.SIA_MISSION_NS) window.AppFramework?.notify?.(
       'Cartes générées (ZIP) : module du registre absent, pas de rangement dans le dossier de la mission.', 'warn')
   } catch (e) {
-    $('result').innerHTML = `<span class="err">${esc(e.message)}</span>`
+    $('result').innerHTML = `<span class="err">${esc(explainErr(e, tl(['Génération des cartes', 'Map generation', 'Kartenerstellung', 'Generación de los mapas'])))}</span>`
   } finally {
-    task?.end();
+    mapTask = null;
+    // dans un lot (outputCapture), l'arrêt est dit par le lot (false : fin sans notification)
+    task?.end(task?.cancelled && outputCapture ? false : stopped, 'info');
     $('generate').disabled = false
   }
 };
@@ -7022,7 +7158,9 @@ applyOutputPrefs();;
     if (doc) try {
       useDoc(doc, false)
     } catch (e) {
-      $('missionStatus').innerHTML = `<span class="err">Mission partagée illisible : ${esc(e.message)}</span>`
+      $('missionStatus').innerHTML = `<span class="err">${esc(explainErr(e, tl(['Mission partagée illisible', 'Shared mission unreadable',
+        'Geteilte Mission nicht lesbar', 'Misión compartida ilegible'
+      ])))}</span>`
     }
     SiaMission.subscribe('studio', d => {
       useDoc(d);
@@ -7129,7 +7267,7 @@ if(!new URLSearchParams(location.search).has('fpl')&&sharedDoc?.yaml?.mission?.i
 if(new URLSearchParams(location.search).has('fpl')){history.replaceState(null,'',location.pathname+location.hash);(async()=>{for(let i=0;i<100&&!baseReady();i++)await new Promise(r=>setTimeout(r,200));if(baseReady()&&$v('vprofRoute').value.trim())build(false)})()}
 })();
 </script>
-<script src="../../shared/repository_nav.js?v=ac264f5f"></script>
-<script src="../../shared/app_framework.js?v=0ee38931"></script>
+<script src="../../shared/repository_nav.js?v=a92d26be"></script>
+<script src="../../shared/app_framework.js?v=0a2fa96b"></script>
 <script src="../../shared/content_i18n.js?v=515ea16b"></script><script src="../cpco/sia_i18n.js?v=e4046ef4"></script>
 </body></html>

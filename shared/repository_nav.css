@@ -712,6 +712,23 @@
   html[data-level="4"] :is([data-max-level="1"], [data-max-level="2"], [data-max-level="3"]) {
     display: none !important
   }
+  /* bouton « Synchroniser » de l'en-tête (shared/sync.js) : aux niveaux 1 et 2, une pastille dit qu'il y a quelque chose
+     à synchroniser au lieu du compteur « (n) », qui reste dans le bouton et dans son infobulle ; niveaux 3 et 4 : compteur */
+  .repo-sync-button .repo-sync-dot {
+    display: none;
+    flex: none;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #f59e0b;
+    box-shadow: 0 0 0 2px #fff9
+  }
+  html:is([data-level="1"], [data-level="2"]) .repo-sync-button .repo-sync-count {
+    display: none
+  }
+  html:is([data-level="1"], [data-level="2"]) .repo-sync-button .repo-sync-dot {
+    display: inline-block
+  }
   /* Centre (CPCO) verrouillé : entrées masquées, page du Centre recouverte d'un avis (shared/repository_nav.js) */
   html[data-cpco="off"] .cpco-only {
     display: none !important

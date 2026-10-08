@@ -22,6 +22,12 @@
     return s.replace(/\{(\w+)\}/g, (_, k) => vars[k] ?? '');
   };
   const esc = window.RepositoryKit.esc; // échappement HTML commun (shared/kit.js)
+  /** Message d'erreur lisible : ce qui a échoué (contexte, traduit) et quoi faire (AppFramework.explain) ; repli : contexte
+   *  et message. */
+  const explain = (e, context = '') => window.AppFramework?.explain?.(e, context) || `${context ? context + ' : ' : ''}${e?.message || e}`;
+  /** Erreur d'arrêt demandé (bouton « Arrêter » d'une tâche) : fait sortir un calcul en cours ; job.fail la notifie
+   *  « Annulé. ». */
+  const stopError = () => new DOMException('Arrêt demandé', 'AbortError');
   /** Locale Intl de la langue courante (fr-FR, en-GB, de-DE, es-ES). */
   const locale = () => ['fr-FR', 'en-GB', 'de-DE', 'es-ES'][li()];
   /** Date lisible dans la langue courante (avec l'heure si time) ; « — » si vide, la valeur échappée si illisible. */
@@ -168,7 +174,9 @@
         await window.FileAccess.pickFolder(key);
         after?.();
       } catch (e) {
-        if (e?.name !== 'AbortError' && e?.message !== 'Dossier refusé')(window.AppFramework?.notify || alert)(e.message, 'warn');
+        if (e?.name !== 'AbortError' && e?.message !== 'Dossier refusé')(window.AppFramework?.notify || alert)(explain(e, t([
+          'Dossier non choisi', 'Folder not chosen', 'Ordner nicht gewählt', 'Carpeta no elegida'
+        ])), 'warn');
       }
     };
     waitFor('FileAccess').then(FA => FA?.decorate(b, key, {
@@ -2117,7 +2125,7 @@
           await fn();
         } catch (e) {
           // une source en échec n'arrête pas les autres : elle reste dans « Actions à faire »
-          window.AppFramework?.notify?.(`${label} : ${e.message}`, 'warn');
+          window.AppFramework?.notify?.(explain(e, label), 'warn');
         }
       }
       job?.set?.(steps.length, total, t(['Base aéronautique', 'Aeronautical database', 'Luftfahrtdatenbank', 'Base aeronáutica']));
@@ -2167,7 +2175,9 @@
         behavior: 'smooth'
       });
     } catch (e) {
-      window.AppFramework?.notify?.(e.message, 'err');
+      window.AppFramework?.notify?.(explain(e, t(['Mise en place des zones', 'Zone setup', 'Einrichtung der Zonen',
+        'Puesta en marcha de las zonas'
+      ])), 'err');
     } finally {
       job?.end?.();
       aeroAutoBusy = false;
@@ -2310,7 +2320,12 @@
       'MORA de {z} por bloques'
     ], {
       z: zName(z)
-    }));
+    }), {
+      // « Arrêter » : le bloc en cours va à son terme et est écrit, les suivants attendent une reprise
+      cancel: () => {
+        moraStop = true;
+      }
+    });
     const b = await window.SiaBase.get(),
       key = c => `${Math.floor(c.lat)}|${Math.floor(c.lon)}`,
       SRC =
@@ -2381,10 +2396,24 @@
         n: chunks.length
       }));
     } catch (e) {
-      moraMsg = pill('err', e.message);
+      moraMsg = pill('err', explain(e, t(['MORA de {z} par blocs', 'MORA of {z} in blocks', 'MORA von {z} in Blöcken',
+        'MORA de {z} por bloques'
+      ], {
+        z: zName(z)
+      })));
       job?.fail?.(e);
     } finally {
-      job?.end?.();
+      // arrêt : mora.csv tient les blocs déjà calculés (état partiel, repris plus tard) — dit dans le message de fin
+      job?.end?.(moraStop && !st.complete ? t([
+        'MORA de {z} arrêtée : {d}/{n} bloc(s) calculé(s) et écrits dans mora.csv (grille partielle) ; « Reprendre le calcul complet… » pour la suite.',
+        'MORA of {z} stopped: {d}/{n} block(s) computed and written to mora.csv (partial grid); “Resume the full calculation…” for the rest.',
+        'MORA von {z} abgebrochen: {d}/{n} Block/Blöcke berechnet und in mora.csv geschrieben (Teilraster); „Vollständige Berechnung fortsetzen…“ für den Rest.',
+        'MORA de {z} detenida: {d}/{n} bloque(s) calculado(s) y escritos en mora.csv (cuadrícula parcial); «Reanudar el cálculo completo…» para el resto.'
+      ], {
+        z: zName(z),
+        d: st.done.length,
+        n: chunks.length
+      }) : undefined, 'warn');
     }
     await scanSiaFolder(false);
     aeroInv = await aeroInventory();
@@ -2402,15 +2431,20 @@
     };
     if (cellsN > 1500) return window.AppFramework.notify(t([
       'Zone trop étendue pour un calcul d’un seul tenant ({n} cases d’un degré) : « MORA d’X-Plane », ou « Calcul complet… » par blocs.',
-      'Zone too large for the calculation ({n} one-degree cells): use the X-Plane MORA for this zone.'
+      'Zone too large for a single calculation ({n} one-degree cells): “X-Plane MORA”, or “Full calculation…” in blocks.',
+      'Zone zu groß für eine Berechnung in einem Stück ({n} Ein-Grad-Felder): „X-Plane-MORA“ oder „Vollständige Berechnung…“ in Blöcken.',
+      'Zona demasiado extensa para un cálculo de una vez ({n} casillas de un grado): «MORA de X-Plane», o «Cálculo completo…» por bloques.'
     ], {
       n: cellsN
     }), 'warn');
     moraMsg = '';
     moraPlan = null;
-    const job = window.AppFramework?.task?.(t(['MORA de la zone {z}', 'MORA of zone {z}'], {
+    const job = window.AppFramework?.task?.(t(['MORA de la zone {z}', 'MORA of zone {z}', 'MORA der Zone {z}', 'MORA de la zona {z}'], {
       z: id.toUpperCase()
-    }));
+    }), {
+      // « Arrêter » : le calcul sort au prochain pas (rien n'est écrit : mora.csv inchangé)
+      cancel: () => {}
+    });
     try {
       const b = await window.SiaBase.get();
       if (!siaFolderState) await scanSiaFolder(true);
@@ -2420,10 +2454,12 @@
       const cells = [];
       cells.peaksOk = true;
       for (const [i, box] of boxes.entries()) {
+        if (job?.cancelled) throw stopError();
         const part = await window.SiaBase.computeMoraGrid(b?.obstacleMax || {}, {
           ...box,
           name: `${id}-${i + 1}`
         }, (d, n, step) => {
+          if (job?.cancelled) throw stopError(); // arrêt demandé : sortie du calcul (tuiles restantes non lues)
           const frame = t(['cadre {i}/{n} ({s}…{N}° / {w}…{e}°)', 'frame {i}/{n} ({s}…{N}° / {w}…{e}°)',
             'Rahmen {i}/{n} ({s}…{N}° / {w}…{e}°)', 'marco {i}/{n} ({s}…{N}° / {w}…{e}°)'
           ], {
@@ -2441,6 +2477,7 @@
         cells.push(...part);
         if (part.peaksOk === false) cells.peaksOk = false;
       }
+      if (job?.cancelled) throw stopError();
       const zk = zoneCellKeys(Z, id),
         mine = cells.filter(c => zk.has(`${Math.floor(c.lat)}|${Math.floor(c.lon)}`)),
         keys = new Set(mine.map(c => c.lat + '|' + c.lon));
@@ -2471,7 +2508,13 @@
         zoneBoxes: boxes.map(x => `${id.toUpperCase()} (${x.s}…${x.n}° / ${x.w}…${x.e}°)`)
       };
     } catch (e) {
-      moraMsg = pill('err', e.message);
+      // arrêt demandé : pas de plan, mora.csv inchangé (job.fail notifie « Annulé. »)
+      moraMsg = e?.name === 'AbortError' ? '' : pill('err', explain(e, t(['MORA de la zone {z}', 'MORA of zone {z}',
+        'MORA der Zone {z}',
+        'MORA de la zona {z}'
+      ], {
+        z: id.toUpperCase()
+      })));
       job?.fail(e);
     } finally {
       job?.end();
@@ -2511,7 +2554,10 @@
     enr57Show();
     const job = window.AppFramework?.task?.(t(['Import de la MILAIP ENR 5.7', 'MILAIP ENR 5.7 import', 'Import MILAIP ENR 5.7',
       'Importación MILAIP ENR 5.7'
-    ]));
+    ]), {
+      // « Arrêter » : lecture du PDF interrompue entre deux pages, rien n'est gardé ni écrit
+      cancel: () => {}
+    });
     try {
       if (!window.AarTracks) await new Promise(res => {
         const sc = document.createElement('script');
@@ -2536,6 +2582,7 @@
       }).promise;
       const pages = [];
       for (let i = 1; i <= doc.numPages; i++) {
+        if (job?.cancelled) throw stopError();
         const c = await (await doc.getPage(i)).getTextContent();
         pages.push(c.items.map(it => it.str + (it.hasEOL ? '\n' : ' ')).join(''));
         job?.set?.(i, doc.numPages);
@@ -2565,8 +2612,11 @@
         edition: amdt ? `AMDT ${amdt}${date ? ` — ${date}` : ''}` : '' // même forme que l'édition en service (AMDT 10/24 — 05 SEP 24)
       };
     } catch (e) {
-      enr57 = {
-        error: e.message
+      // arrêt demandé : l'import est abandonné (bloc vidé) ; sinon l'erreur expliquée sous le bouton
+      enr57 = e?.name === 'AbortError' ? null : {
+        error: explain(e, t(['Import de la MILAIP ENR 5.7', 'MILAIP ENR 5.7 import', 'Import MILAIP ENR 5.7',
+          'Importación MILAIP ENR 5.7'
+        ]))
       };
       job?.fail?.(e);
     } finally {
@@ -2581,8 +2631,10 @@
     if (!r?.parsed) return;
     try {
       const dir = await folder('__sia', true);
-      if (!dir) throw new Error(t(['dossier SIA non autorisé', 'SIA folder not authorised', 'SIA-Ordner nicht erlaubt',
-        'carpeta SIA no autorizada'
+      if (!dir) throw new Error(t(['dossier SIA non autorisé : l’autoriser (Installation › Sources et dossiers), puis réessayer',
+        'SIA folder not authorised: allow it (Installation › Sources and folders), then try again',
+        'SIA-Ordner nicht freigegeben: freigeben (Installation › Quellen und Ordner) und es erneut versuchen',
+        'carpeta SIA no autorizada: autorizarla (Instalación › Fuentes y carpetas) y volver a intentarlo'
       ]));
       r.edition = document.getElementById('mtEnr57Edition')?.value.trim() || r.edition;
       const xml = window.AarTracks.toXml(r.parsed, {
@@ -2599,11 +2651,9 @@
       aeroInv = await aeroInventory();
       aeroRefresh(await window.SiaBase.zones());
     } catch (e) {
-      window.AppFramework?.notify?.(t(['Axes non écrits : {e}', 'Tracks not written: {e}', 'Strecken nicht geschrieben: {e}',
-        'Ejes no escritos: {e}'
-      ], {
-        e: e.message
-      }), 'err');
+      window.AppFramework?.notify?.(explain(e, t(['Axes de ravitaillement non écrits', 'Refuelling tracks not written',
+        'Betankungsstrecken nicht geschrieben', 'Ejes de reabastecimiento no escritos'
+      ])), 'err');
     }
     enr57Show();
   }
@@ -2702,7 +2752,9 @@
       await basePanelApi?.reread(true); // même traitement que « Tout recalculer »
       return true;
     } catch (e) {
-      say(e.message, 'err');
+      say(explain(e, t(['Fichiers de la source non importés', 'Source files not imported', 'Dateien der Quelle nicht importiert',
+        'Archivos de la fuente no importados'
+      ])), 'err');
       return false;
     }
   }
@@ -2750,8 +2802,10 @@
         'Für diese Zone nichts herunterzuladen.', 'Nada que descargar para esta zona.'
       ]));
     } catch {
-      say(t(['Le serveur du lanceur ne répond pas : ouvrez la suite avec lancer.cmd / lancer.sh.',
-        'The launcher server does not answer: open the suite with lancer.cmd / lancer.sh.'
+      say(t(['Téléchargement impossible, le serveur du lanceur ne répond pas : ouvrez la suite avec lancer.cmd / lancer.sh, puis réessayez.',
+        'Download impossible, the launcher server does not answer: open the suite with lancer.cmd / lancer.sh, then try again.',
+        'Download unmöglich, der Server des Starters antwortet nicht: die Suite mit lancer.cmd / lancer.sh öffnen und es erneut versuchen.',
+        'Descarga imposible, el servidor del lanzador no responde: abra la suite con lancer.cmd / lancer.sh y vuelva a intentarlo.'
       ]));
     } finally {
       job?.end?.();
@@ -2785,7 +2839,7 @@
     const host = hosts.sia,
       Z = await window.SiaBase.zones();
     if (!Z) {
-      host.innerHTML = `<p class="err">${esc(t(['Zones de données absentes (shared/aero_zones.js).', 'Data zones missing (shared/aero_zones.js).']))}</p>`;
+      host.innerHTML = `<p class="err">${esc(t(['Zones de données non chargées (shared/aero_zones.js) : recharger la page ; si cela persiste, mettre la suite à jour.', 'Data zones not loaded (shared/aero_zones.js): reload the page; if it persists, update the suite.', 'Datenzonen nicht geladen (shared/aero_zones.js): Seite neu laden; falls es anhält, die Suite aktualisieren.', 'Zonas de datos no cargadas (shared/aero_zones.js): recargar la página; si persiste, actualizar la suite.']))}</p>`;
       return;
     }
     aeroInv = await aeroInventory();
@@ -2944,12 +2998,16 @@
     } catch {
       return say(t([
         'Le serveur du lanceur ne répond pas : ouvrez la suite avec lancer.cmd / lancer.sh, ou choisissez le ZIP avec « ZIP d’export du SIA… ».',
-        'The launcher server does not answer: open the suite with lancer.cmd / lancer.sh, or pick the ZIP with “SIA export ZIP…”.'
+        'The launcher server does not answer: open the suite with lancer.cmd / lancer.sh, or pick the ZIP with “SIA export ZIP…”.',
+        'Der Server des Starters antwortet nicht: die Suite mit lancer.cmd / lancer.sh öffnen oder das ZIP mit „SIA-Export-ZIP…“ wählen.',
+        'El servidor del lanzador no responde: abra la suite con lancer.cmd / lancer.sh, o elija el ZIP con «ZIP de exportación del SIA…».'
       ]));
     }
     if (!info.found) return say(t([
       'Aucun export_xml_bd_SIA_….zip dans {d} : téléchargez-le d’abord sur le site du SIA (lien du panneau).',
-      'No export_xml_bd_SIA_….zip in {d}: download it from the SIA site first (link in the panel).'
+      'No export_xml_bd_SIA_….zip in {d}: download it from the SIA site first (link in the panel).',
+      'Kein export_xml_bd_SIA_….zip in {d}: zuerst von der SIA-Website herunterladen (Link im Feld).',
+      'Ningún export_xml_bd_SIA_….zip en {d}: descárguelo primero del sitio del SIA (enlace del panel).'
     ], {
       d: info.where.join(', ')
     }));
@@ -2983,7 +3041,11 @@
     const el = () => document.getElementById('mtExtract');
     try {
       const dir = await folder('__sia', true);
-      if (!dir) throw new Error(t(['choisir d’abord le dossier SIA XML', 'choose the SIA XML folder first']));
+      if (!dir) throw new Error(t(['dossier SIA non choisi : le choisir d’abord (Installation › Sources et dossiers), puis relancer',
+        'SIA folder not chosen: choose it first (Installation › Sources and folders), then run again',
+        'SIA-Ordner nicht gewählt: zuerst wählen (Installation › Quellen und Ordner) und erneut starten',
+        'carpeta SIA no elegida: elegirla primero (Instalación › Fuentes y carpetas) y volver a lanzar'
+      ]));
       extractMsg = t(['Lecture du ZIP…', 'Reading ZIP…']);
       if (el()) el().textContent = extractMsg;
       const entries = await window.ZipStore.read(file),
@@ -3001,7 +3063,12 @@
       extractMsg = written.length ? pill('ok', t(['{n} fichier(s) extrait(s) : {l}', '{n} file(s) extracted: {l}'], {
         n: written.length,
         l: written.join(', ')
-      })) : pill('warn', t(['aucun XML du SIA dans ce ZIP', 'no SIA XML in this ZIP']));
+      })) : pill('warn', t([
+        'aucun XML du SIA dans ce ZIP : vérifier qu’il s’agit bien de l’export XML du SIA (export_xml_bd_SIA_….zip)',
+        'no SIA XML in this ZIP: check that it is the SIA XML export (export_xml_bd_SIA_….zip)',
+        'kein SIA-XML in diesem ZIP: prüfen, dass es der XML-Export des SIA ist (export_xml_bd_SIA_….zip)',
+        'ningún XML del SIA en este ZIP: comprobar que es la exportación XML del SIA (export_xml_bd_SIA_….zip)'
+      ]));
       window.LocalStore?.logEvent?.({
         kind: 'sia-extract',
         source: file.name,
@@ -3013,7 +3080,9 @@
       });
       await scanSiaFolder(false);
     } catch (e) {
-      extractMsg = pill('err', e.message);
+      extractMsg = pill('err', explain(e, t(['Extraction du ZIP du SIA', 'SIA ZIP extraction', 'Entpacken des SIA-ZIP',
+        'Extracción del ZIP del SIA'
+      ])));
     }
     renderSia();
     renderVersions();
@@ -3040,7 +3109,11 @@
       }))) return;
     try {
       const dir = await folder('__sia', true);
-      if (!dir) throw new Error(t(['dossier non autorisé', 'folder not authorised']));
+      if (!dir) throw new Error(t(['dossier SIA non autorisé : l’autoriser (Installation › Sources et dossiers), puis réessayer',
+        'SIA folder not authorised: allow it (Installation › Sources and folders), then try again',
+        'SIA-Ordner nicht freigegeben: freigeben (Installation › Quellen und Ordner) und es erneut versuchen',
+        'carpeta SIA no autorizada: autorizarla (Instalación › Fuentes y carpetas) y volver a intentarlo'
+      ]));
       let n = 0;
       for (const o of f.old) {
         const sub = await (await dir.getDirectoryHandle('_archives', {
@@ -3076,7 +3149,10 @@
       });
       await scanSiaFolder(false);
     } catch (e) {
-      archiveMsg = pill('err', e.message);
+      archiveMsg = pill('err', explain(e, t(['Archivage des anciens cycles', 'Archiving the old cycles',
+        'Archivierung der alten Zyklen',
+        'Archivado de los ciclos antiguos'
+      ])));
     }
     renderSia();
     renderVersions();
@@ -3140,7 +3216,7 @@
         mode: 'xplane'
       };
     } catch (e) {
-      moraMsg = pill('err', e.message);
+      moraMsg = pill('err', explain(e, t(['MORA d’X-Plane', 'X-Plane MORA', 'X-Plane-MORA', 'MORA de X-Plane'])));
     }
     renderSia();
   }
@@ -3175,7 +3251,9 @@
       };
       if (!moraPlan.changes.length && moraPlan.previousCycle === cyc) moraPlan.written = true;
     } catch (e) {
-      moraMsg = pill('err', e.message);
+      moraMsg = pill('err', explain(e, t(['Recalcul simple de la MORA', 'Simple MORA recalculation', 'Einfache MORA-Neuberechnung',
+        'Recálculo simple de la MORA'
+      ])));
     }
     renderSia();
   }
@@ -3189,7 +3267,12 @@
         if (m) m.innerHTML = x;
       };
     if (btn) btn.disabled = true;
-    const job = window.AppFramework?.task?.(t(['Calcul complet de la grille MORA', 'Full MORA grid calculation']));
+    const job = window.AppFramework?.task?.(t(['Calcul complet de la grille MORA', 'Full MORA grid calculation',
+      'Vollständige Berechnung des MORA-Rasters', 'Cálculo completo de la cuadrícula MORA'
+    ]), {
+      // « Arrêter » : le calcul sort au prochain pas (rien n'est écrit : mora.csv inchangé)
+      cancel: () => {}
+    });
     try {
       const b = await window.SiaBase.get();
       if (!b?.obstacleMax) throw new Error(t(['base absente : « Reconstruire la base aéronautique »',
@@ -3202,10 +3285,12 @@
       // théâtres couverts, plus les emprises des missions du registre situées ailleurs (relief et sommets seulement : pas d'obstacles hors AIXM)
       const extra = window.SiaBase.moraZonesOfMissions?.((await regIndex())?.missions || []) || [];
       const cells = await window.SiaBase.computeMoraGrid(b.obstacleMax, {}, (d, n, step, zi = 0, zn = 0) => {
+        if (job?.cancelled) throw stopError(); // arrêt demandé : sortie du calcul (tuiles restantes non lues)
         say(`<span class="mt-small">${zn ? `${zi + 1}/${zn} — ` : ''}${esc(step)} : ${d}/${n}…</span>`);
         if (zn) job?.set(zi, zn, step);
         job?.sub?.(d, n, `${zn ? `${zi + 1}/${zn} — ` : ''}${step} ${d}/${n}`);
       }, extra);
+      if (job?.cancelled) throw stopError();
       cells.extraZones = extra.map(z => `${z.name} (${z.s}…${z.n}° / ${z.w}…${z.e}°)`);
       const before = new Map((text ? window.SiaBase.parseMora(text) : []).map(c => [c.lat + '|' + c.lon, c]));
       const changes = cells.map(c => {
@@ -3233,7 +3318,11 @@
         extraZones: cells.extraZones
       };
     } catch (e) {
-      moraMsg = pill('err', e.message);
+      // arrêt demandé : pas de plan, mora.csv inchangé (job.fail notifie « Annulé. »)
+      moraMsg = e?.name === 'AbortError' ? '' : pill('err', explain(e, t(['Calcul complet de la grille MORA',
+        'Full MORA grid calculation',
+        'Vollständige Berechnung des MORA-Rasters', 'Cálculo completo de la cuadrícula MORA'
+      ])));
       job?.fail(e);
     } finally {
       job?.end();
@@ -3264,7 +3353,11 @@
   async function writeMora() {
     try {
       const dir = await folder('__sia', true);
-      if (!dir) throw new Error(t(['dossier non autorisé', 'folder not authorised']));
+      if (!dir) throw new Error(t(['dossier SIA non autorisé : l’autoriser (Installation › Sources et dossiers), puis réessayer',
+        'SIA folder not authorised: allow it (Installation › Sources and folders), then try again',
+        'SIA-Ordner nicht freigegeben: freigeben (Installation › Quellen und Ordner) und es erneut versuchen',
+        'carpeta SIA no autorizada: autorizarla (Instalación › Fuentes y carpetas) y volver a intentarlo'
+      ]));
       const old = await fileAt(dir, 'mora.csv');
       if (old) await writeAt(dir, `_archives/mora_${moraPlan.previousCycle || new Date(old.lastModified).toISOString().slice(0, 10)}.csv`, await old.arrayBuffer());
       await writeAt(dir, 'mora.csv', moraPlan.csv);
@@ -3291,7 +3384,9 @@
       await scanSiaFolder(false);
       baseSummary = await window.SiaBase.summary();
     } catch (e) {
-      moraMsg = pill('err', e.message);
+      moraMsg = pill('err', explain(e, t(['mora.csv non écrit', 'mora.csv not written', 'mora.csv nicht geschrieben',
+        'mora.csv no escrito'
+      ])));
     }
     renderSia();
     renderVersions();
@@ -3661,7 +3756,9 @@
         recursive: true
       }]);
     } catch (e) {
-      if (e?.name !== 'AbortError')(window.AppFramework?.notify || alert)(e.message, 'warn');
+      if (e?.name !== 'AbortError')(window.AppFramework?.notify || alert)(explain(e, t(['Dossier non ajouté', 'Folder not added',
+        'Ordner nicht hinzugefügt', 'Carpeta no añadida'
+      ])), 'warn');
     }
     renderBackup();
   }
@@ -3825,7 +3922,9 @@
       renderJournal();
       renderVersions();
     } catch (e) {
-      say(pill('err', e.message));
+      say(pill('err', explain(e, t(['Sauvegarde totale non écrite', 'Full backup not written', 'Vollsicherung nicht geschrieben',
+        'Copia completa no escrita'
+      ]))));
     }
   }
   /** Compare les fichiers actuels des sources au manifeste de la dernière sauvegarde totale tracée (taille, empreinte) :
@@ -3873,8 +3972,11 @@
       const entries = await window.ZipStore.read(file);
       const byName = new Map(entries.map(e => [e.name, e]));
       const mf = byName.get('manifest.json');
-      if (!mf) throw new Error(t(['manifest.json absent : ce n’est pas une sauvegarde totale',
-        'manifest.json missing: not a full backup'
+      if (!mf) throw new Error(t([
+        'ce ZIP n’est pas une sauvegarde totale de la suite (manifest.json absent) : choisir le ZIP écrit par « Sauvegarde totale »',
+        'this ZIP is not a full backup of the suite (manifest.json missing): choose the ZIP written by “Full backup”',
+        'dieses ZIP ist keine Vollsicherung der Suite (manifest.json fehlt): das von „Vollsicherung“ geschriebene ZIP wählen',
+        'este ZIP no es una copia completa de la suite (falta manifest.json): elegir el ZIP escrito por «Copia completa»'
       ]));
       const manifest = JSON.parse(await mf.text());
       const srcs = new Map(SOURCES().map(s => [s.id, s]));
@@ -3906,7 +4008,9 @@
       };
     } catch (e) {
       restorePlan = null;
-      if (box) box.innerHTML = pill('err', e.message);
+      if (box) box.innerHTML = pill('err', explain(e, t(['Sauvegarde illisible', 'Backup unreadable', 'Sicherung nicht lesbar',
+        'Copia ilegible'
+      ])));
       return;
     }
     renderBackup();
@@ -3956,7 +4060,7 @@
         await writeAt(dir, i.path, await p.entries.get(`${i.source}/${i.path}`).bytes());
         done.push(`${i.source}/${i.path}`);
       } catch (e) {
-        errors.push(`${i.path} : ${e.message}`);
+        errors.push(explain(e, i.path));
       }
     }
     let counts = null;
@@ -4361,7 +4465,9 @@
           size: f.size
         })));
     } catch (e) {
-      el.innerHTML = `${head}<p>${pill('err', e.message)}</p>`;
+      el.innerHTML = `${head}<p>${pill('err', explain(e, t(['Dossier SIA illisible', 'SIA folder unreadable', 'SIA-Ordner nicht lesbar',
+        'Carpeta SIA ilegible'
+      ])))}</p>`;
       return;
     }
     const by = new Map(); // zone → { total, n, src: Map source → octets }
@@ -4466,7 +4572,7 @@
       try {
         await fn();
       } catch (e) {
-        window.AppFramework?.notify?.(e.message, 'err');
+        window.AppFramework?.notify?.(explain(e, t(['Espace disque', 'Disk space', 'Speicherplatz', 'Espacio en disco'])), 'err');
       } finally {
         btn.disabled = false;
       }
@@ -4515,7 +4621,7 @@
     try {
       return await fn();
     } catch (e) {
-      const msg = `${what} : ${e?.message || e}`;
+      const msg = explain(e, t(what));
       console.error(msg, e);
       if (host) host.innerHTML = pill('err', msg);
       window.AppFramework?.notify?.(msg, 'err');
@@ -4526,24 +4632,52 @@
    *  par guard) ; ouvre ensuite le bloc demandé (?m= ou ancre), « Mises à jour » par défaut sur la page Maintenance. */
   async function renderAll() {
     titles();
-    await guard('Chargement des modules', () => Promise.all([waitFor('FileAccess'), waitFor('LocalStore'), waitFor('SuiteUpdate')]));
-    await Promise.all([guard('État git', () => readGitState(false)), guard('Dossier SIA', () => scanSiaFolder(false))]);
-    baseSummary = await guard('Base SIA du navigateur', () => window.SiaBase.summary());
+    await guard(['Chargement des modules', 'Loading the modules', 'Laden der Module', 'Carga de los módulos'], () => Promise.all([
+      waitFor('FileAccess'), waitFor('LocalStore'), waitFor('SuiteUpdate')
+    ]));
+    await Promise.all([guard(['État git', 'Git state', 'Git-Status', 'Estado de git'], () => readGitState(false)), guard(['Dossier SIA',
+      'SIA folder', 'SIA-Ordner', 'Carpeta SIA'
+    ], () => scanSiaFolder(false))]);
+    baseSummary = await guard(['Base SIA du navigateur', 'Browser SIA database', 'SIA-Datenbank des Browsers',
+        'Base SIA del navegador'
+      ],
+      () => window.SiaBase.summary());
     for (const [what, fn, host] of [
-        ['Mises à jour', renderUpdates, hosts.updates],
-        ['Sources et dossiers', renderSources, hosts.sources],
-        ['Données aéronautiques', renderSia, hosts.sia],
-        ['Types d’aéronefs', renderTypes, hosts.types],
-        ['Sauvegarde', renderBackup, hosts.backup],
-        ['Journal', renderJournal, hosts.journal],
-        ['Caches', renderCaches, hosts.caches],
-        ['Espace disque', renderStorage, hosts.storage]
+        [
+          ['Mises à jour', 'Updates', 'Aktualisierungen', 'Actualizaciones'], renderUpdates, hosts.updates
+        ],
+        [
+          ['Sources et dossiers', 'Sources and folders', 'Quellen und Ordner', 'Fuentes y carpetas'], renderSources, hosts.sources
+        ],
+        [
+          ['Données aéronautiques', 'Aeronautical data', 'Luftfahrtdaten', 'Datos aeronáuticos'], renderSia, hosts.sia
+        ],
+        [
+          ['Types d’aéronefs', 'Aircraft types', 'Luftfahrzeugtypen', 'Tipos de aeronave'], renderTypes, hosts.types
+        ],
+        [
+          ['Sauvegarde', 'Backup', 'Sicherung', 'Copia de seguridad'], renderBackup, hosts.backup
+        ],
+        [
+          ['Journal', 'Log', 'Protokoll', 'Registro'], renderJournal, hosts.journal
+        ],
+        [
+          ['Caches', 'Caches', 'Caches', 'Cachés'], renderCaches, hosts.caches
+        ],
+        [
+          ['Espace disque', 'Disk space', 'Speicherplatz', 'Espacio en disco'], renderStorage, hosts.storage
+        ]
       ]) {
       if (!onPage(Object.keys(hosts).find(k => hosts[k] === host))) continue; // bloc d'une autre page de Paramètres
       guard(what, fn, host);
     }
-    if (onPage('versions')) await guard('Versions et synchronisation', renderVersions, hosts.versions);
-    if (onPage('deps')) await guard('Références et dépendances', renderDeps, hosts.deps);
+    if (onPage('versions')) await guard(['Versions et synchronisation', 'Versions and synchronisation',
+      'Versionen und Synchronisierung',
+      'Versiones y sincronización'
+    ], renderVersions, hosts.versions);
+    if (onPage('deps')) await guard(['Références et dépendances', 'References and dependencies', 'Referenzen und Abhängigkeiten',
+      'Referencias y dependencias'
+    ], renderDeps, hosts.deps);
     const want = new URLSearchParams(location.search).get('m') || location.hash.slice(1);
     // ancre d'un élément d'un bloc (#mt-aero-base, anciennes ancres #mt-step-N du studio) : le bloc qui le contient est
     // affiché (l'ancre y fait défiler une fois visible), pas « Mises à jour »

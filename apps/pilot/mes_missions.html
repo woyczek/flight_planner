@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Mes missions</title>
-<link rel="stylesheet" href="../../shared/repository_nav.css?v=54118a6e"><link rel="stylesheet" href="../../shared/mission_core/core.css?v=8594d3c0">
+<link rel="stylesheet" href="../../shared/repository_nav.css?v=dd0730c4"><link rel="stylesheet" href="../../shared/mission_core/core.css?v=8594d3c0">
 <script src="../../config/repository_tree?v=c680ce8f"></script>
 <style>
   /* liste en cours de lecture (affectations) : estompée */
@@ -1667,7 +1667,7 @@
 </div>
 </main>
 <script src="../../shared/kit.js?v=d74cff80"></script>
-<script src="../../shared/repository_nav.js?v=ac264f5f"></script>
+<script src="../../shared/repository_nav.js?v=a92d26be"></script>
 <script src="mes_missions_i18n.js?v=ff059abb" defer></script>
 <script src="../../shared/dispos_editor.js?v=9e198a77"></script>
 <script src="../../shared/content_i18n.js?v=515ea16b"></script>
@@ -1864,6 +1864,13 @@
       idx = await A.index({
         fresh: true
       });
+    } catch (e) {
+      // index illisible (lanceur arrêté, dossier refusé…) : la liste le dit, avec quoi faire, au lieu de rester sur
+      // « Chargement… »
+      if (seq === loadSeq) $('pmList').innerHTML = `<p class="pm-empty err">${esc(window.AppFramework?.explain?.(e, tv([
+        'Affectations non lues', 'Assignments not read', 'Zuweisungen nicht gelesen', 'Asignaciones no leídas'
+      ])) || e?.message || e)}</p>`;
+      return;
     } finally {
       job?.end();
       if (seq === loadSeq) $('pmList').removeAttribute('aria-busy');
@@ -2860,11 +2867,28 @@
     if (stale()) return;
     try {
       if (yf) y = window.jsyaml.load(yf.value.replace(/^#.*\n/, ''));
-    } catch {
-      /* mission illisible : affectation seule */
+    } catch (e) {
+      // mission illisible : affectation seule, et le pilote sait pourquoi (détail de la ligne en second plan)
+      window.AppFramework?.notify?.(tv([
+        'Mission {m} : fichier de la mission illisible ({d}) — seule l’affectation est affichée ; le signaler au Centre.',
+        'Mission {m}: mission file unreadable ({d}) — only the assignment is shown; report it to the Centre.',
+        'Mission {m}: Missionsdatei nicht lesbar ({d}) — nur die Zuweisung wird angezeigt; dem Zentrum melden.',
+        'Misión {m}: archivo de la misión ilegible ({d}) — solo se muestra la asignación; avisar al Centro.'
+      ], {
+        m: a.mission,
+        d: String(e?.reason || e?.message || e).slice(0, 120)
+      }), 'warn');
     }
     const md = (await A.missionFirst(a.folder, [a.files?.md, `summary${a.mission}.md`, `summary${bare}.md`]))?.value || '';
-    if (!yf) window.AppFramework?.notify?.(`Mission ${a.mission} : fichier introuvable (dossier « ${a.folder} »), ni dans le dossier des missions autorisé ni dans la copie servie — seule l’affectation est affichée.`, 'warn');
+    if (!yf) window.AppFramework?.notify?.(tv([
+      'Mission {m} : fichier introuvable (dossier « {f} »), ni dans le dossier des missions autorisé ni dans la copie servie — seule l’affectation est affichée ; synchroniser les données, ou autoriser le dossier des missions (Paramètres › Installation).',
+      'Mission {m}: file not found (folder “{f}”), neither in the authorised missions folder nor in the served copy — only the assignment is shown; synchronise the data, or authorise the missions folder (Settings › Installation).',
+      'Mission {m}: Datei nicht gefunden (Ordner „{f}“), weder im freigegebenen Missionsordner noch in der ausgelieferten Kopie — nur die Zuweisung wird angezeigt; Daten synchronisieren oder den Missionsordner freigeben (Einstellungen › Installation).',
+      'Misión {m}: archivo no encontrado (carpeta «{f}»), ni en la carpeta de misiones autorizada ni en la copia servida — solo se muestra la asignación; sincronizar los datos, o autorizar la carpeta de misiones (Ajustes › Instalación).'
+    ], {
+      m: a.mission,
+      f: a.folder
+    }), 'warn');
     // cartes : index de l'affectation, sinon yaml ; adresse résolue (cartes/x.png, sinon x.png)
     // cartes : celles que déclare la mission (yaml) font foi ; sinon la liste de l'index de l'affectation (fichiers du
     // dossier), sans les doublons d'avant la renumérotation (« cibleM004.png » à côté de « cibleM-004.png »)
@@ -3840,5 +3864,5 @@
   keepAll().then(wantedWeek).then(load).then(gridLoad);
 })();
 </script>
-<script src="../../shared/app_framework.js?v=0ee38931"></script>
+<script src="../../shared/app_framework.js?v=0a2fa96b"></script>
 </body></html>
