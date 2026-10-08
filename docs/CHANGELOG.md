@@ -43,12 +43,14 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   respecter un choix personnel — y compris quand il venait d'une autre copie de la suite. À la déduction des dossiers,
   un dossier gardé qui est celui d'une autre copie (non confirmée) est désormais remplacé par celui de `data/` ; le
   premier lancement refait la déduction à l'ouverture.
+
 - **Habilitation du planning** : un compte connecté sans le rôle `admin_centre` pouvait, Centre ouvert en mode develop,
   inscrire des zones comme demandées, modifier les DLO (objectifs) et, au Planning ODV, ajouter, retirer ou importer des
   sessions ATC, écrire des préférences dans les fiches et affecter des pilotes. Tableau et Planning ODV : écriture
   réservée à `admin_centre` dès qu'un utilisateur est connecté (et toujours en production), lecture seule sinon.
 - **Tableau en lecture seule** : le planning seul (frise du jour : vols, contrôles, divers, notes) ; zones, ATC, dispos
   communes, problèmes, journal, vues semaine et statistiques, activations et demandes de zones réservés au Centre.
+
 
 
 ### Modifié
