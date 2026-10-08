@@ -1,5 +1,13 @@
 # Special Ops Virtual Suite — X-Plane Web Suite
 
+> ### 👉 New here? Start with the installation tutorial
+>
+> **[Installation tutorial (English)](docs/tutorial/installation.en.md)** · **[Tutoriel d'installation (français)](docs/tutorial/installation.fr.md)**
+>
+> Ten minutes, one step at a time, with screenshots: download, launch, then the six steps of the **First Run** page.
+> For offline reading, the same tutorial in HTML is in the downloaded folder:
+> `docs/tutorial/installation.en.html` · `docs/tutorial/installation.fr.html`.
+
 Mission reports, reporting, flight preparation (fuel, SIA charts), Centre missions, and the pilot **“My Missions”** page: web pages that run **on your own computer**, in your browser. No account required, no complicated installation.
 
 ## SO Group Virtual — Concise Project Overview
@@ -22,10 +30,8 @@ A shared pilot profile, four interface languages and connected tools reduce repe
 
 ## Getting started (one-time setup)
 
-Lets have a look on [the tutorial](docs/tutorial/installation.en.md) or [it is better in HTML](docs/tutorial/installation.en.html)
-All steps are detailed, one step at a time.
-
-----------------------------------
+**Follow the [installation tutorial](docs/tutorial/installation.en.md)** ([français](docs/tutorial/installation.fr.md)):
+every step is detailed, one at a time, with screenshots. In short:
 
 1. **Download the folder**: click **“Code › Download ZIP”** at  
    <https://framagit.org/asr/flight_planner>, then extract the ZIP wherever you want (Documents, etc.).  
@@ -37,11 +43,15 @@ All steps are detailed, one step at a time.
 
    The launcher installs Python if required, starts the suite, and opens the **First Run** page.
 
-3. **On this page**, complete four steps:
-   1. **Data**: enter your Framagit credentials (or use the archive received by email);
-   2. **Profile**: callsign/trigram, IVAO, VATSIM, SimBrief, and airline website credentials;
-   3. **Folders**: select **this folder** (the one containing `lancer.cmd`) — all other paths are derived from it — then select the OneDrive folder containing the ODV workbook (or the Excel file itself);
-   4. **Finish**: the SIA data update will then start automatically.
+3. **On this page**, follow the six steps; the summary at the top ticks each one as it is done:
+   1. **Application folder**: select **this folder** (the one containing `lancer.cmd`) — everything else is greyed out
+      until it is set;
+   2. **Data**: the SOG data repository (your Framagit credentials, or the archive received by email), or the
+      fictitious sample data to try the suite;
+   3. **Airline**: website and, optionally, the IVAO API key;
+   4. **Profile**: callsign/trigram, IVAO, VATSIM, SimBrief;
+   5. **Aeronautical data**: click the countries on the map, then “Activate” (download, database, MORA);
+   6. **Centre** (administrators only).
 
 On subsequent launches, simply run `lancer.cmd` / `lancer.sh`, leave its window open while using the suite, and close it when you want to stop it.
 
@@ -62,7 +72,7 @@ Firefox and Safari can display the pages, but do not support direct saving to fo
 
 ## Documentation
 
-Everything is available in [docs/](docs/README.md): detailed installation instructions, tutorial, operations manual, and release notes.
+Everything is available in [docs/](docs/README.md): the [installation tutorial](docs/tutorial/installation.en.md), detailed installation instructions, user and administrator manuals, operations manual, and [release notes](docs/VERSION.md).
 
 ## Folder structure
 

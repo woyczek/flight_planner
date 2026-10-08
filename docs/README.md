@@ -1,5 +1,8 @@
 # Index documentaire — Suite SO Group Virtual
 
+> **Première installation : commencer par le [tutoriel d'installation](tutorial/installation.fr.md)**
+> ([HTML](tutorial/installation.fr.html) · [English](tutorial/installation.en.md)).
+
 *[← Retour au dossier](../README.md)* · Dans la suite : entrée **« Aide »** de la barre latérale (ouverte au chapitre de
 la page en cours) ou ☰ › Aide.
 

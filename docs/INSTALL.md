@@ -1,13 +1,10 @@
 # Installation
 
-*[Sommaire de la documentation](README.md) · [Présentation](PRESENTATION.md) · [Tutoriel](TUTORIAL.md) · [Manuel d'exploitation](MANUEL_EXPLOITATION.md)*
+*[Sommaire de la documentation](README.md) · [Présentation](PRESENTATION.md) · [Tutoriel d'installation](tutorial/installation.fr.md) · [Manuel d'exploitation](MANUEL_EXPLOITATION.md)*
 
-DEPRECATED.
-
---> [New tutorial](tutorial/installation.en.md)
---> [Nouveau tutoriel](tutorial/installation.fr.md)
-
-######################################################################################################################
+> **Première installation : ce document est remplacé par le [tutoriel d'installation](tutorial/installation.fr.md)**
+> ([HTML](tutorial/installation.fr.html) · [English](tutorial/installation.en.md)). Ce qui suit reste la référence du
+> fonctionnement et des cas avancés.
 
 La suite est un ensemble de fichiers statiques (HTML, JavaScript, CSS, données YAML / JS) servis par un petit serveur
 local. Rien à compiler.
