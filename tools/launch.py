@@ -1341,6 +1341,9 @@ def main():
     say('3. Navigateur')
     say(f'  {url}')
     say('  Chrome ou Edge conseillés (Brave : voir docs/INSTALL.md).')
+    # tutoriel d'installation : dans l'Aide (version de la langue de la suite), ou hors ligne en HTML
+    say(f'  Tutoriel d’installation, pas à pas : http://127.0.0.1:{port}/apps/aide/aide.html?doc=tutorial/installation.fr.md')
+    say('  (hors ligne : docs/tutorial/installation.fr.html ; English: docs/tutorial/installation.en.html)')
     if not a.no_browser:
         threading.Thread(target=lambda: (time.sleep(0.8), webbrowser.open(url)), daemon=True).start()
     say('')
