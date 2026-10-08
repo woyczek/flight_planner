@@ -23,10 +23,23 @@
     write = x => localStorage.setItem(key(), JSON.stringify(x));
   // Bloc en cours de déplacement (poignée ↕), commun à tous les appels d'init (blocs montés plus tard compris) ; null sinon.
   let movingBlock = null;
-  /** Côté de dépôt sur le bloc el : « before » sur sa moitié haute, « after » sur sa moitié basse (dernière position). */
+  /** Bloc voisin à l'écran (frère suivant, dir 1, ou précédent, dir -1) de el, en sautant ce qui n'est pas un bloc et
+   *  les blocs invisibles (un bloc caché entre deux blocs affichés n'en fait pas des non-voisins). */
+  const sibBlock = (el, dir) => {
+    let x = el;
+    do x = dir > 0 ? x.nextElementSibling : x.previousElementSibling;
+    while (x && (!x.classList.contains("repo-block") || !x.offsetParent));
+    return x;
+  };
+  /** Côté de dépôt sur le bloc el : « before » sur sa moitié haute, « after » sur sa moitié basse (dernière position).
+   *  Un dépôt qui ne changerait rien est retourné : bloc juste au-dessous du bloc déplacé (on descend 1 sur 2) → après
+   *  lui ; bloc juste au-dessus (on remonte 2 sur 1) → avant lui. */
   const dropSide = (el, e) => {
     const r = el.getBoundingClientRect();
-    return e.clientY > r.top + r.height / 2 ? "after" : "before";
+    let side = e.clientY > r.top + r.height / 2 ? "after" : "before";
+    if (side === "before" && sibBlock(el, -1) === movingBlock) side = "after";
+    else if (side === "after" && sibBlock(el, 1) === movingBlock) side = "before";
+    return side;
   };
   const clearDrop = () => document.querySelectorAll(".repo-block-drop-before,.repo-block-drop-after").forEach(x => x.classList
     .remove("repo-block-drop-before", "repo-block-drop-after"));
@@ -871,8 +884,26 @@
   // page), puis de nouveau au chargement complet pour les blocs ajoutés entre-temps (init est ré-exécutable).
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", () => init());
   else init();
+  // Menu ☰ : « Réinitialiser l'ordre des blocs » (ordre d'origine de la page ; blocs masqués gardés), sur les pages qui ont
+  // des blocs déplaçables
+  let resetAdded = false;
+  const addReset = () => {
+    if (resetAdded || !window.RepositoryNav?.addAction || !document.querySelector(".repo-block .repo-drag")) return;
+    resetAdded = true;
+    window.RepositoryNav.addAction(["Réinitialiser l’ordre des blocs", "Reset the block order", "Blockreihenfolge zurücksetzen",
+      "Restablecer el orden de los bloques"
+    ], () => {
+      const st = read();
+      delete st.order;
+      delete st.layout;
+      write(st);
+      location.reload();
+    });
+  };
+  window.addEventListener("repository-nav-ready", addReset);
   window.addEventListener("load", () => {
     init();
-    footer()
+    footer();
+    addReset()
   });
 })();

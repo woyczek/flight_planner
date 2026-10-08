@@ -17,7 +17,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   moitié haute d'un bloc, le bloc déplacé va avant lui, sur la moitié basse après (dernière position possible) ; dépôt
   dans une autre colonne ; la page défile pendant le glisser près du bas de la fenêtre et sous l'en-tête fixe (monter un
   bloc tout en haut d'une longue page). Disposition mémorisée sous une clé unique par conteneur (`layout`) ; les
-  dispositions déjà mémorisées (`order`) restent lues.
+  dispositions déjà mémorisées (`order`) restent lues. Un dépôt qui ne changerait rien est retourné : bloc 1 lâché sur
+  le haut du bloc 2 → « après 2 », et dans l'autre sens « avant » (blocs cachés ignorés). Menu ☰ : « Réinitialiser
+  l'ordre des blocs » (ordre d'origine de la page, blocs masqués gardés), 4 langues.
 - **« Suite lancée depuis …, dossier déclaré …/planner/ » alors que le dossier de l'application est le bon** : le
   dossier des profils de performance (et celui de la sauvegarde locale) était gardé d'une installation à l'autre, pour
   respecter un choix personnel — y compris quand il venait d'une autre copie de la suite. À la déduction des dossiers,
