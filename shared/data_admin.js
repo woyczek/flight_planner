@@ -169,12 +169,18 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
         key: columns[0].key,
         dir: 1
       };
+    // lignes montrées : PAGE d'abord, « Afficher les suivantes » ou « Tout afficher » ensuite (filtre et tri portent sur
+    // toutes) — la flotte entière, champs et listes de choix compris, faisait plus de 5 000 éléments à l'ouverture
+    const PAGE = 100;
+    let limit = PAGE,
+      opts = new Map(); // choix des colonnes « select », calculés une fois par dessin
+    const optionsOf = col => opts.get(col) || opts.set(col, col.options()).get(col);
     /** HTML d'une cellule éditable selon le type de colonne (texte, nombre, case, liste, choix). */
     const cell = (col, row, index) => {
       const v = row[col.key],
         attrs = `data-row="${index}" data-key="${esc(col.key)}"`;
       if (col.type === 'bool') return `<input type="checkbox" ${attrs}${v ? ' checked' : ''}>`;
-      if (col.type === 'select') return `<select ${attrs}>${['', ...col.options()].map(o => `<option${o === v ? ' selected' : ''}>${esc(o)}</option>`).join('')}${v && !col.options().includes(v) ? `<option selected>${esc(v)}</option>` : ''}</select>`;
+      if (col.type === 'select') return `<select ${attrs}>${['', ...optionsOf(col)].map(o => `<option${o === v ? ' selected' : ''}>${esc(o)}</option>`).join('')}${v && !optionsOf(col).includes(v) ? `<option selected>${esc(v)}</option>` : ''}</select>`;
       const value = col.type === 'list' ? (v || []).join(', ') : v ?? '';
       return `<input ${col.type === 'number' ? 'type="number" step="any" ' : ''}${attrs} value="${esc(value)}"${col.width ? ` style="min-width:${col.width}"` : ''}>`;
     };
@@ -182,6 +188,8 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
     /** Redessine le tableau : lignes filtrées (texte de toutes les colonnes) et triées sur la colonne choisie. */
     function paint() {
       const text = filter.toLowerCase();
+      opts = new Map();
+      const tr = window.RepositoryKit?.tf || ((row, v) => String(row[0]).replace(/\{(\w+)\}/g, (m, k) => v[k] ?? m));
       const order = data.map((row, index) => ({
           row,
           index
@@ -195,7 +203,12 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
         }) * sort.dir);
       host.innerHTML = `<div class="da-grid-tools"><input type="search" class="da-filter" placeholder="${esc(T('Filtrer…', 'Filter…'))}" value="${esc(filter)}"><span class="small">${order.length} / ${data.length}</span><button type="button" class="secondary da-add">${esc(T('+ Ajouter une ligne', '+ Add row'))}</button></div>
         <div class="da-scroll"><table class="da-table"><thead><tr>${columns.map(c => `<th data-sort="${esc(c.key)}">${esc(c.label)} ${sort.key === c.key ? (sort.dir > 0 ? '▲' : '▼') : '↕'}</th>`).join('')}<th></th></tr></thead>
-        <tbody>${order.map(({ row, index }) => `<tr>${columns.map(c => `<td>${cell(c, row, index)}</td>`).join('')}<td><button type="button" class="da-del" data-del="${index}" title="${esc(T('Supprimer la ligne', 'Delete row'))}">×</button></td></tr>`).join('')}</tbody></table></div>`;
+        <tbody>${order.slice(0, limit).map(({ row, index }) => `<tr>${columns.map(c => `<td>${cell(c, row, index)}</td>`).join('')}<td><button type="button" class="da-del" data-del="${index}" title="${esc(T('Supprimer la ligne', 'Delete row'))}">×</button></td></tr>`).join('')}</tbody></table></div>
+        ${order.length > limit ? `<p class="row da-more-row"><span class="small">${esc(tr(['{n} lignes sur {t} affichées', '{n} of {t} rows shown', '{n} von {t} Zeilen angezeigt', '{n} de {t} filas mostradas'], { n: limit, t: order.length }))}</span><button type="button" class="secondary" data-more="${PAGE}">${esc(tr(['Afficher les {n} suivantes', 'Show the next {n}', 'Die nächsten {n} anzeigen', 'Mostrar las {n} siguientes'], { n: Math.min(PAGE, order.length - limit) }))}</button><button type="button" class="secondary" data-more="all">${esc(tr(['Tout afficher', 'Show all', 'Alle anzeigen', 'Mostrar todo'], {}))}</button></p>` : ''}`;
+      host.querySelectorAll('[data-more]').forEach(b => b.onclick = () => {
+        limit = b.dataset.more === 'all' ? Infinity : limit + PAGE;
+        paint();
+      });
       const box = host.querySelector('.da-filter');
       box.oninput = () => {
         filter = box.value;
@@ -588,8 +601,8 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
       file: 'data/references/aircraft_fleet.js',
       overrideKey: 'dataOverride:fleet:v1',
       intro: T(
-        'Flotte du SOG : appareils affectables et proposés dans les CR (immatriculation, type, indicatifs, base, opérateur ; plusieurs indicatifs séparés par des virgules). Dessous : les appareils qui volent dans le reporting, avec la case « personnel » (hors flotte).',
-        'SOG fleet: assignable aircraft offered in reports (registration, type, callsigns, base, operator; several callsigns comma-separated). Below: the aircraft flying in the reporting, with the “personal” box (outside the fleet).'
+        'Flotte du {SOG} : appareils affectables et proposés dans les CR (immatriculation, type, indicatifs, base, opérateur ; plusieurs indicatifs séparés par des virgules). Dessous : les appareils qui volent dans le reporting, avec la case « personnel » (hors flotte).',
+        '{SOG} fleet: assignable aircraft offered in reports (registration, type, callsigns, base, operator; several callsigns comma-separated). Below: the aircraft flying in the reporting, with the “personal” box (outside the fleet).'
       ),
       /** Tableaux éditables de la base (colonnes et lignes de travail). */
       tables: () => [{
@@ -645,7 +658,7 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
       ],
       /** Données appliquées dans ce navigateur (dataOverride:fleet:v1). */
       overlay: () => fleetData(),
-      howto: `<p>${T('Mise à jour depuis le site : automatique une fois par jour (lanceur, réglage sous la liste des appareils du reporting) ; à la main, « Coller la page Flotte du site… » (copier-coller de la page « Flotte virtuelle »), vérifier, puis « Enregistrer dans le dépôt ». Ou, avec le script :', 'Update from the website: “Paste the website Fleet page…” (copy-paste of the “Virtual fleet” page), check, then “Save to repository”. Or, with the script:')}</p>
+      howto: `<p>${T('Mise à jour depuis le site : automatique une fois par jour (lanceur, réglage sous la liste des appareils du reporting) ; à la main, « Coller la page Flotte du site… » (copier-coller de la page « Flotte virtuelle »), vérifier, puis « Enregistrer dans le dépôt ». Ou, avec le script :', 'Update from the website: automatic once a day (launcher, setting under the list of reporting aircraft); by hand, “Paste the website Fleet page…” (copy-paste of the “Virtual fleet” page), check, then “Save to repository”. Or, with the script:')}</p>
         <ol><li>${T('Ouvrir', 'Open')} ${window.RepositoryNav?.siteLink?.('fleet', {}, T('Flotte virtuelle', 'Virtual fleet')) || ''}, <span>${T('puis Fichier › Enregistrer sous… (« Flotte.html »).', 'then File › Save as… (“Flotte.html”).')}</span></li>
         <li>${T('À la racine du dépôt :', 'At the repository root:')} <code>python AircraftDB/update_fleet.py Flotte.html</code></li>
         <li>${T('Les appareils de la page remplacent ceux du fichier ; les indicatifs supplémentaires et les appareils ajoutés ici sont conservés.', 'Aircraft from the page replace those of the file; extra callsigns and aircraft added here are kept.')}</li>
@@ -1089,7 +1102,7 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
       )
     }, {
       id: 'send',
-      group: T('Centre (CPCO)', 'Centre (CPCO)'),
+      group: T('Centre ({CENTRE})', 'Centre ({CENTRE})'),
       title: T('Envoi des comptes rendus (webservice)', 'Report sending (web service)'),
       custom: true,
       intro: T(
@@ -1098,13 +1111,16 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
       )
     }, {
       id: 'cpco',
-      group: T('Centre (CPCO)', 'Centre (CPCO)'),
+      group: T('Centre ({CENTRE})', 'Centre ({CENTRE})'),
       title: T('Accès au Centre et réglages', 'Centre access and settings'),
       custom: true,
-      intro: T(
-        'Le Centre de planification et de conduite des opérations (générateur de mission, studio cartographique, registre des missions) est réservé : il s’active ici par un mot de passe, gardé dans ce navigateur. Centre verrouillé : ses pages sont absentes des menus et ses réglages (calcul des routes, espace disque des missions) sont verrouillés.',
-        'The planning and operations command centre (mission generator, map studio, mission registry) is restricted: it is enabled here with a password, kept in this browser. Locked centre: its pages are hidden from menus and its settings (route calculation, missions disk space) are locked.'
-      )
+      // texte traduit à la source (CLAUDE.md : pas de couche de traduction après coup)
+      intro: window.RepositoryKit.t([
+        'Le Centre de planification et de conduite des opérations (générateur de mission, studio cartographique, registre des missions) est réservé : il s’active ici avec le mot de passe du {SOG}, partagé avec les données (data/config/centre.json) et affiché à côté du bouton ; seule l’activation est gardée dans ce navigateur. Centre verrouillé : ses pages sont absentes des menus et ses réglages (calcul des routes, espace disque des missions) sont verrouillés.',
+        'The planning and operations command centre (mission generator, map studio, mission registry) is restricted: it is enabled here with the {SOG} password, shared with the data (data/config/centre.json) and shown next to the button; only the activation is kept in this browser. Locked centre: its pages are hidden from menus and its settings (route calculation, missions disk space) are locked.',
+        'Das Einsatzplanungs- und Führungszentrum (Missionsgenerator, Kartenstudio, Missionsregister) ist reserviert: Es wird hier mit dem Passwort der {SOG} aktiviert, das mit den Daten geteilt (data/config/centre.json) und neben dem Knopf angezeigt wird; nur die Aktivierung bleibt in diesem Browser gespeichert. Gesperrtes Zentrum: Seine Seiten fehlen in den Menüs, und seine Einstellungen (Routenberechnung, Speicherplatz der Missionen) sind gesperrt.',
+        'El Centro de planificación y conducción de operaciones (generador de misiones, estudio cartográfico, registro de misiones) está reservado: se activa aquí con la contraseña del {SOG}, compartida con los datos (data/config/centre.json) y mostrada junto al botón; solo la activación se guarda en este navegador. Centro bloqueado: sus páginas no aparecen en los menús y sus ajustes (cálculo de rutas, espacio en disco de las misiones) están bloqueados.'
+      ])
     }, {
       id: 'planner',
       group: T('Planificateur carburant', 'Fuel planner'),
@@ -1151,11 +1167,26 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
       location.replace(window.RepositoryNav.settingsUrl(wanted));
       return;
     }
+    // v2 : niveau minimal de chaque rubrique (REPOSITORY_TREE.settings.levels ; rubrique d'un outil facultatif,
+    // settings.modules : niveau 4 tant que l'outil n'est pas coché) → data-min-level sur l'entrée et sur le titre du groupe
+    const N = window.RepositoryNav?.levels,
+      lvl = N?.get?.() || 4,
+      LV = window.REPOSITORY_TREE?.settings?.levels || {},
+      MOD = window.REPOSITORY_TREE?.settings?.modules || {};
+    /** Niveau d'utilisation à partir duquel la rubrique d figure dans la colonne (1 à 4). */
+    const minLevel = d => MOD[d.id] && !(N?.modules?.() || []).includes(MOD[d.id]) ? 4 : LV[d.id] || 1;
+    /** Attribut data-min-level d'un niveau n (rien au niveau 1). */
+    const minAttr = n => n > 1 ? ` data-min-level="${n}"` : '';
+    // rubrique ouverte : celle de l'adresse, sinon la première visible au niveau courant ; aucune (Installation : blocs de
+    // shared/maintenance_page.js seulement) → éditeur masqué, maintenance_page.js ouvre son premier bloc
     const current = {
-      id: SETS.some(d => d.id === wanted) ? wanted : SETS[0]?.id || 'fleet'
+      id: SETS.some(d => d.id === wanted) ? wanted : SETS.find(d => minLevel(d) <= lvl)?.id || ''
     };
     const groups = [...new Set(SETS.map(d => d.group))];
-    root.innerHTML = `<aside class="da-nav">${groups.map(g => `<h3>${esc(g)}</h3>${SETS.filter(d => d.group === g).map(d => `<button type="button" data-set="${d.id}">${esc(d.title)}</button>`).join('')}`).join('')}</aside>
+    root.innerHTML = `<aside class="da-nav">${groups.map(g => {
+      const list = SETS.filter(d => d.group === g);
+      return `<h3${minAttr(Math.min(...list.map(minLevel)))}>${esc(g)}</h3>${list.map(d => `<button type="button" data-set="${d.id}"${minAttr(minLevel(d))}>${esc(d.title)}</button>`).join('')}`;
+    }).join('')}</aside>
       <section class="da-main" data-icon="database"><h2></h2><p class="small da-intro"></p><div class="row da-actions"></div><p class="small da-status"></p><div class="da-body"></div><details class="da-howto"><summary>${esc(T('Mode opératoire', 'Procedure'))}</summary><div></div></details></section>`;
     // Dossiers mémorisés et sources externes : réglés dans Paramètres › Maintenance (bloc « Sources et dossiers »).
     root.querySelectorAll('[data-set]').forEach(b => b.onclick = async () => {
@@ -1555,6 +1586,12 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
     // Centre (CPCO) : activation par mot de passe (RepositoryNav.cpco), puis réglages du Centre (calcul des routes).
     function cpcoSettings(body) {
       const access = window.RepositoryNav?.cpco;
+      /** Texte traduit à la source (K.t, quatre langues) : la carte n'ajoute rien à la traduction après coup. */
+      const tt = (...row) => window.RepositoryKit.t(row);
+      /** Texte d'un élément, écrit seulement s'il change. */
+      const setText = (el, v) => {
+        if (el && el.textContent !== v) el.textContent = v;
+      };
       if (!access) {
         body.textContent = T('Accès au Centre indisponible (menu commun non chargé).',
           'Centre access unavailable (common menu not loaded).');
@@ -1566,38 +1603,43 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
         const c = await access.config?.(true) || {};
         const m = body.querySelector('[data-cpco-mode]'),
           s = body.querySelector('[data-cpco-shown]');
-        if (m) m.textContent = c.mode === 'groupe' ?
-          T('Mode groupe : accès au Centre par le rôle d’administrateur du registre signé.',
-            'Group mode: Centre access through the administrator role of the signed registry.') :
-          T('Mode autonome : accès au Centre par le mot de passe du SO Group (verrou d’usage, pas une protection). Mode groupe (registre signé, accès par le rôle) : à venir.',
-            'Standalone mode: Centre access through the SO Group password (a usage lock, not a protection). Group mode (signed registry, access by role): coming.'
-          );
-        if (s) s.textContent = c.motDePasse || '';
+        setText(m, c.mode === 'groupe' ?
+          tt('Mode groupe : accès au Centre par le rôle d’administrateur du registre signé.',
+            'Group mode: Centre access through the administrator role of the signed registry.',
+            'Gruppenmodus: Zugang zum Zentrum über die Administratorrolle des signierten Registers.',
+            'Modo grupo: acceso al Centro por el rol de administrador del registro firmado.') :
+          tt(
+            'Mode autonome : accès au Centre par le mot de passe du {SOG} (verrou d’usage, pas une protection). Mode groupe (registre signé, accès par le rôle) : à venir.',
+            'Standalone mode: Centre access through the {SOG} password (a usage lock, not a protection). Group mode (signed registry, access by role): coming.',
+            'Eigenständiger Modus: Zugang zum Zentrum mit dem Passwort der {SOG} (eine Nutzungssperre, kein Schutz). Gruppenmodus (signiertes Register, Zugang über die Rolle): folgt.',
+            'Modo autónomo: acceso al Centro con la contraseña del {SOG} (un bloqueo de uso, no una protección). Modo grupo (registro firmado, acceso por el rol): próximamente.'
+          ));
+        setText(s, c.motDePasse || '');
         const i = body.querySelector('[data-cpco-new]');
         if (i && !i.value) i.value = c.motDePasse || '';
       };
       if (!access.enabled()) {
-        body.innerHTML = `<p class="small" data-cpco-mode></p><div class="da-form"><label>${esc(T('Mot de passe du Centre', 'Centre password'))}<input type="password" autocomplete="off" data-cpco-pwd></label></div><p class="small">${esc(T('Mot de passe :', 'Password:'))} <b data-cpco-shown></b> — <span>${esc(T('partagé avec les données (data/config/centre.json), modifiable une fois le Centre activé.', 'shared with the data (data/config/centre.json), can be changed once the Centre is enabled.'))}</span></p>`;
+        body.innerHTML = `<p class="small" data-cpco-mode></p><div class="da-form"><label>${esc(tt('Mot de passe du Centre', 'Centre password', 'Passwort des Zentrums', 'Contraseña del Centro'))}<input type="password" autocomplete="off" data-cpco-pwd></label></div><p><button type="button" class="primary" data-cpco-go>${esc(tt('Activer le Centre', 'Enable the Centre', 'Zentrum aktivieren', 'Activar el Centro'))}</button> <span class="small">${esc(tt('Mot de passe :', 'Password:', 'Passwort:', 'Contraseña:'))} <b data-cpco-shown></b></span></p><p class="small">${esc(tt('Partagé avec les données (data/config/centre.json), modifiable une fois le Centre activé.', 'Shared with the data (data/config/centre.json), can be changed once the Centre is enabled.', 'Mit den Daten geteilt (data/config/centre.json), änderbar, sobald das Zentrum aktiviert ist.', 'Compartida con los datos (data/config/centre.json), modificable una vez activado el Centro.'))}</p>`;
         centreInfo();
         const input = body.querySelector('[data-cpco-pwd]');
         /** Déverrouille le Centre avec le mot de passe saisi, sinon message et nouvelle saisie. */
         const go = async () => {
           if (await access.unlock(input.value)) {
-            status(T('Centre activé dans ce navigateur', 'Centre enabled in this browser'));
+            status(tt('Centre activé dans ce navigateur', 'Centre enabled in this browser', 'Zentrum in diesem Browser aktiviert',
+              'Centro activado en este navegador'));
             show();
           } else {
             input.value = '';
-            status(T('Mot de passe incorrect', 'Wrong password'));
+            status(tt('Mot de passe incorrect', 'Wrong password', 'Falsches Passwort', 'Contraseña incorrecta'));
             input.focus();
           }
         };
         input.onkeydown = e => {
           if (e.key === 'Enter') go();
         };
-        status(T('Centre verrouillé', 'Centre locked'));
-        actions([
-          [T('Activer le Centre', 'Enable the Centre'), go, 'primary']
-        ]);
+        body.querySelector('[data-cpco-go]').onclick = go;
+        status(tt('Centre verrouillé', 'Centre locked', 'Zentrum gesperrt', 'Centro bloqueado'));
+        actions([]); // bouton sous le champ, mot de passe sur sa ligne (pas dans la barre d'actions, au-dessus du champ)
         return;
       }
       const R = window.MissionRouting,
@@ -1611,19 +1653,27 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
         ['detourPct', T('Détour admis, voies (%)', 'Allowed detour, airways (%)')],
         ['detourRtbaPct', T('Détour admis, RTBA (%)', 'Allowed detour, RTBA (%)')]
       ];
-      const modeHtml = `<h3>${esc(T('Mode et accès', 'Mode and access'))}</h3><p class="small" data-cpco-mode></p><div class="da-form"><label>${esc(T('Mot de passe du Centre (partagé avec les données)', 'Centre password (shared with the data)'))}<input type="text" autocomplete="off" spellcheck="false" data-cpco-new></label></div><p><button type="button" data-cpco-save>${esc(T('Enregistrer le mot de passe', 'Save the password'))}</button></p>`;
+      const modeHtml = `<h3>${esc(tt('Mode et accès', 'Mode and access', 'Modus und Zugang', 'Modo y acceso'))}</h3><p class="small" data-cpco-mode></p><div class="da-form"><label>${esc(tt('Mot de passe du Centre (partagé avec les données)', 'Centre password (shared with the data)', 'Passwort des Zentrums (mit den Daten geteilt)', 'Contraseña del Centro (compartida con los datos)'))}<input type="text" autocomplete="off" spellcheck="false" data-cpco-new></label></div><p><button type="button" data-cpco-save>${esc(tt('Enregistrer le mot de passe', 'Save the password', 'Passwort speichern', 'Guardar la contraseña'))}</button></p>`;
       body.innerHTML = modeHtml + (R ? `<h3>${esc(T('Calcul des routes de transit', 'Transit route calculation'))}</h3><div class="da-form">${FIELDS.map(([k, l]) => `<label>${esc(l)}<input type="number" min="0" step="any" data-rs="${k}" value="${esc(S[k] ?? '')}" placeholder="${esc(R.DEFAULTS[k])}"></label>`).join('')}</div>` : `<p class="small">${esc(T('Calcul des routes non chargé.', 'Route calculation not loaded.'))}</p>`);
       body.querySelectorAll('[data-rs]').forEach(i => i.oninput = changed);
       centreInfo();
       body.querySelector('[data-cpco-save]').onclick = async () => {
         const v = body.querySelector('[data-cpco-new]').value.trim();
-        if (!v) return status(T('Mot de passe vide : non enregistré', 'Empty password: not saved'));
+        if (!v) return status(tt('Mot de passe vide : non enregistré', 'Empty password: not saved',
+          'Leeres Passwort: nicht gespeichert',
+          'Contraseña vacía: no guardada'));
         const r = await access.setPassword(v);
-        status(!r.ok ? T('Mot de passe non enregistré', 'Password not saved') : r.where === 'data' ?
-          T('Mot de passe enregistré dans les données : il part au prochain « Synchroniser »',
-            'Password saved in the data: it goes out at the next “Synchronise”') :
-          T('Mot de passe gardé dans ce navigateur : dossier des données à autoriser pour l’écrire',
-            'Password kept in this browser: authorise the data folder to write it'));
+        status(!r.ok ? tt('Mot de passe non enregistré', 'Password not saved', 'Passwort nicht gespeichert',
+            'Contraseña no guardada') :
+          r.where === 'data' ?
+          tt('Mot de passe enregistré dans les données : il part au prochain « Synchroniser »',
+            'Password saved in the data: it goes out at the next “Synchronise”',
+            'Passwort in den Daten gespeichert: es geht beim nächsten „Synchronisieren“ hinaus',
+            'Contraseña guardada en los datos: sale en la próxima «Sincronizar»') :
+          tt('Mot de passe gardé dans ce navigateur : dossier des données à autoriser pour l’écrire',
+            'Password kept in this browser: authorise the data folder to write it',
+            'Passwort in diesem Browser behalten: den Datenordner freigeben, um es zu schreiben',
+            'Contraseña guardada en este navegador: autorice la carpeta de datos para escribirla'));
         centreInfo();
       };
       status(T('Centre activé dans ce navigateur', 'Centre enabled in this browser'));
@@ -1640,7 +1690,7 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
             show();
           }]
         ] : []),
-        [T('Verrouiller le Centre', 'Lock the Centre'), () => {
+        [tt('Verrouiller le Centre', 'Lock the Centre', 'Zentrum sperren', 'Bloquear el Centro'), () => {
           access.lock();
           dirty = false;
           show();
@@ -1846,7 +1896,12 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
       ));
     }
 
-    show();
+    if (current.id) show();
+    else {
+      // aucune rubrique à ouvrir à ce niveau : les blocs de maintenance_page.js prennent la place
+      root.querySelector('.da-main').hidden = true;
+      lockNav();
+    }
     window.RepositoryContentI18n?.(rows);
     registered = true;
   }

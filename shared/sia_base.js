@@ -15,6 +15,9 @@
   const DB = 'sia-map-parser',
     STORE = 'cache',
     KEY = 'base',
+    // villes (GeoNames, ≈ 70 000 entrées) rangées sous leur propre clé : la base se désérialise sans elles à chaque
+    // ouverture de page (≈ 200 ms de moins), les cartes qui en ont besoin les lisent par SiaBase.cities()
+    KEY_CITIES = 'cities',
     INFO = 'siaBaseInfo:v1',
     PREV = 'siaBaseInfo:prev',
     FOLDER_NAME = 'siaFolderName';
@@ -49,7 +52,7 @@
   /** Promesse unique (gardée dans zonesLoad) de window.AeroZones : charge si besoin les contours puis aero_zones.js. */
   const needZones = () => zonesLoad ||= (async () => {
     if (!window.AERO_ZONES_GEO) await loadScript('carto/aero_zones_geo.js?v=6e9678c4');
-    if (!window.AeroZones) await loadScript('aero_zones.js?v=0d5d261d');
+    if (!window.AeroZones) await loadScript('aero_zones.js?v=43cfc710');
     return window.AeroZones || null;
   })();
   /** Sous-dossiers du dossier SIA par source (fichiers d'autres pays rangés à part) ; zones/<zone>/ : fichiers déposés
@@ -127,6 +130,9 @@
     });
     if (!db) return null;
     const b = await tx(db, 'readonly', s => s.get(KEY)).catch(() => null);
+    // base d'avant la séparation des villes (b.cities) : gardée telle quelle pour cette ouverture, villes rangées à part
+    // en arrière-plan pour que la prochaine ouverture n'ait plus à les désérialiser
+    if (b && Array.isArray(b.cities)) splitCitiesLater(b);
     // format antérieur compatible (COMPAT…VERSION) : utilisable, seules manquent les données ajoutées depuis (b.outdated)
     if (b && !any && b.parserVersion >= COMPAT && b.parserVersion < VERSION) b.outdated = true;
     return b && (any || (b.parserVersion >= COMPAT && b.parserVersion <= VERSION)) ? b : null;
@@ -149,10 +155,19 @@
     }
     const db = await openDb();
     if (!db) throw new Error('IndexedDB indisponible');
-    await tx(db, 'readwrite', s => s.put({
-      ...base,
-      parserVersion: VERSION
-    }, KEY));
+    const {
+      cities: villes,
+      ...rest
+    } = base;
+    await tx(db, 'readwrite', s => {
+      if (Array.isArray(villes)) s.put(villes, KEY_CITIES);
+      return s.put({
+        ...rest,
+        citiesCount: Array.isArray(villes) ? villes.length : rest.citiesCount || 0,
+        parserVersion: VERSION
+      }, KEY);
+    });
+    if (Array.isArray(villes)) citiesCache = villes;
     remember(summarize(base));
     try {
       if (base.folderName) localStorage.setItem(FOLDER_NAME, base.folderName);
@@ -161,6 +176,50 @@
     }
   }
   /** Met à jour des champs de la base mémorisée (ex. moraCells après un recalcul) ; faux si elle est absente. */
+  let citiesCache = null, // villes lues une fois par page
+    splitting = false; // migration en cours (base d'avant la séparation)
+  /** Range à part, en arrière-plan, les villes d'une base d'avant la séparation (une seule fois par page). */
+  function splitCitiesLater(b) {
+    if (splitting) return;
+    splitting = true;
+    setTimeout(async () => {
+      try {
+        const db = await openDb({
+          create: false
+        });
+        if (!db) return;
+        const {
+          cities: villes,
+          ...rest
+        } = b;
+        await tx(db, 'readwrite', s => {
+          s.put(villes, KEY_CITIES);
+          return s.put({
+            ...rest,
+            citiesCount: villes.length
+          }, KEY);
+        });
+        citiesCache = villes;
+      } catch {
+        /* base relue plus tard : la séparation se refera */
+      }
+    }, 3000);
+  }
+  /** Villes de la base (GeoNames), lues à part et une seule fois par page ; [] sans base ni villes. */
+  async function cities() {
+    if (citiesCache) return citiesCache;
+    const db = await openDb({
+      create: false
+    });
+    if (!db) return [];
+    const c = await tx(db, 'readonly', s => s.get(KEY_CITIES)).catch(() => null);
+    if (Array.isArray(c)) return citiesCache = c;
+    // base d'avant la séparation : ses villes
+    const b = await get({
+      any: true
+    });
+    return citiesCache = Array.isArray(b?.cities) ? b.cities : [];
+  }
   async function patch(fields) {
     const b = await get({
       any: true
@@ -221,7 +280,7 @@
         byType: types,
         aerodromes: count(aero.aerodromes),
         navaids: count(aero.navaids || aero.navaid),
-        cities: (b.cities || []).length,
+        cities: Array.isArray(b.cities) ? b.cities.length : b.citiesCount || 0,
         mora: (b.moraCells || []).length,
         obstacleCells: Object.keys(b.obstacleMax || {}).length
       },
@@ -1750,6 +1809,7 @@
     zones: needZones,
     extraFiles,
     get,
+    cities,
     put,
     patch,
     purge,

@@ -4,7 +4,7 @@
   //   · Mon profil — identité (trigramme, IVAO, VATSIM, SimBrief, identifiants du site de la compagnie, langue), connexion et mot de
   //     passe, préférences de thèmes (listes blanches / noires par domaine), appareils et simulateurs ;
   //   · Centre — utilisateurs et droits (shared/users.js), catégories de disponibilité (shared/dispos.js) ;
-  //   · Installation — premier lancement.
+  //   · Installation — premier lancement (v2 : plus placé, l'onglet Premier lancement le remplace).
   // Chaque rubrique : { id, group, title, intro, render(body, api) } dans window.SettingsPanels.list, lue par
   // DataAdmin.mount (page : REPOSITORY_TREE.settings.sections) ; api : status(texte), actions([[libellé, fn, classe]]),
   // changed() (modifié, non enregistré), saved(), show(), open(id).
@@ -91,6 +91,7 @@
         ['es', 'Español']
       ];
       const mode = nav()?.getLanguageMode?.() || 'auto';
+      // v2 : client OAuth IVAO (réglage technique) et langue (doublon du sélecteur de l'en-tête) au niveau 4 seulement
       body.innerHTML = `<div class="sp-card"><h3>${esc(L('Pilote', 'Pilot', 'Pilot', 'Piloto'))}</h3><div class="sp-form">
           ${field(L('Trigramme', 'Trigram', 'Kürzel', 'Trigrama'), `data-f="trigram" maxlength="4" style="text-transform:uppercase"${triLocked ? ' readonly' : ''}`)}
           ${field(L('ID VATSIM (CID)', 'VATSIM ID (CID)', 'VATSIM-ID (CID)', 'ID VATSIM (CID)'), 'data-f="vatsimId" inputmode="numeric"')}
@@ -99,15 +100,15 @@
         </div>${triLocked ? `<p class="sp-hint">${esc(L('Mode production : le trigramme est celui de l’utilisateur connecté.', 'Production mode: the trigram is the signed-in user’s.', 'Produktionsmodus: Das Kürzel ist das des angemeldeten Benutzers.', 'Modo producción: el trigrama es el del usuario conectado.'))}</p>` : ''}</div>
         <div class="sp-card"><h3>${esc(L('Site de la compagnie', 'Airline website', 'Website der Fluggesellschaft', 'Sitio de la aerolínea'))}</h3><div class="sp-form">
           ${field(L('Identifiant', 'Login', 'Kennung', 'Identificador'), 'data-defa="login"')}
-          <label>${esc(L('Mot de passe', 'Password', 'Passwort', 'Contraseña'))}</label><span class="repo-inop-field"><input type="password" data-defa="password" disabled autocomplete="off"><span class="repo-inop" title="${esc(K.t(['Hors service : le SOG n’a pas encore de webservice. Ce mot de passe n’est ni demandé ni gardé ; un accès futur passera probablement par une clé d’API.', 'Inoperative: the SOG has no web service yet. This password is neither asked for nor kept; future access will probably use an API key.', 'Außer Betrieb: Die SOG hat noch keinen Webdienst. Dieses Passwort wird weder abgefragt noch gespeichert; ein künftiger Zugang läuft wahrscheinlich über einen API-Schlüssel.', 'Fuera de servicio: el SOG aún no tiene servicio web. Esta contraseña no se pide ni se guarda; un acceso futuro usará probablemente una clave de API.']))}" data-no-i18n>INOP</span></span>
+          <label>${esc(L('Mot de passe', 'Password', 'Passwort', 'Contraseña'))}</label><span class="repo-inop-field"><input type="password" data-defa="password" disabled autocomplete="off"><span class="repo-inop" title="${esc(K.t(['Hors service : le {SOG} n’a pas encore de webservice. Ce mot de passe n’est ni demandé ni gardé ; un accès futur passera probablement par une clé d’API.', 'Inoperative: the {SOG} has no web service yet. This password is neither asked for nor kept; future access will probably use an API key.', 'Außer Betrieb: Die {SOG} hat noch keinen Webdienst. Dieses Passwort wird weder abgefragt noch gespeichert; ein künftiger Zugang läuft wahrscheinlich über einen API-Schlüssel.', 'Fuera de servicio: el {SOG} aún no tiene servicio web. Esta contraseña no se pide ni se guarda; un acceso futuro usará probablemente una clave de API.']))}" data-no-i18n>INOP</span></span>
         </div><p class="sp-hint">${esc(L('Gardés dans ce navigateur seulement : jamais écrits dans un fichier ni dans une sauvegarde.', 'Kept in this browser only: never written to a file or a backup.', 'Nur in diesem Browser gespeichert: nie in eine Datei oder Sicherung geschrieben.', 'Guardadas solo en este navegador: nunca escritas en un archivo ni en una copia.'))}</p></div>
-        <div class="sp-card" data-ivc-card><h3>${esc(L('IVAO — client OAuth (personnel)', 'IVAO — OAuth client (personal)', 'IVAO — OAuth-Client (persönlich)', 'IVAO — cliente OAuth (personal)'))}</h3><div class="sp-form">
+        <div class="sp-card" data-ivc-card data-min-level="4"><h3>${esc(L('IVAO — client OAuth (personnel)', 'IVAO — OAuth client (personal)', 'IVAO — OAuth-Client (persönlich)', 'IVAO — cliente OAuth (personal)'))}</h3><div class="sp-form">
           ${field(L('Identifiant du client (client ID)', 'Client ID', 'Client-ID', 'Identificador del cliente (client ID)'), 'data-ivc="clientId" autocomplete="off" spellcheck="false"')}
           <label>${esc(L('Secret du client', 'Client secret', 'Client-Geheimnis', 'Secreto del cliente'))}</label><input type="password" data-ivc="clientSecret" autocomplete="off" spellcheck="false">
           <label>${esc(L('Adresse de redirection à déclarer chez IVAO', 'Redirect URL to declare at IVAO', 'Bei IVAO anzugebende Weiterleitungsadresse', 'Dirección de redirección a declarar en IVAO'))}</label><input type="text" data-ivc-redirect readonly>
         </div><p class="sp-hint">${esc(L('Client créé sur developers.ivao.aero, à votre nom. Gardé par le lanceur de ce poste (secrets/users/<trigramme>.json, exclu de git, hors des données et des sauvegardes) ; le secret n’est jamais renvoyé à la page. La clé d’API de la suite se règle dans Paramètres › Installation.', 'Client created on developers.ivao.aero, in your name. Kept by this computer’s launcher (secrets/users/<trigram>.json, excluded from git, outside the data and the backups); the secret is never sent back to the page. The suite API key is set in Settings › Installation.', 'Auf developers.ivao.aero auf Ihren Namen angelegter Client. Vom Starter dieses Rechners gehalten (secrets/users/<Kürzel>.json, von Git ausgeschlossen, außerhalb der Daten und Sicherungen); das Geheimnis wird nie an die Seite zurückgegeben. Der API-Schlüssel der Suite wird unter Einstellungen › Installation eingestellt.', 'Cliente creado en developers.ivao.aero, a su nombre. Guardado por el lanzador de este equipo (secrets/users/<trigrama>.json, excluido de git, fuera de los datos y de las copias); el secreto nunca se devuelve a la página. La clave de API de la suite se ajusta en Ajustes › Instalación.'))}</p>
         <p class="row"><button type="button" class="secondary" data-ivc-save>${esc(L('Enregistrer le client IVAO', 'Save the IVAO client', 'IVAO-Client speichern', 'Guardar el cliente IVAO'))}</button> <button type="button" class="secondary" data-ivc-clear hidden>${esc(L('Effacer', 'Clear', 'Löschen', 'Borrar'))}</button> <span class="sp-hint" data-ivc-state data-no-i18n></span></p></div>
-        <div class="sp-card"><h3>${esc(L('Langue', 'Language', 'Sprache', 'Idioma'))}</h3><div class="sp-form"><label>${esc(L('Langue de la suite', 'Suite language', 'Sprache der Suite', 'Idioma de la suite'))}</label>
+        <div class="sp-card" data-min-level="4"><h3>${esc(L('Langue', 'Language', 'Sprache', 'Idioma'))}</h3><div class="sp-form"><label>${esc(L('Langue de la suite', 'Suite language', 'Sprache der Suite', 'Idioma de la suite'))}</label>
           <select data-lang>${LANG.map(([v, l]) => `<option value="${v}"${v === mode ? ' selected' : ''}>${esc(l)}</option>`).join('')}</select></div></div>`;
       body.querySelectorAll('[data-f]').forEach(i => {
         i.value = p[i.dataset.f] || '';
@@ -241,6 +242,80 @@
     draw(tri ? await api() : {});
   }
 
+  // ---------------------------------------------------------------- Mon profil › Niveau d'utilisation (v2)
+  const LEVELS = [
+    [L('Équipage', 'Crew', 'Besatzung', 'Tripulación'), L(
+      'Recevoir mes missions, voir le planning des ordres, écrire mes comptes rendus.',
+      'Receive my missions, see the order schedule, write my reports.',
+      'Meine Missionen erhalten, die Befehlsplanung sehen, meine Berichte schreiben.',
+      'Recibir mis misiones, ver la planificación de órdenes, escribir mis informes.')],
+    [L('Planification', 'Planning', 'Planung', 'Planificación'), L(
+      'En plus : planifier les ordres (Tableau, disponibilités, ODV). Demande le Centre.',
+      'Also: plan the orders (Board, availability, ODV). Requires the Centre.',
+      'Zusätzlich: Befehle planen (Einsatztafel, Verfügbarkeit, ODV). Erfordert das Zentrum.',
+      'Además: planificar las órdenes (Tablero, disponibilidad, ODV). Requiere el Centro.')],
+    [L('Conception', 'Design', 'Gestaltung', 'Diseño'), L('En plus : générer, modifier et registrer les missions. Demande le Centre.',
+      'Also: generate, edit and register missions. Requires the Centre.',
+      'Zusätzlich: Missionen erzeugen, ändern und registrieren. Erfordert das Zentrum.',
+      'Además: generar, modificar y registrar misiones. Requiere el Centro.')],
+    [L('Expert', 'Expert', 'Experte', 'Experto'), L(
+      'Tout : studio cartographique, cartes avancées et profils, carburant, atterrissages, analyses.',
+      'Everything: map studio, advanced maps and profiles, fuel, landings, analyses.',
+      'Alles: Kartenstudio, erweiterte Karten und Profile, Kraftstoff, Landungen, Analysen.',
+      'Todo: estudio cartográfico, mapas avanzados y perfiles, combustible, aterrizajes, análisis.')]
+  ];
+  const MODULE_LABELS = {
+    maps: L('Cartes de vol', 'Flight maps', 'Flugkarten', 'Mapas de vuelo'),
+    fuel: L('Carburant', 'Fuel', 'Kraftstoff', 'Combustible'),
+    landings: L('Atterrissages', 'Landings', 'Landungen', 'Aterrizajes'),
+    reporting: L('Analyse des missions', 'Mission analysis', 'Missionsanalyse', 'Análisis de misiones')
+  };
+  const levelPanel = {
+    id: 'level',
+    group: GROUP_PROFILE,
+    title: L('Niveau d’utilisation', 'Usage level', 'Nutzungsstufe', 'Nivel de uso'),
+    intro: L(
+      'Ce que la suite vous montre, selon votre usage. Le niveau range l’interface ; il ne donne aucun droit : le Centre garde son accès.',
+      'What the suite shows you, according to your use. The level arranges the interface; it grants no rights: the Centre keeps its access.',
+      'Was die Suite Ihnen zeigt, je nach Nutzung. Die Stufe ordnet die Oberfläche; sie gewährt keine Rechte: das Zentrum behält seinen Zugang.',
+      'Lo que la suite le muestra, según su uso. El nivel ordena la interfaz; no da ningún derecho: el Centro conserva su acceso.'
+    ),
+    /** Niveau (1 à 4, RepositoryNav.levels) et modules facultatifs ; un changement recharge la page (barre latérale). */
+    render(body, api) {
+      const N = nav().levels;
+      api.actions([]);
+      if (!N) {
+        body.innerHTML = `<p>${esc(L('Navigation non chargée.', 'Navigation not loaded.', 'Navigation nicht geladen.', 'Navegación no cargada.'))}</p>`;
+        return;
+      }
+      const cur = N.get(),
+        mods = N.modules();
+      body.innerHTML = `<fieldset class="sp-levels"><legend>${esc(L('Mon usage', 'My use', 'Meine Nutzung', 'Mi uso'))}</legend>
+        ${LEVELS.map(([name, what], i) => `<label class="sp-level"><input type="radio" name="lvl" value="${i + 1}"${cur === i + 1 ? ' checked' : ''}> <b>${i + 1} · ${esc(name)}</b> <span class="sp-hint">${esc(what)}</span></label>`).join('')}
+        </fieldset>
+        <fieldset class="sp-levels"${cur >= 4 ? ' disabled' : ''}><legend>${esc(L('Outils facultatifs', 'Optional tools', 'Optionale Werkzeuge', 'Herramientas opcionales'))}</legend>
+        ${N.MODULES.map(m => `<label class="sp-level"><input type="checkbox" name="mod" value="${m}"${mods.includes(m) ? ' checked' : ''}> ${esc(MODULE_LABELS[m] || m)}</label>`).join('')}
+        <p class="sp-hint">${esc(cur >= 4 ? L('Tous inclus au niveau Expert.', 'All included at Expert level.', 'Auf Stufe Experte alle enthalten.', 'Todos incluidos en el nivel Experto.') : L('Rangés sous « Outils » dans la barre latérale.', 'Grouped under “Tools” in the sidebar.', 'In der Seitenleiste unter „Werkzeuge“ gruppiert.', 'Agrupados en «Herramientas» en la barra lateral.'))}</p></fieldset>`;
+      const reload = () => {
+        api.status(L('Enregistré : la page se recharge…', 'Saved: the page reloads…', 'Gespeichert: die Seite wird neu geladen…',
+          'Guardado: la página se recarga…'));
+        setTimeout(() => location.reload(), 400);
+      };
+      body.querySelectorAll('input[name="lvl"]').forEach(r => r.onchange = () => {
+        N.set(+r.value);
+        reload();
+      });
+      body.querySelectorAll('input[name="mod"]').forEach(c => c.onchange = () => {
+        N.setModules([...body.querySelectorAll('input[name="mod"]:checked')].map(x => x.value));
+        reload();
+      });
+      api.status(tf(['Niveau {n} · {name}', 'Level {n} · {name}', 'Stufe {n} · {name}', 'Nivel {n} · {name}'], {
+        n: cur,
+        name: LEVELS[cur - 1][0]
+      }));
+    }
+  };
+
   // ---------------------------------------------------------------- Mon profil › Appareils et simulateurs
   const equipment = {
     id: 'equipment',
@@ -270,6 +345,9 @@
   };
 
   // ---------------------------------------------------------------- Installation › Premier lancement
+  // v2 : rubrique faite de liens, plus placée sur une page (REPOSITORY_TREE.settings.sections) : l'onglet Premier
+  // lancement de Réglages et le bloc « Sources et dossiers » d'Installation la remplacent (rubrique gardée : page sans
+  // data-settings, ou nouvelle place à lui donner dans la table)
   const setup = {
     id: 'setup',
     group: L('Installation', 'Installation', 'Installation', 'Instalación'),
@@ -412,7 +490,7 @@
   const A = () => window.MissionAssignments;
 
   // ---------------------------------------------------------------- Centre › Utilisateurs et droits
-  const GROUP_CENTRE = L('Centre (CPCO)', 'Centre (CPCO)', 'Zentrum (CPCO)', 'Centro (CPCO)');
+  const GROUP_CENTRE = L('Centre ({CENTRE})', 'Centre ({CENTRE})', 'Zentrum ({CENTRE})', 'Centro ({CENTRE})');
   const users = {
     id: 'users',
     group: GROUP_CENTRE,
@@ -883,7 +961,7 @@
   };
 
   window.SettingsPanels = {
-    list: [identity, account, themesPanel, equipment, setup, users, categoriesPanel],
+    list: [levelPanel, identity, account, themesPanel, equipment, setup, users, categoriesPanel],
     /** Ajoute une rubrique (autre module : utilisateurs, catégories de disponibilité). */
     add(panel) {
       this.list.push(panel);

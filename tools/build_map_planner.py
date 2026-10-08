@@ -2,10 +2,17 @@
 Centre (apps/cpco/map_parser.html) : même moteur de rendu, mêmes profils d'affichage, même bloc « Route » (champ de
 route en case 15, carte et coupe verticale liées), sans le bloc Mission du Centre.
 
-La page publique ajoute, après le bloc Route, un bloc « Cartes du vol » : rendez-vous facultatif, niveau, choix des cartes
-(route, approche, rendez-vous, destination). Elle crée une mission locale dans son propre espace
+La page publique ajoute, après le bloc Route, un bloc « Cartes » : rendez-vous facultatif, choix des cartes (route,
+approche, rendez-vous, destination) et l'action. Elle crée une mission locale dans son propre espace
 du navigateur (SIA_MISSION_NS = 'planner') d'après la route du champ : la mission du générateur et du studio du Centre
 n'est jamais touchée.
+
+v2 (niveaux d'utilisation) : aux niveaux 1 à 3, la page se limite au bloc « Route » (champ de route, niveau, SimBrief,
+aperçu et « Agrandir ») et au bloc « Cartes », dont l'unique bouton « Générer les cartes et le ZIP » crée les cartes
+puis lance la génération, compte rendu juste dessous ; le reste du studio (recherche de route, tracé, réglages des
+profils, « Cartes à produire », « Aperçus et génération », pied de page, base SIA) porte data-min-level="4" ici
+seulement. Au niveau 4, le bloc « Cartes » garde « Préparer les cartes » (liste « Cartes à produire ») et la génération
+reste celle du studio (pied de page).
 
 À relancer après chaque modification du studio (la page publique n'est pas éditée à la main) :
     python tools/build_map_planner.py
@@ -17,9 +24,9 @@ ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)),
 SRC = os.path.join(ROOT, 'apps', 'cpco', 'map_parser.html')
 OUT = os.path.join(ROOT, 'apps', 'planner', 'map_planner.html')
 
-VOL_BLOCK = r'''<section data-block-id="vol" data-icon="plane" data-subtitle="Rendez-vous facultatif et cartes à produire d’après la route du bloc « Route ».">
-<h2>Cartes du vol</h2>
-<p id="volStatus" data-status class="small"></p>
+# titre, sous-titre et boutons : écrits par VOL_SCRIPT (K.t, avant le cadre de page qui les lit)
+VOL_BLOCK = r'''<section data-block-id="vol" data-icon="plane">
+<h2 id="volTitle"></h2>
 <div class="volForm">
 <label>Rendez-vous (facultatif)<input id="volRdv" spellcheck="false" placeholder="point ou « 44.2, 0.6 »"></label>
 </div>
@@ -29,25 +36,37 @@ VOL_BLOCK = r'''<section data-block-id="vol" data-icon="plane" data-subtitle="Re
 <label class="check"><input type="checkbox" data-volmap="rdv" checked> rendez-vous</label>
 <label class="check"><input type="checkbox" data-volmap="destination" checked> destination</label>
 </div>
-<div class="actions"><button id="volBuild" type="button" data-icon="map">Créer les cartes</button></div>
+<div class="actions"><button id="volGenerate" type="button" data-icon="download" data-max-level="3"></button><button id="volBuild" type="button" data-icon="map" data-min-level="4"></button></div>
+<p id="volStatus" data-status class="small"></p>
 </section>
 
 '''
 
 VOL_CSS = '''.volForm{display:grid;grid-template-columns:repeat(2,minmax(0,260px));gap:8px 12px;align-items:end}.volForm label{display:grid;gap:3px;font-size:13px}
 #volStatus:empty{display:none}
+[data-block-id="vol"] #result:not(:empty){margin-top:6px}
 .volMaps{display:flex;flex-wrap:wrap;gap:4px 14px;align-items:center;margin:8px 0 2px}
 #vprofPtsBox{display:none!important}
 @media(max-width:800px){.volForm{grid-template-columns:1fr 1fr}}
 '''
 
 VOL_SCRIPT = r'''<script>
-// ===== Cartes de vol (page publique) : bloc « Cartes du vol » =====
+// ===== Cartes de vol (page publique) : bloc « Cartes » =====
 // La route est celle du bloc Route (champ vprofRoute, case 15) : points lus par SiaProfile.parseRoute (base SIA du
 // navigateur : aérodromes, balises, points RNAV, voies aériennes) ; mission locale (espace « planner ») envoyée au
 // moteur du studio (useDoc) : points de la route, cartes topographique, approche, rendez-vous, destination, profil.
 (()=>{
-const FORM_KEY='mapPlannerForm:v1',$v=id=>document.getElementById(id);
+const FORM_KEY='mapPlannerForm:v1',$v=id=>document.getElementById(id),K=window.RepositoryKit;
+// niveau d'utilisation (html[data-level], posé avant le rendu) : niveau 4 = studio complet
+const full=(+document.documentElement.dataset.level||4)>=4;
+// textes du bloc, traduits à la source : ce script passe avant le cadre de page (titre, sous-titre, icônes)
+document.querySelector('section[data-block-id="vol"]').dataset.subtitle=K.t(['Rendez-vous facultatif et cartes à choisir d’après la route du bloc « Route ».','Optional rendezvous and maps to choose from the route of the “Route” block.','Optionaler Treffpunkt und auszuwählende Karten nach der Route des Blocks „Route“.','Encuentro opcional y mapas que elegir según la ruta del bloque «Ruta».']);
+$v('volTitle').textContent=K.t(['Cartes','Maps','Karten','Mapas']);
+$v('volGenerate').textContent=K.t(['Générer les cartes et le ZIP','Generate the maps and the ZIP','Karten und ZIP erzeugen','Generar los mapas y el ZIP']);
+$v('volBuild').textContent=K.t(['Préparer les cartes','Prepare the maps','Karten vorbereiten','Preparar los mapas']);
+// niveaux 1 à 3 : « Aperçus et génération » est rangé au niveau 4 ; le compte rendu de la génération (#result du
+// studio, avec « Réessayer seule ») passe sous l'action du bloc, une fois au chargement (le niveau change en rechargeant)
+if(!full)$v('volStatus').after($v('result'));
 const say=(html,kind)=>{$v('volStatus').innerHTML=kind?`<span class="${kind}">${html}</span>`:html};
 const levelFt=t=>{const m=/^(FL)?(\d{1,5})(FT)?$/.exec(String(t||'').toUpperCase().replace(/\s+/g,''));return m?(m[1]?+m[2]*100:+m[2]):null};
 const coord=t=>{const m=/^\s*(-?\d+(?:\.\d+)?)\s*[,;| ]\s*(-?\d+(?:\.\d+)?)\s*$/.exec(t||'');return m&&Math.abs(+m[1])<=90&&Math.abs(+m[2])<=180?{lat:+m[1],lon:+m[2]}:null};
@@ -58,7 +77,7 @@ function saveForm(){const route=$v('vprofRoute').value.trim();try{localStorage.s
 function loadForm(){try{const f=JSON.parse(localStorage.getItem(FORM_KEY)||'null')||{},sh=readFpl(),route=sh?.route&&(sh.at||0)>(f.at||0)?sh.route:f.route;if(route&&(!$v('vprofRoute').value.trim()||sh?.route===route))$v('vprofRoute').value=route;$v('volRdv').value=f.rdv||'';if(f.level&&!$v('vprofCruise').value)$v('vprofCruise').value=f.level;if(Array.isArray(f.maps))document.querySelectorAll('[data-volmap]').forEach(i=>{i.checked=f.maps.includes(i.dataset.volmap)})}catch{}}
 /** Points de la route du champ (sans les points intermédiaires des voies aériennes) ; null et message si impossible. */
 function routePoints(){
- if(!baseReady()){say('Base SIA absente de ce navigateur : bloc « Base de données SIA » (menu ☰ › blocs) → « Relire le dossier ».','err');return null}
+ if(!baseReady()){say(esc(K.t(['Base SIA absente de ce navigateur : bloc « Base de données SIA », « Reconstruire la base aéronautique », ou Paramètres › Maintenance.','SIA database missing from this browser: “SIA database” block, “Rebuild the aeronautical database”, or Settings › Maintenance.','SIA-Datenbank fehlt in diesem Browser: Block „SIA-Datenbank“, „Luftfahrtdatenbank neu aufbauen“, oder Einstellungen › Wartung.','Base SIA ausente de este navegador: bloque «Base de datos SIA», «Reconstruir la base aeronáutica», o Ajustes › Mantenimiento.'])),'err');return null}
  const{points,unknown}=SiaProfile.parseRoute($v('vprofRoute').value.trim(),SiaProfile.resolver({aero:aero||{}}));
  if(unknown.length){say(`Route : inconnu(s) dans la base SIA : ${esc(unknown.join(', '))}.`,'err');return null}
  const pts=points.filter(p=>!p.awy);
@@ -69,8 +88,9 @@ function routePoints(){
 // reprennent le profil par défaut de leur carte (route et approche : IFR ; destination, rendez-vous : VFR détaillé)
 const userProfile=new Map();
 document.addEventListener('change',e=>{const i=e.target?.dataset?.mapProfile;if(i!=null&&mission?.maps?.[+i])userProfile.set(mission.maps[+i].file,e.target.value)},true);
-/** Crée (ou met à jour) la mission du vol et ses cartes ; quiet : sans message ni recentrage (route modifiée). */
-function build(quiet){
+/** Crée (ou met à jour) la mission du vol et ses cartes ; quiet : sans message ni recentrage (route modifiée) ; gen :
+ *  la génération suit (bouton des niveaux 1 à 3), l'aperçu est relancé par elle. */
+function build(quiet,gen){
  const pts=routePoints();if(!pts)return false;const want=new Set([...document.querySelectorAll('[data-volmap]')].filter(i=>i.checked).map(i=>i.dataset.volmap));
  const idOf=(p,i)=>{const n=String(p.name||'').toUpperCase();return/^[A-Z0-9]{2,5}$/.test(n)?n:`P${i}`};
  let rdv=null;const rt=$v('volRdv').value.trim();if(rt){const c=coord(rt);if(c)rdv={id:'RDV',name:'RDV',...c};else{const q=SiaProfile.resolver({aero:aero||{}})(rt);if(!q){say(`Rendez-vous inconnu : ${esc(rt)}.`,'err');return false}rdv={id:'RDV',name:`RDV ${q.name||rt}`,lat:q.lat,lon:q.lon}}}
@@ -86,11 +106,17 @@ function build(quiet){
  const views=new Map((mission?.maps||[]).filter(m=>m._view).map(m=>[m.file,m._view]));
  for(const m of maps){const u=userProfile.get(m.filename);if(u)m.profile=u;const v=views.get(m.filename);if(v)m.view=v}
  try{const doc=SiaMission.save({yaml,narrative:{summary:'',detailed:'',sections:[]},sourceNames:[]},'planner');routeCache={};useDoc(doc,true,true);saveForm()}catch(e){say(esc(e.message),'err');return false}
- setTimeout(()=>{drawVprofPreview();if(!quiet&&!$v('refreshPreview').disabled)$v('refreshPreview').click()},400);
- if(!quiet){say(`${maps.length} carte(s) prête(s) : ${esc(maps.map(m=>m.description).join(', '))}, et le profil vertical de la route. Réglages et aperçus dans « Cartes à produire », fichiers dans « Aperçus et génération ».`,'ok')}
+ setTimeout(()=>{drawVprofPreview();if(!quiet&&!gen&&!$v('refreshPreview').disabled)$v('refreshPreview').click()},400);
+ // suite indiquée selon le niveau : « Cartes à produire » et les aperçus n'existent qu'au niveau 4 ; aux niveaux 1 à 3,
+ // le bouton « Générer les cartes et le ZIP » du bloc (lancée par lui : progression et compte rendu dans #result,
+ // dessous ; sinon à lancer, après une arrivée ?fpl=1)
+ if(!quiet){const list={n:maps.length,list:esc(maps.map(m=>m.description).join(', '))};say(gen?K.tf(['{n} carte(s) : {list}, et le profil vertical de la route.','{n} map(s): {list}, and the vertical profile of the route.','{n} Karte(n): {list}, und das Höhenprofil der Route.','{n} mapa(s): {list}, y el perfil vertical de la ruta.'],list):K.tf(full?['{n} carte(s) prête(s) : {list}, et le profil vertical de la route. Réglages et aperçus dans « Cartes à produire », fichiers dans « Aperçus et génération ».','{n} map(s) ready: {list}, and the vertical profile of the route. Settings and previews in “Maps to produce”, files in “Previews and generation”.','{n} Karte(n) bereit: {list}, und das Höhenprofil der Route. Einstellungen und Vorschauen unter „Zu erstellende Karten“, Dateien unter „Vorschauen und Erzeugung“.','{n} mapa(s) listo(s): {list}, y el perfil vertical de la ruta. Ajustes y vistas previas en «Mapas que producir», archivos en «Vistas previas y generación».']:['{n} carte(s) prête(s) : {list}, et le profil vertical de la route. Fichiers : « Générer les cartes et le ZIP ».','{n} map(s) ready: {list}, and the vertical profile of the route. Files: “Generate the maps and the ZIP”.','{n} Karte(n) bereit: {list}, und das Höhenprofil der Route. Dateien: „Karten und ZIP erzeugen“.','{n} mapa(s) listo(s): {list}, y el perfil vertical de la ruta. Archivos: «Generar los mapas y el ZIP».'],list),'ok')}
  return true;
 }
 $v('volBuild').onclick=()=>build(false);
+// niveaux 1 à 3 : un seul bouton, cartes créées puis aperçu et génération des fichiers et du ZIP par le moteur du studio
+// (« Générer » du studio, masqué ici : compte rendu dans #result, sous ce bouton)
+$v('volGenerate').onclick=async()=>{const b=$v('volGenerate');if(b.disabled||!build(false,true))return;b.disabled=true;try{await new Promise(r=>setTimeout(r,450));await $v('refreshPreview').onclick?.();if(mission&&outputMaps().length)await $v('generate').onclick()}finally{b.disabled=false}};
 // « Tracer » ou « Planificateur carburant » avant la création : la mission du vol est d'abord créée
 for(const id of ['vprofDraw','vprofToPlanner'])$v(id).addEventListener('click',e=>{if(sharedDoc?.yaml?.mission?.id==='VOL')return;e.stopImmediatePropagation();if(build(true))setTimeout(()=>$v(id).click(),600)},true);
 // route modifiée (saisie, recherche, carte ou coupe) : mission, cartes et profil mis à jour
@@ -139,6 +165,40 @@ def main():
     # route probable et cartes d'exercice : propres aux missions du Centre
     sub(r'<button type="button" id="vprofFromProbable"', '<button type="button" id="vprofFromProbable" hidden')
     sub(r'<button type="button" id="addExerciseMaps"', '<button type="button" id="addExerciseMaps" hidden')
+
+    def lit(old, new):
+        """Remplacement d'un morceau exact du studio (sans motif)."""
+        sub(re.escape(old), new)
+
+    # v2 : page simple aux niveaux 1 à 3 (route, niveau, SimBrief, aperçu et « Agrandir », bloc « Cartes » et son bouton
+    # « Générer les cartes et le ZIP ») ; le reste, rangé au niveau 4 (data-min-level, repository_nav.css), y est complet.
+    # Le studio du Centre n'est pas touché.
+    lit('<span class="routeInline"><select id="routeMode"', '<span class="routeInline" data-min-level="4"><select id="routeMode"')
+    lit('<div class="routeGroup"><button type="button" id="vprofDraw"', '<div class="routeGroup" data-min-level="4"><button type="button" id="vprofDraw"')
+    # liste « Carte » gardée à tout niveau (une mission de plusieurs cartes se parcourt dans l'aperçu) ; « Profil » : niveau 4
+    lit('<label class="routeInline">Profil <select id="routeMapProfile"', '<label class="routeInline" data-min-level="4">Profil <select id="routeMapProfile"')
+    # réglages du profil d'affichage (déplacés sous l'aperçu par le studio) et de la coupe
+    lit('<div class="profileLeft routeProfileEdit">', '<div class="profileLeft routeProfileEdit" data-min-level="4">')
+    lit('<details id="profileEdit" class="profileEdit">', '<details id="profileEdit" class="profileEdit" data-min-level="4">')
+    lit('<details class="vprofSettings">', '<details class="vprofSettings" data-min-level="4">')
+    # barre de l'aperçu : seul « Agrandir » reste aux niveaux 1 à 3
+    lit('<label class="mapZip previewZip"', '<label class="mapZip previewZip" data-min-level="4"')
+    lit('<button id="refreshPreview"', '<button id="refreshPreview" data-min-level="4"')
+    for v in ('keep', 'home', 'auto'):
+        lit(f'<button type="button" data-view="{v}"', f'<button type="button" data-view="{v}" data-min-level="4"')
+    lit('<button id="previewWindow"', '<button id="previewWindow" data-min-level="4"')
+    lit('<section data-block-id="sia-profiles"', '<section data-block-id="sia-profiles" data-min-level="4"')
+    # base SIA : niveau 4 ; montrée à tout niveau tant qu'elle manque (renderSiaBaseLine du studio)
+    lit('<section data-block-id="sia-base"', '<section data-block-id="sia-base" data-min-level="4"')
+    # « Aperçus et génération » et pied de page : niveau 4 (l'action des niveaux 1 à 3 est dans le bloc « Cartes », le
+    # compte rendu #result y est déplacé par VOL_SCRIPT) ; au niveau 4, « Générer » une seule fois, dans le pied de page
+    # (generateSticky, qui clique celui-ci, gardé masqué)
+    lit('<section data-block-id="sia-outputs"', '<section data-block-id="sia-outputs" data-min-level="4"')
+    lit('<button id="generate" data-icon="download" disabled>', '<button id="generate" data-icon="download" disabled hidden>')
+    lit('<div class="studio-footer repo-actionbar" id="studioToolbar"', '<div class="studio-footer repo-actionbar" id="studioToolbar" data-min-level="4"')
+    # phrase d'attente du studio dans #result (profils, carte d'assemblage) : niveau 4 seulement ; aux niveaux 1 à 3,
+    # #result est vidé quand la mission change (compte rendu d'une route précédente)
+    lit("  $('result').textContent = hasMission ?\n", "  $('result').textContent = hasMission && (+document.documentElement.dataset.level || 4) >= 4 ?\n")
     i = s.rfind('</script>\n<script src="../../shared/repository_nav.js')
     if i < 0:
         raise SystemExit('fin du script du studio introuvable')

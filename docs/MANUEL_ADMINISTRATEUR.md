@@ -18,17 +18,17 @@ Les réglages se trouvent dans ☰ › Paramètres, onglet « Centre ».
 
 Le verrou masque le Centre tant qu'il n'a pas été activé dans ce navigateur.
 
-- Centre verrouillé : les pages du Centre disparaissent du menu ☰, de la barre latérale (séparateur « Centre » et entrées « Missions », « Registre », « ODV ») et de l'accueil.
+- Centre verrouillé : la barre latérale, le menu ☰ et l'accueil suivent le niveau d'utilisation, pas le verrou ; une page du Centre ouverte sans lui affiche l'avis « Accès réservé », sauf le Tableau (entrée « Planning »), consultable en lecture seule.
 - Une page du Centre ouverte directement (favori, lien) est recouverte d'un avis « Accès réservé » avec les liens « Activer le Centre… » et « Accueil ».
 - Dans Paramètres › Centre, seule la rubrique « Accès au Centre et réglages » reste visible ; les autres (« Utilisateurs et droits », « Catégories de disponibilité », « Planning ODV », « Envoi des comptes rendus (webservice) ») sont cachées.
 - L'activation est mémorisée dans ce navigateur seulement : à refaire sur chaque poste et après un effacement des données du site.
 
-Limite : c'est un verrou d'usage, pas une sécurité. Le mot de passe est écrit en clair dans `data/config/centre.json`, partagé avec les données (`DEFA` par défaut), et affiché sous le champ : c'est le **mode autonome**. Le mode groupe (registre signé, accès par le rôle d'administrateur) est à venir ([conception](technique/COMPTES_SIGNES.md)).
+Limite : c'est un verrou d'usage, pas une sécurité. Le mot de passe est écrit en clair dans `data/config/centre.json`, partagé avec les données (`DEFA` par défaut), et affiché à côté du bouton « Activer le Centre » : c'est le **mode autonome**. Le mode groupe (registre signé, accès par le rôle d'administrateur) est à venir ([conception](technique/COMPTES_SIGNES.md)).
 
 ### Activer ou verrouiller le Centre
 
 1. Ouvrez ☰ › Paramètres, onglet « Centre », rubrique « Accès au Centre et réglages ».
-2. Saisissez le mot de passe affiché sous le champ (« Mot de passe : DEFA » par défaut) dans « Mot de passe du Centre » (majuscules et minuscules indifférentes).
+2. Saisissez le mot de passe affiché à côté du bouton (« Mot de passe : DEFA » par défaut) dans « Mot de passe du Centre » (majuscules et minuscules indifférentes).
 3. Cliquez « Activer le Centre » ou appuyez sur Entrée. La ligne d'état indique « Centre activé dans ce navigateur ».
 
 Les entrées du Centre apparaissent aussitôt, sans recharger la page. La rubrique affiche alors « Mode et accès » (mode du Centre ; « Mot de passe du Centre (partagé avec les données) » et « Enregistrer le mot de passe » : écrit dans `data/config/centre.json`, il part au prochain « Synchroniser »), puis les réglages « Calcul des routes de transit » :
@@ -91,6 +91,7 @@ Pendant l'usurpation, le trigramme de travail est celui de l'utilisateur usurpé
 Le générateur prépare le dossier d'une mission : identification, textes du brief, exercice, durée estimée, zones à activer, puis les PDF à remettre aux équipages. Il sert aussi à commander une mission à ChatGPT et à recevoir sa réponse.
 Accès : barre latérale « Missions » (section « Centre ») ou ☰ › « Centre — Générateur de mission ». Depuis le registre, « Ouvrir dans le générateur » charge la mission choisie.
 Voir aussi [missions SIA](SIA_MISSIONS.md) et [prompt du générateur](technique/PROMPT_GENERATEUR_MISSIONS.md).
+Selon le niveau d'utilisation : la page est proposée à partir du niveau Conception (3). À ce niveau, elle montre sept blocs : Mission, Identification, Durée estimée, Zones à activer, Textes de mission, Cartes du dossier final et Documents (plus Opération et Exercice quand la mission en relève). Les brouillons, « Toutes les données YAML » et les paramètres du calcul des routes sont au niveau Expert (4).
 
 ### Onglets « Générateur de mission » et « Studio cartographique »
 
@@ -112,12 +113,12 @@ Ce bloc montre la mission chargée et réunit l'enregistrement et l'import.
 | « Nouvelle mission » | Vide le formulaire (date du jour) |
 | « Commander à ChatGPT… » | Déplie le formulaire de commande (voir plus bas) |
 | « Enregistrer dans le dossier » | Écrit le YAML modifié dans `data/missions/<lettre>_<FAMILLE>/<ID>/` ; l'ancienne version est remplacée, l'historique est gardé dans le YAML |
-| « Mémoriser le brouillon » / « Recharger le brouillon » | Garde ou relit le texte de la mission dans ce navigateur (les images sont à resélectionner) |
+| « Mémoriser le brouillon » / « Recharger le brouillon » (niveau Expert) | Garde ou relit le texte de la mission dans ce navigateur (les images sont à resélectionner) |
 
 Le volet « Importer une autre mission : fichiers, texte collé, commande ChatGPT » est ouvert quand aucune mission n'est chargée :
 - « YAML et/ou Markdown » : sélectionnez ensemble `mission<ID>.yaml` et `summary<ID>.md`, ou cliquez « ou coller son contenu… » puis « Lire la mission » ;
 - « Cartes ou ZIP livré par le générateur » : choisissez directement le ZIP du studio ; les PNG et la carte d'assemblage sont associés automatiquement ;
-- « Commander une mission à ChatGPT » : même formulaire que le registre (type, sous-type, théâtre, série, équipes, aéronefs…). « Commander : copier le prompt et ouvrir ChatGPT » copie le prompt, ouvre ChatGPT dans un nouvel onglet et inscrit la commande au registre (« commandée »).
+- « Commander une mission à ChatGPT » : même formulaire que le registre (type, sous-type, théâtre, série, équipes, aéronefs…). « Commander : copier le prompt et ouvrir ChatGPT » copie le prompt, ouvre ChatGPT dans un nouvel onglet et inscrit la commande au registre (« commandée »). Au niveau Conception, ce repli n'apparaît que lorsque le bouton « Commander à ChatGPT… » l'ouvre ; au niveau Expert, il figure aussi, replié, dans le volet.
 
 Une mission reçue est inscrite au registre et rangée dans son dossier si le dossier des missions est autorisé ; sinon, cliquez « Ranger dans le dossier des missions… ». Lien « Ouvrir le registre ↗ ».
 
@@ -147,7 +148,7 @@ Changer l'identifiant d'une mission citée par d'autres (opération, cartes, tex
 
 Estimation du vol d'après la route probable et l'appareil ; recalculée à chaque modification. Masqué pour une mission d'organisation.
 - « Transit » : « automatique (selon l'appareil et le niveau) », « voies aériennes (IFR) », « RTBA (basse hauteur) » ou « direct ». Le choix est écrit dans la mission.
-- « Paramètres du calcul des routes (communs à toutes les missions) » : mêmes champs que Paramètres › Centre, avec « Valeurs par défaut ».
+- « Paramètres du calcul des routes (communs à toutes les missions) » (niveau Expert) : mêmes champs que Paramètres › Centre, avec « Valeurs par défaut ».
 - Affichage : « Vol estimé », « Bloc », aller / sur zone / retour, distance ; options de retour et briefs successifs le cas échéant.
 - Les **temps éprouvés** (CR des missions de même départ et mêmes points) remplacent le calcul quand ils existent.
 - Un tableau compare l'estimation aux CR déjà faits de la mission (vol réel, écart).
@@ -184,7 +185,7 @@ Sur une mission d'organisation, le bloc devient « Brief général » : situatio
 
 ### Toutes les données YAML
 
-Bloc masqué par défaut : cliquez « Afficher » dans son en-tête.
+Bloc du niveau Expert, masqué par défaut : cliquez « Afficher » dans son en-tête.
 - Éditeur sans schéma imposé : chaque clé du YAML est modifiable, les champs inconnus sont conservés.
 - Listes : « Ajouter un élément », × pour retirer un élément.
 - « Nom d'un nouveau champ racine » puis « Ajouter » crée une clé de premier niveau.
@@ -245,7 +246,7 @@ Carte de contrôle : listes « Carte » et « Profil », case « ZIP », « Actu
 - Case « ZIP » (décochée : carte non générée ; choix non enregistré dans la mission) et × pour supprimer.
 
 Ajout : nom, type (« générale », « cible », « détail », « zone ») puis « + Carte » (emprise = vue affichée) ; « + Cartes d'exercice » ajoute les cartes de l'organisation, des chiffons joués ou de l'équipage.
-« Réglages du profil … » (replié) : « Nom du profil », « Fond de carte », « Sauvegarder », « Nouveau », « Dupliquer », « Supprimer », puis quatre onglets : « Fond de carte », « Zones », « Symboles OACI », « Éléments ». Le profil modifié est toujours celui de la carte choisie ; les profils sont communs à toutes les missions et gardés dans ce navigateur.
+« Réglages du profil … » (replié) : « Nom du profil », « Fond de carte », « Sauvegarder », « Nouveau », « Dupliquer », « Supprimer », puis quatre onglets : « Fond de carte », « Zones », « Symboles OACI », « Éléments ». Le profil modifié est toujours celui de la carte choisie ; les profils sont communs à toutes les missions et gardés dans ce navigateur. Les listes de suggestions de la saisie (zones, aérodromes, balises : jusqu'à 13 000 entrées d'après la base SIA) ne se remplissent que lorsque vous cliquez dans le champ concerné, pas à l'ouverture de la page.
 
 ### Aperçus et génération
 
@@ -254,6 +255,7 @@ Ajout : nom, type (« générale », « cible », « détail », « zone ») pui
 - Les PNG sont rangés dans `cartes/` du dossier de la mission (visibles dans le registre). Sinon, utilisez « Ranger les cartes dans le dossier » dans le pied de page.
 - Une carte en échec n'arrête pas les autres : le ZIP contient `rapport_generation.txt` et « Réessayer seule » relance la carte. « fond partiel » signale un fond de carte lent.
 - Lot de plusieurs missions : « Générer les n missions » produit un seul ZIP, un dossier par mission, avec la carte de l'opération.
+- « Arrêter » (barre de progression, aperçus comme génération) : la carte en cours s'achève, les suivantes ne sont pas faites. Une génération arrêtée ne télécharge aucun ZIP et ne range rien dans le dossier de la mission ; un lot arrêté dit combien de missions sont terminées (leurs cartes sont déjà rangées dans leur dossier) ; les aperçus déjà affichés restent.
 
 Type de sortie (PNG, SVG éditable) et largeur des PNG : menu ☰ › « Sorties des cartes ». La carte d'assemblage est toujours incluse ; elle s'affiche en bas du bloc.
 
@@ -273,6 +275,7 @@ Si le dossier contient plusieurs cycles, seul le plus récent est lu ; les autre
 Le registre recense toutes les missions générées ou commandées, avec leur suivi par le Centre : statut, date de vol, notes, comptes rendus.
 Il sert à choisir une mission, à l'ouvrir dans le générateur ou le studio, à l'affecter à des pilotes, à créer son CR et à commander de nouvelles missions.
 Accès : barre latérale « Registre » (section « Centre ») ou ☰ › « Centre — Registre des missions ».
+Selon le niveau d'utilisation : la page est proposée à partir du niveau Conception (3), avec l'essentiel : « Ajouter des fichiers… » et « Relire le dossier », quatre filtres et « Plus de filtres », un tableau à sept colonnes, une fiche sans le studio et le formulaire de commande simplifié. Le reste est au niveau Expert (4), comme indiqué ci-dessous.
 
 ### Missions du registre
 
@@ -280,21 +283,21 @@ En tête : nombre de missions, répartition par statut et date de mise à jour.
 
 | Bouton | Effet |
 |---|---|
-| « Dossier des missions : … » | Choisit le dossier `data/missions` puis le relit |
-| « Relire le dossier » | Relit toutes les missions du dossier |
+| « Dossier des missions : … » (niveau Expert) | Choisit le dossier `data/missions` puis le relit |
+| « Relire le dossier » | Relit toutes les missions du dossier ; le demande s'il n'est pas encore autorisé |
 | « Ajouter des fichiers… » | Ajoute des `mission<ID>.yaml` / `summary<ID>.md` (tout navigateur) |
-| « Écrire mission_registry.yaml » | Écrit le registre dans le dossier des missions |
-| « Nettoyer le registre (n) » | Retire les missions « fichier absent » après relecture |
+| « Écrire mission_registry.yaml » (niveau Expert) | Écrit le registre dans le dossier des missions |
+| « Nettoyer le registre (n) » (niveau Expert) | Retire les missions « fichier absent » après relecture |
 
-Le dossier est relu automatiquement à l'ouverture s'il est déjà autorisé.
+Le dossier est relu automatiquement à l'ouverture s'il est déjà autorisé. La lecture affiche une barre de progression avec « Arrêter » : le registre reste inchangé.
 Au nettoyage, le statut, les notes et la date de vol passent à la mission qui remplace une mission renumérotée.
 
 ### Choisir une mission
 
-Filtres : « Type », « Sous-type », « Rendez-vous », « Équipes engagées » (min – max), « Type d'équipe / d'aéronef », « Ravitaillement en vol », « Théâtre », « Statut », « Recherche ». Ils sont mémorisés.
+Filtres : « Type », « Statut », « Théâtre », « Recherche » ; les autres (« Sous-type », « Rendez-vous », « Équipes engagées » (min – max), « Type d'équipe / d'aéronef », « Ravitaillement en vol ») sont sous « Plus de filtres », ouvert au niveau Expert ou quand l'un d'eux est actif. Ils sont mémorisés.
 - « Tirer au sort (n) » choisit une mission parmi celles qui passent les filtres.
 - « Effacer les filtres », « CSV » (export de la sélection).
-- Tableau trié par colonne : Mission, Type, Titre, Équipes, RDV, AAR, Théâtre, Statut, « Durée est. », CR (nombre de vols), « Généré ». La barre sous le tableau règle sa hauteur (double-clic : hauteur par défaut).
+- Tableau trié par colonne : Mission, Type, Titre, Équipes, RDV, AAR, Théâtre, Statut, « Durée est. », CR (nombre de vols), « Généré ». La barre sous le tableau règle sa hauteur (double-clic : hauteur par défaut). Les colonnes Équipes, RDV, AAR et Théâtre ne sont affichées qu'au niveau Expert.
 - ✕ retire une mission du registre sans supprimer ses fichiers.
 
 Cliquez une ligne pour ouvrir la fiche de la mission, décrite ci-dessous. Le lien `?mission=M-016` ouvre directement la fiche.
@@ -303,11 +306,11 @@ Cliquez une ligne pour ouvrir la fiche de la mission, décrite ci-dessous. Le li
 
 La fiche affiche le statut, l'itinéraire, les équipes et indicatifs, puis :
 - pour une opération : ses membres (cliquez pour les afficher) ; « Ouvrir » charge toute l'opération dans le générateur ou le studio ;
-- « Fichiers de la mission » : YAML, « Markdown (lisible) », « PDF (générateur) », « Modifier (générateur) », « Cartes (studio) », vignettes des cartes, versions précédentes et textes reçus ;
+- « Fichiers de la mission » : YAML, « Markdown (lisible) », « PDF (générateur) », « Modifier (générateur) », « Cartes (studio) » (niveau Expert), vignettes des cartes, versions précédentes et textes reçus ;
 - état des cartes : « complète », « partielle : cartes à compléter » ou « partielle : cartes non générées (régénérables) » ;
 - « Durée estimée » avec la comparaison aux CR.
 
-Boutons : « Ouvrir dans le générateur », « Ouvrir dans le studio », « Affecter… » (sauf organisation …Z ; voir [affectation des missions](technique/AFFECTATION_MISSIONS.md)), « Créer le CR » ou « Nouveau CR (vol n) », et « Recopier le prompt » pour une mission commandée.
+Boutons : « Ouvrir dans le générateur », « Ouvrir dans le studio », « Affecter… » (sauf organisation …Z ; voir [affectation des missions](technique/AFFECTATION_MISSIONS.md)), « Créer le CR » ou « Nouveau CR (vol n) », et « Recopier le prompt » pour une mission commandée. « Ouvrir dans le studio » et « Recopier le prompt » sont au niveau Expert.
 
 ### Suivi du Centre : statut, date de vol, notes
 
@@ -333,12 +336,10 @@ Le suivi est écrit dans `suivi.yaml`, dans le dossier de la mission ; il est pa
 
 ### Commander une mission
 
-Formulaire commun avec le générateur.
-1. Réglez « Type », « Sous-type », « Théâtre » et « Second théâtre » (« Pays » pour l'étranger), « Série » (vide = la suivante).
-2. Vérifiez « Identifiant » (calculé, en lecture seule).
-3. Réglez « Équipes en vol », « Rendez-vous », « Équipes au sol », « Durée » (XS à XL), « Traductions », « Ravitaillement en vol ».
-4. Sous « Aéronef de chaque équipe en vol », saisissez l'appareil des équipes A, B… (vide = automatique).
-5. Cliquez « Commander : copier le prompt et ouvrir ChatGPT », collez dans ChatGPT (Ctrl+V) puis envoyez.
+Formulaire commun avec le générateur et les ordres de vols.
+1. Réglez « Type », « Sous-type », « Théâtre » (« Pays » pour l'étranger), « Équipes en vol », « Équipes au sol » et « Durée » (XS à XL).
+2. Au besoin, dépliez « Plus d'options » : « Second théâtre » (« Pays » pour l'étranger), « Série » (vide = la suivante), « Identifiant » (calculé, en lecture seule), « Rendez-vous », « Traductions », « Ravitaillement en vol » et l'aéronef de chaque équipe en vol A, B… (vide = automatique). Ce repli est ouvert au niveau Expert ; aux autres niveaux, il s'ouvre de lui-même quand l'un de ses réglages s'écarte du défaut.
+3. Cliquez « Commander : copier le prompt et ouvrir ChatGPT », collez dans ChatGPT (Ctrl+V) puis envoyez.
 
 La mission apparaît au registre avec le statut « commandée ». Enregistrez ensuite les fichiers dans le dossier des missions puis « Relire le dossier » : la commande est rapprochée de la mission générée (même série). Les réglages sont mémorisés.
 
@@ -346,9 +347,10 @@ La mission apparaît au registre avec le statut « commandée ». Enregistrez en
 <!-- page: apps/cpco/odv_planning.html -->
 
 La page Planning ODV réunit les disponibilités de la semaine, les créneaux communs, les missions probables et les affectations. Le Centre (CPCO) s'en sert pour planifier les missions et les confier aux pilotes libres.
-Pour l'ouvrir : barre latérale › rubrique « Centre » › « ODV ». La page fait partie du Centre : tant que le Centre est verrouillé, un avis renvoie à Paramètres › Centre (voir le chapitre suivant). En mode production, il faut aussi être connecté avec le rôle `admin_centre`.
+Pour l'ouvrir : lien « Page ODV complète : classeur, grille, export… » du bloc « Missions probables » du Tableau (niveau Expert), ou menu ☰ (pages du Centre) ; la page n'a pas d'onglet et relève du niveau d'utilisation Planification (2). La page fait partie du Centre : tant que le Centre est verrouillé, un avis renvoie à Paramètres › Centre (voir le chapitre suivant). En mode production, il faut aussi être connecté avec le rôle `admin_centre`.
 Le classeur Excel de l'escadrille est facultatif : sans lui, la semaine se construit à partir des disponibilités déclarées par les pilotes dans Mes missions et des affectations déjà enregistrées.
 Chaque bloc peut être déplacé (poignée ↕) ou masqué (« Masquer » / « Afficher ») ; la disposition est mémorisée pour la page.
+Les blocs « Créneaux communs » et « Missions probables » figurent aussi dans le Tableau, au niveau Expert, calés sur la semaine qu'il affiche (voir le chapitre suivant).
 
 ### Classeur ODV
 
@@ -409,7 +411,7 @@ Ce bloc rassemble les trainings, examens, événements et réservations VATSIM /
 
 ### Activations des zones par réseau
 
-Ce bloc est celui du Tableau (voir « Activations des zones ») : activations RTBA, R, D, TRA… de la semaine affichée, VATSIM et IVAO côte à côte, mêmes données. Saisie réservée comme au Tableau (Centre activé ; en production, administrateur).
+Ce bloc est celui du Tableau (voir « Zones ») : activations RTBA, R, D, TRA… de la semaine affichée, VATSIM et IVAO côte à côte, mêmes données. Saisie réservée comme au Tableau (Centre activé ; en production, administrateur).
 
 ### Créneaux communs
 
@@ -477,16 +479,29 @@ Si le navigateur refuse la copie automatique, le texte est sélectionné : copie
 <!-- page: apps/cpco/odv_orders.html -->
 
 La page Tableau construit l'ordre de vol de la semaine : plaquettes de vol, contrôle, divers et notes posés sur une frise horaire, avec les conflits de disponibilité et de zones.
-Pour l'ouvrir : barre latérale › rubrique « Centre » › « Tableau ». Comme le reste du Centre, elle demande le Centre activé ; en mode production, il faut aussi être connecté avec le rôle `admin_centre`. Sinon, la page s'ouvre en lecture seule.
+Pour l'ouvrir : barre latérale › « Planning » (onglet « Tableau »). Contrairement au reste du Centre, elle se consulte sans lui : au niveau d'utilisation 1, ou sans le Centre activé (ou, en mode production, sans être connecté avec le rôle `admin_centre`), elle s'ouvre en lecture seule : le seul bloc « Ordre du jour », avec la frise du jour et ses lignes vols, contrôle, divers et notes — ni palette, ni zones, ATC, dispos communes, problèmes, journal, ni glisser-déposer ni ordre de mission ; sans le Centre, un avis flottant le rappelle. La modifier demande le Centre activé et, en mode production ou dès qu'un utilisateur est connecté, le rôle `admin_centre` (un compte `utilisateur` reste en lecture seule même Centre ouvert ; de même au Planning ODV : sessions ATC, activations, affectations).
+
+La page compte six blocs, sans choix de vue. Ce que chacun montre dépend du niveau d'utilisation (Mon profil › « Niveau d'utilisation ») :
+
+| Bloc | Contenu | Niveau |
+|---|---|---|
+| « Ordre du jour » | barre de la semaine, puis la frise du jour (seul bloc en lecture seule) | 1 |
+| « Équipage de la semaine » | dispos des membres jour par jour, DLO et butées, modifications de dispo | 2 |
+| « Zones » | activations des zones par réseau, puis demandes de réservation | 2 |
+| « Créneaux communs » | créneaux où plusieurs pilotes sont disponibles ; un clic ouvre la fenêtre du créneau | 4 (Expert) |
+| « Missions probables » | familles de missions compatibles par créneau, lien vers la page ODV | 4 (Expert) |
+| « Statistiques » | vols de la semaine et charge des membres | 2 |
+
+- **Masquer les pilotes indisponibles** (case de la palette et du bloc « Équipage de la semaine », reprise de la page ODV) : seuls restent les membres qu'une plage déclarée ce jour-là rend affectables à un vol (même règle que les conflits : sol, récupération, contrôle hors SOG ou contrôle seul ne comptent pas) (la semaine : au moins un jour) ; gardée dans ce navigateur.
 Tout est enregistré dans le pool de données partagé : l'ordre de la semaine dans `data/odv/<année>-W<semaine>.json`, les réglages dans `data/config/odv.json`. Les dispos restent celles des pilotes, l'équipage d'un vol de mission celui des affectations.
 Les heures sont en z (UTC). Modèle de données : [Tableau](technique/ODV_ORDRES.md).
 
-### Semaine
+### Ordre du jour : barre de la semaine
 
 - « ◀ » et « ▶ » changent de semaine, « Cette semaine » revient à la semaine en cours.
 - Les onglets des jours portent, en rouge, le nombre d'éléments en conflit du jour.
-- « Jour », « Semaine » et « Statistiques » changent de vue.
 - « Permanence » désigne l'officier de permanence de la semaine.
+- « ↶ Annuler » (ou Ctrl+Z) : revient sur les dix dernières modifications de l'ordre de vol (plaquette déplacée, élément posé ou modifié…), réémissions et enregistrement compris ; vidé au changement de semaine.
 - « Briefing » (ou la touche F) passe l'ordre du jour en plein écran ; les flèches ← et → changent de jour.
 - La ligne d'état indique « Enregistré », ou « Enregistré dans ce navigateur » si le dossier des données n'est pas autorisé.
 
@@ -519,7 +534,7 @@ Sur une plaquette : « ⚠ n » compte ses conflits, « P » signale qu'aucun é
 - **PTA** (principal training audience) : membres que l'élément entraîne en priorité, cochés dans le tableau des avions (vol) ou dans la liste PTA (contrôle, divers) ; ils sont entourés sur la plaquette. **Configuration** : configurations chargées sur l'avion (KNON = canon, TALIOS = pod…), proposées d'après les réglages. **DLO** (desired learning objectives) : objectifs de chaque membre sur l'élément, une ligne par membre « TRI = objectifs » ; « ◎ » sur le trigramme, objectifs au survol.
 - **Avions** : deux places au départ (« + Ailier » en ajoute, huit au plus) ; pour chacune, l'appareil (type de la mission proposé ★, sans être imposé, ou un appareil de la flotte), le pilote et le navigateur. L'indicatif proposé est celui de la mission, sinon ceux de la table des indicatifs pour ce type ; il suit la mission si elle le change. **Ravitaillement** : choisissez l'axe, puis une mission ravitailleur de cet axe ; si sa plaquette n'est pas posée, elle rejoint la palette et le vol s'y accroche quand on la pose. La plaquette montre la mission (titre, famille, terrain), l'axe tenu par un ravitailleur et, pour un receveur, « ⛽ ravitailleur axe heure ».
 - **Postes et appareils** (comme le Planning ODV) : pour un vol de mission, une ligne par poste de la mission (indicatif, type) ; l'équipier suivant prend l'indicatif suivant. La liste des appareils propose les appareils compatibles, sur place d'abord puis du plus proche au plus lointain (« convoyage x h xx ») ; ceux déjà pris pendant le vol sont grisés. Un appareil basé sur un autre terrain que le départ fait apparaître une plaquette de convoyage « ⇢ » (appareil, terrains, « à affecter »), qui arrive 30 min avant le décollage et suit le vol : glissez-y le convoyeur. **Astreinte** : préavis et fin, reportés dans l'ordre de mission. Le trait sous un trigramme signale sa qualification sur le type (vert : maîtrisé ; orange : possédé ou connu ; rouge : non) ; c'est un simple signal.
-- **Choix d'une mission** : la liste se limite à l'indicatif ou au libellé saisi (« SAMU » → missions SAMU) ; une fois la mission choisie, la fenêtre de choix de l'ODV s'ouvre et ses lignes (postes, appareils, pilotes, indicatif, convoyeur) remplissent la plaquette ; les pilotes disponibles et qualifiés sur le type sont proposés en premier. La plaquette prend l'heure de décollage de l'affectation (avertissement en cas d'écart) ; « Ordre de mission de l'opération (n)… » enchaîne les ordres de mission des plaquettes de l'opération posées ce jour ; une plaquette reprise de la réserve ou des formations se pose à sa place de synchro. **Ravitaillement** : l'axe choisi limite la liste à ses ravitailleurs ; « Pas de mission spécifique » met dans la réserve un ravitailleur générique sur l'axe. Un convoyage déplacé à la main garde sa place (il suit le vol de l'écart si le vol bouge) ; s'il arrive moins de 30 min avant le décollage, il est signalé. Une dispo dont la catégorie n'ouvre pas la famille de la mission, et un examen ou un training ATC sur le terrain de départ ou d'arrivée pendant le vol, sont signalés. Sous la frise, « Journal des affectations » montre les 30 dernières opérations.
+- **Choix d'une mission** : la liste se limite à l'indicatif ou au libellé saisi (« SAMU » → missions SAMU) ; une fois la mission choisie, la fenêtre de choix de l'ODV s'ouvre et ses lignes (postes, appareils, pilotes, indicatif, convoyeur) remplissent la plaquette ; les pilotes disponibles et qualifiés sur le type sont proposés en premier. La plaquette prend l'heure de décollage de l'affectation (avertissement en cas d'écart) ; « Ordre de mission de l'opération (n)… » enchaîne les ordres de mission des plaquettes de l'opération posées ce jour ; une plaquette reprise de la réserve ou des formations se pose à sa place de synchro. **Ravitaillement** : l'axe choisi limite la liste à ses ravitailleurs ; « Pas de mission spécifique » met dans la réserve un ravitailleur générique sur l'axe. Un convoyage déplacé à la main garde sa place (il suit le vol de l'écart si le vol bouge), allongé ou raccourci à la main il garde sa durée tant que le trajet ne change pas ; il n'est retiré que si le vol ne le demande plus (vol supprimé, appareil changé ou déjà au terrain de départ) — mission momentanément absente du registre ou terrain sans coordonnées : la plaquette reste telle quelle, convoyeur compris ; s'il arrive moins de 30 min avant le décollage, il est signalé. Une dispo dont la catégorie n'ouvre pas la famille de la mission, et un examen ou un training ATC sur le terrain de départ ou d'arrivée pendant le vol, sont signalés. Sous la frise, « Journal des affectations » montre les 30 dernières opérations.
 - **Affectations et ordres de mission** : une mission affectée ailleurs (Planning ODV, Registre) apparaît d'office en plaquette sur la frise, à son décollage, avec ses avions, ses pilotes, son astreinte et son convoyage. À l'inverse, un vol de mission qui a un équipage sans affectation est signalé « ordre de mission non émis » (le pilote ne voit rien dans Mes missions), et un équipage différent des affectations « ordre de mission à réémettre ». Déplacer la plaquette d'un vol qui a son ordre de mission (jour, heure, durée) le réémet d'office, sans fenêtre : mêmes pilotes, appareils, indicatifs et convoyeurs à la nouvelle heure ; un pli déjà ouvert redevient cacheté pour que le pilote voie le changement. En cas de conflit d'affectation (pilote, convoyeur ou appareil pris ailleurs) ou si le dossier des missions n'est pas autorisé, l'ordre n'est pas réémis : la plaquette le signale (« ordre de mission non réémis », avec la raison) et garde sa nouvelle heure ; « Ordre de mission… » reste le moyen de changer pilotes ou appareils.
 - **Ordre de convoyage** : « Ordre de convoyage… » sur une plaquette de convoyage ouvre l'ordre de mission du vol servi, convoyage compris (heure et durée de la plaquette, même déplacée à la main) ; un convoyeur autre que le pilote de la mission, ou un convoyage à affecter, reçoit son ordre de convoyage dans Mes missions ; fait par le pilote de la mission, le convoyage est une ligne de son ordre de mission.
 - Vol de mission : l'équipage vient des affectations de la mission ; « Ordre de mission… » ouvre la fenêtre d'affectation du Centre, préremplie avec les avions de la plaquette (pilote, immatriculation, indicatifs de la patrouille) : les affectations enregistrées sont l'ordre de mission que les pilotes reçoivent dans Mes missions (badge « OM » sur la plaquette). « Commander une mission… » ouvre la commande du générateur, préréglée d'après la plaquette (équipes, types d'appareils, durée, ravitaillement). Le CR de la mission fait foi : à l'ouverture de la semaine, état et CR en sont repris ; sans CR passé le délai réglé, le vol passe en MNE (cause « pas de CR »).
@@ -541,20 +556,31 @@ Sur une plaquette : « ⚠ n » compte ses conflits, « P » signale qu'aucun é
 
 Un vol demande une catégorie disponible ; un contrôle, une catégorie disponible ou « Contrôle SOG » ; un divers accepte aussi « Disponible au sol seulement ». Contrôle et vol hors SOG, DCS, indisponible et récupération ne sont jamais affectables.
 
-### Semaine et statistiques
+### Équipage de la semaine
 
-- **Semaine** : une ligne par membre, une case par jour avec la barre des dispos déclarées et le nombre d'éléments où il figure. Un clic sur une case ouvre ses plages du jour : catégorie, début, fin, et « Récup à partir de », qui pose une récupération jusqu'à minuit. Les plages sont écrites dans la déclaration du pilote.
+Bloc du niveau 2 : une ligne par membre, une case par jour avec la barre des dispos déclarées et le nombre d'éléments où il figure. Un clic sur une case ouvre ses plages du jour : catégorie, début, fin, et « Récup à partir de », qui pose une récupération jusqu'à minuit. Les plages sont écrites dans la déclaration du pilote.
 - **DLO et butées** : objectifs permanents de chaque membre (« ＋ » pour en ajouter, clic pour modifier), avec une butée facultative (date limite : rouge à 3 jours ouvrés ou moins, jaune à 10 ou moins) ; une DLO est fermée d'office par un vol fait qui la contient (DLO de l'élément, libellé, mission) avec le membre dans l'équipage. La palette montre « ◎n » DLO en cours par membre, et la fenêtre d'un élément rappelle celles de l'équipage.
 - « Modifications de dispo » liste les déclarations modifiées depuis leur dernière prise en compte ; « Pris en compte » et « Tout prendre en compte » les marquent dans ce navigateur.
-- **Statistiques** : vols prévus, durée cumulée, faits, non faits, annulés, AAR, ME, Bâchés, MNE ; par membre : temps disponible sur les heures de service, temps de vol, charge (orange au-delà de 70 %, rouge au-delà de 100 % ou sans dispo).
 
-### Activations des zones
+### Zones
 
-Ce bloc saisit les activations de zones de la semaine (`data/atc/activations/<année>-W<semaine>.json`), en deux colonnes côte à côte, VATSIM et IVAO : jour, zone, état (active, demandée, refusée), début, fin, remarque, réseau. Une activation « les deux réseaux » paraît dans les deux colonnes ; changer son réseau la déplace. VATSIM ne publie pas d'activations : sa colonne se saisit à la main. Dans la colonne IVAO, « Importer d'IVAO » reprend les horaires publiés par IVAO (clé d'API de l'installation), repliés sous la liste, ainsi que les trainings, examens et réservations IVAO de la semaine (sessions ATC) ; les saisies à la main restent. Les sessions IVAO s'importent aussi d'elles-mêmes à l'ouverture d'une semaine, au plus une fois par heure, si la page peut écrire. Une modification recalcule aussitôt les zones des vols. Le Planning ODV montre le même bloc, sur les mêmes données.
+Bloc du niveau 2, en deux parties : les activations des zones par réseau, puis les demandes de réservation.
 
-### Demandes de réservation
+**Activations des zones par réseau** : la première partie saisit les activations de zones de la semaine (`data/atc/activations/<année>-W<semaine>.json`), en deux colonnes côte à côte, VATSIM et IVAO : jour, zone, état (active, demandée, refusée), début, fin, remarque, réseau. Une activation « les deux réseaux » paraît dans les deux colonnes ; changer son réseau la déplace. VATSIM ne publie pas d'activations : sa colonne se saisit à la main. Dans la colonne IVAO, « Importer d'IVAO » reprend les horaires publiés par IVAO (clé d'API de l'installation), repliés sous la liste, ainsi que les trainings, examens et réservations IVAO de la semaine (sessions ATC) ; les saisies à la main restent. Les sessions IVAO s'importent aussi d'elles-mêmes à l'ouverture d'une semaine, au plus une fois par heure, si la page peut écrire. Une modification recalcule aussitôt les zones des vols. Le Planning ODV montre le même bloc, sur les mêmes données.
 
-Ce bloc liste les zones que traversent les vols de mission de la semaine (route prévue et zones de travail de la mission, zones saisies d'un entraînement) sans activation « active » de leur réseau : jour, zone, réseau, créneau, vols, état. « Inscrire comme demandée » (ou « Tout inscrire comme demandé ») les ajoute aux activations communes ; la demande elle-même se fait sur le site du réseau (« Copier la liste », lien vers les demandes d'activation IVAO). Une zone P est signalée « à éviter ». À l'ouverture d'une semaine, la page importe d'office les sessions ATC IVAO (trainings, examens, réservations), au plus une fois par heure, avec l'import commun au Planning ODV.
+**Demandes de réservation** : la seconde partie liste les zones que traversent les vols de mission de la semaine (route prévue et zones de travail de la mission, zones saisies d'un entraînement) sans activation « active » de leur réseau : jour, zone, réseau, créneau, vols, état. « Inscrire comme demandée » (ou « Tout inscrire comme demandé ») les ajoute aux activations communes ; la demande elle-même se fait sur le site du réseau (« Copier la liste », lien vers les demandes d'activation IVAO). Une zone P est signalée « à éviter ». À l'ouverture d'une semaine, la page importe d'office les sessions ATC IVAO (trainings, examens, réservations), au plus une fois par heure, avec l'import commun au Planning ODV. « Retirer la demande » : une zone inscrite comme demandée par erreur repasse « absente ».
+
+### Créneaux communs
+
+Bloc du niveau Expert, repris de la page ODV et calé sur la semaine affichée par le Tableau : les 7 jours × 3 créneaux, avec le nombre de pilotes libres par case et les filtres « Au moins N pilote(s) » et « Simulateur commun ». Un clic sur une case ouvre la fenêtre du créneau (matrice missions × postes). Détail : chapitre Planning ODV, « Créneaux communs » et « Fenêtre « Affecter les pilotes libres » ».
+
+### Missions probables
+
+Bloc du niveau Expert, calé lui aussi sur la semaine du Tableau : les familles de missions compatibles par créneau, avec le tableau et les règles de la page ODV (voir Planning ODV, « Missions probables »). En bas, le lien « Page ODV complète : classeur, grille, export… » ouvre la page ODV, qui n'a pas d'onglet.
+
+### Statistiques
+
+Bloc du niveau 2 : vols prévus, durée cumulée, faits, non faits, annulés, AAR, ME, Bâchés, MNE ; par membre : temps disponible sur les heures de service, temps de vol, charge (orange au-delà de 70 %, rouge au-delà de 100 % ou sans dispo).
 
 ## Paramètres › Centre
 <!-- page: apps/settings/centre.html -->
@@ -566,7 +592,7 @@ Tant que le Centre est verrouillé, seule la rubrique d'accès est visible. En m
 ### Accès au Centre et réglages
 
 Cette rubrique active le Centre dans ce navigateur : générateur de mission, studio cartographique, registre et planning ODV.
-1. Saisissez le « Mot de passe du Centre », affiché sous le champ (`DEFA` par défaut ; sans tenir compte des majuscules).
+1. Saisissez le « Mot de passe du Centre », affiché à côté du bouton (`DEFA` par défaut ; sans tenir compte des majuscules).
 2. Cliquez sur « Activer le Centre » ou appuyez sur Entrée. Le message « Centre activé dans ce navigateur » confirme l'activation.
 
 Une fois le Centre activé, la rubrique affiche « Mode et accès » (mode, changement du mot de passe partagé), puis « Calcul des routes de transit » :
@@ -667,25 +693,11 @@ Détails : [Manuel d'exploitation](MANUEL_EXPLOITATION.md), § 10.
 ## Paramètres › Installation
 <!-- page: apps/settings/installation.html -->
 
-Cette page regroupe les réglages faits une seule fois : premier lancement, dossiers locaux, sources externes et compagnie virtuelle.
-Pour l'ouvrir : barre latérale › « Paramètres », puis l'onglet « Installation ».
-Le menu latéral comporte deux groupes. Le groupe « Installation » contient « Premier lancement » ; le groupe « Dossiers et sources » contient « Sources et dossiers », « Données aéronautiques » et « Types d’aéronefs ».
-Ces rubriques sont attribuées à la page par `config/repository_tree` (clé `settings.sections` : `setup` et `sources` → installation ; `sia` et `types` → installation,maintenance, c'est-à-dire sur les deux pages : la mise en place ici, la mise à jour dans Maintenance, mêmes blocs). Toutes les autres rubriques de maintenance s'ouvrent sur la page Maintenance.
-
-### Premier lancement
-
-Cette rubrique indique si le premier lancement est terminé dans ce navigateur, et à quelle date.
-- « Ouvrir le premier lancement » rouvre l'assistant (`premier_lancement.html?force`), aussi accessible par l'onglet « Premier lancement » de Paramètres et par la carte de l'accueil tant qu'il reste quelque chose à régler. En tête, « Où en est la suite » fait le bilan ; puis six étapes :
-  1. Dossiers : « Choisir le dossier de l'application », puis le classeur ODV, facultatif (« Dossier OneDrive… » ou « ou le fichier Excel… »).
-  2. Données : « Récupérer les données » (clone du dépôt de données) ou « Archive des données… » ; dépôt git de synchronisation (facultatif) ; en option, « Journal (.html)… ».
-  3. Compagnie : nom, sigle, nom long, site de la compagnie ; clé d'API IVAO de l'installation (facultative, gardée par le lanceur) ; « Enregistrer la compagnie ».
-  4. Profil et identifiants : trigramme, IVAO, VATSIM, SimBrief, identifiants du site de la compagnie ; « Enregistrer le profil ».
-  5. Données aéronautiques et types d’aéronefs : les blocs « Données aéronautiques » et « Types d’aéronefs » (les mêmes qu'ici).
-  6. Centre (administrateurs) : « Activer le Centre », puis flotte et journal du site (« Mettre à jour maintenant »), missions du registre et liens vers les réglages du SO Group (Paramètres › Centre) ; enfin « Terminer ».
-- « Sources et dossiers, compagnie virtuelle » ouvre la rubrique suivante.
-- « Canal de mise à jour » ouvre Maintenance › Mises à jour.
-- Pour repartir de zéro : « Nettoyer et recommencer… », en bas du premier lancement. Cela efface les réglages de ce navigateur, pas les fichiers.
-Voir [Installation](INSTALL.md), § 1.
+Cette page regroupe les réglages faits une seule fois : dossiers locaux, sources externes, compagnie virtuelle, données aéronautiques et types d'aéronefs.
+Pour l'ouvrir : barre latérale › « Paramètres », puis l'onglet « Installation ». Cet onglet apparaît à partir du niveau d'utilisation Planification (2) ; une adresse directe vers l'une de ses rubriques l'ouvre à tout niveau.
+Le menu latéral comporte un seul groupe, « Dossiers et sources » : « Sources et dossiers » (ouverte d'emblée), « Données aéronautiques » et « Types d’aéronefs ».
+Le premier lancement a son propre onglet, « Premier lancement », décrit dans le [manuel utilisateur](MANUEL_UTILISATEUR.md#premier-lancement) ; « Nettoyer et recommencer… » se trouve en bas de cette page-là. Voir aussi [Installation](INSTALL.md), § 1.
+Ces rubriques sont attribuées à la page par `config/repository_tree` (clé `settings.sections` : `sources` → installation ; `sia` et `types` → installation,maintenance, c'est-à-dire sur les deux pages : la mise en place ici, la mise à jour dans Maintenance, mêmes blocs). Toutes les autres rubriques de maintenance s'ouvrent sur la page Maintenance.
 
 ### Sources et dossiers
 
@@ -705,16 +717,17 @@ Cette rubrique est le seul endroit où régler les dossiers locaux et les adress
 - **Sources externes** : l'adresse par défaut s'affiche en grisé. Une valeur saisie ne vaut que pour ce navigateur ; « ↺ » revient à la valeur par défaut et « Ouvrir ↗ » ouvre l'adresse.
 - **Clés d'API (services externes)** : clés de la suite, communes à tous ses utilisateurs (IVAO : clé d'API pour les activations de zones et les sessions ATC — trainings, examens, réservations — du Planning ODV et des ordres de vols). « Enregistrer » les confie au lanceur (`secrets/` à la racine de l'application, exclu de git, hors des données et des sauvegardes) ; la page n'en voit que l'état et les 4 derniers caractères ; « Effacer » la retire.
 - **Compagnie virtuelle** : « Nom », « Nom long », « Sigle », « Centre (sigle) », « Centre (nom complet) », et les pages du site (« Page d'accueil », « Log des vols », « Flotte », « Fiche d'un appareil »). Un champ vide garde la valeur par défaut. « Revenir à SO Group Virtual » efface tous ces réglages.
-- **Premier lancement** : « Rouvrir le premier lancement » ; « Nettoyer et recommencer… » efface les dossiers mémorisés, la copie du classeur ODV, les identifiants du site de la compagnie et le profil. Les fichiers sur le disque ne sont pas touchés.
+- **Premier lancement** : « Rouvrir le premier lancement ». Pour repartir de zéro, « Nettoyer et recommencer… » se trouve en bas de la page du premier lancement (rubrique « Recommencer »).
 
 ## Paramètres › Maintenance
 <!-- page: apps/settings/maintenance.html -->
 
 Cette page sert à l'entretien de la suite : mises à jour, versions, données SIA, caches, sauvegardes et bases de référence.
-Pour l'ouvrir : barre latérale › « Paramètres », puis l'onglet « Maintenance ». La page s'ouvre sur « Mises à jour ».
-Le menu latéral comporte deux parties :
-- le groupe « Maintenance » : Mises à jour, Versions et synchros, Références et dépendances, Données aéronautiques, Caches, Espace disque, Sauvegarde totale, Journal ;
-- les bases de données, rangées dans les groupes « Fichiers du dépôt », « Base », « Missions » et « Données du navigateur ».
+Pour l'ouvrir : barre latérale › « Paramètres », puis l'onglet « Maintenance ». La page s'ouvre sur « Mises à jour ». Cet onglet n'apparaît qu'au niveau d'utilisation Expert (4) ; une adresse directe vers l'une de ses rubriques l'ouvre à tout niveau.
+Le menu latéral comporte trois parties :
+- le groupe « Maintenance » : Mises à jour, Versions et synchros, Références et dépendances, Données aéronautiques, Types d'aéronefs ;
+- le groupe « Stockage et sauvegarde » : Caches, Espace disque, Sauvegarde totale, Journal ;
+- les bases de données, rangées dans les groupes « Fichiers du dépôt », « Base », « Missions » et « Données du navigateur ». Ces groupes n'apparaissent qu'au niveau Expert.
 
 ### Mises à jour de la suite
 
@@ -762,7 +775,7 @@ Le bouton « Vérifier » relance les contrôles.
   - un téléchargement direct par le lanceur (`tools/aero_fetch.py`) : openAIP (chaque pays), ENAIRE (Espagne), FAA (États-Unis : zones et routes militaires, classes d'espace), AIP militaire britannique (ENR 5.2, PDF officiel lu par le lanceur : zones de vol à basse altitude, VATA, zone d'évitement TVAA, axes de ravitaillement AARA ajoutés à ceux de la DIRCAM), NAV CANADA (Designated Airspace Handbook, édition en vigueur lue par le lanceur : zones dangereuses, réglementées et consultatives du Canada, à retélécharger tous les 56 jours) ;
   - une commande ou une inscription, avec le lien et le mode d'emploi : SIA France (commande à 0 €, à refaire à chaque cycle), NATS (Royaume-Uni, fichier déposé dans `data/sia/zones/gb/`) ;
   - un PDF, avec le lien et le mode d'emploi : DIRCAM / MILAIP ENR 5.7 (axes de ravitaillement) ;
-    DIRCAM : « Importer le PDF MILAIP… » lit le PDF de la section ENR 5.7 (pdf.js, réseau au premier import), montre le nombre d'axes et les anomalies relevées, puis « Écrire miam-enr-5-7-tracks.xml » range le fichier dans le dossier SIA (ancien dans `_archives/`) et met la base à jour ;
+    DIRCAM : « Importer le PDF MILAIP… » lit le PDF de la section ENR 5.7 (pdf.js, réseau au premier import), montre le nombre d'axes et les anomalies relevées, puis « Écrire miam-enr-5-7-tracks.xml » range le fichier dans le dossier SIA (ancien dans `_archives/`) et met la base à jour  (« Arrêter » pendant la lecture : rien n'est gardé ni écrit);
   - un dossier de l'ordinateur : X-Plane (balises, points, voies aériennes, grille MORA, découpés aux contours des zones actives qui l'ont cochée) ;
   - un calcul : la MORA de la zone. Une zone très étendue (plus de 1500 cases d'un degré : États-Unis, Canada…) prend par défaut la MORA d'X-Plane ; « Calcul complet… » la calcule par blocs de 10°, après une confirmation qui annonce le volume (relief des tuiles ouvertes d'AWS majoré de 100 m, sans requête OpenStreetMap) : chaque bloc est écrit aussitôt dans `mora.csv`, « Arrêter » entre deux blocs, « Reprendre le calcul complet… » plus tard.
 - SIA France (zone France) : « Récupérer le ZIP téléchargé » (le lanceur le prend dans Téléchargements), « ZIP d'export du SIA… », « Extraire … » s'il est déjà dans le dossier, « Archiver les anciens cycles » (`_archives/`) ; « Contenu du dossier SIA » liste les fichiers du cycle.
@@ -937,7 +950,7 @@ Les données partagées (disponibilités, utilisateurs, configuration, missions 
 ### Le bouton « Synchroniser (n) »
 
 - Le bouton n'apparaît que si la suite est servie par le lanceur et que `data/` est un dépôt git.
-- (n) additionne les modifications de ce poste à envoyer et les commits à recevoir. Le dépôt distant est relu toutes les 5 minutes tant que la page est visible. L'infobulle donne la branche et la date de la dernière synchronisation.
+- (n) additionne les modifications de ce poste à envoyer et les commits à recevoir. Le dépôt distant est relu à la fréquence réglée dans Paramètres › Maintenance › Versions et synchronisations (toutes les 30 minutes par défaut ; à chaque page, 3 fois par jour, une fois par jour) ; entre deux vérifications, le bouton montre le dernier état connu, gardé par le navigateur, et le lanceur répond avec son dernier relevé. L'infobulle donne la branche et la date de la dernière synchronisation.
 - La synchronisation se lance à la main, d'un clic :
   1. les fichiers gardés dans le navigateur sont d'abord écrits dans le dossier ;
   2. le lanceur commite au nom du trigramme connecté (utilisateur usurpé compris) ;

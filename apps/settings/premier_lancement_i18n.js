@@ -15,18 +15,7 @@ RepositoryContentI18n([
     'Datos ficticios entregados con la suite, para descubrirla: misiones (incluido un ejercicio), pilotos, flota, disponibilidad y asignaciones de la semana en curso. Para sustituir más adelante por los datos de su aerolínea.'
   ],
   ['Installer le jeu d’essai', 'Install the sample data', 'Testdaten installieren', 'Instalar el conjunto de prueba'],
-  ['Mot de passe :', 'Password:', 'Passwort:', 'Contraseña:'],
-  ['partagé avec les données (data/config/centre.json), modifiable dans Paramètres › Centre une fois le Centre activé. Verrou d’usage, pas une protection.',
-    'shared with the data (data/config/centre.json), can be changed in Settings › Centre once the Centre is enabled. A usage lock, not a protection.',
-    'mit den Daten geteilt (data/config/centre.json), in Einstellungen › Zentrum änderbar, sobald das Zentrum aktiviert ist. Eine Nutzungssperre, kein Schutz.',
-    'compartida con los datos (data/config/centre.json), modificable en Ajustes › Centro una vez activado el Centro. Un bloqueo de uso, no una protección.'
-  ],
   ['Autoriser à nouveau', 'Grant access again', 'Erneut erlauben', 'Autorizar de nuevo'],
-  ['Enregistrement, puis vérification… Autre dépôt que l’actuel : confirmez dans la fenêtre que le lanceur ouvre sur l’ordinateur.',
-    'Saving, then checking… Another repository than the current one: confirm in the window the launcher opens on the computer.',
-    'Speichern, dann Prüfung… Anderes Repository als das aktuelle: im Fenster bestätigen, das der Starter auf dem Computer öffnet.',
-    'Guardando y comprobando… Otro repositorio distinto del actual: confirme en la ventana que el lanzador abre en el equipo.'
-  ],
   ['Installation du jeu d’essai…', 'Installing the sample data…', 'Testdaten werden installiert…', 'Instalando el conjunto de prueba…'],
   ['Dépôt de données', 'Data repository', 'Daten-Repository', 'Repositorio de datos'],
   ['Adresse du dépôt', 'Repository address', 'Repository-Adresse', 'Dirección del repositorio'],
@@ -224,10 +213,10 @@ RepositoryContentI18n([
   ],
   ['Identifiant', 'Login', 'Kennung', 'Identificador'],
   ['Centre (administrateurs)', 'Centre (administrators)', 'Zentrum (Administratoren)', 'Centro (administradores)'],
-  ['Réservé aux administrateurs du SO Group : les pilotes passent cette étape.',
-    'For SO Group administrators only: pilots skip this step.',
-    'Nur für Administratoren der SO Group: Piloten überspringen diesen Schritt.',
-    'Reservado a los administradores del SO Group: los pilotos se saltan este paso.'
+  ['Réservé aux administrateurs du {SOG} : les pilotes passent cette étape.',
+    'For {SOG} administrators only: pilots skip this step.',
+    'Nur für Administratoren der {SOG}: Piloten überspringen diesen Schritt.',
+    'Reservado a los administradores del {SOG}: los pilotos se saltan este paso.'
   ],
   ['Activer le Centre', 'Enable the Centre', 'Zentrum aktivieren', 'Activar el Centro'],
   ['Mot de passe du Centre', 'Centre password', 'Passwort des Zentrums', 'Contraseña del Centro'],
@@ -247,7 +236,7 @@ RepositoryContentI18n([
     '); das Register wird auf seiner Seite neu gelesen.', '); el registro se relee desde su página.'
   ],
   ['Registre des missions', 'Mission registry', 'Missionsregister', 'Registro de misiones'],
-  ['Réglages du SO Group', 'SO Group settings', 'Einstellungen der SO Group', 'Ajustes del SO Group'],
+  ['Réglages du {SOG}', '{SOG} settings', 'Einstellungen der {SOG}', 'Ajustes del {SOG}'],
   ['Accueil', 'Home', 'Startseite', 'Inicio'],
   ['https://hôte/compte/dépôt.git', 'https://host/account/repository.git', 'https://host/konto/repository.git',
     'https://host/cuenta/repositorio.git'

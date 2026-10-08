@@ -16,10 +16,10 @@
   {
    "id": "exercice",
    "label": [
-    "Exercice SOG",
-    "SOG exercise",
-    "SOG-Übung",
-    "Ejercicio SOG"
+    "Exercice {SOG}",
+    "{SOG} exercise",
+    "{SOG}-Übung",
+    "Ejercicio {SOG}"
    ],
    "court": "E",
    "couleur": "#e03c31"
@@ -164,10 +164,10 @@
    "Especial"
   ],
   "EXERCICE": [
-   "Exercice SOG",
-   "SOG exercise",
-   "SOG-Übung",
-   "Ejercicio SOG"
+   "Exercice {SOG}",
+   "{SOG} exercise",
+   "{SOG}-Übung",
+   "Ejercicio {SOG}"
   ],
   "CONTROLE": [
    "Contrôleur d’exercice",
@@ -269,10 +269,10 @@
    "groupe": "exercice",
    "type": "dispo",
    "label": [
-    "Vol en exercice SOG",
-    "SOG exercise flight",
-    "Flug in SOG-Übung",
-    "Vuelo en ejercicio SOG"
+    "Vol en exercice {SOG}",
+    "{SOG} exercise flight",
+    "Flug in {SOG}-Übung",
+    "Vuelo en ejercicio {SOG}"
    ],
    "couleur": "#ff0000",
    "ouverts": [
@@ -287,10 +287,10 @@
    "groupe": "exercice",
    "type": "atc",
    "label": [
-    "Contrôle SOG",
-    "SOG control",
-    "SOG-Lotsendienst",
-    "Control SOG"
+    "Contrôle {SOG}",
+    "{SOG} control",
+    "{SOG}-Lotsendienst",
+    "Control {SOG}"
    ],
    "couleur": "#c4bd97",
    "ouverts": [
@@ -305,10 +305,10 @@
    "groupe": "occupe",
    "type": "occupe",
    "label": [
-    "Vol hors SOG (IVAO / VATSIM)",
-    "Flight outside SOG (IVAO / VATSIM)",
-    "Flug außerhalb SOG (IVAO / VATSIM)",
-    "Vuelo fuera de SOG (IVAO / VATSIM)"
+    "Vol hors {SOG} (IVAO / VATSIM)",
+    "Flight outside {SOG} (IVAO / VATSIM)",
+    "Flug außerhalb {SOG} (IVAO / VATSIM)",
+    "Vuelo fuera de {SOG} (IVAO / VATSIM)"
    ],
    "couleur": "#ffd966",
    "ouverts": "none",
@@ -354,10 +354,10 @@
    "groupe": "occupe",
    "type": "atc",
    "label": [
-    "Contrôle hors SOG (IVAO / VATSIM)",
-    "Control outside SOG (IVAO / VATSIM)",
-    "Lotsendienst außerhalb SOG (IVAO / VATSIM)",
-    "Control fuera de SOG (IVAO / VATSIM)"
+    "Contrôle hors {SOG} (IVAO / VATSIM)",
+    "Control outside {SOG} (IVAO / VATSIM)",
+    "Lotsendienst außerhalb {SOG} (IVAO / VATSIM)",
+    "Control fuera de {SOG} (IVAO / VATSIM)"
    ],
    "couleur": "#7030a0",
    "ouverts": "none",

@@ -4,7 +4,10 @@
   // Déclaratifs : un bloc = titre + champs (ou collection dynamique) + règle d'affichage
   // `when(ctx)` ; ctx = { family, series, capabilities:Set, categories:Set, mission }.
   // Champs : { path, label, type: text|number|date|time|select|textarea|checkgroup,
-  //            options | vocab, placeholder, full, when(ctx) }.
+  //            options | vocab, placeholder, full, when(ctx), minLevel }.
+  // CR court (niveaux d'utilisation 1-2, v2) : `short` d'un bloc (ou de sa collection) = chemins des champs gardés, les
+  // autres n'existent qu'à partir du niveau 3 ; `minLevel: 3` d'un bloc ou d'un champ = réservé aux niveaux 3-4. Rendu
+  // par form.js en data-min-level ; « CR détaillé » (core.js) affiche tout sans changer le niveau.
   const V = window.MissionVocab,
     L = V.L;
   /** Définition d'un champ de bloc : chemin dans la mission, libellé [fr, en, de, es], type, options (extra). */
@@ -29,6 +32,8 @@
     subtitle: L('Numéros, date, série, exercice ou opération réelle, organisation.',
       'Numbers, date, series, exercise or real operation, organisation.', 'Nummern, Datum, Serie, Übung oder Einsatz, Organisation.',
       'Números, fecha, serie, ejercicio u operación real, organización.'),
+    // CR court : mission, n° de CR, date et série ; numéros, heures, contexte et organisation au niveau 3.
+    short: ['metadata.missionNumber', 'metadata.missionId', 'metadata.date', 'series'],
     fields: [
       // Mission volée (identifiant du registre des missions : M-016, S-002A) → n° de CR calculé (MissionVocab.crId) :
       // CRM-016-1 (essai 1, CRM-016-2 si rejouée) ; sans mission : CR libre de la famille, CRM-A01-0.
@@ -115,6 +120,9 @@
         label: L('Fiche appareil ↗', 'Aircraft sheet ↗', 'Luftfahrzeugblatt ↗', 'Ficha de aeronave ↗')
       } : null,
       item: L('Appareil', 'Aircraft', 'Luftfahrzeug', 'Aeronave'),
+      // CR court : immatriculation, type, indicatif et terrains (l'appareil connu remplit le reste) ; terrain
+      // d'atterrissage réel gardé (CR issu d'un ordre de mission : position de l'appareil).
+      short: ['registration', 'type', 'callsign', 'baseDeparture', 'baseReturn', 'landingAd'],
       add: L('+ Ajouter un appareil', '+ Add aircraft', '+ Luftfahrzeug hinzufügen', '+ Añadir aeronave'),
       empty: () => window.MissionModel.emptyAircraft(),
       // Appareil mal identifié (mauvais type, mauvaise immatriculation…) : tout effacer pour
@@ -250,6 +258,7 @@
 
   const tasking = {
     id: 'tasking',
+    minLevel: 3, // CR détaillé (niveaux 3-4)
     title: L('Tâche / ordre de mission', 'Tasking', 'Auftrag', 'Tarea / orden de misión'),
     icon: 'clipboard',
     subtitle: L('Objectif et consignes de la mission.', 'Mission objective and instructions.', 'Auftrag und Anweisungen der Mission.',
@@ -268,6 +277,7 @@
 
   const capabilities = {
     id: 'capabilities',
+    minLevel: 3, // CR détaillé (niveaux 3-4)
     title: L('Capacités / techniques employées', 'Capabilities / techniques', 'Fähigkeiten / Verfahren', 'Capacidades / técnicas'),
     icon: 'wrench',
     subtitle: L('Techniques et moyens employés en vol.', 'Techniques and means used in flight.',
@@ -283,6 +293,7 @@
 
   const environment = {
     id: 'environment',
+    minLevel: 3, // CR détaillé (niveaux 3-4)
     title: L('Environnement / météo', 'Environment / weather', 'Umgebung / Wetter', 'Entorno / meteorología'),
     icon: 'globe',
     subtitle: L('Conditions météo et d’environnement rencontrées.', 'Weather and environmental conditions met.',
@@ -330,6 +341,7 @@
 
   const navigation = {
     id: 'navigation',
+    minLevel: 3, // CR détaillé (niveaux 3-4)
     title: L('Navigation', 'Navigation', 'Navigation', 'Navegación'),
     icon: 'map',
     subtitle: L('Terrains, route, points et zone de travail.', 'Airfields, route, points and working area.',
@@ -393,6 +405,8 @@
     icon: 'calendar',
     subtitle: L('Heures clés du vol, du bloc au bloc.', 'Key times of the flight, block to block.',
       'Wichtige Zeiten des Flugs, Block bis Block.', 'Horas clave del vuelo, de calzos a calzos.'),
+    // CR court : mise en route, décollage, atterrissage, arrêt (temps bloc calculé de la mise en route à l'arrêt).
+    short: ['timeline.engineStart', 'timeline.takeoff', 'timeline.landing', 'timeline.shutdown'],
     fields: [
       f('timeline.briefing', L('Briefing', 'Briefing', 'Briefing', 'Briefing'), 'time'),
       f('timeline.engineStart', L('Mise en route', 'Engine start', 'Anlassen', 'Puesta en marcha'), 'time', {
@@ -423,6 +437,8 @@
     icon: 'fuel',
     subtitle: L('Carburant embarqué, consommé et restant.', 'Fuel on board, used and remaining.',
       'Getankter, verbrauchter und verbleibender Kraftstoff.', 'Combustible embarcado, consumido y restante.'),
+    // CR court : unité, départ et atterrissage (carburant consommé calculé).
+    short: ['fuel.unit', 'fuel.start', 'fuel.landing'],
     fields: [
       f('fuel.unit', L('Unité', 'Unit', 'Einheit', 'Unidad'), 'select', {
         options: V.fuelUnits
@@ -451,6 +467,7 @@
 
   const events = {
     id: 'events',
+    minLevel: 3, // CR détaillé (niveaux 3-4)
     title: L('Événements horodatés', 'Timed events', 'Ereignisse mit Zeitstempel', 'Eventos con hora'),
     icon: 'pin',
     subtitle: L('Événements notables, avec leur heure.', 'Notable events, with their time.', 'Wichtige Ereignisse mit Uhrzeit.',
@@ -498,6 +515,7 @@
 
   const legs = {
     id: 'legs',
+    minLevel: 3, // CR détaillé (niveaux 3-4)
     title: L('Étapes / sorties / rotations', 'Legs / sorties / rotations', 'Etappen / Einsätze / Umläufe',
       'Tramos / salidas / rotaciones'),
     icon: 'layers',
@@ -595,6 +613,7 @@
 
   const network = {
     id: 'network',
+    minLevel: 3, // CR détaillé (niveaux 3-4)
     title: L('Trace réseau IVAO / VATSIM', 'IVAO / VATSIM network track', 'IVAO-/VATSIM-Netzwerkspur', 'Traza de red IVAO / VATSIM'),
     icon: 'send',
     subtitle: L('Trace du vol sur IVAO ou VATSIM.', 'Flight track on IVAO or VATSIM.', 'Flugspur auf IVAO oder VATSIM.',

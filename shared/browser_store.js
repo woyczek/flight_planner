@@ -177,7 +177,8 @@
 
   // ---- bases IndexedDB de données utilisateur, sauvegardées avec le localStorage
   // Les autres bases IndexedDB sont reconstructibles et restent hors sauvegarde : « sia-map-parser » (base SIA,
-  // relue depuis le dossier SIA officiel), « missionCore / handles » (autorisations de dossiers, non exportables).
+  // relue depuis le dossier SIA officiel), « missionCore / handles » (autorisations de dossiers, non exportables),
+  // « sogKeys » (clés du poste, non exportables, propres à ce navigateur : shared/sog_keys.js).
   const IDB_SAVED = [{
       db: 'FlightPerfCache',
       store: 'cache'
@@ -403,6 +404,19 @@
     for (let i = 0; i < text.length; i++) h = (h * 31 + text.charCodeAt(i)) | 0;
     return String(h);
   };
+  /** Empreinte rapide des données sauvegardées, sans analyse JSON ni YAML : textes bruts des clés de l'instantané et
+   *  date du registre indexé. Les bases IndexedDB n'y sont pas : la vérification complète des 5 minutes les couvre. */
+  const quickPrint = () => {
+    let h = 0;
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (!key || key === META || key === PENDING || SKIP.some(re => re.test(key))) continue;
+      const text = `${key}\u0000${localStorage.getItem(key)}\u0001`;
+      for (let j = 0; j < text.length; j++) h = (h * 31 + text.charCodeAt(j)) | 0;
+    }
+    return `${h}|${window.MissionIndex?.updatedAt?.() || ''}`;
+  };
+  let lastQuick = ''; // empreinte rapide au dernier contrôle complet (écrit ou inchangé) de cette page
   /** Méta-données de la dernière sauvegarde ({ savedAt, hash, folder }). */
   const meta = () => {
     try {
@@ -418,6 +432,12 @@
     quiet = false
   } = {}) {
     const dir = await folder(request);
+    // sans dossier, rien à écrire : le texte de sauvegarde (tout le stockage analysé, YAML) n'est pas construit
+    if (!dir) {
+      if (!quiet) status(t('none'));
+      return false;
+    }
+    const quick = quickPrint();
     const {
       text,
       count,
@@ -425,11 +445,10 @@
     } = await toText();
     const body = text.replace(/^savedAt: .*$/m, ''),
       hash = hashOf(body);
-    if (!dir) {
-      if (!quiet) status(t('none'));
-      return false;
+    if (quiet && meta().hash === hash) {
+      lastQuick = quick;
+      return true; // rien de nouveau
     }
-    if (quiet && meta().hash === hash) return true; // rien de nouveau
     const writable = await (await dir.getFileHandle(FILE, {
       create: true
     })).createWritable();
@@ -445,6 +464,7 @@
     } catch {
       /* quota */
     }
+    lastQuick = quick;
     reminder();
     if (!quiet) status(`${t('saved')} : ${dir.name}/${FILE} — ${count} ${t('keys')}`);
     return true;
@@ -660,8 +680,10 @@
   const auto = () => save({
     quiet: true
   }).catch(() => {});
+  // départ de la page : texte de sauvegarde (analyse et YAML de tout le stockage) refait seulement si l'empreinte rapide
+  // a changé depuis le dernier contrôle de cette page — sinon des dizaines de ms à chaque changement de page
   document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'hidden') auto();
+    if (document.visibilityState === 'hidden' && (!lastQuick || quickPrint() !== lastQuick)) auto();
   });
   setInterval(auto, 5 * 60 * 1000);
 

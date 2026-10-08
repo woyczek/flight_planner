@@ -141,7 +141,7 @@
   // rubrique de Paramètres › Centre (page chargée avec shared/settings_panels.js)
   window.SettingsPanels?.add({
     id: 'odv',
-    group: window.SettingsPanels.L('Centre (CPCO)', 'Centre (CPCO)', 'Zentrum (CPCO)', 'Centro (CPCO)'),
+    group: window.SettingsPanels.L('Centre ({CENTRE})', 'Centre ({CENTRE})', 'Zentrum ({CENTRE})', 'Centro ({CENTRE})'),
     title: window.SettingsPanels.L('Planning ODV', 'ODV planning', 'ODV-Planung', 'Planificación ODV'),
     intro: window.SettingsPanels.L(
       'Réglages de la page Planning ODV : heures des créneaux matin, après-midi et soir, pays préféré (périmètre des sessions ATC, aussi pour le Tableau), lecture du classeur (dates de la semaine, case vide, types FLOTTE), missions probables. Gardés dans ce navigateur.',

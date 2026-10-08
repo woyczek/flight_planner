@@ -105,7 +105,7 @@ sequenceDiagram
 ```
 
 - **Déclenchement : à la main.** Pas d'envoi automatique. Le bouton affiche `(n)` = modifications de ce poste +
-  commits à envoyer + commits à recevoir (dépôt distant relu toutes les 5 minutes, page visible).
+  commits à envoyer + commits à recevoir (dépôt distant relu à la fréquence réglée par navigateur, `syncCheck:v1` : à chaque page, 30 min par défaut, 3 fois par jour, une fois par jour ; dernier état connu `syncState:v1` affiché entre deux vérifications ; lanceur : dernier relevé servi, relu en tâche de fond au-delà de 20 s).
 - **Fusion (merge), pas de rebase** : l'historique n'est jamais réécrit, une seule fusion à résoudre.
 - **Un passage à la fois** par lanceur (verrou). Une fusion qui échoue au milieu est **annulée** : le dépôt n'est
   jamais laissé à moitié fusionné.
@@ -143,7 +143,7 @@ sequenceDiagram
 ## 9. Plusieurs utilisateurs, en attendant le serveur central
 
 - **Recevoir** : à chaque lancement, le lanceur fait un `git pull` de `data/` ; le bouton « Synchroniser » reçoit
-  aussi ce qui est arrivé depuis (son compteur l'annonce, dépôt distant relu toutes les 5 minutes).
+  aussi ce qui est arrivé depuis (son compteur l'annonce, dépôt distant relu à la fréquence réglée).
 - **Envoyer** : le bouton « Synchroniser » commite les changements du poste, fusionne avec ceux des autres et pousse.
 - **Ce qu'il faut à chaque poste qui envoie** : git installé, la suite ouverte par le lanceur, un **droit d'écriture
   sur le dépôt de données** (un compte par personne sur l'hébergeur git, ou un compte partagé), et une **clé SSH**

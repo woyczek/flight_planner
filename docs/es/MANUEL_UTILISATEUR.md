@@ -19,17 +19,19 @@ Abra la suite con el lanzador o un marcador: una página de la suite abierta des
 
 La columna de la izquierda da acceso a las aplicaciones. La entrada de la página mostrada aparece resaltada.
 
-| Entrada | Lo que abre |
-|---|---|
-| «Mis misiones» | Misiones asignadas por el Centro y disponibilidad (con una pastilla roja: número de misiones no leídas) |
-| «Informe» | Introducción de un nuevo informe de misión |
-| «Mapas de vuelo» | Mapas de vuelo: ruta, topográfico, aproximación, encuentro, destino |
-| «Combustible» | Planificador de rendimiento y de combustible |
-| «Aterrizajes» | Panel de los aterrizajes |
-| «Informes» | Informes de las misiones (Informe) |
+Lo que muestra depende de su **nivel de uso** (Mi perfil › «Nivel de uso»): como mucho siete entradas, nunca más de lo que su uso necesita.
 
-- El grupo **«Centro»** («Misiones», «Registro», «ODV») solo aparece si el Centro está desbloqueado en este navegador (Ajustes › Centro). Para un piloto, normalmente permanece oculto.
-- Al pie de la columna: «Apariencia» (abre los ajustes de visualización en una ventana, encima de la página actual), «Ajustes» (Mi perfil y las demás páginas de ajustes) y **«Ayuda»**. Estas tres entradas permanecen fijas al pie de la pantalla: solo la lista superior se desplaza cuando hay demasiados iconos (ventana de menos de 460 px de alto: se desplaza toda la barra).
+| Entrada | Lo que abre | Nivel |
+|---|---|---|
+| «Hoy» | Próxima misión, informes por escribir, semana; primera entrada en todos los niveles | 1 |
+| «Mis misiones» | Misiones asignadas por el Centro y disponibilidad (pastilla roja: misiones no leídas) | 1 |
+| «Informe» | Introducción de un informe de misión | 1 |
+| «Planificación» | Planificación de órdenes de la semana (Tablero, en solo lectura en el nivel 1 o sin el Centro); en el nivel 4, franjas comunes y misiones probables de la página ODV | 1 |
+| «Misiones» | Generador de misiones y registro, en pestañas; estudio cartográfico en el nivel 4 | 3 |
+| «Herramientas» | Mapas de vuelo, combustible, aterrizajes, análisis de misiones (herramientas marcadas en Mi perfil, todas en el nivel 4) | 1 a 4 |
+
+- El nivel ordena la interfaz, no da ningún derecho: las páginas del Centro (Misiones, planificación ODV, modificación del Tablero) siguen requiriendo el Centro activado.
+- Al pie de la columna: «Ajustes» (Mi perfil, Apariencia, Centro, Instalación, Mantenimiento, Primer arranque, en pestañas) y **«Ayuda»**. Estas dos entradas quedan fijas al pie de la pantalla: solo la lista de arriba se desplaza cuando hay demasiados iconos (ventana de menos de 460 px de alto: toda la barra se desplaza).
 - «Ayuda» abre la documentación en una ventana, encima de la página actual, directamente en el capítulo de esa página. La ventana se cierra con ✕, Esc o un clic al lado; al reabrirla, continúa donde se quedó. «↗» la abre en página completa (Ctrl-clic en «Ayuda»: en una pestaña nueva). Sustituye a la antigua entrada «Menú». También funciona cuando la suite se abre desde el disco, sin el lanzador: los documentos están integrados en la página.
 - El logotipo de la parte superior de la columna abre el sitio de la aerolínea virtual en una nueva pestaña.
 - La barra se oculta en una pantalla estrecha (menos de 760 px) y al imprimir. Puede ocultarse o mostrarse siempre: Apariencia › Iconos › «Barra lateral».
@@ -41,7 +43,7 @@ La cabecera muestra el título de la página y su subtítulo. A la derecha está
 | Elemento | Función |
 |---|---|
 | Sobre sellado (sobre rojo con un número) | Hay misiones asignadas a usted que aún no ha leído. Un clic abre «Mis misiones». |
-| «Sincronizar (n)» | Intercambia los datos compartidos con el repositorio común. N = cambios por enviar + actualizaciones por recibir. |
+| «Sincronizar (n)» | Intercambia los datos compartidos con el repositorio común. N = cambios por enviar + actualizaciones por recibir. En los niveles 1 y 2, un punto sustituye al número (sigue en cabeza del texto emergente); el contador «(n)» se muestra en los niveles 3 y 4. |
 | «Guardar en la carpeta (n) · última: …» (botón rojo) | Recordatorio de copia de seguridad de los datos locales, mostrado a partir de 10 cambios sin guardar. |
 | «⚠ n» | Alertas de la página ya borradas de la pantalla: un clic las vuelve a mostrar. |
 | Bandera «Idioma» | Elección del idioma: «Auto» (idioma del navegador), Français, English, Deutsch, Español. |
@@ -50,7 +52,7 @@ La cabecera muestra el título de la página y su subtítulo. A la derecha está
 **«Sincronizar»** solo existe si la suite se abre con el lanzador y la carpeta `data/` es un repositorio git.
 - Un clic escribe primero los archivos guardados en el navegador, después envía sus cambios (firmados con su trigrama), recupera los de los demás y los fusiona.
 - En caso de conflicto en una misma ficha, se conserva la versión más reciente; la otra se copia en `_conflits/` y una notificación lo indica.
-- El texto emergente da el detalle (cambios por enviar, elementos por recibir, última sincronización). El estado se vuelve a comprobar cada 5 minutos.
+- El texto emergente da el detalle (cambios por enviar, elementos por recibir, última sincronización). El botón muestra el último estado conocido; se vuelve a comprobar con la frecuencia ajustada en Ajustes › Mantenimiento › Versiones y sincronización (cada 30 minutos por defecto; también en cada página, 3 veces al día o una vez al día, y «Comprobar ahora»).
 - Sin trigrama configurado, la sincronización no se inicia: configúrelo en Ajustes › Mi perfil. Consulte [la arquitectura de la sincronización](../technique/SYNCHRONISATION.md).
 
 **«Guardar en la carpeta»** copia todos los datos guardados por el navegador (borradores, perfil, preferencias…) en el archivo `defa_local_store.yaml` de la carpeta de copia de seguridad.
@@ -74,10 +76,10 @@ Algunas entradas de la barra lateral agrupan varias páginas hermanas, presentad
 | Entrada | Pestañas |
 |---|---|
 | «Mis misiones» | «Mis misiones», «Mi disponibilidad» |
-| «Ajustes» | «Mi perfil», «Centro», «Instalación», «Mantenimiento» |
+| «Ajustes» | «Mi perfil», «Apariencia», «Primer arranque» (desde el nivel 1); «Centro», «Instalación» (nivel 2); «Mantenimiento» (nivel 4) |
 | «Misiones» (Centro) | «Generador de misiones», «Estudio cartográfico» |
 
-Un clic en una pestaña abre la página correspondiente. Un clic con Ctrl (o Mayús) la abre en una nueva pestaña del navegador.
+Un clic en una pestaña abre la página correspondiente. Un clic con Ctrl (o Mayús) la abre en una nueva pestaña del navegador. Las pestañas siguen el nivel de uso (Mi perfil › «Nivel de uso»); una dirección directa a una sección la abre siempre.
 
 ### Los bloques
 
@@ -86,7 +88,7 @@ El contenido de las páginas se divide en bloques con título. Cada título de b
 2. ↕ «Mover»: tome este asa y arrastre el bloque delante de otro bloque de la misma columna.
 
 La disposición (orden, bloques ocultos) se memoriza **por página y por navegador**. Se recupera en cada visita.
-Algunos bloques están ocultos de entrada mientras no los haya mostrado una primera vez.
+Algunos bloques están ocultos de entrada mientras no los haya mostrado una primera vez. Los campos de texto (ruta, observaciones…) crecen con su contenido, hasta tres quintos de la pantalla (Chrome y Edge).
 
 ### Las notificaciones flotantes
 
@@ -94,8 +96,11 @@ Los mensajes de la suite (éxitos, advertencias, errores) aparecen en la parte i
 - Se borran solas: unos 5 s para una información, 8 s para una advertencia, 12 s para un error.
 - Si deja el puntero encima, el borrado se suspende; la cruz «×» cierra la burbuja de inmediato.
 - Quedan como máximo cuatro mensajes en pantalla.
+- Un recordatorio repetitivo (por ejemplo «Base SIA ausente de este navegador…» del estudio cartográfico y de los mapas de vuelo) solo se muestra **una vez por sesión** del navegador. Algunos mensajes están reservados a los niveles de uso superiores: por debajo no se muestran, pero las advertencias y los errores quedan en el registro del indicador «⚠ n».
 - Las advertencias y los errores borrados siguen disponibles en el indicador «⚠ n» de la cabecera: «ACK» confirma una alerta, «Confirmar todas» las confirma todas, «Vaciar» borra la lista. Este registro se pierde al cambiar de página.
-- Una tarea larga (lectura, generación…) muestra una barra de progreso en la misma pila. Salir de la página durante la tarea pide una confirmación.
+- Una tarea larga (lectura, generación…) muestra una barra de progreso en la misma pila. Salir de la página durante la tarea pide una confirmación. Cuando la tarea puede interrumpirse, la barra lleva un botón **«Detener»**: el paso en curso termina, los siguientes no se inician y la burbuja dice «Cancelado.». El botón existe para la generación y las vistas previas de los mapas (estudio cartográfico y mapas de vuelo: parada entre dos mapas), el cálculo de la MORA (de una zona, de la cuadrícula completa o por bloques), la importación de la MILAIP ENR 5.7 y la puesta a punto de las zonas (Mantenimiento), y la lectura de la carpeta de misiones (Registro).
+- Una tarea detenida dice qué queda parcial. Mapas: una generación detenida no descarga ningún ZIP y no guarda nada en la carpeta de la misión (un lote de misiones indica cuántas están terminadas); las vistas previas ya mostradas se quedan. MORA por bloques (botón «Detener (reanudar más tarde)»): los bloques ya calculados se escriben en `mora.csv` (cuadrícula parcial), «Reanudar el cálculo completo…» continúa más tarde. MORA de una zona, cuadrícula MORA e importación de la MILAIP: no se escribe nada. Lectura de la carpeta de misiones: el registro queda sin cambios.
+- Los mensajes de error dicen qué ha fallado y qué hacer, en lugar de un código solo. Ejemplos: «el servidor no responde — comprobar que la suite se abre con el lanzador (lancer.cmd / lancer.sh), reiniciarlo si hace falta y volver a intentarlo»; «archivo ausente — comprobar que está en la carpeta esperada (o volver a crearlo) y volver a intentarlo»; «almacenamiento del navegador lleno — liberar espacio (Ajustes › Mantenimiento › Espacio en disco) y volver a intentarlo». Otros casos: servicio en línea que no responde, error del servidor, acceso denegado por el navegador, tiempo agotado; un error inesperado se muestra como «error» seguido del detalle técnico entre paréntesis.
 - Las preguntas («¿Borrar…?») se abren en una pequeña ventana con «Confirmar» y «Cancelar».
 
 ### Conexión, modo develop o producción, suplantación
@@ -124,6 +129,35 @@ La suite ofrece varios diseños. Cambian la forma de las páginas, no la informa
 - En los diseños con materiales, la carpeta de misión de «Mis misiones» se convierte en un auténtico libro, con sus animaciones.
 - La elección se hace en Apariencia: cada diseño se muestra en miniatura y se aplica al instante. Consulte el capítulo [Apariencia](#apariencia).
 
+## Hoy
+<!-- page: apps/pilot/aujourdhui.html -->
+
+Esta página es la primera entrada de la barra lateral, en cualquier nivel de uso. Responde a tres preguntas sin buscar nada: cuál es mi próxima misión, qué informes me quedan por escribir, qué ocurre esta semana.
+Cada bloque ofrece una sola acción. Los datos proceden de las asignaciones del Centro (véase «Mis misiones») y del registro de informes: no hay nada que volver a introducir. La página se vuelve a leer sola cuando cambia de idioma, de trigrama o de sesión.
+La página de inicio también la ofrece al principio de «Mis tareas».
+
+### Mi próxima misión
+
+- La misión que se le ha asignado más próxima (por venir, o despegada hace menos de seis horas): hora en UTC, misión y título, aeronave (tipo y matrícula), aeródromo, indicativo; «traslado» o «alerta, listo a las …» si procede, y «● nueva» mientras no la haya abierto.
+- Acción: **«Abrir la carpeta»** abre la misión en «Mis misiones».
+- Sin trigrama configurado, este bloque lo pide en el acto: el campo «Trigrama» (de dos a cuatro letras) y el botón «Guardar». El trigrama se guarda en el perfil de piloto y los tres bloques se vuelven a leer de inmediato, sin pasar por Ajustes › Mi perfil. En modo producción o durante una suplantación, es el trigrama de la conexión: el bloque indica «Sin trigrama: inicie sesión para ver sus misiones.»
+- Sin misión próxima, el bloque lo dice: «Ninguna misión próxima está asignada a …».
+
+### Informes por escribir
+
+- Las misiones que se le han asignado, despegadas hace menos de 21 días, para las que el registro de informes no contiene ningún informe. La más reciente va primero; siete líneas como máximo.
+- Un informe es conocido si procede de una orden de misión: el registro (`missions.yaml`) lo vincula a la asignación mediante su referencia de orden (misión, piloto, despegue). Un informe iniciado de otro modo, con la familia elegida a mano, no cuenta: la misión permanece en la lista.
+- Cada línea indica la misión, su título, la hora, la aeronave y el aeródromo, con dos botones.
+- **«Escribir el informe»** abre la carpeta de la misión en «Mis misiones» y comienza el informe en la familia de la misión, rellenado desde la orden de misión (dirección `?mission=…&do=cr`).
+- **«Sin informe»** retira la misión de la lista (misión cancelada, no volada…). La elección se memoriza solo en este navegador; el registro no se toca.
+- Si todo está entregado, el bloque dice «Nada pendiente: sus misiones pasadas tienen su informe.» Sin trigrama, remite al campo del primer bloque («Trigrama por introducir arriba.»).
+
+### Mi semana
+
+- Siete columnas, de lunes a domingo de la semana en curso (días en UTC); el día actual aparece rodeado.
+- Sus misiones figuran como mosaicos: hora y número de misión, o «alerta».
+- Acción: un clic en un mosaico abre la carpeta de la misión en «Mis misiones». Sin trigrama, el bloque dice «Sin trigrama, la semana queda vacía.»
+
 ## Mis misiones
 <!-- page: apps/pilot/mes_missions.html -->
 
@@ -131,6 +165,7 @@ Esta página reúne las misiones que el Centro le asigna, la carpeta de cada una
 Se llega a ella por la entrada «Mis misiones» de la barra lateral, por el sobre sellado de la cabecera o por la pestaña «Mis misiones».
 Diseño de la página: la lista de misiones y la carpeta abierta una al lado de la otra (la carpeta ocupa dos tercios del ancho), «Mi disponibilidad» debajo, a todo el ancho. Sin carpeta abierta, la lista ocupa todo el ancho. En una pantalla estrecha (menos de 1100 px), todo pasa a una sola columna: misiones, carpeta, disponibilidad.
 En modo producción, la página pide primero conectarse.
+Según el nivel de uso (Mi perfil › «Nivel de uso»), la carpeta de la misión muestra más o menos secciones (véase «Misión»); algunos botones y enlaces solo aparecen a partir del nivel Planificación (2) o en el nivel Experto (4).
 
 ### Mis misiones de la semana
 
@@ -142,8 +177,10 @@ La lista de las misiones que tiene asignadas para la semana mostrada, ordenadas 
 - Una mención «traslado» indica que traslada una aeronave para otro piloto: solo se le entrega la orden de traslado, no el brief de la misión.
 - Un clic en una línea abre la misión en el bloque «Misión».
 - Casilla «mostrar también las misiones pasadas»: por defecto, una misión desaparece unas horas después de su despegue. La elección se memoriza.
-- Sin trigrama configurado, la lista indica «Ningún trigrama configurado.»; el botón «Piloto» lleva a la sección donde introducirlo.
+- Sin trigrama configurado, el campo para introducirlo aparece bajo la lista (campo «Trigrama», botón «Guardar»): una vez guardado, la lista y la disponibilidad se vuelven a leer. En modo producción o durante una suplantación, es el trigrama de la conexión.
+- Una dirección `?mission=…` procedente de «Hoy» o de «Nuevo informe» muestra la semana de esa misión (misiones pasadas mostradas si hace falta); con `?do=cr`, el informe comienza en cuanto se abre la carpeta.
 - **Piloto**, **Aeronaves dominadas**, **Simuladores**: tres botones bajo la lista, hacia Ajustes › Mi perfil (sección «Identidad y redes» para el trigrama; sección «Aeronaves y simuladores», en la tarjeta de aeronaves o en la de simuladores). El botón «Piloto» muestra el trigrama utilizado para encontrar sus misiones y su disponibilidad. En modo producción o durante una suplantación, es el trigrama de la conexión.
+- Estos tres botones aparecen a partir del nivel Planificación (2). En el nivel Tripulación (1), solo aparece «Piloto», mientras el trigrama no esté configurado.
 
 ### Misión
 
@@ -161,6 +198,12 @@ La carpeta de la misión elegida, en solo lectura. Este bloque solo aparece tras
 3. Los «Mapas facilitados»: un clic amplía un mapa en un visor (se cierra con la cruz o con Esc).
 4. El final: «Objetivos», «Observaciones», «Ficha técnica», «Historial de asignaciones», y la firma del Centro.
 5. Los «Sobres y mensajes en vuelo», si los hay (véase más abajo).
+
+**Según el nivel de uso**:
+- Tripulación (1): la orden de misión, el resumen, la ruta facilitada, los mapas, los objetivos, la firma y los sobres;
+- Planificación (2): además, la introducción, el objetivo / sector, la descripción detallada, los riesgos, los equipos desplegados, las observaciones y las demás secciones del resumen;
+- Diseño (3): además, la ficha técnica y el historial de asignaciones;
+- Experto (4): toda la carpeta; en el canal develop de actualizaciones, «Volver a sellar» vuelve a sellar la misión (no leída).
 
 **El libro** (diseños Gabinete, Cuaderno de vuelo, Aqua y Robusto, pantalla de al menos 760 px)
 - La carpeta abierta se presenta a doble página. El contenido demasiado largo pasa a la página siguiente; los mapas se colocan de dos en dos por página.
@@ -188,6 +231,7 @@ La carpeta de la misión elegida, en solo lectura. Este bloque solo aparece tras
 | «Cerrar la carpeta» | Cierra la carpeta (la misión sigue marcada como leída). |
 
 Estos botones están en gris si la misión no aporta lo necesario (falta el archivo de misión, ruta demasiado corta).
+«Abrir en los mapas de vuelo» y «Combustible (planificador)» solo aparecen si la herramienta correspondiente está marcada en Mi perfil › «Nivel de uso» (siempre en el nivel Experto). Sin los Mapas de vuelo, «Crear el informe» pasa a ser el botón principal.
 El botón «⤢ Ancho completo» del título del bloque extiende la carpeta a todo el ancho, por encima de la lista; «⇥ Junto a la lista» la vuelve a poner al lado. La elección se memoriza.
 
 **Animaciones** (desactivadas si el sistema pide menos animaciones)
@@ -203,6 +247,7 @@ El botón «⤢ Ancho completo» del título del bloque extiende la carpeta a to
 ### Mi disponibilidad
 
 Su disponibilidad de la semana mostrada, en horas UTC. El Centro la utiliza para asignarle misiones. Es el mismo editor que en la página Mi disponibilidad (capítulo siguiente); aquí, la semana es la de la barra de semana de la lista.
+Según el nivel de uso: la barra de semana propia del bloque, la antigua cuadrícula horaria y el enlace «Abrir solo la introducción de disponibilidad» solo aparecen en el nivel Experto; en los demás niveles, la semana se cambia con la barra de la lista.
 
 **Paleta**: las categorías se ordenan por grupo («Disponible», «Ejercicio SOG», «Ocupado», «No disponible»). Cada pastilla lleva la letra de código ODV y un texto corto; el texto emergente da el nombre completo. La categoría elegida se memoriza.
 
@@ -222,7 +267,7 @@ Categorías por defecto (el Centro puede modificar esta lista):
 
 Una casilla compartida entre varias categorías aparece rayada; una hora cubierta en parte (introducida por cuartos de hora) aparece atenuada. Cada retoque se guarda al instante.
 
-**«Intervalo preciso»** (por cuartos de hora): «Grupo», «Categoría», casillas de los días (Lun a Dom), «de» y «a» (UTC) y, después, «Añadir». Horarios vacíos = día completo. Bajo el formulario, una línea recuerda los temas de misión que abre la categoría; para una categoría personalizada, el enlace «Mis tipos de misión…» lleva a las preferencias de Mi perfil.
+**«Intervalo preciso»** (por cuartos de hora, plegado: un clic en su título lo abre; abierto de entrada en el nivel Experto): «Grupo», «Categoría», casillas de los días (Lun a Dom), «de» y «a» (UTC) y, después, «Añadir». Horarios vacíos = día completo. Bajo el formulario, una línea recuerda los temas de misión que abre la categoría; para una categoría personalizada, el enlace «Mis tipos de misión…» lleva a las preferencias de Mi perfil.
 
 **Otros botones**
 - «⧉ Semana anterior»: copia los intervalos de la semana anterior (sustituye la semana mostrada, tras confirmación).
@@ -231,18 +276,18 @@ Una casilla compartida entre varias categorías aparece rayada; una hora cubiert
 
 El mensaje bajo el bloque indica adónde se ha enviado lo introducido: «Guardado en la carpeta de datos.», o «Guardado en este navegador, el Centro no lo ve: …» si la carpeta de datos no está autorizada (consulte [Primer arranque](#primer-arranque), paso 3).
 Una cuadrícula horaria antigua existente se importa automáticamente en la semana.
-El enlace «Abrir solo la introducción de disponibilidad» lleva a la página Mi disponibilidad.
+El enlace «Abrir solo la introducción de disponibilidad» lleva a la página Mi disponibilidad. Este enlace solo aparece en el nivel Experto.
 
 ## Mi disponibilidad
 <!-- page: apps/pilot/disponibilites.html -->
 
 Esta página muestra solo el editor de disponibilidad, en más grande. Sirve para introducir rápidamente varias semanas.
-Se llega a ella por la pestaña «Mi disponibilidad» (bajo la entrada «Mis misiones» de la barra lateral) o por el enlace «Abrir solo la introducción de disponibilidad» de Mis misiones.
+Se llega a ella por la pestaña «Mi disponibilidad» (bajo la entrada «Mis misiones» de la barra lateral) o por el enlace «Abrir solo la introducción de disponibilidad» de Mis misiones. Este enlace solo aparece en el nivel Experto.
 El piloto es el del trigrama de trabajo (perfil de piloto, conexión o suplantación). En modo producción, la página pide primero conectarse.
 
 ### Mi disponibilidad
 
-El único bloque de la página. Funciona exactamente como el bloque del mismo nombre de Mis misiones (capítulo anterior): paleta, cuadrícula hora por hora, «Intervalo preciso», «⧉ Semana anterior», «Borrar todo».
+El único bloque de la página. Funciona exactamente como el bloque del mismo nombre de Mis misiones (capítulo anterior): paleta, cuadrícula hora por hora, «Intervalo preciso» (plegado, abierto de entrada en el nivel Experto), «⧉ Semana anterior», «Borrar todo».
 
 **Navegación por semanas** (propia de esta página):
 - «‹» y «›»: semana anterior o siguiente;
@@ -265,6 +310,20 @@ Esta página reúne los ajustes propios de cada piloto: identidad, conexión, pr
 Se llega a ella por la entrada «Ajustes» de la barra lateral (primera pestaña, «Mi perfil») o por ☰ › «Ajustes».
 La columna de la izquierda muestra las secciones por grupo; un clic muestra una a la derecha, con su título, su presentación, sus botones y un mensaje de estado.
 Si una sección contiene cambios sin guardar, cambiar de sección o salir de la página pide una confirmación.
+Según el nivel de uso: «Mis aeronaves (reporting)» aparece a partir del nivel Planificación (2); «Altitud sin oxígeno», solo si la herramienta Combustible está marcada (siempre en el nivel Experto); en «Identidad y redes», las tarjetas «IVAO — cliente OAuth» y «Idioma» están en el nivel Experto.
+
+### Nivel de uso
+
+Lo que la suite le muestra, según su uso. Basta una elección: la página se recarga y la barra lateral sigue.
+
+| Nivel | Para | Lo que se añade |
+|---|---|---|
+| 1 · Tripulación | todo piloto | Mis misiones, Informe, Planificación (lectura) |
+| 2 · Planificación | oficial de guardia | planificar las órdenes: Tablero modificable, planificación ODV (Centro activado) |
+| 3 · Diseño | redactor de misiones | Misiones: generador y registro (Centro activado) |
+| 4 · Experto | cartógrafo, analista | todas las herramientas, estudio cartográfico |
+
+Las «herramientas opcionales» (mapas de vuelo, combustible, aterrizajes, análisis de misiones) se añaden en «Herramientas» en cualquier nivel; en el nivel 4 están todas incluidas. Por defecto: nivel 4 si el Centro está activado en este navegador, si no nivel 1. El nivel no da ningún derecho: el Centro conserva su acceso.
 
 ### Identidad y redes
 
@@ -274,15 +333,15 @@ Su identidad en la suite, que usan todas las páginas (☰ › Perfil de piloto,
 |---|---|
 | «Piloto» | «Trigrama», «ID VATSIM (CID)», «ID IVAO (VID)», «SimBrief (usuario o ID)» |
 | «Sitio de la aerolínea» | «Identificador», «Contraseña» |
-| «IVAO — cliente OAuth (personal)» | «Identificador del cliente (client ID)», «Secreto del cliente», «Dirección de redirección a declarar en IVAO» (a copiar en developers.ivao.aero); botón «Guardar el cliente IVAO»: guardado por el lanzador de este equipo, el secreto nunca se vuelve a mostrar |
-| «Idioma» | «Idioma de la suite»: Automático (idioma del navegador), Français, English, Deutsch, Español |
+| «IVAO — cliente OAuth (personal)» (nivel Experto) | «Identificador del cliente (client ID)», «Secreto del cliente», «Dirección de redirección a declarar en IVAO» (a copiar en developers.ivao.aero); botón «Guardar el cliente IVAO»: guardado por el lanzador de este equipo, el secreto nunca se vuelve a mostrar |
+| «Idioma» (nivel Experto) | «Idioma de la suite»: Automático (idioma del navegador), Français, English, Deutsch, Español |
 
 1. Rellene los campos.
 2. Haga clic en «Guardar». El mensaje de estado confirma «Perfil guardado en este navegador».
 
 - El trigrama tiene de 2 a 4 letras o cifras; sirve para encontrar sus misiones asignadas.
 - Los identificadores del sitio de la aerolínea se quedan solo en este navegador: nunca se escriben en un archivo ni en una copia de seguridad.
-- El idioma se aplica en cuanto se elige, sin «Guardar».
+- El idioma se elige normalmente con la bandera «Idioma» de la cabecera; la tarjeta «Idioma» (nivel Experto) se aplica en cuanto se elige, sin «Guardar».
 - En modo producción, el trigrama es el del usuario conectado y no se modifica aquí.
 
 ### Conexión y contraseña
@@ -330,7 +389,7 @@ No hay botón «Guardar»: cada casilla se guarda al instante en este navegador 
 
 ### Altitud sin oxígeno (aviones no presurizados)
 
-Esta sección (grupo «Planificador de combustible») configura el umbral por encima del cual el gráfico de altitud óptima del planificador muestra «oxígeno necesario» para un avión no presurizado.
+Esta sección (grupo «Planificador de combustible») configura el umbral por encima del cual el gráfico de altitud óptima del planificador muestra «oxígeno necesario» para un avión no presurizado. Solo aparece si la herramienta Combustible está marcada en «Nivel de uso» (siempre en el nivel Experto).
 
 1. Introduzca «Altitud máxima sin oxígeno (ft)»: entre 1000 y 30 000 ft, en pasos de 500.
 2. Haga clic en «Guardar».
@@ -341,7 +400,7 @@ Es solo una información: el cálculo no se limita. El ajuste se guarda en este 
 
 ### Mis aeronaves (reporting)
 
-Las aeronaves que ha pilotado o reportado: las de los informes con su trigrama en la tripulación, o que usted redactó (informes guardados desde esta versión) (la aeronave de su puesto cuando el informe lo indica), con tipo, variante, indicativos, operador, número de vuelos y último vuelo. La casilla gris «Flota» indica si la aeronave pertenece a la flota (marcada) o no (desmarcada, indicativo incluido); no se modifica aquí. La lista completa, con la casilla «personal», está en Ajustes › Centro › Flota (reservada al Centro). Arriba, el recuento del diario: informes en total, sus informes, informes sin tripulación introducida (no cuentan para nadie).
+Las aeronaves que ha pilotado o reportado: las de los informes con su trigrama en la tripulación, o que usted redactó (informes guardados desde esta versión) (la aeronave de su puesto cuando el informe lo indica), con tipo, variante, indicativos, operador, número de vuelos y último vuelo. La casilla gris «Flota» indica si la aeronave pertenece a la flota (marcada) o no (desmarcada, indicativo incluido); no se modifica aquí. La lista completa, con la casilla «personal», está en Ajustes › Centro › Flota (reservada al Centro). Arriba, el recuento del diario: informes en total, sus informes, informes sin tripulación introducida (no cuentan para nadie). Sección visible a partir del nivel Planificación (2).
 
 ## Apariencia
 <!-- page: apps/settings/apparence.html -->
@@ -350,24 +409,26 @@ Esta página configura el aspecto de toda la suite: diseño, gráficos, iconos, 
 La entrada «Apariencia» de la barra lateral (o el botón «Apariencia» del menú ☰) la abre en una ventana encima de la página actual: ve el efecto al instante. Cierre: «✕», Esc o clic fuera de la ventana.
 La misma interfaz existe a página completa (☰ › lista de las páginas de ajustes › «Apariencia»).
 Los ajustes se memorizan en este navegador y se aplican a todas las páginas; no cuentan para el recordatorio de copia de seguridad.
+Según el nivel de uso: en los niveles 1 a 3, la página muestra el diseño, el juego de iconos actual, la barra lateral, el tamaño de los iconos y «Restablecer todo»; la decoración, el color Aqua, la visualización de la barra, los demás juegos de iconos, Gráficos, Colores de los temas y «Demostración completa» se añaden en el nivel Experto.
 
 ### Diseño
 
 La forma de las páginas: esquinas redondeadas, densidad, títulos, barra lateral.
 
 - Cada diseño se presenta con una miniatura dibujada en su estilo, con su nombre y su descripción: Estándar, Aero, Operativo, Consola, Gabinete, Cuaderno de vuelo, Robusto, Aqua, Táctico.
+- Se muestran seis miniaturas de entrada (más el diseño actual si no está entre ellas); las demás están en «Más diseños», que se despliega.
 - Un clic en una miniatura aplica el diseño al instante. La miniatura elegida aparece enmarcada.
 - Gabinete, Cuaderno de vuelo, Robusto y Aqua añaden sus materiales, Táctico su vidrio ahumado sobre fondo nocturno; los colores de información siguen siendo los del tema (Táctico: filete en lo alto de los bloques).
 
-**«Decoración (diseños con materiales)»**:
+**«Decoración (diseños con materiales)»** (nivel Experto):
 - «Completo» (por defecto): paneles ilustrados de los bloques, hojas de registro, tornillos, radar;
 - «Sobrio»: solo materiales y placas, en todas las páginas.
 
-**«Color Aqua»**: color de los botones e iconos del diseño Aqua (Azul, Turquesa, Verde, Grafito, Violeta, Naranja, Rojo, Rosa), o «Color de cada aplicación». Los iconos de estado conservan sus colores originales.
+**«Color Aqua»** (nivel Experto): color de los botones e iconos del diseño Aqua (Azul, Turquesa, Verde, Grafito, Violeta, Naranja, Rojo, Rosa), o «Color de cada aplicación». Los iconos de estado conservan sus colores originales.
 
 ### Gráficos
 
-Paleta de colores y estilo de los gráficos (informes, indicadores).
+Paleta de colores y estilo de los gráficos (informes, indicadores). Sección del nivel Experto.
 
 - Paletas: «Automático» (sigue el diseño), «Vivos (colores de las páginas)», «Pizarra», «Latón y cuero», «Caqui y oliva». Cada fila muestra una muestra de colores.
 - «Estilo»: «Automático», «Plano» o «Relieve».
@@ -376,7 +437,7 @@ La elección se aplica al instante a los gráficos de las páginas.
 
 ### Iconos
 
-El grosor del trazo de los iconos, o ningún icono. Cada fila muestra una vista previa del juego.
+El grosor del trazo de los iconos, o ningún icono. Cada fila muestra una vista previa del juego. En los niveles 1 a 3, solo se ofrece el juego actual; todos los juegos en el nivel Experto.
 
 | Opción | Resultado |
 |---|---|
@@ -385,11 +446,11 @@ El grosor del trazo de los iconos, o ningún icono. Cada fila muestra una vista 
 | «Latón (medallones)», «Acero (placas)», «Gel (burbujas)», «Aviónica (instrumentos)» | Juegos con materiales |
 | «Sin iconos» | Sin iconos |
 
-**«Barra lateral»**: «Según el diseño», «Siempre» o «Nunca». Por defecto, se muestra siempre (salvo en pantalla estrecha y al imprimir). «Tamaño de los iconos»: «Pequeño», «Mediano» (por defecto) o «Grande». «Visualización»: «Icono y etiqueta» (por defecto), «Solo icono» (barra más estrecha, nombre de la entrada como información emergente) o «Solo etiqueta».
+**«Barra lateral»**: «Según el diseño», «Siempre» o «Nunca». Por defecto, se muestra siempre (salvo en pantalla estrecha y al imprimir). «Tamaño de los iconos»: «Pequeño», «Mediano» (por defecto) o «Grande». «Visualización» (nivel Experto): «Icono y etiqueta» (por defecto), «Solo icono» (barra más estrecha, nombre de la entrada como información emergente) o «Solo etiqueta».
 
 ### Colores de los temas
 
-Cada página de la suite tiene un tema de colores (barra, texto de la barra, acento). Para cada tema, elige una familia de colores y un tono; los colores se calculan a partir de ellos, con un control de legibilidad.
+Cada página de la suite tiene un tema de colores (barra, texto de la barra, acento). Para cada tema, elige una familia de colores y un tono; los colores se calculan a partir de ellos, con un control de legibilidad. Sección del nivel Experto.
 
 Los temas se presentan en tarjetas, en dos grupos: «Aplicaciones» (Combustible, Aterrizajes, Centro, Informe) y «Familias de informes».
 
@@ -403,7 +464,7 @@ En cada tarjeta:
 Cada cambio se guarda al instante.
 
 **Al pie de la página**:
-- «Demostración completa» abre una maqueta: generador, catálogo de iconos y contrastes de todos los temas.
+- «Demostración completa» (nivel Experto) abre una maqueta: generador, catálogo de iconos y contrastes de todos los temas.
 - «Restablecer todo» restablece todos los ajustes de Apariencia por defecto (diseño Aqua, iconos del diseño, barra lateral siempre visible, decoración completa, colores originales).
 
 ## Primer arranque
@@ -483,7 +544,7 @@ Mapas, misiones y planificación usan los datos aeronáuticos (AIRAC) y la base 
 ### 6 Centro (administradores)
 
 Reservado a los administradores del SO Group: los pilotos se saltan este paso.
-- Tarjeta «Activar el Centro»: «Contraseña del Centro» (mostrada bajo el botón, `DEFA` por defecto), luego «Activar el Centro». El resumen indica el modo del Centro (autónomo: contraseña).
+- Tarjeta «Activar el Centro»: «Contraseña del Centro» (mostrada junto al botón, `DEFA` por defecto), luego «Activar el Centro». El resumen indica el modo del Centro (autónomo: contraseña).
 - Con el Centro activado:
   - «Flota y registro de vuelos»: última lectura del sitio por el lanzador (flota, ubicación de las aeronaves, registro), «Actualizar ahora» y el enlace a la flota (Ajustes › Centro).
   - «Misiones»: número de misiones en el registro (llegan con los datos, paso 1) y el enlace al registro.
@@ -507,6 +568,14 @@ misión y, después, se abre la página de informe de esa familia. Está dirigid
 Para ir a ella: barra lateral › **Informe**, o el botón «Nuevo informe» de la cabecera del
 informe general de misiones. Un informe también puede abrirse directamente, ya rellenado, desde una misión que se le ha
 asignado (véase más abajo). Paso a paso completo: [tutorial](../TUTORIAL.md).
+
+### Mis misiones por informar
+
+Primer bloque de la página: las misiones que se le han asignado, ya pasadas (21 días como máximo) y sin informe en el registro, como en el bloque «Informes por escribir» de la página «Hoy» (siete líneas como máximo).
+
+- **«Escribir el informe»** abre la carpeta de la misión en «Mis misiones» y comienza el informe en la familia de la misión, rellenado desde la orden de misión (véase «Retomar una misión asignada»).
+- **«Sin informe»** retira la misión de la lista (se memoriza en este navegador).
+- Sin trigrama configurado, el bloque lo pide en el acto (campo «Trigrama», botón «Guardar»). La elección de la familia, más abajo, sigue valiendo para una misión fuera de sus asignaciones.
 
 ### Familia de misión
 
@@ -577,13 +646,19 @@ en las Observaciones. Después se aplican las ayudas habituales (aeronave conoci
 <!-- page: apps/cr/SOF/sof_cr.html -->
 <!-- page: apps/cr/SPECIAL/special_cr.html -->
 <!-- page: apps/cr/SURVEY/survey_cr.html -->
-<!-- page: apps/cr/MissionCore/demo_cr.html -->
 
 Todas las familias comparten la misma página de introducción: los mismos bloques comunes, más algunos bloques propios
 de la familia. En ella redacta el informe de un vuelo realizado y, después, lo guarda en el registro de misiones.
 Se llega a ella por la página «Nuevo informe», por una misión asignada, o haciendo clic en una misión
-en un informe estadístico o en una ficha (la misión se abre entonces en modo de modificación). La página `demo_cr.html` es una
-demostración del motor, fuera de la lista de familias.
+en un informe estadístico o en una ficha (la misión se abre entonces en modo de modificación).
+
+**Según el nivel de uso: informe breve o detallado.** En los niveles 1 (Tripulación) y 2 (Planificación), el formulario solo muestra lo esencial del informe:
+- identificación (misión, n.º de informe, fecha, serie) y resultado;
+- aeronave (matrícula, tipo, indicativo, aeródromos; una aeronave conocida rellena el resto) y tripulación;
+- cuatro horas (puesta en marcha, despegue, aterrizaje, parada de motores), combustible a la salida y al aterrizaje;
+- los bloques propios de la familia y las observaciones.
+
+El botón «Informe detallado» de la barra muestra todo el formulario sin cambiar de nivel (elección guardada por el navegador); «Informe breve» vuelve al formulario reducido. Los valores ya introducidos en campos ocultos (importación, plan de vuelo, seguimiento de red) permanecen en el informe. En los niveles 3 y 4, el formulario está siempre completo y este botón no existe.
 
 ### Cabecera y barra de herramientas
 
@@ -598,11 +673,14 @@ La cabecera permanece fija en la parte superior de la página. De izquierda a de
 | «Seguimiento de red» ▾ | seguimiento en directo IVAO / VATSIM, historial VATSIM |
 | «Misión» ▾ | «Nueva misión», «Exportar misión (YAML)», «Eliminar esta misión» (en modificación) |
 | «Registro de misiones» ▾ | «Ver informe», «Carpeta del registro…», «Configurar el envío de informes (servicio web)…», «Configuración — bases de datos…» |
+| «Informe detallado» / «Informe breve» | solo niveles 1 y 2: muestra todo el formulario o vuelve al informe breve (véase más arriba) |
 
 A la derecha, un mensaje de estado indica el último guardado («Borrador guardado en el
 navegador · hora»). Cada bloque tiene en su título **↕** (arrastrar para moverlo) y **Ocultar /
 Mostrar**; la disposición se memoriza. Los bloques que contienen una lista tienen un **+** en su
 título para añadir un elemento.
+
+En los niveles 1 y 2, «Analizar / importar…», «Misión» y «Registro de misiones» no aparecen (llegan en el nivel 3): una nueva misión se abre con ☰ › Misiones › «Nuevo informe».
 
 ### Modificación de una misión del registro
 
@@ -812,6 +890,7 @@ Columna de la derecha, actualizada durante la introducción: «Tiempo calzo», �
   cronología de más de 20 h, fecha futura, combustible incoherente). Un clic lleva al campo correspondiente.
 - «Contexto de visualización» recuerda la familia, la serie, los tipos de aeronave y las capacidades, que
   deciden qué bloques se muestran.
+- En los niveles 1 y 2 (informe breve), solo tres cálculos: «Tiempo calzo», «Tiempo de vuelo», «Combustible consumido»; «Contexto de visualización» y los cálculos de zona y de misión llegan en el nivel 3 o con «Informe detallado». Un clic en una anomalía que afecta a un campo oculto muestra el informe detallado.
 
 ### Informe
 
@@ -907,7 +986,6 @@ da los indicadores propios de la familia, que se recogen en los informes estadí
 | COMBAT | Dispositivo y zona · Interceptación (serie «Interceptación / identificación (VID)») · Enfrentamientos · Balance de la sesión | enfrentamientos, victorias, disparos válidos, paradas de seguridad (KIO) |
 | SOF | Unidad apoyada · Zonas (PZ / LZ / DZ) · Perfil y métodos · Personal | personal desplegado, personal recuperado, zonas utilizadas, misiones nocturnas con NVG |
 | SPECIAL | Transporte VIP / gubernamental (series VIP) · Traslado (series de traslado) · Ensayo en vuelo y Puntos de ensayo (series de ensayo) · Formación y Ejercicios (series de formación) | pasajeros VIP, vuelos de traslado, puntos de ensayo conformes / realizados, ejercicios completados |
-| DEMO (demostración) | Izado (helicóptero + grúa marcada) · Lanzamiento (avión o anfibio + lanzamiento marcado) | ciclos de grúa, personas izadas, carga lanzada (kg) |
 
 Las familias HEMS y FIRE pueden recuperar su antiguo registro CSV: consulte
 [Informes de una familia](#informes-de-una-familia).
@@ -1157,7 +1235,6 @@ navegador»).
 <!-- page: apps/cr/SOF/sof_reporting.html -->
 <!-- page: apps/cr/SPECIAL/special_reporting.html -->
 <!-- page: apps/cr/SURVEY/survey_reporting.html -->
-<!-- page: apps/cr/MissionCore/demo_reporting.html -->
 
 El informe de una familia solo muestra las misiones de esa familia, con sus propios indicadores.
 Se llega a él por «Registro de misiones ▾ › Ver informe» en un informe de misión, por una línea de «Resumen
@@ -1219,6 +1296,7 @@ Esta página sirve para preparar sus propios mapas de vuelo: ruta, mapa de la ru
 Está abierta a todos los pilotos. Para ir a ella: barra lateral «Mapas de vuelo», botón «Abrir en los mapas de vuelo» de una misión en Mis misiones, o botón «Mapas de vuelo» del planificador de combustible.
 Retoma el motor del estudio cartográfico del Centro, pero trabaja en un espacio propio de su navegador: sus ajustes nunca modifican la misión del Centro.
 Cada bloque se pliega («Ocultar» / «Mostrar») y se mueve (asa ↕). La base SIA debe leerse una vez en este navegador (consulte el último bloque).
+En los niveles 1 a 3 (Mi perfil › «Nivel de uso»), la página se limita a lo esencial: campo de ruta, «Nivel», «SimBrief», mapa de control («⤢ Ampliar»), bloque «Mapas del vuelo» y botón «Generar los mapas y el ZIP» del pie de página. Los demás mandos descritos a continuación solo aparecen en el nivel 4 (Experto).
 
 ### Recepción de una misión («Abrir en los mapas de vuelo»)
 
@@ -1226,8 +1304,8 @@ La página no muestra un bloque «Misión»: la misión llega sola desde Mis mis
 
 1. En Mis misiones, abra la carpeta de la misión.
 2. Haga clic en «Abrir en los mapas de vuelo». La aeronave que tiene asignada se coloca al principio de la misión.
-3. La página se abre con la ruta y el nivel de la misión en el bloque «Ruta», y todos los mapas previstos por la misión en «Mapas que producir» (más `profil_vertical.png`).
-4. Ajuste cada mapa si es necesario y, después, genere el ZIP en «Vistas previas y generación».
+3. La página se abre con la ruta y el nivel de la misión en el bloque «Ruta», y todos los mapas previstos por la misión en «Mapas que producir» (más `profil_vertical.png`). La lista «Mapas que producir» solo es visible en el nivel Experto.
+4. Ajuste cada mapa si es necesario (nivel Experto) y, después, haga clic en «Generar los mapas y el ZIP», al pie de la página.
 
 El pie de página indica el número de mapas del ZIP («… mapa(s) en el ZIP + mapa de conjunto»), o «Ninguna misión cargada».
 Misión recibida: «Trazar» y «Combustible» trabajan sobre la misión cargada sin sustituirla. «Crear los mapas» pide confirmación antes de sustituirla por un vuelo libre «Vuelo salida → destino» construido a partir de la ruta; sin misión cargada, los mapas se crean directamente.
@@ -1243,12 +1321,13 @@ Este bloque relaciona tres vistas: el plan de vuelo (texto), el mapa y el corte 
 - «Trazar»: dibuja el corte vertical. «Combustible»: abre el planificador de combustible con esta ruta (distancia, nivel, ruta verdadera, aeronave).
 - «Copiar OACI»: copia el plan de vuelo OACI estricto (puntos no publicados en coordenadas).
 - «Sintaxis y uso»: recordatorio de las formas aceptadas (balizas, puntos de notificación VFR «MM-CV», «REN300010», coordenadas «4330N00125E», niveles «/A035», «VFR»…).
+- En los niveles 1 a 3 quedan el campo de ruta, «Nivel», «SimBrief» y «Sintaxis y uso»; el menú «Aerovías» / «RTBA», «Buscar», «Trazar», «Combustible» y «Copiar OACI» están en el nivel Experto.
 
 En el mapa: arrastre un punto para moverlo (se ajusta a balizas, puntos de notificación y aeródromos), haga clic en la ruta para insertar un punto y clic derecho para eliminar uno. En el corte: clic para añadir un punto a esa altitud, arrastrar para cambiar la altitud, clic derecho para eliminar.
 
 ### Mapa de control y encuadre (bloque Ruta)
 
-Bajo el campo de ruta, un mapa de control muestra el mapa elegido con su perfil de visualización. Se vuelve a dibujar con cada ajuste.
+Bajo el campo de ruta, un mapa de control muestra el mapa elegido con su perfil de visualización. Se vuelve a dibujar con cada ajuste. En los niveles 1 a 3, solo se ofrece «⤢ Ampliar»; los demás mandos de la tabla y los «Ajustes del perfil: corte, aeronave, variómetro, salidas» están en el nivel Experto.
 
 | Control | Efecto |
 |---|---|
@@ -1264,7 +1343,7 @@ Bajo el campo de ruta, un mapa de control muestra el mapa elegido con su perfil 
 
 ### Ajustes del perfil: mapa de fondo, espacios, símbolos OACI, elementos
 
-Este panel plegable, situado bajo el mapa de control, configura el perfil de visualización del mapa elegido. Los perfiles (IFR, VFR detallado, AIRWAYS…) son comunes a todas sus misiones y se guardan en el navegador.
+Este panel plegable, situado bajo el mapa de control, configura el perfil de visualización del mapa elegido. Los perfiles (IFR, VFR detallado, AIRWAYS…) son comunes a todas sus misiones y se guardan en el navegador. Panel del nivel Experto.
 
 - Arriba: «Nombre del perfil», «Mapa de fondo» (OSM estándar, OpenTopoMap, fondos vectoriales…), botones «Guardar», «Nuevo», «Duplicar», «Eliminar».
 - Pestaña «Mapa de fondo»: capas OSM (suelo, hidrografía, carreteras, relieve, curvas de nivel, cimas…), ciudades con símbolos OACI y umbral de población, nombres de ciudades, superficies edificadas.
@@ -1272,7 +1351,7 @@ Este panel plegable, situado bajo el mapa de control, configura el perfil de vis
 - Pestaña «Símbolos OACI»: aeródromos (por categoría, controlados o no, lista blanca), radionavegación, aerovías inferiores y superiores, puntos de notificación VFR, sobrevuelo prohibido, parques y reservas, obstáculos.
 - Pestaña «Elementos»: puntos de ruta, meridianos y paralelos, cuadrícula MORA, nombres de las ciudades, circuito de reabastecimiento, zonas de misión y de búsqueda.
 
-Recuerde hacer clic en «Guardar» para conservar un perfil modificado.
+Recuerde hacer clic en «Guardar» para conservar un perfil modificado. Las listas de sugerencias de los campos de entrada (zonas, aeródromos, balizas) solo se rellenan cuando hace clic en el campo correspondiente: la página se abre así más deprisa y la lista aparece con el clic o la primera pulsación.
 
 ### Mapas del vuelo
 
@@ -1284,13 +1363,14 @@ Este bloque crea los mapas de un vuelo a partir de la ruta, sin misión del Cent
 4. Haga clic en «Crear los mapas».
 
 La página fabrica una misión «Vuelo salida → destino» con los mapas marcados y el perfil vertical. El mapa de encuentro solo se crea si se introduce un encuentro.
+En los niveles 1 a 3, el mensaje que sigue a «Crear los mapas» remite al botón «Generar los mapas y el ZIP» del pie de página.
 Después, cualquier cambio de la ruta, del nivel o del encuentro actualiza los mapas automáticamente.
 Llegada desde el planificador de combustible (botón «Mapas de vuelo»): los mapas se crean solos en cuanto se carga la base SIA.
 Mensajes de error posibles: «Base SIA ausente en este navegador», «Ruta: desconocido(s) en la base SIA», «Ningún mapa elegido».
 
 ### Mapas que producir
 
-La lista «Mapas de la misión» da una línea por mapa:
+Bloque del nivel Experto. La lista «Mapas de la misión» da una línea por mapa:
 
 | Elemento de la línea | Uso |
 |---|---|
@@ -1306,32 +1386,36 @@ Sin misión ni mapas creados, la lista indica «Ningún mapa: añada uno abajo.�
 
 ### Vistas previas y generación
 
+En los niveles 1 a 3, el bloque solo muestra el informe de la generación (mapas generados, fallos y «Reintentar solo este»); «Mostrar todos los mapas», las vistas previas, el mapa de conjunto y la línea «Salidas: …» están en el nivel Experto.
+
 1. «Mostrar todos los mapas»: dibuja una vista previa de cada mapa con su perfil. Las vistas previas no crean ningún archivo. Clic en una vista previa: ampliación.
 2. Cada vista previa conserva su casilla «ZIP».
-3. «Generar los mapas y el ZIP» (también en el pie de página): descarga un ZIP con cada mapa, el mapa de conjunto y `profil_vertical.png` si esa salida está marcada.
+3. «Generar los mapas y el ZIP» (botón del pie de página): descarga un ZIP con cada mapa, el mapa de conjunto y `profil_vertical.png` si esa salida está marcada.
 
 El «Mapa de conjunto» aparece por sí solo bajo las vistas previas; toma el perfil del mapa general.
 Formatos: menú ☰ › Salidas de mapas (PNG, SVG editable, ancho PNG de 400 a 5000 px; 1600 px por defecto).
 Si un mapa falla (fondo no disponible, tiempo agotado), el ZIP contiene `rapport_generation.txt` y la lista ofrece «Reintentar solo este».
-Los botones permanecen en gris mientras no haya ningún mapa que producir.
+Los botones permanecen en gris mientras no haya ningún mapa que producir. Durante las vistas previas y la generación, la barra de progreso lleva un botón «Detener»: el mapa en curso se termina y los siguientes no se hacen. Una generación detenida no descarga ningún ZIP (estaría incompleto); las vistas previas ya mostradas se quedan. Vuelva a lanzar «Generar los mapas y el ZIP» para todos los mapas.
 
 ### Base de datos SIA
 
-Este bloque está oculto por defecto: haga clic en «Mostrar». Lee la carpeta SIA (AIXM) y la guarda en el navegador. Sin ella, la página no reconoce aeródromos, balizas ni espacios.
+Este bloque está en el nivel Experto y oculto por defecto: haga clic en «Mostrar». Cuando falta la base en este navegador, se abre por sí solo, sea cual sea el nivel. Lee la carpeta SIA (AIXM) y la guarda en el navegador. Sin ella, la página no reconoce aeródromos, balizas ni espacios.
 
 - Botón «Carpeta SIA: …»: elegir la carpeta `data/sia` (el navegador pide acceso) y, después, lectura.
 - «Reconstruir la base aeronáutica»: hay que hacerlo tras cada actualización AIRAC; lee las zonas activas de Ajustes › Mantenimiento › Datos aeronáuticos. Un indicador sigue la lectura; «Cancelar» la interrumpe sin tocar la base guardada.
 - «Vaciar la caché»: borra la base guardada (se reconstruirá en la siguiente relectura).
 - La línea de estado indica la base guardada, su ciclo AIRAC y su fecha; se muestra «ciclo caducado» si hay un ciclo más reciente en vigor. «Archivos analizados» muestra los archivos leídos.
+- Sin base, la página lo indica: «Base SIA ausente de este navegador: bloque “Base de datos SIA”, “Reconstruir la base aeronáutica”, o Ajustes › Mantenimiento.»
 
 Es el mismo bloque que Ajustes › Mantenimiento › Datos aeronáuticos. La misma base sirve para el perfil vertical del planificador de combustible. Detalles: [misiones SIA](../SIA_MISSIONS.md).
 
 ## Combustible
 <!-- page: apps/planner/flight_performance_planner.html -->
 
-El planificador de combustible (título «Flight Performance & Fuel Planner») calcula el combustible de un vuelo a partir del perfil de rendimiento de su aeronave. También traza las altitudes y leyes de ascenso óptimas.
+El planificador de combustible (título «Combustible») calcula el combustible de un vuelo a partir del perfil de rendimiento de su aeronave. También traza las altitudes y leyes de ascenso óptimas.
 Para ir a él: barra lateral «Combustible», botón «Combustible (planificador)» de una misión en Mis misiones, o botón «Combustible» de los Mapas de vuelo. En ese caso se recuperan la ruta, la distancia, el nivel y la aeronave.
 Cabecera: menú «Avión», botón «Recuperar último FPL de SimBrief», «Unidades: kg / lbs». Las importaciones y exportaciones están en el menú ☰. Detalles técnicos: [planificador](../FLIGHT_PLANNER.md).
+Según el nivel de uso: en los niveles 1 a 3 (Tripulación, Planificación, Diseño), la página muestra el avión, el plan de vuelo (y «Recuperar último FPL de SimBrief»), el plegable «Parámetros del vuelo», «Calcular» y el Resultado, en dos columnas; el menú ☰ solo conserva exportar e importar las preferencias. Curvas, paneles, instrumentos, bloques del perfil, barra de estado y acciones de perfiles del menú ☰ se añaden en el nivel Experto, donde la página está completa.
 
 ### Elegir el avión y guardar el perfil
 
@@ -1339,24 +1423,24 @@ Cabecera: menú «Avión», botón «Recuperar último FPL de SimBrief», «Unid
 2. Elija un perfil en la lista, agrupada por categoría (helicópteros, reactores, monomotores, turbohélices…).
 3. Un tipo marcado «flota, sin perfil» crea un perfil vacío: hay que rellenar sus prestaciones.
 
-La barra al pie de la página indica «Perfil guardado — …» o «Cambios sin guardar — …». Contiene «Recargar la base local», «Guardar perfil» y «Eliminar este avión».
+La barra al pie de la página indica «Perfil guardado — …» o «Cambios sin guardar — …». Contiene «Recargar la base local», «Guardar perfil» y «Eliminar este avión». Esta barra solo aparece en el nivel Experto.
 Si cambia de avión con cambios sin guardar, la página propone «Quedarse», «Descartar y cambiar» o «Guardar y cambiar».
-Menú ☰: importar perfiles / CSV / JSON (incluido `.lnmperf` de Little Navmap), importar un airframe de SimBrief, elegir la carpeta de rendimiento, exportar el perfil `.lnmperf` o JSON, guardar la base local, restaurar la copia anterior, exportar o importar las preferencias.
+Menú ☰: importar perfiles / CSV / JSON (incluido `.lnmperf` de Little Navmap), importar un airframe de SimBrief, elegir la carpeta de rendimiento, exportar el perfil `.lnmperf` o JSON, guardar la base local, restaurar la copia anterior, exportar o importar las preferencias. Estas acciones son del nivel Experto, salvo exportar e importar las preferencias.
 
 ### Plan de combustible
 
 1. «Plan de vuelo (casilla 15)»: introduzca la ruta. Es el mismo plan que el de los Mapas de vuelo (gana el más reciente). De él se deducen la distancia, la ruta verdadera y el nivel.
-2. Complete o corrija los campos: «Distancia (NM)», «Nivel (FL)», «Ruta verdadera (°)», «Rodaje (min)», «Viento desde (°)», «Viento (kt)», «Reserva (min)», «Contingencia (%)».
-3. Opcional: «Masa de despegue prevista», comparada con la MTOW del tipo; «Desviación ISA (°C)», o «Temperatura en tierra (°C)» con «Elevación del aeródromo (ft)», o «Temperatura en el nivel (°C)».
+2. Complete o corrija los campos del plegable «Parámetros del vuelo» (desplegado de entrada en el nivel Experto, plegado en los demás; los valores por defecto bastan para un cálculo rápido): «Distancia (NM)», «Nivel (FL)», «Ruta verdadera (°)», «Rodaje (min)», «Viento desde (°)», «Viento (kt)», «Reserva (min)», «Contingencia (%)».
+3. Opcional, en el mismo plegable: «Masa de despegue prevista», comparada con la MTOW del tipo; «Desviación ISA (°C)», o «Temperatura en tierra (°C)» con «Elevación del aeródromo (ft)», o «Temperatura en el nivel (°C)».
 4. Haga clic en «Calcular».
 
 Si deja el viento vacío, la página lo indica («Viento desconocido: horquilla ±25 kt…») y da el combustible como una horquilla.
-El botón «Mapas de vuelo» abre los Mapas de vuelo con este plan de vuelo; los mapas y el perfil se crean allí al llegar.
+El botón «Mapas de vuelo» (nivel Experto) abre los Mapas de vuelo con este plan de vuelo; los mapas y el perfil se crean allí al llegar.
 «Sintaxis del plan de vuelo» recuerda las formas aceptadas. Sin base SIA en el navegador, solo se reconocen los puntos en coordenadas.
 
 ### Curvas del plan (altitud y ascenso óptimos)
 
-Después de «Calcular», el bloque «Plan de combustible» muestra, en este orden:
+En el nivel Experto, después de «Calcular», el bloque «Plan de combustible» muestra, en este orden:
 
 | Título | Lo que muestra |
 |---|---|
@@ -1379,13 +1463,13 @@ Este bloque, en la columna de la derecha, acompaña a la página mientras se des
 - Base del cálculo: nivel y ley de ascenso utilizados.
 - Detalle: rodaje, ascenso, crucero, descenso, contingencia, reserva; masa de despegue prevista y MTOW si la ha introducido (en rojo si se supera).
 - Ficha del cursor (⌖ al pasar el ratón, 📌 fijado): combustible y tiempo del trayecto a ese nivel, régimen de ascenso máximo, velocidades de ascenso; «soltar» quita la fijación.
-- Grupo plegable «Regímenes de vuelo — perfil ↔ mapa»: IAS, régimen de ascenso, régimen del motor y flujo por fase, comparados con el mapa del motor. También contiene el campo «SimBrief Airframe Internal ID» y los enlaces a las fichas de las aeronaves de ese tipo.
+- Grupo plegable «Regímenes de vuelo — perfil ↔ mapa» (nivel Experto): IAS, régimen de ascenso, régimen del motor y flujo por fase, comparados con el mapa del motor. También contiene el campo «SimBrief Airframe Internal ID» y los enlaces a las fichas de las aeronaves de ese tipo.
 
-«Fijar» conserva el bloque entero cuando acompaña a la página; si no, se pliega. Bajo el bloque, un panel por curva da los óptimos, los límites (techo, nivel solicitado) y una ayuda de lectura. Una columna de instrumentos muestra IAS, variómetro, altitud, combustible y tiempo de vuelo.
+«Fijar» conserva el bloque entero cuando acompaña a la página; si no, se pliega. En el nivel Experto, bajo el bloque, un panel por curva da los óptimos, los límites (techo, nivel solicitado) y una ayuda de lectura. Una columna de instrumentos (nivel Experto) muestra IAS, variómetro, altitud, combustible y tiempo de vuelo.
 
 ### Prestaciones motor — RPM / potencia / consumo
 
-Este bloque (título original «Ficha de rendimiento del motor») da el consumo para un régimen del motor.
+Este bloque (título original «Ficha de rendimiento del motor») da el consumo para un régimen del motor. Bloque del nivel Experto.
 
 1. Introduzca «RPM / N1». Los campos «Altitud (ft)» y «Fase» completan la ficha.
 2. Haga clic en «Interpolar».
@@ -1396,14 +1480,14 @@ Sin tabla RPM en el perfil, la página muestra «Curva RPM ausente del perfil.»
 
 ### Tabla RPM / potencia → consumo
 
-Esta tabla muestra los puntos del mapa del motor del perfil activo: «RPM / N1», «Mín.», «Nominal», «Máx.», «Fase de vuelo», «Comentario».
+Esta tabla muestra los puntos del mapa del motor del perfil activo: «RPM / N1», «Mín.», «Nominal», «Máx.», «Fase de vuelo», «Comentario». Bloque del nivel Experto.
 Haga clic en un título de columna (↕) para ordenar.
 Es de solo lectura: para modificarla, utilice el bloque «Mapa motor — editar RPM / potencia → consumo».
 Sin datos, muestra «No hay curva RPM en este perfil.»
 
 ### Datos de perfil — JSON ⇄ Little Navmap
 
-Este bloque muestra todos los campos del perfil, exportados tal cual en el archivo `.lnmperf` de Little Navmap.
+Este bloque muestra todos los campos del perfil, exportados tal cual en el archivo `.lnmperf` de Little Navmap. Bloque del nivel Experto.
 
 - Grupos: «Identidad y formato», «Combustible y operación», «Pista y alternativa», «Ascenso», «Crucero», «Descenso», «Régimen y consumo».
 - El combustible se muestra en la unidad elegida (kg o lbs).
@@ -1414,7 +1498,7 @@ Después de modificar, haga clic en «Guardar perfil» en la barra inferior.
 
 ### Mapa motor — editar RPM / potencia → consumo
 
-Este bloque sirve para introducir o corregir la tabla régimen → consumo, punto por punto.
+Este bloque sirve para introducir o corregir la tabla régimen → consumo, punto por punto. Bloque del nivel Experto.
 
 1. «Añadir un punto» crea una línea.
 2. Rellene «RPM / N1», «Mín.», «Nominal», «Máx.», «Fase de vuelo» y «Comentario».
@@ -1425,7 +1509,7 @@ Sin avión elegido, el bloque muestra «Elija o importe un perfil.»
 
 ### Calibración SimBrief desde OFP
 
-Este bloque ajusta el perfil activo a un plan de vuelo real de SimBrief.
+Este bloque ajusta el perfil activo a un plan de vuelo real de SimBrief. Bloque del nivel Experto.
 
 1. Haga clic en «Recuperar último FPL de SimBrief» (cabecera). El identificador se introduce en ☰ › Perfil de piloto. En su defecto, descargue el OFP JSON en simbrief.com y utilice «Importar OFP JSON».
 2. El OFP rellena el plan de combustible y el plan de vuelo; el perfil de la aeronave se crea y se calibra. El mensaje indica una calibración completa o parcial (fases medibles).
@@ -1436,7 +1520,7 @@ Este bloque ajusta el perfil activo a un plan de vuelo real de SimBrief.
 
 ### Perfil vertical
 
-Este bloque dibuja un corte a lo largo del plan de vuelo del plan de combustible: relieve, espacios aéreos, obstáculos, trayectoria (TOC, TOD).
+Este bloque dibuja un corte a lo largo del plan de vuelo del plan de combustible: relieve, espacios aéreos, obstáculos, trayectoria (TOC, TOD). Bloque del nivel Experto.
 
 1. Compruebe el plan de vuelo en «Plan de combustible».
 2. Elija el «Perfil de visualización (estudio)»: son los mismos perfiles que en los Mapas de vuelo.
@@ -1449,14 +1533,14 @@ Se necesita la base SIA de este navegador, leída en los Mapas de vuelo (bloque 
 
 ### Auditoría OFP — valores brutos y calculados
 
-Esta tabla compara, fase por fase, los valores leídos en el OFP y los valores recalculados: «Tiempo», «Distancia», «Combustible», «FF calculado», «TAS / GS», «Variómetro».
+Esta tabla compara, fase por fase, los valores leídos en el OFP y los valores recalculados: «Tiempo», «Distancia», «Combustible», «FF calculado», «TAS / GS», «Variómetro». Bloque del nivel Experto.
 Se rellena tras importar un OFP («Recuperar último FPL de SimBrief» o «Importar OFP JSON»).
 Sin OFP: «Sin datos de OFP.»
 Útil para entender una calibración parcial o una diferencia con SimBrief.
 
 ### JSON importado / SimBrief
 
-Este bloque muestra el contenido bruto del último archivo importado (OFP de SimBrief o JSON).
+Este bloque muestra el contenido bruto del último archivo importado (OFP de SimBrief o JSON). Bloque del nivel Experto.
 - «Copiar JSON»: copia el contenido en el portapapeles.
 - «Borrar»: vacía la visualización (el perfil no se toca).
 

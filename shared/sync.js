@@ -29,6 +29,26 @@
   }).then(r => r.ok ? r.json() : null).catch(() => null);
   let state = null,
     busy = false;
+  // Fréquence de vérification (Paramètres › Maintenance › Versions et synchronisations, réglage de ce navigateur) et
+  // dernier état connu : le bouton s'affiche tout de suite avec lui, sans requête ; une seule vérification (dépôt distant
+  // compris) quand la période est écoulée — git status et fetch à chaque page coûtaient 1 à 3 s au lanceur.
+  const CHECK = 'syncCheck:v1',
+    LAST = 'syncState:v1';
+  const PERIODS = {
+    page: 0,
+    '30m': 30 * 60e3,
+    '3d': 8 * 3600e3,
+    '1d': 24 * 3600e3
+  };
+  const period = () => PERIODS[K?.store?.get?.(CHECK, '30m')] ?? PERIODS['30m'];
+  const saved = () => {
+    try {
+      return JSON.parse(localStorage.getItem(LAST) || 'null');
+    } catch {
+      return null;
+    }
+  };
+  const due = () => Date.now() - (saved()?.at || 0) >= period();
 
   const button = document.createElement('button');
   button.type = 'button';
@@ -119,6 +139,20 @@
     notify(`${d.level === 'alert' ? t(['Sauvegarde des données en alerte', 'Data backup alert', 'Datensicherung: Warnung', 'Alerta de copia de los datos']) : t(['Données à synchroniser', 'Data to synchronise', 'Daten zu synchronisieren', 'Datos por sincronizar'])} — ${reasons().join(' ')}`, d.level === 'alert' ? 'error' : 'warn');
   }
 
+  // contenu du bouton dernièrement écrit (libellé, compteur, pastille) : réécrit seulement s'il change
+  let drawn = '';
+  /** Pose le contenu du bouton (HTML) et son infobulle, seulement s'ils changent. */
+  const paint = (html, title) => {
+    if (html !== drawn) {
+      button.innerHTML = html;
+      drawn = html;
+    }
+    if (button.title !== title) button.title = title;
+  };
+
+  /** Dessine le bouton d'après l'état connu : alerte sans dépôt, sinon « Synchroniser » ; le nombre d'éléments à
+   *  synchroniser est dans son propre élément (.repo-sync-count), doublé d'une pastille (.repo-sync-dot) : aux niveaux
+   *  d'utilisation 1 et 2, repository_nav.css montre la pastille au lieu du nombre, qui reste dans l'infobulle. */
   function draw() {
     place();
     const level = state?.divergence?.level || 'ok';
@@ -128,24 +162,26 @@
     button.classList.toggle('repo-sync-alert', level === 'alert');
     if (button.hidden) return;
     if (!state.repo) {
-      button.textContent = `⚠ ${t(['Sauvegarde', 'Backup', 'Sicherung', 'Copia'])}`;
-      button.title = reasons().join('\n');
+      paint(K.esc(`⚠ ${t(['Sauvegarde', 'Backup', 'Sicherung', 'Copia'])}`), reasons().join('\n'));
       button.disabled = false;
       return;
     }
     const pending = (state.changes || 0) + (A()?.pendingData?.() || []).length,
       n = pending + (state.behind || 0) + (state.ahead || 0);
-    const label = `${t(['Synchroniser', 'Synchronise', 'Synchronisieren', 'Sincronizar'])}${n ? ` (${n})` : ''}`,
-      icon = window.RepositoryIcons?.svg('refresh');
-    button.textContent = icon ? label : '⟳ ' + label;
-    if (icon) button.insertAdjacentHTML('afterbegin', icon);
+    const icon = window.RepositoryIcons?.svg('refresh');
+    const html = `${icon || '⟳ '}<span class="repo-sync-label">${K.esc(t(['Synchroniser', 'Synchronise', 'Synchronisieren', 'Sincronizar']))}</span>${n ? `<span class="repo-sync-count">(${n})</span><span class="repo-sync-dot" aria-hidden="true"></span>` : ''}`;
     button.classList.toggle('busy', busy);
     button.disabled = busy;
     const last = state.last?.at ? new Date(state.last.at).toLocaleString(undefined, {
       dateStyle: 'short',
       timeStyle: 'short'
     }) : t(['jamais', 'never', 'nie', 'nunca']);
-    button.title = tf([
+    // nombre total en tête de l'infobulle : seul endroit où il se lit aux niveaux 1 et 2 (pastille)
+    paint(html, (n ? tf(['{n} élément(s) à synchroniser', '{n} item(s) to synchronise', '{n} Element(e) zu synchronisieren',
+      '{n} elemento(s) por sincronizar'
+    ], {
+      n
+    }) + '\n' : '') + tf([
       'Données partagées (dépôt git {b}) : {p} modification(s) de ce poste à envoyer, {r} commit(s) à recevoir — dernière synchronisation : {l}',
       'Shared data (git repository {b}): {p} change(s) from this computer to send, {r} commit(s) to receive — last synchronisation: {l}',
       'Gemeinsame Daten (Git-Repository {b}): {p} Änderung(en) dieses Rechners zu senden, {r} Commit(s) zu empfangen — letzte Synchronisierung: {l}',
@@ -155,12 +191,23 @@
       p: pending + (state.ahead || 0),
       r: state.behind || 0,
       l: last
-    }) + (RANK[level] ? `\n${reasons().join('\n')}` : '');
+    }) + (RANK[level] ? `\n${reasons().join('\n')}` : ''));
   }
-  /** État relu au lanceur (fetch : aussi le dépôt distant, pour les commits à recevoir). */
+  /** État relu au lanceur (fetch : aussi le dépôt distant, pour les commits à recevoir ; sinon relevé local, refait par
+   *  le lanceur) ; gardé avec sa date (dernier état connu). */
   async function status(fetchRemote = false) {
-    const s = await api(`/__setup/sync-status${fetchRemote ? '?fetch=1' : ''}`);
-    if (s) state = s;
+    const s = await api(`/__setup/sync-status?${fetchRemote ? 'fetch=1' : 'fresh=1'}`);
+    if (s) {
+      state = s;
+      try {
+        localStorage.setItem(LAST, JSON.stringify({
+          at: Date.now(),
+          state: s
+        }));
+      } catch {
+        /* stockage plein ou refusé : l'état reste celui de la page */
+      }
+    }
     draw();
     warnOnce();
     return state;
@@ -236,15 +283,33 @@
   window.SuiteSync = {
     status,
     run,
-    reasons
+    reasons,
+    /** Fréquence de vérification : 'page', '30m', '3d', '1d' (lecture, ou réglage avec une valeur). */
+    checkEvery(v) {
+      if (v in PERIODS) K?.store?.set?.(CHECK, v);
+      return K?.store?.get?.(CHECK, '30m') || '30m';
+    },
+    /** Date du dernier état connu (ms) ou 0. */
+    lastCheck: () => saved()?.at || 0
   };
-  // état au chargement (sans réseau), commits à recevoir toutes les 5 minutes, après chaque écriture (sans réseau)
+  // dernier état connu affiché tout de suite ; vérification (dépôt distant compris) seulement si la période réglée est
+  // écoulée, au chargement puis chaque minute tant que la page est visible ; après une écriture : relevé local seul
   let timer = 0;
   window.addEventListener('defa-data-change', () => {
     clearTimeout(timer);
     timer = setTimeout(() => status(), 2000);
   });
   window.addEventListener('repository-language-change', draw);
-  status().then(s => s?.repo && setTimeout(() => status(true), 4000));
-  setInterval(() => !busy && state?.repo && document.visibilityState === 'visible' && status(true), 5 * 60e3);
+  const last = saved();
+  if (last?.state) {
+    state = last.state;
+    draw();
+    // en-tête pas encore construit au chargement de ce script : bouton posé une fois la page prête
+    if (!button.isConnected) window.addEventListener('load', draw, {
+      once: true
+    });
+  }
+  if (due()) status(true);
+  setInterval(() => !busy && document.visibilityState === 'visible' && Date.now() - (saved()?.at || 0) >= Math.max(period(),
+    5 * 60e3) && status(true), 60e3);
 })();

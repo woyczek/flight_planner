@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Aujourd’hui</title>
+<link rel="stylesheet" href="../../shared/repository_nav.css?v=dd0730c4"><link rel="stylesheet" href="../../shared/mission_core/core.css?v=8594d3c0">
+<script src="../../config/repository_tree?v=18728c91"></script>
+<style>
+  /* largeur : pleine page, marges latérales communes (repository_nav.css, body>main) ; ici le vertical seulement */
+  main.td-page {
+    margin-top: 18px;
+    margin-bottom: 18px;
+    padding-top: 0;
+    padding-bottom: 48px
+  }
+</style>
+</head><body>
+<!-- Page d'arrivée du pilote (v2-fable, docs/technique/V2_FABLE.md § 2.1) : trois blocs, une action chacun — ma prochaine
+     mission, les comptes rendus à écrire, ma semaine. Contenu rendu par shared/pilot_today.js (affectations du socle,
+     registre des CR pour savoir ce qui est déjà rendu) ; sans trigramme, le premier bloc le demande sur place. Titres et
+     sous-titres écrits ici en français puis posés dans la langue de la page par le script (RepositoryKit.t). -->
+<header class="mc-header"><h1>Aujourd’hui</h1><p>Ma prochaine mission, les comptes rendus à écrire, ma semaine</p></header>
+<main class="td-page mc-reporting">
+<section data-block-id="next" data-icon="send"><h2>Ma prochaine mission</h2>
+  <p class="repo-block-subtitle">La mission affectée la plus proche : heure (UTC), appareil, terrain, indicatif.</p>
+  <div id="tdNext"></div>
+</section>
+<section data-block-id="pending" data-icon="clipboard"><h2>Comptes rendus à écrire</h2>
+  <p class="repo-block-subtitle">Missions des trois dernières semaines sans compte rendu dans le registre.</p>
+  <div id="tdPending"></div>
+</section>
+<section data-block-id="week" data-icon="calendar"><h2>Ma semaine</h2>
+  <p class="repo-block-subtitle">Mes missions de la semaine en cours (UTC) ; un clic ouvre le dossier.</p>
+  <div id="tdWeek"></div>
+</section>
+</main>
+<script src="../../shared/kit.js?v=d74cff80"></script>
+<script src="../../shared/repository_nav.js?v=0951fa5a"></script>
+<script src="../../shared/mission_core/vendor/js-yaml.min.js?v=64052ae4"></script>
+<script src="../../shared/mission_core/vocab.js?v=8c65f5c2"></script>
+<script src="../../shared/mission_core/model.js?v=88cf78c1"></script>
+<script src="../../shared/mission_core/ledger.js?v=4436f8c0"></script>
+<script src="../../shared/pilot_today.js?v=c962ff09"></script>
+<script>
+(() => {
+  'use strict';
+  const K = window.RepositoryKit,
+    $ = id => document.getElementById(id);
+  // textes de la page (titre de l'onglet, en-tête, titres et sous-titres des blocs) dans la langue de la page
+  const TEXTS = [
+    ['title', ['Aujourd’hui', 'Today', 'Heute', 'Hoy']],
+    ['header p', ['Ma prochaine mission, les comptes rendus à écrire, ma semaine', 'My next mission, reports to write, my week',
+      'Meine nächste Mission, zu schreibende Berichte, meine Woche', 'Mi próxima misión, informes por escribir, mi semana'
+    ]],
+    ['[data-block-id="next"] h2', ['Ma prochaine mission', 'My next mission', 'Meine nächste Mission', 'Mi próxima misión']],
+    ['[data-block-id="next"] .repo-block-subtitle', ['La mission affectée la plus proche : heure (UTC), appareil, terrain, indicatif.',
+      'The nearest assigned mission: time (UTC), aircraft, airfield, callsign.',
+      'Die nächste zugewiesene Mission: Zeit (UTC), Luftfahrzeug, Flugplatz, Rufzeichen.',
+      'La misión asignada más próxima: hora (UTC), aeronave, aeródromo, indicativo.'
+    ]],
+    ['[data-block-id="pending"] h2', ['Comptes rendus à écrire', 'Reports to write', 'Zu schreibende Berichte',
+      'Informes por escribir'
+    ]],
+    ['[data-block-id="pending"] .repo-block-subtitle', ['Missions des trois dernières semaines sans compte rendu dans le registre.',
+      'Missions of the last three weeks without a report in the registry.',
+      'Missionen der letzten drei Wochen ohne Bericht im Register.',
+      'Misiones de las tres últimas semanas sin informe en el registro.'
+    ]],
+    ['[data-block-id="week"] h2', ['Ma semaine', 'My week', 'Meine Woche', 'Mi semana']],
+    ['[data-block-id="week"] .repo-block-subtitle', ['Mes missions de la semaine en cours (UTC) ; un clic ouvre le dossier.',
+      'My missions of the current week (UTC); a click opens the folder.',
+      'Meine Missionen der laufenden Woche (UTC); ein Klick öffnet die Mappe.',
+      'Mis misiones de la semana en curso (UTC); un clic abre la carpeta.'
+    ]]
+  ];
+  /** Pose les textes de la page dans la langue courante (écriture seulement si le texte change). */
+  const texts = () => {
+    for (const [sel, row] of TEXTS) {
+      const el = sel === 'title' ? null : document.querySelector(sel),
+        v = K.t(row);
+      if (sel === 'title') {
+        if (document.title !== v) document.title = v;
+      } else if (el && el.textContent !== v) el.textContent = v;
+    }
+  };
+  texts();
+  window.addEventListener('repository-language-change', texts);
+  const T = window.PilotToday;
+  const redraw = [T.mount($('tdNext'), 'next'), T.mount($('tdPending'), 'pending', {
+    trigram: false
+  }), T.mount($('tdWeek'), 'week')];
+  // trigramme saisi dans un bloc : les autres se relisent
+  window.addEventListener('pilot-profile-change', () => redraw.forEach(d => setTimeout(d)));
+})();
+</script>
+<script src="../../shared/app_framework.js?v=0a2fa96b"></script>
+</body></html>

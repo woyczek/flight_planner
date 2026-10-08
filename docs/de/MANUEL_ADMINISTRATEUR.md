@@ -18,17 +18,17 @@ Die Einstellungen finden Sie unter ☰ › Einstellungen, Reiter „Zentrum“.
 
 Die Sperre blendet das Zentrum aus, solange es in diesem Browser nicht aktiviert wurde.
 
-- Zentrum gesperrt: Die Seiten des Zentrums verschwinden aus dem Menü ☰, aus der Seitenleiste (Trenner „Zentrum“ und Einträge „Missionen“, „Register“, „ODV“) und von der Startseite.
+- Zentrum gesperrt: Seitenleiste, Menü ☰ und Startseite folgen der Nutzungsstufe, nicht der Sperre; eine ohne Zentrum geöffnete Seite des Zentrums zeigt den Hinweis „Zugang beschränkt“, außer der Einsatztafel (Eintrag „Planung“), schreibgeschützt einsehbar.
 - Eine direkt geöffnete Seite des Zentrums (Lesezeichen, Link) wird von einem Hinweis „Zugang beschränkt“ mit den Links „Zentrum aktivieren…“ und „Startseite“ überdeckt.
 - Unter Einstellungen › Zentrum bleibt nur die Rubrik „Zugang zum Zentrum und Einstellungen“ sichtbar; die anderen („Benutzer und Rechte“, „Verfügbarkeitskategorien“, „ODV-Planung“, „Berichtsversand (Webdienst)“) sind ausgeblendet.
 - Die Aktivierung wird nur in diesem Browser gespeichert: Sie ist auf jedem Rechner und nach dem Löschen der Websitedaten erneut vorzunehmen.
 
-Grenze: Dies ist eine Nutzungssperre, keine Sicherheitsmaßnahme. Das Passwort steht im Klartext in `data/config/centre.json`, wird mit den Daten geteilt (`DEFA` voreingestellt) und unter dem Feld angezeigt: Das ist der **eigenständige Modus**. Der Gruppenmodus (signiertes Register, Zugang über die Administratorrolle) folgt ([Konzept](../technique/COMPTES_SIGNES.md)).
+Grenze: Dies ist eine Nutzungssperre, keine Sicherheitsmaßnahme. Das Passwort steht im Klartext in `data/config/centre.json`, wird mit den Daten geteilt (`DEFA` voreingestellt) und neben dem Knopf „Zentrum aktivieren“ angezeigt: Das ist der **eigenständige Modus**. Der Gruppenmodus (signiertes Register, Zugang über die Administratorrolle) folgt ([Konzept](../technique/COMPTES_SIGNES.md)).
 
 ### Zentrum aktivieren oder sperren
 
 1. Öffnen Sie ☰ › Einstellungen, Reiter „Zentrum“, Rubrik „Zugang zum Zentrum und Einstellungen“.
-2. Geben Sie das unter dem Feld angezeigte Passwort („Passwort: DEFA“ voreingestellt) in „Passwort des Zentrums“ ein (Groß- und Kleinschreibung egal).
+2. Geben Sie das neben dem Knopf angezeigte Passwort („Passwort: DEFA“ voreingestellt) in „Passwort des Zentrums“ ein (Groß- und Kleinschreibung egal).
 3. Klicken Sie auf „Zentrum aktivieren“ oder drücken Sie die Eingabetaste. Die Statuszeile zeigt „Zentrum in diesem Browser aktiviert“.
 
 Die Einträge des Zentrums erscheinen sofort, ohne die Seite neu zu laden. Die Rubrik zeigt dann „Modus und Zugang“ (Modus des Zentrums; „Passwort des Zentrums (mit den Daten geteilt)“ und „Passwort speichern“: in `data/config/centre.json` geschrieben, geht es beim nächsten „Synchronisieren“ hinaus), dann die Einstellungen „Berechnung der Transitrouten“:
@@ -91,6 +91,7 @@ Während der Übernahme ist das Arbeitskürzel das des übernommenen Benutzers, 
 Der Generator bereitet die Unterlagen einer Mission vor: Identifikation, Briefingtexte, Übung, geschätzte Dauer, zu aktivierende Gebiete, danach die PDFs für die Besatzungen. Er dient auch dazu, eine Mission bei ChatGPT zu bestellen und die Antwort zu empfangen.
 Zugang: Seitenleiste „Missionen“ (Bereich „Zentrum“) oder ☰ › „Missionsgenerator (SIA)“. Im Register lädt „Im Generator öffnen“ die gewählte Mission.
 Siehe auch [SIA-Missionen](../SIA_MISSIONS.md) und [Prompt des Generators](../technique/PROMPT_GENERATEUR_MISSIONS.md).
+Je nach Nutzungsstufe: Die Seite wird ab der Stufe Gestaltung (3) angeboten. Auf dieser Stufe zeigt sie sieben Blöcke: Mission, Identifikation, Geschätzte Dauer, Zu aktivierende Gebiete, Missionstexte, Karten des Endpakets und Dokumente (dazu Operation und Übung, wenn die Mission dazugehört). Entwürfe, „Alle YAML-Daten“ und die Einstellungen der Routenberechnung gehören zur Stufe Experte (4).
 
 ### Reiter „Missionsgenerator“ und „Kartenstudio“
 
@@ -112,12 +113,12 @@ Dieser Block zeigt die geladene Mission und vereint Speichern und Import.
 | „Neue Mission“ | Leert das Formular (heutiges Datum) |
 | „Bei ChatGPT bestellen…“ | Klappt das Bestellformular auf (siehe unten) |
 | „Im Ordner speichern“ | Schreibt das geänderte YAML nach `data/missions/<lettre>_<FAMILLE>/<ID>/`; die alte Version wird ersetzt, der Verlauf bleibt im YAML erhalten |
-| „Entwurf speichern“ / „Entwurf neu laden“ | Behält oder liest den Text der Mission in diesem Browser (die Bilder sind neu auszuwählen) |
+| „Entwurf speichern“ / „Entwurf neu laden“ (Stufe Experte) | Behält oder liest den Text der Mission in diesem Browser (die Bilder sind neu auszuwählen) |
 
 Der Bereich „Andere Mission importieren: Dateien, eingefügter Text, ChatGPT-Bestellung“ ist geöffnet, wenn keine Mission geladen ist:
 - „YAML und/oder Markdown“: Wählen Sie `mission<ID>.yaml` und `summary<ID>.md` gemeinsam aus, oder klicken Sie auf „oder Inhalt einfügen…“ und dann auf „Mission lesen“;
 - „Karten oder vom Generator geliefertes ZIP“: Wählen Sie direkt das ZIP des Studios; die PNGs und die Übersichtskarte werden automatisch zugeordnet;
-- „Mission bei ChatGPT bestellen“: dasselbe Formular wie im Register (Typ, Untertyp, Einsatzgebiet, Serie, Teams, Luftfahrzeuge…). „Bestellen: Prompt kopieren und ChatGPT öffnen“ kopiert den Prompt, öffnet ChatGPT in einem neuen Tab und trägt die Bestellung ins Register ein („bestellt“).
+- „Mission bei ChatGPT bestellen“: dasselbe Formular wie im Register (Typ, Untertyp, Einsatzgebiet, Serie, Teams, Luftfahrzeuge…). „Bestellen: Prompt kopieren und ChatGPT öffnen“ kopiert den Prompt, öffnet ChatGPT in einem neuen Tab und trägt die Bestellung ins Register ein („bestellt“). Auf der Stufe Gestaltung erscheint dieser Bereich nur, wenn der Knopf „Bei ChatGPT bestellen…“ ihn öffnet; auf der Stufe Experte steht er auch zugeklappt im Bereich.
 
 Eine empfangene Mission wird ins Register eingetragen und in ihrem Ordner abgelegt, wenn der Missionsordner erlaubt ist; andernfalls klicken Sie auf „Im Missionsordner ablegen…“. Link „Register öffnen ↗“.
 
@@ -147,7 +148,7 @@ Das Ändern der Kennung einer Mission, auf die andere verweisen (Operation, Kart
 
 Schätzung des Flugs anhand der wahrscheinlichen Route und des Luftfahrzeugs; bei jeder Änderung neu berechnet. Bei einer Mission der Übungsleitung ausgeblendet.
 - „Transit“: „automatisch (nach Luftfahrzeug und Höhe)“, „Luftstraßen (IFR)“, „RTBA (Tiefflug)“ oder „direkt“. Die Wahl wird in die Mission geschrieben.
-- „Einstellungen der Routenberechnung (für alle Missionen)“: dieselben Felder wie unter Einstellungen › Zentrum, mit „Standardwerte“.
+- „Einstellungen der Routenberechnung (für alle Missionen)“ (Stufe Experte): dieselben Felder wie unter Einstellungen › Zentrum, mit „Standardwerte“.
 - Anzeige: „geschätzter Flug“, „Block“, Hinflug / im Gebiet / Rückflug, Entfernung; gegebenenfalls Rückflugoptionen und aufeinanderfolgende Briefings.
 - Die **erprobten Zeiten** (Berichte von Missionen mit gleichem Abflugort und gleichen Punkten) ersetzen die Berechnung, wenn es sie gibt.
 - Eine Tabelle vergleicht die Schätzung mit den bereits erstellten Berichten der Mission (tatsächlicher Flug, Abweichung).
@@ -184,7 +185,7 @@ Auf einer Mission der Übungsleitung wird der Block zu „Allgemeines Briefing�
 
 ### Alle YAML-Daten
 
-Block standardmäßig ausgeblendet: Klicken Sie in seinem Kopf auf „Anzeigen“.
+Block der Stufe Experte, standardmäßig ausgeblendet: Klicken Sie in seinem Kopf auf „Anzeigen“.
 - Editor ohne vorgegebenes Schema: Jeder Schlüssel des YAML ist änderbar, unbekannte Felder bleiben erhalten.
 - Listen: „Element hinzufügen“, × zum Entfernen eines Elements.
 - „Name eines neuen Stammfelds“ und dann „Hinzufügen“ legt einen Schlüssel der ersten Ebene an.
@@ -245,7 +246,7 @@ Kontrollkarte: Listen „Karte“ und „Profil“, Kästchen „ZIP“, „Aktu
 - Kästchen „ZIP“ (nicht angehakt: Karte nicht erzeugt; Wahl nicht in der Mission gespeichert) und × zum Löschen.
 
 Hinzufügen: Name, Typ („Übersicht“, „Ziel“, „Detail“, „Gebiet“), dann „+ Karte“ (Ausdehnung = angezeigte Ansicht); „+ Übungskarten“ fügt die Karten der Übungsleitung, der gespielten Übungsziele oder der Besatzung hinzu.
-„Einstellungen des Profils …“ (eingeklappt): „Profilname“, „Hintergrundkarte“, „Speichern“, „Neu“, „Duplizieren“, „Löschen“, dann vier Reiter: „Hintergrundkarte“, „Lufträume“, „ICAO-Symbole“, „Elemente“. Geändert wird immer das Profil der gewählten Karte; die Profile gelten für alle Missionen und bleiben in diesem Browser.
+„Einstellungen des Profils …“ (eingeklappt): „Profilname“, „Hintergrundkarte“, „Speichern“, „Neu“, „Duplizieren“, „Löschen“, dann vier Reiter: „Hintergrundkarte“, „Lufträume“, „ICAO-Symbole“, „Elemente“. Geändert wird immer das Profil der gewählten Karte; die Profile gelten für alle Missionen und bleiben in diesem Browser. Die Vorschlagslisten der Eingabefelder (Zonen, Flugplätze, Funkfeuer: bis zu 13 000 Einträge aus der SIA-Datenbank) werden erst gefüllt, wenn Sie in das betreffende Feld klicken, nicht beim Öffnen der Seite.
 
 ### Vorschauen und Erzeugung
 
@@ -254,6 +255,7 @@ Hinzufügen: Name, Typ („Übersicht“, „Ziel“, „Detail“, „Gebiet“
 - Die PNGs werden in `cartes/` des Missionsordners abgelegt (im Register sichtbar). Andernfalls verwenden Sie „Karten im Ordner ablegen“ in der Fußleiste.
 - Eine fehlgeschlagene Karte hält die anderen nicht auf: Das ZIP enthält `rapport_generation.txt`, und „Einzeln wiederholen“ startet die Karte erneut. „Hintergrund unvollständig“ meldet eine langsame Hintergrundkarte.
 - Paket aus mehreren Missionen: „Die n Missionen erzeugen“ erstellt ein einziges ZIP, einen Ordner pro Mission, mit der Karte der Operation.
+- „Abbrechen“ (Fortschrittsbalken, bei Vorschauen wie bei der Erzeugung): Die laufende Karte wird fertiggestellt, die folgenden werden nicht erstellt. Eine abgebrochene Erzeugung lädt kein ZIP herunter und legt nichts im Missionsordner ab; ein abgebrochener Stapel nennt, wie viele Missionen fertig sind (ihre Karten liegen bereits in ihrem Ordner); die bereits angezeigten Vorschauen bleiben.
 
 Ausgabeart (PNG, bearbeitbares SVG) und Breite der PNGs: Menü ☰ › „Kartenausgaben“. Die Übersichtskarte ist immer enthalten; sie erscheint unten im Block.
 
@@ -273,6 +275,7 @@ Enthält der Ordner mehrere Zyklen, wird nur der neueste gelesen; die anderen we
 Das Register erfasst alle erzeugten oder bestellten Missionen mit ihrer Verfolgung durch das Zentrum: Status, Flugdatum, Notizen, Berichte.
 Es dient dazu, eine Mission auszuwählen, sie im Generator oder im Studio zu öffnen, sie Piloten zuzuweisen, ihren Bericht zu erstellen und neue Missionen zu bestellen.
 Zugang: Seitenleiste „Register“ (Bereich „Zentrum“) oder ☰ › „Missionsregister (SIA)“.
+Je nach Nutzungsstufe: Die Seite wird ab der Stufe Gestaltung (3) angeboten, mit dem Wesentlichen: „Dateien hinzufügen…“ und „Ordner neu lesen“, vier Filter und „Weitere Filter“, eine Tabelle mit sieben Spalten, ein Blatt ohne das Kartenstudio und das vereinfachte Bestellformular. Der Rest gehört zur Stufe Experte (4), wie unten angegeben.
 
 ### Missionen des Registers
 
@@ -280,21 +283,21 @@ Am Kopf: Anzahl der Missionen, Verteilung nach Status und Aktualisierungsdatum.
 
 | Schaltfläche | Wirkung |
 |---|---|
-| „Missionsordner: …“ | Wählt den Ordner `data/missions` und liest ihn dann neu |
-| „Ordner neu lesen“ | Liest alle Missionen des Ordners neu |
+| „Missionsordner: …“ (Stufe Experte) | Wählt den Ordner `data/missions` und liest ihn dann neu |
+| „Ordner neu lesen“ | Liest alle Missionen des Ordners neu; fragt nach ihm, wenn er noch nicht freigegeben ist |
 | „Dateien hinzufügen…“ | Fügt `mission<ID>.yaml` / `summary<ID>.md` hinzu (jeder Browser) |
-| „mission_registry.yaml schreiben“ | Schreibt das Register in den Missionsordner |
-| „Register bereinigen (n)“ | Entfernt die Missionen „Datei fehlt“ nach dem Neueinlesen |
+| „mission_registry.yaml schreiben“ (Stufe Experte) | Schreibt das Register in den Missionsordner |
+| „Register bereinigen (n)“ (Stufe Experte) | Entfernt die Missionen „Datei fehlt“ nach dem Neueinlesen |
 
-Der Ordner wird beim Öffnen automatisch neu gelesen, wenn er bereits erlaubt ist.
+Der Ordner wird beim Öffnen automatisch neu gelesen, wenn er bereits erlaubt ist. Das Lesen zeigt einen Fortschrittsbalken mit „Abbrechen“: Das Register bleibt unverändert.
 Beim Bereinigen gehen Status, Notizen und Flugdatum auf die Mission über, die eine umnummerierte Mission ersetzt.
 
 ### Mission wählen
 
-Filter: „Typ“, „Untertyp“, „Treffpunkt“, „Beteiligte Teams“ (min – max), „Team- / Luftfahrzeugtyp“, „Luftbetankung“, „Schauplatz“, „Status“, „Suche“. Sie werden gespeichert.
+Filter: „Typ“, „Status“, „Schauplatz“, „Suche“; die übrigen („Untertyp“, „Treffpunkt“, „Beteiligte Teams“ (min – max), „Team- / Luftfahrzeugtyp“, „Luftbetankung“) liegen unter „Weitere Filter“, geöffnet auf der Stufe Experte oder wenn einer von ihnen aktiv ist. Sie werden gespeichert.
 - „Zufällig wählen (n)“ wählt eine Mission unter denen, die die Filter passieren.
 - „Filter löschen“, „CSV“ (Export der Auswahl).
-- Tabelle nach Spalte sortierbar: Mission, Typ, Titel, Teams, RDV, AAR, Schauplatz, Status, „Gesch. Dauer“, Berichte (Anzahl der Flüge), „Erzeugt“. Die Leiste unter der Tabelle regelt ihre Höhe (Doppelklick: Standardhöhe).
+- Tabelle nach Spalte sortierbar: Mission, Typ, Titel, Teams, RDV, AAR, Schauplatz, Status, „Gesch. Dauer“, Berichte (Anzahl der Flüge), „Erzeugt“. Die Leiste unter der Tabelle regelt ihre Höhe (Doppelklick: Standardhöhe). Die Spalten Teams, RDV, AAR und Schauplatz erscheinen nur auf der Stufe Experte.
 - ✕ entfernt eine Mission aus dem Register, ohne ihre Dateien zu löschen.
 
 Klicken Sie auf eine Zeile, um das unten beschriebene Missionsblatt zu öffnen. Der Link `?mission=M-016` öffnet das Blatt direkt.
@@ -303,11 +306,11 @@ Klicken Sie auf eine Zeile, um das unten beschriebene Missionsblatt zu öffnen. 
 
 Das Blatt zeigt Status, Streckenführung, Teams und Rufzeichen, danach:
 - bei einer Operation: ihre Mitglieder (klicken Sie, um sie anzuzeigen); „Öffnen“ lädt die ganze Operation in den Generator oder das Studio;
-- „Dateien der Mission“: YAML, „Markdown (lesbar)“, „PDF (Generator)“, „Bearbeiten (Generator)“, „Karten (Studio)“, Miniaturen der Karten, frühere Versionen und empfangene Texte;
+- „Dateien der Mission“: YAML, „Markdown (lesbar)“, „PDF (Generator)“, „Bearbeiten (Generator)“, „Karten (Studio)“ (Stufe Experte), Miniaturen der Karten, frühere Versionen und empfangene Texte;
 - Zustand der Karten: „vollständig“, „teilweise: Karten zu ergänzen“ oder „teilweise: Karten nicht erzeugt (wiedererzeugbar)“;
 - „Geschätzte Dauer“ mit dem Vergleich zu den Berichten.
 
-Schaltflächen: „Im Generator öffnen“, „Im Kartenstudio öffnen“, „Zuweisen…“ (außer Übungsleitung …Z; siehe [Zuweisung der Missionen](../technique/AFFECTATION_MISSIONS.md)), „Bericht erstellen“ oder „Neuer Bericht (Flug n)“, und „Prompt erneut kopieren“ für eine bestellte Mission.
+Schaltflächen: „Im Generator öffnen“, „Im Kartenstudio öffnen“, „Zuweisen…“ (außer Übungsleitung …Z; siehe [Zuweisung der Missionen](../technique/AFFECTATION_MISSIONS.md)), „Bericht erstellen“ oder „Neuer Bericht (Flug n)“, und „Prompt erneut kopieren“ für eine bestellte Mission. „Im Kartenstudio öffnen“ und „Prompt erneut kopieren“ gehören zur Stufe Experte.
 
 ### Verfolgung durch das Zentrum: Status, Flugdatum, Notizen
 
@@ -333,12 +336,10 @@ Die Verfolgung wird in `suivi.yaml` im Missionsordner geschrieben; sie wird mit 
 
 ### Mission bestellen
 
-Gemeinsames Formular mit dem Generator.
-1. Stellen Sie „Typ“, „Untertyp“, „Einsatzgebiet“ und „Zweites Einsatzgebiet“ („Land“ für das Ausland), „Serie“ ein (leer = die nächste).
-2. Prüfen Sie „Kennung“ (berechnet, nur lesbar).
-3. Stellen Sie „Flugbesatzungen“, „Treffpunkt“, „Bodenteams“, „Dauer“ (XS bis XL), „Übersetzungen“, „Luftbetankung“ ein.
-4. Geben Sie unter „Luftfahrzeug jedes fliegenden Teams“ das Luftfahrzeug der Teams A, B… ein (leer = automatisch).
-5. Klicken Sie auf „Bestellen: Prompt kopieren und ChatGPT öffnen“, fügen Sie in ChatGPT ein (Strg+V) und senden Sie ab.
+Gemeinsames Formular mit dem Generator und den Flugbefehlen.
+1. Stellen Sie „Typ“, „Untertyp“, „Einsatzgebiet“ („Land“ für das Ausland), „Flugbesatzungen“, „Bodenteams“ und „Dauer“ (XS bis XL) ein.
+2. Klappen Sie bei Bedarf „Weitere Optionen“ auf: „Zweites Einsatzgebiet“ („Land“ für das Ausland), „Serie“ (leer = die nächste), „Kennung“ (berechnet, nur lesbar), „Treffpunkt“, „Übersetzungen“, „Luftbetankung“ und das Luftfahrzeug jedes fliegenden Teams A, B… (leer = automatisch). Dieser Bereich ist auf der Stufe Experte geöffnet; auf den anderen Stufen öffnet er sich von selbst, wenn eine seiner Einstellungen vom Standard abweicht.
+3. Klicken Sie auf „Bestellen: Prompt kopieren und ChatGPT öffnen“, fügen Sie in ChatGPT ein (Strg+V) und senden Sie ab.
 
 Die Mission erscheint im Register mit dem Status „bestellt“. Speichern Sie dann die Dateien im Missionsordner und klicken Sie auf „Ordner neu lesen“: Die Bestellung wird der erzeugten Mission zugeordnet (gleiche Serie). Die Einstellungen werden gespeichert.
 
@@ -346,9 +347,10 @@ Die Mission erscheint im Register mit dem Status „bestellt“. Speichern Sie d
 <!-- page: apps/cpco/odv_planning.html -->
 
 Die Seite ODV-Planung vereint die Verfügbarkeiten der Woche, die gemeinsamen Zeitfenster, die wahrscheinlichen Missionen und die Zuweisungen. Das Zentrum (CPCO) plant damit die Missionen und vergibt sie an freie Piloten.
-Zum Öffnen: Seitenleiste › Bereich „Zentrum“ › „ODV“. Die Seite gehört zum Zentrum: Solange das Zentrum gesperrt ist, verweist ein Hinweis auf Einstellungen › Zentrum (siehe nächstes Kapitel). Im Modus production ist außerdem eine Anmeldung mit der Rolle `admin_centre` nötig.
+Zum Öffnen: Link „Vollständige ODV-Seite: Arbeitsmappe, Raster, Export…“ im Block „Wahrscheinliche Missionen“ der Einsatztafel (Stufe Experte) oder Menü ☰ (Seiten des Zentrums); die Seite hat keinen Reiter und gehört zur Nutzungsstufe Planung (2). Die Seite gehört zum Zentrum: Solange das Zentrum gesperrt ist, verweist ein Hinweis auf Einstellungen › Zentrum (siehe nächstes Kapitel). Im Modus production ist außerdem eine Anmeldung mit der Rolle `admin_centre` nötig.
 Die Excel-Arbeitsmappe der Staffel ist freiwillig: Ohne sie wird die Woche aus den von den Piloten in Meine Missionen angegebenen Verfügbarkeiten und den bereits gespeicherten Zuweisungen aufgebaut.
 Jeder Block kann verschoben (Griff ↕) oder ausgeblendet („Ausblenden“ / „Anzeigen“) werden; die Anordnung wird für die Seite gespeichert.
+Die Blöcke „Gemeinsame Zeitfenster“ und „Wahrscheinliche Missionen“ stehen auch in der Einsatztafel, auf der Stufe Experte, abgestimmt auf die dort angezeigte Woche (siehe nächstes Kapitel).
 
 ### ODV-Arbeitsmappe
 
@@ -409,7 +411,7 @@ Dieser Block sammelt die Trainings, Prüfungen, Events und Buchungen von VATSIM 
 
 ### Gebietsaktivierungen nach Netzwerk
 
-Dieser Block ist der der Einsatztafel (siehe „Gebietsaktivierungen“): RTBA-, R-, D-, TRA-Aktivierungen… der angezeigten Woche, VATSIM und IVAO nebeneinander, dieselben Daten. Bearbeitung wie bei der Einsatztafel beschränkt (Centre aktiviert; im Produktivbetrieb Administrator).
+Dieser Block ist der der Einsatztafel (siehe „Gebiete“): RTBA-, R-, D-, TRA-Aktivierungen… der angezeigten Woche, VATSIM und IVAO nebeneinander, dieselben Daten. Bearbeitung wie bei der Einsatztafel beschränkt (Centre aktiviert; im Produktivbetrieb Administrator).
 
 ### Gemeinsame Zeitfenster
 
@@ -477,16 +479,29 @@ Verweigert der Browser das automatische Kopieren, wird der Text markiert: Kopier
 <!-- page: apps/cpco/odv_orders.html -->
 
 Die Seite Einsatztafel erstellt den Flugbefehl der Woche: Flugstreifen, Lotsendienst, Sonstiges und Notizen auf einer Zeitleiste, mit Verfügbarkeits- und Gebietskonflikten.
-Zum Öffnen: Seitenleiste › Rubrik „Zentrum“ › „Einsatztafel“. Wie das übrige Zentrum setzt sie das aktivierte Zentrum voraus; im Produktionsmodus muss man zudem mit der Rolle `admin_centre` angemeldet sein. Sonst öffnet sich die Seite schreibgeschützt.
+Zum Öffnen: Seitenleiste › „Planung“ (Reiter „Einsatztafel“). Anders als das übrige Zentrum ist sie ohne es einsehbar: auf Nutzungsstufe 1 oder ohne aktiviertes Zentrum (oder im Produktionsmodus ohne Anmeldung mit der Rolle `admin_centre`) öffnet sie sich schreibgeschützt: nur der Block „Tagesbefehl“, mit der Zeitleiste des Tages und ihren Zeilen Flüge, Lotsendienst, Sonstiges und Notizen — ohne Palette, Gebiete, ATC, gemeinsame Verfügbarkeit, Probleme, Protokoll, ohne Ziehen und Ablegen oder Missionsbefehl; ohne Zentrum erinnert ein schwebender Hinweis daran. Änderungen erfordern das aktivierte Zentrum und, im Produktionsmodus oder sobald ein Benutzer angemeldet ist, die Rolle `admin_centre` (ein Konto `utilisateur` bleibt auch bei geöffnetem Zentrum schreibgeschützt; ebenso in der ODV-Planung: ATC-Sitzungen, Aktivierungen, Zuweisungen).
+
+Die Seite hat sechs Blöcke, ohne Wahl der Ansicht. Was jeder zeigt, hängt von der Nutzungsstufe ab (Mein Profil › „Nutzungsstufe“):
+
+| Block | Inhalt | Stufe |
+|---|---|---|
+| „Tagesbefehl“ | Wochenleiste, dann die Zeitleiste des Tages (einziger Block im schreibgeschützten Modus) | 1 |
+| „Besatzung der Woche“ | Verfügbarkeiten der Mitglieder Tag für Tag, DLO und Fristen, Verfügbarkeitsänderungen | 2 |
+| „Gebiete“ | Gebietsaktivierungen nach Netzwerk, dann Reservierungsanträge | 2 |
+| „Gemeinsame Zeitfenster“ | Zeitfenster, in denen mehrere Piloten verfügbar sind; ein Klick öffnet das Fenster des Zeitfensters | 4 (Experte) |
+| „Wahrscheinliche Missionen“ | passende Missionsfamilien je Zeitfenster, Link zur ODV-Seite | 4 (Experte) |
+| „Statistik“ | Flüge der Woche und Auslastung der Mitglieder | 2 |
+
+- **Nicht verfügbare Piloten ausblenden** (Kästchen der Palette und des Blocks „Besatzung der Woche“, von der ODV-Seite übernommen): nur Mitglieder, die ein an diesem Tag angegebener Zeitraum für einen Flug zuweisbar macht, bleiben (gleiche Regel wie die Konflikte: Boden, Ausgleich, Lotsendienst außerhalb SOG oder nur Lotsendienst zählen nicht) (Woche: mindestens ein Tag); in diesem Browser gespeichert.
 Alles wird im gemeinsamen Datenpool gespeichert: der Befehl der Woche in `data/odv/<Jahr>-W<Woche>.json`, die Einstellungen in `data/config/odv.json`. Die Verfügbarkeiten bleiben die der Piloten, die Besatzung eines Missionsflugs die der Zuweisungen.
 Die Zeiten sind in z (UTC). Datenmodell: [Einsatztafel](../technique/ODV_ORDRES.md).
 
-### Woche
+### Tagesbefehl: Wochenleiste
 
 - „◀“ und „▶“ wechseln die Woche, „Diese Woche“ kehrt zur laufenden Woche zurück.
 - Die Tagesreiter zeigen in Rot die Zahl der Elemente im Konflikt an diesem Tag.
-- „Tag“, „Woche“ und „Statistik“ wechseln die Ansicht.
 - „Dienst“ bestimmt den Diensthabenden der Woche.
+- „↶ Rückgängig“ (oder Strg+Z): nimmt die letzten zehn Änderungen des Flugbefehls zurück (Streifen verschoben, Element gesetzt oder geändert…), Neuausgaben und Speichern inbegriffen; beim Wochenwechsel geleert.
 - „Briefing“ (oder die Taste F) zeigt den Tagesbefehl im Vollbild; die Pfeile ← und → wechseln den Tag.
 - Die Statuszeile zeigt „Gespeichert“ oder „In diesem Browser gespeichert“, wenn der Datenordner nicht freigegeben ist.
 
@@ -519,7 +534,7 @@ Auf einem Streifen: „⚠ n“ zählt seine Konflikte, „P“ zeigt an, dass i
 - **PTA** (principal training audience): Mitglieder, die das Element vorrangig trainiert, in der Luftfahrzeugtabelle (Flug) oder in der PTA-Liste (Lotsendienst, Sonstiges) angekreuzt; sie sind auf dem Streifen eingekreist. **Konfiguration**: auf dem Luftfahrzeug geladene Konfigurationen (KNON = Kanone, TALIOS = Pod…), aus den Einstellungen vorgeschlagen. **DLO** (desired learning objectives): Ziele jedes Mitglieds für das Element, eine Zeile pro Mitglied „TRI = Ziele“; „◎“ am Trigramm, Ziele beim Überfahren.
 - **Luftfahrzeuge**: zu Beginn zwei Plätze („+ Flügelmann“ fügt weitere hinzu, höchstens acht); für jeden das Luftfahrzeug (Typ der Mission vorgeschlagen ★, nicht vorgeschrieben, oder ein Luftfahrzeug der Flotte), der Pilot und der Navigator. Vorgeschlagen wird das Rufzeichen der Mission, sonst die der Rufzeichentabelle für diesen Typ; es folgt der Mission, wenn sie es ändert. **Betankung**: Strecke wählen, dann eine Tankermission dieser Strecke; ist ihr Streifen nicht gesetzt, kommt er in die Palette, und der Flug hängt sich beim Setzen an ihn. Der Streifen zeigt die Mission (Titel, Familie, Flugplatz), die von einem Tanker gehaltene Strecke und für einen Empfänger „⛽ Tanker Strecke Zeit“.
 - **Posten und Luftfahrzeuge** (wie in der ODV-Planung): für einen Missionsflug eine Zeile je Posten der Mission (Rufzeichen, Typ); der nächste Flügelmann erhält das nächste Rufzeichen. Die Luftfahrzeugliste bietet die passenden Luftfahrzeuge an, vor Ort zuerst, dann vom nächsten zum entferntesten („Überführung x h xx“); bereits während des Flugs belegte sind ausgegraut. Ein auf einem anderen Flugplatz als dem Abflug stationiertes Luftfahrzeug lässt einen Überführungsstreifen „⇢“ erscheinen (Luftfahrzeug, Flugplätze, „zuzuweisen“), Ankunft 30 min vor dem Start, folgt dem Flug: den Überführungspiloten darauf ziehen. **Bereitschaft**: Vorlauf und Ende, in den Missionsbefehl übernommen. Der Strich unter einem Trigramm zeigt seine Qualifikation auf dem Typ (grün: beherrscht; orange: besessen oder bekannt; rot: nein); nur ein Hinweis.
-- **Wahl einer Mission**: die Liste beschränkt sich auf das eingegebene Rufzeichen oder die Bezeichnung („SAMU“ → SAMU-Missionen); nach der Wahl öffnet sich das Auswahlfenster der ODV, und seine Zeilen (Posten, Luftfahrzeuge, Piloten, Rufzeichen, Überführungspilot) füllen den Streifen; verfügbare und auf dem Typ qualifizierte Piloten werden zuerst angeboten. Der Streifen übernimmt die Startzeit der Zuweisung (Warnung bei Abweichung); „Missionsbefehl der Operation (n)…“ verkettet die Missionsbefehle der an diesem Tag gesetzten Streifen der Operation; ein aus dem Vorrat oder den Formationen zurückgenommener Streifen wird an seinen Synchronzeitpunkt gesetzt. **Betankung**: die gewählte Strecke beschränkt die Liste auf ihre Tanker; „Keine bestimmte Mission“ legt einen allgemeinen Tanker auf der Strecke in den Vorrat. Eine von Hand verschobene Überführung behält ihren Platz (sie folgt dem Flug um denselben Abstand, wenn er sich verschiebt); kommt sie weniger als 30 min vor dem Start an, wird sie gemeldet. Eine Verfügbarkeit, deren Kategorie die Missionsfamilie nicht öffnet, und eine ATC-Prüfung oder ein -Training am Abflug- oder Zielflugplatz während des Flugs werden gemeldet. Unter der Zeitleiste zeigt „Zuweisungsprotokoll“ die letzten 30 Vorgänge.
+- **Wahl einer Mission**: die Liste beschränkt sich auf das eingegebene Rufzeichen oder die Bezeichnung („SAMU“ → SAMU-Missionen); nach der Wahl öffnet sich das Auswahlfenster der ODV, und seine Zeilen (Posten, Luftfahrzeuge, Piloten, Rufzeichen, Überführungspilot) füllen den Streifen; verfügbare und auf dem Typ qualifizierte Piloten werden zuerst angeboten. Der Streifen übernimmt die Startzeit der Zuweisung (Warnung bei Abweichung); „Missionsbefehl der Operation (n)…“ verkettet die Missionsbefehle der an diesem Tag gesetzten Streifen der Operation; ein aus dem Vorrat oder den Formationen zurückgenommener Streifen wird an seinen Synchronzeitpunkt gesetzt. **Betankung**: die gewählte Strecke beschränkt die Liste auf ihre Tanker; „Keine bestimmte Mission“ legt einen allgemeinen Tanker auf der Strecke in den Vorrat. Eine von Hand verschobene Überführung behält ihren Platz (sie folgt dem Flug um denselben Abstand, wenn er sich verschiebt), von Hand verlängert oder verkürzt behält sie ihre Dauer, solange die Strecke gleich bleibt; sie wird nur entfernt, wenn der Flug sie nicht mehr braucht (Flug gelöscht, Luftfahrzeug geändert oder schon am Abflugplatz) — Mission vorübergehend nicht im Register oder Flugplatz ohne Koordinaten: der Streifen bleibt, wie er ist, Überführungspilot inklusive; kommt sie weniger als 30 min vor dem Start an, wird sie gemeldet. Eine Verfügbarkeit, deren Kategorie die Missionsfamilie nicht öffnet, und eine ATC-Prüfung oder ein -Training am Abflug- oder Zielflugplatz während des Flugs werden gemeldet. Unter der Zeitleiste zeigt „Zuweisungsprotokoll“ die letzten 30 Vorgänge.
 - **Zuweisungen und Missionsbefehle**: eine anderswo (ODV-Planung, Register) zugewiesene Mission erscheint automatisch als Streifen auf der Zeitleiste, zu ihrem Start, mit Luftfahrzeugen, Piloten, Bereitschaft und Überführung. Umgekehrt wird ein Missionsflug mit Besatzung, aber ohne Zuweisung als „Missionsbefehl nicht erteilt“ gemeldet (der Pilot sieht nichts in Meine Missionen), und eine von den Zuweisungen abweichende Besatzung als „Missionsbefehl neu erteilen“. Wird der Streifen eines Flugs mit Missionsbefehl verschoben (Tag, Uhrzeit, Dauer), wird dieser automatisch ohne Fenster neu erteilt: dieselben Piloten, Luftfahrzeuge, Rufzeichen und Überführungspiloten zur neuen Zeit; ein bereits geöffneter Umschlag wird neu versiegelt, damit der Pilot die Änderung sieht. Bei einem Zuweisungskonflikt (Pilot, Überführungspilot oder Luftfahrzeug anderweitig belegt) oder wenn der Missionsordner nicht freigegeben ist, wird der Befehl nicht neu erteilt: der Streifen meldet es („Missionsbefehl nicht neu erteilt“, mit Grund) und behält seine neue Zeit; „Missionsbefehl…“ bleibt der Weg, Piloten oder Luftfahrzeuge zu ändern.
 - **Überführungsbefehl**: „Überführungsbefehl…“ auf einem Überführungsstreifen öffnet den Missionsbefehl des versorgten Flugs mit Überführung (Zeit und Dauer des Streifens, auch von Hand verschoben); ein anderer Überführungspilot als der Missionspilot oder eine zuzuweisende Überführung erhält seinen Überführungsbefehl in Meine Missionen; vom Missionspiloten geflogen, ist die Überführung eine Zeile seines Missionsbefehls.
 - Missionsflug: die Besatzung kommt aus den Zuweisungen der Mission; „Missionsbefehl…“ öffnet das Zuweisungsfenster des Zentrums, vorausgefüllt mit den Luftfahrzeugen des Streifens (Pilot, Kennzeichen, Rufzeichen der Rotte): die gespeicherten Zuweisungen sind der Missionsbefehl, den die Piloten in Meine Missionen erhalten (Kennzeichen „OM“ auf dem Streifen). „Mission bestellen…“ öffnet das Bestellformular des Generators, nach dem Streifen voreingestellt (Teams, Luftfahrzeugtypen, Dauer, Betankung). Der Missionsbericht ist maßgeblich: beim Öffnen der Woche werden Status und Bericht daraus übernommen; ohne Bericht nach der eingestellten Frist wird der Flug MNE (Ursache „kein Bericht“).
@@ -541,20 +556,31 @@ Auf einem Streifen: „⚠ n“ zählt seine Konflikte, „P“ zeigt an, dass i
 
 Ein Flug verlangt eine verfügbare Kategorie; ein Lotsendienst eine verfügbare Kategorie oder „SOG-Lotsendienst“; Sonstiges akzeptiert auch „Nur am Boden verfügbar“. Lotsendienst und Flug außerhalb SOG, DCS, nicht verfügbar und Ausgleich sind nie einsetzbar.
 
-### Woche und Statistik
+### Besatzung der Woche
 
-- **Woche**: eine Zeile pro Mitglied, eine Zelle pro Tag mit dem Balken der angegebenen Verfügbarkeiten und der Zahl der Elemente, auf denen es steht. Ein Klick auf eine Zelle öffnet seine Zeiträume des Tages: Kategorie, Beginn, Ende und „Ausgleich ab“, der einen Ausgleich bis Mitternacht setzt. Die Zeiträume werden in die Angabe des Piloten geschrieben.
+Block der Stufe 2: eine Zeile pro Mitglied, eine Zelle pro Tag mit dem Balken der angegebenen Verfügbarkeiten und der Zahl der Elemente, auf denen es steht. Ein Klick auf eine Zelle öffnet seine Zeiträume des Tages: Kategorie, Beginn, Ende und „Ausgleich ab“, der einen Ausgleich bis Mitternacht setzt. Die Zeiträume werden in die Angabe des Piloten geschrieben.
 - **DLO und Fristen**: dauerhafte Ziele jedes Mitglieds („＋“ zum Hinzufügen, Klick zum Ändern), mit optionaler Frist (rot bei höchstens 3 Arbeitstagen, gelb bei höchstens 10); eine DLO wird durch einen erledigten Flug, der sie enthält (DLO des Elements, Bezeichnung, Mission), mit dem Mitglied in der Besatzung automatisch geschlossen. Die Palette zeigt „◎n“ offene DLO je Mitglied, und das Fenster eines Elements erinnert an die der Besatzung.
 - „Verfügbarkeitsänderungen“ listet die seit ihrer letzten Berücksichtigung geänderten Angaben; „Berücksichtigt“ und „Alle berücksichtigen“ markieren sie in diesem Browser.
-- **Statistik**: geplante Flüge, Gesamtdauer, erledigt, nicht erledigt, abgesagt, AAR, ME, Bâchés, MNE; je Mitglied: verfügbare Zeit in den Dienstzeiten, Flugzeit, Auslastung (orange über 70 %, rot über 100 % oder ohne Verfügbarkeit).
 
-### Gebietsaktivierungen
+### Gebiete
 
-Dieser Block erfasst die Gebietsaktivierungen der Woche (`data/atc/activations/<Jahr>-W<Woche>.json`) in zwei Spalten nebeneinander, VATSIM und IVAO: Tag, Gebiet, Status (aktiv, beantragt, abgelehnt), Beginn, Ende, Bemerkung, Netzwerk. Eine Aktivierung „beide Netze“ erscheint in beiden Spalten; ein Wechsel des Netzwerks verschiebt sie. VATSIM veröffentlicht keine Aktivierungen: Seine Spalte wird von Hand erfasst. In der IVAO-Spalte übernimmt „Von IVAO importieren“ die von IVAO veröffentlichten Zeiten (API-Schlüssel der Installation), unter der Liste eingeklappt, sowie die IVAO-Trainings, -Prüfungen und -Buchungen der Woche (ATC-Sitzungen); manuelle Eingaben bleiben. IVAO-Sitzungen werden beim Öffnen einer Woche auch automatisch importiert, höchstens einmal pro Stunde, wenn die Seite schreiben darf. Eine Änderung berechnet die Gebiete der Flüge sofort neu. Die ODV-Planung zeigt denselben Block mit denselben Daten.
+Block der Stufe 2, in zwei Teilen: Gebietsaktivierungen nach Netzwerk, dann Reservierungsanträge.
 
-### Reservierungsanträge
+**Gebietsaktivierungen nach Netzwerk**: Der erste Teil erfasst die Gebietsaktivierungen der Woche (`data/atc/activations/<Jahr>-W<Woche>.json`) in zwei Spalten nebeneinander, VATSIM und IVAO: Tag, Gebiet, Status (aktiv, beantragt, abgelehnt), Beginn, Ende, Bemerkung, Netzwerk. Eine Aktivierung „beide Netze“ erscheint in beiden Spalten; ein Wechsel des Netzwerks verschiebt sie. VATSIM veröffentlicht keine Aktivierungen: Seine Spalte wird von Hand erfasst. In der IVAO-Spalte übernimmt „Von IVAO importieren“ die von IVAO veröffentlichten Zeiten (API-Schlüssel der Installation), unter der Liste eingeklappt, sowie die IVAO-Trainings, -Prüfungen und -Buchungen der Woche (ATC-Sitzungen); manuelle Eingaben bleiben. IVAO-Sitzungen werden beim Öffnen einer Woche auch automatisch importiert, höchstens einmal pro Stunde, wenn die Seite schreiben darf. Eine Änderung berechnet die Gebiete der Flüge sofort neu. Die ODV-Planung zeigt denselben Block mit denselben Daten.
 
-Dieser Block listet die von den Missionsflügen der Woche durchflogenen Gebiete (geplante Route und Arbeitsgebiete der Mission, für einen Übungsflug eingegebene Gebiete) ohne „aktive“ Aktivierung ihres Netzwerks: Tag, Gebiet, Netzwerk, Zeitfenster, Flüge, Status. „Als beantragt eintragen“ (oder „Alle als beantragt eintragen“) fügt sie den gemeinsamen Aktivierungen hinzu; der Antrag selbst wird auf der Seite des Netzwerks gestellt („Liste kopieren“, Link zu den IVAO-Aktivierungsanträgen). Ein P-Gebiet wird als „meiden“ gemeldet. Beim Öffnen einer Woche importiert die Seite die IVAO-ATC-Sitzungen (Trainings, Prüfungen, Buchungen) automatisch, höchstens einmal pro Stunde, mit dem gemeinsamen Import der ODV-Planung.
+**Reservierungsanträge**: Der zweite Teil listet die von den Missionsflügen der Woche durchflogenen Gebiete (geplante Route und Arbeitsgebiete der Mission, für einen Übungsflug eingegebene Gebiete) ohne „aktive“ Aktivierung ihres Netzwerks: Tag, Gebiet, Netzwerk, Zeitfenster, Flüge, Status. „Als beantragt eintragen“ (oder „Alle als beantragt eintragen“) fügt sie den gemeinsamen Aktivierungen hinzu; der Antrag selbst wird auf der Seite des Netzwerks gestellt („Liste kopieren“, Link zu den IVAO-Aktivierungsanträgen). Ein P-Gebiet wird als „meiden“ gemeldet. Beim Öffnen einer Woche importiert die Seite die IVAO-ATC-Sitzungen (Trainings, Prüfungen, Buchungen) automatisch, höchstens einmal pro Stunde, mit dem gemeinsamen Import der ODV-Planung. „Antrag zurückziehen“: Ein irrtümlich als beantragt eingetragenes Gebiet wird wieder „fehlend“.
+
+### Gemeinsame Zeitfenster
+
+Block der Stufe Experte, von der ODV-Seite übernommen und auf die von der Einsatztafel angezeigte Woche abgestimmt: die 7 Tage × 3 Zeitfenster, mit der Zahl der freien Piloten je Feld und den Filtern „Mindestens N Pilot(en)“ und „Gemeinsamer Simulator“. Ein Klick auf ein Feld öffnet das Fenster des Zeitfensters (Matrix Missionen × Posten). Einzelheiten: Kapitel ODV-Planung, „Gemeinsame Zeitfenster“ und „Fenster ‚Freie Piloten zuweisen‘“.
+
+### Wahrscheinliche Missionen
+
+Block der Stufe Experte, ebenfalls auf die Woche der Einsatztafel abgestimmt: passende Missionsfamilien je Zeitfenster, mit der Tabelle und den Regeln der ODV-Seite (siehe ODV-Planung, „Wahrscheinliche Missionen“). Unten öffnet der Link „Vollständige ODV-Seite: Arbeitsmappe, Raster, Export…“ die ODV-Seite, die keinen Reiter hat.
+
+### Statistik
+
+Block der Stufe 2: geplante Flüge, Gesamtdauer, erledigt, nicht erledigt, abgesagt, AAR, ME, Bâchés, MNE; je Mitglied: verfügbare Zeit in den Dienstzeiten, Flugzeit, Auslastung (orange über 70 %, rot über 100 % oder ohne Verfügbarkeit).
 
 ## Einstellungen › Zentrum
 <!-- page: apps/settings/centre.html -->
@@ -566,7 +592,7 @@ Solange das Zentrum gesperrt ist, ist nur die Zugangsrubrik sichtbar. Im Modus p
 ### Zugang zum Zentrum und Einstellungen
 
 Diese Rubrik aktiviert das Zentrum in diesem Browser: Missionsgenerator, Kartenstudio, Register und ODV-Planung.
-1. Geben Sie das „Passwort des Zentrums“ ein, das unter dem Feld angezeigt wird (`DEFA` voreingestellt; Groß- und Kleinschreibung egal).
+1. Geben Sie das „Passwort des Zentrums“ ein, das neben dem Knopf angezeigt wird (`DEFA` voreingestellt; Groß- und Kleinschreibung egal).
 2. Klicken Sie auf „Zentrum aktivieren“ oder drücken Sie die Eingabetaste. Die Meldung „Zentrum in diesem Browser aktiviert“ bestätigt die Aktivierung.
 
 Ist das Zentrum aktiviert, zeigt die Rubrik „Modus und Zugang“ (Modus, Änderung des geteilten Passworts), dann „Berechnung der Transitrouten“:
@@ -667,25 +693,11 @@ Details: [Betriebshandbuch](../MANUEL_EXPLOITATION.md), § 10.
 ## Einstellungen › Installation
 <!-- page: apps/settings/installation.html -->
 
-Diese Seite vereint die einmalig vorzunehmenden Einstellungen: Erststart, lokale Ordner, externe Quellen und virtuelle Fluggesellschaft.
-Zum Öffnen: Seitenleiste › „Einstellungen“, dann der Reiter „Installation“.
-Das Seitenmenü hat zwei Gruppen. Die Gruppe „Installation“ enthält „Erststart“; die Gruppe „Ordner und Quellen“ enthält „Quellen und Ordner“, „Luftfahrtdaten“ und „Luftfahrzeugtypen“.
-Diese Rubriken werden der Seite durch `config/repository_tree` zugeordnet (Schlüssel `settings.sections`: `setup` und `sources` → installation; `sia` und `types` → installation,maintenance, also auf beiden Seiten: Einrichtung hier, Aktualisierung unter Wartung, dieselben Blöcke). Alle anderen Wartungsrubriken öffnen sich auf der Seite Wartung.
-
-### Erststart
-
-Diese Rubrik zeigt, ob der Erststart in diesem Browser abgeschlossen ist, und an welchem Datum.
-- „Erststart öffnen“ öffnet den Assistenten erneut (`premier_lancement.html?force`), auch über die Registerkarte „Erststart“ der Einstellungen und die Karte der Startseite erreichbar, solange noch etwas einzustellen ist. Oben zieht „Stand der Suite“ Bilanz; dann sechs Schritte:
-  1. Ordner: „Anwendungsordner wählen“, dann die ODV-Arbeitsmappe, optional („OneDrive-Ordner…“ oder „oder die Excel-Datei…“).
-  2. Daten: „Daten abrufen“ (Klon des Datenrepositorys) oder „Datenarchiv…“; Git-Synchronisierungs-Repository (optional); optional „Journal (.html)…“.
-  3. Fluggesellschaft: Name, Kürzel, vollständiger Name, Website der Fluggesellschaft; IVAO-API-Schlüssel der Installation (optional, beim Starter gespeichert); „Fluggesellschaft speichern“.
-  4. Profil und Zugangsdaten: Kürzel, IVAO, VATSIM, SimBrief, Zugangsdaten der Website; „Profil speichern“.
-  5. Luftfahrtdaten und Luftfahrzeugtypen: die Blöcke „Luftfahrtdaten“ und „Luftfahrzeugtypen“ (dieselben wie hier).
-  6. Zentrum (Administratoren): „Zentrum aktivieren“, dann Flotte und Flugbuch der Website („Jetzt aktualisieren“), Missionen des Registers und Links zu den Einstellungen der SO Group (Einstellungen › Zentrum); zum Schluss „Abschließen“.
-- „Quellen und Ordner, virtuelle Fluggesellschaft“ öffnet die nächste Rubrik.
-- „Update-Kanal“ öffnet Wartung › Updates.
-- Um bei null anzufangen: „Bereinigen und neu beginnen…“, unten im Erststart. Das löscht die Einstellungen dieses Browsers, nicht die Dateien.
-Siehe [Installation](../INSTALL.md), § 1.
+Diese Seite vereint die einmalig vorzunehmenden Einstellungen: lokale Ordner, externe Quellen, virtuelle Fluggesellschaft, Luftfahrtdaten und Luftfahrzeugtypen.
+Zum Öffnen: Seitenleiste › „Einstellungen“, dann der Reiter „Installation“. Dieser Reiter erscheint ab der Nutzungsstufe Planung (2); eine direkte Adresse zu einem seiner Abschnitte öffnet ihn auf jeder Stufe.
+Das Seitenmenü hat eine einzige Gruppe, „Ordner und Quellen“: „Quellen und Ordner“ (von Anfang an geöffnet), „Luftfahrtdaten“ und „Luftfahrzeugtypen“.
+Der Erststart hat einen eigenen Reiter, „Erststart“, beschrieben im [Benutzerhandbuch](MANUEL_UTILISATEUR.md#erststart); „Bereinigen und neu beginnen…“ steht unten auf jener Seite. Siehe auch [Installation](../INSTALL.md), § 1.
+Diese Rubriken werden der Seite durch `config/repository_tree` zugeordnet (Schlüssel `settings.sections`: `sources` → installation; `sia` und `types` → installation,maintenance, also auf beiden Seiten: Einrichtung hier, Aktualisierung unter Wartung, dieselben Blöcke). Alle anderen Wartungsrubriken öffnen sich auf der Seite Wartung.
 
 ### Quellen und Ordner
 
@@ -705,16 +717,17 @@ Diese Rubrik ist der einzige Ort, an dem die lokalen Ordner und die Adressen der
 - **Externe Quellen**: Die Standardadresse wird grau angezeigt. Ein eingegebener Wert gilt nur für diesen Browser; „↺“ kehrt zum Standardwert zurück, und „Öffnen ↗“ öffnet die Adresse.
 - **API-Schlüssel (externe Dienste)**: Schlüssel der Suite, für alle ihre Benutzer (IVAO: API-Schlüssel für die Gebietsaktivierungen und die ATC-Sitzungen — Trainings, Prüfungen, Buchungen — der ODV-Planung und der Einsatztafel). „Speichern“ übergibt sie dem Starter (`secrets/` im Anwendungsordner, von Git ausgeschlossen, außerhalb der Daten und Sicherungen); die Seite sieht nur ihren Status und die letzten 4 Zeichen; „Löschen“ entfernt den Schlüssel.
 - **Virtuelle Fluggesellschaft**: „Name“, „Vollständiger Name“, „Kürzel“, „Zentrum (Kürzel)“, „Zentrum (voller Name)“, und die Seiten der Website („Startseite“, „Flugbuch“, „Flotte“, „Flugzeugseite“). Ein leeres Feld behält den Standardwert. „Zurück zu SO Group Virtual“ löscht alle diese Einstellungen.
-- **Erststart**: „Ersten Start erneut öffnen“; „Bereinigen und neu beginnen…“ löscht die gespeicherten Ordner, die Kopie der ODV-Arbeitsmappe, die Zugangsdaten der Website der Fluggesellschaft und das Profil. Die Dateien auf der Festplatte bleiben unberührt.
+- **Erststart**: „Ersten Start erneut öffnen“. Um bei null anzufangen, steht „Bereinigen und neu beginnen…“ unten auf der Seite des Erststarts (Abschnitt „Neu beginnen“).
 
 ## Einstellungen › Wartung
 <!-- page: apps/settings/maintenance.html -->
 
 Diese Seite dient der Pflege der Suite: Updates, Versionen, SIA-Daten, Caches, Sicherungen und Referenzdatenbanken.
-Zum Öffnen: Seitenleiste › „Einstellungen“, dann der Reiter „Wartung“. Die Seite öffnet sich auf „Updates“.
-Das Seitenmenü hat zwei Teile:
-- die Gruppe „Wartung“: Updates, Versionen, Referenzen und Abhängigkeiten, Luftfahrtdaten, Caches, Speicherplatz, Vollständige Sicherung, Protokoll;
-- die Datenbanken, geordnet in den Gruppen „Dateien des Repositorys“, „Datenbank“, „Missionen“ und „Browserdaten“.
+Zum Öffnen: Seitenleiste › „Einstellungen“, dann der Reiter „Wartung“. Die Seite öffnet sich auf „Updates“. Dieser Reiter erscheint nur auf der Nutzungsstufe Experte (4); eine direkte Adresse zu einem seiner Abschnitte öffnet ihn auf jeder Stufe.
+Das Seitenmenü hat drei Teile:
+- die Gruppe „Wartung“: Updates, Versionen, Referenzen und Abhängigkeiten, Luftfahrtdaten, Luftfahrzeugtypen;
+- die Gruppe „Speicher und Sicherung“: Caches, Speicherplatz, Vollständige Sicherung, Protokoll;
+- die Datenbanken, geordnet in den Gruppen „Dateien des Repositorys“, „Datenbank“, „Missionen“ und „Browserdaten“. Diese Gruppen erscheinen nur auf der Stufe Experte.
 
 ### Aktualisierungen der Suite
 
@@ -762,7 +775,7 @@ Die Schaltfläche „Prüfen“ startet die Prüfungen erneut.
   - einen direkten Download über den Starter (`tools/aero_fetch.py`): openAIP (jedes Land), ENAIRE (Spanien), FAA (USA: Militärgebiete und -routen, Luftraumklassen), britisches Militär-AIP (ENR 5.2, offizielles PDF, vom Starter gelesen: Tieffluggebiete, VATA, Ausweichgebiet TVAA, Betankungsstrecken AARA zusätzlich zu denen der DIRCAM), NAV CANADA (Designated Airspace Handbook, gültige Ausgabe vom Starter gelesen: Gefahren-, Beschränkungs- und Advisory-Gebiete Kanadas, alle 56 Tage neu herunterzuladen);
   - eine Bestellung oder Registrierung, mit Link und Anleitung: SIA Frankreich (Bestellung zu 0 €, bei jedem Zyklus erneut), NATS (Vereinigtes Königreich, Datei in `data/sia/zones/gb/` abgelegt);
   - ein PDF, mit Link und Anleitung: DIRCAM / MILAIP ENR 5.7 (Betankungsstrecken);
-    DIRCAM: „MILAIP-PDF importieren…“ liest das PDF des Abschnitts ENR 5.7 (pdf.js, Netz beim ersten Import), zeigt die Zahl der Strecken und die gefundenen Auffälligkeiten, dann legt „miam-enr-5-7-tracks.xml schreiben“ die Datei im SIA-Ordner ab (alte in `_archives/`) und aktualisiert die Datenbank;
+    DIRCAM: „MILAIP-PDF importieren…“ liest das PDF des Abschnitts ENR 5.7 (pdf.js, Netz beim ersten Import), zeigt die Zahl der Strecken und die gefundenen Auffälligkeiten, dann legt „miam-enr-5-7-tracks.xml schreiben“ die Datei im SIA-Ordner ab (alte in `_archives/`) und aktualisiert die Datenbank („Abbrechen“ während des Lesens: nichts wird behalten oder geschrieben);
   - einen Ordner des Rechners: X-Plane (Funkfeuer, Punkte, Luftstraßen, MORA-Gitter, zugeschnitten auf die aktiven Zonen, die es angehakt haben);
   - eine Berechnung: die MORA der Zone. Eine sehr große Zone (mehr als 1500 Ein-Grad-Felder: Vereinigte Staaten, Kanada…) nimmt standardmäßig die MORA von X-Plane; „Vollständige Berechnung…“ berechnet sie in 10°-Blöcken nach einer Bestätigung, die den Umfang nennt (offene AWS-Reliefkacheln, um 100 m erhöht, ohne OpenStreetMap-Abfrage): Jeder Block wird sofort in `mora.csv` geschrieben, „Anhalten“ zwischen zwei Blöcken, später „Vollständige Berechnung fortsetzen…“.
 - SIA Frankreich (Zone Frankreich): „Heruntergeladenes ZIP holen“ (der Starter nimmt es aus dem Download-Ordner), „SIA-Export-ZIP…“, „… entpacken“, wenn es schon im Ordner liegt, „Alte Zyklen archivieren“ (`_archives/`); „Inhalt des SIA-Ordners“ listet die Dateien des Zyklus.
@@ -937,7 +950,7 @@ Die gemeinsamen Daten (Verfügbarkeiten, Benutzer, Konfiguration, Missionen und 
 ### Die Schaltfläche „Synchronisieren (n)“
 
 - Die Schaltfläche erscheint nur, wenn die Suite vom Starter bereitgestellt wird und `data/` ein Git-Repository ist.
-- (n) addiert die zu sendenden Änderungen dieses Rechners und die zu empfangenden Commits. Das entfernte Repository wird alle 5 Minuten neu gelesen, solange die Seite sichtbar ist. Der Tooltip nennt den Branch und das Datum der letzten Synchronisierung.
+- (n) addiert die zu sendenden Änderungen dieses Rechners und die zu empfangenden Commits. Das entfernte Repository wird in der unter Einstellungen › Wartung › Versionen und Synchronisation eingestellten Häufigkeit neu gelesen (standardmäßig alle 30 Minuten; auf jeder Seite, 3-mal am Tag, einmal am Tag); zwischen zwei Prüfungen zeigt die Schaltfläche den letzten bekannten, im Browser gehaltenen Zustand, und der Starter antwortet mit seiner letzten Erhebung. Der Tooltip nennt den Branch und das Datum der letzten Synchronisierung.
 - Die Synchronisierung wird von Hand gestartet, mit einem Klick:
   1. Die im Browser gehaltenen Dateien werden zuerst in den Ordner geschrieben;
   2. der Starter committet im Namen des angemeldeten Kürzels (einschließlich übernommenem Benutzer);

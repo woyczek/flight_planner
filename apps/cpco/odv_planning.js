@@ -14,6 +14,9 @@
   const L = window.RepositoryKit.tf; // phrase traduite, valeurs {clé} insérées (shared/kit.js)
   /** Notification flottante (AppFramework.notify), console à défaut. */
   const notify = (msg, kind) => window.AppFramework?.notify ? window.AppFramework.notify(msg, kind) : console.warn(msg);
+  /** Message d'erreur lisible : ce qui a échoué (contexte traduit, facultatif) et quoi faire (AppFramework.explain :
+   *  réseau, fichier absent, stockage plein…) ; repli : contexte et message. */
+  const explain = (err, context = '') => window.AppFramework?.explain?.(err, context) || `${context ? context + ' : ' : ''}${err?.message || err}`;
   const SHORT = ['M', 'A', 'S'];
 
   // ------------------------------------------------------------------ réglages (seules données mémorisées)
@@ -380,9 +383,10 @@
       announce();
     } catch (e) {
       console.error(e);
-      notify(L(['Lecture impossible : {e}', 'Cannot read the file: {e}', 'Lesen nicht möglich: {e}', 'Lectura imposible: {e}'], {
-        e: e.message
-      }), 'err');
+      notify(explain(e, L(['Classeur des ordres de vols non lu', 'Flight-order workbook not read',
+        'Flugbefehl-Arbeitsmappe nicht gelesen',
+        'Libro de órdenes de vuelo no leído'
+      ])), 'err');
     }
   }
   /** Relit le classeur selon les réglages, recalcule créneaux et contrôles, redessine tout. */
@@ -394,11 +398,9 @@
       jumpToXl = false;
     } catch (e) {
       console.error(e);
-      notify(L(['Analyse impossible : {e}', 'Cannot analyse the workbook: {e}', 'Analyse nicht möglich: {e}',
-        'Análisis imposible: {e}'
-      ], {
-        e: e.message
-      }), 'err');
+      notify(explain(e, L(['Analyse du classeur impossible', 'Cannot analyse the workbook', 'Analyse der Arbeitsmappe nicht möglich',
+        'Análisis del libro imposible'
+      ])), 'err');
       xl = null;
     }
     await showWeek();
@@ -407,6 +409,7 @@
   /** Classeur importé (secondaire) : un pilote sans préférences de thèmes en reçoit par défaut d'après ses codes (C →
    *  chasse…, T → transport…, N → marine et SAR : SuiteDispos.prefsFromCodes), écrites dans sa fiche utilisateur. */
   async function importPrefs(x) {
+    if (!canEditActivations()) return;
     const SD = window.SuiteDispos,
       U = window.SuiteUsers,
       O = window.OdvAssign;
@@ -609,10 +612,11 @@
   // ------------------------------------------------------------------ rendu
   function render() {
     const has = !!data;
+    // page hôte (Planning) : seuls les blocs créneaux et missions probables y sont ; les autres sont ignorés
     ['odvClear', 'odvCsv', 'odvJson', 'odvRecap', 'odvTxt'].forEach(id => {
-      $(id).disabled = !has;
+      if ($(id)) $(id).disabled = !has;
     });
-    $('odvCopy').disabled = !has || !$('odvRecapText').value;
+    if ($('odvCopy')) $('odvCopy').disabled = !has || !$('odvRecapText')?.value;
     renderReport();
     renderWeekNav();
     renderGrid();
@@ -675,12 +679,15 @@
   /** Enregistre les sessions ATC de la semaine affichée (SuiteAtc.save) ; text : message de réussite, notifié si elles
    *  sont écrites dans le dossier ; recalcule et redessine la page. */
   async function saveAtc(list, text) {
+    if (!canEditActivations()) return;
     const w = atcWeek();
     let r;
     try {
       r = await window.SuiteAtc.save(w, list);
     } catch (e) {
-      return notify(e.message, 'err');
+      return notify(explain(e, L(['Sessions ATC non enregistrées', 'ATC sessions not saved', 'ATC-Sitzungen nicht gespeichert',
+        'Sesiones ATC no guardadas'
+      ])), 'err');
     }
     if (w !== atcWeek()) return;
     atc = {
@@ -761,13 +768,22 @@
     });
     // import d'un réseau : le même que celui du Tableau (SuiteAtc.importNetwork : récupérées remplacées,
     // annulations comprises, saisies gardées)
+    // lecture seule : ni ajout, ni retrait, ni import
+    // (style posé ici : la mise en page des formulaires et boutons l'emporte sur l'attribut hidden)
+    if (!canEditActivations()) host.querySelectorAll('[data-atc-form], [data-atc-del], [data-atc-net]').forEach(b => b.style.display =
+      'none');
     host.querySelectorAll('[data-atc-net]').forEach(b => b.onclick = async () => {
+      if (!canEditActivations()) return;
       const net = b.dataset.atcNet,
         w = atcWeek();
       b.disabled = true;
       const r = await S.importNetwork(w, net);
       b.disabled = false;
-      if (r.error) return notify(r.error, 'err');
+      if (r.error) return notify(explain(r.error, L(['Import {n} des sessions ATC impossible', '{n} import of ATC sessions failed',
+        '{n}-Import der ATC-Sitzungen fehlgeschlagen', 'Importación {n} de las sesiones ATC imposible'
+      ], {
+        n: net
+      })), 'err');
       if (w !== atcWeek()) return;
       atc = {
         week: w,
@@ -797,8 +813,15 @@
   // data/atc/activations/<semaine>.json) ; retouche réservée comme au Tableau (Centre activé, hors production : admin)
   let activations = null;
   /** Retouche des activations permise : Centre activé et, en mode production, admin connecté. */
-  const canEditActivations = () => !!window.RepositoryNav?.cpco?.enabled?.() && (window.SuiteUsers?.mode?.() !== 'production' || !!window
-    .SuiteUsers?.isAdmin?.());
+  /** Écritures permises (activations, sessions ATC, préférences importées) : Centre déverrouillé, et admin_centre en mode
+   *  production ou dès qu'un utilisateur est connecté (même règle que canEdit du Tableau). */
+  const canEditActivations = () => {
+    const U = window.SuiteUsers;
+    if (!window.RepositoryNav?.cpco?.enabled?.()) return false;
+    if (U?.session?.()?.tri && !U.isAdmin?.()) return false;
+    if ((window.RepositoryNav?.levels?.get?.() || 2) < 2) return false; // niveau 1 : consultation seulement
+    return U?.mode?.() !== 'production' || !!U?.isAdmin?.();
+  };
 
   /** Bloc des activations des zones (OdvActivationsEditor, monté une fois puis mis à la semaine affichée) ; un import
    *  de sessions depuis l'éditeur recalcule la page. */
@@ -831,6 +854,7 @@
    *  de lecture ; vide sans classeur. */
   function renderReport() {
     const host = $('odvReport');
+    if (!host) return;
     if (!data) {
       host.innerHTML = '';
       return;
@@ -942,10 +966,11 @@
   /** Affectation enregistrée rouverte dans le dialogue complet (« Modifier ») ; mission absente du registre de ce
    *  navigateur : fenêtre du créneau. */
   async function editAssigned(missionId, takeoff) {
-    if (!centreOn()) return notify(L(['Centre verrouillé : l’activer dans Paramètres › Centre (CPCO).',
-      'Centre locked: enable it in Settings › Centre (CPCO).',
-      'Zentrum gesperrt: in Einstellungen › Zentrum (CPCO) aktivieren.',
-      'Centro bloqueado: actívelo en Ajustes › Centro (CPCO).'
+    if (!centreOn()) return notify(L([
+      'Réservé au Centre : l’activer dans Paramètres › Centre ({CENTRE}) ; un compte connecté doit avoir le rôle admin_centre.',
+      'Reserved for the Centre: enable it in Settings › Centre ({CENTRE}); a signed-in account needs the admin_centre role.',
+      'Dem Zentrum vorbehalten: in Einstellungen › Zentrum ({CENTRE}) aktivieren; ein angemeldetes Konto braucht die Rolle admin_centre.',
+      'Reservado al Centro: actívelo en Ajustes › Centro ({CENTRE}); una cuenta conectada necesita el rol admin_centre.'
     ]), 'warn');
     const m = regMissions().find(x => x.id === missionId),
       jk = slotOfAssign({
@@ -1025,6 +1050,7 @@
   /** Grille dense de la semaine : légende, une ligne par pilote filtré (code du classeur, puis déclaration et
    *  affectation par créneau), missions affectées de la semaine, planning heure par heure, journal des affectations. */
   function renderGrid() {
+    if (!$('odvGrid')) return; // bloc absent (Planning)
     renderGridFilters();
     const data = gridData(); // classeur lu, sinon semaine sans classeur (ligne du classeur vide)
     // légende : codes de la légende et nombre de cases
@@ -1122,6 +1148,7 @@
   /** Carte de chaleur des 21 créneaux (pilotes libres, contrôleurs, affectations ✎, événements ★) ; clic : fenêtre
    *  d'affectation du créneau (pickMission). */
   function renderSlots() {
+    if (!$('odvHeat')) return;
     renderSlotFilters();
     const data = basis;
     if (!data) {
@@ -1154,7 +1181,9 @@
   // plusieurs équipes, famille du créneau, pas plus d'équipes en l'air que de pilotes disponibles ; route estimée
   // (points du registre, tronçons échantillonnés) confrontée aux sessions ATC du créneau : CTR du terrain en examen ou
   // en training → écartée, TMA contenant le terrain → signalée. Ouverture dans le registre (?mission=…).
-  const centreOn = () => !!window.RepositoryNav?.cpco?.enabled?.();
+  // affectations possibles (fenêtre du créneau, choix des pilotes) : mêmes droits que les autres écritures de la page
+  // (Centre déverrouillé ; admin_centre en production ou dès qu'un utilisateur est connecté)
+  const centreOn = () => canEditActivations();
   /** Texte sans accents, en majuscules (comparaison des familles). */
   const fold = s => String(s ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase();
   /** Opération d'une mission : tirée de l'identifiant (I-001A → I-001 : missions d'équipage d'une opération), sinon
@@ -1281,10 +1310,10 @@
       k = s.creneauIndex,
       range = O?.range(j, k);
     if (!centreOn()) {
-      notify(L(['Registre des missions : Centre verrouillé — l’activer dans Paramètres › Centre (CPCO).',
-        'Mission registry: Centre locked — enable it in Settings › Centre (CPCO).',
-        'Missionsregister: Zentrum gesperrt — in Einstellungen › Zentrum (CPCO) aktivieren.',
-        'Registro de misiones: Centro bloqueado — actívelo en Ajustes › Centro (CPCO).'
+      notify(L(['Registre des missions : Centre verrouillé — l’activer dans Paramètres › Centre ({CENTRE}).',
+        'Mission registry: Centre locked — enable it in Settings › Centre ({CENTRE}).',
+        'Missionsregister: Zentrum gesperrt — in Einstellungen › Zentrum ({CENTRE}) aktivieren.',
+        'Registro de misiones: Centro bloqueado — actívelo en Ajustes › Centro ({CENTRE}).'
       ]), 'warn');
       return;
     }
@@ -1298,10 +1327,10 @@
       return;
     }
     if (!O?.write || !M?.postsOf || !AD?.frame) return notify(L([
-      'Affectations : modules absents (assignments.js, odv_assign.js, assign_dialog.js).',
-      'Assignments: modules missing (assignments.js, odv_assign.js, assign_dialog.js).',
-      'Zuweisungen: Module fehlen (assignments.js, odv_assign.js, assign_dialog.js).',
-      'Asignaciones: faltan módulos (assignments.js, odv_assign.js, assign_dialog.js).'
+      'Affectations impossibles : modules non chargés (assignments.js, odv_assign.js, assign_dialog.js) — recharger la page.',
+      'Assignments impossible: modules not loaded (assignments.js, odv_assign.js, assign_dialog.js) — reload the page.',
+      'Zuweisungen unmöglich: Module nicht geladen (assignments.js, odv_assign.js, assign_dialog.js) — Seite neu laden.',
+      'Asignaciones imposibles: módulos no cargados (assignments.js, odv_assign.js, assign_dialog.js) — recargar la página.'
     ]), 'err');
     const zones = await zonesToAvoid(s.eviter);
     const fams = [...new Set([...s.toutesMissions.map(m => m.famille), ...all.map(m => fold(m.family || m.type)).filter(Boolean)])]
@@ -1886,7 +1915,7 @@
           await build();
           render();
         } catch (err) {
-          msg.innerHTML = `<span class="err">${L(['Convoyage non confié : {e}', 'Ferry not assigned: {e}', 'Überführung nicht übertragen: {e}', 'Traslado no confiado: {e}'], { e: esc(err.message) })}</span>`;
+          msg.innerHTML = `<span class="err">${esc(explain(err, L(['Convoyage non confié', 'Ferry not assigned', 'Überführung nicht übertragen', 'Traslado no confiado'])))}</span>`;
         }
       });
       bodyEl.addEventListener('click', async e => {
@@ -1968,7 +1997,7 @@
             })), rows[0].takeoff || x.timing?.takeoff || takeoff, rows[0].dep || x.dep);
             ok.push(`${m.id} (${rows.map(r => r.pilot).join(', ')})`);
           } catch (err) {
-            ko.push(`${m.id} : ${err.message}`);
+            ko.push(explain(err, m.id));
           }
         if (ok.length) notify(L(['Affectations enregistrées : {l}.', 'Assignments saved: {l}.', 'Zuweisungen gespeichert: {l}.',
           'Asignaciones guardadas: {l}.'
@@ -2004,7 +2033,7 @@
     const label = has ? (short ? L(['Modifier', 'Edit', 'Ändern', 'Modificar']) : L(['Modifier la mission…', 'Edit the mission…',
       'Mission ändern…', 'Modificar la misión…'
     ])) : short ? L(['Planifier', 'Plan', 'Planen', 'Planificar']) : reg;
-    return `<button type="button" class="odv-pick-btn" data-pick="${s.jourIndex}${s.creneauIndex}" data-fam="${esc(fam)}"${centreOn() ? ` title="${esc(has ? L(['Modifier les missions affectées sur ce créneau, ou en planifier d’autres', 'Edit the missions assigned in this slot, or plan others', 'Die in diesem Zeitfenster zugewiesenen Missionen ändern oder weitere planen', 'Modificar las misiones asignadas en esta franja o planificar otras']) : reg)}"` : ` disabled title="${esc(L(['Centre verrouillé : l’activer dans Paramètres › Centre (CPCO)', 'Centre locked: enable it in Settings › Centre (CPCO)', 'Zentrum gesperrt: in Einstellungen › Zentrum (CPCO) aktivieren', 'Centro bloqueado: actívelo en Ajustes › Centro (CPCO)']))}"`}>${esc(label)}</button>`;
+    return `<button type="button" class="odv-pick-btn" data-pick="${s.jourIndex}${s.creneauIndex}" data-fam="${esc(fam)}"${centreOn() ? ` title="${esc(has ? L(['Modifier les missions affectées sur ce créneau, ou en planifier d’autres', 'Edit the missions assigned in this slot, or plan others', 'Die in diesem Zeitfenster zugewiesenen Missionen ändern oder weitere planen', 'Modificar las misiones asignadas en esta franja o planificar otras']) : reg)}"` : ` disabled title="${esc(L(['Centre verrouillé : l’activer dans Paramètres › Centre ({CENTRE})', 'Centre locked: enable it in Settings › Centre ({CENTRE})', 'Zentrum gesperrt: in Einstellungen › Zentrum ({CENTRE}) aktivieren', 'Centro bloqueado: actívelo en Ajustes › Centro ({CENTRE})']))}"`}>${esc(label)}</button>`;
   };
   document.addEventListener('click', e => {
     const c = e.target.closest('[data-odv-slot]');
@@ -2068,6 +2097,7 @@
    *  (créneaux d'au moins minPilots pilotes avant affectations), résumé déplié sous chaque ligne. */
   function renderMissions() {
     const rules = $('odvRules');
+    if (!rules || !$('odvMissions')) return;
     rules.innerHTML = `<summary>${L(['Règles des familles et du score', 'Family and score rules', 'Regeln der Familien und der Punktzahl', 'Reglas de las familias y de la puntuación'])}</summary><ul>${Object.entries(C.FAMILIES).map(([f, d]) => `<li><span class="odv-fam">${esc(f)}</span> ${esc(C.familyRule(f) ?? d.rule)}</li>`).join('')}</ul>
       <p class="mut">${L(['Rôles d\'un pilote : le code impose le rôle (SC → sécu civile + hélico / avion sécu d\'après FLOTTE, C → chasse, T → transport + ravitailleur / largage, N → FNY / maritime, S → exercice + rôles FLOTTE) ; O → tous les rôles que FLOTTE lui attribue. Score = participants + 2 par pilote à code restreint employé dans son domaine (SC : SAR, FIRE, HEMS ; N : MARITIME ; C : AAR, ISR, SPECIAL ; T : AIRLIFT, AIRBORNE, AAR) + 1 par contrôleur en ligne (2 au plus) pour TRAINING. Famille déjà jouée : − {wc} × log2(1 + nombre de CR) (1 CR : − 0,5 ; 7 CR : − 1,5), pour varier. À score égal : ordre de préférence des réglages ({p}). Les rôles FLOTTE restent indicatifs : le planificateur valide.', 'Pilot roles: the code sets the role (SC → civil security + helicopter / civil security aircraft according to FLOTTE, C → fighter, T → transport + tanker / airdrop, N → FNY / maritime, S → exercise + FLOTTE roles); O → all the roles FLOTTE gives the pilot. Score = participants + 2 per restricted-code pilot used in their domain (SC: SAR, FIRE, HEMS; N: MARITIME; C: AAR, ISR, SPECIAL; T: AIRLIFT, AIRBORNE, AAR) + 1 per online controller (2 at most) for TRAINING. Family already flown: − {wp} × log2(1 + number of CRs) (1 CR: − 0.5; 7 CRs: − 1.5), for variety. On equal score: preference order from the settings ({p}). FLOTTE roles are only indicative: the planner validates.', 'Rollen eines Piloten: Der Code legt die Rolle fest (SC → Zivilschutz + Hubschrauber / Zivilschutzflugzeug laut FLOTTE, C → Jagd, T → Transport + Tanker / Absetzen, N → FNY / maritim, S → Übung + FLOTTE-Rollen); O → alle Rollen, die FLOTTE ihm zuweist. Punktzahl = Teilnehmer + 2 je Pilot mit eingeschränktem Code, der in seinem Bereich eingesetzt wird (SC: SAR, FIRE, HEMS; N: MARITIME; C: AAR, ISR, SPECIAL; T: AIRLIFT, AIRBORNE, AAR) + 1 je Lotse online (höchstens 2) für TRAINING. Bereits geflogene Familie: − {wc} × log2(1 + Anzahl der CR) (1 CR: − 0,5; 7 CR: − 1,5), zur Abwechslung. Bei gleicher Punktzahl: Rangfolge aus den Einstellungen ({p}). Die FLOTTE-Rollen sind nur Richtwerte: der Planer entscheidet.', 'Roles de un piloto: el código impone el rol (SC → seguridad civil + helicóptero / avión de seguridad civil según FLOTTE, C → caza, T → transporte + cisterna / lanzamiento, N → FNY / marítimo, S → ejercicio + roles FLOTTE); O → todos los roles que FLOTTE le atribuye. Puntuación = participantes + 2 por piloto de código restringido empleado en su ámbito (SC: SAR, FIRE, HEMS; N: MARITIME; C: AAR, ISR, SPECIAL; T: AIRLIFT, AIRBORNE, AAR) + 1 por controlador en línea (2 como máximo) para TRAINING. Familia ya volada: − {wc} × log2(1 + número de CR) (1 CR: − 0,5; 7 CR: − 1,5), para variar. A igual puntuación: orden de preferencia de los ajustes ({p}). Los roles FLOTTE son solo orientativos: el planificador valida.'], { wc: esc(String(settings.playWeight ?? 0.5).replace('.', ',')), wp: esc(String(settings.playWeight ?? 0.5)), p: esc(settings.preference.join(', ')) })}</p>`;
     if (!basis) {
@@ -2301,6 +2331,7 @@
 
   /** Branche les exports : CSV de la grille, JSON, récapitulatif texte (affiché, téléchargé ou copié). */
   function bindExports() {
+    if (!$('odvCsv')) return; // bloc Export absent (Planning)
     $('odvCsv').onclick = () => data && download(`${baseName()}_grille.csv`, C.toCsv(data), 'text/csv;charset=utf-8');
     $('odvJson').onclick = () => data && exportJson();
     $('odvRecap').onclick = () => {
@@ -2329,15 +2360,19 @@
   }
 
   // ------------------------------------------------------------------ démarrage
+  let started = false; // démarré (page ODV, ou Planning au niveau Expert) : sinon rien n'est calculé
   function start() {
     if (!C || !window.SortedTable) {
-      notify(L(['Planning ODV : composants manquants (odv_core.js, mission_table.js).',
-        'ODV planning: missing components (odv_core.js, mission_table.js).',
-        'ODV-Planung: fehlende Komponenten (odv_core.js, mission_table.js).',
-        'Planificación ODV: faltan componentes (odv_core.js, mission_table.js).'
+      notify(L(['Planning ODV : composants non chargés (odv_core.js, mission_table.js) — recharger la page.',
+        'ODV planning: components not loaded (odv_core.js, mission_table.js) — reload the page.',
+        'ODV-Planung: Komponenten nicht geladen (odv_core.js, mission_table.js) — Seite neu laden.',
+        'Planificación ODV: componentes no cargados (odv_core.js, mission_table.js) — recargar la página.'
       ]), 'err');
       return;
     }
+    // dans le Planning (pas de grille : page hôte) : seulement au niveau Expert, et la semaine suit celle du Planning
+    if (!$('odvGrid') && (window.RepositoryNav?.levels?.get?.() || 4) < 4) return;
+    started = true;
     bindExports();
     window.OdvAssign?.load(emptyWeek(), settings).then(() => loadAtc()).then(refreshNoBook).catch(
       () => {}); // sans classeur : déclarations
@@ -2347,13 +2382,13 @@
         render();
       }
     });
-    $('odvFile').addEventListener('change', e => {
+    $('odvFile')?.addEventListener('change', e => {
       const f = e.target.files?.[0];
       if (f) loadFile(f, {
         jump: true
       }); // choisi à la main : sa semaine affichée
     });
-    $('odvClear').onclick = clearAll;
+    if ($('odvClear')) $('odvClear').onclick = clearAll;
     // langue changée : zones calculées redessinées dans la nouvelle langue (classeur gardé en mémoire, non relu) ;
     // tableaux recréés (libellés des colonnes posés à leur création)
     window.addEventListener('repository-language-change', () => setTimeout(() => {
@@ -2408,6 +2443,15 @@
       return flights;
     },
     /** Réglages courants. */
-    settings: () => settings
+    settings: () => settings,
+    /** Semaine imposée par la page hôte (Planning) : lundi « AAAA-MM-JJ » ; créneaux et missions recalculés. */
+    setMonday(iso) {
+      if (!started) return;
+      const ms = Date.parse(`${iso}T00:00:00Z`);
+      if (!Number.isFinite(ms) || ms === weekMon) return;
+      weekMon = ms;
+      selected = null;
+      return showWeek();
+    }
   };
 })();

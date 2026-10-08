@@ -8,7 +8,7 @@
     rawListAircraft = listAircraft;
   const css = document.createElement("style");
   css.textContent = `
-    body{padding-bottom:52px}.status-bar{position:fixed;z-index:900;left:0;right:0;bottom:0;display:flex;align-items:center;gap:8px;padding:7px 14px;background:#0c1015ee;border-top:1px solid var(--b);backdrop-filter:blur(8px)}.status-bar .status-text{flex:1;color:var(--mut);font-size:12px}.status-bar.dirty .status-text{color:#f2c879}
+    body.has-status-bar{padding-bottom:52px}.status-bar{position:fixed;z-index:900;left:0;right:0;bottom:0;display:flex;align-items:center;gap:8px;padding:7px 14px;background:#0c1015ee;border-top:1px solid var(--b);backdrop-filter:blur(8px)}.status-bar .status-text{flex:1;color:var(--mut);font-size:12px}.status-bar.dirty .status-text{color:#f2c879}
     .block-heading{display:flex;align-items:center;gap:8px;margin-bottom:10px;cursor:grab}.block-heading h2{flex:1;margin:0}.block-tools{display:flex;gap:5px}.block-tools button{padding:4px 7px;font-size:11px}.collapsible.collapsed>:not(.block-heading){display:none!important}.dragging{opacity:.45}.drop-before{box-shadow:0 -3px 0 var(--a)}
     .phase-table{table-layout:auto}.phase-table th:first-child,.phase-table td:first-child{text-align:left;width:100%}.phase-table th:not(:first-child),.phase-table td:not(:first-child){text-align:right;white-space:nowrap;width:1%}.carto-value{color:#75c8ff}.profile-value{color:#f0b86e}.phase-table td div+div{margin-top:3px}.carto-split{display:block;margin-top:4px;padding-top:4px;border-top:1px solid var(--b)}.source-note{display:block;color:var(--mut);font-size:10px}.engine-performance-group{margin-top:16px;padding:12px;border:1px solid var(--b);border-radius:8px;overflow:auto}.engine-performance-group h3{font-size:13px;margin:0 0 8px}#engineCurveTable{min-width:0;table-layout:fixed}#engineCurveTable th:last-child,#engineCurveTable td:last-child{width:30%;white-space:normal;overflow-wrap:anywhere;text-align:left}svg.engine-chart{min-width:0;height:255px;margin:10px 0}.opt-chart .band-fill{fill:var(--fc-prof,#75c8ff);fill-opacity:.13;stroke:none}
     #unsavedDialog{max-width:520px}#unsavedDialog .dialog-actions{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;margin-top:16px}
@@ -56,13 +56,15 @@
   const profileCard = $("profile")?.closest(".card");
   if (profileCard) profileCard.querySelector("h2").textContent = "Régimes de vol — profil ↔ cartographie";
   // Régimes de vol : groupe repliable du bloc Résultat, sous la fiche du curseur (⌖ / 📌). Le bloc Résultat est un
-  // cadre semi-mobile du framework (StickyFrame.follow, posé par shared/flight_perf_view.js).
+  // cadre semi-mobile du framework (StickyFrame.follow, posé par shared/flight_perf_view.js). Niveau Expert seulement
+  // (profil, airframe SimBrief : édition du profil).
   const resultCard = document.querySelector('[data-block-id="result"]');
   if (profileCard && resultCard) {
     const group = document.createElement("details"),
       title = document.createElement("summary");
     group.className = "result-group";
     group.dataset.group = "flight-regimes";
+    group.dataset.minLevel = "4";
     title.textContent = profileCard.querySelector("h2").textContent;
     group.append(title, ...[...profileCard.children].filter(x => x.tagName !== "H2"));
     resultCard.append(group);
@@ -166,9 +168,11 @@
   });
   if ($("dirBtn")) $("dirBtn").style.display = "none";
   // Barre d'état fixe en bas de page : état du profil (enregistré / modifié), recharger la base locale, enregistrer, supprimer.
-  document.body.classList.add("has-status-bar");
+  // Niveau Expert seulement (édition des profils) : aux niveaux 1 à 3, ni barre ni marge réservée en bas de page.
+  if ((window.RepositoryNav?.levels?.get?.() ?? 4) >= 4) document.body.classList.add("has-status-bar");
   const status = document.createElement("div");
   status.className = "status-bar";
+  status.dataset.minLevel = "4";
   status.innerHTML =
     '<span id="persistentStatus" class="status-text">Base locale prête.</span><button id="statusReload">Recharger la base locale</button><button id="statusSave" class="primary">Enregistrer le profil</button><button id="statusDelete">Supprimer cet avion</button>';
   document.body.append(status);
@@ -460,26 +464,30 @@
   }
 
   // Actions du menu ☰ (imports, exports, dossier, sauvegarde, préférences) et sélecteur d'unités kg / lbs dans l'en-tête commun.
+  // Actions sur les profils et la base locale (expertAction) : niveau Expert seulement, attribut posé sur le bouton créé.
   function addMenuActions() {
     if (!window.RepositoryNav) return;
     let n = RepositoryNav;
-    n.addAction(["Importer profils / CSV / JSON", "Import profiles / CSV / JSON", "Profile / CSV / JSON importieren",
+    const expertAction = (label, handler) => {
+      n.addAction(label, handler).dataset.minLevel = "4"
+    };
+    expertAction(["Importer profils / CSV / JSON", "Import profiles / CSV / JSON", "Profile / CSV / JSON importieren",
       "Importar perfiles / CSV / JSON"
     ], () => $("importBtn").click());
-    n.addAction(["Importer un airframe SimBrief", "Import a SimBrief airframe", "SimBrief-Airframe importieren",
+    expertAction(["Importer un airframe SimBrief", "Import a SimBrief airframe", "SimBrief-Airframe importieren",
       "Importar un airframe de SimBrief"
     ], () => $("sbAirframeBtn").click());
-    n.addAction(["Choisir le dossier performances", "Choose the performance folder", "Leistungsordner wählen",
+    expertAction(["Choisir le dossier performances", "Choose the performance folder", "Leistungsordner wählen",
       "Elegir la carpeta de rendimiento"
     ], () => $("dirBtn").click());
-    n.addAction(["Exporter le profil .lnmperf", "Export .lnmperf profile", ".lnmperf-Profil exportieren", "Exportar perfil .lnmperf"],
+    expertAction(["Exporter le profil .lnmperf", "Export .lnmperf profile", ".lnmperf-Profil exportieren", "Exportar perfil .lnmperf"],
       () => $("exportLnmBtn").click());
-    n.addAction(["Exporter le profil JSON", "Export JSON profile", "JSON-Profil exportieren", "Exportar perfil JSON"], () => $(
+    expertAction(["Exporter le profil JSON", "Export JSON profile", "JSON-Profil exportieren", "Exportar perfil JSON"], () => $(
       "exportBtn").click());
-    n.addAction(["Enregistrer / exporter la BDD locale", "Save / export the local database", "Lokale Datenbank speichern / exportieren",
+    expertAction(["Enregistrer / exporter la BDD locale", "Save / export the local database", "Lokale Datenbank speichern / exportieren",
       "Guardar / exportar la base local"
     ], () => $("exportDbBtn").click());
-    n.addAction(["Restaurer la sauvegarde locale précédente", "Restore the previous local backup",
+    expertAction(["Restaurer la sauvegarde locale précédente", "Restore the previous local backup",
       "Vorherige lokale Sicherung wiederherstellen", "Restaurar la copia local anterior"
     ], restoreBackup);
     let units = document.createElement("div");

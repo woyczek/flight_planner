@@ -32,10 +32,12 @@ except Exception:
 
 
 def say(msg=''):
+    """Message à la console du lanceur, écrit aussitôt (sortie non tamponnée)."""
     print(msg, flush=True)
 
 
 def config_text():
+    """Texte de config/repository_tree (ou de l'ancien repository_tree à la racine) ; '' s'il manque."""
     for p in (os.path.join(ROOT, 'config', 'repository_tree'), os.path.join(ROOT, 'repository_tree')):
         if os.path.isfile(p):
             return io.open(p, encoding='utf-8').read()
@@ -62,6 +64,7 @@ def data_repo_url():
 
 
 def run(cmd, **kw):
+    """Lance une commande (dossier de la suite par défaut) ; code de sortie, -1 si elle ne démarre pas."""
     try:
         return subprocess.run(cmd, cwd=kw.pop('cwd', ROOT), **kw).returncode
     except (OSError, subprocess.SubprocessError):
@@ -69,6 +72,7 @@ def run(cmd, **kw):
 
 
 def has_data():
+    """Vrai si le dossier des données est en place (data/data_tree.js présent)."""
     return os.path.isfile(os.path.join(DATA, 'data_tree.js'))
 
 
@@ -163,6 +167,8 @@ def clone(user=None, secret=None, remember=False, url=None):
 
 
 def ensure_data():
+    """Étape 1 du lancement : données présentes mises à jour (git pull en avance rapide si data/ est un dépôt) ; sinon
+    archive reçue, sinon clone du dépôt de données ; à défaut, la page de premier lancement prend le relais."""
     say('1. Données (dossier data/)')
     git = data_sync.git_exe()
     if has_data():
@@ -230,6 +236,7 @@ class Setup(http.server.SimpleHTTPRequestHandler):
     MAX_UPLOAD = 512 * 1024 * 1024  # archive des données ou journal : 512 Mo au plus
 
     def log_message(self, *a):
+        """Journal des requêtes coupé : la console ne garde que les messages du lanceur."""
         pass
 
     def _local_host(self):
@@ -271,6 +278,8 @@ class Setup(http.server.SimpleHTTPRequestHandler):
         return ''
 
     def _deny(self, why):
+        """Requête refusée : 404 pour un chemin non servi, page d'explication pour un lien venu d'un autre site, 403
+        sinon."""
         if why == 'chemin':
             return self._json({'error': 'introuvable'}, 404)
         if why == 'autre site' and self.headers.get('Sec-Fetch-Mode') == 'navigate':
@@ -290,6 +299,7 @@ class Setup(http.server.SimpleHTTPRequestHandler):
         return self._json({'error': 'refusé'}, 403)
 
     def _allowed(self):
+        """Vrai si une requête /__setup/ vient de la page servie ici : hôte local, même origine, en-tête X-SOG-Setup."""
         return (self._local_host() and self._same_origin()
                 and (self.headers.get('X-SOG-Setup') == '1' or self.headers.get('X-DEFA-Setup') == '1'))
 
@@ -321,6 +331,8 @@ class Setup(http.server.SimpleHTTPRequestHandler):
     purge = True  # première page servie par ce lanceur : vider le cache du navigateur pour ce site
 
     def end_headers(self):
+        """En-têtes communs : purge du cache à la première page de chaque lancement, en-têtes de sécurité, cache
+        (fichier versionné ?v= gardé, le reste revalidé)."""
         if getattr(self, '_purge', False):
             # versions précédentes : pages et scripts gardés en cache (dont un type refusé avec nosniff) ; le navigateur
             # les jette tous à la première page de chaque lancement
@@ -343,6 +355,7 @@ class Setup(http.server.SimpleHTTPRequestHandler):
         super().end_headers()
 
     def guess_type(self, path):
+        """Type MIME servi ; config/repository_tree, sans extension, est un script."""
         # config/repository_tree (sans extension) est un script : avec nosniff, servi en octet-stream il ne
         # s'exécuterait pas (plus de menu ni de barre latérale)
         if os.path.basename(str(path).split('?')[0]) == 'repository_tree':
@@ -350,6 +363,7 @@ class Setup(http.server.SimpleHTTPRequestHandler):
         return super().guess_type(path)
 
     def _json(self, obj, code=200):
+        """Réponse JSON (UTF-8, jamais mise en cache)."""
         body = json.dumps(obj, ensure_ascii=False).encode('utf-8')
         self.send_response(code)
         self.send_header('Content-Type', 'application/json; charset=utf-8')
@@ -370,12 +384,15 @@ class Setup(http.server.SimpleHTTPRequestHandler):
         return why
 
     def do_HEAD(self):
+        """HEAD : mêmes refus que GET."""
         why = self._refused()
         if why:
             return self._deny(why)
         return super().do_HEAD()
 
     def do_GET(self):
+        """GET : refus (chemins cachés, autre site, scripts de données hors format), index du pool refaits avant d'être
+        servis, routes /__setup/, sinon fichier statique."""
         why = self._refused()
         if why:
             return self._deny(why)
@@ -407,7 +424,7 @@ class Setup(http.server.SimpleHTTPRequestHandler):
             # sur le dépôt distant (commits à recevoir)
             if not self._allowed():
                 return self._json({'error': 'refusé'}, 403)
-            return self._json(data_sync.status(DATA, fetch='fetch=1' in self.path))
+            return self._json(sync_status(fetch='fetch=1' in self.path, fresh='fresh=1' in self.path))
         if self.path.split('?')[0] == '/__setup/tools':
             # outils de tools/ (sommaire tools/index.html) : nom, sorte, titre et en-tête de chaque fichier
             if not self._allowed():
@@ -499,6 +516,8 @@ class Setup(http.server.SimpleHTTPRequestHandler):
         return super().do_GET()
 
     def do_POST(self):
+        """POST /__setup/… (page servie ici seulement) : synchronisation, secrets, imports, jeu d'essai, clone et dépôt
+        des données."""
         path = self.path.split('?')[0]
         if not path.startswith('/__setup/') or not self._allowed():
             return self._json({'error': 'refusé'}, 403)
@@ -551,6 +570,7 @@ class Setup(http.server.SimpleHTTPRequestHandler):
                 a = {}
             with SYNC_LOCK:
                 r = data_sync.run(DATA, str(a.get('author') or '').upper(), str(a.get('name') or '')[:60])
+            sync_status_reset()  # état relu au prochain appel : le bouton reflète le passage qui vient d'avoir lieu
             if r.get('received'):
                 with INDEX_LOCK:
                     index_availability()
@@ -775,6 +795,7 @@ class Server(http.server.ThreadingHTTPServer):
     pas une erreur, elle ne s'affiche pas ; les autres gardent leur trace."""
 
     def handle_error(self, request, client_address):
+        """Connexion coupée par le navigateur (page quittée en cours de chargement) : ignorée, rien dans la console."""
         if isinstance(sys.exc_info()[1], (ConnectionAbortedError, ConnectionResetError, BrokenPipeError)):
             return
         super().handle_error(request, client_address)
@@ -799,6 +820,7 @@ def ours(port):
 
 
 def free(port):
+    """Vrai si le port est libre sur 127.0.0.1."""
     with socket.socket() as s:
         try:
             s.bind(('127.0.0.1', port))
@@ -839,12 +861,14 @@ SECRETS = os.path.join(ROOT, 'secrets')
 
 
 def _secret_file(scope, tri='', service=''):
+    """Fichier d'un secret : secrets/<service>.json (portée app) ou secrets/users/<TRI>.json (portée utilisateur)."""
     if scope == 'app':
         return os.path.join(SECRETS, f'{service}.json')
     return os.path.join(SECRETS, 'users', f'{tri}.json')
 
 
 def _read_json(path):
+    """Objet JSON d'un fichier ; {} s'il est absent, illisible ou n'est pas un objet."""
     try:
         with open(path, encoding='utf-8') as f:
             v = json.load(f)
@@ -854,6 +878,7 @@ def _read_json(path):
 
 
 def _write_json(path, value):
+    """Écrit un JSON par fichier temporaire puis remplacement (jamais de fichier à moitié écrit)."""
     os.makedirs(os.path.dirname(path), exist_ok=True)
     tmp = path + '.tmp'
     with open(tmp, 'w', encoding='utf-8', newline='\n') as f:
@@ -862,6 +887,8 @@ def _write_json(path, value):
 
 
 def _hint(v):
+    """Indicateur d'un secret pour la page : réglé ou non, ses 4 derniers caractères s'il en a au moins 8 (jamais la
+    valeur)."""
     v = str(v or '')
     return {'set': bool(v), 'hint': ('…' + v[-4:]) if len(v) >= 8 else ''}
 
@@ -926,6 +953,7 @@ def ivao_key():
 
 
 def _ivao_get(path, key):
+    """GET sur l'API IVAO avec la clé d'API du lanceur ; JSON de la réponse."""
     req = urllib.request.Request(IVAO_API + path, headers={'User-Agent': 'SOG-suite', 'Accept': 'application/json', 'apiKey': key})
     with urllib.request.urlopen(req, timeout=20) as r:
         return json.load(r)
@@ -1004,6 +1032,7 @@ def defa_state():
 
 
 def _defa_save(s):
+    """Écrit l'état de la récupération du site DEFA ; erreur d'écriture ignorée."""
     try:
         with open(DEFA_STATE, 'w', encoding='utf-8') as f:
             json.dump(s, f, ensure_ascii=False, indent=1)
@@ -1012,6 +1041,7 @@ def _defa_save(s):
 
 
 def defa_set_auto(on):
+    """Active ou coupe la récupération automatique du site DEFA ; renvoie l'état."""
     s = defa_state()
     s['auto'] = on
     _defa_save(s)
@@ -1151,6 +1181,45 @@ INSTANCE_DIRS = ('', 'data', os.path.join('data', 'missions'), os.path.join('dat
 
 
 INDEX_LOCK = threading.Lock()
+
+# État de synchronisation (bouton « Synchroniser » de chaque page) : git status, rev-list… prennent 1 à 3 s sur un gros
+# dossier data/, et chaque page le demande à l'ouverture. Réponse immédiate avec le dernier état connu ; relu en tâche de
+# fond s'il a plus de SYNC_TTL secondes (un seul relevé à la fois) ; relu tout de suite au premier appel, avec
+# ?fetch=1 (dépôt distant) et après un passage de synchronisation.
+SYNC_TTL = 20
+_sync = {'at': 0.0, 'value': None, 'busy': False}
+_sync_lock = threading.Lock()
+
+
+def _sync_refresh(fetch=False):
+    """Relève l'état de synchronisation de data/ (dépôt distant compris si fetch) et le met en cache."""
+    try:
+        value = data_sync.status(DATA, fetch=fetch)
+        with _sync_lock:
+            _sync.update(at=time.time(), value=value)
+    finally:
+        with _sync_lock:
+            _sync['busy'] = False
+
+
+def sync_status(fetch=False, fresh=False):
+    """fresh : relevé local refait tout de suite (après une écriture de la page) ; fetch : dépôt distant compris."""
+    with _sync_lock:
+        value, age, busy = _sync['value'], time.time() - _sync['at'], _sync['busy']
+        if value is not None and not fetch and not fresh:
+            if age > SYNC_TTL and not busy:
+                _sync['busy'] = True
+                threading.Thread(target=_sync_refresh, daemon=True).start()
+            return value
+        _sync['busy'] = True
+    _sync_refresh(fetch)
+    return _sync['value']
+
+
+def sync_status_reset():
+    """Oublie l'état de synchronisation en cache (relu à la demande suivante, après une synchronisation)."""
+    with _sync_lock:
+        _sync.update(at=0.0, value=None)
 # ---- base des types d'aéronefs (OACI Doc 8643, performances EUROCONTROL) : non publiée, complétée sur chaque poste,
 # type par type, par AircraftDB/update_aircraft_db.py (--only CODES, puis --apd CODES) : un nouvel appareil, ou une liste
 # (flotte, missions de l'ODV et du registre) — Paramètres › Maintenance › Références et dépendances, /__setup/aircraft-db.
@@ -1160,11 +1229,14 @@ AIRCRAFT_LOCK = threading.Lock()
 
 
 def aircraft_files():
+    """Présence des fichiers de la base des types d'aéronefs (aircraft_db.js, aircraft_perf.js)."""
     d = os.path.join(ROOT, 'AircraftDB')
     return {'db': os.path.exists(os.path.join(d, 'aircraft_db.js')), 'perf': os.path.exists(os.path.join(d, 'aircraft_perf.js'))}
 
 
 def aircraft_rebuild(codes):
+    """Complète la base des types pour les désignateurs donnés : types OACI Doc 8643, puis performances EUROCONTROL
+    APD."""
     d = os.path.join(ROOT, 'AircraftDB')
     script = os.path.join(d, 'update_aircraft_db.py')
     overrides = os.path.join(DATA, 'references', 'aircraft_overrides.json')
@@ -1298,6 +1370,7 @@ def mark_instance():
 
 
 def main():
+    """Point d'entrée : options, données, serveur local (port libre suivant si besoin), navigateur."""
     ap = argparse.ArgumentParser(description='Lanceur de la suite DEFA (données, serveur local, navigateur).')
     ap.add_argument('--port', type=int, default=8000)
     ap.add_argument('--page', default=PAGE)

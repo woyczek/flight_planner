@@ -29,6 +29,9 @@
     PPH = 96; // pixels par heure au zoom 1
   /** Libellé en quatre langues (fr, en, de, es), traduit par t() et tf() selon la langue de la suite. */
   const L4 = (fr, en, de, es) => [fr, en, de, es];
+  /** Message d'erreur lisible : ce qui a échoué (ligne [fr, en, de, es], facultative) et quoi faire
+   *  (AppFramework.explain : réseau, fichier absent, stockage plein…) ; repli : contexte et message. */
+  const explain = (err, row) => window.AppFramework?.explain?.(err, row ? t(row) : '') || `${row ? t(row) + ' : ' : ''}${err?.message || err}`;
   const TX = {
     days: [L4('Lun', 'Mon', 'Mo', 'Lun'), L4('Mar', 'Tue', 'Di', 'Mar'), L4('Mer', 'Wed', 'Mi', 'Mié'), L4('Jeu', 'Thu', 'Do', 'Jue'),
       L4('Ven', 'Fri', 'Fr', 'Vie'), L4('Sam', 'Sat', 'Sa', 'Sáb'), L4('Dim', 'Sun', 'So', 'Dom')
@@ -163,10 +166,14 @@
   /** Nom d'un membre d'après son trigramme (le trigramme s'il n'a pas de nom). */
   const memberName = tri => S.members.find(m => m.tri === tri)?.nom || tri;
 
-  /** Page modifiable : Centre déverrouillé et, en mode production, utilisateur administrateur (admin_centre). */
+  /** Page modifiable : Centre déverrouillé, et administrateur (admin_centre) en mode production ou dès qu'un
+   *  utilisateur est connecté (un compte sans ce rôle ne planifie pas, même Centre ouvert en mode develop). */
   function canEdit() {
     if (!window.RepositoryNav?.cpco?.enabled?.()) return false;
     const U = window.SuiteUsers;
+    if (U?.session?.()?.tri && !U.isAdmin?.()) return false;
+    // niveau 1 (équipage) : le planning se consulte, il ne se modifie pas, quels que soient les droits
+    if ((window.RepositoryNav?.levels?.get?.() || 2) < 2) return false;
     return U?.mode?.() !== 'production' || !!U?.isAdmin?.();
   }
 
@@ -204,6 +211,7 @@
   async function load(week, {
     fresh = false
   } = {}) {
+    if (week !== S.week) S.undo = []; // l'annulation ne traverse pas les semaines
     S.week = week;
     S.cfg = await O().loadConfig({
       fresh
@@ -256,6 +264,7 @@
     loadSun();
     requestsSoon();
     autoImportAtc();
+    syncOdvWeek(); // créneaux communs et missions probables de la même semaine (niveau Expert)
   }
   /** Indicatif des vols de mission tenu à jour : celui que la mission donne à sa patrouille (registre), s'il a changé. */
   function syncCallsigns() {
@@ -347,7 +356,8 @@
     omTimer = setTimeout(async () => {
       const ids = [...omQueue];
       omQueue.clear();
-      for (const vid of ids) await reissueOm(vid).catch(err => notify(String(err?.message || err), 'error'));
+      for (const vid of ids) await reissueOm(vid).catch(err => notify(explain(err, L4('Ordre de mission non réémis',
+        'Mission order not reissued', 'Missionsbefehl nicht neu erteilt', 'Orden de misión no reemitida')), 'error'));
     }, 900);
   }
   /** Réémission silencieuse de l'ordre de mission d'un vol déplacé : mêmes pilotes, appareils, indicatifs et convoyeurs, à
@@ -435,7 +445,7 @@
         alert
       });
     } catch (err) {
-      return hold(String(err?.message || err));
+      return hold(explain(err));
     }
     v.omAttente = false;
     delete v.omRaison;
@@ -592,22 +602,47 @@
     };
     setStatus(r.where === 'folder' ? t(L4('Enregistré', 'Saved', 'Gespeichert', 'Guardado')) : t(L4('Enregistré dans ce navigateur',
       'Saved in this browser', 'In diesem Browser gespeichert', 'Guardado en este navegador')));
-    if (r.error && r.where !== 'local') notify(String(r.error?.message || r.error), 'error');
+    if (r.error && r.where !== 'local') notify(explain(r.error, L4('Ordres de vols non enregistrés dans le dossier des données',
+      'Flight orders not saved in the data folder', 'Flugbefehle nicht im Datenordner gespeichert',
+      'Órdenes de vuelo no guardadas en la carpeta de datos')), 'error');
   }
   /** Texte d'état de l'enregistrement dans la barre (#odvoStatus). */
   const setStatus = s => {
     const el = $('#odvoStatus');
     if (el) el.textContent = s;
   };
+  // annulation : dix états précédents de l'ordre de vol (copies), repris par « ↶ Annuler » ou Ctrl+Z ; vidée au
+  // changement de semaine
+  const UNDO_MAX = 10;
+  S.undo = [];
+  /** Revient à l'état d'avant la dernière modification (réémissions, convoyages, conflits et enregistrement suivent). */
+  function undo() {
+    if (!S.editable || !S.undo.length) return;
+    const prev = S.undo.pop();
+    mutate(doc => {
+      for (const k of Object.keys(doc)) delete doc[k];
+      Object.assign(doc, prev);
+    }, {
+      undo: true
+    });
+  }
+
   /** Applique une modification fn(doc) de l'ordre de vol puis enchaîne : réémission des ordres de mission des vols
-   *  déplacés, convoyages, DLO, demandes de zones, conflits, rendu, zones, enregistrement. Refusée en lecture seule. */
-  function mutate(fn) {
+   *  déplacés, convoyages, DLO, demandes de zones, conflits, rendu, zones, enregistrement. Refusée en lecture seule.
+   *  undo : modification venue de « Annuler » (pas de nouvel état mis de côté). */
+  function mutate(fn, {
+    undo = false
+  } = {}) {
     if (!S.editable) return notify(t(L4('Lecture seule : déverrouillez le Centre (et connectez-vous en admin_centre en mode production).',
       'Read only: unlock the Centre (and log in as admin_centre in production mode).',
       'Nur lesen: Zentrum entsperren (im Produktionsmodus als admin_centre anmelden).',
       'Solo lectura: desbloquee el Centro (y conéctese como admin_centre en modo producción).')), 'warn');
     const slot = v => `${v.date} ${v.debut} ${v.duree}`;
     const before = new Map(S.doc.elements.filter(x => x.type === 'vol' && x.mission && !x.convoyage).map(v => [v.id, slot(v)]));
+    if (!undo) {
+      S.undo.push(JSON.parse(JSON.stringify(S.doc)));
+      if (S.undo.length > UNDO_MAX) S.undo.shift();
+    }
     fn(S.doc);
     // vol de mission déplacé (jour, heure, durée) : son ordre de mission est réémis d'office s'il en a un
     for (const v of S.doc.elements.filter(x => x.type === 'vol' && x.mission && !x.convoyage && before.has(x.id) && before.get(x.id) !==
@@ -780,10 +815,8 @@
     }));
     if (r?.skipped) return;
     if (r?.error) {
-      if (!S.atcWarned) notify(tf(L4('Import IVAO des sessions ATC impossible : {e}', 'IVAO import of ATC sessions failed: {e}',
-        'IVAO-Import der ATC-Sitzungen fehlgeschlagen: {e}', 'Importación IVAO de las sesiones ATC imposible: {e}'), {
-        e: String(r.error?.message || r.error)
-      }), 'warn');
+      if (!S.atcWarned) notify(explain(r.error, L4('Import IVAO des sessions ATC impossible', 'IVAO import of ATC sessions failed',
+        'IVAO-Import der ATC-Sitzungen fehlgeschlagen', 'Importación IVAO de las sesiones ATC imposible')), 'warn');
       S.atcWarned = true;
       return;
     }
@@ -842,7 +875,7 @@
     if (list?.missing) return void(host.innerHTML = `<p class="mut">${esc(t(L4('Base aéronautique absente : les zones traversées par les missions ne peuvent pas être calculées.', 'Aeronautical database missing: the areas crossed by the missions cannot be computed.', 'Luftfahrtdatenbank fehlt: die von den Missionen durchflogenen Gebiete können nicht berechnet werden.', 'Base aeronáutica ausente: no se pueden calcular las zonas que atraviesan las misiones.')))} <a href="${esc(list.url || '#')}">${esc(t(L4('Données aéronautiques', 'Aeronautical data', 'Luftfahrtdaten', 'Datos aeronáuticos')))}</a></p>`);
     S.requests = list;
     const todo = list.filter(r => r.etat === 'absente' && r.zone);
-    host.innerHTML = list.length ? `<table class="odvo-wk"><thead><tr><th>${esc(t(L4('Jour', 'Day', 'Tag', 'Día')))}</th><th>${esc(t(L4('Zone', 'Area', 'Gebiet', 'Zona')))}</th><th>${esc(t(L4('Réseau', 'Network', 'Netzwerk', 'Red')))}</th><th>${esc(t(L4('Créneau (z)', 'Slot (z)', 'Zeitfenster (z)', 'Franja (z)')))}</th><th>${esc(t(L4('Vols', 'Flights', 'Flüge', 'Vuelos')))}</th><th>${esc(t(L4('État', 'Status', 'Status', 'Estado')))}</th><th></th></tr></thead><tbody>${list.map((r, i) => `<tr><td>${esc(r.date.slice(8, 10))}/${esc(r.date.slice(5, 7))}</td><td>${esc(r.nom)}</td><td>${esc(r.reseau || '—')}</td><td>${esc(hhmm(r.debut))}–${esc(hhmm(Math.min(1440, r.fin)))}</td><td>${esc(r.vols.join(', '))}</td><td><span class="odvo-z odvo-z-${esc(r.etat)}">${esc(t(TX.zoneEtats[r.etat] || [r.etat, r.etat, r.etat, r.etat]))}</span></td><td>${r.etat === 'absente' && r.zone && S.editable ? `<button type="button" data-req="${i}">${esc(t(L4('Inscrire comme demandée', 'Record as requested', 'Als beantragt eintragen', 'Inscribir como solicitada')))}</button>` : r.etat === 'interdite' ? esc(t(L4('zone P : à éviter', 'P area: avoid', 'P-Gebiet: meiden', 'zona P: evitar'))) : ''}</td></tr>`).join('')}</tbody></table>
+    host.innerHTML = list.length ? `<table class="odvo-wk"><thead><tr><th>${esc(t(L4('Jour', 'Day', 'Tag', 'Día')))}</th><th>${esc(t(L4('Zone', 'Area', 'Gebiet', 'Zona')))}</th><th>${esc(t(L4('Réseau', 'Network', 'Netzwerk', 'Red')))}</th><th>${esc(t(L4('Créneau (z)', 'Slot (z)', 'Zeitfenster (z)', 'Franja (z)')))}</th><th>${esc(t(L4('Vols', 'Flights', 'Flüge', 'Vuelos')))}</th><th>${esc(t(L4('État', 'Status', 'Status', 'Estado')))}</th><th></th></tr></thead><tbody>${list.map((r, i) => `<tr><td>${esc(r.date.slice(8, 10))}/${esc(r.date.slice(5, 7))}</td><td>${esc(r.nom)}</td><td>${esc(r.reseau || '—')}</td><td>${esc(hhmm(r.debut))}–${esc(hhmm(Math.min(1440, r.fin)))}</td><td>${esc(r.vols.join(', '))}</td><td><span class="odvo-z odvo-z-${esc(r.etat)}">${esc(t(TX.zoneEtats[r.etat] || [r.etat, r.etat, r.etat, r.etat]))}</span></td><td>${r.etat === 'absente' && r.zone && S.editable ? `<button type="button" data-req="${i}">${esc(t(L4('Inscrire comme demandée', 'Record as requested', 'Als beantragt eintragen', 'Inscribir como solicitada')))}</button>` : r.etat === 'demandee' && r.zone && S.editable ? `<button type="button" data-unreq="${i}">${esc(t(L4('Retirer la demande', 'Withdraw the request', 'Antrag zurückziehen', 'Retirar la solicitud')))}</button>` : r.etat === 'interdite' ? esc(t(L4('zone P : à éviter', 'P area: avoid', 'P-Gebiet: meiden', 'zona P: evitar'))) : ''}</td></tr>`).join('')}</tbody></table>
       <div class="row">${todo.length && S.editable ? `<button type="button" data-req="all">${esc(tf(L4('Tout inscrire comme demandé ({n})', 'Record all as requested ({n})', 'Alle als beantragt eintragen ({n})', 'Inscribir todo como solicitado ({n})'), {
         n: todo.length
       }))}</button>` : ''}<button type="button" data-req="copy">${esc(t(L4('Copier la liste', 'Copy the list', 'Liste kopieren', 'Copiar la lista')))}</button><a href="${IVAO_REQUESTS}" target="_blank" rel="noopener">${esc(t(L4('Demandes d’activation IVAO', 'IVAO activation requests', 'IVAO-Aktivierungsanträge', 'Solicitudes de activación IVAO')))}</a></div>` : `<p class="mut">${esc(t(L4('Aucune zone à demander : les zones des vols de mission de la semaine sont actives sur leur réseau.', 'No area to request: the areas of the week’s mission flights are active on their network.', 'Kein Gebiet zu beantragen: die Gebiete der Missionsflüge der Woche sind in ihrem Netzwerk aktiv.', 'Ninguna zona que solicitar: las zonas de los vuelos de misión de la semana están activas en su red.')))}</p>`;
@@ -865,12 +898,35 @@
     const res = await A.saveActivations(S.week, list).catch(err => ({
       error: err
     }));
-    if (res?.error && res.where !== 'local') return notify(String(res.error?.message || res.error), 'error');
+    if (res?.error && res.where !== 'local') return notify(explain(res.error, L4('Demandes non inscrites dans les activations',
+      'Requests not entered in the activations', 'Anträge nicht in die Aktivierungen eingetragen',
+      'Solicitudes no inscritas en las activaciones')), 'error');
     notify(tf(L4('{n} demande(s) inscrite(s) dans les activations : à faire sur le site du réseau.',
       '{n} request(s) recorded in the activations: to be made on the network’s site.',
       '{n} Antrag/Anträge in den Aktivierungen eingetragen: auf der Seite des Netzwerks stellen.',
       '{n} solicitud(es) inscrita(s) en las activaciones: hay que hacerla(s) en el sitio de la red.'), {
       n: rows.length
+    }), 'info');
+    activations?.refresh?.();
+    refreshAirspace();
+    renderRequests();
+  }
+  /** Retire des activations de la semaine la demande (état « demandee ») de la zone r ce jour-là, sur son réseau. */
+  async function withdrawRequest(r) {
+    if (!S.editable) return;
+    const A = AS();
+    const list = await A.activations(S.week).catch(() => []);
+    const keep = list.filter(x => !(x.etat === 'demandee' && x.zone === r.zone && x.date === r.date && (!r.reseau || !x.reseau || x
+      .reseau === r.reseau)));
+    if (keep.length === list.length) return;
+    const res = await A.saveActivations(S.week, keep).catch(err => ({
+      error: err
+    }));
+    if (res?.error && res.where !== 'local') return notify(explain(res.error, L4('Demande non retirée des activations',
+      'Request not withdrawn from the activations', 'Antrag nicht aus den Aktivierungen entfernt',
+      'Solicitud no retirada de las activaciones')), 'err');
+    notify(tf(L4('Demande retirée : {z}.', 'Request withdrawn: {z}.', 'Antrag zurückgezogen: {z}.', 'Solicitud retirada: {z}.'), {
+      z: r.nom || r.zone
     }), 'info');
     activations?.refresh?.();
     refreshAirspace();
@@ -901,17 +957,58 @@
     if (S.view === 'jour') renderDay();
   }
 
+  // ---- disposition des blocs : celle mémorisée pour l'ancienne page (vues, bloc « Semaine », cadre Expert) est oubliée
+  // une fois, avant que le framework ne la relise — sinon les blocs qu'elle cite passent après les nouveaux et l'ordre du
+  // jour n'est plus en tête, ou reste masqué ; repère v2 gardé dans l'état (le framework réécrit l'objet entier)
+  try {
+    const k = `repositoryFramework:${window.RepositoryNav?.page?.path || location.pathname}`,
+      st = JSON.parse(localStorage.getItem(k) || 'null');
+    if (st && st.v2 !== 1) {
+      delete st.order;
+      delete st.layout;
+      if (st.hidden) delete st.hidden.jour;
+      st.v2 = 1;
+      localStorage.setItem(k, JSON.stringify(st));
+    }
+  } catch {}
+  // ---- titres des blocs (posés à la source, dans la langue de la page ; écrits seulement s'ils changent)
+  const BLOCK_TITLES = {
+    '#odvoCrewSection > h2': L4('Équipage de la semaine', 'Crew of the week', 'Besatzung der Woche', 'Tripulación de la semana'),
+    '#odvoZonesSection > h2': L4('Zones', 'Areas', 'Gebiete', 'Zonas'),
+    '#odvoZonesSection [data-title="requests"]': L4('Demandes de réservation', 'Reservation requests', 'Reservierungsanträge',
+      'Solicitudes de reserva'),
+    '#odvoSlotsSection > h2': L4('Créneaux communs', 'Common slots', 'Gemeinsame Zeitfenster', 'Franjas comunes'),
+    '#odvoMissionsSection > h2': L4('Missions probables', 'Likely missions', 'Wahrscheinliche Missionen', 'Misiones probables'),
+    '#odvoStatsSection > h2': L4('Statistiques', 'Statistics', 'Statistik', 'Estadísticas'),
+    '[data-odv-link]': L4('Page ODV complète : classeur, grille, export…', 'Full ODV page: workbook, grid, export…',
+      'Vollständige ODV-Seite: Arbeitsmappe, Raster, Export…', 'Página ODV completa: libro, cuadrícula, exportación…')
+  };
+  /** Titres des blocs dans la langue courante. */
+  function blockTitles() {
+    for (const [sel, row] of Object.entries(BLOCK_TITLES)) {
+      const el = document.querySelector(sel),
+        v = t(row);
+      if (el && el.textContent !== v) el.textContent = v;
+    }
+  }
+  blockTitles(); // avant que le framework ne construise les cartes (il lit les titres)
+  window.addEventListener('repository-language-change', blockTitles);
+  /** Créneaux communs et missions probables (odv_planning.js, niveau Expert) : semaine du Planning. */
+  const syncOdvWeek = () => window.OdvPlanning?.setMonday?.(dates()[0])?.catch?.(() => {});
+
   // ---- rendu
   function render() {
     S.editable = canEdit();
     document.documentElement.classList.toggle('odvo-ro', !S.editable);
+    // lecture seule (pilote, Centre fermé ou compte sans droits) : le planning seul, vue du jour ; la semaine (dispos
+    // et DLO des membres) et les statistiques restent au Centre
+    S.view = 'jour'; // une seule vue : la semaine des membres et les statistiques sont des blocs de la page
     renderBar();
-    $('#odvoDay').hidden = S.view !== 'jour';
-    $('#odvoWeekView').hidden = S.view !== 'semaine';
-    $('#odvoStats').hidden = S.view !== 'stats';
-    if (S.view === 'jour') renderDay();
-    if (S.view === 'semaine') renderWeekView();
-    if (S.view === 'stats') renderStats();
+    renderDay();
+    if (S.editable) {
+      renderWeekView();
+      renderStats();
+    }
   }
   /** Nombre d'éléments du jour en conflit (dispos ou zones) : pastille du bouton du jour. */
   function confCount(date) {
@@ -934,14 +1031,9 @@
         <button type="button" data-act="next" title="${esc(t(L4('Semaine suivante', 'Next week', 'Nächste Woche', 'Semana siguiente')))}">▶</button>
         <button type="button" data-act="today">${esc(t(L4('Cette semaine', 'This week', 'Diese Woche', 'Esta semana')))}</button>
         <span class="odvo-sep"></span>
-        ${['jour', 'semaine', 'stats'].map(v => `<button type="button" data-view="${v}" class="${S.view === v ? 'on' : ''}">${esc(t({
-          jour: L4('Jour', 'Day', 'Tag', 'Día'),
-          semaine: L4('Semaine', 'Week', 'Woche', 'Semana'),
-          stats: L4('Statistiques', 'Statistics', 'Statistik', 'Estadísticas')
-        }[v]))}</button>`).join('')}
-        <span class="odvo-sep"></span>
         <label>${esc(t(L4('Permanence', 'Duty officer', 'Dienst', 'Guardia')))} <select data-act="perm"${S.editable ? '' : ' disabled'}><option value="">—</option>${S.members.map(m => `<option${m.tri === perm ? ' selected' : ''}>${esc(m.tri)}</option>`).join('')}</select></label>
         <button type="button" data-act="brief" title="${esc(t(L4('Plein écran (F), jours : ← →', 'Full screen (F), days: ← →', 'Vollbild (F), Tage: ← →', 'Pantalla completa (F), días: ← →')))}">${esc(t(L4('Briefing', 'Briefing', 'Briefing', 'Briefing')))}</button>
+        ${S.editable ? `<button type="button" data-act="undo"${S.undo.length ? '' : ' disabled'} title="${esc(t(L4('Annuler la dernière modification (Ctrl+Z) ; dix au plus', 'Undo the last change (Ctrl+Z); ten at most', 'Letzte Änderung rückgängig (Strg+Z); höchstens zehn', 'Deshacer el último cambio (Ctrl+Z); diez como máximo')))}">↶ ${esc(t(L4('Annuler', 'Undo', 'Rückgängig', 'Deshacer')))}${S.undo.length ? ` (${S.undo.length})` : ''}</button>` : ''}
         <span class="mut" id="odvoStatus">${S.editable ? '' : esc(t(L4('Lecture seule', 'Read only', 'Nur lesen', 'Solo lectura')))}</span>
       </div>
       <div class="row odvo-days">${ds.map((d, i) => {
@@ -1247,7 +1339,7 @@
     const tpl = (type, list) => (list || []).map(m => `<div class="odvo-tpl" draggable="${S.editable}" data-tpl="${esc(type)}:${esc(m.id)}" style="border-color:${esc(tint(m.couleur || '#64748b'))}${m.fond ? `;background:${esc(tint(m.fond))};color:${ink(tint(m.fond))}` : ''}" title="${esc(t(L4('Glisser sur la frise', 'Drag onto the timeline', 'Auf die Zeitleiste ziehen', 'Arrastrar a la cronología')))}">${esc(m.libelle)} <small>${esc(String(m.duree))}′</small></div>`).join('');
     const note = `<div class="odvo-tpl" draggable="${S.editable}" data-tpl="note:note">${esc(t(L4('Note', 'Note', 'Notiz', 'Nota')))}</div>`;
     // cartes des membres d'un groupe (staff ou autre) : barre de dispo du jour, DLO ouvertes
-    const mem = grp => S.members.filter(m => m.groupe === grp).map(m => {
+    const mem = grp => S.members.filter(m => m.groupe === grp && (!hideUnav() || availableOn(m.tri, date))).map(m => {
       const day = S.dispos[m.tri]?.[date];
       const bar = dispoBar(day, 0, 1440);
       const od = openDlo(m.tri),
@@ -1268,8 +1360,23 @@
       ${gen ? `<h3>${esc(t(L4('Formations des missions', 'Mission formations', 'Formationen der Missionen', 'Formaciones de las misiones')))}</h3>${gen}` : ''}
       <h3>${esc(t(TX.sections.controle))}</h3>${tpl('controle', M.controle)}
       <h3>${esc(t(TX.sections.divers))}</h3>${tpl('divers', M.divers)}${note}
+      ${hideUnavBox()}
       <h3>${esc(t(L4('Staff', 'Staff', 'Stab', 'Staff')))}</h3>${mem('staff')}
       <h3>${esc(t(L4('Membres', 'Members', 'Mitglieder', 'Miembros')))}</h3>${mem('autre')}`;
+  }
+  // ---- pilotes indisponibles masqués (case de la palette et de la vue semaine, préférence de ce navigateur)
+  const HIDE_UNAV = 'odvoHideUnavailable:v1';
+  const hideUnav = () => K.store.get(HIDE_UNAV, '') === '1';
+  /** Membre disponible ce jour pour voler : au moins une plage dont la catégorie le rend affectable à un vol (même règle
+   *  que les conflits : SuiteDispos.affectable ; sol, récup, contrôle hors SOG et contrôle seul ne comptent pas). */
+  const availableOn = (tri, date) => (S.dispos[tri]?.[date] || []).some(p => (SD()?.affectable?.(p.categorie) || []).includes('vol'));
+  /** Case « Masquer les pilotes indisponibles » (cochée selon la préférence) ; data-hideunav : bascule. */
+  const hideUnavBox = () => `<label class="odvo-hideunav"><input type="checkbox" data-hideunav${hideUnav() ? ' checked' : ''}> ${esc(t(L4(
+    'Masquer les pilotes indisponibles', 'Hide unavailable pilots', 'Nicht verfügbare Piloten ausblenden', 'Ocultar los pilotos no disponibles')))}</label>`;
+  /** Bascule la préférence et redessine la page. */
+  function toggleHideUnav(on) {
+    K.store.set(HIDE_UNAV, on ? '1' : '');
+    render();
   }
   /** Barre de dispo d'un jour (plages colorées par catégorie) entre s0 et e0 (minutes). */
   function dispoBar(plages, s0, e0) {
@@ -2050,7 +2157,9 @@
     // groupe d'options (rien si la liste est vide), marque de qualification après le nom
     const group = (title, list) => list.length ? `<optgroup label="${esc(title)}">${list.map(r => opt(r.m.tri, cur, `${r.m.tri}${r.m.nom ? ' — ' + r.m.nom : ''}${r.mark ? ' · ' + r.mark : ''}`)).join('')}</optgroup>` : '';
     const good = r => ['mastered', 'owned', 'flown'].includes(r.ql);
-    return `<option value="">—</option>${group(t(L4('Disponibles, qualifiés sur le type', 'Available, qualified on the type', 'Verfügbar, auf dem Typ qualifiziert', 'Disponibles, cualificados en el tipo')), rows.filter(r => r.free && good(r)))}${group(t(L4('Disponibles', 'Available', 'Verfügbar', 'Disponibles')), rows.filter(r => r.free && !good(r)))}${group(t(L4('Autres', 'Others', 'Andere', 'Otros')), rows.filter(r => !r.free))}`;
+    // pilote déjà posé hors des membres (désactivé, venu des affectations) : proposé tel quel, sinon l'enregistrement l'effaçait
+    const keepCur = cur && !S.members.some(m => m.tri === cur) ? opt(cur, cur) : '';
+    return `<option value="">—</option>${keepCur}${group(t(L4('Disponibles, qualifiés sur le type', 'Available, qualified on the type', 'Verfügbar, auf dem Typ qualifiziert', 'Disponibles, cualificados en el tipo')), rows.filter(r => r.free && good(r)))}${group(t(L4('Disponibles', 'Available', 'Verfügbar', 'Disponibles')), rows.filter(r => r.free && !good(r)))}${group(t(L4('Autres', 'Others', 'Andere', 'Otros')), rows.filter(r => !r.free))}`;
   }
   /** Options « membre » (trigramme — nom), vide en tête. */
   const memOpts = cur => `<option value="">—</option>${S.members.map(m => opt(m.tri, cur, m.tri + (m.nom ? ' — ' + m.nom : ''))).join('')}`;
@@ -2064,7 +2173,8 @@
     if (!e) return;
     const common = field(L4('Début (z)', 'Start (z)', 'Beginn (z)', 'Inicio (z)'), `<input name="debut" type="time" step="300" value="${esc(e.debut)}">`) + field(L4('Durée (min)',
       'Duration (min)', 'Dauer (min)', 'Duración (min)'), `<input name="duree" type="number" min="5" step="1" value="${e.duree}">`);
-    const etat = (e.type !== 'note') ? field(L4('État', 'Status', 'Status', 'Estado'), `<select name="etat">${O().ETATS.map(x => opt(x, e.etat, t(TX.etats[x]))).join('')}</select>`) + field(L4('Motif', 'Reason', 'Grund',
+    const etat = (e.type !== 'note') ? field(L4('État', 'Status', 'Status', 'Estado'), `<select name="etat">${O().ETATS.map(x => opt(x, e.etat, t(TX.etats[x]))).join('')}</select>`) + field(L4('Motif', 'Reason',
+      'Grund',
       'Motivo'), `<input name="motif" value="${esc(e.motif || '')}">`) : '';
     const colors = e.type !== 'note' ? field(L4('Couleur', 'Colour', 'Farbe', 'Color'), `<input name="couleur" type="color" value="${esc(e.couleur || '#64748b')}">`) + field(L4('Fond plein',
       'Solid fill', 'Gefüllt', 'Relleno'), `<input name="fondOn" type="checkbox"${e.fond ? ' checked' : ''}>`) : '';
@@ -2115,11 +2225,11 @@
       ${repeatFields(e)}`;
       const opVols = e.mission && reg(e.mission)?.operation?.id ? S.doc.elements.filter(x => x.type === 'vol' && x.date === e.date && x
         .mission && reg(x.mission)?.operation?.id === reg(e.mission).operation.id) : [];
-      if (opVols.length > 1 && window.AssignDialog) extra += `<button type="button" data-assignop title="${esc(t(L4('Ordre de mission de chaque plaquette de l’opération posée ce jour, l’une après l’autre', 'Mission order for each strip of the operation placed that day, one after the other', 'Missionsbefehl für jeden an diesem Tag gesetzten Streifen der Operation, nacheinander', 'Orden de misión de cada ficha de la operación colocada ese día, una tras otra')))}">${esc(tf(L4('Ordre de mission de l’opération ({n})…', 'Operation mission order ({n})…', 'Missionsbefehl der Operation ({n})…', 'Orden de misión de la operación ({n})…'), {
+      if (S.editable && opVols.length > 1 && window.AssignDialog) extra += `<button type="button" data-assignop title="${esc(t(L4('Ordre de mission de chaque plaquette de l’opération posée ce jour, l’une après l’autre', 'Mission order for each strip of the operation placed that day, one after the other', 'Missionsbefehl für jeden an diesem Tag gesetzten Streifen der Operation, nacheinander', 'Orden de misión de cada ficha de la operación colocada ese día, una tras otra')))}">${esc(tf(L4('Ordre de mission de l’opération ({n})…', 'Operation mission order ({n})…', 'Missionsbefehl der Operation ({n})…', 'Orden de misión de la operación ({n})…'), {
         n: opVols.length
       }))}</button>`;
-      if (e.mission && window.AssignDialog) extra += `<button type="button" data-assign title="${esc(t(L4('Affectations de l’équipage (appareil, indicatif, décollage) : l’ordre de mission que les pilotes reçoivent dans Mes missions', 'Crew assignments (aircraft, callsign, take-off): the mission order the pilots receive in My missions', 'Zuweisungen der Besatzung (Luftfahrzeug, Rufzeichen, Start): der Missionsbefehl, den die Piloten in Meine Missionen erhalten', 'Asignaciones de la tripulación (aeronave, indicativo, despegue): la orden de misión que los pilotos reciben en Mis misiones')))}">${esc(t(L4('Ordre de mission…', 'Mission order…', 'Missionsbefehl…', 'Orden de misión…')))}</button>`;
-      if (e.convoyage && window.AssignDialog) extra += `<button type="button" data-ferryorder title="${esc(t(L4('Ordre de mission du vol servi, convoyage compris : le convoyeur reçoit son ordre de convoyage dans Mes missions (sauf s’il est le pilote de la mission : une ligne de son ordre de mission)', 'Mission order of the flight served, ferry included: the ferry pilot receives their ferry order in My missions (unless they are the mission pilot: a line of their mission order)', 'Missionsbefehl des versorgten Flugs mit Überführung: der Überführungspilot erhält seinen Überführungsbefehl in Meine Missionen (außer er ist der Missionspilot: eine Zeile seines Missionsbefehls)', 'Orden de misión del vuelo servido, con traslado: el piloto del traslado recibe su orden de traslado en Mis misiones (salvo si es el piloto de la misión: una línea de su orden de misión)')))}">${esc(t(L4('Ordre de convoyage…', 'Ferry order…', 'Überführungsbefehl…', 'Orden de traslado…')))}</button>`;
+      if (S.editable && e.mission && window.AssignDialog) extra += `<button type="button" data-assign title="${esc(t(L4('Affectations de l’équipage (appareil, indicatif, décollage) : l’ordre de mission que les pilotes reçoivent dans Mes missions', 'Crew assignments (aircraft, callsign, take-off): the mission order the pilots receive in My missions', 'Zuweisungen der Besatzung (Luftfahrzeug, Rufzeichen, Start): der Missionsbefehl, den die Piloten in Meine Missionen erhalten', 'Asignaciones de la tripulación (aeronave, indicativo, despegue): la orden de misión que los pilotos reciben en Mis misiones')))}">${esc(t(L4('Ordre de mission…', 'Mission order…', 'Missionsbefehl…', 'Orden de misión…')))}</button>`;
+      if (S.editable && e.convoyage && window.AssignDialog) extra += `<button type="button" data-ferryorder title="${esc(t(L4('Ordre de mission du vol servi, convoyage compris : le convoyeur reçoit son ordre de convoyage dans Mes missions (sauf s’il est le pilote de la mission : une ligne de son ordre de mission)', 'Mission order of the flight served, ferry included: the ferry pilot receives their ferry order in My missions (unless they are the mission pilot: a line of their mission order)', 'Missionsbefehl des versorgten Flugs mit Überführung: der Überführungspilot erhält seinen Überführungsbefehl in Meine Missionen (außer er ist der Missionspilot: eine Zeile seines Missionsbefehls)', 'Orden de misión del vuelo servido, con traslado: el piloto del traslado recibe su orden de traslado en Mis misiones (salvo si es el piloto de la misión: una línea de su orden de misión)')))}">${esc(t(L4('Ordre de convoyage…', 'Ferry order…', 'Überführungsbefehl…', 'Orden de traslado…')))}</button>`;
       if (S.editable && e.convoyage) extra += `<button type="button" data-selfferry title="${esc(t(L4('Le pilote de cet appareil sur la mission fait aussi le convoyage', 'The pilot of this aircraft on the mission also flies the ferry', 'Der Pilot dieses Luftfahrzeugs auf der Mission fliegt auch die Überführung', 'El piloto de esta aeronave en la misión hace también el traslado')))}">${esc(t(L4('Par le pilote de la mission', 'By the mission pilot', 'Durch den Missionspiloten', 'Por el piloto de la misión')))}</button>`;
       if (S.editable && !e.convoyage) extra += `<button type="button" data-order title="${esc(t(L4('Commander une mission au générateur : durée, avions et ravitaillement de la plaquette préremplis', 'Order a mission from the generator: duration, aircraft and refuelling of the strip prefilled', 'Mission beim Generator bestellen: Dauer, Luftfahrzeuge und Betankung des Streifens vorausgefüllt', 'Encargar una misión al generador: duración, aeronaves y reabastecimiento de la ficha prerrellenados')))}">${esc(t(L4('Commander une mission…', 'Order a mission…', 'Mission bestellen…', 'Encargar una misión…')))}</button>`;
       if (S.editable) extra += `<button type="button" data-reserve title="${esc(t(L4('Retirer de la frise, garder dans la réserve des vols', 'Remove from the timeline, keep in the flight pool', 'Von der Zeitleiste nehmen, im Flugvorrat behalten', 'Quitar de la cronología, guardar en la reserva de vuelos')))}">${esc(t(L4('↩ Réserve', '↩ Pool', '↩ Vorrat', '↩ Reserva')))}</button>`;
@@ -2311,20 +2421,29 @@
    *  30 min avant le décollage, pilote « à affecter » (gardé s'il a été glissé) ; retirées si l'appareil change. */
   let ferryRun = null;
   /** Calcul des convoyages (voir ci-dessus) : un vol déplacé entraîne son convoyage du même écart, un convoyage
-   *  déplacé à la main garde sa place ; terrains sans coordonnées signalés une fois ; enregistré s'il y a du nouveau. */
+   *  déplacé ou allongé à la main garde sa place et sa durée ; terrains sans coordonnées signalés une fois ; enregistré
+   *  s'il y a du nouveau. Une plaquette n'est retirée que si son vol ne la demande plus (vol supprimé, appareil changé
+   *  ou déjà au départ) : convoyage incalculable pour l'instant (mission absente du registre, appareil hors flotte,
+   *  terrain sans coordonnées), elle est gardée telle quelle — retirée puis recréée, elle perdait heure et convoyeur. */
   async function syncFerries() {
     const doc = S.doc;
     const want = [];
+    const hold = new Set(); // « vol|immat » : convoyage existant gardé sans recalcul
     let unknown = [];
     for (const v of doc.elements.filter(x => x.type === 'vol' && x.mission && !x.convoyage)) {
       const dep = depOf(reg(v.mission));
-      if (!dep) continue;
       for (const a of v.avions) {
-        const f = a.appareil?.immat && (window.DEFA_FLEET || []).find(x => x.registration === a.appareil.immat);
-        if (!adOf(f) || adOf(f) === dep) continue;
+        if (!a.appareil?.immat) continue;
+        const f = (window.DEFA_FLEET || []).find(x => x.registration === a.appareil.immat);
+        if (!dep || !adOf(f)) {
+          hold.add(`${v.id}|${a.appareil.immat}`);
+          continue;
+        }
+        if (adOf(f) === dep) continue;
         const fm = await ferryMin(adOf(f), dep, f.type);
         if (fm == null) {
           unknown.push(`${f.registration} ${adOf(f)} → ${dep}`);
+          hold.add(`${v.id}|${f.registration}`);
           continue;
         }
         want.push({
@@ -2366,7 +2485,8 @@
             immat: f.registration,
             from: adOf(f),
             to: dep,
-            volDebut: v.debut
+            volDebut: v.debut,
+            minutes: fm
           },
           avions: [{
             appareil: {
@@ -2379,15 +2499,18 @@
         doc.elements.push(c);
         changed = true;
       } else {
-        // le vol a bougé : le convoyage le suit du même écart ; sinon il garde sa place (déplacement à la main)
+        // le vol a bougé : le convoyage le suit du même écart ; sinon il garde sa place (déplacement à la main) ; durée
+        // recalculée seulement si le trajet a changé (durée calculée gardée dans minutes), sinon celle de la plaquette
         const shift = c.convoyage.volDebut ? min(v.debut) - min(c.convoyage.volDebut) : 0;
-        const nd = c.convoyage.volDebut ? Math.max(0, Math.min(1440 - Math.max(5, fm), min(c.debut) + shift)) : s0;
-        if (hhmm(nd) !== c.debut || c.duree !== Math.max(5, fm) || c.date !== v.date || c.convoyage.from !== adOf(f) || c.convoyage
-          .to !== dep || c.convoyage.volDebut !== v.debut) {
+        const dur = (c.convoyage.minutes ?? fm) !== fm || c.convoyage.from !== adOf(f) || c.convoyage.to !== dep ? Math.max(5, fm) : c
+          .duree;
+        const nd = c.convoyage.volDebut ? Math.max(0, Math.min(1440 - dur, min(c.debut) + shift)) : s0;
+        if (hhmm(nd) !== c.debut || c.duree !== dur || c.date !== v.date || c.convoyage.from !== adOf(f) || c.convoyage.to !== dep || c
+          .convoyage.volDebut !== v.debut || c.convoyage.minutes !== fm) {
           Object.assign(c, {
             date: v.date,
             debut: hhmm(nd),
-            duree: Math.max(5, fm)
+            duree: dur
           });
           changed = true;
         }
@@ -2395,13 +2518,14 @@
           ...c.convoyage,
           from: adOf(f),
           to: dep,
-          volDebut: v.debut
+          volDebut: v.debut,
+          minutes: fm
         };
       }
       keep.add(c.id);
     }
     const before = doc.elements.length;
-    doc.elements = doc.elements.filter(x => !x.convoyage || keep.has(x.id));
+    doc.elements = doc.elements.filter(x => !x.convoyage || keep.has(x.id) || hold.has(`${x.convoyage.pour}|${x.convoyage.immat}`));
     if (doc.elements.length !== before) changed = true;
     unknown = unknown.filter(u => !S.ferryWarned?.has(u));
     if (unknown.length) {
@@ -2470,7 +2594,9 @@
         error: err
       }));
       if (r?.doc) S.dlo = r.doc;
-      if (r?.error && r.where !== 'local') notify(String(r.error?.message || r.error), 'error');
+      if (r?.error && r.where !== 'local') notify(explain(r.error, L4('DLO non enregistrées', 'DLO not saved',
+        'DLO nicht gespeichert',
+        'DLO no guardadas')), 'error');
     }, 400);
   }
   /** Boutons des DLO d'un membre (état et urgence en classes) ; un clic ouvre la DLO (data-dlo « TRI|id »). */
@@ -2730,7 +2856,8 @@
     }).then(() => (S.cfg = {
       ...cfg,
       recurrences: list
-    })).catch(err => notify(String(err?.message || err), 'error'));
+    })).catch(err => notify(explain(err, L4('Récurrence non enregistrée', 'Recurrence not saved', 'Wiederholung nicht gespeichert',
+      'Recurrencia no guardada')), 'error'));
   }
   // commande d'une mission (générateur, MissionOrder) préremplie d'après la plaquette ; scripts chargés à la demande
   const SELF = document.currentScript?.src || location.href;
@@ -2749,10 +2876,13 @@
    *  plus), classe de durée XS à XL, ravitaillement ; la mission générée se lie ensuite à la plaquette. */
   async function orderMission(e) {
     try {
-      for (const src of ['mission_store.js?v=559e3351', 'mission_prompt.js?v=8774038d', '../../shared/mission_order.js?v=10ea62d0'])
+      for (const src of ['mission_store.js?v=559e3351', 'mission_prompt.js?v=8774038d', '../../shared/mission_order.js?v=6cf0c650'])
         await loadScript(src);
     } catch (err) {
-      return notify(String(err?.message || err), 'error');
+      return notify(explain(err, L4('Commande de mission impossible : générateur non chargé (recharger la page)',
+        'Mission order impossible: generator not loaded (reload the page)',
+        'Missionsbestellung unmöglich: Generator nicht geladen (Seite neu laden)',
+        'Pedido de misión imposible: generador no cargado (recargar la página)')), 'error');
     }
     if (!window.MissionOrder?.mount) return notify('MissionOrder ?', 'error');
     const planes = e.avions.filter(a => a.pilote || a.appareil);
@@ -2841,7 +2971,8 @@
         }
         e._ferryChoice = Object.fromEntries(rows.filter(r => r.registration).map(r => [r.registration, r.ferryPilot || '']));
       }
-    }).catch(err => notify(String(err?.message || err), 'error'));
+    }).catch(err => notify(explain(err, L4('Choix dans l’ODV impossible', 'Choice in the flight order impossible',
+      'Auswahl im Flugbefehl unmöglich', 'Elección en la orden de vuelo imposible')), 'error'));
   }
   /** Plaquette de convoyage d'un appareil du vol, transmise à la fenêtre d'affectation : heure, durée, terrain (gardée telle
    *  quelle, déplacement à la main compris, tant que l'appareil ne change pas). */
@@ -2915,6 +3046,11 @@
   }
 
   // ---- vue de la semaine : dispos par membre et modifications
+  // DLO et butées : tableau repliable (triangle), ouvert ou fermé selon le dernier choix (préférence de ce navigateur)
+  const DLO_OPEN = 'odvoDloOpen:v1';
+
+  /** Vue de la semaine : grille membres × jours (dispos, éléments où le membre est d'équipage), DLO et butées,
+   *  modifications de dispo pas encore prises en compte. */
   function renderWeekView() {
     const ds = dates();
     // éléments actifs du jour où le membre est d'équipage (nombre dans la case, détail en infobulle)
@@ -2929,11 +3065,12 @@
       '')).sort((a, b) => String(b[1].updated_at).localeCompare(String(a[1].updated_at)));
     $('#odvoWeekView').innerHTML = `
       <table class="odvo-wk"><thead><tr><th></th>${ds.map((d, i) => `<th>${esc(t(TX.days[i]))} ${esc(d.slice(8, 10))}/${esc(d.slice(5, 7))}</th>`).join('')}</tr></thead>
-      <tbody>${['staff', 'autre'].map(g => S.members.filter(m => m.groupe === g).map(row).join('')).join('')}</tbody></table>
+      <tbody>${['staff', 'autre'].map(g => S.members.filter(m => m.groupe === g && (!hideUnav() || ds.some(d => availableOn(m.tri, d)))).map(row).join('')).join('')}</tbody></table>
+      ${hideUnavBox()}
       <p class="mut">${esc(t(L4('Clic sur une case : plages déclarées du membre ce jour-là (récup comprise).', 'Click a cell: the member’s declared ranges that day (time off included).', 'Klick auf eine Zelle: angegebene Zeiträume des Mitglieds an diesem Tag (Ausgleich inklusive).', 'Clic en una casilla: franjas declaradas por el miembro ese día (descanso incluido).')))}</p>
-      <h3>${esc(t(L4('DLO et butées', 'DLO and deadlines', 'DLO und Fristen', 'DLO y plazos')))}</h3>
+      <details class="odvo-dlo"${K.store.get(DLO_OPEN, '1') === '1' ? ' open' : ''}><summary><h3>${esc(t(L4('DLO et butées', 'DLO and deadlines', 'DLO und Fristen', 'DLO y plazos')))}</h3></summary>
       <p class="mut">${esc(t(L4('Objectifs de chaque membre, d’une semaine à l’autre ; butée : date limite (rouge à 3 jours ouvrés ou moins, jaune à 10 ou moins) ; fermés d’office par un vol fait qui les contient.', 'Each member’s objectives, from one week to the next; deadline: red at 3 working days or less, yellow at 10 or less; closed automatically by a flight done that contains them.', 'Ziele jedes Mitglieds über die Wochen; Frist: rot bei höchstens 3 Arbeitstagen, gelb bei höchstens 10; durch einen erledigten Flug, der sie enthält, automatisch geschlossen.', 'Objetivos de cada miembro de una semana a otra; plazo: rojo a 3 días hábiles o menos, amarillo a 10 o menos; cerrados automáticamente por un vuelo hecho que los contiene.')))}</p>
-      <table class="odvo-wk odvo-dlotab"><tbody>${S.members.map(m => `<tr><th>${esc(m.tri)}</th><td>${dloChips(m.tri)}${S.editable ? `<button type="button" class="odvo-dloadd" data-dlo="${esc(m.tri)}|" title="${esc(t(L4('Ajouter une DLO', 'Add a DLO', 'DLO hinzufügen', 'Añadir un DLO')))}">＋</button>` : ''}</td></tr>`).join('')}</tbody></table>
+      <table class="odvo-wk odvo-dlotab"><tbody>${S.members.map(m => `<tr><th>${esc(m.tri)}</th><td>${dloChips(m.tri)}${S.editable ? `<button type="button" class="odvo-dloadd" data-dlo="${esc(m.tri)}|" title="${esc(t(L4('Ajouter une DLO', 'Add a DLO', 'DLO hinzufügen', 'Añadir un DLO')))}">＋</button>` : ''}</td></tr>`).join('')}</tbody></table></details>
       <h3>${esc(t(L4('Modifications de dispo', 'Availability changes', 'Verfügbarkeitsänderungen', 'Cambios de disponibilidad')))}</h3>
       ${changes.length ? `<ul class="odvo-chg">${changes.map(([tri, d]) => `<li><b>${esc(tri)}</b> ${esc(String(d.updated_at).slice(0, 16).replace('T', ' '))}z ${d.by && d.by !== tri ? `(${esc(d.by)})` : ''} <button type="button" data-seen="${esc(tri)}">${esc(t(L4('Pris en compte', 'Noted', 'Berücksichtigt', 'Tenido en cuenta')))}</button></li>`).join('')}</ul><button type="button" data-seen="*">${esc(t(L4('Tout prendre en compte', 'Note all', 'Alle berücksichtigen', 'Tener todo en cuenta')))}</button>` : `<p class="mut">${esc(t(L4('Aucune modification depuis la dernière prise en compte.', 'No change since last noted.', 'Keine Änderung seit der letzten Berücksichtigung.', 'Ningún cambio desde la última vez.')))}</p>`}`;
   }
@@ -2968,7 +3105,8 @@
         const r = await O().setDispos(tri, S.week, date, out).catch(err => ({
           error: err
         }));
-        if (r?.error && r.where !== 'local') return notify(String(r.error?.message || r.error), 'error');
+        if (r?.error && r.where !== 'local') return notify(explain(r.error, L4('Disponibilités non enregistrées',
+          'Availability not saved', 'Verfügbarkeiten nicht gespeichert', 'Disponibilidades no guardadas')), 'error');
         S.dispos[tri] = {
           ...(S.dispos[tri] || {}),
           [date]: out
@@ -3026,9 +3164,16 @@
       if (act === 'prev' || act === 'next') return gotoWeek(SD().addWeek(S.week, act === 'prev' ? -1 : 1));
       if (act === 'today') return gotoWeek(SD().weekId(Date.now()), todayIndex());
       if (act === 'brief') return briefing();
+      if (act === 'undo') return undo();
     });
     $('#odvoBar').addEventListener('change', ev => {
       if (ev.target.dataset.act === 'perm') mutate(doc => (doc.permanence = ev.target.value));
+    });
+    $('#odvoWeekView').addEventListener('toggle', ev => {
+      if (ev.target.matches('.odvo-dlo')) K.store.set(DLO_OPEN, ev.target.open ? '1' : '0');
+    }, true);
+    for (const id of ['#odvoWeekView', '#odvoPalette']) $(id).addEventListener('change', ev => {
+      if (ev.target.matches('[data-hideunav]')) toggleHideUnav(ev.target.checked);
     });
     $('#odvoWeekView').addEventListener('click', ev => {
       const dl = ev.target.closest('[data-dlo]');
@@ -3051,6 +3196,8 @@
       }
     });
     $('#odvoRequests')?.addEventListener('click', ev => {
+      const u = ev.target.closest('[data-unreq]');
+      if (u && S.requests?.[+u.dataset.unreq]) return withdrawRequest(S.requests[+u.dataset.unreq]);
       const b = ev.target.closest('[data-req]');
       if (!b || !S.requests) return;
       const v = b.dataset.req;
@@ -3066,6 +3213,10 @@
     });
     document.addEventListener('keydown', ev => {
       if (ev.target.closest('input,textarea,select,dialog')) return;
+      if ((ev.ctrlKey || ev.metaKey) && !ev.shiftKey && (ev.key === 'z' || ev.key === 'Z')) {
+        ev.preventDefault();
+        return undo();
+      }
       if (ev.key === 'f' || ev.key === 'F') briefing();
       if (document.fullscreenElement && (ev.key === 'ArrowLeft' || ev.key === 'ArrowRight')) {
         S.day = Math.max(0, Math.min(dates().length - 1, S.day + (ev.key === 'ArrowLeft' ? -1 : 1)));

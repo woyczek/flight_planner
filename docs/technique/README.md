@@ -22,6 +22,8 @@ ou maintient la suite. Les manuels et guides d'utilisation sont au [premier nive
 | [Comptes et données signés](COMPTES_SIGNES.md) | modes standalone et groupe, clés de poste, registre signé, enrôlement, clé de secours, affectations signées (conception) |
 | [Disponibilités et réorganisation](DISPOS_ET_REORGANISATION.md) | catégories de disponibilité, paramètres en quatre pages, utilisateurs et droits (décisions du 5 octobre 2026) |
 | [Prompt du générateur de missions](PROMPT_GENERATEUR_MISSIONS.md) | prompt de génération des missions (source de `apps/cpco/mission_prompt.js`) |
+| [V2 : niveaux d'utilisation](V2_NIVEAUX.md) | refonte v2 : quatre niveaux, pages et blocs rangés par niveau d'usage |
+| [V2-fable : parcours du pilote](V2_FABLE.md) | page « Aujourd'hui », compte rendu guidé, notifications qui se taisent, tâches qu'on arrête, champs qui s'agrandissent |
 
 ## Projet
 
@@ -48,3 +50,4 @@ ou maintient la suite. Les manuels et guides d'utilisation sont au [premier nive
 | [Audit de sécurité du 2 octobre 2026](AUDIT_SECURITE_2026-10-02.md) | pages, scripts, lanceur |
 | [Audit de sécurité du 7 octobre 2026](AUDIT_SECURITE_2026-10-07.md) | évasion de données, surface locale, code étranger (« zombie »), préparation du mode client/serveur ; plan de correction par lots |
 | [Performances : synthèse](perf/SYNTHESE.md) · [rapport](perf/RAPPORT_PERF.md) · [plan](perf/PLAN_PERF_2026-10-04.md) | audit de performance avant / après, extrapolation |
+| [Performances : mesures du 8 octobre](perf/RAPPORT_2026-10-08.md) | Planning et Cartes de vol dans Chrome (onglet visible) : requêtes, DOM, tâches longues, base SIA ; trois lots de correction |

@@ -34,7 +34,7 @@
       couleur: '#00B050'
     }, {
       id: 'exercice',
-      label: L4('Exercice SOG', 'SOG exercise', 'SOG-Übung', 'Ejercicio SOG'),
+      label: L4('Exercice {SOG}', '{SOG} exercise', '{SOG}-Übung', 'Ejercicio {SOG}'),
       court: 'E',
       couleur: '#E03C31'
     }, {
@@ -72,7 +72,7 @@
       AIRBORNE: L4('Largage', 'Airdrop', 'Absetzen', 'Lanzamiento'),
       MARITIME: L4('Marine', 'Maritime', 'Marine', 'Marítimo'),
       SPECIAL: L4('Spécial', 'Special', 'Spezial', 'Especial'),
-      EXERCICE: L4('Exercice SOG', 'SOG exercise', 'SOG-Übung', 'Ejercicio SOG'),
+      EXERCICE: L4('Exercice {SOG}', '{SOG} exercise', '{SOG}-Übung', 'Ejercicio {SOG}'),
       CONTROLE: L4('Contrôleur d’exercice', 'Exercise controller', 'Übungslotse', 'Controlador de ejercicio')
     },
     // familles de mission sans thème propre → thème (TRAINING : ouvert à toute catégorie de type « dispo »)
@@ -127,7 +127,7 @@
       id: 'exercice_vol',
       groupe: 'exercice',
       type: 'dispo',
-      label: L4('Vol en exercice SOG', 'SOG exercise flight', 'Flug in SOG-Übung', 'Vuelo en ejercicio SOG'),
+      label: L4('Vol en exercice {SOG}', '{SOG} exercise flight', 'Flug in {SOG}-Übung', 'Vuelo en ejercicio {SOG}'),
       couleur: '#FF0000',
       ouverts: ['EXERCICE'],
       odv: ['S']
@@ -135,7 +135,7 @@
       id: 'exercice_ctrl',
       groupe: 'exercice',
       type: 'atc',
-      label: L4('Contrôle SOG', 'SOG control', 'SOG-Lotsendienst', 'Control SOG'),
+      label: L4('Contrôle {SOG}', '{SOG} control', '{SOG}-Lotsendienst', 'Control {SOG}'),
       couleur: '#C4BD97',
       ouverts: ['CONTROLE'],
       odv: ['AM']
@@ -143,8 +143,8 @@
       id: 'vol_hors',
       groupe: 'occupe',
       type: 'occupe',
-      label: L4('Vol hors SOG (IVAO / VATSIM)', 'Flight outside SOG (IVAO / VATSIM)', 'Flug außerhalb SOG (IVAO / VATSIM)',
-        'Vuelo fuera de SOG (IVAO / VATSIM)'),
+      label: L4('Vol hors {SOG} (IVAO / VATSIM)', 'Flight outside {SOG} (IVAO / VATSIM)', 'Flug außerhalb {SOG} (IVAO / VATSIM)',
+        'Vuelo fuera de {SOG} (IVAO / VATSIM)'),
       couleur: '#FFD966',
       ouverts: 'none',
       odv: ['G']
@@ -170,8 +170,8 @@
       id: 'ctrl_hors',
       groupe: 'occupe',
       type: 'atc',
-      label: L4('Contrôle hors SOG (IVAO / VATSIM)', 'Control outside SOG (IVAO / VATSIM)',
-        'Lotsendienst außerhalb SOG (IVAO / VATSIM)', 'Control fuera de SOG (IVAO / VATSIM)'),
+      label: L4('Contrôle hors {SOG} (IVAO / VATSIM)', 'Control outside {SOG} (IVAO / VATSIM)',
+        'Lotsendienst außerhalb {SOG} (IVAO / VATSIM)', 'Control fuera de {SOG} (IVAO / VATSIM)'),
       couleur: '#7030A0',
       ouverts: 'none',
       odv: ['AT']
@@ -392,13 +392,18 @@
     }).catch(() => null);
     const e = idx?.pilots?.[tri],
       sigs = e && typeof e === 'object' ? e.at || {} : {};
+    const pend = (A().pendingData?.() || []).map(p => new RegExp(`^disponibilites/${tri}/(\\d{4}-W\\d{2})\\.json$`).exec(p)?.[1]).filter(Boolean);
     if (!ids) {
-      const pend = (A().pendingData?.() || []).map(p => new RegExp(`^disponibilites/${tri}/(\\d{4}-W\\d{2})\\.json$`).exec(p)?.[1]).filter(Boolean);
       const from = addWeek(weekId(Date.now()), -12);
       let listed = Array.isArray(e?.weeks) ? e.weeks : null;
       // index d'un ancien lanceur (pilote → true) ou absent : semaines proches essayées (précédente, en cours, deux suivantes)
       if (!listed && (e === true || !idx?.pilots)) listed = [-1, 0, 1, 2].map(n => addWeek(weekId(Date.now()), n));
       ids = [...new Set([...(listed || []), ...pend])].filter(w => w >= from);
+    } else if (idx?.pilots && e !== true) {
+      // semaines demandées (ODV : la semaine affichée pour chaque pilote) : seules celles que l'index connaît pour ce
+      // pilote, ou en attente d'écriture, sont lues — un pilote sans déclaration ne coûte plus une requête en 404
+      const known = new Set([...(Array.isArray(e?.weeks) ? e.weeks : []), ...pend]);
+      ids = ids.filter(w => known.has(w));
     }
     const out = {};
     await Promise.all(ids.map(async w => {

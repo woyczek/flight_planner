@@ -2,11 +2,11 @@
 <html lang="fr">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>CPCO — Générateur de mission</title>
-<link rel="stylesheet" href="../../shared/repository_nav.css?v=975c4b32">
-<script src="../../config/repository_tree?v=c3698338"></script><script src="../../shared/kit.js?v=7f07f523"></script>
+<title>{CENTRE} — Générateur de mission</title>
+<link rel="stylesheet" href="../../shared/repository_nav.css?v=dd0730c4">
+<script src="../../config/repository_tree?v=18728c91"></script><script src="../../shared/kit.js?v=d74cff80"></script>
 <script src="../../shared/mission_core/vendor/js-yaml.min.js"></script>
-<script src="mission_prompt.js?v=8774038d"></script><script src="../../shared/data_files.js?v=dcb47c6a" data-file="references/aircraft_fleet.js"></script><script src="../../shared/mission_order.js?v=10ea62d0"></script><script src="../../AircraftDB/aircraft_db.js"></script><script src="../../AircraftDB/aircraft_perf.js"></script><script src="../../shared/mission_core/model.js?v=88cf78c1"></script><script src="../../shared/mission_estimate.js?v=e352037a"></script><script src="../../shared/sia_base.js?v=014ef61f"></script><script src="../../shared/mission_routing.js?v=3cc1352c"></script><script src="../../shared/mission_airspaces.js?v=e13e97bf"></script><script src="../../shared/mission_exercise.js?v=b68ac247"></script><script src="../../shared/mission_registry.js?v=f6f9c789"></script>
+<script src="mission_prompt.js?v=8774038d"></script><script src="../../shared/data_files.js?v=dcb47c6a" data-file="references/aircraft_fleet.js"></script><script src="../../shared/mission_order.js?v=6cf0c650"></script><script src="../../AircraftDB/aircraft_db.js"></script><script src="../../AircraftDB/aircraft_perf.js"></script><script src="../../shared/mission_core/model.js?v=88cf78c1"></script><script src="../../shared/mission_estimate.js?v=e352037a"></script><script src="../../shared/sia_base.js?v=4fe9f369"></script><script src="../../shared/mission_routing.js?v=3cc1352c"></script><script src="../../shared/mission_airspaces.js?v=e13e97bf"></script><script src="../../shared/mission_exercise.js?v=b68ac247"></script><script src="../../shared/mission_registry.js?v=d3a09fa5"></script>
 <script src="mission_store.js?v=559e3351"></script>
 <script src="../../shared/aar_tracks.js?v=8f76a899"></script>
 <script src="../../shared/mission_core/vocab.js?v=8c65f5c2"></script>
@@ -132,6 +132,11 @@
   }
   .gptBox:not([open]) {
     padding: 8px 12px
+  }
+  /* v2 : sous le niveau Expert, la commande ChatGPT s'ouvre par le seul bouton « Commander à ChatGPT… » de la barre ;
+     son repli, fermé, n'est pas répété dans « Importer une autre mission » (visible une fois ouvert : titre, fermeture) */
+  html:is([data-level="1"], [data-level="2"], [data-level="3"]) .gptBox:not([open]) {
+    display: none
   }
   #gptOrder .mo-grid {
     grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
@@ -487,7 +492,7 @@ html[data-skeuo] .repo-block .mapCard.missing:not(#imp) {
 <header><div class="header-row"><h1><span class="cpco-eyebrow">Centre de planification et de conduite des opérations</span>Générateur de mission</h1><button id="openCr" class="headerButton" type="button" title="Nouveau compte rendu CR pré-rempli (famille d’après le type de mission)">Créer le CR →</button></div></header>
 
 <main>
-<section data-block-id="mission-import" data-deco-bg="import" data-icon="upload" data-subtitle="Mission chargée, enregistrement et brouillon ; importer une autre mission ou en commander une à ChatGPT."><h2>Mission</h2><div class="actions"><button id="newMission" data-icon="plus" class="ghost" type="button">Nouvelle mission</button><button id="orderGpt" data-icon="sparkles" class="secondary" type="button" title="Ouvrir le formulaire de commande : type, théâtre, équipes, aéronefs ; le prompt est copié et ChatGPT s’ouvre">Commander à ChatGPT…</button><button id="saveToFolder" data-icon="save" class="secondary" type="button" title="Enregistrer le YAML de la mission (modifications comprises) dans son dossier : data/missions/&lt;lettre&gt;_&lt;FAMILLE&gt;/&lt;ID&gt;/">Enregistrer dans le dossier</button><button id="saveDraft" data-icon="bookmark" class="secondary" type="button">Mémoriser le brouillon</button><button id="loadDraft" data-icon="refresh" class="secondary" type="button">Recharger le brouillon</button></div><div id="status" class="status" data-status>Aucune mission chargée.</div><p id="registryInfo" class="small" hidden><span></span> <button type="button" id="storeMission" class="secondary" data-icon="folder" hidden>Ranger dans le dossier des missions…</button> <a href="mission_registry.html">Ouvrir le registre ↗</a></p><details id="importMore" class="importMore"><summary>Importer une autre mission : fichiers, texte collé, commande ChatGPT</summary><div class="grid"><label>YAML et/ou Markdown<input id="missionFiles" type="file" accept=".yaml,.yml,.md,text/markdown,text/yaml" multiple data-dropzone><button id="openMissionPaste" data-icon="link" class="secondary" type="button" style="margin-top:6px">ou coller son contenu…</button></label><label>Cartes ou ZIP livré par le générateur<input id="mapFiles" type="file" accept=".zip,application/zip,image/png,image/jpeg,image/webp" multiple data-dropzone></label></div><div class="subBlocks"><details id="gptBox" class="pasteBox gptBox"><summary><strong>Commander une mission à ChatGPT</strong> <span class="small">type, théâtre, équipes, aéronefs : le prompt est copié et ChatGPT s’ouvre</span></summary><div id="gptOrder"></div></details><div id="missionPaste" class="pasteBox" hidden><strong>Coller le contenu Markdown ou YAML de la mission</strong><textarea id="missionText" placeholder="Colle ici le contenu Markdown ou YAML de la mission…"></textarea><div class="actions"><button id="parseMission" data-icon="eye" type="button">Lire la mission</button></div></div></div><p class="small">Tu peux sélectionner le YAML et le Markdown ensemble. Pour les cartes, sélectionne directement le ZIP produit par le générateur : les PNG, dont la carte d’assemblage, seront extraits et associés automatiquement.</p></details></section>
+<section data-block-id="mission-import" data-deco-bg="import" data-icon="upload" data-subtitle="Mission chargée, enregistrement et brouillon ; importer une autre mission ou en commander une à ChatGPT."><h2>Mission</h2><div class="actions"><button id="newMission" data-icon="plus" class="ghost" type="button">Nouvelle mission</button><button id="orderGpt" data-icon="sparkles" class="secondary" type="button" title="Ouvrir le formulaire de commande : type, théâtre, équipes, aéronefs ; le prompt est copié et ChatGPT s’ouvre">Commander à ChatGPT…</button><button id="saveToFolder" data-icon="save" class="secondary" type="button" title="Enregistrer le YAML de la mission (modifications comprises) dans son dossier : data/missions/&lt;lettre&gt;_&lt;FAMILLE&gt;/&lt;ID&gt;/">Enregistrer dans le dossier</button><button id="saveDraft" data-icon="bookmark" class="secondary" type="button" data-min-level="4">Mémoriser le brouillon</button><button id="loadDraft" data-icon="refresh" class="secondary" type="button" data-min-level="4">Recharger le brouillon</button></div><div id="status" class="status" data-status>Aucune mission chargée.</div><p id="registryInfo" class="small" hidden><span></span> <button type="button" id="storeMission" class="secondary" data-icon="folder" hidden>Ranger dans le dossier des missions…</button> <a href="mission_registry.html">Ouvrir le registre ↗</a></p><details id="importMore" class="importMore"><summary>Importer une autre mission : fichiers, texte collé, commande ChatGPT</summary><div class="grid"><label>YAML et/ou Markdown<input id="missionFiles" type="file" accept=".yaml,.yml,.md,text/markdown,text/yaml" multiple data-dropzone><button id="openMissionPaste" data-icon="link" class="secondary" type="button" style="margin-top:6px">ou coller son contenu…</button></label><label>Cartes ou ZIP livré par le générateur<input id="mapFiles" type="file" accept=".zip,application/zip,image/png,image/jpeg,image/webp" multiple data-dropzone></label></div><div class="subBlocks"><details id="gptBox" class="pasteBox gptBox"><summary><strong>Commander une mission à ChatGPT</strong> <span class="small">type, théâtre, équipes, aéronefs : le prompt est copié et ChatGPT s’ouvre</span></summary><div id="gptOrder"></div></details><div id="missionPaste" class="pasteBox" hidden><strong>Coller le contenu Markdown ou YAML de la mission</strong><textarea id="missionText" placeholder="Colle ici le contenu Markdown ou YAML de la mission…"></textarea><div class="actions"><button id="parseMission" data-icon="eye" type="button">Lire la mission</button></div></div></div><p class="small">Tu peux sélectionner le YAML et le Markdown ensemble. Pour les cartes, sélectionne directement le ZIP produit par le générateur : les PNG, dont la carte d’assemblage, seront extraits et associés automatiquement.</p></details></section>
 
 <section data-block-id="mission-operation" data-icon="layers" data-subtitle="Missions de l’opération et organisation de l’exercice : cliquer une mission pour l’afficher." hidden><h2>Opération</h2><div id="missionOperation"></div></section>
 
@@ -509,7 +514,7 @@ html[data-skeuo] .repo-block .mapCard.missing:not(#imp) {
 
 <section data-block-id="mission-texts" data-icon="file-text" data-subtitle="Résumé, description détaillée et rubriques du brief."><h2>Textes de mission</h2><div class="two"><label>Summary<textarea id="summary"></textarea></label><label>Description détaillée<textarea id="detailed" class="long"></textarea></label></div><div id="narrativeSections"></div><button id="addNarrative" class="ghost" type="button">Ajouter une rubrique textuelle</button></section>
 
-<section data-block-id="mission-yaml" data-default-hidden="1" data-icon="database" data-subtitle="Éditeur libre de toutes les clés du YAML de la mission."><h2>Toutes les données YAML</h2><p class="note">Cet éditeur est sans schéma imposé : les champs supplémentaires présents dans tes exemples sont conservés et restent modifiables.</p><div id="yamlEditor"></div><div class="inlineAdd"><input id="newRootKey" placeholder="Nom d’un nouveau champ racine"><button id="addRootKey" class="ghost" type="button">Ajouter</button></div></section>
+<section data-block-id="mission-yaml" data-default-hidden="1" data-min-level="4" data-icon="database" data-subtitle="Éditeur libre de toutes les clés du YAML de la mission."><h2>Toutes les données YAML</h2><p class="note">Cet éditeur est sans schéma imposé : les champs supplémentaires présents dans tes exemples sont conservés et restent modifiables.</p><div id="yamlEditor"></div><div class="inlineAdd"><input id="newRootKey" placeholder="Nom d’un nouveau champ racine"><button id="addRootKey" class="ghost" type="button">Ajouter</button></div></section>
 
 <section data-block-id="mission-maps" data-icon="map" data-subtitle="Cartes jointes au PDF, dans l’ordre du dossier."><h2>Cartes du dossier final</h2><div id="mapList" class="maps"></div><p class="small">La carte d’assemblage est intégrée au package cartographique et placée en première position dans le PDF, avant les autres cartes.</p></section>
 
@@ -791,6 +796,22 @@ async function importImages(files) {
   renderMaps();
   setStatus(`${expanded.length} image(s) extraite(s) et associée(s), dont ${missionImage(/assemblage|assembly/i)?'la carte d’assemblage':'aucune carte d’assemblage'}.`, 'ok')
 }
+/** Texte [fr, en, de, es] dans la langue de la page (shared/kit.js). */
+const trl = row => window.RepositoryKit?.t ? window.RepositoryKit.t(row) : row[0];
+/** Message d'erreur lisible : ce qui a échoué (contexte : ligne [fr, en, de, es] ou texte) et quoi faire
+ *  (AppFramework.explain : réseau, fichier absent, stockage plein…) ; repli : contexte et message. */
+function explainErr(e, context) {
+  const c = Array.isArray(context) ? trl(context) : context || '';
+  return window.AppFramework?.explain?.(e, c) || `${c ? c + ' : ' : ''}${e?.message || e}`
+}
+/** Erreur d'un export (zone #exportStatus ou st) : notification flottante si le cadre est là, sinon dans la zone. */
+function exportError(e, context, st = $('exportStatus')) {
+  const text = explainErr(e, context);
+  if (window.AppFramework?.notify) {
+    st.textContent = '';
+    window.AppFramework.notify(text, 'err')
+  } else st.textContent = text
+}
 // ===== Rendu de la page =====
 function setStatus(message, kind = '') {
   $('status').dataset.set = '1';
@@ -980,7 +1001,7 @@ async function registerDocs(inputs, request = false) {
         out.push(`${id} → registre seulement${r.error ? ` (${r.error})` : ""}`)
       } else out.push(`${id} → data/missions/${r.folder}/ — ${r.status==='same'?'identique à la version rangée (rien remplacé)':r.status==='version'?`nouvelle version (différences : ${r.diff.join(', ')||'mineures'} ; l’ancienne est dans versions/)`:'nouvelle mission'}`)
     } catch (e) {
-      out.push(`${id} : ${e.message}`)
+      out.push(explainErr(e, id))
     }
   }
   if (!out.length) return;
@@ -1558,7 +1579,7 @@ function renderRoutingControls() {
   if (host.dataset.built && host.contains(document.activeElement)) return;
   host.dataset.built = '1';
   host.innerHTML = `<div class="routingBar"><label>Transit<select id="routeMode">${Object.entries(ROUTE_MODE_LABEL).map(([v,l])=>`<option value="${v}"${v===cur?' selected':''}>${esc(l)}</option>`).join('')}</select></label><span class="small">${R.ready()?'':'<span class="warn">Base SIA sans voies aériennes : relire le dossier SIA (studio ou Maintenance) pour calculer les routes.</span>'}</span></div>
- <details class="routingSettings"><summary>Paramètres du calcul des routes (communs à toutes les missions)</summary><div class="routingGrid">${ROUTING_FIELDS.map(([k,l])=>`<label>${esc(l)}<input type="number" data-rs="${k}" value="${S[k]}" placeholder="${D[k]}"></label>`).join('')}</div><p class="small">Voies aériennes : plus court chemin sur les voies de l’AIXM ouvertes au niveau de croisière ; RTBA : chaînage des zones raccordées ; au-delà du détour admis, ou sans chemin, le tronçon reste direct. <button type="button" class="secondary" id="routingReset">Valeurs par défaut</button></p></details>`;
+ <details class="routingSettings" data-min-level="4"><summary>Paramètres du calcul des routes (communs à toutes les missions)</summary><div class="routingGrid">${ROUTING_FIELDS.map(([k,l])=>`<label>${esc(l)}<input type="number" data-rs="${k}" value="${S[k]}" placeholder="${D[k]}"></label>`).join('')}</div><p class="small">Voies aériennes : plus court chemin sur les voies de l’AIXM ouvertes au niveau de croisière ; RTBA : chaînage des zones raccordées ; au-delà du détour admis, ou sans chemin, le tronçon reste direct. <button type="button" class="secondary" id="routingReset">Valeurs par défaut</button></p></details>`;
   $('routeMode').onchange = e => {
     const v = e.target.value;
     if (v === 'auto') delete state.yaml.route_mode;
@@ -1904,7 +1925,7 @@ function addPdfFooters(doc) {
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(7.5);
     doc.setTextColor(70, 79, 84);
-    doc.text(pdfSafe(`© SO Group Virtual - ${date} - Auteur : ${author}`), 12, ph - 6);
+    doc.text(pdfSafe(`© ${window.RepositoryKit.brand('{SOG_NOM}')} - ${date} - Auteur : ${author}`), 12, ph - 6);
     doc.text(`${page} / ${count}`, pw - 12, ph - 6, {
       align: 'right'
     });
@@ -2050,7 +2071,7 @@ async function exportOrganisationPdf(zy, opts) {
   else doc.setProperties({
     title: pdfSafe(name),
     subject: 'Dossier organisation d’exercice',
-    author: pdfSafe(zy.author || 'SO Group Virtual')
+    author: pdfSafe(zy.author || window.RepositoryKit.brand('{SOG_NOM}'))
   });
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(20);
@@ -2154,7 +2175,7 @@ async function exportPdf(opts) {
   else doc.setProperties({
     title: pdfSafe(pdfTitle()),
     subject: 'Dossier de mission de simulation',
-    author: pdfSafe(common('author', 'SO Group Virtual'))
+    author: pdfSafe(common('author', window.RepositoryKit.brand('{SOG_NOM}')))
   });
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(20);
@@ -2270,7 +2291,7 @@ async function exportOperationPdf() {
   doc.setProperties({
     title: pdfSafe(name),
     subject: 'Dossier d’opération de simulation',
-    author: pdfSafe(first.author || 'SO Group Virtual')
+    author: pdfSafe(first.author || window.RepositoryKit.brand('{SOG_NOM}'))
   });
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(20);
@@ -2392,7 +2413,9 @@ $('exportPdfOrg').onclick = async () => {
     await exportOrganisationPdf(z || state.yaml);
     st.textContent = 'Dossier organisation exporté.'
   } catch (e) {
-    (window.AppFramework?.notify ? (st.textContent = '', window.AppFramework.notify(e.message, 'err')) : st.textContent = e.message)
+    exportError(e, ['Dossier organisation non exporté', 'Organisation file not exported', 'Organisationsdossier nicht exportiert',
+      'Dossier de organización no exportado'
+    ], st)
   }
 };
 $('exportPdfChiffons').onclick = () => {
@@ -2401,7 +2424,9 @@ $('exportPdfChiffons').onclick = () => {
     const n = exportChiffonPdfs();
     st.textContent = `${n} fiche(s) de chiffon exportée(s).`
   } catch (e) {
-    (window.AppFramework?.notify ? (st.textContent = '', window.AppFramework.notify(e.message, 'err')) : st.textContent = e.message)
+    exportError(e, ['Fiches de chiffon non exportées', 'Track sheets not exported', 'Spurblätter nicht exportiert',
+      'Fichas de pista no exportadas'
+    ], st)
   }
 };
 /* Tous les documents de l'exercice : dossier organisation, brief de chaque équipage (avec ses plis), fiche de chaque chiffon joué. */
@@ -2432,7 +2457,9 @@ $('exportPdfExercise').onclick = async () => {
     }
     st.textContent = `${n} document(s) de l’exercice exporté(s).`
   } catch (e) {
-    (window.AppFramework?.notify ? (st.textContent = '', window.AppFramework.notify(e.message, 'err')) : st.textContent = e.message)
+    exportError(e, ['Documents de l’exercice non exportés', 'Exercise documents not exported', 'Übungsdokumente nicht exportiert',
+      'Documentos del ejercicio no exportados'
+    ], st)
   } finally {
     applyBatchDoc(SiaMission.go(start, 'generator'));
     bt.disabled = false
@@ -2445,8 +2472,9 @@ $('exportPdfOperation').onclick = async () => {
     const m = await exportOperationPdf();
     $('exportStatus').textContent = `Dossier d’opération exporté (un PDF).${m.length?` Cartes non jointes — ${m.join(' ; ')}.`:''}`
   } catch (e) {
-    (window.AppFramework?.notify ? ($('exportStatus').textContent = '', window.AppFramework.notify(e.message, 'err')) : $(
-      'exportStatus').textContent = e.message)
+    exportError(e, ['Dossier d’opération non exporté', 'Operation file not exported', 'Operationsdossier nicht exportiert',
+      'Dossier de operación no exportado'
+    ])
   } finally {
     bt.disabled = false
   }
@@ -2470,7 +2498,9 @@ $('exportPdfAll').onclick = async () => {
     }
     st.textContent = `${b.docs.length} PDF exportés.${miss.length?` Cartes non jointes — ${miss.join(' ; ')}.`:''}`
   } catch (e) {
-    (window.AppFramework?.notify ? (st.textContent = '', window.AppFramework.notify(e.message, 'err')) : st.textContent = e.message)
+    exportError(e, ['PDF des missions non exportés', 'Mission PDFs not exported', 'Missions-PDFs nicht exportiert',
+      'PDF de las misiones no exportados'
+    ], st)
   } finally {
     applyBatchDoc(SiaMission.go(start, 'generator'));
     $('exportPdfAll').disabled = false
@@ -2490,7 +2520,9 @@ $('parseMission').addEventListener('click', async () => {
     await importMissionFiles([new File([text], md ? 'mission collée.md' : 'mission collée.yaml')]);
     missionPaste?.done()
   } catch (error) {
-    setStatus(error.message, 'err')
+    setStatus(explainErr(error, ['Mission collée non importée', 'Pasted mission not imported', 'Eingefügte Mission nicht importiert',
+      'Misión pegada no importada'
+    ]), 'err')
   }
 });
 (function attachPaste(tries = 0) {
@@ -2512,7 +2544,9 @@ $('missionFiles').addEventListener('change', async e => {
   try {
     await importMissionFiles(e.target.files)
   } catch (error) {
-    setStatus(error.message, 'err')
+    setStatus(explainErr(error, ['Fichiers de mission non importés', 'Mission files not imported', 'Missionsdateien nicht importiert',
+      'Archivos de misión no importados'
+    ]), 'err')
   } finally {
     e.target.value = ''
   }
@@ -2521,7 +2555,8 @@ $('mapFiles').addEventListener('change', async e => {
   try {
     await importImages(e.target.files)
   } catch (error) {
-    setStatus(error.message, 'err')
+    setStatus(explainErr(error, ['Images non importées', 'Images not imported', 'Bilder nicht importiert', 'Imágenes no importadas']),
+      'err')
   } finally {
     e.target.value = ''
   }
@@ -2693,7 +2728,12 @@ $('saveToFolder').onclick = async () => {
       action: 'modifiée dans le générateur',
       request: true
     });
-    setStatus(f ? `Mission enregistrée : data/missions/${f}/ (ancienne version remplacée ; historique dans meta.history).` : 'Dossier des missions non autorisé.', f ? 'ok' : 'err');
+    setStatus(f ? `Mission enregistrée : data/missions/${f}/ (ancienne version remplacée ; historique dans meta.history).` : trl([
+      'Mission non enregistrée : dossier des missions non autorisé — l’autoriser (Paramètres › Installation › Sources et dossiers), puis réessayer.',
+      'Mission not saved: missions folder not authorised — allow it (Settings › Installation › Sources and folders), then try again.',
+      'Mission nicht gespeichert: Missionsordner nicht freigegeben — freigeben (Einstellungen › Installation › Quellen und Ordner) und es erneut versuchen.',
+      'Misión no guardada: carpeta de misiones no autorizada — autorizarla (Ajustes › Instalación › Fuentes y carpetas) y volver a intentarlo.'
+    ]), f ? 'ok' : 'err');
     if (f) {
       const d = SiaMission.load();
       if (d) SiaMission.save({
@@ -2702,7 +2742,7 @@ $('saveToFolder').onclick = async () => {
       }, 'generator')
     }
   } catch (e) {
-    setStatus(e.message, 'err')
+    setStatus(explainErr(e, ['Mission non enregistrée', 'Mission not saved', 'Mission nicht gespeichert', 'Misión no guardada']), 'err')
   }
 };
 $('newMission').onclick = () => {
@@ -2754,7 +2794,8 @@ $('loadDraft').onclick = () => {
     renderAll();
     setStatus('Brouillon rechargé.', 'ok')
   } catch (e) {
-    setStatus(e.message, 'err')
+    setStatus(explainErr(e, ['Brouillon non rechargé', 'Draft not reloaded', 'Entwurf nicht neu geladen', 'Borrador no recargado']),
+      'err')
   }
 };
 // onglet « Studio cartographique » (en tête de page, repository_nav.js) : la mission courante part avec
@@ -2771,8 +2812,7 @@ $('exportYaml').onclick = () => {
     }), `${safeStem()}.yaml`);
     $('exportStatus').textContent = 'YAML exporté.'
   } catch (e) {
-    (window.AppFramework?.notify ? ($('exportStatus').textContent = '', window.AppFramework.notify(e.message, 'err')) : $('exportStatus')
-      .textContent = e.message)
+    exportError(e, ['YAML non exporté', 'YAML not exported', 'YAML nicht exportiert', 'YAML no exportado'])
   }
 };
 $('exportMd').onclick = () => {
@@ -2788,7 +2828,7 @@ $('exportPdf').onclick = async () => {
     const missing = await exportPdf();
     $('exportStatus').textContent = missing.length ? `PDF exporté. Cartes non jointes : ${missing.join(', ')}.` : 'PDF final exporté avec toutes les cartes.'
   } catch (e) {
-    $('exportStatus').textContent = 'Export PDF en échec : ' + e.message
+    $('exportStatus').textContent = explainErr(e, ['PDF non exporté', 'PDF not exported', 'PDF nicht exportiert', 'PDF no exportado'])
   } finally {
     $('exportPdf').disabled = false
   }
@@ -2820,7 +2860,9 @@ function shareMission(now) {
         sourceNames: state.sourceNames
       }, 'generator')
     } catch (e) {
-      setStatus(e.message, 'err')
+      setStatus(explainErr(e, ['Mission non transmise aux autres pages', 'Mission not passed to the other pages',
+        'Mission nicht an die anderen Seiten übergeben', 'Misión no transmitida a las demás páginas'
+      ]), 'err')
     }
   };
   if (now) run();
@@ -2850,12 +2892,11 @@ $('openCr').onclick = () => {
     localStorage.setItem('siaMissionToCr:v1', JSON.stringify(state.yaml));
     location.href = `../cr/${target.cr}?from=sia`
   } catch (e) {
-    (window.AppFramework?.notify ? ($('exportStatus').textContent = '', window.AppFramework.notify(e.message, 'err')) : $('exportStatus')
-      .textContent = e.message)
+    exportError(e, ['Compte rendu non commencé', 'Report not started', 'Bericht nicht begonnen', 'Informe no iniciado'])
   }
 };
 </script>
-<script src="../../shared/repository_nav.js?v=55b5672e"></script>
-<script src="../../shared/app_framework.js?v=b2adf17c"></script>
-<script src="../../shared/content_i18n.js?v=266f3261"></script><script src="sia_i18n.js?v=e4046ef4"></script>
+<script src="../../shared/repository_nav.js?v=0951fa5a"></script>
+<script src="../../shared/app_framework.js?v=0a2fa96b"></script>
+<script src="../../shared/content_i18n.js?v=515ea16b"></script><script src="sia_i18n.js?v=e4046ef4"></script>
 </body></html>

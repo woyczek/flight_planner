@@ -1,3 +1,42 @@
+## Passe du 8 octobre 2026 (nuit, `develop`)
+
+**Mesure.** `tools/perf_audit.html`, mode serveur, un passage avant (`runs/2026-10-08_avant.json`) et un après
+(`runs/2026-10-08_apres.json`), onglet au premier plan. Comparaison sur les six pages communes aux deux parcours (Mes
+missions, Planning, registre, générateur, studio, Maintenance) ; le parcours compte désormais aussi le CR, le reporting,
+Aujourd'hui, le Tableau et l'accueil (pages de CR renommées : l'ancien parcours ouvrait deux pages en 404). Un seul
+passage de chaque côté : les compteurs sont exacts, les temps se lisent en tendance.
+
+| | avant | après |
+|---|---:|---:|
+| analyses JSON | 1 525 | 400 (−74 %) |
+| tâches longues | 942 ms | 50 ms (−95 %) |
+| retard des minuteries (page bloquée) | 1 995 ms | 411 ms (−79 %) |
+| décor des designs | 43 passes, 670 ms | 31 passes, 255 ms |
+| icônes des blocs | 434 ms | 291 ms |
+| plus gros DOM (Maintenance) | 11 300 éléments | 4 563 |
+
+**Ce qui a été fait.**
+
+- Réglages des zones aéronautiques analysés une fois tant qu'ils ne changent pas (1 122 analyses à l'ouverture de
+  Maintenance, `aero_zones.js`).
+- Tableaux éditables des bases paginés par 100 lignes, listes de choix calculées une fois par colonne
+  (`data_admin.js`).
+- Sauvegarde automatique des données du navigateur : au départ d'une page, empreinte rapide des textes bruts au lieu de
+  tout analyser et refaire le YAML ; rien de construit sans dossier autorisé (`browser_store.js`).
+- Activations de zones : tableau des importées construit à l'ouverture de son volet, liste des zones au premier passage
+  dans un champ (`odv_activations_editor.js`).
+- Décor : passe du chargement complet regroupée avec celles des changements de hauteur, passe d'une seconde après
+  seulement si la mise en page a changé (`design_deco.js`) ; icônes : `refresh(racine)` limité à la racine
+  (`block_icons.js`).
+- En parallèle (session « Simplification ») : Planning sans rafale de 404, listes de complétion du studio construites au
+  focus (13 000 options en moins), villes de la base SIA à part.
+
+**Ce qui reste.** Les 404 restants viennent du bac d'essai (fichiers absents : `aircraft_positions.json`, SIA) et, dans
+un espace de travail git en « worktree », de `.git/HEAD` (un fichier, pas un dossier) ; rien côté utilisateur. Les
+lectures du stockage (`getItem`, ≈ 8 Mo par parcours, surtout la boîte d'envoi relue à chaque fichier du pool) sont
+des copies de chaînes sans analyse : quelques millisecondes. Les premiers affichages restent sous 220 ms sur ce poste ;
+une lenteur ressentie ailleurs se mesure dans le profil concerné (même outil, mesures exportables).
+
 ## Synthèse (4 octobre 2026, branche `feature/perf-audit`)
 
 **Ce qui a été fait.** Les sept actions de priorité 1 du plan, plus deux corrections trouvées par l'audit « après » :

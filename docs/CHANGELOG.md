@@ -10,6 +10,206 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ## [Non publié]
 
+## [5.0.0] — 2026-10-08
+
+Version « v2 » : la suite s'adapte à son utilisateur. Un **niveau d'utilisation** (équipage, planification, conception,
+expert) remplace « avec ou sans Centre » et range barre latérale, menus, accueil et pages, sept entrées au plus par
+groupe ; outils facultatifs cochés à part. Page **« Aujourd'hui »** (prochaine mission, CR à écrire, semaine).
+**Planning refait** en six blocs natifs, consultable par tous en lecture seule, avec Annuler, retrait d'une demande de
+zone et « Masquer les pilotes indisponibles » ; habilitation corrigée (écriture réservée à `admin_centre`). Cartes de
+vol, Carburant, Mes missions, CR (court par défaut), Réglages, Générateur et Registre simplifiés aux premiers niveaux ;
+Missions s'ouvre sur le registre ; même largeur pour toutes les pages. Bouton Arrêter sur les tâches longues, messages
+d'erreur clairs. Nettement plus rapide (Planning, Cartes de vol, Studio, Maintenance, sauvegarde, synchronisation,
+décor). Corrigés : convoyages du Tableau, déplacement des blocs, dossier des profils d'une autre copie. Clés de poste
+et signatures prêtes (pas encore branchées).
+
+### Ajouté
+
+- **v2-fable, performance (4) : Studio et Cartes de vol** — le résumé « Zones retenues » (7 000 espaces filtrés, jusqu'à
+  400 lignes) n'est recalculé que si le profil ou la base ont changé : 123 ms → 0 à chaque autre rendu du profil.
+- **v2-fable, performance (3) : base SIA plus légère à l'ouverture** — les villes (GeoNames, ≈ 70 000 entrées) sont rangées
+  sous leur propre clé de la base du navigateur (`SiaBase.cities()`, migration silencieuse d'une base existante) : la
+  base se lit en 115 ms au lieu de 210 ; le Studio et les Cartes de vol les lisent après le premier affichage et avant
+  une génération ; axes de ravitaillement analysés à l'inactivité ; complétion des zones calculée au focus du champ.
+- **v2-fable, performance (2) : Cartes de vol et Studio cartographique** — les listes de complétion des zones, aérodromes
+  et balises (jusqu'à 13 000 `<option>` d'après la base SIA) ne sont plus écrites au chargement mais quand leur champ
+  reçoit le focus : page de 15 000 à 1 500 éléments, tâches longues après le premier rendu de 1,5 s à 0,55 s (mesuré en
+  Aqua, Chrome).
+- **v2-fable, lot 2** (`docs/technique/V2_FABLE.md` § 5) — **pastille de synchronisation** : aux niveaux 1 et 2, le
+  bouton « Synchroniser » de l'en-tête garde son libellé et porte une pastille quand il y a quelque chose à envoyer ou à
+  recevoir, au lieu du compteur « (n) » (règle `html[data-level]` de `repository_nav.css` ; le nombre reste dans le
+  bouton pour les niveaux 3-4 et en tête de l'infobulle, quatre langues ; contenu du bouton réécrit seulement s'il
+  change). **Bouton « Arrêter » sur les tâches longues** : Studio cartographique et Cartes de vol (aperçus et génération
+  des cartes, aperçus et génération de toutes les missions d'un lot : arrêt entre deux cartes, ni ZIP ni rangement d'une
+  génération incomplète, bilan du lot arrêté), Maintenance (MORA d'une zone, calcul complet de la grille, MORA par blocs
+  — le bloc en cours est écrit, mora.csv partiel signalé —, import de la MILAIP ENR 5.7), lecture du dossier du registre
+  des missions (registre inchangé) ; `job.end(false)` : fin sans notification (tâche d'un lot qui fait son bilan).
+  **Messages d'erreur clairs** : `AppFramework.explain(erreur, contexte, { remote })` dit ce qui a échoué et quoi faire,
+  en quatre langues (serveur du lanceur muet, service en ligne muet, erreur du serveur, fichier absent, espace du
+  navigateur saturé, accès refusé, délai dépassé, annulé ; sinon « échec (détail technique) ») et sert à `job.fail` ;
+  appliqué aux erreurs de Mes missions (affectations illisibles, fichier de mission introuvable ou illisible), Tableau
+  et Planning ODV, Studio cartographique (villes ou MORA absentes de la base, SimBrief, enregistrement, exports),
+  Générateur de mission (exports PDF et YAML, imports, enregistrement), registre des missions, Maintenance (dossier SIA,
+  ZIP du SIA, MORA, sauvegarde totale, blocs de la page) et compte rendu (plan de vol, import, dossier du registre).
+- **v2-fable, performance (1)** : Planning — plus de requête par pilote et par semaine quand l'index des déclarations ne
+  connaît pas la semaine (`SuiteDispos.readPilot` filtre les semaines demandées par `data/disponibilites/_index.json` ;
+  48 réponses 404 par ouverture avant) ; réglages de compagnie et de sources (`suiteVA:v1`, `suiteSources:v1`) et outils
+  cochés lus par analyse mémorisée (`jsonCached`) au lieu d'une analyse JSON par texte traduit (1 900 analyses par
+  ouverture du Planning avant, 160 après).
+- **v2-fable (branche `v2-fable`) : la suite dit quoi faire et se tait quand ça ne concerne pas** (proposition et
+  fichiers : `docs/technique/V2_FABLE.md`) — page **« Aujourd'hui »** (`apps/pilot/aujourdhui.html`, première entrée de la
+  barre latérale à tout niveau, en tête de « Mes tâches » de l'accueil) : trois blocs, une action chacun — ma prochaine
+  mission (« Ouvrir le dossier »), comptes rendus à écrire (missions passées sur 21 jours sans CR dans le registre,
+  « Écrire le compte rendu » / « Pas de CR », sept lignes au plus), ma semaine ; sans trigramme, le premier bloc le
+  demande sur place (champ + « Enregistrer »). Module `shared/pilot_today.js`. **Nouveau compte rendu** : bloc « Mes
+  missions à rendre » avant le choix de la famille. **Mes missions** : trigramme saisi sous la liste (plus de renvoi
+  aux réglages), `?mission=` d'une autre semaine (semaine de la mission affichée, missions passées montrées au besoin),
+  `?do=cr` (CR commencé à l'ouverture du dossier). **Socle** : `AppFramework.notify(…, { once, minLevel })` (une fois par
+  session ; niveau minimal d'affichage), appliqué au rappel « Base SIA absente » du Studio cartographique et des Cartes
+  de vol ; `AppFramework.task(…, { cancel })` avec bouton **Arrêter** (« Arrêt… » puis « Annulé. »), branché sur la mise
+  en place des zones de Maintenance ; champs de texte qui s'agrandissent avec leur contenu (`field-sizing: content`,
+  `data-fixed-size` pour garder une hauteur fixe) ; icône `today`, entrée de barre latérale et d'accueil. Manuel
+  utilisateur : chapitre « Aujourd'hui » et retouches, en quatre langues.
+- **v2 (branche `feature/v2-niveaux`), lot L0 : niveau d'utilisation** — Mon profil › « Niveau d'utilisation » remplace
+  « avec ou sans Centre » : 1 équipage (Mes missions, Compte rendu, Planning en lecture), 2 planification (Planning ODV),
+  3 conception (Missions : générateur, registre), 4 expert (tous les outils, studio cartographique) ; outils facultatifs
+  (cartes de vol, carburant, atterrissages, analyse des missions) cochés à n'importe quel niveau, rangés sous « Outils ».
+  Barre latérale, onglets, menu ☰ et accueil ne montrent que les pages du niveau (`pages[].level`, `pages[].module`),
+  au plus sept entrées ; Apparence en onglet de Réglages. Le niveau range l'interface, sans donner de droits.
+  Proposition complète : `docs/technique/V2_NIVEAUX.md`.
+- **v2 : studio cartographique dans Missions** (onglet, niveau 4) ; « Outils » ne garde que les outils facultatifs, sans
+  rien du Centre. L'icône du Centre ne marque Planning et Missions que pour qui s'en sert (Centre ouvert, niveau 2 ou
+  plus, pas un compte sans le rôle `admin_centre`) ; sinon icône ordinaire.
+- **Planning : « Masquer les pilotes indisponibles »** (palette et vue semaine du Tableau, reprise de la page ODV ; même
+  règle que les conflits : plage qui rend affectable à un vol) ; au **niveau Expert**, créneaux communs (plusieurs
+  pilotes disponibles) et missions probables repris de la page ODV (voir « Planning refait »).
+- **v2, niveau 1 : Planning en consultation seule**, quels que soient les droits (Centre ouvert compris) : ni DLO et
+  butées, ni activations de zones, ni modification ; thème ordinaire au lieu de celui du Centre pour qui ne fait que
+  consulter (niveau 1, Centre fermé, compte sans le rôle `admin_centre`).
+- **v2, Planning rationalisé** : une seule page (plus d'onglet « Planning ODV ») ; au niveau Expert, créneaux communs et
+  missions probables dans la page (« Page ODV complète » pour le classeur et l'export) ; **Annuler** (dix pas, Ctrl+Z) ; **Retirer la demande** d'une zone inscrite comme demandée ; l'ordre du
+  jour en premier bloc, sa barre (semaine, jours, vue, annuler, briefing) au-dessus de la frise.
+- **v2, lot S0 : niveaux dans les pages** — `<html data-level>` posé dès l'en-tête (repository_tree), `data-min-level="n"`
+  (élément visible à partir du niveau n) et `data-max-level="n"` (jusqu'au niveau n) appliqués par `repository_nav.css`,
+  sans réécriture de la page : blocs, champs et boutons se marquent à la source.
+- **v2, lots S1 à S5 : pages simplifiées par niveau** (tout reste au niveau Expert) —
+  **Cartes de vol** aux niveaux 1 à 3 : route, niveau, SimBrief, liste des cartes, « Cartes du vol », un seul
+  « Générer les cartes et le ZIP » ; **Carburant** (nouveau titre) : avion, plan de vol ou dernier FPL SimBrief,
+  « Paramètres du vol » repliés, Calculer, Résultat ; **Mes missions** : dossier réduit à l'essentiel au niveau 1, boutons
+  Cartes de vol et Carburant selon les outils cochés, une seule barre de semaine, « Plage précise » repliée ; **CR court**
+  aux niveaux 1-2 (identification, résultat, appareil, équipage, 4 heures, carburant, blocs de la famille, remarques) et
+  bouton « CR détaillé » ; **Réglages** : Installation au niveau 2, Maintenance au niveau Expert, sept entrées au plus par
+  groupe, doublons retirés de la vue (langue, client OAuth IVAO, rubrique « Premier lancement » d'Installation, second
+  « Nettoyer et recommencer »), Apparence réduite aux designs courants et aux icônes ; **Générateur et Registre**
+  (niveau 3) : sept blocs, commande à six réglages et « Plus d'options », quatre filtres et « Plus de filtres », sept
+  colonnes.
+- **v2, Planning refait** : six blocs natifs, déplaçables et repliables, sans cadre : Ordre du jour (barre de la semaine
+  et frise, tous niveaux), Équipage de la semaine (dispos et DLO, ancienne vue « Semaine »), Zones (activations et demandes
+  réunies), Statistiques (ancienne vue) au niveau 2 ; Créneaux communs et Missions probables au niveau Expert, servis par
+  le script de la page ODV dans la page (même semaine que le Planning, `OdvPlanning.setMonday`) ; styles des blocs ODV
+  partagés (`apps/cpco/odv_blocks.css`) ; plus de choix de vue ; lien vers la page ODV complète (classeur, export).
+- **v2, retouches** : Missions s'ouvre sur le registre, bouton « Générer une mission » vers le générateur ; onglet
+  « Mes disponibilités » de nouveau à tous les niveaux ; « Commander à ChatGPT » : copie du prompt et ouverture de ChatGPT
+  dans le geste de l'utilisateur, avant l'inscription au registre (la copie était refusée) ; échec SimBrief du Carburant
+  aussi en notification flottante (détail visible à tout niveau) ; note « Clés d'API » : client OAuth IVAO dans Mon
+  profil au niveau Expert.
+- **v2 : même largeur pour toutes les pages** — contenu sur toute la largeur disponible à côté de la barre latérale, marge
+  commune de 16 px (`--repo-main-pad`, une règle dans `repository_nav.css`) ; textes longs de l'aide limités dans l'article ;
+  la fenêtre détachée du studio reste bord à bord.
+- **v2, Cartes de vol** : blocs « Route » et « Cartes » ; aux niveaux 1 à 3, un seul bouton « Générer les cartes et le ZIP »
+  dans le bloc des cartes, sous leur choix (crée les cartes puis lance la génération), progression et compte rendu juste
+  dessous, plus de pied de page ni de bloc « Aperçus et génération » ; au niveau 4, « Préparer les cartes » puis la
+  génération du pied de page.
+- **Pages de démonstration du moteur des CR hors des comptes rendus** : `apps/cr/MissionCore/` → `tools/demo/mission_core/`
+  (outils de développement, niveau Expert) ; plus rien dans le dossier des CR qui ne soit une famille.
+- **Clés de poste et signatures** (`shared/sog_keys.js`, lot L2 de [COMPTES_SIGNES.md](technique/COMPTES_SIGNES.md)) : par
+  poste, une paire de signature ECDSA P-256 et une paire d'échange ECDH P-256, non exportables, gardées dans la base
+  `sogKeys` du navigateur (hors sauvegarde) ; empreinte courte `7F3A-91C2-04BE-D85E` ; JSON canonique (RFC 8785) ;
+  enveloppes et fiches signées ; clé de secours chiffrée par mot de passe (PBKDF2 600 000, AES-GCM). Pas encore branché
+  sur les pages (registre et enrôlement : lots suivants). Banc d'essai : `tools/crypto_banc.html`.
+
+### Corrigé
+
+- **Paramètres › Maintenance (bases) : 21 libellés affichés en anglais en allemand et en espagnol** (flotte, accès au
+  Centre, calcul des routes de transit, valeurs par défaut…) : traductions ajoutées (`shared/data_admin_i18n.js`) ;
+  l'anglais de la mise à jour de la flotte depuis le site mentionne la mise à jour automatique quotidienne.
+- **Tableau : plaquette de convoyage réinitialisée à la modification d'une mission** : le recalcul des convoyages
+  retirait toute plaquette qu'il ne savait pas recalculer à cet instant (mission absente du registre le temps d'une
+  relecture, appareil hors flotte, terrain sans coordonnées ou liste des aéroports non téléchargée), puis la recréait
+  au passage suivant à l'heure calculée, « à affecter » : déplacement à la main et convoyeur perdus. Une plaquette
+  n'est plus retirée que si son vol ne la demande plus (vol supprimé, appareil changé ou déjà au terrain de départ) ;
+  sinon elle est gardée telle quelle. Une durée changée à la main est gardée tant que le trajet ne change pas (durée
+  calculée notée dans `convoyage.minutes`). Fenêtre du vol : un pilote posé qui n'est pas dans la liste des membres
+  (membre désactivé, pilote venu des affectations) reste proposé au lieu d'être effacé à l'enregistrement.
+- **Déplacement des blocs (poignée ↕)** : le bloc visé s'illumine dans tous les designs (contour d'accent et trait
+  d'insertion ; l'ancienne ombre était recouverte par les designs à matières, visible en Métro seulement) ; posé sur la
+  moitié haute d'un bloc, le bloc déplacé va avant lui, sur la moitié basse après (dernière position possible) ; dépôt
+  dans une autre colonne ; la page défile pendant le glisser près du bas de la fenêtre et sous l'en-tête fixe (monter un
+  bloc tout en haut d'une longue page). Disposition mémorisée sous une clé unique par conteneur (`layout`) ; les
+  dispositions déjà mémorisées (`order`) restent lues. Un dépôt qui ne changerait rien est retourné : bloc 1 lâché sur
+  le haut du bloc 2 → « après 2 », et dans l'autre sens « avant » (blocs cachés ignorés). Menu ☰ : « Réinitialiser
+  l'ordre des blocs » (ordre d'origine de la page, blocs masqués gardés), 4 langues.
+- **« Suite lancée depuis …, dossier déclaré …/planner/ » alors que le dossier de l'application est le bon** : le
+  dossier des profils de performance (et celui de la sauvegarde locale) était gardé d'une installation à l'autre, pour
+  respecter un choix personnel — y compris quand il venait d'une autre copie de la suite. À la déduction des dossiers,
+  un dossier gardé qui est celui d'une autre copie (non confirmée) est désormais remplacé par celui de `data/` ; le
+  premier lancement refait la déduction à l'ouverture.
+- **Habilitation du planning** : un compte connecté sans le rôle `admin_centre` pouvait, Centre ouvert en mode develop,
+  inscrire des zones comme demandées, modifier les DLO (objectifs) et, au Planning ODV, ajouter, retirer ou importer des
+  sessions ATC, écrire des préférences dans les fiches et affecter des pilotes. Tableau et Planning ODV : écriture
+  réservée à `admin_centre` dès qu'un utilisateur est connecté (et toujours en production), lecture seule sinon.
+- **Tableau en lecture seule** : le planning seul (frise du jour : vols, contrôles, divers, notes) ; zones, ATC, dispos
+  communes, problèmes, journal, vues semaine et statistiques, activations et demandes de zones réservés au Centre.
+
+### Modifié
+
+- **Icônes des blocs : passe limitée à l'élément remonté** : `AppFramework.refresh(racine)` (éditeur d'activations,
+  panneaux remontés dans un bloc) relançait la passe des icônes sur toute la page ; elle se limite désormais à cette
+  racine, `refresh()` sans racine gardant la passe complète.
+- **Décor des designs à matières : passes inutiles du chargement supprimées** : en plus des recalculs déclenchés par
+  les changements de hauteur et de blocs, le décor était refait sans condition au chargement complet puis une seconde
+  après (jusqu'à 80 ms chacune). La passe du chargement complet est regroupée avec celles des changements de hauteur
+  qui l'entourent ; celle d'une seconde après n'a lieu que si la mise en page a changé (design, ton, largeur, hauteur,
+  place des blocs).
+- **Activations de zones (Tableau, Planning) plus légères** : le tableau des activations importées (IVAO), replié,
+  était construit en entier à l'ouverture de la page (des centaines de lignes) et la liste des zones proposées portait
+  une option par zone de la base — près de 8 000 éléments pour ce bloc dans le Tableau. Le tableau des importées est
+  construit à l'ouverture de son volet, la liste des zones au premier passage dans un champ « zone ». Audit
+  `tools/perf_audit.html` : parcours mis à jour (pages de CR renommées, Aujourd'hui, Tableau, accueil).
+- **Sauvegarde automatique des données du navigateur allégée** : au départ de chaque page (et toutes les 5 minutes),
+  elle analysait tout le stockage du navigateur et refaisait le texte YAML complet, puis constatait qu'il n'avait pas
+  changé — des dizaines de ms à chaque changement de page avec un stockage de 400 Ko. Au départ d'une page, une
+  empreinte rapide des textes bruts (et de la date du registre) décide ; le contrôle complet des 5 minutes, bases
+  IndexedDB comprises, est inchangé. Sans dossier de sauvegarde autorisé, le texte n'est plus construit du tout.
+- **Paramètres › Maintenance plus rapide à l'ouverture** (audit `tools/perf_audit.html`) : les réglages des zones
+  aéronautiques étaient analysés à nouveau pour chaque fichier de la base (1 122 analyses JSON à l'ouverture) —
+  analyse gardée tant que le réglage ne change pas ; les tableaux éditables des bases (flotte, indicatifs…) montrent
+  100 lignes, puis « Afficher les 100 suivantes » ou « Tout afficher » (le filtre et le tri portent sur toutes les
+  lignes), listes de choix calculées une fois par colonne. Ouverture : 11 300 → 4 300 éléments, analyses JSON 1 200 →
+  79, page bloquée 921 → 216 ms.
+- **État de la synchronisation servi tout de suite** : le lanceur relançait ses commandes git (1 à 3 s sur un gros
+  dossier `data/`) à chaque ouverture de page, deux fois. Il répond désormais avec le dernier état connu et le relit en
+  tâche de fond s'il a plus de 20 s (relu tout de suite au premier appel, avec le dépôt distant, et après un passage de
+  synchronisation).
+- **Fréquence de vérification de la synchronisation réglable** (Paramètres › Maintenance › Versions et
+  synchronisations, réglage de ce navigateur) : à chaque page, toutes les 30 minutes (défaut), 3 fois par jour, une fois
+  par jour, et « Vérifier maintenant ». Le bouton « Synchroniser » s'affiche tout de suite avec le dernier état connu
+  (`syncState:v1`), sans requête ; une seule vérification (dépôt distant compris) quand la période est écoulée, au lieu
+  de deux à chaque page et d'une toutes les 5 minutes ; après une écriture, relevé local seul. Manuels (4 langues).
+- **Nom de la compagnie par jetons résolus à la source** : `{SOG}`, `{SOG_NOM}`, `{SOG_NOM_LONG}`, `{CENTRE}` dans les
+  textes (quatre langues, HTML fixe et titres d'onglet compris), résolus par `K.t` / `K.tf` / `K.brand` et par la
+  traduction des textes fixes, de nouveau quand la compagnie réglée change ; l'observateur qui renommait la page après
+  coup est supprimé (pages de Paramètres figées, nom réglé contenant l'ancien). Données inchangées.
+  « SO Group » seul (premier lancement, mode autonome du Centre) et libellés de catégories du jeu d'essai en jetons aussi.
+  Voir `docs/technique/FRAMEWORK.md` § 4 bis.
+- **Carte « Accès au Centre » remise en ordre** (Centre verrouillé) : champ du mot de passe, puis bouton « Activer le
+  Centre » avec « Mot de passe : DEFA » sur la même ligne (premier lancement compris) ; texte d'introduction à jour (le
+  mot de passe vient des données, seule l'activation reste dans le navigateur), traduit en allemand et en espagnol.
+- **Textes du Centre traduits à la source** (règle du CLAUDE.md) : carte « Accès au Centre » et « Mode et accès »,
+  mot de passe affiché au premier lancement et message de confirmation du dépôt distant passent par `K.t` dans les
+  quatre langues ; leurs entrées des tables de traduction après coup (`data_admin_i18n.js`,
+  `premier_lancement_i18n.js`) sont retirées ; textes écrits seulement s'ils changent.
+
 ## [4.11.0] — 2026-10-08
 
 La suite s'installe avec un tutoriel illustré (captures, schémas des échanges et des identifiants, prérequis
@@ -52,6 +252,11 @@ d'une zone correct.
 
 ### Corrigé
 
+- **Pages de Paramètres figées (« page unresponsive »)** quand la compagnie réglée diffère de SO Group Virtual : le
+  renommage dans les pages (`repository_nav.js`) réécrivait à l'identique un texte contenant « CPCO » (centre non
+  renommé), et chaque écriture relançait son observateur, sans fin. Un texte n'est plus réécrit que s'il change, le texte
+  qu'il vient d'écrire n'est pas retraité (nom réglé contenant l'ancien), et un nœud réécrit plus de 20 fois par seconde
+  n'est plus touché.
 - **« Dossier des données : impossible de vérifier qu'il est celui de la suite servie »** après une installation neuve :
   le lanceur n'écrivait ses repères (`.defa_instance`) qu'au démarrage, avant que `data/` existe ; ils sont désormais
   écrits aussi après le jeu d'essai, le clone du dépôt ou l'archive des données (même jeton pour toute la vie du lanceur).
@@ -80,6 +285,10 @@ d'une zone correct.
   `shared/carto/villes_geonames.csv` est tentée deux fois (un lanceur occupé par un téléchargement peut refuser ou couper
   une requête) ; en cas d'échec, le compte rendu de la relecture donne l'adresse et la raison (code HTTP, erreur réseau,
   dossier de l'application) ; message en 4 langues.
+
+### Livraison
+
+- Archive de livraison : `xplane-web-suite-4.11.0.zip` — SHA-256 `36197cbd531c616c52e1fdf634f46b871ba06540b9410244b44aaab35b8d6c24` (code seul, hors dépôt : dossier `dist/`).
 
 ## [4.10.0] — 2026-10-07
 

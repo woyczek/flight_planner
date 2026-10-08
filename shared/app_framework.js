@@ -21,6 +21,38 @@
     },
     /** Mémorise la disposition des blocs de la page (localStorage, clé key()). */
     write = x => localStorage.setItem(key(), JSON.stringify(x));
+  // Bloc en cours de déplacement (poignée ↕), commun à tous les appels d'init (blocs montés plus tard compris) ; null sinon.
+  let movingBlock = null;
+  /** Bloc voisin à l'écran (frère suivant, dir 1, ou précédent, dir -1) de el, en sautant ce qui n'est pas un bloc et
+   *  les blocs invisibles (un bloc caché entre deux blocs affichés n'en fait pas des non-voisins). */
+  const sibBlock = (el, dir) => {
+    let x = el;
+    do x = dir > 0 ? x.nextElementSibling : x.previousElementSibling;
+    while (x && (!x.classList.contains("repo-block") || !x.offsetParent));
+    return x;
+  };
+  /** Côté de dépôt sur le bloc el : « before » sur sa moitié haute, « after » sur sa moitié basse (dernière position).
+   *  Un dépôt qui ne changerait rien est retourné : bloc juste au-dessous du bloc déplacé (on descend 1 sur 2) → après
+   *  lui ; bloc juste au-dessus (on remonte 2 sur 1) → avant lui. */
+  const dropSide = (el, e) => {
+    const r = el.getBoundingClientRect();
+    let side = e.clientY > r.top + r.height / 2 ? "after" : "before";
+    if (side === "before" && sibBlock(el, -1) === movingBlock) side = "after";
+    else if (side === "after" && sibBlock(el, 1) === movingBlock) side = "before";
+    return side;
+  };
+  const clearDrop = () => document.querySelectorAll(".repo-block-drop-before,.repo-block-drop-after").forEach(x => x.classList
+    .remove("repo-block-drop-before", "repo-block-drop-after"));
+  // glisser d'un bloc vers le haut ou le bas d'une longue page : le navigateur ne fait défiler qu'au bord de la fenêtre,
+  // masqué en haut par l'en-tête fixe ; la page défile près du bas de la fenêtre et juste sous l'en-tête
+  document.addEventListener("dragover", e => {
+    if (!movingBlock) return;
+    const top = Math.max(0, document.querySelector(".repo-header")?.getBoundingClientRect().bottom || 0),
+      zone = 70,
+      y = e.clientY;
+    if (y < top + zone) window.scrollBy(0, -Math.ceil((top + zone - y) / 3));
+    else if (y > innerHeight - zone) window.scrollBy(0, Math.ceil((y - innerHeight + zone) / 3));
+  });
 
   /** Transforme les sections de la page en blocs : en-tête avec poignée de déplacement ↕ et bouton Masquer / Afficher, glisser-déposer entre blocs frères, disposition mémorisée par page et réappliquée ; data-default-hidden="1" : bloc masqué tant que l'utilisateur ne l'a pas affiché. */
   /** Blocs du framework dans root (par défaut le contenu principal de la page : main, .wrap) ; root permet d'en
@@ -34,7 +66,6 @@
     const blocks = [...main.querySelectorAll("section,.panel,.format-note,.analysis-dock,.trend-card")].filter(el => !el.closest(
       "section") || el.matches("section,.panel"));
     const parents = new Map();
-    let movingBlock = null; // bloc en cours de déplacement (poignée ↕), sinon null
     blocks.forEach((el, i) => {
       const id = el.dataset.blockId || el.id || `block-${i+1}`;
       el.dataset.blockId = id;
@@ -90,30 +121,52 @@
         movingBlock = null;
         el.draggable = false;
         el.classList.remove("repo-block-dragging");
-        document.querySelectorAll(".repo-block-drop-before").forEach(x => x.classList.remove("repo-block-drop-before"));
-        for (const p of parents.keys()) state.order[parentKey(p)] = blockChildren(p).map(x => x.dataset.blockId);
+        clearDrop();
+        // ordre de chaque conteneur (colonnes comprises : un bloc a pu passer de l'une à l'autre), sous une clé unique
+        state.layout ??= {};
+        for (const p of parents.keys()) state.layout[containerKey(p, main)] = blockChildren(p).map(x => x.dataset.blockId);
         write(state)
       };
+      // cible : le bloc survolé s'illumine, trait avant ou après lui selon la moitié survolée ; dépôt possible dans une
+      // autre colonne (autre conteneur), jamais dans le bloc déplacé lui-même ni dans un bloc qu'il contient
+      const target = e => movingBlock && movingBlock !== el && !movingBlock.contains(el) && e.target.closest(".repo-block") === el;
       el.ondragover = e => {
-        if (!movingBlock) return;
+        if (!target(e)) return;
         e.preventDefault();
-        el.classList.add("repo-block-drop-before")
+        const side = dropSide(el, e);
+        if (!el.classList.contains(`repo-block-drop-${side}`)) {
+          clearDrop();
+          el.classList.add(`repo-block-drop-${side}`);
+        }
       };
-      el.ondragleave = () => el.classList.remove("repo-block-drop-before");
+      el.ondragleave = e => {
+        if (!el.contains(e.relatedTarget)) el.classList.remove("repo-block-drop-before", "repo-block-drop-after");
+      };
       el.ondrop = e => {
-        if (!movingBlock) return;
+        if (!target(e)) return;
         e.preventDefault();
-        if (movingBlock !== el && movingBlock.parentElement === el.parentElement) el.parentElement.insertBefore(movingBlock, el);
-        el.classList.remove("repo-block-drop-before")
+        el.parentElement.insertBefore(movingBlock, dropSide(el, e) === "after" ? el.nextSibling : el);
+        clearDrop();
       };
     });
-    for (const p of parents.keys()) {
-      const map = new Map(blockChildren(p).map(x => [x.dataset.blockId, x]));
-      (state.order[parentKey(p)] || []).forEach(id => {
-        const e = map.get(id);
-        if (e) p.append(e)
-      })
-    }
+    // ordre mémorisé : state.layout (clé unique du conteneur : chemin depuis la page) — un bloc rangé dans une autre
+    // colonne y retourne ; à défaut, ancien state.order (balise et rang, pas unique) : chaque conteneur ne reprend que
+    // ses propres blocs. Clés calculées avant de déplacer quoi que ce soit.
+    const keyed = [...parents.keys()].map(p => [p, containerKey(p, main)]);
+    if (state.layout) {
+      const all = new Map(blocks.map(x => [x.dataset.blockId, x]));
+      for (const [p, k] of keyed)(state.layout[k] || []).forEach(id => {
+        const e = all.get(id);
+        if (e && e !== p && !e.contains(p)) p.append(e)
+      });
+    } else
+      for (const p of parents.keys()) {
+        const map = new Map(blockChildren(p).map(x => [x.dataset.blockId, x]));
+        (state.order[parentKey(p)] || []).forEach(id => {
+          const e = map.get(id);
+          if (e) p.append(e)
+        })
+      }
   }
 
   /** Blocs (.repo-block) enfants directs d'un élément. */
@@ -121,9 +174,28 @@
     return Array.from(parent?.children || []).filter(x => x?.classList?.contains("repo-block"))
   }
 
-  /** Identifiant stable d'un conteneur de blocs (balise et rang), pour mémoriser l'ordre de ses blocs. */
+  /** Ancienne clé d'un conteneur de blocs (balise et rang parmi ses frères) : pas unique, lue pour les dispositions déjà
+   *  mémorisées. */
   function parentKey(p) {
     return `${p.tagName}:${[...p.parentElement?.children||[]].indexOf(p)}`
+  }
+  /** Clé unique d'un conteneur de blocs : chemin depuis la racine des blocs, insensible aux blocs déplacés — id quand il
+   *  y en a, identifiant de bloc pour un bloc du chemin, sinon balise et rang parmi les éléments qui ne sont pas des blocs. */
+  function containerKey(p, root) {
+    const parts = [];
+    for (let e = p; e && e !== root && e !== document.body; e = e.parentElement) {
+      if (e.id) {
+        parts.unshift(`#${e.id}`);
+        break;
+      }
+      if (e.classList.contains("repo-block") && e.dataset.blockId) {
+        parts.unshift(`@${e.dataset.blockId}`);
+        continue;
+      }
+      const sib = [...e.parentElement?.children || []].filter(x => !x.classList.contains("repo-block"));
+      parts.unshift(`${e.tagName}:${sib.indexOf(e)}`);
+    }
+    return parts.join(">") || "root";
   }
 
   /** Pied de page commun : version et date de publication (repository_tree.release), liens du dépôt. */
@@ -132,7 +204,7 @@
       f = document.querySelector("footer") || document.createElement("footer");
     f.className = "repo-footer no-print";
     // licences : dernier lien (le premier est celui de la version, retouché plus bas)
-    f.innerHTML = `© RBR - SO Group Virtual - ${r.date||"2026-09-21"} - <a href="${r.changelog||"https://framagit.org/asr/flight_planner/-/blob/master/docs/CHANGELOG.md"}" target="_blank" rel="noopener" title="Changelog / notes de version">v${r.version||"2026.09"}</a> - <a href="https://framagit.org/asr/flight_planner">framagit.org/asr/flight_planner</a> - <a href="https://framagit.org/asr/flight_planner/-/blob/master/LICENSE.md" target="_blank" rel="noopener" title="Code : MPL 2.0 · contenu : CC BY-SA 4.0 · licences et crédits des composants et des données tiers">MPL 2.0 · CC BY-SA 4.0</a>`;
+    f.innerHTML = `© RBR - ${window.RepositoryKit.esc(window.RepositoryKit.brand("{SOG_NOM}"))} - ${r.date||"2026-09-21"} - <a href="${r.changelog||"https://framagit.org/asr/flight_planner/-/blob/master/docs/CHANGELOG.md"}" target="_blank" rel="noopener" title="Changelog / notes de version">v${r.version||"2026.09"}</a> - <a href="https://framagit.org/asr/flight_planner">framagit.org/asr/flight_planner</a> - <a href="https://framagit.org/asr/flight_planner/-/blob/master/LICENSE.md" target="_blank" rel="noopener" title="Code : MPL 2.0 · contenu : CC BY-SA 4.0 · licences et crédits des composants et des données tiers">MPL 2.0 · CC BY-SA 4.0</a>`;
     if (!f.isConnected) document.body.append(f);
     buildOf(r).then(b => {
       if (!b) return;
@@ -330,7 +402,9 @@
   window.addEventListener("hashchange", revealHash);
   window.addEventListener("load", () => setTimeout(revealHash, 50));
   // Notifications communes : pile en bas de page, au-dessus des barres fixées. kind : info | ok | warn | err ; toutes
-  // s'effacent seules (erreur 12 s, avertissement 8 s, autres 5 s ; en pause tant que la souris est dessus). Les zones d'état
+  // s'effacent seules (erreur 12 s, avertissement 8 s, autres 5 s ; en pause tant que la souris est dessus). Options :
+  // once (même texte une seule fois par session du navigateur : rappels répétitifs), minLevel (niveau d'utilisation
+  // 1 à 4 à partir duquel le message s'affiche ; en dessous, seuls err et warn vont au journal). Les zones d'état
   // marquées data-status (ex. <p id="status" data-status>) y sont relayées quand elles affichent une erreur
   // (.err, .error) ou un avertissement (.warn) : un message d'échec ne reste plus caché en bas d'un bloc.
   const notifyCss = () => {
@@ -411,10 +485,30 @@
     });
   }
 
+  /** Textes déjà montrés avec l'option once pendant cette session du navigateur (sessionStorage, 50 au plus) ;
+   *  retourne true si `text` l'a déjà été, sinon le note et retourne false. sessionStorage indisponible : false
+   *  (le message s'affiche, comme sans l'option). */
+  function shownOnce(text) {
+    try {
+      const key = "repoNotifyOnce:v1",
+        list = JSON.parse(sessionStorage.getItem(key) || "[]");
+      if (list.includes(text)) return true;
+      list.push(text);
+      sessionStorage.setItem(key, JSON.stringify(list.slice(-50)));
+    } catch {
+      /* sessionStorage indisponible : comme sans l'option */
+    }
+    return false;
+  }
   /** Notification flottante (kind : info | ok | warn | err), effacée seule (err 12 s, warn 8 s, autres 5 s ; timeout
-   *  pour changer, 0 : reste) ; même texte remplacé, 4 au plus ; err et warn vont au journal. Retour : l'élément. */
+   *  pour changer, 0 : reste) ; même texte remplacé, 4 au plus ; err et warn vont au journal. Options : once (le même
+   *  texte une seule fois par session du navigateur), minLevel (1 à 4 : sous ce niveau d'utilisation, rien n'est
+   *  affiché, err et warn restent portés au journal). Retour : l'élément, ou null (texte vide, once déjà montré,
+   *  niveau insuffisant). */
   function notify(message, kind = "info", {
-    timeout
+    timeout,
+    once = false,
+    minLevel
   } = {}) {
     const text = String(message ?? "").trim();
     if (!text) return null;
@@ -424,6 +518,11 @@
       warning: "warn",
       success: "ok"
     } [kind] || kind;
+    if (minLevel && (+document.documentElement.dataset.level || 4) < minLevel) {
+      if (kind === "err" || kind === "warn") record(text, kind);
+      return null;
+    }
+    if (once && shownOnce(text)) return null;
     notifyCss();
     const box = notifyBox();
     if (kind === "err" || kind === "warn") record(text, kind);
@@ -459,6 +558,92 @@
     }
     return item;
   }
+  // ---- Erreurs expliquées : ce qui a échoué et quoi faire, dans la langue de la page, au lieu d'un message technique
+  // seul (« Failed to fetch », « 404 », « TypeError… ») ; le détail technique reste entre parenthèses quand il aide.
+  //   AppFramework.explain(err, "Lecture du registre")  →  « Lecture du registre : le serveur ne répond pas — … »
+  // Une erreur levée par la page avec une phrase déjà claire (Error simple, pas un code) est gardée telle quelle.
+  const EX = {
+    join: ["{c} : {m}", "{c}: {m}", "{c}: {m}", "{c}: {m}"],
+    network: [
+      "le serveur ne répond pas — vérifier que la suite est ouverte par le lanceur (lancer.cmd / lancer.sh), le relancer au besoin, puis réessayer",
+      "the server does not answer — check that the suite is opened by the launcher (lancer.cmd / lancer.sh), restart it if needed, then try again",
+      "der Server antwortet nicht — prüfen, dass die Suite über den Starter geöffnet ist (lancer.cmd / lancer.sh), ihn bei Bedarf neu starten und es erneut versuchen",
+      "el servidor no responde — comprobar que la suite se abre con el lanzador (lancer.cmd / lancer.sh), reiniciarlo si hace falta y volver a intentarlo"
+    ],
+    // service en ligne (SimBrief, réseaux, fonds de carte…) : le lanceur n'y est pour rien
+    remote: ["le service en ligne ne répond pas — vérifier la connexion Internet, puis réessayer plus tard",
+      "the online service does not answer — check the Internet connection, then try again later",
+      "der Online-Dienst antwortet nicht — Internetverbindung prüfen und es später erneut versuchen",
+      "el servicio en línea no responde — comprobar la conexión a Internet y volver a intentarlo más tarde"
+    ],
+    remoteServer: ["le service en ligne a renvoyé une erreur ({d}) — réessayer plus tard",
+      "the online service returned an error ({d}) — try again later",
+      "der Online-Dienst hat einen Fehler gemeldet ({d}) — später erneut versuchen",
+      "el servicio en línea devolvió un error ({d}) — volver a intentarlo más tarde"
+    ],
+    server: ["le serveur a renvoyé une erreur ({d}) — relancer le lanceur, puis réessayer",
+      "the server returned an error ({d}) — restart the launcher, then try again",
+      "der Server hat einen Fehler gemeldet ({d}) — den Starter neu starten und es erneut versuchen",
+      "el servidor devolvió un error ({d}) — reiniciar el lanzador y volver a intentarlo"
+    ],
+    missing: ["fichier absent{f} — vérifier qu’il est bien dans le dossier attendu (ou le recréer), puis réessayer",
+      "file missing{f} — check that it is in the expected folder (or create it again), then try again",
+      "Datei fehlt{f} — prüfen, ob sie im erwarteten Ordner liegt (oder neu erstellen), und es erneut versuchen",
+      "archivo ausente{f} — comprobar que está en la carpeta esperada (o volver a crearlo) y volver a intentarlo"
+    ],
+    quota: ["espace du navigateur saturé — libérer de la place (Paramètres › Maintenance › Espace disque), puis réessayer",
+      "browser storage full — free some space (Settings › Maintenance › Disk space), then try again",
+      "Browserspeicher voll — Platz schaffen (Einstellungen › Wartung › Speicherplatz) und es erneut versuchen",
+      "almacenamiento del navegador lleno — liberar espacio (Ajustes › Mantenimiento › Espacio en disco) y volver a intentarlo"
+    ],
+    denied: ["accès refusé par le navigateur — autoriser le dossier ou le fichier demandé, puis réessayer",
+      "access denied by the browser — allow the requested folder or file, then try again",
+      "Zugriff vom Browser verweigert — den angefragten Ordner oder die Datei freigeben und es erneut versuchen",
+      "acceso denegado por el navegador — autorizar la carpeta o el archivo solicitado y volver a intentarlo"
+    ],
+    timeout: ["délai dépassé, le service ne répond pas assez vite — réessayer plus tard",
+      "timed out, the service does not answer fast enough — try again later",
+      "Zeitüberschreitung, der Dienst antwortet nicht schnell genug — später erneut versuchen",
+      "tiempo agotado, el servicio no responde lo bastante rápido — volver a intentarlo más tarde"
+    ],
+    aborted: ["annulé", "cancelled", "abgebrochen", "cancelado"],
+    failed: ["échec ({d})", "failed ({d})", "fehlgeschlagen ({d})", "error ({d})"]
+  };
+  /** Message lisible pour l'erreur err (Error, DOMException, réponse { status }, texte), précédé du contexte (ce qui a
+   *  échoué, déjà traduit par l'appelant) : réseau, serveur, fichier absent, stockage plein, accès refusé, délai,
+   *  annulation ; sinon une phrase claire levée par la page est gardée, et un message technique devient « échec (…) ».
+   *  remote : la requête visait un service en ligne (pas le lanceur) — réseau et erreurs du serveur le disent. */
+  function explain(err, context = "", {
+    remote = false
+  } = {}) {
+    const K = window.RepositoryKit,
+      name = err?.name || "",
+      status = +err?.status || 0,
+      msg = String(err?.message ?? err?.statusText ?? err ?? "").trim(),
+      file = /^[\w./-]+\.(?:js|mjs|json|csv|xml|txt|png|svg|zip|ya?ml|md|html|pdf)$/i.test(msg) ? msg : "";
+    let kind = "";
+    if (name === "AbortError") kind = "aborted";
+    else if (name === "TimeoutError" || /\btime ?out\b|timed out/i.test(msg)) kind = "timeout";
+    else if (name === "QuotaExceededError" || /quota/i.test(msg)) kind = "quota";
+    else if (name === "NotAllowedError" || name === "SecurityError") kind = "denied";
+    else if (name === "NotFoundError" || status === 404 || /^(?:HTTP )?404\b/.test(msg) || file) kind = "missing";
+    else if (/Failed to fetch|NetworkError|Load failed|ERR_(?:CONNECTION|NAME|INTERNET)|ECONNREFUSED|net::/i.test(msg))
+      kind = remote ? "remote" : "network";
+    else if (status >= 500 || /^(?:HTTP )?5\d\d\b/.test(msg)) kind = remote ? "remoteServer" : "server";
+    // erreur technique du navigateur (TypeError…), code seul ou message vide : « échec (détail) » ; phrase de la page gardée
+    else if ((name && name !== "Error") || !msg || /^(?:HTTP )?\d{3}$/.test(msg)) kind = "failed";
+    const text = kind ? K.tf(EX[kind], {
+      d: msg || status || name || "?",
+      f: file ? ` (${file})` : ""
+    }) : msg;
+    // phrase terminée par un point (sauf si elle a déjà sa ponctuation finale)
+    const end = s => /[.!?…]$/.test(s) ? s : `${s}.`;
+    if (context) return end(K.tf(EX.join, {
+      c: context,
+      m: text
+    }));
+    return end(text.charAt(0).toUpperCase() + text.slice(1));
+  }
   // ---- Tâches longues (aperçus, génération, lecture de dossiers, calculs) : barre de progression flottante dans la pile
   // des notifications, et avertissement avant de quitter la page tant qu'une tâche tourne (fermeture, rechargement :
   // fenêtre du navigateur ; lien interne : confirmation qui nomme la tâche). Les erreurs restent signalées par la page
@@ -467,6 +652,9 @@
   //   job.set(fait, total, "carte_1.png");   // total 0 : barre indéterminée
   //   job.end();  ou  job.end("12 cartes générées.", "ok");  ou  job.fail(erreur);
   //   AppFramework.task(titre, { quiet: true }) : sans barre (la page a la sienne), garde de sortie seulement.
+  //   AppFramework.task(titre, { cancel: () => ctrl.abort() }) : bouton « Arrêter » dans la barre ; au clic, job.cancelled
+  //   passe à true (la boucle de la tâche le teste et sort proprement) puis cancel() est appelée ; job.cancel() fait
+  //   de même par code. job.end() sans message d'une tâche arrêtée notifie « Annulé. ».
   const tasks = new Set();
   const TK = {
     leave: ["Tâche en cours : {t}.\nQuitter la page l'interrompra. Quitter quand même ?",
@@ -474,7 +662,9 @@
       "Aufgabe läuft: {t}.\nDas Verlassen der Seite bricht sie ab. Trotzdem verlassen?",
       "Tarea en curso: {t}.\nSalir de la página la interrumpirá. ¿Salir de todos modos?"
     ],
-    cancelled: ["Annulé.", "Cancelled.", "Abgebrochen.", "Cancelado."]
+    cancelled: ["Annulé.", "Cancelled.", "Abgebrochen.", "Cancelado."],
+    stop: ["Arrêter", "Stop", "Abbrechen", "Detener"],
+    stopping: ["Arrêt…", "Stopping…", "Wird abgebrochen…", "Deteniendo…"]
   };
   /** Libellé TK dans la langue de la page. */
   const tk = k => window.RepositoryKit.t(TK[k]);
@@ -487,15 +677,19 @@
 .repo-notify>div.task b{font-weight:600}.repo-notify>div.task em{font-style:normal;opacity:.8;font-variant-numeric:tabular-nums}
 .repo-notify>div.task progress{grid-column:1/-1;width:100%;height:8px;accent-color:#6fa8ff}
 .repo-notify>div.task small{grid-column:1/-1;opacity:.75;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.repo-notify>div.task progress.task-sub{height:5px;opacity:.75}`;
+.repo-notify>div.task progress.task-sub{height:5px;opacity:.75}
+.repo-notify>div.task button.task-stop{grid-column:1/-1;justify-self:end;font-size:12px;line-height:1.2;padding:2px 10px;border:1px solid #fff5;border-radius:6px;opacity:.85}
+.repo-notify>div.task button.task-stop:disabled{cursor:default;opacity:.5}`;
     document.head.append(s);
   };
 
   /** Tâche longue : barre dans la pile des notifications (sauf quiet) et garde de sortie de page tant qu'elle tourne ;
-   *  total : nombre d'étapes (0 : indéterminé). Retour : { title, set, sub, end, fail }. */
+   *  total : nombre d'étapes (0 : indéterminé) ; cancel : fonction d'arrêt, qui ajoute le bouton « Arrêter ». Retour :
+   *  { title, cancelled, cancel, set, sub, end, fail }. */
   function task(title, {
     total = 0,
-    quiet = false
+    quiet = false,
+    cancel
   } = {}) {
     notifyCss();
     taskCss();
@@ -509,8 +703,33 @@
       count = item.querySelector("em"),
       step = item.querySelector("small"),
       sub = item.querySelector("progress.task-sub");
+    let stop = null;
+    if (typeof cancel === "function") {
+      stop = document.createElement("button");
+      stop.type = "button";
+      stop.className = "task-stop";
+      stop.textContent = tk("stop");
+      stop.onclick = () => job.cancel();
+      item.append(stop);
+    }
     const job = {
       title,
+      cancelled: false,
+      /** Arrêt demandé (bouton « Arrêter » ou code) : marque la tâche annulée, désactive le bouton, puis appelle la
+       *  fonction cancel de la page ; sans effet si déjà demandé. */
+      cancel() {
+        if (job.cancelled) return;
+        job.cancelled = true;
+        if (stop) {
+          stop.disabled = true;
+          stop.textContent = tk("stopping");
+        }
+        try {
+          cancel?.();
+        } catch {
+          /* l'arrêt est demandé : une erreur de la page ne doit pas bloquer la suite */
+        }
+      },
       /** Avancement : fait / total (total 0 : indéterminé) ; texte de l'étape en cours. */
       set(done = 0, n = total, text) {
         total = n;
@@ -537,16 +756,19 @@
         if (text !== undefined) step.textContent = text;
         return job;
       },
-      /** Fin de tâche ; message facultatif (notification, kind ok | info | warn | err). */
+      /** Fin de tâche ; message facultatif (notification, kind ok | info | warn | err) ; sans message, une tâche
+       *  arrêtée notifie « Annulé. », sauf end(false) (l'arrêt est dit ailleurs : tâche d'un lot qui fait son bilan). */
       end(message, kind = "ok") {
         if (!tasks.delete(job)) return;
         item.remove();
         if (message) notify(message, kind);
+        else if (job.cancelled && message !== false) notify(tk("cancelled"), "info");
       },
-      /** Échec : notification d'erreur (annulation : simple information). */
-      fail(error) {
+      /** Échec : notification d'erreur expliquée (explain : ce qui a échoué et quoi faire ; contexte : le titre de la
+       *  tâche, sauf autre contexte donné) ; annulation : simple information. */
+      fail(error, context = title) {
         const aborted = error?.name === "AbortError";
-        job.end(aborted ? tk("cancelled") : error?.message || String(error || ""), aborted ? "info" : "err");
+        job.end(aborted ? tk("cancelled") : explain(error, context), aborted ? "info" : "err");
       }
     };
     tasks.add(job);
@@ -798,6 +1020,9 @@
     guardUnsavedChanges,
     /** Tâche longue : barre de progression flottante et garde de sortie de page (voir task()). */
     task,
+    /** Message d'erreur lisible (ce qui a échoué et quoi faire, 4 langues) : explain(erreur, contexte, { remote }) ;
+     *  remote : service en ligne plutôt que lanceur. */
+    explain,
     /** Tâches en cours (titres). */
     busyTasks: () => [...tasks].map(j => j.title)
   };
@@ -812,8 +1037,26 @@
   // page), puis de nouveau au chargement complet pour les blocs ajoutés entre-temps (init est ré-exécutable).
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", () => init());
   else init();
+  // Menu ☰ : « Réinitialiser l'ordre des blocs » (ordre d'origine de la page ; blocs masqués gardés), sur les pages qui ont
+  // des blocs déplaçables
+  let resetAdded = false;
+  const addReset = () => {
+    if (resetAdded || !window.RepositoryNav?.addAction || !document.querySelector(".repo-block .repo-drag")) return;
+    resetAdded = true;
+    window.RepositoryNav.addAction(["Réinitialiser l’ordre des blocs", "Reset the block order", "Blockreihenfolge zurücksetzen",
+      "Restablecer el orden de los bloques"
+    ], () => {
+      const st = read();
+      delete st.order;
+      delete st.layout;
+      write(st);
+      location.reload();
+    });
+  };
+  window.addEventListener("repository-nav-ready", addReset);
   window.addEventListener("load", () => {
     init();
-    footer()
+    footer();
+    addReset()
   });
 })();

@@ -1,11 +1,36 @@
 # Tableau (Centre) — modèle de données et branchement
 
-Page du Centre `apps/cpco/odv_orders.html` (☰ › Centre — Tableau) : l'éditeur hebdomadaire des ordres de vols
-(plaquettes de vol posées sur une frise horaire, zones, contrôle, divers, notes). Chaîne : **mission → ordre de vol →
-exécution → CR**. La page **produit** l'ordre de vol ; le Planning ODV (`apps/cpco/odv_planning.html`,
+Page du Centre `apps/cpco/odv_orders.html` (barre latérale › Planning, ☰ › Centre — Tableau) : l'éditeur hebdomadaire
+des ordres de vols (plaquettes de vol posées sur une frise horaire, zones, contrôle, divers, notes). Chaîne : **mission →
+ordre de vol → exécution → CR**. La page **produit** l'ordre de vol ; le Planning ODV (`apps/cpco/odv_planning.html`,
 `docs/ODV_PLANNING.md`) l'**analyse** (créneaux communs, missions probables). Origine : l'outil autonome « Tableau
 V0 » (HTML monofichier, `localStorage`), repris dans le modèle de la suite ; son format de fichier n'est pas importé
 (format provisoire).
+
+**Structure de la page (v2)** : six blocs, sans choix de vue (plus de boutons Jour / Semaine / Statistiques) ; niveau
+d'utilisation minimal posé par `data-min-level`, titres des blocs posés à la source par `odv_orders.js` (4 langues).
+
+| Bloc (`data-block-id`) | Contenu | Niveau |
+|---|---|---|
+| Ordre du jour (`jour`) | barre de la semaine (◀ ▶, Cette semaine, jours, Permanence, ↶ Annuler, Briefing), palette et frise | 1 |
+| Équipage de la semaine (`equipe`) | ancienne vue Semaine : dispos des membres jour par jour, DLO et butées, modifications de dispo | 2 |
+| Zones (`zones`) | activations par réseau (`odv_activations_editor.js`), puis demandes de réservation | 2 |
+| Créneaux communs (`slots`) | matrice 7 jours × 3 créneaux de la page ODV ; clic : fenêtre du créneau (missions × postes) | 4 |
+| Missions probables (`missions`) | familles compatibles par créneau, règles, lien « Page ODV complète » | 4 |
+| Statistiques (`stats`) | ancienne vue Statistiques | 2 |
+
+- Lecture seule (niveau 1, Centre fermé, compte sans droits ; classe `odvo-ro`) : le bloc Ordre du jour seul ; la page
+  ne dessine alors ni l'équipage ni les statistiques.
+- Créneaux communs et Missions probables sont les blocs natifs de la page ODV, servis **dans la page** par
+  `apps/cpco/odv_planning.js` (chargé par `odv_orders.html` ; plus de cadre ni de `?blocks=`). Sans la grille de la page
+  ODV (`#odvGrid`), le script ne démarre qu'au niveau Expert ; les éléments propres à la page ODV (classeur, grille,
+  export) absents sont ignorés. La semaine est celle du Tableau : `odv_orders.js` appelle
+  `OdvPlanning.setMonday('AAAA-MM-JJ')` (lundi de la semaine affichée) à chaque changement de semaine, ce qui recalcule
+  créneaux et missions.
+- Styles des blocs ODV (créneaux, missions, grille, filtres…) partagés par les deux pages : `apps/cpco/odv_blocks.css`
+  (versionné `?v=` par `bump_versions`) ; les règles propres à chaque page restent dans sa feuille.
+- La page ODV n'a plus d'onglet : le lien « Page ODV complète : classeur, grille, export… » du bloc Missions probables
+  l'ouvre (et ☰ › Centre — Planning ODV).
 
 Statut : **modèle validé en partie (lot L2)** ; questions ouvertes au § 7.
 
@@ -177,7 +202,7 @@ présentation des vols de mission.
 | Lot | Contenu | Qui |
 |---|---|---|
 | L2 | ce modèle ; catégorie `sol` et `SuiteDispos.affectable` ; `shared/odv_orders_store.js` (lecture, écriture, récurrences, conflits) | Ordres de vols |
-| L3 | page `apps/cpco/odv_orders.html` : vue jour (frise, glisser-déposer), vue semaine, statistiques, briefing ; rubrique Paramètres › Centre › Tableau | Ordres de vols |
+| L3 | page `apps/cpco/odv_orders.html` : bloc Ordre du jour (frise, glisser-déposer, briefing), blocs Équipage de la semaine et Statistiques (anciennes vues Semaine et Statistiques), Zones ; Créneaux communs et Missions probables par `odv_planning.js` (v2) ; rubrique Paramètres › Centre › Tableau | Ordres de vols |
 | L4 | `shared/odv_airspace.js` (`OdvAirspace`), `shared/odv_activations_editor.js` — faits | Features SOG |
 | L5 | `etat` / `cr` ↔ registre des CR, délai MNE ; missions ravitailleur liées ; officier de permanence hors de la page | Features SOG |
 | L6 | manuels (4 langues), CHANGELOG ; puis stabilisation | ensemble |

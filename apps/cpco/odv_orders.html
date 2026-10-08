@@ -3,8 +3,9 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Tableau</title>
-<link rel="stylesheet" href="../../shared/repository_nav.css?v=975c4b32">
-<script src="../../config/repository_tree?v=c3698338"></script>
+<link rel="stylesheet" href="../../shared/repository_nav.css?v=dd0730c4">
+<script src="../../config/repository_tree?v=18728c91"></script>
+<link rel="stylesheet" href="odv_blocks.css?v=6304b847">
 <style data-layer="app">
 @layer app {
   /* Tableau : frise horaire (heures z) ; angles droits partout (frise, plaquettes, barres). */
@@ -114,6 +115,39 @@
   }
   .odvo-ro .odvo-rsz {
     display: none
+  }
+  /* lecture seule : pas de palette (modèles, réserve, membres à glisser) ; la frise prend toute la largeur */
+  .odvo-ro .odvo-palette {
+    display: none
+  }
+  /* lecture seule : le planning seul — lignes RTBA/LL, zones, ATC et dispos communes, problèmes, journal des
+     affectations, choix de la vue (jour seul), activations et demandes de zones masqués */
+  .odvo-ro .odvo-sec-ll,
+  .odvo-ro .odvo-sec-zones,
+  .odvo-ro .odvo-sec-atc,
+  .odvo-ro .odvo-sec-ensemble,
+  .odvo-ro #odvoProblems,
+  .odvo-ro #odvoLog,
+  .odvo-ro [data-block-id="equipe"],
+  .odvo-ro [data-block-id="zones"],
+  .odvo-ro [data-block-id="slots"],
+  .odvo-ro [data-block-id="missions"],
+  .odvo-ro [data-block-id="stats"] {
+    display: none !important
+  }
+  .odvo-ro .odvo-day {
+    grid-template-columns: minmax(0, 1fr)
+  }
+  /* DLO et butées : titre dans le triangle du repli */
+  .odvo-dlo>summary {
+    cursor: pointer
+  }
+  .odvo-dlo>summary h3 {
+    display: inline
+  }
+  .odvo-hideunav {
+    display: block;
+    margin: 8px 0 4px
   }
   /* jour : palette + frise */
   .odvo-day {
@@ -806,12 +840,11 @@
 <body>
 <header><h1>Tableau</h1><div class="mut">Centre de planification et de conduite des opérations</div></header>
 <main class="odvo-page">
-<section data-block-id="semaine" data-icon="calendar" data-subtitle="Semaine ISO, jours (nombre d'éléments en conflit), vue, officier de permanence. Heures en z (UTC).">
-  <h2>Semaine</h2>
-  <div id="odvoBar" data-no-i18n></div>
-</section>
-<section id="odvoDaySection" data-block-id="jour" data-icon="clock" data-subtitle="Glisser un modèle sur sa section, un membre sur une plaquette ; clic : modifier ; bord droit : durée. Tranches matin, après-midi, soir du Planning ODV.">
+<!-- premier bloc : l'ordre du jour, sa barre (semaine, jours, vue, annuler, briefing) au-dessus de la frise ; aide au
+     geste dans les infobulles et le manuel, pas de sous-titre -->
+<section id="odvoDaySection" data-block-id="jour" data-icon="clock">
   <h2>Ordre du jour</h2>
+  <div id="odvoBar" data-no-i18n></div>
   <div id="odvoDay">
     <div class="odvo-zoom"><span>Zoom</span><input type="range" id="odvoZoom" min="0" max="4" step="1"></div>
     <div class="odvo-day">
@@ -823,38 +856,62 @@
       </div>
     </div>
   </div>
-  <div id="odvoWeekView" data-no-i18n hidden></div>
-  <div id="odvoStats" data-no-i18n hidden></div>
 </section>
-<section data-block-id="zones" data-icon="map" data-subtitle="Activations des zones par réseau (VATSIM, IVAO), saisies à la main : une zone requise par un vol sans activation « active » de son réseau sur toute sa durée est en conflit.">
-  <h2>Activations des zones</h2>
+<!-- blocs suivants : titres posés à la source par odv_orders.js (4 langues) ; niveaux : data-min-level ; lecture seule
+     (pilote, Centre fermé, compte sans droits) : l'ordre du jour seul -->
+<section id="odvoCrewSection" data-block-id="equipe" data-icon="users" data-min-level="2">
+  <h2 data-no-i18n></h2>
+  <div id="odvoWeekView" data-no-i18n></div>
+</section>
+<section id="odvoZonesSection" data-block-id="zones" data-icon="map" data-min-level="2">
+  <h2 data-no-i18n></h2>
   <div id="odvoActivations"></div>
-</section>
-<section data-block-id="demandes" data-icon="send" data-subtitle="Zones que traversent les vols de mission de la semaine (route prévue, zones de travail) sans activation « active » de leur réseau : à demander sur le site du réseau, puis à inscrire comme demandées.">
-  <h2>Demandes de réservation</h2>
+  <h3 data-no-i18n data-title="requests"></h3>
   <div id="odvoRequests" data-no-i18n></div>
 </section>
+<section id="odvoSlotsSection" data-block-id="slots" data-icon="users" data-min-level="4" class="odv-page">
+  <h2 data-no-i18n></h2>
+  <div class="odv-filters" id="odvSlotFilters" data-no-i18n></div>
+  <div id="odvHeat" data-no-i18n></div>
+</section>
+<section id="odvoMissionsSection" data-block-id="missions" data-icon="target" data-min-level="4" class="odv-page">
+  <h2 data-no-i18n></h2>
+  <div id="odvMissions" data-no-i18n></div>
+  <details class="odv-rules" id="odvRules" data-no-i18n></details>
+  <p class="mut"><a href="odv_planning.html" data-odv-link data-no-i18n></a></p>
+</section>
+<section id="odvoStatsSection" data-block-id="stats" data-icon="chart" data-min-level="2">
+  <h2 data-no-i18n></h2>
+  <div id="odvoStats" data-no-i18n></div>
+</section>
 </main>
-<script src="../../shared/kit.js?v=7f07f523"></script>
-<script src="../../shared/repository_nav.js?v=55b5672e"></script>
+<script src="../../shared/kit.js?v=d74cff80"></script>
+<script src="../../shared/repository_nav.js?v=0951fa5a"></script>
 <script src="../../shared/mission_core/vendor/js-yaml.min.js?v=64052ae4"></script>
 <script src="../../shared/data_files.js?v=dcb47c6a" data-file="references/callsigns.js"></script>
 <script src="../../shared/data_files.js?v=dcb47c6a" data-file="references/defa_reference.js"></script>
 <script src="../../shared/data_files.js?v=dcb47c6a" data-file="references/aircraft_fleet.js"></script>
 <script src="../../shared/mission_core/vocab.js?v=8c65f5c2"></script>
-<script src="../../shared/sia_base.js?v=014ef61f"></script>
+<script src="../../shared/sia_base.js?v=4fe9f369"></script>
 <script src="../../shared/assignments.js?v=95fcb353"></script>
 <script src="../../shared/assign_dialog.js?v=c2b23d27"></script>
 <script src="../../shared/mission_core/assist.js?v=5f5537a8"></script>
 <script src="odv_core.js?v=657ac39e"></script>
-<script src="odv_settings.js?v=e2887fce"></script>
+<script src="odv_settings.js?v=41797a20"></script>
 <script src="../../shared/odv_airspace.js?v=0c32fe0e"></script>
-<script src="../../shared/odv_activations_editor.js?v=9e62217d"></script>
+<script src="../../shared/odv_activations_editor.js?v=b99cb2d2"></script>
 <script src="../../shared/odv_reports.js?v=d66272b9"></script>
-<script src="../../shared/odv_orders_store.js?v=078bd145"></script>
-<script src="odv_orders.js?v=2449ef24"></script>
-<script src="../../shared/app_framework.js?v=b2adf17c"></script>
-<script src="../../shared/content_i18n.js?v=266f3261"></script>
+<script src="../../shared/odv_orders_store.js?v=b2b6d8a6"></script>
+<script src="../../shared/zip_store.js?v=1b42107f"></script>
+<script src="../../shared/mission_table.js?v=10fb25b7"></script>
+<script src="../../AircraftDB/aircraft_db.js"></script><script src="../../AircraftDB/aircraft_perf.js"></script>
+<script src="../../shared/dispos_editor.js?v=9e198a77"></script>
+<script src="../../shared/atc_sessions.js?v=53bdcc60"></script>
+<script src="odv_assign.js?v=4905a185"></script>
+<script src="odv_orders.js?v=cab8cb0b"></script>
+<script src="odv_planning.js?v=77576499"></script>
+<script src="../../shared/app_framework.js?v=0a2fa96b"></script>
+<script src="../../shared/content_i18n.js?v=515ea16b"></script>
 <script>
 // Traductions des textes fixes de la page (contenus calculés : zones data-no-i18n, traduits par le script).
 RepositoryContentI18n([

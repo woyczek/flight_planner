@@ -390,6 +390,25 @@
   html[data-design="console"]:not([data-sidenav="off"]) {
     padding-left: var(--repo-sidenav-w)
   }
+  /* largeur des pages : une seule règle pour toute la suite. La zone de contenu (body > main) occupe toute la largeur
+     à côté de la barre latérale, même marge intérieure partout (--repo-main-pad) ; pas de plafond de page. Un texte de
+     lecture longue limite sa ligne dans son bloc (ex. aide : paragraphes en ch), pas la page. :not(#imp) : l'emporte sur
+     les main.<classe> { max-width; margin: auto } des feuilles de page en couche app (mission_core/core.css,
+     settings_page.css). Marges verticales : celles de chaque page ; impression : règles de la page (core.css) ;
+     fenêtre détachée de la carte (studio cartographique, body.previewWindow) : carte bord à bord, sans marge. */
+  :root {
+    --repo-main-pad: 16px
+  }
+  @media screen {
+    body:not(.previewWindow)>main:not(#imp) {
+      box-sizing: border-box;
+      max-width: none;
+      margin-left: 0;
+      margin-right: 0;
+      padding-left: var(--repo-main-pad);
+      padding-right: var(--repo-main-pad)
+    }
+  }
   .repo-sidenav-brand {
     display: flex;
     align-items: center;
@@ -495,7 +514,7 @@
     display: flex;
     flex-wrap: wrap;
     gap: 2px;
-    padding: 6px 16px 0;
+    padding: 6px var(--repo-main-pad) 0;
     border-bottom: 1px solid color-mix(in srgb, currentColor 18%, transparent)
   }
   .repo-tab {
@@ -682,6 +701,34 @@
     left: var(--repo-sidenav-w)
   }
 
+  /* v2 : niveau d'utilisation (html[data-level], 1 à 4) ; un élément data-min-level="n" n'existe qu'à partir du niveau n
+     (blocs, champs, boutons, rubriques : marqués à la source, dans le HTML ou le gabarit qui les crée) ; data-max-level="n" :
+     seulement jusqu'au niveau n (raccourcis des niveaux simples) */
+  html[data-level="1"] :is([data-min-level="2"], [data-min-level="3"], [data-min-level="4"]),
+  html[data-level="2"] :is([data-min-level="3"], [data-min-level="4"]),
+  html[data-level="3"] [data-min-level="4"],
+  html[data-level="2"] [data-max-level="1"],
+  html[data-level="3"] :is([data-max-level="1"], [data-max-level="2"]),
+  html[data-level="4"] :is([data-max-level="1"], [data-max-level="2"], [data-max-level="3"]) {
+    display: none !important
+  }
+  /* bouton « Synchroniser » de l'en-tête (shared/sync.js) : aux niveaux 1 et 2, une pastille dit qu'il y a quelque chose
+     à synchroniser au lieu du compteur « (n) », qui reste dans le bouton et dans son infobulle ; niveaux 3 et 4 : compteur */
+  .repo-sync-button .repo-sync-dot {
+    display: none;
+    flex: none;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #f59e0b;
+    box-shadow: 0 0 0 2px #fff9
+  }
+  html:is([data-level="1"], [data-level="2"]) .repo-sync-button .repo-sync-count {
+    display: none
+  }
+  html:is([data-level="1"], [data-level="2"]) .repo-sync-button .repo-sync-dot {
+    display: inline-block
+  }
   /* Centre (CPCO) verrouillé : entrées masquées, page du Centre recouverte d'un avis (shared/repository_nav.js) */
   html[data-cpco="off"] .cpco-only {
     display: none !important
@@ -895,4 +942,40 @@ html[data-sidenav-show="label"] .repo-sidenav-item:not(#imp) {
   pointer-events: auto;
   cursor: help;
   user-select: none
+}
+
+/* Déplacement des blocs (poignée ↕) : bloc visé illuminé et trait d'insertion avant ou après lui, dans tous les designs
+   (les designs à matières posent leurs ombres sur les blocs : contour et trait hors couche, deux #imp) */
+.repo-block.repo-block-drop-before:not(#imp):not(#imp),
+.repo-block.repo-block-drop-after:not(#imp):not(#imp) {
+  outline: 3px solid var(--repo-accent, #2563eb);
+  outline-offset: 3px;
+  filter: brightness(1.06) saturate(1.1)
+}
+.repo-block.repo-block-drop-before:not(#imp):not(#imp) {
+  border-top-color: var(--repo-accent, #2563eb)
+}
+.repo-block.repo-block-drop-before::before,
+.repo-block.repo-block-drop-after::after {
+  content: "";
+  display: block;
+  height: 5px;
+  margin: -2px 0 6px;
+  border-radius: 3px;
+  background: var(--repo-accent, #2563eb);
+  box-shadow: 0 0 10px var(--repo-accent, #2563eb)
+}
+.repo-block.repo-block-drop-after::after {
+  margin: 6px 0 -2px
+}
+.repo-block.repo-block-dragging:not(#imp) {
+  opacity: .45
+}
+
+/* Champs qui s'agrandissent : un textarea suit son contenu (Chrome 123+ ; sans effet ailleurs, la hauteur reste
+   celle du champ). data-fixed-size sur le champ garde une hauteur fixe. */
+textarea:not([data-fixed-size]) {
+  field-sizing: content;
+  min-height: 2.8em;
+  max-height: min(60vh, 32em)
 }

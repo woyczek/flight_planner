@@ -21,7 +21,19 @@
     Object.assign(folderSettings, cfg.folders?.[path] || {});
     return path
   }, "");
-  const themeName = page?.theme || folderSettings.theme || cfg.defaults.theme,
+  // page du Centre consultable (view:true, le Planning) vue par qui ne s'en sert pas — niveau 1, Centre fermé dans ce
+  // navigateur ou compte connecté sans le rôle admin_centre : thème ordinaire, pas celui du Centre (lu ici, avant le
+  // premier rendu, comme le script de tête de repository_tree)
+  const centreViewer = !!page?.view && (() => {
+    try {
+      const lv = +localStorage.getItem("suiteLevel:v1"),
+        s = JSON.parse(localStorage.getItem("suiteSession:v1") || "null");
+      return localStorage.getItem("cpcoAccess:v1") !== "on" || lv === 1 || !!(s?.tri && s.role !== "admin_centre");
+    } catch {
+      return false;
+    }
+  })();
+  const themeName = (centreViewer ? "" : page?.theme || folderSettings.theme) || cfg.defaults.theme,
     theme = cfg.themes[themeName] || {};
   const config = {
     ...(cfg.defaults.config || {}),
@@ -121,7 +133,46 @@
   /** Mot de passe comparé sans tenir compte des blancs autour ni de la casse (comme avant : « defa » = « DEFA »). */
   const samePassword = (a, b) => String(a ?? "").trim().toUpperCase() === String(b ?? "").trim().toUpperCase();
   const cpcoOn = () => readPref(CPCO_KEY, "") === "on",
-    isCpco = p => String(p || "").startsWith("apps/cpco/");
+    isCpco = p => String(p || "").startsWith("apps/cpco/"),
+    // page du Centre consultable sans le Centre (repository_tree.pages : view:true, le Tableau) : visible et ouverte en
+    // lecture seule ; la page décide seule de ce qu'elle peut écrire (Centre activé, rôle en mode production)
+    cpcoView = p => !!cfg.pages.find(x => x.path === p)?.view,
+    // page du Centre masquée tant que le Centre est verrouillé (classe cpco-only)
+    cpcoHidden = p => isCpco(p) && !cpcoView(p);
+  // ---- v2 : niveau d'utilisation (préférence suiteLevel:v1 : 1 équipage, 2 planification, 3 conception, 4 expert ;
+  // par défaut 4 si le Centre est activé dans ce navigateur, sinon 1) et modules facultatifs (suiteModules:v1 : cartes,
+  // carburant, atterrissages, analyse ; tous au niveau 4). Une page déclare son niveau minimal (pages[].level, 1 par
+  // défaut) et son module (pages[].module) ; barre latérale, onglets et menu ne montrent que les pages visibles. Le
+  // niveau range l'interface, il ne donne aucun droit : les pages du Centre restent derrière son verrou.
+  const LEVEL_KEY = "suiteLevel:v1",
+    MODULES_KEY = "suiteModules:v1",
+    MODULES = ["maps", "fuel", "landings", "reporting"];
+  /** Niveau d'utilisation courant (1 à 4). */
+  const level = () => {
+    const v = +readPref(LEVEL_KEY, "");
+    return v >= 1 && v <= 4 ? v : cpcoOn() ? 4 : 1;
+  };
+  // niveau sur <html data-level> (posé dès l'en-tête par repository_tree, revalidé ici) : les éléments marqués
+  // data-min-level="n" (blocs, champs, boutons) sont masqués sous le niveau n par repository_nav.css — rien n'est réécrit
+  {
+    const lv = String(level());
+    if (doc.dataset.level !== lv) doc.dataset.level = lv;
+  }
+  /** Modules facultatifs affichés (tous au niveau 4). */
+  const modules = () => level() >= 4 ? MODULES.slice() : (K.store.jsonCached(MODULES_KEY, []) || []).filter(m => MODULES.includes(m));
+  /** Page visible au niveau et avec les modules courants (page non déclarée : visible). */
+  const visible = p => {
+    const d = cfg.pages.find(x => x.path === p);
+    return !d || (d.level || 1) <= level() && (!d.module || modules().includes(d.module));
+  };
+  /** Utilisateur du Centre : Centre ouvert dans ce navigateur, niveau 2 ou plus, et pas un compte connecté sans le rôle
+   *  admin_centre ; seul lui voit les entrées du Centre avec leur icône propre. */
+  const centreUser = () => {
+    const s = window.SuiteUsers?.session?.();
+    return cpcoOn() && level() >= 2 && !(s?.tri && s.role !== "admin_centre");
+  };
+  /** Pages visibles d'un groupe d'onglets (repository_tree.tabs, id). */
+  const tabPages = id => ((cfg.tabs || []).find(g => g.id === id)?.pages || []).filter(p => visible(p.path));
   doc.dataset.cpco = cpcoOn() ? "on" : "off";
   /** Adresse d'une rubrique de Paramètres (REPOSITORY_TREE.settings : rubrique → page ; ?base= pour les rubriques de
    *  data_admin.js et settings_panels.js, ?m= pour les blocs de maintenance_page.js) ; sans rubrique : Mon profil. */
@@ -138,8 +189,39 @@
     if (hash) u.hash = hash;
     return u.href;
   };
+  /** Niveau d'utilisation et modules (v2) : lecture, réglage (page rechargée par l'appelant), visibilité d'une page. */
+  const levels = {
+    MODULES,
+    get: level,
+    modules,
+    visible,
+    /** Règle le niveau (1 à 4) ; événement « suite-level-change ». */
+    set(n) {
+      n = Math.min(4, Math.max(1, Math.round(+n || 1)));
+      K.store.set(LEVEL_KEY, String(n));
+      window.dispatchEvent(new CustomEvent("suite-level-change", {
+        detail: {
+          level: n,
+          modules: modules()
+        }
+      }));
+      return n;
+    },
+    /** Règle les modules facultatifs (liste d'identifiants de MODULES) ; événement « suite-level-change ». */
+    setModules(list) {
+      K.store.setJson(MODULES_KEY, [].concat(list || []).filter(m => MODULES.includes(m)));
+      window.dispatchEvent(new CustomEvent("suite-level-change", {
+        detail: {
+          level: level(),
+          modules: modules()
+        }
+      }));
+    }
+  };
   const cpco = {
     enabled: cpcoOn,
+    /** Page du Centre consultable en lecture seule sans le Centre (view:true dans repository_tree) ; page courante par défaut. */
+    viewOnly: (p = page?.path || rel) => cpcoView(p),
     /** Réglages du Centre { motDePasse, mode } (data/config/centre.json, sinon DEFA et standalone). */
     config: centreConfig,
     /** Active le Centre si le mot de passe est celui de data/config/centre.json ; true si activé. */
@@ -187,7 +269,21 @@
       }));
     }
   };
-  if (isCpco(page?.path || rel) && !cpcoOn()) {
+  if (cpcoView(page?.path || rel) && !cpcoOn()) {
+    /** Page consultable : simple avis flottant (lecture seule, lien vers l'activation du Centre), pas de voile. */
+    const viewNotice = () => window.AppFramework?.notify?.(K.t([
+      "Lecture seule : le planning se consulte sans le Centre ; le modifier demande le Centre activé (Paramètres › Centre).",
+      "Read-only: the schedule can be viewed without the Centre; changing it requires the Centre enabled (Settings › Centre).",
+      "Nur Lesen: Die Planung ist ohne das Zentrum einsehbar; Änderungen erfordern das aktivierte Zentrum (Einstellungen › Zentrum).",
+      "Solo lectura: la planificación se consulta sin el Centro; modificarla requiere el Centro activado (Ajustes › Centro)."
+    ]), "info", {
+      timeout: 8000
+    });
+    if (document.readyState === "complete") setTimeout(viewNotice, 300);
+    else window.addEventListener("load", () => setTimeout(viewNotice, 300), {
+      once: true
+    });
+  } else if (isCpco(page?.path || rel) && !cpcoOn()) {
     /** Ajoute au corps de la page l'avis « Accès réservé » (liens vers l'activation du Centre et l'accueil), traduit. */
     const lockNotice = () => {
       const box = document.createElement("div");
@@ -418,7 +514,7 @@
     if (document.getElementById("repoDesignDeco")) return;
     const d = document.createElement("script");
     d.id = "repoDesignDeco";
-    d.src = new URL("design_deco.js?v=fe6b89a2", script.src).href;
+    d.src = new URL("design_deco.js?v=50e933f4", script.src).href;
     document.head.append(d);
   };
   designCss(design);
@@ -523,7 +619,7 @@
   const groups = new Map(); /* menu:false : page déclarée (thème, réglages) mais absente du menu */
   // pages du Centre toujours construites, masquées tant que le Centre est verrouillé (html[data-cpco="off"] .cpco-only) :
   // l'activation dans Paramètres les montre aussitôt, sans recharger
-  cfg.pages.filter(p => p.menu !== false).forEach(p => {
+  cfg.pages.filter(p => p.menu !== false && visible(p.path)).forEach(p => {
     const bits = (p.menu || p.label).split("/"),
       group = bits.length > 1 ? bits.shift() : "Pages",
       label = bits.join("/") || p.label;
@@ -540,14 +636,14 @@
       details.className = "repo-tree-group";
       details.open = pages.some(p => p.path === page?.path);
       details.innerHTML = `<summary>${esc(group)}</summary>`;
-      if (pages.every(p => isCpco(p.path))) details.classList.add("cpco-only");
+      // v2 : le niveau décide de ce qui est listé ; une page du Centre verrouillé affiche elle-même son avis
       menu.append(details);
       host = details
     }
     for (const p of pages) {
       const a = document.createElement("a");
       a.href = new URL(p.path, root).href;
-      a.className = `repo-link ${p.path===page?.path?"active":""} ${group!=="Pages"?"repo-sub":""}${isCpco(p.path)?" cpco-only":""}`;
+      a.className = `repo-link ${p.path===page?.path?"active":""} ${group!=="Pages"?"repo-sub":""}`;
       a.dataset.label = p.navLabel;
       a.textContent = trLabel(p.navLabel);
       host.append(a)
@@ -617,7 +713,7 @@
     if (window.RepositoryAppearance) show();
     else {
       const sc = document.createElement("script");
-      sc.src = new URL("appearance_page.js?v=59118ff8", script.src).href;
+      sc.src = new URL("appearance_page.js?v=a9050e2b", script.src).href;
       sc.onload = show;
       document.head.append(sc);
     }
@@ -744,15 +840,18 @@
   // autre compagnie : adresses réglées (Paramètres › Installation › Sources et dossiers, premier lancement) ou aucune —
   // jamais de lien inventé (siteLink : invitation à renseigner l'adresse)
   const DEFAULT_SITE_FOR = [cfg.va?.name || "SO Group Virtual", "DEFA Virtual"];
-  const vaName = () => (K.store.json("suiteVA:v1", {}) || {}).name || cfg.va?.name || "SO Group Virtual";
+  // suiteVA:v1 et suiteSources:v1 : lus à chaque texte traduit (jetons de compagnie, K.brand) — analyse JSON mémorisée
+  // tant que le texte du stockage ne change pas (jsonCached), au lieu d'une analyse par appel
+  const vaName = () => (K.store.jsonCached("suiteVA:v1", {}) || {}).name || cfg.va?.name || "SO Group Virtual";
   const defaultVa = () => DEFAULT_SITE_FOR.includes(vaName());
-  const source = key => String(K.store.json("suiteSources:v1", {})[key] || (key === "defa" && !defaultVa() ? "" : cfg.sources?.[key]
+  const source = key => String((K.store.jsonCached("suiteSources:v1", {}) || {})[key] || (key === "defa" && !defaultVa() ? "" : cfg
+    .sources?.[key]
     ?.url) || "").replace(/\/+$/, "");
   /** Compagnie virtuelle : repository_tree.va (SO Group Virtual par défaut) et réglage local (suiteVA:v1) ; url : site
    *  (sources.defa). { name, fullName, short, centre, centreName, url, pages: { home, log, fleet, aircraft } }. */
   const va = () => {
     const d = cfg.va || {},
-      o = K.store.json("suiteVA:v1", {}) || {};
+      o = K.store.jsonCached("suiteVA:v1", {}) || {};
     return {
       name: o.name || d.name || "SO Group Virtual",
       fullName: o.fullName || d.fullName || "",
@@ -788,6 +887,7 @@
   // API publique.
   window.RepositoryNav = {
     cpco,
+    levels,
     settingsUrl,
     /** Langue de la suite : "auto" (navigateur) ou fr / en / de / es ; mémorisée, appliquée à la page. */
     setLanguage(value) {
@@ -1081,6 +1181,14 @@
     }
     const known = new Set(cfg.pages.map(p => p.path)),
       current = page?.path || "";
+    // entrée à onglets (tabs : id d'un groupe de repository_tree.tabs) : la page courante si elle en est, sinon la
+    // première page visible du groupe ; sans page visible, l'entrée disparaît. Entrées simples : page visible seulement.
+    items.forEach(x => {
+      if (!x.tabs) return;
+      const ps = tabPages(x.tabs).filter(p => known.has(p.path));
+      x.match = ps.map(p => p.path);
+      x.path = ps.some(p => p.path === current) ? current : ps[0]?.path || "";
+    });
     // entrée active : la page elle-même, sinon la première entrée dont « match » est contenu dans le chemin courant
     let active = items.findIndex(x => x.path === current);
     if (active < 0) active = items.findIndex(x => x.match && [].concat(x.match).some(m => current.includes(m)));
@@ -1118,15 +1226,15 @@
           li.innerHTML = '<span class="repo-sidenav-sep-title"></span>';
           const next = items.slice(i + 1),
             group = next.slice(0, (next.findIndex(x => x.sep) + 1 || next.length + 1) - 1).filter(x => x.path);
-          if (group.length && group.every(x => isCpco(x.path))) li.classList.add("cpco-only");
+          if (group.length && group.every(x => cpcoHidden(x.path))) li.classList.add("cpco-only");
         }
         ul.append(li);
         return;
       }
-      if (it.path && !known.has(it.path)) return;
-      if (isCpco(it.path)) li.classList.add("cpco-only"); // masquée tant que le Centre est verrouillé
+      if (it.tabs && !it.path) return; // groupe sans page visible à ce niveau
+      if (it.path && (!known.has(it.path) || !visible(it.path))) return;
       const a = document.createElement(it.menu ? "button" : "a");
-      a.className = "repo-sidenav-item" + (isCpco(it.path) ? " repo-sidenav-cpco" : "");
+      a.className = "repo-sidenav-item" + (centreUser() && isCpco(it.path) ? " repo-sidenav-cpco" : "");
       if (it.menu) {
         a.type = "button";
         a.onclick = e => {
@@ -1179,15 +1287,16 @@
   {
     const current = page?.path || rel,
       group = (cfg.tabs || []).find(g => g.pages.some(p => p.path === current));
-    if (group) {
+    // un seul onglet visible à ce niveau : pas de barre d'onglets
+    if (group && group.pages.filter(p => p.path === current || visible(p.path)).length > 1) {
       const bar = document.createElement("nav");
       bar.className = "repo-tabs no-print";
       bar.dataset.tabs = group.id;
       bar.setAttribute("data-no-i18n", "");
       bar.setAttribute("aria-label", group.id);
-      for (const p of group.pages) {
+      for (const p of group.pages.filter(p => p.path === current || visible(p.path))) {
         const a = document.createElement("a");
-        a.className = "repo-tab" + (isCpco(p.path) && !isCpco(current) ? " cpco-only" : "");
+        a.className = "repo-tab";
         a.href = new URL(p.path, root).href;
         a._label = p.label;
         if (p.path === current) a.setAttribute("aria-current", "page");
@@ -1218,17 +1327,17 @@
     profile.src = new URL("pilot_profile.js?v=fbe1241b", script.src).href;
     document.head.append(profile); /* Dossiers autorisés et ouverture des fichiers dans le dossier paramétré */
     const files = document.createElement("script");
-    files.src = new URL("file_access.js?v=1dd74d8c", script.src).href;
+    files.src = new URL("file_access.js?v=d9a2fa8a", script.src).href;
     document.head.append(files); /* Données locales du navigateur ⇄ fichier de sauvegarde */
     /* Icônes, sous-titres de blocs, sous-cartes, zones de dépôt, icônes de la barre latérale (ordre conservé) */
-    for (const f of ["icons/repository_icons.js?v=27853364", "block_icons.js?v=567b5128", "side_nav.js?v=19f74efd"]) {
+    for (const f of ["icons/repository_icons.js?v=3a11f936", "block_icons.js?v=a296ab17", "side_nav.js?v=19f74efd"]) {
       const sc = document.createElement("script");
       sc.src = new URL(f, script.src).href;
       sc.async = false;
       document.head.append(sc);
     }
     const store = document.createElement("script");
-    store.src = new URL("browser_store.js?v=1b114137", script.src).href;
+    store.src = new URL("browser_store.js?v=3156e737", script.src).href;
     document.head.append(store); /* Canal et contrôle des mises à jour, pastilles « Mise à jour » / « AIRAC » de l'en-tête */
     const assign = document.createElement("script"); /* Missions affectées : pli cacheté de l'en-tête, « Mes missions » */
     assign.src = new URL("assignments.js?v=95fcb353", script.src).href;
@@ -1239,11 +1348,11 @@
     document.head.append(positions);
     /* Utilisateurs et droits : mode develop / production, connexion, usurpation (bandeau sur toutes les pages) */
     const users = document.createElement("script");
-    users.src = new URL("users.js?v=1299f816", script.src).href;
+    users.src = new URL("users.js?v=cba465ca", script.src).href;
     document.head.append(users);
     /* Synchronisation git du pool de données : bouton « Synchroniser » de l'en-tête (lanceur, data/ dépôt git) */
     const sync = document.createElement("script");
-    sync.src = new URL("sync.js?v=3b97ce23", script.src).href;
+    sync.src = new URL("sync.js?v=63365867", script.src).href;
     document.head.append(sync);
     /* Flotte et journal DEFA depuis le site : une fois par jour à l'ouverture d'une page (lanceur) */
     const defaSite = document.createElement("script");
@@ -1251,66 +1360,14 @@
     document.head.append(defaSite);
     /* Disponibilités : catégories configurables, thèmes ouverts, déclarations par semaine */
     const dispos = document.createElement("script");
-    dispos.src = new URL("dispos.js?v=b93daed0", script.src).href;
+    dispos.src = new URL("dispos.js?v=5791ed45", script.src).href;
     document.head.append(dispos);
     const update = document.createElement("script");
     update.src = new URL("suite_update.js?v=11739928", script.src).href;
     document.head.append(update)
-  } {
-    /* Autre compagnie virtuelle que celle écrite dans les sources (Paramètres › Sources et dossiers) : « SO Group
-       Virtual », « Virtual Special Operation Group », « SOG » et « CPCO » des textes de la suite affichés avec le nom, le
-       nom long, le sigle et le centre réglés (nœuds texte et infobulles, pages et contenus ajoutés ensuite).
-       Comparaison avec la marque des sources (et non avec repository_tree.va) : la couche agit dès que la compagnie
-       réglée en diffère. */
-    const SOURCE = {
-      name: "SO Group Virtual",
-      fullName: "Virtual Special Operation Group",
-      short: "SOG",
-      centre: "CPCO"
-    };
-    /** Remplace dans la page (textes, infobulles, titre) les noms de la marque des sources par ceux de la compagnie réglée,
-     *  puis suit les contenus ajoutés ou retraduits ; rien si la compagnie réglée ne diffère pas. */
-    const rebrand = () => {
-      const v = va(),
-        rules = [
-          [/\bSO Group Virtual\b/g, v.name, SOURCE.name],
-          [/\bVirtual Special Operation Group\b/g, v.fullName || v.name, SOURCE.fullName],
-          [/\bSOG\b/g, v.short, SOURCE.short],
-          [/\bCPCO\b/g, v.centre, SOURCE.centre]
-        ].filter(([, to, from]) => to && to !== from);
-      if (!rules.length) return;
-      const fix = s => rules.reduce((x, [re, to]) => x.replace(re, to), s);
-      const skip = el => !el || el.closest("script,style,textarea,input,code,pre,[contenteditable],[data-no-rebrand]");
-      /** Corrige les nœuds texte et les attributs title sous root (hors zones exclues par skip). */
-      const walk = root => {
-        const w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
-        for (let n;
-          (n = w.nextNode());)
-          if (!skip(n.parentElement) && /SO Group|Special Operation|SOG|CPCO/.test(n.nodeValue)) {
-            const s = fix(n.nodeValue);
-            if (s !== n.nodeValue) n.nodeValue = s;
-          }
-        if (root.querySelectorAll)
-          for (const el of root.querySelectorAll("[title]"))
-            if (/SO Group|Special Operation|SOG|CPCO/.test(el.title)) el.title = fix(el.title);
-      };
-      walk(document.body);
-      if (document.title) document.title = fix(document.title);
-      new MutationObserver(list => {
-        for (const m of list)
-          for (const n of m.type === "characterData" ? [m.target] : m.addedNodes) n.nodeType === 3 ? (!skip(n.parentElement) &&
-              /SO Group|Special Operation|SOG|CPCO/.test(n.nodeValue) && (n.nodeValue = fix(n.nodeValue))) : n.nodeType === 1 && !
-            skip(n) && walk(n);
-      }).observe(document.body, {
-        childList: true,
-        characterData: true, // textes traduits ensuite (content_i18n.js)
-        subtree: true
-      });
-    };
-    document.readyState === "loading" ? document.addEventListener("DOMContentLoaded", rebrand, {
-      once: true
-    }) : rebrand();
   }
+  // Compagnie virtuelle réglée : plus de renommage de la page après coup — les textes portent des jetons ({SOG},
+  // {SOG_NOM}, {SOG_NOM_LONG}, {CENTRE}) résolus quand ils sont produits (K.t, K.tf, content_i18n.js ; shared/kit.js).
   window.dispatchEvent(new CustomEvent("repository-nav-ready", {
     detail: window.RepositoryNav
   }));

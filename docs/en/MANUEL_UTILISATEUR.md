@@ -19,17 +19,19 @@ Open the suite from the launcher or a bookmark: a suite page opened from a link 
 
 The left-hand column gives access to the applications. The entry of the page on screen is highlighted.
 
-| Entry | What it opens |
-|---|---|
-| “My missions” | Missions assigned by the Centre and availability (with a red badge: number of unread missions) |
-| “Report” | Entry of a new mission report |
-| “Flight maps” | Flight maps: route, topo, approach, rendezvous, destination |
-| “Fuel” | Performance and fuel planner |
-| “Landings” | Landings dashboard |
-| “Reporting” | Mission reporting (Reports) |
+What it shows depends on your **usage level** (My profile › “Usage level”): at most seven entries, never more than your use needs.
 
-- The **“Centre”** group (“Missions”, “Registry”, “ODV”) only appears if the Centre is unlocked in this browser (Settings › Centre). For a pilot, it normally stays hidden.
-- At the bottom of the column: “Appearance” (opens the display settings in a window, above the current page), “Settings” (My profile and the other settings pages) and **“Help”**. These three entries stay fixed at the bottom of the screen: only the upper list scrolls when there are too many icons (window less than 460 px high: the whole bar scrolls).
+| Entry | What it opens | Level |
+|---|---|---|
+| “Today” | Next mission, reports to write, week; first entry at every level | 1 |
+| “My missions” | Missions assigned by the Centre and availability (red badge: unread missions) | 1 |
+| “Report” | Entry of a mission report | 1 |
+| “Schedule” | Weekly order schedule (Board, read-only at level 1 or without the Centre); at level 4, common slots and likely missions of the ODV page | 1 |
+| “Missions” | Mission generator and registry, as tabs; map studio at level 4 | 3 |
+| “Tools” | Flight maps, fuel, landings, mission analysis (tools ticked in My profile, all at level 4) | 1 to 4 |
+
+- The level arranges the interface, it grants no rights: the Centre pages (Missions, ODV planning, changing the Board) still require the Centre enabled.
+- At the bottom of the column: “Settings” (My profile, Appearance, Centre, Installation, Maintenance, First run, as tabs) and **“Help”**. These two entries stay fixed at the bottom of the screen: only the upper list scrolls when there are too many icons (window under 460 px high: the whole bar scrolls).
 - “Help” opens the documentation in a window, above the current page, directly at the chapter of that page. The window closes with ✕, Esc or a click beside it; reopened, it resumes where you were. “↗” opens it as a full page (Ctrl-click on “Help”: in a new tab). It replaces the old “Menu” entry. It also works when the suite is opened from the disk, without the launcher: the documents are built into the page.
 - The logo at the top of the column opens the virtual airline's website in a new tab.
 - The bar is hidden on a narrow screen (less than 760 px) and when printing. You can hide it or always show it: Appearance › Icons › “Side bar”.
@@ -41,7 +43,7 @@ The header shows the page title and its subtitle. On the right are the tools, wh
 | Element | Role |
 |---|---|
 | Sealed envelope (red envelope with a number) | Missions assigned to you have not been read yet. A click opens “My missions”. |
-| “Synchronise (n)” | Exchanges the shared data with the common repository. N = changes to send + updates to receive. |
+| “Synchronise (n)” | Exchanges the shared data with the common repository. N = changes to send + updates to receive. At levels 1 and 2 a dot replaces the number (it stays at the top of the tooltip); the “(n)” counter is shown at levels 3 and 4. |
 | “Save to folder (n) · last: …” (red button) | Reminder to back up the local data, shown from 10 unsaved changes. |
 | “⚠ n” | Page alerts already cleared from the screen: a click shows them again. |
 | “Language” flag | Choice of language: “Auto” (browser language), Français, English, Deutsch, Español. |
@@ -50,7 +52,7 @@ The header shows the page title and its subtitle. On the right are the tools, wh
 **“Synchronise”** only exists if the suite is opened with the launcher and the `data/` folder is a git repository.
 - A click first writes the files kept in the browser, then sends your changes (signed with your trigram), fetches those of the others and merges them.
 - In case of a conflict on the same record, the most recent version is kept; the other one is copied into `_conflits/` and a notification reports it.
-- The tooltip gives the details (changes to send, items to receive, last synchronisation). The state is checked again every 5 minutes.
+- The tooltip gives the details (changes to send, items to receive, last synchronisation). The button shows the last known state; it is checked again at the frequency set in Settings › Maintenance › Versions and synchronisation (every 30 minutes by default; also on every page, 3 times a day or once a day, and “Check now”).
 - Without a trigram set, synchronisation refuses to start: set it in Settings › My profile. See [the synchronisation architecture](../technique/SYNCHRONISATION.md).
 
 **“Save to folder”** copies all the data kept by the browser (drafts, profile, preferences…) into the `defa_local_store.yaml` file of the backup folder.
@@ -74,10 +76,10 @@ Some side bar entries group several sister pages, shown as tabs under the header
 | Entry | Tabs |
 |---|---|
 | “My missions” | “My missions”, “My availability” |
-| “Settings” | “My profile”, “Centre”, “Installation”, “Maintenance” |
+| “Settings” | “My profile”, “Appearance”, “First run” (from level 1); “Centre”, “Installation” (level 2); “Maintenance” (level 4) |
 | “Missions” (Centre) | “Mission generator”, “Map studio” |
 
-A click on a tab opens the matching page. A click with Ctrl (or Shift) opens it in a new browser tab.
+A click on a tab opens the matching page. A click with Ctrl (or Shift) opens it in a new browser tab. The tabs follow the usage level (My profile › “Usage level”); a direct address to a section always opens it.
 
 ### Blocks
 
@@ -86,7 +88,7 @@ Page content is split into blocks with titles. Each block title carries two cont
 2. ↕ “Move”: grab this handle and drag the block before another block of the same column.
 
 The layout (order, hidden blocks) is remembered **per page and per browser**. It is restored at each visit.
-Some blocks are hidden by default until you have shown them once.
+Some blocks are hidden by default until you have shown them once. Text fields (route, remarks…) grow with their content, up to three fifths of the screen (Chrome and Edge).
 
 ### Floating notifications
 
@@ -94,8 +96,11 @@ Messages from the suite (success, warnings, errors) appear at the bottom centre 
 - They clear on their own: about 5 s for information, 8 s for a warning, 12 s for an error.
 - Hovering over a bubble pauses the clearing; the “×” cross closes the bubble at once.
 - At most four messages stay on screen.
+- A repetitive reminder (for example “SIA database missing from this browser…” of the Map studio and the Flight maps) is shown only **once per session** of the browser. Some messages are reserved for higher usage levels: below them they are not shown, but warnings and errors stay in the log of the “⚠ n” indicator.
 - Cleared warnings and errors can still be read through the “⚠ n” indicator in the header: “ACK” acknowledges an alert, “Acknowledge all” acknowledges them all, “Clear” empties the list. This log is lost when you change page.
-- A long task (reading, generation…) shows a progress bar in the same stack. Leaving the page during the task asks for confirmation.
+- A long task (reading, generation…) shows a progress bar in the same stack. Leaving the page during the task asks for confirmation. When the task can be interrupted, the bar carries a **“Stop”** button: the step in progress finishes, the next ones are not started, then the bubble says “Cancelled.”. The button exists for the generation and previews of the maps (Map studio and Flight maps: stop between two maps), the MORA calculation (of a zone, of the full grid or by blocks), the MILAIP ENR 5.7 import and the setting up of the zones (Maintenance), and the reading of the missions folder (Registry).
+- A stopped task says what remains partial. Maps: a stopped generation downloads no ZIP and files nothing in the mission folder (a batch of missions says how many are finished); the previews already shown stay. MORA by blocks (button “Stop (resume later)”): the blocks already computed are written to `mora.csv` (partial grid), “Resume the full calculation…” continues later. MORA of a zone, MORA grid and MILAIP import: nothing is written. Reading of the missions folder: the registry stays unchanged.
+- Error messages say what failed and what to do, instead of a bare code. Examples: “the server does not answer — check that the suite is opened by the launcher (lancer.cmd / lancer.sh), restart it if needed, then try again”; “file missing — check that it is in the expected folder (or create it again), then try again”; “browser storage full — free some space (Settings › Maintenance › Disk space), then try again”. Other cases: online service not answering, server error, access denied by the browser, timeout; an unexpected error is shown as “failed” followed by the technical detail in brackets.
 - Questions (“Clear…?”) open in a small window with “Confirm” and “Cancel”.
 
 ### Sign-in, develop or production mode, impersonation
@@ -124,6 +129,35 @@ The suite offers several designs. They change the shape of the pages, not the in
 - In the material designs, the mission folder in “My missions” becomes a real book, with its animations.
 - You choose in Appearance: each design is shown as a thumbnail and applies at once. See the [Appearance](#appearance) chapter.
 
+## Today
+<!-- page: apps/pilot/aujourdhui.html -->
+
+This page is the first entry of the side bar, at every usage level. It answers three questions without any searching: what is my next mission, which reports are left to write, what is happening this week.
+Each block offers a single action. The data comes from the Centre’s assignments (see “My missions”) and from the report registry: nothing has to be entered again. The page rereads itself when you change language, trigram or session.
+The home page also offers it at the top of “My tasks”.
+
+### My next mission
+
+- The nearest mission assigned to you (upcoming, or taken off less than six hours ago): time in UTC, mission and title, aircraft (type and registration), airfield, callsign; “ferry” or “on call, ready at …” where relevant, and “● new” as long as you have not opened it.
+- Action: **“Open the folder”** opens the mission in “My missions”.
+- With no trigram set, this block asks for it on the spot: the “Trigram” field (two to four letters) and the “Save” button. The trigram is saved in the pilot profile and the three blocks reread at once, without going through Settings › My profile. In production mode or during an impersonation, the trigram is the one you signed in with: the block shows “No trigram: sign in to see your missions.”
+- With no upcoming mission, the block says so: “No upcoming mission is assigned to …”.
+
+### Reports to write
+
+- The missions assigned to you that took off less than 21 days ago and for which the report registry holds no report. The most recent comes first; seven lines at most.
+- A report is known if it comes from a mission order: the registry (`missions.yaml`) ties it to the assignment through its order reference (mission, pilot, take-off). A report started otherwise, with the family picked by hand, does not count: the mission stays in the list.
+- Each line gives the mission, its title, the time, the aircraft and the airfield, with two buttons.
+- **“Write the report”** opens the mission folder in “My missions” and starts the report in the mission’s family, filled in from the mission order (address `?mission=…&do=cr`).
+- **“No report”** removes the mission from the list (cancelled mission, not flown…). The choice is remembered in this browser only; the registry is not touched.
+- When everything is reported, the block says “Nothing to report: your past missions have their report.” With no trigram, it points to the field of the first block (“Trigram to enter above.”).
+
+### My week
+
+- Seven columns, Monday to Sunday of the current week (days in UTC); the current day is outlined.
+- Your missions appear there as tiles: time and mission number, or “on call”.
+- Action: a click on a tile opens the mission folder in “My missions”. With no trigram, the block says “Without a trigram, the week stays empty.”
+
 ## My missions
 <!-- page: apps/pilot/mes_missions.html -->
 
@@ -131,6 +165,7 @@ This page brings together the missions the Centre assigns to you, the folder of 
 You reach it from the “My missions” entry of the side bar, from the sealed envelope in the header or from the “My missions” tab.
 Layout: the list of missions and the open folder side by side (the folder takes two thirds of the width), “My availability” below, across the full width. With no folder open, the list takes the full width. On a narrow screen (less than 1100 px), everything moves to a single column: missions, folder, availability.
 In production mode, the page first asks you to sign in.
+Depending on the usage level (My profile › “Usage level”), the mission folder shows more or fewer sections (see “Mission”); a few buttons and links only appear from the Planning level (2) or at the Expert level (4).
 
 ### My missions this week
 
@@ -142,8 +177,10 @@ The list of the missions assigned to you for the week shown, sorted by take-off 
 - A “ferry” mention means that you are ferrying an aircraft for another pilot: you only receive the ferry order, not the mission brief.
 - A click on a line opens the mission in the “Mission” block.
 - “also show past missions” box: by default, a mission disappears a few hours after its take-off. The choice is remembered.
-- Without a trigram set, the list shows “No trigram set.”; the “Pilot” button leads to the section where you enter it.
+- With no trigram set, the trigram entry field appears under the list (“Trigram” field, “Save” button): once saved, the list and the availability are read again. In production mode or during an impersonation, the trigram is the one you signed in with.
+- An address `?mission=…` coming from “Today” or from “New report” shows the week of that mission (past missions shown if needed); with `?do=cr`, the report starts as soon as the folder opens.
 - **Pilot**, **Aircraft mastered**, **Simulators**: three buttons under the list, to Settings › My profile (“Identity and networks” section for the trigram; “Aircraft and simulators” section, at the aircraft card or the simulators card). The “Pilot” button shows the trigram used to find your missions and your availability. In production mode or during an impersonation, it is the trigram you signed in with.
+- These three buttons appear from the Planning level (2). At the Crew level (1), only “Pilot” appears, as long as the trigram is not set.
 
 ### Mission
 
@@ -161,6 +198,12 @@ The folder of the chosen mission, read-only. This block only appears after a cli
 3. The “Maps supplied”: a click enlarges a map in a viewer (close it with the cross or Esc).
 4. The end: “Objectives”, “Remarks”, “Technical sheet”, “Assignment history”, and the Centre's signature.
 5. The “Envelopes and in-flight messages”, if there are any (see below).
+
+**Depending on the usage level**:
+- Crew (1): the mission order, the summary, the route supplied, the maps, the objectives, the signature and the envelopes;
+- Planning (2): in addition, the introduction, the target, the detailed description, the risks, the teams engaged, the remarks and the other sections of the summary;
+- Design (3): in addition, the technical sheet and the assignment history;
+- Expert (4): the whole folder; on the develop update channel, “Reseal” puts the mission back under seal (unread).
 
 **The book** (Cabinet, Flight log, Aqua and Rugged designs, screen of at least 760 px)
 - The open folder is shown as a double page. Content that is too long moves to the next page; maps are laid out two per page.
@@ -188,6 +231,7 @@ The folder of the chosen mission, read-only. This block only appears after a cli
 | “Close the folder” | Closes the folder (the mission stays read). |
 
 These buttons are greyed out if the mission does not provide what is needed (mission file missing, route too short).
+“Open in the flight maps” and “Fuel (planner)” only appear if the matching tool is ticked in My profile › “Usage level” (always at the Expert level). Without the Flight maps, “Create the report” becomes the main button.
 The “⤢ Full width” button in the block title spreads the folder across the full width, above the list; “⇥ Beside the list” puts it back alongside. The choice is remembered.
 
 **Animations** (turned off if the system asks for fewer animations)
@@ -203,6 +247,7 @@ The “⤢ Full width” button in the block title spreads the folder across the
 ### My availability
 
 Your availability for the week shown, in UTC. The Centre uses it to assign missions to you. It is the same editor as on the My availability page (next chapter); here, the week is the one of the week bar of the list.
+Depending on the usage level: the block’s own week bar, the old hourly grid and the “Open the availability entry on its own” link only appear at the Expert level; at the other levels, the week is changed with the bar of the list.
 
 **Palette**: the categories are arranged by group (“Available”, “SOG exercise”, “Busy”, “Unavailable”). Each badge carries the ODV code letter and a short label; the tooltip gives the full label. The chosen category is remembered.
 
@@ -222,7 +267,7 @@ Default categories (the Centre can change this list):
 
 A cell shared between several categories is striped; an hour partly covered (entered by the quarter hour) is faded. Each change is saved at once.
 
-**“Precise range”** (by the quarter hour): “Group”, “Category”, day boxes (Mon to Sun), “from” and “to” (UTC), then “Add”. Empty times = whole day. Under the form, a line recalls the mission themes opened by the category; for a custom category, the “My mission types…” link leads to the preferences in My profile.
+**“Precise range”** (by the quarter hour, collapsed: a click on its title opens it; open from the start at the Expert level): “Group”, “Category”, day boxes (Mon to Sun), “from” and “to” (UTC), then “Add”. Empty times = whole day. Under the form, a line recalls the mission themes opened by the category; for a custom category, the “My mission types…” link leads to the preferences in My profile.
 
 **Other buttons**
 - “⧉ Previous week”: copies the ranges of the previous week (replaces the week shown, after confirmation).
@@ -231,18 +276,18 @@ A cell shared between several categories is striped; an hour partly covered (ent
 
 The message under the block tells you where the entry went: “Saved to the data folder.”, or “Kept in this browser, the Centre cannot see it: …” if the data folder is not allowed (see [First run](#first-run), step 3).
 An existing old hourly grid is imported automatically into the week.
-The “Open the availability entry on its own” link leads to the My availability page.
+The “Open the availability entry on its own” link leads to the My availability page. This link only appears at the Expert level.
 
 ## My availability
 <!-- page: apps/pilot/disponibilites.html -->
 
 This page shows the availability editor on its own, in a larger size. It is used to enter several weeks quickly.
-You reach it from the “My availability” tab (under the “My missions” entry of the side bar) or from the “Open the availability entry on its own” link in My missions.
+You reach it from the “My availability” tab (under the “My missions” entry of the side bar) or from the “Open the availability entry on its own” link in My missions. This link only appears at the Expert level.
 The pilot is the one of the working trigram (pilot profile, sign-in or impersonation). In production mode, the page first asks you to sign in.
 
 ### My availability
 
-The only block of the page. It works exactly like the block of the same name in My missions (previous chapter): palette, hour-by-hour grid, “Precise range”, “⧉ Previous week”, “Clear all”.
+The only block of the page. It works exactly like the block of the same name in My missions (previous chapter): palette, hour-by-hour grid, “Precise range” (collapsed, open from the start at the Expert level), “⧉ Previous week”, “Clear all”.
 
 **Week navigation** (specific to this page):
 - “‹” and “›”: previous or next week;
@@ -265,6 +310,20 @@ This page groups the settings specific to each pilot: identity, sign-in, mission
 You reach it from the “Settings” entry of the side bar (first tab, “My profile”) or from ☰ › “Settings”.
 The left-hand column lists the sections by group; a click shows one on the right, with its title, its presentation, its buttons and a status message.
 If a section contains unsaved changes, changing section or leaving the page asks for confirmation.
+Depending on the usage level: “My aircraft (reporting)” appears from the Planning level (2); “Altitude without oxygen” only if the Fuel tool is ticked (always at the Expert level); in “Identity and networks”, the “IVAO — OAuth client” and “Language” cards are at the Expert level.
+
+### Usage level
+
+What the suite shows you, according to your use. One choice is enough: the page reloads and the sidebar follows.
+
+| Level | For | What is added |
+|---|---|---|
+| 1 · Crew | every pilot | My missions, Report, Schedule (read-only) |
+| 2 · Planning | duty officer | plan the orders: editable Board, ODV planning (Centre enabled) |
+| 3 · Design | mission writer | Missions: generator and registry (Centre enabled) |
+| 4 · Expert | cartographer, analyst | all tools, map studio |
+
+“Optional tools” (flight maps, fuel, landings, mission analysis) are added under “Tools” at any level; at level 4 they are all included. By default: level 4 if the Centre is enabled in this browser, otherwise level 1. The level grants no rights: the Centre keeps its access.
 
 ### Identity and networks
 
@@ -274,15 +333,15 @@ Your identity in the suite, used by all pages (☰ › Pilot profile, reports, r
 |---|---|
 | “Pilot” | “Trigram”, “VATSIM ID (CID)”, “IVAO ID (VID)”, “SimBrief (username or ID)” |
 | “Airline website” | “Login”, “Password” |
-| “IVAO — OAuth client (personal)” | “Client ID”, “Client secret”, “Redirect URL to declare at IVAO” (to copy on developers.ivao.aero); “Save the IVAO client” button: kept by this computer’s launcher, the secret is never shown again |
-| “Language” | “Suite language”: Automatic (browser language), Français, English, Deutsch, Español |
+| “IVAO — OAuth client (personal)” (Expert level) | “Client ID”, “Client secret”, “Redirect URL to declare at IVAO” (to copy on developers.ivao.aero); “Save the IVAO client” button: kept by this computer’s launcher, the secret is never shown again |
+| “Language” (Expert level) | “Suite language”: Automatic (browser language), Français, English, Deutsch, Español |
 
 1. Fill in the fields.
 2. Click “Save”. The status message confirms “Profile saved in this browser”.
 
 - The trigram has 2 to 4 letters or digits; it is used to find your assigned missions.
 - The airline website credentials stay in this browser only: they are never written to a file or to a backup.
-- The language applies as soon as you choose it, without “Save”.
+- The language is usually chosen with the “Language” flag of the header; the “Language” card (Expert level) applies as soon as you choose it, without “Save”.
 - In production mode, the trigram is the one of the signed-in user and cannot be changed here.
 
 ### Sign-in and password
@@ -330,7 +389,7 @@ There is no “Save” button: each tick is kept at once in this browser, then c
 
 ### Altitude without oxygen (unpressurised aircraft)
 
-This section (“Fuel planner” group) sets the threshold above which the planner's optimum altitude chart shows “oxygen required” for an unpressurised aircraft.
+This section (“Fuel planner” group) sets the threshold above which the planner's optimum altitude chart shows “oxygen required” for an unpressurised aircraft. It only appears if the Fuel tool is ticked in “Usage level” (always at the Expert level).
 
 1. Enter “Maximum altitude without oxygen (ft)”: between 1,000 and 30,000 ft, in steps of 500.
 2. Click “Save”.
@@ -341,7 +400,7 @@ This is information only: the calculation is not limited. The setting is kept in
 
 ### My aircraft (reporting)
 
-The aircraft you flew or reported: those of the reports with your trigram in the crew, or that you wrote (reports saved since this version) (the aircraft of your seat when the report says so), with type, variant, callsigns, operator, number of flights and last flight. The greyed “Fleet” box shows whether the aircraft belongs to the fleet (ticked) or not (unticked, callsign included); it cannot be changed here. The full list, with the “personal” box, is in Settings › Centre › Fleet (restricted to the Centre). At the top, the log count: reports in total, your reports, reports with no crew entered (they count for nobody).
+The aircraft you flew or reported: those of the reports with your trigram in the crew, or that you wrote (reports saved since this version) (the aircraft of your seat when the report says so), with type, variant, callsigns, operator, number of flights and last flight. The greyed “Fleet” box shows whether the aircraft belongs to the fleet (ticked) or not (unticked, callsign included); it cannot be changed here. The full list, with the “personal” box, is in Settings › Centre › Fleet (restricted to the Centre). At the top, the log count: reports in total, your reports, reports with no crew entered (they count for nobody). Section shown from the Planning level (2).
 
 ## Appearance
 <!-- page: apps/settings/apparence.html -->
@@ -350,24 +409,26 @@ This page sets the look of the whole suite: design, charts, icons, side bar and 
 The “Appearance” entry of the side bar (or the “Appearance” button of the ☰ menu) opens it in a window above the current page: you see the effect straight away. To close: “✕”, Esc or a click outside the window.
 The same interface exists as a full page (☰ › list of settings pages › “Appearance”).
 The settings are remembered in this browser and apply to all pages; they do not count in the backup reminder.
+Depending on the usage level: at levels 1 to 3, the page shows the design, the current icon set, the side bar, the icon size and “Reset everything”; the decoration, the Aqua colour, the bar display, the other icon sets, Charts, Theme colours and “Full demonstration” are added at the Expert level.
 
 ### Design
 
 The shape of the pages: corners, density, titles, side bar.
 
 - Each design is presented by a thumbnail drawn in its style, with its name and description: Standard, Aero, Operational, Console, Cabinet, Flight log, Rugged, Aqua, Tactical.
+- Six thumbnails are shown at once (plus the current design if it is not among them); the others are under “More designs”, to unfold.
 - A click on a thumbnail applies the design at once. The chosen thumbnail is framed.
 - Cabinet, Flight log, Rugged and Aqua add their materials, Tactical its smoked glass on a night background; the information colours stay those of the theme (Tactical: edge at the top of the blocks).
 
-**“Decoration (material designs)”**:
+**“Decoration (material designs)”** (Expert level):
 - “Full” (default): illustrated block panels, register sheets, screws, radar;
 - “Plain”: materials and plates only, on all pages.
 
-**“Aqua colour”**: colour of the buttons and icons of the Aqua design (Blue, Teal, Green, Graphite, Violet, Orange, Red, Pink), or “Colour of each application”. Status icons keep their original colours.
+**“Aqua colour”** (Expert level): colour of the buttons and icons of the Aqua design (Blue, Teal, Green, Graphite, Violet, Orange, Red, Pink), or “Colour of each application”. Status icons keep their original colours.
 
 ### Charts
 
-Colour palette and style of the charts (reporting, indicators).
+Colour palette and style of the charts (reporting, indicators). Expert level section.
 
 - Palettes: “Automatic” (follows the design), “Vivid (page colours)”, “Slate”, “Brass and leather”, “Khaki and olive”. Each row shows a sample of colours.
 - “Style”: “Automatic”, “Flat” or “Relieve”.
@@ -376,7 +437,7 @@ The choice applies at once to the charts of the pages.
 
 ### Icons
 
-The stroke width of the icons, or no icons at all. Each row shows a preview of the set.
+The stroke width of the icons, or no icons at all. Each row shows a preview of the set. At levels 1 to 3, only the current set is offered; all sets at the Expert level.
 
 | Choice | Result |
 |---|---|
@@ -385,11 +446,11 @@ The stroke width of the icons, or no icons at all. Each row shows a preview of t
 | “Brass (medallions)”, “Steel (plates)”, “Gel (bubbles)”, “Avionics (dials)” | Material sets |
 | “No icons” | No icons |
 
-**“Side bar”**: “Depending on design”, “Always” or “Never”. By default, it is always shown (except on a narrow screen and when printing). “Icon size”: “Small”, “Medium” (default) or “Large”. “Display”: “Icon and label” (default), “Icon only” (narrower bar, entry name as a tooltip) or “Label only”.
+**“Side bar”**: “Depending on design”, “Always” or “Never”. By default, it is always shown (except on a narrow screen and when printing). “Icon size”: “Small”, “Medium” (default) or “Large”. “Display” (Expert level): “Icon and label” (default), “Icon only” (narrower bar, entry name as a tooltip) or “Label only”.
 
 ### Theme colours
 
-Each page of the suite has a colour theme (banner, banner text, accent). For each theme, you choose a colour family and a tone; the colours are calculated from them, with a readability check.
+Each page of the suite has a colour theme (banner, banner text, accent). For each theme, you choose a colour family and a tone; the colours are calculated from them, with a readability check. Expert level section.
 
 The themes are shown as cards, in two groups: “Applications” (Fuel, Landings, Centre, report) and “Report families”.
 
@@ -403,7 +464,7 @@ On each card:
 Each change is saved at once.
 
 **At the bottom of the page**:
-- “Full demonstration” opens a mock-up: generator, icon catalogue and contrasts of all themes.
+- “Full demonstration” (Expert level) opens a mock-up: generator, icon catalogue and contrasts of all themes.
 - “Reset everything” restores all the Appearance settings to their defaults (Aqua design, design icons, side bar always shown, full decoration, original colours).
 
 ## First run
@@ -483,7 +544,7 @@ Maps, missions and planning use the aeronautical data (AIRAC) and the aircraft t
 ### 6 Centre (administrators)
 
 For SO Group administrators only: pilots skip this step.
-- “Enable the Centre” card: “Centre password” (shown under the button, `DEFA` by default), then “Enable the Centre”. The summary shows the Centre mode (standalone: password).
+- “Enable the Centre” card: “Centre password” (shown next to the button, `DEFA` by default), then “Enable the Centre”. The summary shows the Centre mode (standalone: password).
 - Once the Centre is enabled:
   - “Fleet and flight log”: last reading of the website by the launcher (fleet, aircraft location, log), “Update now”, and the link to the fleet (Settings › Centre).
   - “Missions”: number of missions in the registry (they come with the data, step 1) and the link to the registry.
@@ -507,6 +568,14 @@ then the report page of that family opens. It is meant for all pilots.
 To go there: side bar › **Report**, or the “New report” button in the header of the
 general reporting. A report can also open directly, already filled in, from a mission assigned
 to you (see below). Full step by step: [tutorial](../TUTORIAL.md).
+
+### My missions to report
+
+First block of the page: the missions assigned to you that are already past (21 days at most) and have no report in the registry, as in the “Reports to write” block of the “Today” page (seven lines at most).
+
+- **“Write the report”** opens the mission folder in “My missions” and starts the report in the mission’s family, filled in from the mission order (see “Resume an assigned mission”).
+- **“No report”** removes the mission from the list (remembered in this browser).
+- With no trigram set, the block asks for it on the spot (“Trigram” field, “Save” button). The choice of family, further down, remains for a mission outside your assignments.
 
 ### Mission family
 
@@ -577,13 +646,19 @@ in the Remarks. The usual helpers then apply (known aircraft, airfield, weather)
 <!-- page: apps/cr/SOF/sof_cr.html -->
 <!-- page: apps/cr/SPECIAL/special_cr.html -->
 <!-- page: apps/cr/SURVEY/survey_cr.html -->
-<!-- page: apps/cr/MissionCore/demo_cr.html -->
 
 All families share the same entry page: the same common blocks, plus a few blocks specific
 to the family. You write the report of a flight you have flown there, then save it in the mission ledger.
 You reach it from the “New report” page, from an assigned mission, or by clicking a mission
-in a reporting page or a sheet (the mission then opens for editing). The `demo_cr.html` page is a
-demonstration of the engine, outside the list of families.
+in a reporting page or a sheet (the mission then opens for editing).
+
+**Depending on the usage level: short or detailed report.** At levels 1 (Crew) and 2 (Planning), the form only shows the essentials of the report:
+- identification (mission, report no., date, series) and result;
+- aircraft (registration, type, callsign, airfields; a known aircraft fills in the rest) and crew;
+- four times (engine start, take-off, landing, engine stop), fuel at departure and at landing;
+- the family’s own blocks and remarks.
+
+The “Detailed report” button of the bar shows the whole form without changing level (choice kept by the browser); “Short report” goes back to the reduced form. Values already entered in hidden fields (import, flight plan, network tracking) stay in the report. At levels 3 and 4, the form is always complete and this button does not exist.
 
 ### Header and toolbar
 
@@ -598,11 +673,14 @@ The header stays fixed at the top of the page. From left to right:
 | “Network tracking” ▾ | live IVAO / VATSIM tracking, VATSIM history |
 | “Mission” ▾ | “New mission”, “Export mission (YAML)”, “Delete this mission” (when editing) |
 | “Mission ledger” ▾ | “View reporting”, “Ledger folder…”, “Report sending settings (web service)…”, “Settings — databases…” |
+| “Detailed report” / “Short report” | levels 1 and 2 only: shows the whole form or goes back to the short report (see above) |
 
 On the right, a status message shows the last save (“Draft saved in the
 browser · time”). Each block has in its title **↕** (drag to move it) and **Hide /
 Show**; the layout is remembered. Blocks that contain a list have a **+** in their
 title to add an item.
+
+At levels 1 and 2, “Analyse / import…”, “Mission” and “Mission ledger” do not appear (they come at level 3): a new mission is opened with ☰ › Missions › “New report”.
 
 ### Editing a ledger mission
 
@@ -812,6 +890,7 @@ Right-hand column, updated while you type: “Block time”, “Flight time”, 
   timeline of more than 20 h, future date, inconsistent fuel). A click takes you to the field concerned.
 - “Display context” recalls the family, the series, the aircraft types and the capabilities, which
   decide which blocks are shown.
+- At levels 1 and 2 (short report), three calculations only: “Block time”, “Flight time”, “Fuel used”; “Display context” and the station and mission calculations come at level 3 or with “Detailed report”. A click on an anomaly about a hidden field shows the detailed report.
 
 ### Report
 
@@ -907,7 +986,6 @@ gives the family's own indicators, used in the reporting pages.
 | COMBAT | Setup and area · Interception (“Interception / identification (VID)” series) · Engagements · Session debrief | engagements, wins, valid shots, knock-it-offs (KIO) |
 | SOF | Supported unit · Zones (PZ / LZ / DZ) · Profile and methods · Personnel | personnel delivered, personnel recovered, zones used, night NVG missions |
 | SPECIAL | VIP / government transport (VIP series) · Ferry (ferry series) · Flight test and Test points (test series) · Training and Exercises (training series) | VIP passengers, ferry flights, test points passed / flown, exercises completed |
-| DEMO (demonstration) | Hoist (helicopter + hoist ticked) · Airdrop (aeroplane or amphibian + drop ticked) | hoist cycles, persons hoisted, cargo dropped (kg) |
 
 The HEMS and FIRE families can take over their old CSV ledger: see
 [Family reporting](#family-reporting).
@@ -1157,7 +1235,6 @@ only”).
 <!-- page: apps/cr/SOF/sof_reporting.html -->
 <!-- page: apps/cr/SPECIAL/special_reporting.html -->
 <!-- page: apps/cr/SURVEY/survey_reporting.html -->
-<!-- page: apps/cr/MissionCore/demo_reporting.html -->
 
 The reporting of a family only shows the missions of that family, with its own indicators.
 You reach it from “Mission ledger ▾ › View reporting” in a report, from a line of “Summary
@@ -1219,6 +1296,7 @@ This page is used to prepare your own flight maps: route, route map, approach, r
 It is open to all pilots. To go there: “Flight maps” in the side bar, the “Open in the flight maps” button of a mission in My missions, or the “Flight maps” button of the fuel planner.
 It uses the engine of the Centre's map studio, but works in a space of its own in your browser: your settings never change the Centre's mission.
 Each block collapses (“Hide” / “Show”) and moves (↕ handle). The SIA database must be read once in this browser (see the last block).
+At levels 1 to 3 (My profile › “Usage level”), the page is limited to the essentials: route field, “Level”, “SimBrief”, control map (“⤢ Enlarge”), “Maps of the flight” block and the “Generate the maps and the ZIP” button of the footer. The other controls described below only appear at level 4 (Expert).
 
 ### Receiving a mission (“Open in the flight maps”)
 
@@ -1226,8 +1304,8 @@ The page has no “Mission” block: the mission arrives on its own from My miss
 
 1. In My missions, open the mission folder.
 2. Click “Open in the flight maps”. The aircraft assigned to you is placed first in the mission.
-3. The page opens with the route and the level of the mission in the “Route” block, and all the maps planned by the mission in “Maps to produce” (plus `profil_vertical.png`).
-4. Adjust each map if needed, then generate the ZIP in “Previews and generation”.
+3. The page opens with the route and the level of the mission in the “Route” block, and all the maps planned by the mission in “Maps to produce” (plus `profil_vertical.png`). The “Maps to produce” list is only visible at the Expert level.
+4. Adjust each map if needed (Expert level), then click “Generate the maps and the ZIP” at the bottom of the page.
 
 The footer shows the number of maps in the ZIP (“… map(s) in the ZIP + index map”), or “No mission loaded”.
 Mission received: “Draw” and “Fuel” work on the loaded mission without replacing it. “Create the maps” asks for confirmation before replacing it with a free flight “Flight departure → destination” built from the route; with no mission loaded, the maps are created directly.
@@ -1243,12 +1321,13 @@ This block links three views: the flight plan (text), the map and the vertical s
 - “Draw”: draws the vertical section. “Fuel”: opens the fuel planner with this route (distance, level, true track, aircraft).
 - “Copy ICAO”: copies the strict ICAO flight plan (unpublished points as coordinates).
 - “Syntax and use”: reminder of the accepted forms (beacons, VFR reporting points “MM-CV”, “REN300010”, coordinates “4330N00125E”, levels “/A035”, “VFR”…).
+- At levels 1 to 3, the route field, “Level”, “SimBrief” and “Syntax and use” remain; the “Airways” / “RTBA” menu, “Search”, “Draw”, “Fuel” and “Copy ICAO” are at the Expert level.
 
 On the map: drag a point to move it (it snaps to beacons, reporting points and airfields), click the route to insert a point, right-click to delete one. On the section: click to add a point at that altitude, drag to change the altitude, right-click to delete.
 
 ### Control map and framing (Route block)
 
-Under the route field, a control map shows the chosen map with its display profile. It is redrawn at each setting.
+Under the route field, a control map shows the chosen map with its display profile. It is redrawn at each setting. At levels 1 to 3, only “⤢ Enlarge” is offered; the other controls of the table and the “Profile settings: section, aircraft, climb rate, outputs” are at the Expert level.
 
 | Control | Effect |
 |---|---|
@@ -1264,7 +1343,7 @@ Under the route field, a control map shows the chosen map with its display profi
 
 ### Profile settings: base map, airspaces, ICAO symbols, elements
 
-This collapsible panel, placed under the control map, sets the display profile of the chosen map. The profiles (IFR, detailed VFR, AIRWAYS…) are shared by all your missions and kept in the browser.
+This collapsible panel, placed under the control map, sets the display profile of the chosen map. The profiles (IFR, detailed VFR, AIRWAYS…) are shared by all your missions and kept in the browser. Expert level panel.
 
 - At the top: “Profile name”, “Base map” (standard OSM, OpenTopoMap, vector base maps…), “Save”, “New”, “Duplicate”, “Delete” buttons.
 - “Base map” tab: OSM layers (ground, hydrography, roads, relief, contour lines, summits…), towns as ICAO symbols and population threshold, town labels, built-up areas.
@@ -1272,7 +1351,7 @@ This collapsible panel, placed under the control map, sets the display profile o
 - “ICAO symbols” tab: aerodromes (by category, controlled or not, allow list), radio navigation, low and high airways, VFR reporting points, overflight prohibited, parks and reserves, obstacles.
 - “Elements” tab: waypoints, meridians and parallels, MORA grid, town labels, refuelling racetrack, mission and search areas.
 
-Remember to click “Save” to keep a changed profile.
+Remember to click “Save” to keep a changed profile. The suggestion lists of the input fields (zones, aerodromes, waypoints) are filled only when you click in the field concerned: the page opens faster, and the list appears at the click or the first keystroke.
 
 ### Maps of the flight
 
@@ -1284,13 +1363,14 @@ This block creates the maps of a flight from the route, without a Centre mission
 4. Click “Create the maps”.
 
 The page builds a “Flight departure → destination” mission with the ticked maps and the vertical profile. The rendezvous map is only created if a rendezvous is entered.
+At levels 1 to 3, the message after “Create the maps” points to the “Generate the maps and the ZIP” button of the footer.
 After that, any change to the route, the level or the rendezvous updates the maps automatically.
 Arriving from the fuel planner (“Flight maps” button): the maps are created on their own as soon as the SIA database is loaded.
 Possible error messages: “SIA database missing from this browser”, “Route: unknown in the SIA database”, “No map chosen”.
 
 ### Maps to produce
 
-The “Mission maps” list gives one line per map:
+Expert level block. The “Mission maps” list gives one line per map:
 
 | Element of the line | Use |
 |---|---|
@@ -1306,32 +1386,36 @@ With no mission and no maps created, the list shows “No map: add one below.”
 
 ### Previews and generation
 
+At levels 1 to 3, the block only shows the generation report (maps generated, failures and “Retry this one”); “Show all maps”, the previews, the index map and the “Outputs: …” line are at the Expert level.
+
 1. “Show all maps”: draws a preview of each map with its profile. The previews create no file. Click on a preview: enlargement.
 2. Each preview keeps its “ZIP” box.
-3. “Generate the maps and the ZIP” (also in the footer): downloads a ZIP with each map, the index map and `profil_vertical.png` if this output is ticked.
+3. “Generate the maps and the ZIP” (button of the footer): downloads a ZIP with each map, the index map and `profil_vertical.png` if this output is ticked.
 
 The “Index map” appears by itself under the previews; it uses the profile of the general map.
 Formats: ☰ menu › Map outputs (PNG, editable SVG, PNG width from 400 to 5000 px; 1600 px by default).
 If a map fails (base map unavailable, timeout), the ZIP contains `rapport_generation.txt` and the list offers “Retry this one”.
-The buttons stay greyed out as long as there is no map to produce.
+The buttons stay greyed out as long as there is no map to produce. During the previews and the generation, the progress bar carries a “Stop” button: the map in progress is completed, the next ones are not made. A stopped generation downloads no ZIP (it would be incomplete); the previews already shown stay. Run “Generate the maps and the ZIP” again for all the maps.
 
 ### SIA database
 
-This block is hidden by default: click “Show”. It reads the SIA folder (AIXM) and keeps it in the browser. Without it, the page recognises no airfields, no beacons and no airspaces.
+This block is at the Expert level and hidden by default: click “Show”. When the database is missing in this browser, it opens by itself, whatever the level. It reads the SIA folder (AIXM) and keeps it in the browser. Without it, the page recognises no airfields, no beacons and no airspaces.
 
 - “SIA folder: …” button: choose the `data/sia` folder (the browser asks for access), then reading.
 - “Rebuild the aeronautical database”: to do after each AIRAC update; reads the active zones of Settings › Maintenance › Aeronautical data. A gauge follows the reading; “Cancel” interrupts it without touching the database kept.
 - “Purge the cache”: clears the database kept (it will be rebuilt at the next reading).
 - The status line shows the database kept, its AIRAC cycle and its date; “outdated cycle” is shown if a more recent cycle is in force. “Files analysed” lists the files read.
+- Without a database, the page says so: “SIA database missing from this browser: ‘SIA database’ block, ‘Rebuild the aeronautical database’, or Settings › Maintenance.”
 
 It is the same block as Settings › Maintenance › Aeronautical data. The same database is used for the vertical profile of the fuel planner. Details: [SIA missions](../SIA_MISSIONS.md).
 
 ## Fuel
 <!-- page: apps/planner/flight_performance_planner.html -->
 
-The fuel planner (title “Flight Performance & Fuel Planner”) calculates the fuel for a flight from the performance profile of your aircraft. It also draws the optimum altitudes and climb laws.
+The fuel planner (title “Fuel”) calculates the fuel for a flight from the performance profile of your aircraft. It also draws the optimum altitudes and climb laws.
 To go there: “Fuel” in the side bar, the “Fuel (planner)” button of a mission in My missions, or the “Fuel” button of the Flight maps. The route, the distance, the level and the aircraft are then carried over.
 Header: “Aircraft” menu, “Fetch latest SimBrief FPL” button, “Units: kg / lbs”. Imports and exports are in the ☰ menu. Technical details: [planner](../FLIGHT_PLANNER.md).
+Depending on the usage level: at levels 1 to 3 (Crew, Planning, Design), the page shows the aircraft, the flight plan (and “Fetch latest SimBrief FPL”), the collapsible “Flight parameters” section, “Calculate” and the Result, in two columns; the ☰ menu only keeps exporting and importing the preferences. Curves, panels, instruments, profile blocks, status bar and the profile actions of the ☰ menu are added at the Expert level, where the page is complete.
 
 ### Choose the aircraft and save the profile
 
@@ -1339,24 +1423,24 @@ Header: “Aircraft” menu, “Fetch latest SimBrief FPL” button, “Units: k
 2. Choose a profile in the list, grouped by category (helicopters, jets, single-engines, turboprops…).
 3. A type marked “fleet, no profile” creates an empty profile: its performance must be filled in.
 
-The bar at the bottom of the page shows “Profile saved — …” or “Unsaved changes — …”. It carries “Reload the local database”, “Save profile” and “Delete this aircraft”.
+The bar at the bottom of the page shows “Profile saved — …” or “Unsaved changes — …”. It carries “Reload the local database”, “Save profile” and “Delete this aircraft”. This bar only appears at the Expert level.
 If you change aircraft with unsaved changes, the page offers “Stay”, “Discard and switch” or “Save and switch”.
-☰ menu: import profiles / CSV / JSON (including Little Navmap `.lnmperf`), import a SimBrief airframe, choose the performance folder, export the `.lnmperf` or JSON profile, save the local database, restore the previous backup, export or import the preferences.
+☰ menu: import profiles / CSV / JSON (including Little Navmap `.lnmperf`), import a SimBrief airframe, choose the performance folder, export the `.lnmperf` or JSON profile, save the local database, restore the previous backup, export or import the preferences. These actions are at the Expert level, except exporting and importing the preferences.
 
 ### Fuel plan
 
 1. “Flight plan (item 15)”: enter the route. It is the same plan as the Flight maps (the most recent one wins). The distance, the true track and the level are deduced from it.
-2. Complete or correct the fields: “Distance (NM)”, “Level (FL)”, “True track (°)”, “Taxi (min)”, “Wind from (°)”, “Wind (kt)”, “Reserve (min)”, “Contingency (%)”.
-3. Optional: “Planned take-off mass”, compared with the type's MTOW; “ISA deviation (°C)”, or “Ground temperature (°C)” with “Field elevation (ft)”, or “Temperature at level (°C)”.
+2. Complete or correct the fields of the collapsible “Flight parameters” section (unfolded from the start at the Expert level, collapsed otherwise; the default values are enough for a quick estimate): “Distance (NM)”, “Level (FL)”, “True track (°)”, “Taxi (min)”, “Wind from (°)”, “Wind (kt)”, “Reserve (min)”, “Contingency (%)”.
+3. Optional, in the same section: “Planned take-off mass”, compared with the type's MTOW; “ISA deviation (°C)”, or “Ground temperature (°C)” with “Field elevation (ft)”, or “Temperature at level (°C)”.
 4. Click “Calculate”.
 
 Wind left empty: the page says so (“Unknown wind: ±25 kt range…”) and gives the fuel as a range.
-The “Flight maps” button opens the Flight maps with this flight plan; the maps and the profile are created there on arrival.
+The “Flight maps” button (Expert level) opens the Flight maps with this flight plan; the maps and the profile are created there on arrival.
 “Flight plan syntax” recalls the accepted forms. Without the SIA database in the browser, only points given as coordinates are recognised.
 
 ### Fuel plan curves (optimum altitude and climb)
 
-After “Calculate”, the “Fuel plan” block shows, in order:
+At the Expert level, after “Calculate”, the “Fuel plan” block shows, in order:
 
 | Title | What it shows |
 |---|---|
@@ -1379,13 +1463,13 @@ This block, in the right-hand column, follows the page while you scroll through 
 - Basis of the calculation: level and climb law used.
 - Detail: taxi, climb, cruise, descent, contingency, reserve; planned take-off mass and MTOW if you entered it (in red if it is exceeded).
 - Cursor card (⌖ on hover, 📌 pinned): fuel and time for the trip at that level, max climb rate, climb speeds; “unpin” removes the pin.
-- Collapsible group “Flight regimes — profile ↔ map”: IAS, climb rate, engine setting and flow per phase, compared with the engine map. It also contains the “SimBrief Airframe Internal ID” field and the links to the sheets of the aircraft of this type.
+- Collapsible group “Flight regimes — profile ↔ map” (Expert level): IAS, climb rate, engine setting and flow per phase, compared with the engine map. It also contains the “SimBrief Airframe Internal ID” field and the links to the sheets of the aircraft of this type.
 
-“Pin” keeps the whole block when it follows the page; otherwise, it collapses. Under the block, one panel per curve gives the optimums, the limits (ceiling, requested level) and reading help. A column of instruments shows IAS, climb rate, altitude, fuel and flight time.
+“Pin” keeps the whole block when it follows the page; otherwise, it collapses. At the Expert level, under the block, one panel per curve gives the optimums, the limits (ceiling, requested level) and reading help. A column of instruments (Expert level) shows IAS, climb rate, altitude, fuel and flight time.
 
 ### Engine performance — RPM / power / consumption
 
-This block (original title “Engine performance sheet”) gives the consumption for an engine setting.
+This block (original title “Engine performance sheet”) gives the consumption for an engine setting. Expert level block.
 
 1. Enter “RPM / N1”. The “Altitude (ft)” and “Phase” fields complete the sheet.
 2. Click “Interpolate”.
@@ -1396,14 +1480,14 @@ Without an RPM table in the profile, the page shows “RPM curve missing from th
 
 ### RPM / power → consumption table
 
-This table lists the points of the engine map of the active profile: “RPM / N1”, “Min.”, “Nominal”, “Max.”, “Flight phase”, “Comment”.
+This table lists the points of the engine map of the active profile: “RPM / N1”, “Min.”, “Nominal”, “Max.”, “Flight phase”, “Comment”. Expert level block.
 Click a column title (↕) to sort.
 It is read-only: to change it, use the “Engine map — edit RPM / power → consumption” block.
 Without data, it shows “No RPM curve in this profile.”
 
 ### Profile data — JSON ⇄ Little Navmap
 
-This block shows all the fields of the profile, exported as they are in the Little Navmap `.lnmperf` file.
+This block shows all the fields of the profile, exported as they are in the Little Navmap `.lnmperf` file. Expert level block.
 
 - Groups: “Identity and format”, “Fuel and operation”, “Runway and alternate”, “Climb”, “Cruise”, “Descent”, “Power setting and consumption”.
 - Fuel is shown in the chosen unit (kg or lbs).
@@ -1414,7 +1498,7 @@ After a change, click “Save profile” in the bottom bar.
 
 ### Engine map — edit RPM / power → consumption
 
-This block is used to enter or correct the setting → consumption table, point by point.
+This block is used to enter or correct the setting → consumption table, point by point. Expert level block.
 
 1. “Add a point” creates a line.
 2. Fill in “RPM / N1”, “Min.”, “Nominal”, “Max.”, “Flight phase” and “Comment”.
@@ -1425,7 +1509,7 @@ With no aircraft chosen, the block shows “Choose or import a profile.”
 
 ### SimBrief calibration from OFP
 
-This block adjusts the active profile to a real SimBrief flight plan.
+This block adjusts the active profile to a real SimBrief flight plan. Expert level block.
 
 1. Click “Fetch latest SimBrief FPL” (header). The identifier is entered in ☰ › Pilot profile. Failing that, download the JSON OFP on simbrief.com and use “Import OFP JSON”.
 2. The OFP fills in the fuel plan and the flight plan; the aircraft profile is created and calibrated. The message shows a full or partial calibration (measurable phases).
@@ -1436,7 +1520,7 @@ This block adjusts the active profile to a real SimBrief flight plan.
 
 ### Vertical profile
 
-This block draws a section along the flight plan of the fuel plan: terrain, airspaces, obstacles, trajectory (TOC, TOD).
+This block draws a section along the flight plan of the fuel plan: terrain, airspaces, obstacles, trajectory (TOC, TOD). Expert level block.
 
 1. Check the flight plan in “Fuel plan”.
 2. Choose the “Display profile (studio)”: these are the same profiles as in the Flight maps.
@@ -1449,14 +1533,14 @@ You need the SIA database of this browser, read in the Flight maps (“SIA datab
 
 ### OFP audit — raw and calculated values
 
-This table compares, phase by phase, the values read in the OFP and the recalculated values: “Time”, “Distance”, “Fuel”, “Computed FF”, “TAS / GS”, “V/S”.
+This table compares, phase by phase, the values read in the OFP and the recalculated values: “Time”, “Distance”, “Fuel”, “Computed FF”, “TAS / GS”, “V/S”. Expert level block.
 It fills in after an OFP import (“Fetch latest SimBrief FPL” or “Import OFP JSON”).
 Without an OFP: “No OFP data.”
 Useful to understand a partial calibration or a gap with SimBrief.
 
 ### Imported JSON / SimBrief
 
-This block shows the raw content of the last imported file (SimBrief OFP or JSON).
+This block shows the raw content of the last imported file (SimBrief OFP or JSON). Expert level block.
 - “Copy JSON”: copies the content to the clipboard.
 - “Clear”: empties the display (the profile is not touched).
 

@@ -1,8 +1,8 @@
 <!doctype html>
 <html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Mes missions</title>
-<link rel="stylesheet" href="../../shared/repository_nav.css?v=975c4b32"><link rel="stylesheet" href="../../shared/mission_core/core.css?v=8594d3c0">
-<script src="../../config/repository_tree?v=c3698338"></script>
+<link rel="stylesheet" href="../../shared/repository_nav.css?v=dd0730c4"><link rel="stylesheet" href="../../shared/mission_core/core.css?v=8594d3c0">
+<script src="../../config/repository_tree?v=18728c91"></script>
 <style>
   /* liste en cours de lecture (affectations) : estompée */
   #pmList[aria-busy="true"] {
@@ -1651,33 +1651,35 @@
 <section data-block-id="list" data-icon="calendar" data-subtitle="Missions de la semaine affichée, par heure de décollage (UTC) ; ● : nouvelle, pas encore ouverte."><h2>Mes missions de la semaine</h2>
   <div class="pm-week" data-weekbar></div>
   <div id="pmList" class="pm-list"><p class="pm-empty">Chargement…</p></div>
+  <div id="pmTri"></div>
   <p class="small"><label><input type="checkbox" id="pmAll"> afficher aussi les missions passées</label></p>
-  <div class="pm-me"><a class="secondary" id="pmPilot" data-icon="headset" href="../settings/profil.html?base=identity" title="Trigramme, réseaux, langue : Paramètres › Mon profil">Pilote</a><a class="secondary" data-icon="plane" href="../settings/profil.html?base=equipment#eqTypes" title="Types de la flotte possédés et maîtrisés : Paramètres › Mon profil">Appareils maîtrisés</a><a class="secondary" data-icon="globe" href="../settings/profil.html?base=equipment#eqSims" title="Simulateurs installés : Paramètres › Mon profil">Simulateurs</a><span id="pmWhoNote" class="small"></span></div>
+  <div class="pm-me"><a class="secondary" id="pmPilot" data-min-level="2" data-icon="headset" href="../settings/profil.html?base=identity" title="Trigramme, réseaux, langue : Paramètres › Mon profil">Pilote</a><a class="secondary" data-min-level="2" data-icon="plane" href="../settings/profil.html?base=equipment#eqTypes" title="Types de la flotte possédés et maîtrisés : Paramètres › Mon profil">Appareils maîtrisés</a><a class="secondary" data-min-level="2" data-icon="globe" href="../settings/profil.html?base=equipment#eqSims" title="Simulateurs installés : Paramètres › Mon profil">Simulateurs</a><span id="pmWhoNote" class="small"></span></div>
 </section>
 <section data-block-id="mission" data-icon="target" data-subtitle="Mission affectée, en lecture seule : ce qui vous est demandé, la route, les cartes fournies." id="pmMission" hidden><h2>Mission</h2>
   <div id="pmDetail"></div>
 </section>
 <section data-block-id="availability" data-icon="clock" data-subtitle="Semaine affichée, heures UTC : choisir une catégorie dans la palette, puis cliquer sur une case ou tracer un rectangle ; un second clic efface ; « Plage précise » pour des minutes. Le Centre s’en sert pour affecter les missions."><h2>Mes disponibilités</h2>
-  <div class="pm-week" data-weekbar></div>
+  <div class="pm-week" data-weekbar data-min-level="4"></div>
   <div id="pmDispos"></div>
-  <details id="pmGridOld" class="pm-legacy" hidden><summary>Ancienne grille horaire (lecture seule)</summary><div id="pmGrid"></div></details>
-  <p class="small"><a href="disponibilites.html">Ouvrir la saisie des disponibilités seule</a></p>
+  <details id="pmGridOld" class="pm-legacy" data-min-level="4" hidden><summary>Ancienne grille horaire (lecture seule)</summary><div id="pmGrid"></div></details>
+  <p class="small" data-min-level="4"><a href="disponibilites.html">Ouvrir la saisie des disponibilités seule</a></p>
 </section>
 </div>
 </main>
-<script src="../../shared/kit.js?v=7f07f523"></script>
-<script src="../../shared/repository_nav.js?v=55b5672e"></script>
+<script src="../../shared/kit.js?v=d74cff80"></script>
+<script src="../../shared/repository_nav.js?v=0951fa5a"></script>
 <script src="mes_missions_i18n.js?v=ff059abb" defer></script>
-<script src="../../shared/dispos_editor.js?v=4a8b0acf"></script>
-<script src="../../shared/content_i18n.js?v=266f3261"></script>
+<script src="../../shared/dispos_editor.js?v=9e198a77"></script>
+<script src="../../shared/content_i18n.js?v=515ea16b"></script>
 <script src="../../AircraftDB/aircraft_db.js"></script><script src="../../shared/mission_core/vendor/js-yaml.min.js"></script><script src="../../shared/data_files.js?v=dcb47c6a" data-file="references/aircraft_fleet.js"></script>
 <script src="../../shared/mission_core/vocab.js?v=8c65f5c2"></script>
 <script src="../../shared/mission_estimate.js?v=e352037a"></script><script src="../../shared/mission_i18n.js?v=bfd45c20"></script><script src="../../shared/machine_translate.js?v=9e5fc37d"></script><script src="../../shared/mission_exercise.js?v=b68ac247"></script>
-<script src="../../shared/assignments.js?v=95fcb353"></script>
+<script src="../../shared/assignments.js?v=95fcb353"></script><script src="../../shared/pilot_today.js?v=c962ff09"></script>
 <script>
 (() => {
   'use strict';
   /** Élément de la page par son identifiant ; A : affectations (shared/assignments.js), K : kit commun. */
+  let autoDo = new URLSearchParams(location.search).get('do') || ''; // ?do=cr : CR commencé à l'ouverture du dossier
   const $ = id => document.getElementById(id),
     A = window.MissionAssignments,
     K = window.RepositoryKit,
@@ -1707,7 +1709,8 @@
   }).replace('.', '');
 
   /** Remplit les barres de semaine ([data-weekbar]) : semaine précédente / suivante, choix d'une date, intervalle
-   *  affiché ; data-end : dernier jour de la semaine. */
+   *  affiché ; data-end : dernier jour de la semaine. Celle des disponibilités (même semaine) n'est montrée qu'au
+   *  niveau 4 (data-min-level) : une seule barre visible aux niveaux simples. */
   function weekBars() {
     const end = A.addWeeks(week, 1),
       last = new Date(Date.parse(`${end}T00:00:00Z`) - 864e5).toISOString().slice(0, 10);
@@ -1821,6 +1824,10 @@
     let t = b.querySelector('b');
     if (!t) b.append(t = document.createElement('b'));
     t.textContent = tri;
+    // liens du profil rangés au niveau 2 (Paramètres › Mon profil les porte) ; « Pilote » montré à tout niveau tant que
+    // le trigramme manque (la note ci-dessous y renvoie)
+    const ml = tri ? '2' : null;
+    if (b.getAttribute('data-min-level') !== ml) ml ? b.setAttribute('data-min-level', ml) : b.removeAttribute('data-min-level');
     $('pmWhoNote').textContent = tri ? '' : tv([
       'Trigramme non réglé : « Pilote » pour le saisir et voir les missions qui vous sont affectées.',
       'Trigram not set: “Pilot” to enter it and see the missions assigned to you.',
@@ -1857,6 +1864,13 @@
       idx = await A.index({
         fresh: true
       });
+    } catch (e) {
+      // index illisible (lanceur arrêté, dossier refusé…) : la liste le dit, avec quoi faire, au lieu de rester sur
+      // « Chargement… »
+      if (seq === loadSeq) $('pmList').innerHTML = `<p class="pm-empty err">${esc(window.AppFramework?.explain?.(e, tv([
+        'Affectations non lues', 'Assignments not read', 'Zuweisungen nicht gelesen', 'Asignaciones no leídas'
+      ])) || e?.message || e)}</p>`;
+      return;
     } finally {
       job?.end();
       if (seq === loadSeq) $('pmList').removeAttribute('aria-busy');
@@ -2853,11 +2867,28 @@
     if (stale()) return;
     try {
       if (yf) y = window.jsyaml.load(yf.value.replace(/^#.*\n/, ''));
-    } catch {
-      /* mission illisible : affectation seule */
+    } catch (e) {
+      // mission illisible : affectation seule, et le pilote sait pourquoi (détail de la ligne en second plan)
+      window.AppFramework?.notify?.(tv([
+        'Mission {m} : fichier de la mission illisible ({d}) — seule l’affectation est affichée ; le signaler au Centre.',
+        'Mission {m}: mission file unreadable ({d}) — only the assignment is shown; report it to the Centre.',
+        'Mission {m}: Missionsdatei nicht lesbar ({d}) — nur die Zuweisung wird angezeigt; dem Zentrum melden.',
+        'Misión {m}: archivo de la misión ilegible ({d}) — solo se muestra la asignación; avisar al Centro.'
+      ], {
+        m: a.mission,
+        d: String(e?.reason || e?.message || e).slice(0, 120)
+      }), 'warn');
     }
     const md = (await A.missionFirst(a.folder, [a.files?.md, `summary${a.mission}.md`, `summary${bare}.md`]))?.value || '';
-    if (!yf) window.AppFramework?.notify?.(`Mission ${a.mission} : fichier introuvable (dossier « ${a.folder} »), ni dans le dossier des missions autorisé ni dans la copie servie — seule l’affectation est affichée.`, 'warn');
+    if (!yf) window.AppFramework?.notify?.(tv([
+      'Mission {m} : fichier introuvable (dossier « {f} »), ni dans le dossier des missions autorisé ni dans la copie servie — seule l’affectation est affichée ; synchroniser les données, ou autoriser le dossier des missions (Paramètres › Installation).',
+      'Mission {m}: file not found (folder “{f}”), neither in the authorised missions folder nor in the served copy — only the assignment is shown; synchronise the data, or authorise the missions folder (Settings › Installation).',
+      'Mission {m}: Datei nicht gefunden (Ordner „{f}“), weder im freigegebenen Missionsordner noch in der ausgelieferten Kopie — nur die Zuweisung wird angezeigt; Daten synchronisieren oder den Missionsordner freigeben (Einstellungen › Installation).',
+      'Misión {m}: archivo no encontrado (carpeta «{f}»), ni en la carpeta de misiones autorizada ni en la copia servida — solo se muestra la asignación; sincronizar los datos, o autorizar la carpeta de misiones (Ajustes › Instalación).'
+    ], {
+      m: a.mission,
+      f: a.folder
+    }), 'warn');
     // cartes : index de l'affectation, sinon yaml ; adresse résolue (cartes/x.png, sinon x.png)
     // cartes : celles que déclare la mission (yaml) font foi ; sinon la liste de l'index de l'affectation (fichiers du
     // dossier), sans les doublons d'avant la renumérotation (« cibleM004.png » à côté de « cibleM-004.png »)
@@ -3223,6 +3254,25 @@
     start?.();
   }, true);
 
+  /** Rubrique du dossier (fragment html) rangée sous le niveau d'utilisation lv : chaque élément de premier niveau
+   *  marqué data-min-level (repository_nav.css le masque), texte nu mis dans un span — la découpe en pages du livre
+   *  (bookify) garde les mêmes éléments ; lv ≤ 1 : fragment rendu tel quel. */
+  function minLevel(html, lv) {
+    if (!(lv > 1)) return html;
+    const t = document.createElement('template');
+    t.innerHTML = html;
+    for (const n of [...t.content.childNodes]) {
+      let el = n;
+      if (n.nodeType === 3) {
+        if (!n.textContent.trim()) continue;
+        el = document.createElement('span');
+        n.replaceWith(el);
+        el.append(n);
+      }
+      if (el.nodeType === 1) el.setAttribute('data-min-level', lv);
+    }
+    return t.innerHTML;
+  }
   /** Dessine la mission (affectation a, YAML y, résumé Markdown md, journal log) dans la langue de la page (bloc
    *  i18n, sinon traduction automatique) en parties data-part (voir plus haut), puis en livre (bookify). */
   function render(a, y, md = '', log = []) {
@@ -3235,6 +3285,10 @@
     if (auto) y = mtYaml(y, T);
     const pts = routeOf(y),
       dist = pts.slice(1).reduce((s, p, i) => s + nm(pts[i], p), 0);
+    // outils facultatifs (v2) : bouton présent si la page de l'outil est visible (module coché, ou niveau 4) ; sans
+    // barre de navigation, tous
+    const toMaps = window.RepositoryNav?.levels?.visible?.('apps/planner/map_planner.html') ?? true,
+      toFuel = window.RepositoryNav?.levels?.visible?.('apps/planner/flight_performance_planner.html') ?? true;
     const alert = a.alert || y.alert;
     const secs = mdSections(md, T);
     /** Retire et rend la rubrique du résumé dont le titre correspond à re ; null si aucune. */
@@ -3247,8 +3301,9 @@
       mdDetail = take(/description/i),
       mdRisks = take(/risque|attention|s[ée]curit/i),
       mdTeams = take(/[ée]quipe/i);
-    /** Rubrique titrée, omise si son contenu est vide. */
-    const sec = (title, body) => body ? `<h4>${esc(title)}</h4>${body}` : '';
+    /** Rubrique titrée, omise si son contenu est vide ; lv : niveau d'utilisation à partir duquel elle est montrée
+     *  (v2 : dossier réduit à l'essentiel au niveau 1 — ordre, résumé, route, cartes, objectifs, plis). */
+    const sec = (title, body, lv = 1) => body ? minLevel(`<h4>${esc(title)}</h4>${body}`, lv) : '';
     /** Texte → paragraphes HTML (ligne vide : nouveau paragraphe). */
     const para = s => s ? String(s).trim().split(/\n\s*\n/).map(p => `<p>${esc(p).replace(/\n/g, '<br>')}</p>`).join('') : '';
     const order = `<div class="pm-order">
@@ -3292,42 +3347,47 @@
     });
     // famille de la mission : en-tête de l'ordre propre à la famille quand le design en a un (feuille de la page)
     $('pmDetail').dataset.family = window.MissionVocab?.familyForType?.(y.mission?.type || a.type) || '';
-    $('pmDetail').innerHTML = `<div data-part="title"><header class="pm-head pm-logo" aria-hidden="true"><img class="pm-emblem" src="../../shared/deco/cabinet/emblem-wings.webp?v=79ab9a8f" alt=""><div><b>SO Group Virtual CPCO</b><span>Centre de planification et de conduite des opérations</span></div></header>${labelHtml({ ...a, title: y.title || a.title })}</div>
-      <div data-part="order"><header class="pm-head"><img class="pm-emblem" src="../../shared/deco/cabinet/emblem-wings.webp?v=79ab9a8f" alt=""><div><b>SO Group Virtual CPCO</b><span>Centre de planification et de conduite des opérations</span></div><span class="pm-no">N° ${esc(a.mission)}</span></header>
+    $('pmDetail').innerHTML = `<div data-part="title"><header class="pm-head pm-logo" aria-hidden="true"><img class="pm-emblem" src="../../shared/deco/cabinet/emblem-wings.webp?v=79ab9a8f" alt=""><div><b>${esc(tv('{SOG_NOM} {CENTRE}'))}</b><span>Centre de planification et de conduite des opérations</span></div></header>${labelHtml({ ...a, title: y.title || a.title })}</div>
+      <div data-part="order"><header class="pm-head"><img class="pm-emblem" src="../../shared/deco/cabinet/emblem-wings.webp?v=79ab9a8f" alt=""><div><b>${esc(tv('{SOG_NOM} {CENTRE}'))}</b><span>Centre de planification et de conduite des opérations</span></div><span class="pm-no">N° ${esc(a.mission)}</span></header>
         <i class="pm-dr" aria-label="Diffusion restreinte"></i>
         <h3>${a.role === 'convoyage' ? `Ordre de convoyage — ${esc(titleOf(a).replace(/^Convoyage /, ''))}` : `Ordre de mission — ${esc(y.title || a.title || '')}`}</h3>
         ${auto ? `<p class="pm-mt small" data-mt-note data-no-i18n>${mtNoteHtml()}</p>` : ''}
         ${order}${ferryText}${alertText}
         ${team.length ? `<p><b>Avec</b> : ${team.map(x => `${esc(x.callsign || '')} (${esc(x.pilot)}, ${esc([x.aircraft?.type, x.aircraft?.registration].filter(Boolean).join(' '))}, ${tv(['décollage {t}', 'take-off {t}', 'Start {t}', 'despegue {t}'], { t: esc(hhmm(A.when(x))) })})`).join(' · ')}</p>` : ''}
-        ${sec('Introduction', mdIntro?.html)}
+        ${sec('Introduction', mdIntro?.html, 2)}
         ${sec('Résumé', summary)}
       </div>
       <div class="pm-actions" data-part="actions">
-        <button type="button" class="primary" data-go="maps" data-icon="map" ${y.mission ? '' : 'disabled data-off="1"'}>Ouvrir dans les Cartes de vol</button>
-        <button type="button" class="secondary" data-go="fuel" data-icon="fuel" ${pts.length > 1 ? '' : 'disabled data-off="1"'}>Carburant (planificateur)</button>
-        <button type="button" class="secondary" data-go="cr" data-icon="clipboard" ${y.mission ? '' : 'disabled data-off="1"'}>Créer le CR</button>
+        ${toMaps ? `<button type="button" class="primary" data-go="maps" data-icon="map" ${y.mission ? '' : 'disabled data-off="1"'}>Ouvrir dans les Cartes de vol</button>` : ''}
+        ${toFuel ? `<button type="button" class="secondary" data-go="fuel" data-icon="fuel" ${pts.length > 1 ? '' : 'disabled data-off="1"'}>Carburant (planificateur)</button>` : ''}
+        <button type="button" class="${toMaps ? 'secondary' : 'primary'}" data-go="cr" data-icon="clipboard" ${y.mission ? '' : 'disabled data-off="1"'}>Créer le CR</button>
         <button type="button" class="ghost" data-close-book>Refermer le dossier</button>
-        ${isDevelop() ? '<button type="button" class="ghost" data-reseal title="Canal develop : remettre la mission sous scellés (non lue)">Resceller</button>' : ''}
+        ${isDevelop() ? '<button type="button" class="ghost" data-reseal data-min-level="4" title="Canal develop : remettre la mission sous scellés (non lue)">Resceller</button>' : ''}
       </div>
       <div data-part="details">
-        ${y.target?.name || Number.isFinite(+y.target?.lat) ? sec('Cible / secteur', `<p><b>${esc(y.target.name || y.target.id || 'Cible')}</b>${Number.isFinite(+y.target.lat) ? ` — ${esc(coord({ lat: +y.target.lat, lon: +y.target.lon }))}` : ''}${y.target.description ? `<br>${esc(y.target.description)}` : ''}</p>`) : ''}
-        ${sec('Description détaillée', y.detailed_description ? para(y.detailed_description) : mdDetail?.html)}
-        ${sec('Risques et points d’attention', mdRisks?.html)}
-        ${sec('Équipes engagées', mdTeams?.html || (teams.length ? `<ul>${teams.map(t => `<li><b>${esc(t.name)}</b> — ${esc([t.service, t.type].filter(Boolean).join(', '))}</li>`).join('')}</ul>` : ''))}
+        ${y.target?.name || Number.isFinite(+y.target?.lat) ? sec('Cible / secteur', `<p><b>${esc(y.target.name || y.target.id || 'Cible')}</b>${Number.isFinite(+y.target.lat) ? ` — ${esc(coord({ lat: +y.target.lat, lon: +y.target.lon }))}` : ''}${y.target.description ? `<br>${esc(y.target.description)}` : ''}</p>`, 2) : ''}
+        ${sec('Description détaillée', y.detailed_description ? para(y.detailed_description) : mdDetail?.html, 2)}
+        ${sec('Risques et points d’attention', mdRisks?.html, 2)}
+        ${sec('Équipes engagées', mdTeams?.html || (teams.length ? `<ul>${teams.map(t => `<li><b>${esc(t.name)}</b> — ${esc([t.service, t.type].filter(Boolean).join(', '))}</li>`).join('')}</ul>` : ''), 2)}
         ${pts.length ? `<h4>Route fournie — ${Math.round(dist)} NM${y.vertical_profile?.cruise ? `, ${esc(y.vertical_profile.cruise)}` : ''}</h4>
         <div class="pm-route"><table><thead><tr><th>Point</th><th>Nom</th><th>Rôle</th><th>Position</th></tr></thead><tbody>${pts.map(p => `<tr><td>${esc(p.id)}</td><td>${esc(p.name)}</td><td>${esc(p.role)}</td><td>${esc(coord(p))}</td></tr>`).join('')}</tbody></table>${plan(pts)}</div>` : ''}
       </div>
       ${a.role === 'convoyage' ? '' : `<div data-part="maps"><h4>Cartes fournies</h4>${maps.length ? `<div class="pm-maps">${maps.map(figure).join('')}</div>` : '<p class="small">Aucune carte fournie avec la mission (les Cartes de vol les génèrent depuis la route).</p>'}</div>`}
       <div data-part="final">
         ${sec('Objectifs', objectives)}
-        ${sec('Remarques', notes.length ? `<ul>${notes.map(n => `<li>${esc(n)}</li>`).join('')}</ul>` : '')}
-        ${secs.filter(s => !/piste|track|inject|chiffon|chronolog|exercice|\bplis?\b|message/i.test(s.title)).map(s => sec(s.label || s.title, s.html)).join('')}
-        ${sec('Fiche technique', techSheet(y))}
-        ${sec('Historique des affectations', log.length ? `<ul class="pm-log">${log.map(e => `<li>${esc(A.logText(e))}</li>`).join('')}</ul>` : '')}
-        <div class="pm-sign"><i class="pm-dr" aria-label="Diffusion restreinte"></i><span>${tv(['Fait le {d}, pour le Centre', 'Done on {d}, for the Centre', 'Gegeben am {d}, für das Zentrum', 'Hecho el {d}, por el Centro'], { d: esc(signed) })}</span><em class="pm-signature">${esc(a.by || 'CPCO')}</em><small>Le chef de centre — ${esc(a.by || 'CPCO')}</small></div>
+        ${sec('Remarques', notes.length ? `<ul>${notes.map(n => `<li>${esc(n)}</li>`).join('')}</ul>` : '', 2)}
+        ${secs.filter(s => !/piste|track|inject|chiffon|chronolog|exercice|\bplis?\b|message/i.test(s.title)).map(s => sec(s.label || s.title, s.html, 2)).join('')}
+        ${sec('Fiche technique', techSheet(y), 3)}
+        ${sec('Historique des affectations', log.length ? `<ul class="pm-log">${log.map(e => `<li>${esc(A.logText(e))}</li>`).join('')}</ul>` : '', 3)}
+        <div class="pm-sign"><i class="pm-dr" aria-label="Diffusion restreinte"></i><span>${tv(['Fait le {d}, pour le Centre', 'Done on {d}, for the Centre', 'Gegeben am {d}, für das Zentrum', 'Hecho el {d}, por el Centro'], { d: esc(signed) })}</span><em class="pm-signature">${esc(a.by || tv('{CENTRE}'))}</em><small>Le chef de centre — ${esc(a.by || tv('{CENTRE}'))}</small></div>
       </div>
       ${plis.length ? `<div data-part="plis"><h4>Plis et messages en vol</h4>${plis.map(pliHtml).join('')}</div>` : ''}`;
     $('pmDetail').querySelectorAll('[data-go]').forEach(b => b.onclick = () => go(b.dataset.go, a, y, pts, dist));
+    // ?do=cr (Aujourd'hui, Nouveau compte rendu) : le CR commence dès l'ouverture du dossier, une seule fois
+    if (autoDo === 'cr' && y.mission) {
+      autoDo = '';
+      go('cr', a, y, pts, dist);
+    }
     // cartes (fournies, jointes aux plis) : visionneuse commune (croix, Échap), pas d'onglet à part ; écoute posée une
     // fois, en capture (avant le clic de page qui tournerait la page)
     if (!$('pmDetail').dataset.viewer) {
@@ -3439,7 +3499,8 @@
       .matches) return;
     const host = $('pmDetail'),
       part = n => host.querySelector(`[data-part="${n}"]`),
-      actions = part('actions');
+      actions = part('actions'),
+      lv = window.RepositoryNav?.levels?.get?.() || 4; // niveau d'utilisation (rubriques rangées : data-min-level)
     const book = document.createElement('div');
     book.className = 'pm-book';
     book.innerHTML =
@@ -3476,7 +3537,9 @@
       }
       out.push(page);
       right.replaceChildren();
-      return out.filter(p => p.textContent.trim() || p.querySelector('img'));
+      // page sans rien de visible au niveau d'utilisation courant (rubriques data-min-level au-dessus) : écartée
+      return out.filter(p => [...p.children].some(c => !(+c.dataset.minLevel > lv) && (c.textContent.trim() || c.matches('img') || c
+        .querySelector('img'))));
     };
     // cartes : deux par page
     const mapsPart = part('maps'),
@@ -3772,8 +3835,34 @@
       gridLoad();
     }
   });
-  keepAll().then(load).then(gridLoad);
+  /** ?mission=… d'une autre semaine (Aujourd'hui, Nouveau compte rendu) : semaine de la mission affichée, missions
+   *  passées montrées si elle est passée. */
+  const wantedWeek = () => {
+    const id = new URLSearchParams(location.search).get('mission');
+    const a = id && A.mine(A._all, {
+      all: true
+    }).find(x => x.mission === id);
+    if (!a || !A.when(a)) return;
+    if (A.when(a) < Date.now() - 6 * 36e5 && !$('pmAll').checked) {
+      view.all = true;
+      $('pmAll').checked = true;
+      saveView();
+    }
+    if (A.weekKey(A.when(a)) !== week) {
+      week = A.weekKey(A.when(a));
+      weekBars();
+    }
+  };
+  // trigramme manquant : saisi sur place, sous la liste (shared/pilot_today.js) ; la page se relit ensuite
+  window.PilotToday?.mount($('pmTri'), 'trigram', {
+    onSave: () => {
+      who();
+      load();
+      gridLoad();
+    }
+  });
+  keepAll().then(wantedWeek).then(load).then(gridLoad);
 })();
 </script>
-<script src="../../shared/app_framework.js?v=b2adf17c"></script>
+<script src="../../shared/app_framework.js?v=0a2fa96b"></script>
 </body></html>

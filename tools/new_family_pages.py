@@ -51,7 +51,8 @@ if f'"{APP}/{folder}":{{' not in s:
     anchor = '    "apps/landing":{theme:"landing"'
     s = s.replace(anchor, f'    "{APP}/{folder}":{{theme:"{theme}",favicon:"assets/{cfg["favicon"]}"}},\n' + anchor, 1)
 if f'{APP}/{folder}/{prefix}_cr.html' not in s:
-    anchor = f'    {{path:"{APP}/MissionCore/demo_cr.html"'
+    # nouvelles familles : avant les pages de démonstration du moteur (tools/demo/mission_core/, hors des CR)
+    anchor = '    {path:"tools/demo/mission_core/demo_cr.html"'
     s = s.replace(anchor, f'    {{path:"{APP}/{folder}/{prefix}_cr.html",menu:false,label:"{cfg["cr_title"]}"}},\n'
                           f'    {{path:"{APP}/{folder}/{prefix}_reporting.html",menu:false,label:"{cfg["rep_title"]}"}},\n' + anchor, 1)
 io.open(p, 'w', encoding='utf-8', newline='').write(s.replace('\n', '\r\n') if crlf else s)

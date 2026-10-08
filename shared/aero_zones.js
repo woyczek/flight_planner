@@ -238,12 +238,29 @@
   };
 
   // ---------------------------------------------------------------- réglages
+  // réglages relus pour chaque fichier de la base (fileWanted, isOn, srcOn : plus de mille fois à l'ouverture de
+  // Paramètres › Maintenance) : analyse gardée tant que le texte de la clé ne change pas
+  let memo = null;
   const read = () => {
+    let raw = null;
     try {
-      return JSON.parse(localStorage.getItem(KEY) || 'null');
+      raw = localStorage.getItem(KEY);
     } catch {
       return null;
     }
+    if (memo?.raw !== raw) {
+      let value = null;
+      try {
+        value = JSON.parse(raw || 'null');
+      } catch {
+        /* illisible : réglages par défaut */
+      }
+      memo = {
+        raw,
+        value
+      };
+    }
+    return memo.value;
   };
   /** Réglages ; par défaut (jamais réglés) : France active (anciens réglages aeroSources:v1 repris s'ils existent). */
   function settings() {
@@ -286,13 +303,13 @@
   const srcOn = (zone, src, s = settings()) => s.src[zone]?.[src] ?? !SOURCES[src]?.off;
   /** Active ou désactive une zone, enregistre et renvoie les réglages. */
   const setZone = (zone, on) => {
-    const s = settings();
+    const s = structuredClone(settings()); // copie : l'analyse mémorisée reste intacte jusqu'à l'écriture
     s.on[zone] = !!on;
     return save(s);
   };
   /** Coche ou décoche la source src dans la zone, enregistre et renvoie les réglages. */
   const setSource = (zone, src, on) => {
-    const s = settings();
+    const s = structuredClone(settings());
     (s.src[zone] ||= {})[src] = !!on;
     return save(s);
   };
