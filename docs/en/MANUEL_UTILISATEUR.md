@@ -19,17 +19,18 @@ Open the suite from the launcher or a bookmark: a suite page opened from a link 
 
 The left-hand column gives access to the applications. The entry of the page on screen is highlighted.
 
-| Entry | What it opens |
-|---|---|
-| “My missions” | Missions assigned by the Centre and availability (with a red badge: number of unread missions) |
-| “Report” | Entry of a new mission report |
-| “Flight maps” | Flight maps: route, topo, approach, rendezvous, destination |
-| “Fuel” | Performance and fuel planner |
-| “Landings” | Landings dashboard |
-| “Reporting” | Mission reporting (Reports) |
+What it shows depends on your **usage level** (My profile › “Usage level”): at most seven entries, never more than your use needs.
 
-- The **“Centre”** group (“Missions”, “Registry”, “ODV”) only appears if the Centre is unlocked in this browser (Settings › Centre). For a pilot, it only shows **“Board”**: the week's order schedule, read-only.
-- At the bottom of the column: “Appearance” (opens the display settings in a window, above the current page), “Settings” (My profile and the other settings pages) and **“Help”**. These three entries stay fixed at the bottom of the screen: only the upper list scrolls when there are too many icons (window less than 460 px high: the whole bar scrolls).
+| Entry | What it opens | Level |
+|---|---|---|
+| “My missions” | Missions assigned by the Centre and availability (red badge: unread missions) | 1 |
+| “Report” | Entry of a mission report | 1 |
+| “Schedule” | Weekly order schedule (Board, read-only without the Centre); ODV planning as a tab from level 2 | 1 |
+| “Missions” | Mission generator and registry, as tabs | 3 |
+| “Tools” | Flight maps, fuel, landings, mission analysis (tools ticked in My profile, all at level 4); map studio at level 4 | 1 to 4 |
+
+- The level arranges the interface, it grants no rights: the Centre pages (Missions, ODV planning, changing the Board) still require the Centre enabled.
+- At the bottom of the column: “Settings” (My profile, Appearance, Centre, Installation, Maintenance, First run, as tabs) and **“Help”**. These two entries stay fixed at the bottom of the screen: only the upper list scrolls when there are too many icons (window under 460 px high: the whole bar scrolls).
 - “Help” opens the documentation in a window, above the current page, directly at the chapter of that page. The window closes with ✕, Esc or a click beside it; reopened, it resumes where you were. “↗” opens it as a full page (Ctrl-click on “Help”: in a new tab). It replaces the old “Menu” entry. It also works when the suite is opened from the disk, without the launcher: the documents are built into the page.
 - The logo at the top of the column opens the virtual airline's website in a new tab.
 - The bar is hidden on a narrow screen (less than 760 px) and when printing. You can hide it or always show it: Appearance › Icons › “Side bar”.
@@ -265,6 +266,19 @@ This page groups the settings specific to each pilot: identity, sign-in, mission
 You reach it from the “Settings” entry of the side bar (first tab, “My profile”) or from ☰ › “Settings”.
 The left-hand column lists the sections by group; a click shows one on the right, with its title, its presentation, its buttons and a status message.
 If a section contains unsaved changes, changing section or leaving the page asks for confirmation.
+
+### Usage level
+
+What the suite shows you, according to your use. One choice is enough: the page reloads and the sidebar follows.
+
+| Level | For | What is added |
+|---|---|---|
+| 1 · Crew | every pilot | My missions, Report, Schedule (read-only) |
+| 2 · Planning | duty officer | plan the orders: editable Board, ODV planning (Centre enabled) |
+| 3 · Design | mission writer | Missions: generator and registry (Centre enabled) |
+| 4 · Expert | cartographer, analyst | all tools, map studio |
+
+“Optional tools” (flight maps, fuel, landings, mission analysis) are added under “Tools” at any level; at level 4 they are all included. By default: level 4 if the Centre is enabled in this browser, otherwise level 1. The level grants no rights: the Centre keeps its access.
 
 ### Identity and networks
 

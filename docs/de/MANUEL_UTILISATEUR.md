@@ -19,17 +19,18 @@ Die Startseite (`index.html`) listet die Anwendungen als Karten auf und zeigt di
 
 Die linke Spalte führt zu den Anwendungen. Der Eintrag der angezeigten Seite ist hervorgehoben.
 
-| Eintrag | Was er öffnet |
-|---|---|
-| „Meine Missionen“ | Vom Zentrum zugewiesene Missionen und Verfügbarkeit (mit rotem Punkt: Anzahl ungelesener Missionen) |
-| „Bericht“ | Eingabe eines neuen Missionsberichts |
-| „Flugkarten“ | Flugkarten: Route, Topo, Anflug, Treffpunkt, Ziel |
-| „Kraftstoff“ | Leistungs- und Kraftstoffplaner |
-| „Landungen“ | Übersicht der Landungen |
-| „Berichte“ | Auswertungen der Missionen (Berichte) |
+Was sie zeigt, hängt von Ihrer **Nutzungsstufe** ab (Mein Profil › „Nutzungsstufe“): höchstens sieben Einträge, nie mehr, als Ihre Nutzung braucht.
 
-- Die Gruppe **„Zentrum“** („Missionen“, „Register“, „ODV“) erscheint nur, wenn das Zentrum in diesem Browser freigeschaltet ist (Einstellungen › Zentrum). Für einen Piloten zeigt sie nur **„Einsatztafel“**: die Befehlsplanung der Woche, schreibgeschützt.
-- Unten in der Spalte: „Darstellung“ (öffnet die Anzeigeeinstellungen in einem Fenster über der aktuellen Seite), „Einstellungen“ (Mein Profil und die anderen Einstellungsseiten) und **„Hilfe“**. Diese drei Einträge bleiben unten am Bildschirm fixiert: Nur die obere Liste scrollt, wenn es zu viele Symbole gibt (Fenster unter 460 px Höhe: Die ganze Leiste scrollt).
+| Eintrag | Was er öffnet | Stufe |
+|---|---|---|
+| „Meine Missionen“ | Vom Zentrum zugewiesene Missionen und Verfügbarkeit (roter Punkt: ungelesene Missionen) | 1 |
+| „Bericht“ | Eingabe eines Missionsberichts | 1 |
+| „Planung“ | Befehlsplanung der Woche (Einsatztafel, ohne Zentrum schreibgeschützt); ODV-Planung als Registerkarte ab Stufe 2 | 1 |
+| „Missionen“ | Missionsgenerator und Register, als Registerkarten | 3 |
+| „Werkzeuge“ | Flugkarten, Kraftstoff, Landungen, Missionsanalyse (in Mein Profil angehakte Werkzeuge, auf Stufe 4 alle); Kartenstudio auf Stufe 4 | 1 bis 4 |
+
+- Die Stufe ordnet die Oberfläche, sie gewährt keine Rechte: die Seiten des Zentrums (Missionen, ODV-Planung, Ändern der Einsatztafel) erfordern weiterhin das aktivierte Zentrum.
+- Unten in der Spalte: „Einstellungen“ (Mein Profil, Darstellung, Zentrum, Installation, Wartung, Erststart, als Registerkarten) und **„Hilfe“**. Diese beiden Einträge bleiben unten am Bildschirm fixiert: nur die obere Liste rollt, wenn es zu viele Symbole gibt (Fenster unter 460 px Höhe: die ganze Leiste rollt).
 - „Hilfe“ öffnet die Dokumentation in einem Fenster über der aktuellen Seite, direkt beim Kapitel dieser Seite. Das Fenster schließt sich mit ✕, Esc oder einem Klick daneben; erneut geöffnet, setzt es dort fort, wo Sie waren. „↗“ öffnet sie als ganze Seite (Strg-Klick auf „Hilfe“: in einem neuen Tab). Sie ersetzt den früheren Eintrag „Menü“. Sie funktioniert auch, wenn die Suite ohne Starter direkt von der Festplatte geöffnet wird: Die Dokumente sind in die Seite eingebaut.
 - Das Logo oben in der Spalte öffnet die Website der virtuellen Fluggesellschaft in einem neuen Tab.
 - Die Leiste ist auf einem schmalen Bildschirm (unter 760 px) und beim Drucken ausgeblendet. Man kann sie ausblenden oder immer anzeigen: Darstellung › Symbole › „Seitenleiste“.
@@ -265,6 +266,19 @@ Diese Seite vereint die Einstellungen jedes Piloten: Identität, Anmeldung, Miss
 Sie erreichen sie über den Eintrag „Einstellungen“ der Seitenleiste (erste Registerkarte, „Mein Profil“) oder über ☰ › „Einstellungen“.
 Die linke Spalte listet die Abschnitte nach Gruppen; ein Klick zeigt einen davon rechts an, mit Titel, Beschreibung, Knöpfen und einer Statusmeldung.
 Enthält ein Abschnitt nicht gespeicherte Änderungen, erfordert das Wechseln des Abschnitts oder das Verlassen der Seite eine Bestätigung.
+
+### Nutzungsstufe
+
+Was die Suite Ihnen zeigt, je nach Nutzung. Eine Wahl genügt: die Seite wird neu geladen und die Seitenleiste folgt.
+
+| Stufe | Für | Was hinzukommt |
+|---|---|---|
+| 1 · Besatzung | jeden Piloten | Meine Missionen, Bericht, Planung (nur lesen) |
+| 2 · Planung | Diensthabender | Befehle planen: änderbare Einsatztafel, ODV-Planung (Zentrum aktiviert) |
+| 3 · Gestaltung | Missionsautor | Missionen: Generator und Register (Zentrum aktiviert) |
+| 4 · Experte | Kartograf, Analyst | alle Werkzeuge, Kartenstudio |
+
+„Optionale Werkzeuge“ (Flugkarten, Kraftstoff, Landungen, Missionsanalyse) kommen auf jeder Stufe unter „Werkzeuge“ hinzu; auf Stufe 4 sind alle enthalten. Standard: Stufe 4, wenn das Zentrum in diesem Browser aktiviert ist, sonst Stufe 1. Die Stufe gewährt keine Rechte: das Zentrum behält seinen Zugang.
 
 ### Identität und Netzwerke
 

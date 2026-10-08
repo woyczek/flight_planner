@@ -19,17 +19,18 @@ Ouvrez la suite par le lanceur ou un favori : une page de la suite ouverte depui
 
 La colonne de gauche donne accès aux applications. L'entrée de la page affichée est mise en évidence.
 
-| Entrée | Ce qu'elle ouvre |
-|---|---|
-| « Mes missions » | Missions affectées par le Centre et disponibilités (avec une pastille rouge : nombre de missions non lues) |
-| « CR » | Saisie d'un nouveau compte rendu de mission |
-| « Cartes de vol » | Cartes de vol : route, topo, approche, rendez-vous, destination |
-| « Carburant » | Planificateur de performances et de carburant |
-| « Atterrissages » | Tableau de bord des atterrissages |
-| « Reporting » | Reportings des missions (CR) |
+Ce qu'elle montre dépend de votre **niveau d'utilisation** (Mon profil › « Niveau d'utilisation ») : au plus sept entrées, jamais plus que ce que votre usage demande.
 
-- Le groupe **« Centre »** (« Missions », « Registre », « ODV ») n'apparaît que si le Centre est déverrouillé dans ce navigateur (Paramètres › Centre). Pour un pilote, il ne montre que **« Tableau »** : le planning des ordres de la semaine, en lecture seule.
-- En bas de la colonne : « Apparence » (ouvre les réglages d'affichage dans une fenêtre, au-dessus de la page en cours), « Paramètres » (Mon profil et les autres pages de réglage) et **« Aide »**. Ces trois entrées restent fixées en bas de l'écran : seule la liste du haut défile quand il y a trop d'icônes (fenêtre de moins de 460 px de haut : toute la barre défile).
+| Entrée | Ce qu'elle ouvre | Niveau |
+|---|---|---|
+| « Mes missions » | Missions affectées par le Centre et disponibilités (pastille rouge : missions non lues) | 1 |
+| « Compte rendu » | Saisie d'un compte rendu de mission | 1 |
+| « Planning » | Planning des ordres de la semaine (Tableau, en lecture seule sans le Centre) ; Planning ODV en onglet au niveau 2 | 1 |
+| « Missions » | Générateur de mission et registre, en onglets | 3 |
+| « Outils » | Cartes de vol, carburant, atterrissages, analyse des missions (outils cochés dans Mon profil, tous au niveau 4) ; studio cartographique au niveau 4 | 1 à 4 |
+
+- Le niveau range l'interface, il ne donne aucun droit : les pages du Centre (Missions, Planning ODV, modification du Tableau) demandent toujours le Centre activé.
+- En bas de la colonne : « Réglages » (Mon profil, Apparence, Centre, Installation, Maintenance, Premier lancement, en onglets) et **« Aide »**. Ces deux entrées restent fixées en bas de l'écran : seule la liste du haut défile quand il y a trop d'icônes (fenêtre de moins de 460 px de haut : toute la barre défile).
 - « Aide » ouvre la documentation dans une fenêtre, au-dessus de la page en cours, directement au chapitre de cette page. La fenêtre se ferme par ✕, Échap ou un clic à côté ; rouverte, elle reprend là où vous en étiez. « ↗ » l'ouvre en page entière (Ctrl-clic sur « Aide » : dans un nouvel onglet). Elle remplace l'ancienne entrée « Menu ». Elle fonctionne aussi quand la suite est ouverte depuis le disque, sans le lanceur : les documents sont intégrés à la page.
 - Le logo en haut de la colonne ouvre le site de la compagnie virtuelle dans un nouvel onglet.
 - La barre est masquée sur un écran étroit (moins de 760 px) et à l'impression. On peut la masquer ou l'afficher toujours : Apparence › Icônes › « Barre latérale ».
@@ -265,6 +266,19 @@ Cette page regroupe les réglages propres à chaque pilote : identité, connexio
 On y arrive par l'entrée « Paramètres » de la barre latérale (premier onglet, « Mon profil ») ou par ☰ › « Paramètres ».
 La colonne de gauche liste les rubriques par groupe ; un clic en affiche une à droite, avec son titre, sa présentation, ses boutons et un message d'état.
 Si une rubrique contient des modifications non enregistrées, changer de rubrique ou quitter la page demande une confirmation.
+
+### Niveau d'utilisation
+
+Ce que la suite vous montre, selon votre usage. Un choix suffit : la page se recharge et la barre latérale suit.
+
+| Niveau | Pour | Ce qui s'ajoute |
+|---|---|---|
+| 1 · Équipage | tout pilote | Mes missions, Compte rendu, Planning (lecture) |
+| 2 · Planification | officier de permanence | planifier les ordres : Tableau modifiable, Planning ODV (Centre activé) |
+| 3 · Conception | rédacteur de missions | Missions : générateur et registre (Centre activé) |
+| 4 · Expert | cartographe, analyste | tous les outils, studio cartographique |
+
+« Outils facultatifs » (cartes de vol, carburant, atterrissages, analyse des missions) s'ajoutent sous « Outils » à n'importe quel niveau ; au niveau 4, ils sont tous inclus. Par défaut : niveau 4 si le Centre est activé dans ce navigateur, sinon niveau 1. Le niveau ne donne aucun droit : le Centre garde son accès.
 
 ### Identité et réseaux
 

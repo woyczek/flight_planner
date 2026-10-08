@@ -97,7 +97,7 @@
     display: none
   }
 </style>
-<script src="config/repository_tree?v=7ee7e988" data-no-design></script><script src="data/data_tree.js" onerror="window.DATA_TREE=false"></script>
+<script src="config/repository_tree?v=e06d883a" data-no-design></script><script src="data/data_tree.js" onerror="window.DATA_TREE=false"></script>
 </head><body><main>
 <!-- Page d'accueil (v3) : les applications sont dans apps/ ; les données dans data/ (dépôt de données). -->
 <h1>XPlane Web Suite</h1><p id="brand"></p><p id="rel"></p>
@@ -134,16 +134,35 @@
       '"': '&quot;'
     } [c]));
     const known = new Set((cfg.pages || []).map(p => p.path)),
-      // page du Centre (masquée tant qu'il est verrouillé), sauf celles consultables en lecture seule (view:true : Tableau)
-      cpco = p => (String(p).startsWith('apps/cpco/') || p === 'apps/settings/centre.html') && !(cfg.pages || []).find(x => x.path === p)
-      ?.view;
+      // v2 : pages du niveau d'utilisation choisi, même règle que RepositoryNav.levels (cette page ne charge pas
+      // repository_nav.js) : suiteLevel:v1 (1 à 4 ; à défaut 4 si le Centre est activé, sinon 1), suiteModules:v1 (tous au
+      // niveau 4), pages[].level et pages[].module ; une page du Centre verrouillé affiche elle-même son avis
+      store = (k, d) => {
+        try {
+          return localStorage.getItem(k) ?? d;
+        } catch {
+          return d;
+        }
+      },
+      lvl = (v => v >= 1 && v <= 4 ? v : store('cpcoAccess:v1', '') === 'on' ? 4 : 1)(+store('suiteLevel:v1', '')),
+      mods = (() => {
+        try {
+          return lvl >= 4 ? null : JSON.parse(store('suiteModules:v1', '[]')) || [];
+        } catch {
+          return [];
+        }
+      })(),
+      visible = p => {
+        const d = (cfg.pages || []).find(x => x.path === p);
+        return !!d && (d.level || 1) <= lvl && (!d.module || !mods || mods.includes(d.module));
+      };
     // description d'une entrée sans titre : libellé de la page (repository_tree.pages), traduit par repository_tree.labels
     const pageLabel = path => {
       const l = (cfg.pages || []).find(p => p.path === path)?.label || '';
       return tr(cfg.labels?.[l] || l);
     };
     const groups = [{
-      title: ['Pilote', 'Pilot', 'Pilot', 'Piloto'],
+      title: ['Mes tâches', 'My tasks', 'Meine Aufgaben', 'Mis tareas'],
       items: []
     }];
     for (const e of cfg.sidebar || []) {
@@ -154,20 +173,20 @@
         });
         continue;
       }
-      if (!known.has(e.path)) continue;
-      // pages sœurs (onglets) du bouton de la barre latérale
-      const tab = (cfg.tabs || []).find(g => g.pages.some(p => p.path === e.path));
-      const subs = (tab?.pages || []).filter(p => p.path !== e.path && known.has(p.path));
+      // entrée à onglets (tabs : groupe de repository_tree.tabs) : première page visible, les autres en sous-liens
+      const tab = e.tabs ? (cfg.tabs || []).find(g => g.id === e.tabs) : (cfg.tabs || []).find(g => g.pages.some(p => p.path === e.path));
+      const pages = (tab?.pages || []).filter(p => visible(p.path)),
+        path = e.tabs ? pages[0]?.path : e.path;
+      if (!path || !visible(path)) continue;
       groups.at(-1).items.push({
-        path: e.path,
+        path,
         label: tr(e.label),
-        title: tr(e.title || '') || [pageLabel(e.path)].find(s => s && s !== tr(e.label)) || '',
-        subs,
-        cpco: cpco(e.path)
+        title: tr(e.title || '') || [pageLabel(path)].find(s => s && s !== tr(e.label)) || '',
+        subs: pages.filter(p => p.path !== path)
       });
     }
     groups.push({
-      title: ['Outils', 'Tools', 'Werkzeuge', 'Herramientas'],
+      title: ['Maintenance', 'Maintenance', 'Wartung', 'Mantenimiento'],
       items: [{
         path: 'tools/index.html',
         label: tr(['Outils de maintenance', 'Maintenance tools', 'Wartungswerkzeuge', 'Herramientas de mantenimiento']),
@@ -179,7 +198,7 @@
         subs: []
       }]
     });
-    document.getElementById('apps').innerHTML = groups.filter(g => g.items.length).map(g => `<h2${g.items.every(x => x.cpco) ? ' class="cpco-only"' : ''}>${esc(tr(g.title))}</h2><ul>${g.items.map(x => `<li${x.cpco ? ' class="cpco-only"' : ''}><a href="${esc(x.path)}"><b>${esc(x.label)}</b>${x.title ? `<small>${esc(x.title)}</small>` : ''}</a>${x.subs.length ? `<span class="subs">${x.subs.map(s => `<a href="${esc(s.path)}"${cpco(s.path) ? ' class="cpco-only"' : ''}>${esc(tr(s.label))}</a>`).join('')}</span>` : ''}</li>`).join('')}</ul>`).join('');
+    document.getElementById('apps').innerHTML = groups.filter(g => g.items.length).map(g => `<h2>${esc(tr(g.title))}</h2><ul>${g.items.map(x => `<li><a href="${esc(x.path)}"><b>${esc(x.label)}</b>${x.title ? `<small>${esc(x.title)}</small>` : ''}</a>${x.subs.length ? `<span class="subs">${x.subs.map(s => `<a href="${esc(s.path)}">${esc(tr(s.label))}</a>`).join('')}</span>` : ''}</li>`).join('')}</ul>`).join('');
     // premier lancement : rappel tant que la suite n'est pas réglée (bilan mémorisé par la page)
     let done = null,
       st = null;

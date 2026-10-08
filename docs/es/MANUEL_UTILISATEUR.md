@@ -19,17 +19,18 @@ Abra la suite con el lanzador o un marcador: una página de la suite abierta des
 
 La columna de la izquierda da acceso a las aplicaciones. La entrada de la página mostrada aparece resaltada.
 
-| Entrada | Lo que abre |
-|---|---|
-| «Mis misiones» | Misiones asignadas por el Centro y disponibilidad (con una pastilla roja: número de misiones no leídas) |
-| «Informe» | Introducción de un nuevo informe de misión |
-| «Mapas de vuelo» | Mapas de vuelo: ruta, topográfico, aproximación, encuentro, destino |
-| «Combustible» | Planificador de rendimiento y de combustible |
-| «Aterrizajes» | Panel de los aterrizajes |
-| «Informes» | Informes de las misiones (Informe) |
+Lo que muestra depende de su **nivel de uso** (Mi perfil › «Nivel de uso»): como mucho siete entradas, nunca más de lo que su uso necesita.
 
-- El grupo **«Centro»** («Misiones», «Registro», «ODV») solo aparece si el Centro está desbloqueado en este navegador (Ajustes › Centro). Para un piloto, solo muestra **«Tablero»**: la planificación de órdenes de la semana, en solo lectura.
-- Al pie de la columna: «Apariencia» (abre los ajustes de visualización en una ventana, encima de la página actual), «Ajustes» (Mi perfil y las demás páginas de ajustes) y **«Ayuda»**. Estas tres entradas permanecen fijas al pie de la pantalla: solo la lista superior se desplaza cuando hay demasiados iconos (ventana de menos de 460 px de alto: se desplaza toda la barra).
+| Entrada | Lo que abre | Nivel |
+|---|---|---|
+| «Mis misiones» | Misiones asignadas por el Centro y disponibilidad (pastilla roja: misiones no leídas) | 1 |
+| «Informe» | Introducción de un informe de misión | 1 |
+| «Planificación» | Planificación de órdenes de la semana (Tablero, en solo lectura sin el Centro); planificación ODV en pestaña desde el nivel 2 | 1 |
+| «Misiones» | Generador de misiones y registro, en pestañas | 3 |
+| «Herramientas» | Mapas de vuelo, combustible, aterrizajes, análisis de misiones (herramientas marcadas en Mi perfil, todas en el nivel 4); estudio cartográfico en el nivel 4 | 1 a 4 |
+
+- El nivel ordena la interfaz, no da ningún derecho: las páginas del Centro (Misiones, planificación ODV, modificación del Tablero) siguen requiriendo el Centro activado.
+- Al pie de la columna: «Ajustes» (Mi perfil, Apariencia, Centro, Instalación, Mantenimiento, Primer arranque, en pestañas) y **«Ayuda»**. Estas dos entradas quedan fijas al pie de la pantalla: solo la lista de arriba se desplaza cuando hay demasiados iconos (ventana de menos de 460 px de alto: toda la barra se desplaza).
 - «Ayuda» abre la documentación en una ventana, encima de la página actual, directamente en el capítulo de esa página. La ventana se cierra con ✕, Esc o un clic al lado; al reabrirla, continúa donde se quedó. «↗» la abre en página completa (Ctrl-clic en «Ayuda»: en una pestaña nueva). Sustituye a la antigua entrada «Menú». También funciona cuando la suite se abre desde el disco, sin el lanzador: los documentos están integrados en la página.
 - El logotipo de la parte superior de la columna abre el sitio de la aerolínea virtual en una nueva pestaña.
 - La barra se oculta en una pantalla estrecha (menos de 760 px) y al imprimir. Puede ocultarse o mostrarse siempre: Apariencia › Iconos › «Barra lateral».
@@ -265,6 +266,19 @@ Esta página reúne los ajustes propios de cada piloto: identidad, conexión, pr
 Se llega a ella por la entrada «Ajustes» de la barra lateral (primera pestaña, «Mi perfil») o por ☰ › «Ajustes».
 La columna de la izquierda muestra las secciones por grupo; un clic muestra una a la derecha, con su título, su presentación, sus botones y un mensaje de estado.
 Si una sección contiene cambios sin guardar, cambiar de sección o salir de la página pide una confirmación.
+
+### Nivel de uso
+
+Lo que la suite le muestra, según su uso. Basta una elección: la página se recarga y la barra lateral sigue.
+
+| Nivel | Para | Lo que se añade |
+|---|---|---|
+| 1 · Tripulación | todo piloto | Mis misiones, Informe, Planificación (lectura) |
+| 2 · Planificación | oficial de guardia | planificar las órdenes: Tablero modificable, planificación ODV (Centro activado) |
+| 3 · Diseño | redactor de misiones | Misiones: generador y registro (Centro activado) |
+| 4 · Experto | cartógrafo, analista | todas las herramientas, estudio cartográfico |
+
+Las «herramientas opcionales» (mapas de vuelo, combustible, aterrizajes, análisis de misiones) se añaden en «Herramientas» en cualquier nivel; en el nivel 4 están todas incluidas. Por defecto: nivel 4 si el Centro está activado en este navegador, si no nivel 1. El nivel no da ningún derecho: el Centro conserva su acceso.
 
 ### Identidad y redes
 

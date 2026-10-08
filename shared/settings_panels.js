@@ -241,6 +241,80 @@
     draw(tri ? await api() : {});
   }
 
+  // ---------------------------------------------------------------- Mon profil › Niveau d'utilisation (v2)
+  const LEVELS = [
+    [L('Équipage', 'Crew', 'Besatzung', 'Tripulación'), L(
+      'Recevoir mes missions, voir le planning des ordres, écrire mes comptes rendus.',
+      'Receive my missions, see the order schedule, write my reports.',
+      'Meine Missionen erhalten, die Befehlsplanung sehen, meine Berichte schreiben.',
+      'Recibir mis misiones, ver la planificación de órdenes, escribir mis informes.')],
+    [L('Planification', 'Planning', 'Planung', 'Planificación'), L(
+      'En plus : planifier les ordres (Tableau, disponibilités, ODV). Demande le Centre.',
+      'Also: plan the orders (Board, availability, ODV). Requires the Centre.',
+      'Zusätzlich: Befehle planen (Einsatztafel, Verfügbarkeit, ODV). Erfordert das Zentrum.',
+      'Además: planificar las órdenes (Tablero, disponibilidad, ODV). Requiere el Centro.')],
+    [L('Conception', 'Design', 'Gestaltung', 'Diseño'), L('En plus : générer, modifier et registrer les missions. Demande le Centre.',
+      'Also: generate, edit and register missions. Requires the Centre.',
+      'Zusätzlich: Missionen erzeugen, ändern und registrieren. Erfordert das Zentrum.',
+      'Además: generar, modificar y registrar misiones. Requiere el Centro.')],
+    [L('Expert', 'Expert', 'Experte', 'Experto'), L(
+      'Tout : studio cartographique, cartes avancées et profils, carburant, atterrissages, analyses.',
+      'Everything: map studio, advanced maps and profiles, fuel, landings, analyses.',
+      'Alles: Kartenstudio, erweiterte Karten und Profile, Kraftstoff, Landungen, Analysen.',
+      'Todo: estudio cartográfico, mapas avanzados y perfiles, combustible, aterrizajes, análisis.')]
+  ];
+  const MODULE_LABELS = {
+    maps: L('Cartes de vol', 'Flight maps', 'Flugkarten', 'Mapas de vuelo'),
+    fuel: L('Carburant', 'Fuel', 'Kraftstoff', 'Combustible'),
+    landings: L('Atterrissages', 'Landings', 'Landungen', 'Aterrizajes'),
+    reporting: L('Analyse des missions', 'Mission analysis', 'Missionsanalyse', 'Análisis de misiones')
+  };
+  const levelPanel = {
+    id: 'level',
+    group: GROUP_PROFILE,
+    title: L('Niveau d’utilisation', 'Usage level', 'Nutzungsstufe', 'Nivel de uso'),
+    intro: L(
+      'Ce que la suite vous montre, selon votre usage. Le niveau range l’interface ; il ne donne aucun droit : le Centre garde son accès.',
+      'What the suite shows you, according to your use. The level arranges the interface; it grants no rights: the Centre keeps its access.',
+      'Was die Suite Ihnen zeigt, je nach Nutzung. Die Stufe ordnet die Oberfläche; sie gewährt keine Rechte: das Zentrum behält seinen Zugang.',
+      'Lo que la suite le muestra, según su uso. El nivel ordena la interfaz; no da ningún derecho: el Centro conserva su acceso.'
+    ),
+    /** Niveau (1 à 4, RepositoryNav.levels) et modules facultatifs ; un changement recharge la page (barre latérale). */
+    render(body, api) {
+      const N = nav().levels;
+      api.actions([]);
+      if (!N) {
+        body.innerHTML = `<p>${esc(L('Navigation non chargée.', 'Navigation not loaded.', 'Navigation nicht geladen.', 'Navegación no cargada.'))}</p>`;
+        return;
+      }
+      const cur = N.get(),
+        mods = N.modules();
+      body.innerHTML = `<fieldset class="sp-levels"><legend>${esc(L('Mon usage', 'My use', 'Meine Nutzung', 'Mi uso'))}</legend>
+        ${LEVELS.map(([name, what], i) => `<label class="sp-level"><input type="radio" name="lvl" value="${i + 1}"${cur === i + 1 ? ' checked' : ''}> <b>${i + 1} · ${esc(name)}</b> <span class="sp-hint">${esc(what)}</span></label>`).join('')}
+        </fieldset>
+        <fieldset class="sp-levels"${cur >= 4 ? ' disabled' : ''}><legend>${esc(L('Outils facultatifs', 'Optional tools', 'Optionale Werkzeuge', 'Herramientas opcionales'))}</legend>
+        ${N.MODULES.map(m => `<label class="sp-level"><input type="checkbox" name="mod" value="${m}"${mods.includes(m) ? ' checked' : ''}> ${esc(MODULE_LABELS[m] || m)}</label>`).join('')}
+        <p class="sp-hint">${esc(cur >= 4 ? L('Tous inclus au niveau Expert.', 'All included at Expert level.', 'Auf Stufe Experte alle enthalten.', 'Todos incluidos en el nivel Experto.') : L('Rangés sous « Outils » dans la barre latérale.', 'Grouped under “Tools” in the sidebar.', 'In der Seitenleiste unter „Werkzeuge“ gruppiert.', 'Agrupados en «Herramientas» en la barra lateral.'))}</p></fieldset>`;
+      const reload = () => {
+        api.status(L('Enregistré : la page se recharge…', 'Saved: the page reloads…', 'Gespeichert: die Seite wird neu geladen…',
+          'Guardado: la página se recarga…'));
+        setTimeout(() => location.reload(), 400);
+      };
+      body.querySelectorAll('input[name="lvl"]').forEach(r => r.onchange = () => {
+        N.set(+r.value);
+        reload();
+      });
+      body.querySelectorAll('input[name="mod"]').forEach(c => c.onchange = () => {
+        N.setModules([...body.querySelectorAll('input[name="mod"]:checked')].map(x => x.value));
+        reload();
+      });
+      api.status(tf(['Niveau {n} · {name}', 'Level {n} · {name}', 'Stufe {n} · {name}', 'Nivel {n} · {name}'], {
+        n: cur,
+        name: LEVELS[cur - 1][0]
+      }));
+    }
+  };
+
   // ---------------------------------------------------------------- Mon profil › Appareils et simulateurs
   const equipment = {
     id: 'equipment',
@@ -883,7 +957,7 @@
   };
 
   window.SettingsPanels = {
-    list: [identity, account, themesPanel, equipment, setup, users, categoriesPanel],
+    list: [levelPanel, identity, account, themesPanel, equipment, setup, users, categoriesPanel],
     /** Ajoute une rubrique (autre module : utilisateurs, catégories de disponibilité). */
     add(panel) {
       this.list.push(panel);

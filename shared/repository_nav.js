@@ -127,6 +127,28 @@
     cpcoView = p => !!cfg.pages.find(x => x.path === p)?.view,
     // page du Centre masquée tant que le Centre est verrouillé (classe cpco-only)
     cpcoHidden = p => isCpco(p) && !cpcoView(p);
+  // ---- v2 : niveau d'utilisation (préférence suiteLevel:v1 : 1 équipage, 2 planification, 3 conception, 4 expert ;
+  // par défaut 4 si le Centre est activé dans ce navigateur, sinon 1) et modules facultatifs (suiteModules:v1 : cartes,
+  // carburant, atterrissages, analyse ; tous au niveau 4). Une page déclare son niveau minimal (pages[].level, 1 par
+  // défaut) et son module (pages[].module) ; barre latérale, onglets et menu ne montrent que les pages visibles. Le
+  // niveau range l'interface, il ne donne aucun droit : les pages du Centre restent derrière son verrou.
+  const LEVEL_KEY = "suiteLevel:v1",
+    MODULES_KEY = "suiteModules:v1",
+    MODULES = ["maps", "fuel", "landings", "reporting"];
+  /** Niveau d'utilisation courant (1 à 4). */
+  const level = () => {
+    const v = +readPref(LEVEL_KEY, "");
+    return v >= 1 && v <= 4 ? v : cpcoOn() ? 4 : 1;
+  };
+  /** Modules facultatifs affichés (tous au niveau 4). */
+  const modules = () => level() >= 4 ? MODULES.slice() : (K.store.json(MODULES_KEY, []) || []).filter(m => MODULES.includes(m));
+  /** Page visible au niveau et avec les modules courants (page non déclarée : visible). */
+  const visible = p => {
+    const d = cfg.pages.find(x => x.path === p);
+    return !d || (d.level || 1) <= level() && (!d.module || modules().includes(d.module));
+  };
+  /** Pages visibles d'un groupe d'onglets (repository_tree.tabs, id). */
+  const tabPages = id => ((cfg.tabs || []).find(g => g.id === id)?.pages || []).filter(p => visible(p.path));
   doc.dataset.cpco = cpcoOn() ? "on" : "off";
   /** Adresse d'une rubrique de Paramètres (REPOSITORY_TREE.settings : rubrique → page ; ?base= pour les rubriques de
    *  data_admin.js et settings_panels.js, ?m= pour les blocs de maintenance_page.js) ; sans rubrique : Mon profil. */
@@ -142,6 +164,35 @@
     if (section) u.search = `?${MT_BLOCKS.includes(section) ? "m" : "base"}=${encodeURIComponent(section)}`;
     if (hash) u.hash = hash;
     return u.href;
+  };
+  /** Niveau d'utilisation et modules (v2) : lecture, réglage (page rechargée par l'appelant), visibilité d'une page. */
+  const levels = {
+    MODULES,
+    get: level,
+    modules,
+    visible,
+    /** Règle le niveau (1 à 4) ; événement « suite-level-change ». */
+    set(n) {
+      n = Math.min(4, Math.max(1, Math.round(+n || 1)));
+      K.store.set(LEVEL_KEY, String(n));
+      window.dispatchEvent(new CustomEvent("suite-level-change", {
+        detail: {
+          level: n,
+          modules: modules()
+        }
+      }));
+      return n;
+    },
+    /** Règle les modules facultatifs (liste d'identifiants de MODULES) ; événement « suite-level-change ». */
+    setModules(list) {
+      K.store.setJson(MODULES_KEY, [].concat(list || []).filter(m => MODULES.includes(m)));
+      window.dispatchEvent(new CustomEvent("suite-level-change", {
+        detail: {
+          level: level(),
+          modules: modules()
+        }
+      }));
+    }
   };
   const cpco = {
     enabled: cpcoOn,
@@ -544,7 +595,7 @@
   const groups = new Map(); /* menu:false : page déclarée (thème, réglages) mais absente du menu */
   // pages du Centre toujours construites, masquées tant que le Centre est verrouillé (html[data-cpco="off"] .cpco-only) :
   // l'activation dans Paramètres les montre aussitôt, sans recharger
-  cfg.pages.filter(p => p.menu !== false).forEach(p => {
+  cfg.pages.filter(p => p.menu !== false && visible(p.path)).forEach(p => {
     const bits = (p.menu || p.label).split("/"),
       group = bits.length > 1 ? bits.shift() : "Pages",
       label = bits.join("/") || p.label;
@@ -561,14 +612,14 @@
       details.className = "repo-tree-group";
       details.open = pages.some(p => p.path === page?.path);
       details.innerHTML = `<summary>${esc(group)}</summary>`;
-      if (pages.every(p => cpcoHidden(p.path))) details.classList.add("cpco-only");
+      // v2 : le niveau décide de ce qui est listé ; une page du Centre verrouillé affiche elle-même son avis
       menu.append(details);
       host = details
     }
     for (const p of pages) {
       const a = document.createElement("a");
       a.href = new URL(p.path, root).href;
-      a.className = `repo-link ${p.path===page?.path?"active":""} ${group!=="Pages"?"repo-sub":""}${cpcoHidden(p.path)?" cpco-only":""}`;
+      a.className = `repo-link ${p.path===page?.path?"active":""} ${group!=="Pages"?"repo-sub":""}`;
       a.dataset.label = p.navLabel;
       a.textContent = trLabel(p.navLabel);
       host.append(a)
@@ -809,6 +860,7 @@
   // API publique.
   window.RepositoryNav = {
     cpco,
+    levels,
     settingsUrl,
     /** Langue de la suite : "auto" (navigateur) ou fr / en / de / es ; mémorisée, appliquée à la page. */
     setLanguage(value) {
@@ -1102,6 +1154,14 @@
     }
     const known = new Set(cfg.pages.map(p => p.path)),
       current = page?.path || "";
+    // entrée à onglets (tabs : id d'un groupe de repository_tree.tabs) : la page courante si elle en est, sinon la
+    // première page visible du groupe ; sans page visible, l'entrée disparaît. Entrées simples : page visible seulement.
+    items.forEach(x => {
+      if (!x.tabs) return;
+      const ps = tabPages(x.tabs).filter(p => known.has(p.path));
+      x.match = ps.map(p => p.path);
+      x.path = ps.some(p => p.path === current) ? current : ps[0]?.path || "";
+    });
     // entrée active : la page elle-même, sinon la première entrée dont « match » est contenu dans le chemin courant
     let active = items.findIndex(x => x.path === current);
     if (active < 0) active = items.findIndex(x => x.match && [].concat(x.match).some(m => current.includes(m)));
@@ -1144,8 +1204,8 @@
         ul.append(li);
         return;
       }
-      if (it.path && !known.has(it.path)) return;
-      if (cpcoHidden(it.path)) li.classList.add("cpco-only"); // masquée tant que le Centre est verrouillé (sauf view:true)
+      if (it.tabs && !it.path) return; // groupe sans page visible à ce niveau
+      if (it.path && (!known.has(it.path) || !visible(it.path))) return;
       const a = document.createElement(it.menu ? "button" : "a");
       a.className = "repo-sidenav-item" + (isCpco(it.path) ? " repo-sidenav-cpco" : "");
       if (it.menu) {
@@ -1200,15 +1260,16 @@
   {
     const current = page?.path || rel,
       group = (cfg.tabs || []).find(g => g.pages.some(p => p.path === current));
-    if (group) {
+    // un seul onglet visible à ce niveau : pas de barre d'onglets
+    if (group && group.pages.filter(p => p.path === current || visible(p.path)).length > 1) {
       const bar = document.createElement("nav");
       bar.className = "repo-tabs no-print";
       bar.dataset.tabs = group.id;
       bar.setAttribute("data-no-i18n", "");
       bar.setAttribute("aria-label", group.id);
-      for (const p of group.pages) {
+      for (const p of group.pages.filter(p => p.path === current || visible(p.path))) {
         const a = document.createElement("a");
-        a.className = "repo-tab" + (cpcoHidden(p.path) && !isCpco(current) ? " cpco-only" : "");
+        a.className = "repo-tab";
         a.href = new URL(p.path, root).href;
         a._label = p.label;
         if (p.path === current) a.setAttribute("aria-current", "page");
