@@ -146,6 +146,12 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Modifié
 
+- **Paramètres › Maintenance plus rapide à l'ouverture** (audit `tools/perf_audit.html`) : les réglages des zones
+  aéronautiques étaient analysés à nouveau pour chaque fichier de la base (1 122 analyses JSON à l'ouverture) —
+  analyse gardée tant que le réglage ne change pas ; les tableaux éditables des bases (flotte, indicatifs…) montrent
+  100 lignes, puis « Afficher les 100 suivantes » ou « Tout afficher » (le filtre et le tri portent sur toutes les
+  lignes), listes de choix calculées une fois par colonne. Ouverture : 11 300 → 4 300 éléments, analyses JSON 1 200 →
+  79, page bloquée 921 → 216 ms.
 - **État de la synchronisation servi tout de suite** : le lanceur relançait ses commandes git (1 à 3 s sur un gros
   dossier `data/`) à chaque ouverture de page, deux fois. Il répond désormais avec le dernier état connu et le relit en
   tâche de fond s'il a plus de 20 s (relu tout de suite au premier appel, avec le dépôt distant, et après un passage de

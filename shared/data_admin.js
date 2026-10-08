@@ -169,12 +169,18 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
         key: columns[0].key,
         dir: 1
       };
+    // lignes montrées : PAGE d'abord, « Afficher les suivantes » ou « Tout afficher » ensuite (filtre et tri portent sur
+    // toutes) — la flotte entière, champs et listes de choix compris, faisait plus de 5 000 éléments à l'ouverture
+    const PAGE = 100;
+    let limit = PAGE,
+      opts = new Map(); // choix des colonnes « select », calculés une fois par dessin
+    const optionsOf = col => opts.get(col) || opts.set(col, col.options()).get(col);
     /** HTML d'une cellule éditable selon le type de colonne (texte, nombre, case, liste, choix). */
     const cell = (col, row, index) => {
       const v = row[col.key],
         attrs = `data-row="${index}" data-key="${esc(col.key)}"`;
       if (col.type === 'bool') return `<input type="checkbox" ${attrs}${v ? ' checked' : ''}>`;
-      if (col.type === 'select') return `<select ${attrs}>${['', ...col.options()].map(o => `<option${o === v ? ' selected' : ''}>${esc(o)}</option>`).join('')}${v && !col.options().includes(v) ? `<option selected>${esc(v)}</option>` : ''}</select>`;
+      if (col.type === 'select') return `<select ${attrs}>${['', ...optionsOf(col)].map(o => `<option${o === v ? ' selected' : ''}>${esc(o)}</option>`).join('')}${v && !optionsOf(col).includes(v) ? `<option selected>${esc(v)}</option>` : ''}</select>`;
       const value = col.type === 'list' ? (v || []).join(', ') : v ?? '';
       return `<input ${col.type === 'number' ? 'type="number" step="any" ' : ''}${attrs} value="${esc(value)}"${col.width ? ` style="min-width:${col.width}"` : ''}>`;
     };
@@ -182,6 +188,8 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
     /** Redessine le tableau : lignes filtrées (texte de toutes les colonnes) et triées sur la colonne choisie. */
     function paint() {
       const text = filter.toLowerCase();
+      opts = new Map();
+      const tr = window.RepositoryKit?.tf || ((row, v) => String(row[0]).replace(/\{(\w+)\}/g, (m, k) => v[k] ?? m));
       const order = data.map((row, index) => ({
           row,
           index
@@ -195,7 +203,12 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
         }) * sort.dir);
       host.innerHTML = `<div class="da-grid-tools"><input type="search" class="da-filter" placeholder="${esc(T('Filtrer…', 'Filter…'))}" value="${esc(filter)}"><span class="small">${order.length} / ${data.length}</span><button type="button" class="secondary da-add">${esc(T('+ Ajouter une ligne', '+ Add row'))}</button></div>
         <div class="da-scroll"><table class="da-table"><thead><tr>${columns.map(c => `<th data-sort="${esc(c.key)}">${esc(c.label)} ${sort.key === c.key ? (sort.dir > 0 ? '▲' : '▼') : '↕'}</th>`).join('')}<th></th></tr></thead>
-        <tbody>${order.map(({ row, index }) => `<tr>${columns.map(c => `<td>${cell(c, row, index)}</td>`).join('')}<td><button type="button" class="da-del" data-del="${index}" title="${esc(T('Supprimer la ligne', 'Delete row'))}">×</button></td></tr>`).join('')}</tbody></table></div>`;
+        <tbody>${order.slice(0, limit).map(({ row, index }) => `<tr>${columns.map(c => `<td>${cell(c, row, index)}</td>`).join('')}<td><button type="button" class="da-del" data-del="${index}" title="${esc(T('Supprimer la ligne', 'Delete row'))}">×</button></td></tr>`).join('')}</tbody></table></div>
+        ${order.length > limit ? `<p class="row da-more-row"><span class="small">${esc(tr(['{n} lignes sur {t} affichées', '{n} of {t} rows shown', '{n} von {t} Zeilen angezeigt', '{n} de {t} filas mostradas'], { n: limit, t: order.length }))}</span><button type="button" class="secondary" data-more="${PAGE}">${esc(tr(['Afficher les {n} suivantes', 'Show the next {n}', 'Die nächsten {n} anzeigen', 'Mostrar las {n} siguientes'], { n: Math.min(PAGE, order.length - limit) }))}</button><button type="button" class="secondary" data-more="all">${esc(tr(['Tout afficher', 'Show all', 'Alle anzeigen', 'Mostrar todo'], {}))}</button></p>` : ''}`;
+      host.querySelectorAll('[data-more]').forEach(b => b.onclick = () => {
+        limit = b.dataset.more === 'all' ? Infinity : limit + PAGE;
+        paint();
+      });
       const box = host.querySelector('.da-filter');
       box.oninput = () => {
         filter = box.value;

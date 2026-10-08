@@ -49,7 +49,7 @@
   /** Promesse unique (gardée dans zonesLoad) de window.AeroZones : charge si besoin les contours puis aero_zones.js. */
   const needZones = () => zonesLoad ||= (async () => {
     if (!window.AERO_ZONES_GEO) await loadScript('carto/aero_zones_geo.js?v=6e9678c4');
-    if (!window.AeroZones) await loadScript('aero_zones.js?v=0d5d261d');
+    if (!window.AeroZones) await loadScript('aero_zones.js?v=43cfc710');
     return window.AeroZones || null;
   })();
   /** Sous-dossiers du dossier SIA par source (fichiers d'autres pays rangés à part) ; zones/<zone>/ : fichiers déposés
