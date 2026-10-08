@@ -5,6 +5,54 @@ Une section par version publiée, la plus récente en tête, écrite à chaque r
 effectuer** (ce que chacun doit faire après la mise à jour), **notes** (limites connues, points d'attention, à venir).
 Entre deux versions, le pied de page affiche le commit en cours (`v4.6.0+abc1234`).
 
+## 5.0.0 — 8 octobre 2026
+
+### Synthèse
+
+- **Niveau d'utilisation** (Mon profil) remplace « avec ou sans Centre » : 1 équipage (recevoir ses missions, écrire
+  ses CR, voir le planning), 2 planification (planifier les ordres), 3 conception (générer et modifier les missions),
+  4 expert (tous les outils, cartes avancées, studio cartographique). Barre latérale, onglets, menu ☰, accueil et
+  pages ne montrent que ce qui sert au niveau choisi, sept entrées au plus par groupe. Les outils facultatifs (cartes
+  de vol, carburant, atterrissages, analyse) se cochent à part. Le niveau range l'interface, il ne donne aucun droit.
+- **Page « Aujourd'hui »**, première entrée à tout niveau : ma prochaine mission, les comptes rendus à écrire, ma
+  semaine — une action par bloc.
+- **Planning refait** : une seule page, six blocs (Ordre du jour en tête, Équipage de la semaine, Zones, Statistiques ;
+  Créneaux communs et Missions probables au niveau Expert) ; **Annuler** (dix pas, Ctrl+Z), **Retirer la demande**
+  d'une zone, « DLO et butées » repliables, « Masquer les pilotes indisponibles ». Consultable par tous en lecture
+  seule ; seul `admin_centre` modifie.
+- **Pages simplifiées** aux niveaux 1 à 3 : Cartes de vol (un seul « Générer les cartes et le ZIP »), Carburant, Mes
+  missions, CR court (« CR détaillé » à la demande), Réglages, Générateur et Registre. Missions s'ouvre sur le
+  registre, avec « Générer une mission ». Toutes les pages occupent la même largeur.
+- **Plus sûr et plus rapide** : habilitation du planning corrigée (un compte sans `admin_centre` n'écrit plus) ; textes
+  du Centre traduits à la source ; état de la synchronisation servi tout de suite ; Planning sans rafale de requêtes ;
+  Cartes de vol et Studio plus légers (listes de complétion construites au focus, villes de la base SIA rangées à
+  part, résumé des zones mémorisé) ; Paramètres › Maintenance (tableaux des bases par 100 lignes),
+  sauvegarde automatique, activations de zones et décor des designs allégés.
+- **La suite guide** : bouton **Arrêter** sur les tâches longues, messages d'erreur reformulés en clair, pastille
+  « Synchroniser » discrète aux niveaux 1-2.
+- Corrigés : plaquette de convoyage gardée à la modification d'une mission ; déplacement des blocs (bloc visé illuminé,
+  dépôt avant/après, « Réinitialiser l'ordre des blocs ») ; dossier des profils de performance d'une autre copie.
+
+### Actions à effectuer
+
+1. **Relancer le lanceur**, puis **recharger chaque page** (Ctrl+F5).
+2. **Choisir son niveau d'utilisation** : Mon profil › « Niveau d'utilisation ». Par défaut : Expert si le Centre est
+   activé, Équipage sinon. Cocher les outils facultatifs voulus.
+3. Base SIA : rien à faire, elle est convertie d'elle-même à la première ouverture (villes rangées à part).
+4. **Saisir son trigramme** s'il ne l'est pas : la page « Aujourd'hui » le demande sur place.
+5. Planning : la disposition des blocs mémorisée pour l'ancienne page est oubliée une fois (Ordre du jour remis en
+   tête) ; ☰ › « Réinitialiser l'ordre des blocs » sur toute autre page au besoin.
+
+### Notes
+
+- Bugs ouverts : « villes_geonames.csv not found » au premier lancement (non reproduit ; la raison est désormais
+  affichée) ; lenteur d'environ 4 s à l'ouverture sur certains profils de navigateur (non reproduite ;
+  `tools/perf_audit.html` pour la mesurer) ; en allemand, Paramètres › Maintenance traduit « Base » par « Datenbank »
+  y compris là où il s'agit du terrain de base d'un appareil.
+- Clés de poste et signatures prêtes (`shared/sog_keys.js`) mais pas encore branchées sur les pages ; le mode groupe
+  attend le durcissement CSP.
+- Atterrissages et Analyse des missions ne sont pas encore simplifiés par niveau.
+
 ## 4.11.0 — 8 octobre 2026
 
 ### Synthèse

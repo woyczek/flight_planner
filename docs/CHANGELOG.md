@@ -10,6 +10,19 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ## [Non publié]
 
+## [5.0.0] — 2026-10-08
+
+Version « v2 » : la suite s'adapte à son utilisateur. Un **niveau d'utilisation** (équipage, planification, conception,
+expert) remplace « avec ou sans Centre » et range barre latérale, menus, accueil et pages, sept entrées au plus par
+groupe ; outils facultatifs cochés à part. Page **« Aujourd'hui »** (prochaine mission, CR à écrire, semaine).
+**Planning refait** en six blocs natifs, consultable par tous en lecture seule, avec Annuler, retrait d'une demande de
+zone et « Masquer les pilotes indisponibles » ; habilitation corrigée (écriture réservée à `admin_centre`). Cartes de
+vol, Carburant, Mes missions, CR (court par défaut), Réglages, Générateur et Registre simplifiés aux premiers niveaux ;
+Missions s'ouvre sur le registre ; même largeur pour toutes les pages. Bouton Arrêter sur les tâches longues, messages
+d'erreur clairs. Nettement plus rapide (Planning, Cartes de vol, Studio, Maintenance, sauvegarde, synchronisation,
+décor). Corrigés : convoyages du Tableau, déplacement des blocs, dossier des profils d'une autre copie. Clés de poste
+et signatures prêtes (pas encore branchées).
+
 ### Ajouté
 
 - **v2-fable, performance (4) : Studio et Cartes de vol** — le résumé « Zones retenues » (7 000 espaces filtrés, jusqu'à
@@ -68,15 +81,13 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   rien du Centre. L'icône du Centre ne marque Planning et Missions que pour qui s'en sert (Centre ouvert, niveau 2 ou
   plus, pas un compte sans le rôle `admin_centre`) ; sinon icône ordinaire.
 - **Planning : « Masquer les pilotes indisponibles »** (palette et vue semaine du Tableau, reprise de la page ODV ; même
-  règle que les conflits : plage qui rend affectable à un vol) ; au
-  **niveau Expert**, bloc « Créneaux communs et missions probables » repris de la page ODV (cadre sans en-tête,
-  `odv_planning.html?blocks=slots,missions`, hauteur ajustée à son contenu).
+  règle que les conflits : plage qui rend affectable à un vol) ; au **niveau Expert**, créneaux communs (plusieurs
+  pilotes disponibles) et missions probables repris de la page ODV (voir « Planning refait »).
 - **v2, niveau 1 : Planning en consultation seule**, quels que soient les droits (Centre ouvert compris) : ni DLO et
   butées, ni activations de zones, ni modification ; thème ordinaire au lieu de celui du Centre pour qui ne fait que
   consulter (niveau 1, Centre fermé, compte sans le rôle `admin_centre`).
 - **v2, Planning rationalisé** : une seule page (plus d'onglet « Planning ODV ») ; au niveau Expert, créneaux communs et
-  missions probables à plat dans la page (cadre sans en-tête, onglets ni pied ; « Page ODV complète » pour le classeur
-  et l'export) ; **Annuler** (dix pas, Ctrl+Z) ; **Retirer la demande** d'une zone inscrite comme demandée ; l'ordre du
+  missions probables dans la page (« Page ODV complète » pour le classeur et l'export) ; **Annuler** (dix pas, Ctrl+Z) ; **Retirer la demande** d'une zone inscrite comme demandée ; l'ordre du
   jour en premier bloc, sa barre (semaine, jours, vue, annuler, briefing) au-dessus de la frise.
 - **v2, lot S0 : niveaux dans les pages** — `<html data-level>` posé dès l'en-tête (repository_tree), `data-min-level="n"`
   (élément visible à partir du niveau n) et `data-max-level="n"` (jusqu'au niveau n) appliqués par `repository_nav.css`,
@@ -138,9 +149,6 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   dispositions déjà mémorisées (`order`) restent lues. Un dépôt qui ne changerait rien est retourné : bloc 1 lâché sur
   le haut du bloc 2 → « après 2 », et dans l'autre sens « avant » (blocs cachés ignorés). Menu ☰ : « Réinitialiser
   l'ordre des blocs » (ordre d'origine de la page, blocs masqués gardés), 4 langues.
-
-  dispositions déjà mémorisées (`order`) restent lues.
-
 - **« Suite lancée depuis …, dossier déclaré …/planner/ » alors que le dossier de l'application est le bon** : le
   dossier des profils de performance (et celui de la sauvegarde locale) était gardé d'une installation à l'autre, pour
   respecter un choix personnel — y compris quand il venait d'une autre copie de la suite. À la déduction des dossiers,
