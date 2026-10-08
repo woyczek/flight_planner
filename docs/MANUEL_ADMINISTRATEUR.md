@@ -937,7 +937,7 @@ Les données partagées (disponibilités, utilisateurs, configuration, missions 
 ### Le bouton « Synchroniser (n) »
 
 - Le bouton n'apparaît que si la suite est servie par le lanceur et que `data/` est un dépôt git.
-- (n) additionne les modifications de ce poste à envoyer et les commits à recevoir. Le dépôt distant est relu toutes les 5 minutes tant que la page est visible. L'infobulle donne la branche et la date de la dernière synchronisation.
+- (n) additionne les modifications de ce poste à envoyer et les commits à recevoir. Le dépôt distant est relu à la fréquence réglée dans Paramètres › Maintenance › Versions et synchronisations (toutes les 30 minutes par défaut ; à chaque page, 3 fois par jour, une fois par jour) ; entre deux vérifications, le bouton montre le dernier état connu, gardé par le navigateur, et le lanceur répond avec son dernier relevé. L'infobulle donne la branche et la date de la dernière synchronisation.
 - La synchronisation se lance à la main, d'un clic :
   1. les fichiers gardés dans le navigateur sont d'abord écrits dans le dossier ;
   2. le lanceur commite au nom du trigramme connecté (utilisateur usurpé compris) ;

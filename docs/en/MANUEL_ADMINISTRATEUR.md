@@ -937,7 +937,7 @@ The shared data (availability, users, configuration, missions and assignments, r
 ### The “Synchronise (n)” button
 
 - The button only appears if the suite is served by the launcher and `data/` is a git repository.
-- (n) adds up the changes of this computer to send and the commits to receive. The remote repository is re-read every 5 minutes while the page is visible. The tooltip gives the branch and the date of the last synchronisation.
+- (n) adds up the changes of this computer to send and the commits to receive. The remote repository is re-read at the frequency set in Settings › Maintenance › Versions and synchronisation (every 30 minutes by default; on every page, 3 times a day, once a day); between two checks, the button shows the last known state, kept by the browser, and the launcher answers with its last reading. The tooltip gives the branch and the date of the last synchronisation.
 - Synchronisation is started by hand, with one click:
   1. the files kept in the browser are first written to the folder;
   2. the launcher commits in the name of the signed-in trigram (impersonated user included);

@@ -1035,13 +1035,29 @@
       lastFull?.at), lastFull ? pill(Date.now() - new Date(lastFull.at) > 30 * 864e5 ? 'warn' : 'ok', ago(lastFull.at)) : pill(
       'warn', t(['jamais', 'never'])), '');
     let group = '';
-    host.innerHTML = `<p class="row"><button type="button" class="secondary" id="mtVerRefresh" data-icon="refresh">${esc(t(['Actualiser', 'Refresh', 'Aktualisieren', 'Actualizar']))}</button></p>
+    // fréquence de vérification de la synchronisation des données (réglage de ce navigateur, shared/sync.js)
+    const SS = window.SuiteSync,
+      every = SS?.checkEvery?.() || '30m',
+      lastAt = SS?.lastCheck?.() || 0;
+    const syncRow = SS ? `<p class="row"><label for="mtSyncEvery">${esc(t(['Vérifier l’état de la synchronisation des données', 'Check the data synchronisation status', 'Status der Datensynchronisierung prüfen', 'Comprobar el estado de la sincronización de datos']))}</label>
+      <select id="mtSyncEvery">${[['page', ['à chaque page', 'on every page', 'auf jeder Seite', 'en cada página']], ['30m', ['toutes les 30 minutes', 'every 30 minutes', 'alle 30 Minuten', 'cada 30 minutos']], ['3d', ['3 fois par jour', '3 times a day', '3-mal am Tag', '3 veces al día']], ['1d', ['une fois par jour', 'once a day', 'einmal am Tag', 'una vez al día']]].map(([v, l]) => `<option value="${v}"${v === every ? ' selected' : ''}>${esc(t(l))}</option>`).join('')}</select>
+      <button type="button" class="secondary" id="mtSyncNow" data-icon="refresh">${esc(t(['Vérifier maintenant', 'Check now', 'Jetzt prüfen', 'Comprobar ahora']))}</button>
+      <span class="mt-small">${esc(lastAt ? t(['dernière vérification : {d}', 'last check: {d}', 'letzte Prüfung: {d}', 'última comprobación: {d}'], { d: fmtDate(lastAt) }) : t(['jamais vérifié', 'never checked', 'nie geprüft', 'nunca comprobado']))}</span></p>` : '';
+    host.innerHTML = `${syncRow}<p class="row"><button type="button" class="secondary" id="mtVerRefresh" data-icon="refresh">${esc(t(['Actualiser', 'Refresh', 'Aktualisieren', 'Actualizar']))}</button></p>
       <div class="mt-scroll"><table class="mt-table mt-wide"><thead><tr><th>${esc(t(['Élément', 'Asset', 'Element', 'Elemento']))}</th><th>${esc(t(['Version', 'Version', 'Version', 'Versión']))}</th><th>${esc(t(['Date / synchro', 'Date / sync', 'Datum / Sync', 'Fecha / sinc.']))}</th><th>${esc(t(['État', 'State', 'Status', 'Estado']))}</th><th>${esc(t(['Source / outil', 'Source / tool', 'Quelle / Werkzeug', 'Fuente / herramienta']))}</th></tr></thead><tbody>
       ${rows.map(r => (r.group !== group ? `<tr class="mt-group"><td colspan="5">${esc(group = r.group)}</td></tr>` : '') + `<tr><td>${esc(r.name)}</td><td>${r.version || '—'}</td><td>${r.sync || ''}</td><td>${r.state || ''}</td><td class="mt-small">${r.source || ''}</td></tr>`).join('')}
       </tbody></table></div>`;
     host.querySelector('#mtVerRefresh').onclick = async () => {
       await readGitState(false);
       await scanSiaFolder(false);
+      renderVersions();
+    };
+    const every$ = host.querySelector('#mtSyncEvery');
+    if (every$) every$.onchange = () => SS.checkEvery(every$.value);
+    const now$ = host.querySelector('#mtSyncNow');
+    if (now$) now$.onclick = async () => {
+      now$.disabled = true;
+      await SS.status(true);
       renderVersions();
     };
     window.AppFramework?.refresh?.();

@@ -50,7 +50,7 @@ Die Kopfzeile trägt den Titel der Seite und ihren Untertitel. Rechts befinden s
 **„Synchronisieren“** gibt es nur, wenn die Suite mit dem Starter geöffnet ist und der Ordner `data/` ein Git-Repository ist.
 - Ein Klick schreibt zuerst die im Browser gehaltenen Dateien, sendet dann Ihre Änderungen (mit Ihrem Kürzel signiert), holt die der anderen und führt sie zusammen.
 - Bei einem Konflikt auf demselben Eintrag wird die neueste Version behalten; die andere wird nach `_conflits/` kopiert und eine Benachrichtigung weist darauf hin.
-- Der Tooltip zeigt die Einzelheiten (zu sendende Änderungen, zu empfangende Elemente, letzte Synchronisierung). Der Zustand wird alle 5 Minuten neu geprüft.
+- Der Tooltip zeigt die Einzelheiten (zu sendende Änderungen, zu empfangende Elemente, letzte Synchronisierung). Die Schaltfläche zeigt den letzten bekannten Zustand; er wird in der unter Einstellungen › Wartung › Versionen und Synchronisation eingestellten Häufigkeit neu geprüft (standardmäßig alle 30 Minuten; auch auf jeder Seite, 3-mal am Tag oder einmal am Tag, und „Jetzt prüfen“).
 - Ohne eingestelltes Kürzel startet die Synchronisierung nicht: stellen Sie es unter Einstellungen › Mein Profil ein. Siehe [die Architektur der Synchronisierung](../technique/SYNCHRONISATION.md).
 
 **„Im Ordner sichern“** kopiert alle vom Browser gehaltenen Daten (Entwürfe, Profil, Einstellungen…) in die Datei `defa_local_store.yaml` des Sicherungsordners.

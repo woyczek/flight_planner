@@ -29,6 +29,26 @@
   }).then(r => r.ok ? r.json() : null).catch(() => null);
   let state = null,
     busy = false;
+  // Fréquence de vérification (Paramètres › Maintenance › Versions et synchronisations, réglage de ce navigateur) et
+  // dernier état connu : le bouton s'affiche tout de suite avec lui, sans requête ; une seule vérification (dépôt distant
+  // compris) quand la période est écoulée — git status et fetch à chaque page coûtaient 1 à 3 s au lanceur.
+  const CHECK = 'syncCheck:v1',
+    LAST = 'syncState:v1';
+  const PERIODS = {
+    page: 0,
+    '30m': 30 * 60e3,
+    '3d': 8 * 3600e3,
+    '1d': 24 * 3600e3
+  };
+  const period = () => PERIODS[K?.store?.get?.(CHECK, '30m')] ?? PERIODS['30m'];
+  const saved = () => {
+    try {
+      return JSON.parse(localStorage.getItem(LAST) || 'null');
+    } catch {
+      return null;
+    }
+  };
+  const due = () => Date.now() - (saved()?.at || 0) >= period();
 
   const button = document.createElement('button');
   button.type = 'button';
@@ -157,10 +177,21 @@
       l: last
     }) + (RANK[level] ? `\n${reasons().join('\n')}` : '');
   }
-  /** État relu au lanceur (fetch : aussi le dépôt distant, pour les commits à recevoir). */
+  /** État relu au lanceur (fetch : aussi le dépôt distant, pour les commits à recevoir ; sinon relevé local, refait par
+   *  le lanceur) ; gardé avec sa date (dernier état connu). */
   async function status(fetchRemote = false) {
-    const s = await api(`/__setup/sync-status${fetchRemote ? '?fetch=1' : ''}`);
-    if (s) state = s;
+    const s = await api(`/__setup/sync-status?${fetchRemote ? 'fetch=1' : 'fresh=1'}`);
+    if (s) {
+      state = s;
+      try {
+        localStorage.setItem(LAST, JSON.stringify({
+          at: Date.now(),
+          state: s
+        }));
+      } catch {
+        /* stockage plein ou refusé : l'état reste celui de la page */
+      }
+    }
     draw();
     warnOnce();
     return state;
@@ -236,15 +267,33 @@
   window.SuiteSync = {
     status,
     run,
-    reasons
+    reasons,
+    /** Fréquence de vérification : 'page', '30m', '3d', '1d' (lecture, ou réglage avec une valeur). */
+    checkEvery(v) {
+      if (v in PERIODS) K?.store?.set?.(CHECK, v);
+      return K?.store?.get?.(CHECK, '30m') || '30m';
+    },
+    /** Date du dernier état connu (ms) ou 0. */
+    lastCheck: () => saved()?.at || 0
   };
-  // état au chargement (sans réseau), commits à recevoir toutes les 5 minutes, après chaque écriture (sans réseau)
+  // dernier état connu affiché tout de suite ; vérification (dépôt distant compris) seulement si la période réglée est
+  // écoulée, au chargement puis chaque minute tant que la page est visible ; après une écriture : relevé local seul
   let timer = 0;
   window.addEventListener('defa-data-change', () => {
     clearTimeout(timer);
     timer = setTimeout(() => status(), 2000);
   });
   window.addEventListener('repository-language-change', draw);
-  status().then(s => s?.repo && setTimeout(() => status(true), 4000));
-  setInterval(() => !busy && state?.repo && document.visibilityState === 'visible' && status(true), 5 * 60e3);
+  const last = saved();
+  if (last?.state) {
+    state = last.state;
+    draw();
+    // en-tête pas encore construit au chargement de ce script : bouton posé une fois la page prête
+    if (!button.isConnected) window.addEventListener('load', draw, {
+      once: true
+    });
+  }
+  if (due()) status(true);
+  setInterval(() => !busy && document.visibilityState === 'visible' && Date.now() - (saved()?.at || 0) >= Math.max(period(),
+    5 * 60e3) && status(true), 60e3);
 })();

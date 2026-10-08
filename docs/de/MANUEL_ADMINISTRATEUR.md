@@ -937,7 +937,7 @@ Die gemeinsamen Daten (Verfügbarkeiten, Benutzer, Konfiguration, Missionen und 
 ### Die Schaltfläche „Synchronisieren (n)“
 
 - Die Schaltfläche erscheint nur, wenn die Suite vom Starter bereitgestellt wird und `data/` ein Git-Repository ist.
-- (n) addiert die zu sendenden Änderungen dieses Rechners und die zu empfangenden Commits. Das entfernte Repository wird alle 5 Minuten neu gelesen, solange die Seite sichtbar ist. Der Tooltip nennt den Branch und das Datum der letzten Synchronisierung.
+- (n) addiert die zu sendenden Änderungen dieses Rechners und die zu empfangenden Commits. Das entfernte Repository wird in der unter Einstellungen › Wartung › Versionen und Synchronisation eingestellten Häufigkeit neu gelesen (standardmäßig alle 30 Minuten; auf jeder Seite, 3-mal am Tag, einmal am Tag); zwischen zwei Prüfungen zeigt die Schaltfläche den letzten bekannten, im Browser gehaltenen Zustand, und der Starter antwortet mit seiner letzten Erhebung. Der Tooltip nennt den Branch und das Datum der letzten Synchronisierung.
 - Die Synchronisierung wird von Hand gestartet, mit einem Klick:
   1. Die im Browser gehaltenen Dateien werden zuerst in den Ordner geschrieben;
   2. der Starter committet im Namen des angemeldeten Kürzels (einschließlich übernommenem Benutzer);

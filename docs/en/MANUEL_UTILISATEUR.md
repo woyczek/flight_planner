@@ -50,7 +50,7 @@ The header shows the page title and its subtitle. On the right are the tools, wh
 **“Synchronise”** only exists if the suite is opened with the launcher and the `data/` folder is a git repository.
 - A click first writes the files kept in the browser, then sends your changes (signed with your trigram), fetches those of the others and merges them.
 - In case of a conflict on the same record, the most recent version is kept; the other one is copied into `_conflits/` and a notification reports it.
-- The tooltip gives the details (changes to send, items to receive, last synchronisation). The state is checked again every 5 minutes.
+- The tooltip gives the details (changes to send, items to receive, last synchronisation). The button shows the last known state; it is checked again at the frequency set in Settings › Maintenance › Versions and synchronisation (every 30 minutes by default; also on every page, 3 times a day or once a day, and “Check now”).
 - Without a trigram set, synchronisation refuses to start: set it in Settings › My profile. See [the synchronisation architecture](../technique/SYNCHRONISATION.md).
 
 **“Save to folder”** copies all the data kept by the browser (drafts, profile, preferences…) into the `defa_local_store.yaml` file of the backup folder.

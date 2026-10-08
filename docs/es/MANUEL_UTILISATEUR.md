@@ -50,7 +50,7 @@ La cabecera muestra el título de la página y su subtítulo. A la derecha está
 **«Sincronizar»** solo existe si la suite se abre con el lanzador y la carpeta `data/` es un repositorio git.
 - Un clic escribe primero los archivos guardados en el navegador, después envía sus cambios (firmados con su trigrama), recupera los de los demás y los fusiona.
 - En caso de conflicto en una misma ficha, se conserva la versión más reciente; la otra se copia en `_conflits/` y una notificación lo indica.
-- El texto emergente da el detalle (cambios por enviar, elementos por recibir, última sincronización). El estado se vuelve a comprobar cada 5 minutos.
+- El texto emergente da el detalle (cambios por enviar, elementos por recibir, última sincronización). El botón muestra el último estado conocido; se vuelve a comprobar con la frecuencia ajustada en Ajustes › Mantenimiento › Versiones y sincronización (cada 30 minutos por defecto; también en cada página, 3 veces al día o una vez al día, y «Comprobar ahora»).
 - Sin trigrama configurado, la sincronización no se inicia: configúrelo en Ajustes › Mi perfil. Consulte [la arquitectura de la sincronización](../technique/SYNCHRONISATION.md).
 
 **«Guardar en la carpeta»** copia todos los datos guardados por el navegador (borradores, perfil, preferencias…) en el archivo `defa_local_store.yaml` de la carpeta de copia de seguridad.

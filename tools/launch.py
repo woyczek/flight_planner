@@ -407,7 +407,7 @@ class Setup(http.server.SimpleHTTPRequestHandler):
             # sur le dépôt distant (commits à recevoir)
             if not self._allowed():
                 return self._json({'error': 'refusé'}, 403)
-            return self._json(sync_status(fetch='fetch=1' in self.path))
+            return self._json(sync_status(fetch='fetch=1' in self.path, fresh='fresh=1' in self.path))
         if self.path.split('?')[0] == '/__setup/tools':
             # outils de tools/ (sommaire tools/index.html) : nom, sorte, titre et en-tête de chaque fichier
             if not self._allowed():
@@ -1172,10 +1172,11 @@ def _sync_refresh(fetch=False):
             _sync['busy'] = False
 
 
-def sync_status(fetch=False):
+def sync_status(fetch=False, fresh=False):
+    """fresh : relevé local refait tout de suite (après une écriture de la page) ; fetch : dépôt distant compris."""
     with _sync_lock:
         value, age, busy = _sync['value'], time.time() - _sync['at'], _sync['busy']
-        if value is not None and not fetch:
+        if value is not None and not fetch and not fresh:
             if age > SYNC_TTL and not busy:
                 _sync['busy'] = True
                 threading.Thread(target=_sync_refresh, daemon=True).start()

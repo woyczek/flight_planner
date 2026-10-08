@@ -937,7 +937,7 @@ Los datos compartidos (disponibilidades, usuarios, configuración, misiones y as
 ### El botón «Sincronizar (n)»
 
 - El botón solo aparece si la suite la sirve el lanzador y `data/` es un repositorio git.
-- (n) suma los cambios de este puesto pendientes de enviar y los commits pendientes de recibir. El repositorio remoto se vuelve a leer cada 5 minutos mientras la página esté visible. La información emergente da la rama y la fecha de la última sincronización.
+- (n) suma los cambios de este puesto pendientes de enviar y los commits pendientes de recibir. El repositorio remoto se vuelve a leer con la frecuencia ajustada en Ajustes › Mantenimiento › Versiones y sincronización (cada 30 minutos por defecto; en cada página, 3 veces al día, una vez al día); entre dos comprobaciones, el botón muestra el último estado conocido, guardado por el navegador, y el lanzador responde con su última lectura. La información emergente da la rama y la fecha de la última sincronización.
 - La sincronización se lanza a mano, con un clic:
   1. primero se escriben en la carpeta los archivos guardados en el navegador;
   2. el lanzador hace commit en nombre del trigrama conectado (incluido el usuario suplantado);

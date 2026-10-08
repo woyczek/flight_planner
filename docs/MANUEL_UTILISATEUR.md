@@ -50,7 +50,7 @@ L'en-tête porte le titre de la page et son sous-titre. À droite se trouvent le
 **« Synchroniser »** n'existe que si la suite est ouverte avec le lanceur et que le dossier `data/` est un dépôt git.
 - Un clic écrit d'abord les fichiers gardés dans le navigateur, puis envoie vos modifications (signées de votre trigramme), récupère celles des autres et les fusionne.
 - En cas de conflit sur une même fiche, la version la plus récente est gardée ; l'autre est copiée dans `_conflits/` et une notification le signale.
-- L'infobulle donne le détail (modifications à envoyer, éléments à recevoir, dernière synchronisation). L'état est revérifié toutes les 5 minutes.
+- L'infobulle donne le détail (modifications à envoyer, éléments à recevoir, dernière synchronisation). Le bouton montre le dernier état connu ; il est revérifié à la fréquence réglée dans Paramètres › Maintenance › Versions et synchronisations (toutes les 30 minutes par défaut ; aussi à chaque page, 3 fois par jour ou une fois par jour, et « Vérifier maintenant »).
 - Sans trigramme réglé, la synchronisation refuse de partir : réglez-le dans Paramètres › Mon profil. Voir [l'architecture de la synchronisation](technique/SYNCHRONISATION.md).
 
 **« Sauvegarder dans le dossier »** copie toutes les données gardées par le navigateur (brouillons, profil, préférences…) dans le fichier `defa_local_store.yaml` du dossier de sauvegarde.
