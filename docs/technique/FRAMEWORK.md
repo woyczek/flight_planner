@@ -266,6 +266,10 @@ est produit, avec la compagnie réglée (Paramètres › Installation › Compag
 - **Où les écrire** : textes affichés, dans les quatre langues (`'Exercice {SOG}', '{SOG} exercise', '{SOG}-Übung', …`),
   y compris le HTML fixe des pages (`<title>{CENTRE} — Studio cartographique</title>`, `<p>{SOG_NOM} — …</p>`).
   L'accueil (`index.html`, sans boîte à outils) pose le nom lui-même.
+- **Catégories de disponibilité** : libellés par défaut (`shared/dispos.js`) et ceux du jeu d'essai
+  (`tools/jeu_essai/config/disponibilites.json`) en jetons (« Exercice {SOG} »), résolus à l'affichage
+  (`SuiteDispos.label` → `K.t`) ; l'éditeur de Paramètres › Centre montre le jeton tel quel. Un fichier de catégories
+  déjà écrit avec un nom en clair le garde (donnée).
 - **Où ne pas les écrire** : données (missions, fichiers de `data/`, en-têtes YAML), identifiants et valeurs de repli
   (`by: … || 'CPCO'`, `X-SOG-Setup`), textes qui citent les valeurs par défaut (« Revenir à SO Group Virtual »),
   commentaires, manuels.

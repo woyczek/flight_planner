@@ -5,9 +5,9 @@ window.DataAdminI18n = {
     "Gruppenmodus: Zugang zum Zentrum über die Administratorrolle des signierten Registers.",
     "Modo grupo: acceso al Centro por el rol de administrador del registro firmado."
   ],
-  "Mode autonome : accès au Centre par le mot de passe du SO Group (verrou d’usage, pas une protection). Mode groupe (registre signé, accès par le rôle) : à venir.": [
-    "Eigenständiger Modus: Zugang zum Zentrum mit dem Passwort der SO Group (eine Nutzungssperre, kein Schutz). Gruppenmodus (signiertes Register, Zugang über die Rolle): folgt.",
-    "Modo autónomo: acceso al Centro con la contraseña del SO Group (un bloqueo de uso, no una protección). Modo grupo (registro firmado, acceso por el rol): próximamente."
+  "Mode autonome : accès au Centre par le mot de passe du {SOG} (verrou d’usage, pas une protection). Mode groupe (registre signé, accès par le rôle) : à venir.": [
+    "Eigenständiger Modus: Zugang zum Zentrum mit dem Passwort der {SOG} (eine Nutzungssperre, kein Schutz). Gruppenmodus (signiertes Register, Zugang über die Rolle): folgt.",
+    "Modo autónomo: acceso al Centro con la contraseña del {SOG} (un bloqueo de uso, no una protección). Modo grupo (registro firmado, acceso por el rol): próximamente."
   ],
   "Mot de passe :": ["Passwort:", "Contraseña:"],
   "partagé avec les données (data/config/centre.json), modifiable une fois le Centre activé.": [

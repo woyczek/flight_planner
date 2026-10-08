@@ -1569,8 +1569,8 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
         if (m) m.textContent = c.mode === 'groupe' ?
           T('Mode groupe : accès au Centre par le rôle d’administrateur du registre signé.',
             'Group mode: Centre access through the administrator role of the signed registry.') :
-          T('Mode autonome : accès au Centre par le mot de passe du SO Group (verrou d’usage, pas une protection). Mode groupe (registre signé, accès par le rôle) : à venir.',
-            'Standalone mode: Centre access through the SO Group password (a usage lock, not a protection). Group mode (signed registry, access by role): coming.'
+          T('Mode autonome : accès au Centre par le mot de passe du {SOG} (verrou d’usage, pas une protection). Mode groupe (registre signé, accès par le rôle) : à venir.',
+            'Standalone mode: Centre access through the {SOG} password (a usage lock, not a protection). Group mode (signed registry, access by role): coming.'
           );
         if (s) s.textContent = c.motDePasse || '';
         const i = body.querySelector('[data-cpco-new]');

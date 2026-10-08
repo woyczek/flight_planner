@@ -224,10 +224,10 @@ RepositoryContentI18n([
   ],
   ['Identifiant', 'Login', 'Kennung', 'Identificador'],
   ['Centre (administrateurs)', 'Centre (administrators)', 'Zentrum (Administratoren)', 'Centro (administradores)'],
-  ['Réservé aux administrateurs du SO Group : les pilotes passent cette étape.',
-    'For SO Group administrators only: pilots skip this step.',
-    'Nur für Administratoren der SO Group: Piloten überspringen diesen Schritt.',
-    'Reservado a los administradores del SO Group: los pilotos se saltan este paso.'
+  ['Réservé aux administrateurs du {SOG} : les pilotes passent cette étape.',
+    'For {SOG} administrators only: pilots skip this step.',
+    'Nur für Administratoren der {SOG}: Piloten überspringen diesen Schritt.',
+    'Reservado a los administradores del {SOG}: los pilotos se saltan este paso.'
   ],
   ['Activer le Centre', 'Enable the Centre', 'Zentrum aktivieren', 'Activar el Centro'],
   ['Mot de passe du Centre', 'Centre password', 'Passwort des Zentrums', 'Contraseña del Centro'],
@@ -247,7 +247,7 @@ RepositoryContentI18n([
     '); das Register wird auf seiner Seite neu gelesen.', '); el registro se relee desde su página.'
   ],
   ['Registre des missions', 'Mission registry', 'Missionsregister', 'Registro de misiones'],
-  ['Réglages du SO Group', 'SO Group settings', 'Einstellungen der SO Group', 'Ajustes del SO Group'],
+  ['Réglages du {SOG}', '{SOG} settings', 'Einstellungen der {SOG}', 'Ajustes del {SOG}'],
   ['Accueil', 'Home', 'Startseite', 'Inicio'],
   ['https://hôte/compte/dépôt.git', 'https://host/account/repository.git', 'https://host/konto/repository.git',
     'https://host/cuenta/repositorio.git'

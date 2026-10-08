@@ -16,6 +16,7 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   textes (quatre langues, HTML fixe et titres d'onglet compris), résolus par `K.t` / `K.tf` / `K.brand` et par la
   traduction des textes fixes, de nouveau quand la compagnie réglée change ; l'observateur qui renommait la page après
   coup est supprimé (pages de Paramètres figées, nom réglé contenant l'ancien). Données inchangées.
+  « SO Group » seul (premier lancement, mode autonome du Centre) et libellés de catégories du jeu d'essai en jetons aussi.
   Voir `docs/technique/FRAMEWORK.md` § 4 bis.
 
 ## [4.11.0] — 2026-10-08
