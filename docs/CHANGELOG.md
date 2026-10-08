@@ -43,6 +43,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Corrigé
 
+- **« Dossier des données : impossible de vérifier qu'il est celui de la suite servie »** après une installation neuve :
+  le lanceur n'écrivait ses repères (`.defa_instance`) qu'au démarrage, avant que `data/` existe ; ils sont désormais
+  écrits aussi après le jeu d'essai, le clone du dépôt ou l'archive des données (même jeton pour toute la vie du lanceur).
 - **« Mise à jour disponible » alors que la version locale est en avance** : le commit local venait d'un relevé du
   dossier mémorisé par le navigateur (parfois vieux de plusieurs jours), et de la branche `develop` du dépôt même quand
   une autre branche est extraite (`develop-local`) ; « en retard » était décidé par les dates. Désormais : commit local =

@@ -591,6 +591,7 @@ class Setup(http.server.SimpleHTTPRequestHandler):
         if path == '/__setup/jeu-essai':
             ok, log = sample_data()
             if ok:
+                mark_instance()  # data/ vient d'être créé : ses repères
                 with INDEX_LOCK:
                     index_availability()
                     index_users()
@@ -601,6 +602,8 @@ class Setup(http.server.SimpleHTTPRequestHandler):
             except ValueError:
                 a = {}
             ok, log = clone((a.get('user') or '').strip(), a.get('secret') or '', bool(a.get('remember')), a.get('url'))
+            if ok:
+                mark_instance()
             return self._json({'ok': ok, 'message': log})
         if path == '/__setup/upload':
             kind = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query).get('kind', [''])[0]
@@ -612,6 +615,8 @@ class Setup(http.server.SimpleHTTPRequestHandler):
                     if has_data():
                         return self._json({'ok': False, 'message': 'Les données sont déjà là (data/data_tree.js).'})
                     ok = extract_data(tmp, quiet=True)
+                    if ok:
+                        mark_instance()
                     return self._json({'ok': ok, 'message': 'Données installées dans data/.' if ok else 'Ce fichier n’est pas une archive de données (data_tree.js absent).'})
                 if kind == 'log':
                     if not has_data():
@@ -1270,8 +1275,15 @@ def index_users():
             json.dump({'schema': 1, 'va': va_short(), 'updated_at': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()), 'utilisateurs': users}, f, indent=1, ensure_ascii=False)
 
 
+INSTANCE_TOKEN = ''
+
+
 def mark_instance():
-    token = secrets.token_hex(8)
+    """Repère de l'installation lancée dans le dossier de l'application et ses dossiers de données. Même jeton pour toute la
+    vie du lanceur : rappelé quand les données arrivent après le démarrage (jeu d'essai, dépôt, archive), sinon data/ et
+    ses sous-dossiers restaient sans repère et les pages ne pouvaient pas dire s'ils sont ceux de la suite servie."""
+    global INSTANCE_TOKEN
+    token = INSTANCE_TOKEN = INSTANCE_TOKEN or secrets.token_hex(8)
     for d in INSTANCE_DIRS:
         p = os.path.join(ROOT, d)
         if os.path.isdir(p):
