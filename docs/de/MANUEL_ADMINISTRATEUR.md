@@ -486,7 +486,7 @@ Zum Öffnen: Seitenleiste › Rubrik „Zentrum“ › „Einsatztafel“. Ander
 Alles wird im gemeinsamen Datenpool gespeichert: der Befehl der Woche in `data/odv/<Jahr>-W<Woche>.json`, die Einstellungen in `data/config/odv.json`. Die Verfügbarkeiten bleiben die der Piloten, die Besatzung eines Missionsflugs die der Zuweisungen.
 Die Zeiten sind in z (UTC). Datenmodell: [Einsatztafel](../technique/ODV_ORDRES.md).
 
-### Woche
+### Tagesbefehl: Wochenleiste
 
 - „◀“ und „▶“ wechseln die Woche, „Diese Woche“ kehrt zur laufenden Woche zurück.
 - Die Tagesreiter zeigen in Rot die Zahl der Elemente im Konflikt an diesem Tag.

@@ -486,7 +486,7 @@ Pour l'ouvrir : barre latérale › rubrique « Centre » › « Tableau ». Con
 Tout est enregistré dans le pool de données partagé : l'ordre de la semaine dans `data/odv/<année>-W<semaine>.json`, les réglages dans `data/config/odv.json`. Les dispos restent celles des pilotes, l'équipage d'un vol de mission celui des affectations.
 Les heures sont en z (UTC). Modèle de données : [Tableau](technique/ODV_ORDRES.md).
 
-### Semaine
+### Ordre du jour : barre de la semaine
 
 - « ◀ » et « ▶ » changent de semaine, « Cette semaine » revient à la semaine en cours.
 - Les onglets des jours portent, en rouge, le nombre d'éléments en conflit du jour.

@@ -486,7 +486,7 @@ Para abrirla: barra lateral › sección «Centro» › «Tablero». A diferenci
 Todo se guarda en el pool de datos compartido: la orden de la semana en `data/odv/<año>-W<semana>.json`, los ajustes en `data/config/odv.json`. Las disponibilidades siguen siendo las de los pilotos, y la tripulación de un vuelo de misión la de las asignaciones.
 Las horas están en z (UTC). Modelo de datos: [Tablero](../technique/ODV_ORDRES.md).
 
-### Semana
+### Orden del día: barra de la semana
 
 - «◀» y «▶» cambian de semana, «Esta semana» vuelve a la semana en curso.
 - Las pestañas de los días muestran, en rojo, el número de elementos en conflicto del día.

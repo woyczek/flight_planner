@@ -837,12 +837,11 @@
 <body>
 <header><h1>Tableau</h1><div class="mut">Centre de planification et de conduite des opérations</div></header>
 <main class="odvo-page">
-<section data-block-id="semaine" data-icon="calendar" data-subtitle="Semaine ISO, jours (nombre d'éléments en conflit), vue, officier de permanence. Heures en z (UTC).">
-  <h2>Semaine</h2>
-  <div id="odvoBar" data-no-i18n></div>
-</section>
-<section id="odvoDaySection" data-block-id="jour" data-icon="clock" data-subtitle="Glisser un modèle sur sa section, un membre sur une plaquette ; clic : modifier ; bord droit : durée. Tranches matin, après-midi, soir du Planning ODV.">
+<!-- premier bloc : l'ordre du jour, sa barre (semaine, jours, vue, annuler, briefing) au-dessus de la frise ; aide au
+     geste dans les infobulles et le manuel, pas de sous-titre -->
+<section id="odvoDaySection" data-block-id="jour" data-icon="clock">
   <h2>Ordre du jour</h2>
+  <div id="odvoBar" data-no-i18n></div>
   <div id="odvoDay">
     <div class="odvo-zoom"><span>Zoom</span><input type="range" id="odvoZoom" min="0" max="4" step="1"></div>
     <div class="odvo-day">

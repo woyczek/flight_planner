@@ -486,7 +486,7 @@ To open it: sidebar › “Centre” section › “Board”. Unlike the rest of
 Everything is saved in the shared data pool: the week's order in `data/odv/<year>-W<week>.json`, the settings in `data/config/odv.json`. Availability stays the pilots' own, and the crew of a mission flight comes from the assignments.
 Times are in z (UTC). Data model: [Board](../technique/ODV_ORDRES.md).
 
-### Week
+### Order of the day: week bar
 
 - “◀” and “▶” change the week, “This week” goes back to the current week.
 - The day tabs show, in red, the number of items in conflict that day.
