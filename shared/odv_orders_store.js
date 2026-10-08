@@ -375,7 +375,9 @@
         from: e.convoyage.from || '',
         to: e.convoyage.to || '',
         // début du vol servi au dernier calcul : le convoyage suit le vol, mais garde un déplacement fait à la main
-        volDebut: e.convoyage.volDebut || null
+        volDebut: e.convoyage.volDebut || null,
+        // durée calculée au dernier calcul (min) : une durée changée à la main est gardée tant que le trajet ne change pas
+        minutes: Number.isFinite(+e.convoyage.minutes) && e.convoyage.minutes !== null ? +e.convoyage.minutes : null
       } : null,
       ...training(e),
       etat: ETATS.includes(e.etat) ? e.etat : 'prevu',

@@ -2148,7 +2148,9 @@
     // groupe d'options (rien si la liste est vide), marque de qualification après le nom
     const group = (title, list) => list.length ? `<optgroup label="${esc(title)}">${list.map(r => opt(r.m.tri, cur, `${r.m.tri}${r.m.nom ? ' — ' + r.m.nom : ''}${r.mark ? ' · ' + r.mark : ''}`)).join('')}</optgroup>` : '';
     const good = r => ['mastered', 'owned', 'flown'].includes(r.ql);
-    return `<option value="">—</option>${group(t(L4('Disponibles, qualifiés sur le type', 'Available, qualified on the type', 'Verfügbar, auf dem Typ qualifiziert', 'Disponibles, cualificados en el tipo')), rows.filter(r => r.free && good(r)))}${group(t(L4('Disponibles', 'Available', 'Verfügbar', 'Disponibles')), rows.filter(r => r.free && !good(r)))}${group(t(L4('Autres', 'Others', 'Andere', 'Otros')), rows.filter(r => !r.free))}`;
+    // pilote déjà posé hors des membres (désactivé, venu des affectations) : proposé tel quel, sinon l'enregistrement l'effaçait
+    const keepCur = cur && !S.members.some(m => m.tri === cur) ? opt(cur, cur) : '';
+    return `<option value="">—</option>${keepCur}${group(t(L4('Disponibles, qualifiés sur le type', 'Available, qualified on the type', 'Verfügbar, auf dem Typ qualifiziert', 'Disponibles, cualificados en el tipo')), rows.filter(r => r.free && good(r)))}${group(t(L4('Disponibles', 'Available', 'Verfügbar', 'Disponibles')), rows.filter(r => r.free && !good(r)))}${group(t(L4('Autres', 'Others', 'Andere', 'Otros')), rows.filter(r => !r.free))}`;
   }
   /** Options « membre » (trigramme — nom), vide en tête. */
   const memOpts = cur => `<option value="">—</option>${S.members.map(m => opt(m.tri, cur, m.tri + (m.nom ? ' — ' + m.nom : ''))).join('')}`;
@@ -2410,20 +2412,29 @@
    *  30 min avant le décollage, pilote « à affecter » (gardé s'il a été glissé) ; retirées si l'appareil change. */
   let ferryRun = null;
   /** Calcul des convoyages (voir ci-dessus) : un vol déplacé entraîne son convoyage du même écart, un convoyage
-   *  déplacé à la main garde sa place ; terrains sans coordonnées signalés une fois ; enregistré s'il y a du nouveau. */
+   *  déplacé ou allongé à la main garde sa place et sa durée ; terrains sans coordonnées signalés une fois ; enregistré
+   *  s'il y a du nouveau. Une plaquette n'est retirée que si son vol ne la demande plus (vol supprimé, appareil changé
+   *  ou déjà au départ) : convoyage incalculable pour l'instant (mission absente du registre, appareil hors flotte,
+   *  terrain sans coordonnées), elle est gardée telle quelle — retirée puis recréée, elle perdait heure et convoyeur. */
   async function syncFerries() {
     const doc = S.doc;
     const want = [];
+    const hold = new Set(); // « vol|immat » : convoyage existant gardé sans recalcul
     let unknown = [];
     for (const v of doc.elements.filter(x => x.type === 'vol' && x.mission && !x.convoyage)) {
       const dep = depOf(reg(v.mission));
-      if (!dep) continue;
       for (const a of v.avions) {
-        const f = a.appareil?.immat && (window.DEFA_FLEET || []).find(x => x.registration === a.appareil.immat);
-        if (!adOf(f) || adOf(f) === dep) continue;
+        if (!a.appareil?.immat) continue;
+        const f = (window.DEFA_FLEET || []).find(x => x.registration === a.appareil.immat);
+        if (!dep || !adOf(f)) {
+          hold.add(`${v.id}|${a.appareil.immat}`);
+          continue;
+        }
+        if (adOf(f) === dep) continue;
         const fm = await ferryMin(adOf(f), dep, f.type);
         if (fm == null) {
           unknown.push(`${f.registration} ${adOf(f)} → ${dep}`);
+          hold.add(`${v.id}|${f.registration}`);
           continue;
         }
         want.push({
@@ -2465,7 +2476,8 @@
             immat: f.registration,
             from: adOf(f),
             to: dep,
-            volDebut: v.debut
+            volDebut: v.debut,
+            minutes: fm
           },
           avions: [{
             appareil: {
@@ -2478,15 +2490,18 @@
         doc.elements.push(c);
         changed = true;
       } else {
-        // le vol a bougé : le convoyage le suit du même écart ; sinon il garde sa place (déplacement à la main)
+        // le vol a bougé : le convoyage le suit du même écart ; sinon il garde sa place (déplacement à la main) ; durée
+        // recalculée seulement si le trajet a changé (durée calculée gardée dans minutes), sinon celle de la plaquette
         const shift = c.convoyage.volDebut ? min(v.debut) - min(c.convoyage.volDebut) : 0;
-        const nd = c.convoyage.volDebut ? Math.max(0, Math.min(1440 - Math.max(5, fm), min(c.debut) + shift)) : s0;
-        if (hhmm(nd) !== c.debut || c.duree !== Math.max(5, fm) || c.date !== v.date || c.convoyage.from !== adOf(f) || c.convoyage
-          .to !== dep || c.convoyage.volDebut !== v.debut) {
+        const dur = (c.convoyage.minutes ?? fm) !== fm || c.convoyage.from !== adOf(f) || c.convoyage.to !== dep ? Math.max(5, fm) : c
+          .duree;
+        const nd = c.convoyage.volDebut ? Math.max(0, Math.min(1440 - dur, min(c.debut) + shift)) : s0;
+        if (hhmm(nd) !== c.debut || c.duree !== dur || c.date !== v.date || c.convoyage.from !== adOf(f) || c.convoyage.to !== dep || c
+          .convoyage.volDebut !== v.debut || c.convoyage.minutes !== fm) {
           Object.assign(c, {
             date: v.date,
             debut: hhmm(nd),
-            duree: Math.max(5, fm)
+            duree: dur
           });
           changed = true;
         }
@@ -2494,13 +2509,14 @@
           ...c.convoyage,
           from: adOf(f),
           to: dep,
-          volDebut: v.debut
+          volDebut: v.debut,
+          minutes: fm
         };
       }
       keep.add(c.id);
     }
     const before = doc.elements.length;
-    doc.elements = doc.elements.filter(x => !x.convoyage || keep.has(x.id));
+    doc.elements = doc.elements.filter(x => !x.convoyage || keep.has(x.id) || hold.has(`${x.convoyage.pour}|${x.convoyage.immat}`));
     if (doc.elements.length !== before) changed = true;
     unknown = unknown.filter(u => !S.ferryWarned?.has(u));
     if (unknown.length) {

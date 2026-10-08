@@ -93,6 +93,14 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Corrigé
 
+- **Tableau : plaquette de convoyage réinitialisée à la modification d'une mission** : le recalcul des convoyages
+  retirait toute plaquette qu'il ne savait pas recalculer à cet instant (mission absente du registre le temps d'une
+  relecture, appareil hors flotte, terrain sans coordonnées ou liste des aéroports non téléchargée), puis la recréait
+  au passage suivant à l'heure calculée, « à affecter » : déplacement à la main et convoyeur perdus. Une plaquette
+  n'est plus retirée que si son vol ne la demande plus (vol supprimé, appareil changé ou déjà au terrain de départ) ;
+  sinon elle est gardée telle quelle. Une durée changée à la main est gardée tant que le trajet ne change pas (durée
+  calculée notée dans `convoyage.minutes`). Fenêtre du vol : un pilote posé qui n'est pas dans la liste des membres
+  (membre désactivé, pilote venu des affectations) reste proposé au lieu d'être effacé à l'enregistrement.
 - **Déplacement des blocs (poignée ↕)** : le bloc visé s'illumine dans tous les designs (contour d'accent et trait
   d'insertion ; l'ancienne ombre était recouverte par les designs à matières, visible en Métro seulement) ; posé sur la
   moitié haute d'un bloc, le bloc déplacé va avant lui, sur la moitié basse après (dernière position possible) ; dépôt
