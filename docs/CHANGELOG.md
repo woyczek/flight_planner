@@ -146,6 +146,11 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Modifié
 
+- **Sauvegarde automatique des données du navigateur allégée** : au départ de chaque page (et toutes les 5 minutes),
+  elle analysait tout le stockage du navigateur et refaisait le texte YAML complet, puis constatait qu'il n'avait pas
+  changé — des dizaines de ms à chaque changement de page avec un stockage de 400 Ko. Au départ d'une page, une
+  empreinte rapide des textes bruts (et de la date du registre) décide ; le contrôle complet des 5 minutes, bases
+  IndexedDB comprises, est inchangé. Sans dossier de sauvegarde autorisé, le texte n'est plus construit du tout.
 - **Paramètres › Maintenance plus rapide à l'ouverture** (audit `tools/perf_audit.html`) : les réglages des zones
   aéronautiques étaient analysés à nouveau pour chaque fichier de la base (1 122 analyses JSON à l'ouverture) —
   analyse gardée tant que le réglage ne change pas ; les tableaux éditables des bases (flotte, indicatifs…) montrent
