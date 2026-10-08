@@ -1200,7 +1200,7 @@
     dispos.src = new URL("dispos.js?v=b93daed0", script.src).href;
     document.head.append(dispos);
     const update = document.createElement("script");
-    update.src = new URL("suite_update.js?v=695e4c03", script.src).href;
+    update.src = new URL("suite_update.js?v=11739928", script.src).href;
     document.head.append(update)
   } {
     /* Autre compagnie virtuelle que celle écrite dans les sources (Paramètres › Sources et dossiers) : « SO Group

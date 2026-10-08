@@ -150,17 +150,25 @@
           releaseDate: rel.date,
           url: `${REPO.web}/-/commits/${encodeURIComponent(ch)}`
         };
-      // Nouveauté : commit distant différent du commit local connu et plus récent ; sans commit local connu, version
-      // (ou, à version égale, date du commit distant postérieure à la date de release locale).
+      // Commit local : celui qui est servi (lu maintenant), sinon le relevé du dossier. Le relevé mémorisé pouvait dater
+      // de plusieurs jours, et désignait la branche « develop » du dépôt même quand une autre branche est extraite
+      // (develop-local) : un commit ancien, annoncé « en retard » face au canal.
+      const served = await window.AppFramework?.servedCommit?.().catch(() => null);
+      const head = served?.sha || (loc.git?.branch === ch ? loc.git?.head : loc.git?.channelHeads?.[ch] || '');
+      // Nouveauté : le dépôt distant dit si son commit manque en local (API compare, depuis le commit local jusqu'au
+      // commit du canal : liste vide = le local contient déjà le canal, à jour ou en avance). Commit local inconnu du
+      // dépôt : commits non publiés — ni en retard, ni à jour. Sans commit local connu : versions comparées.
       let available = false,
         reason = '';
-      const head = loc.git?.branch === ch ? loc.git?.head : loc.git?.channelHeads?.[ch] || '';
       if (head && remote.commit) {
-        available = head !== remote.commit && !(loc.git?.remoteHeads?.[ch] === remote.commit && loc.git?.behind === 0);
-        reason = available ? 'commit' : 'same-commit';
-        if (available && loc.git?.headDate && remote.date && new Date(remote.date) <= new Date(loc.git.headDate)) {
-          available = false;
-          reason = 'local-newer';
+        if (head === remote.commit) reason = 'same-commit';
+        else {
+          const cmp = await get(`${REPO.api}/repository/compare?from=${head}&to=${remote.commit}`, 'json').catch(() => null);
+          if (!cmp) reason = 'local-unpublished';
+          else if ((cmp.commits || []).length) {
+            available = true;
+            reason = 'commit';
+          } else reason = 'local-newer';
         }
       } else if (rel.version && loc.version) {
         const c = compare(rel.version, loc.version);

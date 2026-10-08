@@ -32,6 +32,12 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Corrigé
 
+- **« Mise à jour disponible » alors que la version locale est en avance** : le commit local venait d'un relevé du
+  dossier mémorisé par le navigateur (parfois vieux de plusieurs jours), et de la branche `develop` du dépôt même quand
+  une autre branche est extraite (`develop-local`) ; « en retard » était décidé par les dates. Désormais : commit local =
+  commit servi, relu à chaque contrôle (`AppFramework.servedCommit`) ; le dépôt distant dit s'il manque des commits en
+  local (API `repository/compare`). Nouveaux états : « En avance sur … » (le local contient déjà le canal) et
+  « Commits locaux non publiés » (commit local inconnu du dépôt).
 - **Nombre de cases MORA d'une zone sous-compté** (« 74 case(s) dans mora.csv » pour la France au lieu de 133) : le
   panneau comptait les seules cases dont le centre tombe dans le contour du pays ; les petites îles (La Réunion,
   Mayotte, Antilles…) sont désormais comptées, comme dans le calcul (`zoneCellKeys`).

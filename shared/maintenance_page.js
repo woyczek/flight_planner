@@ -507,7 +507,30 @@
     if (!r.ok) return `<p>${pill('err', t(['Contrôle impossible ({d})', 'Check failed ({d})'], { d: fmtDate(r.at) }))}</p><p class="mt-small">${esc(r.error)} — ${esc(t(['hors ligne, ou API bloquée par le navigateur (page ouverte en file://) : utiliser « python tools/update_suite.py ».', 'offline, or API blocked by the browser (page opened as file://): use “python tools/update_suite.py”.']))}</p>`;
     const rm = r.remote || {},
       other = r.channel !== s.channel ? ` ${pill('warn', t(['contrôle fait sur l’ancien canal {c}', 'checked on the former channel {c}'], { c: r.channel }))}` : '';
-    return `<p>${r.available ? pill('warn', t(['Mise à jour disponible sur {c}', 'Update available on {c}', 'Update verfügbar in {c}', 'Actualización disponible en {c}'], { c: r.channel })) : pill('ok', t(['À jour sur {c}', 'Up to date on {c}', 'Aktuell in {c}', 'Al día en {c}'], { c: r.channel }))}${other}</p>
+    // état : mise à jour disponible, à jour, en avance (le local contient le canal), commits locaux non publiés
+    const st = r.available ? pill('warn', t(['Mise à jour disponible sur {c}', 'Update available on {c}', 'Update verfügbar in {c}',
+        'Actualización disponible en {c}'
+      ], {
+        c: r.channel
+      })) :
+      r.reason === 'local-newer' ? pill('ok', t(['En avance sur {c} : la version locale contient déjà le canal',
+        'Ahead of {c}: the local version already contains the channel',
+        'Voraus gegenüber {c}: die lokale Version enthält den Kanal bereits',
+        'Por delante de {c}: la versión local ya contiene el canal'
+      ], {
+        c: r.channel
+      })) :
+      r.reason === 'local-unpublished' ? pill('info', t(['Commits locaux non publiés : version locale inconnue de {c}',
+        'Unpublished local commits: local version unknown to {c}',
+        'Unveröffentlichte lokale Commits: lokale Version in {c} unbekannt',
+        'Commits locales no publicados: versión local desconocida en {c}'
+      ], {
+        c: r.channel
+      })) :
+      pill('ok', t(['À jour sur {c}', 'Up to date on {c}', 'Aktuell in {c}', 'Al día en {c}'], {
+        c: r.channel
+      }));
+    return `<p>${st}${other}</p>
       <table class="mt-table"><tbody>
         <tr><th>${esc(t(['Version locale', 'Local version', 'Lokale Version', 'Versión local']))}</th><td>${esc(r.local?.version || '—')} (${esc(r.local?.date || '')})${r.local?.head ? ` · <code>${esc(r.local.head.slice(0, 9))}</code>` : ''}</td></tr>
         <tr><th>${esc(t(['Dernière version du canal', 'Latest on channel', 'Neueste im Kanal', 'Última del canal']))}</th><td>${esc(rm.version || '—')} · <a href="${esc(rm.url)}" target="_blank" rel="noopener"><code>${esc(rm.short || '')}</code></a> ${esc(fmtDate(rm.date))}<br><span class="mt-small">${esc(rm.title || '')}</span></td></tr>
