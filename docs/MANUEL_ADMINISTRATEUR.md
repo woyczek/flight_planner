@@ -91,6 +91,7 @@ Pendant l'usurpation, le trigramme de travail est celui de l'utilisateur usurpé
 Le générateur prépare le dossier d'une mission : identification, textes du brief, exercice, durée estimée, zones à activer, puis les PDF à remettre aux équipages. Il sert aussi à commander une mission à ChatGPT et à recevoir sa réponse.
 Accès : barre latérale « Missions » (section « Centre ») ou ☰ › « Centre — Générateur de mission ». Depuis le registre, « Ouvrir dans le générateur » charge la mission choisie.
 Voir aussi [missions SIA](SIA_MISSIONS.md) et [prompt du générateur](technique/PROMPT_GENERATEUR_MISSIONS.md).
+Selon le niveau d'utilisation : la page est proposée à partir du niveau Conception (3). À ce niveau, elle montre sept blocs : Mission, Identification, Durée estimée, Zones à activer, Textes de mission, Cartes du dossier final et Documents (plus Opération et Exercice quand la mission en relève). Les brouillons, « Toutes les données YAML » et les paramètres du calcul des routes sont au niveau Expert (4).
 
 ### Onglets « Générateur de mission » et « Studio cartographique »
 
@@ -112,12 +113,12 @@ Ce bloc montre la mission chargée et réunit l'enregistrement et l'import.
 | « Nouvelle mission » | Vide le formulaire (date du jour) |
 | « Commander à ChatGPT… » | Déplie le formulaire de commande (voir plus bas) |
 | « Enregistrer dans le dossier » | Écrit le YAML modifié dans `data/missions/<lettre>_<FAMILLE>/<ID>/` ; l'ancienne version est remplacée, l'historique est gardé dans le YAML |
-| « Mémoriser le brouillon » / « Recharger le brouillon » | Garde ou relit le texte de la mission dans ce navigateur (les images sont à resélectionner) |
+| « Mémoriser le brouillon » / « Recharger le brouillon » (niveau Expert) | Garde ou relit le texte de la mission dans ce navigateur (les images sont à resélectionner) |
 
 Le volet « Importer une autre mission : fichiers, texte collé, commande ChatGPT » est ouvert quand aucune mission n'est chargée :
 - « YAML et/ou Markdown » : sélectionnez ensemble `mission<ID>.yaml` et `summary<ID>.md`, ou cliquez « ou coller son contenu… » puis « Lire la mission » ;
 - « Cartes ou ZIP livré par le générateur » : choisissez directement le ZIP du studio ; les PNG et la carte d'assemblage sont associés automatiquement ;
-- « Commander une mission à ChatGPT » : même formulaire que le registre (type, sous-type, théâtre, série, équipes, aéronefs…). « Commander : copier le prompt et ouvrir ChatGPT » copie le prompt, ouvre ChatGPT dans un nouvel onglet et inscrit la commande au registre (« commandée »).
+- « Commander une mission à ChatGPT » : même formulaire que le registre (type, sous-type, théâtre, série, équipes, aéronefs…). « Commander : copier le prompt et ouvrir ChatGPT » copie le prompt, ouvre ChatGPT dans un nouvel onglet et inscrit la commande au registre (« commandée »). Au niveau Conception, ce repli n'apparaît que lorsque le bouton « Commander à ChatGPT… » l'ouvre ; au niveau Expert, il figure aussi, replié, dans le volet.
 
 Une mission reçue est inscrite au registre et rangée dans son dossier si le dossier des missions est autorisé ; sinon, cliquez « Ranger dans le dossier des missions… ». Lien « Ouvrir le registre ↗ ».
 
@@ -147,7 +148,7 @@ Changer l'identifiant d'une mission citée par d'autres (opération, cartes, tex
 
 Estimation du vol d'après la route probable et l'appareil ; recalculée à chaque modification. Masqué pour une mission d'organisation.
 - « Transit » : « automatique (selon l'appareil et le niveau) », « voies aériennes (IFR) », « RTBA (basse hauteur) » ou « direct ». Le choix est écrit dans la mission.
-- « Paramètres du calcul des routes (communs à toutes les missions) » : mêmes champs que Paramètres › Centre, avec « Valeurs par défaut ».
+- « Paramètres du calcul des routes (communs à toutes les missions) » (niveau Expert) : mêmes champs que Paramètres › Centre, avec « Valeurs par défaut ».
 - Affichage : « Vol estimé », « Bloc », aller / sur zone / retour, distance ; options de retour et briefs successifs le cas échéant.
 - Les **temps éprouvés** (CR des missions de même départ et mêmes points) remplacent le calcul quand ils existent.
 - Un tableau compare l'estimation aux CR déjà faits de la mission (vol réel, écart).
@@ -184,7 +185,7 @@ Sur une mission d'organisation, le bloc devient « Brief général » : situatio
 
 ### Toutes les données YAML
 
-Bloc masqué par défaut : cliquez « Afficher » dans son en-tête.
+Bloc du niveau Expert, masqué par défaut : cliquez « Afficher » dans son en-tête.
 - Éditeur sans schéma imposé : chaque clé du YAML est modifiable, les champs inconnus sont conservés.
 - Listes : « Ajouter un élément », × pour retirer un élément.
 - « Nom d'un nouveau champ racine » puis « Ajouter » crée une clé de premier niveau.
@@ -273,6 +274,7 @@ Si le dossier contient plusieurs cycles, seul le plus récent est lu ; les autre
 Le registre recense toutes les missions générées ou commandées, avec leur suivi par le Centre : statut, date de vol, notes, comptes rendus.
 Il sert à choisir une mission, à l'ouvrir dans le générateur ou le studio, à l'affecter à des pilotes, à créer son CR et à commander de nouvelles missions.
 Accès : barre latérale « Registre » (section « Centre ») ou ☰ › « Centre — Registre des missions ».
+Selon le niveau d'utilisation : la page est proposée à partir du niveau Conception (3), avec l'essentiel : « Ajouter des fichiers… » et « Relire le dossier », quatre filtres et « Plus de filtres », un tableau à sept colonnes, une fiche sans le studio et le formulaire de commande simplifié. Le reste est au niveau Expert (4), comme indiqué ci-dessous.
 
 ### Missions du registre
 
@@ -280,21 +282,21 @@ En tête : nombre de missions, répartition par statut et date de mise à jour.
 
 | Bouton | Effet |
 |---|---|
-| « Dossier des missions : … » | Choisit le dossier `data/missions` puis le relit |
-| « Relire le dossier » | Relit toutes les missions du dossier |
+| « Dossier des missions : … » (niveau Expert) | Choisit le dossier `data/missions` puis le relit |
+| « Relire le dossier » | Relit toutes les missions du dossier ; le demande s'il n'est pas encore autorisé |
 | « Ajouter des fichiers… » | Ajoute des `mission<ID>.yaml` / `summary<ID>.md` (tout navigateur) |
-| « Écrire mission_registry.yaml » | Écrit le registre dans le dossier des missions |
-| « Nettoyer le registre (n) » | Retire les missions « fichier absent » après relecture |
+| « Écrire mission_registry.yaml » (niveau Expert) | Écrit le registre dans le dossier des missions |
+| « Nettoyer le registre (n) » (niveau Expert) | Retire les missions « fichier absent » après relecture |
 
 Le dossier est relu automatiquement à l'ouverture s'il est déjà autorisé.
 Au nettoyage, le statut, les notes et la date de vol passent à la mission qui remplace une mission renumérotée.
 
 ### Choisir une mission
 
-Filtres : « Type », « Sous-type », « Rendez-vous », « Équipes engagées » (min – max), « Type d'équipe / d'aéronef », « Ravitaillement en vol », « Théâtre », « Statut », « Recherche ». Ils sont mémorisés.
+Filtres : « Type », « Statut », « Théâtre », « Recherche » ; les autres (« Sous-type », « Rendez-vous », « Équipes engagées » (min – max), « Type d'équipe / d'aéronef », « Ravitaillement en vol ») sont sous « Plus de filtres », ouvert au niveau Expert ou quand l'un d'eux est actif. Ils sont mémorisés.
 - « Tirer au sort (n) » choisit une mission parmi celles qui passent les filtres.
 - « Effacer les filtres », « CSV » (export de la sélection).
-- Tableau trié par colonne : Mission, Type, Titre, Équipes, RDV, AAR, Théâtre, Statut, « Durée est. », CR (nombre de vols), « Généré ». La barre sous le tableau règle sa hauteur (double-clic : hauteur par défaut).
+- Tableau trié par colonne : Mission, Type, Titre, Équipes, RDV, AAR, Théâtre, Statut, « Durée est. », CR (nombre de vols), « Généré ». La barre sous le tableau règle sa hauteur (double-clic : hauteur par défaut). Les colonnes Équipes, RDV, AAR et Théâtre ne sont affichées qu'au niveau Expert.
 - ✕ retire une mission du registre sans supprimer ses fichiers.
 
 Cliquez une ligne pour ouvrir la fiche de la mission, décrite ci-dessous. Le lien `?mission=M-016` ouvre directement la fiche.
@@ -303,11 +305,11 @@ Cliquez une ligne pour ouvrir la fiche de la mission, décrite ci-dessous. Le li
 
 La fiche affiche le statut, l'itinéraire, les équipes et indicatifs, puis :
 - pour une opération : ses membres (cliquez pour les afficher) ; « Ouvrir » charge toute l'opération dans le générateur ou le studio ;
-- « Fichiers de la mission » : YAML, « Markdown (lisible) », « PDF (générateur) », « Modifier (générateur) », « Cartes (studio) », vignettes des cartes, versions précédentes et textes reçus ;
+- « Fichiers de la mission » : YAML, « Markdown (lisible) », « PDF (générateur) », « Modifier (générateur) », « Cartes (studio) » (niveau Expert), vignettes des cartes, versions précédentes et textes reçus ;
 - état des cartes : « complète », « partielle : cartes à compléter » ou « partielle : cartes non générées (régénérables) » ;
 - « Durée estimée » avec la comparaison aux CR.
 
-Boutons : « Ouvrir dans le générateur », « Ouvrir dans le studio », « Affecter… » (sauf organisation …Z ; voir [affectation des missions](technique/AFFECTATION_MISSIONS.md)), « Créer le CR » ou « Nouveau CR (vol n) », et « Recopier le prompt » pour une mission commandée.
+Boutons : « Ouvrir dans le générateur », « Ouvrir dans le studio », « Affecter… » (sauf organisation …Z ; voir [affectation des missions](technique/AFFECTATION_MISSIONS.md)), « Créer le CR » ou « Nouveau CR (vol n) », et « Recopier le prompt » pour une mission commandée. « Ouvrir dans le studio » et « Recopier le prompt » sont au niveau Expert.
 
 ### Suivi du Centre : statut, date de vol, notes
 
@@ -333,12 +335,10 @@ Le suivi est écrit dans `suivi.yaml`, dans le dossier de la mission ; il est pa
 
 ### Commander une mission
 
-Formulaire commun avec le générateur.
-1. Réglez « Type », « Sous-type », « Théâtre » et « Second théâtre » (« Pays » pour l'étranger), « Série » (vide = la suivante).
-2. Vérifiez « Identifiant » (calculé, en lecture seule).
-3. Réglez « Équipes en vol », « Rendez-vous », « Équipes au sol », « Durée » (XS à XL), « Traductions », « Ravitaillement en vol ».
-4. Sous « Aéronef de chaque équipe en vol », saisissez l'appareil des équipes A, B… (vide = automatique).
-5. Cliquez « Commander : copier le prompt et ouvrir ChatGPT », collez dans ChatGPT (Ctrl+V) puis envoyez.
+Formulaire commun avec le générateur et les ordres de vols.
+1. Réglez « Type », « Sous-type », « Théâtre » (« Pays » pour l'étranger), « Équipes en vol », « Équipes au sol » et « Durée » (XS à XL).
+2. Au besoin, dépliez « Plus d'options » : « Second théâtre » (« Pays » pour l'étranger), « Série » (vide = la suivante), « Identifiant » (calculé, en lecture seule), « Rendez-vous », « Traductions », « Ravitaillement en vol » et l'aéronef de chaque équipe en vol A, B… (vide = automatique). Ce repli est ouvert au niveau Expert ; aux autres niveaux, il s'ouvre de lui-même quand l'un de ses réglages s'écarte du défaut.
+3. Cliquez « Commander : copier le prompt et ouvrir ChatGPT », collez dans ChatGPT (Ctrl+V) puis envoyez.
 
 La mission apparaît au registre avec le statut « commandée ». Enregistrez ensuite les fichiers dans le dossier des missions puis « Relire le dossier » : la commande est rapprochée de la mission générée (même série). Les réglages sont mémorisés.
 
@@ -672,25 +672,11 @@ Détails : [Manuel d'exploitation](MANUEL_EXPLOITATION.md), § 10.
 ## Paramètres › Installation
 <!-- page: apps/settings/installation.html -->
 
-Cette page regroupe les réglages faits une seule fois : premier lancement, dossiers locaux, sources externes et compagnie virtuelle.
-Pour l'ouvrir : barre latérale › « Paramètres », puis l'onglet « Installation ».
-Le menu latéral comporte deux groupes. Le groupe « Installation » contient « Premier lancement » ; le groupe « Dossiers et sources » contient « Sources et dossiers », « Données aéronautiques » et « Types d’aéronefs ».
-Ces rubriques sont attribuées à la page par `config/repository_tree` (clé `settings.sections` : `setup` et `sources` → installation ; `sia` et `types` → installation,maintenance, c'est-à-dire sur les deux pages : la mise en place ici, la mise à jour dans Maintenance, mêmes blocs). Toutes les autres rubriques de maintenance s'ouvrent sur la page Maintenance.
-
-### Premier lancement
-
-Cette rubrique indique si le premier lancement est terminé dans ce navigateur, et à quelle date.
-- « Ouvrir le premier lancement » rouvre l'assistant (`premier_lancement.html?force`), aussi accessible par l'onglet « Premier lancement » de Paramètres et par la carte de l'accueil tant qu'il reste quelque chose à régler. En tête, « Où en est la suite » fait le bilan ; puis six étapes :
-  1. Dossiers : « Choisir le dossier de l'application », puis le classeur ODV, facultatif (« Dossier OneDrive… » ou « ou le fichier Excel… »).
-  2. Données : « Récupérer les données » (clone du dépôt de données) ou « Archive des données… » ; dépôt git de synchronisation (facultatif) ; en option, « Journal (.html)… ».
-  3. Compagnie : nom, sigle, nom long, site de la compagnie ; clé d'API IVAO de l'installation (facultative, gardée par le lanceur) ; « Enregistrer la compagnie ».
-  4. Profil et identifiants : trigramme, IVAO, VATSIM, SimBrief, identifiants du site de la compagnie ; « Enregistrer le profil ».
-  5. Données aéronautiques et types d’aéronefs : les blocs « Données aéronautiques » et « Types d’aéronefs » (les mêmes qu'ici).
-  6. Centre (administrateurs) : « Activer le Centre », puis flotte et journal du site (« Mettre à jour maintenant »), missions du registre et liens vers les réglages du SO Group (Paramètres › Centre) ; enfin « Terminer ».
-- « Sources et dossiers, compagnie virtuelle » ouvre la rubrique suivante.
-- « Canal de mise à jour » ouvre Maintenance › Mises à jour.
-- Pour repartir de zéro : « Nettoyer et recommencer… », en bas du premier lancement. Cela efface les réglages de ce navigateur, pas les fichiers.
-Voir [Installation](INSTALL.md), § 1.
+Cette page regroupe les réglages faits une seule fois : dossiers locaux, sources externes, compagnie virtuelle, données aéronautiques et types d'aéronefs.
+Pour l'ouvrir : barre latérale › « Paramètres », puis l'onglet « Installation ». Cet onglet apparaît à partir du niveau d'utilisation Planification (2) ; une adresse directe vers l'une de ses rubriques l'ouvre à tout niveau.
+Le menu latéral comporte un seul groupe, « Dossiers et sources » : « Sources et dossiers » (ouverte d'emblée), « Données aéronautiques » et « Types d’aéronefs ».
+Le premier lancement a son propre onglet, « Premier lancement », décrit dans le [manuel utilisateur](MANUEL_UTILISATEUR.md#premier-lancement) ; « Nettoyer et recommencer… » se trouve en bas de cette page-là. Voir aussi [Installation](INSTALL.md), § 1.
+Ces rubriques sont attribuées à la page par `config/repository_tree` (clé `settings.sections` : `sources` → installation ; `sia` et `types` → installation,maintenance, c'est-à-dire sur les deux pages : la mise en place ici, la mise à jour dans Maintenance, mêmes blocs). Toutes les autres rubriques de maintenance s'ouvrent sur la page Maintenance.
 
 ### Sources et dossiers
 
@@ -710,16 +696,17 @@ Cette rubrique est le seul endroit où régler les dossiers locaux et les adress
 - **Sources externes** : l'adresse par défaut s'affiche en grisé. Une valeur saisie ne vaut que pour ce navigateur ; « ↺ » revient à la valeur par défaut et « Ouvrir ↗ » ouvre l'adresse.
 - **Clés d'API (services externes)** : clés de la suite, communes à tous ses utilisateurs (IVAO : clé d'API pour les activations de zones et les sessions ATC — trainings, examens, réservations — du Planning ODV et des ordres de vols). « Enregistrer » les confie au lanceur (`secrets/` à la racine de l'application, exclu de git, hors des données et des sauvegardes) ; la page n'en voit que l'état et les 4 derniers caractères ; « Effacer » la retire.
 - **Compagnie virtuelle** : « Nom », « Nom long », « Sigle », « Centre (sigle) », « Centre (nom complet) », et les pages du site (« Page d'accueil », « Log des vols », « Flotte », « Fiche d'un appareil »). Un champ vide garde la valeur par défaut. « Revenir à SO Group Virtual » efface tous ces réglages.
-- **Premier lancement** : « Rouvrir le premier lancement » ; « Nettoyer et recommencer… » efface les dossiers mémorisés, la copie du classeur ODV, les identifiants du site de la compagnie et le profil. Les fichiers sur le disque ne sont pas touchés.
+- **Premier lancement** : « Rouvrir le premier lancement ». Pour repartir de zéro, « Nettoyer et recommencer… » se trouve en bas de la page du premier lancement (rubrique « Recommencer »).
 
 ## Paramètres › Maintenance
 <!-- page: apps/settings/maintenance.html -->
 
 Cette page sert à l'entretien de la suite : mises à jour, versions, données SIA, caches, sauvegardes et bases de référence.
-Pour l'ouvrir : barre latérale › « Paramètres », puis l'onglet « Maintenance ». La page s'ouvre sur « Mises à jour ».
-Le menu latéral comporte deux parties :
-- le groupe « Maintenance » : Mises à jour, Versions et synchros, Références et dépendances, Données aéronautiques, Caches, Espace disque, Sauvegarde totale, Journal ;
-- les bases de données, rangées dans les groupes « Fichiers du dépôt », « Base », « Missions » et « Données du navigateur ».
+Pour l'ouvrir : barre latérale › « Paramètres », puis l'onglet « Maintenance ». La page s'ouvre sur « Mises à jour ». Cet onglet n'apparaît qu'au niveau d'utilisation Expert (4) ; une adresse directe vers l'une de ses rubriques l'ouvre à tout niveau.
+Le menu latéral comporte trois parties :
+- le groupe « Maintenance » : Mises à jour, Versions et synchros, Références et dépendances, Données aéronautiques, Types d'aéronefs ;
+- le groupe « Stockage et sauvegarde » : Caches, Espace disque, Sauvegarde totale, Journal ;
+- les bases de données, rangées dans les groupes « Fichiers du dépôt », « Base », « Missions » et « Données du navigateur ». Ces groupes n'apparaissent qu'au niveau Expert.
 
 ### Mises à jour de la suite
 

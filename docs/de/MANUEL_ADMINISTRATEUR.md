@@ -91,6 +91,7 @@ Während der Übernahme ist das Arbeitskürzel das des übernommenen Benutzers, 
 Der Generator bereitet die Unterlagen einer Mission vor: Identifikation, Briefingtexte, Übung, geschätzte Dauer, zu aktivierende Gebiete, danach die PDFs für die Besatzungen. Er dient auch dazu, eine Mission bei ChatGPT zu bestellen und die Antwort zu empfangen.
 Zugang: Seitenleiste „Missionen“ (Bereich „Zentrum“) oder ☰ › „Missionsgenerator (SIA)“. Im Register lädt „Im Generator öffnen“ die gewählte Mission.
 Siehe auch [SIA-Missionen](../SIA_MISSIONS.md) und [Prompt des Generators](../technique/PROMPT_GENERATEUR_MISSIONS.md).
+Je nach Nutzungsstufe: Die Seite wird ab der Stufe Gestaltung (3) angeboten. Auf dieser Stufe zeigt sie sieben Blöcke: Mission, Identifikation, Geschätzte Dauer, Zu aktivierende Gebiete, Missionstexte, Karten des Endpakets und Dokumente (dazu Operation und Übung, wenn die Mission dazugehört). Entwürfe, „Alle YAML-Daten“ und die Einstellungen der Routenberechnung gehören zur Stufe Experte (4).
 
 ### Reiter „Missionsgenerator“ und „Kartenstudio“
 
@@ -112,12 +113,12 @@ Dieser Block zeigt die geladene Mission und vereint Speichern und Import.
 | „Neue Mission“ | Leert das Formular (heutiges Datum) |
 | „Bei ChatGPT bestellen…“ | Klappt das Bestellformular auf (siehe unten) |
 | „Im Ordner speichern“ | Schreibt das geänderte YAML nach `data/missions/<lettre>_<FAMILLE>/<ID>/`; die alte Version wird ersetzt, der Verlauf bleibt im YAML erhalten |
-| „Entwurf speichern“ / „Entwurf neu laden“ | Behält oder liest den Text der Mission in diesem Browser (die Bilder sind neu auszuwählen) |
+| „Entwurf speichern“ / „Entwurf neu laden“ (Stufe Experte) | Behält oder liest den Text der Mission in diesem Browser (die Bilder sind neu auszuwählen) |
 
 Der Bereich „Andere Mission importieren: Dateien, eingefügter Text, ChatGPT-Bestellung“ ist geöffnet, wenn keine Mission geladen ist:
 - „YAML und/oder Markdown“: Wählen Sie `mission<ID>.yaml` und `summary<ID>.md` gemeinsam aus, oder klicken Sie auf „oder Inhalt einfügen…“ und dann auf „Mission lesen“;
 - „Karten oder vom Generator geliefertes ZIP“: Wählen Sie direkt das ZIP des Studios; die PNGs und die Übersichtskarte werden automatisch zugeordnet;
-- „Mission bei ChatGPT bestellen“: dasselbe Formular wie im Register (Typ, Untertyp, Einsatzgebiet, Serie, Teams, Luftfahrzeuge…). „Bestellen: Prompt kopieren und ChatGPT öffnen“ kopiert den Prompt, öffnet ChatGPT in einem neuen Tab und trägt die Bestellung ins Register ein („bestellt“).
+- „Mission bei ChatGPT bestellen“: dasselbe Formular wie im Register (Typ, Untertyp, Einsatzgebiet, Serie, Teams, Luftfahrzeuge…). „Bestellen: Prompt kopieren und ChatGPT öffnen“ kopiert den Prompt, öffnet ChatGPT in einem neuen Tab und trägt die Bestellung ins Register ein („bestellt“). Auf der Stufe Gestaltung erscheint dieser Bereich nur, wenn der Knopf „Bei ChatGPT bestellen…“ ihn öffnet; auf der Stufe Experte steht er auch zugeklappt im Bereich.
 
 Eine empfangene Mission wird ins Register eingetragen und in ihrem Ordner abgelegt, wenn der Missionsordner erlaubt ist; andernfalls klicken Sie auf „Im Missionsordner ablegen…“. Link „Register öffnen ↗“.
 
@@ -147,7 +148,7 @@ Das Ändern der Kennung einer Mission, auf die andere verweisen (Operation, Kart
 
 Schätzung des Flugs anhand der wahrscheinlichen Route und des Luftfahrzeugs; bei jeder Änderung neu berechnet. Bei einer Mission der Übungsleitung ausgeblendet.
 - „Transit“: „automatisch (nach Luftfahrzeug und Höhe)“, „Luftstraßen (IFR)“, „RTBA (Tiefflug)“ oder „direkt“. Die Wahl wird in die Mission geschrieben.
-- „Einstellungen der Routenberechnung (für alle Missionen)“: dieselben Felder wie unter Einstellungen › Zentrum, mit „Standardwerte“.
+- „Einstellungen der Routenberechnung (für alle Missionen)“ (Stufe Experte): dieselben Felder wie unter Einstellungen › Zentrum, mit „Standardwerte“.
 - Anzeige: „geschätzter Flug“, „Block“, Hinflug / im Gebiet / Rückflug, Entfernung; gegebenenfalls Rückflugoptionen und aufeinanderfolgende Briefings.
 - Die **erprobten Zeiten** (Berichte von Missionen mit gleichem Abflugort und gleichen Punkten) ersetzen die Berechnung, wenn es sie gibt.
 - Eine Tabelle vergleicht die Schätzung mit den bereits erstellten Berichten der Mission (tatsächlicher Flug, Abweichung).
@@ -184,7 +185,7 @@ Auf einer Mission der Übungsleitung wird der Block zu „Allgemeines Briefing�
 
 ### Alle YAML-Daten
 
-Block standardmäßig ausgeblendet: Klicken Sie in seinem Kopf auf „Anzeigen“.
+Block der Stufe Experte, standardmäßig ausgeblendet: Klicken Sie in seinem Kopf auf „Anzeigen“.
 - Editor ohne vorgegebenes Schema: Jeder Schlüssel des YAML ist änderbar, unbekannte Felder bleiben erhalten.
 - Listen: „Element hinzufügen“, × zum Entfernen eines Elements.
 - „Name eines neuen Stammfelds“ und dann „Hinzufügen“ legt einen Schlüssel der ersten Ebene an.
@@ -273,6 +274,7 @@ Enthält der Ordner mehrere Zyklen, wird nur der neueste gelesen; die anderen we
 Das Register erfasst alle erzeugten oder bestellten Missionen mit ihrer Verfolgung durch das Zentrum: Status, Flugdatum, Notizen, Berichte.
 Es dient dazu, eine Mission auszuwählen, sie im Generator oder im Studio zu öffnen, sie Piloten zuzuweisen, ihren Bericht zu erstellen und neue Missionen zu bestellen.
 Zugang: Seitenleiste „Register“ (Bereich „Zentrum“) oder ☰ › „Missionsregister (SIA)“.
+Je nach Nutzungsstufe: Die Seite wird ab der Stufe Gestaltung (3) angeboten, mit dem Wesentlichen: „Dateien hinzufügen…“ und „Ordner neu lesen“, vier Filter und „Weitere Filter“, eine Tabelle mit sieben Spalten, ein Blatt ohne das Kartenstudio und das vereinfachte Bestellformular. Der Rest gehört zur Stufe Experte (4), wie unten angegeben.
 
 ### Missionen des Registers
 
@@ -280,21 +282,21 @@ Am Kopf: Anzahl der Missionen, Verteilung nach Status und Aktualisierungsdatum.
 
 | Schaltfläche | Wirkung |
 |---|---|
-| „Missionsordner: …“ | Wählt den Ordner `data/missions` und liest ihn dann neu |
-| „Ordner neu lesen“ | Liest alle Missionen des Ordners neu |
+| „Missionsordner: …“ (Stufe Experte) | Wählt den Ordner `data/missions` und liest ihn dann neu |
+| „Ordner neu lesen“ | Liest alle Missionen des Ordners neu; fragt nach ihm, wenn er noch nicht freigegeben ist |
 | „Dateien hinzufügen…“ | Fügt `mission<ID>.yaml` / `summary<ID>.md` hinzu (jeder Browser) |
-| „mission_registry.yaml schreiben“ | Schreibt das Register in den Missionsordner |
-| „Register bereinigen (n)“ | Entfernt die Missionen „Datei fehlt“ nach dem Neueinlesen |
+| „mission_registry.yaml schreiben“ (Stufe Experte) | Schreibt das Register in den Missionsordner |
+| „Register bereinigen (n)“ (Stufe Experte) | Entfernt die Missionen „Datei fehlt“ nach dem Neueinlesen |
 
 Der Ordner wird beim Öffnen automatisch neu gelesen, wenn er bereits erlaubt ist.
 Beim Bereinigen gehen Status, Notizen und Flugdatum auf die Mission über, die eine umnummerierte Mission ersetzt.
 
 ### Mission wählen
 
-Filter: „Typ“, „Untertyp“, „Treffpunkt“, „Beteiligte Teams“ (min – max), „Team- / Luftfahrzeugtyp“, „Luftbetankung“, „Schauplatz“, „Status“, „Suche“. Sie werden gespeichert.
+Filter: „Typ“, „Status“, „Schauplatz“, „Suche“; die übrigen („Untertyp“, „Treffpunkt“, „Beteiligte Teams“ (min – max), „Team- / Luftfahrzeugtyp“, „Luftbetankung“) liegen unter „Weitere Filter“, geöffnet auf der Stufe Experte oder wenn einer von ihnen aktiv ist. Sie werden gespeichert.
 - „Zufällig wählen (n)“ wählt eine Mission unter denen, die die Filter passieren.
 - „Filter löschen“, „CSV“ (Export der Auswahl).
-- Tabelle nach Spalte sortierbar: Mission, Typ, Titel, Teams, RDV, AAR, Schauplatz, Status, „Gesch. Dauer“, Berichte (Anzahl der Flüge), „Erzeugt“. Die Leiste unter der Tabelle regelt ihre Höhe (Doppelklick: Standardhöhe).
+- Tabelle nach Spalte sortierbar: Mission, Typ, Titel, Teams, RDV, AAR, Schauplatz, Status, „Gesch. Dauer“, Berichte (Anzahl der Flüge), „Erzeugt“. Die Leiste unter der Tabelle regelt ihre Höhe (Doppelklick: Standardhöhe). Die Spalten Teams, RDV, AAR und Schauplatz erscheinen nur auf der Stufe Experte.
 - ✕ entfernt eine Mission aus dem Register, ohne ihre Dateien zu löschen.
 
 Klicken Sie auf eine Zeile, um das unten beschriebene Missionsblatt zu öffnen. Der Link `?mission=M-016` öffnet das Blatt direkt.
@@ -303,11 +305,11 @@ Klicken Sie auf eine Zeile, um das unten beschriebene Missionsblatt zu öffnen. 
 
 Das Blatt zeigt Status, Streckenführung, Teams und Rufzeichen, danach:
 - bei einer Operation: ihre Mitglieder (klicken Sie, um sie anzuzeigen); „Öffnen“ lädt die ganze Operation in den Generator oder das Studio;
-- „Dateien der Mission“: YAML, „Markdown (lesbar)“, „PDF (Generator)“, „Bearbeiten (Generator)“, „Karten (Studio)“, Miniaturen der Karten, frühere Versionen und empfangene Texte;
+- „Dateien der Mission“: YAML, „Markdown (lesbar)“, „PDF (Generator)“, „Bearbeiten (Generator)“, „Karten (Studio)“ (Stufe Experte), Miniaturen der Karten, frühere Versionen und empfangene Texte;
 - Zustand der Karten: „vollständig“, „teilweise: Karten zu ergänzen“ oder „teilweise: Karten nicht erzeugt (wiedererzeugbar)“;
 - „Geschätzte Dauer“ mit dem Vergleich zu den Berichten.
 
-Schaltflächen: „Im Generator öffnen“, „Im Kartenstudio öffnen“, „Zuweisen…“ (außer Übungsleitung …Z; siehe [Zuweisung der Missionen](../technique/AFFECTATION_MISSIONS.md)), „Bericht erstellen“ oder „Neuer Bericht (Flug n)“, und „Prompt erneut kopieren“ für eine bestellte Mission.
+Schaltflächen: „Im Generator öffnen“, „Im Kartenstudio öffnen“, „Zuweisen…“ (außer Übungsleitung …Z; siehe [Zuweisung der Missionen](../technique/AFFECTATION_MISSIONS.md)), „Bericht erstellen“ oder „Neuer Bericht (Flug n)“, und „Prompt erneut kopieren“ für eine bestellte Mission. „Im Kartenstudio öffnen“ und „Prompt erneut kopieren“ gehören zur Stufe Experte.
 
 ### Verfolgung durch das Zentrum: Status, Flugdatum, Notizen
 
@@ -333,12 +335,10 @@ Die Verfolgung wird in `suivi.yaml` im Missionsordner geschrieben; sie wird mit 
 
 ### Mission bestellen
 
-Gemeinsames Formular mit dem Generator.
-1. Stellen Sie „Typ“, „Untertyp“, „Einsatzgebiet“ und „Zweites Einsatzgebiet“ („Land“ für das Ausland), „Serie“ ein (leer = die nächste).
-2. Prüfen Sie „Kennung“ (berechnet, nur lesbar).
-3. Stellen Sie „Flugbesatzungen“, „Treffpunkt“, „Bodenteams“, „Dauer“ (XS bis XL), „Übersetzungen“, „Luftbetankung“ ein.
-4. Geben Sie unter „Luftfahrzeug jedes fliegenden Teams“ das Luftfahrzeug der Teams A, B… ein (leer = automatisch).
-5. Klicken Sie auf „Bestellen: Prompt kopieren und ChatGPT öffnen“, fügen Sie in ChatGPT ein (Strg+V) und senden Sie ab.
+Gemeinsames Formular mit dem Generator und den Flugbefehlen.
+1. Stellen Sie „Typ“, „Untertyp“, „Einsatzgebiet“ („Land“ für das Ausland), „Flugbesatzungen“, „Bodenteams“ und „Dauer“ (XS bis XL) ein.
+2. Klappen Sie bei Bedarf „Weitere Optionen“ auf: „Zweites Einsatzgebiet“ („Land“ für das Ausland), „Serie“ (leer = die nächste), „Kennung“ (berechnet, nur lesbar), „Treffpunkt“, „Übersetzungen“, „Luftbetankung“ und das Luftfahrzeug jedes fliegenden Teams A, B… (leer = automatisch). Dieser Bereich ist auf der Stufe Experte geöffnet; auf den anderen Stufen öffnet er sich von selbst, wenn eine seiner Einstellungen vom Standard abweicht.
+3. Klicken Sie auf „Bestellen: Prompt kopieren und ChatGPT öffnen“, fügen Sie in ChatGPT ein (Strg+V) und senden Sie ab.
 
 Die Mission erscheint im Register mit dem Status „bestellt“. Speichern Sie dann die Dateien im Missionsordner und klicken Sie auf „Ordner neu lesen“: Die Bestellung wird der erzeugten Mission zugeordnet (gleiche Serie). Die Einstellungen werden gespeichert.
 
@@ -672,25 +672,11 @@ Details: [Betriebshandbuch](../MANUEL_EXPLOITATION.md), § 10.
 ## Einstellungen › Installation
 <!-- page: apps/settings/installation.html -->
 
-Diese Seite vereint die einmalig vorzunehmenden Einstellungen: Erststart, lokale Ordner, externe Quellen und virtuelle Fluggesellschaft.
-Zum Öffnen: Seitenleiste › „Einstellungen“, dann der Reiter „Installation“.
-Das Seitenmenü hat zwei Gruppen. Die Gruppe „Installation“ enthält „Erststart“; die Gruppe „Ordner und Quellen“ enthält „Quellen und Ordner“, „Luftfahrtdaten“ und „Luftfahrzeugtypen“.
-Diese Rubriken werden der Seite durch `config/repository_tree` zugeordnet (Schlüssel `settings.sections`: `setup` und `sources` → installation; `sia` und `types` → installation,maintenance, also auf beiden Seiten: Einrichtung hier, Aktualisierung unter Wartung, dieselben Blöcke). Alle anderen Wartungsrubriken öffnen sich auf der Seite Wartung.
-
-### Erststart
-
-Diese Rubrik zeigt, ob der Erststart in diesem Browser abgeschlossen ist, und an welchem Datum.
-- „Erststart öffnen“ öffnet den Assistenten erneut (`premier_lancement.html?force`), auch über die Registerkarte „Erststart“ der Einstellungen und die Karte der Startseite erreichbar, solange noch etwas einzustellen ist. Oben zieht „Stand der Suite“ Bilanz; dann sechs Schritte:
-  1. Ordner: „Anwendungsordner wählen“, dann die ODV-Arbeitsmappe, optional („OneDrive-Ordner…“ oder „oder die Excel-Datei…“).
-  2. Daten: „Daten abrufen“ (Klon des Datenrepositorys) oder „Datenarchiv…“; Git-Synchronisierungs-Repository (optional); optional „Journal (.html)…“.
-  3. Fluggesellschaft: Name, Kürzel, vollständiger Name, Website der Fluggesellschaft; IVAO-API-Schlüssel der Installation (optional, beim Starter gespeichert); „Fluggesellschaft speichern“.
-  4. Profil und Zugangsdaten: Kürzel, IVAO, VATSIM, SimBrief, Zugangsdaten der Website; „Profil speichern“.
-  5. Luftfahrtdaten und Luftfahrzeugtypen: die Blöcke „Luftfahrtdaten“ und „Luftfahrzeugtypen“ (dieselben wie hier).
-  6. Zentrum (Administratoren): „Zentrum aktivieren“, dann Flotte und Flugbuch der Website („Jetzt aktualisieren“), Missionen des Registers und Links zu den Einstellungen der SO Group (Einstellungen › Zentrum); zum Schluss „Abschließen“.
-- „Quellen und Ordner, virtuelle Fluggesellschaft“ öffnet die nächste Rubrik.
-- „Update-Kanal“ öffnet Wartung › Updates.
-- Um bei null anzufangen: „Bereinigen und neu beginnen…“, unten im Erststart. Das löscht die Einstellungen dieses Browsers, nicht die Dateien.
-Siehe [Installation](../INSTALL.md), § 1.
+Diese Seite vereint die einmalig vorzunehmenden Einstellungen: lokale Ordner, externe Quellen, virtuelle Fluggesellschaft, Luftfahrtdaten und Luftfahrzeugtypen.
+Zum Öffnen: Seitenleiste › „Einstellungen“, dann der Reiter „Installation“. Dieser Reiter erscheint ab der Nutzungsstufe Planung (2); eine direkte Adresse zu einem seiner Abschnitte öffnet ihn auf jeder Stufe.
+Das Seitenmenü hat eine einzige Gruppe, „Ordner und Quellen“: „Quellen und Ordner“ (von Anfang an geöffnet), „Luftfahrtdaten“ und „Luftfahrzeugtypen“.
+Der Erststart hat einen eigenen Reiter, „Erststart“, beschrieben im [Benutzerhandbuch](MANUEL_UTILISATEUR.md#erststart); „Bereinigen und neu beginnen…“ steht unten auf jener Seite. Siehe auch [Installation](../INSTALL.md), § 1.
+Diese Rubriken werden der Seite durch `config/repository_tree` zugeordnet (Schlüssel `settings.sections`: `sources` → installation; `sia` und `types` → installation,maintenance, also auf beiden Seiten: Einrichtung hier, Aktualisierung unter Wartung, dieselben Blöcke). Alle anderen Wartungsrubriken öffnen sich auf der Seite Wartung.
 
 ### Quellen und Ordner
 
@@ -710,16 +696,17 @@ Diese Rubrik ist der einzige Ort, an dem die lokalen Ordner und die Adressen der
 - **Externe Quellen**: Die Standardadresse wird grau angezeigt. Ein eingegebener Wert gilt nur für diesen Browser; „↺“ kehrt zum Standardwert zurück, und „Öffnen ↗“ öffnet die Adresse.
 - **API-Schlüssel (externe Dienste)**: Schlüssel der Suite, für alle ihre Benutzer (IVAO: API-Schlüssel für die Gebietsaktivierungen und die ATC-Sitzungen — Trainings, Prüfungen, Buchungen — der ODV-Planung und der Einsatztafel). „Speichern“ übergibt sie dem Starter (`secrets/` im Anwendungsordner, von Git ausgeschlossen, außerhalb der Daten und Sicherungen); die Seite sieht nur ihren Status und die letzten 4 Zeichen; „Löschen“ entfernt den Schlüssel.
 - **Virtuelle Fluggesellschaft**: „Name“, „Vollständiger Name“, „Kürzel“, „Zentrum (Kürzel)“, „Zentrum (voller Name)“, und die Seiten der Website („Startseite“, „Flugbuch“, „Flotte“, „Flugzeugseite“). Ein leeres Feld behält den Standardwert. „Zurück zu SO Group Virtual“ löscht alle diese Einstellungen.
-- **Erststart**: „Ersten Start erneut öffnen“; „Bereinigen und neu beginnen…“ löscht die gespeicherten Ordner, die Kopie der ODV-Arbeitsmappe, die Zugangsdaten der Website der Fluggesellschaft und das Profil. Die Dateien auf der Festplatte bleiben unberührt.
+- **Erststart**: „Ersten Start erneut öffnen“. Um bei null anzufangen, steht „Bereinigen und neu beginnen…“ unten auf der Seite des Erststarts (Abschnitt „Neu beginnen“).
 
 ## Einstellungen › Wartung
 <!-- page: apps/settings/maintenance.html -->
 
 Diese Seite dient der Pflege der Suite: Updates, Versionen, SIA-Daten, Caches, Sicherungen und Referenzdatenbanken.
-Zum Öffnen: Seitenleiste › „Einstellungen“, dann der Reiter „Wartung“. Die Seite öffnet sich auf „Updates“.
-Das Seitenmenü hat zwei Teile:
-- die Gruppe „Wartung“: Updates, Versionen, Referenzen und Abhängigkeiten, Luftfahrtdaten, Caches, Speicherplatz, Vollständige Sicherung, Protokoll;
-- die Datenbanken, geordnet in den Gruppen „Dateien des Repositorys“, „Datenbank“, „Missionen“ und „Browserdaten“.
+Zum Öffnen: Seitenleiste › „Einstellungen“, dann der Reiter „Wartung“. Die Seite öffnet sich auf „Updates“. Dieser Reiter erscheint nur auf der Nutzungsstufe Experte (4); eine direkte Adresse zu einem seiner Abschnitte öffnet ihn auf jeder Stufe.
+Das Seitenmenü hat drei Teile:
+- die Gruppe „Wartung“: Updates, Versionen, Referenzen und Abhängigkeiten, Luftfahrtdaten, Luftfahrzeugtypen;
+- die Gruppe „Speicher und Sicherung“: Caches, Speicherplatz, Vollständige Sicherung, Protokoll;
+- die Datenbanken, geordnet in den Gruppen „Dateien des Repositorys“, „Datenbank“, „Missionen“ und „Browserdaten“. Diese Gruppen erscheinen nur auf der Stufe Experte.
 
 ### Aktualisierungen der Suite
 

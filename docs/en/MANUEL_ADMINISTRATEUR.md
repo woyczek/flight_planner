@@ -91,6 +91,7 @@ During impersonation, the working trigram is that of the impersonated user and e
 The generator prepares a mission file: identification, brief texts, exercise, estimated duration, airspaces to activate, then the PDFs to hand to the crews. It is also used to order a mission from ChatGPT and to receive its answer.
 Access: sidebar “Missions” (“Centre” section) or ☰ › “Mission generator (SIA)”. From the registry, “Open in generator” loads the chosen mission.
 See also [SIA missions](../SIA_MISSIONS.md) and [generator prompt](../technique/PROMPT_GENERATEUR_MISSIONS.md).
+Depending on the usage level: the page is offered from the Design level (3). At that level, it shows seven blocks: Mission, Identification, Estimated duration, Airspaces to activate, Mission texts, Maps of the final file and Documents (plus Operation and Exercise when the mission belongs to one). Drafts, “All YAML data” and the route calculation settings are at the Expert level (4).
 
 ### “Mission generator” and “Map studio” tabs
 
@@ -112,12 +113,12 @@ This block shows the loaded mission and groups saving and import.
 | “New mission” | Clears the form (today's date) |
 | “Order from ChatGPT…” | Expands the order form (see below) |
 | “Save to the folder” | Writes the modified YAML to `data/missions/<lettre>_<FAMILLE>/<ID>/`; the old version is replaced, the history is kept in the YAML |
-| “Save draft” / “Reload draft” | Keeps or reloads the mission text in this browser (images must be selected again) |
+| “Save draft” / “Reload draft” (Expert level) | Keeps or reloads the mission text in this browser (images must be selected again) |
 
 The “Import another mission: files, pasted text, ChatGPT order” pane is open when no mission is loaded:
 - “YAML and/or Markdown”: select `mission<ID>.yaml` and `summary<ID>.md` together, or click “or paste its content…” then “Read the mission”;
 - “Maps or ZIP delivered by the generator”: choose the studio ZIP directly; the PNGs and the overview map are matched automatically;
-- “Order a mission from ChatGPT”: same form as the registry (type, subtype, theatre, series, teams, aircraft…). “Order: copy prompt and open ChatGPT” copies the prompt, opens ChatGPT in a new tab and records the order in the registry (“ordered”).
+- “Order a mission from ChatGPT”: same form as the registry (type, subtype, theatre, series, teams, aircraft…). “Order: copy prompt and open ChatGPT” copies the prompt, opens ChatGPT in a new tab and records the order in the registry (“ordered”). At the Design level, this section only appears when the “Order from ChatGPT…” button opens it; at the Expert level, it is also shown, collapsed, in the pane.
 
 A received mission is recorded in the registry and filed in its folder if the missions folder is authorised; otherwise, click “File in the missions folder…”. Link “Open the registry ↗”.
 
@@ -147,7 +148,7 @@ Changing the identifier of a mission cited by others (operation, maps, texts) op
 
 Flight estimate based on the probable route and the aircraft; recomputed on every change. Hidden for an organisation mission.
 - “Transit”: “automatic (by aircraft and level)”, “airways (IFR)”, “RTBA (low level)” or “direct”. The choice is written into the mission.
-- “Route calculation settings (common to all missions)”: same fields as Settings › Centre, with “Default values”.
+- “Route calculation settings (common to all missions)” (Expert level): same fields as Settings › Centre, with “Default values”.
 - Display: “Estimated flight”, “Block”, outbound / on station / return, distance; return options and successive briefs where relevant.
 - **Proven times** (reports of missions with the same departure and the same points) replace the calculation when they exist.
 - A table compares the estimate with the reports already filed for the mission (actual flight, difference).
@@ -184,7 +185,7 @@ On an organisation mission, the block becomes “General brief”: situation, co
 
 ### All YAML data
 
-Block hidden by default: click “Show” in its header.
+Expert level block, hidden by default: click “Show” in its header.
 - Editor without an enforced schema: every YAML key can be edited, unknown fields are kept.
 - Lists: “Add an item”, × to remove an item.
 - “Name of a new root field” then “Add” creates a top-level key.
@@ -273,6 +274,7 @@ If the folder contains several cycles, only the most recent is read; the others 
 The registry lists all the generated or ordered missions, with their follow-up by the Centre: status, flight date, notes, reports.
 It is used to choose a mission, open it in the generator or the studio, assign it to pilots, create its report and order new missions.
 Access: sidebar “Registry” (“Centre” section) or ☰ › “Mission registry (SIA)”.
+Depending on the usage level: the page is offered from the Design level (3), with the essentials: “Add files…” and “Re-read folder”, four filters and “More filters”, a seven-column table, a card without the map studio and the simplified order form. The rest is at the Expert level (4), as shown below.
 
 ### Registry missions
 
@@ -280,21 +282,21 @@ At the top: number of missions, breakdown by status and update date.
 
 | Button | Effect |
 |---|---|
-| “Missions folder: …” | Chooses the `data/missions` folder then re-reads it |
-| “Re-read folder” | Re-reads all the missions of the folder |
+| “Missions folder: …” (Expert level) | Chooses the `data/missions` folder then re-reads it |
+| “Re-read folder” | Re-reads all the missions of the folder; asks for it if it is not yet allowed |
 | “Add files…” | Adds `mission<ID>.yaml` / `summary<ID>.md` files (any browser) |
-| “Write mission_registry.yaml” | Writes the registry to the missions folder |
-| “Clean up the registry (n)” | Removes the “file missing” missions after re-reading |
+| “Write mission_registry.yaml” (Expert level) | Writes the registry to the missions folder |
+| “Clean up the registry (n)” (Expert level) | Removes the “file missing” missions after re-reading |
 
 The folder is re-read automatically on opening if it is already authorised.
 On clean-up, the status, notes and flight date move to the mission that replaces a renumbered mission.
 
 ### Choose a mission
 
-Filters: “Type”, “Subtype”, “Rendezvous”, “Teams engaged” (min – max), “Team / aircraft type”, “Air refuelling”, “Theatre”, “Status”, “Search”. They are stored.
+Filters: “Type”, “Status”, “Theatre”, “Search”; the others (“Subtype”, “Rendezvous”, “Teams engaged” (min – max), “Team / aircraft type”, “Air refuelling”) are under “More filters”, open at the Expert level or when one of them is active. They are stored.
 - “Draw at random (n)” picks a mission among those that pass the filters.
 - “Clear filters”, “CSV” (export of the selection).
-- Table sorted by column: Mission, Type, Title, Teams, RDV, AAR, Theatre, Status, “Est. time”, Reports (number of flights), “Generated”. The bar under the table sets its height (double-click: default height).
+- Table sorted by column: Mission, Type, Title, Teams, RDV, AAR, Theatre, Status, “Est. time”, Reports (number of flights), “Generated”. The bar under the table sets its height (double-click: default height). The Teams, RDV, AAR and Theatre columns are only shown at the Expert level.
 - ✕ removes a mission from the registry without deleting its files.
 
 Click a row to open the mission card, described below. The link `?mission=M-016` opens the card directly.
@@ -303,11 +305,11 @@ Click a row to open the mission card, described below. The link `?mission=M-016`
 
 The card shows the status, the itinerary, the teams and callsigns, then:
 - for an operation: its members (click to show them); “Open” loads the whole operation in the generator or the studio;
-- “Mission files”: YAML, “Markdown (readable)”, “PDF (generator)”, “Edit (generator)”, “Maps (studio)”, map thumbnails, previous versions and received texts;
+- “Mission files”: YAML, “Markdown (readable)”, “PDF (generator)”, “Edit (generator)”, “Maps (studio)” (Expert level), map thumbnails, previous versions and received texts;
 - map state: “complete”, “partial: maps missing” or “partial: maps not generated (can be regenerated)”;
 - “Estimated time” with the comparison with the reports.
 
-Buttons: “Open in generator”, “Open in map studio”, “Assign…” (except organisation …Z; see [mission assignment](../technique/AFFECTATION_MISSIONS.md)), “Create report” or “New report (flight n)”, and “Copy prompt again” for an ordered mission.
+Buttons: “Open in generator”, “Open in map studio”, “Assign…” (except organisation …Z; see [mission assignment](../technique/AFFECTATION_MISSIONS.md)), “Create report” or “New report (flight n)”, and “Copy prompt again” for an ordered mission. “Open in map studio” and “Copy prompt again” are at the Expert level.
 
 ### Centre follow-up: status, flight date, notes
 
@@ -333,12 +335,10 @@ The follow-up is written to `suivi.yaml`, in the mission folder; it is shared wi
 
 ### Order a mission
 
-Form shared with the generator.
-1. Set “Type”, “Subtype”, “Theatre” and “Second theatre” (“Country” for abroad), “Series” (empty = the next one).
-2. Check “Identifier” (computed, read-only).
-3. Set “Flying teams”, “Rendezvous”, “Ground teams”, “Duration” (XS to XL), “Translations”, “Air refuelling”.
-4. Under “Aircraft of each flying team”, enter the aircraft of teams A, B… (empty = automatic).
-5. Click “Order: copy prompt and open ChatGPT”, paste into ChatGPT (Ctrl+V) then send.
+Form shared with the generator and the flight orders.
+1. Set “Type”, “Subtype”, “Theatre” (“Country” for abroad), “Flying teams”, “Ground teams” and “Duration” (XS to XL).
+2. If needed, unfold “More options”: “Second theatre” (“Country” for abroad), “Series” (empty = the next one), “Identifier” (computed, read-only), “Rendezvous”, “Translations”, “Air refuelling” and the aircraft of each flying team A, B… (empty = automatic). This section is open at the Expert level; at the other levels, it opens by itself when one of its settings differs from the default.
+3. Click “Order: copy prompt and open ChatGPT”, paste into ChatGPT (Ctrl+V) then send.
 
 The mission appears in the registry with the status “ordered”. Then save the files to the missions folder and click “Re-read folder”: the order is matched with the generated mission (same series). The settings are stored.
 
@@ -672,25 +672,11 @@ Details: [Operations manual](../MANUEL_EXPLOITATION.md), § 10.
 ## Settings › Installation
 <!-- page: apps/settings/installation.html -->
 
-This page groups the one-time settings: first run, local folders, external sources and virtual airline.
-To open it: sidebar › “Settings”, then the “Installation” tab.
-The side menu has two groups. The “Installation” group contains “First run”; the “Folders and sources” group contains “Sources and folders”, “Aeronautical data” and “Aircraft types”.
-These sections are assigned to the page by `config/repository_tree` (key `settings.sections`: `setup` and `sources` → installation; `sia` and `types` → installation,maintenance, i.e. on both pages: set-up here, update in Maintenance, same blocks). All the other maintenance sections open on the Maintenance page.
-
-### First run
-
-This section shows whether the first run is complete in this browser, and on what date.
-- “Open the first run” reopens the wizard (`premier_lancement.html?force`), also reachable through the “First run” tab of Settings and the home page card as long as something remains to be set. At the top, “Where the suite stands” takes stock; then six steps:
-  1. Folders: “Choose the application folder”, then the ODV workbook, optional (“OneDrive folder…” or “or the Excel file…”).
-  2. Data: “Fetch the data” (clone of the data repository) or “Data archive…”; git sync repository (optional); optionally, “Log (.html)…”.
-  3. Airline: name, short name, full name, airline website; the installation's IVAO API key (optional, kept by the launcher); “Save the airline”.
-  4. Profile and credentials: trigram, IVAO, VATSIM, SimBrief, airline website credentials; “Save the profile”.
-  5. Aeronautical data and aircraft types: the “Aeronautical data” and “Aircraft types” blocks (the same as here).
-  6. Centre (administrators): “Enable the Centre”, then fleet and log from the website (“Update now”), registry missions and links to the SO Group settings (Settings › Centre); finally “Finish”.
-- “Sources and folders, virtual airline” opens the next section.
-- “Update channel” opens Maintenance › Updates.
-- To start from scratch: “Clean and start again…”, at the bottom of the first run. This clears the settings of this browser, not the files.
-See [Installation](../INSTALL.md), § 1.
+This page groups the one-time settings: local folders, external sources, virtual airline, aeronautical data and aircraft types.
+To open it: sidebar › “Settings”, then the “Installation” tab. This tab appears from the Planning usage level (2); a direct address to one of its sections opens it at any level.
+The side menu has a single group, “Folders and sources”: “Sources and folders” (open from the start), “Aeronautical data” and “Aircraft types”.
+The first run has its own tab, “First run”, described in the [user manual](MANUEL_UTILISATEUR.md#first-run); “Clean and start again…” is at the bottom of that page. See also [Installation](../INSTALL.md), § 1.
+These sections are assigned to the page by `config/repository_tree` (key `settings.sections`: `sources` → installation; `sia` and `types` → installation,maintenance, i.e. on both pages: set-up here, update in Maintenance, same blocks). All the other maintenance sections open on the Maintenance page.
 
 ### Sources and folders
 
@@ -710,16 +696,17 @@ This section is the only place to set the local folders and the addresses of the
 - **External sources**: the default address is shown greyed out. An entered value applies to this browser only; “↺” goes back to the default value and “Open ↗” opens the address.
 - **API keys (external services)**: suite keys, shared by all its users (IVAO: API key for the area activations and the ATC sessions — trainings, exams, bookings — of the ODV planning and the Board). “Save” hands them to the launcher (`secrets/` at the application root, excluded from git, outside the data and the backups); the page only sees their state and last 4 characters; “Clear” removes the key.
 - **Virtual airline**: “Name”, “Full name”, “Short name”, “Centre (short)”, “Centre (full name)”, and the site pages (“Home page”, “Flight log”, “Fleet”, “Aircraft page”). An empty field keeps the default value. “Back to SO Group Virtual” clears all these settings.
-- **First run**: “Reopen the first run”; “Clean and start over…” clears the stored folders, the copy of the ODV workbook, the airline site credentials and the profile. The files on disk are not touched.
+- **First run**: “Reopen the first run”. To start from scratch, “Clean and start again…” is at the bottom of the first run page (“Start again” section).
 
 ## Settings › Maintenance
 <!-- page: apps/settings/maintenance.html -->
 
 This page is used to maintain the suite: updates, versions, SIA data, caches, backups and reference databases.
-To open it: sidebar › “Settings”, then the “Maintenance” tab. The page opens on “Updates”.
-The side menu has two parts:
-- the “Maintenance” group: Updates, Versions and sync, References and dependencies, Aeronautical data, Caches, Disk space, Full backup, Journal;
-- the databases, arranged in the groups “Repository files”, “Base”, “Missions” and “Browser data”.
+To open it: sidebar › “Settings”, then the “Maintenance” tab. The page opens on “Updates”. This tab only appears at the Expert usage level (4); a direct address to one of its sections opens it at any level.
+The side menu has three parts:
+- the “Maintenance” group: Updates, Versions and sync, References and dependencies, Aeronautical data, Aircraft types;
+- the “Storage and backup” group: Caches, Disk space, Full backup, Journal;
+- the databases, arranged in the groups “Repository files”, “Base”, “Missions” and “Browser data”. These groups only appear at the Expert level.
 
 ### Suite updates
 

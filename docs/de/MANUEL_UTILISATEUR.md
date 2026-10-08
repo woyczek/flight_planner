@@ -75,10 +75,10 @@ Manche Einträge der Seitenleiste fassen mehrere verwandte Seiten zusammen, die 
 | Eintrag | Registerkarten |
 |---|---|
 | „Meine Missionen“ | „Meine Missionen“, „Meine Verfügbarkeit“ |
-| „Einstellungen“ | „Mein Profil“, „Zentrum“, „Installation“, „Wartung“ |
+| „Einstellungen“ | „Mein Profil“, „Darstellung“, „Erststart“ (ab Stufe 1); „Zentrum“, „Installation“ (Stufe 2); „Wartung“ (Stufe 4) |
 | „Missionen“ (Zentrum) | „Missionsgenerator“, „Kartenstudio“ |
 
-Ein Klick auf eine Registerkarte öffnet die entsprechende Seite. Ein Klick mit Strg (oder Umschalt) öffnet sie in einem neuen Tab des Browsers.
+Ein Klick auf eine Registerkarte öffnet die entsprechende Seite. Ein Klick mit Strg (oder Umschalt) öffnet sie in einem neuen Tab des Browsers. Die Registerkarten folgen der Nutzungsstufe (Mein Profil › „Nutzungsstufe“); eine direkte Adresse zu einem Abschnitt öffnet ihn immer.
 
 ### Die Blöcke
 
@@ -132,6 +132,7 @@ Diese Seite vereint die Missionen, die Ihnen das Zentrum zuweist, die Mappe jede
 Sie erreichen sie über den Eintrag „Meine Missionen“ der Seitenleiste, über den versiegelten Umschlag der Kopfzeile oder über die Registerkarte „Meine Missionen“.
 Aufbau: die Liste der Missionen und die geöffnete Mappe nebeneinander (die Mappe nimmt zwei Drittel der Breite ein), „Meine Verfügbarkeit“ darunter, über die ganze Breite. Ohne geöffnete Mappe nimmt die Liste die ganze Breite ein. Auf einem schmalen Bildschirm (unter 1100 px) steht alles in einer einzigen Spalte: Missionen, Mappe, Verfügbarkeit.
 Im Produktionsmodus verlangt die Seite zuerst eine Anmeldung.
+Je nach Nutzungsstufe (Mein Profil › „Nutzungsstufe“) zeigt die Missionsmappe mehr oder weniger Abschnitte (siehe „Mission“); einige Knöpfe und Links erscheinen erst ab der Stufe Planung (2) oder auf der Stufe Experte (4).
 
 ### Meine Missionen der Woche
 
@@ -145,6 +146,7 @@ Die Liste der Missionen, die Ihnen für die angezeigte Woche zugewiesen sind, so
 - Kästchen „auch vergangene Missionen anzeigen“: Standardmäßig verschwindet eine Mission einige Stunden nach ihrem Start. Die Wahl wird gespeichert.
 - Ohne eingestelltes Kürzel zeigt die Liste „Kein Kürzel eingestellt.“; der Knopf „Pilot“ führt zum Abschnitt, in dem Sie es eingeben.
 - **Pilot**, **Beherrschte Luftfahrzeuge**, **Simulatoren**: drei Knöpfe unter der Liste, zu Einstellungen › Mein Profil (Abschnitt „Identität und Netzwerke“ für das Kürzel; Abschnitt „Luftfahrzeuge und Simulatoren“, bei der Karte der Luftfahrzeuge oder der Simulatoren). Der Knopf „Pilot“ zeigt das Kürzel, mit dem Ihre Missionen und Ihre Verfügbarkeit gefunden werden. Im Produktionsmodus oder während einer Identitätsübernahme ist es das Kürzel der Anmeldung.
+- Diese drei Knöpfe erscheinen ab der Stufe Planung (2). Auf der Stufe Besatzung (1) erscheint nur „Pilot“, solange das Kürzel nicht eingestellt ist.
 
 ### Mission
 
@@ -162,6 +164,12 @@ Die Mappe der gewählten Mission, nur lesbar. Dieser Block erscheint erst nach e
 3. Der Teil „Gelieferte Karten“: Ein Klick vergrößert eine Karte in einem Betrachter (Schließen mit dem Kreuz oder Esc).
 4. Der Schluss: „Ziele“, „Bemerkungen“, „Technisches Blatt“, „Zuweisungsverlauf“ und die Unterschrift des Zentrums.
 5. Der Teil „Umschläge und Funksprüche im Flug“, falls vorhanden (siehe unten).
+
+**Je nach Nutzungsstufe**:
+- Besatzung (1): der Missionsauftrag, die Zusammenfassung, die gelieferte Route, die Karten, die Ziele, die Unterschrift und die Umschläge;
+- Planung (2): zusätzlich die Einleitung, „Ziel / Sektor“, die ausführliche Beschreibung, die Risiken, die eingesetzten Teams, die Bemerkungen und die übrigen Abschnitte der Zusammenfassung;
+- Gestaltung (3): zusätzlich das technische Blatt und der Zuweisungsverlauf;
+- Experte (4): die ganze Mappe; auf dem Aktualisierungskanal develop versiegelt „Neu versiegeln“ die Mission wieder (ungelesen).
 
 **Das Buch** (Designs Kabinett, Flugbuch, Aqua und Robust, Bildschirm von mindestens 760 px)
 - Die geöffnete Mappe erscheint als Doppelseite. Zu langer Inhalt geht auf die nächste Seite über; die Karten liegen zu zweit auf einer Seite.
@@ -189,6 +197,7 @@ Die Mappe der gewählten Mission, nur lesbar. Dieser Block erscheint erst nach e
 | „Mappe schließen“ | Schließt die Mappe (die Mission bleibt gelesen). |
 
 Diese Knöpfe sind ausgegraut, wenn die Mission nicht das Nötige liefert (Missionsdatei fehlt, Route zu kurz).
+„In den Flugkarten öffnen“ und „Kraftstoff (Planer)“ erscheinen nur, wenn das entsprechende Werkzeug in Mein Profil › „Nutzungsstufe“ angekreuzt ist (auf der Stufe Experte immer). Ohne die Flugkarten wird „Bericht erstellen“ zum Hauptknopf.
 Der Knopf „⤢ Volle Breite“ im Blocktitel breitet die Mappe über die ganze Breite aus, oberhalb der Liste; „⇥ Neben der Liste“ setzt sie wieder daneben. Die Wahl wird gespeichert.
 
 **Animationen** (deaktiviert, wenn das System weniger Animationen verlangt)
@@ -204,6 +213,7 @@ Der Knopf „⤢ Volle Breite“ im Blocktitel breitet die Mappe über die ganze
 ### Meine Verfügbarkeit
 
 Ihre Verfügbarkeit in der angezeigten Woche, in UTC-Stunden. Das Zentrum nutzt sie, um Ihnen Missionen zuzuweisen. Es ist derselbe Editor wie auf der Seite Meine Verfügbarkeit (nächstes Kapitel); hier ist die Woche die der Wochenleiste der Liste.
+Je nach Nutzungsstufe: Die eigene Wochenleiste des Blocks, das alte Stundenraster und der Link „Verfügbarkeitseingabe einzeln öffnen“ erscheinen nur auf der Stufe Experte; auf den anderen Stufen wechselt man die Woche über die Leiste der Liste.
 
 **Palette**: Die Kategorien sind nach Gruppen geordnet („Verfügbar“, „SOG-Übung“, „Beschäftigt“, „Nicht verfügbar“). Jeder Farbpunkt trägt den ODV-Codebuchstaben und eine kurze Beschriftung; der Tooltip zeigt die vollständige Beschriftung. Die gewählte Kategorie wird gespeichert.
 
@@ -223,7 +233,7 @@ Standardkategorien (das Zentrum kann diese Liste ändern):
 
 Ein Feld, das sich mehrere Kategorien teilen, ist schraffiert; eine teilweise belegte Stunde (Eingabe auf die Viertelstunde) ist blasser. Jede Änderung wird sofort gespeichert.
 
-**„Genauer Zeitraum“** (auf die Viertelstunde): „Gruppe“, „Kategorie“, Kästchen der Tage (Mo bis So), „von“ und „bis“ (UTC), dann „Hinzufügen“. Leere Uhrzeiten = ganzer Tag. Unter dem Formular zeigt eine Zeile die Missionsthemen, die die Kategorie öffnet; bei einer Kategorie nach Wahl führt der Link „Meine Missionsarten…“ zu den Einstellungen in Mein Profil.
+**„Genauer Zeitraum“** (auf die Viertelstunde, zugeklappt: Ein Klick auf den Titel öffnet ihn; auf der Stufe Experte von Anfang an offen): „Gruppe“, „Kategorie“, Kästchen der Tage (Mo bis So), „von“ und „bis“ (UTC), dann „Hinzufügen“. Leere Uhrzeiten = ganzer Tag. Unter dem Formular zeigt eine Zeile die Missionsthemen, die die Kategorie öffnet; bei einer Kategorie nach Wahl führt der Link „Meine Missionsarten…“ zu den Einstellungen in Mein Profil.
 
 **Weitere Knöpfe**
 - „⧉ Vorherige Woche“: übernimmt die Zeiträume der vorherigen Woche (ersetzt die angezeigte Woche, nach Bestätigung).
@@ -232,18 +242,18 @@ Ein Feld, das sich mehrere Kategorien teilen, ist schraffiert; eine teilweise be
 
 Die Meldung unter dem Block zeigt, wohin die Eingabe gegangen ist: „Im Datenordner gespeichert.“ oder „In diesem Browser behalten, das Zentrum sieht es nicht: …“, wenn der Datenordner nicht freigegeben ist (siehe [Erststart](#erststart), Schritt 3).
 Ein vorhandenes altes Stundenraster wird automatisch in die Woche übernommen.
-Der Link „Verfügbarkeitseingabe einzeln öffnen“ führt zur Seite Meine Verfügbarkeit.
+Der Link „Verfügbarkeitseingabe einzeln öffnen“ führt zur Seite Meine Verfügbarkeit. Dieser Link erscheint nur auf der Stufe Experte.
 
 ## Meine Verfügbarkeit
 <!-- page: apps/pilot/disponibilites.html -->
 
 Diese Seite zeigt nur den Verfügbarkeitseditor, in größerem Format. Sie dient dazu, schnell mehrere Wochen einzugeben.
-Sie erreichen sie über die Registerkarte „Meine Verfügbarkeit“ (unter dem Eintrag „Meine Missionen“ der Seitenleiste) oder über den Link „Verfügbarkeitseingabe einzeln öffnen“ in Meine Missionen.
+Sie erreichen sie über die Registerkarte „Meine Verfügbarkeit“ (unter dem Eintrag „Meine Missionen“ der Seitenleiste) oder über den Link „Verfügbarkeitseingabe einzeln öffnen“ in Meine Missionen. Dieser Link erscheint nur auf der Stufe Experte.
 Der Pilot ist der des Arbeitskürzels (Pilotenprofil, Anmeldung oder Identitätsübernahme). Im Produktionsmodus verlangt die Seite zuerst eine Anmeldung.
 
 ### Meine Verfügbarkeit
 
-Der einzige Block der Seite. Er funktioniert genau wie der gleichnamige Block in Meine Missionen (vorheriges Kapitel): Palette, Stundenraster, „Genauer Zeitraum“, „⧉ Vorherige Woche“, „Alles löschen“.
+Der einzige Block der Seite. Er funktioniert genau wie der gleichnamige Block in Meine Missionen (vorheriges Kapitel): Palette, Stundenraster, „Genauer Zeitraum“ (zugeklappt, auf der Stufe Experte von Anfang an offen), „⧉ Vorherige Woche“, „Alles löschen“.
 
 **Wochennavigation** (nur auf dieser Seite):
 - „‹“ und „›“: vorherige oder nächste Woche;
@@ -266,6 +276,7 @@ Diese Seite vereint die Einstellungen jedes Piloten: Identität, Anmeldung, Miss
 Sie erreichen sie über den Eintrag „Einstellungen“ der Seitenleiste (erste Registerkarte, „Mein Profil“) oder über ☰ › „Einstellungen“.
 Die linke Spalte listet die Abschnitte nach Gruppen; ein Klick zeigt einen davon rechts an, mit Titel, Beschreibung, Knöpfen und einer Statusmeldung.
 Enthält ein Abschnitt nicht gespeicherte Änderungen, erfordert das Wechseln des Abschnitts oder das Verlassen der Seite eine Bestätigung.
+Je nach Nutzungsstufe: „Meine Luftfahrzeuge (Reporting)“ erscheint ab der Stufe Planung (2); „Höhe ohne Sauerstoff“ nur, wenn das Werkzeug Kraftstoff angekreuzt ist (auf der Stufe Experte immer); in „Identität und Netzwerke“ gehören die Karten „IVAO — OAuth-Client“ und „Sprache“ zur Stufe Experte.
 
 ### Nutzungsstufe
 
@@ -288,15 +299,15 @@ Ihre Identität in der Suite, die alle Seiten übernehmen (☰ › Pilotenprofil
 |---|---|
 | „Pilot“ | „Kürzel“, „VATSIM-ID (CID)“, „IVAO-ID (VID)“, „SimBrief (Benutzer oder ID)“ |
 | „Website der Fluggesellschaft“ | „Kennung“, „Passwort“ |
-| „IVAO — OAuth-Client (persönlich)“ | „Client-ID“, „Client-Geheimnis“, „Bei IVAO anzugebende Weiterleitungsadresse“ (auf developers.ivao.aero einzutragen); Schaltfläche „IVAO-Client speichern“: vom Starter dieses Rechners gehalten, das Geheimnis wird nie wieder angezeigt |
-| „Sprache“ | „Sprache der Suite“: Automatisch (Browsersprache), Français, English, Deutsch, Español |
+| „IVAO — OAuth-Client (persönlich)“ (Stufe Experte) | „Client-ID“, „Client-Geheimnis“, „Bei IVAO anzugebende Weiterleitungsadresse“ (auf developers.ivao.aero einzutragen); Schaltfläche „IVAO-Client speichern“: vom Starter dieses Rechners gehalten, das Geheimnis wird nie wieder angezeigt |
+| „Sprache“ (Stufe Experte) | „Sprache der Suite“: Automatisch (Browsersprache), Français, English, Deutsch, Español |
 
 1. Füllen Sie die Felder aus.
 2. Klicken Sie auf „Speichern“. Die Statusmeldung bestätigt „Profil in diesem Browser gespeichert“.
 
 - Das Kürzel hat 2 bis 4 Buchstaben oder Ziffern; damit werden Ihre zugewiesenen Missionen gefunden.
 - Die Zugangsdaten der Website der Fluggesellschaft bleiben nur in diesem Browser: Sie werden nie in eine Datei oder eine Sicherung geschrieben.
-- Die Sprache gilt, sobald sie gewählt ist, ohne „Speichern“.
+- Die Sprache wird gewöhnlich über die Flagge „Sprache“ der Kopfzeile gewählt; die Karte „Sprache“ (Stufe Experte) gilt, sobald sie gewählt ist, ohne „Speichern“.
 - Im Produktionsmodus ist das Kürzel das des angemeldeten Benutzers und lässt sich hier nicht ändern.
 
 ### Anmeldung und Passwort
@@ -344,7 +355,7 @@ Es gibt keinen Knopf „Speichern“: Jedes Häkchen wird sofort in diesem Brows
 
 ### Höhe ohne Sauerstoff (Flugzeuge ohne Druckkabine)
 
-Dieser Abschnitt (Gruppe „Kraftstoffplaner“) legt die Schwelle fest, oberhalb der das Diagramm der optimalen Flughöhe des Planers „Sauerstoff erforderlich“ für ein Flugzeug ohne Druckkabine anzeigt.
+Dieser Abschnitt (Gruppe „Kraftstoffplaner“) legt die Schwelle fest, oberhalb der das Diagramm der optimalen Flughöhe des Planers „Sauerstoff erforderlich“ für ein Flugzeug ohne Druckkabine anzeigt. Er erscheint nur, wenn das Werkzeug Kraftstoff in „Nutzungsstufe“ angekreuzt ist (auf der Stufe Experte immer).
 
 1. Geben Sie „Maximale Höhe ohne Sauerstoff (ft)“ ein: zwischen 1.000 und 30.000 ft, in Schritten von 500.
 2. Klicken Sie auf „Speichern“.
@@ -355,7 +366,7 @@ Dies ist nur ein Hinweis: Die Berechnung wird nicht begrenzt. Die Einstellung wi
 
 ### Meine Luftfahrzeuge (Reporting)
 
-Die Luftfahrzeuge, die Sie geflogen oder berichtet haben: die der Berichte mit Ihrem Kürzel in der Besatzung oder die Sie verfasst haben (seit dieser Version gespeicherte Berichte) (das Luftfahrzeug Ihres Platzes, wenn der Bericht es angibt), mit Typ, Variante, Rufzeichen, Betreiber, Anzahl der Flüge und letztem Flug. Das graue Kästchen „Flotte“ zeigt, ob das Luftfahrzeug zur Flotte gehört (angehakt) oder nicht (nicht angehakt, Rufzeichen inbegriffen); es lässt sich hier nicht ändern. Die vollständige Liste mit dem Kästchen „Privat“ steht unter Einstellungen › Zentrum › Flotte (dem Zentrum vorbehalten). Oben die Zählung des Journals: Berichte insgesamt, Ihre Berichte, Berichte ohne erfasste Besatzung (sie zählen für niemanden).
+Die Luftfahrzeuge, die Sie geflogen oder berichtet haben: die der Berichte mit Ihrem Kürzel in der Besatzung oder die Sie verfasst haben (seit dieser Version gespeicherte Berichte) (das Luftfahrzeug Ihres Platzes, wenn der Bericht es angibt), mit Typ, Variante, Rufzeichen, Betreiber, Anzahl der Flüge und letztem Flug. Das graue Kästchen „Flotte“ zeigt, ob das Luftfahrzeug zur Flotte gehört (angehakt) oder nicht (nicht angehakt, Rufzeichen inbegriffen); es lässt sich hier nicht ändern. Die vollständige Liste mit dem Kästchen „Privat“ steht unter Einstellungen › Zentrum › Flotte (dem Zentrum vorbehalten). Oben die Zählung des Journals: Berichte insgesamt, Ihre Berichte, Berichte ohne erfasste Besatzung (sie zählen für niemanden). Abschnitt ab der Stufe Planung (2) sichtbar.
 
 ## Darstellung
 <!-- page: apps/settings/apparence.html -->
@@ -364,24 +375,26 @@ Diese Seite stellt das Aussehen der ganzen Suite ein: Design, Diagramme, Symbole
 Der Eintrag „Darstellung“ der Seitenleiste (oder der Knopf „Darstellung“ im Menü ☰) öffnet sie in einem Fenster über der aktuellen Seite: Sie sehen die Wirkung sofort. Schließen: „✕“, Esc oder Klick außerhalb des Fensters.
 Dieselbe Oberfläche gibt es als ganze Seite (☰ › Liste der Einstellungsseiten › „Darstellung“).
 Die Einstellungen werden in diesem Browser gespeichert und gelten für alle Seiten; sie zählen nicht für die Sicherungserinnerung.
+Je nach Nutzungsstufe: Auf den Stufen 1 bis 3 zeigt die Seite das Design, den aktuellen Symbolsatz, die Seitenleiste, die Symbolgröße und „Alles zurücksetzen“; Dekor, Aqua-Farbe, Anzeige der Leiste, die übrigen Symbolsätze, Diagramme, Themenfarben und „Vollständige Demo“ kommen auf der Stufe Experte hinzu.
 
 ### Design
 
 Die Form der Seiten: Ecken, Dichte, Titel, Seitenleiste.
 
 - Jedes Design wird durch ein in seinem Stil gezeichnetes Vorschaubild dargestellt, mit Name und Beschreibung: Standard, Aero, Operativ, Konsole, Kabinett, Flugbuch, Robust, Aqua, Taktisch.
+- Sechs Vorschaubilder erscheinen sofort (dazu das aktuelle Design, falls es nicht darunter ist); die übrigen liegen zum Aufklappen unter „Weitere Designs“.
 - Ein Klick auf ein Vorschaubild wendet das Design sofort an. Das gewählte Vorschaubild ist umrahmt.
 - Kabinett, Flugbuch, Robust und Aqua bringen ihre Materialien mit, Taktisch sein Rauchglas auf Nachthintergrund; die Informationsfarben bleiben die des Themas (Taktisch: Kante oben an den Blöcken).
 
-**„Dekor (Material-Designs)“**:
+**„Dekor (Material-Designs)“** (Stufe Experte):
 - „Vollständig“ (Standard): illustrierte Blockflächen, Registerblätter, Schrauben, Radar;
 - „Schlicht“: nur Materialien und Schilder, auf allen Seiten.
 
-**„Aqua-Farbe“**: Farbe der Knöpfe und Symbole des Aqua-Designs (Blau, Türkis, Grün, Graphit, Violett, Orange, Rot, Rosa) oder „Farbe jeder Anwendung“. Die Statussymbole behalten ihre ursprünglichen Farben.
+**„Aqua-Farbe“** (Stufe Experte): Farbe der Knöpfe und Symbole des Aqua-Designs (Blau, Türkis, Grün, Graphit, Violett, Orange, Rot, Rosa) oder „Farbe jeder Anwendung“. Die Statussymbole behalten ihre ursprünglichen Farben.
 
 ### Diagramme
 
-Farbpalette und Stil der Diagramme (Auswertungen, Kennzahlen).
+Farbpalette und Stil der Diagramme (Auswertungen, Kennzahlen). Abschnitt der Stufe Experte.
 
 - Paletten: „Automatisch“ (folgt dem Design), „Kräftig (Seitenfarben)“, „Schiefer“, „Messing und Leder“, „Khaki und Oliv“. Jede Zeile zeigt ein Farbmuster.
 - „Stil“: „Automatisch“, „Flach“ oder „Relief“.
@@ -390,7 +403,7 @@ Die Wahl gilt sofort für die Diagramme der Seiten.
 
 ### Symbole
 
-Die Strichstärke der Symbole oder gar keine Symbole. Jede Zeile zeigt eine Vorschau des Satzes.
+Die Strichstärke der Symbole oder gar keine Symbole. Jede Zeile zeigt eine Vorschau des Satzes. Auf den Stufen 1 bis 3 wird nur der aktuelle Satz angeboten; alle Sätze auf der Stufe Experte.
 
 | Wahl | Darstellung |
 |---|---|
@@ -399,11 +412,11 @@ Die Strichstärke der Symbole oder gar keine Symbole. Jede Zeile zeigt eine Vors
 | „Messing (Medaillons)“, „Stahl (Platten)“, „Gel (Blasen)“, „Avionik (Instrumente)“ | Material-Sätze |
 | „Keine Symbole“ | Keine Symbole |
 
-**„Seitenleiste“**: „Je nach Design“, „Immer“ oder „Nie“. Standardmäßig wird sie immer angezeigt (außer bei schmalem Bildschirm und beim Drucken). „Symbolgröße“: „Klein“, „Mittel“ (Standard) oder „Groß“. „Anzeige“: „Symbol und Beschriftung“ (Standard), „Nur Symbol“ (schmalere Leiste, Name des Eintrags als Tooltip) oder „Nur Beschriftung“.
+**„Seitenleiste“**: „Je nach Design“, „Immer“ oder „Nie“. Standardmäßig wird sie immer angezeigt (außer bei schmalem Bildschirm und beim Drucken). „Symbolgröße“: „Klein“, „Mittel“ (Standard) oder „Groß“. „Anzeige“ (Stufe Experte): „Symbol und Beschriftung“ (Standard), „Nur Symbol“ (schmalere Leiste, Name des Eintrags als Tooltip) oder „Nur Beschriftung“.
 
 ### Themenfarben
 
-Jede Seite der Suite hat ein Farbthema (Leiste, Text der Leiste, Akzent). Für jedes Thema wählen Sie eine Farbfamilie und einen Ton; daraus werden die Farben berechnet, mit einer Lesbarkeitsprüfung.
+Jede Seite der Suite hat ein Farbthema (Leiste, Text der Leiste, Akzent). Für jedes Thema wählen Sie eine Farbfamilie und einen Ton; daraus werden die Farben berechnet, mit einer Lesbarkeitsprüfung. Abschnitt der Stufe Experte.
 
 Die Themen werden als Karten dargestellt, in zwei Gruppen: „Anwendungen“ (Kraftstoff, Landungen, Zentrum, Bericht) und „Berichtsfamilien“.
 
@@ -417,7 +430,7 @@ Auf jeder Karte:
 Jede Änderung wird sofort gespeichert.
 
 **Unten auf der Seite**:
-- „Vollständige Demo“ öffnet ein Modell: Generator, Symbolkatalog und Kontraste aller Themen.
+- „Vollständige Demo“ (Stufe Experte) öffnet ein Modell: Generator, Symbolkatalog und Kontraste aller Themen.
 - „Alles zurücksetzen“ stellt alle Darstellungseinstellungen auf die Standardwerte zurück (Design Aqua, Symbole des Designs, Seitenleiste immer angezeigt, vollständiges Dekor, ursprüngliche Farben).
 
 ## Erststart
@@ -599,6 +612,14 @@ Sie erreichen sie über die Seite „Neuer Bericht“, über eine zugewiesene Mi
 in einer Auswertung oder einem Blatt (die Mission öffnet sich dann zur Bearbeitung). Die Seite `demo_cr.html` ist eine
 Demonstration der Engine, außerhalb der Liste der Familien.
 
+**Je nach Nutzungsstufe: kurzer oder ausführlicher Bericht.** Auf den Stufen 1 (Besatzung) und 2 (Planung) zeigt das Formular nur das Wesentliche des Berichts:
+- Identifikation (Mission, Berichtsnummer, Datum, Serie) und Ergebnis;
+- Luftfahrzeug (Kennzeichen, Typ, Rufzeichen, Flugplätze; ein bekanntes Luftfahrzeug füllt den Rest aus) und Besatzung;
+- vier Uhrzeiten (Anlassen, Start, Landung, Abstellen der Triebwerke), Kraftstoff beim Abflug und bei der Landung;
+- die familieneigenen Blöcke und Bemerkungen.
+
+Der Knopf „Ausführlicher Bericht“ der Leiste zeigt das ganze Formular, ohne die Stufe zu wechseln (Wahl im Browser gespeichert); „Kurzer Bericht“ kehrt zum verkürzten Formular zurück. Werte, die bereits in ausgeblendeten Feldern stehen (Import, Flugplan, Netzwerk-Tracking), bleiben im Bericht. Auf den Stufen 3 und 4 ist das Formular immer vollständig, und dieser Knopf fehlt.
+
 ### Kopfzeile und Werkzeugleiste
 
 Die Kopfzeile bleibt oben auf der Seite fixiert. Von links nach rechts:
@@ -612,11 +633,14 @@ Die Kopfzeile bleibt oben auf der Seite fixiert. Von links nach rechts:
 | „Netzwerk-Tracking“ ▾ | Live-Verfolgung IVAO / VATSIM, VATSIM-Historie |
 | „Einsatz“ ▾ | „Neue Mission“, „Einsatz exportieren (YAML)“, „Diesen Einsatz löschen“ (bei Bearbeitung) |
 | „Einsatzregister“ ▾ | „Auswertung anzeigen“, „Registerordner…“, „Berichtversand einrichten (Webservice)…“, „Einstellungen — Datenbanken…“ |
+| „Ausführlicher Bericht“ / „Kurzer Bericht“ | nur Stufen 1 und 2: zeigt das ganze Formular oder kehrt zum kurzen Bericht zurück (siehe oben) |
 
 Rechts zeigt eine Statusmeldung die letzte Speicherung („Entwurf im Browser gespeichert
 · Uhrzeit“). Jeder Block hat in seinem Titel **↕** (ziehen zum Verschieben) und **Ausblenden /
 Anzeigen**; die Anordnung wird gespeichert. Blöcke, die eine Liste enthalten, haben ein **+** in ihrem
 Titel, um ein Element hinzuzufügen.
+
+Auf den Stufen 1 und 2 erscheinen „Auswerten / importieren…“, „Einsatz“ und „Einsatzregister“ nicht (sie kommen auf Stufe 3): Eine neue Mission öffnet man über ☰ › Missionen › „Neuer Bericht“.
 
 ### Bearbeitung eines Registereinsatzes
 
@@ -826,6 +850,7 @@ Rechte Spalte, während der Eingabe aktualisiert: „Blockzeit“, „Flugzeit�
   Zeitablauf von mehr als 20 h, Datum in der Zukunft, unstimmiger Kraftstoff). Ein Klick führt zum betreffenden Feld.
 - „Anzeigekontext“ zeigt Familie, Serie, Luftfahrzeugtypen und Fähigkeiten, die
   über die angezeigten Blöcke entscheiden.
+- Auf den Stufen 1 und 2 (kurzer Bericht) nur drei Berechnungen: „Blockzeit“, „Flugzeit“, „Kraftstoffverbrauch“; „Anzeigekontext“ und die Berechnungen zu Einsatzraum und Mission kommen auf Stufe 3 oder mit „Ausführlicher Bericht“. Ein Klick auf eine Unstimmigkeit in einem ausgeblendeten Feld zeigt den ausführlichen Bericht.
 
 ### Bericht
 
@@ -1233,6 +1258,7 @@ Diese Seite dient zur Vorbereitung Ihrer eigenen Flugkarten: Route, Streckenkart
 Sie steht allen Piloten offen. Zugang: Seitenleiste „Flugkarten“, Knopf „In den Flugkarten öffnen“ einer Mission in Meine Missionen oder Knopf „Flugkarten“ des Kraftstoffplaners.
 Sie nutzt die Engine des Kartenstudios des Zentrums, arbeitet aber in einem eigenen Bereich Ihres Browsers: Ihre Einstellungen ändern nie die Mission des Zentrums.
 Jeder Block lässt sich zuklappen („Ausblenden“ / „Anzeigen“) und verschieben (Griff ↕). Die SIA-Datenbank muss einmal in diesem Browser gelesen werden (siehe letzter Block).
+Auf den Stufen 1 bis 3 (Mein Profil › „Nutzungsstufe“) beschränkt sich die Seite auf das Wesentliche: Routenfeld, „Höhe“, „SimBrief“, Kontrollkarte („⤢ Vergrößern“), Block „Karten des Flugs“ und der Knopf „Karten und ZIP erzeugen“ der Fußzeile. Die übrigen unten beschriebenen Bedienelemente erscheinen nur auf Stufe 4 (Experte).
 
 ### Empfang einer Mission („In den Flugkarten öffnen“)
 
@@ -1240,8 +1266,8 @@ Die Seite zeigt keinen Block „Mission“: Die Mission kommt von selbst aus Mei
 
 1. Öffnen Sie in Meine Missionen die Mappe der Mission.
 2. Klicken Sie auf „In den Flugkarten öffnen“. Das Ihnen zugewiesene Luftfahrzeug wird an die Spitze der Mission gesetzt.
-3. Die Seite öffnet sich mit der Route und der Flughöhe der Mission im Block „Route“ und mit allen von der Mission vorgesehenen Karten in „Zu erstellende Karten“ (dazu `profil_vertical.png`).
-4. Stellen Sie bei Bedarf jede Karte ein und erzeugen Sie dann das ZIP in „Vorschauen und Erzeugung“.
+3. Die Seite öffnet sich mit der Route und der Flughöhe der Mission im Block „Route“ und mit allen von der Mission vorgesehenen Karten in „Zu erstellende Karten“ (dazu `profil_vertical.png`). Die Liste „Zu erstellende Karten“ ist nur auf der Stufe Experte sichtbar.
+4. Stellen Sie bei Bedarf jede Karte ein (Stufe Experte) und klicken Sie dann unten auf der Seite auf „Karten und ZIP erzeugen“.
 
 Die Fußzeile zeigt die Anzahl der Karten im ZIP („… Karte(n) im ZIP + Übersichtskarte“) oder „Keine Mission geladen“.
 Empfangene Mission: „Zeichnen“ und „Kraftstoff“ arbeiten mit der geladenen Mission, ohne sie zu ersetzen. „Karten erstellen“ fragt nach einer Bestätigung, bevor sie durch einen freien Flug „Flug Abflug → Ziel“ aus der Route ersetzt wird; ohne geladene Mission werden die Karten direkt erstellt.
@@ -1257,12 +1283,13 @@ Dieser Block verbindet drei Ansichten: den Flugplan (Text), die Karte und den Ve
 - „Zeichnen“: zeichnet den Vertikalschnitt. „Kraftstoff“: öffnet den Kraftstoffplaner mit dieser Route (Distanz, Flughöhe, rechtweisender Kurs, Luftfahrzeug).
 - „ICAO kopieren“: kopiert den strikten ICAO-Flugplan (nicht veröffentlichte Punkte als Koordinaten).
 - „Syntax und Verwendung“: Überblick über die akzeptierten Formen (Funkfeuer, VFR-Meldepunkte „MM-CV“, „REN300010“, Koordinaten „4330N00125E“, Höhen „/A035“, „VFR“…).
+- Auf den Stufen 1 bis 3 bleiben das Routenfeld, „Höhe“, „SimBrief“ und „Syntax und Verwendung“; das Menü „Luftstraßen“ / „RTBA“, „Suchen“, „Zeichnen“, „Kraftstoff“ und „ICAO kopieren“ gehören zur Stufe Experte.
 
 Auf der Karte: Ziehen Sie einen Punkt, um ihn zu verschieben (er rastet an Funkfeuern, Meldepunkten und Flugplätzen ein), klicken Sie auf die Route, um einen Punkt einzufügen, Rechtsklick, um einen zu löschen. Im Schnitt: Klick, um einen Punkt in dieser Höhe hinzuzufügen, Ziehen, um die Höhe zu ändern, Rechtsklick zum Löschen.
 
 ### Kontrollkarte und Ausschnitt (Block Route)
 
-Unter dem Routenfeld zeigt eine Kontrollkarte die gewählte Karte mit ihrem Anzeigeprofil. Sie wird bei jeder Einstellung neu gezeichnet.
+Unter dem Routenfeld zeigt eine Kontrollkarte die gewählte Karte mit ihrem Anzeigeprofil. Sie wird bei jeder Einstellung neu gezeichnet. Auf den Stufen 1 bis 3 wird nur „⤢ Vergrößern“ angeboten; die übrigen Bedienelemente der Tabelle und die „Profileinstellungen: Schnitt, Luftfahrzeug, Steigrate, Ausgaben“ gehören zur Stufe Experte.
 
 | Bedienelement | Wirkung |
 |---|---|
@@ -1278,7 +1305,7 @@ Unter dem Routenfeld zeigt eine Kontrollkarte die gewählte Karte mit ihrem Anze
 
 ### Profileinstellungen: Hintergrundkarte, Lufträume, ICAO-Symbole, Elemente
 
-Dieses aufklappbare Feld unter der Kontrollkarte stellt das Anzeigeprofil der gewählten Karte ein. Die Profile (IFR, VFR detailliert, AIRWAYS…) gelten für alle Ihre Missionen und werden im Browser gespeichert.
+Dieses aufklappbare Feld unter der Kontrollkarte stellt das Anzeigeprofil der gewählten Karte ein. Die Profile (IFR, VFR detailliert, AIRWAYS…) gelten für alle Ihre Missionen und werden im Browser gespeichert. Feld der Stufe Experte.
 
 - Oben: „Profilname“, „Hintergrundkarte“ (OSM Standard, OpenTopoMap, Vektorhintergründe…), Knöpfe „Speichern“, „Neu“, „Duplizieren“, „Löschen“.
 - Registerkarte „Hintergrundkarte“: OSM-Ebenen (Boden, Gewässer, Straßen, Relief, Höhenlinien, Gipfel…), Städte als ICAO-Symbole und Einwohnerschwelle, Städtenamen, bebaute Flächen.
@@ -1298,13 +1325,14 @@ Dieser Block erstellt die Karten eines Flugs aus der Route, ohne Mission des Zen
 4. Klicken Sie auf „Karten erstellen“.
 
 Die Seite erzeugt eine Mission „Flug Abflug → Ziel“ mit den angekreuzten Karten und dem Vertikalprofil. Die Treffpunktkarte wird nur erstellt, wenn ein Treffpunkt eingegeben ist.
+Auf den Stufen 1 bis 3 verweist die Meldung nach „Karten erstellen“ auf den Knopf „Karten und ZIP erzeugen“ der Fußzeile.
 Danach aktualisiert jede Änderung der Route, der Flughöhe oder des Treffpunkts die Karten automatisch.
 Ankunft aus dem Kraftstoffplaner (Knopf „Flugkarten“): Die Karten werden von selbst erstellt, sobald die SIA-Datenbank geladen ist.
 Mögliche Fehlermeldungen: „SIA-Basis fehlt in diesem Browser“, „Route: unbekannt in der SIA-Datenbank“, „Keine Karte gewählt“.
 
 ### Zu erstellende Karten
 
-Die Liste „Karten der Mission“ hat eine Zeile pro Karte:
+Block der Stufe Experte. Die Liste „Karten der Mission“ hat eine Zeile pro Karte:
 
 | Element der Zeile | Verwendung |
 |---|---|
@@ -1320,9 +1348,11 @@ Ohne Mission und ohne erstellte Karten zeigt die Liste „Keine Karte: unten ein
 
 ### Vorschauen und Erzeugung
 
+Auf den Stufen 1 bis 3 zeigt der Block nur den Bericht der Erzeugung (erzeugte Karten, Fehlschläge und „Einzeln erneut versuchen“); „Alle Karten anzeigen“, die Vorschauen, die Übersichtskarte und die Zeile „Ausgaben: …“ gehören zur Stufe Experte.
+
 1. „Alle Karten anzeigen“: zeichnet eine Vorschau jeder Karte mit ihrem Profil. Die Vorschauen erzeugen keine Datei. Klick auf eine Vorschau: Vergrößerung.
 2. Jede Vorschau behält ihr Kästchen „ZIP“.
-3. „Karten und ZIP erzeugen“ (auch in der Fußzeile): lädt ein ZIP herunter mit jeder Karte, der Übersichtskarte und `profil_vertical.png`, wenn diese Ausgabe angekreuzt ist.
+3. „Karten und ZIP erzeugen“ (Knopf der Fußzeile): lädt ein ZIP herunter mit jeder Karte, der Übersichtskarte und `profil_vertical.png`, wenn diese Ausgabe angekreuzt ist.
 
 Die „Übersichtskarte“ erscheint von selbst unter den Vorschauen; sie übernimmt das Profil der Übersichtskarte der Route.
 Formate: Menü ☰ › Kartenausgaben (PNG, bearbeitbares SVG, PNG-Breite von 400 bis 5000 px; standardmäßig 1600 px).
@@ -1331,21 +1361,23 @@ Die Knöpfe bleiben ausgegraut, solange keine Karte zu erstellen ist.
 
 ### SIA-Datenbank
 
-Dieser Block ist standardmäßig ausgeblendet: Klicken Sie auf „Anzeigen“. Er liest den SIA-Ordner (AIXM) und hält ihn im Browser. Ohne ihn erkennt die Seite weder Flugplätze noch Funkfeuer noch Lufträume.
+Dieser Block gehört zur Stufe Experte und ist standardmäßig ausgeblendet: Klicken Sie auf „Anzeigen“. Fehlt die Datenbank in diesem Browser, öffnet er sich von selbst, gleich auf welcher Stufe. Er liest den SIA-Ordner (AIXM) und hält ihn im Browser. Ohne ihn erkennt die Seite weder Flugplätze noch Funkfeuer noch Lufträume.
 
 - Knopf „SIA-Ordner: …“: den Ordner `data/sia` wählen (der Browser fragt nach dem Zugriff), dann Lesen.
 - „Luftfahrtdatenbank neu aufbauen“: nach jeder AIRAC-Aktualisierung auszuführen; liest die aktiven Zonen unter Einstellungen › Wartung › Luftfahrtdaten. Eine Anzeige verfolgt das Lesen; „Abbrechen“ unterbricht es, ohne die gespeicherte Datenbank zu berühren.
 - „Cache leeren“: löscht die gespeicherte Datenbank (sie wird beim nächsten Neulesen wieder aufgebaut).
 - Die Statuszeile zeigt die gespeicherte Datenbank, ihren AIRAC-Zyklus und ihr Datum; „Zyklus veraltet“ erscheint, wenn ein neuerer Zyklus gilt. „Analysierte Dateien“ listet die gelesenen Dateien.
+- Ohne Datenbank meldet die Seite: „SIA-Datenbank fehlt in diesem Browser: Block ‚SIA-Datenbank‘, ‚Luftfahrtdatenbank neu aufbauen‘ oder Einstellungen › Wartung.“
 
 Es ist derselbe Block wie unter Einstellungen › Wartung › Luftfahrtdaten. Dieselbe Datenbank dient dem Vertikalprofil des Kraftstoffplaners. Einzelheiten: [SIA-Missionen](../SIA_MISSIONS.md).
 
 ## Kraftstoff
 <!-- page: apps/planner/flight_performance_planner.html -->
 
-Der Kraftstoffplaner (Titel „Flight Performance & Fuel Planner“) berechnet den Kraftstoff eines Flugs aus dem Leistungsprofil Ihres Luftfahrzeugs. Er zeichnet auch die optimalen Flughöhen und Steiggesetze.
+Der Kraftstoffplaner (Titel „Kraftstoff“) berechnet den Kraftstoff eines Flugs aus dem Leistungsprofil Ihres Luftfahrzeugs. Er zeichnet auch die optimalen Flughöhen und Steiggesetze.
 Zugang: Seitenleiste „Kraftstoff“, Knopf „Kraftstoff (Planer)“ einer Mission in Meine Missionen oder Knopf „Kraftstoff“ der Flugkarten. Route, Distanz, Flughöhe und Luftfahrzeug werden dann übernommen.
 Kopfzeile: Menü „Flugzeug“, Knopf „Letzten SimBrief-FPL abrufen“, „Einheiten: kg / lbs“. Importe und Exporte befinden sich im Menü ☰. Technische Einzelheiten: [Planer](../FLIGHT_PLANNER.md).
+Je nach Nutzungsstufe: Auf den Stufen 1 bis 3 (Besatzung, Planung, Gestaltung) zeigt die Seite das Flugzeug, den Flugplan (und „Letzten SimBrief-FPL abrufen“), den aufklappbaren Bereich „Flugparameter“, „Berechnen“ und das Ergebnis in zwei Spalten; das Menü ☰ behält dort nur Export und Import der Einstellungen. Kurven, Felder, Instrumente, Profilblöcke, Statusleiste und die Profilaktionen des Menüs ☰ kommen auf der Stufe Experte hinzu, wo die Seite vollständig ist.
 
 ### Flugzeug wählen und Profil speichern
 
@@ -1353,24 +1385,24 @@ Kopfzeile: Menü „Flugzeug“, Knopf „Letzten SimBrief-FPL abrufen“, „Ei
 2. Wählen Sie ein Profil in der Liste, nach Kategorie gruppiert (Hubschrauber, Jets, einmotorige, Turboprops…).
 3. Ein als „Flotte, ohne Profil“ markierter Typ erzeugt ein leeres Profil: Seine Leistungsdaten sind einzutragen.
 
-Die Leiste unten auf der Seite zeigt „Profil gespeichert — …“ oder „Nicht gespeicherte Änderungen — …“. Sie trägt „Lokale Datenbank neu laden“, „Profil speichern“ und „Dieses Flugzeug löschen“.
+Die Leiste unten auf der Seite zeigt „Profil gespeichert — …“ oder „Nicht gespeicherte Änderungen — …“. Sie trägt „Lokale Datenbank neu laden“, „Profil speichern“ und „Dieses Flugzeug löschen“. Diese Leiste erscheint nur auf der Stufe Experte.
 Wechseln Sie das Flugzeug mit nicht gespeicherten Änderungen, bietet die Seite „Bleiben“, „Verwerfen und wechseln“ oder „Speichern und wechseln“ an.
-Menü ☰: Profile / CSV / JSON importieren (darunter `.lnmperf` von Little Navmap), ein SimBrief-Airframe importieren, den Leistungsordner wählen, das Profil als `.lnmperf` oder JSON exportieren, die lokale Datenbank speichern, die vorherige Sicherung wiederherstellen, die Einstellungen exportieren oder importieren.
+Menü ☰: Profile / CSV / JSON importieren (darunter `.lnmperf` von Little Navmap), ein SimBrief-Airframe importieren, den Leistungsordner wählen, das Profil als `.lnmperf` oder JSON exportieren, die lokale Datenbank speichern, die vorherige Sicherung wiederherstellen, die Einstellungen exportieren oder importieren. Diese Aktionen gehören zur Stufe Experte, außer Export und Import der Einstellungen.
 
 ### Kraftstoffplanung
 
 1. „Flugplan (Feld 15)“: Geben Sie die Route ein. Es ist derselbe Plan wie in den Flugkarten (der neueste gewinnt). Distanz, rechtweisender Kurs und Flughöhe werden daraus abgeleitet.
-2. Ergänzen oder korrigieren Sie die Felder: „Distanz (NM)“, „Flugfläche (FL)“, „Rechtweisender Kurs (°)“, „Rollen (min)“, „Wind aus (°)“, „Wind (kt)“, „Reserve (min)“, „Unvorhergesehenes (%)“.
-3. Optional: „Geplante Startmasse“, verglichen mit der MTOW des Typs; „ISA-Abweichung (°C)“ oder „Bodentemperatur (°C)“ mit „Platzhöhe (ft)“ oder „Temperatur auf Flughöhe (°C)“.
+2. Ergänzen oder korrigieren Sie die Felder im aufklappbaren Bereich „Flugparameter“ (auf der Stufe Experte von Anfang an aufgeklappt, sonst zugeklappt; für eine schnelle Planung genügen die Standardwerte): „Distanz (NM)“, „Flugfläche (FL)“, „Rechtweisender Kurs (°)“, „Rollen (min)“, „Wind aus (°)“, „Wind (kt)“, „Reserve (min)“, „Unvorhergesehenes (%)“.
+3. Optional, im selben Bereich: „Geplante Startmasse“, verglichen mit der MTOW des Typs; „ISA-Abweichung (°C)“ oder „Bodentemperatur (°C)“ mit „Platzhöhe (ft)“ oder „Temperatur auf Flughöhe (°C)“.
 4. Klicken Sie auf „Berechnen“.
 
 Wind leer gelassen: Die Seite weist darauf hin („Wind unbekannt: Bereich ±25 kt…“) und gibt den Kraftstoff als Bereich an.
-Der Knopf „Flugkarten“ öffnet die Flugkarten mit diesem Flugplan; Karten und Profil werden dort bei der Ankunft erstellt.
+Der Knopf „Flugkarten“ (Stufe Experte) öffnet die Flugkarten mit diesem Flugplan; Karten und Profil werden dort bei der Ankunft erstellt.
 „Flugplan-Syntax“ zeigt die akzeptierten Formen. Ohne SIA-Datenbank im Browser werden nur Punkte in Koordinaten erkannt.
 
 ### Kurven der Kraftstoffplanung (optimale Flughöhe und optimaler Steigflug)
 
-Nach „Berechnen“ zeigt der Block „Kraftstoffplanung“ in dieser Reihenfolge:
+Auf der Stufe Experte zeigt der Block „Kraftstoffplanung“ nach „Berechnen“ in dieser Reihenfolge:
 
 | Titel | Was er zeigt |
 |---|---|
@@ -1393,13 +1425,13 @@ Dieser Block in der rechten Spalte folgt der Seite, während Sie durch die Kurve
 - Berechnungsgrundlage: gewählte Flughöhe und gewähltes Steiggesetz.
 - Einzelheiten: Rollen, Steigflug, Reiseflug, Sinkflug, Unvorhergesehenes, Reserve; geplante Startmasse und MTOW, wenn Sie sie eingegeben haben (rot, wenn sie überschritten ist).
 - Karte des Cursors (⌖ beim Überfahren, 📌 angeheftet): Kraftstoff und Zeit der Strecke auf dieser Höhe, maximale Steigrate, Steiggeschwindigkeiten; „lösen“ entfernt die Anheftung.
-- Aufklappbare Gruppe „Flugphasen — Profil ↔ Kennfeld“: IAS, Steigrate, Triebwerksdrehzahl und Durchfluss pro Phase, verglichen mit dem Triebwerkskennfeld. Sie enthält auch das Feld „SimBrief Airframe Internal ID“ und die Links zu den Blättern der Luftfahrzeuge dieses Typs.
+- Aufklappbare Gruppe „Flugphasen — Profil ↔ Kennfeld“ (Stufe Experte): IAS, Steigrate, Triebwerksdrehzahl und Durchfluss pro Phase, verglichen mit dem Triebwerkskennfeld. Sie enthält auch das Feld „SimBrief Airframe Internal ID“ und die Links zu den Blättern der Luftfahrzeuge dieses Typs.
 
-„Anheften“ behält den ganzen Block, wenn er der Seite folgt; sonst klappt er zusammen. Unter dem Block gibt ein Feld pro Kurve die Optima, die Grenzen (Gipfelhöhe, angeforderte Flughöhe) und eine Lesehilfe an. Eine Instrumentenspalte zeigt IAS, Steigrate, Höhe, Kraftstoff und Flugzeit.
+„Anheften“ behält den ganzen Block, wenn er der Seite folgt; sonst klappt er zusammen. Auf der Stufe Experte gibt unter dem Block ein Feld pro Kurve die Optima, die Grenzen (Gipfelhöhe, angeforderte Flughöhe) und eine Lesehilfe an. Eine Instrumentenspalte (Stufe Experte) zeigt IAS, Steigrate, Höhe, Kraftstoff und Flugzeit.
 
 ### Triebwerksleistung — Drehzahl / Leistung / Verbrauch
 
-Dieser Block (ursprünglicher Titel „Fiche performance moteur“) gibt den Verbrauch für eine Triebwerksdrehzahl an.
+Dieser Block (ursprünglicher Titel „Fiche performance moteur“) gibt den Verbrauch für eine Triebwerksdrehzahl an. Block der Stufe Experte.
 
 1. Geben Sie „RPM / N1“ ein. Die Felder „Höhe (ft)“ und „Phase“ ergänzen das Blatt.
 2. Klicken Sie auf „Interpolieren“.
@@ -1410,14 +1442,14 @@ Ohne RPM-Tabelle im Profil zeigt die Seite „RPM-Kurve fehlt im Profil.“ oder
 
 ### Tabelle Drehzahl / Leistung → Verbrauch
 
-Diese Tabelle listet die Punkte des Triebwerkskennfelds des aktiven Profils auf: „RPM / N1“, „Min.“, „Nennwert“, „Max.“, „Flugphase“, „Kommentar“.
+Diese Tabelle listet die Punkte des Triebwerkskennfelds des aktiven Profils auf: „RPM / N1“, „Min.“, „Nennwert“, „Max.“, „Flugphase“, „Kommentar“. Block der Stufe Experte.
 Klicken Sie auf einen Spaltentitel (↕), um zu sortieren.
 Sie ist nur lesbar: Um sie zu ändern, verwenden Sie den Block „Motorkennfeld — Drehzahl / Leistung → Verbrauch bearbeiten“.
 Ohne Daten zeigt sie „Keine Drehzahlkurve in diesem Profil.“
 
 ### Profildaten — JSON ⇄ Little Navmap
 
-Dieser Block zeigt alle Felder des Profils, die unverändert in die Datei `.lnmperf` von Little Navmap exportiert werden.
+Dieser Block zeigt alle Felder des Profils, die unverändert in die Datei `.lnmperf` von Little Navmap exportiert werden. Block der Stufe Experte.
 
 - Gruppen: „Identität und Format“, „Kraftstoff und Betrieb“, „Piste und Ausweichflugplatz“, „Steigflug“, „Reiseflug“, „Sinkflug“, „Leistungseinstellung und Verbrauch“.
 - Der Kraftstoff erscheint in der gewählten Einheit (kg oder lbs).
@@ -1428,7 +1460,7 @@ Klicken Sie nach einer Änderung in der unteren Leiste auf „Profil speichern�
 
 ### Motorkennfeld — Drehzahl / Leistung → Verbrauch bearbeiten
 
-Dieser Block dient dazu, die Tabelle Drehzahl → Verbrauch Punkt für Punkt einzugeben oder zu korrigieren.
+Dieser Block dient dazu, die Tabelle Drehzahl → Verbrauch Punkt für Punkt einzugeben oder zu korrigieren. Block der Stufe Experte.
 
 1. „Punkt hinzufügen“ erzeugt eine Zeile.
 2. Füllen Sie „RPM / N1“, „Min.“, „Nennwert“, „Max.“, „Flugphase“ und „Kommentar“ aus.
@@ -1439,7 +1471,7 @@ Ohne gewähltes Flugzeug zeigt der Block „Profil wählen oder importieren.“
 
 ### SimBrief-Kalibrierung aus OFP
 
-Dieser Block gleicht das aktive Profil mit einem echten SimBrief-Flugplan ab.
+Dieser Block gleicht das aktive Profil mit einem echten SimBrief-Flugplan ab. Block der Stufe Experte.
 
 1. Klicken Sie auf „Letzten SimBrief-FPL abrufen“ (Kopfzeile). Die Kennung wird in ☰ › Pilotenprofil eingegeben. Ersatzweise laden Sie das OFP-JSON auf simbrief.com herunter und verwenden „OFP-JSON importieren“.
 2. Das OFP füllt die Planung und den Flugplan; das Profil des Luftfahrzeugs wird erstellt und kalibriert. Die Meldung zeigt eine vollständige oder teilweise Kalibrierung (messbare Phasen) an.
@@ -1450,7 +1482,7 @@ Dieser Block gleicht das aktive Profil mit einem echten SimBrief-Flugplan ab.
 
 ### Vertikalprofil
 
-Dieser Block zeichnet einen Schnitt entlang des Flugplans der Planung: Gelände, Lufträume, Hindernisse, Flugbahn (TOC, TOD).
+Dieser Block zeichnet einen Schnitt entlang des Flugplans der Planung: Gelände, Lufträume, Hindernisse, Flugbahn (TOC, TOD). Block der Stufe Experte.
 
 1. Prüfen Sie den Flugplan in „Kraftstoffplanung“.
 2. Wählen Sie das „Anzeigeprofil (Studio)“: Es sind dieselben Profile wie in den Flugkarten.
@@ -1463,14 +1495,14 @@ Sie brauchen die SIA-Datenbank dieses Browsers, gelesen in den Flugkarten (Block
 
 ### OFP-Prüfung — Roh- und berechnete Werte
 
-Diese Tabelle vergleicht Phase für Phase die im OFP gelesenen und die neu berechneten Werte: „Zeit“, „Distanz“, „Kraftstoff“, „Berechneter Verbrauch“, „TAS / GS“, „Variometer“.
+Diese Tabelle vergleicht Phase für Phase die im OFP gelesenen und die neu berechneten Werte: „Zeit“, „Distanz“, „Kraftstoff“, „Berechneter Verbrauch“, „TAS / GS“, „Variometer“. Block der Stufe Experte.
 Sie füllt sich nach einem OFP-Import („Letzten SimBrief-FPL abrufen“ oder „OFP-JSON importieren“).
 Ohne OFP: „Keine OFP-Daten.“
 Nützlich, um eine teilweise Kalibrierung oder eine Abweichung zu SimBrief zu verstehen.
 
 ### Importiertes JSON / SimBrief
 
-Dieser Block zeigt den Rohinhalt der zuletzt importierten Datei (SimBrief-OFP oder JSON).
+Dieser Block zeigt den Rohinhalt der zuletzt importierten Datei (SimBrief-OFP oder JSON). Block der Stufe Experte.
 - „JSON kopieren“: kopiert den Inhalt in die Zwischenablage.
 - „Leeren“: leert die Anzeige (das Profil wird nicht berührt).
 
