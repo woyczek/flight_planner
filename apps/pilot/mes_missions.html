@@ -2,7 +2,7 @@
 <html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Mes missions</title>
 <link rel="stylesheet" href="../../shared/repository_nav.css?v=975c4b32"><link rel="stylesheet" href="../../shared/mission_core/core.css?v=8594d3c0">
-<script src="../../config/repository_tree?v=b7e63bc4"></script>
+<script src="../../config/repository_tree?v=7ee7e988"></script>
 <style>
   /* liste en cours de lecture (affectations) : estompée */
   #pmList[aria-busy="true"] {
@@ -1665,11 +1665,11 @@
 </section>
 </div>
 </main>
-<script src="../../shared/kit.js?v=7f07f523"></script>
-<script src="../../shared/repository_nav.js?v=0f6ed5f4"></script>
+<script src="../../shared/kit.js?v=d74cff80"></script>
+<script src="../../shared/repository_nav.js?v=452e07a3"></script>
 <script src="mes_missions_i18n.js?v=ff059abb" defer></script>
 <script src="../../shared/dispos_editor.js?v=4a8b0acf"></script>
-<script src="../../shared/content_i18n.js?v=266f3261"></script>
+<script src="../../shared/content_i18n.js?v=515ea16b"></script>
 <script src="../../AircraftDB/aircraft_db.js"></script><script src="../../shared/mission_core/vendor/js-yaml.min.js"></script><script src="../../shared/data_files.js?v=dcb47c6a" data-file="references/aircraft_fleet.js"></script>
 <script src="../../shared/mission_core/vocab.js?v=8c65f5c2"></script>
 <script src="../../shared/mission_estimate.js?v=e352037a"></script><script src="../../shared/mission_i18n.js?v=bfd45c20"></script><script src="../../shared/machine_translate.js?v=9e5fc37d"></script><script src="../../shared/mission_exercise.js?v=b68ac247"></script>
@@ -3292,8 +3292,8 @@
     });
     // famille de la mission : en-tête de l'ordre propre à la famille quand le design en a un (feuille de la page)
     $('pmDetail').dataset.family = window.MissionVocab?.familyForType?.(y.mission?.type || a.type) || '';
-    $('pmDetail').innerHTML = `<div data-part="title"><header class="pm-head pm-logo" aria-hidden="true"><img class="pm-emblem" src="../../shared/deco/cabinet/emblem-wings.webp?v=79ab9a8f" alt=""><div><b>SO Group Virtual CPCO</b><span>Centre de planification et de conduite des opérations</span></div></header>${labelHtml({ ...a, title: y.title || a.title })}</div>
-      <div data-part="order"><header class="pm-head"><img class="pm-emblem" src="../../shared/deco/cabinet/emblem-wings.webp?v=79ab9a8f" alt=""><div><b>SO Group Virtual CPCO</b><span>Centre de planification et de conduite des opérations</span></div><span class="pm-no">N° ${esc(a.mission)}</span></header>
+    $('pmDetail').innerHTML = `<div data-part="title"><header class="pm-head pm-logo" aria-hidden="true"><img class="pm-emblem" src="../../shared/deco/cabinet/emblem-wings.webp?v=79ab9a8f" alt=""><div><b>${esc(tv('{SOG_NOM} {CENTRE}'))}</b><span>Centre de planification et de conduite des opérations</span></div></header>${labelHtml({ ...a, title: y.title || a.title })}</div>
+      <div data-part="order"><header class="pm-head"><img class="pm-emblem" src="../../shared/deco/cabinet/emblem-wings.webp?v=79ab9a8f" alt=""><div><b>${esc(tv('{SOG_NOM} {CENTRE}'))}</b><span>Centre de planification et de conduite des opérations</span></div><span class="pm-no">N° ${esc(a.mission)}</span></header>
         <i class="pm-dr" aria-label="Diffusion restreinte"></i>
         <h3>${a.role === 'convoyage' ? `Ordre de convoyage — ${esc(titleOf(a).replace(/^Convoyage /, ''))}` : `Ordre de mission — ${esc(y.title || a.title || '')}`}</h3>
         ${auto ? `<p class="pm-mt small" data-mt-note data-no-i18n>${mtNoteHtml()}</p>` : ''}
@@ -3324,7 +3324,7 @@
         ${secs.filter(s => !/piste|track|inject|chiffon|chronolog|exercice|\bplis?\b|message/i.test(s.title)).map(s => sec(s.label || s.title, s.html)).join('')}
         ${sec('Fiche technique', techSheet(y))}
         ${sec('Historique des affectations', log.length ? `<ul class="pm-log">${log.map(e => `<li>${esc(A.logText(e))}</li>`).join('')}</ul>` : '')}
-        <div class="pm-sign"><i class="pm-dr" aria-label="Diffusion restreinte"></i><span>${tv(['Fait le {d}, pour le Centre', 'Done on {d}, for the Centre', 'Gegeben am {d}, für das Zentrum', 'Hecho el {d}, por el Centro'], { d: esc(signed) })}</span><em class="pm-signature">${esc(a.by || 'CPCO')}</em><small>Le chef de centre — ${esc(a.by || 'CPCO')}</small></div>
+        <div class="pm-sign"><i class="pm-dr" aria-label="Diffusion restreinte"></i><span>${tv(['Fait le {d}, pour le Centre', 'Done on {d}, for the Centre', 'Gegeben am {d}, für das Zentrum', 'Hecho el {d}, por el Centro'], { d: esc(signed) })}</span><em class="pm-signature">${esc(a.by || tv('{CENTRE}'))}</em><small>Le chef de centre — ${esc(a.by || tv('{CENTRE}'))}</small></div>
       </div>
       ${plis.length ? `<div data-part="plis"><h4>Plis et messages en vol</h4>${plis.map(pliHtml).join('')}</div>` : ''}`;
     $('pmDetail').querySelectorAll('[data-go]').forEach(b => b.onclick = () => go(b.dataset.go, a, y, pts, dist));
@@ -3775,5 +3775,5 @@
   keepAll().then(load).then(gridLoad);
 })();
 </script>
-<script src="../../shared/app_framework.js?v=b2adf17c"></script>
+<script src="../../shared/app_framework.js?v=2fbc9957"></script>
 </body></html>

@@ -9,6 +9,9 @@
 //   K.lang() / K.langIndex()             langue courante (fr, en, de, es) / son rang dans K.LANGS
 //   K.t([fr, en, de, es])                ligne de traduction dans la langue courante (typographie française appliquée)
 //   K.tf([fr, en, de, es], { n: 2 })     même chose, valeurs {clé} insérées (déjà échappées si c'est du HTML)
+//   K.brand(texte)                       jetons de compagnie résolus : {SOG} sigle, {SOG_NOM} nom, {SOG_NOM_LONG} nom
+//                                        long, {CENTRE} sigle du centre (compagnie réglée, sinon repository_tree.va) ;
+//                                        appliqué par K.t / K.tf et par la traduction des textes fixes (content_i18n.js)
 //   K.hOffset('H+1h30mn') / K.hText(90)  heure d'exercice : une seule référence (H, T ou M), décalage avec son unité
 //   K.viewImage(src, titre) / K.viewHtml(titre, html)   visionneuse commune (croix, Échap ; image : taille réelle au clic)
 //   K.store.get(clé, défaut) / .set / .remove / .json(clé, défaut) / .setJson
@@ -148,14 +151,55 @@ if (!window.DataIndex) {
   const lang = () => window.RepositoryNav?.getLanguage?.() || document.documentElement.lang || 'fr';
   /** Rang de la langue courante dans LANGS (0 si inconnue). */
   const langIndex = () => Math.max(0, LANGS.indexOf(lang()));
+  // ------------------------------------------------------------------ jetons de la compagnie virtuelle
+  // Les textes de la suite n'écrivent pas le nom de la compagnie en dur : ils portent des jetons, résolus quand le texte
+  // est produit (K.t, K.tf, traduction des textes fixes) avec la compagnie réglée (Paramètres › Installation ›
+  // Compagnie virtuelle, suiteVA:v1), sinon celle de repository_tree.va. Jetons fixés (docs/technique/FRAMEWORK.md) :
+  //   {SOG}          sigle            (va.short,    « SOG »)
+  //   {SOG_NOM}      nom              (va.name,     « SO Group Virtual »)
+  //   {SOG_NOM_LONG} nom long         (va.fullName, « Virtual Special Operation Group » ; le nom à défaut)
+  //   {CENTRE}       sigle du centre  (va.centre,   « CPCO »)
+  // Les données (missions, fichiers de data/) gardent leurs noms tels quels.
+  const BRAND = /\{(SOG_NOM_LONG|SOG_NOM|SOG|CENTRE)\}/g;
+  /** Compagnie réglée : RepositoryNav.va() une fois prêt, sinon lue ici (suiteVA:v1 sur repository_tree.va). */
+  const brandValues = () => {
+    const nav = window.RepositoryNav?.va?.();
+    if (nav) return nav;
+    const d = window.REPOSITORY_TREE?.va || {};
+    let o = {};
+    try {
+      o = JSON.parse(localStorage.getItem('suiteVA:v1') || '{}') || {};
+    } catch {
+      /* stockage indisponible : défauts */
+    }
+    return {
+      name: o.name || d.name || '',
+      fullName: o.fullName || d.fullName || '',
+      short: o.short || d.short || '',
+      centre: o.centre || d.centre || ''
+    };
+  };
+  /** Texte aux jetons de compagnie résolus ({SOG}, {SOG_NOM}, {SOG_NOM_LONG}, {CENTRE}) ; texte sans jeton : inchangé. */
+  const brand = s => {
+    const text = String(s ?? '');
+    if (!text.includes('{')) return text;
+    const v = brandValues(),
+      map = {
+        SOG: v.short,
+        SOG_NOM: v.name,
+        SOG_NOM_LONG: v.fullName || v.name,
+        CENTRE: v.centre
+      };
+    return text.replace(BRAND, (m, k) => map[k] || m);
+  };
   /**
-   * Ligne de traduction [fr, en, de, es] dans la langue courante (repli : français) ; typographie de la langue appliquée
-   * (espaces fines insécables du français : content_i18n.js) sauf { typo: false }.
+   * Ligne de traduction [fr, en, de, es] dans la langue courante (repli : français), jetons de compagnie résolus ;
+   * typographie de la langue appliquée (espaces fines insécables du français : content_i18n.js) sauf { typo: false }.
    */
   const t = (row, {
     typo = true
   } = {}) => {
-    const s = Array.isArray(row) ? row[langIndex()] ?? row[0] ?? '' : String(row ?? '');
+    const s = brand(Array.isArray(row) ? row[langIndex()] ?? row[0] ?? '' : String(row ?? ''));
     const f = typo && window.RepositoryContentI18n?.typography;
     return f ? f(s, lang()) : s;
   };
@@ -403,6 +447,7 @@ if (!window.DataIndex) {
     langIndex,
     t,
     tf,
+    brand,
     store,
     noFolderAccess,
     color: {

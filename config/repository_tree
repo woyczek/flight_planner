@@ -12,9 +12,10 @@ window.REPOSITORY_TREE={
   },
   // Sources externes (adresses par défaut ; réglables dans Paramètres › Maintenance › Sources et dossiers, surcharge
   // locale suiteSources:v1) : RepositoryNav.source(clé). {nn} / {yy} : numéro du cycle AIRAC et année sur deux chiffres.
-  // Compagnie virtuelle (SO Group Virtual par défaut ; réglable dans Paramètres › Maintenance › Sources et dossiers,
+  // Compagnie virtuelle (SO Group Virtual par défaut ; réglable dans Paramètres › Installation › Sources et dossiers,
   // surcharge locale suiteVA:v1) : RepositoryNav.va() ; adresse du site : sources.defa ; pages : chemins sous ce site,
   // {id} remplacé (RepositoryNav.vaUrl(page, { id })).
+  // Textes : jetons {SOG}, {SOG_NOM}, {SOG_NOM_LONG}, {CENTRE} résolus par K.t / K.brand (docs/technique/FRAMEWORK.md § 4 bis).
   va:{name:"SO Group Virtual",fullName:"Virtual Special Operation Group",short:"SOG",centre:"CPCO",centreName:"Centre de planification et de conduite des opérations",
     pages:{home:"/index.php",log:"/log_vols.php",fleet:"/flotte.php",aircraft:"/appareil.php?id={id}"}},
   sources:{

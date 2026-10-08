@@ -94,7 +94,7 @@
   // rubrique « Tableau » du groupe Centre : rendu, collecte, enregistrement et retour aux valeurs par défaut
   SP.add({
     id: 'odvOrders',
-    group: L('Centre (CPCO)', 'Centre (CPCO)', 'Zentrum (CPCO)', 'Centro (CPCO)'),
+    group: L('Centre ({CENTRE})', 'Centre ({CENTRE})', 'Zentrum ({CENTRE})', 'Centro ({CENTRE})'),
     title: L('Tableau', 'Board', 'Einsatztafel', 'Tablero'),
     intro: L(
       'Réglages partagés de la page Tableau (data/config/odv.json, synchronisé) : terrain, réseau par défaut, délai des CR, heures de service, modèles de plaquettes, couleurs des indicatifs, créneaux LL / RTBA de repli, personnel, récurrences.',

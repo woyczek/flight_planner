@@ -588,8 +588,8 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
       file: 'data/references/aircraft_fleet.js',
       overrideKey: 'dataOverride:fleet:v1',
       intro: T(
-        'Flotte du SOG : appareils affectables et proposés dans les CR (immatriculation, type, indicatifs, base, opérateur ; plusieurs indicatifs séparés par des virgules). Dessous : les appareils qui volent dans le reporting, avec la case « personnel » (hors flotte).',
-        'SOG fleet: assignable aircraft offered in reports (registration, type, callsigns, base, operator; several callsigns comma-separated). Below: the aircraft flying in the reporting, with the “personal” box (outside the fleet).'
+        'Flotte du {SOG} : appareils affectables et proposés dans les CR (immatriculation, type, indicatifs, base, opérateur ; plusieurs indicatifs séparés par des virgules). Dessous : les appareils qui volent dans le reporting, avec la case « personnel » (hors flotte).',
+        '{SOG} fleet: assignable aircraft offered in reports (registration, type, callsigns, base, operator; several callsigns comma-separated). Below: the aircraft flying in the reporting, with the “personal” box (outside the fleet).'
       ),
       /** Tableaux éditables de la base (colonnes et lignes de travail). */
       tables: () => [{
@@ -1089,7 +1089,7 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
       )
     }, {
       id: 'send',
-      group: T('Centre (CPCO)', 'Centre (CPCO)'),
+      group: T('Centre ({CENTRE})', 'Centre ({CENTRE})'),
       title: T('Envoi des comptes rendus (webservice)', 'Report sending (web service)'),
       custom: true,
       intro: T(
@@ -1098,7 +1098,7 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
       )
     }, {
       id: 'cpco',
-      group: T('Centre (CPCO)', 'Centre (CPCO)'),
+      group: T('Centre ({CENTRE})', 'Centre ({CENTRE})'),
       title: T('Accès au Centre et réglages', 'Centre access and settings'),
       custom: true,
       intro: T(

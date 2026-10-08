@@ -97,10 +97,10 @@
     display: none
   }
 </style>
-<script src="config/repository_tree?v=b7e63bc4" data-no-design></script><script src="data/data_tree.js" onerror="window.DATA_TREE=false"></script>
+<script src="config/repository_tree?v=7ee7e988" data-no-design></script><script src="data/data_tree.js" onerror="window.DATA_TREE=false"></script>
 </head><body><main>
 <!-- Page d'accueil (v3) : les applications sont dans apps/ ; les données dans data/ (dépôt de données). -->
-<h1>XPlane Web Suite</h1><p>SO Group Virtual — Virtual Special Operation Group</p><p id="rel"></p>
+<h1>XPlane Web Suite</h1><p id="brand"></p><p id="rel"></p>
 <p class="warn" id="noData">Dossier <code>data/</code> absent : les pages utilisent les exemples. Voir INSTALL.md (clone du dépôt de données).</p>
 <p class="setup" id="setup" hidden></p>
 <div id="apps"></div>
@@ -117,6 +117,15 @@
     const nav = (navigator.languages?.[0] || navigator.language || 'en').slice(0, 2).toLowerCase(),
       li = Math.max(0, langs.indexOf(langs.includes(mode) ? mode : langs.includes(nav) ? nav : 'en'));
     document.documentElement.lang = langs[li];
+    // compagnie réglée (Paramètres › Installation › Compagnie virtuelle, suiteVA:v1), sinon repository_tree.va : nom posé
+    // ici, à la génération de la page (pas de boîte à outils sur l'accueil)
+    let va = {};
+    try {
+      va = JSON.parse(localStorage.getItem('suiteVA:v1') || '{}') || {};
+    } catch {}
+    const vaName = va.name || cfg.va?.name || '',
+      vaLong = va.fullName || cfg.va?.fullName || '';
+    document.getElementById('brand').textContent = [vaName, vaLong].filter(Boolean).join(' — ');
     const tr = v => Array.isArray(v) ? v[li] || v[0] || '' : String(v || '');
     const esc = s => String(s).replace(/[&<>"]/g, c => ({
       '&': '&amp;',

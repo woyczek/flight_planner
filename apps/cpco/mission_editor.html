@@ -2,9 +2,9 @@
 <html lang="fr">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>CPCO — Générateur de mission</title>
+<title>{CENTRE} — Générateur de mission</title>
 <link rel="stylesheet" href="../../shared/repository_nav.css?v=975c4b32">
-<script src="../../config/repository_tree?v=b7e63bc4"></script><script src="../../shared/kit.js?v=7f07f523"></script>
+<script src="../../config/repository_tree?v=7ee7e988"></script><script src="../../shared/kit.js?v=d74cff80"></script>
 <script src="../../shared/mission_core/vendor/js-yaml.min.js"></script>
 <script src="mission_prompt.js?v=8774038d"></script><script src="../../shared/data_files.js?v=dcb47c6a" data-file="references/aircraft_fleet.js"></script><script src="../../shared/mission_order.js?v=10ea62d0"></script><script src="../../AircraftDB/aircraft_db.js"></script><script src="../../AircraftDB/aircraft_perf.js"></script><script src="../../shared/mission_core/model.js?v=88cf78c1"></script><script src="../../shared/mission_estimate.js?v=e352037a"></script><script src="../../shared/sia_base.js?v=014ef61f"></script><script src="../../shared/mission_routing.js?v=3cc1352c"></script><script src="../../shared/mission_airspaces.js?v=e13e97bf"></script><script src="../../shared/mission_exercise.js?v=b68ac247"></script><script src="../../shared/mission_registry.js?v=f6f9c789"></script>
 <script src="mission_store.js?v=559e3351"></script>
@@ -1904,7 +1904,7 @@ function addPdfFooters(doc) {
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(7.5);
     doc.setTextColor(70, 79, 84);
-    doc.text(pdfSafe(`© SO Group Virtual - ${date} - Auteur : ${author}`), 12, ph - 6);
+    doc.text(pdfSafe(`© ${window.RepositoryKit.brand('{SOG_NOM}')} - ${date} - Auteur : ${author}`), 12, ph - 6);
     doc.text(`${page} / ${count}`, pw - 12, ph - 6, {
       align: 'right'
     });
@@ -2050,7 +2050,7 @@ async function exportOrganisationPdf(zy, opts) {
   else doc.setProperties({
     title: pdfSafe(name),
     subject: 'Dossier organisation d’exercice',
-    author: pdfSafe(zy.author || 'SO Group Virtual')
+    author: pdfSafe(zy.author || window.RepositoryKit.brand('{SOG_NOM}'))
   });
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(20);
@@ -2154,7 +2154,7 @@ async function exportPdf(opts) {
   else doc.setProperties({
     title: pdfSafe(pdfTitle()),
     subject: 'Dossier de mission de simulation',
-    author: pdfSafe(common('author', 'SO Group Virtual'))
+    author: pdfSafe(common('author', window.RepositoryKit.brand('{SOG_NOM}')))
   });
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(20);
@@ -2270,7 +2270,7 @@ async function exportOperationPdf() {
   doc.setProperties({
     title: pdfSafe(name),
     subject: 'Dossier d’opération de simulation',
-    author: pdfSafe(first.author || 'SO Group Virtual')
+    author: pdfSafe(first.author || window.RepositoryKit.brand('{SOG_NOM}'))
   });
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(20);
@@ -2855,7 +2855,7 @@ $('openCr').onclick = () => {
   }
 };
 </script>
-<script src="../../shared/repository_nav.js?v=0f6ed5f4"></script>
-<script src="../../shared/app_framework.js?v=b2adf17c"></script>
-<script src="../../shared/content_i18n.js?v=266f3261"></script><script src="sia_i18n.js?v=e4046ef4"></script>
+<script src="../../shared/repository_nav.js?v=452e07a3"></script>
+<script src="../../shared/app_framework.js?v=2fbc9957"></script>
+<script src="../../shared/content_i18n.js?v=515ea16b"></script><script src="sia_i18n.js?v=e4046ef4"></script>
 </body></html>

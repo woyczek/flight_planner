@@ -11,10 +11,10 @@
   const VER = new URL(document.currentScript?.src || location.href).search; // version des images (celle de ce script)
   const K = window.RepositoryKit; // utilitaires communs (shared/kit.js)
   const T = {
-    sub: ['SO Group Virtual — design, icônes, barre latérale et couleurs, pour toutes les pages de la suite',
-      'SO Group Virtual — design, icons, side bar and colours, for every page of the suite',
-      'SO Group Virtual — Design, Symbole, Seitenleiste und Farben für alle Seiten der Suite',
-      'SO Group Virtual — diseño, iconos, barra lateral y colores, para todas las páginas'
+    sub: ['{SOG_NOM} — design, icônes, barre latérale et couleurs, pour toutes les pages de la suite',
+      '{SOG_NOM} — design, icons, side bar and colours, for every page of the suite',
+      '{SOG_NOM} — Design, Symbole, Seitenleiste und Farben für alle Seiten der Suite',
+      '{SOG_NOM} — diseño, iconos, barra lateral y colores, para todas las páginas'
     ],
     design: ['Design', 'Design', 'Design', 'Diseño'],
     designSub: [
@@ -142,8 +142,8 @@
     sia: ['Missions SIA (générateur, studio)', 'SIA missions (generator, studio)', 'SIA-Missionen (Generator, Studio)',
       'Misiones SIA (generador, estudio)'
     ],
-    cpco: ['Centre (CPCO : générateur, studio, registre)', 'Centre (CPCO: generator, studio, registry)',
-      'Zentrum (CPCO: Generator, Studio, Register)', 'Centro (CPCO: generador, estudio, registro)'
+    cpco: ['Centre ({CENTRE} : générateur, studio, registre)', 'Centre ({CENTRE}: generator, studio, registry)',
+      'Zentrum ({CENTRE}: Generator, Studio, Register)', 'Centro ({CENTRE}: generador, estudio, registro)'
     ],
     core: ['CR (pages communes)', 'Reports (common pages)', 'Berichte (gemeinsame Seiten)', 'Informes (páginas comunes)']
   };

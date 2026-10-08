@@ -247,6 +247,29 @@ sont produits directement dans la langue courante (`RepositoryNav.getLanguage()`
 du Landing Dashboard et du Planner ont en plus leur dictionnaire propre (`TR`,
 `flight_i18n.js`).
 
+## 4 bis. Jetons de la compagnie virtuelle
+
+Les textes de la suite n'écrivent pas le nom de la compagnie en dur : ils portent des **jetons**, résolus quand le texte
+est produit, avec la compagnie réglée (Paramètres › Installation › Compagnie virtuelle, `suiteVA:v1`), sinon celle de
+`repository_tree.va`. Aucun renommage de la page après coup (l'ancien observateur de `repository_nav.js` est supprimé).
+
+| Jeton | Valeur | Défaut |
+|---|---|---|
+| `{SOG}` | sigle (`va.short`) | SOG |
+| `{SOG_NOM}` | nom (`va.name`) | SO Group Virtual |
+| `{SOG_NOM_LONG}` | nom long (`va.fullName`, le nom à défaut) | Virtual Special Operation Group |
+| `{CENTRE}` | sigle du centre (`va.centre`) | CPCO |
+
+- **Où ils sont résolus** : `K.t` / `K.tf` (`shared/kit.js`, `K.brand(texte)` pour un texte hors traduction : en-tête d'un
+  PDF, pied de page) et la traduction des textes fixes (`content_i18n.js` : nœuds, infobulles, titre de l'onglet ;
+  texte d'origine gardé, résolu de nouveau quand la compagnie change — événement `suite-sources-change`).
+- **Où les écrire** : textes affichés, dans les quatre langues (`'Exercice {SOG}', '{SOG} exercise', '{SOG}-Übung', …`),
+  y compris le HTML fixe des pages (`<title>{CENTRE} — Studio cartographique</title>`, `<p>{SOG_NOM} — …</p>`).
+  L'accueil (`index.html`, sans boîte à outils) pose le nom lui-même.
+- **Où ne pas les écrire** : données (missions, fichiers de `data/`, en-têtes YAML), identifiants et valeurs de repli
+  (`by: … || 'CPCO'`, `X-SOG-Setup`), textes qui citent les valeurs par défaut (« Revenir à SO Group Virtual »),
+  commentaires, manuels.
+
 ## 5. `pilot_profile.js` — profil pilote
 
 ☰ › Profil pilote : ID IVAO (VID), ID VATSIM (CID), identifiant SimBrief. Stockés une fois

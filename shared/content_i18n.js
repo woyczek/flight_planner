@@ -74,6 +74,9 @@
       records.set(owner, all)
     }
     let rec = all[key];
+    // texte à jetons de compagnie sans ligne de traduction : affiché résolu, texte d'origine gardé (compagnie changée,
+    // passe complète : résolu de nouveau depuis l'original ; comparaison sans la typographie posée à l'affichage)
+    if (rec?.tpl !== undefined && norm(value) === norm(rec.last)) return rec.last = brand(rec.tpl);
     if (rec?.miss === value && rec.version === version) return value; // inconnu, sans nouvelles lignes depuis : inchangé
     if (!rec || rec.miss !== undefined || value !== rec.last) {
       const normalized = norm(value);
@@ -112,6 +115,10 @@
         }
       }
       if (!row) {
+        if (BRAND_TOKEN.test(value)) return (all[key] = {
+          tpl: value,
+          last: brand(value)
+        }).last;
         all[key] = {
           miss: value,
           version
@@ -128,11 +135,14 @@
       }
     }
     const pick = r => r[languages.indexOf(lang)] || r[1];
-    rec.last = rec.prefix + (rec.headRow ? pick(rec.headRow) + ' — ' : rec.head || '') + pick(rec.row) + rec.tail + rec.suffix;
+    rec.last = brand(rec.prefix + (rec.headRow ? pick(rec.headRow) + ' — ' : rec.head || '') + pick(rec.row) + rec.tail + rec.suffix);
     return rec.last;
   }
 
   const lang = () => window.RepositoryNav?.getLanguage() || 'en';
+  // jetons de compagnie ({SOG}, {SOG_NOM}, {SOG_NOM_LONG}, {CENTRE}) : résolus par la boîte à outils (shared/kit.js)
+  const BRAND_TOKEN = /\{(?:SOG_NOM_LONG|SOG_NOM|SOG|CENTRE)\}/;
+  const brand = s => window.RepositoryKit?.brand ? window.RepositoryKit.brand(s) : s;
   /** Un nœud texte : traduit (hors zones exclues ; outils d'en-tête : typographie seule). */
   function doText(node, l) {
     const el = node.parentElement;
@@ -226,6 +236,12 @@
       schedule()
     });
     window.addEventListener('repository-language-change', () => {
+      full = true;
+      run()
+    });
+    // compagnie réglée changée (Paramètres › Installation) : textes à jetons résolus de nouveau
+    window.addEventListener('suite-sources-change', e => {
+      if (e.detail?.key !== 'va') return;
       full = true;
       run()
     });

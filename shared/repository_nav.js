@@ -638,7 +638,7 @@
     if (window.RepositoryAppearance) show();
     else {
       const sc = document.createElement("script");
-      sc.src = new URL("appearance_page.js?v=59118ff8", script.src).href;
+      sc.src = new URL("appearance_page.js?v=c4fe4fed", script.src).href;
       sc.onload = show;
       document.head.append(sc);
     }
@@ -1272,86 +1272,14 @@
     document.head.append(defaSite);
     /* Disponibilités : catégories configurables, thèmes ouverts, déclarations par semaine */
     const dispos = document.createElement("script");
-    dispos.src = new URL("dispos.js?v=b93daed0", script.src).href;
+    dispos.src = new URL("dispos.js?v=0d1907e0", script.src).href;
     document.head.append(dispos);
     const update = document.createElement("script");
     update.src = new URL("suite_update.js?v=11739928", script.src).href;
     document.head.append(update)
-  } {
-    /* Autre compagnie virtuelle que celle écrite dans les sources (Paramètres › Sources et dossiers) : « SO Group
-       Virtual », « Virtual Special Operation Group », « SOG » et « CPCO » des textes de la suite affichés avec le nom, le
-       nom long, le sigle et le centre réglés (nœuds texte et infobulles, pages et contenus ajoutés ensuite).
-       Comparaison avec la marque des sources (et non avec repository_tree.va) : la couche agit dès que la compagnie
-       réglée en diffère. */
-    const SOURCE = {
-      name: "SO Group Virtual",
-      fullName: "Virtual Special Operation Group",
-      short: "SOG",
-      centre: "CPCO"
-    };
-    /** Remplace dans la page (textes, infobulles, titre) les noms de la marque des sources par ceux de la compagnie réglée,
-     *  puis suit les contenus ajoutés ou retraduits ; rien si la compagnie réglée ne diffère pas. */
-    const rebrand = () => {
-      const v = va(),
-        rules = [
-          [/\bSO Group Virtual\b/g, v.name, SOURCE.name],
-          [/\bVirtual Special Operation Group\b/g, v.fullName || v.name, SOURCE.fullName],
-          [/\bSOG\b/g, v.short, SOURCE.short],
-          [/\bCPCO\b/g, v.centre, SOURCE.centre]
-        ].filter(([, to, from]) => to && to !== from);
-      if (!rules.length) return;
-      const fix = s => rules.reduce((x, [re, to]) => x.replace(re, to), s);
-      const skip = el => !el || el.closest("script,style,textarea,input,code,pre,[contenteditable],[data-no-rebrand]");
-      // Écritures de ce renommage : un nœud n'est réécrit que si son texte change, jamais à l'identique (le filtre
-      // ci-dessous voit « CPCO » même quand le centre n'est pas renommé : réécrit tel quel, chaque écriture relançait
-      // l'observateur, à l'infini — pages de Paramètres figées) ; le texte qu'il vient d'écrire n'est pas retraité
-      // (nom réglé qui contient l'ancien), et un nœud réécrit plus de 20 fois par seconde n'est plus touché (renvoi
-      // sans fin avec la traduction).
-      const written = new WeakMap();
-      const setText = n => {
-        if (written.get(n)?.value === n.nodeValue) return;
-        const s = fix(n.nodeValue);
-        if (s === n.nodeValue) return;
-        const w = written.get(n),
-          now = performance.now(),
-          count = w && now - w.at < 1000 ? w.count + 1 : 1;
-        if (count > 20) return;
-        n.nodeValue = s;
-        written.set(n, {
-          value: s,
-          at: w && now - w.at < 1000 ? w.at : now,
-          count
-        });
-      };
-      /** Corrige les nœuds texte et les attributs title sous root (hors zones exclues par skip). */
-      const walk = root => {
-        const w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
-        for (let n;
-          (n = w.nextNode());)
-          if (!skip(n.parentElement) && /SO Group|Special Operation|SOG|CPCO/.test(n.nodeValue)) setText(n);
-        if (root.querySelectorAll)
-          for (const el of root.querySelectorAll("[title]"))
-            if (/SO Group|Special Operation|SOG|CPCO/.test(el.title)) {
-              const t = fix(el.title);
-              if (t !== el.title) el.title = t;
-            }
-      };
-      walk(document.body);
-      if (document.title && fix(document.title) !== document.title) document.title = fix(document.title);
-      new MutationObserver(list => {
-        for (const m of list)
-          for (const n of m.type === "characterData" ? [m.target] : m.addedNodes) n.nodeType === 3 ? (!skip(n.parentElement) &&
-            /SO Group|Special Operation|SOG|CPCO/.test(n.nodeValue) && setText(n)) : n.nodeType === 1 && !skip(n) && walk(n);
-      }).observe(document.body, {
-        childList: true,
-        characterData: true, // textes traduits ensuite (content_i18n.js)
-        subtree: true
-      });
-    };
-    document.readyState === "loading" ? document.addEventListener("DOMContentLoaded", rebrand, {
-      once: true
-    }) : rebrand();
   }
+  // Compagnie virtuelle réglée : plus de renommage de la page après coup — les textes portent des jetons ({SOG},
+  // {SOG_NOM}, {SOG_NOM_LONG}, {CENTRE}) résolus quand ils sont produits (K.t, K.tf, content_i18n.js ; shared/kit.js).
   window.dispatchEvent(new CustomEvent("repository-nav-ready", {
     detail: window.RepositoryNav
   }));

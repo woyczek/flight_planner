@@ -10,6 +10,14 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ## [Non publié]
 
+### Modifié
+
+- **Nom de la compagnie par jetons résolus à la source** : `{SOG}`, `{SOG_NOM}`, `{SOG_NOM_LONG}`, `{CENTRE}` dans les
+  textes (quatre langues, HTML fixe et titres d'onglet compris), résolus par `K.t` / `K.tf` / `K.brand` et par la
+  traduction des textes fixes, de nouveau quand la compagnie réglée change ; l'observateur qui renommait la page après
+  coup est supprimé (pages de Paramètres figées, nom réglé contenant l'ancien). Données inchangées.
+  Voir `docs/technique/FRAMEWORK.md` § 4 bis.
+
 ## [4.11.0] — 2026-10-08
 
 La suite s'installe avec un tutoriel illustré (captures, schémas des échanges et des identifiants, prérequis

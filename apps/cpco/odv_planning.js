@@ -942,10 +942,10 @@
   /** Affectation enregistrée rouverte dans le dialogue complet (« Modifier ») ; mission absente du registre de ce
    *  navigateur : fenêtre du créneau. */
   async function editAssigned(missionId, takeoff) {
-    if (!centreOn()) return notify(L(['Centre verrouillé : l’activer dans Paramètres › Centre (CPCO).',
-      'Centre locked: enable it in Settings › Centre (CPCO).',
-      'Zentrum gesperrt: in Einstellungen › Zentrum (CPCO) aktivieren.',
-      'Centro bloqueado: actívelo en Ajustes › Centro (CPCO).'
+    if (!centreOn()) return notify(L(['Centre verrouillé : l’activer dans Paramètres › Centre ({CENTRE}).',
+      'Centre locked: enable it in Settings › Centre ({CENTRE}).',
+      'Zentrum gesperrt: in Einstellungen › Zentrum ({CENTRE}) aktivieren.',
+      'Centro bloqueado: actívelo en Ajustes › Centro ({CENTRE}).'
     ]), 'warn');
     const m = regMissions().find(x => x.id === missionId),
       jk = slotOfAssign({
@@ -1281,10 +1281,10 @@
       k = s.creneauIndex,
       range = O?.range(j, k);
     if (!centreOn()) {
-      notify(L(['Registre des missions : Centre verrouillé — l’activer dans Paramètres › Centre (CPCO).',
-        'Mission registry: Centre locked — enable it in Settings › Centre (CPCO).',
-        'Missionsregister: Zentrum gesperrt — in Einstellungen › Zentrum (CPCO) aktivieren.',
-        'Registro de misiones: Centro bloqueado — actívelo en Ajustes › Centro (CPCO).'
+      notify(L(['Registre des missions : Centre verrouillé — l’activer dans Paramètres › Centre ({CENTRE}).',
+        'Mission registry: Centre locked — enable it in Settings › Centre ({CENTRE}).',
+        'Missionsregister: Zentrum gesperrt — in Einstellungen › Zentrum ({CENTRE}) aktivieren.',
+        'Registro de misiones: Centro bloqueado — actívelo en Ajustes › Centro ({CENTRE}).'
       ]), 'warn');
       return;
     }
@@ -2004,7 +2004,7 @@
     const label = has ? (short ? L(['Modifier', 'Edit', 'Ändern', 'Modificar']) : L(['Modifier la mission…', 'Edit the mission…',
       'Mission ändern…', 'Modificar la misión…'
     ])) : short ? L(['Planifier', 'Plan', 'Planen', 'Planificar']) : reg;
-    return `<button type="button" class="odv-pick-btn" data-pick="${s.jourIndex}${s.creneauIndex}" data-fam="${esc(fam)}"${centreOn() ? ` title="${esc(has ? L(['Modifier les missions affectées sur ce créneau, ou en planifier d’autres', 'Edit the missions assigned in this slot, or plan others', 'Die in diesem Zeitfenster zugewiesenen Missionen ändern oder weitere planen', 'Modificar las misiones asignadas en esta franja o planificar otras']) : reg)}"` : ` disabled title="${esc(L(['Centre verrouillé : l’activer dans Paramètres › Centre (CPCO)', 'Centre locked: enable it in Settings › Centre (CPCO)', 'Zentrum gesperrt: in Einstellungen › Zentrum (CPCO) aktivieren', 'Centro bloqueado: actívelo en Ajustes › Centro (CPCO)']))}"`}>${esc(label)}</button>`;
+    return `<button type="button" class="odv-pick-btn" data-pick="${s.jourIndex}${s.creneauIndex}" data-fam="${esc(fam)}"${centreOn() ? ` title="${esc(has ? L(['Modifier les missions affectées sur ce créneau, ou en planifier d’autres', 'Edit the missions assigned in this slot, or plan others', 'Die in diesem Zeitfenster zugewiesenen Missionen ändern oder weitere planen', 'Modificar las misiones asignadas en esta franja o planificar otras']) : reg)}"` : ` disabled title="${esc(L(['Centre verrouillé : l’activer dans Paramètres › Centre ({CENTRE})', 'Centre locked: enable it in Settings › Centre ({CENTRE})', 'Zentrum gesperrt: in Einstellungen › Zentrum ({CENTRE}) aktivieren', 'Centro bloqueado: actívelo en Ajustes › Centro ({CENTRE})']))}"`}>${esc(label)}</button>`;
   };
   document.addEventListener('click', e => {
     const c = e.target.closest('[data-odv-slot]');
