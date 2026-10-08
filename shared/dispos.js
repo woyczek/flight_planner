@@ -392,13 +392,18 @@
     }).catch(() => null);
     const e = idx?.pilots?.[tri],
       sigs = e && typeof e === 'object' ? e.at || {} : {};
+    const pend = (A().pendingData?.() || []).map(p => new RegExp(`^disponibilites/${tri}/(\\d{4}-W\\d{2})\\.json$`).exec(p)?.[1]).filter(Boolean);
     if (!ids) {
-      const pend = (A().pendingData?.() || []).map(p => new RegExp(`^disponibilites/${tri}/(\\d{4}-W\\d{2})\\.json$`).exec(p)?.[1]).filter(Boolean);
       const from = addWeek(weekId(Date.now()), -12);
       let listed = Array.isArray(e?.weeks) ? e.weeks : null;
       // index d'un ancien lanceur (pilote → true) ou absent : semaines proches essayées (précédente, en cours, deux suivantes)
       if (!listed && (e === true || !idx?.pilots)) listed = [-1, 0, 1, 2].map(n => addWeek(weekId(Date.now()), n));
       ids = [...new Set([...(listed || []), ...pend])].filter(w => w >= from);
+    } else if (idx?.pilots && e !== true) {
+      // semaines demandées (ODV : la semaine affichée pour chaque pilote) : seules celles que l'index connaît pour ce
+      // pilote, ou en attente d'écriture, sont lues — un pilote sans déclaration ne coûte plus une requête en 404
+      const known = new Set([...(Array.isArray(e?.weeks) ? e.weeks : []), ...pend]);
+      ids = ids.filter(w => known.has(w));
     }
     const out = {};
     await Promise.all(ids.map(async w => {

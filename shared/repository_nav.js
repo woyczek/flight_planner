@@ -159,7 +159,7 @@
     if (doc.dataset.level !== lv) doc.dataset.level = lv;
   }
   /** Modules facultatifs affichés (tous au niveau 4). */
-  const modules = () => level() >= 4 ? MODULES.slice() : (K.store.json(MODULES_KEY, []) || []).filter(m => MODULES.includes(m));
+  const modules = () => level() >= 4 ? MODULES.slice() : (K.store.jsonCached(MODULES_KEY, []) || []).filter(m => MODULES.includes(m));
   /** Page visible au niveau et avec les modules courants (page non déclarée : visible). */
   const visible = p => {
     const d = cfg.pages.find(x => x.path === p);
@@ -840,15 +840,18 @@
   // autre compagnie : adresses réglées (Paramètres › Installation › Sources et dossiers, premier lancement) ou aucune —
   // jamais de lien inventé (siteLink : invitation à renseigner l'adresse)
   const DEFAULT_SITE_FOR = [cfg.va?.name || "SO Group Virtual", "DEFA Virtual"];
-  const vaName = () => (K.store.json("suiteVA:v1", {}) || {}).name || cfg.va?.name || "SO Group Virtual";
+  // suiteVA:v1 et suiteSources:v1 : lus à chaque texte traduit (jetons de compagnie, K.brand) — analyse JSON mémorisée
+  // tant que le texte du stockage ne change pas (jsonCached), au lieu d'une analyse par appel
+  const vaName = () => (K.store.jsonCached("suiteVA:v1", {}) || {}).name || cfg.va?.name || "SO Group Virtual";
   const defaultVa = () => DEFAULT_SITE_FOR.includes(vaName());
-  const source = key => String(K.store.json("suiteSources:v1", {})[key] || (key === "defa" && !defaultVa() ? "" : cfg.sources?.[key]
+  const source = key => String((K.store.jsonCached("suiteSources:v1", {}) || {})[key] || (key === "defa" && !defaultVa() ? "" : cfg
+    .sources?.[key]
     ?.url) || "").replace(/\/+$/, "");
   /** Compagnie virtuelle : repository_tree.va (SO Group Virtual par défaut) et réglage local (suiteVA:v1) ; url : site
    *  (sources.defa). { name, fullName, short, centre, centreName, url, pages: { home, log, fleet, aircraft } }. */
   const va = () => {
     const d = cfg.va || {},
-      o = K.store.json("suiteVA:v1", {}) || {};
+      o = K.store.jsonCached("suiteVA:v1", {}) || {};
     return {
       name: o.name || d.name || "SO Group Virtual",
       fullName: o.fullName || d.fullName || "",
@@ -1357,7 +1360,7 @@
     document.head.append(defaSite);
     /* Disponibilités : catégories configurables, thèmes ouverts, déclarations par semaine */
     const dispos = document.createElement("script");
-    dispos.src = new URL("dispos.js?v=0d1907e0", script.src).href;
+    dispos.src = new URL("dispos.js?v=5791ed45", script.src).href;
     document.head.append(dispos);
     const update = document.createElement("script");
     update.src = new URL("suite_update.js?v=11739928", script.src).href;

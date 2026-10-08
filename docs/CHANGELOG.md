@@ -12,6 +12,11 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Ajouté
 
+- **v2-fable, performance (1)** : Planning — plus de requête par pilote et par semaine quand l'index des déclarations ne
+  connaît pas la semaine (`SuiteDispos.readPilot` filtre les semaines demandées par `data/disponibilites/_index.json` ;
+  48 réponses 404 par ouverture avant) ; réglages de compagnie et de sources (`suiteVA:v1`, `suiteSources:v1`) et outils
+  cochés lus par analyse mémorisée (`jsonCached`) au lieu d'une analyse JSON par texte traduit (1 900 analyses par
+  ouverture du Planning avant, 160 après).
 - **v2-fable (branche `v2-fable`) : la suite dit quoi faire et se tait quand ça ne concerne pas** (proposition et
   fichiers : `docs/technique/V2_FABLE.md`) — page **« Aujourd'hui »** (`apps/pilot/aujourdhui.html`, première entrée de la
   barre latérale à tout niveau, en tête de « Mes tâches » de l'accueil) : trois blocs, une action chacun — ma prochaine
