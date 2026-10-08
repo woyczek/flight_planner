@@ -225,11 +225,37 @@
     render: L('Générer / actualiser le CR', 'Generate / refresh report', 'Bericht erzeugen / aktualisieren',
       'Generar / actualizar el informe'),
     print: L('PDF / Imprimer', 'PDF / Print', 'PDF / Drucken', 'PDF / Imprimir'),
+    // CR court (niveaux 1-2) / CR détaillé : bouton de la barre d'outils (data-max-level="2")
+    detailShow: L('CR détaillé', 'Detailed report', 'Ausführlicher Bericht', 'Informe detallado'),
+    detailShowTitle: L('Afficher tout le formulaire (blocs et champs des niveaux 3-4), sans changer de niveau d’utilisation',
+      'Show the whole form (blocks and fields of levels 3-4), without changing the usage level',
+      'Das ganze Formular anzeigen (Blöcke und Felder der Stufen 3-4), ohne die Nutzungsstufe zu ändern',
+      'Mostrar todo el formulario (bloques y campos de los niveles 3-4), sin cambiar el nivel de uso'),
+    detailHide: L('CR court', 'Short report', 'Kurzer Bericht', 'Informe breve'),
+    detailHideTitle: L('Revenir au formulaire court : champs essentiels du compte rendu',
+      'Back to the short form: essential report fields', 'Zurück zum kurzen Formular: wesentliche Berichtsfelder',
+      'Volver al formulario breve: campos esenciales del informe'),
     leave: L('La mission n’a pas été enregistrée dans le registre. Quitter quand même ?',
       'The mission has not been saved to the ledger. Leave anyway?',
       'Der Einsatz wurde nicht im Register gespeichert. Trotzdem verlassen?',
       'La misión no se ha guardado en el registro. ¿Salir de todos modos?')
   };
+
+  // CR court / CR détaillé (v2) : aux niveaux 1-2, les blocs et champs marqués data-min-level="3" (blocks.js, form.js)
+  // sont masqués par la règle commune (shared/repository_nav.css) ; « CR détaillé » pose .mc-detailed sur la page et
+  // cette règle les rend à leur affichage par défaut, sans changer le niveau. Déjà rangée en couche « app » : !important
+  // gardé tel quel par kit.js, spécificité supérieure à la règle commune ; masquages propres (hidden, bloc replié par
+  // le framework) respectés. Éléments marqués : affichage par défaut du navigateur (section, div, th / td).
+  (() => {
+    if (document.getElementById('mc-level-style')) return;
+    const style = document.createElement('style');
+    style.id = 'mc-level-style';
+    style.dataset.layer = 'app';
+    style.textContent =
+      '@layer app{html:is([data-level="1"],[data-level="2"]) .mc-page.mc-detailed [data-min-level="3"]:not([hidden],.repo-block-hidden>*){display:revert !important}}';
+    document.head.append(style);
+  })();
+  const DETAIL_KEY = 'missionCoreDetailed:v1'; // « CR détaillé » choisi aux niveaux 1-2 (navigateur, toutes familles)
 
   /** Enregistre une famille de mission (id, blocs, séries, pages, résumé…) ; ses champs de texte simple passent en majuscules. Lève une erreur sans identifiant. Retourne la définition complétée. */
   function registerFamily(def) {
@@ -308,10 +334,12 @@
     // Sept entrées au plus, par ordre d'importance : contexte (famille · série, ajoutée plus
     // bas), actions principales (enregistrer, envoyer), puis menus (importer, suivi réseau,
     // mission, registre). Les actions gardent leur data-action, quel que soit leur menu.
+    // Niveaux 1-2 (CR court) : famille · série, enregistrer, envoyer, suivi réseau et « CR détaillé » ; importer,
+    // mission et registre à partir du niveau 3.
     tools.innerHTML = `<div class="mc-toolbar">
         <button type="button" class="primary" data-action="store"></button>
         <button type="button" class="mc-send" data-action="send"></button>
-        <details class="mc-import mc-menu"><summary></summary><div class="mc-import-pop mc-pop">
+        <details class="mc-import mc-menu" data-min-level="3"><summary></summary><div class="mc-import-pop mc-pop">
           <div class="mc-import-row mc-import-links"><a data-open="ivao" target="_blank" rel="noopener"></a><a data-open="statsim" target="_blank" rel="noopener"></a></div>
           <p class="small mc-import-intro"></p>
           <textarea spellcheck="false" rows="8"></textarea>
@@ -320,23 +348,24 @@
           <p class="small mc-import-result"></p>
           <div class="mc-import-row mc-import-file"><button type="button" data-action="import"></button></div></div></details>
         <details class="mc-menu mc-net"><summary data-menu="network"></summary><div class="mc-pop mc-net-pop"><div id="mc-header-tracker"></div></div></details>
-        <details class="mc-menu"><summary data-menu="mission"></summary><div class="mc-pop mc-list">
+        <details class="mc-menu" data-min-level="3"><summary data-menu="mission"></summary><div class="mc-pop mc-list">
           <button type="button" data-action="new"></button>
           <button type="button" data-action="export"></button>
           <button type="button" class="danger" data-action="delete" hidden></button></div></details>
-        <details class="mc-menu"><summary data-menu="ledger"></summary><div class="mc-pop mc-list">
+        <details class="mc-menu" data-min-level="3"><summary data-menu="ledger"></summary><div class="mc-pop mc-list">
           <p class="small mc-ledger-info"></p>
           <a class="mc-button" data-action="reporting"></a>
           <button type="button" data-action="folder"></button>
           <button type="button" data-action="download" hidden></button>
           <hr><a class="mc-button" data-action="sendSettings"></a>
           <a class="mc-button" data-action="settings"></a></div></details>
+        <button type="button" class="secondary" data-action="detail" data-max-level="2" aria-pressed="false"></button>
         <input type="file" accept=".yaml,.yml,.json,application/json,text/yaml" hidden>
         <span class="mc-status"></span></div>`;
     if (header) header.append(tools);
     root.innerHTML = `<form id="missionCoreForm" class="mc-form" autocomplete="off">
       <section class="mc-edit-banner" data-icon="edit" hidden><h2></h2><p class="note mc-edit-info"></p></section></form>
-      <aside class="mc-aside"><div class="panel mc-kpi-panel" data-icon="chart"><h2></h2><div class="mc-kpi"></div><ul class="mc-issues" hidden></ul><h3></h3><div class="small mc-context"></div></div>
+      <aside class="mc-aside"><div class="panel mc-kpi-panel" data-icon="chart"><h2></h2><div class="mc-kpi"></div><ul class="mc-issues" hidden></ul><h3 data-min-level="3"></h3><div class="small mc-context" data-min-level="3"></div></div>
         <div class="panel mc-report-panel" data-block-id="mc-report" data-icon="file-text"><h2></h2><div class="row mc-report-actions">
         <button type="button" class="primary" data-action="render"></button><button type="button" class="secondary" data-action="print"></button>
         <label class="mc-public" hidden><input type="checkbox" data-action="public"> <span></span></label></div>
@@ -401,6 +430,28 @@
     tools.querySelectorAll('.mc-list').forEach(list => list.addEventListener('click', event => {
       if (event.target.closest('button,a')) list.closest('details').open = false;
     }));
+    // CR court / CR détaillé (niveaux 1-2) : état gardé dans le navigateur, libellé dans la langue de la page.
+    let detailed = window.RepositoryKit.store.get(DETAIL_KEY) === '1';
+    /** Classe .mc-detailed de la page et libellé du bouton selon l'état. */
+    const detailUi = () => {
+      const button = $a('detail'),
+        K = window.RepositoryKit;
+      root.classList.toggle('mc-detailed', detailed);
+      const label = K.t(detailed ? UI.detailHide : UI.detailShow),
+        title = K.t(detailed ? UI.detailHideTitle : UI.detailShowTitle);
+      if (button.textContent !== label) button.textContent = label;
+      if (button.title !== title) button.title = title;
+      if (button.getAttribute('aria-pressed') !== String(detailed)) button.setAttribute('aria-pressed', String(detailed));
+    };
+    /** Passe au CR détaillé (on) ou court, état mémorisé. */
+    const setDetailed = on => {
+      detailed = !!on;
+      window.RepositoryKit.store.set(DETAIL_KEY, detailed ? '1' : '0');
+      detailUi();
+    };
+    $a('detail').onclick = () => setDetailed(!detailed);
+    detailUi();
+    window.addEventListener('repository-language-change', detailUi);
     root.querySelector('.mc-kpi-panel h2').textContent = t('kpiTitle');
     root.querySelector('.mc-report-panel h2').textContent = t('reportTitle');
     // Familles avec champs sensibles (ex. LAW ENFORCEMENT) : version publique du CR.
@@ -937,12 +988,14 @@
       missionLink(); // durée réelle modifiée : écart avec l'estimation de la mission
       const s = M.computeStatistics(mission),
         unit = mission.fuel?.unit || '';
-      /** Case d'un calcul (libellé, valeur). */
-      const cell = (key, value) => `<div><span class="small">${esc(t(key))}</span><b>${esc(value)}</b></div>`;
+      /** Case d'un calcul (libellé, valeur) ; detail : calcul tiré de champs du CR détaillé (niveaux 3-4). */
+      const cell = (key, value, detail = false) => `<div${detail ? ' data-min-level="3"' : ''}><span class="small">${esc(t(key))}</span><b>${esc(value)}</b></div>`;
+      // CR court : temps bloc, temps de vol et carburant consommé ; transits, zone et mission (heures de zone et de
+      // mission, carburant sur zone) avec le CR détaillé.
       root.querySelector('.mc-kpi').innerHTML = cell('block', duration(s.blockMinutes)) + cell('flight', duration(s.flightMinutes)) +
-        cell('transitOut', duration(s.transitOutMinutes)) + cell('onStation', duration(s.timeOnStationMinutes)) +
-        cell('transitIn', duration(s.transitInMinutes)) + cell('mission', duration(s.missionMinutes)) +
-        cell('fuelUsed', s.fuelUsed == null ? '—' : `${s.fuelUsed} ${unit}`) + cell('fuelOnStation', s.fuelOnStation == null ? '—' : `${s.fuelOnStation} ${unit}`);
+        cell('transitOut', duration(s.transitOutMinutes), true) + cell('onStation', duration(s.timeOnStationMinutes), true) +
+        cell('transitIn', duration(s.transitInMinutes), true) + cell('mission', duration(s.missionMinutes), true) +
+        cell('fuelUsed', s.fuelUsed == null ? '—' : `${s.fuelUsed} ${unit}`) + cell('fuelOnStation', s.fuelOnStation == null ? '—' : `${s.fuelOnStation} ${unit}`, true);
       checks();
       const ctx = view.context() || {};
       // un morceau traduisible par élément (la couche de traduction remplace des nœuds de texte entiers)
@@ -960,6 +1013,8 @@
       list.innerHTML = issues.map(issue => `<li><button type="button" data-goto="${esc(issue.path)}">⚠ ${esc(window.MissionBlocks.describeIssue(issue, i))}</button></li>`).join('');
       list.querySelectorAll('[data-goto]').forEach(b => b.onclick = () => {
         const el = form.querySelector(`[data-path="${b.dataset.goto}"]`);
+        // champ du CR détaillé masqué au niveau 1-2 (heure de zone, cales…) : CR détaillé affiché
+        if (el?.closest('[data-min-level="3"]') && !el.getClientRects().length) setDetailed(true);
         el?.scrollIntoView({
           block: 'center'
         });

@@ -12,6 +12,8 @@
   // pool (réserve de valeurs connues partagée, ex. « aerodrome »).
   // Familles : hide = [chemins de champs sans index (« aircraft.tacticalNumber ») ou id de blocs].
   // Blocs : defaultHidden (masqué par défaut via le framework, comme « Masquer »).
+  // Niveau d'utilisation (v2) : minLevel d'un bloc ou d'un champ, short d'un bloc ou d'une collection (champs du CR
+  // court ; les autres à partir de DETAIL_LEVEL) → attribut data-min-level (masquage : shared/repository_nav.css).
   // Suggestions : à la prise de focus d'un champ texte / numérique, suggest(path, field,
   // saisie) fournit les valeurs proposées (liste commune #mc-suggest, rafraîchie à la frappe).
   const M = window.MissionModel,
@@ -28,6 +30,7 @@
     utc: ['Maintenant (UTC)', 'Now (UTC)', 'Jetzt (UTC)', 'Ahora (UTC)'],
     date: ['Aujourd’hui', 'Today', 'Heute', 'Hoy']
   };
+  const DETAIL_LEVEL = 3; // champs hors CR court (short) : à partir de ce niveau
   const EMPTY_HINT = ['Aucun élément : « + » dans le titre pour en ajouter.', 'No item: “+” in the title to add one.',
     'Kein Element: „+“ im Titel zum Hinzufügen.', 'Ningún elemento: «+» en el título para añadir.'
   ];
@@ -59,6 +62,13 @@
     let ctx = null;
     // Champ propre à certaines familles (only / hideFor du champ, hide de la famille).
     const hidden = new Set(family.hide || []);
+    // Champs hors du CR court (absents de la liste short de leur bloc ou de leur collection), recensés au rendu.
+    const detailOnly = new Set();
+    /** Attribut data-min-level d'un champ (minLevel, sinon hors CR court) ; vide sans niveau. */
+    const levelAttr = field => {
+      const level = field.minLevel || (detailOnly.has(field) ? DETAIL_LEVEL : 0);
+      return level ? ` data-min-level="${level}"` : '';
+    };
     /** Vrai si le champ s'affiche pour la famille et n'est pas masqué par une condition. */
     const shown = (field, key) => !(field.only && !field.only.includes(family.id)) && !(field.hideFor || []).includes(family.id) && !
       hidden.has(key);
@@ -124,7 +134,7 @@
     const fieldHtml = (field, path, withAlias = true, item = null, key = path) => {
       if (!shown(field, key)) return '';
       fieldsByPath.set(path, field);
-      return `<div class="mc-field${field.full ? ' full' : ''}" data-field="${esc(path)}">${field.label && !field.collapsed ? `<label>${esc(txt(field.label))}</label>` : ''}${controlHtml(field, path, withAlias, item)}<span class="mc-hint small" hidden></span></div>`;
+      return `<div class="mc-field${field.full ? ' full' : ''}" data-field="${esc(path)}"${levelAttr(field)}>${field.label && !field.collapsed ? `<label>${esc(txt(field.label))}</label>` : ''}${controlHtml(field, path, withAlias, item)}<span class="mc-hint small" hidden></span></div>`;
     };
 
     // ---- collections dynamiques (appareils, équipage, événements, étapes…)
@@ -177,9 +187,9 @@
         return `<div class="mc-field" data-field="${esc(path)}">${controlHtml(field, path, i === 0, item)}<span class="mc-hint small" hidden></span></div>`;
       };
       const canRemove = list.length > (spec.min || 0);
-      host.innerHTML = list.length ? `<div class="mc-table-wrap"><table class="mc-table"><thead><tr><th class="mc-idx">#</th>${short.map(f => `<th>${esc(txt(f.label))}</th>`).join('')}<th class="mc-idx"></th></tr></thead><tbody>${list.map((item, i) =>
-        `<tr data-index="${i}"><td class="mc-idx">${i + 1}</td>${short.map(f => `<td>${cell(f, i, item)}</td>`).join('')}<td class="mc-idx">${canRemove ? `<button type="button" class="mc-remove" data-remove="${i}" title="${esc(txt(['Retirer', 'Remove', 'Entfernen', 'Quitar']))}">×</button>` : ''}</td></tr>`
-        + (wide.length ? `<tr class="mc-row2" data-index="${i}"><td></td><td colspan="${short.length}">${wide.map(f => `<label class="mc-row2-field"><span>${esc(txt(f.label))}</span>${cell(f, i, item)}</label>`).join('')}</td><td></td></tr>` : '')).join('')}</tbody></table></div>` :
+      host.innerHTML = list.length ? `<div class="mc-table-wrap"><table class="mc-table"><thead><tr><th class="mc-idx">#</th>${short.map(f => `<th${levelAttr(f)}>${esc(txt(f.label))}</th>`).join('')}<th class="mc-idx"></th></tr></thead><tbody>${list.map((item, i) =>
+        `<tr data-index="${i}"><td class="mc-idx">${i + 1}</td>${short.map(f => `<td${levelAttr(f)}>${cell(f, i, item)}</td>`).join('')}<td class="mc-idx">${canRemove ? `<button type="button" class="mc-remove" data-remove="${i}" title="${esc(txt(['Retirer', 'Remove', 'Entfernen', 'Quitar']))}">×</button>` : ''}</td></tr>`
+        + (wide.length ? `<tr class="mc-row2" data-index="${i}"><td></td><td colspan="${short.length}">${wide.map(f => `<label class="mc-row2-field"${levelAttr(f)}><span>${esc(txt(f.label))}</span>${cell(f, i, item)}</label>`).join('')}</td><td></td></tr>` : '')).join('')}</tbody></table></div>` :
         `<p class="small mc-empty-hint">${esc(txt(EMPTY_HINT))}</p>`;
       host.querySelectorAll('[data-remove]').forEach(button => button.onclick = () => {
         list.splice(Number(button.dataset.remove), 1);
@@ -222,6 +232,13 @@
       fieldsByPath.clear();
       const controls = form.querySelector('.controls');
       form.querySelectorAll('section.mc-block').forEach(section => section.remove());
+      detailOnly.clear();
+      blockList.forEach(block => {
+        const spec = block.collection || block;
+        if (spec.short) spec.fields.forEach(field => {
+          if (!spec.short.includes(field.path)) detailOnly.add(field);
+        });
+      });
       blockList.forEach(block => {
         if (hidden.has(block.id) || (block.only && !block.only.includes(family.id))) return;
         const section = document.createElement('section');
@@ -232,6 +249,8 @@
         // Bloc masqué par défaut : mécanisme afficher / masquer / déplacer du framework
         // (shared/app_framework.js), le choix de l'utilisateur restant mémorisé.
         if (block.defaultHidden) section.dataset.defaultHidden = '1';
+        // Bloc du CR détaillé (niveaux 3-4) : masqué aux niveaux 1-2 par la règle commune.
+        if (block.minLevel) section.dataset.minLevel = block.minLevel;
         // icône et sous-titre (block_icons.js, chargé par repository_nav.js) : blocs communs de blocks.js, blocs propres
         // aux familles (icône par défaut « layers »)
         section.dataset.icon = block.icon || 'layers';
