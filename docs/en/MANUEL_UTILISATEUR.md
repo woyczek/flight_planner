@@ -416,6 +416,8 @@ At the top, **“Where the suite stands”** takes stock, line by line, and each
 - For everyone: data, git sync repository (optional), application folder, airline and website, IVAO API key (optional), pilot (trigram and at least one network), airline website credentials, aeronautical data.
 - Centre: enabling (administrators); once the Centre is enabled, fleet and log from the website, registry missions, users and rights (at least one administrator), report sending (optional).
 
+Above the summary, “📘 Installation tutorial, step by step” opens the [installation tutorial](../tutorial/installation.en.md) in the Help, in the suite's language.
+
 The number of each step turns green when it is done.
 
 ### 1 Folders

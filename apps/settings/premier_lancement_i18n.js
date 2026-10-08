@@ -252,5 +252,8 @@ RepositoryContentI18n([
   ['https://hôte/compte/dépôt.git', 'https://host/account/repository.git', 'https://host/konto/repository.git',
     'https://host/cuenta/repositorio.git'
   ],
-  ['git@hôte:compte/dépôt.git', 'git@host:account/repository.git', 'git@host:konto/repository.git', 'git@host:cuenta/repositorio.git']
+  ['git@hôte:compte/dépôt.git', 'git@host:account/repository.git', 'git@host:konto/repository.git', 'git@host:cuenta/repositorio.git'],
+  ['📘 Tutoriel d’installation, pas à pas', '📘 Installation tutorial, step by step', '📘 Installationsanleitung, Schritt für Schritt',
+    '📘 Tutorial de instalación, paso a paso'
+  ]
 ]);

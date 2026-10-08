@@ -63,7 +63,7 @@
   const loadBundle = () => bundle ||= new Promise(res => {
     if (window.DOC_BUNDLE) return res(window.DOC_BUNDLE);
     const sc = document.createElement('script');
-    sc.src = new URL('docs_bundle.js?v=69835929', HERE).href;
+    sc.src = new URL('docs_bundle.js?v=a1df0769', HERE).href;
     sc.onload = () => res(window.DOC_BUNDLE || {});
     sc.onerror = () => res({});
     document.head.append(sc);
@@ -277,7 +277,7 @@
         return;
       }
       const found = [];
-      for (const m of [...MANUALS, 'TUTORIAL.md', 'MANUEL_EXPLOITATION.md']) {
+      for (const m of ['tutorial/installation.fr.md', ...MANUALS, 'MANUEL_EXPLOITATION.md']) {
         const f = await localized(m),
           md = await text(f);
         if (!md) continue;
