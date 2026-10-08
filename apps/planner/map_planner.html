@@ -4,8 +4,8 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Cartes de vol</title>
-<link rel="stylesheet" href="../../shared/repository_nav.css?v=58a1131c">
-<script src="../../config/repository_tree?v=12f9355a"></script><script src="../../shared/kit.js?v=d74cff80"></script>
+<link rel="stylesheet" href="../../shared/repository_nav.css?v=54118a6e">
+<script src="../../config/repository_tree?v=c680ce8f"></script><script src="../../shared/kit.js?v=d74cff80"></script>
 <style data-layer="lib">
 @import url("../../shared/carto/maplibre-gl.css") layer(lib);
 .volForm{display:grid;grid-template-columns:repeat(2,minmax(0,260px));gap:8px 12px;align-items:end}.volForm label{display:grid;gap:3px;font-size:13px}
@@ -1577,7 +1577,9 @@ function renderSiaBaseLine(b) {
       'SIA database missing from this browser: “Build the database now” (Mission block) or Settings › Maintenance.',
       'SIA-Datenbank fehlt in diesem Browser: „Datenbank jetzt aufbauen“ (Block Mission) oder Einstellungen › Wartung.',
       'Base SIA ausente de este navegador: «Construir la base ahora» (bloque Misión) o Ajustes › Mantenimiento.'
-    ]), 'warn')
+    ]), 'warn', {
+      once: true
+    })
   }).catch(() => {})
 }
 
@@ -7127,7 +7129,7 @@ if(!new URLSearchParams(location.search).has('fpl')&&sharedDoc?.yaml?.mission?.i
 if(new URLSearchParams(location.search).has('fpl')){history.replaceState(null,'',location.pathname+location.hash);(async()=>{for(let i=0;i<100&&!baseReady();i++)await new Promise(r=>setTimeout(r,200));if(baseReady()&&$v('vprofRoute').value.trim())build(false)})()}
 })();
 </script>
-<script src="../../shared/repository_nav.js?v=d0e3af67"></script>
-<script src="../../shared/app_framework.js?v=90445249"></script>
+<script src="../../shared/repository_nav.js?v=9bc9d971"></script>
+<script src="../../shared/app_framework.js?v=0ee38931"></script>
 <script src="../../shared/content_i18n.js?v=515ea16b"></script><script src="../cpco/sia_i18n.js?v=e4046ef4"></script>
 </body></html>

@@ -2103,11 +2103,15 @@
       n: ids.length
     }) : t(['Mise en place de la zone {z}', 'Setting up zone {z}', 'Einrichtung der Zone {z}', 'Puesta en marcha de la zona {z}'], {
       z: zName(Z.byId(ids[0]))
-    }));
+    }), {
+      // « Arrêter » : la tâche en cours va à son terme, les suivantes ne sont pas lancées (sortie propre des boucles)
+      cancel: () => {}
+    });
     const before = window.SiaBase.info()?.cachedAt || '';
     const zones = names => names.map(id => zName(Z.byId(id))).join(', ');
     try {
       for (const [i, [label, fn]] of steps.entries()) {
+        if (job?.cancelled) break;
         job?.set?.(i, total, label);
         try {
           await fn();
@@ -2117,16 +2121,24 @@
         }
       }
       job?.set?.(steps.length, total, t(['Base aéronautique', 'Aeronautical database', 'Luftfahrtdatenbank', 'Base aeronáutica']));
-      if (!rebuilt || fetched) await basePanelApi?.reread(true);
+      if (!job?.cancelled && (!rebuilt || fetched)) await basePanelApi?.reread(true);
       // base vraiment relue ? (dossier SIA non choisi, lecture annulée : le bloc de la base le dit)
       const built = (window.SiaBase.info()?.cachedAt || '') !== before;
       const moraDone = [];
       if (built)
         for (const [i, id] of moras.entries()) {
+          if (job?.cancelled) break;
           job?.set?.(steps.length + 1 + i, total, `MORA — ${zName(Z.byId(id))}`);
           await moraExclusive(moraTooLarge(Z, id) ? planMoraXplane : planMoraZone, id);
           moraDone.push(id);
         }
+      // arrêt demandé : zones non marquées « faites » (la mise en place pourra être relancée), état des sources
+      // rafraîchi ; job.end() dans finally notifie « Annulé. » à la place du bilan
+      if (job?.cancelled) {
+        aeroInv = await aeroInventory();
+        aeroRefresh(Z);
+        return;
+      }
       const done = aeroAutoDone();
       ids.forEach(id => done.add(id));
       try {

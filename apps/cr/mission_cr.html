@@ -1,8 +1,8 @@
 <!doctype html>
 <html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Nouveau compte rendu de mission</title>
-<link rel="stylesheet" href="../../shared/repository_nav.css?v=58a1131c"><link rel="stylesheet" href="../../shared/mission_core/core.css?v=8594d3c0">
-<script src="../../config/repository_tree?v=12f9355a"></script>
+<link rel="stylesheet" href="../../shared/repository_nav.css?v=54118a6e"><link rel="stylesheet" href="../../shared/mission_core/core.css?v=8594d3c0">
+<script src="../../config/repository_tree?v=c680ce8f"></script>
 <style data-layer="app">
 @layer app {
   .mc-choose {
@@ -63,6 +63,10 @@
 </head><body>
 <header class="mc-header"><h1>Nouveau compte rendu de mission</h1><p>{SOG_NOM} — Mission Report Core</p></header>
 <main class="mc-choose" id="choose">
+  <section id="pending" data-block-id="pending" data-icon="send"><h2>Mes missions à rendre</h2>
+    <p class="repo-block-subtitle">Missions passées qui vous ont été affectées, sans compte rendu dans le registre ; le compte rendu s’ouvre prérempli depuis l’ordre de mission.</p>
+    <div id="pendingList"></div>
+  </section>
   <section id="family" data-icon="clipboard"><h2 data-text="title"></h2>
     <p class="small" data-text="intro"></p>
     <input id="familySearch" class="mc-find" type="search" autocomplete="off">
@@ -71,9 +75,10 @@
   </section>
 </main>
 <script src="../../shared/kit.js?v=d74cff80"></script>
-<script src="../../shared/repository_nav.js?v=d0e3af67"></script>
+<script src="../../shared/repository_nav.js?v=9bc9d971"></script>
 <script src="../../shared/content_i18n.js?v=515ea16b"></script>
 <script src="../../shared/mission_core/vocab.js?v=8c65f5c2"></script>
+<script src="../../shared/mission_core/vendor/js-yaml.min.js?v=64052ae4"></script><script src="../../shared/mission_core/model.js?v=88cf78c1"></script><script src="../../shared/mission_core/ledger.js?v=4436f8c0"></script><script src="../../shared/pilot_today.js?v=c962ff09"></script>
 <script>
   // Menu ☰ › Missions › Nouveau compte rendu : choix de la famille, affiché à chaque fois ;
   // la dernière famille utilisée est proposée en premier (« Continuer avec … »).
@@ -163,8 +168,28 @@
     // libellés des familles dans les 4 langues ; exemple du champ de recherche traduit aussi
     window.RepositoryContentI18n?.([title, intro, again, hint, noHit, ph, ...families.map(f => f.labels), ...families.map(f => f
       .descriptions).filter(Boolean)]);
+    // v2-fable : missions affectées passées sans CR (shared/pilot_today.js), avant le choix de la famille ; textes du
+    // bloc dans la langue de la page (RepositoryKit.t), posés seulement s'ils changent
+    const PT = [
+      ['h2', ['Mes missions à rendre', 'My missions to report', 'Meine zu berichtenden Missionen', 'Mis misiones por informar']],
+      ['.repo-block-subtitle', [
+        'Missions passées qui vous ont été affectées, sans compte rendu dans le registre ; le compte rendu s’ouvre prérempli depuis l’ordre de mission.',
+        'Past missions assigned to you, with no report in the registry; the report opens pre-filled from the mission order.',
+        'Ihnen zugewiesene vergangene Missionen ohne Bericht im Register; der Bericht öffnet sich aus dem Einsatzbefehl vorausgefüllt.',
+        'Misiones pasadas que le fueron asignadas, sin informe en el registro; el informe se abre prerrellenado desde la orden de misión.'
+      ]]
+    ];
+    /** Pose les textes du bloc « Mes missions à rendre » dans la langue courante. */
+    const ptTexts = () => PT.forEach(([sel, row]) => {
+      const el = document.querySelector(`#pending ${sel}`),
+        v = window.RepositoryKit.t(row);
+      if (el && el.textContent !== v) el.textContent = v;
+    });
+    ptTexts();
+    window.addEventListener('repository-language-change', ptTexts);
+    window.PilotToday?.mount($('pendingList'), 'pending');
     document.getElementById('choose').hidden = false;
   })();
 </script>
-<script src="../../shared/app_framework.js?v=90445249"></script>
+<script src="../../shared/app_framework.js?v=0ee38931"></script>
 </body></html>

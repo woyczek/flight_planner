@@ -132,7 +132,8 @@ window.REPOSITORY_TREE={
   // Séparateur : {sep:true} ; title : séparateur titré (masqué, comme le Centre, si toutes ses entrées sont du Centre) ;
   // bottom : la suite est rangée en bas de la colonne.
   sidebar:[
-    {icon:"send",path:"apps/pilot/mes_missions.html",match:"apps/pilot/",label:["Mes missions","My missions","Meine Missionen","Mis misiones"],title:["Missions qui vous sont affectées, disponibilités","Missions assigned to you, availability","Ihnen zugewiesene Missionen, Verfügbarkeit","Misiones que le han asignado, disponibilidad"]},
+    {icon:"today",path:"apps/pilot/aujourdhui.html",label:["Aujourd’hui","Today","Heute","Hoy"],title:["Ma prochaine mission, les comptes rendus à écrire, ma semaine","My next mission, reports to write, my week","Meine nächste Mission, zu schreibende Berichte, meine Woche","Mi próxima misión, informes por escribir, mi semana"]},
+    {icon:"send",path:"apps/pilot/mes_missions.html",match:["mes_missions.html","disponibilites.html"],label:["Mes missions","My missions","Meine Missionen","Mis misiones"],title:["Missions qui vous sont affectées, disponibilités","Missions assigned to you, availability","Ihnen zugewiesene Missionen, Verfügbarkeit","Misiones que le han asignado, disponibilidad"]},
     {icon:"clipboard",path:"apps/cr/mission_cr.html",match:"_cr.html",label:["Compte rendu","Report","Bericht","Informe"],title:["Écrire le compte rendu d’une mission","Write a mission report","Einen Missionsbericht schreiben","Escribir el informe de una misión"]},
     {icon:"calendar",tabs:"planning",label:["Planning","Schedule","Planung","Planificación"],title:["Planning des ordres de la semaine (Tableau) ; ODV au niveau 2","Weekly order schedule (Board); ODV from level 2","Befehlsplanung der Woche (Einsatztafel); ODV ab Stufe 2","Planificación de órdenes de la semana (Tablero); ODV desde el nivel 2"]},
     {icon:"target",tabs:"missions",label:["Missions","Missions","Missionen","Misiones"],title:["Générer, modifier et registrer les missions (niveau 3) ; studio cartographique au niveau 4","Generate, edit and register missions (level 3); map studio at level 4","Missionen erzeugen, ändern und registrieren (Stufe 3); Kartenstudio auf Stufe 4","Generar, modificar y registrar misiones (nivel 3); estudio cartográfico en el nivel 4"]},
@@ -240,6 +241,7 @@ window.REPOSITORY_TREE={
     {path:"apps/cpco/mission_registry.html",level:3,menu:"Centre — Registre des missions",label:"Registre des missions — Centre de planification et de conduite des opérations"},
     {path:"apps/planner/flight_performance_planner.html",module:"fuel",menu:"Carburant",label:"Carburant — performances et devis carburant"},
     {path:"apps/pilot/disponibilites.html",menu:false,label:"Mes disponibilités — saisie par plages, par catégorie"},
+    {path:"apps/pilot/aujourdhui.html",menu:"Aujourd’hui",label:"Aujourd’hui — ma prochaine mission, comptes rendus à écrire, ma semaine"},
     {path:"apps/pilot/mes_missions.html",menu:"Mes missions",label:"Mes missions — missions affectées par le Centre, disponibilités"},
     {path:"apps/planner/map_planner.html",module:"maps",menu:"Cartes de vol",label:"Cartes de vol — route, cartes topographiques, approche, rendez-vous, destination"},
     {path:"apps/cpco/odv_planning.html",level:2,menu:"Centre — Planning ODV",label:"Planning ODV — Centre de planification et de conduite des opérations"},
@@ -257,6 +259,8 @@ window.REPOSITORY_TREE={
     "Cartes de vol":["Cartes de vol","Flight maps","Flugkarten","Mapas de vuelo"],
     "Carburant":["Carburant","Fuel","Kraftstoff","Combustible"],
     "Carburant — performances et devis carburant":["Carburant — performances et devis carburant","Fuel — performance and fuel estimate","Kraftstoff — Leistung und Kraftstoffschätzung","Combustible — rendimiento y estimación de combustible"],
+    "Aujourd’hui":["Aujourd’hui","Today","Heute","Hoy"],
+    "Aujourd’hui — ma prochaine mission, comptes rendus à écrire, ma semaine":["Aujourd’hui — ma prochaine mission, comptes rendus à écrire, ma semaine","Today — my next mission, reports to write, my week","Heute — meine nächste Mission, zu schreibende Berichte, meine Woche","Hoy — mi próxima misión, informes por escribir, mi semana"],
     "Mes missions":["Mes missions","My missions","Meine Missionen","Mis misiones"],
     "Centre — Planning ODV":["Centre — Planning ODV","Centre — ODV planning","Zentrum — ODV-Planung","Centro — Planificación ODV"],
     "Centre — Tableau":["Centre — Tableau","Centre — Board","Zentrum — Einsatztafel","Centro — Tablero"],

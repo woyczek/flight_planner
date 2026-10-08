@@ -954,3 +954,11 @@ html[data-sidenav-show="label"] .repo-sidenav-item:not(#imp) {
 .repo-block.repo-block-dragging:not(#imp) {
   opacity: .45
 }
+
+/* Champs qui s'agrandissent : un textarea suit son contenu (Chrome 123+ ; sans effet ailleurs, la hauteur reste
+   celle du champ). data-fixed-size sur le champ garde une hauteur fixe. */
+textarea:not([data-fixed-size]) {
+  field-sizing: content;
+  min-height: 2.8em;
+  max-height: min(60vh, 32em)
+}

@@ -23,6 +23,7 @@ Ce qu'elle montre dépend de votre **niveau d'utilisation** (Mon profil › « N
 
 | Entrée | Ce qu'elle ouvre | Niveau |
 |---|---|---|
+| « Aujourd'hui » | Prochaine mission, comptes rendus à écrire, semaine ; première entrée à tout niveau | 1 |
 | « Mes missions » | Missions affectées par le Centre et disponibilités (pastille rouge : missions non lues) | 1 |
 | « Compte rendu » | Saisie d'un compte rendu de mission | 1 |
 | « Planning » | Planning des ordres de la semaine (Tableau, en lecture seule au niveau 1 ou sans le Centre) ; au niveau 4, créneaux communs et missions probables de la page ODV | 1 |
@@ -87,7 +88,7 @@ Le contenu des pages est découpé en blocs titrés. Chaque titre de bloc porte 
 2. ↕ « Déplacer » : saisissez cette poignée et faites glisser le bloc avant un autre bloc de la même colonne.
 
 La disposition (ordre, blocs masqués) est mémorisée **par page et par navigateur**. Elle est reprise à chaque visite.
-Certains blocs sont masqués d'office tant que vous ne les avez pas affichés une première fois.
+Certains blocs sont masqués d'office tant que vous ne les avez pas affichés une première fois. Les champs de texte (route, remarques…) s'agrandissent avec leur contenu, dans la limite des trois cinquièmes de l'écran (Chrome et Edge).
 
 ### Les notifications flottantes
 
@@ -95,8 +96,9 @@ Les messages de la suite (succès, avertissements, erreurs) s'affichent en bas d
 - Elles s'effacent seules : environ 5 s pour une information, 8 s pour un avertissement, 12 s pour une erreur.
 - Le pointeur posé dessus suspend l'effacement ; la croix « × » ferme la bulle tout de suite.
 - Quatre messages au plus restent à l'écran.
+- Un rappel répétitif (par exemple « Base SIA absente de ce navigateur… » du Studio cartographique et des Cartes de vol) ne s'affiche qu'**une fois par session** du navigateur. Certains messages sont réservés aux niveaux d'utilisation supérieurs : en dessous, ils ne s'affichent pas, mais les avertissements et erreurs restent au journal du témoin « ⚠ n ».
 - Les avertissements et erreurs effacés restent consultables par le témoin « ⚠ n » de l'en-tête : « ACK » acquitte une alerte, « Tout acquitter » les acquitte toutes, « Vider » efface la liste. Ce journal est perdu au changement de page.
-- Une tâche longue (lecture, génération…) affiche une barre de progression dans la même pile. Quitter la page pendant la tâche demande une confirmation.
+- Une tâche longue (lecture, génération…) affiche une barre de progression dans la même pile. Quitter la page pendant la tâche demande une confirmation. Quand la tâche peut être interrompue (mise en place des zones dans Maintenance), la barre porte un bouton **« Arrêter »** : l'étape en cours se termine, les suivantes ne sont pas lancées, puis la bulle dit « Annulé. ».
 - Les questions (« Effacer… ? ») s'ouvrent dans une petite fenêtre avec « Confirmer » et « Annuler ».
 
 ### Connexion, mode develop ou production, usurpation
@@ -125,6 +127,35 @@ La suite propose plusieurs designs. Ils changent la forme des pages, pas les inf
 - Dans les designs à matières, le dossier de mission de « Mes missions » devient un véritable livre, avec ses animations.
 - Le choix se fait dans Apparence : chaque design y est montré en vignette et s'applique aussitôt. Voir le chapitre [Apparence](#apparence).
 
+## Aujourd'hui
+<!-- page: apps/pilot/aujourdhui.html -->
+
+Cette page est la première entrée de la barre latérale, à tout niveau d'utilisation. Elle répond à trois questions sans rien chercher : quelle est ma prochaine mission, quels comptes rendus me reste-t-il à écrire, que se passe-t-il cette semaine.
+Chaque bloc ne propose qu'une action. Les données viennent des affectations du Centre (voir « Mes missions ») et du registre des comptes rendus : rien n'est à ressaisir. La page se relit toute seule quand vous changez de langue, de trigramme ou de session.
+La page d'accueil la propose aussi en tête de « Mes tâches ».
+
+### Ma prochaine mission
+
+- La mission qui vous est affectée la plus proche (à venir, ou décollée depuis moins de six heures) : heure en UTC, mission et titre, appareil (type et immatriculation), terrain, indicatif ; « convoyage » ou « astreinte, prêt à … » le cas échéant, et « ● nouvelle » tant que vous ne l'avez pas ouverte.
+- Action : **« Ouvrir le dossier »** ouvre la mission dans « Mes missions ».
+- Sans trigramme réglé, ce bloc le demande sur place : le champ « Trigramme » (deux à quatre lettres) et le bouton « Enregistrer ». Le trigramme est enregistré dans le profil pilote et les trois blocs se relisent aussitôt, sans passer par Paramètres › Mon profil. En mode production ou pendant une usurpation, le trigramme est celui de la connexion : le bloc indique « Aucun trigramme : connectez-vous pour voir vos missions. »
+- Sans mission à venir, le bloc le dit : « Aucune mission à venir n'est affectée à … ».
+
+### Comptes rendus à écrire
+
+- Les missions qui vous ont été affectées, déjà décollées depuis moins de 21 jours, pour lesquelles le registre des comptes rendus ne contient aucun CR. La plus récente est en tête ; sept lignes au plus.
+- Un CR est connu s'il est issu d'un ordre de mission : le registre (`missions.yaml`) le rattache à l'affectation par sa référence d'ordre (mission, pilote, décollage). Un CR commencé autrement, famille choisie à la main, ne compte pas : la mission reste dans la liste.
+- Chaque ligne donne la mission, son titre, l'heure, l'appareil et le terrain, avec deux boutons.
+- **« Écrire le compte rendu »** ouvre le dossier de la mission dans « Mes missions » et commence le CR dans la famille de la mission, rempli depuis l'ordre de mission (adresse `?mission=…&do=cr`).
+- **« Pas de CR »** écarte la mission de la liste (mission annulée, non volée…). Le choix est mémorisé dans ce navigateur seulement ; le registre n'est pas touché.
+- Si tout est rendu, le bloc dit « Rien à rendre : vos missions passées ont leur compte rendu. » Sans trigramme, il renvoie au champ du premier bloc (« Trigramme à saisir ci-dessus. »).
+
+### Ma semaine
+
+- Sept colonnes, du lundi au dimanche de la semaine en cours (jours en UTC) ; le jour courant est entouré.
+- Vos missions y figurent en vignettes : heure et numéro de mission, ou « astreinte ».
+- Action : un clic sur une vignette ouvre le dossier de la mission dans « Mes missions ». Sans trigramme, le bloc dit « Sans trigramme, la semaine reste vide. »
+
 ## Mes missions
 <!-- page: apps/pilot/mes_missions.html -->
 
@@ -144,7 +175,8 @@ La liste des missions qui vous sont affectées pour la semaine affichée, triée
 - Une mention « convoyage » indique que vous convoyez un appareil pour un autre pilote : seul l'ordre de convoyage vous est remis, pas le brief de la mission.
 - Un clic sur une ligne ouvre la mission dans le bloc « Mission ».
 - Case « afficher aussi les missions passées » : par défaut, une mission disparaît quelques heures après son décollage. Le choix est mémorisé.
-- Sans trigramme réglé, la liste indique « Aucun trigramme réglé. » ; le bouton « Pilote » mène à la rubrique où le saisir.
+- Sans trigramme réglé, le champ de saisie du trigramme apparaît sous la liste (champ « Trigramme », bouton « Enregistrer ») : une fois enregistré, la liste et les disponibilités se relisent. En mode production ou pendant une usurpation, le trigramme est celui de la connexion.
+- Une adresse `?mission=…` venant de « Aujourd'hui » ou de « Nouveau compte rendu » affiche la semaine de cette mission (missions passées montrées au besoin) ; avec `?do=cr`, le CR commence dès l'ouverture du dossier.
 - **Pilote**, **Appareils maîtrisés**, **Simulateurs** : trois boutons sous la liste, vers Paramètres › Mon profil (rubrique « Identité et réseaux » pour le trigramme ; rubrique « Appareils et simulateurs », à la carte des appareils ou à celle des simulateurs). Le bouton « Pilote » affiche le trigramme utilisé pour trouver vos missions et vos disponibilités. En mode production ou pendant une usurpation, c'est le trigramme de la connexion.
 - Ces trois boutons apparaissent à partir du niveau Planification (2). Au niveau Équipage (1), seul « Pilote » apparaît, tant que le trigramme n'est pas réglé.
 
@@ -534,6 +566,14 @@ mission, puis la page de CR de cette famille s'ouvre. Elle s'adresse à tous les
 Pour y aller : barre latérale › **CR**, ou le bouton « Nouveau compte rendu » de l'en-tête du
 reporting général. Un CR peut aussi s'ouvrir directement, déjà rempli, depuis une mission qui vous a été
 affectée (voir plus bas). Pas à pas complet : [tutoriel](TUTORIAL.md).
+
+### Mes missions à rendre
+
+Premier bloc de la page : les missions qui vous ont été affectées, déjà passées (21 jours au plus) et sans CR dans le registre, comme dans le bloc « Comptes rendus à écrire » de la page « Aujourd'hui » (sept lignes au plus).
+
+- **« Écrire le compte rendu »** ouvre le dossier de la mission dans « Mes missions » et commence le CR dans la famille de la mission, rempli depuis l'ordre de mission (voir « Reprendre une mission affectée »).
+- **« Pas de CR »** écarte la mission de la liste (mémorisé dans ce navigateur).
+- Sans trigramme réglé, le bloc le demande sur place (champ « Trigramme », bouton « Enregistrer »). Le choix de la famille, plus bas, reste pour une mission hors affectation.
 
 ### Famille de mission
 

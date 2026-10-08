@@ -12,6 +12,20 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Ajouté
 
+- **v2-fable (branche `v2-fable`) : la suite dit quoi faire et se tait quand ça ne concerne pas** (proposition et
+  fichiers : `docs/technique/V2_FABLE.md`) — page **« Aujourd'hui »** (`apps/pilot/aujourdhui.html`, première entrée de la
+  barre latérale à tout niveau, en tête de « Mes tâches » de l'accueil) : trois blocs, une action chacun — ma prochaine
+  mission (« Ouvrir le dossier »), comptes rendus à écrire (missions passées sur 21 jours sans CR dans le registre,
+  « Écrire le compte rendu » / « Pas de CR », sept lignes au plus), ma semaine ; sans trigramme, le premier bloc le
+  demande sur place (champ + « Enregistrer »). Module `shared/pilot_today.js`. **Nouveau compte rendu** : bloc « Mes
+  missions à rendre » avant le choix de la famille. **Mes missions** : trigramme saisi sous la liste (plus de renvoi
+  aux réglages), `?mission=` d'une autre semaine (semaine de la mission affichée, missions passées montrées au besoin),
+  `?do=cr` (CR commencé à l'ouverture du dossier). **Socle** : `AppFramework.notify(…, { once, minLevel })` (une fois par
+  session ; niveau minimal d'affichage), appliqué au rappel « Base SIA absente » du Studio cartographique et des Cartes
+  de vol ; `AppFramework.task(…, { cancel })` avec bouton **Arrêter** (« Arrêt… » puis « Annulé. »), branché sur la mise
+  en place des zones de Maintenance ; champs de texte qui s'agrandissent avec leur contenu (`field-sizing: content`,
+  `data-fixed-size` pour garder une hauteur fixe) ; icône `today`, entrée de barre latérale et d'accueil. Manuel
+  utilisateur : chapitre « Aujourd'hui » et retouches, en quatre langues.
 - **v2 (branche `feature/v2-niveaux`), lot L0 : niveau d'utilisation** — Mon profil › « Niveau d'utilisation » remplace
   « avec ou sans Centre » : 1 équipage (Mes missions, Compte rendu, Planning en lecture), 2 planification (Planning ODV),
   3 conception (Missions : générateur, registre), 4 expert (tous les outils, studio cartographique) ; outils facultatifs

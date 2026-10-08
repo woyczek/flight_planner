@@ -23,6 +23,7 @@ Lo que muestra depende de su **nivel de uso** (Mi perfil › «Nivel de uso»): 
 
 | Entrada | Lo que abre | Nivel |
 |---|---|---|
+| «Hoy» | Próxima misión, informes por escribir, semana; primera entrada en todos los niveles | 1 |
 | «Mis misiones» | Misiones asignadas por el Centro y disponibilidad (pastilla roja: misiones no leídas) | 1 |
 | «Informe» | Introducción de un informe de misión | 1 |
 | «Planificación» | Planificación de órdenes de la semana (Tablero, en solo lectura en el nivel 1 o sin el Centro); en el nivel 4, franjas comunes y misiones probables de la página ODV | 1 |
@@ -87,7 +88,7 @@ El contenido de las páginas se divide en bloques con título. Cada título de b
 2. ↕ «Mover»: tome este asa y arrastre el bloque delante de otro bloque de la misma columna.
 
 La disposición (orden, bloques ocultos) se memoriza **por página y por navegador**. Se recupera en cada visita.
-Algunos bloques están ocultos de entrada mientras no los haya mostrado una primera vez.
+Algunos bloques están ocultos de entrada mientras no los haya mostrado una primera vez. Los campos de texto (ruta, observaciones…) crecen con su contenido, hasta tres quintos de la pantalla (Chrome y Edge).
 
 ### Las notificaciones flotantes
 
@@ -95,8 +96,9 @@ Los mensajes de la suite (éxitos, advertencias, errores) aparecen en la parte i
 - Se borran solas: unos 5 s para una información, 8 s para una advertencia, 12 s para un error.
 - Si deja el puntero encima, el borrado se suspende; la cruz «×» cierra la burbuja de inmediato.
 - Quedan como máximo cuatro mensajes en pantalla.
+- Un recordatorio repetitivo (por ejemplo «Base SIA ausente de este navegador…» del estudio cartográfico y de los mapas de vuelo) solo se muestra **una vez por sesión** del navegador. Algunos mensajes están reservados a los niveles de uso superiores: por debajo no se muestran, pero las advertencias y los errores quedan en el registro del indicador «⚠ n».
 - Las advertencias y los errores borrados siguen disponibles en el indicador «⚠ n» de la cabecera: «ACK» confirma una alerta, «Confirmar todas» las confirma todas, «Vaciar» borra la lista. Este registro se pierde al cambiar de página.
-- Una tarea larga (lectura, generación…) muestra una barra de progreso en la misma pila. Salir de la página durante la tarea pide una confirmación.
+- Una tarea larga (lectura, generación…) muestra una barra de progreso en la misma pila. Salir de la página durante la tarea pide una confirmación. Cuando la tarea puede interrumpirse (puesta a punto de las zonas en Mantenimiento), la barra lleva un botón **«Detener»**: el paso en curso termina, los siguientes no se inician y la burbuja dice «Cancelado.».
 - Las preguntas («¿Borrar…?») se abren en una pequeña ventana con «Confirmar» y «Cancelar».
 
 ### Conexión, modo develop o producción, suplantación
@@ -125,6 +127,35 @@ La suite ofrece varios diseños. Cambian la forma de las páginas, no la informa
 - En los diseños con materiales, la carpeta de misión de «Mis misiones» se convierte en un auténtico libro, con sus animaciones.
 - La elección se hace en Apariencia: cada diseño se muestra en miniatura y se aplica al instante. Consulte el capítulo [Apariencia](#apariencia).
 
+## Hoy
+<!-- page: apps/pilot/aujourdhui.html -->
+
+Esta página es la primera entrada de la barra lateral, en cualquier nivel de uso. Responde a tres preguntas sin buscar nada: cuál es mi próxima misión, qué informes me quedan por escribir, qué ocurre esta semana.
+Cada bloque ofrece una sola acción. Los datos proceden de las asignaciones del Centro (véase «Mis misiones») y del registro de informes: no hay nada que volver a introducir. La página se vuelve a leer sola cuando cambia de idioma, de trigrama o de sesión.
+La página de inicio también la ofrece al principio de «Mis tareas».
+
+### Mi próxima misión
+
+- La misión que se le ha asignado más próxima (por venir, o despegada hace menos de seis horas): hora en UTC, misión y título, aeronave (tipo y matrícula), aeródromo, indicativo; «traslado» o «alerta, listo a las …» si procede, y «● nueva» mientras no la haya abierto.
+- Acción: **«Abrir la carpeta»** abre la misión en «Mis misiones».
+- Sin trigrama configurado, este bloque lo pide en el acto: el campo «Trigrama» (de dos a cuatro letras) y el botón «Guardar». El trigrama se guarda en el perfil de piloto y los tres bloques se vuelven a leer de inmediato, sin pasar por Ajustes › Mi perfil. En modo producción o durante una suplantación, es el trigrama de la conexión: el bloque indica «Sin trigrama: inicie sesión para ver sus misiones.»
+- Sin misión próxima, el bloque lo dice: «Ninguna misión próxima está asignada a …».
+
+### Informes por escribir
+
+- Las misiones que se le han asignado, despegadas hace menos de 21 días, para las que el registro de informes no contiene ningún informe. La más reciente va primero; siete líneas como máximo.
+- Un informe es conocido si procede de una orden de misión: el registro (`missions.yaml`) lo vincula a la asignación mediante su referencia de orden (misión, piloto, despegue). Un informe iniciado de otro modo, con la familia elegida a mano, no cuenta: la misión permanece en la lista.
+- Cada línea indica la misión, su título, la hora, la aeronave y el aeródromo, con dos botones.
+- **«Escribir el informe»** abre la carpeta de la misión en «Mis misiones» y comienza el informe en la familia de la misión, rellenado desde la orden de misión (dirección `?mission=…&do=cr`).
+- **«Sin informe»** retira la misión de la lista (misión cancelada, no volada…). La elección se memoriza solo en este navegador; el registro no se toca.
+- Si todo está entregado, el bloque dice «Nada pendiente: sus misiones pasadas tienen su informe.» Sin trigrama, remite al campo del primer bloque («Trigrama por introducir arriba.»).
+
+### Mi semana
+
+- Siete columnas, de lunes a domingo de la semana en curso (días en UTC); el día actual aparece rodeado.
+- Sus misiones figuran como mosaicos: hora y número de misión, o «alerta».
+- Acción: un clic en un mosaico abre la carpeta de la misión en «Mis misiones». Sin trigrama, el bloque dice «Sin trigrama, la semana queda vacía.»
+
 ## Mis misiones
 <!-- page: apps/pilot/mes_missions.html -->
 
@@ -144,7 +175,8 @@ La lista de las misiones que tiene asignadas para la semana mostrada, ordenadas 
 - Una mención «traslado» indica que traslada una aeronave para otro piloto: solo se le entrega la orden de traslado, no el brief de la misión.
 - Un clic en una línea abre la misión en el bloque «Misión».
 - Casilla «mostrar también las misiones pasadas»: por defecto, una misión desaparece unas horas después de su despegue. La elección se memoriza.
-- Sin trigrama configurado, la lista indica «Ningún trigrama configurado.»; el botón «Piloto» lleva a la sección donde introducirlo.
+- Sin trigrama configurado, el campo para introducirlo aparece bajo la lista (campo «Trigrama», botón «Guardar»): una vez guardado, la lista y la disponibilidad se vuelven a leer. En modo producción o durante una suplantación, es el trigrama de la conexión.
+- Una dirección `?mission=…` procedente de «Hoy» o de «Nuevo informe» muestra la semana de esa misión (misiones pasadas mostradas si hace falta); con `?do=cr`, el informe comienza en cuanto se abre la carpeta.
 - **Piloto**, **Aeronaves dominadas**, **Simuladores**: tres botones bajo la lista, hacia Ajustes › Mi perfil (sección «Identidad y redes» para el trigrama; sección «Aeronaves y simuladores», en la tarjeta de aeronaves o en la de simuladores). El botón «Piloto» muestra el trigrama utilizado para encontrar sus misiones y su disponibilidad. En modo producción o durante una suplantación, es el trigrama de la conexión.
 - Estos tres botones aparecen a partir del nivel Planificación (2). En el nivel Tripulación (1), solo aparece «Piloto», mientras el trigrama no esté configurado.
 
@@ -534,6 +566,14 @@ misión y, después, se abre la página de informe de esa familia. Está dirigid
 Para ir a ella: barra lateral › **Informe**, o el botón «Nuevo informe» de la cabecera del
 informe general de misiones. Un informe también puede abrirse directamente, ya rellenado, desde una misión que se le ha
 asignado (véase más abajo). Paso a paso completo: [tutorial](../TUTORIAL.md).
+
+### Mis misiones por informar
+
+Primer bloque de la página: las misiones que se le han asignado, ya pasadas (21 días como máximo) y sin informe en el registro, como en el bloque «Informes por escribir» de la página «Hoy» (siete líneas como máximo).
+
+- **«Escribir el informe»** abre la carpeta de la misión en «Mis misiones» y comienza el informe en la familia de la misión, rellenado desde la orden de misión (véase «Retomar una misión asignada»).
+- **«Sin informe»** retira la misión de la lista (se memoriza en este navegador).
+- Sin trigrama configurado, el bloque lo pide en el acto (campo «Trigrama», botón «Guardar»). La elección de la familia, más abajo, sigue valiendo para una misión fuera de sus asignaciones.
 
 ### Familia de misión
 

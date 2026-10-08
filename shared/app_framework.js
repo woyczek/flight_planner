@@ -402,7 +402,9 @@
   window.addEventListener("hashchange", revealHash);
   window.addEventListener("load", () => setTimeout(revealHash, 50));
   // Notifications communes : pile en bas de page, au-dessus des barres fixées. kind : info | ok | warn | err ; toutes
-  // s'effacent seules (erreur 12 s, avertissement 8 s, autres 5 s ; en pause tant que la souris est dessus). Les zones d'état
+  // s'effacent seules (erreur 12 s, avertissement 8 s, autres 5 s ; en pause tant que la souris est dessus). Options :
+  // once (même texte une seule fois par session du navigateur : rappels répétitifs), minLevel (niveau d'utilisation
+  // 1 à 4 à partir duquel le message s'affiche ; en dessous, seuls err et warn vont au journal). Les zones d'état
   // marquées data-status (ex. <p id="status" data-status>) y sont relayées quand elles affichent une erreur
   // (.err, .error) ou un avertissement (.warn) : un message d'échec ne reste plus caché en bas d'un bloc.
   const notifyCss = () => {
@@ -483,10 +485,30 @@
     });
   }
 
+  /** Textes déjà montrés avec l'option once pendant cette session du navigateur (sessionStorage, 50 au plus) ;
+   *  retourne true si `text` l'a déjà été, sinon le note et retourne false. sessionStorage indisponible : false
+   *  (le message s'affiche, comme sans l'option). */
+  function shownOnce(text) {
+    try {
+      const key = "repoNotifyOnce:v1",
+        list = JSON.parse(sessionStorage.getItem(key) || "[]");
+      if (list.includes(text)) return true;
+      list.push(text);
+      sessionStorage.setItem(key, JSON.stringify(list.slice(-50)));
+    } catch {
+      /* sessionStorage indisponible : comme sans l'option */
+    }
+    return false;
+  }
   /** Notification flottante (kind : info | ok | warn | err), effacée seule (err 12 s, warn 8 s, autres 5 s ; timeout
-   *  pour changer, 0 : reste) ; même texte remplacé, 4 au plus ; err et warn vont au journal. Retour : l'élément. */
+   *  pour changer, 0 : reste) ; même texte remplacé, 4 au plus ; err et warn vont au journal. Options : once (le même
+   *  texte une seule fois par session du navigateur), minLevel (1 à 4 : sous ce niveau d'utilisation, rien n'est
+   *  affiché, err et warn restent portés au journal). Retour : l'élément, ou null (texte vide, once déjà montré,
+   *  niveau insuffisant). */
   function notify(message, kind = "info", {
-    timeout
+    timeout,
+    once = false,
+    minLevel
   } = {}) {
     const text = String(message ?? "").trim();
     if (!text) return null;
@@ -496,6 +518,11 @@
       warning: "warn",
       success: "ok"
     } [kind] || kind;
+    if (minLevel && (+document.documentElement.dataset.level || 4) < minLevel) {
+      if (kind === "err" || kind === "warn") record(text, kind);
+      return null;
+    }
+    if (once && shownOnce(text)) return null;
     notifyCss();
     const box = notifyBox();
     if (kind === "err" || kind === "warn") record(text, kind);
@@ -539,6 +566,9 @@
   //   job.set(fait, total, "carte_1.png");   // total 0 : barre indéterminée
   //   job.end();  ou  job.end("12 cartes générées.", "ok");  ou  job.fail(erreur);
   //   AppFramework.task(titre, { quiet: true }) : sans barre (la page a la sienne), garde de sortie seulement.
+  //   AppFramework.task(titre, { cancel: () => ctrl.abort() }) : bouton « Arrêter » dans la barre ; au clic, job.cancelled
+  //   passe à true (la boucle de la tâche le teste et sort proprement) puis cancel() est appelée ; job.cancel() fait
+  //   de même par code. job.end() sans message d'une tâche arrêtée notifie « Annulé. ».
   const tasks = new Set();
   const TK = {
     leave: ["Tâche en cours : {t}.\nQuitter la page l'interrompra. Quitter quand même ?",
@@ -546,7 +576,9 @@
       "Aufgabe läuft: {t}.\nDas Verlassen der Seite bricht sie ab. Trotzdem verlassen?",
       "Tarea en curso: {t}.\nSalir de la página la interrumpirá. ¿Salir de todos modos?"
     ],
-    cancelled: ["Annulé.", "Cancelled.", "Abgebrochen.", "Cancelado."]
+    cancelled: ["Annulé.", "Cancelled.", "Abgebrochen.", "Cancelado."],
+    stop: ["Arrêter", "Stop", "Abbrechen", "Detener"],
+    stopping: ["Arrêt…", "Stopping…", "Wird abgebrochen…", "Deteniendo…"]
   };
   /** Libellé TK dans la langue de la page. */
   const tk = k => window.RepositoryKit.t(TK[k]);
@@ -559,15 +591,19 @@
 .repo-notify>div.task b{font-weight:600}.repo-notify>div.task em{font-style:normal;opacity:.8;font-variant-numeric:tabular-nums}
 .repo-notify>div.task progress{grid-column:1/-1;width:100%;height:8px;accent-color:#6fa8ff}
 .repo-notify>div.task small{grid-column:1/-1;opacity:.75;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.repo-notify>div.task progress.task-sub{height:5px;opacity:.75}`;
+.repo-notify>div.task progress.task-sub{height:5px;opacity:.75}
+.repo-notify>div.task button.task-stop{grid-column:1/-1;justify-self:end;font-size:12px;line-height:1.2;padding:2px 10px;border:1px solid #fff5;border-radius:6px;opacity:.85}
+.repo-notify>div.task button.task-stop:disabled{cursor:default;opacity:.5}`;
     document.head.append(s);
   };
 
   /** Tâche longue : barre dans la pile des notifications (sauf quiet) et garde de sortie de page tant qu'elle tourne ;
-   *  total : nombre d'étapes (0 : indéterminé). Retour : { title, set, sub, end, fail }. */
+   *  total : nombre d'étapes (0 : indéterminé) ; cancel : fonction d'arrêt, qui ajoute le bouton « Arrêter ». Retour :
+   *  { title, cancelled, cancel, set, sub, end, fail }. */
   function task(title, {
     total = 0,
-    quiet = false
+    quiet = false,
+    cancel
   } = {}) {
     notifyCss();
     taskCss();
@@ -581,8 +617,33 @@
       count = item.querySelector("em"),
       step = item.querySelector("small"),
       sub = item.querySelector("progress.task-sub");
+    let stop = null;
+    if (typeof cancel === "function") {
+      stop = document.createElement("button");
+      stop.type = "button";
+      stop.className = "task-stop";
+      stop.textContent = tk("stop");
+      stop.onclick = () => job.cancel();
+      item.append(stop);
+    }
     const job = {
       title,
+      cancelled: false,
+      /** Arrêt demandé (bouton « Arrêter » ou code) : marque la tâche annulée, désactive le bouton, puis appelle la
+       *  fonction cancel de la page ; sans effet si déjà demandé. */
+      cancel() {
+        if (job.cancelled) return;
+        job.cancelled = true;
+        if (stop) {
+          stop.disabled = true;
+          stop.textContent = tk("stopping");
+        }
+        try {
+          cancel?.();
+        } catch {
+          /* l'arrêt est demandé : une erreur de la page ne doit pas bloquer la suite */
+        }
+      },
       /** Avancement : fait / total (total 0 : indéterminé) ; texte de l'étape en cours. */
       set(done = 0, n = total, text) {
         total = n;
@@ -614,6 +675,7 @@
         if (!tasks.delete(job)) return;
         item.remove();
         if (message) notify(message, kind);
+        else if (job.cancelled) notify(tk("cancelled"), "info");
       },
       /** Échec : notification d'erreur (annulation : simple information). */
       fail(error) {

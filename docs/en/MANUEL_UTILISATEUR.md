@@ -23,6 +23,7 @@ What it shows depends on your **usage level** (My profile › “Usage level”)
 
 | Entry | What it opens | Level |
 |---|---|---|
+| “Today” | Next mission, reports to write, week; first entry at every level | 1 |
 | “My missions” | Missions assigned by the Centre and availability (red badge: unread missions) | 1 |
 | “Report” | Entry of a mission report | 1 |
 | “Schedule” | Weekly order schedule (Board, read-only at level 1 or without the Centre); at level 4, common slots and likely missions of the ODV page | 1 |
@@ -87,7 +88,7 @@ Page content is split into blocks with titles. Each block title carries two cont
 2. ↕ “Move”: grab this handle and drag the block before another block of the same column.
 
 The layout (order, hidden blocks) is remembered **per page and per browser**. It is restored at each visit.
-Some blocks are hidden by default until you have shown them once.
+Some blocks are hidden by default until you have shown them once. Text fields (route, remarks…) grow with their content, up to three fifths of the screen (Chrome and Edge).
 
 ### Floating notifications
 
@@ -95,8 +96,9 @@ Messages from the suite (success, warnings, errors) appear at the bottom centre 
 - They clear on their own: about 5 s for information, 8 s for a warning, 12 s for an error.
 - Hovering over a bubble pauses the clearing; the “×” cross closes the bubble at once.
 - At most four messages stay on screen.
+- A repetitive reminder (for example “SIA database missing from this browser…” of the Map studio and the Flight maps) is shown only **once per session** of the browser. Some messages are reserved for higher usage levels: below them they are not shown, but warnings and errors stay in the log of the “⚠ n” indicator.
 - Cleared warnings and errors can still be read through the “⚠ n” indicator in the header: “ACK” acknowledges an alert, “Acknowledge all” acknowledges them all, “Clear” empties the list. This log is lost when you change page.
-- A long task (reading, generation…) shows a progress bar in the same stack. Leaving the page during the task asks for confirmation.
+- A long task (reading, generation…) shows a progress bar in the same stack. Leaving the page during the task asks for confirmation. When the task can be interrupted (setting up the zones in Maintenance), the bar carries a **“Stop”** button: the step in progress finishes, the next ones are not started, then the bubble says “Cancelled.”.
 - Questions (“Clear…?”) open in a small window with “Confirm” and “Cancel”.
 
 ### Sign-in, develop or production mode, impersonation
@@ -125,6 +127,35 @@ The suite offers several designs. They change the shape of the pages, not the in
 - In the material designs, the mission folder in “My missions” becomes a real book, with its animations.
 - You choose in Appearance: each design is shown as a thumbnail and applies at once. See the [Appearance](#appearance) chapter.
 
+## Today
+<!-- page: apps/pilot/aujourdhui.html -->
+
+This page is the first entry of the side bar, at every usage level. It answers three questions without any searching: what is my next mission, which reports are left to write, what is happening this week.
+Each block offers a single action. The data comes from the Centre’s assignments (see “My missions”) and from the report registry: nothing has to be entered again. The page rereads itself when you change language, trigram or session.
+The home page also offers it at the top of “My tasks”.
+
+### My next mission
+
+- The nearest mission assigned to you (upcoming, or taken off less than six hours ago): time in UTC, mission and title, aircraft (type and registration), airfield, callsign; “ferry” or “on call, ready at …” where relevant, and “● new” as long as you have not opened it.
+- Action: **“Open the folder”** opens the mission in “My missions”.
+- With no trigram set, this block asks for it on the spot: the “Trigram” field (two to four letters) and the “Save” button. The trigram is saved in the pilot profile and the three blocks reread at once, without going through Settings › My profile. In production mode or during an impersonation, the trigram is the one you signed in with: the block shows “No trigram: sign in to see your missions.”
+- With no upcoming mission, the block says so: “No upcoming mission is assigned to …”.
+
+### Reports to write
+
+- The missions assigned to you that took off less than 21 days ago and for which the report registry holds no report. The most recent comes first; seven lines at most.
+- A report is known if it comes from a mission order: the registry (`missions.yaml`) ties it to the assignment through its order reference (mission, pilot, take-off). A report started otherwise, with the family picked by hand, does not count: the mission stays in the list.
+- Each line gives the mission, its title, the time, the aircraft and the airfield, with two buttons.
+- **“Write the report”** opens the mission folder in “My missions” and starts the report in the mission’s family, filled in from the mission order (address `?mission=…&do=cr`).
+- **“No report”** removes the mission from the list (cancelled mission, not flown…). The choice is remembered in this browser only; the registry is not touched.
+- When everything is reported, the block says “Nothing to report: your past missions have their report.” With no trigram, it points to the field of the first block (“Trigram to enter above.”).
+
+### My week
+
+- Seven columns, Monday to Sunday of the current week (days in UTC); the current day is outlined.
+- Your missions appear there as tiles: time and mission number, or “on call”.
+- Action: a click on a tile opens the mission folder in “My missions”. With no trigram, the block says “Without a trigram, the week stays empty.”
+
 ## My missions
 <!-- page: apps/pilot/mes_missions.html -->
 
@@ -144,7 +175,8 @@ The list of the missions assigned to you for the week shown, sorted by take-off 
 - A “ferry” mention means that you are ferrying an aircraft for another pilot: you only receive the ferry order, not the mission brief.
 - A click on a line opens the mission in the “Mission” block.
 - “also show past missions” box: by default, a mission disappears a few hours after its take-off. The choice is remembered.
-- Without a trigram set, the list shows “No trigram set.”; the “Pilot” button leads to the section where you enter it.
+- With no trigram set, the trigram entry field appears under the list (“Trigram” field, “Save” button): once saved, the list and the availability are read again. In production mode or during an impersonation, the trigram is the one you signed in with.
+- An address `?mission=…` coming from “Today” or from “New report” shows the week of that mission (past missions shown if needed); with `?do=cr`, the report starts as soon as the folder opens.
 - **Pilot**, **Aircraft mastered**, **Simulators**: three buttons under the list, to Settings › My profile (“Identity and networks” section for the trigram; “Aircraft and simulators” section, at the aircraft card or the simulators card). The “Pilot” button shows the trigram used to find your missions and your availability. In production mode or during an impersonation, it is the trigram you signed in with.
 - These three buttons appear from the Planning level (2). At the Crew level (1), only “Pilot” appears, as long as the trigram is not set.
 
@@ -534,6 +566,14 @@ then the report page of that family opens. It is meant for all pilots.
 To go there: side bar › **Report**, or the “New report” button in the header of the
 general reporting. A report can also open directly, already filled in, from a mission assigned
 to you (see below). Full step by step: [tutorial](../TUTORIAL.md).
+
+### My missions to report
+
+First block of the page: the missions assigned to you that are already past (21 days at most) and have no report in the registry, as in the “Reports to write” block of the “Today” page (seven lines at most).
+
+- **“Write the report”** opens the mission folder in “My missions” and starts the report in the mission’s family, filled in from the mission order (see “Resume an assigned mission”).
+- **“No report”** removes the mission from the list (remembered in this browser).
+- With no trigram set, the block asks for it on the spot (“Trigram” field, “Save” button). The choice of family, further down, remains for a mission outside your assignments.
 
 ### Mission family
 

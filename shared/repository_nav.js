@@ -1327,7 +1327,7 @@
     files.src = new URL("file_access.js?v=d9a2fa8a", script.src).href;
     document.head.append(files); /* Données locales du navigateur ⇄ fichier de sauvegarde */
     /* Icônes, sous-titres de blocs, sous-cartes, zones de dépôt, icônes de la barre latérale (ordre conservé) */
-    for (const f of ["icons/repository_icons.js?v=27853364", "block_icons.js?v=567b5128", "side_nav.js?v=19f74efd"]) {
+    for (const f of ["icons/repository_icons.js?v=3a11f936", "block_icons.js?v=567b5128", "side_nav.js?v=19f74efd"]) {
       const sc = document.createElement("script");
       sc.src = new URL(f, script.src).href;
       sc.async = false;

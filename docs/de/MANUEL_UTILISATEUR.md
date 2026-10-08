@@ -23,6 +23,7 @@ Was sie zeigt, hängt von Ihrer **Nutzungsstufe** ab (Mein Profil › „Nutzung
 
 | Eintrag | Was er öffnet | Stufe |
 |---|---|---|
+| „Heute“ | Nächste Mission, zu schreibende Berichte, Woche; erster Eintrag auf jeder Stufe | 1 |
 | „Meine Missionen“ | Vom Zentrum zugewiesene Missionen und Verfügbarkeit (roter Punkt: ungelesene Missionen) | 1 |
 | „Bericht“ | Eingabe eines Missionsberichts | 1 |
 | „Planung“ | Befehlsplanung der Woche (Einsatztafel, auf Stufe 1 oder ohne Zentrum schreibgeschützt); auf Stufe 4 gemeinsame Zeitfenster und wahrscheinliche Missionen der ODV-Seite | 1 |
@@ -87,7 +88,7 @@ Der Inhalt der Seiten ist in Blöcke mit Titel aufgeteilt. Jeder Blocktitel trä
 2. ↕ „Verschieben“: Fassen Sie diesen Griff und ziehen Sie den Block vor einen anderen Block derselben Spalte.
 
 Die Anordnung (Reihenfolge, ausgeblendete Blöcke) wird **pro Seite und pro Browser** gespeichert. Sie wird bei jedem Besuch übernommen.
-Manche Blöcke sind von vornherein ausgeblendet, solange Sie sie nicht einmal angezeigt haben.
+Manche Blöcke sind von vornherein ausgeblendet, solange Sie sie nicht einmal angezeigt haben. Textfelder (Route, Bemerkungen…) wachsen mit ihrem Inhalt, bis zu drei Fünfteln des Bildschirms (Chrome und Edge).
 
 ### Die schwebenden Benachrichtigungen
 
@@ -95,8 +96,9 @@ Die Meldungen der Suite (Erfolg, Warnungen, Fehler) erscheinen unten in der Mitt
 - Sie verschwinden von selbst: etwa 5 s für eine Information, 8 s für eine Warnung, 12 s für einen Fehler.
 - Liegt der Mauszeiger darauf, wird das Ausblenden angehalten; das Kreuz „×“ schließt die Blase sofort.
 - Höchstens vier Meldungen bleiben auf dem Bildschirm.
+- Eine sich wiederholende Erinnerung (zum Beispiel „SIA-Datenbank fehlt in diesem Browser…“ im Kartenstudio und bei den Flugkarten) erscheint nur **einmal pro Sitzung** des Browsers. Manche Meldungen sind höheren Nutzungsstufen vorbehalten: Darunter werden sie nicht angezeigt, Warnungen und Fehler bleiben aber im Protokoll der Anzeige „⚠ n“.
 - Ausgeblendete Warnungen und Fehler bleiben über die Anzeige „⚠ n“ der Kopfzeile abrufbar: „OK“ bestätigt eine Warnung, „Alle bestätigen“ bestätigt alle, „Leeren“ löscht die Liste. Dieses Protokoll geht beim Seitenwechsel verloren.
-- Eine lange Aufgabe (Lesen, Erzeugen…) zeigt einen Fortschrittsbalken im selben Stapel. Das Verlassen der Seite während der Aufgabe erfordert eine Bestätigung.
+- Eine lange Aufgabe (Lesen, Erzeugen…) zeigt einen Fortschrittsbalken im selben Stapel. Das Verlassen der Seite während der Aufgabe erfordert eine Bestätigung. Lässt sich die Aufgabe unterbrechen (Einrichten der Zonen in der Wartung), trägt der Balken einen Knopf **„Abbrechen“**: Der laufende Schritt wird beendet, die folgenden werden nicht gestartet, dann meldet die Blase „Abgebrochen.“.
 - Fragen („Löschen… ?“) öffnen sich in einem kleinen Fenster mit „Bestätigen“ und „Abbrechen“.
 
 ### Anmeldung, develop- oder Produktionsmodus, Identitätsübernahme
@@ -125,6 +127,35 @@ Die Suite bietet mehrere Designs. Sie ändern die Form der Seiten, nicht die Inf
 - In den Material-Designs wird die Missionsmappe von „Meine Missionen“ zu einem richtigen Buch, mit seinen Animationen.
 - Die Wahl erfolgt unter Darstellung: Jedes Design wird dort als Vorschaubild gezeigt und sofort angewendet. Siehe das Kapitel [Darstellung](#darstellung).
 
+## Heute
+<!-- page: apps/pilot/aujourdhui.html -->
+
+Diese Seite ist der erste Eintrag der Seitenleiste, auf jeder Nutzungsstufe. Sie beantwortet drei Fragen, ohne dass Sie suchen müssen: Wie lautet meine nächste Mission, welche Berichte sind noch zu schreiben, was steht diese Woche an.
+Jeder Block bietet nur eine Aktion. Die Daten stammen aus den Zuweisungen des Zentrums (siehe „Meine Missionen“) und aus dem Berichtsregister: Nichts muss erneut eingegeben werden. Die Seite liest sich von selbst neu, wenn Sie Sprache, Kürzel oder Sitzung wechseln.
+Die Startseite bietet sie außerdem an erster Stelle von „Meine Aufgaben“ an.
+
+### Meine nächste Mission
+
+- Die nächste Ihnen zugewiesene Mission (anstehend oder vor weniger als sechs Stunden gestartet): Zeit in UTC, Mission und Titel, Luftfahrzeug (Typ und Kennzeichen), Flugplatz, Rufzeichen; gegebenenfalls „Überführung“ oder „Bereitschaft, bereit um …“ sowie „● neu“, solange Sie sie nicht geöffnet haben.
+- Aktion: **„Mappe öffnen“** öffnet die Mission in „Meine Missionen“.
+- Ohne eingestelltes Kürzel fragt dieser Block direkt danach: das Feld „Kürzel“ (zwei bis vier Buchstaben) und der Knopf „Speichern“. Das Kürzel wird im Pilotenprofil gespeichert und die drei Blöcke lesen sich sofort neu, ohne Umweg über Einstellungen › Mein Profil. Im Produktionsmodus oder während einer Identitätsübernahme ist es das Kürzel der Anmeldung: Der Block zeigt „Kein Kürzel: anmelden, um Ihre Missionen zu sehen.“
+- Ohne anstehende Mission sagt der Block es: „Keine anstehende Mission ist … zugewiesen.“.
+
+### Zu schreibende Berichte
+
+- Die Ihnen zugewiesenen Missionen, die vor weniger als 21 Tagen gestartet sind und für die das Berichtsregister keinen Bericht enthält. Die jüngste steht oben; höchstens sieben Zeilen.
+- Ein Bericht gilt als bekannt, wenn er aus einem Einsatzbefehl stammt: Das Register (`missions.yaml`) ordnet ihn der Zuweisung über seine Befehlsreferenz zu (Mission, Pilot, Start). Ein anders begonnener Bericht, mit von Hand gewählter Familie, zählt nicht: Die Mission bleibt in der Liste.
+- Jede Zeile nennt die Mission, ihren Titel, die Zeit, das Luftfahrzeug und den Flugplatz, mit zwei Knöpfen.
+- **„Bericht schreiben“** öffnet die Missionsmappe in „Meine Missionen“ und beginnt den Bericht in der Familie der Mission, aus dem Einsatzbefehl vorausgefüllt (Adresse `?mission=…&do=cr`).
+- **„Kein Bericht“** nimmt die Mission aus der Liste (abgesagte, nicht geflogene Mission…). Die Wahl wird nur in diesem Browser gemerkt; das Register bleibt unberührt.
+- Ist alles berichtet, sagt der Block „Nichts offen: Ihre vergangenen Missionen haben ihren Bericht.“ Ohne Kürzel verweist er auf das Feld des ersten Blocks („Kürzel oben eingeben.“).
+
+### Meine Woche
+
+- Sieben Spalten, Montag bis Sonntag der laufenden Woche (Tage in UTC); der aktuelle Tag ist umrandet.
+- Ihre Missionen erscheinen dort als Kacheln: Zeit und Missionsnummer oder „Bereitschaft“.
+- Aktion: Ein Klick auf eine Kachel öffnet die Missionsmappe in „Meine Missionen“. Ohne Kürzel sagt der Block „Ohne Kürzel bleibt die Woche leer.“
+
 ## Meine Missionen
 <!-- page: apps/pilot/mes_missions.html -->
 
@@ -144,7 +175,8 @@ Die Liste der Missionen, die Ihnen für die angezeigte Woche zugewiesen sind, so
 - Der Vermerk „Überführung“ zeigt, dass Sie ein Luftfahrzeug für einen anderen Piloten überführen: Sie erhalten nur den Überführungsbefehl, nicht das Briefing der Mission.
 - Ein Klick auf eine Zeile öffnet die Mission im Block „Mission“.
 - Kästchen „auch vergangene Missionen anzeigen“: Standardmäßig verschwindet eine Mission einige Stunden nach ihrem Start. Die Wahl wird gespeichert.
-- Ohne eingestelltes Kürzel zeigt die Liste „Kein Kürzel eingestellt.“; der Knopf „Pilot“ führt zum Abschnitt, in dem Sie es eingeben.
+- Ohne eingestelltes Kürzel erscheint das Eingabefeld für das Kürzel unter der Liste (Feld „Kürzel“, Knopf „Speichern“): Nach dem Speichern werden die Liste und die Verfügbarkeit neu gelesen. Im Produktionsmodus oder während einer Identitätsübernahme ist es das Kürzel der Anmeldung.
+- Eine Adresse `?mission=…` aus „Heute“ oder aus „Neuer Bericht“ zeigt die Woche dieser Mission (vergangene Missionen bei Bedarf eingeblendet); mit `?do=cr` beginnt der Bericht gleich beim Öffnen der Mappe.
 - **Pilot**, **Beherrschte Luftfahrzeuge**, **Simulatoren**: drei Knöpfe unter der Liste, zu Einstellungen › Mein Profil (Abschnitt „Identität und Netzwerke“ für das Kürzel; Abschnitt „Luftfahrzeuge und Simulatoren“, bei der Karte der Luftfahrzeuge oder der Simulatoren). Der Knopf „Pilot“ zeigt das Kürzel, mit dem Ihre Missionen und Ihre Verfügbarkeit gefunden werden. Im Produktionsmodus oder während einer Identitätsübernahme ist es das Kürzel der Anmeldung.
 - Diese drei Knöpfe erscheinen ab der Stufe Planung (2). Auf der Stufe Besatzung (1) erscheint nur „Pilot“, solange das Kürzel nicht eingestellt ist.
 
@@ -534,6 +566,14 @@ Mission, dann öffnet sich die Berichtsseite dieser Familie. Sie richtet sich an
 Zugang: Seitenleiste › **Bericht** oder der Knopf „Neuer Bericht“ in der Kopfzeile der
 allgemeinen Auswertung. Ein Bericht kann sich auch direkt und bereits ausgefüllt öffnen, aus einer Mission, die Ihnen
 zugewiesen wurde (siehe unten). Vollständige Schritt-für-Schritt-Anleitung: [Tutorial](../TUTORIAL.md).
+
+### Meine zu berichtenden Missionen
+
+Erster Block der Seite: die Ihnen zugewiesenen Missionen, die schon vergangen sind (höchstens 21 Tage) und keinen Bericht im Register haben, wie im Block „Zu schreibende Berichte“ der Seite „Heute“ (höchstens sieben Zeilen).
+
+- **„Bericht schreiben“** öffnet die Missionsmappe in „Meine Missionen“ und beginnt den Bericht in der Familie der Mission, aus dem Einsatzbefehl ausgefüllt (siehe „Zugewiesene Mission übernehmen“).
+- **„Kein Bericht“** nimmt die Mission aus der Liste (in diesem Browser gemerkt).
+- Ohne eingestelltes Kürzel fragt der Block direkt danach (Feld „Kürzel“, Knopf „Speichern“). Die Wahl der Familie weiter unten bleibt für eine Mission außerhalb Ihrer Zuweisungen.
 
 ### Einsatzfamilie
 

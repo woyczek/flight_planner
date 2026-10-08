@@ -1,8 +1,8 @@
 <!doctype html>
 <html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Mes missions</title>
-<link rel="stylesheet" href="../../shared/repository_nav.css?v=58a1131c"><link rel="stylesheet" href="../../shared/mission_core/core.css?v=8594d3c0">
-<script src="../../config/repository_tree?v=12f9355a"></script>
+<link rel="stylesheet" href="../../shared/repository_nav.css?v=54118a6e"><link rel="stylesheet" href="../../shared/mission_core/core.css?v=8594d3c0">
+<script src="../../config/repository_tree?v=c680ce8f"></script>
 <style>
   /* liste en cours de lecture (affectations) : estompée */
   #pmList[aria-busy="true"] {
@@ -1651,6 +1651,7 @@
 <section data-block-id="list" data-icon="calendar" data-subtitle="Missions de la semaine affichée, par heure de décollage (UTC) ; ● : nouvelle, pas encore ouverte."><h2>Mes missions de la semaine</h2>
   <div class="pm-week" data-weekbar></div>
   <div id="pmList" class="pm-list"><p class="pm-empty">Chargement…</p></div>
+  <div id="pmTri"></div>
   <p class="small"><label><input type="checkbox" id="pmAll"> afficher aussi les missions passées</label></p>
   <div class="pm-me"><a class="secondary" id="pmPilot" data-min-level="2" data-icon="headset" href="../settings/profil.html?base=identity" title="Trigramme, réseaux, langue : Paramètres › Mon profil">Pilote</a><a class="secondary" data-min-level="2" data-icon="plane" href="../settings/profil.html?base=equipment#eqTypes" title="Types de la flotte possédés et maîtrisés : Paramètres › Mon profil">Appareils maîtrisés</a><a class="secondary" data-min-level="2" data-icon="globe" href="../settings/profil.html?base=equipment#eqSims" title="Simulateurs installés : Paramètres › Mon profil">Simulateurs</a><span id="pmWhoNote" class="small"></span></div>
 </section>
@@ -1666,18 +1667,19 @@
 </div>
 </main>
 <script src="../../shared/kit.js?v=d74cff80"></script>
-<script src="../../shared/repository_nav.js?v=d0e3af67"></script>
+<script src="../../shared/repository_nav.js?v=9bc9d971"></script>
 <script src="mes_missions_i18n.js?v=ff059abb" defer></script>
 <script src="../../shared/dispos_editor.js?v=9e198a77"></script>
 <script src="../../shared/content_i18n.js?v=515ea16b"></script>
 <script src="../../AircraftDB/aircraft_db.js"></script><script src="../../shared/mission_core/vendor/js-yaml.min.js"></script><script src="../../shared/data_files.js?v=dcb47c6a" data-file="references/aircraft_fleet.js"></script>
 <script src="../../shared/mission_core/vocab.js?v=8c65f5c2"></script>
 <script src="../../shared/mission_estimate.js?v=e352037a"></script><script src="../../shared/mission_i18n.js?v=bfd45c20"></script><script src="../../shared/machine_translate.js?v=9e5fc37d"></script><script src="../../shared/mission_exercise.js?v=b68ac247"></script>
-<script src="../../shared/assignments.js?v=95fcb353"></script>
+<script src="../../shared/assignments.js?v=95fcb353"></script><script src="../../shared/pilot_today.js?v=c962ff09"></script>
 <script>
 (() => {
   'use strict';
   /** Élément de la page par son identifiant ; A : affectations (shared/assignments.js), K : kit commun. */
+  let autoDo = new URLSearchParams(location.search).get('do') || ''; // ?do=cr : CR commencé à l'ouverture du dossier
   const $ = id => document.getElementById(id),
     A = window.MissionAssignments,
     K = window.RepositoryKit,
@@ -3357,6 +3359,11 @@
       </div>
       ${plis.length ? `<div data-part="plis"><h4>Plis et messages en vol</h4>${plis.map(pliHtml).join('')}</div>` : ''}`;
     $('pmDetail').querySelectorAll('[data-go]').forEach(b => b.onclick = () => go(b.dataset.go, a, y, pts, dist));
+    // ?do=cr (Aujourd'hui, Nouveau compte rendu) : le CR commence dès l'ouverture du dossier, une seule fois
+    if (autoDo === 'cr' && y.mission) {
+      autoDo = '';
+      go('cr', a, y, pts, dist);
+    }
     // cartes (fournies, jointes aux plis) : visionneuse commune (croix, Échap), pas d'onglet à part ; écoute posée une
     // fois, en capture (avant le clic de page qui tournerait la page)
     if (!$('pmDetail').dataset.viewer) {
@@ -3804,8 +3811,34 @@
       gridLoad();
     }
   });
-  keepAll().then(load).then(gridLoad);
+  /** ?mission=… d'une autre semaine (Aujourd'hui, Nouveau compte rendu) : semaine de la mission affichée, missions
+   *  passées montrées si elle est passée. */
+  const wantedWeek = () => {
+    const id = new URLSearchParams(location.search).get('mission');
+    const a = id && A.mine(A._all, {
+      all: true
+    }).find(x => x.mission === id);
+    if (!a || !A.when(a)) return;
+    if (A.when(a) < Date.now() - 6 * 36e5 && !$('pmAll').checked) {
+      view.all = true;
+      $('pmAll').checked = true;
+      saveView();
+    }
+    if (A.weekKey(A.when(a)) !== week) {
+      week = A.weekKey(A.when(a));
+      weekBars();
+    }
+  };
+  // trigramme manquant : saisi sur place, sous la liste (shared/pilot_today.js) ; la page se relit ensuite
+  window.PilotToday?.mount($('pmTri'), 'trigram', {
+    onSave: () => {
+      who();
+      load();
+      gridLoad();
+    }
+  });
+  keepAll().then(wantedWeek).then(load).then(gridLoad);
 })();
 </script>
-<script src="../../shared/app_framework.js?v=90445249"></script>
+<script src="../../shared/app_framework.js?v=0ee38931"></script>
 </body></html>
