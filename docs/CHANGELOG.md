@@ -12,6 +12,12 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Corrigé
 
+- **Déplacement des blocs (poignée ↕)** : le bloc visé s'illumine dans tous les designs (contour d'accent et trait
+  d'insertion ; l'ancienne ombre était recouverte par les designs à matières, visible en Métro seulement) ; posé sur la
+  moitié haute d'un bloc, le bloc déplacé va avant lui, sur la moitié basse après (dernière position possible) ; dépôt
+  dans une autre colonne ; la page défile pendant le glisser près du bas de la fenêtre et sous l'en-tête fixe (monter un
+  bloc tout en haut d'une longue page). Disposition mémorisée sous une clé unique par conteneur (`layout`) ; les
+  dispositions déjà mémorisées (`order`) restent lues.
 - **« Suite lancée depuis …, dossier déclaré …/planner/ » alors que le dossier de l'application est le bon** : le
   dossier des profils de performance (et celui de la sauvegarde locale) était gardé d'une installation à l'autre, pour
   respecter un choix personnel — y compris quand il venait d'une autre copie de la suite. À la déduction des dossiers,

@@ -21,6 +21,25 @@
     },
     /** Mémorise la disposition des blocs de la page (localStorage, clé key()). */
     write = x => localStorage.setItem(key(), JSON.stringify(x));
+  // Bloc en cours de déplacement (poignée ↕), commun à tous les appels d'init (blocs montés plus tard compris) ; null sinon.
+  let movingBlock = null;
+  /** Côté de dépôt sur le bloc el : « before » sur sa moitié haute, « after » sur sa moitié basse (dernière position). */
+  const dropSide = (el, e) => {
+    const r = el.getBoundingClientRect();
+    return e.clientY > r.top + r.height / 2 ? "after" : "before";
+  };
+  const clearDrop = () => document.querySelectorAll(".repo-block-drop-before,.repo-block-drop-after").forEach(x => x.classList
+    .remove("repo-block-drop-before", "repo-block-drop-after"));
+  // glisser d'un bloc vers le haut ou le bas d'une longue page : le navigateur ne fait défiler qu'au bord de la fenêtre,
+  // masqué en haut par l'en-tête fixe ; la page défile près du bas de la fenêtre et juste sous l'en-tête
+  document.addEventListener("dragover", e => {
+    if (!movingBlock) return;
+    const top = Math.max(0, document.querySelector(".repo-header")?.getBoundingClientRect().bottom || 0),
+      zone = 70,
+      y = e.clientY;
+    if (y < top + zone) window.scrollBy(0, -Math.ceil((top + zone - y) / 3));
+    else if (y > innerHeight - zone) window.scrollBy(0, Math.ceil((y - innerHeight + zone) / 3));
+  });
 
   /** Transforme les sections de la page en blocs : en-tête avec poignée de déplacement ↕ et bouton Masquer / Afficher, glisser-déposer entre blocs frères, disposition mémorisée par page et réappliquée ; data-default-hidden="1" : bloc masqué tant que l'utilisateur ne l'a pas affiché. */
   /** Blocs du framework dans root (par défaut le contenu principal de la page : main, .wrap) ; root permet d'en
@@ -34,7 +53,6 @@
     const blocks = [...main.querySelectorAll("section,.panel,.format-note,.analysis-dock,.trend-card")].filter(el => !el.closest(
       "section") || el.matches("section,.panel"));
     const parents = new Map();
-    let movingBlock = null; // bloc en cours de déplacement (poignée ↕), sinon null
     blocks.forEach((el, i) => {
       const id = el.dataset.blockId || el.id || `block-${i+1}`;
       el.dataset.blockId = id;
@@ -90,30 +108,52 @@
         movingBlock = null;
         el.draggable = false;
         el.classList.remove("repo-block-dragging");
-        document.querySelectorAll(".repo-block-drop-before").forEach(x => x.classList.remove("repo-block-drop-before"));
-        for (const p of parents.keys()) state.order[parentKey(p)] = blockChildren(p).map(x => x.dataset.blockId);
+        clearDrop();
+        // ordre de chaque conteneur (colonnes comprises : un bloc a pu passer de l'une à l'autre), sous une clé unique
+        state.layout ??= {};
+        for (const p of parents.keys()) state.layout[containerKey(p, main)] = blockChildren(p).map(x => x.dataset.blockId);
         write(state)
       };
+      // cible : le bloc survolé s'illumine, trait avant ou après lui selon la moitié survolée ; dépôt possible dans une
+      // autre colonne (autre conteneur), jamais dans le bloc déplacé lui-même ni dans un bloc qu'il contient
+      const target = e => movingBlock && movingBlock !== el && !movingBlock.contains(el) && e.target.closest(".repo-block") === el;
       el.ondragover = e => {
-        if (!movingBlock) return;
+        if (!target(e)) return;
         e.preventDefault();
-        el.classList.add("repo-block-drop-before")
+        const side = dropSide(el, e);
+        if (!el.classList.contains(`repo-block-drop-${side}`)) {
+          clearDrop();
+          el.classList.add(`repo-block-drop-${side}`);
+        }
       };
-      el.ondragleave = () => el.classList.remove("repo-block-drop-before");
+      el.ondragleave = e => {
+        if (!el.contains(e.relatedTarget)) el.classList.remove("repo-block-drop-before", "repo-block-drop-after");
+      };
       el.ondrop = e => {
-        if (!movingBlock) return;
+        if (!target(e)) return;
         e.preventDefault();
-        if (movingBlock !== el && movingBlock.parentElement === el.parentElement) el.parentElement.insertBefore(movingBlock, el);
-        el.classList.remove("repo-block-drop-before")
+        el.parentElement.insertBefore(movingBlock, dropSide(el, e) === "after" ? el.nextSibling : el);
+        clearDrop();
       };
     });
-    for (const p of parents.keys()) {
-      const map = new Map(blockChildren(p).map(x => [x.dataset.blockId, x]));
-      (state.order[parentKey(p)] || []).forEach(id => {
-        const e = map.get(id);
-        if (e) p.append(e)
-      })
-    }
+    // ordre mémorisé : state.layout (clé unique du conteneur : chemin depuis la page) — un bloc rangé dans une autre
+    // colonne y retourne ; à défaut, ancien state.order (balise et rang, pas unique) : chaque conteneur ne reprend que
+    // ses propres blocs. Clés calculées avant de déplacer quoi que ce soit.
+    const keyed = [...parents.keys()].map(p => [p, containerKey(p, main)]);
+    if (state.layout) {
+      const all = new Map(blocks.map(x => [x.dataset.blockId, x]));
+      for (const [p, k] of keyed)(state.layout[k] || []).forEach(id => {
+        const e = all.get(id);
+        if (e && e !== p && !e.contains(p)) p.append(e)
+      });
+    } else
+      for (const p of parents.keys()) {
+        const map = new Map(blockChildren(p).map(x => [x.dataset.blockId, x]));
+        (state.order[parentKey(p)] || []).forEach(id => {
+          const e = map.get(id);
+          if (e) p.append(e)
+        })
+      }
   }
 
   /** Blocs (.repo-block) enfants directs d'un élément. */
@@ -121,9 +161,28 @@
     return Array.from(parent?.children || []).filter(x => x?.classList?.contains("repo-block"))
   }
 
-  /** Identifiant stable d'un conteneur de blocs (balise et rang), pour mémoriser l'ordre de ses blocs. */
+  /** Ancienne clé d'un conteneur de blocs (balise et rang parmi ses frères) : pas unique, lue pour les dispositions déjà
+   *  mémorisées. */
   function parentKey(p) {
     return `${p.tagName}:${[...p.parentElement?.children||[]].indexOf(p)}`
+  }
+  /** Clé unique d'un conteneur de blocs : chemin depuis la racine des blocs, insensible aux blocs déplacés — id quand il
+   *  y en a, identifiant de bloc pour un bloc du chemin, sinon balise et rang parmi les éléments qui ne sont pas des blocs. */
+  function containerKey(p, root) {
+    const parts = [];
+    for (let e = p; e && e !== root && e !== document.body; e = e.parentElement) {
+      if (e.id) {
+        parts.unshift(`#${e.id}`);
+        break;
+      }
+      if (e.classList.contains("repo-block") && e.dataset.blockId) {
+        parts.unshift(`@${e.dataset.blockId}`);
+        continue;
+      }
+      const sib = [...e.parentElement?.children || []].filter(x => !x.classList.contains("repo-block"));
+      parts.unshift(`${e.tagName}:${sib.indexOf(e)}`);
+    }
+    return parts.join(">") || "root";
   }
 
   /** Pied de page commun : version et date de publication (repository_tree.release), liens du dépôt. */

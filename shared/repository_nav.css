@@ -896,3 +896,31 @@ html[data-sidenav-show="label"] .repo-sidenav-item:not(#imp) {
   cursor: help;
   user-select: none
 }
+
+/* Déplacement des blocs (poignée ↕) : bloc visé illuminé et trait d'insertion avant ou après lui, dans tous les designs
+   (les designs à matières posent leurs ombres sur les blocs : contour et trait hors couche, deux #imp) */
+.repo-block.repo-block-drop-before:not(#imp):not(#imp),
+.repo-block.repo-block-drop-after:not(#imp):not(#imp) {
+  outline: 3px solid var(--repo-accent, #2563eb);
+  outline-offset: 3px;
+  filter: brightness(1.06) saturate(1.1)
+}
+.repo-block.repo-block-drop-before:not(#imp):not(#imp) {
+  border-top-color: var(--repo-accent, #2563eb)
+}
+.repo-block.repo-block-drop-before::before,
+.repo-block.repo-block-drop-after::after {
+  content: "";
+  display: block;
+  height: 5px;
+  margin: -2px 0 6px;
+  border-radius: 3px;
+  background: var(--repo-accent, #2563eb);
+  box-shadow: 0 0 10px var(--repo-accent, #2563eb)
+}
+.repo-block.repo-block-drop-after::after {
+  margin: 6px 0 -2px
+}
+.repo-block.repo-block-dragging:not(#imp) {
+  opacity: .45
+}
