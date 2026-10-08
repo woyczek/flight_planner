@@ -61,7 +61,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 - **Carte « Accès au Centre » remise en ordre** (Centre verrouillé) : champ du mot de passe, puis bouton « Activer le
   Centre » avec « Mot de passe : DEFA » sur la même ligne (premier lancement compris) ; texte d'introduction à jour (le
   mot de passe vient des données, seule l'activation reste dans le navigateur), traduit en allemand et en espagnol.
-
+- **Textes du Centre traduits à la source** (règle du CLAUDE.md) : carte « Accès au Centre » et « Mode et accès »,
+  mot de passe affiché au premier lancement et message de confirmation du dépôt distant passent par `K.t` dans les
+  quatre langues ; leurs entrées des tables de traduction après coup (`data_admin_i18n.js`,
+  `premier_lancement_i18n.js`) sont retirées ; textes écrits seulement s'ils changent.
 
 ## [4.11.0] — 2026-10-08
 

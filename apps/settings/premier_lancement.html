@@ -340,8 +340,8 @@
     <p class="pl-hint">Réservé aux administrateurs du {SOG} : les pilotes passent cette étape.</p>
     <div class="pl-card" id="plCentreLock"><h3>Activer le Centre</h3>
       <div class="pl-form"><label for="plCpcoPass">Mot de passe du Centre</label><input type="password" id="plCpcoPass" autocomplete="off"></div>
-      <div class="pl-row"><button type="button" class="primary" id="plCpcoOn">Activer le Centre</button><span>Mot de passe : <b id="plCpcoShown"></b></span><span class="pl-msg" id="plCpcoMsg"></span></div>
-      <p class="pl-hint"><span>partagé avec les données (data/config/centre.json), modifiable dans Paramètres › Centre une fois le Centre activé. Verrou d’usage, pas une protection.</span></p>
+      <div class="pl-row"><button type="button" class="primary" id="plCpcoOn">Activer le Centre</button><span><span id="plCpcoPwdLabel"></span> <b id="plCpcoShown"></b></span><span class="pl-msg" id="plCpcoMsg"></span></div>
+      <p class="pl-hint" id="plCpcoHint"></p>
     </div>
     <div class="pl-grid" id="plCentreOn" hidden>
       <div class="pl-card"><h3>Flotte et journal des vols</h3>
@@ -374,7 +374,7 @@
 </main>
 <script src="../../shared/kit.js?v=d74cff80"></script>
 <script src="../../shared/repository_nav.js?v=b7fded24"></script>
-<script src="../../shared/content_i18n.js?v=515ea16b"></script><script src="premier_lancement_i18n.js?v=cd98a82b"></script>
+<script src="../../shared/content_i18n.js?v=515ea16b"></script><script src="premier_lancement_i18n.js?v=3c28317d"></script>
 <!-- blocs « Données aéronautiques » et « Types d'aéronefs » (shared/maintenance_page.js) et leurs dépendances -->
 <script src="../../AircraftDB/aircraft_db.js"></script><script src="../../shared/data_files.js?v=dcb47c6a" data-file="references/aircraft_fleet.js"></script>
 <script src="../../shared/mission_core/vendor/js-yaml.min.js"></script>
@@ -691,7 +691,11 @@
     if (!url) return msg('plSyncMsg', 'Adresse du dépôt à préciser (git@… ou https://…).', 'err');
     $('plRepoCheck').disabled = $('plRepoSave').disabled = true;
     msg('plSyncMsg', save ?
-      'Enregistrement, puis vérification… Autre dépôt que l’actuel : confirmez dans la fenêtre que le lanceur ouvre sur l’ordinateur.' :
+      L('Enregistrement, puis vérification… Autre dépôt que l’actuel : confirmez dans la fenêtre que le lanceur ouvre sur l’ordinateur.',
+        'Saving, then checking… Another repository than the current one: confirm in the window the launcher opens on the computer.',
+        'Speichern, dann Prüfung… Anderes Repository als das aktuelle: im Fenster bestätigen, das der Starter auf dem Computer öffnet.',
+        'Guardando y comprobando… Otro repositorio distinto del actual: confirme en la ventana que el lanzador abre en el equipo.'
+      ) :
       'Vérification… (jusqu’à 30 s)');
     try {
       const r = await post('sync-remote', {
@@ -1013,7 +1017,18 @@
     const onC = cpcoOn();
     // mot de passe du Centre affiché (verrou d'usage, data/config/centre.json) et mode pour le bilan
     window.RepositoryNav?.cpco?.config?.(true).then(c => {
-      $('plCpcoShown').textContent = c.motDePasse || '';
+      // textes traduits à la source (K.t), écrits seulement s'ils changent
+      const put = (id, v) => {
+        if ($(id).textContent !== v) $(id).textContent = v;
+      };
+      put('plCpcoPwdLabel', L('Mot de passe :', 'Password:', 'Passwort:', 'Contraseña:'));
+      put('plCpcoShown', c.motDePasse || '');
+      put('plCpcoHint', L(
+        'Partagé avec les données (data/config/centre.json), modifiable dans Paramètres › Centre une fois le Centre activé. Verrou d’usage, pas une protection.',
+        'Shared with the data (data/config/centre.json), can be changed in Settings › Centre once the Centre is enabled. A usage lock, not a protection.',
+        'Mit den Daten geteilt (data/config/centre.json), in Einstellungen › Zentrum änderbar, sobald das Zentrum aktiviert ist. Eine Nutzungssperre, kein Schutz.',
+        'Compartida con los datos (data/config/centre.json), modificable en Ajustes › Centro una vez activado el Centro. Un bloqueo de uso, no una protección.'
+      ));
       if (S.centreMode !== c.mode) {
         S.centreMode = c.mode;
         checklist();
