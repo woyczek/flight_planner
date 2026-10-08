@@ -12,6 +12,11 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Corrigé
 
+- **« Suite lancée depuis …, dossier déclaré …/planner/ » alors que le dossier de l'application est le bon** : le
+  dossier des profils de performance (et celui de la sauvegarde locale) était gardé d'une installation à l'autre, pour
+  respecter un choix personnel — y compris quand il venait d'une autre copie de la suite. À la déduction des dossiers,
+  un dossier gardé qui est celui d'une autre copie (non confirmée) est désormais remplacé par celui de `data/` ; le
+  premier lancement refait la déduction à l'ouverture.
 - **Habilitation du planning** : un compte connecté sans le rôle `admin_centre` pouvait, Centre ouvert en mode develop,
   inscrire des zones comme demandées, modifier les DLO (objectifs) et, au Planning ODV, ajouter, retirer ou importer des
   sessions ATC, écrire des préférences dans les fiches et affecter des pilotes. Tableau et Planning ODV : écriture

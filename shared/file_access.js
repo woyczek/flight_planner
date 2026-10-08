@@ -350,7 +350,13 @@
   } = {}) {
     const done = [];
     for (const [key, sub] of Object.entries(DERIVED)) {
-      if (!ALWAYS.includes(key) && await get(key)) continue;
+      // performances, sauvegarde locale : un dossier choisi à part est gardé — sauf s'il est celui d'une autre copie de
+      // la suite, non confirmé (hérité d'une ancienne installation : « …/planner/ » annoncé « autre copie » alors que
+      // le dossier de l'application est le bon) ; il est alors remplacé par celui de data/
+      if (!ALWAYS.includes(key)) {
+        const cur = await get(key);
+        if (cur && await otherState(key, cur).catch(() => null) !== 'other') continue;
+      }
       try {
         await set(key, await dataHandle.getDirectoryHandle(sub, {
           create: true
