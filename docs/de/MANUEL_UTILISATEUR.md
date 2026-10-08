@@ -25,7 +25,7 @@ Was sie zeigt, hängt von Ihrer **Nutzungsstufe** ab (Mein Profil › „Nutzung
 |---|---|---|
 | „Meine Missionen“ | Vom Zentrum zugewiesene Missionen und Verfügbarkeit (roter Punkt: ungelesene Missionen) | 1 |
 | „Bericht“ | Eingabe eines Missionsberichts | 1 |
-| „Planung“ | Befehlsplanung der Woche (Einsatztafel, ohne Zentrum schreibgeschützt); ODV-Planung als Registerkarte ab Stufe 2 | 1 |
+| „Planung“ | Befehlsplanung der Woche (Einsatztafel, auf Stufe 1 oder ohne Zentrum schreibgeschützt); auf Stufe 4 gemeinsame Zeitfenster und wahrscheinliche Missionen der ODV-Seite | 1 |
 | „Missionen“ | Missionsgenerator und Register, als Registerkarten; Kartenstudio auf Stufe 4 | 3 |
 | „Werkzeuge“ | Flugkarten, Kraftstoff, Landungen, Missionsanalyse (in Mein Profil angehakte Werkzeuge, auf Stufe 4 alle) | 1 bis 4 |
 

@@ -25,7 +25,7 @@ Lo que muestra depende de su **nivel de uso** (Mi perfil › «Nivel de uso»): 
 |---|---|---|
 | «Mis misiones» | Misiones asignadas por el Centro y disponibilidad (pastilla roja: misiones no leídas) | 1 |
 | «Informe» | Introducción de un informe de misión | 1 |
-| «Planificación» | Planificación de órdenes de la semana (Tablero, en solo lectura sin el Centro); planificación ODV en pestaña desde el nivel 2 | 1 |
+| «Planificación» | Planificación de órdenes de la semana (Tablero, en solo lectura en el nivel 1 o sin el Centro); en el nivel 4, franjas comunes y misiones probables de la página ODV | 1 |
 | «Misiones» | Generador de misiones y registro, en pestañas; estudio cartográfico en el nivel 4 | 3 |
 | «Herramientas» | Mapas de vuelo, combustible, aterrizajes, análisis de misiones (herramientas marcadas en Mi perfil, todas en el nivel 4) | 1 a 4 |
 

@@ -208,6 +208,7 @@
   async function load(week, {
     fresh = false
   } = {}) {
+    if (week !== S.week) S.undo = []; // l'annulation ne traverse pas les semaines
     S.week = week;
     S.cfg = await O().loadConfig({
       fresh
@@ -605,13 +606,35 @@
   };
   /** Applique une modification fn(doc) de l'ordre de vol puis enchaîne : réémission des ordres de mission des vols
    *  déplacés, convoyages, DLO, demandes de zones, conflits, rendu, zones, enregistrement. Refusée en lecture seule. */
-  function mutate(fn) {
+  // annulation : dix états précédents de l'ordre de vol (copies), repris par « ↶ Annuler » ou Ctrl+Z ; vidée au
+  // changement de semaine
+  const UNDO_MAX = 10;
+  S.undo = [];
+  /** Revient à l'état d'avant la dernière modification (réémissions, convoyages, conflits et enregistrement suivent). */
+  function undo() {
+    if (!S.editable || !S.undo.length) return;
+    const prev = S.undo.pop();
+    mutate(doc => {
+      for (const k of Object.keys(doc)) delete doc[k];
+      Object.assign(doc, prev);
+    }, {
+      undo: true
+    });
+  }
+
+  function mutate(fn, {
+    undo = false
+  } = {}) {
     if (!S.editable) return notify(t(L4('Lecture seule : déverrouillez le Centre (et connectez-vous en admin_centre en mode production).',
       'Read only: unlock the Centre (and log in as admin_centre in production mode).',
       'Nur lesen: Zentrum entsperren (im Produktionsmodus als admin_centre anmelden).',
       'Solo lectura: desbloquee el Centro (y conéctese como admin_centre en modo producción).')), 'warn');
     const slot = v => `${v.date} ${v.debut} ${v.duree}`;
     const before = new Map(S.doc.elements.filter(x => x.type === 'vol' && x.mission && !x.convoyage).map(v => [v.id, slot(v)]));
+    if (!undo) {
+      S.undo.push(JSON.parse(JSON.stringify(S.doc)));
+      if (S.undo.length > UNDO_MAX) S.undo.shift();
+    }
     fn(S.doc);
     // vol de mission déplacé (jour, heure, durée) : son ordre de mission est réémis d'office s'il en a un
     for (const v of S.doc.elements.filter(x => x.type === 'vol' && x.mission && !x.convoyage && before.has(x.id) && before.get(x.id) !==
@@ -846,7 +869,7 @@
     if (list?.missing) return void(host.innerHTML = `<p class="mut">${esc(t(L4('Base aéronautique absente : les zones traversées par les missions ne peuvent pas être calculées.', 'Aeronautical database missing: the areas crossed by the missions cannot be computed.', 'Luftfahrtdatenbank fehlt: die von den Missionen durchflogenen Gebiete können nicht berechnet werden.', 'Base aeronáutica ausente: no se pueden calcular las zonas que atraviesan las misiones.')))} <a href="${esc(list.url || '#')}">${esc(t(L4('Données aéronautiques', 'Aeronautical data', 'Luftfahrtdaten', 'Datos aeronáuticos')))}</a></p>`);
     S.requests = list;
     const todo = list.filter(r => r.etat === 'absente' && r.zone);
-    host.innerHTML = list.length ? `<table class="odvo-wk"><thead><tr><th>${esc(t(L4('Jour', 'Day', 'Tag', 'Día')))}</th><th>${esc(t(L4('Zone', 'Area', 'Gebiet', 'Zona')))}</th><th>${esc(t(L4('Réseau', 'Network', 'Netzwerk', 'Red')))}</th><th>${esc(t(L4('Créneau (z)', 'Slot (z)', 'Zeitfenster (z)', 'Franja (z)')))}</th><th>${esc(t(L4('Vols', 'Flights', 'Flüge', 'Vuelos')))}</th><th>${esc(t(L4('État', 'Status', 'Status', 'Estado')))}</th><th></th></tr></thead><tbody>${list.map((r, i) => `<tr><td>${esc(r.date.slice(8, 10))}/${esc(r.date.slice(5, 7))}</td><td>${esc(r.nom)}</td><td>${esc(r.reseau || '—')}</td><td>${esc(hhmm(r.debut))}–${esc(hhmm(Math.min(1440, r.fin)))}</td><td>${esc(r.vols.join(', '))}</td><td><span class="odvo-z odvo-z-${esc(r.etat)}">${esc(t(TX.zoneEtats[r.etat] || [r.etat, r.etat, r.etat, r.etat]))}</span></td><td>${r.etat === 'absente' && r.zone && S.editable ? `<button type="button" data-req="${i}">${esc(t(L4('Inscrire comme demandée', 'Record as requested', 'Als beantragt eintragen', 'Inscribir como solicitada')))}</button>` : r.etat === 'interdite' ? esc(t(L4('zone P : à éviter', 'P area: avoid', 'P-Gebiet: meiden', 'zona P: evitar'))) : ''}</td></tr>`).join('')}</tbody></table>
+    host.innerHTML = list.length ? `<table class="odvo-wk"><thead><tr><th>${esc(t(L4('Jour', 'Day', 'Tag', 'Día')))}</th><th>${esc(t(L4('Zone', 'Area', 'Gebiet', 'Zona')))}</th><th>${esc(t(L4('Réseau', 'Network', 'Netzwerk', 'Red')))}</th><th>${esc(t(L4('Créneau (z)', 'Slot (z)', 'Zeitfenster (z)', 'Franja (z)')))}</th><th>${esc(t(L4('Vols', 'Flights', 'Flüge', 'Vuelos')))}</th><th>${esc(t(L4('État', 'Status', 'Status', 'Estado')))}</th><th></th></tr></thead><tbody>${list.map((r, i) => `<tr><td>${esc(r.date.slice(8, 10))}/${esc(r.date.slice(5, 7))}</td><td>${esc(r.nom)}</td><td>${esc(r.reseau || '—')}</td><td>${esc(hhmm(r.debut))}–${esc(hhmm(Math.min(1440, r.fin)))}</td><td>${esc(r.vols.join(', '))}</td><td><span class="odvo-z odvo-z-${esc(r.etat)}">${esc(t(TX.zoneEtats[r.etat] || [r.etat, r.etat, r.etat, r.etat]))}</span></td><td>${r.etat === 'absente' && r.zone && S.editable ? `<button type="button" data-req="${i}">${esc(t(L4('Inscrire comme demandée', 'Record as requested', 'Als beantragt eintragen', 'Inscribir como solicitada')))}</button>` : r.etat === 'demandee' && r.zone && S.editable ? `<button type="button" data-unreq="${i}">${esc(t(L4('Retirer la demande', 'Withdraw the request', 'Antrag zurückziehen', 'Retirar la solicitud')))}</button>` : r.etat === 'interdite' ? esc(t(L4('zone P : à éviter', 'P area: avoid', 'P-Gebiet: meiden', 'zona P: evitar'))) : ''}</td></tr>`).join('')}</tbody></table>
       <div class="row">${todo.length && S.editable ? `<button type="button" data-req="all">${esc(tf(L4('Tout inscrire comme demandé ({n})', 'Record all as requested ({n})', 'Alle als beantragt eintragen ({n})', 'Inscribir todo como solicitado ({n})'), {
         n: todo.length
       }))}</button>` : ''}<button type="button" data-req="copy">${esc(t(L4('Copier la liste', 'Copy the list', 'Liste kopieren', 'Copiar la lista')))}</button><a href="${IVAO_REQUESTS}" target="_blank" rel="noopener">${esc(t(L4('Demandes d’activation IVAO', 'IVAO activation requests', 'IVAO-Aktivierungsanträge', 'Solicitudes de activación IVAO')))}</a></div>` : `<p class="mut">${esc(t(L4('Aucune zone à demander : les zones des vols de mission de la semaine sont actives sur leur réseau.', 'No area to request: the areas of the week’s mission flights are active on their network.', 'Kein Gebiet zu beantragen: die Gebiete der Missionsflüge der Woche sind in ihrem Netzwerk aktiv.', 'Ninguna zona que solicitar: las zonas de los vuelos de misión de la semana están activas en su red.')))}</p>`;
@@ -875,6 +898,25 @@
       '{n} Antrag/Anträge in den Aktivierungen eingetragen: auf der Seite des Netzwerks stellen.',
       '{n} solicitud(es) inscrita(s) en las activaciones: hay que hacerla(s) en el sitio de la red.'), {
       n: rows.length
+    }), 'info');
+    activations?.refresh?.();
+    refreshAirspace();
+    renderRequests();
+  }
+  /** Retire des activations de la semaine la demande (état « demandee ») de la zone r ce jour-là, sur son réseau. */
+  async function withdrawRequest(r) {
+    if (!S.editable) return;
+    const A = AS();
+    const list = await A.activations(S.week).catch(() => []);
+    const keep = list.filter(x => !(x.etat === 'demandee' && x.zone === r.zone && x.date === r.date && (!r.reseau || !x.reseau || x
+      .reseau === r.reseau)));
+    if (keep.length === list.length) return;
+    const res = await A.saveActivations(S.week, keep).catch(err => ({
+      error: err
+    }));
+    if (res?.error && res.where !== 'local') return notify(String(res.error?.message || res.error), 'err');
+    notify(tf(L4('Demande retirée : {z}.', 'Request withdrawn: {z}.', 'Antrag zurückgezogen: {z}.', 'Solicitud retirada: {z}.'), {
+      z: r.nom || r.zone
     }), 'info');
     activations?.refresh?.();
     refreshAirspace();
@@ -910,11 +952,15 @@
   let expertObs = null;
   /** Montre ou masque le bloc Expert ; charge la page ODV réduite à ses blocs à la première ouverture. */
   function renderExpert() {
-    const sec = document.querySelector('[data-block-id="expert"]'),
+    const sec = $('#odvoExpert'),
       fr = sec?.querySelector('iframe');
     if (!sec || !fr) return;
     const on = S.editable && (window.RepositoryNav?.levels?.get?.() || 1) >= 4;
     if (sec.style.display !== (on ? '' : 'none')) sec.style.display = on ? '' : 'none';
+    const link = sec.querySelector('[data-odv-link]'),
+      lt = t(L4('Page ODV complète : classeur, grille, export…', 'Full ODV page: workbook, grid, export…',
+        'Vollständige ODV-Seite: Arbeitsmappe, Raster, Export…', 'Página ODV completa: libro, cuadrícula, exportación…'));
+    if (link && link.textContent !== lt) link.textContent = lt;
     if (!on || fr.src) return;
     fr.addEventListener('load', () => {
       const d = fr.contentDocument;
@@ -977,6 +1023,7 @@
         <span class="odvo-sep"></span>
         <label>${esc(t(L4('Permanence', 'Duty officer', 'Dienst', 'Guardia')))} <select data-act="perm"${S.editable ? '' : ' disabled'}><option value="">—</option>${S.members.map(m => `<option${m.tri === perm ? ' selected' : ''}>${esc(m.tri)}</option>`).join('')}</select></label>
         <button type="button" data-act="brief" title="${esc(t(L4('Plein écran (F), jours : ← →', 'Full screen (F), days: ← →', 'Vollbild (F), Tage: ← →', 'Pantalla completa (F), días: ← →')))}">${esc(t(L4('Briefing', 'Briefing', 'Briefing', 'Briefing')))}</button>
+        ${S.editable ? `<button type="button" data-act="undo"${S.undo.length ? '' : ' disabled'} title="${esc(t(L4('Annuler la dernière modification (Ctrl+Z) ; dix au plus', 'Undo the last change (Ctrl+Z); ten at most', 'Letzte Änderung rückgängig (Strg+Z); höchstens zehn', 'Deshacer el último cambio (Ctrl+Z); diez como máximo')))}">↶ ${esc(t(L4('Annuler', 'Undo', 'Rückgängig', 'Deshacer')))}${S.undo.length ? ` (${S.undo.length})` : ''}</button>` : ''}
         <span class="mut" id="odvoStatus">${S.editable ? '' : esc(t(L4('Lecture seule', 'Read only', 'Nur lesen', 'Solo lectura')))}</span>
       </div>
       <div class="row odvo-days">${ds.map((d, i) => {
@@ -3078,6 +3125,7 @@
       if (act === 'prev' || act === 'next') return gotoWeek(SD().addWeek(S.week, act === 'prev' ? -1 : 1));
       if (act === 'today') return gotoWeek(SD().weekId(Date.now()), todayIndex());
       if (act === 'brief') return briefing();
+      if (act === 'undo') return undo();
     });
     $('#odvoBar').addEventListener('change', ev => {
       if (ev.target.dataset.act === 'perm') mutate(doc => (doc.permanence = ev.target.value));
@@ -3106,6 +3154,8 @@
       }
     });
     $('#odvoRequests')?.addEventListener('click', ev => {
+      const u = ev.target.closest('[data-unreq]');
+      if (u && S.requests?.[+u.dataset.unreq]) return withdrawRequest(S.requests[+u.dataset.unreq]);
       const b = ev.target.closest('[data-req]');
       if (!b || !S.requests) return;
       const v = b.dataset.req;
@@ -3121,6 +3171,10 @@
     });
     document.addEventListener('keydown', ev => {
       if (ev.target.closest('input,textarea,select,dialog')) return;
+      if ((ev.ctrlKey || ev.metaKey) && !ev.shiftKey && (ev.key === 'z' || ev.key === 'Z')) {
+        ev.preventDefault();
+        return undo();
+      }
       if (ev.key === 'f' || ev.key === 'F') briefing();
       if (document.fullscreenElement && (ev.key === 'ArrowLeft' || ev.key === 'ArrowRight')) {
         S.day = Math.max(0, Math.min(dates().length - 1, S.day + (ev.key === 'ArrowLeft' ? -1 : 1)));

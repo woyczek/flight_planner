@@ -149,8 +149,7 @@ window.REPOSITORY_TREE={
       {path:"apps/pilot/mes_missions.html",label:["Mes missions","My missions","Meine Missionen","Mis misiones"]},
       {path:"apps/pilot/disponibilites.html",label:["Mes disponibilités","My availability","Meine Verfügbarkeit","Mi disponibilidad"]}]},
     {id:"planning",pages:[
-      {path:"apps/cpco/odv_orders.html",label:["Tableau","Board","Einsatztafel","Tablero"]},
-      {path:"apps/cpco/odv_planning.html",label:["Planning ODV","ODV planning","ODV-Planung","Planificación ODV"]}]},
+      {path:"apps/cpco/odv_orders.html",label:["Tableau","Board","Einsatztafel","Tablero"]}]},
     {id:"missions",pages:[
       {path:"apps/cpco/mission_editor.html",label:["Générateur","Generator","Generator","Generador"]},
       {path:"apps/cpco/mission_registry.html",label:["Registre","Registry","Register","Registro"]},

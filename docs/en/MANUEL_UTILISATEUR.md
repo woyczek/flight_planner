@@ -25,7 +25,7 @@ What it shows depends on your **usage level** (My profile › “Usage level”)
 |---|---|---|
 | “My missions” | Missions assigned by the Centre and availability (red badge: unread missions) | 1 |
 | “Report” | Entry of a mission report | 1 |
-| “Schedule” | Weekly order schedule (Board, read-only without the Centre); ODV planning as a tab from level 2 | 1 |
+| “Schedule” | Weekly order schedule (Board, read-only at level 1 or without the Centre); at level 4, common slots and likely missions of the ODV page | 1 |
 | “Missions” | Mission generator and registry, as tabs; map studio at level 4 | 3 |
 | “Tools” | Flight maps, fuel, landings, mission analysis (tools ticked in My profile, all at level 4) | 1 to 4 |
 

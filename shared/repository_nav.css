@@ -654,6 +654,19 @@
   html[data-help-frame] :is(.repo-sidenav, body > header.repo-header) {
     display: none !important
   }
+  /* page montrée dans un bloc d'une autre page (cadre « repo-embed ») : ni onglets ni pied, fond de la page hôte */
+  html[data-embed-frame] :is(.repo-tabs, .repo-footer) {
+    display: none !important
+  }
+  html[data-embed-frame],
+  html[data-embed-frame] body {
+    background: transparent !important
+  }
+  html[data-embed-frame] main {
+    margin: 0 !important;
+    padding: 0 !important;
+    max-width: none !important
+  }
   dialog.repo-ap-dialog main.ap-page {
     max-width: none;
     margin: 0;

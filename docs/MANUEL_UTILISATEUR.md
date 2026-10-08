@@ -25,7 +25,7 @@ Ce qu'elle montre dépend de votre **niveau d'utilisation** (Mon profil › « N
 |---|---|---|
 | « Mes missions » | Missions affectées par le Centre et disponibilités (pastille rouge : missions non lues) | 1 |
 | « Compte rendu » | Saisie d'un compte rendu de mission | 1 |
-| « Planning » | Planning des ordres de la semaine (Tableau, en lecture seule sans le Centre) ; Planning ODV en onglet au niveau 2 | 1 |
+| « Planning » | Planning des ordres de la semaine (Tableau, en lecture seule au niveau 1 ou sans le Centre) ; au niveau 4, créneaux communs et missions probables de la page ODV | 1 |
 | « Missions » | Générateur de mission et registre, en onglets ; studio cartographique au niveau 4 | 3 |
 | « Outils » | Cartes de vol, carburant, atterrissages, analyse des missions (outils cochés dans Mon profil, tous au niveau 4) | 1 à 4 |
 
