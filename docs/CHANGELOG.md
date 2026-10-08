@@ -210,6 +210,10 @@ et signatures prêtes (pas encore branchées).
   quatre langues ; leurs entrées des tables de traduction après coup (`data_admin_i18n.js`,
   `premier_lancement_i18n.js`) sont retirées ; textes écrits seulement s'ils changent.
 
+### Livraison
+
+- Archive de livraison : `xplane-web-suite-5.0.0.zip` — SHA-256 `f3785cb40d5700f95bffb6b3bfff2da86df98d9b86628296a9b53353b20e8462` (code seul, hors dépôt : dossier `dist/`).
+
 ## [4.11.0] — 2026-10-08
 
 La suite s'installe avec un tutoriel illustré (captures, schémas des échanges et des identifiants, prérequis
