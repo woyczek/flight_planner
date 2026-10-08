@@ -1302,26 +1302,46 @@
       if (!rules.length) return;
       const fix = s => rules.reduce((x, [re, to]) => x.replace(re, to), s);
       const skip = el => !el || el.closest("script,style,textarea,input,code,pre,[contenteditable],[data-no-rebrand]");
+      // Écritures de ce renommage : un nœud n'est réécrit que si son texte change, jamais à l'identique (le filtre
+      // ci-dessous voit « CPCO » même quand le centre n'est pas renommé : réécrit tel quel, chaque écriture relançait
+      // l'observateur, à l'infini — pages de Paramètres figées) ; le texte qu'il vient d'écrire n'est pas retraité
+      // (nom réglé qui contient l'ancien), et un nœud réécrit plus de 20 fois par seconde n'est plus touché (renvoi
+      // sans fin avec la traduction).
+      const written = new WeakMap();
+      const setText = n => {
+        if (written.get(n)?.value === n.nodeValue) return;
+        const s = fix(n.nodeValue);
+        if (s === n.nodeValue) return;
+        const w = written.get(n),
+          now = performance.now(),
+          count = w && now - w.at < 1000 ? w.count + 1 : 1;
+        if (count > 20) return;
+        n.nodeValue = s;
+        written.set(n, {
+          value: s,
+          at: w && now - w.at < 1000 ? w.at : now,
+          count
+        });
+      };
       /** Corrige les nœuds texte et les attributs title sous root (hors zones exclues par skip). */
       const walk = root => {
         const w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
         for (let n;
           (n = w.nextNode());)
-          if (!skip(n.parentElement) && /SO Group|Special Operation|SOG|CPCO/.test(n.nodeValue)) {
-            const s = fix(n.nodeValue);
-            if (s !== n.nodeValue) n.nodeValue = s;
-          }
+          if (!skip(n.parentElement) && /SO Group|Special Operation|SOG|CPCO/.test(n.nodeValue)) setText(n);
         if (root.querySelectorAll)
           for (const el of root.querySelectorAll("[title]"))
-            if (/SO Group|Special Operation|SOG|CPCO/.test(el.title)) el.title = fix(el.title);
+            if (/SO Group|Special Operation|SOG|CPCO/.test(el.title)) {
+              const t = fix(el.title);
+              if (t !== el.title) el.title = t;
+            }
       };
       walk(document.body);
-      if (document.title) document.title = fix(document.title);
+      if (document.title && fix(document.title) !== document.title) document.title = fix(document.title);
       new MutationObserver(list => {
         for (const m of list)
           for (const n of m.type === "characterData" ? [m.target] : m.addedNodes) n.nodeType === 3 ? (!skip(n.parentElement) &&
-              /SO Group|Special Operation|SOG|CPCO/.test(n.nodeValue) && (n.nodeValue = fix(n.nodeValue))) : n.nodeType === 1 && !
-            skip(n) && walk(n);
+            /SO Group|Special Operation|SOG|CPCO/.test(n.nodeValue) && setText(n)) : n.nodeType === 1 && !skip(n) && walk(n);
       }).observe(document.body, {
         childList: true,
         characterData: true, // textes traduits ensuite (content_i18n.js)

@@ -52,6 +52,11 @@ d'une zone correct.
 
 ### Corrigé
 
+- **Pages de Paramètres figées (« page unresponsive »)** quand la compagnie réglée diffère de SO Group Virtual : le
+  renommage dans les pages (`repository_nav.js`) réécrivait à l'identique un texte contenant « CPCO » (centre non
+  renommé), et chaque écriture relançait son observateur, sans fin. Un texte n'est plus réécrit que s'il change, le texte
+  qu'il vient d'écrire n'est pas retraité (nom réglé contenant l'ancien), et un nœud réécrit plus de 20 fois par seconde
+  n'est plus touché.
 - **« Dossier des données : impossible de vérifier qu'il est celui de la suite servie »** après une installation neuve :
   le lanceur n'écrivait ses repères (`.defa_instance`) qu'au démarrage, avant que `data/` existe ; ils sont désormais
   écrits aussi après le jeu d'essai, le clone du dépôt ou l'archive des données (même jeton pour toute la vie du lanceur).
