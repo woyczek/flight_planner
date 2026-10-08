@@ -10,16 +10,15 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ## [Non publié]
 
-### Modifié
+## [4.11.0] — 2026-10-08
 
-- **Mot de passe du Centre dans les données** : le verrou d'usage du Centre ne compare plus le mot de passe à une
-  empreinte écrite dans le code. Il lit `data/config/centre.json` (`{ "motDePasse": "DEFA" }`), qui est partagé avec les
-  données. Le mot de passe est affiché à côté du bouton « Activer le Centre » (premier lancement, Paramètres › Centre).
-  Il se change dans Paramètres › Centre › « Mode et accès », une fois le Centre activé, et part au prochain
-  « Synchroniser ». Le jeu d'essai et le modèle des données livrent le fichier.
-- **Mode du Centre affiché** : mode autonome (mot de passe) dans le bilan du premier lancement et dans Paramètres ›
-  Centre. Le mode groupe (registre signé, accès par le rôle) est en conception
-  ([COMPTES_SIGNES.md](technique/COMPTES_SIGNES.md)).
+La suite s'installe avec un tutoriel illustré (captures, schémas des échanges et des identifiants, prérequis
+utilisateur et administrateur), en français et en anglais, suivi par le menu de langue de l'aide. Centre en mode
+autonome : mot de passe lu dans les données (`data/config/centre.json`, DEFA par défaut), affiché et modifiable ;
+conception des comptes et données signés par git. Mot de passe du site du SOG hors service (INOP). Premier lancement
+plus sûr (dossiers de `data/` déduits quand les données arrivent, accès à redonner, faux « autre copie » supprimé) ;
+contrôle des mises à jour juste (commit servi, filiation demandée au dépôt) ; titres traduits ; nombre de cases MORA
+d'une zone correct.
 
 ### Ajouté
 
@@ -35,6 +34,14 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Modifié
 
+- **Mot de passe du Centre dans les données** : le verrou d'usage du Centre ne compare plus le mot de passe à une
+  empreinte écrite dans le code. Il lit `data/config/centre.json` (`{ "motDePasse": "DEFA" }`), qui est partagé avec les
+  données. Le mot de passe est affiché à côté du bouton « Activer le Centre » (premier lancement, Paramètres › Centre).
+  Il se change dans Paramètres › Centre › « Mode et accès », une fois le Centre activé, et part au prochain
+  « Synchroniser ». Le jeu d'essai et le modèle des données livrent le fichier.
+- **Mode du Centre affiché** : mode autonome (mot de passe) dans le bilan du premier lancement et dans Paramètres ›
+  Centre. Le mode groupe (registre signé, accès par le rôle) est en conception
+  ([COMPTES_SIGNES.md](technique/COMPTES_SIGNES.md)).
 - **Aide : documents nommés par langue** (`….fr.md`, `….en.md`, comme le tutoriel d'installation) affichés dans la
   langue de la suite (allemand, espagnol : l'anglais) ; le menu de langue fait basculer le document, et un lien vers la
   version d'une autre langue change la langue de la suite, comme le menu. Pages HTML du tutoriel : menu de langue.
