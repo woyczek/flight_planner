@@ -23,15 +23,15 @@ El bloqueo oculta el Centro mientras no se haya activado en este navegador.
 - En Ajustes › Centro solo queda visible el apartado «Acceso al Centro y ajustes»; los demás («Usuarios y derechos», «Categorías de disponibilidad», «Planificación ODV», «Envío de informes (servicio web)») quedan ocultos.
 - La activación se guarda solo en este navegador: hay que repetirla en cada puesto y después de borrar los datos del sitio.
 
-Límite: es un bloqueo de uso, no una medida de seguridad. Las páginas siguen siendo archivos legibles por quien tenga acceso a la carpeta.
+Límite: es un bloqueo de uso, no una medida de seguridad. La contraseña está escrita en claro en `data/config/centre.json`, compartida con los datos (`DEFA` por defecto), y se muestra bajo el campo: es el **modo autónomo**. El modo grupo (registro firmado, acceso por el rol de administrador) llegará más adelante ([diseño](../technique/COMPTES_SIGNES.md)).
 
 ### Activar o bloquear el Centro
 
 1. Abra ☰ › Ajustes, pestaña «Centro», apartado «Acceso al Centro y ajustes».
-2. Introduzca la contraseña en «Contraseña del Centro» (no distingue mayúsculas y minúsculas).
+2. Introduzca la contraseña mostrada bajo el campo («Contraseña: DEFA» por defecto) en «Contraseña del Centro» (no distingue mayúsculas y minúsculas).
 3. Haga clic en «Activar el Centro» o pulse Intro. La línea de estado indica «Centro activado en este navegador».
 
-Las entradas del Centro aparecen de inmediato, sin recargar la página. El apartado muestra entonces los ajustes «Cálculo de las rutas de tránsito»:
+Las entradas del Centro aparecen de inmediato, sin recargar la página. El apartado muestra entonces «Modo y acceso» (modo del Centro; «Contraseña del Centro (compartida con los datos)» y «Guardar la contraseña»: escrita en `data/config/centre.json`, sale en la próxima «Sincronizar»), y luego los ajustes «Cálculo de las rutas de tránsito»:
 
 | Campo | Función |
 |---|---|
@@ -566,10 +566,10 @@ Mientras el Centro esté bloqueado, solo es visible el apartado de acceso. En mo
 ### Acceso al Centro y ajustes
 
 Este apartado activa el Centro en este navegador: generador de misiones, estudio cartográfico, registro y planificación ODV.
-1. Introduzca la «Contraseña del Centro» (sin distinguir mayúsculas).
+1. Introduzca la «Contraseña del Centro», mostrada bajo el campo (`DEFA` por defecto; sin distinguir mayúsculas).
 2. Haga clic en «Activar el Centro» o pulse Intro. El mensaje «Centro activado en este navegador» confirma la activación.
 
-Una vez activado el Centro, el apartado muestra «Cálculo de las rutas de tránsito»:
+Una vez activado el Centro, el apartado muestra «Modo y acceso» (modo, cambio de la contraseña compartida), y luego «Cálculo de las rutas de tránsito»:
 
 | Campo | Función |
 |---|---|

@@ -10,6 +10,17 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ## [Non publié]
 
+### Modifié
+
+- **Mot de passe du Centre dans les données** : le verrou d'usage du Centre ne compare plus le mot de passe à une
+  empreinte écrite dans le code. Il lit `data/config/centre.json` (`{ "motDePasse": "DEFA" }`), qui est partagé avec les
+  données. Le mot de passe est affiché à côté du bouton « Activer le Centre » (premier lancement, Paramètres › Centre).
+  Il se change dans Paramètres › Centre › « Mode et accès », une fois le Centre activé, et part au prochain
+  « Synchroniser ». Le jeu d'essai et le modèle des données livrent le fichier.
+- **Mode du Centre affiché** : mode autonome (mot de passe) dans le bilan du premier lancement et dans Paramètres ›
+  Centre. Le mode groupe (registre signé, accès par le rôle) est en conception
+  ([COMPTES_SIGNES.md](technique/COMPTES_SIGNES.md)).
+
 ### Ajouté
 
 - **Tutoriel d'installation** (`docs/tutorial/`, français et anglais, Markdown et HTML) : installation en quelques

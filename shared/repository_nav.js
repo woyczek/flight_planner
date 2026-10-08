@@ -85,8 +85,41 @@
   // navigateur (cpcoAccess:v1). Verrou d'usage, pas une sécurité : les pages restent des fichiers lisibles. Centre
   // verrouillé : pages du Centre absentes du menu, de la barre latérale et de l'accueil (html[data-cpco="off"]),
   // page du Centre ouverte directement recouverte d'un avis ; réglages du Centre verrouillés dans Paramètres.
+  // Mode autonome (standalone, docs/technique/COMPTES_SIGNES.md § 2) : mot de passe en clair dans le pool partagé,
+  // data/config/centre.json { motDePasse, mode } (DEFA par défaut), affiché à côté du bouton « Activer le Centre » ;
+  // mode groupe (registre signé, accès par le rôle admin) : à venir.
   const CPCO_KEY = "cpcoAccess:v1",
-    CPCO_HASH = "1310afbbafc4f1eb714648fb094b876f453356b9c84958057a783fb478474993";
+    CENTRE_FILE = "config/centre.json",
+    CENTRE_DEFAULT = {
+      motDePasse: "DEFA",
+      mode: "standalone"
+    };
+  let centreCfg = null;
+  /** Réglages du Centre (data/config/centre.json, sinon défaut) : { motDePasse, mode: standalone | groupe } ; fresh :
+   *  relus (sinon gardés pour la page). Par le socle du pool s'il est chargé (modifications pas encore écrites
+   *  comprises), sinon lus au serveur. */
+  async function centreConfig(fresh = false) {
+    if (centreCfg && !fresh) return centreCfg;
+    let v = null;
+    try {
+      v = window.MissionAssignments?.readData ? await window.MissionAssignments.readData(CENTRE_FILE, {
+        fresh: true
+      }) : await fetch(new URL(`data/${CENTRE_FILE}`, root), {
+        cache: "no-cache"
+      }).then(r => r.ok ? r.json() : null);
+    } catch {
+      v = null;
+    }
+    const c = v && typeof v === "object" ? v : {};
+    centreCfg = {
+      ...c,
+      motDePasse: String(c.motDePasse ?? "").trim() || CENTRE_DEFAULT.motDePasse,
+      mode: c.mode === "groupe" ? "groupe" : "standalone"
+    };
+    return centreCfg;
+  }
+  /** Mot de passe comparé sans tenir compte des blancs autour ni de la casse (comme avant : « defa » = « DEFA »). */
+  const samePassword = (a, b) => String(a ?? "").trim().toUpperCase() === String(b ?? "").trim().toUpperCase();
   const cpcoOn = () => readPref(CPCO_KEY, "") === "on",
     isCpco = p => String(p || "").startsWith("apps/cpco/");
   doc.dataset.cpco = cpcoOn() ? "on" : "off";
@@ -107,12 +140,11 @@
   };
   const cpco = {
     enabled: cpcoOn,
-    /** Active le Centre si le mot de passe est bon ; true si activé. */
+    /** Réglages du Centre { motDePasse, mode } (data/config/centre.json, sinon DEFA et standalone). */
+    config: centreConfig,
+    /** Active le Centre si le mot de passe est celui de data/config/centre.json ; true si activé. */
     async unlock(password) {
-      const bytes = new TextEncoder().encode(String(password || "").trim().toUpperCase());
-      const hex = [...new Uint8Array(await crypto.subtle.digest("SHA-256", bytes))].map(b => b.toString(16).padStart(2, "0")).join(
-        "");
-      if (hex !== CPCO_HASH) return false;
+      if (!samePassword(password, (await centreConfig(true)).motDePasse)) return false;
       if (!K.store.set(CPCO_KEY, "on")) return false;
       doc.dataset.cpco = "on";
       window.dispatchEvent(new CustomEvent("cpco-access-change", {
@@ -121,6 +153,28 @@
         }
       }));
       return true;
+    },
+    /** Nouveau mot de passe du Centre, écrit dans data/config/centre.json (pool partagé : il part au prochain
+     *  « Synchroniser ») ; Centre activé seulement. Rend { ok, where, error } (where : « data » ou « local »). */
+    async setPassword(password) {
+      const p = String(password ?? "").trim();
+      if (!cpcoOn() || !p || !window.MissionAssignments?.writeData) return {
+        ok: false
+      };
+      const cur = await centreConfig(true),
+        doc = {
+          ...cur,
+          schema: 1,
+          motDePasse: p,
+          updated_at: new Date().toISOString(),
+          by: window.SuiteUsers?.by?.() || "CPCO"
+        };
+      const r = await window.MissionAssignments.writeData(CENTRE_FILE, doc);
+      centreCfg = null;
+      return {
+        ok: !!r, // gardé dans la boîte d'envoi même sans dossier autorisé (where : local)
+        ...r
+      };
     },
     /** Verrouille le Centre dans ce navigateur (préférence effacée, html[data-cpco="off"]) ; événement « cpco-access-change ». */
     lock() {

@@ -338,6 +338,7 @@
     <div class="pl-card" id="plCentreLock"><h3>Activer le Centre</h3>
       <div class="pl-form"><label for="plCpcoPass">Mot de passe du Centre</label><input type="password" id="plCpcoPass" autocomplete="off"></div>
       <div class="pl-row"><button type="button" class="primary" id="plCpcoOn">Activer le Centre</button><span class="pl-msg" id="plCpcoMsg"></span></div>
+      <p class="pl-hint">Mot de passe : <b id="plCpcoShown"></b> — <span>partagé avec les données (data/config/centre.json), modifiable dans Paramètres › Centre une fois le Centre activé. Verrou d’usage, pas une protection.</span></p>
     </div>
     <div class="pl-grid" id="plCentreOn" hidden>
       <div class="pl-card"><h3>Flotte et journal des vols</h3>
@@ -369,8 +370,8 @@
   </section>
 </main>
 <script src="../../shared/kit.js?v=7f07f523"></script>
-<script src="../../shared/repository_nav.js?v=75fc0da7"></script>
-<script src="../../shared/content_i18n.js?v=266f3261"></script><script src="premier_lancement_i18n.js?v=6b9e89af"></script>
+<script src="../../shared/repository_nav.js?v=55b5672e"></script>
+<script src="../../shared/content_i18n.js?v=266f3261"></script><script src="premier_lancement_i18n.js?v=f9b3b440"></script>
 <!-- blocs « Données aéronautiques » et « Types d'aéronefs » (shared/maintenance_page.js) et leurs dépendances -->
 <script src="../../AircraftDB/aircraft_db.js"></script><script src="../../shared/data_files.js?v=dcb47c6a" data-file="references/aircraft_fleet.js"></script>
 <script src="../../shared/mission_core/vendor/js-yaml.min.js"></script>
@@ -505,8 +506,13 @@
       item('aero', sia ? (sia.counts?.airspaces || 0) > 0 : false, L('Données aéronautiques', 'Aeronautical data', 'Luftfahrtdaten',
         'Datos aeronáuticos'), 'plSia', false, sia?.airac ? `AIRAC ${sia.airac}` : '')
     ];
-    const centre = !cpcoOn() ? [item('cpco', false, L('Centre activé (administrateurs)', 'Centre enabled (administrators)',
-      'Zentrum aktiviert (Administratoren)', 'Centro activado (administradores)'), 'plCentre', true)] : [
+    // mode du Centre : autonome (mot de passe, data/config/centre.json) ; groupe (registre signé) à venir
+    const mode = item('mode', true, L('Mode du Centre', 'Centre mode', 'Modus des Zentrums', 'Modo del Centro'), 'plCentre', false,
+      S.centreMode === 'groupe' ? L('groupe (registre signé)', 'group (signed registry)', 'Gruppe (signiertes Register)',
+        'grupo (registro firmado)') : L('autonome (mot de passe)', 'standalone (password)', 'eigenständig (Passwort)',
+        'autónomo (contraseña)'));
+    const centre = !cpcoOn() ? [mode, item('cpco', false, L('Centre activé (administrateurs)', 'Centre enabled (administrators)',
+      'Zentrum aktiviert (Administratoren)', 'Centro activado (administradores)'), 'plCentre', true)] : [mode,
       item('cpco', true, L('Centre activé', 'Centre enabled', 'Zentrum aktiviert', 'Centro activado'), 'plCentre'),
       item('fleet', S.fleet ?? null, L('Flotte et journal du site', 'Fleet and log from the website', 'Flotte und Flugbuch der Website',
         'Flota y registro del sitio'), 'plCentreOn', false, S.fleetAt || ''),
@@ -1002,6 +1008,14 @@
   /** Étape 6 : verrou ou, Centre activé, flotte, missions et réglages du SO Group. */
   function centreState() {
     const onC = cpcoOn();
+    // mot de passe du Centre affiché (verrou d'usage, data/config/centre.json) et mode pour le bilan
+    window.RepositoryNav?.cpco?.config?.(true).then(c => {
+      $('plCpcoShown').textContent = c.motDePasse || '';
+      if (S.centreMode !== c.mode) {
+        S.centreMode = c.mode;
+        checklist();
+      }
+    });
     $('plCentreLock').hidden = onC;
     $('plCentreOn').hidden = !onC;
     done('plCentre', onC);

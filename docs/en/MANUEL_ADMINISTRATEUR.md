@@ -23,15 +23,15 @@ The lock hides the Centre until it has been enabled in this browser.
 - In Settings › Centre, only the “Centre access and settings” section stays visible; the others (“Users and rights”, “Availability categories”, “ODV planning”, “Report sending (web service)”) are hidden.
 - Activation is stored in this browser only: repeat it on each computer and after clearing the site data.
 
-Limit: this is a usage lock, not security. The pages remain files readable by anyone with access to the folder.
+Limit: this is a usage lock, not security. The password is written in clear in `data/config/centre.json`, shared with the data (`DEFA` by default), and shown under the field: this is the **standalone mode**. Group mode (signed registry, access by the administrator role) is coming ([design](../technique/COMPTES_SIGNES.md)).
 
 ### Enable or lock the Centre
 
 1. Open ☰ › Settings, “Centre” tab, “Centre access and settings” section.
-2. Enter the password in “Centre password” (not case-sensitive).
+2. Enter the password shown under the field (“Password: DEFA” by default) in “Centre password” (not case-sensitive).
 3. Click “Enable the Centre” or press Enter. The status line shows “Centre enabled in this browser”.
 
-The Centre entries appear at once, without reloading the page. The section then shows the “Transit route calculation” settings:
+The Centre entries appear at once, without reloading the page. The section then shows “Mode and access” (Centre mode; “Centre password (shared with the data)” and “Save the password”: written to `data/config/centre.json`, it goes out at the next “Synchronise”), then the “Transit route calculation” settings:
 
 | Field | Role |
 |---|---|
@@ -566,10 +566,10 @@ As long as the Centre is locked, only the access section is visible. In producti
 ### Centre access and settings
 
 This section enables the Centre in this browser: mission generator, map studio, registry and ODV planning.
-1. Enter the “Centre password” (not case-sensitive).
+1. Enter the “Centre password”, shown under the field (`DEFA` by default; not case-sensitive).
 2. Click “Enable the Centre” or press Enter. The message “Centre enabled in this browser” confirms the activation.
 
-Once the Centre is enabled, the section shows “Transit route calculation”:
+Once the Centre is enabled, the section shows “Mode and access” (mode, change of the shared password), then “Transit route calculation”:
 
 | Field | Role |
 |---|---|

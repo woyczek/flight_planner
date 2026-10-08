@@ -23,15 +23,15 @@ Le verrou masque le Centre tant qu'il n'a pas été activé dans ce navigateur.
 - Dans Paramètres › Centre, seule la rubrique « Accès au Centre et réglages » reste visible ; les autres (« Utilisateurs et droits », « Catégories de disponibilité », « Planning ODV », « Envoi des comptes rendus (webservice) ») sont cachées.
 - L'activation est mémorisée dans ce navigateur seulement : à refaire sur chaque poste et après un effacement des données du site.
 
-Limite : c'est un verrou d'usage, pas une sécurité. Les pages restent des fichiers lisibles par qui a accès au dossier.
+Limite : c'est un verrou d'usage, pas une sécurité. Le mot de passe est écrit en clair dans `data/config/centre.json`, partagé avec les données (`DEFA` par défaut), et affiché sous le champ : c'est le **mode autonome**. Le mode groupe (registre signé, accès par le rôle d'administrateur) est à venir ([conception](technique/COMPTES_SIGNES.md)).
 
 ### Activer ou verrouiller le Centre
 
 1. Ouvrez ☰ › Paramètres, onglet « Centre », rubrique « Accès au Centre et réglages ».
-2. Saisissez le mot de passe dans « Mot de passe du Centre » (majuscules et minuscules indifférentes).
+2. Saisissez le mot de passe affiché sous le champ (« Mot de passe : DEFA » par défaut) dans « Mot de passe du Centre » (majuscules et minuscules indifférentes).
 3. Cliquez « Activer le Centre » ou appuyez sur Entrée. La ligne d'état indique « Centre activé dans ce navigateur ».
 
-Les entrées du Centre apparaissent aussitôt, sans recharger la page. La rubrique affiche alors les réglages « Calcul des routes de transit » :
+Les entrées du Centre apparaissent aussitôt, sans recharger la page. La rubrique affiche alors « Mode et accès » (mode du Centre ; « Mot de passe du Centre (partagé avec les données) » et « Enregistrer le mot de passe » : écrit dans `data/config/centre.json`, il part au prochain « Synchroniser »), puis les réglages « Calcul des routes de transit » :
 
 | Champ | Rôle |
 |---|---|
@@ -566,10 +566,10 @@ Tant que le Centre est verrouillé, seule la rubrique d'accès est visible. En m
 ### Accès au Centre et réglages
 
 Cette rubrique active le Centre dans ce navigateur : générateur de mission, studio cartographique, registre et planning ODV.
-1. Saisissez le « Mot de passe du Centre » (sans tenir compte des majuscules).
+1. Saisissez le « Mot de passe du Centre », affiché sous le champ (`DEFA` par défaut ; sans tenir compte des majuscules).
 2. Cliquez sur « Activer le Centre » ou appuyez sur Entrée. Le message « Centre activé dans ce navigateur » confirme l'activation.
 
-Une fois le Centre activé, la rubrique affiche « Calcul des routes de transit » :
+Une fois le Centre activé, la rubrique affiche « Mode et accès » (mode, changement du mot de passe partagé), puis « Calcul des routes de transit » :
 
 | Champ | Rôle |
 |---|---|

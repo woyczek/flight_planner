@@ -481,7 +481,7 @@ Cartes, missions et planification utilisent les données aéronautiques (AIRAC) 
 ### 6 Centre (administrateurs)
 
 Réservé aux administrateurs du SO Group : les pilotes passent cette étape.
-- Carte « Activer le Centre » : « Mot de passe du Centre », puis « Activer le Centre ».
+- Carte « Activer le Centre » : « Mot de passe du Centre » (affiché sous le bouton, `DEFA` par défaut), puis « Activer le Centre ». Le bilan indique le mode du Centre (autonome : mot de passe).
 - Une fois le Centre activé :
   - « Flotte et journal des vols » : dernière lecture du site par le lanceur (flotte, emplacement des appareils, journal), « Mettre à jour maintenant », et le lien vers la flotte (Paramètres › Centre).
   - « Missions » : nombre de missions au registre (elles arrivent avec les données, étape 1) et le lien vers le registre.

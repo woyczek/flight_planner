@@ -1,6 +1,34 @@
 // Traductions allemandes et espagnoles de la page Paramétrage (shared/data_admin.js), repérées par le texte
 // français de chaque T(fr, en) : T() les ajoute aux lignes [fr, en, de, es] de la couche de traduction.
 window.DataAdminI18n = {
+  "Mode groupe : accès au Centre par le rôle d’administrateur du registre signé.": [
+    "Gruppenmodus: Zugang zum Zentrum über die Administratorrolle des signierten Registers.",
+    "Modo grupo: acceso al Centro por el rol de administrador del registro firmado."
+  ],
+  "Mode autonome : accès au Centre par le mot de passe du SO Group (verrou d’usage, pas une protection). Mode groupe (registre signé, accès par le rôle) : à venir.": [
+    "Eigenständiger Modus: Zugang zum Zentrum mit dem Passwort der SO Group (eine Nutzungssperre, kein Schutz). Gruppenmodus (signiertes Register, Zugang über die Rolle): folgt.",
+    "Modo autónomo: acceso al Centro con la contraseña del SO Group (un bloqueo de uso, no una protección). Modo grupo (registro firmado, acceso por el rol): próximamente."
+  ],
+  "Mot de passe :": ["Passwort:", "Contraseña:"],
+  "partagé avec les données (data/config/centre.json), modifiable une fois le Centre activé.": [
+    "mit den Daten geteilt (data/config/centre.json), änderbar, sobald das Zentrum aktiviert ist.",
+    "compartida con los datos (data/config/centre.json), modificable una vez activado el Centro."
+  ],
+  "Mode et accès": ["Modus und Zugang", "Modo y acceso"],
+  "Mot de passe du Centre (partagé avec les données)": ["Passwort des Zentrums (mit den Daten geteilt)",
+    "Contraseña del Centro (compartida con los datos)"
+  ],
+  "Enregistrer le mot de passe": ["Passwort speichern", "Guardar la contraseña"],
+  "Mot de passe vide : non enregistré": ["Leeres Passwort: nicht gespeichert", "Contraseña vacía: no guardada"],
+  "Mot de passe non enregistré": ["Passwort nicht gespeichert", "Contraseña no guardada"],
+  "Mot de passe enregistré dans les données : il part au prochain « Synchroniser »": [
+    "Passwort in den Daten gespeichert: es geht beim nächsten „Synchronisieren“ hinaus",
+    "Contraseña guardada en los datos: sale en la próxima «Sincronizar»"
+  ],
+  "Mot de passe gardé dans ce navigateur : dossier des données à autoriser pour l’écrire": [
+    "Passwort in diesem Browser behalten: den Datenordner freigeben, um es zu schreiben",
+    "Contraseña guardada en este navegador: autorice la carpeta de datos para escribirla"
+  ],
   "bases de données (flotte, types, indicatifs, registres…) et maintenance (mises à jour, sources et dossiers, données SIA, sauvegarde)": [
     "Datenbanken (Flotte, Typen, Rufzeichen, Register…) und Wartung (Aktualisierungen, Quellen und Ordner, SIA-Daten, Sicherung)",
     "bases de datos (flota, tipos, indicativos, registros…) y mantenimiento (actualizaciones, fuentes y carpetas, datos SIA, copia de seguridad)"
