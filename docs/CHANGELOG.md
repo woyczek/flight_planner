@@ -19,6 +19,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Corrigé
 
+- **Nombre de cases MORA d'une zone sous-compté** (« 74 case(s) dans mora.csv » pour la France au lieu de 133) : le
+  panneau comptait les seules cases dont le centre tombe dans le contour du pays ; les petites îles (La Réunion,
+  Mayotte, Antilles…) sont désormais comptées, comme dans le calcul (`zoneCellKeys`).
 - **Titres restés en français** : titre de la page Premier lancement (entrée de traduction manquante) et titres d'onglet
   du navigateur de toutes les pages (`document.title` désormais traduit par la couche commune, `shared/content_i18n.js`).
 - **Premier lancement : dossiers SIA, missions et registre jamais réglés** quand les données arrivent après le choix du

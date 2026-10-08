@@ -1381,7 +1381,8 @@
     }
     if (moraCounts.has(id)) return moraCounts.get(id);
     let n = 0;
-    for (const k of Z.cellsOf(id)) n += (moraIdx.get(k) || []).length; // cases d'un degré de la zone (AeroZones.cellsOf)
+    // cases d'un degré de la zone, petites îles comprises (zoneCellKeys : AeroZones.cellsOf ne voyait que la métropole)
+    for (const k of zoneCellKeys(Z, id)) n += (moraIdx.get(k) || []).length;
     moraCounts.set(id, n);
     return n;
   }
