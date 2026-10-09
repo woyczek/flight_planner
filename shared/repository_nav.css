@@ -91,9 +91,15 @@
     max-height: 75vh;
     overflow: auto;
     padding: 7px;
+    /* encre du menu : celle du design s'il habille le menu (--sk-menu-ink, designs à matières), sinon le texte du
+       bandeau ; titres de groupe, séparateurs, survol et réglages en dérivent (jamais --repo-bar-text en dur) */
+    --repo-menu-ink: var(--sk-menu-ink, var(--repo-bar-text));
+    --repo-menu-ink-2: var(--sk-menu-ink-2, color-mix(in srgb, var(--repo-menu-ink) 72%, transparent));
+    --repo-menu-line: var(--sk-menu-line, color-mix(in srgb, var(--repo-menu-ink) 18%, transparent));
+    --repo-menu-hover: var(--sk-menu-hover, color-mix(in srgb, var(--repo-accent) 22%, transparent));
     background: var(--repo-bar);
-    color: var(--repo-bar-text);
-    border: 1px solid color-mix(in srgb, var(--repo-bar-text) 25%, transparent);
+    color: var(--repo-menu-ink);
+    border: 1px solid color-mix(in srgb, var(--repo-menu-ink) 25%, transparent);
     border-radius: 9px;
     box-shadow: 0 12px 36px #0008
   }
@@ -118,17 +124,17 @@
     cursor: pointer
   }
   .repo-language-menu button:hover {
-    background: color-mix(in srgb, var(--repo-accent) 22%, transparent)
+    background: var(--repo-menu-hover)
   }
   .repo-group {
     margin: 5px 4px 2px;
     padding: 5px 5px 3px;
-    color: color-mix(in srgb, var(--repo-bar-text) 66%, transparent);
+    color: var(--repo-menu-ink-2);
     font-size: 11px;
     font-weight: 750;
     text-transform: uppercase;
     letter-spacing: .06em;
-    border-bottom: 1px solid color-mix(in srgb, var(--repo-bar-text) 16%, transparent)
+    border-bottom: 1px solid var(--repo-menu-line)
   }
   .repo-tree-group {
     margin: 3px 0
@@ -138,12 +144,12 @@
     list-style: none;
     margin: 5px 4px 2px;
     padding: 6px 5px;
-    color: color-mix(in srgb, var(--repo-bar-text) 76%, transparent);
+    color: var(--repo-menu-ink-2);
     font-size: 11px;
     font-weight: 750;
     text-transform: uppercase;
     letter-spacing: .06em;
-    border-bottom: 1px solid color-mix(in srgb, var(--repo-bar-text) 16%, transparent)
+    border-bottom: 1px solid var(--repo-menu-line)
   }
   .repo-tree-group summary::-webkit-details-marker {
     display: none
@@ -174,7 +180,7 @@
   .repo-link:hover,
   .repo-action:hover,
   .repo-link.active {
-    background: color-mix(in srgb, var(--repo-accent) 22%, transparent)
+    background: var(--repo-menu-hover)
   }
   .repo-sub {
     padding-left: 23px
@@ -182,7 +188,7 @@
   .repo-sep {
     height: 1px;
     margin: 6px;
-    background: color-mix(in srgb, var(--repo-bar-text) 16%, transparent)
+    background: var(--repo-menu-line)
   }
   .repo-unit-control {
     display: flex;
@@ -586,7 +592,7 @@
     gap: 6px;
     padding: 4px 4px 8px;
     margin-bottom: 6px;
-    border-bottom: 1px solid color-mix(in srgb, var(--repo-bar-text) 18%, transparent)
+    border-bottom: 1px solid var(--repo-menu-line)
   }
   .repo-settings-button {
     flex: 1;
@@ -595,15 +601,15 @@
     justify-content: center;
     gap: 6px;
     padding: 7px 10px;
-    border: 1px solid color-mix(in srgb, var(--repo-bar-text) 30%, transparent);
+    border: 1px solid color-mix(in srgb, var(--repo-menu-ink) 30%, transparent);
     border-radius: 7px;
-    background: color-mix(in srgb, var(--repo-bar-text) 10%, transparent);
+    background: color-mix(in srgb, var(--repo-menu-ink) 10%, transparent);
     font: 600 12.5px/1.2 Inter, system-ui, Segoe UI, Arial, sans-serif;
     color: inherit;
     text-decoration: none
   }
   .repo-settings-button:hover {
-    background: color-mix(in srgb, var(--repo-bar-text) 20%, transparent)
+    background: color-mix(in srgb, var(--repo-menu-ink) 20%, transparent)
   }
   /* fenêtre modale Apparence (repository_nav.js, contenu : appearance_page.js) */
   dialog.repo-ap-dialog {

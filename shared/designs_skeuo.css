@@ -64,8 +64,8 @@ html[data-design-base="cabinet"] {
   /* crème / cuir marine ou bandeau assombri : ≥ 10:1 */
   --cab-ink: #2b2418;
   /* encre / parchemin #efe3c4 : 12,6:1 */
-  --cab-ink-2: #5b4a2e;
-  /* encre secondaire / parchemin : 7:1 */
+  --cab-ink-2: #45361f;
+  /* encre secondaire / parchemin : 7:1 sur la teinte de base #efe3c4, 4,9:1 sur la texture moyenne (#c0a883) */
   --cab-navy: #1d3557;
   /* titres / parchemin : 10,4:1 */
   --cab-rule: #9c7a44;
@@ -116,6 +116,7 @@ html[data-design-base="cabinet"] {
   --sk-mbtn-radius: 5px;
   --sk-menu-bg: #f6ecd2 url("textures/parchment.webp?v=0") center/400px;
   --sk-menu-ink: var(--cab-ink);
+  --sk-menu-ink-2: var(--cab-navy);
   --sk-menu-border: 2px solid var(--cab-brass-lo);
   --sk-block-radius: 12px;
   --sk-block-border: 10px solid transparent;
@@ -207,6 +208,9 @@ html[data-design-base="cabinet"] {
   background: #3a2112 url("textures/leather-brown.webp?v=0") center/256px
 }
 html[data-design-base="cabinet"][data-tone="dark"] {
+  /* menus et notifications : parchemin sombre sous l'encre claire du ton (le parchemin clair donnait 1,2:1) */
+  --sk-menu-bg: #1c2230 url("textures/parchment-dark.webp?v=d9b8cd4f") center/400px;
+  --sk-footer-bg: #1c2230 url("textures/parchment-dark.webp?v=d9b8cd4f") center/300px;
   --sk-code-bg: #141a21;
   --sk-code-ink: #e6edf5;
   --sk-code-border: 1px solid #46525f;
@@ -368,12 +372,63 @@ html[data-skeuo="frame"][data-decor="full"] .repo-card::after {
 html[data-skeuo="frame"] .repo-block :is(label, legend, th, h3, h4):not(#imp) {
   color: var(--sk-label-ink)
 }
-/* gris secondaire des pages (var(--muted), pensé pour le design standard) : encre secondaire du design dans les blocs */
-html[data-skeuo="frame"] .repo-block {
+/* gris secondaire des pages (var(--muted), pensé pour le design standard) : encre secondaire du design dans les blocs de
+   tous les designs à matières (Aqua clair : le gris #6b7280 de la page tombait à 3,7:1 sur le verre) ; barres d'état :
+   encre de la barre atténuée */
+html[data-skeuo] .repo-block {
   --muted: var(--sk-ink-2)
+}
+html[data-skeuo] :is(#status, .status, .status-bar) {
+  --muted: color-mix(in srgb, currentColor 85%, transparent)
 }
 html[data-design="field"] .repo-has-sheet {
   --muted: #4a4634
+}
+/* gris secondaire des pages hors des blocs (designs à matières) : dans l'en-tête, encre de l'en-tête atténuée ; dans un
+   bouton (flèche ▾ d'un menu déroulant…), encre du bouton — pas le gris de la page, pensé pour son propre fond */
+html[data-skeuo] .repo-header {
+  --muted: color-mix(in srgb, var(--sk-header-ink) 82%, transparent);
+  /* gris des Ordres de vols (odv_orders.html : encre secondaire des blocs) : celui de l'en-tête */
+  --odvo-mute: var(--muted)
+}
+html[data-skeuo] :is(button, .buttonLink, a.headerButton) {
+  --muted: color-mix(in srgb, currentColor 88%, transparent)
+}
+/* liens des blocs : encre de lien du design (--sk-link : marine de Cabinet, voyant de Durci, bleu ou bleu clair d'Aqua,
+   cyan de Tactique) — le bleu par défaut tombait à 4:1 sur le parchemin, le lavande des pages d'outil sombres (Ordres de
+   vols) à 1-2:1 sur les blocs clairs ; soulignés, ils restent distincts du texte */
+html[data-design-base="cabinet"] {
+  --sk-link: var(--cab-navy)
+}
+html[data-design="aqua"] {
+  --sk-link: #1a56b0
+}
+html[data-design="aqua"][data-tone="dark"] {
+  --sk-link: #8cc4ff
+}
+html[data-design="tactique"] {
+  --sk-link: var(--tq-link)
+}
+html[data-skeuo] .repo-block a:not(.buttonLink):not(.headerButton):not(.secondary):not(.primary):not(.mc-button):not(.repo-plain):not(.repo-tab) {
+  color: var(--sk-link)
+}
+/* aperçu imprimable (.report sur --sk-paper, Mission Core) : encre d'impression foncée, y compris dans les designs à
+   blocs sombres (Durci, Tactique : texte clair sur le papier, 1,05:1) — jetons d'encre redéfinis sur la feuille */
+html[data-skeuo] .repo-block .report {
+  --sk-ink: #1d1a14;
+  --sk-ink-2: #4a4634;
+  --sk-label-ink: #1d1a14;
+  --fd-text: #1d1a14;
+  --fd-text-2: #4a4634;
+  --tq-ink: #1d1a14;
+  --tq-ink-2: #4a4634;
+  --muted: #4a4634;
+  --sk-link: #1a3f8a;
+  text-shadow: none
+}
+html[data-skeuo] .repo-block .report thead th:not(#imp) {
+  background-color: rgba(0, 0, 0, .07);
+  color: #1d1a14
 }
 /* textes courants des blocs : encre du design ; libellés et intertitres : police du design (facultative) */
 html[data-skeuo="frame"] .repo-block :is(p, li, td, summary) {
@@ -382,7 +437,7 @@ html[data-skeuo="frame"] .repo-block :is(p, li, td, summary) {
 html[data-skeuo="frame"] .repo-block :is(label, legend, th, h3, h4) {
   font-family: var(--sk-label-family, inherit)
 }
-html[data-skeuo="frame"] .repo-block :is(.small, .note, .muted, .hint) {
+html[data-skeuo] .repo-block :is(.small, .note, .muted, .hint) {
   color: var(--sk-ink-2)
 }
 /* composants des designs à cadre (Cabinet, Carnet de vol, Durci) : une règle, valeurs par jetons ; facultatifs (repli :
@@ -529,7 +584,8 @@ html[data-design="field"] {
   --sk-card-title-ink: #f2f4ea;
   --sk-card-title-case: uppercase;
   --sk-card-title-spacing: .05em;
-  --sk-card-sub-ink: var(--fd-text-2);
+  --sk-card-sub-ink: var(--fd-text);
+  /* sous-titre des cartes : encre claire pleine (l'acier des cartes est plus clair que celui des blocs : 4:1 avec --fd-text-2) */
   --sk-drop-ink: var(--fd-field-ink);
   --sk-drop-state-ink: #b9c1a2;
   --sk-pick-case: uppercase;
@@ -563,6 +619,7 @@ html[data-design="field"] {
   --sk-mbtn-radius: 5px;
   --sk-menu-bg: #1d201b url("textures/steel-dark.webp?v=0") center/400px;
   --sk-menu-ink: var(--fd-text);
+  --sk-menu-ink-2: var(--fd-text-2);
   --sk-menu-border: 2px solid #0b0d08;
   --sk-block-radius: 10px;
   --sk-block-border: 2px solid #2a2e22;
@@ -673,8 +730,8 @@ html[data-design="field"] .repo-block :is(table, thead, tbody, tr, th, td) {
 html[data-design="field"] .repo-block thead th:not(#imp) {
   background-color: rgba(10, 12, 8, .45)
 }
-html[data-design="field"] .repo-block a {
-  color: var(--fd-led)
+html[data-design="field"] {
+  --sk-link: var(--fd-led)
 }
 html[data-design="field"] .repo-block :is(input, textarea)::placeholder {
   color: #8b907f
@@ -685,7 +742,7 @@ html[data-design="field"] select option {
 }
 /* boutons : noir canon de fusil ; principal et en-tête : vert lumineux à voyant ; secondaire : bleu nuit */
 html[data-design="field"] :is(button.primary, .repo-header button.headerButton:first-of-type, button[data-icon="sparkles"]):not(#imp) {
-  background: linear-gradient(#3fa83f, #146b1c);
+  background: linear-gradient(#379a37, #11601a);
   color: #fff;
   border-color: transparent;
   box-shadow: inset 0 1px 0 rgba(220, 255, 200, .45), 0 0 0 1px #0b2a0b, 0 0 0 3px #4a4f40, 0 0 14px rgba(80, 255, 90, .4), 0 3px 5px rgba(0, 0, 0, .6)
@@ -703,7 +760,9 @@ html[data-design="field"] :is(button.primary, .repo-header button.headerButton:f
 }
 html[data-design="field"] :is(button.secondary, a.secondary, label.rg-file, label.mt-file):not(.repo-block-tools button):not(#imp),
 html[data-design="field"] .repo-header button.headerButton:not(#imp) {
-  background: linear-gradient(#26364e, #0f1a2a)
+  background: linear-gradient(#26364e, #0f1a2a);
+  /* encre des boutons du design (un lien .secondary gardait la couleur de la page : 1:1 sur le bleu nuit) */
+  color: var(--sk-btn-ink)
 }
 html[data-design="field"] button.danger:not(#imp) {
   background: linear-gradient(#7a2a20, #3c120c)
@@ -731,16 +790,30 @@ html[data-design="field"][data-decor="full"] .repo-footer::after {
 
 /* ================================================================================================ AQUA */
 html[data-design="aqua"] {
+  /* matières de l'Aqua, une fois pour toutes (ton sombre : AQUA SOMBRE ne redéfinit que ces jetons) : verre (boutons
+     secondaires, ☰, langue, liens-boutons, outils de bloc, listes, segments et onglets au repos), gel --aq-gel (action
+     principale, segment et onglet choisis), ardoise (bouton discret), métal du rail des onglets */
+  --aq-glass: linear-gradient(#ffffff, #e9eef3 50%, #dde4eb 51%, #f1f4f7);
+  --aq-glass-ink: var(--aq-ink);
+  --aq-glass-edge: #9aa6b2;
+  --aq-glass-sep: #b7c1cc;
+  --aq-glass-shine: inset 0 1px 0 #fff;
+  --aq-glass-drop: 0 1px 3px rgba(0, 0, 0, .15);
+  --aq-glass-text-shadow: 0 1px 0 #fff;
+  --aq-slate: linear-gradient(#7d8b99, #56646f 50%, #4a5763 51%, #6b7885);
+  --aq-slate-edge: #3c4a58;
+  --aq-rail: linear-gradient(#e9edf2, #c9d1da);
+  --aq-rail-shadow: inset 0 1px 0 #fff, 0 1px 3px rgba(0, 0, 0, .25);
   --sk-title-ink: var(--aq-ink);
   --sk-title-shadow: 0 1px 0 rgba(255, 255, 255, .8);
-  --sk-segs-border: 1px solid #9aa6b2;
+  --sk-segs-border: 1px solid var(--aq-glass-edge);
   --sk-segs-radius: 8px;
-  --sk-seg-ink: var(--aq-ink, #1b2733);
-  --sk-seg-bg: linear-gradient(#ffffff, #f1f4f8 50%, #e6ebf1 51%, #f6f8fb);
-  --sk-seg-shadow: 0 1px 0 #fff;
-  --sk-seg-sep: 1px solid #b7c1cc;
+  --sk-seg-ink: var(--aq-glass-ink);
+  --sk-seg-bg: var(--aq-glass);
+  --sk-seg-shadow: var(--aq-glass-text-shadow);
+  --sk-seg-sep: 1px solid var(--aq-glass-sep);
   --sk-seg-sep-shadow: none;
-  --sk-seg-on-bg: linear-gradient(180deg, color-mix(in srgb, var(--aq-gel) 55%, #fff) 0%, var(--aq-gel) 50%, color-mix(in srgb, var(--aq-gel) 85%, #000) 51%, color-mix(in srgb, var(--aq-gel) 70%, #fff) 100%);
+  --sk-seg-on-bg: linear-gradient(180deg, color-mix(in srgb, var(--aq-gel) 85%, #fff) 0%, var(--aq-gel) 50%, color-mix(in srgb, var(--aq-gel) 80%, #000) 51%, var(--aq-gel) 100%);
   --sk-seg-on-ink: #fff;
   --sk-seg-on-text-shadow: 0 -1px 0 rgba(0, 0, 0, .25);
   --sk-seg-on-shadow: none;
@@ -766,12 +839,13 @@ html[data-design="aqua"] {
   /* pleine largeur : angles droits, filet bas */
   --sk-header-bg: linear-gradient(rgba(255, 255, 255, .45), rgba(255, 255, 255, 0) 50%, rgba(0, 0, 0, .05)), #d8dde2 url("textures/brushed-light.webp?v=0") center/256px;
   --sk-header-shadow: inset 0 1px 0 #fff, inset 0 -1px 0 rgba(0, 0, 0, .12), 0 6px 16px rgba(40, 60, 90, .18);
-  --sk-mbtn-bg: linear-gradient(#ffffff, #dfe6ee);
-  --sk-mbtn-ink: var(--aq-ink);
-  --sk-mbtn-border: 1px solid #9aa6b2;
+  --sk-mbtn-bg: var(--aq-glass);
+  --sk-mbtn-ink: var(--aq-glass-ink);
+  --sk-mbtn-border: 1px solid var(--aq-glass-edge);
   --sk-mbtn-radius: 8px;
   --sk-menu-bg: rgba(248, 251, 254, .92);
   --sk-menu-ink: var(--aq-ink);
+  --sk-menu-ink-2: var(--aq-ink-2);
   --sk-menu-border: 1px solid #b8c3ce;
   --sk-block-radius: 14px;
   --sk-block-border: 1px solid rgba(255, 255, 255, .9);
@@ -802,13 +876,13 @@ html[data-design="aqua"] {
   --sk-btn-hover: brightness(1.06) saturate(1.1);
   --sk-btn-disabled: grayscale(1) opacity(.5);
   --sk-lbtn-weight: 600;
-  --sk-lbtn-border: 1px solid #9aa6b2;
+  --sk-lbtn-border: 1px solid var(--aq-glass-edge);
   --sk-lbtn-radius: 9px;
-  --sk-lbtn-ink: var(--aq-ink);
-  --sk-lbtn-bg: linear-gradient(#ffffff, #e9eef3 50%, #dde4eb 51%, #f1f4f7);
-  --sk-lbtn-shadow: inset 0 1px 0 #fff, 0 1px 3px rgba(0, 0, 0, .15);
-  --sk-pick-ink: var(--aq-ink);
-  --sk-pick-bg: linear-gradient(#ffffff, #e9eef3 50%, #dde4eb 51%, #f1f4f7);
+  --sk-lbtn-ink: var(--aq-glass-ink);
+  --sk-lbtn-bg: var(--aq-glass);
+  --sk-lbtn-shadow: var(--aq-glass-shine), var(--aq-glass-drop);
+  --sk-pick-ink: var(--aq-glass-ink);
+  --sk-pick-bg: var(--aq-glass);
   --sk-sidenav-bg: #d8dde2 url("textures/brushed-light.webp?v=0") center/256px;
   --sk-sidenav-border: 1px solid #9aa6b2;
   --sk-sidenav-ink: var(--aq-ink);
@@ -819,8 +893,8 @@ html[data-design="aqua"] {
   --sk-abar-bg: linear-gradient(rgba(255, 255, 255, .45), rgba(255, 255, 255, 0) 50%, rgba(0, 0, 0, .05)), #d8dde2 url("textures/brushed-light.webp?v=0") center/256px;
   --sk-abar-border: 1px solid #9aa6b2;
   --sk-abar-ink: var(--aq-ink);
-  --sk-tool-bg: linear-gradient(#fff, #e3e9f0);
-  --sk-tool-ink: var(--aq-ink);
+  --sk-tool-bg: var(--aq-glass);
+  --sk-tool-ink: var(--aq-glass-ink);
   --sk-dialog-bg: linear-gradient(180deg, #e9eff5, #d9e3ec);
   --sk-chart-bg: linear-gradient(#fbfdff, #e6edf4);
   --sk-chart-border: 1px solid #b8c3ce;
@@ -848,10 +922,12 @@ html[data-design="aqua"] body {
 }
 html[data-design="aqua"] .repo-header-subtitle,
 html[data-design="aqua"] .repo-language-label {
-  color: var(--aq-ink-2)
+  /* encre de l'en-tête atténuée : --aq-ink-2 tombait à 3,9:1 sur le métal brossé */
+  color: color-mix(in srgb, var(--sk-header-ink) 82%, transparent)
 }
 html[data-design="aqua"] :is(.repo-menu-button, .repo-language-button) {
-  box-shadow: inset 0 1px 0 #fff, 0 1px 2px rgba(0, 0, 0, .15)
+  text-shadow: var(--aq-glass-text-shadow);
+  box-shadow: var(--aq-glass-shine), var(--aq-glass-drop)
 }
 html[data-design="aqua"] :is(.repo-menu, .repo-language-menu) {
   backdrop-filter: blur(10px);
@@ -871,24 +947,26 @@ html[data-design="aqua"] .repo-block :is(input, select, textarea):focus:not(#imp
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--aq-gel) 30%, transparent), inset 0 1px 2px rgba(20, 40, 70, .12)
 }
 /* boutons : gel (couleur du thème) par défaut, verre clair (secondaire), ardoise (discret) */
-/* boutons en gel : jetons posés sur les boutons eux-mêmes (ils suivent --aq-gel du bouton : rouge des boutons « danger ») */
+/* boutons en gel : jetons posés sur les boutons eux-mêmes (ils suivent --aq-gel du bouton : rouge des boutons « danger ») ;
+   reflet haut limité (15 % de blanc) et bas assombri : couleur moyenne du gel ≥ 4,5:1 sous le texte blanc (l'ancien
+   reflet à 45 % de blanc donnait 3,6:1) */
 html[data-design="aqua"] :is(button, .buttonLink, a.mc-button) {
   --sk-btn-border: 1px solid color-mix(in srgb, var(--aq-gel) 70%, #000);
-  --sk-btn-bg: linear-gradient(180deg, color-mix(in srgb, var(--aq-gel) 55%, #fff) 0%, var(--aq-gel) 50%, color-mix(in srgb, var(--aq-gel) 85%, #000) 51%, color-mix(in srgb, var(--aq-gel) 70%, #fff) 100%);
+  --sk-btn-bg: linear-gradient(180deg, color-mix(in srgb, var(--aq-gel) 85%, #fff) 0%, var(--aq-gel) 50%, color-mix(in srgb, var(--aq-gel) 80%, #000) 51%, var(--aq-gel) 100%);
   --sk-btn-shadow: inset 0 1px 0 rgba(255, 255, 255, .6), 0 2px 5px color-mix(in srgb, var(--aq-gel) 40%, transparent)
 }
 html[data-design="aqua"] :is(button.secondary, a.secondary, label.rg-file, label.mt-file, .repo-header button.headerButton:not(:first-of-type)):not(.repo-block-tools button) {
-  text-shadow: 0 1px 0 #fff
+  text-shadow: var(--aq-glass-text-shadow)
 }
 html[data-design="aqua"] :is(button.secondary, a.secondary, label.rg-file, label.mt-file, .repo-header button.headerButton:not(:first-of-type)):not(.repo-block-tools button):not(#imp) {
-  border-color: #9aa6b2;
-  color: var(--aq-ink);
-  background: linear-gradient(#ffffff, #e9eef3 50%, #dde4eb 51%, #f1f4f7);
-  box-shadow: inset 0 1px 0 #fff, 0 1px 3px rgba(0, 0, 0, .15)
+  border-color: var(--aq-glass-edge);
+  color: var(--aq-glass-ink);
+  background: var(--aq-glass);
+  box-shadow: var(--aq-glass-shine), var(--aq-glass-drop)
 }
 html[data-design="aqua"] button.ghost:not(.repo-block-tools button):not(#imp) {
-  border-color: #3c4a58;
-  background: linear-gradient(#7d8b99, #56646f 50%, #4a5763 51%, #6b7885)
+  border-color: var(--aq-slate-edge);
+  background: var(--aq-slate)
 }
 html[data-design="aqua"] button.danger {
   --aq-gel: #d33a2c
@@ -907,10 +985,21 @@ html[data-design="aqua"] :is(.repo-block-titles, .repo-block-heading)>h2 {
    Pages à thème sombre (planificateur, Landing : graphiques conçus pour un fond sombre) : graphite, verre fumé,
    métal brossé assombri ; les graphiques gardent leurs couleurs. Texte clair #e6edf5 / verre #26303b : 11,9:1. */
 html[data-design="aqua"][data-tone="dark"] {
+  /* verre fumé, ardoise sombre, rail de métal assombri : mêmes rôles que l'Aqua clair (jetons --aq-*) ; texte #e6edf5 sur
+     verre fumé #323c47 : 10,4:1 ; gel : action principale, segment et onglet choisis (texte blanc ≥ 4,5:1, applyAqua) */
+  --aq-glass: linear-gradient(#4a5663, #323c47 50%, #2a333d 51%, #3b4652);
+  --aq-glass-edge: #11161c;
+  --aq-glass-sep: #11161c;
+  --aq-glass-shine: inset 0 1px 0 rgba(255, 255, 255, .15);
+  --aq-glass-drop: 0 1px 3px rgba(0, 0, 0, .4);
+  --aq-glass-text-shadow: 0 -1px 0 rgba(0, 0, 0, .5);
+  --aq-slate: linear-gradient(#222a33, #161c23 50%, #11161c 51%, #1c232b);
+  --aq-slate-edge: #05080b;
+  --aq-rail: linear-gradient(#323b46, #1a2028);
+  --aq-rail-shadow: inset 0 1px 0 rgba(255, 255, 255, .1), inset 0 -1px 0 rgba(0, 0, 0, .5), 0 1px 3px rgba(0, 0, 0, .5);
+  /* entrée courante de la barre latérale : voile clair léger (le voile blanc .55 du ton clair éteignait le texte clair) */
+  --sk-nav-on-bg: rgba(255, 255, 255, .14);
   --sk-title-shadow: 0 -1px 0 rgba(0, 0, 0, .6);
-  --sk-seg-bg: linear-gradient(#4a5663, #323c47 50%, #2a333d 51%, #3b4652);
-  --sk-seg-ink: #e6edf5;
-  --sk-seg-shadow: 0 -1px 0 rgba(0, 0, 0, .4);
   --sk-code-bg: #141a21;
   --sk-code-ink: #e6edf5;
   --sk-code-border: 1px solid #46525f;
@@ -953,17 +1042,6 @@ html[data-design="aqua"][data-tone="dark"] {
 html[data-design="aqua"][data-tone="dark"]:not(#imp) {
   background: linear-gradient(180deg, #1b2129, #10151b)
 }
-html[data-design="aqua"][data-tone="dark"] :is(.repo-menu-button, .repo-language-button),
-html[data-design="aqua"][data-tone="dark"] :is(button.secondary, a.secondary, label.rg-file, label.mt-file, .repo-header button.headerButton:not(:first-of-type), a.headerButton):not(.repo-block-tools button) {
-  text-shadow: 0 -1px 0 rgba(0, 0, 0, .5)
-}
-html[data-design="aqua"][data-tone="dark"] :is(.repo-menu-button, .repo-language-button):not(#imp),
-html[data-design="aqua"][data-tone="dark"] :is(button.secondary, a.secondary, label.rg-file, label.mt-file, .repo-header button.headerButton:not(:first-of-type), a.headerButton):not(.repo-block-tools button):not(#imp) {
-  background: linear-gradient(#4a5663, #323c47 50%, #2a333d 51%, #3b4652);
-  color: #e6edf5;
-  border-color: #11161c;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .15), 0 1px 3px rgba(0, 0, 0, .4)
-}
 html[data-design="aqua"][data-tone="dark"] .repo-footer {
   border-color: #2c3642
 }
@@ -999,13 +1077,54 @@ html[data-skeuo] :is(.repo-menu-button, .repo-language-button) {
   border: var(--sk-mbtn-border);
   border-radius: var(--sk-mbtn-radius)
 }
+/* menus ☰ et langues : matière --sk-menu-bg, une seule encre --sk-menu-ink (texte, libellés du profil), titres de
+   groupe --sk-menu-ink-2, séparateurs et survol tirés de l'encre (repository_nav.css : --repo-menu-*) ; les entrées
+   (liens, actions, langues) sont des lignes plates, pas les boutons du design (cuir marine sous une encre foncée :
+   1,1:1) ; champs du profil pilote : champs du design (--sk-input-*). Encre ≥ 4,5:1 sur la matière moyenne du menu,
+   dans chaque design et chaque ton (tools/contrast_audit.html). */
 html[data-skeuo] :is(.repo-menu, .repo-language-menu) {
+  --sk-menu-line: color-mix(in srgb, var(--sk-menu-ink) 24%, transparent);
+  --sk-menu-hover: color-mix(in srgb, var(--sk-menu-ink) 13%, transparent);
   background: var(--sk-menu-bg);
   color: var(--sk-menu-ink);
   border: var(--sk-menu-border)
 }
-html[data-skeuo] .repo-menu :is(a, button, summary):not(#imp) {
+html[data-skeuo] :is(.repo-menu, .repo-language-menu) :is(a, button, summary, label):not(#imp) {
   color: var(--sk-menu-ink)
+}
+html[data-skeuo] :is(.repo-menu, .repo-language-menu) :is(.repo-group, .repo-tree-group summary):not(#imp) {
+  color: var(--sk-menu-ink-2, var(--sk-menu-ink))
+}
+html[data-skeuo] :is(.repo-menu, .repo-language-menu) :is(.repo-link, .repo-action, button:not(.repo-settings-button)):not(#imp) {
+  min-height: 0;
+  padding: 8px;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  text-shadow: none;
+  font-family: inherit;
+  font-weight: 400;
+  filter: none
+}
+html[data-skeuo] :is(.repo-menu, .repo-language-menu) :is(.repo-link, .repo-action, button:not(.repo-settings-button)):is(:hover, :focus-visible, .active):not(#imp) {
+  background: var(--sk-menu-hover)
+}
+html[data-skeuo] .repo-menu .repo-settings-button:not(#imp) {
+  border: 1px solid var(--sk-menu-line);
+  background: var(--sk-menu-hover);
+  color: var(--sk-menu-ink);
+  text-shadow: none
+}
+html[data-skeuo] .repo-menu .repo-profile-field input:not(#imp) {
+  border: var(--sk-input-border);
+  background: var(--sk-input-bg);
+  color: var(--sk-input-ink)
+}
+html[data-skeuo] .repo-menu .repo-store-status:not(#imp) {
+  opacity: 1 !important
+    /* garder : opacité .8 posée en ligne par browser_store.js (3,8:1 sur le parchemin) */
+  ;
+  color: var(--sk-menu-ink-2, var(--sk-menu-ink))
 }
 html[data-skeuo] .repo-block:not(#imp) {
   border: var(--sk-block-border);
@@ -1035,6 +1154,24 @@ html[data-skeuo] .da-nav:not(#imp) {
 }
 html[data-skeuo] .da-nav h3:not(#imp) {
   color: var(--sk-ink-2)
+}
+/* la matière des cartes est semi-transparente (pensée pour un bloc) : le menu, posé sur le fond de page (bois, peinture),
+   reçoit dessous la surface des blocs du design (--repo-surface) */
+html[data-skeuo] .da-nav {
+  isolation: isolate
+}
+html[data-skeuo] .da-nav::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background: var(--repo-surface)
+}
+/* textes atténués par opacité dans les pages (libellés des formulaires d'ordre de mission_order.js : .85 ; intertitres
+   du sommaire de l'Aide : .7) : pleine encre du design, déjà secondaire (l'opacité les faisait tomber sous 4,5:1) */
+html[data-skeuo] :is(.mo-form .mo-grid label, .doc-side h3):not(#imp) {
+  opacity: 1
 }
 html[data-skeuo] .repo-dropzone {
   background: var(--sk-drop-bg);
@@ -1200,7 +1337,7 @@ html[data-skeuo] .repo-dropzone-pick {
   text-decoration: none
 }
 html[data-design="aqua"] .repo-dropzone-pick {
-  border: 1px solid #9aa6b2;
+  border: 1px solid var(--aq-glass-edge);
   border-radius: 8px
 }
 html[data-skeuo] .repo-dropzone-pick {
@@ -1591,7 +1728,8 @@ html[data-design="flightlog"] {
   --sk-plate-screw: 10px;
   --repo-surface: #efe3c4;
   --sk-segs-border: 1px solid #394350;
-  --sk-segs-bg: #b9bec5 url("textures/steel.webp?v=0") center/256px;
+  /* aluminium brossé clair, comme les plaques de titre (l'acier, moyenne #7a7f6e, donnait 3,8:1 sous l'encre) */
+  --sk-segs-bg: #c9ccc9 url("textures/brushed-light.webp?v=0") center/256px;
   --sk-seg-ink: #18212e;
   --sk-seg-shadow: 0 1px 0 rgba(255, 255, 255, .55);
   --sk-block-border: 22px solid transparent;
@@ -1799,15 +1937,10 @@ html[data-design="aqua"] .repo-block-tools button:is(:hover, :focus-visible):not
    Listes déroulantes et segments (vignettes et rangées de l'Apparence : appearance_page.js) : verre bombé (clair ou sombre selon le ton),
    état choisi en gel de la couleur Aqua. */
 html[data-design="aqua"] select:not([multiple]):not([size]):not(#imp) {
-  background-image: linear-gradient(#ffffff, #eef2f6 50%, #e2e8ee 51%, #f4f7fa);
-  box-shadow: inset 0 1px 0 #fff, 0 1px 2px rgba(20, 40, 70, .12);
-  /* encre du design : sur une page d'outil sombre (color-scheme sombre), le texte par défaut est blanc sur ce verre clair */
-  color: var(--sk-ink, #1c2733)
-}
-html[data-design="aqua"][data-tone="dark"] select:not([multiple]):not([size]):not(#imp) {
-  background-image: linear-gradient(#4a5663, #323c47 50%, #2a333d 51%, #3a4652);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .12), 0 1px 2px rgba(0, 0, 0, .4);
-  color: #e6edf5
+  background-image: var(--aq-glass);
+  box-shadow: var(--aq-glass-shine), var(--aq-glass-drop);
+  /* encre du verre : sur une page d'outil sombre (color-scheme sombre), le texte par défaut est blanc sur le verre clair */
+  color: var(--aq-glass-ink)
 }
 /* liste déroulante (fenêtre native) au ton du design : sur une page d'outil sombre (color-scheme sombre : Ordres de
    vols, Planning ODV…), elle s'ouvrait sombre sous l'encre foncée d'Aqua clair, de Cabinet ou du Carnet de vol (Durci :
@@ -2271,6 +2404,7 @@ html body .repo-block.repo-has-sheet:not(#imp) {
    --sheet-ink-2 ; texte courant --sheet-text, libellés --sheet-label-ink, facultatifs) — Durci, dont les blocs sont sombres à texte clair, y écrit comme sur du papier */
 html[data-skeuo] .repo-block.repo-has-sheet {
   --sk-label-ink: var(--sheet-label-ink, var(--sheet-ink));
+  --sk-link: var(--sheet-label-ink, var(--sheet-ink));
   color: var(--sheet-ink)
 }
 html[data-skeuo] .repo-has-sheet :is(p, td) {
@@ -2672,10 +2806,10 @@ html[data-design="field"] {
   --sk-pop-danger: #ff9a8a
 }
 html[data-design="aqua"] {
-  --sk-hb: linear-gradient(#ffffff, #e9eef3 50%, #dde4eb 51%, #f1f4f7);
-  --sk-hb-fg: #1c2733;
-  --sk-hb-bd: #9aa6b2;
-  --sk-acc: linear-gradient(180deg, color-mix(in srgb, var(--aq-gel) 55%, #fff) 0%, var(--aq-gel) 50%, color-mix(in srgb, var(--aq-gel) 85%, #000) 51%, color-mix(in srgb, var(--aq-gel) 70%, #fff) 100%);
+  --sk-hb: var(--aq-glass);
+  --sk-hb-fg: var(--aq-glass-ink);
+  --sk-hb-bd: var(--aq-glass-edge);
+  --sk-acc: linear-gradient(180deg, color-mix(in srgb, var(--aq-gel) 85%, #fff) 0%, var(--aq-gel) 50%, color-mix(in srgb, var(--aq-gel) 80%, #000) 51%, var(--aq-gel) 100%);
   --sk-acc-fg: #fff;
   --sk-pop: rgba(248, 251, 254, .97);
   --sk-pop-ink: #1c2733;
@@ -2688,9 +2822,6 @@ html[data-design="aqua"] {
   --sk-pop-danger: #a3170f
 }
 html[data-design="aqua"][data-tone="dark"] {
-  --sk-hb: linear-gradient(#4a5663, #323c47 50%, #2a333d 51%, #3a4652);
-  --sk-hb-fg: #e6edf5;
-  --sk-hb-bd: #1a2029;
   --sk-pop: rgba(30, 37, 46, .97);
   --sk-pop-ink: #e6edf5;
   --sk-pop-bd: #46525f;
@@ -2850,7 +2981,9 @@ html[data-skeuo] .repo-seg:not([aria-pressed="true"]):is(:hover, :focus-visible)
   filter: brightness(1.1)
 }
 /* ================================================================================================ ONGLETS DE PAGE (repo-tabs)
-   Onglets en tête de page (repository_nav.js, REPOSITORY_TREE.tabs : pages de Paramètres, générateur ⇄ studio) : un
+   Onglets en tête de page (repository_nav.js, REPOSITORY_TREE.tabs : pages de Paramètres, générateur ⇄ studio) et
+   onglets propres à une page (.profileTabs du Studio cartographique et des Cartes de vol, bouton choisi .on : mêmes
+   règles, même rail, mêmes poussoirs — un seul composant d'onglets par design) : un
    rail à angles droits, vissé aux deux bouts, et une plaque ou un poussoir par page ; la page courante est éclairée, les
    autres un peu éteintes. Cabinet, Durci : plaque gravée vissée (jetons --sk-plate-*) ; Carnet de vol : bouton du design
    (cuir sombre cerclé de laiton) et voyant ambre sur la page courante ; Aqua : bouton gel.
@@ -2888,7 +3021,7 @@ html[data-design="aqua"] {
   --sk-tab-bg: var(--sk-seg-bg);
   --sk-tab-ink: var(--sk-seg-ink);
   --sk-tab-text-shadow: var(--sk-seg-shadow);
-  --sk-tab-shadow: inset 0 1px 0 #fff, 0 0 0 1px #9aa6b2, 0 1px 3px rgba(0, 0, 0, .18);
+  --sk-tab-shadow: var(--aq-glass-shine), 0 0 0 1px var(--aq-glass-edge), var(--aq-glass-drop);
   --sk-tab-on-bg: var(--sk-seg-on-bg);
   --sk-tab-on-ink: var(--sk-seg-on-ink);
   --sk-tab-on-text-shadow: var(--sk-seg-on-text-shadow);
@@ -2897,10 +3030,10 @@ html[data-design="aqua"] {
   --sk-tab-glow: color-mix(in srgb, var(--aq-gel) 45%, transparent);
   --sk-tab-padding: 6px 18px;
   --sk-tab-screw: none;
-  --sk-tabs-rail: linear-gradient(#e9edf2, #c9d1da);
-  --sk-tabs-rail-shadow: inset 0 1px 0 #fff, 0 1px 3px rgba(0, 0, 0, .25)
+  --sk-tabs-rail: var(--aq-rail);
+  --sk-tabs-rail-shadow: var(--aq-rail-shadow)
 }
-html[data-skeuo] .repo-tabs:not(#imp) {
+html[data-skeuo] :is(.repo-tabs, .profileTabs):not(#imp) {
   position: relative;
   gap: 8px;
   margin: 8px 16px 0;
@@ -2915,8 +3048,8 @@ html[data-skeuo] .repo-tabs:not(#imp) {
   border-image: var(--sk-tabs-rail-img, none) var(--sk-tabs-rail-slice, 0) fill / var(--sk-tabs-rail-slice-w, 0) stretch
 }
 /* vis du rail, aux deux bouts */
-html[data-skeuo] .repo-tabs::before,
-html[data-skeuo] .repo-tabs::after {
+html[data-skeuo] :is(.repo-tabs, .profileTabs)::before,
+html[data-skeuo] :is(.repo-tabs, .profileTabs)::after {
   content: "";
   position: absolute;
   top: 50%;
@@ -2925,13 +3058,13 @@ html[data-skeuo] .repo-tabs::after {
   margin-top: -6px;
   background: var(--sk-screw, none) center/12px no-repeat
 }
-html[data-skeuo] .repo-tabs::before {
+html[data-skeuo] :is(.repo-tabs, .profileTabs)::before {
   left: 9px
 }
-html[data-skeuo] .repo-tabs::after {
+html[data-skeuo] :is(.repo-tabs, .profileTabs)::after {
   right: 9px
 }
-html[data-skeuo] .repo-tab:not(#imp) {
+html[data-skeuo] :is(.repo-tab, .profileTabs>button):not(#imp) {
   position: relative;
   margin: 0;
   padding: var(--sk-tab-padding);
@@ -2949,11 +3082,11 @@ html[data-skeuo] .repo-tab:not(#imp) {
   border-image: var(--sk-tab-img, none) var(--sk-tab-slice, 0) fill / var(--sk-tab-slice-w, 0) stretch;
   transition: filter .12s
 }
-html[data-skeuo] .repo-tab:not([aria-current="page"]):is(:hover, :focus-visible):not(#imp) {
+html[data-skeuo] :is(.repo-tab, .profileTabs>button):not([aria-current="page"], .on):is(:hover, :focus-visible):not(#imp) {
   filter: brightness(.95)
 }
 /* page courante : poussoir enfoncé et éclairé */
-html[data-skeuo] .repo-tab[aria-current="page"]:not(#imp) {
+html[data-skeuo] :is(.repo-tab[aria-current="page"], .profileTabs>button.on):not(#imp) {
   margin: 0;
   background: var(--sk-tab-on-bg, var(--sk-tab-bg));
   color: var(--sk-tab-on-ink, var(--sk-tab-ink));
@@ -2964,8 +3097,8 @@ html[data-skeuo] .repo-tab[aria-current="page"]:not(#imp) {
   transform: translateY(1px)
 }
 /* vis de la plaque, aux deux bouts (Cabinet, Durci) */
-html[data-skeuo] .repo-tab::before,
-html[data-skeuo] .repo-tab::after {
+html[data-skeuo] :is(.repo-tab, .profileTabs>button)::before,
+html[data-skeuo] :is(.repo-tab, .profileTabs>button)::after {
   content: "";
   position: absolute;
   top: 50%;
@@ -2974,14 +3107,14 @@ html[data-skeuo] .repo-tab::after {
   margin-top: calc(var(--sk-tab-screw-size) / -2);
   background: var(--sk-tab-screw) center/var(--sk-tab-screw-size) no-repeat
 }
-html[data-skeuo] .repo-tab::before {
+html[data-skeuo] :is(.repo-tab, .profileTabs>button)::before {
   left: 9px
 }
-html[data-skeuo] .repo-tab::after {
+html[data-skeuo] :is(.repo-tab, .profileTabs>button)::after {
   right: 9px
 }
 /* voyant de la page courante (Carnet de vol : --sk-tab-led) à la place de la vis de gauche */
-html[data-design="flightlog"] .repo-tab[aria-current="page"]::before {
+html[data-design="flightlog"] :is(.repo-tab[aria-current="page"], .profileTabs>button.on)::before {
   width: 8px;
   height: 8px;
   left: 8px;
@@ -2991,7 +3124,7 @@ html[data-design="flightlog"] .repo-tab[aria-current="page"]::before {
   box-shadow: 0 0 6px var(--sk-tab-led), 0 0 12px color-mix(in srgb, var(--sk-tab-led) 60%, transparent)
 }
 @media print {
-  html[data-skeuo] .repo-tabs {
+  html[data-skeuo] :is(.repo-tabs, .profileTabs) {
     display: none
   }
 }
@@ -3000,7 +3133,7 @@ html[data-design="flightlog"] .repo-tab[aria-current="page"]::before {
    fenêtre, poussoir : relâché, ou allumé avec voyant et lueur), les cellules accolées refont la barre, ses embouts
    vissés la ferment ; elle a la longueur des onglets (barre fermée, comme la planche). Échelle : 52 px de haut pour
    197 px d'image (× .264) ; découpes : embouts 92 px, cellule 110 px à gauche (voyant compris) et 70 px à droite. */
-html[data-design-base="cabinet"]:not([data-design="flightlog"]) .repo-tabs:not(#imp) {
+html[data-design-base="cabinet"]:not([data-design="flightlog"]) :is(.repo-tabs, .profileTabs):not(#imp) {
   width: fit-content;
   max-width: calc(100% - 32px);
   gap: 0;
@@ -3010,13 +3143,13 @@ html[data-design-base="cabinet"]:not([data-design="flightlog"]) .repo-tabs:not(#
   border: 0;
   border-image: url("deco/cabinet/tabs/rail.webp?v=0") 0 92 0 92 / 0 24px 0 24px stretch
 }
-html[data-design-base="cabinet"]:not([data-design="flightlog"]) .repo-tabs::before,
-html[data-design-base="cabinet"]:not([data-design="flightlog"]) .repo-tabs::after,
-html[data-design-base="cabinet"]:not([data-design="flightlog"]) .repo-tab::before,
-html[data-design-base="cabinet"]:not([data-design="flightlog"]) .repo-tab::after {
+html[data-design-base="cabinet"]:not([data-design="flightlog"]) :is(.repo-tabs, .profileTabs)::before,
+html[data-design-base="cabinet"]:not([data-design="flightlog"]) :is(.repo-tabs, .profileTabs)::after,
+html[data-design-base="cabinet"]:not([data-design="flightlog"]) :is(.repo-tab, .profileTabs>button)::before,
+html[data-design-base="cabinet"]:not([data-design="flightlog"]) :is(.repo-tab, .profileTabs>button)::after {
   content: none
 }
-html[data-design-base="cabinet"]:not([data-design="flightlog"]) .repo-tab:not(#imp) {
+html[data-design-base="cabinet"]:not([data-design="flightlog"]) :is(.repo-tab, .profileTabs>button):not(#imp) {
   height: 52px;
   padding: 0 24px 0 34px;
   line-height: 52px;
@@ -3030,7 +3163,7 @@ html[data-design-base="cabinet"]:not([data-design="flightlog"]) .repo-tab:not(#i
   border: 0;
   border-image: url("deco/cabinet/tabs/tab.webp?v=0") 0 70 0 110 fill / 0 18.5px 0 29px stretch
 }
-html[data-design-base="cabinet"]:not([data-design="flightlog"]) .repo-tab[aria-current="page"]:not(#imp) {
+html[data-design-base="cabinet"]:not([data-design="flightlog"]) :is(.repo-tab[aria-current="page"], .profileTabs>button.on):not(#imp) {
   color: #ffe2a8;
   text-shadow: 0 1px 0 #000, 0 0 8px rgba(255, 170, 40, .55);
   box-shadow: none;
@@ -3038,7 +3171,7 @@ html[data-design-base="cabinet"]:not([data-design="flightlog"]) .repo-tab[aria-c
   transform: none;
   border-image: url("deco/cabinet/tabs/tab-on.webp?v=0") 0 70 0 110 fill / 0 18.5px 0 29px stretch
 }
-html[data-design-base="cabinet"]:not([data-design="flightlog"]) .repo-tab:not([aria-current="page"]):is(:hover, :focus-visible):not(#imp) {
+html[data-design-base="cabinet"]:not([data-design="flightlog"]) :is(.repo-tab, .profileTabs>button):not([aria-current="page"], .on):is(:hover, :focus-visible):not(#imp) {
   filter: brightness(1.15)
 }
 /* Carnet de vol : étiquettes « complémentaires » (retouche de l'utilisateur) — chaque plaque porte une demi-patte rivetée à
@@ -3046,7 +3179,7 @@ html[data-design-base="cabinet"]:not([data-design="flightlog"]) .repo-tab:not([a
    manque est prise dans l'autre bout de la plaque (pseudo-éléments) ; barre d'aluminium nue (tabs/rail.vierge.webp) sous
    toute la rangée, sur toute la largeur de la page. Plaque : 44 px de haut pour 269 px d'image (× .1636), découpe
    autour du papier (64 / 138 / 58 / 132), demi-pattes de 38 px (6.2 px) ; barre : 79 px → 12.9 px. */
-html[data-design="flightlog"] .repo-tabs:not(#imp) {
+html[data-design="flightlog"] :is(.repo-tabs, .profileTabs):not(#imp) {
   gap: 0;
   padding: 4px 24px;
   background: none;
@@ -3054,7 +3187,7 @@ html[data-design="flightlog"] .repo-tabs:not(#imp) {
   border: 0;
   border-image: none
 }
-html[data-design="flightlog"] .repo-tabs::before {
+html[data-design="flightlog"] :is(.repo-tabs, .profileTabs)::before {
   inset: 50% 0 auto;
   width: auto;
   height: 12.9px;
@@ -3062,14 +3195,14 @@ html[data-design="flightlog"] .repo-tabs::before {
   border-image: none;
   background: url("deco/flightlog/tabs/rail.vierge.webp?v=0") left center/auto 100% repeat-x
 }
-html[data-design="flightlog"] .repo-tabs::after,
-html[data-design="flightlog"] .repo-tab::before,
-html[data-design="flightlog"] .repo-tab::after {
+html[data-design="flightlog"] :is(.repo-tabs, .profileTabs)::after,
+html[data-design="flightlog"] :is(.repo-tab, .profileTabs>button)::before,
+html[data-design="flightlog"] :is(.repo-tab, .profileTabs>button)::after {
   content: none
 }
 /* bouts de la rangée : demi-patte complémentaire (bout droit de la plaque à gauche, bout gauche à droite) */
-html[data-design="flightlog"] .repo-tab:first-child::before,
-html[data-design="flightlog"] .repo-tab:last-child::after {
+html[data-design="flightlog"] :is(.repo-tab, .profileTabs>button):first-child::before,
+html[data-design="flightlog"] :is(.repo-tab, .profileTabs>button):last-child::after {
   content: "";
   position: absolute;
   top: 0;
@@ -3083,21 +3216,21 @@ html[data-design="flightlog"] .repo-tab:last-child::after {
    760–765 au-dessus et au-dessous de la patte (traits verticaux aux bouts de la rangée) — terminateurs pris dans les
    colonnes propres : gauche x 766–794 (29 px, 4.74 px), droite x 1–28 (28 px, 4.58 px), collés à la partie opaque de la
    plaque (ses colonnes transparentes : 1 px à gauche, 2 px à droite, soit .16 et .33 px) */
-html[data-design="flightlog"] .repo-tab:first-child::before {
+html[data-design="flightlog"] :is(.repo-tab, .profileTabs>button):first-child::before {
   left: -4.58px;
   width: 4.74px;
   background: url("deco/flightlog/tabs/tab.webp?v=0") right -0.33px center/auto 100% no-repeat
 }
-html[data-design="flightlog"] .repo-tab:last-child::after {
+html[data-design="flightlog"] :is(.repo-tab, .profileTabs>button):last-child::after {
   right: -4.25px;
   width: 4.58px;
   background: url("deco/flightlog/tabs/tab.webp?v=0") left -0.16px center/auto 100% no-repeat
 }
 /* plaques serrées d'1 px : colonnes transparentes des bords (1 + 2 px d'image) sans fente entre deux demi-pattes */
-html[data-design="flightlog"] .repo-tab+.repo-tab:not(#imp) {
+html[data-design="flightlog"] :is(.repo-tab, .profileTabs>button)+:is(.repo-tab, .profileTabs>button):not(#imp) {
   margin-left: -1px
 }
-html[data-design="flightlog"] .repo-tab:not(#imp) {
+html[data-design="flightlog"] :is(.repo-tab, .profileTabs>button):not(#imp) {
   z-index: 1;
   height: 44px;
   padding: 0 24px;
@@ -3107,29 +3240,30 @@ html[data-design="flightlog"] .repo-tab:not(#imp) {
   box-shadow: none;
   filter: none;
   transform: none;
-  color: #2b2418;
+  /* encre foncée sur le papier de l'étiquette (bords et pattes plus sombres) */
+  color: #1c160d;
   text-shadow: 0 1px 0 rgba(255, 248, 225, .6);
   border: 0;
   border-image: url("deco/flightlog/tabs/tab.webp?v=0") 64 138 58 132 fill / 10.5px 22.6px 9.5px 21.6px stretch
 }
-html[data-design="flightlog"] .repo-tab[aria-current="page"]:not(#imp) {
+html[data-design="flightlog"] :is(.repo-tab[aria-current="page"], .profileTabs>button.on):not(#imp) {
   /* pas de fond : celui de l'onglet courant (bleu marine du thème) débordait autour de la plaque */
   background: none;
-  color: #3a2808;
+  color: #241803;
   text-shadow: 0 1px 0 rgba(255, 244, 200, .8);
   box-shadow: none;
   filter: none;
   transform: none;
   border-image: url("deco/flightlog/tabs/tab-on.webp?v=0") 64 138 58 132 fill / 10.5px 22.6px 9.5px 21.6px stretch
 }
-html[data-design="flightlog"] .repo-tab:not([aria-current="page"]):is(:hover, :focus-visible):not(#imp) {
+html[data-design="flightlog"] :is(.repo-tab, .profileTabs>button):not([aria-current="page"], .on):is(:hover, :focus-visible):not(#imp) {
   filter: brightness(1.08)
 }
 /* Durci : sangle de toile cousue sur toute la largeur de la page (embouts vissés, toile répétée), une cellule par
    onglet (cadre d'acier vissé, bouton de toile ; page courante : toile éclairée et voyant ambre au centre, posé à part
    pour ne pas s'étirer avec la cellule). Échelle : 56 px de haut pour 385 px d'image (× .1455) ; embouts 99 / 105 px,
    cellule 80 px de chaque côté (cadre et vis) ; voyant 119 × 79 px à 20 px du haut. */
-html[data-design="field"] .repo-tabs:not(#imp) {
+html[data-design="field"] :is(.repo-tabs, .profileTabs):not(#imp) {
   gap: 0;
   padding: 0 16px;
   background: none;
@@ -3137,12 +3271,12 @@ html[data-design="field"] .repo-tabs:not(#imp) {
   border: 0;
   border-image: url("deco/field/tabs/rail.webp?v=0") 0 105 0 99 fill / 0 15.3px 0 14.4px round stretch
 }
-html[data-design="field"] .repo-tabs::before,
-html[data-design="field"] .repo-tabs::after,
-html[data-design="field"] .repo-tab::after {
+html[data-design="field"] :is(.repo-tabs, .profileTabs)::before,
+html[data-design="field"] :is(.repo-tabs, .profileTabs)::after,
+html[data-design="field"] :is(.repo-tab, .profileTabs>button)::after {
   content: none
 }
-html[data-design="field"] .repo-tab:not(#imp) {
+html[data-design="field"] :is(.repo-tab, .profileTabs>button):not(#imp) {
   height: 56px;
   padding: 0 20px;
   line-height: 56px;
@@ -3156,8 +3290,9 @@ html[data-design="field"] .repo-tab:not(#imp) {
   border: 0;
   border-image: url("deco/field/tabs/tab.webp?v=0") 0 80 0 80 fill / 0 11.6px 0 11.6px stretch
 }
-html[data-design="field"] .repo-tab[aria-current="page"]:not(#imp) {
-  color: #262612;
+html[data-design="field"] :is(.repo-tab[aria-current="page"], .profileTabs>button.on):not(#imp) {
+  /* encre presque noire : la toile éclairée est un ton moyen (#262612 : 4:1) */
+  color: #0d0d06;
   text-shadow: 0 1px 0 rgba(255, 240, 180, .55);
   box-shadow: none;
   filter: none;
@@ -3166,7 +3301,7 @@ html[data-design="field"] .repo-tab[aria-current="page"]:not(#imp) {
 }
 /* voyant au centre du haut de chaque onglet : éteint (tabs/led.off.webp, fourni par l'utilisateur), allumé sur la page
    courante (tabs/led.webp) */
-html[data-design="field"] .repo-tab::before {
+html[data-design="field"] :is(.repo-tab, .profileTabs>button)::before {
   content: "";
   position: absolute;
   top: 2.9px;
@@ -3178,16 +3313,17 @@ html[data-design="field"] .repo-tab::before {
   box-shadow: none;
   background: url("deco/field/tabs/led.off.webp?v=0") center/100% 100% no-repeat
 }
-html[data-design="field"] .repo-tab[aria-current="page"]::before {
+html[data-design="field"] :is(.repo-tab[aria-current="page"], .profileTabs>button.on)::before {
   background-image: url("deco/field/tabs/led.webp?v=0")
 }
-html[data-design="field"] .repo-tab:not([aria-current="page"]):is(:hover, :focus-visible):not(#imp) {
+html[data-design="field"] :is(.repo-tab, .profileTabs>button):not([aria-current="page"], .on):is(:hover, :focus-visible):not(#imp) {
   filter: brightness(1.12)
 }
 /* Liseré du bloc à onglets : le bloc qui suit la barre d'onglets (main) est entouré d'un liseré — laiton (Cabinet,
    Carnet de vol), acier (Durci, Aqua) — qui le désigne comme la page des onglets. Liseré : cadre à coins arrondis de
    la planche (tools/cut_tabs.py, docs/technique/planches/lisere_*.webp), trait d'environ 6 px ; découpe 75 (laiton) / 85 (acier). */
-html[data-skeuo] .repo-tabs+main:not(#imp) {
+/* contenu de la page sous les onglets : main, ou .wrap (Carburant) */
+html[data-skeuo] .repo-tabs+:is(main, .wrap):not(#imp) {
   margin-top: 8px;
   padding-top: 10px;
   border: 6px solid transparent;
@@ -3297,6 +3433,7 @@ html[data-design="tactique"] {
   --sk-mbtn-radius: 10px;
   --sk-menu-bg: rgba(17, 25, 38, .96);
   --sk-menu-ink: var(--tq-ink);
+  --sk-menu-ink-2: var(--tq-ink-2);
   --sk-menu-border: 1px solid var(--tq-glass-brd);
   /* blocs, cartes, zones de dépôt, encadrés */
   --sk-block-radius: 14px;
@@ -3426,7 +3563,8 @@ html[data-design="tactique"] {
   --sk-card: linear-gradient(180deg, rgba(33, 49, 66, .7), rgba(27, 38, 55, .7));
   --sk-card-ink: var(--tq-ink);
   --sk-card-bd: var(--tq-brd);
-  --sk-paper: #141c29;
+  --sk-paper: #f3f5f8;
+  /* aperçu imprimable : papier clair sous l'encre d'impression (le verre sombre donnait 1:1) */
   color-scheme: dark;
   background:
     radial-gradient(1200px 600px at 15% -5%, rgba(56, 189, 248, .07), transparent 60%),

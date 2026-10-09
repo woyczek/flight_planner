@@ -1,0 +1,842 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Audit de contraste</title>
+<style>
+  :root {
+    --ink: #1b1f24;
+    --mut: #5b6470;
+    --line: #d5d9df;
+    --bg: #fff;
+    --head: #f2f4f7;
+    --ok: #1d7a3a;
+    --bad: #a3241a;
+    --warn: #8a5a00;
+  }
+  body {
+    font: 14px/1.45 system-ui, sans-serif;
+    margin: 16px;
+    background: var(--bg);
+    color: var(--ink);
+  }
+  h1 {
+    font-size: 20px;
+    margin: 0 0 6px;
+  }
+  h2 {
+    font-size: 16px;
+    margin: 22px 0 6px;
+  }
+  p,
+  li {
+    max-width: 980px;
+  }
+  .row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    margin: 8px 0;
+  }
+  fieldset {
+    border: 1px solid var(--line);
+    margin: 6px 0;
+    padding: 6px 10px;
+  }
+  table {
+    border-collapse: collapse;
+    margin-top: 8px;
+    font-size: 13px;
+  }
+  th,
+  td {
+    border: 1px solid var(--line);
+    padding: 3px 6px;
+    text-align: right;
+    vertical-align: top;
+  }
+  th {
+    background: var(--head);
+  }
+  td.l,
+  th.l {
+    text-align: left;
+  }
+  code {
+    font-size: 12px;
+  }
+  .mut {
+    color: var(--mut);
+  }
+  .bad {
+    color: var(--bad);
+    font-weight: 600;
+  }
+  .ok {
+    color: var(--ok);
+    font-weight: 600;
+  }
+  .sw {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border: 1px solid #0006;
+    vertical-align: -2px;
+    margin-right: 3px;
+  }
+  .chip {
+    display: inline-block;
+    padding: 0 6px;
+    border-radius: 3px;
+    font-weight: 600;
+  }
+  details {
+    margin: 4px 0;
+  }
+  summary {
+    cursor: pointer;
+  }
+  textarea {
+    width: min(720px, 100%);
+    font: 12px/1.35 ui-monospace, Consolas, monospace;
+  }
+  iframe {
+    width: 1280px;
+    height: 900px;
+    border: 1px solid var(--line);
+    transform: scale(.35);
+    transform-origin: 0 0;
+    margin-bottom: -580px;
+  }
+</style>
+</head>
+<body>
+<h1>Audit de contraste</h1>
+<p>Charge chaque page de la liste dans le cadre ci-dessous, pour chaque design et chaque décor choisis (réglages posés
+dans le stockage du navigateur avant le chargement, puis rendus à la fin), attend que la page soit stable, puis mesure
+le contraste WCAG de chaque texte visible : couleur du texte contre le <b>fond effectif</b> (ancêtres remontés jusqu'à un
+fond opaque ; fonds semi-transparents composés ; texture ou dégradé : couleur moyenne échantillonnée, marquée
+« fond image »). Seuils : 4,5:1 (texte courant), 3:1 (grand texte : ≥ 24 px, ou ≥ 18,66 px en gras). Option : ouvre aussi
+le menu ☰ (groupes dépliés) et le menu des langues. Le ton (clair ou sombre) est celui du thème de chaque page : les
+pages à thème sombre (planificateur, Atterrissages) donnent les variantes sombres. Limites : décors posés par
+éléments frères non vus (sauf panneaux en z-index négatif et pseudo-éléments couvrants) ; ombres portées du texte
+ignorées ; survol non testé ; commandes désactivées ignorées ; glyphe seul (flèche, croix) : seuil 3:1. Les réglages
+étant ceux du navigateur pour cette origine, ouvrir l'outil sur une adresse que personne d'autre n'utilise pendant
+l'audit (par exemple <code>http://[::1]:&lt;port&gt;/tools/contrast_audit.html</code>) ; un réglage changé en cours de
+route est reposé et la page rechargée (champ <code>applied</code> du relevé).</p>
+<fieldset>
+  <legend>Périmètre</legend>
+  <div class="row" id="designs"></div>
+  <div class="row">
+    <label><input type="checkbox" class="decor" value="full" checked> décor complet</label>
+    <label><input type="checkbox" class="decor" value="sober" checked> décor sobre</label>
+    <label><input type="checkbox" id="menus" checked> menus ☰ et langues</label>
+    <label><input type="checkbox" id="fresh" checked title="Recharge depuis le serveur (sans le cache « immutable ») les feuilles communes : designs.css, designs_skeuo.css, repository_nav.css, block_icons.css — utile pendant les retouches, avant bump_versions.py">feuilles communes sans cache</label>
+    <label title="Relevé « avant » : dossier (sous tools/) contenant des copies de référence des feuilles communes (designs_skeuo.css, repository_nav.css…, adresses url() réécrites vers shared/) ; elles remplacent celles de la page">Feuilles de référence <input id="ref" size="14" placeholder="_verify/ref/"></label>
+    <label>Niveau <select id="level"><option>1</option><option>2</option><option>3</option><option selected>4</option></select></label>
+  </div>
+  <textarea id="pages" rows="10" spellcheck="false"></textarea>
+</fieldset>
+<div class="row">
+  <label>Libellé <input id="label" size="18" placeholder="avant / après…"></label>
+  <button id="go">Lancer l'audit</button>
+  <button id="stop">Arrêter</button>
+  <button id="download">Télécharger (JSON)</button>
+  <button id="save" title="Lanceur seulement : écrit docs/technique/perf/runs/contrast_&lt;date&gt;.json (tous les relevés de cette session)">Enregistrer dans docs/perf</button>
+  <button id="load" title="Relit docs/technique/perf/runs/contrast_&lt;date&gt;.json (relevés enregistrés)">Relire le fichier enregistré</button>
+  <span id="state" class="mut"></span>
+</div>
+<div id="summary"></div>
+<div id="out"></div>
+<iframe id="frame" title="page auditée"></iframe>
+<script src="../config/repository_tree"></script>
+<script>
+(() => {
+  'use strict';
+  const $ = id => document.getElementById(id);
+  const sleep = ms => new Promise(r => setTimeout(r, ms));
+  const frame = $('frame');
+  const W = () => frame.contentWindow,
+    D = () => frame.contentDocument;
+  const DATE = new Date().toISOString().slice(0, 10);
+  const FILE = `contrast_${DATE}`;
+  const KEEP = ['repositoryDesign', 'repositoryDecor', 'suiteLevel:v1', 'cpcoAccess:v1', 'repositoryLanguageMode'];
+  const DESIGNS = Object.keys(window.REPOSITORY_TREE?.designs?.list || {
+    standard: 1,
+    aero: 1,
+    ops: 1,
+    console: 1,
+    cabinet: 1,
+    flightlog: 1,
+    field: 1,
+    aqua: 1,
+    tactique: 1
+  });
+  const SKEUO = DESIGNS.filter(d => window.REPOSITORY_TREE?.designs?.list?.[d]?.skeuo);
+  const PAGES = ['index.html', 'apps/pilot/aujourdhui.html', 'apps/pilot/mes_missions.html', 'apps/cr/mission_cr.html',
+    'apps/cr/HEMS/hems_medevac_cr.html', 'apps/cr/HEMS/hems_medevac_reporting.html', 'apps/cpco/odv_orders.html',
+    'apps/cpco/mission_editor.html', 'apps/cpco/mission_registry.html', 'apps/cpco/map_parser.html', 'apps/planner/map_planner.html',
+    'apps/planner/flight_performance_planner.html', 'apps/landing/LandingPerformance_Dashboard_MultiCSV_i18n.html',
+    'apps/settings/profil.html', 'apps/settings/apparence.html', 'apps/settings/installation.html', 'apps/settings/maintenance.html',
+    'apps/aide/aide.html'
+  ];
+  $('designs').innerHTML = DESIGNS.map(d => `<label><input type="checkbox" class="design" value="${d}" checked> ${d}${SKEUO.includes(d) ? ' ◆' : ''}</label>`).join('') +
+    ' <button id="onlySkeuo" type="button">designs à matières seulement</button>';
+  $('pages').value = PAGES.join('\n');
+  $('onlySkeuo').onclick = () => document.querySelectorAll('.design').forEach(c => (c.checked = SKEUO.includes(c.value)));
+
+  // ---------------------------------------------------------------------------------------------- couleurs
+  const CV = document.createElement('canvas');
+  CV.width = CV.height = 1;
+  const CX = CV.getContext('2d', {
+    willReadFrequently: true
+  });
+  const cache = new Map();
+  /** Couleur CSS calculée → [r, g, b, a] (0-255, a 0-1) ; rgb(), rgba(), color(srgb …), sinon par un canevas. */
+  function parse(str) {
+    if (!str) return [0, 0, 0, 0];
+    if (cache.has(str)) return cache.get(str);
+    let m, v;
+    if ((m = /^rgba?\(([^)]+)\)$/.exec(str))) {
+      const p = m[1].split(/[\s,/]+/).filter(Boolean).map(Number);
+      v = [p[0], p[1], p[2], p.length > 3 ? p[3] : 1];
+    } else if ((m = /^color\(srgb ([^)]+)\)$/.exec(str))) {
+      const p = m[1].split(/[\s/]+/).filter(Boolean).map(Number);
+      v = [p[0] * 255, p[1] * 255, p[2] * 255, p.length > 3 ? p[3] : 1];
+    } else if (str === 'transparent') v = [0, 0, 0, 0];
+    else {
+      CX.clearRect(0, 0, 1, 1);
+      CX.fillStyle = 'rgba(0,0,0,0)';
+      CX.fillStyle = str;
+      CX.fillRect(0, 0, 1, 1);
+      const d = CX.getImageData(0, 0, 1, 1).data;
+      v = [d[0], d[1], d[2], d[3] / 255];
+    }
+    cache.set(str, v);
+    return v;
+  }
+  /** Couleur top posée sur bottom (composition « source-over »). */
+  function over(top, bot) {
+    const a = top[3] + bot[3] * (1 - top[3]);
+    if (a <= 0) return [0, 0, 0, 0];
+    return [0, 1, 2].map(i => (top[i] * top[3] + bot[i] * bot[3] * (1 - top[3])) / a).concat(a);
+  }
+  const lin = c => {
+    c /= 255;
+    return c <= .04045 ? c / 12.92 : ((c + .055) / 1.055) ** 2.4;
+  };
+  const lum = c => .2126 * lin(c[0]) + .7152 * lin(c[1]) + .0722 * lin(c[2]);
+  const ratio = (a, b) => {
+    const x = lum(a),
+      y = lum(b);
+    return (Math.max(x, y) + .05) / (Math.min(x, y) + .05);
+  };
+  const hex = c => '#' + c.slice(0, 3).map(v => Math.round(Math.max(0, Math.min(255, v))).toString(16).padStart(2, '0')).join('');
+
+  // ---------------------------------------------------------------------------------------------- fonds
+  /** Coupe une liste CSS calculée à ses virgules de premier niveau (images de fond, tailles…). */
+  function split(list) {
+    const out = [];
+    let depth = 0,
+      cur = '';
+    for (const ch of list) {
+      if (ch === '(') depth++;
+      if (ch === ')') depth--;
+      if (ch === ',' && !depth) {
+        out.push(cur.trim());
+        cur = '';
+      } else cur += ch;
+    }
+    if (cur.trim()) out.push(cur.trim());
+    return out;
+  }
+  const imgAvg = new Map();
+  /** Couleur moyenne d'une image de fond (même origine), réduite à 24 × 24 sur un canevas ; null si illisible. */
+  function imageAverage(url, slice = null) {
+    const key = url + (slice ? '#' + slice : '');
+    if (imgAvg.has(key)) return imgAvg.get(key);
+    const p = new Promise(res => {
+      const im = new Image();
+      im.onload = () => {
+        try {
+          const c = document.createElement('canvas');
+          c.width = c.height = 24;
+          const x = c.getContext('2d', {
+            willReadFrequently: true
+          });
+          // découpe d'une image de bord (border-image-slice : haut droite bas gauche, en pixels ou en %) : seule la
+          // partie centrale, celle qui remplit l'élément (fill), est échantillonnée
+          let sx = 0,
+            sy = 0,
+            sw = im.naturalWidth,
+            sh = im.naturalHeight;
+          if (slice) {
+            const q = slice.replace('fill', '').trim().split(/\s+/);
+            const [t, r2 = t, b2 = t, l = r2] = q;
+            const px = (v, d) => v.endsWith('%') ? parseFloat(v) / 100 * d : parseFloat(v) || 0;
+            const W0 = im.naturalWidth,
+              H0 = im.naturalHeight;
+            const T = px(t, H0),
+              R = px(r2, W0),
+              B = px(b2, H0),
+              L = px(l, W0);
+            if (W0 - L - R > 2 && H0 - T - B > 2) {
+              sx = L;
+              sy = T;
+              sw = W0 - L - R;
+              sh = H0 - T - B;
+            }
+          }
+          x.drawImage(im, sx, sy, sw, sh, 0, 0, 24, 24);
+          const d = x.getImageData(0, 0, 24, 24).data;
+          let r = 0,
+            g = 0,
+            b = 0,
+            a = 0;
+          for (let i = 0; i < d.length; i += 4) {
+            const w = d[i + 3] / 255;
+            r += d[i] * w;
+            g += d[i + 1] * w;
+            b += d[i + 2] * w;
+            a += w;
+          }
+          const n = d.length / 4;
+          res(a ? [r / a, g / a, b / a, a / n] : [0, 0, 0, 0]);
+        } catch {
+          res(null);
+        }
+      };
+      im.onerror = () => res(null);
+      im.src = url;
+    });
+    imgAvg.set(key, p);
+    return p;
+  }
+  /** Couleur moyenne d'un dégradé : moyenne des arrêts de couleur (pondérée par l'opacité). */
+  function gradientAverage(g) {
+    const stops = g.match(/rgba?\([^)]*\)|color\([^)]*\)|#[0-9a-f]{3,8}\b|\btransparent\b/gi) || [];
+    if (!stops.length) return null;
+    let r = 0,
+      gg = 0,
+      b = 0,
+      a = 0;
+    for (const s of stops) {
+      const c = parse(s);
+      r += c[0] * c[3];
+      gg += c[1] * c[3];
+      b += c[2] * c[3];
+      a += c[3];
+    }
+    return a ? [r / a, gg / a, b / a, a / stops.length] : [0, 0, 0, 0];
+  }
+  /** Couleur d'une couche de fond d'un élément : couleur de fond sous ses images (images partielles, non répétées
+   *  et sans « cover », ignorées : icônes, vis, filigranes). Renvoie {c, kind} ; kind = color | image | gradient | none. */
+  async function layer(cs, small = false) {
+    let c = parse(cs.backgroundColor),
+      kind = c[3] > 0 ? 'color' : 'none',
+      unknown = false;
+    const imgs = split(cs.backgroundImage || 'none');
+    const reps = split(cs.backgroundRepeat),
+      sizes = split(cs.backgroundSize);
+    for (let i = imgs.length - 1; i >= 0; i--) {
+      const im = imgs[i];
+      if (im === 'none') continue;
+      const rep = reps[i % reps.length] || 'repeat',
+        size = sizes[i % sizes.length] || 'auto';
+      // image partielle (non répétée, ni « cover ») : décor ignoré, sauf sur un petit élément (bouton à médaillon)
+      // (dégradé : partiel seulement s'il a une taille propre, barrette de galon 48px 3px…)
+      const partial = !small && /no-repeat/.test(rep) && !/cover|100% 100%|^100%$/.test(size) && !(/gradient/.test(im) && size ===
+        'auto');
+      if (partial) continue;
+      let avg = null;
+      const u = /^url\("?(.*?)"?\)$/.exec(im);
+      if (u) {
+        avg = await imageAverage(u[1]);
+        if (avg) kind = 'image';
+        else unknown = true;
+      } else if (/gradient/.test(im)) {
+        avg = gradientAverage(im);
+        if (avg && kind !== 'image') kind = 'gradient';
+      } else unknown = true;
+      if (avg) c = over(avg, c);
+    }
+    // image de bord remplie (border-image … fill : onglets et plaques découpés dans les planches) : peinte par-dessus
+    const bi = /^url\("?(.*?)"?\)$/.exec(cs.borderImageSource || '');
+    if (bi && /fill/.test(cs.borderImageSlice)) {
+      const avg = await imageAverage(bi[1], cs.borderImageSlice);
+      if (avg) {
+        c = over(avg, c);
+        kind = 'image';
+      } else unknown = true;
+    }
+    return {
+      c,
+      kind: unknown && kind === 'none' ? 'unknown' : kind
+    };
+  }
+  /** Fond effectif sous l'élément n (mémorisé par élément pour un relevé : les ancêtres sont partagés) : sa couche de
+   *  fond, puis les fonds posés sous son contenu par un enfant en position absolue à z-index négatif qui le couvre
+   *  (panneaux des blocs : .repo-deco-bgimg) ou par un pseudo-élément ::before / ::after couvrant (inset 0, z-index
+   *  négatif) ; couche non opaque : composée sur le fond du parent ; au bout, fond du canevas (blanc, ou sombre si la
+   *  page est en color-scheme sombre seulement). Renvoie {c, kind, opacity} (opacité cumulée des ancêtres). */
+  function backdrop(n, win, memo) {
+    if (!n || n.nodeType !== 1) {
+      const scheme = (win.getComputedStyle(win.document.documentElement).colorScheme || '').trim();
+      return Promise.resolve({
+        c: scheme === 'dark' ? [18, 18, 18, 1] : [255, 255, 255, 1],
+        kind: 'color',
+        opacity: 1
+      });
+    }
+    if (memo.has(n)) return memo.get(n);
+    const job = (async () => {
+      const cs = win.getComputedStyle(n);
+      const r = n.getBoundingClientRect();
+      const own = await layer(cs, r.width <= 64 && r.height <= 64);
+      const under = [];
+      for (const c of n.children) {
+        const cc = win.getComputedStyle(c);
+        if (!/absolute|fixed/.test(cc.position) || !(parseInt(cc.zIndex, 10) < 0) || cc.display === 'none' || cc.visibility ===
+          'hidden') continue;
+        const b = c.getBoundingClientRect();
+        if (b.width * b.height < .8 * r.width * r.height) continue;
+        let l = await layer(cc);
+        // conteneur de décor sans fond propre (feuille de registre .repo-deco-sheet) : ses pièces couvrantes (.sh-paper…)
+        for (const g of c.children) {
+          const gc = win.getComputedStyle(g),
+            gb = g.getBoundingClientRect();
+          if (!/absolute|fixed/.test(gc.position) || gb.width * gb.height < .6 * b.width * b.height) continue;
+          const gl = await layer(gc);
+          if (gl.c[3] > 0) l = {
+            c: over([gl.c[0], gl.c[1], gl.c[2], gl.c[3] * +gc.opacity], l.c),
+            kind: gl.kind === 'color' && l.kind !== 'none' ? l.kind : gl.kind
+          };
+        }
+        under.push([l, +cc.opacity]);
+      }
+      for (const ps of ['::before', '::after']) {
+        const pc = win.getComputedStyle(n, ps);
+        if (pc.content === 'none' || pc.content === 'normal' || !/absolute|fixed/.test(pc.position) || !(parseInt(pc.zIndex, 10) <
+            0)) continue;
+        if (![pc.top, pc.left, pc.right, pc.bottom].every(v => parseFloat(v) <= 0)) continue;
+        under.push([await layer(pc), +pc.opacity]);
+      }
+      let c, kind;
+      if (own.c[3] >= .995) {
+        c = own.c;
+        kind = own.kind === 'none' ? 'color' : own.kind;
+      } else {
+        const p = await backdrop(n.parentElement, win, memo);
+        c = own.c[3] > 0 ? over(own.c, p.c) : p.c;
+        kind = own.kind === 'unknown' || p.kind === 'unknown' ? 'unknown' : own.kind === 'image' || own.kind === 'gradient' ? own
+          .kind : p.kind;
+      }
+      for (const [l, op] of under) {
+        if (l.kind === 'unknown') kind = 'unknown';
+        if (l.c[3] <= 0) continue;
+        c = over([l.c[0], l.c[1], l.c[2], l.c[3] * op], c);
+        if (kind !== 'unknown' && l.kind !== 'color' && l.kind !== 'none') kind = l.kind;
+      }
+      const parentOp = n.parentElement ? (await backdropOpacity(n.parentElement, win, memo)) : 1;
+      return {
+        c,
+        kind,
+        opacity: parentOp * +cs.opacity
+      };
+    })();
+    memo.set(n, job);
+    return job;
+  }
+  /** Opacité cumulée d'un élément et de ses ancêtres (mémorisée avec les fonds). */
+  async function backdropOpacity(n, win, memo) {
+    const k = memo.op || (memo.op = new Map());
+    if (k.has(n)) return k.get(n);
+    let o = 1;
+    for (let x = n; x && x.nodeType === 1; x = x.parentElement) o *= +win.getComputedStyle(x).opacity;
+    k.set(n, o);
+    return o;
+  }
+
+  // ---------------------------------------------------------------------------------------------- relevé
+  /** Sélecteur court : l'élément et ses deux ancêtres les plus proches qui portent un id ou une classe. */
+  function selector(el) {
+    const part = n => {
+      let s = n.tagName.toLowerCase();
+      if (n.id && n.id.length < 24 && !/\d{3}/.test(n.id)) s += '#' + n.id;
+      const cls = [...n.classList].filter(c => !/^(active|on|open|is-|js-)/.test(c)).slice(0, 2);
+      if (cls.length) s += '.' + cls.join('.');
+      return s;
+    };
+    const out = [part(el)];
+    for (let n = el.parentElement; n && out.length < 3 && n.tagName !== 'BODY'; n = n.parentElement)
+      if (n.id || n.classList.length) out.unshift(part(n));
+    return out.join(' > ');
+  }
+  const SKIP = 'script,style,noscript,template,option,optgroup,svg,canvas,[aria-hidden="true"]';
+  /** Mesure tous les textes visibles sous root (document du cadre) ; un relevé par élément porteur de texte (et par
+   *  champ rempli). Renvoie {checked, unknown, fails:[{sel, fg, bg, ratio, need, kind, n, text}]} regroupés. */
+  async function scan(doc, root, scope) {
+    const win = doc.defaultView;
+    root = root || doc.body;
+    const seen = new Set(),
+      items = [];
+    const tw = doc.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+    for (let t = tw.nextNode(); t; t = tw.nextNode()) {
+      const el = t.parentElement;
+      if (!el || seen.has(el) || !t.data.trim()) continue;
+      seen.add(el);
+      if (el.closest(SKIP)) continue;
+      items.push([el, [...el.childNodes].filter(x => x.nodeType === 3).map(x => x.data).join(' ')]);
+    }
+    for (const el of root.querySelectorAll(
+        'input:not([type=hidden]):not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color]):not([type=file]), select, textarea'
+      ))
+      if ((el.value || '').trim() && !el.closest(SKIP)) items.push([el, el.value]);
+    const groups = new Map(),
+      memo = new Map();
+    let checked = 0,
+      unknown = 0;
+    for (const [el, own] of items) {
+      // commandes désactivées : hors exigence WCAG (1.4.3)
+      if (el.closest(':disabled, [aria-disabled="true"]')) continue;
+      if (el.checkVisibility && !el.checkVisibility({
+          opacityProperty: true,
+          visibilityProperty: true,
+          checkOpacity: true,
+          checkVisibilityCSS: true
+        })) continue;
+      const r = el.getBoundingClientRect();
+      if (r.width < 1 || r.height < 1) continue;
+      const cs = win.getComputedStyle(el);
+      if (+cs.fontSize.replace('px', '') < 6) continue;
+      let fg = parse(cs.webkitTextFillColor && cs.webkitTextFillColor !== cs.color ? cs.webkitTextFillColor : cs.color);
+      if (/text/.test(cs.backgroundClip) || fg[3] === 0) {
+        unknown++;
+        continue;
+      }
+      const bd = await backdrop(el, win, memo);
+      fg = [fg[0], fg[1], fg[2], fg[3] * bd.opacity];
+      const text = over(fg, bd.c);
+      const k = ratio(text, bd.c);
+      const px = parseFloat(cs.fontSize),
+        bold = +cs.fontWeight >= 700;
+      // grand texte, ou glyphe seul sans lettre ni chiffre (flèche, ↕, ✕ : élément graphique, 1.4.11) : 3:1
+      const need = px >= 24 || (bold && px >= 18.66) || !/[\p{L}\p{N}]/u.test(own) ? 3 : 4.5;
+      checked++;
+      if (bd.kind === 'unknown') {
+        unknown++;
+        continue;
+      }
+      if (k >= need) continue;
+      const sel = selector(el),
+        key = `${sel}|${hex(text)}|${hex(bd.c)}`;
+      const g = groups.get(key);
+      if (g) {
+        g.n++;
+        continue;
+      }
+      groups.set(key, {
+        scope,
+        sel,
+        fg: hex(text),
+        bg: hex(bd.c),
+        ratio: Math.round(k * 100) / 100,
+        need,
+        kind: bd.kind,
+        n: 1,
+        text: (el.value || el.textContent || '').trim().replace(/\s+/g, ' ').slice(0, 40)
+      });
+    }
+    return {
+      checked,
+      unknown,
+      fails: [...groups.values()].sort((a, b) => a.ratio - b.ratio)
+    };
+  }
+
+  // ---------------------------------------------------------------------------------------------- chargement
+  let stopAsked = false;
+  /** Attend la stabilité de la page du cadre : aucune modification du document pendant 600 ms (8 s au plus). */
+  async function settle(max = 8000) {
+    const t0 = performance.now();
+    let last = t0,
+      mo = null;
+    try {
+      mo = new(W().MutationObserver)(() => (last = performance.now()));
+      mo.observe(D().documentElement, {
+        subtree: true,
+        childList: true,
+        characterData: true,
+        attributes: true
+      });
+    } catch {
+      /* document en cours de remplacement */
+    }
+    while (performance.now() - t0 < max) {
+      await sleep(100);
+      if (performance.now() - last >= 600) break;
+    }
+    mo?.disconnect();
+    try {
+      await D().fonts?.ready;
+    } catch {}
+  }
+  const refreshed = new Set();
+  /** Sans cache : relit depuis le serveur les feuilles communes liées par la page (adresse exacte, cache « reload ») ;
+   *  vrai si une feuille a été relue (la page est alors rechargée). */
+  async function refreshSheets() {
+    if (!$('fresh').checked) return false;
+    const urls = [...D().querySelectorAll('link[rel=stylesheet]')].map(l => l.href).filter(h =>
+      /\/shared\/(designs|designs_skeuo|repository_nav|block_icons)\.css/.test(h) && !refreshed.has(h));
+    for (const u of urls) {
+      refreshed.add(u);
+      try {
+        await fetch(u, {
+          cache: 'reload'
+        });
+      } catch {}
+    }
+    return urls.length > 0;
+  }
+  const refHas = new Map();
+  /** Feuilles de référence (relevé « avant ») : remplace chaque feuille commune de la page par sa copie du dossier
+   *  choisi, si elle existe, et attend son chargement. */
+  async function useReference() {
+    const dir = $('ref').value.trim();
+    if (!dir) return;
+    const waits = [];
+    for (const l of D().querySelectorAll('link[rel=stylesheet]')) {
+      const m = /\/shared\/(designs|designs_skeuo|repository_nav|block_icons)\.css/.exec(l.href);
+      if (!m) continue;
+      const u = new URL(dir.replace(/\/?$/, '/') + m[1] + '.css', location.href).href;
+      if (!refHas.has(u)) refHas.set(u, await fetch(u, {
+        method: 'HEAD',
+        cache: 'no-store'
+      }).then(r => r.ok, () => false));
+      if (!refHas.get(u)) continue;
+      waits.push(new Promise(r => {
+        l.onload = l.onerror = r;
+        setTimeout(r, 3000);
+      }));
+      l.href = u + '?t=' + Date.now();
+    }
+    await Promise.all(waits);
+  }
+  async function open(url) {
+    await new Promise(r => {
+      frame.onload = r;
+      frame.src = url;
+    });
+    if (await refreshSheets()) await new Promise(r => {
+      frame.onload = r;
+      W().location.reload();
+    });
+    await useReference();
+    await settle();
+  }
+  /** Ouvre le menu ☰ (groupes dépliés) ou le menu des langues, le mesure, le referme. */
+  async function scanMenu(btnSel, menuSel, scope) {
+    const btn = D().querySelector(btnSel);
+    if (!btn) return null;
+    btn.click();
+    await sleep(350);
+    const m = D().querySelector(menuSel);
+    if (!m || m.hidden) return null;
+    m.querySelectorAll('details').forEach(d => (d.open = true));
+    await sleep(100);
+    const r = await scan(D(), m, scope);
+    btn.click();
+    await sleep(100);
+    return r;
+  }
+  /** Une page dans un design et un décor : relevé de la page, puis des menus. */
+  async function auditOne(page, design, decor) {
+    const t0 = performance.now();
+    // réglages relus sur la page chargée : un autre onglet de la même origine peut les changer entre-temps (on recharge)
+    for (let k = 0; k < 3; k++) {
+      localStorage.setItem('repositoryDesign', design);
+      localStorage.setItem('repositoryDecor', decor);
+      await open('../' + page);
+      const h = D().documentElement;
+      if (h.dataset.design === design && h.dataset.decor === decor) break;
+    }
+    const d = D(),
+      h = d.documentElement;
+    const res = {
+      page,
+      design,
+      decor,
+      applied: h.dataset.design === design && h.dataset.decor === decor,
+      tone: h.dataset.tone || '',
+      surface: h.dataset.surface || '',
+      checked: 0,
+      unknown: 0,
+      fails: []
+    };
+    const add = r => {
+      if (!r) return;
+      res.checked += r.checked;
+      res.unknown += r.unknown;
+      res.fails.push(...r.fails);
+    };
+    try {
+      add(await scan(d, d.body, 'page'));
+      if ($('menus').checked) {
+        add(await scanMenu('.repo-menu-button', '.repo-menu', 'menu'));
+        add(await scanMenu('.repo-language-button', '.repo-language-menu', 'langues'));
+      }
+    } catch (e) {
+      res.error = String(e);
+    }
+    res.fails = res.fails.slice(0, 80);
+    res.ms = Math.round(performance.now() - t0);
+    res.failCount = res.fails.reduce((s, f) => s + f.n, 0);
+    return res;
+  }
+
+  // ---------------------------------------------------------------------------------------------- relevés, affichage
+  const RUNS = [];
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;'
+  })[c]);
+  const sw = c => `<span class="sw" style="background:${c}"></span>${c}`;
+  /** Tableau de synthèse : éléments sous le seuil par design × décor, une colonne par relevé (avant / après). */
+  function summary() {
+    if (!RUNS.length) return '';
+    const keys = [...new Set(RUNS.flatMap(r => r.results.map(x => `${x.design}|${x.decor}`)))];
+    const cell = (run, k) => {
+      const rs = run.results.filter(x => `${x.design}|${x.decor}` === k);
+      if (!rs.length) return '<td>—</td>';
+      const n = rs.reduce((s, x) => s + x.failCount, 0),
+        c = rs.reduce((s, x) => s + x.checked, 0);
+      return `<td class="${n ? 'bad' : 'ok'}">${n} <span class="mut">/ ${c}</span></td>`;
+    };
+    return `<h2>Synthèse : textes sous le seuil / textes mesurés</h2><table><thead><tr><th class="l">design</th><th class="l">décor</th>${RUNS.map(r => `<th>${esc(r.label || '?')}<br><span class="mut">${r.date.slice(0, 16).replace('T', ' ')}</span></th>`).join('')}</tr></thead><tbody>${keys.map(k => `<tr><td class="l">${k.split('|')[0]}</td><td class="l">${k.split('|')[1]}</td>${RUNS.map(r => cell(r, k)).join('')}</tr>`).join('')}</tbody></table>`;
+  }
+  /** Détail d'un relevé : une ligne par page × design × décor, défauts dépliables. */
+  function detail(run) {
+    return `<h2>${esc(run.label || '(sans libellé)')} — ${run.date.slice(0, 16).replace('T', ' ')}</h2>${run.results.map(x => `<details><summary><b>${x.page.split('/').pop()}</b> · ${x.design} · ${x.decor} · ton ${x.tone || '?'} — <span class="${x.failCount ? 'bad' : 'ok'}">${x.failCount} sous le seuil</span> <span class="mut">/ ${x.checked} mesurés, ${x.unknown} non calculés${x.error ? ' — erreur : ' + esc(x.error) : ''}</span></summary>${x.fails.length ? `<table><thead><tr><th class="l">zone</th><th class="l">sélecteur</th><th class="l">texte</th><th class="l">couleur</th><th class="l">fond</th><th>ratio</th><th>seuil</th><th>n</th></tr></thead><tbody>${x.fails.map(f => `<tr><td class="l">${f.scope}</td><td class="l"><code>${esc(f.sel)}</code></td><td class="l">${esc(f.text)}</td><td class="l">${sw(f.fg)}</td><td class="l">${sw(f.bg)}${f.kind !== 'color' ? ` <span class="mut">(${f.kind === 'image' ? 'fond image' : f.kind})</span>` : ''}</td><td>${f.ratio}</td><td>${f.need}</td><td>${f.n}</td></tr>`).join('')}</tbody></table>` : ''}</details>`).join('')}`;
+  }
+  const render = () => {
+    $('summary').innerHTML = summary();
+    $('out').innerHTML = RUNS.slice().reverse().map(detail).join('');
+  };
+
+  async function run() {
+    stopAsked = false;
+    const designs = [...document.querySelectorAll('.design:checked')].map(c => c.value);
+    const decors = [...document.querySelectorAll('.decor:checked')].map(c => c.value);
+    const pages = $('pages').value.split('\n').map(s => s.trim()).filter(Boolean);
+    const saved = Object.fromEntries(KEEP.map(k => [k, localStorage.getItem(k)]));
+    localStorage.setItem('suiteLevel:v1', $('level').value);
+    localStorage.setItem('cpcoAccess:v1', 'on');
+    localStorage.setItem('repositoryLanguageMode', 'fr');
+    refreshed.clear();
+    const r = {
+      label: $('label').value.trim() || 'audit',
+      date: new Date().toISOString(),
+      build: window.REPOSITORY_BUILD || null,
+      config: {
+        designs,
+        decors,
+        pages,
+        menus: $('menus').checked,
+        level: +$('level').value
+      },
+      results: []
+    };
+    RUNS.push(r);
+    const total = designs.length * decors.length * pages.length;
+    let i = 0;
+    try {
+      for (const design of designs)
+        for (const decor of decors)
+          for (const page of pages) {
+            if (stopAsked) throw new Error('arrêt');
+            $('state').textContent = `${++i} / ${total} — ${design} · ${decor} · ${page}`;
+            r.results.push(await auditOne(page, design, decor));
+            if (i % 9 === 0) render();
+          }
+      $('state').textContent = `Terminé : ${total} relevés.`;
+    } catch (e) {
+      $('state').textContent = `Interrompu (${e.message}) après ${r.results.length} relevés.`;
+    } finally {
+      for (const [k, v] of Object.entries(saved)) v == null ? localStorage.removeItem(k) : localStorage.setItem(k, v);
+      frame.src = 'about:blank';
+      r.done = true;
+      render();
+    }
+    return r;
+  }
+  const payload = () => JSON.stringify({
+    tool: 'tools/contrast_audit.html',
+    thresholds: {
+      normal: 4.5,
+      large: 3
+    },
+    runs: RUNS
+  }, null, 1);
+  $('go').onclick = () => run();
+  $('stop').onclick = () => {
+    stopAsked = true;
+  };
+  $('download').onclick = () => {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([payload()], {
+      type: 'application/json'
+    }));
+    a.download = FILE + '.json';
+    a.click();
+  };
+  // écrit par le lanceur dans docs/technique/perf/runs/contrast_<date>.json (même route que l'audit de performance)
+  async function saveToRepo() {
+    try {
+      const r = await fetch(`../__setup/perf?name=${encodeURIComponent(FILE)}`, {
+        method: 'POST',
+        headers: {
+          'X-SOG-Setup': '1',
+          'Content-Type': 'application/json'
+        },
+        body: payload()
+      });
+      return r.ok ? (await r.json()).file : null;
+    } catch {
+      return null;
+    }
+  }
+  $('save').onclick = async () => {
+    const f = await saveToRepo();
+    $('state').textContent = f ? `Enregistré : ${f}` : 'Enregistrement impossible (lanceur requis) : utiliser Télécharger.';
+  };
+  $('load').onclick = async () => {
+    try {
+      const j = await (await fetch(`../docs/technique/perf/runs/${FILE}.json`, {
+        cache: 'no-store'
+      })).json();
+      RUNS.splice(0, RUNS.length, ...(j.runs || []));
+      render();
+      $('state').textContent = `${RUNS.length} relevé(s) relu(s).`;
+    } catch {
+      $('state').textContent = 'Aucun fichier enregistré aujourd\'hui.';
+    }
+  };
+  window.__contrast = {
+    scan,
+    auditOne,
+    run,
+    RUNS,
+    render,
+    saveToRepo,
+    ratio,
+    parse,
+    backdrop
+  };
+})();
+</script>
+</body>
+</html>
