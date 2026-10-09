@@ -165,18 +165,107 @@ Mes missions, Mon profil, CR et Ordres de vols en Aqua, Cabinet, Carnet de vol e
 
 ## 5. Ce qui reste
 
-Hors des feuilles corrigées ici :
+Hors des feuilles corrigées ici ; dernière colonne : état après la passe G (§ 6).
 
-| Où | Défaut | Designs | Ratio |
-|---|---|---|---|
-| `apps/cpco/odv_orders.html` (Ordres de vols) | pastilles de simulateur `.sim-chip` blanches sur couleurs claires (vert, jaune, cyan) | tous | 2,4-4,3 |
-| `apps/cpco/odv_orders.html` | `.odvo-tpl small` (gabarits de la palette), `.odvo-tr span` (or #7a5c12 sur sombre), `.odvo-atc-reservation`, `sup.odv-rank`, `button.repo-plain.low small` | tous | 1,3-4,5 |
-| `shared/mission_table.js` (tableaux triables) | flèches de tri `.st-arrow` (#a9adb5 sur #f5f5f6 ; or ou violet sur sombre) ; en-têtes `.st-sortable` #6b7280 sur #f5f5f6 | tous | 1,3-4,4 |
-| `shared/mission_core/` (CR HEMS) | `.mc-kpi .small` #6b7280 sur #ececf3 | Standard, Ops, Console | 4,1 |
-| `shared/designs.css` (Aéro) | titre de bloc `h2` des Ordres de vols #7a5c12 sur #181d23 (page d'outil sombre) | Aéro | 2,7 |
-| `tools/build_skeuo_icons_css.py` → `block_icons.css` (section générée) | bouton « déplacer » des blocs en jeu Gel : glyphe blanc sur bulle grise teintée, or (#ffd23f) sur les pages du Centre | Aqua | 2,0-3,0 |
-| `apps/aide/aide.html`, `apps/cpco/mission_registry.html` | `.small` à opacité .8 sur parchemin (#483e2d) | Cabinet, Carnet de vol (sobre) | 4,48 |
-| Mesure | Durci : onglet courant, toile éclairée — la moyenne de la colonne centrale inclut le cadre d'acier (2,5:1 mesuré) ; visuellement lisible, à confirmer sur la planche | Durci | — |
+| Où | Défaut | Designs | Ratio | Passe G |
+|---|---|---|---|---|
+| `apps/cpco/odv_orders.html` (Ordres de vols) | pastilles de simulateur `.sim-chip` blanches sur couleurs claires (vert, jaune, cyan) | tous | 2,4-4,3 | encre calculée par `assignments.js` (`chipInk`, autre session) ; non remesuré (pas de planning dans le stockage de l'origine d'audit) |
+| `apps/cpco/odv_orders.html` | `.odvo-tpl small` (gabarits de la palette), `.odvo-tr span` (or #7a5c12 sur sombre), `.odvo-atc-reservation`, `button.repo-plain.low small` ; jours `.odvo-days button.on` #0b1016 sur l'accent #7a5c12 (3,1:1) | tous | 1,3-4,5 | reste : page réservée à une autre session (même correction que `odv_blocks.css` à reporter : texte sur l'accent = `var(--repo-page)`) |
+| `apps/cpco/odv_blocks.css` | `sup.odv-rank` (encre à 82 %) ; `button.primary` #0b1016 et `.odv-tri3 i.on` #fff sur l'accent | tous | 3,6-4,3 ; 3,1 | **corrigé** : encre pleine ; texte sur l'accent = `var(--repo-page)` (≥ 4,5:1 par construction) |
+| `shared/mission_table.js` (tableaux triables) | flèches de tri `.st-arrow` (#a9adb5 sur #f5f5f6 ; or ou violet sur sombre) ; en-têtes `.st-sortable` #6b7280 sur #f5f5f6 | tous | 1,3-4,4 | reste (#7a5c12 sur #22282e : 2,4:1) : fichier réservé à une autre session |
+| `shared/mission_core/` (CR HEMS) | `.mc-kpi .small` #6b7280 sur #ececf3 ; `p.small` du choix de famille (CR) 4,47:1 | Standard, Ops, Console | 4,1 | **corrigé** : `--muted` #5b6270 (5,2:1 sur #ececf3) |
+| `shared/designs.css` (Aéro) | titre de bloc `h2` des Ordres de vols #7a5c12 sur #181d23 (page d'outil sombre) | Aéro | 2,7 | **corrigé** : `var(--repo-ink, var(--repo-accent))` → #e2c16b sur #181d23 (9,8:1) ; accent inchangé sur les blocs clairs |
+| `tools/build_skeuo_icons_css.py` → `block_icons.css` (section générée) | bouton « déplacer » des blocs en jeu Gel : glyphe blanc sur bulle grise teintée, or (#ffd23f) sur les pages du Centre | Aqua | 2,0-3,0 | **Centre corrigé** (bulle marine, § 6.2) ; bulle bleue : 4,1:1 réels, reste signalée par l'outil (limite de mesure, § 6.2) |
+| `apps/aide/aide.html`, `apps/cpco/mission_registry.html` | `.small` à opacité .8 sur parchemin (#483e2d) | Cabinet, Carnet de vol (sobre) | 4,48 | Aide : 0 défaut au relevé (déjà réglé) ; registre : `.mo-small` posé par `shared/mission_order.js` (JS, hors périmètre) |
+| Mesure | Durci : onglet courant, toile éclairée — la moyenne de la colonne centrale inclut le cadre d'acier (2,5:1 mesuré) ; visuellement lisible, à confirmer sur la planche | Durci | — | — |
 
 À noter pour `designs.css` (autre session) : les menus d'Aéro et Opérationnel peuvent désormais s'appuyer sur
 `--repo-menu-ink` / `--repo-menu-line` si leur fond change.
+
+## 6. Passe G : contrastes restants, Opérationnel et Console cohérents
+
+Périmètre : `shared/designs.css` (Aéro : contraste seulement ; Opérationnel, Console), `shared/block_icons.css`
+(Console de base, Opérationnel, jeu Gel du Centre), `shared/mission_core/core.css`, `apps/cpco/odv_blocks.css`.
+Règle tenue : un design ne change que la forme ; aucune couleur fixe ajoutée dans les designs ; toutes les nouvelles
+règles de design commencent par `html[data-design="ops"]` ou `html[data-design="console"]` (Standard et Aéro
+inchangés, vérifié par mesure des styles calculés sur les cinq pages ci-dessous).
+
+### 6.1 Relevés avant / après (`tools/contrast_audit.html`, 18 pages, niveau 4, origine `[::1]`)
+
+| Design | Décor | Avant | Après | Reste (tous designs) |
+|---|---|---:|---:|---|
+| Standard | complet / sobre | 16 / 16 | 5 / 5 | Ordres de vols : `.st-arrow` (2,4), jour courant (3,1), `.odvo-tpl small` ×3 (3,9-4,4) |
+| Aéro | complet / sobre | 11 / 11 | 5 / 5 | idem |
+| Opérationnel | complet / sobre | 16 / 16 | 5 / 5 | idem |
+| Console | complet / sobre | 16 / 16 | 5 / 5 | idem |
+| Aqua (5 pages : Mes missions, générateur, Ordres de vols, Mon profil, CR HEMS) | complet | 28 | 42 | bulles du jeu Gel (§ 6.2) ; Ordres de vols `.odvo-tr span`, `.odvo-atc-reservation` (1,03, fond mesuré clair sous un texte clair : page réservée) |
+| Cabinet, Carnet de vol (Aide, registre) | sobre | 2 / 2 | 2 / 2 | registre : `.mo-small` (opacité .8, `mission_order.js`) |
+
+Écart de comptage Aqua : le CR HEMS comptait 3 bulles « déplacer » au premier relevé et 17 au second (même mesure,
+2,94:1, sur chaque bloc) ; aucune règle de la bulle bleue n'a changé — l'écart vient de l'état de la page au relevé.
+
+Défauts corrigés (ratios mesurés par l'outil, sauf mention) :
+
+| Élément | Où | Avant | Après |
+|---|---|---:|---:|
+| `.mc-kpi .small`, `.mc-tools p.small` (CR HEMS) | `core.css` `--muted` #6b7280 → #5b6270 | 4,13 | 5,2 |
+| `section#family p.small` (CR) | idem | 4,47 | 5,7 |
+| `h2` des blocs des Ordres de vols (Aéro) | `designs.css` | 2,72 | 9,8 (#e2c16b sur #181d23) |
+| `sup.odv-rank` (Cabinet, Carnet de vol, Durci) | `odv_blocks.css` | 3,6-4,3 (relevé du 09/10, `runs[1]`) | encre pleine du bloc (non remesuré : pas de planning sur l'origine d'audit) |
+| `button.primary`, `.odv-tri3 i.on` sur l'accent | `odv_blocks.css` | 3,1 (même motif que les jours du Planning) | ≥ 4,5 (accent réglé sur la page) |
+| bouton « déplacer » / « masquer », jeu Gel, pages du Centre | `block_icons.css` | 2,9 réel (or sur gel or #916d12) | 10,2 réel (or sur marine #1b2440) |
+
+### 6.2 Bulles du jeu Gel
+
+Rendu réel calculé sur un canevas (disque du gel, puis la bulle `vierge.gris.webp` en `overlay`, moyenne et pire
+pixel du carré central où se trouve le glyphe) :
+
+| Bulle | Glyphe | Moyenne | Pire pixel |
+|---|---|---:|---:|
+| gel bleu #2473db (CR et autres pages) | blanc | 4,1 | 3,2 |
+| Centre, avant : gel or #916d12 (accent) | or #ffd23f | 2,9 | 2,2 |
+| Centre, après : gel marine #1b2440 (celui des icônes du Centre) | or #ffd23f | 10,2 | 9,2 |
+
+Le glyphe ↕ est un élément graphique (seuil 3:1) : la bulle bleue passe. L'outil, lui, compose l'image en mode
+normal (il ignore `background-blend-mode: overlay`) : il voit la bulle grise et donne 2,5-2,9. Correction de l'outil
+à prévoir (`layer()` : appliquer le mode de fusion de la couche), sinon ces lignes resteront signalées.
+
+Règle du générateur à reporter (`tools/build_skeuo_icons_css.py`, boucle des jeux, ligne
+`out.append(f'html[data-app-theme="cpco"][data-icons="{key}"] .repo-block .repo-block-tools button:is(.repo-drag,.repo-toggle){{color:{g["centre"]}!important}}')`) :
+pour un jeu teinté (`g.get('centreGel')`), ajouter dans la même règle
+`--aq-gel:{g["centreGel"]};background:url("icons/skeuo/{centre}") center/contain no-repeat,{disc({**g, "up": -0.5})} center/contain no-repeat!important;background-blend-mode:overlay,normal!important;`
+(le même disque recentré que les icônes du Centre, `CENTRE`).
+
+### 6.3 Opérationnel : incohérences et corrections
+
+Pages : Mes missions, générateur, Mon profil, CR HEMS, Carburant (ton foncé). Mesure : styles calculés des éléments
+(rayon, marges, hauteur, taille, casse) en Standard, Opérationnel et Console.
+
+| Élément | Page | Ce qui différait | Correction |
+|---|---|---|---|
+| Onglets `.repo-tab` | Mes missions, générateur, Mon profil, Carburant | 7 px arrondis (Standard) au milieu d'angles vifs de 3 px | `--repo-round: .4` (tous les rayons écrits en `calc`) ; onglet 3 px 3 px 0 0, 5/12 px |
+| En-tête | Mes missions, Mon profil, CR (marges 18 px) ; générateur, Carburant (10 px) | hauteur selon la page ; description 16, 15 ou 13 px | marges 7 px ; description 12,5 px partout |
+| Boutons du contenu `.primary/.secondary/.ghost/.danger`, `a.mc-button` | Mes missions et générateur 37 px, Carburant et CR 33 px | pas denses, à côté de champs de 27-31 px | marges verticales 5 px → 27 px |
+| Liens-boutons `a.mc-button`, `a.headerButton` | CR, en-têtes | 7-10 px, hors de la règle des boutons | 3 px |
+| Sous-cartes `.mc-item`, `.mc-tools`, `.mc-kpi>div`, `fieldset`, `.note` | CR HEMS | 10 px dans des blocs à 3 px | 3 px |
+| Menu ☰ | toutes | conteneur 3 px ; liens 6 px, Apparence / Paramètres 7 px, actions 3 px, choix du design 6 px | 3 px |
+| Champs, bandeaux `.repo-notice`, zones de dépôt | toutes | 2 px, contre 3 px pour boutons, blocs, menus | 3 px |
+| Titre de l'aperçu imprimable (`.report h2`) | CR HEMS | mis en capitales 12,5 px comme un titre de bloc (`.repo-block h2`) | capitales limitées à `.repo-block-heading h2` et `.card>h2` |
+
+### 6.4 Console : incohérences et corrections
+
+| Élément | Page | Ce qui différait | Correction |
+|---|---|---|---|
+| Titre d'un bloc sans icône | Carburant (« JSON importé / SimBrief ») | 15 px, casse normale ; les autres en capitales 1,3 rem 800 (règle limitée à `.repo-block-heading-rich`) | `.repo-block-heading h2`, `.card>h2` |
+| Boutons de l'en-tête (Synchroniser, Sauvegarder, Créer le CR, outils du CR) | toutes | 40 px à côté de ☰ et langue (32 px) et des menus du CR (30 px) | hauteur 40 px réservée au contenu |
+| Rayons de l'en-tête | toutes | ☰ et langue 7 px, boutons 6 px, menus du CR 8 px et pilule, `a.mc-button` 7 px | 6 px |
+| Menu ☰ | toutes | actions (Données locales, Page) 40 px contre liens 37 px ; menu 9 px, fenêtres du CR 12 px ; Apparence / Paramètres 7 px | menus hors 40 px ; conteneurs 10 px (rayon des blocs) ; entrées 6 px |
+| Boutons à icône seule (« maintenant » des heures) | CR HEMS (19) | étirés à 40 px de haut | exclus de la hauteur 40 |
+| Champs dans les tableaux | CR HEMS | 40 px dans les cellules (lignes de 45 px) | exclus (saisie dense, comme Aéro) |
+| Sous-cartes, groupes de champs, bandeaux, zones de dépôt | CR HEMS (10 px), `.repo-card` (8 px) | deux rayons de sous-carte | 8 px |
+| Onglets `.repo-tab` | Mes missions, générateur, Mon profil, Carburant | dessin Standard (7 px, 7/14 px) dans un design aéré | 8 px, 9/16 px |
+| Description de l'en-tête | toutes | 16, 15 ou 13 px selon la page | 14 px |
+
+Hors correction (voulu ou hors périmètre) : le bouton rond de fermeture `fa-x` prend le rayon des boutons du design
+(comme en Aéro) ; tableaux et barre latérale identiques à Standard dans les deux designs (densité de tableau déjà
+réglée en Opérationnel) ; pas de `.repo-actionbar` sur ces cinq pages (studio et Cartes de vol seulement).

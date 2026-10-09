@@ -17,10 +17,12 @@
   .odv-page button {
     cursor: pointer
   }
+  /* texte sur l'accent : couleur de la page (l'accent du thème est réglé à ≥ 4,5:1 sur elle) ; #0b1016 fixe donnait 3:1
+     sur un accent foncé (Centre : #7a5c12) */
   .odv-page button.primary {
     background: var(--repo-accent, #71b7ff);
     border-color: transparent;
-    color: #0b1016;
+    color: var(--repo-page, #0b1016);
     font-weight: 650
   }
   .odv-page button:disabled {
@@ -400,7 +402,7 @@
     opacity: 1;
     background: var(--repo-accent, #71b7ff);
     border-color: var(--repo-accent, #71b7ff);
-    color: #fff
+    color: var(--repo-page, #fff)
   }
   .odv-week tr[data-edit-assign] {
     cursor: pointer
@@ -650,7 +652,9 @@
   .odv-rank {
     margin-left: 2px;
     font-size: 9.5px;
-    color: color-mix(in srgb, currentColor 82%, transparent)
+    /* encre pleine : à 82 % sur le parchemin des designs à matières, 4,3:1 */
+    color: inherit;
+    font-weight: 600
   }
   .odv-why {
     display: -webkit-box;
