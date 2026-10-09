@@ -2170,12 +2170,14 @@
     await Promise.all([foldersState(), dataState(), repoState(), ivaoKeyState()]);
     centreState();
     checklist();
-    // ouverte par le lanceur (sans ?force) : l'accueil dès que « Terminer » vaut pour cette installation et que le
-    // bloquant (dossier, données) est réglé — le reste est rappelé par l'accueil, sans ramener ici à chaque lancement
+    // ouverte par le lanceur (adresse ?t=…, sans ?force) : l'accueil dès que « Terminer » vaut pour cette installation et
+    // que le bloquant (dossier, données) est réglé — le reste est rappelé par l'accueil, sans ramener ici à chaque
+    // lancement. Ouverte depuis Paramètres › Premier lancement ou l'accueil (sans ?t) : la page reste — sinon elle
+    // renvoyait à l'accueil à chaque clic, sans moyen d'y revenir
     const fin = read(DONE),
-      st = read(STATE);
-    if (fin.at && !new URLSearchParams(location.search).has('force') && (fin.path || '') === await installPath() && (st.todoCore ??
-        st.todoSuite) === 0) {
+      st = read(STATE),
+      q = new URLSearchParams(location.search);
+    if (fin.at && q.has('t') && !q.has('force') && (fin.path || '') === await installPath() && (st.todoCore ?? st.todoSuite) === 0) {
       location.replace('../../index.html');
       return;
     }

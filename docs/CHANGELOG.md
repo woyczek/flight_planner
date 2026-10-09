@@ -209,6 +209,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Corrigé
 
+- **Premier lancement : renvoi vers l'accueil en boucle** une fois « Terminer » validé : ouverte sans `?force`
+  (Paramètres › Premier lancement, que le message de « Terminer » indique), la page renvoyait à l'accueil à chaque
+  clic. Le renvoi ne vaut plus que pour la page ouverte par le lanceur (adresse `?t=…`).
 - **Lanceur : réponses coupées pour les données servies depuis un autre disque** (`--data`) : le contrôle des
   empreintes de version échouait sur un chemin hors du dossier de la suite (fichier jamais reçu, « Failed to fetch »)
   ; un tel fichier part désormais tel quel, et aucune erreur de ce contrôle ne coupe plus une réponse.

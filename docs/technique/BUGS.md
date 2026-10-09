@@ -16,6 +16,7 @@ Les évolutions et la dette technique n'y figurent pas (CHANGELOG, `docs/techniq
 
 | Signalé | Zone | Bug | Cause | Correction |
 |---|---|---|---|---|
+| 09/10 | Premier lancement | Renvoie sur l'accueil, en boucle (DEFA-fable) | Après « Terminer », toute ouverture sans `?force` (lien Paramètres › Premier lancement) renvoyait à l'accueil | Renvoi seulement pour la page ouverte par le lanceur (`?t=`) (`premier_lancement.html`) |
 | 09/10 | Registre des missions | Beaucoup d'artefacts aux fichiers absents ; l'index n'apparaissait pas dans les caches | Registre servi périmé (55 dossiers sur 67 absents) repris tel quel au premier démarrage ; ligne de cache nommée « Index des données » | Missions reprises seulement si leur dossier existe (`/__setup/mission-folders`, `data_index.js`) ; libellé et nombre de missions dans Caches |
 | 09/10 | Données aéronautiques | « Télécharger ✗ fournisseur inconnu : nat » | Lanceur lancé avant l'ajout du fournisseur : ancien `aero_fetch.py` en mémoire | Module relu quand son fichier change (`launch.py`, `fresh`) |
 | 09/10 | Lanceur (données sur un autre disque) | Fichiers de données jamais reçus (« Failed to fetch ») | Contrôle des empreintes : chemin relatif impossible entre deux disques, exception, réponse coupée | Fichier hors de la suite servi tel quel ; aucune erreur du contrôle ne coupe une réponse (`version_stamps.py`, `launch.py`) |
