@@ -16,7 +16,9 @@
     border: 1px solid var(--line);
     border-radius: 12px;
     padding: 18px 20px;
-    margin: 0 0 16px
+    margin: 0 0 16px;
+    /* étape ouverte par le rail ou « Suivant → » : son titre sous l'en-tête fixe, pas dessous */
+    scroll-margin-top: 96px
   }
   main.pl-page h2 {
     font-size: 17px;
@@ -37,8 +39,9 @@
     font-size: 14px;
     flex: none
   }
-  section.pl-done .pl-n {
-    background: var(--ok, #2e9d5b)
+  /* numéro de l'étape : vert seulement quand l'état calculé de l'étape (checklist → stepStates) est « faite » */
+  section.pl-st-ok .pl-n {
+    background: #2e7d32
   }
   .pl-state {
     font-weight: 600;
@@ -213,6 +216,184 @@
   .pl-links li {
     margin: 3px 0
   }
+  /* rail des six étapes (en tête) : état calculé de chacune, l'étape courante cerclée ; un clic ouvre l'étape */
+  .pl-rail {
+    list-style: none;
+    padding: 0;
+    margin: 10px 0 6px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 8px
+  }
+  .pl-rail a {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 2px 8px;
+    align-items: center;
+    padding: 7px 10px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--card);
+    color: inherit;
+    text-decoration: none;
+    font-size: 13px;
+    line-height: 1.3
+  }
+  .pl-rail a:hover,
+  .pl-rail a:focus-visible {
+    border-color: var(--accent, #2f6fd6)
+  }
+  .pl-rail a.pl-cur {
+    outline: 2px solid var(--accent, #2f6fd6);
+    outline-offset: 1px
+  }
+  .pl-rail a>b,
+  .pl-badge>b {
+    display: inline-grid;
+    place-items: center;
+    width: 1.5em;
+    height: 1.5em;
+    border-radius: 50%;
+    color: #fff;
+    background: #4b5563;
+    font-size: 11px
+  }
+  .pl-rail a>b {
+    grid-row: span 2
+  }
+  .pl-rail a>small {
+    opacity: .85
+  }
+  /* pastilles : blanc sur fond plein, contraste ≥ 4,5:1 (vert 5,1 ; orange 5,0 ; rouge 6,5 ; gris 7,6) */
+  .pl-s-ok>b {
+    background: #2e7d32 !important
+  }
+  .pl-s-todo>b {
+    background: #b45309 !important
+  }
+  .pl-s-bad>b {
+    background: #b3261e !important
+  }
+  /* état dans le titre de l'étape, après le numéro */
+  .pl-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 12.5px;
+    font-weight: 600
+  }
+  .pl-badge:empty {
+    display: none
+  }
+  /* ligne d'état sous le titre : « ✓ Fait : … » / « ○ À faire : … » */
+  .pl-status {
+    font-weight: 600;
+    margin: 6px 0 10px;
+    white-space: pre-line
+  }
+  .pl-status:empty {
+    display: none
+  }
+  /* fin d'étape : « Suivant → » (ou « Terminer » à la 6) */
+  .pl-next {
+    border-top: 1px solid var(--line);
+    padding-top: 10px;
+    margin-top: 14px
+  }
+  /* designs à matières : le rail et les lignes d'état sur fond papier, comme le bilan */
+  html[data-design="cabinet"] :is(.pl-rail, .pl-lines),
+  html[data-design="field"] :is(.pl-rail, .pl-lines),
+  html[data-design="flightlog"] :is(.pl-rail, .pl-lines) {
+    position: relative;
+    z-index: 1
+  }
+  html[data-design="cabinet"] :is(#plRailHint, .pl-detail>summary, .pl-status),
+  html[data-design="field"] :is(#plRailHint, .pl-detail>summary, .pl-status),
+  html[data-design="flightlog"] :is(#plRailHint, .pl-detail>summary, .pl-status) {
+    position: relative;
+    z-index: 1;
+    width: fit-content;
+    background: rgba(246, 238, 218, .93);
+    color: #2b2116;
+    opacity: 1;
+    padding: 3px 8px
+  }
+  html[data-design="cabinet"] .pl-rail a,
+  html[data-design="field"] .pl-rail a,
+  html[data-design="flightlog"] .pl-rail a {
+    background: rgba(246, 238, 218, .95);
+    color: #2b2116
+  }
+  /* étape 5 : types d'aéronefs d'abord, puis données aéronautiques (ordre d'affichage des blocs embarqués, sans les
+     déplacer : maintenance_page.js les crée dans #maintenance dans l'ordre sia, types) */
+  #maintenance.pl-mt {
+    display: flex;
+    flex-direction: column
+  }
+  #plTypesHead {
+    order: 1
+  }
+  #maintenance.pl-mt>#types {
+    order: 2
+  }
+  #plAeroHead {
+    order: 3
+  }
+  #maintenance.pl-mt>#sia {
+    order: 4
+  }
+  .pl-sub h3 {
+    margin: 4px 0 4px;
+    font-size: 15px
+  }
+  .pl-lines {
+    list-style: none;
+    padding: 0;
+    margin: 4px 0 12px
+  }
+  .pl-lines li {
+    margin: 3px 0;
+    font-size: 13.5px
+  }
+  .pl-lines li>b {
+    display: inline-grid;
+    place-items: center;
+    width: 1.4em;
+    height: 1.4em;
+    border-radius: 50%;
+    font-size: 11px;
+    color: #fff;
+    background: #4b5563;
+    margin-right: 6px
+  }
+  .pl-lines button {
+    margin-left: 6px
+  }
+  /* outils avancés du bloc « Données aéronautiques » (cartes Base aéronautique, MORA, Cohérence) : repliés sous un
+     volet propre à cette page, placé après « Actions à faire » ; le bloc se déroule en colonne (son corps .mt-body en
+     display: contents) pour que le volet se range entre ses cartes sans toucher à son contenu, redessiné par
+     maintenance_page.js. Carte « Cohérence » sans id : visée comme la carte qui suit #mt-aero-mora. */
+  #plSia #sia:not(.repo-block-hidden) {
+    display: flex;
+    flex-direction: column
+  }
+  #plSia #sia:not(.repo-block-hidden)>.mt-body {
+    display: contents
+  }
+  #plSia #sia>.pl-adv {
+    order: 1;
+    margin: 12px 0 0
+  }
+  #plSia #sia :is(#mt-aero-base, #mt-aero-mora, #mt-aero-mora+.repo-card) {
+    order: 2
+  }
+  #plSia:not(.pl-adv-open) #sia :is(#mt-aero-base, #mt-aero-mora, #mt-aero-mora+.repo-card) {
+    display: none
+  }
+  .pl-adv>summary {
+    cursor: pointer;
+    font-weight: 600
+  }
 </style>
 </head><body>
 <!-- Premier lancement : page ouverte par le lanceur (lancer.cmd / lancer.sh → tools/launch.py), et à tout moment depuis
@@ -228,12 +409,20 @@
   <section id="plSummary"><h2>Où en est la suite</h2>
     <!-- tutoriel d'installation (docs/tutorial) : ouvert dans l'Aide, qui prend la version de la langue de la suite
          (.fr en français, .en sinon) -->
-    <p class="pl-row pl-tuto"><a class="primary" id="plTuto" href="../aide/aide.html?doc=tutorial/installation.fr.md">📘 Tutoriel d’installation, pas à pas</a></p>
-    <p class="pl-hint">À reprendre à tout moment : Paramètres › Premier lancement. Chaque ligne mène à son étape.</p>
-    <ul class="pl-check" id="plChecklist"></ul>
+    <!-- rail des six étapes : état calculé par checklist() (stepStates), un clic ouvre l'étape (goStep) -->
+    <ol class="pl-rail" id="plRail" data-no-i18n></ol>
+    <p class="pl-hint" id="plRailHint" data-no-i18n></p>
+    <p class="pl-row pl-tuto"><a class="secondary" id="plTuto" href="../aide/aide.html?doc=tutorial/installation.fr.md" target="_blank" rel="noopener">📘 Tutoriel d’installation, pas à pas</a></p>
+    <details class="pl-detail"><summary id="plDetailSum" data-no-i18n></summary>
+      <p class="pl-hint">À reprendre à tout moment : Paramètres › Premier lancement. Chaque ligne mène à son étape.</p>
+      <ul class="pl-check" id="plChecklist"></ul>
+    </details>
   </section>
 
-  <section id="plFolders"><h2><span class="pl-n">1</span>Dossiers</h2>
+  <!-- chaque étape : titre (numéro, état), « ce que c'est », ligne d'état (stepStates), contenu, rangée « Suivant → » -->
+  <section id="plFolders"><h2><span class="pl-n">1</span>Dossiers <span class="pl-badge" data-no-i18n></span></h2>
+    <p class="pl-hint" data-what="plFolders" data-no-i18n></p>
+    <p class="pl-status" data-no-i18n></p>
     <p class="pl-hint">Le navigateur demande de désigner chaque dossier une fois (il le mémorise).</p>
     <div class="pl-grid">
       <div class="pl-card"><h3>Dossier de l’application</h3>
@@ -248,9 +437,12 @@
         <p class="pl-msg" id="plOdvMsg"></p>
       </div>
     </div>
+    <div class="pl-row pl-next" data-no-i18n><button type="button" class="primary" data-next="plData"></button><span class="pl-hint"></span></div>
   </section>
 
-  <section id="plData"><h2><span class="pl-n">2</span>Données</h2>
+  <section id="plData"><h2><span class="pl-n">2</span>Données <span class="pl-badge" data-no-i18n></span></h2>
+    <p class="pl-hint" data-what="plData" data-no-i18n></p>
+    <p class="pl-status" data-no-i18n></p>
     <p class="pl-state" id="plDataState">Vérification…</p>
     <p class="pl-msg warn" id="plDataNeed" hidden></p>
     <div class="pl-grid" id="plDataForms" hidden>
@@ -288,10 +480,12 @@
       <div class="pl-row"><button type="button" class="secondary" data-pick="plLog">Journal (.html)…</button><input type="file" id="plLog" accept=".html,.htm" hidden></div>
       <p class="pl-msg" id="plLogMsg"></p>
     </div>
+    <div class="pl-row pl-next" data-no-i18n><button type="button" class="primary" data-next="plCompany"></button><span class="pl-hint"></span></div>
   </section>
 
-  <section id="plCompany"><h2><span class="pl-n">3</span>Compagnie</h2>
-    <p class="pl-hint">La compagnie virtuelle dont la suite porte le nom, et l’adresse de son site (liens, flotte, journal des vols). Réglage de ce navigateur ; tous les champs (centre, pages du site, sources externes) : <a id="plSourcesLink" href="installation.html?m=sources">Paramètres › Installation › Sources et dossiers</a>.</p>
+  <section id="plCompany"><h2><span class="pl-n">3</span>Compagnie <span class="pl-badge" data-no-i18n></span></h2>
+    <p class="pl-hint">La compagnie virtuelle dont la suite porte le nom, et l’adresse de son site (liens, flotte, journal des vols). Réglage de ce navigateur ; tous les champs (centre, pages du site, sources externes) : <a id="plSourcesLink" href="installation.html?m=sources" target="_blank" rel="noopener">Paramètres › Installation › Sources et dossiers</a>.</p>
+    <p class="pl-status" data-no-i18n></p>
     <div class="pl-grid">
       <div class="pl-card"><h3>Compagnie virtuelle</h3>
         <div class="pl-form">
@@ -308,10 +502,12 @@
       </div>
     </div>
     <div class="pl-row"><button type="button" class="primary" id="plSaveCompany">Enregistrer la compagnie</button><span class="pl-msg" id="plCompanyMsg"></span></div>
+    <div class="pl-row pl-next" data-no-i18n><button type="button" class="primary" data-next="plProfile"></button><span class="pl-hint"></span></div>
   </section>
 
-  <section id="plProfile"><h2><span class="pl-n">4</span>Profil et identifiants</h2>
-    <p class="pl-hint">Repris par toutes les pages (☰ › Profil pilote). La suite ne demande jamais vos mots de passe IVAO ni VATSIM : vos identifiants (VID, CID) suffisent. Compte de la suite (mot de passe, mode production), client IVAO personnel et préférences : <a href="profil.html">Paramètres › Mon profil</a>.</p>
+  <section id="plProfile"><h2><span class="pl-n">4</span>Profil et identifiants <span class="pl-badge" data-no-i18n></span></h2>
+    <p class="pl-hint">Repris par toutes les pages (☰ › Profil pilote). La suite ne demande jamais vos mots de passe IVAO ni VATSIM : vos identifiants (VID, CID) suffisent. Compte de la suite (mot de passe, mode production), client IVAO personnel et préférences : <a href="profil.html" target="_blank" rel="noopener">Paramètres › Mon profil</a>.</p>
+    <p class="pl-status" data-no-i18n></p>
     <div class="pl-grid">
       <div class="pl-card"><h3>Pilote</h3>
         <div class="pl-form">
@@ -330,42 +526,55 @@
       </div>
     </div>
     <div class="pl-row"><button type="button" class="primary" id="plSaveProfile">Enregistrer le profil</button><span class="pl-msg" id="plProfileMsg"></span></div>
+    <div class="pl-row pl-next" data-no-i18n><button type="button" class="primary" data-next="plSia"></button><span class="pl-hint"></span></div>
   </section>
 
-  <section id="plSia"><h2><span class="pl-n">5</span>Données aéronautiques et types d’aéronefs</h2>
-    <p class="pl-hint">Cartes, missions et planification utilisent les données aéronautiques (AIRAC) et la base des types d’aéronefs. Ci-dessous, les mêmes blocs que dans Paramètres › Installation : choisir les zones (France active par défaut) et, pour chacune, le bouton de chaque source (ZIP du SIA : lien vers la boutique, compte gratuit, produit du cycle à 0 €, puis « Récupérer le ZIP téléchargé » ; MORA ; axes de ravitaillement : PDF MILAIP ; autres pays) — la base se construit seule ; puis « Compléter les types… » pour les types d’aéronefs et leurs performances.</p>
-    <!-- blocs de shared/maintenance_page.js (page autonome réduite) : mêmes composants qu'Installation et Maintenance -->
-    <div id="maintenance" class="pl-mt" data-blocks="sia,types"></div>
+  <section id="plSia"><h2><span class="pl-n">5</span>Données aéronautiques et types d’aéronefs <span class="pl-badge" data-no-i18n></span></h2>
+    <p class="pl-hint" data-what="plSia" data-no-i18n></p>
+    <p class="pl-status" data-no-i18n></p>
+    <!-- une seule action principale : types d'aéronefs (« Compléter automatiquement »), puis zones (« Activer »),
+         chaque tâche attendue jusqu'à sa fin (installAll) -->
+    <div class="pl-row" data-no-i18n><button type="button" class="primary" id="plAll"></button><span class="pl-hint" id="plAllHint"></span></div>
+    <p class="pl-msg" id="plAllMsg" data-no-i18n></p>
+    <!-- blocs de shared/maintenance_page.js (page autonome réduite) : mêmes composants qu'Installation et Maintenance ;
+         affichés dans l'ordre ① types, ② données aéronautiques (CSS order), chacun précédé de sa ligne d'état -->
+    <div id="maintenance" class="pl-mt" data-blocks="sia,types">
+      <div class="pl-sub" id="plTypesHead" data-no-i18n><h3></h3><ul class="pl-lines" id="plTypesLine"></ul></div>
+      <div class="pl-sub" id="plAeroHead" data-no-i18n><h3></h3><ul class="pl-lines" id="plAeroLines"></ul></div>
+    </div>
+    <div class="pl-row pl-next" data-no-i18n><button type="button" class="primary" data-next="plCentre"></button><span class="pl-hint"></span></div>
   </section>
 
-  <section id="plCentre"><h2><span class="pl-n">6</span>Centre (administrateurs)</h2>
+  <section id="plCentre"><h2><span class="pl-n">6</span>Centre (administrateurs) <span class="pl-badge" data-no-i18n></span></h2>
     <p class="pl-hint">Réservé aux administrateurs du {SOG} : les pilotes passent cette étape.</p>
+    <p class="pl-status" data-no-i18n></p>
     <div class="pl-card" id="plCentreLock"><h3>Activer le Centre</h3>
       <div class="pl-form"><label for="plCpcoPass">Mot de passe du Centre</label><input type="password" id="plCpcoPass" autocomplete="off"></div>
       <div class="pl-row"><button type="button" class="primary" id="plCpcoOn">Activer le Centre</button><span><span id="plCpcoPwdLabel"></span> <b id="plCpcoShown"></b></span><span class="pl-msg" id="plCpcoMsg"></span></div>
       <p class="pl-hint" id="plCpcoHint"></p>
     </div>
+    <!-- liens sortants de l'étape : chacun dit ce qu'on y fait et s'ouvre dans un nouvel onglet (l'assistant reste ouvert) -->
     <div class="pl-grid" id="plCentreOn" hidden>
       <div class="pl-card"><h3>Flotte et journal des vols</h3>
         <p class="pl-hint">Lus sur le site de la compagnie par le lanceur (une fois par jour, et à la demande) : flotte, emplacement des appareils, journal des vols ; types inconnus complétés ensuite.</p>
         <p class="pl-msg" id="plFleetNow"></p>
-        <div class="pl-row"><button type="button" class="primary" id="plFleetGo">Mettre à jour maintenant</button><a class="secondary" id="plFleetLink" href="centre.html?base=fleet">Flotte</a></div>
+        <div class="pl-row"><button type="button" class="primary" id="plFleetGo">Mettre à jour maintenant</button><a class="secondary" id="plFleetLink" href="centre.html?base=fleet" target="_blank" rel="noopener" data-no-i18n></a></div>
       </div>
       <div class="pl-card"><h3>Missions</h3>
-        <p class="pl-hint">Les missions arrivent avec les données (étape 2, registre <code>data/missions</code>) ; le registre se relit depuis sa page.</p>
-        <p class="pl-msg" id="plMissionsNow"></p>
-        <div class="pl-row"><a class="secondary" href="../cpco/mission_registry.html">Registre des missions</a></div>
+        <p class="pl-msg" id="plMissionsNow" data-no-i18n></p>
+        <div class="pl-row"><a class="secondary" id="plRegLink" href="../cpco/mission_registry.html" target="_blank" rel="noopener" data-no-i18n></a></div>
+        <p class="pl-hint" id="plRegWhat" data-no-i18n></p>
       </div>
       <div class="pl-card"><h3>Réglages du {SOG}</h3>
-        <ul class="pl-links" id="plSogLinks"></ul>
+        <ul class="pl-links" id="plSogLinks" data-no-i18n></ul>
       </div>
     </div>
+    <!-- fin de l'assistant : « Terminer » actif quand les étapes obligatoires (1 à 5) sont faites, sinon ce qui manque -->
+    <div class="pl-row pl-next" data-no-i18n><button type="button" class="primary" id="plFinish"></button>
+      <a class="secondary" id="plHome" href="../../index.html"></a><span class="pl-hint" id="plFinishWhy"></span></div>
   </section>
 
-  <div class="pl-row"><button type="button" class="primary" id="plFinish">Terminer</button>
-    <a class="secondary" href="../../index.html">Accueil</a></div>
-
-  <section id="plReset" style="margin-top:16px"><h2>Recommencer</h2>
+  <section id="plReset" data-default-hidden="1" style="margin-top:16px"><h2>Recommencer</h2>
     <div class="pl-warn"><b>⚠ Nettoyer efface les réglages de ce navigateur</b> : dossiers mémorisés (application, données,
       registre, missions, SIA, ODV, X-Plane, performances, sauvegarde locale), copie du classeur ODV, identifiants du site
       de la compagnie, profil (trigramme, IVAO, VATSIM, SimBrief) et l’indicateur « suite réglée ». Les fichiers sur le disque —
@@ -388,8 +597,11 @@
 <script>
 (() => {
   'use strict';
-  // Premier lancement : assistant de mise en route de la suite, par étapes (1 données, 2 dossiers, 3 compagnie,
-  // 4 profil et identifiants, 6 Centre) et bilan des besoins (checklist). Les actions sur le disque passent par le
+  // Premier lancement : assistant de mise en route de la suite, en six étapes (1 dossiers, 2 données, 3 compagnie,
+  // 4 profil et identifiants, 5 données aéronautiques et types d'aéronefs, 6 Centre) et bilan des besoins (checklist).
+  // L'état de chaque étape (stepStates : faite, à faire, facultative, verrouillée…) est repris par le rail en tête, la
+  // pastille du titre et la ligne d'état de l'étape ; l'étape courante est ouverte, les autres repliées (goStep), et
+  // chaque étape finit par « Suivant → » (« Terminer » à la 6). Les actions sur le disque passent par le
   // lanceur local (/__setup/…, en-tête X-SOG-Setup) : jeu d'essai, dépôt de données, synchronisation, envois, secrets.
   // Clés du navigateur : suiteSetup:v1 (mise en route terminée), suiteSetupState:v1 (reste à faire, lu par l'accueil),
   // missionReportingConfig:v1 (profil pilote), defaCredentials:v1 (identifiants du site). ?force : rester sur la page
@@ -469,6 +681,63 @@
   };
   /** Centre déverrouillé dans ce navigateur. */
   const cpcoOn = () => !!window.RepositoryNav?.cpco?.enabled?.();
+  /** Texte de l'élément el, écrit seulement s'il change (textes produits à la source, K.t). */
+  const setText = (el, v) => {
+    if (el && el.textContent !== v) el.textContent = v;
+  };
+  // dernier HTML écrit par élément : réécrit seulement s'il change
+  const lastHtml = new WeakMap();
+  /** HTML de l'élément el, écrit seulement s'il change. */
+  const setHtml = (el, v) => {
+    if (!el || lastHtml.get(el) === v) return;
+    lastHtml.set(el, v);
+    el.innerHTML = v;
+  };
+  // ---- étapes de l'assistant : ordre, symbole et mot de chaque état (ok faite, todo à faire, opt facultative ou
+  // passée, lock verrouillée faute d'étape 1, bad à refaire, unknown inconnu sans lanceur)
+  const STEPS = ['plFolders', 'plData', 'plCompany', 'plProfile', 'plSia', 'plCentre'];
+  const SYM = {
+    ok: '✓',
+    todo: '○',
+    opt: '–',
+    lock: '🔒',
+    bad: '✗',
+    unknown: '?'
+  };
+  /** Mot de l'état st d'une étape, dans la langue courante. */
+  const stateWord = st => K.t({
+    ok: ['faite', 'done', 'erledigt', 'hecho'],
+    todo: ['à faire', 'to do', 'zu erledigen', 'por hacer'],
+    opt: ['facultative', 'optional', 'optional', 'opcional'],
+    lock: ['verrouillée', 'locked', 'gesperrt', 'bloqueado'],
+    bad: ['à refaire', 'to redo', 'neu zu machen', 'por rehacer'],
+    unknown: ['inconnue', 'unknown', 'unbekannt', 'desconocido']
+  } [st]);
+  /** Nom court de l'étape id (rail, « Reste à faire »). */
+  const stepName = id => K.t({
+    plFolders: ['Dossiers', 'Folders', 'Ordner', 'Carpetas'],
+    plData: ['Données', 'Data', 'Daten', 'Datos'],
+    plCompany: ['Compagnie', 'Airline', 'Fluggesellschaft', 'Aerolínea'],
+    plProfile: ['Profil', 'Profile', 'Profil', 'Perfil'],
+    plSia: ['Données aéronautiques et types', 'Aeronautical data and types', 'Luftfahrtdaten und Typen',
+      'Datos aeronáuticos y tipos'
+    ],
+    plCentre: ['Centre', 'Centre', 'Zentrum', 'Centro']
+  } [id]);
+  /** Replie (hide) ou ouvre une étape par le bouton Masquer / Afficher du framework (app_framework.js : classe
+   *  repo-block-hidden, choix mémorisé par page) ; rien si elle est déjà dans cet état. */
+  const fold = (sec, hide) => {
+    if (sec && sec.classList.contains('repo-block-hidden') !== hide) sec.querySelector(
+      ':scope>.repo-block-heading .repo-toggle')?.click();
+  };
+  /** Ouvre l'étape id et replie les autres (une étape à la fois) ; scroll : la fait défiler en haut de l'écran. */
+  function goStep(id, scroll = true) {
+    for (const s of STEPS) fold($(s), s !== id);
+    if (scroll) $(id)?.scrollIntoView({
+      behavior: 'smooth',
+      block: 'start'
+    });
+  }
 
   // bilan : état de chaque besoin de la suite (true : réglé, false : à faire, null : inconnu), relu après chaque action
   const S = {};
@@ -509,7 +778,14 @@
       item('site', !!c.login, L('Identifiant du site de la compagnie', 'Airline website login',
         'Kennung der Website', 'Identificador del sitio de la aerolínea'), 'plProfile', false, c.login || ''),
       item('aero', sia ? (sia.counts?.airspaces || 0) > 0 : false, L('Données aéronautiques', 'Aeronautical data', 'Luftfahrtdaten',
-        'Datos aeronáuticos'), 'plSia', false, sia?.airac ? `AIRAC ${sia.airac}` : '')
+        'Datos aeronáuticos'), 'plSia', false, sia?.airac ? `AIRAC ${sia.airac}` : ''),
+      // types d'aéronefs (typesState) : hors du compte de l'accueil (home: false) — un nouveau type de la flotte ne
+      // doit pas renvoyer chaque lancement au premier lancement
+      {
+        ...item('types', S.types ? S.types.ok : null, L('Types d’aéronefs et performances', 'Aircraft types and performance',
+          'Luftfahrzeugtypen und Leistungen', 'Tipos de aeronave y rendimientos'), 'plSia', false, S.types?.short || ''),
+        home: false
+      }
     ];
     // mode du Centre : autonome (mot de passe, data/config/centre.json) ; groupe (registre signé) à venir
     const mode = item('mode', true, L('Mode du Centre', 'Centre mode', 'Modus des Zentrums', 'Modo del Centro'), 'plCentre', false,
@@ -531,18 +807,198 @@
     ];
     // ligne du bilan : ✓ réglé, ? inconnu, – facultatif, ○ à faire
     const li = x => `<li class="${x.ok === 'bad' ? 'bad' : x.ok === true ? 'ok' : x.ok === null ? 'unknown' : x.opt ? 'opt' : 'todo'}"><b>${x.ok === 'bad' ? '✗' : x.ok === true ? '✓' : x.ok === null ? '?' : x.opt ? '–' : '○'}</b><span><a href="#${x.step}">${K.esc(x.label)}</a>${x.opt ? ` <small>(${K.esc(L('facultatif', 'optional', 'optional', 'opcional'))})</small>` : ''}${x.detail ? ` <small>${K.esc(x.detail)}</small>` : ''}</span></li>`;
-    $('plChecklist').innerHTML = `<h4>${K.esc(L('Pour tous', 'For everyone', 'Für alle', 'Para todos'))}</h4>${suite.map(li).join('')}<h4>${K.esc(L('Centre', 'Centre', 'Zentrum', 'Centro'))}</h4>${centre.map(li).join('')}`;
-    // mémorisé pour l'accueil : reste à faire (obligatoire seulement)
-    const need = [...suite, ...centre].filter(x => !x.opt);
-    try {
+    setHtml($('plChecklist'), `<h4>${K.esc(L('Pour tous', 'For everyone', 'Für alle', 'Para todos'))}</h4>${suite.map(li).join('')}<h4>${K.esc(L('Centre', 'Centre', 'Zentrum', 'Centro'))}</h4>${centre.map(li).join('')}`);
+    // mémorisé pour l'accueil : reste à faire (obligatoire seulement ; types d'aéronefs exclus, voir plus haut)
+    const need = [...suite, ...centre].filter(x => !x.opt && x.home !== false);
+    setText($('plDetailSum'), K.tf(['Détail du bilan : {n} besoin(s) sur {t} à régler', 'Detailed check: {n} of {t} needs to settle',
+      'Einzelheiten: {n} von {t} Punkten offen', 'Detalle del balance: {n} de {t} necesidades por resolver'
+    ], {
+      n: need.filter(x => x.ok !== true).length,
+      t: need.length
+    }));
+    const home = {
+      todo: need.filter(x => x.ok !== true).length,
+      total: need.length,
+      // « pour tous » seulement : décide du renvoi vers l'accueil à l'ouverture par le lanceur
+      todoSuite: suite.filter(x => !x.opt && x.home !== false && x.ok !== true).length
+    };
+    // écrit seulement si le compte change (l'accueil le lit ; chaque écriture réveille les autres onglets)
+    const was = read(STATE);
+    if (was.todo !== home.todo || was.total !== home.total || was.todoSuite !== home.todoSuite) try {
       localStorage.setItem(STATE, JSON.stringify({
         at: new Date().toISOString(),
-        todo: need.filter(x => x.ok !== true).length,
-        total: need.length,
-        // « pour tous » seulement : décide du renvoi vers l'accueil à l'ouverture par le lanceur
-        todoSuite: suite.filter(x => !x.opt && x.ok !== true).length
+        ...home
       }));
     } catch {}
+    renderSteps(Object.fromEntries([...suite, ...centre].map(x => [x.id, x])));
+  }
+
+  /** État de chaque étape d'après les besoins du bilan (by : besoins par id) : { id, n, st (ok, todo, opt, lock, bad,
+   *  unknown), text (ligne « ✓ Fait : … » / « ○ À faire : … ») }. Étapes 2 à 6 verrouillées sans l'étape 1 ; l'étape 6
+   *  n'est « faite » que Centre activé et étapes 1 à 5 faites, sinon facultative (pilotes : passer). */
+  function stepStates(by) {
+    const lock = !S.folder;
+    const st = ok => ok === true ? 'ok' : ok === null ? 'unknown' : ok === 'bad' ? 'bad' : 'todo';
+    const p = read(PROFILE),
+      c = read(DEFA),
+      va = window.RepositoryNav?.va?.() || {};
+    const out = [];
+    /** Ajoute l'étape id d'état s avec sa ligne d'état (texte déjà traduit ; vide si verrouillée). */
+    const add = (id, s, text) => out.push({
+      id,
+      n: out.length + 1,
+      st: id !== 'plFolders' && lock ? 'lock' : s,
+      text: id !== 'plFolders' && lock ? '' : text
+    });
+    // 1. dossiers
+    const s1 = st(by.folder.ok);
+    add('plFolders', s1, s1 === 'ok' ? K.tf(['Fait : dossier de l’application « {f} ».', 'Done: application folder “{f}”.',
+        'Erledigt: Anwendungsordner „{f}“.', 'Hecho: carpeta de la aplicación «{f}».'
+      ], {
+        f: S.folderName
+      }) : s1 === 'bad' ? L('À refaire : ce dossier est celui d’une autre copie de la suite ; choisir celui de cette suite.',
+        'To redo: this folder belongs to another copy of the suite; choose the one of this suite.',
+        'Neu zu machen: Dieser Ordner gehört zu einer anderen Kopie der Suite; den dieser Suite wählen.',
+        'Por rehacer: esta carpeta es de otra copia de la suite; elegir la de esta suite.') :
+      L('À faire : « Choisir le dossier de l’application » — celui qui contient lancer.cmd et lancer.sh.',
+        'To do: “Choose the application folder” — the one that contains lancer.cmd and lancer.sh.',
+        'Zu erledigen: „Anwendungsordner wählen“ — der Ordner mit lancer.cmd und lancer.sh.',
+        'Por hacer: «Elegir la carpeta de la aplicación», la que contiene lancer.cmd y lancer.sh.'));
+    // 2. données
+    const s2 = st(by.data.ok);
+    add('plData', s2, s2 === 'ok' ? (S.git ? K.tf(['Fait : données présentes, partagées par le dépôt {u}.',
+      'Done: data present, shared through the repository {u}.', 'Erledigt: Daten vorhanden, über das Repository {u} geteilt.',
+      'Hecho: datos presentes, compartidos por el repositorio {u}.'
+    ], {
+      u: S.gitUrl
+    }) : L('Fait : données présentes. Dépôt de synchronisation : facultatif (carte ci-dessous).',
+      'Done: data present. Synchronisation repository: optional (card below).',
+      'Erledigt: Daten vorhanden. Synchronisierungs-Repository: optional (Karte unten).',
+      'Hecho: datos presentes. Repositorio de sincronización: opcional (tarjeta abajo).')) : s2 === 'unknown' ? L(
+      'Inconnu : cette étape passe par le lanceur — ouvrir la suite avec lancer.cmd (Windows) ou sh lancer.sh.',
+      'Unknown: this step goes through the launcher — open the suite with lancer.cmd (Windows) or sh lancer.sh.',
+      'Unbekannt: Dieser Schritt läuft über den Starter — die Suite mit lancer.cmd (Windows) oder sh lancer.sh öffnen.',
+      'Desconocido: este paso pasa por el lanzador; abrir la suite con lancer.cmd (Windows) o sh lancer.sh.') : L(
+      'À faire : une source ci-dessous — le jeu d’essai pour découvrir la suite, ou les données de votre compagnie (dépôt, archive).',
+      'To do: one source below — the sample data to discover the suite, or your airline’s data (repository, archive).',
+      'Zu erledigen: eine Quelle unten — die Testdaten zum Kennenlernen oder die Daten Ihrer Fluggesellschaft (Repository, Archiv).',
+      'Por hacer: una fuente abajo: el conjunto de prueba para descubrir la suite o los datos de su aerolínea (repositorio, archivo).'
+    ));
+    // 3. compagnie
+    const miss3 = [!va.name && L('le nom', 'the name', 'der Name', 'el nombre'), !va.url && L('l’adresse du site',
+      'the website address', 'die Website-Adresse', 'la dirección del sitio')].filter(Boolean).join(L(' et ', ' and ', ' und ', ' y '));
+    add('plCompany', st(by.company.ok), by.company.ok ? K.tf(['Fait : {d}.', 'Done: {d}.', 'Erledigt: {d}.', 'Hecho: {d}.'], {
+      d: by.company.detail
+    }) : K.tf(['À faire : {m} de la compagnie, puis « Enregistrer la compagnie ».',
+      'To do: {m} of the airline, then “Save the airline”.',
+      'Zu erledigen: {m} der Fluggesellschaft, dann „Fluggesellschaft speichern“.',
+      'Por hacer: {m} de la aerolínea y luego «Guardar la aerolínea».'
+    ], {
+      m: miss3
+    }));
+    // 4. profil (lu dans missionReportingConfig:v1 et defaCredentials:v1, enregistrés par la partie « profil » du script)
+    const ok4 = by.pilot.ok && by.site.ok;
+    const miss4 = [!p.trigram && L('trigramme', 'trigram', 'Kürzel', 'trigrama'), !(p.ivaoId || p.vatsimId) && L('ID IVAO ou VATSIM',
+        'IVAO or VATSIM ID', 'IVAO- oder VATSIM-ID', 'ID IVAO o VATSIM'), !c.login && L('identifiant du site de la compagnie',
+        'airline website login', 'Kennung der Website', 'identificador del sitio de la aerolínea')]
+      .filter(Boolean).join(', ');
+    add('plProfile', ok4 ? 'ok' : 'todo', ok4 ? K.tf(['Fait : {d} ; site : {l}.', 'Done: {d}; website: {l}.',
+      'Erledigt: {d}; Website: {l}.',
+      'Hecho: {d}; sitio: {l}.'
+    ], {
+      d: by.pilot.detail,
+      l: c.login
+    }) : K.tf(['À faire : {m}.', 'To do: {m}.', 'Zu erledigen: {m}.', 'Por hacer: {m}.'], {
+      m: miss4
+    }));
+    // 5. données aéronautiques et types d'aéronefs (types inconnus sans lanceur : pas bloquant)
+    const tOk = by.types.ok !== false,
+      aOk = by.aero.ok === true;
+    const miss5 = [!tOk && K.tf(['compléter {n} type(s) d’aéronefs', 'complete {n} aircraft type(s)', '{n} Luftfahrzeugtyp(en) ergänzen',
+      'completar {n} tipo(s) de aeronave'
+    ], {
+      n: S.types?.todo || 0
+    }), !aOk && L('construire la base aéronautique', 'build the aeronautical database', 'die Luftfahrtdatenbank aufbauen',
+      'construir la base aeronáutica')].filter(Boolean).join(L(' et ', ' and ', ' und ', ' y '));
+    add('plSia', tOk && aOk ? 'ok' : 'todo', tOk && aOk ? K.tf(['Fait : {t} ; {a}.', 'Done: {t}; {a}.', 'Erledigt: {t}; {a}.',
+      'Hecho: {t}; {a}.'
+    ], {
+      t: S.types?.short || L('types d’aéronefs', 'aircraft types', 'Luftfahrzeugtypen', 'tipos de aeronave'),
+      a: by.aero.detail
+    }) : K.tf(['À faire : {m} — « Tout installer » s’en charge (types, puis zones de la carte).',
+      'To do: {m} — “Install everything” takes care of it (types, then map zones).',
+      'Zu erledigen: {m} — „Alles installieren“ übernimmt das (Typen, dann Zonen der Karte).',
+      'Por hacer: {m}; «Instalar todo» se encarga (tipos y luego zonas del mapa).'
+    ], {
+      m: miss5
+    }));
+    // 6. Centre : allumé seulement quand 1 à 5 sont faites
+    const prior = out.every(x => x.st === 'ok' || x.st === 'unknown');
+    add('plCentre', cpcoOn() && prior ? 'ok' : 'opt', cpcoOn() ? (prior ? L('Fait : Centre activé dans ce navigateur.',
+      'Done: Centre enabled in this browser.', 'Erledigt: Zentrum in diesem Browser aktiviert.',
+      'Hecho: Centro activado en este navegador.') : L(
+      'Centre activé ; l’étape sera faite quand les étapes 1 à 5 le seront.',
+      'Centre enabled; the step will be done once steps 1 to 5 are.',
+      'Zentrum aktiviert; der Schritt ist erledigt, sobald die Schritte 1 bis 5 erledigt sind.',
+      'Centro activado; el paso estará hecho cuando lo estén los pasos 1 a 5.')) : L(
+      'Réservé aux administrateurs : les pilotes passent cette étape et cliquent « Terminer ».',
+      'For administrators only: pilots skip this step and click “Finish”.',
+      'Nur für Administratoren: Piloten überspringen diesen Schritt und klicken „Abschließen“.',
+      'Reservado a los administradores: los pilotos se saltan este paso y hacen clic en «Terminar».'));
+    return out;
+  }
+  let curStep = '';
+  /** Dessine l'état des étapes : rail en tête (étape courante cerclée), pastille dans chaque titre, ligne d'état sous
+   *  chaque titre, fin de chaque étape (« Suivant → » et ce qu'il en reste) et « Terminer » (actif quand les étapes
+   *  obligatoires 1 à 5 sont faites, sinon ce qui manque). Écritures seulement si la valeur change. */
+  function renderSteps(by) {
+    const steps = stepStates(by);
+    // étape courante : la première à faire (ou à refaire) ; toutes faites : la 6
+    curStep = (steps.find(x => x.st === 'todo' || x.st === 'bad') || steps[5]).id;
+    setHtml($('plRail'), steps.map(x => `<li><a href="#${x.id}" data-goto="${x.id}" class="pl-s-${x.st}${x.id === curStep ? ' pl-cur' : ''}"${x.id === curStep ? ' aria-current="step"' : ''}><b>${SYM[x.st]}</b><span>${x.n}. ${K.esc(stepName(x.id))}</span><small>${K.esc(stateWord(x.st))}</small></a></li>`).join(''));
+    const missing = steps.slice(0, 5).filter(x => x.st !== 'ok' && x.st !== 'unknown');
+    setText($('plRailHint'), missing.length ? K.tf(['Étape en cours : {n}. {s}. Un clic sur une étape l’ouvre.',
+      'Current step: {n}. {s}. Click a step to open it.', 'Aktueller Schritt: {n}. {s}. Ein Klick öffnet einen Schritt.',
+      'Paso actual: {n}. {s}. Un clic en un paso lo abre.'
+    ], {
+      n: STEPS.indexOf(curStep) + 1,
+      s: stepName(curStep)
+    }) : L('Les étapes obligatoires sont faites : « Terminer » à l’étape 6.', 'The required steps are done: “Finish” at step 6.',
+      'Die Pflichtschritte sind erledigt: „Abschließen“ in Schritt 6.',
+      'Los pasos obligatorios están hechos: «Terminar» en el paso 6.'));
+    for (const x of steps) {
+      const sec = $(x.id);
+      if (!sec) continue;
+      for (const k of Object.keys(SYM)) sec.classList.toggle(`pl-st-${k}`, k === x.st);
+      const badge = sec.querySelector('.pl-badge');
+      setHtml(badge, `<b>${SYM[x.st]}</b>${K.esc(stateWord(x.st))}`);
+      badge?.classList.toggle('pl-s-ok', x.st === 'ok');
+      badge?.classList.toggle('pl-s-todo', x.st === 'todo');
+      badge?.classList.toggle('pl-s-bad', x.st === 'bad');
+      setText(sec.querySelector(':scope>.pl-status'), x.text ? `${SYM[x.st]} ${x.text}` : '');
+      // fin d'étape : « Suivant → » et l'état de l'étape qu'on quitte
+      const next = sec.querySelector(':scope>.pl-next [data-next]');
+      if (next) {
+        setText(next, L('Suivant →', 'Next →', 'Weiter →', 'Siguiente →'));
+        setText(next.nextElementSibling, x.st === 'ok' ? L('✓ Étape faite.', '✓ Step done.', '✓ Schritt erledigt.', '✓ Paso hecho.') :
+          x.st === 'lock' ? '' : L('○ Pas encore faite : elle reste marquée à faire dans le rail, en haut.',
+            '○ Not done yet: it stays marked as to do in the rail, at the top.',
+            '○ Noch nicht erledigt: bleibt oben in der Leiste als offen markiert.',
+            '○ Aún no hecho: queda marcado por hacer en la barra, arriba.'));
+      }
+    }
+    // « Terminer » : étapes obligatoires faites (inconnues sans lanceur : pas bloquantes)
+    const fin = $('plFinish');
+    if (fin) {
+      fin.disabled = missing.length > 0;
+      setText(fin, L('Terminer', 'Finish', 'Abschließen', 'Terminar'));
+      setText($('plFinishWhy'), missing.length ? K.tf(['Reste à faire : {l}.', 'Still to do: {l}.', 'Noch zu erledigen: {l}.',
+        'Queda por hacer: {l}.'
+      ], {
+        l: missing.map(x => `${x.n}. ${stepName(x.id)}`).join(' · ')
+      }) : L('Tout l’obligatoire est fait.', 'All the required steps are done.', 'Alles Erforderliche ist erledigt.',
+        'Todo lo obligatorio está hecho.'));
+    }
   }
 
   // 2. données : installées par le lanceur dans la suite servie ; seulement une fois le dossier de l'application réglé
@@ -563,7 +1019,7 @@
     for (const id of ['plData', 'plCompany', 'plProfile', 'plSia', 'plCentre']) {
       const sec = $(id);
       if (!sec) continue;
-      sec.inert = !ok;
+      if (sec.inert !== !ok) sec.inert = !ok;
       sec.classList.toggle('pl-locked', !ok);
       let m = sec.querySelector(':scope>.pl-lockmsg');
       if (!ok && !m) {
@@ -576,11 +1032,10 @@
       }
       if (m) {
         m.hidden = ok;
-        m.textContent = ok ? '' : `🔒 ${why}`;
+        setText(m, ok ? '' : `🔒 ${why}`);
       }
     }
-    const fin = $('plFinish');
-    if (fin) fin.disabled = !ok;
+    // « Terminer » : décidé par renderSteps (étapes obligatoires faites)
   }
   /** Boutons de l'étape « Données » : dossier réglé (étape 1), et Git installé pour le dépôt de données. */
   function dataGate() {
@@ -998,14 +1453,18 @@
       n = null;
     }
     S.missions = n;
-    msg('plMissionsNow', n == null ? '' : n ? K.tf(['{n} mission(s) au registre.', '{n} mission(s) in the registry.',
-      '{n} Mission(en) im Register.', '{n} misión(es) en el registro.'
+    // ligne d'état de la carte : rien à faire, ou d'où viennent les missions (générateur : nouvel onglet)
+    const out = $('plMissionsNow');
+    out.className = `pl-msg ${n == null ? '' : n ? 'ok' : 'warn'}`;
+    setHtml(out, n == null ? '' : n ? K.esc(K.tf(['✓ {n} mission(s) au registre : rien à faire.',
+      '✓ {n} mission(s) in the registry: nothing to do.', '✓ {n} Mission(en) im Register: nichts zu tun.',
+      '✓ {n} misión(es) en el registro: nada que hacer.'
     ], {
       n
-    }) : L('Registre vide ou absent : récupérer les données (étape 2), puis relire le registre.',
-      'Registry empty or missing: fetch the data (step 2), then reread the registry.',
-      'Register leer oder fehlt: Daten abrufen (Schritt 2), dann das Register neu lesen.',
-      'Registro vacío o ausente: obtener los datos (paso 2) y releer el registro.'), n ? 'ok' : 'warn');
+    })) : `${K.esc(L('○ Aucune mission : elles arrivent avec les données de l’étape 2 ; sinon, les générer dans',
+      '○ No mission: they come with the data of step 2; otherwise, generate them in',
+      '○ Keine Mission: Sie kommen mit den Daten aus Schritt 2; sonst in',
+      '○ Ninguna misión: llegan con los datos del paso 2; si no, generarlas en'))} <a href="../cpco/mission_editor.html" target="_blank" rel="noopener">${K.esc(L('Centre › Générateur de mission (nouvel onglet)', 'Centre › Mission generator (new tab)', 'Zentrum › Missionsgenerator (neuer Tab) erzeugen', 'Centro › Generador de misiones (nueva pestaña)'))}</a>.`);
     checklist();
   }
   /** Utilisateurs, administrateurs du Centre et liens vers les réglages du SO Group (Paramètres › Centre). */
@@ -1016,8 +1475,13 @@
     S.users = users ? users.length : null;
     S.admins = users ? users.filter(u => u.role === 'admin_centre' && u.actif !== false).length : null;
     const send = read('missionSendConfig:v1').url;
+    // réglage, ce qu'on y fait (une ligne), état ; chaque lien ouvre Paramètres › Centre dans un nouvel onglet
     const rows = [
-      ['users', L('Utilisateurs et droits', 'Users and rights', 'Benutzer und Rechte', 'Usuarios y derechos'), users ? K.tf([
+      ['users', L('Utilisateurs et droits', 'Users and rights', 'Benutzer und Rechte', 'Usuarios y derechos'), L(
+        'les comptes de la suite (une fiche par pilote) et qui administre le Centre',
+        'the suite accounts (one file per pilot) and who administers the Centre',
+        'die Konten der Suite (eine Datei pro Pilot) und wer das Zentrum verwaltet',
+        'las cuentas de la suite (una ficha por piloto) y quién administra el Centro'), users ? K.tf([
         '{n} utilisateur(s), {a} administrateur(s) ; mode {m}', '{n} user(s), {a} administrator(s); {m} mode',
         '{n} Benutzer, {a} Administrator(en); Modus {m}', '{n} usuario(s), {a} administrador(es); modo {m}'
       ], {
@@ -1026,15 +1490,28 @@
         m: U?.mode?.() || ''
       }) : ''],
       ['dispoCategories', L('Catégories de disponibilité', 'Availability categories', 'Verfügbarkeitskategorien',
-        'Categorías de disponibilidad'), ''],
-      ['odv', L('Planning ODV', 'ODV planning', 'ODV-Planung', 'Planificación ODV'), ''],
-      ['odvOrders', L('Tableau', 'Board', 'Einsatztafel', 'Tablero'), ''],
-      ['send', L('Envoi des CR', 'Report sending', 'Berichtsversand', 'Envío de informes'), send ? send.replace(/^https?:\/\//, '') :
-        L('pas d’adresse', 'no address', 'keine Adresse', 'sin dirección')
+        'Categorías de disponibilidad'), L(
+        'ce que les pilotes peuvent déclarer comme disponibilités (catégories, couleurs, codes ODV)',
+        'what pilots can declare as availability (categories, colours, ODV codes)',
+        'was Piloten als Verfügbarkeit angeben können (Kategorien, Farben, ODV-Codes)',
+        'lo que los pilotos pueden declarar como disponibilidad (categorías, colores, códigos ODV)'), ''],
+      ['odv', L('Planning ODV', 'ODV planning', 'ODV-Planung', 'Planificación ODV'), L(
+        'lecture du classeur ODV de l’escadrille et affichage du planning',
+        'reading of the squadron ODV workbook and planning display',
+        'Lesen der ODV-Arbeitsmappe der Staffel und Anzeige der Planung',
+        'lectura del libro ODV del escuadrón y presentación de la planificación'), ''],
+      ['odvOrders', L('Tableau', 'Board', 'Einsatztafel', 'Tablero'), L('réglages du tableau des ordres de vols',
+        'settings of the flight orders board', 'Einstellungen der Einsatztafel', 'ajustes del tablero de órdenes de vuelo'), ''],
+      ['send', L('Envoi des CR', 'Report sending', 'Berichtsversand', 'Envío de informes'), L(
+          'adresse où partent les comptes rendus des pilotes', 'address the pilots’ reports are sent to',
+          'Adresse, an die die Berichte der Piloten gehen', 'dirección a la que se envían los informes de los pilotos'), send ? send
+        .replace(/^https?:\/\//, '') : L('pas d’adresse', 'no address', 'keine Adresse', 'sin dirección')
       ],
-      ['cpco', L('Calcul des routes', 'Route calculation', 'Routenberechnung', 'Cálculo de rutas'), '']
+      ['cpco', L('Calcul des routes', 'Route calculation', 'Routenberechnung', 'Cálculo de rutas'), L(
+        'réglages du calcul des routes des missions', 'settings of the mission route calculation',
+        'Einstellungen der Routenberechnung der Missionen', 'ajustes del cálculo de rutas de las misiones'), '']
     ];
-    $('plSogLinks').innerHTML = rows.map(([id, label, note]) => `<li><a href="${K.esc(nav?.settingsUrl?.(id) || `centre.html?base=${id}`)}">${K.esc(label)}</a>${note ? ` <small>— ${K.esc(note)}</small>` : ''}</li>`).join('');
+    setHtml($('plSogLinks'), rows.map(([id, label, what, note]) => `<li><a href="${K.esc(nav?.settingsUrl?.(id) || `centre.html?base=${id}`)}" target="_blank" rel="noopener">${K.esc(label)} ↗</a> — ${K.esc(what)}${note ? ` <small>(${K.esc(note)})</small>` : ''}</li>`).join(''));
     checklist();
   }
   /** Étape 6 : verrou ou, Centre activé, flotte, missions et réglages du SO Group. */
@@ -1070,6 +1547,438 @@
     sogState();
   }
   window.addEventListener('cpco-access-change', centreState);
+
+  // 5. données aéronautiques et types d'aéronefs : la page embarque les blocs « Types d'aéronefs » et « Données
+  // aéronautiques » de shared/maintenance_page.js sans les modifier ; elle affiche avant chacun une ligne d'état calculée
+  // aux mêmes sources que lui (lanceur, bases chargées, résumé de la base SIA), replie ses cartes expertes et enchaîne
+  // leurs deux actions principales (« Tout installer »).
+  /** État de la passe de téléchargement des types (GET /__setup/aircraft-db, comme le bloc) ; null sans lanceur. */
+  const acStatus = () => api('aircraft-db').catch(() => null);
+  /** Ligne d'état HTML (symbole en pastille, classe pl-s-… pour la couleur), texte échappé, extra : HTML ajouté. */
+  const line = (st, text, extra = '') => `<li class="pl-s-${st}"><b>${SYM[st] || '…'}</b>${K.esc(text)}${extra}</li>`;
+  /** Types d'aéronefs : mêmes types suivis et mêmes règles que le bloc (maintenance_page.js, aircraftDbState) — flotte
+   *  (DEFA_FLEET), missions du registre (MissionIndex) et types saisis dans les CR (missionAircraftTypes:v1), regroupés
+   *  par code OACI (alias d'AIRCRAFT_DB) ; fiche OACI (AIRCRAFT_DB, hors saisie locale), performances (AIRCRAFT_PERF) ;
+   *  « absent d'EUROCONTROL » : cherché à la dernière passe du lanceur sans résultat. Une passe terminée depuis le
+   *  chargement de la page n'est lue qu'au rechargement : son bilan vient alors du journal du lanceur. Résultat dans
+   *  S.types (ok : true, false, null inconnu sans lanceur) et ligne d'état avant le bloc. */
+  async function typesState() {
+    const s = await acStatus(),
+      db = window.AIRCRAFT_DB || {},
+      perfDb = window.AIRCRAFT_PERF || {};
+    const alias = c => db.__aliases?.[c] || c;
+    let missions = [];
+    try {
+      await window.MissionIndex?.ready;
+      missions = (window.MissionIndex ? window.MissionIndex.all() : read('missionRegistry:v1').missions || []).flatMap(m => m
+        .aircraftTypes || []);
+    } catch {
+      /* registre illisible : flotte et types saisis seulement */
+    }
+    const fresh = s?.state === 'done' && s.ended && s.ended * 1000 > performance.timeOrigin,
+      tried = new Set(!fresh && s?.state === 'done' ? s.codes || [] : []);
+    const groups = new Map();
+    for (const code of [...(window.DEFA_FLEET || []).map(r => r.type), ...missions, ...Object.keys(read('missionAircraftTypes:v1'))]) {
+      const c = String(code || '').toUpperCase().trim();
+      if (!c) continue;
+      const k = alias(c);
+      (groups.get(k) || groups.set(k, new Set()).get(k)).add(c);
+    }
+    const rows = [...groups].map(([k, codes]) => {
+      const all = [k, ...codes],
+        rec = all.map(c => db[c]).find(Boolean),
+        perf = all.some(c => perfDb[c]),
+        absent = !perf && all.some(c => tried.has(c));
+      return {
+        noFiche: !rec || !!rec.local,
+        perf,
+        absent,
+        noPerf: !perf && !absent
+      };
+    });
+    const empty = !Object.keys(db).some(k => !k.startsWith('__')),
+      nFiche = rows.filter(r => r.noFiche).length,
+      nPerf = rows.filter(r => !r.noFiche && r.noPerf).length,
+      todo = rows.filter(r => r.noFiche || r.noPerf).length,
+      withPerf = rows.filter(r => r.perf).length,
+      absent = rows.filter(r => r.absent).length;
+    const T = {
+      todo,
+      running: s?.state === 'running',
+      ok: !s ? null : fresh || (!empty && todo === 0),
+      short: !s ? '' : K.tf(['{n} types, {p} avec performances', '{n} types, {p} with performance', '{n} Typen, {p} mit Leistungen',
+        '{n} tipos, {p} con rendimientos'
+      ], {
+        n: rows.length,
+        p: withPerf
+      })
+    };
+    const absentNote = n => K.tf(['{n} type(s) sans performances chez EUROCONTROL : normal pour les militaires et les hélicoptères.',
+      '{n} type(s) without EUROCONTROL performance: normal for military aircraft and helicopters.',
+      '{n} Typ(en) ohne Leistungen bei EUROCONTROL: normal bei Militärflugzeugen und Hubschraubern.',
+      '{n} tipo(s) sin rendimientos en EUROCONTROL: normal en militares y helicópteros.'
+    ], {
+      n
+    });
+    let html;
+    if (!s) html = line('unknown', L('Lanceur absent : la base des types se complète avec le lanceur (lancer.cmd, sh lancer.sh).',
+      'No launcher: the type database is completed with the launcher (lancer.cmd, sh lancer.sh).',
+      'Kein Starter: Die Typendatenbank wird mit dem Starter ergänzt (lancer.cmd, sh lancer.sh).',
+      'Sin lanzador: la base de tipos se completa con el lanzador (lancer.cmd, sh lancer.sh).'));
+    else if (s.state === 'running') html = line('todo', K.tf([
+      'Téléchargement en cours ({s}) : l’état se met à jour à la fin de la tâche.',
+      'Download running ({s}): the state updates when the task ends.',
+      'Download läuft ({s}): Der Stand wird am Ende der Aufgabe aktualisiert.',
+      'Descarga en curso ({s}): el estado se actualiza al final de la tarea.'
+    ], {
+      s: s.step || '…'
+    }));
+    else if (fresh) {
+      // bilan de la passe d'après le journal du lanceur (AircraftDB/update_aircraft_db.py) : fiches résolues, fiches de
+      // performances, types sans données APD ; à défaut, le nombre de types traités
+      const log = (s.log || []).join('\n'),
+        unresolved = +(/(\d+) non résolu/.exec(log)?.[1] || 0),
+        perfN = /APD : (\d+) fiche/.exec(log)?.[1],
+        none = (log.match(/pas de données APD/g) || []).length;
+      html = line('ok', perfN != null ? K.tf(['Terminé : {f} fiche(s) OACI, {p} performance(s).',
+          'Done: {f} ICAO record(s), {p} performance profile(s).',
+          'Fertig: {f} ICAO-Datensätze, {p} Leistungsprofile.', 'Terminado: {f} ficha(s) OACI, {p} rendimiento(s).'
+        ], {
+          f: (s.codes || []).length - unresolved,
+          p: perfN
+        }) : K.tf(['Terminé : {n} type(s) traité(s).', 'Done: {n} type(s) processed.', 'Fertig: {n} Typ(en) bearbeitet.',
+          'Terminado: {n} tipo(s) tratado(s).'
+        ], {
+          n: (s.codes || []).length
+        }), ` <button type="button" class="secondary" data-pl-reload>${K.esc(L('Recharger la page pour les lire', 'Reload the page to read them', 'Seite neu laden, um sie zu lesen', 'Recargar la página para leerlos'))}</button>`) +
+        (none ? line('opt', absentNote(none)) : '');
+    } else if (s.state === 'error') html = line('bad', L(
+      'Échec de la dernière passe : voir « Journal » dans le bloc ci-dessous, puis réessayer.',
+      'The last pass failed: see “Log” in the block below, then try again.',
+      'Der letzte Durchlauf ist fehlgeschlagen: „Protokoll“ im Block unten ansehen, dann erneut versuchen.',
+      'Falló la última pasada: ver «Registro» en el bloque de abajo y volver a intentarlo.'));
+    else if (empty) html = line('todo', L(
+      'Base des types vide : « Compléter automatiquement » ci-dessous la télécharge (réseau, quelques secondes par type).',
+      'Type database empty: “Complete automatically” below downloads it (network, a few seconds per type).',
+      'Typendatenbank leer: „Automatisch ergänzen“ unten lädt sie herunter (Netz, einige Sekunden pro Typ).',
+      'Base de tipos vacía: «Completar automáticamente» abajo la descarga (red, unos segundos por tipo).'));
+    else if (todo) html = line('todo', K.tf([
+      '{n} type(s) à compléter ({f} sans fiche OACI, {p} sans performances) : « Compléter automatiquement » ci-dessous.',
+      '{n} type(s) to complete ({f} without ICAO record, {p} without performance): “Complete automatically” below.',
+      '{n} Typ(en) zu ergänzen ({f} ohne ICAO-Datensatz, {p} ohne Leistungen): unten „Automatisch ergänzen“.',
+      '{n} tipo(s) por completar ({f} sin ficha OACI, {p} sin rendimientos): «Completar automáticamente» abajo.'
+    ], {
+      n: todo,
+      f: nFiche,
+      p: nPerf
+    }));
+    else html = line('ok', K.tf(['{n} types de la flotte et des missions connus, {p} avec performances : à jour.',
+      '{n} fleet and mission types known, {p} with performance: up to date.',
+      '{n} Typen der Flotte und der Missionen bekannt, {p} mit Leistungen: aktuell.',
+      '{n} tipos de la flota y de las misiones conocidos, {p} con rendimientos: al día.'
+    ], {
+      n: rows.length,
+      p: withPerf
+    })) + (absent ? line('opt', absentNote(absent)) : '');
+    setHtml($('plTypesLine'), html);
+    S.types = T;
+    checklist();
+    return T;
+  }
+  let typesTimer = 0;
+  /** Suit une passe des types lancée par le bloc (clic « Compléter automatiquement » / « Télécharger ») : état relu
+   *  toutes les 3 s tant que la passe tourne (au moins 9 s, le temps qu'elle démarre), puis une dernière fois. */
+  function watchTypes() {
+    clearTimeout(typesTimer);
+    const until = Date.now() + 9000;
+    /** Relit l'état ; reprogramme tant que la passe tourne ou qu'elle n'a pas encore démarré. */
+    const tick = async () => {
+      const T = await typesState();
+      if (T.running || Date.now() < until) typesTimer = setTimeout(tick, 3000);
+    };
+    typesTimer = setTimeout(tick, 1500);
+  }
+  /** Données aéronautiques : base (résumé siaBaseInfo:v1 de SiaBase.info() — cycle, nombre d'espaces, date de
+   *  construction — comparé au cycle en vigueur d'Airac), MORA (cases de la base ; date de mora.csv du dossier SIA si
+   *  l'accès est ouvert), dossier X-Plane (FileAccess __xpnav, facultatif). Lignes d'état avant le bloc. */
+  async function aeroState() {
+    const info = window.SiaBase?.info?.() || null,
+      A = window.Airac,
+      FA = window.FileAccess;
+    const n = info?.counts?.airspaces || 0,
+      cyc = info?.airac && A ? A.cycle(info.airac) : null,
+      cur = A?.cycle?.();
+    let moraAt = 0;
+    const sia = await FA?.status?.('__sia').catch(() => null);
+    if (sia?.handle && sia.permission === 'granted') try {
+      moraAt = (await (await sia.handle.getFileHandle('mora.csv')).getFile()).lastModified;
+    } catch {
+      /* pas de mora.csv */
+    }
+    const xp = await FA?.status?.('__xpnav').catch(() => null);
+    const adv = ` <button type="button" class="secondary" data-open-adv>${K.esc(L('Outils avancés', 'Advanced tools', 'Erweiterte Werkzeuge', 'Herramientas avanzadas'))}</button>`;
+    const lines = [];
+    // base aéronautique
+    if (!n) lines.push(line('todo', L(
+      'Base aéronautique à construire : « Activer » sous la carte (téléchargements, ZIP du SIA, reconstruction) ; ce que la suite ne peut pas faire seule est listé dans « Actions à faire ».',
+      'Aeronautical database to build: “Activate” under the map (downloads, SIA ZIP, rebuild); what the suite cannot do on its own is listed in “Actions to do”.',
+      'Luftfahrtdatenbank aufzubauen: „Aktivieren“ unter der Karte (Downloads, SIA-ZIP, Neuaufbau); was die Suite nicht allein kann, steht unter „Zu erledigen“.',
+      'Base aeronáutica por construir: «Activar» bajo el mapa (descargas, ZIP del SIA, reconstrucción); lo que la suite no puede hacer sola figura en «Acciones pendientes».'
+    )));
+    else lines.push(line(cyc && cur && cyc.ident !== cur.ident ? 'todo' : 'ok', K.tf([
+      'Base aéronautique : AIRAC {c}, {n} espaces, construite le {d}{x}.',
+      'Aeronautical database: AIRAC {c}, {n} airspaces, built on {d}{x}.',
+      'Luftfahrtdatenbank: AIRAC {c}, {n} Lufträume, aufgebaut am {d}{x}.',
+      'Base aeronáutica: AIRAC {c}, {n} espacios, construida el {d}{x}.'
+    ], {
+      c: cyc?.label || info.airac || '?',
+      n: n.toLocaleString(K.lang?.() || undefined),
+      d: info.cachedAt ? when(info.cachedAt) : '?',
+      x: cyc && cur && cyc.ident !== cur.ident ? K.tf([
+        ' — le cycle {c} est en vigueur : « Activer » sous la carte ou « Actions à faire »',
+        ' — cycle {c} is in force: “Activate” under the map or “Actions to do”',
+        ' — Zyklus {c} ist gültig: „Aktivieren“ unter der Karte oder „Zu erledigen“',
+        ' — el ciclo {c} está en vigor: «Activar» bajo el mapa o «Acciones pendientes»'
+      ], {
+        c: cur.label
+      }) : L(' (cycle en vigueur)', ' (current cycle)', ' (gültiger Zyklus)', ' (ciclo en vigor)')
+    })));
+    // MORA
+    const m = info?.counts?.mora || 0;
+    lines.push(m ? line('ok', K.tf(['MORA : {n} cases{d}.', 'MORA: {n} cells{d}.', 'MORA: {n} Felder{d}.', 'MORA: {n} casillas{d}.'], {
+      n: m.toLocaleString(K.lang?.() || undefined),
+      d: moraAt ? K.tf([', mora.csv du {d}', ', mora.csv of {d}', ', mora.csv vom {d}', ', mora.csv del {d}'], {
+        d: when(moraAt)
+      }) : ''
+    })) : n ? line('todo', L('MORA à calculer : « Activer » sous la carte la calcule ; autres calculs dans les outils avancés.',
+      'MORA to compute: “Activate” under the map computes it; other calculations in the advanced tools.',
+      'MORA zu berechnen: „Aktivieren“ unter der Karte berechnet sie; weitere Berechnungen in den erweiterten Werkzeugen.',
+      'MORA por calcular: «Activar» bajo el mapa la calcula; otros cálculos en las herramientas avanzadas.'), adv) : line('todo', L(
+      'MORA : calculée par « Activer » une fois la base construite.', 'MORA: computed by “Activate” once the database is built.',
+      'MORA: wird von „Aktivieren“ berechnet, sobald die Datenbank aufgebaut ist.',
+      'MORA: la calcula «Activar» una vez construida la base.')));
+    // X-Plane (facultatif)
+    lines.push(xp?.handle ? line('ok', K.tf(['X-Plane : dossier « {n} » (MORA mondiale, données de navigation).',
+      'X-Plane: folder “{n}” (world MORA, navigation data).', 'X-Plane: Ordner „{n}“ (weltweite MORA, Navigationsdaten).',
+      'X-Plane: carpeta «{n}» (MORA mundial, datos de navegación).'
+    ], {
+      n: xp.name || xp.handle.name
+    })) : line('opt', L(
+      'X-Plane non choisi : facultatif (MORA mondiale hors des zones calculées, données de navigation du simulateur).',
+      'X-Plane not chosen: optional (world MORA outside computed zones, simulator navigation data).',
+      'X-Plane nicht gewählt: optional (weltweite MORA außerhalb berechneter Zonen, Navigationsdaten des Simulators).',
+      'X-Plane no elegido: opcional (MORA mundial fuera de las zonas calculadas, datos de navegación del simulador).')));
+    setHtml($('plAeroLines'), lines.join(''));
+    checklist();
+  }
+  let tasksTimer = 0;
+  /** Après une action d'un bloc embarqué (clic dans « Données aéronautiques » ou « Types d'aéronefs ») : attend que les
+   *  tâches longues de la page (AppFramework.busyTasks) soient finies — au plus 4 s pour qu'une démarre —, puis relit
+   *  les états de l'étape 5 et le bouton « Tout installer ». */
+  function afterTasks() {
+    clearInterval(tasksTimer);
+    const t0 = Date.now();
+    let seen = false;
+    tasksTimer = setInterval(() => {
+      if ((window.AppFramework?.busyTasks?.() || []).length) seen = true;
+      else if (seen || Date.now() - t0 > 4000) {
+        clearInterval(tasksTimer);
+        aeroState();
+        typesState();
+        allButton();
+      }
+      if (seen) allButton();
+    }, 1000);
+  }
+  /** Attend la fin des tâches de la page : au plus wait ms pour qu'une démarre, puis jusqu'à ce qu'il n'y en ait plus. */
+  const tasksDone = (wait = 5000) => new Promise(res => {
+    const t0 = Date.now();
+    let seen = false;
+    const t = setInterval(() => {
+      if ((window.AppFramework?.busyTasks?.() || []).length) seen = true;
+      else if (seen || Date.now() - t0 > wait) {
+        clearInterval(t);
+        res();
+      }
+    }, 1000);
+  });
+  /** Attend la fin d'une passe des types (lanceur) : au plus 9 s pour qu'elle démarre, puis tant qu'elle tourne. */
+  const typesDone = () => new Promise(res => {
+    const t0 = Date.now();
+    let seen = false;
+    const t = setInterval(async () => {
+      const s = await acStatus();
+      if (s?.state === 'running') seen = true;
+      else if (seen || Date.now() - t0 > 9000) {
+        clearInterval(t);
+        res(s);
+      }
+    }, 2000);
+  });
+  let allBusy = false;
+  /** Bouton « Tout installer » : libellé (zones actives de la carte, SiaBase.zones), désactivé pendant une tâche. */
+  async function allButton() {
+    const b = $('plAll');
+    if (!b) return;
+    const Z = await window.SiaBase?.zones?.().catch(() => null);
+    const zones = Z ? Z.zones().filter(z => Z.isOn(z.id)).map(z => K.t(z.name || [z.id])).join(', ') : '';
+    setText(b, zones ? K.tf(['Tout installer pour {z}', 'Install everything for {z}', 'Alles installieren für {z}',
+      'Instalar todo para {z}'
+    ], {
+      z: zones
+    }) : L('Tout installer', 'Install everything', 'Alles installieren', 'Instalar todo'));
+    b.disabled = allBusy || (window.AppFramework?.busyTasks?.() || []).length > 0;
+    setText($('plAllHint'), L(
+      'Dans l’ordre : ① types d’aéronefs (« Compléter automatiquement »), ② zones de la carte (« Activer » : téléchargements, base, MORA) — chaque tâche attendue jusqu’au bout.',
+      'In order: ① aircraft types (“Complete automatically”), ② map zones (“Activate”: downloads, database, MORA) — each task awaited to the end.',
+      'Der Reihe nach: ① Luftfahrzeugtypen („Automatisch ergänzen“), ② Zonen der Karte („Aktivieren“: Downloads, Datenbank, MORA) — jede Aufgabe bis zum Ende abgewartet.',
+      'En orden: ① tipos de aeronave («Completar automáticamente»), ② zonas del mapa («Activar»: descargas, base, MORA), cada tarea esperada hasta el final.'
+    ));
+  }
+  /** « Tout installer » : clique les deux actions principales des blocs embarqués, dans l'ordre, en attendant la fin de
+   *  chacune — « Compléter automatiquement » (types, passe du lanceur), puis « Activer » sous la carte (zones actives :
+   *  téléchargements, ZIP du SIA, reconstruction de la base, MORA ; maintenance_page.js, aeroSelApply). Une action
+   *  désactivée (rien à faire, ou lanceur absent) est sautée ; le bilan dit ce qui a été fait. */
+  async function installAll() {
+    if (allBusy) return;
+    allBusy = true;
+    allButton();
+    const done = [];
+    try {
+      const auto = document.querySelector('#types [data-ac="auto"]');
+      if (auto && !auto.disabled) {
+        msg('plAllMsg', L('1/2 — Types d’aéronefs : téléchargement des fiches et performances…',
+          '1/2 — Aircraft types: downloading records and performance…',
+          '1/2 — Luftfahrzeugtypen: Datensätze und Leistungen werden geladen…',
+          '1/2 — Tipos de aeronave: descargando fichas y rendimientos…'));
+        auto.click();
+        await typesDone();
+        await typesState();
+        done.push(L('types d’aéronefs', 'aircraft types', 'Luftfahrzeugtypen', 'tipos de aeronave'));
+      }
+      const apply = document.querySelector('#sia [data-sel-apply]');
+      if (apply && !apply.disabled) {
+        msg('plAllMsg', L('2/2 — Données aéronautiques : téléchargements, base, MORA…',
+          '2/2 — Aeronautical data: downloads, database, MORA…',
+          '2/2 — Luftfahrtdaten: Downloads, Datenbank, MORA…', '2/2 — Datos aeronáuticos: descargas, base, MORA…'));
+        apply.click();
+        await tasksDone();
+        done.push(L('zones de la carte', 'map zones', 'Zonen der Karte', 'zonas del mapa'));
+      }
+      await Promise.all([typesState(), aeroState()]);
+      // ce qui reste après les deux actions (types incomplets, base non construite) : dit tel quel, en avertissement
+      const left = [S.types?.ok === false && L('types d’aéronefs', 'aircraft types', 'Luftfahrzeugtypen', 'tipos de aeronave'),
+        !(window.SiaBase?.info?.()?.counts?.airspaces > 0) && L('base aéronautique', 'aeronautical database', 'Luftfahrtdatenbank',
+          'base aeronáutica')
+      ].filter(Boolean);
+      if (left.length) return msg('plAllMsg', K.tf([
+        'Fini ({d}), mais il reste : {l} — voir les lignes d’état ci-dessous et « Actions à faire » sous la carte (ce que la suite ne peut pas faire seule).',
+        'Finished ({d}), but still left: {l} — see the state lines below and “Actions to do” under the map (what the suite cannot do on its own).',
+        'Beendet ({d}), aber es bleibt: {l} — siehe die Statuszeilen unten und „Zu erledigen“ unter der Karte (was die Suite nicht allein kann).',
+        'Terminado ({d}), pero queda: {l}; ver las líneas de estado abajo y «Acciones pendientes» bajo el mapa (lo que la suite no puede hacer sola).'
+      ], {
+        d: done.join(', ') || '—',
+        l: left.join(', ')
+      }), 'warn');
+      msg('plAllMsg', done.length ? K.tf([
+        'Terminé ({d}) : l’état de chaque élément est ci-dessous ; ce que la suite ne peut pas faire seule est listé dans « Actions à faire ».',
+        'Done ({d}): the state of each item is below; what the suite cannot do on its own is listed in “Actions to do”.',
+        'Fertig ({d}): Der Stand jedes Elements steht unten; was die Suite nicht allein kann, steht unter „Zu erledigen“.',
+        'Terminado ({d}): el estado de cada elemento está abajo; lo que la suite no puede hacer sola figura en «Acciones pendientes».'
+      ], {
+        d: done.join(', ')
+      }) : L(
+        'Rien à lancer : les types et les zones actives sont déjà à jour, ou attendent une action à la main (voir ci-dessous).',
+        'Nothing to start: types and active zones are already up to date, or wait for a manual action (see below).',
+        'Nichts zu starten: Typen und aktive Zonen sind aktuell oder warten auf eine Handlung von Hand (siehe unten).',
+        'Nada que lanzar: los tipos y las zonas activas ya están al día o esperan una acción manual (ver abajo).'), 'ok');
+    } finally {
+      allBusy = false;
+      allButton();
+    }
+  }
+  on('click', 'plAll', installAll);
+  // volet « Outils avancés » : ajouté au bloc « Données aéronautiques » (hors de son corps, que maintenance_page.js
+  // redessine) ; ouvert, il montre les cartes Base aéronautique, MORA et Cohérence (règles CSS #plSia.pl-adv-open)
+  const adv = document.createElement('details');
+  adv.className = 'pl-adv';
+  adv.dataset.noI18n = '';
+  adv.innerHTML = '<summary></summary><p class="pl-hint"></p>';
+  $('sia')?.append(adv);
+  adv.addEventListener('toggle', () => $('plSia').classList.toggle('pl-adv-open', adv.open));
+
+  /** Textes fixes ajoutés par l'assistant (ce que c'est, titres de l'étape 5, liens sortants de l'étape 6, volet des
+   *  outils avancés), produits dans la langue courante (K.t) ; repris au changement de langue. */
+  function texts() {
+    const what = {
+      plFolders: L(
+        'Où se trouve la suite sur ce poste : le dossier de l’application (obligatoire) et, si l’escadrille en a un, le classeur ODV.',
+        'Where the suite is on this computer: the application folder (required) and, if the squadron has one, the ODV workbook.',
+        'Wo die Suite auf diesem Rechner liegt: der Anwendungsordner (Pflicht) und, falls die Staffel eine hat, die ODV-Arbeitsmappe.',
+        'Dónde está la suite en este equipo: la carpeta de la aplicación (obligatoria) y, si el escuadrón tiene uno, el libro ODV.'),
+      plData: L(
+        'Les données de la compagnie (missions, pilotes, flotte, registres) : un jeu d’essai pour découvrir la suite, ou celles de votre compagnie.',
+        'The airline data (missions, pilots, fleet, registries): sample data to discover the suite, or your airline’s data.',
+        'Die Daten der Fluggesellschaft (Missionen, Piloten, Flotte, Register): Testdaten zum Kennenlernen oder die Ihrer Fluggesellschaft.',
+        'Los datos de la aerolínea (misiones, pilotos, flota, registros): un conjunto de prueba para descubrir la suite o los de su aerolínea.'
+      ),
+      plSia: L(
+        'Ce dont les cartes, les missions et le planificateur ont besoin : la fiche OACI et les performances de chaque type d’aéronef de la flotte, puis les données aéronautiques (espaces, terrains, obstacles, MORA) des zones choisies sur la carte.',
+        'What maps, missions and the planner need: the ICAO record and performance of each fleet aircraft type, then the aeronautical data (airspace, aerodromes, obstacles, MORA) of the zones chosen on the map.',
+        'Was Karten, Missionen und der Planer brauchen: ICAO-Datensatz und Leistungen jedes Luftfahrzeugtyps der Flotte, dann die Luftfahrtdaten (Lufträume, Flugplätze, Hindernisse, MORA) der auf der Karte gewählten Zonen.',
+        'Lo que necesitan los mapas, las misiones y el planificador: la ficha OACI y los rendimientos de cada tipo de aeronave de la flota y luego los datos aeronáuticos (espacios, aeródromos, obstáculos, MORA) de las zonas elegidas en el mapa.'
+      )
+    };
+    document.querySelectorAll('[data-what]').forEach(el => setText(el, what[el.dataset.what] || ''));
+    setText($('plTypesHead').querySelector('h3'), L('① Types d’aéronefs et performances', '① Aircraft types and performance',
+      '① Luftfahrzeugtypen und Leistungen', '① Tipos de aeronave y rendimientos'));
+    setText($('plAeroHead').querySelector('h3'), L('② Données aéronautiques', '② Aeronautical data', '② Luftfahrtdaten',
+      '② Datos aeronáuticos'));
+    setText(adv.querySelector('summary'), L(
+      'Outils avancés : sources et cycles de la base, MORA (recalcul simple, X-Plane, calcul complet), cohérence — aussi dans Paramètres › Maintenance',
+      'Advanced tools: database sources and cycles, MORA (simple recalculation, X-Plane, full calculation), consistency — also in Settings › Maintenance',
+      'Erweiterte Werkzeuge: Quellen und Zyklen der Datenbank, MORA (einfache Neuberechnung, X-Plane, vollständige Berechnung), Konsistenz — auch unter Einstellungen › Wartung',
+      'Herramientas avanzadas: fuentes y ciclos de la base, MORA (recálculo simple, X-Plane, cálculo completo), coherencia; también en Ajustes › Mantenimiento'
+    ));
+    setText(adv.querySelector('p'), L(
+      'Pour reprendre une source, recalculer la MORA autrement ou contrôler la cohérence. Au premier lancement, « Activer » sous la carte suffit.',
+      'To redo a source, compute the MORA another way or check consistency. On first run, “Activate” under the map is enough.',
+      'Um eine Quelle zu wiederholen, die MORA anders zu berechnen oder die Konsistenz zu prüfen. Beim ersten Start genügt „Aktivieren“ unter der Karte.',
+      'Para rehacer una fuente, calcular la MORA de otro modo o comprobar la coherencia. En el primer arranque basta «Activar» bajo el mapa.'
+    ));
+    setText($('plFleetLink'), L('Voir la flotte (nouvel onglet)', 'See the fleet (new tab)', 'Flotte ansehen (neuer Tab)',
+      'Ver la flota (nueva pestaña)'));
+    setText($('plRegLink'), L('Voir le registre des missions (nouvel onglet)', 'See the mission registry (new tab)',
+      'Missionsregister ansehen (neuer Tab)', 'Ver el registro de misiones (nueva pestaña)'));
+    setText($('plRegWhat'), L(
+      'Le registre : on y relit le dossier des missions (après une synchronisation) et on y commande de nouvelles missions.',
+      'The registry: there you reread the missions folder (after a synchronisation) and order new missions.',
+      'Das Register: Dort wird der Missionsordner neu gelesen (nach einer Synchronisierung) und es werden neue Missionen bestellt.',
+      'El registro: allí se relee la carpeta de misiones (tras una sincronización) y se piden nuevas misiones.'));
+    setText($('plHome'), L('Accueil', 'Home', 'Startseite', 'Inicio'));
+  }
+  texts();
+  // délégations de l'assistant : rail et « Suivant → » (ouvrent une étape), volet des outils avancés, rechargement
+  // après une passe des types ; suivi des actions des blocs embarqués jusqu'à la fin de leurs tâches
+  document.addEventListener('click', e => {
+    const go = e.target.closest?.('[data-goto], [data-next]');
+    if (go) {
+      e.preventDefault();
+      goStep(go.dataset.goto || go.dataset.next);
+      return;
+    }
+    if (e.target.closest?.('[data-open-adv]')) {
+      adv.open = true;
+      adv.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start'
+      });
+      return;
+    }
+    if (e.target.closest?.('[data-pl-reload]')) return location.reload();
+    if (e.target.closest?.('#types [data-ac]')) watchTypes();
+    if (e.target.closest?.('#sia button, #types button') && !allBusy) afterTasks();
+  });
 
   /** Chemin réel de la suite servie (2e ligne du repère .defa_instance écrit par le lanceur) ; '' sans lanceur. */
   const installPath = () => fetch('../../.defa_instance', {
@@ -1121,8 +2030,26 @@
       return;
     }
     // données aéronautiques construites par les blocs : bilan relu quand la base change
-    window.addEventListener('storage', e => e.key === 'siaBaseInfo:v1' && checklist());
+    window.addEventListener('storage', e => e.key === 'siaBaseInfo:v1' && aeroState());
+    window.addEventListener('sia-base-change', () => aeroState());
+    // profil enregistré (étape 4) : états relus
+    window.addEventListener('pilot-profile-change', () => checklist());
+    // langue changée : textes produits à la source repris
+    window.addEventListener('repository-language-change', () => {
+      texts();
+      typesState();
+      aeroState();
+      allButton();
+      centreState();
+    });
     setInterval(checklist, 15000);
+    // étape 5 : états des types et des données aéronautiques, puis l'étape courante ouverte, les autres repliées
+    // (sauf ancre demandée : le framework l'ouvre)
+    const T = await typesState();
+    if (T.running) watchTypes();
+    await aeroState();
+    allButton();
+    if (!location.hash) goStep(curStep, false);
     // Paramètres › Sources et dossiers › « Nettoyer et recommencer… » : même nettoyage, confirmé ici
     if (new URLSearchParams(location.search).has('clean')) {
       history.replaceState(null, '', 'premier_lancement.html?force');
