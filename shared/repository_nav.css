@@ -23,8 +23,9 @@
   }
   .repo-header-line1 {
     display: flex;
+    flex-wrap: wrap; /* page à en-tête chargé : les outils passent à la ligne au lieu d'écraser ses contrôles */
     align-items: center;
-    gap: 10px;
+    gap: 6px 10px;
     min-height: 43px
   }
   .repo-header-line1 h1 {
@@ -36,9 +37,12 @@
   }
   .repo-header-tools {
     display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
     align-items: center;
     gap: 7px;
-    flex: 0 0 auto
+    flex: 0 1 auto;
+    margin-left: auto /* passés à la ligne : rangés à droite */
   }
   .repo-language-popup,
   .repo-menu-wrap {

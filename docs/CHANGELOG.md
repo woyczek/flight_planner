@@ -257,6 +257,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Corrigé
 
+- **En-tête des pages chargées (Atterrissages, Studio, Cartes de vol…) : contrôles de la page écrasés par les outils
+  du socle** (jusqu'à 750 px en Aqua) : bouton de sauvegarde au libellé court (« Sauvegarder (184) », libellé complet
+  et date de la dernière sauvegarde en infobulle, 4 langues) ; première ligne de l'en-tête qui passe à la ligne,
+  outils rangés à droite, au lieu de rétrécir les contrôles de la page.
 - **Premier lancement : renvoi vers l'accueil en boucle** une fois « Terminer » validé : ouverte sans `?force`
   (Paramètres › Premier lancement, que le message de « Terminer » indique), la page renvoyait à l'accueil à chaque
   clic. Le renvoi ne vaut plus que pour la page ouverte par le lanceur (adresse `?t=…`).
