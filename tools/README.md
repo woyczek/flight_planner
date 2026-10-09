@@ -48,6 +48,7 @@ Trois familles :
 | `migrate_missions_schema.py` | après une montée du format de mission | Passe les YAML de `data/missions` au format `helo-xp-mission` courant (2.0) ; aperçu sans `--write`. Les fichiers hors format sont signalés, pas modifiés. |
 | `data_template/` | création d'un dépôt de données | Squelette du dépôt `data/` (README, `data_tree.js`), repris par `migrate_v3.py`. |
 | `install_hooks.sh` | une fois par clone | Pose dans les crochets git locaux (post-commit, post-checkout, post-merge) l'appel de `write_build.sh`, puis l'exécute. |
+| `merge_vstamp.py` | pilote de fusion git (configuré par `install_hooks.sh`) | Résout seul les conflits qui ne portent que sur les empreintes `?v=` des pages, scripts et feuilles (déclaré dans `.gitattributes`) ; les vrais conflits restent à résoudre, puis `bump_versions.py` |
 | `write_build.sh` | appelé par les crochets git | Écrit `config/build.js` (commit, branche, étiquette courants, hors dépôt) : le pied de page affiche la version exacte, même en `file://`. |
 | `planche_rubriques.py` | après retouche des en-têtes de l'ordre de mission | Planche contact des en-têtes de l'ordre de mission par organisme, pour chaque design à matières (`docs/technique/planches/rubriques_<design>.jpg` et planche d'ensemble), d'après les règles de `apps/pilot/mes_missions.html`. |
 
