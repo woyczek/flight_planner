@@ -6376,7 +6376,11 @@ $('newProfile').onclick = () => {
   applyProfileToUi();
   saveProfiles()
 };
-$('profileEditor').addEventListener('change', e => {
+// réglages du profil : écoutés au niveau du document — depuis la 4.2.0, « Réglages du profil » (#profileEdit) est déplacé
+// sous l'aperçu du bloc Route, hors de #profileEditor : ses changements n'y remontaient plus et l'aperçu ne se
+// redessinait plus de lui-même
+document.addEventListener('change', e => {
+  if (!e.target.closest?.('#profileEditor, #profileEdit')) return;
   if (e.target.dataset?.aar !== undefined) {
     if (mission) {
       const pick = {
