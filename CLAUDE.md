@@ -26,7 +26,9 @@ Lues par toutes les sessions qui travaillent sur ce dépôt. Elles priment sur l
 - Avant chaque commit :
   1. `python tools/format_sources.py <fichiers touchés>`, puis contrôle par `tools/verify_format.html`
      (arbres syntaxiques identiques) ;
-  2. `python tools/bump_versions.py` ;
+  2. aucune empreinte `?v=` dans le dépôt : les références restent à `?v=0` (le lanceur pose l'empreinte réelle en
+     servant, `tools/version_stamps.py` ; la livraison les pose dans l'archive) — `python tools/bump_versions.py --neutral`
+     seulement si une empreinte réelle s'est glissée ;
   3. pages modifiées rechargées, sans erreur JavaScript ;
   4. entrée au CHANGELOG, rubrique « Non publié » ;
   5. aucune marque de conflit : `git grep -l -E "^(<<<<<<<|>>>>>>>) "` vide.

@@ -209,8 +209,8 @@ html[data-design-base="cabinet"] {
 }
 html[data-design-base="cabinet"][data-tone="dark"] {
   /* menus et notifications : parchemin sombre sous l'encre claire du ton (le parchemin clair donnait 1,2:1) */
-  --sk-menu-bg: #1c2230 url("textures/parchment-dark.webp?v=d9b8cd4f") center/400px;
-  --sk-footer-bg: #1c2230 url("textures/parchment-dark.webp?v=d9b8cd4f") center/300px;
+  --sk-menu-bg: #1c2230 url("textures/parchment-dark.webp?v=0") center/400px;
+  --sk-footer-bg: #1c2230 url("textures/parchment-dark.webp?v=0") center/300px;
   --sk-code-bg: #141a21;
   --sk-code-ink: #e6edf5;
   --sk-code-border: 1px solid #46525f;
