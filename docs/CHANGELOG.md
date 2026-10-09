@@ -77,6 +77,12 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Ajouté
 
+- **Performances : SimBrief en seconde source** — la mise à jour des types (lanceur, « Compléter automatiquement » ;
+  `AircraftDB/update_aircraft_db.py --simbrief`) lit aussi la liste publique de SimBrief (`inputs.airframes.json`, une
+  requête, cache d'une semaine) : consommation de croisière (kg/h), masses du gabarit SimBrief (vide, sans carburant,
+  atterrissage, carburant maximal), plafond, vitesse, distances et profils de 224 types, dans le bloc `simbrief` de
+  `aircraft_perf.js` (sur chaque poste, jamais publié) ; fiches EUROCONTROL gardées, fichier réécrit seulement s'il
+  change ; précision de SimBrief notée (`accuracy`). Manuel administrateur (4 langues).
 - **Atlantique Nord : zone océanique et tracks NAT du jour** — nouvelle zone « Atlantique Nord (océanique, NAT) »
   (contour au large des côtes, `OCEANIC` de `tools/build_aero_zones.py`), sources X-Plane et « Tracks NAT du jour » :
   les points et routes océaniques d'X-Plane, jusqu'ici écartés car hors de tout pays, entrent dans la base quand la

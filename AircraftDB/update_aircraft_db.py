@@ -41,6 +41,9 @@ from pathlib import Path
 WIKIDATA_API = "https://www.wikidata.org/w/api.php"
 WIKIPEDIA_API = "https://en.wikipedia.org/w/api.php"
 EUROCONTROL_DETAILS = "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO={}"
+# liste publique des types de SimBrief (Navigraph) : consommation de croisière, masses, plafond, vitesse, distances ;
+# lue une fois par semaine au plus, gardée sur ce poste (aircraft_perf.js n'est pas publié avec la suite)
+SIMBRIEF_AIRFRAMES = "https://www.simbrief.com/api/inputs.airframes.json"
 
 # ICAO's public report URLs. Unversioned URLs are tried first; Ed40 is a fallback
 # because it is known to be publicly accessible. The store edition may be newer.
@@ -699,14 +702,102 @@ def apd_pass(db, out_path, only=None):
                 rec["model"] = info["model"]; fixed += 1
         if data:
             data["url"] = EUROCONTROL_DETAILS.format(code); data["fetched"] = dt.date.today().isoformat()
+            # blocs des autres sources (SimBrief, Poll-Schumann…) gardés
+            data.update({k: v for k, v in (perf.get(code) or {}).items() if k in OTHER_PERF_SOURCES})
             perf[code] = data; found += 1
         print(f"[{n:03d}/{len(codes):03d}] {code}: {'APD ' + ', '.join(data) if data else 'pas de données APD'} | {rec.get('model', '')}", flush=True)
         if n % 10 == 0:
             save_perf_db(out_path, perf); HTTP.save_cache()
-    perf["__meta"] = {"source": "EUROCONTROL Aircraft Performance Database", "generated": dt.date.today().isoformat(), "entries": found}
+    perf["__meta"] = {**{k: v for k, v in (perf.get("__meta") or {}).items() if k in OTHER_PERF_SOURCES},
+                      "source": "EUROCONTROL Aircraft Performance Database", "generated": dt.date.today().isoformat(), "entries": found}
     save_perf_db(out_path, perf); HTTP.save_cache()
     print(f"APD : {found} fiche(s) de performances, {fixed} nom(s) de modèle réparé(s).")
     return fixed
+
+
+OTHER_PERF_SOURCES = ("simbrief", "ps")
+
+
+def simbrief_record(v):
+    """Bloc « simbrief » d'un type de inputs.airframes.json : consommation de croisière (kg/h), masses (kg : celles du
+    gabarit SimBrief, pas d'un appareil d'utilisateur), plafond (ft), vitesse de croisière (Mach ou kt), distances de
+    décollage et d'atterrissage (m), profils de montée, croisière et descente."""
+    lbkg = 0.45359237
+    out = {"name": v.get("aircraft_name") or "", "engines": v.get("aircraft_engines") or "",
+           "fuelflowKgh": v.get("aircraft_fuelflow_kgs"), "mtowKg": v.get("aircraft_mtow_kgs"),
+           "ceilingFt": v.get("aircraft_ceiling"), "pax": v.get("aircraft_passengers")}
+    sp = str(v.get("aircraft_speed") or "")
+    m = re.match(r"Mach\s*([\d.]+)", sp, re.I)
+    k = re.match(r"(\d+)\s*K", sp, re.I)
+    if m:
+        out["mach"] = float(m.group(1))
+    elif k:
+        out["speedKt"] = int(k.group(1))
+    for src, dst in (("aircraft_takeoff", "takeoffM"), ("aircraft_landing", "landingM")):
+        if isinstance(v.get(src), (int, float)) and v[src] > 0:
+            out[dst] = round(v[src] * 0.3048)
+    base = next((a for a in v.get("airframes") or [] if not a.get("pilot_id")), None)
+    o = (base or {}).get("airframe_options") or {}
+    unit = 1 if str(o.get("wgtunits", "KGS")).upper().startswith("KG") else lbkg
+    for src, dst in (("oew", "oewKg"), ("mzfw", "mzfwKg"), ("mlw", "mlwKg"), ("maxfuel", "maxFuelKg")):
+        try:
+            x = float(o.get(src))
+        except (TypeError, ValueError):
+            continue
+        if x > 0:
+            out[dst] = round(x * unit)
+    for src, dst in (("aircraft_profiles_climb", "climb"), ("aircraft_profiles_cruise", "cruise"), ("aircraft_profiles_descent", "descent")):
+        if v.get(src):
+            out[dst] = v[src]
+    out["accuracy"] = v.get("stats_accuracy") or ""
+    return {k2: x for k2, x in out.items() if x not in (None, "", [])}
+
+
+def simbrief_pass(out_path, cache_dir, max_age_days=7, use_network=True):
+    """Passe SimBrief : consommation et masses de tous les types de la liste publique de SimBrief, dans le bloc
+    « simbrief » de chaque type de aircraft_perf.js (fiches EUROCONTROL gardées). Liste en cache une semaine ; fichier
+    réécrit seulement s'il change. Renvoie le nombre de types."""
+    cache = Path(cache_dir) / "simbrief_airframes.json"
+    raw = None
+    if use_network and not file_is_fresh(cache, max_age_days):
+        try:
+            req = urllib.request.Request(SIMBRIEF_AIRFRAMES, headers={"User-Agent": "DEFA-suite/1.0 (+https://framagit.org/asr/flight_planner)"})
+            with urllib.request.urlopen(req, timeout=60) as r:
+                raw = r.read()
+            json.loads(raw)
+            cache.parent.mkdir(parents=True, exist_ok=True)
+            cache.write_bytes(raw)
+        except Exception as exc:
+            print(f"SimBrief : liste non téléchargée ({exc}) ; cache utilisé s'il existe.")
+            raw = None
+    if raw is None:
+        if not cache.exists():
+            print("SimBrief : aucune liste (ni réseau, ni cache).")
+            return 0
+        raw = cache.read_bytes()
+    types = json.loads(raw)
+    perf = load_perf_db(out_path)
+    before = json.dumps(perf, ensure_ascii=False, sort_keys=True)
+    today = dt.date.today().isoformat()
+    n = 0
+    for code, v in types.items():
+        code = normalize_key(code)
+        rec = simbrief_record(v)
+        if not rec.get("fuelflowKgh"):
+            continue
+        entry = perf.setdefault(code, {})
+        old = {k: x for k, x in (entry.get("simbrief") or {}).items() if k != "fetched"}
+        entry["simbrief"] = {**rec, "fetched": (entry.get("simbrief") or {}).get("fetched", today) if old == rec else today}
+        n += 1
+    meta = perf.get("__meta") or {}
+    meta["simbrief"] = {"source": "SimBrief (Navigraph) — " + SIMBRIEF_AIRFRAMES, "entries": n}
+    perf["__meta"] = meta
+    if json.dumps(perf, ensure_ascii=False, sort_keys=True) != before:
+        save_perf_db(out_path, perf)
+        print(f"SimBrief : {n} type(s) — consommation de croisière, masses, plafond, vitesse.")
+    else:
+        print(f"SimBrief : {n} type(s), rien de changé.")
+    return n
 
 
 def load_perf_db(path):
@@ -719,8 +810,9 @@ def load_perf_db(path):
 
 def save_perf_db(path, obj):
     path = Path(path)
-    payload = ("// Performances par type (EUROCONTROL Aircraft Performance Database), GÉNÉRÉ par\n"
-               "// AircraftDB/update_aircraft_db.py --apd : ne pas éditer à la main. Unités : kt, ft/min, FL, NM, m, kg.\n"
+    payload = ("// Performances par type (EUROCONTROL Aircraft Performance Database ; bloc « simbrief » : liste publique de\n"
+               "// SimBrief), GÉNÉRÉ par AircraftDB/update_aircraft_db.py --apd / --simbrief : ne pas éditer à la main.\n"
+               "// Unités : kt, ft/min, FL, NM, m, kg ; simbrief : kg/h, kg, ft (plafond), m (distances).\n"
                "window.AIRCRAFT_PERF = " + json.dumps(obj, ensure_ascii=False, separators=(",", ":")) + ";\n")
     tmp = path.with_suffix(path.suffix + ".tmp"); tmp.write_text(payload, encoding="utf-8"); replace_retry(tmp, path)
 
@@ -1011,11 +1103,15 @@ def main():
     ap.add_argument("--only", nargs="+", metavar="CODE", help="ne traiter que ces types (au lieu de toute la base)")
     ap.add_argument("--apd", nargs="*", metavar="CODE", help="passe EUROCONTROL APD seule : performances -> aircraft_perf.js et réparation des noms de modèle (tous les types, ou les codes donnés)")
     ap.add_argument("--perf-out", default="aircraft_perf.js", help="sortie de la passe APD")
+    ap.add_argument("--simbrief", action="store_true", help="passe SimBrief seule : consommation de croisière et masses de tous les types de SimBrief -> bloc simbrief de aircraft_perf.js")
     args = ap.parse_args()
 
     global HTTP
     HTTP = HttpClient(args.cache, args.delay, args.retries)
 
+    if args.simbrief:
+        simbrief_pass(args.perf_out, args.icao_cache_dir, use_network=not args.no_network)
+        return 0
     db = load_js_db(args.db)
     if args.apd is not None:
         if apd_pass(db, args.perf_out, {normalize_key(x) for x in args.apd} or None):
