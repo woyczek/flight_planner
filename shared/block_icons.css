@@ -428,7 +428,7 @@ html[data-icons="off"] .repo-icon-only>.repo-icon:not(#imp) {
 }
 /* ==== JEUX D'ICÔNES SKEUOMORPHES (généré par tools/build_skeuo_icons_css.py) ==== */
 html:is([data-icons="brass"],[data-icons="avio"],[data-icons="steel"],[data-icons="gel"]) .repo-svg[data-i]{background-position:center;background-size:contain;background-repeat:no-repeat;--rs:1.6em}
-html:is([data-icons="brass"],[data-icons="avio"],[data-icons="steel"],[data-icons="gel"]) :is(.repo-block-icon,.repo-card-icon):not(#imp) {
+html:is([data-icons="brass"],[data-icons="avio"],[data-icons="steel"],[data-icons="gel"]) :is(.repo-block-icon,.repo-card-icon) {
   background:none;
   box-shadow:none;
   border-radius:0;
@@ -439,8 +439,10 @@ html:is([data-icons="brass"],[data-icons="avio"],[data-icons="steel"],[data-icon
 html:is([data-icons="brass"],[data-icons="avio"],[data-icons="steel"],[data-icons="gel"]) .repo-card-icon .repo-svg[data-i]{--rs:38px}
 html:is([data-icons="brass"],[data-icons="avio"],[data-icons="steel"],[data-icons="gel"]) :is(button,.buttonLink,a.mc-button,a.headerButton,summary) .repo-svg[data-i]{--rs:1.9em}
 html:is([data-icons="brass"],[data-icons="avio"],[data-icons="steel"],[data-icons="gel"]) :is(button,.buttonLink,a.mc-button,a.headerButton) .repo-icon{height:1.25em;overflow:visible;align-items:center}
-html:is([data-icons="brass"],[data-icons="avio"],[data-icons="steel"],[data-icons="gel"]) .repo-sidenav-item .repo-svg[data-i]{--rs:50px!important/*garder*/}
-html:is([data-icons="brass"],[data-icons="avio"],[data-icons="steel"],[data-icons="gel"]) .repo-dropzone-badge:not(#imp) {
+html:is([data-icons="brass"],[data-icons="avio"],[data-icons="steel"],[data-icons="gel"]) .repo-sidenav-item .repo-svg[data-i] {
+  --rs:var(--repo-sn-ic-sk, 40px) !important /* garder : taille en ligne (style="--rs:…") des icônes de la barre */
+}
+html:is([data-icons="brass"],[data-icons="avio"],[data-icons="steel"],[data-icons="gel"]) .repo-dropzone-badge {
   background:none
 }html:is([data-icons="brass"],[data-icons="avio"],[data-icons="steel"],[data-icons="gel"]) .repo-dropzone-badge .repo-svg[data-i]{--rs:42px}
 html:is([data-icons="brass"],[data-icons="avio"],[data-icons="steel"],[data-icons="gel"]) .repo-notice>.repo-icon .repo-svg[data-i]{--rs:30px}
@@ -450,10 +452,8 @@ html:is([data-icons="brass"],[data-icons="avio"],[data-icons="steel"],[data-icon
 html[data-icons="brass"] .repo-svg[data-i] {
   box-sizing:border-box;
   padding:calc(var(--rs,1.15em) * 0.26);
-  overflow:visible
-}
-html[data-icons="brass"] .repo-svg[data-i]:not(#imp) {
-  background-image:url("icons/skeuo/cabinet/vierge.webp");
+  overflow:visible;
+  background-image:url("icons/skeuo/cabinet/vierge.webp?v=b436eb35");
   color:var(--ico-glyph,#f1e4c0)
 }
 html[data-app-theme="cpco"][data-icons="brass"] .repo-svg[data-i]:not(.repo-sidenav .repo-svg):not(#imp),
@@ -466,7 +466,7 @@ html[data-icons="brass"] .repo-block .repo-block-tools button:is(.repo-drag,.rep
   opacity:1
 }
 html[data-icons="brass"] .repo-block .repo-block-tools button:is(.repo-drag,.repo-toggle):not(#imp) {
-  background:url("icons/skeuo/cabinet/vierge.webp") center/contain no-repeat;
+  background:url("icons/skeuo/cabinet/vierge.webp?v=b436eb35") center/contain no-repeat;
   width:28px;
   height:28px;
   color:#f1e4c0
@@ -488,8 +488,6 @@ html[data-icons="brass"] .repo-block .repo-block-tools .repo-toggle:not(#imp)::b
   width:13px;
   height:13px
 }
-html[data-icons="brass"] .repo-block .repo-block-heading:not(.repo-block-heading-rich) .repo-toggle::before{content:"";display:inline-block;-webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m18 15-6-6-6 6'/%3E%3C/svg%3E") center/contain no-repeat;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m18 15-6-6-6 6'/%3E%3C/svg%3E") center/contain no-repeat}
-html[data-icons="brass"] .repo-block-hidden>.repo-block-heading:not(.repo-block-heading-rich) .repo-toggle::before{transform:rotate(180deg)}
 html[data-app-theme="cpco"][data-icons="brass"] .repo-block .repo-block-tools button:is(.repo-drag,.repo-toggle):not(#imp) {
   color:#ffd23f
 }
@@ -497,10 +495,8 @@ html[data-icons="brass"] :is(.repo-block-icon,.repo-card-icon){filter:drop-shado
 html[data-icons="avio"] .repo-svg[data-i] {
   box-sizing:border-box;
   padding:calc(var(--rs,1.15em) * 0.26);
-  overflow:visible
-}
-html[data-icons="avio"] .repo-svg[data-i]:not(#imp) {
-  background-image:url("icons/skeuo/flightlog/vierge.webp");
+  overflow:visible;
+  background-image:url("icons/skeuo/flightlog/vierge.webp?v=5be875bf");
   color:var(--ico-glyph,#f4ecd8)
 }
 html[data-app-theme="cpco"][data-icons="avio"] .repo-svg[data-i]:not(.repo-sidenav .repo-svg):not(#imp),
@@ -513,7 +509,7 @@ html[data-icons="avio"] .repo-block .repo-block-tools button:is(.repo-drag,.repo
   opacity:1
 }
 html[data-icons="avio"] .repo-block .repo-block-tools button:is(.repo-drag,.repo-toggle):not(#imp) {
-  background:url("icons/skeuo/flightlog/vierge.webp") center/contain no-repeat;
+  background:url("icons/skeuo/flightlog/vierge.webp?v=5be875bf") center/contain no-repeat;
   width:28px;
   height:28px;
   color:#f4ecd8
@@ -535,8 +531,6 @@ html[data-icons="avio"] .repo-block .repo-block-tools .repo-toggle:not(#imp)::be
   width:13px;
   height:13px
 }
-html[data-icons="avio"] .repo-block .repo-block-heading:not(.repo-block-heading-rich) .repo-toggle::before{content:"";display:inline-block;-webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m18 15-6-6-6 6'/%3E%3C/svg%3E") center/contain no-repeat;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m18 15-6-6-6 6'/%3E%3C/svg%3E") center/contain no-repeat}
-html[data-icons="avio"] .repo-block-hidden>.repo-block-heading:not(.repo-block-heading-rich) .repo-toggle::before{transform:rotate(180deg)}
 html[data-app-theme="cpco"][data-icons="avio"] .repo-block .repo-block-tools button:is(.repo-drag,.repo-toggle):not(#imp) {
   color:#ffd23f
 }
@@ -544,10 +538,8 @@ html[data-icons="avio"] :is(.repo-block-icon,.repo-card-icon){filter:drop-shadow
 html[data-icons="steel"] .repo-svg[data-i] {
   box-sizing:border-box;
   padding:calc(var(--rs,1.15em) * 0.24);
-  overflow:visible
-}
-html[data-icons="steel"] .repo-svg[data-i]:not(#imp) {
-  background-image:url("icons/skeuo/field/vierge.webp");
+  overflow:visible;
+  background-image:url("icons/skeuo/field/vierge.webp?v=c2adc3a9");
   color:var(--ico-glyph,#e9ecdf)
 }
 html[data-app-theme="cpco"][data-icons="steel"] .repo-svg[data-i]:not(.repo-sidenav .repo-svg):not(#imp),
@@ -560,7 +552,7 @@ html[data-icons="steel"] .repo-block .repo-block-tools button:is(.repo-drag,.rep
   opacity:1
 }
 html[data-icons="steel"] .repo-block .repo-block-tools button:is(.repo-drag,.repo-toggle):not(#imp) {
-  background:url("icons/skeuo/field/vierge.webp") center/contain no-repeat;
+  background:url("icons/skeuo/field/vierge.webp?v=c2adc3a9") center/contain no-repeat;
   width:28px;
   height:28px;
   color:#e9ecdf
@@ -582,8 +574,6 @@ html[data-icons="steel"] .repo-block .repo-block-tools .repo-toggle:not(#imp)::b
   width:13px;
   height:13px
 }
-html[data-icons="steel"] .repo-block .repo-block-heading:not(.repo-block-heading-rich) .repo-toggle::before{content:"";display:inline-block;-webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m18 15-6-6-6 6'/%3E%3C/svg%3E") center/contain no-repeat;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m18 15-6-6-6 6'/%3E%3C/svg%3E") center/contain no-repeat}
-html[data-icons="steel"] .repo-block-hidden>.repo-block-heading:not(.repo-block-heading-rich) .repo-toggle::before{transform:rotate(180deg)}
 html[data-app-theme="cpco"][data-icons="steel"] .repo-block .repo-block-tools button:is(.repo-drag,.repo-toggle):not(#imp) {
   color:#ffd23f
 }
@@ -593,21 +583,19 @@ html[data-icons="gel"] .repo-svg[data-i] {
   mask:url("icons/skeuo/aqua/vierge.gris.webp") center/contain no-repeat;
   box-sizing:border-box;
   padding:calc(var(--rs,1.15em) * 0.24);
-  overflow:visible
-}
-html[data-icons="gel"] .repo-svg[data-i]:not(#imp) {
+  overflow:visible;
   background:url("icons/skeuo/aqua/vierge.gris.webp") center/contain no-repeat,radial-gradient(43% 43% at 50% calc(50% - 1px),var(--aq-gel,#2473db) 0 calc(97% - 1px),transparent calc(100% - 1px)) center/contain no-repeat;
   background-color:transparent;
   background-blend-mode:overlay,normal;
   filter:none;
   color:var(--ico-glyph,#ffffff)
 }
-html[data-app-theme="cpco"][data-icons="gel"] .repo-svg[data-i]:not(.repo-sidenav .repo-svg),html[data-icons="gel"] .repo-sidenav-cpco .repo-svg[data-i] {
-  --aq-gel:#1b2440
-}
 html[data-app-theme="cpco"][data-icons="gel"] .repo-svg[data-i]:not(.repo-sidenav .repo-svg):not(#imp),
 html[data-icons="gel"] .repo-sidenav-cpco .repo-svg[data-i]:not(#imp) {
-  background:url("icons/skeuo/aqua/vierge.gris.webp") center/contain no-repeat,radial-gradient(43% 43% at 50% calc(50% - -0.5px),var(--aq-gel,#2473db) 0 calc(97% - 1px),transparent calc(100% - 1px)) center/contain no-repeat;
+  --aq-gel:#1b2440; /* bulle marine du Centre (build_skeuo_icons_css.py : centreGel) */
+  /* disque recentré (le jeu Gel le remonte d'1 px : invisible sur le bleu, visible sur le marine) */
+  background:url("icons/skeuo/aqua/vierge.gris.webp") center/contain no-repeat,radial-gradient(43% 43% at 50% calc(50% + .5px),var(--aq-gel) 0 calc(97% - 1px),transparent calc(100% - 1px)) center/contain no-repeat;
+  background-blend-mode:overlay,normal;
   color:var(--ico-glyph-centre,#ffd23f)
 }
 html[data-icons="gel"] .repo-svg[data-i]>*{display:inline;filter:var(--ico-glyph-shadow,drop-shadow(.5px 1px .6px rgba(0,0,0,.55)))}
@@ -641,10 +629,18 @@ html[data-icons="gel"] .repo-block .repo-block-tools .repo-toggle:not(#imp)::bef
   width:13px;
   height:13px
 }
-html[data-icons="gel"] .repo-block .repo-block-heading:not(.repo-block-heading-rich) .repo-toggle::before{content:"";display:inline-block;-webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m18 15-6-6-6 6'/%3E%3C/svg%3E") center/contain no-repeat;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m18 15-6-6-6 6'/%3E%3C/svg%3E") center/contain no-repeat}
-html[data-icons="gel"] .repo-block-hidden>.repo-block-heading:not(.repo-block-heading-rich) .repo-toggle::before{transform:rotate(180deg)}
 html[data-app-theme="cpco"][data-icons="gel"] .repo-block .repo-block-tools button:is(.repo-drag,.repo-toggle):not(#imp) {
   color:#ffd23f
 }
 html[data-icons="gel"] :is(.repo-block-icon,.repo-card-icon){filter:drop-shadow(0 2px 3px rgba(0,0,0,.35))}
+/* bloc sans icône ni sous-titre (en-tête non « riche », ex. étapes du Premier lancement) : le texte du bouton Masquer est caché
+   par la bulle, le chevron doit donc exister aussi — même masque que .repo-block-heading-rich (tools/build_skeuo_icons_css.py) */
+html[data-icons="brass"] .repo-block .repo-block-heading:not(.repo-block-heading-rich) .repo-toggle::before{content:"";display:inline-block;-webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m18 15-6-6-6 6'/%3E%3C/svg%3E") center/contain no-repeat;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m18 15-6-6-6 6'/%3E%3C/svg%3E") center/contain no-repeat}
+html[data-icons="brass"] .repo-block-hidden>.repo-block-heading:not(.repo-block-heading-rich) .repo-toggle::before{transform:rotate(180deg)}
+html[data-icons="avio"] .repo-block .repo-block-heading:not(.repo-block-heading-rich) .repo-toggle::before{content:"";display:inline-block;-webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m18 15-6-6-6 6'/%3E%3C/svg%3E") center/contain no-repeat;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m18 15-6-6-6 6'/%3E%3C/svg%3E") center/contain no-repeat}
+html[data-icons="avio"] .repo-block-hidden>.repo-block-heading:not(.repo-block-heading-rich) .repo-toggle::before{transform:rotate(180deg)}
+html[data-icons="steel"] .repo-block .repo-block-heading:not(.repo-block-heading-rich) .repo-toggle::before{content:"";display:inline-block;-webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m18 15-6-6-6 6'/%3E%3C/svg%3E") center/contain no-repeat;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m18 15-6-6-6 6'/%3E%3C/svg%3E") center/contain no-repeat}
+html[data-icons="steel"] .repo-block-hidden>.repo-block-heading:not(.repo-block-heading-rich) .repo-toggle::before{transform:rotate(180deg)}
+html[data-icons="gel"] .repo-block .repo-block-heading:not(.repo-block-heading-rich) .repo-toggle::before{content:"";display:inline-block;-webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m18 15-6-6-6 6'/%3E%3C/svg%3E") center/contain no-repeat;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m18 15-6-6-6 6'/%3E%3C/svg%3E") center/contain no-repeat}
+html[data-icons="gel"] .repo-block-hidden>.repo-block-heading:not(.repo-block-heading-rich) .repo-toggle::before{transform:rotate(180deg)}
 /* ==== fin des jeux skeuomorphes ==== */

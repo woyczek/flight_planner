@@ -88,7 +88,7 @@ out = [BEGIN,
        f'{ANY} :is(button,.buttonLink,a.mc-button,a.headerButton,summary) .repo-svg[data-i]{{--rs:1.9em}}',
        # l'icône d'un bouton ne l'agrandit pas : son enveloppe garde la hauteur d'une ligne, l'image déborde (centrée)
        f'{ANY} :is(button,.buttonLink,a.mc-button,a.headerButton) .repo-icon{{height:1.25em;overflow:visible;align-items:center}}',
-       f'{ANY} .repo-sidenav-item .repo-svg[data-i]{{--rs:50px!important/*garder*/}}',   # après les boutons (« Menu » est un bouton)
+       f'{ANY} .repo-sidenav-item .repo-svg[data-i]{{--rs:var(--repo-sn-ic-sk, 40px)!important/* garder : taille en ligne (style="--rs:…") des icônes de la barre */}}',   # après les boutons (« Menu » est un bouton) ; taille de l'emplacement (repository_nav.css)
        f'{ANY} .repo-dropzone-badge{{background:none!important}}{ANY} .repo-dropzone-badge .repo-svg[data-i]{{--rs:42px}}',
        f'{ANY} .repo-notice>.repo-icon .repo-svg[data-i]{{--rs:30px}}',
        f'{ANY} .repo-sidenav-brand .repo-svg[data-i]{{--rs:40px!important}}']
