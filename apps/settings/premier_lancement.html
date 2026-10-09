@@ -696,6 +696,7 @@
   // ---- étapes de l'assistant : ordre, symbole et mot de chaque état (ok faite, todo à faire, opt facultative ou
   // passée, lock verrouillée faute d'étape 1, bad à refaire, unknown inconnu sans lanceur)
   const STEPS = ['plFolders', 'plData', 'plCompany', 'plProfile', 'plSia', 'plCentre'];
+  let lastSteps = []; // états des étapes au dernier rendu (« Terminer » : confirmation si 3 à 5 restent à faire)
   const SYM = {
     ok: '✓',
     todo: '○',
@@ -914,23 +915,24 @@
     // 5. données aéronautiques et types d'aéronefs (types inconnus sans lanceur : pas bloquant)
     const tOk = by.types.ok !== false,
       aOk = by.aero.ok === true;
-    const miss5 = [!tOk && K.tf(['compléter {n} type(s) d’aéronefs', 'complete {n} aircraft type(s)', '{n} Luftfahrzeugtyp(en) ergänzen',
-      'completar {n} tipo(s) de aeronave'
+    // types sans fiche OACI (saisis à la main, non répertoriés dans le Doc 8643) : signalés, jamais bloquants — l'étape
+    // est faite dès que la base aéronautique l'est
+    const typesNote = !tOk ? K.tf([' {n} type(s) sans fiche OACI (saisis ou non répertoriés) : sans conséquence.',
+      ' {n} type(s) without an ICAO record (typed in or not listed): no consequence.',
+      ' {n} Typ(en) ohne ICAO-Eintrag (eingegeben oder nicht gelistet): ohne Folgen.',
+      ' {n} tipo(s) sin ficha OACI (introducidos o no listados): sin consecuencia.'
     ], {
       n: S.types?.todo || 0
-    }), !aOk && L('construire la base aéronautique', 'build the aeronautical database', 'die Luftfahrtdatenbank aufbauen',
-      'construir la base aeronáutica')].filter(Boolean).join(L(' et ', ' and ', ' und ', ' y '));
-    add('plSia', tOk && aOk ? 'ok' : 'todo', tOk && aOk ? K.tf(['Fait : {t} ; {a}.', 'Done: {t}; {a}.', 'Erledigt: {t}; {a}.',
-      'Hecho: {t}; {a}.'
+    }) : S.types?.short ? ` ${S.types.short}.` : '';
+    add('plSia', aOk ? 'ok' : 'todo', aOk ? K.tf(['Fait : {a}.{t}', 'Done: {a}.{t}', 'Erledigt: {a}.{t}', 'Hecho: {a}.{t}'], {
+      a: by.aero.detail,
+      t: typesNote
+    }) : K.tf(['À faire : construire la base aéronautique — « Tout installer » s’en charge (types, puis zones de la carte).{t}',
+      'To do: build the aeronautical database — “Install everything” takes care of it (types, then map zones).{t}',
+      'Zu erledigen: die Luftfahrtdatenbank aufbauen — „Alles installieren“ übernimmt das (Typen, dann Zonen der Karte).{t}',
+      'Por hacer: construir la base aeronáutica; «Instalar todo» se encarga (tipos y luego zonas del mapa).{t}'
     ], {
-      t: S.types?.short || L('types d’aéronefs', 'aircraft types', 'Luftfahrzeugtypen', 'tipos de aeronave'),
-      a: by.aero.detail
-    }) : K.tf(['À faire : {m} — « Tout installer » s’en charge (types, puis zones de la carte).',
-      'To do: {m} — “Install everything” takes care of it (types, then map zones).',
-      'Zu erledigen: {m} — „Alles installieren“ übernimmt das (Typen, dann Zonen der Karte).',
-      'Por hacer: {m}; «Instalar todo» se encarga (tipos y luego zonas del mapa).'
-    ], {
-      m: miss5
+      t: typesNote
     }));
     // 6. Centre : allumé seulement quand 1 à 5 sont faites
     const prior = out.every(x => x.st === 'ok' || x.st === 'unknown');
@@ -957,6 +959,7 @@
     curStep = (steps.find(x => x.st === 'todo' || x.st === 'bad') || steps[5]).id;
     setHtml($('plRail'), steps.map(x => `<li><a href="#${x.id}" data-goto="${x.id}" class="pl-s-${x.st}${x.id === curStep ? ' pl-cur' : ''}"${x.id === curStep ? ' aria-current="step"' : ''}><b>${SYM[x.st]}</b><span>${x.n}. ${K.esc(stepName(x.id))}</span><small>${K.esc(stateWord(x.st))}</small></a></li>`).join(''));
     const missing = steps.slice(0, 5).filter(x => x.st !== 'ok' && x.st !== 'unknown');
+    lastSteps = steps;
     setText($('plRailHint'), missing.length ? K.tf(['Étape en cours : {n}. {s}. Un clic sur une étape l’ouvre.',
       'Current step: {n}. {s}. Click a step to open it.', 'Aktueller Schritt: {n}. {s}. Ein Klick öffnet einen Schritt.',
       'Paso actual: {n}. {s}. Un clic en un paso lo abre.'
@@ -990,12 +993,22 @@
     // « Terminer » : étapes obligatoires faites (inconnues sans lanceur : pas bloquantes)
     const fin = $('plFinish');
     if (fin) {
-      fin.disabled = missing.length > 0;
+      // obligatoire : dossier de l'application (1) et données (2) ; compagnie, profil et données aéronautiques (3 à 5)
+      // sont recommandées : « Terminer » reste possible (confirmation au clic) — jamais d'impasse
+      const must = missing.filter(x => x.n <= 2);
+      fin.disabled = must.length > 0;
       setText(fin, L('Terminer', 'Finish', 'Abschließen', 'Terminar'));
-      setText($('plFinishWhy'), missing.length ? K.tf(['Reste à faire : {l}.', 'Still to do: {l}.', 'Noch zu erledigen: {l}.',
+      const names = l => l.map(x => `${x.n}. ${stepName(x.id)}`).join(' · ');
+      setText($('plFinishWhy'), must.length ? K.tf(['Reste à faire : {l}.', 'Still to do: {l}.', 'Noch zu erledigen: {l}.',
         'Queda por hacer: {l}.'
       ], {
-        l: missing.map(x => `${x.n}. ${stepName(x.id)}`).join(' · ')
+        l: names(must)
+      }) : missing.length ? K.tf(['Recommandé avant de terminer : {l} — « Terminer » reste possible.',
+        'Recommended before finishing: {l} — “Finish” stays possible.',
+        'Vor dem Abschluss empfohlen: {l} — „Abschließen“ bleibt möglich.',
+        'Recomendado antes de terminar: {l}; «Terminar» sigue siendo posible.'
+      ], {
+        l: names(missing)
       }) : L('Tout l’obligatoire est fait.', 'All the required steps are done.', 'Alles Erforderliche ist erledigt.',
         'Todo lo obligatorio está hecho.'));
     }
@@ -1993,6 +2006,16 @@
   // fin : la suite est notée réglée POUR CETTE INSTALLATION (les réglages du navigateur suivent l'adresse, pas le dossier :
   // une autre installation servie au même port n'hérite pas du « Terminer »)
   on('click', 'plFinish', async () => {
+    // étapes recommandées pas faites (3 à 5) : on termine quand même, après confirmation (reprise possible à tout moment)
+    const left = lastSteps.filter(x => x.n >= 3 && x.n <= 5 && x.st !== 'ok' && x.st !== 'unknown');
+    if (left.length && !await window.AppFramework.ask(K.tf([
+        'Il reste : {l}. Terminer quand même ? Ces réglages restent accessibles dans Paramètres › Premier lancement.',
+        'Still left: {l}. Finish anyway? These settings stay available in Settings › First run.',
+        'Es bleibt: {l}. Trotzdem abschließen? Diese Einstellungen bleiben unter Einstellungen › Erststart verfügbar.',
+        'Queda: {l}. ¿Terminar de todos modos? Estos ajustes siguen disponibles en Ajustes › Primer arranque.'
+      ], {
+        l: left.map(x => `${x.n}. ${stepName(x.id)}`).join(' · ')
+      }))) return;
     localStorage.setItem(DONE, JSON.stringify({
       at: new Date().toISOString(),
       path: await installPath()
