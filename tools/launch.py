@@ -399,11 +399,11 @@ class Setup(http.server.SimpleHTTPRequestHandler):
         """Page, script ou feuille de design servi avec ses empreintes ?v=… posées (tools/version_stamps.py) et un ETag
         (son empreinte) : une page inchangée répond 304, un fichier versionné reste en cache. Vrai si servi ici."""
         f = self.translate_path(self.path)
-        if not os.path.isfile(f) or not version_stamps.stamped(f):
-            return False
         try:
+            if not os.path.isfile(f) or not version_stamps.stamped(f):
+                return False
             body, h = version_stamps.serve(f)
-        except (OSError, ValueError) as e:
+        except Exception as e:  # jamais de réponse coupée : le fichier part tel quel
             say(f'  ⚠ Empreintes non posées ({os.path.basename(f)}) : {e} — fichier servi tel quel.')
             return False
         etag = f'"{h}"'
@@ -445,6 +445,20 @@ class Setup(http.server.SimpleHTTPRequestHandler):
             git = data_sync.git_exe()
             return self._json({'server': True, 'root': ROOT, 'git': bool(git), 'data': has_data(),
                                'dataGit': os.path.isdir(os.path.join(DATA, '.git')), 'dataRepo': data_repo_url(), 'lfs': LFS})
+        if self.path.split('?')[0] == '/__setup/mission-folders':
+            # dossiers de missions présents (data/missions/<famille>/<id>) : le registre repris par le navigateur au
+            # premier démarrage écarte les missions dont le dossier n'existe plus (registre périmé)
+            if not self._allowed():
+                return self._json({'error': 'refusé'}, 403)
+            root, out = os.path.join(DATA, 'missions'), []
+            try:
+                for fam in sorted(os.listdir(root)):
+                    if os.path.isdir(os.path.join(root, fam)) and not fam.startswith('.'):
+                        out += [f'{fam}/{m}' for m in sorted(os.listdir(os.path.join(root, fam)))
+                                if os.path.isdir(os.path.join(root, fam, m)) and not m.startswith('.')]
+            except OSError:
+                pass
+            return self._json({'folders': out})
         if self.path.split('?')[0] == '/__setup/sync-remote':
             # dépôt git de synchronisation de data/ : adresse actuelle (ou celle du clone par défaut)
             if not self._allowed():
@@ -640,7 +654,7 @@ class Setup(http.server.SimpleHTTPRequestHandler):
                 a = {}
             args = [str(x)[:12] for x in (a.get('args') or [])][:40]
             with AERO_LOCK:
-                return self._json(aero_fetch.fetch(DATA, str(a.get('provider') or ''), args))
+                return self._json(fresh(aero_fetch).fetch(DATA, str(a.get('provider') or ''), args))
         if path == '/__setup/jeu-essai':
             ok, log = sample_data()
             if ok:
@@ -1311,6 +1325,25 @@ def aircraft_start(codes):
 
 
 AERO_LOCK = threading.Lock()  # un téléchargement de données aéronautiques à la fois (tools/aero_fetch.py)
+_loaded = {}  # module → date du fichier au chargement
+
+
+def fresh(mod):
+    """Module d'outil relu si son fichier a changé depuis le chargement (mise à jour de la suite sans relancer le
+    lanceur : sinon un fournisseur ajouté depuis répondait « fournisseur inconnu », comme « nat » des tracks NAT)."""
+    import importlib
+    try:
+        m = os.stat(mod.__file__).st_mtime_ns
+    except OSError:
+        return mod
+    if _loaded.setdefault(mod.__name__, m) != m:
+        try:
+            mod = importlib.reload(mod)
+            _loaded[mod.__name__] = m
+            say(f'  {os.path.basename(mod.__file__)} relu (modifié depuis le lancement).')
+        except Exception as e:  # fichier en cours d'écriture, erreur de syntaxe : l'ancienne version reste
+            say(f'  ⚠ {os.path.basename(mod.__file__)} non relu : {e}')
+    return mod
 SYNC_LOCK = threading.Lock()  # une synchronisation git à la fois (tools/data_sync.py)  # index du pool refaits à la demande (do_GET)
 
 

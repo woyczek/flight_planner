@@ -225,8 +225,20 @@
           sc.onload = sc.onerror = ok;
           document.head.append(sc);
         });
-        const doc = window.jsyaml?.load(text),
-          missions = Array.isArray(doc?.missions) ? doc.missions : [];
+        const doc = window.jsyaml?.load(text);
+        let missions = Array.isArray(doc?.missions) ? doc.missions : [];
+        // registre périmé (dossiers de missions retirés depuis) : seules les missions dont le dossier existe, d'après le
+        // lanceur — sinon des dizaines de lignes aux fichiers absents ; sans lanceur, le registre tel quel
+        const present = await fetch(new URL('../__setup/mission-folders', SELF), {
+          headers: {
+            'X-SOG-Setup': '1'
+          },
+          cache: 'no-store'
+        }).then(x => x.ok ? x.json() : null).catch(() => null);
+        if (Array.isArray(present?.folders)) {
+          const set = new Set(present.folders);
+          missions = missions.filter(m => !m?.folder || set.has(String(m.folder).replace(/\\/g, '/')));
+        }
         if (!missions.length || list.length) return false;
         saved = new Map();
         await save(missions, String(doc.updatedAt || new Date().toISOString()), {

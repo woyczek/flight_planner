@@ -4774,12 +4774,19 @@
   const CACHES = () => [{
     id: 'dataIndex',
     icon: 'refresh',
-    label: ['Index des données', 'Data index', 'Datenindex', 'Índice de datos'],
+    label: ['Index des données (registre des missions, CR, fiches)', 'Data index (mission registry, reports, cards)',
+      'Datenindex (Missionsregister, Berichte, Karten)', 'Índice de datos (registro de misiones, informes, fichas)'
+    ],
     where: 'IndexedDB defaIndex',
-    /** Contenu de l'index (texte fixe). */
-    state: () => t(['Registre des missions, CR, copies des fichiers du pool (disponibilités, fiches) ; les fichiers font foi.',
-      'Mission registry, reports, copies of pool files (availability, user cards); the files prevail.'
-    ]),
+    /** Contenu de l'index : missions du registre gardées par le navigateur, puis le reste. */
+    state: () => t([
+      '{n} mission(s) au registre du navigateur ; CR, copies des fichiers du pool (disponibilités, fiches) ; les fichiers font foi.',
+      '{n} mission(s) in the browser registry; reports, copies of pool files (availability, user cards); the files prevail.',
+      '{n} Mission(en) im Browser-Register; Berichte, Kopien der Pool-Dateien (Verfügbarkeiten, Karten); die Dateien sind maßgeblich.',
+      '{n} misión(es) en el registro del navegador; informes, copias de los archivos del pool (disponibilidades, fichas); los archivos prevalecen.'
+    ], {
+      n: window.MissionIndex?.all?.().length ?? 0
+    }),
     after: [
       'Base effacée, reconstruite depuis les fichiers au prochain chargement des pages (après un changement extérieur des fichiers sans lanceur, par exemple).',
       'Base erased, rebuilt from the files when pages next load (after the files changed outside the suite without the launcher, for example).'

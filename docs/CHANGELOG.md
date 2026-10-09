@@ -209,6 +209,16 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Corrigé
 
+- **Lanceur : réponses coupées pour les données servies depuis un autre disque** (`--data`) : le contrôle des
+  empreintes de version échouait sur un chemin hors du dossier de la suite (fichier jamais reçu, « Failed to fetch »)
+  ; un tel fichier part désormais tel quel, et aucune erreur de ce contrôle ne coupe plus une réponse.
+- **Lanceur : « fournisseur inconnu : nat »** (tracks NAT) après une mise à jour sans relancer le lanceur : il gardait
+  l'ancien `tools/aero_fetch.py` ; le module est relu quand son fichier a changé.
+- **Registre des missions : artefacts aux fichiers absents** : au premier démarrage, le registre servi était repris
+  tel quel, y compris les missions dont le dossier n'existe plus (registre périmé : 55 sur 67 dans une copie). Le
+  lanceur liste les dossiers présents (`/__setup/mission-folders`) et seules ces missions sont reprises ; Paramètres ›
+  Maintenance › Caches : « Index des données (registre des missions, CR, fiches) » avec le nombre de missions — sa
+  purge reconstruit le registre proprement.
 - **A400M sans performances ni fiche : alias à l'envers** — l'outil des types (`AircraftDB/update_aircraft_db.py`) et le
   jeu d'essai déclaraient « A400 → A4M » : le désignateur OACI de l'A400M (A400, celui d'EUROCONTROL et de SimBrief)
   était détourné vers un code maison inconnu partout ; la suite cherchait donc ses performances sous A4M et la

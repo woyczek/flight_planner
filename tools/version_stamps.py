@@ -77,7 +77,10 @@ def _glob(motif):
 def stamped(path):
     """Vrai si le fichier reçoit des empreintes quand il est servi : pages HTML, scripts, feuilles des designs et
     config/repository_tree — hors données (data/), exemples et bibliothèques minifiées."""
-    r = rel(path)
+    try:
+        r = rel(path)
+    except ValueError:  # autre disque (données servies d'ailleurs, --data) : hors de la suite
+        return False
     if r.startswith(('data/', 'examples/', '.')) or r.endswith('.min.js') or 'maplibre' in r or 'jspdf' in r:
         return False
     return r.endswith(('.html', '.js')) or r == 'config/repository_tree' or r in ('shared/designs_skeuo.css',
