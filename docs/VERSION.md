@@ -5,6 +5,50 @@ Une section par version publiée, la plus récente en tête, écrite à chaque r
 effectuer** (ce que chacun doit faire après la mise à jour), **notes** (limites connues, points d'attention, à venir).
 Entre deux versions, le pied de page affiche le commit en cours (`v4.6.0+abc1234`).
 
+## 5.1.0 — 9 octobre 2026
+
+### Synthèse
+
+- **Profils de performances** (Carburant) : un bloc fait l'état de chaque type de la flotte et de chaque profil
+  enregistré (source, cartographie moteur, données manquantes ou estimées). Une case par ligne sert la barre du bloc :
+  **Fusionner (n)**, **Exporter (n)** et **Enregistrer dans le dossier (n)** (un fichier par profil), **Supprimer (n)**.
+  « Choisir » ou « Créer » restent seuls sur chaque ligne, au même endroit.
+- **Fusion** : le plus récent gagne champ par champ, les vides sont comblés, la cartographie est réunie. Un **aperçu**
+  montre chaque donnée qui change (valeur actuelle, valeur retenue, source) avec une case pour la reprendre ou garder
+  l'actuelle ; « Tout reprendre » / « Ne rien reprendre » ; « Annuler » pendant 10 s.
+- **Nouvelles sources de performances** : la fiche **SimBrief** du type (créer un profil, le mettre à jour, le fusionner),
+  le modèle de **Poll et Schumann** pour les avions de ligne, **Airframe DB** pour les militaires et les hélicoptères.
+- **« Demander à ChatGPT »** : la page prépare un prompt pour le type (avec ce que la suite sait déjà), le copie et ouvre
+  ChatGPT ; la réponse collée (JSON ou CSV) s'importe comme nouveau profil ou se fusionne. Valeurs estimées signalées
+  dans le bloc jusqu'à ce que vous les corrigiez.
+- **Supprimer un profil** le retire aussi du dossier performances (base exportée réécrite, fichier d'un seul profil
+  renommé `.bak`) ; « Relire » et « Dossier… » reprennent tout ce que le dossier contient.
+- **Carburant** : consignes de montée, montée choisie (badin, vario, régime), état du calcul toujours lisible.
+- **Ergonomie** (lots A à G) : contrastes des designs à matières, Premier lancement (rail des étapes, types
+  d'aéronefs), Sources et dossiers, Maintenance, Aéro, Cartes de vol en ton foncé, en-têtes des reportings.
+- **Données aéronautiques** : rien n'est refait ni retéléchargé si tout est à jour ; « Purger la zone… » ; zone
+  **Atlantique Nord** avec les tracks NAT du jour ; profils de cartes revus (IFR simplifié, AIRWAYS, points RNAV).
+- Corrigés : A400M sans performances, premier lancement qui renvoyait en boucle, textures absentes après un clone sans
+  Git LFS, données servies depuis un autre disque, profils cachés à la relecture du dossier performances.
+
+### Actions à effectuer
+
+1. **Relancer le lanceur**, puis **recharger chaque page** (Ctrl+F5) : il pose désormais lui-même les versions des
+   fichiers servis, et lance les nouvelles passes SimBrief et Airframe DB à la mise à jour des types.
+2. **Carburant** : si des profils manquent alors qu'ils sont dans le dossier performances, cliquer **« Relire »** (ou
+   « Restaurer » sur la ligne « profils retirés encore dans le dossier »).
+3. **Atlantique Nord** (facultatif) : Paramètres › Maintenance › Données aéronautiques, carte des zones : cliquer la
+   zone océanique puis « Activer », pour avoir les points et routes océaniques et les tracks NAT du jour dans les cartes.
+4. **Cartes** : les profils de base de cartes sont remplacés une fois (vos profils personnels restent) ; revoir le
+   profil par défaut de vos cartes si vous l'aviez réglé.
+
+### Notes
+
+- Les valeurs proposées par ChatGPT sont des estimations : relisez l'aperçu avant de fusionner, et corrigez à la main
+  ce qui est douteux (la marque « estimé » tombe alors).
+- Un profil d'un CSV à plusieurs profils n'est pas retiré du fichier : il reste signalé (« Restaurer »).
+- Gel des fonctionnalités maintenu : la suite se concentre sur l'ergonomie, les corrections et la documentation.
+
 ## 5.0.0 — 8 octobre 2026
 
 ### Synthèse
