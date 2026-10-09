@@ -1,8 +1,8 @@
 <!doctype html>
 <html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Mes missions</title>
-<link rel="stylesheet" href="../../shared/repository_nav.css?v=dd0730c4"><link rel="stylesheet" href="../../shared/mission_core/core.css?v=8594d3c0">
-<script src="../../config/repository_tree?v=18728c91"></script>
+<link rel="stylesheet" href="../../shared/repository_nav.css?v=0"><link rel="stylesheet" href="../../shared/mission_core/core.css?v=0">
+<script src="../../config/repository_tree?v=0"></script>
 <style>
   /* liste en cours de lecture (affectations) : estompée */
   #pmList[aria-busy="true"] {
@@ -331,19 +331,19 @@
   }
   /* designs à matières : l'enveloppe cachetée du design (--pm-pli, --pm-pli-ratio) au-dessus des mentions, sans papier dessiné */
   html[data-design="cabinet"] {
-    --pm-pli: url("../../shared/deco/cabinet/pli-sealed.webp?v=2e89c25c");
+    --pm-pli: url("../../shared/deco/cabinet/pli-sealed.webp?v=0");
     --pm-pli-ratio: 1.4579
   }
   html[data-design="flightlog"] {
-    --pm-pli: url("../../shared/deco/flightlog/pli-sealed.webp?v=70c15353");
+    --pm-pli: url("../../shared/deco/flightlog/pli-sealed.webp?v=0");
     --pm-pli-ratio: 1.4713
   }
   html[data-design="aqua"] {
-    --pm-pli: url("../../shared/deco/aqua/pli-sealed.webp?v=175bada2");
+    --pm-pli: url("../../shared/deco/aqua/pli-sealed.webp?v=0");
     --pm-pli-ratio: 1.5274
   }
   html[data-design="field"] {
-    --pm-pli: url("../../shared/deco/field/pli-sealed.webp?v=98eb4a6c");
+    --pm-pli: url("../../shared/deco/field/pli-sealed.webp?v=0");
     --pm-pli-ratio: 1.5274
   }
   html:is([data-design="cabinet"], [data-design="flightlog"], [data-design="aqua"], [data-design="field"]) .pm-pli {
@@ -481,7 +481,7 @@
     right: var(--pm-stamp-right, -18px);
     width: var(--pm-stamp-w, 180px);
     aspect-ratio: 700/245;
-    background: url("../../shared/deco/stamp-confidential.webp?v=85ab3564") center/contain no-repeat;
+    background: url("../../shared/deco/stamp-confidential.webp?v=0") center/contain no-repeat;
     color: transparent;
     font-size: 0;
     transform: rotate(-9deg);
@@ -504,19 +504,19 @@
                              reposée par-dessus l'étiquette et son tampon ; facultatif)
      Ouvrir brise le sceau ; dossier rouvert après lecture : couverture fermée, sans calque. */
   html[data-design="cabinet"] {
-    --pm-wallet-back: url("../../shared/deco/cabinet/mission-wallet-back.webp?v=06188663");
-    --pm-wallet-front: url("../../shared/deco/cabinet/mission-wallet-front.webp?v=91202ded");
-    --pm-sheets: url("../../shared/deco/cabinet/mission-sheets.webp?v=e7dc8c1c");
-    --pm-cover: url("../../shared/deco/cabinet/mission-cover.webp?v=2bf76d77");
-    --pm-seal: url("../../shared/deco/cabinet/mission-seal-fitted.webp?v=9c2ac112");
+    --pm-wallet-back: url("../../shared/deco/cabinet/mission-wallet-back.webp?v=0");
+    --pm-wallet-front: url("../../shared/deco/cabinet/mission-wallet-front.webp?v=0");
+    --pm-sheets: url("../../shared/deco/cabinet/mission-sheets.webp?v=0");
+    --pm-cover: url("../../shared/deco/cabinet/mission-cover.webp?v=0");
+    --pm-seal: url("../../shared/deco/cabinet/mission-seal-fitted.webp?v=0");
     --pm-ratio: 720/1015;
     --pm-cwk: .4266
   }
   /* Carnet de vol : scellé, l'enveloppe cachetée (en-tête du ministère), la mission sur une étiquette scotchée de
      travers ; lu, le carnet fermé (étiquette collée sur la plaque, prise sous l'élastique avec son tampon) */
   html[data-design="flightlog"] {
-    --pm-cover: url("../../shared/deco/flightlog/mission-closed.webp?v=3ad105ce");
-    --pm-cover-sealed: url("../../shared/deco/flightlog/mission-sealed.webp?v=d2ff2cc7");
+    --pm-cover: url("../../shared/deco/flightlog/mission-closed.webp?v=0");
+    --pm-cover-sealed: url("../../shared/deco/flightlog/mission-sealed.webp?v=0");
     --pm-ratio: 600/852;
     --pm-ratio-sealed: 640/900;
     --pm-cwk: .509;
@@ -527,26 +527,26 @@
     --pm-stamp-right: 6px;
     --pm-label-dx: 6%;
     --pm-stamp-w: 118px;
-    --pm-band: url("../../shared/deco/flightlog/mission-elastic.webp?v=5e69d3b5");
+    --pm-band: url("../../shared/deco/flightlog/mission-elastic.webp?v=0");
     --pm-band-l: 84%;
     --pm-band-w: 8%;
     --pm-label-rot-sealed: 1.8deg;
-    --pm-tape-1: url("../../shared/deco/flightlog/tape-1.webp?v=463c91c8");
-    --pm-tape-2: url("../../shared/deco/flightlog/tape-2.webp?v=9cba6e50");
+    --pm-tape-1: url("../../shared/deco/flightlog/tape-1.webp?v=0");
+    --pm-tape-2: url("../../shared/deco/flightlog/tape-2.webp?v=0");
     --pm-open-fade: 0
   }
   html[data-design="aqua"] {
-    --pm-cover: url("../../shared/deco/aqua/mission-cover.webp?v=999d136a");
-    --pm-seal: url("../../shared/deco/aqua/mission-seal-fitted.webp?v=101a308a");
+    --pm-cover: url("../../shared/deco/aqua/mission-cover.webp?v=0");
+    --pm-seal: url("../../shared/deco/aqua/mission-seal-fitted.webp?v=0");
     --pm-ratio: 720/954;
     --pm-cwk: .445
   }
   /* Durci : scellé, fermeture intacte (étiquette « CONFIDENTIEL » à la tirette) et ficelle en croix cachetée ; lu,
      fermeture brisée ; tampon de l'étiquette sur l'étiquette (pas sur la toile) */
   html[data-design="field"] {
-    --pm-cover: url("../../shared/deco/field/mission-closed.webp?v=9ae3fcc8");
-    --pm-cover-sealed: url("../../shared/deco/field/mission-sealed.webp?v=45e80a15");
-    --pm-seal: url("../../shared/deco/field/mission-seal-fitted.webp?v=db24e3b1");
+    --pm-cover: url("../../shared/deco/field/mission-closed.webp?v=0");
+    --pm-cover-sealed: url("../../shared/deco/field/mission-sealed.webp?v=0");
+    --pm-seal: url("../../shared/deco/field/mission-seal-fitted.webp?v=0");
     --pm-ratio: 961/1441;
     --pm-cwk: .529;
     --pm-open-bottom: 20%;
@@ -663,7 +663,7 @@
   }
   html[data-design="aqua"] .pm-label small {
     aspect-ratio: 700/194;
-    background-image: url("../../shared/deco/stamp-urgent.webp?v=f32486f9")
+    background-image: url("../../shared/deco/stamp-urgent.webp?v=0")
   }
   html:is([data-design="cabinet"], [data-design="flightlog"], [data-design="aqua"], [data-design="field"]) .pm-open {
     position: absolute;
@@ -685,7 +685,7 @@
      signet) ; turn-o / bturn-o : pivot (dos) relatif à la feuille ; pad, pad-fb, pad-bf, pad-bb : faces (départ, verso
      vers la gauche, recto et verso vers la droite) ; font / ink : caractères et encre des pages (défaut : machine à écrire) */
   html[data-design="cabinet"] .pm-book {
-    --pm-open: url("../../shared/deco/cabinet/mission-open.webp?v=141b7dc8");
+    --pm-open: url("../../shared/deco/cabinet/mission-open.webp?v=0");
     --pm-ratio-open: 1400/842;
     --pm-page-t: 8.5%;
     --pm-page-b: 8%;
@@ -703,15 +703,15 @@
     --pm-bsheet-l: 3.57%;
     --pm-bsheet-r: 52.5%;
     --pm-bturn-o: 104.88%;
-    --pm-face: url("../../shared/deco/cabinet/mission-page.webp?v=6cfcdf40");
+    --pm-face: url("../../shared/deco/cabinet/mission-page.webp?v=0");
     --pm-pad: 3.86cqw 4.27cqw 7.61cqw 4.2cqw;
     --pm-pad-fb: 3.86cqw 4.29cqw 7.61cqw 5.28cqw;
     --pm-pad-bf: 3.86cqw 4.3cqw 7.61cqw 4.43cqw;
     --pm-pad-bb: 3.86cqw 3.42cqw 7.61cqw 4.21cqw;
-    --pm-corner: url("../../shared/deco/cabinet/page-corner.webp?v=ffa933b3")
+    --pm-corner: url("../../shared/deco/cabinet/page-corner.webp?v=0")
   }
   html[data-design="flightlog"] .pm-book {
-    --pm-open: url("../../shared/deco/flightlog/mission-open.webp?v=17d1364d");
+    --pm-open: url("../../shared/deco/flightlog/mission-open.webp?v=0");
     --pm-ratio-open: 1428/1032;
     --pm-page-t: 8.05%;
     --pm-page-b: 9.33%;
@@ -729,15 +729,15 @@
     --pm-bsheet-l: 5.25%;
     --pm-bsheet-r: 52.59%;
     --pm-bturn-o: 103.66%;
-    --pm-face: url("../../shared/deco/flightlog/mission-page.webp?v=18c232e3");
+    --pm-face: url("../../shared/deco/flightlog/mission-page.webp?v=0");
     --pm-pad: 4.13cqw 4.4cqw 8.09cqw 4.4cqw;
     --pm-pad-fb: 4.13cqw 3.35cqw 8.09cqw 4.4cqw;
     --pm-pad-bf: 4.13cqw 4.4cqw 8.09cqw 4.4cqw;
     --pm-pad-bb: 4.13cqw 4.4cqw 8.09cqw 5.45cqw;
-    --pm-corner: url("../../shared/deco/flightlog/page-corner.webp?v=fe1aedb9")
+    --pm-corner: url("../../shared/deco/flightlog/page-corner.webp?v=0")
   }
   html[data-design="aqua"] .pm-book {
-    --pm-open: url("../../shared/deco/aqua/mission-open.webp?v=25da795c");
+    --pm-open: url("../../shared/deco/aqua/mission-open.webp?v=0");
     --pm-ratio-open: 1409/831;
     --pm-page-t: 11.7%;
     --pm-page-b: 10.4%;
@@ -755,17 +755,17 @@
     --pm-bsheet-l: 4.33%;
     --pm-bsheet-r: 55.07%;
     --pm-bturn-o: 111.89%;
-    --pm-face: url("../../shared/deco/aqua/mission-page.webp?v=25c8e227");
+    --pm-face: url("../../shared/deco/aqua/mission-page.webp?v=0");
     --pm-pad: 3.67cqw 4.4cqw 7.57cqw 4.4cqw;
     --pm-pad-fb: 3.67cqw 2.91cqw 7.57cqw 4.4cqw;
     --pm-pad-bf: 3.82cqw 4.4cqw 8.07cqw 4.4cqw;
     --pm-pad-bb: 3.82cqw 4.41cqw 8.07cqw 5.89cqw;
-    --pm-corner: url("../../shared/deco/aqua/page-corner.webp?v=12b36be8");
+    --pm-corner: url("../../shared/deco/aqua/page-corner.webp?v=0");
     --pm-font: Marianne, "Helvetica Neue", Arial, sans-serif;
     --pm-ink: #1e2733
   }
   html[data-design="field"] .pm-book {
-    --pm-open: url("../../shared/deco/field/mission-open.webp?v=243c9b80");
+    --pm-open: url("../../shared/deco/field/mission-open.webp?v=0");
     --pm-ratio-open: 1236/898;
     --pm-page-t: 10.18%;
     --pm-page-b: 19.59%;
@@ -783,12 +783,12 @@
     --pm-bsheet-l: 6.55%;
     --pm-bsheet-r: 54.61%;
     --pm-bturn-o: 111.88%;
-    --pm-face: url("../../shared/deco/field/mission-page.webp?v=bcbd3569");
+    --pm-face: url("../../shared/deco/field/mission-page.webp?v=0");
     --pm-pad: 4.14cqw 4.4cqw 8.11cqw 4.4cqw;
     --pm-pad-fb: 4.14cqw 4.4cqw 8.11cqw 4.4cqw;
     --pm-pad-bf: 4.22cqw 4.4cqw 8.19cqw 4.4cqw;
     --pm-pad-bb: 4.22cqw 4.4cqw 8.19cqw 4.4cqw;
-    --pm-corner: url("../../shared/deco/field/page-corner.webp?v=55121820");
+    --pm-corner: url("../../shared/deco/field/page-corner.webp?v=0");
     --pm-ink: #1f2a1c
   }
   .pm-book {
@@ -916,7 +916,7 @@
     z-index: 2;
     width: 190px;
     aspect-ratio: 505/200;
-    background: url("../../shared/deco/cabinet/stamp-diffusion-restreinte.webp?v=73254f39") center/contain no-repeat;
+    background: url("../../shared/deco/cabinet/stamp-diffusion-restreinte.webp?v=0") center/contain no-repeat;
     opacity: .8;
     pointer-events: none
   }
@@ -1178,7 +1178,7 @@
     margin: 0 0 26px;
     padding: 0;
     border: 0;
-    background: url("../../shared/deco/aqua/order-header.webp?v=2015f881") center/100% 100% no-repeat;
+    background: url("../../shared/deco/aqua/order-header.webp?v=0") center/100% 100% no-repeat;
     box-shadow: 0 1px 2px rgba(0, 0, 0, .15)
   }
   html[data-design="aqua"] .pm-book .pm-head>:not(.pm-no) {
@@ -1193,37 +1193,37 @@
      civil de la demande (SDIS, SAMU, centre hospitalier, ARS, préfet, Intérieur, COZ, CPCO) ; familles militaires :
      demande de concours des armées (en-tête par défaut ci-dessus) */
   html[data-design="aqua"] #pmDetail[data-family="FIRE"] .pm-book .pm-head {
-    background-image: url("../../shared/deco/aqua/order-header-sdis.webp?v=d1587c8f");
+    background-image: url("../../shared/deco/aqua/order-header-sdis.webp?v=0");
     aspect-ratio: 753/239
   }
   html[data-design="aqua"] #pmDetail[data-family="HEMS"] .pm-book .pm-head {
-    background-image: url("../../shared/deco/aqua/order-header-samu.webp?v=5f3999a5");
+    background-image: url("../../shared/deco/aqua/order-header-samu.webp?v=0");
     aspect-ratio: 753/239
   }
   html[data-design="aqua"] #pmDetail[data-family="AIRLIFT"] .pm-book .pm-head {
-    background-image: url("../../shared/deco/aqua/order-header-hopital.webp?v=991b0712");
+    background-image: url("../../shared/deco/aqua/order-header-hopital.webp?v=0");
     aspect-ratio: 753/239
   }
   html[data-design="aqua"] #pmDetail[data-family="SURVEY"] .pm-book .pm-head {
-    background-image: url("../../shared/deco/aqua/order-header-ars.webp?v=fd33f021");
+    background-image: url("../../shared/deco/aqua/order-header-ars.webp?v=0");
     aspect-ratio: 753/239
   }
   html[data-design="aqua"] #pmDetail[data-family="LE"] .pm-book .pm-head,
   html[data-design="aqua"] #pmDetail[data-family="MARITIME"] .pm-book .pm-head {
-    background-image: url("../../shared/deco/aqua/order-header-prefet.webp?v=9e499c9c");
+    background-image: url("../../shared/deco/aqua/order-header-prefet.webp?v=0");
     aspect-ratio: 753/239
   }
   html[data-design="aqua"] #pmDetail[data-family="SAR"] .pm-book .pm-head {
-    background-image: url("../../shared/deco/aqua/order-header-interieur.webp?v=9ab122e0");
+    background-image: url("../../shared/deco/aqua/order-header-interieur.webp?v=0");
     aspect-ratio: 753/239
   }
   html[data-design="aqua"] #pmDetail[data-family="HADR"] .pm-book .pm-head {
-    background-image: url("../../shared/deco/aqua/order-header-coz.webp?v=4eee4ed3");
+    background-image: url("../../shared/deco/aqua/order-header-coz.webp?v=0");
     aspect-ratio: 753/239
   }
   html[data-design="aqua"] #pmDetail[data-family="COMMAND"] .pm-book .pm-head,
   html[data-design="aqua"] #pmDetail[data-family="SPECIAL"] .pm-book .pm-head {
-    background-image: url("../../shared/deco/aqua/order-header-cpco.webp?v=dfa1df57");
+    background-image: url("../../shared/deco/aqua/order-header-cpco.webp?v=0");
     aspect-ratio: 753/239
   }
   html[data-design="aqua"] .pm-book .pm-head .pm-no {
@@ -1249,44 +1249,44 @@
     width: 56%;
     padding: 0;
     border: 0;
-    background: url("../../shared/deco/field/order-header.webp?v=b361e25b") center/100% 100% no-repeat
+    background: url("../../shared/deco/field/order-header.webp?v=0") center/100% 100% no-repeat
   }
   /* Durci : en-tête de l'ordre selon la famille (émetteur militaire), bandeau pleine largeur */
   html[data-design="field"] #pmDetail[data-family="FIRE"] .pm-book .pm-head {
-    background-image: url("../../shared/deco/field/order-header-bspp.webp?v=163928f0");
+    background-image: url("../../shared/deco/field/order-header-bspp.webp?v=0");
     aspect-ratio: 760/223;
     width: 100%
   }
   html[data-design="field"] #pmDetail[data-family="HEMS"] .pm-book .pm-head {
-    background-image: url("../../shared/deco/field/order-header-ssa.webp?v=543ebc72");
+    background-image: url("../../shared/deco/field/order-header-ssa.webp?v=0");
     aspect-ratio: 760/213;
     width: 100%
   }
   html[data-design="field"] #pmDetail[data-family="AIRLIFT"] .pm-book .pm-head {
-    background-image: url("../../shared/deco/field/order-header-hia.webp?v=33872398");
+    background-image: url("../../shared/deco/field/order-header-hia.webp?v=0");
     aspect-ratio: 746/209;
     width: 100%
   }
   html[data-design="field"] #pmDetail[data-family="SURVEY"] .pm-book .pm-head {
-    background-image: url("../../shared/deco/field/order-header-dcssa.webp?v=2c197954");
+    background-image: url("../../shared/deco/field/order-header-dcssa.webp?v=0");
     aspect-ratio: 770/216;
     width: 100%
   }
   html[data-design="field"] #pmDetail[data-family="LE"] .pm-book .pm-head,
   html[data-design="field"] #pmDetail[data-family="MARITIME"] .pm-book .pm-head {
-    background-image: url("../../shared/deco/field/order-header-dmd.webp?v=f115c20c");
+    background-image: url("../../shared/deco/field/order-header-dmd.webp?v=0");
     aspect-ratio: 800/190;
     width: 100%
   }
   html[data-design="field"] #pmDetail[data-family="SAR"] .pm-book .pm-head,
   html[data-design="field"] #pmDetail[data-family="HADR"] .pm-book .pm-head {
-    background-image: url("../../shared/deco/field/order-header-emzd.webp?v=0a1ba46b");
+    background-image: url("../../shared/deco/field/order-header-emzd.webp?v=0");
     aspect-ratio: 742/233;
     width: 100%
   }
   html[data-design="field"] #pmDetail[data-family="COMMAND"] .pm-book .pm-head,
   html[data-design="field"] #pmDetail[data-family="SPECIAL"] .pm-book .pm-head {
-    background-image: url("../../shared/deco/field/order-header-cpco.webp?v=4f8f929d");
+    background-image: url("../../shared/deco/field/order-header-cpco.webp?v=0");
     aspect-ratio: 763/210;
     width: 100%
   }
@@ -1295,7 +1295,7 @@
   html[data-design="field"] #pmDetail[data-family="ISR"] .pm-book .pm-head,
   html[data-design="field"] #pmDetail[data-family="AAR"] .pm-book .pm-head,
   html[data-design="field"] #pmDetail[data-family="AIRBORNE"] .pm-book .pm-head {
-    background-image: url("../../shared/deco/field/order-header-ema.webp?v=21844b34");
+    background-image: url("../../shared/deco/field/order-header-ema.webp?v=0");
     aspect-ratio: 800/245;
     width: 100%
   }
@@ -1326,78 +1326,78 @@
   html[data-design="cabinet"] #pmDetail[data-family="COMMAND"] .pm-book [data-part="order"] .pm-head,
   html[data-design="cabinet"] #pmDetail[data-family="SPECIAL"] .pm-book [data-part="order"] .pm-head,
   html[data-design="cabinet"] #pmDetail[data-family="SOF"] .pm-book [data-part="order"] .pm-head {
-    background-image: url("../../shared/deco/cabinet/order-header-emg.webp?v=2f0f1503");
+    background-image: url("../../shared/deco/cabinet/order-header-emg.webp?v=0");
     aspect-ratio: 761/233;
   }
   html[data-design="cabinet"] #pmDetail[data-family="AAR"] .pm-book [data-part="order"] .pm-head,
   html[data-design="cabinet"] #pmDetail[data-family="AIRBORNE"] .pm-book [data-part="order"] .pm-head {
-    background-image: url("../../shared/deco/cabinet/order-header-fam.webp?v=1ded3e31");
+    background-image: url("../../shared/deco/cabinet/order-header-fam.webp?v=0");
     aspect-ratio: 635/210;
   }
   html[data-design="cabinet"] #pmDetail[data-family="SURVEY"] .pm-book [data-part="order"] .pm-head,
   html[data-design="cabinet"] #pmDetail[data-family="FI"] .pm-book [data-part="order"] .pm-head {
-    background-image: url("../../shared/deco/cabinet/order-header-dfam.webp?v=8a9b6aa6");
+    background-image: url("../../shared/deco/cabinet/order-header-dfam.webp?v=0");
     aspect-ratio: 863/208;
   }
   html[data-design="cabinet"] #pmDetail[data-family="LE"] .pm-book [data-part="order"] .pm-head,
   html[data-design="cabinet"] #pmDetail[data-family="MARITIME"] .pm-book [data-part="order"] .pm-head,
   html[data-design="cabinet"] #pmDetail[data-family="SAR"] .pm-book [data-part="order"] .pm-head,
   html[data-design="cabinet"] #pmDetail[data-family="FIRE"] .pm-book [data-part="order"] .pm-head {
-    background-image: url("../../shared/deco/cabinet/order-header-prefmar.webp?v=8ea59c39");
+    background-image: url("../../shared/deco/cabinet/order-header-prefmar.webp?v=0");
     aspect-ratio: 724/189;
   }
   html[data-design="cabinet"] #pmDetail[data-family="AIRLIFT"] .pm-book [data-part="order"] .pm-head,
   html[data-design="cabinet"] #pmDetail[data-family="HEMS"] .pm-book [data-part="order"] .pm-head,
   html[data-design="cabinet"] #pmDetail[data-family="MEDEVAC"] .pm-book [data-part="order"] .pm-head,
   html[data-design="cabinet"] #pmDetail[data-family="HADR"] .pm-book [data-part="order"] .pm-head {
-    background-image: url("../../shared/deco/cabinet/order-header-ban.webp?v=76f49d13");
+    background-image: url("../../shared/deco/cabinet/order-header-ban.webp?v=0");
     aspect-ratio: 841/171;
   }
   html[data-design="cabinet"] #pmDetail[data-family="ISR"] .pm-book [data-part="order"] .pm-head {
-    background-image: url("../../shared/deco/cabinet/order-header-escadrille.webp?v=18bc5a76");
+    background-image: url("../../shared/deco/cabinet/order-header-escadrille.webp?v=0");
     aspect-ratio: 803/170;
   }
   html[data-design="cabinet"] #pmDetail[data-family="COMBAT"] .pm-book [data-part="order"] .pm-head {
-    background-image: url("../../shared/deco/cabinet/order-header-embarquee.webp?v=f7ab3a69");
+    background-image: url("../../shared/deco/cabinet/order-header-embarquee.webp?v=0");
     aspect-ratio: 852/184;
   }
   html[data-design="cabinet"] #pmDetail[data-family="DEMO"] .pm-book [data-part="order"] .pm-head {
-    background-image: url("../../shared/deco/cabinet/order-header-mn.webp?v=1ad5de38");
+    background-image: url("../../shared/deco/cabinet/order-header-mn.webp?v=0");
     aspect-ratio: 835/208;
   }
   /* Carnet de vol : en-tête de l'ordre selon la famille (protection civile, secours) et tampon de l'émetteur à la signature */
   html[data-design="flightlog"] #pmDetail[data-family="HADR"] .pm-book .pm-head,
   html[data-design="flightlog"] #pmDetail[data-family="LE"] .pm-book .pm-head,
   html[data-design="flightlog"] #pmDetail[data-family="COMMAND"] .pm-book .pm-head {
-    background-image: url("../../shared/deco/flightlog/order-header-snpc.webp?v=ad0c9122");
+    background-image: url("../../shared/deco/flightlog/order-header-snpc.webp?v=0");
     aspect-ratio: 400/205;
     width: 64%;
     margin-left: auto;
     margin-right: auto
   }
   html[data-design="flightlog"] #pmDetail[data-family="FIRE"] .pm-book .pm-head {
-    background-image: url("../../shared/deco/flightlog/order-header-marignane.webp?v=b39e26a2");
+    background-image: url("../../shared/deco/flightlog/order-header-marignane.webp?v=0");
     aspect-ratio: 437/213;
     width: 64%;
     margin-left: auto;
     margin-right: auto
   }
   html[data-design="flightlog"] #pmDetail[data-family="HEMS"] .pm-book .pm-head {
-    background-image: url("../../shared/deco/flightlog/order-header-helico.webp?v=a6c50da4");
+    background-image: url("../../shared/deco/flightlog/order-header-helico.webp?v=0");
     aspect-ratio: 425/198;
     width: 64%;
     margin-left: auto;
     margin-right: auto
   }
   html[data-design="flightlog"] #pmDetail[data-family="SAR"] .pm-book .pm-head {
-    background-image: url("../../shared/deco/flightlog/order-header-sna.webp?v=223d99da");
+    background-image: url("../../shared/deco/flightlog/order-header-sna.webp?v=0");
     aspect-ratio: 432/217;
     width: 64%;
     margin-left: auto;
     margin-right: auto
   }
   html[data-design="flightlog"] #pmDetail[data-family="MEDEVAC"] .pm-book .pm-head {
-    background-image: url("../../shared/deco/flightlog/order-header-alat.webp?v=b6484b50");
+    background-image: url("../../shared/deco/flightlog/order-header-alat.webp?v=0");
     aspect-ratio: 408/221;
     width: 64%;
     margin-left: auto;
@@ -1405,14 +1405,14 @@
   }
   html[data-design="flightlog"] #pmDetail[data-family="AIRLIFT"] .pm-book .pm-head,
   html[data-design="flightlog"] #pmDetail[data-family="AIRBORNE"] .pm-book .pm-head {
-    background-image: url("../../shared/deco/flightlog/order-header-tam.webp?v=afa2f059");
+    background-image: url("../../shared/deco/flightlog/order-header-tam.webp?v=0");
     aspect-ratio: 445/233;
     width: 64%;
     margin-left: auto;
     margin-right: auto
   }
   html[data-design="flightlog"] #pmDetail[data-family="MARITIME"] .pm-book .pm-head {
-    background-image: url("../../shared/deco/flightlog/order-header-aeronavale.webp?v=c83c36ce");
+    background-image: url("../../shared/deco/flightlog/order-header-aeronavale.webp?v=0");
     aspect-ratio: 413/219;
     width: 64%;
     margin-left: auto;
@@ -1421,7 +1421,7 @@
   html[data-design="flightlog"] #pmDetail[data-family="FI"] .pm-book .pm-head,
   html[data-design="flightlog"] #pmDetail[data-family="SURVEY"] .pm-book .pm-head,
   html[data-design="flightlog"] #pmDetail[data-family="DEMO"] .pm-book .pm-head {
-    background-image: url("../../shared/deco/flightlog/order-header-cev.webp?v=cb5d3a74");
+    background-image: url("../../shared/deco/flightlog/order-header-cev.webp?v=0");
     aspect-ratio: 427/238;
     width: 64%;
     margin-left: auto;
@@ -1430,31 +1430,31 @@
   html[data-design="flightlog"] #pmDetail[data-family="HADR"] .pm-book .pm-sign,
   html[data-design="flightlog"] #pmDetail[data-family="LE"] .pm-book .pm-sign,
   html[data-design="flightlog"] #pmDetail[data-family="COMMAND"] .pm-book .pm-sign {
-    --pm-fam-stamp: url("../../shared/deco/flightlog/order-stamp-snpc.webp?v=c7a1b087")
+    --pm-fam-stamp: url("../../shared/deco/flightlog/order-stamp-snpc.webp?v=0")
   }
   html[data-design="flightlog"] #pmDetail[data-family="FIRE"] .pm-book .pm-sign {
-    --pm-fam-stamp: url("../../shared/deco/flightlog/order-stamp-marignane.webp?v=2ae3e285")
+    --pm-fam-stamp: url("../../shared/deco/flightlog/order-stamp-marignane.webp?v=0")
   }
   html[data-design="flightlog"] #pmDetail[data-family="HEMS"] .pm-book .pm-sign {
-    --pm-fam-stamp: url("../../shared/deco/flightlog/order-stamp-helico.webp?v=229868d0")
+    --pm-fam-stamp: url("../../shared/deco/flightlog/order-stamp-helico.webp?v=0")
   }
   html[data-design="flightlog"] #pmDetail[data-family="SAR"] .pm-book .pm-sign {
-    --pm-fam-stamp: url("../../shared/deco/flightlog/order-stamp-sna.webp?v=01d0b4bc")
+    --pm-fam-stamp: url("../../shared/deco/flightlog/order-stamp-sna.webp?v=0")
   }
   html[data-design="flightlog"] #pmDetail[data-family="MEDEVAC"] .pm-book .pm-sign {
-    --pm-fam-stamp: url("../../shared/deco/flightlog/order-stamp-alat.webp?v=b41f7511")
+    --pm-fam-stamp: url("../../shared/deco/flightlog/order-stamp-alat.webp?v=0")
   }
   html[data-design="flightlog"] #pmDetail[data-family="AIRLIFT"] .pm-book .pm-sign,
   html[data-design="flightlog"] #pmDetail[data-family="AIRBORNE"] .pm-book .pm-sign {
-    --pm-fam-stamp: url("../../shared/deco/flightlog/order-stamp-tam.webp?v=8652571e")
+    --pm-fam-stamp: url("../../shared/deco/flightlog/order-stamp-tam.webp?v=0")
   }
   html[data-design="flightlog"] #pmDetail[data-family="MARITIME"] .pm-book .pm-sign {
-    --pm-fam-stamp: url("../../shared/deco/flightlog/order-stamp-aeronavale.webp?v=5d7072fc")
+    --pm-fam-stamp: url("../../shared/deco/flightlog/order-stamp-aeronavale.webp?v=0")
   }
   html[data-design="flightlog"] #pmDetail[data-family="FI"] .pm-book .pm-sign,
   html[data-design="flightlog"] #pmDetail[data-family="SURVEY"] .pm-book .pm-sign,
   html[data-design="flightlog"] #pmDetail[data-family="DEMO"] .pm-book .pm-sign {
-    --pm-fam-stamp: url("../../shared/deco/flightlog/order-stamp-cev.webp?v=113def84")
+    --pm-fam-stamp: url("../../shared/deco/flightlog/order-stamp-cev.webp?v=0")
   }
   .pm-book .pm-sign::before {
     content: "";
@@ -1496,7 +1496,7 @@
     margin: 0 0 24px;
     padding: 0;
     border: 0;
-    background: url("../../shared/deco/flightlog/order-header.webp?v=183a04de") center/100% 100% no-repeat
+    background: url("../../shared/deco/flightlog/order-header.webp?v=0") center/100% 100% no-repeat
   }
   html[data-design="flightlog"] .pm-book .pm-head>:not(.pm-no) {
     position: absolute;
@@ -1529,12 +1529,12 @@
     width: 44%;
     aspect-ratio: 420/73;
     transform: translateX(-50%) rotate(-3deg);
-    background: url("../../shared/deco/flightlog/tape-1.webp?v=463c91c8") center/100% 100% no-repeat;
+    background: url("../../shared/deco/flightlog/tape-1.webp?v=0") center/100% 100% no-repeat;
     opacity: .92;
     pointer-events: none
   }
   html[data-design="flightlog"] .pm-page .pm-maps figure:nth-child(even)::before {
-    background-image: url("../../shared/deco/flightlog/tape-2.webp?v=9cba6e50");
+    background-image: url("../../shared/deco/flightlog/tape-2.webp?v=0");
     transform: translateX(-50%) rotate(2.5deg)
   }
   /* signet (tous les designs à matières) : ruban (--pm-sig-body, étiré) au bout duquel pend le signet (--pm-sig-tail) ;
@@ -1592,18 +1592,18 @@
   }
   /* place du bout du signet */
   html[data-design="cabinet"] .pm-book {
-    --pm-sig-body: url("../../shared/deco/cabinet/bookmark-body.webp?v=448f0fbb");
-    --pm-sig-tail: url("../../shared/deco/cabinet/bookmark-tail.webp?v=6c5d9661")
+    --pm-sig-body: url("../../shared/deco/cabinet/bookmark-body.webp?v=0");
+    --pm-sig-tail: url("../../shared/deco/cabinet/bookmark-tail.webp?v=0")
   }
   html[data-design="flightlog"] .pm-book {
-    --pm-sig-body: url("../../shared/deco/flightlog/bookmark-body.webp?v=5ff34cd3");
-    --pm-sig-tail: url("../../shared/deco/flightlog/bookmark-tail.webp?v=4dfe039d")
+    --pm-sig-body: url("../../shared/deco/flightlog/bookmark-body.webp?v=0");
+    --pm-sig-tail: url("../../shared/deco/flightlog/bookmark-tail.webp?v=0")
   }
   /* Aqua : ruban bleu, carte « Guide essentiel » ; Durci : sangle olive, sangle entoilée à œillet. Signet plus haut que
      la part visible sous la feuille : --pm-sig-show:100% (en lecture, seul le bas du signet, coupé au bord de la feuille) */
   html[data-design="aqua"] .pm-book {
-    --pm-sig-body: url("../../shared/deco/aqua/bookmark-body.webp?v=4aad1e14");
-    --pm-sig-tail: url("../../shared/deco/aqua/bookmark-tail.webp?v=8d4faa7a");
+    --pm-sig-body: url("../../shared/deco/aqua/bookmark-body.webp?v=0");
+    --pm-sig-tail: url("../../shared/deco/aqua/bookmark-tail.webp?v=0");
     --pm-sig-w: 9cqw;
     --pm-sig-body-w: 1.06cqw;
     --pm-sig-tail-h: 28.64cqw;
@@ -1612,8 +1612,8 @@
     --pm-sig-show: 100%
   }
   html[data-design="field"] .pm-book {
-    --pm-sig-body: url("../../shared/deco/field/bookmark-body.webp?v=429e6201");
-    --pm-sig-tail: url("../../shared/deco/field/bookmark-tail.webp?v=9dc4aeea");
+    --pm-sig-body: url("../../shared/deco/field/bookmark-body.webp?v=0");
+    --pm-sig-tail: url("../../shared/deco/field/bookmark-tail.webp?v=0");
     --pm-sig-w: 5.2cqw;
     --pm-sig-tail-h: 25.8cqw;
     --pm-sig-out: 2.5cqw;
@@ -1666,15 +1666,15 @@
 </section>
 </div>
 </main>
-<script src="../../shared/kit.js?v=b73e1b98"></script>
-<script src="../../shared/repository_nav.js?v=c3a81ac5"></script>
-<script src="mes_missions_i18n.js?v=ff059abb" defer></script>
-<script src="../../shared/dispos_editor.js?v=9e198a77"></script>
-<script src="../../shared/content_i18n.js?v=515ea16b"></script>
-<script src="../../AircraftDB/aircraft_db.js"></script><script src="../../shared/mission_core/vendor/js-yaml.min.js"></script><script src="../../shared/data_files.js?v=dcb47c6a" data-file="references/aircraft_fleet.js"></script>
-<script src="../../shared/mission_core/vocab.js?v=8c65f5c2"></script>
-<script src="../../shared/mission_estimate.js?v=e352037a"></script><script src="../../shared/mission_i18n.js?v=bfd45c20"></script><script src="../../shared/machine_translate.js?v=9e5fc37d"></script><script src="../../shared/mission_exercise.js?v=b68ac247"></script>
-<script src="../../shared/assignments.js?v=213a47d9"></script><script src="../../shared/pilot_today.js?v=c962ff09"></script>
+<script src="../../shared/kit.js?v=0"></script>
+<script src="../../shared/repository_nav.js?v=0"></script>
+<script src="mes_missions_i18n.js?v=0" defer></script>
+<script src="../../shared/dispos_editor.js?v=0"></script>
+<script src="../../shared/content_i18n.js?v=0"></script>
+<script src="../../AircraftDB/aircraft_db.js"></script><script src="../../shared/mission_core/vendor/js-yaml.min.js"></script><script src="../../shared/data_files.js?v=0" data-file="references/aircraft_fleet.js"></script>
+<script src="../../shared/mission_core/vocab.js?v=0"></script>
+<script src="../../shared/mission_estimate.js?v=0"></script><script src="../../shared/mission_i18n.js?v=0"></script><script src="../../shared/machine_translate.js?v=0"></script><script src="../../shared/mission_exercise.js?v=0"></script>
+<script src="../../shared/assignments.js?v=0"></script><script src="../../shared/pilot_today.js?v=0"></script>
 <script>
 (() => {
   'use strict';
@@ -3347,8 +3347,8 @@
     });
     // famille de la mission : en-tête de l'ordre propre à la famille quand le design en a un (feuille de la page)
     $('pmDetail').dataset.family = window.MissionVocab?.familyForType?.(y.mission?.type || a.type) || '';
-    $('pmDetail').innerHTML = `<div data-part="title"><header class="pm-head pm-logo" aria-hidden="true"><img class="pm-emblem" src="../../shared/deco/cabinet/emblem-wings.webp?v=79ab9a8f" alt=""><div><b>${esc(tv('{SOG_NOM} {CENTRE}'))}</b><span>Centre de planification et de conduite des opérations</span></div></header>${labelHtml({ ...a, title: y.title || a.title })}</div>
-      <div data-part="order"><header class="pm-head"><img class="pm-emblem" src="../../shared/deco/cabinet/emblem-wings.webp?v=79ab9a8f" alt=""><div><b>${esc(tv('{SOG_NOM} {CENTRE}'))}</b><span>Centre de planification et de conduite des opérations</span></div><span class="pm-no">N° ${esc(a.mission)}</span></header>
+    $('pmDetail').innerHTML = `<div data-part="title"><header class="pm-head pm-logo" aria-hidden="true"><img class="pm-emblem" src="../../shared/deco/cabinet/emblem-wings.webp?v=0" alt=""><div><b>${esc(tv('{SOG_NOM} {CENTRE}'))}</b><span>Centre de planification et de conduite des opérations</span></div></header>${labelHtml({ ...a, title: y.title || a.title })}</div>
+      <div data-part="order"><header class="pm-head"><img class="pm-emblem" src="../../shared/deco/cabinet/emblem-wings.webp?v=0" alt=""><div><b>${esc(tv('{SOG_NOM} {CENTRE}'))}</b><span>Centre de planification et de conduite des opérations</span></div><span class="pm-no">N° ${esc(a.mission)}</span></header>
         <i class="pm-dr" aria-label="Diffusion restreinte"></i>
         <h3>${a.role === 'convoyage' ? `Ordre de convoyage — ${esc(titleOf(a).replace(/^Convoyage /, ''))}` : `Ordre de mission — ${esc(y.title || a.title || '')}`}</h3>
         ${auto ? `<p class="pm-mt small" data-mt-note data-no-i18n>${mtNoteHtml()}</p>` : ''}
@@ -3864,5 +3864,5 @@
   keepAll().then(wantedWeek).then(load).then(gridLoad);
 })();
 </script>
-<script src="../../shared/app_framework.js?v=0a2fa96b"></script>
+<script src="../../shared/app_framework.js?v=0"></script>
 </body></html>

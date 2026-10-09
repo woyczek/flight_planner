@@ -30,7 +30,7 @@
 /* ================================================================================================ CABINET */
 html[data-design-base="cabinet"] {
   --sk-page-margin: 14px;
-  --sk-page-bg: #4a2712 url("textures/wood.webp?v=73340c58") center/512px;
+  --sk-page-bg: #4a2712 url("textures/wood.webp?v=0") center/512px;
   --sk-page-shadow: 0 18px 40px rgba(0, 0, 0, .6), inset 0 1px 0 rgba(255, 220, 170, .35), inset 0 0 0 1px #1c0d05, inset 0 0 24px rgba(0, 0, 0, .5);
   --sk-corner-screw: var(--cab-screw);
   --sk-header-screw-at: 9px;
@@ -95,12 +95,12 @@ html[data-design-base="cabinet"] {
   --sk-step-shadow: inset 0 0 0 2px rgba(0, 0, 0, .25), 0 2px 3px rgba(0, 0, 0, .4);
   --sk-step-family: Georgia, serif;
   --sk-segs-border: 1px solid #2a1606;
-  --sk-segs-bg: #b08a3a url("textures/brass.webp?v=f418b500") center/256px;
+  --sk-segs-bg: #b08a3a url("textures/brass.webp?v=0") center/256px;
   --sk-seg-ink: #231507;
   --sk-seg-shadow: 0 1px 0 rgba(255, 240, 200, .55);
   --sk-seg-sep: 1px solid rgba(30, 16, 4, .55);
   --sk-seg-sep-shadow: inset 1px 0 0 rgba(255, 240, 200, .35);
-  --sk-seg-on-bg: #1f2c47 url("textures/leather-navy.webp?v=1bacc4e6") center/256px;
+  --sk-seg-on-bg: #1f2c47 url("textures/leather-navy.webp?v=0") center/256px;
   --sk-seg-on-ink: #f1e4c0;
   --sk-seg-on-text-shadow: 0 1px 0 #000;
   --sk-seg-on-shadow: inset 0 2px 6px rgba(0, 0, 0, .65);
@@ -108,21 +108,21 @@ html[data-design-base="cabinet"] {
   --sk-header-border: 0;
   --sk-header-margin: 0 0 6px;
   --sk-header-ink: var(--cab-cream);
-  --sk-header-bg: linear-gradient(color-mix(in srgb, var(--cab-bar) 55%, transparent), color-mix(in srgb, var(--cab-bar) 55%, transparent)), #0f2140 url("textures/leather-navy.webp?v=1bacc4e6") center/256px;
+  --sk-header-bg: linear-gradient(color-mix(in srgb, var(--cab-bar) 55%, transparent), color-mix(in srgb, var(--cab-bar) 55%, transparent)), #0f2140 url("textures/leather-navy.webp?v=0") center/256px;
   --sk-header-shadow: inset 0 0 0 1px #0b1628, inset 0 2px 0 rgba(160, 190, 240, .18), inset 0 -8px 20px rgba(0, 0, 0, .45), 0 3px 0 #1c0d05;
   --sk-mbtn-bg: linear-gradient(#27446f, #122746);
   --sk-mbtn-ink: var(--cab-brass-hi);
   --sk-mbtn-border: 1px solid var(--cab-brass);
   --sk-mbtn-radius: 5px;
-  --sk-menu-bg: #f6ecd2 url("textures/parchment.webp?v=c0677c03") center/400px;
+  --sk-menu-bg: #f6ecd2 url("textures/parchment.webp?v=0") center/400px;
   --sk-menu-ink: var(--cab-ink);
   --sk-menu-border: 2px solid var(--cab-brass-lo);
   --sk-block-radius: 12px;
   --sk-block-border: 10px solid transparent;
-  --sk-block-bg: url("textures/parchment.webp?v=c0677c03") center/512px padding-box,
+  --sk-block-bg: url("textures/parchment.webp?v=0") center/512px padding-box,
     linear-gradient(180deg, rgba(255, 228, 190, .22), rgba(255, 228, 190, 0) 4px, rgba(0, 0, 0, 0) calc(100% - 5px), rgba(0, 0, 0, .55)) border-box,
     linear-gradient(90deg, rgba(255, 228, 190, .14), rgba(255, 228, 190, 0) 4px, rgba(0, 0, 0, 0) calc(100% - 5px), rgba(0, 0, 0, .4)) border-box,
-    url("textures/leather-brown.webp?v=45953b4a") center/256px border-box #4a2712;
+    url("textures/leather-brown.webp?v=0") center/256px border-box #4a2712;
   --sk-block-shadow: inset 0 0 0 1px rgba(40, 18, 4, .75), inset 0 3px 5px rgba(40, 18, 4, .45), inset 0 0 36px rgba(120, 80, 30, .35), 0 0 0 1px rgba(20, 8, 2, .8), 0 5px 10px rgba(40, 20, 5, .5);
   --sk-card-bg: color-mix(in srgb, var(--cab-field) 55%, transparent);
   --sk-card-border: 1px solid var(--cab-rule);
@@ -141,7 +141,7 @@ html[data-design-base="cabinet"] {
   --sk-plate-spacing: .06em;
   --sk-plate-ink: var(--cab-engrave);
   --sk-plate-text-shadow: 0 1px 0 rgba(255, 244, 200, .75), 0 -1px 0 rgba(60, 40, 10, .3);
-  --sk-plate-bg: #c9a24a url("textures/brass.webp?v=f418b500") center/256px;
+  --sk-plate-bg: #c9a24a url("textures/brass.webp?v=0") center/256px;
   --sk-plate-shadow: 0 0 0 1px #5a4012, inset 0 1px 0 #fff7d1, inset 0 -2px 0 rgba(0, 0, 0, .25), 0 3px 6px rgba(0, 0, 0, .35);
   --sk-screw: var(--cab-screw);
   --sk-plate-screw: 10px;
@@ -161,7 +161,7 @@ html[data-design-base="cabinet"] {
   --sk-btn-radius: 6px;
   --sk-btn-ink: var(--cab-cream);
   --sk-btn-text-shadow: 0 1px 0 #000;
-  --sk-btn-bg: linear-gradient(color-mix(in srgb, var(--cab-bar) 45%, transparent), color-mix(in srgb, var(--cab-bar) 45%, transparent)), #0f2140 url("textures/leather-navy.webp?v=1bacc4e6") center/200px;
+  --sk-btn-bg: linear-gradient(color-mix(in srgb, var(--cab-bar) 45%, transparent), color-mix(in srgb, var(--cab-bar) 45%, transparent)), #0f2140 url("textures/leather-navy.webp?v=0") center/200px;
   --sk-btn-shadow: 0 0 0 2px var(--cab-brass), 0 0 0 3px #5a4012, inset 0 1px 0 rgba(255, 255, 255, .22), inset 0 -6px 12px rgba(0, 0, 0, .4), 0 4px 6px rgba(0, 0, 0, .4);
   --sk-btn-hover: brightness(1.12);
   --sk-btn-disabled: grayscale(1) opacity(.5);
@@ -170,24 +170,24 @@ html[data-design-base="cabinet"] {
   --sk-lbtn-border: 0;
   --sk-lbtn-radius: 6px;
   --sk-lbtn-ink: var(--cab-cream);
-  --sk-lbtn-bg: linear-gradient(color-mix(in srgb, var(--cab-bar) 45%, transparent), color-mix(in srgb, var(--cab-bar) 45%, transparent)), #0f2140 url("textures/leather-navy.webp?v=1bacc4e6") center/200px;
+  --sk-lbtn-bg: linear-gradient(color-mix(in srgb, var(--cab-bar) 45%, transparent), color-mix(in srgb, var(--cab-bar) 45%, transparent)), #0f2140 url("textures/leather-navy.webp?v=0") center/200px;
   --sk-lbtn-shadow: 0 0 0 2px var(--cab-brass), 0 0 0 3px #5a4012, inset 0 1px 0 rgba(255, 255, 255, .22), 0 4px 6px rgba(0, 0, 0, .4);
   --sk-pick-ink: var(--cab-cream);
-  --sk-pick-bg: #0f2140 url("textures/leather-navy.webp?v=1bacc4e6") center/200px;
-  --sk-sidenav-bg: #3a1e0e url("textures/wood.webp?v=73340c58") center/512px;
+  --sk-pick-bg: #0f2140 url("textures/leather-navy.webp?v=0") center/200px;
+  --sk-sidenav-bg: #3a1e0e url("textures/wood.webp?v=0") center/512px;
   --sk-sidenav-border: 3px solid var(--cab-brass-lo);
   --sk-sidenav-ink: var(--cab-cream);
   --sk-footer-margin: 14px 0 0;
   --sk-footer-padding: 8px 14px 8px 34px;
-  --sk-footer-bg: #efe3c4 url("textures/parchment.webp?v=c0677c03") center/300px;
+  --sk-footer-bg: #efe3c4 url("textures/parchment.webp?v=0") center/300px;
   --sk-footer-ink: var(--cab-ink);
-  --sk-abar-bg: linear-gradient(color-mix(in srgb, var(--cab-bar) 45%, transparent), color-mix(in srgb, var(--cab-bar) 45%, transparent)), #0f2140 url("textures/leather-navy.webp?v=1bacc4e6") center/256px;
+  --sk-abar-bg: linear-gradient(color-mix(in srgb, var(--cab-bar) 45%, transparent), color-mix(in srgb, var(--cab-bar) 45%, transparent)), #0f2140 url("textures/leather-navy.webp?v=0") center/256px;
   --sk-abar-border: 2px solid var(--cab-brass);
   --sk-abar-shadow: 0 -6px 16px rgba(0, 0, 0, .45);
   --sk-abar-ink: var(--cab-cream);
   --sk-tool-bg: linear-gradient(#27446f, #122746);
   --sk-tool-ink: var(--cab-cream);
-  --sk-dialog-bg: #4a2712 url("textures/wood.webp?v=73340c58") center/512px;
+  --sk-dialog-bg: #4a2712 url("textures/wood.webp?v=0") center/512px;
   --sk-chart-bg: radial-gradient(ellipse at 50% 35%, #1d2e4a, #0c1424 85%);
   --sk-chart-border: 2px solid #8a6526;
   --sk-chart-radius: 6px;
@@ -204,7 +204,7 @@ html[data-design-base="cabinet"] {
   --sk-thumb-border: 1px solid #3a2808;
   --sk-thumb-bg: repeating-conic-gradient(rgba(0, 0, 0, .18) 0 6deg, transparent 6deg 12deg), radial-gradient(circle at 35% 30%, #fff3c4, #d6ae55 45%, #7a5520);
   --sk-thumb-shadow: 0 2px 3px rgba(0, 0, 0, .6), inset 0 1px 1px rgba(255, 255, 255, .6);
-  background: #3a2112 url("textures/leather-brown.webp?v=45953b4a") center/256px
+  background: #3a2112 url("textures/leather-brown.webp?v=0") center/256px
 }
 html[data-design-base="cabinet"][data-tone="dark"] {
   --sk-code-bg: #141a21;
@@ -217,10 +217,10 @@ html[data-design-base="cabinet"][data-tone="dark"] {
   --cab-paper: #1c2230;
   --cab-field: #121722;
   --repo-surface: #1c2230;
-  --sk-block-bg: url("textures/parchment-dark.webp?v=d9b8cd4f") center/512px padding-box,
+  --sk-block-bg: url("textures/parchment-dark.webp?v=0") center/512px padding-box,
     linear-gradient(180deg, rgba(255, 228, 190, .2), rgba(255, 228, 190, 0) 4px, rgba(0, 0, 0, 0) calc(100% - 5px), rgba(0, 0, 0, .6)) border-box,
     linear-gradient(90deg, rgba(255, 228, 190, .12), rgba(255, 228, 190, 0) 4px, rgba(0, 0, 0, 0) calc(100% - 5px), rgba(0, 0, 0, .45)) border-box,
-    url("textures/leather-brown.webp?v=45953b4a") center/256px border-box #4a2712;
+    url("textures/leather-brown.webp?v=0") center/256px border-box #4a2712;
   --sk-block-shadow: inset 0 0 0 1px rgba(0, 0, 0, .8), inset 0 3px 6px rgba(0, 0, 0, .5), inset 0 0 36px rgba(0, 0, 0, .45), 0 0 0 1px rgba(0, 0, 0, .85), 0 5px 10px rgba(0, 0, 0, .55);
 }
 /* cadre : la page est un meuble en bois verni posé sur un sous-main en cuir (piqûre en décor complet) */
@@ -463,10 +463,10 @@ html[data-design-base="cabinet"] :is(button.secondary, a.secondary, label.rg-fil
     /* garder : liens secondaires des CR en style en ligne « color: inherit » */
   ;
   font-weight: 700;
-  background: #efe3c4 url("textures/parchment.webp?v=c0677c03") center/300px
+  background: #efe3c4 url("textures/parchment.webp?v=0") center/300px
 }
 html[data-design-base="cabinet"] button:is(.ghost, .danger):not(.repo-block-tools button):not(#imp) {
-  background: #4a2712 url("textures/leather-brown.webp?v=45953b4a") center/200px
+  background: #4a2712 url("textures/leather-brown.webp?v=0") center/200px
 }
 html[data-design-base="cabinet"] .repo-header button.headerButton {
   font-size: 13px
@@ -477,7 +477,7 @@ html[data-design-base="cabinet"] .repo-header button.headerButton {
 /* ================================================================================================ DURCI */
 html[data-design="field"] {
   --sk-page-margin: 16px;
-  --sk-page-bg: #465034 url("textures/olive.webp?v=1599d9f0") center/512px;
+  --sk-page-bg: #465034 url("textures/olive.webp?v=0") center/512px;
   --sk-page-shadow: 0 20px 40px rgba(0, 0, 0, .6), inset 0 2px 0 rgba(220, 230, 190, .25), inset 0 0 0 2px #1d2116, inset 0 0 30px rgba(0, 0, 0, .45);
   --sk-corner-screw: var(--fd-screw);
   --sk-header-screw-at: 8px;
@@ -543,7 +543,7 @@ html[data-design="field"] {
   --sk-step-ink: #eef0e6;
   --sk-step-shadow: inset 0 1px 0 rgba(255, 255, 255, .15), 0 0 0 2px #4a4f40;
   --sk-segs-border: 1px solid #0b0d08;
-  --sk-segs-bg: #23261e url("textures/steel-dark.webp?v=8533e93c") center/512px;
+  --sk-segs-bg: #23261e url("textures/steel-dark.webp?v=0") center/512px;
   --sk-seg-ink: #cfd2c4;
   --sk-seg-shadow: 0 1px 0 #000;
   --sk-seg-sep: 1px solid #0b0d08;
@@ -555,21 +555,21 @@ html[data-design="field"] {
   --sk-header-border: 0;
   --sk-header-margin: 0 0 8px;
   --sk-header-ink: var(--fd-text);
-  --sk-header-bg: #23261e url("textures/steel-dark.webp?v=8533e93c") center/512px;
+  --sk-header-bg: #23261e url("textures/steel-dark.webp?v=0") center/512px;
   --sk-header-shadow: inset 0 0 0 2px #0d0f08, inset 0 2px 0 rgba(255, 255, 255, .12), 0 3px 0 #14170d, inset 0 -3px 0 var(--fd-unit);
   --sk-mbtn-bg: linear-gradient(#3a3f37, #15180f);
   --sk-mbtn-ink: #e7e6d6;
   --sk-mbtn-border: 1px solid #0b0d08;
   --sk-mbtn-radius: 5px;
-  --sk-menu-bg: #1d201b url("textures/steel-dark.webp?v=8533e93c") center/400px;
+  --sk-menu-bg: #1d201b url("textures/steel-dark.webp?v=0") center/400px;
   --sk-menu-ink: var(--fd-text);
   --sk-menu-border: 2px solid #0b0d08;
   --sk-block-radius: 10px;
   --sk-block-border: 2px solid #2a2e22;
   --sk-block-border-left: 6px solid var(--fd-unit);
-  --sk-block-bg: linear-gradient(rgba(40, 46, 32, .55), rgba(40, 46, 32, .55)), #7c8270 url("textures/steel.webp?v=1726e89a") center/512px;
+  --sk-block-bg: linear-gradient(rgba(40, 46, 32, .55), rgba(40, 46, 32, .55)), #7c8270 url("textures/steel.webp?v=0") center/512px;
   --sk-block-shadow: inset 0 2px 0 rgba(255, 255, 255, .18), inset 0 0 26px rgba(0, 0, 0, .35), 0 4px 10px rgba(0, 0, 0, .5);
-  --sk-card-bg: linear-gradient(rgba(40, 46, 32, .35), rgba(40, 46, 32, .35)), #7c8270 url("textures/steel.webp?v=1726e89a") 30% 60%/400px;
+  --sk-card-bg: linear-gradient(rgba(40, 46, 32, .35), rgba(40, 46, 32, .35)), #7c8270 url("textures/steel.webp?v=0") 30% 60%/400px;
   --sk-card-border: 1px solid #3b4032;
   --sk-card-radius: 8px;
   --sk-card-shadow: inset 0 2px 0 rgba(255, 255, 255, .25), inset 0 0 18px rgba(0, 0, 0, .3), 0 3px 6px rgba(0, 0, 0, .4);
@@ -586,7 +586,7 @@ html[data-design="field"] {
   --sk-plate-font: 700 .92rem/1.2 Bahnschrift, "Arial Narrow", Impact, sans-serif;
   --sk-plate-spacing: .04em;
   --sk-plate-ink: var(--fd-plate-ink);
-  --sk-plate-bg: #cfc7a4 url("textures/khaki.webp?v=0ceabf72") center/256px;
+  --sk-plate-bg: #cfc7a4 url("textures/khaki.webp?v=0") center/256px;
   --sk-plate-shadow: inset 0 1px 0 rgba(255, 255, 255, .55), inset 0 -2px 0 rgba(0, 0, 0, .2), 0 0 0 2px #2a2e22, 0 3px 5px rgba(0, 0, 0, .45);
   --sk-screw: var(--fd-screw);
   --sk-plate-screw: 11px;
@@ -618,21 +618,21 @@ html[data-design="field"] {
   --sk-lbtn-shadow: inset 0 1px 0 rgba(255, 255, 255, .16), 0 0 0 1px #0b0d08, 0 0 0 3px #4a4f40;
   --sk-pick-ink: #15180f;
   --sk-pick-bg: linear-gradient(#e8e6d8, #b7b39e);
-  --sk-sidenav-bg: linear-gradient(90deg, rgba(8, 10, 6, .62), rgba(8, 10, 6, .45) 80%, rgba(8, 10, 6, .7)), #2e3522 url("textures/olive.webp?v=1599d9f0") center/512px;
+  --sk-sidenav-bg: linear-gradient(90deg, rgba(8, 10, 6, .62), rgba(8, 10, 6, .45) 80%, rgba(8, 10, 6, .7)), #2e3522 url("textures/olive.webp?v=0") center/512px;
   --sk-sidenav-border: 3px solid #0b0d08;
   --sk-sidenav-ink: #e7e6d6;
   --sk-footer-margin: 14px 0 0;
   --sk-footer-padding: 8px 14px 8px 34px;
   --sk-footer-bg: #15180f;
   --sk-footer-ink: #cfd2c4;
-  --sk-abar-bg: #23261e url("textures/steel-dark.webp?v=8533e93c") center/512px;
+  --sk-abar-bg: #23261e url("textures/steel-dark.webp?v=0") center/512px;
   --sk-abar-border: 2px solid #0b0d08;
   --sk-abar-shadow: inset 0 1px 0 rgba(255, 255, 255, .12), 0 -6px 16px rgba(0, 0, 0, .5);
   --sk-abar-ink: #e6ecd6;
   --sk-abar-ink-2: #cfd2c4;
   --sk-tool-bg: linear-gradient(#30352b, #12150e);
   --sk-tool-ink: #eef0e6;
-  --sk-dialog-bg: #465034 url("textures/olive.webp?v=1599d9f0") center/512px;
+  --sk-dialog-bg: #465034 url("textures/olive.webp?v=0") center/512px;
   --sk-chart-bg: repeating-linear-gradient(0deg, rgba(0, 0, 0, .28) 0 1px, transparent 1px 3px), radial-gradient(ellipse at 50% 45%, #0f2414, #050c07 90%);
   --sk-chart-border: 3px solid #0b0d08;
   --sk-chart-radius: 10px;
@@ -649,7 +649,7 @@ html[data-design="field"] {
   --sk-thumb-border: 1px solid #0b0d08;
   --sk-thumb-bg: linear-gradient(transparent 45%, rgba(0, 0, 0, .55) 45% 55%, transparent 55%), linear-gradient(#77805f, #3a4030 50%, #262a1e);
   --sk-thumb-shadow: 0 2px 3px rgba(0, 0, 0, .7), inset 0 1px 0 rgba(255, 255, 255, .3);
-  background: #cfc4a4 url("textures/topo.webp?v=7b703ce4") center/512px
+  background: #cfc4a4 url("textures/topo.webp?v=0") center/512px
 }
 html[data-design="field"] body {
   font-family: Bahnschrift, "DIN Alternate", "Roboto Condensed", "Arial Narrow", system-ui, sans-serif
@@ -719,7 +719,7 @@ html[data-design="field"][data-decor="full"] .repo-footer::after {
   height: 30px;
   margin-top: -15px;
   border-radius: 50%;
-  background: conic-gradient(from 0deg, transparent 0deg 280deg, rgba(159, 232, 112, .12) 300deg, rgba(159, 232, 112, .75) 359.5deg, transparent 360deg), repeating-radial-gradient(circle, transparent 0 5px, rgba(159, 232, 112, .35) 5px 6px), #07100a url("textures/radar.webp?v=99553719") center/60px;
+  background: conic-gradient(from 0deg, transparent 0deg 280deg, rgba(159, 232, 112, .12) 300deg, rgba(159, 232, 112, .75) 359.5deg, transparent 360deg), repeating-radial-gradient(circle, transparent 0 5px, rgba(159, 232, 112, .35) 5px 6px), #07100a url("textures/radar.webp?v=0") center/60px;
   box-shadow: 0 0 0 2px #2f7a1c;
   animation: repo-sweep 4s linear infinite
 }
@@ -764,7 +764,7 @@ html[data-design="aqua"] {
   --sk-header-margin: 0 0 10px;
   --sk-header-ink: var(--aq-ink);
   /* pleine largeur : angles droits, filet bas */
-  --sk-header-bg: linear-gradient(rgba(255, 255, 255, .45), rgba(255, 255, 255, 0) 50%, rgba(0, 0, 0, .05)), #d8dde2 url("textures/brushed-light.webp?v=6bef2cba") center/256px;
+  --sk-header-bg: linear-gradient(rgba(255, 255, 255, .45), rgba(255, 255, 255, 0) 50%, rgba(0, 0, 0, .05)), #d8dde2 url("textures/brushed-light.webp?v=0") center/256px;
   --sk-header-shadow: inset 0 1px 0 #fff, inset 0 -1px 0 rgba(0, 0, 0, .12), 0 6px 16px rgba(40, 60, 90, .18);
   --sk-mbtn-bg: linear-gradient(#ffffff, #dfe6ee);
   --sk-mbtn-ink: var(--aq-ink);
@@ -809,14 +809,14 @@ html[data-design="aqua"] {
   --sk-lbtn-shadow: inset 0 1px 0 #fff, 0 1px 3px rgba(0, 0, 0, .15);
   --sk-pick-ink: var(--aq-ink);
   --sk-pick-bg: linear-gradient(#ffffff, #e9eef3 50%, #dde4eb 51%, #f1f4f7);
-  --sk-sidenav-bg: #d8dde2 url("textures/brushed-light.webp?v=6bef2cba") center/256px;
+  --sk-sidenav-bg: #d8dde2 url("textures/brushed-light.webp?v=0") center/256px;
   --sk-sidenav-border: 1px solid #9aa6b2;
   --sk-sidenav-ink: var(--aq-ink);
   --sk-footer-margin: 12px 0 0;
   --sk-footer-padding: 8px 14px;
   --sk-footer-bg: rgba(255, 255, 255, .7);
   --sk-footer-ink: var(--aq-ink-2);
-  --sk-abar-bg: linear-gradient(rgba(255, 255, 255, .45), rgba(255, 255, 255, 0) 50%, rgba(0, 0, 0, .05)), #d8dde2 url("textures/brushed-light.webp?v=6bef2cba") center/256px;
+  --sk-abar-bg: linear-gradient(rgba(255, 255, 255, .45), rgba(255, 255, 255, 0) 50%, rgba(0, 0, 0, .05)), #d8dde2 url("textures/brushed-light.webp?v=0") center/256px;
   --sk-abar-border: 1px solid #9aa6b2;
   --sk-abar-ink: var(--aq-ink);
   --sk-tool-bg: linear-gradient(#fff, #e3e9f0);
@@ -919,7 +919,7 @@ html[data-design="aqua"][data-tone="dark"] {
   --aq-ink-2: #aebccb;
   --repo-surface: #26303b;
   --sk-header-border: 0 solid #0b0f14;
-  --sk-header-bg: linear-gradient(rgba(255, 255, 255, .12), rgba(255, 255, 255, 0) 50%, rgba(0, 0, 0, .2)), linear-gradient(rgba(20, 26, 34, .72), rgba(20, 26, 34, .72)), #d8dde2 url("textures/brushed-light.webp?v=6bef2cba") center/256px;
+  --sk-header-bg: linear-gradient(rgba(255, 255, 255, .12), rgba(255, 255, 255, 0) 50%, rgba(0, 0, 0, .2)), linear-gradient(rgba(20, 26, 34, .72), rgba(20, 26, 34, .72)), #d8dde2 url("textures/brushed-light.webp?v=0") center/256px;
   --sk-header-shadow: inset 0 1px 0 rgba(255, 255, 255, .18), 0 6px 16px rgba(0, 0, 0, .45);
   --sk-menu-bg: rgba(30, 37, 46, .95);
   --sk-menu-border: 1px solid #46525f;
@@ -937,10 +937,10 @@ html[data-design="aqua"][data-tone="dark"] {
   --sk-input-ink: #e6edf5;
   --sk-input-border: 1px solid #46525f;
   --sk-input-shadow: inset 0 1px 3px rgba(0, 0, 0, .6);
-  --sk-sidenav-bg: linear-gradient(rgba(20, 26, 34, .72), rgba(20, 26, 34, .72)), #d8dde2 url("textures/brushed-light.webp?v=6bef2cba") center/256px;
+  --sk-sidenav-bg: linear-gradient(rgba(20, 26, 34, .72), rgba(20, 26, 34, .72)), #d8dde2 url("textures/brushed-light.webp?v=0") center/256px;
   --sk-sidenav-border: 1px solid #0b0f14;
   --sk-footer-bg: rgba(30, 37, 46, .8);
-  --sk-abar-bg: linear-gradient(rgba(20, 26, 34, .75), rgba(20, 26, 34, .75)), #d8dde2 url("textures/brushed-light.webp?v=6bef2cba") center/256px;
+  --sk-abar-bg: linear-gradient(rgba(20, 26, 34, .75), rgba(20, 26, 34, .75)), #d8dde2 url("textures/brushed-light.webp?v=0") center/256px;
   --sk-abar-border: 1px solid #0b0f14;
   --sk-dialog-bg: linear-gradient(180deg, #1b2129, #10151b);
   --sk-chart-bg: linear-gradient(#232c36, #161c23);
@@ -1357,7 +1357,7 @@ html[data-design="field"][data-decor="full"] .repo-deco>.repo-deco-strip {
   gap: 12px;
   padding: 10px 16px;
   border-radius: 6px;
-  background: #cfc7a4 url("textures/khaki.webp?v=0ceabf72") center/256px;
+  background: #cfc7a4 url("textures/khaki.webp?v=0") center/256px;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, .5), 0 0 0 2px #2a2e22, 0 3px 6px rgba(0, 0, 0, .45);
   color: #2f3327;
   position: relative
@@ -1406,7 +1406,7 @@ html[data-design="field"][data-decor="full"] .repo-deco>.repo-deco-strip {
   height: auto;
   border-radius: 8px;
   overflow: hidden;
-  background: #04140a url("textures/radar.webp?v=99553719") center/320px;
+  background: #04140a url("textures/radar.webp?v=0") center/320px;
   box-shadow: inset 0 0 0 2px #0b0d08, inset 0 0 26px rgba(0, 0, 0, .9), 0 0 0 3px #4a4f40
 }
 .repo-deco-radar svg {
@@ -1516,10 +1516,10 @@ html[data-dirty="1"] .repo-deco-leds i.led-save {
 }
 /* vis découpées dans les planches (vis cruciforme de Durci, punaise de laiton de Cabinet) à la place des vis dessinées */
 html[data-design="field"] {
-  --fd-screw: url("deco/field/screw-x.webp?v=d2486b42")
+  --fd-screw: url("deco/field/screw-x.webp?v=0")
 }
 html[data-design-base="cabinet"] {
-  --cab-screw: url("deco/cabinet/tack.webp?v=d13b9116")
+  --cab-screw: url("deco/cabinet/tack.webp?v=0")
 }
 /* ================================================================================================ DÉCORS DISSÉMINÉS (design_deco.js)
    Entre les blocs (sans décaler la mise en page : hauteur nulle, image centrée sur l'intervalle) et dans les marges
@@ -1585,29 +1585,29 @@ html[data-design="flightlog"] {
   --sk-plate-ink: #1d2733;
   --sk-plate-text-shadow: 0 1px 0 rgba(255, 255, 255, .7);
   --sk-plate-padding: 6px 64px 6px 26px;
-  --sk-plate-bg: url("deco/flightlog/plane-plaque.webp?v=a312fb26") right 16px center/44px auto no-repeat, linear-gradient(rgba(255, 255, 255, .35), rgba(0, 0, 0, .12)) 0 0/auto, #c9ccc9 url("textures/brushed-light.webp?v=6bef2cba") center/256px;
+  --sk-plate-bg: url("deco/flightlog/plane-plaque.webp?v=0") right 16px center/44px auto no-repeat, linear-gradient(rgba(255, 255, 255, .35), rgba(0, 0, 0, .12)) 0 0/auto, #c9ccc9 url("textures/brushed-light.webp?v=0") center/256px;
   --sk-plate-shadow: 0 0 0 1px #4a4d4a, inset 0 1px 0 #fff, inset 0 -2px 0 rgba(0, 0, 0, .25), 0 3px 6px rgba(0, 0, 0, .35);
-  --sk-screw: url("deco/field/screw.webp?v=d2011d1d");
+  --sk-screw: url("deco/field/screw.webp?v=0");
   --sk-plate-screw: 10px;
   --repo-surface: #efe3c4;
   --sk-segs-border: 1px solid #394350;
-  --sk-segs-bg: #b9bec5 url("textures/steel.webp?v=1726e89a") center/256px;
+  --sk-segs-bg: #b9bec5 url("textures/steel.webp?v=0") center/256px;
   --sk-seg-ink: #18212e;
   --sk-seg-shadow: 0 1px 0 rgba(255, 255, 255, .55);
   --sk-block-border: 22px solid transparent;
   --sk-block-radius: 0;
   --sk-block-shadow: 0 5px 10px rgba(30, 15, 5, .45);
-  --sk-block-bg: url("textures/parchment.webp?v=c0677c03") center/512px padding-box #efe3c4;
+  --sk-block-bg: url("textures/parchment.webp?v=0") center/512px padding-box #efe3c4;
   --sk-card-border: 1px solid #8a8d8a;
   --sk-card-shadow: inset 0 0 0 3px rgba(255, 255, 255, .35), 0 2px 4px rgba(40, 30, 10, .3);
-  --sk-sidenav-bg: #0f2140 url("textures/leather-navy.webp?v=1bacc4e6") center/256px;
+  --sk-sidenav-bg: #0f2140 url("textures/leather-navy.webp?v=0") center/256px;
   --sk-sidenav-border: 3px solid #c9a24a
 }
 html[data-design="flightlog"][data-tone="dark"] {
-  --sk-block-bg: url("textures/parchment-dark.webp?v=d9b8cd4f") center/512px padding-box #1c2230
+  --sk-block-bg: url("textures/parchment-dark.webp?v=0") center/512px padding-box #1c2230
 }
 html[data-design="flightlog"] .repo-block:not(#imp) {
-  border-image: url("deco/flightlog/frame.webp?v=50dc8083") 36 / 22px round;
+  border-image: url("deco/flightlog/frame.webp?v=0") 36 / 22px round;
   padding: 14px 18px 18px
 }
 html[data-design="flightlog"][data-decor="full"] .repo-block::after {
@@ -1943,20 +1943,20 @@ html[data-design-base="cabinet"] {
   --sheet-ink-2: var(--cab-ink-2);
   --sheet-text: var(--cab-ink);
   --sheet-label-ink: var(--cab-navy);
-  --sheet-card-bg: #f6ecd2 url("deco/cabinet/sheet-paper.webp?v=03c9356f") left top/480px;
+  --sheet-card-bg: #f6ecd2 url("deco/cabinet/sheet-paper.webp?v=0") left top/480px;
   --sheet-pin: var(--cab-screw);
-  --sheet-paper: url("deco/cabinet/sheet-paper.webp?v=03c9356f");
-  --sheet-top: url("deco/cabinet/sheet-top.webp?v=f536decb");
-  --sheet-bot: url("deco/cabinet/sheet-bot.webp?v=59eb8c03");
-  --sheet-left: url("deco/cabinet/sheet-left.webp?v=d8fbd593");
-  --sheet-right: url("deco/cabinet/sheet-right.webp?v=e3556261");
-  --sheet-head: url("deco/cabinet/sheet-head.webp?v=2bdfe375");
-  --sheet-stamp: url("deco/cabinet/sheet-stamp.webp?v=e1364b44");
-  --sheet-string: url("deco/cabinet/sheet-string.webp?v=0347c438");
-  --sheet-tl: url("deco/cabinet/sheet-tl.webp?v=629cb6e2");
-  --sheet-tr: url("deco/cabinet/sheet-tr.webp?v=7ec88b9b");
-  --sheet-bl: url("deco/cabinet/sheet-bl.webp?v=f46d54ae");
-  --sheet-br: url("deco/cabinet/sheet-br.webp?v=b7ce776b");
+  --sheet-paper: url("deco/cabinet/sheet-paper.webp?v=0");
+  --sheet-top: url("deco/cabinet/sheet-top.webp?v=0");
+  --sheet-bot: url("deco/cabinet/sheet-bot.webp?v=0");
+  --sheet-left: url("deco/cabinet/sheet-left.webp?v=0");
+  --sheet-right: url("deco/cabinet/sheet-right.webp?v=0");
+  --sheet-head: url("deco/cabinet/sheet-head.webp?v=0");
+  --sheet-stamp: url("deco/cabinet/sheet-stamp.webp?v=0");
+  --sheet-string: url("deco/cabinet/sheet-string.webp?v=0");
+  --sheet-tl: url("deco/cabinet/sheet-tl.webp?v=0");
+  --sheet-tr: url("deco/cabinet/sheet-tr.webp?v=0");
+  --sheet-bl: url("deco/cabinet/sheet-bl.webp?v=0");
+  --sheet-br: url("deco/cabinet/sheet-br.webp?v=0");
   /* découpe : tools/cut_register_sheet.py cabinet --write */
   --sh-tl-w: 720px;
   --sh-tl-h: 115px;
@@ -2007,19 +2007,19 @@ html[data-design-base="cabinet"] {
 /* Carnet de vol : carnet de vol toilé (dos à gauche, coin corné, pages empilées à droite), en-tête imprimé (Marianne,
    ministère, « Carnet de vol »), cachet « Autorisation de transit » à droite, ficelle sur le dos */
 html[data-design="flightlog"] {
-  --sheet-card-bg: #f4ecd6 url("deco/flightlog/sheet-paper.webp?v=afe3e6f1") left top/480px;
-  --sheet-paper: url("deco/flightlog/sheet-paper.webp?v=afe3e6f1");
-  --sheet-top: url("deco/flightlog/sheet-top.webp?v=a7c6bbf9");
-  --sheet-bot: url("deco/flightlog/sheet-bot.webp?v=d4a1a5e2");
-  --sheet-left: url("deco/flightlog/sheet-left.webp?v=6946d80b");
-  --sheet-right: url("deco/flightlog/sheet-right.webp?v=240ecab7");
-  --sheet-head: url("deco/flightlog/sheet-head.webp?v=13b1121e");
-  --sheet-stamp: url("deco/flightlog/sheet-stamp.webp?v=68cc8e34");
-  --sheet-string: url("deco/flightlog/sheet-string.webp?v=97b963ab");
-  --sheet-tl: url("deco/flightlog/sheet-tl.webp?v=dc458d78");
-  --sheet-tr: url("deco/flightlog/sheet-tr.webp?v=601273c0");
-  --sheet-bl: url("deco/flightlog/sheet-bl.webp?v=e16443a6");
-  --sheet-br: url("deco/flightlog/sheet-br.webp?v=c78856b8");
+  --sheet-card-bg: #f4ecd6 url("deco/flightlog/sheet-paper.webp?v=0") left top/480px;
+  --sheet-paper: url("deco/flightlog/sheet-paper.webp?v=0");
+  --sheet-top: url("deco/flightlog/sheet-top.webp?v=0");
+  --sheet-bot: url("deco/flightlog/sheet-bot.webp?v=0");
+  --sheet-left: url("deco/flightlog/sheet-left.webp?v=0");
+  --sheet-right: url("deco/flightlog/sheet-right.webp?v=0");
+  --sheet-head: url("deco/flightlog/sheet-head.webp?v=0");
+  --sheet-stamp: url("deco/flightlog/sheet-stamp.webp?v=0");
+  --sheet-string: url("deco/flightlog/sheet-string.webp?v=0");
+  --sheet-tl: url("deco/flightlog/sheet-tl.webp?v=0");
+  --sheet-tr: url("deco/flightlog/sheet-tr.webp?v=0");
+  --sheet-bl: url("deco/flightlog/sheet-bl.webp?v=0");
+  --sheet-br: url("deco/flightlog/sheet-br.webp?v=0");
   /* découpe : tools/cut_register_sheet.py flightlog --write */
   --sh-tl-w: 240px;
   --sh-tl-h: 130px;
@@ -2071,18 +2071,18 @@ html[data-design="flightlog"] {
 html[data-design="aqua"] {
   --sheet-ink: #14285a;
   --sheet-ink-2: #3a4a66;
-  --sheet-card-bg: #f7f8fa url("deco/aqua/sheet-paper.webp?v=fd7285cd") left top/480px;
-  --sheet-paper: url("deco/aqua/sheet-paper.webp?v=fd7285cd");
-  --sheet-top: url("deco/aqua/sheet-top.webp?v=aa540570");
-  --sheet-bot: url("deco/aqua/sheet-bot.webp?v=c40f266b");
-  --sheet-left: url("deco/aqua/sheet-left.webp?v=52601958");
-  --sheet-right: url("deco/aqua/sheet-right.webp?v=3d5de3fc");
-  --sheet-head: url("deco/aqua/sheet-head.webp?v=5fe24d23");
-  --sheet-clip: url("deco/aqua/sheet-clip.webp?v=02a0536c");
-  --sheet-tl: url("deco/aqua/sheet-tl.webp?v=aa6b5008");
-  --sheet-tr: url("deco/aqua/sheet-tr.webp?v=382b9f40");
-  --sheet-bl: url("deco/aqua/sheet-bl.webp?v=c0b51f3a");
-  --sheet-br: url("deco/aqua/sheet-br.webp?v=6f7dc0d4");
+  --sheet-card-bg: #f7f8fa url("deco/aqua/sheet-paper.webp?v=0") left top/480px;
+  --sheet-paper: url("deco/aqua/sheet-paper.webp?v=0");
+  --sheet-top: url("deco/aqua/sheet-top.webp?v=0");
+  --sheet-bot: url("deco/aqua/sheet-bot.webp?v=0");
+  --sheet-left: url("deco/aqua/sheet-left.webp?v=0");
+  --sheet-right: url("deco/aqua/sheet-right.webp?v=0");
+  --sheet-head: url("deco/aqua/sheet-head.webp?v=0");
+  --sheet-clip: url("deco/aqua/sheet-clip.webp?v=0");
+  --sheet-tl: url("deco/aqua/sheet-tl.webp?v=0");
+  --sheet-tr: url("deco/aqua/sheet-tr.webp?v=0");
+  --sheet-bl: url("deco/aqua/sheet-bl.webp?v=0");
+  --sheet-br: url("deco/aqua/sheet-br.webp?v=0");
   /* découpe : tools/cut_register_sheet.py aqua --write */
   --sh-tl-w: 200px;
   --sh-tl-h: 260px;
@@ -2130,18 +2130,18 @@ html[data-design="aqua"] {
 html[data-design="field"] {
   --sheet-ink: #2b2a20;
   --sheet-ink-2: #4a4634;
-  --sheet-card-bg: #efe7d0 url("deco/field/sheet-paper.webp?v=ee3f07db") left top/480px;
-  --sheet-pin: url("deco/cabinet/tack.webp?v=d13b9116");
-  --sheet-paper: url("deco/field/sheet-paper.webp?v=ee3f07db");
-  --sheet-top: url("deco/field/sheet-top.webp?v=28a0dd88");
-  --sheet-bot: url("deco/field/sheet-bot.webp?v=5aabc68d");
-  --sheet-left: url("deco/field/sheet-left.webp?v=a336814a");
-  --sheet-right: url("deco/field/sheet-right.webp?v=5e1ae061");
-  --sheet-string: url("deco/field/sheet-string.webp?v=7e8c7224");
-  --sheet-tl: url("deco/field/sheet-tl.webp?v=23ee7ca1");
-  --sheet-tr: url("deco/field/sheet-tr.webp?v=e88937ee");
-  --sheet-bl: url("deco/field/sheet-bl.webp?v=662c7719");
-  --sheet-br: url("deco/field/sheet-br.webp?v=e9e624d2");
+  --sheet-card-bg: #efe7d0 url("deco/field/sheet-paper.webp?v=0") left top/480px;
+  --sheet-pin: url("deco/cabinet/tack.webp?v=0");
+  --sheet-paper: url("deco/field/sheet-paper.webp?v=0");
+  --sheet-top: url("deco/field/sheet-top.webp?v=0");
+  --sheet-bot: url("deco/field/sheet-bot.webp?v=0");
+  --sheet-left: url("deco/field/sheet-left.webp?v=0");
+  --sheet-right: url("deco/field/sheet-right.webp?v=0");
+  --sheet-string: url("deco/field/sheet-string.webp?v=0");
+  --sheet-tl: url("deco/field/sheet-tl.webp?v=0");
+  --sheet-tr: url("deco/field/sheet-tr.webp?v=0");
+  --sheet-bl: url("deco/field/sheet-bl.webp?v=0");
+  --sheet-br: url("deco/field/sheet-br.webp?v=0");
   /* découpe : tools/cut_register_sheet.py field --write */
   --sh-tl-w: 500px;
   --sh-tl-h: 260px;
@@ -2331,20 +2331,20 @@ html[data-skeuo] .repo-has-sheet .repo-card :is(h3, h4, legend, label):not(th, t
    Utilisé par le Studio cartographique (aperçus des cartes). Par design : images --nb-closed / --nb-open, ratio du
    carnet ouvert --nb-ratio, marges de la carte sur ses pages --nb-pad. */
 html[data-design="field"] {
-  --nb-closed: url("deco/field/notebook-closed.webp?v=1c5d389e");
-  --nb-open: url("deco/field/notebook-open.webp?v=cd86a81d");
+  --nb-closed: url("deco/field/notebook-closed.webp?v=0");
+  --nb-open: url("deco/field/notebook-open.webp?v=0");
   --nb-ratio: 1000/595;
   --nb-pad: 5% 14% 6% 8%
 }
 html[data-design="aqua"] {
-  --nb-closed: url("deco/aqua/notebook-closed.webp?v=fd1954d8");
-  --nb-open: url("deco/aqua/notebook-open.webp?v=2ec4d1be");
+  --nb-closed: url("deco/aqua/notebook-closed.webp?v=0");
+  --nb-open: url("deco/aqua/notebook-open.webp?v=0");
   --nb-ratio: 1000/595;
   --nb-pad: 4% 6% 6% 6%
 }
 html[data-design-base="cabinet"] {
-  --nb-closed: url("deco/flightlog/notebook-closed.webp?v=35ba10c8");
-  --nb-open: url("deco/flightlog/notebook-open.webp?v=07ac79a7");
+  --nb-closed: url("deco/flightlog/notebook-closed.webp?v=0");
+  --nb-open: url("deco/flightlog/notebook-open.webp?v=0");
   --nb-ratio: 900/677;
   --nb-pad: 5% 12% 5% 6%
 }
@@ -2645,7 +2645,7 @@ html[data-design-base="cabinet"] {
   --sk-hb-bd: #b8963e;
   --sk-acc: linear-gradient(#f0d489, #c29a45 55%, #a57d2f);
   --sk-acc-fg: #1d2733;
-  --sk-pop: #f6ecd2 url("textures/parchment.webp?v=c0677c03") center/400px;
+  --sk-pop: #f6ecd2 url("textures/parchment.webp?v=0") center/400px;
   --sk-pop-ink: #2b2418;
   --sk-pop-bd: #8a6526;
   --sk-pop-hover: rgba(138, 101, 38, .16);
@@ -2661,7 +2661,7 @@ html[data-design="field"] {
   --sk-hb-bd: #0b0d08;
   --sk-acc: linear-gradient(#e2c066, #b08a33);
   --sk-acc-fg: #1b1d14;
-  --sk-pop: #2b3024 url("textures/steel-dark.webp?v=8533e93c") center/300px;
+  --sk-pop: #2b3024 url("textures/steel-dark.webp?v=0") center/300px;
   --sk-pop-ink: #eef0e6;
   --sk-pop-bd: #0b0d08;
   --sk-pop-hover: rgba(255, 255, 255, .1);
@@ -2880,7 +2880,7 @@ html[data-design="flightlog"] {
   --sk-tab-padding: 6px 22px;
   --sk-tab-screw: none;
   --sk-tab-led: #ffb020;
-  --sk-tabs-rail: #a8823a url("textures/brass.webp?v=f418b500") center/256px;
+  --sk-tabs-rail: #a8823a url("textures/brass.webp?v=0") center/256px;
   --sk-tabs-rail-shadow: inset 0 1px 0 #fff3c4, inset 0 -2px 0 rgba(60, 40, 10, .45), 0 2px 4px rgba(0, 0, 0, .4)
 }
 /* Aqua : comme le sélecteur segmenté — verre clair, page courante en gel ; rail de métal brossé, sans vis */
@@ -3008,7 +3008,7 @@ html[data-design-base="cabinet"]:not([data-design="flightlog"]) .repo-tabs:not(#
   background: none;
   box-shadow: none;
   border: 0;
-  border-image: url("deco/cabinet/tabs/rail.webp?v=a3e12860") 0 92 0 92 / 0 24px 0 24px stretch
+  border-image: url("deco/cabinet/tabs/rail.webp?v=0") 0 92 0 92 / 0 24px 0 24px stretch
 }
 html[data-design-base="cabinet"]:not([data-design="flightlog"]) .repo-tabs::before,
 html[data-design-base="cabinet"]:not([data-design="flightlog"]) .repo-tabs::after,
@@ -3028,7 +3028,7 @@ html[data-design-base="cabinet"]:not([data-design="flightlog"]) .repo-tab:not(#i
   color: #e9e2cf;
   text-shadow: 0 1px 0 #000, 0 0 6px rgba(0, 0, 0, .6);
   border: 0;
-  border-image: url("deco/cabinet/tabs/tab.webp?v=958ae537") 0 70 0 110 fill / 0 18.5px 0 29px stretch
+  border-image: url("deco/cabinet/tabs/tab.webp?v=0") 0 70 0 110 fill / 0 18.5px 0 29px stretch
 }
 html[data-design-base="cabinet"]:not([data-design="flightlog"]) .repo-tab[aria-current="page"]:not(#imp) {
   color: #ffe2a8;
@@ -3036,7 +3036,7 @@ html[data-design-base="cabinet"]:not([data-design="flightlog"]) .repo-tab[aria-c
   box-shadow: none;
   filter: none;
   transform: none;
-  border-image: url("deco/cabinet/tabs/tab-on.webp?v=f6c9c38b") 0 70 0 110 fill / 0 18.5px 0 29px stretch
+  border-image: url("deco/cabinet/tabs/tab-on.webp?v=0") 0 70 0 110 fill / 0 18.5px 0 29px stretch
 }
 html[data-design-base="cabinet"]:not([data-design="flightlog"]) .repo-tab:not([aria-current="page"]):is(:hover, :focus-visible):not(#imp) {
   filter: brightness(1.15)
@@ -3060,7 +3060,7 @@ html[data-design="flightlog"] .repo-tabs::before {
   height: 12.9px;
   margin-top: -6.45px;
   border-image: none;
-  background: url("deco/flightlog/tabs/rail.vierge.webp?v=d6cb265f") left center/auto 100% repeat-x
+  background: url("deco/flightlog/tabs/rail.vierge.webp?v=0") left center/auto 100% repeat-x
 }
 html[data-design="flightlog"] .repo-tabs::after,
 html[data-design="flightlog"] .repo-tab::before,
@@ -3086,12 +3086,12 @@ html[data-design="flightlog"] .repo-tab:last-child::after {
 html[data-design="flightlog"] .repo-tab:first-child::before {
   left: -4.58px;
   width: 4.74px;
-  background: url("deco/flightlog/tabs/tab.webp?v=7d2ddfc4") right -0.33px center/auto 100% no-repeat
+  background: url("deco/flightlog/tabs/tab.webp?v=0") right -0.33px center/auto 100% no-repeat
 }
 html[data-design="flightlog"] .repo-tab:last-child::after {
   right: -4.25px;
   width: 4.58px;
-  background: url("deco/flightlog/tabs/tab.webp?v=7d2ddfc4") left -0.16px center/auto 100% no-repeat
+  background: url("deco/flightlog/tabs/tab.webp?v=0") left -0.16px center/auto 100% no-repeat
 }
 /* plaques serrées d'1 px : colonnes transparentes des bords (1 + 2 px d'image) sans fente entre deux demi-pattes */
 html[data-design="flightlog"] .repo-tab+.repo-tab:not(#imp) {
@@ -3110,7 +3110,7 @@ html[data-design="flightlog"] .repo-tab:not(#imp) {
   color: #2b2418;
   text-shadow: 0 1px 0 rgba(255, 248, 225, .6);
   border: 0;
-  border-image: url("deco/flightlog/tabs/tab.webp?v=7d2ddfc4") 64 138 58 132 fill / 10.5px 22.6px 9.5px 21.6px stretch
+  border-image: url("deco/flightlog/tabs/tab.webp?v=0") 64 138 58 132 fill / 10.5px 22.6px 9.5px 21.6px stretch
 }
 html[data-design="flightlog"] .repo-tab[aria-current="page"]:not(#imp) {
   /* pas de fond : celui de l'onglet courant (bleu marine du thème) débordait autour de la plaque */
@@ -3120,7 +3120,7 @@ html[data-design="flightlog"] .repo-tab[aria-current="page"]:not(#imp) {
   box-shadow: none;
   filter: none;
   transform: none;
-  border-image: url("deco/flightlog/tabs/tab-on.webp?v=88e2b4fe") 64 138 58 132 fill / 10.5px 22.6px 9.5px 21.6px stretch
+  border-image: url("deco/flightlog/tabs/tab-on.webp?v=0") 64 138 58 132 fill / 10.5px 22.6px 9.5px 21.6px stretch
 }
 html[data-design="flightlog"] .repo-tab:not([aria-current="page"]):is(:hover, :focus-visible):not(#imp) {
   filter: brightness(1.08)
@@ -3135,7 +3135,7 @@ html[data-design="field"] .repo-tabs:not(#imp) {
   background: none;
   box-shadow: none;
   border: 0;
-  border-image: url("deco/field/tabs/rail.webp?v=7b0fa1f5") 0 105 0 99 fill / 0 15.3px 0 14.4px round stretch
+  border-image: url("deco/field/tabs/rail.webp?v=0") 0 105 0 99 fill / 0 15.3px 0 14.4px round stretch
 }
 html[data-design="field"] .repo-tabs::before,
 html[data-design="field"] .repo-tabs::after,
@@ -3154,7 +3154,7 @@ html[data-design="field"] .repo-tab:not(#imp) {
   color: #e6e2c8;
   text-shadow: 0 1px 1px #000, 0 0 4px rgba(0, 0, 0, .5);
   border: 0;
-  border-image: url("deco/field/tabs/tab.webp?v=c2977df9") 0 80 0 80 fill / 0 11.6px 0 11.6px stretch
+  border-image: url("deco/field/tabs/tab.webp?v=0") 0 80 0 80 fill / 0 11.6px 0 11.6px stretch
 }
 html[data-design="field"] .repo-tab[aria-current="page"]:not(#imp) {
   color: #262612;
@@ -3162,7 +3162,7 @@ html[data-design="field"] .repo-tab[aria-current="page"]:not(#imp) {
   box-shadow: none;
   filter: none;
   transform: none;
-  border-image: url("deco/field/tabs/tab-on.webp?v=2cce5070") 0 80 0 80 fill / 0 11.6px 0 11.6px stretch
+  border-image: url("deco/field/tabs/tab-on.webp?v=0") 0 80 0 80 fill / 0 11.6px 0 11.6px stretch
 }
 /* voyant au centre du haut de chaque onglet : éteint (tabs/led.off.webp, fourni par l'utilisateur), allumé sur la page
    courante (tabs/led.webp) */
@@ -3176,10 +3176,10 @@ html[data-design="field"] .repo-tab::before {
   margin: 0 0 0 -8.65px;
   border-radius: 0;
   box-shadow: none;
-  background: url("deco/field/tabs/led.off.webp?v=4e819eef") center/100% 100% no-repeat
+  background: url("deco/field/tabs/led.off.webp?v=0") center/100% 100% no-repeat
 }
 html[data-design="field"] .repo-tab[aria-current="page"]::before {
-  background-image: url("deco/field/tabs/led.webp?v=2c3c2da4")
+  background-image: url("deco/field/tabs/led.webp?v=0")
 }
 html[data-design="field"] .repo-tab:not([aria-current="page"]):is(:hover, :focus-visible):not(#imp) {
   filter: brightness(1.12)
@@ -3194,22 +3194,22 @@ html[data-skeuo] .repo-tabs+main:not(#imp) {
   border-image: var(--sk-tabs-lisere, none) var(--sk-tabs-lisere-slice, 0) / var(--sk-tabs-lisere-w, 0) stretch
 }
 html[data-design-base="cabinet"] {
-  --sk-tabs-lisere: url("deco/cabinet/tabs/lisere.webp?v=062612e9");
+  --sk-tabs-lisere: url("deco/cabinet/tabs/lisere.webp?v=0");
   --sk-tabs-lisere-slice: 75;
   --sk-tabs-lisere-w: 12.8px
 }
 html[data-design="flightlog"] {
-  --sk-tabs-lisere: url("deco/flightlog/tabs/lisere.webp?v=5582b766");
+  --sk-tabs-lisere: url("deco/flightlog/tabs/lisere.webp?v=0");
   --sk-tabs-lisere-slice: 85;
   --sk-tabs-lisere-w: 12.2px
 }
 html[data-design="field"] {
-  --sk-tabs-lisere: url("deco/field/tabs/lisere.webp?v=5582b766");
+  --sk-tabs-lisere: url("deco/field/tabs/lisere.webp?v=0");
   --sk-tabs-lisere-slice: 85;
   --sk-tabs-lisere-w: 12.2px
 }
 html[data-design="aqua"] {
-  --sk-tabs-lisere: url("deco/aqua/tabs/lisere.webp?v=5582b766");
+  --sk-tabs-lisere: url("deco/aqua/tabs/lisere.webp?v=0");
   --sk-tabs-lisere-slice: 85;
   --sk-tabs-lisere-w: 12.2px
 }
@@ -3225,14 +3225,14 @@ html[data-design="aqua"] {
   font-style: normal;
   font-weight: 100 900;
   font-display: swap;
-  src: url("fonts/inter-latin-wght.woff2?v=f11d729b") format("woff2")
+  src: url("fonts/inter-latin-wght.woff2?v=0") format("woff2")
 }
 @font-face {
   font-family: "Orbitron";
   font-style: normal;
   font-weight: 400 900;
   font-display: swap;
-  src: url("fonts/orbitron-latin-wght.woff2?v=d686c7f2") format("woff2")
+  src: url("fonts/orbitron-latin-wght.woff2?v=0") format("woff2")
 }
 html[data-design="tactique"] {
   --tq-bg: #0b1018;

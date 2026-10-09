@@ -3,7 +3,14 @@ une empreinte courte du fichier visé (8 caractères de SHA-1). Une version ne c
 navigateurs rechargent exactement ce qui a bougé, et une page n'est modifiée que si l'un de ses fichiers l'est.
 
 Usage (à la racine du dépôt) :
-    python tools/bump_versions.py
+    python tools/bump_versions.py --neutral     état du dépôt : toutes les références à « ?v=0 » (voir ci-dessous)
+    python tools/bump_versions.py               empreintes réelles : réservé à la livraison (tools/publish_dist.py) et aux
+                                                usages sans lanceur (fichier local)
+
+Depuis la 5.0.1, le dépôt ne porte PLUS d'empreintes : chaque référence est « ?v=0 » et le lanceur pose l'empreinte
+réelle au moment de servir le fichier (tools/version_stamps.py, tools/launch.py). Les empreintes commitées changeaient
+des dizaines de pages à chaque retouche et provoquaient des conflits sans contenu à chaque fusion. Avant un commit :
+rien à lancer (ou « --neutral » si une empreinte réelle s'est glissée) ; la livraison pose les empreintes dans l'archive.
 
 Ce qui est versionné :
 - pages HTML : attributs src / href « …?v=… », @import url("…?v=…") et images des styles de la page
@@ -24,6 +31,8 @@ jour des versions 4.6.0 et antérieures, qui ne cherchaient pas encore dans conf
 """
 import glob, hashlib, io, json, os, re, subprocess, sys
 sys.stdout.reconfigure(encoding='utf-8')
+# --neutral : empreinte « 0 » partout (état du dépôt) ; sinon empreintes réelles (livraison, usage sans lanceur)
+NEUTRAL = '--neutral' in sys.argv[1:]
 ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
 SHARED = os.path.join(ROOT, 'shared')
 
@@ -69,7 +78,9 @@ def suivis():
 
 
 def empreinte(path):
-    """Empreinte du fichier (et de ses dépendances déclarées) ; 8 caractères hexadécimaux."""
+    """Empreinte du fichier (et de ses dépendances déclarées) ; 8 caractères hexadécimaux ; « 0 » en mode --neutral."""
+    if NEUTRAL:
+        return '0'
     path = os.path.normpath(path)
     if path in _cache:
         return _cache[path]
@@ -190,7 +201,7 @@ for p in pages:
     s = io.open(p, encoding='utf-8', newline='').read()
     d = os.path.dirname(p)
     changees += ecrire_si_change(p, s, versionner(versionner(versionner(s, d, ATTR), d, IMPORT), d, PAGEIMG))
-print(f'Versions par empreinte : {changees} page(s) modifiée(s).')
+print(f"{'Références neutralisées (?v=0)' if NEUTRAL else 'Versions par empreinte'} : {changees} page(s) modifiée(s).")
 for a in sorted(absents):
     print('  référence vers un fichier absent : ' + a)
 

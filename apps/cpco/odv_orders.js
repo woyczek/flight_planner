@@ -665,7 +665,7 @@
    *  réservations ; mêmes fichiers data/atc que le Planning ODV. */
   async function loadAtcDay(date) {
     try {
-      if (!window.SuiteAtc) await loadScript('../../shared/atc_sessions.js?v=53bdcc60');
+      if (!window.SuiteAtc) await loadScript('../../shared/atc_sessions.js?v=0');
     } catch {
       return;
     }
@@ -803,7 +803,7 @@
   async function autoImportAtc() {
     if (!canEdit()) return;
     try {
-      if (!window.SuiteAtc) await loadScript('../../shared/atc_sessions.js?v=53bdcc60');
+      if (!window.SuiteAtc) await loadScript('../../shared/atc_sessions.js?v=0');
     } catch {
       return;
     }
@@ -2876,7 +2876,7 @@
    *  plus), classe de durée XS à XL, ravitaillement ; la mission générée se lie ensuite à la plaquette. */
   async function orderMission(e) {
     try {
-      for (const src of ['mission_store.js?v=559e3351', 'mission_prompt.js?v=8774038d', '../../shared/mission_order.js?v=6cf0c650'])
+      for (const src of ['mission_store.js?v=0', 'mission_prompt.js?v=0', '../../shared/mission_order.js?v=0'])
         await loadScript(src);
     } catch (err) {
       return notify(explain(err, L4('Commande de mission impossible : générateur non chargé (recharger la page)',

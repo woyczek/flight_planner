@@ -453,7 +453,7 @@ html[data-icons="brass"] .repo-svg[data-i] {
   box-sizing:border-box;
   padding:calc(var(--rs,1.15em) * 0.26);
   overflow:visible;
-  background-image:url("icons/skeuo/cabinet/vierge.webp?v=b436eb35");
+  background-image:url("icons/skeuo/cabinet/vierge.webp?v=0");
   color:var(--ico-glyph,#f1e4c0)
 }
 html[data-app-theme="cpco"][data-icons="brass"] .repo-svg[data-i]:not(.repo-sidenav .repo-svg):not(#imp),
@@ -466,7 +466,7 @@ html[data-icons="brass"] .repo-block .repo-block-tools button:is(.repo-drag,.rep
   opacity:1
 }
 html[data-icons="brass"] .repo-block .repo-block-tools button:is(.repo-drag,.repo-toggle):not(#imp) {
-  background:url("icons/skeuo/cabinet/vierge.webp?v=b436eb35") center/contain no-repeat;
+  background:url("icons/skeuo/cabinet/vierge.webp?v=0") center/contain no-repeat;
   width:28px;
   height:28px;
   color:#f1e4c0
@@ -496,7 +496,7 @@ html[data-icons="avio"] .repo-svg[data-i] {
   box-sizing:border-box;
   padding:calc(var(--rs,1.15em) * 0.26);
   overflow:visible;
-  background-image:url("icons/skeuo/flightlog/vierge.webp?v=5be875bf");
+  background-image:url("icons/skeuo/flightlog/vierge.webp?v=0");
   color:var(--ico-glyph,#f4ecd8)
 }
 html[data-app-theme="cpco"][data-icons="avio"] .repo-svg[data-i]:not(.repo-sidenav .repo-svg):not(#imp),
@@ -509,7 +509,7 @@ html[data-icons="avio"] .repo-block .repo-block-tools button:is(.repo-drag,.repo
   opacity:1
 }
 html[data-icons="avio"] .repo-block .repo-block-tools button:is(.repo-drag,.repo-toggle):not(#imp) {
-  background:url("icons/skeuo/flightlog/vierge.webp?v=5be875bf") center/contain no-repeat;
+  background:url("icons/skeuo/flightlog/vierge.webp?v=0") center/contain no-repeat;
   width:28px;
   height:28px;
   color:#f4ecd8
@@ -539,7 +539,7 @@ html[data-icons="steel"] .repo-svg[data-i] {
   box-sizing:border-box;
   padding:calc(var(--rs,1.15em) * 0.24);
   overflow:visible;
-  background-image:url("icons/skeuo/field/vierge.webp?v=c2adc3a9");
+  background-image:url("icons/skeuo/field/vierge.webp?v=0");
   color:var(--ico-glyph,#e9ecdf)
 }
 html[data-app-theme="cpco"][data-icons="steel"] .repo-svg[data-i]:not(.repo-sidenav .repo-svg):not(#imp),
@@ -552,7 +552,7 @@ html[data-icons="steel"] .repo-block .repo-block-tools button:is(.repo-drag,.rep
   opacity:1
 }
 html[data-icons="steel"] .repo-block .repo-block-tools button:is(.repo-drag,.repo-toggle):not(#imp) {
-  background:url("icons/skeuo/field/vierge.webp?v=c2adc3a9") center/contain no-repeat;
+  background:url("icons/skeuo/field/vierge.webp?v=0") center/contain no-repeat;
   width:28px;
   height:28px;
   color:#e9ecdf

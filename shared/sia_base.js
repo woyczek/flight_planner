@@ -34,7 +34,7 @@
   /** Promesse unique (gardée dans aeroLoad) de window.AeroSources : injecte aero_sources.js au premier appel ; null si échec. */
   const needAero = () => aeroLoad ||= window.AeroSources ? Promise.resolve(window.AeroSources) : new Promise(res => {
     const sc = document.createElement('script');
-    sc.src = new URL('aero_sources.js?v=708d2c7b', SCRIPT_URL).href;
+    sc.src = new URL('aero_sources.js?v=0', SCRIPT_URL).href;
     sc.onload = () => res(window.AeroSources || null);
     sc.onerror = () => res(null);
     document.head.append(sc);
@@ -52,8 +52,8 @@
   });
   /** Promesse unique (gardée dans zonesLoad) de window.AeroZones : charge si besoin les contours puis aero_zones.js. */
   const needZones = () => zonesLoad ||= (async () => {
-    if (!window.AERO_ZONES_GEO) await loadScript('carto/aero_zones_geo.js?v=fe20bdd2');
-    if (!window.AeroZones) await loadScript('aero_zones.js?v=1c66b816');
+    if (!window.AERO_ZONES_GEO) await loadScript('carto/aero_zones_geo.js?v=0');
+    if (!window.AeroZones) await loadScript('aero_zones.js?v=0');
     return window.AeroZones || null;
   })();
   /** Sous-dossiers du dossier SIA par source (fichiers d'autres pays rangés à part) ; zones/<zone>/ : fichiers déposés

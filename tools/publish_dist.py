@@ -21,6 +21,7 @@ Usage (à la racine du dépôt, après la publication de la version : tag v<vers
 Lanceurs : tools/publish_dist.sh (bash) et tools/publish_dist.cmd (Windows), mêmes arguments.
 """
 import argparse, hashlib, io, os, re, subprocess, sys, time, zipfile
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))  # tools/version_stamps.py
 
 sys.stdout.reconfigure(encoding='utf-8')
 ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
@@ -84,15 +85,30 @@ def build(version, tag, out_zip):
     files = entries(tag)
     when = time.localtime(int(git('log', '-1', '--format=%ct', tag).strip()))[:6]  # date du commit tagué
     missing, buf = [], io.BytesIO()
+    # les fichiers du tag sont d'abord extraits dans un dossier temporaire : les empreintes de livraison (?v=…) se
+    # calculent d'un fichier à l'autre (une page dépend de ses scripts, un script de ses images), comme le lanceur les
+    # pose en servant (tools/version_stamps.py) — le dépôt, lui, reste à « ?v=0 »
+    import tempfile
+    import version_stamps as vs
+    tmp = tempfile.mkdtemp(prefix='sog-dist-')
+    kept = []
+    for path, mode, sha in files:
+        data = git('cat-file', 'blob', sha, binary=True)
+        if data.startswith(LFS_HEAD) and len(data) < 1024:
+            real = lfs_object(data, store)
+            if real is None:
+                missing.append(path)
+                continue
+            data = real
+        full = os.path.join(tmp, *path.split('/'))
+        os.makedirs(os.path.dirname(full), exist_ok=True)
+        open(full, 'wb').write(data)
+        kept.append((path, mode, full))
+    vs.ROOT, vs.SHARED = tmp, os.path.join(tmp, 'shared')
+    vs._memo.clear()
     with zipfile.ZipFile(buf, 'w', zipfile.ZIP_DEFLATED, compresslevel=9) as z:
-        for path, mode, sha in files:
-            data = git('cat-file', 'blob', sha, binary=True)
-            if data.startswith(LFS_HEAD) and len(data) < 1024:
-                real = lfs_object(data, store)
-                if real is None:
-                    missing.append(path)
-                    continue
-                data = real
+        for path, mode, full in kept:
+            data = vs.serve(full)[0] if vs.stamped(full) else open(full, 'rb').read()
             info = zipfile.ZipInfo(f'{PREFIX}-{version}/{path}', date_time=when)
             info.compress_type = zipfile.ZIP_DEFLATED
             info.external_attr = (0o100755 if mode == '100755' else 0o100644) << 16
