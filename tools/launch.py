@@ -21,6 +21,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import data_sync  # synchronisation git du pool de données (bouton « Synchroniser ») ; git durci (data_sync.git_cmd)
 import data_guard  # .js de data/ : servis seulement s'ils suivent le format des fichiers de données
 import aero_fetch  # données aéronautiques d'autres pays (Paramètres › Maintenance › Données aéronautiques)
+from check_binaries import POINTER as LFS_POINTER  # début d'un pointeur Git LFS (fichier non récupéré)
 
 ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
 DATA = os.path.join(ROOT, 'data')
@@ -159,6 +160,7 @@ def clone(user=None, secret=None, remember=False, url=None):
         if re.search(r'Authentication failed|could not read Username|403|401|terminal prompts disabled', log, re.I):
             return False, 'Accès refusé : identifiant, mot de passe ou jeton incorrect, ou accès au dépôt pas encore donné.'
         return False, log or 'Échec du clone.'
+    ensure_lfs(DATA, 'data', 'Données')  # données clonées : fichiers Git LFS récupérés, ou signalés
     if remember and user and secret:
         host = urllib.parse.urlparse(url)
         subprocess.run([git, 'credential', 'approve'], input=f'protocol={host.scheme}\nhost={host.netloc}\nusername={user}\npassword={secret}\n\n',
@@ -413,7 +415,7 @@ class Setup(http.server.SimpleHTTPRequestHandler):
                 return self._json({'error': 'refusé'}, 403)
             git = data_sync.git_exe()
             return self._json({'server': True, 'root': ROOT, 'git': bool(git), 'data': has_data(),
-                               'dataGit': os.path.isdir(os.path.join(DATA, '.git')), 'dataRepo': data_repo_url()})
+                               'dataGit': os.path.isdir(os.path.join(DATA, '.git')), 'dataRepo': data_repo_url(), 'lfs': LFS})
         if self.path.split('?')[0] == '/__setup/sync-remote':
             # dépôt git de synchronisation de data/ : adresse actuelle (ou celle du clone par défaut)
             if not self._allowed():
@@ -1350,6 +1352,68 @@ def index_users():
 INSTANCE_TOKEN = ''
 
 
+# ---- Git LFS : images, textures, icônes, polices et archives sont suivies par Git LFS (.gitattributes) ; un clone fait
+# sans Git LFS installé ne laisse que des pointeurs (texte de 130 octets) — designs sans textures, icônes absentes.
+# Contrôlé à chaque lancement, pour la suite et pour data/ : récupérés par « git lfs pull » si Git LFS est là, sinon
+# consigne dans la fenêtre du lanceur et sur la page de premier lancement (/__setup/status › lfs), jamais en silence.
+LFS = {}  # 'suite' | 'data' → {'missing': n, 'example': chemin, 'tool': bool}
+LFS_SKIP = {'.git', '.claude', 'node_modules', '__pycache__', 'dist'}
+
+
+def lfs_patterns(root):
+    """Motifs des fichiers suivis par Git LFS (lignes « motif filter=lfs » du .gitattributes de root)."""
+    try:
+        lines = open(os.path.join(root, '.gitattributes'), encoding='utf-8', errors='replace').read().splitlines()
+    except OSError:
+        return []
+    return [l.split()[0] for l in lines if 'filter=lfs' in l and l.split() and not l.lstrip().startswith('#')]
+
+
+def lfs_pointers(root, skip=()):
+    """Fichiers de root restés en pointeurs Git LFS (chemins relatifs) ; skip : dossiers de premier niveau à ignorer."""
+    pats = lfs_patterns(root)
+    out = []
+    if not pats:
+        return out
+    for d, dirs, files in os.walk(root):
+        rel_d = os.path.relpath(d, root)
+        dirs[:] = [x for x in dirs if x not in LFS_SKIP and not (rel_d == '.' and x in skip)]
+        for n in files:
+            if not any(fnmatch.fnmatch(n, p) for p in pats):
+                continue
+            f = os.path.join(d, n)
+            try:
+                if os.path.getsize(f) > 1024:
+                    continue
+                with open(f, 'rb') as h:
+                    if h.read(len(LFS_POINTER)) == LFS_POINTER:
+                        out.append(os.path.relpath(f, root).replace(os.sep, '/'))
+            except OSError:
+                pass
+    return out
+
+
+def ensure_lfs(root, key, label, skip=()):
+    """Contrôle Git LFS d'un dépôt (root) : pointeurs trouvés → « git lfs pull » si Git LFS est installé, sinon consigne.
+    Résultat gardé dans LFS[key] pour la page ; vrai si plus aucun pointeur."""
+    ptr = lfs_pointers(root, skip)
+    git = data_sync.git_exe()
+    tool = bool(git) and run([git, 'lfs', 'version'], capture_output=True) == 0
+    if ptr and tool and os.path.exists(os.path.join(root, '.git')):
+        say(f'  {label} : {len(ptr)} fichier(s) Git LFS pas encore récupéré(s) (images, textures, polices…) : git lfs pull…')
+        run([git, 'lfs', 'install', '--local'], cwd=root, capture_output=True)
+        run(data_sync.git_cmd('-C', root, 'lfs', 'pull'), cwd=root, timeout=1800, env=git_env())
+        ptr = lfs_pointers(root, skip)
+        say(f'  {label} : fichiers Git LFS récupérés.' if not ptr else f'  ⚠ {label} : {len(ptr)} fichier(s) Git LFS toujours manquant(s) '
+            f'(réseau ou accès au dépôt), ex. {ptr[0]}')
+    elif ptr:
+        say(f'  ⚠ {label} : {len(ptr)} fichier(s) restés en pointeurs Git LFS (ex. {ptr[0]}) — textures, icônes et polices absentes.')
+        say('    Installer Git LFS (https://git-lfs.com), puis relancer le lanceur : les fichiers seront récupérés.' if not tool else
+            '    Copie sans dépôt git (pas de .git) : reprendre l’archive complète de la version, ou un clone fait avec Git LFS.')
+    LFS[key] = {'missing': len(ptr), 'example': ptr[0] if ptr else '', 'tool': tool, 'repo': os.path.exists(os.path.join(root, '.git'))}
+    return not ptr
+
+
 def mark_instance():
     """Repère de l'installation lancée dans le dossier de l'application et ses dossiers de données. Même jeton pour toute la
     vie du lanceur : rappelé quand les données arrivent après le démarrage (jeu d'essai, dépôt, archive), sinon data/ et
@@ -1392,6 +1456,10 @@ def main():
     say('')
     if not a.no_data:
         ensure_data()
+    # fichiers Git LFS (textures, icônes, polices…) de la suite et des données : récupérés ou signalés
+    ensure_lfs(ROOT, 'suite', 'Suite', skip=('data',))
+    if os.path.isdir(DATA):
+        ensure_lfs(DATA, 'data', 'Données')
     say('2. Serveur local')
     port = a.port
     for p in range(a.port, a.port + 20):

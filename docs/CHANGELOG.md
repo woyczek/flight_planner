@@ -12,6 +12,12 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Corrigé
 
+- **Textures, icônes et polices absentes après un clone de la suite** : un clone fait sans Git LFS installé ne laisse
+  que des pointeurs (texte de 130 octets) à la place des images, textures et polices suivies par Git LFS. Le lanceur
+  contrôle désormais la suite et `data/` à chaque démarrage (et après le clone des données) : fichiers récupérés par
+  `git lfs pull` si Git LFS est installé, sinon consigne dans sa fenêtre et en notification sur la page de premier
+  lancement (installer Git LFS, relancer), jamais en silence ; `tools/update_suite.py` les récupère après une mise à
+  jour et les signale dans `doctor`.
 - **Premier lancement : ID IVAO (et autres champs du profil) absent de Mon profil › Identité et réseaux** : la carte «
   Pilote » ne s'enregistrait qu'avec « Enregistrer le profil » ; une saisie suivie du passage à l'étape suivante était
   perdue sans avertissement. Chaque champ (trigramme, ID IVAO, ID VATSIM, SimBrief, identifiant du site) s'enregistre

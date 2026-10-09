@@ -603,6 +603,22 @@
       return;
     }
     S.data = !!st.data;
+    // fichiers Git LFS non récupérés (clone fait sans Git LFS : textures, icônes, polices réduites à des pointeurs) :
+    // le lanceur les récupère s'il le peut ; sinon consigne ici, comme dans sa fenêtre
+    for (const [k, v] of Object.entries(st.lfs || {}))
+      if (v?.missing) window.AppFramework?.notify?.(L(
+        '{w} : {n} fichier(s) Git LFS absents (textures, icônes, polices — ex. {e}). {a}',
+        '{w}: {n} Git LFS file(s) missing (textures, icons, fonts — e.g. {e}). {a}',
+        '{w}: {n} Git-LFS-Datei(en) fehlen (Texturen, Symbole, Schriften — z. B. {e}). {a}',
+        '{w}: faltan {n} archivo(s) Git LFS (texturas, iconos, fuentes — p. ej. {e}). {a}'
+      ).replace('{w}', k === 'data' ? L('Données', 'Data', 'Daten', 'Datos') : L('Suite', 'Suite', 'Suite', 'Suite'))
+        .replace('{n}', v.missing).replace('{e}', v.example).replace('{a}', !v.tool ? L(
+          'Installer Git LFS (https://git-lfs.com), puis relancer le lanceur.', 'Install Git LFS (https://git-lfs.com), then restart the launcher.',
+          'Git LFS installieren (https://git-lfs.com), dann den Starter neu starten.', 'Instalar Git LFS (https://git-lfs.com) y reiniciar el lanzador.') :
+          !v.repo ? L('Copie sans dépôt git : reprendre l’archive complète de la version.', 'Copy without a git repository: take the full release archive again.',
+            'Kopie ohne Git-Repository: das vollständige Archiv der Version erneut nehmen.', 'Copia sin repositorio git: volver a tomar el archivo completo de la versión.') :
+          L('Réseau ou accès au dépôt : relancer le lanceur pour réessayer.', 'Network or repository access: restart the launcher to try again.',
+            'Netzwerk oder Repository-Zugang: Starter neu starten, um es erneut zu versuchen.', 'Red o acceso al repositorio: reiniciar el lanzador para reintentar.')), 'err');
     // données arrivées après le choix du dossier de l'application (jeu d'essai, dépôt, archive) : leurs dossiers (SIA,
     // missions, registre) se déduisent maintenant, tant que l'accès au dossier est ouvert
     if (st.data) await rederive();
