@@ -16,6 +16,7 @@ Les évolutions et la dette technique n'y figurent pas (CHANGELOG, `docs/techniq
 
 | Signalé | Zone | Bug | Cause | Correction |
 |---|---|---|---|---|
+| 09/10 | Types d'aéronefs | A400M sans performances | Alias « A400 → A4M » (code maison) qui détournait le désignateur OACI A400 : performances cherchées sous A4M | Alias remis à l'endroit (A4M, A400M → A400) ; `update_aircraft_db.py` inverse tout alias qui détourne un désignateur officiel — 3652f13dd (Features SOG) |
 | 09/10 | Types d'aéronefs | « A330 » classé « autre » (icône par défaut) | Nom de famille, ni désignateur ni alias | « A330 » → A332 (l'A330 des missions est le MRTT, un A330-200) dans `AircraftCatalog.codeOf` |
 | 09/10 | Types d'aéronefs (« Où en est ») | « A330 MRTT Phénix », « C-130J-30 Super Hercules », « H225M Caracal », « Rafale B — Patrouille de 2 » : fiche OACI manquante | Noms d'usage sans code ni alias dans la base du poste ; trois résolveurs partiels dans la suite | Résolveur commun `AircraftCatalog.codeOf` (`aircraft_catalog.js`) |
 | 09/10 | Premier démarrage (registre, Maintenance…) | « 0 / aucune mission » alors que le registre est plein | Index des missions du navigateur rempli seulement par la relecture du dossier « Missions » | Index vide : registre servi (`data/missions/mission_registry.yaml`) repris (`data_index.js`) |
