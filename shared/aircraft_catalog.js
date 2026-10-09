@@ -155,7 +155,23 @@
     SUPERHERCULES: 'C30J',
     RAFALE: 'RFAL',
     MIRAGE2000: 'MIR2',
-    ATLAS: 'A400M'
+    ATLAS: 'A400M',
+    A400M: 'A400', // désignateur OACI de l'A400M
+    // noms commerciaux Airbus Helicopters (le désignateur reste celui d'Eurocopter)
+    H120: 'EC20',
+    H125: 'AS50',
+    H130: 'EC30',
+    H135: 'EC35',
+    H145: 'EC45',
+    H175: 'EC75',
+    // drones et guet aérien
+    E2C: 'E2',
+    HAWKEYE: 'E2',
+    RQ9P: 'Q9',
+    MQ9: 'Q9',
+    REAPER: 'Q9',
+    CAIMAN: 'NH90',
+    TIGRE: 'TIGR'
   };
   /** Texte réduit à ses lettres et chiffres en majuscules, accents retirés (« Phénix » → PHENIX). */
   const fold = s => String(s ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().replace(/[^A-Z0-9]/g, '');

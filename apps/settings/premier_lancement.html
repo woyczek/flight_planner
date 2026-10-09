@@ -1634,6 +1634,8 @@
         rec = all.map(c => db[c]).find(r => r && !r.local) || all.map(c => db[c]).find(Boolean),
         perf = all.some(c => perfDb[c]),
         absent = !perf && all.some(c => tried.has(c)),
+        // cherché à la dernière passe et toujours sans fiche : code inconnu de l'OACI, alias à ajouter — pas une passe de plus
+        unresolved = (!rec || !!rec.local) && all.some(c => tried.has(c)),
         // sans performances EUROCONTROL : consommation estimée par type ou classe OACI (shared/fuel_reference.js, la
         // source de repli du planificateur carburant) ; rien d'estimé sans fiche OACI
         est = !perf && !!window.FuelReference?.estimate?.({
@@ -1642,7 +1644,8 @@
         });
       return {
         key: k,
-        noFiche: !rec || !!rec.local,
+        noFiche: (!rec || !!rec.local) && !unresolved,
+        unresolved,
         perf,
         absent,
         est,
@@ -1651,9 +1654,10 @@
     });
     const empty = !Object.keys(db).some(k => !k.startsWith('__')),
       nFiche = rows.filter(r => r.noFiche).length,
-      nPerf = rows.filter(r => !r.noFiche && r.noPerf).length,
-      todo = rows.filter(r => r.noFiche || r.noPerf).length,
-      todoList = rows.filter(r => r.noFiche || r.noPerf).map(r => r.key),
+      nPerf = rows.filter(r => !r.noFiche && !r.unresolved && r.noPerf).length,
+      todo = rows.filter(r => r.noFiche || (!r.unresolved && r.noPerf)).length,
+      todoList = rows.filter(r => r.noFiche || (!r.unresolved && r.noPerf)).map(r => r.key),
+      unresolvedList = rows.filter(r => r.unresolved).map(r => r.key),
       withPerf = rows.filter(r => r.perf).length,
       absent = rows.filter(r => r.absent).length,
       absentList = rows.filter(r => r.absent).map(r => r.key),
@@ -1761,6 +1765,16 @@
       n: rows.length,
       p: withPerf
     })) + (absent ? line('opt', absentNote(absent, absentList.join(', '), nEst)) : '');
+    // codes inconnus de l'OACI (noms d'usage, fautes de frappe) : à corriger à la main, pas une passe de plus
+    if (unresolvedList.length) html += line('bad', K.tf([
+      '{n} code(s) inconnus de l’OACI : {l} — nom d’usage ou faute de frappe : alias à ajouter dans le bloc ci-dessous (« Modifier la base à la main… »), ou type à corriger dans la flotte ou la mission.',
+      '{n} code(s) unknown to ICAO: {l} — usual name or typo: add an alias in the block below (“Edit the database by hand…”), or fix the type in the fleet or the mission.',
+      '{n} ICAO unbekannte(r) Code(s): {l} — gebräuchlicher Name oder Tippfehler: Alias im Block unten ergänzen („Datenbank von Hand bearbeiten…“) oder den Typ in Flotte oder Mission berichtigen.',
+      '{n} código(s) desconocido(s) para la OACI: {l} — nombre de uso o errata: añadir un alias en el bloque de abajo («Editar la base a mano…») o corregir el tipo en la flota o la misión.'
+    ], {
+      n: unresolvedList.length,
+      l: unresolvedList.join(', ')
+    }));
     // bilan de la passe qui vient de se terminer (la page s'est rechargée pour lire la base) : montré une fois
     let doneNote = '';
     try {

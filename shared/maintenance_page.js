@@ -1492,6 +1492,9 @@
         perf = all.map(c => perfDb[c]).find(Boolean),
         noFiche = !rec || !!rec.local,
         absent = !perf && all.some(c => tried.has(c)), // cherché à la dernière passe, absent d'EUROCONTROL
+        // cherché à la dernière passe et toujours sans fiche : code inconnu de l'OACI (nom d'usage, faute de frappe) —
+        // un alias à ajouter à la main, pas une passe de plus (sinon la page le reproposerait sans fin)
+        unresolved = (!rec || !!rec.local) && all.some(c => tried.has(c)),
         // sans performances EUROCONTROL : consommation estimée par type ou classe OACI (shared/fuel_reference.js, source
         // de repli du planificateur carburant) ; null sans fiche OACI, ou sans le script sur la page
         est = !perf ? window.FuelReference?.estimate?.({
@@ -1506,17 +1509,20 @@
         perf,
         noFiche,
         noPerf: !perf && !absent,
+        unresolved,
         absent,
-        rank: noFiche ? 0 : !perf && !absent ? 1 : 2
+        rank: noFiche && !unresolved ? 0 : !perf && !absent ? 1 : 2
       };
     }).sort((a, b) => a.rank - b.rank || a.key.localeCompare(b.key));
     // à compléter : sans fiche, ou sans performances jamais cherchées — le code OACI du groupe, plus les codes saisis qui
     // en ont la forme (2 à 4 lettres ou chiffres) ; jamais un libellé en clair (« C-130J-30 Super Hercules »)
-    const todo = [...new Set(rows.filter(r => r.noFiche || r.noPerf).flatMap(r => [r.key, ...r.codes].filter(c => /^[A-Z0-9]{2,4}$/
+    const todo = [...new Set(rows.filter(r => (r.noFiche && !r.unresolved) || r.noPerf).flatMap(r => [r.key, ...r.codes].filter(c =>
+        /^[A-Z0-9]{2,4}$/
         .test(c))))],
       nFiche = rows.filter(r => r.noFiche).length,
       nPerf = rows.filter(r => !r.noFiche && r.noPerf).length,
       nAbsent = rows.filter(r => r.absent).length,
+      unresolved = rows.filter(r => r.unresolved).map(r => r.key),
       nEst = rows.filter(r => !r.perf && r.est).length;
     if (empty && s && !acWarned) {
       acWarned = true;
@@ -1595,7 +1601,9 @@
       }) : '', r.missions ? t(['missions', 'missions', 'Missionen', 'misiones']) : '', r.local ? t(['saisi dans un CR',
         'entered in a report', 'in einem Bericht erfasst', 'introducido en un informe'
       ]) : ''].filter(Boolean).join(' · ');
-      const fiche = !r.rec ? pill('warn', t(['manquante', 'missing', 'fehlt', 'falta'])) : r.rec.local ? pill('warn', t([
+      const fiche = r.unresolved ? pill('warn', t(['code inconnu de l’OACI : alias à ajouter', 'code unknown to ICAO: alias to add',
+        'ICAO unbekannter Code: Alias ergänzen', 'código desconocido para la OACI: alias por añadir'
+      ])) : !r.rec ? pill('warn', t(['manquante', 'missing', 'fehlt', 'falta'])) : r.rec.local ? pill('warn', t([
         'saisie locale, sans fiche OACI', 'local entry, no ICAO record', 'lokal erfasst, ohne ICAO-Datensatz',
         'entrada local, sin ficha OACI'
       ])) : `<span title="${esc([r.rec.source, r.rec.wtc ? `WTC ${r.rec.wtc}` : ''].filter(Boolean).join(' · '))}">${yes}</span>`;
@@ -1617,10 +1625,11 @@
     const table = rows.length ? `<div class="mt-scroll mt-ac-table"><table class="mt-table"><thead><tr><th></th>${H(['Type (code OACI, modèle)', 'Type (ICAO code, model)', 'Typ (ICAO-Code, Modell)', 'Tipo (código OACI, modelo)'])}${H(['Classe OACI', 'ICAO class', 'ICAO-Klasse', 'Clase OACI'])}${H(['Fiche OACI', 'ICAO record', 'ICAO-Datensatz', 'Ficha OACI'])}${H(['Performances (EUROCONTROL)', 'Performance (EUROCONTROL)', 'Leistungen (EUROCONTROL)', 'Rendimientos (EUROCONTROL)'])}${H(['Utilisé par', 'Used by', 'Verwendet von', 'Usado por'])}</tr></thead><tbody>${rows.map(row).join('')}</tbody></table></div>` :
       `<p class="mt-small">${esc(t(['Aucun type dans la flotte ni dans les missions de ce navigateur.', 'No type in the fleet or in the missions of this browser.', 'Kein Typ in der Flotte oder den Missionen dieses Browsers.', 'Ningún tipo en la flota ni en las misiones de este navegador.']))}</p>`;
     // résumé du tableau : manques (avertissement) ou rien à compléter, puis types que EUROCONTROL ne couvre pas
-    const summary = !rows.length ? '' : (nFiche || nPerf ? [nFiche ? pill('warn', t(['{n} sans fiche OACI', '{n} without ICAO record',
+    const summary = !rows.length ? '' : (nFiche - unresolved.length || nPerf ? [nFiche - unresolved.length ? pill('warn', t([
+      '{n} sans fiche OACI', '{n} without ICAO record',
       '{n} ohne ICAO-Datensatz', '{n} sin ficha OACI'
     ], {
-      n: nFiche
+      n: nFiche - unresolved.length
     })) : '', nPerf ? pill('warn', t(['{n} sans performances', '{n} without performance', '{n} ohne Leistungen',
       '{n} sin rendimientos'
     ], {
@@ -1629,7 +1638,10 @@
       '{n} Typen, nichts zu ergänzen', '{n} tipos, nada que completar'
     ], {
       n: rows.length
-    }))) + (nAbsent ? ` ${pill('info', t(['{n} sans performances chez EUROCONTROL (surtout militaires et hélicoptères), {e} estimées par type ou classe OACI pour le carburant', '{n} without EUROCONTROL performance (mostly military and helicopters), {e} estimated by type or ICAO class for fuel', '{n} ohne Leistungen bei EUROCONTROL (meist Militär und Hubschrauber), {e} nach Typ oder ICAO-Klasse für den Kraftstoff geschätzt', '{n} sin rendimientos en EUROCONTROL (sobre todo militares y helicópteros), {e} estimados por tipo o clase OACI para el combustible'], {
+    }))) + (unresolved.length ? ` ${pill('warn', t(['{n} code(s) inconnus de l’OACI : {l} — nom d’usage ou faute de frappe : alias à ajouter (« Modifier la base à la main… », __aliases), ou corriger le type dans la flotte ou la mission', '{n} code(s) unknown to ICAO: {l} — usual name or typo: add an alias (“Edit the database by hand…”, __aliases) or fix the type in the fleet or the mission', '{n} ICAO unbekannte(r) Code(s): {l} — gebräuchlicher Name oder Tippfehler: Alias ergänzen („Datenbank von Hand bearbeiten…“, __aliases) oder den Typ in Flotte oder Mission berichtigen', '{n} código(s) desconocido(s) para la OACI: {l} — nombre de uso o errata: añadir un alias («Editar la base a mano…», __aliases) o corregir el tipo en la flota o la misión'], {
+      n: unresolved.length,
+      l: unresolved.join(', ')
+    }))}` : '') + (nAbsent ? ` ${pill('info', t(['{n} sans performances chez EUROCONTROL (surtout militaires et hélicoptères), {e} estimées par type ou classe OACI pour le carburant', '{n} without EUROCONTROL performance (mostly military and helicopters), {e} estimated by type or ICAO class for fuel', '{n} ohne Leistungen bei EUROCONTROL (meist Militär und Hubschrauber), {e} nach Typ oder ICAO-Klasse für den Kraftstoff geschätzt', '{n} sin rendimientos en EUROCONTROL (sobre todo militares y helicópteros), {e} estimados por tipo o clase OACI para el combustible'], {
       n: nAbsent,
       e: nEst
     }))}` : '');
