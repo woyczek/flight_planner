@@ -923,6 +923,14 @@
     ["Libellés (désignation)", "Labels (designation)", "Beschriftungen (Bezeichnung)", "Etiquetas (designación)"],
     ["Libellés (identifiant)", "Labels (identifier)", "Beschriftungen (Kennung)", "Etiquetas (identificador)"],
     ["Points RNAV en route (OACI)", "En-route RNAV points (ICAO)", "RNAV-Streckenpunkte (ICAO)", "Puntos RNAV en ruta (OACI)"],
+    ["Tracks NAT du jour (Atlantique Nord)", "Today’s NAT tracks (North Atlantic)", "NAT-Tracks des Tages (Nordatlantik)",
+      "Tracks NAT del día (Atlántico Norte)"
+    ],
+    ["Tracks NAT : zone « Atlantique Nord (océanique, NAT) » active, tracks téléchargés dans Paramètres › Maintenance ; tireté magenta, « NAT A »…",
+      "NAT tracks: “North Atlantic (oceanic, NAT)” zone active, tracks downloaded in Settings › Maintenance; magenta dashes, “NAT A”…",
+      "NAT-Tracks: Zone „Nordatlantik (ozeanisch, NAT)“ aktiv, Tracks unter Einstellungen › Wartung heruntergeladen; magenta gestrichelt, „NAT A“…",
+      "Tracks NAT: zona «Atlántico Norte (oceánico, NAT)» activa, tracks descargados en Ajustes › Mantenimiento; trazos magenta, «NAT A»…"
+    ],
     ["Points RNAV : points désignés en route de la base aéronautique (SIA, autres pays, X-Plane), triangle bleu.",
       "RNAV points: en-route designated points of the aeronautical database (SIA, other countries, X-Plane), blue triangle.",
       "RNAV-Punkte: benannte Streckenpunkte der Luftfahrtdatenbank (SIA, andere Länder, X-Plane), blaues Dreieck.",

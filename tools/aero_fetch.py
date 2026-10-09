@@ -14,6 +14,9 @@ Fournisseurs :
   ukmil    UK Military AIP (AIDU, OGL v3.0) : ENR-5-2.pdf (adresse fixe) lu par tools/ukmil_aip.py →
            data/sia/zones/gb/ukmil_enr52.geojson (zones de vol à basse altitude, VATA, TVAA) et ukmil_aara-tracks.xml
            (zones de ravitaillement en vol en axes IP → CP) ; le PDF est gardé à côté (ukmil_ENR-5-2.pdf) ;
+  nat      tracks NAT du jour (Atlantique Nord, système de routes organisées) : message de Shanwick et de Gander tel
+           que publié par la FAA (nms.aim.faa.gov/datanat/nat.json) → data/sia/zones/nat/nat_tracks.json (lettre,
+           points — noms de points ou « 63/20 » = 63° N 020° W —, niveaux est et ouest, validité) ;
   navcan   NAV CANADA, Designated Airspace Handbook : édition en vigueur (dah<AAAAMMJJ>.pdf, trouvée sur la page des
            guides opérationnels) lue par tools/navcan_dah.py → data/sia/zones/ca/navcan_dah.geojson (zones dangereuses,
            réglementées, consultatives) ; le PDF est gardé à côté (navcan_dah.pdf).
@@ -29,6 +32,7 @@ Usage (racine du dépôt) :
   python tools/aero_fetch.py enaire
   python tools/aero_fetch.py ukmil
   python tools/aero_fetch.py navcan
+  python tools/aero_fetch.py nat
   option --data <dossier> : dossier des données (défaut : data/)
 Appelé aussi par le lanceur (POST /__setup/aero-fetch) pour les boutons de Paramètres › Maintenance › Données
 aéronautiques.
@@ -47,6 +51,7 @@ FAA_PAGE = {'class': 250}  # objets par page (classes : contours très détaill�
 FAA_SIMPLIFY = {'maxAllowableOffset': 0.0005, 'geometryPrecision': 5}
 ENAIRE = 'https://aip.enaire.es/AIP/'
 ENAIRE_KINDS = ('Airspace', 'EnRoute')
+NAT_URL = 'https://nms.aim.faa.gov/datanat/nat.json'
 
 
 def get(url, since=None):
@@ -273,6 +278,46 @@ def navcan(data):
     return out, err
 
 
+def nat_parse(messages):
+    """Tracks d'une liste de messages NAT de la FAA ([{ icao_id, condition_message, start_datetime, end_datetime }]) :
+    [{ id, route: [jetons], east: [niveaux], west: [niveaux], nar: [routes], by, from, to }], dans l'ordre des lettres."""
+    tracks = {}
+    for m in messages:
+        cur = None
+        for raw in str(m.get('condition_message') or '').replace('\r', '').split('\n'):
+            line = raw.strip().rstrip('-').strip()
+            t = re.fullmatch(r'([A-Z]) ((?:[A-Z0-9]{2,5}|\d{2,4}/\d{2,3})(?: (?:[A-Z0-9]{2,5}|\d{2,4}/\d{2,3}))+)', line)
+            if t:
+                cur = tracks[t.group(1)] = {'id': t.group(1), 'route': t.group(2).split(), 'east': [], 'west': [], 'nar': [],
+                                            'by': m.get('icao_id') or '', 'from': m.get('start_datetime') or '',
+                                            'to': m.get('end_datetime') or ''}
+                continue
+            if not cur:
+                continue
+            for key, label in (('east', 'EAST LVLS'), ('west', 'WEST LVLS'), ('nar', 'NAR')):
+                if line.startswith(label):
+                    cur[key] = [x for x in line[len(label):].split() if x != 'NIL']
+    return [tracks[k] for k in sorted(tracks)]
+
+
+def nat(data):
+    """Tracks NAT en vigueur (FAA) → zones/nat/nat_tracks.json ; le fichier n'est réécrit que si les tracks changent."""
+    try:
+        msgs = json.loads(get(NAT_URL))
+    except (OSError, ValueError) as e:
+        return [], [f'NAT (FAA) : {e}']
+    msgs = [m for m in msgs if isinstance(m, dict) and m.get('transaction_type', 'NAT_TRACK') == 'NAT_TRACK']
+    tracks = nat_parse(msgs)
+    if not tracks:
+        return [], ['NAT (FAA) : aucun track dans le message publié (format changé ?)']
+    doc = {'source': 'FAA NMS — ' + NAT_URL, 'tracks': tracks,
+           'messages': [{'by': m.get('icao_id') or '', 'id': m.get('notam_number_formatted') or '', 'part': m.get('part_no'),
+                         'from': m.get('start_datetime') or '', 'to': m.get('end_datetime') or ''} for m in msgs]}
+    body = json.dumps(doc, ensure_ascii=False, indent=1).encode('utf-8')
+    changed = write(os.path.join(data, 'sia', 'zones', 'nat', 'nat_tracks.json'), body)
+    return [{'name': 'nat_tracks.json', 'bytes': len(body), 'features': len(tracks), 'unchanged': not changed}], []
+
+
 def fetch(data, provider, args=()):
     """Point d'entrée commun (ligne de commande, lanceur) : { ok, files, errors }."""
     args = [a for a in args if a]
@@ -286,6 +331,8 @@ def fetch(data, provider, args=()):
         files, errors = ukmil(data)
     elif provider == 'navcan':
         files, errors = navcan(data)
+    elif provider == 'nat':
+        files, errors = nat(data)
     else:
         return {'ok': False, 'files': [], 'errors': [f'fournisseur inconnu : {provider}']}
     return {'ok': bool(files) and not errors, 'files': files, 'errors': errors}

@@ -52,8 +52,8 @@
   });
   /** Promesse unique (gardée dans zonesLoad) de window.AeroZones : charge si besoin les contours puis aero_zones.js. */
   const needZones = () => zonesLoad ||= (async () => {
-    if (!window.AERO_ZONES_GEO) await loadScript('carto/aero_zones_geo.js?v=6e9678c4');
-    if (!window.AeroZones) await loadScript('aero_zones.js?v=43cfc710');
+    if (!window.AERO_ZONES_GEO) await loadScript('carto/aero_zones_geo.js?v=fe20bdd2');
+    if (!window.AeroZones) await loadScript('aero_zones.js?v=1c66b816');
     return window.AeroZones || null;
   })();
   /** Sous-dossiers du dossier SIA par source (fichiers d'autres pays rangés à part) ; zones/<zone>/ : fichiers déposés
@@ -1490,7 +1490,9 @@
       }
       return la0 <= la1 && cover.some(r => inRing(r, (la0 + la1) / 2, (lo0 + lo1) / 2));
     };
-    // axes de ravitaillement d'autres pays : remplis plus bas (même tableau que base.aarXmlExtra)
+    // axes de ravitaillement d'autres pays : remplis plus bas (même tableau que base.aarXmlExtra) ; tracks NAT du jour
+    // (zones/nat/nat_tracks.json, tools/aero_fetch.py nat) gardés tels quels dans base.natTracks : leurs points nommés
+    // sont placés au tracé, d'après les points de la base
     if (AS)
       for (const src of AS.SOURCES.filter(x => x.dir || x.id === 'xplane')) {
         const list = (extra[src.id] || []).filter(f => extraOk(src.id, f));
@@ -1505,6 +1507,14 @@
             if (src.id === 'xplane' && /^earth_\w+\.dat$/i.test(f.name)) {
               part = AS.xplane(f.name, t);
               role = 'X-Plane — ' + f.name;
+            } else if (/^nat_tracks\.json$/i.test(f.name)) {
+              const n = JSON.parse(t);
+              base.natTracks = {
+                tracks: Array.isArray(n.tracks) ? n.tracks : [],
+                messages: n.messages || [],
+                source: n.source || ''
+              };
+              role = `tracks NAT (${base.natTracks.tracks.length})`;
             } else if (/\.(geo)?json$/i.test(f.name)) {
               part = AS.geojson(JSON.parse(t), f.name);
               role = 'GeoJSON';

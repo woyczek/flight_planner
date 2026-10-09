@@ -77,6 +77,15 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Ajouté
 
+- **Atlantique Nord : zone océanique et tracks NAT du jour** — nouvelle zone « Atlantique Nord (océanique, NAT) »
+  (contour au large des côtes, `OCEANIC` de `tools/build_aero_zones.py`), sources X-Plane et « Tracks NAT du jour » :
+  les points et routes océaniques d'X-Plane, jusqu'ici écartés car hors de tout pays, entrent dans la base quand la
+  zone est active. Tracks : message de Shanwick et de Gander tel que publié par la FAA
+  (`nms.aim.faa.gov/datanat/nat.json`), téléchargé et lu par le lanceur (`tools/aero_fetch.py nat` →
+  `data/sia/zones/nat/nat_tracks.json` : lettre, points, niveaux est et ouest, validité ; fichier réécrit seulement si
+  les tracks changent), gardés dans la base (`natTracks`), « ancien » au-delà de 12 heures. Cartes : case « Tracks NAT
+  du jour » dans les voies aériennes (tireté magenta, « NAT A » ; « 63/20 » = 63° N 020° W, points nommés placés
+  d'après la base), cochée dans AIRWAYS (profils de base, version 3). Manuels (4 langues).
 - **Pilote de fusion des empreintes `?v=`** (`tools/merge_vstamp.py`, déclaré dans `.gitattributes` pour les pages, scripts,
   feuilles et `config/repository_tree`, configuré par `tools/install_hooks.sh`) : à la fusion ou au rebase, un conflit qui ne
   porte que sur les empreintes de cache posées par `bump_versions.py` est résolu seul (côté courant gardé, empreinte

@@ -172,6 +172,29 @@
       licence: 'NAV CANADA',
       age: 'file'
     },
+    // tracks NAT du jour (système de routes organisées de l'Atlantique Nord, deux fois par jour) : message de Shanwick et
+    // de Gander publié par la FAA, téléchargé et lu par le lanceur (tools/aero_fetch.py nat) → zones/nat/nat_tracks.json
+    nat: {
+      kind: 'download',
+      provider: 'nat',
+      args: [],
+      readable: true,
+      label: L4('Tracks NAT du jour (Shanwick, Gander)', 'Today’s NAT tracks (Shanwick, Gander)',
+        'NAT-Tracks des Tages (Shanwick, Gander)', 'Tracks NAT del día (Shanwick, Gander)'),
+      gives: L4('routes organisées de l’Atlantique Nord en vigueur : lettre, points, niveaux est et ouest, validité',
+        'organised North Atlantic tracks in force: letter, points, eastbound and westbound levels, validity',
+        'gültige organisierte Nordatlantik-Strecken: Buchstabe, Punkte, Flugflächen ost- und westwärts, Gültigkeit',
+        'rutas organizadas del Atlántico Norte en vigor: letra, puntos, niveles este y oeste, validez'),
+      link: 'https://nms.aim.faa.gov/nat',
+      howto: L4(
+        'Message NAT publié par la FAA, téléchargé par le lanceur ; les tracks changent deux fois par jour : à retélécharger avant chaque vol transatlantique. Les points nommés (entrées et sorties océaniques) sont placés d’après la source X-Plane de la zone.',
+        'NAT message published by the FAA, downloaded by the launcher; the tracks change twice a day: download again before each transatlantic flight. Named points (oceanic entries and exits) are placed from the X-Plane source of the zone.',
+        'Von der FAA veröffentlichte NAT-Meldung, vom Starter heruntergeladen; die Tracks ändern sich zweimal täglich: vor jedem Transatlantikflug neu herunterladen. Benannte Punkte (ozeanische Ein- und Ausflugpunkte) werden nach der X-Plane-Quelle der Zone platziert.',
+        'Mensaje NAT publicado por la FAA, descargado por el lanzador; los tracks cambian dos veces al día: volver a descargar antes de cada vuelo transatlántico. Los puntos con nombre (entradas y salidas oceánicas) se sitúan según la fuente X-Plane de la zona.'
+      ),
+      licence: 'FAA (domaine public)',
+      age: 'nat'
+    },
     xplane: {
       kind: 'local',
       global: true,
@@ -203,6 +226,12 @@
   // Toutes les zones du monde (un pays par zone : contours et noms de shared/carto/aero_zones_geo.js) : openAIP (export du
   // pays), MORA calculée et X-Plane partout ; sources propres à certains pays en tête de liste
   const COMMON = ['openaip', 'mora', 'xplane'];
+  // zones hors pays (shared/carto/aero_zones_geo.js, OCEANIC de tools/build_aero_zones.py) : leurs seules sources
+  const OWN = {
+    nat: ['nat', 'xplane']
+  };
+  /** Sources d'une zone : les siennes (zone océanique), sinon celles du pays puis les communes. */
+  const sourcesOf = id => OWN[id] || [...(EXTRA[id] || []), ...COMMON];
   const EXTRA = {
     fr: ['sia', 'dircam'],
     gb: ['nats', 'ukmil'],
@@ -218,7 +247,7 @@
     const list = Object.entries(g || {}).map(([id, z]) => ({
       id,
       name: z.n,
-      sources: [...(EXTRA[id] || []), ...COMMON],
+      sources: sourcesOf(id),
       openaip: [id]
     }));
     cache = {
@@ -233,7 +262,7 @@
   const byIdOf = id => (zones(), cache?.by?.[id]) || {
     id,
     name: [id.toUpperCase()],
-    sources: [...(EXTRA[id] || []), ...COMMON],
+    sources: sourcesOf(id),
     openaip: [id]
   };
 

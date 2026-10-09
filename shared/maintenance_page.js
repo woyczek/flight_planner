@@ -1553,6 +1553,8 @@
     if (!st.has) return st.optional ? 'opt' : 'none';
     if (S.age === 'airac') return st.airac && eff && st.airac >= eff.date ? 'ok' : 'warn';
     if (S.age === 'xplane') return !st.airac || !eff ? 'ok' : st.airac === eff.label ? 'ok' : 'warn';
+    // tracks NAT : publiés deux fois par jour, à jour pendant 12 heures
+    if (S.age === 'nat') return Math.max(st.at || 0, st.checked || 0) > Date.now() - 12 * 36e5 ? 'ok' : 'warn';
     const at = Math.max(st.at || 0, st.checked || 0);
     return at && Date.now() - at < 28 * 864e5 ? 'ok' : at ? 'warn' : 'ok';
   }
