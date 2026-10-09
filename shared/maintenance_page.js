@@ -2037,6 +2037,12 @@
           ]), t(['Déposer les fichiers…', 'Drop the files…', 'Dateien ablegen…', 'Depositar los archivos…'])];
         // source facultative (dossier X-Plane d'une zone à MORA calculée) : proposée, pas à faire — en fin de liste, hors du
         // compte des actions restantes
+        // X-Plane, dossier déjà choisi : « Choisir le dossier… » n'y changeait rien — autorisation à renouveler (après un
+        // rechargement) : on la redemande pour ce dossier ; autorisé mais « Custom Data » d'un ancien cycle : la mise à jour
+        // se fait dans X-Plane (Navigraph), simple information hors du compte des actions restantes
+        const xp = s === 'xplane' ? aeroInv?.xplane : null;
+        if (xp?.granted) return `<li data-optional>${pill('warn', t(['ancien', 'old', 'alt', 'antiguo']))} <b>${esc(zName(z))} — X-Plane</b> : ${esc(t(['données de navigation de « Custom Data » du cycle {c} (en vigueur : {e}) : à mettre à jour dans X-Plane (Navigraph) ; la base les relira à sa prochaine reconstruction', 'navigation data in “Custom Data” from cycle {c} (in force: {e}): to update in X-Plane (Navigraph); the database reads them at its next rebuild', 'Navigationsdaten in „Custom Data“ aus Zyklus {c} (gültig: {e}): in X-Plane aktualisieren (Navigraph); die Datenbank liest sie beim nächsten Neuaufbau', 'datos de navegación de «Custom Data» del ciclo {c} (vigente: {e}): actualizar en X-Plane (Navigraph); la base los leerá en su próxima reconstrucción'], { c: st.airac, e: eff.label }))}</li>`;
+        if (xp) return `<li>${pill('err', t(['à ré-autoriser', 'to re-authorise', 'erneut erlauben', 'por reautorizar']))} <b>${esc(zName(z))} — X-Plane</b> : ${esc(xp.name)} <button type="button" class="secondary mt-btn-sm" data-todo-xp-auth>${esc(t(['Ré-autoriser le dossier…', 'Re-authorise the folder…', 'Ordner erneut erlauben…', 'Reautorizar la carpeta…']))}</button></li>`;
         if (age === 'opt') return `<li data-optional>${pill('info', t(['facultatif', 'optional', 'optional', 'opcional']))} <b>${esc(zName(z))} — ${esc(t(S.label).split(/ — | \(/)[0])}</b> : ${esc(t(['seulement si X-Plane est installé sur ce poste (données de navigation du simulateur, MORA des grandes zones)', 'only if X-Plane is installed on this computer (simulator navigation data, MORA of large zones)', 'nur wenn X-Plane auf diesem Rechner installiert ist (Navigationsdaten des Simulators, MORA großer Zonen)', 'solo si X-Plane está instalado en este equipo (datos de navegación del simulador, MORA de las zonas grandes)']))} <button type="button" class="secondary mt-btn-sm" data-todo-zone="${esc(z.id)}" data-todo-src="${esc(s)}">${esc(what[1])}</button></li>`;
         return `<li>${pill(age === 'none' ? 'err' : 'warn', age === 'none' ? t(['manquant', 'missing', 'fehlt', 'falta']) : t(['ancien', 'old', 'alt', 'antiguo']))} <b>${esc(zName(z))} — ${esc(t(S.label).split(/ — | \(/)[0])}</b> : ${url && what[0] ? `<a class="mt-link" href="${esc(url)}" target="_blank" rel="noopener">${esc(what[0])} ↗</a> / ` : ''}<button type="button" class="secondary mt-btn-sm" data-todo-zone="${esc(z.id)}" data-todo-src="${esc(s)}">${esc(what[1])}</button></li>`;
       })).filter(Boolean).sort((x, y) => x.startsWith('<li data-optional') - y.startsWith('<li data-optional'));
@@ -2048,7 +2054,20 @@
     ]);
     if (auto) lines.unshift(`<li>${pill('info', t(['automatique', 'automatic', 'automatisch', 'automático']))} ${esc(t(['{n} source(s) téléchargée(s) ou calculée(s) par « Activer » sous la carte (téléchargements, MORA)', '{n} source(s) downloaded or computed by “Activate” under the map (downloads, MORA)', '{n} Quelle(n), die „Aktivieren“ unter der Karte lädt oder berechnet (Downloads, MORA)', '{n} fuente(s) descargada(s) o calculada(s) por «Activar» bajo el mapa (descargas, MORA)'], { n: auto }))}</li>`);
     el.innerHTML = `<h3>${esc(t(['Actions à faire', 'Actions to do', 'Zu erledigen', 'Acciones pendientes']))}</h3>${lines.length ? `<ul class="mt-aero-todo">${lines.join('')}</ul>` : `<p class="mt-small">${pill('ok', t(['rien à faire : toutes les sources des zones actives sont présentes et à jour', 'nothing to do: all sources of the active zones are present and up to date', 'nichts zu tun: alle Quellen der aktiven Zonen sind vorhanden und aktuell', 'nada que hacer: todas las fuentes de las zonas activas están presentes y al día']))}</p>`}`;
-    el.onclick = e => {
+    el.onclick = async e => {
+      // dossier d'X-Plane déjà choisi : autorisation redemandée (dans le geste du clic), état et liste redessinés
+      if (e.target.closest('[data-todo-xp-auth]')) {
+        const st = await window.FileAccess?.status?.('__xpnav');
+        try {
+          if (st?.handle) await st.handle.requestPermission({
+            mode: 'read'
+          });
+        } catch {
+          /* refus : la ligne reste */
+        }
+        aeroInv = await aeroInventory();
+        return aeroRefresh(Z);
+      }
       const b = e.target.closest('[data-todo-src]');
       if (b) aeroRowAction(Z, b.dataset.todoZone, b.dataset.todoSrc);
     };
@@ -2162,7 +2181,8 @@
       } catch {}
       aeroInv = await aeroInventory();
       aeroRefresh(Z);
-      const left = document.querySelectorAll('#mtAeroTodo .mt-aero-todo>li:not([data-optional]) [data-todo-src]').length;
+      const left = document.querySelectorAll(
+        '#mtAeroTodo .mt-aero-todo>li:not([data-optional]) [data-todo-src], #mtAeroTodo [data-todo-xp-auth]').length;
       const parts = [built ? t(['base reconstruite', 'database rebuilt', 'Datenbank neu aufgebaut', 'base reconstruida']) : t([
           'base non reconstruite (voir « Base aéronautique ») : MORA non calculée',
           'database not rebuilt (see “Aeronautical database”): MORA not computed',
