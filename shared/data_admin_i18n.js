@@ -69,9 +69,13 @@ window.DataAdminI18n = {
     "Rufzeichen",
     "Indicativos"
   ],
-  "Base": [
-    "Datenbank",
-    "Base"
+  "Référence et journal": [
+    "Referenz und Flugbuch",
+    "Referencia y registro"
+  ],
+  "Terrain de base": [
+    "Heimatflugplatz",
+    "Aeródromo base"
   ],
   "Opérationnel": [
     "Einsatzbereit",

@@ -637,7 +637,7 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
           width: '12em'
         }, {
           key: 'base',
-          label: T('Base', 'Base'),
+          label: T('Terrain de base', 'Home base'),
           upper: true
         }, {
           key: 'operational',
@@ -977,7 +977,7 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
       }]
     }, {
       id: 'defaReference',
-      group: T('Base', 'Base'),
+      group: T('Référence et journal', 'Reference and log'),
       title: T('Flotte et pilotes de la compagnie (référence anonymisée)', 'Company fleet and pilots (anonymised reference)'),
       file: 'data/references/defa_reference.js',
       overrideKey: 'dataOverride:defaReference:v1',
@@ -1090,7 +1090,7 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
       howto: `<ol><li>${T('Charger le journal des vols (Base › Journal des vols).', 'Load the flight log (Base › Flight log).')}</li><li>${T('« Mettre à jour la référence » : pilotes et appareils ajoutés ou complétés (rien n’est supprimé ; terrain de rattachement, statut, mise en service et notes saisis ici sont conservés).', '“Update the reference”: pilots and aircraft added or completed (nothing removed; home AD, status, commissioning and notes kept).')}</li><li>${T('« Enregistrer dans le dépôt », puis committer data/references/defa_reference.js.', '“Save to repository”, then commit data/references/defa_reference.js.')}</li></ol><p>${T('Ou, à la racine du dépôt :', 'Or, at the repository root:')} <code>python tools/defa_reference.py "Log des vols.html"</code></p>`
     }, {
       id: 'defaLog',
-      group: T('Base', 'Base'),
+      group: T('Référence et journal', 'Reference and log'),
       title: T('Journal des vols (vols réalisés)', 'Flight log (flights flown)'),
       custom: true,
       intro: T(
@@ -1099,7 +1099,7 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
       )
     }, {
       id: 'merges',
-      group: T('Base', 'Base'),
+      group: T('Référence et journal', 'Reference and log'),
       title: T('Fusions et renommages (pilotes, appareils)', 'Merges and renames (pilots, aircraft)'),
       custom: true,
       intro: T(

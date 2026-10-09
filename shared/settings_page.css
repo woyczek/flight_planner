@@ -400,3 +400,21 @@
     background: color-mix(in srgb, var(--accent) 16%, transparent)
   }
 }
+
+/* Bases de Paramètres (data_admin.js) : commandes secondaires repliées sous « Plus… » dans la barre d'actions — mêmes
+   règles que shared/maintenance.css, pour les pages qui ne la chargent pas (Centre, Mon profil) */
+@layer app {
+  .da-actions>.da-more {
+    display: inline-block
+  }
+  .da-actions>.da-more>summary {
+    cursor: pointer;
+    padding: 4px 6px
+  }
+  .da-actions>.da-more[open]>div {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 6px
+  }
+}

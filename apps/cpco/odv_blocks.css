@@ -253,8 +253,9 @@
     outline: 2px solid var(--repo-accent, #71b7ff);
     outline-offset: 1px
   }
+  /* case peu chargée : moins saturée, texte à pleine encre (contraste gardé) */
   .odv-heat button.low {
-    opacity: .55
+    filter: saturate(.5)
   }
   .odv-detail {
     border: 1px solid var(--line);
@@ -649,7 +650,7 @@
   .odv-rank {
     margin-left: 2px;
     font-size: 9.5px;
-    opacity: .7
+    color: color-mix(in srgb, currentColor 82%, transparent)
   }
   .odv-why {
     display: -webkit-box;
