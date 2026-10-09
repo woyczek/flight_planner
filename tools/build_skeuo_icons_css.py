@@ -22,6 +22,9 @@ import json, os, re, sys
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
+# chevron du bouton Masquer / Afficher (même tracé que block_icons.css, en-tête riche)
+CHEVRON = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m18 15-6-6-6 6'/%3E%3C/svg%3E"
+
 def skeuo_sets():
     """Jeux d'icônes à matières → dossier d'images, lus dans le registre des designs (repository_tree, designs.list) :
     chaque design marqué skeuo:true fournit son jeu icons:"…", dont les images sont dans shared/icons/skeuo/<id du design>."""
@@ -139,6 +142,10 @@ for key, d in composed.items():
     out.append(f'{T}:is(:hover,:focus-visible){{filter:brightness(1.12)}}')
     out.append(f'{H} .repo-block .repo-block-tools .repo-drag{{font-size:15px!important;line-height:1;font-weight:700;text-shadow:0 1px 1px rgba(0,0,0,.55)}}')
     out.append(f'{H} .repo-block .repo-block-tools .repo-toggle::before{{background-color:currentColor!important;width:13px!important;height:13px!important;filter:drop-shadow(0 1px .6px rgba(0,0,0,.55))}}')
+    # bloc sans icône ni sous-titre (en-tête non « riche », ex. étapes du Premier lancement) : le texte du bouton est caché
+    # par la bulle, le chevron doit donc exister aussi — même masque que block_icons.css (.repo-block-heading-rich)
+    out.append(f'{H} .repo-block .repo-block-heading:not(.repo-block-heading-rich) .repo-toggle::before{{content:"";display:inline-block;-webkit-mask:url("{CHEVRON}") center/contain no-repeat;mask:url("{CHEVRON}") center/contain no-repeat}}')
+    out.append(f'{H} .repo-block-hidden>.repo-block-heading:not(.repo-block-heading-rich) .repo-toggle::before{{transform:rotate(180deg)}}')
     out.append(f'html[data-app-theme="cpco"][data-icons="{key}"] .repo-block .repo-block-tools button:is(.repo-drag,.repo-toggle){{color:{g["centre"]}!important}}')
     # ombre du bloc portée par le conteneur (la découpe de la bulle la couperait)
     out.append(f'{H} :is(.repo-block-icon,.repo-card-icon){{filter:drop-shadow(0 2px 3px rgba(0,0,0,.35))}}')

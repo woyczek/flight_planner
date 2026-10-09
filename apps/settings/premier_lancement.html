@@ -406,7 +406,7 @@
      page). Bilan mémorisé (suiteSetupState:v1) pour l'accueil ; « Terminer » : suiteSetup:v1, puis l'accueil. -->
 <header class="mc-header"><h1>Premier lancement</h1><p>{SOG_NOM} ({SOG_NOM_LONG}) — ce dont la suite a besoin pour travailler, étape par étape</p></header>
 <main class="pl-page">
-  <section id="plSummary"><h2>Où en est la suite</h2>
+  <section id="plSummary" data-icon="list"><h2>Où en est la suite</h2>
     <!-- tutoriel d'installation (docs/tutorial) : ouvert dans l'Aide, qui prend la version de la langue de la suite
          (.fr en français, .en sinon) -->
     <!-- rail des six étapes : état calculé par checklist() (stepStates), un clic ouvre l'étape (goStep) -->
@@ -420,7 +420,7 @@
   </section>
 
   <!-- chaque étape : titre (numéro, état), « ce que c'est », ligne d'état (stepStates), contenu, rangée « Suivant → » -->
-  <section id="plFolders"><h2><span class="pl-n">1</span>Dossiers <span class="pl-badge" data-no-i18n></span></h2>
+  <section id="plFolders" data-icon="folder"><h2><span class="pl-n">1</span>Dossiers <span class="pl-badge" data-no-i18n></span></h2>
     <p class="pl-hint" data-what="plFolders" data-no-i18n></p>
     <p class="pl-status" data-no-i18n></p>
     <p class="pl-hint">Le navigateur demande de désigner chaque dossier une fois (il le mémorise).</p>
@@ -440,7 +440,7 @@
     <div class="pl-row pl-next" data-no-i18n><button type="button" class="primary" data-next="plData"></button><span class="pl-hint"></span></div>
   </section>
 
-  <section id="plData"><h2><span class="pl-n">2</span>Données <span class="pl-badge" data-no-i18n></span></h2>
+  <section id="plData" data-icon="database"><h2><span class="pl-n">2</span>Données <span class="pl-badge" data-no-i18n></span></h2>
     <p class="pl-hint" data-what="plData" data-no-i18n></p>
     <p class="pl-status" data-no-i18n></p>
     <p class="pl-state" id="plDataState">Vérification…</p>
@@ -483,7 +483,7 @@
     <div class="pl-row pl-next" data-no-i18n><button type="button" class="primary" data-next="plCompany"></button><span class="pl-hint"></span></div>
   </section>
 
-  <section id="plCompany"><h2><span class="pl-n">3</span>Compagnie <span class="pl-badge" data-no-i18n></span></h2>
+  <section id="plCompany" data-icon="globe"><h2><span class="pl-n">3</span>Compagnie <span class="pl-badge" data-no-i18n></span></h2>
     <p class="pl-hint">La compagnie virtuelle dont la suite porte le nom, et l’adresse de son site (liens, flotte, journal des vols). Réglage de ce navigateur ; tous les champs (centre, pages du site, sources externes) : <a id="plSourcesLink" href="installation.html?m=sources" target="_blank" rel="noopener">Paramètres › Installation › Sources et dossiers</a>.</p>
     <p class="pl-status" data-no-i18n></p>
     <div class="pl-grid">
@@ -505,7 +505,7 @@
     <div class="pl-row pl-next" data-no-i18n><button type="button" class="primary" data-next="plProfile"></button><span class="pl-hint"></span></div>
   </section>
 
-  <section id="plProfile"><h2><span class="pl-n">4</span>Profil et identifiants <span class="pl-badge" data-no-i18n></span></h2>
+  <section id="plProfile" data-icon="headset"><h2><span class="pl-n">4</span>Profil et identifiants <span class="pl-badge" data-no-i18n></span></h2>
     <p class="pl-hint">Repris par toutes les pages (☰ › Profil pilote). La suite ne demande jamais vos mots de passe IVAO ni VATSIM : vos identifiants (VID, CID) suffisent. Compte de la suite (mot de passe, mode production), client IVAO personnel et préférences : <a href="profil.html" target="_blank" rel="noopener">Paramètres › Mon profil</a>.</p>
     <p class="pl-status" data-no-i18n></p>
     <div class="pl-grid">
@@ -529,7 +529,7 @@
     <div class="pl-row pl-next" data-no-i18n><button type="button" class="primary" data-next="plSia"></button><span class="pl-hint"></span></div>
   </section>
 
-  <section id="plSia"><h2><span class="pl-n">5</span>Données aéronautiques et types d’aéronefs <span class="pl-badge" data-no-i18n></span></h2>
+  <section id="plSia" data-icon="map"><h2><span class="pl-n">5</span>Données aéronautiques et types d’aéronefs <span class="pl-badge" data-no-i18n></span></h2>
     <p class="pl-hint" data-what="plSia" data-no-i18n></p>
     <p class="pl-status" data-no-i18n></p>
     <!-- une seule action principale : types d'aéronefs (« Compléter automatiquement »), puis zones (« Activer »),
@@ -545,7 +545,7 @@
     <div class="pl-row pl-next" data-no-i18n><button type="button" class="primary" data-next="plCentre"></button><span class="pl-hint"></span></div>
   </section>
 
-  <section id="plCentre"><h2><span class="pl-n">6</span>Centre (administrateurs) <span class="pl-badge" data-no-i18n></span></h2>
+  <section id="plCentre" data-icon="shield"><h2><span class="pl-n">6</span>Centre (administrateurs) <span class="pl-badge" data-no-i18n></span></h2>
     <p class="pl-hint">Réservé aux administrateurs du {SOG} : les pilotes passent cette étape.</p>
     <p class="pl-status" data-no-i18n></p>
     <div class="pl-card" id="plCentreLock"><h3>Activer le Centre</h3>
@@ -574,7 +574,7 @@
       <a class="secondary" id="plHome" href="../../index.html"></a><span class="pl-hint" id="plFinishWhy"></span></div>
   </section>
 
-  <section id="plReset" data-default-hidden="1" style="margin-top:16px"><h2>Recommencer</h2>
+  <section id="plReset" data-icon="refresh" data-default-hidden="1" style="margin-top:16px"><h2>Recommencer</h2>
     <div class="pl-warn"><b>⚠ Nettoyer efface les réglages de ce navigateur</b> : dossiers mémorisés (application, données,
       registre, missions, SIA, ODV, X-Plane, performances, sauvegarde locale), copie du classeur ODV, identifiants du site
       de la compagnie, profil (trigramme, IVAO, VATSIM, SimBrief) et l’indicateur « suite réglée ». Les fichiers sur le disque —
@@ -1062,18 +1062,24 @@
     // le lanceur les récupère s'il le peut ; sinon consigne ici, comme dans sa fenêtre
     for (const [k, v] of Object.entries(st.lfs || {}))
       if (v?.missing) window.AppFramework?.notify?.(L(
-        '{w} : {n} fichier(s) Git LFS absents (textures, icônes, polices — ex. {e}). {a}',
-        '{w}: {n} Git LFS file(s) missing (textures, icons, fonts — e.g. {e}). {a}',
-        '{w}: {n} Git-LFS-Datei(en) fehlen (Texturen, Symbole, Schriften — z. B. {e}). {a}',
-        '{w}: faltan {n} archivo(s) Git LFS (texturas, iconos, fuentes — p. ej. {e}). {a}'
-      ).replace('{w}', k === 'data' ? L('Données', 'Data', 'Daten', 'Datos') : L('Suite', 'Suite', 'Suite', 'Suite'))
+          '{w} : {n} fichier(s) Git LFS absents (textures, icônes, polices — ex. {e}). {a}',
+          '{w}: {n} Git LFS file(s) missing (textures, icons, fonts — e.g. {e}). {a}',
+          '{w}: {n} Git-LFS-Datei(en) fehlen (Texturen, Symbole, Schriften — z. B. {e}). {a}',
+          '{w}: faltan {n} archivo(s) Git LFS (texturas, iconos, fuentes — p. ej. {e}). {a}'
+        ).replace('{w}', k === 'data' ? L('Données', 'Data', 'Daten', 'Datos') : L('Suite', 'Suite', 'Suite', 'Suite'))
         .replace('{n}', v.missing).replace('{e}', v.example).replace('{a}', !v.tool ? L(
-          'Installer Git LFS (https://git-lfs.com), puis relancer le lanceur.', 'Install Git LFS (https://git-lfs.com), then restart the launcher.',
-          'Git LFS installieren (https://git-lfs.com), dann den Starter neu starten.', 'Instalar Git LFS (https://git-lfs.com) y reiniciar el lanzador.') :
-          !v.repo ? L('Copie sans dépôt git : reprendre l’archive complète de la version.', 'Copy without a git repository: take the full release archive again.',
-            'Kopie ohne Git-Repository: das vollständige Archiv der Version erneut nehmen.', 'Copia sin repositorio git: volver a tomar el archivo completo de la versión.') :
-          L('Réseau ou accès au dépôt : relancer le lanceur pour réessayer.', 'Network or repository access: restart the launcher to try again.',
-            'Netzwerk oder Repository-Zugang: Starter neu starten, um es erneut zu versuchen.', 'Red o acceso al repositorio: reiniciar el lanzador para reintentar.')), 'err');
+            'Installer Git LFS (https://git-lfs.com), puis relancer le lanceur.',
+            'Install Git LFS (https://git-lfs.com), then restart the launcher.',
+            'Git LFS installieren (https://git-lfs.com), dann den Starter neu starten.',
+            'Instalar Git LFS (https://git-lfs.com) y reiniciar el lanzador.') :
+          !v.repo ? L('Copie sans dépôt git : reprendre l’archive complète de la version.',
+            'Copy without a git repository: take the full release archive again.',
+            'Kopie ohne Git-Repository: das vollständige Archiv der Version erneut nehmen.',
+            'Copia sin repositorio git: volver a tomar el archivo completo de la versión.') :
+          L('Réseau ou accès au dépôt : relancer le lanceur pour réessayer.',
+            'Network or repository access: restart the launcher to try again.',
+            'Netzwerk oder Repository-Zugang: Starter neu starten, um es erneut zu versuchen.',
+            'Red o acceso al repositorio: reiniciar el lanzador para reintentar.')), 'err');
     // données arrivées après le choix du dossier de l'application (jeu d'essai, dépôt, archive) : leurs dossiers (SIA,
     // missions, registre) se déduisent maintenant, tant que l'accès au dossier est ouvert
     if (st.data) await rederive();

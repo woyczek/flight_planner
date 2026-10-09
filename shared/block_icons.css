@@ -488,6 +488,8 @@ html[data-icons="brass"] .repo-block .repo-block-tools .repo-toggle:not(#imp)::b
   width:13px;
   height:13px
 }
+html[data-icons="brass"] .repo-block .repo-block-heading:not(.repo-block-heading-rich) .repo-toggle::before{content:"";display:inline-block;-webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m18 15-6-6-6 6'/%3E%3C/svg%3E") center/contain no-repeat;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m18 15-6-6-6 6'/%3E%3C/svg%3E") center/contain no-repeat}
+html[data-icons="brass"] .repo-block-hidden>.repo-block-heading:not(.repo-block-heading-rich) .repo-toggle::before{transform:rotate(180deg)}
 html[data-app-theme="cpco"][data-icons="brass"] .repo-block .repo-block-tools button:is(.repo-drag,.repo-toggle):not(#imp) {
   color:#ffd23f
 }
@@ -533,6 +535,8 @@ html[data-icons="avio"] .repo-block .repo-block-tools .repo-toggle:not(#imp)::be
   width:13px;
   height:13px
 }
+html[data-icons="avio"] .repo-block .repo-block-heading:not(.repo-block-heading-rich) .repo-toggle::before{content:"";display:inline-block;-webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m18 15-6-6-6 6'/%3E%3C/svg%3E") center/contain no-repeat;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m18 15-6-6-6 6'/%3E%3C/svg%3E") center/contain no-repeat}
+html[data-icons="avio"] .repo-block-hidden>.repo-block-heading:not(.repo-block-heading-rich) .repo-toggle::before{transform:rotate(180deg)}
 html[data-app-theme="cpco"][data-icons="avio"] .repo-block .repo-block-tools button:is(.repo-drag,.repo-toggle):not(#imp) {
   color:#ffd23f
 }
@@ -578,6 +582,8 @@ html[data-icons="steel"] .repo-block .repo-block-tools .repo-toggle:not(#imp)::b
   width:13px;
   height:13px
 }
+html[data-icons="steel"] .repo-block .repo-block-heading:not(.repo-block-heading-rich) .repo-toggle::before{content:"";display:inline-block;-webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m18 15-6-6-6 6'/%3E%3C/svg%3E") center/contain no-repeat;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m18 15-6-6-6 6'/%3E%3C/svg%3E") center/contain no-repeat}
+html[data-icons="steel"] .repo-block-hidden>.repo-block-heading:not(.repo-block-heading-rich) .repo-toggle::before{transform:rotate(180deg)}
 html[data-app-theme="cpco"][data-icons="steel"] .repo-block .repo-block-tools button:is(.repo-drag,.repo-toggle):not(#imp) {
   color:#ffd23f
 }
@@ -635,6 +641,8 @@ html[data-icons="gel"] .repo-block .repo-block-tools .repo-toggle:not(#imp)::bef
   width:13px;
   height:13px
 }
+html[data-icons="gel"] .repo-block .repo-block-heading:not(.repo-block-heading-rich) .repo-toggle::before{content:"";display:inline-block;-webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m18 15-6-6-6 6'/%3E%3C/svg%3E") center/contain no-repeat;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m18 15-6-6-6 6'/%3E%3C/svg%3E") center/contain no-repeat}
+html[data-icons="gel"] .repo-block-hidden>.repo-block-heading:not(.repo-block-heading-rich) .repo-toggle::before{transform:rotate(180deg)}
 html[data-app-theme="cpco"][data-icons="gel"] .repo-block .repo-block-tools button:is(.repo-drag,.repo-toggle):not(#imp) {
   color:#ffd23f
 }
