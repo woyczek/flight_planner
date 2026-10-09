@@ -456,6 +456,10 @@ servies depuis un autre disque, registre aux fichiers absents, profils cachés �
   à chaque relecture (`SiaBase.upToDate`) et suivie quand la suite réécrit `mora.csv` ou les axes ENR 5.7 avec la base.
   Relancée sans rien de nouveau, la mise en place ne télécharge, n'écrit et ne recalcule rien (« base déjà à jour »).
 
+### Livraison
+
+- Archive de livraison : `xplane-web-suite-5.1.0.zip` — SHA-256 `07ed25ee741ff296d6a789224cf42721385b9671266c5b91d38f82837c7492d9` (code seul, hors dépôt : dossier `dist/`).
+
 ## [5.0.0] — 2026-10-08
 
 Version « v2 » : la suite s'adapte à son utilisateur. Un **niveau d'utilisation** (équipage, planification, conception,
