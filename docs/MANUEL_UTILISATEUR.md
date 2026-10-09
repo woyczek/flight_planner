@@ -1419,9 +1419,9 @@ Selon le niveau d'utilisation : aux niveaux 1 à 3 (Équipage, Planification, Co
 
 ### Choisir l'avion et enregistrer le profil
 
-1. Cliquez sur le bouton d'avion de l'en-tête (« Aucun avion » au départ).
-2. Choisissez un profil dans la liste, groupée par catégorie (hélicoptères, jets, monomoteurs, turboprops…).
-3. Un type marqué « flotte, sans profil » crée un profil vide : ses performances sont à renseigner.
+1. Cliquez sur le bouton d'avion de l'en-tête (« Aucun avion » au départ) : une liste s'ouvre, une ligne par appareil (icône, nom, type, source du profil, état).
+2. Choisissez un appareil à la souris, ou avec les flèches puis Entrée ; Échap ferme la liste.
+3. Un type de la flotte sans profil crée un profil vide : ses performances sont à renseigner (voir aussi « Profils de performances »).
 
 La barre en bas de page indique « Profil enregistré — … » ou « Modifications non enregistrées — … ». Elle porte « Recharger la base locale », « Enregistrer le profil » et « Supprimer cet avion ». Cette barre n'apparaît qu'au niveau Expert.
 Si vous changez d'avion avec des modifications non enregistrées, la page propose « Rester », « Abandonner et changer » ou « Enregistrer et changer ».
@@ -1431,7 +1431,7 @@ Menu ☰ : importer profils / CSV / JSON (dont `.lnmperf` de Little Navmap), imp
 
 1. « Plan de vol (case 15) » : saisissez la route. C'est le même plan que les Cartes de vol (le plus récent l'emporte). La distance, la route vraie et le niveau en sont déduits.
 2. Complétez ou corrigez les champs du repli « Paramètres du vol » (déplié d'emblée au niveau Expert, replié sinon ; les valeurs par défaut suffisent pour un devis rapide) : « Distance (NM) », « Niveau (FL) », « Route vraie (°) », « Taxi (min) », « Vent de (°) », « Vent (kt) », « Réserve (min) », « Contingence (%) ».
-3. Facultatif, dans le même repli : « Masse au décollage prévue », comparée à la MTOW du type ; « Écart ISA (°C) », ou « Température sol (°C) » avec « Altitude terrain (ft) », ou « Température au niveau (°C) ». « Consommation de croisière (kg/h) » : préremplie par le profil ; sans profil, la page dit quelle valeur elle utilisera et d'où elle vient (par exemple « ≈ 4 000 kg/h, estimation type A400 ») ; « Utiliser cette valeur » la reprend dans le champ, « Mémoriser pour ce type » la garde pour les prochains vols. « Montée choisie » : « Vitesse indiquée » (kt) et « Vario » (ft/min, ou plein gaz), avec le régime et le débit à mi-montée.
+3. Facultatif, dans le même repli : « Masse au décollage prévue », comparée à la MTOW du type ; « Écart ISA (°C) », ou « Température sol (°C) » avec « Altitude terrain (ft) », ou « Température au niveau (°C) ». « Consommation de croisière (kg/h) » : préremplie par le profil ; sans profil, la page dit quelle valeur elle utilisera et d'où elle vient (par exemple « ≈ 4 000 kg/h, estimation type A400 ») ; « Utiliser cette valeur » la reprend dans le champ, « Mémoriser pour ce type » la garde pour les prochains vols. « Montée choisie » (vue détaillée) : trois curseurs, « Vitesse indiquée », « Vario » et « Gaz (%) » (RPM ou N1 si le profil a une cartographie moteur), chacun précédé d'une case « fixé » ; deux sont fixés, le troisième est calculé et grisé ; « plein gaz » s'affiche sous le vario ; la ligne du dessous donne débit, TAS et gaz à mi-montée. C'est cette montée que le devis compte.
 4. Cliquez sur « Calculer ».
 
 Vent laissé vide : la page l'indique (« Vent inconnu : fourchette ±25 kt… ») et donne le carburant en fourchette.
@@ -1445,15 +1445,24 @@ En vue détaillée (bouton « Vue détaillée » / « Vue simple » du Résultat
 | Titre | Ce qu'il montre |
 |---|---|
 | « Altitude optimale — carburant et vitesse » | Trajet entier volé à chaque niveau : plus la courbe est haute, moins on consomme par mille. |
-| « Montée optimale — vario et carburant » | Vario disponible et carburant par 1000 ft selon l'altitude. |
+| « Montée optimale — vario et carburant » | Vario disponible et carburant par 1000 ft, « par altitude » ou « par régime ». |
 | « Vitesses de montée — Badin et TAS selon l'altitude » | Vy, montée rapide, montée économique, montée choisie, Vx. |
 | « TAS selon le niveau — croisière et montée » | Vitesse vraie en croisière et en montée. |
 | « Comparaison des montées » | Durée, distance et carburant de chaque montée, jusqu'au niveau du plan puis sur le trajet entier ; ★ : meilleur de la colonne. |
 | « Montée par altitude — régimes RPM / N1 » | Table à Vy avec cumuls depuis le sol. |
 
 Survolez une courbe pour lire les valeurs à cette altitude ; cliquez pour épingler un niveau (trait blanc sur toutes les courbes). Le devis est alors calculé à ce niveau.
-Les deux curseurs verticaux (vario à gauche, Badin à droite) règlent votre « montée choisie », comme les champs du même nom dans le devis.
+Les curseurs « Montée choisie » du devis règlent votre montée choisie, tracée en violet sur les courbes.
 La zone grisée « inaccessible » se trouve au-dessus du plafond de l'appareil.
+
+### Consignes de montée
+
+Ce bloc, sous « Calculer », dit comment monter, à tout niveau d'utilisation.
+- Cinq objectifs, chacun avec son temps et son carburant jusqu'au niveau : « Éco », « Vy », « Rapide », « Profil » (vitesse de montée du profil), « Réglée » (montée choisie). Le choix est gardé dans ce navigateur.
+- Une consigne en trois temps : « Régler » (gaz, hélice, RPM ou N1), « Tenir » (l'instrument qui porte la consigne, le plus souvent le badin), « Attendu » (vario à voir, niveau atteint, temps et carburant).
+- Un tableau par tranche d'altitude (sol, 2 000 ft, FL050, FL100… jusqu'au niveau du plan) : gaz, RPM ou N1 si le profil a une cartographie moteur, badin à tenir, vario attendu, temps cumulé.
+
+Les consignes guident le pilotage ; le devis compte la montée choisie. Elles viennent du modèle de performances du profil (atmosphère du devis, masse non modélisée) : à confronter au manuel de vol.
 
 ### Résultat
 
@@ -1465,7 +1474,13 @@ Ce bloc, dans la colonne de droite, suit la page pendant que vous faites défile
 - Fiche du curseur (⌖ au survol, 📌 épinglé) : carburant et temps du trajet à ce niveau, vario max, vitesses de montée ; « désépingler » retire l'épingle.
 - Groupe repliable « Régimes de vol — profil ↔ cartographie » (niveau Expert) : Badin, vario, régime moteur et débit par phase, comparés à la cartographie moteur. Il contient aussi le champ « SimBrief Airframe Internal ID » et les liens vers les fiches des appareils de ce type.
 
-« Épingler » garde le bloc entier quand il suit la page ; sinon, il se replie. « Vue simple » masque les courbes et les instruments, « Vue détaillée » les montre (choix gardé dans ce navigateur). Au niveau Expert, sous le bloc, un panneau par courbe donne les optimums, les limites (plafond, niveau demandé) et une aide à la lecture. Une colonne d'instruments (niveau Expert) reprend Badin, vario, altitude, carburant et temps de vol.
+« Épingler » garde le bloc entier quand il suit la page ; sinon, il se replie. « Vue simple » masque les courbes et les instruments, « Vue détaillée » les montre (choix gardé dans ce navigateur). Au niveau Expert, sous le bloc, un panneau par courbe donne les optimums, les limites (plafond, niveau demandé) et une aide à la lecture. Le bandeau d'instruments (niveau Expert) reprend badin, altimètre, vario, chronomètre (temps de montée), carburant et temps de vol.
+
+### Profils de performances
+
+Ce bloc (à partir du niveau Conception) fait l'état des profils : une ligne par profil enregistré et par type de la flotte sans profil.
+- Colonnes : « Appareil », « Profil (source) » (`.lnmperf`, SimBrief, JSON, saisie ou estimation ; « actif » pour l'appareil choisi, « Créer » pour un type sans profil), « Cartographie moteur », « Consommation de croisière » et son origine, « Plafond », « Données manquantes ».
+- « Importer… » (`.lnmperf`, JSON, CSV), « Dossier… » (dossier performances), « Relire ». Le dossier est relu de lui-même quand il change ailleurs (Paramètres, autre onglet).
 
 ### Performances moteur — RPM / puissance / consommation
 
@@ -1473,14 +1488,14 @@ Ce bloc (titre d'origine « Fiche performance moteur ») donne la consommation p
 
 1. Saisissez « RPM / N1 ». Les champs « Altitude (ft) » et « Phase » complètent la fiche.
 2. Cliquez sur « Interpoler ».
-3. Lisez le « Débit total » et sa fourchette min.–max. (interpolation linéaire dans la table).
+3. Lisez le « Débit total » et sa fourchette min.–max. (interpolation dans la table, par altitude quand la colonne « Altitude (ft) » est remplie).
 
 Sous la fiche, la « Courbe RPM / puissance → consommation » trace les débits min., nominal et max. selon le régime. Survolez-la pour lire les valeurs à un régime donné. Le point interpolé y est marqué.
 Sans table RPM dans le profil, la page affiche « Courbe RPM absente du profil. » ou « Aucune cartographie chiffrée ».
 
 ### Table RPM / puissance → consommation
 
-Cette table liste les points de la cartographie moteur du profil actif : « RPM / N1 », « Min. », « Nominal », « Max. », « Régime de vol », « Commentaire ». Bloc du niveau Expert.
+Cette table liste les points de la cartographie moteur du profil actif : « RPM / N1 », « Min. », « Nominal », « Max. », « Altitude (ft) » (facultative : une ligne par altitude publiée), « Régime de vol », « Commentaire ». Bloc du niveau Expert.
 Cliquez sur un titre de colonne (↕) pour trier.
 Elle est en lecture seule : pour la modifier, utilisez le bloc « Cartographie moteur — édition RPM / puissance → consommation ».
 Sans données, elle affiche « Pas de courbe RPM dans ce profil. »
@@ -1501,7 +1516,7 @@ Après modification, cliquez sur « Enregistrer le profil » dans la barre du ba
 Ce bloc sert à saisir ou corriger la table régime → consommation, point par point. Bloc du niveau Expert.
 
 1. « Ajouter un point » crée une ligne.
-2. Remplissez « RPM / N1 », « Min. », « Nominal », « Max. », « Régime de vol » et « Commentaire ».
+2. Remplissez « RPM / N1 », « Min. », « Nominal », « Max. », « Altitude (ft) » (facultative : une ligne par altitude publiée), « Régime de vol » et « Commentaire ».
 3. Enregistrez le profil (barre du bas).
 
 Astuce : une plage écrite dans le commentaire, par exemple « 1 000–1 300 kg/h total », remplit min., nominal et max. à l'enregistrement.
@@ -1541,7 +1556,7 @@ Utile pour comprendre une calibration partielle ou un écart avec SimBrief.
 ### JSON importé / SimBrief
 
 Ce bloc affiche le contenu brut du dernier fichier importé (OFP SimBrief ou JSON). Bloc du niveau Expert.
-- « Copier JSON » : copie le contenu dans le presse-papiers.
+- « Copier JSON » : copie le contenu dans le presse-papiers ; grisé quand il n'y a rien à copier.
 - « Effacer » : vide l'affichage (le profil n'est pas touché).
 
 Sans import : « Aucun JSON chargé. »

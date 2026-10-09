@@ -1419,9 +1419,9 @@ Según el nivel de uso: en los niveles 1 a 3 (Tripulación, Planificación, Dise
 
 ### Elegir el avión y guardar el perfil
 
-1. Haga clic en el botón de avión de la cabecera («Ningún avión» al principio).
-2. Elija un perfil en la lista, agrupada por categoría (helicópteros, reactores, monomotores, turbohélices…).
-3. Un tipo marcado «flota, sin perfil» crea un perfil vacío: hay que rellenar sus prestaciones.
+1. Haga clic en el botón de aeronave de la cabecera («Ninguna aeronave» al principio): se abre una lista, una línea por aeronave (icono, nombre, tipo, origen del perfil, estado).
+2. Elija una aeronave con el ratón, o con las flechas y después Intro; Escape cierra la lista.
+3. Un tipo de la flota sin perfil crea un perfil vacío: sus rendimientos deben rellenarse (véase también «Perfiles de rendimiento»).
 
 La barra al pie de la página indica «Perfil guardado — …» o «Cambios sin guardar — …». Contiene «Recargar la base local», «Guardar perfil» y «Eliminar este avión». Esta barra solo aparece en el nivel Experto.
 Si cambia de avión con cambios sin guardar, la página propone «Quedarse», «Descartar y cambiar» o «Guardar y cambiar».
@@ -1431,7 +1431,7 @@ Menú ☰: importar perfiles / CSV / JSON (incluido `.lnmperf` de Little Navmap)
 
 1. «Plan de vuelo (casilla 15)»: introduzca la ruta. Es el mismo plan que el de los Mapas de vuelo (gana el más reciente). De él se deducen la distancia, la ruta verdadera y el nivel.
 2. Complete o corrija los campos del plegable «Parámetros del vuelo» (desplegado de entrada en el nivel Experto, plegado en los demás; los valores por defecto bastan para un cálculo rápido): «Distancia (NM)», «Nivel (FL)», «Ruta verdadera (°)», «Rodaje (min)», «Viento desde (°)», «Viento (kt)», «Reserva (min)», «Contingencia (%)».
-3. Opcional, en el mismo plegable: «Masa de despegue prevista», comparada con la MTOW del tipo; «Desviación ISA (°C)», o «Temperatura en tierra (°C)» con «Elevación del aeródromo (ft)», o «Temperatura en el nivel (°C)». «Consumo de crucero (kg/h)»: rellenado desde el perfil; sin perfil, la página dice qué valor usará y de dónde viene (por ejemplo «≈ 4 000 kg/h, estimación tipo A400»); «Usar este valor» lo copia en el campo, «Guardar para este tipo» lo conserva para los próximos vuelos. «Ascenso elegido»: «IAS» (kt) y variómetro (ft/min, o gases a fondo), con el régimen y el consumo a mitad del ascenso.
+3. Opcional, en el mismo plegable: «Masa de despegue prevista», comparada con la MTOW del tipo; «Desviación ISA (°C)», o «Temperatura en tierra (°C)» con «Elevación del aeródromo (ft)», o «Temperatura en el nivel (°C)». «Consumo de crucero (kg/h)»: rellenado desde el perfil; sin perfil, la página dice qué valor usará y de dónde viene (por ejemplo «≈ 4 000 kg/h, estimación tipo A400»); «Usar este valor» lo copia en el campo, «Guardar para este tipo» lo conserva para los próximos vuelos. «Ascenso elegido» (vista detallada): tres cursores, «IAS», variómetro y «Gases (%)» (RPM o N1 si el perfil tiene mapa motor), cada uno precedido de una casilla «fijo»; dos están fijos, el tercero se calcula y aparece en gris; «gases a fondo» aparece bajo el variómetro; la línea de abajo da consumo, TAS y gases a mitad del ascenso. Es el ascenso que cuenta el plan de combustible.
 4. Haga clic en «Calcular».
 
 Si deja el viento vacío, la página lo indica («Viento desconocido: horquilla ±25 kt…») y da el combustible como una horquilla.
@@ -1445,15 +1445,24 @@ En la vista detallada (botón «Vista detallada» / «Vista simple» del Resulta
 | Título | Lo que muestra |
 |---|---|
 | «Altitud óptima — combustible y velocidad» | Trayecto completo volado a cada nivel: cuanto más alta es la curva, menos se consume por milla. |
-| «Ascenso óptimo — régimen y combustible» | Régimen de ascenso disponible y combustible por 1000 ft según la altitud. |
+| «Ascenso óptimo — régimen y combustible» | Variómetro disponible y combustible por 1000 ft, «por altitud» o «por régimen». |
 | «Velocidades de ascenso — IAS y TAS según la altitud» | Vy, ascenso rápido, ascenso económico, ascenso elegido, Vx. |
 | «TAS según el nivel — crucero y ascenso» | Velocidad verdadera en crucero y en ascenso. |
 | «Comparación de ascensos» | Duración, distancia y combustible de cada ascenso, hasta el nivel del plan y después en todo el trayecto; ★: el mejor de la columna. |
 | «Ascenso por altitud — regímenes RPM / N1» | Tabla a Vy con acumulados desde el suelo. |
 
 Pase el ratón por una curva para leer los valores a esa altitud; haga clic para fijar un nivel (línea blanca en todas las curvas). El plan se calcula entonces a ese nivel.
-Los dos cursores verticales (régimen de ascenso a la izquierda, IAS a la derecha) ajustan su «ascenso elegido», como los campos del mismo nombre del plan de combustible.
+Los cursores «Ascenso elegido» del plan de combustible ajustan su ascenso elegido, trazado en violeta en las curvas.
 La zona gris «inaccesible» está por encima del techo de la aeronave.
+
+### Consignas de ascenso
+
+Este bloque, bajo «Calcular», dice cómo ascender, en todos los niveles de uso.
+- Cinco objetivos, cada uno con su tiempo y su combustible hasta el nivel: «Eco», «Vy», «Rápida», «Perfil» (velocidad de ascenso del perfil), «Ajustada» (ascenso elegido). La elección se guarda en este navegador.
+- Una consigna en tres partes: «Ajustar» (gases, hélice, RPM o N1), «Mantener» (el instrumento que lleva la consigna, casi siempre la IAS), «Esperado» (variómetro que se debe ver, nivel alcanzado, tiempo y combustible).
+- Una tabla por tramo de altitud (suelo, 2 000 ft, FL050, FL100… hasta el nivel del plan): gases, RPM o N1 si el perfil tiene mapa motor, IAS a mantener, variómetro esperado, tiempo acumulado.
+
+Las consignas guían el pilotaje; el plan de combustible cuenta el ascenso elegido. Proceden del modelo de rendimiento del perfil (atmósfera del plan, masa no modelada): a contrastar con el manual de vuelo.
 
 ### Resultado
 
@@ -1465,7 +1474,13 @@ Este bloque, en la columna de la derecha, acompaña a la página mientras se des
 - Ficha del cursor (⌖ al pasar el ratón, 📌 fijado): combustible y tiempo del trayecto a ese nivel, régimen de ascenso máximo, velocidades de ascenso; «soltar» quita la fijación.
 - Grupo plegable «Regímenes de vuelo — perfil ↔ mapa» (nivel Experto): IAS, régimen de ascenso, régimen del motor y flujo por fase, comparados con el mapa del motor. También contiene el campo «SimBrief Airframe Internal ID» y los enlaces a las fichas de las aeronaves de ese tipo.
 
-«Fijar» conserva el bloque entero cuando acompaña a la página; si no, se pliega. «Vista simple» oculta las curvas y los instrumentos, «Vista detallada» los muestra (elección guardada en este navegador). En el nivel Experto, bajo el bloque, un panel por curva da los óptimos, los límites (techo, nivel solicitado) y una ayuda de lectura. Una columna de instrumentos (nivel Experto) muestra IAS, variómetro, altitud, combustible y tiempo de vuelo.
+«Fijar» conserva el bloque entero cuando acompaña a la página; si no, se pliega. «Vista simple» oculta las curvas y los instrumentos, «Vista detallada» los muestra (elección guardada en este navegador). En el nivel Experto, bajo el bloque, un panel por curva da los óptimos, los límites (techo, nivel solicitado) y una ayuda de lectura. La banda de instrumentos (nivel Experto) muestra IAS, altímetro, variómetro, cronómetro (tiempo de ascenso), combustible y tiempo de vuelo.
+
+### Perfiles de rendimiento
+
+Este bloque (a partir del nivel Diseño) hace balance de los perfiles: una línea por perfil guardado y por tipo de la flota sin perfil.
+- Columnas: «Aeronave», «Perfil (origen)» (`.lnmperf`, SimBrief, JSON, entrada o estimación; «activo» para la aeronave elegida, «Crear» para un tipo sin perfil), «Mapa motor», «Consumo de crucero» y su origen, «Techo», «Datos que faltan».
+- «Importar…» (`.lnmperf`, JSON, CSV), «Carpeta…» (carpeta de rendimiento), «Releer». La carpeta se relee sola cuando cambia en otro lugar (Ajustes, otra pestaña).
 
 ### Prestaciones motor — RPM / potencia / consumo
 
@@ -1473,14 +1488,14 @@ Este bloque (título original «Ficha de rendimiento del motor») da el consumo 
 
 1. Introduzca «RPM / N1». Los campos «Altitud (ft)» y «Fase» completan la ficha.
 2. Haga clic en «Interpolar».
-3. Lea el «Flujo total» y su horquilla mín.–máx. (interpolación lineal en la tabla).
+3. Lea el «Flujo total» y su horquilla mín.–máx. (interpolación en la tabla, por altitud cuando la columna «Altitud (ft)» está rellenada).
 
 Bajo la ficha, la «Curva RPM / potencia → consumo» traza los flujos mín., nominal y máx. según el régimen. Pase el ratón por ella para leer los valores a un régimen dado. El punto interpolado aparece marcado.
 Sin tabla RPM en el perfil, la página muestra «Curva RPM ausente del perfil.» o «Sin cartografía cuantificada».
 
 ### Tabla RPM / potencia → consumo
 
-Esta tabla muestra los puntos del mapa del motor del perfil activo: «RPM / N1», «Mín.», «Nominal», «Máx.», «Fase de vuelo», «Comentario». Bloque del nivel Experto.
+Esta tabla muestra los puntos del mapa del motor del perfil activo: «RPM / N1», «Mín.», «Nominal», «Máx.», «Altitud (ft)» (opcional: una línea por altitud publicada), «Fase de vuelo», «Comentario». Bloque del nivel Experto.
 Haga clic en un título de columna (↕) para ordenar.
 Es de solo lectura: para modificarla, utilice el bloque «Mapa motor — editar RPM / potencia → consumo».
 Sin datos, muestra «No hay curva RPM en este perfil.»
@@ -1501,7 +1516,7 @@ Después de modificar, haga clic en «Guardar perfil» en la barra inferior.
 Este bloque sirve para introducir o corregir la tabla régimen → consumo, punto por punto. Bloque del nivel Experto.
 
 1. «Añadir un punto» crea una línea.
-2. Rellene «RPM / N1», «Mín.», «Nominal», «Máx.», «Fase de vuelo» y «Comentario».
+2. Rellene «RPM / N1», «Mín.», «Nominal», «Máx.», «Altitud (ft)» (opcional: una línea por altitud publicada), «Fase de vuelo» y «Comentario».
 3. Guarde el perfil (barra inferior).
 
 Consejo: un intervalo escrito en el comentario, por ejemplo «1 000–1 300 kg/h total», rellena mín., nominal y máx. al guardar.
@@ -1541,7 +1556,7 @@ Sin OFP: «Sin datos de OFP.»
 ### JSON importado / SimBrief
 
 Este bloque muestra el contenido bruto del último archivo importado (OFP de SimBrief o JSON). Bloque del nivel Experto.
-- «Copiar JSON»: copia el contenido en el portapapeles.
+- «Copiar JSON»: copia el contenido en el portapapeles; en gris cuando no hay nada que copiar.
 - «Borrar»: vacía la visualización (el perfil no se toca).
 
 Sin importación: «Ningún JSON cargado.»

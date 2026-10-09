@@ -12,6 +12,11 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Modifié
 
+- **Manuels (4 langues), Carburant (V2_FABLE § 7)** : liste d'appareils (flèches, Entrée, Échap), curseurs « Montée
+  choisie » (badin, vario, gaz ou régime ; deux fixés, le troisième calculé ; « plein gaz » sous le vario), bloc
+  « Consignes de montée » (cinq objectifs, Régler / Tenir / Attendu, tableau par tranche d'altitude), graphe de montée
+  par altitude ou par régime, bandeau d'instruments avec altimètre et chronomètre, bloc « Profils de performances »,
+  colonne « Altitude (ft) » de la cartographie moteur, « Copier JSON » grisé ; dossier performances relu par Carburant.
 - **Manuel utilisateur (4 langues), Carburant** : l'estimation de consommation s'appuie sur la fiche Airframe DB (TAS de
   croisière, plafond) pour les types sans fiche EUROCONTROL ni SimBrief.
 - **Estimation de consommation (`shared/fuel_reference.js`)** : la fiche Airframe DB du type (posée par le lanceur pour les types sans EUROCONTROL ni SimBrief) affine l'estimation par classe — TAS de croisière, plafond (`ceilingFt`) et catégorie de sillage d'après sa MTOW ; la consommation reste celle du type ou de la classe. Manuels administrateur : paragraphe « Types d'aéronefs » fusionné avec develop (Airframe DB), alias cité à l'endroit (A4M → A400), rechargement automatique.

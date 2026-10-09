@@ -1419,9 +1419,9 @@ Depending on the usage level: at levels 1 to 3 (Crew, Planning, Design), the pag
 
 ### Choose the aircraft and save the profile
 
-1. Click the aircraft button in the header (“No aircraft” at the start).
-2. Choose a profile in the list, grouped by category (helicopters, jets, single-engines, turboprops…).
-3. A type marked “fleet, no profile” creates an empty profile: its performance must be filled in.
+1. Click the aircraft button in the header (“No aircraft” at first): a list opens, one line per aircraft (icon, name, type, profile source, state).
+2. Choose an aircraft with the mouse, or with the arrow keys then Enter; Escape closes the list.
+3. A fleet type without a profile creates an empty profile: its performance must be filled in (see also “Performance profiles”).
 
 The bar at the bottom of the page shows “Profile saved — …” or “Unsaved changes — …”. It carries “Reload the local database”, “Save profile” and “Delete this aircraft”. This bar only appears at the Expert level.
 If you change aircraft with unsaved changes, the page offers “Stay”, “Discard and switch” or “Save and switch”.
@@ -1431,7 +1431,7 @@ If you change aircraft with unsaved changes, the page offers “Stay”, “Disc
 
 1. “Flight plan (item 15)”: enter the route. It is the same plan as the Flight maps (the most recent one wins). The distance, the true track and the level are deduced from it.
 2. Complete or correct the fields of the collapsible “Flight parameters” section (unfolded from the start at the Expert level, collapsed otherwise; the default values are enough for a quick estimate): “Distance (NM)”, “Level (FL)”, “True track (°)”, “Taxi (min)”, “Wind from (°)”, “Wind (kt)”, “Reserve (min)”, “Contingency (%)”.
-3. Optional, in the same section: “Planned take-off mass”, compared with the type's MTOW; “ISA deviation (°C)”, or “Ground temperature (°C)” with “Field elevation (ft)”, or “Temperature at level (°C)”. “Cruise fuel flow (kg/h)”: filled in from the profile; without a profile, the page says which value it will use and where it comes from (for example “≈ 4,000 kg/h, type estimate A400”); “Use this value” copies it into the field, “Remember for this type” keeps it for the next flights. “Chosen climb”: “IAS” (kt) and climb rate (ft/min, or full throttle), with the power setting and the fuel flow at mid-climb.
+3. Optional, in the same section: “Planned take-off mass”, compared with the type's MTOW; “ISA deviation (°C)”, or “Ground temperature (°C)” with “Field elevation (ft)”, or “Temperature at level (°C)”. “Cruise fuel flow (kg/h)”: filled in from the profile; without a profile, the page says which value it will use and where it comes from (for example “≈ 4,000 kg/h, type estimate A400”); “Use this value” copies it into the field, “Remember for this type” keeps it for the next flights. “Chosen climb” (detailed view): three sliders, “IAS”, climb rate and “Throttle (%)” (RPM or N1 if the profile has an engine map), each preceded by a “fixed” box; two are fixed, the third is calculated and greyed out; “full throttle” shows under the climb rate; the line below gives fuel flow, TAS and throttle at mid-climb. This is the climb the fuel plan counts.
 4. Click “Calculate”.
 
 Wind left empty: the page says so (“Unknown wind: ±25 kt range…”) and gives the fuel as a range.
@@ -1445,15 +1445,24 @@ In the detailed view (“Detailed view” / “Simple view” button of the Resu
 | Title | What it shows |
 |---|---|
 | “Optimum altitude — fuel and speed” | Whole trip flown at each level: the higher the curve, the less fuel per mile. |
-| “Optimum climb — rate and fuel” | Available climb rate and fuel per 1000 ft by altitude. |
+| “Optimum climb — rate and fuel” | Available climb rate and fuel per 1000 ft, “by altitude” or “by power setting”. |
 | “Climb speeds — IAS and TAS by altitude” | Vy, fast climb, economy climb, chosen climb, Vx. |
 | “TAS by level — cruise and climb” | True airspeed in cruise and in climb. |
 | “Climb comparison” | Time, distance and fuel of each climb, up to the plan level then over the whole trip; ★: best in the column. |
 | “Climb by altitude — RPM / N1 settings” | Table at Vy with totals from the ground. |
 
 Hover over a curve to read the values at that altitude; click to pin a level (white line on all curves). The fuel plan is then calculated at that level.
-The two vertical sliders (climb rate on the left, IAS on the right) set your “chosen climb”, like the fields of the same name in the fuel plan.
+The “Chosen climb” sliders of the fuel plan set your chosen climb, drawn in purple on the curves.
 The greyed “unreachable” area lies above the aircraft's ceiling.
+
+### Climb instructions
+
+This block, under “Calculate”, says how to climb, at every usage level.
+- Five goals, each with its time and fuel up to the level: “Eco”, “Vy”, “Fast”, “Profile” (climb speed of the profile), “Set” (chosen climb). The choice is kept in this browser.
+- An instruction in three parts: “Set” (throttle, propeller, RPM or N1), “Hold” (the instrument that carries the instruction, usually the IAS), “Expect” (climb rate to see, level reached, time and fuel).
+- A table by altitude band (ground, 2,000 ft, FL050, FL100… up to the plan level): throttle, RPM or N1 if the profile has an engine map, IAS to fly, expected climb rate, cumulative time.
+
+The instructions guide the flying; the fuel plan counts the chosen climb. They come from the performance model of the profile (atmosphere of the fuel plan, mass not modelled): to be checked against the flight manual.
 
 ### Result
 
@@ -1465,7 +1474,13 @@ This block, in the right-hand column, follows the page while you scroll through 
 - Cursor card (⌖ on hover, 📌 pinned): fuel and time for the trip at that level, max climb rate, climb speeds; “unpin” removes the pin.
 - Collapsible group “Flight regimes — profile ↔ map” (Expert level): IAS, climb rate, engine setting and flow per phase, compared with the engine map. It also contains the “SimBrief Airframe Internal ID” field and the links to the sheets of the aircraft of this type.
 
-“Pin” keeps the whole block when it follows the page; otherwise, it collapses. “Simple view” hides the curves and instruments, “Detailed view” shows them (choice kept in this browser). At the Expert level, under the block, one panel per curve gives the optimums, the limits (ceiling, requested level) and reading help. A column of instruments (Expert level) shows IAS, climb rate, altitude, fuel and flight time.
+“Pin” keeps the whole block when it follows the page; otherwise, it collapses. “Simple view” hides the curves and instruments, “Detailed view” shows them (choice kept in this browser). At the Expert level, under the block, one panel per curve gives the optimums, the limits (ceiling, requested level) and reading help. The instrument strip (Expert level) shows IAS, altimeter, climb rate, stopwatch (climb time), fuel and flight time.
+
+### Performance profiles
+
+This block (from the Design level) reviews the profiles: one line per saved profile and per fleet type without a profile.
+- Columns: “Aircraft”, “Profile (source)” (`.lnmperf`, SimBrief, JSON, entry or estimate; “active” for the chosen aircraft, “Create” for a type without a profile), “Engine map”, “Cruise fuel flow” and its origin, “Ceiling”, “Missing data”.
+- “Import…” (`.lnmperf`, JSON, CSV), “Folder…” (performance folder), “Reread”. The folder is read again by itself when it changes elsewhere (Settings, another tab).
 
 ### Engine performance — RPM / power / consumption
 
@@ -1473,14 +1488,14 @@ This block (original title “Engine performance sheet”) gives the consumption
 
 1. Enter “RPM / N1”. The “Altitude (ft)” and “Phase” fields complete the sheet.
 2. Click “Interpolate”.
-3. Read the “Total fuel flow” and its min.–max. range (linear interpolation in the table).
+3. Read the “Total fuel flow” and its min.–max. range (interpolation in the table, by altitude when the “Altitude (ft)” column is filled in).
 
 Under the sheet, the “RPM / power → consumption curve” draws the min., nominal and max. flows by engine setting. Hover over it to read the values at a given setting. The interpolated point is marked on it.
 Without an RPM table in the profile, the page shows “RPM curve missing from the profile.” or “No quantified map”.
 
 ### RPM / power → consumption table
 
-This table lists the points of the engine map of the active profile: “RPM / N1”, “Min.”, “Nominal”, “Max.”, “Flight phase”, “Comment”. Expert level block.
+This table lists the points of the engine map of the active profile: “RPM / N1”, “Min.”, “Nominal”, “Max.”, “Altitude (ft)” (optional: one line per published altitude), “Flight phase”, “Comment”. Expert level block.
 Click a column title (↕) to sort.
 It is read-only: to change it, use the “Engine map — edit RPM / power → consumption” block.
 Without data, it shows “No RPM curve in this profile.”
@@ -1501,7 +1516,7 @@ After a change, click “Save profile” in the bottom bar.
 This block is used to enter or correct the setting → consumption table, point by point. Expert level block.
 
 1. “Add a point” creates a line.
-2. Fill in “RPM / N1”, “Min.”, “Nominal”, “Max.”, “Flight phase” and “Comment”.
+2. Fill in “RPM / N1”, “Min.”, “Nominal”, “Max.”, “Altitude (ft)” (optional: one line per published altitude), “Flight phase” and “Comment”.
 3. Save the profile (bottom bar).
 
 Tip: a range written in the comment, for example “1,000–1,300 kg/h total”, fills in min., nominal and max. when saving.
@@ -1541,7 +1556,7 @@ Useful to understand a partial calibration or a gap with SimBrief.
 ### Imported JSON / SimBrief
 
 This block shows the raw content of the last imported file (SimBrief OFP or JSON). Expert level block.
-- “Copy JSON”: copies the content to the clipboard.
+- “Copy JSON”: copies the content to the clipboard; greyed out when there is nothing to copy.
 - “Clear”: empties the display (the profile is not touched).
 
 Without an import: “No JSON loaded.”

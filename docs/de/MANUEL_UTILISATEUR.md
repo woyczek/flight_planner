@@ -1419,9 +1419,9 @@ Je nach Nutzungsstufe: Auf den Stufen 1 bis 3 (Besatzung, Planung, Gestaltung) z
 
 ### Flugzeug wählen und Profil speichern
 
-1. Klicken Sie auf den Flugzeugknopf der Kopfzeile (anfangs „Kein Flugzeug“).
-2. Wählen Sie ein Profil in der Liste, nach Kategorie gruppiert (Hubschrauber, Jets, einmotorige, Turboprops…).
-3. Ein als „Flotte, ohne Profil“ markierter Typ erzeugt ein leeres Profil: Seine Leistungsdaten sind einzutragen.
+1. Klicken Sie auf die Flugzeug-Schaltfläche der Kopfzeile (anfangs „Kein Flugzeug“): Eine Liste öffnet sich, eine Zeile pro Luftfahrzeug (Symbol, Name, Typ, Quelle des Profils, Zustand).
+2. Wählen Sie ein Luftfahrzeug mit der Maus oder mit den Pfeiltasten und dann Eingabe; Escape schließt die Liste.
+3. Ein Flottentyp ohne Profil legt ein leeres Profil an: Seine Leistungen sind einzutragen (siehe auch „Leistungsprofile“).
 
 Die Leiste unten auf der Seite zeigt „Profil gespeichert — …“ oder „Nicht gespeicherte Änderungen — …“. Sie trägt „Lokale Datenbank neu laden“, „Profil speichern“ und „Dieses Flugzeug löschen“. Diese Leiste erscheint nur auf der Stufe Experte.
 Wechseln Sie das Flugzeug mit nicht gespeicherten Änderungen, bietet die Seite „Bleiben“, „Verwerfen und wechseln“ oder „Speichern und wechseln“ an.
@@ -1431,7 +1431,7 @@ Menü ☰: Profile / CSV / JSON importieren (darunter `.lnmperf` von Little Navm
 
 1. „Flugplan (Feld 15)“: Geben Sie die Route ein. Es ist derselbe Plan wie in den Flugkarten (der neueste gewinnt). Distanz, rechtweisender Kurs und Flughöhe werden daraus abgeleitet.
 2. Ergänzen oder korrigieren Sie die Felder im aufklappbaren Bereich „Flugparameter“ (auf der Stufe Experte von Anfang an aufgeklappt, sonst zugeklappt; für eine schnelle Planung genügen die Standardwerte): „Distanz (NM)“, „Flugfläche (FL)“, „Rechtweisender Kurs (°)“, „Rollen (min)“, „Wind aus (°)“, „Wind (kt)“, „Reserve (min)“, „Unvorhergesehenes (%)“.
-3. Optional, im selben Bereich: „Geplante Startmasse“, verglichen mit der MTOW des Typs; „ISA-Abweichung (°C)“ oder „Bodentemperatur (°C)“ mit „Platzhöhe (ft)“ oder „Temperatur auf Flughöhe (°C)“. „Reiseverbrauch (kg/h)“: aus dem Profil vorbelegt; ohne Profil sagt die Seite, welchen Wert sie verwendet und woher er kommt (zum Beispiel „≈ 4 000 kg/h, Typschätzung A400“); „Diesen Wert verwenden“ übernimmt ihn ins Feld, „Für diesen Typ speichern“ behält ihn für die nächsten Flüge. „Gewählter Steigflug“: „IAS“ (kt) und Steigrate (ft/min oder Vollgas), mit Leistungseinstellung und Verbrauch in der Mitte des Steigflugs.
+3. Optional, im selben Bereich: „Geplante Startmasse“, verglichen mit der MTOW des Typs; „ISA-Abweichung (°C)“ oder „Bodentemperatur (°C)“ mit „Platzhöhe (ft)“ oder „Temperatur auf Flughöhe (°C)“. „Reiseverbrauch (kg/h)“: aus dem Profil vorbelegt; ohne Profil sagt die Seite, welchen Wert sie verwendet und woher er kommt (zum Beispiel „≈ 4 000 kg/h, Typschätzung A400“); „Diesen Wert verwenden“ übernimmt ihn ins Feld, „Für diesen Typ speichern“ behält ihn für die nächsten Flüge. „Gewählter Steigflug“ (Detailansicht): drei Schieberegler, „IAS“, Steigrate und „Leistung (%)“ (RPM oder N1, wenn das Profil ein Motorkennfeld hat), jeweils mit einem Kästchen „fest“ davor; zwei sind fest, der dritte wird berechnet und ausgegraut; „Vollgas“ erscheint unter der Steigrate; die Zeile darunter nennt Verbrauch, TAS und Leistung in der Mitte des Steigflugs. Diesen Steigflug zählt die Kraftstoffplanung.
 4. Klicken Sie auf „Berechnen“.
 
 Wind leer gelassen: Die Seite weist darauf hin („Wind unbekannt: Bereich ±25 kt…“) und gibt den Kraftstoff als Bereich an.
@@ -1445,15 +1445,24 @@ In der Detailansicht (Schaltfläche „Detailansicht“ / „Einfache Ansicht“
 | Titel | Was er zeigt |
 |---|---|
 | „Optimale Flughöhe — Kraftstoff und Geschwindigkeit“ | Gesamte Strecke auf jeder Höhe geflogen: Je höher die Kurve, desto weniger Verbrauch pro Meile. |
-| „Optimaler Steigflug — Steigrate und Kraftstoff“ | Verfügbare Steigrate und Kraftstoff pro 1000 ft nach Höhe. |
+| „Optimaler Steigflug — Steigrate und Kraftstoff“ | Verfügbare Steigrate und Kraftstoff pro 1000 ft, „nach Höhe“ oder „nach Leistungseinstellung“. |
 | „Steiggeschwindigkeiten — IAS und TAS nach Höhe“ | Vy, schneller Steigflug, wirtschaftlicher Steigflug, gewählter Steigflug, Vx. |
 | „TAS nach Flughöhe — Reise- und Steigflug“ | Wahre Geschwindigkeit im Reise- und im Steigflug. |
 | „Vergleich der Steigflüge“ | Dauer, Distanz und Kraftstoff jedes Steigflugs, bis zur Planflughöhe und dann über die ganze Strecke; ★: Bester der Spalte. |
 | „Steigflug nach Höhe — RPM-/N1-Einstellungen“ | Tabelle bei Vy mit Summen ab dem Boden. |
 
 Fahren Sie über eine Kurve, um die Werte in dieser Höhe abzulesen; klicken Sie, um eine Höhe anzuheften (weiße Linie auf allen Kurven). Die Planung wird dann auf dieser Höhe berechnet.
-Die beiden senkrechten Schieberegler (Steigrate links, IAS rechts) stellen Ihren „gewählten Steigflug“ ein, wie die gleichnamigen Felder der Kraftstoffplanung.
+Die Schieberegler „Gewählter Steigflug“ der Kraftstoffplanung stellen Ihren gewählten Steigflug ein, auf den Kurven violett gezeichnet.
 Der grau hinterlegte Bereich „unerreichbar“ liegt über der Gipfelhöhe des Luftfahrzeugs.
+
+### Steigflug-Anweisungen
+
+Dieser Block unter „Berechnen“ sagt auf jeder Nutzungsstufe, wie zu steigen ist.
+- Fünf Ziele, jedes mit Zeit und Kraftstoff bis zur Flughöhe: „Spar“, „Vy“, „Schnell“, „Profil“ (Steiggeschwindigkeit des Profils), „Eingestellt“ (gewählter Steigflug). Die Wahl bleibt in diesem Browser gespeichert.
+- Eine Anweisung in drei Teilen: „Einstellen“ (Leistung, Propeller, RPM oder N1), „Halten“ (das Instrument, das die Anweisung trägt, meist die IAS), „Erwartet“ (zu sehende Steigrate, erreichte Flughöhe, Zeit und Kraftstoff).
+- Eine Tabelle nach Höhenstufen (Boden, 2 000 ft, FL050, FL100… bis zur Planflughöhe): Leistung, RPM oder N1, wenn das Profil ein Motorkennfeld hat, zu fliegende IAS, erwartete Steigrate, kumulierte Zeit.
+
+Die Anweisungen leiten das Fliegen; die Kraftstoffplanung zählt den gewählten Steigflug. Sie stammen aus dem Leistungsmodell des Profils (Atmosphäre der Planung, Masse nicht modelliert): mit dem Flughandbuch abzugleichen.
 
 ### Ergebnis
 
@@ -1465,7 +1474,13 @@ Dieser Block in der rechten Spalte folgt der Seite, während Sie durch die Kurve
 - Karte des Cursors (⌖ beim Überfahren, 📌 angeheftet): Kraftstoff und Zeit der Strecke auf dieser Höhe, maximale Steigrate, Steiggeschwindigkeiten; „lösen“ entfernt die Anheftung.
 - Aufklappbare Gruppe „Flugphasen — Profil ↔ Kennfeld“ (Stufe Experte): IAS, Steigrate, Triebwerksdrehzahl und Durchfluss pro Phase, verglichen mit dem Triebwerkskennfeld. Sie enthält auch das Feld „SimBrief Airframe Internal ID“ und die Links zu den Blättern der Luftfahrzeuge dieses Typs.
 
-„Anheften“ behält den ganzen Block, wenn er der Seite folgt; sonst klappt er zusammen. „Einfache Ansicht“ blendet Kurven und Instrumente aus, „Detailansicht“ zeigt sie (Wahl in diesem Browser gespeichert). Auf der Stufe Experte gibt unter dem Block ein Feld pro Kurve die Optima, die Grenzen (Gipfelhöhe, angeforderte Flughöhe) und eine Lesehilfe an. Eine Instrumentenspalte (Stufe Experte) zeigt IAS, Steigrate, Höhe, Kraftstoff und Flugzeit.
+„Anheften“ behält den ganzen Block, wenn er der Seite folgt; sonst klappt er zusammen. „Einfache Ansicht“ blendet Kurven und Instrumente aus, „Detailansicht“ zeigt sie (Wahl in diesem Browser gespeichert). Auf der Stufe Experte gibt unter dem Block ein Feld pro Kurve die Optima, die Grenzen (Gipfelhöhe, angeforderte Flughöhe) und eine Lesehilfe an. Die Instrumentenleiste (Stufe Experte) zeigt IAS, Höhenmesser, Steigrate, Stoppuhr (Steigzeit), Kraftstoff und Flugzeit.
+
+### Leistungsprofile
+
+Dieser Block (ab der Stufe Gestaltung) zeigt den Stand der Profile: eine Zeile pro gespeichertem Profil und pro Flottentyp ohne Profil.
+- Spalten: „Luftfahrzeug“, „Profil (Quelle)“ (`.lnmperf`, SimBrief, JSON, Eingabe oder Schätzung; „aktiv“ für das gewählte Luftfahrzeug, „Anlegen“ für einen Typ ohne Profil), „Motorkennfeld“, „Reiseverbrauch“ und seine Herkunft, „Gipfelhöhe“, „Fehlende Daten“.
+- „Importieren…“ (`.lnmperf`, JSON, CSV), „Ordner…“ (Leistungsordner), „Neu lesen“. Der Ordner wird von selbst neu gelesen, wenn er sich anderswo ändert (Einstellungen, anderer Tab).
 
 ### Triebwerksleistung — Drehzahl / Leistung / Verbrauch
 
@@ -1473,14 +1488,14 @@ Dieser Block (ursprünglicher Titel „Fiche performance moteur“) gibt den Ver
 
 1. Geben Sie „RPM / N1“ ein. Die Felder „Höhe (ft)“ und „Phase“ ergänzen das Blatt.
 2. Klicken Sie auf „Interpolieren“.
-3. Lesen Sie den „Gesamtverbrauch“ und seinen Bereich Min.–Max. ab (lineare Interpolation in der Tabelle).
+3. Lesen Sie den „Gesamtverbrauch“ und seinen Bereich Min.–Max. ab (Interpolation in der Tabelle, nach Höhe, wenn die Spalte „Höhe (ft)“ ausgefüllt ist).
 
 Unter dem Blatt zeichnet die „Drehzahl-/Leistungs-/Verbrauchskurve“ die minimalen, nominalen und maximalen Durchflüsse nach Drehzahl. Fahren Sie darüber, um die Werte bei einer bestimmten Drehzahl abzulesen. Der interpolierte Punkt ist darauf markiert.
 Ohne RPM-Tabelle im Profil zeigt die Seite „RPM-Kurve fehlt im Profil.“ oder „Keine bezifferte Kennlinie“.
 
 ### Tabelle Drehzahl / Leistung → Verbrauch
 
-Diese Tabelle listet die Punkte des Triebwerkskennfelds des aktiven Profils auf: „RPM / N1“, „Min.“, „Nennwert“, „Max.“, „Flugphase“, „Kommentar“. Block der Stufe Experte.
+Diese Tabelle listet die Punkte des Triebwerkskennfelds des aktiven Profils auf: „RPM / N1“, „Min.“, „Nennwert“, „Max.“, „Höhe (ft)“ (optional: eine Zeile pro veröffentlichter Höhe), „Flugphase“, „Kommentar“. Block der Stufe Experte.
 Klicken Sie auf einen Spaltentitel (↕), um zu sortieren.
 Sie ist nur lesbar: Um sie zu ändern, verwenden Sie den Block „Motorkennfeld — Drehzahl / Leistung → Verbrauch bearbeiten“.
 Ohne Daten zeigt sie „Keine Drehzahlkurve in diesem Profil.“
@@ -1501,7 +1516,7 @@ Klicken Sie nach einer Änderung in der unteren Leiste auf „Profil speichern�
 Dieser Block dient dazu, die Tabelle Drehzahl → Verbrauch Punkt für Punkt einzugeben oder zu korrigieren. Block der Stufe Experte.
 
 1. „Punkt hinzufügen“ erzeugt eine Zeile.
-2. Füllen Sie „RPM / N1“, „Min.“, „Nennwert“, „Max.“, „Flugphase“ und „Kommentar“ aus.
+2. Füllen Sie „RPM / N1“, „Min.“, „Nennwert“, „Max.“, „Höhe (ft)“ (optional: eine Zeile pro veröffentlichter Höhe), „Flugphase“ und „Kommentar“ aus.
 3. Speichern Sie das Profil (untere Leiste).
 
 Tipp: Ein im Kommentar geschriebener Bereich, zum Beispiel „1 000–1 300 kg/h total“, füllt beim Speichern Min., Nennwert und Max.
@@ -1541,7 +1556,7 @@ Nützlich, um eine teilweise Kalibrierung oder eine Abweichung zu SimBrief zu ve
 ### Importiertes JSON / SimBrief
 
 Dieser Block zeigt den Rohinhalt der zuletzt importierten Datei (SimBrief-OFP oder JSON). Block der Stufe Experte.
-- „JSON kopieren“: kopiert den Inhalt in die Zwischenablage.
+- „JSON kopieren“: kopiert den Inhalt in die Zwischenablage; ausgegraut, wenn nichts zu kopieren ist.
 - „Leeren“: leert die Anzeige (das Profil wird nicht berührt).
 
 Ohne Import: „Kein JSON geladen.“

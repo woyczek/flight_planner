@@ -712,7 +712,7 @@ This section is the only place to set the local folders and the addresses of the
 | Data folder | `data/` (contains `data_tree.js`) |
 | “Derived folders (3)”, folded: ledger, missions, SIA | `data/cr`, `data/missions`, `data/sia`, set with the data folder |
 | ODV workbook folder | synchronised folder (OneDrive…) where the squadron drops the `.xlsx` |
-| X-Plane (second line: “Landing logs: other folder…”), Performance folder, Local backup folder | X-Plane installation folder (navigation data `earth_*.dat`, Custom Data; CSV landing logs, unless another folder is chosen), `.lnmperf` / `.json` profiles, `defa_local_store.yaml`; optional, shown “optional, not chosen” (information) until chosen |
+| X-Plane (second line: “Landing logs: other folder…”), Performance folder, Local backup folder | X-Plane installation folder (navigation data `earth_*.dat`, Custom Data; CSV landing logs, unless another folder is chosen), `.lnmperf` / `.json` profiles (read again by Fuel, “Performance profiles” block, as soon as the folder changes), `defa_local_store.yaml`; optional, shown “optional, not chosen” (information) until chosen |
 
 - **External sources**: the default address is shown greyed out. An entered value applies to this browser only; “↺” goes back to the default value and “Open ↗” opens the address.
 - **API keys (external services)**: suite keys, shared by all its users (IVAO: API key for the area activations and the ATC sessions — trainings, exams, bookings — of the ODV planning and the Board). “Save” hands them to the launcher (`secrets/` at the application root, excluded from git, outside the data and the backups); the page only sees their state and last 4 characters; “Clear” removes the key.
