@@ -843,10 +843,20 @@
   // ---- types d'aéronefs : base OACI fusionnée (aircraft_catalog.js) et alias (AIRCRAFT_DB.__aliases : H145 → EC45…)
   /** Codes OACI de la base des types chargée (clés techniques « __… » exclues). */
   const typeSet = () => new Set(Object.keys(window.AIRCRAFT_DB || {}).filter(k => !k.startsWith('__')));
-  /** Code de type en majuscules, remplacé par son code OACI s'il figure dans AIRCRAFT_DB.__aliases. */
+  /** Code de type en majuscules, remplacé par son code OACI s'il figure dans AIRCRAFT_DB.__aliases. Un nom écrit dans une
+   *  mission (« MIR2 Mirage 2000B », « A400M Atlas ») est ramené à son code : texte entier, puis chacun de ses mots
+   *  (lettres et chiffres seulement, comme les alias), code de la base ou alias ; texte inchangé si rien ne correspond. */
   const alias = code => {
-    const k = String(code || '').toUpperCase().trim();
-    return window.AIRCRAFT_DB?.__aliases?.[k] || k;
+    const k = String(code || '').toUpperCase().trim(),
+      db = window.AIRCRAFT_DB || {},
+      al = db.__aliases || {};
+    if (al[k]) return al[k];
+    if (db[k] && !k.startsWith('__')) return k;
+    for (const w of [k, ...k.split(/[\s/,()]+/)].map(x => x.replace(/[^A-Z0-9]/g, '')).filter(Boolean)) {
+      if (al[w]) return al[w];
+      if (db[w] && !w.startsWith('__')) return w;
+    }
+    return k;
   };
   /** Vrai si code (ou son alias) figure dans l'ensemble de types. */
   const knownType = (types, code) => types.has(alias(code)) || types.has(String(code || '').toUpperCase().trim());

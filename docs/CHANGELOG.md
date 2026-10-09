@@ -12,6 +12,11 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Corrigé
 
+- **Types d'aéronefs : types des missions comptés « inconnus » de la base OACI** (« MIR2 Mirage 2000B », « A400M Atlas
+  », « A330 MRTT Phénix »…) : le nom écrit dans la mission était comparé tel quel aux codes. Il est ramené à son code
+  (texte entier, puis chacun de ses mots, code de la base ou alias : MIR2, A4M, A332…). Alias ajoutés : H225M, EC725
+  et Caracal → EC25 (table par défaut d'`update_aircraft_db.py` et références du jeu d'essai ; pris en compte à la
+  prochaine mise à jour de la base des types).
 - **Studio et Cartes de vol : l'aperçu ne se redessinait plus après une modification du profil de carte** (fond,
   zones, symboles, éléments). Depuis la 4.2.0, « Réglages du profil » est déplacé sous l'aperçu du bloc Route, hors du
   conteneur dont l'écouteur relançait l'aperçu : ses changements n'y remontaient plus. Changements du profil écoutés
