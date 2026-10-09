@@ -85,9 +85,9 @@ Ein Klick auf eine Registerkarte öffnet die entsprechende Seite. Ein Klick mit 
 
 Der Inhalt der Seiten ist in Blöcke mit Titel aufgeteilt. Jeder Blocktitel trägt zwei Bedienelemente:
 1. „Ausblenden“ / „Anzeigen“: klappt den Block zu oder auf (in den Material-Designs ist nur das Symbol sichtbar; die Beschriftung erscheint als Tooltip).
-2. ↕ „Verschieben“: Fassen Sie diesen Griff und ziehen Sie den Block vor einen anderen Block derselben Spalte.
+2. ↕ „Verschieben“: Fassen Sie diesen Griff und ziehen Sie den Block auf einen anderen: auf dessen obere Hälfte losgelassen, kommt er davor, auf die untere Hälfte, danach; er kann die Spalte wechseln. Der Zielblock leuchtet auf, und die Seite scrollt, wenn Sie sich dem unteren Fensterrand oder der Kopfzeile nähern.
 
-Die Anordnung (Reihenfolge, ausgeblendete Blöcke) wird **pro Seite und pro Browser** gespeichert. Sie wird bei jedem Besuch übernommen.
+Die Anordnung (Reihenfolge, ausgeblendete Blöcke) wird **pro Seite und pro Browser** gespeichert. Sie wird bei jedem Besuch übernommen. Menü ☰ › „Blockreihenfolge zurücksetzen“ stellt die ursprüngliche Reihenfolge der Seite wieder her (ausgeblendete Blöcke bleiben ausgeblendet).
 Manche Blöcke sind von vornherein ausgeblendet, solange Sie sie nicht einmal angezeigt haben. Textfelder (Route, Bemerkungen…) wachsen mit ihrem Inhalt, bis zu drei Fünfteln des Bildschirms (Chrome und Edge).
 
 ### Die schwebenden Benachrichtigungen

@@ -26,7 +26,8 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 - **Manuels (4 langues), chemins d'accès de la v2** : « Compte rendu » au lieu de « CR », onglets de « Outils » (Cartes
   de vol, Carburant, Atterrissages, Analyse des missions) et de « Missions » (Registre, Générateur, Studio
   cartographique), « Réglages » au lieu de « Paramètres » ; bouton « Générer une mission » du registre ; « DLO et
-  butées » repliables ; Cartes de vol : blocs « Cheminement » et « Cartes », bouton unique des niveaux 1 à 3.
+  butées » repliables ; Cartes de vol : blocs « Cheminement » et « Cartes », bouton unique des niveaux 1 à 3. Prise en main : déplacement des blocs (moitié haute ou basse, autre colonne) et ☰ « Réinitialiser l'ordre
+  des blocs ».
 
 ## [5.0.0] — 2026-10-08
 

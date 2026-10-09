@@ -85,9 +85,9 @@ Un clic sur un onglet ouvre la page correspondante. Un clic avec Ctrl (ou Maj) l
 
 Le contenu des pages est découpé en blocs titrés. Chaque titre de bloc porte deux commandes :
 1. « Masquer » / « Afficher » : replie ou déplie le bloc (dans les designs à matières, seule l'icône est visible ; le libellé apparaît en infobulle).
-2. ↕ « Déplacer » : saisissez cette poignée et faites glisser le bloc avant un autre bloc de la même colonne.
+2. ↕ « Déplacer » : saisissez cette poignée et faites glisser le bloc sur un autre : lâché sur sa moitié haute, il se place avant lui, sur sa moitié basse, après ; il peut changer de colonne. Le bloc visé s'éclaire, et la page défile quand on approche du bas de la fenêtre ou de l'en-tête.
 
-La disposition (ordre, blocs masqués) est mémorisée **par page et par navigateur**. Elle est reprise à chaque visite.
+La disposition (ordre, blocs masqués) est mémorisée **par page et par navigateur**. Elle est reprise à chaque visite. Menu ☰ › « Réinitialiser l’ordre des blocs » remet l'ordre d'origine de la page (les blocs masqués le restent).
 Certains blocs sont masqués d'office tant que vous ne les avez pas affichés une première fois. Les champs de texte (route, remarques…) s'agrandissent avec leur contenu, dans la limite des trois cinquièmes de l'écran (Chrome et Edge).
 
 ### Les notifications flottantes

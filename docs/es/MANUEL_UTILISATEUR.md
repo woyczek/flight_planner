@@ -85,9 +85,9 @@ Un clic en una pestaña abre la página correspondiente. Un clic con Ctrl (o May
 
 El contenido de las páginas se divide en bloques con título. Cada título de bloque tiene dos controles:
 1. «Ocultar» / «Mostrar»: pliega o despliega el bloque (en los diseños con materiales, solo se ve el icono; el texto aparece como texto emergente).
-2. ↕ «Mover»: tome este asa y arrastre el bloque delante de otro bloque de la misma columna.
+2. ↕ «Mover»: tome este asa y arrastre el bloque sobre otro: soltado en su mitad superior, se coloca delante, en su mitad inferior, detrás; puede cambiar de columna. El bloque de destino se ilumina y la página se desplaza al acercarse al borde inferior de la ventana o a la cabecera.
 
-La disposición (orden, bloques ocultos) se memoriza **por página y por navegador**. Se recupera en cada visita.
+La disposición (orden, bloques ocultos) se memoriza **por página y por navegador**. Se recupera en cada visita. Menú ☰ › «Restablecer el orden de los bloques» devuelve el orden original de la página (los bloques ocultos siguen ocultos).
 Algunos bloques están ocultos de entrada mientras no los haya mostrado una primera vez. Los campos de texto (ruta, observaciones…) crecen con su contenido, hasta tres quintos de la pantalla (Chrome y Edge).
 
 ### Las notificaciones flotantes

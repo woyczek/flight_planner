@@ -85,9 +85,9 @@ A click on a tab opens the matching page. A click with Ctrl (or Shift) opens it 
 
 Page content is split into blocks with titles. Each block title carries two controls:
 1. “Hide” / “Show”: collapses or expands the block (in the material designs, only the icon is visible; the label appears as a tooltip).
-2. ↕ “Move”: grab this handle and drag the block before another block of the same column.
+2. ↕ “Move”: grab this handle and drag the block onto another: dropped on its upper half, it goes before it, on its lower half, after it; it can change column. The target block lights up, and the page scrolls when you get near the bottom of the window or the header.
 
-The layout (order, hidden blocks) is remembered **per page and per browser**. It is restored at each visit.
+The layout (order, hidden blocks) is remembered **per page and per browser**. It is restored at each visit. Menu ☰ › “Reset the block order” restores the page's original order (hidden blocks stay hidden).
 Some blocks are hidden by default until you have shown them once. Text fields (route, remarks…) grow with their content, up to three fifths of the screen (Chrome and Edge).
 
 ### Floating notifications
