@@ -34,6 +34,8 @@
   }
   .header-row {
     display: flex;
+    flex-wrap: wrap;
+    /* en-tête trop étroit : les outils du socle passent à la ligne, rien ne déborde ni ne se recouvre */
     align-items: center;
     gap: 10px;
     min-width: 0
@@ -50,6 +52,17 @@
   .header-spacer {
     flex: 1 1 auto;
     min-width: 8px
+  }
+  /* fichier de données et « Imprimer / PDF » : jamais rétrécis sous leur contenu — les outils du socle (Synchroniser,
+     Sauvegarder « dernière : … », langue, menu) passent à la ligne quand l'en-tête est trop étroit, au lieu que le bouton
+     de fichiers disparaisse sous « Imprimer / PDF » (vu en Aqua à 1 400 px) */
+  .header-right,
+  #printBtn {
+    flex: 0 0 auto
+  }
+  .header-row-1 .repo-header-tools {
+    margin-left: auto
+      /* passés à la ligne, les outils du socle restent à droite */
   }
   .header-right {
     display: flex;
