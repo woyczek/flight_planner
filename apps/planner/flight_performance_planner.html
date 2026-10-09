@@ -1162,6 +1162,29 @@
   .pp-diff .pp-same {
     opacity: .6
   }
+  /* case décochée : la valeur actuelle est gardée (ligne grisée, valeur proposée barrée, mention « gardé ») */
+  .pp-diff tr.pp-off td {
+    opacity: .55
+  }
+  .pp-diff tr.pp-off .pp-new {
+    text-decoration: line-through
+  }
+  .pp-diff .pp-keep {
+    display: none;
+    margin-left: 4px;
+    font-style: italic
+  }
+  .pp-diff tr.pp-off .pp-keep {
+    display: inline
+  }
+  .pp-diff .pp-take-all button {
+    padding: 0 4px;
+    text-decoration: underline
+  }
+  .pp-diff h4 {
+    margin: 8px 0 2px;
+    font-size: 12px
+  }
   .pp-choice .pp-diff p {
     margin: 0;
     padding: 4px 0;
@@ -1192,7 +1215,13 @@
   .perf-profiles .pp-name {
     display: flex;
     align-items: center;
+    justify-content: flex-start;
     gap: 6px
+  }
+  /* colonne de l'appareil (nom, type) alignée à gauche, en-tête compris */
+  .perf-profiles td:nth-child(3),
+  .perf-profiles th:nth-child(3) {
+    text-align: left
   }
   .perf-profiles .pp-pick,
   .perf-profiles .pp-sb {
@@ -2010,6 +2039,10 @@ function setActive(p, source = "local") {
   renderPerfProfilesSoon();
   save();
   window.updateProfileStatus?.();
+  gptFollow({
+    id: active.id,
+    landing: !state.profiles?.[active.id]
+  }); // panneau ChatGPT ouvert : il suit l'appareil choisi
   try {
     calculate()
   } catch (e) {
@@ -4757,6 +4790,10 @@ function renderPerfProfiles() {
       const c = e.target.closest(".pp-sel");
       if (!c) return;
       if (c.checked) ppSelected.add(c.dataset.id);
+      if (c.checked) gptFollow({
+        id: c.dataset.id,
+        landing: false
+      }); // panneau ChatGPT ouvert : il suit la ligne cochée
       else ppSelected.delete(c.dataset.id);
       syncMergeButton()
     });
@@ -4987,8 +5024,8 @@ function profileFieldLabel(path) {
   return f ? `${f[0]} · ${f[1]}` : path
 }
 /** Fenêtre de choix dans la page : message, champ de texte facultatif (input : valeur initiale), case facultative (check :
- *  libellé, cochée d'avance), zone facultative extra(checked, value) → nœud, redessinée quand la case ou le champ
- *  change (aperçu), fenêtre large (wide), un bouton par choix [clé, libellé] et « Annuler ». Promesse :
+ *  libellé, cochée d'avance), zone facultative extra(checked, value, ui) → nœud, redessinée quand la case change
+ *  (aperçu ; ui.setOk(libellé, grisé) règle le bouton principal), fenêtre large (wide), un bouton par choix [clé, libellé] et « Annuler ». Promesse :
  *  { key, value, checked } ou null (Échap, Annuler, clic à côté). */
 function choose(message, choices, {
   input,
@@ -5010,7 +5047,16 @@ function choose(message, choices, {
       }) : null,
       boxLabel = box ? document.createElement("label") : null,
       area = extra ? document.createElement("div") : null,
-      paint = () => area?.replaceChildren(extra(!!box?.checked, field ? field.value.trim() : "")),
+      ui = {
+        // libellé et état du bouton principal (aperçu : nombre de données reprises)
+        setOk: (label, disabled) => {
+          const b = foot.querySelector(".primary");
+          if (!b) return;
+          b.textContent = label;
+          b.disabled = !!disabled
+        }
+      },
+      paint = () => area?.replaceChildren(extra(!!box?.checked, field ? field.value.trim() : "", ui)),
       done = r => {
         d.close();
         d.remove();
@@ -5034,7 +5080,6 @@ function choose(message, choices, {
     }
     if (boxLabel) boxLabel.append(box, check);
     if (box) box.onchange = paint;
-    if (field && area) field.oninput = paint;
     paint();
     d.append(p, ...(field ? [field] : []), ...(boxLabel ? [boxLabel] : []), ...(area ? [area] : []), foot);
     d.addEventListener("cancel", e => {
@@ -5140,67 +5185,142 @@ function mergeProfileSources(keeper, sources, name) {
   else delete target.estimatedFields;
   if (refs.length) target.gptSources = refs.filter((x, i) => refs.findIndex(y => JSON.stringify(y) === JSON.stringify(x)) === i);
   target.name = name || keeper.name || target.name;
-  if (name && name !== keeper.name) origin.name = kt(["nom choisi", "chosen name", "gewählter Name", "nombre elegido"]);
-  origin.description = kt(["note de fusion", "merge note", "Zusammenführungsnotiz", "nota de fusión"]);
   target.updatedAt = new Date().toISOString();
   target.mergedProfileIds = [...new Set([...(target.mergedProfileIds || []), ...recent.filter(p => p.id !== keeper.id && !p
     ._simbriefSource).map(p => p.id)])];
-  target.description = [target.description, ktf(["Fusion du {d} : {list}.", "Merged on {d}: {list}.", "Zusammengeführt am {d}: {list}.",
-    "Fusionado el {d}: {list}."
-  ], {
-    d: new Date().toLocaleDateString(),
-    list: names
-  }), ...recent.filter(x => x._gptSource && x.description).map(x => `ChatGPT — ${x.description}`)].filter(Boolean).join(
-    "\n"); // notes et sources d'une réponse ChatGPT gardées
   return {
     target,
     before,
     base: recent[0],
     took,
     names,
-    origin
+    origin,
+    // notes et sources d'une réponse ChatGPT, gardées dans la description (finishMerge)
+    notes: recent.filter(x => x._gptSource && x.description && x !== keeper).map(x => `ChatGPT — ${x.description}`)
   }
+}
+/** Profil after où les données décochées de l'aperçu (sel.skip : chemins de champs, sel.skipCurve : clés de lignes de
+ *  cartographie) reprennent leur valeur de before ; champs estimés recalculés en conséquence. */
+function pickChanges(before, after, diff, sel) {
+  const out = structuredClone(after),
+    b = normalize(structuredClone(before || {}));
+  for (const path of sel.skip) {
+    const v = pathGet(b, path);
+    pathSet(out, path, v === undefined ? null : structuredClone(v))
+  }
+  if (sel.skipCurve.size) {
+    const old = new Map((b.rpmFuelCurve || []).map(r => [curveKey(r), r]));
+    out.rpmFuelCurve = (out.rpmFuelCurve || []).flatMap(r => {
+      const k = curveKey(r);
+      if (!sel.skipCurve.has(k)) return [r];
+      return old.has(k) ? [structuredClone(old.get(k))] : [] // remplacée : l'ancienne revient ; ajoutée : retirée
+    })
+  }
+  const est = [...(after.estimatedFields || []).filter(k => !sel.skip.has(k)), ...(b.estimatedFields || []).filter(k => sel.skip.has(k))];
+  if (est.length) out.estimatedFields = [...new Set(est)];
+  else delete out.estimatedFields;
+  return out
+}
+/** Ce qui a été repris (champs cochés par source, lignes de cartographie cochées), pour la note et la notification. */
+function takenList(diff, sel) {
+  const by = new Map();
+  for (const r of diff.rows)
+    if (r.changed && !sel.skip.has(r.path)) by.set(r.src || "—", [...(by.get(r.src || "—") || []), r.label]);
+  const out = [...by].map(([src, labels]) => `${src} : ${labels.join(", ")}`),
+    add = diff.curve.filter(c => c.kind === "added" && !sel.skipCurve.has(c.key)).length,
+    rep = diff.curve.filter(c => c.kind === "replaced" && !sel.skipCurve.has(c.key)).length;
+  if (add || rep) out.push(ktf(["cartographie moteur : {a} ligne(s) ajoutée(s), {r} remplacée(s)",
+    "engine map: {a} row(s) added, {r} replaced", "Motorkennfeld: {a} Zeile(n) hinzugefügt, {r} ersetzt",
+    "mapa motor: {a} fila(s) añadida(s), {r} sustituida(s)"
+  ], {
+    a: add,
+    r: rep
+  }));
+  return out
+}
+/** Termine une fusion après le choix des données : profil retenu (pickChanges), note de fusion qui liste seulement ce qui
+ *  a été repris, notes de ChatGPT ; res.target et res.took mis à jour. Retour : res. */
+function finishMerge(res, diff, sel) {
+  const t = pickChanges(res.before, res.target, diff, sel),
+    took = takenList(diff, sel);
+  t.description = [t.description, took.length ? ktf(["Fusion du {d} — repris : {list}.", "Merged on {d} — taken: {list}.",
+    "Zusammengeführt am {d} — übernommen: {list}.", "Fusionado el {d} — tomado: {list}."
+  ], {
+    d: new Date().toLocaleDateString(),
+    list: took.join(" ; ")
+  }) : "", ...(res.notes || [])].filter(Boolean).join("\n");
+  res.target = t;
+  res.took = took;
+  return res
+}
+/** Clé de rapprochement d'une ligne de cartographie (régime au millième, altitude) ; null sans régime. */
+function curveKey(r) {
+  return r && r.rpm !== null && r.rpm !== "" && Number.isFinite(Number(r.rpm)) ? `${Math.round(Number(r.rpm) * 1000)}@${r.altFt ?? ""}` :
+    null
 }
 /** Nom court d'une source de fusion (colonne « Source » de l'aperçu). */
 function mergeSourceShort(p) {
   return p._simbriefSource ? "SimBrief" : p._gptSource ? "ChatGPT" : p.name || p.id
 }
-/** Écart entre deux profils pour l'aperçu : champs { label, old, now, src, changed } (date de modification et fiche
- *  SimBrief brute à part ; src : origin[chemin], sinon defaultSrc pour un champ qui change), lignes de cartographie
- *  ajoutées et remplacées, nombre de changements. */
+/** Écart entre deux profils pour l'aperçu : champs { path, label, old, now, src, changed } (date de modification et
+ *  fiche SimBrief brute à part ; src : origin[chemin], sinon defaultSrc pour un champ qui change), lignes de cartographie
+ *  ajoutées ou remplacées { key, kind, label, old, now }, nombre de changements. */
 function profileDiff(before, after, origin = {}, defaultSrc = "") {
   const skip = k => k === "updatedAt" || k === "simbrief" || k.startsWith("simbriefType."),
     a = profileLeaves(before ? normalize(structuredClone(before)) : {}),
     b = profileLeaves(after),
     rows = [...new Set([...Object.keys(a), ...Object.keys(b)])].filter(k => !skip(k)).map(k => ({
+      path: k,
       label: profileFieldLabel(k),
       old: a[k],
       now: b[k],
       changed: a[k] !== b[k],
       src: origin[k] || (a[k] !== b[k] ? defaultSrc : "")
     })),
-    key = r => r && Number.isFinite(Number(r.rpm)) && r.rpm !== null && r.rpm !== "" ? `${Math.round(Number(r.rpm) * 1000)}@${r.altFt ?? ""}` :
-    null,
     plain = r => JSON.stringify(r, (k, v) => k.startsWith("_") ? undefined : v),
-    was = new Map((before?.rpmFuelCurve || []).map(r => [key(r), plain(r)]));
-  let added = 0,
-    replaced = 0;
+    was = new Map((before?.rpmFuelCurve || []).map(r => [curveKey(r), r])),
+    ff = r => r ? `${Math.round(Number(r.fuelFlowPerHour) * 10) / 10}` : "—",
+    curve = [];
   for (const r of after?.rpmFuelCurve || []) {
-    const k = key(r);
+    const k = curveKey(r);
     if (k === null) continue;
-    if (!was.has(k)) added++;
-    else if (was.get(k) !== plain(r)) replaced++
+    const o = was.get(k);
+    if (o && plain(o) === plain(r)) continue;
+    curve.push({
+      key: k,
+      kind: o ? "replaced" : "added",
+      label: `${r.rpm}${r.altFt !== null && r.altFt !== undefined && r.altFt !== "" ? ` @ ${r.altFt} ft` : ""}${r.phaseLabel ? ` (${r.phaseLabel})` : ""}`,
+      old: o ? ff(o) : "—",
+      now: ff(r)
+    })
   }
+  const added = curve.filter(c => c.kind === "added").length;
   return {
     rows,
+    curve,
     added,
-    replaced,
-    changed: rows.filter(r => r.changed).length + added + replaced
+    replaced: curve.length - added,
+    changed: rows.filter(r => r.changed).length + curve.length
   }
 }
-/** Aperçu d'un écart (profileDiff) : tableau des champs qui changent (actuel → retenu, source), champs inchangés repliés
- *  et grisés, ligne de la cartographie moteur, note facultative. */
-function diffNode(diff, note = "") {
+/** Libellé du bouton de validation selon les données cochées : « Fusionner (7 champs, 2 lignes) » ; none : rien de coché. */
+function takeLabel(base, diff, sel) {
+  const f = diff.rows.filter(r => r.changed && !sel.skip.has(r.path)).length,
+    c = diff.curve.filter(x => !sel.skipCurve.has(x.key)).length,
+    parts = [f ? ktf(["{n} champ(s)", "{n} field(s)", "{n} Feld(er)", "{n} campo(s)"], {
+      n: f
+    }) : "", c ? ktf(["{n} ligne(s) de cartographie", "{n} engine map row(s)", "{n} Kennfeldzeile(n)", "{n} fila(s) del mapa motor"], {
+      n: c
+    }) : ""].filter(Boolean);
+  return {
+    label: `${base} (${parts.join(", ") || kt(["rien", "nothing", "nichts", "nada"])})`,
+    none: !parts.length
+  }
+}
+/** Aperçu d'un écart (profileDiff) : champs qui changent (actuel → retenu, source), lignes de cartographie ajoutées ou
+ *  remplacées, champs inchangés repliés et grisés, note facultative. Avec sel ({ skip, skipCurve, onChange }) : une case
+ *  par donnée qui change (décochée : la valeur actuelle est gardée), « Tout reprendre » / « Ne rien reprendre ». */
+function diffNode(diff, note = "", sel = null) {
   const esc = KIT.esc,
     val = v => {
       if (v === undefined) return "—";
@@ -5208,34 +5328,75 @@ function diffNode(diff, note = "") {
         t = Array.isArray(x) ? x.join(", ") : typeof x === "number" ? String(Math.round(x * 10) / 10) : String(x);
       return t.length > 90 ? t.slice(0, 88) + "…" : t
     },
-    head = `<tr><th>${esc(kt(["Champ", "Field", "Feld", "Campo"]))}</th><th>${esc(kt(["Actuel", "Current", "Aktuell", "Actual"]))}</th><th>${esc(kt(["Retenu", "Kept", "Übernommen", "Retenido"]))}</th><th>${esc(kt(["Source", "Source", "Quelle", "Origen"]))}</th></tr>`,
-    line = r => `<tr${r.changed ? "" : ' class="pp-same"'}><td>${esc(r.label)}</td><td>${esc(val(r.old))}</td><td>${r.changed ? "<b>" : ""}${esc(val(r.now))}${r.changed ? "</b>" : ""}</td><td>${esc(r.src)}</td></tr>`,
+    keep = `<span class="pp-keep">${esc(kt(["gardé", "kept", "beibehalten", "conservado"]))}</span>`,
+    box = (attr, on) => sel ? `<td><input type="checkbox" class="pp-take" ${attr}${on ? " checked" : ""}></td>` : "",
+    th = sel ? "<th></th>" : "",
+    head = `<tr>${th}<th>${esc(kt(["Champ", "Field", "Feld", "Campo"]))}</th><th>${esc(kt(["Actuel", "Current", "Aktuell", "Actual"]))}</th><th>${esc(kt(["Retenu", "Kept", "Übernommen", "Retenido"]))}</th><th>${esc(kt(["Source", "Source", "Quelle", "Origen"]))}</th></tr>`,
+    line = r => {
+      const off = sel && r.changed && sel.skip.has(r.path);
+      return `<tr${r.changed ? off ? ' class="pp-off"' : "" : ' class="pp-same"'}>${r.changed ? box(`data-k="${esc(r.path)}"`, !off) : th ? "<td></td>" : ""}<td>${esc(r.label)}</td><td>${esc(val(r.old))}</td><td>${r.changed ? `<b class="pp-new">${esc(val(r.now))}</b>${keep}` : esc(val(r.now))}</td><td>${esc(r.src)}</td></tr>`
+    },
+    cline = c => {
+      const off = sel && sel.skipCurve.has(c.key);
+      return `<tr${off ? ' class="pp-off"' : ""}>${box(`data-c="${esc(c.key)}"`, !off)}<td>${esc(c.label)}</td><td>${esc(c.old)}</td><td><b class="pp-new">${esc(c.now)}</b>${keep}</td><td>${esc(c.kind === "added" ? kt(["ajoutée", "added", "hinzugefügt", "añadida"]) : kt(["remplacée", "replaced", "ersetzt", "sustituida"]))}</td></tr>`
+    },
     ch = diff.rows.filter(r => r.changed),
     same = diff.rows.filter(r => !r.changed),
-    map = diff.added || diff.replaced ? ktf(["Cartographie moteur : {a} ligne(s) ajoutée(s), {r} remplacée(s).",
-      "Engine map: {a} row(s) added, {r} replaced.", "Motorkennfeld: {a} Zeile(n) hinzugefügt, {r} ersetzt.",
-      "Mapa motor: {a} fila(s) añadida(s), {r} sustituida(s)."
-    ], {
-      a: diff.added,
-      r: diff.replaced
-    }) : kt(["Cartographie moteur inchangée.", "Engine map unchanged.", "Motorkennfeld unverändert.", "Mapa motor sin cambios."]),
+    chead = `<tr>${th}<th>${esc(kt(["Régime", "Setting", "Einstellung", "Régimen"]))}</th><th>${esc(kt(["Actuel", "Current", "Aktuell", "Actual"]))}</th><th>${esc(kt(["Retenu", "Kept", "Übernommen", "Retenido"]))}</th><th></th></tr>`,
     el = document.createElement("div");
   el.className = "pp-diff";
-  el.innerHTML = (ch.length ? `<table>${head}${ch.map(line).join("")}</table>` : `<p>${esc(kt(["Aucun champ ne change.",
-    "No field changes.", "Kein Feld ändert sich.", "Ningún campo cambia."
-  ]))}</p>`) + `<p>${esc(map)}</p>` + (same.length ? `<details><summary>${esc(ktf(["{n} champ(s) inchangé(s)",
-    "{n} unchanged field(s)", "{n} unveränderte(s) Feld(er)", "{n} campo(s) sin cambios"
-  ], {
-    n: same.length
-  }))}</summary><table>${same.map(line).join("")}</table></details>` : "") + (note ? `<p>${esc(note)}</p>` : "");
+  el.innerHTML = (sel && diff.changed ? `<p class="pp-take-all"><button type="button" class="ghost" data-all="1">${esc(kt(["Tout reprendre", "Take everything", "Alles übernehmen", "Tomar todo"]))}</button> · <button type="button" class="ghost" data-all="0">${esc(kt(["Ne rien reprendre", "Take nothing", "Nichts übernehmen", "No tomar nada"]))}</button></p>` : "") +
+    (ch.length ? `<table>${head}${ch.map(line).join("")}</table>` : `<p>${esc(kt(["Aucun champ ne change.", "No field changes.",
+      "Kein Feld ändert sich.", "Ningún campo cambia."
+    ]))}</p>`) + (diff.curve.length ? `<h4>${esc(kt(["Cartographie moteur (consommation moyenne)", "Engine map (average fuel flow)",
+      "Motorkennfeld (mittlerer Verbrauch)", "Mapa motor (consumo medio)"
+    ]))}</h4><table>${chead}${diff.curve.map(cline).join("")}</table>` : `<p>${esc(kt(["Cartographie moteur inchangée.",
+      "Engine map unchanged.", "Motorkennfeld unverändert.", "Mapa motor sin cambios."
+    ]))}</p>`) + (same.length ? `<details><summary>${esc(ktf(["{n} champ(s) inchangé(s)", "{n} unchanged field(s)",
+      "{n} unveränderte(s) Feld(er)", "{n} campo(s) sin cambios"
+    ], {
+      n: same.length
+    }))}</summary><table>${same.map(line).join("")}</table></details>` : "") + (note ?
+      `<p>${esc(note)}</p>` : "");
+  if (sel) {
+    /** Reporte une case dans la sélection et grise sa ligne. */
+    const apply = c => {
+      const set = c.dataset.k !== undefined ? sel.skip : sel.skipCurve,
+        k = c.dataset.k ?? c.dataset.c;
+      if (c.checked) set.delete(k);
+      else set.add(k);
+      c.closest("tr").classList.toggle("pp-off", !c.checked)
+    };
+    el.addEventListener("change", e => {
+      const c = e.target.closest(".pp-take");
+      if (!c) return;
+      apply(c);
+      sel.onChange?.()
+    });
+    el.addEventListener("click", e => {
+      const b = e.target.closest("[data-all]");
+      if (!b) return;
+      for (const c of el.querySelectorAll(".pp-take")) {
+        c.checked = b.dataset.all === "1";
+        apply(c)
+      }
+      sel.onChange?.()
+    })
+  }
   return el
 }
-/** Aperçu avant de valider une mise à jour : rien à montrer si rien ne change (vrai) ; sinon fenêtre « Changements » avec
- *  le bouton ok ; vrai si validé. */
-async function confirmChanges(before, after, origin, ok, defaultSrc) {
-  const diff = profileDiff(before, after, origin, defaultSrc);
-  if (!diff.changed) return true;
-  return !!await choose(ktf(["Changements de « {p} » avant de valider :", "Changes to “{p}” before confirming:",
+/** Aperçu avant de valider une mise à jour, données à cocher : after tel quel si rien ne change ; sinon fenêtre
+ *  « Changements » (bouton ok avec le nombre de données reprises, grisé si rien n'est coché). Retour : profil retenu
+ *  (pickChanges ; fusion res : note et liste des reprises via finishMerge), ou null si abandon. */
+async function confirmChanges(before, after, origin, ok, defaultSrc, res = null) {
+  const diff = profileDiff(before, after, origin, defaultSrc),
+    sel = {
+      skip: new Set(),
+      skipCurve: new Set()
+    },
+    done = () => res ? finishMerge(res, diff, sel).target : pickChanges(before, after, diff, sel);
+  if (!diff.changed) return done();
+  const r = await choose(ktf(["Changements de « {p} » avant de valider :", "Changes to “{p}” before confirming:",
     "Änderungen an „{p}“ vor der Bestätigung:", "Cambios de «{p}» antes de validar:"
   ], {
     p: after.name || after.id
@@ -5243,8 +5404,16 @@ async function confirmChanges(before, after, origin, ok, defaultSrc) {
     ["ok", ok, true]
   ], {
     wide: true,
-    extra: () => diffNode(diff)
-  })
+    extra: (_c, _v, ui) => {
+      sel.onChange = () => {
+        const t = takeLabel(ok, diff, sel);
+        ui.setOk(t.label, t.none)
+      };
+      sel.onChange();
+      return diffNode(diff, "", sel)
+    }
+  });
+  return r ? done() : null
 }
 /** Message d'une fusion : profil obtenu, base (le plus récent), ce qui a été repris des autres sources. */
 function mergeMessage({
@@ -5282,10 +5451,11 @@ async function mergeSelected() {
   const complete = [...list].sort((a, b) => profileInfo(normalize(structuredClone(a))).missing.length - profileInfo(normalize(
       structuredClone(b))).missing.length || (b.rpmFuelCurve?.length || 0) - (a.rpmFuelCurve?.length || 0))[0],
     names = recent.map(mergeSourceName).join(", ");
+  let view = null; // aperçu affiché : { res, diff, sel }
   const removed = list.filter(p => p.id !== keeper.id),
-    plan = (withSb, name) => {
+    plan = withSb => {
       const sources = [...list, ...(sbSrc && withSb ? [sbSrc] : [])];
-      return sources.length < 2 ? null : mergeProfileSources(keeper, sources, name)
+      return sources.length < 2 ? null : mergeProfileSources(keeper, sources)
     },
     nothing = kt(["Un seul profil, sans la fiche SimBrief : rien à fusionner.",
       "A single profile, without the SimBrief record: nothing to merge.",
@@ -5310,25 +5480,45 @@ async function mergeSelected() {
       d: sbSrc.updatedAt ? new Date(sbSrc.updatedAt).toLocaleDateString() : "—"
     }) : undefined,
     wide: true,
-    // aperçu : changements du profil gardé (le plus récent coché), profils retirés ensuite
-    extra: (withSb, name) => {
-      const res = plan(withSb, name);
-      if (!res) return Object.assign(document.createElement("p"), {
-        className: "pp-diff",
-        textContent: nothing
-      });
-      return diffNode(profileDiff(keeper, res.target, res.origin), removed.length ? ktf(["Retirés après la fusion : {list}.",
-        "Removed after the merge: {list}.", "Nach dem Zusammenführen entfernt: {list}.", "Retirados tras la fusión: {list}."
+    // aperçu : changements du profil gardé (le plus récent coché), données à cocher, profils retirés ensuite
+    extra: (withSb, _name, ui) => {
+      const res = plan(withSb);
+      view = null;
+      if (!res) {
+        ui.setOk(kt(["Fusionner", "Merge", "Zusammenführen", "Fusionar"]), true);
+        return Object.assign(document.createElement("p"), {
+          className: "pp-diff",
+          textContent: nothing
+        })
+      }
+      const diff = profileDiff(keeper, res.target, res.origin),
+        sel = {
+          skip: new Set(),
+          skipCurve: new Set()
+        };
+      view = {
+        res,
+        diff,
+        sel
+      };
+      sel.onChange = () => {
+        const t = takeLabel(kt(["Fusionner", "Merge", "Zusammenführen", "Fusionar"]), diff, sel);
+        ui.setOk(t.label, t.none)
+      };
+      sel.onChange();
+      return diffNode(diff, removed.length ? ktf(["Retirés après la fusion : {list}.", "Removed after the merge: {list}.",
+        "Nach dem Zusammenführen entfernt: {list}.", "Retirados tras la fusión: {list}."
       ], {
         list: removed.map(p => p.name || p.id).join(", ")
-      }) : "")
+      }) : "", sel)
     }
   });
   if (!r) return;
-  const res = plan(r.checked, r.value);
-  if (!res) return window.AppFramework?.notify?.(nothing, "warn");
-  const target = res.target,
+  if (!view) return window.AppFramework?.notify?.(nothing, "warn");
+  const res = finishMerge(view.res, view.diff, view.sel),
+    target = res.target,
     before = res.before;
+  target.name = r.value || keeper.name || target.name;
   state.profiles[target.id] = target;
   const wasActive = active && list.some(p => p.id === active.id);
   removeProfiles(removed.map(p => p.id), mergeMessage(res), () => {
@@ -5556,7 +5746,8 @@ async function simbriefProfileFor(id, landing = false) {
       if (active?.id === own.id) commitProfileEditor(false);
       const cur = state.profiles[own.id],
         res = mergeProfileSources(cur, [cur, simbriefMergeSource(code, own.unit)]);
-      if (!await confirmChanges(cur, res.target, res.origin, kt(["Fusionner", "Merge", "Zusammenführen", "Fusionar"]))) return;
+      if (!await confirmChanges(cur, res.target, res.origin, kt(["Fusionner", "Merge", "Zusammenführen", "Fusionar"]), "", res))
+        return;
       state.profiles[own.id] = res.target;
       setActive(res.target, "SimBrief");
       profilesChanged();
@@ -5571,7 +5762,8 @@ async function simbriefProfileFor(id, landing = false) {
     if (r.key === "new") {
       target = fresh;
       if (prevSb) fillProfileGaps(target, prevSb);
-      if (prevSb && !await confirmChanges(prevSb, target, {}, kt(["Appliquer", "Apply", "Übernehmen", "Aplicar"]), "SimBrief")) return;
+      if (prevSb && !(target = await confirmChanges(prevSb, target, {}, kt(["Appliquer", "Apply", "Übernehmen", "Aplicar"]),
+          "SimBrief"))) return;
       state.profiles[target.id] = target;
       undo = () => prevSb ? (state.profiles[prevSb.id] = prevSb) : delete state.profiles[target.id]
     } else {
@@ -5587,7 +5779,7 @@ async function simbriefProfileFor(id, landing = false) {
         fillProfileGaps(target, keep)
       }
       target.updatedAt = new Date().toISOString();
-      if (!await confirmChanges(own, target, {}, kt(["Appliquer", "Apply", "Übernehmen", "Aplicar"]), "SimBrief")) return;
+      if (!(target = await confirmChanges(own, target, {}, kt(["Appliquer", "Apply", "Übernehmen", "Aplicar"]), "SimBrief"))) return;
       state.profiles[own.id] = target;
       undo = () => state.profiles[before.id] = before
     }
@@ -5595,7 +5787,8 @@ async function simbriefProfileFor(id, landing = false) {
     // profil SimBrief du type : créé, ou remis à jour (ce qui a été ajouté à la main et que SimBrief ne donne pas est gardé)
     target = fresh;
     if (prevSb) fillProfileGaps(target, prevSb);
-    if (prevSb && !await confirmChanges(prevSb, target, {}, kt(["Appliquer", "Apply", "Übernehmen", "Aplicar"]), "SimBrief")) return;
+    if (prevSb && !(target = await confirmChanges(prevSb, target, {}, kt(["Appliquer", "Apply", "Übernehmen", "Aplicar"]),
+        "SimBrief"))) return;
     state.profiles[target.id] = target;
     undo = () => prevSb ? (state.profiles[prevSb.id] = prevSb) : delete state.profiles[target.id]
   }
@@ -5784,7 +5977,8 @@ async function gptCopyAndOpen() {
   ]));
   let copied = !navigator.clipboard && execCopy(txt);
   const copy = navigator.clipboard?.writeText(txt);
-  window.open(txt.length < 7000 ? `https://chatgpt.com/?q=${encodeURIComponent(txt)}` : "https://chatgpt.com/", "_blank", "noopener");
+  // un seul onglet ChatGPT, réutilisé d'un clic à l'autre ; pas de préremplissage (?q=) : le prompt n'est collé qu'une fois
+  window.open("https://chatgpt.com/", "chatgpt");
   if (copy) try {
     await copy;
     copied = true
@@ -5792,10 +5986,10 @@ async function gptCopyAndOpen() {
     copied = execCopy(txt)
   }
   setText("ppGptStatus", copied ? ktf([
-    "Prompt copié ({n} caractères) et ChatGPT ouvert : coller le prompt s'il n'y est pas déjà (Ctrl+V), l'envoyer, puis coller la réponse ci-dessous.",
-    "Prompt copied ({n} characters) and ChatGPT opened: paste the prompt if it is not there yet (Ctrl+V), send it, then paste the answer below.",
-    "Prompt kopiert ({n} Zeichen) und ChatGPT geöffnet: den Prompt einfügen, falls er noch nicht dort steht (Strg+V), senden, dann die Antwort unten einfügen.",
-    "Prompt copiado ({n} caracteres) y ChatGPT abierto: pegar el prompt si aún no está (Ctrl+V), enviarlo y pegar la respuesta abajo."
+    "Prompt copié ({n} caractères) et ChatGPT ouvert : y coller le prompt (Ctrl+V), l'envoyer, puis coller la réponse ci-dessous.",
+    "Prompt copied ({n} characters) and ChatGPT opened: paste the prompt there (Ctrl+V), send it, then paste the answer below.",
+    "Prompt kopiert ({n} Zeichen) und ChatGPT geöffnet: dort den Prompt einfügen (Strg+V), senden, dann die Antwort unten einfügen.",
+    "Prompt copiado ({n} caracteres) y ChatGPT abierto: pegar allí el prompt (Ctrl+V), enviarlo y pegar la respuesta abajo."
   ], {
     n: txt.length.toLocaleString()
   }) : kt([
@@ -6073,7 +6267,7 @@ async function gptMerge() {
     }),
     res = mergeProfileSources(cur, [cur, src]);
   gptReport(r.warnings);
-  if (!await confirmChanges(cur, res.target, res.origin, kt(["Fusionner", "Merge", "Zusammenführen", "Fusionar"]))) return;
+  if (!await confirmChanges(cur, res.target, res.origin, kt(["Fusionner", "Merge", "Zusammenführen", "Fusionar"]), "", res)) return;
   const before = res.before;
   state.profiles[e.id] = res.target;
   if (active?.id === e.id) setActive(res.target, "ChatGPT");
@@ -6102,6 +6296,22 @@ function gptRefresh(prompt = true) {
     "Fusionar (ningún perfil para este tipo)"
   ]);
   m.disabled = !has || !target
+}
+/** Panneau ChatGPT ouvert : passe à l'appareil e { id, landing } (sélecteur et prompt), sans toucher à la réponse
+ *  collée ; panneau refait si l'appareil n'est pas encore dans le sélecteur (profil tout juste créé). */
+function gptFollow(e) {
+  const box = $("ppGptPanel"),
+    sel = $("ppGptFor");
+  if (!box || box.hidden || !sel || !e?.id) return;
+  const v = (e.landing ? "L:" : "P:") + e.id;
+  if (sel.value === v) return;
+  if (![...sel.options].some(o => o.value === v)) return openGptPanel(e);
+  sel.value = v;
+  gptFor = {
+    id: e.id,
+    landing: !!e.landing
+  };
+  gptRefresh()
 }
 /** Ouvre le panneau « Demander à ChatGPT » pour pick { id, landing } (sinon : le seul profil coché, le profil actif, le
  *  premier appareil) : choix de l'appareil, copie du prompt et ouverture de ChatGPT, prompt replié, réponse à coller. */
