@@ -471,9 +471,9 @@ Chaque changement est enregistré aussitôt.
 <!-- page: apps/settings/premier_lancement.html -->
 
 Cette page règle ce dont la suite a besoin pour travailler. Le lanceur (`lancer.cmd` sous Windows, `sh lancer.sh` sous macOS ou Linux) l'ouvre de lui-même ; on y revient à tout moment par Paramètres › onglet « Premier lancement », ou par la carte « Premier lancement » de l'accueil, affichée tant qu'il reste quelque chose à régler.
-Ouverte par le lanceur, la page ne renvoie vers l'accueil que si « Terminer » a été fait pour cette installation (même dossier de la suite) et que rien d'obligatoire ne manque. Une nouvelle installation servie à la même adresse affiche donc le premier lancement, et l'accueil l'annonce en bandeau.
+Le lanceur ne ramène au premier lancement que si le dossier de l'application ou les données manquent. Une fois « Terminer » cliqué, l'accueil rappelle ce qui reste à faire dans un cadre gris discret, sans alerte.
 
-En tête, un **rail des six étapes** (1 Dossiers · 2 Données · 3 Compagnie · 4 Profil · 5 Données aéronautiques et types · 6 Centre) donne l'état de chacune : ✓ faite, ○ à faire, – facultative, 🔒 verrouillée sans l'étape 1, ✗ à refaire ; l'étape courante est cerclée, un clic ouvre une étape. Le bilan détaillé, **« Où en est la suite »**, est dans un volet replié : chaque ligne mène à son étape (✓ réglé, ○ à faire, – facultatif, ? inconnu : lanceur absent).
+En tête, un **rail des six étapes** (1 Dossiers · 2 Données · 3 Compagnie · 4 Profil · 5 Données aéronautiques et types · 6 Centre, puis « Terminer » : « à la fin », « prêt » et cerclé quand tout est fait ; l'étape Centre ne s'allume pas pour un pilote) donne l'état de chacune : ✓ faite, ○ à faire, – facultative, 🔒 verrouillée sans l'étape 1, ✗ à refaire ; l'étape courante est cerclée, un clic ouvre une étape. Le bilan détaillé, **« Où en est la suite »**, est dans un volet replié : chaque ligne mène à son étape (✓ réglé, ○ à faire, – facultatif, ? inconnu : lanceur absent).
 - Pour tous : données, dépôt git de synchronisation (facultatif), dossier de l'application, compagnie et site, clé d'API IVAO (facultative), pilote (trigramme et au moins un réseau), identifiants du site de la compagnie, données aéronautiques.
 - Centre : activation (administrateurs) ; une fois le Centre activé, flotte et journal du site, missions du registre, utilisateurs et droits (au moins un administrateur), envoi des CR (facultatif).
 
@@ -538,7 +538,7 @@ La suite ne demande jamais vos mots de passe IVAO ni VATSIM : vos identifiants (
 
 Cartes, missions et planification utilisent les données aéronautiques (AIRAC) et la base des types d’aéronefs. L'étape montre les mêmes blocs que Paramètres › Installation :
 
-1. ① « Types d’aéronefs » d'abord, précédés d'une ligne d'état (« ✓ 34 types connus, 18 avec performances », « ○ n types à compléter ») : « Compléter automatiquement » télécharge les types (OACI) et leurs performances (EUROCONTROL), puis dit « ✓ Terminé : … » (des types sans performances EUROCONTROL sont normaux pour les militaires et les hélicoptères ; un type sans fiche OACI ne bloque pas l'étape).
+1. ① « Types d’aéronefs » d'abord : la ligne d'état nomme les types à compléter et porte elle-même « Compléter automatiquement » (types OACI et performances EUROCONTROL) ; pendant la passe, « Téléchargement en cours (étape, n s) : la page se recharge à la fin de la tâche. », puis la page se recharge d'elle-même et montre le bilan (« Terminé : 8 fiche(s) OACI, 1 performance(s). »), de même après « Tout installer ». Un type sans performances EUROCONTROL (militaires, hélicoptères) est estimé : « ≈ 2 000 kg/h, 480 kt (type connu) » ou « (classe OACI L2J) », comme dans le planificateur carburant ; un type sans fiche OACI ne bloque pas l'étape.
 2. ② « Données aéronautiques », précédées de leurs lignes d'état (base : AIRAC, espaces, date de construction ; MORA ; X-Plane, facultatif) : la France est active par défaut, un clic sur la carte choisit d'autres zones, chaque source garde son bouton (ZIP du SIA : lien vers la boutique, compte gratuit, produit du cycle à 0 €, puis « Récupérer le ZIP téléchargé » ; MORA ; PDF MILAIP ; jeux des autres pays). Un seul bouton principal, **« Tout installer pour <zones> »**, enchaîne la complétion des types puis l'activation des zones, attend la fin de chaque tâche et dit ce qui reste ; ce qui est déjà installé n'est pas refait. Les cartes expertes (base aéronautique, MORA, cohérence) sont repliées sous « Outils avancés » (aussi dans Paramètres › Maintenance).
 
 ### 6 Centre (administrateurs)
@@ -550,7 +550,7 @@ Réservé aux administrateurs du SO Group : les pilotes passent cette étape et 
   - « Missions » : « ✓ n missions au registre : rien à faire », sinon d'où elles viennent (données de l'étape 2, sinon Centre › Générateur de mission), et le lien vers le registre.
   - « Réglages du SO Group » : liens vers les rubriques de Paramètres › Centre — utilisateurs et droits (nombre, administrateurs, mode), catégories de disponibilité, Planning ODV, Tableau, envoi des CR, calcul des routes.
 
-« Terminer » demande seulement les étapes 1 et 2 ; les étapes 3 à 5 sont recommandées (s'il en reste, une confirmation le rappelle au clic) ; il note la suite « réglée » et ouvre l'accueil. Le lien « Accueil » y ramène sans terminer.
+« Terminer » (dernier point du rail ; bloc de fin toujours visible sous les étapes) demande seulement les étapes 1 et 2 ; les étapes 3 à 5 sont recommandées (s'il en reste, une confirmation le rappelle au clic) ; il note la suite « réglée » et ouvre l'accueil. Le lien « Accueil » y ramène sans terminer.
 
 ### Recommencer
 
@@ -1460,7 +1460,7 @@ La zone grisée « inaccessible » se trouve au-dessus du plafond de l'appareil.
 Ce bloc, dans la colonne de droite, suit la page pendant que vous faites défiler les courbes.
 
 - « Block fuel » (en fourchette si le vent est inconnu), « Temps de vol », « TOD ».
-- Base du calcul : niveau, montée retenue et origine de la consommation de croisière (« profil enregistré », « saisie pour ce vol », « Poll-Schumann, 70 t à mi-croisière, FL350, M0,78 », « SimBrief », « estimation… »). Sans consommation connue, « Carburant bloc » affiche « — » : saisissez la consommation dans le devis.
+- Ligne d'état « Calculé pour <avion> à <heure> : <distance> NM au FL…, temps de vol, TOD. Consommation de croisière : … », puis base du calcul : niveau, montée retenue et origine de la consommation de croisière (« profil enregistré », « saisie pour ce vol », « Poll-Schumann, 70 t à mi-croisière, FL350, M0,78 », « SimBrief », « estimation… »). Sans consommation connue, « Carburant bloc » affiche « — » : saisissez la consommation dans le devis.
 - Détail : taxi, montée, croisière, descente, contingence, réserve ; masse au décollage prévue et MTOW si vous l'avez saisie (en rouge si elle est dépassée).
 - Fiche du curseur (⌖ au survol, 📌 épinglé) : carburant et temps du trajet à ce niveau, vario max, vitesses de montée ; « désépingler » retire l'épingle.
 - Groupe repliable « Régimes de vol — profil ↔ cartographie » (niveau Expert) : Badin, vario, régime moteur et débit par phase, comparés à la cartographie moteur. Il contient aussi le champ « SimBrief Airframe Internal ID » et les liens vers les fiches des appareils de ce type.

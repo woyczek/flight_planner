@@ -471,9 +471,9 @@ Jede Änderung wird sofort gespeichert.
 <!-- page: apps/settings/premier_lancement.html -->
 
 Diese Seite richtet ein, was die Suite zum Arbeiten braucht. Der Starter (`lancer.cmd` unter Windows, `sh lancer.sh` unter macOS oder Linux) öffnet sie von selbst; jederzeit erreichbar über Einstellungen › Registerkarte „Erststart“ oder die Karte „Erststart“ der Startseite, die angezeigt wird, solange noch etwas einzustellen ist.
-Vom Starter geöffnet, leitet die Seite nur dann zur Startseite weiter, wenn „Abschließen“ für diese Installation erfolgt ist (derselbe Suite-Ordner) und nichts Verpflichtendes fehlt. Eine neue Installation unter derselben Adresse zeigt daher den Erststart, und die Startseite kündigt ihn als Banner an.
+Der Starter führt nur dann zum Erststart zurück, wenn der Anwendungsordner oder die Daten fehlen. Nach „Abschließen“ erinnert die Startseite in einem dezenten grauen Rahmen an das, was noch zu tun ist, ohne Warnung.
 
-Oben zeigt eine **Leiste der sechs Schritte** (1 Ordner · 2 Daten · 3 Unternehmen · 4 Profil · 5 Luftfahrtdaten und Typen · 6 Zentrum) den Stand jedes Schritts: ✓ erledigt, ○ zu erledigen, – optional, 🔒 ohne Schritt 1 gesperrt, ✗ zu wiederholen; der aktuelle Schritt ist eingekreist, ein Klick öffnet einen Schritt. Die ausführliche Bilanz, **„Stand der Suite“**, steht in einem zugeklappten Bereich: jede Zeile führt zu ihrem Schritt (✓ eingestellt, ○ zu erledigen, – optional, ? unbekannt: kein Starter).
+Oben zeigt eine **Leiste der sechs Schritte** (1 Ordner · 2 Daten · 3 Unternehmen · 4 Profil · 5 Luftfahrtdaten und Typen · 6 Zentrum, dann „Abschließen“: „am Ende“, „bereit“ und eingekreist, wenn alles erledigt ist; der Schritt Zentrum leuchtet für einen Piloten nicht auf) den Stand jedes Schritts: ✓ erledigt, ○ zu erledigen, – optional, 🔒 ohne Schritt 1 gesperrt, ✗ zu wiederholen; der aktuelle Schritt ist eingekreist, ein Klick öffnet einen Schritt. Die ausführliche Bilanz, **„Stand der Suite“**, steht in einem zugeklappten Bereich: jede Zeile führt zu ihrem Schritt (✓ eingestellt, ○ zu erledigen, – optional, ? unbekannt: kein Starter).
 - Für alle: Daten, Git-Synchronisierungs-Repository (optional), Anwendungsordner, Fluggesellschaft und Website, IVAO-API-Schlüssel (optional), Pilot (Kürzel und mindestens ein Netzwerk), Zugangsdaten der Website, Luftfahrtdaten.
 - Zentrum: Aktivierung (Administratoren); ist das Zentrum aktiviert, Flotte und Flugbuch der Website, Missionen des Registers, Benutzer und Rechte (mindestens ein Administrator), Berichtsversand (optional).
 
@@ -538,7 +538,7 @@ Die Suite fragt nie nach Ihren IVAO- oder VATSIM-Passwörtern: Ihre Kennungen (V
 
 Karten, Missionen und Planung nutzen die Luftfahrtdaten (AIRAC) und die Datenbank der Luftfahrzeugtypen. Der Schritt zeigt dieselben Blöcke wie Einstellungen › Installation:
 
-1. ① Zuerst „Luftfahrzeugtypen“, mit einer Statuszeile davor („✓ 34 bekannte Typen, 18 mit Leistungen“, „○ n Typen zu ergänzen“): „Automatisch ergänzen“ lädt die Typen (ICAO) und ihre Leistungen (EUROCONTROL) herunter und meldet dann „✓ Fertig: …“ (Typen ohne EUROCONTROL-Leistungen sind bei Militärflugzeugen und Hubschraubern normal; ein Typ ohne ICAO-Eintrag blockiert den Schritt nicht).
+1. ① Zuerst „Luftfahrzeugtypen“: Die Statuszeile nennt die zu ergänzenden Typen und trägt selbst „Automatisch ergänzen“ (ICAO-Typen und EUROCONTROL-Leistungen); während des Durchlaufs „Download läuft (Schritt, n s): Die Seite lädt am Ende der Aufgabe neu.“, dann lädt die Seite von selbst neu und zeigt die Bilanz („Fertig: 8 ICAO-Datensätze, 1 Leistungsprofile.“), ebenso nach „Alles installieren“. Ein Typ ohne EUROCONTROL-Leistungen (Militär, Hubschrauber) wird geschätzt: „≈ 2 000 kg/h, 480 kt (bekannter Typ)“ oder „(ICAO-Klasse L2J)“, wie im Kraftstoffplaner; ein Typ ohne ICAO-Eintrag blockiert den Schritt nicht.
 2. ② „Luftfahrtdaten“, mit ihren Statuszeilen davor (Datenbank: AIRAC, Lufträume, Erstellungsdatum; MORA; X-Plane, optional): Frankreich ist standardmäßig aktiv, ein Klick auf die Karte wählt weitere Zonen, jede Quelle behält ihre Schaltfläche (SIA-ZIP: Link zum Shop, kostenloses Konto, Zyklusprodukt zu 0 €, dann „Heruntergeladene ZIP abrufen“; MORA; MILAIP-PDF; Datensätze anderer Länder). Eine einzige Hauptschaltfläche, **„Alles installieren für <Zonen>“**, verkettet das Ergänzen der Typen und dann die Aktivierung der Zonen, wartet das Ende jeder Aufgabe ab und sagt, was bleibt; bereits Installiertes wird nicht wiederholt. Die Expertenkarten (Luftfahrtdatenbank, MORA, Kohärenz) sind unter „Erweiterte Werkzeuge“ zugeklappt (auch unter Einstellungen › Wartung).
 
 ### 6 Zentrum (Administratoren)
@@ -550,7 +550,7 @@ Nur für Administratoren der SO Group: Piloten überspringen diesen Schritt und 
   - „Missionen“: „✓ n Missionen im Register: nichts zu tun“, sonst ihre Herkunft (Daten aus Schritt 2, sonst Zentrum › Missionsgenerator), und der Link zum Register.
   - „Einstellungen der SO Group“: Links zu den Rubriken unter Einstellungen › Zentrum — Benutzer und Rechte (Anzahl, Administratoren, Modus), Verfügbarkeitskategorien, ODV-Planung, Einsatztafel, Berichtsversand, Routenberechnung.
 
-„Abschließen“ verlangt nur die Schritte 1 und 2; die Schritte 3 bis 5 werden empfohlen (bleiben welche offen, erinnert beim Klick eine Bestätigung daran); es vermerkt die Suite als „eingerichtet“ und öffnet die Startseite. Der Link „Start“ führt ohne Abschluss dorthin zurück.
+„Abschließen“ (letzter Punkt der Leiste; Abschlussblock immer sichtbar unter den Schritten) verlangt nur die Schritte 1 und 2; die Schritte 3 bis 5 werden empfohlen (bleiben welche offen, erinnert beim Klick eine Bestätigung daran); es vermerkt die Suite als „eingerichtet“ und öffnet die Startseite. Der Link „Start“ führt ohne Abschluss dorthin zurück.
 
 ### Neu beginnen
 
@@ -1460,7 +1460,7 @@ Der grau hinterlegte Bereich „unerreichbar“ liegt über der Gipfelhöhe des 
 Dieser Block in der rechten Spalte folgt der Seite, während Sie durch die Kurven scrollen.
 
 - „Block fuel“ (als Bereich, wenn der Wind unbekannt ist), „Flugzeit“, „TOD“.
-- Berechnungsgrundlage: Flughöhe, verwendeter Steigflug und Herkunft des Reiseverbrauchs („gespeichertes Profil“, „für diesen Flug eingegeben“, „Poll-Schumann, 70 t in Reiseflugmitte, FL350, M0,78“, „SimBrief“, „Schätzung…“). Ohne bekannten Verbrauch zeigt „Blockkraftstoff“ „—“: den Verbrauch in der Kraftstoffplanung eingeben.
+- Statuszeile „Berechnet für <Luftfahrzeug> um <Uhrzeit>: <Distanz> NM auf FL…, Flugzeit, TOD. Reiseverbrauch: …“, dann Berechnungsgrundlage: Flughöhe, verwendeter Steigflug und Herkunft des Reiseverbrauchs („gespeichertes Profil“, „für diesen Flug eingegeben“, „Poll-Schumann, 70 t in Reiseflugmitte, FL350, M0,78“, „SimBrief“, „Schätzung…“). Ohne bekannten Verbrauch zeigt „Blockkraftstoff“ „—“: den Verbrauch in der Kraftstoffplanung eingeben.
 - Einzelheiten: Rollen, Steigflug, Reiseflug, Sinkflug, Unvorhergesehenes, Reserve; geplante Startmasse und MTOW, wenn Sie sie eingegeben haben (rot, wenn sie überschritten ist).
 - Karte des Cursors (⌖ beim Überfahren, 📌 angeheftet): Kraftstoff und Zeit der Strecke auf dieser Höhe, maximale Steigrate, Steiggeschwindigkeiten; „lösen“ entfernt die Anheftung.
 - Aufklappbare Gruppe „Flugphasen — Profil ↔ Kennfeld“ (Stufe Experte): IAS, Steigrate, Triebwerksdrehzahl und Durchfluss pro Phase, verglichen mit dem Triebwerkskennfeld. Sie enthält auch das Feld „SimBrief Airframe Internal ID“ und die Links zu den Blättern der Luftfahrzeuge dieses Typs.

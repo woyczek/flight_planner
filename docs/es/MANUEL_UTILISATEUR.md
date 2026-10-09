@@ -471,9 +471,9 @@ Cada cambio se guarda al instante.
 <!-- page: apps/settings/premier_lancement.html -->
 
 Esta página configura lo que la suite necesita para trabajar. El lanzador (`lancer.cmd` en Windows, `sh lancer.sh` en macOS o Linux) la abre por sí mismo; se vuelve a ella en cualquier momento por Ajustes › pestaña «Primer arranque», o por la tarjeta «Primer arranque» de la página de inicio, mostrada mientras quede algo por ajustar.
-Abierta por el lanzador, la página solo remite a la página de inicio si se hizo «Terminar» para esta instalación (misma carpeta de la suite) y no falta nada obligatorio. Una nueva instalación servida en la misma dirección muestra pues el primer arranque, y la página de inicio lo anuncia en un banner.
+El lanzador solo vuelve al primer arranque si faltan la carpeta de la aplicación o los datos. Una vez pulsado «Terminar», la página de inicio recuerda lo que queda por hacer en un marco gris discreto, sin alerta.
 
-Arriba, un **carril de los seis pasos** (1 Carpetas · 2 Datos · 3 Compañía · 4 Perfil · 5 Datos aeronáuticos y tipos · 6 Centro) da el estado de cada uno: ✓ hecho, ○ por hacer, – opcional, 🔒 bloqueado sin el paso 1, ✗ por rehacer; el paso actual va rodeado, un clic abre un paso. El balance detallado, **«Estado de la suite»**, está en un panel plegado: cada línea lleva a su paso (✓ ajustado, ○ por hacer, – opcional, ? desconocido: sin lanzador).
+Arriba, un **carril de los seis pasos** (1 Carpetas · 2 Datos · 3 Compañía · 4 Perfil · 5 Datos aeronáuticos y tipos · 6 Centro, y después «Terminar»: «al final», «listo» y rodeado cuando todo está hecho; el paso Centro no se ilumina para un piloto) da el estado de cada uno: ✓ hecho, ○ por hacer, – opcional, 🔒 bloqueado sin el paso 1, ✗ por rehacer; el paso actual va rodeado, un clic abre un paso. El balance detallado, **«Estado de la suite»**, está en un panel plegado: cada línea lleva a su paso (✓ ajustado, ○ por hacer, – opcional, ? desconocido: sin lanzador).
 - Para todos: datos, repositorio git de sincronización (opcional), carpeta de la aplicación, aerolínea y sitio, clave de API IVAO (opcional), piloto (trigrama y al menos una red), credenciales del sitio de la aerolínea, datos aeronáuticos.
 - Centro: activación (administradores); con el Centro activado, flota y registro del sitio, misiones del registro, usuarios y derechos (al menos un administrador), envío de informes (opcional).
 
@@ -538,7 +538,7 @@ La suite nunca pide sus contraseñas IVAO ni VATSIM: sus identificadores (VID, C
 
 Mapas, misiones y planificación usan los datos aeronáuticos (AIRAC) y la base de tipos de aeronave. El paso muestra los mismos bloques que Ajustes › Instalación:
 
-1. ① Primero «Tipos de aeronave», precedidos de una línea de estado («✓ 34 tipos conocidos, 18 con rendimientos», «○ n tipos por completar»): «Completar automáticamente» descarga los tipos (OACI) y sus rendimientos (EUROCONTROL) y después indica «✓ Terminado: …» (los tipos sin rendimientos EUROCONTROL son normales en aviones militares y helicópteros; un tipo sin ficha OACI no bloquea el paso).
+1. ① Primero «Tipos de aeronave»: la línea de estado nombra los tipos por completar y lleva ella misma «Completar automáticamente» (tipos OACI y rendimientos EUROCONTROL); durante la pasada, «Descarga en curso (paso, n s): la página se recarga al final de la tarea.», y después la página se recarga sola y muestra el balance («Terminado: 8 ficha(s) OACI, 1 rendimiento(s).»), también tras «Instalar todo». Un tipo sin rendimientos EUROCONTROL (militares, helicópteros) se estima: «≈ 2 000 kg/h, 480 kt (tipo conocido)» o «(clase OACI L2J)», como en el planificador de combustible; un tipo sin ficha OACI no bloquea el paso.
 2. ② «Datos aeronáuticos», precedidos de sus líneas de estado (base: AIRAC, espacios, fecha de construcción; MORA; X-Plane, opcional): Francia está activa por defecto, un clic en el mapa elige otras zonas, cada fuente conserva su botón (ZIP del SIA: enlace a la tienda, cuenta gratuita, producto del ciclo a 0 €, luego «Obtener el ZIP descargado»; MORA; PDF MILAIP; conjuntos de otros países). Un único botón principal, **«Instalar todo para <zonas>»**, encadena la compleción de los tipos y luego la activación de las zonas, espera el final de cada tarea y dice lo que queda; lo ya instalado no se rehace. Las tarjetas expertas (base aeronáutica, MORA, coherencia) están plegadas en «Herramientas avanzadas» (también en Ajustes › Mantenimiento).
 
 ### 6 Centro (administradores)
@@ -550,7 +550,7 @@ Reservado a los administradores del SO Group: los pilotos se saltan este paso y 
   - «Misiones»: «✓ n misiones en el registro: nada que hacer», si no de dónde vienen (datos del paso 2, si no Centro › Generador de misiones), y el enlace al registro.
   - «Ajustes del SO Group»: enlaces a las rúbricas de Ajustes › Centro — usuarios y derechos (número, administradores, modo), categorías de disponibilidad, planificación ODV, Tablero, envío de informes, cálculo de rutas.
 
-«Terminar» solo exige los pasos 1 y 2; los pasos 3 a 5 se recomiendan (si quedan, una confirmación lo recuerda al hacer clic); marca la suite como «configurada» y abre la página de inicio. El enlace «Inicio» vuelve a ella sin terminar.
+«Terminar» (último punto del carril; bloque final siempre visible bajo los pasos) solo exige los pasos 1 y 2; los pasos 3 a 5 se recomiendan (si quedan, una confirmación lo recuerda al hacer clic); marca la suite como «configurada» y abre la página de inicio. El enlace «Inicio» vuelve a ella sin terminar.
 
 ### Empezar de nuevo
 
@@ -1460,7 +1460,7 @@ La zona gris «inaccesible» está por encima del techo de la aeronave.
 Este bloque, en la columna de la derecha, acompaña a la página mientras se desplaza por las curvas.
 
 - «Block fuel» (en horquilla si el viento es desconocido), «Tiempo de vuelo», «TOD».
-- Base del cálculo: nivel, ascenso utilizado y origen del consumo de crucero («perfil guardado», «introducido para este vuelo», «Poll-Schumann, 70 t a mitad del crucero, FL350, M0,78», «SimBrief», «estimación…»). Sin consumo conocido, «Combustible de bloque» muestra «—»: introduzca el consumo en el plan de combustible.
+- Línea de estado «Calculado para <aeronave> a las <hora>: <distancia> NM a FL…, tiempo de vuelo, TOD. Consumo de crucero: …», y después base del cálculo: nivel, ascenso utilizado y origen del consumo de crucero («perfil guardado», «introducido para este vuelo», «Poll-Schumann, 70 t a mitad del crucero, FL350, M0,78», «SimBrief», «estimación…»). Sin consumo conocido, «Combustible de bloque» muestra «—»: introduzca el consumo en el plan de combustible.
 - Detalle: rodaje, ascenso, crucero, descenso, contingencia, reserva; masa de despegue prevista y MTOW si la ha introducido (en rojo si se supera).
 - Ficha del cursor (⌖ al pasar el ratón, 📌 fijado): combustible y tiempo del trayecto a ese nivel, régimen de ascenso máximo, velocidades de ascenso; «soltar» quita la fijación.
 - Grupo plegable «Regímenes de vuelo — perfil ↔ mapa» (nivel Experto): IAS, régimen de ascenso, régimen del motor y flujo por fase, comparados con el mapa del motor. También contiene el campo «SimBrief Airframe Internal ID» y los enlaces a las fichas de las aeronaves de ese tipo.

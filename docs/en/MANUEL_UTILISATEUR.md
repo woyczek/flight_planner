@@ -471,9 +471,9 @@ Each change is saved at once.
 <!-- page: apps/settings/premier_lancement.html -->
 
 This page sets up what the suite needs to work. The launcher (`lancer.cmd` on Windows, `sh lancer.sh` on macOS or Linux) opens it by itself; you can come back at any time through Settings › “First run” tab, or the “First run” card of the home page, shown as long as something remains to be set.
-Opened by the launcher, the page only sends you to the home page if “Finish” was done for this installation (same suite folder) and nothing mandatory is missing. A new installation served at the same address therefore shows the first run, and the home page announces it in a banner.
+The launcher only brings you back to the first run if the application folder or the data are missing. Once “Finish” is clicked, the home page recalls what remains to be done in a discreet grey frame, without an alert.
 
-At the top, a **rail of the six steps** (1 Folders · 2 Data · 3 Company · 4 Profile · 5 Aeronautical data and types · 6 Centre) gives the state of each: ✓ done, ○ to do, – optional, 🔒 locked without step 1, ✗ to redo; the current step is circled, a click opens a step. The detailed review, **“Where the suite stands”**, is in a folded panel: each line leads to its step (✓ set, ○ to do, – optional, ? unknown: no launcher).
+At the top, a **rail of the six steps** (1 Folders · 2 Data · 3 Company · 4 Profile · 5 Aeronautical data and types · 6 Centre, then “Finish”: “at the end”, “ready” and circled when everything is done; the Centre step does not light up for a pilot) gives the state of each: ✓ done, ○ to do, – optional, 🔒 locked without step 1, ✗ to redo; the current step is circled, a click opens a step. The detailed review, **“Where the suite stands”**, is in a folded panel: each line leads to its step (✓ set, ○ to do, – optional, ? unknown: no launcher).
 - For everyone: data, git sync repository (optional), application folder, airline and website, IVAO API key (optional), pilot (trigram and at least one network), airline website credentials, aeronautical data.
 - Centre: enabling (administrators); once the Centre is enabled, fleet and log from the website, registry missions, users and rights (at least one administrator), report sending (optional).
 
@@ -538,7 +538,7 @@ The suite never asks for your IVAO or VATSIM passwords: your IDs (VID, CID) are 
 
 Maps, missions and planning use the aeronautical data (AIRAC) and the aircraft type database. The step shows the same blocks as Settings › Installation:
 
-1. ① “Aircraft types” first, preceded by a status line (“✓ 34 known types, 18 with performance”, “○ n types to complete”): “Complete automatically” downloads the types (ICAO) and their performance (EUROCONTROL), then says “✓ Finished: …” (types without EUROCONTROL performance are normal for military aircraft and helicopters; a type without an ICAO record does not block the step).
+1. ① “Aircraft types” first: the status line names the types to complete and carries “Complete automatically” itself (ICAO types and EUROCONTROL performance); during the pass, “Download running (step, n s): the page reloads when the task ends.”, then the page reloads by itself and shows the result (“Done: 8 ICAO record(s), 1 performance profile(s).”), also after “Install everything”. A type without EUROCONTROL performance (military aircraft, helicopters) is estimated: “≈ 2,000 kg/h, 480 kt (known type)” or “(ICAO class L2J)”, as in the fuel planner; a type without an ICAO record does not block the step.
 2. ② “Aeronautical data”, preceded by their status lines (database: AIRAC, airspaces, build date; MORA; X-Plane, optional): France is active by default, a click on the map chooses other zones, each source keeps its button (SIA ZIP: link to the shop, free account, cycle product at 0 €, then “Fetch the downloaded ZIP”; MORA; MILAIP PDF; datasets of other countries). A single main button, **“Install everything for <zones>”**, chains the completion of the types then the activation of the zones, waits for the end of each task and says what remains; what is already installed is not redone. The expert cards (aeronautical database, MORA, consistency) are folded under “Advanced tools” (also in Settings › Maintenance).
 
 ### 6 Centre (administrators)
@@ -550,7 +550,7 @@ For SO Group administrators only: pilots skip this step and click “Finish”. 
   - “Missions”: “✓ n missions in the registry: nothing to do”, otherwise where they come from (data of step 2, otherwise Centre › Mission generator), and the link to the registry.
   - “SO Group settings”: links to the Settings › Centre sections — users and rights (number, administrators, mode), availability categories, ODV planning, Board, report sending, route calculation.
 
-“Finish” only requires steps 1 and 2; steps 3 to 5 are recommended (if some remain, a confirmation recalls them on click); it marks the suite as “set up” and opens the home page. The “Home” link goes back to it without finishing.
+“Finish” (last point of the rail; end block always visible under the steps) only requires steps 1 and 2; steps 3 to 5 are recommended (if some remain, a confirmation recalls them on click); it marks the suite as “set up” and opens the home page. The “Home” link goes back to it without finishing.
 
 ### Start again
 
@@ -1460,7 +1460,7 @@ The greyed “unreachable” area lies above the aircraft's ceiling.
 This block, in the right-hand column, follows the page while you scroll through the curves.
 
 - “Block fuel” (as a range if the wind is unknown), “Flight time”, “TOD”.
-- Basis of the calculation: level, climb used and origin of the cruise fuel flow (“saved profile”, “entered for this flight”, “Poll-Schumann, 70 t at mid-cruise, FL350, M0.78”, “SimBrief”, “estimate…”). With no known fuel flow, “Block fuel” shows “—”: enter the fuel flow in the fuel plan.
+- Status line “Calculated for <aircraft> at <time>: <distance> NM at FL…, flight time, TOD. Cruise fuel flow: …”, then basis of the calculation: level, climb used and origin of the cruise fuel flow (“saved profile”, “entered for this flight”, “Poll-Schumann, 70 t at mid-cruise, FL350, M0.78”, “SimBrief”, “estimate…”). With no known fuel flow, “Block fuel” shows “—”: enter the fuel flow in the fuel plan.
 - Detail: taxi, climb, cruise, descent, contingency, reserve; planned take-off mass and MTOW if you entered it (in red if it is exceeded).
 - Cursor card (⌖ on hover, 📌 pinned): fuel and time for the trip at that level, max climb rate, climb speeds; “unpin” removes the pin.
 - Collapsible group “Flight regimes — profile ↔ map” (Expert level): IAS, climb rate, engine setting and flow per phase, compared with the engine map. It also contains the “SimBrief Airframe Internal ID” field and the links to the sheets of the aircraft of this type.
