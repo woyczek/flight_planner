@@ -66,7 +66,8 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
   const fileData = data; // contenu du fichier (page Paramétrage : retour au fichier)
   // Modifications locales plus récentes que ce fichier (page Paramétrage, pas encore
   // enregistrées dans le dépôt) : prioritaires dans ce navigateur.
-  try { const o = JSON.parse(localStorage.getItem('${overrideKey}') || 'null'); if (o && o.updatedAt > META.updatedAt) data = o.data; } catch { /* stockage indisponible */ }
+  // (base : date du fichier au moment de la modification — un fichier plus récent reprend la main, la page Paramétrage fusionne)
+  try { const o = JSON.parse(localStorage.getItem('${overrideKey}') || 'null'); if (o && o.updatedAt > META.updatedAt && (!o.base || o.base === META.updatedAt)) data = o.data; } catch { /* stockage indisponible */ }
   ${exportJs}
 })();
 `;
@@ -258,15 +259,62 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
   }
 
   // ---- bases éditables
-  /** Données en vigueur d'une base : modification locale (overrideKey) si plus récente que le fichier, sinon le fichier. Sortie : { data, local : date de la modification locale ou '' }. */
-  const effective = (fileData, overrideKey, fileStamp) => {
+  /** Fusion d'une modification locale faite sur un fichier plus ancien (ou d'une ancienne surcharge sans date de base) avec le
+   *  fichier actuel : lignes du fichier gardées, lignes locales prioritaires (même clé), objets fusionnés clé par clé. */
+  const mergeOverride = (file, local, keyOf) => {
+    const out = structuredClone(file);
+    for (const [k, v] of Object.entries(local || {})) {
+      if (Array.isArray(v) && Array.isArray(out[k]) && keyOf) {
+        const key = r => keyOf(r) || JSON.stringify(r),
+          seen = new Map(out[k].map((r, i) => [key(r), i]));
+        for (const r of v) {
+          const i = seen.get(key(r));
+          if (i == null) out[k].push(structuredClone(r));
+          else out[k][i] = structuredClone(r);
+        }
+      } else if (v && typeof v === 'object' && !Array.isArray(v) && out[k] && typeof out[k] === 'object' && !Array.isArray(out[k])) {
+        for (const [kk, vv] of Object.entries(v)) {
+          out[k][kk] = vv && typeof vv === 'object' && !Array.isArray(vv) && out[k][kk] && typeof out[k][kk] === 'object' ? {
+            ...out[k][kk],
+            ...structuredClone(vv)
+          } : structuredClone(vv);
+        }
+      } else out[k] = structuredClone(v);
+    }
+    return out;
+  };
+  /** Données en vigueur d'une base : modification locale (overrideKey) si plus récente que le fichier ET faite sur ce fichier
+   *  (base), sinon fusion locale + fichier (réécrite avec la date de base : les autres pages la lisent aussi), sinon le
+   *  fichier. keyOf : clé d'une ligne des tableaux (fusion). Sortie : { data, local : date de la modification locale ou '' }. */
+  const effective = (fileData, overrideKey, fileStamp, keyOf = null) => {
     const o = read(overrideKey);
-    return o?.data && o.updatedAt > fileStamp ? {
-      data: structuredClone(o.data),
-      local: o.updatedAt
-    } : {
+    if (!o?.data || !(o.updatedAt > fileStamp)) return {
       data: structuredClone(fileData),
-      local: ''
+      local: '',
+      fileStamp
+    };
+    if (o.base === fileStamp) return {
+      data: structuredClone(o.data),
+      local: o.updatedAt,
+      fileStamp
+    };
+    // modification locale faite sur un autre état du fichier (ou ancienne, sans date de base) : fusionnée, puis réécrite
+    // avec la date de base pour que les autres pages voient la même chose
+    const data = mergeOverride(fileData, o.data, keyOf);
+    try {
+      write(overrideKey, {
+        updatedAt: now(),
+        base: fileStamp,
+        data
+      });
+    } catch {
+      /* stockage plein */
+    }
+    return {
+      data: structuredClone(data),
+      local: o.updatedAt,
+      fileStamp,
+      merged: true
     };
   };
   /** Organismes connus (table des indicatifs + SAMU), pour les listes de choix. */
@@ -477,13 +525,14 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
       rows: (window.DEFA_FLEET_FILE || window.DEFA_FLEET || []).map(r => Object.fromEntries(FLEET_COLS.map(k => [k, r[k] ?? (k ===
         'callsigns' ? [] : '')])))
     };
-    work.fleet = effective(fleetFile, 'dataOverride:fleet:v1', window.DEFA_FLEET_META?.updatedAt || '');
+    work.fleet = effective(fleetFile, 'dataOverride:fleet:v1', window.DEFA_FLEET_META?.updatedAt || '', r => String(r.registration ||
+      '').toUpperCase().replace(/[^A-Z0-9]/g, ''));
     const cs = window.MISSION_CALLSIGNS || {},
       csFile = cs.file || cs;
     work.callsigns = effective({
       table: csFile.table || [],
       operators: csFile.operators || {}
-    }, 'dataOverride:callsigns:v1', cs.META?.updatedAt || '');
+    }, 'dataOverride:callsigns:v1', cs.META?.updatedAt || '', r => String(r.prefix || '').toUpperCase());
     work.callsigns.operatorRows = Object.entries(work.callsigns.data.operators).map(([name, designator]) => ({
       name,
       designator
@@ -1404,8 +1453,10 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
             // Même date que le fichier : ignorée dès que le nouveau fichier est chargé.
             write(set.overrideKey, {
               updatedAt: stamp,
+              base: stamp,
               data: await set.overlay(stamp)
             });
+            w.fileStamp = stamp;
             w.local = '';
             dirty = false;
             status(`${T('Enregistré dans le dépôt', 'Saved to repository')} : ${files.map(f => f[0]).join(', ')} — ${T('à committer', 'to be committed')}`);
@@ -1414,6 +1465,7 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
             const stamp = now();
             write(set.overrideKey, {
               updatedAt: stamp,
+              base: w.fileStamp || '', // fichier sur lequel la modification est faite
               data: await set.overlay(stamp)
             });
             w.local = stamp;

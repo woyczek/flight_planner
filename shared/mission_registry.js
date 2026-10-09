@@ -1337,9 +1337,9 @@
   }
   /** Texte coupé à la largeur de la colonne, complet au survol (title). */
   const cut = (v, cls) => `<span class="rg-cut ${cls}" title="${esc(v || '')}">${esc(v || '')}</span>`;
-  /** Colonnes du tableau des missions (SortedTable), libellés dans la langue de la page ; v2 : colonnes minLevel 4
-   *  (équipes, RDV, AAR, théâtre) au niveau Expert seulement, retirées à la source (SortedTable ne pose pas d'attribut
-   *  par colonne) : sept colonnes aux niveaux inférieurs. */
+  /** Colonnes du tableau des missions (SortedTable), libellés dans la langue de la page ; v2 : colonnes minLevel 3
+   *  (équipes, RDV, AAR, théâtre) aux niveaux Avancé et Expert, retirées à la source (SortedTable ne pose pas d'attribut
+   *  par colonne) : sept colonnes aux niveaux 1 et 2. */
   const COLUMNS = () => [{
       key: 'id',
       label: t(['Mission', 'Mission', 'Mission', 'Misión']),
@@ -1357,7 +1357,7 @@
       html: (v, m) => `${m.organisation ? `<span class="rg-pill rg-planned">${esc(t(['organisation', 'organisation', 'Leitung', 'organización']))}</span> ` : ''}${cut(v, 'rg-cut-l')}${m.missingFile ? ' <span class="rg-pill rg-cancelled">fichier absent</span>' : ''}`
     }, {
       key: 'teamCount',
-      minLevel: 4,
+      minLevel: 3,
       label: t(['Équipes', 'Teams', 'Teams', 'Equipos']),
       html: (v, m) => {
         const k = [...(m.aircraftTypes || []), ...(m.teamTypes || [])].filter((x, i, a) => a.indexOf(x) === i).join(', ');
@@ -1366,17 +1366,17 @@
       sortValue: m => m.teamCount || 0
     }, {
       key: 'rdv',
-      minLevel: 4,
+      minLevel: 3,
       label: 'RDV',
       type: 'number'
     }, {
       key: 'aar',
-      minLevel: 4,
+      minLevel: 3,
       label: 'AAR',
       format: v => v ? '✓' : ''
     }, {
       key: 'theatre',
-      minLevel: 4,
+      minLevel: 3,
       label: t(['Théâtre', 'Theatre', 'Schauplatz', 'Teatro'])
     }, {
       key: 'status',
