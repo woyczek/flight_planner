@@ -4884,7 +4884,8 @@ function choose(message, choices, {
         d.remove();
         resolve(r)
       };
-    d.className = "pp-choice";
+    window.AppFramework?.dialogCss?.(); // fenêtre habillée par le socle (fond et encre du design)
+    d.className = "repo-ask pp-choice";
     d.setAttribute("data-no-i18n", "");
     p.textContent = message;
     for (const [key, label, primary] of [...choices, ["", kt(["Annuler", "Cancel", "Abbrechen", "Cancelar"])]]) {

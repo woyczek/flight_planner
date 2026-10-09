@@ -1696,6 +1696,7 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
       const chooseSimilar = (prefix, cands) => new Promise(resolve => {
         const K = window.RepositoryKit,
           d = document.createElement('dialog');
+        window.AppFramework?.dialogCss?.(); // style des fenêtres du socle, posé même si ask() n'a pas encore servi
         d.className = 'repo-ask da-similar';
         d.innerHTML = `<p>${esc(K.tf(['« {p} » ressemble à des entrées de la correspondance. Est-ce une autre forme de l’une d’elles ?',
           '“{p}” looks like existing correspondence entries. Is it another form of one of them?',
