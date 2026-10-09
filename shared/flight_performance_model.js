@@ -125,8 +125,20 @@
     if (e === 'J') return 'jet';
     if (e === 'T') return 'turboprop';
     if (e === 'P') return 'piston';
+    // type absent de la base OACI, motorisation non renseignée : la TAS de croisière départage (un piston ne croise pas
+    // à 300 kt, un réacteur rarement sous 320) ; aux vitesses basses, « carburant Jet » distingue turbopropulseur et
+    // piston — avant, un réacteur inconnu de la base passait pour un piston (plafond calculé vers 12 000 ft)
     const tas = +profile?.cruise?.tasKt || 0;
-    return profile?.jetFuel ? (tas > 320 ? 'jet' : 'turboprop') : 'piston';
+    if (tas > 320) return 'jet';
+    if (tas > 230) return 'turboprop';
+    return profile?.jetFuel ? 'turboprop' : 'piston';
+  }
+  /** Vrai si la motorisation n'est ni renseignée dans le profil ni connue de la base OACI (déduite de la vitesse). */
+  function kindGuessed(profile, db) {
+    if (CLASS[profile?.engineType]) return false;
+    const code = String(profile?.type || profile?.icao || profile?.id || '').toUpperCase(),
+      row = db?.[code] || db?.[db?.__aliases?.[code]];
+    return !'JTP'.includes(String(row?.description || '')[2] || '-');
   }
 
   /** Modèle de performances calibré sur un profil d'appareil (et la base des types db pour la motorisation) : polaire, poussée / puissance, consommation, plafond. Lève une erreur si la TAS ou le débit de croisière manquent. Retourne les calculs exportés (cruise, trip, climbTo, climbPoint, climbOpt, manualLaw…). */
@@ -140,6 +152,10 @@
       lapse0 = LAPSE[kind],
       jet = kind === 'jet',
       notes = [];
+    if (kindGuessed(profile, db)) notes.push(tl(`Motorisation déduite de la TAS de croisière (${Math.round(+profile?.cruise?.tasKt || 0)} kt) : ${tl(...C.label)} — type absent de la base OACI du poste ; renseigner « Motorisation » dans le profil, ou télécharger sa fiche (Paramètres › Maintenance › Types d'aéronefs).`,
+      `Engine type derived from the cruise TAS (${Math.round(+profile?.cruise?.tasKt || 0)} kt): ${tl(...C.label)} — type not in this computer's ICAO database; set “Engine type” in the profile, or download its record (Settings › Maintenance › Aircraft types).`,
+      `Antriebsart aus der Reiseflug-TAS abgeleitet (${Math.round(+profile?.cruise?.tasKt || 0)} kt): ${tl(...C.label)} — Typ fehlt in der ICAO-Datenbank dieses Rechners; „Antrieb“ im Profil setzen oder den Datensatz laden (Einstellungen › Wartung › Luftfahrzeugtypen).`,
+      `Motorización deducida de la TAS de crucero (${Math.round(+profile?.cruise?.tasKt || 0)} kt): ${tl(...C.label)} — tipo ausente de la base OACI de este equipo; indicar «Motorización» en el perfil o descargar su ficha (Ajustes › Mantenimiento › Tipos de aeronave).`));
     /** Nombre d'un champ du profil ; NaN si vide. */
     const num = v => v === null || v === undefined || v === '' ? NaN : +v;
     const cr = profile.cruise || {},
