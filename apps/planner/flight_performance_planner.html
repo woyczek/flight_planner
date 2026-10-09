@@ -3409,8 +3409,8 @@ $("clearJsonBtn").onclick = () => {
   syncCopyJsonBtn()
 };
 /** Profils d'un CSV enrichi (piste mini, table RPM texte, contingence…) ; lignes sans avion ou OACI ignorées. Lève une erreur si aucune ligne n'est valide. */
-function parsePerformanceCsvEnriched(text, name) {
-  let rows = parseDelimited(text.replace(/^\uFEFF/, ""));
+function parsePerformanceCsvEnriched(text, name, sep = ";") { // sep : séparateur (« ; » pour les CSV de la suite)
+  let rows = parseDelimited(text.replace(/^\uFEFF/, ""), sep);
   if (rows.length < 2) throw Error("CSV sans données");
   let h = rows.shift().map(x => x.trim()),
     ix = k => h.indexOf(k),
@@ -6002,7 +6002,8 @@ async function gptCopyAndOpen() {
 /** Lit la réponse collée : JSON du schéma (bloc de code accepté), sinon CSV de performances. Clés inconnues ignorées,
  *  valeurs illisibles ou hors plage écartées, unités vérifiées (kg ou lb ; varios positifs), cartographie relue comme
  *  dans l'éditeur (bornes absentes : valeur moyenne ; moyenne absente : milieu des bornes ; phase admise, sinon déduite du
- *  commentaire). Sortie : { profile (daté de maintenant, _gptSource), warnings } ; erreur si rien n'est lisible. */
+ *  commentaire). Type : celui de la réponse, code (sélecteur) en repli. Sortie : { profile (daté de maintenant,
+ *  _gptSource), warnings, code (type donné par la réponse, ou null) } ; erreur si rien n'est lisible. */
 function parseGptReply(text, code) {
   const S = window.PERF_PROMPT_SCHEMA || {},
     warnings = [],
@@ -6022,7 +6023,9 @@ function parseGptReply(text, code) {
   if (!obj || typeof obj !== "object" || Array.isArray(obj)) {
     const head = t.split(/\r?\n/)[0] || "";
     if (/aircraft/i.test(head) && /icao/i.test(head)) {
-      const list = parsePerformanceCsvEnriched(t, "ChatGPT.csv");
+      // séparateur de l'en-tête : ChatGPT rend souvent des virgules, les CSV de la suite des points-virgules
+      const count = c => head.split(c).length - 1,
+        list = parsePerformanceCsvEnriched(t, "ChatGPT.csv", [";", ",", "\t"].sort((a, b) => count(b) - count(a))[0]);
       if (list.length > 1) warnings.push(ktf(["{n} lignes CSV : seule la première est reprise.",
         "{n} CSV rows: only the first one is used.",
         "{n} CSV-Zeilen: nur die erste wird übernommen.", "{n} filas CSV: solo se toma la primera."
@@ -6030,6 +6033,7 @@ function parseGptReply(text, code) {
         n: list.length
       }));
       return {
+        code: aKey(list[0].icao || list[0].type || "") || null,
         profile: Object.assign(list[0], {
           source: {
             format: "ChatGPT (CSV)",
@@ -6114,14 +6118,8 @@ function parseGptReply(text, code) {
     const x = value(k, v);
     if (x !== undefined) out[k] = x
   }
-  if (out.icao && aKey(out.icao) !== code) warnings.push(ktf(["Code OACI de la réponse ({r}) différent du type demandé : {c} retenu.",
-    "ICAO code of the answer ({r}) differs from the requested type: {c} used.",
-    "ICAO-Code der Antwort ({r}) weicht vom angefragten Typ ab: {c} verwendet.",
-    "Código OACI de la respuesta ({r}) distinto del tipo pedido: se usa {c}."
-  ], {
-    r: out.icao,
-    c: code
-  }));
+  // type de la réponse (icao, sinon type) : il prime sur l'appareil choisi (repli seulement si la réponse n'en donne pas)
+  const replyCode = aKey(out.icao || obj.type || "") || null;
   // cartographie moteur, lue comme l'éditeur ; lignes estimées notées dans leur commentaire
   const est = (Array.isArray(obj.estimated) ? obj.estimated : []).map(String),
     estRows = new Set(est.map(x => x.match(/^rpmFuelCurve\[(\d+)\]/)?.[1]).filter(Boolean).map(Number)),
@@ -6178,8 +6176,8 @@ function parseGptReply(text, code) {
   }));
   const p = normalize({
     ...out,
-    icao: code,
-    type: code,
+    icao: replyCode || code,
+    type: replyCode || code,
     unit,
     rpmFuelCurve: curve,
     description: [obj.notes ? String(obj.notes).trim() : "", sources.length ? kt(["Sources : ", "Sources: ", "Quellen: ",
@@ -6198,6 +6196,7 @@ function parseGptReply(text, code) {
   if (fields.length) p.estimatedFields = fields;
   if (sources.length) p.gptSources = sources;
   return {
+    code: replyCode,
     profile: p,
     warnings
   }
@@ -6208,22 +6207,67 @@ function gptReport(lines, kind = "warn") {
   setText("ppGptReport", txt);
   if (txt) window.AppFramework?.notify?.(txt, kind)
 }
-/** « Importer comme nouveau profil » : profil « <nom> — ChatGPT » (identifiant GPT_<code>, numéroté s'il existe déjà),
- *  rendu actif ; « Annuler » 10 s. */
-function gptImportNew() {
-  let r;
-  try {
-    r = parseGptReply($("ppGptReply").value, gptCode())
-  } catch (e) {
-    return gptReport(e.message, "err")
-  }
+/** Deux codes désignent-ils le même type (alias de la base OACI suivis) ? */
+function sameType(a, b) {
+  return profileTypeKey({
+    icao: a
+  }) === profileTypeKey({
+    icao: b
+  })
+}
+/** Type à retenir pour une réponse r : celui de la réponse, sinon celui de l'appareil choisi ; s'ils diffèrent,
+ *  confirmation — import : « Importer comme <réponse> » / « Importer comme <choisi> » ; fusion : « Importer comme nouveau
+ *  profil <réponse> » / « Fusionner quand même ». Retour : { code, key } (key : "reply" | "sel" | "new"), ou null. */
+async function gptPickType(r, mode) {
+  const sel = gptCode(),
+    rc = r.code;
+  if (!rc || !sel || sameType(rc, sel)) return {
+    code: sel || rc, // même type (alias compris) : le code de l’appareil choisi, celui de la flotte
+    key: rc ? "reply" : "sel"
+  };
+  const target = gptFor && !gptFor.landing ? state.profiles?.[gptFor.id] : null,
+    c = await choose(ktf(["La réponse décrit {r}, l'appareil choisi est {s}.", "The answer describes {r}, the chosen aircraft is {s}.",
+      "Die Antwort beschreibt {r}, das gewählte Luftfahrzeug ist {s}.", "La respuesta describe {r}, la aeronave elegida es {s}."
+    ], {
+      r: rc,
+      s: sel
+    }), mode === "merge" ? [
+      ["new", ktf(["Importer comme nouveau profil {r}", "Import as a new {r} profile", "Als neues {r}-Profil importieren",
+        "Importar como perfil nuevo {r}"
+      ], {
+        r: rc
+      }), true],
+      ["sel", ktf(["Fusionner quand même avec « {p} »", "Merge with “{p}” anyway", "Trotzdem mit „{p}“ zusammenführen",
+        "Fusionar de todos modos con «{p}»"
+      ], {
+        p: target?.name || sel
+      })]
+    ] : [
+      ["reply", ktf(["Importer comme {c}", "Import as {c}", "Als {c} importieren", "Importar como {c}"], {
+        c: rc
+      }), true],
+      ["sel", ktf(["Importer comme {c}", "Import as {c}", "Als {c} importieren", "Importar como {c}"], {
+        c: sel
+      })]
+    ]);
+  return c ? {
+    code: c.key === "sel" ? sel : rc,
+    key: c.key
+  } : null
+}
+/** Range la réponse r comme nouveau profil du type code : identifiant GPT_<code> (numéroté s'il existe déjà), nom
+ *  « <nom> — ChatGPT » — nom de la réponse si elle décrit ce type, sinon modèle du type (jamais le nom d'un type avec le
+ *  code d'un autre) ; rendu actif, « Annuler » 10 s. */
+function gptStoreNew(r, code) {
   const p = r.profile,
-    code = gptCode(),
-    model = (window.AIRCRAFT_DB || {})[code]?.model || code;
+    model = (window.AIRCRAFT_DB || {})[code]?.model || code,
+    own = !r.code || sameType(r.code, code);
+  p.icao = p.type = code;
   let id = `GPT_${code}`;
   for (let i = 2; state.profiles[id]; i++) id = `GPT_${code}_${i}`;
   p.id = id;
-  p.name = /chatgpt/i.test(p.name || "") ? p.name : `${p.name || model} — ChatGPT`;
+  const name = own ? String(p.name || "").replace(/\s*—\s*ChatGPT$/i, "") || model : model;
+  p.name = `${name} — ChatGPT`;
   delete p._gptSource;
   storeProfile(p);
   setActive(p, "ChatGPT");
@@ -6248,6 +6292,17 @@ function gptImportNew() {
     profilesChanged()
   })
 }
+/** « Importer comme nouveau profil » : réponse lue, type retenu (gptPickType), profil rangé (gptStoreNew). */
+async function gptImportNew() {
+  let r;
+  try {
+    r = parseGptReply($("ppGptReply").value, gptCode())
+  } catch (e) {
+    return gptReport(e.message, "err")
+  }
+  const t = await gptPickType(r, "import");
+  if (t) gptStoreNew(r, t.code)
+}
 /** « Fusionner avec le profil … » : la réponse, datée de maintenant, comme source de fusion (mergeProfileSources :
  *  le plus récent gagne champ par champ, les vides sont comblés) ; aperçu avant de valider, « Annuler » 10 s. */
 async function gptMerge() {
@@ -6259,6 +6314,11 @@ async function gptMerge() {
   } catch (x) {
     return gptReport(x.message, "err")
   }
+  // réponse d'un autre type : confirmation (nouveau profil de ce type, ou fusion quand même dans le profil choisi)
+  const t = await gptPickType(r, "merge");
+  if (!t) return;
+  if (t.key === "new") return gptStoreNew(r, t.code);
+  r.profile.icao = r.profile.type = state.profiles[e.id].icao || state.profiles[e.id].type || t.code;
   if (active?.id === e.id) commitProfileEditor(false);
   const cur = state.profiles[e.id],
     u = cur.unit || "kg",

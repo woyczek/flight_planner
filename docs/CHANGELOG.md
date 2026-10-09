@@ -288,6 +288,13 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Corrigé
 
+- **Carburant, réponse ChatGPT : type de la réponse d'abord** — le code OACI et le nom viennent de la réponse (JSON :
+  `icao`, sinon `type` ; CSV : colonne ICAO), l'appareil choisi n'étant qu'un repli ; type différent : confirmation
+  (« Importer comme <réponse> » / « Importer comme <choisi> » ; pour une fusion : « Importer comme nouveau profil » /
+  « Fusionner quand même ») ; l'identifiant `GPT_<code>` et le nom « <nom> — ChatGPT » suivent le code retenu (nom de la
+  réponse seulement si elle décrit ce type, sinon modèle du type) — plus de nom d'un type avec le code d'un autre. Même
+  type par alias : code de l'appareil choisi. CSV de la réponse : séparateur de l'en-tête détecté (virgule,
+  point-virgule, tabulation). Manuel utilisateur (4 langues).
 - **En-tête des pages chargées (Atterrissages, Studio, Cartes de vol…) : contrôles de la page écrasés par les outils
   du socle** (jusqu'à 750 px en Aqua) : bouton de sauvegarde au libellé court (« Sauvegarder (184) », libellé complet
   et date de la dernière sauvegarde en infobulle, 4 langues) ; première ligne de l'en-tête qui passe à la ligne,
