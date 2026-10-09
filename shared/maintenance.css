@@ -515,3 +515,20 @@ html[data-design="field"] .mt-block :is(button.secondary, .mt-file):not(#imp) {
     margin-top: 6px
   }
 }
+
+/* Sources et dossiers : phrase « à quoi il sert » lisible (colonne du libellé plus large), journaux d'atterrissage
+   d'X-Plane en second plan sous le bouton du dossier d'installation, dossiers déduits repliés */
+@layer app {
+  .mt-folders td:first-child {
+    width: 55%
+  }
+  .mt-xpl {
+    margin-top: 4px
+  }
+  .mt-derived {
+    margin: 6px 0
+  }
+  .mt-derived>summary {
+    cursor: pointer
+  }
+}

@@ -648,24 +648,49 @@
       return;
     }
     const keys = [...FOLDER_ORDER.filter(k => FA.FOLDERS[k]), ...Object.keys(FA.FOLDERS).filter(k => !FOLDER_ORDER.includes(k))];
-    const rows = [];
-    for (const key of keys) {
+    // dossiers déduits du dossier des données (repliés, sauf en avertissement), dossiers facultatifs ; les journaux
+    // d'atterrissage (__xplane) partagent la ligne « X-Plane » du dossier d'installation (__xpnav) en second plan : le
+    // plugin écrit ses CSV où on l'a réglé (rien dans la suite ne le situe dans l'installation d'X-Plane), ils gardent
+    // leur propre dossier
+    const DERIVED = ['__ledger', '__missions', '__sia'],
+      OPTIONAL = new Set(['__odv', '__xpnav', '__xplane', '__perf', '__store']);
+    const dataSt = await FA.status('__data'),
+      dataOk = !!dataSt.handle && dataSt.permission === 'granted';
+    const rows = [],
+      folded = [];
+    for (const key of keys.filter(k => k !== '__xplane')) {
       const st = await FA.status(key),
-        info = FA.FOLDERS[key] || {};
-      let marker = '';
+        info = FA.FOLDERS[key] || {},
+        derived = DERIVED.includes(key);
+      let marker = '',
+        warn = false;
       if (st.handle && st.permission === 'granted' && info.check) {
         if (await FA.has(st.handle, info.check)) marker = pill('ok', info.check);
         else {
-          marker = pill('warn', t(['« {f} » absent : dossier attendu ?', '“{f}” missing: expected folder?'], {
+          warn = true;
+          marker = pill('warn', t(['« {f} » absent : dossier attendu ?', '“{f}” missing: expected folder?',
+            '„{f}“ fehlt: erwarteter Ordner?', '«{f}» ausente: ¿carpeta esperada?'
+          ], {
             f: info.check
           }));
         }
       }
-      const state = !st.handle ? pill('warn', t(['non choisi', 'not chosen', 'nicht gewählt', 'no elegida'])) : st.permission ===
-        'granted' ? pill('ok', t(['autorisé', 'authorised', 'erlaubt', 'autorizada'])) : pill('info', t(['à ré-autoriser',
-          'to re-authorise', 'erneut erlauben', 'a reautorizar'
+      // non choisi : avertissement pour un dossier nécessaire (ou déduit alors que les données sont là), information
+      // pour un dossier facultatif ou déduit plus tard
+      const missing = !st.handle && !OPTIONAL.has(key) && (!derived || dataOk);
+      warn ||= missing;
+      const state = !st.handle ? missing ? pill('warn', t(['non choisi', 'not chosen', 'nicht gewählt', 'no elegida'])) : pill('info',
+          derived ? t(['déduit du dossier des données', 'derived from the data folder', 'aus dem Datenordner abgeleitet',
+            'deducida de la carpeta de datos'
+          ]) : t(['facultatif, non choisi', 'optional, not chosen', 'optional, nicht gewählt', 'opcional, no elegida'])) : st
+        .permission === 'granted' ? pill('ok', t(['autorisé', 'authorised', 'erlaubt', 'autorizada'])) : pill('info', t([
+          'à ré-autoriser', 'to re-authorise', 'erneut erlauben', 'a reautorizar'
         ]));
-      rows.push(`<tr data-key="${esc(key)}"><td><b>${esc(t(info.label || [key]))}</b><br><span class="mt-small">${esc(t(info.expect || ['']))}</span></td><td class="mt-fcell"></td><td>${state} ${marker}</td></tr>`);
+      const xp = key === '__xpnav',
+        label = xp ? 'X-Plane' : t(info.label || [key]),
+        help = t((derived ? info.expect : info.use || info.expect) || ['']);
+      const html = `<tr data-key="${esc(key)}"><td><b>${esc(label)}</b><br><span class="mt-small">${esc(help)}</span></td><td class="mt-fcell">${xp ? '<div class="mt-xpl"></div>' : ''}</td><td>${state} ${marker}</td></tr>`;
+      (derived && !(dataOk && warn) ? folded : rows).push(html);
     }
     const src = window.REPOSITORY_TREE?.sources || {};
     let local = {};
@@ -709,6 +734,7 @@
       <h3>${esc(t(['Dossiers locaux', 'Local folders', 'Lokale Ordner', 'Carpetas locales']))}</h3>
       <p class="mt-small">${esc(t(['Chaque dossier est choisi une fois (le navigateur mémorise l’autorisation, parfois à reconfirmer après un redémarrage). Les sélecteurs de fichiers des pages s’ouvrent directement dans le dossier correspondant.', 'Each folder is chosen once (the browser remembers the permission, sometimes to be confirmed again after a restart). File pickers open directly in the matching folder.']))}</p>
       <div class="mt-scroll"><table class="mt-table mt-wide mt-folders"><tbody>${rows.join('')}</tbody></table></div>
+      ${folded.length ? `<details class="mt-derived"><summary>${esc(t(['Dossiers déduits ({n})', 'Derived folders ({n})', 'Abgeleitete Ordner ({n})', 'Carpetas deducidas ({n})'], { n: folded.length }))} <span class="mt-small">${esc(t(['registre, missions, SIA : réglés avec le dossier des données', 'ledger, missions, SIA: set with the data folder', 'Register, Missionen, SIA: mit dem Datenordner eingestellt', 'registro, misiones, SIA: ajustadas con la carpeta de datos']))}</span></summary><table class="mt-table mt-wide mt-folders"><tbody>${folded.join('')}</tbody></table></details>` : ''}
       <h3>${esc(t(['Sources externes', 'External sources', 'Externe Quellen', 'Fuentes externas']))}</h3>
       <p class="mt-small">${esc(t(['Adresses par défaut livrées avec l’application (repository_tree) ; une valeur saisie ici ne vaut que pour ce navigateur (sauvegardée avec les données locales). Les adresses du SIA, de la DIRCAM, de NATS, de l’AIP militaire britannique et de NAV CANADA servent aux liens des sources de Paramètres › Maintenance › Données aéronautiques ; les dossiers SIA et X-Plane ci-dessus sont les mêmes que là-bas.', 'Default addresses ship with the application (repository_tree); a value entered here applies to this browser only (saved with local data). The SIA, DIRCAM, NATS, UK military AIP and NAV CANADA addresses are the source links of Settings › Maintenance › Aeronautical data; the SIA and X-Plane folders above are the same as there.', 'Standardadressen werden mit der Anwendung geliefert (repository_tree); ein hier eingegebener Wert gilt nur für diesen Browser. Die Adressen von SIA, DIRCAM, NATS, britischem Militär-AIP und NAV CANADA sind die Quellen-Links unter Einstellungen › Wartung › Luftfahrtdaten; die SIA- und X-Plane-Ordner oben sind dieselben wie dort.', 'Direcciones por defecto entregadas con la aplicación (repository_tree); un valor introducido aquí solo vale para este navegador. Las direcciones del SIA, la DIRCAM, NATS, el AIP militar británico y NAV CANADA son los enlaces de las fuentes de Ajustes › Mantenimiento › Datos aeronáuticos; las carpetas SIA y X-Plane de arriba son las mismas que allí.']))} <a class="mt-link" href="${esc(window.RepositoryNav?.settingsUrl?.('sia') || '?m=sia')}">${esc(t(['Données aéronautiques →', 'Aeronautical data →', 'Luftfahrtdaten →', 'Datos aeronáuticos →']))}</a></p>
       <table class="mt-table mt-wide mt-sources"><tbody>${Object.entries(src).map(([k, v]) => `<tr data-src="${esc(k)}"><td><b>${esc(t(v.label || [k]))}</b></td><td><input type="url" class="mt-url" value="${esc(local[k] || '')}" placeholder="${esc(v.url)}" spellcheck="false"></td><td class="mt-nowrap">${local[k] ? pill('info', t(['modifiée', 'changed', 'geändert', 'cambiada'])) : ''} <button type="button" class="secondary" data-reset ${local[k] ? '' : 'hidden'}>↺</button> <a class="mt-link" href="${esc(openUrl(k, nav.source(k)))}" target="_blank" rel="noopener">${esc(t(['Ouvrir', 'Open', 'Öffnen', 'Abrir']))} ↗</a></td></tr>`).join('')}</tbody></table>
@@ -744,14 +770,49 @@
     // « Nettoyer et recommencer… » : sur la page du premier lancement seulement (v2, une seule occurrence)
     host.querySelector('#mtSetupOpen').onclick = () => location.assign('premier_lancement.html?force');
     if (setup && !repo.handle) host.querySelector('tr[data-key="__repo"]')?.classList.add('mt-setup-row');
-    host.querySelectorAll('tr[data-key]').forEach(tr => tr.querySelector('.mt-fcell').append(folderButton(tr.dataset.key, () => {
+    /** Tout ce qui dépend des dossiers, redessiné après un choix. */
+    const afterPick = () => {
       renderSources();
       renderVersions();
       renderDeps();
       renderBackup();
-    }, {
+    };
+    host.querySelectorAll('tr[data-key]').forEach(tr => tr.querySelector('.mt-fcell').prepend(folderButton(tr.dataset.key, afterPick, {
       withLabel: false
     })));
+    // ligne X-Plane : journaux d'atterrissage en second plan (dossier choisi : son bouton ; sinon « autre dossier… »)
+    const xpl = host.querySelector('.mt-xpl');
+    if (xpl) {
+      const own = (await FA.status('__xplane')).handle;
+      const b = own ? folderButton('__xplane', afterPick, {
+        withLabel: false
+      }) : document.createElement('button');
+      if (!own) {
+        b.type = 'button';
+        b.className = 'repo-plain mt-small';
+        b.textContent = t(['Journaux d’atterrissage : autre dossier…', 'Landing logs: other folder…',
+          'Landeprotokolle: anderer Ordner…',
+          'Registros de aterrizaje: otra carpeta…'
+        ]);
+        b.onclick = async () => {
+          try {
+            await FA.pickFolder('__xplane');
+            afterPick();
+          } catch (e) {
+            if (e?.name !== 'AbortError' && e?.message !== 'Dossier refusé') window.AppFramework?.notify?.(explain(e, t([
+              'Dossier non choisi',
+              'Folder not chosen', 'Ordner nicht gewählt', 'Carpeta no elegida'
+            ])), 'warn');
+          }
+        };
+      }
+      b.title = t(FA.FOLDERS.__xplane?.use || ['']);
+      if (own) xpl.append(Object.assign(document.createElement('span'), {
+        className: 'mt-small',
+        textContent: t(['Journaux d’atterrissage : ', 'Landing logs: ', 'Landeprotokolle: ', 'Registros de aterrizaje: '])
+      }));
+      xpl.append(b);
+    }
     host.querySelectorAll('tr[data-src]').forEach(tr => {
       const k = tr.dataset.src,
         input = tr.querySelector('input');
@@ -1488,6 +1549,19 @@
         'falló la última pasada'
       ]) : '';
     const yes = '<span class="mt-ac-yes">✓</span>';
+    /** Silhouette d'un type (AircraftDBIcons.icon) ; sans fiche OACI (ou classe inconnue), la silhouette par défaut
+     *  d'AircraftDBIcons (« other », un dirigeable, gardé à la demande de l'utilisateur) avec l'infobulle « type sans
+     *  fiche OACI : silhouette inconnue » à la place de celle d'AircraftDBIcons. */
+    const acIcon = r => {
+      if (!icons) return '';
+      const html = icons.icon({
+        icao: r.key
+      });
+      if (r.rec && !r.rec.local && icons.visual({
+          icao: r.key
+        }) !== 'other') return html;
+      return html.replace(/ title="[^"]*"/, ` title="${esc(t(['type sans fiche OACI : silhouette inconnue', 'type without ICAO record: unknown silhouette', 'Typ ohne ICAO-Datensatz: Silhouette unbekannt', 'tipo sin ficha OACI: silueta desconocida']))}"`);
+    };
     /** Ligne du tableau d'un type : icône, code (codes saisis s'ils diffèrent), modèle, classe, fiche, performances, emploi. */
     const row = r => {
       const cls = acClass(r.rec),
@@ -1512,7 +1586,7 @@
         r.absent ? pill('info', t(['absentes d’EUROCONTROL', 'not in EUROCONTROL', 'nicht bei EUROCONTROL',
           'no están en EUROCONTROL'
         ])) : pill('warn', t(['manquantes', 'missing', 'fehlen', 'faltan']));
-      return `<tr${r.rank < 2 ? ' class="mt-ac-todo"' : ''}><td class="mt-ac-ic">${icons && r.rec ? icons.icon({ icao: r.key }) : ''}</td><td><b>${esc(r.key)}</b>${other.length ? ` <span class="mt-small">(${esc(other.join(', '))})</span>` : ''}<br><span class="mt-small">${esc(model || '—')}</span></td><td>${cls.code ? `<b>${esc(cls.code)}</b><br><span class="mt-small">${esc(cls.label)}</span>` : '—'}</td><td>${fiche}</td><td>${perf}</td><td class="mt-small">${esc(used)}</td></tr>`;
+      return `<tr${r.rank < 2 ? ' class="mt-ac-todo"' : ''}><td class="mt-ac-ic">${acIcon(r)}</td><td><b>${esc(r.key)}</b>${other.length ? ` <span class="mt-small">(${esc(other.join(', '))})</span>` : ''}<br><span class="mt-small">${esc(model || '—')}</span></td><td>${cls.code ? `<b>${esc(cls.code)}</b><br><span class="mt-small">${esc(cls.label)}</span>` : '—'}</td><td>${fiche}</td><td>${perf}</td><td class="mt-small">${esc(used)}</td></tr>`;
     };
     const H = l => `<th>${esc(t(l))}</th>`;
     const table = rows.length ? `<div class="mt-scroll mt-ac-table"><table class="mt-table"><thead><tr><th></th>${H(['Type (code OACI, modèle)', 'Type (ICAO code, model)', 'Typ (ICAO-Code, Modell)', 'Tipo (código OACI, modelo)'])}${H(['Classe OACI', 'ICAO class', 'ICAO-Klasse', 'Clase OACI'])}${H(['Fiche OACI', 'ICAO record', 'ICAO-Datensatz', 'Ficha OACI'])}${H(['Performances (EUROCONTROL)', 'Performance (EUROCONTROL)', 'Leistungen (EUROCONTROL)', 'Rendimientos (EUROCONTROL)'])}${H(['Utilisé par', 'Used by', 'Verwendet von', 'Usado por'])}</tr></thead><tbody>${rows.map(row).join('')}</tbody></table></div>` :
