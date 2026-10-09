@@ -206,12 +206,13 @@
           got = rows.filter(r => imported(r) && r.reseau === net).sort(byTime);
         const ivao = net === 'IVAO';
         if (got.length) lazy.set(net, () => `<div class="odv-act-scroll"><table><thead><tr>${head}</tr></thead><tbody>${got.map(r => `<tr data-etat="${esc(r.etat)}"><td>${esc(dayLabel(r.date))}</td><td>${esc(zoneName(r.zone))}</td><td>${esc(t(ETAT[r.etat] || [r.etat]))}</td><td>${esc(r.debut)}</td><td>${esc(r.fin)}</td><td>${esc(r.texte || '')}</td><td>${esc(r.reseau)}</td></tr>`).join('')}</tbody></table></div>`);
-        return `<section class="odv-act-net" data-net="${esc(net)}"><h4>${esc(net)}</h4>
+        // colonne d'un réseau : un div (une <section> serait prise par AppFramework pour un bloc imbriqué, sans titre)
+        return `<div class="odv-act-net" data-net="${esc(net)}"><h4>${esc(net)}</h4>
           ${ivao ? '' : `<p class="odv-act-note">${esc(t(T.vatsimNote))}</p>`}
           ${mine.length ? `<div class="odv-act-scroll"><table><thead><tr>${head}<th></th></tr></thead><tbody>${mine.map(([r, i]) => line(r, i)).join('')}</tbody></table></div>` : `<p class="odv-act-note">${esc(tf(T.videNet, { r: net }))}</p>`}
           ${got.length ? `<details class="odv-act-ivao" data-net="${esc(net)}"><summary>${esc(tf(T.ivaoListe, { n: got.length }))}</summary></details>` : ''}
           ${ro ? '' : `<p class="row"><button type="button" class="secondary" data-add="${esc(net)}" data-icon="plus">${esc(t(T.ajouter))}</button>${ivao ? ` <button type="button" class="secondary" data-ivao data-icon="download" title="${esc(t(T.ivaoTitre))}">${esc(t(T.ivao))}</button>` : ''}</p>`}
-        </section>`;
+        </div>`;
       };
       host.innerHTML = `${zonesNote ? `<p class="odv-act-note">${esc(zonesNote)}</p>` : ''}
         <datalist id="${listId}"></datalist>

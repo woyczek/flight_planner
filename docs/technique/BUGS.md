@@ -16,6 +16,7 @@ Les évolutions et la dette technique n'y figurent pas (CHANGELOG, `docs/techniq
 
 | Signalé | Zone | Bug | Cause | Correction |
 |---|---|---|---|---|
+| 09/10 | Planning, Tableau (bloc des zones) | Colonnes VATSIM / IVAO des activations transformées en blocs imbriqués sans titre (signalé par Features SOG) | Colonnes écrites en `<section>`, que le framework prend pour des blocs | `<div>` dans `odv_activations_editor.js` |
 | 09/10 | Paramètres › Maintenance | La rubrique « Types d'aéronefs » apparaît un instant à l'ouverture, puis disparaît | L'éditeur des bases ouvrait sa première rubrique avant que la page n'ouvre « Mises à jour » et ne le masque | Page Maintenance sans `?base=`, ou bloc demandé (`?m=`) : aucune rubrique rendue par l'éditeur (`data_admin.js`) |
 | 08/10 | Tableau | Plaquette de convoyage réinitialisée (heure calculée, « à affecter ») à la modification d'une mission | Le recalcul retirait toute plaquette qu'il ne savait pas recalculer sur le moment (mission absente du registre, terrain sans coordonnées), puis la recréait | 3ca27ab5 |
 | 08/10 | Tableau | Pilote d'une plaquette effacé à l'enregistrement de sa fenêtre | Pilote hors de la liste des membres : pas d'option dans la liste | 3ca27ab5 |
