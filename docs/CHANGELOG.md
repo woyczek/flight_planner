@@ -43,6 +43,16 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Ajouté
 
+- **Carburant, Profils de performances : supprimer, fusionner, profil SimBrief** — sur chaque ligne, « Supprimer »
+  (confirmation, « Annuler » pendant 10 s ; profil noté supprimé, `state.removedProfiles`, que la relecture du dossier
+  performances ne ramène plus, le fichier n'étant jamais effacé ; un import explicite le ramène) et « Profil SimBrief »
+  quand le type est dans la liste de SimBrief (`AIRCRAFT_PERF[code].simbrief`) : profil « <type> — SimBrief »
+  (`SB_TYPE_<code>` : consommation, plafond, Mach ou vitesse indiquée et TAS au niveau de référence, Badin de montée et de
+  descente, carburant utilisable, piste ; masses et moteurs en description), créé ou remis à jour sans perdre ce qui a été
+  ajouté à la main ; face à un profil perso : « Mettre à jour les champs vides », « Remplacer » ou « Nouveau profil » ;
+  même bouton dans la fiche du profil actif. « Fusionner » : profils cochés du même type réunis (nom choisi, celui du
+  plus complet par défaut ; base : le plus récent ; manques comblés par les autres ; cartographie moteur réunie) ;
+  notification qui dit ce qui a été repris de chacun, « Annuler » 10 s. Manuel utilisateur (4 langues).
 - **Carburant — consignes de montée, base de performances (v2-fable, §7 de `docs/technique/V2_FABLE.md`)** :
   - **Consignes de montée** (bloc du devis, toutes vues, tous niveaux ; `shared/flight_perf_view.js`) : objectif par
     segments (Éco · Vy · Rapide · Profil · Réglée, chacun avec son temps et son carburant jusqu'au niveau), tableau par

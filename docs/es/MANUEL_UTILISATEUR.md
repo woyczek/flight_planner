@@ -1481,6 +1481,8 @@ Este bloque, en la columna de la derecha, acompaña a la página mientras se des
 Este bloque (a partir del nivel Diseño) hace balance de los perfiles: una línea por perfil guardado y por tipo de la flota sin perfil.
 - Columnas: «Aeronave», «Perfil (origen)» (`.lnmperf`, SimBrief, JSON, entrada o estimación; «activo» para la aeronave elegida, «Crear» para un tipo sin perfil), «Mapa motor», «Consumo de crucero» y su origen, «Techo», «Datos que faltan».
 - «Importar…» (`.lnmperf`, JSON, CSV), «Carpeta…» (carpeta de rendimiento), «Releer». La carpeta se relee sola cuando cambia en otro lugar (Ajustes, otra pestaña).
+- En cada línea: «Eliminar» (confirmación y después «Deshacer» durante 10 s; un archivo de la carpeta de rendimiento no se borra pero ya no se lee: importarlo de nuevo para recuperarlo) y, cuando SimBrief conoce el tipo, «Perfil SimBrief»: crea o actualiza el perfil «<tipo> — SimBrief» (consumo de crucero, techo, velocidad, masas y motores en la descripción); frente a un perfil personal, propone «Completar los campos vacíos», «Sustituir» (valores de SimBrief en su lugar, el resto conservado) o «Perfil nuevo». El mismo botón está en la ficha del perfil activo, junto a «Eliminar este avión».
+- «Fusionar»: marcar al menos dos perfiles del mismo tipo (casilla delante del nombre) y elegir el nombre (el del más completo por defecto). El perfil más reciente sirve de base, los demás completan lo que le falta, el mapa motor reúne sus filas (mismo régimen y misma altitud: la más reciente); la descripción conserva la lista de perfiles fusionados, la notificación dice qué se tomó de cada uno y «Deshacer» (10 s) lo deshace todo.
 
 ### Prestaciones motor — RPM / potencia / consumo
 

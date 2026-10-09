@@ -1481,6 +1481,8 @@ This block, in the right-hand column, follows the page while you scroll through 
 This block (from the Design level) reviews the profiles: one line per saved profile and per fleet type without a profile.
 - Columns: “Aircraft”, “Profile (source)” (`.lnmperf`, SimBrief, JSON, entry or estimate; “active” for the chosen aircraft, “Create” for a type without a profile), “Engine map”, “Cruise fuel flow” and its origin, “Ceiling”, “Missing data”.
 - “Import…” (`.lnmperf`, JSON, CSV), “Folder…” (performance folder), “Reread”. The folder is read again by itself when it changes elsewhere (Settings, another tab).
+- On each line: “Delete” (confirmation, then “Undo” for 10 s; a file in the performance folder is not erased but is no longer read: import it again to bring it back) and, when SimBrief knows the type, “SimBrief profile”: it creates or updates the profile “<type> — SimBrief” (cruise fuel flow, ceiling, speed, weights and engines in the description); against a personal profile, it offers “Fill the empty fields”, “Replace” (SimBrief values instead, the rest kept) or “New profile”. The same button is in the sheet of the active profile, next to “Delete this aircraft”.
+- “Merge”: tick at least two profiles of the same type (box before the name), then choose the name (the most complete one’s by default). The most recent profile is the base, the others fill its gaps, the engine map gathers their rows (same RPM and same altitude: the most recent); the description keeps the list of merged profiles, the notification says what was taken from each, and “Undo” (10 s) reverts everything.
 
 ### Engine performance — RPM / power / consumption
 

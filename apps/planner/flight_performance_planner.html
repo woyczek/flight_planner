@@ -1082,6 +1082,50 @@
     gap: 6px;
     margin-bottom: 8px
   }
+  /* actions d'une ligne (supprimer, profil SimBrief) et case de fusion */
+  .perf-profiles .pp-row-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: 4px
+  }
+  .perf-profiles .pp-row-actions button {
+    padding: 2px 8px;
+    font-size: 12px
+  }
+  .perf-profiles .pp-sel {
+    margin-right: 6px
+  }
+  /* choix à plusieurs réponses (profil SimBrief face à un profil perso) et saisie du nom d'une fusion */
+  .pp-choice {
+    max-width: min(560px, 92vw);
+    padding: 0;
+    border: 1px solid color-mix(in srgb, currentColor 25%, transparent);
+    border-radius: calc(10px * var(--repo-round, 1));
+    background: var(--repo-card, #fff);
+    color: var(--sk-ink, var(--repo-ink, #1d2633));
+    box-shadow: 0 18px 50px rgba(0, 0, 0, .45)
+  }
+  .pp-choice::backdrop {
+    background: rgba(10, 14, 20, .5)
+  }
+  .pp-choice p {
+    margin: 0;
+    padding: 16px 18px 6px;
+    white-space: pre-line
+  }
+  .pp-choice input {
+    display: block;
+    width: calc(100% - 36px);
+    margin: 6px 18px
+  }
+  .pp-choice footer {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 8px;
+    padding: 10px 14px 14px
+  }
   .perf-profiles {
     overflow: auto
   }
@@ -1296,7 +1340,7 @@ html[data-skeuo] .repo-block-tools .fp-result-pin[aria-pressed="true"]:not(#imp)
 </aside>
 <aside id="fpInstrCol" class="instr-col" data-fp-detail aria-label="Instruments"><div class="fp-instr-sticky"></div></aside>
 
-<section class="card span12" data-min-level="3" data-block-id="perf-profiles" data-icon="list" data-no-i18n><h2 id="ppTitle">Profils de performances</h2><p id="ppIntro" class="mut"></p><div class="row perf-profiles-actions"><button id="ppImport" type="button" class="secondary" data-icon="upload"><span id="ppImportLbl">Importer…</span></button><button id="ppFolder" type="button" class="secondary" data-icon="folder"><span id="ppFolderLbl">Dossier…</span></button><button id="ppReload" type="button" class="secondary" data-icon="refresh"><span id="ppReloadLbl">Relire</span></button><span id="ppStatus" class="mut"></span></div><div id="perfProfiles" class="perf-profiles"></div></section>
+<section class="card span12" data-min-level="3" data-block-id="perf-profiles" data-icon="list" data-no-i18n><h2 id="ppTitle">Profils de performances</h2><p id="ppIntro" class="mut"></p><div class="row perf-profiles-actions"><button id="ppImport" type="button" class="secondary" data-icon="upload"><span id="ppImportLbl">Importer…</span></button><button id="ppFolder" type="button" class="secondary" data-icon="folder"><span id="ppFolderLbl">Dossier…</span></button><button id="ppReload" type="button" class="secondary" data-icon="refresh"><span id="ppReloadLbl">Relire</span></button><button id="ppMerge" type="button" class="secondary" data-icon="layers" disabled><span id="ppMergeLbl">Fusionner</span></button><span id="ppStatus" class="mut"></span></div><div id="perfProfiles" class="perf-profiles"></div></section>
 
 
 <section class="card span6 engine-card" data-min-level="4" data-block-id="engine-performance" data-icon="wrench" data-subtitle="Performances du moteur selon le régime."><h2>Fiche performance moteur</h2><div class="fields">
@@ -1313,7 +1357,7 @@ html[data-skeuo] .repo-block-tools .fp-result-pin[aria-pressed="true"]:not(#imp)
 <div style="height:8px"></div><div class="row"><button id="sbAirframeBtn" class="primary">Importer airframe SimBrief</button><button id="importBtn" data-icon="upload">Importer `.lnmperf` / JSON / CSV</button><button id="exportLnmBtn">Exporter `.lnmperf`</button><button id="exportBtn" data-icon="download">Exporter JSON</button><button id="exportDbBtn">Exporter BDD locale</button><input id="fileInput" type="file" accept=".json,.csv,.lnmperf,application/xml,text/xml" multiple hidden></div>
 <div id="sbStatus" class="mut" style="margin-top:8px"></div></section>
 
-<section class="card span12" data-min-level="4" data-block-id="profile-data" data-icon="file-text" data-subtitle="Tous les champs du profil de l’appareil."><div class="row"><h2 style="flex:1">Données du profil — JSON ⇄ Little Navmap</h2><button id="toggleProfileEditor">Masquer les champs</button></div><div class="mut">Champs exportés exactement dans le `.lnmperf`. Une case vide reste vide dans le JSON et bloque l’export XML : aucune valeur n’est ajoutée automatiquement.</div><div id="apdBar" class="apd-bar"></div><div id="profileEditor" style="margin-top:10px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px"></div><div class="row" style="margin-top:10px"><button id="saveProfileBtn" data-icon="save" class="primary">Enregistrer le profil</button><button id="deleteProfileBtn" data-icon="x">Supprimer cet avion</button><span id="profileEditStatus" class="mut"></span></div></section>
+<section class="card span12" data-min-level="4" data-block-id="profile-data" data-icon="file-text" data-subtitle="Tous les champs du profil de l’appareil."><div class="row"><h2 style="flex:1">Données du profil — JSON ⇄ Little Navmap</h2><button id="toggleProfileEditor">Masquer les champs</button></div><div class="mut">Champs exportés exactement dans le `.lnmperf`. Une case vide reste vide dans le JSON et bloque l’export XML : aucune valeur n’est ajoutée automatiquement.</div><div id="apdBar" class="apd-bar"></div><div id="profileEditor" style="margin-top:10px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px"></div><div class="row" style="margin-top:10px"><button id="saveProfileBtn" data-icon="save" class="primary">Enregistrer le profil</button><button id="deleteProfileBtn" data-icon="x">Supprimer cet avion</button><button id="sbTypeBtn" type="button" class="secondary" data-icon="refresh" data-no-i18n hidden></button><span id="profileEditStatus" class="mut"></span></div></section>
 
 <section class="card span12" data-min-level="4" data-block-id="rpm-curve-editor" data-icon="chart" data-subtitle="Courbe de consommation à éditer point par point."><h2>Cartographie moteur — édition RPM / puissance → consommation</h2><div id="curveEditor"><div class="mut">Choisis ou importe un profil.</div></div></section>
 
@@ -1872,6 +1916,9 @@ function fillProfileGaps(target, source) {
 }
 /** Range un profil dans state.profiles (complété par l'ancienne version du même id). N'enregistre pas le stockage. */
 function storeProfile(p) {
+  // import explicite (fichier, OFP, SimBrief) d'un profil supprimé auparavant : il revient (la relecture du dossier, elle,
+  // saute les profils supprimés avant d'arriver ici)
+  if (state.removedProfiles?.[p.id]) delete state.removedProfiles[p.id];
   let old = state.profiles[p.id];
   if (old && old !== p) fillProfileGaps(p, old);
   state.profiles[p.id] = p
@@ -3411,14 +3458,8 @@ $("toggleProfileEditor").onclick = () => {
   $("toggleProfileEditor").textContent = state.profileEditorHidden ? "Afficher les champs" : "Masquer les champs";
   save()
 };
-// Supprime le profil actif du stockage local (après confirmation).
-$("deleteProfileBtn").onclick = async () => {
-  if (!active) return;
-  let label = active.name || active.id;
-  if (!await window.AppFramework.ask(`Supprimer définitivement le profil « ${label} » du stockage local ?`)) return;
-  delete state.profiles[active.id];
-  clearActive(`Profil supprimé : ${label}`)
-};
+// Supprime le profil actif de la base locale (confirmation, puis « Annuler » pendant 10 s : deleteProfileAsk).
+$("deleteProfileBtn").onclick = () => active && deleteProfileAsk(active.id);
 // Exporte le profil actif en JSON.
 $("exportBtn").onclick = () => {
   try {
@@ -3484,6 +3525,8 @@ async function readPerfFolder(handle) {
         profiles = low.endsWith(".lnmperf") ? [parseLnmperf(txt, name)] : low.endsWith(".csv") ? parsePerformanceCsvEnriched(txt,
           name) : profilesFromJson(JSON.parse(txt), name);
       for (const p of profiles) {
+        // profil supprimé ou absorbé par une fusion dans cette page : pas ramené par la relecture du dossier
+        if (state.removedProfiles?.[p.id]) continue;
         storeProfile(p);
         count++
       }
@@ -4621,6 +4664,7 @@ function renderPerfProfilesSoon() {
  *  manquantes nommées. Écrit seulement si le contenu change. */
 function renderPerfProfiles() {
   perfProfilesLabels();
+  syncSbTypeButton();
   const box = $("perfProfiles");
   if (!box) return;
   const esc = KIT.esc,
@@ -4636,12 +4680,27 @@ function renderPerfProfiles() {
   if (!box.dataset.ready) {
     box.dataset.ready = "1";
     box.addEventListener("click", e => {
+      const del = e.target.closest(".pp-del"),
+        sb = e.target.closest(".pp-sb");
+      if (del) return deleteProfileAsk(del.dataset.id);
+      if (sb) return simbriefProfileFor(sb.dataset.id, !!sb.dataset.landing);
       const b = e.target.closest(".pp-pick");
       if (!b) return;
       const p = b.dataset.landing ? newProfileFromLanding(b.dataset.id) : state.profiles?.[b.dataset.id];
       if (p) setActive(p, kt(["base de performances", "performance database", "Leistungsdatenbank", "base de rendimiento"]))
     });
+    // cases de fusion : sélection gardée d'un rendu à l'autre (ppSelected), bouton « Fusionner » mis à jour
+    box.addEventListener("change", e => {
+      const c = e.target.closest(".pp-sel");
+      if (!c) return;
+      if (c.checked) ppSelected.add(c.dataset.id);
+      else ppSelected.delete(c.dataset.id);
+      syncMergeButton()
+    });
   }
+  for (const id of [...ppSelected])
+    if (!state.profiles?.[id]) ppSelected.delete(id);
+  syncMergeButton();
   if (!all.length) return setHtml("perfProfiles", `<p class="mut">${esc(kt(["Aucun profil ni type de flotte : importer un profil ou choisir le dossier performances.",
     "No profile and no fleet type: import a profile or choose the performance folder.",
     "Weder Profil noch Flottenmuster: ein Profil importieren oder den Leistungsordner wählen.",
@@ -4671,10 +4730,438 @@ function renderPerfProfiles() {
       ceil = i.ceil ? `${flTxt(i.ceil)}${i.ceilSrc === "apd" ? ` <small class="mut">(EUROCONTROL)</small>` : ""}` : "—",
       miss = p._landingOnly ? `<span class="pp-missing">${esc(kt(["tout le profil", "the whole profile", "das ganze Profil", "todo el perfil"]))}</span>` :
       i.missing.length ? `<span class="pp-missing">${esc(i.missing.join(", "))}</span>` : `<span class="pp-ok">${esc(kt(["rien", "nothing", "nichts", "nada"]))}</span>`;
-    return `<tr${on ? ' class="is-active"' : ""}><td><div class="pp-name"><span>${aircraftIcon(p)}</span><span><b>${esc(p.name || p.id)}</b><br><small class="mut">${esc(p.type || p.icao || p.id)}</small></span><button type="button" class="secondary pp-pick" data-id="${esc(p.id)}"${p._landingOnly ? ' data-landing="1"' : ""}${on ? " disabled" : ""}>${esc(pick)}</button></div></td><td>${esc(profileSourceText(p, i))}</td><td>${map}</td><td>${ff}</td><td>${ceil}</td><td>${miss}</td></tr>`
+    // case de fusion (profils enregistrés), puis actions de la ligne : supprimer, profil SimBrief (si SimBrief connaît le type)
+    const sel = p._landingOnly ? "" : `<input type="checkbox" class="pp-sel" data-id="${esc(p.id)}" title="${esc(kt(["À fusionner", "To merge",
+      "Zum Zusammenführen", "Para fusionar"
+    ]))}"${ppSelected.has(p.id) ? " checked" : ""}>`,
+      acts = [p._landingOnly ? "" : `<button type="button" class="secondary pp-del" data-id="${esc(p.id)}">${esc(kt(["Supprimer", "Delete",
+        "Löschen", "Eliminar"
+      ]))}</button>`, simbriefRecordFor(p.type || p.icao || p.id) ? `<button type="button" class="secondary pp-sb" data-id="${esc(p.id)}"${p._landingOnly ? ' data-landing="1"' : ""}>${esc(kt(["Profil SimBrief", "SimBrief profile", "SimBrief-Profil", "Perfil SimBrief"]))}</button>` : ""].join("");
+    return `<tr${on ? ' class="is-active"' : ""}><td><div class="pp-name">${sel}<span>${aircraftIcon(p)}</span><span><b>${esc(p.name || p.id)}</b><br><small class="mut">${esc(p.type || p.icao || p.id)}</small></span><button type="button" class="secondary pp-pick" data-id="${esc(p.id)}"${p._landingOnly ? ' data-landing="1"' : ""}${on ? " disabled" : ""}>${esc(pick)}</button></div>${acts ? `<div class="pp-row-actions">${acts}</div>` : ""}</td><td>${esc(profileSourceText(p, i))}</td><td>${map}</td><td>${ff}</td><td>${ceil}</td><td>${miss}</td></tr>`
   }).join("");
   setHtml("perfProfiles", typo(`<table><thead><tr>${head.map(h => `<th>${esc(h)}</th>`).join("")}</tr></thead><tbody>${rows}</tbody></table>`))
 }
+// ===== Base de performances : supprimer, fusionner, profil SimBrief =====
+// Supprimer et fusionner retirent des profils de la base locale ; un profil retiré est noté (state.removedProfiles) pour
+// que la relecture du dossier performances ne le ramène pas (le fichier du dossier n'est jamais effacé ; un import
+// explicite du fichier le ramène). Chaque retrait propose « Annuler » pendant 10 s.
+let ppSelected = new Set(); // profils cochés pour une fusion (identifiants)
+/** Clé de type d'un profil (code OACI, alias suivis) : deux profils ne se fusionnent que s'ils ont la même. */
+function profileTypeKey(p) {
+  const k = aKey(p?.icao || p?.type || p?.id || ""),
+    al = window.AIRCRAFT_DB?.__aliases || {};
+  let x = k;
+  for (let i = 0; i < 5 && al[x] && al[x] !== x; i++) x = aKey(al[x]);
+  return x
+}
+/** Bouton « Fusionner » : libellé avec le nombre de profils cochés, actif s'il y en a deux ou plus du même type. */
+function syncMergeButton() {
+  const b = $("ppMerge");
+  if (!b) return;
+  const list = [...ppSelected].map(id => state.profiles?.[id]).filter(Boolean),
+    same = list.length > 1 && new Set(list.map(profileTypeKey)).size === 1,
+    label = list.length ? ktf(["Fusionner ({n})", "Merge ({n})", "Zusammenführen ({n})", "Fusionar ({n})"], {
+      n: list.length
+    }) : kt(["Fusionner", "Merge", "Zusammenführen", "Fusionar"]),
+    tip = list.length > 1 && !same ? kt(["Les profils cochés ne sont pas du même type : rien à fusionner.",
+      "The ticked profiles are not of the same type: nothing to merge.",
+      "Die angekreuzten Profile sind nicht vom selben Typ: nichts zusammenzuführen.",
+      "Los perfiles marcados no son del mismo tipo: nada que fusionar."
+    ]) : kt(["Cocher au moins deux profils du même type (case devant le nom), puis Fusionner.",
+      "Tick at least two profiles of the same type (box before the name), then Merge.",
+      "Mindestens zwei Profile desselben Typs ankreuzen (Kästchen vor dem Namen), dann Zusammenführen.",
+      "Marcar al menos dos perfiles del mismo tipo (casilla delante del nombre) y después Fusionar."
+    ]);
+  setText("ppMergeLbl", label);
+  if (b.disabled !== !same) b.disabled = !same;
+  if (b.title !== tip) b.title = tip
+}
+/** Notification avec un bouton « Annuler » actif 10 s ; undo() remet les choses en l'état. */
+function notifyUndo(message, undo) {
+  const item = window.AppFramework?.notify?.(message, "ok", {
+    timeout: 10000
+  });
+  if (!item) return;
+  const b = document.createElement("button");
+  b.type = "button";
+  b.className = "secondary";
+  b.textContent = kt(["Annuler", "Undo", "Rückgängig", "Deshacer"]);
+  b.onclick = () => {
+    item.remove();
+    undo()
+  };
+  item.insertBefore(b, item.lastElementChild)
+}
+/** Base locale enregistrée et vues redessinées après un changement de profils (actif repris s'il existe encore). */
+function profilesChanged() {
+  save();
+  syncAircraftPicker();
+  renderPerfProfilesSoon();
+  syncSbTypeButton()
+}
+/** Retire les profils ids de la base locale (notés retirés pour la relecture du dossier) ; actif retiré : plus d'actif.
+ *  « Annuler » (10 s) remet les profils, l'actif et ce que fait extraUndo. */
+function removeProfiles(ids, message, extraUndo) {
+  const kept = ids.map(id => [id, state.profiles?.[id]]).filter(([, p]) => p),
+    wasActive = active && ids.includes(active.id) ? active.id : null;
+  state.removedProfiles ||= {};
+  for (const [id] of kept) {
+    delete state.profiles[id];
+    state.removedProfiles[id] = new Date().toISOString();
+    ppSelected.delete(id)
+  }
+  if (wasActive) clearActive(message);
+  profilesChanged();
+  notifyUndo(message, () => {
+    for (const [id, p] of kept) {
+      state.profiles[id] = p;
+      delete state.removedProfiles[id]
+    }
+    extraUndo?.();
+    if (wasActive && state.profiles[wasActive]) setActive(state.profiles[wasActive], kt(["suppression annulée", "deletion undone",
+      "Löschen rückgängig gemacht", "eliminación deshecha"
+    ]));
+    profilesChanged()
+  })
+}
+/** « Supprimer » d'une ligne (ou de la fiche du profil actif) : confirmation, puis retrait avec « Annuler » 10 s. */
+async function deleteProfileAsk(id) {
+  const p = state.profiles?.[id];
+  if (!p) return;
+  const label = p.name || p.id;
+  if (!await window.AppFramework.ask(ktf([
+      "Supprimer le profil « {p} » de la base de ce navigateur ? Un fichier du dossier performances n’est pas effacé, mais il ne sera plus relu (l’importer de nouveau pour le ramener).",
+      "Delete the profile “{p}” from this browser’s database? A file in the performance folder is not erased, but it will no longer be read (import it again to bring it back).",
+      "Profil „{p}“ aus der Datenbank dieses Browsers löschen? Eine Datei im Leistungsordner wird nicht gelöscht, aber nicht mehr gelesen (erneut importieren, um es zurückzuholen).",
+      "¿Eliminar el perfil «{p}» de la base de este navegador? Un archivo de la carpeta de rendimiento no se borra, pero ya no se leerá (importarlo de nuevo para recuperarlo)."
+    ], {
+      p: label
+    }), {
+      danger: true,
+      ok: kt(["Supprimer", "Delete", "Löschen", "Eliminar"])
+    })) return;
+  removeProfiles([id], ktf(["Profil supprimé : {p}.", "Profile deleted: {p}.", "Profil gelöscht: {p}.", "Perfil eliminado: {p}."], {
+    p: label
+  }))
+}
+/** Date la plus récente connue d'un profil (modification, import, OFP SimBrief, calibration) en ms ; 0 si aucune. */
+function profileWhen(p) {
+  const d = v => Date.parse(v || "") || 0;
+  return Math.max(d(p?.updatedAt), d(p?.source?.importedAt), d(p?.simbriefSnapshot?.fetchedAt), d(p?.calibration?.at), d(p?.calibration
+    ?.appliedAt))
+}
+/** Valeurs renseignées d'un profil à plat : { « cruise.tasKt » : valeur… } (identifiants, unité, sources et table RPM à
+ *  part). */
+function profileLeaves(p, prefix = "", out = {}) {
+  for (const [k, v] of Object.entries(p || {})) {
+    if (SKIP_MERGE_KEYS.has(k) || k === "rpmFuelCurve" || k.startsWith("_")) continue;
+    const path = prefix + k;
+    if (v && typeof v === "object" && !Array.isArray(v)) profileLeaves(v, path + ".", out);
+    else if (!isBlankValue(v)) out[path] = JSON.stringify(v)
+  }
+  return out
+}
+/** Libellé d'un champ de profil (PROFILE_FIELDS : « Croisière · TAS (kt) »), sinon son chemin. */
+function profileFieldLabel(path) {
+  const f = PROFILE_FIELDS.find(x => x[2] === path);
+  return f ? `${f[0]} · ${f[1]}` : path
+}
+/** Fenêtre de choix dans la page : message, champ de texte facultatif (input : valeur initiale), un bouton par choix
+ *  [clé, libellé] et « Annuler ». Promesse : { key, value } ou null (Échap, Annuler, clic à côté). */
+function choose(message, choices, {
+  input
+} = {}) {
+  return new Promise(resolve => {
+    const d = document.createElement("dialog"),
+      p = document.createElement("p"),
+      foot = document.createElement("footer"),
+      field = input !== undefined ? Object.assign(document.createElement("input"), {
+        type: "text",
+        value: input
+      }) : null,
+      done = r => {
+        d.close();
+        d.remove();
+        resolve(r)
+      };
+    d.className = "pp-choice";
+    d.setAttribute("data-no-i18n", "");
+    p.textContent = message;
+    for (const [key, label, primary] of [...choices, ["", kt(["Annuler", "Cancel", "Abbrechen", "Cancelar"])]]) {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = key ? primary ? "primary" : "secondary" : "ghost";
+      b.textContent = label;
+      b.onclick = () => done(key ? {
+        key,
+        value: field ? field.value.trim() : ""
+      } : null);
+      foot.append(b)
+    }
+    d.append(p, ...(field ? [field] : []), foot);
+    d.addEventListener("cancel", e => {
+      e.preventDefault();
+      done(null)
+    });
+    d.addEventListener("click", e => {
+      if (e.target === d) done(null)
+    });
+    document.body.append(d);
+    d.showModal();
+    (field || foot.querySelector(".primary") || foot.firstChild)?.focus()
+  })
+}
+/** « Fusionner » : profils cochés du même type réunis en un seul — nom choisi (celui du plus complet par défaut), valeurs
+ *  du plus récent, manques comblés par les autres dans l'ordre de leur date, table RPM réunie (même régime et altitude :
+ *  la ligne la plus récente), sources dans la description ; les autres profils sont retirés (« Annuler » 10 s). */
+async function mergeSelected() {
+  const list = [...ppSelected].map(id => state.profiles?.[id]).filter(Boolean);
+  if (list.length < 2 || new Set(list.map(profileTypeKey)).size !== 1) return syncMergeButton();
+  const recent = [...list].sort((a, b) => profileWhen(b) - profileWhen(a)),
+    complete = [...list].sort((a, b) => profileInfo(normalize(structuredClone(a))).missing.length - profileInfo(normalize(structuredClone(
+      b))).missing.length || (b.rpmFuelCurve?.length || 0) - (a.rpmFuelCurve?.length || 0))[0],
+    names = recent.map(p => `« ${p.name || p.id} » (${profileSourceText(normalize(structuredClone(p)))})`).join(", ");
+  const r = await choose(ktf(["Fusionner {n} profils : {list}.\nNom du profil fusionné :",
+    "Merge {n} profiles: {list}.\nName of the merged profile:",
+    "{n} Profile zusammenführen: {list}.\nName des zusammengeführten Profils:",
+    "Fusionar {n} perfiles: {list}.\nNombre del perfil fusionado:"
+  ], {
+    n: list.length,
+    list: names
+  }), [
+    ["merge", kt(["Fusionner", "Merge", "Zusammenführen", "Fusionar"]), true]
+  ], {
+    input: complete.name || complete.id
+  });
+  if (!r) return;
+  const base = recent[0],
+    before = structuredClone(base),
+    target = normalize(structuredClone(base)),
+    took = [];
+  for (const p of recent.slice(1)) {
+    const was = profileLeaves(target),
+      rows = (target.rpmFuelCurve || []).length;
+    fillProfileGaps(target, p);
+    const now = profileLeaves(target),
+      fields = Object.keys(now).filter(k => !(k in was)).map(profileFieldLabel),
+      added = (target.rpmFuelCurve || []).length - rows;
+    if (fields.length || added) took.push(`${p.name || p.id} : ${[...fields, ...(added ? [ktf(["cartographie +{n} ligne(s)",
+      "engine map +{n} row(s)", "Motorkennfeld +{n} Zeile(n)", "mapa motor +{n} fila(s)"
+    ], {
+      n: added
+    })] : [])].join(", ")}`)
+  }
+  target.name = r.value || target.name;
+  target.updatedAt = new Date().toISOString();
+  target.mergedProfileIds = [...new Set([...(target.mergedProfileIds || []), ...recent.slice(1).map(p => p.id)])];
+  target.description = [target.description, ktf(["Fusion du {d} : {list}.", "Merged on {d}: {list}.", "Zusammengeführt am {d}: {list}.",
+    "Fusionado el {d}: {list}."
+  ], {
+    d: new Date().toLocaleDateString(),
+    list: names
+  })].filter(Boolean).join("\n");
+  state.profiles[target.id] = target;
+  const wasActive = active && list.some(p => p.id === active.id);
+  removeProfiles(recent.slice(1).map(p => p.id), ktf(["Profils fusionnés dans « {p} » (base : le plus récent, {b}). {took}",
+    "Profiles merged into “{p}” (base: the most recent, {b}). {took}",
+    "Profile zusammengeführt in „{p}“ (Basis: das neueste, {b}). {took}",
+    "Perfiles fusionados en «{p}» (base: el más reciente, {b}). {took}"
+  ], {
+    p: target.name,
+    b: before.name || before.id,
+    took: took.length ? kt(["Repris des autres :", "Taken from the others:", "Von den anderen übernommen:",
+        "Tomado de los demás:"
+      ]) + " " +
+      took.join(" ; ") : kt(["Rien à reprendre des autres.", "Nothing to take from the others.",
+        "Nichts von den anderen zu übernehmen.",
+        "Nada que tomar de los demás."
+      ])
+  }), () => {
+    state.profiles[before.id] = before
+  });
+  ppSelected.clear();
+  if (wasActive) setActive(target, kt(["profils fusionnés", "merged profiles", "zusammengeführte Profile", "perfiles fusionados"]));
+  profilesChanged()
+}
+/** Fiche SimBrief du type (AIRCRAFT_PERF[code].simbrief, posée par le lanceur ; alias suivis) ; null si SimBrief ne le
+ *  connaît pas. */
+function simbriefRecordFor(code) {
+  const perf = window.AIRCRAFT_PERF || {},
+    k = aKey(code || ""),
+    al = window.AIRCRAFT_DB?.__aliases || {};
+  let x = k;
+  for (let i = 0; i < 6 && x; i++) {
+    if (perf[x]?.simbrief?.fuelflowKgh > 0) return perf[x].simbrief;
+    if (!al[x] || al[x] === x) break;
+    x = aKey(al[x])
+  }
+  return null
+}
+/** TAS (kt) en atmosphère standard au niveau ft : depuis un Mach, ou depuis une vitesse indiquée (ias). */
+function isaTas(ft, {
+  mach,
+  ias
+}) {
+  const h = Math.min(ft, 36089) * 0.3048,
+    t = 288.15 - 0.0065 * h;
+  if (mach > 0) return Math.round(mach * 38.967854 * Math.sqrt(ft > 36089 ? 216.65 : t));
+  const sigma = Math.pow(t / 288.15, 4.2559) * (ft > 36089 ? Math.exp(-(ft - 36089) * 0.3048 / 6341.6) : 1);
+  return ias > 0 ? Math.round(ias / Math.sqrt(sigma)) : null
+}
+/** Profil construit depuis la fiche SimBrief du type : consommation de croisière, plafond, vitesse (Mach ou vitesse
+ *  indiquée, TAS au niveau de référence), Badin de montée et de descente des profils SimBrief, carburant utilisable,
+ *  piste, masses et moteurs en description ; identifiant « SB_TYPE_<code> », unité kg. */
+function profileFromSimbriefType(code, sb) {
+  const c = aKey(code),
+    ceil = +sb.ceilingFt || null,
+    ref = sb.mach ? Math.min(ceil || 35000, 35000) : Math.round((ceil || 10000) * 0.6 / 1000) * 1000,
+    climbIas = +String(sb.climb?.[0] || "").split("/")[1] || +String(sb.climb?.[0] || "").split("/")[0] || null,
+    descIas = +String(sb.descent?.[0] || "").split("/")[1] || null,
+    kg = v => v > 0 ? `${fmt(v, 0)} kg` : null,
+    masses = [
+      ["MTOW", kg(sb.mtowKg)],
+      ["OEW", kg(sb.oewKg)],
+      ["MZFW", kg(sb.mzfwKg)],
+      ["MLW", kg(sb.mlwKg)]
+    ].filter(x => x[1]).map(x => x.join(" ")).join(", ");
+  return normalize({
+    id: `SB_TYPE_${c}`,
+    icao: c,
+    type: c,
+    name: `${sb.name || c} — SimBrief`,
+    unit: "kg",
+    simbrief: true,
+    simbriefType: structuredClone(sb),
+    usableFuel: sb.maxFuelKg || undefined,
+    minRunwayLengthFt: sb.takeoffM ? Math.round(sb.takeoffM * 3.28084) : undefined,
+    cruise: {
+      fuelFlowPerHour: sb.fuelflowKgh,
+      tasKt: isaTas(ref, {
+        mach: sb.mach,
+        ias: sb.speedKt
+      }) || undefined,
+      iasKt: sb.speedKt || undefined,
+      ceilingFt: ceil || undefined,
+      refAltFt: ref
+    },
+    climb: climbIas ? {
+      iasKt: climbIas
+    } : {},
+    descent: descIas ? {
+      iasKt: descIas
+    } : {},
+    description: [`SimBrief : ${sb.name || c}${sb.engines ? `, ${sb.engines}` : ""}${masses ? ` ; ${masses}` : ""}${sb.accuracy === "high" ? "" : " ; " + kt(["précision non garantie par SimBrief", "accuracy not guaranteed by SimBrief", "Genauigkeit von SimBrief nicht garantiert", "precisión no garantizada por SimBrief"])}`].join(""),
+    source: {
+      format: "SimBrief (liste publique des types)",
+      importedAt: new Date().toISOString()
+    },
+    updatedAt: new Date().toISOString()
+  }, c)
+}
+/** « Profil SimBrief » d'une ligne (id : profil, ou type de flotte sans profil si landing) ou de la fiche du profil actif :
+ *  crée ou remet à jour le profil SimBrief du type ; face à un profil perso, propose « Mettre à jour les champs vides »,
+ *  « Remplacer » ou « Nouveau profil ». « Annuler » 10 s. */
+async function simbriefProfileFor(id, landing = false) {
+  const src = landing ? landingOnlyAircraft(Object.values(state.profiles || {}).filter(p => p && typeof p === "object").map(p =>
+      normalize(p))).find(p => p.id === id) : state.profiles?.[id],
+    code = src && (src.type || src.icao || src.id),
+    sb = simbriefRecordFor(code);
+  if (!sb) return window.AppFramework?.notify?.(kt([
+    "SimBrief ne connaît pas ce type (liste publique, lue par « Compléter automatiquement »).",
+    "SimBrief does not know this type (public list, read by “Complete automatically”).",
+    "SimBrief kennt diesen Typ nicht (öffentliche Liste, gelesen von „Automatisch ergänzen“).",
+    "SimBrief no conoce este tipo (lista pública, leída por «Completar automáticamente»)."
+  ]), "warn");
+  const fresh = profileFromSimbriefType(code, sb),
+    own = !landing && src && !String(src.id).startsWith("SB_TYPE_") ? src : null,
+    sbId = own ? fresh.id : (landing ? fresh.id : src.id),
+    prevSb = state.profiles?.[sbId] ? structuredClone(state.profiles[sbId]) : null;
+  let target, message, undo;
+  if (own) {
+    const r = await choose(ktf(["« {p} » est un profil perso. Que faire des valeurs SimBrief ({ff} kg/h, plafond {c}) ?",
+      "“{p}” is a personal profile. What to do with the SimBrief values ({ff} kg/h, ceiling {c})?",
+      "„{p}“ ist ein persönliches Profil. Was tun mit den SimBrief-Werten ({ff} kg/h, Gipfelhöhe {c})?",
+      "«{p}» es un perfil personal. ¿Qué hacer con los valores de SimBrief ({ff} kg/h, techo {c})?"
+    ], {
+      p: own.name || own.id,
+      ff: fmt(sb.fuelflowKgh, 0),
+      c: sb.ceilingFt ? `${fmt(sb.ceilingFt, 0)} ft` : "—"
+    }), [
+      ["fill", kt(["Mettre à jour les champs vides", "Fill the empty fields", "Leere Felder ergänzen",
+        "Completar los campos vacíos"
+      ]), true],
+      ["replace", kt(["Remplacer", "Replace", "Ersetzen", "Sustituir"])],
+      ["new", kt(["Nouveau profil", "New profile", "Neues Profil", "Perfil nuevo"])]
+    ]);
+    if (!r) return;
+    const before = structuredClone(own);
+    if (r.key === "new") {
+      target = fresh;
+      if (prevSb) fillProfileGaps(target, prevSb);
+      state.profiles[target.id] = target;
+      undo = () => prevSb ? (state.profiles[prevSb.id] = prevSb) : delete state.profiles[target.id]
+    } else {
+      target = normalize(structuredClone(own));
+      if (r.key === "fill") fillProfileGaps(target, fresh);
+      else {
+        // Remplacer : valeurs SimBrief à la place, ce que SimBrief ne donne pas (table RPM, champs perso) gardé
+        const keep = structuredClone(own);
+        Object.assign(target, structuredClone(fresh), {
+          id: own.id,
+          name: own.name
+        });
+        fillProfileGaps(target, keep)
+      }
+      target.updatedAt = new Date().toISOString();
+      state.profiles[own.id] = target;
+      undo = () => state.profiles[before.id] = before
+    }
+  } else {
+    // profil SimBrief du type : créé, ou remis à jour (ce qui a été ajouté à la main et que SimBrief ne donne pas est gardé)
+    target = fresh;
+    if (prevSb) fillProfileGaps(target, prevSb);
+    state.profiles[target.id] = target;
+    undo = () => prevSb ? (state.profiles[prevSb.id] = prevSb) : delete state.profiles[target.id]
+  }
+  if (state.removedProfiles) delete state.removedProfiles[target.id];
+  message = ktf(["Profil SimBrief : « {p} » — {ff} kg/h{c}.", "SimBrief profile: “{p}” — {ff} kg/h{c}.",
+    "SimBrief-Profil: „{p}“ — {ff} kg/h{c}.",
+    "Perfil SimBrief: «{p}» — {ff} kg/h{c}."
+  ], {
+    p: target.name || target.id,
+    ff: fmt(sb.fuelflowKgh, 0),
+    c: sb.ceilingFt ? `, ${flTxt(sb.ceilingFt)}` : ""
+  });
+  const wasActive = active?.id;
+  setActive(target, "SimBrief");
+  profilesChanged();
+  notifyUndo(message, () => {
+    undo();
+    const back = wasActive && state.profiles[wasActive];
+    if (back) setActive(back, kt(["profil SimBrief annulé", "SimBrief profile undone", "SimBrief-Profil rückgängig",
+      "perfil SimBrief deshecho"
+    ]));
+    else if (active?.id === target.id && !state.profiles[target.id]) clearActive();
+    profilesChanged()
+  })
+}
+/** Bouton « Profil SimBrief » de la fiche du profil actif : visible si SimBrief connaît son type. */
+function syncSbTypeButton() {
+  const b = $("sbTypeBtn");
+  if (!b) return;
+  const on = !!(active && simbriefRecordFor(active.type || active.icao || active.id));
+  setText("sbTypeBtn", kt(["Profil SimBrief", "SimBrief profile", "SimBrief-Profil", "Perfil SimBrief"]));
+  if (b.hidden === on) b.hidden = !on;
+  const tip = kt([
+    "Créer ou mettre à jour le profil de ce type d’après la liste publique de SimBrief (consommation de croisière, plafond, vitesse, masses).",
+    "Create or update this type’s profile from SimBrief’s public list (cruise fuel flow, ceiling, speed, weights).",
+    "Profil dieses Typs aus der öffentlichen SimBrief-Liste anlegen oder aktualisieren (Reiseverbrauch, Gipfelhöhe, Geschwindigkeit, Massen).",
+    "Crear o actualizar el perfil de este tipo según la lista pública de SimBrief (consumo de crucero, techo, velocidad, masas)."
+  ]);
+  if (b.title !== tip) b.title = tip
+}
+$("sbTypeBtn").onclick = () => active && simbriefProfileFor(active.id);
+$("ppMerge").onclick = () => mergeSelected();
 $("ppImport").onclick = () => $("fileInput").click();
 $("ppFolder").onclick = () => $("dirBtn").click();
 $("ppReload").onclick = () => reloadPerfFolder(true);
