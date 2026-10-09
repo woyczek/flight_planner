@@ -1096,35 +1096,20 @@
   .perf-profiles .pp-sel {
     margin-right: 6px
   }
-  /* choix à plusieurs réponses (profil SimBrief face à un profil perso) et saisie du nom d'une fusion */
-  .pp-choice {
-    max-width: min(560px, 92vw);
-    padding: 0;
-    border: 1px solid color-mix(in srgb, currentColor 25%, transparent);
-    border-radius: calc(10px * var(--repo-round, 1));
-    background: var(--repo-card, #fff);
-    color: var(--sk-ink, var(--repo-ink, #1d2633));
-    box-shadow: 0 18px 50px rgba(0, 0, 0, .45)
-  }
-  .pp-choice::backdrop {
-    background: rgba(10, 14, 20, .5)
-  }
-  .pp-choice p {
-    margin: 0;
-    padding: 16px 18px 6px;
-    white-space: pre-line
-  }
+  /* fenêtre de choix (profil SimBrief face à un profil perso, nom d'une fusion) : habillée par le socle (.repo-ask de
+     shared/app_framework.js, et les designs) ; ici, seulement le champ de texte, le retour à la ligne des boutons et
+     l'explication du bouton SimBrief de la fiche */
   .pp-choice input {
     display: block;
     width: calc(100% - 36px);
     margin: 6px 18px
   }
+  #sbTypeHelp {
+    flex-basis: 100%;
+    font-size: 12px
+  }
   .pp-choice footer {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: flex-end;
-    gap: 8px;
-    padding: 10px 14px 14px
+    flex-wrap: wrap
   }
   .perf-profiles {
     overflow: auto
@@ -1340,7 +1325,7 @@ html[data-skeuo] .repo-block-tools .fp-result-pin[aria-pressed="true"]:not(#imp)
 </aside>
 <aside id="fpInstrCol" class="instr-col" data-fp-detail aria-label="Instruments"><div class="fp-instr-sticky"></div></aside>
 
-<section class="card span12" data-min-level="3" data-block-id="perf-profiles" data-icon="list" data-no-i18n><h2 id="ppTitle">Profils de performances</h2><p id="ppIntro" class="mut"></p><div class="row perf-profiles-actions"><button id="ppImport" type="button" class="secondary" data-icon="upload"><span id="ppImportLbl">Importer…</span></button><button id="ppFolder" type="button" class="secondary" data-icon="folder"><span id="ppFolderLbl">Dossier…</span></button><button id="ppReload" type="button" class="secondary" data-icon="refresh"><span id="ppReloadLbl">Relire</span></button><button id="ppMerge" type="button" class="secondary" data-icon="layers" disabled><span id="ppMergeLbl">Fusionner</span></button><span id="ppStatus" class="mut"></span></div><div id="perfProfiles" class="perf-profiles"></div></section>
+<section class="card span12" data-min-level="3" data-block-id="perf-profiles" data-icon="list" data-no-i18n><h2 id="ppTitle">Profils de performances</h2><p id="ppIntro" class="mut"></p><div class="row perf-profiles-actions"><button id="ppImport" type="button" class="secondary" data-icon="upload"><span id="ppImportLbl">Importer…</span></button><button id="ppFolder" type="button" class="secondary" data-icon="folder"><span id="ppFolderLbl">Dossier…</span></button><button id="ppReload" type="button" class="secondary" data-icon="refresh"><span id="ppReloadLbl">Relire</span></button><button id="ppMerge" type="button" class="secondary" data-icon="layers" disabled><span id="ppMergeLbl">Fusionner</span></button><button id="ppExport" type="button" class="secondary" data-icon="download" disabled><span id="ppExportLbl">Exporter</span></button><button id="ppSaveDir" type="button" class="secondary" data-icon="save" disabled><span id="ppSaveDirLbl">Enregistrer dans le dossier</span></button><span id="ppStatus" class="mut"></span></div><div id="perfProfiles" class="perf-profiles"></div></section>
 
 
 <section class="card span6 engine-card" data-min-level="4" data-block-id="engine-performance" data-icon="wrench" data-subtitle="Performances du moteur selon le régime."><h2>Fiche performance moteur</h2><div class="fields">
@@ -1357,7 +1342,7 @@ html[data-skeuo] .repo-block-tools .fp-result-pin[aria-pressed="true"]:not(#imp)
 <div style="height:8px"></div><div class="row"><button id="sbAirframeBtn" class="primary">Importer airframe SimBrief</button><button id="importBtn" data-icon="upload">Importer `.lnmperf` / JSON / CSV</button><button id="exportLnmBtn">Exporter `.lnmperf`</button><button id="exportBtn" data-icon="download">Exporter JSON</button><button id="exportDbBtn">Exporter BDD locale</button><input id="fileInput" type="file" accept=".json,.csv,.lnmperf,application/xml,text/xml" multiple hidden></div>
 <div id="sbStatus" class="mut" style="margin-top:8px"></div></section>
 
-<section class="card span12" data-min-level="4" data-block-id="profile-data" data-icon="file-text" data-subtitle="Tous les champs du profil de l’appareil."><div class="row"><h2 style="flex:1">Données du profil — JSON ⇄ Little Navmap</h2><button id="toggleProfileEditor">Masquer les champs</button></div><div class="mut">Champs exportés exactement dans le `.lnmperf`. Une case vide reste vide dans le JSON et bloque l’export XML : aucune valeur n’est ajoutée automatiquement.</div><div id="apdBar" class="apd-bar"></div><div id="profileEditor" style="margin-top:10px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px"></div><div class="row" style="margin-top:10px"><button id="saveProfileBtn" data-icon="save" class="primary">Enregistrer le profil</button><button id="deleteProfileBtn" data-icon="x">Supprimer cet avion</button><button id="sbTypeBtn" type="button" class="secondary" data-icon="refresh" data-no-i18n hidden></button><span id="profileEditStatus" class="mut"></span></div></section>
+<section class="card span12" data-min-level="4" data-block-id="profile-data" data-icon="file-text" data-subtitle="Tous les champs du profil de l’appareil."><div class="row"><h2 style="flex:1">Données du profil — JSON ⇄ Little Navmap</h2><button id="toggleProfileEditor">Masquer les champs</button></div><div class="mut">Champs exportés exactement dans le `.lnmperf`. Une case vide reste vide dans le JSON et bloque l’export XML : aucune valeur n’est ajoutée automatiquement.</div><div id="apdBar" class="apd-bar"></div><div id="profileEditor" style="margin-top:10px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px"></div><div class="row" style="margin-top:10px"><button id="saveProfileBtn" data-icon="save" class="primary">Enregistrer le profil</button><button id="deleteProfileBtn" data-icon="x">Supprimer cet avion</button><button id="sbTypeBtn" type="button" class="secondary" data-icon="refresh" data-no-i18n hidden></button><span id="sbTypeHelp" class="mut" data-no-i18n hidden></span><span id="profileEditStatus" class="mut"></span></div></section>
 
 <section class="card span12" data-min-level="4" data-block-id="rpm-curve-editor" data-icon="chart" data-subtitle="Courbe de consommation à éditer point par point."><h2>Cartographie moteur — édition RPM / puissance → consommation</h2><div id="curveEditor"><div class="mut">Choisis ou importe un profil.</div></div></section>
 
@@ -4730,13 +4715,16 @@ function renderPerfProfiles() {
       ceil = i.ceil ? `${flTxt(i.ceil)}${i.ceilSrc === "apd" ? ` <small class="mut">(EUROCONTROL)</small>` : ""}` : "—",
       miss = p._landingOnly ? `<span class="pp-missing">${esc(kt(["tout le profil", "the whole profile", "das ganze Profil", "todo el perfil"]))}</span>` :
       i.missing.length ? `<span class="pp-missing">${esc(i.missing.join(", "))}</span>` : `<span class="pp-ok">${esc(kt(["rien", "nothing", "nichts", "nada"]))}</span>`;
-    // case de fusion (profils enregistrés), puis actions de la ligne : supprimer, profil SimBrief (si SimBrief connaît le type)
-    const sel = p._landingOnly ? "" : `<input type="checkbox" class="pp-sel" data-id="${esc(p.id)}" title="${esc(kt(["À fusionner", "To merge",
-      "Zum Zusammenführen", "Para fusionar"
+    // case de sélection (profils enregistrés : fusion, export, enregistrement), puis la seconde action de la ligne :
+    // « Supprimer » pour un profil, « Créer depuis SimBrief » pour un type de la flotte sans profil que SimBrief connaît
+    const sel = p._landingOnly ? "" : `<input type="checkbox" class="pp-sel" data-id="${esc(p.id)}" title="${esc(kt([
+      "Sélection : fusionner, exporter ou enregistrer plusieurs profils", "Selection: merge, export or save several profiles",
+      "Auswahl: mehrere Profile zusammenführen, exportieren oder speichern", "Selección: fusionar, exportar o guardar varios perfiles"
     ]))}"${ppSelected.has(p.id) ? " checked" : ""}>`,
       acts = [p._landingOnly ? "" : `<button type="button" class="secondary pp-del" data-id="${esc(p.id)}">${esc(kt(["Supprimer", "Delete",
         "Löschen", "Eliminar"
-      ]))}</button>`, simbriefRecordFor(p.type || p.icao || p.id) ? `<button type="button" class="secondary pp-sb" data-id="${esc(p.id)}"${p._landingOnly ? ' data-landing="1"' : ""}>${esc(kt(["Profil SimBrief", "SimBrief profile", "SimBrief-Profil", "Perfil SimBrief"]))}</button>` : ""].join("");
+      ]))}</button>`, p._landingOnly && simbriefRecordFor(p.type || p.icao || p.id) ? `<button type="button" class="secondary pp-sb" data-id="${esc(p.id)}" data-landing="1">${esc(kt(["Créer depuis SimBrief", "Create from SimBrief", "Aus SimBrief anlegen", "Crear desde SimBrief"]))}</button>` : ""].join(
+        "");
     return `<tr${on ? ' class="is-active"' : ""}><td><div class="pp-name">${sel}<span>${aircraftIcon(p)}</span><span><b>${esc(p.name || p.id)}</b><br><small class="mut">${esc(p.type || p.icao || p.id)}</small></span><button type="button" class="secondary pp-pick" data-id="${esc(p.id)}"${p._landingOnly ? ' data-landing="1"' : ""}${on ? " disabled" : ""}>${esc(pick)}</button></div>${acts ? `<div class="pp-row-actions">${acts}</div>` : ""}</td><td>${esc(profileSourceText(p, i))}</td><td>${map}</td><td>${ff}</td><td>${ceil}</td><td>${miss}</td></tr>`
   }).join("");
   setHtml("perfProfiles", typo(`<table><thead><tr>${head.map(h => `<th>${esc(h)}</th>`).join("")}</tr></thead><tbody>${rows}</tbody></table>`))
@@ -4754,8 +4742,28 @@ function profileTypeKey(p) {
   for (let i = 0; i < 5 && al[x] && al[x] !== x; i++) x = aKey(al[x]);
   return x
 }
-/** Bouton « Fusionner » : libellé avec le nombre de profils cochés, actif s'il y en a deux ou plus du même type. */
+/** Boutons de la barre du bloc selon les profils cochés : « Exporter (n) » et « Enregistrer dans le dossier (n) » dès un
+ *  profil, « Fusionner (n) » à partir de deux profils du même type. */
 function syncMergeButton() {
+  const nSel = [...ppSelected].filter(id => state.profiles?.[id]).length;
+  for (const [id, lbl, row, rowN] of [
+      ["ppExport", "ppExportLbl", ["Exporter", "Export", "Exportieren", "Exportar"],
+        ["Exporter ({n})", "Export ({n})", "Exportieren ({n})",
+          "Exportar ({n})"
+        ]
+      ],
+      ["ppSaveDir", "ppSaveDirLbl", ["Enregistrer dans le dossier", "Save to the folder", "Im Ordner speichern", "Guardar en la carpeta"],
+        [
+          "Enregistrer dans le dossier ({n})", "Save to the folder ({n})", "Im Ordner speichern ({n})", "Guardar en la carpeta ({n})"
+        ]
+      ]
+    ]) {
+    setText(lbl, nSel ? ktf(rowN, {
+      n: nSel
+    }) : kt(row));
+    const b = $(id);
+    if (b && b.disabled !== !nSel) b.disabled = !nSel
+  }
   const b = $("ppMerge");
   if (!b) return;
   const list = [...ppSelected].map(id => state.profiles?.[id]).filter(Boolean),
@@ -4984,6 +4992,103 @@ async function mergeSelected() {
   if (wasActive) setActive(target, kt(["profils fusionnés", "merged profiles", "zusammengeführte Profile", "perfiles fusionados"]));
   profilesChanged()
 }
+/** Nom de fichier tiré du nom d'un profil (repli : identifiant), extension ext, rendu unique parmi used (Set). */
+function profileFileName(p, ext, used) {
+  const base = String(p.name || p.id || "profil").normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^\w.-]+/g, "_").replace(
+    /^_+|_+$/g, "") || "profil";
+  let name = `${base}.${ext}`;
+  for (let i = 2; used.has(name.toLowerCase()); i++) name = `${base}_${i}.${ext}`;
+  used.add(name.toLowerCase());
+  return name
+}
+/** Profils cochés (copies normalisées, profil actif avec ses modifications en cours). */
+function selectedProfiles() {
+  if (active && ppSelected.has(active.id)) commitProfileEditor(false);
+  return [...ppSelected].map(id => state.profiles?.[id]).filter(Boolean).map(p => normalize(structuredClone(p)))
+}
+/** « Exporter (n) » : un fichier par profil coché, téléchargé — .lnmperf (Little Navmap) quand le profil est complet,
+ *  sinon JSON de la suite ; jamais un fichier qui les regroupe. */
+async function exportSelected() {
+  const list = selectedProfiles(),
+    used = new Set(),
+    out = [];
+  for (const p of list) {
+    let name, text, type;
+    try {
+      text = toLnmperf(p);
+      name = profileFileName(p, "lnmperf", used);
+      type = "application/xml"
+    } catch {
+      text = JSON.stringify(p, null, 2);
+      name = profileFileName(p, "performance.json", used);
+      type = "application/json"
+    }
+    downloadText(name, text, type);
+    out.push(name);
+    await new Promise(r => setTimeout(r, 350)) // téléchargements espacés : les navigateurs en bloquent les rafales
+  }
+  if (out.length) window.AppFramework?.notify?.(ktf(["{n} fichier(s) exporté(s), un par profil : {list}.",
+    "{n} file(s) exported, one per profile: {list}.", "{n} Datei(en) exportiert, eine pro Profil: {list}.",
+    "{n} archivo(s) exportado(s), uno por perfil: {list}."
+  ], {
+    n: out.length,
+    list: out.join(", ")
+  }), "ok")
+}
+/** « Enregistrer dans le dossier (n) » : un fichier JSON par profil coché dans le dossier performances (autorisation
+ *  demandée au besoin), nommé d'après le profil ; relu ensuite comme les autres profils du dossier. */
+async function saveSelectedToFolder() {
+  const list = selectedProfiles();
+  let h = dirHandle;
+  if (!h && window.FileAccess) try {
+    h = await window.FileAccess.get("__perf")
+  } catch {
+    h = null
+  }
+  let ok = false;
+  try {
+    ok = !!h && ((await h.queryPermission?.({
+      mode: "readwrite"
+    })) === "granted" || (await h.requestPermission?.({
+      mode: "readwrite"
+    })) === "granted")
+  } catch {
+    ok = false
+  }
+  if (!ok) return window.AppFramework?.notify?.(kt(["Aucun dossier performances autorisé : bouton « Dossier… » d’abord, ou « Exporter ».",
+    "No performance folder allowed: use the “Folder…” button first, or “Export”.",
+    "Kein Leistungsordner freigegeben: zuerst „Ordner…“, oder „Exportieren“.",
+    "Ninguna carpeta de rendimiento autorizada: primero «Carpeta…», o «Exportar»."
+  ]), "warn");
+  dirHandle = h;
+  const used = new Set(),
+    out = [];
+  try {
+    for (const p of list) {
+      const name = profileFileName(p, "json", used),
+        w = await (await h.getFileHandle(name, {
+          create: true
+        })).createWritable();
+      await w.write(JSON.stringify(p, null, 2));
+      await w.close();
+      out.push(name)
+    }
+    lastPerfRead = Date.now(); // ce changement du dossier est le nôtre : pas de relecture
+    window.AppFramework?.notify?.(ktf(["{n} profil(s) enregistré(s) dans le dossier {d}, un fichier chacun : {list}.",
+      "{n} profile(s) saved in the folder {d}, one file each: {list}.",
+      "{n} Profil(e) im Ordner {d} gespeichert, je eine Datei: {list}.",
+      "{n} perfil(es) guardado(s) en la carpeta {d}, un archivo cada uno: {list}."
+    ], {
+      n: out.length,
+      d: h.name,
+      list: out.join(", ")
+    }), "ok")
+  } catch (e) {
+    window.AppFramework?.notify?.(window.AppFramework?.explain?.(e, kt(["Enregistrement des profils", "Saving the profiles",
+      "Speichern der Profile", "Guardado de los perfiles"
+    ])) || e.message, "err")
+  }
+}
 /** Fiche SimBrief du type (AIRCRAFT_PERF[code].simbrief, posée par le lanceur ; alias suivis) ; null si SimBrief ne le
  *  connaît pas. */
 function simbriefRecordFor(code) {
@@ -5151,8 +5256,17 @@ function syncSbTypeButton() {
   const b = $("sbTypeBtn");
   if (!b) return;
   const on = !!(active && simbriefRecordFor(active.type || active.icao || active.id));
-  setText("sbTypeBtn", kt(["Profil SimBrief", "SimBrief profile", "SimBrief-Profil", "Perfil SimBrief"]));
+  setText("sbTypeBtn", kt(["Mettre à jour depuis SimBrief", "Update from SimBrief", "Aus SimBrief aktualisieren",
+    "Actualizar desde SimBrief"
+  ]));
+  setText("sbTypeHelp", kt([
+    "Reprend la fiche SimBrief du type : consommation de croisière, masses, plafond, vitesse ; vos saisies sont gardées.",
+    "Takes the type’s SimBrief record: cruise fuel flow, weights, ceiling, speed; your entries are kept.",
+    "Übernimmt den SimBrief-Eintrag des Typs: Reiseverbrauch, Massen, Gipfelhöhe, Geschwindigkeit; Ihre Eingaben bleiben erhalten.",
+    "Toma la ficha SimBrief del tipo: consumo de crucero, masas, techo, velocidad; sus entradas se conservan."
+  ]));
   if (b.hidden === on) b.hidden = !on;
+  if ($("sbTypeHelp").hidden === on) $("sbTypeHelp").hidden = !on;
   const tip = kt([
     "Créer ou mettre à jour le profil de ce type d’après la liste publique de SimBrief (consommation de croisière, plafond, vitesse, masses).",
     "Create or update this type’s profile from SimBrief’s public list (cruise fuel flow, ceiling, speed, weights).",
@@ -5163,6 +5277,8 @@ function syncSbTypeButton() {
 }
 $("sbTypeBtn").onclick = () => active && simbriefProfileFor(active.id);
 $("ppMerge").onclick = () => mergeSelected();
+$("ppExport").onclick = () => exportSelected();
+$("ppSaveDir").onclick = () => saveSelectedToFolder();
 $("ppImport").onclick = () => $("fileInput").click();
 $("ppFolder").onclick = () => $("dirBtn").click();
 $("ppReload").onclick = () => reloadPerfFolder(true);
