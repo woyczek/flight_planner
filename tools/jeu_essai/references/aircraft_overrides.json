@@ -37,11 +37,10 @@
     "ATR72600": "AT76",
     "Q300": "DH8C",
     "Q200": "DH8B",
-    "A400": "A4M",
     "H225M": "EC25",
     "EC725": "EC25",
     "CARACAL": "EC25",
-    "A400M": "A4M",
+    "A400M": "A400",
     "CASA295": "C295",
     "DORNIER228": "D228",
     "DO228": "D228",
@@ -62,7 +61,8 @@
     "SF340": "SF34",
     "SF3": "SF34",
     "E2C": "E2",
-    "RQ9P": "Q9"
+    "RQ9P": "Q9",
+    "A4M": "A400"
   },
   "__records": {
     "C152": {
@@ -286,14 +286,6 @@
       "model": "Shorts 360",
       "description": "L2T",
       "wtc": "M",
-      "source": "manual/common",
-      "wing_position": "high"
-    },
-    "A4M": {
-      "tdesig": "A4M",
-      "model": "Airbus A400M Atlas",
-      "description": "L4T",
-      "wtc": "H",
       "source": "manual/common",
       "wing_position": "high"
     },

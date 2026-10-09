@@ -12,6 +12,13 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Corrigé
 
+- **A400M sans performances ni fiche : alias à l'envers** — l'outil des types (`AircraftDB/update_aircraft_db.py`) et le
+  jeu d'essai déclaraient « A400 → A4M » : le désignateur OACI de l'A400M (A400, celui d'EUROCONTROL et de SimBrief)
+  était détourné vers un code maison inconnu partout ; la suite cherchait donc ses performances sous A4M et la
+  complétion des types échouait. Alias remis à l'endroit (A4M et A400M → A400), type maison A4M retiré du jeu d'essai ;
+  l'outil ne laisse plus jamais un alias détourner un désignateur OACI officiel vers un code qui n'en est pas un (il
+  l'inverse, y compris pour un alias venu des données de la compagnie). À la prochaine complétion des types, la base de
+  chaque poste est corrigée.
 - **Types d'aéronefs : noms des missions sans code OACI** (« A330 MRTT Phénix », « C-130J-30 Super Hercules », « H225M
   Caracal », « Rafale B — Patrouille de 2 », « A330 ») affichés « fiche OACI manquante » ou classés « autre » : résolveur commun
   `AircraftCatalog.codeOf` (désignateur, alias, noms d'usage militaires des missions, nom propre du modèle quand il

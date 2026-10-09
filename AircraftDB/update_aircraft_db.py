@@ -68,7 +68,7 @@ ICAO_PART3_URLS = [
 DEFAULT_COMMON = [
     "C152","C172","C182","C206","C208","BN2P","BE58","B350","AT42","AT72","AT76",
     "DH8A","DH8B","DH8C","DH8D","DHC6","DHC7","F27","F50","L410","D228","C212",
-    "CN35","C295","SF34","SH33","SH36","A4M","DC3","C750","S210","MD88","EC35",
+    "CN35","C295","SF34","SH33","SH36","A400","DC3","C750","S210","MD88","EC35",
     "EC45","AS50","AS65","S76","CH47","SA342"
 ]
 
@@ -81,7 +81,7 @@ ALIASES_DEFAULT = {
     "SA365":"AS65", "AS365":"AS65", "AS565":"AS65",
     "Q400":"DH8D", "DHC8400":"DH8D", "DASH8Q400":"DH8D", "DASH8400":"DH8D",
     "ATR42":"AT42", "ATR72":"AT72", "ATR72600":"AT76",
-    "A400":"A4M", "A400M":"A4M",
+    "A4M":"A400", "A400M":"A400",  # A400 : désignateur OACI de l'A400M (A4M : ancien code maison)
     "H225M":"EC25", "EC725":"EC25", "CARACAL":"EC25",
     "DO228":"D228", "DORNIER228":"D228",
     "CARAVELLE":"S210", "SE210":"S210",
@@ -616,6 +616,26 @@ def icao_resolve_input(raw_key, aliases, icao_index):
     return "none", explicit, []
 
 
+ICAO_INDEX = {}  # index OACI Doc 8643 de la passe en cours (main), relu par apply_overrides
+
+
+def official_aliases(aliases, db, icao_index, quiet=False):
+    """Un alias ne détourne jamais un désignateur OACI officiel vers un code qui n'en est pas un : « A400 → A4M » (code
+    maison) devient « A4M → A400 », sinon la suite cherche ses performances (EUROCONTROL, SimBrief) sous un code que
+    personne ne connaît. Désignateur officiel : dans l'index OACI Doc 8643, ou fiche de la base issue de l'OACI."""
+    def official(code):
+        rec = db.get(code) or {}
+        return bool(icao_record(code, icao_index)) or "ICAO" in str(rec.get("source", ""))
+    out = dict(aliases)
+    for key, target in aliases.items():
+        if key != target and official(key) and not official(target):
+            del out[key]
+            out.setdefault(target, key)
+            if not quiet:
+                print(f"Alias inversé : {key} est un désignateur OACI, {target} n'en est pas un ({target} → {key}).")
+    return out
+
+
 def icao_record(code, icao_index):
     rec = icao_index.get("by_designator", {}).get(normalize_key(code))
     if not rec:
@@ -1078,6 +1098,10 @@ def update_one(db, aliases, raw_designator, icao_index, use_network=True, force=
 
 def apply_overrides(db, aliases, overrides):
     aliases.update(normalize_alias_map(overrides.get("__aliases", {})))
+    # alias des données de la compagnie remis à l'endroit à chaque fois (désignateur OACI jamais détourné)
+    fixed = official_aliases(aliases, db, ICAO_INDEX, quiet=True)
+    aliases.clear()
+    aliases.update(fixed)
     for key, patch in overrides.get("__records", {}).items():
         canonical = normalize_key(key)
         base = dict(db.get(canonical, {"tdesig": canonical}))
@@ -1135,6 +1159,10 @@ def main():
     except Exception as exc:
         print(f"ICAO Doc 8643 indisponible: {exc}", file=sys.stderr)
         icao_index = {"by_designator": {}, "alias_candidates": {}, "part3_entries": []}
+    global ICAO_INDEX
+    ICAO_INDEX = icao_index
+    aliases = official_aliases(aliases, db, icao_index)
+    db["__aliases"] = aliases
 
     wanted = {normalize_key(x) for x in DEFAULT_COMMON}
     wanted |= {normalize_key(x) for x in args.add}
