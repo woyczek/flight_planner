@@ -22,6 +22,7 @@ import data_sync  # synchronisation git du pool de données (bouton « Synchroni
 import data_guard  # .js de data/ : servis seulement s'ils suivent le format des fichiers de données
 import aero_fetch  # données aéronautiques d'autres pays (Paramètres › Maintenance › Données aéronautiques)
 from check_binaries import POINTER as LFS_POINTER  # début d'un pointeur Git LFS (fichier non récupéré)
+import version_stamps  # empreintes ?v=… posées au moment de servir (pages, scripts, feuilles des designs)
 
 ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
 DATA = os.path.join(ROOT, 'data')
@@ -390,7 +391,35 @@ class Setup(http.server.SimpleHTTPRequestHandler):
         why = self._refused()
         if why:
             return self._deny(why)
+        if self._stamped(head=True):
+            return None
         return super().do_HEAD()
+
+    def _stamped(self, head=False):
+        """Page, script ou feuille de design servi avec ses empreintes ?v=… posées (tools/version_stamps.py) et un ETag
+        (son empreinte) : une page inchangée répond 304, un fichier versionné reste en cache. Vrai si servi ici."""
+        f = self.translate_path(self.path)
+        if not os.path.isfile(f) or not version_stamps.stamped(f):
+            return False
+        try:
+            body, h = version_stamps.serve(f)
+        except (OSError, ValueError) as e:
+            say(f'  ⚠ Empreintes non posées ({os.path.basename(f)}) : {e} — fichier servi tel quel.')
+            return False
+        etag = f'"{h}"'
+        if self.headers.get('If-None-Match') == etag:
+            self.send_response(304)
+            self.send_header('ETag', etag)
+            self.end_headers()
+            return True
+        self.send_response(200)
+        self.send_header('Content-Type', self.guess_type(f))
+        self.send_header('Content-Length', str(len(body)))
+        self.send_header('ETag', etag)
+        self.end_headers()
+        if not head:
+            self.wfile.write(body)
+        return True
 
     def do_GET(self):
         """GET : refus (chemins cachés, autre site, scripts de données hors format), index du pool refaits avant d'être
@@ -514,6 +543,8 @@ class Setup(http.server.SimpleHTTPRequestHandler):
             self.send_header('Cache-Control', 'no-store')
             self.end_headers()
             self.wfile.write(body)
+            return None
+        if self._stamped():
             return None
         return super().do_GET()
 

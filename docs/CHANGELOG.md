@@ -89,6 +89,11 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Modifié
 
+- **Empreintes de version posées par le lanceur** (`tools/version_stamps.py`) : quand il sert une page, un script ou
+  une feuille des designs, chaque référence `chemin?v=…` reçoit l'empreinte du contenu servi du fichier visé (mêmes
+  références que `tools/bump_versions.py`) ; pages servies avec un ETag (304 si inchangées), fichiers versionnés en
+  cache long, résultats gardés en mémoire tant que leurs fichiers ne changent pas (0,2 ms par fichier). Prépare le
+  passage du dépôt à `?v=0` : plus d'empreintes à recalculer et à fusionner avant chaque commit.
 - **Cartes : profils de base revus** (Studio cartographique, Cartes de vol) — profils réglés par l'administrateur :
   IFR, **IFR simplifié** (nouveau), VFR détaillé, VFR simplifié, AIRWAYS. Profil par défaut d'une carte : IFR simplifié
   pour la carte principale d'une mission et les vues d'ensemble, VFR détaillé pour cible, détail et rendez-vous, VFR
