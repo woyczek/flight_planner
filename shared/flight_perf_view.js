@@ -117,9 +117,9 @@
   const L = {
     prof: () => tl("croisière du profil", "profile cruise", "Profil-Reiseflug", "crucero del perfil"),
     eco: () => tl("croisière économique", "economy cruise", "Spar-Reiseflug", "crucero económico"),
-    fast: () => tl("rapide", "fast", "schnell", "rápida"),
-    fuelLaw: () => tl("économique", "economy", "sparsam", "económica"),
-    man: () => tl("loi réglée", "set law", "eingestelltes Gesetz", "ley ajustada"),
+    fast: () => tl("montée rapide", "fast climb", "schneller Steigflug", "ascenso rápido"),
+    fuelLaw: () => tl("montée économique", "economy climb", "sparsamer Steigflug", "ascenso económico"),
+    man: () => tl("montée choisie", "chosen climb", "gewählter Steigflug", "ascenso elegido"),
     climbSpd: () => tl("vitesse de montée du profil", "profile climb speed", "Profil-Steiggeschwindigkeit",
       "velocidad de ascenso del perfil"),
     full: () => tl("plein gaz", "full throttle", "Vollgas", "gases a fondo"),
@@ -271,6 +271,38 @@
   const beyondZone = (X, T, bottom, ceil, xmax) => ceil < xmax - 1 ?
     `<rect class="beyond" x="${X(ceil).toFixed(1)}" y="${T}" width="${(X(xmax) - X(ceil)).toFixed(1)}" height="${bottom - T}"/><line class="beyond-edge" x1="${X(ceil).toFixed(1)}" x2="${X(ceil).toFixed(1)}" y1="${T}" y2="${bottom}"/>` +
     `<text class="beyond-label" x="${((X(ceil) + X(xmax)) / 2).toFixed(1)}" y="${T + 11}" text-anchor="middle">${tl("inaccessible", "unreachable", "unerreichbar", "inaccesible")}</text>` : "";
+  /** Graduations rondes d'un axe : pas de 1, 2, 2,5 ou 5 × 10^n couvrant [lo, hi] en n intervalles environ ; zero :
+   *  l'axe part de 0. Sortie : { lo, hi (bornes arrondies au pas), ticks (valeurs), dec (décimales à afficher) }. */
+  const niceAxis = (lo, hi, n = 4, zero = false) => {
+    if (!Number.isFinite(lo) || !Number.isFinite(hi)) return {
+      lo: 0,
+      hi: 1,
+      ticks: [0, 1],
+      dec: 0
+    };
+    if (zero) lo = Math.min(0, lo);
+    if (!(hi > lo)) hi = lo + (Math.abs(lo) || 1);
+    const raw = (hi - lo) / n,
+      p = Math.pow(10, Math.floor(Math.log10(raw))),
+      f = raw / p,
+      step = (f <= 1 ? 1 : f <= 2 ? 2 : f <= 2.5 ? 2.5 : f <= 5 ? 5 : 10) * p,
+      a = Math.floor(lo / step + 1e-9) * step,
+      b = Math.ceil(hi / step - 1e-9) * step,
+      ticks = [];
+    for (let v = a; v <= b + step / 2; v += step) ticks.push(+v.toPrecision(12));
+    let dec = 0;
+    while (dec < 6 && Math.abs(step * 10 ** dec - Math.round(step * 10 ** dec)) > 1e-6) dec++;
+    return {
+      lo: a,
+      hi: b,
+      ticks,
+      dec
+    };
+  };
+  /** Repère du niveau du plan de vol sur une courbe à l'altitude en abscisse : trait vertical discret et étiquette
+   *  « FL240 plan » (rien si le niveau est hors de l'axe). X : abscisse d'une altitude ; T, bottom : haut et bas. */
+  const planMark = (X, T, bottom, h, xmax) => h > 0 && h <= xmax ?
+    `<line class="plan-line" x1="${X(h).toFixed(1)}" x2="${X(h).toFixed(1)}" y1="${T}" y2="${bottom}"/><text class="plan-label" x="${(X(h) + 3).toFixed(1)}" y="${bottom - 5}">${flTxt(h)} ${tl("plan", "plan", "Plan", "plan")}</text>` : "";
   /** Place la ligne de jauge (élément SVG id) à l'abscisse x et l'affiche. */
   const cursorAt = (id, x) => {
     const l = $(id);
@@ -347,14 +379,16 @@
         inp.value = vs ? (q.full ? q.vMax : q.vs) : q.ias;
         d.querySelector("output").textContent = vs ? (q.full ? "max" : fmt(q.vs, 0)) : q.ias;
         d.title = vs ?
-          tl("Loi réglée — vario visé (en haut : plein gaz)", "Set law — target rate (top: full throttle)",
-            "Eingestelltes Gesetz — Ziel-Steigrate (oben: Vollgas)", "Ley ajustada — régimen objetivo (arriba: gases a fondo)") :
-          tl("Loi réglée — Badin de montée", "Set law — climb IAS", "Eingestelltes Gesetz — Steig-IAS",
-            "Ley ajustada — IAS de ascenso");
+          tl("Montée choisie — vario visé (en haut : plein gaz)", "Chosen climb — target rate (top: full throttle)",
+            "Gewählter Steigflug — Ziel-Steigrate (oben: Vollgas)", "Ascenso elegido — régimen objetivo (arriba: gases a fondo)") :
+          tl("Montée choisie — vitesse indiquée", "Chosen climb — indicated airspeed",
+            "Gewählter Steigflug — angezeigte Geschwindigkeit",
+            "Ascenso elegido — velocidad indicada");
       }
     });
     alignSliders();
     feedInstruments();
+    syncClimbCtl();
   }
   /** Instruments du bandeau (shared/flight_instruments.js) : loi réglée à l'altitude survolée (hover), sinon
    *  épinglée, sinon niveau du plan ; masqués sans modèle. Badin et vario réglés sur l'instrument → setManual. */
@@ -363,7 +397,6 @@
       m = S.m,
       q = S.manual;
     if (!FI) return;
-    FI.onSet ||= (k, v) => setManual(k, v);
     FI.onRefresh ||= () => feedInstruments(); // changement de lecture de la jauge carburant
     if (!m || !q) return FI.update(null);
     try {
@@ -454,9 +487,183 @@
     syncSliders();
     clearTimeout(setManual.t);
     setManual.t = setTimeout(() => {
-      if (S.m) renderAll(S.m, S.c);
+      if (S.m && S.c && curvesShown()) renderAll(S.m, S.c); // vue simple : courbes masquées, devis seul
       window.planQuote?.();
     }, 40);
+  }
+  /** Vrai si les courbes sont affichées (vue détaillée de la page : classe fp-detail du corps). */
+  const curvesShown = () => document.body.classList.contains("fp-detail");
+
+  // ---------------------------------------------------------------------------------------------------
+  // Montée choisie dans le devis (#climbCtl) : curseurs « Vitesse indiquée » et « Vario » avec leur champ chiffré, et
+  // ce qui en découle (régime, manette, débit) en lecture. Vue détaillée et profil à table régime → débit : « Régler
+  // par le régime » (le régime devient l'entrée, vitesse et vario les valeurs lues). Les jauges restent des lectures.
+  // ---------------------------------------------------------------------------------------------------
+
+  /** Écrit une propriété d'un élément seulement si sa valeur change. */
+  const put = (el, k, v) => {
+    if (el && el[k] !== v) el[k] = v;
+  };
+  /** Lignes valides de la table régime → débit du profil actif, triées par régime ({ rpm, ff } en unité du profil). */
+  const rpmRows = () => (active?.rpmFuelCurve || []).map(r => ({
+    rpm: +r.rpm,
+    ff: Number.isFinite(+r.fuelFlowPerHour) && r.fuelFlowPerHour !== null && r.fuelFlowPerHour !== "" ? +r.fuelFlowPerHour : (+r
+      .fuelFlowMin + +r.fuelFlowMax) / 2
+  })).filter(r => r.rpm > 0 && r.ff > 0).sort((a, b) => a.rpm - b.rpm);
+  /** Régime de la table pour un débit ff (interpolation linéaire entre deux lignes) ; null hors de la table. */
+  const rpmForFF = (rows, ff) => {
+    for (let i = 1; i < rows.length; i++) {
+      const a = rows[i - 1],
+        b = rows[i];
+      if ((ff - a.ff) * (ff - b.ff) <= 0 && a.ff !== b.ff) return a.rpm + (ff - a.ff) / (b.ff - a.ff) * (b.rpm - a.rpm);
+    }
+    return null;
+  };
+  /** Unité du régime : N1 (%) pour un réacteur, tours par minute sinon. */
+  const rpmUnit = m => m?.kind === "jet" ? "% N1" : "RPM";
+  /** Altitude de lecture de la montée : mi-montée vers le niveau du plan (borné au plafond), 1000 ft au moins. */
+  const readAlt = m => Math.max(1000, Math.round(Math.min((S.c?.FL || 0) * 100, m.ceiling) / 2 / 500) * 500);
+  /** Libellés de la montée choisie (4 langues). */
+  const CL = {
+    title: () => tl("Montée choisie", "Chosen climb", "Gewählter Steigflug", "Ascenso elegido"),
+    ias: () => tl("Vitesse indiquée", "Indicated airspeed", "Angezeigte Geschwindigkeit", "Velocidad indicada"),
+    vs: () => tl("Vario", "Vario", "Vario", "Vario"),
+    rpm: () => tl("Régime", "Engine setting", "Drehzahl", "Régimen"),
+    byRpm: () => tl("Régler par le régime", "Set by engine setting", "Nach Drehzahl einstellen", "Ajustar por el régimen"),
+    bySpeed: () => tl("Régler par la vitesse", "Set by speed", "Nach Geschwindigkeit einstellen", "Ajustar por la velocidad"),
+    unknown: () => tl("non connu pour ce type", "not known for this type", "für diesen Typ unbekannt", "desconocido para este tipo")
+  };
+  /** Crée une fois le contenu de #climbCtl : titre, trois lignes (curseur, champ, unité), lecture, bouton de mode. */
+  function mountClimbCtl(box) {
+    if (box.dataset.ready) return;
+    box.dataset.ready = "1";
+    const row = key => `<div class="climb-row" data-key="${key}"><label for="cc-${key}-n"></label><input type="range" id="cc-${key}-r" data-key="${key}"><input type="number" id="cc-${key}-n" data-key="${key}" inputmode="numeric"><span class="climb-unit"></span></div>`;
+    box.innerHTML = `<div class="climb-title"></div>${row("ias")}${row("vs")}${row("rpm")}<div class="climb-read mut"></div><div class="row"><button type="button" class="secondary climb-mode" data-fp-detail hidden></button></div>`;
+    for (const inp of box.querySelectorAll("input")) {
+      const key = inp.dataset.key;
+      // curseur : valeur suivie en direct ; champ chiffré : validée à la sortie du champ ou par Entrée
+      inp.addEventListener(inp.type === "range" ? "input" : "change", () => {
+        const v = +inp.value;
+        if (!Number.isFinite(v)) return syncClimbCtl();
+        key === "rpm" ? setRpm(v) : setManual(key, clampKey(key, v));
+      });
+    }
+    box.querySelector(".climb-mode").addEventListener("click", () => {
+      S.byRpm = !S.byRpm;
+      // régime de départ : celui de la montée choisie, sinon le bout de table le plus proche (débit hors table)
+      if (S.byRpm) {
+        const rows = rpmRows(),
+          now = currentRpm(),
+          m = S.m,
+          ff = m ? m.manualPoint(readAlt(m), manualLaw(m)).ff : 0;
+        setRpm(S.rpm ?? now ?? (rows.length && ff > rows.at(-1).ff ? rows.at(-1).rpm : rows[0]?.rpm));
+      }
+      syncClimbCtl();
+    });
+  }
+  /** Valeur ronde et bornée d'une entrée (vitesse : pas de 5 kt ; vario : pas de 50 ft/min). */
+  function clampKey(key, v) {
+    const q = S.manual,
+      [lo, hi, st] = key === "ias" ? [q.iMin, q.iMax, 5] : [100, q.vMax, 50];
+    return Math.min(hi, Math.max(lo, Math.round(v / st) * st));
+  }
+  /** Régime correspondant à la montée choisie à l'altitude de lecture (null sans table ou hors table). */
+  function currentRpm() {
+    const m = S.m,
+      rows = rpmRows();
+    if (!m || rows.length < 2) return null;
+    const p = m.manualPoint(readAlt(m), manualLaw(m));
+    return rpmForFF(rows, p.ff);
+  }
+  /** Régime choisi (mode « Régler par le régime ») : débit de la table, puis vitesse et vario qui en découlent à
+   *  l'altitude de lecture (m.settingAt : vario à Vy) ; la montée choisie suit (setManual). */
+  function setRpm(v) {
+    const m = S.m,
+      rows = rpmRows(),
+      q = S.manual;
+    if (!m || !q || rows.length < 2 || !Number.isFinite(v)) return;
+    const rpm = Math.min(rows.at(-1).rpm, Math.max(rows[0].rpm, v)),
+      r = window.interpRange?.(active.rpmFuelCurve || [], rpm);
+    S.rpm = rpm;
+    if (!(r?.nominal > 0)) return syncClimbCtl();
+    const st = m.settingAt(r.nominal, readAlt(m));
+    q.ias = clampKey("ias", st.ias);
+    q.vs = clampKey("vs", Math.max(100, st.roc));
+    q.full = st.frac >= .999 || q.vs >= q.vMax;
+    setManual("ias", q.ias);
+  }
+  /** Montée choisie dans le devis : valeurs, bornes, libellés, lecture (régime, manette, débit) et mode ; écrit seulement
+   *  ce qui change. Masquée tant qu'il n'y a pas de modèle (pas d'avion, ou ni TAS ni consommation). */
+  function syncClimbCtl() {
+    const box = $("climbCtl");
+    if (!box) return;
+    const m = S.m,
+      q = S.manual;
+    put(box, "hidden", !(m && q));
+    if (!m || !q) return;
+    mountClimbCtl(box);
+    const rows = rpmRows(),
+      canRpm = rows.length >= 2,
+      byRpm = !!S.byRpm && canRpm && curvesShown(),
+      unit = fuelUnit(),
+      h = readAlt(m),
+      p = m.manualPoint(h, manualLaw(m)),
+      rpmNow = byRpm ? S.rpm : rpmForFF(rows, p.ff);
+    put(box.querySelector(".climb-title"), "textContent", CL.title());
+    const spec = {
+      ias: [CL.ias(), "kt", q.iMin, q.iMax, 5, q.ias, !byRpm],
+      vs: [CL.vs(), q.full ? `ft/min · ${L.full()}` : "ft/min", 100, q.vMax, 50, q.full ? q.vMax : q.vs, !byRpm],
+      rpm: [CL.rpm(), rpmUnit(m), canRpm ? rows[0].rpm : 0, canRpm ? rows.at(-1).rpm : 1, m.kind === "jet" ? 0.5 : 10, Math.round(
+        rpmNow ??
+        rows[0]?.rpm ?? 0), byRpm]
+    };
+    for (const [key, [label, u, lo, hi, step, val, editable]] of Object.entries(spec)) {
+      const r = box.querySelector(`.climb-row[data-key="${key}"]`),
+        show = key === "rpm" ? byRpm : true;
+      put(r, "hidden", !show);
+      if (!show) continue;
+      put(r.querySelector("label"), "textContent", label);
+      put(r.querySelector(".climb-unit"), "textContent", u);
+      for (const inp of r.querySelectorAll("input")) {
+        put(inp, "min", String(lo));
+        put(inp, "max", String(hi));
+        put(inp, "step", String(step));
+        put(inp, "disabled", !editable);
+        if (document.activeElement !== inp) put(inp, "value", String(val));
+      }
+    }
+    // lecture : ce qui découle de la montée choisie à mi-montée (texte, pas de jauge)
+    const throttle = p.frac >= .995 ? L.full() : `${tl("manette", "throttle", "Leistungshebel", "palanca")} ${fmt(p.frac * 100, 0)} %`,
+      rpmTxt = canRpm ? (Number.isFinite(rpmNow) ? `${tl("régime", "engine setting", "Drehzahl", "régimen")} ${fmt(rpmNow, m.kind === "jet" ? 1 : 0)} ${rpmUnit(m)}` :
+        `${tl("régime", "engine setting", "Drehzahl", "régimen")} ${tl("hors de la table du profil", "outside the profile table", "außerhalb der Profiltabelle", "fuera de la tabla del perfil")}`) :
+      `${tl("régime", "engine setting", "Drehzahl", "régimen")} ${CL.unknown()}`,
+      parts = [byRpm ? `${tl("vitesse indiquée", "indicated airspeed", "angezeigte Geschwindigkeit", "velocidad indicada")} ${fmt(p.ias, 0)} kt` : "", byRpm ? `${tl("vario", "vario", "Vario", "vario")} ${fmt(Math.max(0, p.roc), 0)} ft/min` : "",
+        byRpm ? "" : rpmTxt, throttle, `${tl("débit", "fuel flow", "Verbrauch", "consumo")} ${showFuel(p.ff)} ${unit}/h`
+      ].filter(Boolean);
+    put(box.querySelector(".climb-read"), "textContent", typo(`${tl("À mi-montée", "At mid-climb", "Halber Steigflug", "A media subida")} (${flTxt(h)}) : ${parts.join(" · ")}`));
+    const b = box.querySelector(".climb-mode");
+    put(b, "hidden", !canRpm);
+    put(b, "textContent", byRpm ? CL.bySpeed() : CL.byRpm());
+    const tip = byRpm ? tl("Revenir au réglage par la vitesse indiquée et le vario.", "Back to setting by indicated airspeed and vario.",
+        "Zurück zur Einstellung nach angezeigter Geschwindigkeit und Vario.", "Volver a ajustar por velocidad indicada y vario.") :
+      tl("Choisir le régime moteur (table du profil) : vitesse et vario deviennent les valeurs lues.",
+        "Choose the engine setting (profile table): speed and vario become the read values.",
+        "Triebwerksdrehzahl wählen (Profiltabelle): Geschwindigkeit und Vario werden zu Anzeigewerten.",
+        "Elegir el régimen del motor (tabla del perfil): velocidad y vario pasan a ser valores leídos.");
+    put(b, "title", tip);
+  }
+  /** Modèle et paramètres du dernier devis, sans tracer les courbes (vue simple) : la montée choisie et sa lecture
+   *  restent à jour. m : modèle (null : rien) ; c : paramètres du trajet (voir l'en-tête). */
+  function prepare(m, c) {
+    if (!m) {
+      S.m = null;
+      return syncClimbCtl();
+    }
+    if (S.m !== m) S.cache = null;
+    S.m = m;
+    S.c = c;
+    ensureManual(m);
+    syncClimbCtl();
   }
 
   // ---------------------------------------------------------------------------------------------------
@@ -814,17 +1021,17 @@
     const all = rows.flatMap(r => [r.prof, r.eco, r.man, r.isa].filter(Boolean).map(x => x.tas));
     if (!all.length) throw Error(tl("aucune vitesse calculable", "no computable speed", "keine berechenbare Geschwindigkeit",
       "ninguna velocidad calculable"));
-    const vmin = Math.min(...all) * .94,
-      vmax = Math.max(...all) * 1.04,
+    // axe des vitesses gradué en valeurs rondes (kt)
+    const ax = niceAxis(Math.min(...all) * .97, Math.max(...all) * 1.02),
+      vmin = ax.lo,
+      vmax = ax.hi,
       X = h => Lm + h / xmax * (W - Lm - R),
       Y = v => T + (1 - (v - vmin) / (vmax - vmin || 1)) * (H - T - B);
     let g = "";
-    for (let i = 0; i <= 4; i++) {
-      const v = vmin + (vmax - vmin) * i / 4;
-      g += `<line class="grid-line" x1="${Lm}" x2="${W - R}" y1="${Y(v)}" y2="${Y(v)}"/><text x="${Lm - 5}" y="${Y(v) + 4}" text-anchor="end">${fmt(v, 0)}</text>`;
-    }
+    for (const v of ax.ticks) g += `<line class="grid-line" x1="${Lm}" x2="${W - R}" y1="${Y(v)}" y2="${Y(v)}"/><text x="${Lm - 5}" y="${Y(v) + 4}" text-anchor="end">${fmt(v, ax.dec)}</text>`;
     const tk = xmax > 30000 ? 10000 : xmax > 12000 ? 5000 : 2000;
     for (let h = 0; h <= xmax; h += tk) g += `<line class="grid-line" x1="${X(h)}" x2="${X(h)}" y1="${T}" y2="${H - B}"/><text x="${X(h)}" y="${H - B + 14}" text-anchor="middle">${flTxt(h)}</text>`;
+    g += planMark(X, T, H - B, c.FL * 100, xmax); // niveau du vol
     /** Tracé SVG de la série k (TAS), interrompu là où la série manque. */
     const pth = (k, cls) => {
       let d = "",
@@ -883,8 +1090,8 @@
       legend([
         [sw(COL.prof), lab(L.prof(), COL.prof), ""],
         [sw(COL.eco), lab(L.eco(), COL.eco), ""],
-        [sw(COL.man), lab(climbName, COL.man), tl("TAS de montée à la loi des curseurs", "climb TAS at the slider law",
-          "Steig-TAS nach dem Reglergesetz", "TAS de ascenso con la ley de los cursores")],
+        [sw(COL.man), lab(climbName, COL.man), tl("TAS de la montée choisie (curseurs)", "TAS of the chosen climb (sliders)",
+          "TAS des gewählten Steigflugs (Regler)", "TAS del ascenso elegido (cursores)")],
         ...(m0 ? [
           [sw(COL.ref, true), lab(isaName, COL.ref), tl("même croisière en atmosphère standard",
             "same cruise in the standard atmosphere", "gleicher Reiseflug in der Standardatmosphäre",
@@ -1011,17 +1218,15 @@
     /** Distance parcourue par unité de carburant (NM par unité affichée). */
     const eff = r => c.D / cv(r.fuel);
     const vals = [eco, norm, man, ...bands].flat().filter(ok).map(eff),
-      ymax = Math.max(...vals) * 1.05,
-      ymin = Math.max(0, Math.min(...vals) * .92);
+      ay = niceAxis(Math.max(0, Math.min(...vals) * .95), Math.max(...vals) * 1.03), // graduations rondes (NM par unité)
+      ymax = ay.hi,
+      ymin = ay.lo;
     /** Coordonnées du graphique : X (altitude), Y (rendement). */
     const X = h => Lm + h / xmax * (W - Lm - R),
       Y = v => T + (1 - (v - ymin) / (ymax - ymin || 1)) * (H - T - B);
     const tick = xmax > 30000 ? 10000 : xmax > 12000 ? 5000 : 2000;
     let g = "";
-    for (let i = 0; i <= 4; i++) {
-      const v = ymin + (ymax - ymin) * i / 4;
-      g += `<line class="grid-line" x1="${Lm}" x2="${W - R}" y1="${Y(v)}" y2="${Y(v)}"/><text x="${Lm - 5}" y="${Y(v) + 4}" text-anchor="end">${f3(v)}</text>`;
-    }
+    for (const v of ay.ticks) g += `<line class="grid-line" x1="${Lm}" x2="${W - R}" y1="${Y(v)}" y2="${Y(v)}"/><text x="${Lm - 5}" y="${Y(v) + 4}" text-anchor="end">${fmt(v, ay.dec)}</text>`;
     for (let h = 0; h <= xmax; h += tick) g += `<line class="grid-line" x1="${X(h)}" x2="${X(h)}" y1="${T}" y2="${H - B}"/><text x="${X(h)}" y="${H - B + 14}" text-anchor="middle">${flTxt(h)}</text>`;
     /** Tracé SVG du rendement d'une série, interrompu sur les niveaux non utilisables. */
     const path = rs => {
@@ -1204,20 +1409,22 @@
         T = 14,
         B = 30,
         xmax = Math.max(K.topX, 1000);
-      const rmax = Math.max(...pts.map((p, i) => Math.max(p.roc, p.profileRoc, mpts[i].roc))) * 1.08;
-      const fmax = Math.max(...pts.filter(p => Number.isFinite(p.fuelPer1000) && p.roc > 100).map(p => cv(p.fuelPer1000))) * 1.08 ||
-        1;
+      // axes gradués en valeurs rondes depuis 0 : vario (ft/min) à gauche, carburant par 1000 ft à droite
+      const rAx = niceAxis(0, Math.max(...pts.map((p, i) => Math.max(p.roc, p.profileRoc, mpts[i].roc))) * 1.03, 4, true),
+        rmax = rAx.hi;
+      const fAx = niceAxis(0, Math.max(...pts.filter(p => Number.isFinite(p.fuelPer1000) && p.roc > 100).map(p => cv(p
+          .fuelPer1000))) * 1.03 || 1, 4, true),
+        fmax = fAx.hi;
       /** Coordonnées du graphique : X (altitude), Y (vario), Yf (carburant par 1000 ft). */
       const X = h => Lm + h / xmax * (W - Lm - R),
         Y = v => T + (1 - v / rmax) * (H - T - B),
         Yf = v => T + (1 - v / fmax) * (H - T - B);
       let g = "";
-      for (let i = 0; i <= 4; i++) {
-        const v = rmax * i / 4;
-        g += `<line class="grid-line" x1="${Lm}" x2="${W - R}" y1="${Y(v)}" y2="${Y(v)}"/><text x="${Lm - 5}" y="${Y(v) + 4}" text-anchor="end">${fmt(v, 0)}</text><text x="${W - R + 5}" y="${Yf(fmax * i / 4) + 4}">${fmt(fmax * i / 4, 1)}</text>`;
-      }
+      for (const v of rAx.ticks) g += `<line class="grid-line" x1="${Lm}" x2="${W - R}" y1="${Y(v)}" y2="${Y(v)}"/><text x="${Lm - 5}" y="${Y(v) + 4}" text-anchor="end">${fmt(v, rAx.dec)}</text>`;
+      for (const v of fAx.ticks) g += `<text x="${W - R + 5}" y="${Yf(v) + 4}">${fmt(v, fAx.dec)}</text>`;
       const tick = xmax > 30000 ? 10000 : xmax > 12000 ? 5000 : 2000;
       for (let h = 0; h <= xmax; h += tick) g += `<text x="${X(h)}" y="${H - B + 14}" text-anchor="middle">${flTxt(h)}</text>`;
+      g += planMark(X, T, H - B, c.FL * 100, xmax); // niveau du vol (haut de la montée)
       /** Tracé SVG d'une grandeur f(point, index) sur les points retenus par sel. */
       const pl = (f, sel = () => true) => pts.map((p, i) => [p, i]).filter(([p]) => sel(p)).map(([p, i], j) => `${j ? "L" : "M"}${X(p.h).toFixed(1)},${f(p, i).toFixed(1)}`).join("");
       g += `<line class="axis" x1="${Lm}" x2="${W - R}" y1="${H - B}" y2="${H - B}"/>` +
@@ -1267,10 +1474,10 @@
         ]),
         `<div id="climbReadout" class="readout"></div>`,
         reading(tl(
-          "au trait blanc (niveau épinglé), le vario encore disponible : il baisse jusqu’au plafond. Violet sous le bleu : la loi réglée monte moins vite que Vy, en réduisant les gaz.",
-          "at the white line (pinned level), the rate still available: it drops towards the ceiling. Violet below blue: the set law climbs slower than Vy, with reduced throttle.",
-          "an der weißen Linie (angeheftete Höhe) die noch verfügbare Steigrate: sie sinkt bis zur Gipfelhöhe. Violett unter Blau: das eingestellte Gesetz steigt langsamer als Vy, mit reduzierter Leistung.",
-          "en la línea blanca (nivel fijado), el régimen aún disponible: baja hasta el techo. Violeta bajo el azul: la ley ajustada sube más despacio que Vy, con gases reducidos."
+          "au trait blanc (niveau épinglé), le vario encore disponible : il baisse jusqu’au plafond. Violet sous le bleu : la montée choisie monte moins vite que Vy, en réduisant les gaz.",
+          "at the white line (pinned level), the rate still available: it drops towards the ceiling. Violet below blue: the chosen climb is slower than Vy, with reduced throttle.",
+          "an der weißen Linie (angeheftete Höhe) die noch verfügbare Steigrate: sie sinkt bis zur Gipfelhöhe. Violett unter Blau: der gewählte Steigflug steigt langsamer als Vy, mit reduzierter Leistung.",
+          "en la línea blanca (nivel fijado), el régimen aún disponible: baja hasta el techo. Violeta bajo el azul: el ascenso elegido sube más despacio que Vy, con gases reducidos."
         )));
     });
 
@@ -1309,15 +1516,14 @@
         const xm = Math.max(hTarget, step),
           all = sch.flatMap(r => [r.vy?.ias, r.t?.ias, r.f?.ias, r.pr, r.mn.ias, r.vx, r.vy?.tas, r.t?.tas, r.f?.tas, r.mn.tas]).filter(
             Number.isFinite);
-        const vmin = Math.min(...all) * .92,
-          vmax = Math.max(...all) * 1.06,
+        // axe des vitesses gradué en valeurs rondes (kt)
+        const ax = niceAxis(Math.min(...all) * .96, Math.max(...all) * 1.03),
+          vmin = ax.lo,
+          vmax = ax.hi,
           X = h => Lm + h / xm * (W - Lm - R),
           Y = v => T + (1 - (v - vmin) / (vmax - vmin || 1)) * (H - T - B);
         let g = "";
-        for (let i = 0; i <= 4; i++) {
-          const v = vmin + (vmax - vmin) * i / 4;
-          g += `<line class="grid-line" x1="${Lm}" x2="${W - R}" y1="${Y(v)}" y2="${Y(v)}"/><text x="${Lm - 5}" y="${Y(v) + 4}" text-anchor="end">${fmt(v, 0)}</text>`;
-        }
+        for (const v of ax.ticks) g += `<line class="grid-line" x1="${Lm}" x2="${W - R}" y1="${Y(v)}" y2="${Y(v)}"/><text x="${Lm - 5}" y="${Y(v) + 4}" text-anchor="end">${fmt(v, ax.dec)}</text>`;
         const tk = xm > 30000 ? 10000 : xm > 12000 ? 5000 : 2000;
         for (let h = 0; h <= xm; h += tk) g += `<text x="${X(h)}" y="${H - B + 14}" text-anchor="middle">${flTxt(h)}</text>`;
         /** Tracé SVG d'une grandeur de la table des vitesses (trait coloré si col). */
@@ -1362,11 +1568,12 @@
         panel("panelSpeed", tl("Vitesses de montée", "Climb speeds", "Steiggeschwindigkeiten", "Velocidades de ascenso"),
           `<p>${tl("Badin à tenir, à mi-montée", "IAS to fly, at mid-climb", "Zu fliegende IAS, halber Steigflug", "IAS a mantener, a media subida")} (${flTxt(hMidC)}) :</p><dl class="kvp">${law(mv, COL.prof, def("Vy"))}${law(mt, COL.fast, L.fast())}${law(mf, COL.eco, L.fuelLaw())}${law(m.manualPoint(hMidC, man), COL.man, L.man())}<dt>${def("Vx")} (${tl("pente max", "max. angle", "max. Steigwinkel", "ángulo máx.")})</dt><dd>${fmt(m.climbPoint(hMidC).vxIas, 0)} kt</dd></dl>`,
           `<div id="climbSpeedReadout" class="readout"></div>`,
-          reading(tl(`trois objectifs incompatibles : ${def("Vy")} gagne l’altitude au plus vite ; la loi rapide arrive au plus tôt (plus vite, moins de vario) ; la loi économique dépense le moins. Pointillés : ${def("climbSpd", L.climbSpd())} ; pointillés fins bleus : ${def("Vx")} (obstacle à franchir) ; tirets de la couleur de chaque loi : sa TAS (vitesse vraie), qui s’écarte du Badin en montant. Les curseurs violets (vario à gauche, Badin à droite) règlent votre propre loi.`, `three incompatible goals: ${def("Vy")} gains altitude fastest; the fast law arrives soonest (faster, less rate); the economy law burns least. Dashed: ${def("climbSpd", L.climbSpd())}; thin blue dots: ${def("Vx")} (obstacle clearance). The violet sliders (rate left, IAS right) set your own law.`, `drei unvereinbare Ziele: ${def("Vy")} gewinnt am schnellsten Höhe; das schnelle Gesetz kommt am frühesten an (schneller, weniger Steigrate); das sparsame verbraucht am wenigsten. Gestrichelt: ${def("climbSpd", L.climbSpd())}; feine blaue Punkte: ${def("Vx")} (Hindernisfreiheit). Die violetten Regler (Steigrate links, IAS rechts) stellen Ihr eigenes Gesetz ein.`, `tres objetivos incompatibles: ${def("Vy")} gana altitud lo antes posible; la ley rápida llega antes (más rápida, menos régimen); la económica gasta lo mínimo. Punteado: ${def("climbSpd", L.climbSpd())}; puntos azules finos: ${def("Vx")} (franqueo de obstáculos). Los cursores violetas (régimen a la izquierda, IAS a la derecha) ajustan su propia ley.`)));
+          reading(tl(`trois objectifs incompatibles : ${def("Vy")} gagne l’altitude au plus vite ; la montée rapide arrive au plus tôt (plus vite, moins de vario) ; la montée économique dépense le moins. Pointillés : ${def("climbSpd", L.climbSpd())} ; pointillés fins bleus : ${def("Vx")} (obstacle à franchir) ; tirets de la couleur de chaque montée : sa TAS (vitesse vraie), qui s’écarte du Badin en montant. Les curseurs violets (vario à gauche, Badin à droite) règlent votre montée choisie.`, `three incompatible goals: ${def("Vy")} gains altitude fastest; the fast climb arrives soonest (faster, less rate); the economy climb burns least. Dashed: ${def("climbSpd", L.climbSpd())}; thin blue dots: ${def("Vx")} (obstacle clearance). The violet sliders (rate left, IAS right) set your chosen climb.`, `drei unvereinbare Ziele: ${def("Vy")} gewinnt am schnellsten Höhe; der schnelle Steigflug kommt am frühesten an (schneller, weniger Steigrate); der sparsame verbraucht am wenigsten. Gestrichelt: ${def("climbSpd", L.climbSpd())}; feine blaue Punkte: ${def("Vx")} (Hindernisfreiheit). Die violetten Regler (Steigrate links, IAS rechts) stellen Ihren gewählten Steigflug ein.`, `tres objetivos incompatibles: ${def("Vy")} gana altitud lo antes posible; el ascenso rápido llega antes (más rápido, menos régimen); el económico gasta lo mínimo. Punteado: ${def("climbSpd", L.climbSpd())}; puntos azules finos: ${def("Vx")} (franqueo de obstáculos). Los cursores violetas (régimen a la izquierda, IAS a la derecha) ajustan su ascenso elegido.`)));
       });
 
     // --- comparaison des lois : montée au niveau du plan et trajet entier ----------------------------------
-    guard("panelCompare", "climbCompare", tl("Comparaison des lois", "Law comparison", "Vergleich der Gesetze", "Comparación de leyes"),
+    guard("panelCompare", "climbCompare", tl("Comparaison des montées", "Climb comparison", "Vergleich der Steigflüge",
+        "Comparación de ascensos"),
       () => {
         const laws = [
           ["profile", L.climbSpd(), COL.ref],
@@ -1392,11 +1599,11 @@
           bV = min(r => r.t.climb.minutes);
         /** Cellule du tableau, marquée ★ si la loi est la meilleure de la colonne. */
         const cell = (r, best, txt) => `<td${r === best ? ' class="best"' : ""}>${txt}${r === best ? " ★" : ""}</td>`;
-        $("climbCompare").innerHTML = typo(`<table><thead><tr><th>${tl("Loi — montée au", "Law — climb to", "Gesetz — Steigflug auf", "Ley — ascenso a")} ${flTxt(hTarget)}</th><th>${tl("Durée", "Time", "Dauer", "Duración")}</th><th>NM</th><th>${unit}</th><th>${tl("Trajet", "Trip", "Strecke", "Trayecto")}</th><th>${unit}</th></tr></thead><tbody>${res.map(r => r.t.ok
+        $("climbCompare").innerHTML = typo(`<table><thead><tr><th>${tl("Montée jusqu’au", "Climb to", "Steigflug auf", "Ascenso a")} ${flTxt(hTarget)}</th><th>${tl("Durée", "Time", "Dauer", "Duración")}</th><th>NM</th><th>${unit}</th><th>${tl("Trajet", "Trip", "Strecke", "Trayecto")}</th><th>${unit}</th></tr></thead><tbody>${res.map(r => r.t.ok
         ? `<tr><td>${lab(r.label, r.col)}</td>${cell(r, bV, hmTxt(r.t.climb.minutes))}<td>${fmt(r.t.climb.nm, 0)}</td><td>${fmt(cv(r.t.climb.fuel), 0)}</td>${cell(r, bT, hmTxt(r.t.minutes))}${cell(r, bF, fmt(cv(r.t.fuel), 0))}</tr>`
         : `<tr><td>${lab(r.label, r.col)}</td><td colspan="5" class="unreach">${tl("inatteignable", "unreachable", "nicht erreichbar", "inalcanzable")} — ${whyNot(m, c, r.t, hTarget, r.id)}</td></tr>`).join("")}</tbody></table>`);
-        panel("panelCompare", tl("Comparaison des lois", "Law comparison", "Vergleich der Gesetze", "Comparación de leyes"),
-          reading(tl(`montée jusqu’au niveau du plan (${flTxt(hTarget)}) puis trajet entier de ${fmt(c.D, 0)} NM, pour chaque loi. ★ : meilleur de la colonne. Lois rapide et économique : la distance parcourue en montée est retranchée de la croisière ; vario ≥ 50 % du vario max ; réacteur limité à 250 kt sous FL100.`, `climb to the plan level (${flTxt(hTarget)}) then the whole ${fmt(c.D, 0)} NM trip, for each law. ★: best in the column. Fast and economy laws: the distance covered while climbing is deducted from the cruise; rate ≥ 50 % of the maximum; jets limited to 250 kt below FL100.`, `Steigflug auf die Planhöhe (${flTxt(hTarget)}) und gesamte Strecke von ${fmt(c.D, 0)} NM, je Gesetz. ★: bester Wert der Spalte. Schnelles und sparsames Gesetz: die Steigstrecke wird vom Reiseflug abgezogen; Steigrate ≥ 50 % des Maximums; Strahlflugzeuge unter FL100 auf 250 kt begrenzt.`, `ascenso al nivel del plan (${flTxt(hTarget)}) y trayecto completo de ${fmt(c.D, 0)} NM, para cada ley. ★: mejor de la columna. Leyes rápida y económica: la distancia en ascenso se descuenta del crucero; régimen ≥ 50 % del máximo; reactores limitados a 250 kt bajo FL100.`)));
+        panel("panelCompare", tl("Comparaison des montées", "Climb comparison", "Vergleich der Steigflüge", "Comparación de ascensos"),
+          reading(tl(`montée jusqu’au niveau du plan (${flTxt(hTarget)}) puis trajet entier de ${fmt(c.D, 0)} NM, pour chaque montée. ★ : meilleur de la colonne. Montées rapide et économique : la distance parcourue en montée est retranchée de la croisière ; vario ≥ 50 % du vario max ; réacteur limité à 250 kt sous FL100.`, `climb to the plan level (${flTxt(hTarget)}) then the whole ${fmt(c.D, 0)} NM trip, for each climb. ★: best in the column. Fast and economy climbs: the distance covered while climbing is deducted from the cruise; rate ≥ 50 % of the maximum; jets limited to 250 kt below FL100.`, `Steigflug auf die Planhöhe (${flTxt(hTarget)}) und gesamte Strecke von ${fmt(c.D, 0)} NM, je Steigflug. ★: bester Wert der Spalte. Schneller und sparsamer Steigflug: die Steigstrecke wird vom Reiseflug abgezogen; Steigrate ≥ 50 % des Maximums; Strahlflugzeuge unter FL100 auf 250 kt begrenzt.`, `ascenso al nivel del plan (${flTxt(hTarget)}) y trayecto completo de ${fmt(c.D, 0)} NM, para cada ascenso. ★: mejor de la columna. Ascensos rápido y económico: la distancia en ascenso se descuenta del crucero; régimen ≥ 50 % del máximo; reactores limitados a 250 kt bajo FL100.`)));
       });
 
     // --- table par altitude (cumuls à Vy) et régimes de la table RPM / N1 -----------------------------------
@@ -1428,7 +1635,7 @@
           (rpm.length ? `<h4>${tl("Régimes de montée (table RPM / N1)", "Climb settings (RPM / N1 table)", "Steigflugeinstellungen (RPM-/N1-Tabelle)", "Regímenes de ascenso (tabla RPM / N1)")} — ${flTxt(hMid)}</h4><table><thead><tr><th>RPM / N1</th><th>${tl("Débit", "Fuel flow", "Verbrauch", "Flujo")}</th><th>${tl("Gaz", "Throttle", "Leistungshebel", "Gases")}</th><th>${RATE} ${tl("sol", "SL", "Boden", "nivel del mar")}</th><th>${RATE} ${flTxt(hMid)}</th><th>${PER}</th></tr></thead><tbody>${rpm.sort((a, b) => a.r.rpm - b.r.rpm).map(x => `<tr><td${x === bestRpm ? ' class="best"' : ""}>${fmt(x.r.rpm, 0)}${x === bestRpm ? " ★" : ""}</td><td>${showFuel(x.ff)}</td><td>${fmt(x.at.frac * 100, 0)} %</td><td>${fmt(x.sl.roc, 0)}</td><td>${fmt(x.at.roc, 0)}</td><td>${fmt(cv(x.at.fuelPer1000), 1)}</td></tr>`).join("")}</tbody></table>` : ""));
         panel("panelTable", tl("Montée par altitude", "Climb by altitude", "Steigflug nach Höhe", "Ascenso por altitud"),
           reading(tl(`montée à ${def("Vy")} : vario, débit et carburant par 1000 ft à chaque altitude, cumuls depuis le sol.`, `climb at ${def("Vy")}: rate, fuel flow and fuel per 1000 ft at each altitude, totals from the ground.`, `Steigflug mit ${def("Vy")}: Steigrate, Verbrauch und Kraftstoff je 1000 ft auf jeder Höhe, Summen ab Boden.`, `ascenso a ${def("Vy")}: régimen, flujo y combustible por 1000 ft a cada altitud, acumulados desde el suelo.`)),
-          rpm.length ? `<p>${tl(`Table RPM / N1 : vario et carburant par pied gagné à ${flTxt(hMid)} pour chaque régime de la table (au-delà de la puissance disponible : plein gaz). ★ : le plus économique.`, `RPM / N1 table: rate and fuel per foot gained at ${flTxt(hMid)} for each setting of the table (beyond the power available: full throttle). ★: most economical.`, `RPM-/N1-Tabelle: Steigrate und Kraftstoff je gewonnenem Fuß auf ${flTxt(hMid)} für jede Einstellung (über der verfügbaren Leistung: Vollgas). ★: am sparsamsten.`, `Tabla RPM / N1: régimen y combustible por pie ganado a ${flTxt(hMid)} para cada régimen de la tabla (por encima de la potencia disponible: gases a fondo). ★: el más económico.`)}${mf && m.kind !== "jet" ? ` ${tl(`Loi économique : gaz ${fmt(mf.frac * 100, 0)} %, ${showFuel(mf.ff)} ${unit}/h.`, `Economy law: throttle ${fmt(mf.frac * 100, 0)} %, ${showFuel(mf.ff)} ${unit}/h.`, `Sparsames Gesetz: Leistung ${fmt(mf.frac * 100, 0)} %, ${showFuel(mf.ff)} ${unit}/h.`, `Ley económica: gases ${fmt(mf.frac * 100, 0)} %, ${showFuel(mf.ff)} ${unit}/h.`)}` : ""}</p>` : "");
+          rpm.length ? `<p>${tl(`Table RPM / N1 : vario et carburant par pied gagné à ${flTxt(hMid)} pour chaque régime de la table (au-delà de la puissance disponible : plein gaz). ★ : le plus économique.`, `RPM / N1 table: rate and fuel per foot gained at ${flTxt(hMid)} for each setting of the table (beyond the power available: full throttle). ★: most economical.`, `RPM-/N1-Tabelle: Steigrate und Kraftstoff je gewonnenem Fuß auf ${flTxt(hMid)} für jede Einstellung (über der verfügbaren Leistung: Vollgas). ★: am sparsamsten.`, `Tabla RPM / N1: régimen y combustible por pie ganado a ${flTxt(hMid)} para cada régimen de la tabla (por encima de la potencia disponible: gases a fondo). ★: el más económico.`)}${mf && m.kind !== "jet" ? ` ${tl(`Montée économique : gaz ${fmt(mf.frac * 100, 0)} %, ${showFuel(mf.ff)} ${unit}/h.`, `Economy climb: throttle ${fmt(mf.frac * 100, 0)} %, ${showFuel(mf.ff)} ${unit}/h.`, `Sparsamer Steigflug: Leistung ${fmt(mf.frac * 100, 0)} %, ${showFuel(mf.ff)} ${unit}/h.`, `Ascenso económico: gases ${fmt(mf.frac * 100, 0)} %, ${showFuel(mf.ff)} ${unit}/h.`)}` : ""}</p>` : "");
       });
   }
 
@@ -1442,7 +1649,7 @@
       t = setTimeout(() => {
         const w = document.querySelector("#optBlock .chart-wrap")?.clientWidth || 0,
           key = `${Math.round(w / 20)}|${Math.round(innerHeight / 20)}`;
-        if (key !== last && S.m) {
+        if (key !== last && S.m && S.c && curvesShown()) {
           last = key;
           renderAll(S.m, S.c);
           window.StickyFrame?.resetGrow?.();
@@ -1454,7 +1661,11 @@
   window.FlightPerfView = {
     sync,
     /** Redessine toutes les courbes avec le dernier calcul (ex. couleurs refaites au changement de design). */
-    renderAll: () => S.m && renderAll(S.m, S.c),
+    renderAll: () => S.m && S.c && curvesShown() && renderAll(S.m, S.c),
+    /** Modèle et trajet du devis sans tracer les courbes (vue simple) : montée choisie du devis à jour. */
+    prepare,
+    /** Montée choisie du devis redessinée (changement de vue, de langue ou d'unité). */
+    syncClimb: () => syncClimbCtl(),
     state: S,
     /** Loi réglée par les curseurs pour le profil actif : { ias, vs, full } ; null avant le premier calcul. */
     manual: () => S.manual && S.manual.pid.startsWith(`${active?.id}|`) ? {
