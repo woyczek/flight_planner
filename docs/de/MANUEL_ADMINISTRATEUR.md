@@ -710,9 +710,9 @@ Diese Rubrik ist der einzige Ort, an dem die lokalen Ordner und die Adressen der
 |---|---|
 | Repository-Ordner | Stammverzeichnis der Anwendung (enthält `lancer.cmd`, `config/repository_tree`) |
 | Datenordner | `data/` (enthält `data_tree.js`) |
-| Registerordner, Missionsordner, Ordner SIA XML | `data/cr`, `data/missions`, `data/sia` (aus dem Datenordner abgeleitet) |
+| „Abgeleitete Ordner (3)“, zugeklappt: Register, Missionen, SIA | `data/cr`, `data/missions`, `data/sia`, mit dem Datenordner eingestellt |
 | Ordner der ODV-Arbeitsmappe | synchronisierter Ordner (OneDrive…), in dem die Staffel die `.xlsx` ablegt |
-| Ordner X-Plane (Landungen), Ordner Leistungsdaten, Ordner der lokalen Sicherung | CSV-Protokolle, Profile `.lnmperf` / `.json`, `defa_local_store.yaml` |
+| X-Plane (zweite Zeile: „Landeprotokolle: anderer Ordner…“), Ordner Leistungsdaten, Ordner der lokalen Sicherung | Installationsordner von X-Plane (Navigationsdaten `earth_*.dat`, Custom Data; CSV-Landeprotokolle, sofern kein anderer Ordner gewählt ist), Profile `.lnmperf` / `.json`, `defa_local_store.yaml`; optional, als „optional, nicht gewählt“ (Information) angezeigt, solange nicht gewählt |
 
 - **Externe Quellen**: Die Standardadresse wird grau angezeigt. Ein eingegebener Wert gilt nur für diesen Browser; „↺“ kehrt zum Standardwert zurück, und „Öffnen ↗“ öffnet die Adresse.
 - **API-Schlüssel (externe Dienste)**: Schlüssel der Suite, für alle ihre Benutzer (IVAO: API-Schlüssel für die Gebietsaktivierungen und die ATC-Sitzungen — Trainings, Prüfungen, Buchungen — der ODV-Planung und der Einsatztafel). „Speichern“ übergibt sie dem Starter (`secrets/` im Anwendungsordner, von Git ausgeschlossen, außerhalb der Daten und Sicherungen); die Seite sieht nur ihren Status und die letzten 4 Zeichen; „Löschen“ entfernt den Schlüssel.

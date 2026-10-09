@@ -12,6 +12,11 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Modifié
 
+- **Manuels (4 langues), Carburant et Sources et dossiers** : chaîne de la consommation de croisière (saisie, profil,
+  Poll-Schumann, SimBrief, estimation ≈), champ « Consommation de croisière » (« Utiliser cette valeur », « Mémoriser
+  pour ce type »), « Montée choisie » (au lieu de « loi réglée »), « Vue détaillée » / « Vue simple », « Comparaison des
+  montées », origine de la consommation dans la base du calcul ; Sources et dossiers : « Dossiers déduits (3) »
+  repliés, ligne X-Plane unique avec « Journaux d'atterrissage : autre dossier… ».
 - **Manuels (4 langues)** : groupe « Référence et journal » (ex-« Base ») des rubriques de Paramètres, colonne « Terrain
   de base » de la flotte ; Premier lancement : « Terminer » après les étapes 1 et 2 (3 à 5 recommandées), type sans fiche
   OACI non bloquant à l'étape 5.

@@ -1412,7 +1412,7 @@ Es el mismo bloque que Ajustes › Mantenimiento › Datos aeronáuticos. La mis
 ## Combustible
 <!-- page: apps/planner/flight_performance_planner.html -->
 
-El planificador de combustible (título «Combustible») calcula el combustible de un vuelo a partir del perfil de rendimiento de su aeronave. También traza las altitudes y leyes de ascenso óptimas.
+El planificador de combustible (título «Combustible») calcula el combustible de un vuelo a partir del perfil de rendimiento de su aeronave. El consumo de crucero viene, por este orden, de su entrada para este vuelo, del perfil guardado, del modelo de Poll y Schumann (aviones de línea a reacción, según la masa, el nivel y el Mach), de SimBrief y después de una estimación por tipo o clase OACI; un valor aproximado se marca con ≈. También traza las altitudes y leyes de ascenso óptimas.
 Para ir a él: barra lateral «Herramientas», pestaña «Combustible», botón «Combustible (planificador)» de una misión en Mis misiones, o botón «Combustible» de los Mapas de vuelo. En ese caso se recuperan la ruta, la distancia, el nivel y la aeronave.
 Cabecera: menú «Avión», botón «Recuperar último FPL de SimBrief», «Unidades: kg / lbs». Las importaciones y exportaciones están en el menú ☰. Detalles técnicos: [planificador](../FLIGHT_PLANNER.md).
 Según el nivel de uso: en los niveles 1 a 3 (Tripulación, Planificación, Diseño), la página muestra el avión, el plan de vuelo (y «Recuperar último FPL de SimBrief»), el plegable «Parámetros del vuelo», «Calcular» y el Resultado, en dos columnas; el menú ☰ solo conserva exportar e importar las preferencias. Curvas, paneles, instrumentos, bloques del perfil, barra de estado y acciones de perfiles del menú ☰ se añaden en el nivel Experto, donde la página está completa.
@@ -1431,7 +1431,7 @@ Menú ☰: importar perfiles / CSV / JSON (incluido `.lnmperf` de Little Navmap)
 
 1. «Plan de vuelo (casilla 15)»: introduzca la ruta. Es el mismo plan que el de los Mapas de vuelo (gana el más reciente). De él se deducen la distancia, la ruta verdadera y el nivel.
 2. Complete o corrija los campos del plegable «Parámetros del vuelo» (desplegado de entrada en el nivel Experto, plegado en los demás; los valores por defecto bastan para un cálculo rápido): «Distancia (NM)», «Nivel (FL)», «Ruta verdadera (°)», «Rodaje (min)», «Viento desde (°)», «Viento (kt)», «Reserva (min)», «Contingencia (%)».
-3. Opcional, en el mismo plegable: «Masa de despegue prevista», comparada con la MTOW del tipo; «Desviación ISA (°C)», o «Temperatura en tierra (°C)» con «Elevación del aeródromo (ft)», o «Temperatura en el nivel (°C)».
+3. Opcional, en el mismo plegable: «Masa de despegue prevista», comparada con la MTOW del tipo; «Desviación ISA (°C)», o «Temperatura en tierra (°C)» con «Elevación del aeródromo (ft)», o «Temperatura en el nivel (°C)». «Consumo de crucero (kg/h)»: rellenado desde el perfil; sin perfil, la página dice qué valor usará y de dónde viene (por ejemplo «≈ 4 000 kg/h, estimación tipo A400»); «Usar este valor» lo copia en el campo, «Guardar para este tipo» lo conserva para los próximos vuelos. «Ascenso elegido»: «IAS» (kt) y variómetro (ft/min, o gases a fondo), con el régimen y el consumo a mitad del ascenso.
 4. Haga clic en «Calcular».
 
 Si deja el viento vacío, la página lo indica («Viento desconocido: horquilla ±25 kt…») y da el combustible como una horquilla.
@@ -1440,19 +1440,19 @@ El botón «Mapas de vuelo» (nivel Experto) abre los Mapas de vuelo con este pl
 
 ### Curvas del plan (altitud y ascenso óptimos)
 
-En el nivel Experto, después de «Calcular», el bloque «Plan de combustible» muestra, en este orden:
+En la vista detallada (botón «Vista detallada» / «Vista simple» del Resultado; detallada por defecto en el nivel Experto, simple en los niveles 1 a 3), después de «Calcular», el bloque «Plan de combustible» muestra, en este orden:
 
 | Título | Lo que muestra |
 |---|---|
 | «Altitud óptima — combustible y velocidad» | Trayecto completo volado a cada nivel: cuanto más alta es la curva, menos se consume por milla. |
 | «Ascenso óptimo — régimen y combustible» | Régimen de ascenso disponible y combustible por 1000 ft según la altitud. |
-| «Velocidades de ascenso — IAS y TAS según la altitud» | Vy, ascenso rápido, ascenso económico, ley ajustada, Vx. |
+| «Velocidades de ascenso — IAS y TAS según la altitud» | Vy, ascenso rápido, ascenso económico, ascenso elegido, Vx. |
 | «TAS según el nivel — crucero y ascenso» | Velocidad verdadera en crucero y en ascenso. |
-| «Comparación de leyes de ascenso» | Duración, distancia y combustible de cada ley; ★: el mejor de la columna. |
+| «Comparación de ascensos» | Duración, distancia y combustible de cada ascenso, hasta el nivel del plan y después en todo el trayecto; ★: el mejor de la columna. |
 | «Ascenso por altitud — regímenes RPM / N1» | Tabla a Vy con acumulados desde el suelo. |
 
 Pase el ratón por una curva para leer los valores a esa altitud; haga clic para fijar un nivel (línea blanca en todas las curvas). El plan se calcula entonces a ese nivel.
-Los dos cursores verticales (régimen de ascenso a la izquierda, IAS a la derecha) ajustan su propia ley de ascenso («ley ajustada»).
+Los dos cursores verticales (régimen de ascenso a la izquierda, IAS a la derecha) ajustan su «ascenso elegido», como los campos del mismo nombre del plan de combustible.
 La zona gris «inaccesible» está por encima del techo de la aeronave.
 
 ### Resultado
@@ -1460,12 +1460,12 @@ La zona gris «inaccesible» está por encima del techo de la aeronave.
 Este bloque, en la columna de la derecha, acompaña a la página mientras se desplaza por las curvas.
 
 - «Block fuel» (en horquilla si el viento es desconocido), «Tiempo de vuelo», «TOD».
-- Base del cálculo: nivel y ley de ascenso utilizados.
+- Base del cálculo: nivel, ascenso utilizado y origen del consumo de crucero («perfil guardado», «introducido para este vuelo», «Poll-Schumann, 70 t a mitad del crucero, FL350, M0,78», «SimBrief», «estimación…»). Sin consumo conocido, «Combustible de bloque» muestra «—»: introduzca el consumo en el plan de combustible.
 - Detalle: rodaje, ascenso, crucero, descenso, contingencia, reserva; masa de despegue prevista y MTOW si la ha introducido (en rojo si se supera).
 - Ficha del cursor (⌖ al pasar el ratón, 📌 fijado): combustible y tiempo del trayecto a ese nivel, régimen de ascenso máximo, velocidades de ascenso; «soltar» quita la fijación.
 - Grupo plegable «Regímenes de vuelo — perfil ↔ mapa» (nivel Experto): IAS, régimen de ascenso, régimen del motor y flujo por fase, comparados con el mapa del motor. También contiene el campo «SimBrief Airframe Internal ID» y los enlaces a las fichas de las aeronaves de ese tipo.
 
-«Fijar» conserva el bloque entero cuando acompaña a la página; si no, se pliega. En el nivel Experto, bajo el bloque, un panel por curva da los óptimos, los límites (techo, nivel solicitado) y una ayuda de lectura. Una columna de instrumentos (nivel Experto) muestra IAS, variómetro, altitud, combustible y tiempo de vuelo.
+«Fijar» conserva el bloque entero cuando acompaña a la página; si no, se pliega. «Vista simple» oculta las curvas y los instrumentos, «Vista detallada» los muestra (elección guardada en este navegador). En el nivel Experto, bajo el bloque, un panel por curva da los óptimos, los límites (techo, nivel solicitado) y una ayuda de lectura. Una columna de instrumentos (nivel Experto) muestra IAS, variómetro, altitud, combustible y tiempo de vuelo.
 
 ### Prestaciones motor — RPM / potencia / consumo
 

@@ -710,9 +710,9 @@ Este apartado es el único lugar donde se ajustan las carpetas locales y las dir
 |---|---|
 | Carpeta del repositorio | raíz de la aplicación (contiene `lancer.cmd`, `config/repository_tree`) |
 | Carpeta de datos | `data/` (contiene `data_tree.js`) |
-| Carpeta del registro, Carpeta de misiones, Carpeta SIA XML | `data/cr`, `data/missions`, `data/sia` (deducidas de la carpeta de datos) |
+| «Carpetas deducidas (3)», plegadas: registro, misiones, SIA | `data/cr`, `data/missions`, `data/sia`, ajustadas con la carpeta de datos |
 | Carpeta del libro ODV | carpeta sincronizada (OneDrive…) donde la escuadrilla deja el `.xlsx` |
-| Carpeta X-Plane (aterrizajes), Carpeta de rendimiento, Carpeta de copia local | registros CSV, perfiles `.lnmperf` / `.json`, `defa_local_store.yaml` |
+| X-Plane (segunda línea: «Registros de aterrizaje: otra carpeta…»), Carpeta de rendimiento, Carpeta de copia local | carpeta de instalación de X-Plane (datos de navegación `earth_*.dat`, Custom Data; registros CSV de aterrizaje, salvo otra carpeta elegida), perfiles `.lnmperf` / `.json`, `defa_local_store.yaml`; opcionales, indicados «opcional, no elegida» (información) mientras no se elijan |
 
 - **Fuentes externas**: la dirección por defecto aparece en gris. Un valor introducido solo vale para este navegador; «↺» vuelve al valor por defecto y «Abrir ↗» abre la dirección.
 - **Claves de API (servicios externos)**: claves de la suite, comunes a todos sus usuarios (IVAO: clave de API para las activaciones de zonas y las sesiones ATC — entrenamientos, exámenes, reservas — de la planificación ODV y del Tablero). «Guardar» las confía al lanzador (`secrets/` en la raíz de la aplicación, excluido de git, fuera de los datos y de las copias); la página solo ve su estado y los 4 últimos caracteres; «Borrar» la retira.

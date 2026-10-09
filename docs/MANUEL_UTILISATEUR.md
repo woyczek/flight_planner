@@ -1412,7 +1412,7 @@ C'est le même bloc que Paramètres › Maintenance › Données aéronautiques.
 ## Carburant
 <!-- page: apps/planner/flight_performance_planner.html -->
 
-Le planificateur carburant (titre « Carburant ») calcule le carburant d'un vol à partir du profil de performances de votre appareil. Il trace aussi les altitudes et lois de montée optimales.
+Le planificateur carburant (titre « Carburant ») calcule le carburant d'un vol à partir du profil de performances de votre appareil. La consommation de croisière vient, dans l'ordre, de votre saisie pour ce vol, du profil enregistré, du modèle de Poll et Schumann (avions de ligne à réaction, selon la masse, le niveau et le Mach), de SimBrief, puis d'une estimation par type ou classe OACI ; une valeur approchée est marquée ≈. Il trace aussi les altitudes et lois de montée optimales.
 Pour y aller : barre latérale « Outils », onglet « Carburant », bouton « Carburant (planificateur) » d'une mission dans Mes missions, ou bouton « Carburant » des Cartes de vol. La route, la distance, le niveau et l'appareil sont alors repris.
 En-tête : menu « Avion », bouton « Récupérer dernier FPL SimBrief », « Unités : kg / lbs ». Les imports et exports sont dans le menu ☰. Détails techniques : [planificateur](FLIGHT_PLANNER.md).
 Selon le niveau d'utilisation : aux niveaux 1 à 3 (Équipage, Planification, Conception), la page montre l'avion, le plan de vol (et « Récupérer dernier FPL SimBrief »), le repli « Paramètres du vol », « Calculer » et le Résultat, sur deux colonnes ; le menu ☰ n'y garde qu'exporter et importer les préférences. Courbes, panneaux, instruments, blocs du profil, barre d'état et actions de profils du menu ☰ s'ajoutent au niveau Expert, où la page est complète.
@@ -1431,7 +1431,7 @@ Menu ☰ : importer profils / CSV / JSON (dont `.lnmperf` de Little Navmap), imp
 
 1. « Plan de vol (case 15) » : saisissez la route. C'est le même plan que les Cartes de vol (le plus récent l'emporte). La distance, la route vraie et le niveau en sont déduits.
 2. Complétez ou corrigez les champs du repli « Paramètres du vol » (déplié d'emblée au niveau Expert, replié sinon ; les valeurs par défaut suffisent pour un devis rapide) : « Distance (NM) », « Niveau (FL) », « Route vraie (°) », « Taxi (min) », « Vent de (°) », « Vent (kt) », « Réserve (min) », « Contingence (%) ».
-3. Facultatif, dans le même repli : « Masse au décollage prévue », comparée à la MTOW du type ; « Écart ISA (°C) », ou « Température sol (°C) » avec « Altitude terrain (ft) », ou « Température au niveau (°C) ».
+3. Facultatif, dans le même repli : « Masse au décollage prévue », comparée à la MTOW du type ; « Écart ISA (°C) », ou « Température sol (°C) » avec « Altitude terrain (ft) », ou « Température au niveau (°C) ». « Consommation de croisière (kg/h) » : préremplie par le profil ; sans profil, la page dit quelle valeur elle utilisera et d'où elle vient (par exemple « ≈ 4 000 kg/h, estimation type A400 ») ; « Utiliser cette valeur » la reprend dans le champ, « Mémoriser pour ce type » la garde pour les prochains vols. « Montée choisie » : « Vitesse indiquée » (kt) et « Vario » (ft/min, ou plein gaz), avec le régime et le débit à mi-montée.
 4. Cliquez sur « Calculer ».
 
 Vent laissé vide : la page l'indique (« Vent inconnu : fourchette ±25 kt… ») et donne le carburant en fourchette.
@@ -1440,19 +1440,19 @@ Le bouton « Cartes de vol » (niveau Expert) ouvre les Cartes de vol avec ce pl
 
 ### Courbes du devis (altitude et montée optimales)
 
-Au niveau Expert, après « Calculer », le bloc « Devis carburant » affiche, dans l'ordre :
+En vue détaillée (bouton « Vue détaillée » / « Vue simple » du Résultat ; détaillée par défaut au niveau Expert, simple aux niveaux 1 à 3), après « Calculer », le bloc « Devis carburant » affiche, dans l'ordre :
 
 | Titre | Ce qu'il montre |
 |---|---|
 | « Altitude optimale — carburant et vitesse » | Trajet entier volé à chaque niveau : plus la courbe est haute, moins on consomme par mille. |
 | « Montée optimale — vario et carburant » | Vario disponible et carburant par 1000 ft selon l'altitude. |
-| « Vitesses de montée — Badin et TAS selon l'altitude » | Vy, montée rapide, montée économique, loi réglée, Vx. |
+| « Vitesses de montée — Badin et TAS selon l'altitude » | Vy, montée rapide, montée économique, montée choisie, Vx. |
 | « TAS selon le niveau — croisière et montée » | Vitesse vraie en croisière et en montée. |
-| « Comparaison des lois de montée » | Durée, distance et carburant de chaque loi ; ★ : meilleur de la colonne. |
+| « Comparaison des montées » | Durée, distance et carburant de chaque montée, jusqu'au niveau du plan puis sur le trajet entier ; ★ : meilleur de la colonne. |
 | « Montée par altitude — régimes RPM / N1 » | Table à Vy avec cumuls depuis le sol. |
 
 Survolez une courbe pour lire les valeurs à cette altitude ; cliquez pour épingler un niveau (trait blanc sur toutes les courbes). Le devis est alors calculé à ce niveau.
-Les deux curseurs verticaux (vario à gauche, Badin à droite) règlent votre propre loi de montée (« loi réglée »).
+Les deux curseurs verticaux (vario à gauche, Badin à droite) règlent votre « montée choisie », comme les champs du même nom dans le devis.
 La zone grisée « inaccessible » se trouve au-dessus du plafond de l'appareil.
 
 ### Résultat
@@ -1460,12 +1460,12 @@ La zone grisée « inaccessible » se trouve au-dessus du plafond de l'appareil.
 Ce bloc, dans la colonne de droite, suit la page pendant que vous faites défiler les courbes.
 
 - « Block fuel » (en fourchette si le vent est inconnu), « Temps de vol », « TOD ».
-- Base du calcul : niveau et loi de montée retenus.
+- Base du calcul : niveau, montée retenue et origine de la consommation de croisière (« profil enregistré », « saisie pour ce vol », « Poll-Schumann, 70 t à mi-croisière, FL350, M0,78 », « SimBrief », « estimation… »). Sans consommation connue, « Carburant bloc » affiche « — » : saisissez la consommation dans le devis.
 - Détail : taxi, montée, croisière, descente, contingence, réserve ; masse au décollage prévue et MTOW si vous l'avez saisie (en rouge si elle est dépassée).
 - Fiche du curseur (⌖ au survol, 📌 épinglé) : carburant et temps du trajet à ce niveau, vario max, vitesses de montée ; « désépingler » retire l'épingle.
 - Groupe repliable « Régimes de vol — profil ↔ cartographie » (niveau Expert) : Badin, vario, régime moteur et débit par phase, comparés à la cartographie moteur. Il contient aussi le champ « SimBrief Airframe Internal ID » et les liens vers les fiches des appareils de ce type.
 
-« Épingler » garde le bloc entier quand il suit la page ; sinon, il se replie. Au niveau Expert, sous le bloc, un panneau par courbe donne les optimums, les limites (plafond, niveau demandé) et une aide à la lecture. Une colonne d'instruments (niveau Expert) reprend Badin, vario, altitude, carburant et temps de vol.
+« Épingler » garde le bloc entier quand il suit la page ; sinon, il se replie. « Vue simple » masque les courbes et les instruments, « Vue détaillée » les montre (choix gardé dans ce navigateur). Au niveau Expert, sous le bloc, un panneau par courbe donne les optimums, les limites (plafond, niveau demandé) et une aide à la lecture. Une colonne d'instruments (niveau Expert) reprend Badin, vario, altitude, carburant et temps de vol.
 
 ### Performances moteur — RPM / puissance / consommation
 

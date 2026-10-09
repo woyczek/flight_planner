@@ -1412,7 +1412,7 @@ Es ist derselbe Block wie unter Einstellungen › Wartung › Luftfahrtdaten. Di
 ## Kraftstoff
 <!-- page: apps/planner/flight_performance_planner.html -->
 
-Der Kraftstoffplaner (Titel „Kraftstoff“) berechnet den Kraftstoff eines Flugs aus dem Leistungsprofil Ihres Luftfahrzeugs. Er zeichnet auch die optimalen Flughöhen und Steiggesetze.
+Der Kraftstoffplaner (Titel „Kraftstoff“) berechnet den Kraftstoff eines Flugs aus dem Leistungsprofil Ihres Luftfahrzeugs. Der Reiseverbrauch stammt, in dieser Reihenfolge, aus Ihrer Eingabe für diesen Flug, dem gespeicherten Profil, dem Modell von Poll und Schumann (Strahlverkehrsflugzeuge, nach Masse, Flughöhe und Mach), SimBrief, dann aus einer Schätzung nach ICAO-Typ oder -Klasse; ein Näherungswert ist mit ≈ gekennzeichnet. Er zeichnet auch die optimalen Flughöhen und Steiggesetze.
 Zugang: Seitenleiste „Werkzeuge“, Reiter „Kraftstoff“, Knopf „Kraftstoff (Planer)“ einer Mission in Meine Missionen oder Knopf „Kraftstoff“ der Flugkarten. Route, Distanz, Flughöhe und Luftfahrzeug werden dann übernommen.
 Kopfzeile: Menü „Flugzeug“, Knopf „Letzten SimBrief-FPL abrufen“, „Einheiten: kg / lbs“. Importe und Exporte befinden sich im Menü ☰. Technische Einzelheiten: [Planer](../FLIGHT_PLANNER.md).
 Je nach Nutzungsstufe: Auf den Stufen 1 bis 3 (Besatzung, Planung, Gestaltung) zeigt die Seite das Flugzeug, den Flugplan (und „Letzten SimBrief-FPL abrufen“), den aufklappbaren Bereich „Flugparameter“, „Berechnen“ und das Ergebnis in zwei Spalten; das Menü ☰ behält dort nur Export und Import der Einstellungen. Kurven, Felder, Instrumente, Profilblöcke, Statusleiste und die Profilaktionen des Menüs ☰ kommen auf der Stufe Experte hinzu, wo die Seite vollständig ist.
@@ -1431,7 +1431,7 @@ Menü ☰: Profile / CSV / JSON importieren (darunter `.lnmperf` von Little Navm
 
 1. „Flugplan (Feld 15)“: Geben Sie die Route ein. Es ist derselbe Plan wie in den Flugkarten (der neueste gewinnt). Distanz, rechtweisender Kurs und Flughöhe werden daraus abgeleitet.
 2. Ergänzen oder korrigieren Sie die Felder im aufklappbaren Bereich „Flugparameter“ (auf der Stufe Experte von Anfang an aufgeklappt, sonst zugeklappt; für eine schnelle Planung genügen die Standardwerte): „Distanz (NM)“, „Flugfläche (FL)“, „Rechtweisender Kurs (°)“, „Rollen (min)“, „Wind aus (°)“, „Wind (kt)“, „Reserve (min)“, „Unvorhergesehenes (%)“.
-3. Optional, im selben Bereich: „Geplante Startmasse“, verglichen mit der MTOW des Typs; „ISA-Abweichung (°C)“ oder „Bodentemperatur (°C)“ mit „Platzhöhe (ft)“ oder „Temperatur auf Flughöhe (°C)“.
+3. Optional, im selben Bereich: „Geplante Startmasse“, verglichen mit der MTOW des Typs; „ISA-Abweichung (°C)“ oder „Bodentemperatur (°C)“ mit „Platzhöhe (ft)“ oder „Temperatur auf Flughöhe (°C)“. „Reiseverbrauch (kg/h)“: aus dem Profil vorbelegt; ohne Profil sagt die Seite, welchen Wert sie verwendet und woher er kommt (zum Beispiel „≈ 4 000 kg/h, Typschätzung A400“); „Diesen Wert verwenden“ übernimmt ihn ins Feld, „Für diesen Typ speichern“ behält ihn für die nächsten Flüge. „Gewählter Steigflug“: „IAS“ (kt) und Steigrate (ft/min oder Vollgas), mit Leistungseinstellung und Verbrauch in der Mitte des Steigflugs.
 4. Klicken Sie auf „Berechnen“.
 
 Wind leer gelassen: Die Seite weist darauf hin („Wind unbekannt: Bereich ±25 kt…“) und gibt den Kraftstoff als Bereich an.
@@ -1440,19 +1440,19 @@ Der Knopf „Flugkarten“ (Stufe Experte) öffnet die Flugkarten mit diesem Flu
 
 ### Kurven der Kraftstoffplanung (optimale Flughöhe und optimaler Steigflug)
 
-Auf der Stufe Experte zeigt der Block „Kraftstoffplanung“ nach „Berechnen“ in dieser Reihenfolge:
+In der Detailansicht (Schaltfläche „Detailansicht“ / „Einfache Ansicht“ des Ergebnisses; auf der Stufe Experte standardmäßig detailliert, auf den Stufen 1 bis 3 einfach) zeigt der Block „Kraftstoffplanung“ nach „Berechnen“ in dieser Reihenfolge:
 
 | Titel | Was er zeigt |
 |---|---|
 | „Optimale Flughöhe — Kraftstoff und Geschwindigkeit“ | Gesamte Strecke auf jeder Höhe geflogen: Je höher die Kurve, desto weniger Verbrauch pro Meile. |
 | „Optimaler Steigflug — Steigrate und Kraftstoff“ | Verfügbare Steigrate und Kraftstoff pro 1000 ft nach Höhe. |
-| „Steiggeschwindigkeiten — IAS und TAS nach Höhe“ | Vy, schneller Steigflug, wirtschaftlicher Steigflug, eingestelltes Gesetz, Vx. |
+| „Steiggeschwindigkeiten — IAS und TAS nach Höhe“ | Vy, schneller Steigflug, wirtschaftlicher Steigflug, gewählter Steigflug, Vx. |
 | „TAS nach Flughöhe — Reise- und Steigflug“ | Wahre Geschwindigkeit im Reise- und im Steigflug. |
-| „Vergleich der Steiggesetze“ | Dauer, Distanz und Kraftstoff jedes Gesetzes; ★: Bester der Spalte. |
+| „Vergleich der Steigflüge“ | Dauer, Distanz und Kraftstoff jedes Steigflugs, bis zur Planflughöhe und dann über die ganze Strecke; ★: Bester der Spalte. |
 | „Steigflug nach Höhe — RPM-/N1-Einstellungen“ | Tabelle bei Vy mit Summen ab dem Boden. |
 
 Fahren Sie über eine Kurve, um die Werte in dieser Höhe abzulesen; klicken Sie, um eine Höhe anzuheften (weiße Linie auf allen Kurven). Die Planung wird dann auf dieser Höhe berechnet.
-Die beiden senkrechten Schieberegler (Steigrate links, IAS rechts) stellen Ihr eigenes Steiggesetz ein („eingestelltes Gesetz“).
+Die beiden senkrechten Schieberegler (Steigrate links, IAS rechts) stellen Ihren „gewählten Steigflug“ ein, wie die gleichnamigen Felder der Kraftstoffplanung.
 Der grau hinterlegte Bereich „unerreichbar“ liegt über der Gipfelhöhe des Luftfahrzeugs.
 
 ### Ergebnis
@@ -1460,12 +1460,12 @@ Der grau hinterlegte Bereich „unerreichbar“ liegt über der Gipfelhöhe des 
 Dieser Block in der rechten Spalte folgt der Seite, während Sie durch die Kurven scrollen.
 
 - „Block fuel“ (als Bereich, wenn der Wind unbekannt ist), „Flugzeit“, „TOD“.
-- Berechnungsgrundlage: gewählte Flughöhe und gewähltes Steiggesetz.
+- Berechnungsgrundlage: Flughöhe, verwendeter Steigflug und Herkunft des Reiseverbrauchs („gespeichertes Profil“, „für diesen Flug eingegeben“, „Poll-Schumann, 70 t in Reiseflugmitte, FL350, M0,78“, „SimBrief“, „Schätzung…“). Ohne bekannten Verbrauch zeigt „Blockkraftstoff“ „—“: den Verbrauch in der Kraftstoffplanung eingeben.
 - Einzelheiten: Rollen, Steigflug, Reiseflug, Sinkflug, Unvorhergesehenes, Reserve; geplante Startmasse und MTOW, wenn Sie sie eingegeben haben (rot, wenn sie überschritten ist).
 - Karte des Cursors (⌖ beim Überfahren, 📌 angeheftet): Kraftstoff und Zeit der Strecke auf dieser Höhe, maximale Steigrate, Steiggeschwindigkeiten; „lösen“ entfernt die Anheftung.
 - Aufklappbare Gruppe „Flugphasen — Profil ↔ Kennfeld“ (Stufe Experte): IAS, Steigrate, Triebwerksdrehzahl und Durchfluss pro Phase, verglichen mit dem Triebwerkskennfeld. Sie enthält auch das Feld „SimBrief Airframe Internal ID“ und die Links zu den Blättern der Luftfahrzeuge dieses Typs.
 
-„Anheften“ behält den ganzen Block, wenn er der Seite folgt; sonst klappt er zusammen. Auf der Stufe Experte gibt unter dem Block ein Feld pro Kurve die Optima, die Grenzen (Gipfelhöhe, angeforderte Flughöhe) und eine Lesehilfe an. Eine Instrumentenspalte (Stufe Experte) zeigt IAS, Steigrate, Höhe, Kraftstoff und Flugzeit.
+„Anheften“ behält den ganzen Block, wenn er der Seite folgt; sonst klappt er zusammen. „Einfache Ansicht“ blendet Kurven und Instrumente aus, „Detailansicht“ zeigt sie (Wahl in diesem Browser gespeichert). Auf der Stufe Experte gibt unter dem Block ein Feld pro Kurve die Optima, die Grenzen (Gipfelhöhe, angeforderte Flughöhe) und eine Lesehilfe an. Eine Instrumentenspalte (Stufe Experte) zeigt IAS, Steigrate, Höhe, Kraftstoff und Flugzeit.
 
 ### Triebwerksleistung — Drehzahl / Leistung / Verbrauch
 
