@@ -160,14 +160,17 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
 
   // ---- éditeur de tableau
   // colonnes : { key, label, type: text|number|bool|list|select, options?, width? } ; filter : texte du filtre à
-  // l'ouverture (ligne à montrer, ex. la série ajoutée depuis le journal des vols)
+  // l'ouverture ; focus : valeur de la première colonne de la ligne à montrer (ex. la série ajoutée depuis le journal
+  // des vols) — la table reste entière, la ligne est mise en évidence et défilée à l'écran
   function grid(host, {
     columns,
     data,
     onChange,
-    filter: initialFilter = ''
+    filter: initialFilter = '',
+    focus = ''
   }) {
     let filter = initialFilter,
+      scrolled = false, // ligne à montrer : défilée une fois, mise en évidence à chaque dessin
       sort = {
         key: columns[0].key,
         dir: 1
@@ -204,14 +207,29 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
         .sort((a, b) => String(a.row[sort.key] ?? '').localeCompare(String(b.row[sort.key] ?? ''), undefined, {
           numeric: true
         }) * sort.dir);
+      // ligne à montrer : parmi les lignes affichées (la pagination s'étend jusqu'à elle)
+      let focusIdx = -1;
+      if (focus) {
+        const f = String(focus).toUpperCase();
+        focusIdx = data.findIndex(r => String(r[columns[0].key] ?? '').toUpperCase() === f);
+        const pos = order.findIndex(x => x.index === focusIdx);
+        if (pos >= limit) limit = pos + 1;
+      }
       host.innerHTML = `<div class="da-grid-tools"><input type="search" class="da-filter" placeholder="${esc(T('Filtrer…', 'Filter…'))}" value="${esc(filter)}"><span class="small">${order.length} / ${data.length}</span><button type="button" class="secondary da-add">${esc(T('+ Ajouter une ligne', '+ Add row'))}</button></div>
         <div class="da-scroll"><table class="da-table"><thead><tr>${columns.map(c => `<th data-sort="${esc(c.key)}">${esc(c.label)} ${sort.key === c.key ? (sort.dir > 0 ? '▲' : '▼') : '↕'}</th>`).join('')}<th></th></tr></thead>
-        <tbody>${order.slice(0, limit).map(({ row, index }) => `<tr>${columns.map(c => `<td>${cell(c, row, index)}</td>`).join('')}<td><button type="button" class="da-del" data-del="${index}" title="${esc(T('Supprimer la ligne', 'Delete row'))}">×</button></td></tr>`).join('')}</tbody></table></div>
+        <tbody>${order.slice(0, limit).map(({ row, index }) => `<tr${index === focusIdx ? ' class="da-focus"' : ''}>${columns.map(c => `<td>${cell(c, row, index)}</td>`).join('')}<td><button type="button" class="da-del" data-del="${index}" title="${esc(T('Supprimer la ligne', 'Delete row'))}">×</button></td></tr>`).join('')}</tbody></table></div>
         ${order.length > limit ? `<p class="row da-more-row"><span class="small">${esc(tr(['{n} lignes sur {t} affichées', '{n} of {t} rows shown', '{n} von {t} Zeilen angezeigt', '{n} de {t} filas mostradas'], { n: limit, t: order.length }))}</span><button type="button" class="secondary" data-more="${PAGE}">${esc(tr(['Afficher les {n} suivantes', 'Show the next {n}', 'Die nächsten {n} anzeigen', 'Mostrar las {n} siguientes'], { n: Math.min(PAGE, order.length - limit) }))}</button><button type="button" class="secondary" data-more="all">${esc(tr(['Tout afficher', 'Show all', 'Alle anzeigen', 'Mostrar todo'], {}))}</button></p>` : ''}`;
       host.querySelectorAll('[data-more]').forEach(b => b.onclick = () => {
         limit = b.dataset.more === 'all' ? Infinity : limit + PAGE;
         paint();
       });
+      if (focusIdx >= 0 && !scrolled) {
+        scrolled = true;
+        requestAnimationFrame(() => host.querySelector('.da-focus')?.scrollIntoView({
+          block: 'center',
+          behavior: 'smooth'
+        }));
+      }
       const box = host.querySelector('.da-filter');
       box.oninput = () => {
         filter = box.value;
@@ -1415,7 +1433,7 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
             columns: table.columns,
             data: table.data,
             onChange: changed,
-            filter: i ? '' : focusRow
+            focus: i ? '' : focusRow
           });
         });
         focusRow = '';
@@ -1635,9 +1653,92 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
         ev.preventDefault();
         openCallsigns(a.dataset.defaOpen);
       });
-      body.querySelectorAll('[data-defa-add]').forEach(b => b.onclick = () => {
+      /** Distance de Levenshtein (fautes de frappe) entre deux textes courts. */
+      const lev = (a, b) => {
+        const d = Array.from({
+          length: b.length + 1
+        }, (_, i) => i);
+        for (let i = 1; i <= a.length; i++) {
+          let prev = d[0];
+          d[0] = i;
+          for (let j = 1; j <= b.length; j++) {
+            const cur = d[j];
+            d[j] = Math.min(d[j] + 1, d[j - 1] + 1, prev + (a[i - 1] === b[j - 1] ? 0 : 1));
+            prev = cur;
+          }
+        }
+        return d[b.length];
+      };
+      /** Vrai si deux formes nettoyées se ressemblent : l'une contient l'autre (3 caractères au moins), même début ou même
+       *  fin sur 3 caractères (MIFF ↔ MASTIFF), deux fautes au plus, ou l'une est une sous-suite de l'autre (MIFF dans
+       *  MASTIFF : M·I·F·F dans l'ordre), moitié de sa longueur au moins. */
+      const near = (a, b) => {
+        if (!a || !b || a === b) return a === b;
+        const [x, y] = a.length <= b.length ? [a, b] : [b, a];
+        if (x.length >= 3 && (y.includes(x) || y.startsWith(x.slice(0, 3)) || y.endsWith(x.slice(-3)))) return true;
+        if (Math.abs(a.length - b.length) <= 2 && lev(a, b) <= 2) return true;
+        if (x.length >= 4 && x.length * 2 >= y.length) {
+          let i = 0;
+          for (const ch of y)
+            if (ch === x[i]) i++;
+          if (i === x.length) return true;
+        }
+        return false;
+      };
+      /** Entrées de la correspondance proches d'une forme vue (préfixe, forme plan de vol, autres formes), 6 au plus. */
+      const similar = prefix => {
+        const p = clean(prefix);
+        return table().filter(e => clean(e.prefix) !== p && [e.prefix, e.fpl, ...(e.aliases || [])].some(f => near(clean(f), p))).slice(
+          0, 6);
+      };
+      /** Avant d'ajouter une forme vue : des entrées proches existent — autre forme de l'une d'elles (ajoutée à ses
+       *  « autres formes ») ou nouvelle ligne. Promesse : l'entrée choisie, 'new', ou null (annulé). */
+      const chooseSimilar = (prefix, cands) => new Promise(resolve => {
+        const K = window.RepositoryKit,
+          d = document.createElement('dialog');
+        d.className = 'repo-ask da-similar';
+        d.innerHTML = `<p>${esc(K.tf(['« {p} » ressemble à des entrées de la correspondance. Est-ce une autre forme de l’une d’elles ?',
+          '“{p}” looks like existing correspondence entries. Is it another form of one of them?',
+          '„{p}“ ähnelt vorhandenen Einträgen der Zuordnung. Ist es eine andere Form eines davon?',
+          '«{p}» se parece a entradas de la correspondencia. ¿Es otra forma de una de ellas?'
+        ], {
+          p: prefix
+        }))}</p><div class="da-similar-list">${cands.map((e, i) => `<label><input type="radio" name="daSim" value="${i}"${i ? '' : ' checked'}> <b>${esc(e.prefix)}</b> <span class="small">${esc([e.fpl, ...(e.aliases || [])].filter(Boolean).join(' · '))}${e.operator ? ` — ${esc(e.operator)}` : ''}</span></label>`).join('')}<label><input type="radio" name="daSim" value="new"> ${esc(K.t(['Non : nouvelle ligne', 'No: new row', 'Nein: neue Zeile', 'No: fila nueva']))}</label></div><footer><button type="button" class="ghost" data-x>${esc(K.t(['Annuler', 'Cancel', 'Abbrechen', 'Cancelar']))}</button><button type="button" class="primary" data-ok>${esc(K.t(['Continuer', 'Continue', 'Weiter', 'Continuar']))}</button></footer>`;
+        document.body.append(d);
+        /** Ferme la fenêtre et résout. */
+        const end = v => {
+          d.close();
+          d.remove();
+          resolve(v);
+        };
+        d.querySelector('[data-x]').onclick = () => end(null);
+        d.querySelector('[data-ok]').onclick = () => {
+          const v = d.querySelector('input[name=daSim]:checked')?.value;
+          end(v === 'new' || v == null ? 'new' : cands[+v]);
+        };
+        d.addEventListener('cancel', e => {
+          e.preventDefault();
+          end(null);
+        });
+        d.showModal();
+      });
+      body.querySelectorAll('[data-defa-add]').forEach(b => b.onclick = async () => {
         const s = series.find(x => x.prefix === b.dataset.defaAdd),
           forms = [...s.forms].sort((a, c) => c[1] - a[1]).map(([f]) => f);
+        // formes proches déjà dans la correspondance : autre forme d'une entrée, ou nouvelle ligne
+        const cands = similar(s.prefix);
+        if (cands.length) {
+          const choice = await chooseSimilar(s.prefix, cands);
+          if (!choice) return;
+          if (choice !== 'new') {
+            const e = choice;
+            e.aliases = [...new Set([...(e.aliases || []), s.prefix, ...forms].filter(f => ![e.prefix, e.fpl].map(clean).includes(
+              clean(f))))];
+            e.types = [...new Set([...(e.types || []).map(up), ...topTypes(s)])];
+            toCallsigns(e.prefix, false);
+            return;
+          }
+        }
         const fpl = forms.filter(f => f.length <= 7).sort((a, c) => (s.forms.get(c) - s.forms.get(a)))[0] || s.prefix.slice(0, 7);
         table().push({
           prefix: s.prefix,

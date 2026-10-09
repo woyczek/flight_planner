@@ -162,6 +162,26 @@
     white-space: nowrap;
     z-index: 1
   }
+  /* ligne à montrer (ouverte depuis le journal des vols) : mise en évidence dans la table entière */
+  .da-table tr.da-focus td {
+    background: color-mix(in srgb, var(--accent, #2f6fd6) 18%, transparent);
+    box-shadow: inset 0 2px 0 var(--accent, #2f6fd6), inset 0 -2px 0 var(--accent, #2f6fd6)
+  }
+  /* choix d'une forme proche avant l'ajout à la correspondance (fenêtre modale du socle, liste de choix) */
+  .da-similar {
+    max-width: min(560px, 92vw);
+    padding: 16px 18px
+  }
+  .da-similar-list {
+    display: grid;
+    gap: 6px;
+    margin: 10px 0 14px
+  }
+  .da-similar footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px
+  }
   .da-table td {
     padding: 2px 4px;
     border-top: 1px solid var(--line);
