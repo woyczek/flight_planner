@@ -314,7 +314,7 @@ Selon le niveau d'utilisation : « Mes appareils (reporting) » apparaît à par
 
 ### Niveau d'utilisation
 
-Ce que la suite vous montre, selon votre usage. Un choix suffit : la page se recharge et la barre latérale suit.
+Ce que la suite vous montre, selon votre usage. Quatre cartes, une par niveau (numéro et nom, ce que le niveau montre, « Demande le Centre » pour les niveaux 2 à 4) ; la carte choisie est en évidence et la ligne « Niveau actuel » le rappelle. Un clic suffit : la page se recharge et la barre latérale suit.
 
 | Niveau | Pour | Ce qui s'ajoute |
 |---|---|---|
@@ -323,7 +323,7 @@ Ce que la suite vous montre, selon votre usage. Un choix suffit : la page se rec
 | 3 · Conception | rédacteur de missions | Missions : générateur et registre (Centre activé) |
 | 4 · Expert | cartographe, analyste | tous les outils, studio cartographique |
 
-« Outils facultatifs » (cartes de vol, carburant, atterrissages, analyse des missions) s'ajoutent sous « Outils » à n'importe quel niveau ; au niveau 4, ils sont tous inclus. Par défaut : niveau 4 si le Centre est activé dans ce navigateur, sinon niveau 1. Le niveau ne donne aucun droit : le Centre garde son accès.
+« Outils facultatifs » : Cartes de vol (route, cartes topographiques, approche), Carburant (performances et devis carburant), Atterrissages (tableau de bord des atterrissages), Analyse des missions (reporting des comptes rendus) ; ils se cochent à n'importe quel niveau et se rangent sous « Outils » dans la barre latérale ; au niveau 4, « Tous inclus au niveau Expert ». Par défaut : niveau 4 si le Centre est activé dans ce navigateur, sinon niveau 1. Le niveau ne donne aucun droit : le Centre garde son accès.
 
 ### Identité et réseaux
 
@@ -473,13 +473,13 @@ Chaque changement est enregistré aussitôt.
 Cette page règle ce dont la suite a besoin pour travailler. Le lanceur (`lancer.cmd` sous Windows, `sh lancer.sh` sous macOS ou Linux) l'ouvre de lui-même ; on y revient à tout moment par Paramètres › onglet « Premier lancement », ou par la carte « Premier lancement » de l'accueil, affichée tant qu'il reste quelque chose à régler.
 Ouverte par le lanceur, la page ne renvoie vers l'accueil que si « Terminer » a été fait pour cette installation (même dossier de la suite) et que rien d'obligatoire ne manque. Une nouvelle installation servie à la même adresse affiche donc le premier lancement, et l'accueil l'annonce en bandeau.
 
-En tête, **« Où en est la suite »** fait le bilan, ligne par ligne, et chaque ligne mène à son étape : ✓ réglé, ○ à faire, – facultatif, ? inconnu (lanceur absent).
+En tête, un **rail des six étapes** (1 Dossiers · 2 Données · 3 Compagnie · 4 Profil · 5 Données aéronautiques et types · 6 Centre) donne l'état de chacune : ✓ faite, ○ à faire, – facultative, 🔒 verrouillée sans l'étape 1, ✗ à refaire ; l'étape courante est cerclée, un clic ouvre une étape. Le bilan détaillé, **« Où en est la suite »**, est dans un volet replié : chaque ligne mène à son étape (✓ réglé, ○ à faire, – facultatif, ? inconnu : lanceur absent).
 - Pour tous : données, dépôt git de synchronisation (facultatif), dossier de l'application, compagnie et site, clé d'API IVAO (facultative), pilote (trigramme et au moins un réseau), identifiants du site de la compagnie, données aéronautiques.
 - Centre : activation (administrateurs) ; une fois le Centre activé, flotte et journal du site, missions du registre, utilisateurs et droits (au moins un administrateur), envoi des CR (facultatif).
 
 Au-dessus du bilan, « 📘 Tutoriel d’installation, pas à pas » ouvre dans l'Aide le [tutoriel d'installation](tutorial/installation.fr.md), dans la langue de la suite.
 
-Le numéro de chaque étape passe au vert quand elle est faite.
+Le même état est en pastille dans le titre de chaque étape (le numéro passe au vert quand elle est faite), avec dessous une ligne « ✓ Fait : … » ou « ○ À faire : … ». L'étape courante est ouverte, les autres repliées ; chaque étape finit par « Suivant → ».
 
 ### 1 Dossiers
 
@@ -538,23 +538,23 @@ La suite ne demande jamais vos mots de passe IVAO ni VATSIM : vos identifiants (
 
 Cartes, missions et planification utilisent les données aéronautiques (AIRAC) et la base des types d’aéronefs. L'étape montre les mêmes blocs que Paramètres › Installation :
 
-1. « Données aéronautiques » : la France est active par défaut ; un clic sur la carte active une autre zone. Chaque source a son bouton : ZIP du SIA (lien vers la boutique, compte gratuit, produit du cycle à 0 €, puis « Récupérer le ZIP téléchargé »), MORA de la zone, PDF MILAIP (axes de ravitaillement), jeux des autres pays. La base se construit seule.
-2. « Types d’aéronefs » : « Compléter les types manquants de la flotte et des missions » télécharge les types (OACI) et leurs performances (EUROCONTROL).
+1. ① « Types d’aéronefs » d'abord, précédés d'une ligne d'état (« ✓ 34 types connus, 18 avec performances », « ○ n types à compléter ») : « Compléter automatiquement » télécharge les types (OACI) et leurs performances (EUROCONTROL), puis dit « ✓ Terminé : … » (des types sans performances EUROCONTROL sont normaux pour les militaires et les hélicoptères).
+2. ② « Données aéronautiques », précédées de leurs lignes d'état (base : AIRAC, espaces, date de construction ; MORA ; X-Plane, facultatif) : la France est active par défaut, un clic sur la carte choisit d'autres zones, chaque source garde son bouton (ZIP du SIA : lien vers la boutique, compte gratuit, produit du cycle à 0 €, puis « Récupérer le ZIP téléchargé » ; MORA ; PDF MILAIP ; jeux des autres pays). Un seul bouton principal, **« Tout installer pour <zones> »**, enchaîne la complétion des types puis l'activation des zones, attend la fin de chaque tâche et dit ce qui reste ; ce qui est déjà installé n'est pas refait. Les cartes expertes (base aéronautique, MORA, cohérence) sont repliées sous « Outils avancés » (aussi dans Paramètres › Maintenance).
 
 ### 6 Centre (administrateurs)
 
-Réservé aux administrateurs du SO Group : les pilotes passent cette étape.
+Réservé aux administrateurs du SO Group : les pilotes passent cette étape et cliquent « Terminer ». Chaque lien de l'étape dit ce qu'on y fait et s'ouvre dans un nouvel onglet.
 - Carte « Activer le Centre » : « Mot de passe du Centre » (affiché à côté du bouton, `DEFA` par défaut), puis « Activer le Centre ». Le bilan indique le mode du Centre (autonome : mot de passe).
 - Une fois le Centre activé :
   - « Flotte et journal des vols » : dernière lecture du site par le lanceur (flotte, emplacement des appareils, journal), « Mettre à jour maintenant », et le lien vers la flotte (Paramètres › Centre).
-  - « Missions » : nombre de missions au registre (elles arrivent avec les données, étape 1) et le lien vers le registre.
+  - « Missions » : « ✓ n missions au registre : rien à faire », sinon d'où elles viennent (données de l'étape 2, sinon Centre › Générateur de mission), et le lien vers le registre.
   - « Réglages du SO Group » : liens vers les rubriques de Paramètres › Centre — utilisateurs et droits (nombre, administrateurs, mode), catégories de disponibilité, Planning ODV, Tableau, envoi des CR, calcul des routes.
 
-« Terminer » note la suite « réglée » et ouvre l'accueil ; le lien « Accueil » y ramène sans terminer.
+« Terminer » n'est actif que quand les étapes 1 à 5 sont faites (sinon il dit ce qui manque) ; il note la suite « réglée » et ouvre l'accueil. Le lien « Accueil » y ramène sans terminer.
 
 ### Recommencer
 
-Pour reprendre le premier lancement de zéro, et seulement dans ce cas.
+Pour reprendre le premier lancement de zéro, et seulement dans ce cas. Le bloc est replié par défaut.
 
 - « Nettoyer et recommencer… » efface, **dans ce navigateur**, les dossiers mémorisés (application, données, registre, missions, SIA, ODV, X-Plane, performances, sauvegarde locale), la copie du classeur ODV, les identifiants du site de la compagnie, le profil (trigramme, IVAO, VATSIM, SimBrief) et l'indicateur « suite réglée ».
 - Une confirmation est demandée, puis la page se recharge à l'étape 1.
@@ -1116,9 +1116,9 @@ Le reporting général présente l'activité de **toutes les familles** à parti
 `data/cr/missions.yaml` : indicateurs, graphiques, synthèses et tableau des missions. Il sert aux pilotes
 pour leur bilan et au Centre pour le suivi. Pour y aller : barre latérale › **Outils**, onglet « Analyse des missions » (outil facultatif, coché dans Mon profil).
 
-### En-tête : période, familles, regroupement, mesure
+### Familles et période
 
-L'en-tête reste visible en haut de page.
+Premier bloc de la page (l'en-tête ne garde que le titre et le sous-titre) : il se replie et se déplace comme les autres ; à l'impression, seule la période paraît.
 
 | Élément | Rôle |
 |---|---|
@@ -1238,9 +1238,9 @@ uniquement »).
 
 Le reporting d'une famille ne montre que les missions de cette famille, avec ses indicateurs propres.
 On y arrive par « Registre des missions ▾ › Voir le reporting » dans un CR, par une ligne de « Synthèse
-par famille » du reporting général, ou par la popup de l'en-tête d'une autre page de reporting.
+par famille » du reporting général, ou par le menu « famille · sous-type » du bloc « Famille et période » d'une autre page de reporting.
 
-### En-tête
+### Famille et période
 
 | Élément | Rôle |
 |---|---|

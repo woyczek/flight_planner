@@ -314,7 +314,7 @@ Según el nivel de uso: «Mis aeronaves (reporting)» aparece a partir del nivel
 
 ### Nivel de uso
 
-Lo que la suite le muestra, según su uso. Basta una elección: la página se recarga y la barra lateral sigue.
+Lo que la suite le muestra, según su uso. Cuatro tarjetas, una por nivel (número y nombre, lo que muestra el nivel, «Requiere el Centro» para los niveles 2 a 4); la tarjeta elegida se destaca y la línea «Nivel actual» la recuerda. Basta un clic: la página se recarga y la barra lateral sigue.
 
 | Nivel | Para | Lo que se añade |
 |---|---|---|
@@ -323,7 +323,7 @@ Lo que la suite le muestra, según su uso. Basta una elección: la página se re
 | 3 · Diseño | redactor de misiones | Misiones: generador y registro (Centro activado) |
 | 4 · Experto | cartógrafo, analista | todas las herramientas, estudio cartográfico |
 
-Las «herramientas opcionales» (mapas de vuelo, combustible, aterrizajes, análisis de misiones) se añaden en «Herramientas» en cualquier nivel; en el nivel 4 están todas incluidas. Por defecto: nivel 4 si el Centro está activado en este navegador, si no nivel 1. El nivel no da ningún derecho: el Centro conserva su acceso.
+«Herramientas opcionales»: Mapas de vuelo (ruta, mapas topográficos, aproximación), Combustible (prestaciones y cálculo de combustible), Aterrizajes (panel de aterrizajes), Análisis de misiones (análisis de los informes de misión); se marcan en cualquier nivel y se agrupan en «Herramientas» en la barra lateral; en el nivel 4, «Todos incluidos en el nivel Experto». Por defecto: nivel 4 si el Centro está activado en este navegador, si no nivel 1. El nivel no da ningún derecho: el Centro conserva su acceso.
 
 ### Identidad y redes
 
@@ -473,13 +473,13 @@ Cada cambio se guarda al instante.
 Esta página configura lo que la suite necesita para trabajar. El lanzador (`lancer.cmd` en Windows, `sh lancer.sh` en macOS o Linux) la abre por sí mismo; se vuelve a ella en cualquier momento por Ajustes › pestaña «Primer arranque», o por la tarjeta «Primer arranque» de la página de inicio, mostrada mientras quede algo por ajustar.
 Abierta por el lanzador, la página solo remite a la página de inicio si se hizo «Terminar» para esta instalación (misma carpeta de la suite) y no falta nada obligatorio. Una nueva instalación servida en la misma dirección muestra pues el primer arranque, y la página de inicio lo anuncia en un banner.
 
-Arriba, **«Estado de la suite»** hace balance, línea por línea, y cada línea lleva a su paso: ✓ ajustado, ○ por hacer, – opcional, ? desconocido (sin lanzador).
+Arriba, un **carril de los seis pasos** (1 Carpetas · 2 Datos · 3 Compañía · 4 Perfil · 5 Datos aeronáuticos y tipos · 6 Centro) da el estado de cada uno: ✓ hecho, ○ por hacer, – opcional, 🔒 bloqueado sin el paso 1, ✗ por rehacer; el paso actual va rodeado, un clic abre un paso. El balance detallado, **«Estado de la suite»**, está en un panel plegado: cada línea lleva a su paso (✓ ajustado, ○ por hacer, – opcional, ? desconocido: sin lanzador).
 - Para todos: datos, repositorio git de sincronización (opcional), carpeta de la aplicación, aerolínea y sitio, clave de API IVAO (opcional), piloto (trigrama y al menos una red), credenciales del sitio de la aerolínea, datos aeronáuticos.
 - Centro: activación (administradores); con el Centro activado, flota y registro del sitio, misiones del registro, usuarios y derechos (al menos un administrador), envío de informes (opcional).
 
 Encima del balance, «📘 Tutorial de instalación, paso a paso» abre en la Ayuda el [tutorial de instalación](../tutorial/installation.en.md), en el idioma de la suite (si no, en inglés).
 
-El número de cada paso se pone en verde cuando está hecho.
+El mismo estado aparece como distintivo en el título de cada paso (el número se pone en verde cuando está hecho), con debajo una línea «✓ Hecho: …» o «○ Por hacer: …». El paso actual está abierto, los demás plegados; cada paso termina con «Siguiente →».
 
 ### 1 Carpetas
 
@@ -538,23 +538,23 @@ La suite nunca pide sus contraseñas IVAO ni VATSIM: sus identificadores (VID, C
 
 Mapas, misiones y planificación usan los datos aeronáuticos (AIRAC) y la base de tipos de aeronave. El paso muestra los mismos bloques que Ajustes › Instalación:
 
-1. «Datos aeronáuticos»: Francia está activa por defecto; un clic en el mapa activa otra zona. Cada fuente tiene su botón: ZIP del SIA (enlace a la tienda, cuenta gratuita, producto del ciclo a 0 €, luego «Obtener el ZIP descargado»), MORA de la zona, PDF MILAIP (ejes de reabastecimiento), conjuntos de otros países. La base se construye sola.
-2. «Tipos de aeronave»: «Completar los tipos que faltan de la flota y las misiones» descarga los tipos (OACI) y sus rendimientos (EUROCONTROL).
+1. ① Primero «Tipos de aeronave», precedidos de una línea de estado («✓ 34 tipos conocidos, 18 con rendimientos», «○ n tipos por completar»): «Completar automáticamente» descarga los tipos (OACI) y sus rendimientos (EUROCONTROL) y después indica «✓ Terminado: …» (los tipos sin rendimientos EUROCONTROL son normales en aviones militares y helicópteros).
+2. ② «Datos aeronáuticos», precedidos de sus líneas de estado (base: AIRAC, espacios, fecha de construcción; MORA; X-Plane, opcional): Francia está activa por defecto, un clic en el mapa elige otras zonas, cada fuente conserva su botón (ZIP del SIA: enlace a la tienda, cuenta gratuita, producto del ciclo a 0 €, luego «Obtener el ZIP descargado»; MORA; PDF MILAIP; conjuntos de otros países). Un único botón principal, **«Instalar todo para <zonas>»**, encadena la compleción de los tipos y luego la activación de las zonas, espera el final de cada tarea y dice lo que queda; lo ya instalado no se rehace. Las tarjetas expertas (base aeronáutica, MORA, coherencia) están plegadas en «Herramientas avanzadas» (también en Ajustes › Mantenimiento).
 
 ### 6 Centro (administradores)
 
-Reservado a los administradores del SO Group: los pilotos se saltan este paso.
+Reservado a los administradores del SO Group: los pilotos se saltan este paso y hacen clic en «Terminar». Cada enlace del paso dice lo que se hace allí y se abre en una pestaña nueva.
 - Tarjeta «Activar el Centro»: «Contraseña del Centro» (mostrada junto al botón, `DEFA` por defecto), luego «Activar el Centro». El resumen indica el modo del Centro (autónomo: contraseña).
 - Con el Centro activado:
   - «Flota y registro de vuelos»: última lectura del sitio por el lanzador (flota, ubicación de las aeronaves, registro), «Actualizar ahora» y el enlace a la flota (Ajustes › Centro).
-  - «Misiones»: número de misiones en el registro (llegan con los datos, paso 1) y el enlace al registro.
+  - «Misiones»: «✓ n misiones en el registro: nada que hacer», si no de dónde vienen (datos del paso 2, si no Centro › Generador de misiones), y el enlace al registro.
   - «Ajustes del SO Group»: enlaces a las rúbricas de Ajustes › Centro — usuarios y derechos (número, administradores, modo), categorías de disponibilidad, planificación ODV, Tablero, envío de informes, cálculo de rutas.
 
-«Terminar» marca la suite como «configurada» y abre la página de inicio; el enlace «Inicio» vuelve a ella sin terminar.
+«Terminar» solo está activo cuando los pasos 1 a 5 están hechos (si no, dice lo que falta); marca la suite como «configurada» y abre la página de inicio. El enlace «Inicio» vuelve a ella sin terminar.
 
 ### Empezar de nuevo
 
-Para retomar el primer arranque desde cero, y solo en ese caso.
+Para retomar el primer arranque desde cero, y solo en ese caso. El bloque está plegado por defecto.
 
 - «Limpiar y empezar de nuevo…» borra, **en este navegador**, las carpetas recordadas (aplicación, datos, registro, misiones, SIA, ODV, X-Plane, rendimiento, copia local), la copia del libro ODV, los identificadores del sitio de la aerolínea, el perfil (trigrama, IVAO, VATSIM, SimBrief) y el indicador «suite configurada».
 - Se pide una confirmación y, después, la página se recarga en el paso 1.
@@ -1116,9 +1116,9 @@ El informe general de misiones presenta la actividad de **todas las familias** a
 `data/cr/missions.yaml`: indicadores, gráficos, resúmenes y tabla de misiones. Sirve a los pilotos
 para su balance y al Centro para el seguimiento. Para ir a él: barra lateral › **Herramientas**, pestaña «Análisis de misiones» (herramienta opcional, marcada en Mi perfil).
 
-### Cabecera: periodo, familias, agrupación, medida
+### Familias y periodo
 
-La cabecera permanece visible en la parte superior de la página.
+Primer bloque de la página (la cabecera solo conserva el título y el subtítulo): se pliega y se desplaza como los demás; al imprimir solo aparece el periodo.
 
 | Elemento | Función |
 |---|---|
@@ -1238,9 +1238,9 @@ navegador»).
 
 El informe de una familia solo muestra las misiones de esa familia, con sus propios indicadores.
 Se llega a él por «Registro de misiones ▾ › Ver informe» en un informe de misión, por una línea de «Resumen
-por familia» del informe general de misiones, o por la ventana de la cabecera de otra página de informes.
+por familia» del informe general de misiones, o por el menú «familia · subtipo» del bloque «Familia y periodo» de otra página de informes.
 
-### Cabecera
+### Familia y periodo
 
 | Elemento | Función |
 |---|---|

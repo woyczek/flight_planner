@@ -10,6 +10,15 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ## [Non publié]
 
+### Modifié
+
+- **Manuels (4 langues) alignés sur le lot d'ergonomie A à E** : Mon profil › Niveau d'utilisation (cartes de niveau,
+  « Niveau actuel », outils facultatifs décrits) ; Premier lancement (rail des six étapes et leurs états, « Suivant → »,
+  étape 5 dans l'ordre types puis données aéronautiques, « Tout installer pour <zones> », « Outils avancés », étape 6 et
+  « Terminer ») ; reportings (bloc « Familles et période » / « Famille et période ») ; Paramètres (« Plus… », ligne
+  « État », rubrique Types d'aéronefs de Maintenance, « Flotte et pilotes de la compagnie (référence anonymisée) »,
+  séries d'indicatifs du journal).
+
 ### Ajouté
 
 - **Ergonomie (E) : Premier lancement — rail des étapes, états, étape 5 réordonnée** — la page devient un assistant

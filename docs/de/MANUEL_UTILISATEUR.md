@@ -314,7 +314,7 @@ Je nach Nutzungsstufe: „Meine Luftfahrzeuge (Reporting)“ erscheint ab der St
 
 ### Nutzungsstufe
 
-Was die Suite Ihnen zeigt, je nach Nutzung. Eine Wahl genügt: die Seite wird neu geladen und die Seitenleiste folgt.
+Was die Suite Ihnen zeigt, je nach Nutzung. Vier Karten, eine pro Stufe (Nummer und Name, was die Stufe zeigt, „Erfordert das Zentrum“ für die Stufen 2 bis 4); die gewählte Karte ist hervorgehoben, und die Zeile „Aktuelle Stufe“ nennt sie. Ein Klick genügt: die Seite wird neu geladen und die Seitenleiste folgt.
 
 | Stufe | Für | Was hinzukommt |
 |---|---|---|
@@ -323,7 +323,7 @@ Was die Suite Ihnen zeigt, je nach Nutzung. Eine Wahl genügt: die Seite wird ne
 | 3 · Gestaltung | Missionsautor | Missionen: Generator und Register (Zentrum aktiviert) |
 | 4 · Experte | Kartograf, Analyst | alle Werkzeuge, Kartenstudio |
 
-„Optionale Werkzeuge“ (Flugkarten, Kraftstoff, Landungen, Missionsanalyse) kommen auf jeder Stufe unter „Werkzeuge“ hinzu; auf Stufe 4 sind alle enthalten. Standard: Stufe 4, wenn das Zentrum in diesem Browser aktiviert ist, sonst Stufe 1. Die Stufe gewährt keine Rechte: das Zentrum behält seinen Zugang.
+„Optionale Werkzeuge“: Flugkarten (Route, topografische Karten, Anflug), Kraftstoff (Flugleistungen und Kraftstoffberechnung), Landungen (Übersicht der Landungen), Missionsanalyse (Auswertung der Einsatzberichte); sie werden auf jeder Stufe angekreuzt und in der Seitenleiste unter „Werkzeuge“ gruppiert; auf Stufe 4 „Auf Stufe Experte alle enthalten“. Standard: Stufe 4, wenn das Zentrum in diesem Browser aktiviert ist, sonst Stufe 1. Die Stufe gewährt keine Rechte: das Zentrum behält seinen Zugang.
 
 ### Identität und Netzwerke
 
@@ -473,13 +473,13 @@ Jede Änderung wird sofort gespeichert.
 Diese Seite richtet ein, was die Suite zum Arbeiten braucht. Der Starter (`lancer.cmd` unter Windows, `sh lancer.sh` unter macOS oder Linux) öffnet sie von selbst; jederzeit erreichbar über Einstellungen › Registerkarte „Erststart“ oder die Karte „Erststart“ der Startseite, die angezeigt wird, solange noch etwas einzustellen ist.
 Vom Starter geöffnet, leitet die Seite nur dann zur Startseite weiter, wenn „Abschließen“ für diese Installation erfolgt ist (derselbe Suite-Ordner) und nichts Verpflichtendes fehlt. Eine neue Installation unter derselben Adresse zeigt daher den Erststart, und die Startseite kündigt ihn als Banner an.
 
-Oben zieht **„Stand der Suite“** Bilanz, Zeile für Zeile, und jede Zeile führt zu ihrem Schritt: ✓ eingestellt, ○ zu erledigen, – optional, ? unbekannt (kein Starter).
+Oben zeigt eine **Leiste der sechs Schritte** (1 Ordner · 2 Daten · 3 Unternehmen · 4 Profil · 5 Luftfahrtdaten und Typen · 6 Zentrum) den Stand jedes Schritts: ✓ erledigt, ○ zu erledigen, – optional, 🔒 ohne Schritt 1 gesperrt, ✗ zu wiederholen; der aktuelle Schritt ist eingekreist, ein Klick öffnet einen Schritt. Die ausführliche Bilanz, **„Stand der Suite“**, steht in einem zugeklappten Bereich: jede Zeile führt zu ihrem Schritt (✓ eingestellt, ○ zu erledigen, – optional, ? unbekannt: kein Starter).
 - Für alle: Daten, Git-Synchronisierungs-Repository (optional), Anwendungsordner, Fluggesellschaft und Website, IVAO-API-Schlüssel (optional), Pilot (Kürzel und mindestens ein Netzwerk), Zugangsdaten der Website, Luftfahrtdaten.
 - Zentrum: Aktivierung (Administratoren); ist das Zentrum aktiviert, Flotte und Flugbuch der Website, Missionen des Registers, Benutzer und Rechte (mindestens ein Administrator), Berichtsversand (optional).
 
 Über der Übersicht öffnet „📘 Installationsanleitung, Schritt für Schritt“ die [Installationsanleitung](../tutorial/installation.en.md) in der Hilfe, in der Sprache der Suite (sonst Englisch).
 
-Die Nummer jedes Schritts wird grün, wenn er erledigt ist.
+Derselbe Stand steht als Plakette im Titel jedes Schritts (die Nummer wird grün, wenn er erledigt ist), darunter eine Zeile „✓ Erledigt: …“ oder „○ Zu erledigen: …“. Der aktuelle Schritt ist geöffnet, die anderen zugeklappt; jeder Schritt endet mit „Weiter →“.
 
 ### 1 Ordner
 
@@ -538,23 +538,23 @@ Die Suite fragt nie nach Ihren IVAO- oder VATSIM-Passwörtern: Ihre Kennungen (V
 
 Karten, Missionen und Planung nutzen die Luftfahrtdaten (AIRAC) und die Datenbank der Luftfahrzeugtypen. Der Schritt zeigt dieselben Blöcke wie Einstellungen › Installation:
 
-1. „Luftfahrtdaten“: Frankreich ist standardmäßig aktiv; ein Klick auf die Karte aktiviert eine andere Zone. Jede Quelle hat ihre Schaltfläche: SIA-ZIP (Link zum Shop, kostenloses Konto, Zyklusprodukt zu 0 €, dann „Heruntergeladene ZIP abrufen“), MORA der Zone, MILAIP-PDF (Betankungsstrecken), Datensätze anderer Länder. Die Datenbank baut sich selbst auf.
-2. „Luftfahrzeugtypen“: „Fehlende Typen der Flotte und der Missionen ergänzen“ lädt die Typen (ICAO) und ihre Leistungen (EUROCONTROL) herunter.
+1. ① Zuerst „Luftfahrzeugtypen“, mit einer Statuszeile davor („✓ 34 bekannte Typen, 18 mit Leistungen“, „○ n Typen zu ergänzen“): „Automatisch ergänzen“ lädt die Typen (ICAO) und ihre Leistungen (EUROCONTROL) herunter und meldet dann „✓ Fertig: …“ (Typen ohne EUROCONTROL-Leistungen sind bei Militärflugzeugen und Hubschraubern normal).
+2. ② „Luftfahrtdaten“, mit ihren Statuszeilen davor (Datenbank: AIRAC, Lufträume, Erstellungsdatum; MORA; X-Plane, optional): Frankreich ist standardmäßig aktiv, ein Klick auf die Karte wählt weitere Zonen, jede Quelle behält ihre Schaltfläche (SIA-ZIP: Link zum Shop, kostenloses Konto, Zyklusprodukt zu 0 €, dann „Heruntergeladene ZIP abrufen“; MORA; MILAIP-PDF; Datensätze anderer Länder). Eine einzige Hauptschaltfläche, **„Alles installieren für <Zonen>“**, verkettet das Ergänzen der Typen und dann die Aktivierung der Zonen, wartet das Ende jeder Aufgabe ab und sagt, was bleibt; bereits Installiertes wird nicht wiederholt. Die Expertenkarten (Luftfahrtdatenbank, MORA, Kohärenz) sind unter „Erweiterte Werkzeuge“ zugeklappt (auch unter Einstellungen › Wartung).
 
 ### 6 Zentrum (Administratoren)
 
-Nur für Administratoren der SO Group: Piloten überspringen diesen Schritt.
+Nur für Administratoren der SO Group: Piloten überspringen diesen Schritt und klicken „Abschließen“. Jeder Link des Schritts sagt, was man dort tut, und öffnet sich in einem neuen Tab.
 - Karte „Zentrum aktivieren“: „Passwort des Zentrums“ (neben dem Knopf angezeigt, `DEFA` voreingestellt), dann „Zentrum aktivieren“. Die Übersicht zeigt den Modus des Zentrums (eigenständig: Passwort).
 - Ist das Zentrum aktiviert:
   - „Flotte und Flugbuch“: letztes Lesen der Website durch den Starter (Flotte, Standort der Luftfahrzeuge, Flugbuch), „Jetzt aktualisieren“ und der Link zur Flotte (Einstellungen › Zentrum).
-  - „Missionen“: Zahl der Missionen im Register (sie kommen mit den Daten, Schritt 1) und der Link zum Register.
+  - „Missionen“: „✓ n Missionen im Register: nichts zu tun“, sonst ihre Herkunft (Daten aus Schritt 2, sonst Zentrum › Missionsgenerator), und der Link zum Register.
   - „Einstellungen der SO Group“: Links zu den Rubriken unter Einstellungen › Zentrum — Benutzer und Rechte (Anzahl, Administratoren, Modus), Verfügbarkeitskategorien, ODV-Planung, Einsatztafel, Berichtsversand, Routenberechnung.
 
-„Abschließen“ vermerkt die Suite als „eingerichtet“ und öffnet die Startseite; der Link „Start“ führt ohne Abschluss dorthin zurück.
+„Abschließen“ ist erst aktiv, wenn die Schritte 1 bis 5 erledigt sind (sonst sagt es, was fehlt); es vermerkt die Suite als „eingerichtet“ und öffnet die Startseite. Der Link „Start“ führt ohne Abschluss dorthin zurück.
 
 ### Neu beginnen
 
-Um den Erststart von vorn zu beginnen, und nur in diesem Fall.
+Um den Erststart von vorn zu beginnen, und nur in diesem Fall. Der Block ist standardmäßig zugeklappt.
 
 - „Bereinigen und neu beginnen…“ löscht **in diesem Browser** die gespeicherten Ordner (Anwendung, Daten, Register, Missionen, SIA, ODV, X-Plane, Leistungen, lokale Sicherung), die Kopie der ODV-Arbeitsmappe, die Zugangsdaten der Website der Fluggesellschaft, das Profil (Kürzel, IVAO, VATSIM, SimBrief) und den Vermerk „Suite eingerichtet“.
 - Eine Bestätigung wird verlangt, dann lädt die Seite neu bei Schritt 1.
@@ -1116,9 +1116,9 @@ Die allgemeine Auswertung zeigt die Aktivität **aller Familien** aus dem einzig
 `data/cr/missions.yaml`: Kennzahlen, Diagramme, Übersichten und Tabelle der Missionen. Sie dient den Piloten
 für ihre Bilanz und dem Zentrum für die Verfolgung. Zugang: Seitenleiste › **Werkzeuge**, Reiter „Missionsanalyse“ (optionales Werkzeug, in Mein Profil angekreuzt).
 
-### Kopfzeile: Zeitraum, Familien, Gruppierung, Messgröße
+### Familien und Zeitraum
 
-Die Kopfzeile bleibt oben auf der Seite sichtbar.
+Erster Block der Seite (die Kopfzeile behält nur Titel und Untertitel): er klappt zu und lässt sich verschieben wie die anderen; beim Drucken erscheint nur der Zeitraum.
 
 | Element | Funktion |
 |---|---|
@@ -1238,9 +1238,9 @@ Browser“).
 
 Die Auswertung einer Familie zeigt nur die Missionen dieser Familie, mit ihren eigenen Kennzahlen.
 Sie erreichen sie über „Einsatzregister ▾ › Auswertung anzeigen“ in einem Bericht, über eine Zeile von „Übersicht
-nach Familie“ der allgemeinen Auswertung oder über das Popup in der Kopfzeile einer anderen Auswertungsseite.
+nach Familie“ der allgemeinen Auswertung oder über das Menü „Familie · Untertyp“ des Blocks „Familie und Zeitraum“ einer anderen Auswertungsseite.
 
-### Kopfzeile
+### Familie und Zeitraum
 
 | Element | Funktion |
 |---|---|

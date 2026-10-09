@@ -314,7 +314,7 @@ Depending on the usage level: “My aircraft (reporting)” appears from the Pla
 
 ### Usage level
 
-What the suite shows you, according to your use. One choice is enough: the page reloads and the sidebar follows.
+What the suite shows you, according to your use. Four cards, one per level (number and name, what the level shows, “Requires the Centre” for levels 2 to 4); the chosen card is highlighted and the “Current level” line recalls it. One click is enough: the page reloads and the sidebar follows.
 
 | Level | For | What is added |
 |---|---|---|
@@ -323,7 +323,7 @@ What the suite shows you, according to your use. One choice is enough: the page 
 | 3 · Design | mission writer | Missions: generator and registry (Centre enabled) |
 | 4 · Expert | cartographer, analyst | all tools, map studio |
 
-“Optional tools” (flight maps, fuel, landings, mission analysis) are added under “Tools” at any level; at level 4 they are all included. By default: level 4 if the Centre is enabled in this browser, otherwise level 1. The level grants no rights: the Centre keeps its access.
+“Optional tools”: Flight maps (route, topographic maps, approach), Fuel (performance and fuel estimate), Landings (landings dashboard), Mission analysis (reporting on mission reports); they are ticked at any level and grouped under “Tools” in the sidebar; at level 4, “All included at Expert level”. By default: level 4 if the Centre is enabled in this browser, otherwise level 1. The level grants no rights: the Centre keeps its access.
 
 ### Identity and networks
 
@@ -473,13 +473,13 @@ Each change is saved at once.
 This page sets up what the suite needs to work. The launcher (`lancer.cmd` on Windows, `sh lancer.sh` on macOS or Linux) opens it by itself; you can come back at any time through Settings › “First run” tab, or the “First run” card of the home page, shown as long as something remains to be set.
 Opened by the launcher, the page only sends you to the home page if “Finish” was done for this installation (same suite folder) and nothing mandatory is missing. A new installation served at the same address therefore shows the first run, and the home page announces it in a banner.
 
-At the top, **“Where the suite stands”** takes stock, line by line, and each line leads to its step: ✓ set, ○ to do, – optional, ? unknown (no launcher).
+At the top, a **rail of the six steps** (1 Folders · 2 Data · 3 Company · 4 Profile · 5 Aeronautical data and types · 6 Centre) gives the state of each: ✓ done, ○ to do, – optional, 🔒 locked without step 1, ✗ to redo; the current step is circled, a click opens a step. The detailed review, **“Where the suite stands”**, is in a folded panel: each line leads to its step (✓ set, ○ to do, – optional, ? unknown: no launcher).
 - For everyone: data, git sync repository (optional), application folder, airline and website, IVAO API key (optional), pilot (trigram and at least one network), airline website credentials, aeronautical data.
 - Centre: enabling (administrators); once the Centre is enabled, fleet and log from the website, registry missions, users and rights (at least one administrator), report sending (optional).
 
 Above the summary, “📘 Installation tutorial, step by step” opens the [installation tutorial](../tutorial/installation.en.md) in the Help, in the suite's language.
 
-The number of each step turns green when it is done.
+The same state is shown as a badge in each step title (the number turns green when the step is done), with a “✓ Done: …” or “○ To do: …” line below. The current step is open, the others folded; each step ends with “Next →”.
 
 ### 1 Folders
 
@@ -538,23 +538,23 @@ The suite never asks for your IVAO or VATSIM passwords: your IDs (VID, CID) are 
 
 Maps, missions and planning use the aeronautical data (AIRAC) and the aircraft type database. The step shows the same blocks as Settings › Installation:
 
-1. “Aeronautical data”: France is active by default; a click on the map activates another zone. Each source has its button: SIA ZIP (link to the shop, free account, cycle product at 0 €, then “Fetch the downloaded ZIP”), zone MORA, MILAIP PDF (refuelling tracks), datasets of other countries. The database builds itself.
-2. “Aircraft types”: “Complete the missing fleet and mission types” downloads the types (ICAO) and their performance (EUROCONTROL).
+1. ① “Aircraft types” first, preceded by a status line (“✓ 34 known types, 18 with performance”, “○ n types to complete”): “Complete automatically” downloads the types (ICAO) and their performance (EUROCONTROL), then says “✓ Finished: …” (types without EUROCONTROL performance are normal for military aircraft and helicopters).
+2. ② “Aeronautical data”, preceded by their status lines (database: AIRAC, airspaces, build date; MORA; X-Plane, optional): France is active by default, a click on the map chooses other zones, each source keeps its button (SIA ZIP: link to the shop, free account, cycle product at 0 €, then “Fetch the downloaded ZIP”; MORA; MILAIP PDF; datasets of other countries). A single main button, **“Install everything for <zones>”**, chains the completion of the types then the activation of the zones, waits for the end of each task and says what remains; what is already installed is not redone. The expert cards (aeronautical database, MORA, consistency) are folded under “Advanced tools” (also in Settings › Maintenance).
 
 ### 6 Centre (administrators)
 
-For SO Group administrators only: pilots skip this step.
+For SO Group administrators only: pilots skip this step and click “Finish”. Each link of the step says what is done there and opens in a new tab.
 - “Enable the Centre” card: “Centre password” (shown next to the button, `DEFA` by default), then “Enable the Centre”. The summary shows the Centre mode (standalone: password).
 - Once the Centre is enabled:
   - “Fleet and flight log”: last reading of the website by the launcher (fleet, aircraft location, log), “Update now”, and the link to the fleet (Settings › Centre).
-  - “Missions”: number of missions in the registry (they come with the data, step 1) and the link to the registry.
+  - “Missions”: “✓ n missions in the registry: nothing to do”, otherwise where they come from (data of step 2, otherwise Centre › Mission generator), and the link to the registry.
   - “SO Group settings”: links to the Settings › Centre sections — users and rights (number, administrators, mode), availability categories, ODV planning, Board, report sending, route calculation.
 
-“Finish” marks the suite as “set up” and opens the home page; the “Home” link goes back to it without finishing.
+“Finish” is only active when steps 1 to 5 are done (otherwise it says what is missing); it marks the suite as “set up” and opens the home page. The “Home” link goes back to it without finishing.
 
 ### Start again
 
-To restart the first run from scratch, and only in that case.
+To restart the first run from scratch, and only in that case. The block is folded by default.
 
 - “Clean and start again…” clears, **in this browser**, the remembered folders (application, data, registry, missions, SIA, ODV, X-Plane, performance, local backup), the copy of the ODV workbook, the airline website credentials, the profile (trigram, IVAO, VATSIM, SimBrief) and the “suite set up” flag.
 - A confirmation is requested, then the page reloads at step 1.
@@ -1116,9 +1116,9 @@ The general reporting shows the activity of **all families** from the single led
 `data/cr/missions.yaml`: indicators, charts, summaries and table of missions. Pilots use it
 for their review and the Centre for follow-up. To go there: side bar › **Tools**, “Mission analysis” tab (optional tool, ticked in My profile).
 
-### Header: period, families, grouping, measure
+### Families and period
 
-The header stays visible at the top of the page.
+First block of the page (the header only keeps the title and subtitle): it folds and moves like the others; when printed, only the period appears.
 
 | Element | Role |
 |---|---|
@@ -1238,9 +1238,9 @@ only”).
 
 The reporting of a family only shows the missions of that family, with its own indicators.
 You reach it from “Mission ledger ▾ › View reporting” in a report, from a line of “Summary
-by family” in the general reporting, or from the header popup of another reporting page.
+by family” in the general reporting, or from the “family · subtype” menu of the “Family and period” block of another reporting page.
 
-### Header
+### Family and period
 
 | Element | Role |
 |---|---|
