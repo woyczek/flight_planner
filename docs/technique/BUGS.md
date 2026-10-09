@@ -16,6 +16,7 @@ Les évolutions et la dette technique n'y figurent pas (CHANGELOG, `docs/techniq
 
 | Signalé | Zone | Bug | Cause | Correction |
 |---|---|---|---|---|
+| 09/10 | Premier lancement, données aéronautiques | « dossier X-Plane non choisi » au recalcul de la MORA ; phasage peu naturel (l'utilisateur ne choisit pas de dossier X-Plane, il passe aux types OACI) | Source X-Plane, facultative pour une zone à MORA calculée, traitée comme manquante ; bouton « MORA d'X-Plane » actif sans dossier, sans rien enchaîner | X-Plane « facultatif » (exigé seulement pour une zone trop étendue), bouton qui enchaîne dossier, base, MORA (`maintenance_page.js`) |
 | 09/10 | Planning, Tableau (bloc des zones) | Colonnes VATSIM / IVAO des activations transformées en blocs imbriqués sans titre (signalé par Features SOG) | Colonnes écrites en `<section>`, que le framework prend pour des blocs | `<div>` dans `odv_activations_editor.js` |
 | 09/10 | Paramètres › Maintenance | La rubrique « Types d'aéronefs » apparaît un instant à l'ouverture, puis disparaît | L'éditeur des bases ouvrait sa première rubrique avant que la page n'ouvre « Mises à jour » et ne le masque | Page Maintenance sans `?base=`, ou bloc demandé (`?m=`) : aucune rubrique rendue par l'éditeur (`data_admin.js`) |
 | 08/10 | Tableau | Plaquette de convoyage réinitialisée (heure calculée, « à affecter ») à la modification d'une mission | Le recalcul retirait toute plaquette qu'il ne savait pas recalculer sur le moment (mission absente du registre, terrain sans coordonnées), puis la recréait | 3ca27ab5 |

@@ -12,6 +12,12 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Corrigé
 
+- **Premier lancement, données aéronautiques : « dossier X-Plane non choisi » au recalcul de la MORA** : la source
+  X-Plane, facultative pour une zone dont la MORA est calculée (France…), était affichée en rouge « manquant » et
+  comptée dans les actions à faire, et « MORA d'X-Plane → mora.csv » renvoyait une erreur sans dossier. La source est
+  désormais « facultatif » (en fin de liste, hors du compte des actions restantes ; exigée seulement pour une zone
+  trop étendue) ; le bouton enchaîne lui-même : choix du dossier du simulateur, reconstruction de la base, puis MORA
+  d'X-Plane (4 langues).
 - **Planning et Tableau, bloc des zones : colonnes VATSIM / IVAO de l'éditeur des activations prises pour des blocs
   imbriqués sans titre** (`repo-block`, `block-1` / `block-2`) : écrites en `<section>`, que le framework transforme
   en blocs ; ce sont désormais de simples conteneurs (`shared/odv_activations_editor.js`).

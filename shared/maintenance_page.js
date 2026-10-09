@@ -1462,6 +1462,9 @@
       const x = inv.xplane;
       return {
         has: !!x?.granted,
+        // dossier jamais choisi : facultatif pour une zone dont la MORA est calculée (relief, obstacles) ; exigé pour une
+        // zone trop étendue, dont la MORA vient d'X-Plane
+        optional: !x && !moraTooLarge(Z, id),
         airac: x?.cycle ? `${x.cycle.slice(2)}/${x.cycle.slice(0, 2)}` : '',
         text: !x ? t(['dossier d’X-Plane non choisi', 'X-Plane folder not chosen', 'X-Plane-Ordner nicht gewählt',
           'carpeta de X-Plane no elegida'
@@ -1500,13 +1503,13 @@
   function aeroZoneState(Z, z) {
     const st = Object.fromEntries(z.sources.map(s => [s, aeroSourceStatus(Z, z.id, s)]));
     if (!Z.isOn(z.id)) return z.sources.some(s => s !== 'xplane' && st[s].has) ? 'data' : 'blank';
-    const need = z.sources.filter(s => Z.srcOn(z.id, s) && st[s].has !== null);
+    const need = z.sources.filter(s => Z.srcOn(z.id, s) && st[s].has !== null && !st[s].optional);
     return need.length && need.every(s => st[s].has) ? 'complete' : 'partial';
   }
   /** Âge d'une source : ok (cycle en vigueur, ou moins de 28 jours), warn (plus ancien), none. */
   function aeroAge(S, st) {
     const eff = window.Airac?.cycle?.();
-    if (!st.has) return 'none';
+    if (!st.has) return st.optional ? 'opt' : 'none';
     if (S.age === 'airac') return st.airac && eff && st.airac >= eff.date ? 'ok' : 'warn';
     if (S.age === 'xplane') return !st.airac || !eff ? 'ok' : st.airac === eff.label ? 'ok' : 'warn';
     return st.at && Date.now() - st.at < 28 * 864e5 ? 'ok' : st.at ? 'warn' : 'ok';
@@ -1893,7 +1896,7 @@
         cyc: st.airac || (at ? fmtDate(at, false) : ''),
         days: s === 'xplane' ? null : days(at),
         size: files.reduce((n, f) => n + (f.size || 0), 0),
-        state: age === 'none' ? 'err' : age === 'warn' ? 'warn' : 'ok'
+        state: age === 'none' ? 'err' : age === 'warn' ? 'warn' : age === 'opt' ? 'opt' : 'ok'
       };
     }));
   }
@@ -1917,21 +1920,23 @@
       info = window.SiaBase.info();
     const all = aeroAgesRows(Z),
       n = {
-        ok: all.filter(r => r.state === 'ok').length,
+        ok: all.filter(r => r.state === 'ok' || r.state === 'opt').length,
         warn: all.filter(r => r.state === 'warn').length,
         err: all.filter(r => r.state === 'err').length
       },
       only = aeroProblemsOnly(),
-      rows = only ? all.filter(r => r.state !== 'ok') : all;
+      rows = only ? all.filter(r => r.state !== 'ok' && r.state !== 'opt') : all;
     const LEVEL = {
       err: 0,
       warn: 1,
-      ok: 2
+      opt: 2,
+      ok: 3
     };
     const STATE = {
       err: ['manquant', 'missing', 'fehlt', 'falta'],
       warn: ['ancien', 'old', 'alt', 'antiguo'],
-      ok: ['à jour', 'up to date', 'aktuell', 'al día']
+      ok: ['à jour', 'up to date', 'aktuell', 'al día'],
+      opt: ['facultatif', 'optional', 'optional', 'opcional']
     };
     el.innerHTML = `<p>${esc(t(['Cycle AIRAC en vigueur', 'AIRAC cycle in force', 'Gültiger AIRAC-Zyklus', 'Ciclo AIRAC vigente']))} : <b>${esc(eff.label)}</b> (${esc(fmtDate(eff.date, false))} → ${esc(fmtDate(eff.until, false))}) · ${esc(t(['suivant', 'next', 'nächster', 'siguiente']))} : <b>${esc(nxt.label)}</b> (${esc(fmtDate(nxt.date, false))}) · ${esc(t(['base aéronautique', 'aeronautical database', 'Luftfahrtdatenbank', 'base aeronáutica']))} : ${info ? `${esc(info.airac || '—')} (${esc(fmtDate(info.cachedAt))})` : '—'}</p>
       ${all.length ? `<p class="row mt-small"><b>${esc(t(['{n} contrôle(s) sans souci', '{n} check(s) without issue', '{n} Prüfung(en) ohne Befund', '{n} control(es) sin problemas'], { n: n.ok }))}</b> · ${n.err ? pill('err', t(['{n} problème(s)', '{n} problem(s)', '{n} Problem(e)', '{n} problema(s)'], { n: n.err })) : ''} ${n.warn ? pill('warn', t(['{n} avertissement(s)', '{n} warning(s)', '{n} Warnung(en)', '{n} aviso(s)'], { n: n.warn })) : ''}
@@ -1961,7 +1966,7 @@
         key: 'state',
         label: t(['État', 'State', 'Status', 'Estado']),
         sortValue: r => LEVEL[r.state],
-        html: (v, r) => pill(r.state, t(STATE[r.state]))
+        html: (v, r) => pill(r.state === 'opt' ? 'info' : r.state, t(STATE[r.state]))
       }, {
         key: 'zoneName',
         label: t(['Zone', 'Zone', 'Zone', 'Zona'])
@@ -2030,8 +2035,11 @@
           S.kind === 'local' ? ['', t(['Choisir le dossier…', 'Choose the folder…', 'Ordner wählen…', 'Elegir la carpeta…'])] : [t([
             'télécharger les fichiers', 'download the files', 'Dateien herunterladen', 'descargar los archivos'
           ]), t(['Déposer les fichiers…', 'Drop the files…', 'Dateien ablegen…', 'Depositar los archivos…'])];
+        // source facultative (dossier X-Plane d'une zone à MORA calculée) : proposée, pas à faire — en fin de liste, hors du
+        // compte des actions restantes
+        if (age === 'opt') return `<li data-optional>${pill('info', t(['facultatif', 'optional', 'optional', 'opcional']))} <b>${esc(zName(z))} — ${esc(t(S.label).split(/ — | \(/)[0])}</b> : ${esc(t(['seulement si X-Plane est installé sur ce poste (données de navigation du simulateur, MORA des grandes zones)', 'only if X-Plane is installed on this computer (simulator navigation data, MORA of large zones)', 'nur wenn X-Plane auf diesem Rechner installiert ist (Navigationsdaten des Simulators, MORA großer Zonen)', 'solo si X-Plane está instalado en este equipo (datos de navegación del simulador, MORA de las zonas grandes)']))} <button type="button" class="secondary mt-btn-sm" data-todo-zone="${esc(z.id)}" data-todo-src="${esc(s)}">${esc(what[1])}</button></li>`;
         return `<li>${pill(age === 'none' ? 'err' : 'warn', age === 'none' ? t(['manquant', 'missing', 'fehlt', 'falta']) : t(['ancien', 'old', 'alt', 'antiguo']))} <b>${esc(zName(z))} — ${esc(t(S.label).split(/ — | \(/)[0])}</b> : ${url && what[0] ? `<a class="mt-link" href="${esc(url)}" target="_blank" rel="noopener">${esc(what[0])} ↗</a> / ` : ''}<button type="button" class="secondary mt-btn-sm" data-todo-zone="${esc(z.id)}" data-todo-src="${esc(s)}">${esc(what[1])}</button></li>`;
-      })).filter(Boolean);
+      })).filter(Boolean).sort((x, y) => x.startsWith('<li data-optional') - y.startsWith('<li data-optional'));
     el.dataset.subtitle = t([
       'Ce que la suite ne peut pas faire seule : commandes, téléchargements à la main, dossiers à choisir — une ligne par source des zones actives',
       'What the suite cannot do on its own: orders, manual downloads, folders to choose — one line per source of the active zones',
@@ -2154,7 +2162,7 @@
       } catch {}
       aeroInv = await aeroInventory();
       aeroRefresh(Z);
-      const left = document.querySelectorAll('#mtAeroTodo .mt-aero-todo>li [data-todo-src]').length;
+      const left = document.querySelectorAll('#mtAeroTodo .mt-aero-todo>li:not([data-optional]) [data-todo-src]').length;
       const parts = [built ? t(['base reconstruite', 'database rebuilt', 'Datenbank neu aufgebaut', 'base reconstruida']) : t([
           'base non reconstruite (voir « Base aéronautique ») : MORA non calculée',
           'database not rebuilt (see “Aeronautical database”): MORA not computed',
@@ -2855,7 +2863,7 @@
       <div class="repo-card" id="mtAeroTodo" data-icon="check"></div>
       <div class="repo-card" id="mt-aero-base" data-icon="refresh" data-subtitle="${esc(t(['Toutes les sources cochées des zones actives : cycle, âge, taille ; un clic sur une ligne met sa source à jour. « Tout recalculer » reconstruit la base (studio, cartes de vol, profil vertical, espaces à activer) ; « Purger le cache » la vide.', 'All ticked sources of the active zones: cycle, age, size; a click on a row updates its source. “Recompute all” rebuilds the database (studio, flight maps, vertical profile, airspace to activate); “Purge the cache” empties it.', 'Alle angehakten Quellen der aktiven Zonen: Zyklus, Alter, Größe; ein Klick auf eine Zeile aktualisiert ihre Quelle. „Alles neu berechnen“ baut die Datenbank neu auf; „Cache leeren“ leert sie.', 'Todas las fuentes marcadas de las zonas activas: ciclo, antigüedad, tamaño; un clic en una fila actualiza su fuente. «Recalcular todo» reconstruye la base; «Vaciar la caché» la vacía.']))}"><h3>${esc(t(['Base aéronautique : sources, cycles et reconstruction', 'Aeronautical database: sources, cycles and rebuild', 'Luftfahrtdatenbank: Quellen, Zyklen und Neuaufbau', 'Base aeronáutica: fuentes, ciclos y reconstrucción']))}</h3><div id="mtAeroAges"></div><div id="mtBasePanel"></div></div>
       <div class="repo-card" id="mt-aero-mora" data-icon="chart" data-subtitle="${esc(t(['Sources de MORA : grille calculée (relief, sommets, obstacles ; ici pour la France et les missions, ou zone par zone dans le panneau), X-Plane (grille mondiale) ; la grille calculée a la priorité.', 'MORA sources: computed grid (terrain, peaks, obstacles; here for France and the missions, or zone by zone in the panel), X-Plane (world grid); the computed grid has priority.']))}"><h3>MORA</h3>
-        <p class="row"><button type="button" class="secondary" id="mtMora"${moraBusy ? ' disabled' : ''} data-icon="refresh" title="${esc(t(['Obstacles du nouveau cycle, relief du mora.csv actuel — sans réseau, immédiat', 'New-cycle obstacles, terrain from the current mora.csv — offline, immediate']))}">${esc(t(['Recalcul simple', 'Simple recalculation', 'Einfache Neuberechnung', 'Recálculo simple']))}</button><button type="button" class="secondary" id="mtMoraXp"${moraBusy ? ' disabled' : ''} data-icon="download" title="${esc(t(['Cases de la MORA d’X-Plane (zones actives, source X-Plane) absentes de mora.csv', 'X-Plane MORA cells (active zones, X-Plane source) missing from mora.csv', 'X-Plane-MORA-Felder (aktive Zonen), die in mora.csv fehlen', 'Casillas MORA de X-Plane (zonas activas) ausentes de mora.csv']))}">${esc(t(['MORA d’X-Plane → mora.csv', 'X-Plane MORA → mora.csv', 'X-Plane-MORA → mora.csv', 'MORA de X-Plane → mora.csv']))}</button><button type="button" class="secondary" id="mtMoraFull"${moraBusy ? ' disabled' : ''} data-icon="chart">${esc(t(['Calcul complet', 'Full calculation', 'Vollständige Berechnung', 'Cálculo completo']))}</button>${moraPlan && !moraPlan.written ? `<button type="button" class="primary" id="mtMoraWrite" data-icon="save">${esc(t(['Écrire mora.csv (ancien archivé)', 'Write mora.csv (old one archived)', 'mora.csv schreiben (alte archiviert)', 'Escribir mora.csv (antiguo archivado)']))}</button><button type="button" class="secondary" id="mtMoraDl" data-icon="download">mora.csv</button>` : ''}</p>
+        <p class="row"><button type="button" class="secondary" id="mtMora"${moraBusy ? ' disabled' : ''} data-icon="refresh" title="${esc(t(['Obstacles du nouveau cycle, relief du mora.csv actuel — sans réseau, immédiat', 'New-cycle obstacles, terrain from the current mora.csv — offline, immediate']))}">${esc(t(['Recalcul simple', 'Simple recalculation', 'Einfache Neuberechnung', 'Recálculo simple']))}</button><button type="button" class="secondary" id="mtMoraXp"${moraBusy ? ' disabled' : ''} data-icon="download" title="${esc(t(['Cases de la MORA d’X-Plane (zones actives, source X-Plane) absentes de mora.csv ; sans données d’X-Plane, choisit d’abord le dossier du simulateur et reconstruit la base', 'X-Plane MORA cells (active zones, X-Plane source) missing from mora.csv; without X-Plane data, first chooses the simulator folder and rebuilds the database', 'X-Plane-MORA-Felder (aktive Zonen), die in mora.csv fehlen; ohne X-Plane-Daten wird zuerst der Simulatorordner gewählt und die Datenbank neu aufgebaut', 'Casillas MORA de X-Plane (zonas activas) ausentes de mora.csv; sin datos de X-Plane, elige primero la carpeta del simulador y reconstruye la base']))}">${esc(t(['MORA d’X-Plane → mora.csv', 'X-Plane MORA → mora.csv', 'X-Plane-MORA → mora.csv', 'MORA de X-Plane → mora.csv']))}</button><button type="button" class="secondary" id="mtMoraFull"${moraBusy ? ' disabled' : ''} data-icon="chart">${esc(t(['Calcul complet', 'Full calculation', 'Vollständige Berechnung', 'Cálculo completo']))}</button>${moraPlan && !moraPlan.written ? `<button type="button" class="primary" id="mtMoraWrite" data-icon="save">${esc(t(['Écrire mora.csv (ancien archivé)', 'Write mora.csv (old one archived)', 'mora.csv schreiben (alte archiviert)', 'Escribir mora.csv (antiguo archivado)']))}</button><button type="button" class="secondary" id="mtMoraDl" data-icon="download">mora.csv</button>` : ''}</p>
         <div id="mtMoraMsg">${moraMsg}</div><div>${moraPlan ? moraHtml(moraPlan) : ''}</div></div>
       <div class="repo-card" data-icon="plane" data-subtitle="${esc(t(['Espaces, appareils, flotte, performances, terrains des missions', 'Airspace, aircraft, fleet, performance, mission aerodromes']))}"><h3>${esc(t(['Cohérence', 'Consistency', 'Konsistenz', 'Coherencia']))}</h3><div id="mtUsage"><p class="row"><button type="button" class="secondary" id="mtUsageRun" data-icon="search">${esc(t(['Contrôler', 'Check', 'Prüfen', 'Comprobar']))}</button></p></div></div>`;
     aeroAges(Z);
@@ -2945,7 +2953,30 @@
     };
     host.querySelector('#mtMora').onclick = () => moraExclusive(planMora);
     host.querySelector('#mtMoraFull').onclick = () => moraExclusive(planMoraFull);
-    host.querySelector('#mtMoraXp').onclick = () => moraExclusive(planMoraXplane);
+    // sans case d'X-Plane dans la base, la page enchaîne au lieu de renvoyer à « Sources et dossiers » : dossier du
+    // simulateur choisi (ou ré-autorisé) dans le geste du clic, base reconstruite avec lui, puis MORA d'X-Plane
+    host.querySelector('#mtMoraXp').onclick = async () => {
+      const hasXp = ((await window.SiaBase.get())?.moraCells || []).some(c => c.src === 'xplane');
+      if (!hasXp) {
+        const st = await window.FileAccess?.status?.('__xpnav');
+        try {
+          if (st?.handle && st.permission !== 'granted') {
+            if (await st.handle.requestPermission({
+                mode: 'read'
+              }) !== 'granted') return;
+          } else if (!st?.handle) await window.FileAccess.pickFolder('__xpnav');
+        } catch (e) {
+          if (e?.name !== 'AbortError' && e?.message !== 'Dossier refusé') window.AppFramework?.notify?.(explain(e, t([
+            'Dossier d’X-Plane non choisi', 'X-Plane folder not chosen', 'X-Plane-Ordner nicht gewählt',
+            'Carpeta de X-Plane no elegida'
+          ])), 'warn');
+          return;
+        }
+        aeroInv = await aeroInventory();
+        await basePanelApi?.reread(true);
+      }
+      moraExclusive(planMoraXplane);
+    };
     host.querySelector('#mtMoraWrite')?.addEventListener('click', writeMora);
     host.querySelector('#mtMoraDl')?.addEventListener('click', () => {
       const a = document.createElement('a');
