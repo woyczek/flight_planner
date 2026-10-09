@@ -62,7 +62,8 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   hors plage écartées, kg ou lb, varios positifs, cartographie relue comme dans l'éditeur ; « Importer comme nouveau
   profil » (`GPT_<code>`, source « ChatGPT ») ou « Fusionner avec « … » » (réponse datée du jour, aperçu d'abord).
   Valeurs estimées gardées (`estimatedFields`, lignes de cartographie notées « estimé (ChatGPT) ») et affichées sous
-  « Données manquantes ». Manuel utilisateur (4 langues).
+  « Données manquantes » ; une valeur estimée changée à la main (fiche, ou ligne de cartographie) ne l'est plus.
+  Manuel utilisateur (4 langues).
 - **Carburant, Profils de performances : fusion avec la fiche SimBrief, aperçu avant toute fusion** — la fiche SimBrief
   du type devient une source de fusion comme un profil (profil virtuel « <type> — SimBrief », daté de sa récupération,
   `simbrief.fetched`, sinon date de la passe ; carburant converti dans l'unité du profil) : quatrième choix

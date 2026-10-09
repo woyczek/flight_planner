@@ -1867,15 +1867,21 @@ function commitProfileEditor(announce = true) {
       if (el.dataset.profileFuel === "1") v = convertFuel(v, fuelUnit(), active.unit)
     } else if (type === "bool") v = v === "" ? null : v === "1";
     else v = v.trim();
+    // valeur estimée (réponse ChatGPT) changée à la main : elle n'est plus estimée
+    if (active.estimatedFields?.includes(el.dataset.profilePath) && JSON.stringify(pathGet(active, el.dataset.profilePath) ?? null) !==
+      JSON.stringify(v)) active.estimatedFields = active.estimatedFields.filter(k => k !== el.dataset.profilePath);
     pathSet(active, el.dataset.profilePath, v)
   });
-  let rows = {};
+  if (active.estimatedFields && !active.estimatedFields.length) delete active.estimatedFields;
+  let rows = {},
+    edited = new Set(); // lignes de cartographie dont une valeur (hors commentaire) a été changée à la main
   document.querySelectorAll("[data-curve-id]").forEach(el => {
     let i = el.dataset.curveId,
       k = el.dataset.curveKey;
     rows[i] ??= {
       _rowId: i
     };
+    if (k && k !== "comment" && !isPristineInput(el)) edited.add(i); // (le bouton × de la ligne porte aussi data-curve-id)
     rows[i][k] = k === "comment" || k === "phaseLabel" ? el.value.trim() : (el.value.trim() === "" ? null : Number(el.value))
   });
   let curve = Object.values(rows).map(p => {
@@ -1892,7 +1898,8 @@ function commitProfileEditor(announce = true) {
       fuelFlowPerHour: convertFuel(nom, fuelUnit(), active.unit),
       fuelFlowMax: convertFuel(max, fuelUnit(), active.unit),
       phaseLabel: p.phaseLabel || inferredCurvePhase(p.comment),
-      comment: p.comment || ""
+      // ligne changée à la main : la mention « estimé (ChatGPT) » de son commentaire tombe
+      comment: edited.has(p._rowId) ? String(p.comment || "").replace(ESTIMATED_MARK, "").trim() : p.comment || ""
     }
   });
   active.rpmFuelCurve = curve;
@@ -1903,6 +1910,8 @@ function commitProfileEditor(announce = true) {
   if (announce) $("profileEditStatus").textContent = `Modifications en attente. ${curve.length} ligne(s) de cartographie conservée(s), y compris les lignes vides.`;
   window.updateProfileStatus?.()
 }
+/** Mention « estimé (ChatGPT) » (4 langues) ajoutée au commentaire d'une ligne de cartographie estimée. */
+const ESTIMATED_MARK = /\s*(—\s*)?(estimé|estimated|geschätzt|estimado) \(ChatGPT\)/i;
 const FUEL_KEYS = new Set(["fuelFlowPerHour", "fuelFlowMin", "fuelFlowMax", "usableFuel", "taxiFuel", "reserveFuel", "extraFuel"]);
 const SKIP_MERGE_KEYS = new Set(["_rowId", "id", "unit", "source", "mergedProfileIds", "lnmSource", "estimatedFields", "gptSources"]);
 /** Vrai pour null, undefined, chaîne vide ou tableau vide (valeur « à compléter »). */
