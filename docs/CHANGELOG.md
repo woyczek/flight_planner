@@ -24,6 +24,73 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Ajouté
 
+- **Ergonomie (F, suite) : Carburant — Poll-Schumann et SimBrief, montée choisie, revue d'usage** — Outils › Carburant
+  (`apps/planner/flight_performance_planner.html`, `shared/flight_perf_view.js`, `shared/flight_instruments.js`,
+  `shared/flight_i18n.js`). **Consommation** : après la saisie du vol et le profil, Poll-Schumann pour les avions de
+  ligne couverts (`shared/fuel_poll_schumann.js` ; masse à mi-croisière tirée de la masse au décollage saisie, sinon
+  masse moyenne du module ; origine « Poll-Schumann, 198 t à mi-croisière, FL350, M0,82 »), puis SimBrief
+  (`AIRCRAFT_PERF[type].simbrief`, « ≈ » si la précision n'est pas « high »), puis l'estimation ; « Utiliser cette
+  valeur » recopie la source automatique dans le champ ; TAS de croisière aussi tirée de SimBrief. Montée et descente
+  du modèle complétées par la fiche EUROCONTROL quand le profil ne les donne pas (A400M : plafond calculé FL176 →
+  FL264) ; un niveau du plan au-dessus du plafond calculé est signalé dans la ligne d'état. **Montée choisie** dans le
+  devis, à tout niveau : curseurs « Vitesse indiquée » et « Vario », chacun avec son champ chiffré (pas de 5 kt et
+  50 ft/min), et en lecture à mi-montée régime (table du profil, sinon « non connu pour ce type »), manette et débit ;
+  en vue détaillée, pour un profil à table régime → débit, « Régler par le régime » (vitesse et vario deviennent les
+  valeurs lues). « Loi réglée » devient « montée choisie » partout (courbes, panneaux, instruments, base du devis), les
+  « lois » rapide et économique deviennent des « montées », « Comparaison des montées ». **Résultat** : carburant
+  d'abord — Carburant bloc, Temps de vol, Début de descente (TOD), puis Roulage, Délestage (étape), Contingence,
+  Réserve ; montée, croisière et descente sous le délestage en vue détaillée, base du devis (niveau, montée choisie)
+  aussi ; libellés produits dans la langue de la page (plus de « Block fuel » en dur). **Courbes** : graduations
+  rondes (1, 2, 2,5, 5 × 10ⁿ) sur tous les axes de valeurs, niveau du plan marqué (trait discret « FL240 plan ») sur
+  « TAS selon le niveau » et « Montée ». **Instruments** : lecture seulement (plus de réglage par glisser ou molette) ;
+  altimètre et horloge retirés (ils redisaient le niveau survolé et la durée déjà écrits) ; restent vitesse indiquée,
+  vario et carburant du trajet, en vue détaillée. Fourchette de carburant ramenée à une valeur quand ses bornes
+  s'affichent pareil. Quatre langues.
+- **Ergonomie (G) : contrastes restants ; Opérationnel et Console cohérents** — suite de la passe de contraste
+  (`docs/technique/CONTRASTE_2026-10-09.md` § 5 et 6, relevés `tools/contrast_audit.html` avant / après : 16 → 5
+  textes sous le seuil en Standard, Opérationnel et Console, 11 → 5 en Aéro ; les 5 restants sont dans les Ordres de
+  vols et les tableaux triables, fichiers d'une autre session). Contrastes : petits textes des CR (`--muted` de
+  `shared/mission_core/core.css` #5b6270 : cases de calcul 4,1 → 5,2:1) ; titres de bloc d'Aéro sur un bloc sombre
+  d'une page claire (Ordres de vols : 2,7 → 9,8:1, `--repo-ink`) ; texte sur l'accent et rang des créneaux du Planning
+  (`apps/cpco/odv_blocks.css`) ; boutons « déplacer » et « masquer » du jeu Gel sur les pages du Centre en bulle
+  marine (or sur or 2,9 → 10:1, `shared/block_icons.css`, règle du générateur à reporter). **Opérationnel** : un seul
+  angle de 3 px (onglets, sous-cartes et groupes de champs des CR, menu ☰, champs, liens-boutons), boutons du contenu
+  à la hauteur des champs denses, en-tête compact et même sous-titre sur toutes les pages, titre de l'aperçu
+  imprimable du CR plus mis en capitales. **Console** : tous les titres de bloc en capitales (aussi ceux sans icône),
+  hauteur de 40 px réservée au contenu (plus dans l'en-tête, les menus, les boutons à icône seule ni les tableaux),
+  rayons alignés (6 px commandes et ☰, 8 px sous-cartes, onglets et bandeaux, 10 px blocs et menus), onglets aérés.
+  Formes de Standard et d'Aéro inchangées (règles en `html[data-design="ops"|"console"]`).
+- **Ergonomie (F) : Carburant — état du calcul, consommation toujours disponible** — Outils › Carburant
+  (`apps/planner/flight_performance_planner.html`, nouveau `shared/fuel_reference.js`). Cause du « Calculer ne fait
+  rien » : l'appareil choisi (type de la flotte sans profil, ex. A400M) n'avait ni consommation ni TAS de croisière ; le
+  devis calculait temps et TOD avec des valeurs par défaut et un carburant nul (« 0–0 kg »), le plan de vol relu
+  mettait déjà le devis à jour, et un nouveau clic redonnait les mêmes chiffres sans rien dire ; le modèle de
+  performances refusant un profil incomplet, courbes de niveau et instruments disparaissaient aussi au niveau Expert.
+  Désormais : **ligne d'état** dans Résultat après chaque calcul (« Calculé pour … à 11:48:18 : 500 NM au FL280, temps
+  de vol 1 h 26, TOD 98 NM. Consommation de croisière : ≈ 4 000 kg/h (estimation type A400) », TAS et son origine) et,
+  sans consommation, « Carburant non calculé : … » et quoi faire, au lieu d'un tiret muet ou d'un 0 ; « Calculer »
+  sans avion ou sans distance le dit en notification et met le champ en avant ; les valeurs inchangées ne sont pas
+  réécrites. **Consommation de croisière** dans le devis, trois sources affichées avec leur origine : saisie du vol
+  (champ prérempli, kg/h ou lb/h selon l'unité affichée, « Mémoriser pour ce type » l'écrit dans le profil comme
+  « Enregistrer le profil »), profil enregistré (table RPM ou débit de croisière), sinon **estimation** (≈, jamais
+  confondue avec le profil, « Utiliser cette estimation » la recopie dans le champ) : 34 types nommés de la flotte
+  (A400M, C-130, A330 MRTT, E-3F, Rafale, Mirage 2000, PC-21, TBM 700, H145, H160, NH90, Puma, Tigre, Gazelle, CAP 10,
+  Twin Otter…, source citée pour chacun) puis classes OACI (L1P à L4J, H1T, H2T) × catégorie de sillage (MTOW
+  EUROCONTROL sinon base des types) ; TAS de croisière : profil, sinon fiche EUROCONTROL, sinon estimation. Bloc,
+  réserves et courbes se calculent dès qu'une consommation existe. **Vue simple / Vue détaillée** (bouton du Résultat,
+  choix mémorisé, défaut : détaillée au niveau 4, simple aux niveaux 1 à 3) : courbes de niveau et de consommation,
+  panneaux et instruments à tout niveau, sans recalcul au basculement quand ils sont à jour ; plan de vol relu :
+  courbes retracées. Fiche EUROCONTROL trouvée aussi par les alias de la base (A4M ↔ A400). Quatre langues.
+- **Ergonomie (D) : Sources et dossiers — une seule ligne X-Plane, dossiers déduits repliés** — Paramètres ›
+  Installation › « Sources et dossiers » (`shared/maintenance_page.js`, libellés et aides de `shared/file_access.js`) :
+  6 lignes visibles au lieu de 10. « Dossier X-Plane (atterrissages) » et « Dossier du simulateur X-Plane » deviennent
+  une ligne « X-Plane » : bouton principal du dossier d'installation (données de navigation) et, en second plan,
+  « Journaux d'atterrissage : autre dossier… » (le plugin écrit ses CSV où on l'a réglé : dossier propre, gardé) ;
+  libellés renommés « Dossier d'installation d'X-Plane » et « Journaux d'atterrissage X-Plane ». Registre, missions et
+  SIA, déduits du dossier des données, passent sous « Dossiers déduits (3) », replié (une ligne en avertissement reste
+  visible). Chaque ligne dit à quoi sert le dossier et ce qui se passe sans lui ; un dossier facultatif non choisi est
+  une information, plus un avertissement. Types d'aéronefs : un type sans fiche OACI garde la silhouette par défaut,
+  avec l'infobulle « type sans fiche OACI : silhouette inconnue ».
 - **Pilote de fusion des empreintes `?v=`** (`tools/merge_vstamp.py`, déclaré dans `.gitattributes` pour les pages, scripts,
   feuilles et `config/repository_tree`, configuré par `tools/install_hooks.sh`) : à la fusion ou au rebase, un conflit qui ne
   porte que sur les empreintes de cache posées par `bump_versions.py` est résolu seul (côté courant gardé, empreinte
