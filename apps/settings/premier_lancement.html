@@ -895,15 +895,20 @@
     $('plTri').readOnly = !!window.SuiteUsers?.trigramLocked?.();
     done('plProfile', p.trigram && c.login);
   }
-  // profil et identifiants (vides : clé defaCredentials:v1 retirée), puis événement pilot-profile-change
-  on('click', 'plSaveProfile', () => {
+  // profil et identifiants (vides : clé defaCredentials:v1 retirée), puis événement pilot-profile-change ; enregistrés
+  // aussi à chaque champ quitté (comme ☰ › Profil pilote) — saisis puis laissés sans « Enregistrer le profil », ils
+  // étaient perdus (ID IVAO absent de Mon profil)
+  function saveProfile() {
     const tri = $('plTri').value.trim().toUpperCase();
     if (tri && !/^[A-Z0-9]{2,4}$/.test(tri)) return msg('plProfileMsg', L('Trigramme : 2 à 4 lettres ou chiffres.',
         'Trigram: 2 to 4 letters or digits.', 'Kürzel: 2 bis 4 Buchstaben oder Ziffern.', 'Trigrama: de 2 a 4 letras o cifras.'),
       'err');
     const p = read(PROFILE);
     Object.assign(p, {
-      trigram: tri,
+      // trigramme figé (mode production, autre utilisateur) : celui du compte, pas le champ
+      ...($('plTri').readOnly ? {} : {
+        trigram: tri
+      }),
       ivaoId: $('plIvao').value.trim(),
       vatsimId: $('plVatsim').value.trim(),
       simbriefUser: $('plSimbrief').value.trim()
@@ -916,10 +921,12 @@
     if (c.login) localStorage.setItem(DEFA, JSON.stringify(c));
     else localStorage.removeItem(DEFA);
     window.dispatchEvent(new CustomEvent('pilot-profile-change'));
-    msg('plProfileMsg', 'Profil enregistré.', 'ok');
+    msg('plProfileMsg', L('Profil enregistré.', 'Profile saved.', 'Profil gespeichert.', 'Perfil guardado.'), 'ok');
     profileLoad();
     checklist();
-  });
+  }
+  on('click', 'plSaveProfile', saveProfile);
+  ['plTri', 'plIvao', 'plVatsim', 'plSimbrief', 'plSiteLogin'].forEach(id => on('change', id, saveProfile));
 
   // 6. Centre : activation (mot de passe du Centre), puis flotte et journal du site (lanceur), missions du registre,
   // réglages du SO Group (Paramètres › Centre)

@@ -12,6 +12,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Corrigé
 
+- **Premier lancement : ID IVAO (et autres champs du profil) absent de Mon profil › Identité et réseaux** : la carte «
+  Pilote » ne s'enregistrait qu'avec « Enregistrer le profil » ; une saisie suivie du passage à l'étape suivante était
+  perdue sans avertissement. Chaque champ (trigramme, ID IVAO, ID VATSIM, SimBrief, identifiant du site) s'enregistre
+  désormais dès qu'on le quitte, comme ☰ › Profil pilote ; trigramme figé (mode production) jamais réécrit.
 - **Données aéronautiques : « Choisir le dossier… » X-Plane restait dans « Actions à faire » une fois le dossier
   choisi** : autorisation à renouveler (après un rechargement), la ligne propose « Ré-autoriser le dossier… » pour ce
   dossier ; dossier autorisé dont « Custom Data » est d'un ancien cycle, simple information (mise à jour dans X-Plane,

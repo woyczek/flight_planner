@@ -16,6 +16,7 @@ Les évolutions et la dette technique n'y figurent pas (CHANGELOG, `docs/techniq
 
 | Signalé | Zone | Bug | Cause | Correction |
 |---|---|---|---|---|
+| 09/10 | Premier lancement → Mon profil | ID IVAO saisi au premier lancement absent de « Identité et réseaux » | Carte « Pilote » enregistrée seulement par « Enregistrer le profil » : saisie perdue en passant à la suite | Enregistrement à chaque champ quitté (`premier_lancement.html`) |
 | 09/10 | Données aéronautiques | « Choisir le dossier… » X-Plane toujours dans « Actions à faire » une fois le dossier choisi | Ligne due à une autorisation à renouveler ou à un ancien cycle de « Custom Data », avec toujours le même bouton, sans effet | « Ré-autoriser le dossier… » ou simple information sur le cycle (`aeroTodo`, `maintenance_page.js`) |
 | 09/10 | Premier lancement, données aéronautiques | « dossier X-Plane non choisi » au recalcul de la MORA ; phasage peu naturel (l'utilisateur ne choisit pas de dossier X-Plane, il passe aux types OACI) | Source X-Plane, facultative pour une zone à MORA calculée, traitée comme manquante ; bouton « MORA d'X-Plane » actif sans dossier, sans rien enchaîner | X-Plane « facultatif » (exigé seulement pour une zone trop étendue), bouton qui enchaîne dossier, base, MORA (`maintenance_page.js`) |
 | 09/10 | Planning, Tableau (bloc des zones) | Colonnes VATSIM / IVAO des activations transformées en blocs imbriqués sans titre (signalé par Features SOG) | Colonnes écrites en `<section>`, que le framework prend pour des blocs | `<div>` dans `odv_activations_editor.js` |
