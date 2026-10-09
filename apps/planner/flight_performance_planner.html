@@ -856,12 +856,63 @@
     .wrap>.grid>.span12 {
       grid-column: 1/-1 !important
     }
-    /* niveaux 1 à 3 : instruments et blocs du profil masqués (data-min-level="4") ; deux colonnes, saisie | Résultat
-       (les poignées de largeur, prévues pour trois colonnes, se masquent d'elles-mêmes) */
-    html:is([data-level="1"], [data-level="2"], [data-level="3"]) .wrap>.grid {
+    /* vue simple (bouton « Vue détaillée » du Résultat ; défaut aux niveaux 1 à 3) : instruments masqués, deux
+       colonnes, saisie | Résultat (les poignées de largeur, prévues pour trois colonnes, se masquent d'elles-mêmes) ;
+       niveaux 1 à 3 : blocs du profil masqués (data-min-level="4"), une seule rangée */
+    body:not(.fp-detail) .wrap>.grid {
       grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr) !important;
+      grid-template-areas: "fuel result" "engine rpmtable" !important
+    }
+    html:is([data-level="1"], [data-level="2"], [data-level="3"]) body:not(.fp-detail) .wrap>.grid {
       grid-template-areas: "fuel result" !important
     }
+    html:is([data-level="1"], [data-level="2"], [data-level="3"]) body.fp-detail .wrap>.grid {
+      grid-template-areas: "fuel result instr" !important
+    }
+  }
+  /* vue simple : courbes de niveau et de consommation, panneaux et instruments masqués (data-fp-detail) */
+  body:not(.fp-detail) [data-fp-detail] {
+    display: none !important
+  }
+  /* consommation de croisière du vol (profil, saisie, estimation) et ligne d'état du calcul */
+  .ff-quick {
+    margin-top: 10px
+  }
+  .ff-quick>label {
+    display: block;
+    color: var(--muted);
+    font-size: 12px;
+    margin-bottom: 4px
+  }
+  .ff-quick-row {
+    flex-wrap: wrap;
+    gap: 6px
+  }
+  .ff-quick-row input {
+    width: 9em
+  }
+  .ff-source {
+    font-size: 12px;
+    margin-top: 4px
+  }
+  .calc-status {
+    font-size: 12px;
+    margin: 8px 0;
+    line-height: 1.45
+  }
+  .calc-status:empty {
+    display: none
+  }
+  .calc-status .calc-warn {
+    color: var(--warn, #e0a030);
+    font-weight: 600
+  }
+  .calc-status .calc-est,
+  .ff-source .calc-est {
+    color: var(--warn, #e0a030)
+  }
+  .fp-view-row {
+    margin-top: 8px
   }
   /* repli « Paramètres du vol » du devis carburant (ouvert d'emblée au niveau Expert) */
   .flight-params {
@@ -1033,7 +1084,7 @@ html[data-skeuo] .repo-block-tools .fp-result-pin[aria-pressed="true"]:not(#imp)
 <div class="field" title="Température mesurée au terrain (METAR) : l’écart ISA en est déduit avec l’altitude du terrain."><label>Température sol (°C)</label><input id="tGround" type="number" step="1" placeholder="15"></div>
 <div class="field" title="Altitude du terrain de la température au sol (ft)."><label>Altitude terrain (ft)</label><input id="elevFt" type="number" step="10" value="0"></div>
 <div class="field" title="Température prévue au niveau de croisière (prévision TEMSI / vents et températures en altitude, OFP) : l’écart ISA en est déduit."><label>Température au niveau (°C)</label><input id="tLevel" type="number" step="1"></div>
-</div></details><div style="height:12px"></div><div class="row"><button id="calc" data-icon="chart" class="primary">Calculer</button><span id="windInfo" class="mut"></span></div><div id="optBlock" data-min-level="4">
+</div></details><div class="ff-quick" data-no-i18n><label for="cruiseFF" id="cruiseFFLabel"></label><div class="row ff-quick-row"><input id="cruiseFF" type="number" min="0" step="any" inputmode="decimal"><button id="ffUseEstimate" type="button" class="secondary" hidden></button><button id="ffRemember" type="button" class="secondary" hidden></button></div><div id="ffSource" class="mut ff-source"></div></div><div style="height:12px"></div><div class="row"><button id="calc" data-icon="chart" class="primary">Calculer</button><span id="windInfo" class="mut" data-no-i18n></span></div><div id="optBlock" data-fp-detail>
 <div class="perf-row" id="rowOpt"><h3>Altitude optimale — carburant et vitesse</h3><div id="optEmpty" class="mut">Lance « Calculer » pour tracer les courbes d’altitude et de montée optimales.</div><div class="chart-wrap"><svg id="optChart" class="opt-chart" viewBox="0 0 540 270" hidden></svg></div><ul id="optZones" class="chart-zones" hidden></ul></div>
 <div id="climbBlock" hidden>
 <div class="perf-row" id="rowClimb"><h3>Montée optimale — vario et carburant</h3><div class="chart-wrap"><svg id="climbChart" class="opt-chart" viewBox="0 0 540 230" hidden></svg></div></div>
@@ -1044,15 +1095,15 @@ html[data-skeuo] .repo-block-tools .fp-result-pin[aria-pressed="true"]:not(#imp)
 </div></div></section>
 
 <aside id="perfSide" class="perf-side">
-<section class="card span6" data-block-id="result" data-deco-bg="result" data-icon="check" data-subtitle="Carburant bloc, temps de vol et détail par phase."><h2>Résultat</h2><div class="row"><div><div class="mut">Block fuel</div><div id="block" class="big">—</div></div><div style="flex:1"></div><div><div class="mut">Temps de vol</div><div id="tripTime" class="big">—</div></div><div style="flex:1"></div><div><div class="mut">TOD</div><div id="tod" class="big">—</div></div></div><div style="height:10px"></div><div id="quoteBasis" class="mut quote-basis" data-no-i18n></div><div id="breakdown" class="kv"></div><div id="wxImpact" class="wx-impact" data-no-i18n></div><div id="perfPinned"></div></section>
-<div class="side-panel" data-min-level="4" id="panelOpt" data-row="rowOpt"></div>
-<div class="side-panel" data-min-level="4" id="panelClimb" data-row="rowClimb"></div>
-<div class="side-panel" data-min-level="4" id="panelSpeed" data-row="rowSpeed"></div>
-<div class="side-panel" data-min-level="4" id="panelTas" data-row="rowTas"></div>
-<div class="side-panel" data-min-level="4" id="panelCompare" data-row="rowCompare"></div>
-<div class="side-panel" data-min-level="4" id="panelTable" data-row="rowTable"></div>
+<section class="card span6" data-block-id="result" data-deco-bg="result" data-icon="check" data-subtitle="Carburant bloc, temps de vol et détail par phase."><h2>Résultat</h2><div class="row"><div><div class="mut">Block fuel</div><div id="block" class="big">—</div></div><div style="flex:1"></div><div><div class="mut">Temps de vol</div><div id="tripTime" class="big">—</div></div><div style="flex:1"></div><div><div class="mut">TOD</div><div id="tod" class="big">—</div></div></div><div id="calcStatus" class="calc-status" role="status" aria-live="polite" data-no-i18n></div><div id="quoteBasis" class="mut quote-basis" data-no-i18n></div><div id="breakdown" class="kv"></div><div id="wxImpact" class="wx-impact" data-no-i18n></div><div id="perfPinned"></div><div class="row fp-view-row" data-no-i18n><button id="viewToggle" type="button" class="secondary" aria-pressed="false"></button></div></section>
+<div class="side-panel" data-fp-detail id="panelOpt" data-row="rowOpt"></div>
+<div class="side-panel" data-fp-detail id="panelClimb" data-row="rowClimb"></div>
+<div class="side-panel" data-fp-detail id="panelSpeed" data-row="rowSpeed"></div>
+<div class="side-panel" data-fp-detail id="panelTas" data-row="rowTas"></div>
+<div class="side-panel" data-fp-detail id="panelCompare" data-row="rowCompare"></div>
+<div class="side-panel" data-fp-detail id="panelTable" data-row="rowTable"></div>
 </aside>
-<aside id="fpInstrCol" class="instr-col" data-min-level="4" aria-label="Instruments"><div class="fp-instr-sticky"></div></aside>
+<aside id="fpInstrCol" class="instr-col" data-fp-detail aria-label="Instruments"><div class="fp-instr-sticky"></div></aside>
 
 
 <section class="card span6 engine-card" data-min-level="4" data-block-id="engine-performance" data-icon="wrench" data-subtitle="Performances du moteur selon le régime."><h2>Fiche performance moteur</h2><div class="fields">
@@ -1096,7 +1147,7 @@ html[data-skeuo] .repo-block-tools .fp-result-pin[aria-pressed="true"]:not(#imp)
 <script src="../../shared/repository_nav.js?v=0"></script>
 <script src="../../AircraftDB/aircraft_db.js"></script><script src="../../shared/data_files.js?v=0" data-file="references/aircraft_fleet.js"></script><script src="../../shared/data_files.js?v=0" data-file="references/defa_reference.js"></script><script src="../../shared/aircraft_catalog.js?v=0"></script>
 <script src="../../AircraftDB/aircraft_icons.js"></script>
-<script src="../../AircraftDB/aircraft_perf.js"></script>
+<script src="../../AircraftDB/aircraft_perf.js"></script><script src="../../shared/fuel_reference.js?v=0"></script>
 <script src="../../shared/sticky_frame.js?v=0"></script><script src="../../shared/flight_profile_help.js?v=0"></script><script src="../../shared/column_resize.js?v=0"></script><script src="../../shared/flight_instruments.js?v=0"></script><script src="../../shared/flight_perf_view.js?v=0"></script>
 <script src="../../shared/flight_performance_model.js?v=0"></script>
 <script>
@@ -1706,24 +1757,420 @@ function renderProfile() {
     '<tr><td colspan="6">Pas de courbe RPM dans ce profil.</td></tr>';
   renderProfileEditor();
 }
+// ===== Consommation de croisière : profil, saisie du vol, estimation (shared/fuel_reference.js) =====
+// Trois sources, dans l'ordre : saisie du vol (champ « Consommation de croisière », state.quickFF[id] en kg/h, qui
+// remplace le profil pour ce vol), profil enregistré (table RPM au régime de croisière, sinon débit de croisière),
+// estimation par type ou classe OACI (toujours affichée comme telle). Textes en quatre langues (K.t / K.tf).
+const KIT = window.RepositoryKit,
+  kt = row => KIT.t(row),
+  ktf = (row, vals) => KIT.tf(row, vals);
+/** Écrit un texte dans un élément seulement s'il change (rien ne clignote, les observateurs restent au repos). */
+function setText(id, text) {
+  const el = $(id);
+  if (el && el.textContent !== text) el.textContent = text
+}
+const writtenHtml = new Map();
+/** Écrit du HTML dans un élément seulement s'il diffère du dernier HTML écrit par cette fonction. */
+function setHtml(id, html) {
+  const el = $(id);
+  if (!el || writtenHtml.get(id) === html) return;
+  writtenHtml.set(id, html);
+  el.innerHTML = html
+}
+/** Fiche EUROCONTROL APD d'un profil : code OACI, type ou identifiant, directement ou par les alias de la base des types
+ *  (A4M ↔ A400) ; null si absente (base non installée). */
+function apdOf(p) {
+  const P = window.AIRCRAFT_PERF || {},
+    al = window.AIRCRAFT_DB?.__aliases || {};
+  for (const v of [p?.icao, p?.type, p?.id]) {
+    const k = aKey(v);
+    if (!k) continue;
+    if (P[k]) return P[k];
+    if (al[k] && P[al[k]]) return P[al[k]];
+    const back = Object.keys(al).find(a => al[a] === k && P[a]);
+    if (back) return P[back]
+  }
+  return null
+}
+/** Consommation de croisière retenue pour le profil actif et son origine. Sortie : { ff (unité du profil, null si
+ *  aucune), kind ("entry" | "profile" | "map" | "estimate" | null), profileFF, est (FuelReference.estimate), tas,
+ *  tasKind ("profile" | "apd" | "estimate" | "default") }. */
+function cruiseSource() {
+  if (!active) return {
+    ff: null,
+    kind: null,
+    profileFF: null,
+    est: null,
+    tas: null,
+    tasKind: null
+  };
+  const u = active.unit || "kg",
+    cr = active.cruise || {},
+    rpm = finiteProfileNumber(cr.rpmNominal) ? Number(cr.rpmNominal) : null,
+    map = rpm !== null ? interpRange(active.rpmFuelCurve || [], rpm) : null,
+    own = +cr.fuelFlowPerHour > 0 ? +cr.fuelFlowPerHour : null,
+    profileFF = map?.nominal > 0 ? map.nominal : own,
+    entryKg = +(state.quickFF || {})[active.id] || 0,
+    apd = apdOf(active),
+    est = window.FuelReference?.estimate({
+      codes: [active.type, active.icao, active.id],
+      db: window.AIRCRAFT_DB,
+      apd
+    }) || null,
+    estFF = est ? convertFuel(est.kgPerHour, "kg", u) : null;
+  const [ff, kind] = entryKg > 0 ? [convertFuel(entryKg, "kg", u), "entry"] : profileFF ? [profileFF, map?.nominal > 0 ? "map" :
+    "profile"
+  ] : estFF > 0 ? [estFF, "estimate"] : [null, null];
+  const [tas, tasKind] = +cr.tasKt > 0 ? [+cr.tasKt, "profile"] : +apd?.cruise?.tasKt > 0 ? [+apd.cruise.tasKt, "apd"] : est?.tasKt >
+    0 ? [est.tasKt, "estimate"] : [300, "default"];
+  return {
+    ff,
+    kind,
+    profileFF,
+    est,
+    estFF,
+    tas,
+    tasKind
+  }
+}
+/** Profil passé au modèle de performances : le profil actif, croisière complétée (TAS, débit) par cruiseSource quand
+ *  il lui en manque ou qu'une saisie du vol le remplace ; copie superficielle (le profil n'est pas modifié). */
+function modelProfile() {
+  if (!active) return active;
+  const s = cruiseSource(),
+    cr = active.cruise || {},
+    ownFF = +cr.fuelFlowPerHour > 0,
+    ownTas = +cr.tasKt > 0;
+  if (s.kind !== "entry" && ownFF && ownTas) return active;
+  return {
+    ...active,
+    cruise: {
+      ...cr,
+      tasKt: ownTas ? +cr.tasKt : s.tas,
+      fuelFlowPerHour: s.kind === "entry" || !ownFF ? s.ff : +cr.fuelFlowPerHour
+    }
+  }
+}
+/** Origine d'une consommation, en clair : « profil enregistré », « saisie pour ce vol », « estimation classe L4T / H »… */
+function ffSourceText(s) {
+  if (s.kind === "entry") return kt(["saisie pour ce vol", "entered for this flight", "für diesen Flug eingegeben",
+    "introducido para este vuelo"
+  ]);
+  if (s.kind === "map") return kt(["table RPM du profil", "profile RPM table", "Drehzahltabelle des Profils", "tabla RPM del perfil"]);
+  if (s.kind === "profile") return kt(["profil enregistré", "saved profile", "gespeichertes Profil", "perfil guardado"]);
+  if (s.kind === "estimate") return estimateText(s.est);
+  return ""
+}
+/** Nature d'une estimation : « estimation type A400 » ou « estimation classe L4T / H ». */
+function estimateText(est) {
+  if (!est) return "";
+  return est.basis === "type" ? ktf(["estimation type {code}", "estimate for type {code}", "Schätzung Typ {code}",
+    "estimación tipo {code}"
+  ], {
+    code: est.code
+  }) : ktf(["estimation classe {cls}", "estimate for class {cls}", "Schätzung Klasse {cls}", "estimación clase {cls}"], {
+    cls: `${est.cls}${est.wtc?` / ${est.wtc}`:""}`
+  })
+}
+/** Champ « Consommation de croisière » du devis : libellé (unité affichée), valeur (saisie ou profil), estimation en
+ *  indication, origine, boutons « Utiliser cette estimation » et « Mémoriser pour ce type ». Écrit seulement ce qui change. */
+function renderFuelSource() {
+  const u = fuelUnit(),
+    s = cruiseSource(),
+    input = $("cruiseFF"),
+    esc = window.RepositoryKit.esc;
+  setText("cruiseFFLabel", ktf(["Consommation de croisière ({u}/h)", "Cruise fuel flow ({u}/h)", "Reiseverbrauch ({u}/h)",
+    "Consumo de crucero ({u}/h)"
+  ], {
+    u
+  }));
+  const shown = s.kind && s.kind !== "estimate" ? fuelInput(s.ff) : "",
+    hint = s.estFF > 0 ? `≈ ${fuelInput(s.estFF)}` : "";
+  if (document.activeElement !== input && input.value !== shown) input.value = shown;
+  if (input.placeholder !== hint) input.placeholder = hint;
+  if (input.disabled !== !active) input.disabled = !active;
+  const est = s.est ? `<span class="calc-est">≈ ${esc(showFuel(s.estFF))} ${u}/h, ${esc(estimateText(s.est))}</span>` : "";
+  let html;
+  if (!active) html = esc(kt(["Choisir d’abord l’avion en haut de page.", "Choose the aircraft at the top of the page first.",
+    "Zuerst oben auf der Seite das Flugzeug wählen.", "Elegir primero el avión en la parte superior de la página."
+  ]));
+  else if (s.kind === "entry") html = esc(s.profileFF ? ktf(["Saisie pour ce vol (profil : {v} {u}/h).",
+    "Entered for this flight (profile: {v} {u}/h).", "Für diesen Flug eingegeben (Profil: {v} {u}/h).",
+    "Introducido para este vuelo (perfil: {v} {u}/h)."
+  ], {
+    v: showFuel(s.profileFF),
+    u
+  }) : kt(["Saisie pour ce vol ; le profil n’a pas de consommation de croisière.",
+    "Entered for this flight; the profile has no cruise fuel flow.",
+    "Für diesen Flug eingegeben; das Profil hat keinen Reiseverbrauch.",
+    "Introducido para este vuelo; el perfil no tiene consumo de crucero."
+  ]));
+  else if (s.kind === "map" || s.kind === "profile") html = esc(ktf(["Valeur du profil ({src}).", "Profile value ({src}).",
+    "Profilwert ({src}).", "Valor del perfil ({src})."
+  ], {
+    src: ffSourceText(s)
+  }));
+  else if (s.kind === "estimate") html = esc(kt(["Aucune consommation dans le profil : le calcul utilise",
+    "No fuel flow in the profile: the calculation uses",
+    "Kein Verbrauch im Profil: die Berechnung verwendet", "Sin consumo en el perfil: el cálculo usa"
+  ])) + " " + est + ".";
+  else html = esc(kt(["Aucune consommation connue pour ce type : saisir la valeur de croisière (manuel de vol, OFP).",
+    "No fuel flow known for this type: enter the cruise value (flight manual, OFP).",
+    "Kein Verbrauch für diesen Typ bekannt: Reisewert eingeben (Flughandbuch, OFP).",
+    "Ningún consumo conocido para este tipo: introducir el valor de crucero (manual de vuelo, OFP)."
+  ]));
+  setHtml("ffSource", html);
+  const useBtn = $("ffUseEstimate"),
+    memBtn = $("ffRemember"),
+    showUse = !!active && s.kind === "estimate",
+    showMem = !!active && s.kind === "entry" && !(finiteProfileNumber(active.cruise?.rpmNominal) && s.profileFF);
+  if (useBtn.hidden !== !showUse) useBtn.hidden = !showUse;
+  if (memBtn.hidden !== !showMem) memBtn.hidden = !showMem;
+  setText("ffUseEstimate", kt(["Utiliser cette estimation", "Use this estimate", "Diese Schätzung verwenden", "Usar esta estimación"]));
+  setText("ffRemember", kt(["Mémoriser pour ce type", "Remember for this type", "Für diesen Typ speichern", "Guardar para este tipo"]));
+  const tip = kt(["Écrit cette consommation de croisière dans le profil de l’appareil (comme « Enregistrer le profil »).",
+    "Writes this cruise fuel flow into the aircraft profile (like “Save profile”).",
+    "Schreibt diesen Reiseverbrauch ins Flugzeugprofil (wie „Profil speichern“).",
+    "Escribe este consumo de crucero en el perfil del avión (como «Guardar perfil»)."
+  ]);
+  if (memBtn.title !== tip) memBtn.title = tip
+}
+/** Saisie du champ « Consommation de croisière » (unité affichée) : rangée en kg/h pour ce vol et cet appareil ; vide,
+ *  nulle ou égale au profil : la saisie est retirée (le profil, sinon l'estimation, reprend la main). Puis recalcul. */
+function commitCruiseEntry() {
+  if (!active) return;
+  const raw = $("cruiseFF").value.trim(),
+    v = raw === "" ? 0 : +raw,
+    kg = Number.isFinite(v) && v > 0 ? convertFuel(v, fuelUnit(), "kg") : 0,
+    s = cruiseSource(),
+    profKg = s.profileFF ? convertFuel(s.profileFF, active.unit || "kg", "kg") : null,
+    q = state.quickFF ||= {},
+    before = q[active.id];
+  if (!(kg > 0) || (profKg && Math.abs(profKg - kg) < 0.5)) delete q[active.id];
+  else q[active.id] = Math.round(kg * 10) / 10;
+  if (q[active.id] === before) return renderFuelSource();
+  calculate()
+}
+$("cruiseFF").addEventListener("change", commitCruiseEntry);
+// « Utiliser cette estimation » : l'estimation devient la saisie du vol (modifiable, mémorisable).
+$("ffUseEstimate").onclick = () => {
+  const s = cruiseSource();
+  if (!active || !s.est) return;
+  (state.quickFF ||= {})[active.id] = s.est.kgPerHour;
+  calculate();
+  $("cruiseFF").focus()
+};
+/** « Mémoriser pour ce type » : la saisie du vol devient la consommation de croisière du profil enregistré (même
+ *  écriture que « Enregistrer le profil », limitée à ce champ : les autres modifications en cours restent à enregistrer). */
+function rememberCruiseFF() {
+  const kg = +(state.quickFF || {})[active?.id] || 0;
+  if (!active || !(kg > 0)) return;
+  try {
+    commitProfileEditor(false)
+  } catch {}
+  const stored = state.profiles[active.id] ||= structuredClone(active),
+    r1 = v => Math.round(v * 10) / 10;
+  (stored.cruise ||= {}).fuelFlowPerHour = r1(convertFuel(kg, "kg", stored.unit || "kg"));
+  (active.cruise ||= {}).fuelFlowPerHour = r1(convertFuel(kg, "kg", active.unit || "kg"));
+  delete state.quickFF[active.id];
+  activeSavedSnapshot = JSON.stringify(normalize(structuredClone(stored)));
+  profileDirty = JSON.stringify(active) !== activeSavedSnapshot;
+  save();
+  renderProfile();
+  window.updateProfileStatus?.();
+  window.AppFramework.notify(ktf(["Consommation de croisière mémorisée pour {ac} : {v} {u}/h.",
+    "Cruise fuel flow remembered for {ac}: {v} {u}/h.", "Reiseverbrauch für {ac} gespeichert: {v} {u}/h.",
+    "Consumo de crucero guardado para {ac}: {v} {u}/h."
+  ], {
+    ac: active.name || active.id,
+    v: fmt(convertFuel(kg, "kg", fuelUnit()), 0),
+    u: fuelUnit()
+  }), "ok");
+  calculate()
+}
+$("ffRemember").onclick = rememberCruiseFF;
+
+// ===== Vue simple / détaillée (bouton du Résultat) et ligne d'état du calcul =====
+/** Vue détaillée (courbes de niveau et de consommation, panneaux, instruments) : choix mémorisé dans ce navigateur
+ *  (state.detailView, flightPerfState), sinon selon le niveau d'utilisation (Expert : détaillée). */
+const detailOn = () => typeof state.detailView === "boolean" ? state.detailView : (window.RepositoryNav?.levels?.get?.() ?? 4) >= 4;
+let curvesStale = true, // courbes à retracer (calcul fait en vue simple, ou jamais tracées)
+  curvesKey = "", // données des dernières courbes tracées (un devis seul qui les change les retrace)
+  lastCalc = null; // dernier calcul, pour la ligne d'état (redite au changement de langue ou de vue)
+/** Applique la vue (classe fp-detail du corps de page) et le libellé du bouton ; écrit seulement ce qui change. */
+function applyDetailView() {
+  const on = detailOn(),
+    b = $("viewToggle");
+  if (document.body.classList.contains("fp-detail") !== on) {
+    document.body.classList.toggle("fp-detail", on);
+    window.StickyFrame?.refresh?.()
+  }
+  setText("viewToggle", on ? kt(["Vue simple", "Simple view", "Einfache Ansicht", "Vista simple"]) : kt(["Vue détaillée", "Detailed view",
+    "Detailansicht", "Vista detallada"
+  ]));
+  const tip = on ? kt(["Masquer les courbes de niveau et de consommation et les instruments.",
+    "Hide the level and fuel curves and the instruments.", "Höhen- und Verbrauchskurven sowie Instrumente ausblenden.",
+    "Ocultar las curvas de nivel y de consumo y los instrumentos."
+  ]) : kt(["Afficher les courbes de niveau et de consommation et les instruments.",
+    "Show the level and fuel curves and the instruments.", "Höhen- und Verbrauchskurven sowie Instrumente anzeigen.",
+    "Mostrar las curvas de nivel y de consumo y los instrumentos."
+  ]);
+  if (b.title !== tip) b.title = tip;
+  if (b.getAttribute("aria-pressed") !== String(on)) b.setAttribute("aria-pressed", String(on))
+}
+// Bascule simple ↔ détaillée : choix mémorisé ; courbes tracées seulement si elles manquent ou ne sont plus à jour.
+$("viewToggle").onclick = () => {
+  state.detailView = !detailOn();
+  save();
+  applyDetailView();
+  if (state.detailView && active && curvesStale) calculate();
+  else {
+    renderCalcStatus();
+    // courbes déjà calculées : redessinées à la largeur de la nouvelle mise en page (sans recalcul)
+    if (state.detailView) requestAnimationFrame(() => window.FlightPerfView?.renderAll?.())
+  }
+};
+/** Ligne d'état du Résultat : ce qui a été calculé, pour quel appareil, avec quelle consommation (et son origine) ;
+ *  sans consommation, pourquoi et quoi faire ; en vue simple, où trouver les courbes. Écrite seulement si elle change. */
+function renderCalcStatus() {
+  const c = lastCalc,
+    esc = window.RepositoryKit.esc,
+    lang = window.RepositoryNav?.getLanguage?.() || "fr",
+    parts = [];
+  if (!c || c.none) parts.push(`<span class="calc-warn">${esc(kt(["Aucun avion choisi : choisir l’appareil en haut de page (bouton « Aucun avion »), puis « Calculer ».",
+    "No aircraft chosen: pick the aircraft at the top of the page (“No aircraft” button), then “Calculate”.",
+    "Kein Flugzeug gewählt: oben auf der Seite das Flugzeug wählen (Schaltfläche „Kein Flugzeug“), dann „Berechnen“.",
+    "Ningún avión elegido: elegir el avión en la parte superior de la página (botón «Ningún avión») y luego «Calcular»."
+  ]))}</span>`);
+  else {
+    const s = c.src,
+      u = fuelUnit();
+    parts.push(esc(ktf(["Calculé pour {ac} à {time} : {dist} NM au {fl}, temps de vol {t}, TOD {tod} NM.",
+      "Calculated for {ac} at {time}: {dist} NM at {fl}, flight time {t}, TOD {tod} NM.",
+      "Berechnet für {ac} um {time}: {dist} NM auf {fl}, Flugzeit {t}, TOD {tod} NM.",
+      "Calculado para {ac} a las {time}: {dist} NM a {fl}, tiempo de vuelo {t}, TOD {tod} NM."
+    ], {
+      ac: c.ac,
+      time: c.at.toLocaleTimeString(lang, {
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit"
+      }),
+      dist: fmt(c.D, 0),
+      fl: flTxt(c.alt),
+      t: hmTxt(c.minutes),
+      tod: fmt(c.tod, 0)
+    })));
+    if (s.ff > 0) {
+      const txt = ktf(["Consommation de croisière : {v} {u}/h ({src}).", "Cruise fuel flow: {v} {u}/h ({src}).",
+        "Reiseverbrauch: {v} {u}/h ({src}).", "Consumo de crucero: {v} {u}/h ({src})."
+      ], {
+        v: (s.kind === "estimate" ? "≈ " : "") + showFuel(s.ff),
+        u,
+        src: ffSourceText(s)
+      });
+      parts.push(s.kind === "estimate" ? `<span class="calc-est">${esc(txt)} ${esc(kt(["Carburant estimé, à confirmer : saisir la consommation réelle dans « Devis carburant ».",
+        "Estimated fuel, to be confirmed: enter the actual fuel flow in “Fuel plan”.",
+        "Geschätzter Kraftstoff, zu bestätigen: tatsächlichen Verbrauch unter „Kraftstoffplanung“ eingeben.",
+        "Combustible estimado, por confirmar: introducir el consumo real en «Plan de combustible»."
+      ]))}</span>` : esc(txt))
+    } else parts.push(`<span class="calc-warn">${esc(kt(["Carburant non calculé : aucune consommation connue pour ce type. Saisir la consommation de croisière dans « Devis carburant ».",
+      "Fuel not calculated: no fuel flow known for this type. Enter the cruise fuel flow in “Fuel plan”.",
+      "Kraftstoff nicht berechnet: kein Verbrauch für diesen Typ bekannt. Reiseverbrauch unter „Kraftstoffplanung“ eingeben.",
+      "Combustible no calculado: ningún consumo conocido para este tipo. Introducir el consumo de crucero en «Plan de combustible»."
+    ]))}</span>`);
+    if (s.tasKind !== "profile") parts.push(esc(ktf(["TAS de croisière {tas} kt ({src}).", "Cruise TAS {tas} kt ({src}).",
+      "Reise-TAS {tas} kt ({src}).", "TAS de crucero {tas} kt ({src})."
+    ], {
+      tas: fmt(s.tas, 0),
+      src: s.tasKind === "apd" ? "EUROCONTROL" : s.tasKind === "estimate" ? estimateText(s.est) : kt(["valeur par défaut",
+        "default value", "Standardwert", "valor por defecto"
+      ])
+    })));
+    if (!detailOn()) parts.push(esc(kt(["Courbes de niveau et de consommation, instruments : bouton « Vue détaillée ».",
+      "Level and fuel curves, instruments: “Detailed view” button.",
+      "Höhen- und Verbrauchskurven, Instrumente: Schaltfläche „Detailansicht“.",
+      "Curvas de nivel y de consumo, instrumentos: botón «Vista detallada»."
+    ])))
+  }
+  setHtml("calcStatus", parts.join(" "))
+}
+/** « Calculer » : sans avion ou sans distance, le dit (notification, champ à remplir mis en avant) ; sinon devis
+ *  complet et courbes — la ligne d'état du Résultat change à chaque calcul (heure, valeurs, origine). */
+function calculateFromButton() {
+  if (!active) {
+    lastCalc = {
+      none: true
+    };
+    renderCalcStatus();
+    $("aircraftCurrent").focus();
+    return window.AppFramework.notify(kt([
+      "Rien à calculer : aucun avion choisi. Choisir l’appareil en haut de page (bouton « Aucun avion »).",
+      "Nothing to calculate: no aircraft chosen. Pick the aircraft at the top of the page (“No aircraft” button).",
+      "Nichts zu berechnen: kein Flugzeug gewählt. Oben auf der Seite das Flugzeug wählen (Schaltfläche „Kein Flugzeug“).",
+      "Nada que calcular: ningún avión elegido. Elegir el avión en la parte superior de la página (botón «Ningún avión»)."
+    ]), "warn")
+  }
+  if (!(+$("dist").value > 0)) {
+    const route = $("vpRoute").value.trim() !== "";
+    if (route) {
+      $("flightParams").open = true;
+      $("dist").focus()
+    } else $("vpRoute").focus();
+    return window.AppFramework.notify(route ? kt([
+      "Rien à calculer : distance nulle — le plan de vol n’a pas pu être mesuré (points inconnus ?). Saisir la distance dans « Paramètres du vol » › Distance (NM).",
+      "Nothing to calculate: zero distance — the flight plan could not be measured (unknown points?). Enter the distance in “Flight parameters” › Distance (NM).",
+      "Nichts zu berechnen: Entfernung null — der Flugplan konnte nicht vermessen werden (unbekannte Punkte?). Entfernung unter „Flugparameter“ › Distanz (NM) eingeben.",
+      "Nada que calcular: distancia nula — no se pudo medir el plan de vuelo (¿puntos desconocidos?). Introducir la distancia en «Parámetros del vuelo» › Distancia (NM)."
+    ]) : kt(["Rien à calculer : ni plan de vol ni distance. Saisir le plan de vol (case 15) ou la distance dans « Paramètres du vol ».",
+      "Nothing to calculate: no flight plan and no distance. Enter the flight plan (item 15) or the distance in “Flight parameters”.",
+      "Nichts zu berechnen: weder Flugplan noch Entfernung. Flugplan (Feld 15) oder Entfernung unter „Flugparameter“ eingeben.",
+      "Nada que calcular: ni plan de vuelo ni distancia. Introducir el plan de vuelo (casilla 15) o la distancia en «Parámetros del vuelo»."
+    ]), "warn")
+  }
+  calculate()
+}
+window.addEventListener("repository-language-change", () => setTimeout(() => {
+  renderFuelSource();
+  applyDetailView();
+  renderCalcStatus()
+}));
+window.addEventListener("suite-level-change", () => {
+  const was = document.body.classList.contains("fp-detail");
+  applyDetailView();
+  if (!was && detailOn() && active && curvesStale) calculate();
+  else renderCalcStatus()
+});
 // ===== Devis carburant : composante de vent, temps et consommation par phase =====
 /** Composante de vent sur la route (kt ; positive = arrière). Entrées : route vraie, direction d'où vient le vent, vitesse (°, °, kt). */
 function windComponent(track, from, speed) {
   return speed * Math.cos((from - track) * Math.PI / 180) * -1
 } // + tailwind
-/** Devis carburant du plan saisi : vent (connu ou fourchette), montée et croisière par le modèle calibré (sinon valeurs du profil), descente, roulage, contingence, réserve ; bloc et TOD affichés dans Résultat ; puis courbes de performances (renderAltitudeOptimum) et enregistrement de l'état. */
+/** Devis carburant du plan saisi : vent (connu ou fourchette), montée et croisière par le modèle calibré (sinon valeurs du profil), descente, roulage, contingence, réserve ; bloc et TOD affichés dans Résultat, ligne d'état ; puis courbes de performances (renderAltitudeOptimum, vue détaillée) et enregistrement de l'état. */
 // Devis (bloc Résultat). Niveau : niveau épinglé sur une courbe s'il y en a un, sinon celui du plan ; montée : loi
 // réglée par les curseurs verticaux (au départ, Badin et vario du profil). opts.quoteOnly : devis seul, sans
-// redessiner les courbes (appelé par les curseurs et l'épingle, via planQuote).
+// redessiner les courbes (appelé par les curseurs et l'épingle, via planQuote) — sauf si les données des courbes ont
+// changé (plan de vol relu : distance, niveau). Consommation de croisière : cruiseSource (saisie, profil, estimation).
+// Les valeurs affichées ne sont écrites que si elles changent (setText / setHtml).
 function calculate(opts) {
-  if (!active) return window.AppFramework.notify("Choisis ou importe d’abord un profil avion.", 'warn');
-  const quoteOnly = opts?.quoteOnly === true,
-    pinned = window.FlightPerfView?.sync?.pinned ?? null,
-    mq = window.FlightPerfView?.manual?.() || null;
+  if (!active) {
+    lastCalc = {
+      none: true
+    };
+    renderCalcStatus();
+    renderFuelSource();
+    return
+  }
+  let quoteOnly = opts?.quoteOnly === true;
+  const pinned = window.FlightPerfView?.sync?.pinned ?? null,
+    mq = window.FlightPerfView?.manual?.() || null,
+    src = cruiseSource(),
+    hasFuel = src.ff > 0,
+    approx = src.kind === "estimate" ? "≈ " : "";
   const D = +$("dist").value,
     FL = +$("fl").value,
     alt = pinned != null ? pinned : FL * 100,
-    tas = active.cruise.tasKt || 300;
+    tas = src.tas;
   let windKnown = $("wdir").value !== "" && $("wspd").value !== "",
     wc = 0,
     low = 0,
@@ -1731,14 +2178,14 @@ function calculate(opts) {
   if (windKnown) {
     wc = windComponent(+$("trk").value, +$("wdir").value, +$("wspd").value);
     low = high = wc;
-    $("windInfo").textContent = wc >= 0 ? tl(`Composante arrière ${fmt(wc,0)} kt`, `Tailwind component ${fmt(wc,0)} kt`, `Rückenwindkomponente ${fmt(wc,0)} kt`, `Componente de cola ${fmt(wc,0)} kt`) : tl(`Composante face ${fmt(-wc,0)} kt`, `Headwind component ${fmt(-wc,0)} kt`, `Gegenwindkomponente ${fmt(-wc,0)} kt`, `Componente de cara ${fmt(-wc,0)} kt`);
+    setText("windInfo", kt(wc >= 0 ? tl(`Composante arrière ${fmt(wc,0)} kt`, `Tailwind component ${fmt(wc,0)} kt`, `Rückenwindkomponente ${fmt(wc,0)} kt`, `Componente de cola ${fmt(wc,0)} kt`) : tl(`Composante face ${fmt(-wc,0)} kt`, `Headwind component ${fmt(-wc,0)} kt`, `Gegenwindkomponente ${fmt(-wc,0)} kt`, `Componente de cara ${fmt(-wc,0)} kt`)));
   } else {
     let supplied = $('wspd').value.trim(),
       band = supplied === "" ? (active.typicalWindKt ?? 25) : Math.abs(+$('wspd').value);
     low = -band;
     high = band;
-    $("windInfo").textContent = supplied === "" ? tl(`Vent inconnu : fourchette ±${band} kt sur la composante route`, `Unknown wind: ±${band} kt range on the track component`, `Wind unbekannt: Bereich ±${band} kt auf der Streckenkomponente`, `Viento desconocido: horquilla ±${band} kt en la componente de ruta`) : tl(`Direction inconnue : fourchette −${band} à +${band} kt sur la composante route`, `Unknown direction: −${band} to +${band} kt range on the track component`, `Richtung unbekannt: Bereich −${band} bis +${band} kt auf der Streckenkomponente`,
-      `Dirección desconocida: horquilla −${band} a +${band} kt en la componente de ruta`);
+    setText("windInfo", kt(supplied === "" ? tl(`Vent inconnu : fourchette ±${band} kt sur la composante route`, `Unknown wind: ±${band} kt range on the track component`, `Wind unbekannt: Bereich ±${band} kt auf der Streckenkomponente`, `Viento desconocido: horquilla ±${band} kt en la componente de ruta`) : tl(`Direction inconnue : fourchette −${band} à +${band} kt sur la composante route`, `Unknown direction: −${band} to +${band} kt range on the track component`, `Richtung unbekannt: Bereich −${band} bis +${band} kt auf der Streckenkomponente`,
+      `Dirección desconocida: horquilla −${band} a +${band} kt en la componente de ruta`)));
   }
   /** Régime nominal d'une phase du profil et débit lu dans la table RPM ({ rpm, map, ff }), sinon débit de la phase. */
   const mappedPhase = phaseName => {
@@ -1748,7 +2195,7 @@ function calculate(opts) {
     return {
       rpm,
       map,
-      ff: map?.nominal ?? phase.fuelFlowPerHour
+      ff: map?.nominal ?? (+phase.fuelFlowPerHour > 0 ? +phase.fuelFlowPerHour : null)
     }
   };
   const climbPhase = mappedPhase("climb"),
@@ -1777,10 +2224,11 @@ function calculate(opts) {
   const cruiseDist = Math.max(0, D - climbDist - descentDist);
   /** Carburant d'une phase : durée (min) × débit horaire. */
   const phaseFuel = (mins, ff) => mins / 60 * (ff || 0);
-  const climbFF = climbPhase.ff ?? cruisePhase.ff ?? 0,
-    cruiseFF = cruisePhase.ff ?? 0,
+  // Débits : croisière retenue (saisie du vol, profil, estimation) ; montée et descente du profil, sinon déduits.
+  const cruiseFF = hasFuel ? src.ff : 0,
+    climbFF = climbPhase.ff ?? cruiseFF,
     descentFF = descentPhase.ff ?? (cruiseFF * .45);
-  const climbFuel = pClimb ? pClimb.fuel : phaseFuel(climbMin, climbFF);
+  const climbFuel = pClimb && Number.isFinite(pClimb.fuel) ? pClimb.fuel : phaseFuel(climbMin, climbFF);
   const descentFuel = phaseFuel(descentMin, descentFF);
   const taxiFuel = phaseFuel(+$("taxi").value, active.taxi.fuelFlowPerHour || cruiseFF * .25);
   const tasAlt = pCruise?.ok ? pCruise.tas : tas,
@@ -1800,47 +2248,62 @@ function calculate(opts) {
     block = taxiFuel + trip + contingency + reserve;
   const bLo = taxiFuel + climbFuel + cLo + descentFuel + (climbFuel + cLo + descentFuel) * (+$("cont").value / 100) + reserve;
   const bHi = taxiFuel + climbFuel + cHi + descentFuel + (climbFuel + cHi + descentFuel) * (+$("cont").value / 100) + reserve;
-  $("block").textContent = windKnown ? `${showFuel(block)} ${fuelUnit()}` : `${showFuel(Math.min(bLo,bHi))}–${showFuel(Math.max(bLo,bHi))} ${fuelUnit()}`;
+  // Sans consommation connue : pas de chiffre trompeur (« 0 kg ») ; la ligne d'état dit pourquoi et quoi faire.
+  setText("block", !hasFuel ? "—" : windKnown ? `${approx}${showFuel(block)} ${fuelUnit()}` : `${approx}${showFuel(Math.min(bLo,bHi))}–${showFuel(Math.max(bLo,bHi))} ${fuelUnit()}`);
   const tod = alt / (active.tod.gradientFtPerNm || 300) + (active.tod.bufferNm || 0);
-  $("tod").textContent = `${fmt(tod,1)} NM`;
+  setText("tod", `${fmt(tod,1)} NM`);
   const cruiseMin = cruiseDist / Math.max(80, tasAlt + (windKnown ? wc : 0)) * 60;
-  $("tripTime").textContent = hmTxt(climbMin + cruiseMin + descentMin);
+  setText("tripTime", hmTxt(climbMin + cruiseMin + descentMin));
+  let wx = "";
   try {
-    $("wxImpact").innerHTML = weatherImpact(perf, D, alt, windKnown ? wc : 0)
-  } catch (e) {
-    console.warn("Météo :", e);
-    $("wxImpact").innerHTML = ""
+    wx = hasFuel ? weatherImpact(perf, D, alt, windKnown ? wc : 0) : ""
+  } catch {
+    wx = "" /* effet météo indisponible : le devis reste valable */
   }
+  setHtml("wxImpact", wx);
   /** Mention du régime et du débit lus dans la table RPM pour une phase (vide sans table). */
   const mapNote = phase => phase.map ? `<span class="mapval">${phase.rpm} RPM → ${showFuel(phase.map.nominal)} ${fuelUnit()}/h <small>(${showFuel(phase.map.min)}–${showFuel(phase.map.max)})</small></span>` : "";
-  const rows = [
-    ["Taxi", taxiFuel],
-    ["Montée" + mapNote(climbPhase), climbFuel],
-    ["Croisière (nominal)" + mapNote(cruisePhase), cNom],
-    ["Descente" + mapNote(descentPhase), descentFuel],
-    ["Contingence", contingency],
-    ["Réserve", reserve]
-  ];
-  $("breakdown").innerHTML = rows.map(x => `<div>${x[0]}</div><div>${showFuel(x[1])} ${fuelUnit()}</div>`).join("");
+  const rows = hasFuel ? [
+    [tl("Roulage", "Taxi", "Rollen", "Rodaje"), taxiFuel],
+    [tl("Montée", "Climb", "Steigflug", "Ascenso") + mapNote(climbPhase), climbFuel],
+    [tl("Croisière (nominal)", "Cruise (nominal)", "Reiseflug (nominal)", "Crucero (nominal)") + mapNote(cruisePhase), cNom],
+    [tl("Descente", "Descent", "Sinkflug", "Descenso") + mapNote(descentPhase), descentFuel],
+    [tl("Contingence", "Contingency", "Unvorhergesehenes", "Contingencia"), contingency],
+    [tl("Réserve", "Reserve", "Reserve", "Reserva"), reserve]
+  ] : [];
+  let breakdown = rows.map(x => `<div>${x[0]}</div><div>${approx}${showFuel(x[1])} ${fuelUnit()}</div>`).join("");
   // Masses : décollage prévu (unité d'affichage du carburant), MTOW de l'appareil (fiche APD), atterrissage estimé.
   {
     const u = fuelUnit(),
       tow = +$("tow").value,
-      mtowKg = +(window.AIRCRAFT_PERF?.[String(active?.icao || active?.type || "").toUpperCase()]?.takeoff?.mtowKg || active?.mtowKg || 0),
-      mtow = mtowKg ? (u === "kg" ? mtowKg : mtowKg / KG_PER_LB) : 0;
-    $("towUnit").textContent = u;
-    $("tow").placeholder = mtow ? `MTOW ${fmt(mtow,0)}` : "";
+      mtowKg = +(apdOf(active)?.takeoff?.mtowKg || active?.mtowKg || 0),
+      mtow = mtowKg ? (u === "kg" ? mtowKg : mtowKg / KG_PER_LB) : 0,
+      ph = mtow ? `MTOW ${fmt(mtow,0)}` : "";
+    setText("towUnit", u);
+    if ($("tow").placeholder !== ph) $("tow").placeholder = ph;
     if (tow > 0) {
       const land = tow - convertFuel(trip, active?.unit || u, u),
         over = mtow && tow > mtow;
-      $("breakdown").insertAdjacentHTML("beforeend", `<div>${tl("Masse au décollage prévue","Planned take-off mass","Geplante Startmasse","Masa de despegue prevista")}</div><div${over?' style="color:#e5484d;font-weight:700"':""}>${fmt(tow,0)} ${u}${mtow?` / MTOW ${fmt(mtow,0)}`:""}${over?` — ${tl("dépasse la MTOW de","exceeds MTOW by","überschreitet MTOW um","excede la MTOW en")} ${fmt(tow-mtow,0)} ${u}`:""}</div><div>${tl("Masse à l’atterrissage estimée","Estimated landing mass","Geschätzte Landemasse","Masa de aterrizaje estimada")}</div><div>${fmt(land,0)} ${u}</div>`);
-      if (over) window.AppFramework?.notify?.(tl(`Masse au décollage prévue supérieure à la MTOW (${fmt(tow,0)} > ${fmt(mtow,0)} ${u}).`, `Planned take-off mass above MTOW (${fmt(tow,0)} > ${fmt(mtow,0)} ${u}).`), "warn")
+      breakdown += `<div>${tl("Masse au décollage prévue","Planned take-off mass","Geplante Startmasse","Masa de despegue prevista")}</div><div${over?' style="color:#e5484d;font-weight:700"':""}>${fmt(tow,0)} ${u}${mtow?` / MTOW ${fmt(mtow,0)}`:""}${over?` — ${tl("dépasse la MTOW de","exceeds MTOW by","überschreitet MTOW um","excede la MTOW en")} ${fmt(tow-mtow,0)} ${u}`:""}</div>` + (hasFuel ? `<div>${tl("Masse à l’atterrissage estimée","Estimated landing mass","Geschätzte Landemasse","Masa de aterrizaje estimada")}</div><div>${approx}${fmt(land,0)} ${u}</div>` : "");
+      if (over && !quoteOnly) window.AppFramework?.notify?.(tl(`Masse au décollage prévue supérieure à la MTOW (${fmt(tow,0)} > ${fmt(mtow,0)} ${u}).`, `Planned take-off mass above MTOW (${fmt(tow,0)} > ${fmt(mtow,0)} ${u}).`, `Geplante Startmasse über MTOW (${fmt(tow,0)} > ${fmt(mtow,0)} ${u}).`, `Masa de despegue prevista superior a la MTOW (${fmt(tow,0)} > ${fmt(mtow,0)} ${u}).`), "warn")
     }
   }
-  $("quoteBasis").innerHTML = typo(`${tl("Niveau","Level","Flughöhe","Nivel")} ${flTxt(alt)}${pinned!=null?` 📌 (${tl("plan","plan","Plan","plan")} ${flTxt(FL*100)})`:""} · ${tl("montée","climb","Steigflug","ascenso")} ${law?`${tl("loi réglée","set law","eingestelltes Gesetz","ley ajustada")} ${mq.ias} kt, ${mq.full?tl("plein gaz","full throttle","Vollgas","gases a fondo"):`${fmt(mq.vs,0)} ft/min`}`:tl("du profil","of the profile","des Profils","del perfil")}${law0&&!law?` — ⚠ ${tl("la loi réglée n’atteint pas ce niveau : montée du profil","the set law does not reach this level: profile climb","das eingestellte Gesetz erreicht diese Höhe nicht: Steigflug des Profils","la ley ajustada no alcanza este nivel: ascenso del perfil")}`:""}${pClimb?"":` (${tl("valeurs du profil","profile values","Profilwerte","valores del perfil")})`}`);
-  if (quoteOnly) return;
-  try {
-    renderAltitudeOptimum({
+  setHtml("breakdown", breakdown);
+  setHtml("quoteBasis", typo(`${tl("Niveau","Level","Flughöhe","Nivel")} ${flTxt(alt)}${pinned!=null?` 📌 (${tl("plan","plan","Plan","plan")} ${flTxt(FL*100)})`:""} · ${tl("montée","climb","Steigflug","ascenso")} ${law?`${tl("loi réglée","set law","eingestelltes Gesetz","ley ajustada")} ${mq.ias} kt, ${mq.full?tl("plein gaz","full throttle","Vollgas","gases a fondo"):`${fmt(mq.vs,0)} ft/min`}`:tl("du profil","of the profile","des Profils","del perfil")}${law0&&!law?` — ⚠ ${tl("la loi réglée n’atteint pas ce niveau : montée du profil","the set law does not reach this level: profile climb","das eingestellte Gesetz erreicht diese Höhe nicht: Steigflug des Profils","la ley ajustada no alcanza este nivel: ascenso del perfil")}`:""}${pClimb?"":` (${tl("valeurs du profil","profile values","Profilwerte","valores del perfil")})`}`));
+  // Ligne d'état et champ de consommation : ce qui a été calculé, avec quoi.
+  lastCalc = {
+    at: new Date(),
+    ac: active.name || active.id,
+    D,
+    alt,
+    minutes: climbMin + cruiseMin + descentMin,
+    tod,
+    src
+  };
+  renderCalcStatus();
+  renderFuelSource();
+  // Courbes : un devis seul les laisse en place, sauf si leurs données ont changé (plan de vol relu).
+  const c = {
       D,
       FL,
       windKnown,
@@ -1850,11 +2313,24 @@ function calculate(opts) {
       climbFF,
       cruiseFF,
       descentFF
-    })
+    },
+    key = JSON.stringify([active.id, c, isaDev(), src.ff, src.tas]);
+  if (quoteOnly && key !== curvesKey && detailOn()) quoteOnly = false;
+  if (quoteOnly) return;
+  if (!detailOn()) {
+    // Vue simple : courbes masquées, tracées au passage en vue détaillée.
+    curvesStale = true;
+    save();
+    return
+  }
+  curvesKey = key;
+  curvesStale = false;
+  try {
+    renderAltitudeOptimum(c)
   } catch (e) {
-    console.warn("Altitude optimale :", e);
     $("optEmpty").hidden = false;
-    $("optEmpty").textContent = "Courbe indisponible : " + e.message
+    $("optEmpty").textContent = tl("Courbe indisponible : ", "Curve unavailable: ", "Kurve nicht verfügbar: ", "Curva no disponible: ") + e
+      .message
   }
   if (!mq && window.FlightPerfView?.manual?.()) calculate({
     quoteOnly: true
@@ -1871,10 +2347,11 @@ const isaDev = () => {
   return Number.isFinite(v) ? Math.max(-60, Math.min(60, v)) : 0
 };
 /** Modèle de performances du profil actif ; fiche EUROCONTROL APD du type (plafond, Mach) en référence. */
-const perfModel = (dIsa = isaDev()) => FlightPerfModel.create(active, {
+// Profil du modèle : celui de l'appareil, croisière complétée par la consommation et la TAS retenues (cruiseSource).
+const perfModel = (dIsa = isaDev()) => FlightPerfModel.create(modelProfile(), {
   db: window.AIRCRAFT_DB,
   dIsa,
-  apd: window.AIRCRAFT_PERF?.[String(active?.icao || "").toUpperCase()] || null
+  apd: apdOf(active)
 });
 /** Température ISA (°C) à l'altitude pression ft. */
 const isaTemp = ft => ft <= 36089 ? 15 - 1.98 * ft / 1000 : -56.5;
@@ -2115,7 +2592,7 @@ $("fuelUnitBtn").onclick = () => {
   save()
 };
 // Bouton « Calculer » : devis carburant et courbes.
-$("calc").onclick = () => calculate();
+$("calc").onclick = calculateFromButton;
 /** Devis refait (sans redessiner les courbes) après un réglage des curseurs ou une épingle — appelé par la vue. */
 window.planQuote = () => {
   clearTimeout(window.planQuote.t);
@@ -3466,6 +3943,7 @@ function renderDefaSheets() {
 refreshLandingAircraft();
 restore();
 applyHeaderPreferences();
+applyDetailView(); // vue simple / détaillée avant le premier calcul
 {
   const params = new URLSearchParams(location.search),
     handoff = (() => {
@@ -3495,6 +3973,7 @@ applyHeaderPreferences();
   else if (state.lastAircraft && state.profiles[state.lastAircraft]) setActive(state.profiles[state.lastAircraft], "état restauré");
   else syncAircraftPicker();
 }
+if (!active) calculate(); // sans avion : ligne d'état et champ de consommation disent quoi faire
 </script>
 <script src="../../shared/app_framework.js?v=0"></script>
 <script src="../../shared/flight_ui.js?v=0"></script>
