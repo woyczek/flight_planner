@@ -1236,6 +1236,11 @@
       local: Object.keys(readJson('missionAircraftTypes:v1', {}) || {})
     });
   }
+  // registre des missions complété après le premier dessin (index du navigateur repris du registre servi, autre onglet) :
+  // tableau des types redessiné, sinon il manque les types des missions arrivées entre-temps
+  window.addEventListener('mission-index-change', () => {
+    if (hosts.types?.isConnected && !document.querySelector('#types .repo-task-busy')) renderTypes();
+  });
 
   // ===== 4. Mise à jour SIA pas à pas
   let extractMsg = '',
