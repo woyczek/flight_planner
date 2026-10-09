@@ -12,10 +12,11 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Modifié
 
-- **Carburant, Profils de performances, retours de l'utilisateur** : deux boutons au plus par ligne (« Choisir » ou
-  « Créer », puis « Supprimer », ou « Créer depuis SimBrief » pour un type sans profil) ; cases de sélection pour
-  « Fusionner (n) », « Exporter (n) » (un fichier téléchargé par profil : `.lnmperf` si complet, sinon JSON) et
-  « Enregistrer dans le dossier (n) » (un JSON par profil, nommé d'après le profil), jamais un fichier qui les regroupe ;
+- **Carburant, Profils de performances, retours de l'utilisateur** : un seul bouton par ligne (« Choisir », ou
+  « Créer » avec « Créer depuis SimBrief » à côté pour un type sans profil), tableau resserré ; cases de sélection pour
+  « Fusionner (n) », « Exporter (n) » (un fichier téléchargé par profil : `.lnmperf` si complet, sinon JSON),
+  « Enregistrer dans le dossier (n) » (un JSON par profil, nommé d'après le profil ; jamais un fichier qui les regroupe) et
+  « Supprimer (n) » (une confirmation, un seul message pour le lot, « Annuler » 10 s) ;
   dans la fiche du profil actif, « Mettre à jour depuis SimBrief » avec sa phrase d'explication (au lieu de « Profil
   SimBrief ») ; fenêtre de choix habillée par le socle (`.repo-ask`), sans couleurs propres. Manuel utilisateur (4 langues).
 - **Carburant, modèle de performances** : un type absent de la base OACI du poste, sans motorisation renseignée, n'est plus pris pour un piston (plafond calculé vers 12 000 ft, courbes « inaccessibles » dès le FL120 pour une Caravelle III) : la TAS de croisière départage (réacteur au-dessus de 320 kt, turbopropulseur au-dessus de 230 kt), et une note de la base du calcul dit que la motorisation a été déduite et comment la fixer.
