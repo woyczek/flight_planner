@@ -136,7 +136,54 @@
       rest = words.slice(n).join(' ');
     return /^\d/.test(rest) ? `${maker} ${rest}` : `${rest} — ${maker}`;
   }
+  // ---- type écrit en clair dans une mission → désignateur OACI (Doc 8643)
+  // Noms d'usage des missions (militaires, absents des alias de la base) ; la valeur passe encore par les alias de la
+  // base (A400M → désignateur de la base).
+  const USAGE = {
+    H225: 'EC25',
+    H225M: 'EC25',
+    EC725: 'EC25',
+    CARACAL: 'EC25',
+    E3F: 'E3CF',
+    AWACS: 'E3CF',
+    MRTT: 'A332',
+    A330MRTT: 'A332',
+    PHENIX: 'A332',
+    C130J: 'C30J',
+    C130J30: 'C30J',
+    SUPERHERCULES: 'C30J',
+    RAFALE: 'RFAL',
+    MIRAGE2000: 'MIR2',
+    ATLAS: 'A400M'
+  };
+  /** Texte réduit à ses lettres et chiffres en majuscules, accents retirés (« Phénix » → PHENIX). */
+  const fold = s => String(s ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+  /** Désignateur OACI d'un type écrit en clair (« MIR2 Mirage 2000B », « A330 MRTT Phénix », « C-130J-30 Super Hercules »,
+   *  « Rafale B — Patrouille de 2 ») : texte entier, puis mots deux à deux, puis mot à mot — désignateur de la base,
+   *  alias, nom d'usage ; à défaut, nom propre du modèle d'un seul type de la base (« DASSAULT Rafale »). '' si rien. */
+  function codeOf(text) {
+    const db = window.AIRCRAFT_DB || {},
+      al = db.__aliases || {},
+      words = String(text || '').split(/[\s/,;+()—–]+/).map(fold).filter(w => w.length >= 2 && /[A-Z]/.test(w));
+    const hit = k => {
+      if (!k) return '';
+      if (db[k] && !k.startsWith('__')) return k;
+      if (al[k]) return al[k];
+      if (USAGE[k]) return al[USAGE[k]] || USAGE[k];
+      return '';
+    };
+    for (const k of [fold(text), ...words.slice(1).map((w, i) => words[i] + w), ...words]) {
+      const c = hit(k);
+      if (c) return c;
+    }
+    for (const w of words.filter(x => x.length >= 4)) {
+      const found = Object.keys(db).filter(k => !k.startsWith('__') && fold(String(db[k]?.model || '').split(/\s+/).at(-1)) === w);
+      if (found.length === 1) return found[0];
+    }
+    return '';
+  }
   window.AircraftCatalog = {
+    codeOf,
     displayName,
     SUPPLEMENT,
     defaAircraft,

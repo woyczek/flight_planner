@@ -848,15 +848,9 @@
    *  (lettres et chiffres seulement, comme les alias), code de la base ou alias ; texte inchangé si rien ne correspond. */
   const alias = code => {
     const k = String(code || '').toUpperCase().trim(),
-      db = window.AIRCRAFT_DB || {},
-      al = db.__aliases || {};
-    if (al[k]) return al[k];
-    if (db[k] && !k.startsWith('__')) return k;
-    for (const w of [k, ...k.split(/[\s/,()]+/)].map(x => x.replace(/[^A-Z0-9]/g, '')).filter(Boolean)) {
-      if (al[w]) return al[w];
-      if (db[w] && !w.startsWith('__')) return w;
-    }
-    return k;
+      al = window.AIRCRAFT_DB?.__aliases || {};
+    // résolveur commun des types écrits en clair (shared/aircraft_catalog.js : alias, noms d'usage, modèle)
+    return al[k] || window.AircraftCatalog?.codeOf?.(k) || k;
   };
   /** Vrai si code (ou son alias) figure dans l'ensemble de types. */
   const knownType = (types, code) => types.has(alias(code)) || types.has(String(code || '').toUpperCase().trim());
