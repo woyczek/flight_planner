@@ -1,7 +1,7 @@
 # Dette technique
 
 Points connus, gardés en l'état par choix ou faute de temps, à reprendre. Chaque entrée : ce qui se passe, pourquoi on
-le garde, ce qu'il faudrait faire. Mise à jour : 5 octobre 2026.
+le garde, ce qu'il faudrait faire. Mise à jour : 9 octobre 2026.
 
 ## Données et synchronisation
 
@@ -31,6 +31,8 @@ le garde, ce qu'il faudrait faire. Mise à jour : 5 octobre 2026.
 | 05/10/2026 | Libellés de configuration en français seul | les libellés des catégories de disponibilité se saisissent en français ; les traductions manquantes sont listées par l'audit (`tools/audit_i18n.html`) mais se complètent à la main dans `data/config/disponibilites.json` | décidé le 5 octobre | saisie des traductions dans l'audit lui-même |
 | 06/10/2026 | Tableau : placement sans aimantation | les éléments d'une section de la frise s'empilent automatiquement (couloirs) ; le placement libre de l'outil V0 (position verticale en pixels, gardée dans les données) n'est pas repris | données sans pixels, rendu identique sur tous les écrans | option « placement libre » (désactive l'aimantation), position relative gardée dans l'élément ([ODV_ORDRES.md](ODV_ORDRES.md) § 1) |
 | 05/10/2026 | Range-dossier du Cabinet en calques | l'animation du Cabinet utilise trois calques découpés dans la couverture (`tools/cabinet_layers.py`) | — | relancer le script si l'image de la couverture change (mesures reprises dans `mes_missions.html`, constante `CAB`) |
+| 09/10/2026 | **Styles mis en couche après coup** (`shared/kit.js`) | chaque `<style>` posé par un module est réécrit dans `@layer app` par un observateur, après son insertion | une trentaine de modules injectent leurs styles ; les réécrire un par un est une refonte | écrire `@layer app { … }` à la source (aide commune `K.style(css)`), puis retirer l'observateur |
+| 09/10/2026 | **Zones d'état relayées après coup** (`shared/app_framework.js`, `watchStatus`) | un observateur par zone `[data-status]` repère un message d'erreur affiché et le transforme en notification (le message en ligne est masqué) | toutes les pages écrivent leurs erreurs dans ces zones | appeler `AppFramework.notify` là où l'erreur est produite, page par page, puis retirer le relais |
 
 ## Outillage
 

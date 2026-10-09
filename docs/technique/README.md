@@ -31,6 +31,7 @@ ou maintient la suite. Les manuels et guides d'utilisation sont au [premier nive
 |---|---|
 | [Feuille de route](ROADMAP.md) | où va la suite, dans quel ordre, décisions en attente |
 | [Dette technique](DETTE_TECHNIQUE.md) | points connus, gardés en l'état, à reprendre |
+| [Journal des bugs](BUGS.md) | bugs ouverts et fermés : zone, cause, commit de la correction |
 
 ## Designs et images
 

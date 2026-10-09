@@ -10,6 +10,13 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ## [Non publié]
 
+### Corrigé
+
+- **Paramètres › Maintenance : la rubrique « Types d'aéronefs » paraissait un instant à l'ouverture, puis
+  disparaissait** : l'éditeur des bases ouvrait sa première rubrique avant que la page n'ouvre « Mises à jour ». Page
+  Maintenance sans `?base=`, ou bloc demandé (`?m=`) : aucune rubrique de l'éditeur n'est rendue. Journal des bugs
+  ouverts et fermés : `docs/technique/BUGS.md` ; dette technique : deux observateurs de réécriture restants.
+
 ## [5.0.0] — 2026-10-08
 
 Version « v2 » : la suite s'adapte à son utilisateur. Un **niveau d'utilisation** (équipage, planification, conception,

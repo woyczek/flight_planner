@@ -1178,9 +1178,12 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
     /** Attribut data-min-level d'un niveau n (rien au niveau 1). */
     const minAttr = n => n > 1 ? ` data-min-level="${n}"` : '';
     // rubrique ouverte : celle de l'adresse, sinon la première visible au niveau courant ; aucune (Installation : blocs de
-    // shared/maintenance_page.js seulement) → éditeur masqué, maintenance_page.js ouvre son premier bloc
+    // shared/maintenance_page.js seulement) → éditeur masqué, maintenance_page.js ouvre son premier bloc. Page Maintenance
+    // sans ?base=, ou bloc demandé (?m=) : maintenance_page.js ouvre un de ses blocs (« Mises à jour » par défaut) — aucune
+    // rubrique rendue ici (« Types d'aéronefs », la première, paraissait un instant avant d'être masquée)
+    const blockFirst = !wanted && (page === 'maintenance' || new URLSearchParams(location.search).has('m'));
     const current = {
-      id: SETS.some(d => d.id === wanted) ? wanted : SETS.find(d => minLevel(d) <= lvl)?.id || ''
+      id: SETS.some(d => d.id === wanted) ? wanted : blockFirst ? '' : SETS.find(d => minLevel(d) <= lvl)?.id || ''
     };
     const groups = [...new Set(SETS.map(d => d.group))];
     root.innerHTML = `<aside class="da-nav">${groups.map(g => {
