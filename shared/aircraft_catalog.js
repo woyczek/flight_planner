@@ -160,26 +160,39 @@
   /** Texte réduit à ses lettres et chiffres en majuscules, accents retirés (« Phénix » → PHENIX). */
   const fold = s => String(s ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().replace(/[^A-Z0-9]/g, '');
   /** Désignateur OACI d'un type écrit en clair (« MIR2 Mirage 2000B », « A330 MRTT Phénix », « C-130J-30 Super Hercules »,
-   *  « Rafale B — Patrouille de 2 ») : texte entier, puis mots deux à deux, puis mot à mot — désignateur de la base,
-   *  alias, nom d'usage ; à défaut, nom propre du modèle d'un seul type de la base (« DASSAULT Rafale »). '' si rien. */
+   *  « Rafale B — Patrouille de 2 ») : type ou variante de la flotte (DEFA_FLEET) écrits tels quels, puis texte entier,
+   *  mots deux à deux, mot à mot — désignateur de la base, alias, nom d'usage ; à défaut, nom propre du modèle d'un
+   *  seul type de la base (« DASSAULT Rafale »). Les saisies locales des CR (entrées « local ») ne sont pas des
+   *  désignateurs. '' si rien. */
   function codeOf(text) {
     const db = window.AIRCRAFT_DB || {},
       al = db.__aliases || {},
       words = String(text || '').split(/[\s/,;+()—–]+/).map(fold).filter(w => w.length >= 2 && /[A-Z]/.test(w));
+    /** Bout de la chaîne d'alias (A400M → A400 → A4M quand les données de la compagnie renvoient A400 vers A4M). */
+    const chase = c => {
+      let x = c;
+      for (let i = 0; i < 5 && al[x] && al[x] !== x; i++) x = al[x];
+      return x;
+    };
     const hit = k => {
       if (!k) return '';
-      if (db[k] && !k.startsWith('__')) return k;
-      if (al[k]) return al[k];
-      if (USAGE[k]) return al[USAGE[k]] || USAGE[k];
+      if (db[k] && !k.startsWith('__') && !db[k].local) return chase(k);
+      if (al[k]) return chase(k);
+      if (USAGE[k]) return chase(USAGE[k]);
       return '';
     };
-    for (const k of [fold(text), ...words.slice(1).map((w, i) => words[i] + w), ...words]) {
+    // flotte : « A330 MRTT Phénix » (variante) → A332, « Rafale C » → RFAL — la donnée de la compagnie avant les tables
+    const whole = fold(text);
+    for (const r of window.DEFA_FLEET || []) {
+      if (whole && r.type && (fold(r.variant) === whole || fold(r.type) === whole)) return hit(fold(r.type)) || chase(fold(r.type));
+    }
+    for (const k of [whole, ...words.slice(1).map((w, i) => words[i] + w), ...words]) {
       const c = hit(k);
       if (c) return c;
     }
     for (const w of words.filter(x => x.length >= 4)) {
       const found = Object.keys(db).filter(k => !k.startsWith('__') && fold(String(db[k]?.model || '').split(/\s+/).at(-1)) === w);
-      if (found.length === 1) return found[0];
+      if (found.length === 1) return chase(found[0]);
     }
     return '';
   }

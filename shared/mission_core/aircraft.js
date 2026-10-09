@@ -90,9 +90,18 @@
   function lookupType(value) {
     const code = String(value || '').trim().toUpperCase().replace(/\s+/g, '');
     if (!code) return null;
-    const base = db(),
-      resolved = base.__aliases?.[code] || code;
-    const entry = base[resolved] || localTypes()[resolved] || localTypes()[code];
+    const base = db();
+    let resolved = base.__aliases?.[code] || code,
+      entry = base[resolved] || localTypes()[resolved] || localTypes()[code];
+    // écrit en clair (« A330 MRTT Phénix », « A332 A330 MRTT Phénix ») : désignateur trouvé par le catalogue commun
+    // (shared/aircraft_catalog.js : flotte, alias, noms d'usage) — rien n'est ajouté en type local pour ces libellés
+    if (!entry) {
+      const found = window.AircraftCatalog?.codeOf?.(value);
+      if (found && base[found]) {
+        resolved = found;
+        entry = base[found];
+      }
+    }
     if (!entry) return null;
     return {
       tdesig: entry.tdesig || resolved,

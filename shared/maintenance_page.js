@@ -910,8 +910,11 @@
   const alias = code => {
     const k = String(code || '').toUpperCase().trim(),
       al = window.AIRCRAFT_DB?.__aliases || {};
-    // résolveur commun des types écrits en clair (shared/aircraft_catalog.js : alias, noms d'usage, modèle)
-    return al[k] || window.AircraftCatalog?.codeOf?.(k) || k;
+    // résolveur commun des types écrits en clair (shared/aircraft_catalog.js : alias, noms d'usage, modèle), puis la
+    // chaîne d'alias suivie jusqu'au bout (A400 → A4M : les données de la compagnie peuvent renvoyer un code vers un autre)
+    let x = al[k] || window.AircraftCatalog?.codeOf?.(k) || k;
+    for (let i = 0; i < 5 && al[x] && al[x] !== x; i++) x = al[x];
+    return x;
   };
   /** Vrai si code (ou son alias) figure dans l'ensemble de types. */
   const knownType = (types, code) => types.has(alias(code)) || types.has(String(code || '').toUpperCase().trim());
@@ -1479,14 +1482,25 @@
     (acLists.fleet || []).forEach(c => add(c, 'fleet'));
     (acLists.missions || []).forEach(c => add(c, 'missions'));
     (acLists.local || []).forEach(c => add(c, 'local'));
+    // codes qui renvoient (alias) vers une clé : A4M ← A400, A400M… — fiche et performances portées par l'un d'eux
+    const back = {};
+    for (const [a, b] of Object.entries(db.__aliases || {}))(back[b] ||= []).push(a);
     const rows = [...groups.values()].map(g => {
       const codes = [...g.codes],
-        rec = db[g.key] || codes.map(c => db[c]).find(Boolean),
-        perf = perfDb[g.key] || codes.map(c => perfDb[c]).find(Boolean),
+        all = [...new Set([g.key, ...codes, ...(back[g.key] || [])])],
+        rec = all.map(c => db[c]).find(r => r && !r.local) || all.map(c => db[c]).find(Boolean),
+        perf = all.map(c => perfDb[c]).find(Boolean),
         noFiche = !rec || !!rec.local,
-        absent = !perf && [g.key, ...codes].some(c => tried.has(c)); // cherché à la dernière passe, absent d'EUROCONTROL
+        absent = !perf && all.some(c => tried.has(c)), // cherché à la dernière passe, absent d'EUROCONTROL
+        // sans performances EUROCONTROL : consommation estimée par type ou classe OACI (shared/fuel_reference.js, source
+        // de repli du planificateur carburant) ; null sans fiche OACI, ou sans le script sur la page
+        est = !perf ? window.FuelReference?.estimate?.({
+          codes: all,
+          db
+        }) || null : null;
       return {
         ...g,
+        est,
         codes,
         rec,
         perf,
@@ -1496,11 +1510,14 @@
         rank: noFiche ? 0 : !perf && !absent ? 1 : 2
       };
     }).sort((a, b) => a.rank - b.rank || a.key.localeCompare(b.key));
-    // à compléter : sans fiche, ou sans performances jamais cherchées ; codes tels qu'ils sont saisis (comme avant)
-    const todo = [...new Set(rows.filter(r => r.noFiche || r.noPerf).flatMap(r => r.codes))],
+    // à compléter : sans fiche, ou sans performances jamais cherchées — le code OACI du groupe, plus les codes saisis qui
+    // en ont la forme (2 à 4 lettres ou chiffres) ; jamais un libellé en clair (« C-130J-30 Super Hercules »)
+    const todo = [...new Set(rows.filter(r => r.noFiche || r.noPerf).flatMap(r => [r.key, ...r.codes].filter(c => /^[A-Z0-9]{2,4}$/
+        .test(c))))],
       nFiche = rows.filter(r => r.noFiche).length,
       nPerf = rows.filter(r => !r.noFiche && r.noPerf).length,
-      nAbsent = rows.filter(r => r.absent).length;
+      nAbsent = rows.filter(r => r.absent).length,
+      nEst = rows.filter(r => !r.perf && r.est).length;
     if (empty && s && !acWarned) {
       acWarned = true;
       window.AppFramework?.notify?.(t([
@@ -1583,9 +1600,17 @@
         'entrada local, sin ficha OACI'
       ])) : `<span title="${esc([r.rec.source, r.rec.wtc ? `WTC ${r.rec.wtc}` : ''].filter(Boolean).join(' · '))}">${yes}</span>`;
       const perf = r.perf ? `${yes} <span class="mt-small" title="${esc([...facts.map(([l, x]) => `${l} : ${x}`), r.perf.fetched ? `EUROCONTROL APD, ${r.perf.fetched}` : ''].filter(Boolean).join('\n'))}">${esc(compact)}</span>${r.perf.url ? ` <a class="mt-link" href="${esc(r.perf.url)}" target="_blank" rel="noopener" title="EUROCONTROL APD">↗</a>` : ''}` :
-        r.absent ? pill('info', t(['absentes d’EUROCONTROL', 'not in EUROCONTROL', 'nicht bei EUROCONTROL',
-          'no están en EUROCONTROL'
-        ])) : pill('warn', t(['manquantes', 'missing', 'fehlen', 'faltan']));
+        // sans performances EUROCONTROL : manquantes (jamais cherchées) ou absentes (cherchées) ; l'estimation de
+        // consommation du planificateur carburant, quand elle existe, est montrée dans les deux cas
+        (r.absent ? pill('info', t(r.est ? ['estimées', 'estimated', 'geschätzt', 'estimados'] : ['absentes d’EUROCONTROL',
+          'not in EUROCONTROL', 'nicht bei EUROCONTROL', 'no están en EUROCONTROL'
+        ])) : pill('warn', t(['manquantes', 'missing', 'fehlen', 'faltan']))) + (r.est ? ` <span class="mt-small" title="${esc(r.est.src || '')}">${esc(t(['≈ {k} kg/h, {v} kt ({b})', '≈ {k} kg/h, {v} kt ({b})', '≈ {k} kg/h, {v} kt ({b})', '≈ {k} kg/h, {v} kt ({b})'], {
+          k: r.est.kgPerHour,
+          v: r.est.tasKt,
+          b: r.est.basis === 'type' ? t(['type connu', 'known type', 'bekannter Typ', 'tipo conocido']) : t(['classe OACI {c}', 'ICAO class {c}', 'ICAO-Klasse {c}', 'clase OACI {c}'], {
+            c: r.est.cls
+          })
+        }))}</span>` : '');
       return `<tr${r.rank < 2 ? ' class="mt-ac-todo"' : ''}><td class="mt-ac-ic">${acIcon(r)}</td><td><b>${esc(r.key)}</b>${other.length ? ` <span class="mt-small">(${esc(other.join(', '))})</span>` : ''}<br><span class="mt-small">${esc(model || '—')}</span></td><td>${cls.code ? `<b>${esc(cls.code)}</b><br><span class="mt-small">${esc(cls.label)}</span>` : '—'}</td><td>${fiche}</td><td>${perf}</td><td class="mt-small">${esc(used)}</td></tr>`;
     };
     const H = l => `<th>${esc(t(l))}</th>`;
@@ -1604,8 +1629,9 @@
       '{n} Typen, nichts zu ergänzen', '{n} tipos, nada que completar'
     ], {
       n: rows.length
-    }))) + (nAbsent ? ` ${pill('info', t(['{n} sans performances chez EUROCONTROL (surtout militaires et hélicoptères)', '{n} without EUROCONTROL performance (mostly military and helicopters)', '{n} ohne Leistungen bei EUROCONTROL (meist Militär und Hubschrauber)', '{n} sin rendimientos en EUROCONTROL (sobre todo militares y helicópteros)'], {
-      n: nAbsent
+    }))) + (nAbsent ? ` ${pill('info', t(['{n} sans performances chez EUROCONTROL (surtout militaires et hélicoptères), {e} estimées par type ou classe OACI pour le carburant', '{n} without EUROCONTROL performance (mostly military and helicopters), {e} estimated by type or ICAO class for fuel', '{n} ohne Leistungen bei EUROCONTROL (meist Militär und Hubschrauber), {e} nach Typ oder ICAO-Klasse für den Kraftstoff geschätzt', '{n} sin rendimientos en EUROCONTROL (sobre todo militares y helicópteros), {e} estimados por tipo o clase OACI para el combustible'], {
+      n: nAbsent,
+      e: nEst
     }))}` : '');
     // état gardé d'un redessin à l'autre : volet « autres types » ouvert, codes saisis
     const keep = {

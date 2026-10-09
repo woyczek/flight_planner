@@ -247,6 +247,12 @@
     outline: 2px solid var(--accent, #2f6fd6);
     outline-offset: 1px
   }
+  /* fin de l'assistant (« Terminer ») : hors des étapes, toujours visible sous la dernière */
+  .pl-end {
+    margin: 18px 0 0;
+    padding-top: 12px;
+    border-top: 1px solid var(--line)
+  }
   .pl-rail a>b,
   .pl-badge>b {
     display: inline-grid;
@@ -569,10 +575,12 @@
         <ul class="pl-links" id="plSogLinks" data-no-i18n></ul>
       </div>
     </div>
-    <!-- fin de l'assistant : « Terminer » actif quand les étapes obligatoires (1 à 5) sont faites, sinon ce qui manque -->
-    <div class="pl-row pl-next" data-no-i18n><button type="button" class="primary" id="plFinish"></button>
-      <a class="secondary" id="plHome" href="../../index.html"></a><span class="pl-hint" id="plFinishWhy"></span></div>
   </section>
+
+  <!-- fin de l'assistant, hors des étapes (visible quelle que soit l'étape ouverte, dernier point du rail) : « Terminer »
+       actif quand les étapes obligatoires (1 et 2) sont faites, sinon ce qui manque -->
+  <div class="pl-end" id="plEnd" data-no-i18n><div class="pl-row pl-next"><button type="button" class="primary" id="plFinish"></button>
+    <a class="secondary" id="plHome" href="../../index.html"></a><span class="pl-hint" id="plFinishWhy"></span></div></div>
 
   <section id="plReset" data-icon="refresh" data-default-hidden="1" style="margin-top:16px"><h2>Recommencer</h2>
     <div class="pl-warn"><b>⚠ Nettoyer efface les réglages de ce navigateur</b> : dossiers mémorisés (application, données,
@@ -589,7 +597,7 @@
 <!-- blocs « Données aéronautiques » et « Types d'aéronefs » (shared/maintenance_page.js) et leurs dépendances -->
 <script src="../../AircraftDB/aircraft_db.js"></script><script src="../../shared/data_files.js?v=0" data-file="references/aircraft_fleet.js"></script>
 <script src="../../shared/mission_core/vendor/js-yaml.min.js"></script>
-<script src="../../AircraftDB/aircraft_perf.js"></script><script src="../cpco/mission_prompt.js?v=0"></script>
+<script src="../../AircraftDB/aircraft_perf.js"></script><script src="../../shared/aircraft_catalog.js?v=0"></script><script src="../../shared/fuel_reference.js?v=0"></script><script src="../cpco/mission_prompt.js?v=0"></script>
 <script src="../../shared/zip_store.js?v=0"></script><script src="../../shared/airac.js?v=0"></script><script src="../../shared/carto/aero_symbols.js?v=0"></script><script src="../../shared/sia_base.js?v=0"></script>
 <script src="../../shared/mission_table.js?v=0"></script><script src="../cpco/mission_store.js?v=0"></script><script src="../../shared/mission_routing.js?v=0"></script><script src="../../shared/mission_registry.js?v=0"></script>
 <script src="../../shared/maintenance_page.js?v=0"></script>
@@ -733,7 +741,8 @@
   };
   /** Ouvre l'étape id et replie les autres (une étape à la fois) ; scroll : la fait défiler en haut de l'écran. */
   function goStep(id, scroll = true) {
-    for (const s of STEPS) fold($(s), s !== id);
+    if (STEPS.includes(id))
+      for (const s of STEPS) fold($(s), s !== id);
     if (scroll) $(id)?.scrollIntoView({
       behavior: 'smooth',
       block: 'start'
@@ -820,12 +829,15 @@
     const home = {
       todo: need.filter(x => x.ok !== true).length,
       total: need.length,
-      // « pour tous » seulement : décide du renvoi vers l'accueil à l'ouverture par le lanceur
-      todoSuite: suite.filter(x => !x.opt && x.home !== false && x.ok !== true).length
+      // « pour tous » seulement (affiché par l'accueil)
+      todoSuite: suite.filter(x => !x.opt && x.home !== false && x.ok !== true).length,
+      // bloquant à l'ouverture par le lanceur : dossier de l'application et données (les mêmes que pour « Terminer ») ;
+      // le reste se règle depuis l'accueil, sans revenir ici à chaque lancement
+      todoCore: suite.filter(x => (x.id === 'folder' || x.id === 'data') && x.ok !== true).length
     };
     // écrit seulement si le compte change (l'accueil le lit ; chaque écriture réveille les autres onglets)
     const was = read(STATE);
-    if (was.todo !== home.todo || was.total !== home.total || was.todoSuite !== home.todoSuite) try {
+    if (was.todo !== home.todo || was.total !== home.total || was.todoSuite !== home.todoSuite || was.todoCore !== home.todoCore) try {
       localStorage.setItem(STATE, JSON.stringify({
         at: new Date().toISOString(),
         ...home
@@ -955,9 +967,12 @@
    *  obligatoires 1 à 5 sont faites, sinon ce qui manque). Écritures seulement si la valeur change. */
   function renderSteps(by) {
     const steps = stepStates(by);
-    // étape courante : la première à faire (ou à refaire) ; toutes faites : la 6
-    curStep = (steps.find(x => x.st === 'todo' || x.st === 'bad') || steps[5]).id;
-    setHtml($('plRail'), steps.map(x => `<li><a href="#${x.id}" data-goto="${x.id}" class="pl-s-${x.st}${x.id === curStep ? ' pl-cur' : ''}"${x.id === curStep ? ' aria-current="step"' : ''}><b>${SYM[x.st]}</b><span>${x.n}. ${K.esc(stepName(x.id))}</span><small>${K.esc(stateWord(x.st))}</small></a></li>`).join(''));
+    // étape courante : la première à faire (ou à refaire) ; toutes faites : aucune — c'est « Terminer », dernier point
+    // du rail, qui est cerclé (l'étape 6, réservée aux administrateurs, ne s'allume pas pour un pilote)
+    curStep = steps.find(x => x.st === 'todo' || x.st === 'bad')?.id || '';
+    const end = !curStep;
+    setHtml($('plRail'), steps.map(x => `<li><a href="#${x.id}" data-goto="${x.id}" class="pl-s-${x.st}${x.id === curStep ? ' pl-cur' : ''}"${x.id === curStep ? ' aria-current="step"' : ''}><b>${SYM[x.st]}</b><span>${x.n}. ${K.esc(stepName(x.id))}</span><small>${K.esc(stateWord(x.st))}</small></a></li>`).join('') +
+      `<li><a href="#plEnd" data-goto="plEnd" class="pl-s-${end ? 'ok' : 'todo'}${end ? ' pl-cur' : ''}"${end ? ' aria-current="step"' : ''}><b>${SYM[end ? 'ok' : 'todo']}</b><span>${K.esc(L('Terminer', 'Finish', 'Abschließen', 'Terminar'))}</span><small>${K.esc(end ? L('prêt', 'ready', 'bereit', 'listo') : L('à la fin', 'at the end', 'am Ende', 'al final'))}</small></a></li>`);
     const missing = steps.slice(0, 5).filter(x => x.st !== 'ok' && x.st !== 'unknown');
     lastSteps = steps;
     setText($('plRailHint'), missing.length ? K.tf(['Étape en cours : {n}. {s}. Un clic sur une étape l’ouvre.',
@@ -966,9 +981,10 @@
     ], {
       n: STEPS.indexOf(curStep) + 1,
       s: stepName(curStep)
-    }) : L('Les étapes obligatoires sont faites : « Terminer » à l’étape 6.', 'The required steps are done: “Finish” at step 6.',
-      'Die Pflichtschritte sind erledigt: „Abschließen“ in Schritt 6.',
-      'Los pasos obligatorios están hechos: «Terminar» en el paso 6.'));
+    }) : L('Les étapes obligatoires sont faites : « Terminer », en bas de page.',
+      'The required steps are done: “Finish”, at the bottom of the page.',
+      'Die Pflichtschritte sind erledigt: „Abschließen“ unten auf der Seite.',
+      'Los pasos obligatorios están hechos: «Terminar», al final de la página.'));
     for (const x of steps) {
       const sec = $(x.id);
       if (!sec) continue;
@@ -1585,7 +1601,17 @@
     const s = await acStatus(),
       db = window.AIRCRAFT_DB || {},
       perfDb = window.AIRCRAFT_PERF || {};
-    const alias = c => db.__aliases?.[c] || c;
+    // code OACI d'un type écrit en clair (« A332 A330 MRTT Phénix » des missions, « A330 MRTT PHÉNIX » saisi dans un CR) :
+    // alias de la base, puis catalogue (flotte, désignateurs, noms d'usage) — même regroupement que le bloc
+    const al = db.__aliases || {};
+    const alias = c => {
+      let x = al[c] || window.AircraftCatalog?.codeOf?.(c) || c;
+      for (let i = 0; i < 5 && al[x] && al[x] !== x; i++) x = al[x]; // chaîne d'alias suivie jusqu'au bout (A400 → A4M)
+      return x;
+    };
+    // codes qui renvoient vers une clé (A4M ← A400, A400M…) : fiche et performances portées par l'un d'eux
+    const back = {};
+    for (const [a, b] of Object.entries(al))(back[b] ||= []).push(a);
     let missions = [];
     try {
       await window.MissionIndex?.ready;
@@ -1604,14 +1630,22 @@
       (groups.get(k) || groups.set(k, new Set()).get(k)).add(c);
     }
     const rows = [...groups].map(([k, codes]) => {
-      const all = [k, ...codes],
-        rec = all.map(c => db[c]).find(Boolean),
+      const all = [...new Set([k, ...codes, ...(back[k] || [])])],
+        rec = all.map(c => db[c]).find(r => r && !r.local) || all.map(c => db[c]).find(Boolean),
         perf = all.some(c => perfDb[c]),
-        absent = !perf && all.some(c => tried.has(c));
+        absent = !perf && all.some(c => tried.has(c)),
+        // sans performances EUROCONTROL : consommation estimée par type ou classe OACI (shared/fuel_reference.js, la
+        // source de repli du planificateur carburant) ; rien d'estimé sans fiche OACI
+        est = !perf && !!window.FuelReference?.estimate?.({
+          codes: all,
+          db
+        });
       return {
+        key: k,
         noFiche: !rec || !!rec.local,
         perf,
         absent,
+        est,
         noPerf: !perf && !absent
       };
     });
@@ -1619,38 +1653,56 @@
       nFiche = rows.filter(r => r.noFiche).length,
       nPerf = rows.filter(r => !r.noFiche && r.noPerf).length,
       todo = rows.filter(r => r.noFiche || r.noPerf).length,
+      todoList = rows.filter(r => r.noFiche || r.noPerf).map(r => r.key),
       withPerf = rows.filter(r => r.perf).length,
-      absent = rows.filter(r => r.absent).length;
+      absent = rows.filter(r => r.absent).length,
+      absentList = rows.filter(r => r.absent).map(r => r.key),
+      nEst = rows.filter(r => !r.perf && r.est).length,
+      nEstTodo = rows.filter(r => !r.noFiche && r.noPerf && r.est).length;
     const T = {
       todo,
       running: s?.state === 'running',
       ok: !s ? null : fresh || (!empty && todo === 0),
-      short: !s ? '' : K.tf(['{n} types, {p} avec performances', '{n} types, {p} with performance', '{n} Typen, {p} mit Leistungen',
-        '{n} tipos, {p} con rendimientos'
+      short: !s ? '' : K.tf(['{n} types, {p} avec performances, {e} estimées', '{n} types, {p} with performance, {e} estimated',
+        '{n} Typen, {p} mit Leistungen, {e} geschätzt', '{n} tipos, {p} con rendimientos, {e} estimados'
       ], {
         n: rows.length,
-        p: withPerf
-      })
+        p: withPerf,
+        e: nEst
+      }),
+      fresh
     };
-    const absentNote = n => K.tf(['{n} type(s) sans performances chez EUROCONTROL : normal pour les militaires et les hélicoptères.',
-      '{n} type(s) without EUROCONTROL performance: normal for military aircraft and helicopters.',
-      '{n} Typ(en) ohne Leistungen bei EUROCONTROL: normal bei Militärflugzeugen und Hubschraubern.',
-      '{n} tipo(s) sin rendimientos en EUROCONTROL: normal en militares y helicópteros.'
+    /** Note des types sans performances EUROCONTROL : n types, l (codes, facultatif), e estimés (consommation par type ou
+     *  classe OACI, planificateur carburant) ; sans fiche OACI, rien n'est estimé. */
+    const absentNote = (n, l, e) => K.tf([
+      '{n} type(s) sans performances chez EUROCONTROL (militaires, hélicoptères){l}. Planificateur carburant : consommation estimée par type ou classe OACI pour {e} d’entre eux{r}.',
+      '{n} type(s) without EUROCONTROL performance (military, helicopters){l}. Fuel planner: consumption estimated by type or ICAO class for {e} of them{r}.',
+      '{n} Typ(en) ohne Leistungen bei EUROCONTROL (Militär, Hubschrauber){l}. Kraftstoffplaner: Verbrauch für {e} davon nach Typ oder ICAO-Klasse geschätzt{r}.',
+      '{n} tipo(s) sin rendimientos en EUROCONTROL (militares, helicópteros){l}. Planificador de combustible: consumo estimado por tipo o clase OACI para {e} de ellos{r}.'
     ], {
-      n
+      n,
+      l: l ? ` : ${l}` : '',
+      e: e ?? n,
+      r: e != null && e < n ? L(', sans fiche OACI pour les autres', ', no ICAO record for the others',
+        ', ohne ICAO-Datensatz bei den übrigen',
+        ', sin ficha OACI para los demás') : ''
     });
+    /** Bouton « Compléter automatiquement » de la ligne d'état : déclenche celui du bloc (data-pl-complete), sauf passe en cours. */
+    const completeButton = s?.state === 'running' ? '' : ` <button type="button" class="primary" data-pl-complete>${K.esc(L('Compléter automatiquement',
+      'Complete automatically', 'Automatisch ergänzen', 'Completar automáticamente'))}</button>`;
     let html;
     if (!s) html = line('unknown', L('Lanceur absent : la base des types se complète avec le lanceur (lancer.cmd, sh lancer.sh).',
       'No launcher: the type database is completed with the launcher (lancer.cmd, sh lancer.sh).',
       'Kein Starter: Die Typendatenbank wird mit dem Starter ergänzt (lancer.cmd, sh lancer.sh).',
       'Sin lanzador: la base de tipos se completa con el lanzador (lancer.cmd, sh lancer.sh).'));
     else if (s.state === 'running') html = line('todo', K.tf([
-      'Téléchargement en cours ({s}) : l’état se met à jour à la fin de la tâche.',
-      'Download running ({s}): the state updates when the task ends.',
-      'Download läuft ({s}): Der Stand wird am Ende der Aufgabe aktualisiert.',
-      'Descarga en curso ({s}): el estado se actualiza al final de la tarea.'
+      'Téléchargement en cours ({s}, {t} s) : la page se recharge à la fin de la tâche.',
+      'Download running ({s}, {t} s): the page reloads when the task ends.',
+      'Download läuft ({s}, {t} s): Die Seite lädt am Ende der Aufgabe neu.',
+      'Descarga en curso ({s}, {t} s): la página se recarga al final de la tarea.'
     ], {
-      s: s.step || '…'
+      s: s.step || '…',
+      t: s.started ? Math.max(0, Math.round(Date.now() / 1000 - s.started)) : 0
     }));
     else if (fresh) {
       // bilan de la passe d'après le journal du lanceur (AircraftDB/update_aircraft_db.py) : fiches résolues, fiches de
@@ -1659,46 +1711,63 @@
         unresolved = +(/(\d+) non résolu/.exec(log)?.[1] || 0),
         perfN = /APD : (\d+) fiche/.exec(log)?.[1],
         none = (log.match(/pas de données APD/g) || []).length;
-      html = line('ok', perfN != null ? K.tf(['Terminé : {f} fiche(s) OACI, {p} performance(s).',
-          'Done: {f} ICAO record(s), {p} performance profile(s).',
-          'Fertig: {f} ICAO-Datensätze, {p} Leistungsprofile.', 'Terminado: {f} ficha(s) OACI, {p} rendimiento(s).'
-        ], {
-          f: (s.codes || []).length - unresolved,
-          p: perfN
-        }) : K.tf(['Terminé : {n} type(s) traité(s).', 'Done: {n} type(s) processed.', 'Fertig: {n} Typ(en) bearbeitet.',
-          'Terminado: {n} tipo(s) tratado(s).'
-        ], {
-          n: (s.codes || []).length
-        }), ` <button type="button" class="secondary" data-pl-reload>${K.esc(L('Recharger la page pour les lire', 'Reload the page to read them', 'Seite neu laden, um sie zu lesen', 'Recargar la página para leerlos'))}</button>`) +
+      T.doneText = perfN != null ? K.tf(['Terminé : {f} fiche(s) OACI, {p} performance(s).',
+        'Done: {f} ICAO record(s), {p} performance profile(s).',
+        'Fertig: {f} ICAO-Datensätze, {p} Leistungsprofile.', 'Terminado: {f} ficha(s) OACI, {p} rendimiento(s).'
+      ], {
+        f: (s.codes || []).length - unresolved,
+        p: perfN
+      }) : K.tf(['Terminé : {n} type(s) traité(s).', 'Done: {n} type(s) processed.', 'Fertig: {n} Typ(en) bearbeitet.',
+        'Terminado: {n} tipo(s) tratado(s).'
+      ], {
+        n: (s.codes || []).length
+      });
+      html = line('ok', T.doneText, ` <button type="button" class="secondary" data-pl-reload>${K.esc(L('Recharger la page pour les lire', 'Reload the page to read them', 'Seite neu laden, um sie zu lesen', 'Recargar la página para leerlos'))}</button>`) +
         (none ? line('opt', absentNote(none)) : '');
+      // bilan gardé pour l'affichage après le rechargement (watchTypes, installAll)
+      T.doneText += none ? ` ${absentNote(none)}` : '';
     } else if (s.state === 'error') html = line('bad', L(
       'Échec de la dernière passe : voir « Journal » dans le bloc ci-dessous, puis réessayer.',
       'The last pass failed: see “Log” in the block below, then try again.',
       'Der letzte Durchlauf ist fehlgeschlagen: „Protokoll“ im Block unten ansehen, dann erneut versuchen.',
       'Falló la última pasada: ver «Registro» en el bloque de abajo y volver a intentarlo.'));
     else if (empty) html = line('todo', L(
-      'Base des types vide : « Compléter automatiquement » ci-dessous la télécharge (réseau, quelques secondes par type).',
-      'Type database empty: “Complete automatically” below downloads it (network, a few seconds per type).',
-      'Typendatenbank leer: „Automatisch ergänzen“ unten lädt sie herunter (Netz, einige Sekunden pro Typ).',
-      'Base de tipos vacía: «Completar automáticamente» abajo la descarga (red, unos segundos por tipo).'));
+      'Base des types vide : « Compléter automatiquement » la télécharge (réseau, quelques secondes par type).',
+      'Type database empty: “Complete automatically” downloads it (network, a few seconds per type).',
+      'Typendatenbank leer: „Automatisch ergänzen“ lädt sie herunter (Netz, einige Sekunden pro Typ).',
+      'Base de tipos vacía: «Completar automáticamente» la descarga (red, unos segundos por tipo).'), completeButton);
     else if (todo) html = line('todo', K.tf([
-      '{n} type(s) à compléter ({f} sans fiche OACI, {p} sans performances) : « Compléter automatiquement » ci-dessous.',
-      '{n} type(s) to complete ({f} without ICAO record, {p} without performance): “Complete automatically” below.',
-      '{n} Typ(en) zu ergänzen ({f} ohne ICAO-Datensatz, {p} ohne Leistungen): unten „Automatisch ergänzen“.',
-      '{n} tipo(s) por completar ({f} sin ficha OACI, {p} sin rendimientos): «Completar automáticamente» abajo.'
+      '{n} type(s) à compléter : {l} ({f} sans fiche OACI, {p} sans performances EUROCONTROL).',
+      '{n} type(s) to complete: {l} ({f} without ICAO record, {p} without EUROCONTROL performance).',
+      '{n} Typ(en) zu ergänzen: {l} ({f} ohne ICAO-Datensatz, {p} ohne EUROCONTROL-Leistungen).',
+      '{n} tipo(s) por completar: {l} ({f} sin ficha OACI, {p} sin rendimientos EUROCONTROL).'
     ], {
       n: todo,
+      l: todoList.join(', '),
       f: nFiche,
       p: nPerf
-    }));
-    else html = line('ok', K.tf(['{n} types de la flotte et des missions connus, {p} avec performances : à jour.',
-      '{n} fleet and mission types known, {p} with performance: up to date.',
-      '{n} Typen der Flotte und der Missionen bekannt, {p} mit Leistungen: aktuell.',
-      '{n} tipos de la flota y de las misiones conocidos, {p} con rendimientos: al día.'
+    }) + (nEstTodo ? ' ' + K.tf(['Carburant : consommation estimée par type ou classe OACI pour {e} d’entre eux en attendant.',
+      'Fuel: consumption estimated by type or ICAO class for {e} of them meanwhile.',
+      'Kraftstoff: Verbrauch für {e} davon einstweilen nach Typ oder ICAO-Klasse geschätzt.',
+      'Combustible: consumo estimado por tipo o clase OACI para {e} de ellos mientras tanto.'
+    ], {
+      e: nEstTodo
+    }) : ''), completeButton);
+    else html = line('ok', K.tf(['{n} types de la flotte et des missions connus, {p} avec performances EUROCONTROL : à jour.',
+      '{n} fleet and mission types known, {p} with EUROCONTROL performance: up to date.',
+      '{n} Typen der Flotte und der Missionen bekannt, {p} mit EUROCONTROL-Leistungen: aktuell.',
+      '{n} tipos de la flota y de las misiones conocidos, {p} con rendimientos EUROCONTROL: al día.'
     ], {
       n: rows.length,
       p: withPerf
-    })) + (absent ? line('opt', absentNote(absent)) : '');
+    })) + (absent ? line('opt', absentNote(absent, absentList.join(', '), nEst)) : '');
+    // bilan de la passe qui vient de se terminer (la page s'est rechargée pour lire la base) : montré une fois
+    let doneNote = '';
+    try {
+      doneNote = sessionStorage.getItem('plTypesDone') || '';
+      if (doneNote) sessionStorage.removeItem('plTypesDone');
+    } catch {}
+    if (doneNote) html = line('ok', doneNote) + html;
     setHtml($('plTypesLine'), html);
     S.types = T;
     checklist();
@@ -1713,6 +1782,14 @@
     /** Relit l'état ; reprogramme tant que la passe tourne ou qu'elle n'a pas encore démarré. */
     const tick = async () => {
       const T = await typesState();
+      // passe terminée : la base écrite par le lanceur n'est lue qu'au chargement — la page se recharge (bilan gardé,
+      // étape conservée par l'ancre) ; « Tout installer » recharge lui-même à la fin de sa chaîne
+      if (T.fresh && !allBusy) {
+        try {
+          sessionStorage.setItem('plTypesDone', T.doneText || '');
+        } catch {}
+        return location.reload();
+      }
       if (T.running || Date.now() < until) typesTimer = setTimeout(tick, 3000);
     };
     typesTimer = setTimeout(tick, 1500);
@@ -1863,6 +1940,7 @@
     allBusy = true;
     allButton();
     const done = [];
+    let reload = false; // base des types écrite par le lanceur : relue au rechargement, à la fin de la chaîne
     try {
       const auto = document.querySelector('#types [data-ac="auto"]');
       if (auto && !auto.disabled) {
@@ -1872,7 +1950,13 @@
           '1/2 — Tipos de aeronave: descargando fichas y rendimientos…'));
         auto.click();
         await typesDone();
-        await typesState();
+        const T = await typesState();
+        if (T.fresh) {
+          reload = true;
+          try {
+            sessionStorage.setItem('plTypesDone', T.doneText || '');
+          } catch {}
+        }
         done.push(L('types d’aéronefs', 'aircraft types', 'Luftfahrzeugtypen', 'tipos de aeronave'));
       }
       const apply = document.querySelector('#sia [data-sel-apply]');
@@ -1914,6 +1998,12 @@
     } finally {
       allBusy = false;
       allButton();
+      if (reload) {
+        try {
+          sessionStorage.setItem('plAllMsg', $('plAllMsg').textContent);
+        } catch {}
+        location.reload();
+      }
     }
   }
   on('click', 'plAll', installAll);
@@ -1995,6 +2085,15 @@
       return;
     }
     if (e.target.closest?.('[data-pl-reload]')) return location.reload();
+    // « Compléter automatiquement » de la ligne d'état : le bouton du bloc (mêmes codes), puis suivi de la passe
+    if (e.target.closest?.('[data-pl-complete]')) {
+      const b = document.querySelector('#types [data-ac="auto"]');
+      if (b && !b.disabled) {
+        b.click();
+        watchTypes();
+      }
+      return;
+    }
     if (e.target.closest?.('#types [data-ac]')) watchTypes();
     if (e.target.closest?.('#sia button, #types button') && !allBusy) afterTasks();
   });
@@ -2044,17 +2143,25 @@
   async function start() {
     await wait('FileAccess');
     checklist();
+    // « Tout installer » a rechargé la page à la fin de sa chaîne : son bilan est repris
+    try {
+      const m = sessionStorage.getItem('plAllMsg');
+      if (m) {
+        sessionStorage.removeItem('plAllMsg');
+        msg('plAllMsg', m, 'ok');
+      }
+    } catch {}
     companyLoad();
     profileLoad();
     await Promise.all([foldersState(), dataState(), repoState(), ivaoKeyState()]);
     centreState();
     checklist();
-    // ouverte par le lanceur (sans ?force) : l'accueil seulement si « Terminer » vaut pour cette installation et que tout
-    // l'obligatoire « pour tous » est réglé
+    // ouverte par le lanceur (sans ?force) : l'accueil dès que « Terminer » vaut pour cette installation et que le
+    // bloquant (dossier, données) est réglé — le reste est rappelé par l'accueil, sans ramener ici à chaque lancement
     const fin = read(DONE),
       st = read(STATE);
-    if (fin.at && !new URLSearchParams(location.search).has('force') && (fin.path || '') === await installPath() && st.todoSuite ===
-      0) {
+    if (fin.at && !new URLSearchParams(location.search).has('force') && (fin.path || '') === await installPath() && (st.todoCore ??
+        st.todoSuite) === 0) {
       location.replace('../../index.html');
       return;
     }
