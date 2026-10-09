@@ -586,7 +586,7 @@ Bloc du niveau 2 : vols prévus, durée cumulée, faits, non faits, annulés, AA
 <!-- page: apps/settings/centre.html -->
 
 Cette page regroupe les réglages courants du Centre : accès, utilisateurs, catégories de disponibilité, planning ODV et envoi des comptes rendus. Elle s'adresse aux administrateurs du Centre.
-Pour l'ouvrir : barre latérale › « Réglages », puis l'onglet « Centre ». Les rubriques s'affichent dans le menu latéral, groupe « Centre (CPCO) ».
+Pour l'ouvrir : barre latérale › « Paramètres », puis l'onglet « Centre ». Les rubriques s'affichent dans le menu latéral, groupe « Centre (CPCO) ».
 Tant que le Centre est verrouillé, seule la rubrique d'accès est visible. En mode production, la page demande en plus une connexion `admin_centre`.
 
 ### Accès au Centre et réglages
@@ -694,7 +694,7 @@ Détails : [Manuel d'exploitation](MANUEL_EXPLOITATION.md), § 10.
 <!-- page: apps/settings/installation.html -->
 
 Cette page regroupe les réglages faits une seule fois : dossiers locaux, sources externes, compagnie virtuelle, données aéronautiques et types d'aéronefs.
-Pour l'ouvrir : barre latérale › « Réglages », puis l'onglet « Installation ». Cet onglet apparaît à partir du niveau d'utilisation Planification (2) ; une adresse directe vers l'une de ses rubriques l'ouvre à tout niveau.
+Pour l'ouvrir : barre latérale › « Paramètres », puis l'onglet « Installation ». Cet onglet apparaît à partir du niveau d'utilisation Planification (2) ; une adresse directe vers l'une de ses rubriques l'ouvre à tout niveau.
 Le menu latéral comporte un seul groupe, « Dossiers et sources » : « Sources et dossiers » (ouverte d'emblée), « Données aéronautiques » et « Types d’aéronefs ».
 Le premier lancement a son propre onglet, « Premier lancement », décrit dans le [manuel utilisateur](MANUEL_UTILISATEUR.md#premier-lancement) ; « Nettoyer et recommencer… » se trouve en bas de cette page-là. Voir aussi [Installation](INSTALL.md), § 1.
 Ces rubriques sont attribuées à la page par `config/repository_tree` (clé `settings.sections` : `sources` → installation ; `sia` et `types` → installation,maintenance, c'est-à-dire sur les deux pages : la mise en place ici, la mise à jour dans Maintenance, mêmes blocs). Toutes les autres rubriques de maintenance s'ouvrent sur la page Maintenance.
@@ -723,7 +723,7 @@ Cette rubrique est le seul endroit où régler les dossiers locaux et les adress
 <!-- page: apps/settings/maintenance.html -->
 
 Cette page sert à l'entretien de la suite : mises à jour, versions, données SIA, caches, sauvegardes et bases de référence.
-Pour l'ouvrir : barre latérale › « Réglages », puis l'onglet « Maintenance ». La page s'ouvre sur « Mises à jour ». Cet onglet n'apparaît qu'au niveau d'utilisation Expert (4) ; une adresse directe vers l'une de ses rubriques l'ouvre à tout niveau.
+Pour l'ouvrir : barre latérale › « Paramètres », puis l'onglet « Maintenance ». La page s'ouvre sur « Mises à jour ». Cet onglet n'apparaît qu'au niveau d'utilisation Expert (4) ; une adresse directe vers l'une de ses rubriques l'ouvre à tout niveau.
 Le menu latéral comporte trois parties :
 - le groupe « Maintenance » : Mises à jour, Versions et synchros, Références et dépendances, Données aéronautiques, Types d'aéronefs ;
 - le groupe « Stockage et sauvegarde » : Caches, Espace disque, Sauvegarde totale, Journal ;

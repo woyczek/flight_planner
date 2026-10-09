@@ -31,7 +31,7 @@ Ce qu'elle montre dépend de votre **niveau d'utilisation** (Mon profil › « N
 | « Outils » | Cartes de vol, carburant, atterrissages, analyse des missions (outils cochés dans Mon profil, tous au niveau 4) | 1 à 4 |
 
 - Le niveau range l'interface, il ne donne aucun droit : les pages du Centre (Missions, Planning ODV, modification du Tableau) demandent toujours le Centre activé.
-- En bas de la colonne : « Réglages » (Mon profil, Apparence, Centre, Installation, Maintenance, Premier lancement, en onglets) et **« Aide »**. Ces deux entrées restent fixées en bas de l'écran : seule la liste du haut défile quand il y a trop d'icônes (fenêtre de moins de 460 px de haut : toute la barre défile).
+- En bas de la colonne : « Paramètres » (Mon profil, Apparence, Centre, Installation, Maintenance, Premier lancement, en onglets) et **« Aide »**. Ces deux entrées restent fixées en bas de l'écran : seule la liste du haut défile quand il y a trop d'icônes (fenêtre de moins de 460 px de haut : toute la barre défile).
 - « Aide » ouvre la documentation dans une fenêtre, au-dessus de la page en cours, directement au chapitre de cette page. La fenêtre se ferme par ✕, Échap ou un clic à côté ; rouverte, elle reprend là où vous en étiez. « ↗ » l'ouvre en page entière (Ctrl-clic sur « Aide » : dans un nouvel onglet). Elle remplace l'ancienne entrée « Menu ». Elle fonctionne aussi quand la suite est ouverte depuis le disque, sans le lanceur : les documents sont intégrés à la page.
 - Le logo en haut de la colonne ouvre le site de la compagnie virtuelle dans un nouvel onglet.
 - La barre est masquée sur un écran étroit (moins de 760 px) et à l'impression. On peut la masquer ou l'afficher toujours : Apparence › Icônes › « Barre latérale ».
@@ -76,7 +76,7 @@ Certaines entrées de la barre latérale regroupent plusieurs pages sœurs, pré
 | Entrée | Onglets |
 |---|---|
 | « Mes missions » | « Mes missions », « Mes disponibilités » |
-| « Réglages » | « Mon profil », « Apparence », « Premier lancement » (dès le niveau 1) ; « Centre », « Installation » (niveau 2) ; « Maintenance » (niveau 4) |
+| « Paramètres » | « Mon profil », « Apparence », « Premier lancement » (dès le niveau 1) ; « Centre », « Installation » (niveau 2) ; « Maintenance » (niveau 4) |
 | « Missions » (Centre) | « Générateur de mission », « Studio cartographique » |
 
 Un clic sur un onglet ouvre la page correspondante. Un clic avec Ctrl (ou Maj) l'ouvre dans un nouvel onglet du navigateur. Les onglets suivent le niveau d'utilisation (Mon profil › « Niveau d'utilisation ») ; une adresse directe vers une rubrique l'ouvre toujours.
