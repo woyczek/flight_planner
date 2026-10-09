@@ -10,6 +10,8 @@
 //     les autres onglets sont prévenus (BroadcastChannel « defa-data ») et la page reçoit « mission-index-change ».
 (() => {
   'use strict';
+  // adresse de ce script (shared/data_index.js) : racine de la suite et lecteur YAML trouvés depuis elle
+  const SELF = document.currentScript?.src || '';
   if (window.DataIndex) return;
   const NAME = 'defaIndex',
     VERSION = 2; // 2 : index « mission » des CR
@@ -205,6 +207,37 @@
       list = await read();
       return true;
     }
+    /** Première ouverture (index et ancienne clé vides) : registre servi par le lanceur (data/missions/
+     *  mission_registry.yaml) repris — sinon chaque page affichait « aucune mission » tant que le dossier « Missions »
+     *  n'avait pas été relu, alors que le registre était plein. true si repris. */
+    async function adoptServed() {
+      if (fallback || list.length || !SELF || !/^https?:$/.test(location.protocol)) return false;
+      try {
+        const r = await fetch(new URL('../data/missions/mission_registry.yaml', SELF), {
+          cache: 'no-store'
+        });
+        if (!r.ok) return false;
+        const text = await r.text();
+        // lecteur YAML chargé à la demande (pages qui ne l'ont pas)
+        if (!window.jsyaml) await new Promise(ok => {
+          const sc = document.createElement('script');
+          sc.src = new URL('mission_core/vendor/js-yaml.min.js', SELF).href;
+          sc.onload = sc.onerror = ok;
+          document.head.append(sc);
+        });
+        const doc = window.jsyaml?.load(text),
+          missions = Array.isArray(doc?.missions) ? doc.missions : [];
+        if (!missions.length || list.length) return false;
+        saved = new Map();
+        await save(missions, String(doc.updatedAt || new Date().toISOString()), {
+          quiet: true
+        });
+        list = await read();
+        return true;
+      } catch {
+        return false; // pas de lanceur, fichier absent ou illisible : registre vide, comme avant
+      }
+    }
     // copie de compatibilité sous l'ancienne clé, tant qu'elle reste petite : une version antérieure de la suite (autre
     // branche, autre onglet pas encore rechargé) voit le même registre ; au-delà, retirée (quota du stockage)
     const MIRROR_MAX = 2e6;
@@ -233,6 +266,7 @@
       try {
         list = await read();
         await adoptLegacy();
+        await adoptServed();
       } catch (e) {
         // sans IndexedDB (navigation privée stricte…) : ancienne copie du navigateur, en lecture et écriture
         console.warn('defaIndex indisponible, registre gardé dans le stockage du navigateur :', e?.message || e);

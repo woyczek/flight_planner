@@ -16,6 +16,7 @@ Les évolutions et la dette technique n'y figurent pas (CHANGELOG, `docs/techniq
 
 | Signalé | Zone | Bug | Cause | Correction |
 |---|---|---|---|---|
+| 09/10 | Premier démarrage (registre, Maintenance…) | « 0 / aucune mission » alors que le registre est plein | Index des missions du navigateur rempli seulement par la relecture du dossier « Missions » | Index vide : registre servi (`data/missions/mission_registry.yaml`) repris (`data_index.js`) |
 | 09/10 | Types d'aéronefs (missions d'essai) | Codes OACI « manquants » : « MIR2 Mirage 2000B », « A400M Atlas » | Nom de la mission (code + nom, ou nom seul) comparé tel quel aux codes ; alias H225M absent | Nom ramené à son code (`alias`, `maintenance_page.js`) ; alias H225M / EC725 / Caracal → EC25 |
 | 09/10 | Studio, Cartes de vol | Modification du profil de carte : plus de rafraîchissement automatique de l'aperçu | Pas un retrait voulu : en 4.2.0 (4285e9f6), « Réglages du profil » a été déplacé sous l'aperçu du bloc Route, hors de `#profileEditor` dont l'écouteur `change` relançait l'aperçu | Écoute au niveau du document, filtrée sur les deux conteneurs (`map_parser.html`, `map_planner.html` regénéré) |
 | 09/10 | Données aéronautiques (DIRCAM) | Après l'import de la MILAIP ENR 5.7, le XML n'était pas enregistré sans un clic de plus | Écriture réservée au bouton « Écrire miam-enr-5-7-tracks.xml » | Écriture d'office après l'import, bouton gardé seulement en cas d'échec (`maintenance_page.js`) |

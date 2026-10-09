@@ -12,6 +12,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Corrigé
 
+- **Premier démarrage : « aucune mission » alors que le registre est plein** : le registre des missions du navigateur
+  (index IndexedDB) n'était rempli qu'en relisant le dossier « Missions » ; seul le Tableau lisait le registre servi.
+  À la première ouverture (index vide), le registre servi par le lanceur (`data/missions/mission_registry.yaml`) est
+  repris pour toutes les pages (`shared/data_index.js`).
 - **Types d'aéronefs : types des missions comptés « inconnus » de la base OACI** (« MIR2 Mirage 2000B », « A400M Atlas
   », « A330 MRTT Phénix »…) : le nom écrit dans la mission était comparé tel quel aux codes. Il est ramené à son code
   (texte entier, puis chacun de ses mots, code de la base ou alias : MIR2, A4M, A332…). Alias ajoutés : H225M, EC725
