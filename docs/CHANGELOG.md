@@ -13,7 +13,7 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 ### Corrigé
 
 - **Types d'aéronefs : noms des missions sans code OACI** (« A330 MRTT Phénix », « C-130J-30 Super Hercules », « H225M
-  Caracal », « Rafale B — Patrouille de 2 ») affichés « fiche OACI manquante » : résolveur commun
+  Caracal », « Rafale B — Patrouille de 2 », « A330 ») affichés « fiche OACI manquante » ou classés « autre » : résolveur commun
   `AircraftCatalog.codeOf` (désignateur, alias, noms d'usage militaires des missions, nom propre du modèle quand il
   désigne un seul type) : A332, C30J, EC25, RFAL ; utilisé par Paramètres › Maintenance › Types d'aéronefs.
 - **Contraste (rapport `docs/technique/CONTRASTE_2026-10-09.md`), Tableau et tableaux triables** : pastilles de

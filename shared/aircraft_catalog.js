@@ -147,6 +147,7 @@
     E3F: 'E3CF',
     AWACS: 'E3CF',
     MRTT: 'A332',
+    A330: 'A332', // famille sans désignateur : l'A330 des missions est le MRTT Phénix, un A330-200
     A330MRTT: 'A332',
     PHENIX: 'A332',
     C130J: 'C30J',
