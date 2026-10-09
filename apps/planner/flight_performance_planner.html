@@ -248,10 +248,58 @@
   }
   .aircraft-menu {
     left: 0;
-    min-width: 290px;
-    max-width: 420px;
+    width: min(680px, 94vw);
     max-height: 65vh;
     overflow: auto
+  }
+  .aircraft-row {
+    display: grid;
+    grid-template-columns: 30px minmax(8em, 1.6fr) minmax(3.5em, .5fr) minmax(7em, 1fr) minmax(6em, .9fr);
+    align-items: center;
+    gap: 8px;
+    padding: 6px 8px;
+    border-radius: 5px;
+    color: #eef3f7;
+    cursor: pointer;
+    font-size: 13px
+  }
+  .aircraft-row>span {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap
+  }
+  .aircraft-row:hover,
+  .aircraft-row:focus-visible,
+  .aircraft-row.active {
+    background: #202735;
+    outline: none
+  }
+  .aircraft-row-head {
+    cursor: default;
+    color: var(--muted);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    padding-top: 2px;
+    padding-bottom: 2px
+  }
+  .aircraft-row-head:hover {
+    background: transparent
+  }
+  .aircraft-row .ac-type,
+  .aircraft-row .ac-src {
+    color: var(--muted);
+    font-size: 12px
+  }
+  .aircraft-row .ac-state {
+    font-size: 12px
+  }
+  .aircraft-row .ac-state.warn {
+    color: var(--warn, #e0a030)
+  }
+  .aircraft-row .ac-state.none {
+    color: var(--muted)
   }
   .lang-menu[hidden],
   .prefs-menu[hidden],
@@ -259,8 +307,7 @@
     display: none
   }
   .lang-item,
-  .prefs-item,
-  .aircraft-item {
+  .prefs-item {
     width: 100%;
     display: flex;
     align-items: center;
@@ -273,9 +320,7 @@
     color: #eef3f7
   }
   .lang-item:hover,
-  .prefs-item:hover,
-  .aircraft-item:hover,
-  .aircraft-item.active {
+  .prefs-item:hover {
     background: #202735
   }
   .lang-item svg {
@@ -333,12 +378,6 @@
   }
   .ac-icon.unknown {
     opacity: .58
-  }
-  .aircraft-item .ac-meta {
-    color: var(--muted);
-    font-size: 11px;
-    margin-left: auto;
-    white-space: nowrap
   }
   .aircraft-group {
     margin: 7px 7px 3px;
@@ -413,7 +452,7 @@
     overflow: auto
   }
   #curveEditor table {
-    min-width: 900px;
+    min-width: 980px;
     table-layout: fixed
   }
   #curveEditor th:nth-last-child(2),
@@ -610,32 +649,13 @@
     flex: 1;
     min-width: 0
   }
-  .chart-wrap.no-sliders .vslider {
-    display: none
+  /* bascule « par altitude ↔ par régime » du graphe de montée (shared/flight_perf_view.js, mountClimbX) */
+  .climb-x-row {
+    margin: -2px 0 6px
   }
-  .vslider {
-    width: 40px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 2px;
-    font-size: 11px;
-    color: var(--muted)
-  }
-  .vslider output {
-    color: #eef3f7;
-    font-variant-numeric: tabular-nums;
-    height: 16px
-  }
-  .vslider input.vr {
-    writing-mode: vertical-lr;
-    direction: rtl;
-    width: 22px;
-    padding: 0;
-    margin: 0;
-    accent-color: var(--fc-man, #c792ea);
-    background: transparent;
-    border: 0
+  .climb-x-row .repo-seg {
+    padding: 4px 10px;
+    font-size: 12px
   }
   .side-panel {
     background: var(--card);
@@ -914,7 +934,8 @@
   .fp-view-row {
     margin-top: 8px
   }
-  /* montée choisie (shared/flight_perf_view.js, syncClimbCtl) : curseur, champ chiffré et unité par ligne ; lecture */
+  /* montée choisie (shared/flight_perf_view.js, syncClimbCtl, vue détaillée) : trois champs du framework (.field) —
+     case « fixé » et libellé au-dessus, curseur standard, valeur et état dessous ; le champ calculé est grisé */
   .climb-ctl {
     margin-top: 12px
   }
@@ -923,40 +944,172 @@
     font-size: 12px;
     margin-bottom: 4px
   }
-  .climb-ctl .climb-row {
+  .climb-ctl .climb-fields {
     display: grid;
-    grid-template-columns: minmax(8em, auto) minmax(0, 1fr) 6.5em auto;
-    gap: 8px;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px
+  }
+  .climb-ctl .climb-field {
+    min-width: 0
+  }
+  .climb-ctl .climb-head {
+    display: flex;
     align-items: center;
-    margin: 4px 0
-  }
-  .climb-ctl .climb-row[hidden] {
-    display: none
-  }
-  .climb-ctl .climb-row label {
+    gap: 6px;
+    flex-wrap: wrap;
     font-size: 13px
   }
-  .climb-ctl .climb-row input[type="range"] {
-    width: 100%;
-    accent-color: var(--repo-accent, var(--accent))
-  }
-  .climb-ctl .climb-unit {
-    font-size: 12px;
+  .climb-ctl .climb-fix {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    margin: 0;
+    font-size: 11px;
     color: var(--muted);
-    white-space: nowrap
+    cursor: pointer
+  }
+  .climb-ctl .climb-fix input {
+    width: auto;
+    margin: 0
+  }
+  .climb-ctl .climb-lab {
+    display: inline;
+    margin: 0;
+    font-size: 13px;
+    color: inherit
+  }
+  .climb-ctl .climb-field input[type="range"] {
+    width: 100%;
+    margin: 4px 0 2px;
+    accent-color: var(--fc-man, var(--repo-accent, var(--accent)))
+  }
+  .climb-ctl .climb-field.is-calc input[type="range"] {
+    opacity: .45;
+    filter: grayscale(1)
+  }
+  .climb-ctl .climb-state {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px 8px;
+    align-items: baseline;
+    min-height: 2.6em
+  }
+  .climb-ctl .climb-val {
+    font-weight: 600;
+    font-variant-numeric: tabular-nums
+  }
+  .climb-ctl .climb-note {
+    font-size: 11.5px;
+    color: var(--muted)
+  }
+  .climb-ctl .climb-field.is-calc .climb-val {
+    color: var(--muted)
   }
   .climb-ctl .climb-read {
     font-size: 12px;
     margin: 4px 0 6px
   }
   @media(max-width:560px) {
-    .climb-ctl .climb-row {
-      grid-template-columns: 1fr 6.5em auto
+    .climb-ctl .climb-fields {
+      grid-template-columns: 1fr
     }
-    .climb-ctl .climb-row input[type="range"] {
-      grid-column: 1/-1;
-      grid-row: 2
-    }
+  }
+  /* consignes de montée (shared/flight_perf_view.js, renderGuide) : objectif par segments, phrase, tableau */
+  .climb-guide {
+    margin-top: 14px;
+    padding-top: 10px;
+    border-top: 1px solid var(--line)
+  }
+  .climb-guide-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 12px;
+    margin-bottom: 8px
+  }
+  .climb-guide-head h3 {
+    margin: 0;
+    font-size: 14px
+  }
+  .climb-guide .repo-seg {
+    padding: 4px 10px;
+    font-size: 12.5px;
+    line-height: 1.2;
+    text-align: center
+  }
+  .climb-guide .repo-seg small {
+    display: block;
+    font-size: 10.5px;
+    font-weight: 400;
+    opacity: .8;
+    white-space: nowrap
+  }
+  .climb-guide .repo-seg small:empty {
+    display: none
+  }
+  .climb-guide .repo-seg:disabled {
+    opacity: .45;
+    cursor: not-allowed
+  }
+  .climb-say {
+    margin: 0 0 8px;
+    line-height: 1.5
+  }
+  .climb-guide-wrap {
+    overflow: auto
+  }
+  .climb-guide-table {
+    width: 100%;
+    font-size: 12.5px;
+    font-variant-numeric: tabular-nums
+  }
+  .climb-guide-table th,
+  .climb-guide-table td {
+    text-align: right;
+    white-space: nowrap
+  }
+  .climb-guide-table th:first-child,
+  .climb-guide-table td:first-child {
+    text-align: left
+  }
+  .climb-guide-foot {
+    font-size: 11.5px;
+    margin: 6px 0 0
+  }
+  /* base de performances (bloc « Profils de performances », niveau 3 et plus) */
+  .perf-profiles-actions {
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 8px
+  }
+  .perf-profiles {
+    overflow: auto
+  }
+  .perf-profiles table {
+    width: 100%;
+    font-size: 12.5px
+  }
+  .perf-profiles td,
+  .perf-profiles th {
+    vertical-align: top
+  }
+  .perf-profiles tr.is-active td {
+    background: color-mix(in srgb, var(--repo-accent, #075ca8) 14%, transparent)
+  }
+  .perf-profiles .pp-name {
+    display: flex;
+    align-items: center;
+    gap: 6px
+  }
+  .perf-profiles .pp-pick {
+    padding: 2px 8px;
+    font-size: 12px
+  }
+  .perf-profiles .pp-missing {
+    color: var(--warn, #e0a030)
+  }
+  .perf-profiles .pp-ok {
+    color: var(--muted)
   }
   /* détail du devis : délestage en gras, phases en retrait (vue détaillée), MTOW dépassée en couleur d'erreur du socle */
   #breakdown .kv-trip {
@@ -1092,34 +1245,6 @@ html:is([data-design="cabinet"], [data-design="flightlog"], [data-design="aqua"]
   stroke-linecap: round;
   filter: drop-shadow(0 1px 1px rgba(0, 0, 0, .55))
 }
-/* curseurs verticaux */
-html[data-skeuo] .vslider input.vr {
-  appearance: none;
-  -webkit-appearance: none;
-  width: 24px;
-  cursor: ns-resize
-}
-html[data-skeuo] .vslider input.vr::-webkit-slider-runnable-track {
-  width: 8px;
-  border-radius: 4px
-}
-html[data-skeuo] .vslider input.vr::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  appearance: none
-}
-html[data-skeuo] .vslider input.vr::-webkit-slider-runnable-track {
-  background: var(--sk-slider-track);
-  box-shadow: var(--sk-slider-track-shadow)
-}
-html[data-skeuo] .vslider input.vr::-webkit-slider-thumb {
-  width: var(--sk-thumb-w);
-  height: var(--sk-thumb-h);
-  margin-left: var(--sk-thumb-x);
-  border-radius: var(--sk-thumb-radius);
-  border: var(--sk-thumb-border);
-  background: var(--sk-thumb-bg);
-  box-shadow: var(--sk-thumb-shadow)
-}
 /* planificateur : bouton « épingler déplié » du bloc Résultat, icône à la taille des autres outils */
 html[data-skeuo] .repo-block-tools .fp-result-pin svg:not(#imp) {
   width: 18px;
@@ -1134,7 +1259,7 @@ html[data-skeuo] .repo-block-tools .fp-result-pin[aria-pressed="true"]:not(#imp)
 </style>
 </head>
 <body>
-<header><div class="header-row"><h1 id="pageTitle" data-no-i18n></h1><span id="source" class="mut"></span><span class="header-spacer"></span><span class="control">Langue <span class="lang-popup"><button id="languageCurrent" class="lang-current" type="button" aria-haspopup="menu" aria-expanded="false"><span id="languageCurrentIcon"></span><span class="caret">▼</span></button><span id="languageMenu" class="lang-menu" role="menu" hidden><button class="lang-item" data-lang="fr">🇫🇷 Français</button><button class="lang-item" data-lang="en">🇬🇧 English</button></span></span></span><span class="prefs-popup"><button id="prefsCurrent" class="prefs-current" type="button" aria-haspopup="menu" aria-expanded="false" title="Préférences">⚙ <span class="caret">▼</span></button><span id="prefsMenu" class="prefs-menu" role="menu" hidden><button id="fuelUnitBtn" class="prefs-item">Affichage : kg</button><button id="prefsEditorBtn" class="prefs-item">Masquer les champs du profil</button></span></span></div><div class="header-row"><span class="control">Avion <button id="airBtn" hidden></button><span class="aircraft-popup"><button id="aircraftCurrent" class="aircraft-current primary" type="button" aria-haspopup="menu" aria-expanded="false"><span id="aircraftCurrentIcon" class="ac-icon"></span><span id="aircraftCurrentText" class="aircraft-current-text">Aucun avion</span><span class="caret">▾</span></button><span id="aircraftMenu" class="aircraft-menu" role="menu" hidden></span></span></span><button id="dirBtn">Dossier performances</button><button id="simBtn" class="primary">Récupérer dernier FPL SimBrief</button></div></header>
+<header><div class="header-row"><h1 id="pageTitle" data-no-i18n></h1><span id="source" class="mut"></span><span class="header-spacer"></span><span class="control">Langue <span class="lang-popup"><button id="languageCurrent" class="lang-current" type="button" aria-haspopup="menu" aria-expanded="false"><span id="languageCurrentIcon"></span><span class="caret">▼</span></button><span id="languageMenu" class="lang-menu" role="menu" hidden><button class="lang-item" data-lang="fr">🇫🇷 Français</button><button class="lang-item" data-lang="en">🇬🇧 English</button></span></span></span><span class="prefs-popup"><button id="prefsCurrent" class="prefs-current" type="button" aria-haspopup="menu" aria-expanded="false" title="Préférences">⚙ <span class="caret">▼</span></button><span id="prefsMenu" class="prefs-menu" role="menu" hidden><button id="fuelUnitBtn" class="prefs-item">Affichage : kg</button><button id="prefsEditorBtn" class="prefs-item">Masquer les champs du profil</button></span></span></div><div class="header-row"><span class="control">Avion <button id="airBtn" hidden></button><span class="aircraft-popup"><button id="aircraftCurrent" class="aircraft-current primary" type="button" aria-haspopup="menu" aria-expanded="false"><span id="aircraftCurrentIcon" class="ac-icon"></span><span id="aircraftCurrentText" class="aircraft-current-text">Aucun avion</span><span class="caret">▾</span></button><span id="aircraftMenu" class="aircraft-menu" role="listbox" hidden></span></span></span><button id="dirBtn">Dossier performances</button><button id="simBtn" class="primary">Récupérer dernier FPL SimBrief</button></div></header>
 <div class="wrap"><div class="grid">
 <section class="card span6" data-block-id="fuel-plan" data-icon="fuel" data-subtitle="Trajet, niveau, vent, météo et réserves du vol."><h2>Devis carburant</h2><div class="field fpl-field"><label>Plan de vol (case 15) <small class="mut">— même plan que les Cartes de vol ; distance, route vraie et niveau en sont déduits</small></label><textarea id="vpRoute" rows="2" placeholder="LFBO N0450F350 DCT TOU UN460 NTS LFRN — ou reprise de l’OFP SimBrief importé en en-tête"></textarea><div class="row" style="margin-top:6px"><button id="fplToMaps" type="button" class="secondary" data-icon="map" data-min-level="4" title="Ouvrir les Cartes de vol avec ce plan de vol (route, profil vertical, cartes)">Cartes de vol</button><span id="fplInfo" class="mut"></span></div><details class="fpl-syntax mut"><summary>Syntaxe du plan de vol</summary>Case 15 du plan de vol OACI (séparée par des espaces) ou liste à virgules. Points : terrains (OACI), balises, points RNAV, points de report VFR (« MM-CV »), « REN300010 » (radiale / distance), coordonnées « 4330N00125E » ou « lat lon » ; voies aériennes entre deux points (« TOU UN460 NTS ») suivies point par point ; « DCT » : direct. Niveaux : « N0450F350 » groupe vitesse / niveau (au départ ou après un point : « NTS/N0440F370 »), « FL105 » ou « 5500 ft » seul : montée ou descente après le point précédent, « /A035 », « /F065 » ou « /3000 » après un point : altitude à atteindre au point, « VFR » : pas de niveau. Le bouton SimBrief de l’en-tête remplit le plan de vol avec le dernier OFP.</details></div><details id="flightParams" class="flight-params"><summary id="flightParamsTitle" data-no-i18n></summary><div class="fields">
 <div class="field"><label>Distance (NM)</label><input id="dist" type="number" value="500"></div>
@@ -1150,10 +1275,10 @@ html[data-skeuo] .repo-block-tools .fp-result-pin[aria-pressed="true"]:not(#imp)
 <div class="field" title="Température mesurée au terrain (METAR) : l’écart ISA en est déduit avec l’altitude du terrain."><label>Température sol (°C)</label><input id="tGround" type="number" step="1" placeholder="15"></div>
 <div class="field" title="Altitude du terrain de la température au sol (ft)."><label>Altitude terrain (ft)</label><input id="elevFt" type="number" step="10" value="0"></div>
 <div class="field" title="Température prévue au niveau de croisière (prévision TEMSI / vents et températures en altitude, OFP) : l’écart ISA en est déduit."><label>Température au niveau (°C)</label><input id="tLevel" type="number" step="1"></div>
-</div></details><div class="ff-quick" data-no-i18n><label for="cruiseFF" id="cruiseFFLabel"></label><div class="row ff-quick-row"><input id="cruiseFF" type="number" min="0" step="any" inputmode="decimal"><button id="ffUseEstimate" type="button" class="secondary" hidden></button><button id="ffRemember" type="button" class="secondary" hidden></button></div><div id="ffSource" class="mut ff-source"></div></div><div id="climbCtl" class="climb-ctl" data-no-i18n hidden></div><div style="height:12px"></div><div class="row"><button id="calc" data-icon="chart" class="primary">Calculer</button><span id="windInfo" class="mut" data-no-i18n></span></div><div id="optBlock" data-fp-detail>
+</div></details><div class="ff-quick" data-no-i18n><label for="cruiseFF" id="cruiseFFLabel"></label><div class="row ff-quick-row"><input id="cruiseFF" type="number" min="0" step="any" inputmode="decimal"><button id="ffUseEstimate" type="button" class="secondary" hidden></button><button id="ffRemember" type="button" class="secondary" hidden></button></div><div id="ffSource" class="mut ff-source"></div></div><div id="climbCtl" class="climb-ctl" data-no-i18n data-fp-detail hidden></div><div style="height:12px"></div><div class="row"><button id="calc" data-icon="chart" class="primary">Calculer</button><span id="windInfo" class="mut" data-no-i18n></span></div><div id="climbGuide" class="climb-guide" data-no-i18n hidden></div><div id="optBlock" data-fp-detail>
 <div class="perf-row" id="rowOpt"><h3>Altitude optimale — carburant et vitesse</h3><div id="optEmpty" class="mut">Lance « Calculer » pour tracer les courbes d’altitude et de montée optimales.</div><div class="chart-wrap"><svg id="optChart" class="opt-chart" viewBox="0 0 540 270" hidden></svg></div><ul id="optZones" class="chart-zones" hidden></ul></div>
 <div id="climbBlock" hidden>
-<div class="perf-row" id="rowClimb"><h3>Montée optimale — vario et carburant</h3><div class="chart-wrap"><svg id="climbChart" class="opt-chart" viewBox="0 0 540 230" hidden></svg></div></div>
+<div class="perf-row" id="rowClimb"><h3>Montée optimale — vario et carburant</h3><div class="climb-x-row" data-no-i18n><span id="climbX" class="repo-segs" role="group"></span></div><div class="chart-wrap"><svg id="climbChart" class="opt-chart" viewBox="0 0 540 230" hidden></svg></div></div>
 <div class="perf-row" id="rowSpeed"><h3>Vitesses de montée — Badin et TAS selon l’altitude</h3><div class="chart-wrap"><svg id="climbSpeedChart" class="opt-chart" viewBox="0 0 540 200" hidden></svg></div></div>
 <div class="perf-row" id="rowTas"><h3>TAS selon le niveau — croisière et montée</h3><div class="chart-wrap"><svg id="tasChart" class="opt-chart" viewBox="0 0 540 220" hidden></svg></div><ul id="tasZones" class="chart-zones" hidden></ul></div>
 <div class="perf-row" id="rowCompare"><h3>Comparaison des montées</h3><div id="climbCompare"></div></div>
@@ -1171,6 +1296,8 @@ html[data-skeuo] .repo-block-tools .fp-result-pin[aria-pressed="true"]:not(#imp)
 </aside>
 <aside id="fpInstrCol" class="instr-col" data-fp-detail aria-label="Instruments"><div class="fp-instr-sticky"></div></aside>
 
+<section class="card span12" data-min-level="3" data-block-id="perf-profiles" data-icon="list" data-no-i18n><h2 id="ppTitle">Profils de performances</h2><p id="ppIntro" class="mut"></p><div class="row perf-profiles-actions"><button id="ppImport" type="button" class="secondary" data-icon="upload"><span id="ppImportLbl">Importer…</span></button><button id="ppFolder" type="button" class="secondary" data-icon="folder"><span id="ppFolderLbl">Dossier…</span></button><button id="ppReload" type="button" class="secondary" data-icon="refresh"><span id="ppReloadLbl">Relire</span></button><span id="ppStatus" class="mut"></span></div><div id="perfProfiles" class="perf-profiles"></div></section>
+
 
 <section class="card span6 engine-card" data-min-level="4" data-block-id="engine-performance" data-icon="wrench" data-subtitle="Performances du moteur selon le régime."><h2>Fiche performance moteur</h2><div class="fields">
 <div class="field"><label>RPM / N1</label><input id="rpm" type="number"></div>
@@ -1179,7 +1306,7 @@ html[data-skeuo] .repo-block-tools .fp-result-pin[aria-pressed="true"]:not(#imp)
 <div class="field"><label>&nbsp;</label><button id="rpmCalc">Interpoler</button></div>
 </div><div style="height:12px"></div><div class="row"><div><div class="mut">Débit total</div><div id="ff" class="big">—</div></div><span id="ffnote" class="mut"></span></div></section>
 
-<section class="card span6" data-min-level="4" data-block-id="rpm-table" data-icon="list" data-subtitle="Consommation selon le régime moteur."><h2>Table RPM / puissance → consommation</h2><table id="engineCurveTable"><thead><tr><th>RPM / N1</th><th>Min.</th><th>Nominal</th><th>Max.</th><th>Unité</th><th>Commentaire</th></tr></thead><tbody id="curve"></tbody></table></section>
+<section class="card span6" data-min-level="4" data-block-id="rpm-table" data-icon="list" data-subtitle="Consommation selon le régime moteur."><h2>Table RPM / puissance → consommation</h2><table id="engineCurveTable"><thead><tr><th>RPM / N1</th><th id="curveAltTh" data-no-i18n>Altitude (ft)</th><th>Min.</th><th>Nominal</th><th>Max.</th><th>Unité</th><th>Commentaire</th></tr></thead><tbody id="curve"></tbody></table></section>
 
 <section class="card span6" data-min-level="4" data-block-id="flight-regimes" data-icon="plane" data-subtitle="Montée, croisière et descente de l’appareil choisi."><h2>Profil actif</h2><div id="profile" class="kv"><div>État</div><div>Aucun profil chargé</div></div><div id="defaSheets" class="small" style="margin-top:8px"></div><div style="height:12px"></div>
 <div class="field"><label>SimBrief Airframe Internal ID</label><input id="sbAirframeId" value="878804_1738673287258" placeholder="Internal ID ou URL de partage SimBrief"></div>
@@ -1568,9 +1695,9 @@ function renderProfileEditor() {
         wide = type === "textarea" ? " wide" : "";
       return `<div class="field${wide}"><label>${label}<span>${unit}</span></label><${tag} ${attrs} data-profile-path="${path}" data-profile-type="${type}" data-profile-fuel="${isFuel?1:0}" value="${tag==="input"?escXml(v??""):""}">${tag==="textarea"?escXml(v??""):""}</${tag}></div>`
     };
-  const curveRows = (active.rpmFuelCurve || []).map(p => `<tr><td><input type="number" step="any" data-curve-id="${p._rowId}" data-curve-key="rpm" value="${p.rpm??""}"></td><td><input type="number" step="any" data-curve-id="${p._rowId}" data-curve-key="fuelFlowMin" value="${fuelInput(p.fuelFlowMin??p.fuelFlowPerHour)}"></td><td><input type="number" step="any" data-curve-id="${p._rowId}" data-curve-key="fuelFlowPerHour" value="${fuelInput(p.fuelFlowPerHour)}"></td><td><input type="number" step="any" data-curve-id="${p._rowId}" data-curve-key="fuelFlowMax" value="${fuelInput(p.fuelFlowMax??p.fuelFlowPerHour)}"></td><td><select data-curve-id="${p._rowId}" data-curve-key="phaseLabel"><option value=""></option>${FLIGHT_PHASES.map(x=>`<option value="${x}" ${p.phaseLabel===x?"selected":""}>${x}</option>`).join("")}</select></td><td><textarea rows="2" data-curve-id="${p._rowId}" data-curve-key="comment">${escXml(p.comment??"")}</textarea></td><td><button type="button" class="removeCurve" data-curve-id="${p._rowId}">×</button></td></tr>`).join("");
+  const curveRows = (active.rpmFuelCurve || []).map(p => `<tr><td><input type="number" step="any" data-curve-id="${p._rowId}" data-curve-key="rpm" value="${p.rpm??""}"></td><td><input type="number" step="any" data-curve-id="${p._rowId}" data-curve-key="altFt" value="${p.altFt??""}" placeholder="—"></td><td><input type="number" step="any" data-curve-id="${p._rowId}" data-curve-key="fuelFlowMin" value="${fuelInput(p.fuelFlowMin??p.fuelFlowPerHour)}"></td><td><input type="number" step="any" data-curve-id="${p._rowId}" data-curve-key="fuelFlowPerHour" value="${fuelInput(p.fuelFlowPerHour)}"></td><td><input type="number" step="any" data-curve-id="${p._rowId}" data-curve-key="fuelFlowMax" value="${fuelInput(p.fuelFlowMax??p.fuelFlowPerHour)}"></td><td><select data-curve-id="${p._rowId}" data-curve-key="phaseLabel"><option value=""></option>${FLIGHT_PHASES.map(x=>`<option value="${x}" ${p.phaseLabel===x?"selected":""}>${x}</option>`).join("")}</select></td><td><textarea rows="2" data-curve-id="${p._rowId}" data-curve-key="comment">${escXml(p.comment??"")}</textarea></td><td><button type="button" class="removeCurve" data-curve-id="${p._rowId}">×</button></td></tr>`).join("");
   box.innerHTML = groups.map(g => `<section class="editorGroup${g==="Régime et consommation"?" editorGroupSingle":""}" style="display:block"><h3>${g}</h3><div class="fields">${PROFILE_FIELDS.filter(x=>x[0]===g).map(field).join("")}</div></section>`).join("");
-  curveBox.innerHTML = `<div class="mut">Une plage écrite dans le commentaire, par ex. « 1 000–1 300 kg/h total », remplit automatiquement min., nominal et max. à l’enregistrement.</div><table><thead><tr><th>RPM / N1</th><th>Min.</th><th>Nominal</th><th>Max.</th><th>Régime de vol</th><th>Commentaire</th><th></th></tr></thead><tbody id="curveEditRows">${curveRows}</tbody></table><button type="button" id="addCurvePoint" style="margin-top:8px">Ajouter un point</button>`;
+  curveBox.innerHTML = `<div class="mut">Une plage écrite dans le commentaire, par ex. « 1 000–1 300 kg/h total », remplit automatiquement min., nominal et max. à l’enregistrement.</div><table><thead><tr><th>RPM / N1</th><th data-no-i18n title="${escXml(kt(["Facultative : altitude (ft) à laquelle la consommation est publiée. Avec deux altitudes ou plus, le calcul interpole entre les lignes d’une même altitude ; une ligne sans altitude vaut pour toutes.", "Optional: altitude (ft) at which the fuel flow is published. With two altitudes or more, the calculation interpolates between rows of the same altitude; a row without altitude applies to all.", "Optional: Höhe (ft), für die der Verbrauch angegeben ist. Ab zwei Höhen interpoliert die Berechnung zwischen den Zeilen derselben Höhe; eine Zeile ohne Höhe gilt für alle.", "Opcional: altitud (ft) a la que se publica el consumo. Con dos altitudes o más, el cálculo interpola entre las filas de una misma altitud; una fila sin altitud vale para todas."]))}">${escXml(kt(["Altitude (ft)", "Altitude (ft)", "Höhe (ft)", "Altitud (ft)"]))}</th><th>Min.</th><th>Nominal</th><th>Max.</th><th>Régime de vol</th><th>Commentaire</th><th></th></tr></thead><tbody id="curveEditRows">${curveRows}</tbody></table><button type="button" id="addCurvePoint" style="margin-top:8px">Ajouter un point</button>`;
   curveBox.querySelectorAll(".removeCurve").forEach(b => b.onclick = () => {
     try {
       commitProfileEditor(false);
@@ -1588,6 +1715,7 @@ function renderProfileEditor() {
       active.rpmFuelCurve.push({
         _rowId: crypto.randomUUID(),
         rpm: null,
+        altFt: null,
         fuelFlowMin: null,
         fuelFlowPerHour: null,
         fuelFlowMax: null,
@@ -1664,6 +1792,7 @@ function commitProfileEditor(announce = true) {
     return {
       _rowId: p._rowId,
       rpm: p.rpm,
+      altFt: Number.isFinite(p.altFt) ? p.altFt : null,
       fuelFlowMin: convertFuel(min, fuelUnit(), active.unit),
       fuelFlowPerHour: convertFuel(nom, fuelUnit(), active.unit),
       fuelFlowMax: convertFuel(max, fuelUnit(), active.unit),
@@ -1675,6 +1804,7 @@ function commitProfileEditor(announce = true) {
   normalize(active);
   profileDirty = JSON.stringify(active) !== activeSavedSnapshot;
   renderProfile();
+  renderPerfProfilesSoon();
   if (announce) $("profileEditStatus").textContent = `Modifications en attente. ${curve.length} ligne(s) de cartographie conservée(s), y compris les lignes vides.`;
   window.updateProfileStatus?.()
 }
@@ -1695,12 +1825,13 @@ function fuelConvertedCopy(o, from, to, ok) {
   }
   return o
 }
-/** Fusionne deux tables RPM (t prioritaire) : lignes de s ajoutées si leur RPM est absent de t ; phase et commentaire complétés sinon. */
+/** Fusionne deux tables RPM (t prioritaire) : lignes de s ajoutées si leur RPM (à la même altitude) est absent de t ; phase et commentaire complétés sinon. */
 function mergeCurves(t, s) {
   t = Array.isArray(t) ? t : [];
   s = Array.isArray(s) ? s : [];
-  /** Clé de rapprochement d'une ligne de table RPM : régime au millième, null sans régime. */
-  const key = r => r && r.rpm !== null && r.rpm !== undefined && Number.isFinite(Number(r.rpm)) ? Math.round(Number(r.rpm) * 1000) : null;
+  /** Clé de rapprochement d'une ligne de table RPM : régime au millième et altitude (colonne facultative), null sans régime. */
+  const key = r => r && r.rpm !== null && r.rpm !== undefined && Number.isFinite(Number(r.rpm)) ?
+    `${Math.round(Number(r.rpm) * 1000)}@${r.altFt !== null && r.altFt !== undefined && r.altFt !== "" && Number.isFinite(+r.altFt) ? +r.altFt : ""}` : null;
   const out = [...t];
   for (const r of s) {
     const k = key(r);
@@ -1769,6 +1900,7 @@ function setActive(p, source = "local") {
   syncAircraftPicker();
   updateFuelUnitButton();
   renderProfile();
+  renderPerfProfilesSoon();
   save();
   window.updateProfileStatus?.();
   try {
@@ -1787,8 +1919,9 @@ function clearActive(message = "Aucun profil actif") {
   $("source").textContent = message;
   syncAircraftPicker();
   $("profile").innerHTML = '<div>État</div><div>Aucun profil chargé</div>';
-  $("curve").innerHTML = '<tr><td colspan="6">Aucun profil.</td></tr>';
+  $("curve").innerHTML = '<tr><td colspan="7">Aucun profil.</td></tr>';
   renderProfileEditor();
+  renderPerfProfilesSoon();
   save();
   window.updateProfileStatus?.()
 }
@@ -1819,9 +1952,13 @@ function renderProfile() {
     ["TOD", `${active.tod.gradientFtPerNm||300} ft/NM + ${active.tod.bufferNm||0} NM`]
   ];
   $("profile").innerHTML = vals.map(x => `<div>${x[0]}</div><div>${window.RepositoryKit.esc(x[1])}</div>`).join("");
-  $("curve").innerHTML = (active.rpmFuelCurve || []).sort((a, b) => a.rpm - b.rpm).map(x => `<tr><td>${x.rpm}</td><td>${showFuel(x.fuelFlowMin??x.fuelFlowPerHour)}</td><td>${showFuel(x.fuelFlowPerHour)}</td><td>${showFuel(x.fuelFlowMax??x.fuelFlowPerHour)}</td><td>${fuelUnit()}/h</td><td>${window.RepositoryKit.esc(x.comment||"")}</td></tr>`).join("") ||
-    '<tr><td colspan="6">Pas de courbe RPM dans ce profil.</td></tr>';
+  /** Altitude d'une ligne de cartographie (−1 sans altitude : en tête du tri). */
+  const altOf = x => x.altFt !== null && x.altFt !== undefined && x.altFt !== "" && Number.isFinite(+x.altFt) ? +x.altFt : -1;
+  setText("curveAltTh", kt(["Altitude (ft)", "Altitude (ft)", "Höhe (ft)", "Altitud (ft)"]));
+  $("curve").innerHTML = (active.rpmFuelCurve || []).sort((a, b) => (altOf(a) - altOf(b)) || a.rpm - b.rpm).map(x => `<tr><td>${x.rpm}</td><td>${altOf(x) >= 0 ? fmt(altOf(x), 0) : "—"}</td><td>${showFuel(x.fuelFlowMin??x.fuelFlowPerHour)}</td><td>${showFuel(x.fuelFlowPerHour)}</td><td>${showFuel(x.fuelFlowMax??x.fuelFlowPerHour)}</td><td>${fuelUnit()}/h</td><td>${window.RepositoryKit.esc(x.comment||"")}</td></tr>`).join("") ||
+    '<tr><td colspan="7">Pas de courbe RPM dans ce profil.</td></tr>';
   renderProfileEditor();
+  renderPerfProfilesSoon();
 }
 // ===== Consommation de croisière : saisie du vol, profil, Poll-Schumann, SimBrief, estimation =====
 // Sources, dans l'ordre : saisie du vol (champ « Consommation de croisière », state.quickFF[id] en kg/h, qui
@@ -1930,15 +2067,16 @@ function pollSchumann(code, alt, mach, tasKt) {
     mach: m
   } : null
 }
-/** Consommation de croisière retenue pour le profil actif et son origine. Ordre : saisie du vol (state.quickFF, qui
+/** Consommation de croisière retenue pour un profil (pr : le profil actif par défaut ; la base de performances la
+ *  demande pour chaque type) et son origine. Table RPM lue à l'altitude du plan (colonne Altitude facultative). Ordre : saisie du vol (state.quickFF, qui
  *  remplace le profil pour ce vol), profil enregistré (table RPM au régime de croisière, sinon débit de croisière), puis
  *  source automatique (auto) : Poll-Schumann si le type est couvert (shared/fuel_poll_schumann.js),
  *  SimBrief (≈ si sa précision n'est pas « high »), estimation par type ou classe OACI (≈, shared/fuel_reference.js).
  *  TAS : profil, EUROCONTROL, SimBrief (vitesse, sinon Mach au niveau du plan), estimation, 300 kt.
  *  Sortie : { ff (unité du profil, null si aucune), kind ("entry" | "profile" | "map" | "ps" | "simbrief" | "estimate"
  *  | null), approx, profileFF, auto ({ ff, kind, approx, kg, mass, mach } ou null), est, tas, tasKind }. */
-function cruiseSource() {
-  if (!active) return {
+function cruiseSource(pr = active) {
+  if (!pr) return {
     ff: null,
     kind: null,
     approx: false,
@@ -1948,17 +2086,17 @@ function cruiseSource() {
     tas: null,
     tasKind: null
   };
-  const u = active.unit || "kg",
-    cr = active.cruise || {},
+  const u = pr.unit || "kg",
+    cr = pr.cruise || {},
     rpm = finiteProfileNumber(cr.rpmNominal) ? Number(cr.rpmNominal) : null,
-    map = rpm !== null ? interpRange(active.rpmFuelCurve || [], rpm) : null,
+    map = rpm !== null ? interpRange(pr.rpmFuelCurve || [], rpm, Math.max(0, (+$("fl")?.value || 0) * 100)) : null,
     own = +cr.fuelFlowPerHour > 0 ? +cr.fuelFlowPerHour : null,
     profileFF = map?.nominal > 0 ? map.nominal : own,
-    entryKg = +(state.quickFF || {})[active.id] || 0,
-    apd = apdOf(active),
-    sb = simbriefOf(active),
+    entryKg = +(state.quickFF || {})[pr.id] || 0,
+    apd = apdOf(pr),
+    sb = simbriefOf(pr),
     est = window.FuelReference?.estimate({
-      codes: [active.type, active.icao, active.id],
+      codes: [pr.type, pr.icao, pr.id],
       db: window.AIRCRAFT_DB,
       apd
     }) || null,
@@ -1971,7 +2109,7 @@ function cruiseSource() {
   // Source automatique : Poll-Schumann, SimBrief, estimation
   let auto = null;
   const ps = window.FuelPollSchumann,
-    code = ps?.covers ? icaoCodes(active).find(c => {
+    code = ps?.covers ? icaoCodes(pr).find(c => {
       try {
         return ps.covers(c)
       } catch {
@@ -2197,6 +2335,7 @@ function rememberCruiseFF() {
   profileDirty = JSON.stringify(active) !== activeSavedSnapshot;
   save();
   renderProfile();
+  renderPerfProfilesSoon();
   window.updateProfileStatus?.();
   window.AppFramework.notify(ktf(["Consommation de croisière mémorisée pour {ac} : {v} {u}/h.",
     "Cruise fuel flow remembered for {ac}: {v} {u}/h.", "Reiseverbrauch für {ac} gespeichert: {v} {u}/h.",
@@ -2380,7 +2519,9 @@ window.addEventListener("repository-language-change", () => setTimeout(() => {
   renderFuelSource();
   applyDetailView();
   renderCalcStatus();
-  window.FlightPerfView?.syncClimb?.()
+  window.FlightPerfView?.syncClimb?.();
+  syncCopyJsonBtn();
+  renderPerfProfilesSoon()
 }));
 window.addEventListener("suite-level-change", () => {
   const was = document.body.classList.contains("fp-detail");
@@ -2438,7 +2579,7 @@ function calculate(opts) {
   const mappedPhase = phaseName => {
     let phase = active[phaseName] || {},
       rpm = finiteProfileNumber(phase.rpmNominal) ? Number(phase.rpmNominal) : null,
-      map = rpm !== null ? interpRange(active.rpmFuelCurve || [], rpm) : null;
+      map = rpm !== null ? interpRange(active.rpmFuelCurve || [], rpm, phaseName === "cruise" ? alt : alt / 2) : null;
     return {
       rpm,
       map,
@@ -2456,7 +2597,7 @@ function calculate(opts) {
         return null
       }
     })(),
-    law0 = perf && mq ? perf.manualLaw(mq.ias, mq.full ? 0 : mq.vs) : null,
+    law0 = perf && mq ? (mq.law ? mq.law(perf) : perf.manualLaw(mq.ias, mq.full ? 0 : mq.vs)) : null,
     lawClimb = law0 && alt > 0 ? perf.climbTo(Math.min(alt, perf.ceiling), {
       speed: law0
     }) : null,
@@ -2547,7 +2688,13 @@ function calculate(opts) {
     }
   }
   setHtml("breakdown", breakdown);
-  setHtml("quoteBasis", typo(`${tl("Niveau","Level","Flughöhe","Nivel")} ${flTxt(alt)}${pinned!=null?` 📌 (${tl("plan","plan","Plan","plan")} ${flTxt(FL*100)})`:""} · ${law?`${tl("montée choisie","chosen climb","gewählter Steigflug","ascenso elegido")} : ${mq.ias} kt, ${mq.full?tl("plein gaz","full throttle","Vollgas","gases a fondo"):`${fmt(mq.vs,0)} ft/min`} (${tl("curseurs","sliders","Regler","cursores")})`:tl("montée du profil","profile climb","Steigflug des Profils","ascenso del perfil")}${law0&&!law?` — ⚠ ${tl("la montée choisie n’atteint pas ce niveau : montée du profil retenue","the chosen climb does not reach this level: profile climb used","der gewählte Steigflug erreicht diese Höhe nicht: Steigflug des Profils verwendet","el ascenso elegido no alcanza este nivel: se usa el ascenso del perfil")}`:""}${pClimb?"":` (${tl("valeurs du profil","profile values","Profilwerte","valores del perfil")})`}`));
+  setHtml("quoteBasis", typo(`${tl("Niveau","Level","Flughöhe","Nivel")} ${flTxt(alt)}${pinned!=null?` 📌 (${tl("plan","plan","Plan","plan")} ${flTxt(FL*100)})`:""} · ${law?`${tl("montée choisie","chosen climb","gewählter Steigflug","ascenso elegido")} (${tl("curseurs","sliders","Regler","cursores")})`:tl("montée du profil","profile climb","Steigflug des Profils","ascenso del perfil")}${law0&&!law?` — ⚠ ${tl("la montée choisie n’atteint pas ce niveau : montée du profil retenue","the chosen climb does not reach this level: profile climb used","der gewählte Steigflug erreicht diese Höhe nicht: Steigflug des Profils verwendet","el ascenso elegido no alcanza este nivel: se usa el ascenso del perfil")}`:""}${pClimb?"":` (${tl("valeurs du profil","profile values","Profilwerte","valores del perfil")})`}`));
+  {
+    // précision de la montée choisie (badin, vario ou « plein gaz ») en infobulle : la ligne de base garde sa longueur
+    // (« plein gaz » s'affiche sous le curseur de vario)
+    const tip = law && mq?.text ? typo(`${tl("Montée choisie","Chosen climb","Gewählter Steigflug","Ascenso elegido")} : ${mq.text}`) : "";
+    if ($("quoteBasis").title !== tip) $("quoteBasis").title = tip
+  }
   // Ligne d'état et champ de consommation : ce qui a été calculé, avec quoi.
   lastCalc = {
     at: new Date(),
@@ -2803,8 +2950,11 @@ function parseRpmFuelCurve(raw, targetUnit = "kg") {
   }
   return out.sort((a, b) => a.rpm - b.rpm)
 }
-/** Plage de débit { min, nominal, max } interpolée dans une table RPM pour un régime ; null sans table ou sans régime. */
-function interpRange(curve, rpm) {
+/** Plage de débit { min, nominal, max } interpolée dans une table RPM pour un régime ; null sans table ou sans régime.
+ *  h (ft, facultatif) : table ramenée à cette altitude d'abord (colonne Altitude : FlightPerfModel.mapAt ; sans altitudes
+ *  dans la table, inchangée). */
+function interpRange(curve, rpm, h) {
+  if (Number.isFinite(h) && window.FlightPerfModel?.mapAt) curve = FlightPerfModel.mapAt(curve, h);
   let c = [...curve].filter(p => Number.isFinite(p.rpm) && [p.fuelFlowMin, p.fuelFlowPerHour, p.fuelFlowMax].some(Number.isFinite)).sort((a,
       b) => a.rpm - b.rpm),
     value = (p, k, fallback) => Number.isFinite(p[k]) ? p[k] : p[fallback];
@@ -2835,7 +2985,7 @@ function interpRange(curve, rpm) {
 $("rpmCalc").onclick = () => {
   if (!active) return;
   let rpm = +$("rpm").value,
-    v = interpRange(active.rpmFuelCurve || [], rpm);
+    v = interpRange(active.rpmFuelCurve || [], rpm, +$("alt").value);
   window.engineInterpolation = v ? {
     rpm,
     range: v
@@ -2848,6 +2998,7 @@ $("rpmCalc").onclick = () => {
 $("fuelUnitBtn").onclick = () => {
   state.displayFuelUnit = fuelUnit() === "kg" ? "lb" : "kg";
   updateFuelUnitButton();
+  renderPerfProfilesSoon();
   if (active) {
     renderProfile();
     calculate()
@@ -2962,6 +3113,11 @@ function parsePerformanceCsv(text, name) {
 /** Profils d'un JSON : base exportée (schema flight-performance-db/v1) ou profil unique. */
 function profilesFromJson(obj, name) {
   if (obj?.schema === "flight-performance-db/v1" && Array.isArray(obj.profiles)) return obj.profiles.map(p => normalize(p, name));
+  if (obj && typeof obj === "object" && !obj.source && !obj.lnmSource && !obj.simbrief && !obj.simbriefSnapshot) obj.source = {
+    format: "JSON",
+    file: name,
+    importedAt: new Date().toISOString()
+  };
   return [normalize(obj, name)]
 }
 /** Nature d'un JSON importé (base de profils, OFP SimBrief, profil, générique), pour l'affichage. */
@@ -2984,6 +3140,45 @@ function showJson(obj, name = "JSON", kind = null) {
     $("jsonViewer").textContent = String(obj);
     $("jsonMeta").textContent = `${name} · affichage JSON impossible : ${e.message}`
   }
+  syncCopyJsonBtn()
+}
+/** Bouton « Copier JSON » : grisé (infobulle explicative) tant qu'aucun JSON n'est chargé ; écrit seulement ce qui change. */
+function syncCopyJsonBtn() {
+  const b = $("copyJsonBtn"),
+    has = !!window.__lastImportedJson,
+    tip = has ? kt(["Copier le JSON affiché dans le presse-papiers.", "Copy the displayed JSON to the clipboard.",
+      "Angezeigtes JSON in die Zwischenablage kopieren.", "Copiar el JSON mostrado al portapapeles."
+    ]) : kt(["Rien à copier : importer d’abord un JSON ou un OFP SimBrief (bloc « Profil actif » ou bouton SimBrief de l’en-tête).",
+      "Nothing to copy: first import a JSON or a SimBrief OFP (“Active profile” block or SimBrief button in the header).",
+      "Nichts zu kopieren: zuerst ein JSON oder ein SimBrief-OFP importieren (Block „Aktives Profil“ oder SimBrief-Schaltfläche der Kopfzeile).",
+      "Nada que copiar: importar primero un JSON o un OFP de SimBrief (bloque «Perfil activo» o botón SimBrief de la cabecera)."
+    ]);
+  if (b.disabled !== !has) b.disabled = !has;
+  if (b.title !== tip) b.title = tip
+}
+/** Copie un texte dans le presse-papiers : API du navigateur en contexte sécurisé (https, localhost), sinon repli par
+ *  sélection d'une zone de texte invisible et execCommand("copy"). Sortie : vrai si la copie a eu lieu. */
+async function copyText(txt) {
+  if (navigator.clipboard && window.isSecureContext) try {
+    await navigator.clipboard.writeText(txt);
+    return true
+  } catch {
+    /* refus du navigateur : repli ci-dessous */
+  }
+  const ta = document.createElement("textarea");
+  ta.value = txt;
+  ta.setAttribute("readonly", "");
+  ta.style.cssText = "position:fixed;left:-9999px;top:0;opacity:0";
+  document.body.append(ta);
+  ta.select();
+  let ok = false;
+  try {
+    ok = document.execCommand("copy")
+  } catch {
+    ok = false
+  }
+  ta.remove();
+  return ok
 }
 // ===== OFP SimBrief : reconnaissance et remplissage du plan =====
 /** Vrai si un objet a la structure d'un OFP SimBrief (navlog + général / avion, ou api_params). */
@@ -3055,19 +3250,23 @@ function populatePlanFromOFP(ofp) {
 }
 // Copie le dernier JSON importé dans le presse-papiers.
 $("copyJsonBtn").onclick = async () => {
-  if (!window.__lastImportedJson) return;
-  try {
-    await navigator.clipboard.writeText(JSON.stringify(window.__lastImportedJson, null, 2));
-    $("jsonMeta").textContent += " · copié"
-  } catch (e) {
-    window.AppFramework.notify("Copie impossible : " + e.message, 'err')
-  }
+  if (!window.__lastImportedJson) return syncCopyJsonBtn();
+  if (await copyText(JSON.stringify(window.__lastImportedJson, null, 2))) $("jsonMeta").textContent += " · " + kt(["copié", "copied",
+    "kopiert", "copiado"
+  ]);
+  else window.AppFramework.notify(kt([
+    "Copie impossible : le navigateur refuse l’accès au presse-papiers. Sélectionner le texte du JSON et le copier à la main (Ctrl+C).",
+    "Copy failed: the browser denies access to the clipboard. Select the JSON text and copy it by hand (Ctrl+C).",
+    "Kopieren nicht möglich: der Browser verweigert den Zugriff auf die Zwischenablage. JSON-Text markieren und von Hand kopieren (Strg+C).",
+    "Copia imposible: el navegador deniega el acceso al portapapeles. Seleccionar el texto del JSON y copiarlo a mano (Ctrl+C)."
+  ]), 'err')
 };
 // Vide l'affichage du JSON importé.
 $("clearJsonBtn").onclick = () => {
   window.__lastImportedJson = null;
   $("jsonViewer").textContent = "—";
-  $("jsonMeta").textContent = "Aucun JSON chargé."
+  $("jsonMeta").textContent = "Aucun JSON chargé.";
+  syncCopyJsonBtn()
 };
 /** Profils d'un CSV enrichi (piste mini, table RPM texte, contingence…) ; lignes sans avion ou OACI ignorées. Lève une erreur si aucune ligne n'est valide. */
 function parsePerformanceCsvEnriched(text, name) {
@@ -3271,36 +3470,126 @@ window.addEventListener("load", async () => {
     } catch {}
   }
 });
+let perfBusy = false, // lecture du dossier performances en cours (choix par le bouton)
+  lastPerfRead = 0; // heure de la dernière lecture (un changement signalé juste après est le nôtre)
+/** Lit les profils (.json, .lnmperf, .csv) du dossier performances handle et les range dans la base locale (fichiers
+ *  illisibles ignorés), puis enregistre l'état. Sortie : nombre de profils lus. */
+async function readPerfFolder(handle) {
+  let count = 0;
+  for await (const [name, h] of handle.entries()) {
+    const low = name.toLowerCase();
+    if (h.kind !== "file" || !(low.endsWith(".json") || low.endsWith(".lnmperf") || low.endsWith(".csv"))) continue;
+    try {
+      const txt = await (await h.getFile()).text(),
+        profiles = low.endsWith(".lnmperf") ? [parseLnmperf(txt, name)] : low.endsWith(".csv") ? parsePerformanceCsvEnriched(txt,
+          name) : profilesFromJson(JSON.parse(txt), name);
+      for (const p of profiles) {
+        storeProfile(p);
+        count++
+      }
+    } catch {
+      /* fichier illisible ou d'un autre format : ignoré */
+    }
+  }
+  save();
+  lastPerfRead = Date.now();
+  return count
+}
+/** Après une lecture du dossier : profil actif repris du dossier s'il n'a pas de modification en cours, état « n profils
+ *  lus », base de performances redessinée. */
+function perfFolderDone(count) {
+  const stored = active && state.profiles[active.id];
+  if (stored && !profileDirty && JSON.stringify(normalize(structuredClone(stored))) !== activeSavedSnapshot) setActive(stored, kt([
+    "dossier performances relu", "performance folder reread", "Leistungsordner neu gelesen", "carpeta de rendimiento releída"
+  ]));
+  setText("ppStatus", ktf(["{n} profil(s) lu(s) dans le dossier « {dir} » à {t}.", "{n} profile(s) read from the “{dir}” folder at {t}.",
+    "{n} Profil(e) aus dem Ordner „{dir}“ um {t} gelesen.", "{n} perfil(es) leído(s) en la carpeta «{dir}» a las {t}."
+  ], {
+    n: count,
+    dir: dirHandle?.name || "",
+    t: new Date().toLocaleTimeString(window.RepositoryNav?.getLanguage?.() || "fr", {
+      hour: "2-digit",
+      minute: "2-digit"
+    })
+  }));
+  renderPerfProfilesSoon()
+}
 // Choix du dossier performances : lit les profils (.json, .lnmperf, .csv) qu'il contient.
 $("dirBtn").onclick = async () => {
   if (!window.showDirectoryPicker) return window.AppFramework.notify(
     "Ce navigateur ne permet pas l’accès direct à un dossier. Utilise Chrome/Edge ou importe les fichiers.", 'warn');
+  perfBusy = true;
   try {
     dirHandle = window.FileAccess ? await window.FileAccess.pickFolder("__perf") : await showDirectoryPicker({
       mode: "readwrite"
     }); /* dossier mémorisé, sélecteur ouvert sur le dossier actuel */
-    let count = 0;
-    for await (const [name, h] of dirHandle.entries()) {
-      if (h.kind === "file" && (name.toLowerCase().endsWith(".json") || name.toLowerCase().endsWith(".lnmperf") || name.toLowerCase()
-          .endsWith(".csv"))) {
-        try {
-          let f = await h.getFile(),
-            txt = await f.text(),
-            profiles = name.toLowerCase().endsWith(".lnmperf") ? [parseLnmperf(txt, name)] : name.toLowerCase().endsWith(".csv") ?
-            parsePerformanceCsvEnriched(txt, name) : profilesFromJson(JSON.parse(txt), name);
-          for (const p of profiles) {
-            storeProfile(p);
-            count++
-          }
-        } catch {}
-      }
-    }
-    save();
+    const count = await readPerfFolder(dirHandle);
+    perfFolderDone(count);
     window.AppFramework.notify(`${count} profil(s) chargé(s). La BDD locale sera écrite ici via « Exporter BDD locale ».`, 'ok')
   } catch (e) {
     if (e.name !== "AbortError") window.AppFramework.notify(e.message, 'err')
+  } finally {
+    perfBusy = false
   }
 };
+/** « Relire » (ask vrai) ou dossier changé ailleurs (ask faux) : relit le dossier performances déjà choisi. ask : demande
+ *  la permission au besoin et dit pourquoi rien n'est relu ; sans ask, rien ne s'affiche si le dossier n'est pas accessible. */
+async function reloadPerfFolder(ask) {
+  let h = dirHandle;
+  if (!h && window.FileAccess) try {
+    h = await window.FileAccess.get("__perf")
+  } catch {
+    h = null
+  }
+  if (!h) {
+    if (ask) window.AppFramework.notify(kt(["Aucun dossier performances choisi : bouton « Dossier… » d’abord.",
+      "No performance folder chosen: use the “Folder…” button first.",
+      "Kein Leistungsordner gewählt: zuerst die Schaltfläche „Ordner…“.",
+      "Ninguna carpeta de rendimiento elegida: primero el botón «Carpeta…»."
+    ]), "warn");
+    return
+  }
+  let perm = "prompt";
+  try {
+    perm = await h.queryPermission({
+      mode: "readwrite"
+    })
+  } catch {
+    perm = "prompt"
+  }
+  if (perm !== "granted" && ask) try {
+    perm = await h.requestPermission({
+      mode: "readwrite"
+    })
+  } catch {
+    perm = "denied"
+  }
+  if (perm !== "granted") {
+    if (ask) window.AppFramework.notify(kt([
+      "Accès au dossier performances refusé : l’autoriser, ou le choisir de nouveau (bouton « Dossier… »).",
+      "Access to the performance folder denied: allow it, or choose it again (“Folder…” button).",
+      "Zugriff auf den Leistungsordner verweigert: erlauben oder neu wählen (Schaltfläche „Ordner…“).",
+      "Acceso a la carpeta de rendimiento denegado: autorizarlo o elegirla de nuevo (botón «Carpeta…»)."
+    ]), "warn");
+    return
+  }
+  dirHandle = h;
+  perfBusy = true;
+  try {
+    perfFolderDone(await readPerfFolder(h))
+  } catch (e) {
+    if (ask) window.AppFramework.notify(e.message, "err")
+  } finally {
+    perfBusy = false
+  }
+}
+// Dossier performances changé ailleurs (autre page, autre onglet, Paramètres) : profils relus sans question.
+window.addEventListener("file-access-change", e => {
+  if (e.detail?.key && e.detail.key !== "__perf") return;
+  setTimeout(() => {
+    if (!perfBusy && Date.now() - lastPerfRead > 3000) reloadPerfFolder(false)
+  }, 300)
+});
 
 // ===== Little Navmap : lecture et export des profils .lnmperf =====
 /** Nombre du premier élément tag sous root (def si absent ou non numérique). */
@@ -4110,10 +4399,14 @@ function newProfileFromLanding(id) {
       "Type utilisé par la compagnie : perfs à renseigner."
   }) : null
 }
-/** Menu des appareils de l'en-tête : profils et appareils sans profil, groupés par catégorie ; le choix rend le profil actif (ou le crée). */
+/** Liste des appareils de l'en-tête : une rangée par appareil (icône, nom, type, source du profil, état), groupées par
+ *  catégorie ; profils enregistrés et appareils sans profil (Landing Performance, flotte). Choix au clic ou au clavier
+ *  (flèches, Entrée ou Espace, Échap) : le profil devient actif (ou est créé vide). */
 function listAircraft() {
-  const profiles = Object.values(state.profiles || {}).filter(p => p && typeof p === "object" && String(p.id || p.icao || p.type || p
-    .name || "").trim()).map(p => normalize(p));
+  const esc = KIT.esc,
+    menu = $("aircraftMenu"),
+    profiles = Object.values(state.profiles || {}).filter(p => p && typeof p === "object" && String(p.id || p.icao || p.type || p
+      .name || "").trim()).map(p => normalize(p));
   const all = [...profiles, ...landingOnlyAircraft(profiles)].sort((a, b) => {
       let x = profileVisual(a),
         y = profileVisual(b),
@@ -4128,13 +4421,59 @@ function listAircraft() {
     if (!groups.has(g[0])) groups.set(g[0], []);
     groups.get(g[0]).push([p, g])
   }
-  $("aircraftMenu").innerHTML = [...groups].map(([label, items]) => `<div class="aircraft-group">${escXml(label)}</div>` + items.map(([p, g]) => `<button class="aircraft-item ${active?.id===p.id?"active":""}" type="button" role="menuitemradio" aria-checked="${active?.id===p.id}" data-id="${escXml(p.id)}"${p._landingOnly?` data-landing="1" title="${p._landing?"Connu du Landing Performance":"Utilisé par la compagnie"}, pas encore de profil : un profil vide sera créé"`:""}><span>${aircraftIcon(p)}</span><span class="aircraft-current-text">${escXml(p.name||p.id)}</span><span class="ac-meta">${escXml(g[2]||"")}${p._landingOnly?(p._landing?" · landing":" · flotte, sans profil"):""}</span></button>`).join("")).join("") ||
-    '<div class="mut" style="padding:8px">Aucun avion. Importe un profil, choisis le dossier performances ou charge des atterrissages dans le Landing Performance.</div>';
-  $("aircraftMenu").querySelectorAll(".aircraft-item").forEach(x => x.onclick = () => {
+  /** Rangée d'un appareil : état « actif », « sans profil », « à compléter (n) » (manques en infobulle) ou « complet ». */
+  const row = (p, g) => {
+    const i = profileInfo(p),
+      on = active?.id === p.id,
+      todo = i.missing.length ? ktf(["à compléter ({n})", "to complete ({n})", "zu ergänzen ({n})", "por completar ({n})"], {
+        n: i.missing.length
+      }) : "",
+      [st, cls, tip] = p._landingOnly ? [kt(["sans profil", "no profile", "kein Profil", "sin perfil"]), "none", kt(p._landing ? [
+        "Connu du Landing Performance, pas encore de profil : un profil vide sera créé.",
+        "Known from Landing Performance, no profile yet: an empty profile will be created.",
+        "Aus Landing Performance bekannt, noch kein Profil: ein leeres Profil wird angelegt.",
+        "Conocido por Landing Performance, aún sin perfil: se creará un perfil vacío."
+      ] : ["Utilisé par la compagnie, pas encore de profil : un profil vide sera créé.",
+        "Used by the company, no profile yet: an empty profile will be created.",
+        "Von der Gesellschaft genutzt, noch kein Profil: ein leeres Profil wird angelegt.",
+        "Usado por la compañía, aún sin perfil: se creará un perfil vacío."
+      ])] : [on ? [kt(["actif", "active", "aktiv", "activo"]), todo].filter(Boolean).join(" · ") : todo || kt(["complet", "complete",
+        "vollständig", "completo"
+      ]), todo ? "warn" : "", i.missing.join(", ")];
+    return `<div class="aircraft-row aircraft-item${on ? " active" : ""}" role="option" tabindex="-1" aria-selected="${on}" data-id="${esc(p.id)}"${p._landingOnly ? ' data-landing="1"' : ""} title="${esc([p.name || p.id, g[2], tip].filter(Boolean).join(" · "))}"><span>${aircraftIcon(p)}</span><span class="ac-name">${esc(p.name || p.id)}</span><span class="ac-type">${esc(p.type || p.icao || p.id)}</span><span class="ac-src">${esc(profileSourceText(p, i))}</span><span class="ac-state ${cls}">${esc(st)}</span></div>`
+  };
+  const head = `<div class="aircraft-row aircraft-row-head" role="presentation"><span></span><span>${esc(kt(["Appareil", "Aircraft", "Luftfahrzeug", "Aeronave"]))}</span><span>${esc(kt(["Type", "Type", "Muster", "Tipo"]))}</span><span>${esc(kt(["Profil", "Profile", "Profil", "Perfil"]))}</span><span>${esc(kt(["État", "Status", "Status", "Estado"]))}</span></div>`;
+  menu.innerHTML = all.length ? head + [...groups].map(([label, items]) => `<div class="aircraft-group" role="presentation">${esc(label)}</div>` + items.map(([p, g]) => row(p, g)).join("")).join(
+      "") :
+    `<div class="mut" style="padding:8px">${esc(kt(["Aucun avion. Importe un profil, choisis le dossier performances ou charge des atterrissages dans le Landing Performance.",
+      "No aircraft. Import a profile, choose the performance folder or load landings in Landing Performance.",
+      "Kein Flugzeug. Profil importieren, Leistungsordner wählen oder Landungen in Landing Performance laden.",
+      "Ningún avión. Importa un perfil, elige la carpeta de rendimiento o carga aterrizajes en Landing Performance."
+    ]))}</div>`;
+  menu.setAttribute("aria-label", kt(["Choisir l’avion", "Choose the aircraft", "Flugzeug wählen", "Elegir el avión"]));
+  /** Rend actif l'appareil d'une rangée (profil vide créé pour un appareil sans profil) et ferme la liste. Clic remplacé
+   *  par shared/flight_ui.js (classe aircraft-item : confirmation si le profil courant est modifié). */
+  const choose = x => {
     const p = x.dataset.landing ? newProfileFromLanding(x.dataset.id) : state.profiles?.[x.dataset.id];
     if (p) setActive(p, x.dataset.landing ? "avion du Landing Performance" : "cache local");
-    closeHeaderMenus()
-  })
+    closeHeaderMenus();
+    $("aircraftCurrent").focus()
+  };
+  menu.querySelectorAll('[role="option"]').forEach(x => x.onclick = () => choose(x));
+  menu.onkeydown = e => {
+    const opts = [...menu.querySelectorAll('[role="option"]')],
+      i = opts.indexOf(document.activeElement);
+    if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+      e.preventDefault();
+      opts[Math.min(opts.length - 1, Math.max(0, i + (e.key === "ArrowDown" ? 1 : -1)))]?.focus()
+    } else if ((e.key === "Enter" || e.key === " ") && i >= 0) {
+      e.preventDefault();
+      opts[i].click() // même chemin que le clic (confirmation des modifications non enregistrées)
+    } else if (e.key === "Escape") {
+      closeHeaderMenus();
+      $("aircraftCurrent").focus()
+    }
+  }
 }
 // Ouvre le menu des appareils (liste rafraîchie avec le Landing Performance).
 $("aircraftCurrent").onclick = e => {
@@ -4145,6 +4484,8 @@ $("aircraftCurrent").onclick = e => {
     listAircraft();
     $("aircraftMenu").hidden = false;
     $("aircraftCurrent").setAttribute("aria-expanded", "true");
+    ($("aircraftMenu").querySelector('.aircraft-row.active[role="option"]') || $("aircraftMenu").querySelector('[role="option"]'))
+    ?.focus();
     refreshLandingAircraft().then(changed => {
       if (changed && !$("aircraftMenu").hidden) listAircraft()
     })
@@ -4185,6 +4526,158 @@ $("prefsEditorBtn").onclick = () => {
 document.addEventListener("click", e => {
   if (!e.target.closest(".lang-popup,.prefs-popup,.aircraft-popup")) closeHeaderMenus()
 });
+// ===== Base de performances : un état par type (bloc « Profils de performances », liste d'appareils de l'en-tête) =====
+/** Origine d'un profil en clair : OFP SimBrief calibré, SimBrief, Little Navmap, CSV, JSON, saisie ; « aucun profil »
+ *  pour un type de la flotte ou du Landing sans profil, suivi de l'estimation de consommation s'il y en a une.
+ *  info : profileInfo(p) déjà calculé (facultatif). */
+function profileSourceText(p, info) {
+  if (p._landingOnly) {
+    const i = info || profileInfo(p);
+    return i.s.auto ? ktf(["aucun profil — {src}", "no profile — {src}", "kein Profil — {src}", "sin perfil — {src}"], {
+      src: ffSourceText(i.s, i.s.auto.kind)
+    }) : kt(["aucun profil", "no profile", "kein Profil", "sin perfil"])
+  }
+  if (p.calibration) return kt(["OFP SimBrief (calibré)", "SimBrief OFP (calibrated)", "SimBrief-OFP (kalibriert)",
+    "OFP SimBrief (calibrado)"
+  ]);
+  if (p.simbriefSnapshot || p.simbrief) return "SimBrief";
+  if (p.lnmSource) return "Little Navmap (.lnmperf)";
+  const f = String(p.source?.format || "");
+  if (/csv/i.test(f)) return "CSV";
+  if (/json/i.test(f)) return "JSON";
+  return kt(["saisie", "manual entry", "manuelle Eingabe", "entrada manual"])
+}
+/** État d'un profil pour la base de performances et la liste d'appareils. Sortie : { s (cruiseSource), map (lignes de
+ *  cartographie), alts (altitudes distinctes de la cartographie), ceil (ft, profil sinon EUROCONTROL), ceilSrc
+ *  ("profile" | "apd" | null), missing (données manquantes du profil, nommées dans la langue de la page) }. */
+function profileInfo(p) {
+  const s = cruiseSource(p),
+    apd = apdOf(p),
+    ok = v => v !== null && v !== undefined && v !== "" && Number.isFinite(+v),
+    map = (p.rpmFuelCurve || []).filter(r => ok(r.rpm) && [r.fuelFlowMin, r.fuelFlowPerHour, r.fuelFlowMax].some(ok)),
+    alts = new Set(map.filter(r => ok(r.altFt)).map(r => +r.altFt)),
+    [ceil, ceilSrc] = +p.cruise?.ceilingFt > 0 ? [+p.cruise.ceilingFt, "profile"] : +apd?.cruise?.ceilingFL > 0 ? [apd.cruise
+      .ceilingFL * 100, "apd"
+    ] : [null, null];
+  const need = [
+    [+p.cruise?.tasKt > 0, ["TAS de croisière", "cruise TAS", "Reise-TAS", "TAS de crucero"]],
+    [s.kind === "map" || +p.cruise?.fuelFlowPerHour > 0, ["consommation de croisière", "cruise fuel flow", "Reiseverbrauch",
+      "consumo de crucero"
+    ]],
+    [+p.climb?.iasKt > 0, ["Badin de montée", "climb IAS", "Steig-IAS", "IAS de ascenso"]],
+    [Math.abs(+p.climb?.rateFpm) > 0, ["vario de montée", "climb rate", "Steigrate", "régimen de ascenso"]],
+    [Math.abs(+p.descent?.rateFpm) > 0, ["vario de descente", "descent rate", "Sinkrate", "régimen de descenso"]],
+    [ceil > 0, ["plafond", "ceiling", "Gipfelhöhe", "techo"]]
+  ];
+  return {
+    s,
+    map: map.length,
+    alts: alts.size,
+    ceil,
+    ceilSrc,
+    missing: p._landingOnly ? [] : need.filter(x => !x[0]).map(x => kt(x[1]))
+  }
+}
+/** Libellés du bloc « Profils de performances » (titre, présentation, boutons et infobulles) ; écrits s'ils changent. */
+function perfProfilesLabels() {
+  setText("ppTitle", kt(["Profils de performances", "Performance profiles", "Leistungsprofile", "Perfiles de rendimiento"]));
+  setText("ppIntro", kt([
+    "Un état par type de la flotte et des profils enregistrés : d’où vient le profil, s’il a une cartographie moteur, ce qui lui manque. Le dossier performances est relu quand il change ailleurs (autre page, autre onglet).",
+    "One status per fleet type and saved profile: where the profile comes from, whether it has an engine map, what it lacks. The performance folder is reread when it changes elsewhere (another page or tab).",
+    "Ein Status je Flottenmuster und gespeichertem Profil: Herkunft des Profils, Motorkennfeld vorhanden, was fehlt. Der Leistungsordner wird neu gelesen, wenn er anderswo geändert wird (andere Seite, anderer Tab).",
+    "Un estado por tipo de la flota y perfil guardado: de dónde viene el perfil, si tiene mapa motor, qué le falta. La carpeta de rendimiento se relee cuando cambia en otro lugar (otra página u otra pestaña)."
+  ]));
+  setText("ppImportLbl", kt(["Importer…", "Import…", "Importieren…", "Importar…"]));
+  setText("ppFolderLbl", kt(["Dossier…", "Folder…", "Ordner…", "Carpeta…"]));
+  setText("ppReloadLbl", kt(["Relire", "Reread", "Neu lesen", "Releer"]));
+  const tips = {
+    ppImport: kt([
+      "Fichiers .lnmperf (Little Navmap), JSON (profil ou base exportée), CSV de performances ; un OFP SimBrief JSON est aussi reconnu.",
+      "Files: .lnmperf (Little Navmap), JSON (profile or exported database), performance CSV; a SimBrief OFP JSON is recognised too.",
+      "Dateien: .lnmperf (Little Navmap), JSON (Profil oder exportierte Datenbank), Leistungs-CSV; ein SimBrief-OFP-JSON wird ebenfalls erkannt.",
+      "Archivos .lnmperf (Little Navmap), JSON (perfil o base exportada), CSV de rendimiento; también se reconoce un OFP JSON de SimBrief."
+    ]),
+    ppFolder: kt(["Choisir le dossier performances et lire ses profils (.json, .lnmperf, .csv).",
+      "Choose the performance folder and read its profiles (.json, .lnmperf, .csv).",
+      "Leistungsordner wählen und seine Profile lesen (.json, .lnmperf, .csv).",
+      "Elegir la carpeta de rendimiento y leer sus perfiles (.json, .lnmperf, .csv)."
+    ]),
+    ppReload: kt(["Relire les profils du dossier performances déjà choisi.",
+      "Reread the profiles of the performance folder already chosen.",
+      "Profile des bereits gewählten Leistungsordners neu lesen.", "Releer los perfiles de la carpeta de rendimiento ya elegida."
+    ])
+  };
+  for (const [id, t] of Object.entries(tips))
+    if ($(id).title !== t) $(id).title = t
+}
+let ppTimer = 0;
+/** Base de performances redessinée un peu plus tard (plusieurs changements de suite : un seul rendu). */
+function renderPerfProfilesSoon() {
+  clearTimeout(ppTimer);
+  ppTimer = setTimeout(renderPerfProfiles, 50)
+}
+/** Bloc « Profils de performances » : une ligne par type (profils enregistrés, puis types de la flotte sans profil) —
+ *  appareil (bouton Choisir / Créer), source du profil, cartographie moteur, consommation de croisière, plafond, données
+ *  manquantes nommées. Écrit seulement si le contenu change. */
+function renderPerfProfiles() {
+  perfProfilesLabels();
+  const box = $("perfProfiles");
+  if (!box) return;
+  const esc = KIT.esc,
+    u = fuelUnit(),
+    profiles = Object.values(state.profiles || {}).filter(p => p && typeof p === "object" && String(p.id || p.icao || p.type || p
+      .name || "").trim()).map(p => normalize(p)),
+    all = [...profiles, ...landingOnlyAircraft(profiles).filter(p => p._defa)].sort((a, b) => String(a.type || a.icao || a.id)
+      .localeCompare(String(b.type || b.icao || b.id), "fr", {
+        numeric: true
+      }) || String(a.name || a.id).localeCompare(String(b.name || b.id), "fr", {
+        numeric: true
+      }));
+  if (!box.dataset.ready) {
+    box.dataset.ready = "1";
+    box.addEventListener("click", e => {
+      const b = e.target.closest(".pp-pick");
+      if (!b) return;
+      const p = b.dataset.landing ? newProfileFromLanding(b.dataset.id) : state.profiles?.[b.dataset.id];
+      if (p) setActive(p, kt(["base de performances", "performance database", "Leistungsdatenbank", "base de rendimiento"]))
+    });
+  }
+  if (!all.length) return setHtml("perfProfiles", `<p class="mut">${esc(kt(["Aucun profil ni type de flotte : importer un profil ou choisir le dossier performances.",
+    "No profile and no fleet type: import a profile or choose the performance folder.",
+    "Weder Profil noch Flottenmuster: ein Profil importieren oder den Leistungsordner wählen.",
+    "Ningún perfil ni tipo de flota: importar un perfil o elegir la carpeta de rendimiento."
+  ]))}</p>`);
+  const head = [kt(["Appareil", "Aircraft", "Luftfahrzeug", "Aeronave"]), kt(["Profil (source)", "Profile (source)", "Profil (Quelle)",
+    "Perfil (origen)"
+  ]), kt(["Cartographie moteur", "Engine map", "Motorkennfeld", "Mapa motor"]), kt(["Consommation de croisière", "Cruise fuel flow",
+    "Reiseverbrauch", "Consumo de crucero"
+  ]), kt(["Plafond", "Ceiling", "Gipfelhöhe", "Techo"]), kt(["Données manquantes", "Missing data", "Fehlende Daten",
+    "Datos que faltan"
+  ])];
+  const rows = all.map(p => {
+    const i = profileInfo(p),
+      s = i.s,
+      on = active?.id === p.id,
+      pick = on ? kt(["actif", "active", "aktiv", "activo"]) : p._landingOnly ? kt(["Créer", "Create", "Anlegen", "Crear"]) : kt([
+        "Choisir",
+        "Choose", "Wählen", "Elegir"
+      ]),
+      map = i.map ? `${esc(ktf(["oui, {n} ligne(s)", "yes, {n} row(s)", "ja, {n} Zeile(n)", "sí, {n} fila(s)"], {
+        n: i.map
+      }))}${i.alts > 1 ? `<br><small class="mut">${esc(ktf(["{n} altitudes", "{n} altitudes", "{n} Höhen", "{n} altitudes"], {
+        n: i.alts
+      }))}</small>` : ""}` : esc(kt(["non", "no", "nein", "no"])),
+      ff = s.ff > 0 ? `${s.approx ? "≈ " : ""}${fmt(convertFuel(s.ff, p.unit || "kg", u), 0)} ${u}/h<br><small class="mut">${esc(ffSourceText(s))}</small>` : "—",
+      ceil = i.ceil ? `${flTxt(i.ceil)}${i.ceilSrc === "apd" ? ` <small class="mut">(EUROCONTROL)</small>` : ""}` : "—",
+      miss = p._landingOnly ? `<span class="pp-missing">${esc(kt(["tout le profil", "the whole profile", "das ganze Profil", "todo el perfil"]))}</span>` :
+      i.missing.length ? `<span class="pp-missing">${esc(i.missing.join(", "))}</span>` : `<span class="pp-ok">${esc(kt(["rien", "nothing", "nichts", "nada"]))}</span>`;
+    return `<tr${on ? ' class="is-active"' : ""}><td><div class="pp-name"><span>${aircraftIcon(p)}</span><span><b>${esc(p.name || p.id)}</b><br><small class="mut">${esc(p.type || p.icao || p.id)}</small></span><button type="button" class="secondary pp-pick" data-id="${esc(p.id)}"${p._landingOnly ? ' data-landing="1"' : ""}${on ? " disabled" : ""}>${esc(pick)}</button></div></td><td>${esc(profileSourceText(p, i))}</td><td>${map}</td><td>${ff}</td><td>${ceil}</td><td>${miss}</td></tr>`
+  }).join("");
+  setHtml("perfProfiles", typo(`<table><thead><tr>${head.map(h => `<th>${esc(h)}</th>`).join("")}</tr></thead><tbody>${rows}</tbody></table>`))
+}
+$("ppImport").onclick = () => $("fileInput").click();
+$("ppFolder").onclick = () => $("dirBtn").click();
+$("ppReload").onclick = () => reloadPerfFolder(true);
 /* Fiches appareils du type actif (apps/cr/appareil.html) : même catalogue commun que les CR et le reporting. */
 // Fiches des appareils de ce type (flotte virtuelle).
 /** Liens vers les fiches des appareils du type actif (apps/cr/appareil.html). */
@@ -4207,6 +4700,8 @@ refreshLandingAircraft();
 restore();
 applyHeaderPreferences();
 applyDetailView(); // vue simple / détaillée avant le premier calcul
+syncCopyJsonBtn();
+renderPerfProfilesSoon();
 {
   const params = new URLSearchParams(location.search),
     handoff = (() => {

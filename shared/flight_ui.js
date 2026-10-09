@@ -43,7 +43,7 @@
     group.className = "engine-performance-group";
     table.id = "engineCurveTable";
     table.querySelector("thead").innerHTML =
-      '<tr><th data-sort="rpm">RPM / N1 ↕</th><th data-sort="fuelFlowMin">Min. ↕</th><th data-sort="fuelFlowPerHour">Nominal ↕</th><th data-sort="fuelFlowMax">Max. ↕</th><th data-sort="phaseLabel">Régime de vol ↕</th><th>Commentaire</th></tr>';
+      '<tr><th data-sort="rpm">RPM / N1 ↕</th><th data-sort="fuelFlowMin">Min. ↕</th><th data-sort="fuelFlowPerHour">Nominal ↕</th><th data-sort="fuelFlowMax">Max. ↕</th><th data-sort="altFt">Altitude (ft) ↕</th><th data-sort="phaseLabel">Régime de vol ↕</th><th>Commentaire</th></tr>';
     group.append(heading, svg);
     engineCard.append(group);
     curveCard.dataset.blockId = "rpm-table";
@@ -372,7 +372,7 @@
         numeric: true
       })
     });
-    $("curve").innerHTML = sorted.map(x => `<tr><td>${x.rpm??"—"}</td><td>${showFuel(x.fuelFlowMin??x.fuelFlowPerHour,1)}</td><td>${showFuel(x.fuelFlowPerHour,1)}</td><td>${showFuel(x.fuelFlowMax??x.fuelFlowPerHour,1)}</td><td>${escXml(x.phaseLabel||"—")}</td><td>${escXml(x.comment||"")}</td></tr>`).join("") || '<tr><td colspan="6">Pas de courbe RPM dans ce profil.</td></tr>';
+    $("curve").innerHTML = sorted.map(x => `<tr><td>${x.rpm??"—"}</td><td>${showFuel(x.fuelFlowMin??x.fuelFlowPerHour,1)}</td><td>${showFuel(x.fuelFlowPerHour,1)}</td><td>${showFuel(x.fuelFlowMax??x.fuelFlowPerHour,1)}</td><td>${Number.isFinite(x.altFt)?x.altFt:"—"}</td><td>${escXml(x.phaseLabel||"—")}</td><td>${escXml(x.comment||"")}</td></tr>`).join("") || '<tr><td colspan="6">Pas de courbe RPM dans ce profil.</td></tr>';
     renderEngineChart();
     renderProfileEditor();
     updateProfileStatus();

@@ -721,9 +721,79 @@
       }
     };
   }
+  /** Cartographie moteur (table RPM / N1 → débit) ramenée à l'altitude h (ft). Chaque ligne peut porter une altitude
+   *  (altFt, colonne facultative) : avec moins de deux altitudes différentes, ou sans h, les lignes valides sont rendues
+   *  telles quelles (comportement d'avant). Avec deux altitudes ou plus : lignes groupées par altitude (une ligne sans
+   *  altitude vaut pour toutes, si son régime manque au groupe), débits de chaque groupe interpolés au même régime, puis
+   *  interpolés linéairement entre les deux altitudes qui encadrent h (bornés aux altitudes extrêmes).
+   *  Sortie : lignes { rpm, fuelFlowMin, fuelFlowPerHour, fuelFlowMax, altFt } triées par régime. */
+  function mapAt(curve, h) {
+    const num = v => v === null || v === undefined || v === '' ? NaN : +v,
+      rows = (Array.isArray(curve) ? curve : []).filter(r => r && Number.isFinite(num(r.rpm)) && [r.fuelFlowMin, r.fuelFlowPerHour, r
+        .fuelFlowMax
+      ].some(v => Number.isFinite(num(v)))),
+      alts = [...new Set(rows.map(r => num(r.altFt)).filter(Number.isFinite))].sort((a, b) => a - b);
+    if (alts.length < 2 || !Number.isFinite(h)) return rows;
+    const loose = rows.filter(r => !Number.isFinite(num(r.altFt)));
+    /** Lignes d'une altitude a (complétées par les lignes sans altitude), triées par régime. */
+    const group = a => {
+      const g = rows.filter(r => num(r.altFt) === a),
+        have = new Set(g.map(r => num(r.rpm)));
+      return [...g, ...loose.filter(r => !have.has(num(r.rpm)))].sort((x, y) => num(x.rpm) - num(y.rpm));
+    };
+    /** Plage { min, nominal, max } d'une ligne, valeurs manquantes complétées par les autres valeurs de la ligne. */
+    const rng = r => {
+      const n = num(r.fuelFlowPerHour),
+        lo = num(r.fuelFlowMin),
+        hi = num(r.fuelFlowMax),
+        nom = Number.isFinite(n) ? n : Number.isFinite(lo) && Number.isFinite(hi) ? (lo + hi) / 2 : Number.isFinite(lo) ? lo : hi;
+      return {
+        min: Number.isFinite(lo) ? lo : nom,
+        nominal: nom,
+        max: Number.isFinite(hi) ? hi : nom
+      };
+    };
+    /** Plage interpolée au régime rpm dans le groupe g (bornée aux lignes extrêmes). */
+    const at = (g, rpm) => {
+      if (rpm <= num(g[0].rpm)) return rng(g[0]);
+      for (let i = 1; i < g.length; i++)
+        if (rpm <= num(g[i].rpm)) {
+          const a = rng(g[i - 1]),
+            b = rng(g[i]),
+            t = (rpm - num(g[i - 1].rpm)) / ((num(g[i].rpm) - num(g[i - 1].rpm)) || 1);
+          return {
+            min: a.min + t * (b.min - a.min),
+            nominal: a.nominal + t * (b.nominal - a.nominal),
+            max: a.max + t * (b.max - a.max)
+          };
+        }
+      return rng(g[g.length - 1]);
+    };
+    const hh = Math.min(alts[alts.length - 1], Math.max(alts[0], h));
+    let k = 1;
+    while (k < alts.length - 1 && alts[k] < hh) k++;
+    const a0 = alts[k - 1],
+      a1 = alts[k],
+      t = (hh - a0) / ((a1 - a0) || 1),
+      g0 = group(a0),
+      g1 = group(a1),
+      rpms = [...new Set([...g0, ...g1].map(r => num(r.rpm)))].sort((x, y) => x - y);
+    return rpms.map(rpm => {
+      const x = at(g0, rpm),
+        y = at(g1, rpm);
+      return {
+        rpm,
+        fuelFlowMin: x.min + t * (y.min - x.min),
+        fuelFlowPerHour: x.nominal + t * (y.nominal - x.nominal),
+        fuelFlowMax: x.max + t * (y.max - x.max),
+        altFt: h
+      };
+    });
+  }
   window.FlightPerfModel = {
     create,
     isa,
-    kindOf
+    kindOf,
+    mapAt
   };
 })();

@@ -38,6 +38,32 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Ajouté
 
+- **Carburant — consignes de montée, base de performances (v2-fable, §7 de `docs/technique/V2_FABLE.md`)** :
+  - **Consignes de montée** (bloc du devis, toutes vues, tous niveaux ; `shared/flight_perf_view.js`) : objectif par
+    segments (Éco · Vy · Rapide · Profil · Réglée, chacun avec son temps et son carburant jusqu'au niveau), tableau par
+    tranche d'altitude (sol, 2 000, 5 000, 10 000 ft… niveau du plan : gaz « plein » ou %, RPM / N1 si cartographie,
+    Badin à tenir, vario attendu, temps cumulé) et phrase « Régler / Tenir / Attendu » produite à la source (gaz, hélice ou
+    régime ; instrument qui porte la consigne ; vario, niveau, temps et carburant attendus), en quatre langues.
+  - **Montée choisie, vue détaillée** : trois curseurs horizontaux (vitesse indiquée, vario, régime — RPM / N1 de la
+    cartographie, sinon gaz en %) avec une case « fixé » devant chacun : deux fixés, le troisième calculé et grisé ;
+    valeur et état (« plein gaz », « calculé ») sous chaque curseur. Les curseurs verticaux autour des courbes et le mode
+    « Régler par le régime » sont retirés ; la ligne de base du calcul ne change plus de longueur (détail de la montée
+    choisie en infobulle).
+  - **Graphe de montée par altitude ↔ par régime** (à mi-montée, au Badin de la montée choisie : vario à Vy et au Badin
+    choisi, carburant par 1000 ft, réglage du moment).
+  - **Altimètre et chronomètre** de retour dans le bandeau d'instruments, niveau Expert seulement (`data-min-level="4"`) :
+    altitude survolée, temps de montée depuis le sol à la montée choisie (`shared/flight_instruments.js`).
+  - **Bloc « Profils de performances »** (niveau 3 et plus) : une ligne par type (profils enregistrés et types de la
+    flotte sans profil) — source du profil (.lnmperf, SimBrief, OFP calibré, CSV, JSON, saisie, estimation), cartographie
+    (oui, n lignes / non), consommation de croisière et son origine, plafond, données manquantes nommées ; Importer,
+    Dossier, Relire ; le dossier performances est relu quand il change ailleurs (`file-access-change`, clé `__perf`).
+  - **Cartographie moteur : colonne « Altitude » facultative** dans l'éditeur ; avec deux altitudes ou plus, débits
+    interpolés entre les lignes d'une même altitude puis entre altitudes (`FlightPerfModel.mapAt`), utilisés par le devis,
+    la montée choisie, les consignes et la fiche moteur ; sinon comportement inchangé.
+  - **Choix d'appareil en liste** (icône, nom, type, source du profil, état « complet / à compléter (n) / sans profil »),
+    clavier (flèches, Entrée, Échap) ; **« Copier JSON »** : repli `execCommand("copy")` hors contexte sécurisé, bouton
+    grisé avec infobulle quand rien n'est chargé.
+
 - **Plus d'empreintes `?v=` dans le dépôt** : toutes les références restent à `?v=0` ; le lanceur pose l'empreinte réelle en
   servant chaque page, script ou feuille (`tools/version_stamps.py`, poussé sur develop) et `tools/publish_dist.py` les pose
   dans l'archive de livraison (fichiers du tag extraits dans un dossier temporaire, empreintes calculées d'un fichier à

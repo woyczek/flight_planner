@@ -1,7 +1,7 @@
 /* =====================================================================================================
-   Flight Performance Planner — instruments de lecture (vitesse indiquée, vario, carburant)
+   Flight Performance Planner — instruments de lecture (vitesse indiquée, altimètre, vario, chronomètre, carburant)
    -----------------------------------------------------------------------------------------------------
-   Trois cadrans ronds (SVG) dans la colonne de droite de la page (#fpInstrCol, collée sous l'en-tête ; à défaut
+   Cinq cadrans ronds (SVG) dans la colonne de droite de la page (#fpInstrCol, collée sous l'en-tête ; à défaut
    dans l'en-tête), donc visibles pendant le défilement des courbes.
    Ils montrent la montée choisie avec les curseurs (shared/flight_perf_view.js) à l'altitude
    courante (survolée sur une courbe, sinon épinglée, sinon niveau du plan) :
@@ -12,13 +12,17 @@
      - carburant : carburant du trajet entier volé à cette altitude (unité d'affichage kg / lbs) et sa durée ;
        un clic (bouton ou cadran) change la lecture, une par courbe et dans sa couleur : montée choisie (violet) → profil
        (bleu) → croisière économique (vert) → montée rapide (jaune) → Vy (bleu) → montée économique (vert) ;
-   Instruments de LECTURE seulement (revue d'usage du 9 octobre) : la montée se choisit par les curseurs « Vitesse
-   indiquée » et « Vario » du devis ; l'altimètre et l'horloge, qui redisaient le niveau survolé et la durée déjà écrits
-   (légende de la jauge carburant, relevés des courbes), sont retirés.
+     - altimètre (niveau 4 seulement, data-min-level="4") : altitude courante, grande aiguille des centaines, petite des
+       milliers, triangle des dizaines de milliers ;
+     - chronomètre (niveau 4 seulement) : temps de montée depuis le sol jusqu'à l'altitude courante, à la loi réglée.
+   Instruments de LECTURE seulement (revue d'usage du 9 octobre) : la montée se choisit par les curseurs « Montée
+   choisie » du devis (vitesse indiquée, vario, régime). L'altimètre et le chronomètre, retirés le 9 octobre, reviennent
+   au niveau Expert (10 octobre : ils redisent le niveau survolé et le temps de montée, « ludiques et parlants »).
 
    Interface : window.FlightInstruments = { update(état | null), onRefresh, fuelMode } ;
-     état = { h, ias, iasSet, iasMin, iasMax, tas, tasMax, mach, roc, vsSet, vsMax, full, above } (tasMax : TAS
-     la plus grande de la loi, pour l'échelle du Badin).
+     état = { h, ias, iasSet, iasMin, iasMax, tas, tasMax, mach, roc, vsSet, vsMax, full, above, climbMin } (tasMax :
+     TAS la plus grande de la loi, pour l'échelle du Badin ; vsSet nul : vario calculé, pas de repère ; climbMin : minutes
+     de montée depuis le sol, nul au-dessus du plafond).
    Designs à matières (Cabinet, Carnet de vol, Durci, Aqua) : cadrans « réels » (boîtier, lunette métallique de la
    matière du design, cadran noir bombé, ombre intérieure, aiguilles ombrées, moyeu, reflet du verre) ; mêmes
    graduations et aiguilles (lecture inchangée), redessinés au changement de design.
@@ -136,7 +140,8 @@
     host = document.createElement("div");
     host.className = "fp-instruments";
     host.hidden = true;
-    host.innerHTML = ["ias", "vs", "fuel"].map(k => `<figure class="fp-gauge" data-k="${k}"><svg viewBox="0 0 100 100" aria-hidden="true"></svg><figcaption></figcaption>${k === "fuel" ? '<button type="button" class="fp-fuel-mode repo-plain"></button>' : ""}</figure>`).join("");
+    // altimètre et chronomètre : niveau Expert seulement (masqués par repository_nav.css aux niveaux 1 à 3)
+    host.innerHTML = ["ias", "alt", "vs", "clock", "fuel"].map(k => `<figure class="fp-gauge" data-k="${k}"${k === "alt" || k === "clock" ? ' data-min-level="4"' : ""}><svg viewBox="0 0 100 100" aria-hidden="true"></svg><figcaption></figcaption>${k === "fuel" ? '<button type="button" class="fp-fuel-mode repo-plain"></button>' : ""}</figure>`).join("");
     if (col) col.append(host);
     else {
       const tools = line.querySelector(".repo-header-tools");
@@ -209,11 +214,41 @@
     for (let v = -max; v <= max + 1e-6; v += st) g += num(A(v), 31, nf(Math.abs(v) / (max >= 2000 ? 1000 : 100)));
     g += `<text x="60" y="38" font-size="5.5" text-anchor="middle" fill="#9ba8b5">UP</text><text x="60" y="66" font-size="5.5" text-anchor="middle" fill="#9ba8b5">DN</text>`;
     g += `<text x="62" y="53" font-size="5" text-anchor="middle" fill="#9ba8b5">${max >= 2000 ? "×1000" : "×100"}</text>`;
-    if (!s.full) g += bug(A(s.vsSet));
-    else g += `<text x="50" y="30" font-size="7.5" text-anchor="middle" fill="${PURPLE}" font-weight="700">${tl("PG", "FT", "VG", "GF")}</text>`;
+    if (s.full) g += `<text x="50" y="30" font-size="7.5" text-anchor="middle" fill="${PURPLE}" font-weight="700">${tl("PG", "FT", "VG", "GF")}</text>`;
+    else if (Number.isFinite(s.vsSet)) g += bug(A(s.vsSet));
     g += needle(A(s.roc), 42, 2.2, "#fff") + hub;
     faces.vs.querySelector("svg").innerHTML = frame(g);
     faces.vs.querySelector("figcaption").textContent = `${tl("Vario", "V/S", "Variometer", "Variómetro")} ${s.above ? tl("plafond", "ceiling", "Gipfelhöhe", "techo") : `${nf(s.roc)} ft/min`}`;
+  }
+  /** Altimètre : grande aiguille = centaines de pieds (un tour = 1 000 ft), petite = milliers (un tour = 10 000 ft),
+   *  triangle = dizaines de milliers (un tour = 100 000 ft) ; chiffres 0 à 9 ; altitude en clair dans la légende. */
+  function drawAlt(s) {
+    const h = Math.max(0, +s.h || 0),
+      A = (v, turn) => (v % turn) / turn * 360,
+      a10 = A(h, 100000);
+    let g = "";
+    for (let i = 0; i < 50; i++) g += tick(i * 7.2, i % 5 ? 43 : 39, 46, i % 5 ? .7 : 1.2);
+    for (let i = 0; i < 10; i++) g += num(i * 36, 31, String(i), 9);
+    g += `<text x="50" y="40" font-size="5.5" text-anchor="middle" fill="#9ba8b5">ALT</text><text x="50" y="66" font-size="5.5" text-anchor="middle" fill="#9ba8b5">FT</text>`;
+    const [tx, ty] = P(a10, 46), [lx, ly] = P(a10 - 4, 40), [rx, ry] = P(a10 + 4, 40);
+    g += `<polygon points="${tx.toFixed(2)},${ty.toFixed(2)} ${lx.toFixed(2)},${ly.toFixed(2)} ${rx.toFixed(2)},${ry.toFixed(2)}" fill="#e8edf2"/>`;
+    g += needle(A(h, 10000), 26, 3.2, "#fff") + needle(A(h, 1000), 42, 2, "#fff") + hub;
+    faces.alt.querySelector("svg").innerHTML = frame(g);
+    faces.alt.querySelector("figcaption").textContent = `${tl("Altitude", "Altitude", "Höhe", "Altitud")} ${nf(Math.round(h / 10) * 10)} ft`;
+  }
+  /** Chronomètre : temps de montée depuis le sol jusqu'à l'altitude courante (loi réglée) ; grande aiguille = minutes
+   *  (un tour = 60 min), petite = secondes ; au-dessus du plafond : aiguilles à zéro, « plafond » en légende. */
+  function drawClock(s) {
+    const t = Number.isFinite(s.climbMin) ? Math.max(0, s.climbMin) : null,
+      min = t ?? 0;
+    let g = "";
+    for (let i = 0; i < 60; i++) g += tick(i * 6, i % 5 ? 43 : 39, 46, i % 5 ? .6 : 1.2);
+    for (let i = 0; i < 12; i++) g += num(i * 30, 31, String(i * 5 || 60), 7.5);
+    g += `<text x="50" y="40" font-size="5.5" text-anchor="middle" fill="#9ba8b5">MIN</text>`;
+    g += `<rect x="31" y="64" width="38" height="11" rx="1.5" fill="#000" stroke="#2b3440"/><text x="50" y="72.5" font-size="7.5" text-anchor="middle" fill="${PURPLE}" font-family="ui-monospace,Consolas,monospace">${t == null ? "--:--" : `${String(Math.floor(min)).padStart(2, "0")}:${String(Math.floor(min % 1 * 60)).padStart(2, "0")}`}</text>`;
+    g += needle((min % 1) * 360, 40, 1.2, "#f0b86e") + needle((min % 60) / 60 * 360, 42, 2.2, "#fff") + hub;
+    faces.clock.querySelector("svg").innerHTML = frame(g);
+    faces.clock.querySelector("figcaption").textContent = t == null ? `${tl("Montée", "Climb", "Steigflug", "Ascenso")} — ${tl("plafond", "ceiling", "Gipfelhöhe", "techo")}` : `${tl("Temps de montée", "Climb time", "Steigzeit", "Tiempo de ascenso")} ${Math.floor(min / 60)} h ${String(Math.round(min % 60)).padStart(2, "0")}`;
   }
   /** Carburant : carburant du trajet entier volé à l'altitude courante (montée à la loi réglée, croisière,
    *  descente), dans l'unité d'affichage ; échelle 0 → trajet le plus coûteux des courbes. */
@@ -282,13 +317,15 @@
       scale.vs = [500, 1000, 2000, 3000, 4000, 6000, 8000].find(v => v >= s.vsMax * 1.05) || Math.ceil(s.vsMax / 2000) * 2000;
       setHub();
       drawIas(s);
+      drawAlt(s);
       drawVs(s);
+      drawClock(s);
       drawFuel(s);
       host.title = tl(
-        "Lecture de la montée choisie à l’altitude courante (survolée, épinglée, sinon niveau du plan). Pour la changer : curseurs « Vitesse indiquée » et « Vario » du devis.",
-        "Reading of the chosen climb at the current altitude (hovered, pinned, otherwise plan level). To change it: “Indicated airspeed” and “Vario” sliders of the fuel plan.",
-        "Anzeige des gewählten Steigflugs auf der aktuellen Höhe (überfahren, angeheftet, sonst Planhöhe). Zum Ändern: Regler „Angezeigte Geschwindigkeit“ und „Vario“ der Kraftstoffplanung.",
-        "Lectura del ascenso elegido a la altitud actual (sobrevolada, fijada o nivel del plan). Para cambiarlo: cursores «Velocidad indicada» y «Vario» del plan de combustible."
+        "Lecture de la montée choisie à l’altitude courante (survolée, épinglée, sinon niveau du plan). Pour la changer : curseurs « Montée choisie » du devis (vitesse indiquée, vario, régime).",
+        "Reading of the chosen climb at the current altitude (hovered, pinned, otherwise plan level). To change it: “Chosen climb” sliders of the fuel plan (indicated airspeed, vario, engine setting).",
+        "Anzeige des gewählten Steigflugs auf der aktuellen Höhe (überfahren, angeheftet, sonst Planhöhe). Zum Ändern: Regler „Gewählter Steigflug“ der Kraftstoffplanung (angezeigte Geschwindigkeit, Vario, Drehzahl).",
+        "Lectura del ascenso elegido a la altitud actual (sobrevolada, fijada o nivel del plan). Para cambiarlo: cursores «Ascenso elegido» del plan de combustible (velocidad indicada, vario, régimen)."
       );
     }
   };

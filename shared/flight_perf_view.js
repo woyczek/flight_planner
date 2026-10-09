@@ -12,9 +12,11 @@
    « semi-mobiles » sont gérés par le framework (shared/sticky_frame.js, StickyFrame.follow) : chaque
    panneau arrive avec sa courbe, reste sous le bloc Résultat tant qu'elle est à l'écran, repart avec elle.
 
-   Loi de montée réglable (violet) : deux curseurs verticaux autour de chaque courbe — vario visé à
-   gauche, Badin à droite — partagés par les trois courbes. Les gaz sont réduits pour tenir le vario,
-   plein gaz au-delà (FlightPerfModel : manualLaw / manualPoint).
+   Loi de montée réglable (violet) : trois curseurs « Montée choisie » du devis (#climbCtl, vue détaillée) —
+   vitesse indiquée, vario, régime (RPM / N1 de la cartographie moteur, sinon gaz en %) ; deux sont fixés, le
+   troisième est calculé (FlightPerfModel : manualLaw / manualPoint ; gaz réduits pour tenir le vario, plein
+   gaz au-delà). Consignes de montée (#climbGuide, toutes vues) : objectif, tableau par tranche d'altitude et
+   phrase « Régler / Tenir / Attendu ». Graphe de montée : par altitude ou par régime (bascule de la rangée).
 
    Jauges : les trois courbes ont l'altitude en abscisse ; survoler l'une place la jauge sur les trois,
    un clic épingle le niveau (trait blanc) ; la fiche ⌖ / 📌 du bloc Résultat résume ce niveau.
@@ -210,7 +212,7 @@
    *  fenêtre, 200 à 330 px pour la plus haute) — sur une colonne large, la courbe s'élargit au lieu de grandir ;
    *  même échelle (taille de texte) pour toutes les courbes. Met à jour le viewBox du SVG. */
   function chartW(svg, H) {
-    const wrapW = Math.max(300, (svg.parentElement?.clientWidth || 540) - 90), // moins les deux curseurs verticaux
+    const wrapW = Math.max(300, (svg.parentElement?.clientWidth || 540) - 8),
       px = Math.min(330, Math.max(200, innerHeight * .36)) / 270, // pixels par unité, commun aux courbes
       W = Math.max(540, Math.round(wrapW / px));
     svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
@@ -312,12 +314,14 @@
   };
 
   // ---------------------------------------------------------------------------------------------------
-  // Loi de montée réglable : état et curseurs verticaux
+  // Loi de montée réglable : état (badin, vario, régime — deux fixés, le troisième calculé)
   // ---------------------------------------------------------------------------------------------------
 
   /** Initialise la loi réglable pour le profil actif et le modèle m, ou garde les réglages s'il s'agit du même
    *  profil. Bornes : Badin 0,8 – 2,6 × Ve_md (réacteur ≤ 360 kt) ; vario 100 ft/min – vario max au sol
-   *  (curseur au maximum : plein gaz). Départ : Badin et vario de montée du profil. */
+   *  (curseur au maximum : plein gaz). Départ : Badin et vario de montée du profil fixés, régime calculé.
+   *  calc : grandeur calculée (« ias », « vs » ou « rpm ») ; fixed : les deux autres, la plus anciennement fixée
+   *  d'abord ; frac : fraction de gaz fixée (quand le régime est fixé) ; unreach : vario fixé hors d'atteinte. */
   function ensureManual(m) {
     const p0 = m.climbPoint(0),
       iMin = Math.round(.8 * m.veMd / 5) * 5,
@@ -334,64 +338,41 @@
       vMax,
       ias: Math.min(iMax, Math.max(iMin, Math.round(ias))),
       vs: vs ? Math.min(vMax, vs) : vMax,
-      full: !vs || vs >= vMax
+      full: !vs || vs >= vMax,
+      frac: 1,
+      calc: "rpm",
+      fixed: ["ias", "vs"],
+      unreach: false
     };
   }
-  /** Loi h → { ve, frac } des curseurs, à passer à m.trip / m.climbTo / m.manualPoint (null sans modèle). */
-  const manualLaw = m => S.manual && m ? m.manualLaw(S.manual.ias, S.manual.full ? 0 : S.manual.vs) : null;
-  /** Libellé court de la loi réglée : « 300 kt, 1 800 ft/min » ou « 300 kt, plein gaz ». */
-  const manualTxt = () => `${S.manual.ias} kt, ${S.manual.full ? L.full() : `${fmt(S.manual.vs, 0)} ft/min`}`;
-
-  /** Crée une fois, dans un cadre de courbe (.chart-wrap), les deux curseurs verticaux : vario à gauche, Badin à droite. */
-  function mountSliders(wrap) {
-    if (wrap.querySelector(".vslider")) return;
-    /** Curseur vertical (vario visé à gauche, Badin à droite) relié à la loi réglable (setManual). */
-    const mk = (side, key) => {
-      const d = document.createElement("div");
-      d.className = `vslider ${side}`;
-      d.innerHTML = `<output></output><input type="range" class="vr" data-key="${key}"><span class="vs-unit">${key === "vs" ? "ft/min" : "kt"}</span>`;
-      d.querySelector("input").addEventListener("input", e => setManual(key, +e.target.value));
-      return d;
-    };
-    wrap.prepend(mk("left", "vs"));
-    wrap.append(mk("right", "ias"));
-  }
-  /** Bornes, valeurs, bulles et hauteur de tous les curseurs (alignés sur la zone tracée de leur courbe). */
-  function syncSliders() {
+  /** Loi h → { ve, frac } réglée, à passer à m.trip / m.climbTo / m.manualPoint (null sans modèle). Badin et vario
+   *  fixés : gaz réduits pour tenir le vario (FlightPerfModel.manualLaw) ; régime fixé : gaz constants (fraction
+   *  q.frac), Badin fixé ou calculé (réacteur : borné au Mach de croisière en altitude). */
+  const manualLaw = m => {
     const q = S.manual;
-    document.querySelectorAll("#optBlock .chart-wrap").forEach(wrap => {
-      mountSliders(wrap);
-      const svg = wrap.querySelector("svg");
-      wrap.classList.toggle("no-sliders", !q || svg.hidden);
-      if (!q || svg.hidden) return;
-      for (const d of wrap.querySelectorAll(".vslider")) {
-        const inp = d.querySelector("input"),
-          vs = inp.dataset.key === "vs";
-        Object.assign(inp, vs ? {
-          min: 100,
-          max: q.vMax,
-          step: 50
-        } : {
-          min: q.iMin,
-          max: q.iMax,
-          step: 5
-        });
-        inp.value = vs ? (q.full ? q.vMax : q.vs) : q.ias;
-        d.querySelector("output").textContent = vs ? (q.full ? "max" : fmt(q.vs, 0)) : q.ias;
-        d.title = vs ?
-          tl("Montée choisie — vario visé (en haut : plein gaz)", "Chosen climb — target rate (top: full throttle)",
-            "Gewählter Steigflug — Ziel-Steigrate (oben: Vollgas)", "Ascenso elegido — régimen objetivo (arriba: gases a fondo)") :
-          tl("Montée choisie — vitesse indiquée", "Chosen climb — indicated airspeed",
-            "Gewählter Steigflug — angezeigte Geschwindigkeit",
-            "Ascenso elegido — velocidad indicada");
-      }
+    if (!q || !m) return null;
+    if (q.calc === "rpm") return m.manualLaw(q.ias, q.full ? 0 : q.vs);
+    const base = m.manualLaw(q.ias, 0),
+      fr = Math.min(1, Math.max(.05, q.frac));
+    return h => ({
+      ve: base(h).ve,
+      frac: fr
     });
-    alignSliders();
+  };
+  /** Libellé court de la loi réglée : « 300 kt, 1 800 ft/min », « 300 kt, plein gaz » ou « 120 kt, gaz 75 % ». */
+  const manualTxt = () => {
+    const q = S.manual;
+    if (q.calc === "rpm") return `${fmt(q.ias, 0)} kt, ${q.full ? L.full() : `${fmt(q.vs, 0)} ft/min`}`;
+    return `${fmt(q.ias, 0)} kt, ${q.frac >= .995 ? L.full() : `${tl("gaz", "throttle", "Leistung", "gases")} ${fmt(q.frac * 100, 0)} %`}`;
+  };
+
+  /** Loi réglée tenue partout (instruments, devis, courbes et consignes) : à rappeler après chaque changement. */
+  function syncManual() {
     feedInstruments();
     syncClimbCtl();
   }
   /** Instruments du bandeau (shared/flight_instruments.js) : loi réglée à l'altitude survolée (hover), sinon
-   *  épinglée, sinon niveau du plan ; masqués sans modèle. Badin et vario réglés sur l'instrument → setManual. */
+   *  épinglée, sinon niveau du plan ; masqués sans modèle. Temps de montée depuis le sol pour le chronomètre (niveau 4). */
   function feedInstruments(hover) {
     const FI = window.FlightInstruments,
       m = S.m,
@@ -403,9 +384,10 @@
       const h = hover ?? sync.pinned ?? (S.c?.FL > 0 ? S.c.FL * 100 : 0),
         above = h > m.ceiling,
         hh = Math.min(h, m.ceiling),
-        p = m.manualPoint(hh, manualLaw(m)),
+        law = manualLaw(m),
+        p = m.manualPoint(hh, law),
         a = FlightPerfModel.isa(hh).a;
-      const tasMax = Math.max(p.tas, m.manualPoint(m.ceiling, manualLaw(m)).tas || 0, m.cruise(Math.min((S.c?.FL || 0) * 100, m.ceiling),
+      const tasMax = Math.max(p.tas, m.manualPoint(m.ceiling, law).tas || 0, m.cruise(Math.min((S.c?.FL || 0) * 100, m.ceiling),
         "normal")?.tas || 0);
       // carburant du trajet entier volé à ce niveau (montée à la loi réglée) ; échelle : trajet le plus coûteux des courbes
       // lecture choisie sur la jauge (une seule calculée : les lois optimisées sont coûteuses) — une par courbe :
@@ -418,7 +400,7 @@
         } : null,
         mode = FI.fuelMode?.() || "man";
       const tripFor = {
-        man: () => m.trip(hh, D, wc, "normal", manualLaw(m)),
+        man: () => m.trip(hh, D, wc, "normal", law),
         prof: () => m.trip(hh, D, wc, "normal", "profile"),
         eco: () => m.trip(hh, D, wc, "eco"),
         fast: () => m.trip(hh, D, wc, "normal", "time"),
@@ -430,6 +412,12 @@
         } : null,
         fuelMax = Math.max(...[...(S.cache?.norm || []), ...(S.cache?.eco || [])].filter(r => r?.ok).map(r => cv(r.fuel)), ...Object
           .values(fuelBy || {}).filter(Boolean).map(x => x.fuel), 0);
+      // chronomètre : montée depuis le sol jusqu'à ce niveau, à la loi réglée (rien au-dessus du plafond)
+      const cl = above ? null : hh > 0 ? m.climbTo(hh, {
+        speed: law
+      }) : {
+        minutes: 0
+      };
       FI.update({
         h,
         ias: p.ias,
@@ -451,61 +439,124 @@
           fuel: COL.eco
         },
         roc: above ? 0 : p.roc,
-        vsSet: q.vs,
+        vsSet: q.calc === "vs" ? null : q.vs,
         vsMax: q.vMax,
-        full: q.full,
-        above
+        full: q.calc === "rpm" ? q.full : p.frac >= .995,
+        above,
+        climbMin: cl ? cl.minutes : null
       });
     } catch (e) {
       console.error("Instruments :", e);
       FI.update(null);
     }
   }
-  /** Hauteur des curseurs = hauteur de la zone tracée (marges T / B du viewBox, en data-t / data-b du SVG). */
-  function alignSliders() {
-    document.querySelectorAll("#optBlock .chart-wrap").forEach(wrap => {
-      const svg = wrap.querySelector("svg");
-      if (svg.hidden) return;
-      const r = svg.getBoundingClientRect(),
-        k = r.height / (svg.viewBox.baseVal.height || 1),
-        t = (+svg.dataset.t || 0) * k,
-        b = (+svg.dataset.b || 0) * k;
-      wrap.querySelectorAll(".vslider").forEach(d => {
-        d.style.paddingTop = Math.max(0, t - 18) + "px";
-        d.querySelector("input").style.height = Math.max(60, r.height - t - b) + "px";
-      });
-    });
-  }
-  /** Nouvelle valeur d'un curseur (key 'vs' ou 'ias') : état, curseurs jumeaux, puis redessin différé. */
-  function setManual(key, v) {
-    const q = S.manual;
-    if (!q) return;
-    if (key === "vs") {
-      q.vs = v;
-      q.full = v >= q.vMax;
-    } else q.ias = v;
-    syncSliders();
-    clearTimeout(setManual.t);
-    setManual.t = setTimeout(() => {
+  /** Redessin différé après un réglage : courbes (vue détaillée) puis devis. */
+  function redrawSoon() {
+    clearTimeout(redrawSoon.t);
+    redrawSoon.t = setTimeout(() => {
       if (S.m && S.c && curvesShown()) renderAll(S.m, S.c); // vue simple : courbes masquées, devis seul
       window.planQuote?.();
     }, 40);
+  }
+  /** Nouvelle valeur d'un curseur (key 'ias', 'vs' ou 'rpm' — régime ou gaz) ; la grandeur calculée ne se règle pas. */
+  function setManual(key, v) {
+    const q = S.manual,
+      m = S.m;
+    if (!q || !m || !Number.isFinite(v) || key === q.calc) return;
+    const h = readAlt(m);
+    if (key === "ias") q.ias = clampKey("ias", v);
+    else if (key === "vs") {
+      q.vs = clampKey("vs", v);
+      if (q.calc === "rpm") q.full = q.vs >= q.vMax;
+    } else {
+      q.frac = fracOfRegime(m, h, v, q.ias);
+      q.full = q.frac >= .995;
+    }
+    if (q.calc === "ias") solveIas(m, h);
+    syncManual();
+    redrawSoon();
+  }
+  /** Case « fixé » d'une grandeur : cochée, elle devient fixée et la plus anciennement fixée devient calculée ;
+   *  décochée, elle devient calculée et l'ancienne grandeur calculée est fixée. Les valeurs du moment (à mi-montée) sont
+   *  gardées : la loi ne saute pas au changement. */
+  function setFix(key) {
+    const q = S.manual,
+      m = S.m;
+    if (!q || !m) return;
+    const h = readAlt(m),
+      p = m.manualPoint(h, manualLaw(m));
+    if (key === q.calc) {
+      q.calc = q.fixed[0];
+      q.fixed = [q.fixed[1], key];
+    } else {
+      const other = q.fixed.find(k => k !== key);
+      q.fixed = [other, q.calc];
+      q.calc = key;
+    }
+    q.frac = Math.min(1, Math.max(.05, p.frac));
+    if (q.calc === "rpm") {
+      // Badin et vario fixés : plein gaz si les gaz l'étaient, sinon le vario du moment devient la consigne
+      q.full = p.frac >= .995;
+      if (!q.full) q.vs = clampKey("vs", Math.max(100, p.roc));
+    } else {
+      q.full = q.frac >= .995;
+      if (q.calc === "ias") q.vs = clampKey("vs", Math.max(100, p.roc));
+    }
+    q.unreach = false;
+    if (q.calc === "ias") solveIas(m, h);
+    syncManual();
+    redrawSoon();
+  }
+  /** Valeur ronde et bornée d'une entrée (vitesse : pas de 5 kt ; vario : pas de 50 ft/min). */
+  function clampKey(key, v) {
+    const q = S.manual,
+      [lo, hi, st] = key === "ias" ? [q.iMin, q.iMax, 5] : [100, q.vMax, 50];
+    return Math.min(hi, Math.max(lo, Math.round(v / st) * st));
+  }
+  /** Badin qui donne le vario fixé (q.vs) avec les gaz fixés (q.frac) à l'altitude h, du côté rapide de la courbe (au-dessus
+   *  du meilleur vario) ; vario hors d'atteinte : Badin du meilleur vario (q.unreach vrai). Résultat dans q.ias. */
+  function solveIas(m, h) {
+    const q = S.manual,
+      fr = Math.min(1, Math.max(.05, q.frac)),
+      samples = [];
+    let best = q.iMin,
+      bestR = -Infinity;
+    for (let v = q.iMin; v <= q.iMax; v++) {
+      const base = m.manualLaw(v, 0),
+        r = m.manualPoint(h, hh => ({
+          ve: base(hh).ve,
+          frac: fr
+        })).roc;
+      samples.push([v, r]);
+      if (r > bestR) {
+        bestR = r;
+        best = v;
+      }
+    }
+    q.unreach = bestR < q.vs;
+    let pick = best;
+    if (!q.unreach)
+      for (const [v, r] of samples)
+        if (v >= best && r >= q.vs) pick = v;
+    q.ias = pick;
   }
   /** Vrai si les courbes sont affichées (vue détaillée de la page : classe fp-detail du corps). */
   const curvesShown = () => document.body.classList.contains("fp-detail");
 
   // ---------------------------------------------------------------------------------------------------
-  // Montée choisie dans le devis (#climbCtl) : curseurs « Vitesse indiquée » et « Vario » avec leur champ chiffré, et
-  // ce qui en découle (régime, manette, débit) en lecture. Vue détaillée et profil à table régime → débit : « Régler
-  // par le régime » (le régime devient l'entrée, vitesse et vario les valeurs lues). Les jauges restent des lectures.
+  // Montée choisie dans le devis (#climbCtl, vue détaillée) : trois curseurs — vitesse indiquée, vario, régime (RPM / N1
+  // de la cartographie moteur, sinon gaz en %) — avec une case « fixé » devant chacun : deux fixés, le troisième calculé
+  // et grisé. Valeurs lues à mi-montée ; valeur et état (« plein gaz », « calculé ») sous chaque curseur.
   // ---------------------------------------------------------------------------------------------------
 
   /** Écrit une propriété d'un élément seulement si sa valeur change. */
   const put = (el, k, v) => {
     if (el && el[k] !== v) el[k] = v;
   };
-  /** Lignes valides de la table régime → débit du profil actif, triées par régime ({ rpm, ff } en unité du profil). */
-  const rpmRows = () => (active?.rpmFuelCurve || []).map(r => ({
+  /** Lignes valides de la cartographie moteur du profil actif ramenée à l'altitude h (FlightPerfModel.mapAt : colonne
+   *  Altitude facultative ; h absent : table telle quelle), triées par régime ({ rpm, ff } en unité du profil). */
+  const rpmRows = h => (h == null || !window.FlightPerfModel?.mapAt ? active?.rpmFuelCurve || [] : FlightPerfModel.mapAt(active
+    ?.rpmFuelCurve || [], h)).map(r => ({
     rpm: +r.rpm,
     ff: Number.isFinite(+r.fuelFlowPerHour) && r.fuelFlowPerHour !== null && r.fuelFlowPerHour !== "" ? +r.fuelFlowPerHour : (+r
       .fuelFlowMin + +r.fuelFlowMax) / 2
@@ -519,8 +570,47 @@
     }
     return null;
   };
+  /** Débit de la table pour un régime rpm (interpolation linéaire, borné aux lignes extrêmes). */
+  const ffForRpm = (rows, rpm) => {
+    if (!rows.length) return NaN;
+    if (rpm <= rows[0].rpm) return rows[0].ff;
+    for (let i = 1; i < rows.length; i++)
+      if (rpm <= rows[i].rpm) {
+        const a = rows[i - 1],
+          b = rows[i];
+        return a.ff + (rpm - a.rpm) / ((b.rpm - a.rpm) || 1) * (b.ff - a.ff);
+      }
+    return rows.at(-1).ff;
+  };
   /** Unité du régime : N1 (%) pour un réacteur, tours par minute sinon. */
   const rpmUnit = m => m?.kind === "jet" ? "% N1" : "RPM";
+  /** Échelle du curseur « régime » à l'altitude h : cartographie (deux lignes au moins : RPM / N1) ou gaz en %. */
+  const regimeScale = (m, h) => {
+    const rows = rpmRows(h);
+    return rows.length >= 2 ? {
+      map: true,
+      rows,
+      lo: rows[0].rpm,
+      hi: rows.at(-1).rpm,
+      step: m.kind === "jet" ? .5 : 10,
+      unit: rpmUnit(m)
+    } : {
+      map: false,
+      rows,
+      lo: 5,
+      hi: 100,
+      step: 1,
+      unit: "%"
+    };
+  };
+  /** Fraction de gaz d'une valeur v du curseur « régime » à l'altitude h et au Badin ias : cartographie — débit de la
+   *  table ramené au débit plein gaz à cette vitesse ; sinon v en %. Bornée à 5 – 100 %. */
+  function fracOfRegime(m, h, v, ias) {
+    const sc = regimeScale(m, h);
+    if (!sc.map) return Math.min(1, Math.max(.05, v / 100));
+    const full = m.manualPoint(h, m.manualLaw(ias, 0)).ff;
+    return Math.min(1, Math.max(.05, ffForRpm(sc.rows, v) / (full || 1)));
+  }
   /** Altitude de lecture de la montée : mi-montée vers le niveau du plan (borné au plafond), 1000 ft au moins. */
   const readAlt = m => Math.max(1000, Math.round(Math.min((S.c?.FL || 0) * 100, m.ceiling) / 2 / 500) * 500);
   /** Libellés de la montée choisie (4 langues). */
@@ -529,72 +619,29 @@
     ias: () => tl("Vitesse indiquée", "Indicated airspeed", "Angezeigte Geschwindigkeit", "Velocidad indicada"),
     vs: () => tl("Vario", "Vario", "Vario", "Vario"),
     rpm: () => tl("Régime", "Engine setting", "Drehzahl", "Régimen"),
-    byRpm: () => tl("Régler par le régime", "Set by engine setting", "Nach Drehzahl einstellen", "Ajustar por el régimen"),
-    bySpeed: () => tl("Régler par la vitesse", "Set by speed", "Nach Geschwindigkeit einstellen", "Ajustar por la velocidad"),
-    unknown: () => tl("non connu pour ce type", "not known for this type", "für diesen Typ unbekannt", "desconocido para este tipo")
+    throttle: () => tl("Gaz (%)", "Throttle (%)", "Leistung (%)", "Gases (%)"),
+    fix: () => tl("fixé", "fixed", "fest", "fijo"),
+    calc: () => tl("calculé", "computed", "berechnet", "calculado"),
+    fixTip: () => tl("Cocher deux grandeurs sur trois : la troisième est calculée par le modèle (grisée).",
+      "Tick two quantities out of three: the third one is computed by the model (greyed).",
+      "Zwei von drei Größen ankreuzen: die dritte berechnet das Modell (grau).",
+      "Marcar dos magnitudes de tres: la tercera la calcula el modelo (en gris).")
   };
-  /** Crée une fois le contenu de #climbCtl : titre, trois lignes (curseur, champ, unité), lecture, bouton de mode. */
+  /** Crée une fois le contenu de #climbCtl : titre, trois champs (case « fixé » et libellé au-dessus, curseur, valeur et
+   *  état dessous), ligne de lecture. */
   function mountClimbCtl(box) {
     if (box.dataset.ready) return;
     box.dataset.ready = "1";
-    const row = key => `<div class="climb-row" data-key="${key}"><label for="cc-${key}-n"></label><input type="range" id="cc-${key}-r" data-key="${key}"><input type="number" id="cc-${key}-n" data-key="${key}" inputmode="numeric"><span class="climb-unit"></span></div>`;
-    box.innerHTML = `<div class="climb-title"></div>${row("ias")}${row("vs")}${row("rpm")}<div class="climb-read mut"></div><div class="row"><button type="button" class="secondary climb-mode" data-fp-detail hidden></button></div>`;
-    for (const inp of box.querySelectorAll("input")) {
-      const key = inp.dataset.key;
-      // curseur : valeur suivie en direct ; champ chiffré : validée à la sortie du champ ou par Entrée
-      inp.addEventListener(inp.type === "range" ? "input" : "change", () => {
-        const v = +inp.value;
-        if (!Number.isFinite(v)) return syncClimbCtl();
-        key === "rpm" ? setRpm(v) : setManual(key, clampKey(key, v));
-      });
-    }
-    box.querySelector(".climb-mode").addEventListener("click", () => {
-      S.byRpm = !S.byRpm;
-      // régime de départ : celui de la montée choisie, sinon le bout de table le plus proche (débit hors table)
-      if (S.byRpm) {
-        const rows = rpmRows(),
-          now = currentRpm(),
-          m = S.m,
-          ff = m ? m.manualPoint(readAlt(m), manualLaw(m)).ff : 0;
-        setRpm(S.rpm ?? now ?? (rows.length && ff > rows.at(-1).ff ? rows.at(-1).rpm : rows[0]?.rpm));
-      }
-      syncClimbCtl();
-    });
+    const field = key => `<div class="field climb-field" data-key="${key}"><div class="climb-head"><label class="climb-fix"><input type="checkbox" data-key="${key}"><span class="climb-fixlab"></span></label><label class="climb-lab" for="cc-${key}"></label></div><input type="range" id="cc-${key}" data-key="${key}"><div class="climb-state"><output class="climb-val" for="cc-${key}"></output><span class="climb-note"></span></div></div>`;
+    box.innerHTML = `<div class="climb-title"></div><div class="climb-fields">${field("ias")}${field("vs")}${field("rpm")}</div><div class="climb-read mut"></div>`;
+    for (const inp of box.querySelectorAll('input[type="range"]')) inp.addEventListener("input", () => setManual(inp.dataset.key, +inp
+      .value));
+    for (const cb of box.querySelectorAll('input[type="checkbox"]')) cb.addEventListener("change", () => setFix(cb.dataset.key));
   }
-  /** Valeur ronde et bornée d'une entrée (vitesse : pas de 5 kt ; vario : pas de 50 ft/min). */
-  function clampKey(key, v) {
-    const q = S.manual,
-      [lo, hi, st] = key === "ias" ? [q.iMin, q.iMax, 5] : [100, q.vMax, 50];
-    return Math.min(hi, Math.max(lo, Math.round(v / st) * st));
-  }
-  /** Régime correspondant à la montée choisie à l'altitude de lecture (null sans table ou hors table). */
-  function currentRpm() {
-    const m = S.m,
-      rows = rpmRows();
-    if (!m || rows.length < 2) return null;
-    const p = m.manualPoint(readAlt(m), manualLaw(m));
-    return rpmForFF(rows, p.ff);
-  }
-  /** Régime choisi (mode « Régler par le régime ») : débit de la table, puis vitesse et vario qui en découlent à
-   *  l'altitude de lecture (m.settingAt : vario à Vy) ; la montée choisie suit (setManual). */
-  function setRpm(v) {
-    const m = S.m,
-      rows = rpmRows(),
-      q = S.manual;
-    if (!m || !q || rows.length < 2 || !Number.isFinite(v)) return;
-    const rpm = Math.min(rows.at(-1).rpm, Math.max(rows[0].rpm, v)),
-      r = window.interpRange?.(active.rpmFuelCurve || [], rpm);
-    S.rpm = rpm;
-    if (!(r?.nominal > 0)) return syncClimbCtl();
-    const st = m.settingAt(r.nominal, readAlt(m));
-    q.ias = clampKey("ias", st.ias);
-    q.vs = clampKey("vs", Math.max(100, st.roc));
-    q.full = st.frac >= .999 || q.vs >= q.vMax;
-    setManual("ias", q.ias);
-  }
-  /** Montée choisie dans le devis : valeurs, bornes, libellés, lecture (régime, manette, débit) et mode ; écrit seulement
-   *  ce qui change. Masquée tant qu'il n'y a pas de modèle (pas d'avion, ou ni TAS ni consommation). */
+  /** Montée choisie dans le devis : bornes, valeurs, cases « fixé », états et lecture ; écrit seulement ce qui change.
+   *  Masquée tant qu'il n'y a pas de modèle (pas d'avion, ou ni TAS ni consommation). Relance les consignes de montée. */
   function syncClimbCtl() {
+    scheduleGuide();
     const box = $("climbCtl");
     if (!box) return;
     const m = S.m,
@@ -602,58 +649,57 @@
     put(box, "hidden", !(m && q));
     if (!m || !q) return;
     mountClimbCtl(box);
-    const rows = rpmRows(),
-      canRpm = rows.length >= 2,
-      byRpm = !!S.byRpm && canRpm && curvesShown(),
-      unit = fuelUnit(),
-      h = readAlt(m),
+    const h = readAlt(m),
       p = m.manualPoint(h, manualLaw(m)),
-      rpmNow = byRpm ? S.rpm : rpmForFF(rows, p.ff);
-    put(box.querySelector(".climb-title"), "textContent", CL.title());
+      sc = regimeScale(m, h),
+      full = p.frac >= .995,
+      jet = m.kind === "jet",
+      reg = sc.map ? rpmForFF(sc.rows, p.ff) : p.frac * 100,
+      gas = `${tl("gaz", "throttle", "Leistung", "gases")} ${fmt(p.frac * 100, 0)} %`;
+    put(box.querySelector(".climb-title"), "textContent", typo(`${CL.title()} — ${tl("à mi-montée", "at mid-climb", "halber Steigflug", "a media subida")} (${flTxt(h)})`));
+    put(box.querySelector(".climb-title"), "title", CL.fixTip());
+    // vario : « plein gaz » sous le curseur (plus dans la ligne de base du calcul) ; consigne hors d'atteinte signalée
+    const vsNote = q.calc === "rpm" && !q.full && full ? `${L.full()} — ${tl("vario visé hors d’atteinte", "target rate out of reach", "Ziel-Steigrate nicht erreichbar", "régimen objetivo inalcanzable")}` : full ? L.full() : "";
+    const iasNote = q.calc === "ias" && q.unreach ? tl("vario fixé hors d’atteinte : meilleur vario",
+      "fixed rate out of reach: best rate",
+      "feste Steigrate nicht erreichbar: bestes Steigen", "régimen fijo inalcanzable: mejor régimen") : jet && p.ias < q.ias - 2 ? tl(
+      "limitée au Mach de croisière", "limited to the cruise Mach", "auf Reise-Mach begrenzt", "limitada al Mach de crucero") : "";
     const spec = {
-      ias: [CL.ias(), "kt", q.iMin, q.iMax, 5, q.ias, !byRpm],
-      vs: [CL.vs(), q.full ? `ft/min · ${L.full()}` : "ft/min", 100, q.vMax, 50, q.full ? q.vMax : q.vs, !byRpm],
-      rpm: [CL.rpm(), rpmUnit(m), canRpm ? rows[0].rpm : 0, canRpm ? rows.at(-1).rpm : 1, m.kind === "jet" ? 0.5 : 10, Math.round(
-        rpmNow ??
-        rows[0]?.rpm ?? 0), byRpm]
+      ias: [CL.ias(), q.iMin, q.iMax, 5, q.ias, `${fmt(q.ias, 0)} kt`, iasNote],
+      vs: [CL.vs(), 100, q.vMax, 50, q.calc === "vs" ? Math.min(q.vMax, Math.max(100, p.roc)) : q.calc === "rpm" && q.full ? q.vMax : q
+        .vs,
+        `${fmt(Math.max(0, q.calc === "ias" ? q.vs : p.roc), 0)} ft/min`, vsNote
+      ],
+      rpm: [sc.map ? `${CL.rpm()} (${sc.unit})` : CL.throttle(), sc.lo, sc.hi, sc.step, Number.isFinite(reg) ? Math.min(sc.hi, Math.max(sc
+          .lo, reg)) : full ? sc.hi : sc.lo, sc.map ? (Number.isFinite(reg) ? `${fmt(reg, jet ? 1 : 0)} ${sc.unit}` : tl(
+          "hors de la table", "outside the table", "außerhalb der Tabelle", "fuera de la tabla")) : `${fmt(p.frac * 100, 0)} %`,
+        sc.map ? gas : tl("pas de cartographie moteur : gaz en %", "no engine map: throttle in %",
+          "kein Motorkennfeld: Leistung in %",
+          "sin mapa motor: gases en %")
+      ]
     };
-    for (const [key, [label, u, lo, hi, step, val, editable]] of Object.entries(spec)) {
-      const r = box.querySelector(`.climb-row[data-key="${key}"]`),
-        show = key === "rpm" ? byRpm : true;
-      put(r, "hidden", !show);
-      if (!show) continue;
-      put(r.querySelector("label"), "textContent", label);
-      put(r.querySelector(".climb-unit"), "textContent", u);
-      for (const inp of r.querySelectorAll("input")) {
-        put(inp, "min", String(lo));
-        put(inp, "max", String(hi));
-        put(inp, "step", String(step));
-        put(inp, "disabled", !editable);
-        if (document.activeElement !== inp) put(inp, "value", String(val));
-      }
+    for (const [key, [label, lo, hi, step, val, txt, note]] of Object.entries(spec)) {
+      const f = box.querySelector(`.climb-field[data-key="${key}"]`),
+        calc = key === q.calc,
+        inp = f.querySelector('input[type="range"]'),
+        cb = f.querySelector('input[type="checkbox"]');
+      put(f.querySelector(".climb-lab"), "textContent", label);
+      put(f.querySelector(".climb-fixlab"), "textContent", CL.fix());
+      put(cb, "checked", !calc);
+      put(cb, "title", CL.fixTip());
+      if (f.classList.contains("is-calc") !== calc) f.classList.toggle("is-calc", calc);
+      put(inp, "min", String(lo));
+      put(inp, "max", String(hi));
+      put(inp, "step", String(step));
+      put(inp, "disabled", calc);
+      if (document.activeElement !== inp || calc) put(inp, "value", String(val));
+      put(f.querySelector(".climb-val"), "textContent", txt);
+      put(f.querySelector(".climb-note"), "textContent", [calc ? CL.calc() : "", note].filter(Boolean).join(" · "));
     }
-    // lecture : ce qui découle de la montée choisie à mi-montée (texte, pas de jauge)
-    const throttle = p.frac >= .995 ? L.full() : `${tl("manette", "throttle", "Leistungshebel", "palanca")} ${fmt(p.frac * 100, 0)} %`,
-      rpmTxt = canRpm ? (Number.isFinite(rpmNow) ? `${tl("régime", "engine setting", "Drehzahl", "régimen")} ${fmt(rpmNow, m.kind === "jet" ? 1 : 0)} ${rpmUnit(m)}` :
-        `${tl("régime", "engine setting", "Drehzahl", "régimen")} ${tl("hors de la table du profil", "outside the profile table", "außerhalb der Profiltabelle", "fuera de la tabla del perfil")}`) :
-      `${tl("régime", "engine setting", "Drehzahl", "régimen")} ${CL.unknown()}`,
-      parts = [byRpm ? `${tl("vitesse indiquée", "indicated airspeed", "angezeigte Geschwindigkeit", "velocidad indicada")} ${fmt(p.ias, 0)} kt` : "", byRpm ? `${tl("vario", "vario", "Vario", "vario")} ${fmt(Math.max(0, p.roc), 0)} ft/min` : "",
-        byRpm ? "" : rpmTxt, throttle, `${tl("débit", "fuel flow", "Verbrauch", "consumo")} ${showFuel(p.ff)} ${unit}/h`
-      ].filter(Boolean);
-    put(box.querySelector(".climb-read"), "textContent", typo(`${tl("À mi-montée", "At mid-climb", "Halber Steigflug", "A media subida")} (${flTxt(h)}) : ${parts.join(" · ")}`));
-    const b = box.querySelector(".climb-mode");
-    put(b, "hidden", !canRpm);
-    put(b, "textContent", byRpm ? CL.bySpeed() : CL.byRpm());
-    const tip = byRpm ? tl("Revenir au réglage par la vitesse indiquée et le vario.", "Back to setting by indicated airspeed and vario.",
-        "Zurück zur Einstellung nach angezeigter Geschwindigkeit und Vario.", "Volver a ajustar por velocidad indicada y vario.") :
-      tl("Choisir le régime moteur (table du profil) : vitesse et vario deviennent les valeurs lues.",
-        "Choose the engine setting (profile table): speed and vario become the read values.",
-        "Triebwerksdrehzahl wählen (Profiltabelle): Geschwindigkeit und Vario werden zu Anzeigewerten.",
-        "Elegir el régimen del motor (tabla del perfil): velocidad y vario pasan a ser valores leídos.");
-    put(b, "title", tip);
+    put(box.querySelector(".climb-read"), "textContent", typo(`${tl("Débit", "Fuel flow", "Verbrauch", "Consumo")} ${showFuel(p.ff)} ${fuelUnit()}/h · TAS ${fmt(p.tas, 0)} kt${sc.map ? "" : ` · ${gas}`}`));
   }
-  /** Modèle et paramètres du dernier devis, sans tracer les courbes (vue simple) : la montée choisie et sa lecture
-   *  restent à jour. m : modèle (null : rien) ; c : paramètres du trajet (voir l'en-tête). */
+  /** Modèle et paramètres du dernier devis, sans tracer les courbes (vue simple) : la montée choisie, les consignes et leur
+   *  lecture restent à jour. m : modèle (null : rien) ; c : paramètres du trajet (voir l'en-tête). */
   function prepare(m, c) {
     if (!m) {
       S.m = null;
@@ -664,6 +710,292 @@
     S.c = c;
     ensureManual(m);
     syncClimbCtl();
+  }
+
+  // ---------------------------------------------------------------------------------------------------
+  // Consignes de montée (#climbGuide, toutes vues, tous niveaux) : un objectif par segments, un tableau par tranche
+  // d'altitude et une phrase « Régler / Tenir / Attendu » produite à la source, dans la langue de la page
+  // ---------------------------------------------------------------------------------------------------
+
+  /** Objectifs de montée proposés, dans l'ordre des segments. */
+  const GOALS = ["eco", "vy", "fast", "prof", "man"];
+  /** Libellé court (segment) et explication (infobulle) de chaque objectif. */
+  const GOAL_TXT = {
+    eco: () => [tl("Éco", "Eco", "Spar", "Eco"), tl(
+      "Montée économique : le moins de carburant jusqu’au niveau du plan (la distance parcourue en montée est retranchée de la croisière).",
+      "Economy climb: least fuel to the plan level (the distance covered while climbing is deducted from the cruise).",
+      "Sparsamer Steigflug: am wenigsten Kraftstoff bis zur Planhöhe (die Steigstrecke wird vom Reiseflug abgezogen).",
+      "Ascenso económico: el menor combustible hasta el nivel del plan (la distancia en ascenso se descuenta del crucero).")],
+    vy: () => ["Vy", tl("Meilleur taux de montée : le plus d’altitude par minute, plein gaz.",
+      "Best rate of climb: most altitude per minute, full throttle.", "Bestes Steigen: größter Höhengewinn pro Minute, Vollgas.",
+      "Mejor régimen de ascenso: más altitud por minuto, gases a fondo.")],
+    fast: () => [tl("Rapide", "Fast", "Schnell", "Rápida"), tl(
+      "Montée rapide : le trajet entier le plus court en temps (plus vite, moins de vario).",
+      "Fast climb: shortest whole trip in time (faster, less climb rate).",
+      "Schneller Steigflug: kürzeste Gesamtflugzeit (schneller, weniger Steigrate).",
+      "Ascenso rápido: el trayecto completo más corto en tiempo (más rápido, menos régimen).")],
+    prof: () => [tl("Profil", "Profile", "Profil", "Perfil"), tl("Badin de montée du profil, plein gaz.",
+      "Profile climb IAS, full throttle.", "Steig-IAS des Profils, Vollgas.", "IAS de ascenso del perfil, gases a fondo.")],
+    man: () => [tl("Réglée", "Set", "Eingestellt", "Ajustada"), tl(
+      "Montée choisie : réglée par les curseurs « Montée choisie » de la vue détaillée (badin, vario, régime).",
+      "Chosen climb: set with the “Chosen climb” sliders of the detailed view (IAS, vario, engine setting).",
+      "Gewählter Steigflug: mit den Reglern „Gewählter Steigflug“ der Detailansicht eingestellt (IAS, Vario, Drehzahl).",
+      "Ascenso elegido: ajustado con los cursores «Ascenso elegido» de la vista detallada (IAS, vario, régimen).")]
+  };
+  /** Objectif choisi, mémorisé dans ce navigateur (fpClimbGoal) ; « Profil » par défaut. */
+  const goalGet = () => {
+    try {
+      const v = localStorage.getItem("fpClimbGoal");
+      return GOALS.includes(v) ? v : "prof";
+    } catch {
+      return "prof";
+    }
+  };
+  /** Badin de montée du profil passé au modèle (profil complété par la fiche EUROCONTROL : modelProfile de la page), 0
+   *  s'il manque. */
+  const profileClimbIas = () => {
+    try {
+      return +(window.modelProfile?.() || active)?.climb?.iasKt || 0;
+    } catch {
+      return 0;
+    }
+  };
+  /** Loi h → { ve, frac } d'un objectif pour le modèle m, croisière visée kC (null si l'objectif n'est pas disponible). */
+  function goalLaw(m, goal, kC) {
+    if (goal === "man") return manualLaw(m);
+    if (goal === "prof") {
+      const ias = profileClimbIas();
+      return ias > 0 ? m.manualLaw(ias, 0) : null;
+    }
+    return m.climbLaw({
+      eco: "fuel",
+      vy: "vy",
+      fast: "time"
+    } [goal], kC);
+  }
+  /** Altitude en clair pour les consignes : « sol », « 2 000 ft » sous 5 000 ft, niveau au-dessus (« FL065 »). */
+  const altTxt = h => h <= 0 ? tl("sol", "ground", "Boden", "suelo") : h < 5000 ? `${fmt(h, 0)} ft` : flTxt(h);
+  /** Montée d'un objectif jusqu'au niveau du plan (borné au plafond) : intégration par pas (point milieu) et relevé aux
+   *  tranches (sol, 2 000, 5 000, 10 000 ft puis tous les 5 000 ft, niveau du plan) : gaz, régime de la cartographie à
+   *  cette altitude, Badin, vario, Mach, temps et carburant cumulés. Sortie : { top, rows, reached, minutes, fuel, law }
+   *  ou null (pas de niveau, objectif indisponible). */
+  function climbGuide(m, c, goal) {
+    const top = Math.round(Math.min((c?.FL || 0) * 100, Math.floor(m.ceiling / 100) * 100) / 100) * 100;
+    if (!(top > 0)) return null;
+    const law = goalLaw(m, goal, m.cruise(top, "normal"));
+    if (!law) return null;
+    const marks = [0, 2000, 5000, 10000, 15000, 20000, 25000, 30000, 35000, 40000, 45000, 50000].filter(h => h < top - 250).concat(top),
+      dh = Math.max(100, Math.min(500, top / 60));
+    /** Relevé de la loi à l'altitude h ; t, f : temps (min) et carburant (unité du profil) cumulés depuis le sol. */
+    const row = (h, t, f) => {
+      const p = m.manualPoint(h, law),
+        rows = rpmRows(h);
+      return {
+        h,
+        frac: p.frac,
+        ias: p.ias,
+        roc: p.roc,
+        ff: p.ff,
+        mach: p.tas / m.atm(h).a,
+        rpm: rows.length >= 2 ? rpmForFF(rows, p.ff) : null,
+        t,
+        f
+      };
+    };
+    const rows = [row(0, 0, 0)];
+    let h = 0,
+      t = 0,
+      f = 0,
+      k = 1,
+      reached = true;
+    while (k < marks.length && h < top - 1e-6) {
+      const st = Math.min(dh, marks[k] - h),
+        p = m.manualPoint(h + st / 2, law);
+      if (!(p.roc > 20)) {
+        reached = false;
+        break;
+      }
+      const dt = st / p.roc;
+      t += dt;
+      f += p.ff * dt / 60;
+      h += st;
+      if (Math.abs(h - marks[k]) < 1e-6) {
+        h = marks[k];
+        rows.push(row(h, t, f));
+        k++;
+      }
+    }
+    return {
+      top,
+      rows,
+      reached,
+      minutes: t,
+      fuel: f,
+      law
+    };
+  }
+  /** Phrase de consigne d'une montée g (objectif goal) : quoi régler (gaz, hélice ou régime), quoi tenir (l'instrument
+   *  qui porte la consigne), quoi attendre (l'autre instrument, le niveau atteint, le temps et le carburant). HTML. */
+  function guideSay(m, g, goal) {
+    const rows = g.rows,
+      r0 = rows[0],
+      rN = rows.at(-1),
+      q = S.manual,
+      U = rpmUnit(m),
+      jet = m.kind === "jet",
+      dec = jet ? 1 : 0,
+      full = r => r.frac >= .995,
+      allFull = rows.every(full),
+      firstFull = rows.find(full),
+      pct = r => `${fmt(r.frac * 100, 0)} %`,
+      rpms = rows.map(r => r.rpm).filter(Number.isFinite);
+    // Régler : gaz (plein, réduits, puis plein), régime de la cartographie ou hélice
+    let set;
+    if (allFull) set = L.full();
+    else if (!firstFull) {
+      const a = r0.frac * 100,
+        b = rN.frac * 100;
+      set = `${tl("gaz", "throttle", "Leistung", "gases")} ${Math.abs(a - b) < 3 ? fmt(a, 0) : `${fmt(a, 0)} → ${fmt(b, 0)}`} %`;
+    } else set = tl(`gaz ${pct(r0)} au départ, plein gaz à partir de ${altTxt(firstFull.h)}`,
+      `throttle ${pct(r0)} at first, full throttle from ${altTxt(firstFull.h)}`,
+      `Leistung ${pct(r0)} zu Beginn, Vollgas ab ${altTxt(firstFull.h)}`,
+      `gases ${pct(r0)} al inicio, a fondo desde ${altTxt(firstFull.h)}`);
+    if (rpms.length) set += ` (${Math.max(...rpms) - Math.min(...rpms) < (jet ? 1 : 30) ? `≈ ${fmt(rpms[0], dec)}` : `${fmt(rpms[0], dec)} → ${fmt(rpms.at(-1), dec)}`} ${U})`;
+    else if (allFull && m.kind === "piston") set += `, ${tl("hélice plein petit pas", "propeller fully fine", "Propeller auf kleinste Steigung", "hélice a paso mínimo")}`;
+    else if (allFull && m.kind === "turboprop") set += `, ${tl("hélice au régime maximal", "propeller at maximum RPM", "Propeller auf Höchstdrehzahl", "hélice a RPM máximas")}`;
+    // Tenir : le badin (constant, variable, ou Mach au-dessus de l'altitude de conjonction d'un réacteur), et le vario
+    // quand les gaz le tiennent (montée réglée, Badin et vario fixés)
+    const ias = rows.map(r => r.ias),
+      i0 = ias[0],
+      holdVs = goal === "man" && q?.calc === "rpm" && !q.full && !full(r0);
+    let hx = null;
+    if (jet && (goal === "man" || goal === "prof"))
+      for (let x = 500; x <= rN.h; x += 500)
+        if (m.manualPoint(x, g.law).ias < i0 - 2) {
+          hx = x;
+          break;
+        }
+    let hold = hx != null ? tl(`${fmt(i0, 0)} kt au badin, puis Mach ${fmt(m.mRef, 2)} à partir de ${altTxt(hx)}`,
+        `${fmt(i0, 0)} kt IAS, then Mach ${fmt(m.mRef, 2)} from ${altTxt(hx)}`, `${fmt(i0, 0)} kt IAS, dann Mach ${fmt(m.mRef, 2)} ab ${altTxt(hx)}`,
+        `${fmt(i0, 0)} kt IAS, luego Mach ${fmt(m.mRef, 2)} desde ${altTxt(hx)}`) :
+      Math.max(...ias) - Math.min(...ias) <= 4 ? tl(`${fmt(i0, 0)} kt au badin`, `${fmt(i0, 0)} kt on the airspeed indicator`,
+        `${fmt(i0, 0)} kt am Fahrtmesser`, `${fmt(i0, 0)} kt en el anemómetro`) :
+      tl(`le badin, de ${fmt(i0, 0)} kt au sol à ${fmt(rN.ias, 0)} kt à ${altTxt(rN.h)}`,
+        `the airspeed, from ${fmt(i0, 0)} kt at ground level to ${fmt(rN.ias, 0)} kt at ${altTxt(rN.h)}`,
+        `die Fahrt, von ${fmt(i0, 0)} kt am Boden bis ${fmt(rN.ias, 0)} kt auf ${altTxt(rN.h)}`,
+        `la velocidad, de ${fmt(i0, 0)} kt en el suelo a ${fmt(rN.ias, 0)} kt a ${altTxt(rN.h)}`);
+    if (holdVs) hold += tl(` et ${fmt(q.vs, 0)} ft/min au vario (avec les gaz)`, ` and ${fmt(q.vs, 0)} ft/min on the vario (with the throttle)`,
+      ` und ${fmt(q.vs, 0)} ft/min am Variometer (mit der Leistung)`, ` y ${fmt(q.vs, 0)} ft/min en el variómetro (con los gases)`);
+    // Attendu : le vario (ou sa décroissance une fois plein gaz), puis le niveau, le temps et le carburant
+    const v0 = fmt(Math.max(0, r0.roc), 0),
+      vN = fmt(Math.max(0, rN.roc), 0);
+    let expect = holdVs ? (firstFull ? tl(`vario tenu jusqu’à ${altTxt(firstFull.h)}, puis en baisse jusqu’à ${vN} ft/min à ${altTxt(rN.h)}`,
+        `rate held up to ${altTxt(firstFull.h)}, then decreasing to ${vN} ft/min at ${altTxt(rN.h)}`,
+        `Steigrate gehalten bis ${altTxt(firstFull.h)}, dann abnehmend bis ${vN} ft/min auf ${altTxt(rN.h)}`,
+        `régimen mantenido hasta ${altTxt(firstFull.h)}, luego en descenso hasta ${vN} ft/min a ${altTxt(rN.h)}`) : tl(
+        `vario tenu jusqu’à ${altTxt(rN.h)}`, `rate held up to ${altTxt(rN.h)}`, `Steigrate gehalten bis ${altTxt(rN.h)}`,
+        `régimen mantenido hasta ${altTxt(rN.h)}`)) :
+      tl(`vario de ${v0} ft/min au sol à ${vN} ft/min à ${altTxt(rN.h)}`, `vario from ${v0} ft/min at ground level to ${vN} ft/min at ${altTxt(rN.h)}`,
+        `Steigrate von ${v0} ft/min am Boden bis ${vN} ft/min auf ${altTxt(rN.h)}`, `régimen de ${v0} ft/min en el suelo a ${vN} ft/min a ${altTxt(rN.h)}`);
+    const fu = `${showFuel(g.fuel)} ${fuelUnit()}`;
+    expect += g.reached ? tl(` ; ${altTxt(g.top)} en ${hmTxt(g.minutes)}, ${fu}`, `; ${altTxt(g.top)} in ${hmTxt(g.minutes)}, ${fu}`,
+      `; ${altTxt(g.top)} in ${hmTxt(g.minutes)}, ${fu}`, `; ${altTxt(g.top)} en ${hmTxt(g.minutes)}, ${fu}`) : ` — ⚠ ${tl(`vario nul avant ${altTxt(g.top)} : niveau non atteint avec cette consigne`, `climb rate reaches zero before ${altTxt(g.top)}: level not reached with this setting`, `Steigrate vor ${altTxt(g.top)} null: Höhe mit dieser Einstellung nicht erreicht`, `régimen nulo antes de ${altTxt(g.top)}: nivel no alcanzado con esta consigna`)}`;
+    return typo(`<b>${tl("Régler", "Set", "Einstellen", "Ajustar")}</b> : ${set}. <b>${tl("Tenir", "Hold", "Halten", "Mantener")}</b> : ${hold}. <b>${tl("Attendu", "Expect", "Erwartet", "Esperado")}</b> : ${expect}.`);
+  }
+  /** Tableau des consignes par tranche d'altitude : altitude, gaz (« plein » ou %), RPM / N1 (cartographie), Badin à
+   *  tenir, vario attendu, temps cumulé. HTML. */
+  function guideTable(m, g) {
+    const map = g.rows.some(r => Number.isFinite(r.rpm)),
+      jet = m.kind === "jet";
+    const head = [tl("Altitude", "Altitude", "Höhe", "Altitud"), tl("Gaz", "Throttle", "Leistung", "Gases"), ...(map ? [rpmUnit(m)
+      .replace("% ", "") + (jet ? " (%)" : "")
+    ] : []), tl("Badin à tenir (kt)", "IAS to fly (kt)", "Zu haltende IAS (kt)",
+      "IAS a mantener (kt)"), tl("Vario attendu (ft/min)", "Expected rate (ft/min)", "Erwartete Steigrate (ft/min)",
+      "Régimen esperado (ft/min)"), tl("Temps", "Time", "Zeit", "Tiempo")];
+    const body = g.rows.map(r => `<tr><td>${altTxt(r.h)}</td><td>${r.frac >= .995 ? tl("plein", "full", "voll", "a fondo") : `${fmt(r.frac * 100, 0)} %`}</td>${map ? `<td>${Number.isFinite(r.rpm) ? fmt(r.rpm, jet ? 1 : 0) : "—"}</td>` : ""}<td>${fmt(r.ias, 0)}${jet && r.mach >= .4 ? ` <small>M${fmt(r.mach, 2)}</small>` : ""}</td><td>${fmt(Math.max(0, r.roc), 0)}</td><td>${r.h ? hmTxt(r.t) : "—"}</td></tr>`).join("");
+    return typo(`<table class="climb-guide-table"><thead><tr>${head.map(x => `<th>${x}</th>`).join("")}</tr></thead><tbody>${body}</tbody></table>`);
+  }
+  let guideTimer = 0,
+    guideHtml = "";
+  /** Consignes redessinées un peu plus tard (plusieurs réglages de suite : un seul calcul). */
+  function scheduleGuide() {
+    clearTimeout(guideTimer);
+    guideTimer = setTimeout(renderGuide, 60);
+  }
+  /** Montée d'un objectif, mémorisée par modèle et niveau (la montée réglée : par réglage) ; null en cas d'échec. */
+  function guideFor(goal) {
+    const m = S.m,
+      c = S.c,
+      q = S.manual;
+    if (S.gModel !== m || S.gFL !== c?.FL) {
+      S.gCache = new Map();
+      S.gModel = m;
+      S.gFL = c?.FL;
+    }
+    const k = goal === "man" ? `man|${q ? [q.ias, q.vs, q.full, q.frac, q.calc].join("|") : ""}` : goal;
+    if (!S.gCache.has(k)) {
+      if (goal === "man")
+        for (const x of [...S.gCache.keys()])
+          if (x.startsWith("man|")) S.gCache.delete(x);
+      let g = null;
+      try {
+        g = climbGuide(m, c, goal);
+      } catch (e) {
+        console.error("Consignes de montée :", e);
+      }
+      S.gCache.set(k, g);
+    }
+    return S.gCache.get(k);
+  }
+  /** Bloc « Consignes de montée » : segments d'objectif (avec temps et carburant de chacun jusqu'au niveau), phrase de
+   *  consigne et tableau de l'objectif choisi. Masqué sans modèle ; écrit seulement s'il change. Les montées des autres
+   *  objectifs (petites lignes des segments) sont calculées ensuite, sans retarder l'affichage. */
+  function renderGuide() {
+    const box = $("climbGuide");
+    if (!box) return;
+    const m = S.m,
+      c = S.c;
+    if (!m || !c || !active || !S.manual) return put(box, "hidden", true);
+    let goal = goalGet();
+    if (goal === "prof" && !(profileClimbIas() > 0)) goal = "vy";
+    const g = guideFor(goal),
+      seg = gl => {
+        const [lab, tip] = GOAL_TXT[gl](),
+          off = gl === "prof" && !(profileClimbIas() > 0),
+          t = off ? tl("Pas de Badin de montée dans le profil (Montée › Badin).", "No climb IAS in the profile (Climb › IAS).",
+            "Keine Steig-IAS im Profil (Steigflug › IAS).", "Sin IAS de ascenso en el perfil (Ascenso › IAS).") : tip;
+        return `<button type="button" class="repo-seg" data-goal="${gl}" aria-pressed="${gl === goal}"${off ? " disabled" : ""} title="${escXml(t)}">${lab}<small data-goal-sum="${gl}"></small></button>`;
+      };
+    const html = `<div class="climb-guide-head"><h3>${tl("Consignes de montée", "Climb instructions", "Steigflug-Anweisungen", "Consignas de ascenso")}</h3><span class="repo-segs" role="group" aria-label="${escXml(tl("Objectif de la montée", "Climb goal", "Ziel des Steigflugs", "Objetivo del ascenso"))}">${GOALS.map(seg).join("")}</span></div>` +
+      (g ? `<p class="climb-say">${guideSay(m, g, goal)}</p><div class="climb-guide-wrap">${guideTable(m, g)}</div>` :
+        `<p class="mut">${tl("Pas de montée à calculer : niveau du plan nul ou au sol.", "No climb to compute: plan level is zero or at ground level.", "Kein Steigflug zu berechnen: Planhöhe null oder am Boden.", "Ningún ascenso que calcular: nivel del plan nulo o en el suelo.")}</p>`) +
+      `<p class="mut climb-guide-foot">${typo(tl("Selon le modèle de performances du profil (atmosphère du devis, masse non modélisée) ; à confronter au manuel de vol.", "From the profile’s performance model (fuel plan atmosphere, mass not modelled); check against the flight manual.", "Nach dem Leistungsmodell des Profils (Atmosphäre der Planung, Masse nicht modelliert); mit dem Flughandbuch abgleichen.", "Según el modelo de rendimiento del perfil (atmósfera del plan, masa no modelizada); contrastar con el manual de vuelo."))}</p>`;
+    put(box, "hidden", false);
+    if (html !== guideHtml) {
+      guideHtml = html;
+      box.innerHTML = html;
+    }
+    if (!box.dataset.ready) {
+      box.dataset.ready = "1";
+      box.addEventListener("click", e => {
+        const b = e.target.closest("button[data-goal]");
+        if (!b || b.disabled) return;
+        try {
+          localStorage.setItem("fpClimbGoal", b.dataset.goal);
+        } catch {}
+        renderGuide();
+      });
+    }
+    // temps et carburant de chaque objectif jusqu'au niveau (le « sweet point » entre éco et rapide), calculés ensuite
+    clearTimeout(renderGuide.sum);
+    renderGuide.sum = setTimeout(() => {
+      if (S.m !== m) return;
+      for (const gl of GOALS) {
+        const el = box.querySelector(`[data-goal-sum="${gl}"]`),
+          x = el && !el.closest("button").disabled ? guideFor(gl) : null;
+        if (el) put(el, "textContent", x?.reached ? `${hmTxt(x.minutes)} · ${showFuel(x.fuel)} ${fuelUnit()}` : "—");
+      }
+    }, 30);
   }
 
   // ---------------------------------------------------------------------------------------------------
@@ -881,7 +1213,7 @@
       });
       window.altitudeOptimum = null;
       renderPinned();
-      syncSliders();
+      syncManual();
       StickyFrame.refresh();
     };
     if (!(c.D > 0)) return stop(tl("Distance nulle : renseigne une distance pour tracer les courbes.",
@@ -944,7 +1276,7 @@
     else $("climbBlock").hidden = true;
     if (K.top > 0) guard("panelTas", "tasChart", tl("TAS selon le niveau", "TAS by level", "TAS nach Flughöhe", "TAS según el nivel"),
       () => drawTas(m, c, K));
-    syncSliders();
+    syncManual();
     if (sync.pinned != null) sync.charts.forEach(ch => sync.drawPin(ch, sync.pinned));
     renderPinned();
     StickyFrame.refresh();
@@ -1374,6 +1706,146 @@
   // 2 à 4. Montée : vario, vitesses, comparaison, tables
   // ---------------------------------------------------------------------------------------------------
 
+  /** Abscisse du graphe de montée : « alt » (selon l'altitude, défaut) ou « rpm » (selon le régime, à mi-montée) ;
+   *  mémorisée dans ce navigateur (fpClimbX). */
+  const climbX = () => {
+    try {
+      return localStorage.getItem("fpClimbX") === "rpm" ? "rpm" : "alt";
+    } catch {
+      return "alt";
+    }
+  };
+  /** Bascule « par altitude ↔ par régime » de la rangée de montée (#climbX) : boutons créés une fois, libellés et état
+   *  écrits seulement s'ils changent ; un clic redessine les courbes (sans recalcul du cache). */
+  function mountClimbX() {
+    const box = $("climbX");
+    if (!box) return;
+    if (!box.dataset.ready) {
+      box.dataset.ready = "1";
+      box.innerHTML =
+        '<button type="button" class="repo-seg" data-x="alt"></button><button type="button" class="repo-seg" data-x="rpm"></button>';
+      box.addEventListener("click", e => {
+        const b = e.target.closest("button[data-x]");
+        if (!b) return;
+        try {
+          localStorage.setItem("fpClimbX", b.dataset.x);
+        } catch {}
+        if (S.m && S.c && curvesShown()) renderAll(S.m, S.c);
+      });
+    }
+    const x = climbX();
+    for (const b of box.querySelectorAll("button")) {
+      put(b, "textContent", b.dataset.x === "alt" ? tl("par altitude", "by altitude", "nach Höhe", "por altitud") : tl("par régime",
+        "by engine setting", "nach Drehzahl", "por régimen"));
+      if (b.getAttribute("aria-pressed") !== String(b.dataset.x === x)) b.setAttribute("aria-pressed", String(b.dataset.x === x));
+    }
+    put(box, "title", tl("Graphe de montée : selon l’altitude, ou selon le régime à mi-montée (au Badin de la montée choisie)",
+      "Climb chart: by altitude, or by engine setting at mid-climb (at the chosen climb IAS)",
+      "Steigflugdiagramm: nach Höhe oder nach Drehzahl im halben Steigflug (bei der IAS des gewählten Steigflugs)",
+      "Gráfico de ascenso: por altitud, o por régimen a media subida (a la IAS del ascenso elegido)"));
+  }
+  /** Graphe de montée selon le régime, à mi-montée (readAlt) : vario au Badin de la montée choisie (violet) et à Vy (bleu),
+   *  carburant par 1000 ft (échelle de droite), réglage du moment en trait vertical ; abscisse : RPM / N1 de la
+   *  cartographie moteur, sinon gaz en %. Lecture au survol (hors des jauges synchronisées, qui suivent l'altitude). */
+  function drawClimbRegime(m, c) {
+    const svg = $("climbChart"),
+      H = 230,
+      W = chartW(svg, H),
+      Lm = 52,
+      R = 44,
+      T = 14,
+      B = 30,
+      q = S.manual,
+      h = readAlt(m),
+      sc = regimeScale(m, h),
+      unit = fuelUnit(),
+      PER = L.per1000(),
+      jet = m.kind === "jet",
+      base = m.manualLaw(q.ias, 0),
+      fullVy = m.settingAt(1e12, h).ff,
+      n = 40,
+      pts = [];
+    sync.charts = sync.charts.filter(x => x.svg !== svg); // hors des jauges synchronisées (abscisse : le régime)
+    for (let i = 0; i <= n; i++) {
+      const x = sc.lo + (sc.hi - sc.lo) * i / n,
+        frac = fracOfRegime(m, h, x, q.ias),
+        p = m.manualPoint(h, hh => ({
+          ve: base(hh).ve,
+          frac
+        })),
+        vy = m.settingAt(sc.map ? ffForRpm(sc.rows, x) : frac * fullVy, h);
+      pts.push({
+        x,
+        frac,
+        p,
+        vy
+      });
+    }
+    const rAx = niceAxis(0, Math.max(...pts.map(o => Math.max(o.p.roc, o.vy.roc)), 100) * 1.03, 4, true),
+      fAx = niceAxis(0, Math.max(...pts.filter(o => o.p.roc > 100 && Number.isFinite(o.p.fuelPer1000)).map(o => cv(o.p.fuelPer1000)),
+        1) * 1.03, 4, true),
+      xAx = niceAxis(sc.lo, sc.hi, 5),
+      X = v => Lm + (v - sc.lo) / ((sc.hi - sc.lo) || 1) * (W - Lm - R),
+      Y = v => T + (1 - Math.max(0, v) / rAx.hi) * (H - T - B),
+      Yf = v => T + (1 - v / fAx.hi) * (H - T - B),
+      xTxt = v => sc.map ? `${fmt(v, jet ? 1 : 0)} ${sc.unit}` : `${fmt(v, 0)} %`;
+    let g = "";
+    for (const v of rAx.ticks) g += `<line class="grid-line" x1="${Lm}" x2="${W - R}" y1="${Y(v)}" y2="${Y(v)}"/><text x="${Lm - 5}" y="${Y(v) + 4}" text-anchor="end">${fmt(v, rAx.dec)}</text>`;
+    for (const v of fAx.ticks) g += `<text x="${W - R + 5}" y="${Yf(v) + 4}">${fmt(v, fAx.dec)}</text>`;
+    for (const v of xAx.ticks)
+      if (v >= sc.lo - 1e-9 && v <= sc.hi + 1e-9) g += `<text x="${X(v)}" y="${H - B + 14}" text-anchor="middle">${fmt(v, xAx.dec)}</text>`;
+    /** Tracé SVG d'une grandeur f(échantillon) sur les échantillons retenus par sel. */
+    const pl = (f, sel = () => true) => pts.filter(sel).map((o, j) => `${j ? "L" : "M"}${X(o.x).toFixed(1)},${f(o).toFixed(1)}`).join("");
+    const cur = (() => {
+      const p = m.manualPoint(h, manualLaw(m));
+      return sc.map ? rpmForFF(sc.rows, p.ff) : p.frac * 100;
+    })();
+    g += `<line class="axis" x1="${Lm}" x2="${W - R}" y1="${H - B}" y2="${H - B}"/>` +
+      `<path class="curve" d="${pl(o => Y(o.vy.roc))}"/><path class="curve-fuel" d="${pl(o => Yf(cv(o.p.fuelPer1000)), o => o.p.roc > 100)}"/><path class="curve-man" d="${pl(o => Y(o.p.roc))}"/>` +
+      (Number.isFinite(cur) ? `<line class="plan-line" x1="${X(cur).toFixed(1)}" x2="${X(cur).toFixed(1)}" y1="${T}" y2="${H - B}"/><text class="plan-label" x="${(X(cur) + 3).toFixed(1)}" y="${T + 10}">${tl("réglage", "setting", "Einstellung", "ajuste")}</text>` : "") +
+      `<text x="${(Lm + W - R) / 2}" y="${H - 3}" text-anchor="middle">${sc.map ? `${tl("Régime", "Engine setting", "Drehzahl", "Régimen")} (${sc.unit})` : CL.throttle()} — ${flTxt(h)}</text><text x="11" y="${(T + H - B) / 2}" text-anchor="middle" transform="rotate(-90 11 ${(T + H - B) / 2})">ft/min</text>` +
+      `<text x="${W - 8}" y="${(T + H - B) / 2}" text-anchor="middle" transform="rotate(90 ${W - 8} ${(T + H - B) / 2})">${PER}</text>` +
+      `<line id="climbCursor" class="cursor" x1="0" x2="0" y1="${T}" y2="${H - B}" visibility="hidden"/><rect id="climbHit" x="${Lm}" y="${T}" width="${W - Lm - R}" height="${H - T - B}" fill="transparent"/>`;
+    svg.innerHTML = typo(g);
+    svg.hidden = false;
+    svg.dataset.t = T;
+    svg.dataset.b = B;
+    panel("panelClimb", tl("Montée — vario selon le régime", "Climb — rate by engine setting", "Steigflug — Steigrate nach Drehzahl",
+        "Ascenso — régimen según el ajuste del motor"),
+      `<p>${tl("À mi-montée", "At mid-climb", "Halber Steigflug", "A media subida")} (${flTxt(h)}) — ${L.man()} : ${fmt(q.ias, 0)} kt</p>`,
+      legend([
+        [sw(COL.prof), lab(tl("Vario à Vy", "Rate at Vy", "Steigrate bei Vy", "Régimen a Vy"), COL.prof), tl(
+          "meilleur vario pour ce régime",
+          "best rate for this setting", "bestes Steigen bei dieser Einstellung", "mejor régimen para este ajuste")],
+        [sw(COL.man), lab(L.man(), COL.man), tl("vario au Badin de la montée choisie", "rate at the chosen climb IAS",
+          "Steigrate bei der IAS des gewählten Steigflugs", "régimen a la IAS del ascenso elegido")],
+        [sw(COL.fast), lab(tl("Carburant", "Fuel", "Kraftstoff", "Combustible"), COL.fast), `${PER} ${tl("(échelle de droite)", "(right scale)", "(rechte Skala)", "(escala derecha)")}`]
+      ]),
+      `<div id="climbReadout" class="readout"></div>`,
+      reading(tl(
+        "ce que donne chaque régime à mi-montée : à gauche, peu de gaz, peu de vario ; le trait vertical est le réglage du moment. Le carburant par 1000 ft baisse souvent quand le régime monte : on reste moins longtemps en montée.",
+        "what each engine setting gives at mid-climb: on the left, little throttle, little climb rate; the vertical line is the current setting. Fuel per 1000 ft often drops as the setting increases: less time spent climbing.",
+        "was jede Einstellung im halben Steigflug ergibt: links wenig Leistung, wenig Steigrate; die senkrechte Linie ist die aktuelle Einstellung. Der Kraftstoff je 1000 ft sinkt oft mit steigender Leistung: kürzere Steigzeit.",
+        "lo que da cada régimen a media subida: a la izquierda, pocos gases, poco régimen de ascenso; la línea vertical es el ajuste actual. El combustible por 1000 ft suele bajar al subir el régimen: menos tiempo en ascenso."
+      )));
+    const hit = $("climbHit");
+    hit.style.cursor = "crosshair";
+    hit.onpointermove = e => {
+      const b = svg.getBoundingClientRect(),
+        x = sc.lo + ((e.clientX - b.left) / (b.width || 1) * W - Lm) / (W - Lm - R) * (sc.hi - sc.lo),
+        o = pts.reduce((a, s) => Math.abs(s.x - x) < Math.abs(a.x - x) ? s : a, pts[0]);
+      cursorAt("climbCursor", X(o.x));
+      const ro = $("climbReadout");
+      if (ro) ro.innerHTML = typo(`<b>⌖ ${xTxt(o.x)}</b><dl class="kvp"><dt>${lab(tl("Vario à Vy", "Rate at Vy", "Steigrate bei Vy", "Régimen a Vy"), COL.prof)}</dt><dd>${fmt(o.vy.roc, 0)} ft/min · ${fmt(o.vy.ias, 0)} kt</dd><dt>${lab(L.man(), COL.man)}</dt><dd>${fmt(Math.max(0, o.p.roc), 0)} ft/min · ${fmt(o.p.ias, 0)} kt · ${tl("gaz", "throttle", "Leistung", "gases")} ${fmt(o.frac * 100, 0)} %</dd><dt>${lab(tl("Carburant", "Fuel", "Kraftstoff", "Combustible"), COL.fast)}</dt><dd>${Number.isFinite(o.p.fuelPer1000) && o.p.roc > 20 ? `${fmt(cv(o.p.fuelPer1000), 1)} ${PER} · ` : ""}${showFuel(o.p.ff)} ${unit}/h</dd></dl>`);
+    };
+    hit.onpointerleave = () => {
+      $("climbCursor")?.setAttribute("visibility", "hidden");
+      if ($("climbReadout")) $("climbReadout").textContent = "";
+    };
+    hit.onclick = null;
+    hit.onpointerdown = null;
+  }
+
   /** Courbes de montée (vario, Badin), table comparative des lois, table par altitude et régimes RPM, et leurs panneaux. */
   function drawClimb(m, c, K) {
     $("climbBlock").hidden = false;
@@ -1400,7 +1872,9 @@
       kC = m.cruise(hTarget, "normal");
 
     // --- 2. vario selon l'altitude ------------------------------------------------------------------
+    mountClimbX();
     guard("panelClimb", "climbChart", tl("Montée — vario", "Climb — rate", "Steigflug — Steigrate", "Ascenso — régimen"), () => {
+      if (climbX() === "rpm") return drawClimbRegime(m, c);
       const svg = $("climbChart"),
         H = 230,
         W = chartW(svg, H),
@@ -1430,7 +1904,7 @@
       g += `<line class="axis" x1="${Lm}" x2="${W - R}" y1="${H - B}" y2="${H - B}"/>` +
         `<path class="band" d="${pl(p => Y(Math.max(0, p.profileRoc)))}"/><path class="curve" d="${pl(p => Y(Math.max(0, p.roc)))}"/>` +
         `<path class="curve-fuel" d="${pl(p => Yf(cv(p.fuelPer1000)), p => p.roc > 100)}"/><path class="curve-man" d="${pl((p, i) => Y(Math.max(0, mpts[i].roc)))}"/>`;
-      if (!S.manual.full && S.manual.vs < rmax) g += `<line class="target" x1="${Lm}" x2="${W - R}" y1="${Y(S.manual.vs)}" y2="${Y(S.manual.vs)}"/>`; // vario visé
+      if (S.manual.calc !== "vs" && !(S.manual.calc === "rpm" && S.manual.full) && S.manual.vs < rmax) g += `<line class="target" x1="${Lm}" x2="${W - R}" y1="${Y(S.manual.vs)}" y2="${Y(S.manual.vs)}"/>`; // vario visé
       g += beyondZone(X, T, H - B, m.ceiling, xmax);
       g += `<text x="${(Lm + W - R) / 2}" y="${H - 3}" text-anchor="middle">${tl("Altitude", "Altitude", "Höhe", "Altitud")}</text><text x="11" y="${(T + H - B) / 2}" text-anchor="middle" transform="rotate(-90 11 ${(T + H - B) / 2})">ft/min</text>` +
         `<text x="${W - 8}" y="${(T + H - B) / 2}" text-anchor="middle" transform="rotate(90 ${W - 8} ${(T + H - B) / 2})">${PER}</text>` +
@@ -1470,7 +1944,7 @@
           [sw(COL.ref, true), lab(def("climbSpd", L.climbSpd()), COL.ref), tl("vario à cette vitesse", "rate at this speed",
             "Steigrate bei dieser Geschwindigkeit", "régimen a esta velocidad")],
           [sw(COL.fast), lab(tl("Carburant", "Fuel", "Kraftstoff", "Combustible"), COL.fast), `${PER} ${tl("(échelle de droite)", "(right scale)", "(rechte Skala)", "(escala derecha)")}`],
-          [sw(COL.man), lab(L.man(), COL.man), `${manualTxt()} — ${tl("curseurs verticaux : vario à gauche, Badin à droite", "vertical sliders: rate on the left, IAS on the right", "senkrechte Regler: Steigrate links, IAS rechts", "cursores verticales: régimen a la izquierda, IAS a la derecha")}`]
+          [sw(COL.man), lab(L.man(), COL.man), `${manualTxt()} — ${tl("curseurs « Montée choisie » du devis", "“Chosen climb” sliders of the fuel plan", "Regler „Gewählter Steigflug“ der Planung", "cursores «Ascenso elegido» del plan")}`]
         ]),
         `<div id="climbReadout" class="readout"></div>`,
         reading(tl(
@@ -1568,7 +2042,7 @@
         panel("panelSpeed", tl("Vitesses de montée", "Climb speeds", "Steiggeschwindigkeiten", "Velocidades de ascenso"),
           `<p>${tl("Badin à tenir, à mi-montée", "IAS to fly, at mid-climb", "Zu fliegende IAS, halber Steigflug", "IAS a mantener, a media subida")} (${flTxt(hMidC)}) :</p><dl class="kvp">${law(mv, COL.prof, def("Vy"))}${law(mt, COL.fast, L.fast())}${law(mf, COL.eco, L.fuelLaw())}${law(m.manualPoint(hMidC, man), COL.man, L.man())}<dt>${def("Vx")} (${tl("pente max", "max. angle", "max. Steigwinkel", "ángulo máx.")})</dt><dd>${fmt(m.climbPoint(hMidC).vxIas, 0)} kt</dd></dl>`,
           `<div id="climbSpeedReadout" class="readout"></div>`,
-          reading(tl(`trois objectifs incompatibles : ${def("Vy")} gagne l’altitude au plus vite ; la montée rapide arrive au plus tôt (plus vite, moins de vario) ; la montée économique dépense le moins. Pointillés : ${def("climbSpd", L.climbSpd())} ; pointillés fins bleus : ${def("Vx")} (obstacle à franchir) ; tirets de la couleur de chaque montée : sa TAS (vitesse vraie), qui s’écarte du Badin en montant. Les curseurs violets (vario à gauche, Badin à droite) règlent votre montée choisie.`, `three incompatible goals: ${def("Vy")} gains altitude fastest; the fast climb arrives soonest (faster, less rate); the economy climb burns least. Dashed: ${def("climbSpd", L.climbSpd())}; thin blue dots: ${def("Vx")} (obstacle clearance). The violet sliders (rate left, IAS right) set your chosen climb.`, `drei unvereinbare Ziele: ${def("Vy")} gewinnt am schnellsten Höhe; der schnelle Steigflug kommt am frühesten an (schneller, weniger Steigrate); der sparsame verbraucht am wenigsten. Gestrichelt: ${def("climbSpd", L.climbSpd())}; feine blaue Punkte: ${def("Vx")} (Hindernisfreiheit). Die violetten Regler (Steigrate links, IAS rechts) stellen Ihren gewählten Steigflug ein.`, `tres objetivos incompatibles: ${def("Vy")} gana altitud lo antes posible; el ascenso rápido llega antes (más rápido, menos régimen); el económico gasta lo mínimo. Punteado: ${def("climbSpd", L.climbSpd())}; puntos azules finos: ${def("Vx")} (franqueo de obstáculos). Los cursores violetas (régimen a la izquierda, IAS a la derecha) ajustan su ascenso elegido.`)));
+          reading(tl(`trois objectifs incompatibles : ${def("Vy")} gagne l’altitude au plus vite ; la montée rapide arrive au plus tôt (plus vite, moins de vario) ; la montée économique dépense le moins. Pointillés : ${def("climbSpd", L.climbSpd())} ; pointillés fins bleus : ${def("Vx")} (obstacle à franchir) ; tirets de la couleur de chaque montée : sa TAS (vitesse vraie), qui s’écarte du Badin en montant. Les curseurs « Montée choisie » du devis (badin, vario, régime) règlent votre montée choisie (violet).`, `three incompatible goals: ${def("Vy")} gains altitude fastest; the fast climb arrives soonest (faster, less rate); the economy climb burns least. Dashed: ${def("climbSpd", L.climbSpd())}; thin blue dots: ${def("Vx")} (obstacle clearance). The “Chosen climb” sliders of the fuel plan (IAS, vario, engine setting) set your chosen climb (violet).`, `drei unvereinbare Ziele: ${def("Vy")} gewinnt am schnellsten Höhe; der schnelle Steigflug kommt am frühesten an (schneller, weniger Steigrate); der sparsame verbraucht am wenigsten. Gestrichelt: ${def("climbSpd", L.climbSpd())}; feine blaue Punkte: ${def("Vx")} (Hindernisfreiheit). Die Regler „Gewählter Steigflug“ der Planung (IAS, Vario, Drehzahl) stellen Ihren gewählten Steigflug (violett) ein.`, `tres objetivos incompatibles: ${def("Vy")} gana altitud lo antes posible; el ascenso rápido llega antes (más rápido, menos régimen); el económico gasta lo mínimo. Punteado: ${def("climbSpd", L.climbSpd())}; puntos azules finos: ${def("Vx")} (franqueo de obstáculos). Los cursores «Ascenso elegido» del plan (IAS, vario, régimen) ajustan su ascenso elegido (violeta).`)));
       });
 
     // --- comparaison des lois : montée au niveau du plan et trajet entier ----------------------------------
@@ -1639,7 +2113,6 @@
       });
   }
 
-  addEventListener("resize", () => alignSliders());
   // largeur de colonne ou hauteur de fenêtre changée : courbes redessinées à la nouvelle taille (sans recalcul du cache)
   {
     let last = "",
@@ -1664,14 +2137,23 @@
     renderAll: () => S.m && S.c && curvesShown() && renderAll(S.m, S.c),
     /** Modèle et trajet du devis sans tracer les courbes (vue simple) : montée choisie du devis à jour. */
     prepare,
-    /** Montée choisie du devis redessinée (changement de vue, de langue ou d'unité). */
-    syncClimb: () => syncClimbCtl(),
+    /** Montée choisie du devis et consignes de montée redessinées (changement de vue, de langue, d'unité ou de profil). */
+    syncClimb: () => {
+      guideHtml = "";
+      syncClimbCtl();
+      mountClimbX();
+    },
     state: S,
-    /** Loi réglée par les curseurs pour le profil actif : { ias, vs, full } ; null avant le premier calcul. */
+    /** Loi réglée par les curseurs pour le profil actif : { ias, vs, full, calc, frac, law(modèle) → loi h → { ve, frac },
+     *  text (libellé court : « 120 kt, plein gaz ») } ; null avant le premier calcul. */
     manual: () => S.manual && S.manual.pid.startsWith(`${active?.id}|`) ? {
       ias: S.manual.ias,
       vs: S.manual.vs,
-      full: S.manual.full
+      full: S.manual.full,
+      calc: S.manual.calc,
+      frac: S.manual.frac,
+      law: m => manualLaw(m),
+      text: manualTxt()
     } : null
   };
 })();
