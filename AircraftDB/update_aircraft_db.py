@@ -735,7 +735,7 @@ def apd_pass(db, out_path, only=None):
     return fixed
 
 
-OTHER_PERF_SOURCES = ("simbrief", "ps")
+OTHER_PERF_SOURCES = ("simbrief", "ps", "airframedb")
 
 
 def simbrief_record(v):
@@ -818,6 +818,135 @@ def simbrief_pass(out_path, cache_dir, max_age_days=7, use_network=True):
     else:
         print(f"SimBrief : {n} type(s), rien de changé.")
     return n
+
+
+AIRFRAMEDB = "https://airframedb.com"
+AIRFRAMEDB_DELAY = 1.5  # secondes entre deux pages téléchargées (conditions du site : pas de charge déraisonnable)
+
+
+def airframedb_number(text, unit):
+    """Premier nombre suivi de l'unité dans un texte de fiche (« 245 km/h (152 mph, 132 kn) », unit « kn » → 132)."""
+    m = re.search(r"([\d][\d,.]*)\s*" + unit + r"\b", text)
+    if not m:
+        return None
+    try:
+        return float(m.group(1).replace(",", ""))
+    except ValueError:
+        return None
+
+
+def airframedb_parse(page):
+    """Fiche d'Airframe DB → { name, variant, designators: [[code, nom]], specs: { cruiseKt, maxKt, rangeNm,
+    ceilingFt, climbFpm, emptyKg, mtowKg } } (valeurs des caractéristiques reprises de Wikipédia par le site)."""
+    name = unescape(re.sub(r"<[^>]+>", "", (re.search(r"<h1[^>]*>(.*?)</h1>", page, re.S) or [None, ""])[1])).strip()
+    des = []
+    for m in re.finditer(r'<article class="designator-entry">.*?<strong>([A-Z0-9]{2,5})</strong>.*?<p>(.*?)</p>', page, re.S):
+        des.append([m.group(1), unescape(re.sub(r"<[^>]+>", "", m.group(2))).strip()])
+    variant = (re.search(r"Specifications \(([^)<]+)\)", page) or [None, ""])[1].strip()
+    rows = {unescape(k).strip().lower(): unescape(re.sub(r"<[^>]+>", "", v)) for k, v in
+            re.findall(r'<th scope="row">(.*?)</th><td>(.*?)</td>', page, re.S)}
+    def row(*names):
+        return next((rows[n] for n in names if n in rows), "")
+    specs = {}
+    v = row("cruise speed")
+    x = airframedb_number(v, "kn") or (airframedb_number(v, "km/h") or 0) / 1.852
+    if x:
+        specs["cruiseKt"] = round(x)
+    v = row("maximum speed", "max speed")
+    x = airframedb_number(v, "kn") or (airframedb_number(v, "km/h") or 0) / 1.852
+    if x:
+        specs["maxKt"] = round(x)
+    v = row("range", "ferry range")
+    x = airframedb_number(v, "nmi") or (airframedb_number(v, "km") or 0) / 1.852
+    if x:
+        specs["rangeNm"] = round(x)
+    v = row("service ceiling")
+    x = airframedb_number(v, "ft") or (airframedb_number(v, "m") or 0) * 3.28084
+    if x:
+        specs["ceilingFt"] = round(x)
+    v = row("rate of climb")
+    x = airframedb_number(v, "ft/min") or (airframedb_number(v, "m/s") or 0) * 196.85
+    if x:
+        specs["climbFpm"] = round(x)
+    for key, names in (("emptyKg", ("empty weight",)), ("mtowKg", ("max takeoff weight", "maximum takeoff weight", "gross weight"))):
+        x = airframedb_number(row(*names), "kg")
+        if x:
+            specs[key] = round(x)
+    return {"name": name, "variant": variant, "designators": des, "specs": specs}
+
+
+def airframedb_pass(db_path, out_path, cache_dir, max_new=None, max_age_days=30, use_network=True):
+    """Passe Airframe DB (airframedb.com) : fiches des appareils lues une à une (plan du site, cache local de 30 jours,
+    au plus max_new fiches téléchargées par passe, pause entre deux), puis
+    - alias : nom de la fiche, de la variante et de chaque désignateur → code OACI (aircraft_db.js), jamais à la place
+      d'un alias existant ni d'un désignateur officiel ;
+    - bloc « airframedb » de aircraft_perf.js (fiche à un seul désignateur) : vitesses, plafond, vario, masses, distance
+      franchissable — utile aux types sans EUROCONTROL ni SimBrief (militaires, hélicoptères).
+    Fichiers réécrits seulement s'ils changent. Renvoie le nombre de fiches en cache."""
+    cache_path = Path(cache_dir) / "airframedb.json"
+    cache = json.loads(cache_path.read_text(encoding="utf-8")) if cache_path.exists() else {"pages": {}}
+    pages = cache.setdefault("pages", {})
+    today = dt.date.today()
+    fresh = lambda d: d and (today - dt.date.fromisoformat(d)).days < max_age_days
+    ua = {"User-Agent": "DEFA-suite/1.0 (+https://framagit.org/asr/flight_planner)"}
+    def get(url):
+        with urllib.request.urlopen(urllib.request.Request(url, headers=ua), timeout=60) as r:
+            return r.read().decode("utf-8", "replace")
+    if use_network and not fresh(cache.get("sitemapFetched")):
+        try:
+            slugs = sorted(set(re.findall(r"<loc>https://airframedb\.com/aircraft/([a-z0-9-]+)</loc>", get(AIRFRAMEDB + "/sitemap.xml"))))
+            cache["slugs"], cache["sitemapFetched"] = slugs, today.isoformat()
+        except Exception as exc:
+            print(f"Airframe DB : plan du site non lu ({exc}).")
+    done = 0
+    for slug in cache.get("slugs", []):
+        if not use_network or (max_new is not None and done >= max_new):
+            break
+        if fresh((pages.get(slug) or {}).get("fetched")):
+            continue
+        try:
+            rec = airframedb_parse(get(f"{AIRFRAMEDB}/aircraft/{slug}"))
+        except Exception as exc:
+            print(f"Airframe DB : {slug} non lu ({exc}).")
+            continue
+        rec["fetched"] = today.isoformat()
+        pages[slug] = rec
+        done += 1
+        print(f"Airframe DB [{done}] {slug} : {rec['name']} — {', '.join(c for c, _ in rec['designators']) or 'sans désignateur'}", flush=True)
+        if done % 10 == 0:
+            cache_path.parent.mkdir(parents=True, exist_ok=True)
+            cache_path.write_text(json.dumps(cache, ensure_ascii=False), encoding="utf-8")
+        time.sleep(AIRFRAMEDB_DELAY)
+    cache_path.parent.mkdir(parents=True, exist_ok=True)
+    cache_path.write_text(json.dumps(cache, ensure_ascii=False), encoding="utf-8")
+    # alias et caractéristiques
+    db = load_js_db(db_path) if Path(db_path).exists() else {}
+    perf = load_perf_db(out_path)
+    before_db = json.dumps(db.get("__aliases", {}), sort_keys=True)
+    before_perf = json.dumps(perf, ensure_ascii=False, sort_keys=True)
+    aliases = db.setdefault("__aliases", {})
+    official = lambda c: "ICAO" in str((db.get(c) or {}).get("source", ""))
+    for slug, rec in pages.items():
+        des = rec.get("designators") or []
+        names = [n for _, n in des] + ([rec.get("name"), rec.get("variant")] if len(des) == 1 else [])
+        for code, own in des:
+            for n in ([own] if len(des) > 1 else names):
+                k = normalize_key(n)
+                if k and k != code and k not in aliases and not official(k) and len(k) >= 3:
+                    aliases[k] = code
+        if len(des) == 1 and rec.get("specs"):
+            code = des[0][0]
+            perf.setdefault(code, {})["airframedb"] = {"name": rec.get("name"), **rec["specs"],
+                                                        "url": f"{AIRFRAMEDB}/aircraft/{slug}", "fetched": rec.get("fetched")}
+    if json.dumps(aliases, sort_keys=True) != before_db and db:
+        save_js_db(db_path, db)
+    meta = perf.get("__meta") or {}
+    meta["airframedb"] = {"source": "Airframe DB — " + AIRFRAMEDB + " (caractéristiques : Wikipédia, CC BY-SA)", "entries": len(pages)}
+    perf["__meta"] = meta
+    if json.dumps(perf, ensure_ascii=False, sort_keys=True) != before_perf:
+        save_perf_db(out_path, perf)
+    print(f"Airframe DB : {len(pages)} fiche(s) en cache, {done} téléchargée(s) ; {len(cache.get('slugs', [])) - len(pages)} restante(s).")
+    return len(pages)
 
 
 def load_perf_db(path):
@@ -1127,12 +1256,16 @@ def main():
     ap.add_argument("--only", nargs="+", metavar="CODE", help="ne traiter que ces types (au lieu de toute la base)")
     ap.add_argument("--apd", nargs="*", metavar="CODE", help="passe EUROCONTROL APD seule : performances -> aircraft_perf.js et réparation des noms de modèle (tous les types, ou les codes donnés)")
     ap.add_argument("--perf-out", default="aircraft_perf.js", help="sortie de la passe APD")
+    ap.add_argument("--airframedb", nargs="?", type=int, const=0, metavar="N", help="passe Airframe DB seule : alias (noms en usage -> code OACI) et caractéristiques (bloc airframedb) ; N : au plus N fiches téléchargées (0 ou rien : toutes celles à rafraîchir)")
     ap.add_argument("--simbrief", action="store_true", help="passe SimBrief seule : consommation de croisière et masses de tous les types de SimBrief -> bloc simbrief de aircraft_perf.js")
     args = ap.parse_args()
 
     global HTTP
     HTTP = HttpClient(args.cache, args.delay, args.retries)
 
+    if args.airframedb is not None:
+        airframedb_pass(args.db, args.perf_out, args.icao_cache_dir, max_new=args.airframedb or None, use_network=not args.no_network)
+        return 0
     if args.simbrief:
         simbrief_pass(args.perf_out, args.icao_cache_dir, use_network=not args.no_network)
         return 0

@@ -1269,14 +1269,18 @@ def aircraft_files():
 
 def aircraft_rebuild(codes):
     """Complète la base des types pour les désignateurs donnés : types OACI Doc 8643, performances EUROCONTROL APD,
-    puis consommations SimBrief (tous les types de SimBrief, liste en cache une semaine)."""
+    puis consommations SimBrief (tous les types de SimBrief, liste en cache une semaine), enfin alias et caractéristiques
+    d'Airframe DB (40 fiches au plus par passe)."""
     d = os.path.join(ROOT, 'AircraftDB')
     script = os.path.join(d, 'update_aircraft_db.py')
     overrides = os.path.join(DATA, 'references', 'aircraft_overrides.json')
     steps = [('types (OACI Doc 8643) : ' + ' '.join(codes), [sys.executable, script, '--only', *codes, '--overrides', overrides]),
              ('performances (EUROCONTROL APD) : ' + ' '.join(codes), [sys.executable, script, '--apd', *codes]),
              # consommation de croisière et masses de tous les types de SimBrief (une requête, cache d'une semaine)
-             ('consommations (SimBrief)', [sys.executable, script, '--simbrief'])]
+             ('consommations (SimBrief)', [sys.executable, script, '--simbrief']),
+             # alias (noms en usage → code OACI) et caractéristiques d'Airframe DB : au plus 40 fiches par passe (≈ 1 min),
+             # la base se complète au fil des passes puis se rafraîchit tous les 30 jours
+             ('alias et caractéristiques (Airframe DB)', [sys.executable, script, '--airframedb', '40'])]
     env = {**os.environ, 'PYTHONIOENCODING': 'utf-8'}
     ok = True
     for name, cmd in steps:

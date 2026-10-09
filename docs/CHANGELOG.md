@@ -84,6 +84,13 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Ajouté
 
+- **Types d'aéronefs : Airframe DB** (passe `--airframedb` de `AircraftDB/update_aircraft_db.py`, enchaînée par le
+  lanceur après SimBrief, 40 fiches au plus par passe, 1,5 s entre deux, cache de 30 jours dans le dossier du cache OACI) :
+  alias des noms en usage vers le code OACI (nom de la fiche, de la variante, de chaque désignateur : H125 → AS50,
+  « Aero Vodochody L-39 » → L39…), jamais à la place d'un alias existant ni d'un désignateur officiel ; bloc
+  `airframedb` de `aircraft_perf.js` (vitesses de croisière et maximale, plafond, vario, masses, distance franchissable,
+  d'après Wikipédia) pour les types sans EUROCONTROL ni SimBrief (militaires, hélicoptères). Données gardées sur chaque
+  poste ; `LICENSE.md`, manuel administrateur (4 langues).
 - **Performances : modèle de Poll et Schumann** (`shared/fuel_poll_schumann.js`, `window.FuelPollSchumann`) — consommation
   de croisière calculée selon la masse, l'altitude et le Mach pour 68 avions de ligne à réaction (et 35 codes OACI
   équivalents) : portage en JavaScript de la partie croisière du modèle « PSFlight » de pycontrails (Apache 2.0,

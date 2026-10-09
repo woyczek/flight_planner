@@ -63,7 +63,9 @@ Doc 8643, recoupée EUROCONTROL, Wikidata) et celle des performances (`AircraftD
 *Aircraft Performance Database*) ne sont ni publiées ni redistribuées : elles sont ignorées par git et complétées sur
 le poste de chaque utilisateur, type par type, par `AircraftDB/update_aircraft_db.py`. Elles restent © OACI et
 © EUROCONTROL. Le bloc `simbrief` de `aircraft_perf.js` (consommation de croisière, masses, plafond : liste publique
-`inputs.airframes.json` de SimBrief) suit la même règle : lu sur chaque poste, jamais publié ; © Navigraph (SimBrief).
+`inputs.airframes.json` de SimBrief) suit la même règle : lu sur chaque poste, jamais publié ; © Navigraph (SimBrief). Le bloc `airframedb` et les alias qu'il ajoute viennent des fiches publiques d'Airframe DB
+(<https://airframedb.com>, accès automatisé limité comme le demandent ses conditions) ; ses caractéristiques sont celles
+de Wikipédia (CC BY-SA 4.0) ; lus sur chaque poste, jamais publiés.
 
 ## 5. Données aéronautiques
 
