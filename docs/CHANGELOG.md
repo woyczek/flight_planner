@@ -10,116 +10,6 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ## [Non publié]
 
-<<<<<<< HEAD
-=======
-### Modifié
-
-- **Manuels (4 langues) alignés sur le lot d'ergonomie A à E** : Mon profil › Niveau d'utilisation (cartes de niveau,
-  « Niveau actuel », outils facultatifs décrits) ; Premier lancement (rail des six étapes et leurs états, « Suivant → »,
-  étape 5 dans l'ordre types puis données aéronautiques, « Tout installer pour <zones> », « Outils avancés », étape 6 et
-  « Terminer ») ; reportings (bloc « Familles et période » / « Famille et période ») ; Paramètres (« Plus… », ligne
-  « État », rubrique Types d'aéronefs de Maintenance, « Flotte et pilotes de la compagnie (référence anonymisée) »,
-  séries d'indicatifs du journal).
-
-### Ajouté
-
-- **Pilote de fusion des empreintes `?v=`** (`tools/merge_vstamp.py`, déclaré dans `.gitattributes` pour les pages, scripts,
-  feuilles et `config/repository_tree`, configuré par `tools/install_hooks.sh`) : à la fusion ou au rebase, un conflit qui ne
-  porte que sur les empreintes de cache posées par `bump_versions.py` est résolu seul (côté courant gardé, empreinte
-  remise par `bump_versions.py`) ; les vrais conflits restent à résoudre à la main.
-- **Ergonomie (E) : Premier lancement — rail des étapes, états, étape 5 réordonnée** — la page devient un assistant
-  qui dit à chaque étape où on en est, quoi faire et quand c'est fini (`apps/settings/premier_lancement.html`).
-  - **Rail des six étapes** en tête (1 Dossiers · 2 Données · 3 Compagnie · 4 Profil · 5 Données aéronautiques et
-    types · 6 Centre) : état calculé par le bilan (✓ faite, ○ à faire, – facultative, 🔒 verrouillée sans l'étape 1,
-    ✗ à refaire), étape courante cerclée ; un clic ouvre l'étape. Le même état en pastille dans chaque titre (le
-    numéro ne passe au vert que quand l'étape est faite) et une ligne « ✓ Fait : … » / « ○ À faire : … » sous le titre.
-    L'étape courante est ouverte, les autres repliées (bouton Masquer / Afficher des blocs) ; chaque étape finit par
-    « Suivant → », la 6 par « Terminer », actif seulement quand les étapes 1 à 5 sont faites (sinon ce qui manque).
-    Le bilan détaillé passe dans un volet replié ; « Recommencer » est replié par défaut.
-  - **Étape 5 dans l'ordre naturel** : ① types d'aéronefs et performances d'abord, précédés d'une ligne d'état aux
-    mêmes sources que le bloc (lanceur `/__setup/aircraft-db`, bases chargées, flotte, missions, types saisis) — « ✓ 34
-    types connus, 18 avec performances », « ○ n types à compléter », pendant une passe « téléchargement en cours », puis
-    « ✓ Terminé : n fiches OACI, m performances ; k types sans performances EUROCONTROL (normal pour les militaires et
-    les hélicoptères) » ; ② données aéronautiques, précédées de leurs lignes d'état (base : AIRAC, espaces, date de
-    construction, cycle en vigueur ; MORA : cases, date de `mora.csv` ; X-Plane : facultatif). Les cartes expertes
-    (Base aéronautique, MORA, Cohérence) sont repliées sous « Outils avancés (aussi dans Paramètres › Maintenance) ».
-    Un seul bouton principal **« Tout installer pour <zones> »** enchaîne « Compléter automatiquement » puis
-    « Activer » sous la carte, en attendant la fin de chaque tâche, et dit ce qui reste.
-  - **Étape 6** : chaque lien sortant (flotte, registre des missions, réglages du Centre) dit ce qu'on y fait et
-    s'ouvre dans un nouvel onglet ; carte Missions : « ✓ 66 missions au registre : rien à faire » ou d'où elles
-    viennent (données de l'étape 2, sinon Centre › Générateur de mission). Pilotes : « Réservé aux administrateurs :
-    passer ».
-  - Textes nouveaux produits à la source (`K.t` / `K.tf`, quatre langues), écrits seulement quand ils changent ;
-    blocs embarqués de `shared/maintenance_page.js` inchangés (ordre par CSS, volet ajouté hors de leur corps).
-
-- **Ergonomie (B) : contraste et cohérence des designs à matières** — passe de contraste sur toutes les pages et tous
-  les designs, outil de mesure à l'appui (`tools/contrast_audit.html` : 18 pages × 9 designs × décor complet et sobre,
-  menus ☰ et langues ouverts ; contraste WCAG de chaque texte visible contre son fond effectif, textures et dégradés
-  échantillonnés ; relevés avant / après dans `docs/technique/perf/runs/contrast_2026-10-09.json`, rapport
-  `docs/technique/CONTRASTE_2026-10-09.md`). **Menus** ☰ et langues (`designs_skeuo.css`, `repository_nav.css`) : une
-  seule encre par design (`--sk-menu-ink`, titres de groupe `--sk-menu-ink-2`, séparateurs et survol qui en dérivent :
-  jetons `--repo-menu-*`, plus de `--repo-bar-text` en dur) ; entrées « Données locales » et « Page » en lignes plates
-  (elles prenaient le cuir marine des boutons sous une encre foncée : 1,1:1) ; champs du profil pilote aux champs du
-  design ; Cabinet et Carnet de vol en ton sombre : menu, notifications et pied de page en parchemin sombre (texte
-  clair sur parchemin clair : 1,2 à 1,9:1). **Aqua** : matières en jetons (`--aq-glass*` verre, `--aq-slate*` ardoise,
-  `--aq-rail*` métal du rail) que le ton sombre redéfinit seuls — boutons secondaires, ☰, langue, liens-boutons, outils
-  de bloc, listes, segments et onglets au repos en verre fumé, page courante et action principale en gel, rail des
-  onglets sombre (il restait clair sous des poussoirs sombres) ; gel moins blanchi en haut (texte blanc ≥ 4,5:1, 3,6:1
-  avant) ; entrée courante de la barre latérale lisible en ton sombre. **Onglets** : un seul composant par design — les
-  onglets propres au Studio cartographique et aux Cartes de vol (`.profileTabs`) prennent le rail et les poussoirs des
-  onglets de page ; liseré du bloc à onglets aussi sur Carburant (contenu en `.wrap`, pas en `main`). **Encres** :
-  secondaire de Cabinet assombrie (`--cab-ink-2`, 3,7 → 4,9:1 sur le parchemin réel), gris des pages (`--muted`,
-  `.small`) remplacé par l'encre secondaire du design dans tous les designs à matières, y compris en-tête, boutons et
-  barres d'état ; liens des blocs à l'encre du design (`--sk-link`) ; aperçu imprimable (`.report`) à l'encre
-  d'impression sur papier clair (Durci, Tactique : 1:1) ; menu des Paramètres posé sur la surface des blocs ; sélecteur
-  segmenté du Carnet de vol en aluminium clair ; vert du bouton principal de Durci approfondi.
-
-- **Ergonomie (D) : Maintenance — types d'aéronefs, référence anonymisée, journal des vols** — sans changer les données
-  ni les mécanismes. Le bloc « Types d'aéronefs » (`shared/maintenance_page.js`) se lit en trois temps : ce que c'est
-  (fiche OACI qui donne l'icône et la classe 2P, 2T, 4T…, performances EUROCONTROL, téléchargées sur ce poste) ; où on
-  en est (tableau des types de la flotte, des missions et des types saisis dans les CR : silhouette de l'appareil
-  `AircraftDBIcons`, code et modèle, classe OACI et libellé « avion, 2 réacteurs », fiche ✓/manquante, performances
-  clés plafond · croisière · V2 · Vat avec toutes les valeurs en infobulle et lien EUROCONTROL, emploi ; manques en
-  avertissement, types absents d'EUROCONTROL en information) ; quoi faire (« Compléter automatiquement », avec la barre
-  des tâches commune, à la place des boutons « Types inconnus / Flotte / Missions » ; codes libres repliés sous
-  « Télécharger d'autres types… » ; lien « Modifier la base à la main… » au niveau Expert). Rubriques de Paramètres
-  (`shared/data_admin.js`) : commandes secondaires des bases du dépôt (« Appliquer dans ce navigateur », « Télécharger »,
-  « Annuler », « Revenir au fichier ») repliées sous « Plus… », « Enregistrer dans le dépôt » en évidence ; la
-  référence devient « Flotte et pilotes de la compagnie (référence anonymisée) », présentée en trois phrases, avec
-  « Mettre à jour depuis le journal des vols » (même fonction que dans le journal) ; « Séries d'indicatifs » du journal :
-  chemin vers la correspondance expliqué, « Ajouter à la correspondance », notification avec « Ouvrir la
-  correspondance » (ligne filtrée, modifications gardées) et état « Dans la correspondance ✓ » ; intros de la
-  correspondance, de la base OACI, des types ajoutés localement et des appareils des missions reliées à ces rubriques.
-  Plus d'état ni de boutons de la base précédente affichés en changeant de rubrique.
-- **Ergonomie (A) : en-têtes des reportings et niveau d'utilisation plus clairs** — les pages de reporting des familles
-  de mission (`shared/mission_core/reporting.js`) et le reporting général (`global_reporting.js`) ne portent plus de
-  barre d'outils dans l'en-tête, qui garde titre et sous-titre comme les autres pages : famille · sous-type (ou puces des
-  familles), « + Nouveau compte rendu », données (registre / journal), période, regroupement et mesure forment le
-  **bloc n° 1 « Famille(s) et période »** (six commandes sur des rangées souples, styles `.mc-scope` de `core.css`) ;
-  les blocs suivants gardent leurs identifiants (disposition et blocs masqués mémorisés), l'impression montre la période
-  sans les commandes, le menu « Données » suit le changement de langue. Mon profil › **Niveau d'utilisation**
-  (`settings_panels.js`, `settings_page.css`) : quatre cartes de niveau (numéro et nom, ce que le niveau montre,
-  « Demande le Centre » pour 2 à 4 ; carte cochée en évidence, 2 × 2 sur grand écran), ligne « Niveau actuel », outils
-  facultatifs avec une courte description (désactivés, « Tous inclus au niveau Expert » au niveau 4) ; textes produits
-  dans la langue de la page, en quatre langues ; plus de légende « Mon usage ».
-
-- **Ergonomie (C) : Aéro fidèle à la maquette ; Cartes de vol en ton foncé** — le design Aéro reprend sur les vraies
-  pages les formes de sa maquette (`docs/technique/demo_design_icones.html`) : en-tête compact (titre 21 px, description
-  en sous-titre à 84 % du texte du bandeau), blocs à marge intérieure de 20 px et titre sans filet, champs de 38 px à
-  bordure fine et anneau de focus à la couleur des icônes, libellés en gras, groupes de champs arrondis, aides à 78 % du
-  texte (≥ 4,5:1), tableaux de lecture aérés, onglets de page en pastilles, barre d'action arrondie en verre
-  (`shared/designs.css`, règles `html[data-design="aero"]` seulement : Standard, Opérationnel et Console inchangés).
-  **Cartes de vol** passe en ton foncé comme Carburant, dans tous les designs : `<html data-tool="dark">` (palette
-  « outil sombre ») et règles de ton posées par `tools/build_map_planner.py` en couche « app » après celles du studio
-  (surfaces, champs, boutons, onglets des profils, aperçus, pied de page ; accent du thème ; cartes et images
-  inchangées) ; onglets lisibles en Opérationnel. Le Studio cartographique du Centre reste clair.
-- **« Purger la zone… »** (panneau d'une zone qui a des données, Paramètres › Maintenance › Données aéronautiques) :
-  après confirmation, supprime les fichiers de la zone du dossier SIA (toutes sources ; France : XML du SIA et axes
-  ENR 5.7) et ses cases de `mora.csv` (ancien fichier archivé), oublie ses marques de mise en place, la désactive et
-  relit la base ; le dossier X-Plane n'est pas touché. Une nouvelle activation réinstalle tout. Manuel administrateur
-  (4 langues).
-
->>>>>>> b446d3013 (:memo: CHANGELOG : pilote de fusion des empreintes ?v=)
 ### Corrigé
 
 - **Types d'aéronefs : noms des missions sans code OACI** (« A330 MRTT Phénix », « C-130J-30 Super Hercules », « H225M
@@ -187,6 +77,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Ajouté
 
+- **Pilote de fusion des empreintes `?v=`** (`tools/merge_vstamp.py`, déclaré dans `.gitattributes` pour les pages, scripts,
+  feuilles et `config/repository_tree`, configuré par `tools/install_hooks.sh`) : à la fusion ou au rebase, un conflit qui ne
+  porte que sur les empreintes de cache posées par `bump_versions.py` est résolu seul (côté courant gardé, empreinte
+  remise par `bump_versions.py`) ; les vrais conflits restent à résoudre à la main.
 - **« Purger la zone… »** (panneau d'une zone qui a des données, Paramètres › Maintenance › Données aéronautiques) :
   après confirmation, supprime les fichiers de la zone du dossier SIA (toutes sources ; France : XML du SIA et axes
   ENR 5.7) et ses cases de `mora.csv` (ancien fichier archivé), oublie ses marques de mise en place, la désactive et
