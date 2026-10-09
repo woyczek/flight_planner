@@ -105,9 +105,9 @@ window.DataAdminI18n = {
     "Luftfahrzeugmuster (ICAO-Datenbank)",
     "Tipos de aeronave (base OACI)"
   ],
-  "Désignateur OACI (Doc 8643), modèle, description (L2J, H1T…), catégorie de turbulence, position de l’aile. Les modifications sont aussi reportées dans aircraft_overrides.json.": [
-    "ICAO-Kennung (Doc 8643), Modell, Beschreibung (L2J, H1T…), Wirbelschleppenkategorie, Flügelposition. Änderungen werden auch in aircraft_overrides.json geschrieben.",
-    "Designador OACI (Doc 8643), modelo, descripción (L2J, H1T…), categoría de estela, posición del ala. Los cambios también se escriben en aircraft_overrides.json."
+  "Édition à la main de la base que Maintenance › Types d’aéronefs complète automatiquement (fiches téléchargées type par type) : en général, rien à faire ici. Désignateur OACI (Doc 8643), modèle, description (L2J, H1T…), catégorie de turbulence, position de l’aile. Les modifications sont aussi reportées dans aircraft_overrides.json.": [
+    "Manuelle Bearbeitung der Datenbank, die Wartung › Luftfahrzeugtypen automatisch ergänzt (Datensätze Typ für Typ heruntergeladen): meist ist hier nichts zu tun. ICAO-Kennung (Doc 8643), Modell, Beschreibung (L2J, H1T…), Wirbelschleppenkategorie, Flügelposition. Änderungen werden auch in aircraft_overrides.json übernommen.",
+    "Edición a mano de la base que Mantenimiento › Tipos de aeronave completa automáticamente (fichas descargadas tipo por tipo): en general, nada que hacer aquí. Designador OACI (Doc 8643), modelo, descripción (L2J, H1T…), categoría de estela, posición del ala. Los cambios también se escriben en aircraft_overrides.json."
   ],
   "Types": [
     "Muster",
@@ -173,9 +173,9 @@ window.DataAdminI18n = {
     "Rufzeichen-Zuordnung",
     "Correspondencia de indicativos"
   ],
-  "Indicatif complet (conservé dans les CR) ↔ forme plan de vol (case 7, 7 caractères avec le numéro) ↔ exploitant OACI (OPR/, case 18). Types : types OACI de la série, séparés par des virgules.": [
-    "Vollständiges Rufzeichen (in Berichten beibehalten) ↔ Flugplanform (Feld 7, 7 Zeichen mit Nummer) ↔ ICAO-Betreiber (OPR/, Feld 18). Muster: ICAO-Muster der Serie, durch Kommas getrennt.",
-    "Indicativo completo (conservado en los informes) ↔ forma del plan de vuelo (casilla 7, 7 caracteres con el número) ↔ operador OACI (OPR/, casilla 18). Tipos: tipos OACI de la serie, separados por comas."
+  "Sert aux CR et aux plans de vol : indicatif complet (conservé dans les CR) ↔ forme plan de vol (case 7, 7 caractères avec le numéro) ↔ exploitant OACI (OPR/, case 18). Les lignes viennent de la saisie ici, du journal des vols (Base › Journal des vols, « Ajouter à la correspondance » ou « Compléter » d’une série) et des indicatifs appris (formes corrigées dans les CR : Données du navigateur › Indicatifs appris, « Intégrer »). Types : types OACI de la série, séparés par des virgules.": [
+    "Dient den Berichten und Flugplänen: vollständiges Rufzeichen (in den Berichten gespeichert) ↔ Flugplanform (Feld 7, 7 Zeichen mit Nummer) ↔ ICAO-Betreiber (OPR/, Feld 18). Die Zeilen stammen aus der Eingabe hier, aus dem Flugbuch (Datenbank › Flugbuch, „Zur Zuordnung hinzufügen“ oder „Ergänzen“ einer Serie) und aus den gelernten Rufzeichen (in Berichten korrigierte Formen: Browserdaten › Gelernte Rufzeichen, „Übernehmen“). Muster: ICAO-Muster der Serie, durch Kommas getrennt.",
+    "Sirve a los informes y planes de vuelo: indicativo completo (conservado en los informes) ↔ forma de plan de vuelo (casilla 7, 7 caracteres con el número) ↔ operador OACI (OPR/, casilla 18). Las filas vienen de la entrada aquí, del registro de vuelos (Base › Registro de vuelos, «Añadir a la correspondencia» o «Completar» de una serie) y de los indicativos aprendidos (formas corregidas en los informes: Datos del navegador › Indicativos aprendidos, «Integrar»). Tipos: tipos OACI de la serie, separados por comas."
   ],
   "Indicatif complet": [
     "Vollständiges Rufzeichen",
@@ -225,9 +225,9 @@ window.DataAdminI18n = {
     "Flugzeuge aus erfassten Missionen",
     "Aeronaves de misiones registradas"
   ],
-  "Mémorisés à chaque enregistrement d’une mission (la donnée la plus récente l’emporte sur la flotte).": [
-    "Bei jedem Speichern einer Mission gemerkt (neueste Daten haben Vorrang vor der Flotte).",
-    "Recordadas en cada guardado de misión (los datos más recientes prevalecen sobre la flota)."
+  "Mémorisés à chaque enregistrement d’une mission (la donnée la plus récente l’emporte sur la flotte). La fiche OACI et les performances de leurs types se vérifient et se téléchargent dans Maintenance › Types d’aéronefs.": [
+    "Bei jedem Speichern einer Mission gemerkt (die neueste Angabe hat Vorrang vor der Flotte). ICAO-Datensatz und Leistungen ihrer Muster werden unter Wartung › Luftfahrzeugtypen geprüft und heruntergeladen.",
+    "Memorizadas en cada guardado de una misión (el dato más reciente prevalece sobre la flota). La ficha OACI y los rendimientos de sus tipos se comprueban y descargan en Mantenimiento › Tipos de aeronave."
   ],
   "Type": [
     "Muster",
@@ -249,9 +249,9 @@ window.DataAdminI18n = {
     "Lokal hinzugefügte Muster",
     "Tipos añadidos localmente"
   ],
-  "Types inconnus saisis dans des missions. « Intégrer » les copie dans la base OACI (à enregistrer ensuite).": [
-    "In Missionen eingegebene unbekannte Muster. „Übernehmen“ kopiert sie in die ICAO-Datenbank (danach speichern).",
-    "Tipos desconocidos introducidos en misiones. «Integrar» los copia en la base OACI (guárdela después)."
+  "Types inconnus saisis dans des missions. Ils figurent aussi dans le tableau de Maintenance › Types d’aéronefs (« saisi dans un CR »), qui télécharge leur fiche OACI s’ils existent ; « Intégrer » les copie tels quels dans la base OACI (à enregistrer ensuite).": [
+    "In Missionen erfasste unbekannte Muster. Sie stehen auch in der Tabelle unter Wartung › Luftfahrzeugtypen („in einem Bericht erfasst“), die ihren ICAO-Datensatz herunterlädt, falls es ihn gibt; „Übernehmen“ kopiert sie unverändert in die ICAO-Datenbank (danach speichern).",
+    "Tipos desconocidos introducidos en misiones. También figuran en la tabla de Mantenimiento › Tipos de aeronave («introducido en un informe»), que descarga su ficha OACI si existe; «Integrar» los copia tal cual en la base OACI (guardarla después)."
   ],
   "Ajouté le": [
     "Hinzugefügt",
@@ -289,13 +289,13 @@ window.DataAdminI18n = {
     "Zeitzone",
     "Zona horaria"
   ],
-  "Référence (anonymisée, dans le dépôt)": [
-    "Referenz (anonymisiert, im Repository)",
-    "Referencia (anonimizada, en el repositorio)"
+  "Flotte et pilotes de la compagnie (référence anonymisée)": [
+    "Flotte und Piloten der Gesellschaft (anonymisierte Referenz)",
+    "Flota y pilotos de la compañía (referencia anonimizada)"
   ],
-  "Pilotes (trigrammes) et appareils de la compagnie — immatriculation, type, indicatifs utilisés, terrain de rattachement (modifiable), dernier terrain connu, statut — sans les vols ni les missions. Utilisée par les trois applications (CR, Landing Dashboard, Flight Planner). Base « lâche » : aide à la saisie, non exhaustive. Mise à jour : « Base » › « Mettre à jour la référence », ou tools/defa_reference.py.": [
-    "Piloten (Trigramme) und Flugzeuge — Kennzeichen, Muster, verwendete Rufzeichen, Heimatflugplatz (bearbeitbar), letzter bekannter Flugplatz, Status — ohne Flüge oder Missionen. Von den drei Anwendungen genutzt. Lockere Datenbank: Eingabehilfe, nicht vollständig.",
-    "Pilotos (trigramas) y aeronaves — matrícula, tipo, indicativos usados, aeródromo base (editable), último aeródromo conocido, estado — sin vuelos ni misiones. Usada por las tres aplicaciones. Base flexible: ayuda a la entrada, no exhaustiva."
+  "Liste des appareils et des trigrammes des pilotes de la compagnie, sans vols ni missions, livrée dans le dépôt : elle préremplit les CR, le planificateur et le tableau de bord (aide à la saisie, non exhaustive). Elle vient du journal des vols du site, par « Mettre à jour depuis le journal des vols ». En général, rien à faire ; après un changement de flotte : charger le journal (Base › Journal des vols), mettre à jour, puis « Enregistrer dans le dépôt ».": [
+    "Liste der Luftfahrzeuge und Pilotenkürzel der Gesellschaft, ohne Flüge und Missionen, im Repository mitgeliefert: Sie füllt Berichte, Planer und Übersichtstafel vor (Eingabehilfe, nicht vollständig). Sie stammt aus dem Flugbuch der Website, über „Aus dem Flugbuch aktualisieren“. Meist ist nichts zu tun; nach einer Flottenänderung: Flugbuch laden (Datenbank › Flugbuch), aktualisieren, dann „Im Repository speichern“.",
+    "Lista de las aeronaves y trigramas de los pilotos de la compañía, sin vuelos ni misiones, entregada en el repositorio: rellena de antemano los informes, el planificador y el cuadro de mando (ayuda a la entrada, no exhaustiva). Viene del registro de vuelos del sitio, mediante «Actualizar desde el registro de vuelos». En general, nada que hacer; tras un cambio de flota: cargar el registro (Base › Registro de vuelos), actualizar y luego «Guardar en el repositorio»."
   ],
   "Appareils": [
     "Flugzeuge",
@@ -429,9 +429,9 @@ window.DataAdminI18n = {
     "in diesem Browser aktiv, noch nicht im Repository",
     "activos en este navegador, aún no en el repositorio"
   ],
-  "Contenu du fichier du dépôt": [
-    "Inhalt der Repository-Datei",
-    "Contenido del archivo del repositorio"
+  "État : fichier du dépôt, sans modification dans ce navigateur": [
+    "Stand: Repository-Datei, ohne Änderung in diesem Browser",
+    "Estado: archivo del repositorio, sin cambios en este navegador"
   ],
   "Appliquer dans ce navigateur": [
     "In diesem Browser anwenden",
@@ -497,9 +497,9 @@ window.DataAdminI18n = {
     "Rufzeichenserien",
     "Series de indicativos"
   ],
-  "Formes vues ramenées à une série (fautes, suffixes de patrouille : lettre, couleur, alphabet OTAN). « Ajouter » crée la ligne dans la correspondance des indicatifs (à vérifier : indicatif complet, organisme), « Compléter » y ajoute les formes et types vus.": [
-    "Gesehene Formen, zu Serien gruppiert (Tippfehler, Rotten-Suffixe). „Hinzufügen“ legt die Zeile in der Rufzeichen-Zuordnung an (vollständiges Rufzeichen und Organisation prüfen), „Ergänzen“ fügt die gesehenen Formen und Muster hinzu.",
-    "Formas vistas agrupadas en series (errores tipográficos, sufijos de patrulla). «Añadir» crea la fila en la correspondencia de indicativos (compruebe el indicativo completo y la organización), «Completar» añade las formas y tipos vistos."
+  "Formes vues ramenées à une série (fautes, suffixes de patrouille : lettre, couleur, alphabet OTAN). Chaque série vue dans le journal peut devenir une ligne de la Correspondance des indicatifs (Fichiers du dépôt) : « Ajouter à la correspondance » crée la ligne, à compléter ensuite (indicatif complet, organisme) ; « Compléter » y ajoute les formes et types vus.": [
+    "Gesehene Formen zu einer Serie zusammengefasst (Tippfehler, Rottensuffixe: Buchstabe, Farbe, NATO-Alphabet). Jede im Flugbuch gesehene Serie kann eine Zeile der Rufzeichen-Zuordnung (Dateien des Repositorys) werden: „Zur Zuordnung hinzufügen“ legt die Zeile an, danach zu ergänzen (vollständiges Rufzeichen, Organisation); „Ergänzen“ fügt die gesehenen Formen und Muster hinzu.",
+    "Formas vistas agrupadas en una serie (errores, sufijos de patrulla: letra, color, alfabeto OTAN). Cada serie vista en el registro puede convertirse en una fila de la Correspondencia de indicativos (Archivos del repositorio): «Añadir a la correspondencia» crea la fila, que se completa después (indicativo completo, organismo); «Completar» le añade las formas y tipos vistos."
   ],
   "Filtrer (indicatif, immatriculation, pilote, terrain, mission…)": [
     "Filtern (Rufzeichen, Kennzeichen, Pilot, Flugplatz, Mission…)",
@@ -561,9 +561,9 @@ window.DataAdminI18n = {
     "Zuordnung",
     "Correspondencia"
   ],
-  "Correspondance des indicatifs modifiée : vérifier, puis « Appliquer dans ce navigateur » ou « Enregistrer dans le dépôt ».": [
-    "Rufzeichen-Zuordnung geändert: prüfen, dann anwenden oder speichern.",
-    "Correspondencia de indicativos modificada: compruebe y luego aplique o guarde."
+  "Correspondance des indicatifs modifiée, pas encore enregistrée : « Ouvrir la correspondance » pour vérifier, puis « Enregistrer dans le dépôt ».": [
+    "Rufzeichen-Zuordnung geändert, noch nicht gespeichert: „Zuordnung öffnen“ zum Prüfen, dann „Im Repository speichern“.",
+    "Correspondencia de indicativos modificada, aún sin guardar: «Abrir la correspondencia» para comprobar y luego «Guardar en el repositorio»."
   ],
   "journal": [
     "Flugbuch",
@@ -972,5 +972,21 @@ window.DataAdminI18n = {
   "Adresse en https:// obligatoire (la clef d’envoi passerait en clair).": [
     "https://-Adresse erforderlich (der Sendeschlüssel würde im Klartext übertragen).",
     "Dirección https:// obligatoria (la clave de envío viajaría en claro)."
+  ],
+  "Plus…": [
+    "Mehr…",
+    "Más…"
+  ],
+  "Mettre à jour depuis le journal des vols": [
+    "Aus dem Flugbuch aktualisieren",
+    "Actualizar desde el registro de vuelos"
+  ],
+  "Ajouter à la correspondance": [
+    "Zur Zuordnung hinzufügen",
+    "Añadir a la correspondencia"
+  ],
+  "Dans la correspondance ✓": [
+    "In der Zuordnung ✓",
+    "En la correspondencia ✓"
   ]
 };

@@ -158,13 +158,15 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
   };
 
   // ---- éditeur de tableau
-  // colonnes : { key, label, type: text|number|bool|list|select, options?, width? }
+  // colonnes : { key, label, type: text|number|bool|list|select, options?, width? } ; filter : texte du filtre à
+  // l'ouverture (ligne à montrer, ex. la série ajoutée depuis le journal des vols)
   function grid(host, {
     columns,
     data,
-    onChange
+    onChange,
+    filter: initialFilter = ''
   }) {
-    let filter = '',
+    let filter = initialFilter,
       sort = {
         key: columns[0].key,
         dir: 1
@@ -670,8 +672,8 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
       file: 'AircraftDB/aircraft_db.js',
       overrideKey: 'dataOverride:aircraftDb:v1',
       intro: T(
-        'Désignateur OACI (Doc 8643), modèle, description (L2J, H1T…), catégorie de turbulence, position de l’aile. Les modifications sont aussi reportées dans aircraft_overrides.json.',
-        'ICAO designator (Doc 8643), model, description (L2J, H1T…), wake category, wing position. Changes are also written to aircraft_overrides.json.'
+        'Édition à la main de la base que Maintenance › Types d’aéronefs complète automatiquement (fiches téléchargées type par type) : en général, rien à faire ici. Désignateur OACI (Doc 8643), modèle, description (L2J, H1T…), catégorie de turbulence, position de l’aile. Les modifications sont aussi reportées dans aircraft_overrides.json.',
+        'Manual editing of the database that Maintenance › Aircraft types completes automatically (records downloaded type by type): usually nothing to do here. ICAO designator (Doc 8643), model, description (L2J, H1T…), wake category, wing position. Changes are also written to aircraft_overrides.json.'
       ),
       /** Tableaux éditables de la base : types puis alias. */
       tables: () => [{
@@ -740,8 +742,8 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
       file: 'data/references/callsigns.js',
       overrideKey: 'dataOverride:callsigns:v1',
       intro: T(
-        'Indicatif complet (conservé dans les CR) ↔ forme plan de vol (case 7, 7 caractères avec le numéro) ↔ exploitant OACI (OPR/, case 18). Types : types OACI de la série, séparés par des virgules.',
-        'Full callsign (kept in reports) ↔ flight plan form (item 7, 7 characters with the number) ↔ ICAO operator (OPR/, item 18). Types: ICAO types of the series, comma-separated.'
+        'Sert aux CR et aux plans de vol : indicatif complet (conservé dans les CR) ↔ forme plan de vol (case 7, 7 caractères avec le numéro) ↔ exploitant OACI (OPR/, case 18). Les lignes viennent de la saisie ici, du journal des vols (Base › Journal des vols, « Ajouter à la correspondance » ou « Compléter » d’une série) et des indicatifs appris (formes corrigées dans les CR : Données du navigateur › Indicatifs appris, « Intégrer »). Types : types OACI de la série, séparés par des virgules.',
+        'Used by reports and flight plans: full callsign (kept in reports) ↔ flight plan form (item 7, 7 characters with the number) ↔ ICAO operator (OPR/, item 18). Rows come from entry here, from the flight log (Base › Flight log, “Add to the correspondence” or “Complete” on a series) and from learned callsigns (forms corrected in reports: Browser data › Learned callsigns, “Integrate”). Types: ICAO types of the series, comma-separated.'
       ),
       /** Tableaux éditables de la base : indicatifs puis exploitants. */
       tables: () => [{
@@ -820,8 +822,10 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
       key: 'missionAircraftRegistry:v1',
       /** Clé d'enregistrement d'une ligne : immatriculation sans séparateurs. */
       byKey: r => String(r.registration || '').toUpperCase().replace(/[^A-Z0-9]/g, ''),
-      intro: T('Mémorisés à chaque enregistrement d’une mission (la donnée la plus récente l’emporte sur la flotte).',
-        'Remembered each time a mission is saved (latest data wins over the fleet).'),
+      intro: T(
+        'Mémorisés à chaque enregistrement d’une mission (la donnée la plus récente l’emporte sur la flotte). La fiche OACI et les performances de leurs types se vérifient et se téléchargent dans Maintenance › Types d’aéronefs.',
+        'Remembered each time a mission is saved (latest data wins over the fleet). The ICAO record and performance of their types are checked and downloaded in Maintenance › Aircraft types.'
+      ),
       columns: [{
         key: 'registration',
         label: T('Immatriculation', 'Registration'),
@@ -860,8 +864,10 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
       key: 'missionAircraftTypes:v1',
       /** Clé d'enregistrement d'une ligne : désignateur OACI. */
       byKey: r => String(r.tdesig || '').toUpperCase(),
-      intro: T('Types inconnus saisis dans des missions. « Intégrer » les copie dans la base OACI (à enregistrer ensuite).',
-        'Unknown types entered in missions. “Integrate” copies them into the ICAO base (save it afterwards).'),
+      intro: T(
+        'Types inconnus saisis dans des missions. Ils figurent aussi dans le tableau de Maintenance › Types d’aéronefs (« saisi dans un CR »), qui télécharge leur fiche OACI s’ils existent ; « Intégrer » les copie tels quels dans la base OACI (à enregistrer ensuite).',
+        'Unknown types entered in missions. They also appear in the table of Maintenance › Aircraft types (“entered in a report”), which downloads their ICAO record if they exist; “Integrate” copies them as they are into the ICAO base (save it afterwards).'
+      ),
       columns: [{
         key: 'tdesig',
         label: T('Désignateur', 'Designator'),
@@ -972,12 +978,12 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
     }, {
       id: 'defaReference',
       group: T('Base', 'Base'),
-      title: T('Référence (anonymisée, dans le dépôt)', 'Reference (anonymised, in the repository)'),
+      title: T('Flotte et pilotes de la compagnie (référence anonymisée)', 'Company fleet and pilots (anonymised reference)'),
       file: 'data/references/defa_reference.js',
       overrideKey: 'dataOverride:defaReference:v1',
       intro: T(
-        'Pilotes (trigrammes) et appareils de la compagnie — immatriculation, type, indicatifs utilisés, terrain de rattachement (modifiable), dernier terrain connu, statut — sans les vols ni les missions. Utilisée par les trois applications (CR, Landing Dashboard, Flight Planner). Base « lâche » : aide à la saisie, non exhaustive. Mise à jour : « Base » › « Mettre à jour la référence », ou tools/defa_reference.py.',
-        'Pilots (trigrams) and aircraft — registration, type, callsigns used, home aerodrome (editable), last known aerodrome, status — without flights or missions. Used by the three applications. Loose base: input aid, not exhaustive.'
+        'Liste des appareils et des trigrammes des pilotes de la compagnie, sans vols ni missions, livrée dans le dépôt : elle préremplit les CR, le planificateur et le tableau de bord (aide à la saisie, non exhaustive). Elle vient du journal des vols du site, par « Mettre à jour depuis le journal des vols ». En général, rien à faire ; après un changement de flotte : charger le journal (Base › Journal des vols), mettre à jour, puis « Enregistrer dans le dépôt ».',
+        'List of the company aircraft and pilot trigrams, without flights or missions, shipped in the repository: it pre-fills reports, the planner and the dashboard (input aid, not exhaustive). It comes from the website flight log, through “Update from the flight log”. Usually nothing to do; after a fleet change: load the log (Base › Flight log), update, then “Save to repository”.'
       ),
       /** Tableaux éditables de la référence : appareils puis pilotes. */
       tables: () => [{
@@ -1213,14 +1219,16 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
       }
     });
 
-    /** Barre d'actions de la base affichée : [libellé, fonction, classe] ; les erreurs s'affichent dans le message d'état. */
+    /** Barre d'actions de la base affichée : [libellé, fonction, classe] ; classe « more » : commande secondaire, repliée
+     *  sous « Plus… » (au plus quelques commandes visibles) ; les erreurs s'affichent dans le message d'état. */
     function actions(buttons) {
       const host = root.querySelector('.da-actions');
       host.innerHTML = '';
+      let more = null;
       buttons.forEach(([label, fn, cls = 'secondary']) => {
         const b = document.createElement('button');
         b.type = 'button';
-        b.className = cls;
+        b.className = cls === 'more' ? 'secondary' : cls;
         b.textContent = label;
         b.onclick = async () => {
           try {
@@ -1229,8 +1237,50 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
             status(`${T('Échec', 'Failed')} : ${e.message}`);
           }
         };
-        host.append(b);
+        if (cls !== 'more') return host.append(b);
+        if (!more) {
+          more = document.createElement('details');
+          more.className = 'da-more';
+          more.innerHTML = `<summary>${esc(T('Plus…', 'More…'))}</summary><div></div>`;
+        }
+        more.lastElementChild.append(b);
       });
+      if (more) host.append(more);
+    }
+    /** Référence anonymisée complétée depuis le journal des vols chargé (DefaFlightLog.reference : rien n'est supprimé,
+     *  les saisies manuelles restent), puis affichée à vérifier ; sans journal, la rubrique du journal s'ouvre. */
+    function updateReference() {
+      const D = window.DefaFlightLog,
+        list = D?.load?.().records || [];
+      if (!list.length) {
+        window.AppFramework?.notify?.(window.RepositoryKit.t([
+          'Journal des vols non chargé dans ce navigateur : charge-le d’abord (« Charger / mettre à jour le journal… »), puis « Mettre à jour la référence ».',
+          'Flight log not loaded in this browser: load it first (“Load / update the log…”), then “Update the reference”.',
+          'Flugbuch in diesem Browser nicht geladen: zuerst laden („Flugbuch laden / aktualisieren…“), dann „Referenz aktualisieren“.',
+          'Registro de vuelos no cargado en este navegador: cárgalo primero («Cargar / actualizar el registro…») y luego «Actualizar la referencia».'
+        ]), 'warn');
+        current.id = 'defaLog';
+        history.replaceState(null, '', '?base=defaLog');
+        show();
+        return;
+      }
+      work.defaReference.data = D.reference(list, work.defaReference.data);
+      current.id = 'defaReference';
+      history.replaceState(null, '', '?base=defaReference');
+      show();
+      changed();
+      status(T(
+        'Référence complétée depuis le journal : vérifier, puis « Enregistrer dans le dépôt » (data/references/defa_reference.js).',
+        'Reference completed from the log: check, then save to repository.'));
+    }
+    let focusRow = ''; // texte du filtre du premier tableau à la prochaine ouverture d'une base (ligne à montrer)
+    /** Ouvre la correspondance des indicatifs, filtrée sur l'indicatif prefix (ligne ajoutée ou complétée). */
+    function openCallsigns(prefix = '') {
+      focusRow = prefix;
+      current.id = 'callsigns';
+      history.replaceState(null, '', '?base=callsigns');
+      show();
+      if (dirty) changed(); // ligne ajoutée en mémoire : l'état dit « non enregistré », pas « fichier du dépôt »
     }
 
     /** Rubriques réservées au Centre masquées tant qu'il est verrouillé (titres de groupe vides compris). */
@@ -1281,6 +1331,10 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
       howto.querySelector('div').innerHTML = set.howto || '';
       const body = root.querySelector('.da-body');
       body.innerHTML = '';
+      // ni état ni commandes de la base précédente (« État : fichier du dépôt… » restait sur le journal, les boutons
+      // « Enregistrer / Annuler » des aérodromes sur les fusions, qui n'ont pas de barre d'actions)
+      status('');
+      actions([]);
       // rubrique de shared/settings_panels.js : sa propre interface, avec les outils de la page
       if (set.render) return set.render(body, {
         status,
@@ -1302,17 +1356,20 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
         sendSettings(body) : set.id === 'defaLog' ? defaLog(body) : set.id === 'merges' ? merges(body) : ledgers(body);
       if (set.file) {
         const w = work[set.id];
-        status(w.local ? `${T('Modifications locales du', 'Local changes from')} ${new Date(w.local).toLocaleString()} (${T('prioritaires dans ce navigateur, pas encore dans le dépôt', 'active in this browser, not yet in the repository')})` : T('Contenu du fichier du dépôt', 'Repository file content'));
-        set.tables().forEach(table => {
+        status(w.local ? `${T('Modifications locales du', 'Local changes from')} ${new Date(w.local).toLocaleString()} (${T('prioritaires dans ce navigateur, pas encore dans le dépôt', 'active in this browser, not yet in the repository')})` : T('État : fichier du dépôt, sans modification dans ce navigateur',
+          'State: repository file, no change in this browser'));
+        set.tables().forEach((table, i) => {
           if (table.title) body.insertAdjacentHTML('beforeend', `<h3>${esc(table.title)}</h3>`);
           const host = document.createElement('div');
           body.append(host);
           grid(host, {
             columns: table.columns,
             data: table.data,
-            onChange: changed
+            onChange: changed,
+            filter: i ? '' : focusRow
           });
         });
+        focusRow = '';
         // flotte : appareils du reporting (case « personnel »), types et mise à jour depuis le site (fleet_reporting.js)
         if (set.id === 'fleet' && window.FleetReporting) {
           const rep = document.createElement('div');
@@ -1325,7 +1382,12 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
             }
           });
         }
+        // commande propre à la base (action principale), « Enregistrer dans le dépôt », puis le reste sous « Plus… »
+        const own = set.id === 'fleet' || set.id === 'defaReference';
         actions([
+          ...(set.id === 'defaReference' ? [
+            [T('Mettre à jour depuis le journal des vols', 'Update from the flight log'), updateReference, 'primary']
+          ] : []),
           ...(set.id === 'fleet' ? [
             [T('Coller la page Flotte du site…', 'Paste the website Fleet page…'), () => fleetPasteDialog(page => {
               const r = mergeFleet(w.data.rows, page);
@@ -1335,16 +1397,6 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
               status(T('Page Flotte lue', 'Fleet page read') + ` : ${r.updated} ${T('appareils mis à jour', 'aircraft updated')}, ${r.added} ${T('ajoutés', 'added')}, ${r.kept} ${T('conservés (absents de la page)', 'kept (not on the page)')} — ${T('vérifier, puis « Enregistrer dans le dépôt »', 'check, then “Save to repository”')}`);
             }), 'primary']
           ] : []),
-          [T('Appliquer dans ce navigateur', 'Apply in this browser'), async () => {
-            const stamp = now();
-            write(set.overrideKey, {
-              updatedAt: stamp,
-              data: await set.overlay(stamp)
-            });
-            w.local = stamp;
-            dirty = false;
-            status(`${T('Appliqué dans ce navigateur', 'Applied in this browser')} (${new Date(stamp).toLocaleString()}) — ${T('pensez à l’enregistrer dans le dépôt', 'remember to save it to the repository')}`);
-          }, 'primary'],
           [T('Enregistrer dans le dépôt', 'Save to repository'), async () => {
             const stamp = now(),
               files = await set.files(stamp);
@@ -1357,17 +1409,27 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
             w.local = '';
             dirty = false;
             status(`${T('Enregistré dans le dépôt', 'Saved to repository')} : ${files.map(f => f[0]).join(', ')} — ${T('à committer', 'to be committed')}`);
-          }],
+          }, own ? 'secondary' : 'primary'],
+          [T('Appliquer dans ce navigateur', 'Apply in this browser'), async () => {
+            const stamp = now();
+            write(set.overrideKey, {
+              updatedAt: stamp,
+              data: await set.overlay(stamp)
+            });
+            w.local = stamp;
+            dirty = false;
+            status(`${T('Appliqué dans ce navigateur', 'Applied in this browser')} (${new Date(stamp).toLocaleString()}) — ${T('pensez à l’enregistrer dans le dépôt', 'remember to save it to the repository')}`);
+          }, 'more'],
           [T('Télécharger', 'Download'), async () => {
             const files = await set.files(now());
             files.forEach(([path, text]) => download(path.split('/').pop(), text, path.endsWith('.json') ? 'application/json' :
               'text/javascript'));
-          }],
+          }, 'more'],
           [T('Annuler les modifications', 'Discard changes'), () => {
             loadWork();
             dirty = false;
             show();
-          }],
+          }, 'more'],
           [T('Revenir au fichier du dépôt', 'Back to repository file'), async () => {
             if (!await window.AppFramework.ask(T('Supprimer les modifications locales de cette base ?',
                 'Delete local changes of this base?'))) return;
@@ -1375,7 +1437,7 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
             loadWork();
             dirty = false;
             show();
-          }]
+          }, 'more']
         ]);
         return;
       }
@@ -1434,7 +1496,7 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
       const hours = m => `${Math.floor(m / 60)} h ${String(Math.round(m % 60)).padStart(2, '0')}`;
       body.innerHTML = `<div class="row da-defa-import"><button type="button" class="primary" data-defa-load>${esc(T('Charger / mettre à jour le journal (page « Log des vols » copiée ou enregistrée)…', 'Load / update the log (copied or saved “Log des vols” page)…'))}</button></div>
         <p class="small da-defa-stats"></p>
-        <h3>${esc(T('Séries d’indicatifs', 'Callsign series'))}</h3><p class="small">${esc(T('Formes vues ramenées à une série (fautes, suffixes de patrouille : lettre, couleur, alphabet OTAN). « Ajouter » crée la ligne dans la correspondance des indicatifs (à vérifier : indicatif complet, organisme), « Compléter » y ajoute les formes et types vus.', 'Seen forms grouped into series (typos, patrol suffixes). “Add” creates the row in the callsign correspondence (check the full callsign and organisation), “Complete” adds the seen forms and types.'))}</p>
+        <h3>${esc(T('Séries d’indicatifs', 'Callsign series'))}</h3><p class="small">${esc(T('Formes vues ramenées à une série (fautes, suffixes de patrouille : lettre, couleur, alphabet OTAN). Chaque série vue dans le journal peut devenir une ligne de la Correspondance des indicatifs (Fichiers du dépôt) : « Ajouter à la correspondance » crée la ligne, à compléter ensuite (indicatif complet, organisme) ; « Compléter » y ajoute les formes et types vus.', 'Seen forms grouped into series (typos, patrol suffixes: letter, colour, NATO alphabet). Each series seen in the log can become a row of the Callsign correspondence (Repository files): “Add to the correspondence” creates the row, to be completed afterwards (full callsign, organisation); “Complete” adds the seen forms and types.'))}</p>
         <div class="da-defa-series"></div>
         <h3>${esc(T('Vols', 'Flights'))}</h3><div class="row"><input type="search" class="da-defa-filter" placeholder="${esc(T('Filtrer (indicatif, immatriculation, pilote, terrain, mission…)', 'Filter (callsign, registration, pilot, aerodrome, mission…)'))}"></div><div class="da-defa-flights"></div>`;
       // Chargement / mise à jour : même fenêtre que les reportings (copier-coller ou page enregistrée ;
@@ -1462,6 +1524,7 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
       const entryOf = s => table().find(e => [e.prefix, e.fpl, ...(e.aliases || [])].map(clean).some(f => f === s.prefix || s.forms.has(
         f)));
       const series = D.series(list);
+      const callsignsUrl = window.RepositoryNav?.settingsUrl?.('callsigns') || '?base=callsigns';
       // Types réellement employés par la série : au moins 2 vols ou 20 % des vols.
       const topTypes = s => {
         const per = new Map();
@@ -1481,21 +1544,45 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
           forms: [...s.forms.keys()].filter(f => ![e.prefix, e.fpl, ...(e.aliases || [])].map(clean).includes(f)),
           types: e.generic || e.role ? [] : topTypes(s).filter(t => !(e.types || []).map(up).includes(t))
         } : null;
-        const state = !e ? `<button type="button" class="primary" data-defa-add="${esc(s.prefix)}">${esc(T('Ajouter', 'Add'))}</button>` :
-          missing.forms.length || missing.types.length ? `<button type="button" data-defa-fill="${esc(s.prefix)}" title="${esc([...missing.forms, ...missing.types].join(', '))}">${esc(T('Compléter', 'Complete'))} (${esc(e.prefix)})</button>` : `✓ ${esc(e.prefix)}`;
+        const state = !e ? `<button type="button" class="primary" data-defa-add="${esc(s.prefix)}">${esc(T('Ajouter à la correspondance', 'Add to the correspondence'))}</button>` :
+          missing.forms.length || missing.types.length ? `<button type="button" data-defa-fill="${esc(s.prefix)}" title="${esc([...missing.forms, ...missing.types].join(', '))}">${esc(T('Compléter', 'Complete'))} (${esc(e.prefix)})</button>` : `<a href="${esc(callsignsUrl)}" data-defa-open="${esc(e.prefix)}">${esc(T('Dans la correspondance ✓', 'In the correspondence ✓'))}</a> <span class="small">${esc(e.prefix)}</span>`;
         return `<tr><td><b>${esc(s.prefix)}</b></td><td>${esc(forms)}</td><td class="num">${s.count}</td><td title="${esc(numbers.join(' '))}">${numbers.length ? `${numbers.length} : ${esc(numbers.slice(0, 8).join(' '))}${numbers.length > 8 ? '…' : ''}` : '—'}</td><td>${esc([...s.suffixes].join(' ') || '—')}</td><td>${esc(types)}</td><td>${esc(s.first)} → ${esc(s.last)}</td><td>${state}</td></tr>`;
       }).join('');
       body.querySelector('.da-defa-series').innerHTML = `<table class="da-table"><thead><tr><th>${esc(T('Série', 'Series'))}</th><th>${esc(T('Formes vues (vols)', 'Seen forms (flights)'))}</th><th>${esc(T('Vols', 'Flights'))}</th><th>${esc(T('Numéros', 'Numbers'))}</th><th>${esc(T('Suffixes', 'Suffixes'))}</th><th>Types</th><th>${esc(T('Période', 'Period'))}</th><th>${esc(T('Correspondance', 'Correspondence'))}</th></tr></thead><tbody>${rows}</tbody></table>`;
-      /** Passe à la table des indicatifs (depuis le journal), séries manquantes proposées. */
-      const toCallsigns = () => {
-        current.id = 'callsigns';
-        history.replaceState(null, '', '?base=callsigns');
-        show();
+      /** Ligne prefix ajoutée ou complétée dans la correspondance (en mémoire, à enregistrer) : le journal reste affiché,
+       *  la série passe « Dans la correspondance ✓ » ; notification avec le lien « Ouvrir la correspondance » (ligne
+       *  filtrée), même lien dans l'état de la série. */
+      const toCallsigns = (prefix, added) => {
+        defaLog(body);
         changed();
         status(T(
-          'Correspondance des indicatifs modifiée : vérifier, puis « Appliquer dans ce navigateur » ou « Enregistrer dans le dépôt ».',
-          'Callsign correspondence changed: check, then apply or save.'));
+          'Correspondance des indicatifs modifiée, pas encore enregistrée : « Ouvrir la correspondance » pour vérifier, puis « Enregistrer dans le dépôt ».',
+          'Callsign correspondence changed, not saved yet: “Open the correspondence” to check, then “Save to repository”.'));
+        const K = window.RepositoryKit,
+          n = window.AppFramework?.notify?.(K.t(added ? ['Ligne ajoutée à la correspondance des indicatifs',
+            'Row added to the callsign correspondence',
+            'Zeile zur Rufzeichenzuordnung hinzugefügt', 'Fila añadida a la correspondencia de indicativos'
+          ] : ['Ligne complétée dans la correspondance des indicatifs', 'Row completed in the callsign correspondence',
+            'Zeile in der Rufzeichenzuordnung ergänzt', 'Fila completada en la correspondencia de indicativos'
+          ]) + ` (${prefix}) —`, 'ok', {
+            timeout: 10000
+          });
+        if (!n) return;
+        const a = document.createElement('a');
+        a.href = callsignsUrl;
+        a.textContent = K.t(['Ouvrir la correspondance', 'Open the correspondence', 'Zuordnung öffnen', 'Abrir la correspondencia']);
+        a.onclick = ev => {
+          ev.preventDefault();
+          n.remove();
+          openCallsigns(prefix);
+        };
+        n.querySelector('span')?.append(' ', a);
       };
+      // « Dans la correspondance ✓ » : la base s'ouvre ici (modifications en mémoire gardées), filtrée sur la ligne
+      body.querySelectorAll('[data-defa-open]').forEach(a => a.onclick = ev => {
+        ev.preventDefault();
+        openCallsigns(a.dataset.defaOpen);
+      });
       body.querySelectorAll('[data-defa-add]').forEach(b => b.onclick = () => {
         const s = series.find(x => x.prefix === b.dataset.defaAdd),
           forms = [...s.forms].sort((a, c) => c[1] - a[1]).map(([f]) => f);
@@ -1509,7 +1596,7 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
           types: topTypes(s),
           note: `${T('journal', 'Log')} ${s.first} → ${s.last} : ${s.count} ${T('vols', 'flights')}${s.suffixes.size ? ` · ${T('suffixes', 'suffixes')} ${[...s.suffixes].join(' ')}` : ''}`
         });
-        toCallsigns();
+        toCallsigns(s.prefix, true);
       });
       body.querySelectorAll('[data-defa-fill]').forEach(b => b.onclick = () => {
         const s = series.find(x => x.prefix === b.dataset.defaFill),
@@ -1517,7 +1604,7 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
         e.aliases = [...new Set([...(e.aliases || []), ...[...s.forms.keys()].filter(f => ![e.prefix, e.fpl].map(clean).includes(
           f))])];
         e.types = [...new Set([...(e.types || []).map(up), ...topTypes(s)])];
-        toCallsigns();
+        toCallsigns(e.prefix, false);
       });
       // Vols : filtre plein texte, 300 lignes affichées.
       const flights = body.querySelector('.da-defa-flights'),
@@ -1531,16 +1618,7 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
       filter.oninput = paint;
       paint();
       actions([
-        [T('Mettre à jour la référence (anonymisée)', 'Update the reference (anonymised)'), () => {
-          work.defaReference.data = D.reference(list, work.defaReference.data);
-          current.id = 'defaReference';
-          history.replaceState(null, '', '?base=defaReference');
-          show();
-          changed();
-          status(T(
-            'Référence complétée depuis le journal : vérifier, puis « Enregistrer dans le dépôt » (data/references/defa_reference.js).',
-            'Reference completed from the log: check, then save to repository.'));
-        }, 'primary'],
+        [T('Mettre à jour la référence (anonymisée)', 'Update the reference (anonymised)'), updateReference, 'primary'],
         [T('Exporter en CSV', 'Export CSV'), () => download('defa_log_des_vols.csv', D.toCsv(list), 'text/csv')],
         [T('Exporter en JSON (rechargeable)', 'Export JSON (reloadable)'), () => download('defa_log_des_vols.json', JSON.stringify({
           source: data.source,

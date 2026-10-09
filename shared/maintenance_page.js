@@ -1218,15 +1218,22 @@
     };
     window.AppFramework?.refresh?.();
   }
-  /** Bloc « Types d'aéronefs » (Installation, Maintenance, premier lancement) : types complétés type par type (flotte,
-   *  missions du registre et de l'ODV, inconnus), même carte et même lanceur partout. */
+  /** Bloc « Types d'aéronefs » (Installation, Maintenance, premier lancement) : types de la flotte (avec leur nombre
+   *  d'appareils), des missions du registre et ceux saisis dans les CR (missionAircraftTypes:v1), même bloc et même
+   *  lanceur partout. */
   async function renderTypes() {
     const host = hosts.types;
     host.innerHTML = '<div class="mt-types"></div>';
-    const reg = (await regIndex().catch(() => null))?.missions || [];
+    const reg = (await regIndex().catch(() => null))?.missions || [],
+      fleetCount = {};
+    (window.DEFA_FLEET || []).forEach(r => {
+      if (r.type) fleetCount[r.type] = (fleetCount[r.type] || 0) + 1;
+    });
     aircraftDbState(host.querySelector('.mt-types'), {
-      fleet: [...new Set((window.DEFA_FLEET || []).map(r => r.type).filter(Boolean))],
-      missions: [...new Set(reg.flatMap(m => m.aircraftTypes || []))]
+      fleet: Object.keys(fleetCount),
+      fleetCount,
+      missions: [...new Set(reg.flatMap(m => m.aircraftTypes || []))],
+      local: Object.keys(readJson('missionAircraftTypes:v1', {}) || {})
     });
   }
 
@@ -1252,14 +1259,112 @@
     return siaFolderState;
   }
   // ---- base des types d'aéronefs (OACI Doc 8643, performances EUROCONTROL) : non publiée, complétée sur ce poste type
-  // par type par le lanceur (AircraftDB/update_aircraft_db.py ; GET / POST /__setup/aircraft-db { codes }) : un nouvel
-  // appareil (code saisi), les types de la flotte, ceux des missions (ODV, registre), ou les types encore inconnus de la
-  // base ; jamais toute la base EUROCONTROL. État relu toutes les 5 s pendant une passe.
+  // par type par le lanceur (AircraftDB/update_aircraft_db.py ; GET / POST /__setup/aircraft-db { codes }). Le bloc se lit
+  // en trois temps : ce que c'est, où on en est (tableau des types de la flotte, des missions et des types saisis, avec
+  // icône, classe OACI, fiche et performances), quoi faire (« Compléter automatiquement » ce qui manque ; autres codes
+  // repliés). Jamais toute la base EUROCONTROL. État relu toutes les 5 s pendant une passe, avancement dans la barre des
+  // tâches (AppFramework.task : pas de bouton « Arrêter », le lanceur ne sait pas interrompre une passe).
   let acTimer = 0,
     acWarned = false,
-    acLists = {};
-  /** Dessine dans el la carte « Types d'aéronefs et performances » d'après l'état du lanceur (/__setup/aircraft-db) ; lists
-   *  { fleet, missions } : codes à proposer (gardés pour les redessins). Les boutons lancent une passe sur les codes choisis. */
+    acLists = {},
+    acJob = null, // tâche affichée pendant une passe du lanceur (barre de progression commune)
+    acIcons = null; // promesse du module des silhouettes (AircraftDB/aircraft_icons.js)
+  // la passe continue dans le lanceur quand la page se ferme : sa tâche ne doit pas faire demander « Quitter la page ? »
+  // (écouteur posé avant celui d'AppFramework, chargé après ce script : il passe en premier)
+  window.addEventListener('beforeunload', () => acJob?.end(false));
+  /** Module des silhouettes d'appareils (window.AircraftDBIcons : la pastille du planificateur et du tableau des
+   *  atterrissages), chargé une fois à la demande du bloc ; null s'il manque. */
+  const loadAcIcons = () => acIcons ||= window.AircraftDBIcons ? Promise.resolve(window.AircraftDBIcons) : new Promise(resolve => {
+    const s = document.createElement('script');
+    s.src = new URL('AircraftDB/aircraft_icons.js', root()).href;
+    s.onload = () => resolve(window.AircraftDBIcons || null);
+    s.onerror = () => resolve(null);
+    document.head.append(s);
+  });
+  // description OACI (Doc 8643) : lettre de la famille, nombre de moteurs (C : deux moteurs couplés), motorisation
+  const AC_FAMILY = {
+    L: ['avion', 'aeroplane', 'Flugzeug', 'avión'],
+    S: ['hydravion', 'seaplane', 'Wasserflugzeug', 'hidroavión'],
+    A: ['amphibie', 'amphibian', 'Amphibienflugzeug', 'anfibio'],
+    H: ['hélicoptère', 'helicopter', 'Hubschrauber', 'helicóptero'],
+    G: ['autogire', 'gyroplane', 'Tragschrauber', 'autogiro'],
+    T: ['convertible', 'tiltrotor', 'Kipprotor', 'convertiplano']
+  };
+  // motorisation [singulier, pluriel] par langue ; T : turbopropulseur (avion) ou turbomoteur (hélicoptère)
+  const AC_POWER = {
+    P: [
+      ['moteur à pistons', 'moteurs à pistons'],
+      ['piston engine', 'piston engines'],
+      ['Kolbenmotor', 'Kolbenmotoren'],
+      ['motor de pistón', 'motores de pistón']
+    ],
+    T: [
+      ['turbopropulseur', 'turbopropulseurs'],
+      ['turboprop', 'turboprops'],
+      ['Turboprop', 'Turboprops'],
+      ['turbohélice', 'turbohélices']
+    ],
+    TH: [
+      ['turbomoteur', 'turbomoteurs'],
+      ['turboshaft', 'turboshafts'],
+      ['Wellenturbine', 'Wellenturbinen'],
+      ['turboeje', 'turboejes']
+    ],
+    J: [
+      ['réacteur', 'réacteurs'],
+      ['jet engine', 'jet engines'],
+      ['Strahltriebwerk', 'Strahltriebwerke'],
+      ['reactor', 'reactores']
+    ],
+    E: [
+      ['moteur électrique', 'moteurs électriques'],
+      ['electric motor', 'electric motors'],
+      ['Elektromotor', 'Elektromotoren'],
+      ['motor eléctrico', 'motores eléctricos']
+    ],
+    R: [
+      ['moteur-fusée', 'moteurs-fusées'],
+      ['rocket engine', 'rocket engines'],
+      ['Raketentriebwerk', 'Raketentriebwerke'],
+      ['motor cohete', 'motores cohete']
+    ]
+  };
+  /** Classe OACI d'une fiche (« L2J ») et son libellé lisible (« avion, 2 réacteurs ») ; libellé de la famille seule
+   *  pour une fiche incomplète (type saisi dans un CR : « H », « L »). */
+  function acClass(rec) {
+    const d = String(rec?.description || '').toUpperCase(),
+      fam = AC_FAMILY[d[0]] ? t(AC_FAMILY[d[0]]) : '';
+    const n = d[1] === 'C' ? 2 : parseInt(d[1], 10) || 0,
+      pw = AC_POWER[d[2] === 'T' && d[0] === 'H' ? 'TH' : d[2]];
+    return {
+      code: d,
+      label: n && pw ? `${fam}, ${n} ${pw[li()][n > 1 ? 1 : 0]}` : fam
+    };
+  }
+  /** Valeurs clés des performances EUROCONTROL d'un type [libellé, valeur], valeurs nulles ou absentes écartées :
+   *  plafond, croisière, distance franchissable, montée, descente, approche, V2, Vat, masse et distances. */
+  function perfFacts(p) {
+    const v = (x, u) => x > 0 ? `${x} ${u}` : '',
+      j = (...l) => l.filter(Boolean).join(' · ');
+    return [
+      [t(['Plafond', 'Ceiling', 'Gipfelhöhe', 'Techo']), p.cruise?.ceilingFL > 0 ? `FL${p.cruise.ceilingFL}` : ''],
+      [t(['Croisière', 'Cruise', 'Reiseflug', 'Crucero']), j(v(p.cruise?.tasKt, 'kt TAS'), p.cruise?.mach > 0 ? `M${p.cruise.mach}` : '')],
+      [t(['Distance franchissable', 'Range', 'Reichweite', 'Alcance']), v(p.cruise?.rangeNm, 'NM')],
+      [t(['Montée initiale', 'Initial climb', 'Anfangssteigflug', 'Ascenso inicial']), j(v(p.climbInitial?.iasKt, 'kt'), v(p
+        .climbInitial
+        ?.rocFpm, 'ft/min'))],
+      [t(['Descente', 'Descent', 'Sinkflug', 'Descenso']), j(v(p.descent?.iasKt, 'kt'), v(p.descent?.rodFpm, 'ft/min'))],
+      [t(['Approche', 'Approach', 'Anflug', 'Aproximación']), v(p.approach?.iasKt, 'kt')],
+      ['V2', v(p.takeoff?.v2Kt, 'kt')],
+      ['Vat', v(p.landing?.vatKt, 'kt')],
+      ['MTOW', v(p.takeoff?.mtowKg, 'kg')],
+      [t(['Décollage', 'Take-off', 'Start', 'Despegue']), v(p.takeoff?.distanceM, 'm')],
+      [t(['Atterrissage', 'Landing', 'Landung', 'Aterrizaje']), v(p.landing?.distanceM, 'm')]
+    ].filter(([, x]) => x);
+  }
+  /** Dessine dans el le bloc « Types d'aéronefs et performances » d'après l'état du lanceur (/__setup/aircraft-db) ;
+   *  lists { fleet, fleetCount, missions, local } : types à suivre (gardés pour les redessins). Zone de codes et volet
+   *  replié gardés d'un redessin à l'autre (relecture toutes les 5 s pendant une passe). */
   async function aircraftDbState(el, lists) {
     if (!el?.isConnected) return;
     if (lists) acLists = lists;
@@ -1274,67 +1379,187 @@
       body: body ? JSON.stringify(body) : undefined,
       cache: 'no-store'
     }).then(r => r.ok ? r.json() : null).catch(() => null);
-    const s = await api();
+    const [s, icons] = await Promise.all([api(), loadAcIcons()]);
+    if (!el.isConnected) return;
     const types = typeSet(),
-      unknown = [...new Set([...(acLists.fleet || []), ...(acLists.missions || [])])].filter(x => !knownType(types, x));
+      db = window.AIRCRAFT_DB || {},
+      perfDb = window.AIRCRAFT_PERF || {};
+    const busy = !s || s.state === 'running',
+      empty = !types.size,
+      // passe terminée depuis le chargement de la page : la base relue au prochain chargement
+      fresh = s?.state === 'done' && s.ended && s.ended * 1000 > performance.timeOrigin,
+      // codes de la dernière passe, déjà lue par la page : un type encore sans performances n'est pas dans EUROCONTROL
+      tried = new Set(!fresh && s?.state === 'done' ? s.codes || [] : []);
+    // types suivis, regroupés par code OACI (alias résolus : H145 → EC45)
+    const groups = new Map();
+    /** Ajoute le type code (tel que saisi) au groupe de son code OACI ; src : fleet (avec son nombre d'appareils),
+     *  missions ou local (saisi dans un CR). */
+    const add = (code, src) => {
+      const c = String(code || '').toUpperCase().trim();
+      if (!c) return;
+      const k = alias(c),
+        g = groups.get(k) || {
+          key: k,
+          codes: new Set(),
+          fleet: 0,
+          missions: false,
+          local: false
+        };
+      g.codes.add(c);
+      if (src === 'fleet') g.fleet += acLists.fleetCount?.[code] || 1;
+      else g[src] = true;
+      groups.set(k, g);
+    };
+    (acLists.fleet || []).forEach(c => add(c, 'fleet'));
+    (acLists.missions || []).forEach(c => add(c, 'missions'));
+    (acLists.local || []).forEach(c => add(c, 'local'));
+    const rows = [...groups.values()].map(g => {
+      const codes = [...g.codes],
+        rec = db[g.key] || codes.map(c => db[c]).find(Boolean),
+        perf = perfDb[g.key] || codes.map(c => perfDb[c]).find(Boolean),
+        noFiche = !rec || !!rec.local,
+        absent = !perf && [g.key, ...codes].some(c => tried.has(c)); // cherché à la dernière passe, absent d'EUROCONTROL
+      return {
+        ...g,
+        codes,
+        rec,
+        perf,
+        noFiche,
+        noPerf: !perf && !absent,
+        absent,
+        rank: noFiche ? 0 : !perf && !absent ? 1 : 2
+      };
+    }).sort((a, b) => a.rank - b.rank || a.key.localeCompare(b.key));
+    // à compléter : sans fiche, ou sans performances jamais cherchées ; codes tels qu'ils sont saisis (comme avant)
+    const todo = [...new Set(rows.filter(r => r.noFiche || r.noPerf).flatMap(r => r.codes))],
+      nFiche = rows.filter(r => r.noFiche).length,
+      nPerf = rows.filter(r => !r.noFiche && r.noPerf).length,
+      nAbsent = rows.filter(r => r.absent).length;
+    if (empty && s && !acWarned) {
+      acWarned = true;
+      window.AppFramework?.notify?.(t([
+        'Base des types d’aéronefs vide : Paramètres › Maintenance › Types d’aéronefs, « Compléter automatiquement ».',
+        'Aircraft type database empty: Settings › Maintenance › Aircraft types, “Complete automatically”.',
+        'Luftfahrzeugtyp-Datenbank leer: Einstellungen › Wartung › Luftfahrzeugtypen, „Automatisch ergänzen“.',
+        'Base de tipos de aeronave vacía: Ajustes › Mantenimiento › Tipos de aeronave, «Completar automáticamente».'
+      ]), 'warn');
+    }
+    // barre de progression commune pendant une passe (deux étapes : fiches OACI, puis performances EUROCONTROL)
+    if (s?.state === 'running') {
+      acJob ||= window.AppFramework?.task?.(t(['Types d’aéronefs : téléchargement', 'Aircraft types: download',
+        'Luftfahrzeugtypen: Download', 'Tipos de aeronave: descarga'
+      ]), {
+        total: 2
+      }) || null;
+      acJob?.set(/^perf/i.test(s.step || '') ? 1 : 0, 2, s.step || '');
+    } else if (acJob) {
+      acJob.end(s?.state === 'error' ? t(['Téléchargement des types en échec : voir « Journal » dans le bloc.',
+        'Type download failed: see “Log” in the block.', 'Download der Typen fehlgeschlagen: siehe „Protokoll“ im Block.',
+        'Descarga de los tipos fallida: ver «Registro» en el bloque.'
+      ]) : t(['Types et performances téléchargés : recharge la page pour les lire.',
+        'Types and performance downloaded: reload the page to read them.',
+        'Typen und Leistungen heruntergeladen: Seite neu laden, um sie zu lesen.',
+        'Tipos y rendimientos descargados: recarga la página para leerlos.'
+      ]), s?.state === 'error' ? 'err' : 'ok');
+      acJob = null;
+    }
     const files = s ? (s.db ? t(['base présente ({n} types)', 'database present ({n} types)', 'Basis vorhanden ({n} Typen)',
       'base presente ({n} tipos)'
     ], {
       n: types.size
     }) : t(['base absente', 'database missing', 'Basis fehlt', 'base ausente'])) : '';
     const state = !s ? t(['lanceur absent : python update_aircraft_db.py --only CODES puis --apd CODES (dans AircraftDB/)',
-        'no launcher: python update_aircraft_db.py --only CODES then --apd CODES (in AircraftDB/)'
+        'no launcher: python update_aircraft_db.py --only CODES then --apd CODES (in AircraftDB/)',
+        'kein Starter: python update_aircraft_db.py --only CODES, dann --apd CODES (in AircraftDB/)',
+        'sin lanzador: python update_aircraft_db.py --only CODES y luego --apd CODES (en AircraftDB/)'
       ]) :
       s.state === 'running' ? t(['passe en cours : {s}', 'pass running: {s}', 'Durchlauf läuft: {s}', 'pasada en curso: {s}'], {
         s: s.step
-      }) : s.state === 'done' ? t(['dernière passe terminée ({c})', 'last pass done ({c})', 'letzter Durchlauf beendet ({c})',
-        'última pasada terminada ({c})'
+      }) : s.state === 'done' ? t(['dernière passe terminée ({c} types)', 'last pass done ({c} types)',
+        'letzter Durchlauf beendet ({c} Typen)', 'última pasada terminada ({c} tipos)'
       ], {
-        c: (s.codes || []).join(' ')
+        c: (s.codes || []).length
       }) : s.state === 'error' ? t(['échec de la dernière passe', 'last pass failed', 'letzter Durchlauf fehlgeschlagen',
         'falló la última pasada'
       ]) : '';
-    const busy = !s || s.state === 'running',
-      empty = !types.size,
-      all = [...new Set([...(acLists.fleet || []), ...(acLists.missions || [])])],
-      // passe terminée depuis le chargement de la page : la base relue au prochain chargement
-      fresh = s?.state === 'done' && s.ended && s.ended * 1000 > performance.timeOrigin;
-    if (empty && s && !acWarned) {
-      acWarned = true;
-      window.AppFramework?.notify?.(t([
-        'Base des types d’aéronefs vide : Paramètres › Maintenance › Références et dépendances, « Compléter la base ».',
-        'Aircraft type database empty: Settings › Maintenance › References and dependencies, “Complete the database”.',
-        'Luftfahrzeugtyp-Datenbank leer: Einstellungen › Wartung › Referenzen und Abhängigkeiten, „Datenbank ergänzen“.',
-        'Base de tipos de aeronave vacía: Ajustes › Mantenimiento › Referencias y dependencias, «Completar la base».'
-      ]), 'warn');
-    }
-    /** Bouton de passe sur une liste de codes (désactivé si vide ou passe en cours), codes en infobulle (20 au plus). */
-    const btn = (id, label, list, title) => `<button type="button" class="secondary" data-ac="${id}" data-icon="refresh"${busy || !list.length ? ' disabled' : ''} title="${esc(title + (list.length ? ' : ' + list.slice(0, 20).join(' ') + (list.length > 20 ? '…' : '') : ''))}">${esc(label)} (${list.length})</button>`;
-    el.innerHTML = `<div class="repo-card" data-icon="plane" data-subtitle="${esc(t(['Données de l’OACI (Doc 8643) et d’EUROCONTROL : non publiées avec la suite, complétées sur ce poste, type par type (réseau, quelques secondes par type)', 'ICAO (Doc 8643) and EUROCONTROL data: not published with the suite, completed on this computer type by type (network, a few seconds per type)', 'Daten von ICAO (Doc 8643) und EUROCONTROL: nicht mit der Suite veröffentlicht, auf diesem Rechner Typ für Typ ergänzt', 'Datos de la OACI (Doc 8643) y EUROCONTROL: no publicados con la suite, completados en este equipo tipo por tipo']))}"><h3>${esc(t(['Types d’aéronefs et performances', 'Aircraft types and performance', 'Luftfahrzeugtypen und Leistungen', 'Tipos de aeronave y rendimientos']))}</h3>
-      ${!empty && unknown.length ? `<p class="row"><button type="button" class="primary" data-ac="unknown" data-icon="download"${busy ? ' disabled' : ''}>${esc(t(['Compléter les types manquants de la flotte et des missions ({n})', 'Complete the missing fleet and mission types ({n})', 'Fehlende Typen der Flotte und der Missionen ergänzen ({n})', 'Completar los tipos que faltan de la flota y las misiones ({n})'], {
-        n: unknown.length
-      }))}</button></p>` : ''}
-      ${empty ? `<div class="repo-notice"><b>${esc(t(['Base vide.', 'Empty database.', 'Leere Datenbank.', 'Base vacía.']))}</b> ${esc(t(['Sans elle, pas de types d’aéronefs (flotte, missions, CR, performances du planificateur). Un clic la complète avec les types de la flotte et des missions ; ensuite, un type à la fois quand un nouvel appareil arrive.', 'Without it, no aircraft types (fleet, missions, reports, planner performance). One click completes it with the fleet and mission types; then one type at a time when a new aircraft arrives.', 'Ohne sie keine Luftfahrzeugtypen (Flotte, Missionen, Berichte, Leistungen des Planers). Ein Klick ergänzt sie mit den Typen der Flotte und der Missionen; danach ein Typ nach dem anderen, wenn ein neues Luftfahrzeug kommt.', 'Sin ella, no hay tipos de aeronave (flota, misiones, informes, rendimientos del planificador). Un clic la completa con los tipos de la flota y de las misiones; después, un tipo cada vez que llega una aeronave nueva.']))}</div>
-      <p class="row"><button type="button" class="primary" data-ac="all" data-icon="download"${busy || !all.length ? ' disabled' : ''}>${esc(t(['Compléter la base ({n} types)', 'Complete the database ({n} types)', 'Datenbank ergänzen ({n} Typen)', 'Completar la base ({n} tipos)'], {
-        n: all.length
-      }))}</button></p>` : ''}
-      <p class="mt-small">${esc(files)}${state ? ` · ${esc(state)}` : ''}</p>
-      ${fresh ? `<p class="row">${pill('ok', t(['base mise à jour', 'database updated', 'Datenbank aktualisiert', 'base actualizada']))} <button type="button" class="secondary" data-ac-reload data-icon="refresh">${esc(t(['Recharger la page pour la lire', 'Reload the page to read it', 'Seite neu laden, um sie zu lesen', 'Recargar la página para leerla']))}</button></p>` : ''}
-      <label class="mt-small">${esc(t(['Codes OACI à télécharger (types et performances) : un par ligne, ou séparés par des virgules', 'ICAO codes to download (types and performance): one per line, or comma-separated', 'Herunterzuladende ICAO-Codes (Typen und Leistungen): einer pro Zeile oder durch Kommas getrennt', 'Códigos OACI que descargar (tipos y rendimientos): uno por línea o separados por comas']))}<br><textarea class="mt-ac-code" rows="4" cols="24" spellcheck="false" placeholder="H160&#10;EC35, A320" aria-label="${esc(t(['Codes OACI', 'ICAO codes', 'ICAO-Codes', 'Códigos OACI']))}"></textarea></label>
-      <p class="row"><button type="button" class="secondary" data-ac="one" data-icon="download"${busy ? ' disabled' : ''}>${esc(t(['Télécharger types et performances', 'Download types and performance', 'Typen und Leistungen herunterladen', 'Descargar tipos y rendimientos']))}</button></p>
-      <p class="row">${btn('unknown', t(['Types inconnus', 'Unknown types', 'Unbekannte Typen', 'Tipos desconocidos']), unknown, t(['types de la flotte et des missions absents de la base', 'fleet and mission types missing from the database']))} ${btn('fleet', t(['Flotte', 'Fleet', 'Flotte', 'Flota']), acLists.fleet || [], t(['tous les types de la flotte', 'all fleet types']))} ${btn('missions', t(['Missions (ODV, registre)', 'Missions (ODV, registry)', 'Missionen (ODV, Register)', 'Misiones (ODV, registro)']), acLists.missions || [], t(['types demandés par les missions', 'types required by the missions']))}</p>
-      <p class="mt-small">${esc(t(['Fichiers écrits sur ce poste : AircraftDB/aircraft_db.js (types) et aircraft_perf.js (performances). Rien à en faire : toutes les pages les lisent à leur prochain chargement. Ils ne sont pas versionnés (données OACI et EUROCONTROL, non redistribuées) : à compléter sur chaque poste, ou à recopier d’un poste à l’autre.', 'Files written on this computer: AircraftDB/aircraft_db.js (types) and aircraft_perf.js (performance). Nothing to do with them: every page reads them at its next load. They are not versioned (ICAO and EUROCONTROL data, not redistributed): complete them on each computer, or copy them from one computer to another.', 'Auf diesem Rechner geschriebene Dateien: AircraftDB/aircraft_db.js (Typen) und aircraft_perf.js (Leistungen). Nichts damit zu tun: Alle Seiten lesen sie beim nächsten Laden. Sie werden nicht versioniert (Daten von ICAO und EUROCONTROL, nicht weitergegeben): auf jedem Rechner ergänzen oder von Rechner zu Rechner kopieren.', 'Archivos escritos en este equipo: AircraftDB/aircraft_db.js (tipos) y aircraft_perf.js (rendimientos). Nada que hacer con ellos: todas las páginas los leen en su próxima carga. No se versionan (datos de la OACI y EUROCONTROL, no redistribuidos): completarlos en cada equipo o copiarlos de uno a otro.']))}</p>
-      ${s?.log?.length ? `<details class="mt-small"><summary>${esc(t(['Journal', 'Log', 'Protokoll', 'Registro']))}</summary><pre>${esc(s.log.slice(-12).join('\n'))}</pre></details>` : ''}</div>`;
-    const lists2 = {
-      all,
-      unknown,
-      fleet: acLists.fleet || [],
-      missions: acLists.missions || []
+    const yes = '<span class="mt-ac-yes">✓</span>';
+    /** Ligne du tableau d'un type : icône, code (codes saisis s'ils diffèrent), modèle, classe, fiche, performances, emploi. */
+    const row = r => {
+      const cls = acClass(r.rec),
+        facts = r.perf ? perfFacts(r.perf) : [],
+        p = r.perf || {};
+      // valeurs visibles sans survol : plafond, croisière, V2, Vat (le reste en infobulle)
+      const compact = [p.cruise?.ceilingFL > 0 ? `FL${p.cruise.ceilingFL}` : '', p.cruise?.tasKt > 0 ? `${p.cruise.tasKt} kt` : '', p
+        .takeoff?.v2Kt > 0 ? `V2 ${p.takeoff.v2Kt}` : '', p.landing?.vatKt > 0 ? `Vat ${p.landing.vatKt}` : ''
+      ].filter(Boolean).join(' · ');
+      const other = r.codes.filter(c => c !== r.key),
+        model = r.rec?.model ? window.AircraftCatalog?.displayName?.(r.rec.model) || r.rec.model : '';
+      const used = [r.fleet ? t(['flotte ({n})', 'fleet ({n})', 'Flotte ({n})', 'flota ({n})'], {
+        n: r.fleet
+      }) : '', r.missions ? t(['missions', 'missions', 'Missionen', 'misiones']) : '', r.local ? t(['saisi dans un CR',
+        'entered in a report', 'in einem Bericht erfasst', 'introducido en un informe'
+      ]) : ''].filter(Boolean).join(' · ');
+      const fiche = !r.rec ? pill('warn', t(['manquante', 'missing', 'fehlt', 'falta'])) : r.rec.local ? pill('warn', t([
+        'saisie locale, sans fiche OACI', 'local entry, no ICAO record', 'lokal erfasst, ohne ICAO-Datensatz',
+        'entrada local, sin ficha OACI'
+      ])) : `<span title="${esc([r.rec.source, r.rec.wtc ? `WTC ${r.rec.wtc}` : ''].filter(Boolean).join(' · '))}">${yes}</span>`;
+      const perf = r.perf ? `${yes} <span class="mt-small" title="${esc([...facts.map(([l, x]) => `${l} : ${x}`), r.perf.fetched ? `EUROCONTROL APD, ${r.perf.fetched}` : ''].filter(Boolean).join('\n'))}">${esc(compact)}</span>${r.perf.url ? ` <a class="mt-link" href="${esc(r.perf.url)}" target="_blank" rel="noopener" title="EUROCONTROL APD">↗</a>` : ''}` :
+        r.absent ? pill('info', t(['absentes d’EUROCONTROL', 'not in EUROCONTROL', 'nicht bei EUROCONTROL',
+          'no están en EUROCONTROL'
+        ])) : pill('warn', t(['manquantes', 'missing', 'fehlen', 'faltan']));
+      return `<tr${r.rank < 2 ? ' class="mt-ac-todo"' : ''}><td class="mt-ac-ic">${icons && r.rec ? icons.icon({ icao: r.key }) : ''}</td><td><b>${esc(r.key)}</b>${other.length ? ` <span class="mt-small">(${esc(other.join(', '))})</span>` : ''}<br><span class="mt-small">${esc(model || '—')}</span></td><td>${cls.code ? `<b>${esc(cls.code)}</b><br><span class="mt-small">${esc(cls.label)}</span>` : '—'}</td><td>${fiche}</td><td>${perf}</td><td class="mt-small">${esc(used)}</td></tr>`;
     };
+    const H = l => `<th>${esc(t(l))}</th>`;
+    const table = rows.length ? `<div class="mt-scroll mt-ac-table"><table class="mt-table"><thead><tr><th></th>${H(['Type (code OACI, modèle)', 'Type (ICAO code, model)', 'Typ (ICAO-Code, Modell)', 'Tipo (código OACI, modelo)'])}${H(['Classe OACI', 'ICAO class', 'ICAO-Klasse', 'Clase OACI'])}${H(['Fiche OACI', 'ICAO record', 'ICAO-Datensatz', 'Ficha OACI'])}${H(['Performances (EUROCONTROL)', 'Performance (EUROCONTROL)', 'Leistungen (EUROCONTROL)', 'Rendimientos (EUROCONTROL)'])}${H(['Utilisé par', 'Used by', 'Verwendet von', 'Usado por'])}</tr></thead><tbody>${rows.map(row).join('')}</tbody></table></div>` :
+      `<p class="mt-small">${esc(t(['Aucun type dans la flotte ni dans les missions de ce navigateur.', 'No type in the fleet or in the missions of this browser.', 'Kein Typ in der Flotte oder den Missionen dieses Browsers.', 'Ningún tipo en la flota ni en las misiones de este navegador.']))}</p>`;
+    // résumé du tableau : manques (avertissement) ou rien à compléter, puis types que EUROCONTROL ne couvre pas
+    const summary = !rows.length ? '' : (nFiche || nPerf ? [nFiche ? pill('warn', t(['{n} sans fiche OACI', '{n} without ICAO record',
+      '{n} ohne ICAO-Datensatz', '{n} sin ficha OACI'
+    ], {
+      n: nFiche
+    })) : '', nPerf ? pill('warn', t(['{n} sans performances', '{n} without performance', '{n} ohne Leistungen',
+      '{n} sin rendimientos'
+    ], {
+      n: nPerf
+    })) : ''].join(' ') : pill('ok', t(['{n} types, rien à compléter', '{n} types, nothing to complete',
+      '{n} Typen, nichts zu ergänzen', '{n} tipos, nada que completar'
+    ], {
+      n: rows.length
+    }))) + (nAbsent ? ` ${pill('info', t(['{n} sans performances chez EUROCONTROL (surtout militaires et hélicoptères)', '{n} without EUROCONTROL performance (mostly military and helicopters)', '{n} ohne Leistungen bei EUROCONTROL (meist Militär und Hubschrauber)', '{n} sin rendimientos en EUROCONTROL (sobre todo militares y helicópteros)'], {
+      n: nAbsent
+    }))}` : '');
+    // état gardé d'un redessin à l'autre : volet « autres types » ouvert, codes saisis
+    const keep = {
+      open: !!el.querySelector('.mt-ac-more')?.open,
+      code: el.querySelector('.mt-ac-code')?.value || ''
+    };
+    const editUrl = window.RepositoryNav?.settingsUrl?.('aircraftDb');
+    el.innerHTML = `<div class="repo-card mt-ac" data-icon="plane"><h3>${esc(t(['Types d’aéronefs et performances', 'Aircraft types and performance', 'Luftfahrzeugtypen und Leistungen', 'Tipos de aeronave y rendimientos']))}</h3>
+      <h4>${esc(t(['Ce que c’est', 'What it is', 'Worum es geht', 'Qué es']))}</h4>
+      <p>${esc(t(['Pour chaque type d’appareil de la flotte et des missions, la suite a besoin de sa fiche OACI (code, modèle, classe comme L2J ou H1T : c’est elle qui donne l’icône de l’appareil et sa catégorie 2P, 2T, 4T…) et de son profil de performances EUROCONTROL (vitesses, plafond, montée et descente). Ces données ne sont pas livrées avec la suite : elles se téléchargent sur ce poste, type par type.', 'For each aircraft type of the fleet and the missions, the suite needs its ICAO record (code, model, class such as L2J or H1T: it gives the aircraft icon and its 2P, 2T, 4T… category) and its EUROCONTROL performance profile (speeds, ceiling, climb and descent). These data are not shipped with the suite: they are downloaded on this computer, type by type.', 'Für jeden Luftfahrzeugtyp der Flotte und der Missionen braucht die Suite seinen ICAO-Datensatz (Code, Modell, Klasse wie L2J oder H1T: Er liefert das Symbol des Luftfahrzeugs und seine Kategorie 2P, 2T, 4T…) und sein EUROCONTROL-Leistungsprofil (Geschwindigkeiten, Gipfelhöhe, Steig- und Sinkflug). Diese Daten werden nicht mit der Suite geliefert: Sie werden auf diesem Rechner Typ für Typ heruntergeladen.', 'Para cada tipo de aeronave de la flota y de las misiones, la suite necesita su ficha OACI (código, modelo, clase como L2J o H1T: es la que da el icono de la aeronave y su categoría 2P, 2T, 4T…) y su perfil de rendimientos EUROCONTROL (velocidades, techo, ascenso y descenso). Estos datos no se entregan con la suite: se descargan en este equipo, tipo por tipo.']))}</p>
+      ${empty ? `<div class="repo-notice"><b>${esc(t(['Base vide.', 'Empty database.', 'Leere Datenbank.', 'Base vacía.']))}</b> ${esc(t(['Sans elle, pas de types d’aéronefs (flotte, missions, CR, performances du planificateur) : « Compléter automatiquement » ci-dessous.', 'Without it, no aircraft types (fleet, missions, reports, planner performance): “Complete automatically” below.', 'Ohne sie keine Luftfahrzeugtypen (Flotte, Missionen, Berichte, Leistungen des Planers): unten „Automatisch ergänzen“.', 'Sin ella, no hay tipos de aeronave (flota, misiones, informes, rendimientos del planificador): «Completar automáticamente» abajo.']))}</div>` : ''}
+      <h4>${esc(t(['Où on en est : types de la flotte et des missions', 'Where things stand: fleet and mission types', 'Stand: Typen der Flotte und der Missionen', 'Situación: tipos de la flota y de las misiones']))}</h4>
+      <p class="row">${summary} <span class="mt-small" title="${esc((s?.codes || []).join(' '))}">${esc(files)}${state ? ` · ${esc(state)}` : ''}</span></p>
+      ${table}
+      <p class="mt-small">${esc(t(['EUROCONTROL donne les vitesses (montée, croisière, approche, V2, Vat), le plafond, la distance franchissable et les distances de décollage et d’atterrissage, surtout pour les appareils civils ; ni consommation ni V1, VR, VNO : ces valeurs se règlent dans les profils du planificateur. Survoler une ligne pour toutes les valeurs.', 'EUROCONTROL gives speeds (climb, cruise, approach, V2, Vat), ceiling, range and take-off and landing distances, mostly for civil aircraft; no fuel consumption nor V1, VR, VNO: these are set in the planner profiles. Hover a row for all values.', 'EUROCONTROL liefert Geschwindigkeiten (Steigflug, Reiseflug, Anflug, V2, Vat), Gipfelhöhe, Reichweite sowie Start- und Landestrecken, vor allem für zivile Luftfahrzeuge; weder Verbrauch noch V1, VR, VNO: Diese stehen in den Profilen des Planers. Für alle Werte über eine Zeile fahren.', 'EUROCONTROL da las velocidades (ascenso, crucero, aproximación, V2, Vat), el techo, el alcance y las distancias de despegue y aterrizaje, sobre todo para aeronaves civiles; ni consumo ni V1, VR, VNO: se ajustan en los perfiles del planificador. Pasar sobre una fila para ver todos los valores.']))}</p>
+      <h4>${esc(t(['Quoi faire', 'What to do', 'Was zu tun ist', 'Qué hacer']))}</h4>
+      <p class="row"><button type="button" class="primary" data-ac="auto" data-icon="download"${busy || !todo.length ? ' disabled' : ''} title="${esc(todo.slice(0, 30).join(' ') + (todo.length > 30 ? '…' : ''))}">${esc((todo.length ? t(['Compléter automatiquement ({n})', 'Complete automatically ({n})', 'Automatisch ergänzen ({n})', 'Completar automáticamente ({n})'], {
+        n: todo.length
+      }) : t(['Compléter automatiquement', 'Complete automatically', 'Automatisch ergänzen', 'Completar automáticamente'])))}</button> <span class="mt-small">${esc(todo.length ? t(['Télécharge les fiches et performances qui manquent (réseau, quelques secondes par type), puis propose de recharger la page.', 'Downloads the missing records and performance (network, a few seconds per type), then offers to reload the page.', 'Lädt die fehlenden Datensätze und Leistungen herunter (Netz, einige Sekunden pro Typ) und bietet dann an, die Seite neu zu laden.', 'Descarga las fichas y rendimientos que faltan (red, unos segundos por tipo) y luego propone recargar la página.']) : t(['Rien à télécharger : la base couvre tous les types du tableau.', 'Nothing to download: the database covers every type of the table.', 'Nichts herunterzuladen: Die Datenbank deckt alle Typen der Tabelle ab.', 'Nada que descargar: la base cubre todos los tipos de la tabla.']))}</span></p>
+      ${fresh ? `<p class="row">${pill('ok', t(['base mise à jour', 'database updated', 'Datenbank aktualisiert', 'base actualizada']))} <button type="button" class="secondary" data-ac-reload data-icon="refresh">${esc(t(['Recharger la page pour la lire', 'Reload the page to read it', 'Seite neu laden, um sie zu lesen', 'Recargar la página para leerla']))}</button></p>` : ''}
+      <details class="mt-ac-more"><summary>${esc(t(['Télécharger d’autres types…', 'Download other types…', 'Weitere Typen herunterladen…', 'Descargar otros tipos…']))}</summary>
+      <label class="mt-small">${esc(t(['Codes OACI à télécharger (types et performances) : un par ligne, ou séparés par des virgules', 'ICAO codes to download (types and performance): one per line, or comma-separated', 'Herunterzuladende ICAO-Codes (Typen und Leistungen): einer pro Zeile oder durch Kommas getrennt', 'Códigos OACI que descargar (tipos y rendimientos): uno por línea o separados por comas']))}<br><textarea class="mt-ac-code" rows="3" cols="24" spellcheck="false" placeholder="H160&#10;EC35, A320" aria-label="${esc(t(['Codes OACI', 'ICAO codes', 'ICAO-Codes', 'Códigos OACI']))}"></textarea></label>
+      <p class="row"><button type="button" class="secondary" data-ac="one" data-icon="download"${busy ? ' disabled' : ''}>${esc(t(['Télécharger', 'Download', 'Herunterladen', 'Descargar']))}</button></p></details>
+      ${editUrl ? `<p class="mt-small" data-min-level="4"><a class="mt-link" href="${esc(editUrl)}">${esc(t(['Modifier la base à la main…', 'Edit the database by hand…', 'Datenbank von Hand bearbeiten…', 'Editar la base a mano…']))}</a> ${esc(t(['(Fichiers du dépôt › Types d’aéronefs (base OACI) ; types saisis dans les CR : Données du navigateur › Types ajoutés localement)', '(Repository files › Aircraft types (ICAO base); types entered in reports: Browser data › Locally added types)', '(Dateien des Repositorys › Luftfahrzeugmuster (ICAO-Datenbank); in Berichten erfasste Typen: Browserdaten › Lokal hinzugefügte Muster)', '(Archivos del repositorio › Tipos de aeronave (base OACI); tipos introducidos en informes: Datos del navegador › Tipos añadidos localmente)']))}</p>` : ''}
+      <p class="mt-small">${esc(t(['Fichiers écrits sur ce poste, lus par toutes les pages à leur prochain chargement : AircraftDB/aircraft_db.js (types) et aircraft_perf.js (performances), non versionnés (données OACI et EUROCONTROL) : à compléter sur chaque poste ou à recopier d’un poste à l’autre.', 'Files written on this computer, read by every page at its next load: AircraftDB/aircraft_db.js (types) and aircraft_perf.js (performance), not versioned (ICAO and EUROCONTROL data): complete them on each computer or copy them from one to another.', 'Auf diesem Rechner geschriebene Dateien, von allen Seiten beim nächsten Laden gelesen: AircraftDB/aircraft_db.js (Typen) und aircraft_perf.js (Leistungen), nicht versioniert (Daten von ICAO und EUROCONTROL): auf jedem Rechner ergänzen oder von Rechner zu Rechner kopieren.', 'Archivos escritos en este equipo, leídos por todas las páginas en su próxima carga: AircraftDB/aircraft_db.js (tipos) y aircraft_perf.js (rendimientos), no versionados (datos de la OACI y EUROCONTROL): completarlos en cada equipo o copiarlos de uno a otro.']))}</p>
+      ${s?.log?.length ? `<details class="mt-small"><summary>${esc(t(['Journal', 'Log', 'Protokoll', 'Registro']))}</summary><pre>${esc(s.log.slice(-12).join('\n'))}</pre></details>` : ''}</div>`;
+    if (keep.open) el.querySelector('.mt-ac-more').open = true;
+    if (keep.code) el.querySelector('.mt-ac-code').value = keep.code;
     el.querySelectorAll('[data-ac]').forEach(b => b.onclick = async () => {
       const codes = b.dataset.ac === 'one' ? [...new Set(el.querySelector('.mt-ac-code').value.toUpperCase().split(/[\s,;]+/)
-        .filter(c => /^[A-Z0-9]{2,4}$/.test(c)))] : lists2[b.dataset.ac];
+        .filter(c => /^[A-Z0-9]{2,4}$/.test(c)))] : todo;
       if (!codes.length) return;
+      b.disabled = true;
       await api({
         codes
       });

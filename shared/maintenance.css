@@ -453,3 +453,65 @@ html[data-design="field"] .mt-block :is(button.secondary, .mt-file):not(#imp) {
   line-height: 1.45;
   vertical-align: baseline
 }
+
+/* Types d'aéronefs : bloc en trois temps (ce que c'est, où on en est, quoi faire), tableau des types avec la
+   silhouette de l'appareil (AircraftDB/aircraft_icons.js, même pastille que le planificateur) */
+@layer app {
+  .mt-ac h4 {
+    margin: 14px 0 4px;
+    font-size: 14px
+  }
+  .mt-ac-table {
+    max-height: 46vh;
+    margin: 6px 0
+  }
+  .mt-ac-table td.mt-ac-ic {
+    width: 34px;
+    vertical-align: middle
+  }
+  .mt-ac-table tr.mt-ac-todo td {
+    background: color-mix(in srgb, #e39b1b 8%, transparent)
+  }
+  .mt-ac-yes {
+    color: #2e9d4f;
+    font-weight: 700
+  }
+  .mt-ac .ac-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--muted);
+    line-height: 0
+  }
+  .mt-ac .ac-icon svg {
+    display: block;
+    width: 28px;
+    height: 22px
+  }
+  .mt-ac .ac-icon.unknown {
+    opacity: .58
+  }
+  .mt-ac-more {
+    margin: 6px 0
+  }
+  .mt-ac-more>summary {
+    cursor: pointer
+  }
+}
+
+/* Bases de Paramètres (data_admin.js) : commandes secondaires repliées sous « Plus… » dans la barre d'actions */
+@layer app {
+  .da-actions>.da-more {
+    display: inline-block
+  }
+  .da-actions>.da-more>summary {
+    cursor: pointer;
+    padding: 4px 6px
+  }
+  .da-actions>.da-more[open]>div {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 6px
+  }
+}
