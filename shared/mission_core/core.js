@@ -1733,8 +1733,8 @@
 
   // ---- mission générée (SIA XML, schéma helo-xp-mission) → champs du CR
   const SIA_KEY = 'siaMissionToCr:v1';
-  // « A400M Atlas », « C-130J-30 Super Hercules » → type OACI du catalogue commun (A4M, C130…).
-  /** Type OACI du catalogue commun d'après un nom d'appareil du générateur SIA (« A400M Atlas » → A4M). */
+  // « A400M Atlas », « C-130J-30 Super Hercules » → type OACI du catalogue commun (A400, C30J…).
+  /** Type OACI du catalogue commun d'après un nom d'appareil du générateur SIA (« A400M Atlas » → A400). */
   function siaType(text) {
     const A = window.MissionAircraft;
     text = String(text || '').trim();

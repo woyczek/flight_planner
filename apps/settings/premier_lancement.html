@@ -1606,10 +1606,10 @@
     const al = db.__aliases || {};
     const alias = c => {
       let x = al[c] || window.AircraftCatalog?.codeOf?.(c) || c;
-      for (let i = 0; i < 5 && al[x] && al[x] !== x; i++) x = al[x]; // chaîne d'alias suivie jusqu'au bout (A400 → A4M)
+      for (let i = 0; i < 5 && al[x] && al[x] !== x; i++) x = al[x]; // chaîne d'alias suivie jusqu'au bout (A400M → A400)
       return x;
     };
-    // codes qui renvoient vers une clé (A4M ← A400, A400M…) : fiche et performances portées par l'un d'eux
+    // codes qui renvoient vers une clé (A400 ← A400M, A4M…) : fiche et performances portées par l'un d'eux
     const back = {};
     for (const [a, b] of Object.entries(al))(back[b] ||= []).push(a);
     let missions = [];

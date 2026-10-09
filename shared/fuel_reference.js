@@ -15,8 +15,10 @@
        quand elle est connue, sinon de la base des types (AircraftDB/aircraft_db.js).
 
    Interface : window.FuelReference = { estimate({ codes, db, apd }), TYPES, CLASSES }.
-     estimate → { kgPerHour, tasKt, basis: "type" | "class", code, cls, wtc, src } ou null (type inconnu, base
-     des types absente : rien n'est inventé).
+     estimate → { kgPerHour, tasKt, ceilingFt, basis: "type" | "class", code, cls, wtc, src } ou null (type inconnu,
+     base des types absente : rien n'est inventé). La fiche Airframe DB du type (AIRCRAFT_PERF[code].airframedb, posée
+     par le lanceur pour les types sans EUROCONTROL ni SimBrief : TAS de croisière, plafond, MTOW, jamais de
+     consommation) affine la TAS, le plafond et la catégorie de sillage de l'estimation par classe.
    ===================================================================================================== */
 (() => {
   "use strict";
@@ -191,9 +193,10 @@
   })();
   /** Ligne de la base des types d'un code (entrée directe, sinon alias de la base). */
   const dbRow = (db, k) => db?.[k] || db?.[db?.__aliases?.[k]] || null;
-  /** Catégorie de sillage : MTOW EUROCONTROL (< 7 t : L, < 136 t : M, sinon H), sinon base des types (« L/M » : L). */
-  const wtcOf = (row, apd) => {
-    const mtow = +apd?.takeoff?.mtowKg || 0;
+  /** Catégorie de sillage : MTOW EUROCONTROL, sinon Airframe DB (< 7 t : L, < 136 t : M, sinon H), sinon base des
+   *  types (« L/M » : L). */
+  const wtcOf = (row, apd, adb = null) => {
+    const mtow = +apd?.takeoff?.mtowKg || +adb?.mtowKg || 0;
     if (mtow > 0) return mtow < 7000 ? "L" : mtow < 136000 ? "M" : "H";
     const w = String(row?.wtc || "").toUpperCase()[0];
     return "LMH".includes(w) && w ? w : "";
@@ -208,6 +211,9 @@
     apd = null
   } = {}) {
     const ks = [...new Set(codes.map(key).filter(Boolean))];
+    // fiche Airframe DB du type (fiche EUROCONTROL passée, sinon AIRCRAFT_PERF par code ou désignateur de la base)
+    const adb = (apd || ks.map(k => window.AIRCRAFT_PERF?.[k] || window.AIRCRAFT_PERF?.[dbRow(db, k)?.tdesig]).find(Boolean))
+      ?.airframedb || null;
     // 1) type nommé (code, alias de la table, alias de la base des types)
     for (const k of ks) {
       const code = ALIAS[k] || ALIAS[key(db?.__aliases?.[k])] || ALIAS[key(dbRow(db, k)?.tdesig)];
@@ -216,10 +222,11 @@
         return {
           kgPerHour: kg,
           tasKt: tas,
+          ceilingFt: adb?.ceilingFt > 0 ? adb.ceilingFt : null,
           basis: "type",
           code,
           cls: String(dbRow(db, k)?.description || ""),
-          wtc: wtcOf(dbRow(db, k), apd),
+          wtc: wtcOf(dbRow(db, k), apd, adb),
           src
         };
       }
@@ -230,16 +237,19 @@
         cls = String(row?.description || "").toUpperCase(),
         band = CLASSES[cls] || CLASSES[cls.replace(/^[AG]/, "L")]; // amphibie, autogire : comme l'avion
       if (!band) continue;
-      const w = wtcOf(row, apd),
+      const w = wtcOf(row, apd, adb),
         pick = band[w] ? w : ["M", "L", "H"].find(x => band[x]);
+      // TAS de croisière de la fiche Airframe DB quand elle existe : celle de la classe est un ordre de grandeur
+      const tas = adb?.cruiseKt > 0 ? adb.cruiseKt : band[pick][1];
       return {
         kgPerHour: band[pick][0],
-        tasKt: band[pick][1],
+        tasKt: tas,
+        ceilingFt: adb?.ceilingFt > 0 ? adb.ceilingFt : null,
         basis: "class",
         code: row?.tdesig || k,
         cls,
         wtc: pick,
-        src: "classe OACI " + cls + " / " + pick
+        src: "classe OACI " + cls + " / " + pick + (adb?.cruiseKt > 0 ? " ; TAS et plafond Airframe DB" : "")
       };
     }
     return null;

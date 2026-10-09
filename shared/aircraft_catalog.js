@@ -168,7 +168,7 @@
     const db = window.AIRCRAFT_DB || {},
       al = db.__aliases || {},
       words = String(text || '').split(/[\s/,;+()—–]+/).map(fold).filter(w => w.length >= 2 && /[A-Z]/.test(w));
-    /** Bout de la chaîne d'alias (A400M → A400 → A4M quand les données de la compagnie renvoient A400 vers A4M). */
+    /** Bout de la chaîne d'alias (A4M → A400M → A400 : un code maison ou en usage renvoyé vers le désignateur OACI). */
     const chase = c => {
       let x = c;
       for (let i = 0; i < 5 && al[x] && al[x] !== x; i++) x = al[x];

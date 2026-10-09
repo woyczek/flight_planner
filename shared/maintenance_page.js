@@ -911,7 +911,7 @@
     const k = String(code || '').toUpperCase().trim(),
       al = window.AIRCRAFT_DB?.__aliases || {};
     // résolveur commun des types écrits en clair (shared/aircraft_catalog.js : alias, noms d'usage, modèle), puis la
-    // chaîne d'alias suivie jusqu'au bout (A400 → A4M : les données de la compagnie peuvent renvoyer un code vers un autre)
+    // chaîne d'alias suivie jusqu'au bout (A400M → A400 : les données de la compagnie peuvent renvoyer un code vers un autre)
     let x = al[k] || window.AircraftCatalog?.codeOf?.(k) || k;
     for (let i = 0; i < 5 && al[x] && al[x] !== x; i++) x = al[x];
     return x;
@@ -1482,7 +1482,7 @@
     (acLists.fleet || []).forEach(c => add(c, 'fleet'));
     (acLists.missions || []).forEach(c => add(c, 'missions'));
     (acLists.local || []).forEach(c => add(c, 'local'));
-    // codes qui renvoient (alias) vers une clé : A4M ← A400, A400M… — fiche et performances portées par l'un d'eux
+    // codes qui renvoient (alias) vers une clé : A400 ← A400M, A4M… — fiche et performances portées par l'un d'eux
     const back = {};
     for (const [a, b] of Object.entries(db.__aliases || {}))(back[b] ||= []).push(a);
     const rows = [...groups.values()].map(g => {
