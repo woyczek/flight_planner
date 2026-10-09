@@ -98,6 +98,12 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   « outil sombre ») et règles de ton posées par `tools/build_map_planner.py` en couche « app » après celles du studio
   (surfaces, champs, boutons, onglets des profils, aperçus, pied de page ; accent du thème ; cartes et images
   inchangées) ; onglets lisibles en Opérationnel. Le Studio cartographique du Centre reste clair.
+- **« Purger la zone… »** (panneau d'une zone qui a des données, Paramètres › Maintenance › Données aéronautiques) :
+  après confirmation, supprime les fichiers de la zone du dossier SIA (toutes sources ; France : XML du SIA et axes
+  ENR 5.7) et ses cases de `mora.csv` (ancien fichier archivé), oublie ses marques de mise en place, la désactive et
+  relit la base ; le dossier X-Plane n'est pas touché. Une nouvelle activation réinstalle tout. Manuel administrateur
+  (4 langues).
+
 ### Corrigé
 
 - **A400M sans performances ni fiche : alias à l'envers** — l'outil des types (`AircraftDB/update_aircraft_db.py`) et le
