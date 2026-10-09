@@ -89,17 +89,22 @@
   });
 
   // ---- dossiers autorisés
-  /** Dossier mémorisé (FileAccess) avec autorisation ; request : demande l'autorisation (geste de l'utilisateur requis). */
-  async function folder(key, request = false) {
+  /** Dossier mémorisé (FileAccess) avec autorisation ; request : demande l'autorisation (geste de l'utilisateur requis) ;
+   *  mode : celui du dossier par défaut (FileAccess.modeOf : lecture seule pour l'application, X-Plane, sauvegardes),
+   *  « readwrite » pour une écriture ponctuelle (restauration). */
+  async function folder(key, request = false, mode) {
     const FA = await waitFor('FileAccess');
     if (!FA) return null;
-    const st = await FA.status(key);
+    const m = mode || FA.modeOf?.(key) || 'readwrite',
+      st = await FA.status(key, {
+        mode: m
+      });
     if (!st.handle) return null;
     if (st.permission === 'granted') return st.handle;
     if (!request) return null;
     try {
       return (await st.handle.requestPermission({
-        mode: 'readwrite'
+        mode: m
       })) === 'granted' ? st.handle : null;
     } catch {
       return null;
@@ -753,7 +758,9 @@
           derived ? t(['déduit du dossier des données', 'derived from the data folder', 'aus dem Datenordner abgeleitet',
             'deducida de la carpeta de datos'
           ]) : t(['facultatif, non choisi', 'optional, not chosen', 'optional, nicht gewählt', 'opcional, no elegida'])) : st
-        .permission === 'granted' ? pill('ok', t(['autorisé', 'authorised', 'erlaubt', 'autorizada'])) : pill('info', t([
+        .permission === 'granted' ? pill('ok', st.mode === 'read' ? t(['autorisé (lecture)', 'authorised (read)',
+          'erlaubt (lesen)', 'autorizada (lectura)'
+        ]) : t(['autorisé', 'authorised', 'erlaubt', 'autorizada'])) : pill('info', t([
           'à ré-autoriser', 'to re-authorise', 'erneut erlauben', 'a reautorizar'
         ]));
       const xp = key === '__xpnav',
@@ -4919,7 +4926,7 @@
     const srcs = new Map(SOURCES().map(s => [s.id, s]));
     for (const i of picks) {
       try {
-        const dir = await folder(srcs.get(i.source).key, true);
+        const dir = await folder(srcs.get(i.source).key, true, 'readwrite');
         const cur = await fileAt(dir, i.path);
         if (cur) await writeAt(dir, `_avant_restauration/${stamp}/${i.path}`, await cur.arrayBuffer());
         await writeAt(dir, i.path, await p.entries.get(`${i.source}/${i.path}`).bytes());

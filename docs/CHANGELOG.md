@@ -316,6 +316,13 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Security
 
+- **Read-only folders** (audit of 7 October, batch 4b) — the application folder, the X-Plane ones, the ODV workbook
+  and the folders added to the backup are opened read-only; a trapped script can no longer rewrite the suite's code nor
+  drop a plug-in into X-Plane. Write access to the data (`data/`) is asked separately, right after choosing the
+  application folder ("Allow writing the data", then the browser prompt) and with the "Allow" button after a restart;
+  one-off writes (restore, AircraftDB) are asked only on click. Sub-folders of `data/` are taken without write access
+  if they exist; the local backup goes to `data/local`, no longer to the application root. Settings › Installation
+  shows "authorised (read)".
 - **Content security policy (CSP) sent by the launcher** (audit of 7 October, batch 4a) — pages may only contact
   (fetch, maps, workers) the suite, a fixed list (map backgrounds, relief, Overpass, SimBrief, IVAO, VATSIM, weather,
   airport database) and the addresses of `config/repository_tree`; scripts limited to the suite's own (inline included)

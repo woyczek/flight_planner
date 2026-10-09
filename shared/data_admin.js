@@ -134,11 +134,18 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
     await idbSet('folder:__repo', handle);
     return handle;
   }
-  /** Écrit un fichier du dépôt (chemin relatif, dossiers créés au besoin). */
+  /** Écrit un fichier du dépôt (chemin relatif, dossiers créés au besoin). Sous data/ : par le dossier des données
+   *  (autorisé en écriture) ; ailleurs (AircraftDB/…) : écriture ponctuelle demandée sur le dossier de l'application,
+   *  ouvert en lecture seule (FileAccess.modeOf). */
   async function writeRepoFile(path, text) {
     // mode GitHub (appli sans lanceur) : « data/<rel> » est écrit dans le dépôt des données (un commit), jamais dans un dossier
     if (window.GitHubData?.on?.()) return window.GitHubData.put(path.replace(/^data\//, ''), text);
-    let dir = await repo(true);
+    const FA = window.FileAccess,
+      inData = path.startsWith('data/') && FA ? await FA.writable('__data', {
+        request: true
+      }) : null;
+    let dir = inData || await repo(true);
+    if (inData) path = path.slice('data/'.length);
     const parts = path.split('/'),
       name = parts.pop();
     for (const part of parts) dir = await dir.getDirectoryHandle(part, {

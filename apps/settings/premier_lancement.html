@@ -1287,13 +1287,15 @@
     const h = (await window.FileAccess.status('__repo')).handle;
     if (!h) return;
     try {
+      // dossier de l'application : lecture seule (FileAccess.modeOf) ; écriture des données demandée ensuite
       await h.requestPermission({
-        mode: 'readwrite'
+        mode: window.FileAccess.modeOf?.('__repo') || 'read'
       });
     } catch {
       /* refus : l'état le dit */
     }
     await rederive();
+    await window.FileAccess.grantData?.();
     foldersState();
   });
   /** Action d'un bouton « Choisir le dossier » (FileAccess.pickFolder) ; un refus ou une annulation est silencieux. */

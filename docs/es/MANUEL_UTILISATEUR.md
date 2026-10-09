@@ -583,6 +583,7 @@ El mismo estado aparece como distintivo en el título de cada paso (el número s
 El navegador pide designar cada carpeta una vez; después la recuerda.
 
 - **«Carpeta de la aplicación»**: «Elegir la carpeta de la aplicación» y, después, designe la carpeta que contiene `lancer.cmd` y `lancer.sh`. Las demás carpetas (datos, registro, misiones, SIA, rendimiento, copia local) se deducen de ella; el mensaje indica cuántas se han configurado.
+- La carpeta de la aplicación se abre **en solo lectura**: ninguna página puede modificar el código de la suite. Justo después, la página pregunta «Autorizar la escritura de los datos»: haga clic y acepte la petición del navegador, para que su disponibilidad, misiones e informes se escriban en `data/`. Tras reiniciar el navegador, «Autorizar» vuelve a pedir ambos.
 - La carpeta debe ser la de la suite servida por el lanzador: si pertenece a otra copia de la suite, el paso queda por hacer (✗ en el balance) con el mensaje «Suite iniciada desde …, carpeta declarada …»; vuelva a elegir la carpeta correcta.
 - **«Libro ODV (opcional)»**: «Carpeta OneDrive…» designa la carpeta sincronizada donde la escuadrilla deposita el libro (la Planificación ODV abre el más reciente). Sin OneDrive: «o el archivo Excel…», guardado en este navegador.
 

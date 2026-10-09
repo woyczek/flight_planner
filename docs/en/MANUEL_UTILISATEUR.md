@@ -581,6 +581,7 @@ The same state is shown as a badge in each step title (the number turns green wh
 The browser asks you to point to each folder once; it remembers it afterwards.
 
 - **“Application folder”**: “Choose the application folder”, then point to the folder that contains `lancer.cmd` and `lancer.sh`. The other folders (data, registry, missions, SIA, performance, local backup) are deduced from it; the message tells you how many were set.
+- The application folder is opened **read-only**: no page can modify the suite's code. Right after, the page asks “Allow writing the data”: click, then accept the browser's request, so that your availability, missions and reports are written to `data/`. After a browser restart, “Allow” asks for both again.
 - The folder must be the one of the suite served by the launcher: if it belongs to another copy of the suite, the step stays to do (✗ in the summary) with the message “Suite launched from …, declared folder …”; choose the right folder again.
 - **“ODV workbook (optional)”**: “OneDrive folder…” points to the synchronised folder where the squadron drops the workbook (the ODV planning opens the most recent one). Without OneDrive: “or the Excel file…”, kept in this browser.
 

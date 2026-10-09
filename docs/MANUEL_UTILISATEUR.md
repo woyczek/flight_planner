@@ -609,6 +609,7 @@ Le même état est en pastille dans le titre de chaque étape (le numéro passe 
 Le navigateur demande de désigner chaque dossier une fois ; il s'en souvient ensuite.
 
 - **« Dossier de l'application »** : « Choisir le dossier de l'application », puis désignez le dossier qui contient `lancer.cmd` et `lancer.sh`. Les autres dossiers (données, registre, missions, SIA, performances, sauvegarde locale) en sont déduits ; le message indique combien ont été réglés.
+- Le dossier de l'application est ouvert **en lecture seule** : aucune page ne peut modifier le code de la suite. Juste après, la page demande « Autoriser l'écriture des données » : cliquez, puis acceptez la demande du navigateur, pour que vos disponibilités, missions et comptes rendus s'écrivent dans `data/`. Après un redémarrage du navigateur, « Autoriser » redemande les deux.
 - Le dossier doit être celui de la suite servie par le lanceur : s'il appartient à une autre copie de la suite, l'étape reste à faire (✗ dans le bilan) avec le message « Suite lancée depuis …, dossier déclaré … » ; rechoisissez le bon dossier.
 - **« Classeur ODV (facultatif) »** : « Dossier OneDrive… » désigne le dossier synchronisé où l'escadrille dépose le classeur (le Planning ODV ouvre le plus récent). Sans OneDrive : « ou le fichier Excel… », gardé dans ce navigateur.
 

@@ -584,6 +584,7 @@ Derselbe Stand steht als Plakette im Titel jedes Schritts (die Nummer wird grün
 Der Browser verlangt, jeden Ordner einmal anzugeben; danach merkt er ihn sich.
 
 - **„Anwendungsordner“**: „Anwendungsordner wählen“, dann geben Sie den Ordner an, der `lancer.cmd` und `lancer.sh` enthält. Die anderen Ordner (Daten, Register, Missionen, SIA, Leistungen, lokale Sicherung) werden daraus abgeleitet; die Meldung zeigt, wie viele eingestellt wurden.
+- Der Anwendungsordner wird **schreibgeschützt** geöffnet: Keine Seite kann den Code der Suite ändern. Gleich danach fragt die Seite „Schreiben der Daten erlauben“: klicken und die Anfrage des Browsers annehmen, damit Ihre Verfügbarkeit, Missionen und Berichte in `data/` geschrieben werden. Nach einem Neustart des Browsers fragt „Erlauben“ beides erneut.
 - Der Ordner muss der der vom Starter bereitgestellten Suite sein: gehört er zu einer anderen Kopie der Suite, bleibt der Schritt offen (✗ in der Übersicht) mit der Meldung „Suite gestartet aus …, angegebener Ordner …“; wählen Sie den richtigen Ordner neu.
 - **„ODV-Arbeitsmappe (optional)“**: „OneDrive-Ordner…“ gibt den synchronisierten Ordner an, in dem die Staffel die Arbeitsmappe ablegt (die ODV-Planung öffnet die neueste). Ohne OneDrive: „oder die Excel-Datei…“, in diesem Browser gespeichert.
 
