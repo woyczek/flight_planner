@@ -258,9 +258,9 @@ class Setup(http.server.SimpleHTTPRequestHandler):
         """Raison de refuser la requête ('' : servie) — hôte, origine, chemin caché."""
         if not self._local_host():
             return 'hôte'
-        if not self._same_origin():
-            return 'autre site'
         path = self.path.split('?', 1)[0].split('#', 1)[0]
+        if not self._same_origin() and not self._relaxed_navigation(path):
+            return 'autre site'
         if path.startswith('/__setup/'):
             return ''
         rel = posixpath.normpath(urllib.parse.unquote(path))
@@ -279,6 +279,14 @@ class Setup(http.server.SimpleHTTPRequestHandler):
                     return 'chemin'
                 break
         return ''
+
+    def _relaxed_navigation(self, path):
+        """Débrayage (RELAX, jusqu'à la fermeture du lanceur) : une page de la suite ouverte depuis un autre site ou une
+        extension (navigation de premier plan) est servie ; scripts, données, images et /__setup/ restent refusés aux
+        autres sites."""
+        return (RELAX['nav'] and self.headers.get('Sec-Fetch-Mode') == 'navigate'
+                and self.headers.get('Sec-Fetch-Dest') == 'document' and not path.startswith('/__setup/')
+                and (path.endswith('/') or path.lower().endswith('.html')))  # pages seulement, jamais un fichier de données
 
     def _deny(self, why):
         """Requête refusée : 404 pour un chemin non servi, page d'explication pour un lien venu d'un autre site, 403
@@ -447,7 +455,7 @@ class Setup(http.server.SimpleHTTPRequestHandler):
             git = data_sync.git_exe()
             return self._json({'server': True, 'root': ROOT, 'git': bool(git), 'data': has_data(),
                                'dataGit': os.path.isdir(os.path.join(DATA, '.git')), 'dataRepo': data_repo_url(), 'lfs': LFS,
-                               'csp': True})
+                               'csp': True, 'relaxNav': RELAX['nav']})
         if self.path.split('?')[0] == '/__setup/mission-folders':
             # dossiers de missions présents (data/missions/<famille>/<id>) : le registre repris par le navigateur au
             # premier démarrage écarte les missions dont le dossier n'existe plus (registre périmé)
@@ -671,6 +679,14 @@ class Setup(http.server.SimpleHTTPRequestHandler):
             except ValueError:
                 return self._json({'ok': False, 'message': 'JSON invalide'}, 400)
             return self._json(secrets_save(a))
+        if path == '/__setup/relax':
+            # débrayage de l'ouverture depuis un autre site ou une extension : activé après confirmation dans la fenêtre du
+            # lanceur, jusqu'à sa fermeture ; rétabli sans confirmation
+            try:
+                a = json.loads(body or b'{}')
+            except ValueError:
+                a = {}
+            return self._json(relax_set(bool(a.get('on'))))
         if path in ('/__setup/site-allow', '/__setup/site-remove'):
             # site ajouté à la CSP (connect-src) : confirmé dans la fenêtre du lanceur, qu'aucune page ne peut voir ni
             # valider ; retiré : sans confirmation (la liste ne fait que rétrécir)
@@ -1120,6 +1136,40 @@ def csp_policy():
                                    f"script-src 'self' 'unsafe-inline' {' '.join(CSP_SCRIPTS)}; object-src 'none'; "
                                    "base-uri 'self'; form-action 'self'; frame-ancestors 'self'")
     return _csp['value']
+
+
+# ---- débrayage : pages de la suite ouvertes depuis un autre site ou une extension (Claude in Chrome, favoris gérés par
+# une extension…), pour la session du lanceur seulement — rien n'est enregistré, la protection revient au lancement
+# suivant. Les pages affichent tant qu'il dure un bouton rouge « Protection réduite — rétablir » (app_framework.js).
+RELAX = {'nav': False}
+
+
+def relax_set(on):
+    """Active (après confirmation dans la fenêtre du lanceur) ou rétablit (sans confirmation) ; { ok, relaxNav }."""
+    if not on:
+        if RELAX['nav']:
+            say('  Ouverture depuis un autre site : protection rétablie.')
+        RELAX['nav'] = False
+        return {'ok': True, 'relaxNav': False}
+    if RELAX['nav']:
+        return {'ok': True, 'relaxNav': True}
+    if time.time() < _confirm['until']:
+        return {'ok': False, 'relaxNav': False, 'message': 'Demande refusée il y a moins de 30 s : réessayez plus tard.'}
+    ok = confirm_box('SO Group — protection réduite / reduced protection', (
+        'Autoriser l’ouverture des pages de la suite depuis un autre site ou une extension (par exemple Claude in Chrome), '
+        'jusqu’à la fermeture du lanceur ?\n\n'
+        'Un site que vous visitez pourra alors ouvrir une page de la suite avec ses propres paramètres. Les données, les '
+        'scripts et les réglages du lanceur restent fermés aux autres sites. Un bouton rouge reste affiché en haut de '
+        'chaque page pour rétablir la protection.\n\n'
+        'Allow suite pages to be opened from another website or an extension (for example Claude in Chrome) until the '
+        'launcher closes? A website you visit could then open a suite page with its own parameters. Data, scripts and '
+        'launcher settings stay closed to other websites.'))
+    say('  Ouverture depuis un autre site : ' + ('autorisée jusqu’à la fermeture du lanceur' if ok else 'non confirmée'))
+    if not ok:
+        _confirm['until'] = time.time() + 30
+        return {'ok': False, 'relaxNav': False, 'message': 'Non confirmé dans la fenêtre du lanceur.'}
+    RELAX['nav'] = True
+    return {'ok': True, 'relaxNav': True}
 
 
 def site_allow(url):

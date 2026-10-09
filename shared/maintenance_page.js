@@ -820,6 +820,9 @@
       <h3>${esc(t(['Sites que la suite peut contacter', 'Websites the suite may contact', 'Websites, die die Suite kontaktieren darf', 'Sitios que la suite puede contactar']))}</h3>
       <p class="mt-small">${esc(t(['Les pages ne peuvent envoyer de requêtes qu’à la suite et à ces sites (politique de sécurité du lanceur) : un script piégé ne peut pas envoyer les données ailleurs. Liste fixe (cartes, réseaux, météo, SimBrief) et adresses de la configuration ; un autre site (webservice des CR, autre dépôt) s’ajoute par le bouton « Autoriser ce site… » de la notification qui signale le blocage, confirmé dans la fenêtre du lanceur.', 'Pages may only send requests to the suite and to these websites (launcher security policy): a trapped script cannot send the data elsewhere. Fixed list (maps, networks, weather, SimBrief) and configuration addresses; another website (report web service, other repository) is added with the “Allow this website…” button of the notification that reports the block, confirmed in the launcher window.', 'Die Seiten dürfen Anfragen nur an die Suite und an diese Websites senden (Sicherheitsrichtlinie des Starters): Ein manipuliertes Skript kann die Daten nicht anderswohin senden. Feste Liste (Karten, Netzwerke, Wetter, SimBrief) und Adressen der Konfiguration; eine andere Website (Berichts-Webservice, anderes Repository) wird über die Schaltfläche „Diese Website erlauben…“ der Meldung hinzugefügt, die die Sperre anzeigt, und im Fenster des Starters bestätigt.', 'Las páginas solo pueden enviar peticiones a la suite y a estos sitios (política de seguridad del lanzador): un script trampa no puede enviar los datos a otro lugar. Lista fija (mapas, redes, meteorología, SimBrief) y direcciones de la configuración; otro sitio (servicio web de los informes, otro repositorio) se añade con el botón «Autorizar este sitio…» de la notificación que señala el bloqueo, confirmado en la ventana del lanzador.']))}</p>
       <div id="mtSites"></div>
+      <h3>${esc(t(['Ouverture depuis un autre site ou une extension', 'Opening from another website or an extension', 'Öffnen von einer anderen Website oder Erweiterung', 'Apertura desde otro sitio o una extensión']))}</h3>
+      <p class="mt-small">${esc(t(['Par défaut, une page de la suite ouverte depuis un autre site ou une extension (Claude in Chrome…) est refusée : ce site ne peut rien y lire ni déclencher. Pour travailler avec une extension, la protection peut être réduite jusqu’à la fermeture du lanceur, après confirmation dans sa fenêtre ; un bouton rouge reste alors en haut de chaque page pour la rétablir. Données, scripts et réglages du lanceur restent fermés aux autres sites.', 'By default, a suite page opened from another website or an extension (Claude in Chrome…) is refused: that website can neither read nor trigger anything. To work with an extension, the protection can be reduced until the launcher closes, after confirmation in its window; a red button then stays at the top of every page to restore it. Data, scripts and launcher settings stay closed to other websites.', 'Standardmäßig wird eine Seite der Suite, die von einer anderen Website oder Erweiterung (Claude in Chrome…) geöffnet wird, abgelehnt. Für die Arbeit mit einer Erweiterung kann der Schutz bis zum Schließen des Starters verringert werden, nach Bestätigung in dessen Fenster; ein roter Knopf oben auf jeder Seite stellt ihn wieder her. Daten, Skripte und Einstellungen des Starters bleiben für andere Websites gesperrt.', 'Por defecto, una página de la suite abierta desde otro sitio o una extensión (Claude in Chrome…) se rechaza. Para trabajar con una extensión, la protección puede reducirse hasta que se cierre el lanzador, tras confirmarlo en su ventana; un botón rojo queda entonces arriba de cada página para restablecerla. Datos, scripts y ajustes del lanzador siguen cerrados a otros sitios.']))}</p>
+      <p class="row"><span id="mtRelaxState"></span> <button type="button" class="secondary" id="mtRelax"></button></p>
       <h3>${esc(t(['Compagnie virtuelle', 'Virtual airline', 'Virtuelle Fluggesellschaft', 'Aerolínea virtual']))}</h3>
       <p class="mt-small">${esc(t(['Nom, sigle et centre affichés dans la suite (SO Group Virtual, SOG, CPCO par défaut) et pages du site de la compagnie (adresse : « Site de la compagnie virtuelle » ci-dessus ; chemin sous ce site, ou adresse complète ; {id} : numéro de l’appareil). Vide : valeur par défaut. Vaut pour ce navigateur.', 'Name, short name and centre shown in the suite (SO Group Virtual, SOG, CPCO by default) and pages of the airline website (address: “Virtual airline website” above; path under that site, or full address; {id}: aircraft number). Empty: default value. Applies to this browser.', 'Name, Kürzel und Zentrum in der Suite (standardmäßig SO Group Virtual, DEFA, CPCO) und Seiten der Website (Adresse: oben; Pfad unter dieser Website oder vollständige Adresse; {id}: Flugzeugnummer). Leer: Standardwert. Gilt für diesen Browser.', 'Nombre, sigla y centro mostrados en la suite (SO Group Virtual, SOG, CPCO por defecto) y páginas del sitio de la aerolínea (dirección: arriba; ruta bajo ese sitio o dirección completa; {id}: número del avión). Vacío: valor por defecto. Vale para este navegador.']))}</p>
       <table class="mt-table mt-wide mt-va"><tbody>${vaRows()}</tbody></table>
@@ -844,6 +847,7 @@
       renderSources();
     };
     sitesRows(host);
+    relaxRow(host);
     // « Nettoyer et recommencer… » : sur la page du premier lancement seulement (v2, une seule occurrence)
     host.querySelector('#mtSetupOpen').onclick = () => location.assign('premier_lancement.html?force');
     if (setup && !repo.handle) host.querySelector('tr[data-key="__repo"]')?.classList.add('mt-setup-row');
@@ -972,6 +976,63 @@
     });
     window.AppFramework?.refresh?.();
   }
+
+  // ---- débrayage de l'ouverture depuis un autre site ou une extension (lanceur : POST /__setup/relax ; état dans
+  // /__setup/status) : activé après confirmation dans la fenêtre du lanceur, jusqu'à sa fermeture
+  async function relaxRow(host) {
+    const state = host.querySelector('#mtRelaxState'),
+      btn = host.querySelector('#mtRelax');
+    if (!state || !btn) return;
+    const post = on => fetch('/__setup/relax', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-SOG-Setup': '1'
+      },
+      body: JSON.stringify({
+        on
+      })
+    }).then(r => r.json()).catch(() => null);
+    const st = await fetch('/__setup/status', {
+      headers: {
+        'X-SOG-Setup': '1'
+      },
+      cache: 'no-store'
+    }).then(r => r.ok ? r.json() : null).catch(() => null);
+    if (!st) {
+      state.innerHTML = pill('info', t(['sans lanceur', 'without launcher', 'ohne Starter', 'sin lanzador']));
+      btn.hidden = true;
+      return;
+    }
+    const on = !!st.relaxNav;
+    state.innerHTML = on ? pill('warn', t(['protection réduite jusqu’à la fermeture du lanceur',
+        'reduced protection until the launcher closes', 'Schutz verringert bis zum Schließen des Starters',
+        'protección reducida hasta cerrar el lanzador'
+      ])) :
+      pill('ok', t(['protégé : refusé', 'protected: refused', 'geschützt: abgelehnt', 'protegido: rechazado']));
+    btn.textContent = on ? t(['Rétablir la protection', 'Restore the protection', 'Schutz wiederherstellen',
+        'Restablecer la protección'
+      ]) :
+      t(['Autoriser jusqu’à la fermeture du lanceur…', 'Allow until the launcher closes…', 'Bis zum Schließen des Starters erlauben…',
+        'Autorizar hasta cerrar el lanzador…'
+      ]);
+    btn.onclick = async () => {
+      btn.disabled = true;
+      if (!on) window.AppFramework?.notify?.(t(['Confirmez dans la fenêtre que le lanceur ouvre sur l’ordinateur.',
+        'Confirm in the window the launcher opens on the computer.',
+        'Im Fenster bestätigen, das der Starter auf dem Computer öffnet.',
+        'Confirme en la ventana que el lanzador abre en el equipo.'
+      ]), 'info');
+      const r = await post(!on);
+      btn.disabled = false;
+      if (!on && !r?.relaxNav) window.AppFramework?.notify?.(r?.message || t(['Non confirmé.', 'Not confirmed.', 'Nicht bestätigt.',
+        'No confirmado.'
+      ]), 'warn');
+      window.dispatchEvent(new CustomEvent('suite-relax-change'));
+      relaxRow(host);
+    };
+  }
+  window.addEventListener('suite-relax-change', () => hosts.sources && relaxRow(hosts.sources));
 
   // ---- sites que les pages peuvent contacter (CSP connect-src du lanceur : GET /__setup/sites ; ajout par la
   // notification de blocage et la fenêtre du lanceur, app_framework.js ; retrait ici, POST /__setup/site-remove)

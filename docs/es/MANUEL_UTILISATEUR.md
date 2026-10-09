@@ -103,6 +103,7 @@ Los mensajes de la suite (éxitos, advertencias, errores) aparecen en la parte i
 - Los mensajes de error dicen qué ha fallado y qué hacer, en lugar de un código solo. Ejemplos: «el servidor no responde — comprobar que la suite se abre con el lanzador (lancer.cmd / lancer.sh), reiniciarlo si hace falta y volver a intentarlo»; «archivo ausente — comprobar que está en la carpeta esperada (o volver a crearlo) y volver a intentarlo»; «almacenamiento del navegador lleno — liberar espacio (Ajustes › Mantenimiento › Espacio en disco) y volver a intentarlo». Otros casos: servicio en línea que no responde, error del servidor, acceso denegado por el navegador, tiempo agotado; un error inesperado se muestra como «error» seguido del detalle técnico entre paréntesis.
 - Las preguntas («¿Borrar…?») se abren en una pequeña ventana con «Confirmar» y «Cancelar».
 - «Conexión bloqueada hacia …»: la suite solo contacta los sitios previstos (política de seguridad del lanzador). Para un sitio deseado (servicio web de los informes, otro repositorio), «Autorizar este sitio…» y luego «Sí» en la ventana del lanzador; la lista se revisa en Ajustes › Instalación › Fuentes y carpetas.
+- «⚠ Protección reducida — restablecer» (botón rojo de la cabecera): las páginas de la suite pueden abrirse desde otro sitio o una extensión, ajuste elegido en Ajustes › Instalación; un clic restablece la protección (también vuelve al cerrar el lanzador).
 
 ### Conexión, modo develop o producción, suplantación
 

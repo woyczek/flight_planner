@@ -75,6 +75,8 @@ Choices made while fixing:
   send the files. The danger came from the `.git/` received in an archive, which is no longer extracted.
 - **Navigations coming from another site refused.** The launcher renders an explanatory page with a link to the home page,
   never to the requested address.
+  Can be switched off to work with an extension (Claude in Chrome sends its navigations as coming from another
+  site): HTML pages only, confirmed in the launcher window, until it closes, red button in the header.
 - **Remote repository change confirmed outside the browser.** For a repository other than the current one or the one in the
   configuration, the launcher opens a system Yes / No window. It shows the current and the new address,
   with “No” as default. A confirmation in the page would protect nothing, since an injected script would validate it

@@ -103,6 +103,7 @@ Die Meldungen der Suite (Erfolg, Warnungen, Fehler) erscheinen unten in der Mitt
 - Fehlermeldungen sagen, was fehlgeschlagen ist und was zu tun ist, statt nur eines Codes. Beispiele: „der Server antwortet nicht — prüfen, dass die Suite über den Starter geöffnet ist (lancer.cmd / lancer.sh), ihn bei Bedarf neu starten und es erneut versuchen“; „Datei fehlt — prüfen, ob sie im erwarteten Ordner liegt (oder neu erstellen), und es erneut versuchen“; „Browserspeicher voll — Platz schaffen (Einstellungen › Wartung › Speicherplatz) und es erneut versuchen“. Weitere Fälle: Online-Dienst antwortet nicht, Serverfehler, vom Browser verweigerter Zugriff, Zeitüberschreitung; ein unerwarteter Fehler erscheint als „fehlgeschlagen“ mit dem technischen Detail in Klammern.
 - Fragen („Löschen… ?“) öffnen sich in einem kleinen Fenster mit „Bestätigen“ und „Abbrechen“.
 - „Verbindung zu … blockiert“: Die Suite kontaktiert nur die vorgesehenen Websites (Sicherheitsrichtlinie des Starters). Für eine gewünschte Website (Berichts-Webservice, anderes Repository) „Diese Website erlauben…“, dann „Ja“ im Fenster des Starters; die Liste steht unter Einstellungen › Installation › Quellen und Ordner.
+- „⚠ Schutz verringert — wiederherstellen“ (roter Knopf in der Kopfzeile): Seiten der Suite können von einer anderen Website oder Erweiterung aus geöffnet werden, eingestellt unter Einstellungen › Installation; ein Klick stellt den Schutz wieder her (er kehrt auch beim Schließen des Starters zurück).
 
 ### Anmeldung, develop- oder Produktionsmodus, Identitätsübernahme
 

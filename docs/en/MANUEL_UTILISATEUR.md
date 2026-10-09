@@ -103,6 +103,7 @@ Messages from the suite (success, warnings, errors) appear at the bottom centre 
 - Error messages say what failed and what to do, instead of a bare code. Examples: “the server does not answer — check that the suite is opened by the launcher (lancer.cmd / lancer.sh), restart it if needed, then try again”; “file missing — check that it is in the expected folder (or create it again), then try again”; “browser storage full — free some space (Settings › Maintenance › Disk space), then try again”. Other cases: online service not answering, server error, access denied by the browser, timeout; an unexpected error is shown as “failed” followed by the technical detail in brackets.
 - Questions (“Clear…?”) open in a small window with “Confirm” and “Cancel”.
 - “Connection blocked to …”: the suite only contacts the expected websites (launcher security policy). For a wanted website (report web service, other repository), “Allow this website…” then “Yes” in the launcher window; the list is reviewed in Settings › Installation › Sources and folders.
+- “⚠ Reduced protection — restore” (red header button): suite pages can be opened from another website or an extension, a setting chosen in Settings › Installation; one click restores the protection (it also comes back when the launcher closes).
 
 ### Sign-in, develop or production mode, impersonation
 

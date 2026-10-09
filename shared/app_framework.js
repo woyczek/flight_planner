@@ -756,6 +756,77 @@
     item.querySelector("span")?.after(b);
   });
 
+  // ---- Protection réduite (débrayage du lanceur : pages ouvrables depuis un autre site ou une extension, jusqu'à sa
+  // fermeture) : bouton rouge dans l'en-tête de chaque page ; un clic rétablit la protection. État lu au lanceur au
+  // chargement de la page (/__setup/status), et de nouveau quand un réglage de Paramètres l'annonce (suite-relax-change).
+  async function relaxBadge() {
+    if (!/^https?:$/.test(location.protocol)) return;
+    const st = await fetch("/__setup/status", {
+      headers: {
+        "X-SOG-Setup": "1"
+      },
+      cache: "no-store"
+    }).then(r => r.ok ? r.json() : null).catch(() => null);
+    let b = document.getElementById("repoRelaxBadge");
+    if (!st?.relaxNav) return b?.remove();
+    const K = window.RepositoryKit,
+      tt = row => K?.t ? K.t(row) : row[0];
+    if (!b) {
+      if (!document.getElementById("repoRelaxCss")) document.head.insertAdjacentHTML("beforeend",
+        "<style id=\"repoRelaxCss\">#repoRelaxBadge{all:unset;cursor:pointer;display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 10px;border-radius:7px;background:#c62828;color:#fff;font:600 12px/1 system-ui,sans-serif;box-shadow:0 0 0 2px #fff6,0 2px 8px #0006;white-space:nowrap}#repoRelaxBadge:hover{background:#a51d1d}#repoRelaxBadge.floating{position:fixed;top:8px;right:8px;z-index:3100}</style>"
+      );
+      b = document.createElement("button");
+      b.type = "button";
+      b.id = "repoRelaxBadge";
+      b.className = "no-print";
+      b.onclick = async () => {
+        b.disabled = true;
+        const r = await fetch("/__setup/relax", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-SOG-Setup": "1"
+          },
+          body: JSON.stringify({
+            on: false
+          })
+        }).then(x => x.json()).catch(() => null);
+        b.disabled = false;
+        if (r && !r.relaxNav) {
+          b.remove();
+          notify(tt(["Protection rétablie : les pages de la suite ne s’ouvrent plus depuis un autre site ni une extension.",
+            "Protection restored: suite pages no longer open from another website or an extension.",
+            "Schutz wiederhergestellt: Seiten der Suite öffnen sich nicht mehr von einer anderen Website oder Erweiterung aus.",
+            "Protección restablecida: las páginas de la suite ya no se abren desde otro sitio ni desde una extensión."
+          ]), "ok");
+          window.dispatchEvent(new CustomEvent("suite-relax-change"));
+        }
+      };
+    }
+    const label = tt(["⚠ Protection réduite — rétablir", "⚠ Reduced protection — restore", "⚠ Schutz verringert — wiederherstellen",
+        "⚠ Protección reducida — restablecer"
+      ]),
+      tip = tt([
+        "Les pages de la suite peuvent être ouvertes depuis un autre site ou une extension, jusqu’à la fermeture du lanceur. Cliquer pour rétablir la protection.",
+        "Suite pages can be opened from another website or an extension until the launcher closes. Click to restore the protection.",
+        "Seiten der Suite können bis zum Schließen des Starters von einer anderen Website oder Erweiterung aus geöffnet werden. Klicken, um den Schutz wiederherzustellen.",
+        "Las páginas de la suite pueden abrirse desde otro sitio o una extensión hasta que se cierre el lanzador. Pulsar para restablecer la protección."
+      ]);
+    if (b.textContent !== label) b.textContent = label;
+    if (b.title !== tip) b.title = tip;
+    const host = document.querySelector(".repo-header-tools");
+    if (host && b.parentNode !== host) {
+      b.classList.remove("floating");
+      host.prepend(b);
+    } else if (!host && !b.parentNode) {
+      b.classList.add("floating");
+      document.body.append(b);
+    }
+  }
+  if (document.readyState === "complete") relaxBadge();
+  else window.addEventListener("load", () => relaxBadge());
+  window.addEventListener("suite-relax-change", () => relaxBadge());
+
   // ---- Erreurs expliquées : ce qui a échoué et quoi faire, dans la langue de la page, au lieu d'un message technique
   // seul (« Failed to fetch », « 404 », « TypeError… ») ; le détail technique reste entre parenthèses quand il aide.
   //   AppFramework.explain(err, "Lecture du registre")  →  « Lecture du registre : le serveur ne répond pas — … »

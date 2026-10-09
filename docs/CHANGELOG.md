@@ -316,6 +316,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Security
 
+- **Switch-off for navigations from another site** — to work with an extension (Claude in Chrome sends its
+  navigations as coming from another site): HTML pages only, confirmed in the launcher window, valid until the launcher
+  closes, with a red button in the header to turn it back on.
 - **Read-only folders** (audit of 7 October, batch 4b) — the application folder, the X-Plane ones, the ODV workbook
   and the folders added to the backup are opened read-only; a trapped script can no longer rewrite the suite's code nor
   drop a plug-in into X-Plane. Write access to the data (`data/`) is asked separately, right after choosing the

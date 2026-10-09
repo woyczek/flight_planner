@@ -105,6 +105,7 @@ Les messages de la suite (succès, avertissements, erreurs) s'affichent en bas d
 - Les messages d'erreur disent ce qui a échoué et quoi faire, au lieu d'un code seul. Exemples : « le serveur ne répond pas — vérifier que la suite est ouverte par le lanceur (lancer.cmd / lancer.sh), le relancer au besoin, puis réessayer » ; « fichier absent — vérifier qu'il est bien dans le dossier attendu (ou le recréer), puis réessayer » ; « espace du navigateur saturé — libérer de la place (Paramètres › Maintenance › Espace disque), puis réessayer ». Autres cas : service en ligne muet, erreur du serveur, accès refusé par le navigateur, délai dépassé ; une erreur inattendue s'affiche « échec » suivi du détail technique entre parenthèses.
 - Les questions (« Effacer… ? ») s'ouvrent dans une petite fenêtre avec « Confirmer » et « Annuler ».
 - « Connexion bloquée vers … » : la suite n'a contacté que les sites prévus (politique de sécurité du lanceur). Pour un site voulu (webservice des CR, autre dépôt), « Autoriser ce site… » puis « Oui » dans la fenêtre du lanceur ; la liste se revoit dans Paramètres › Installation › Sources et dossiers.
+- « ⚠ Protection réduite — rétablir » (bouton rouge de l'en-tête) : les pages de la suite peuvent être ouvertes depuis un autre site ou une extension, réglage choisi dans Paramètres › Installation ; un clic rétablit la protection (elle revient aussi à la fermeture du lanceur).
 
 ### Connexion, mode develop ou production, usurpation
 
