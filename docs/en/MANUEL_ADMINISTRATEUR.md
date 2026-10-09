@@ -727,7 +727,7 @@ To open it: sidebar › “Settings”, then the “Maintenance” tab. The page
 The side menu has three parts:
 - the “Maintenance” group: Updates, Versions and sync, References and dependencies, Aeronautical data, Aircraft types;
 - the “Storage and backup” group: Caches, Disk space, Full backup, Journal;
-- the databases, arranged in the groups “Repository files”, “Base”, “Missions” and “Browser data”. These groups only appear at the Expert level.
+- the databases, arranged in the groups “Repository files”, “Reference and log”, “Missions” and “Browser data”. These groups only appear at the Expert level.
 
 ### Suite updates
 
@@ -852,7 +852,7 @@ As long as none of these operations has taken place, the journal is empty.
 
 ### fleet (known aircraft)
 
-This database (`data/references/aircraft_fleet.js`) lists the aircraft offered in the reports: “Operator”, “ICAO type”, “Variant”, “Registration”, “Code”, “Number”, “Callsigns” (comma-separated), “Base”, “Operational”.
+This database (`data/references/aircraft_fleet.js`) lists the aircraft offered in the reports: “Operator”, “ICAO type”, “Variant”, “Registration”, “Code”, “Number”, “Callsigns” (comma-separated), “Home base”, “Operational”.
 - **“Paste the website Fleet page…”**:
   1. open the “Virtual fleet” page of the airline's website (link in the window);
   2. press Ctrl+A then Ctrl+C, and paste into the area (Ctrl+V); you can also use “Read the clipboard” or “or saved page…”;

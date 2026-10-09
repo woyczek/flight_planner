@@ -538,7 +538,7 @@ The suite never asks for your IVAO or VATSIM passwords: your IDs (VID, CID) are 
 
 Maps, missions and planning use the aeronautical data (AIRAC) and the aircraft type database. The step shows the same blocks as Settings › Installation:
 
-1. ① “Aircraft types” first, preceded by a status line (“✓ 34 known types, 18 with performance”, “○ n types to complete”): “Complete automatically” downloads the types (ICAO) and their performance (EUROCONTROL), then says “✓ Finished: …” (types without EUROCONTROL performance are normal for military aircraft and helicopters).
+1. ① “Aircraft types” first, preceded by a status line (“✓ 34 known types, 18 with performance”, “○ n types to complete”): “Complete automatically” downloads the types (ICAO) and their performance (EUROCONTROL), then says “✓ Finished: …” (types without EUROCONTROL performance are normal for military aircraft and helicopters; a type without an ICAO record does not block the step).
 2. ② “Aeronautical data”, preceded by their status lines (database: AIRAC, airspaces, build date; MORA; X-Plane, optional): France is active by default, a click on the map chooses other zones, each source keeps its button (SIA ZIP: link to the shop, free account, cycle product at 0 €, then “Fetch the downloaded ZIP”; MORA; MILAIP PDF; datasets of other countries). A single main button, **“Install everything for <zones>”**, chains the completion of the types then the activation of the zones, waits for the end of each task and says what remains; what is already installed is not redone. The expert cards (aeronautical database, MORA, consistency) are folded under “Advanced tools” (also in Settings › Maintenance).
 
 ### 6 Centre (administrators)
@@ -550,7 +550,7 @@ For SO Group administrators only: pilots skip this step and click “Finish”. 
   - “Missions”: “✓ n missions in the registry: nothing to do”, otherwise where they come from (data of step 2, otherwise Centre › Mission generator), and the link to the registry.
   - “SO Group settings”: links to the Settings › Centre sections — users and rights (number, administrators, mode), availability categories, ODV planning, Board, report sending, route calculation.
 
-“Finish” is only active when steps 1 to 5 are done (otherwise it says what is missing); it marks the suite as “set up” and opens the home page. The “Home” link goes back to it without finishing.
+“Finish” only requires steps 1 and 2; steps 3 to 5 are recommended (if some remain, a confirmation recalls them on click); it marks the suite as “set up” and opens the home page. The “Home” link goes back to it without finishing.
 
 ### Start again
 

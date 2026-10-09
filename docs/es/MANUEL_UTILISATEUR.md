@@ -538,7 +538,7 @@ La suite nunca pide sus contraseñas IVAO ni VATSIM: sus identificadores (VID, C
 
 Mapas, misiones y planificación usan los datos aeronáuticos (AIRAC) y la base de tipos de aeronave. El paso muestra los mismos bloques que Ajustes › Instalación:
 
-1. ① Primero «Tipos de aeronave», precedidos de una línea de estado («✓ 34 tipos conocidos, 18 con rendimientos», «○ n tipos por completar»): «Completar automáticamente» descarga los tipos (OACI) y sus rendimientos (EUROCONTROL) y después indica «✓ Terminado: …» (los tipos sin rendimientos EUROCONTROL son normales en aviones militares y helicópteros).
+1. ① Primero «Tipos de aeronave», precedidos de una línea de estado («✓ 34 tipos conocidos, 18 con rendimientos», «○ n tipos por completar»): «Completar automáticamente» descarga los tipos (OACI) y sus rendimientos (EUROCONTROL) y después indica «✓ Terminado: …» (los tipos sin rendimientos EUROCONTROL son normales en aviones militares y helicópteros; un tipo sin ficha OACI no bloquea el paso).
 2. ② «Datos aeronáuticos», precedidos de sus líneas de estado (base: AIRAC, espacios, fecha de construcción; MORA; X-Plane, opcional): Francia está activa por defecto, un clic en el mapa elige otras zonas, cada fuente conserva su botón (ZIP del SIA: enlace a la tienda, cuenta gratuita, producto del ciclo a 0 €, luego «Obtener el ZIP descargado»; MORA; PDF MILAIP; conjuntos de otros países). Un único botón principal, **«Instalar todo para <zonas>»**, encadena la compleción de los tipos y luego la activación de las zonas, espera el final de cada tarea y dice lo que queda; lo ya instalado no se rehace. Las tarjetas expertas (base aeronáutica, MORA, coherencia) están plegadas en «Herramientas avanzadas» (también en Ajustes › Mantenimiento).
 
 ### 6 Centro (administradores)
@@ -550,7 +550,7 @@ Reservado a los administradores del SO Group: los pilotos se saltan este paso y 
   - «Misiones»: «✓ n misiones en el registro: nada que hacer», si no de dónde vienen (datos del paso 2, si no Centro › Generador de misiones), y el enlace al registro.
   - «Ajustes del SO Group»: enlaces a las rúbricas de Ajustes › Centro — usuarios y derechos (número, administradores, modo), categorías de disponibilidad, planificación ODV, Tablero, envío de informes, cálculo de rutas.
 
-«Terminar» solo está activo cuando los pasos 1 a 5 están hechos (si no, dice lo que falta); marca la suite como «configurada» y abre la página de inicio. El enlace «Inicio» vuelve a ella sin terminar.
+«Terminar» solo exige los pasos 1 y 2; los pasos 3 a 5 se recomiendan (si quedan, una confirmación lo recuerda al hacer clic); marca la suite como «configurada» y abre la página de inicio. El enlace «Inicio» vuelve a ella sin terminar.
 
 ### Empezar de nuevo
 

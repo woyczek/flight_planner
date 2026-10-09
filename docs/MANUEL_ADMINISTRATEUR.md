@@ -727,7 +727,7 @@ Pour l'ouvrir : barre latérale › « Paramètres », puis l'onglet « Maintena
 Le menu latéral comporte trois parties :
 - le groupe « Maintenance » : Mises à jour, Versions et synchros, Références et dépendances, Données aéronautiques, Types d'aéronefs ;
 - le groupe « Stockage et sauvegarde » : Caches, Espace disque, Sauvegarde totale, Journal ;
-- les bases de données, rangées dans les groupes « Fichiers du dépôt », « Base », « Missions » et « Données du navigateur ». Ces groupes n'apparaissent qu'au niveau Expert.
+- les bases de données, rangées dans les groupes « Fichiers du dépôt », « Référence et journal », « Missions » et « Données du navigateur ». Ces groupes n'apparaissent qu'au niveau Expert.
 
 ### Mises à jour de la suite
 
@@ -852,7 +852,7 @@ Tant qu'aucune de ces opérations n'a eu lieu, le journal est vide.
 
 ### Flotte (appareils connus)
 
-Cette base (`data/references/aircraft_fleet.js`) liste les appareils proposés dans les CR : « Opérateur », « Type OACI », « Variante », « Immatriculation », « Code », « Numéro », « Indicatifs » (séparés par des virgules), « Base », « Opérationnel ».
+Cette base (`data/references/aircraft_fleet.js`) liste les appareils proposés dans les CR : « Opérateur », « Type OACI », « Variante », « Immatriculation », « Code », « Numéro », « Indicatifs » (séparés par des virgules), « Terrain de base », « Opérationnel ».
 - **« Coller la page Flotte du site… »** :
   1. ouvrez la page « Flotte virtuelle » du site de la compagnie (lien dans la fenêtre) ;
   2. faites Ctrl+A puis Ctrl+C, et collez dans la zone (Ctrl+V) ; vous pouvez aussi utiliser « Lire le presse-papiers » ou « ou page enregistrée… » ;

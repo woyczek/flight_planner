@@ -727,7 +727,7 @@ Zum Öffnen: Seitenleiste › „Einstellungen“, dann der Reiter „Wartung“
 Das Seitenmenü hat drei Teile:
 - die Gruppe „Wartung“: Updates, Versionen, Referenzen und Abhängigkeiten, Luftfahrtdaten, Luftfahrzeugtypen;
 - die Gruppe „Speicher und Sicherung“: Caches, Speicherplatz, Vollständige Sicherung, Protokoll;
-- die Datenbanken, geordnet in den Gruppen „Dateien des Repositorys“, „Datenbank“, „Missionen“ und „Browserdaten“. Diese Gruppen erscheinen nur auf der Stufe Experte.
+- die Datenbanken, geordnet in den Gruppen „Dateien des Repositorys“, „Referenz und Flugbuch“, „Missionen“ und „Browserdaten“. Diese Gruppen erscheinen nur auf der Stufe Experte.
 
 ### Aktualisierungen der Suite
 
@@ -852,7 +852,7 @@ Solange keiner dieser Vorgänge stattgefunden hat, ist das Protokoll leer.
 
 ### Flotte (bekannte Flugzeuge)
 
-Diese Datenbank (`data/references/aircraft_fleet.js`) listet die in den Berichten angebotenen Flugzeuge: „Betreiber“, „ICAO-Muster“, „Variante“, „Kennzeichen“, „Code“, „Nummer“, „Rufzeichen“ (durch Kommas getrennt), „Basis“, „Einsatzbereit“.
+Diese Datenbank (`data/references/aircraft_fleet.js`) listet die in den Berichten angebotenen Flugzeuge: „Betreiber“, „ICAO-Muster“, „Variante“, „Kennzeichen“, „Code“, „Nummer“, „Rufzeichen“ (durch Kommas getrennt), „Heimatflugplatz“, „Einsatzbereit“.
 - **„Flottenseite der Website einfügen…“**:
   1. Öffnen Sie die Seite „Virtuelle Flotte“ der Website der Gesellschaft (Link im Fenster);
   2. drücken Sie Strg+A und dann Strg+C, und fügen Sie in das Feld ein (Strg+V); Sie können auch „Zwischenablage lesen“ oder „oder gespeicherte Seite…“ verwenden;

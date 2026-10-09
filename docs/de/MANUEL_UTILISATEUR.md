@@ -538,7 +538,7 @@ Die Suite fragt nie nach Ihren IVAO- oder VATSIM-Passwörtern: Ihre Kennungen (V
 
 Karten, Missionen und Planung nutzen die Luftfahrtdaten (AIRAC) und die Datenbank der Luftfahrzeugtypen. Der Schritt zeigt dieselben Blöcke wie Einstellungen › Installation:
 
-1. ① Zuerst „Luftfahrzeugtypen“, mit einer Statuszeile davor („✓ 34 bekannte Typen, 18 mit Leistungen“, „○ n Typen zu ergänzen“): „Automatisch ergänzen“ lädt die Typen (ICAO) und ihre Leistungen (EUROCONTROL) herunter und meldet dann „✓ Fertig: …“ (Typen ohne EUROCONTROL-Leistungen sind bei Militärflugzeugen und Hubschraubern normal).
+1. ① Zuerst „Luftfahrzeugtypen“, mit einer Statuszeile davor („✓ 34 bekannte Typen, 18 mit Leistungen“, „○ n Typen zu ergänzen“): „Automatisch ergänzen“ lädt die Typen (ICAO) und ihre Leistungen (EUROCONTROL) herunter und meldet dann „✓ Fertig: …“ (Typen ohne EUROCONTROL-Leistungen sind bei Militärflugzeugen und Hubschraubern normal; ein Typ ohne ICAO-Eintrag blockiert den Schritt nicht).
 2. ② „Luftfahrtdaten“, mit ihren Statuszeilen davor (Datenbank: AIRAC, Lufträume, Erstellungsdatum; MORA; X-Plane, optional): Frankreich ist standardmäßig aktiv, ein Klick auf die Karte wählt weitere Zonen, jede Quelle behält ihre Schaltfläche (SIA-ZIP: Link zum Shop, kostenloses Konto, Zyklusprodukt zu 0 €, dann „Heruntergeladene ZIP abrufen“; MORA; MILAIP-PDF; Datensätze anderer Länder). Eine einzige Hauptschaltfläche, **„Alles installieren für <Zonen>“**, verkettet das Ergänzen der Typen und dann die Aktivierung der Zonen, wartet das Ende jeder Aufgabe ab und sagt, was bleibt; bereits Installiertes wird nicht wiederholt. Die Expertenkarten (Luftfahrtdatenbank, MORA, Kohärenz) sind unter „Erweiterte Werkzeuge“ zugeklappt (auch unter Einstellungen › Wartung).
 
 ### 6 Zentrum (Administratoren)
@@ -550,7 +550,7 @@ Nur für Administratoren der SO Group: Piloten überspringen diesen Schritt und 
   - „Missionen“: „✓ n Missionen im Register: nichts zu tun“, sonst ihre Herkunft (Daten aus Schritt 2, sonst Zentrum › Missionsgenerator), und der Link zum Register.
   - „Einstellungen der SO Group“: Links zu den Rubriken unter Einstellungen › Zentrum — Benutzer und Rechte (Anzahl, Administratoren, Modus), Verfügbarkeitskategorien, ODV-Planung, Einsatztafel, Berichtsversand, Routenberechnung.
 
-„Abschließen“ ist erst aktiv, wenn die Schritte 1 bis 5 erledigt sind (sonst sagt es, was fehlt); es vermerkt die Suite als „eingerichtet“ und öffnet die Startseite. Der Link „Start“ führt ohne Abschluss dorthin zurück.
+„Abschließen“ verlangt nur die Schritte 1 und 2; die Schritte 3 bis 5 werden empfohlen (bleiben welche offen, erinnert beim Klick eine Bestätigung daran); es vermerkt die Suite als „eingerichtet“ und öffnet die Startseite. Der Link „Start“ führt ohne Abschluss dorthin zurück.
 
 ### Neu beginnen
 

@@ -727,7 +727,7 @@ Para abrirla: barra lateral › «Ajustes» y después la pestaña «Mantenimien
 El menú lateral tiene tres partes:
 - el grupo «Mantenimiento»: Actualizaciones, Versiones, Referencias y dependencias, Datos aeronáuticos, Tipos de aeronave;
 - el grupo «Almacenamiento y copia»: Cachés, Espacio en disco, Copia total, Registro;
-- las bases de datos, agrupadas en «Archivos del repositorio», «Base», «Misiones» y «Datos del navegador». Estos grupos solo aparecen en el nivel Experto.
+- las bases de datos, agrupadas en «Archivos del repositorio», «Referencia y registro», «Misiones» y «Datos del navegador». Estos grupos solo aparecen en el nivel Experto.
 
 ### Actualizaciones de la suite
 
@@ -852,7 +852,7 @@ Mientras no haya tenido lugar ninguna de estas operaciones, el registro está va
 
 ### Flota (aeronaves conocidas)
 
-Esta base (`data/references/aircraft_fleet.js`) lista las aeronaves propuestas en los informes: «Operador», «Tipo OACI», «Variante», «Matrícula», «Código», «Número», «Indicativos» (separados por comas), «Base», «Operativo».
+Esta base (`data/references/aircraft_fleet.js`) lista las aeronaves propuestas en los informes: «Operador», «Tipo OACI», «Variante», «Matrícula», «Código», «Número», «Indicativos» (separados por comas), «Aeródromo base», «Operativo».
 - **«Pegar la página Flota del sitio…»**:
   1. abra la página «Flota virtual» del sitio de la compañía (enlace en la ventana);
   2. pulse Ctrl+A y después Ctrl+C, y pegue en la zona (Ctrl+V); también puede usar «Leer el portapapeles» u «o página guardada…»;

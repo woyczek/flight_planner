@@ -538,7 +538,7 @@ La suite ne demande jamais vos mots de passe IVAO ni VATSIM : vos identifiants (
 
 Cartes, missions et planification utilisent les données aéronautiques (AIRAC) et la base des types d’aéronefs. L'étape montre les mêmes blocs que Paramètres › Installation :
 
-1. ① « Types d’aéronefs » d'abord, précédés d'une ligne d'état (« ✓ 34 types connus, 18 avec performances », « ○ n types à compléter ») : « Compléter automatiquement » télécharge les types (OACI) et leurs performances (EUROCONTROL), puis dit « ✓ Terminé : … » (des types sans performances EUROCONTROL sont normaux pour les militaires et les hélicoptères).
+1. ① « Types d’aéronefs » d'abord, précédés d'une ligne d'état (« ✓ 34 types connus, 18 avec performances », « ○ n types à compléter ») : « Compléter automatiquement » télécharge les types (OACI) et leurs performances (EUROCONTROL), puis dit « ✓ Terminé : … » (des types sans performances EUROCONTROL sont normaux pour les militaires et les hélicoptères ; un type sans fiche OACI ne bloque pas l'étape).
 2. ② « Données aéronautiques », précédées de leurs lignes d'état (base : AIRAC, espaces, date de construction ; MORA ; X-Plane, facultatif) : la France est active par défaut, un clic sur la carte choisit d'autres zones, chaque source garde son bouton (ZIP du SIA : lien vers la boutique, compte gratuit, produit du cycle à 0 €, puis « Récupérer le ZIP téléchargé » ; MORA ; PDF MILAIP ; jeux des autres pays). Un seul bouton principal, **« Tout installer pour <zones> »**, enchaîne la complétion des types puis l'activation des zones, attend la fin de chaque tâche et dit ce qui reste ; ce qui est déjà installé n'est pas refait. Les cartes expertes (base aéronautique, MORA, cohérence) sont repliées sous « Outils avancés » (aussi dans Paramètres › Maintenance).
 
 ### 6 Centre (administrateurs)
@@ -550,7 +550,7 @@ Réservé aux administrateurs du SO Group : les pilotes passent cette étape et 
   - « Missions » : « ✓ n missions au registre : rien à faire », sinon d'où elles viennent (données de l'étape 2, sinon Centre › Générateur de mission), et le lien vers le registre.
   - « Réglages du SO Group » : liens vers les rubriques de Paramètres › Centre — utilisateurs et droits (nombre, administrateurs, mode), catégories de disponibilité, Planning ODV, Tableau, envoi des CR, calcul des routes.
 
-« Terminer » n'est actif que quand les étapes 1 à 5 sont faites (sinon il dit ce qui manque) ; il note la suite « réglée » et ouvre l'accueil. Le lien « Accueil » y ramène sans terminer.
+« Terminer » demande seulement les étapes 1 et 2 ; les étapes 3 à 5 sont recommandées (s'il en reste, une confirmation le rappelle au clic) ; il note la suite « réglée » et ouvre l'accueil. Le lien « Accueil » y ramène sans terminer.
 
 ### Recommencer
 
