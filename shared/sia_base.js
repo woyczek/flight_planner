@@ -20,6 +20,7 @@
     KEY_CITIES = 'cities',
     INFO = 'siaBaseInfo:v1',
     PREV = 'siaBaseInfo:prev',
+    INPUTS = 'siaBaseInputs:v1', // empreinte des fichiers et réglages lus par la dernière relecture (inputsOf)
     FOLDER_NAME = 'siaFolderName';
   /** Version du format de la base mémorisée : une base d'une autre version est ignorée (à relire). */
   const COMPAT = 14; // plus ancien format encore utilisable tel quel (15 n'ajoute que aero.vrp)
@@ -138,8 +139,13 @@
     return b && (any || (b.parserVersion >= COMPAT && b.parserVersion <= VERSION)) ? b : null;
   }
   /** Mémorise la base (et son résumé siaBaseInfo:v1). Une base nouvellement lue (cachedAt différent) garde le résumé de la
-   *  précédente (siaBaseInfo:prev) pour la comparaison des deux bases (Maintenance, étape 5), quelle que soit la page qui relit. */
-  async function put(base) {
+   *  précédente (siaBaseInfo:prev) pour la comparaison des deux bases (Maintenance, étape 5), quelle que soit la page qui relit.
+   *  inputs : empreinte des entrées (rebuild) ; sans elle, l'empreinte est oubliée (base d'une autre origine : la prochaine
+   *  mise en place relira), sauf keepInputs (patch : même base, quelques champs changés). */
+  async function put(base, {
+    inputs = null,
+    keepInputs = false
+  } = {}) {
     const old = await get({
       any: true
     });
@@ -169,6 +175,7 @@
     });
     if (Array.isArray(villes)) citiesCache = villes;
     remember(summarize(base));
+    if (!keepInputs) storeInputs(inputs);
     try {
       if (base.folderName) localStorage.setItem(FOLDER_NAME, base.folderName);
     } catch {
@@ -220,7 +227,11 @@
     });
     return citiesCache = Array.isArray(b?.cities) ? b.cities : [];
   }
-  async function patch(fields) {
+  // touched : fichiers du dossier SIA réécrits avec ce changement (« mora.csv »…) : leur empreinte suit, la base en tient
+  // déjà compte (sans cela, la mise en place suivante relirait tout pour rien)
+  async function patch(fields, {
+    touched = []
+  } = {}) {
     const b = await get({
       any: true
     });
@@ -228,7 +239,10 @@
     await put({
       ...b,
       ...fields
+    }, {
+      keepInputs: true
     });
+    if (touched.length) await touchInputs(touched);
     return true;
   }
   /** Purge : vide le magasin (jamais bloqué par un onglet ouvert, contrairement à deleteDatabase) et oublie le résumé. */
@@ -240,6 +254,7 @@
       create: false
     });
     if (db) await tx(db, 'readwrite', s => s.clear()).catch(() => {});
+    storeInputs(null);
     try {
       localStorage.removeItem(INFO);
     } catch {
@@ -1187,6 +1202,76 @@
     }
     return out;
   }
+  // ---- empreinte des entrées : rien de changé depuis la dernière relecture → pas de nouvelle relecture (mise en place
+  // des zones idempotente : seuls un fichier ajouté, retiré ou modifié, une zone ou une source changée, ou un nouveau
+  // lecteur font refaire la base)
+  /** Empreinte des entrées d'une relecture du dossier dir : chaque fichier qu'elle verrait (dossier SIA, sous-dossiers
+   *  des sources, dossier X-Plane) avec sa taille et sa date, zones actives et sources cochées, version du lecteur.
+   *  root, extra : listes déjà faites (rebuild). { key, files: { chemin: 'taille|date' } }. */
+  async function inputsOf(dir, {
+    root = null,
+    extra = null
+  } = {}) {
+    const Z = await needZones(),
+      s = Z?.settings();
+    root ||= await filesOf(dir);
+    extra ||= await extraFiles(dir);
+    const files = {};
+    for (const f of root) files[f.name] = `${f.size}|${f.lastModified}`;
+    for (const [k, l] of Object.entries(extra))
+      for (const f of l) files[f.__rel || `${k}/${f.name}`] = `${f.size}|${f.lastModified}`;
+    const zones = Z ? Object.keys(s.on).filter(id => Z.isOn(id, s)).sort().map(id => [id, (Z.byId(id)?.sources || []).filter(x => Z
+      .srcOn(id, x, s))]) : null;
+    return {
+      key: JSON.stringify([VERSION, zones]),
+      files
+    };
+  }
+  /** Empreinte gardée (null si aucune : base jamais relue depuis le dossier, purgée, ou d'une autre origine). */
+  const storedInputs = () => {
+    try {
+      return JSON.parse(localStorage.getItem(INPUTS) || 'null');
+    } catch {
+      return null;
+    }
+  };
+  /** Garde l'empreinte v (null : l'oublie). */
+  function storeInputs(v) {
+    try {
+      if (v) localStorage.setItem(INPUTS, JSON.stringify(v));
+      else localStorage.removeItem(INPUTS);
+    } catch {
+      /* quota : la prochaine mise en place relira */
+    }
+  }
+  /** Fichiers du dossier SIA (noms à sa racine) réécrits par la suite avec la base : leur empreinte remise à jour. */
+  async function touchInputs(names) {
+    const was = storedInputs(),
+      st = await window.FileAccess?.status?.('__sia');
+    if (!was || !st?.handle || st.permission !== 'granted') return;
+    for (const n of names) try {
+      const f = await (await st.handle.getFileHandle(n)).getFile();
+      was.files[n] = `${f.size}|${f.lastModified}`;
+    } catch {
+      delete was.files[n];
+    }
+    storeInputs(was);
+  }
+  /** Vrai si la base mémorisée vient des fichiers et réglages actuels : une relecture referait la même base. Faux sans
+   *  base, sans empreinte ou sans dossier SIA autorisé (pas de demande d'accès ici). */
+  async function upToDate() {
+    const was = storedInputs();
+    if (!was || !info()) return false;
+    const st = await window.FileAccess?.status?.('__sia');
+    if (!st?.handle || st.permission !== 'granted') return false;
+    try {
+      const cur = await inputsOf(st.handle),
+        a = Object.keys(cur.files);
+      return cur.key === was.key && a.length === Object.keys(was.files || {}).length && a.every(k => cur.files[k] === was.files[k]);
+    } catch {
+      return false; // dossier déplacé ou illisible : relire
+    }
+  }
   /** Fichier livré avec l'application (shared/carto/) : fetch (page servie en http), sinon dossier de l'application
    *  mémorisé (__repo) s'il est déjà autorisé — jamais d'invite en pleine lecture (en file://, fetch est refusé). */
   // raison du dernier échec d'appAsset (code HTTP, erreur réseau, dossier) : montrée dans le compte rendu de la relecture
@@ -1539,15 +1624,22 @@
     }
     progress?.(`Liste des fichiers du dossier « ${dir.name} »…`, 0);
     const extra = await extraFiles(dir, {
-      request
-    });
-    const r = await build(await filesOf(dir), {
+        request
+      }),
+      root = await filesOf(dir),
+      inputs = await inputsOf(dir, {
+        root,
+        extra
+      }); // avant la lecture : ce que la base va contenir
+    const r = await build(root, {
       folderName: dir.name,
       progress,
       signal,
       extra
     });
-    await put(r.base);
+    await put(r.base, {
+      inputs
+    });
     r.report.finish();
     return r;
   }
@@ -1813,6 +1905,7 @@
     put,
     patch,
     purge,
+    upToDate,
     summarize,
     summary,
     info,

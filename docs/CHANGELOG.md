@@ -43,6 +43,26 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   butées » repliables ; Cartes de vol : blocs « Cheminement » et « Cartes », bouton unique des niveaux 1 à 3. Prise en main : déplacement des blocs (moitié haute ou basse, autre colonne) et ☰ « Réinitialiser l'ordre
   des blocs ».
 
+### Ajouté
+
+- **« Purger la zone… »** (panneau d'une zone qui a des données, Paramètres › Maintenance › Données aéronautiques) :
+  après confirmation, supprime les fichiers de la zone du dossier SIA (toutes sources ; France : XML du SIA et axes
+  ENR 5.7) et ses cases de `mora.csv` (ancien fichier archivé), oublie ses marques de mise en place, la désactive et
+  relit la base ; le dossier X-Plane n'est pas touché. Une nouvelle activation réinstalle tout. Manuel administrateur
+  (4 langues).
+
+### Modifié
+
+- **Données aéronautiques : mise en place des zones idempotente** — si tout est là, rien n'est refait. Une source
+  téléchargée à jour (moins de 28 jours depuis son téléchargement ou sa dernière vérification) n'est pas retéléchargée ;
+  « Tout récupérer et recalculer » la revérifie par requête conditionnelle (`If-Modified-Since` : réponse 304 sans
+  téléchargement). Le lanceur (`tools/aero_fetch.py`) ne réécrit jamais un fichier identique, ne retélécharge pas un
+  amendement ENAIRE déjà présent et ne relit pas un PDF inchangé (AIP militaire britannique, NAV CANADA) ; les dépôts
+  de Téléchargements identiques ne sont pas réécrits. La base aéronautique n'est relue que si ses entrées ont changé :
+  empreinte des fichiers lus (taille, date), des zones actives, des sources cochées et de la version du lecteur, gardée
+  à chaque relecture (`SiaBase.upToDate`) et suivie quand la suite réécrit `mora.csv` ou les axes ENR 5.7 avec la base.
+  Relancée sans rien de nouveau, la mise en place ne télécharge, n'écrit et ne recalcule rien (« base déjà à jour »).
+
 ## [5.0.0] — 2026-10-08
 
 Version « v2 » : la suite s'adapte à son utilisateur. Un **niveau d'utilisation** (équipage, planification, conception,

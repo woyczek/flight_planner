@@ -19,6 +19,10 @@ Fournisseurs :
            réglementées, consultatives) ; le PDF est gardé à côté (navcan_dah.pdf).
 Le Royaume-Uni (NATS, AIXM 5.1) demande une inscription : fichier à déposer à la main dans data/sia/aixm5/.
 
+Idempotent : un fichier déjà présent est demandé avec If-Modified-Since (304 : rien de téléchargé), un contenu identique
+n'est jamais réécrit (date du fichier et base aéronautique inchangées), un jeu ENAIRE déjà présent n'est pas retéléchargé
+et un PDF inchangé n'est pas relu. Chaque fichier du compte rendu porte « unchanged » (vrai : rien n'a changé).
+
 Usage (racine du dépôt) :
   python tools/aero_fetch.py openaip gb de es      pays (codes ISO à deux lettres)
   python tools/aero_fetch.py faa [sua mtr class]
@@ -29,7 +33,7 @@ Usage (racine du dépôt) :
 Appelé aussi par le lanceur (POST /__setup/aero-fetch) pour les boutons de Paramètres › Maintenance › Données
 aéronautiques.
 """
-import json, os, re, sys, urllib.parse, urllib.request
+import email.utils, json, os, re, sys, urllib.error, urllib.parse, urllib.request
 
 ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
 UA = {'User-Agent': 'DEFA-suite/1.0 (+https://framagit.org/asr/flight_planner)'}
@@ -45,18 +49,51 @@ ENAIRE = 'https://aip.enaire.es/AIP/'
 ENAIRE_KINDS = ('Airspace', 'EnRoute')
 
 
-def get(url):
-    with urllib.request.urlopen(urllib.request.Request(url, headers=UA), timeout=TIMEOUT) as r:
-        return r.read()
+def get(url, since=None):
+    """Corps de la réponse ; None si le serveur répond 304 (rien de plus récent que since, date du fichier local)."""
+    headers = dict(UA)
+    if since:
+        headers['If-Modified-Since'] = email.utils.formatdate(since, usegmt=True)
+    try:
+        with urllib.request.urlopen(urllib.request.Request(url, headers=headers), timeout=TIMEOUT) as r:
+            return r.read()
+    except urllib.error.HTTPError as e:
+        if e.code == 304:
+            return None
+        raise
+
+
+def mtime(path):
+    """Date du fichier local (secondes), None s'il est absent : sert à If-Modified-Since."""
+    try:
+        return os.path.getmtime(path)
+    except OSError:
+        return None
+
+
+def same(path, data):
+    """Vrai si le fichier existe déjà avec exactement ce contenu."""
+    try:
+        if os.path.getsize(path) != len(data):
+            return False
+        with open(path, 'rb') as f:
+            return f.read() == data
+    except OSError:
+        return False
 
 
 def write(path, data):
-    """Écriture atomique (fichier temporaire puis remplacement) : une lecture de la base ne voit jamais un fichier tronqué."""
+    """Écriture atomique (fichier temporaire puis remplacement) : une lecture de la base ne voit jamais un fichier tronqué.
+    Contenu identique au fichier présent : rien n'est réécrit (sa date ne change pas, la base n'a pas à être refaite) ;
+    renvoie vrai si le fichier a été écrit."""
+    if same(path, data):
+        return False
     os.makedirs(os.path.dirname(path), exist_ok=True)
     tmp = path + '.part'
     with open(tmp, 'wb') as f:
         f.write(data)
     os.replace(tmp, path)
+    return True
 
 
 def openaip(data, countries, layers=OPENAIP_LAYERS):
@@ -67,8 +104,10 @@ def openaip(data, countries, layers=OPENAIP_LAYERS):
             errors.append(f'code pays invalide : {cc}')
             continue
         for layer in layers:
+            name = f'{cc}_{layer}.geojson'
+            path = os.path.join(data, 'sia', 'openaip', name)
             try:
-                body = get(OPENAIP.format(cc=cc, layer=layer))
+                body = get(OPENAIP.format(cc=cc, layer=layer), since=mtime(path))
             except urllib.error.HTTPError as e:
                 if e.code in (403, 404):  # couche absente pour ce pays
                     continue
@@ -77,9 +116,11 @@ def openaip(data, countries, layers=OPENAIP_LAYERS):
             except OSError as e:
                 errors.append(f'{cc}_{layer} : {e}')
                 continue
-            name = f'{cc}_{layer}.geojson'
-            write(os.path.join(data, 'sia', 'openaip', name), body)
-            out.append({'name': name, 'bytes': len(body), 'features': len(json.loads(body).get('features', []))})
+            if body is None:  # 304 : le fichier présent est à jour
+                out.append({'name': name, 'bytes': os.path.getsize(path), 'unchanged': True})
+                continue
+            changed = write(path, body)
+            out.append({'name': name, 'bytes': len(body), 'features': len(json.loads(body).get('features', [])), 'unchanged': not changed})
     return out, errors
 
 
@@ -115,8 +156,8 @@ def faa(data, layers=('sua', 'mtr')):
             continue
         name = f'faa_{layer}.geojson'
         body = json.dumps({'type': 'FeatureCollection', 'features': feats}, separators=(',', ':')).encode('utf-8')
-        write(os.path.join(data, 'sia', 'geojson', name), body)
-        out.append({'name': name, 'bytes': len(body), 'features': len(feats)})
+        changed = write(os.path.join(data, 'sia', 'geojson', name), body)
+        out.append({'name': name, 'bytes': len(body), 'features': len(feats), 'unchanged': not changed})
     return out, errors
 
 
@@ -135,26 +176,47 @@ def enaire(data):
             continue
         rel = links[0]
         name = rel.rsplit('/', 1)[-1]
+        if os.path.exists(os.path.join(folder, name)):  # amendement en vigueur déjà là : rien à télécharger
+            out.append({'name': name, 'bytes': os.path.getsize(os.path.join(folder, name)), 'unchanged': True})
+            continue
         try:
             body = get(ENAIRE + rel)
         except OSError as e:
             errors.append(f'{name} : {e}')
             continue
-        write(os.path.join(folder, name), body)
+        changed = write(os.path.join(folder, name), body)
         for old in os.listdir(folder):  # amendements précédents du même jeu
             if old != name and re.fullmatch(r'LE_.*_AIP_DS_FULL_' + kind + r'\.xml', old):
                 os.remove(os.path.join(folder, old))
-        out.append({'name': name, 'bytes': len(body)})
+        out.append({'name': name, 'bytes': len(body), 'unchanged': not changed})
     return out, errors
+
+
+def unchanged_outputs(folder, pdf, outputs):
+    """Compte rendu « rien n'a changé » d'un PDF déjà lu (le PDF et ses sorties présentes), sinon None."""
+    names = [pdf] + [o for o in outputs if os.path.exists(os.path.join(folder, o))]
+    if len(names) < 2:
+        return None
+    return [{'name': n, 'bytes': os.path.getsize(os.path.join(folder, n)), 'unchanged': True} for n in names]
 
 
 def ukmil(data):
     """UK Mil AIP ENR 5.2 : PDF téléchargé, lu (zones, AARA) et rangé dans zones/gb/ avec ses deux sorties."""
     import ukmil_aip
+    folder = os.path.join(data, 'sia', 'zones', 'gb')
+    outputs = ('ukmil_enr52.geojson', 'ukmil_aara-tracks.xml')
+    pdf = os.path.join(folder, 'ukmil_ENR-5-2.pdf')
     try:
-        raw = get(ukmil_aip.URL)
+        raw = get(ukmil_aip.URL, since=mtime(pdf))
     except OSError as e:
         return [], [f'UK Mil AIP : {e}']
+    # PDF inchangé (304, ou même contenu) et déjà lu : ni relecture du PDF ni réécriture
+    done = unchanged_outputs(folder, 'ukmil_ENR-5-2.pdf', outputs) if raw is None or same(pdf, raw) else None
+    if done:
+        return done, []
+    if raw is None:  # 304 sans sorties lues : le PDF présent est relu
+        with open(pdf, 'rb') as f:
+            raw = f.read()
     try:
         g, xml, edition, n = ukmil_aip.convert(raw)
     except Exception as e:  # PDF d'une autre forme : on le garde quand même pour consultation
@@ -162,31 +224,39 @@ def ukmil(data):
         err = [f'UK Mil AIP : PDF illisible ({e})']
     else:
         err = [] if n.get('zones') else ['UK Mil AIP : aucune zone lue dans l’ENR 5.2 (mise en page changée ?)']
-    folder = os.path.join(data, 'sia', 'zones', 'gb')
     out = []
-    write(os.path.join(folder, 'ukmil_ENR-5-2.pdf'), raw)
-    out.append({'name': 'ukmil_ENR-5-2.pdf', 'bytes': len(raw)})
+    changed = write(pdf, raw)
+    out.append({'name': 'ukmil_ENR-5-2.pdf', 'bytes': len(raw), 'unchanged': not changed})
     if g and n.get('zones'):
         body = json.dumps(g, ensure_ascii=False).encode('utf-8')
-        write(os.path.join(folder, 'ukmil_enr52.geojson'), body)
-        out.append({'name': 'ukmil_enr52.geojson', 'bytes': len(body), 'features': n['zones']})
+        changed = write(os.path.join(folder, 'ukmil_enr52.geojson'), body)
+        out.append({'name': 'ukmil_enr52.geojson', 'bytes': len(body), 'features': n['zones'], 'unchanged': not changed})
     if xml and n.get('aara'):
         body = xml.encode('utf-8')
-        write(os.path.join(folder, 'ukmil_aara-tracks.xml'), body)
-        out.append({'name': 'ukmil_aara-tracks.xml', 'bytes': len(body), 'features': n['aara']})
+        changed = write(os.path.join(folder, 'ukmil_aara-tracks.xml'), body)
+        out.append({'name': 'ukmil_aara-tracks.xml', 'bytes': len(body), 'features': n['aara'], 'unchanged': not changed})
     return out, err
 
 
 def navcan(data):
     """NAV CANADA DAH : édition en vigueur (adresse datée, lue sur la page des guides) téléchargée, lue et rangée dans zones/ca/."""
     import navcan_dah
+    folder = os.path.join(data, 'sia', 'zones', 'ca')
+    pdf = os.path.join(folder, 'navcan_dah.pdf')
     try:
         url = navcan_dah.current_url(get(navcan_dah.PAGE).decode('utf-8', 'replace'))
         if not url:
             return [], ['NAV CANADA : aucun lien vers le DAH sur la page des guides opérationnels (page changée ?)']
-        raw = get(url)
+        raw = get(url, since=mtime(pdf))  # adresse datée : une nouvelle édition répond toujours 200
     except OSError as e:
         return [], [f'NAV CANADA : {e}']
+    # édition inchangée (304, ou même contenu) et déjà lue : ni relecture du PDF ni réécriture
+    done = unchanged_outputs(folder, 'navcan_dah.pdf', ('navcan_dah.geojson',)) if raw is None or same(pdf, raw) else None
+    if done:
+        return done, []
+    if raw is None:  # 304 sans sortie lue : le PDF présent est relu
+        with open(pdf, 'rb') as f:
+            raw = f.read()
     try:
         g, edition, n = navcan_dah.convert(raw)
     except Exception as e:  # PDF d'une autre forme : on le garde quand même pour consultation
@@ -194,13 +264,12 @@ def navcan(data):
         err = [f'NAV CANADA : PDF illisible ({e})']
     else:
         err = [] if n.get('zones') else ['NAV CANADA : aucune zone lue dans le DAH (mise en page changée ?)']
-    folder = os.path.join(data, 'sia', 'zones', 'ca')
-    write(os.path.join(folder, 'navcan_dah.pdf'), raw)
-    out = [{'name': 'navcan_dah.pdf', 'bytes': len(raw), 'edition': edition, 'url': url}]
+    changed = write(pdf, raw)
+    out = [{'name': 'navcan_dah.pdf', 'bytes': len(raw), 'edition': edition, 'url': url, 'unchanged': not changed}]
     if g and n.get('zones'):
         body = json.dumps(g, ensure_ascii=False).encode('utf-8')
-        write(os.path.join(folder, 'navcan_dah.geojson'), body)
-        out.append({'name': 'navcan_dah.geojson', 'bytes': len(body), 'features': n['zones'], 'edition': edition})
+        changed = write(os.path.join(folder, 'navcan_dah.geojson'), body)
+        out.append({'name': 'navcan_dah.geojson', 'bytes': len(body), 'features': n['zones'], 'edition': edition, 'unchanged': not changed})
     return out, err
 
 
@@ -235,7 +304,7 @@ def main():
         return 1
     r = fetch(data, argv[0], argv[1:])
     for f in r['files']:
-        print(f"  {f['name']} : {f['bytes'] // 1024} Ko" + (f", {f['features']} objets" if 'features' in f else ''))
+        print(f"  {f['name']} : {f['bytes'] // 1024} Ko" + (f", {f['features']} objets" if 'features' in f else '') + (' (inchangé)' if f.get('unchanged') else ''))
     for e in r['errors']:
         print('  erreur :', e)
     return 0 if r['files'] else 1

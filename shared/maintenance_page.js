@@ -1493,6 +1493,7 @@
       has: files.length > 0,
       n: files.length,
       at,
+      checked: files.length ? aeroChecked()[`${id}|${src}`] || 0 : 0,
       airac,
       text: files.length ? `${files.length} ${t(['fichier(s)', 'file(s)', 'Datei(en)', 'archivo(s)'])}${airac ? ` — AIRAC ${airac}` : at ? ` — ${fmtDate(at, false)}` : ''}` : inv.folder ? t(['aucun fichier', 'no file', 'keine Datei', 'ningún archivo']) : t([
         'dossier SIA non autorisé', 'SIA folder not authorised', 'SIA-Ordner nicht erlaubt', 'carpeta SIA no autorizada'
@@ -1506,13 +1507,50 @@
     const need = z.sources.filter(s => Z.srcOn(z.id, s) && st[s].has !== null && !st[s].optional);
     return need.length && need.every(s => st[s].has) ? 'complete' : 'partial';
   }
-  /** Âge d'une source : ok (cycle en vigueur, ou moins de 28 jours), warn (plus ancien), none. */
+  // dernière vérification réussie d'une source téléchargée, par « zone|source » : une réponse « rien de changé » ne
+  // réécrit pas les fichiers (leur date reste ancienne) mais vaut mise à jour pour l'âge de la source
+  const AERO_CHECKED_KEY = 'aeroChecked:v1';
+  let aeroCheckedMemo = null;
+  /** Dates de vérification { 'zone|source': ms } (relues seulement si la clé a changé). */
+  function aeroChecked() {
+    let raw = null;
+    try {
+      raw = localStorage.getItem(AERO_CHECKED_KEY);
+    } catch {}
+    if (aeroCheckedMemo?.raw !== raw) {
+      let v = {};
+      try {
+        v = JSON.parse(raw || '{}') || {};
+      } catch {}
+      aeroCheckedMemo = {
+        raw,
+        v
+      };
+    }
+    return aeroCheckedMemo.v;
+  }
+  /** Note (at : date) ou retire (at nul) la vérification de « zone|source » ; keep(k) : filtre des clés gardées. */
+  function aeroCheckedSet(key, at, keep = null) {
+    const v = {
+      ...aeroChecked()
+    };
+    if (at) v[key] = at;
+    else delete v[key];
+    if (keep)
+      for (const k of Object.keys(v))
+        if (!keep(k)) delete v[k];
+    try {
+      localStorage.setItem(AERO_CHECKED_KEY, JSON.stringify(v));
+    } catch {}
+  }
+  /** Âge d'une source : ok (cycle en vigueur, ou fichiers ou vérification de moins de 28 jours), warn (plus ancien), none. */
   function aeroAge(S, st) {
     const eff = window.Airac?.cycle?.();
     if (!st.has) return st.optional ? 'opt' : 'none';
     if (S.age === 'airac') return st.airac && eff && st.airac >= eff.date ? 'ok' : 'warn';
     if (S.age === 'xplane') return !st.airac || !eff ? 'ok' : st.airac === eff.label ? 'ok' : 'warn';
-    return st.at && Date.now() - st.at < 28 * 864e5 ? 'ok' : st.at ? 'warn' : 'ok';
+    const at = Math.max(st.at || 0, st.checked || 0);
+    return at && Date.now() - at < 28 * 864e5 ? 'ok' : at ? 'warn' : 'ok';
   }
   /** Panneau d'une zone : état, activation, sources (case, statut, licence, action : téléchargement, lien et mode
    *  d'emploi, dossier, calcul). */
@@ -1564,7 +1602,7 @@
     }).join('');
     return `<h3>${esc(zName(z))} <span class="mt-small">(${esc(id.toUpperCase())})</span>${aeroLocked && id === aeroPinned ? ` <button type="button" class="secondary" data-zone-unpin title="${esc(t(['Le panneau suit de nouveau le survol de la carte (aussi : nouveau clic sur la zone, Échap)', 'The panel follows the map hover again (also: click the zone again, Esc)', 'Das Feld folgt wieder dem Überfahren der Karte (auch: erneuter Klick auf die Zone, Esc)', 'El panel vuelve a seguir el paso del ratón (también: nuevo clic en la zona, Esc)']))}">📌 ${esc(t(['Libérer', 'Release', 'Lösen', 'Soltar']))}</button>` : ''}</h3>
       <p><span class="mt-aero-dot" style="background:${AERO_COLOR[state]}${state === 'blank' ? ';opacity:.25' : ''}"></span> ${esc(t(AERO_STATE[state]))}
-        ${on ? `<button type="button" class="primary" data-zone-auto="${esc(id)}" data-icon="refresh" title="${esc(t(['Téléchargements, derniers ZIP de Téléchargements, reconstruction de la base, MORA de la zone : enchaînés', 'Downloads, latest ZIPs from Downloads, database rebuild, zone MORA: chained', 'Downloads, neueste ZIPs aus „Downloads“, Neuaufbau der Datenbank, MORA der Zone: verkettet', 'Descargas, últimos ZIP de Descargas, reconstrucción de la base, MORA de la zona: encadenados']))}">${esc(t(['Tout récupérer et recalculer', 'Fetch and recompute everything', 'Alles abrufen und neu berechnen', 'Obtener y recalcular todo']))}</button> ` : ''}<button type="button" class="${on ? 'secondary' : 'primary'}" data-zone-toggle="${esc(id)}">${esc(on ? t(['Désactiver la zone', 'Deactivate the zone', 'Zone deaktivieren', 'Desactivar la zona']) : t(['Activer la zone', 'Activate the zone', 'Zone aktivieren', 'Activar la zona']))}</button></p>
+        ${on ? `<button type="button" class="primary" data-zone-auto="${esc(id)}" data-icon="refresh" title="${esc(t(['Téléchargements, derniers ZIP de Téléchargements, reconstruction de la base, MORA de la zone : enchaînés', 'Downloads, latest ZIPs from Downloads, database rebuild, zone MORA: chained', 'Downloads, neueste ZIPs aus „Downloads“, Neuaufbau der Datenbank, MORA der Zone: verkettet', 'Descargas, últimos ZIP de Descargas, reconstrucción de la base, MORA de la zona: encadenados']))}">${esc(t(['Tout récupérer et recalculer', 'Fetch and recompute everything', 'Alles abrufen und neu berechnen', 'Obtener y recalcular todo']))}</button> ` : ''}<button type="button" class="${on ? 'secondary' : 'primary'}" data-zone-toggle="${esc(id)}">${esc(on ? t(['Désactiver la zone', 'Deactivate the zone', 'Zone deaktivieren', 'Desactivar la zona']) : t(['Activer la zone', 'Activate the zone', 'Zone aktivieren', 'Activar la zona']))}</button>${state !== 'blank' ? ` <button type="button" class="secondary" data-zone-purge="${esc(id)}" data-icon="trash" title="${esc(t(['Supprime les fichiers de la zone du dossier SIA et ses cases de mora.csv, puis la désactive : une nouvelle activation réinstalle tout', 'Deletes the zone files from the SIA folder and its mora.csv cells, then deactivates it: activating it again reinstalls everything', 'Löscht die Dateien der Zone aus dem SIA-Ordner und ihre Felder aus mora.csv und deaktiviert sie: eine neue Aktivierung installiert alles neu', 'Borra los archivos de la zona de la carpeta SIA y sus casillas de mora.csv y la desactiva: una nueva activación lo reinstala todo']))}">${esc(t(['Purger la zone…', 'Purge the zone…', 'Zone leeren…', 'Purgar la zona…']))}</button>` : ''}</p>
       <ul class="mt-aero-srcs">${rows}</ul>`;
   }
   /** Zones en GeoJSON (une entité par zone, état en propriété). */
@@ -2087,20 +2125,22 @@
   };
   let aeroAutoBusy = false;
   /** Mise en place automatique d'une seule zone (aeroAutoZones). */
-  const aeroAutoZone = (Z, id) => aeroAutoZones(Z, [id]);
-  /** Mise en place de zones actives : téléchargements de leurs sources, derniers ZIP de Téléchargements, une seule
-   *  reconstruction de la base, puis MORA de chaque zone qui en manque — seulement si la base a été reconstruite (relief
-   *  sans obstacles sinon) ; résumé en notification, reliquat sous la carte (aeroTodo). */
-  async function aeroAutoZones(Z, ids) {
+  const aeroAutoZone = (Z, id, opts) => aeroAutoZones(Z, [id], opts);
+  /** Mise en place de zones actives, idempotente : téléchargement des sources qui ne sont pas à jour (toutes, en
+   *  requêtes conditionnelles, si force : « Tout récupérer et recalculer »), derniers ZIP de Téléchargements s'ils
+   *  manquent, base relue une seule fois et seulement si ses entrées ont changé (SiaBase.upToDate), puis MORA de chaque
+   *  zone qui en manque — seulement sur une base à jour (relief sans obstacles sinon) ; résumé en notification, reliquat
+   *  sous la carte (aeroTodo). Refaite sans rien de nouveau, elle ne télécharge, n'écrit et ne recalcule rien. */
+  async function aeroAutoZones(Z, ids, {
+    force = false
+  } = {}) {
     ids = ids.filter(id => Z.byId(id) && Z.isOn(id));
     if (aeroAutoBusy || !ids.length) return;
     aeroAutoBusy = true;
     aeroSelShow(Z);
     const steps = [],
       moras = [];
-    let rebuilt = false,
-      fetched = false,
-      sia = false;
+    let sia = false;
     const xpMora = ((await window.SiaBase.get())?.moraCells || []).some(c => c.src === 'xplane');
     for (const id of ids) {
       const z = Z.byId(id),
@@ -2109,23 +2149,18 @@
         const S = Z.SOURCES[s];
         if (!Z.srcOn(id, s) || !S?.readable) continue;
         const fresh = aeroAge(S, aeroSourceStatus(Z, id, s)) === 'ok';
-        if (S.kind === 'download') steps.push([many + t(S.label), async () => {
-          await aeroFetch(S.provider, S.args || [id], null, id, s);
-          fetched = true;
-        }]);
+        if (S.kind === 'download') {
+          if (force || !fresh) steps.push([many + t(S.label), () => aeroFetch(S.provider, S.args || [id], null, id, s)]);
+        }
         // le ZIP du SIA vaut pour toute la France : une seule fois
         else if (s === 'sia' && !fresh && !sia) {
           sia = true;
-          steps.push(['SIA', async () => {
-            if (await siaFetchZip({
-                quiet: true
-              })) rebuilt = true;
-          }]);
-        } else if (S.downloads && !fresh) steps.push([many + t(S.label), async () => {
-          if (await aeroDrop(id, s, {
-              auto: true
-            })) rebuilt = true;
-        }]);
+          steps.push(['SIA', () => siaFetchZip({
+            quiet: true
+          })]);
+        } else if (S.downloads && !fresh) steps.push([many + t(S.label), () => aeroDrop(id, s, {
+          auto: true
+        })]);
       }
       // MORA : calculée pour une zone ordinaire ; grande zone : celle d'X-Plane, si la base en a
       if (z.sources.includes('mora') && Z.srcOn(id, 'mora') && !aeroSourceStatus(Z, id, 'mora').has && (!moraTooLarge(Z, id) || xpMora))
@@ -2156,11 +2191,15 @@
         }
       }
       job?.set?.(steps.length, total, t(['Base aéronautique', 'Aeronautical database', 'Luftfahrtdatenbank', 'Base aeronáutica']));
-      if (!job?.cancelled && (!rebuilt || fetched)) await basePanelApi?.reread(true);
+      // base relue seulement si ses entrées ont changé (fichier ajouté, retiré ou modifié, zone ou source changée, nouveau
+      // lecteur) ; déjà relue par un ZIP du SIA ou un dépôt de cette mise en place : à jour, pas relue une seconde fois
+      const current = !job?.cancelled && await window.SiaBase.upToDate?.();
+      if (!job?.cancelled && !current) await basePanelApi?.reread(true);
       // base vraiment relue ? (dossier SIA non choisi, lecture annulée : le bloc de la base le dit)
-      const built = (window.SiaBase.info()?.cachedAt || '') !== before;
+      const built = (window.SiaBase.info()?.cachedAt || '') !== before,
+        ready = built || current;
       const moraDone = [];
-      if (built)
+      if (ready)
         for (const [i, id] of moras.entries()) {
           if (job?.cancelled) break;
           job?.set?.(steps.length + 1 + i, total, `MORA — ${zName(Z.byId(id))}`);
@@ -2183,7 +2222,10 @@
       aeroRefresh(Z);
       const left = document.querySelectorAll(
         '#mtAeroTodo .mt-aero-todo>li:not([data-optional]) [data-todo-src], #mtAeroTodo [data-todo-xp-auth]').length;
-      const parts = [built ? t(['base reconstruite', 'database rebuilt', 'Datenbank neu aufgebaut', 'base reconstruida']) : t([
+      const parts = [built ? t(['base reconstruite', 'database rebuilt', 'Datenbank neu aufgebaut', 'base reconstruida']) : current ?
+        t(['base déjà à jour, rien de changé', 'database already up to date, nothing changed',
+          'Datenbank bereits aktuell, nichts geändert', 'base ya al día, nada cambiado'
+        ]) : t([
           'base non reconstruite (voir « Base aéronautique ») : MORA non calculée',
           'database not rebuilt (see “Aeronautical database”): MORA not computed',
           'Datenbank nicht neu aufgebaut (siehe „Luftfahrtdatenbank“): MORA nicht berechnet',
@@ -2197,7 +2239,7 @@
           n: left
         }) : t(['rien d’autre à faire', 'nothing else to do', 'nichts weiter zu tun', 'nada más que hacer'])
       ].filter(Boolean);
-      window.AppFramework?.notify?.(`${zones(ids)} : ${parts.join(' ; ')}.`, built ? 'ok' : 'warn');
+      window.AppFramework?.notify?.(`${zones(ids)} : ${parts.join(' ; ')}.`, ready ? 'ok' : 'warn');
       if (left) document.getElementById('mtAeroTodo')?.scrollIntoView({
         block: 'center',
         behavior: 'smooth'
@@ -2405,6 +2447,8 @@
           xp = (b?.moraCells || []).filter(x => x.src === 'xplane' && !inCsv.has(key(x)));
         await window.SiaBase.patch?.({
           moraCells: merged.concat(xp)
+        }, {
+          touched: ['mora.csv']
         });
       }
       moraMsg = pill(st.complete ? 'ok' : 'info', st.complete ? t(['MORA de {z} : {n} bloc(s) calculé(s), mora.csv écrit — à committer',
@@ -2674,6 +2718,8 @@
       await writeAt(dir, name, xml);
       await window.SiaBase.patch?.({
         aarXml: xml
+      }, {
+        touched: [name]
       });
       r.written = true;
       aeroInv = await aeroInventory();
@@ -2760,16 +2806,34 @@
         'SIA-Ordner nicht freigegeben: Installation › Quellen und Ordner',
         'carpeta SIA no autorizada: Instalación › Fuentes y carpetas'
       ]));
-      for (const o of out) await writeAt(dir, `zones/${zone}/${o.name}`, o.data);
+      // fichier déjà présent à l'identique : pas réécrit (sa date ne change pas, la base n'a pas à être relue)
+      const same = [];
+      for (const o of out) {
+        const bytes = o.data instanceof Uint8Array ? o.data : new Uint8Array(o.data),
+          old = await fileAt(dir, `zones/${zone}/${o.name}`);
+        if (old && old.size === bytes.length && sameBytes(new Uint8Array(await old.arrayBuffer()), bytes)) same.push(o.name);
+        else await writeAt(dir, `zones/${zone}/${o.name}`, bytes);
+      }
+      if (same.length === out.length) {
+        say(t(['{s} : fichiers déjà installés à l’identique ({l}) — rien de changé, base gardée.',
+          '{s}: files already installed, identical ({l}) — nothing changed, database kept.',
+          '{s}: Dateien bereits identisch installiert ({l}) — nichts geändert, Datenbank behalten.',
+          '{s}: archivos ya instalados idénticos ({l}) — nada cambiado, base conservada.'
+        ], {
+          s: t(S.label || [src, src]),
+          l: same.join(', ')
+        }), 'ok');
+        return false;
+      }
       say(t(['{n} fichier(s) {s} rangé(s) dans data/sia/zones/{z}/ : {l}{i} — reconstruction de la base…',
         '{n} {s} file(s) stored in data/sia/zones/{z}/: {l}{i} — rebuilding the database…',
         '{n} {s}-Datei(en) in data/sia/zones/{z}/ abgelegt: {l}{i} — Datenbank wird neu aufgebaut…',
         '{n} archivo(s) {s} guardado(s) en data/sia/zones/{z}/: {l}{i} — reconstruyendo la base…'
       ], {
-        n: out.length,
+        n: out.length - same.length,
         s: t(S.label || [src, src]),
         z: zone,
-        l: out.map(o => o.name).join(', '),
+        l: out.filter(o => !same.includes(o.name)).map(o => o.name).join(', '),
         i: ignored.length ? t([' (écartés : {l})', ' (left out: {l})', ' (ausgelassen: {l})', ' (descartados: {l})'], {
           l: ignored.join(', ')
         }) : ''
@@ -2787,7 +2851,8 @@
     }
   }
   /** Fait télécharger la source par le lanceur (POST /__setup/aero-fetch { provider, args }) ; btn désactivé pendant ce temps,
-   *  compte rendu gardé par « zone|source » (aeroFetchMsg) et affiché au panneau, puis inventaire et carte rafraîchis. */
+   *  compte rendu gardé par « zone|source » (aeroFetchMsg) et affiché au panneau, puis inventaire et carte rafraîchis.
+   *  Le lanceur ne réécrit pas un fichier inchangé (unchanged) ; la vérification réussie est notée (aeroChecked). */
   async function aeroFetch(provider, args, btn, zone = '', src = '') {
     const say = (m, k = 'warn') => window.AppFramework.notify(m, k),
       key = `${zone}|${src}`;
@@ -2822,9 +2887,16 @@
       });
       if (!r.ok) throw new Error(r.status);
       res = await r.json();
-      if (res.files.length) say(t(['Téléchargé : {f}.', 'Downloaded: {f}.', 'Heruntergeladen: {f}.', 'Descargado: {f}.'], {
-        f: res.files.map(f => f.name + (f.features != null ? ` (${f.features})` : '')).join(', ')
+      const changed = res.files.filter(f => !f.unchanged);
+      if (changed.length) say(t(['Téléchargé : {f}.', 'Downloaded: {f}.', 'Heruntergeladen: {f}.', 'Descargado: {f}.'], {
+        f: changed.map(f => f.name + (f.features != null ? ` (${f.features})` : '')).join(', ')
       }), res.errors.length ? 'warn' : 'ok');
+      else if (res.files.length) say(t(['Déjà à jour, rien de changé : {f}.', 'Already up to date, nothing changed: {f}.',
+        'Bereits aktuell, nichts geändert: {f}.', 'Ya al día, nada cambiado: {f}.'
+      ], {
+        f: res.files.map(f => f.name).join(', ')
+      }), 'ok');
+      if (zone && src && res.files.length && !res.errors.length) aeroCheckedSet(`${zone}|${src}`, Date.now());
       if (res.errors.length) say(res.errors.join(' · '), 'err');
       if (!res.files.length && !res.errors.length) say(t(['Rien à télécharger pour cette zone.', 'Nothing to download for this zone.',
         'Für diese Zone nichts herunterzuladen.', 'Nada que descargar para esta zona.'
@@ -2844,11 +2916,14 @@
     if (!res) show(pill('err', t(['lanceur injoignable', 'launcher unreachable', 'Starter nicht erreichbar', 'lanzador inaccesible'])));
     else {
       const seen = !zone || aeroSourceStatus(Z, zone, src).has;
-      show([res.files.length ? pill('ok', t(['{n} fichier(s) téléchargé(s)', '{n} file(s) downloaded', '{n} Datei(en) heruntergeladen',
+      const n = res.files.filter(f => !f.unchanged).length;
+      show([n ? pill('ok', t(['{n} fichier(s) téléchargé(s)', '{n} file(s) downloaded', '{n} Datei(en) heruntergeladen',
           '{n} archivo(s) descargado(s)'
         ], {
-          n: res.files.length
-        })) : '', res.errors.length ? pill('err', res.errors.join(' · ')) : '', !res.files.length && !res.errors.length ? pill(
+          n
+        })) : res.files.length ? pill('ok', t(['à jour, rien de changé', 'up to date, nothing changed', 'aktuell, nichts geändert',
+          'al día, nada cambiado'
+        ])) : '', res.errors.length ? pill('err', res.errors.join(' · ')) : '', !res.files.length && !res.errors.length ? pill(
           'info', t(['rien à télécharger', 'nothing to download', 'nichts herunterzuladen', 'nada que descargar'])) : '', res.files
         .length && !seen ? pill('warn', t([
           'écrits dans data/sia du lanceur, mais le dossier SIA de ce navigateur n’est pas autorisé ou en est un autre : « Dossier SIA » ci-dessous',
@@ -2859,6 +2934,104 @@
       ].join(' '));
     }
     aeroRefresh(Z);
+    return res ? res.files.filter(f => !f.unchanged).length : 0;
+  }
+  /** Vrai si deux tableaux d'octets sont identiques. */
+  function sameBytes(a, b) {
+    if (a.length !== b.length) return false;
+    for (let i = 0; i < a.length; i++)
+      if (a[i] !== b[i]) return false;
+    return true;
+  }
+  /** « Purger la zone… » : après confirmation, supprime du dossier SIA les fichiers de la zone (toutes sources ; pour la
+   *  France, les XML du SIA et les axes ENR 5.7), retire ses cases de mora.csv (ancien fichier archivé dans _archives/),
+   *  oublie ses marques (mise en place faite, calcul de MORA par blocs, vérifications), la désactive, puis relit la
+   *  base si elle existe. Le dossier X-Plane, extérieur, n'est jamais touché. Une nouvelle activation réinstalle tout. */
+  async function aeroPurgeZone(Z, id) {
+    const say = (m, k) => window.AppFramework?.notify?.(m, k);
+    aeroInv = await aeroInventory();
+    const z = Z.byId(id),
+      files = (aeroInv.files || []).filter(f => Z.fileSource(f.rel)?.zone === id),
+      cells = moraCount(Z, id, aeroInv);
+    if (!confirm(t([
+        'Purger la zone {z} : {n} fichier(s) supprimé(s) du dossier SIA{m}, zone désactivée, base relue. Une nouvelle activation réinstalle tout. Continuer ?',
+        'Purge the zone {z}: {n} file(s) deleted from the SIA folder{m}, zone deactivated, database read again. Activating it again reinstalls everything. Continue?',
+        'Zone {z} leeren: {n} Datei(en) aus dem SIA-Ordner gelöscht{m}, Zone deaktiviert, Datenbank neu gelesen. Eine neue Aktivierung installiert alles neu. Fortfahren?',
+        'Purgar la zona {z}: {n} archivo(s) borrado(s) de la carpeta SIA{m}, zona desactivada, base releída. Una nueva activación lo reinstala todo. ¿Continuar?'
+      ], {
+        z: zName(z),
+        n: files.length,
+        m: cells ? t([', {c} case(s) retirée(s) de mora.csv', ', {c} cell(s) removed from mora.csv',
+          ', {c} Feld(er) aus mora.csv entfernt',
+          ', {c} casilla(s) retirada(s) de mora.csv'
+        ], {
+          c: cells
+        }) : ''
+      }))) return;
+    try {
+      const dir = await folder('__sia', true);
+      if ((files.length || cells) && !dir) throw new Error(t(['dossier SIA non autorisé : Installation › Sources et dossiers',
+        'SIA folder not authorised: Installation › Sources and folders',
+        'SIA-Ordner nicht freigegeben: Installation › Quellen und Ordner',
+        'carpeta SIA no autorizada: Instalación › Fuentes y carpetas'
+      ]));
+      let removed = 0;
+      for (const f of files) try {
+        const bits = f.rel.split('/');
+        let h = dir;
+        for (const b of bits.slice(0, -1)) h = await h.getDirectoryHandle(b);
+        await h.removeEntry(bits[bits.length - 1]);
+        removed++;
+      } catch {
+        /* déjà absent */
+      }
+      if (cells) {
+        const old = await fileAt(dir, 'mora.csv'),
+          text = old ? await old.text() : '';
+        if (old) {
+          const keys = zoneCellKeys(Z, id),
+            keep = window.SiaBase.parseMora(text).filter(c => !keys.has(`${Math.floor(c.lat)}|${Math.floor(c.lon)}`)).map(c => ({
+              ...c,
+              keepSource: true
+            }));
+          await writeAt(dir, `_archives/mora_${new Date(old.lastModified).toISOString().slice(0, 10)}.csv`, await old.arrayBuffer());
+          await writeAt(dir, 'mora.csv', window.SiaBase.moraCsv(keep, {
+            airac: window.SiaBase.moraCycle(text)
+          }));
+        }
+      }
+      // marques de la zone oubliées : sa prochaine activation refait toute la mise en place
+      const done = aeroAutoDone();
+      done.delete(id);
+      try {
+        localStorage.setItem(AERO_AUTO_KEY, JSON.stringify([...done]));
+        localStorage.removeItem(ROLL_KEY(id));
+      } catch {}
+      aeroCheckedSet('', 0, k => !k.startsWith(`${id}|`));
+      for (const k of Object.keys(aeroFetchMsg))
+        if (k.startsWith(`${id}|`)) delete aeroFetchMsg[k];
+      if (Z.isOn(id)) Z.setZone(id, false);
+      aeroInv = await aeroInventory();
+      aeroRefresh(Z);
+      // base existante : relue sans la zone (ses entrées ont changé)
+      if (window.SiaBase.info() && !(await window.SiaBase.upToDate?.())) await basePanelApi?.reread(true);
+      say(t(['Zone {z} purgée : {n} fichier(s) supprimé(s){m}.', 'Zone {z} purged: {n} file(s) deleted{m}.',
+        'Zone {z} geleert: {n} Datei(en) gelöscht{m}.',
+        'Zona {z} purgada: {n} archivo(s) borrado(s){m}.'
+      ], {
+        z: zName(z),
+        n: removed,
+        m: cells ? t([', {c} case(s) de MORA retirée(s)', ', {c} MORA cell(s) removed', ', {c} MORA-Feld(er) entfernt',
+          ', {c} casilla(s) de MORA retirada(s)'
+        ], {
+          c: cells
+        }) : ''
+      }), 'ok');
+    } catch (e) {
+      say(explain(e, t(['Zone non purgée', 'Zone not purged', 'Zone nicht geleert', 'Zona no purgada'])), 'err');
+      aeroInv = await aeroInventory();
+      aeroRefresh(Z);
+    }
   }
 
   /** Dessine le bloc « Données aéronautiques » : carte des zones et panneau, actions à faire, tableau des sources et bloc
@@ -2907,7 +3080,12 @@
         // première activation : tout ce qui peut se faire seul est enchaîné
         if (on && !aeroAutoDone().has(id)) aeroAutoZone(Z, id);
       } else if (b.dataset.zoneAuto) {
-        aeroAutoZone(Z, b.dataset.zoneAuto);
+        // demande explicite : les sources téléchargées sont revérifiées même récentes (rien de réécrit si rien n'a changé)
+        aeroAutoZone(Z, b.dataset.zoneAuto, {
+          force: true
+        });
+      } else if (b.dataset.zonePurge) {
+        aeroPurgeZone(Z, b.dataset.zonePurge);
       } else if (b.dataset.aeroDrop) aeroDrop(panel.dataset.zone, b.dataset.aeroDrop);
       else if (b.dataset.aeroFetch) aeroFetch(b.dataset.aeroFetch, b.dataset.args.split(' ').filter(Boolean), b, panel.dataset.zone,
         b.dataset.src);
@@ -3419,6 +3597,8 @@
         xp = ((await window.SiaBase.get())?.moraCells || []).filter(c => c.src === 'xplane' && !inCsv.has(key(c)));
       const patched = await window.SiaBase.patch({
         moraCells: moraPlan.cells.concat(xp) // cases d'X-Plane hors mora.csv gardées
+      }, {
+        touched: ['mora.csv']
       });
       moraPlan.written = true;
       moraMsg = pill('ok', t(['mora.csv écrit{b} — à committer', 'mora.csv written{b} — commit it'], {
