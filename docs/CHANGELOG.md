@@ -51,6 +51,17 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Ajouté
 
+- **Carburant, Profils de performances : fusion avec la fiche SimBrief, aperçu avant toute fusion** — la fiche SimBrief
+  du type devient une source de fusion comme un profil (profil virtuel « <type> — SimBrief », daté de sa récupération,
+  `simbrief.fetched`, sinon date de la passe ; carburant converti dans l'unité du profil) : quatrième choix
+  « Fusionner » dans « Mettre à jour depuis SimBrief », case « Inclure la fiche SimBrief du type » (cochée d'avance)
+  dans « Fusionner (n) », possible dès un profil coché. Même règle partout (`mergeProfileSources`) : le plus récent gagne
+  champ par champ, les vides sont comblés, cartographie réunie, profil gardé (identifiant, nom, unité, source) ;
+  notification « Repris des sources : … » qui nomme SimBrief. Toute fusion, et toute mise à jour depuis SimBrief qui
+  change des champs, montre d'abord un aperçu (champ, valeur actuelle, valeur retenue, source ; inchangés repliés ;
+  lignes de cartographie ajoutées / remplacées), redessiné quand la case SimBrief ou le nom changent ; « Annuler » 10 s
+  reste. Boutons « Choisir » / « Créer » dans une colonne à eux, au même endroit sur chaque ligne. Manuel utilisateur
+  (4 langues).
 - **Carburant, Profils de performances : supprimer, fusionner, profil SimBrief** — sur chaque ligne, « Supprimer »
   (confirmation, « Annuler » pendant 10 s ; profil noté supprimé, `state.removedProfiles`, que la relecture du dossier
   performances ne ramène plus, le fichier n'étant jamais effacé ; un import explicite le ramène) et « Profil SimBrief »
