@@ -1420,7 +1420,7 @@ html[data-skeuo] .repo-block-tools .fp-result-pin[aria-pressed="true"]:not(#imp)
 </aside>
 <aside id="fpInstrCol" class="instr-col" data-fp-detail aria-label="Instruments"><div class="fp-instr-sticky"></div></aside>
 
-<section class="card span12" data-min-level="3" data-block-id="perf-profiles" data-icon="list" data-no-i18n><h2 id="ppTitle">Profils de performances</h2><p id="ppIntro" class="mut"></p><div class="row perf-profiles-actions"><button id="ppImport" type="button" class="secondary" data-icon="upload"><span id="ppImportLbl">Importer…</span></button><button id="ppFolder" type="button" class="secondary" data-icon="folder"><span id="ppFolderLbl">Dossier…</span></button><button id="ppReload" type="button" class="secondary" data-icon="refresh"><span id="ppReloadLbl">Relire</span></button><button id="ppMerge" type="button" class="secondary" data-icon="layers" disabled><span id="ppMergeLbl">Fusionner</span></button><button id="ppExport" type="button" class="secondary" data-icon="download" disabled><span id="ppExportLbl">Exporter</span></button><button id="ppSaveDir" type="button" class="secondary" data-icon="save" disabled><span id="ppSaveDirLbl">Enregistrer dans le dossier</span></button><button id="ppDelete" type="button" class="secondary" data-icon="trash" disabled><span id="ppDeleteLbl">Supprimer</span></button><button id="ppGpt" type="button" class="secondary" data-icon="sparkles"><span id="ppGptLbl">Demander à ChatGPT</span></button><span id="ppStatus" class="mut"></span></div><div id="ppGptPanel" class="pp-gpt" hidden></div><div id="perfProfiles" class="perf-profiles"></div></section>
+<section class="card span12" data-min-level="3" data-block-id="perf-profiles" data-icon="list" data-no-i18n><h2 id="ppTitle">Profils de performances</h2><p id="ppIntro" class="mut"></p><div class="row perf-profiles-actions"><button id="ppImport" type="button" class="secondary" data-icon="upload"><span id="ppImportLbl">Importer…</span></button><button id="ppFolder" type="button" class="secondary" data-icon="folder"><span id="ppFolderLbl">Dossier…</span></button><button id="ppReload" type="button" class="secondary" data-icon="refresh"><span id="ppReloadLbl">Relire</span></button><button id="ppMerge" type="button" class="secondary" data-icon="layers" disabled><span id="ppMergeLbl">Fusionner</span></button><button id="ppExport" type="button" class="secondary" data-icon="download" disabled><span id="ppExportLbl">Exporter</span></button><button id="ppSaveDir" type="button" class="secondary" data-icon="save" disabled><span id="ppSaveDirLbl">Enregistrer dans le dossier</span></button><button id="ppDelete" type="button" class="secondary" data-icon="trash" disabled><span id="ppDeleteLbl">Supprimer</span></button><button id="ppGpt" type="button" class="secondary" data-icon="sparkles"><span id="ppGptLbl">Demander à ChatGPT</span></button><span id="ppStatus" class="mut"></span><span id="ppRemoved" class="mut" hidden></span></div><div id="ppGptPanel" class="pp-gpt" hidden></div><div id="perfProfiles" class="perf-profiles"></div></section>
 
 
 <section class="card span6 engine-card" data-min-level="4" data-block-id="engine-performance" data-icon="wrench" data-subtitle="Performances du moteur selon le régime."><h2>Fiche performance moteur</h2><div class="fields">
@@ -3659,6 +3659,7 @@ $("dirBtn").onclick = async () => {
     dirHandle = window.FileAccess ? await window.FileAccess.pickFolder("__perf") : await showDirectoryPicker({
       mode: "readwrite"
     }); /* dossier mémorisé, sélecteur ouvert sur le dossier actuel */
+    state.removedProfiles = {}; // choisir le dossier = reprendre tout ce qu'il contient
     const count = await readPerfFolder(dirHandle);
     perfFolderDone(count);
     window.AppFramework.notify(`${count} profil(s) chargé(s). La BDD locale sera écrite ici via « Exporter BDD locale ».`, 'ok')
@@ -3710,6 +3711,7 @@ async function reloadPerfFolder(ask) {
     return
   }
   dirHandle = h;
+  if (ask) state.removedProfiles = {}; // « Relire » = reprendre tout ce que le dossier contient
   perfBusy = true;
   try {
     perfFolderDone(await readPerfFolder(h))
@@ -4863,6 +4865,7 @@ function profileTypeKey(p) {
 /** Boutons de la barre du bloc selon les profils cochés : « Exporter (n) », « Enregistrer dans le dossier (n) » et
  *  « Supprimer (n) » dès un profil, « Fusionner (n) » à partir de deux profils du même type. */
 function syncMergeButton() {
+  syncRemovedLine();
   const nSel = [...ppSelected].filter(id => state.profiles?.[id]).length;
   for (const [id, lbl, row, rowN] of [
       ["ppExport", "ppExportLbl", ["Exporter", "Export", "Exportieren", "Exportar"],
@@ -4932,9 +4935,11 @@ function profilesChanged() {
   renderPerfProfilesSoon();
   syncSbTypeButton()
 }
-/** Retire les profils ids de la base locale (notés retirés pour la relecture du dossier) ; actif retiré : plus d'actif.
- *  « Annuler » (10 s) remet les profils, l'actif et ce que fait extraUndo. */
-function removeProfiles(ids, message, extraUndo) {
+/** Retire les profils ids de la base locale, puis du dossier performances (removeFromPerfFolder) ; actif retiré : plus
+ *  d'actif. Un profil resté dans un fichier du dossier (écriture impossible, CSV à plusieurs profils) est noté
+ *  (state.removedProfiles) jusqu'à la prochaine relecture choisie (« Dossier… », « Relire », « Restaurer »). Un seul
+ *  message ; « Annuler » (10 s) remet les profils, les fichiers du dossier, l'actif et ce que fait extraUndo. */
+async function removeProfiles(ids, message, extraUndo) {
   const kept = ids.map(id => [id, state.profiles?.[id]]).filter(([, p]) => p),
     wasActive = active && ids.includes(active.id) ? active.id : null;
   state.removedProfiles ||= {};
@@ -4945,7 +4950,40 @@ function removeProfiles(ids, message, extraUndo) {
   }
   if (wasActive) clearActive(message);
   profilesChanged();
-  notifyUndo(message, () => {
+  let folder = null;
+  try {
+    folder = await removeFromPerfFolder(kept.map(([id]) => id))
+  } catch {
+    folder = {
+      unwritable: true
+    }
+  }
+  // marque gardée seulement pour un profil resté dans un fichier du dossier
+  for (const [id] of kept)
+    if (!folder?.unwritable && !folder?.kept?.includes(id)) delete state.removedProfiles[id];
+  save();
+  syncRemovedLine();
+  const files = folder?.done ? [...new Set(folder.done.values())] : [],
+    extra = [files.length ? ktf(["Retiré aussi du dossier « {d} » : {list}.", "Also removed from the “{d}” folder: {list}.",
+      "Auch aus dem Ordner „{d}“ entfernt: {list}.", "Retirado también de la carpeta «{d}»: {list}."
+    ], {
+      d: folder.dir,
+      list: files.join(", ")
+    }) : "", folder?.kept?.length ? ktf([
+      "Encore dans un fichier du dossier (CSV à plusieurs profils) : {list} — ils reviendront à la prochaine relecture.",
+      "Still in a folder file (CSV with several profiles): {list} — they will come back at the next reread.",
+      "Noch in einer Datei des Ordners (CSV mit mehreren Profilen): {list} — sie kommen beim nächsten Neulesen zurück.",
+      "Aún en un archivo de la carpeta (CSV con varios perfiles): {list} — volverán en la próxima relectura."
+    ], {
+      list: folder.kept.join(", ")
+    }) : "", folder?.unwritable ? kt([
+      "Dossier performances non accessible en écriture : le(s) profil(s) qui y sont reviendront à la prochaine relecture.",
+      "Performance folder not writable: the profile(s) in it will come back at the next reread.",
+      "Leistungsordner nicht beschreibbar: die Profile darin kommen beim nächsten Neulesen zurück.",
+      "Carpeta de rendimiento no escribible: los perfiles que contiene volverán en la próxima relectura."
+    ]) : ""].filter(Boolean);
+  notifyUndo([message, ...extra].join("\n"), async () => {
+    if (folder?.ops?.length) await restorePerfFolder(folder);
     for (const [id, p] of kept) {
       state.profiles[id] = p;
       delete state.removedProfiles[id]
@@ -4954,23 +4992,239 @@ function removeProfiles(ids, message, extraUndo) {
     if (wasActive && state.profiles[wasActive]) setActive(state.profiles[wasActive], kt(["suppression annulée", "deletion undone",
       "Löschen rückgängig gemacht", "eliminación deshecha"
     ]));
-    profilesChanged()
+    profilesChanged();
+    syncRemovedLine()
   })
+}
+/** Dossier performances accessible en écriture (autorisation demandée si ask) ; { h } ; { unwritable } si un dossier est
+ *  choisi sans écriture permise ; null sans dossier. */
+async function perfDirWritable(ask = true) {
+  let h = dirHandle;
+  if (!h && window.FileAccess) try {
+    h = await window.FileAccess.get("__perf")
+  } catch {
+    h = null
+  }
+  if (!h) return null;
+  try {
+    if ((await h.queryPermission?.({
+        mode: "readwrite"
+      })) === "granted" || ask && (await h.requestPermission?.({
+        mode: "readwrite"
+      })) === "granted") return {
+      h
+    }
+  } catch {
+    /* autorisation refusée */
+  }
+  return {
+    unwritable: true
+  }
+}
+/** Fichiers de profils du dossier h : [{ name, text, kind ("db" : base exportée, "csv", "single"), ids }] (fichiers
+ *  illisibles ignorés ; identifiants calculés comme à la lecture du dossier). */
+async function perfFolderIndex(h) {
+  const out = [];
+  for await (const [name, fh] of h.entries()) {
+    const low = name.toLowerCase();
+    if (fh.kind !== "file" || !/\.(json|lnmperf|csv)$/.test(low)) continue;
+    try {
+      const text = await (await fh.getFile()).text();
+      let kind = "single",
+        ids;
+      if (low.endsWith(".lnmperf")) ids = [parseLnmperf(text, name).id];
+      else if (low.endsWith(".csv")) {
+        kind = "csv";
+        ids = parsePerformanceCsvEnriched(text, name).map(p => p.id)
+      } else {
+        const obj = JSON.parse(text);
+        if (obj?.schema === "flight-performance-db/v1" && Array.isArray(obj.profiles)) kind = "db";
+        ids = profilesFromJson(obj, name).map(p => p.id)
+      }
+      out.push({
+        name,
+        text,
+        kind,
+        ids
+      })
+    } catch {
+      /* fichier illisible ou d'un autre format : ignoré */
+    }
+  }
+  return out
+}
+/** Écrit text dans le fichier name du dossier h (créé au besoin). */
+async function writePerfFile(h, name, text) {
+  const w = await (await h.getFileHandle(name, {
+    create: true
+  })).createWritable();
+  await w.write(text);
+  await w.close()
+}
+/** Nom libre dans le dossier h à partir de name (name, puis name.2, name.3…). */
+async function freePerfName(h, name) {
+  for (let i = 1;; i++) {
+    const n = i === 1 ? name : `${name}.${i}`;
+    try {
+      await h.getFileHandle(n)
+    } catch {
+      return n
+    }
+  }
+}
+/** Retire du dossier performances les profils ids : base exportée (.fpdb.json…) réécrite sans eux ; fichier d'un seul
+ *  profil, ou CSV dont tous les profils partent, renommé .bak (contenu gardé, plus relu) ; CSV dont d'autres profils
+ *  restent : laissé tel quel (ids dans kept). Retour : { ops (pour restorePerfFolder), done (id → fichier), kept, dir },
+ *  { unwritable } si le dossier n'est pas accessible en écriture, null sans dossier. */
+async function removeFromPerfFolder(ids) {
+  if (!ids.length) return null;
+  const d = await perfDirWritable(true);
+  if (!d?.h) return d;
+  const h = d.h,
+    want = new Set(ids),
+    ops = [],
+    done = new Map(),
+    kept = [];
+  for (const f of await perfFolderIndex(h)) {
+    const hit = f.ids.filter(id => want.has(id));
+    if (!hit.length) continue;
+    try {
+      let label = f.name;
+      if (f.kind === "db") {
+        const obj = JSON.parse(f.text);
+        obj.profiles = obj.profiles.filter(p => !want.has(normalize(structuredClone(p), f.name).id));
+        await writePerfFile(h, f.name, JSON.stringify(obj, null, 2));
+        ops.push({
+          kind: "write",
+          name: f.name,
+          text: f.text
+        })
+      } else if (f.ids.every(id => want.has(id))) {
+        const bak = await freePerfName(h, f.name + ".bak");
+        await writePerfFile(h, bak, f.text);
+        await h.removeEntry(f.name);
+        ops.push({
+          kind: "bak",
+          name: f.name,
+          bak,
+          text: f.text
+        });
+        label = `${f.name} → ${bak}`
+      } else {
+        kept.push(...hit);
+        continue
+      }
+      for (const id of hit) done.set(id, label)
+    } catch {
+      kept.push(...hit)
+    }
+  }
+  lastPerfRead = Date.now(); // ces changements du dossier sont les nôtres : pas de relecture
+  return {
+    ops,
+    done,
+    kept,
+    dir: h.name,
+    h
+  }
+}
+/** « Annuler » d'un retrait : fichiers du dossier remis comme avant (base réécrite, .bak renommé). */
+async function restorePerfFolder(folder) {
+  try {
+    for (const op of [...folder.ops].reverse()) {
+      await writePerfFile(folder.h, op.name, op.text);
+      if (op.kind === "bak") await folder.h.removeEntry(op.bak)
+    }
+    lastPerfRead = Date.now()
+  } catch (e) {
+    window.AppFramework?.notify?.(window.AppFramework?.explain?.(e, kt(["Restauration du dossier performances",
+      "Restoring the performance folder", "Wiederherstellen des Leistungsordners", "Restauración de la carpeta de rendimiento"
+    ])) || e.message, "err")
+  }
+}
+/** Phrase de la confirmation de suppression : fichiers du dossier d'où les profils ids seront aussi retirés (dossier lu
+ *  sans demander d'autorisation), sinon la règle en une phrase. */
+async function perfWhereText(ids) {
+  let h = dirHandle;
+  if (!h && window.FileAccess) try {
+    h = await window.FileAccess.get("__perf")
+  } catch {
+    h = null
+  }
+  if (!h) return "";
+  let files = [];
+  try {
+    if ((await h.queryPermission?.({
+        mode: "read"
+      })) === "granted") files = (await perfFolderIndex(h)).filter(f => f.ids.some(id => ids.includes(id))).map(f => f.kind === "db" ?
+      ktf(["{f} (profil retiré du fichier)", "{f} (profile removed from the file)", "{f} (Profil aus der Datei entfernt)",
+        "{f} (perfil retirado del archivo)"
+      ], {
+        f: f.name
+      }) : f.kind === "csv" && !f.ids.every(id => ids.includes(id)) ? ktf(["{f} (CSV à plusieurs profils : laissé tel quel)",
+        "{f} (CSV with several profiles: left as is)", "{f} (CSV mit mehreren Profilen: unverändert)",
+        "{f} (CSV con varios perfiles: sin cambios)"
+      ], {
+        f: f.name
+      }) : ktf(["{f} (renommé {f}.bak)", "{f} (renamed {f}.bak)", "{f} (umbenannt in {f}.bak)", "{f} (renombrado {f}.bak)"], {
+        f: f.name
+      }));
+    else return "\n" + kt([
+      "S’ils sont dans le dossier performances, ils en seront aussi retirés (base réécrite sans eux, ou fichier renommé .bak).",
+      "If they are in the performance folder, they will be removed from it too (database rewritten without them, or file renamed .bak).",
+      "Wenn sie im Leistungsordner liegen, werden sie auch dort entfernt (Datenbank ohne sie neu geschrieben oder Datei in .bak umbenannt).",
+      "Si están en la carpeta de rendimiento, también se retirarán de ella (base reescrita sin ellos, o archivo renombrado .bak)."
+    ])
+  } catch {
+    return ""
+  }
+  return files.length ? "\n" + ktf(["Ils seront aussi retirés du dossier « {d} » : {list}.",
+    "They will also be removed from the “{d}” folder: {list}.",
+    "Sie werden auch aus dem Ordner „{d}“ entfernt: {list}.", "También se retirarán de la carpeta «{d}»: {list}."
+  ], {
+    d: h.name,
+    list: files.join(", ")
+  }) : ""
+}
+/** Ligne d'état « n profil(s) retiré(s) encore dans le dossier — Restaurer » (marques state.removedProfiles) ;
+ *  « Restaurer » efface les marques et relit le dossier. */
+function syncRemovedLine() {
+  const el = $("ppRemoved");
+  if (!el) return;
+  const n = Object.keys(state.removedProfiles || {}).length;
+  if (el.hidden === !n && el.dataset.n === String(n)) return;
+  el.dataset.n = String(n);
+  el.hidden = !n;
+  if (!n) return el.replaceChildren();
+  const b = Object.assign(document.createElement("button"), {
+    type: "button",
+    className: "ghost",
+    textContent: kt(["Restaurer", "Restore", "Wiederherstellen", "Restaurar"])
+  });
+  b.onclick = () => {
+    state.removedProfiles = {};
+    save();
+    syncRemovedLine();
+    reloadPerfFolder(true)
+  };
+  el.replaceChildren(ktf(["{n} profil(s) retiré(s) encore dans le dossier — ", "{n} removed profile(s) still in the folder — ",
+    "{n} entfernte(s) Profil(e) noch im Ordner — ", "{n} perfil(es) retirado(s) aún en la carpeta — "
+  ], {
+    n
+  }), b)
 }
 /** « Supprimer (n) » de la barre : profils cochés, une confirmation et un seul message pour le lot (« Annuler » 10 s). */
 async function deleteSelectedAsk() {
   const list = [...ppSelected].map(id => state.profiles?.[id]).filter(Boolean);
   if (list.length < 2) return list.length && deleteProfileAsk(list[0].id);
   const names = list.map(p => p.name || p.id).join(", ");
-  if (!await window.AppFramework.ask(ktf([
-      "Supprimer {n} profils de la base de ce navigateur ({list}) ? Les fichiers du dossier performances ne sont pas effacés, mais ils ne seront plus relus (les importer de nouveau pour les ramener).",
-      "Delete {n} profiles from this browser’s database ({list})? The files in the performance folder are not erased, but they will no longer be read (import them again to bring them back).",
-      "{n} Profile aus der Datenbank dieses Browsers löschen ({list})? Die Dateien im Leistungsordner werden nicht gelöscht, aber nicht mehr gelesen (erneut importieren, um sie zurückzuholen).",
-      "¿Eliminar {n} perfiles de la base de este navegador ({list})? Los archivos de la carpeta de rendimiento no se borran, pero ya no se leerán (importarlos de nuevo para recuperarlos)."
+  if (!await window.AppFramework.ask(ktf(["Supprimer {n} profils ({list}) ?", "Delete {n} profiles ({list})?",
+      "{n} Profile löschen ({list})?",
+      "¿Eliminar {n} perfiles ({list})?"
     ], {
       n: list.length,
       list: names
-    }), {
+    }) + await perfWhereText(list.map(p => p.id)), {
       danger: true,
       ok: kt(["Supprimer", "Delete", "Löschen", "Eliminar"])
     })) return;
@@ -4986,14 +5240,11 @@ async function deleteProfileAsk(id) {
   const p = state.profiles?.[id];
   if (!p) return;
   const label = p.name || p.id;
-  if (!await window.AppFramework.ask(ktf([
-      "Supprimer le profil « {p} » de la base de ce navigateur ? Un fichier du dossier performances n’est pas effacé, mais il ne sera plus relu (l’importer de nouveau pour le ramener).",
-      "Delete the profile “{p}” from this browser’s database? A file in the performance folder is not erased, but it will no longer be read (import it again to bring it back).",
-      "Profil „{p}“ aus der Datenbank dieses Browsers löschen? Eine Datei im Leistungsordner wird nicht gelöscht, aber nicht mehr gelesen (erneut importieren, um es zurückzuholen).",
-      "¿Eliminar el perfil «{p}» de la base de este navegador? Un archivo de la carpeta de rendimiento no se borra, pero ya no se leerá (importarlo de nuevo para recuperarlo)."
+  if (!await window.AppFramework.ask(ktf(["Supprimer le profil « {p} » ?", "Delete the profile “{p}”?", "Profil „{p}“ löschen?",
+      "¿Eliminar el perfil «{p}»?"
     ], {
       p: label
-    }), {
+    }) + await perfWhereText([id]), {
       danger: true,
       ok: kt(["Supprimer", "Delete", "Löschen", "Eliminar"])
     })) return;

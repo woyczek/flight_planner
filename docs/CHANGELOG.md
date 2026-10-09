@@ -288,6 +288,13 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Corrigé
 
+- **Carburant, profils supprimés ou fusionnés : retirés aussi du dossier performances** — plus de profils cachés à chaque
+  relecture sans moyen de les retrouver (DC3, Caravelle) : après la confirmation (qui nomme les fichiers), la base
+  exportée (`flight_performance_database.fpdb.json`…) est réécrite sans eux et un fichier d'un seul profil est renommé
+  `.bak` ; « Annuler » 10 s remet aussi les fichiers. La marque `state.removedProfiles` ne reste que pour un profil encore
+  dans un fichier (écriture refusée, CSV à plusieurs profils) ; « Dossier… » et « Relire » l'effacent (relire = reprendre
+  ce que le dossier contient) ; ligne « n profil(s) retiré(s) encore dans le dossier — Restaurer ». Manuel utilisateur
+  (4 langues).
 - **Carburant, réponse ChatGPT : type de la réponse d'abord** — le code OACI et le nom viennent de la réponse (JSON :
   `icao`, sinon `type` ; CSV : colonne ICAO), l'appareil choisi n'étant qu'un repli ; type différent : confirmation
   (« Importer comme <réponse> » / « Importer comme <choisi> » ; pour une fusion : « Importer comme nouveau profil » /
