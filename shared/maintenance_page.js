@@ -1565,7 +1565,7 @@
       const S = Z.SOURCES[src];
       const url = Z.linkOf(src),
         link = url ? `<a class="mt-link" href="${esc(url)}" target="_blank" rel="noopener">${esc(t(['Ouvrir le site', 'Open the website', 'Website öffnen', 'Abrir el sitio']))} ↗</a>` : '';
-      if (src === 'dircam') return `<p class="mt-small">${esc(t(S.howto || ['', '']))}</p><p class="row">${link} <label class="secondary mt-file" data-icon="upload" title="${esc(t(['PDF de la MILAIP (section ENR 5.7) téléchargé sur le site de la DIRCAM : axes et points lus, anomalies à valider, puis écriture de miam-enr-5-7-tracks.xml dans le dossier SIA', 'MILAIP PDF (section ENR 5.7) downloaded from the DIRCAM website: tracks and points read, anomalies to check, then miam-enr-5-7-tracks.xml written to the SIA folder']))}">${esc(t(['Importer le PDF MILAIP…', 'Import the MILAIP PDF…', 'MILAIP-PDF importieren…', 'Importar el PDF MILAIP…']))}<input type="file" id="mtEnr57" accept=".pdf,application/pdf" hidden></label></p><div id="mtEnr57Msg">${enr57Html()}</div>`;
+      if (src === 'dircam') return `<p class="mt-small">${esc(t(S.howto || ['', '']))}</p><p class="row">${link} <label class="secondary mt-file" data-icon="upload" title="${esc(t(['PDF de la MILAIP (section ENR 5.7) téléchargé sur le site de la DIRCAM : axes et points lus, anomalies listées, miam-enr-5-7-tracks.xml écrit d’office dans le dossier SIA (l’ancien archivé)', 'MILAIP PDF (section ENR 5.7) downloaded from the DIRCAM website: tracks and points read, anomalies listed, miam-enr-5-7-tracks.xml written straight away to the SIA folder (old one archived)']))}">${esc(t(['Importer le PDF MILAIP…', 'Import the MILAIP PDF…', 'MILAIP-PDF importieren…', 'Importar el PDF MILAIP…']))}<input type="file" id="mtEnr57" accept=".pdf,application/pdf" hidden></label></p><div id="mtEnr57Msg">${enr57Html()}</div>`;
       if (src === 'sia') {
         const eff = window.Airac.cycle();
         return `<p class="mt-small">${esc(t(S.howto))}</p><p class="row"><a class="mt-link" href="${esc(eff.url)}" target="_blank" rel="noopener">SIA — AIRAC ${esc(eff.label)} ↗</a>
@@ -2609,7 +2609,7 @@
     if (r.error) return `<p>${pill('err', r.error)}</p>`;
     const issues = r.issues.length ? `<details class="mt-small"><summary>${esc(t(['{n} anomalie(s) à vérifier', '{n} anomaly(ies) to check', '{n} Auffälligkeit(en) zu prüfen', '{n} anomalía(s) que verificar'], { n: r.issues.length }))}</summary><ul>${r.issues.map(i => `<li>p. ${esc(i.page)} · ${esc(i.kind)} — ${esc(i.text)}</li>`).join('')}</ul></details>` : `<p class="mt-small">${pill('ok', t(['aucune anomalie relevée', 'no anomaly found', 'keine Auffälligkeit', 'ninguna anomalía']))}</p>`;
     return `<p class="mt-small">${pill(r.tracks.length ? 'ok' : 'warn', t(['{n} axe(s) lu(s) dans {f}', '{n} track(s) read from {f}', '{n} Strecke(n) aus {f} gelesen', '{n} eje(s) leído(s) en {f}'], { n: r.tracks.length, f: r.file }))}</p>${issues}
-      ${r.written ? `<p>${pill('ok', t(['miam-enr-5-7-tracks.xml écrit (ancien archivé) et base mise à jour', 'miam-enr-5-7-tracks.xml written (old one archived) and database updated', 'miam-enr-5-7-tracks.xml geschrieben (alte archiviert), Datenbank aktualisiert', 'miam-enr-5-7-tracks.xml escrito (anterior archivado) y base actualizada']))}</p>` : r.tracks.length ? `<p class="row"><label class="mt-small">${esc(t(['Édition', 'Edition', 'Ausgabe', 'Edición']))} <input type="text" id="mtEnr57Edition" size="26" value="${esc(r.edition)}" spellcheck="false"></label> <button type="button" class="primary" id="mtEnr57Write" data-icon="save">${esc(t(['Écrire miam-enr-5-7-tracks.xml', 'Write miam-enr-5-7-tracks.xml', 'miam-enr-5-7-tracks.xml schreiben', 'Escribir miam-enr-5-7-tracks.xml']))}</button></p>` : ''}`;
+      ${r.written ? `<p>${pill('ok', t(['miam-enr-5-7-tracks.xml écrit (ancien archivé) et base mise à jour', 'miam-enr-5-7-tracks.xml written (old one archived) and database updated', 'miam-enr-5-7-tracks.xml geschrieben (alte archiviert), Datenbank aktualisiert', 'miam-enr-5-7-tracks.xml escrito (anterior archivado) y base actualizada']))}</p>` : r.tracks.length ? `<p class="row"><label class="mt-small">${esc(t(['Édition', 'Edition', 'Ausgabe', 'Edición']))} <input type="text" id="mtEnr57Edition" size="26" value="${esc(r.edition)}" spellcheck="false"></label> <button type="button" class="primary" id="mtEnr57Write" data-icon="save">${esc(t(['Écrire miam-enr-5-7-tracks.xml', 'Write miam-enr-5-7-tracks.xml', 'miam-enr-5-7-tracks.xml schreiben', 'Escribir miam-enr-5-7-tracks.xml']))}</button></p>${r.autoWhy ? `<p class="mt-small">${pill('warn', r.autoWhy)}</p>` : ''}` : ''}`;
   }
 
   /** Redessine l'état de l'import ENR 5.7 dans #mtEnr57Msg (s'il est affiché). */
@@ -2695,12 +2695,21 @@
       job?.end?.();
     }
     enr57Show();
+    // axes lus : XML écrit d'office (édition lue dans le PDF, anomalies toujours listées) ; « Écrire… » ne reste que si
+    // l'écriture n'a pas pu se faire (dossier SIA à autoriser d'un clic)
+    if (enr57?.parsed && !enr57.written) await writeEnr57({
+      auto: true
+    });
   }
   /** Écrit miam-enr-5-7-tracks.xml (édition saisie) dans le dossier SIA, l'ancien archivé dans _archives/, met à jour la
-   *  base (SiaBase.patch) et la carte des zones ; échec en notification. */
-  async function writeEnr57() {
+   *  base (SiaBase.patch) et la carte des zones ; échec en notification (auto : écriture qui suit l'import, raison
+   *  affichée sous le bouton « Écrire… » resté en place). */
+  async function writeEnr57({
+    auto = false
+  } = {}) {
     const r = enr57;
     if (!r?.parsed) return;
+    r.autoWhy = '';
     try {
       const dir = await folder('__sia', true);
       if (!dir) throw new Error(t(['dossier SIA non autorisé : l’autoriser (Installation › Sources et dossiers), puis réessayer',
@@ -2725,9 +2734,11 @@
       aeroInv = await aeroInventory();
       aeroRefresh(await window.SiaBase.zones());
     } catch (e) {
-      window.AppFramework?.notify?.(explain(e, t(['Axes de ravitaillement non écrits', 'Refuelling tracks not written',
+      const why = explain(e, t(['Axes de ravitaillement non écrits', 'Refuelling tracks not written',
         'Betankungsstrecken nicht geschrieben', 'Ejes de reabastecimiento no escritos'
-      ])), 'err');
+      ]));
+      if (auto) r.autoWhy = why;
+      else window.AppFramework?.notify?.(why, 'err');
     }
     enr57Show();
   }

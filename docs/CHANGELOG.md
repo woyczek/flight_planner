@@ -12,6 +12,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Corrigé
 
+- **Import de la MILAIP ENR 5.7 : XML écrit d'office** : après l'import du PDF, il fallait encore cliquer « Écrire
+  miam-enr-5-7-tracks.xml ». Dès que des axes sont lus, le XML est écrit dans le dossier SIA (édition lue dans le PDF,
+  ancien archivé, base mise à jour), les anomalies restant listées ; « Écrire… » ne reste, avec sa raison, que si
+  l'écriture n'a pas pu se faire (dossier SIA à autoriser d'un clic).
 - **Textures, icônes et polices absentes après un clone de la suite** : un clone fait sans Git LFS installé ne laisse
   que des pointeurs (texte de 130 octets) à la place des images, textures et polices suivies par Git LFS. Le lanceur
   contrôle désormais la suite et `data/` à chaque démarrage (et après le clone des données) : fichiers récupérés par

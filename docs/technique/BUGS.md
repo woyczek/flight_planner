@@ -16,6 +16,7 @@ Les évolutions et la dette technique n'y figurent pas (CHANGELOG, `docs/techniq
 
 | Signalé | Zone | Bug | Cause | Correction |
 |---|---|---|---|---|
+| 09/10 | Données aéronautiques (DIRCAM) | Après l'import de la MILAIP ENR 5.7, le XML n'était pas enregistré sans un clic de plus | Écriture réservée au bouton « Écrire miam-enr-5-7-tracks.xml » | Écriture d'office après l'import, bouton gardé seulement en cas d'échec (`maintenance_page.js`) |
 | 09/10 | Lanceur, toutes les pages | Textures des designs à matières disparues après un clone (relevé sur 2aa52752) | Clone fait sans Git LFS : images, textures et polices restées en pointeurs | Contrôle à chaque lancement : `git lfs pull`, ou consigne dans la fenêtre du lanceur et sur le premier lancement (`launch.py`, `update_suite.py`) |
 | 09/10 | Premier lancement → Mon profil | ID IVAO saisi au premier lancement absent de « Identité et réseaux » | Carte « Pilote » enregistrée seulement par « Enregistrer le profil » : saisie perdue en passant à la suite | Enregistrement à chaque champ quitté (`premier_lancement.html`) |
 | 09/10 | Données aéronautiques | « Choisir le dossier… » X-Plane toujours dans « Actions à faire » une fois le dossier choisi | Ligne due à une autorisation à renouveler ou à un ancien cycle de « Custom Data », avec toujours le même bouton, sans effet | « Ré-autoriser le dossier… » ou simple information sur le cycle (`aeroTodo`, `maintenance_page.js`) |
