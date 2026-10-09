@@ -1343,12 +1343,12 @@ Bajo el campo de ruta, un mapa de control muestra el mapa elegido con su perfil 
 
 ### Ajustes del perfil: mapa de fondo, espacios, símbolos OACI, elementos
 
-Este panel plegable, situado bajo el mapa de control, configura el perfil de visualización del mapa elegido. Los perfiles (IFR, VFR detallado, AIRWAYS…) son comunes a todas sus misiones y se guardan en el navegador. Panel del nivel Experto.
+Este panel plegable, situado bajo el mapa de control, configura el perfil de visualización del mapa elegido. Los perfiles (IFR, IFR simplificado, VFR detallado, VFR simplificado, AIRWAYS…) son comunes a todas sus misiones y se guardan en el navegador. Perfil por defecto de un mapa: AIRWAYS para el mapa de la ruta de los Mapas de vuelo; IFR simplificado para el mapa principal de una misión y las vistas de conjunto; VFR detallado para los mapas de objetivo, detalle y encuentro; VFR simplificado para la aproximación. Panel del nivel Experto.
 
 - Arriba: «Nombre del perfil», «Mapa de fondo» (OSM estándar, OpenTopoMap, fondos vectoriales…), botones «Guardar», «Nuevo», «Duplicar», «Eliminar».
 - Pestaña «Mapa de fondo»: capas OSM (suelo, hidrografía, carreteras, relieve, curvas de nivel, cimas…), ciudades con símbolos OACI y umbral de población, nombres de ciudades, superficies edificadas.
 - Pestaña «Espacios»: familias de espacios (R / D / P, CTR, TMA, CTA, SIV, TRA, RMZ, TMZ, PJE), simbología OACI, franja de altitud mostrada, opacidad. «Selección de espacios»: lista blanca o negra (botón «Lista blanca» para cambiar), introducción con autocompletado («R 45 A», «@RTBA»…), «Pegar una lista…», «Eliminar todo». «Espacios seleccionados» muestra el resultado.
-- Pestaña «Símbolos OACI»: aeródromos (por categoría, controlados o no, lista blanca), radionavegación, aerovías inferiores y superiores, puntos de notificación VFR, sobrevuelo prohibido, parques y reservas, obstáculos.
+- Pestaña «Símbolos OACI»: aeródromos (por categoría, controlados o no, lista blanca), radionavegación, aerovías inferiores y superiores, puntos de notificación VFR y puntos RNAV en ruta (triángulo azul), sobrevuelo prohibido, parques y reservas, obstáculos.
 - Pestaña «Elementos»: puntos de ruta, meridianos y paralelos, cuadrícula MORA, nombres de las ciudades, circuito de reabastecimiento, zonas de misión y de búsqueda.
 
 Recuerde hacer clic en «Guardar» para conservar un perfil modificado. Las listas de sugerencias de los campos de entrada (zonas, aeródromos, balizas) solo se rellenan cuando hace clic en el campo correspondiente: la página se abre así más deprisa y la lista aparece con el clic o la primera pulsación.

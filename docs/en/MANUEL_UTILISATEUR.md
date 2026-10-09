@@ -1343,12 +1343,12 @@ Under the route field, a control map shows the chosen map with its display profi
 
 ### Profile settings: base map, airspaces, ICAO symbols, elements
 
-This collapsible panel, placed under the control map, sets the display profile of the chosen map. The profiles (IFR, detailed VFR, AIRWAYS…) are shared by all your missions and kept in the browser. Expert level panel.
+This collapsible panel, placed under the control map, sets the display profile of the chosen map. The profiles (IFR, simplified IFR, detailed VFR, simplified VFR, AIRWAYS…) are shared by all your missions and kept in the browser. Default profile of a map: AIRWAYS for the route map of the Flight maps; simplified IFR for the main map of a mission and the overview maps; detailed VFR for the target, detail and rendezvous maps; simplified VFR for the approach. Expert level panel.
 
 - At the top: “Profile name”, “Base map” (standard OSM, OpenTopoMap, vector base maps…), “Save”, “New”, “Duplicate”, “Delete” buttons.
 - “Base map” tab: OSM layers (ground, hydrography, roads, relief, contour lines, summits…), towns as ICAO symbols and population threshold, town labels, built-up areas.
 - “Airspaces” tab: airspace families (R / D / P, CTR, TMA, CTA, SIV, TRA, RMZ, TMZ, PJE), ICAO symbology, altitude band shown, opacity. “Airspace selection”: allow list or block list (“Whitelist” button to switch), entry with completion (“R 45 A”, “@RTBA”…), “Paste a list…”, “Remove all”. “Selected airspaces” shows the result.
-- “ICAO symbols” tab: aerodromes (by category, controlled or not, allow list), radio navigation, low and high airways, VFR reporting points, overflight prohibited, parks and reserves, obstacles.
+- “ICAO symbols” tab: aerodromes (by category, controlled or not, allow list), radio navigation, low and high airways, VFR reporting points and en-route RNAV points (blue triangle), overflight prohibited, parks and reserves, obstacles.
 - “Elements” tab: waypoints, meridians and parallels, MORA grid, town labels, refuelling racetrack, mission and search areas.
 
 Remember to click “Save” to keep a changed profile. The suggestion lists of the input fields (zones, aerodromes, waypoints) are filled only when you click in the field concerned: the page opens faster, and the list appears at the click or the first keystroke.

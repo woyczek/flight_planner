@@ -1343,12 +1343,12 @@ Unter dem Routenfeld zeigt eine Kontrollkarte die gewählte Karte mit ihrem Anze
 
 ### Profileinstellungen: Hintergrundkarte, Lufträume, ICAO-Symbole, Elemente
 
-Dieses aufklappbare Feld unter der Kontrollkarte stellt das Anzeigeprofil der gewählten Karte ein. Die Profile (IFR, VFR detailliert, AIRWAYS…) gelten für alle Ihre Missionen und werden im Browser gespeichert. Feld der Stufe Experte.
+Dieses aufklappbare Feld unter der Kontrollkarte stellt das Anzeigeprofil der gewählten Karte ein. Die Profile (IFR, IFR vereinfacht, VFR detailliert, VFR vereinfacht, AIRWAYS…) gelten für alle Ihre Missionen und werden im Browser gespeichert. Standardprofil einer Karte: AIRWAYS für die Routenkarte der Flugkarten; IFR vereinfacht für die Hauptkarte einer Mission und die Übersichtskarten; VFR detailliert für Ziel-, Detail- und Treffpunktkarten; VFR vereinfacht für den Anflug. Feld der Stufe Experte.
 
 - Oben: „Profilname“, „Hintergrundkarte“ (OSM Standard, OpenTopoMap, Vektorhintergründe…), Knöpfe „Speichern“, „Neu“, „Duplizieren“, „Löschen“.
 - Registerkarte „Hintergrundkarte“: OSM-Ebenen (Boden, Gewässer, Straßen, Relief, Höhenlinien, Gipfel…), Städte als ICAO-Symbole und Einwohnerschwelle, Städtenamen, bebaute Flächen.
 - Registerkarte „Lufträume“: Luftraumfamilien (R / D / P, CTR, TMA, CTA, SIV, TRA, RMZ, TMZ, PJE), ICAO-Symbolik, angezeigter Höhenbereich, Deckkraft. „Luftraumauswahl“: Positiv- oder Negativliste (Knopf „Positivliste“ zum Umschalten), Eingabe mit Vervollständigung („R 45 A“, „@RTBA“…), „Liste einfügen…“, „Alle entfernen“. „Ausgewählte Lufträume“ zeigt das Ergebnis.
-- Registerkarte „ICAO-Symbole“: Flugplätze (nach Kategorie, kontrolliert oder nicht, Positivliste), Funknavigation, untere und obere Luftstraßen, VFR-Meldepunkte, Überflugverbot, Parks und Schutzgebiete, Hindernisse.
+- Registerkarte „ICAO-Symbole“: Flugplätze (nach Kategorie, kontrolliert oder nicht, Positivliste), Funknavigation, untere und obere Luftstraßen, VFR-Meldepunkte und RNAV-Streckenpunkte (blaues Dreieck), Überflugverbot, Parks und Schutzgebiete, Hindernisse.
 - Registerkarte „Elemente“: Wegpunkte, Meridiane und Breitenkreise, MORA-Gitter, Städtenamen, Betankungs-Racetrack, Missions- und Suchgebiete.
 
 Denken Sie daran, auf „Speichern“ zu klicken, um ein geändertes Profil zu behalten. Die Vorschlagslisten der Eingabefelder (Zonen, Flugplätze, Funkfeuer) werden erst gefüllt, wenn Sie in das betreffende Feld klicken: Die Seite öffnet sich so schneller, und die Liste erscheint beim Klick oder beim ersten Tastenanschlag.

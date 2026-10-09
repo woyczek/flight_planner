@@ -96,7 +96,7 @@ function build(quiet,gen){
  let rdv=null;const rt=$v('volRdv').value.trim();if(rt){const c=coord(rt);if(c)rdv={id:'RDV',name:'RDV',...c};else{const q=SiaProfile.resolver({aero:aero||{}})(rt);if(!q){say(`Rendez-vous inconnu : ${esc(rt)}.`,'err');return false}rdv={id:'RDV',name:`RDV ${q.name||rt}`,lat:q.lat,lon:q.lon}}}
  const P=(p,i)=>({id:idOf(p,i),name:p.name||idOf(p,i),lat:+p.lat.toFixed(6),lon:+p.lon.toFixed(6)}),dep=P(pts[0],0),dest=P(pts[pts.length-1],pts.length-1),mid=pts.slice(1,-1).map((p,i)=>P(p,i+1)),ft=levelFt($v('vprofCruise').value);
  const maps=[];
- if(want.has('topo'))maps.push({filename:`route_${dep.id}_${dest.id}.png`,type:'general',description:'Carte de la route',profile:'ifr'});
+ if(want.has('topo'))maps.push({filename:`route_${dep.id}_${dest.id}.png`,type:'general',description:'Carte de la route',profile:'airways'});
  if(want.has('approche'))maps.push({filename:`approche_${dest.id}.png`,type:'approche',description:`Approche de ${dest.id}`,centre_ref:'DESTINATION',range_km:30});
  if(want.has('rdv')&&rdv)maps.push({filename:'rendez_vous.png',type:'rdv',description:'Rendez-vous',centre_ref:'RDV',range_km:15});
  if(want.has('destination'))maps.push({filename:`destination_${dest.id}.png`,type:'detail',description:`Terrain de destination ${dest.id}`,centre_ref:'DESTINATION'});

@@ -67,6 +67,16 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Modifié
 
+- **Cartes : profils de base revus** (Studio cartographique, Cartes de vol) — profils réglés par l'administrateur :
+  IFR, **IFR simplifié** (nouveau), VFR détaillé, VFR simplifié, AIRWAYS. Profil par défaut d'une carte : IFR simplifié
+  pour la carte principale d'une mission et les vues d'ensemble, VFR détaillé pour cible, détail et rendez-vous, VFR
+  simplifié pour l'approche ; Cartes de vol (hors mission) : AIRWAYS pour la carte de la route. Les profils de base déjà
+  gardés dans un navigateur sont remplacés une fois (`BASE_PROFILES_VERSION` 2 ; ancienne liste dans
+  `siaDisplayProfiles:avant`, profil de même nom créé à la main repris) ; les profils créés par l'utilisateur restent.
+  **Points RNAV en route** : nouvelle case dans « Points de report VFR » (points désignés OACI de la base : SIA, autres
+  pays, X-Plane, openAIP ; triangle bleu, libellé avec ceux des points VFR), cochée dans AIRWAYS. Manuel utilisateur
+  (4 langues).
+
 - **Données aéronautiques : mise en place des zones idempotente** — si tout est là, rien n'est refait. Une source
   téléchargée à jour (moins de 28 jours depuis son téléchargement ou sa dernière vérification) n'est pas retéléchargée ;
   « Tout récupérer et recalculer » la revérifie par requête conditionnelle (`If-Modified-Since` : réponse 304 sans

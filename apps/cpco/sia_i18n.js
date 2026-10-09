@@ -922,6 +922,12 @@
     ["Basses (jusqu’au FL195)", "Low (up to FL195)", "Untere (bis FL195)", "Bajas (hasta FL195)"],
     ["Libellés (désignation)", "Labels (designation)", "Beschriftungen (Bezeichnung)", "Etiquetas (designación)"],
     ["Libellés (identifiant)", "Labels (identifier)", "Beschriftungen (Kennung)", "Etiquetas (identificador)"],
+    ["Points RNAV en route (OACI)", "En-route RNAV points (ICAO)", "RNAV-Streckenpunkte (ICAO)", "Puntos RNAV en ruta (OACI)"],
+    ["Points RNAV : points désignés en route de la base aéronautique (SIA, autres pays, X-Plane), triangle bleu.",
+      "RNAV points: en-route designated points of the aeronautical database (SIA, other countries, X-Plane), blue triangle.",
+      "RNAV-Punkte: benannte Streckenpunkte der Luftfahrtdatenbank (SIA, andere Länder, X-Plane), blaues Dreieck.",
+      "Puntos RNAV: puntos designados en ruta de la base aeronáutica (SIA, otros países, X-Plane), triángulo azul."
+    ],
     ["Base SIA : segments de routes ATS (AIXM) ; bleu : basses, violet pointillé : hautes.",
       "SIA base: ATS route segments (AIXM); blue: low, dotted purple: high.",
       "SIA-Basis: ATS-Streckensegmente (AIXM); blau: untere, violett gepunktet: obere.",
