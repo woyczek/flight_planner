@@ -648,24 +648,49 @@
       return;
     }
     const keys = [...FOLDER_ORDER.filter(k => FA.FOLDERS[k]), ...Object.keys(FA.FOLDERS).filter(k => !FOLDER_ORDER.includes(k))];
-    const rows = [];
-    for (const key of keys) {
+    // dossiers déduits du dossier des données (repliés, sauf en avertissement), dossiers facultatifs ; les journaux
+    // d'atterrissage (__xplane) partagent la ligne « X-Plane » du dossier d'installation (__xpnav) en second plan : le
+    // plugin écrit ses CSV où on l'a réglé (rien dans la suite ne le situe dans l'installation d'X-Plane), ils gardent
+    // leur propre dossier
+    const DERIVED = ['__ledger', '__missions', '__sia'],
+      OPTIONAL = new Set(['__odv', '__xpnav', '__xplane', '__perf', '__store']);
+    const dataSt = await FA.status('__data'),
+      dataOk = !!dataSt.handle && dataSt.permission === 'granted';
+    const rows = [],
+      folded = [];
+    for (const key of keys.filter(k => k !== '__xplane')) {
       const st = await FA.status(key),
-        info = FA.FOLDERS[key] || {};
-      let marker = '';
+        info = FA.FOLDERS[key] || {},
+        derived = DERIVED.includes(key);
+      let marker = '',
+        warn = false;
       if (st.handle && st.permission === 'granted' && info.check) {
         if (await FA.has(st.handle, info.check)) marker = pill('ok', info.check);
         else {
-          marker = pill('warn', t(['« {f} » absent : dossier attendu ?', '“{f}” missing: expected folder?'], {
+          warn = true;
+          marker = pill('warn', t(['« {f} » absent : dossier attendu ?', '“{f}” missing: expected folder?',
+            '„{f}“ fehlt: erwarteter Ordner?', '«{f}» ausente: ¿carpeta esperada?'
+          ], {
             f: info.check
           }));
         }
       }
-      const state = !st.handle ? pill('warn', t(['non choisi', 'not chosen', 'nicht gewählt', 'no elegida'])) : st.permission ===
-        'granted' ? pill('ok', t(['autorisé', 'authorised', 'erlaubt', 'autorizada'])) : pill('info', t(['à ré-autoriser',
-          'to re-authorise', 'erneut erlauben', 'a reautorizar'
+      // non choisi : avertissement pour un dossier nécessaire (ou déduit alors que les données sont là), information
+      // pour un dossier facultatif ou déduit plus tard
+      const missing = !st.handle && !OPTIONAL.has(key) && (!derived || dataOk);
+      warn ||= missing;
+      const state = !st.handle ? missing ? pill('warn', t(['non choisi', 'not chosen', 'nicht gewählt', 'no elegida'])) : pill('info',
+          derived ? t(['déduit du dossier des données', 'derived from the data folder', 'aus dem Datenordner abgeleitet',
+            'deducida de la carpeta de datos'
+          ]) : t(['facultatif, non choisi', 'optional, not chosen', 'optional, nicht gewählt', 'opcional, no elegida'])) : st
+        .permission === 'granted' ? pill('ok', t(['autorisé', 'authorised', 'erlaubt', 'autorizada'])) : pill('info', t([
+          'à ré-autoriser', 'to re-authorise', 'erneut erlauben', 'a reautorizar'
         ]));
-      rows.push(`<tr data-key="${esc(key)}"><td><b>${esc(t(info.label || [key]))}</b><br><span class="mt-small">${esc(t(info.expect || ['']))}</span></td><td class="mt-fcell"></td><td>${state} ${marker}</td></tr>`);
+      const xp = key === '__xpnav',
+        label = xp ? 'X-Plane' : t(info.label || [key]),
+        help = t((derived ? info.expect : info.use || info.expect) || ['']);
+      const html = `<tr data-key="${esc(key)}"><td><b>${esc(label)}</b><br><span class="mt-small">${esc(help)}</span></td><td class="mt-fcell">${xp ? '<div class="mt-xpl"></div>' : ''}</td><td>${state} ${marker}</td></tr>`;
+      (derived && !(dataOk && warn) ? folded : rows).push(html);
     }
     const src = window.REPOSITORY_TREE?.sources || {};
     let local = {};
@@ -709,6 +734,7 @@
       <h3>${esc(t(['Dossiers locaux', 'Local folders', 'Lokale Ordner', 'Carpetas locales']))}</h3>
       <p class="mt-small">${esc(t(['Chaque dossier est choisi une fois (le navigateur mémorise l’autorisation, parfois à reconfirmer après un redémarrage). Les sélecteurs de fichiers des pages s’ouvrent directement dans le dossier correspondant.', 'Each folder is chosen once (the browser remembers the permission, sometimes to be confirmed again after a restart). File pickers open directly in the matching folder.']))}</p>
       <div class="mt-scroll"><table class="mt-table mt-wide mt-folders"><tbody>${rows.join('')}</tbody></table></div>
+      ${folded.length ? `<details class="mt-derived"><summary>${esc(t(['Dossiers déduits ({n})', 'Derived folders ({n})', 'Abgeleitete Ordner ({n})', 'Carpetas deducidas ({n})'], { n: folded.length }))} <span class="mt-small">${esc(t(['registre, missions, SIA : réglés avec le dossier des données', 'ledger, missions, SIA: set with the data folder', 'Register, Missionen, SIA: mit dem Datenordner eingestellt', 'registro, misiones, SIA: ajustadas con la carpeta de datos']))}</span></summary><table class="mt-table mt-wide mt-folders"><tbody>${folded.join('')}</tbody></table></details>` : ''}
       <h3>${esc(t(['Sources externes', 'External sources', 'Externe Quellen', 'Fuentes externas']))}</h3>
       <p class="mt-small">${esc(t(['Adresses par défaut livrées avec l’application (repository_tree) ; une valeur saisie ici ne vaut que pour ce navigateur (sauvegardée avec les données locales). Les adresses du SIA, de la DIRCAM, de NATS, de l’AIP militaire britannique et de NAV CANADA servent aux liens des sources de Paramètres › Maintenance › Données aéronautiques ; les dossiers SIA et X-Plane ci-dessus sont les mêmes que là-bas.', 'Default addresses ship with the application (repository_tree); a value entered here applies to this browser only (saved with local data). The SIA, DIRCAM, NATS, UK military AIP and NAV CANADA addresses are the source links of Settings › Maintenance › Aeronautical data; the SIA and X-Plane folders above are the same as there.', 'Standardadressen werden mit der Anwendung geliefert (repository_tree); ein hier eingegebener Wert gilt nur für diesen Browser. Die Adressen von SIA, DIRCAM, NATS, britischem Militär-AIP und NAV CANADA sind die Quellen-Links unter Einstellungen › Wartung › Luftfahrtdaten; die SIA- und X-Plane-Ordner oben sind dieselben wie dort.', 'Direcciones por defecto entregadas con la aplicación (repository_tree); un valor introducido aquí solo vale para este navegador. Las direcciones del SIA, la DIRCAM, NATS, el AIP militar británico y NAV CANADA son los enlaces de las fuentes de Ajustes › Mantenimiento › Datos aeronáuticos; las carpetas SIA y X-Plane de arriba son las mismas que allí.']))} <a class="mt-link" href="${esc(window.RepositoryNav?.settingsUrl?.('sia') || '?m=sia')}">${esc(t(['Données aéronautiques →', 'Aeronautical data →', 'Luftfahrtdaten →', 'Datos aeronáuticos →']))}</a></p>
       <table class="mt-table mt-wide mt-sources"><tbody>${Object.entries(src).map(([k, v]) => `<tr data-src="${esc(k)}"><td><b>${esc(t(v.label || [k]))}</b></td><td><input type="url" class="mt-url" value="${esc(local[k] || '')}" placeholder="${esc(v.url)}" spellcheck="false"></td><td class="mt-nowrap">${local[k] ? pill('info', t(['modifiée', 'changed', 'geändert', 'cambiada'])) : ''} <button type="button" class="secondary" data-reset ${local[k] ? '' : 'hidden'}>↺</button> <a class="mt-link" href="${esc(openUrl(k, nav.source(k)))}" target="_blank" rel="noopener">${esc(t(['Ouvrir', 'Open', 'Öffnen', 'Abrir']))} ↗</a></td></tr>`).join('')}</tbody></table>
@@ -744,14 +770,49 @@
     // « Nettoyer et recommencer… » : sur la page du premier lancement seulement (v2, une seule occurrence)
     host.querySelector('#mtSetupOpen').onclick = () => location.assign('premier_lancement.html?force');
     if (setup && !repo.handle) host.querySelector('tr[data-key="__repo"]')?.classList.add('mt-setup-row');
-    host.querySelectorAll('tr[data-key]').forEach(tr => tr.querySelector('.mt-fcell').append(folderButton(tr.dataset.key, () => {
+    /** Tout ce qui dépend des dossiers, redessiné après un choix. */
+    const afterPick = () => {
       renderSources();
       renderVersions();
       renderDeps();
       renderBackup();
-    }, {
+    };
+    host.querySelectorAll('tr[data-key]').forEach(tr => tr.querySelector('.mt-fcell').prepend(folderButton(tr.dataset.key, afterPick, {
       withLabel: false
     })));
+    // ligne X-Plane : journaux d'atterrissage en second plan (dossier choisi : son bouton ; sinon « autre dossier… »)
+    const xpl = host.querySelector('.mt-xpl');
+    if (xpl) {
+      const own = (await FA.status('__xplane')).handle;
+      const b = own ? folderButton('__xplane', afterPick, {
+        withLabel: false
+      }) : document.createElement('button');
+      if (!own) {
+        b.type = 'button';
+        b.className = 'repo-plain mt-small';
+        b.textContent = t(['Journaux d’atterrissage : autre dossier…', 'Landing logs: other folder…',
+          'Landeprotokolle: anderer Ordner…',
+          'Registros de aterrizaje: otra carpeta…'
+        ]);
+        b.onclick = async () => {
+          try {
+            await FA.pickFolder('__xplane');
+            afterPick();
+          } catch (e) {
+            if (e?.name !== 'AbortError' && e?.message !== 'Dossier refusé') window.AppFramework?.notify?.(explain(e, t([
+              'Dossier non choisi',
+              'Folder not chosen', 'Ordner nicht gewählt', 'Carpeta no elegida'
+            ])), 'warn');
+          }
+        };
+      }
+      b.title = t(FA.FOLDERS.__xplane?.use || ['']);
+      if (own) xpl.append(Object.assign(document.createElement('span'), {
+        className: 'mt-small',
+        textContent: t(['Journaux d’atterrissage : ', 'Landing logs: ', 'Landeprotokolle: ', 'Registros de aterrizaje: '])
+      }));
+      xpl.append(b);
+    }
     host.querySelectorAll('tr[data-src]').forEach(tr => {
       const k = tr.dataset.src,
         input = tr.querySelector('input');
@@ -843,10 +904,17 @@
   // ---- types d'aéronefs : base OACI fusionnée (aircraft_catalog.js) et alias (AIRCRAFT_DB.__aliases : H145 → EC45…)
   /** Codes OACI de la base des types chargée (clés techniques « __… » exclues). */
   const typeSet = () => new Set(Object.keys(window.AIRCRAFT_DB || {}).filter(k => !k.startsWith('__')));
-  /** Code de type en majuscules, remplacé par son code OACI s'il figure dans AIRCRAFT_DB.__aliases. */
+  /** Code de type en majuscules, remplacé par son code OACI s'il figure dans AIRCRAFT_DB.__aliases. Un nom écrit dans une
+   *  mission (« MIR2 Mirage 2000B », « A400M Atlas ») est ramené à son code : texte entier, puis chacun de ses mots
+   *  (lettres et chiffres seulement, comme les alias), code de la base ou alias ; texte inchangé si rien ne correspond. */
   const alias = code => {
-    const k = String(code || '').toUpperCase().trim();
-    return window.AIRCRAFT_DB?.__aliases?.[k] || k;
+    const k = String(code || '').toUpperCase().trim(),
+      al = window.AIRCRAFT_DB?.__aliases || {};
+    // résolveur commun des types écrits en clair (shared/aircraft_catalog.js : alias, noms d'usage, modèle), puis la
+    // chaîne d'alias suivie jusqu'au bout (A400M → A400 : les données de la compagnie peuvent renvoyer un code vers un autre)
+    let x = al[k] || window.AircraftCatalog?.codeOf?.(k) || k;
+    for (let i = 0; i < 5 && al[x] && al[x] !== x; i++) x = al[x];
+    return x;
   };
   /** Vrai si code (ou son alias) figure dans l'ensemble de types. */
   const knownType = (types, code) => types.has(alias(code)) || types.has(String(code || '').toUpperCase().trim());
@@ -1214,17 +1282,29 @@
     };
     window.AppFramework?.refresh?.();
   }
-  /** Bloc « Types d'aéronefs » (Installation, Maintenance, premier lancement) : types complétés type par type (flotte,
-   *  missions du registre et de l'ODV, inconnus), même carte et même lanceur partout. */
+  /** Bloc « Types d'aéronefs » (Installation, Maintenance, premier lancement) : types de la flotte (avec leur nombre
+   *  d'appareils), des missions du registre et ceux saisis dans les CR (missionAircraftTypes:v1), même bloc et même
+   *  lanceur partout. */
   async function renderTypes() {
     const host = hosts.types;
     host.innerHTML = '<div class="mt-types"></div>';
-    const reg = (await regIndex().catch(() => null))?.missions || [];
+    const reg = (await regIndex().catch(() => null))?.missions || [],
+      fleetCount = {};
+    (window.DEFA_FLEET || []).forEach(r => {
+      if (r.type) fleetCount[r.type] = (fleetCount[r.type] || 0) + 1;
+    });
     aircraftDbState(host.querySelector('.mt-types'), {
-      fleet: [...new Set((window.DEFA_FLEET || []).map(r => r.type).filter(Boolean))],
-      missions: [...new Set(reg.flatMap(m => m.aircraftTypes || []))]
+      fleet: Object.keys(fleetCount),
+      fleetCount,
+      missions: [...new Set(reg.flatMap(m => m.aircraftTypes || []))],
+      local: Object.keys(readJson('missionAircraftTypes:v1', {}) || {})
     });
   }
+  // registre des missions complété après le premier dessin (index du navigateur repris du registre servi, autre onglet) :
+  // tableau des types redessiné, sinon il manque les types des missions arrivées entre-temps
+  window.addEventListener('mission-index-change', () => {
+    if (hosts.types?.isConnected && !document.querySelector('#types .repo-task-busy')) renderTypes();
+  });
 
   // ===== 4. Mise à jour SIA pas à pas
   let extractMsg = '',
@@ -1248,14 +1328,112 @@
     return siaFolderState;
   }
   // ---- base des types d'aéronefs (OACI Doc 8643, performances EUROCONTROL) : non publiée, complétée sur ce poste type
-  // par type par le lanceur (AircraftDB/update_aircraft_db.py ; GET / POST /__setup/aircraft-db { codes }) : un nouvel
-  // appareil (code saisi), les types de la flotte, ceux des missions (ODV, registre), ou les types encore inconnus de la
-  // base ; jamais toute la base EUROCONTROL. État relu toutes les 5 s pendant une passe.
+  // par type par le lanceur (AircraftDB/update_aircraft_db.py ; GET / POST /__setup/aircraft-db { codes }). Le bloc se lit
+  // en trois temps : ce que c'est, où on en est (tableau des types de la flotte, des missions et des types saisis, avec
+  // icône, classe OACI, fiche et performances), quoi faire (« Compléter automatiquement » ce qui manque ; autres codes
+  // repliés). Jamais toute la base EUROCONTROL. État relu toutes les 5 s pendant une passe, avancement dans la barre des
+  // tâches (AppFramework.task : pas de bouton « Arrêter », le lanceur ne sait pas interrompre une passe).
   let acTimer = 0,
     acWarned = false,
-    acLists = {};
-  /** Dessine dans el la carte « Types d'aéronefs et performances » d'après l'état du lanceur (/__setup/aircraft-db) ; lists
-   *  { fleet, missions } : codes à proposer (gardés pour les redessins). Les boutons lancent une passe sur les codes choisis. */
+    acLists = {},
+    acJob = null, // tâche affichée pendant une passe du lanceur (barre de progression commune)
+    acIcons = null; // promesse du module des silhouettes (AircraftDB/aircraft_icons.js)
+  // la passe continue dans le lanceur quand la page se ferme : sa tâche ne doit pas faire demander « Quitter la page ? »
+  // (écouteur posé avant celui d'AppFramework, chargé après ce script : il passe en premier)
+  window.addEventListener('beforeunload', () => acJob?.end(false));
+  /** Module des silhouettes d'appareils (window.AircraftDBIcons : la pastille du planificateur et du tableau des
+   *  atterrissages), chargé une fois à la demande du bloc ; null s'il manque. */
+  const loadAcIcons = () => acIcons ||= window.AircraftDBIcons ? Promise.resolve(window.AircraftDBIcons) : new Promise(resolve => {
+    const s = document.createElement('script');
+    s.src = new URL('AircraftDB/aircraft_icons.js', root()).href;
+    s.onload = () => resolve(window.AircraftDBIcons || null);
+    s.onerror = () => resolve(null);
+    document.head.append(s);
+  });
+  // description OACI (Doc 8643) : lettre de la famille, nombre de moteurs (C : deux moteurs couplés), motorisation
+  const AC_FAMILY = {
+    L: ['avion', 'aeroplane', 'Flugzeug', 'avión'],
+    S: ['hydravion', 'seaplane', 'Wasserflugzeug', 'hidroavión'],
+    A: ['amphibie', 'amphibian', 'Amphibienflugzeug', 'anfibio'],
+    H: ['hélicoptère', 'helicopter', 'Hubschrauber', 'helicóptero'],
+    G: ['autogire', 'gyroplane', 'Tragschrauber', 'autogiro'],
+    T: ['convertible', 'tiltrotor', 'Kipprotor', 'convertiplano']
+  };
+  // motorisation [singulier, pluriel] par langue ; T : turbopropulseur (avion) ou turbomoteur (hélicoptère)
+  const AC_POWER = {
+    P: [
+      ['moteur à pistons', 'moteurs à pistons'],
+      ['piston engine', 'piston engines'],
+      ['Kolbenmotor', 'Kolbenmotoren'],
+      ['motor de pistón', 'motores de pistón']
+    ],
+    T: [
+      ['turbopropulseur', 'turbopropulseurs'],
+      ['turboprop', 'turboprops'],
+      ['Turboprop', 'Turboprops'],
+      ['turbohélice', 'turbohélices']
+    ],
+    TH: [
+      ['turbomoteur', 'turbomoteurs'],
+      ['turboshaft', 'turboshafts'],
+      ['Wellenturbine', 'Wellenturbinen'],
+      ['turboeje', 'turboejes']
+    ],
+    J: [
+      ['réacteur', 'réacteurs'],
+      ['jet engine', 'jet engines'],
+      ['Strahltriebwerk', 'Strahltriebwerke'],
+      ['reactor', 'reactores']
+    ],
+    E: [
+      ['moteur électrique', 'moteurs électriques'],
+      ['electric motor', 'electric motors'],
+      ['Elektromotor', 'Elektromotoren'],
+      ['motor eléctrico', 'motores eléctricos']
+    ],
+    R: [
+      ['moteur-fusée', 'moteurs-fusées'],
+      ['rocket engine', 'rocket engines'],
+      ['Raketentriebwerk', 'Raketentriebwerke'],
+      ['motor cohete', 'motores cohete']
+    ]
+  };
+  /** Classe OACI d'une fiche (« L2J ») et son libellé lisible (« avion, 2 réacteurs ») ; libellé de la famille seule
+   *  pour une fiche incomplète (type saisi dans un CR : « H », « L »). */
+  function acClass(rec) {
+    const d = String(rec?.description || '').toUpperCase(),
+      fam = AC_FAMILY[d[0]] ? t(AC_FAMILY[d[0]]) : '';
+    const n = d[1] === 'C' ? 2 : parseInt(d[1], 10) || 0,
+      pw = AC_POWER[d[2] === 'T' && d[0] === 'H' ? 'TH' : d[2]];
+    return {
+      code: d,
+      label: n && pw ? `${fam}, ${n} ${pw[li()][n > 1 ? 1 : 0]}` : fam
+    };
+  }
+  /** Valeurs clés des performances EUROCONTROL d'un type [libellé, valeur], valeurs nulles ou absentes écartées :
+   *  plafond, croisière, distance franchissable, montée, descente, approche, V2, Vat, masse et distances. */
+  function perfFacts(p) {
+    const v = (x, u) => x > 0 ? `${x} ${u}` : '',
+      j = (...l) => l.filter(Boolean).join(' · ');
+    return [
+      [t(['Plafond', 'Ceiling', 'Gipfelhöhe', 'Techo']), p.cruise?.ceilingFL > 0 ? `FL${p.cruise.ceilingFL}` : ''],
+      [t(['Croisière', 'Cruise', 'Reiseflug', 'Crucero']), j(v(p.cruise?.tasKt, 'kt TAS'), p.cruise?.mach > 0 ? `M${p.cruise.mach}` : '')],
+      [t(['Distance franchissable', 'Range', 'Reichweite', 'Alcance']), v(p.cruise?.rangeNm, 'NM')],
+      [t(['Montée initiale', 'Initial climb', 'Anfangssteigflug', 'Ascenso inicial']), j(v(p.climbInitial?.iasKt, 'kt'), v(p
+        .climbInitial
+        ?.rocFpm, 'ft/min'))],
+      [t(['Descente', 'Descent', 'Sinkflug', 'Descenso']), j(v(p.descent?.iasKt, 'kt'), v(p.descent?.rodFpm, 'ft/min'))],
+      [t(['Approche', 'Approach', 'Anflug', 'Aproximación']), v(p.approach?.iasKt, 'kt')],
+      ['V2', v(p.takeoff?.v2Kt, 'kt')],
+      ['Vat', v(p.landing?.vatKt, 'kt')],
+      ['MTOW', v(p.takeoff?.mtowKg, 'kg')],
+      [t(['Décollage', 'Take-off', 'Start', 'Despegue']), v(p.takeoff?.distanceM, 'm')],
+      [t(['Atterrissage', 'Landing', 'Landung', 'Aterrizaje']), v(p.landing?.distanceM, 'm')]
+    ].filter(([, x]) => x);
+  }
+  /** Dessine dans el le bloc « Types d'aéronefs et performances » d'après l'état du lanceur (/__setup/aircraft-db) ;
+   *  lists { fleet, fleetCount, missions, local } : types à suivre (gardés pour les redessins). Zone de codes et volet
+   *  replié gardés d'un redessin à l'autre (relecture toutes les 5 s pendant une passe). */
   async function aircraftDbState(el, lists) {
     if (!el?.isConnected) return;
     if (lists) acLists = lists;
@@ -1270,67 +1448,235 @@
       body: body ? JSON.stringify(body) : undefined,
       cache: 'no-store'
     }).then(r => r.ok ? r.json() : null).catch(() => null);
-    const s = await api();
+    const [s, icons] = await Promise.all([api(), loadAcIcons()]);
+    if (!el.isConnected) return;
     const types = typeSet(),
-      unknown = [...new Set([...(acLists.fleet || []), ...(acLists.missions || [])])].filter(x => !knownType(types, x));
+      db = window.AIRCRAFT_DB || {},
+      perfDb = window.AIRCRAFT_PERF || {};
+    const busy = !s || s.state === 'running',
+      empty = !types.size,
+      // passe terminée depuis le chargement de la page : la base relue au prochain chargement
+      fresh = s?.state === 'done' && s.ended && s.ended * 1000 > performance.timeOrigin,
+      // codes de la dernière passe, déjà lue par la page : un type encore sans performances n'est pas dans EUROCONTROL
+      tried = new Set(!fresh && s?.state === 'done' ? s.codes || [] : []);
+    // types suivis, regroupés par code OACI (alias résolus : H145 → EC45)
+    const groups = new Map();
+    /** Ajoute le type code (tel que saisi) au groupe de son code OACI ; src : fleet (avec son nombre d'appareils),
+     *  missions ou local (saisi dans un CR). */
+    const add = (code, src) => {
+      const c = String(code || '').toUpperCase().trim();
+      if (!c) return;
+      const k = alias(c),
+        g = groups.get(k) || {
+          key: k,
+          codes: new Set(),
+          fleet: 0,
+          missions: false,
+          local: false
+        };
+      g.codes.add(c);
+      if (src === 'fleet') g.fleet += acLists.fleetCount?.[code] || 1;
+      else g[src] = true;
+      groups.set(k, g);
+    };
+    (acLists.fleet || []).forEach(c => add(c, 'fleet'));
+    (acLists.missions || []).forEach(c => add(c, 'missions'));
+    (acLists.local || []).forEach(c => add(c, 'local'));
+    // codes qui renvoient (alias) vers une clé : A400 ← A400M, A4M… — fiche et performances portées par l'un d'eux
+    const back = {};
+    for (const [a, b] of Object.entries(db.__aliases || {}))(back[b] ||= []).push(a);
+    const rows = [...groups.values()].map(g => {
+      const codes = [...g.codes],
+        all = [...new Set([g.key, ...codes, ...(back[g.key] || [])])],
+        rec = all.map(c => db[c]).find(r => r && !r.local) || all.map(c => db[c]).find(Boolean),
+        perf = all.map(c => perfDb[c]).find(Boolean),
+        noFiche = !rec || !!rec.local,
+        absent = !perf && all.some(c => tried.has(c)), // cherché à la dernière passe, absent d'EUROCONTROL
+        // cherché à la dernière passe et toujours sans fiche : code inconnu de l'OACI (nom d'usage, faute de frappe) —
+        // un alias à ajouter à la main, pas une passe de plus (sinon la page le reproposerait sans fin)
+        unresolved = (!rec || !!rec.local) && all.some(c => tried.has(c)),
+        // sans performances EUROCONTROL : consommation estimée par type ou classe OACI (shared/fuel_reference.js, source
+        // de repli du planificateur carburant) ; null sans fiche OACI, ou sans le script sur la page
+        est = !perf ? window.FuelReference?.estimate?.({
+          codes: all,
+          db
+        }) || null : null;
+      return {
+        ...g,
+        est,
+        codes,
+        rec,
+        perf,
+        noFiche,
+        noPerf: !perf && !absent,
+        unresolved,
+        absent,
+        rank: noFiche && !unresolved ? 0 : !perf && !absent ? 1 : 2
+      };
+    }).sort((a, b) => a.rank - b.rank || a.key.localeCompare(b.key));
+    // à compléter : sans fiche, ou sans performances jamais cherchées — le code OACI du groupe, plus les codes saisis qui
+    // en ont la forme (2 à 4 lettres ou chiffres) ; jamais un libellé en clair (« C-130J-30 Super Hercules »)
+    const todo = [...new Set(rows.filter(r => (r.noFiche && !r.unresolved) || r.noPerf).flatMap(r => [r.key, ...r.codes].filter(c =>
+        /^[A-Z0-9]{2,4}$/
+        .test(c))))],
+      nFiche = rows.filter(r => r.noFiche).length,
+      nPerf = rows.filter(r => !r.noFiche && r.noPerf).length,
+      nAbsent = rows.filter(r => r.absent).length,
+      unresolved = rows.filter(r => r.unresolved).map(r => r.key),
+      nEst = rows.filter(r => !r.perf && r.est).length;
+    if (empty && s && !acWarned) {
+      acWarned = true;
+      window.AppFramework?.notify?.(t([
+        'Base des types d’aéronefs vide : Paramètres › Maintenance › Types d’aéronefs, « Compléter automatiquement ».',
+        'Aircraft type database empty: Settings › Maintenance › Aircraft types, “Complete automatically”.',
+        'Luftfahrzeugtyp-Datenbank leer: Einstellungen › Wartung › Luftfahrzeugtypen, „Automatisch ergänzen“.',
+        'Base de tipos de aeronave vacía: Ajustes › Mantenimiento › Tipos de aeronave, «Completar automáticamente».'
+      ]), 'warn');
+    }
+    // barre de progression commune pendant une passe (deux étapes : fiches OACI, puis performances EUROCONTROL)
+    if (s?.state === 'running') {
+      acJob ||= window.AppFramework?.task?.(t(['Types d’aéronefs : téléchargement', 'Aircraft types: download',
+        'Luftfahrzeugtypen: Download', 'Tipos de aeronave: descarga'
+      ]), {
+        total: 2
+      }) || null;
+      acJob?.set(/^perf/i.test(s.step || '') ? 1 : 0, 2, s.step || '');
+    } else if (acJob) {
+      acJob.end(s?.state === 'error' ? t(['Téléchargement des types en échec : voir « Journal » dans le bloc.',
+        'Type download failed: see “Log” in the block.', 'Download der Typen fehlgeschlagen: siehe „Protokoll“ im Block.',
+        'Descarga de los tipos fallida: ver «Registro» en el bloque.'
+      ]) : t(['Types et performances téléchargés : recharge la page pour les lire.',
+        'Types and performance downloaded: reload the page to read them.',
+        'Typen und Leistungen heruntergeladen: Seite neu laden, um sie zu lesen.',
+        'Tipos y rendimientos descargados: recarga la página para leerlos.'
+      ]), s?.state === 'error' ? 'err' : 'ok');
+      acJob = null;
+    }
     const files = s ? (s.db ? t(['base présente ({n} types)', 'database present ({n} types)', 'Basis vorhanden ({n} Typen)',
       'base presente ({n} tipos)'
     ], {
       n: types.size
     }) : t(['base absente', 'database missing', 'Basis fehlt', 'base ausente'])) : '';
     const state = !s ? t(['lanceur absent : python update_aircraft_db.py --only CODES puis --apd CODES (dans AircraftDB/)',
-        'no launcher: python update_aircraft_db.py --only CODES then --apd CODES (in AircraftDB/)'
+        'no launcher: python update_aircraft_db.py --only CODES then --apd CODES (in AircraftDB/)',
+        'kein Starter: python update_aircraft_db.py --only CODES, dann --apd CODES (in AircraftDB/)',
+        'sin lanzador: python update_aircraft_db.py --only CODES y luego --apd CODES (en AircraftDB/)'
       ]) :
       s.state === 'running' ? t(['passe en cours : {s}', 'pass running: {s}', 'Durchlauf läuft: {s}', 'pasada en curso: {s}'], {
         s: s.step
-      }) : s.state === 'done' ? t(['dernière passe terminée ({c})', 'last pass done ({c})', 'letzter Durchlauf beendet ({c})',
-        'última pasada terminada ({c})'
+      }) : s.state === 'done' ? t(['dernière passe terminée ({c} types)', 'last pass done ({c} types)',
+        'letzter Durchlauf beendet ({c} Typen)', 'última pasada terminada ({c} tipos)'
       ], {
-        c: (s.codes || []).join(' ')
+        c: (s.codes || []).length
       }) : s.state === 'error' ? t(['échec de la dernière passe', 'last pass failed', 'letzter Durchlauf fehlgeschlagen',
         'falló la última pasada'
       ]) : '';
-    const busy = !s || s.state === 'running',
-      empty = !types.size,
-      all = [...new Set([...(acLists.fleet || []), ...(acLists.missions || [])])],
-      // passe terminée depuis le chargement de la page : la base relue au prochain chargement
-      fresh = s?.state === 'done' && s.ended && s.ended * 1000 > performance.timeOrigin;
-    if (empty && s && !acWarned) {
-      acWarned = true;
-      window.AppFramework?.notify?.(t([
-        'Base des types d’aéronefs vide : Paramètres › Maintenance › Références et dépendances, « Compléter la base ».',
-        'Aircraft type database empty: Settings › Maintenance › References and dependencies, “Complete the database”.',
-        'Luftfahrzeugtyp-Datenbank leer: Einstellungen › Wartung › Referenzen und Abhängigkeiten, „Datenbank ergänzen“.',
-        'Base de tipos de aeronave vacía: Ajustes › Mantenimiento › Referencias y dependencias, «Completar la base».'
-      ]), 'warn');
-    }
-    /** Bouton de passe sur une liste de codes (désactivé si vide ou passe en cours), codes en infobulle (20 au plus). */
-    const btn = (id, label, list, title) => `<button type="button" class="secondary" data-ac="${id}" data-icon="refresh"${busy || !list.length ? ' disabled' : ''} title="${esc(title + (list.length ? ' : ' + list.slice(0, 20).join(' ') + (list.length > 20 ? '…' : '') : ''))}">${esc(label)} (${list.length})</button>`;
-    el.innerHTML = `<div class="repo-card" data-icon="plane" data-subtitle="${esc(t(['Données de l’OACI (Doc 8643) et d’EUROCONTROL : non publiées avec la suite, complétées sur ce poste, type par type (réseau, quelques secondes par type)', 'ICAO (Doc 8643) and EUROCONTROL data: not published with the suite, completed on this computer type by type (network, a few seconds per type)', 'Daten von ICAO (Doc 8643) und EUROCONTROL: nicht mit der Suite veröffentlicht, auf diesem Rechner Typ für Typ ergänzt', 'Datos de la OACI (Doc 8643) y EUROCONTROL: no publicados con la suite, completados en este equipo tipo por tipo']))}"><h3>${esc(t(['Types d’aéronefs et performances', 'Aircraft types and performance', 'Luftfahrzeugtypen und Leistungen', 'Tipos de aeronave y rendimientos']))}</h3>
-      ${!empty && unknown.length ? `<p class="row"><button type="button" class="primary" data-ac="unknown" data-icon="download"${busy ? ' disabled' : ''}>${esc(t(['Compléter les types manquants de la flotte et des missions ({n})', 'Complete the missing fleet and mission types ({n})', 'Fehlende Typen der Flotte und der Missionen ergänzen ({n})', 'Completar los tipos que faltan de la flota y las misiones ({n})'], {
-        n: unknown.length
-      }))}</button></p>` : ''}
-      ${empty ? `<div class="repo-notice"><b>${esc(t(['Base vide.', 'Empty database.', 'Leere Datenbank.', 'Base vacía.']))}</b> ${esc(t(['Sans elle, pas de types d’aéronefs (flotte, missions, CR, performances du planificateur). Un clic la complète avec les types de la flotte et des missions ; ensuite, un type à la fois quand un nouvel appareil arrive.', 'Without it, no aircraft types (fleet, missions, reports, planner performance). One click completes it with the fleet and mission types; then one type at a time when a new aircraft arrives.', 'Ohne sie keine Luftfahrzeugtypen (Flotte, Missionen, Berichte, Leistungen des Planers). Ein Klick ergänzt sie mit den Typen der Flotte und der Missionen; danach ein Typ nach dem anderen, wenn ein neues Luftfahrzeug kommt.', 'Sin ella, no hay tipos de aeronave (flota, misiones, informes, rendimientos del planificador). Un clic la completa con los tipos de la flota y de las misiones; después, un tipo cada vez que llega una aeronave nueva.']))}</div>
-      <p class="row"><button type="button" class="primary" data-ac="all" data-icon="download"${busy || !all.length ? ' disabled' : ''}>${esc(t(['Compléter la base ({n} types)', 'Complete the database ({n} types)', 'Datenbank ergänzen ({n} Typen)', 'Completar la base ({n} tipos)'], {
-        n: all.length
-      }))}</button></p>` : ''}
-      <p class="mt-small">${esc(files)}${state ? ` · ${esc(state)}` : ''}</p>
-      ${fresh ? `<p class="row">${pill('ok', t(['base mise à jour', 'database updated', 'Datenbank aktualisiert', 'base actualizada']))} <button type="button" class="secondary" data-ac-reload data-icon="refresh">${esc(t(['Recharger la page pour la lire', 'Reload the page to read it', 'Seite neu laden, um sie zu lesen', 'Recargar la página para leerla']))}</button></p>` : ''}
-      <label class="mt-small">${esc(t(['Codes OACI à télécharger (types et performances) : un par ligne, ou séparés par des virgules', 'ICAO codes to download (types and performance): one per line, or comma-separated', 'Herunterzuladende ICAO-Codes (Typen und Leistungen): einer pro Zeile oder durch Kommas getrennt', 'Códigos OACI que descargar (tipos y rendimientos): uno por línea o separados por comas']))}<br><textarea class="mt-ac-code" rows="4" cols="24" spellcheck="false" placeholder="H160&#10;EC35, A320" aria-label="${esc(t(['Codes OACI', 'ICAO codes', 'ICAO-Codes', 'Códigos OACI']))}"></textarea></label>
-      <p class="row"><button type="button" class="secondary" data-ac="one" data-icon="download"${busy ? ' disabled' : ''}>${esc(t(['Télécharger types et performances', 'Download types and performance', 'Typen und Leistungen herunterladen', 'Descargar tipos y rendimientos']))}</button></p>
-      <p class="row">${btn('unknown', t(['Types inconnus', 'Unknown types', 'Unbekannte Typen', 'Tipos desconocidos']), unknown, t(['types de la flotte et des missions absents de la base', 'fleet and mission types missing from the database']))} ${btn('fleet', t(['Flotte', 'Fleet', 'Flotte', 'Flota']), acLists.fleet || [], t(['tous les types de la flotte', 'all fleet types']))} ${btn('missions', t(['Missions (ODV, registre)', 'Missions (ODV, registry)', 'Missionen (ODV, Register)', 'Misiones (ODV, registro)']), acLists.missions || [], t(['types demandés par les missions', 'types required by the missions']))}</p>
-      <p class="mt-small">${esc(t(['Fichiers écrits sur ce poste : AircraftDB/aircraft_db.js (types) et aircraft_perf.js (performances). Rien à en faire : toutes les pages les lisent à leur prochain chargement. Ils ne sont pas versionnés (données OACI et EUROCONTROL, non redistribuées) : à compléter sur chaque poste, ou à recopier d’un poste à l’autre.', 'Files written on this computer: AircraftDB/aircraft_db.js (types) and aircraft_perf.js (performance). Nothing to do with them: every page reads them at its next load. They are not versioned (ICAO and EUROCONTROL data, not redistributed): complete them on each computer, or copy them from one computer to another.', 'Auf diesem Rechner geschriebene Dateien: AircraftDB/aircraft_db.js (Typen) und aircraft_perf.js (Leistungen). Nichts damit zu tun: Alle Seiten lesen sie beim nächsten Laden. Sie werden nicht versioniert (Daten von ICAO und EUROCONTROL, nicht weitergegeben): auf jedem Rechner ergänzen oder von Rechner zu Rechner kopieren.', 'Archivos escritos en este equipo: AircraftDB/aircraft_db.js (tipos) y aircraft_perf.js (rendimientos). Nada que hacer con ellos: todas las páginas los leen en su próxima carga. No se versionan (datos de la OACI y EUROCONTROL, no redistribuidos): completarlos en cada equipo o copiarlos de uno a otro.']))}</p>
-      ${s?.log?.length ? `<details class="mt-small"><summary>${esc(t(['Journal', 'Log', 'Protokoll', 'Registro']))}</summary><pre>${esc(s.log.slice(-12).join('\n'))}</pre></details>` : ''}</div>`;
-    const lists2 = {
-      all,
-      unknown,
-      fleet: acLists.fleet || [],
-      missions: acLists.missions || []
+    const yes = '<span class="mt-ac-yes">✓</span>';
+    /** Silhouette d'un type (AircraftDBIcons.icon) ; sans fiche OACI (ou classe inconnue), la silhouette par défaut
+     *  d'AircraftDBIcons (« other », un dirigeable, gardé à la demande de l'utilisateur) avec l'infobulle « type sans
+     *  fiche OACI : silhouette inconnue » à la place de celle d'AircraftDBIcons. */
+    const acIcon = r => {
+      if (!icons) return '';
+      const html = icons.icon({
+        icao: r.key
+      });
+      if (r.rec && !r.rec.local && icons.visual({
+          icao: r.key
+        }) !== 'other') return html;
+      return html.replace(/ title="[^"]*"/, ` title="${esc(t(['type sans fiche OACI : silhouette inconnue', 'type without ICAO record: unknown silhouette', 'Typ ohne ICAO-Datensatz: Silhouette unbekannt', 'tipo sin ficha OACI: silueta desconocida']))}"`);
     };
+    /** Ligne du tableau d'un type : icône, code (codes saisis s'ils diffèrent), modèle, classe, fiche, performances, emploi. */
+    const row = r => {
+      const cls = acClass(r.rec),
+        facts = r.perf ? perfFacts(r.perf) : [],
+        p = r.perf || {};
+      // valeurs visibles sans survol : plafond, croisière, V2, Vat (le reste en infobulle)
+      const compact = [p.cruise?.ceilingFL > 0 ? `FL${p.cruise.ceilingFL}` : '', p.cruise?.tasKt > 0 ? `${p.cruise.tasKt} kt` : '', p
+        .takeoff?.v2Kt > 0 ? `V2 ${p.takeoff.v2Kt}` : '', p.landing?.vatKt > 0 ? `Vat ${p.landing.vatKt}` : ''
+      ].filter(Boolean).join(' · ');
+      const other = r.codes.filter(c => c !== r.key),
+        model = r.rec?.model ? window.AircraftCatalog?.displayName?.(r.rec.model) || r.rec.model : '';
+      const used = [r.fleet ? t(['flotte ({n})', 'fleet ({n})', 'Flotte ({n})', 'flota ({n})'], {
+        n: r.fleet
+      }) : '', r.missions ? t(['missions', 'missions', 'Missionen', 'misiones']) : '', r.local ? t(['saisi dans un CR',
+        'entered in a report', 'in einem Bericht erfasst', 'introducido en un informe'
+      ]) : ''].filter(Boolean).join(' · ');
+      const fiche = r.unresolved ? pill('warn', t(['code inconnu de l’OACI : alias à ajouter', 'code unknown to ICAO: alias to add',
+        'ICAO unbekannter Code: Alias ergänzen', 'código desconocido para la OACI: alias por añadir'
+      ])) : !r.rec ? pill('warn', t(['manquante', 'missing', 'fehlt', 'falta'])) : r.rec.local ? pill('warn', t([
+        'saisie locale, sans fiche OACI', 'local entry, no ICAO record', 'lokal erfasst, ohne ICAO-Datensatz',
+        'entrada local, sin ficha OACI'
+      ])) : `<span title="${esc([r.rec.source, r.rec.wtc ? `WTC ${r.rec.wtc}` : ''].filter(Boolean).join(' · '))}">${yes}</span>`;
+      const perf = r.perf ? `${yes} <span class="mt-small" title="${esc([...facts.map(([l, x]) => `${l} : ${x}`), r.perf.fetched ? `EUROCONTROL APD, ${r.perf.fetched}` : ''].filter(Boolean).join('\n'))}">${esc(compact)}</span>${r.perf.url ? ` <a class="mt-link" href="${esc(r.perf.url)}" target="_blank" rel="noopener" title="EUROCONTROL APD">↗</a>` : ''}` :
+        // sans performances EUROCONTROL : manquantes (jamais cherchées) ou absentes (cherchées) ; l'estimation de
+        // consommation du planificateur carburant, quand elle existe, est montrée dans les deux cas
+        (r.absent ? pill('info', t(r.est ? ['estimées', 'estimated', 'geschätzt', 'estimados'] : ['absentes d’EUROCONTROL',
+          'not in EUROCONTROL', 'nicht bei EUROCONTROL', 'no están en EUROCONTROL'
+        ])) : pill('warn', t(['manquantes', 'missing', 'fehlen', 'faltan']))) + (r.est ? ` <span class="mt-small" title="${esc(r.est.src || '')}">${esc(t(['≈ {k} kg/h, {v} kt ({b})', '≈ {k} kg/h, {v} kt ({b})', '≈ {k} kg/h, {v} kt ({b})', '≈ {k} kg/h, {v} kt ({b})'], {
+          k: r.est.kgPerHour,
+          v: r.est.tasKt,
+          b: r.est.basis === 'type' ? t(['type connu', 'known type', 'bekannter Typ', 'tipo conocido']) : t(['classe OACI {c}', 'ICAO class {c}', 'ICAO-Klasse {c}', 'clase OACI {c}'], {
+            c: r.est.cls
+          })
+        }))}</span>` : '');
+      return `<tr${r.rank < 2 ? ' class="mt-ac-todo"' : ''}><td class="mt-ac-ic">${acIcon(r)}</td><td><b>${esc(r.key)}</b>${other.length ? ` <span class="mt-small">(${esc(other.join(', '))})</span>` : ''}<br><span class="mt-small">${esc(model || '—')}</span></td><td>${cls.code ? `<b>${esc(cls.code)}</b><br><span class="mt-small">${esc(cls.label)}</span>` : '—'}</td><td>${fiche}</td><td>${perf}</td><td class="mt-small">${esc(used)}</td></tr>`;
+    };
+    const H = l => `<th>${esc(t(l))}</th>`;
+    const table = rows.length ? `<div class="mt-scroll mt-ac-table"><table class="mt-table"><thead><tr><th></th>${H(['Type (code OACI, modèle)', 'Type (ICAO code, model)', 'Typ (ICAO-Code, Modell)', 'Tipo (código OACI, modelo)'])}${H(['Classe OACI', 'ICAO class', 'ICAO-Klasse', 'Clase OACI'])}${H(['Fiche OACI', 'ICAO record', 'ICAO-Datensatz', 'Ficha OACI'])}${H(['Performances (EUROCONTROL)', 'Performance (EUROCONTROL)', 'Leistungen (EUROCONTROL)', 'Rendimientos (EUROCONTROL)'])}${H(['Utilisé par', 'Used by', 'Verwendet von', 'Usado por'])}</tr></thead><tbody>${rows.map(row).join('')}</tbody></table></div>` :
+      `<p class="mt-small">${esc(t(['Aucun type dans la flotte ni dans les missions de ce navigateur.', 'No type in the fleet or in the missions of this browser.', 'Kein Typ in der Flotte oder den Missionen dieses Browsers.', 'Ningún tipo en la flota ni en las misiones de este navegador.']))}</p>`;
+    // résumé du tableau : manques (avertissement) ou rien à compléter, puis types que EUROCONTROL ne couvre pas
+    const summary = !rows.length ? '' : (nFiche - unresolved.length || nPerf ? [nFiche - unresolved.length ? pill('warn', t([
+      '{n} sans fiche OACI', '{n} without ICAO record',
+      '{n} ohne ICAO-Datensatz', '{n} sin ficha OACI'
+    ], {
+      n: nFiche - unresolved.length
+    })) : '', nPerf ? pill('warn', t(['{n} sans performances', '{n} without performance', '{n} ohne Leistungen',
+      '{n} sin rendimientos'
+    ], {
+      n: nPerf
+    })) : ''].join(' ') : pill('ok', t(['{n} types, rien à compléter', '{n} types, nothing to complete',
+      '{n} Typen, nichts zu ergänzen', '{n} tipos, nada que completar'
+    ], {
+      n: rows.length
+    }))) + (unresolved.length ? ` ${pill('warn', t(['{n} code(s) inconnus de l’OACI : {l} — nom d’usage ou faute de frappe : alias à ajouter (« Modifier la base à la main… », __aliases), ou corriger le type dans la flotte ou la mission', '{n} code(s) unknown to ICAO: {l} — usual name or typo: add an alias (“Edit the database by hand…”, __aliases) or fix the type in the fleet or the mission', '{n} ICAO unbekannte(r) Code(s): {l} — gebräuchlicher Name oder Tippfehler: Alias ergänzen („Datenbank von Hand bearbeiten…“, __aliases) oder den Typ in Flotte oder Mission berichtigen', '{n} código(s) desconocido(s) para la OACI: {l} — nombre de uso o errata: añadir un alias («Editar la base a mano…», __aliases) o corregir el tipo en la flota o la misión'], {
+      n: unresolved.length,
+      l: unresolved.join(', ')
+    }))}` : '') + (nAbsent ? ` ${pill('info', t(['{n} sans performances chez EUROCONTROL (surtout militaires et hélicoptères), {e} estimées par type ou classe OACI pour le carburant', '{n} without EUROCONTROL performance (mostly military and helicopters), {e} estimated by type or ICAO class for fuel', '{n} ohne Leistungen bei EUROCONTROL (meist Militär und Hubschrauber), {e} nach Typ oder ICAO-Klasse für den Kraftstoff geschätzt', '{n} sin rendimientos en EUROCONTROL (sobre todo militares y helicópteros), {e} estimados por tipo o clase OACI para el combustible'], {
+      n: nAbsent,
+      e: nEst
+    }))}` : '');
+    // état gardé d'un redessin à l'autre : volet « autres types » ouvert, codes saisis
+    const keep = {
+      open: !!el.querySelector('.mt-ac-more')?.open,
+      code: el.querySelector('.mt-ac-code')?.value || ''
+    };
+    const editUrl = window.RepositoryNav?.settingsUrl?.('aircraftDb');
+    el.innerHTML = `<div class="repo-card mt-ac" data-icon="plane"><h3>${esc(t(['Types d’aéronefs et performances', 'Aircraft types and performance', 'Luftfahrzeugtypen und Leistungen', 'Tipos de aeronave y rendimientos']))}</h3>
+      <h4>${esc(t(['Ce que c’est', 'What it is', 'Worum es geht', 'Qué es']))}</h4>
+      <p>${esc(t(['Pour chaque type d’appareil de la flotte et des missions, la suite a besoin de sa fiche OACI (code, modèle, classe comme L2J ou H1T : c’est elle qui donne l’icône de l’appareil et sa catégorie 2P, 2T, 4T…) et de son profil de performances EUROCONTROL (vitesses, plafond, montée et descente). Ces données ne sont pas livrées avec la suite : elles se téléchargent sur ce poste, type par type.', 'For each aircraft type of the fleet and the missions, the suite needs its ICAO record (code, model, class such as L2J or H1T: it gives the aircraft icon and its 2P, 2T, 4T… category) and its EUROCONTROL performance profile (speeds, ceiling, climb and descent). These data are not shipped with the suite: they are downloaded on this computer, type by type.', 'Für jeden Luftfahrzeugtyp der Flotte und der Missionen braucht die Suite seinen ICAO-Datensatz (Code, Modell, Klasse wie L2J oder H1T: Er liefert das Symbol des Luftfahrzeugs und seine Kategorie 2P, 2T, 4T…) und sein EUROCONTROL-Leistungsprofil (Geschwindigkeiten, Gipfelhöhe, Steig- und Sinkflug). Diese Daten werden nicht mit der Suite geliefert: Sie werden auf diesem Rechner Typ für Typ heruntergeladen.', 'Para cada tipo de aeronave de la flota y de las misiones, la suite necesita su ficha OACI (código, modelo, clase como L2J o H1T: es la que da el icono de la aeronave y su categoría 2P, 2T, 4T…) y su perfil de rendimientos EUROCONTROL (velocidades, techo, ascenso y descenso). Estos datos no se entregan con la suite: se descargan en este equipo, tipo por tipo.']))}</p>
+      ${empty ? `<div class="repo-notice"><b>${esc(t(['Base vide.', 'Empty database.', 'Leere Datenbank.', 'Base vacía.']))}</b> ${esc(t(['Sans elle, pas de types d’aéronefs (flotte, missions, CR, performances du planificateur) : « Compléter automatiquement » ci-dessous.', 'Without it, no aircraft types (fleet, missions, reports, planner performance): “Complete automatically” below.', 'Ohne sie keine Luftfahrzeugtypen (Flotte, Missionen, Berichte, Leistungen des Planers): unten „Automatisch ergänzen“.', 'Sin ella, no hay tipos de aeronave (flota, misiones, informes, rendimientos del planificador): «Completar automáticamente» abajo.']))}</div>` : ''}
+      <h4>${esc(t(['Où on en est : types de la flotte et des missions', 'Where things stand: fleet and mission types', 'Stand: Typen der Flotte und der Missionen', 'Situación: tipos de la flota y de las misiones']))}</h4>
+      <p class="row">${summary} <span class="mt-small" title="${esc((s?.codes || []).join(' '))}">${esc(files)}${state ? ` · ${esc(state)}` : ''}</span></p>
+      ${table}
+      <p class="mt-small">${esc(t(['EUROCONTROL donne les vitesses (montée, croisière, approche, V2, Vat), le plafond, la distance franchissable et les distances de décollage et d’atterrissage, surtout pour les appareils civils ; ni consommation ni V1, VR, VNO : ces valeurs se règlent dans les profils du planificateur. Survoler une ligne pour toutes les valeurs.', 'EUROCONTROL gives speeds (climb, cruise, approach, V2, Vat), ceiling, range and take-off and landing distances, mostly for civil aircraft; no fuel consumption nor V1, VR, VNO: these are set in the planner profiles. Hover a row for all values.', 'EUROCONTROL liefert Geschwindigkeiten (Steigflug, Reiseflug, Anflug, V2, Vat), Gipfelhöhe, Reichweite sowie Start- und Landestrecken, vor allem für zivile Luftfahrzeuge; weder Verbrauch noch V1, VR, VNO: Diese stehen in den Profilen des Planers. Für alle Werte über eine Zeile fahren.', 'EUROCONTROL da las velocidades (ascenso, crucero, aproximación, V2, Vat), el techo, el alcance y las distancias de despegue y aterrizaje, sobre todo para aeronaves civiles; ni consumo ni V1, VR, VNO: se ajustan en los perfiles del planificador. Pasar sobre una fila para ver todos los valores.']))}</p>
+      <h4>${esc(t(['Quoi faire', 'What to do', 'Was zu tun ist', 'Qué hacer']))}</h4>
+      <p class="row"><button type="button" class="primary" data-ac="auto" data-icon="download"${busy || !todo.length ? ' disabled' : ''} title="${esc(todo.slice(0, 30).join(' ') + (todo.length > 30 ? '…' : ''))}">${esc((todo.length ? t(['Compléter automatiquement ({n})', 'Complete automatically ({n})', 'Automatisch ergänzen ({n})', 'Completar automáticamente ({n})'], {
+        n: todo.length
+      }) : t(['Compléter automatiquement', 'Complete automatically', 'Automatisch ergänzen', 'Completar automáticamente'])))}</button> <span class="mt-small">${esc(todo.length ? t(['Télécharge les fiches et performances qui manquent (réseau, quelques secondes par type), puis propose de recharger la page.', 'Downloads the missing records and performance (network, a few seconds per type), then offers to reload the page.', 'Lädt die fehlenden Datensätze und Leistungen herunter (Netz, einige Sekunden pro Typ) und bietet dann an, die Seite neu zu laden.', 'Descarga las fichas y rendimientos que faltan (red, unos segundos por tipo) y luego propone recargar la página.']) : t(['Rien à télécharger : la base couvre tous les types du tableau.', 'Nothing to download: the database covers every type of the table.', 'Nichts herunterzuladen: Die Datenbank deckt alle Typen der Tabelle ab.', 'Nada que descargar: la base cubre todos los tipos de la tabla.']))}</span></p>
+      ${fresh ? `<p class="row">${pill('ok', t(['base mise à jour', 'database updated', 'Datenbank aktualisiert', 'base actualizada']))} <button type="button" class="secondary" data-ac-reload data-icon="refresh">${esc(t(['Recharger la page pour la lire', 'Reload the page to read it', 'Seite neu laden, um sie zu lesen', 'Recargar la página para leerla']))}</button></p>` : ''}
+      <details class="mt-ac-more"><summary>${esc(t(['Télécharger d’autres types…', 'Download other types…', 'Weitere Typen herunterladen…', 'Descargar otros tipos…']))}</summary>
+      <label class="mt-small">${esc(t(['Codes OACI à télécharger (types et performances) : un par ligne, ou séparés par des virgules', 'ICAO codes to download (types and performance): one per line, or comma-separated', 'Herunterzuladende ICAO-Codes (Typen und Leistungen): einer pro Zeile oder durch Kommas getrennt', 'Códigos OACI que descargar (tipos y rendimientos): uno por línea o separados por comas']))}<br><textarea class="mt-ac-code" rows="3" cols="24" spellcheck="false" placeholder="H160&#10;EC35, A320" aria-label="${esc(t(['Codes OACI', 'ICAO codes', 'ICAO-Codes', 'Códigos OACI']))}"></textarea></label>
+      <p class="row"><button type="button" class="secondary" data-ac="one" data-icon="download"${busy ? ' disabled' : ''}>${esc(t(['Télécharger', 'Download', 'Herunterladen', 'Descargar']))}</button></p></details>
+      ${editUrl ? `<p class="mt-small" data-min-level="4"><a class="mt-link" href="${esc(editUrl)}">${esc(t(['Modifier la base à la main…', 'Edit the database by hand…', 'Datenbank von Hand bearbeiten…', 'Editar la base a mano…']))}</a> ${esc(t(['(Fichiers du dépôt › Types d’aéronefs (base OACI) ; types saisis dans les CR : Données du navigateur › Types ajoutés localement)', '(Repository files › Aircraft types (ICAO base); types entered in reports: Browser data › Locally added types)', '(Dateien des Repositorys › Luftfahrzeugmuster (ICAO-Datenbank); in Berichten erfasste Typen: Browserdaten › Lokal hinzugefügte Muster)', '(Archivos del repositorio › Tipos de aeronave (base OACI); tipos introducidos en informes: Datos del navegador › Tipos añadidos localmente)']))}</p>` : ''}
+      <p class="mt-small">${esc(t(['Fichiers écrits sur ce poste, lus par toutes les pages à leur prochain chargement : AircraftDB/aircraft_db.js (types) et aircraft_perf.js (performances), non versionnés (données OACI et EUROCONTROL) : à compléter sur chaque poste ou à recopier d’un poste à l’autre.', 'Files written on this computer, read by every page at its next load: AircraftDB/aircraft_db.js (types) and aircraft_perf.js (performance), not versioned (ICAO and EUROCONTROL data): complete them on each computer or copy them from one to another.', 'Auf diesem Rechner geschriebene Dateien, von allen Seiten beim nächsten Laden gelesen: AircraftDB/aircraft_db.js (Typen) und aircraft_perf.js (Leistungen), nicht versioniert (Daten von ICAO und EUROCONTROL): auf jedem Rechner ergänzen oder von Rechner zu Rechner kopieren.', 'Archivos escritos en este equipo, leídos por todas las páginas en su próxima carga: AircraftDB/aircraft_db.js (tipos) y aircraft_perf.js (rendimientos), no versionados (datos de la OACI y EUROCONTROL): completarlos en cada equipo o copiarlos de uno a otro.']))}</p>
+      ${s?.log?.length ? `<details class="mt-small"><summary>${esc(t(['Journal', 'Log', 'Protokoll', 'Registro']))}</summary><pre>${esc(s.log.slice(-12).join('\n'))}</pre></details>` : ''}</div>`;
+    if (keep.open) el.querySelector('.mt-ac-more').open = true;
+    if (keep.code) el.querySelector('.mt-ac-code').value = keep.code;
     el.querySelectorAll('[data-ac]').forEach(b => b.onclick = async () => {
       const codes = b.dataset.ac === 'one' ? [...new Set(el.querySelector('.mt-ac-code').value.toUpperCase().split(/[\s,;]+/)
-        .filter(c => /^[A-Z0-9]{2,4}$/.test(c)))] : lists2[b.dataset.ac];
+        .filter(c => /^[A-Z0-9]{2,4}$/.test(c)))] : todo;
       if (!codes.length) return;
+      b.disabled = true;
       await api({
         codes
       });
@@ -1462,6 +1808,9 @@
       const x = inv.xplane;
       return {
         has: !!x?.granted,
+        // dossier jamais choisi : facultatif pour une zone dont la MORA est calculée (relief, obstacles) ; exigé pour une
+        // zone trop étendue, dont la MORA vient d'X-Plane
+        optional: !x && !moraTooLarge(Z, id),
         airac: x?.cycle ? `${x.cycle.slice(2)}/${x.cycle.slice(0, 2)}` : '',
         text: !x ? t(['dossier d’X-Plane non choisi', 'X-Plane folder not chosen', 'X-Plane-Ordner nicht gewählt',
           'carpeta de X-Plane no elegida'
@@ -1490,6 +1839,7 @@
       has: files.length > 0,
       n: files.length,
       at,
+      checked: files.length ? aeroChecked()[`${id}|${src}`] || 0 : 0,
       airac,
       text: files.length ? `${files.length} ${t(['fichier(s)', 'file(s)', 'Datei(en)', 'archivo(s)'])}${airac ? ` — AIRAC ${airac}` : at ? ` — ${fmtDate(at, false)}` : ''}` : inv.folder ? t(['aucun fichier', 'no file', 'keine Datei', 'ningún archivo']) : t([
         'dossier SIA non autorisé', 'SIA folder not authorised', 'SIA-Ordner nicht erlaubt', 'carpeta SIA no autorizada'
@@ -1500,16 +1850,55 @@
   function aeroZoneState(Z, z) {
     const st = Object.fromEntries(z.sources.map(s => [s, aeroSourceStatus(Z, z.id, s)]));
     if (!Z.isOn(z.id)) return z.sources.some(s => s !== 'xplane' && st[s].has) ? 'data' : 'blank';
-    const need = z.sources.filter(s => Z.srcOn(z.id, s) && st[s].has !== null);
+    const need = z.sources.filter(s => Z.srcOn(z.id, s) && st[s].has !== null && !st[s].optional);
     return need.length && need.every(s => st[s].has) ? 'complete' : 'partial';
   }
-  /** Âge d'une source : ok (cycle en vigueur, ou moins de 28 jours), warn (plus ancien), none. */
+  // dernière vérification réussie d'une source téléchargée, par « zone|source » : une réponse « rien de changé » ne
+  // réécrit pas les fichiers (leur date reste ancienne) mais vaut mise à jour pour l'âge de la source
+  const AERO_CHECKED_KEY = 'aeroChecked:v1';
+  let aeroCheckedMemo = null;
+  /** Dates de vérification { 'zone|source': ms } (relues seulement si la clé a changé). */
+  function aeroChecked() {
+    let raw = null;
+    try {
+      raw = localStorage.getItem(AERO_CHECKED_KEY);
+    } catch {}
+    if (aeroCheckedMemo?.raw !== raw) {
+      let v = {};
+      try {
+        v = JSON.parse(raw || '{}') || {};
+      } catch {}
+      aeroCheckedMemo = {
+        raw,
+        v
+      };
+    }
+    return aeroCheckedMemo.v;
+  }
+  /** Note (at : date) ou retire (at nul) la vérification de « zone|source » ; keep(k) : filtre des clés gardées. */
+  function aeroCheckedSet(key, at, keep = null) {
+    const v = {
+      ...aeroChecked()
+    };
+    if (at) v[key] = at;
+    else delete v[key];
+    if (keep)
+      for (const k of Object.keys(v))
+        if (!keep(k)) delete v[k];
+    try {
+      localStorage.setItem(AERO_CHECKED_KEY, JSON.stringify(v));
+    } catch {}
+  }
+  /** Âge d'une source : ok (cycle en vigueur, ou fichiers ou vérification de moins de 28 jours), warn (plus ancien), none. */
   function aeroAge(S, st) {
     const eff = window.Airac?.cycle?.();
-    if (!st.has) return 'none';
+    if (!st.has) return st.optional ? 'opt' : 'none';
     if (S.age === 'airac') return st.airac && eff && st.airac >= eff.date ? 'ok' : 'warn';
     if (S.age === 'xplane') return !st.airac || !eff ? 'ok' : st.airac === eff.label ? 'ok' : 'warn';
-    return st.at && Date.now() - st.at < 28 * 864e5 ? 'ok' : st.at ? 'warn' : 'ok';
+    // tracks NAT : publiés deux fois par jour, à jour pendant 12 heures
+    if (S.age === 'nat') return Math.max(st.at || 0, st.checked || 0) > Date.now() - 12 * 36e5 ? 'ok' : 'warn';
+    const at = Math.max(st.at || 0, st.checked || 0);
+    return at && Date.now() - at < 28 * 864e5 ? 'ok' : at ? 'warn' : 'ok';
   }
   /** Panneau d'une zone : état, activation, sources (case, statut, licence, action : téléchargement, lien et mode
    *  d'emploi, dossier, calcul). */
@@ -1524,7 +1913,7 @@
       const S = Z.SOURCES[src];
       const url = Z.linkOf(src),
         link = url ? `<a class="mt-link" href="${esc(url)}" target="_blank" rel="noopener">${esc(t(['Ouvrir le site', 'Open the website', 'Website öffnen', 'Abrir el sitio']))} ↗</a>` : '';
-      if (src === 'dircam') return `<p class="mt-small">${esc(t(S.howto || ['', '']))}</p><p class="row">${link} <label class="secondary mt-file" data-icon="upload" title="${esc(t(['PDF de la MILAIP (section ENR 5.7) téléchargé sur le site de la DIRCAM : axes et points lus, anomalies à valider, puis écriture de miam-enr-5-7-tracks.xml dans le dossier SIA', 'MILAIP PDF (section ENR 5.7) downloaded from the DIRCAM website: tracks and points read, anomalies to check, then miam-enr-5-7-tracks.xml written to the SIA folder']))}">${esc(t(['Importer le PDF MILAIP…', 'Import the MILAIP PDF…', 'MILAIP-PDF importieren…', 'Importar el PDF MILAIP…']))}<input type="file" id="mtEnr57" accept=".pdf,application/pdf" hidden></label></p><div id="mtEnr57Msg">${enr57Html()}</div>`;
+      if (src === 'dircam') return `<p class="mt-small">${esc(t(S.howto || ['', '']))}</p><p class="row">${link} <label class="secondary mt-file" data-icon="upload" title="${esc(t(['PDF de la MILAIP (section ENR 5.7) téléchargé sur le site de la DIRCAM : axes et points lus, anomalies listées, miam-enr-5-7-tracks.xml écrit d’office dans le dossier SIA (l’ancien archivé)', 'MILAIP PDF (section ENR 5.7) downloaded from the DIRCAM website: tracks and points read, anomalies listed, miam-enr-5-7-tracks.xml written straight away to the SIA folder (old one archived)']))}">${esc(t(['Importer le PDF MILAIP…', 'Import the MILAIP PDF…', 'MILAIP-PDF importieren…', 'Importar el PDF MILAIP…']))}<input type="file" id="mtEnr57" accept=".pdf,application/pdf" hidden></label></p><div id="mtEnr57Msg">${enr57Html()}</div>`;
       if (src === 'sia') {
         const eff = window.Airac.cycle();
         return `<p class="mt-small">${esc(t(S.howto))}</p><p class="row"><a class="mt-link" href="${esc(eff.url)}" target="_blank" rel="noopener">SIA — AIRAC ${esc(eff.label)} ↗</a>
@@ -1561,7 +1950,7 @@
     }).join('');
     return `<h3>${esc(zName(z))} <span class="mt-small">(${esc(id.toUpperCase())})</span>${aeroLocked && id === aeroPinned ? ` <button type="button" class="secondary" data-zone-unpin title="${esc(t(['Le panneau suit de nouveau le survol de la carte (aussi : nouveau clic sur la zone, Échap)', 'The panel follows the map hover again (also: click the zone again, Esc)', 'Das Feld folgt wieder dem Überfahren der Karte (auch: erneuter Klick auf die Zone, Esc)', 'El panel vuelve a seguir el paso del ratón (también: nuevo clic en la zona, Esc)']))}">📌 ${esc(t(['Libérer', 'Release', 'Lösen', 'Soltar']))}</button>` : ''}</h3>
       <p><span class="mt-aero-dot" style="background:${AERO_COLOR[state]}${state === 'blank' ? ';opacity:.25' : ''}"></span> ${esc(t(AERO_STATE[state]))}
-        ${on ? `<button type="button" class="primary" data-zone-auto="${esc(id)}" data-icon="refresh" title="${esc(t(['Téléchargements, derniers ZIP de Téléchargements, reconstruction de la base, MORA de la zone : enchaînés', 'Downloads, latest ZIPs from Downloads, database rebuild, zone MORA: chained', 'Downloads, neueste ZIPs aus „Downloads“, Neuaufbau der Datenbank, MORA der Zone: verkettet', 'Descargas, últimos ZIP de Descargas, reconstrucción de la base, MORA de la zona: encadenados']))}">${esc(t(['Tout récupérer et recalculer', 'Fetch and recompute everything', 'Alles abrufen und neu berechnen', 'Obtener y recalcular todo']))}</button> ` : ''}<button type="button" class="${on ? 'secondary' : 'primary'}" data-zone-toggle="${esc(id)}">${esc(on ? t(['Désactiver la zone', 'Deactivate the zone', 'Zone deaktivieren', 'Desactivar la zona']) : t(['Activer la zone', 'Activate the zone', 'Zone aktivieren', 'Activar la zona']))}</button></p>
+        ${on ? `<button type="button" class="primary" data-zone-auto="${esc(id)}" data-icon="refresh" title="${esc(t(['Téléchargements, derniers ZIP de Téléchargements, reconstruction de la base, MORA de la zone : enchaînés', 'Downloads, latest ZIPs from Downloads, database rebuild, zone MORA: chained', 'Downloads, neueste ZIPs aus „Downloads“, Neuaufbau der Datenbank, MORA der Zone: verkettet', 'Descargas, últimos ZIP de Descargas, reconstrucción de la base, MORA de la zona: encadenados']))}">${esc(t(['Tout récupérer et recalculer', 'Fetch and recompute everything', 'Alles abrufen und neu berechnen', 'Obtener y recalcular todo']))}</button> ` : ''}<button type="button" class="${on ? 'secondary' : 'primary'}" data-zone-toggle="${esc(id)}">${esc(on ? t(['Désactiver la zone', 'Deactivate the zone', 'Zone deaktivieren', 'Desactivar la zona']) : t(['Activer la zone', 'Activate the zone', 'Zone aktivieren', 'Activar la zona']))}</button>${state !== 'blank' ? ` <button type="button" class="secondary" data-zone-purge="${esc(id)}" data-icon="trash" title="${esc(t(['Supprime les fichiers de la zone du dossier SIA et ses cases de mora.csv, puis la désactive : une nouvelle activation réinstalle tout', 'Deletes the zone files from the SIA folder and its mora.csv cells, then deactivates it: activating it again reinstalls everything', 'Löscht die Dateien der Zone aus dem SIA-Ordner und ihre Felder aus mora.csv und deaktiviert sie: eine neue Aktivierung installiert alles neu', 'Borra los archivos de la zona de la carpeta SIA y sus casillas de mora.csv y la desactiva: una nueva activación lo reinstala todo']))}">${esc(t(['Purger la zone…', 'Purge the zone…', 'Zone leeren…', 'Purgar la zona…']))}</button>` : ''}</p>
       <ul class="mt-aero-srcs">${rows}</ul>`;
   }
   /** Zones en GeoJSON (une entité par zone, état en propriété). */
@@ -1893,7 +2282,7 @@
         cyc: st.airac || (at ? fmtDate(at, false) : ''),
         days: s === 'xplane' ? null : days(at),
         size: files.reduce((n, f) => n + (f.size || 0), 0),
-        state: age === 'none' ? 'err' : age === 'warn' ? 'warn' : 'ok'
+        state: age === 'none' ? 'err' : age === 'warn' ? 'warn' : age === 'opt' ? 'opt' : 'ok'
       };
     }));
   }
@@ -1917,21 +2306,23 @@
       info = window.SiaBase.info();
     const all = aeroAgesRows(Z),
       n = {
-        ok: all.filter(r => r.state === 'ok').length,
+        ok: all.filter(r => r.state === 'ok' || r.state === 'opt').length,
         warn: all.filter(r => r.state === 'warn').length,
         err: all.filter(r => r.state === 'err').length
       },
       only = aeroProblemsOnly(),
-      rows = only ? all.filter(r => r.state !== 'ok') : all;
+      rows = only ? all.filter(r => r.state !== 'ok' && r.state !== 'opt') : all;
     const LEVEL = {
       err: 0,
       warn: 1,
-      ok: 2
+      opt: 2,
+      ok: 3
     };
     const STATE = {
       err: ['manquant', 'missing', 'fehlt', 'falta'],
       warn: ['ancien', 'old', 'alt', 'antiguo'],
-      ok: ['à jour', 'up to date', 'aktuell', 'al día']
+      ok: ['à jour', 'up to date', 'aktuell', 'al día'],
+      opt: ['facultatif', 'optional', 'optional', 'opcional']
     };
     el.innerHTML = `<p>${esc(t(['Cycle AIRAC en vigueur', 'AIRAC cycle in force', 'Gültiger AIRAC-Zyklus', 'Ciclo AIRAC vigente']))} : <b>${esc(eff.label)}</b> (${esc(fmtDate(eff.date, false))} → ${esc(fmtDate(eff.until, false))}) · ${esc(t(['suivant', 'next', 'nächster', 'siguiente']))} : <b>${esc(nxt.label)}</b> (${esc(fmtDate(nxt.date, false))}) · ${esc(t(['base aéronautique', 'aeronautical database', 'Luftfahrtdatenbank', 'base aeronáutica']))} : ${info ? `${esc(info.airac || '—')} (${esc(fmtDate(info.cachedAt))})` : '—'}</p>
       ${all.length ? `<p class="row mt-small"><b>${esc(t(['{n} contrôle(s) sans souci', '{n} check(s) without issue', '{n} Prüfung(en) ohne Befund', '{n} control(es) sin problemas'], { n: n.ok }))}</b> · ${n.err ? pill('err', t(['{n} problème(s)', '{n} problem(s)', '{n} Problem(e)', '{n} problema(s)'], { n: n.err })) : ''} ${n.warn ? pill('warn', t(['{n} avertissement(s)', '{n} warning(s)', '{n} Warnung(en)', '{n} aviso(s)'], { n: n.warn })) : ''}
@@ -1961,7 +2352,7 @@
         key: 'state',
         label: t(['État', 'State', 'Status', 'Estado']),
         sortValue: r => LEVEL[r.state],
-        html: (v, r) => pill(r.state, t(STATE[r.state]))
+        html: (v, r) => pill(r.state === 'opt' ? 'info' : r.state, t(STATE[r.state]))
       }, {
         key: 'zoneName',
         label: t(['Zone', 'Zone', 'Zone', 'Zona'])
@@ -2030,8 +2421,17 @@
           S.kind === 'local' ? ['', t(['Choisir le dossier…', 'Choose the folder…', 'Ordner wählen…', 'Elegir la carpeta…'])] : [t([
             'télécharger les fichiers', 'download the files', 'Dateien herunterladen', 'descargar los archivos'
           ]), t(['Déposer les fichiers…', 'Drop the files…', 'Dateien ablegen…', 'Depositar los archivos…'])];
+        // source facultative (dossier X-Plane d'une zone à MORA calculée) : proposée, pas à faire — en fin de liste, hors du
+        // compte des actions restantes
+        // X-Plane, dossier déjà choisi : « Choisir le dossier… » n'y changeait rien — autorisation à renouveler (après un
+        // rechargement) : on la redemande pour ce dossier ; autorisé mais « Custom Data » d'un ancien cycle : la mise à jour
+        // se fait dans X-Plane (Navigraph), simple information hors du compte des actions restantes
+        const xp = s === 'xplane' ? aeroInv?.xplane : null;
+        if (xp?.granted) return `<li data-optional>${pill('warn', t(['ancien', 'old', 'alt', 'antiguo']))} <b>${esc(zName(z))} — X-Plane</b> : ${esc(t(['données de navigation de « Custom Data » du cycle {c} (en vigueur : {e}) : à mettre à jour dans X-Plane (Navigraph) ; la base les relira à sa prochaine reconstruction', 'navigation data in “Custom Data” from cycle {c} (in force: {e}): to update in X-Plane (Navigraph); the database reads them at its next rebuild', 'Navigationsdaten in „Custom Data“ aus Zyklus {c} (gültig: {e}): in X-Plane aktualisieren (Navigraph); die Datenbank liest sie beim nächsten Neuaufbau', 'datos de navegación de «Custom Data» del ciclo {c} (vigente: {e}): actualizar en X-Plane (Navigraph); la base los leerá en su próxima reconstrucción'], { c: st.airac, e: eff.label }))}</li>`;
+        if (xp) return `<li>${pill('err', t(['à ré-autoriser', 'to re-authorise', 'erneut erlauben', 'por reautorizar']))} <b>${esc(zName(z))} — X-Plane</b> : ${esc(xp.name)} <button type="button" class="secondary mt-btn-sm" data-todo-xp-auth>${esc(t(['Ré-autoriser le dossier…', 'Re-authorise the folder…', 'Ordner erneut erlauben…', 'Reautorizar la carpeta…']))}</button></li>`;
+        if (age === 'opt') return `<li data-optional>${pill('info', t(['facultatif', 'optional', 'optional', 'opcional']))} <b>${esc(zName(z))} — ${esc(t(S.label).split(/ — | \(/)[0])}</b> : ${esc(t(['seulement si X-Plane est installé sur ce poste (données de navigation du simulateur, MORA des grandes zones)', 'only if X-Plane is installed on this computer (simulator navigation data, MORA of large zones)', 'nur wenn X-Plane auf diesem Rechner installiert ist (Navigationsdaten des Simulators, MORA großer Zonen)', 'solo si X-Plane está instalado en este equipo (datos de navegación del simulador, MORA de las zonas grandes)']))} <button type="button" class="secondary mt-btn-sm" data-todo-zone="${esc(z.id)}" data-todo-src="${esc(s)}">${esc(what[1])}</button></li>`;
         return `<li>${pill(age === 'none' ? 'err' : 'warn', age === 'none' ? t(['manquant', 'missing', 'fehlt', 'falta']) : t(['ancien', 'old', 'alt', 'antiguo']))} <b>${esc(zName(z))} — ${esc(t(S.label).split(/ — | \(/)[0])}</b> : ${url && what[0] ? `<a class="mt-link" href="${esc(url)}" target="_blank" rel="noopener">${esc(what[0])} ↗</a> / ` : ''}<button type="button" class="secondary mt-btn-sm" data-todo-zone="${esc(z.id)}" data-todo-src="${esc(s)}">${esc(what[1])}</button></li>`;
-      })).filter(Boolean);
+      })).filter(Boolean).sort((x, y) => x.startsWith('<li data-optional') - y.startsWith('<li data-optional'));
     el.dataset.subtitle = t([
       'Ce que la suite ne peut pas faire seule : commandes, téléchargements à la main, dossiers à choisir — une ligne par source des zones actives',
       'What the suite cannot do on its own: orders, manual downloads, folders to choose — one line per source of the active zones',
@@ -2040,7 +2440,20 @@
     ]);
     if (auto) lines.unshift(`<li>${pill('info', t(['automatique', 'automatic', 'automatisch', 'automático']))} ${esc(t(['{n} source(s) téléchargée(s) ou calculée(s) par « Activer » sous la carte (téléchargements, MORA)', '{n} source(s) downloaded or computed by “Activate” under the map (downloads, MORA)', '{n} Quelle(n), die „Aktivieren“ unter der Karte lädt oder berechnet (Downloads, MORA)', '{n} fuente(s) descargada(s) o calculada(s) por «Activar» bajo el mapa (descargas, MORA)'], { n: auto }))}</li>`);
     el.innerHTML = `<h3>${esc(t(['Actions à faire', 'Actions to do', 'Zu erledigen', 'Acciones pendientes']))}</h3>${lines.length ? `<ul class="mt-aero-todo">${lines.join('')}</ul>` : `<p class="mt-small">${pill('ok', t(['rien à faire : toutes les sources des zones actives sont présentes et à jour', 'nothing to do: all sources of the active zones are present and up to date', 'nichts zu tun: alle Quellen der aktiven Zonen sind vorhanden und aktuell', 'nada que hacer: todas las fuentes de las zonas activas están presentes y al día']))}</p>`}`;
-    el.onclick = e => {
+    el.onclick = async e => {
+      // dossier d'X-Plane déjà choisi : autorisation redemandée (dans le geste du clic), état et liste redessinés
+      if (e.target.closest('[data-todo-xp-auth]')) {
+        const st = await window.FileAccess?.status?.('__xpnav');
+        try {
+          if (st?.handle) await st.handle.requestPermission({
+            mode: 'read'
+          });
+        } catch {
+          /* refus : la ligne reste */
+        }
+        aeroInv = await aeroInventory();
+        return aeroRefresh(Z);
+      }
       const b = e.target.closest('[data-todo-src]');
       if (b) aeroRowAction(Z, b.dataset.todoZone, b.dataset.todoSrc);
     };
@@ -2060,20 +2473,22 @@
   };
   let aeroAutoBusy = false;
   /** Mise en place automatique d'une seule zone (aeroAutoZones). */
-  const aeroAutoZone = (Z, id) => aeroAutoZones(Z, [id]);
-  /** Mise en place de zones actives : téléchargements de leurs sources, derniers ZIP de Téléchargements, une seule
-   *  reconstruction de la base, puis MORA de chaque zone qui en manque — seulement si la base a été reconstruite (relief
-   *  sans obstacles sinon) ; résumé en notification, reliquat sous la carte (aeroTodo). */
-  async function aeroAutoZones(Z, ids) {
+  const aeroAutoZone = (Z, id, opts) => aeroAutoZones(Z, [id], opts);
+  /** Mise en place de zones actives, idempotente : téléchargement des sources qui ne sont pas à jour (toutes, en
+   *  requêtes conditionnelles, si force : « Tout récupérer et recalculer »), derniers ZIP de Téléchargements s'ils
+   *  manquent, base relue une seule fois et seulement si ses entrées ont changé (SiaBase.upToDate), puis MORA de chaque
+   *  zone qui en manque — seulement sur une base à jour (relief sans obstacles sinon) ; résumé en notification, reliquat
+   *  sous la carte (aeroTodo). Refaite sans rien de nouveau, elle ne télécharge, n'écrit et ne recalcule rien. */
+  async function aeroAutoZones(Z, ids, {
+    force = false
+  } = {}) {
     ids = ids.filter(id => Z.byId(id) && Z.isOn(id));
     if (aeroAutoBusy || !ids.length) return;
     aeroAutoBusy = true;
     aeroSelShow(Z);
     const steps = [],
       moras = [];
-    let rebuilt = false,
-      fetched = false,
-      sia = false;
+    let sia = false;
     const xpMora = ((await window.SiaBase.get())?.moraCells || []).some(c => c.src === 'xplane');
     for (const id of ids) {
       const z = Z.byId(id),
@@ -2082,23 +2497,18 @@
         const S = Z.SOURCES[s];
         if (!Z.srcOn(id, s) || !S?.readable) continue;
         const fresh = aeroAge(S, aeroSourceStatus(Z, id, s)) === 'ok';
-        if (S.kind === 'download') steps.push([many + t(S.label), async () => {
-          await aeroFetch(S.provider, S.args || [id], null, id, s);
-          fetched = true;
-        }]);
+        if (S.kind === 'download') {
+          if (force || !fresh) steps.push([many + t(S.label), () => aeroFetch(S.provider, S.args || [id], null, id, s)]);
+        }
         // le ZIP du SIA vaut pour toute la France : une seule fois
         else if (s === 'sia' && !fresh && !sia) {
           sia = true;
-          steps.push(['SIA', async () => {
-            if (await siaFetchZip({
-                quiet: true
-              })) rebuilt = true;
-          }]);
-        } else if (S.downloads && !fresh) steps.push([many + t(S.label), async () => {
-          if (await aeroDrop(id, s, {
-              auto: true
-            })) rebuilt = true;
-        }]);
+          steps.push(['SIA', () => siaFetchZip({
+            quiet: true
+          })]);
+        } else if (S.downloads && !fresh) steps.push([many + t(S.label), () => aeroDrop(id, s, {
+          auto: true
+        })]);
       }
       // MORA : calculée pour une zone ordinaire ; grande zone : celle d'X-Plane, si la base en a
       if (z.sources.includes('mora') && Z.srcOn(id, 'mora') && !aeroSourceStatus(Z, id, 'mora').has && (!moraTooLarge(Z, id) || xpMora))
@@ -2129,11 +2539,15 @@
         }
       }
       job?.set?.(steps.length, total, t(['Base aéronautique', 'Aeronautical database', 'Luftfahrtdatenbank', 'Base aeronáutica']));
-      if (!job?.cancelled && (!rebuilt || fetched)) await basePanelApi?.reread(true);
+      // base relue seulement si ses entrées ont changé (fichier ajouté, retiré ou modifié, zone ou source changée, nouveau
+      // lecteur) ; déjà relue par un ZIP du SIA ou un dépôt de cette mise en place : à jour, pas relue une seconde fois
+      const current = !job?.cancelled && await window.SiaBase.upToDate?.();
+      if (!job?.cancelled && !current) await basePanelApi?.reread(true);
       // base vraiment relue ? (dossier SIA non choisi, lecture annulée : le bloc de la base le dit)
-      const built = (window.SiaBase.info()?.cachedAt || '') !== before;
+      const built = (window.SiaBase.info()?.cachedAt || '') !== before,
+        ready = built || current;
       const moraDone = [];
-      if (built)
+      if (ready)
         for (const [i, id] of moras.entries()) {
           if (job?.cancelled) break;
           job?.set?.(steps.length + 1 + i, total, `MORA — ${zName(Z.byId(id))}`);
@@ -2154,8 +2568,12 @@
       } catch {}
       aeroInv = await aeroInventory();
       aeroRefresh(Z);
-      const left = document.querySelectorAll('#mtAeroTodo .mt-aero-todo>li [data-todo-src]').length;
-      const parts = [built ? t(['base reconstruite', 'database rebuilt', 'Datenbank neu aufgebaut', 'base reconstruida']) : t([
+      const left = document.querySelectorAll(
+        '#mtAeroTodo .mt-aero-todo>li:not([data-optional]) [data-todo-src], #mtAeroTodo [data-todo-xp-auth]').length;
+      const parts = [built ? t(['base reconstruite', 'database rebuilt', 'Datenbank neu aufgebaut', 'base reconstruida']) : current ?
+        t(['base déjà à jour, rien de changé', 'database already up to date, nothing changed',
+          'Datenbank bereits aktuell, nichts geändert', 'base ya al día, nada cambiado'
+        ]) : t([
           'base non reconstruite (voir « Base aéronautique ») : MORA non calculée',
           'database not rebuilt (see “Aeronautical database”): MORA not computed',
           'Datenbank nicht neu aufgebaut (siehe „Luftfahrtdatenbank“): MORA nicht berechnet',
@@ -2169,7 +2587,7 @@
           n: left
         }) : t(['rien d’autre à faire', 'nothing else to do', 'nichts weiter zu tun', 'nada más que hacer'])
       ].filter(Boolean);
-      window.AppFramework?.notify?.(`${zones(ids)} : ${parts.join(' ; ')}.`, built ? 'ok' : 'warn');
+      window.AppFramework?.notify?.(`${zones(ids)} : ${parts.join(' ; ')}.`, ready ? 'ok' : 'warn');
       if (left) document.getElementById('mtAeroTodo')?.scrollIntoView({
         block: 'center',
         behavior: 'smooth'
@@ -2377,6 +2795,8 @@
           xp = (b?.moraCells || []).filter(x => x.src === 'xplane' && !inCsv.has(key(x)));
         await window.SiaBase.patch?.({
           moraCells: merged.concat(xp)
+        }, {
+          touched: ['mora.csv']
         });
       }
       moraMsg = pill(st.complete ? 'ok' : 'info', st.complete ? t(['MORA de {z} : {n} bloc(s) calculé(s), mora.csv écrit — à committer',
@@ -2537,7 +2957,7 @@
     if (r.error) return `<p>${pill('err', r.error)}</p>`;
     const issues = r.issues.length ? `<details class="mt-small"><summary>${esc(t(['{n} anomalie(s) à vérifier', '{n} anomaly(ies) to check', '{n} Auffälligkeit(en) zu prüfen', '{n} anomalía(s) que verificar'], { n: r.issues.length }))}</summary><ul>${r.issues.map(i => `<li>p. ${esc(i.page)} · ${esc(i.kind)} — ${esc(i.text)}</li>`).join('')}</ul></details>` : `<p class="mt-small">${pill('ok', t(['aucune anomalie relevée', 'no anomaly found', 'keine Auffälligkeit', 'ninguna anomalía']))}</p>`;
     return `<p class="mt-small">${pill(r.tracks.length ? 'ok' : 'warn', t(['{n} axe(s) lu(s) dans {f}', '{n} track(s) read from {f}', '{n} Strecke(n) aus {f} gelesen', '{n} eje(s) leído(s) en {f}'], { n: r.tracks.length, f: r.file }))}</p>${issues}
-      ${r.written ? `<p>${pill('ok', t(['miam-enr-5-7-tracks.xml écrit (ancien archivé) et base mise à jour', 'miam-enr-5-7-tracks.xml written (old one archived) and database updated', 'miam-enr-5-7-tracks.xml geschrieben (alte archiviert), Datenbank aktualisiert', 'miam-enr-5-7-tracks.xml escrito (anterior archivado) y base actualizada']))}</p>` : r.tracks.length ? `<p class="row"><label class="mt-small">${esc(t(['Édition', 'Edition', 'Ausgabe', 'Edición']))} <input type="text" id="mtEnr57Edition" size="26" value="${esc(r.edition)}" spellcheck="false"></label> <button type="button" class="primary" id="mtEnr57Write" data-icon="save">${esc(t(['Écrire miam-enr-5-7-tracks.xml', 'Write miam-enr-5-7-tracks.xml', 'miam-enr-5-7-tracks.xml schreiben', 'Escribir miam-enr-5-7-tracks.xml']))}</button></p>` : ''}`;
+      ${r.written ? `<p>${pill('ok', t(['miam-enr-5-7-tracks.xml écrit (ancien archivé) et base mise à jour', 'miam-enr-5-7-tracks.xml written (old one archived) and database updated', 'miam-enr-5-7-tracks.xml geschrieben (alte archiviert), Datenbank aktualisiert', 'miam-enr-5-7-tracks.xml escrito (anterior archivado) y base actualizada']))}</p>` : r.tracks.length ? `<p class="row"><label class="mt-small">${esc(t(['Édition', 'Edition', 'Ausgabe', 'Edición']))} <input type="text" id="mtEnr57Edition" size="26" value="${esc(r.edition)}" spellcheck="false"></label> <button type="button" class="primary" id="mtEnr57Write" data-icon="save">${esc(t(['Écrire miam-enr-5-7-tracks.xml', 'Write miam-enr-5-7-tracks.xml', 'miam-enr-5-7-tracks.xml schreiben', 'Escribir miam-enr-5-7-tracks.xml']))}</button></p>${r.autoWhy ? `<p class="mt-small">${pill('warn', r.autoWhy)}</p>` : ''}` : ''}`;
   }
 
   /** Redessine l'état de l'import ENR 5.7 dans #mtEnr57Msg (s'il est affiché). */
@@ -2623,12 +3043,21 @@
       job?.end?.();
     }
     enr57Show();
+    // axes lus : XML écrit d'office (édition lue dans le PDF, anomalies toujours listées) ; « Écrire… » ne reste que si
+    // l'écriture n'a pas pu se faire (dossier SIA à autoriser d'un clic)
+    if (enr57?.parsed && !enr57.written) await writeEnr57({
+      auto: true
+    });
   }
   /** Écrit miam-enr-5-7-tracks.xml (édition saisie) dans le dossier SIA, l'ancien archivé dans _archives/, met à jour la
-   *  base (SiaBase.patch) et la carte des zones ; échec en notification. */
-  async function writeEnr57() {
+   *  base (SiaBase.patch) et la carte des zones ; échec en notification (auto : écriture qui suit l'import, raison
+   *  affichée sous le bouton « Écrire… » resté en place). */
+  async function writeEnr57({
+    auto = false
+  } = {}) {
     const r = enr57;
     if (!r?.parsed) return;
+    r.autoWhy = '';
     try {
       const dir = await folder('__sia', true);
       if (!dir) throw new Error(t(['dossier SIA non autorisé : l’autoriser (Installation › Sources et dossiers), puis réessayer',
@@ -2646,14 +3075,18 @@
       await writeAt(dir, name, xml);
       await window.SiaBase.patch?.({
         aarXml: xml
+      }, {
+        touched: [name]
       });
       r.written = true;
       aeroInv = await aeroInventory();
       aeroRefresh(await window.SiaBase.zones());
     } catch (e) {
-      window.AppFramework?.notify?.(explain(e, t(['Axes de ravitaillement non écrits', 'Refuelling tracks not written',
+      const why = explain(e, t(['Axes de ravitaillement non écrits', 'Refuelling tracks not written',
         'Betankungsstrecken nicht geschrieben', 'Ejes de reabastecimiento no escritos'
-      ])), 'err');
+      ]));
+      if (auto) r.autoWhy = why;
+      else window.AppFramework?.notify?.(why, 'err');
     }
     enr57Show();
   }
@@ -2732,16 +3165,34 @@
         'SIA-Ordner nicht freigegeben: Installation › Quellen und Ordner',
         'carpeta SIA no autorizada: Instalación › Fuentes y carpetas'
       ]));
-      for (const o of out) await writeAt(dir, `zones/${zone}/${o.name}`, o.data);
+      // fichier déjà présent à l'identique : pas réécrit (sa date ne change pas, la base n'a pas à être relue)
+      const same = [];
+      for (const o of out) {
+        const bytes = o.data instanceof Uint8Array ? o.data : new Uint8Array(o.data),
+          old = await fileAt(dir, `zones/${zone}/${o.name}`);
+        if (old && old.size === bytes.length && sameBytes(new Uint8Array(await old.arrayBuffer()), bytes)) same.push(o.name);
+        else await writeAt(dir, `zones/${zone}/${o.name}`, bytes);
+      }
+      if (same.length === out.length) {
+        say(t(['{s} : fichiers déjà installés à l’identique ({l}) — rien de changé, base gardée.',
+          '{s}: files already installed, identical ({l}) — nothing changed, database kept.',
+          '{s}: Dateien bereits identisch installiert ({l}) — nichts geändert, Datenbank behalten.',
+          '{s}: archivos ya instalados idénticos ({l}) — nada cambiado, base conservada.'
+        ], {
+          s: t(S.label || [src, src]),
+          l: same.join(', ')
+        }), 'ok');
+        return false;
+      }
       say(t(['{n} fichier(s) {s} rangé(s) dans data/sia/zones/{z}/ : {l}{i} — reconstruction de la base…',
         '{n} {s} file(s) stored in data/sia/zones/{z}/: {l}{i} — rebuilding the database…',
         '{n} {s}-Datei(en) in data/sia/zones/{z}/ abgelegt: {l}{i} — Datenbank wird neu aufgebaut…',
         '{n} archivo(s) {s} guardado(s) en data/sia/zones/{z}/: {l}{i} — reconstruyendo la base…'
       ], {
-        n: out.length,
+        n: out.length - same.length,
         s: t(S.label || [src, src]),
         z: zone,
-        l: out.map(o => o.name).join(', '),
+        l: out.filter(o => !same.includes(o.name)).map(o => o.name).join(', '),
         i: ignored.length ? t([' (écartés : {l})', ' (left out: {l})', ' (ausgelassen: {l})', ' (descartados: {l})'], {
           l: ignored.join(', ')
         }) : ''
@@ -2759,7 +3210,8 @@
     }
   }
   /** Fait télécharger la source par le lanceur (POST /__setup/aero-fetch { provider, args }) ; btn désactivé pendant ce temps,
-   *  compte rendu gardé par « zone|source » (aeroFetchMsg) et affiché au panneau, puis inventaire et carte rafraîchis. */
+   *  compte rendu gardé par « zone|source » (aeroFetchMsg) et affiché au panneau, puis inventaire et carte rafraîchis.
+   *  Le lanceur ne réécrit pas un fichier inchangé (unchanged) ; la vérification réussie est notée (aeroChecked). */
   async function aeroFetch(provider, args, btn, zone = '', src = '') {
     const say = (m, k = 'warn') => window.AppFramework.notify(m, k),
       key = `${zone}|${src}`;
@@ -2794,9 +3246,16 @@
       });
       if (!r.ok) throw new Error(r.status);
       res = await r.json();
-      if (res.files.length) say(t(['Téléchargé : {f}.', 'Downloaded: {f}.', 'Heruntergeladen: {f}.', 'Descargado: {f}.'], {
-        f: res.files.map(f => f.name + (f.features != null ? ` (${f.features})` : '')).join(', ')
+      const changed = res.files.filter(f => !f.unchanged);
+      if (changed.length) say(t(['Téléchargé : {f}.', 'Downloaded: {f}.', 'Heruntergeladen: {f}.', 'Descargado: {f}.'], {
+        f: changed.map(f => f.name + (f.features != null ? ` (${f.features})` : '')).join(', ')
       }), res.errors.length ? 'warn' : 'ok');
+      else if (res.files.length) say(t(['Déjà à jour, rien de changé : {f}.', 'Already up to date, nothing changed: {f}.',
+        'Bereits aktuell, nichts geändert: {f}.', 'Ya al día, nada cambiado: {f}.'
+      ], {
+        f: res.files.map(f => f.name).join(', ')
+      }), 'ok');
+      if (zone && src && res.files.length && !res.errors.length) aeroCheckedSet(`${zone}|${src}`, Date.now());
       if (res.errors.length) say(res.errors.join(' · '), 'err');
       if (!res.files.length && !res.errors.length) say(t(['Rien à télécharger pour cette zone.', 'Nothing to download for this zone.',
         'Für diese Zone nichts herunterzuladen.', 'Nada que descargar para esta zona.'
@@ -2816,11 +3275,14 @@
     if (!res) show(pill('err', t(['lanceur injoignable', 'launcher unreachable', 'Starter nicht erreichbar', 'lanzador inaccesible'])));
     else {
       const seen = !zone || aeroSourceStatus(Z, zone, src).has;
-      show([res.files.length ? pill('ok', t(['{n} fichier(s) téléchargé(s)', '{n} file(s) downloaded', '{n} Datei(en) heruntergeladen',
+      const n = res.files.filter(f => !f.unchanged).length;
+      show([n ? pill('ok', t(['{n} fichier(s) téléchargé(s)', '{n} file(s) downloaded', '{n} Datei(en) heruntergeladen',
           '{n} archivo(s) descargado(s)'
         ], {
-          n: res.files.length
-        })) : '', res.errors.length ? pill('err', res.errors.join(' · ')) : '', !res.files.length && !res.errors.length ? pill(
+          n
+        })) : res.files.length ? pill('ok', t(['à jour, rien de changé', 'up to date, nothing changed', 'aktuell, nichts geändert',
+          'al día, nada cambiado'
+        ])) : '', res.errors.length ? pill('err', res.errors.join(' · ')) : '', !res.files.length && !res.errors.length ? pill(
           'info', t(['rien à télécharger', 'nothing to download', 'nichts herunterzuladen', 'nada que descargar'])) : '', res.files
         .length && !seen ? pill('warn', t([
           'écrits dans data/sia du lanceur, mais le dossier SIA de ce navigateur n’est pas autorisé ou en est un autre : « Dossier SIA » ci-dessous',
@@ -2831,6 +3293,104 @@
       ].join(' '));
     }
     aeroRefresh(Z);
+    return res ? res.files.filter(f => !f.unchanged).length : 0;
+  }
+  /** Vrai si deux tableaux d'octets sont identiques. */
+  function sameBytes(a, b) {
+    if (a.length !== b.length) return false;
+    for (let i = 0; i < a.length; i++)
+      if (a[i] !== b[i]) return false;
+    return true;
+  }
+  /** « Purger la zone… » : après confirmation, supprime du dossier SIA les fichiers de la zone (toutes sources ; pour la
+   *  France, les XML du SIA et les axes ENR 5.7), retire ses cases de mora.csv (ancien fichier archivé dans _archives/),
+   *  oublie ses marques (mise en place faite, calcul de MORA par blocs, vérifications), la désactive, puis relit la
+   *  base si elle existe. Le dossier X-Plane, extérieur, n'est jamais touché. Une nouvelle activation réinstalle tout. */
+  async function aeroPurgeZone(Z, id) {
+    const say = (m, k) => window.AppFramework?.notify?.(m, k);
+    aeroInv = await aeroInventory();
+    const z = Z.byId(id),
+      files = (aeroInv.files || []).filter(f => Z.fileSource(f.rel)?.zone === id),
+      cells = moraCount(Z, id, aeroInv);
+    if (!confirm(t([
+        'Purger la zone {z} : {n} fichier(s) supprimé(s) du dossier SIA{m}, zone désactivée, base relue. Une nouvelle activation réinstalle tout. Continuer ?',
+        'Purge the zone {z}: {n} file(s) deleted from the SIA folder{m}, zone deactivated, database read again. Activating it again reinstalls everything. Continue?',
+        'Zone {z} leeren: {n} Datei(en) aus dem SIA-Ordner gelöscht{m}, Zone deaktiviert, Datenbank neu gelesen. Eine neue Aktivierung installiert alles neu. Fortfahren?',
+        'Purgar la zona {z}: {n} archivo(s) borrado(s) de la carpeta SIA{m}, zona desactivada, base releída. Una nueva activación lo reinstala todo. ¿Continuar?'
+      ], {
+        z: zName(z),
+        n: files.length,
+        m: cells ? t([', {c} case(s) retirée(s) de mora.csv', ', {c} cell(s) removed from mora.csv',
+          ', {c} Feld(er) aus mora.csv entfernt',
+          ', {c} casilla(s) retirada(s) de mora.csv'
+        ], {
+          c: cells
+        }) : ''
+      }))) return;
+    try {
+      const dir = await folder('__sia', true);
+      if ((files.length || cells) && !dir) throw new Error(t(['dossier SIA non autorisé : Installation › Sources et dossiers',
+        'SIA folder not authorised: Installation › Sources and folders',
+        'SIA-Ordner nicht freigegeben: Installation › Quellen und Ordner',
+        'carpeta SIA no autorizada: Instalación › Fuentes y carpetas'
+      ]));
+      let removed = 0;
+      for (const f of files) try {
+        const bits = f.rel.split('/');
+        let h = dir;
+        for (const b of bits.slice(0, -1)) h = await h.getDirectoryHandle(b);
+        await h.removeEntry(bits[bits.length - 1]);
+        removed++;
+      } catch {
+        /* déjà absent */
+      }
+      if (cells) {
+        const old = await fileAt(dir, 'mora.csv'),
+          text = old ? await old.text() : '';
+        if (old) {
+          const keys = zoneCellKeys(Z, id),
+            keep = window.SiaBase.parseMora(text).filter(c => !keys.has(`${Math.floor(c.lat)}|${Math.floor(c.lon)}`)).map(c => ({
+              ...c,
+              keepSource: true
+            }));
+          await writeAt(dir, `_archives/mora_${new Date(old.lastModified).toISOString().slice(0, 10)}.csv`, await old.arrayBuffer());
+          await writeAt(dir, 'mora.csv', window.SiaBase.moraCsv(keep, {
+            airac: window.SiaBase.moraCycle(text)
+          }));
+        }
+      }
+      // marques de la zone oubliées : sa prochaine activation refait toute la mise en place
+      const done = aeroAutoDone();
+      done.delete(id);
+      try {
+        localStorage.setItem(AERO_AUTO_KEY, JSON.stringify([...done]));
+        localStorage.removeItem(ROLL_KEY(id));
+      } catch {}
+      aeroCheckedSet('', 0, k => !k.startsWith(`${id}|`));
+      for (const k of Object.keys(aeroFetchMsg))
+        if (k.startsWith(`${id}|`)) delete aeroFetchMsg[k];
+      if (Z.isOn(id)) Z.setZone(id, false);
+      aeroInv = await aeroInventory();
+      aeroRefresh(Z);
+      // base existante : relue sans la zone (ses entrées ont changé)
+      if (window.SiaBase.info() && !(await window.SiaBase.upToDate?.())) await basePanelApi?.reread(true);
+      say(t(['Zone {z} purgée : {n} fichier(s) supprimé(s){m}.', 'Zone {z} purged: {n} file(s) deleted{m}.',
+        'Zone {z} geleert: {n} Datei(en) gelöscht{m}.',
+        'Zona {z} purgada: {n} archivo(s) borrado(s){m}.'
+      ], {
+        z: zName(z),
+        n: removed,
+        m: cells ? t([', {c} case(s) de MORA retirée(s)', ', {c} MORA cell(s) removed', ', {c} MORA-Feld(er) entfernt',
+          ', {c} casilla(s) de MORA retirada(s)'
+        ], {
+          c: cells
+        }) : ''
+      }), 'ok');
+    } catch (e) {
+      say(explain(e, t(['Zone non purgée', 'Zone not purged', 'Zone nicht geleert', 'Zona no purgada'])), 'err');
+      aeroInv = await aeroInventory();
+      aeroRefresh(Z);
+    }
   }
 
   /** Dessine le bloc « Données aéronautiques » : carte des zones et panneau, actions à faire, tableau des sources et bloc
@@ -2855,7 +3415,7 @@
       <div class="repo-card" id="mtAeroTodo" data-icon="check"></div>
       <div class="repo-card" id="mt-aero-base" data-icon="refresh" data-subtitle="${esc(t(['Toutes les sources cochées des zones actives : cycle, âge, taille ; un clic sur une ligne met sa source à jour. « Tout recalculer » reconstruit la base (studio, cartes de vol, profil vertical, espaces à activer) ; « Purger le cache » la vide.', 'All ticked sources of the active zones: cycle, age, size; a click on a row updates its source. “Recompute all” rebuilds the database (studio, flight maps, vertical profile, airspace to activate); “Purge the cache” empties it.', 'Alle angehakten Quellen der aktiven Zonen: Zyklus, Alter, Größe; ein Klick auf eine Zeile aktualisiert ihre Quelle. „Alles neu berechnen“ baut die Datenbank neu auf; „Cache leeren“ leert sie.', 'Todas las fuentes marcadas de las zonas activas: ciclo, antigüedad, tamaño; un clic en una fila actualiza su fuente. «Recalcular todo» reconstruye la base; «Vaciar la caché» la vacía.']))}"><h3>${esc(t(['Base aéronautique : sources, cycles et reconstruction', 'Aeronautical database: sources, cycles and rebuild', 'Luftfahrtdatenbank: Quellen, Zyklen und Neuaufbau', 'Base aeronáutica: fuentes, ciclos y reconstrucción']))}</h3><div id="mtAeroAges"></div><div id="mtBasePanel"></div></div>
       <div class="repo-card" id="mt-aero-mora" data-icon="chart" data-subtitle="${esc(t(['Sources de MORA : grille calculée (relief, sommets, obstacles ; ici pour la France et les missions, ou zone par zone dans le panneau), X-Plane (grille mondiale) ; la grille calculée a la priorité.', 'MORA sources: computed grid (terrain, peaks, obstacles; here for France and the missions, or zone by zone in the panel), X-Plane (world grid); the computed grid has priority.']))}"><h3>MORA</h3>
-        <p class="row"><button type="button" class="secondary" id="mtMora"${moraBusy ? ' disabled' : ''} data-icon="refresh" title="${esc(t(['Obstacles du nouveau cycle, relief du mora.csv actuel — sans réseau, immédiat', 'New-cycle obstacles, terrain from the current mora.csv — offline, immediate']))}">${esc(t(['Recalcul simple', 'Simple recalculation', 'Einfache Neuberechnung', 'Recálculo simple']))}</button><button type="button" class="secondary" id="mtMoraXp"${moraBusy ? ' disabled' : ''} data-icon="download" title="${esc(t(['Cases de la MORA d’X-Plane (zones actives, source X-Plane) absentes de mora.csv', 'X-Plane MORA cells (active zones, X-Plane source) missing from mora.csv', 'X-Plane-MORA-Felder (aktive Zonen), die in mora.csv fehlen', 'Casillas MORA de X-Plane (zonas activas) ausentes de mora.csv']))}">${esc(t(['MORA d’X-Plane → mora.csv', 'X-Plane MORA → mora.csv', 'X-Plane-MORA → mora.csv', 'MORA de X-Plane → mora.csv']))}</button><button type="button" class="secondary" id="mtMoraFull"${moraBusy ? ' disabled' : ''} data-icon="chart">${esc(t(['Calcul complet', 'Full calculation', 'Vollständige Berechnung', 'Cálculo completo']))}</button>${moraPlan && !moraPlan.written ? `<button type="button" class="primary" id="mtMoraWrite" data-icon="save">${esc(t(['Écrire mora.csv (ancien archivé)', 'Write mora.csv (old one archived)', 'mora.csv schreiben (alte archiviert)', 'Escribir mora.csv (antiguo archivado)']))}</button><button type="button" class="secondary" id="mtMoraDl" data-icon="download">mora.csv</button>` : ''}</p>
+        <p class="row"><button type="button" class="secondary" id="mtMora"${moraBusy ? ' disabled' : ''} data-icon="refresh" title="${esc(t(['Obstacles du nouveau cycle, relief du mora.csv actuel — sans réseau, immédiat', 'New-cycle obstacles, terrain from the current mora.csv — offline, immediate']))}">${esc(t(['Recalcul simple', 'Simple recalculation', 'Einfache Neuberechnung', 'Recálculo simple']))}</button><button type="button" class="secondary" id="mtMoraXp"${moraBusy ? ' disabled' : ''} data-icon="download" title="${esc(t(['Cases de la MORA d’X-Plane (zones actives, source X-Plane) absentes de mora.csv ; sans données d’X-Plane, choisit d’abord le dossier du simulateur et reconstruit la base', 'X-Plane MORA cells (active zones, X-Plane source) missing from mora.csv; without X-Plane data, first chooses the simulator folder and rebuilds the database', 'X-Plane-MORA-Felder (aktive Zonen), die in mora.csv fehlen; ohne X-Plane-Daten wird zuerst der Simulatorordner gewählt und die Datenbank neu aufgebaut', 'Casillas MORA de X-Plane (zonas activas) ausentes de mora.csv; sin datos de X-Plane, elige primero la carpeta del simulador y reconstruye la base']))}">${esc(t(['MORA d’X-Plane → mora.csv', 'X-Plane MORA → mora.csv', 'X-Plane-MORA → mora.csv', 'MORA de X-Plane → mora.csv']))}</button><button type="button" class="secondary" id="mtMoraFull"${moraBusy ? ' disabled' : ''} data-icon="chart">${esc(t(['Calcul complet', 'Full calculation', 'Vollständige Berechnung', 'Cálculo completo']))}</button>${moraPlan && !moraPlan.written ? `<button type="button" class="primary" id="mtMoraWrite" data-icon="save">${esc(t(['Écrire mora.csv (ancien archivé)', 'Write mora.csv (old one archived)', 'mora.csv schreiben (alte archiviert)', 'Escribir mora.csv (antiguo archivado)']))}</button><button type="button" class="secondary" id="mtMoraDl" data-icon="download">mora.csv</button>` : ''}</p>
         <div id="mtMoraMsg">${moraMsg}</div><div>${moraPlan ? moraHtml(moraPlan) : ''}</div></div>
       <div class="repo-card" data-icon="plane" data-subtitle="${esc(t(['Espaces, appareils, flotte, performances, terrains des missions', 'Airspace, aircraft, fleet, performance, mission aerodromes']))}"><h3>${esc(t(['Cohérence', 'Consistency', 'Konsistenz', 'Coherencia']))}</h3><div id="mtUsage"><p class="row"><button type="button" class="secondary" id="mtUsageRun" data-icon="search">${esc(t(['Contrôler', 'Check', 'Prüfen', 'Comprobar']))}</button></p></div></div>`;
     aeroAges(Z);
@@ -2879,7 +3439,12 @@
         // première activation : tout ce qui peut se faire seul est enchaîné
         if (on && !aeroAutoDone().has(id)) aeroAutoZone(Z, id);
       } else if (b.dataset.zoneAuto) {
-        aeroAutoZone(Z, b.dataset.zoneAuto);
+        // demande explicite : les sources téléchargées sont revérifiées même récentes (rien de réécrit si rien n'a changé)
+        aeroAutoZone(Z, b.dataset.zoneAuto, {
+          force: true
+        });
+      } else if (b.dataset.zonePurge) {
+        aeroPurgeZone(Z, b.dataset.zonePurge);
       } else if (b.dataset.aeroDrop) aeroDrop(panel.dataset.zone, b.dataset.aeroDrop);
       else if (b.dataset.aeroFetch) aeroFetch(b.dataset.aeroFetch, b.dataset.args.split(' ').filter(Boolean), b, panel.dataset.zone,
         b.dataset.src);
@@ -2945,7 +3510,30 @@
     };
     host.querySelector('#mtMora').onclick = () => moraExclusive(planMora);
     host.querySelector('#mtMoraFull').onclick = () => moraExclusive(planMoraFull);
-    host.querySelector('#mtMoraXp').onclick = () => moraExclusive(planMoraXplane);
+    // sans case d'X-Plane dans la base, la page enchaîne au lieu de renvoyer à « Sources et dossiers » : dossier du
+    // simulateur choisi (ou ré-autorisé) dans le geste du clic, base reconstruite avec lui, puis MORA d'X-Plane
+    host.querySelector('#mtMoraXp').onclick = async () => {
+      const hasXp = ((await window.SiaBase.get())?.moraCells || []).some(c => c.src === 'xplane');
+      if (!hasXp) {
+        const st = await window.FileAccess?.status?.('__xpnav');
+        try {
+          if (st?.handle && st.permission !== 'granted') {
+            if (await st.handle.requestPermission({
+                mode: 'read'
+              }) !== 'granted') return;
+          } else if (!st?.handle) await window.FileAccess.pickFolder('__xpnav');
+        } catch (e) {
+          if (e?.name !== 'AbortError' && e?.message !== 'Dossier refusé') window.AppFramework?.notify?.(explain(e, t([
+            'Dossier d’X-Plane non choisi', 'X-Plane folder not chosen', 'X-Plane-Ordner nicht gewählt',
+            'Carpeta de X-Plane no elegida'
+          ])), 'warn');
+          return;
+        }
+        aeroInv = await aeroInventory();
+        await basePanelApi?.reread(true);
+      }
+      moraExclusive(planMoraXplane);
+    };
     host.querySelector('#mtMoraWrite')?.addEventListener('click', writeMora);
     host.querySelector('#mtMoraDl')?.addEventListener('click', () => {
       const a = document.createElement('a');
@@ -3368,6 +3956,8 @@
         xp = ((await window.SiaBase.get())?.moraCells || []).filter(c => c.src === 'xplane' && !inCsv.has(key(c)));
       const patched = await window.SiaBase.patch({
         moraCells: moraPlan.cells.concat(xp) // cases d'X-Plane hors mora.csv gardées
+      }, {
+        touched: ['mora.csv']
       });
       moraPlan.written = true;
       moraMsg = pill('ok', t(['mora.csv écrit{b} — à committer', 'mora.csv written{b} — commit it'], {
@@ -4184,12 +4774,19 @@
   const CACHES = () => [{
     id: 'dataIndex',
     icon: 'refresh',
-    label: ['Index des données', 'Data index', 'Datenindex', 'Índice de datos'],
+    label: ['Index des données (registre des missions, CR, fiches)', 'Data index (mission registry, reports, cards)',
+      'Datenindex (Missionsregister, Berichte, Karten)', 'Índice de datos (registro de misiones, informes, fichas)'
+    ],
     where: 'IndexedDB defaIndex',
-    /** Contenu de l'index (texte fixe). */
-    state: () => t(['Registre des missions, CR, copies des fichiers du pool (disponibilités, fiches) ; les fichiers font foi.',
-      'Mission registry, reports, copies of pool files (availability, user cards); the files prevail.'
-    ]),
+    /** Contenu de l'index : missions du registre gardées par le navigateur, puis le reste. */
+    state: () => t([
+      '{n} mission(s) au registre du navigateur ; CR, copies des fichiers du pool (disponibilités, fiches) ; les fichiers font foi.',
+      '{n} mission(s) in the browser registry; reports, copies of pool files (availability, user cards); the files prevail.',
+      '{n} Mission(en) im Browser-Register; Berichte, Kopien der Pool-Dateien (Verfügbarkeiten, Karten); die Dateien sind maßgeblich.',
+      '{n} misión(es) en el registro del navegador; informes, copias de los archivos del pool (disponibilidades, fichas); los archivos prevalecen.'
+    ], {
+      n: window.MissionIndex?.all?.().length ?? 0
+    }),
     after: [
       'Base effacée, reconstruite depuis les fichiers au prochain chargement des pages (après un changement extérieur des fichiers sans lanceur, par exemple).',
       'Base erased, rebuilt from the files when pages next load (after the files changed outside the suite without the launcher, for example).'

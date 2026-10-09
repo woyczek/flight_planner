@@ -438,6 +438,12 @@
     }
     return box;
   }
+  /** Style des fenêtres modales du socle (.repo-ask : fond d'un bloc du design, encre du design, pied à boutons), posé
+   *  une fois ; les pages qui ouvrent leurs propres fenêtres (class repo-ask + la leur) l'appellent avant showModal,
+   *  sinon le navigateur pose son fond blanc sous l'encre du design (illisible en Aqua sombre). */
+  function dialogCss() {
+    if (!document.getElementById("repoAskCss")) document.head.insertAdjacentHTML("beforeend", `<style id="repoAskCss">.repo-ask{max-width:min(520px,92vw);padding:0;border:1px solid color-mix(in srgb,currentColor 25%,transparent);border-radius:calc(10px * var(--repo-round, 1));background:var(--repo-card, #fff);color:var(--sk-ink, var(--repo-ink, #1d2633));box-shadow:0 18px 50px rgba(0,0,0,.45)}.repo-ask::backdrop{background:rgba(10,14,20,.5)}.repo-ask p{margin:0;padding:16px 18px 6px;white-space:pre-line;font:14px/1.45 system-ui,sans-serif}.repo-ask footer{display:flex;justify-content:flex-end;gap:8px;padding:10px 14px 14px}</style>`);
+  }
   /** Confirmation dans la page (remplace window.confirm, bloquée dans certains navigateurs intégrés et hors du design) :
    *  fenêtre modale au fond d'un bloc du design, message, « Confirmer » / « Annuler » (Échap, clic à côté : annuler).
    *  Promesse : true si confirmé. Options : ok, cancel (libellés), danger (bouton rouge). */
@@ -448,7 +454,7 @@
   } = {}) {
     const K = window.RepositoryKit,
       tt = row => K?.t ? K.t(row) : row[0];
-    if (!document.getElementById("repoAskCss")) document.head.insertAdjacentHTML("beforeend", `<style id="repoAskCss">.repo-ask{max-width:min(520px,92vw);padding:0;border:1px solid color-mix(in srgb,currentColor 25%,transparent);border-radius:calc(10px * var(--repo-round, 1));background:var(--repo-card, #fff);color:var(--sk-ink, var(--repo-ink, #1d2633));box-shadow:0 18px 50px rgba(0,0,0,.45)}.repo-ask::backdrop{background:rgba(10,14,20,.5)}.repo-ask p{margin:0;padding:16px 18px 6px;white-space:pre-line;font:14px/1.45 system-ui,sans-serif}.repo-ask footer{display:flex;justify-content:flex-end;gap:8px;padding:10px 14px 14px}</style>`);
+    dialogCss();
     const d = document.createElement("dialog"),
       p = document.createElement("p"),
       foot = document.createElement("footer"),
@@ -999,6 +1005,7 @@
     notify,
     /** Confirmation dans la page (promesse : true si confirmé) ; remplace window.confirm. */
     ask,
+    dialogCss,
     /** Journal des alertes de la page (erreurs, avertissements) : liste, tout acquitter. */
     alerts: {
       /** Copie des alertes du journal. */

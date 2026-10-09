@@ -151,7 +151,7 @@
     ["Vitesses de montée — Badin selon l’altitude", "Climb speeds — IAS by altitude", "Steiggeschwindigkeiten — IAS nach Höhe",
       "Velocidades de ascenso — IAS según la altitud"
     ],
-    ["Comparaison des lois de montée", "Climb law comparison", "Vergleich der Steiggesetze", "Comparación de leyes de ascenso"],
+    ["Comparaison des montées", "Climb comparison", "Vergleich der Steigflüge", "Comparación de ascensos"],
     ["Montée par altitude — régimes RPM / N1", "Climb by altitude — RPM / N1 settings", "Steigflug nach Höhe — RPM-/N1-Einstellungen",
       "Ascenso por altitud — regímenes RPM / N1"
     ],

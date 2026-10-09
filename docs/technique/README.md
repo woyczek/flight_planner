@@ -22,6 +22,7 @@ ou maintient la suite. Les manuels et guides d'utilisation sont au [premier nive
 | [Comptes et données signés](COMPTES_SIGNES.md) | modes standalone et groupe, clés de poste, registre signé, enrôlement, clé de secours, affectations signées (conception) |
 | [Disponibilités et réorganisation](DISPOS_ET_REORGANISATION.md) | catégories de disponibilité, paramètres en quatre pages, utilisateurs et droits (décisions du 5 octobre 2026) |
 | [Prompt du générateur de missions](PROMPT_GENERATEUR_MISSIONS.md) | prompt de génération des missions (source de `apps/cpco/mission_prompt.js`) |
+| [Prompt du profil de performances](PROMPT_PROFIL_PERFORMANCES.md) | prompt « Demander à ChatGPT » de Carburant, 4 langues et schéma de la réponse (source de `apps/planner/perf_prompt.js`) |
 | [V2 : niveaux d'utilisation](V2_NIVEAUX.md) | refonte v2 : quatre niveaux, pages et blocs rangés par niveau d'usage |
 | [V2-fable : parcours du pilote](V2_FABLE.md) | page « Aujourd'hui », compte rendu guidé, notifications qui se taisent, tâches qu'on arrête, champs qui s'agrandissent |
 
@@ -31,6 +32,7 @@ ou maintient la suite. Les manuels et guides d'utilisation sont au [premier nive
 |---|---|
 | [Feuille de route](ROADMAP.md) | où va la suite, dans quel ordre, décisions en attente |
 | [Dette technique](DETTE_TECHNIQUE.md) | points connus, gardés en l'état, à reprendre |
+| [Journal des bugs](BUGS.md) | bugs ouverts et fermés : zone, cause, commit de la correction |
 
 ## Designs et images
 

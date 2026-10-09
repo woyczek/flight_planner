@@ -3,16 +3,16 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>{CENTRE} — Studio cartographique</title>
-<link rel="stylesheet" href="../../shared/repository_nav.css?v=dd0730c4">
-<script src="../../config/repository_tree?v=18728c91"></script><script src="../../shared/kit.js?v=d74cff80"></script>
+<link rel="stylesheet" href="../../shared/repository_nav.css?v=0">
+<script src="../../config/repository_tree?v=0"></script><script src="../../shared/kit.js?v=0"></script>
 <style data-layer="lib">
 @import url("../../shared/carto/maplibre-gl.css") layer(lib);
 </style>
 <script src="../../shared/carto/maplibre-gl.js"></script>
 <script src="../../shared/mission_core/vendor/js-yaml.min.js"></script>
-<script src="mission_store.js?v=559e3351"></script>
-<script src="../../shared/carto/aero_symbols.js?v=50ad43df"></script><script src="../../shared/carto/vertical_profile.js?v=75163ccf"></script><script src="../../shared/carto/vprof_editor.js?v=e34b66fc"></script><script src="../../AircraftDB/aircraft_db.js"></script><script src="../../shared/flight_performance_model.js?v=e12c839a"></script><script src="../../AircraftDB/aircraft_perf.js"></script><script src="../../shared/mission_routing.js?v=3cc1352c"></script><script src="../../shared/mission_estimate.js?v=e352037a"></script><script src="../../shared/mission_exercise.js?v=b68ac247"></script><script src="../../shared/mission_registry.js?v=d3a09fa5"></script>
-<script src="../../shared/sia_base.js?v=4fe9f369"></script><script src="../../shared/aar_tracks.js?v=8f76a899"></script><script src="../../shared/airac.js?v=1fa4a088"></script><script src="../../shared/sticky_frame.js?v=90db4df1"></script>
+<script src="mission_store.js?v=0"></script>
+<script src="../../shared/carto/aero_symbols.js?v=0"></script><script src="../../shared/carto/vertical_profile.js?v=0"></script><script src="../../shared/carto/vprof_editor.js?v=0"></script><script src="../../AircraftDB/aircraft_db.js"></script><script src="../../shared/flight_performance_model.js?v=0"></script><script src="../../AircraftDB/aircraft_perf.js"></script><script src="../../shared/mission_routing.js?v=0"></script><script src="../../shared/mission_estimate.js?v=0"></script><script src="../../shared/mission_exercise.js?v=0"></script><script src="../../shared/mission_registry.js?v=0"></script>
+<script src="../../shared/sia_base.js?v=0"></script><script src="../../shared/aar_tracks.js?v=0"></script><script src="../../shared/airac.js?v=0"></script><script src="../../shared/sticky_frame.js?v=0"></script>
 <style data-layer="app">
 @layer app {
   :root {
@@ -1164,8 +1164,8 @@
 <div class="tabPanel" data-panel="aero" hidden><div class="grid elemGrid">
 <div class="box elemBox" data-elem="aerodromes"><label class="check elemHead"><input id="aerodromes" type="checkbox"> Aérodromes</label><div class="sub checkGrid"><label class="check"><input id="adLabels" type="checkbox" checked> <b>Libellés (OACI)</b></label><label class="check"><input id="adPublic" type="checkbox" checked> Civils ouverts à la CAP</label><label class="check"><input id="adRestricted" type="checkbox" checked> Restreints / agréés</label><label class="check"><input id="adState" type="checkbox" checked> État / militaires</label><label class="check"><input id="adHeli" type="checkbox" checked> Hélistations</label><label class="check"><input id="adStrip" type="checkbox" checked> Bandes, ULM</label><label>Contrôle<select id="adControl"><option value="all">Tous</option><option value="ctl">Contrôlés (TWR)</option><option value="unctl">Non contrôlés</option></select></label></div><div class="sub pickList" data-list="ad"><div class="zoneModeRow"><button type="button" class="buttonLink" data-pick-mode>Liste blanche</button><span class="small" data-pick-help></span></div><div class="zoneAdd"><input list="adOptions" data-pick-input autocomplete="off" placeholder="LFOJ, ORLEANS, LFR* …"><button type="button" data-pick-add>Ajouter</button><button type="button" class="danger" data-pick-clear title="Vider la liste">×</button></div><datalist id="adOptions"></datalist><ul class="zoneChips" data-pick-chips></ul></div><span class="small">Symboles de la carte : piste en dur &gt; 2300 m (orientée), 1000–2300 m, &lt; 1000 m, bande, hélistation ; ouvert à la CAP (bleu plein), restreint (clair), État (rouge).</span></div>
 <div class="box elemBox" data-elem="navaids"><label class="check elemHead"><input id="navaids" type="checkbox"> Radionavigation</label><div class="sub checkGrid"><label class="check"><input id="navLabels" type="checkbox" checked> <b>Libellés (indicatif, fréquence)</b></label><label class="check"><input id="navVor" type="checkbox" checked> VOR, VOR-DME</label><label class="check"><input id="navTacan" type="checkbox" checked> TACAN, VOR-TACAN</label><label class="check"><input id="navDme" type="checkbox" checked> DME</label><label class="check"><input id="navNdb" type="checkbox" checked> NDB</label><label class="check"><input id="navIls" type="checkbox" checked> ILS</label></div><div class="sub"><label>Rose des VOR : ×<output id="roseSizeValue">3.2</output><input id="roseSize" type="range" min="0" max="6" step="0.2" value="3.2" title="0 = sans rose"></label></div><div class="sub pickList" data-list="nav"><div class="zoneModeRow"><button type="button" class="buttonLink" data-pick-mode>Liste blanche</button><span class="small" data-pick-help></span></div><div class="zoneAdd"><input list="navOptions" data-pick-input autocomplete="off" placeholder="Indicatif : CX, AVD, LFOJ…"><button type="button" data-pick-add>Ajouter</button><button type="button" class="danger" data-pick-clear title="Vider la liste">×</button></div><datalist id="navOptions"></datalist><ul class="zoneChips" data-pick-chips></ul></div><span class="small">VOR, VOR-DME, VOR-TACAN, TACAN, DME, NDB ; cartouche indicatif / fréquence, rose au nord magnétique en vue détaillée.</span></div>
-<div class="box elemBox"><strong class="elemHead">Voies aériennes</strong><div class="sub checkGrid"><label class="check"><input id="airwaysLow" type="checkbox"> Basses (jusqu’au FL195)</label><label class="check"><input id="airwaysHigh" type="checkbox"> Hautes (au-dessus du FL195)</label><label class="check"><input id="airwayLabels" type="checkbox" checked> <b>Libellés (désignation)</b></label></div><span class="small">Base SIA : segments de routes ATS (AIXM) ; bleu : basses, violet pointillé : hautes.</span></div>
-<div class="box elemBox" data-elem="vrpPoints"><label class="check elemHead"><input id="vrpPoints" type="checkbox"> Points de report VFR</label><div class="sub checkGrid"><label class="check"><input id="vrpLabels" type="checkbox" checked> <b>Libellés (identifiant)</b></label></div><span class="small">Base SIA (XML_SIA, points « VFR ») : relire le dossier SIA s’ils n’apparaissent pas.</span></div>
+<div class="box elemBox"><strong class="elemHead">Voies aériennes</strong><div class="sub checkGrid"><label class="check"><input id="airwaysLow" type="checkbox"> Basses (jusqu’au FL195)</label><label class="check"><input id="airwaysHigh" type="checkbox"> Hautes (au-dessus du FL195)</label><label class="check"><input id="airwayLabels" type="checkbox" checked> <b>Libellés (désignation)</b></label><label class="check"><input id="natTracks" type="checkbox"> Tracks NAT du jour (Atlantique Nord)</label></div><span class="small">Base SIA : segments de routes ATS (AIXM) ; bleu : basses, violet pointillé : hautes.</span><span class="small">Tracks NAT : zone « Atlantique Nord (océanique, NAT) » active, tracks téléchargés dans Paramètres › Maintenance ; tireté magenta, « NAT A »…</span></div>
+<div class="box elemBox" data-elem="vrpPoints rnavPoints"><label class="check elemHead"><input id="vrpPoints" type="checkbox"> Points de report VFR</label><div class="sub checkGrid"><label class="check"><input id="vrpLabels" type="checkbox" checked> <b>Libellés (identifiant)</b></label><label class="check"><input id="rnavPoints" type="checkbox"> <b>Points RNAV en route (OACI)</b></label></div><span class="small">Base SIA (XML_SIA, points « VFR ») : relire le dossier SIA s’ils n’apparaissent pas.</span><span class="small">Points RNAV : points désignés en route de la base aéronautique (SIA, autres pays, X-Plane), triangle bleu.</span></div>
 <div class="box elemBox" data-elem="sites"><label class="check elemHead"><input id="sites" type="checkbox"> Survol interdit</label><span class="small">Installations portant une marque distinctive — survol interdit au-dessous de 1000 m (3300 ft) ; contour et symbole ⊗ rouges, symboles non superposés (AIXM : SUR).</span><label class="check"><input id="reserves" type="checkbox"> Parcs et réserves naturels</label><span class="small">Survol réglementé : contour vert, ou symbole vert quand l’AIXM ne donne qu’un point.</span><div class="elemBox nested" data-elem="obstacles"><label class="check elemHead"><input id="obstacles" type="checkbox"> Obstacles (AIXM SIA)</label><div class="sub"><label>Hauteur minimale<select id="obstacleMin"><option value="300">≥ 300 ft AGL (carte 1 : 500 000)</option><option value="500">≥ 500 ft AGL (élevés)</option><option value="1000">≥ 1000 ft AGL</option></select></label><span class="small">Balisés de nuit, groupes, éoliennes ; cote AMSL et (hauteur) en vue détaillée ; en vue générale, obstacles élevés seulement.</span></div></div></div>
 
 
@@ -1219,101 +1219,473 @@ const tl = row => window.RepositoryKit?.t ? window.RepositoryKit.t(row) : row[0]
 const explainErr = (e, context, opts) => window.AppFramework?.explain?.(e, context, opts) || `${context} : ${e?.message || e}`;
 const layerNames = ['land', 'urban', 'water', 'transport', 'buildings', 'boundaries', 'relief', 'contours', 'summits'],
   zoneNames = ['R', 'D', 'P', 'CTR', 'TMA', 'SIV'];
-/** Profils d'affichage livrés : IFR, VFR détaillé, AIRWAYS (voies aériennes, balises, aérodromes),
- *  VFR simplifié — couches OSM, familles de zones et seuil de population des villes ; nouvelle copie à chaque appel. */
+/** Profils d'affichage livrés (profils de base, réglés par l'administrateur le 2026-10-09) : IFR, IFR simplifié (vues
+ *  d'ensemble et carte principale d'une mission), VFR détaillé (cible, détail, rendez-vous), VFR simplifié (approche),
+ *  AIRWAYS (voies aériennes ; carte de la route des Cartes de vol) — couches OSM, familles de zones, seuil de population
+ *  des villes, éléments ; nouvelle copie à chaque appel. Une modification de ces profils de base fait monter
+ *  BASE_PROFILES_VERSION (loadProfiles). */
 const defaultProfiles = () => [{
-  id: 'ifr',
-  name: 'IFR',
-  base: 'vector',
-  layers: {
-    land: true,
-    urban: false,
-    water: true,
-    transport: true,
-    buildings: false,
-    boundaries: true,
-    relief: false,
-    contours: false,
-    summits: false
+  "id": "ifr",
+  "name": "IFR",
+  "base": "vector",
+  "layers": {
+    "land": true,
+    "water": true,
+    "transport": false,
+    "buildings": false,
+    "boundaries": true,
+    "relief": false,
+    "contours": false,
+    "summits": false
   },
-  cities: false,
-  population: 200000,
-  zones: ['R', 'D', 'P', 'CTR', 'TMA', 'SIV'],
-  zoneList: [],
-  zoneMode: 'white'
-}, {
-  id: 'vfr-detail',
-  name: 'VFR détaillé',
-  base: 'topo',
-  layers: {
-    land: true,
-    urban: true,
-    water: true,
-    transport: true,
-    buildings: true,
-    boundaries: true,
-    relief: true,
-    contours: true,
-    summits: true
-  },
-  cities: true,
-  population: 20000,
-  zones: ['R', 'D', 'P', 'CTR', 'TMA'],
-  zoneList: [],
-  zoneMode: 'white'
-}, {
-  id: 'airways',
-  name: 'AIRWAYS',
-  base: 'vector',
-  layers: {
-    land: true,
-    urban: false,
-    water: true,
-    transport: false,
-    buildings: false,
-    boundaries: true,
-    relief: false,
-    contours: false,
-    summits: false
-  },
-  cities: false,
-  population: 500000,
-  zones: ['R', 'D', 'P', 'TMA', 'CTA'],
-  zoneList: [],
-  zoneMode: 'white',
-  elements: {
-    airwaysLow: true,
-    airwaysHigh: true,
-    airwayLabels: true,
-    navaids: true,
-    aerodromes: true,
-    vrpPoints: false
+  "cities": false,
+  "population": 200000,
+  "zones": [
+    "R",
+    "D",
+    "P"
+  ],
+  "zoneList": [],
+  "zoneMode": "white",
+  "adList": [],
+  "adMode": "white",
+  "navList": [],
+  "navMode": "white",
+  "elements": {
+    "airwaysLow": false,
+    "airwaysHigh": false,
+    "airwayLabels": true,
+    "vrpPoints": false,
+    "vrpLabels": true,
+    "zoneAbbrev": true,
+    "cityLabelMin": "20000",
+    "urbanStyle": "both",
+    "urbanMin": "20000",
+    "agglos": false,
+    "sites": false,
+    "reserves": false,
+    "zoneLabelsShow": true,
+    "zoneOpacity": "50",
+    "adLabels": true,
+    "navLabels": true,
+    "roseSize": "3.2",
+    "navIls": true,
+    "zoneLimitsShow": true,
+    "zoneSmallCross": true,
+    "adPublic": true,
+    "adRestricted": false,
+    "adState": true,
+    "adHeli": true,
+    "adStrip": false,
+    "adControl": "all",
+    "navVor": true,
+    "navTacan": true,
+    "navDme": true,
+    "navNdb": true,
+    "icaoStyle": true,
+    "zoneFloor": "",
+    "zoneCeil": "",
+    "aerodromes": true,
+    "navaids": false,
+    "obstacles": false,
+    "obstacleMin": "300",
+    "turningPoints": true,
+    "aarTracks": true,
+    "missionZones": true,
+    "graticule": true,
+    "graticuleLabels": true,
+    "graticuleFont": "7",
+    "graticuleColor": "#365a6c",
+    "mora": false,
+    "zoneFont": "7",
+    "zoneColor": "#17202a",
+    "pointFont": "11",
+    "pointColor": "#d0021b",
+    "pointFill": "#d0021b",
+    "pointMarker": "8",
+    "cityFont": "7",
+    "cityColor": "#17202a",
+    "moraFont": "12",
+    "moraColor": "#8b2d18",
+    "moraOpacity": "90",
+    "moraSpacing": "70",
+    "summitFont": "7",
+    "summitColor": "#6b3515",
+    "rnavPoints": false,
+    "natTracks": false
   }
 }, {
-  id: 'vfr-simple',
-  name: 'VFR simplifié',
-  base: 'vector',
-  layers: {
-    land: true,
-    urban: true,
-    water: true,
-    transport: true,
-    buildings: false,
-    boundaries: false,
-    relief: true,
-    contours: false,
-    summits: true
+  "id": "ifr-simple",
+  "name": "IFR simplifié",
+  "base": "vector",
+  "layers": {
+    "land": true,
+    "water": true,
+    "transport": false,
+    "buildings": false,
+    "boundaries": true,
+    "relief": false,
+    "contours": false,
+    "summits": false
   },
-  cities: true,
-  population: 50000,
-  zones: ['R', 'D', 'P', 'CTR'],
-  zoneList: [],
-  zoneMode: 'white'
+  "cities": false,
+  "population": 200000,
+  "zones": [
+    "D",
+    "P"
+  ],
+  "zoneList": [],
+  "zoneMode": "white",
+  "adList": [],
+  "adMode": "white",
+  "navList": [],
+  "navMode": "white",
+  "elements": {
+    "airwaysLow": false,
+    "airwaysHigh": false,
+    "airwayLabels": true,
+    "vrpPoints": false,
+    "vrpLabels": true,
+    "zoneAbbrev": true,
+    "cityLabelMin": "20000",
+    "urbanStyle": "both",
+    "urbanMin": "20000",
+    "agglos": false,
+    "sites": false,
+    "reserves": false,
+    "zoneLabelsShow": true,
+    "zoneOpacity": "25",
+    "adLabels": true,
+    "navLabels": true,
+    "roseSize": "3.2",
+    "navIls": true,
+    "zoneLimitsShow": false,
+    "zoneSmallCross": true,
+    "adPublic": true,
+    "adRestricted": false,
+    "adState": true,
+    "adHeli": true,
+    "adStrip": false,
+    "adControl": "all",
+    "navVor": true,
+    "navTacan": true,
+    "navDme": true,
+    "navNdb": true,
+    "icaoStyle": true,
+    "zoneFloor": "",
+    "zoneCeil": "",
+    "aerodromes": false,
+    "navaids": false,
+    "obstacles": false,
+    "obstacleMin": "300",
+    "turningPoints": true,
+    "aarTracks": true,
+    "missionZones": true,
+    "graticule": true,
+    "graticuleLabels": true,
+    "graticuleFont": "7",
+    "graticuleColor": "#365a6c",
+    "mora": false,
+    "zoneFont": "7",
+    "zoneColor": "#17202a",
+    "pointFont": "11",
+    "pointColor": "#d0021b",
+    "pointFill": "#d0021b",
+    "pointMarker": "8",
+    "cityFont": "7",
+    "cityColor": "#17202a",
+    "moraFont": "12",
+    "moraColor": "#8b2d18",
+    "moraOpacity": "90",
+    "moraSpacing": "70",
+    "summitFont": "7",
+    "summitColor": "#6b3515",
+    "rnavPoints": false,
+    "natTracks": false
+  }
+}, {
+  "id": "vfr-detail",
+  "name": "VFR détaillé",
+  "base": "topo",
+  "layers": {
+    "land": true,
+    "water": true,
+    "transport": true,
+    "buildings": true,
+    "boundaries": true,
+    "relief": true,
+    "contours": true,
+    "summits": true
+  },
+  "cities": true,
+  "population": 20000,
+  "zones": [
+    "D",
+    "P",
+    "CTR",
+    "PJE"
+  ],
+  "zoneList": [],
+  "zoneMode": "white",
+  "adList": [],
+  "adMode": "white",
+  "navList": [],
+  "navMode": "white",
+  "elements": {
+    "airwaysLow": false,
+    "airwaysHigh": false,
+    "airwayLabels": true,
+    "vrpPoints": true,
+    "vrpLabels": true,
+    "zoneAbbrev": true,
+    "cityLabelMin": "20000",
+    "urbanStyle": "both",
+    "urbanMin": "20000",
+    "agglos": true,
+    "sites": true,
+    "reserves": true,
+    "zoneLabelsShow": true,
+    "zoneOpacity": "50",
+    "adLabels": true,
+    "navLabels": true,
+    "roseSize": "3.2",
+    "navIls": true,
+    "zoneLimitsShow": true,
+    "zoneSmallCross": true,
+    "adPublic": true,
+    "adRestricted": false,
+    "adState": true,
+    "adHeli": true,
+    "adStrip": false,
+    "adControl": "all",
+    "navVor": true,
+    "navTacan": true,
+    "navDme": true,
+    "navNdb": true,
+    "icaoStyle": true,
+    "zoneFloor": "",
+    "zoneCeil": "",
+    "aerodromes": true,
+    "navaids": false,
+    "obstacles": true,
+    "obstacleMin": "300",
+    "turningPoints": true,
+    "aarTracks": true,
+    "missionZones": true,
+    "graticule": false,
+    "graticuleLabels": false,
+    "graticuleFont": "7",
+    "graticuleColor": "#365a6c",
+    "mora": false,
+    "zoneFont": "7",
+    "zoneColor": "#17202a",
+    "pointFont": "11",
+    "pointColor": "#d0021b",
+    "pointFill": "#d0021b",
+    "pointMarker": "8",
+    "cityFont": "7",
+    "cityColor": "#17202a",
+    "moraFont": "12",
+    "moraColor": "#8b2d18",
+    "moraOpacity": "90",
+    "moraSpacing": "70",
+    "summitFont": "7",
+    "summitColor": "#6b3515",
+    "rnavPoints": false,
+    "natTracks": false
+  }
+}, {
+  "id": "vfr-simple",
+  "name": "VFR simplifié",
+  "base": "vector",
+  "layers": {
+    "land": true,
+    "water": true,
+    "transport": true,
+    "buildings": false,
+    "boundaries": false,
+    "relief": true,
+    "contours": false,
+    "summits": true
+  },
+  "cities": true,
+  "population": 50000,
+  "zones": [
+    "R",
+    "D",
+    "P",
+    "CTR",
+    "TMA"
+  ],
+  "zoneList": [],
+  "zoneMode": "white",
+  "adList": [],
+  "adMode": "white",
+  "navList": [],
+  "navMode": "white",
+  "elements": {
+    "airwaysLow": false,
+    "airwaysHigh": false,
+    "airwayLabels": true,
+    "vrpPoints": false,
+    "vrpLabels": true,
+    "zoneAbbrev": false,
+    "cityLabelMin": "20000",
+    "urbanStyle": "both",
+    "urbanMin": "20000",
+    "agglos": true,
+    "sites": false,
+    "reserves": false,
+    "zoneLabelsShow": true,
+    "zoneOpacity": "50",
+    "adLabels": true,
+    "navLabels": true,
+    "roseSize": "3.2",
+    "navIls": true,
+    "zoneLimitsShow": true,
+    "zoneSmallCross": true,
+    "adPublic": true,
+    "adRestricted": false,
+    "adState": true,
+    "adHeli": true,
+    "adStrip": false,
+    "adControl": "all",
+    "navVor": true,
+    "navTacan": true,
+    "navDme": true,
+    "navNdb": true,
+    "icaoStyle": true,
+    "zoneFloor": "",
+    "zoneCeil": "",
+    "aerodromes": true,
+    "navaids": false,
+    "obstacles": false,
+    "obstacleMin": "300",
+    "turningPoints": true,
+    "aarTracks": true,
+    "missionZones": true,
+    "graticule": false,
+    "graticuleLabels": false,
+    "graticuleFont": "7",
+    "graticuleColor": "#365a6c",
+    "mora": false,
+    "zoneFont": "7",
+    "zoneColor": "#17202a",
+    "pointFont": "11",
+    "pointColor": "#d0021b",
+    "pointFill": "#d0021b",
+    "pointMarker": "8",
+    "cityFont": "7",
+    "cityColor": "#17202a",
+    "moraFont": "12",
+    "moraColor": "#8b2d18",
+    "moraOpacity": "90",
+    "moraSpacing": "70",
+    "summitFont": "7",
+    "summitColor": "#6b3515",
+    "rnavPoints": false,
+    "natTracks": false
+  }
+}, {
+  "id": "airways",
+  "name": "AIRWAYS",
+  "base": "vector",
+  "layers": {
+    "land": true,
+    "water": true,
+    "transport": false,
+    "buildings": false,
+    "boundaries": true,
+    "relief": false,
+    "contours": false,
+    "summits": false
+  },
+  "cities": false,
+  "population": 500000,
+  "zones": [],
+  "zoneList": [],
+  "zoneMode": "white",
+  "elements": {
+    "airwaysLow": true,
+    "airwaysHigh": true,
+    "airwayLabels": true,
+    "vrpPoints": false,
+    "vrpLabels": true,
+    "zoneAbbrev": true,
+    "cityLabelMin": "20000",
+    "urbanStyle": "both",
+    "urbanMin": "20000",
+    "agglos": true,
+    "sites": false,
+    "reserves": false,
+    "zoneLabelsShow": true,
+    "zoneOpacity": "50",
+    "adLabels": true,
+    "navLabels": true,
+    "roseSize": "3.2",
+    "navIls": true,
+    "zoneLimitsShow": true,
+    "zoneSmallCross": true,
+    "adPublic": true,
+    "adRestricted": true,
+    "adState": true,
+    "adHeli": true,
+    "adStrip": true,
+    "adControl": "all",
+    "navVor": true,
+    "navTacan": true,
+    "navDme": true,
+    "navNdb": true,
+    "icaoStyle": false,
+    "zoneFloor": "",
+    "zoneCeil": "",
+    "aerodromes": false,
+    "navaids": false,
+    "obstacles": false,
+    "obstacleMin": "300",
+    "turningPoints": true,
+    "aarTracks": true,
+    "missionZones": true,
+    "graticule": false,
+    "graticuleLabels": false,
+    "graticuleFont": "7",
+    "graticuleColor": "#365a6c",
+    "mora": false,
+    "zoneFont": "7",
+    "zoneColor": "#17202a",
+    "pointFont": "11",
+    "pointColor": "#d0021b",
+    "pointFill": "#d0021b",
+    "pointMarker": "8",
+    "cityFont": "7",
+    "cityColor": "#17202a",
+    "moraFont": "12",
+    "moraColor": "#8b2d18",
+    "moraOpacity": "90",
+    "moraSpacing": "70",
+    "summitFont": "7",
+    "summitColor": "#6b3515",
+    "rnavPoints": true,
+    "natTracks": true
+  },
+  "adList": [],
+  "adMode": "white",
+  "navList": [],
+  "navMode": "white"
 }];
+const BASE_PROFILES_VERSION = 3; // 3 : tracks NAT du jour cochés dans AIRWAYS
 // ===== Profils d'affichage =====
 // Profils communs à toutes les missions (localStorage siaDisplayProfiles) ; chaque carte de la mission
 // désigne le sien (_profileId). Réglages de couches OSM dans p.layers, des éléments dans p.elements.
+// Profils de base d'une version plus récente (siaDisplayProfilesBase < BASE_PROFILES_VERSION) : ceux de même identifiant
+// sont remplacés une fois (ancienne liste gardée dans siaDisplayProfiles:avant), un profil de même nom créé à la main
+// prend l'identifiant du profil livré, les profils livrés absents sont ajoutés ; les profils de l'utilisateur restent.
 function loadProfiles() {
+  const keepBase = () => {
+    try {
+      localStorage.setItem('siaDisplayProfilesBase', String(BASE_PROFILES_VERSION))
+    } catch {}
+  };
   try {
     const saved = JSON.parse(localStorage.getItem('siaDisplayProfiles') || 'null');
     if (Array.isArray(saved) && saved.length) {
@@ -1323,12 +1695,28 @@ function loadProfiles() {
         if (e.pointColor === undefined || e.pointColor === '#17202a') e.pointColor = '#d0021b';
         if (e.pointFont === undefined || +e.pointFont === 7) e.pointFont = '11';
         e.pointFill = '#d0021b'
-      } /* profils ajoutés depuis (AIRWAYS) : proposés aussi à qui a déjà ses profils */
-      for (const d of defaultProfiles())
-        if (d.id === 'airways' && !saved.some(x => x.id === d.id)) saved.push(d);
+      }
+      const base = defaultProfiles(),
+        older = +(localStorage.getItem('siaDisplayProfilesBase') || 0) < BASE_PROFILES_VERSION;
+      if (older) {
+        localStorage.setItem('siaDisplayProfiles:avant', JSON.stringify(saved));
+        for (const d of base) {
+          const i = saved.findIndex(x => x.id === d.id),
+            j = i < 0 ? saved.findIndex(x => String(x.name || '').trim().toLowerCase() === d.name.toLowerCase()) : -1;
+          if (i >= 0) saved[i] = d;
+          else if (j >= 0) saved[j] = d;
+        }
+      }
+      for (const d of base)
+        if (!saved.some(x => x.id === d.id)) saved.push(d);
+      if (older) {
+        localStorage.setItem('siaDisplayProfiles', JSON.stringify(saved));
+        keepBase()
+      }
       return saved
     }
   } catch {}
+  keepBase();
   return defaultProfiles()
 }
 let displayProfiles = loadProfiles();
@@ -1383,7 +1771,9 @@ function applyProfileToUi() {
   syncElementBoxes();
   renderZonePick()
 }
-const PROFILE_ELEMENTS = ['airwaysLow', 'airwaysHigh', 'airwayLabels', 'vrpPoints', 'vrpLabels', 'zoneAbbrev', 'cityLabelMin', 'urbanStyle',
+const PROFILE_ELEMENTS = ['airwaysLow', 'airwaysHigh', 'airwayLabels', 'natTracks', 'vrpPoints', 'vrpLabels', 'rnavPoints', 'zoneAbbrev',
+  'cityLabelMin',
+  'urbanStyle',
   'urbanMin', 'agglos', 'sites', 'reserves', 'zoneLabelsShow', 'zoneOpacity', 'adLabels', 'navLabels', 'roseSize', 'navIls',
   'zoneLimitsShow', 'zoneSmallCross', 'adPublic', 'adRestricted', 'adState', 'adHeli', 'adStrip', 'adControl', 'navVor', 'navTacan',
   'navDme', 'navNdb', 'icaoStyle', 'zoneFloor', 'zoneCeil', 'aerodromes', 'navaids', 'obstacles', 'obstacleMin', 'turningPoints',
@@ -1403,7 +1793,9 @@ const defaultOf = input => input.type === 'checkbox' ? input.defaultChecked : in
   .defaultSelected) || input.options[0])?.value : input.defaultValue;
 // Coche d'une famille de zones : toutes / aucune / partielle (état intermédiaire).
 function syncElementBoxes() {
-  for (const box of document.querySelectorAll('.elemBox[data-elem]')) box.classList.toggle('off', !$(box.dataset.elem).checked);
+  // bloc estompé quand aucune de ses cases de tête (data-elem : une ou plusieurs, séparées par une espace) n'est cochée
+  for (const box of document.querySelectorAll('.elemBox[data-elem]')) box.classList.toggle('off', !box.dataset.elem.split(' ').some(id => $(
+    id)?.checked));
   const lab = $('graticuleLabels').closest('label');
   if (lab) lab.style.opacity = $('graticule').checked ? '' : '.4'
 }
@@ -1458,11 +1850,12 @@ function saveProfiles() {
   assemblyRenderKey = '';
   updateGenerate()
 }
-// Profil par défaut selon le type de carte (générale, cible, détail).
-// Profil par défaut d'une carte : détail, cible, rendez-vous → VFR détaillé ; toutes les autres → IFR.
+// Profil par défaut d'une carte selon son type et son nom : cible, détail, rendez-vous → VFR détaillé ; approche → VFR
+// simplifié ; carte principale et vues d'ensemble (générale, zone…) → IFR simplifié. (Cartes de vol : la carte de la
+// route porte AIRWAYS, posé par la page.)
 function defaultProfileForMap(map, i = -1) {
   const key = String(map.type || '') + ' ' + String(map.file || '');
-  return /detail|cible|target|rdv/i.test(key) ? 'vfr-detail' : 'ifr'
+  return /detail|cible|target|rdv/i.test(key) ? 'vfr-detail' : /approche|approach/i.test(key) ? 'vfr-simple' : 'ifr-simple'
 }
 // Cartes à produire : profil « Désactivé » (off) = carte ni générée, ni prévisualisée, ni sur l'assemblage.
 const outputMaps = () => (mission?.maps || []).filter(m => m._profileId !== 'off');
@@ -1594,6 +1987,7 @@ function applyBase(b) {
   }));
   obstacleMax = b.obstacleMax || {};
   aero = b.aero || aero;
+  natTracks = b.natTracks || null;
   aarXml = b.aarXml || aarXml;
   window.siaAirac = b.airac || '';
   idle(loadAarTracks); // analyse du XML des axes de ravitaillement : à l'inactivité, après le premier affichage
@@ -3140,6 +3534,7 @@ function addLiveGridMora(map, mapDef) {
       drawSitesCanvas(ctx, mapDef, toC, W, H, 1, bb, pl);
       const cityList = reserveMarkerLabels(pl, mapDef, toC, 1, bb, true);
       drawAirwaysCanvas(ctx, mapDef, toC, W, H, 1, bb, pl);
+      drawNatCanvas(ctx, mapDef, toC, W, H, 1, bb, pl);
       drawAeroCanvas(ctx, mapDef, toC, W, H, 1, bb, pl);
       drawVrpCanvas(ctx, mapDef, toC, W, H, 1, bb, pl);
       drawZonesCanvas(ctx, mapDef, toC, W, H, 1, pl, 'labels', bb);
@@ -3682,6 +4077,63 @@ function drawAeroCanvas(ctx, mapDef, toC, W, H, scale, b, pl) {
   })
 }
 // Voies aériennes (base SIA, aero.airways) : basses (plancher sous le FL195, bleu) et hautes (pointillé violet), désignation au milieu des segments assez longs.
+// Tracks NAT du jour (base.natTracks : tools/aero_fetch.py nat, zone « Atlantique Nord ») : tireté magenta par track,
+// « NAT A » au milieu ; « 63/20 » = 63° N 020° W (« 6330/20 » : 63° 30′ N) ; points nommés (entrées et sorties
+// océaniques) placés d'après les balises et points de la base (source X-Plane de la zone), sinon laissés de côté.
+let natTracks = null,
+  natIndex = null,
+  natIndexOf = null;
+/** Position { lat, lon } d'un jeton de track NAT ; null s'il est inconnu de la base. */
+function natPoint(tok) {
+  const m = /^(\d{2})(\d{2})?\/(\d{2,3})$/.exec(tok);
+  if (m) return {
+    lat: +m[1] + (+m[2] || 0) / 60,
+    lon: - +m[3]
+  };
+  if (natIndexOf !== aero) {
+    natIndexOf = aero;
+    natIndex = new Map();
+    for (const p of [...(aero?.navaids || []), ...(aero?.points || [])])
+      if (p.id && Number.isFinite(p.lat) && !natIndex.has(p.id)) natIndex.set(p.id, p);
+  }
+  return natIndex.get(tok) || null;
+}
+/** Tracks NAT sur un canvas (case « Tracks NAT du jour » du profil de la carte). */
+function drawNatCanvas(ctx, mapDef, toC, W, H, scale, b, pl) {
+  if (!el(mapDef, 'natTracks') || !natTracks?.tracks?.length) return;
+  const col = '#b0197e',
+    f = 9 * 4 / 3 * scale * .85;
+  ctx.save();
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  for (const tr of natTracks.tracks) {
+    const pts = (tr.route || []).map(natPoint).filter(Boolean);
+    if (pts.length < 2 || !pts.some(p => p.lat >= b.s - 2 && p.lat <= b.n + 2 && p.lon >= b.w - 3 && p.lon <= b.e + 3)) continue;
+    const cs = pts.map(p => toC(p.lat, p.lon));
+    ctx.strokeStyle = col;
+    ctx.globalAlpha = .9;
+    ctx.lineWidth = 2 * scale;
+    ctx.setLineDash([8 * scale, 4 * scale]);
+    ctx.beginPath();
+    cs.forEach((c, i) => i ? ctx.lineTo(c.x, c.y) : ctx.moveTo(c.x, c.y));
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.globalAlpha = 1;
+    const k = Math.floor((cs.length - 2) / 2),
+      x = (cs[k].x + cs[k + 1].x) / 2,
+      y = (cs[k].y + cs[k + 1].y) / 2,
+      txt = `NAT ${tr.id}`,
+      w = txt.length * f * .62;
+    if (x > -20 && y > -20 && x < W + 20 && y < H + 20 && (!pl || pl.take({
+        x0: x - w / 2 - 2,
+        y0: y - f * .7,
+        x1: x + w / 2 + 2,
+        y1: y + f * .7
+      }))) drawHaloText(ctx, txt, x, y, f, col, 'center');
+  }
+  ctx.restore();
+}
+
 function drawAirwaysCanvas(ctx, mapDef, toC, W, H, scale, b, pl) {
   const lo = el(mapDef, 'airwaysLow'),
     hi = el(mapDef, 'airwaysHigh');
@@ -3731,9 +4183,12 @@ function drawAirwaysCanvas(ctx, mapDef, toC, W, H, scale, b, pl) {
   ctx.setLineDash([]);
   ctx.restore()
 }
-// Points de report VFR (base SIA, aero.vrp) : losange, identifiant.
+// Points de report VFR (base SIA, aero.vrp) : losange vert, identifiant ; points RNAV en route (aero.points de type
+// ICAO : SIA, AIXM des autres pays, X-Plane, openAIP) : triangle bleu, identifiant (même case « Libellés »).
 function drawVrpCanvas(ctx, mapDef, toC, W, H, scale, b, pl) {
-  if (!el(mapDef, 'vrpPoints') || !aero?.vrp?.length) return;
+  const vrp = el(mapDef, 'vrpPoints') && aero?.vrp?.length,
+    rnav = el(mapDef, 'rnavPoints') && aero?.points?.length;
+  if (!vrp && !rnav) return;
   const lab = el(mapDef, 'vrpLabels') !== false,
     t = {
       s: b.s - .2,
@@ -3745,31 +4200,60 @@ function drawVrpCanvas(ctx, mapDef, toC, W, H, scale, b, pl) {
     f = 8 * 4 / 3 * scale * .85,
     col = '#0b7a3b';
   ctx.save();
-  for (const v of aero.vrp) {
-    if (!inBox(t, v.lat, v.lon)) continue;
-    const p = toC(v.lat, v.lon);
-    if (p.x < -20 || p.y < -20 || p.x > W + 20 || p.y > H + 20) continue;
-    ctx.beginPath();
-    ctx.moveTo(p.x, p.y - r);
-    ctx.lineTo(p.x + r, p.y);
-    ctx.lineTo(p.x, p.y + r);
-    ctx.lineTo(p.x - r, p.y);
-    ctx.closePath();
-    ctx.fillStyle = '#fff';
-    ctx.fill();
-    ctx.strokeStyle = col;
-    ctx.lineWidth = 1.6 * scale;
-    ctx.stroke();
-    if (lab && v.id) {
-      const w = v.id.length * f * .62;
-      if (!pl || pl.take({
-          x0: p.x + r + 2,
-          y0: p.y - f * .7,
-          x1: p.x + r + 4 + w,
-          y1: p.y + f * .7
-        })) drawHaloText(ctx, v.id, p.x + r + 3, p.y, f, col, 'left')
+  if (rnav) {
+    const blue = '#1f5fa8',
+      rr = 4 * scale;
+    for (const v of aero.points) {
+      if (v.type !== 'ICAO' || !inBox(t, v.lat, v.lon)) continue;
+      const p = toC(v.lat, v.lon);
+      if (p.x < -20 || p.y < -20 || p.x > W + 20 || p.y > H + 20) continue;
+      ctx.beginPath();
+      ctx.moveTo(p.x, p.y - rr);
+      ctx.lineTo(p.x + rr * .87, p.y + rr * .5);
+      ctx.lineTo(p.x - rr * .87, p.y + rr * .5);
+      ctx.closePath();
+      ctx.fillStyle = '#fff';
+      ctx.fill();
+      ctx.strokeStyle = blue;
+      ctx.lineWidth = 1.4 * scale;
+      ctx.stroke();
+      if (lab && v.id) {
+        const w = v.id.length * f * .62;
+        if (!pl || pl.take({
+            x0: p.x + rr + 2,
+            y0: p.y - f * .7,
+            x1: p.x + rr + 4 + w,
+            y1: p.y + f * .7
+          })) drawHaloText(ctx, v.id, p.x + rr + 3, p.y, f, blue, 'left')
+      }
     }
   }
+  if (vrp)
+    for (const v of aero.vrp) {
+      if (!inBox(t, v.lat, v.lon)) continue;
+      const p = toC(v.lat, v.lon);
+      if (p.x < -20 || p.y < -20 || p.x > W + 20 || p.y > H + 20) continue;
+      ctx.beginPath();
+      ctx.moveTo(p.x, p.y - r);
+      ctx.lineTo(p.x + r, p.y);
+      ctx.lineTo(p.x, p.y + r);
+      ctx.lineTo(p.x - r, p.y);
+      ctx.closePath();
+      ctx.fillStyle = '#fff';
+      ctx.fill();
+      ctx.strokeStyle = col;
+      ctx.lineWidth = 1.6 * scale;
+      ctx.stroke();
+      if (lab && v.id) {
+        const w = v.id.length * f * .62;
+        if (!pl || pl.take({
+            x0: p.x + r + 2,
+            y0: p.y - f * .7,
+            x1: p.x + r + 4 + w,
+            y1: p.y + f * .7
+          })) drawHaloText(ctx, v.id, p.x + r + 3, p.y, f, col, 'left')
+      }
+    }
   ctx.restore()
 }
 // Quadrillage et grille MORA sur un canvas (bornes = emprise réellement affichée).
@@ -5255,6 +5739,7 @@ function drawOsmOverlays(ctx, mapInstance, mapDef, W, H, assemblyMaps = [], peak
   drawSitesCanvas(ctx, mapDef, toCanvas, W, H, scale, shownBox, pl);
   const cityList = reserveMarkerLabels(pl, mapDef, toCanvas, scale, shownBox);
   drawAirwaysCanvas(ctx, mapDef, toCanvas, W, H, scale, shownBox, pl);
+  drawNatCanvas(ctx, mapDef, toCanvas, W, H, scale, shownBox, pl);
   drawAeroCanvas(ctx, mapDef, toCanvas, W, H, scale, shownBox, pl);
   drawVrpCanvas(ctx, mapDef, toCanvas, W, H, scale, shownBox, pl);
   drawZonesCanvas(ctx, mapDef, toCanvas, W, H, scale, pl, 'labels', shownBox);
@@ -6354,7 +6839,11 @@ $('newProfile').onclick = () => {
   applyProfileToUi();
   saveProfiles()
 };
-$('profileEditor').addEventListener('change', e => {
+// réglages du profil : écoutés au niveau du document — depuis la 4.2.0, « Réglages du profil » (#profileEdit) est déplacé
+// sous l'aperçu du bloc Route, hors de #profileEditor : ses changements n'y remontaient plus et l'aperçu ne se
+// redessinait plus de lui-même
+document.addEventListener('change', e => {
+  if (!e.target.closest?.('#profileEditor, #profileEdit')) return;
   if (e.target.dataset?.aar !== undefined) {
     if (mission) {
       const pick = {
@@ -7215,7 +7704,7 @@ applyOutputPrefs();;
   }
 })();
 </script>
-<script src="../../shared/repository_nav.js?v=0951fa5a"></script>
-<script src="../../shared/app_framework.js?v=0a2fa96b"></script>
-<script src="../../shared/content_i18n.js?v=515ea16b"></script><script src="sia_i18n.js?v=e4046ef4"></script>
+<script src="../../shared/repository_nav.js?v=0"></script>
+<script src="../../shared/app_framework.js?v=0"></script>
+<script src="../../shared/content_i18n.js?v=0"></script><script src="sia_i18n.js?v=0"></script>
 </body></html>

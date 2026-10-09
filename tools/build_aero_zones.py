@@ -15,6 +15,17 @@ URL = 'https://cdn.jsdelivr.net/gh/nvkelso/natural-earth-vector@v5.1.2/geojson/n
 # territoires rattachés à une zone (ADM0_A3 de Natural Earth) : la France du SIA couvre aussi l'outre-mer
 GROUPS = {'PYF': 'fr', 'NCL': 'fr', 'SPM': 'fr', 'WLF': 'fr', 'BLM': 'fr', 'MAF': 'fr'}
 SKIP = {'ATA'}  # Antarctique
+# zones hors pays : l'espace océanique de l'Atlantique Nord (OCA de Shanwick, Gander, Santa Maria, New York Oceanic
+# Est), contour simplifié tracé au large des côtes (Irlande, Islande, Groenland, Terre-Neuve, Canaries hors zone) :
+# ses points et routes océaniques (X-Plane) et les tracks NAT du jour ne tombent dans aucun pays
+OCEANIC = {
+    'nat': {
+        'n': ['Atlantique Nord (océanique, NAT)', 'North Atlantic (oceanic, NAT)', 'Nordatlantik (ozeanisch, NAT)',
+              'Atlántico Norte (oceánico, NAT)'],
+        'r': [[[-67, 30], [-60, 27], [-20, 27], [-15, 33], [-15, 51], [-11, 51], [-15, 54], [-12, 57], [-12, 61], [-28, 62.5],
+               [-38, 62], [-44, 58.5], [-52, 58], [-55, 54], [-50, 52], [-52, 46], [-60, 42], [-67, 40], [-67, 30]]]
+    }
+}
 TOL = .08  # tolérance de simplification (degrés)
 
 
@@ -68,6 +79,7 @@ def main():
         if a3 == 'FRA':
             z['n'] = ['France (métropole et outre-mer)', 'France (mainland and overseas)', 'Frankreich (Mutterland und Übersee)', 'Francia (metrópoli y ultramar)']
         z['r'].extend(rings(f['geometry']))
+    out.update(OCEANIC)
     out = {k: v for k, v in sorted(out.items()) if v['r']}
     text = ('// GÉNÉRÉ par tools/build_aero_zones.py depuis Natural Earth (1:50 000 000, domaine public) : ne pas éditer.\n'
             '// Zones de données aéronautiques : noms [fr, en, de, es] et contours ([lon, lat], extérieurs, simplifiés).\n'

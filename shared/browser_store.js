@@ -721,16 +721,17 @@
     if (had) hit(key);
   };
   const BTN = {
+    // [action complète, infobulle, « dernière : », libellé court du bouton]
     fr: ['Sauvegarder dans le dossier',
       '{n} modifications depuis la dernière sauvegarde ({last}) — écrire les données locales dans le dossier de sauvegarde',
-      'dernière :'
+      'dernière :', 'Sauvegarder'
     ],
-    en: ['Save to folder', '{n} changes since the last backup ({last}) — write local data to the backup folder', 'last:'],
+    en: ['Save to folder', '{n} changes since the last backup ({last}) — write local data to the backup folder', 'last:', 'Save'],
     de: ['Im Ordner sichern', '{n} Änderungen seit der letzten Sicherung ({last}) — lokale Daten in den Sicherungsordner schreiben',
-      'letzte:'
+      'letzte:', 'Sichern'
     ],
     es: ['Guardar en la carpeta', '{n} cambios desde la última copia ({last}) — escribir los datos locales en la carpeta de copia',
-      'última:'
+      'última:', 'Guardar'
     ]
   };
   const button = document.createElement('button');
@@ -752,11 +753,14 @@
     button.hidden = n < REMIND;
     // voyant de la barre d'état des designs à matières (designs_skeuo.css) : vert si tout est sauvegardé, ambre sinon
     document.documentElement.dataset.dirty = n > 0 ? '1' : '0';
-    const label = `${row[0]} (${n}) · ${row[2]} ${m.savedAt ? new Date(m.savedAt).toLocaleString(undefined, { dateStyle: 'short', timeStyle: 'short' }) : t('never')}`,
+    // libellé court (« Sauvegarder (184) ») : le libellé complet et la date de la dernière sauvegarde (jusqu'à 330 px en
+    // Aqua) écrasaient les contrôles des pages à en-tête chargé (Atterrissages, Studio, Cartes de vol) ; ils sont dans
+    // l'infobulle
+    const label = `${row[3]} (${n})`,
       icon = window.RepositoryIcons?.svg('save'); // taille : celle des icônes de bouton du jeu (pas de taille en ligne)
     button.textContent = icon ? label : '💾 ' + label;
     if (icon) button.insertAdjacentHTML('afterbegin', icon);
-    button.title = row[1].replace('{n}', n).replace('{last}', last);
+    button.title = `${row[0]} — ${row[1].replace('{n}', n).replace('{last}', last)}`;
   }
   button.onclick = run(async () => {
     if (await save({

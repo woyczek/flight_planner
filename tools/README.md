@@ -21,7 +21,8 @@ Trois familles :
 
 | Outil | Quand | Ce qu'il fait |
 |---|---|---|
-| `bump_versions.py` | après toute modification d'un script, d'une feuille ou d'une image | Versions de cache `?v=` par **empreinte du contenu** (8 caractères de SHA-1) : chaque référence reçoit l'empreinte du fichier visé ; une version ne change que si son fichier change (une page n'est modifiée que si l'un de ses fichiers l'est). Couvre les attributs `src` / `href` des pages, les chargements écrits dans les scripts (`'fichier.js?v=…'`), la table `FILE_V` de `repository_nav.js` (feuilles de design) et les images des feuilles des designs ; un script qui versionne ses images avec son propre `?v=` a une empreinte qui couvre ces images (`DEPENDANCES` dans le script). Idempotent ; signale les références vers un fichier absent. Relance aussi `build_mission_prompt.py`, `build_docs_bundle.py` et le contrôle des images. |
+| `bump_versions.py` | `--neutral` : remettre toutes les références à `?v=0` (état du dépôt) ; sans option : empreintes réelles, réservé à la livraison et à l'usage sans lanceur | Depuis la 5.0.1 le dépôt ne porte plus d'empreintes : le lanceur les pose en servant (`version_stamps.py`), `publish_dist.py` les pose dans l'archive. Lance aussi `build_docs_bundle.py`, `build_mission_prompt.py` et `check_assets.py` |
+| `version_stamps.py` | appelé par `launch.py` à chaque fichier servi, et par `publish_dist.py` | Empreinte réelle (8 caractères de SHA-1 du contenu servi) posée sur chaque référence `?v=…` des pages, scripts et feuilles ; rien n'est écrit sur le disque |
 | `publish_dist.py` (`publish_dist.sh`, `publish_dist.cmd`) | après la publication d’une version (tag `vx.y.z` poussé, `docs/MANUEL_EXPLOITATION.md` §6) | Archive de livraison `dist/xplane-web-suite-<version>.zip` : le **code seul** au tag (fichiers suivis par git, ni `data/` ni `examples/`), sous `xplane-web-suite-<version>/`, avec les **vraies images LFS** (prises dans `.git/lfs/objects`, `git lfs fetch` si besoin — `git archive` livrerait des pointeurs) ; archive reproductible (dates du commit tagué). Écrit l’empreinte (`.zip.sha256`) et la rubrique « Livraison » de la section de la version dans `docs/CHANGELOG.md` (à commiter ; `--sans-changelog` pour l’éviter). Sans argument : version publiée (`config/repository_tree` › `release`) ; `--dist <dossier>` (ex. `E:/DEFA/dist`), `--force` pour refaire. Les archives ne sont jamais commitées (`dist/` ignoré). |
 | `build_map_planner.py` | après toute modification de `apps/cpco/map_parser.html` (studio du Centre) | Génère la page publique **Cartes de vol** (`apps/planner/map_planner.html`) depuis le studio : même moteur, même bloc Route, sans le bloc Mission ; ajoute le bloc « Cartes du vol ». La page générée ne s'édite pas à la main. |
 | `build_mission_prompt.py` | après modification de `docs/technique/PROMPT_GENERATEUR_MISSIONS.md` | Recopie le prompt du générateur de missions (bloc ```text du document) dans `apps/cpco/mission_prompt.js`, lu par le bouton « Commander à ChatGPT ». |
@@ -48,6 +49,7 @@ Trois familles :
 | `migrate_missions_schema.py` | après une montée du format de mission | Passe les YAML de `data/missions` au format `helo-xp-mission` courant (2.0) ; aperçu sans `--write`. Les fichiers hors format sont signalés, pas modifiés. |
 | `data_template/` | création d'un dépôt de données | Squelette du dépôt `data/` (README, `data_tree.js`), repris par `migrate_v3.py`. |
 | `install_hooks.sh` | une fois par clone | Pose dans les crochets git locaux (post-commit, post-checkout, post-merge) l'appel de `write_build.sh`, puis l'exécute. |
+| `merge_vstamp.py` | pilote de fusion git (configuré par `install_hooks.sh`) | Résout seul les conflits qui ne portent que sur les empreintes `?v=` des pages, scripts et feuilles (déclaré dans `.gitattributes`) ; les vrais conflits restent à résoudre, puis `bump_versions.py` |
 | `write_build.sh` | appelé par les crochets git | Écrit `config/build.js` (commit, branche, étiquette courants, hors dépôt) : le pied de page affiche la version exacte, même en `file://`. |
 | `planche_rubriques.py` | après retouche des en-têtes de l'ordre de mission | Planche contact des en-têtes de l'ordre de mission par organisme, pour chaque design à matières (`docs/technique/planches/rubriques_<design>.jpg` et planche d'ensemble), d'après les règles de `apps/pilot/mes_missions.html`. |
 
@@ -68,7 +70,8 @@ Pages HTML à ouvrir via le petit serveur d'écriture : `python tools/save_textu
 | `cut_register_sheet.py` | Découpe une feuille de registre (`python tools/cut_register_sheet.py cabinet\|flightlog\|field [--write]`) en morceaux `shared/deco/<design>/sheet-*.webp` : coins aux bords intérieurs fondus, tranches raccordables, pièces d'en-tête facultatives, papier de fond ; affiche les jetons de géométrie `--sh-*` et, avec `--write`, réécrit le bloc « découpe » du design dans `designs_skeuo.css` (les « réglages » restent à la main). Planches sources non versionnées (configurations en tête du script) ; accessoire du bord gauche (ficelle, crayon) livré à part ; ImageMagick 7. |
 | `gauges_from_sheets.html` | Découpe des boîtiers de cadrans (laiton → Cabinet, métal sombre → Carnet de vol, plaque sombre → Durci, chrome → Aqua). |
 
-Après une découpe ou une retouche d'icônes : `python tools/build_skeuo_icons_css.py` puis `python tools/bump_versions.py`.
+Après une découpe ou une retouche d'icônes : `python tools/build_skeuo_icons_css.py` (attention : la section générée de
+`shared/block_icons.css` a été retouchée à la main — spécificité `:not(#imp)`, taille des icônes de la barre — à reporter avant de régénérer).
 **Jeux composés (fond + glyphe SVG)** : déposer dans le dossier du jeu (`shared/icons/skeuo/<jeu>/`, `<jeu>` = `aqua`,
 `cabinet`, `field`, `flightlog`) le fond vide `vierge.webp` et celui du Centre `vierge.rouge.webp` (cuivre, rouge ; à défaut
 `vierge.gris.webp`), puis relancer les deux
@@ -121,5 +124,5 @@ chaque passage se vérifie au banc `skeuo_regression.html`. Tous ont `--check` (
 
 ---
 
-Ordre habituel après une modification de code : **(générateurs concernés)** → `bump_versions.py` → vérifier les pages
-modifiées dans le navigateur (console sans erreur) → commit.
+Ordre habituel après une modification de code : **(générateurs concernés)** → vérifier les pages modifiées dans le
+navigateur (console sans erreur) → commit. Plus d'empreintes à monter : le dépôt reste à `?v=0`.

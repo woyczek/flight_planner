@@ -123,12 +123,6 @@ RepositoryContentI18n([
   ['Données aéronautiques et types d’aéronefs', 'Aeronautical data and aircraft types', 'Luftfahrtdaten und Luftfahrzeugtypen',
     'Datos aeronáuticos y tipos de aeronave'
   ],
-  ["Cartes, missions et planification utilisent les données aéronautiques (AIRAC) et la base des types d’aéronefs. Ci-dessous, les mêmes blocs que dans Paramètres › Installation : choisir les zones (France active par défaut) et, pour chacune, le bouton de chaque source (ZIP du SIA : lien vers la boutique, compte gratuit, produit du cycle à 0 €, puis « Récupérer le ZIP téléchargé » ; MORA ; axes de ravitaillement : PDF MILAIP ; autres pays) — la base se construit seule ; puis « Compléter les types… » pour les types d’aéronefs et leurs performances.",
-    "Maps, missions and planning use the aeronautical data (AIRAC) and the aircraft type database. Below, the same blocks as in Settings › Installation: choose the zones (France active by default) and, for each one, the button of each source (SIA ZIP: link to the shop, free account, cycle product at 0 €, then “Fetch the downloaded ZIP”; MORA; refuelling tracks: MILAIP PDF; other countries) — the database builds itself; then “Complete the types…” for aircraft types and their performance.",
-    "Karten, Missionen und Planung nutzen die Luftfahrtdaten (AIRAC) und die Datenbank der Luftfahrzeugtypen. Unten dieselben Blöcke wie unter Einstellungen › Installation: die Zonen wählen (Frankreich standardmäßig aktiv) und für jede die Schaltfläche jeder Quelle (SIA-ZIP: Link zum Shop, kostenloses Konto, Zyklusprodukt zu 0 €, dann „Heruntergeladene ZIP abrufen“; MORA; Betankungsstrecken: MILAIP-PDF; andere Länder) — die Datenbank baut sich selbst auf; dann „Typen ergänzen…“ für die Luftfahrzeugtypen und ihre Leistungen.",
-    "Mapas, misiones y planificación usan los datos aeronáuticos (AIRAC) y la base de tipos de aeronave. Abajo, los mismos bloques que en Ajustes › Instalación: elegir las zonas (Francia activa por defecto) y, para cada una, el botón de cada fuente (ZIP del SIA: enlace a la tienda, cuenta gratuita, producto del ciclo a 0 €, luego «Obtener el ZIP descargado»; MORA; ejes de reabastecimiento: PDF MILAIP; otros países) — la base se construye sola; luego «Completar los tipos…» para los tipos de aeronave y sus rendimientos."
-  ],
-  ['Terminer', 'Finish', 'Abschließen', 'Terminar'],
   ['⚠ Nettoyer efface les réglages de ce navigateur', '⚠ Cleaning erases this browser’s settings',
     '⚠ Bereinigen löscht die Einstellungen dieses Browsers', '⚠ Limpiar borra los ajustes de este navegador'
   ],
@@ -229,13 +223,6 @@ RepositoryContentI18n([
   ['Mettre à jour maintenant', 'Update now', 'Jetzt aktualisieren', 'Actualizar ahora'],
   ['Flotte', 'Fleet', 'Flotte', 'Flota'],
   ['Missions', 'Missions', 'Missionen', 'Misiones'],
-  ['Les missions arrivent avec les données (étape 2, registre', 'Missions come with the data (step 2, registry',
-    'Die Missionen kommen mit den Daten (Schritt 2, Register', 'Las misiones llegan con los datos (paso 2, registro'
-  ],
-  [') ; le registre se relit depuis sa page.', '); the registry is reread from its page.',
-    '); das Register wird auf seiner Seite neu gelesen.', '); el registro se relee desde su página.'
-  ],
-  ['Registre des missions', 'Mission registry', 'Missionsregister', 'Registro de misiones'],
   ['Réglages du {SOG}', '{SOG} settings', 'Einstellungen der {SOG}', 'Ajustes del {SOG}'],
   ['Accueil', 'Home', 'Startseite', 'Inicio'],
   ['https://hôte/compte/dépôt.git', 'https://host/account/repository.git', 'https://host/konto/repository.git',

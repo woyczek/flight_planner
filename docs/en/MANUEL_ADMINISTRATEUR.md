@@ -89,7 +89,7 @@ During impersonation, the working trigram is that of the impersonated user and e
 <!-- page: apps/cpco/mission_editor.html -->
 
 The generator prepares a mission file: identification, brief texts, exercise, estimated duration, airspaces to activate, then the PDFs to hand to the crews. It is also used to order a mission from ChatGPT and to receive its answer.
-Access: sidebar “Missions” (“Centre” section) or ☰ › “Mission generator (SIA)”. From the registry, “Open in generator” loads the chosen mission.
+Access: sidebar “Missions”, “Generator” tab (Design level, 3), or ☰ › “Mission generator (SIA)”. From the registry, “Generate a mission” opens the empty generator and “Open in generator” loads the chosen mission.
 See also [SIA missions](../SIA_MISSIONS.md) and [generator prompt](../technique/PROMPT_GENERATEUR_MISSIONS.md).
 Depending on the usage level: the page is offered from the Design level (3). At that level, it shows seven blocks: Mission, Identification, Estimated duration, Airspaces to activate, Mission texts, Maps of the final file and Documents (plus Operation and Exercise when the mission belongs to one). Drafts, “All YAML data” and the route calculation settings are at the Expert level (4).
 
@@ -212,7 +212,7 @@ The crew brief contains its sealed envelopes and the maps; the status line lists
 <!-- page: apps/cpco/map_parser.html -->
 
 The studio produces the maps of the mission file from the SIA data (AIRAC cycle): route, vertical section, maps in PNG or SVG, ZIP and overview map.
-Access: the generator's “Map studio” tab, ☰ › “Map studio (SIA)”, or “Open in map studio” in the registry.
+Access: sidebar “Missions”, “Map studio” tab (Expert level, 4), ☰ › “Map studio (SIA)”, or “Open in map studio” in the registry.
 It works on the mission shared with the generator. Technical details: [SIA missions](../SIA_MISSIONS.md).
 
 ### Mission
@@ -274,7 +274,7 @@ If the folder contains several cycles, only the most recent is read; the others 
 
 The registry lists all the generated or ordered missions, with their follow-up by the Centre: status, flight date, notes, reports.
 It is used to choose a mission, open it in the generator or the studio, assign it to pilots, create its report and order new missions.
-Access: sidebar “Registry” (“Centre” section) or ☰ › “Mission registry (SIA)”.
+Access: sidebar “Missions”, which opens on the registry (“Registry” tab), or ☰ › “Mission registry (SIA)”. At the top, “Generate a mission” opens the generator to create one.
 Depending on the usage level: the page is offered from the Design level (3), with the essentials: “Add files…” and “Re-read folder”, four filters and “More filters”, a seven-column table, a card without the map studio and the simplified order form. The rest is at the Expert level (4), as shown below.
 
 ### Registry missions
@@ -559,7 +559,7 @@ A flight needs an available category; a control item, an available category or �
 ### Crew of the week
 
 Level 2 block: one row per member, one cell per day with the bar of declared availability and the number of items they appear on. A click on a cell opens their ranges for the day: category, start, end, and “Time off from”, which sets time off until midnight. The ranges are written into the pilot's declaration.
-- **DLO and deadlines**: each member's permanent objectives (“＋” to add, click to edit), with an optional deadline (red at 3 working days or less, yellow at 10 or less); a DLO is closed automatically by a flight done that contains it (item DLO, label, mission) with the member in the crew. The palette shows “◎n” open DLO per member, and an item's window recalls those of the crew.
+- **DLO and deadlines** (table folded or unfolded by its triangle, state kept in this browser): each member's permanent objectives (“＋” to add, click to edit), with an optional deadline (red at 3 working days or less, yellow at 10 or less); a DLO is closed automatically by a flight done that contains it (item DLO, label, mission) with the member in the crew. The palette shows “◎n” open DLO per member, and an item's window recalls those of the crew.
 - “Availability changes” lists the declarations changed since they were last noted; “Noted” and “Note all” mark them in this browser.
 
 ### Areas
@@ -710,9 +710,9 @@ This section is the only place to set the local folders and the addresses of the
 |---|---|
 | Repository folder | root of the application (contains `lancer.cmd`, `config/repository_tree`) |
 | Data folder | `data/` (contains `data_tree.js`) |
-| Ledger folder, Missions folder, SIA XML folder | `data/cr`, `data/missions`, `data/sia` (deduced from the data folder) |
+| “Derived folders (3)”, folded: ledger, missions, SIA | `data/cr`, `data/missions`, `data/sia`, set with the data folder |
 | ODV workbook folder | synchronised folder (OneDrive…) where the squadron drops the `.xlsx` |
-| X-Plane folder (landings), Performance folder, Local backup folder | CSV logs, `.lnmperf` / `.json` profiles, `defa_local_store.yaml` |
+| X-Plane (second line: “Landing logs: other folder…”), Performance folder, Local backup folder | X-Plane installation folder (navigation data `earth_*.dat`, Custom Data; CSV landing logs, unless another folder is chosen), `.lnmperf` / `.json` profiles (read again by Fuel, “Performance profiles” block, as soon as the folder changes), `defa_local_store.yaml`; optional, shown “optional, not chosen” (information) until chosen |
 
 - **External sources**: the default address is shown greyed out. An entered value applies to this browser only; “↺” goes back to the default value and “Open ↗” opens the address.
 - **API keys (external services)**: suite keys, shared by all its users (IVAO: API key for the area activations and the ATC sessions — trainings, exams, bookings — of the ODV planning and the Board). “Save” hands them to the launcher (`secrets/` at the application root, excluded from git, outside the data and the backups); the page only sees their state and last 4 characters; “Clear” removes the key.
@@ -727,7 +727,7 @@ To open it: sidebar › “Settings”, then the “Maintenance” tab. The page
 The side menu has three parts:
 - the “Maintenance” group: Updates, Versions and sync, References and dependencies, Aeronautical data, Aircraft types;
 - the “Storage and backup” group: Caches, Disk space, Full backup, Journal;
-- the databases, arranged in the groups “Repository files”, “Base”, “Missions” and “Browser data”. These groups only appear at the Expert level.
+- the databases, arranged in the groups “Repository files”, “Reference and log”, “Missions” and “Browser data”. These groups only appear at the Expert level.
 
 ### Suite updates
 
@@ -768,11 +768,11 @@ The “Check” button reruns the checks.
 
 ### Aeronautical data: world zones, sources and AIRAC cycles
 
-**Zone map**: one zone per country (France groups mainland and overseas territories, the SIA coverage). Hovering it shows its sources in the right-hand panel. **One click adds the country to the selection, another removes it** (chosen countries in blue with a dark outline); the bar under the map lists them (to activate, to deactivate, “Cancel”). **“Activate”** applies the selection, then chains by itself, for all chosen countries still incomplete, everything the suite can do: downloads of their sources, latest ZIPs from Downloads (SIA, NATS…), a single database rebuild, then the MORA of each country that has none — only if the database was rebuilt (double gauge: step and detail; a failed source does not stop the others; summary in a notification). A country’s panel keeps “Activate the zone” / “Deactivate the zone” and, for an active zone, “Fetch and recompute everything”. What is left to do by hand (order on the SIA website, PDF to import, X-Plane folder, files to drop…) is listed under the map, “Actions to do”: one line per source, with its link and its button; downloads and the MORA, done by “Activate”, fit on a single “automatic” line.
+**Zone map**: one zone per country (France groups mainland and overseas territories, the SIA coverage), plus an oceanic zone, “North Atlantic (oceanic, NAT)”, whose sources are X-Plane (oceanic points and routes, outside any country) and today’s NAT tracks. Hovering it shows its sources in the right-hand panel. **One click adds the country to the selection, another removes it** (chosen countries in blue with a dark outline); the bar under the map lists them (to activate, to deactivate, “Cancel”). **“Activate”** applies the selection, then chains by itself, for all chosen countries still incomplete, everything the suite can do: downloads of their sources, latest ZIPs from Downloads (SIA, NATS…), a single database rebuild, then the MORA of each country that has none — only if the database was rebuilt (double gauge: step and detail; a failed source does not stop the others; summary in a notification). A country’s panel keeps “Activate the zone” / “Deactivate the zone” and, for an active zone, “Fetch and recompute everything”. What is left to do by hand (order on the SIA website, PDF to import, X-Plane folder, files to drop…) is listed under the map, “Actions to do”: one line per source, with its link and its button; downloads and the MORA, done by “Activate”, fit on a single “automatic” line.
 - Colours: outline only = inactive, no data; grey = inactive, with data; orange = active, incomplete data; green = active, all data of the ticked sources; light blue = hovered zone; blue with a dark blue outline = chosen country (“Activate” to apply).
-- Each source is ticked or unticked for its zone; only the ticked sources of the active zones go into the database. A “link” source (PDF or reference website) is not read by the suite.
+- Each source is ticked or unticked for its zone; only the ticked sources of the active zones go into the database. A “link” source (PDF or reference website) is not read by the suite. **Setting up only redoes what is missing**: an up-to-date source is not downloaded again (“Fetch and recompute everything” checks it again, without rewriting anything if the server has nothing new), an identical file is not rewritten, and the database is only read again if a file, a zone or a source has changed; run again with nothing new, it downloads, writes and recomputes nothing. **“Purge the zone…”** (zone that has data) deletes, after confirmation, its files from the SIA folder (for France: the SIA XMLs and the ENR 5.7 tracks) and its `mora.csv` cells (old file in `_archives/`), deactivates it and reads the database again; the X-Plane folder is not touched. Activating it again reinstalls everything.
 - Depending on the source, the panel offers:
-  - a direct download through the launcher (`tools/aero_fetch.py`): openAIP (each country), ENAIRE (Spain), FAA (United States: military areas and routes, airspace classes), UK military AIP (ENR 5.2, official PDF read by the launcher: low flying areas, VATA, TVAA avoidance area, AARA refuelling tracks added to the DIRCAM ones), NAV CANADA (Designated Airspace Handbook, current edition read by the launcher: Canadian danger, restricted and advisory areas, to download again every 56 days);
+  - a direct download through the launcher (`tools/aero_fetch.py`): openAIP (each country), ENAIRE (Spain), FAA (United States: military areas and routes, airspace classes), UK military AIP (ENR 5.2, official PDF read by the launcher: low flying areas, VATA, TVAA avoidance area, AARA refuelling tracks added to the DIRCAM ones), NAV CANADA (Designated Airspace Handbook, current edition read by the launcher: Canadian danger, restricted and advisory areas, to download again every 56 days), today’s NAT tracks (North Atlantic zone: Shanwick and Gander message published by the FAA, to download again before each transatlantic flight, the tracks changing twice a day; “old” after 12 hours; named points placed from the X-Plane source of the zone);
   - an order or a registration, with the link and the instructions: SIA France (0 € order, to redo at each cycle), NATS (United Kingdom, file dropped into `data/sia/zones/gb/`);
   - a PDF, with the link and the instructions: DIRCAM / MILAIP ENR 5.7 (refuelling tracks);
     DIRCAM: “Import the MILAIP PDF…” reads the PDF of section ENR 5.7 (pdf.js, network at the first import), shows the number of tracks and the anomalies found, then “Write miam-enr-5-7-tracks.xml” stores the file in the SIA folder (old one in `_archives/`) and updates the database (“Stop” during the reading: nothing is kept or written);
@@ -787,7 +787,7 @@ The “Check” button reruns the checks.
 Table states:
 - SIA: cycle read from the file names, “old” if it precedes the cycle in force;
 - X-Plane: “Custom Data” cycle;
-- downloaded files: “old” after 28 days (one AIRAC cycle).
+- downloaded files: “old” after 28 days (one AIRAC cycle) since the download or the last check without change.
 
 **MORA**: several sources.
 - The computed grid (`data/sia/mora.csv`) has priority. “Simple recalculation” takes the obstacles of the new cycle (offline); “Full calculation” redoes terrain and peaks (network, about one minute) for the theatres and missions; “Compute the zone MORA” (panel) does it over the extent of one zone, the other cells being kept.
@@ -852,14 +852,14 @@ As long as none of these operations has taken place, the journal is empty.
 
 ### fleet (known aircraft)
 
-This database (`data/references/aircraft_fleet.js`) lists the aircraft offered in the reports: “Operator”, “ICAO type”, “Variant”, “Registration”, “Code”, “Number”, “Callsigns” (comma-separated), “Base”, “Operational”.
+This database (`data/references/aircraft_fleet.js`) lists the aircraft offered in the reports: “Operator”, “ICAO type”, “Variant”, “Registration”, “Code”, “Number”, “Callsigns” (comma-separated), “Home base”, “Operational”.
 - **“Paste the website Fleet page…”**:
   1. open the “Virtual fleet” page of the airline's website (link in the window);
   2. press Ctrl+A then Ctrl+C, and paste into the area (Ctrl+V); you can also use “Read the clipboard” or “or saved page…”;
   3. click “Read”.
 - An aircraft from the page replaces the one in the file (same registration) but keeps its extra callsigns. Aircraft missing from the page are kept.
 - The status line gives the number of aircraft updated, added and kept. Check, then “Save to repository”.
-- **Buttons common to the repository databases**: “Apply in this browser” (local changes take priority), “Save to repository” (writes the file to the Repository folder, to be committed), “Download”, “Discard changes”, “Back to repository file”.
+- **Buttons common to the repository databases**: “Save to repository” highlighted (writes the file to the Repository folder, to be committed); under “More…”, “Apply in this browser” (local changes take priority), “Download”, “Discard changes”, “Back to repository file”. The status line says where the content comes from: “State: repository file, no change in this browser”, or the local changes and their date.
 - **Automatic**: the launcher itself reads the website's public Fleet and Flight log pages (no login), once a day when a page opens, with the same rules as pasting; it writes `data/references/aircraft_fleet.js` and `defa_reference.js`, to be sent with “Synchronise”. Setting and “Update now”: under the list of aircraft in the reporting (below). Pasting and the script (`python AircraftDB/update_fleet.py Flotte.html`) remain possible.
 - **Where**: Settings › Centre › “Fleet (known aircraft)”, restricted while the Centre is locked (previously in Maintenance).
 - **Aircraft in the reporting**: below the fleet, all the aircraft flying in the mission log (type, callsigns, operator, flights, last flight). “Personal” box, ticked by default: individual aircraft, outside the SOG fleet; unticking it adds it to the fleet (it becomes assignable), ticking it again removes it. Then “Save to repository”: the fleet and the index of individual aircraft (`data/references/aircraft_personal.js`) are written together. An aircraft on the website's Fleet page comes back into the fleet at the next update.
@@ -872,7 +872,7 @@ This database (`AircraftDB/aircraft_db.js`) contains two tables:
 - “Types”: “Designator”, “Model”, “ICAO description”, “WTC”, “Wing”, “Source”;
 - “Aliases (common name → designator)”.
 Changes are also carried over to `aircraft_overrides.json`. The buttons are those of the repository databases.
-The “Procedure” gives the commands of the refresh script, to be run from `AircraftDB`: `python update_aircraft_db.py --no-network`, `--add <types>`, `--refresh-icao`. The database is not published with the suite (ICAO and EUROCONTROL data): the “Aircraft types and performance” card in Settings › Maintenance › References and dependencies completes it on this computer, type by type, never all at once — a code typed in (“Add / update”), the unknown types, the fleet types or the mission types (ODV, registry); it needs the launcher and the network, then reload the page (a button offers it at the end). The card is at the top of the block; with an empty database it is outlined, a notification says so and “Complete the database” takes the fleet and mission types in one click. The files written (`AircraftDB/aircraft_db.js`, `aircraft_perf.js`) need nothing: the pages read them; not versioned, they are completed on each computer or copied from one to another.
+The “Procedure” gives the commands of the refresh script, to be run from `AircraftDB`: `python update_aircraft_db.py --no-network`, `--add <types>`, `--refresh-icao`. The database is not published with the suite (ICAO and EUROCONTROL data): the “Aircraft types” section of Settings › Maintenance completes it on this computer, type by type, never all at once. It reads in three steps: “What it is” (the ICAO record, which gives the icon and the class 2P, 2T, 4T…, and the EUROCONTROL performance); the table of the fleet, mission and report types (silhouette, code and model, ICAO class, record ✓ or missing, key performance — ceiling, cruise, V2, Vat — with the detail as a tooltip and the EUROCONTROL link, use); then “Complete automatically (n)”, which downloads what is missing. A free code is typed under “Download other types…” (folded); “Edit the database by hand…” (Expert level) opens this database. One group per aircraft: the labels of missions and reports (“A332 A330 MRTT Phénix”, “A330 MRTT PHÉNIX”) are brought back to the ICAO code (fleet, aliases, usual names; alias chain followed, for example A4M → A400, a house code brought back to the ICAO designator); a type written in plain text in a report is recognised instead of creating a local type. A type without EUROCONTROL performance is estimated: “≈ 2,000 kg/h, 480 kt (known type)” or “(ICAO class L2J)”, the same fallback as the fuel planner (`shared/fuel_reference.js`). It needs the launcher and the network; when the pass ends, the page reloads by itself and shows the summary. The files written (`AircraftDB/aircraft_db.js`, `aircraft_perf.js`) need nothing: the pages read them; not versioned, they are completed on each computer or copied from one to another. The same pass also reads the public SimBrief list (one request, kept for a week; `--simbrief` on the command line): cruise fuel flow (kg/h), weights (empty, zero fuel, landing, maximum fuel), ceiling and speed of 224 types, stored in `aircraft_perf.js` next to the EUROCONTROL records; a value whose accuracy SimBrief does not guarantee is an estimate. Finally, Airframe DB (`--airframedb`, at most 40 records per pass, 30-day cache) adds aliases (names in use, such as H125 → AS50, and simulator names → ICAO code, never replacing an existing alias nor diverting an official designator) and the published characteristics (speeds, ceiling, climb rate, weights, range) of types without an EUROCONTROL or SimBrief record, military aircraft and helicopters included.
 Limit: a type deleted here may come back at the next refresh, if it is part of the script's base list.
 
 ### Callsign correspondence
@@ -883,14 +883,14 @@ This database (`data/references/callsigns.js`) links the full callsign (kept in 
 - There is no script: this page (or the file, edited by hand) is the source.
 - To feed it: forms corrected in the reports arrive in “Learned callsigns”, and the series seen in the log arrive through “Add” or “Complete”.
 
-### reference (anonymised, in the repository)
+### Company fleet and pilots (anonymised reference)
 
 This database (`data/references/defa_reference.js`) lists the pilots (trigrams) and aircraft, without the flights or the missions. It is an input aid and is not exhaustive.
 - “Aircraft” table: registration, type, variant, status, home base (editable), last known AD, entry into service, callsigns used, first and last flight, flights, fleet record, note.
 - “Pilots” table: trigram, first and last flight, flights, types, note.
 - Update:
   1. load the flight log (next section);
-  2. click “Update the reference (anonymised)”: nothing is deleted, and manual entries are kept;
+  2. click “Update from the flight log” (here) or “Update the reference (anonymised)” (in the log): nothing is deleted, and manual entries are kept;
   3. “Save to repository”, then commit.
 - Script alternative: `tools/defa_reference.py`.
 
@@ -898,7 +898,7 @@ This database (`data/references/defa_reference.js`) lists the pilots (trigrams) 
 
 This database is separate from the mission registry. It is kept only in this browser: out of the repository and out of the local backup, because it contains trigrams.
 - “Load / update the log…” accepts the “Log des vols” page copied or saved, or a CSV / JSON export. Flights are merged without duplicates.
-- “Callsign series”: “Add” creates the row in the callsign correspondence; “Complete” adds the forms and types seen to it.
+- “Callsign series”: “Add to the correspondence” creates the row in the callsign correspondence (notification with “Open the correspondence”, filtered on the row); the series becomes “In the correspondence ✓”; “Complete” adds the forms and types seen since.
 - “Flights”: full-text filter, 300 rows shown at most.
 - Actions:
   - “Update the reference (anonymised)”;

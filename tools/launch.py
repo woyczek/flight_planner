@@ -21,6 +21,8 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import data_sync  # synchronisation git du pool de données (bouton « Synchroniser ») ; git durci (data_sync.git_cmd)
 import data_guard  # .js de data/ : servis seulement s'ils suivent le format des fichiers de données
 import aero_fetch  # données aéronautiques d'autres pays (Paramètres › Maintenance › Données aéronautiques)
+from check_binaries import POINTER as LFS_POINTER  # début d'un pointeur Git LFS (fichier non récupéré)
+import version_stamps  # empreintes ?v=… posées au moment de servir (pages, scripts, feuilles des designs)
 
 ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
 DATA = os.path.join(ROOT, 'data')
@@ -159,6 +161,7 @@ def clone(user=None, secret=None, remember=False, url=None):
         if re.search(r'Authentication failed|could not read Username|403|401|terminal prompts disabled', log, re.I):
             return False, 'Accès refusé : identifiant, mot de passe ou jeton incorrect, ou accès au dépôt pas encore donné.'
         return False, log or 'Échec du clone.'
+    ensure_lfs(DATA, 'data', 'Données')  # données clonées : fichiers Git LFS récupérés, ou signalés
     if remember and user and secret:
         host = urllib.parse.urlparse(url)
         subprocess.run([git, 'credential', 'approve'], input=f'protocol={host.scheme}\nhost={host.netloc}\nusername={user}\npassword={secret}\n\n',
@@ -388,7 +391,35 @@ class Setup(http.server.SimpleHTTPRequestHandler):
         why = self._refused()
         if why:
             return self._deny(why)
+        if self._stamped(head=True):
+            return None
         return super().do_HEAD()
+
+    def _stamped(self, head=False):
+        """Page, script ou feuille de design servi avec ses empreintes ?v=… posées (tools/version_stamps.py) et un ETag
+        (son empreinte) : une page inchangée répond 304, un fichier versionné reste en cache. Vrai si servi ici."""
+        f = self.translate_path(self.path)
+        try:
+            if not os.path.isfile(f) or not version_stamps.stamped(f):
+                return False
+            body, h = version_stamps.serve(f)
+        except Exception as e:  # jamais de réponse coupée : le fichier part tel quel
+            say(f'  ⚠ Empreintes non posées ({os.path.basename(f)}) : {e} — fichier servi tel quel.')
+            return False
+        etag = f'"{h}"'
+        if self.headers.get('If-None-Match') == etag:
+            self.send_response(304)
+            self.send_header('ETag', etag)
+            self.end_headers()
+            return True
+        self.send_response(200)
+        self.send_header('Content-Type', self.guess_type(f))
+        self.send_header('Content-Length', str(len(body)))
+        self.send_header('ETag', etag)
+        self.end_headers()
+        if not head:
+            self.wfile.write(body)
+        return True
 
     def do_GET(self):
         """GET : refus (chemins cachés, autre site, scripts de données hors format), index du pool refaits avant d'être
@@ -413,7 +444,21 @@ class Setup(http.server.SimpleHTTPRequestHandler):
                 return self._json({'error': 'refusé'}, 403)
             git = data_sync.git_exe()
             return self._json({'server': True, 'root': ROOT, 'git': bool(git), 'data': has_data(),
-                               'dataGit': os.path.isdir(os.path.join(DATA, '.git')), 'dataRepo': data_repo_url()})
+                               'dataGit': os.path.isdir(os.path.join(DATA, '.git')), 'dataRepo': data_repo_url(), 'lfs': LFS})
+        if self.path.split('?')[0] == '/__setup/mission-folders':
+            # dossiers de missions présents (data/missions/<famille>/<id>) : le registre repris par le navigateur au
+            # premier démarrage écarte les missions dont le dossier n'existe plus (registre périmé)
+            if not self._allowed():
+                return self._json({'error': 'refusé'}, 403)
+            root, out = os.path.join(DATA, 'missions'), []
+            try:
+                for fam in sorted(os.listdir(root)):
+                    if os.path.isdir(os.path.join(root, fam)) and not fam.startswith('.'):
+                        out += [f'{fam}/{m}' for m in sorted(os.listdir(os.path.join(root, fam)))
+                                if os.path.isdir(os.path.join(root, fam, m)) and not m.startswith('.')]
+            except OSError:
+                pass
+            return self._json({'folders': out})
         if self.path.split('?')[0] == '/__setup/sync-remote':
             # dépôt git de synchronisation de data/ : adresse actuelle (ou celle du clone par défaut)
             if not self._allowed():
@@ -513,6 +558,8 @@ class Setup(http.server.SimpleHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(body)
             return None
+        if self._stamped():
+            return None
         return super().do_GET()
 
     def do_POST(self):
@@ -607,7 +654,7 @@ class Setup(http.server.SimpleHTTPRequestHandler):
                 a = {}
             args = [str(x)[:12] for x in (a.get('args') or [])][:40]
             with AERO_LOCK:
-                return self._json(aero_fetch.fetch(DATA, str(a.get('provider') or ''), args))
+                return self._json(fresh(aero_fetch).fetch(DATA, str(a.get('provider') or ''), args))
         if path == '/__setup/jeu-essai':
             ok, log = sample_data()
             if ok:
@@ -1235,13 +1282,19 @@ def aircraft_files():
 
 
 def aircraft_rebuild(codes):
-    """Complète la base des types pour les désignateurs donnés : types OACI Doc 8643, puis performances EUROCONTROL
-    APD."""
+    """Complète la base des types pour les désignateurs donnés : types OACI Doc 8643, performances EUROCONTROL APD,
+    puis consommations SimBrief (tous les types de SimBrief, liste en cache une semaine), enfin alias et caractéristiques
+    d'Airframe DB (40 fiches au plus par passe)."""
     d = os.path.join(ROOT, 'AircraftDB')
     script = os.path.join(d, 'update_aircraft_db.py')
     overrides = os.path.join(DATA, 'references', 'aircraft_overrides.json')
     steps = [('types (OACI Doc 8643) : ' + ' '.join(codes), [sys.executable, script, '--only', *codes, '--overrides', overrides]),
-             ('performances (EUROCONTROL APD) : ' + ' '.join(codes), [sys.executable, script, '--apd', *codes])]
+             ('performances (EUROCONTROL APD) : ' + ' '.join(codes), [sys.executable, script, '--apd', *codes]),
+             # consommation de croisière et masses de tous les types de SimBrief (une requête, cache d'une semaine)
+             ('consommations (SimBrief)', [sys.executable, script, '--simbrief']),
+             # alias (noms en usage → code OACI) et caractéristiques d'Airframe DB : au plus 40 fiches par passe (≈ 1 min),
+             # la base se complète au fil des passes puis se rafraîchit tous les 30 jours
+             ('alias et caractéristiques (Airframe DB)', [sys.executable, script, '--airframedb', '40'])]
     env = {**os.environ, 'PYTHONIOENCODING': 'utf-8'}
     ok = True
     for name, cmd in steps:
@@ -1272,6 +1325,25 @@ def aircraft_start(codes):
 
 
 AERO_LOCK = threading.Lock()  # un téléchargement de données aéronautiques à la fois (tools/aero_fetch.py)
+_loaded = {}  # module → date du fichier au chargement
+
+
+def fresh(mod):
+    """Module d'outil relu si son fichier a changé depuis le chargement (mise à jour de la suite sans relancer le
+    lanceur : sinon un fournisseur ajouté depuis répondait « fournisseur inconnu », comme « nat » des tracks NAT)."""
+    import importlib
+    try:
+        m = os.stat(mod.__file__).st_mtime_ns
+    except OSError:
+        return mod
+    if _loaded.setdefault(mod.__name__, m) != m:
+        try:
+            mod = importlib.reload(mod)
+            _loaded[mod.__name__] = m
+            say(f'  {os.path.basename(mod.__file__)} relu (modifié depuis le lancement).')
+        except Exception as e:  # fichier en cours d'écriture, erreur de syntaxe : l'ancienne version reste
+            say(f'  ⚠ {os.path.basename(mod.__file__)} non relu : {e}')
+    return mod
 SYNC_LOCK = threading.Lock()  # une synchronisation git à la fois (tools/data_sync.py)  # index du pool refaits à la demande (do_GET)
 
 
@@ -1350,6 +1422,68 @@ def index_users():
 INSTANCE_TOKEN = ''
 
 
+# ---- Git LFS : images, textures, icônes, polices et archives sont suivies par Git LFS (.gitattributes) ; un clone fait
+# sans Git LFS installé ne laisse que des pointeurs (texte de 130 octets) — designs sans textures, icônes absentes.
+# Contrôlé à chaque lancement, pour la suite et pour data/ : récupérés par « git lfs pull » si Git LFS est là, sinon
+# consigne dans la fenêtre du lanceur et sur la page de premier lancement (/__setup/status › lfs), jamais en silence.
+LFS = {}  # 'suite' | 'data' → {'missing': n, 'example': chemin, 'tool': bool}
+LFS_SKIP = {'.git', '.claude', 'node_modules', '__pycache__', 'dist'}
+
+
+def lfs_patterns(root):
+    """Motifs des fichiers suivis par Git LFS (lignes « motif filter=lfs » du .gitattributes de root)."""
+    try:
+        lines = open(os.path.join(root, '.gitattributes'), encoding='utf-8', errors='replace').read().splitlines()
+    except OSError:
+        return []
+    return [l.split()[0] for l in lines if 'filter=lfs' in l and l.split() and not l.lstrip().startswith('#')]
+
+
+def lfs_pointers(root, skip=()):
+    """Fichiers de root restés en pointeurs Git LFS (chemins relatifs) ; skip : dossiers de premier niveau à ignorer."""
+    pats = lfs_patterns(root)
+    out = []
+    if not pats:
+        return out
+    for d, dirs, files in os.walk(root):
+        rel_d = os.path.relpath(d, root)
+        dirs[:] = [x for x in dirs if x not in LFS_SKIP and not (rel_d == '.' and x in skip)]
+        for n in files:
+            if not any(fnmatch.fnmatch(n, p) for p in pats):
+                continue
+            f = os.path.join(d, n)
+            try:
+                if os.path.getsize(f) > 1024:
+                    continue
+                with open(f, 'rb') as h:
+                    if h.read(len(LFS_POINTER)) == LFS_POINTER:
+                        out.append(os.path.relpath(f, root).replace(os.sep, '/'))
+            except OSError:
+                pass
+    return out
+
+
+def ensure_lfs(root, key, label, skip=()):
+    """Contrôle Git LFS d'un dépôt (root) : pointeurs trouvés → « git lfs pull » si Git LFS est installé, sinon consigne.
+    Résultat gardé dans LFS[key] pour la page ; vrai si plus aucun pointeur."""
+    ptr = lfs_pointers(root, skip)
+    git = data_sync.git_exe()
+    tool = bool(git) and run([git, 'lfs', 'version'], capture_output=True) == 0
+    if ptr and tool and os.path.exists(os.path.join(root, '.git')):
+        say(f'  {label} : {len(ptr)} fichier(s) Git LFS pas encore récupéré(s) (images, textures, polices…) : git lfs pull…')
+        run([git, 'lfs', 'install', '--local'], cwd=root, capture_output=True)
+        run(data_sync.git_cmd('-C', root, 'lfs', 'pull'), cwd=root, timeout=1800, env=git_env())
+        ptr = lfs_pointers(root, skip)
+        say(f'  {label} : fichiers Git LFS récupérés.' if not ptr else f'  ⚠ {label} : {len(ptr)} fichier(s) Git LFS toujours manquant(s) '
+            f'(réseau ou accès au dépôt), ex. {ptr[0]}')
+    elif ptr:
+        say(f'  ⚠ {label} : {len(ptr)} fichier(s) restés en pointeurs Git LFS (ex. {ptr[0]}) — textures, icônes et polices absentes.')
+        say('    Installer Git LFS (https://git-lfs.com), puis relancer le lanceur : les fichiers seront récupérés.' if not tool else
+            '    Copie sans dépôt git (pas de .git) : reprendre l’archive complète de la version, ou un clone fait avec Git LFS.')
+    LFS[key] = {'missing': len(ptr), 'example': ptr[0] if ptr else '', 'tool': tool, 'repo': os.path.exists(os.path.join(root, '.git'))}
+    return not ptr
+
+
 def mark_instance():
     """Repère de l'installation lancée dans le dossier de l'application et ses dossiers de données. Même jeton pour toute la
     vie du lanceur : rappelé quand les données arrivent après le démarrage (jeu d'essai, dépôt, archive), sinon data/ et
@@ -1392,6 +1526,10 @@ def main():
     say('')
     if not a.no_data:
         ensure_data()
+    # fichiers Git LFS (textures, icônes, polices…) de la suite et des données : récupérés ou signalés
+    ensure_lfs(ROOT, 'suite', 'Suite', skip=('data',))
+    if os.path.isdir(DATA):
+        ensure_lfs(DATA, 'data', 'Données')
     say('2. Serveur local')
     port = a.port
     for p in range(a.port, a.port + 20):

@@ -34,11 +34,11 @@
     style.textContent = `.st-wrap{overflow:auto}
 .st-table{width:100%;border-collapse:collapse;font-size:12px}
 .st-table th,.st-table td{padding:8px 10px;text-align:left;border-bottom:1px solid var(--line,#2b313d);white-space:nowrap}
-.st-table th{position:sticky;top:0;z-index:1;color:var(--muted,#9aa3b2);font-weight:600;background:var(--panel,var(--card,#fff));background-image:linear-gradient(color-mix(in srgb,currentColor 7%,transparent),color-mix(in srgb,currentColor 7%,transparent))}
+.st-table th{position:sticky;top:0;z-index:1;color:color-mix(in srgb,var(--muted,#9aa3b2) 80%,var(--text,var(--ink,#111)));font-weight:600;background:var(--panel,var(--card,#fff));background-image:linear-gradient(color-mix(in srgb,currentColor 7%,transparent),color-mix(in srgb,currentColor 7%,transparent))}
 .st-table .st-num{text-align:right}
 .st-table th.st-sortable{cursor:pointer;user-select:none}
 .st-table th.st-sortable:hover{color:var(--text,var(--ink,inherit))}
-.st-arrow{display:inline-block;min-width:12px;margin-left:5px;opacity:.55;font-size:10px;vertical-align:1px}
+.st-arrow{display:inline-block;min-width:12px;margin-left:5px;font-size:10px;vertical-align:1px}
 .st-table th.st-asc .st-arrow,.st-table th.st-desc .st-arrow{opacity:1;color:var(--accent,#6fa8ff)}
 .st-table tbody tr:hover td{background:color-mix(in srgb,var(--accent,#6fa8ff) 10%,transparent)}
 .st-table tr.st-clickable{cursor:pointer}

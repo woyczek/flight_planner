@@ -243,44 +243,88 @@
   }
 
   // ---------------------------------------------------------------- Mon profil › Niveau d'utilisation (v2)
-  const LEVELS = [
-    [L('Équipage', 'Crew', 'Besatzung', 'Tripulación'), L(
-      'Recevoir mes missions, voir le planning des ordres, écrire mes comptes rendus.',
+  // Quatre cartes de niveau (case radio, numéro et nom, ce que le niveau montre, « Demande le Centre » pour 2 à 4), le
+  // niveau actuel, puis les outils facultatifs (case, nom, courte description). Textes [fr, en, de, es] écrits dans la
+  // langue de la page (K.t, K.tf) en zone [data-no-i18n] : la rubrique est refaite au changement de langue (data_admin.js).
+  const LEVEL_TITLE = ['Niveau d’utilisation', 'Usage level', 'Nutzungsstufe', 'Nivel de uso'];
+  /** Niveaux 1 à 4 : nom, ce que le niveau montre, et s'il demande l'accord du Centre. */
+  const LEVELS = [{
+    name: ['Équipage', 'Crew', 'Besatzung', 'Tripulación'],
+    what: ['Recevoir mes missions, voir le planning des ordres, écrire mes comptes rendus.',
       'Receive my missions, see the order schedule, write my reports.',
       'Meine Missionen erhalten, die Befehlsplanung sehen, meine Berichte schreiben.',
-      'Recibir mis misiones, ver la planificación de órdenes, escribir mis informes.')],
-    [L('Planification', 'Planning', 'Planung', 'Planificación'), L(
-      'En plus : planifier les ordres (Tableau, disponibilités, ODV). Demande le Centre.',
-      'Also: plan the orders (Board, availability, ODV). Requires the Centre.',
-      'Zusätzlich: Befehle planen (Einsatztafel, Verfügbarkeit, ODV). Erfordert das Zentrum.',
-      'Además: planificar las órdenes (Tablero, disponibilidad, ODV). Requiere el Centro.')],
-    [L('Conception', 'Design', 'Gestaltung', 'Diseño'), L('En plus : générer, modifier et registrer les missions. Demande le Centre.',
-      'Also: generate, edit and register missions. Requires the Centre.',
-      'Zusätzlich: Missionen erzeugen, ändern und registrieren. Erfordert das Zentrum.',
-      'Además: generar, modificar y registrar misiones. Requiere el Centro.')],
-    [L('Expert', 'Expert', 'Experte', 'Experto'), L(
-      'Tout : studio cartographique, cartes avancées et profils, carburant, atterrissages, analyses.',
+      'Recibir mis misiones, ver la planificación de órdenes, escribir mis informes.'
+    ]
+  }, {
+    name: ['Planification', 'Planning', 'Planung', 'Planificación'],
+    what: ['En plus : planifier les ordres (Tableau, disponibilités, ODV).', 'Also: plan the orders (Board, availability, ODV).',
+      'Zusätzlich: Befehle planen (Einsatztafel, Verfügbarkeit, ODV).',
+      'Además: planificar las órdenes (Tablero, disponibilidad, ODV).'
+    ],
+    centre: true
+  }, {
+    name: ['Conception', 'Design', 'Gestaltung', 'Diseño'],
+    what: ['En plus : générer, modifier et registrer les missions.', 'Also: generate, edit and register missions.',
+      'Zusätzlich: Missionen erzeugen, ändern und registrieren.', 'Además: generar, modificar y registrar misiones.'
+    ],
+    centre: true
+  }, {
+    name: ['Expert', 'Expert', 'Experte', 'Experto'],
+    what: ['Tout : studio cartographique, cartes avancées et profils, carburant, atterrissages, analyses.',
       'Everything: map studio, advanced maps and profiles, fuel, landings, analyses.',
       'Alles: Kartenstudio, erweiterte Karten und Profile, Kraftstoff, Landungen, Analysen.',
-      'Todo: estudio cartográfico, mapas avanzados y perfiles, combustible, aterrizajes, análisis.')]
-  ];
-  const MODULE_LABELS = {
-    maps: L('Cartes de vol', 'Flight maps', 'Flugkarten', 'Mapas de vuelo'),
-    fuel: L('Carburant', 'Fuel', 'Kraftstoff', 'Combustible'),
-    landings: L('Atterrissages', 'Landings', 'Landungen', 'Aterrizajes'),
-    reporting: L('Analyse des missions', 'Mission analysis', 'Missionsanalyse', 'Análisis de misiones')
+      'Todo: estudio cartográfico, mapas avanzados y perfiles, combustible, aterrizajes, análisis.'
+    ],
+    centre: true
+  }];
+  /** Outils facultatifs (RepositoryNav.levels.MODULES) : nom et courte description. */
+  const MODULE_TEXTS = {
+    maps: [
+      ['Cartes de vol', 'Flight maps', 'Flugkarten', 'Mapas de vuelo'],
+      ['route, cartes topographiques, approche', 'route, topographic maps, approach', 'Route, topografische Karten, Anflug',
+        'ruta, mapas topográficos, aproximación'
+      ]
+    ],
+    fuel: [
+      ['Carburant', 'Fuel', 'Kraftstoff', 'Combustible'],
+      ['performances et devis carburant', 'performance and fuel estimate', 'Flugleistungen und Kraftstoffberechnung',
+        'prestaciones y cálculo de combustible'
+      ]
+    ],
+    landings: [
+      ['Atterrissages', 'Landings', 'Landungen', 'Aterrizajes'],
+      ['tableau de bord des atterrissages', 'landings dashboard', 'Übersicht der Landungen', 'panel de aterrizajes']
+    ],
+    reporting: [
+      ['Analyse des missions', 'Mission analysis', 'Missionsanalyse', 'Análisis de misiones'],
+      ['reporting des comptes rendus', 'reporting on mission reports', 'Auswertung der Einsatzberichte',
+        'análisis de los informes de misión'
+      ]
+    ]
+  };
+  const LEVEL_TEXT = {
+    centre: ['Demande le Centre', 'Requires the Centre', 'Erfordert das Zentrum', 'Requiere el Centro'],
+    now: ['Niveau actuel : {n} · {name}', 'Current level: {n} · {name}', 'Aktuelle Stufe: {n} · {name}', 'Nivel actual: {n} · {name}'],
+    tools: ['Outils facultatifs', 'Optional tools', 'Optionale Werkzeuge', 'Herramientas opcionales'],
+    allIn: ['Tous inclus au niveau Expert.', 'All included at Expert level.', 'Auf Stufe Experte alle enthalten.',
+      'Todos incluidos en el nivel Experto.'
+    ],
+    inTools: ['Rangés sous « Outils » dans la barre latérale.', 'Grouped under “Tools” in the sidebar.',
+      'In der Seitenleiste unter „Werkzeuge“ gruppiert.', 'Agrupados en «Herramientas» en la barra lateral.'
+    ]
   };
   const levelPanel = {
     id: 'level',
     group: GROUP_PROFILE,
-    title: L('Niveau d’utilisation', 'Usage level', 'Nutzungsstufe', 'Nivel de uso'),
+    title: L(...LEVEL_TITLE),
     intro: L(
       'Ce que la suite vous montre, selon votre usage. Le niveau range l’interface ; il ne donne aucun droit : le Centre garde son accès.',
       'What the suite shows you, according to your use. The level arranges the interface; it grants no rights: the Centre keeps its access.',
       'Was die Suite Ihnen zeigt, je nach Nutzung. Die Stufe ordnet die Oberfläche; sie gewährt keine Rechte: das Zentrum behält seinen Zugang.',
       'Lo que la suite le muestra, según su uso. El nivel ordena la interfaz; no da ningún derecho: el Centro conserva su acceso.'
     ),
-    /** Niveau (1 à 4, RepositoryNav.levels) et modules facultatifs ; un changement recharge la page (barre latérale). */
+    /** Niveau (1 à 4, RepositoryNav.levels) en cartes, niveau actuel, modules facultatifs ; un changement enregistre
+     *  (événement « suite-level-change » émis par RepositoryNav) et recharge la page (barre latérale). */
     render(body, api) {
       const N = nav().levels;
       api.actions([]);
@@ -289,19 +333,26 @@
         return;
       }
       const cur = N.get(),
-        mods = N.modules();
-      body.innerHTML = `<fieldset class="sp-levels"><legend>${esc(L('Mon usage', 'My use', 'Meine Nutzung', 'Mi uso'))}</legend>
-        ${LEVELS.map(([name, what], i) => `<label class="sp-level"><input type="radio" name="lvl" value="${i + 1}"${cur === i + 1 ? ' checked' : ''}> <b>${i + 1} · ${esc(name)}</b> <span class="sp-hint">${esc(what)}</span></label>`).join('')}
-        </fieldset>
-        <fieldset class="sp-levels"${cur >= 4 ? ' disabled' : ''}><legend>${esc(L('Outils facultatifs', 'Optional tools', 'Optionale Werkzeuge', 'Herramientas opcionales'))}</legend>
-        ${N.MODULES.map(m => `<label class="sp-level"><input type="checkbox" name="mod" value="${m}"${mods.includes(m) ? ' checked' : ''}> ${esc(MODULE_LABELS[m] || m)}</label>`).join('')}
-        <p class="sp-hint">${esc(cur >= 4 ? L('Tous inclus au niveau Expert.', 'All included at Expert level.', 'Auf Stufe Experte alle enthalten.', 'Todos incluidos en el nivel Experto.') : L('Rangés sous « Outils » dans la barre latérale.', 'Grouped under “Tools” in the sidebar.', 'In der Seitenleiste unter „Werkzeuge“ gruppiert.', 'Agrupados en «Herramientas» en la barra lateral.'))}</p></fieldset>`;
+        mods = N.modules(),
+        all = cur >= 4,
+        T = K.t;
+      body.innerHTML = `<div class="sp-level-panel" data-no-i18n>
+        <div class="sp-level-cards" role="radiogroup" aria-label="${esc(T(LEVEL_TITLE))}">
+        ${LEVELS.map((level, i) => `<label class="sp-level-card"><input type="radio" name="lvl" value="${i + 1}"${cur === i + 1 ? ' checked' : ''}><span class="sp-level-text"><b>${i + 1} · ${esc(T(level.name))}</b><span class="sp-level-what">${esc(T(level.what))}</span>${level.centre ? `<small class="sp-level-need">${esc(T(LEVEL_TEXT.centre))}</small>` : ''}</span></label>`).join('')}
+        </div>
+        <p class="sp-level-now">${esc(tf(LEVEL_TEXT.now, { n: cur, name: T(LEVELS[cur - 1]?.name || ['—']) }))}</p>
+        <fieldset class="sp-tools"${all ? ' disabled' : ''}><legend>${esc(T(LEVEL_TEXT.tools))}</legend>
+        <p class="sp-hint">${esc(T(all ? LEVEL_TEXT.allIn : LEVEL_TEXT.inTools))}</p>
+        ${N.MODULES.map(m => `<label class="sp-tool"><input type="checkbox" name="mod" value="${m}"${all || mods.includes(m) ? ' checked' : ''}><span><b>${esc(T(MODULE_TEXTS[m]?.[0] || [m]))}</b>${MODULE_TEXTS[m] ? ` <span class="sp-tool-what">— ${esc(T(MODULE_TEXTS[m][1]))}</span>` : ''}</span></label>`).join('')}
+        </fieldset></div>`;
+      /** Enregistré : annonce, puis rechargement (barre latérale et pages selon le niveau). */
       const reload = () => {
         api.status(L('Enregistré : la page se recharge…', 'Saved: the page reloads…', 'Gespeichert: die Seite wird neu geladen…',
           'Guardado: la página se recarga…'));
         setTimeout(() => location.reload(), 400);
       };
       body.querySelectorAll('input[name="lvl"]').forEach(r => r.onchange = () => {
+        if (+r.value === cur) return; // déjà ce niveau : rien à écrire
         N.set(+r.value);
         reload();
       });
@@ -309,10 +360,6 @@
         N.setModules([...body.querySelectorAll('input[name="mod"]:checked')].map(x => x.value));
         reload();
       });
-      api.status(tf(['Niveau {n} · {name}', 'Level {n} · {name}', 'Stufe {n} · {name}', 'Nivel {n} · {name}'], {
-        n: cur,
-        name: LEVELS[cur - 1][0]
-      }));
     }
   };
 

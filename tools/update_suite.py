@@ -148,6 +148,9 @@ def update(ch=None):
         sys.exit(1)
     if behind:
         git('merge', '--ff-only', f'origin/{ch}')
+    # fichiers Git LFS : ceux de la mise à jour, et ceux d'un clone fait sans Git LFS (pointeurs) — sans effet s'il manque
+    if not subprocess.run(['git', 'lfs', 'version'], cwd=ROOT, capture_output=True).returncode:
+        subprocess.run(['git', 'lfs', 'pull'], cwd=ROOT, capture_output=True)
     after, after_v = git('rev-parse', 'HEAD'), release()
     if before == after:
         print(f'✓ Déjà à jour sur {ch} ({after_v}).' + (f' {ahead} commit(s) local(aux) non publié(s).' if ahead else ''))
@@ -197,6 +200,11 @@ def doctor():
     # Git LFS : outil présent, binaires suivis tous en LFS, crochet pre-commit installé
     if subprocess.run(['git', 'lfs', 'version'], cwd=ROOT, capture_output=True).returncode:
         issues.append('git-lfs absent : installer Git LFS (https://git-lfs.com) puis « git lfs install »')
+    # fichiers restés en pointeurs (clone fait sans Git LFS) : textures, icônes et polices absentes des pages
+    from launch import lfs_pointers
+    ptr = lfs_pointers(ROOT, skip=('data',))
+    if ptr:
+        issues.append(f'{len(ptr)} fichier(s) Git LFS non récupéré(s), ex. {ptr[0]} : « git lfs pull » (ou relancer le lanceur)')
     chk = subprocess.run([sys.executable, os.path.join(HERE, 'check_binaries.py'), '--repo', ROOT], capture_output=True, text=True, encoding='utf-8', errors='replace')
     if chk.returncode:
         issues.append('binaires hors Git LFS : ' + ' '.join(chk.stdout.split('\n')[0:1]) + ' (python tools/check_binaries.py)')

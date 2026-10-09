@@ -22,8 +22,10 @@ html[data-design="aero"] .card:not(#imp) {
   border-color: color-mix(in srgb, var(--repo-accent) 20%, transparent);
   box-shadow: 0 10px 30px color-mix(in srgb, var(--repo-accent) 13%, transparent)
 }
+/* titre de bloc à l'accent du thème ; sur un bloc sombre d'une page claire (Ordres de vols : #7a5c12 sur #181d23,
+   2,7:1), --repo-ink de block_icons.js (accent, bandeau ou texte du bandeau, le premier à 4,5:1 sur ce bloc) */
 html[data-design="aero"] .repo-block h2 {
-  color: var(--repo-accent)
+  color: var(--repo-ink, var(--repo-accent))
 }
 html[data-design="aero"] button:not(.col-split):not(#imp),
 html[data-design="aero"] .buttonLink:not(#imp),
@@ -53,6 +55,101 @@ html[data-design="aero"] textarea:not(#imp) {
   border-radius: 7px
 }
 
+/* Aéro fidèle à sa maquette (docs/technique/demo_design_icones.html, design Aéro) : mêmes formes sur les vraies pages,
+   quelles que soient leurs feuilles propres — en-tête compact (titre 21 px, description en sous-titre), blocs aérés
+   (marge intérieure 20 px, titre sans filet), champs de 38 px à bordure fine et anneau de focus, libellés en gras,
+   aides lisibles, tableaux aérés, onglets en pastilles, barre d'action en verre. Couleurs : celles de la page et du
+   thème (--repo-*), mélangées à currentColor pour les bordures et les encres secondaires (contraste ≥ 4,5:1). */
+html[data-design="aero"] .repo-header:not(#imp) {
+  padding-top: 10px;
+  padding-bottom: 10px
+}
+html[data-design="aero"] .repo-header h1:not(#imp) {
+  font-size: 21px;
+  font-weight: 700
+}
+/* description de la page sous le titre : sous-titre de la maquette (texte du bandeau à 84 %, ≥ 4,5:1) */
+html[data-design="aero"] .repo-header>p:not(#imp) {
+  margin: 2px 0 0;
+  font-size: 12.5px;
+  line-height: 1.3;
+  color: color-mix(in srgb, var(--repo-bar-text) 84%, transparent)
+}
+html[data-design="aero"] .repo-block:not(#imp) {
+  padding: 20px
+}
+/* titre de bloc : sans le filet de certaines pages (CR, Mes missions) */
+html[data-design="aero"] .repo-block-heading h2:not(#imp) {
+  padding-bottom: 0;
+  border-bottom: 0;
+  font-weight: 700
+}
+/* champs : 38 px, bordure fine teintée du texte, texte normal ; hors tableaux (saisie dense) et éléments repo-plain */
+html[data-design="aero"] :is(.repo-block, .repo-actionbar) :is(input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]):not([type=color]):not([type=hidden]):not([type=image]):not([type=button]):not([type=submit]):not([type=reset]), select:not([multiple]):not([size]), textarea):not(:is(td, th) *):not(.repo-plain):not(#imp) {
+  box-sizing: border-box;
+  border: 1px solid color-mix(in srgb, currentColor 32%, transparent);
+  font-weight: 400
+}
+html[data-design="aero"] :is(.repo-block, .repo-actionbar) :is(input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]):not([type=color]):not([type=hidden]):not([type=image]):not([type=button]):not([type=submit]):not([type=reset]), select:not([multiple]):not([size])):not(:is(td, th) *):not(.repo-plain):not(#imp) {
+  min-height: 38px;
+  padding-top: 7px;
+  padding-bottom: 7px;
+  padding-left: 10px;
+  padding-right: 10px
+}
+/* anneau de focus à la couleur des icônes du bloc (≥ 3:1 sur sa surface) */
+html[data-design="aero"] :is(.repo-block, .repo-actionbar) :is(input, select, textarea):focus-visible:not([type=checkbox]):not([type=radio]):not([type=range]):not(#imp) {
+  outline: 2px solid color-mix(in srgb, var(--repo-icon, var(--repo-accent)) 55%, transparent);
+  outline-offset: 1px;
+  border-color: var(--repo-icon, var(--repo-accent))
+}
+/* libellés de champs en gras (pas ceux des cases à cocher) */
+html[data-design="aero"] .repo-block label:not(.check):not(:has(>input:is([type=checkbox], [type=radio]))):not(#imp) {
+  font-weight: 600
+}
+/* groupes de champs (fieldset) : cadre fin arrondi des sous-cartes de la maquette, légende en gras */
+html[data-design="aero"] .repo-block fieldset:not(.repo-plain):not(#imp) {
+  border: 1px solid color-mix(in srgb, currentColor 16%, transparent);
+  border-radius: 10px;
+  padding: 8px 14px 12px
+}
+html[data-design="aero"] .repo-block fieldset:not(.repo-plain)>legend:not(#imp) {
+  padding: 0 6px;
+  font-weight: 650
+}
+/* aides et petits textes : texte du parent à 78 % (≥ 4,5:1 sur les surfaces claires et sombres) */
+html[data-design="aero"] :is(.repo-block, .repo-actionbar) :is(.small, .hint, .muted):not(.ok):not(.err):not(.warn):not(.bad):not(.good):not(#imp) {
+  color: color-mix(in srgb, currentColor 78%, transparent)
+}
+/* tableaux de lecture (sans champs) : cellules aérées comme la maquette */
+html[data-design="aero"] .repo-block table:not(:has(input, select, textarea)) :is(th, td):not(#imp) {
+  padding: 6px 8px
+}
+/* onglets de page : pastilles arrondies, onglet courant teinté de l'accent (texte de la page) */
+html[data-design="aero"] .repo-tabs:not(#imp) {
+  gap: 6px;
+  padding-bottom: 8px;
+  border-bottom: 0
+}
+html[data-design="aero"] .repo-tab:not(#imp) {
+  margin: 0;
+  padding: 7px 15px;
+  border: 1px solid transparent;
+  border-radius: 999px
+}
+html[data-design="aero"] .repo-tab[aria-current="page"]:not(#imp) {
+  border-color: color-mix(in srgb, var(--repo-accent) 35%, transparent);
+  background: color-mix(in srgb, var(--repo-accent) 13%, var(--card, var(--repo-page)));
+  box-shadow: 0 4px 14px color-mix(in srgb, var(--repo-accent) 18%, transparent)
+}
+/* barre d'action collée en bas : coins hauts arrondis, ombre douce teintée, verre dépoli */
+html[data-design="aero"] .repo-actionbar:not(#imp) {
+  border-top: 1px solid color-mix(in srgb, var(--repo-accent) 22%, transparent);
+  border-radius: 14px 14px 0 0;
+  box-shadow: 0 -8px 26px color-mix(in srgb, var(--repo-accent) 16%, transparent);
+  backdrop-filter: blur(8px)
+}
+
 /* ---- Opérationnel : dense, angles vifs, liseré de thème à gauche des blocs, titres en capitales, chiffres tabulaires */
 html[data-design="ops"] :where(body>:not(.repo-header):not(.repo-footer)) {
   font-size: 13px
@@ -77,17 +174,20 @@ html[data-design="ops"] .card:not(#imp) {
   padding: 10px 12px;
   margin-bottom: 8px
 }
-html[data-design="ops"] .repo-block h2,
-html[data-design="ops"] .card h2 {
+/* titre du bloc (en-tête posé par le framework) ; pas les titres du contenu (aperçu imprimable .report du CR) */
+html[data-design="ops"] .repo-block-heading h2,
+html[data-design="ops"] .card>h2 {
   text-transform: uppercase;
   letter-spacing: .07em
 }
-html[data-design="ops"] .repo-block h2:not(#imp),
-html[data-design="ops"] .card h2:not(#imp) {
+html[data-design="ops"] .repo-block-heading h2:not(#imp),
+html[data-design="ops"] .card>h2:not(#imp) {
   font-size: 12.5px
 }
 html[data-design="ops"] button:not(.col-split):not(#imp),
 html[data-design="ops"] .buttonLink:not(#imp),
+html[data-design="ops"] a.mc-button:not(#imp),
+html[data-design="ops"] a.headerButton:not(#imp),
 html[data-design="ops"] .mc-header-tools summary:not(#imp),
 html[data-design="ops"] .mc-header-tools a:not(#imp),
 html[data-design="ops"] .mc-report-tools summary:not(#imp),
@@ -111,7 +211,7 @@ html[data-design="ops"] [role="menu"]:not(#imp) {
 html[data-design="ops"] input:not([type=checkbox]):not([type=radio]):not([type=range]):not(#imp),
 html[data-design="ops"] select:not(#imp),
 html[data-design="ops"] textarea:not(#imp) {
-  border-radius: 2px
+  border-radius: 3px
 }
 html[data-design="ops"] :where(body>:not(.repo-header):not(.repo-footer)) input:not([type=checkbox]):not([type=radio]):not([type=range]):not(#imp),
 html[data-design="ops"] :where(body>:not(.repo-header):not(.repo-footer)) select:not(#imp) {
@@ -123,8 +223,83 @@ html[data-design="ops"] :where(body>:not(.repo-header):not(.repo-footer)) td:not
   padding-top: 4px;
   padding-bottom: 4px
 }
+/* Opérationnel cohérent : un seul angle (3 px) pour tout ce qui était encore arrondi par la page ou le framework,
+   une seule densité (boutons à la hauteur des champs), un en-tête compact sur toutes les pages. Couleurs : celles du
+   thème et de la page, inchangées. */
+/* rayons écrits calc(<rayon> * var(--repo-round, 1)) : onglets de page, champs des Paramètres, cartes du CR */
+html[data-design="ops"] {
+  --repo-round: .4
+}
+/* en-tête : même hauteur sur les pages à en-tête de CR (mc-header 18 px) et les autres (10 px) ; description en
+   petit sous-titre (16 px sur Mes missions et Mon profil, 13 px sur les CR, 15 px sur le générateur) */
+html[data-design="ops"] .repo-header:not(#imp) {
+  padding-top: 7px;
+  padding-bottom: 7px
+}
+html[data-design="ops"] .repo-header>p:not(#imp) {
+  margin: 1px 0 0;
+  font-size: 12.5px;
+  line-height: 1.3
+}
+/* onglets de page : angles vifs, plus serrés, comme les blocs */
+html[data-design="ops"] .repo-tab:not(#imp) {
+  padding: 5px 12px 4px;
+  border-radius: 3px 3px 0 0
+}
+/* boutons du contenu à la hauteur des champs denses (5 px), au lieu de 8 à 10 px selon la page */
+html[data-design="ops"] :where(body>:not(.repo-header):not(.repo-footer)) :is(button, .buttonLink, a.mc-button):is(.primary, .secondary, .ghost, .danger, .mc-button, .buttonLink):not(.repo-plain):not(.repo-icon-only):not(#imp) {
+  padding-top: 5px;
+  padding-bottom: 5px
+}
+/* sous-cartes, groupes de champs, encadrés (10 px dans les CR) et entrées des menus (6-7 px) : angle du design */
+html[data-design="ops"] .repo-block :is(fieldset, .mc-item, .mc-tools, .mc-kpi>div, .mc-summary, .note):not(.repo-plain):not(#imp),
+html[data-design="ops"] :is(.repo-menu, .repo-language-menu) :is(a, button, summary):not(#imp),
+html[data-design="ops"] .repo-design-row button:not(#imp) {
+  border-radius: 3px
+}
 
-/* ---- Console : règles dans block_icons.css (barre latérale, blocs aérés numérotés, titres en capitales) */
+/* ---- Console : règles de base dans block_icons.css (barre latérale, blocs aérés numérotés, titres en capitales,
+   boutons et champs de 40 px dans le contenu) ; ici, la cohérence des éléments entre eux. Rayons : 6 px pour les
+   commandes (boutons, champs, ☰, langue, outils de l'en-tête), 8 px pour les sous-cartes, onglets, bandeaux,
+   10 px pour les blocs et les menus. Couleurs : celles du thème et de la page, inchangées. */
+/* tous les titres de bloc (pas seulement les en-têtes à icône) : capitales, 1,3 rem, gras ; pas ceux du contenu */
+html[data-design="console"] .repo-block-heading h2,
+html[data-design="console"] .card>h2 {
+  text-transform: uppercase;
+  letter-spacing: .02em
+}
+html[data-design="console"] .repo-block-heading h2:not(#imp),
+html[data-design="console"] .card>h2:not(#imp) {
+  font-size: 1.3rem;
+  font-weight: 800
+}
+/* description de la page : même sous-titre sur toutes les pages (13 à 16 px selon la page) */
+html[data-design="console"] .repo-header>p:not(#imp) {
+  margin: 3px 0 0;
+  font-size: 14px;
+  line-height: 1.35
+}
+/* commandes de l'en-tête (☰, langue, outils du CR, liens-boutons) : rayon des boutons (7, 8 ou pilule selon la page) */
+html[data-design="console"] :is(.repo-menu-button, .repo-language-button, .mc-header-tools summary, .mc-menu>summary, a.mc-button, a.headerButton):not(#imp) {
+  border-radius: 6px
+}
+/* menus déroulants (☰ 9 px, fenêtres du CR 12 px) : rayon des blocs ; entrées à 6 px */
+html[data-design="console"] :is(.repo-menu, .repo-language-menu, .mc-pop, .mc-switch-pop, .mc-import-pop, .lang-menu, .aircraft-menu, .dropdown-menu, .popover, [role="menu"]):not(#imp) {
+  border-radius: 10px
+}
+html[data-design="console"] :is(.repo-menu, .repo-language-menu) :is(a, button, summary):not(#imp) {
+  border-radius: 6px
+}
+/* onglets de page : aérés, rayon des sous-cartes */
+html[data-design="console"] .repo-tab:not(#imp) {
+  padding: 9px 16px 8px;
+  border-radius: 8px 8px 0 0
+}
+/* sous-cartes, groupes de champs, encadrés, bandeaux et zones de dépôt : rayon des sous-cartes (.repo-card 8 px) */
+html[data-design="console"] .repo-block :is(fieldset, .mc-item, .mc-tools, .mc-kpi>div, .mc-summary, .note):not(.repo-plain):not(#imp),
+html[data-design="console"] :is(.repo-notice, .repo-dropzone):not(#imp) {
+  border-radius: 8px
+}
 
 /* ---- choix du design dans le menu ☰ */
 .repo-design-row {

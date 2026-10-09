@@ -1,25 +1,28 @@
 /* =====================================================================================================
-   Flight Performance Planner — instruments fictifs du bandeau (Badin, vario, altimètre)
+   Flight Performance Planner — instruments de lecture (vitesse indiquée, altimètre, vario, chronomètre, carburant)
    -----------------------------------------------------------------------------------------------------
-   Trois cadrans ronds (SVG) dans la colonne de droite de la page (#fpInstrCol, collée sous l'en-tête ; à défaut
+   Cinq cadrans ronds (SVG) dans la colonne de droite de la page (#fpInstrCol, collée sous l'en-tête ; à défaut
    dans l'en-tête), donc visibles pendant le défilement des courbes.
-   Ils montrent la loi de montée réglée par les curseurs verticaux (shared/flight_perf_view.js) à l'altitude
+   Ils montrent la montée choisie avec les curseurs (shared/flight_perf_view.js) à l'altitude
    courante (survolée sur une courbe, sinon épinglée, sinon niveau du plan) :
-     - Badin : aiguille = Badin tenu à cette altitude (réacteur : limité par le Mach de croisière en altitude),
+     - vitesse indiquée : aiguille = Badin tenu à cette altitude (réacteur : limité par le Mach de croisière en altitude),
        repère violet = consigne du curseur ; aiguille bleue semi-transparente = TAS ; arc violet = plage du curseur ;
      - vario : aiguille = vario obtenu à cette altitude (zéro à 9 h, montée vers le haut), repère = vario visé
        (« PG » : plein gaz) ;
-     - altimètre : grande aiguille = centaines de pieds, petite = milliers ; fenêtre numérique (ft, FL) ;
      - carburant : carburant du trajet entier volé à cette altitude (unité d'affichage kg / lbs) et sa durée ;
-       un clic (bouton ou cadran) change la lecture, une par courbe et dans sa couleur : loi réglée (violet) → profil
+       un clic (bouton ou cadran) change la lecture, une par courbe et dans sa couleur : montée choisie (violet) → profil
        (bleu) → croisière économique (vert) → montée rapide (jaune) → Vy (bleu) → montée économique (vert) ;
-     - horloge : temps de vol du même trajet (même lecture, même couleur ; un clic sur l'un change les deux).
-   Badin et vario se règlent aussi sur l'instrument : glisser verticalement ou molette (mêmes pas que les
-   curseurs : 5 kt, 50 ft/min) — FlightInstruments.onSet(clé, valeur) renvoie la valeur à la vue.
+     - altimètre (niveau 4 seulement, data-min-level="4") : altitude courante, grande aiguille des centaines, petite des
+       milliers, triangle des dizaines de milliers ;
+     - chronomètre (niveau 4 seulement) : temps de montée depuis le sol jusqu'à l'altitude courante, à la loi réglée.
+   Instruments de LECTURE seulement (revue d'usage du 9 octobre) : la montée se choisit par les curseurs « Montée
+   choisie » du devis (vitesse indiquée, vario, régime). L'altimètre et le chronomètre, retirés le 9 octobre, reviennent
+   au niveau Expert (10 octobre : ils redisent le niveau survolé et le temps de montée, « ludiques et parlants »).
 
-   Interface : window.FlightInstruments = { update(état | null), onSet } ;
-     état = { h, ias, iasSet, iasMin, iasMax, tas, tasMax, mach, roc, vsSet, vsMax, full, above } (tasMax : TAS
-     la plus grande de la loi, pour l'échelle du Badin).
+   Interface : window.FlightInstruments = { update(état | null), onRefresh, fuelMode } ;
+     état = { h, ias, iasSet, iasMin, iasMax, tas, tasMax, mach, roc, vsSet, vsMax, full, above, climbMin } (tasMax :
+     TAS la plus grande de la loi, pour l'échelle du Badin ; vsSet nul : vario calculé, pas de repère ; climbMin : minutes
+     de montée depuis le sol, nul au-dessus du plafond).
    Designs à matières (Cabinet, Carnet de vol, Durci, Aqua) : cadrans « réels » (boîtier, lunette métallique de la
    matière du design, cadran noir bombé, ombre intérieure, aiguilles ombrées, moyeu, reflet du verre) ; mêmes
    graduations et aiguilles (lecture inchangée), redessinés au changement de design.
@@ -137,7 +140,8 @@
     host = document.createElement("div");
     host.className = "fp-instruments";
     host.hidden = true;
-    host.innerHTML = ["ias", "vs", "alt", "fuel", "time"].map(k => `<figure class="fp-gauge" data-k="${k}"><svg viewBox="0 0 100 100" aria-hidden="true"></svg><figcaption></figcaption>${k === "fuel" || k === "time" ? '<button type="button" class="fp-fuel-mode repo-plain"></button>' : ""}</figure>`).join("");
+    // altimètre et chronomètre : niveau Expert seulement (masqués par repository_nav.css aux niveaux 1 à 3)
+    host.innerHTML = ["ias", "alt", "vs", "clock", "fuel"].map(k => `<figure class="fp-gauge" data-k="${k}"${k === "alt" || k === "clock" ? ' data-min-level="4"' : ""}><svg viewBox="0 0 100 100" aria-hidden="true"></svg><figcaption></figcaption>${k === "fuel" ? '<button type="button" class="fp-fuel-mode repo-plain"></button>' : ""}</figure>`).join("");
     if (col) col.append(host);
     else {
       const tools = line.querySelector(".repo-header-tools");
@@ -145,7 +149,6 @@
     }
     host.querySelectorAll(".fp-gauge").forEach(f => {
       faces[f.dataset.k] = f;
-      if (f.dataset.k === "ias" || f.dataset.k === "vs") drag(f);
     });
     // bouton à trois états de la jauge carburant : loi réglée → économique → profil (couleur de la série)
     // (clic sur le bouton ou sur le cadran lui-même)
@@ -154,61 +157,19 @@
       try {
         localStorage.setItem("flightPerfFuelGauge", fuelMode);
       } catch {}
-      api.onRefresh ? api.onRefresh() : state && (drawFuel(state), drawTime(state)); // la vue recalcule la lecture choisie
+      api.onRefresh ? api.onRefresh() : state && drawFuel(state); // la vue recalcule la lecture choisie
     };
-    // carburant et horloge partagent la lecture : un clic sur l'un change les deux
-    for (const k of ["fuel", "time"]) {
-      faces[k].querySelector(".fp-fuel-mode").onclick = cycleFuel;
-      faces[k].querySelector("svg").addEventListener("click", cycleFuel);
-    }
+    faces.fuel.querySelector(".fp-fuel-mode").onclick = cycleFuel;
+    faces.fuel.querySelector("svg").addEventListener("click", cycleFuel);
     const css = document.createElement("style");
     css.textContent = `.fp-instruments{display:flex;gap:6px;align-items:center;margin:2px 6px}.fp-instruments[hidden]{display:none}
 .fp-gauge{margin:0;display:flex;flex-direction:column;align-items:center;gap:1px}.fp-gauge svg{width:62px;height:62px;display:block;border-radius:50%;box-shadow:0 0 0 2px #2b3440,0 2px 6px #0008;background:#0b0e12}
-.fp-gauge[data-k="ias"] svg,.fp-gauge[data-k="vs"] svg{cursor:ns-resize;touch-action:none}.fp-gauge[data-k="fuel"] svg,.fp-gauge[data-k="time"] svg{cursor:pointer}
+.fp-gauge[data-k="fuel"] svg{cursor:pointer}
 .fp-fuel-mode{margin-top:3px;padding:2px 10px;border-radius:999px;border:1px solid currentColor;background:transparent;font:600 10.5px/1.3 Inter,system-ui,Segoe UI,Arial,sans-serif;cursor:pointer}
 .fp-gauge figcaption{font:10px/1.15 Inter,system-ui,Segoe UI,Arial,sans-serif;text-align:center;white-space:nowrap;opacity:.95;font-variant-numeric:tabular-nums}
 @media (max-width:720px){.fp-gauge svg{width:46px;height:46px}.fp-gauge figcaption{font-size:9px}}`;
     document.head.append(css);
     return true;
-  }
-
-  /** Réglage à la souris d'un cadran (Badin ou vario) : glisser verticalement (1 pas tous les 4 px) ou molette. */
-  function drag(fig) {
-    const svg = fig.querySelector("svg"),
-      key = fig.dataset.k;
-    const step = () => key === "ias" ? 5 : 50;
-    const current = () => key === "ias" ? state.iasSet : (state.full ? state.vsMax : state.vsSet);
-    const set = v => {
-      const lo = key === "ias" ? state.iasMin : 100,
-        hi = key === "ias" ? state.iasMax : state.vsMax;
-      v = Math.min(hi, Math.max(lo, Math.round(v / step()) * step()));
-      if (v !== current()) api.onSet?.(key === "ias" ? "ias" : "vs", v);
-    };
-    let y0 = null,
-      v0 = 0;
-    svg.addEventListener("pointerdown", e => {
-      if (!state) return;
-      y0 = e.clientY;
-      v0 = current();
-      svg.setPointerCapture(e.pointerId);
-      e.preventDefault();
-    });
-    svg.addEventListener("pointermove", e => {
-      if (y0 == null || !state) return;
-      set(v0 + Math.round((y0 - e.clientY) / 4) * step());
-    });
-    const end = () => {
-      y0 = null;
-    };
-    svg.addEventListener("pointerup", end);
-    svg.addEventListener("pointercancel", end);
-    svg.addEventListener("wheel", e => {
-      if (!state) return;
-      e.preventDefault();
-      set(current() + (e.deltaY < 0 ? 1 : -1) * step());
-    }, {
-      passive: false
-    });
   }
 
   /** Aiguille (polygone effilé) à l'angle a, longueur r, largeur w, couleur col. */
@@ -241,7 +202,7 @@
     g += bug(A(s.iasSet)) + `<g opacity=".45">${needle(A(s.tas), 44, 2.6, "#75c8ff")}</g>` + needle(A(s.ias), 42, 2.2, "#fff") + hub;
     g += `<text x="50" y="76" font-size="6" text-anchor="middle" fill="#75c8ff" opacity=".8">TAS</text>`;
     faces.ias.querySelector("svg").innerHTML = frame(g);
-    faces.ias.querySelector("figcaption").textContent = `${tl("Badin", "IAS", "IAS", "IAS")} ${nf(s.ias)} kt · TAS ${nf(s.tas)}${s.mach >= .3 ? ` · M${nf(s.mach, 2)}` : ""}`;
+    faces.ias.querySelector("figcaption").textContent = `${tl("Vitesse indiquée", "IAS", "IAS", "IAS")} ${nf(s.ias)} kt · TAS ${nf(s.tas)}${s.mach >= .3 ? ` · M${nf(s.mach, 2)}` : ""}`;
   }
   /** Vario : zéro à 9 h, ± échelle sur 170° de part et d'autre (montée vers le haut). */
   function drawVs(s) {
@@ -253,24 +214,42 @@
     for (let v = -max; v <= max + 1e-6; v += st) g += num(A(v), 31, nf(Math.abs(v) / (max >= 2000 ? 1000 : 100)));
     g += `<text x="60" y="38" font-size="5.5" text-anchor="middle" fill="#9ba8b5">UP</text><text x="60" y="66" font-size="5.5" text-anchor="middle" fill="#9ba8b5">DN</text>`;
     g += `<text x="62" y="53" font-size="5" text-anchor="middle" fill="#9ba8b5">${max >= 2000 ? "×1000" : "×100"}</text>`;
-    if (!s.full) g += bug(A(s.vsSet));
-    else g += `<text x="50" y="30" font-size="7.5" text-anchor="middle" fill="${PURPLE}" font-weight="700">${tl("PG", "FT", "VG", "GF")}</text>`;
+    if (s.full) g += `<text x="50" y="30" font-size="7.5" text-anchor="middle" fill="${PURPLE}" font-weight="700">${tl("PG", "FT", "VG", "GF")}</text>`;
+    else if (Number.isFinite(s.vsSet)) g += bug(A(s.vsSet));
     g += needle(A(s.roc), 42, 2.2, "#fff") + hub;
     faces.vs.querySelector("svg").innerHTML = frame(g);
     faces.vs.querySelector("figcaption").textContent = `${tl("Vario", "V/S", "Variometer", "Variómetro")} ${s.above ? tl("plafond", "ceiling", "Gipfelhöhe", "techo") : `${nf(s.roc)} ft/min`}`;
   }
-  /** Altimètre : grande aiguille = centaines (1 tour / 1000 ft), petite = milliers (1 tour / 10 000 ft). */
+  /** Altimètre : grande aiguille = centaines de pieds (un tour = 1 000 ft), petite = milliers (un tour = 10 000 ft),
+   *  triangle = dizaines de milliers (un tour = 100 000 ft) ; chiffres 0 à 9 ; altitude en clair dans la légende. */
   function drawAlt(s) {
+    const h = Math.max(0, +s.h || 0),
+      A = (v, turn) => (v % turn) / turn * 360,
+      a10 = A(h, 100000);
     let g = "";
-    for (let i = 0; i < 50; i++) g += tick(i * 7.2, i % 5 ? 43 : 39, 46, i % 5 ? .6 : 1.2);
-    for (let i = 0; i < 10; i++) g += num(i * 36, 32, i, 9);
-    const h = Math.max(0, s.h);
-    g += `<rect x="31" y="56" width="38" height="11" rx="1.5" fill="#000" stroke="#2b3440"/><text x="50" y="64.5" font-size="8" text-anchor="middle" fill="#e8edf2" font-family="ui-monospace,Consolas,monospace">${nf(Math.round(h / 10) * 10)}</text>`;
-    g += needle((h % 10000) / 10000 * 360, 25, 3, "#e8edf2") + needle((h % 1000) / 1000 * 360, 42, 1.8, "#fff") + hub;
+    for (let i = 0; i < 50; i++) g += tick(i * 7.2, i % 5 ? 43 : 39, 46, i % 5 ? .7 : 1.2);
+    for (let i = 0; i < 10; i++) g += num(i * 36, 31, String(i), 9);
+    g += `<text x="50" y="40" font-size="5.5" text-anchor="middle" fill="#9ba8b5">ALT</text><text x="50" y="66" font-size="5.5" text-anchor="middle" fill="#9ba8b5">FT</text>`;
+    const [tx, ty] = P(a10, 46), [lx, ly] = P(a10 - 4, 40), [rx, ry] = P(a10 + 4, 40);
+    g += `<polygon points="${tx.toFixed(2)},${ty.toFixed(2)} ${lx.toFixed(2)},${ly.toFixed(2)} ${rx.toFixed(2)},${ry.toFixed(2)}" fill="#e8edf2"/>`;
+    g += needle(A(h, 10000), 26, 3.2, "#fff") + needle(A(h, 1000), 42, 2, "#fff") + hub;
     faces.alt.querySelector("svg").innerHTML = frame(g);
-    faces.alt.querySelector("figcaption").textContent = `${tl("Altimètre", "Altimeter", "Höhenmesser", "Altímetro")} FL${String(Math.round(h / 100)).padStart(3, "0")}`;
+    faces.alt.querySelector("figcaption").textContent = `${tl("Altitude", "Altitude", "Höhe", "Altitud")} ${nf(Math.round(h / 10) * 10)} ft`;
   }
-
+  /** Chronomètre : temps de montée depuis le sol jusqu'à l'altitude courante (loi réglée) ; grande aiguille = minutes
+   *  (un tour = 60 min), petite = secondes ; au-dessus du plafond : aiguilles à zéro, « plafond » en légende. */
+  function drawClock(s) {
+    const t = Number.isFinite(s.climbMin) ? Math.max(0, s.climbMin) : null,
+      min = t ?? 0;
+    let g = "";
+    for (let i = 0; i < 60; i++) g += tick(i * 6, i % 5 ? 43 : 39, 46, i % 5 ? .6 : 1.2);
+    for (let i = 0; i < 12; i++) g += num(i * 30, 31, String(i * 5 || 60), 7.5);
+    g += `<text x="50" y="40" font-size="5.5" text-anchor="middle" fill="#9ba8b5">MIN</text>`;
+    g += `<rect x="31" y="64" width="38" height="11" rx="1.5" fill="#000" stroke="#2b3440"/><text x="50" y="72.5" font-size="7.5" text-anchor="middle" fill="${PURPLE}" font-family="ui-monospace,Consolas,monospace">${t == null ? "--:--" : `${String(Math.floor(min)).padStart(2, "0")}:${String(Math.floor(min % 1 * 60)).padStart(2, "0")}`}</text>`;
+    g += needle((min % 1) * 360, 40, 1.2, "#f0b86e") + needle((min % 60) / 60 * 360, 42, 2.2, "#fff") + hub;
+    faces.clock.querySelector("svg").innerHTML = frame(g);
+    faces.clock.querySelector("figcaption").textContent = t == null ? `${tl("Montée", "Climb", "Steigflug", "Ascenso")} — ${tl("plafond", "ceiling", "Gipfelhöhe", "techo")}` : `${tl("Temps de montée", "Climb time", "Steigzeit", "Tiempo de ascenso")} ${Math.floor(min / 60)} h ${String(Math.round(min % 60)).padStart(2, "0")}`;
+  }
   /** Carburant : carburant du trajet entier volé à l'altitude courante (montée à la loi réglée, croisière,
    *  descente), dans l'unité d'affichage ; échelle 0 → trajet le plus coûteux des courbes. */
   function drawFuel(s) {
@@ -278,7 +257,7 @@
       x = s.fuelBy?.[fuelMode],
       col = s.fuelColors?.[fuelMode] || "#f0b86e",
       name = {
-        man: tl("loi réglée", "set law", "eingestelltes Gesetz", "ley ajustada"),
+        man: tl("montée choisie", "chosen climb", "gewählter Steigflug", "ascenso elegido"),
         prof: tl("profil", "profile", "Profil", "perfil"),
         eco: tl("croisière éco", "eco cruise", "Sparflug", "crucero eco"),
         fast: tl("rapide", "fast", "schnell", "rápida"),
@@ -289,10 +268,10 @@
     btn.textContent = name;
     btn.style.color = col;
     btn.title = tl(
-      "Lecture (clic pour changer) : loi réglée → profil → croisière économique → montée rapide → Vy → montée économique ; couleur de la courbe correspondante",
-      "Reading (click to change): set law → profile → economy cruise → fast climb → Vy → economy climb; colour of the matching curve",
-      "Anzeige (Klick zum Wechseln): eingestelltes Gesetz → Profil → Sparflug → schneller Steigflug → Vy → sparsamer Steigflug; Farbe der Kurve",
-      "Lectura (clic para cambiar): ley ajustada → perfil → crucero económico → ascenso rápido → Vy → ascenso económico; color de la curva"
+      "Lecture (clic pour changer) : montée choisie (violet) → profil → croisière économique → montée rapide → Vy → montée économique ; couleur de la courbe correspondante",
+      "Reading (click to change): chosen climb (violet) → profile → economy cruise → fast climb → Vy → economy climb; colour of the matching curve",
+      "Anzeige (Klick zum Wechseln): gewählter Steigflug (violett) → Profil → Sparflug → schneller Steigflug → Vy → sparsamer Steigflug; Farbe der Kurve",
+      "Lectura (clic para cambiar): ascenso elegido (violeta) → perfil → crucero económico → ascenso rápido → Vy → ascenso económico; color de la curva"
     );
     if (!x) {
       fig.querySelector("svg").innerHTML = frame(hub);
@@ -322,41 +301,7 @@
     fig.querySelector("figcaption").textContent = `${tl("Carburant trajet", "Trip fuel", "Streckenkraftstoff", "Combustible del trayecto")} ${nf(s.fuel)} ${s.fuelUnit || ""}${h}`;
   }
 
-  /** Horloge : temps de vol du trajet entier à l'altitude courante, même lecture que la jauge carburant (courbe
-   *  choisie, dans sa couleur) ; petite aiguille = heures (tour de 12 h), grande = minutes. */
-  function drawTime(s) {
-    const fig = faces.time,
-      x = s.fuelBy?.[fuelMode],
-      col = s.fuelColors?.[fuelMode] || "#f0b86e",
-      btn = fig.querySelector(".fp-fuel-mode"),
-      src = faces.fuel.querySelector(".fp-fuel-mode");
-    btn.textContent = src.textContent;
-    btn.style.color = src.style.color;
-    btn.title = src.title;
-    fig.hidden = !s.fuelBy;
-    if (!x || !Number.isFinite(x.minutes)) {
-      fig.querySelector("svg").innerHTML = frame(hub);
-      fig.querySelector("figcaption").textContent = `${tl("Temps de vol", "Flight time", "Flugzeit", "Tiempo de vuelo")} —`;
-      return;
-    }
-    const min = x.minutes,
-      hh = Math.floor(min / 60),
-      mm = Math.round(min % 60),
-      txt = `${hh} h ${String(mm).padStart(2, "0")}`;
-    let g = "";
-    for (let i = 0; i < 60; i++) g += tick(i * 6, i % 5 ? 43 : 39, 46, i % 5 ? .6 : 1.3);
-    for (let i = 1; i <= 12; i++) g += num(i * 30, 32, i, 9);
-    // arc de la durée (couleur de la courbe) sur le tour des minutes
-    g += `<path d="${arc(0.001, Math.max(.5, Math.min(359.5, (min % 60) / 60 * 360)), 47.5)}" stroke="${col}" stroke-width="2" fill="none" opacity=".75"/>`;
-    g += `<rect x="31" y="60" width="38" height="11" rx="1.5" fill="#000" stroke="#2b3440"/><text x="50" y="68.5" font-size="7.5" text-anchor="middle" fill="${col}" font-family="ui-monospace,Consolas,monospace">${txt}</text>`;
-    g += needle((min / 60) % 12 * 30, 24, 3, "#e8edf2") + needle((min % 60) * 6, 40, 1.8, col) + hub;
-    fig.querySelector("svg").innerHTML = frame(g);
-    fig.querySelector("figcaption").textContent = `${tl("Temps de vol", "Flight time", "Flugzeit", "Tiempo de vuelo")} ${txt}`;
-  }
-
   const api = {
-    /** Rappel de réglage depuis un cadran : (clé 'ias' | 'vs', valeur) ; défini par la vue. */
-    onSet: null,
     /** Rappel pour recalculer les instruments (changement de lecture de la jauge carburant) ; défini par la vue. */
     onRefresh: null,
     /** Lecture choisie de la jauge carburant : 'man' | 'prof' | 'eco' | 'fast' | 'vy' | 'fuel'. */
@@ -372,15 +317,15 @@
       scale.vs = [500, 1000, 2000, 3000, 4000, 6000, 8000].find(v => v >= s.vsMax * 1.05) || Math.ceil(s.vsMax / 2000) * 2000;
       setHub();
       drawIas(s);
-      drawVs(s);
       drawAlt(s);
+      drawVs(s);
+      drawClock(s);
       drawFuel(s);
-      drawTime(s);
       host.title = tl(
-        "Instruments de la loi réglée à l’altitude courante (survolée, épinglée, sinon niveau du plan). Badin et vario : glisser ou molette pour régler.",
-        "Instruments of the set law at the current altitude (hovered, pinned, otherwise plan level). IAS and V/S: drag or scroll to adjust.",
-        "Instrumente des eingestellten Gesetzes auf der aktuellen Höhe (überfahren, angeheftet, sonst Planhöhe). IAS und Steigrate: ziehen oder Mausrad zum Einstellen.",
-        "Instrumentos de la ley ajustada a la altitud actual (sobrevolada, fijada o nivel del plan). IAS y régimen: arrastrar o rueda para ajustar."
+        "Lecture de la montée choisie à l’altitude courante (survolée, épinglée, sinon niveau du plan). Pour la changer : curseurs « Montée choisie » du devis (vitesse indiquée, vario, régime).",
+        "Reading of the chosen climb at the current altitude (hovered, pinned, otherwise plan level). To change it: “Chosen climb” sliders of the fuel plan (indicated airspeed, vario, engine setting).",
+        "Anzeige des gewählten Steigflugs auf der aktuellen Höhe (überfahren, angeheftet, sonst Planhöhe). Zum Ändern: Regler „Gewählter Steigflug“ der Kraftstoffplanung (angezeigte Geschwindigkeit, Vario, Drehzahl).",
+        "Lectura del ascenso elegido a la altitud actual (sobrevolada, fijada o nivel del plan). Para cambiarlo: cursores «Ascenso elegido» del plan de combustible (velocidad indicada, vario, régimen)."
       );
     }
   };

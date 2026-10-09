@@ -14,6 +14,12 @@ profils, « Cartes à produire », « Aperçus et génération », pied de page,
 seulement. Au niveau 4, le bloc « Cartes » garde « Préparer les cartes » (liste « Cartes à produire ») et la génération
 reste celle du studio (pied de page).
 
+Ton foncé, comme les autres outils (Carburant, Atterrissages) : la page porte <html data-tool="dark"> (palette « outil
+sombre » de repository_nav.css : --bg, --card, --card-2, --field, --ink, --muted, --line, --ok, --warn, --bad) et reçoit
+TONE_CSS, en couche « app » après les styles du studio : surfaces, champs, boutons, onglets des profils, aperçus, pied de
+page passent en ton foncé, accent du thème (--repo-accent) ; les cartes (canvas, images, marqueurs) gardent leurs
+couleurs. Les designs (designs.css, designs_skeuo.css, hors couche) s'appliquent par-dessus. Le studio reste clair.
+
 À relancer après chaque modification du studio (la page publique n'est pas éditée à la main) :
     python tools/build_map_planner.py
 """
@@ -48,6 +54,154 @@ VOL_CSS = '''.volForm{display:grid;grid-template-columns:repeat(2,minmax(0,260px
 .volMaps{display:flex;flex-wrap:wrap;gap:4px 14px;align-items:center;margin:8px 0 2px}
 #vprofPtsBox{display:none!important}
 @media(max-width:800px){.volForm{grid-template-columns:1fr 1fr}}
+'''
+
+# Ton foncé de la page publique (le studio du Centre reste clair) : règles en couche « app », posées après celles du
+# studio (même couche, ordre postérieur) ; palette « outil sombre » de repository_nav.css (html[data-tool="dark"]) et
+# accent du thème. Les designs, hors couche, gardent la main sur les blocs, boutons et champs qu'ils habillent.
+TONE_CSS = '''<style id="plannerTone" data-layer="app">
+@layer app {
+  :root {
+    color-scheme: dark;
+    color: var(--ink);
+    background: var(--bg)
+  }
+  section {
+    background: var(--card);
+    border-color: var(--line);
+    box-shadow: 0 2px 10px #0000004d
+  }
+  .sub,
+  .small,
+  .studio-footer .small {
+    color: var(--muted)
+  }
+  .box,
+  .aliasCard,
+  .previewCard,
+  #osmLivePreview,
+  #generalPreview,
+  #assemblyPreview {
+    border-color: var(--line)
+  }
+  .previewCard {
+    background: var(--card-2)
+  }
+  .previewCard img,
+  #generalPreview,
+  #assemblyPreview {
+    background: var(--field)
+  }
+  input,
+  select,
+  textarea,
+  .colorRow input[type=color],
+  .aarPick summary,
+  .aarOptions,
+  .vprof-chip {
+    border-color: var(--line);
+    background: var(--field);
+    color: var(--ink)
+  }
+  input[type=checkbox],
+  input[type=radio],
+  input[type=range] {
+    accent-color: var(--repo-accent)
+  }
+  .vprof-chip.on {
+    background: #ffe08a;
+    border-color: #d69600;
+    color: #17202a
+  }
+  button,
+  .buttonLink {
+    border: 1px solid color-mix(in srgb, var(--repo-accent) 55%, transparent);
+    background: color-mix(in srgb, var(--repo-accent) 26%, var(--card));
+    color: var(--ink)
+  }
+  button:hover:not(:disabled),
+  .buttonLink:hover {
+    background: color-mix(in srgb, var(--repo-accent) 38%, var(--card))
+  }
+  .danger {
+    border-color: var(--bad)
+  }
+  section a:not([class*="repo-"]):not(.buttonLink) {
+    color: var(--repo-accent)
+  }
+  .warn {
+    border-left-color: var(--warn);
+    background: color-mix(in srgb, var(--warn) 14%, var(--card));
+    color: var(--ink)
+  }
+  .ok {
+    color: var(--ok)
+  }
+  .err,
+  .mapRow .mapDel {
+    color: var(--bad)
+  }
+  code {
+    background: var(--soft)
+  }
+  .profileTabs {
+    border-bottom-color: var(--repo-accent)
+  }
+  .profileTabs button {
+    border-color: var(--line);
+    border-bottom: 0;
+    background: var(--card-2);
+    color: var(--muted)
+  }
+  .profileTabs button:hover:not(.on) {
+    background: var(--soft);
+    color: var(--ink)
+  }
+  .profileTabs button.on {
+    border-color: var(--repo-accent);
+    background: color-mix(in srgb, var(--repo-accent) 30%, var(--card));
+    color: var(--ink)
+  }
+  .mapRow.on .mapShow {
+    color: var(--repo-accent)
+  }
+  .mapProfileRow,
+  .mapRow {
+    border-bottom-color: var(--line)
+  }
+  .elemBox.nested,
+  .profileEdit,
+  .mapList {
+    border-top-color: var(--line)
+  }
+  .galleryMission {
+    border-bottom-color: var(--line)
+  }
+  .zoneChips li {
+    border-color: var(--line);
+    background: var(--card-2)
+  }
+  .zoneChips li.none {
+    border-color: var(--bad);
+    background: color-mix(in srgb, var(--bad) 18%, var(--card))
+  }
+  .splitter {
+    background: linear-gradient(90deg, transparent 4px, var(--line) 4px, var(--line) 8px, transparent 8px)
+  }
+  .splitter:hover,
+  .splitter.drag {
+    background: linear-gradient(90deg, transparent 3px, var(--repo-accent) 3px, var(--repo-accent) 9px, transparent 9px)
+  }
+  .profilePreview.popped {
+    background: var(--card)
+  }
+  .studio-footer {
+    background: color-mix(in srgb, var(--card) 94%, transparent);
+    border-top-color: var(--line);
+    box-shadow: 0 -4px 16px #00000066
+  }
+}
+</style>
 '''
 
 VOL_SCRIPT = r'''<script>
@@ -96,7 +250,7 @@ function build(quiet,gen){
  let rdv=null;const rt=$v('volRdv').value.trim();if(rt){const c=coord(rt);if(c)rdv={id:'RDV',name:'RDV',...c};else{const q=SiaProfile.resolver({aero:aero||{}})(rt);if(!q){say(`Rendez-vous inconnu : ${esc(rt)}.`,'err');return false}rdv={id:'RDV',name:`RDV ${q.name||rt}`,lat:q.lat,lon:q.lon}}}
  const P=(p,i)=>({id:idOf(p,i),name:p.name||idOf(p,i),lat:+p.lat.toFixed(6),lon:+p.lon.toFixed(6)}),dep=P(pts[0],0),dest=P(pts[pts.length-1],pts.length-1),mid=pts.slice(1,-1).map((p,i)=>P(p,i+1)),ft=levelFt($v('vprofCruise').value);
  const maps=[];
- if(want.has('topo'))maps.push({filename:`route_${dep.id}_${dest.id}.png`,type:'general',description:'Carte de la route',profile:'ifr'});
+ if(want.has('topo'))maps.push({filename:`route_${dep.id}_${dest.id}.png`,type:'general',description:'Carte de la route',profile:'airways'});
  if(want.has('approche'))maps.push({filename:`approche_${dest.id}.png`,type:'approche',description:`Approche de ${dest.id}`,centre_ref:'DESTINATION',range_km:30});
  if(want.has('rdv')&&rdv)maps.push({filename:'rendez_vous.png',type:'rdv',description:'Rendez-vous',centre_ref:'RDV',range_km:15});
  if(want.has('destination'))maps.push({filename:`destination_${dest.id}.png`,type:'detail',description:`Terrain de destination ${dest.id}`,centre_ref:'DESTINATION'});
@@ -113,12 +267,15 @@ function build(quiet,gen){
  if(!quiet){const list={n:maps.length,list:esc(maps.map(m=>m.description).join(', '))};say(gen?K.tf(['{n} carte(s) : {list}, et le profil vertical de la route.','{n} map(s): {list}, and the vertical profile of the route.','{n} Karte(n): {list}, und das Höhenprofil der Route.','{n} mapa(s): {list}, y el perfil vertical de la ruta.'],list):K.tf(full?['{n} carte(s) prête(s) : {list}, et le profil vertical de la route. Réglages et aperçus dans « Cartes à produire », fichiers dans « Aperçus et génération ».','{n} map(s) ready: {list}, and the vertical profile of the route. Settings and previews in “Maps to produce”, files in “Previews and generation”.','{n} Karte(n) bereit: {list}, und das Höhenprofil der Route. Einstellungen und Vorschauen unter „Zu erstellende Karten“, Dateien unter „Vorschauen und Erzeugung“.','{n} mapa(s) listo(s): {list}, y el perfil vertical de la ruta. Ajustes y vistas previas en «Mapas que producir», archivos en «Vistas previas y generación».']:['{n} carte(s) prête(s) : {list}, et le profil vertical de la route. Fichiers : « Générer les cartes et le ZIP ».','{n} map(s) ready: {list}, and the vertical profile of the route. Files: “Generate the maps and the ZIP”.','{n} Karte(n) bereit: {list}, und das Höhenprofil der Route. Dateien: „Karten und ZIP erzeugen“.','{n} mapa(s) listo(s): {list}, y el perfil vertical de la ruta. Archivos: «Generar los mapas y el ZIP».'],list),'ok')}
  return true;
 }
-$v('volBuild').onclick=()=>build(false);
+// mission reçue de Mes missions (autre qu'un vol « VOL » de cette page) : remplacée par le vol libre seulement après confirmation
+$v('volBuild').onclick=()=>{if(mission&&sharedDoc?.yaml?.mission?.id!=='VOL'&&!confirm(K.t(['Remplacer la mission chargée par un vol libre construit à partir du cheminement ?','Replace the loaded mission with a free flight built from the route?','Die geladene Mission durch einen freien Flug aus der Route ersetzen?','¿Sustituir la misión cargada por un vuelo libre construido a partir de la ruta?'])))return;build(false)};
 // niveaux 1 à 3 : un seul bouton, cartes créées puis aperçu et génération des fichiers et du ZIP par le moteur du studio
-// (« Générer » du studio, masqué ici : compte rendu dans #result, sous ce bouton)
-$v('volGenerate').onclick=async()=>{const b=$v('volGenerate');if(b.disabled||!build(false,true))return;b.disabled=true;try{await new Promise(r=>setTimeout(r,450));await $v('refreshPreview').onclick?.();if(mission&&outputMaps().length)await $v('generate').onclick()}finally{b.disabled=false}};
-// « Tracer » ou « Planificateur carburant » avant la création : la mission du vol est d'abord créée
-for(const id of ['vprofDraw','vprofToPlanner'])$v(id).addEventListener('click',e=>{if(sharedDoc?.yaml?.mission?.id==='VOL')return;e.stopImmediatePropagation();if(build(true))setTimeout(()=>$v(id).click(),600)},true);
+// (« Générer » du studio, masqué ici : compte rendu dans #result, sous ce bouton) ; mission reçue de Mes missions
+// (autre qu'un vol « VOL » de cette page) : ses cartes sont générées telles quelles, sans les remplacer par celles du bloc
+$v('volGenerate').onclick=async()=>{const b=$v('volGenerate'),own=!mission||sharedDoc?.yaml?.mission?.id==='VOL';if(b.disabled||(own&&!build(false,true)))return;b.disabled=true;try{await new Promise(r=>setTimeout(r,450));await $v('refreshPreview').onclick?.();if(mission&&outputMaps().length)await $v('generate').onclick()}finally{b.disabled=false}};
+// « Tracer » ou « Planificateur carburant » avant la création : la mission du vol est d'abord créée ; mission chargée (vol de
+// cette page ou mission reçue) : ils travaillent dessus sans la remplacer
+for(const id of ['vprofDraw','vprofToPlanner'])$v(id).addEventListener('click',e=>{if(mission||sharedDoc?.yaml?.mission?.id==='VOL')return;e.stopImmediatePropagation();if(build(true))setTimeout(()=>$v(id).click(),600)},true);
 // route modifiée (saisie, recherche, carte ou coupe) : mission, cartes et profil mis à jour
 const follow=()=>{saveForm();if(sharedDoc?.yaml?.mission?.id==='VOL')build(true)};
 $v('vprofRoute').addEventListener('change',follow);
@@ -152,6 +309,9 @@ def main():
         rep.append(pattern)
 
     sub(r'<title>[^<]*</title>', '<title>Cartes de vol</title>')
+    # ton foncé (palette « outil sombre ») : attribut de <html>, règles TONE_CSS à la fin de <head>
+    sub(r'<html lang="fr">', '<html data-tool="dark" lang="fr">')
+    sub(r'</head>', TONE_CSS + '</head>')
     # scripts propres au Centre : chemins depuis apps/planner ; mission dans l'espace « planner » ; registre non chargé
     sub(r'<script src="mission_store\.js', '<script>window.SIA_MISSION_NS=\'planner\'</script><script src="../cpco/mission_store.js')
     sub(r'<script src="sia_i18n\.js', '<script src="../cpco/sia_i18n.js')

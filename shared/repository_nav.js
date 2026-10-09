@@ -487,7 +487,7 @@
   if (!document.getElementById("repoDesignsCss")) { // déjà posée dès l'en-tête par config/repository_tree, en général
     const css = document.createElement("link");
     css.rel = "stylesheet";
-    css.href = new URL("designs.css?v=51c18d91", script.src).href;
+    css.href = new URL("designs.css?v=0", script.src).href;
     css.id = "repoDesignsCss";
     document.head.append(css)
   }
@@ -496,7 +496,7 @@
   // écrite par tools/bump_versions.py).
   /* beautify preserve:start */
   // ligne réécrite telle quelle par tools/bump_versions.py : le formateur n'y touche pas
-  const FILE_V = {"designs_skeuo.css": "f6dd1e62"};
+  const FILE_V = {"designs_skeuo.css": "0"};
   /* beautify preserve:end */
   /** Pour un design à feuille propre : pose sa feuille (une fois) et charge une fois design_deco.js (décor complet). */
   const designCss = id => {
@@ -514,7 +514,7 @@
     if (document.getElementById("repoDesignDeco")) return;
     const d = document.createElement("script");
     d.id = "repoDesignDeco";
-    d.src = new URL("design_deco.js?v=50e933f4", script.src).href;
+    d.src = new URL("design_deco.js?v=0", script.src).href;
     document.head.append(d);
   };
   designCss(design);
@@ -713,7 +713,7 @@
     if (window.RepositoryAppearance) show();
     else {
       const sc = document.createElement("script");
-      sc.src = new URL("appearance_page.js?v=a9050e2b", script.src).href;
+      sc.src = new URL("appearance_page.js?v=0", script.src).href;
       sc.onload = show;
       document.head.append(sc);
     }
@@ -1324,46 +1324,46 @@
   } {
     /* Profil pilote (ID IVAO / VATSIM) commun à toutes les pages */
     const profile = document.createElement("script");
-    profile.src = new URL("pilot_profile.js?v=fbe1241b", script.src).href;
+    profile.src = new URL("pilot_profile.js?v=0", script.src).href;
     document.head.append(profile); /* Dossiers autorisés et ouverture des fichiers dans le dossier paramétré */
     const files = document.createElement("script");
-    files.src = new URL("file_access.js?v=d9a2fa8a", script.src).href;
+    files.src = new URL("file_access.js?v=0", script.src).href;
     document.head.append(files); /* Données locales du navigateur ⇄ fichier de sauvegarde */
     /* Icônes, sous-titres de blocs, sous-cartes, zones de dépôt, icônes de la barre latérale (ordre conservé) */
-    for (const f of ["icons/repository_icons.js?v=3a11f936", "block_icons.js?v=a296ab17", "side_nav.js?v=19f74efd"]) {
+    for (const f of ["icons/repository_icons.js?v=0", "block_icons.js?v=0", "side_nav.js?v=0"]) {
       const sc = document.createElement("script");
       sc.src = new URL(f, script.src).href;
       sc.async = false;
       document.head.append(sc);
     }
     const store = document.createElement("script");
-    store.src = new URL("browser_store.js?v=3156e737", script.src).href;
+    store.src = new URL("browser_store.js?v=0", script.src).href;
     document.head.append(store); /* Canal et contrôle des mises à jour, pastilles « Mise à jour » / « AIRAC » de l'en-tête */
     const assign = document.createElement("script"); /* Missions affectées : pli cacheté de l'en-tête, « Mes missions » */
-    assign.src = new URL("assignments.js?v=95fcb353", script.src).href;
+    assign.src = new URL("assignments.js?v=0", script.src).href;
     document.head.append(assign);
     /* Terrain actuel des appareils : site (emplacement) ou CR issu d'un ordre de mission (après assignments.js) */
     const positions = document.createElement("script");
-    positions.src = new URL("aircraft_positions.js?v=cc7e2381", script.src).href;
+    positions.src = new URL("aircraft_positions.js?v=0", script.src).href;
     document.head.append(positions);
     /* Utilisateurs et droits : mode develop / production, connexion, usurpation (bandeau sur toutes les pages) */
     const users = document.createElement("script");
-    users.src = new URL("users.js?v=cba465ca", script.src).href;
+    users.src = new URL("users.js?v=0", script.src).href;
     document.head.append(users);
     /* Synchronisation git du pool de données : bouton « Synchroniser » de l'en-tête (lanceur, data/ dépôt git) */
     const sync = document.createElement("script");
-    sync.src = new URL("sync.js?v=63365867", script.src).href;
+    sync.src = new URL("sync.js?v=0", script.src).href;
     document.head.append(sync);
     /* Flotte et journal DEFA depuis le site : une fois par jour à l'ouverture d'une page (lanceur) */
     const defaSite = document.createElement("script");
-    defaSite.src = new URL("defa_site.js?v=ceeb2b55", script.src).href;
+    defaSite.src = new URL("defa_site.js?v=0", script.src).href;
     document.head.append(defaSite);
     /* Disponibilités : catégories configurables, thèmes ouverts, déclarations par semaine */
     const dispos = document.createElement("script");
-    dispos.src = new URL("dispos.js?v=5791ed45", script.src).href;
+    dispos.src = new URL("dispos.js?v=0", script.src).href;
     document.head.append(dispos);
     const update = document.createElement("script");
-    update.src = new URL("suite_update.js?v=11739928", script.src).href;
+    update.src = new URL("suite_update.js?v=0", script.src).href;
     document.head.append(update)
   }
   // Compagnie virtuelle réglée : plus de renommage de la page après coup — les textes portent des jetons ({SOG},

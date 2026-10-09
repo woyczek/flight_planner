@@ -136,7 +136,84 @@
       rest = words.slice(n).join(' ');
     return /^\d/.test(rest) ? `${maker} ${rest}` : `${rest} — ${maker}`;
   }
+  // ---- type écrit en clair dans une mission → désignateur OACI (Doc 8643)
+  // Noms d'usage des missions (militaires, absents des alias de la base) ; la valeur passe encore par les alias de la
+  // base (A400M → désignateur de la base).
+  const USAGE = {
+    H225: 'EC25',
+    H225M: 'EC25',
+    EC725: 'EC25',
+    CARACAL: 'EC25',
+    E3F: 'E3CF',
+    AWACS: 'E3CF',
+    MRTT: 'A332',
+    A330: 'A332', // famille sans désignateur : l'A330 des missions est le MRTT Phénix, un A330-200
+    A330MRTT: 'A332',
+    PHENIX: 'A332',
+    C130J: 'C30J',
+    C130J30: 'C30J',
+    SUPERHERCULES: 'C30J',
+    RAFALE: 'RFAL',
+    MIRAGE2000: 'MIR2',
+    ATLAS: 'A400M',
+    A400M: 'A400', // désignateur OACI de l'A400M
+    // noms commerciaux Airbus Helicopters (le désignateur reste celui d'Eurocopter)
+    H120: 'EC20',
+    H125: 'AS50',
+    H130: 'EC30',
+    H135: 'EC35',
+    H145: 'EC45',
+    H175: 'EC75',
+    // drones et guet aérien
+    E2C: 'E2',
+    HAWKEYE: 'E2',
+    RQ9P: 'Q9',
+    MQ9: 'Q9',
+    REAPER: 'Q9',
+    CAIMAN: 'NH90',
+    TIGRE: 'TIGR'
+  };
+  /** Texte réduit à ses lettres et chiffres en majuscules, accents retirés (« Phénix » → PHENIX). */
+  const fold = s => String(s ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+  /** Désignateur OACI d'un type écrit en clair (« MIR2 Mirage 2000B », « A330 MRTT Phénix », « C-130J-30 Super Hercules »,
+   *  « Rafale B — Patrouille de 2 ») : type ou variante de la flotte (DEFA_FLEET) écrits tels quels, puis texte entier,
+   *  mots deux à deux, mot à mot — désignateur de la base, alias, nom d'usage ; à défaut, nom propre du modèle d'un
+   *  seul type de la base (« DASSAULT Rafale »). Les saisies locales des CR (entrées « local ») ne sont pas des
+   *  désignateurs. '' si rien. */
+  function codeOf(text) {
+    const db = window.AIRCRAFT_DB || {},
+      al = db.__aliases || {},
+      words = String(text || '').split(/[\s/,;+()—–]+/).map(fold).filter(w => w.length >= 2 && /[A-Z]/.test(w));
+    /** Bout de la chaîne d'alias (A4M → A400M → A400 : un code maison ou en usage renvoyé vers le désignateur OACI). */
+    const chase = c => {
+      let x = c;
+      for (let i = 0; i < 5 && al[x] && al[x] !== x; i++) x = al[x];
+      return x;
+    };
+    const hit = k => {
+      if (!k) return '';
+      if (db[k] && !k.startsWith('__') && !db[k].local) return chase(k);
+      if (al[k]) return chase(k);
+      if (USAGE[k]) return chase(USAGE[k]);
+      return '';
+    };
+    // flotte : « A330 MRTT Phénix » (variante) → A332, « Rafale C » → RFAL — la donnée de la compagnie avant les tables
+    const whole = fold(text);
+    for (const r of window.DEFA_FLEET || []) {
+      if (whole && r.type && (fold(r.variant) === whole || fold(r.type) === whole)) return hit(fold(r.type)) || chase(fold(r.type));
+    }
+    for (const k of [whole, ...words.slice(1).map((w, i) => words[i] + w), ...words]) {
+      const c = hit(k);
+      if (c) return c;
+    }
+    for (const w of words.filter(x => x.length >= 4)) {
+      const found = Object.keys(db).filter(k => !k.startsWith('__') && fold(String(db[k]?.model || '').split(/\s+/).at(-1)) === w);
+      if (found.length === 1) return chase(found[0]);
+    }
+    return '';
+  }
   window.AircraftCatalog = {
+    codeOf,
     displayName,
     SUPPLEMENT,
     defaAircraft,

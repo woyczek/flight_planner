@@ -125,8 +125,20 @@
     if (e === 'J') return 'jet';
     if (e === 'T') return 'turboprop';
     if (e === 'P') return 'piston';
+    // type absent de la base OACI, motorisation non renseignée : la TAS de croisière départage (un piston ne croise pas
+    // à 300 kt, un réacteur rarement sous 320) ; aux vitesses basses, « carburant Jet » distingue turbopropulseur et
+    // piston — avant, un réacteur inconnu de la base passait pour un piston (plafond calculé vers 12 000 ft)
     const tas = +profile?.cruise?.tasKt || 0;
-    return profile?.jetFuel ? (tas > 320 ? 'jet' : 'turboprop') : 'piston';
+    if (tas > 320) return 'jet';
+    if (tas > 230) return 'turboprop';
+    return profile?.jetFuel ? 'turboprop' : 'piston';
+  }
+  /** Vrai si la motorisation n'est ni renseignée dans le profil ni connue de la base OACI (déduite de la vitesse). */
+  function kindGuessed(profile, db) {
+    if (CLASS[profile?.engineType]) return false;
+    const code = String(profile?.type || profile?.icao || profile?.id || '').toUpperCase(),
+      row = db?.[code] || db?.[db?.__aliases?.[code]];
+    return !'JTP'.includes(String(row?.description || '')[2] || '-');
   }
 
   /** Modèle de performances calibré sur un profil d'appareil (et la base des types db pour la motorisation) : polaire, poussée / puissance, consommation, plafond. Lève une erreur si la TAS ou le débit de croisière manquent. Retourne les calculs exportés (cruise, trip, climbTo, climbPoint, climbOpt, manualLaw…). */
@@ -140,6 +152,10 @@
       lapse0 = LAPSE[kind],
       jet = kind === 'jet',
       notes = [];
+    if (kindGuessed(profile, db)) notes.push(tl(`Motorisation déduite de la TAS de croisière (${Math.round(+profile?.cruise?.tasKt || 0)} kt) : ${tl(...C.label)} — type absent de la base OACI du poste ; renseigner « Motorisation » dans le profil, ou télécharger sa fiche (Paramètres › Maintenance › Types d'aéronefs).`,
+      `Engine type derived from the cruise TAS (${Math.round(+profile?.cruise?.tasKt || 0)} kt): ${tl(...C.label)} — type not in this computer's ICAO database; set “Engine type” in the profile, or download its record (Settings › Maintenance › Aircraft types).`,
+      `Antriebsart aus der Reiseflug-TAS abgeleitet (${Math.round(+profile?.cruise?.tasKt || 0)} kt): ${tl(...C.label)} — Typ fehlt in der ICAO-Datenbank dieses Rechners; „Antrieb“ im Profil setzen oder den Datensatz laden (Einstellungen › Wartung › Luftfahrzeugtypen).`,
+      `Motorización deducida de la TAS de crucero (${Math.round(+profile?.cruise?.tasKt || 0)} kt): ${tl(...C.label)} — tipo ausente de la base OACI de este equipo; indicar «Motorización» en el perfil o descargar su ficha (Ajustes › Mantenimiento › Tipos de aeronave).`));
     /** Nombre d'un champ du profil ; NaN si vide. */
     const num = v => v === null || v === undefined || v === '' ? NaN : +v;
     const cr = profile.cruise || {},
@@ -721,9 +737,79 @@
       }
     };
   }
+  /** Cartographie moteur (table RPM / N1 → débit) ramenée à l'altitude h (ft). Chaque ligne peut porter une altitude
+   *  (altFt, colonne facultative) : avec moins de deux altitudes différentes, ou sans h, les lignes valides sont rendues
+   *  telles quelles (comportement d'avant). Avec deux altitudes ou plus : lignes groupées par altitude (une ligne sans
+   *  altitude vaut pour toutes, si son régime manque au groupe), débits de chaque groupe interpolés au même régime, puis
+   *  interpolés linéairement entre les deux altitudes qui encadrent h (bornés aux altitudes extrêmes).
+   *  Sortie : lignes { rpm, fuelFlowMin, fuelFlowPerHour, fuelFlowMax, altFt } triées par régime. */
+  function mapAt(curve, h) {
+    const num = v => v === null || v === undefined || v === '' ? NaN : +v,
+      rows = (Array.isArray(curve) ? curve : []).filter(r => r && Number.isFinite(num(r.rpm)) && [r.fuelFlowMin, r.fuelFlowPerHour, r
+        .fuelFlowMax
+      ].some(v => Number.isFinite(num(v)))),
+      alts = [...new Set(rows.map(r => num(r.altFt)).filter(Number.isFinite))].sort((a, b) => a - b);
+    if (alts.length < 2 || !Number.isFinite(h)) return rows;
+    const loose = rows.filter(r => !Number.isFinite(num(r.altFt)));
+    /** Lignes d'une altitude a (complétées par les lignes sans altitude), triées par régime. */
+    const group = a => {
+      const g = rows.filter(r => num(r.altFt) === a),
+        have = new Set(g.map(r => num(r.rpm)));
+      return [...g, ...loose.filter(r => !have.has(num(r.rpm)))].sort((x, y) => num(x.rpm) - num(y.rpm));
+    };
+    /** Plage { min, nominal, max } d'une ligne, valeurs manquantes complétées par les autres valeurs de la ligne. */
+    const rng = r => {
+      const n = num(r.fuelFlowPerHour),
+        lo = num(r.fuelFlowMin),
+        hi = num(r.fuelFlowMax),
+        nom = Number.isFinite(n) ? n : Number.isFinite(lo) && Number.isFinite(hi) ? (lo + hi) / 2 : Number.isFinite(lo) ? lo : hi;
+      return {
+        min: Number.isFinite(lo) ? lo : nom,
+        nominal: nom,
+        max: Number.isFinite(hi) ? hi : nom
+      };
+    };
+    /** Plage interpolée au régime rpm dans le groupe g (bornée aux lignes extrêmes). */
+    const at = (g, rpm) => {
+      if (rpm <= num(g[0].rpm)) return rng(g[0]);
+      for (let i = 1; i < g.length; i++)
+        if (rpm <= num(g[i].rpm)) {
+          const a = rng(g[i - 1]),
+            b = rng(g[i]),
+            t = (rpm - num(g[i - 1].rpm)) / ((num(g[i].rpm) - num(g[i - 1].rpm)) || 1);
+          return {
+            min: a.min + t * (b.min - a.min),
+            nominal: a.nominal + t * (b.nominal - a.nominal),
+            max: a.max + t * (b.max - a.max)
+          };
+        }
+      return rng(g[g.length - 1]);
+    };
+    const hh = Math.min(alts[alts.length - 1], Math.max(alts[0], h));
+    let k = 1;
+    while (k < alts.length - 1 && alts[k] < hh) k++;
+    const a0 = alts[k - 1],
+      a1 = alts[k],
+      t = (hh - a0) / ((a1 - a0) || 1),
+      g0 = group(a0),
+      g1 = group(a1),
+      rpms = [...new Set([...g0, ...g1].map(r => num(r.rpm)))].sort((x, y) => x - y);
+    return rpms.map(rpm => {
+      const x = at(g0, rpm),
+        y = at(g1, rpm);
+      return {
+        rpm,
+        fuelFlowMin: x.min + t * (y.min - x.min),
+        fuelFlowPerHour: x.nominal + t * (y.nominal - x.nominal),
+        fuelFlowMax: x.max + t * (y.max - x.max),
+        altFt: h
+      };
+    });
+  }
   window.FlightPerfModel = {
     create,
     isa,
-    kindOf
+    kindOf,
+    mapAt
   };
 })();

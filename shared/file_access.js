@@ -14,6 +14,8 @@
   const tr = row => window.RepositoryKit.t(row, {
     typo: false
   }); // shared/kit.js
+  // label : nom du dossier ; expect : dossier à choisir (infobulle des boutons) ; use : à quoi il sert et ce qui se
+  // passe sans lui (une phrase, Paramètres › Installation › Sources et dossiers)
   const FOLDERS = {
     __repo: {
       label: L('Dossier du dépôt', 'Repository folder', 'Repository-Ordner', 'Carpeta del repositorio'),
@@ -21,7 +23,13 @@
         'application root: the folder containing lancer.cmd, lancer.sh, apps/, config/, shared/ (and data/)',
         'Repository-Wurzel: Ordner „Documentation“ (mit repository_tree, shared/, apps/cr/…)',
         'raíz del repositorio: la carpeta «Documentation» (con repository_tree, shared/, apps/cr/…)'),
-      check: 'config/repository_tree'
+      check: 'config/repository_tree',
+      use: L(
+        'Sert à lire et écrire les fichiers de l’application (bases du dépôt, mises à jour) ; les autres dossiers s’en déduisent. Sans lui, rien ne s’enregistre dans le dépôt.',
+        'Used to read and write the application files (repository databases, updates); the other folders are derived from it. Without it, nothing is saved to the repository.',
+        'Dient zum Lesen und Schreiben der Anwendungsdateien (Repository-Datenbanken, Updates); die anderen Ordner werden daraus abgeleitet. Ohne ihn wird nichts im Repository gespeichert.',
+        'Sirve para leer y escribir los archivos de la aplicación (bases del repositorio, actualizaciones); las demás carpetas se deducen de ella. Sin ella, nada se guarda en el repositorio.'
+      )
     },
     __data: {
       label: L('Dossier des données', 'Data folder', 'Datenordner', 'Carpeta de datos'),
@@ -30,7 +38,13 @@
         'the application data/ folder: clone of the data repository (contains data_tree.js); ledger, missions and SIA are derived from it',
         'Ordner data/ der Anwendung: Klon des Daten-Repositorys (mit data_tree.js)',
         'carpeta data/ de la aplicación: clon del repositorio de datos (contiene data_tree.js)'),
-      check: 'data_tree.js'
+      check: 'data_tree.js',
+      use: L(
+        'Données partagées de la compagnie (CR, missions, SIA) ; registre, missions et SIA s’en déduisent. Sans lui, CR et missions restent dans ce navigateur.',
+        'Shared company data (reports, missions, SIA); ledger, missions and SIA are derived from it. Without it, reports and missions stay in this browser.',
+        'Gemeinsame Daten der Gesellschaft (Berichte, Missionen, SIA); Register, Missionen und SIA werden daraus abgeleitet. Ohne ihn bleiben Berichte und Missionen in diesem Browser.',
+        'Datos compartidos de la compañía (informes, misiones, SIA); registro, misiones y SIA se deducen de ella. Sin ella, informes y misiones se quedan en este navegador.'
+      )
     },
     __ledger: {
       label: L('Dossier du registre', 'Ledger folder', 'Registerordner', 'Carpeta del registro'),
@@ -44,7 +58,13 @@
       expect: L('dossier de votre choix, idéalement synchronisé (defa_local_store.yaml y est écrit)',
         'folder of your choice, ideally synchronised (defa_local_store.yaml is written there)',
         'Ordner Ihrer Wahl, idealerweise synchronisiert (defa_local_store.yaml)',
-        'carpeta a su elección, idealmente sincronizada (defa_local_store.yaml)')
+        'carpeta a su elección, idealmente sincronizada (defa_local_store.yaml)'),
+      use: L(
+        'Sauvegarde des réglages et données de ce navigateur (defa_local_store.yaml), pour les retrouver sur un autre poste ; facultatif. Sans lui, la sauvegarde se télécharge à la main.',
+        'Backup of this browser’s settings and data (defa_local_store.yaml), to find them on another computer; optional. Without it, the backup is downloaded by hand.',
+        'Sicherung der Einstellungen und Daten dieses Browsers (defa_local_store.yaml), um sie auf einem anderen Rechner wiederzufinden; optional. Ohne ihn wird die Sicherung von Hand heruntergeladen.',
+        'Copia de los ajustes y datos de este navegador (defa_local_store.yaml), para recuperarlos en otro equipo; opcional. Sin ella, la copia se descarga a mano.'
+      )
     },
     __sia: {
       label: L('Dossier SIA XML', 'SIA XML folder', 'SIA-XML-Ordner', 'Carpeta SIA XML'),
@@ -63,21 +83,33 @@
         'data/missions (series generadas) — deducida de la carpeta de datos')
     },
     __xplane: {
-      label: L('Dossier X-Plane (atterrissages)', 'X-Plane folder (landings)', 'X-Plane-Ordner (Landungen)',
-        'Carpeta X-Plane (aterrizajes)'),
+      label: L('Journaux d’atterrissage X-Plane', 'X-Plane landing logs', 'X-Plane-Landeprotokolle',
+        'Registros de aterrizaje de X-Plane'),
       expect: L('dossier où le plugin d’atterrissage d’X-Plane écrit ses journaux CSV (Landing Performance Dashboard)',
         'folder where the X-Plane landing plugin writes its CSV logs (Landing Performance Dashboard)',
         'Ordner, in den das X-Plane-Landungs-Plugin seine CSV-Protokolle schreibt',
-        'carpeta donde el plugin de aterrizaje de X-Plane escribe sus registros CSV')
+        'carpeta donde el plugin de aterrizaje de X-Plane escribe sus registros CSV'),
+      use: L(
+        'Le Landing Performance Dashboard y ouvre son sélecteur de fichiers ; facultatif. Sans lui, le sélecteur s’ouvre dans le dernier dossier utilisé.',
+        'The Landing Performance Dashboard opens its file picker there; optional. Without it, the picker opens in the last folder used.',
+        'Das Landing Performance Dashboard öffnet dort seine Dateiauswahl; optional. Ohne ihn öffnet sie sich im zuletzt verwendeten Ordner.',
+        'El Landing Performance Dashboard abre allí su selector de archivos; opcional. Sin ella, el selector se abre en la última carpeta usada.'
+      )
     },
     __xpnav: {
-      label: L('Dossier du simulateur X-Plane (données de navigation)', 'X-Plane simulator folder (navigation data)',
-        'X-Plane-Simulatorordner (Navigationsdaten)', 'Carpeta del simulador X-Plane (datos de navegación)'),
+      label: L('Dossier d’installation d’X-Plane', 'X-Plane installation folder', 'X-Plane-Installationsordner',
+        'Carpeta de instalación de X-Plane'),
       expect: L(
         'dossier d’installation d’X-Plane (Custom Data, Resources/default data : earth_nav.dat, earth_fix.dat, earth_awy.dat, earth_mora.dat), lu seulement si une zone active de Données aéronautiques a coché la source « X-Plane »',
         'X-Plane installation folder (Custom Data, Resources/default data: earth_nav.dat, earth_fix.dat, earth_awy.dat, earth_mora.dat), read only when an active zone of Aeronautical data has the “X-Plane” source ticked',
         'X-Plane-Installationsordner (Custom Data, Resources/default data: earth_*.dat), nur gelesen, wenn eine aktive Zone unter Luftfahrtdaten die Quelle „X-Plane“ angehakt hat',
         'carpeta de instalación de X-Plane (Custom Data, Resources/default data: earth_*.dat), leída solo si una zona activa de Datos aeronáuticos tiene marcada la fuente «X-Plane»'
+      ),
+      use: L(
+        'Données de navigation d’X-Plane (earth_*.dat, Custom Data) pour les zones de Données aéronautiques qui cochent la source X-Plane ; facultatif. Sans lui, cette source est ignorée.',
+        'X-Plane navigation data (earth_*.dat, Custom Data) for the Aeronautical data zones that tick the X-Plane source; optional. Without it, that source is ignored.',
+        'X-Plane-Navigationsdaten (earth_*.dat, Custom Data) für die Zonen unter Luftfahrtdaten, die die Quelle X-Plane anhaken; optional. Ohne ihn wird diese Quelle ignoriert.',
+        'Datos de navegación de X-Plane (earth_*.dat, Custom Data) para las zonas de Datos aeronáuticos que marcan la fuente X-Plane; opcional. Sin ella, esa fuente se ignora.'
       )
     },
     __odv: {
@@ -86,13 +118,25 @@
         'dossier synchronisé (OneDrive…) où l’escadrille dépose le classeur ODV (.xlsx) : le Planning ODV ouvre le plus récent ; sans OneDrive, le classeur choisi est gardé dans le navigateur',
         'synchronised folder (OneDrive…) where the squadron puts the ODV workbook (.xlsx): ODV planning opens the latest; without OneDrive, the chosen workbook is kept in the browser',
         'synchronisierter Ordner (OneDrive…) mit der ODV-Arbeitsmappe (.xlsx)',
-        'carpeta sincronizada (OneDrive…) con el libro ODV (.xlsx)')
+        'carpeta sincronizada (OneDrive…) con el libro ODV (.xlsx)'),
+      use: L(
+        'Le Planning ODV y ouvre le classeur le plus récent ; facultatif. Sans lui, le classeur se choisit à la main et reste dans ce navigateur.',
+        'ODV planning opens the latest workbook there; optional. Without it, the workbook is chosen by hand and stays in this browser.',
+        'Die ODV-Planung öffnet dort die neueste Arbeitsmappe; optional. Ohne ihn wird die Arbeitsmappe von Hand gewählt und bleibt in diesem Browser.',
+        'La planificación ODV abre allí el libro más reciente; opcional. Sin ella, el libro se elige a mano y se queda en este navegador.'
+      )
     },
     __perf: {
       label: L('Dossier performances', 'Performance folder', 'Leistungsordner', 'Carpeta de rendimiento'),
       expect: L('dossier des profils de performance (.lnmperf, .json ; la base flight_performance_database.fpdb.json y est écrite)',
         'performance profiles folder (.lnmperf, .json; flight_performance_database.fpdb.json is written there)',
-        'Ordner der Leistungsprofile (.lnmperf, .json)', 'carpeta de perfiles de rendimiento (.lnmperf, .json)')
+        'Ordner der Leistungsprofile (.lnmperf, .json)', 'carpeta de perfiles de rendimiento (.lnmperf, .json)'),
+      use: L(
+        'Profils de performance du Flight Planner, relus à l’ouverture ; facultatif. Sans lui, le planificateur demande le dossier au premier chargement des profils.',
+        'Flight Planner performance profiles, re-read at opening; optional. Without it, the planner asks for the folder when profiles are first loaded.',
+        'Leistungsprofile des Flight Planners, beim Öffnen neu gelesen; optional. Ohne ihn fragt der Planer beim ersten Laden der Profile nach dem Ordner.',
+        'Perfiles de rendimiento del Flight Planner, releídos al abrir; opcional. Sin ella, el planificador pide la carpeta al cargar los perfiles por primera vez.'
+      )
     }
   };
   const STATE = {

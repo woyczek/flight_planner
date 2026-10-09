@@ -89,7 +89,7 @@ Pendant l'usurpation, le trigramme de travail est celui de l'utilisateur usurpé
 <!-- page: apps/cpco/mission_editor.html -->
 
 Le générateur prépare le dossier d'une mission : identification, textes du brief, exercice, durée estimée, zones à activer, puis les PDF à remettre aux équipages. Il sert aussi à commander une mission à ChatGPT et à recevoir sa réponse.
-Accès : barre latérale « Missions » (section « Centre ») ou ☰ › « Centre — Générateur de mission ». Depuis le registre, « Ouvrir dans le générateur » charge la mission choisie.
+Accès : barre latérale « Missions », onglet « Générateur » (niveau Conception, 3), ou ☰ › « Centre — Générateur de mission ». Depuis le registre, « Générer une mission » ouvre le générateur vide et « Ouvrir dans le générateur » charge la mission choisie.
 Voir aussi [missions SIA](SIA_MISSIONS.md) et [prompt du générateur](technique/PROMPT_GENERATEUR_MISSIONS.md).
 Selon le niveau d'utilisation : la page est proposée à partir du niveau Conception (3). À ce niveau, elle montre sept blocs : Mission, Identification, Durée estimée, Zones à activer, Textes de mission, Cartes du dossier final et Documents (plus Opération et Exercice quand la mission en relève). Les brouillons, « Toutes les données YAML » et les paramètres du calcul des routes sont au niveau Expert (4).
 
@@ -212,7 +212,7 @@ Le brief de l'équipage contient ses plis scellés et les cartes ; la ligne d'é
 <!-- page: apps/cpco/map_parser.html -->
 
 Le studio produit les cartes du dossier de mission à partir des données du SIA (cycle AIRAC) : route, coupe verticale, cartes en PNG ou SVG, ZIP et carte d'assemblage.
-Accès : onglet « Studio cartographique » du générateur, ☰ › « Centre — Studio cartographique », ou « Ouvrir dans le studio » dans le registre.
+Accès : barre latérale « Missions », onglet « Studio cartographique » (niveau Expert, 4), ☰ › « Centre — Studio cartographique », ou « Ouvrir dans le studio » dans le registre.
 Il travaille sur la mission partagée avec le générateur. Détails techniques : [missions SIA](SIA_MISSIONS.md).
 
 ### Mission
@@ -274,7 +274,7 @@ Si le dossier contient plusieurs cycles, seul le plus récent est lu ; les autre
 
 Le registre recense toutes les missions générées ou commandées, avec leur suivi par le Centre : statut, date de vol, notes, comptes rendus.
 Il sert à choisir une mission, à l'ouvrir dans le générateur ou le studio, à l'affecter à des pilotes, à créer son CR et à commander de nouvelles missions.
-Accès : barre latérale « Registre » (section « Centre ») ou ☰ › « Centre — Registre des missions ».
+Accès : barre latérale « Missions », qui s'ouvre sur le registre (onglet « Registre »), ou ☰ › « Centre — Registre des missions ». En tête, « Générer une mission » ouvre le générateur pour en créer une.
 Selon le niveau d'utilisation : la page est proposée à partir du niveau Conception (3), avec l'essentiel : « Ajouter des fichiers… » et « Relire le dossier », quatre filtres et « Plus de filtres », un tableau à sept colonnes, une fiche sans le studio et le formulaire de commande simplifié. Le reste est au niveau Expert (4), comme indiqué ci-dessous.
 
 ### Missions du registre
@@ -559,7 +559,7 @@ Un vol demande une catégorie disponible ; un contrôle, une catégorie disponib
 ### Équipage de la semaine
 
 Bloc du niveau 2 : une ligne par membre, une case par jour avec la barre des dispos déclarées et le nombre d'éléments où il figure. Un clic sur une case ouvre ses plages du jour : catégorie, début, fin, et « Récup à partir de », qui pose une récupération jusqu'à minuit. Les plages sont écrites dans la déclaration du pilote.
-- **DLO et butées** : objectifs permanents de chaque membre (« ＋ » pour en ajouter, clic pour modifier), avec une butée facultative (date limite : rouge à 3 jours ouvrés ou moins, jaune à 10 ou moins) ; une DLO est fermée d'office par un vol fait qui la contient (DLO de l'élément, libellé, mission) avec le membre dans l'équipage. La palette montre « ◎n » DLO en cours par membre, et la fenêtre d'un élément rappelle celles de l'équipage.
+- **DLO et butées** (tableau replié ou ouvert par son triangle, état gardé dans ce navigateur) : objectifs permanents de chaque membre (« ＋ » pour en ajouter, clic pour modifier), avec une butée facultative (date limite : rouge à 3 jours ouvrés ou moins, jaune à 10 ou moins) ; une DLO est fermée d'office par un vol fait qui la contient (DLO de l'élément, libellé, mission) avec le membre dans l'équipage. La palette montre « ◎n » DLO en cours par membre, et la fenêtre d'un élément rappelle celles de l'équipage.
 - « Modifications de dispo » liste les déclarations modifiées depuis leur dernière prise en compte ; « Pris en compte » et « Tout prendre en compte » les marquent dans ce navigateur.
 
 ### Zones
@@ -710,9 +710,9 @@ Cette rubrique est le seul endroit où régler les dossiers locaux et les adress
 |---|---|
 | Dossier du dépôt | racine de l'application (contient `lancer.cmd`, `config/repository_tree`) |
 | Dossier des données | `data/` (contient `data_tree.js`) |
-| Dossier du registre, Dossier des missions, Dossier SIA XML | `data/cr`, `data/missions`, `data/sia` (déduits du dossier des données) |
+| « Dossiers déduits (3) », repliés : registre, missions, SIA | `data/cr`, `data/missions`, `data/sia`, réglés avec le dossier des données |
 | Dossier du classeur ODV | dossier synchronisé (OneDrive…) où l'escadrille dépose le `.xlsx` |
-| Dossier X-Plane (atterrissages), Dossier performances, Dossier de sauvegarde locale | journaux CSV, profils `.lnmperf` / `.json`, `defa_local_store.yaml` |
+| X-Plane (en second plan : « Journaux d'atterrissage : autre dossier… »), Dossier performances, Dossier de sauvegarde locale | dossier d'installation d'X-Plane (données de navigation `earth_*.dat`, Custom Data ; journaux d'atterrissage CSV, sauf autre dossier choisi), profils `.lnmperf` / `.json` (relus par Carburant, bloc « Profils de performances », dès que le dossier change), `defa_local_store.yaml` ; facultatifs, signalés « facultatif, non choisi » (information) tant qu'ils ne sont pas choisis |
 
 - **Sources externes** : l'adresse par défaut s'affiche en grisé. Une valeur saisie ne vaut que pour ce navigateur ; « ↺ » revient à la valeur par défaut et « Ouvrir ↗ » ouvre l'adresse.
 - **Clés d'API (services externes)** : clés de la suite, communes à tous ses utilisateurs (IVAO : clé d'API pour les activations de zones et les sessions ATC — trainings, examens, réservations — du Planning ODV et des ordres de vols). « Enregistrer » les confie au lanceur (`secrets/` à la racine de l'application, exclu de git, hors des données et des sauvegardes) ; la page n'en voit que l'état et les 4 derniers caractères ; « Effacer » la retire.
@@ -727,7 +727,7 @@ Pour l'ouvrir : barre latérale › « Paramètres », puis l'onglet « Maintena
 Le menu latéral comporte trois parties :
 - le groupe « Maintenance » : Mises à jour, Versions et synchros, Références et dépendances, Données aéronautiques, Types d'aéronefs ;
 - le groupe « Stockage et sauvegarde » : Caches, Espace disque, Sauvegarde totale, Journal ;
-- les bases de données, rangées dans les groupes « Fichiers du dépôt », « Base », « Missions » et « Données du navigateur ». Ces groupes n'apparaissent qu'au niveau Expert.
+- les bases de données, rangées dans les groupes « Fichiers du dépôt », « Référence et journal », « Missions » et « Données du navigateur ». Ces groupes n'apparaissent qu'au niveau Expert.
 
 ### Mises à jour de la suite
 
@@ -768,11 +768,11 @@ Le bouton « Vérifier » relance les contrôles.
 
 ### Données aéronautiques : zones du monde, sources et cycles AIRAC
 
-**Carte des zones** : une zone par pays (la France regroupe la métropole et l'outre-mer, couverture du SIA). La survoler affiche ses sources dans le panneau de droite. **Un clic ajoute le pays à la sélection, un autre l'en retire** (pays choisis en bleu cerclé) ; la barre sous la carte les énumère (à activer, à désactiver, « Annuler »). **« Activer »** applique la sélection, puis enchaîne seul, pour tous les pays choisis encore incomplets, tout ce que la suite peut faire : téléchargements de leurs sources, derniers ZIP de Téléchargements (SIA, NATS…), une seule reconstruction de la base, puis la MORA de chaque pays qui n'en a pas — seulement si la base a été reconstruite (double jauge : étape et détail ; une source en échec n'arrête pas les autres ; résumé en notification). Le panneau d'un pays garde « Activer la zone » / « Désactiver la zone » et, pour une zone active, « Tout récupérer et recalculer ». Ce qui reste à faire à la main (commande sur le site du SIA, PDF à importer, dossier d'X-Plane, fichiers à déposer…) est listé sous la carte, « Actions à faire » : une ligne par source, avec son lien et son bouton ; les téléchargements et la MORA, faits par « Activer », y tiennent sur une seule ligne « automatique ».
+**Carte des zones** : une zone par pays (la France regroupe la métropole et l'outre-mer, couverture du SIA), plus une zone océanique, « Atlantique Nord (océanique, NAT) », dont les sources sont X-Plane (points et routes océaniques, hors de tout pays) et les tracks NAT du jour. La survoler affiche ses sources dans le panneau de droite. **Un clic ajoute le pays à la sélection, un autre l'en retire** (pays choisis en bleu cerclé) ; la barre sous la carte les énumère (à activer, à désactiver, « Annuler »). **« Activer »** applique la sélection, puis enchaîne seul, pour tous les pays choisis encore incomplets, tout ce que la suite peut faire : téléchargements de leurs sources, derniers ZIP de Téléchargements (SIA, NATS…), une seule reconstruction de la base, puis la MORA de chaque pays qui n'en a pas — seulement si la base a été reconstruite (double jauge : étape et détail ; une source en échec n'arrête pas les autres ; résumé en notification). Le panneau d'un pays garde « Activer la zone » / « Désactiver la zone » et, pour une zone active, « Tout récupérer et recalculer ». Ce qui reste à faire à la main (commande sur le site du SIA, PDF à importer, dossier d'X-Plane, fichiers à déposer…) est listé sous la carte, « Actions à faire » : une ligne par source, avec son lien et son bouton ; les téléchargements et la MORA, faits par « Activer », y tiennent sur une seule ligne « automatique ».
 - Couleurs : contour seul = inactive, sans données ; gris = inactive, avec des données ; orange = active, données incomplètes ; vert = active, toutes les données des sources cochées ; bleu clair = zone survolée ; bleu cerclé de bleu foncé = pays choisi (« Activer » pour appliquer).
-- Chaque source se coche ou se décoche pour sa zone ; seules les sources cochées des zones actives entrent dans la base. Une source « lien » (PDF ou site de consultation) n'est pas lue par la suite.
+- Chaque source se coche ou se décoche pour sa zone ; seules les sources cochées des zones actives entrent dans la base. Une source « lien » (PDF ou site de consultation) n'est pas lue par la suite. **La mise en place ne refait que ce qui manque** : une source à jour n'est pas retéléchargée (« Tout récupérer et recalculer » la revérifie, sans rien réécrire si le serveur n'a rien de nouveau), un fichier identique n'est pas réécrit, et la base n'est relue que si un fichier, une zone ou une source a changé ; relancée sans rien de nouveau, elle ne télécharge, n'écrit et ne recalcule rien. **« Purger la zone… »** (zone qui a des données) supprime, après confirmation, ses fichiers du dossier SIA (pour la France : les XML du SIA et les axes ENR 5.7) et ses cases de `mora.csv` (ancien fichier dans `_archives/`), la désactive et relit la base ; le dossier X-Plane n'est pas touché. Une nouvelle activation réinstalle tout.
 - Selon la source, le panneau propose :
-  - un téléchargement direct par le lanceur (`tools/aero_fetch.py`) : openAIP (chaque pays), ENAIRE (Espagne), FAA (États-Unis : zones et routes militaires, classes d'espace), AIP militaire britannique (ENR 5.2, PDF officiel lu par le lanceur : zones de vol à basse altitude, VATA, zone d'évitement TVAA, axes de ravitaillement AARA ajoutés à ceux de la DIRCAM), NAV CANADA (Designated Airspace Handbook, édition en vigueur lue par le lanceur : zones dangereuses, réglementées et consultatives du Canada, à retélécharger tous les 56 jours) ;
+  - un téléchargement direct par le lanceur (`tools/aero_fetch.py`) : openAIP (chaque pays), ENAIRE (Espagne), FAA (États-Unis : zones et routes militaires, classes d'espace), AIP militaire britannique (ENR 5.2, PDF officiel lu par le lanceur : zones de vol à basse altitude, VATA, zone d'évitement TVAA, axes de ravitaillement AARA ajoutés à ceux de la DIRCAM), NAV CANADA (Designated Airspace Handbook, édition en vigueur lue par le lanceur : zones dangereuses, réglementées et consultatives du Canada, à retélécharger tous les 56 jours), tracks NAT du jour (zone Atlantique Nord : message de Shanwick et de Gander publié par la FAA, à retélécharger avant chaque vol transatlantique, les tracks changeant deux fois par jour ; « ancien » au-delà de 12 heures ; points nommés placés d'après la source X-Plane de la zone) ;
   - une commande ou une inscription, avec le lien et le mode d'emploi : SIA France (commande à 0 €, à refaire à chaque cycle), NATS (Royaume-Uni, fichier déposé dans `data/sia/zones/gb/`) ;
   - un PDF, avec le lien et le mode d'emploi : DIRCAM / MILAIP ENR 5.7 (axes de ravitaillement) ;
     DIRCAM : « Importer le PDF MILAIP… » lit le PDF de la section ENR 5.7 (pdf.js, réseau au premier import), montre le nombre d'axes et les anomalies relevées, puis « Écrire miam-enr-5-7-tracks.xml » range le fichier dans le dossier SIA (ancien dans `_archives/`) et met la base à jour  (« Arrêter » pendant la lecture : rien n'est gardé ni écrit);
@@ -787,7 +787,7 @@ Le bouton « Vérifier » relance les contrôles.
 États du tableau :
 - SIA : cycle lu dans le nom des fichiers, « ancien » s'il précède le cycle en vigueur ;
 - X-Plane : cycle de « Custom Data » ;
-- fichiers téléchargés : « ancien » au-delà de 28 jours (un cycle AIRAC).
+- fichiers téléchargés : « ancien » au-delà de 28 jours (un cycle AIRAC) depuis le téléchargement ou la dernière vérification sans changement.
 
 **MORA** : plusieurs sources.
 - La grille calculée (`data/sia/mora.csv`) a la priorité. « Recalcul simple » reprend les obstacles du nouveau cycle (hors ligne) ; « Calcul complet » refait relief et sommets (réseau, environ une minute) pour les théâtres et les missions ; « Calculer la MORA de la zone » (panneau) le fait sur l'emprise d'une zone, les autres cases étant gardées.
@@ -852,14 +852,14 @@ Tant qu'aucune de ces opérations n'a eu lieu, le journal est vide.
 
 ### Flotte (appareils connus)
 
-Cette base (`data/references/aircraft_fleet.js`) liste les appareils proposés dans les CR : « Opérateur », « Type OACI », « Variante », « Immatriculation », « Code », « Numéro », « Indicatifs » (séparés par des virgules), « Base », « Opérationnel ».
+Cette base (`data/references/aircraft_fleet.js`) liste les appareils proposés dans les CR : « Opérateur », « Type OACI », « Variante », « Immatriculation », « Code », « Numéro », « Indicatifs » (séparés par des virgules), « Terrain de base », « Opérationnel ».
 - **« Coller la page Flotte du site… »** :
   1. ouvrez la page « Flotte virtuelle » du site de la compagnie (lien dans la fenêtre) ;
   2. faites Ctrl+A puis Ctrl+C, et collez dans la zone (Ctrl+V) ; vous pouvez aussi utiliser « Lire le presse-papiers » ou « ou page enregistrée… » ;
   3. cliquez sur « Lire ».
 - Un appareil de la page remplace celui du fichier (même immatriculation) mais garde ses indicatifs supplémentaires. Les appareils absents de la page sont conservés.
 - La ligne d'état donne le nombre d'appareils mis à jour, ajoutés et conservés. Vérifiez, puis « Enregistrer dans le dépôt ».
-- **Boutons communs aux bases du dépôt** : « Appliquer dans ce navigateur » (modifications locales prioritaires), « Enregistrer dans le dépôt » (écrit le fichier dans le Dossier du dépôt, à committer), « Télécharger », « Annuler les modifications », « Revenir au fichier du dépôt ».
+- **Boutons communs aux bases du dépôt** : « Enregistrer dans le dépôt » en évidence (écrit le fichier dans le Dossier du dépôt, à committer) ; sous « Plus… », « Appliquer dans ce navigateur » (modifications locales prioritaires), « Télécharger », « Annuler les modifications », « Revenir au fichier du dépôt ». La ligne d'état dit d'où vient le contenu : « État : fichier du dépôt, sans modification dans ce navigateur », ou les modifications locales et leur date.
 - **Automatique** : le lanceur lit lui-même les pages publiques Flotte et Log des vols du site (sans connexion), une fois par jour à l'ouverture d'une page, avec les mêmes règles que le collage ; il écrit `data/references/aircraft_fleet.js` et `defa_reference.js`, à envoyer par « Synchroniser ». Réglage et « Mettre à jour maintenant » : sous la liste des appareils du reporting (ci-dessous). Le collage et le script (`python AircraftDB/update_fleet.py Flotte.html`) restent possibles.
 - **Où** : Paramètres › Centre › « Flotte (appareils connus) », réservée tant que le Centre est verrouillé (auparavant dans Maintenance).
 - **Appareils du reporting** : sous la flotte, tous les appareils qui volent dans le journal des missions (type, indicatifs, exploitant, vols, dernier vol). Case « personnel », cochée par défaut : appareil individuel, hors de la flotte du SOG ; la décocher l'ajoute à la flotte (il devient affectable), la recocher l'en retire. Puis « Enregistrer dans le dépôt » : la flotte et l'index des appareils individuels (`data/references/aircraft_personal.js`) sont écrits ensemble. Un appareil de la page Flotte du site revient dans la flotte à la mise à jour suivante.
@@ -872,7 +872,7 @@ Cette base (`AircraftDB/aircraft_db.js`) contient deux tableaux :
 - « Types » : « Désignateur », « Modèle », « Description OACI », « WTC », « Aile », « Source » ;
 - « Alias (nom courant → désignateur) ».
 Les modifications sont aussi reportées dans `aircraft_overrides.json`. Les boutons sont ceux des bases du dépôt.
-Le « Mode opératoire » donne les commandes du script de rafraîchissement, à lancer depuis `AircraftDB` : `python update_aircraft_db.py --no-network`, `--add <types>`, `--refresh-icao`. La base n'est pas publiée avec la suite (données de l'OACI et d'EUROCONTROL) : la carte « Types d'aéronefs et performances » de Paramètres › Maintenance › Références et dépendances la complète sur ce poste, type par type, sans jamais tout reprendre — un code saisi (« Ajouter / mettre à jour »), les types inconnus, ceux de la flotte ou ceux des missions (ODV, registre) ; il faut le lanceur et le réseau, puis recharger la page (bouton proposé à la fin). La carte est en tête du bloc ; base vide, elle est encadrée, une notification le signale et « Compléter la base » reprend d'un clic les types de la flotte et des missions. Les fichiers écrits (`AircraftDB/aircraft_db.js`, `aircraft_perf.js`) n'appellent rien : les pages les lisent ; non versionnés, ils se complètent sur chaque poste ou se recopient d'un poste à l'autre.
+Le « Mode opératoire » donne les commandes du script de rafraîchissement, à lancer depuis `AircraftDB` : `python update_aircraft_db.py --no-network`, `--add <types>`, `--refresh-icao`. La base n'est pas publiée avec la suite (données de l'OACI et d'EUROCONTROL) : la rubrique « Types d'aéronefs » de Paramètres › Maintenance la complète sur ce poste, type par type, sans jamais tout reprendre. Elle se lit en trois temps : « Ce que c’est » (la fiche OACI, qui donne l'icône et la classe 2P, 2T, 4T…, et les performances EUROCONTROL) ; le tableau des types de la flotte, des missions et des CR (silhouette, code et modèle, classe OACI, fiche ✓ ou manquante, performances clés — plafond, croisière, V2, Vat — avec le détail en infobulle et le lien EUROCONTROL, emploi) ; puis « Compléter automatiquement (n) », qui télécharge ce qui manque. Un code libre se saisit sous « Télécharger d’autres types… » (replié) ; « Modifier la base à la main… » (niveau Expert) ouvre cette base. Un seul groupe par avion : les libellés des missions et des CR (« A332 A330 MRTT Phénix », « A330 MRTT PHÉNIX ») sont ramenés au code OACI (flotte, alias, noms d'usage ; chaîne d'alias suivie, par exemple A4M → A400, un code maison ramené au désignateur OACI) ; un type écrit en clair dans un CR est reconnu au lieu de créer un type local. Un type sans performances EUROCONTROL est estimé : « ≈ 2 000 kg/h, 480 kt (type connu) » ou « (classe OACI L2J) », même repli que le planificateur carburant (`shared/fuel_reference.js`). Il faut le lanceur et le réseau ; à la fin de la passe, la page se recharge d'elle-même et montre le bilan. Les fichiers écrits (`AircraftDB/aircraft_db.js`, `aircraft_perf.js`) n'appellent rien : les pages les lisent ; non versionnés, ils se complètent sur chaque poste ou se recopient d'un poste à l'autre. La même passe lit aussi la liste publique de SimBrief (une requête, gardée une semaine ; `--simbrief` en ligne de commande) : consommation de croisière (kg/h), masses (vide, sans carburant, atterrissage, carburant maximal), plafond et vitesse de 224 types, rangés dans `aircraft_perf.js` à côté des fiches EUROCONTROL ; une valeur dont SimBrief ne garantit pas la précision est une estimation. Enfin, Airframe DB (`--airframedb`, 40 fiches au plus par passe, cache de 30 jours) ajoute des alias (noms en usage, comme H125 → AS50, et noms des simulateurs → code OACI, sans jamais remplacer un alias existant ni détourner un désignateur officiel) et les caractéristiques publiées (vitesses, plafond, vario, masses, distance franchissable) des types sans fiche EUROCONTROL ni SimBrief, militaires et hélicoptères compris.
 Limite : un type supprimé ici peut revenir au prochain rafraîchissement, s'il fait partie de la liste de base du script.
 
 ### Correspondance des indicatifs
@@ -883,14 +883,14 @@ Cette base (`data/references/callsigns.js`) relie l'indicatif complet (conservé
 - Il n'existe pas de script : cette page (ou le fichier, édité à la main) est la source.
 - Pour l'alimenter : les formes corrigées dans les CR arrivent dans « Indicatifs appris », et les séries vues dans le journal arrivent par « Ajouter » ou « Compléter ».
 
-### Référence (anonymisée, dans le dépôt)
+### Flotte et pilotes de la compagnie (référence anonymisée)
 
 Cette base (`data/references/defa_reference.js`) recense les pilotes (trigrammes) et les appareils de la compagnie, sans les vols ni les missions. Elle sert d'aide à la saisie et n'est pas exhaustive.
 - Tableau « Appareils » : immatriculation, type, variante, statut, rattachement (modifiable), dernier AD connu, mise en service, indicatifs utilisés, premier et dernier vol, vols, fiche flotte, note.
 - Tableau « Pilotes » : trigramme, premier et dernier vol, vols, types, note.
 - Mise à jour :
   1. chargez le journal des vols (rubrique suivante) ;
-  2. cliquez sur « Mettre à jour la référence (anonymisée) » : rien n'est supprimé, et les saisies manuelles sont gardées ;
+  2. cliquez sur « Mettre à jour depuis le journal des vols » (ici) ou « Mettre à jour la référence (anonymisée) » (dans le journal) : rien n'est supprimé, et les saisies manuelles sont gardées ;
   3. « Enregistrer dans le dépôt », puis committez.
 - Alternative par script : `tools/defa_reference.py`.
 
@@ -898,7 +898,7 @@ Cette base (`data/references/defa_reference.js`) recense les pilotes (trigrammes
 
 Cette base est distincte du registre des missions. Elle n'est gardée que dans ce navigateur : hors dépôt et hors sauvegarde locale, car elle contient des trigrammes.
 - « Charger / mettre à jour le journal… » accepte la page « Log des vols » copiée ou enregistrée, ou un export CSV / JSON. Les vols sont fusionnés sans doublon.
-- « Séries d'indicatifs » : « Ajouter » crée la ligne dans la correspondance des indicatifs ; « Compléter » y ajoute les formes et les types vus.
+- « Séries d'indicatifs » : « Ajouter à la correspondance » crée la ligne dans la correspondance des indicatifs (notification avec « Ouvrir la correspondance », filtrée sur la ligne) ; la série passe « Dans la correspondance ✓ » ; « Compléter » y ajoute les formes et les types vus depuis.
 - « Vols » : filtre plein texte, 300 lignes affichées au plus.
 - Actions :
   - « Mettre à jour la référence (anonymisée) » ;

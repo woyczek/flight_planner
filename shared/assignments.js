@@ -810,9 +810,36 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
   /** Pastilles des simulateurs (abréviation colorée, nom complet au survol). */
   function simChips(list) {
     if (!document.getElementById('simChipCss')) document.head.insertAdjacentHTML('beforeend',
-      '<style id="simChipCss">.sim-chip{display:inline-block;margin:0 3px 2px 0;padding:0 5px;border-radius:3px;font:700 10.5px/1.6 system-ui,sans-serif;letter-spacing:.03em;color:#fff;background:var(--sim);vertical-align:middle;white-space:nowrap}</style>'
+      '<style id="simChipCss">.sim-chip{display:inline-block;margin:0 3px 2px 0;padding:0 5px;border-radius:3px;font:700 10.5px/1.6 system-ui,sans-serif;letter-spacing:.03em;color:var(--sim-ink,#fff);background:var(--sim);vertical-align:middle;white-space:nowrap}</style>'
     );
-    return (list || []).map(simTag).map(t => `<span class="sim-chip" style="--sim:${t.color}" title="${K.esc(t.name)}">${K.esc(t.abbr)}</span>`).join('');
+    return (list || []).map(simTag).map(t => `<span class="sim-chip" style="--sim:${t.color};--sim-ink:${chipInk(t.color)}" title="${K.esc(t.name)}">${K.esc(t.abbr)}</span>`).join('');
+  }
+  /** Encre d'une pastille : blanc ou presque noir, le plus contrasté sur sa couleur (#rgb, #rrggbb, rgb(), hsl()) — le
+   *  blanc d'office tombait à 2:1 sur les couleurs claires (vert, jaune, cyan) ; blanc si la couleur est illisible. */
+  function chipInk(color) {
+    const s = String(color || '').trim();
+    let rgb = null,
+      m;
+    if ((m = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(s))) {
+      const h = m[1].length === 3 ? [...m[1]].map(c => c + c).join('') : m[1];
+      rgb = [0, 2, 4].map(i => parseInt(h.slice(i, i + 2), 16));
+    } else if ((m = /^rgba?\(\s*([\d.]+)[,\s]+([\d.]+)[,\s]+([\d.]+)/i.exec(s))) rgb = [+m[1], +m[2], +m[3]];
+    else if ((m = /^hsla?\(\s*([\d.]+)(?:deg)?[,\s]+([\d.]+)%[,\s]+([\d.]+)%/i.exec(s))) {
+      const h = +m[1] / 360,
+        sat = +m[2] / 100,
+        l = +m[3] / 100;
+      const q = l < .5 ? l * (1 + sat) : l + sat - l * sat,
+        p = 2 * l - q,
+        f = t => {
+          t = (t + 1) % 1;
+          return 255 * (t < 1 / 6 ? p + (q - p) * 6 * t : t < .5 ? q : t < 2 / 3 ? p + (q - p) * (2 / 3 - t) * 6 : p);
+        };
+      rgb = [f(h + 1 / 3), f(h), f(h - 1 / 3)];
+    }
+    if (!rgb) return '#fff';
+    const lin = c => (c /= 255) <= .03928 ? c / 12.92 : ((c + .055) / 1.055) ** 2.4,
+      L = .2126 * lin(rgb[0]) + .7152 * lin(rgb[1]) + .0722 * lin(rgb[2]);
+    return 1.05 / (L + .05) >= (L + .05) / .0581 ? '#fff' : '#111';
   }
   /** Simulateurs du pilote (liste de la feuille FLOTTE) : gardés avec ses disponibilités, comme ses appareils. */
   function saveSims(tri, sims) {

@@ -106,3 +106,39 @@ l'affichage : les mesures de temps ne valent qu'onglet visible.
 `JSON.parse`, 409 Ko) : signalé à la session BUGS SOG (socle), non touché. Non faits : `renderZonePick` (≈ 100 ms,
 `selectedAirspaces` sur 7 000 espaces à chaque rendu), géométrie des espaces en tableaux compacts, DOM du Planning
 (7 700 éléments).
+
+## 7. Carburant : consignes de montée, base de performances (10 octobre)
+
+**Ce que l'utilisateur veut savoir** (ses mots : « comment régler mon throttle, mon pas d'hélice et/ou le rpm, et si je dois
+surveiller le badin, l'altimètre ou le vario durant la montée », « le sweet point entre le pilotage éco et le pilotage
+rapide »). À chaque altitude, trois grandeurs sont liées : vitesse indiquée, vario, régime (gaz, RPM ou N1). Deux fixent
+la troisième — c'est ce que fait déjà le modèle (`FlightPerfModel.manualLaw` / `manualPoint`, régime retrouvé par la
+cartographie moteur `rpmForFF`). La page le montrait mal : deux curseurs verticaux faits main autour des courbes, la
+loi « plein gaz » qui déplace la ligne de base du calcul, l'altimètre et le chronomètre retirés, aucune vue d'ensemble
+des profils de performances chargés.
+
+**Vue simple (niveaux 1 à 3).** Un bloc « Consignes de montée » dans la colonne de gauche, sous le devis : un choix
+d'objectif par segments (Éco · Vy · Rapide · Profil · Réglée) et, pour l'objectif choisi, un tableau par tranche
+d'altitude (sol, 2 000, 5 000, 10 000 ft… jusqu'au niveau du plan) : gaz (« plein » ou %), RPM ou N1 quand la
+cartographie le permet, badin à tenir, vario attendu, temps cumulé ; au-dessus, une phrase de consigne produite à la
+source (« Plein gaz, hélice plein petit pas, tenir 120 kt au badin ; le vario décroît de 900 à 500 ft/min »), qui dit
+quoi régler et quoi surveiller (l'instrument qui porte la consigne est nommé, l'autre est « attendu »). Les instruments
+du bandeau (badin, vario) restent.
+
+**Vue détaillée (niveau 4, ou « Vue détaillée »).** Trois curseurs — badin, vario, régime — avec une case « fixé »
+devant chacun : deux au plus sont fixés, le troisième est calculé et grisé (composant du framework : champ `.field` avec
+`input[type=range]`, libellé au-dessus, valeur et état sous le curseur — « plein gaz » s'affiche sous le curseur de vario,
+plus dans la ligne de base du calcul, qui ne bouge plus). Les courbes existantes, avec une bascule « par altitude ↔ par
+régime » du graphe de montée ; altimètre et chronomètre reviennent dans le bandeau au niveau 4 (ils redisent le
+niveau survolé et le temps de montée : ludiques et parlants, dixit l'utilisateur).
+
+**Base de performances.** Un bloc « Profils de performances » (niveau 3 et plus) : une ligne par type de la flotte et
+des missions — profil chargé (source : `.lnmperf`, SimBrief, JSON, saisie, estimation par classe), cartographie moteur
+(oui, n lignes / non), consommation de croisière, plafond, données manquantes nommées ; actions : Importer (`.lnmperf`,
+JSON, CSV, texte d'une fiche PDF collé), Dossier, Relire. Les profils du dossier sont relus quand le dossier change
+ailleurs (`file-access-change`, clé `__perf`). La cartographie moteur gagne une colonne « Altitude » facultative (les
+consommations publiées varient avec l'altitude ; le modèle interpole entre les lignes d'une même altitude).
+
+**Détails.** Le choix d'appareil en tête de page devient une liste (icône, nom, type, source du profil, état) au lieu
+d'une rangée de boutons ; « Copier JSON » a un repli `execCommand("copy")` hors contexte sécurisé et se grise quand il
+n'y a rien à copier.

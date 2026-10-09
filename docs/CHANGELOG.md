@@ -10,6 +10,452 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ## [Non publié]
 
+## [5.1.0] — 2026-10-09
+
+Carburant devient l'atelier des profils de performances. Un bloc **« Profils de performances »** donne pour chaque
+type de la flotte et chaque profil enregistré d'où il vient, s'il a une cartographie moteur et ce qui lui manque. On y
+**sélectionne** des profils pour les **fusionner** (le plus récent gagne champ par champ ; aperçu des changements, donnée
+par donnée, à cocher), les **exporter** ou les **enregistrer** dans le dossier (un fichier par profil) et les
+**supprimer** (retirés aussi du dossier performances, « Annuler » 10 s). Nouvelles sources : **SimBrief** (fiche
+publique de 224 types, créer, mettre à jour ou fusionner un profil), modèle de **Poll et Schumann** (avions de ligne),
+**Airframe DB** (militaires, hélicoptères), et **« Demander à ChatGPT »** (prompt du type, réponse importée ou fusionnée,
+valeurs estimées signalées). Consignes de montée et montée choisie dans Carburant. Lot d'ergonomie A à G : contrastes des
+designs à matières, Premier lancement (rail des étapes, types d'aéronefs), Sources et dossiers, Maintenance, Aéro, Cartes
+de vol. Données aéronautiques : mise en place idempotente, « Purger la zone… », zone **Atlantique Nord** et tracks NAT du
+jour, profils de cartes revus (IFR simplifié, AIRWAYS, points RNAV). Plus d'empreintes `?v=` dans le dépôt : le lanceur
+les pose en servant. Corrigés : A400M, renvoi en boucle du premier lancement, textures absentes après un clone, données
+servies depuis un autre disque, registre aux fichiers absents, profils cachés à la relecture du dossier performances.
+
+### Ajouté
+
+- **Carburant, Profils de performances : « Demander à ChatGPT »** — bouton dans la barre du bloc et dans la fiche du
+  profil actif ; panneau : appareil (profil ou type de la flotte sans profil), « Copier le prompt et ouvrir ChatGPT »
+  (repli `execCommand`, prompt prérempli s'il est court), « Voir le prompt ». Prompt rédigé en règles, dans la langue de
+  la page, tenu dans `docs/technique/PROMPT_PROFIL_PERFORMANCES.md` (un bloc par langue, schéma JSON commun) et généré
+  dans `apps/planner/perf_prompt.js` par `tools/build_perf_prompt.py` (relancé par `bump_versions.py`) : sources à
+  compiler, croisière ordinaire à masse moyenne, unités imposées, valeurs estimées dans `estimated`, sources citées,
+  JSON seul avec les clés du schéma ; il donne ce que la suite sait déjà (EUROCONTROL, SimBrief, Airframe DB, profil
+  actuel). Réponse collée (JSON, ou CSV de performances) : clés inconnues ignorées et signalées, valeurs illisibles ou
+  hors plage écartées, kg ou lb, varios positifs, cartographie relue comme dans l'éditeur ; « Importer comme nouveau
+  profil » (`GPT_<code>`, source « ChatGPT ») ou « Fusionner avec « … » » (réponse datée du jour, aperçu d'abord).
+  Valeurs estimées gardées (`estimatedFields`, lignes de cartographie notées « estimé (ChatGPT) ») et affichées sous
+  « Données manquantes » ; une valeur estimée changée à la main (fiche, ou ligne de cartographie) ne l'est plus.
+  Manuel utilisateur (4 langues).
+- **Carburant, Profils de performances : fusion avec la fiche SimBrief, aperçu avant toute fusion** — la fiche SimBrief
+  du type devient une source de fusion comme un profil (profil virtuel « <type> — SimBrief », daté de sa récupération,
+  `simbrief.fetched`, sinon date de la passe ; carburant converti dans l'unité du profil) : quatrième choix
+  « Fusionner » dans « Mettre à jour depuis SimBrief », case « Inclure la fiche SimBrief du type » (cochée d'avance)
+  dans « Fusionner (n) », possible dès un profil coché. Même règle partout (`mergeProfileSources`) : le plus récent gagne
+  champ par champ, les vides sont comblés, cartographie réunie, profil gardé (identifiant, nom, unité, source) ;
+  notification « Repris des sources : … » qui nomme SimBrief. Toute fusion, et toute mise à jour depuis SimBrief qui
+  change des champs, montre d'abord un aperçu (champ, valeur actuelle, valeur retenue, source ; inchangés repliés ;
+  lignes de cartographie ajoutées / remplacées), redessiné quand la case SimBrief ou le nom changent ; « Annuler » 10 s
+  reste. Boutons « Choisir » / « Créer » dans une colonne à eux, au même endroit sur chaque ligne. Manuel utilisateur
+  (4 langues).
+- **Carburant, Profils de performances : supprimer, fusionner, profil SimBrief** — sur chaque ligne, « Supprimer »
+  (confirmation, « Annuler » pendant 10 s ; profil noté supprimé, `state.removedProfiles`, que la relecture du dossier
+  performances ne ramène plus, le fichier n'étant jamais effacé ; un import explicite le ramène) et « Profil SimBrief »
+  quand le type est dans la liste de SimBrief (`AIRCRAFT_PERF[code].simbrief`) : profil « <type> — SimBrief »
+  (`SB_TYPE_<code>` : consommation, plafond, Mach ou vitesse indiquée et TAS au niveau de référence, Badin de montée et de
+  descente, carburant utilisable, piste ; masses et moteurs en description), créé ou remis à jour sans perdre ce qui a été
+  ajouté à la main ; face à un profil perso : « Mettre à jour les champs vides », « Remplacer » ou « Nouveau profil » ;
+  même bouton dans la fiche du profil actif. « Fusionner » : profils cochés du même type réunis (nom choisi, celui du
+  plus complet par défaut ; base : le plus récent ; manques comblés par les autres ; cartographie moteur réunie) ;
+  notification qui dit ce qui a été repris de chacun, « Annuler » 10 s. Manuel utilisateur (4 langues).
+- **Carburant — consignes de montée, base de performances (v2-fable, §7 de `docs/technique/V2_FABLE.md`)** :
+  - **Consignes de montée** (bloc du devis, toutes vues, tous niveaux ; `shared/flight_perf_view.js`) : objectif par
+    segments (Éco · Vy · Rapide · Profil · Réglée, chacun avec son temps et son carburant jusqu'au niveau), tableau par
+    tranche d'altitude (sol, 2 000, 5 000, 10 000 ft… niveau du plan : gaz « plein » ou %, RPM / N1 si cartographie,
+    Badin à tenir, vario attendu, temps cumulé) et phrase « Régler / Tenir / Attendu » produite à la source (gaz, hélice ou
+    régime ; instrument qui porte la consigne ; vario, niveau, temps et carburant attendus), en quatre langues.
+  - **Montée choisie, vue détaillée** : trois curseurs horizontaux (vitesse indiquée, vario, régime — RPM / N1 de la
+    cartographie, sinon gaz en %) avec une case « fixé » devant chacun : deux fixés, le troisième calculé et grisé ;
+    valeur et état (« plein gaz », « calculé ») sous chaque curseur. Les curseurs verticaux autour des courbes et le mode
+    « Régler par le régime » sont retirés ; la ligne de base du calcul ne change plus de longueur (détail de la montée
+    choisie en infobulle).
+  - **Graphe de montée par altitude ↔ par régime** (à mi-montée, au Badin de la montée choisie : vario à Vy et au Badin
+    choisi, carburant par 1000 ft, réglage du moment).
+  - **Altimètre et chronomètre** de retour dans le bandeau d'instruments, niveau Expert seulement (`data-min-level="4"`) :
+    altitude survolée, temps de montée depuis le sol à la montée choisie (`shared/flight_instruments.js`).
+  - **Bloc « Profils de performances »** (niveau 3 et plus) : une ligne par type (profils enregistrés et types de la
+    flotte sans profil) — source du profil (.lnmperf, SimBrief, OFP calibré, CSV, JSON, saisie, estimation), cartographie
+    (oui, n lignes / non), consommation de croisière et son origine, plafond, données manquantes nommées ; Importer,
+    Dossier, Relire ; le dossier performances est relu quand il change ailleurs (`file-access-change`, clé `__perf`).
+  - **Cartographie moteur : colonne « Altitude » facultative** dans l'éditeur ; avec deux altitudes ou plus, débits
+    interpolés entre les lignes d'une même altitude puis entre altitudes (`FlightPerfModel.mapAt`), utilisés par le devis,
+    la montée choisie, les consignes et la fiche moteur ; sinon comportement inchangé.
+  - **Choix d'appareil en liste** (icône, nom, type, source du profil, état « complet / à compléter (n) / sans profil »),
+    clavier (flèches, Entrée, Échap) ; **« Copier JSON »** : repli `execCommand("copy")` hors contexte sécurisé, bouton
+    grisé avec infobulle quand rien n'est chargé.
+- **Plus d'empreintes `?v=` dans le dépôt** : toutes les références restent à `?v=0` ; le lanceur pose l'empreinte réelle en
+  servant chaque page, script ou feuille (`tools/version_stamps.py`, poussé sur develop) et `tools/publish_dist.py` les pose
+  dans l'archive de livraison (fichiers du tag extraits dans un dossier temporaire, empreintes calculées d'un fichier à
+  l'autre comme en service). `bump_versions.py --neutral` remet tout à `?v=0` ; sans option il ne sert plus qu'à un usage
+  sans lanceur. Plus rien à monter avant un commit (CLAUDE.md, README des outils, INSTALL) : fini les dizaines de pages
+  modifiées à chaque retouche et les conflits d'empreintes.
+- **Ergonomie (F, suite) : Carburant — Poll-Schumann et SimBrief, montée choisie, revue d'usage** — Outils › Carburant
+  (`apps/planner/flight_performance_planner.html`, `shared/flight_perf_view.js`, `shared/flight_instruments.js`,
+  `shared/flight_i18n.js`). **Consommation** : après la saisie du vol et le profil, Poll-Schumann pour les avions de
+  ligne couverts (`shared/fuel_poll_schumann.js` ; masse à mi-croisière tirée de la masse au décollage saisie, sinon
+  masse moyenne du module ; origine « Poll-Schumann, 198 t à mi-croisière, FL350, M0,82 »), puis SimBrief
+  (`AIRCRAFT_PERF[type].simbrief`, « ≈ » si la précision n'est pas « high »), puis l'estimation ; « Utiliser cette
+  valeur » recopie la source automatique dans le champ ; TAS de croisière aussi tirée de SimBrief. Montée et descente
+  du modèle complétées par la fiche EUROCONTROL quand le profil ne les donne pas (A400M : plafond calculé FL176 →
+  FL264) ; un niveau du plan au-dessus du plafond calculé est signalé dans la ligne d'état. **Montée choisie** dans le
+  devis, à tout niveau : curseurs « Vitesse indiquée » et « Vario », chacun avec son champ chiffré (pas de 5 kt et
+  50 ft/min), et en lecture à mi-montée régime (table du profil, sinon « non connu pour ce type »), manette et débit ;
+  en vue détaillée, pour un profil à table régime → débit, « Régler par le régime » (vitesse et vario deviennent les
+  valeurs lues). « Loi réglée » devient « montée choisie » partout (courbes, panneaux, instruments, base du devis), les
+  « lois » rapide et économique deviennent des « montées », « Comparaison des montées ». **Résultat** : carburant
+  d'abord — Carburant bloc, Temps de vol, Début de descente (TOD), puis Roulage, Délestage (étape), Contingence,
+  Réserve ; montée, croisière et descente sous le délestage en vue détaillée, base du devis (niveau, montée choisie)
+  aussi ; libellés produits dans la langue de la page (plus de « Block fuel » en dur). **Courbes** : graduations
+  rondes (1, 2, 2,5, 5 × 10ⁿ) sur tous les axes de valeurs, niveau du plan marqué (trait discret « FL240 plan ») sur
+  « TAS selon le niveau » et « Montée ». **Instruments** : lecture seulement (plus de réglage par glisser ou molette) ;
+  altimètre et horloge retirés (ils redisaient le niveau survolé et la durée déjà écrits) ; restent vitesse indiquée,
+  vario et carburant du trajet, en vue détaillée. Fourchette de carburant ramenée à une valeur quand ses bornes
+  s'affichent pareil. Quatre langues.
+- **Ergonomie (G) : contrastes restants ; Opérationnel et Console cohérents** — suite de la passe de contraste
+  (`docs/technique/CONTRASTE_2026-10-09.md` § 5 et 6, relevés `tools/contrast_audit.html` avant / après : 16 → 5
+  textes sous le seuil en Standard, Opérationnel et Console, 11 → 5 en Aéro ; les 5 restants sont dans les Ordres de
+  vols et les tableaux triables, fichiers d'une autre session). Contrastes : petits textes des CR (`--muted` de
+  `shared/mission_core/core.css` #5b6270 : cases de calcul 4,1 → 5,2:1) ; titres de bloc d'Aéro sur un bloc sombre
+  d'une page claire (Ordres de vols : 2,7 → 9,8:1, `--repo-ink`) ; texte sur l'accent et rang des créneaux du Planning
+  (`apps/cpco/odv_blocks.css`) ; boutons « déplacer » et « masquer » du jeu Gel sur les pages du Centre en bulle
+  marine (or sur or 2,9 → 10:1, `shared/block_icons.css`, règle du générateur à reporter). **Opérationnel** : un seul
+  angle de 3 px (onglets, sous-cartes et groupes de champs des CR, menu ☰, champs, liens-boutons), boutons du contenu
+  à la hauteur des champs denses, en-tête compact et même sous-titre sur toutes les pages, titre de l'aperçu
+  imprimable du CR plus mis en capitales. **Console** : tous les titres de bloc en capitales (aussi ceux sans icône),
+  hauteur de 40 px réservée au contenu (plus dans l'en-tête, les menus, les boutons à icône seule ni les tableaux),
+  rayons alignés (6 px commandes et ☰, 8 px sous-cartes, onglets et bandeaux, 10 px blocs et menus), onglets aérés.
+  Formes de Standard et d'Aéro inchangées (règles en `html[data-design="ops"|"console"]`).
+- **Ergonomie (F) : Carburant — état du calcul, consommation toujours disponible** — Outils › Carburant
+  (`apps/planner/flight_performance_planner.html`, nouveau `shared/fuel_reference.js`). Cause du « Calculer ne fait
+  rien » : l'appareil choisi (type de la flotte sans profil, ex. A400M) n'avait ni consommation ni TAS de croisière ; le
+  devis calculait temps et TOD avec des valeurs par défaut et un carburant nul (« 0–0 kg »), le plan de vol relu
+  mettait déjà le devis à jour, et un nouveau clic redonnait les mêmes chiffres sans rien dire ; le modèle de
+  performances refusant un profil incomplet, courbes de niveau et instruments disparaissaient aussi au niveau Expert.
+  Désormais : **ligne d'état** dans Résultat après chaque calcul (« Calculé pour … à 11:48:18 : 500 NM au FL280, temps
+  de vol 1 h 26, TOD 98 NM. Consommation de croisière : ≈ 4 000 kg/h (estimation type A400) », TAS et son origine) et,
+  sans consommation, « Carburant non calculé : … » et quoi faire, au lieu d'un tiret muet ou d'un 0 ; « Calculer »
+  sans avion ou sans distance le dit en notification et met le champ en avant ; les valeurs inchangées ne sont pas
+  réécrites. **Consommation de croisière** dans le devis, trois sources affichées avec leur origine : saisie du vol
+  (champ prérempli, kg/h ou lb/h selon l'unité affichée, « Mémoriser pour ce type » l'écrit dans le profil comme
+  « Enregistrer le profil »), profil enregistré (table RPM ou débit de croisière), sinon **estimation** (≈, jamais
+  confondue avec le profil, « Utiliser cette estimation » la recopie dans le champ) : 34 types nommés de la flotte
+  (A400M, C-130, A330 MRTT, E-3F, Rafale, Mirage 2000, PC-21, TBM 700, H145, H160, NH90, Puma, Tigre, Gazelle, CAP 10,
+  Twin Otter…, source citée pour chacun) puis classes OACI (L1P à L4J, H1T, H2T) × catégorie de sillage (MTOW
+  EUROCONTROL sinon base des types) ; TAS de croisière : profil, sinon fiche EUROCONTROL, sinon estimation. Bloc,
+  réserves et courbes se calculent dès qu'une consommation existe. **Vue simple / Vue détaillée** (bouton du Résultat,
+  choix mémorisé, défaut : détaillée au niveau 4, simple aux niveaux 1 à 3) : courbes de niveau et de consommation,
+  panneaux et instruments à tout niveau, sans recalcul au basculement quand ils sont à jour ; plan de vol relu :
+  courbes retracées. Fiche EUROCONTROL trouvée aussi par les alias de la base (A4M ↔ A400). Quatre langues.
+- **Ergonomie (D) : Sources et dossiers — une seule ligne X-Plane, dossiers déduits repliés** — Paramètres ›
+  Installation › « Sources et dossiers » (`shared/maintenance_page.js`, libellés et aides de `shared/file_access.js`) :
+  6 lignes visibles au lieu de 10. « Dossier X-Plane (atterrissages) » et « Dossier du simulateur X-Plane » deviennent
+  une ligne « X-Plane » : bouton principal du dossier d'installation (données de navigation) et, en second plan,
+  « Journaux d'atterrissage : autre dossier… » (le plugin écrit ses CSV où on l'a réglé : dossier propre, gardé) ;
+  libellés renommés « Dossier d'installation d'X-Plane » et « Journaux d'atterrissage X-Plane ». Registre, missions et
+  SIA, déduits du dossier des données, passent sous « Dossiers déduits (3) », replié (une ligne en avertissement reste
+  visible). Chaque ligne dit à quoi sert le dossier et ce qui se passe sans lui ; un dossier facultatif non choisi est
+  une information, plus un avertissement. Types d'aéronefs : un type sans fiche OACI garde la silhouette par défaut,
+  avec l'infobulle « type sans fiche OACI : silhouette inconnue ».
+- **Pilote de fusion des empreintes `?v=`** (`tools/merge_vstamp.py`, déclaré dans `.gitattributes` pour les pages, scripts,
+  feuilles et `config/repository_tree`, configuré par `tools/install_hooks.sh`) : à la fusion ou au rebase, un conflit qui ne
+  porte que sur les empreintes de cache posées par `bump_versions.py` est résolu seul (côté courant gardé, empreinte
+  remise par `bump_versions.py`) ; les vrais conflits restent à résoudre à la main.
+- **Ergonomie (E) : Premier lancement — rail des étapes, états, étape 5 réordonnée** — la page devient un assistant
+  qui dit à chaque étape où on en est, quoi faire et quand c'est fini (`apps/settings/premier_lancement.html`).
+  - **Rail des six étapes** en tête (1 Dossiers · 2 Données · 3 Compagnie · 4 Profil · 5 Données aéronautiques et
+    types · 6 Centre) : état calculé par le bilan (✓ faite, ○ à faire, – facultative, 🔒 verrouillée sans l'étape 1,
+    ✗ à refaire), étape courante cerclée ; un clic ouvre l'étape. Le même état en pastille dans chaque titre (le
+    numéro ne passe au vert que quand l'étape est faite) et une ligne « ✓ Fait : … » / « ○ À faire : … » sous le titre.
+    L'étape courante est ouverte, les autres repliées (bouton Masquer / Afficher des blocs) ; chaque étape finit par
+    « Suivant → », la 6 par « Terminer », actif seulement quand les étapes 1 à 5 sont faites (sinon ce qui manque).
+    Le bilan détaillé passe dans un volet replié ; « Recommencer » est replié par défaut.
+  - **Étape 5 dans l'ordre naturel** : ① types d'aéronefs et performances d'abord, précédés d'une ligne d'état aux
+    mêmes sources que le bloc (lanceur `/__setup/aircraft-db`, bases chargées, flotte, missions, types saisis) — « ✓ 34
+    types connus, 18 avec performances », « ○ n types à compléter », pendant une passe « téléchargement en cours », puis
+    « ✓ Terminé : n fiches OACI, m performances ; k types sans performances EUROCONTROL (normal pour les militaires et
+    les hélicoptères) » ; ② données aéronautiques, précédées de leurs lignes d'état (base : AIRAC, espaces, date de
+    construction, cycle en vigueur ; MORA : cases, date de `mora.csv` ; X-Plane : facultatif). Les cartes expertes
+    (Base aéronautique, MORA, Cohérence) sont repliées sous « Outils avancés (aussi dans Paramètres › Maintenance) ».
+    Un seul bouton principal **« Tout installer pour <zones> »** enchaîne « Compléter automatiquement » puis
+    « Activer » sous la carte, en attendant la fin de chaque tâche, et dit ce qui reste.
+  - **Étape 6** : chaque lien sortant (flotte, registre des missions, réglages du Centre) dit ce qu'on y fait et
+    s'ouvre dans un nouvel onglet ; carte Missions : « ✓ 66 missions au registre : rien à faire » ou d'où elles
+    viennent (données de l'étape 2, sinon Centre › Générateur de mission). Pilotes : « Réservé aux administrateurs :
+    passer ».
+  - Textes nouveaux produits à la source (`K.t` / `K.tf`, quatre langues), écrits seulement quand ils changent ;
+    blocs embarqués de `shared/maintenance_page.js` inchangés (ordre par CSS, volet ajouté hors de leur corps).
+- **Ergonomie (B) : contraste et cohérence des designs à matières** — passe de contraste sur toutes les pages et tous
+  les designs, outil de mesure à l'appui (`tools/contrast_audit.html` : 18 pages × 9 designs × décor complet et sobre,
+  menus ☰ et langues ouverts ; contraste WCAG de chaque texte visible contre son fond effectif, textures et dégradés
+  échantillonnés ; relevés avant / après dans `docs/technique/perf/runs/contrast_2026-10-09.json`, rapport
+  `docs/technique/CONTRASTE_2026-10-09.md`). **Menus** ☰ et langues (`designs_skeuo.css`, `repository_nav.css`) : une
+  seule encre par design (`--sk-menu-ink`, titres de groupe `--sk-menu-ink-2`, séparateurs et survol qui en dérivent :
+  jetons `--repo-menu-*`, plus de `--repo-bar-text` en dur) ; entrées « Données locales » et « Page » en lignes plates
+  (elles prenaient le cuir marine des boutons sous une encre foncée : 1,1:1) ; champs du profil pilote aux champs du
+  design ; Cabinet et Carnet de vol en ton sombre : menu, notifications et pied de page en parchemin sombre (texte
+  clair sur parchemin clair : 1,2 à 1,9:1). **Aqua** : matières en jetons (`--aq-glass*` verre, `--aq-slate*` ardoise,
+  `--aq-rail*` métal du rail) que le ton sombre redéfinit seuls — boutons secondaires, ☰, langue, liens-boutons, outils
+  de bloc, listes, segments et onglets au repos en verre fumé, page courante et action principale en gel, rail des
+  onglets sombre (il restait clair sous des poussoirs sombres) ; gel moins blanchi en haut (texte blanc ≥ 4,5:1, 3,6:1
+  avant) ; entrée courante de la barre latérale lisible en ton sombre. **Onglets** : un seul composant par design — les
+  onglets propres au Studio cartographique et aux Cartes de vol (`.profileTabs`) prennent le rail et les poussoirs des
+  onglets de page ; liseré du bloc à onglets aussi sur Carburant (contenu en `.wrap`, pas en `main`). **Encres** :
+  secondaire de Cabinet assombrie (`--cab-ink-2`, 3,7 → 4,9:1 sur le parchemin réel), gris des pages (`--muted`,
+  `.small`) remplacé par l'encre secondaire du design dans tous les designs à matières, y compris en-tête, boutons et
+  barres d'état ; liens des blocs à l'encre du design (`--sk-link`) ; aperçu imprimable (`.report`) à l'encre
+  d'impression sur papier clair (Durci, Tactique : 1:1) ; menu des Paramètres posé sur la surface des blocs ; sélecteur
+  segmenté du Carnet de vol en aluminium clair ; vert du bouton principal de Durci approfondi.
+- **Ergonomie (D) : Maintenance — types d'aéronefs, référence anonymisée, journal des vols** — sans changer les données
+  ni les mécanismes. Le bloc « Types d'aéronefs » (`shared/maintenance_page.js`) se lit en trois temps : ce que c'est
+  (fiche OACI qui donne l'icône et la classe 2P, 2T, 4T…, performances EUROCONTROL, téléchargées sur ce poste) ; où on
+  en est (tableau des types de la flotte, des missions et des types saisis dans les CR : silhouette de l'appareil
+  `AircraftDBIcons`, code et modèle, classe OACI et libellé « avion, 2 réacteurs », fiche ✓/manquante, performances
+  clés plafond · croisière · V2 · Vat avec toutes les valeurs en infobulle et lien EUROCONTROL, emploi ; manques en
+  avertissement, types absents d'EUROCONTROL en information) ; quoi faire (« Compléter automatiquement », avec la barre
+  des tâches commune, à la place des boutons « Types inconnus / Flotte / Missions » ; codes libres repliés sous
+  « Télécharger d'autres types… » ; lien « Modifier la base à la main… » au niveau Expert). Rubriques de Paramètres
+  (`shared/data_admin.js`) : commandes secondaires des bases du dépôt (« Appliquer dans ce navigateur », « Télécharger »,
+  « Annuler », « Revenir au fichier ») repliées sous « Plus… », « Enregistrer dans le dépôt » en évidence ; la
+  référence devient « Flotte et pilotes de la compagnie (référence anonymisée) », présentée en trois phrases, avec
+  « Mettre à jour depuis le journal des vols » (même fonction que dans le journal) ; « Séries d'indicatifs » du journal :
+  chemin vers la correspondance expliqué, « Ajouter à la correspondance », notification avec « Ouvrir la
+  correspondance » (ligne filtrée, modifications gardées) et état « Dans la correspondance ✓ » ; intros de la
+  correspondance, de la base OACI, des types ajoutés localement et des appareils des missions reliées à ces rubriques.
+  Plus d'état ni de boutons de la base précédente affichés en changeant de rubrique.
+- **Ergonomie (A) : en-têtes des reportings et niveau d'utilisation plus clairs** — les pages de reporting des familles
+  de mission (`shared/mission_core/reporting.js`) et le reporting général (`global_reporting.js`) ne portent plus de
+  barre d'outils dans l'en-tête, qui garde titre et sous-titre comme les autres pages : famille · sous-type (ou puces des
+  familles), « + Nouveau compte rendu », données (registre / journal), période, regroupement et mesure forment le
+  **bloc n° 1 « Famille(s) et période »** (six commandes sur des rangées souples, styles `.mc-scope` de `core.css`) ;
+  les blocs suivants gardent leurs identifiants (disposition et blocs masqués mémorisés), l'impression montre la période
+  sans les commandes, le menu « Données » suit le changement de langue. Mon profil › **Niveau d'utilisation**
+  (`settings_panels.js`, `settings_page.css`) : quatre cartes de niveau (numéro et nom, ce que le niveau montre,
+  « Demande le Centre » pour 2 à 4 ; carte cochée en évidence, 2 × 2 sur grand écran), ligne « Niveau actuel », outils
+  facultatifs avec une courte description (désactivés, « Tous inclus au niveau Expert » au niveau 4) ; textes produits
+  dans la langue de la page, en quatre langues ; plus de légende « Mon usage ».
+- **Ergonomie (C) : Aéro fidèle à la maquette ; Cartes de vol en ton foncé** — le design Aéro reprend sur les vraies
+  pages les formes de sa maquette (`docs/technique/demo_design_icones.html`) : en-tête compact (titre 21 px, description
+  en sous-titre à 84 % du texte du bandeau), blocs à marge intérieure de 20 px et titre sans filet, champs de 38 px à
+  bordure fine et anneau de focus à la couleur des icônes, libellés en gras, groupes de champs arrondis, aides à 78 % du
+  texte (≥ 4,5:1), tableaux de lecture aérés, onglets de page en pastilles, barre d'action arrondie en verre
+  (`shared/designs.css`, règles `html[data-design="aero"]` seulement : Standard, Opérationnel et Console inchangés).
+  **Cartes de vol** passe en ton foncé comme Carburant, dans tous les designs : `<html data-tool="dark">` (palette
+  « outil sombre ») et règles de ton posées par `tools/build_map_planner.py` en couche « app » après celles du studio
+  (surfaces, champs, boutons, onglets des profils, aperçus, pied de page ; accent du thème ; cartes et images
+  inchangées) ; onglets lisibles en Opérationnel. Le Studio cartographique du Centre reste clair.
+- **« Purger la zone… »** (panneau d'une zone qui a des données, Paramètres › Maintenance › Données aéronautiques) :
+  après confirmation, supprime les fichiers de la zone du dossier SIA (toutes sources ; France : XML du SIA et axes
+  ENR 5.7) et ses cases de `mora.csv` (ancien fichier archivé), oublie ses marques de mise en place, la désactive et
+  relit la base ; le dossier X-Plane n'est pas touché. Une nouvelle activation réinstalle tout. Manuel administrateur
+  (4 langues).
+- **Types d'aéronefs : Airframe DB** (passe `--airframedb` de `AircraftDB/update_aircraft_db.py`, enchaînée par le
+  lanceur après SimBrief, 40 fiches au plus par passe, 1,5 s entre deux, cache de 30 jours dans le dossier du cache OACI) :
+  alias des noms en usage vers le code OACI (nom de la fiche, de la variante, de chaque désignateur : H125 → AS50,
+  « Aero Vodochody L-39 » → L39…), jamais à la place d'un alias existant ni d'un désignateur officiel ; bloc
+  `airframedb` de `aircraft_perf.js` (vitesses de croisière et maximale, plafond, vario, masses, distance franchissable,
+  d'après Wikipédia) pour les types sans EUROCONTROL ni SimBrief (militaires, hélicoptères). Données gardées sur chaque
+  poste ; `LICENSE.md`, manuel administrateur (4 langues).
+- **Performances : modèle de Poll et Schumann** (`shared/fuel_poll_schumann.js`, `window.FuelPollSchumann`) — consommation
+  de croisière calculée selon la masse, l'altitude et le Mach pour 68 avions de ligne à réaction (et 35 codes OACI
+  équivalents) : portage en JavaScript de la partie croisière du modèle « PSFlight » de pycontrails (Apache 2.0,
+  Contrails.org et Breakthrough Energy Foundation), paramètres générés par `tools/build_fuel_poll_schumann.py` ; résultats
+  identiques à pycontrails 0.64 sur neuf cas (A320 à A380). API : `covers(icao)`, `fuelFlowKgh(icao, { massKg,
+  altitudeFt, mach })`, `params(icao)` ; branché dans Carburant avant SimBrief (lot de la v2). Licence ajoutée
+  (`LICENSES/Apache-2.0.txt`, `LICENSE.md`), avec SimBrief et les tracks NAT de la FAA.
+- **Performances : SimBrief en seconde source** — la mise à jour des types (lanceur, « Compléter automatiquement » ;
+  `AircraftDB/update_aircraft_db.py --simbrief`) lit aussi la liste publique de SimBrief (`inputs.airframes.json`, une
+  requête, cache d'une semaine) : consommation de croisière (kg/h), masses du gabarit SimBrief (vide, sans carburant,
+  atterrissage, carburant maximal), plafond, vitesse, distances et profils de 224 types, dans le bloc `simbrief` de
+  `aircraft_perf.js` (sur chaque poste, jamais publié) ; fiches EUROCONTROL gardées, fichier réécrit seulement s'il
+  change ; précision de SimBrief notée (`accuracy`). Manuel administrateur (4 langues).
+- **Atlantique Nord : zone océanique et tracks NAT du jour** — nouvelle zone « Atlantique Nord (océanique, NAT) »
+  (contour au large des côtes, `OCEANIC` de `tools/build_aero_zones.py`), sources X-Plane et « Tracks NAT du jour » :
+  les points et routes océaniques d'X-Plane, jusqu'ici écartés car hors de tout pays, entrent dans la base quand la
+  zone est active. Tracks : message de Shanwick et de Gander tel que publié par la FAA
+  (`nms.aim.faa.gov/datanat/nat.json`), téléchargé et lu par le lanceur (`tools/aero_fetch.py nat` →
+  `data/sia/zones/nat/nat_tracks.json` : lettre, points, niveaux est et ouest, validité ; fichier réécrit seulement si
+  les tracks changent), gardés dans la base (`natTracks`), « ancien » au-delà de 12 heures. Cartes : case « Tracks NAT
+  du jour » dans les voies aériennes (tireté magenta, « NAT A » ; « 63/20 » = 63° N 020° W, points nommés placés
+  d'après la base), cochée dans AIRWAYS (profils de base, version 3). Manuels (4 langues).
+
+### Corrigé
+
+- **Carburant, profils supprimés ou fusionnés : retirés aussi du dossier performances** — plus de profils cachés à chaque
+  relecture sans moyen de les retrouver (DC3, Caravelle) : après la confirmation (qui nomme les fichiers), la base
+  exportée (`flight_performance_database.fpdb.json`…) est réécrite sans eux et un fichier d'un seul profil est renommé
+  `.bak` ; « Annuler » 10 s remet aussi les fichiers. La marque `state.removedProfiles` ne reste que pour un profil encore
+  dans un fichier (écriture refusée, CSV à plusieurs profils) ; « Dossier… » et « Relire » l'effacent (relire = reprendre
+  ce que le dossier contient) ; ligne « n profil(s) retiré(s) encore dans le dossier — Restaurer ». Manuel utilisateur
+  (4 langues).
+- **Carburant, réponse ChatGPT : type de la réponse d'abord** — le code OACI et le nom viennent de la réponse (JSON :
+  `icao`, sinon `type` ; CSV : colonne ICAO), l'appareil choisi n'étant qu'un repli ; type différent : confirmation
+  (« Importer comme <réponse> » / « Importer comme <choisi> » ; pour une fusion : « Importer comme nouveau profil » /
+  « Fusionner quand même ») ; l'identifiant `GPT_<code>` et le nom « <nom> — ChatGPT » suivent le code retenu (nom de la
+  réponse seulement si elle décrit ce type, sinon modèle du type) — plus de nom d'un type avec le code d'un autre. Même
+  type par alias : code de l'appareil choisi. CSV de la réponse : séparateur de l'en-tête détecté (virgule,
+  point-virgule, tabulation). Manuel utilisateur (4 langues).
+- **En-tête des pages chargées (Atterrissages, Studio, Cartes de vol…) : contrôles de la page écrasés par les outils
+  du socle** (jusqu'à 750 px en Aqua) : bouton de sauvegarde au libellé court (« Sauvegarder (184) », libellé complet
+  et date de la dernière sauvegarde en infobulle, 4 langues) ; première ligne de l'en-tête qui passe à la ligne,
+  outils rangés à droite, au lieu de rétrécir les contrôles de la page.
+- **Premier lancement : renvoi vers l'accueil en boucle** une fois « Terminer » validé : ouverte sans `?force`
+  (Paramètres › Premier lancement, que le message de « Terminer » indique), la page renvoyait à l'accueil à chaque
+  clic. Le renvoi ne vaut plus que pour la page ouverte par le lanceur (adresse `?t=…`).
+- **Lanceur : réponses coupées pour les données servies depuis un autre disque** (`--data`) : le contrôle des
+  empreintes de version échouait sur un chemin hors du dossier de la suite (fichier jamais reçu, « Failed to fetch »)
+  ; un tel fichier part désormais tel quel, et aucune erreur de ce contrôle ne coupe plus une réponse.
+- **Lanceur : « fournisseur inconnu : nat »** (tracks NAT) après une mise à jour sans relancer le lanceur : il gardait
+  l'ancien `tools/aero_fetch.py` ; le module est relu quand son fichier a changé.
+- **Registre des missions : artefacts aux fichiers absents** : au premier démarrage, le registre servi était repris
+  tel quel, y compris les missions dont le dossier n'existe plus (registre périmé : 55 sur 67 dans une copie). Le
+  lanceur liste les dossiers présents (`/__setup/mission-folders`) et seules ces missions sont reprises ; Paramètres ›
+  Maintenance › Caches : « Index des données (registre des missions, CR, fiches) » avec le nombre de missions — sa
+  purge reconstruit le registre proprement.
+- **A400M sans performances ni fiche : alias à l'envers** — l'outil des types (`AircraftDB/update_aircraft_db.py`) et le
+  jeu d'essai déclaraient « A400 → A4M » : le désignateur OACI de l'A400M (A400, celui d'EUROCONTROL et de SimBrief)
+  était détourné vers un code maison inconnu partout ; la suite cherchait donc ses performances sous A4M et la
+  complétion des types échouait. Alias remis à l'endroit (A4M et A400M → A400), type maison A4M retiré du jeu d'essai ;
+  l'outil ne laisse plus jamais un alias détourner un désignateur OACI officiel vers un code qui n'en est pas un (il
+  l'inverse, y compris pour un alias venu des données de la compagnie). À la prochaine complétion des types, la base de
+  chaque poste est corrigée.
+- **Types d'aéronefs : noms des missions sans code OACI** (« A330 MRTT Phénix », « C-130J-30 Super Hercules », « H225M
+  Caracal », « Rafale B — Patrouille de 2 », « A330 ») affichés « fiche OACI manquante » ou classés « autre » : résolveur commun
+  `AircraftCatalog.codeOf` (désignateur, alias, noms d'usage militaires des missions, nom propre du modèle quand il
+  désigne un seul type) : A332, C30J, EC25, RFAL ; utilisé par Paramètres › Maintenance › Types d'aéronefs.
+- **Contraste (rapport `docs/technique/CONTRASTE_2026-10-09.md`), Tableau et tableaux triables** : pastilles de
+  simulateur en encre sombre ou blanche selon leur couleur (blanc d'office : 2:1 sur vert, jaune, cyan → 8:1) ;
+  en-têtes des tableaux triables (4,4 → 5,9:1) et flèches de tri sans transparence (2,1 → 5,9:1) ; Tableau : petits
+  textes des gabarits, libellé de l'heure courante et réservations ATC lisibles (encre du thème au lieu d'une opacité
+  ou de l'accent).
+- **Premier démarrage : « aucune mission » alors que le registre est plein** : le registre des missions du navigateur
+  (index IndexedDB) n'était rempli qu'en relisant le dossier « Missions » ; seul le Tableau lisait le registre servi.
+  À la première ouverture (index vide), le registre servi par le lanceur (`data/missions/mission_registry.yaml`) est
+  repris pour toutes les pages (`shared/data_index.js`).
+- **Types d'aéronefs : types des missions comptés « inconnus » de la base OACI** (« MIR2 Mirage 2000B », « A400M Atlas
+  », « A330 MRTT Phénix »…) : le nom écrit dans la mission était comparé tel quel aux codes. Il est ramené à son code
+  (texte entier, puis chacun de ses mots, code de la base ou alias : MIR2, A400, A332…). Alias ajoutés : H225M, EC725
+  et Caracal → EC25 (table par défaut d'`update_aircraft_db.py` et références du jeu d'essai ; pris en compte à la
+  prochaine mise à jour de la base des types).
+- **Studio et Cartes de vol : l'aperçu ne se redessinait plus après une modification du profil de carte** (fond,
+  zones, symboles, éléments). Depuis la 4.2.0, « Réglages du profil » est déplacé sous l'aperçu du bloc Route, hors du
+  conteneur dont l'écouteur relançait l'aperçu : ses changements n'y remontaient plus. Changements du profil écoutés
+  au niveau du document (deux conteneurs) ; `map_planner.html` regénéré.
+- **Import de la MILAIP ENR 5.7 : XML écrit d'office** : après l'import du PDF, il fallait encore cliquer « Écrire
+  miam-enr-5-7-tracks.xml ». Dès que des axes sont lus, le XML est écrit dans le dossier SIA (édition lue dans le PDF,
+  ancien archivé, base mise à jour), les anomalies restant listées ; « Écrire… » ne reste, avec sa raison, que si
+  l'écriture n'a pas pu se faire (dossier SIA à autoriser d'un clic).
+- **Textures, icônes et polices absentes après un clone de la suite** : un clone fait sans Git LFS installé ne laisse
+  que des pointeurs (texte de 130 octets) à la place des images, textures et polices suivies par Git LFS. Le lanceur
+  contrôle désormais la suite et `data/` à chaque démarrage (et après le clone des données) : fichiers récupérés par
+  `git lfs pull` si Git LFS est installé, sinon consigne dans sa fenêtre et en notification sur la page de premier
+  lancement (installer Git LFS, relancer), jamais en silence ; `tools/update_suite.py` les récupère après une mise à
+  jour et les signale dans `doctor`.
+- **Premier lancement : ID IVAO (et autres champs du profil) absent de Mon profil › Identité et réseaux** : la carte «
+  Pilote » ne s'enregistrait qu'avec « Enregistrer le profil » ; une saisie suivie du passage à l'étape suivante était
+  perdue sans avertissement. Chaque champ (trigramme, ID IVAO, ID VATSIM, SimBrief, identifiant du site) s'enregistre
+  désormais dès qu'on le quitte, comme ☰ › Profil pilote ; trigramme figé (mode production) jamais réécrit.
+- **Données aéronautiques : « Choisir le dossier… » X-Plane restait dans « Actions à faire » une fois le dossier
+  choisi** : autorisation à renouveler (après un rechargement), la ligne propose « Ré-autoriser le dossier… » pour ce
+  dossier ; dossier autorisé dont « Custom Data » est d'un ancien cycle, simple information (mise à jour dans X-Plane,
+  Navigraph), hors du compte des actions restantes (4 langues).
+- **Premier lancement, données aéronautiques : « dossier X-Plane non choisi » au recalcul de la MORA** : la source
+  X-Plane, facultative pour une zone dont la MORA est calculée (France…), était affichée en rouge « manquant » et
+  comptée dans les actions à faire, et « MORA d'X-Plane → mora.csv » renvoyait une erreur sans dossier. La source est
+  désormais « facultatif » (en fin de liste, hors du compte des actions restantes ; exigée seulement pour une zone
+  trop étendue) ; le bouton enchaîne lui-même : choix du dossier du simulateur, reconstruction de la base, puis MORA
+  d'X-Plane (4 langues).
+- **Planning et Tableau, bloc des zones : colonnes VATSIM / IVAO de l'éditeur des activations prises pour des blocs
+  imbriqués sans titre** (`repo-block`, `block-1` / `block-2`) : écrites en `<section>`, que le framework transforme
+  en blocs ; ce sont désormais de simples conteneurs (`shared/odv_activations_editor.js`).
+- **Paramètres › Maintenance : la rubrique « Types d'aéronefs » paraissait un instant à l'ouverture, puis
+  disparaissait** : l'éditeur des bases ouvrait sa première rubrique avant que la page n'ouvre « Mises à jour ». Page
+  Maintenance sans `?base=`, ou bloc demandé (`?m=`) : aucune rubrique de l'éditeur n'est rendue. Journal des bugs
+  ouverts et fermés : `docs/technique/BUGS.md` ; dette technique : deux observateurs de réécriture restants.
+- **Cartes de vol, mission reçue de Mes missions** : aux niveaux 1 à 3, « Générer les cartes et le ZIP » remplaçait les
+  cartes prévues par la mission par celles d'un vol libre construit à partir du cheminement ; il génère désormais les
+  cartes de la mission telles quelles. « Tracer » et « Carburant » travaillent sur la mission chargée sans la remplacer,
+  et « Préparer les cartes » (niveau Expert) demande confirmation avant de la remplacer, comme le dit le manuel.
+- **Manuels (4 langues), chemins d'accès de la v2** : « Compte rendu » au lieu de « CR », onglets de « Outils » (Cartes
+  de vol, Carburant, Atterrissages, Analyse des missions) et de « Missions » (Registre, Générateur, Studio
+  cartographique), « Paramètres » partout (nom retenu pour les réglages) ; bouton « Générer une mission » du registre ; « DLO et
+  butées » repliables ; Cartes de vol : blocs « Cheminement » et « Cartes », bouton unique des niveaux 1 à 3. Prise en main : déplacement des blocs (moitié haute ou basse, autre colonne) et ☰ « Réinitialiser l'ordre
+  des blocs ».
+
+### Modifié
+
+- **Carburant, aperçu de fusion : données à cocher** — une case par champ qui change et par ligne de cartographie
+  ajoutée ou remplacée (décochée : la valeur actuelle est gardée, ligne grisée « gardé »), « Tout reprendre » / « Ne rien
+  reprendre », bouton « Fusionner (7 champs, 1 ligne de cartographie) » grisé si rien n'est coché ; même fenêtre pour
+  SimBrief et ChatGPT ; note de fusion et notification limitées à ce qui a été repris. Le nom ne redessine plus l'aperçu
+  (sélection gardée). Tableau des profils : colonne de l'appareil alignée à gauche. Panneau ChatGPT : il suit
+  l'appareil choisi ou coché ; un seul onglet ChatGPT, réutilisé, sans préremplissage. Manuel utilisateur (4 langues).
+- **Carburant, Profils de performances, retours de l'utilisateur** : un seul bouton par ligne (« Choisir », ou
+  « Créer » avec « Créer depuis SimBrief » à côté pour un type sans profil), tableau resserré ; cases de sélection pour
+  « Fusionner (n) », « Exporter (n) » (un fichier téléchargé par profil : `.lnmperf` si complet, sinon JSON),
+  « Enregistrer dans le dossier (n) » (un JSON par profil, nommé d'après le profil ; jamais un fichier qui les regroupe) et
+  « Supprimer (n) » (une confirmation, un seul message pour le lot, « Annuler » 10 s) ;
+  dans la fiche du profil actif, « Mettre à jour depuis SimBrief » avec sa phrase d'explication (au lieu de « Profil
+  SimBrief ») ; fenêtre de choix habillée par le socle (`.repo-ask`), sans couleurs propres. Manuel utilisateur (4 langues).
+- **Carburant, modèle de performances** : un type absent de la base OACI du poste, sans motorisation renseignée, n'est plus pris pour un piston (plafond calculé vers 12 000 ft, courbes « inaccessibles » dès le FL120 pour une Caravelle III) : la TAS de croisière départage (réacteur au-dessus de 320 kt, turbopropulseur au-dessus de 230 kt), et une note de la base du calcul dit que la motorisation a été déduite et comment la fixer.
+- **Manuels (4 langues), Carburant (V2_FABLE § 7)** : liste d'appareils (flèches, Entrée, Échap), curseurs « Montée
+  choisie » (badin, vario, gaz ou régime ; deux fixés, le troisième calculé ; « plein gaz » sous le vario), bloc
+  « Consignes de montée » (cinq objectifs, Régler / Tenir / Attendu, tableau par tranche d'altitude), graphe de montée
+  par altitude ou par régime, bandeau d'instruments avec altimètre et chronomètre, bloc « Profils de performances »,
+  colonne « Altitude (ft) » de la cartographie moteur, « Copier JSON » grisé ; dossier performances relu par Carburant.
+- **Manuel utilisateur (4 langues), Carburant** : l'estimation de consommation s'appuie sur la fiche Airframe DB (TAS de
+  croisière, plafond) pour les types sans fiche EUROCONTROL ni SimBrief.
+- **Estimation de consommation (`shared/fuel_reference.js`)** : la fiche Airframe DB du type (posée par le lanceur pour les types sans EUROCONTROL ni SimBrief) affine l'estimation par classe — TAS de croisière, plafond (`ceilingFt`) et catégorie de sillage d'après sa MTOW ; la consommation reste celle du type ou de la classe. Manuels administrateur : paragraphe « Types d'aéronefs » fusionné avec develop (Airframe DB), alias cité à l'endroit (A4M → A400), rechargement automatique.
+- **Manuels (4 langues), Premier lancement et types d'aéronefs** : retour au premier lancement seulement si le dossier
+  de l'application ou les données manquent (rappel discret dans l'accueil ensuite) ; « Terminer » au bout du rail et bloc
+  de fin toujours visible ; étape 5 : ligne d'état des types avec « Compléter automatiquement », téléchargement suivi,
+  rechargement et bilan automatiques, types estimés (« ≈ … (type connu) », « (classe OACI …) ») ; Types d'aéronefs : un
+  groupe par avion, types en clair des CR reconnus ; Carburant : ligne d'état « Calculé pour … ».
+- **Premier lancement, étape 5 « Types d'aéronefs »** : un seul groupe par avion — les libellés en clair des missions (« A332 A330 MRTT Phénix ») et des CR (« A330 MRTT PHÉNIX ») sont ramenés au code OACI par le catalogue (flotte, alias, noms d'usage ; `shared/aircraft_catalog.js`, aussi dans `mission_core/aircraft.js` : plus de type local parasite) ; la ligne d'état nomme les types à compléter et porte « Compléter automatiquement » ; pendant la passe, étape et durée ; à la fin, la page se recharge d'elle-même et montre le bilan (aussi après « Tout installer ») ; les types sans performances EUROCONTROL sont « estimées » (consommation par type ou classe OACI, `shared/fuel_reference.js`, dans le bloc Types d'aéronefs de Maintenance et Installation aussi) ; « Terminer » sort de l'étape 6 (dernier point du rail, cerclé quand tout est fait : l'étape Centre ne s'allume plus pour un pilote) ; le lanceur ne ramène au premier lancement que si le dossier ou les données manquent, l'accueil rappelle le reste en discret.
+- **Manuels (4 langues), Carburant et Sources et dossiers** : chaîne de la consommation de croisière (saisie, profil,
+  Poll-Schumann, SimBrief, estimation ≈), champ « Consommation de croisière » (« Utiliser cette valeur », « Mémoriser
+  pour ce type »), « Montée choisie » (au lieu de « loi réglée »), « Vue détaillée » / « Vue simple », « Comparaison des
+  montées », origine de la consommation dans la base du calcul ; Sources et dossiers : « Dossiers déduits (3) »
+  repliés, ligne X-Plane unique avec « Journaux d'atterrissage : autre dossier… ».
+- **Manuels (4 langues)** : groupe « Référence et journal » (ex-« Base ») des rubriques de Paramètres, colonne « Terrain
+  de base » de la flotte ; Premier lancement : « Terminer » après les étapes 1 et 2 (3 à 5 recommandées), type sans fiche
+  OACI non bloquant à l'étape 5.
+- **Manuels (4 langues) alignés sur le lot d'ergonomie A à E** : Mon profil › Niveau d'utilisation (cartes de niveau,
+  « Niveau actuel », outils facultatifs décrits) ; Premier lancement (rail des six étapes et leurs états, « Suivant → »,
+  étape 5 dans l'ordre types puis données aéronautiques, « Tout installer pour <zones> », « Outils avancés », étape 6 et
+  « Terminer ») ; reportings (bloc « Familles et période » / « Famille et période ») ; Paramètres (« Plus… », ligne
+  « État », rubrique Types d'aéronefs de Maintenance, « Flotte et pilotes de la compagnie (référence anonymisée) »,
+  séries d'indicatifs du journal).
+- **Plus d'empreintes `?v=` dans le dépôt (develop)** : toutes les références à `?v=0` (`tools/bump_versions.py
+  --neutral`), le lanceur pose les empreintes réelles en servant (`tools/version_stamps.py`) ; `tools/publish_dist.py`
+  les pose dans l'archive de livraison ; `tools/README.md`, `docs/INSTALL.md` (repris de v2-fable, 5c67f30c8).
+- **Empreintes de version posées par le lanceur** (`tools/version_stamps.py`) : quand il sert une page, un script ou
+  une feuille des designs, chaque référence `chemin?v=…` reçoit l'empreinte du contenu servi du fichier visé (mêmes
+  références que `tools/bump_versions.py`) ; pages servies avec un ETag (304 si inchangées), fichiers versionnés en
+  cache long, résultats gardés en mémoire tant que leurs fichiers ne changent pas (0,2 ms par fichier). Prépare le
+  passage du dépôt à `?v=0` : plus d'empreintes à recalculer et à fusionner avant chaque commit.
+- **Cartes : profils de base revus** (Studio cartographique, Cartes de vol) — profils réglés par l'administrateur :
+  IFR, **IFR simplifié** (nouveau), VFR détaillé, VFR simplifié, AIRWAYS. Profil par défaut d'une carte : IFR simplifié
+  pour la carte principale d'une mission et les vues d'ensemble, VFR détaillé pour cible, détail et rendez-vous, VFR
+  simplifié pour l'approche ; Cartes de vol (hors mission) : AIRWAYS pour la carte de la route. Les profils de base déjà
+  gardés dans un navigateur sont remplacés une fois (`BASE_PROFILES_VERSION` 2 ; ancienne liste dans
+  `siaDisplayProfiles:avant`, profil de même nom créé à la main repris) ; les profils créés par l'utilisateur restent.
+  **Points RNAV en route** : nouvelle case dans « Points de report VFR » (points désignés OACI de la base : SIA, autres
+  pays, X-Plane, openAIP ; triangle bleu, libellé avec ceux des points VFR), cochée dans AIRWAYS. Manuel utilisateur
+  (4 langues).
+- **Données aéronautiques : mise en place des zones idempotente** — si tout est là, rien n'est refait. Une source
+  téléchargée à jour (moins de 28 jours depuis son téléchargement ou sa dernière vérification) n'est pas retéléchargée ;
+  « Tout récupérer et recalculer » la revérifie par requête conditionnelle (`If-Modified-Since` : réponse 304 sans
+  téléchargement). Le lanceur (`tools/aero_fetch.py`) ne réécrit jamais un fichier identique, ne retélécharge pas un
+  amendement ENAIRE déjà présent et ne relit pas un PDF inchangé (AIP militaire britannique, NAV CANADA) ; les dépôts
+  de Téléchargements identiques ne sont pas réécrits. La base aéronautique n'est relue que si ses entrées ont changé :
+  empreinte des fichiers lus (taille, date), des zones actives, des sources cochées et de la version du lecteur, gardée
+  à chaque relecture (`SiaBase.upToDate`) et suivie quand la suite réécrit `mora.csv` ou les axes ENR 5.7 avec la base.
+  Relancée sans rien de nouveau, la mise en place ne télécharge, n'écrit et ne recalcule rien (« base déjà à jour »).
+
 ## [5.0.0] — 2026-10-08
 
 Version « v2 » : la suite s'adapte à son utilisateur. Un **niveau d'utilisation** (équipage, planification, conception,
@@ -209,6 +655,10 @@ et signatures prêtes (pas encore branchées).
   mot de passe affiché au premier lancement et message de confirmation du dépôt distant passent par `K.t` dans les
   quatre langues ; leurs entrées des tables de traduction après coup (`data_admin_i18n.js`,
   `premier_lancement_i18n.js`) sont retirées ; textes écrits seulement s'ils changent.
+
+### Livraison
+
+- Archive de livraison : `xplane-web-suite-5.0.0.zip` — SHA-256 `f3785cb40d5700f95bffb6b3bfff2da86df98d9b86628296a9b53353b20e8462` (code seul, hors dépôt : dossier `dist/`).
 
 ## [4.11.0] — 2026-10-08
 

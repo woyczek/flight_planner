@@ -33,6 +33,7 @@ CC BY-SA 4.0, dans la mesure où des droits d'auteur s'y attachent.
 | MapLibre GL JS (script et feuille de style) | 5.6.0 | BSD 3-Clause | `shared/carto/maplibre-gl.js`, `maplibre-gl.css` | © MapLibre contributors (et Mapbox pour le code d'origine) — <https://github.com/maplibre/maplibre-gl-js/blob/v5.6.0/LICENSE.txt> |
 | Natural Earth, Admin 0 – Countries 1:50m (contours simplifiés des zones de données aéronautiques) | 5.1.2 | domaine public | `shared/carto/aero_zones_geo.js` (généré par `tools/build_aero_zones.py`) | Made with Natural Earth — <https://www.naturalearthdata.com/about/terms-of-use/> |
 | jsPDF | 2.5.2 | MIT | `apps/cpco/jspdf.umd.min.js` | © James Hall, yWorks GmbH et contributeurs — <https://github.com/parallax/jsPDF> |
+| Modèle de Poll et Schumann (croisière, porté en JavaScript) et ses paramètres d'avions (69 avions de ligne, codes équivalents) | pycontrails 0.64 (fichiers `ps-*-20250328.csv`) | Apache 2.0 ([LICENSES/Apache-2.0.txt](LICENSES/Apache-2.0.txt)) | `shared/fuel_poll_schumann.js` (paramètres générés par `tools/build_fuel_poll_schumann.py`) | © 2021-present Contrails.org and the Breakthrough Energy Foundation — <https://github.com/contrailcirrus/pycontrails> ; modifications : partie croisière seule, sans plafond de poussée ni limite de Mach selon l'altitude |
 | js-yaml | 4.1.0 | MIT | `shared/mission_core/vendor/js-yaml.min.js` (licence : `js-yaml.LICENSE`) | © 2011-2015 Vitaly Puzrin — <https://github.com/nodeca/js-yaml> |
 
 Chargé à la demande depuis un CDN, dans un outil de développement seulement : **acorn** 8.11.3 (MIT, © Marijn Haverbeke
@@ -61,7 +62,10 @@ Modules Python utilisés par certains outils, installés à part et non inclus :
 Doc 8643, recoupée EUROCONTROL, Wikidata) et celle des performances (`AircraftDB/aircraft_perf.js` : EUROCONTROL,
 *Aircraft Performance Database*) ne sont ni publiées ni redistribuées : elles sont ignorées par git et complétées sur
 le poste de chaque utilisateur, type par type, par `AircraftDB/update_aircraft_db.py`. Elles restent © OACI et
-© EUROCONTROL.
+© EUROCONTROL. Le bloc `simbrief` de `aircraft_perf.js` (consommation de croisière, masses, plafond : liste publique
+`inputs.airframes.json` de SimBrief) suit la même règle : lu sur chaque poste, jamais publié ; © Navigraph (SimBrief). Le bloc `airframedb` et les alias qu'il ajoute viennent des fiches publiques d'Airframe DB
+(<https://airframedb.com>, accès automatisé limité comme le demandent ses conditions) ; ses caractéristiques sont celles
+de Wikipédia (CC BY-SA 4.0) ; lus sur chaque poste, jamais publiés.
 
 ## 5. Données aéronautiques
 
@@ -73,7 +77,7 @@ britannique) pourraient être redistribuées ; les autres ne doivent jamais êtr
 |---|---|---|---|
 | **SIA** (Service de l'information aéronautique, DGAC) | eAIP France, exports AIXM 4.5 et XML SIA | Licence ouverte du SIA (adaptée de la Licence Ouverte Etalab 2.0) : réutilisation libre, même commerciale, sans altérer les données, en citant la source et la date de mise à jour ; aucune garantie, en particulier pour la sécurité des vols | « Service de l'Information Aéronautique — Données originales téléchargées sur https://www.sia.aviation-civile.gouv.fr, mise à jour du [date du cycle AIRAC] » |
 | **DIRCAM** (Direction de la circulation aérienne militaire) | MILAIP : ENR 5.7 (axes de ravitaillement en vol), zones RTBA / AZBA | réutilisation non commerciale admise, sans altération, en citant l'origine et la date ; usage commercial sur autorisation préalable | « DIRCAM — MILAIP, amendement [n° / date] » |
-| **FAA** (Federal Aviation Administration, États-Unis) | ADDS (espaces à usage spécial, routes MTR, classes d'espace), NASR, CIFP | domaine public (œuvres du gouvernement fédéral américain) ; ne pas laisser croire à un soutien de la FAA | « Source : FAA » |
+| **FAA** (Federal Aviation Administration, États-Unis) | ADDS (espaces à usage spécial, routes MTR, classes d'espace), NASR, CIFP, message des tracks NAT du jour (NMS, `nms.aim.faa.gov/datanat/nat.json`) | domaine public (œuvres du gouvernement fédéral américain) ; ne pas laisser croire à un soutien de la FAA | « Source : FAA » |
 | **openAIP** | exports par pays (espaces, aérodromes, balises, points VFR) | CC BY-NC 4.0 : usage non commercial, avec attribution ; les données ne doivent pas être vendues | « © openAIP — https://www.openaip.net, CC BY-NC 4.0 » |
 | **ENAIRE** (Espagne) | AIP en AIXM 5.1 | conditions de réutilisation à vérifier (avis légal d'ENAIRE restrictif ; licence de données ouvertes du ministère des Transports pour les jeux publiés) : usage personnel seulement | « Fuente: ENAIRE — AIP España » |
 | **NATS** (Royaume-Uni) | UK AIP en AIXM 5.1 (après inscription) | conditions du site de NATS, pas de licence ouverte : usage personnel seulement | « Source: NATS — UK AIP » |
