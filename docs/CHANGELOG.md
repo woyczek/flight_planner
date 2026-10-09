@@ -16,6 +16,14 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   disparaissait** : l'éditeur des bases ouvrait sa première rubrique avant que la page n'ouvre « Mises à jour ». Page
   Maintenance sans `?base=`, ou bloc demandé (`?m=`) : aucune rubrique de l'éditeur n'est rendue. Journal des bugs
   ouverts et fermés : `docs/technique/BUGS.md` ; dette technique : deux observateurs de réécriture restants.
+- **Cartes de vol, mission reçue de Mes missions** : aux niveaux 1 à 3, « Générer les cartes et le ZIP » remplaçait les
+  cartes prévues par la mission par celles d'un vol libre construit à partir du cheminement ; il génère désormais les
+  cartes de la mission telles quelles. « Tracer » et « Carburant » travaillent sur la mission chargée sans la remplacer,
+  et « Préparer les cartes » (niveau Expert) demande confirmation avant de la remplacer, comme le dit le manuel.
+- **Manuels (4 langues), chemins d'accès de la v2** : « Compte rendu » au lieu de « CR », onglets de « Outils » (Cartes
+  de vol, Carburant, Atterrissages, Analyse des missions) et de « Missions » (Registre, Générateur, Studio
+  cartographique), « Réglages » au lieu de « Paramètres » ; bouton « Générer une mission » du registre ; « DLO et
+  butées » repliables ; Cartes de vol : blocs « Cheminement » et « Cartes », bouton unique des niveaux 1 à 3.
 
 ## [5.0.0] — 2026-10-08
 

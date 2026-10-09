@@ -1114,7 +1114,7 @@ modo de modificación; vuelos del diario en solo lectura.
 
 El informe general de misiones presenta la actividad de **todas las familias** a partir del registro único
 `data/cr/missions.yaml`: indicadores, gráficos, resúmenes y tabla de misiones. Sirve a los pilotos
-para su balance y al Centro para el seguimiento. Para ir a él: barra lateral › **Informes**.
+para su balance y al Centro para el seguimiento. Para ir a él: barra lateral › **Herramientas**, pestaña «Análisis de misiones» (herramienta opcional, marcada en Mi perfil).
 
 ### Cabecera: periodo, familias, agrupación, medida
 
@@ -1293,10 +1293,10 @@ zona, traza, «Control» (⚠ número de anomalías, detalle al pasar el ratón)
 <!-- page: apps/planner/map_planner.html -->
 
 Esta página sirve para preparar sus propios mapas de vuelo: ruta, mapa de la ruta, aproximación, encuentro, aeródromo de destino y perfil vertical.
-Está abierta a todos los pilotos. Para ir a ella: barra lateral «Mapas de vuelo», botón «Abrir en los mapas de vuelo» de una misión en Mis misiones, o botón «Mapas de vuelo» del planificador de combustible.
+Está abierta a todos los pilotos. Para ir a ella: barra lateral «Herramientas», pestaña «Mapas de vuelo», botón «Abrir en los mapas de vuelo» de una misión en Mis misiones, o botón «Mapas de vuelo» del planificador de combustible.
 Retoma el motor del estudio cartográfico del Centro, pero trabaja en un espacio propio de su navegador: sus ajustes nunca modifican la misión del Centro.
 Cada bloque se pliega («Ocultar» / «Mostrar») y se mueve (asa ↕). La base SIA debe leerse una vez en este navegador (consulte el último bloque).
-En los niveles 1 a 3 (Mi perfil › «Nivel de uso»), la página se limita a lo esencial: campo de ruta, «Nivel», «SimBrief», mapa de control («⤢ Ampliar»), bloque «Mapas del vuelo» y botón «Generar los mapas y el ZIP» del pie de página. Los demás mandos descritos a continuación solo aparecen en el nivel 4 (Experto).
+En los niveles 1 a 3 (Mi perfil › «Nivel de uso»), la página se limita a dos bloques: «Ruta» (campo de ruta, «Nivel», «SimBrief», mapa de control con «⤢ Ampliar») y «Mapas», con su único botón «Generar los mapas y el ZIP». Los demás mandos descritos a continuación solo aparecen en el nivel 4 (Experto).
 
 ### Recepción de una misión («Abrir en los mapas de vuelo»)
 
@@ -1305,10 +1305,10 @@ La página no muestra un bloque «Misión»: la misión llega sola desde Mis mis
 1. En Mis misiones, abra la carpeta de la misión.
 2. Haga clic en «Abrir en los mapas de vuelo». La aeronave que tiene asignada se coloca al principio de la misión.
 3. La página se abre con la ruta y el nivel de la misión en el bloque «Ruta», y todos los mapas previstos por la misión en «Mapas que producir» (más `profil_vertical.png`). La lista «Mapas que producir» solo es visible en el nivel Experto.
-4. Ajuste cada mapa si es necesario (nivel Experto) y, después, haga clic en «Generar los mapas y el ZIP», al pie de la página.
+4. Ajuste cada mapa si es necesario (nivel Experto) y, después, haga clic en «Generar los mapas y el ZIP»: en el bloque «Mapas» en los niveles 1 a 3, en el pie de página en el nivel Experto.
 
 El pie de página indica el número de mapas del ZIP («… mapa(s) en el ZIP + mapa de conjunto»), o «Ninguna misión cargada».
-Misión recibida: «Trazar» y «Combustible» trabajan sobre la misión cargada sin sustituirla. «Crear los mapas» pide confirmación antes de sustituirla por un vuelo libre «Vuelo salida → destino» construido a partir de la ruta; sin misión cargada, los mapas se crean directamente.
+Misión recibida: «Trazar» y «Combustible» trabajan sobre la misión cargada sin sustituirla. En los niveles 1 a 3, «Generar los mapas y el ZIP» genera sus mapas tal cual. En el nivel Experto, «Preparar los mapas» pide confirmación antes de sustituirla por un vuelo libre «Vuelo salida → destino» construido a partir de la ruta; sin misión cargada, los mapas se crean directamente.
 
 ### Ruta
 
@@ -1353,17 +1353,17 @@ Este panel plegable, situado bajo el mapa de control, configura el perfil de vis
 
 Recuerde hacer clic en «Guardar» para conservar un perfil modificado. Las listas de sugerencias de los campos de entrada (zonas, aeródromos, balizas) solo se rellenan cuando hace clic en el campo correspondiente: la página se abre así más deprisa y la lista aparece con el clic o la primera pulsación.
 
-### Mapas del vuelo
+### Mapas
 
-Este bloque crea los mapas de un vuelo a partir de la ruta, sin misión del Centro.
+Este bloque crea los mapas de un vuelo a partir de la ruta, sin misión del Centro; en los niveles 1 a 3, también los genera.
 
 1. Introduzca la ruta y el nivel en el bloque «Ruta» (al menos una salida y un destino conocidos en la base SIA).
 2. Opcional: «Encuentro (opcional)», un punto o unas coordenadas «44.2, 0.6».
 3. Marque los mapas deseados: «ruta (vista general, IFR)», «aproximación», «encuentro», «destino».
-4. Haga clic en «Crear los mapas».
+4. Haga clic en «Generar los mapas y el ZIP» (niveles 1 a 3): los mapas se crean y después se generan, el progreso (con «Detener») y el informe se muestran justo debajo y el ZIP se descarga. En el nivel Experto, «Preparar los mapas» solo los crea: ajustes en «Mapas que producir», generación en el pie de página.
 
 La página fabrica una misión «Vuelo salida → destino» con los mapas marcados y el perfil vertical. El mapa de encuentro solo se crea si se introduce un encuentro.
-En los niveles 1 a 3, el mensaje que sigue a «Crear los mapas» remite al botón «Generar los mapas y el ZIP» del pie de página.
+En los niveles 1 a 3, la página no tiene pie de página ni bloque «Vistas previas y generación»: todo parte del botón de este bloque.
 Después, cualquier cambio de la ruta, del nivel o del encuentro actualiza los mapas automáticamente.
 Llegada desde el planificador de combustible (botón «Mapas de vuelo»): los mapas se crean solos en cuanto se carga la base SIA.
 Mensajes de error posibles: «Base SIA ausente en este navegador», «Ruta: desconocido(s) en la base SIA», «Ningún mapa elegido».
@@ -1386,7 +1386,7 @@ Sin misión ni mapas creados, la lista indica «Ningún mapa: añada uno abajo.�
 
 ### Vistas previas y generación
 
-En los niveles 1 a 3, el bloque solo muestra el informe de la generación (mapas generados, fallos y «Reintentar solo este»); «Mostrar todos los mapas», las vistas previas, el mapa de conjunto y la línea «Salidas: …» están en el nivel Experto.
+Bloque del nivel Experto; en los niveles 1 a 3, el informe de la generación (mapas generados, fallos y «Reintentar solo este») se muestra bajo el botón del bloque «Mapas».
 
 1. «Mostrar todos los mapas»: dibuja una vista previa de cada mapa con su perfil. Las vistas previas no crean ningún archivo. Clic en una vista previa: ampliación.
 2. Cada vista previa conserva su casilla «ZIP».
@@ -1413,7 +1413,7 @@ Es el mismo bloque que Ajustes › Mantenimiento › Datos aeronáuticos. La mis
 <!-- page: apps/planner/flight_performance_planner.html -->
 
 El planificador de combustible (título «Combustible») calcula el combustible de un vuelo a partir del perfil de rendimiento de su aeronave. También traza las altitudes y leyes de ascenso óptimas.
-Para ir a él: barra lateral «Combustible», botón «Combustible (planificador)» de una misión en Mis misiones, o botón «Combustible» de los Mapas de vuelo. En ese caso se recuperan la ruta, la distancia, el nivel y la aeronave.
+Para ir a él: barra lateral «Herramientas», pestaña «Combustible», botón «Combustible (planificador)» de una misión en Mis misiones, o botón «Combustible» de los Mapas de vuelo. En ese caso se recuperan la ruta, la distancia, el nivel y la aeronave.
 Cabecera: menú «Avión», botón «Recuperar último FPL de SimBrief», «Unidades: kg / lbs». Las importaciones y exportaciones están en el menú ☰. Detalles técnicos: [planificador](../FLIGHT_PLANNER.md).
 Según el nivel de uso: en los niveles 1 a 3 (Tripulación, Planificación, Diseño), la página muestra el avión, el plan de vuelo (y «Recuperar último FPL de SimBrief»), el plegable «Parámetros del vuelo», «Calcular» y el Resultado, en dos columnas; el menú ☰ solo conserva exportar e importar las preferencias. Curvas, paneles, instrumentos, bloques del perfil, barra de estado y acciones de perfiles del menú ☰ se añaden en el nivel Experto, donde la página está completa.
 
@@ -1550,7 +1550,7 @@ Sin importación: «Ningún JSON cargado.»
 <!-- page: apps/landing/LandingPerformance_Dashboard_MultiCSV_i18n.html -->
 
 Este panel (título «Landing Performance — Resumen») analiza la calidad de sus aterrizajes a partir de los archivos exportados del simulador: puntuación, régimen de descenso, G, por aeronave y a lo largo del tiempo.
-Para ir a él: barra lateral «Aterrizajes». El archivo se lee en el navegador; no se envía nada.
+Para ir a él: barra lateral «Herramientas», pestaña «Aterrizajes». El archivo se lee en el navegador; no se envía nada.
 El último archivo cargado se conserva y se vuelve a cargar al abrir la página. Sus aeronaves también se proponen en el menú «Avión» del planificador de combustible. Detalles: [panel de los aterrizajes](../LANDING_DASHBOARD.md).
 
 ### Carga del archivo

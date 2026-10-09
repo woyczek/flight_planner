@@ -89,7 +89,7 @@ During impersonation, the working trigram is that of the impersonated user and e
 <!-- page: apps/cpco/mission_editor.html -->
 
 The generator prepares a mission file: identification, brief texts, exercise, estimated duration, airspaces to activate, then the PDFs to hand to the crews. It is also used to order a mission from ChatGPT and to receive its answer.
-Access: sidebar “Missions” (“Centre” section) or ☰ › “Mission generator (SIA)”. From the registry, “Open in generator” loads the chosen mission.
+Access: sidebar “Missions”, “Generator” tab (Design level, 3), or ☰ › “Mission generator (SIA)”. From the registry, “Generate a mission” opens the empty generator and “Open in generator” loads the chosen mission.
 See also [SIA missions](../SIA_MISSIONS.md) and [generator prompt](../technique/PROMPT_GENERATEUR_MISSIONS.md).
 Depending on the usage level: the page is offered from the Design level (3). At that level, it shows seven blocks: Mission, Identification, Estimated duration, Airspaces to activate, Mission texts, Maps of the final file and Documents (plus Operation and Exercise when the mission belongs to one). Drafts, “All YAML data” and the route calculation settings are at the Expert level (4).
 
@@ -212,7 +212,7 @@ The crew brief contains its sealed envelopes and the maps; the status line lists
 <!-- page: apps/cpco/map_parser.html -->
 
 The studio produces the maps of the mission file from the SIA data (AIRAC cycle): route, vertical section, maps in PNG or SVG, ZIP and overview map.
-Access: the generator's “Map studio” tab, ☰ › “Map studio (SIA)”, or “Open in map studio” in the registry.
+Access: sidebar “Missions”, “Map studio” tab (Expert level, 4), ☰ › “Map studio (SIA)”, or “Open in map studio” in the registry.
 It works on the mission shared with the generator. Technical details: [SIA missions](../SIA_MISSIONS.md).
 
 ### Mission
@@ -274,7 +274,7 @@ If the folder contains several cycles, only the most recent is read; the others 
 
 The registry lists all the generated or ordered missions, with their follow-up by the Centre: status, flight date, notes, reports.
 It is used to choose a mission, open it in the generator or the studio, assign it to pilots, create its report and order new missions.
-Access: sidebar “Registry” (“Centre” section) or ☰ › “Mission registry (SIA)”.
+Access: sidebar “Missions”, which opens on the registry (“Registry” tab), or ☰ › “Mission registry (SIA)”. At the top, “Generate a mission” opens the generator to create one.
 Depending on the usage level: the page is offered from the Design level (3), with the essentials: “Add files…” and “Re-read folder”, four filters and “More filters”, a seven-column table, a card without the map studio and the simplified order form. The rest is at the Expert level (4), as shown below.
 
 ### Registry missions
@@ -559,7 +559,7 @@ A flight needs an available category; a control item, an available category or �
 ### Crew of the week
 
 Level 2 block: one row per member, one cell per day with the bar of declared availability and the number of items they appear on. A click on a cell opens their ranges for the day: category, start, end, and “Time off from”, which sets time off until midnight. The ranges are written into the pilot's declaration.
-- **DLO and deadlines**: each member's permanent objectives (“＋” to add, click to edit), with an optional deadline (red at 3 working days or less, yellow at 10 or less); a DLO is closed automatically by a flight done that contains it (item DLO, label, mission) with the member in the crew. The palette shows “◎n” open DLO per member, and an item's window recalls those of the crew.
+- **DLO and deadlines** (table folded or unfolded by its triangle, state kept in this browser): each member's permanent objectives (“＋” to add, click to edit), with an optional deadline (red at 3 working days or less, yellow at 10 or less); a DLO is closed automatically by a flight done that contains it (item DLO, label, mission) with the member in the crew. The palette shows “◎n” open DLO per member, and an item's window recalls those of the crew.
 - “Availability changes” lists the declarations changed since they were last noted; “Noted” and “Note all” mark them in this browser.
 
 ### Areas

@@ -1114,7 +1114,7 @@ Bearbeitung; Flüge des Journals nur lesbar.
 
 Die allgemeine Auswertung zeigt die Aktivität **aller Familien** aus dem einzigen Register
 `data/cr/missions.yaml`: Kennzahlen, Diagramme, Übersichten und Tabelle der Missionen. Sie dient den Piloten
-für ihre Bilanz und dem Zentrum für die Verfolgung. Zugang: Seitenleiste › **Berichte**.
+für ihre Bilanz und dem Zentrum für die Verfolgung. Zugang: Seitenleiste › **Werkzeuge**, Reiter „Missionsanalyse“ (optionales Werkzeug, in Mein Profil angekreuzt).
 
 ### Kopfzeile: Zeitraum, Familien, Gruppierung, Messgröße
 
@@ -1293,10 +1293,10 @@ Einsatzraum, Spur, „Prüfung“ (⚠ Anzahl der Unstimmigkeiten, Einzelheiten 
 <!-- page: apps/planner/map_planner.html -->
 
 Diese Seite dient zur Vorbereitung Ihrer eigenen Flugkarten: Route, Streckenkarte, Anflug, Treffpunkt, Zielflugplatz und Vertikalprofil.
-Sie steht allen Piloten offen. Zugang: Seitenleiste „Flugkarten“, Knopf „In den Flugkarten öffnen“ einer Mission in Meine Missionen oder Knopf „Flugkarten“ des Kraftstoffplaners.
+Sie steht allen Piloten offen. Zugang: Seitenleiste „Werkzeuge“, Reiter „Flugkarten“, Knopf „In den Flugkarten öffnen“ einer Mission in Meine Missionen oder Knopf „Flugkarten“ des Kraftstoffplaners.
 Sie nutzt die Engine des Kartenstudios des Zentrums, arbeitet aber in einem eigenen Bereich Ihres Browsers: Ihre Einstellungen ändern nie die Mission des Zentrums.
 Jeder Block lässt sich zuklappen („Ausblenden“ / „Anzeigen“) und verschieben (Griff ↕). Die SIA-Datenbank muss einmal in diesem Browser gelesen werden (siehe letzter Block).
-Auf den Stufen 1 bis 3 (Mein Profil › „Nutzungsstufe“) beschränkt sich die Seite auf das Wesentliche: Routenfeld, „Höhe“, „SimBrief“, Kontrollkarte („⤢ Vergrößern“), Block „Karten des Flugs“ und der Knopf „Karten und ZIP erzeugen“ der Fußzeile. Die übrigen unten beschriebenen Bedienelemente erscheinen nur auf Stufe 4 (Experte).
+Auf den Stufen 1 bis 3 (Mein Profil › „Nutzungsstufe“) beschränkt sich die Seite auf zwei Blöcke: „Route“ (Routenfeld, „Höhe“, „SimBrief“, Kontrollkarte mit „⤢ Vergrößern“) und „Karten“ mit seinem einzigen Knopf „Karten und ZIP erzeugen“. Die übrigen unten beschriebenen Bedienelemente erscheinen nur auf Stufe 4 (Experte).
 
 ### Empfang einer Mission („In den Flugkarten öffnen“)
 
@@ -1305,10 +1305,10 @@ Die Seite zeigt keinen Block „Mission“: Die Mission kommt von selbst aus Mei
 1. Öffnen Sie in Meine Missionen die Mappe der Mission.
 2. Klicken Sie auf „In den Flugkarten öffnen“. Das Ihnen zugewiesene Luftfahrzeug wird an die Spitze der Mission gesetzt.
 3. Die Seite öffnet sich mit der Route und der Flughöhe der Mission im Block „Route“ und mit allen von der Mission vorgesehenen Karten in „Zu erstellende Karten“ (dazu `profil_vertical.png`). Die Liste „Zu erstellende Karten“ ist nur auf der Stufe Experte sichtbar.
-4. Stellen Sie bei Bedarf jede Karte ein (Stufe Experte) und klicken Sie dann unten auf der Seite auf „Karten und ZIP erzeugen“.
+4. Stellen Sie bei Bedarf jede Karte ein (Stufe Experte) und klicken Sie dann auf „Karten und ZIP erzeugen“: im Block „Karten“ auf den Stufen 1 bis 3, in der Fußzeile auf der Stufe Experte.
 
 Die Fußzeile zeigt die Anzahl der Karten im ZIP („… Karte(n) im ZIP + Übersichtskarte“) oder „Keine Mission geladen“.
-Empfangene Mission: „Zeichnen“ und „Kraftstoff“ arbeiten mit der geladenen Mission, ohne sie zu ersetzen. „Karten erstellen“ fragt nach einer Bestätigung, bevor sie durch einen freien Flug „Flug Abflug → Ziel“ aus der Route ersetzt wird; ohne geladene Mission werden die Karten direkt erstellt.
+Empfangene Mission: „Zeichnen“ und „Kraftstoff“ arbeiten mit der geladenen Mission, ohne sie zu ersetzen. Auf den Stufen 1 bis 3 erzeugt „Karten und ZIP erzeugen“ ihre Karten unverändert. Auf der Stufe Experte fragt „Karten vorbereiten“ nach einer Bestätigung, bevor sie durch einen freien Flug „Flug Abflug → Ziel“ aus der Route ersetzt wird; ohne geladene Mission werden die Karten direkt erstellt.
 
 ### Route
 
@@ -1353,17 +1353,17 @@ Dieses aufklappbare Feld unter der Kontrollkarte stellt das Anzeigeprofil der ge
 
 Denken Sie daran, auf „Speichern“ zu klicken, um ein geändertes Profil zu behalten. Die Vorschlagslisten der Eingabefelder (Zonen, Flugplätze, Funkfeuer) werden erst gefüllt, wenn Sie in das betreffende Feld klicken: Die Seite öffnet sich so schneller, und die Liste erscheint beim Klick oder beim ersten Tastenanschlag.
 
-### Karten des Flugs
+### Karten
 
-Dieser Block erstellt die Karten eines Flugs aus der Route, ohne Mission des Zentrums.
+Dieser Block erstellt die Karten eines Flugs aus der Route, ohne Mission des Zentrums; auf den Stufen 1 bis 3 erzeugt er sie auch.
 
 1. Geben Sie Route und Flughöhe im Block „Route“ ein (mindestens ein Abflug und ein Ziel, die der SIA-Datenbank bekannt sind).
 2. Optional: „Treffpunkt (optional)“, ein Punkt oder Koordinaten „44.2, 0.6“.
 3. Kreuzen Sie die gewünschten Karten an: „Route (Übersicht, IFR)“, „Anflug“, „Treffpunkt“, „Ziel“.
-4. Klicken Sie auf „Karten erstellen“.
+4. Klicken Sie auf „Karten und ZIP erzeugen“ (Stufen 1 bis 3): Die Karten werden erstellt und dann erzeugt, Fortschritt (mit „Abbrechen“) und Bericht erscheinen direkt darunter, und das ZIP wird heruntergeladen. Auf der Stufe Experte erstellt „Karten vorbereiten“ sie nur: Einstellungen unter „Zu erstellende Karten“, Erzeugung in der Fußzeile.
 
 Die Seite erzeugt eine Mission „Flug Abflug → Ziel“ mit den angekreuzten Karten und dem Vertikalprofil. Die Treffpunktkarte wird nur erstellt, wenn ein Treffpunkt eingegeben ist.
-Auf den Stufen 1 bis 3 verweist die Meldung nach „Karten erstellen“ auf den Knopf „Karten und ZIP erzeugen“ der Fußzeile.
+Auf den Stufen 1 bis 3 hat die Seite weder Fußzeile noch Block „Vorschauen und Erzeugung“: Alles geht vom Knopf dieses Blocks aus.
 Danach aktualisiert jede Änderung der Route, der Flughöhe oder des Treffpunkts die Karten automatisch.
 Ankunft aus dem Kraftstoffplaner (Knopf „Flugkarten“): Die Karten werden von selbst erstellt, sobald die SIA-Datenbank geladen ist.
 Mögliche Fehlermeldungen: „SIA-Basis fehlt in diesem Browser“, „Route: unbekannt in der SIA-Datenbank“, „Keine Karte gewählt“.
@@ -1386,7 +1386,7 @@ Ohne Mission und ohne erstellte Karten zeigt die Liste „Keine Karte: unten ein
 
 ### Vorschauen und Erzeugung
 
-Auf den Stufen 1 bis 3 zeigt der Block nur den Bericht der Erzeugung (erzeugte Karten, Fehlschläge und „Einzeln erneut versuchen“); „Alle Karten anzeigen“, die Vorschauen, die Übersichtskarte und die Zeile „Ausgaben: …“ gehören zur Stufe Experte.
+Block der Stufe Experte; auf den Stufen 1 bis 3 erscheint der Bericht der Erzeugung (erzeugte Karten, Fehlschläge und „Einzeln erneut versuchen“) unter dem Knopf des Blocks „Karten“.
 
 1. „Alle Karten anzeigen“: zeichnet eine Vorschau jeder Karte mit ihrem Profil. Die Vorschauen erzeugen keine Datei. Klick auf eine Vorschau: Vergrößerung.
 2. Jede Vorschau behält ihr Kästchen „ZIP“.
@@ -1413,7 +1413,7 @@ Es ist derselbe Block wie unter Einstellungen › Wartung › Luftfahrtdaten. Di
 <!-- page: apps/planner/flight_performance_planner.html -->
 
 Der Kraftstoffplaner (Titel „Kraftstoff“) berechnet den Kraftstoff eines Flugs aus dem Leistungsprofil Ihres Luftfahrzeugs. Er zeichnet auch die optimalen Flughöhen und Steiggesetze.
-Zugang: Seitenleiste „Kraftstoff“, Knopf „Kraftstoff (Planer)“ einer Mission in Meine Missionen oder Knopf „Kraftstoff“ der Flugkarten. Route, Distanz, Flughöhe und Luftfahrzeug werden dann übernommen.
+Zugang: Seitenleiste „Werkzeuge“, Reiter „Kraftstoff“, Knopf „Kraftstoff (Planer)“ einer Mission in Meine Missionen oder Knopf „Kraftstoff“ der Flugkarten. Route, Distanz, Flughöhe und Luftfahrzeug werden dann übernommen.
 Kopfzeile: Menü „Flugzeug“, Knopf „Letzten SimBrief-FPL abrufen“, „Einheiten: kg / lbs“. Importe und Exporte befinden sich im Menü ☰. Technische Einzelheiten: [Planer](../FLIGHT_PLANNER.md).
 Je nach Nutzungsstufe: Auf den Stufen 1 bis 3 (Besatzung, Planung, Gestaltung) zeigt die Seite das Flugzeug, den Flugplan (und „Letzten SimBrief-FPL abrufen“), den aufklappbaren Bereich „Flugparameter“, „Berechnen“ und das Ergebnis in zwei Spalten; das Menü ☰ behält dort nur Export und Import der Einstellungen. Kurven, Felder, Instrumente, Profilblöcke, Statusleiste und die Profilaktionen des Menüs ☰ kommen auf der Stufe Experte hinzu, wo die Seite vollständig ist.
 
@@ -1550,7 +1550,7 @@ Ohne Import: „Kein JSON geladen.“
 <!-- page: apps/landing/LandingPerformance_Dashboard_MultiCSV_i18n.html -->
 
 Diese Übersicht (Titel „Landing Performance — Übersicht“) analysiert die Qualität Ihrer Landungen anhand der vom Simulator exportierten Dateien: Score, Sinkrate, G, pro Luftfahrzeug und im Zeitverlauf.
-Zugang: Seitenleiste „Landungen“. Die Datei wird im Browser gelesen; nichts wird gesendet.
+Zugang: Seitenleiste „Werkzeuge“, Reiter „Landungen“. Die Datei wird im Browser gelesen; nichts wird gesendet.
 Die zuletzt geladene Datei wird gespeichert und beim Öffnen neu geladen. Ihre Luftfahrzeuge werden auch im Menü „Flugzeug“ des Kraftstoffplaners vorgeschlagen. Einzelheiten: [Landungsübersicht](../LANDING_DASHBOARD.md).
 
 ### Datei laden

@@ -565,7 +565,7 @@ Pour reprendre le premier lancement de zéro, et seulement dans ce cas.
 
 Cette page est la porte d'entrée de tout compte rendu (CR) de mission : vous y choisissez la famille de
 mission, puis la page de CR de cette famille s'ouvre. Elle s'adresse à tous les pilotes.
-Pour y aller : barre latérale › **CR**, ou le bouton « Nouveau compte rendu » de l'en-tête du
+Pour y aller : barre latérale › **Compte rendu**, ou le bouton « Nouveau compte rendu » de l'en-tête du
 reporting général. Un CR peut aussi s'ouvrir directement, déjà rempli, depuis une mission qui vous a été
 affectée (voir plus bas). Pas à pas complet : [tutoriel](TUTORIAL.md).
 
@@ -1114,7 +1114,7 @@ modification ; vols du journal en lecture seule.
 
 Le reporting général présente l'activité de **toutes les familles** à partir du registre unique
 `data/cr/missions.yaml` : indicateurs, graphiques, synthèses et tableau des missions. Il sert aux pilotes
-pour leur bilan et au Centre pour le suivi. Pour y aller : barre latérale › **Reporting**.
+pour leur bilan et au Centre pour le suivi. Pour y aller : barre latérale › **Outils**, onglet « Analyse des missions » (outil facultatif, coché dans Mon profil).
 
 ### En-tête : période, familles, regroupement, mesure
 
@@ -1293,10 +1293,10 @@ zone, trace, « Contrôle » (⚠ nombre d'anomalies, détail au survol).
 <!-- page: apps/planner/map_planner.html -->
 
 Cette page sert à préparer vos propres cartes de vol : cheminement, carte de la route, approche, rendez-vous, terrain de destination et profil vertical.
-Elle est ouverte à tous les pilotes. Pour y aller : barre latérale « Cartes de vol », bouton « Ouvrir dans les Cartes de vol » d'une mission dans Mes missions, ou bouton « Cartes de vol » du planificateur carburant.
+Elle est ouverte à tous les pilotes. Pour y aller : barre latérale « Outils », onglet « Cartes de vol », bouton « Ouvrir dans les Cartes de vol » d'une mission dans Mes missions, ou bouton « Cartes de vol » du planificateur carburant.
 Elle reprend le moteur du studio cartographique du Centre, mais travaille dans un espace propre à votre navigateur : vos réglages ne modifient jamais la mission du Centre.
 Chaque bloc se replie (« Masquer » / « Afficher ») et se déplace (poignée ↕). La base SIA doit être lue une fois dans ce navigateur (voir le dernier bloc).
-Aux niveaux 1 à 3 (Mon profil › « Niveau d'utilisation »), la page se limite à l'essentiel : champ de route, « Niveau », « SimBrief », carte de contrôle (« ⤢ Agrandir »), bloc « Cartes du vol » et bouton « Générer les cartes et le ZIP » du pied de page. Les autres commandes décrites ci-dessous n'apparaissent qu'au niveau 4 (Expert).
+Aux niveaux 1 à 3 (Mon profil › « Niveau d'utilisation »), la page se limite à deux blocs : « Cheminement » (champ de route, « Niveau », « SimBrief », carte de contrôle avec « ⤢ Agrandir ») et « Cartes », avec son unique bouton « Générer les cartes et le ZIP ». Les autres commandes décrites ci-dessous n'apparaissent qu'au niveau 4 (Expert).
 
 ### Réception d'une mission (« Ouvrir dans les Cartes de vol »)
 
@@ -1305,10 +1305,10 @@ La page n'affiche pas de bloc « Mission » : la mission arrive toute seule depu
 1. Dans Mes missions, ouvrez le dossier de la mission.
 2. Cliquez sur « Ouvrir dans les Cartes de vol ». L'appareil qui vous est attribué est repris en tête de la mission.
 3. La page s'ouvre avec le cheminement et le niveau de la mission dans le bloc « Cheminement », et toutes les cartes prévues par la mission dans « Cartes à produire » (plus `profil_vertical.png`). La liste « Cartes à produire » n'est visible qu'au niveau Expert.
-4. Réglez au besoin chaque carte (niveau Expert), puis cliquez sur « Générer les cartes et le ZIP », en bas de page.
+4. Réglez au besoin chaque carte (niveau Expert), puis cliquez sur « Générer les cartes et le ZIP » : dans le bloc « Cartes » aux niveaux 1 à 3, au pied de page au niveau Expert.
 
 Le pied de page indique le nombre de cartes du ZIP (« … carte(s) dans le ZIP + carte d'assemblage »), ou « Aucune mission chargée ».
-Mission reçue : « Tracer » et « Carburant » travaillent sur la mission chargée sans la remplacer. « Créer les cartes » demande confirmation avant de la remplacer par un vol libre « Vol départ → destination » construit à partir du cheminement ; sans mission chargée, les cartes sont créées directement.
+Mission reçue : « Tracer » et « Carburant » travaillent sur la mission chargée sans la remplacer. Aux niveaux 1 à 3, « Générer les cartes et le ZIP » génère ses cartes telles quelles. Au niveau Expert, « Préparer les cartes » demande confirmation avant de la remplacer par un vol libre « Vol départ → destination » construit à partir du cheminement ; sans mission chargée, les cartes sont créées directement.
 
 ### Cheminement
 
@@ -1353,17 +1353,17 @@ Ce panneau repliable, placé sous la carte de contrôle, règle le profil d'affi
 
 Pensez à cliquer sur « Sauvegarder » pour garder un profil modifié. Les listes de suggestions de la saisie (zones, aérodromes, balises) ne se remplissent que lorsque vous cliquez dans le champ concerné : la page s'ouvre ainsi plus vite, et la liste apparaît dès le clic ou la première frappe.
 
-### Cartes du vol
+### Cartes
 
-Ce bloc crée les cartes d'un vol à partir du cheminement, sans mission du Centre.
+Ce bloc crée les cartes d'un vol à partir du cheminement, sans mission du Centre ; aux niveaux 1 à 3, il les génère aussi.
 
 1. Saisissez le cheminement et le niveau dans le bloc « Cheminement » (au moins un départ et une destination connus de la base SIA).
 2. Facultatif : « Rendez-vous (facultatif) », un point ou des coordonnées « 44.2, 0.6 ».
 3. Cochez les cartes voulues : « route (vue d'ensemble, IFR) », « approche », « rendez-vous », « destination ».
-4. Cliquez sur « Créer les cartes ».
+4. Cliquez sur « Générer les cartes et le ZIP » (niveaux 1 à 3) : les cartes sont créées puis générées, la progression (avec « Arrêter ») et le compte rendu s'affichent juste dessous et le ZIP se télécharge. Au niveau Expert, « Préparer les cartes » les crée seulement : réglages dans « Cartes à produire », génération au pied de page.
 
 La page fabrique une mission « Vol départ → destination » avec les cartes cochées et le profil vertical. La carte de rendez-vous n'est créée que si un rendez-vous est saisi.
-Aux niveaux 1 à 3, le message qui suit « Créer les cartes » renvoie au bouton « Générer les cartes et le ZIP » du pied de page.
+Aux niveaux 1 à 3, la page n'a ni pied de page ni bloc « Aperçus et génération » : tout part du bouton de ce bloc.
 Ensuite, toute modification du cheminement, du niveau ou du rendez-vous met les cartes à jour automatiquement.
 Arrivée depuis le planificateur carburant (bouton « Cartes de vol ») : les cartes sont créées seules dès que la base SIA est chargée.
 Messages d'erreur possibles : « Base SIA absente de ce navigateur », « Route : inconnu(s) dans la base SIA », « Aucune carte choisie ».
@@ -1386,7 +1386,7 @@ Sans mission ni cartes créées, la liste indique « Aucune carte : ajoute-en un
 
 ### Aperçus et génération
 
-Aux niveaux 1 à 3, le bloc ne montre que le compte rendu de la génération (cartes générées, échecs et « Réessayer seule ») ; « Afficher toutes les cartes », les aperçus, la carte d'assemblage et la ligne « Sorties : … » sont au niveau Expert.
+Bloc du niveau Expert ; aux niveaux 1 à 3, le compte rendu de la génération (cartes générées, échecs et « Réessayer seule ») s'affiche sous le bouton du bloc « Cartes ».
 
 1. « Afficher toutes les cartes » : dessine un aperçu de chaque carte avec son profil. Les aperçus ne créent aucun fichier. Clic sur un aperçu : agrandissement.
 2. Chaque aperçu garde sa case « ZIP ».
@@ -1413,7 +1413,7 @@ C'est le même bloc que Paramètres › Maintenance › Données aéronautiques.
 <!-- page: apps/planner/flight_performance_planner.html -->
 
 Le planificateur carburant (titre « Carburant ») calcule le carburant d'un vol à partir du profil de performances de votre appareil. Il trace aussi les altitudes et lois de montée optimales.
-Pour y aller : barre latérale « Carburant », bouton « Carburant (planificateur) » d'une mission dans Mes missions, ou bouton « Carburant » des Cartes de vol. La route, la distance, le niveau et l'appareil sont alors repris.
+Pour y aller : barre latérale « Outils », onglet « Carburant », bouton « Carburant (planificateur) » d'une mission dans Mes missions, ou bouton « Carburant » des Cartes de vol. La route, la distance, le niveau et l'appareil sont alors repris.
 En-tête : menu « Avion », bouton « Récupérer dernier FPL SimBrief », « Unités : kg / lbs ». Les imports et exports sont dans le menu ☰. Détails techniques : [planificateur](FLIGHT_PLANNER.md).
 Selon le niveau d'utilisation : aux niveaux 1 à 3 (Équipage, Planification, Conception), la page montre l'avion, le plan de vol (et « Récupérer dernier FPL SimBrief »), le repli « Paramètres du vol », « Calculer » et le Résultat, sur deux colonnes ; le menu ☰ n'y garde qu'exporter et importer les préférences. Courbes, panneaux, instruments, blocs du profil, barre d'état et actions de profils du menu ☰ s'ajoutent au niveau Expert, où la page est complète.
 
@@ -1550,7 +1550,7 @@ Sans import : « Aucun JSON chargé. »
 <!-- page: apps/landing/LandingPerformance_Dashboard_MultiCSV_i18n.html -->
 
 Ce tableau de bord (titre « Landing Performance — Synthèse ») analyse la qualité de vos atterrissages à partir des fichiers exportés du simulateur : score, taux de chute, G, par appareil et dans le temps.
-Pour y aller : barre latérale « Atterrissages ». Le fichier est lu dans le navigateur ; rien n'est envoyé.
+Pour y aller : barre latérale « Outils », onglet « Atterrissages ». Le fichier est lu dans le navigateur ; rien n'est envoyé.
 Le dernier fichier chargé est gardé et rechargé à l'ouverture. Ses appareils sont aussi proposés dans le menu « Avion » du planificateur carburant. Détails : [tableau de bord des atterrissages](LANDING_DASHBOARD.md).
 
 ### Chargement du fichier

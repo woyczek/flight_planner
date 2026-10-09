@@ -113,12 +113,15 @@ function build(quiet,gen){
  if(!quiet){const list={n:maps.length,list:esc(maps.map(m=>m.description).join(', '))};say(gen?K.tf(['{n} carte(s) : {list}, et le profil vertical de la route.','{n} map(s): {list}, and the vertical profile of the route.','{n} Karte(n): {list}, und das Höhenprofil der Route.','{n} mapa(s): {list}, y el perfil vertical de la ruta.'],list):K.tf(full?['{n} carte(s) prête(s) : {list}, et le profil vertical de la route. Réglages et aperçus dans « Cartes à produire », fichiers dans « Aperçus et génération ».','{n} map(s) ready: {list}, and the vertical profile of the route. Settings and previews in “Maps to produce”, files in “Previews and generation”.','{n} Karte(n) bereit: {list}, und das Höhenprofil der Route. Einstellungen und Vorschauen unter „Zu erstellende Karten“, Dateien unter „Vorschauen und Erzeugung“.','{n} mapa(s) listo(s): {list}, y el perfil vertical de la ruta. Ajustes y vistas previas en «Mapas que producir», archivos en «Vistas previas y generación».']:['{n} carte(s) prête(s) : {list}, et le profil vertical de la route. Fichiers : « Générer les cartes et le ZIP ».','{n} map(s) ready: {list}, and the vertical profile of the route. Files: “Generate the maps and the ZIP”.','{n} Karte(n) bereit: {list}, und das Höhenprofil der Route. Dateien: „Karten und ZIP erzeugen“.','{n} mapa(s) listo(s): {list}, y el perfil vertical de la ruta. Archivos: «Generar los mapas y el ZIP».'],list),'ok')}
  return true;
 }
-$v('volBuild').onclick=()=>build(false);
+// mission reçue de Mes missions (autre qu'un vol « VOL » de cette page) : remplacée par le vol libre seulement après confirmation
+$v('volBuild').onclick=()=>{if(mission&&sharedDoc?.yaml?.mission?.id!=='VOL'&&!confirm(K.t(['Remplacer la mission chargée par un vol libre construit à partir du cheminement ?','Replace the loaded mission with a free flight built from the route?','Die geladene Mission durch einen freien Flug aus der Route ersetzen?','¿Sustituir la misión cargada por un vuelo libre construido a partir de la ruta?'])))return;build(false)};
 // niveaux 1 à 3 : un seul bouton, cartes créées puis aperçu et génération des fichiers et du ZIP par le moteur du studio
-// (« Générer » du studio, masqué ici : compte rendu dans #result, sous ce bouton)
-$v('volGenerate').onclick=async()=>{const b=$v('volGenerate');if(b.disabled||!build(false,true))return;b.disabled=true;try{await new Promise(r=>setTimeout(r,450));await $v('refreshPreview').onclick?.();if(mission&&outputMaps().length)await $v('generate').onclick()}finally{b.disabled=false}};
-// « Tracer » ou « Planificateur carburant » avant la création : la mission du vol est d'abord créée
-for(const id of ['vprofDraw','vprofToPlanner'])$v(id).addEventListener('click',e=>{if(sharedDoc?.yaml?.mission?.id==='VOL')return;e.stopImmediatePropagation();if(build(true))setTimeout(()=>$v(id).click(),600)},true);
+// (« Générer » du studio, masqué ici : compte rendu dans #result, sous ce bouton) ; mission reçue de Mes missions
+// (autre qu'un vol « VOL » de cette page) : ses cartes sont générées telles quelles, sans les remplacer par celles du bloc
+$v('volGenerate').onclick=async()=>{const b=$v('volGenerate'),own=!mission||sharedDoc?.yaml?.mission?.id==='VOL';if(b.disabled||(own&&!build(false,true)))return;b.disabled=true;try{await new Promise(r=>setTimeout(r,450));await $v('refreshPreview').onclick?.();if(mission&&outputMaps().length)await $v('generate').onclick()}finally{b.disabled=false}};
+// « Tracer » ou « Planificateur carburant » avant la création : la mission du vol est d'abord créée ; mission chargée (vol de
+// cette page ou mission reçue) : ils travaillent dessus sans la remplacer
+for(const id of ['vprofDraw','vprofToPlanner'])$v(id).addEventListener('click',e=>{if(mission||sharedDoc?.yaml?.mission?.id==='VOL')return;e.stopImmediatePropagation();if(build(true))setTimeout(()=>$v(id).click(),600)},true);
 // route modifiée (saisie, recherche, carte ou coupe) : mission, cartes et profil mis à jour
 const follow=()=>{saveForm();if(sharedDoc?.yaml?.mission?.id==='VOL')build(true)};
 $v('vprofRoute').addEventListener('change',follow);

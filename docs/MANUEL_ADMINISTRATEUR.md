@@ -89,7 +89,7 @@ Pendant l'usurpation, le trigramme de travail est celui de l'utilisateur usurpé
 <!-- page: apps/cpco/mission_editor.html -->
 
 Le générateur prépare le dossier d'une mission : identification, textes du brief, exercice, durée estimée, zones à activer, puis les PDF à remettre aux équipages. Il sert aussi à commander une mission à ChatGPT et à recevoir sa réponse.
-Accès : barre latérale « Missions » (section « Centre ») ou ☰ › « Centre — Générateur de mission ». Depuis le registre, « Ouvrir dans le générateur » charge la mission choisie.
+Accès : barre latérale « Missions », onglet « Générateur » (niveau Conception, 3), ou ☰ › « Centre — Générateur de mission ». Depuis le registre, « Générer une mission » ouvre le générateur vide et « Ouvrir dans le générateur » charge la mission choisie.
 Voir aussi [missions SIA](SIA_MISSIONS.md) et [prompt du générateur](technique/PROMPT_GENERATEUR_MISSIONS.md).
 Selon le niveau d'utilisation : la page est proposée à partir du niveau Conception (3). À ce niveau, elle montre sept blocs : Mission, Identification, Durée estimée, Zones à activer, Textes de mission, Cartes du dossier final et Documents (plus Opération et Exercice quand la mission en relève). Les brouillons, « Toutes les données YAML » et les paramètres du calcul des routes sont au niveau Expert (4).
 
@@ -212,7 +212,7 @@ Le brief de l'équipage contient ses plis scellés et les cartes ; la ligne d'é
 <!-- page: apps/cpco/map_parser.html -->
 
 Le studio produit les cartes du dossier de mission à partir des données du SIA (cycle AIRAC) : route, coupe verticale, cartes en PNG ou SVG, ZIP et carte d'assemblage.
-Accès : onglet « Studio cartographique » du générateur, ☰ › « Centre — Studio cartographique », ou « Ouvrir dans le studio » dans le registre.
+Accès : barre latérale « Missions », onglet « Studio cartographique » (niveau Expert, 4), ☰ › « Centre — Studio cartographique », ou « Ouvrir dans le studio » dans le registre.
 Il travaille sur la mission partagée avec le générateur. Détails techniques : [missions SIA](SIA_MISSIONS.md).
 
 ### Mission
@@ -274,7 +274,7 @@ Si le dossier contient plusieurs cycles, seul le plus récent est lu ; les autre
 
 Le registre recense toutes les missions générées ou commandées, avec leur suivi par le Centre : statut, date de vol, notes, comptes rendus.
 Il sert à choisir une mission, à l'ouvrir dans le générateur ou le studio, à l'affecter à des pilotes, à créer son CR et à commander de nouvelles missions.
-Accès : barre latérale « Registre » (section « Centre ») ou ☰ › « Centre — Registre des missions ».
+Accès : barre latérale « Missions », qui s'ouvre sur le registre (onglet « Registre »), ou ☰ › « Centre — Registre des missions ». En tête, « Générer une mission » ouvre le générateur pour en créer une.
 Selon le niveau d'utilisation : la page est proposée à partir du niveau Conception (3), avec l'essentiel : « Ajouter des fichiers… » et « Relire le dossier », quatre filtres et « Plus de filtres », un tableau à sept colonnes, une fiche sans le studio et le formulaire de commande simplifié. Le reste est au niveau Expert (4), comme indiqué ci-dessous.
 
 ### Missions du registre
@@ -559,7 +559,7 @@ Un vol demande une catégorie disponible ; un contrôle, une catégorie disponib
 ### Équipage de la semaine
 
 Bloc du niveau 2 : une ligne par membre, une case par jour avec la barre des dispos déclarées et le nombre d'éléments où il figure. Un clic sur une case ouvre ses plages du jour : catégorie, début, fin, et « Récup à partir de », qui pose une récupération jusqu'à minuit. Les plages sont écrites dans la déclaration du pilote.
-- **DLO et butées** : objectifs permanents de chaque membre (« ＋ » pour en ajouter, clic pour modifier), avec une butée facultative (date limite : rouge à 3 jours ouvrés ou moins, jaune à 10 ou moins) ; une DLO est fermée d'office par un vol fait qui la contient (DLO de l'élément, libellé, mission) avec le membre dans l'équipage. La palette montre « ◎n » DLO en cours par membre, et la fenêtre d'un élément rappelle celles de l'équipage.
+- **DLO et butées** (tableau replié ou ouvert par son triangle, état gardé dans ce navigateur) : objectifs permanents de chaque membre (« ＋ » pour en ajouter, clic pour modifier), avec une butée facultative (date limite : rouge à 3 jours ouvrés ou moins, jaune à 10 ou moins) ; une DLO est fermée d'office par un vol fait qui la contient (DLO de l'élément, libellé, mission) avec le membre dans l'équipage. La palette montre « ◎n » DLO en cours par membre, et la fenêtre d'un élément rappelle celles de l'équipage.
 - « Modifications de dispo » liste les déclarations modifiées depuis leur dernière prise en compte ; « Pris en compte » et « Tout prendre en compte » les marquent dans ce navigateur.
 
 ### Zones
@@ -586,7 +586,7 @@ Bloc du niveau 2 : vols prévus, durée cumulée, faits, non faits, annulés, AA
 <!-- page: apps/settings/centre.html -->
 
 Cette page regroupe les réglages courants du Centre : accès, utilisateurs, catégories de disponibilité, planning ODV et envoi des comptes rendus. Elle s'adresse aux administrateurs du Centre.
-Pour l'ouvrir : barre latérale › « Paramètres », puis l'onglet « Centre ». Les rubriques s'affichent dans le menu latéral, groupe « Centre (CPCO) ».
+Pour l'ouvrir : barre latérale › « Réglages », puis l'onglet « Centre ». Les rubriques s'affichent dans le menu latéral, groupe « Centre (CPCO) ».
 Tant que le Centre est verrouillé, seule la rubrique d'accès est visible. En mode production, la page demande en plus une connexion `admin_centre`.
 
 ### Accès au Centre et réglages
@@ -694,7 +694,7 @@ Détails : [Manuel d'exploitation](MANUEL_EXPLOITATION.md), § 10.
 <!-- page: apps/settings/installation.html -->
 
 Cette page regroupe les réglages faits une seule fois : dossiers locaux, sources externes, compagnie virtuelle, données aéronautiques et types d'aéronefs.
-Pour l'ouvrir : barre latérale › « Paramètres », puis l'onglet « Installation ». Cet onglet apparaît à partir du niveau d'utilisation Planification (2) ; une adresse directe vers l'une de ses rubriques l'ouvre à tout niveau.
+Pour l'ouvrir : barre latérale › « Réglages », puis l'onglet « Installation ». Cet onglet apparaît à partir du niveau d'utilisation Planification (2) ; une adresse directe vers l'une de ses rubriques l'ouvre à tout niveau.
 Le menu latéral comporte un seul groupe, « Dossiers et sources » : « Sources et dossiers » (ouverte d'emblée), « Données aéronautiques » et « Types d’aéronefs ».
 Le premier lancement a son propre onglet, « Premier lancement », décrit dans le [manuel utilisateur](MANUEL_UTILISATEUR.md#premier-lancement) ; « Nettoyer et recommencer… » se trouve en bas de cette page-là. Voir aussi [Installation](INSTALL.md), § 1.
 Ces rubriques sont attribuées à la page par `config/repository_tree` (clé `settings.sections` : `sources` → installation ; `sia` et `types` → installation,maintenance, c'est-à-dire sur les deux pages : la mise en place ici, la mise à jour dans Maintenance, mêmes blocs). Toutes les autres rubriques de maintenance s'ouvrent sur la page Maintenance.
@@ -723,7 +723,7 @@ Cette rubrique est le seul endroit où régler les dossiers locaux et les adress
 <!-- page: apps/settings/maintenance.html -->
 
 Cette page sert à l'entretien de la suite : mises à jour, versions, données SIA, caches, sauvegardes et bases de référence.
-Pour l'ouvrir : barre latérale › « Paramètres », puis l'onglet « Maintenance ». La page s'ouvre sur « Mises à jour ». Cet onglet n'apparaît qu'au niveau d'utilisation Expert (4) ; une adresse directe vers l'une de ses rubriques l'ouvre à tout niveau.
+Pour l'ouvrir : barre latérale › « Réglages », puis l'onglet « Maintenance ». La page s'ouvre sur « Mises à jour ». Cet onglet n'apparaît qu'au niveau d'utilisation Expert (4) ; une adresse directe vers l'une de ses rubriques l'ouvre à tout niveau.
 Le menu latéral comporte trois parties :
 - le groupe « Maintenance » : Mises à jour, Versions et synchros, Références et dépendances, Données aéronautiques, Types d'aéronefs ;
 - le groupe « Stockage et sauvegarde » : Caches, Espace disque, Sauvegarde totale, Journal ;

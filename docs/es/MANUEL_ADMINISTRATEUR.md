@@ -89,7 +89,7 @@ Durante la suplantación, el trigrama de trabajo es el del usuario suplantado y 
 <!-- page: apps/cpco/mission_editor.html -->
 
 El generador prepara el dosier de una misión: identificación, textos del briefing, ejercicio, duración estimada, zonas que activar y, por último, los PDF que se entregan a las tripulaciones. También sirve para encargar una misión a ChatGPT y recibir su respuesta.
-Acceso: barra lateral «Misiones» (sección «Centro») o ☰ › «Generador de misiones (SIA)». Desde el registro, «Abrir en el generador» carga la misión elegida.
+Acceso: barra lateral «Misiones», pestaña «Generador» (nivel Diseño, 3), o ☰ › «Generador de misiones (SIA)». Desde el registro, «Generar una misión» abre el generador vacío y «Abrir en el generador» carga la misión elegida.
 Véase también [misiones SIA](../SIA_MISSIONS.md) y [prompt del generador](../technique/PROMPT_GENERATEUR_MISSIONS.md).
 Según el nivel de uso: la página se ofrece a partir del nivel Diseño (3). En ese nivel, muestra siete bloques: Misión, Identificación, Duración estimada, Zonas que activar, Textos de la misión, Mapas del dosier final y Documentos (más Operación y Ejercicio cuando la misión pertenece a uno). Los borradores, «Todos los datos YAML» y los parámetros del cálculo de rutas están en el nivel Experto (4).
 
@@ -212,7 +212,7 @@ El briefing de la tripulación contiene sus sobres sellados y los mapas; la lín
 <!-- page: apps/cpco/map_parser.html -->
 
 El estudio produce los mapas del dosier de misión a partir de los datos del SIA (ciclo AIRAC): ruta, corte vertical, mapas en PNG o SVG, ZIP y mapa de conjunto.
-Acceso: pestaña «Estudio cartográfico» del generador, ☰ › «Estudio cartográfico (SIA)», o «Abrir en el estudio» en el registro.
+Acceso: barra lateral «Misiones», pestaña «Estudio cartográfico» (nivel Experto, 4), ☰ › «Estudio cartográfico (SIA)», o «Abrir en el estudio» en el registro.
 Trabaja sobre la misión compartida con el generador. Detalles técnicos: [misiones SIA](../SIA_MISSIONS.md).
 
 ### Misión
@@ -274,7 +274,7 @@ Si la carpeta contiene varios ciclos, solo se lee el más reciente; los demás s
 
 El registro recoge todas las misiones generadas o encargadas, con su seguimiento por el Centro: estado, fecha de vuelo, notas, informes.
 Sirve para elegir una misión, abrirla en el generador o en el estudio, asignarla a pilotos, crear su informe y encargar nuevas misiones.
-Acceso: barra lateral «Registro» (sección «Centro») o ☰ › «Registro de misiones (SIA)».
+Acceso: barra lateral «Misiones», que se abre en el registro (pestaña «Registro»), o ☰ › «Registro de misiones (SIA)». Arriba, «Generar una misión» abre el generador para crear una.
 Según el nivel de uso: la página se ofrece a partir del nivel Diseño (3), con lo esencial: «Añadir archivos…» y «Releer la carpeta», cuatro filtros y «Más filtros», una tabla de siete columnas, una ficha sin el estudio y el formulario de encargo simplificado. El resto está en el nivel Experto (4), como se indica a continuación.
 
 ### Misiones del registro
@@ -559,7 +559,7 @@ Un vuelo requiere una categoría disponible; un control, una categoría disponib
 ### Tripulación de la semana
 
 Bloque del nivel 2: una fila por miembro, una casilla por día con la barra de las disponibilidades declaradas y el número de elementos en los que figura. Un clic en una casilla abre sus franjas del día: categoría, inicio, fin, y «Descanso desde», que coloca un descanso hasta medianoche. Las franjas se escriben en la declaración del piloto.
-- **DLO y plazos**: objetivos permanentes de cada miembro («＋» para añadir, clic para modificar), con un plazo opcional (rojo a 3 días hábiles o menos, amarillo a 10 o menos); un DLO se cierra automáticamente con un vuelo hecho que lo contiene (DLO del elemento, etiqueta, misión) con el miembro en la tripulación. La paleta muestra «◎n» DLO abiertos por miembro, y la ventana de un elemento recuerda los de la tripulación.
+- **DLO y plazos** (tabla plegada o desplegada con su triángulo, estado guardado en este navegador): objetivos permanentes de cada miembro («＋» para añadir, clic para modificar), con un plazo opcional (rojo a 3 días hábiles o menos, amarillo a 10 o menos); un DLO se cierra automáticamente con un vuelo hecho que lo contiene (DLO del elemento, etiqueta, misión) con el miembro en la tripulación. La paleta muestra «◎n» DLO abiertos por miembro, y la ventana de un elemento recuerda los de la tripulación.
 - «Cambios de disponibilidad» lista las declaraciones modificadas desde la última vez que se tuvieron en cuenta; «Tenido en cuenta» y «Tener todo en cuenta» las marcan en este navegador.
 
 ### Zonas

@@ -89,7 +89,7 @@ Während der Übernahme ist das Arbeitskürzel das des übernommenen Benutzers, 
 <!-- page: apps/cpco/mission_editor.html -->
 
 Der Generator bereitet die Unterlagen einer Mission vor: Identifikation, Briefingtexte, Übung, geschätzte Dauer, zu aktivierende Gebiete, danach die PDFs für die Besatzungen. Er dient auch dazu, eine Mission bei ChatGPT zu bestellen und die Antwort zu empfangen.
-Zugang: Seitenleiste „Missionen“ (Bereich „Zentrum“) oder ☰ › „Missionsgenerator (SIA)“. Im Register lädt „Im Generator öffnen“ die gewählte Mission.
+Zugang: Seitenleiste „Missionen“, Reiter „Generator“ (Stufe Gestaltung, 3), oder ☰ › „Missionsgenerator (SIA)“. Im Register öffnet „Eine Mission erzeugen“ den leeren Generator, und „Im Generator öffnen“ lädt die gewählte Mission.
 Siehe auch [SIA-Missionen](../SIA_MISSIONS.md) und [Prompt des Generators](../technique/PROMPT_GENERATEUR_MISSIONS.md).
 Je nach Nutzungsstufe: Die Seite wird ab der Stufe Gestaltung (3) angeboten. Auf dieser Stufe zeigt sie sieben Blöcke: Mission, Identifikation, Geschätzte Dauer, Zu aktivierende Gebiete, Missionstexte, Karten des Endpakets und Dokumente (dazu Operation und Übung, wenn die Mission dazugehört). Entwürfe, „Alle YAML-Daten“ und die Einstellungen der Routenberechnung gehören zur Stufe Experte (4).
 
@@ -212,7 +212,7 @@ Das Briefing der Besatzung enthält ihre versiegelten Umschläge und die Karten;
 <!-- page: apps/cpco/map_parser.html -->
 
 Das Studio erstellt die Karten der Missionsunterlagen aus den Daten des SIA (AIRAC-Zyklus): Route, Vertikalschnitt, Karten als PNG oder SVG, ZIP und Übersichtskarte.
-Zugang: Reiter „Kartenstudio“ des Generators, ☰ › „Kartenstudio (SIA)“, oder „Im Kartenstudio öffnen“ im Register.
+Zugang: Seitenleiste „Missionen“, Reiter „Kartenstudio“ (Stufe Experte, 4), ☰ › „Kartenstudio (SIA)“, oder „Im Kartenstudio öffnen“ im Register.
 Es arbeitet an der mit dem Generator geteilten Mission. Technische Details: [SIA-Missionen](../SIA_MISSIONS.md).
 
 ### Mission
@@ -274,7 +274,7 @@ Enthält der Ordner mehrere Zyklen, wird nur der neueste gelesen; die anderen we
 
 Das Register erfasst alle erzeugten oder bestellten Missionen mit ihrer Verfolgung durch das Zentrum: Status, Flugdatum, Notizen, Berichte.
 Es dient dazu, eine Mission auszuwählen, sie im Generator oder im Studio zu öffnen, sie Piloten zuzuweisen, ihren Bericht zu erstellen und neue Missionen zu bestellen.
-Zugang: Seitenleiste „Register“ (Bereich „Zentrum“) oder ☰ › „Missionsregister (SIA)“.
+Zugang: Seitenleiste „Missionen“, die sich auf dem Register öffnet (Reiter „Register“), oder ☰ › „Missionsregister (SIA)“. Oben öffnet „Eine Mission erzeugen“ den Generator, um eine zu erstellen.
 Je nach Nutzungsstufe: Die Seite wird ab der Stufe Gestaltung (3) angeboten, mit dem Wesentlichen: „Dateien hinzufügen…“ und „Ordner neu lesen“, vier Filter und „Weitere Filter“, eine Tabelle mit sieben Spalten, ein Blatt ohne das Kartenstudio und das vereinfachte Bestellformular. Der Rest gehört zur Stufe Experte (4), wie unten angegeben.
 
 ### Missionen des Registers
@@ -559,7 +559,7 @@ Ein Flug verlangt eine verfügbare Kategorie; ein Lotsendienst eine verfügbare 
 ### Besatzung der Woche
 
 Block der Stufe 2: eine Zeile pro Mitglied, eine Zelle pro Tag mit dem Balken der angegebenen Verfügbarkeiten und der Zahl der Elemente, auf denen es steht. Ein Klick auf eine Zelle öffnet seine Zeiträume des Tages: Kategorie, Beginn, Ende und „Ausgleich ab“, der einen Ausgleich bis Mitternacht setzt. Die Zeiträume werden in die Angabe des Piloten geschrieben.
-- **DLO und Fristen**: dauerhafte Ziele jedes Mitglieds („＋“ zum Hinzufügen, Klick zum Ändern), mit optionaler Frist (rot bei höchstens 3 Arbeitstagen, gelb bei höchstens 10); eine DLO wird durch einen erledigten Flug, der sie enthält (DLO des Elements, Bezeichnung, Mission), mit dem Mitglied in der Besatzung automatisch geschlossen. Die Palette zeigt „◎n“ offene DLO je Mitglied, und das Fenster eines Elements erinnert an die der Besatzung.
+- **DLO und Fristen** (Tabelle über ihr Dreieck ein- oder ausgeklappt, Zustand in diesem Browser gespeichert): dauerhafte Ziele jedes Mitglieds („＋“ zum Hinzufügen, Klick zum Ändern), mit optionaler Frist (rot bei höchstens 3 Arbeitstagen, gelb bei höchstens 10); eine DLO wird durch einen erledigten Flug, der sie enthält (DLO des Elements, Bezeichnung, Mission), mit dem Mitglied in der Besatzung automatisch geschlossen. Die Palette zeigt „◎n“ offene DLO je Mitglied, und das Fenster eines Elements erinnert an die der Besatzung.
 - „Verfügbarkeitsänderungen“ listet die seit ihrer letzten Berücksichtigung geänderten Angaben; „Berücksichtigt“ und „Alle berücksichtigen“ markieren sie in diesem Browser.
 
 ### Gebiete
