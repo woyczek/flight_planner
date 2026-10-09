@@ -21,6 +21,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Ajouté
 
+- **Pilote de fusion des empreintes `?v=`** (`tools/merge_vstamp.py`, déclaré dans `.gitattributes` pour les pages, scripts,
+  feuilles et `config/repository_tree`, configuré par `tools/install_hooks.sh`) : à la fusion ou au rebase, un conflit qui ne
+  porte que sur les empreintes de cache posées par `bump_versions.py` est résolu seul (côté courant gardé, empreinte
+  remise par `bump_versions.py`) ; les vrais conflits restent à résoudre à la main.
 - **Ergonomie (E) : Premier lancement — rail des étapes, états, étape 5 réordonnée** — la page devient un assistant
   qui dit à chaque étape où on en est, quoi faire et quand c'est fini (`apps/settings/premier_lancement.html`).
   - **Rail des six étapes** en tête (1 Dossiers · 2 Données · 3 Compagnie · 4 Profil · 5 Données aéronautiques et
