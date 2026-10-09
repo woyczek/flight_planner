@@ -367,7 +367,7 @@
     }
   }
   @media print {
-    .mc-reporting section:nth-child(2) {
+    .mc-reporting .mc-ledger-block {
       display: none
     }
   }
@@ -1187,7 +1187,82 @@
     cursor: help
   }
 
-  /* Reporting de famille : barre de l'en-tête (famille · série, nouveau CR, période, graphique) */
+  /* Reporting de famille : bloc n° 1 « Famille et période » (reporting.js). Rangée 1 : famille · sous-type, nouveau
+     CR, données ; rangée 2 : période, regroupement, mesure. Six commandes, rangées souples. */
+  /* libellés de la période (TimePeriod) : couleur du texte du bloc (contraste, designs sombres) */
+  .mc-scope {
+    display: grid;
+    gap: 10px;
+    --tp-muted: currentColor
+  }
+  .mc-scope-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 14px;
+    align-items: center
+  }
+  .mc-scope-family,
+  .mc-scope-row>label,
+  .mc-scope .mc-source {
+    display: inline-flex;
+    gap: 6px;
+    align-items: center;
+    font-size: 13px;
+    color: inherit
+  }
+  .mc-scope-label {
+    font-size: 13px
+  }
+  .mc-scope .mc-switch {
+    margin: 0
+  }
+  /* sélecteur commun (core.js) : pastille sur fond de carte, et non plus sur la couleur de l'en-tête */
+  .mc-scope .mc-switch>summary {
+    background: var(--soft);
+    border: 1px solid var(--line);
+    color: var(--ink);
+    padding: 6px 12px
+  }
+  .mc-scope .mc-switch-pop label {
+    color: var(--ink)
+  }
+  .mc-scope a.mc-scope-new {
+    padding: 8px 14px
+  }
+  .mc-scope .mc-source select {
+    font-weight: 600
+  }
+  /* champs et boutons de période : mesure commune ; couleurs du design, sinon tirées du texte du bloc */
+  .mc-scope select,
+  .mc-scope input {
+    padding: 5px 8px;
+    border: 1px solid var(--line);
+    border-radius: calc(7px * var(--repo-round, 1));
+    font: inherit;
+    font-size: 13px
+  }
+  .mc-scope .tp-btn {
+    padding: 4px 7px;
+    border: 1px solid color-mix(in srgb, currentColor 35%, transparent);
+    border-radius: calc(7px * var(--repo-round, 1));
+    background: transparent;
+    color: inherit
+  }
+  .mc-scope .tp-btn:hover:not(:disabled) {
+    border-color: currentColor
+  }
+  @media print {
+    .mc-scope-family,
+    .mc-scope a.mc-scope-new,
+    .mc-scope .mc-source,
+    .mc-scope-row>label,
+    .mc-scope .tp-nav,
+    .mc-scope select {
+      display: none !important
+    }
+  }
+
+  /* Fiches appareil / équipage (sheets.js) : barre de période dans l'en-tête */
   .mc-report-tools {
     display: flex;
     flex-wrap: wrap;

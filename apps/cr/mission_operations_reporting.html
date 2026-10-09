@@ -32,7 +32,7 @@
     margin: 6px 0 0;
     line-height: 1.45
   }
-  /* en-tête collé : période (◀ zoom − ▶) et filtres */
+  /* bloc n° 1 « Familles et période » (global_reporting.js) : nouveau CR, données, familles, période, graphique */
   .mcg-header-tools {
     display: grid;
     gap: 8px;
@@ -58,9 +58,6 @@
   .mcg-header-tools input,
   .mcg-header-tools .tp-btn {
     padding: 5px 8px
-  }
-  header p {
-    display: none
   }
   .mcg-new {
     display: inline-flex;
@@ -300,6 +297,8 @@
     }
     .mcg-header-tools .tp-nav,
     .mcg-header-tools select,
+    .mcg-header-tools .mcg-inline,
+    .mcg-header-tools .mc-source,
     .mcg-ledger,
     .mcg-new {
       display: none

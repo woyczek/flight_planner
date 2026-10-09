@@ -16,6 +16,11 @@
   };
   const UI = {
     period: L('Période analysée', 'Analysed period', 'Analysezeitraum', 'Periodo analizado'),
+    scope: L('Famille et période', 'Family and period', 'Familie und Zeitraum', 'Familia y periodo'),
+    scopeSub: L('Famille, période analysée, regroupement et mesure des graphiques',
+      'Family, analysed period, chart grouping and measure', 'Familie, Analysezeitraum, Gruppierung und Messgröße der Diagramme',
+      'Familia, periodo analizado, agrupación y medida de los gráficos'),
+    scopeFamily: L('Famille', 'Family', 'Familie', 'Familia'),
     data: L('Registre des missions', 'Mission ledger', 'Einsatzregister', 'Registro de misiones'),
     summary: L('Synthèse', 'Summary', 'Übersicht', 'Resumen'),
     breakdowns: L('Répartition détaillée', 'Detailed breakdown', 'Detaillierte Aufschlüsselung', 'Desglose detallado'),
@@ -120,18 +125,23 @@
     };
 
     root.classList.add('mc-reporting');
-    // En-tête collé : nouveau CR, période (◀ zoom − ▶, composant TimePeriod), regroupement et
-    // mesure du graphique ; la famille / série reste dans la popup d'en-tête.
+    // L'en-tête ne garde que titre et sous-titre, comme les autres pages. Bloc n° 1 « Famille et période » :
+    // rangée 1 = famille · sous-type (popup du sélecteur commun, déplacée ici plus bas), nouveau CR, source des
+    // données ; rangée 2 = période (◀ zoom − ▶, composant TimePeriod), regroupement et mesure des graphiques.
+    // Titre, sous-titre et libellé de la famille : écrits dans la langue de la page par paintScope ([data-no-i18n]).
+    // Les blocs suivants gardent les identifiants block-1…5 qu'ils avaient avant l'ajout de ce bloc (disposition et
+    // blocs masqués mémorisés par AppFramework).
     const pageHeader = document.querySelector('header.mc-header');
-    const tools = document.createElement('div');
-    tools.className = 'mc-report-tools';
-    tools.innerHTML = `<a class="mc-header-new" href="${esc(family.pages.cr || '../mission_cr.html')}">+&nbsp;<span>${t('newReport')}</span></a><div id="mcPeriod"></div>
-      <label>${t('unit')}<select data-pref="unit">${['auto', 'day', 'week', 'month', 'quarter', 'year'].map(u => `<option value="${u}">${t(u)}</option>`).join('')}</select></label>
-      <label>${t('metric')}<select data-pref="metric"><option value="missions">${t('missions')}</option><option value="flight">${t('flight')}</option><option value="block">${t('block')}</option><option value="station">${t('onStation')}</option></select></label>`;
-    if (pageHeader) pageHeader.append(tools);
-    else root.before(tools);
     root.innerHTML = `
-      <section data-icon="database"><h2>${t('data')}</h2><div class="row">
+      <section data-icon="calendar" data-block-id="scope" class="mc-scope-block"><h2 data-no-i18n></h2><p class="repo-block-subtitle" data-no-i18n></p>
+        <div class="mc-scope">
+          <div class="mc-scope-row"><div class="mc-scope-family"><span class="mc-scope-label" data-no-i18n></span></div>
+            <a class="mc-button primary mc-scope-new" href="${esc(family.pages.cr || '../mission_cr.html')}">+&nbsp;<span>${t('newReport')}</span></a></div>
+          <div class="mc-scope-row"><div id="mcPeriod"></div>
+            <label>${t('unit')}<select data-pref="unit">${['auto', 'day', 'week', 'month', 'quarter', 'year'].map(u => `<option value="${u}">${t(u)}</option>`).join('')}</select></label>
+            <label>${t('metric')}<select data-pref="metric"><option value="missions">${t('missions')}</option><option value="flight">${t('flight')}</option><option value="block">${t('block')}</option><option value="station">${t('onStation')}</option></select></label></div>
+        </div></section>
+      <section data-icon="database" data-block-id="block-1" class="mc-ledger-block"><h2>${t('data')}</h2><div class="row">
         <button type="button" class="secondary" data-action="yaml" data-icon="download">${t('exportYaml')}</button>
         <button type="button" class="secondary" data-action="csv" data-icon="download">${t('exportCsv')}</button>
         <button type="button" class="secondary" data-action="import" data-icon="upload">${t('importYaml')}</button>
@@ -139,12 +149,13 @@
         <button type="button" class="secondary" data-action="print" data-icon="printer">${t('print')}</button>
         <button type="button" class="secondary" data-action="legacy" hidden></button><input type="file" accept=".csv,text/csv" data-legacy hidden>
         <input type="file" accept=".yaml,.yml,text/yaml" multiple hidden></div><p class="small mc-ledger-info"></p><p class="small mc-status"></p></section>
-      <section data-icon="chart"><h2>${t('summary')}</h2><div class="mc-cards" id="mcCards"></div></section>
-      <section data-icon="calendar"><h2>${t('activity')}</h2>
+      <section data-icon="chart" data-block-id="block-2"><h2>${t('summary')}</h2><div class="mc-cards" id="mcCards"></div></section>
+      <section data-icon="calendar" data-block-id="block-3"><h2>${t('activity')}</h2>
         <div id="mcActivity"></div><div class="mcg-series-legend" id="mcActivityLegend"></div></section>
-      <section data-icon="layers"><h2>${t('breakdowns')}</h2><div class="mc-breakdowns" id="mcBreakdowns"></div></section>
-      <section data-icon="list"><h2>${t('missionsTitle')}<button type="button" class="ge-toggle" data-grid-edit></button></h2><div id="mcTable"></div><div id="mcEdges" hidden></div></section>`;
-    const $a = action => root.querySelector(`[data-action="${action}"]`),
+      <section data-icon="layers" data-block-id="block-4"><h2>${t('breakdowns')}</h2><div class="mc-breakdowns" id="mcBreakdowns"></div></section>
+      <section data-icon="list" data-block-id="block-5"><h2>${t('missionsTitle')}<button type="button" class="ge-toggle" data-grid-edit></button></h2><div id="mcTable"></div><div id="mcEdges" hidden></div></section>`;
+    const tools = root.querySelector('.mc-scope'),
+      $a = action => root.querySelector(`[data-action="${action}"]`),
       status = root.querySelector('.mc-status');
     // Regroupement et mesure du graphique : préférences partagées avec le reporting général.
     const PREFS = 'missionGlobalReporting:v1';
@@ -308,7 +319,7 @@
       }
     });
     const switchBox = pageHeader?.querySelector('.mc-switch');
-    if (switchBox) tools.prepend(switchBox); // famille · série en tête de la barre
+    if (switchBox) tools.querySelector('.mc-scope-family').append(switchBox); // famille · série en tête du bloc n° 1
     /** Texte d'une ligne [fr, en, de, es] dans la langue de la page. */
     const tr = row => row[Math.max(0, ['fr', 'en', 'de', 'es'].indexOf(window.RepositoryNav?.getLanguage?.() || 'fr'))] || row[0];
     // Données des reportings : registre des missions (défaut) ou journal (vols réalisés,
@@ -338,6 +349,7 @@
       if (!host || !window.DefaFlightLog) return;
       const label = document.createElement('label');
       label.className = 'mc-source';
+      label.dataset.noI18n = ''; // libellés déjà dans la langue de la page (tr), repeints au changement de langue
       const paint = () => {
         const n = window.DefaFlightLog.records().length,
           dates = n ? window.DefaFlightLog.records().map(r => r.date).sort() : [];
@@ -368,9 +380,25 @@
         logMissions = null;
         paint();
       });
+      window.addEventListener('repository-language-change', () => setTimeout(paint));
       host.append(label);
     }
-    sourcePicker(tools);
+    sourcePicker(tools.querySelector('.mc-scope-row'));
+
+    /** Textes du bloc « Famille et période » dans la langue de la page (écrits seulement s'ils changent). */
+    function paintScope() {
+      const scope = root.querySelector('.mc-scope-block');
+      [
+        [scope.querySelector('h2'), UI.scope],
+        [scope.querySelector('.repo-block-subtitle'), UI.scopeSub],
+        [scope.querySelector('.mc-scope-label'), UI.scopeFamily]
+      ].forEach(([el, row]) => {
+        const text = tr(row);
+        if (el && el.textContent !== text) el.textContent = text;
+      });
+    }
+    paintScope();
+    window.addEventListener('repository-language-change', () => setTimeout(paintScope));
 
     /** Rendu du reporting pour la période et le sous-type : cartes, graphiques, répartitions, tableau. */
     function render() {

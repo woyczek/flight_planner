@@ -75,6 +75,11 @@
       'Todas las familias de misiones · registro único data/cr/missions.yaml'),
     newReport: L('Nouveau compte rendu', 'New report', 'Neuer Bericht', 'Nuevo informe'),
     period: L('Période et filtres', 'Period and filters', 'Zeitraum und Filter', 'Periodo y filtros'),
+    scope: L('Familles et période', 'Families and period', 'Familien und Zeitraum', 'Familias y periodo'),
+    scopeSub: L('Familles affichées, période analysée, regroupement et mesure des graphiques',
+      'Families shown, analysed period, chart grouping and measure',
+      'Angezeigte Familien, Analysezeitraum, Gruppierung und Messgröße der Diagramme',
+      'Familias mostradas, periodo analizado, agrupación y medida de los gráficos'),
     families: L('Familles', 'Families', 'Familien', 'Familias'),
     all: L('Toutes', 'All', 'Alle', 'Todas'),
     unit: L('Regroupement', 'Grouping', 'Gruppierung', 'Agrupación'),
@@ -295,16 +300,17 @@
 
     // ---- en-tête de page
     document.title = UI.title[0];
-    // Période (composant TimePeriod : préréglages, dates, ◀ zoom − ▶) et filtres dans l'en-tête
-    // collé en haut de page ; le titre, la langue et le menu ☰ (repository_nav) restent en place.
-    const header = document.querySelector('header');
-    const bar = document.createElement('div');
-    bar.className = 'mcg-header-tools';
-    bar.innerHTML = `<div class="mcg-header-row"><a class="mcg-new mc-button primary" data-icon="plus" href="mission_cr.html"><span>${t('newReport')}</span></a><div id="periodPicker"></div></div>
-      <div class="mcg-header-row"><div class="mcg-chips"><span class="mcg-label">${t('families')}</span><div class="mcg-chip-list"></div></div>
-        <label class="mcg-inline">${t('unit')}<select data-pref="unit">${UNITS.map(u => `<option value="${u}">${t(u)}</option>`).join('')}</select></label>
-        <label class="mcg-inline">${t('metric')}<select data-pref="metric">${METRICS.map(m => `<option value="${m.id}">${esc(m.label[0])}</option>`).join('')}</select></label></div>`;
-    (header || root.parentElement).append(bar);
+    // L'en-tête ne garde que titre et sous-titre, comme les autres pages. Bloc n° 1 « Familles et période » (posé
+    // après les autres, voir plus bas) : rangée 1 = nouveau CR et source des données ; rangée 2 = familles affichées
+    // (puces) ; rangée 3 = période (composant TimePeriod : préréglages, dates, ◀ zoom − ▶), regroupement et mesure.
+    const scopeHtml = `<section class="panel mcg-scope" data-icon="calendar" data-block-id="scope"><h2 data-no-i18n></h2><p class="repo-block-subtitle" data-no-i18n></p>
+      <div class="mcg-header-tools">
+        <div class="mcg-header-row"><a class="mcg-new mc-button primary" data-icon="plus" href="mission_cr.html"><span>${t('newReport')}</span></a></div>
+        <div class="mcg-header-row"><div class="mcg-chips"><span class="mcg-label">${t('families')}</span><div class="mcg-chip-list"></div></div></div>
+        <div class="mcg-header-row"><div id="periodPicker"></div>
+          <label class="mcg-inline">${t('unit')}<select data-pref="unit">${UNITS.map(u => `<option value="${u}">${t(u)}</option>`).join('')}</select></label>
+          <label class="mcg-inline">${t('metric')}<select data-pref="metric">${METRICS.map(m => `<option value="${m.id}">${esc(m.label[0])}</option>`).join('')}</select></label></div>
+      </div></section>`;
 
     root.innerHTML = `
       <section class="cards mcg-cards" id="mcgCards"></section>
@@ -330,6 +336,26 @@
         <button type="button" data-action="folder" data-icon="folder">${t('folder')}</button><button type="button" data-action="print" data-icon="printer">${t('print')}</button>
         <label class="mcg-legacy">${t('legacy')}<select data-legacy><option value=""></option></select></label><input type="file" accept=".csv,text/csv" hidden></div>
         <p class="note mcg-ledger-info"></p><p class="note mcg-status"></p></section>`;
+    // Blocs existants : identifiants qu'AppFramework leur donnait avant l'ajout du bloc n° 1 (rang, ou id de
+    // l'élément), pour garder la disposition et les blocs masqués mémorisés ; puis le bloc n° 1 en tête.
+    root.querySelectorAll('section').forEach((section, i) => {
+      if (!section.dataset.blockId && !section.id) section.dataset.blockId = `block-${i + 1}`;
+    });
+    root.insertAdjacentHTML('afterbegin', scopeHtml);
+    const bar = root.querySelector('.mcg-header-tools');
+    /** Textes du bloc « Familles et période » dans la langue de la page (écrits seulement s'ils changent). */
+    const paintScope = () => {
+      const scope = root.querySelector('.mcg-scope');
+      [
+        [scope.querySelector('h2'), UI.scope],
+        [scope.querySelector('.repo-block-subtitle'), UI.scopeSub]
+      ].forEach(([el, row]) => {
+        const text = row[idx()] || row[0];
+        if (el && el.textContent !== text) el.textContent = text;
+      });
+    };
+    paintScope();
+    window.addEventListener('repository-language-change', () => setTimeout(paintScope));
     const $ = sel => root.querySelector(sel) || bar.querySelector(sel),
       status = $('.mcg-status');
     $('[data-pref="unit"]').value = UNITS.includes(prefs.unit) ? prefs.unit : 'auto';
@@ -422,6 +448,7 @@
       if (!host || !window.DefaFlightLog) return;
       const label = document.createElement('label');
       label.className = 'mc-source';
+      label.dataset.noI18n = ''; // libellés déjà dans la langue de la page (tr), repeints au changement de langue
       const paint = () => {
         const n = window.DefaFlightLog.records().length,
           dates = n ? window.DefaFlightLog.records().map(r => r.date).sort() : [];
@@ -452,6 +479,7 @@
         logMissions = null;
         paint();
       });
+      window.addEventListener('repository-language-change', () => setTimeout(paint));
       host.append(label);
     }
     /** Lignes de toutes les missions de la source (journal ou registre), avec leur rang dans leur famille. */
