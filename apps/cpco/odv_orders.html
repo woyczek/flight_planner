@@ -173,7 +173,7 @@
     color: var(--odvo-ink)
   }
   .odvo-tpl small {
-    opacity: .7
+    color: color-mix(in srgb, var(--odvo-ink) 80%, var(--odvo-surface))
   }
   .odvo-mem {
     display: grid;
@@ -264,7 +264,7 @@
     top: 16px;
     left: 4px;
     font-size: 10px;
-    color: var(--repo-accent, #71b7ff);
+    color: var(--ink);
     text-transform: uppercase
   }
   .odvo-night {
@@ -557,7 +557,7 @@
     overflow: hidden;
     white-space: nowrap;
     border-left: 1px solid var(--ink);
-    background: color-mix(in srgb, #64748b 45%, transparent);
+    background: color-mix(in srgb, var(--ink) 16%, var(--odvo-surface, transparent));
     color: var(--ink)
   }
   .odvo-atc-training,
@@ -886,14 +886,14 @@
 </section>
 </main>
 <script src="../../shared/kit.js?v=b73e1b98"></script>
-<script src="../../shared/repository_nav.js?v=0951fa5a"></script>
+<script src="../../shared/repository_nav.js?v=c3a81ac5"></script>
 <script src="../../shared/mission_core/vendor/js-yaml.min.js?v=64052ae4"></script>
 <script src="../../shared/data_files.js?v=dcb47c6a" data-file="references/callsigns.js"></script>
 <script src="../../shared/data_files.js?v=dcb47c6a" data-file="references/defa_reference.js"></script>
 <script src="../../shared/data_files.js?v=dcb47c6a" data-file="references/aircraft_fleet.js"></script>
 <script src="../../shared/mission_core/vocab.js?v=8c65f5c2"></script>
 <script src="../../shared/sia_base.js?v=f26f6ba4"></script>
-<script src="../../shared/assignments.js?v=95fcb353"></script>
+<script src="../../shared/assignments.js?v=213a47d9"></script>
 <script src="../../shared/assign_dialog.js?v=c2b23d27"></script>
 <script src="../../shared/mission_core/assist.js?v=5f5537a8"></script>
 <script src="odv_core.js?v=657ac39e"></script>
@@ -903,7 +903,7 @@
 <script src="../../shared/odv_reports.js?v=d66272b9"></script>
 <script src="../../shared/odv_orders_store.js?v=b2b6d8a6"></script>
 <script src="../../shared/zip_store.js?v=1b42107f"></script>
-<script src="../../shared/mission_table.js?v=10fb25b7"></script>
+<script src="../../shared/mission_table.js?v=2f91dadd"></script>
 <script src="../../AircraftDB/aircraft_db.js"></script><script src="../../AircraftDB/aircraft_perf.js"></script>
 <script src="../../shared/dispos_editor.js?v=9e198a77"></script>
 <script src="../../shared/atc_sessions.js?v=53bdcc60"></script>

@@ -12,6 +12,11 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Corrigé
 
+- **Contraste (rapport `docs/technique/CONTRASTE_2026-10-09.md`), Tableau et tableaux triables** : pastilles de
+  simulateur en encre sombre ou blanche selon leur couleur (blanc d'office : 2:1 sur vert, jaune, cyan → 8:1) ;
+  en-têtes des tableaux triables (4,4 → 5,9:1) et flèches de tri sans transparence (2,1 → 5,9:1) ; Tableau : petits
+  textes des gabarits, libellé de l'heure courante et réservations ATC lisibles (encre du thème au lieu d'une opacité
+  ou de l'accent).
 - **Premier démarrage : « aucune mission » alors que le registre est plein** : le registre des missions du navigateur
   (index IndexedDB) n'était rempli qu'en relisant le dossier « Missions » ; seul le Tableau lisait le registre servi.
   À la première ouverture (index vide), le registre servi par le lanceur (`data/missions/mission_registry.yaml`) est
