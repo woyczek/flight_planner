@@ -1082,6 +1082,34 @@
     gap: 6px;
     margin-bottom: 8px
   }
+  /* panneau « Demander à ChatGPT » : appareil, prompt (replié), réponse collée, importer ou fusionner */
+  .pp-gpt {
+    margin: 0 0 8px;
+    padding: 8px;
+    border: 1px solid color-mix(in srgb, currentColor 18%, transparent)
+  }
+  .pp-gpt-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-items: center;
+    margin: 4px 0
+  }
+  .pp-gpt textarea {
+    width: 100%;
+    box-sizing: border-box;
+    font: 12px/1.4 ui-monospace, Consolas, monospace
+  }
+  .pp-gpt-paste {
+    display: block;
+    margin-top: 6px
+  }
+  #ppGptReport,
+  #ppGptStatus {
+    white-space: pre-line;
+    font-size: 12px;
+    margin: 4px 0
+  }
   /* case de sélection (fusion, export, enregistrement, suppression : barre du bloc) */
   .perf-profiles .pp-sel {
     margin: 0
@@ -1363,7 +1391,7 @@ html[data-skeuo] .repo-block-tools .fp-result-pin[aria-pressed="true"]:not(#imp)
 </aside>
 <aside id="fpInstrCol" class="instr-col" data-fp-detail aria-label="Instruments"><div class="fp-instr-sticky"></div></aside>
 
-<section class="card span12" data-min-level="3" data-block-id="perf-profiles" data-icon="list" data-no-i18n><h2 id="ppTitle">Profils de performances</h2><p id="ppIntro" class="mut"></p><div class="row perf-profiles-actions"><button id="ppImport" type="button" class="secondary" data-icon="upload"><span id="ppImportLbl">Importer…</span></button><button id="ppFolder" type="button" class="secondary" data-icon="folder"><span id="ppFolderLbl">Dossier…</span></button><button id="ppReload" type="button" class="secondary" data-icon="refresh"><span id="ppReloadLbl">Relire</span></button><button id="ppMerge" type="button" class="secondary" data-icon="layers" disabled><span id="ppMergeLbl">Fusionner</span></button><button id="ppExport" type="button" class="secondary" data-icon="download" disabled><span id="ppExportLbl">Exporter</span></button><button id="ppSaveDir" type="button" class="secondary" data-icon="save" disabled><span id="ppSaveDirLbl">Enregistrer dans le dossier</span></button><button id="ppDelete" type="button" class="secondary" data-icon="trash" disabled><span id="ppDeleteLbl">Supprimer</span></button><span id="ppStatus" class="mut"></span></div><div id="perfProfiles" class="perf-profiles"></div></section>
+<section class="card span12" data-min-level="3" data-block-id="perf-profiles" data-icon="list" data-no-i18n><h2 id="ppTitle">Profils de performances</h2><p id="ppIntro" class="mut"></p><div class="row perf-profiles-actions"><button id="ppImport" type="button" class="secondary" data-icon="upload"><span id="ppImportLbl">Importer…</span></button><button id="ppFolder" type="button" class="secondary" data-icon="folder"><span id="ppFolderLbl">Dossier…</span></button><button id="ppReload" type="button" class="secondary" data-icon="refresh"><span id="ppReloadLbl">Relire</span></button><button id="ppMerge" type="button" class="secondary" data-icon="layers" disabled><span id="ppMergeLbl">Fusionner</span></button><button id="ppExport" type="button" class="secondary" data-icon="download" disabled><span id="ppExportLbl">Exporter</span></button><button id="ppSaveDir" type="button" class="secondary" data-icon="save" disabled><span id="ppSaveDirLbl">Enregistrer dans le dossier</span></button><button id="ppDelete" type="button" class="secondary" data-icon="trash" disabled><span id="ppDeleteLbl">Supprimer</span></button><button id="ppGpt" type="button" class="secondary" data-icon="sparkles"><span id="ppGptLbl">Demander à ChatGPT</span></button><span id="ppStatus" class="mut"></span></div><div id="ppGptPanel" class="pp-gpt" hidden></div><div id="perfProfiles" class="perf-profiles"></div></section>
 
 
 <section class="card span6 engine-card" data-min-level="4" data-block-id="engine-performance" data-icon="wrench" data-subtitle="Performances du moteur selon le régime."><h2>Fiche performance moteur</h2><div class="fields">
@@ -1380,7 +1408,7 @@ html[data-skeuo] .repo-block-tools .fp-result-pin[aria-pressed="true"]:not(#imp)
 <div style="height:8px"></div><div class="row"><button id="sbAirframeBtn" class="primary">Importer airframe SimBrief</button><button id="importBtn" data-icon="upload">Importer `.lnmperf` / JSON / CSV</button><button id="exportLnmBtn">Exporter `.lnmperf`</button><button id="exportBtn" data-icon="download">Exporter JSON</button><button id="exportDbBtn">Exporter BDD locale</button><input id="fileInput" type="file" accept=".json,.csv,.lnmperf,application/xml,text/xml" multiple hidden></div>
 <div id="sbStatus" class="mut" style="margin-top:8px"></div></section>
 
-<section class="card span12" data-min-level="4" data-block-id="profile-data" data-icon="file-text" data-subtitle="Tous les champs du profil de l’appareil."><div class="row"><h2 style="flex:1">Données du profil — JSON ⇄ Little Navmap</h2><button id="toggleProfileEditor">Masquer les champs</button></div><div class="mut">Champs exportés exactement dans le `.lnmperf`. Une case vide reste vide dans le JSON et bloque l’export XML : aucune valeur n’est ajoutée automatiquement.</div><div id="apdBar" class="apd-bar"></div><div id="profileEditor" style="margin-top:10px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px"></div><div class="row" style="margin-top:10px"><button id="saveProfileBtn" data-icon="save" class="primary">Enregistrer le profil</button><button id="deleteProfileBtn" data-icon="x">Supprimer cet avion</button><button id="sbTypeBtn" type="button" class="secondary" data-icon="refresh" data-no-i18n hidden></button><span id="sbTypeHelp" class="mut" data-no-i18n hidden></span><span id="profileEditStatus" class="mut"></span></div></section>
+<section class="card span12" data-min-level="4" data-block-id="profile-data" data-icon="file-text" data-subtitle="Tous les champs du profil de l’appareil."><div class="row"><h2 style="flex:1">Données du profil — JSON ⇄ Little Navmap</h2><button id="toggleProfileEditor">Masquer les champs</button></div><div class="mut">Champs exportés exactement dans le `.lnmperf`. Une case vide reste vide dans le JSON et bloque l’export XML : aucune valeur n’est ajoutée automatiquement.</div><div id="apdBar" class="apd-bar"></div><div id="profileEditor" style="margin-top:10px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px"></div><div class="row" style="margin-top:10px"><button id="saveProfileBtn" data-icon="save" class="primary">Enregistrer le profil</button><button id="deleteProfileBtn" data-icon="x">Supprimer cet avion</button><button id="sbTypeBtn" type="button" class="secondary" data-icon="refresh" data-no-i18n hidden></button><button id="gptSheetBtn" type="button" class="secondary" data-icon="sparkles" data-no-i18n hidden></button><span id="sbTypeHelp" class="mut" data-no-i18n hidden></span><span id="profileEditStatus" class="mut"></span></div></section>
 
 <section class="card span12" data-min-level="4" data-block-id="rpm-curve-editor" data-icon="chart" data-subtitle="Courbe de consommation à éditer point par point."><h2>Cartographie moteur — édition RPM / puissance → consommation</h2><div id="curveEditor"><div class="mut">Choisis ou importe un profil.</div></div></section>
 
@@ -1407,7 +1435,7 @@ html[data-skeuo] .repo-block-tools .fp-result-pin[aria-pressed="true"]:not(#imp)
 <script src="../../shared/repository_nav.js?v=0"></script>
 <script src="../../AircraftDB/aircraft_db.js"></script><script src="../../shared/data_files.js?v=0" data-file="references/aircraft_fleet.js"></script><script src="../../shared/data_files.js?v=0" data-file="references/defa_reference.js"></script><script src="../../shared/aircraft_catalog.js?v=0"></script>
 <script src="../../AircraftDB/aircraft_icons.js"></script>
-<script src="../../AircraftDB/aircraft_perf.js"></script><script src="../../shared/fuel_reference.js?v=0"></script><script src="../../shared/fuel_poll_schumann.js?v=0"></script>
+<script src="../../AircraftDB/aircraft_perf.js"></script><script src="../../shared/fuel_reference.js?v=0"></script><script src="../../shared/fuel_poll_schumann.js?v=0"></script><script src="perf_prompt.js?v=0"></script>
 <script src="../../shared/sticky_frame.js?v=0"></script><script src="../../shared/flight_profile_help.js?v=0"></script><script src="../../shared/column_resize.js?v=0"></script><script src="../../shared/flight_instruments.js?v=0"></script><script src="../../shared/flight_perf_view.js?v=0"></script>
 <script src="../../shared/flight_performance_model.js?v=0"></script>
 <script>
@@ -1876,7 +1904,7 @@ function commitProfileEditor(announce = true) {
   window.updateProfileStatus?.()
 }
 const FUEL_KEYS = new Set(["fuelFlowPerHour", "fuelFlowMin", "fuelFlowMax", "usableFuel", "taxiFuel", "reserveFuel", "extraFuel"]);
-const SKIP_MERGE_KEYS = new Set(["_rowId", "id", "unit", "source", "mergedProfileIds", "lnmSource"]);
+const SKIP_MERGE_KEYS = new Set(["_rowId", "id", "unit", "source", "mergedProfileIds", "lnmSource", "estimatedFields", "gptSources"]);
 /** Vrai pour null, undefined, chaîne vide ou tableau vide (valeur « à compléter »). */
 function isBlankValue(v) {
   return v === null || v === undefined || (typeof v === "string" && v.trim() === "") || (Array.isArray(v) && !v.length)
@@ -4609,6 +4637,7 @@ function profileSourceText(p, info) {
   if (p.simbriefSnapshot || p.simbrief) return "SimBrief";
   if (p.lnmSource) return "Little Navmap (.lnmperf)";
   const f = String(p.source?.format || "");
+  if (/chatgpt/i.test(f)) return "ChatGPT";
   if (/csv/i.test(f)) return "CSV";
   if (/json/i.test(f)) return "JSON";
   return kt(["saisie", "manual entry", "manuelle Eingabe", "entrada manual"])
@@ -4641,7 +4670,10 @@ function profileInfo(p) {
     alts: alts.size,
     ceil,
     ceilSrc,
-    missing: p._landingOnly ? [] : need.filter(x => !x[0]).map(x => kt(x[1]))
+    missing: p._landingOnly ? [] : need.filter(x => !x[0]).map(x => kt(x[1])),
+    // valeurs marquées estimées (réponse ChatGPT) : champs, et lignes de cartographie notées « (ChatGPT) »
+    estimated: [...(p.estimatedFields || []).map(profileFieldLabel), ...((p.rpmFuelCurve || []).some(r => /\(ChatGPT\)/.test(r
+      .comment || "")) ? [kt(["cartographie moteur", "engine map", "Motorkennfeld", "mapa motor"])] : [])]
   }
 }
 /** Libellés du bloc « Profils de performances » (titre, présentation, boutons et infobulles) ; écrits s'ils changent. */
@@ -4656,6 +4688,7 @@ function perfProfilesLabels() {
   setText("ppImportLbl", kt(["Importer…", "Import…", "Importieren…", "Importar…"]));
   setText("ppFolderLbl", kt(["Dossier…", "Folder…", "Ordner…", "Carpeta…"]));
   setText("ppReloadLbl", kt(["Relire", "Reread", "Neu lesen", "Releer"]));
+  setText("ppGptLbl", kt(["Demander à ChatGPT", "Ask ChatGPT", "ChatGPT fragen", "Preguntar a ChatGPT"]));
   const tips = {
     ppImport: kt([
       "Fichiers .lnmperf (Little Navmap), JSON (profil ou base exportée), CSV de performances ; un OFP SimBrief JSON est aussi reconnu.",
@@ -4751,7 +4784,10 @@ function renderPerfProfiles() {
       ff = s.ff > 0 ? `${s.approx ? "≈ " : ""}${fmt(convertFuel(s.ff, p.unit || "kg", u), 0)} ${u}/h<br><small class="mut">${esc(ffSourceText(s))}</small>` : "—",
       ceil = i.ceil ? `${flTxt(i.ceil)}${i.ceilSrc === "apd" ? ` <small class="mut">(EUROCONTROL)</small>` : ""}` : "—",
       miss = p._landingOnly ? `<span class="pp-missing">${esc(kt(["tout le profil", "the whole profile", "das ganze Profil", "todo el perfil"]))}</span>` :
-      i.missing.length ? `<span class="pp-missing">${esc(i.missing.join(", "))}</span>` : `<span class="pp-ok">${esc(kt(["rien", "nothing", "nichts", "nada"]))}</span>`;
+      (i.missing.length ? `<span class="pp-missing">${esc(i.missing.join(", "))}</span>` : `<span class="pp-ok">${esc(kt(["rien", "nothing", "nichts", "nada"]))}</span>`) +
+      (i.estimated?.length ? `<br><small class="mut">${esc(ktf(["estimé : {list}", "estimated: {list}", "geschätzt: {list}", "estimado: {list}"], {
+        list: i.estimated.join(", ")
+      }))}</small>` : "");
     // case de sélection (profils enregistrés : fusion, export, enregistrement, suppression par la barre du bloc) ; pour un
     // type de la flotte sans profil que SimBrief connaît, « Créer depuis SimBrief » à côté de « Créer »
     const sel = p._landingOnly ? "" : `<input type="checkbox" class="pp-sel" data-id="${esc(p.id)}" title="${esc(kt([
@@ -5027,6 +5063,11 @@ function simbriefMergeSource(code, unit) {
 }
 /** Libellé d'une source de fusion : « nom » (source), avec la date de la fiche SimBrief. */
 function mergeSourceName(p) {
+  if (p._gptSource) return ktf(["« ChatGPT » (réponse du {d})", "“ChatGPT” (answer of {d})", "„ChatGPT“ (Antwort vom {d})",
+    "«ChatGPT» (respuesta del {d})"
+  ], {
+    d: new Date(p.updatedAt || Date.now()).toLocaleDateString()
+  });
   return p._simbriefSource ? ktf(["« {p} » (fiche SimBrief du {d})", "“{p}” (SimBrief record of {d})", "„{p}“ (SimBrief-Eintrag vom {d})",
     "«{p}» (ficha SimBrief del {d})"
   ], {
@@ -5047,7 +5088,7 @@ function mergeProfileSources(keeper, sources, name) {
     took = [];
   if (recent[0] !== keeper) {
     // base plus récente que le profil gardé : son identité reprend le dessus, ses valeurs comblent les manques ensuite
-    for (const k of ["simbrief", "simbriefType", "_simbriefSource", "lnmSource", "mergedProfileIds"]) delete target[k];
+    for (const k of ["simbrief", "simbriefType", "_simbriefSource", "_gptSource", "lnmSource", "mergedProfileIds"]) delete target[k];
     Object.assign(target, {
       id: keeper.id,
       name: keeper.name,
@@ -5083,6 +5124,12 @@ function mergeProfileSources(keeper, sources, name) {
       n: added
     })] : [])].join(", ")}`)
   }
+  // champs estimés : ceux qui viennent d'une source qui les disait estimés ; références (ChatGPT) de toutes les sources
+  const est = recent.flatMap(x => (x.estimatedFields || []).filter(k => origin[k] === mergeSourceShort(x))),
+    refs = recent.flatMap(x => x.gptSources || []);
+  if (est.length) target.estimatedFields = [...new Set(est)];
+  else delete target.estimatedFields;
+  if (refs.length) target.gptSources = refs.filter((x, i) => refs.findIndex(y => JSON.stringify(y) === JSON.stringify(x)) === i);
   target.name = name || keeper.name || target.name;
   if (name && name !== keeper.name) origin.name = kt(["nom choisi", "chosen name", "gewählter Name", "nombre elegido"]);
   origin.description = kt(["note de fusion", "merge note", "Zusammenführungsnotiz", "nota de fusión"]);
@@ -5094,7 +5141,8 @@ function mergeProfileSources(keeper, sources, name) {
   ], {
     d: new Date().toLocaleDateString(),
     list: names
-  })].filter(Boolean).join("\n");
+  }), ...recent.filter(x => x._gptSource && x.description).map(x => `ChatGPT — ${x.description}`)].filter(Boolean).join(
+    "\n"); // notes et sources d'une réponse ChatGPT gardées
   return {
     target,
     before,
@@ -5106,7 +5154,7 @@ function mergeProfileSources(keeper, sources, name) {
 }
 /** Nom court d'une source de fusion (colonne « Source » de l'aperçu). */
 function mergeSourceShort(p) {
-  return p._simbriefSource ? "SimBrief" : p.name || p.id
+  return p._simbriefSource ? "SimBrief" : p._gptSource ? "ChatGPT" : p.name || p.id
 }
 /** Écart entre deux profils pour l'aperçu : champs { label, old, now, src, changed } (date de modification et fiche
  *  SimBrief brute à part ; src : origin[chemin], sinon defaultSrc pour un champ qui change), lignes de cartographie
@@ -5580,6 +5628,9 @@ function syncSbTypeButton() {
   ]));
   if (b.hidden === on) b.hidden = !on;
   if ($("sbTypeHelp").hidden === on) $("sbTypeHelp").hidden = !on;
+  const g = $("gptSheetBtn");
+  setText("gptSheetBtn", kt(["Demander à ChatGPT", "Ask ChatGPT", "ChatGPT fragen", "Preguntar a ChatGPT"]));
+  if (g.hidden === !!active) g.hidden = !active;
   const tip = kt([
     "Créer ou mettre à jour le profil de ce type d’après la liste publique de SimBrief (consommation de croisière, plafond, vitesse, masses).",
     "Create or update this type’s profile from SimBrief’s public list (cruise fuel flow, ceiling, speed, weights).",
@@ -5588,7 +5639,511 @@ function syncSbTypeButton() {
   ]);
   if (b.title !== tip) b.title = tip
 }
+// ===== Demander le profil à ChatGPT =====
+// Prompt (apps/planner/perf_prompt.js, généré depuis docs/technique/PROMPT_PROFIL_PERFORMANCES.md) rempli pour le type :
+// modèle, variante de la flotte, motorisation, ce que la suite sait déjà ; copié, ChatGPT ouvert. La réponse collée (JSON
+// du schéma, ou CSV de performances) est vérifiée puis importée comme nouveau profil ou fusionnée (aperçu d'abord).
+let gptFor = null; // appareil du panneau : { id, landing } (landing : type de la flotte sans profil)
+/** Appareils proposés au panneau : profils enregistrés (par nom), puis types de la flotte sans profil. */
+function gptEntries() {
+  const saved = Object.values(state.profiles || {}).filter(p => p && typeof p === "object" && p.id).map(p => normalize(structuredClone(p)));
+  return [...saved.sort((a, b) => String(a.name || a.id).localeCompare(String(b.name || b.id), "fr", {
+    numeric: true
+  })).map(p => ({
+    id: p.id,
+    landing: false,
+    p
+  })), ...landingOnlyAircraft(saved).map(p => ({
+    id: p.id,
+    landing: true,
+    p
+  }))]
+}
+/** Profil (copie) ou type sans profil de l'entrée { id, landing } ; profil actif non enregistré en repli. */
+function gptProfileOf(e) {
+  if (!e) return null;
+  if (!e.landing && state.profiles?.[e.id]) return normalize(structuredClone(state.profiles[e.id]));
+  return gptEntries().find(x => x.landing && x.id === e.id)?.p || (active?.id === e.id ? normalize(structuredClone(active)) : null)
+}
+/** Code OACI de l'entrée du panneau. */
+function gptCode(e = gptFor) {
+  const p = gptProfileOf(e);
+  return aKey(p?.icao || p?.type || p?.id || e?.id || "")
+}
+/** Motorisation connue en clair : description OACI (nombre et nature des moteurs), moteurs SimBrief, motorisation du
+ *  profil. */
+function gptEngines(p, code) {
+  const d = String((window.AIRCRAFT_DB || {})[code]?.description || ""),
+    kind = {
+      J: ["réacteur(s)", "jet engine(s)", "Strahltriebwerk(e)", "reactor(es)"],
+      T: ["turbine(s) (turbopropulseur ou turbomoteur)", "turbine(s) (turboprop or turboshaft)",
+        "Turbine(n) (Turboprop oder Wellenturbine)",
+        "turbina(s) (turbohélice o turboeje)"
+      ],
+      P: ["moteur(s) à pistons", "piston engine(s)", "Kolbenmotor(en)", "motor(es) de pistón"],
+      E: ["moteur(s) électrique(s)", "electric motor(s)", "Elektromotor(en)", "motor(es) eléctrico(s)"]
+    } [d[2]],
+    sb = simbriefRecordFor(code),
+    out = [];
+  if (kind) out.push(`${+d[1] || "?"} ${kt(kind)}${d[0] === "H" ? kt([", hélicoptère", ", helicopter", ", Hubschrauber", ", helicóptero"]) : ""}`);
+  if (sb?.engines) out.push(`SimBrief — ${sb.engines}`);
+  if (p?.engineType && p.engineType !== "auto") out.push(`engineType = ${p.engineType}`);
+  return out.join(" ; ") || kt(["inconnue", "unknown", "unbekannt", "desconocida"])
+}
+/** Ce que la suite sait déjà du type, une ligne par source (EUROCONTROL APD, SimBrief, Airframe DB, profil actuel) ;
+ *  valeurs nommées par leur chemin dans le schéma. */
+function gptKnown(p, code, landing) {
+  const lines = [],
+    colon = kt([" :", ":", ":", ":"]), // typographie de la langue du prompt
+    apd = apdFor({
+      icao: code
+    }),
+    sb = simbriefRecordFor(code),
+    af = (window.AIRCRAFT_PERF || {})[code]?.airframedb;
+  if (apd?.fields && Object.keys(apd.fields).length) lines.push(`- EUROCONTROL Aircraft Performance Database${colon} ${Object.entries(apd.fields).map(([k, x]) => `${k} = ${x.v} (${x.how})`).join(" ; ")}`);
+  if (sb) lines.push(`- SimBrief (${kt(["liste publique des types", "public type list", "öffentliche Typenliste", "lista pública de tipos"])})${colon} ${[
+      ["fuelflowKgh", "kg/h"], ["ceilingFt", "ft"], ["mach", ""], ["speedKt", "kt"], ["maxFuelKg", "kg"], ["mtowKg", "kg"], ["oewKg", "kg"],
+      ["mzfwKg", "kg"], ["mlwKg", "kg"], ["takeoffM", "m"], ["landingM", "m"]
+    ].filter(([k]) => sb[k]).map(([k, u]) => `${k} = ${sb[k]}${u ? " " + u : ""}`).concat(sb.climb?.length ? [`climb = ${sb.climb.join(" / ")}`] : [],
+      sb.descent?.length ? [`descent = ${sb.descent.join(" / ")}`] : []).join(" ; ")}`);
+  if (af) lines.push(`- Airframe DB (${af.url || "airframedb.com"})${colon} ${Object.entries(af).filter(([k, v]) => !["url", "fetched", "name"].includes(k) && v !== null && v !== "" && typeof v !== "object").map(([k, v]) => `${k} = ${v}`).join(" ; ")}`);
+  if (p && !landing) {
+    const leaves = profileLeaves(p),
+      keys = Object.keys(leaves).filter(k => !["name", "icao", "type", "description", "updatedAt", "simbrief"].includes(k) && !
+        /^(simbriefType|simbriefSnapshot|calibration|tod|source)\b/.test(k)),
+      map = (p.rpmFuelCurve || []).filter(r => r.rpm !== null && r.rpm !== "" && Number.isFinite(+r.rpm));
+    lines.push(`- ${ktf(["Profil actuel « {p} » (unité {u})", "Current profile “{p}” (unit {u})", "Aktuelles Profil „{p}“ (Einheit {u})",
+      "Perfil actual «{p}» (unidad {u})"
+    ], {
+      p: p.name || p.id,
+      u: p.unit || "kg"
+    })}${colon} ${keys.map(k => `${k} = ${[].concat(JSON.parse(leaves[k])).join(", ")}`).join(" ; ") || "—"}${map.length ? ` ; rpmFuelCurve = ${map.map(r => `${r.rpm}${Number.isFinite(+r.altFt) && r.altFt !== null && r.altFt !== "" ? ` @ ${r.altFt} ft` : ""} → ${r.fuelFlowPerHour ?? "?"}`).join(", ")}` : ""}`)
+  }
+  return lines.join("\n") || kt(["- rien", "- nothing", "- nichts", "- nada"])
+}
+/** Prompt rempli pour l'entrée e (langue de la page) ; chaîne vide si perf_prompt.js n'est pas chargé. */
+function gptPrompt(e = gptFor) {
+  const base = window.PERF_PROMPT?.[KIT.lang()] || window.PERF_PROMPT?.fr;
+  if (!base || !e) return "";
+  const p = gptProfileOf(e),
+    code = gptCode(e),
+    model = (window.AIRCRAFT_DB || {})[code]?.model || p?.name || code,
+    fleet = (window.AircraftCatalog?.defaTypes() || []).find(t => aKey(t.type) === code),
+    variant = (p?.name && p.name !== model && !e.landing ? ktf([", variante « {v} »", ", variant “{v}”", ", Variante „{v}“",
+      ", variante «{v}»"
+    ], {
+      v: p.name
+    }) : "") + (fleet ? ktf([" ; flotte : {m}, {n} appareil(s)", "; fleet: {m}, {n} aircraft", "; Flotte: {m}, {n} Luftfahrzeug(e)",
+      "; flota: {m}, {n} aeronave(s)"
+    ], {
+      m: fleet.model || code,
+      n: (fleet.registrations || []).length
+    }) : "");
+  let out = base;
+  for (const [k, v] of [
+      ["TYPE", code],
+      ["MODELE", model],
+      ["VARIANTE", variant],
+      ["MOTORISATION", gptEngines(p, code)],
+      ["CONNU", gptKnown(p, code, e.landing)]
+    ]) out = out.split(`{{${k}}}`).join(String(v));
+  return out
+}
+/** Copie un texte par l'ancienne commande du navigateur (repli quand l'API presse-papiers est absente ou refusée). */
+function execCopy(txt) {
+  const t = Object.assign(document.createElement("textarea"), {
+    value: txt
+  });
+  t.style.cssText = "position:fixed;top:0;left:0;opacity:0";
+  document.body.append(t);
+  t.select();
+  let ok = false;
+  try {
+    ok = document.execCommand("copy")
+  } catch {
+    ok = false
+  }
+  t.remove();
+  return ok
+}
+/** « Copier le prompt et ouvrir ChatGPT » : copie lancée dans le geste de l'utilisateur, ChatGPT ouvert (prompt prérempli
+ *  s'il est assez court), état affiché ; le prompt reste lisible dans « Voir le prompt ». */
+async function gptCopyAndOpen() {
+  const txt = gptPrompt();
+  if (!txt) return setText("ppGptStatus", kt(["Prompt absent (perf_prompt.js non chargé).", "Prompt missing (perf_prompt.js not loaded).",
+    "Prompt fehlt (perf_prompt.js nicht geladen).", "Falta el prompt (perf_prompt.js no cargado)."
+  ]));
+  let copied = !navigator.clipboard && execCopy(txt);
+  const copy = navigator.clipboard?.writeText(txt);
+  window.open(txt.length < 7000 ? `https://chatgpt.com/?q=${encodeURIComponent(txt)}` : "https://chatgpt.com/", "_blank", "noopener");
+  if (copy) try {
+    await copy;
+    copied = true
+  } catch {
+    copied = execCopy(txt)
+  }
+  setText("ppGptStatus", copied ? ktf([
+    "Prompt copié ({n} caractères) et ChatGPT ouvert : coller le prompt s'il n'y est pas déjà (Ctrl+V), l'envoyer, puis coller la réponse ci-dessous.",
+    "Prompt copied ({n} characters) and ChatGPT opened: paste the prompt if it is not there yet (Ctrl+V), send it, then paste the answer below.",
+    "Prompt kopiert ({n} Zeichen) und ChatGPT geöffnet: den Prompt einfügen, falls er noch nicht dort steht (Strg+V), senden, dann die Antwort unten einfügen.",
+    "Prompt copiado ({n} caracteres) y ChatGPT abierto: pegar el prompt si aún no está (Ctrl+V), enviarlo y pegar la respuesta abajo."
+  ], {
+    n: txt.length.toLocaleString()
+  }) : kt([
+    "Copie refusée par le navigateur : ouvrir « Voir le prompt », tout sélectionner et copier (Ctrl+A, Ctrl+C).",
+    "Copy denied by the browser: open “Show the prompt”, select all and copy (Ctrl+A, Ctrl+C).",
+    "Kopieren vom Browser verweigert: „Prompt anzeigen“ öffnen, alles markieren und kopieren (Strg+A, Strg+C).",
+    "Copia rechazada por el navegador: abrir «Ver el prompt», seleccionar todo y copiar (Ctrl+A, Ctrl+C)."
+  ]))
+}
+/** Lit la réponse collée : JSON du schéma (bloc de code accepté), sinon CSV de performances. Clés inconnues ignorées,
+ *  valeurs illisibles ou hors plage écartées, unités vérifiées (kg ou lb ; varios positifs), cartographie relue comme
+ *  dans l'éditeur (bornes absentes : valeur moyenne ; moyenne absente : milieu des bornes ; phase admise, sinon déduite du
+ *  commentaire). Sortie : { profile (daté de maintenant, _gptSource), warnings } ; erreur si rien n'est lisible. */
+function parseGptReply(text, code) {
+  const S = window.PERF_PROMPT_SCHEMA || {},
+    warnings = [],
+    now = new Date().toISOString();
+  let t = String(text || "").trim(),
+    obj = null,
+    err = null;
+  const fence = t.match(/```[a-z]*\s*([\s\S]*?)```/i);
+  if (fence) t = fence[1].trim();
+  const a = t.indexOf("{"),
+    b = t.lastIndexOf("}");
+  if (a >= 0 && b > a) try {
+    obj = JSON.parse(t.slice(a, b + 1))
+  } catch (x) {
+    err = x
+  }
+  if (!obj || typeof obj !== "object" || Array.isArray(obj)) {
+    const head = t.split(/\r?\n/)[0] || "";
+    if (/aircraft/i.test(head) && /icao/i.test(head)) {
+      const list = parsePerformanceCsvEnriched(t, "ChatGPT.csv");
+      if (list.length > 1) warnings.push(ktf(["{n} lignes CSV : seule la première est reprise.",
+        "{n} CSV rows: only the first one is used.",
+        "{n} CSV-Zeilen: nur die erste wird übernommen.", "{n} filas CSV: solo se toma la primera."
+      ], {
+        n: list.length
+      }));
+      return {
+        profile: Object.assign(list[0], {
+          source: {
+            format: "ChatGPT (CSV)",
+            importedAt: now
+          },
+          updatedAt: now,
+          _gptSource: true
+        }),
+        warnings
+      }
+    }
+    throw Error(kt(["Réponse illisible : ni JSON ni CSV de performances (colonnes Aircraft et ICAO).",
+      "Unreadable answer: neither JSON nor a performance CSV (Aircraft and ICAO columns).",
+      "Antwort unlesbar: weder JSON noch Leistungs-CSV (Spalten Aircraft und ICAO).",
+      "Respuesta ilegible: ni JSON ni CSV de rendimiento (columnas Aircraft e ICAO)."
+    ]) + (err ? ` (${err.message})` : ""))
+  }
+  const unknown = [],
+    dropped = [],
+    unitIn = String(obj.unit || "kg").trim().toLowerCase(),
+    unit = ["kg", "lb"].includes(unitIn) ? unitIn : "kg",
+    kg = v => unit === "lb" ? v * KG_PER_LB : v,
+    field = path => PROFILE_FIELDS.find(f => f[2] === path),
+    // plages plausibles (carburant ramené en kg) : au-delà, la valeur est écartée et signalée
+    range = path => /fuelFlow/.test(path) ? [0.5, 40000, true] : /Fuel$/.test(path) ? [0, 400000, true] : /Kt$/.test(path) ? [20, 700] :
+    /rateFpm$/.test(path) ? [50, 12000] : /Ft$/.test(path) ? [0, 70000] : /rpm/i.test(path) ? [0.1, 100000] : null,
+    value = (path, v) => {
+      if (v === null || v === undefined || v === "") return undefined;
+      const type = field(path)?.[3] || "number";
+      if (type === "bool") {
+        if (typeof v === "boolean") return v;
+        if (/^(true|oui|yes|ja|sí|si|1)$/i.test(String(v).trim())) return true;
+        if (/^(false|non|no|nein|0)$/i.test(String(v).trim())) return false;
+        dropped.push(`${path} (${v})`);
+        return undefined
+      }
+      if (type.startsWith("select:")) {
+        const x = type.slice(7).split(",").find(o => o.toLowerCase() === String(v).trim().toLowerCase());
+        if (!x) dropped.push(`${path} (${v})`);
+        return x
+      }
+      if (type === "text" || type === "textarea") return String(v).trim() || undefined;
+      let n = typeof v === "number" ? v : Number(String(v).replace(",", ".").replace(/\s*[a-z/%°]+$/i, "").trim());
+      if (!Number.isFinite(n)) {
+        dropped.push(`${path} (${v})`);
+        return undefined
+      }
+      if (/rateFpm$/.test(path) && n < 0) n = -n;
+      const r = range(path),
+        c = r?.[2] ? kg(n) : n;
+      if (r && (c < r[0] || c > r[1])) {
+        dropped.push(`${path} = ${v}`);
+        return undefined
+      }
+      return n
+    },
+    out = {};
+  if (!["kg", "lb"].includes(unitIn)) warnings.push(ktf(["Unité « {u} » non reconnue : kg retenu.", "Unit “{u}” not recognised: kg used.",
+    "Einheit „{u}“ nicht erkannt: kg verwendet.", "Unidad «{u}» no reconocida: se usa kg."
+  ], {
+    u: obj.unit
+  }));
+  for (const [k, v] of Object.entries(obj)) {
+    if (!(k in S)) {
+      unknown.push(k);
+      continue
+    }
+    if (["estimated", "sources", "notes", "rpmFuelCurve", "unit"].includes(k)) continue;
+    if (S[k] && typeof S[k] === "object" && !Array.isArray(S[k])) {
+      if (!v || typeof v !== "object") continue;
+      out[k] = {};
+      for (const [sk, sv] of Object.entries(v)) {
+        if (!(sk in S[k])) {
+          unknown.push(`${k}.${sk}`);
+          continue
+        }
+        const x = value(`${k}.${sk}`, sv);
+        if (x !== undefined) out[k][sk] = x
+      }
+      continue
+    }
+    const x = value(k, v);
+    if (x !== undefined) out[k] = x
+  }
+  if (out.icao && aKey(out.icao) !== code) warnings.push(ktf(["Code OACI de la réponse ({r}) différent du type demandé : {c} retenu.",
+    "ICAO code of the answer ({r}) differs from the requested type: {c} used.",
+    "ICAO-Code der Antwort ({r}) weicht vom angefragten Typ ab: {c} verwendet.",
+    "Código OACI de la respuesta ({r}) distinto del tipo pedido: se usa {c}."
+  ], {
+    r: out.icao,
+    c: code
+  }));
+  // cartographie moteur, lue comme l'éditeur ; lignes estimées notées dans leur commentaire
+  const est = (Array.isArray(obj.estimated) ? obj.estimated : []).map(String),
+    estRows = new Set(est.map(x => x.match(/^rpmFuelCurve\[(\d+)\]/)?.[1]).filter(Boolean).map(Number)),
+    rowKeys = Object.keys(S.rpmFuelCurve?.[0] || {}),
+    curve = [];
+  (Array.isArray(obj.rpmFuelCurve) ? obj.rpmFuelCurve : []).forEach((r, i) => {
+    if (!r || typeof r !== "object") return;
+    for (const k of Object.keys(r))
+      if (!rowKeys.includes(k)) unknown.push(`rpmFuelCurve[${i}].${k}`);
+    const num = k => value(`rpmFuelCurve.${k}`, r[k]),
+      rpm = num("rpm");
+    let min = num("fuelFlowMin"),
+      nom = num("fuelFlowPerHour"),
+      max = num("fuelFlowMax");
+    min ??= nom;
+    max ??= nom;
+    nom ??= Number.isFinite(min) && Number.isFinite(max) ? (min + max) / 2 : undefined;
+    if (rpm === undefined || nom === undefined) return dropped.push(`rpmFuelCurve[${i}]`);
+    const ph = String(r.phaseLabel || "").trim().toLowerCase(),
+      comment = String(r.comment || "").trim();
+    if (ph && !FLIGHT_PHASES.includes(ph)) dropped.push(`rpmFuelCurve[${i}].phaseLabel (${r.phaseLabel})`);
+    curve.push({
+      rpm,
+      altFt: num("altFt") ?? null,
+      fuelFlowMin: min,
+      fuelFlowPerHour: nom,
+      fuelFlowMax: max,
+      phaseLabel: FLIGHT_PHASES.includes(ph) ? ph : inferredCurvePhase(comment),
+      comment: estRows.has(i) ? [comment, kt(["estimé (ChatGPT)", "estimated (ChatGPT)", "geschätzt (ChatGPT)",
+          "estimado (ChatGPT)"
+        ])]
+        .filter(Boolean).join(" — ") : comment
+    })
+  });
+  const has = path => path.split(".").reduce((o, k) => o?.[k], out) !== undefined,
+    sources = (Array.isArray(obj.sources) ? obj.sources : []).map(x => typeof x === "string" ? {
+      title: x
+    } : x && typeof x === "object" ? {
+      title: String(x.title || ""),
+      publisher: String(x.publisher || ""),
+      url: String(x.url || "")
+    } : null).filter(x => x && (x.title || x.url));
+  if (unknown.length) warnings.push(ktf(["Clés inconnues ignorées : {list}.", "Unknown keys ignored: {list}.",
+    "Unbekannte Schlüssel ignoriert: {list}.",
+    "Claves desconocidas ignoradas: {list}."
+  ], {
+    list: unknown.join(", ")
+  }));
+  if (dropped.length) warnings.push(ktf(["Valeurs écartées (illisibles ou hors plage) : {list}.",
+    "Values discarded (unreadable or out of range): {list}.",
+    "Verworfene Werte (unlesbar oder außerhalb des Bereichs): {list}.", "Valores descartados (ilegibles o fuera de rango): {list}."
+  ], {
+    list: dropped.join(", ")
+  }));
+  const p = normalize({
+    ...out,
+    icao: code,
+    type: code,
+    unit,
+    rpmFuelCurve: curve,
+    description: [obj.notes ? String(obj.notes).trim() : "", sources.length ? kt(["Sources : ", "Sources: ", "Quellen: ",
+        "Fuentes: "
+      ]) +
+      sources.map(x => [x.title, x.publisher, x.url].filter(Boolean).join(", ")).join(" ; ") : ""
+    ].filter(Boolean).join("\n"),
+    source: {
+      format: "ChatGPT",
+      importedAt: now
+    },
+    updatedAt: now,
+    _gptSource: true
+  }, code);
+  const fields = est.filter(x => !/^rpmFuelCurve/.test(x) && has(x));
+  if (fields.length) p.estimatedFields = fields;
+  if (sources.length) p.gptSources = sources;
+  return {
+    profile: p,
+    warnings
+  }
+}
+/** Compte rendu de la lecture de la réponse sous le panneau (avertissements, ou erreur), aussi en notification. */
+function gptReport(lines, kind = "warn") {
+  const txt = [].concat(lines || []).filter(Boolean).join("\n");
+  setText("ppGptReport", txt);
+  if (txt) window.AppFramework?.notify?.(txt, kind)
+}
+/** « Importer comme nouveau profil » : profil « <nom> — ChatGPT » (identifiant GPT_<code>, numéroté s'il existe déjà),
+ *  rendu actif ; « Annuler » 10 s. */
+function gptImportNew() {
+  let r;
+  try {
+    r = parseGptReply($("ppGptReply").value, gptCode())
+  } catch (e) {
+    return gptReport(e.message, "err")
+  }
+  const p = r.profile,
+    code = gptCode(),
+    model = (window.AIRCRAFT_DB || {})[code]?.model || code;
+  let id = `GPT_${code}`;
+  for (let i = 2; state.profiles[id]; i++) id = `GPT_${code}_${i}`;
+  p.id = id;
+  p.name = /chatgpt/i.test(p.name || "") ? p.name : `${p.name || model} — ChatGPT`;
+  delete p._gptSource;
+  storeProfile(p);
+  setActive(p, "ChatGPT");
+  profilesChanged();
+  openGptPanel({
+    id,
+    landing: false
+  });
+  gptReport(r.warnings);
+  notifyUndo(ktf(["Profil importé depuis ChatGPT : « {p} »{e}.", "Profile imported from ChatGPT: “{p}”{e}.",
+    "Profil aus ChatGPT importiert: „{p}“{e}.", "Perfil importado desde ChatGPT: «{p}»{e}."
+  ], {
+    p: p.name,
+    e: p.estimatedFields?.length ? ktf([" ({n} valeur(s) estimée(s))", " ({n} estimated value(s))", " ({n} geschätzte(r) Wert(e))",
+      " ({n} valor(es) estimado(s))"
+    ], {
+      n: p.estimatedFields.length
+    }) : ""
+  }), () => {
+    delete state.profiles[id];
+    if (active?.id === id) clearActive();
+    profilesChanged()
+  })
+}
+/** « Fusionner avec le profil … » : la réponse, datée de maintenant, comme source de fusion (mergeProfileSources :
+ *  le plus récent gagne champ par champ, les vides sont comblés) ; aperçu avant de valider, « Annuler » 10 s. */
+async function gptMerge() {
+  const e = gptFor;
+  if (!e || e.landing || !state.profiles?.[e.id]) return;
+  let r;
+  try {
+    r = parseGptReply($("ppGptReply").value, gptCode())
+  } catch (x) {
+    return gptReport(x.message, "err")
+  }
+  if (active?.id === e.id) commitProfileEditor(false);
+  const cur = state.profiles[e.id],
+    u = cur.unit || "kg",
+    src = r.profile.unit === u ? r.profile : Object.assign(fuelConvertedCopy(r.profile, r.profile.unit, u, true), {
+      unit: u
+    }),
+    res = mergeProfileSources(cur, [cur, src]);
+  gptReport(r.warnings);
+  if (!await confirmChanges(cur, res.target, res.origin, kt(["Fusionner", "Merge", "Zusammenführen", "Fusionar"]))) return;
+  const before = res.before;
+  state.profiles[e.id] = res.target;
+  if (active?.id === e.id) setActive(res.target, "ChatGPT");
+  profilesChanged();
+  $("ppGptReply").value = "";
+  gptRefresh(false);
+  notifyUndo(mergeMessage(res), () => {
+    state.profiles[before.id] = before;
+    if (active?.id === before.id) setActive(before, kt(["fusion annulée", "merge undone", "Zusammenführen rückgängig",
+      "fusión deshecha"
+    ]));
+    profilesChanged()
+  })
+}
+/** Met à jour le panneau : prompt (si prompt), boutons « Importer » / « Fusionner avec « … » » selon la réponse collée et
+ *  l'appareil (pas de fusion pour un type sans profil). */
+function gptRefresh(prompt = true) {
+  if (prompt) $("ppGptPrompt").value = gptPrompt();
+  const has = !!$("ppGptReply").value.trim(),
+    target = gptFor && !gptFor.landing ? state.profiles?.[gptFor.id] : null,
+    m = $("ppGptMerge");
+  $("ppGptImport").disabled = !has;
+  m.textContent = target ? ktf(["Fusionner avec « {p} »", "Merge with “{p}”", "Mit „{p}“ zusammenführen", "Fusionar con «{p}»"], {
+    p: target.name || target.id
+  }) : kt(["Fusionner (aucun profil pour ce type)", "Merge (no profile for this type)", "Zusammenführen (kein Profil für diesen Typ)",
+    "Fusionar (ningún perfil para este tipo)"
+  ]);
+  m.disabled = !has || !target
+}
+/** Ouvre le panneau « Demander à ChatGPT » pour pick { id, landing } (sinon : le seul profil coché, le profil actif, le
+ *  premier appareil) : choix de l'appareil, copie du prompt et ouverture de ChatGPT, prompt replié, réponse à coller. */
+function openGptPanel(pick) {
+  const box = $("ppGptPanel"),
+    esc = KIT.esc,
+    entries = gptEntries(),
+    one = [...ppSelected].filter(id => state.profiles?.[id]);
+  pick ||= one.length === 1 ? {
+    id: one[0],
+    landing: false
+  } : active ? {
+    id: active.id,
+    landing: !state.profiles?.[active.id]
+  } : entries[0];
+  gptFor = pick ? {
+    id: pick.id,
+    landing: !!pick.landing
+  } : null;
+  const opts = entries.map(x => `<option value="${esc((x.landing ? "L:" : "P:") + x.id)}"${gptFor && x.id === gptFor.id && x.landing === gptFor.landing ? " selected" : ""}>${esc(x.landing ? ktf(["{p} — aucun profil", "{p} — no profile", "{p} — kein Profil", "{p} — sin perfil"], { p: x.p.name || x.id }) : `${x.p.name || x.id} (${x.p.type || x.p.icao || x.id})`)}</option>`).join("");
+  box.innerHTML = `<div class="pp-gpt-row"><label>${esc(kt(["Appareil", "Aircraft", "Luftfahrzeug", "Aeronave"]))} <select id="ppGptFor">${opts}</select></label><button type="button" id="ppGptCopy" class="primary">${esc(kt(["Copier le prompt et ouvrir ChatGPT", "Copy the prompt and open ChatGPT", "Prompt kopieren und ChatGPT öffnen", "Copiar el prompt y abrir ChatGPT"]))}</button><a href="https://chatgpt.com/" target="_blank" rel="noopener">chatgpt.com</a><button type="button" id="ppGptClose" class="ghost" title="${esc(kt(["Fermer", "Close", "Schließen", "Cerrar"]))}">×</button></div><p id="ppGptStatus" class="mut">${esc(kt(["Le prompt demande à ChatGPT de compiler toutes les sources (manuels, constructeur, Wikipédia, forums de simulation), en unités imposées, valeurs estimées marquées, cartographie moteur comprise ; il donne aussi ce que la suite sait déjà.", "The prompt asks ChatGPT to compile every source (manuals, manufacturer, Wikipedia, simulation forums), in required units, estimated values marked, engine map included; it also gives what the suite already knows.", "Der Prompt bittet ChatGPT, alle Quellen zusammenzutragen (Handbücher, Hersteller, Wikipedia, Simulationsforen), in vorgeschriebenen Einheiten, geschätzte Werte markiert, Motorkennfeld inklusive; er nennt auch, was die Suite schon weiß.", "El prompt pide a ChatGPT reunir todas las fuentes (manuales, fabricante, Wikipedia, foros de simulación), en unidades impuestas, valores estimados marcados, mapa motor incluido; también da lo que la suite ya sabe."]))}</p><details><summary>${esc(kt(["Voir le prompt", "Show the prompt", "Prompt anzeigen", "Ver el prompt"]))}</summary><textarea id="ppGptPrompt" rows="12" readonly></textarea></details><label class="pp-gpt-paste">${esc(kt(["Coller ici la réponse de ChatGPT (le JSON, ou un CSV de performances)", "Paste ChatGPT’s answer here (the JSON, or a performance CSV)", "ChatGPTs Antwort hier einfügen (das JSON oder ein Leistungs-CSV)", "Pegar aquí la respuesta de ChatGPT (el JSON, o un CSV de rendimiento)"]))}<textarea id="ppGptReply" rows="6" spellcheck="false"></textarea></label><div class="pp-gpt-row"><button type="button" id="ppGptImport" class="secondary">${esc(kt(["Importer comme nouveau profil", "Import as a new profile", "Als neues Profil importieren", "Importar como perfil nuevo"]))}</button><button type="button" id="ppGptMerge" class="secondary"></button></div><p id="ppGptReport" class="mut"></p>`;
+  box.hidden = false;
+  $("ppGptFor").onchange = ev => {
+    const v = ev.target.value;
+    gptFor = {
+      id: v.slice(2),
+      landing: v.startsWith("L:")
+    };
+    gptRefresh()
+  };
+  $("ppGptCopy").onclick = () => gptCopyAndOpen();
+  $("ppGptClose").onclick = () => box.hidden = true;
+  $("ppGptReply").oninput = () => gptRefresh(false);
+  $("ppGptImport").onclick = () => gptImportNew();
+  $("ppGptMerge").onclick = () => gptMerge();
+  gptRefresh()
+}
 $("sbTypeBtn").onclick = () => active && simbriefProfileFor(active.id);
+$("ppGpt").onclick = () => $("ppGptPanel").hidden ? openGptPanel() : ($("ppGptPanel").hidden = true);
+// « Demander à ChatGPT » de la fiche : panneau du bloc ouvert sur le profil actif
+$("gptSheetBtn").onclick = () => {
+  if (!active) return;
+  openGptPanel({
+    id: active.id,
+    landing: !state.profiles?.[active.id]
+  });
+  $("ppGptPanel").scrollIntoView({
+    behavior: "smooth",
+    block: "center"
+  })
+};
 $("ppMerge").onclick = () => mergeSelected();
 $("ppExport").onclick = () => exportSelected();
 $("ppSaveDir").onclick = () => saveSelectedToFolder();

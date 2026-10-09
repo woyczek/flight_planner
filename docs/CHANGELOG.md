@@ -51,6 +51,18 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Ajouté
 
+- **Carburant, Profils de performances : « Demander à ChatGPT »** — bouton dans la barre du bloc et dans la fiche du
+  profil actif ; panneau : appareil (profil ou type de la flotte sans profil), « Copier le prompt et ouvrir ChatGPT »
+  (repli `execCommand`, prompt prérempli s'il est court), « Voir le prompt ». Prompt rédigé en règles, dans la langue de
+  la page, tenu dans `docs/technique/PROMPT_PROFIL_PERFORMANCES.md` (un bloc par langue, schéma JSON commun) et généré
+  dans `apps/planner/perf_prompt.js` par `tools/build_perf_prompt.py` (relancé par `bump_versions.py`) : sources à
+  compiler, croisière ordinaire à masse moyenne, unités imposées, valeurs estimées dans `estimated`, sources citées,
+  JSON seul avec les clés du schéma ; il donne ce que la suite sait déjà (EUROCONTROL, SimBrief, Airframe DB, profil
+  actuel). Réponse collée (JSON, ou CSV de performances) : clés inconnues ignorées et signalées, valeurs illisibles ou
+  hors plage écartées, kg ou lb, varios positifs, cartographie relue comme dans l'éditeur ; « Importer comme nouveau
+  profil » (`GPT_<code>`, source « ChatGPT ») ou « Fusionner avec « … » » (réponse datée du jour, aperçu d'abord).
+  Valeurs estimées gardées (`estimatedFields`, lignes de cartographie notées « estimé (ChatGPT) ») et affichées sous
+  « Données manquantes ». Manuel utilisateur (4 langues).
 - **Carburant, Profils de performances : fusion avec la fiche SimBrief, aperçu avant toute fusion** — la fiche SimBrief
   du type devient une source de fusion comme un profil (profil virtuel « <type> — SimBrief », daté de sa récupération,
   `simbrief.fetched`, sinon date de la passe ; carburant converti dans l'unité du profil) : quatrième choix

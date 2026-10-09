@@ -13,14 +13,14 @@ mêmes littéraux, pas de point-virgule implicite déplacé) ; chaque CSS est lu
 (CSSStyleSheet) et les règles doivent être identiques. En cas d'écart : git checkout du fichier, et le signaler.
 
 Hors champ : bibliothèques minifiées, fichiers générés (apps/planner/map_planner.html : relancer
-tools/build_map_planner.py ; apps/cpco/mission_prompt.js : tools/build_mission_prompt.py ; section générée de
+tools/build_map_planner.py ; apps/cpco/mission_prompt.js : tools/build_mission_prompt.py ; apps/planner/perf_prompt.js : tools/build_perf_prompt.py ; section générée de
 shared/block_icons.css : tools/build_skeuo_icons_css.py), données.
 """
 import io, json, os, re, subprocess, sys
 import cssbeautifier, jsbeautifier
 
 ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
-EXCLUS = re.compile(r'(\.min\.js$|^apps/aide/docs_bundle\.js$|/maplibre|/jspdf|^AircraftDB/|^data/|/carto/|^apps/planner/map_planner\.html$|^apps/cpco/mission_prompt\.js$|^tools/|^docs/)')
+EXCLUS = re.compile(r'(\.min\.js$|^apps/aide/docs_bundle\.js$|/maplibre|/jspdf|^AircraftDB/|^data/|/carto/|^apps/planner/map_planner\.html$|^apps/cpco/mission_prompt\.js$|^apps/planner/perf_prompt\.js$|^tools/|^docs/)')
 
 JS_OPTS = jsbeautifier.default_options()
 JS_OPTS.indent_size = 2

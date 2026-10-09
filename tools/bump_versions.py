@@ -130,6 +130,9 @@ PAGEIMG = re.compile(r'(url\(["\']?)([^"\'()?#:]+\.(?:webp|png|jpe?g|svg))\?v=\w
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import build_mission_prompt
 build_mission_prompt.build(verbose=False)
+# prompt « Demander le profil à ChatGPT » (Carburant) : régénéré depuis docs/ (tools/build_perf_prompt.py)
+import build_perf_prompt
+build_perf_prompt.build(verbose=False)
 # documents de l'Aide pour l'ouverture en fichier local (tools/build_docs_bundle.py)
 import build_docs_bundle
 build_docs_bundle.build(verbose=False)
