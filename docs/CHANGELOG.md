@@ -77,6 +77,13 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Ajouté
 
+- **Performances : modèle de Poll et Schumann** (`shared/fuel_poll_schumann.js`, `window.FuelPollSchumann`) — consommation
+  de croisière calculée selon la masse, l'altitude et le Mach pour 68 avions de ligne à réaction (et 35 codes OACI
+  équivalents) : portage en JavaScript de la partie croisière du modèle « PSFlight » de pycontrails (Apache 2.0,
+  Contrails.org et Breakthrough Energy Foundation), paramètres générés par `tools/build_fuel_poll_schumann.py` ; résultats
+  identiques à pycontrails 0.64 sur neuf cas (A320 à A380). API : `covers(icao)`, `fuelFlowKgh(icao, { massKg,
+  altitudeFt, mach })`, `params(icao)` ; branché dans Carburant avant SimBrief (lot de la v2). Licence ajoutée
+  (`LICENSES/Apache-2.0.txt`, `LICENSE.md`), avec SimBrief et les tracks NAT de la FAA.
 - **Performances : SimBrief en seconde source** — la mise à jour des types (lanceur, « Compléter automatiquement » ;
   `AircraftDB/update_aircraft_db.py --simbrief`) lit aussi la liste publique de SimBrief (`inputs.airframes.json`, une
   requête, cache d'une semaine) : consommation de croisière (kg/h), masses du gabarit SimBrief (vide, sans carburant,
