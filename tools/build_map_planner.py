@@ -14,6 +14,12 @@ profils, « Cartes à produire », « Aperçus et génération », pied de page,
 seulement. Au niveau 4, le bloc « Cartes » garde « Préparer les cartes » (liste « Cartes à produire ») et la génération
 reste celle du studio (pied de page).
 
+Ton foncé, comme les autres outils (Carburant, Atterrissages) : la page porte <html data-tool="dark"> (palette « outil
+sombre » de repository_nav.css : --bg, --card, --card-2, --field, --ink, --muted, --line, --ok, --warn, --bad) et reçoit
+TONE_CSS, en couche « app » après les styles du studio : surfaces, champs, boutons, onglets des profils, aperçus, pied de
+page passent en ton foncé, accent du thème (--repo-accent) ; les cartes (canvas, images, marqueurs) gardent leurs
+couleurs. Les designs (designs.css, designs_skeuo.css, hors couche) s'appliquent par-dessus. Le studio reste clair.
+
 À relancer après chaque modification du studio (la page publique n'est pas éditée à la main) :
     python tools/build_map_planner.py
 """
@@ -48,6 +54,154 @@ VOL_CSS = '''.volForm{display:grid;grid-template-columns:repeat(2,minmax(0,260px
 .volMaps{display:flex;flex-wrap:wrap;gap:4px 14px;align-items:center;margin:8px 0 2px}
 #vprofPtsBox{display:none!important}
 @media(max-width:800px){.volForm{grid-template-columns:1fr 1fr}}
+'''
+
+# Ton foncé de la page publique (le studio du Centre reste clair) : règles en couche « app », posées après celles du
+# studio (même couche, ordre postérieur) ; palette « outil sombre » de repository_nav.css (html[data-tool="dark"]) et
+# accent du thème. Les designs, hors couche, gardent la main sur les blocs, boutons et champs qu'ils habillent.
+TONE_CSS = '''<style id="plannerTone" data-layer="app">
+@layer app {
+  :root {
+    color-scheme: dark;
+    color: var(--ink);
+    background: var(--bg)
+  }
+  section {
+    background: var(--card);
+    border-color: var(--line);
+    box-shadow: 0 2px 10px #0000004d
+  }
+  .sub,
+  .small,
+  .studio-footer .small {
+    color: var(--muted)
+  }
+  .box,
+  .aliasCard,
+  .previewCard,
+  #osmLivePreview,
+  #generalPreview,
+  #assemblyPreview {
+    border-color: var(--line)
+  }
+  .previewCard {
+    background: var(--card-2)
+  }
+  .previewCard img,
+  #generalPreview,
+  #assemblyPreview {
+    background: var(--field)
+  }
+  input,
+  select,
+  textarea,
+  .colorRow input[type=color],
+  .aarPick summary,
+  .aarOptions,
+  .vprof-chip {
+    border-color: var(--line);
+    background: var(--field);
+    color: var(--ink)
+  }
+  input[type=checkbox],
+  input[type=radio],
+  input[type=range] {
+    accent-color: var(--repo-accent)
+  }
+  .vprof-chip.on {
+    background: #ffe08a;
+    border-color: #d69600;
+    color: #17202a
+  }
+  button,
+  .buttonLink {
+    border: 1px solid color-mix(in srgb, var(--repo-accent) 55%, transparent);
+    background: color-mix(in srgb, var(--repo-accent) 26%, var(--card));
+    color: var(--ink)
+  }
+  button:hover:not(:disabled),
+  .buttonLink:hover {
+    background: color-mix(in srgb, var(--repo-accent) 38%, var(--card))
+  }
+  .danger {
+    border-color: var(--bad)
+  }
+  section a:not([class*="repo-"]):not(.buttonLink) {
+    color: var(--repo-accent)
+  }
+  .warn {
+    border-left-color: var(--warn);
+    background: color-mix(in srgb, var(--warn) 14%, var(--card));
+    color: var(--ink)
+  }
+  .ok {
+    color: var(--ok)
+  }
+  .err,
+  .mapRow .mapDel {
+    color: var(--bad)
+  }
+  code {
+    background: var(--soft)
+  }
+  .profileTabs {
+    border-bottom-color: var(--repo-accent)
+  }
+  .profileTabs button {
+    border-color: var(--line);
+    border-bottom: 0;
+    background: var(--card-2);
+    color: var(--muted)
+  }
+  .profileTabs button:hover:not(.on) {
+    background: var(--soft);
+    color: var(--ink)
+  }
+  .profileTabs button.on {
+    border-color: var(--repo-accent);
+    background: color-mix(in srgb, var(--repo-accent) 30%, var(--card));
+    color: var(--ink)
+  }
+  .mapRow.on .mapShow {
+    color: var(--repo-accent)
+  }
+  .mapProfileRow,
+  .mapRow {
+    border-bottom-color: var(--line)
+  }
+  .elemBox.nested,
+  .profileEdit,
+  .mapList {
+    border-top-color: var(--line)
+  }
+  .galleryMission {
+    border-bottom-color: var(--line)
+  }
+  .zoneChips li {
+    border-color: var(--line);
+    background: var(--card-2)
+  }
+  .zoneChips li.none {
+    border-color: var(--bad);
+    background: color-mix(in srgb, var(--bad) 18%, var(--card))
+  }
+  .splitter {
+    background: linear-gradient(90deg, transparent 4px, var(--line) 4px, var(--line) 8px, transparent 8px)
+  }
+  .splitter:hover,
+  .splitter.drag {
+    background: linear-gradient(90deg, transparent 3px, var(--repo-accent) 3px, var(--repo-accent) 9px, transparent 9px)
+  }
+  .profilePreview.popped {
+    background: var(--card)
+  }
+  .studio-footer {
+    background: color-mix(in srgb, var(--card) 94%, transparent);
+    border-top-color: var(--line);
+    box-shadow: 0 -4px 16px #00000066
+  }
+}
+</style>
 '''
 
 VOL_SCRIPT = r'''<script>
@@ -155,6 +309,9 @@ def main():
         rep.append(pattern)
 
     sub(r'<title>[^<]*</title>', '<title>Cartes de vol</title>')
+    # ton foncé (palette « outil sombre ») : attribut de <html>, règles TONE_CSS à la fin de <head>
+    sub(r'<html lang="fr">', '<html data-tool="dark" lang="fr">')
+    sub(r'</head>', TONE_CSS + '</head>')
     # scripts propres au Centre : chemins depuis apps/planner ; mission dans l'espace « planner » ; registre non chargé
     sub(r'<script src="mission_store\.js', '<script>window.SIA_MISSION_NS=\'planner\'</script><script src="../cpco/mission_store.js')
     sub(r'<script src="sia_i18n\.js', '<script src="../cpco/sia_i18n.js')
