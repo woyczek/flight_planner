@@ -221,6 +221,7 @@ Este apartado es el único lugar donde se ajustan las carpetas locales y las dir
 
 - **Fuentes externas**: la dirección por defecto aparece en gris. Un valor introducido solo vale para este navegador; «↺» vuelve al valor por defecto y «Abrir ↗» abre la dirección.
 - **Claves de API (servicios externos)**: remite al apartado «Claves y servicios externos», único lugar de las claves de la suite.
+- **Sitios que la suite puede contactar**: lista fija (mapas, redes, meteorología, SimBrief) y direcciones de la configuración, más los sitios autorizados en este equipo («Quitar»); un sitio se añade con «Autorizar este sitio…» en la notificación de bloqueo, confirmado en la ventana del lanzador (guardado en secrets/sites.json).
 - **Aerolínea virtual**: «Nombre», «Nombre completo», «Sigla», «Centro (sigla)», «Centro (nombre completo)» y las páginas del sitio («Página de inicio», «Registro de vuelos», «Flota», «Ficha de un avión»). Un campo vacío mantiene el valor por defecto. «Volver a SO Group Virtual» borra todos estos ajustes.
 - **Primer arranque**: «Reabrir el primer inicio». Para empezar desde cero, «Limpiar y empezar de nuevo…» está al pie de la página del primer arranque (apartado «Empezar de nuevo»).
 

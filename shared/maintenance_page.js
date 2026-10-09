@@ -810,6 +810,9 @@
       <table class="mt-table mt-wide mt-sources"><tbody>${Object.entries(src).map(([k, v]) => `<tr data-src="${esc(k)}"><td><b>${esc(t(v.label || [k]))}</b></td><td><input type="url" class="mt-url" value="${esc(local[k] || '')}" placeholder="${esc(v.url)}" spellcheck="false"></td><td class="mt-nowrap">${local[k] ? pill('info', t(['modifiée', 'changed', 'geändert', 'cambiada'])) : ''} <button type="button" class="secondary" data-reset ${local[k] ? '' : 'hidden'}>↺</button> <a class="mt-link" href="${esc(openUrl(k, nav.source(k)))}" target="_blank" rel="noopener">${esc(t(['Ouvrir', 'Open', 'Öffnen', 'Abrir']))} ↗</a></td></tr>`).join('')}</tbody></table>
       <h3>${esc(t(['Clés d’API (services externes)', 'API keys (external services)', 'API-Schlüssel (externe Dienste)', 'Claves de API (servicios externos)']))}</h3>
       <p class="mt-small">${esc(t(['Clés de la suite (IVAO…) : une seule place, avec leur état, leur test et ce qui s’en sert.', 'Suite keys (IVAO…): one place, with their state, their test and what uses them.', 'Schlüssel der Suite (IVAO…): ein Ort, mit Status, Test und Verwendung.', 'Claves de la suite (IVAO…): un solo lugar, con su estado, su prueba y qué las usa.']))} <a class="mt-link" href="${esc(window.RepositoryNav?.settingsUrl?.('keys') || '?m=keys')}">${esc(t(['Clés et services externes →', 'Keys and external services →', 'Schlüssel und externe Dienste →', 'Claves y servicios externos →']))}</a></p>
+      <h3>${esc(t(['Sites que la suite peut contacter', 'Websites the suite may contact', 'Websites, die die Suite kontaktieren darf', 'Sitios que la suite puede contactar']))}</h3>
+      <p class="mt-small">${esc(t(['Les pages ne peuvent envoyer de requêtes qu’à la suite et à ces sites (politique de sécurité du lanceur) : un script piégé ne peut pas envoyer les données ailleurs. Liste fixe (cartes, réseaux, météo, SimBrief) et adresses de la configuration ; un autre site (webservice des CR, autre dépôt) s’ajoute par le bouton « Autoriser ce site… » de la notification qui signale le blocage, confirmé dans la fenêtre du lanceur.', 'Pages may only send requests to the suite and to these websites (launcher security policy): a trapped script cannot send the data elsewhere. Fixed list (maps, networks, weather, SimBrief) and configuration addresses; another website (report web service, other repository) is added with the “Allow this website…” button of the notification that reports the block, confirmed in the launcher window.', 'Die Seiten dürfen Anfragen nur an die Suite und an diese Websites senden (Sicherheitsrichtlinie des Starters): Ein manipuliertes Skript kann die Daten nicht anderswohin senden. Feste Liste (Karten, Netzwerke, Wetter, SimBrief) und Adressen der Konfiguration; eine andere Website (Berichts-Webservice, anderes Repository) wird über die Schaltfläche „Diese Website erlauben…“ der Meldung hinzugefügt, die die Sperre anzeigt, und im Fenster des Starters bestätigt.', 'Las páginas solo pueden enviar peticiones a la suite y a estos sitios (política de seguridad del lanzador): un script trampa no puede enviar los datos a otro lugar. Lista fija (mapas, redes, meteorología, SimBrief) y direcciones de la configuración; otro sitio (servicio web de los informes, otro repositorio) se añade con el botón «Autorizar este sitio…» de la notificación que señala el bloqueo, confirmado en la ventana del lanzador.']))}</p>
+      <div id="mtSites"></div>
       <h3>${esc(t(['Compagnie virtuelle', 'Virtual airline', 'Virtuelle Fluggesellschaft', 'Aerolínea virtual']))}</h3>
       <p class="mt-small">${esc(t(['Nom, sigle et centre affichés dans la suite (SO Group Virtual, SOG, CPCO par défaut) et pages du site de la compagnie (adresse : « Site de la compagnie virtuelle » ci-dessus ; chemin sous ce site, ou adresse complète ; {id} : numéro de l’appareil). Vide : valeur par défaut. Vaut pour ce navigateur.', 'Name, short name and centre shown in the suite (SO Group Virtual, SOG, CPCO by default) and pages of the airline website (address: “Virtual airline website” above; path under that site, or full address; {id}: aircraft number). Empty: default value. Applies to this browser.', 'Name, Kürzel und Zentrum in der Suite (standardmäßig SO Group Virtual, DEFA, CPCO) und Seiten der Website (Adresse: oben; Pfad unter dieser Website oder vollständige Adresse; {id}: Flugzeugnummer). Leer: Standardwert. Gilt für diesen Browser.', 'Nombre, sigla y centro mostrados en la suite (SO Group Virtual, SOG, CPCO por defecto) y páginas del sitio de la aerolínea (dirección: arriba; ruta bajo ese sitio o dirección completa; {id}: número del avión). Vacío: valor por defecto. Vale para este navegador.']))}</p>
       <table class="mt-table mt-wide mt-va"><tbody>${vaRows()}</tbody></table>
@@ -833,6 +836,7 @@
       nav.setVa({});
       renderSources();
     };
+    sitesRows(host);
     // « Nettoyer et recommencer… » : sur la page du premier lancement seulement (v2, une seule occurrence)
     host.querySelector('#mtSetupOpen').onclick = () => location.assign('premier_lancement.html?force');
     if (setup && !repo.handle) host.querySelector('tr[data-key="__repo"]')?.classList.add('mt-setup-row');
@@ -960,6 +964,52 @@
       };
     });
     window.AppFramework?.refresh?.();
+  }
+
+  // ---- sites que les pages peuvent contacter (CSP connect-src du lanceur : GET /__setup/sites ; ajout par la
+  // notification de blocage et la fenêtre du lanceur, app_framework.js ; retrait ici, POST /__setup/site-remove)
+  async function sitesRows(host) {
+    const box = host.querySelector('#mtSites');
+    if (!box) return;
+    /** Appel au lanceur (en-tête X-SOG-Setup) ; réponse JSON, ou null sans lanceur. */
+    const api = (path, body) => fetch(`/__setup/${path}`, {
+      method: body ? 'POST' : 'GET',
+      headers: {
+        'X-SOG-Setup': '1',
+        ...(body ? {
+          'Content-Type': 'application/json'
+        } : {})
+      },
+      body: body ? JSON.stringify(body) : undefined
+    }).then(r => r.ok ? r.json() : null).catch(() => null);
+    const v = await api('sites');
+    if (!v) {
+      box.innerHTML = `<p class="mt-small">${esc(t(['Liste lue par le lanceur : suite ouverte sans lui.', 'List read from the launcher: suite opened without it.', 'Liste vom Starter gelesen: Suite ohne ihn geöffnet.', 'Lista leída del lanzador: suite abierta sin él.']))}</p>`;
+      return;
+    }
+    const user = v.user || [],
+      fixed = [...new Set([...(v.fixed || []), ...(v.config || [])])];
+    box.innerHTML = `<table class="mt-table mt-wide mt-sites"><tbody>${user.map(o => `<tr data-site="${esc(o)}"><td><b>${esc(o)}</b><br><span class="mt-small">${esc(t(['autorisé sur ce poste', 'allowed on this computer', 'auf diesem Rechner erlaubt', 'autorizado en este equipo']))}</span></td><td class="mt-nowrap"><button type="button" class="secondary" data-remove>${esc(t(['Retirer', 'Remove', 'Entfernen', 'Quitar']))}</button></td></tr>`).join('') || `<tr><td class="mt-small">${esc(t(['Aucun site ajouté sur ce poste.', 'No website added on this computer.', 'Keine Website auf diesem Rechner hinzugefügt.', 'Ningún sitio añadido en este equipo.']))}</td><td></td></tr>`}</tbody></table>
+      <details><summary class="mt-small">${esc(t(['Liste fixe et configuration ({n} sites)', 'Fixed list and configuration ({n} websites)', 'Feste Liste und Konfiguration ({n} Websites)', 'Lista fija y configuración ({n} sitios)'], {
+        n: fixed.length
+      }))}</summary><p class="mt-small">${fixed.map(esc).join(' · ')}</p></details>`;
+    box.querySelectorAll('tr[data-site] [data-remove]').forEach(b => b.onclick = async () => {
+      const o = b.closest('tr').dataset.site,
+        r = await api('site-remove', {
+          url: o
+        });
+      window.AppFramework?.notify?.(r?.ok ? t(['{o} retiré : rechargez les pages ouvertes.',
+        '{o} removed: reload the open pages.', '{o} entfernt: offene Seiten neu laden.',
+        '{o} quitado: recargue las páginas abiertas.'
+      ], {
+        o
+      }) : t(['{o} : retrait impossible.', '{o}: could not be removed.', '{o}: Entfernen nicht möglich.',
+        '{o}: no se pudo quitar.'
+      ], {
+        o
+      }), r?.ok ? 'ok' : 'warn');
+      sitesRows(host);
+    });
   }
 
   // ---- Clés et services externes (Installation) : une carte par service, la seule place des clés de la suite. Les clés

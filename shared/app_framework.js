@@ -425,7 +425,7 @@
 .repo-notify>div{max-height:40vh;overflow:auto}
 .repo-notify>div{pointer-events:auto;display:flex;gap:10px;align-items:flex-start;padding:9px 12px;border-radius:10px;font:13px/1.4 system-ui,sans-serif;box-shadow:0 6px 24px #0004;background:#1d2733;color:#f2f5f8;border-left:5px solid #6fa8ff}
 .repo-notify>div.ok{border-left-color:#2e9d5b}.repo-notify>div.warn{border-left-color:#e0a400}.repo-notify>div.err{border-left-color:#e5484d;background:#2a1618}
-.repo-notify>div>span{flex:1;white-space:pre-line}.repo-notify button{all:unset;cursor:pointer;opacity:.75;font-size:16px;line-height:1;padding:0 2px}.repo-notify button:hover{opacity:1}`;
+.repo-notify>div>span{flex:1;white-space:pre-line}.repo-notify button{all:unset;cursor:pointer;opacity:.75;font-size:16px;line-height:1;padding:0 2px}.repo-notify button:hover{opacity:1}.repo-notify .repo-notify-act{font-size:13px;line-height:1.4;text-decoration:underline;white-space:nowrap;opacity:.9}`;
     document.head.append(s);
   };
 
@@ -691,6 +691,71 @@
     }
     return item;
   }
+  // ---- Connexion bloquée par la politique de sécurité du lanceur (CSP, connect-src) : une notification par site et
+  // par page, avec « Autoriser ce site… » ; le lanceur demande confirmation dans sa fenêtre du système (aucune page ne
+  // peut y répondre). Sites réglés dans le navigateur (webservice des CR, autre dépôt de la suite) : inconnus du
+  // lanceur tant qu'ils ne sont pas autorisés ainsi. Les blocages dans un worker (tuiles) ne remontent pas ici.
+  const blockedSites = new Set();
+  document.addEventListener("securitypolicyviolation", e => {
+    if (!/^connect-src/.test(e.effectiveDirective || e.violatedDirective || "")) return;
+    let origin = "";
+    try {
+      origin = new URL(e.blockedURI).origin;
+    } catch {
+      return;
+    }
+    if (!origin || origin === "null" || blockedSites.has(origin)) return;
+    blockedSites.add(origin);
+    const K = window.RepositoryKit,
+      tf = (row, v) => K?.tf ? K.tf(row, v) : row[0].replace("{o}", v.o);
+    const item = notify(tf([
+      "Connexion bloquée vers {o} : ce site n’est pas dans la liste des sites que la suite peut contacter.",
+      "Connection blocked to {o}: this website is not in the list of websites the suite may contact.",
+      "Verbindung zu {o} blockiert: Diese Website steht nicht in der Liste der Websites, die die Suite kontaktieren darf.",
+      "Conexión bloqueada hacia {o}: este sitio no está en la lista de sitios que la suite puede contactar."
+    ], {
+      o: origin
+    }), "warn", {
+      timeout: 0
+    });
+    if (!item || !/^(https:|http:\/\/(localhost|127\.0\.0\.1|\[::1\]))/.test(origin)) return;
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "repo-notify-act";
+    b.textContent = tf(["Autoriser ce site…", "Allow this website…", "Diese Website erlauben…", "Autorizar este sitio…"], {});
+    b.onclick = async () => {
+      b.disabled = true;
+      let r = null;
+      try {
+        r = await fetch("/__setup/site-allow", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-SOG-Setup": "1"
+          },
+          body: JSON.stringify({
+            url: origin
+          })
+        }).then(x => x.json());
+      } catch {
+        r = null;
+      }
+      item.remove();
+      notify(r?.ok ? tf(["{o} autorisé : rechargez la page pour l’utiliser.", "{o} allowed: reload the page to use it.",
+        "{o} erlaubt: Seite neu laden, um sie zu verwenden.", "{o} autorizado: recargue la página para usarlo."
+      ], {
+        o: origin
+      }) : tf(["{o} non autorisé (refusé dans la fenêtre du lanceur, ou suite ouverte sans le lanceur).",
+        "{o} not allowed (refused in the launcher window, or suite opened without the launcher).",
+        "{o} nicht erlaubt (im Fenster des Starters abgelehnt, oder Suite ohne Starter geöffnet).",
+        "{o} no autorizado (rechazado en la ventana del lanzador, o suite abierta sin el lanzador)."
+      ], {
+        o: origin
+      }), r?.ok ? "ok" : "warn");
+    };
+    item.querySelector("span")?.after(b);
+  });
+
   // ---- Erreurs expliquées : ce qui a échoué et quoi faire, dans la langue de la page, au lieu d'un message technique
   // seul (« Failed to fetch », « 404 », « TypeError… ») ; le détail technique reste entre parenthèses quand il aide.
   //   AppFramework.explain(err, "Lecture du registre")  →  « Lecture du registre : le serveur ne répond pas — … »

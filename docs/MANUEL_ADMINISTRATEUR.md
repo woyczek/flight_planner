@@ -238,6 +238,7 @@ Cette rubrique est le seul endroit où régler les dossiers locaux et les adress
 
 - **Sources externes** : l'adresse par défaut s'affiche en grisé. Une valeur saisie ne vaut que pour ce navigateur ; « ↺ » revient à la valeur par défaut et « Ouvrir ↗ » ouvre l'adresse.
 - **Clés d'API (services externes)** : renvoi vers la rubrique « Clés et services externes », seule place des clés de la suite.
+- **Sites que la suite peut contacter** : liste fixe (cartes, réseaux, météo, SimBrief) et adresses de la configuration, plus les sites autorisés sur ce poste (« Retirer ») ; un site s'ajoute par « Autoriser ce site… » dans la notification de blocage, confirmé dans la fenêtre du lanceur (gardé dans secrets/sites.json).
 - **Compagnie virtuelle** : « Nom », « Nom long », « Sigle », « Centre (sigle) », « Centre (nom complet) », et les pages du site (« Page d'accueil », « Log des vols », « Flotte », « Fiche d'un appareil »). Un champ vide garde la valeur par défaut. « Revenir à SO Group Virtual » efface tous ces réglages.
 - **Premier lancement** : « Rouvrir le premier lancement ». Pour repartir de zéro, « Nettoyer et recommencer… » se trouve en bas de la page du premier lancement (rubrique « Recommencer »).
 

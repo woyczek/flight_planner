@@ -350,7 +350,7 @@ class Setup(http.server.SimpleHTTPRequestHandler):
         raw = getattr(self, 'path', '') or ''
         path = raw.split('?', 1)[0].lower()
         sandbox = path.startswith('/data/') and path.endswith(SANDBOXED)
-        self.send_header('Content-Security-Policy', ("sandbox; " if sandbox else '') + "frame-ancestors 'self'")
+        self.send_header('Content-Security-Policy', ("sandbox; " if sandbox else '') + csp_policy())
         # fichier versionné par son empreinte (?v=…, tools/bump_versions.py : elle change avec le contenu) : gardé tel
         # quel, sans revalidation — une quarantaine d'allers-retours de moins par page, qui retardaient la fin de
         # l'analyse et laissaient voir la page à moitié construite ; le reste (pages, données) : revalidé à chaque fois,
@@ -446,7 +446,8 @@ class Setup(http.server.SimpleHTTPRequestHandler):
                 return self._json({'error': 'refusé'}, 403)
             git = data_sync.git_exe()
             return self._json({'server': True, 'root': ROOT, 'git': bool(git), 'data': has_data(),
-                               'dataGit': os.path.isdir(os.path.join(DATA, '.git')), 'dataRepo': data_repo_url(), 'lfs': LFS})
+                               'dataGit': os.path.isdir(os.path.join(DATA, '.git')), 'dataRepo': data_repo_url(), 'lfs': LFS,
+                               'csp': True})
         if self.path.split('?')[0] == '/__setup/mission-folders':
             # dossiers de missions présents (data/missions/<famille>/<id>) : le registre repris par le navigateur au
             # premier démarrage écarte les missions dont le dossier n'existe plus (registre périmé)
@@ -461,6 +462,11 @@ class Setup(http.server.SimpleHTTPRequestHandler):
             except OSError:
                 pass
             return self._json({'folders': out})
+        if self.path.split('?')[0] == '/__setup/sites':
+            # sites que les pages peuvent contacter (connect-src) : liste fixe, configuration, sites autorisés ici
+            if not self._allowed():
+                return self._json({'error': 'refusé'}, 403)
+            return self._json(sites_view())
         if self.path.split('?')[0] == '/__setup/sync-remote':
             # dépôt git de synchronisation de data/ : adresse actuelle (ou celle du clone par défaut)
             if not self._allowed():
@@ -665,6 +671,14 @@ class Setup(http.server.SimpleHTTPRequestHandler):
             except ValueError:
                 return self._json({'ok': False, 'message': 'JSON invalide'}, 400)
             return self._json(secrets_save(a))
+        if path in ('/__setup/site-allow', '/__setup/site-remove'):
+            # site ajouté à la CSP (connect-src) : confirmé dans la fenêtre du lanceur, qu'aucune page ne peut voir ni
+            # valider ; retiré : sans confirmation (la liste ne fait que rétrécir)
+            try:
+                a = json.loads(body or b'{}')
+            except ValueError:
+                a = {}
+            return self._json(site_allow(str(a.get('url') or '')) if path.endswith('allow') else site_remove(str(a.get('url') or '')))
         if path == '/__setup/aero-fetch':
             # données aéronautiques d'autres pays (tools/aero_fetch.py) : téléchargées dans data/sia/<source>/
             try:
@@ -1047,6 +1061,105 @@ def secrets_test(service):
     except (OSError, ValueError) as e:
         return {'ok': False, **ivao_fail(e)}
     return {'ok': True, 'count': int((got if isinstance(got, dict) else {}).get('totalItems') or 0)}
+
+
+# ---- politique de sécurité du contenu (CSP ; docs/technique/AUDIT_SECURITE_2026-10-07.md, lot 4) : les pages ne
+# contactent (fetch, cartes, workers) que la suite et les services prévus — un script injecté ne peut plus envoyer les
+# données ailleurs par fetch. Scripts : ceux de la suite, en ligne (pages actuelles), pdf.js et acorn épinglés. Images,
+# liens et navigation : non restreints (tuiles, liens d'aide) — fuite résiduelle documentée.
+CSP_CONNECT = [
+    # fonds de carte, relief, points OSM (map_planner, map_parser, sia_base, profil vertical)
+    'https://tiles.openfreemap.org', 'https://tiles.versatiles.org', 'https://vector.openstreetmap.org',
+    'https://tile.openstreetmap.org', 'https://a.tile.opentopomap.org', 'https://b.tile.opentopomap.org',
+    'https://c.tile.opentopomap.org', 'https://s3.amazonaws.com/elevation-tiles-prod/', 'https://overpass-api.de',
+    # plans de vol, réseaux, météo
+    'https://www.simbrief.com', 'https://dispatch.simbrief.com', 'https://api.ivao.aero', 'https://data.vatsim.net',
+    # dépôt des données par l'API GitHub (accès aux données, shared/github_data.js)
+    'https://api.github.com',
+    'https://metar.vatsim.net', 'https://api.open-meteo.com', 'https://archive-api.open-meteo.com',
+    # base mondiale des aérodromes (sources.airports) et purge de son cache
+    'https://cdn.jsdelivr.net', 'https://purge.jsdelivr.net',
+]
+CSP_SCRIPTS = ['https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/', 'https://cdnjs.cloudflare.com/ajax/libs/acorn/']
+SITES_FILE = os.path.join(SECRETS, 'sites.json')  # sites autorisés par l'utilisateur (fenêtre du lanceur)
+ORIGIN_RE = re.compile(r'^(?:https://[a-z0-9-]+(?:\.[a-z0-9-]+)+(?::\d{1,5})?|http://(?:localhost|127\.0\.0\.1|\[::1\])(?::\d{1,5})?)$')
+_csp = {'key': None, 'value': ''}
+
+
+def site_origin(url):
+    """Origine (schéma, hôte, port) d'une adresse https (ou http de cette machine) ; '' sinon."""
+    try:
+        u = urllib.parse.urlsplit(str(url or '').strip())
+        o = f'{u.scheme}://{u.hostname}' + (f':{u.port}' if u.port else '') if u.scheme and u.hostname else ''
+    except ValueError:
+        return ''
+    return o.lower() if ORIGIN_RE.match(o.lower()) else ''
+
+
+def config_sites():
+    """Origines des adresses de la configuration de la suite (config/repository_tree : dépôt de la suite, sources) :
+    réglées par le code, pas par la page."""
+    return sorted({site_origin(u) for u in re.findall(r'https://[^\s"\'`]+', config_text())} - {''})
+
+
+def user_sites():
+    return [o for o in _read_json(SITES_FILE).get('sites') or [] if site_origin(o) == o]
+
+
+def sites_view():
+    return {'fixed': CSP_CONNECT, 'config': config_sites(), 'user': user_sites()}
+
+
+def csp_policy():
+    """Valeur de l'en-tête Content-Security-Policy (refaite quand la configuration ou les sites autorisés changent)."""
+    key = tuple(os.path.getmtime(p) if os.path.exists(p) else 0 for p in
+                (SITES_FILE, os.path.join(ROOT, 'config', 'repository_tree'), os.path.join(ROOT, 'repository_tree')))
+    if _csp['key'] != key:
+        connect = ' '.join(dict.fromkeys(["'self'", *CSP_CONNECT, *config_sites(), *user_sites()]))
+        _csp.update(key=key, value=f"connect-src {connect}; worker-src 'self' blob:; "
+                                   f"script-src 'self' 'unsafe-inline' {' '.join(CSP_SCRIPTS)}; object-src 'none'; "
+                                   "base-uri 'self'; form-action 'self'; frame-ancestors 'self'")
+    return _csp['value']
+
+
+def site_allow(url):
+    """Ajoute un site à connect-src après confirmation dans la fenêtre du lanceur ; { ok, origin, message }."""
+    o = site_origin(url)
+    if not o:
+        return {'ok': False, 'message': 'Adresse refusée : https://… seulement (ou http:// de cette machine).'}
+    if o in CSP_CONNECT or o in config_sites() or o in user_sites():
+        return {'ok': True, 'origin': o, 'already': True, 'message': f'{o} : déjà autorisé.'}
+    if time.time() < _confirm['until']:
+        return {'ok': False, 'origin': o, 'message': 'Demande refusée il y a moins de 30 s : réessayez plus tard.'}
+    ok = confirm_box('SO Group — site autorisé / allowed website', (
+        f'Autoriser la suite à contacter ce site ?\n\n{o}\n\n'
+        'Les pages pourront lui envoyer des données (comptes rendus, requêtes). Si vous n’avez pas demandé cet ajout, '
+        'répondez Non.\n\n'
+        'Allow the suite to contact this website? The pages will be able to send data to it. If you did not ask for '
+        'this, answer No.'))
+    say(f'  Site autorisé : {o} — ' + ('confirmé' if ok else 'non confirmé'))
+    if not ok:
+        _confirm['until'] = time.time() + 30
+        return {'ok': False, 'origin': o, 'message': 'Ajout non confirmé dans la fenêtre du lanceur.'}
+    cur = _read_json(SITES_FILE)
+    cur['sites'] = sorted({*user_sites(), o})
+    try:
+        _write_json(SITES_FILE, cur)
+    except OSError as e:
+        return {'ok': False, 'origin': o, 'message': str(e)}
+    return {'ok': True, 'origin': o, 'message': f'{o} : autorisé.'}
+
+
+def site_remove(url):
+    """Retire un site autorisé par l'utilisateur (sans confirmation) ; { ok, origin }."""
+    o = site_origin(url)
+    cur = _read_json(SITES_FILE)
+    cur['sites'] = [x for x in user_sites() if x != o]
+    try:
+        _write_json(SITES_FILE, cur)
+    except OSError as e:
+        return {'ok': False, 'message': str(e)}
+    return {'ok': True, 'origin': o}
 
 
 def ivao_key():

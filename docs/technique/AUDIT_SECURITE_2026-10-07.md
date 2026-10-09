@@ -64,9 +64,10 @@ Verified with the same hostile page, forged requests and loading the 60 pages of
 | M1 | **fixed** (colours, status, performance profile, help, density altitude, ODV colours) |
 | C1 | **stopgap**: `.js` files of `data/` served and committed only in the data format (`tools/data_guard.py`); the underlying fix (data in JSON, batch 6) remains to be done |
 | C3 | **fixed** at extraction (neither `.git` nor executable); git hardened (`core.fsmonitor`, `ext::`, submodules) |
-| M2 | **partial**: framing protection in place; the CSP that closes the exits (`connect-src`) remains in batch 4 |
+| M2 | **fixed** (batch 4a, 9 October): launcher CSP — `connect-src` as a list (fixed, configuration, websites confirmed in the launcher window), restricted `script-src` (suite, inline, pinned pdf.js and acorn), `worker-src`, `object-src 'none'`, `base-uri`, `form-action`, `frame-ancestors`; images and navigation stay open (a leak through `<img src>` or a link is still possible) |
 | M6 | **partial**: no more password or token in the repository address, `secrets/` no longer served; secrets still in clear on disk and in browser storage (batch 8) |
-| E4, E6, E7, M3, M4 | to do (batches 4, 5, 7, 9) |
+| E4 | to do (batch 4b: application and X-Plane folders read-only; tests with the folder pickers, by hand) |
+| E6, E7, M3, M4 | to do (batches 5, 7, 9) |
 
 Choices made while fixing:
 

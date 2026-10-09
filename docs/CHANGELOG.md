@@ -314,6 +314,17 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   points of the flight; it now writes each navlog point with its position ("ID lat lon", same form as Fuel; field 15
   kept as a fallback without positions) and, in Flight maps, fills the alternate.
 
+### Security
+
+- **Content security policy (CSP) sent by the launcher** (audit of 7 October, batch 4a) — pages may only contact
+  (fetch, maps, workers) the suite, a fixed list (map backgrounds, relief, Overpass, SimBrief, IVAO, VATSIM, weather,
+  airport database) and the addresses of `config/repository_tree`; scripts limited to the suite's own (inline included)
+  and pinned pdf.js / acorn; no `<object>`, no `<base>`, no form to another site. A trapped script can no longer send the
+  data elsewhere by request. Another wanted site (report web service, other repository) is added with "Allow this
+  website…" in the block notification, confirmed in the launcher window; list and "Remove" in Settings › Installation ›
+  Sources and folders. The launcher reports `csp: true` (prerequisite for the group mode of signed accounts). Images and
+  navigation stay open (documented residual leak).
+
 ## [5.3.0] — 2026-10-19
 
 The mission report is rebuilt around what a pilot does: one "Prefill ▾" menu gathers every source (a mission order,

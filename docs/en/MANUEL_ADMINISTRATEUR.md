@@ -221,6 +221,7 @@ This section is the only place to set the local folders and the addresses of the
 
 - **External sources**: the default address is shown greyed out. An entered value applies to this browser only; “↺” goes back to the default value and “Open ↗” opens the address.
 - **API keys (external services)**: link to the “Keys and external services” section, the one place for the suite keys.
+- **Websites the suite may contact**: fixed list (maps, networks, weather, SimBrief) and configuration addresses, plus the websites allowed on this computer (“Remove”); a website is added with “Allow this website…” in the block notification, confirmed in the launcher window (kept in secrets/sites.json).
 - **Virtual airline**: “Name”, “Full name”, “Short name”, “Centre (short)”, “Centre (full name)”, and the site pages (“Home page”, “Flight log”, “Fleet”, “Aircraft page”). An empty field keeps the default value. “Back to SO Group Virtual” clears all these settings.
 - **First run**: “Reopen the first run”. To start from scratch, “Clean and start again…” is at the bottom of the first run page (“Start again” section).
 
