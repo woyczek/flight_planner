@@ -22,7 +22,12 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   added, is completed by the launcher in a short pass (`POST /__setup/aircraft-db { codes, quick }`: ICAO type and
   EUROCONTROL performance only), one pass at a time, started by "Add" only, never while typing; a retired type the
   official sources no longer know is kept with the note "not found in the official sources". A refused entry now says
-  what was read and puts the closest designator in the field ("Add" to confirm).
+  what was read and puts the closest designator in the field ("Add" to confirm). The browser's datalist is replaced by
+  suggestions computed while typing (local index of fleet, this computer's base, published ICAO list, alias names and
+  types declared by other pilots; arrows, Enter, Escape; origin shown on each line), with a hint under the field saying
+  the base is only completed by the launcher on "Add". Wider recognition: accents, spaces and hyphens ignored, single
+  words or two joined words ("SE 210 Caravelle" → S210), name prefixes and substrings; a vague entry ("cara": Caravelle
+  or Caravan?) is refused with the closest type proposed.
 - **Mission registry: ChatGPT reply imported on an ordered mission, deletion** — an ordered mission shows a "ChatGPT
   reply" panel: paste the reply (YAML and Markdown) or choose the received files; the mission is stored in the missions
   folder and replaces the order (order, date and notes kept, even if ChatGPT changed the series or identifier).

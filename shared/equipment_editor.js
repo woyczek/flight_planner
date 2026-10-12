@@ -29,7 +29,9 @@
 .eq-table{width:100%;border-collapse:collapse;font-size:12.5px}.eq-table th,.eq-table td{padding:5px 8px;text-align:left;vertical-align:middle;border-bottom:1px solid color-mix(in srgb,currentColor 12%,transparent)}
 .eq-table th{font-size:11.5px;font-weight:700;opacity:.8}.eq-table .eq-c{width:5.5em;text-align:center}.eq-table .eq-c input{margin:0;width:16px;height:16px;vertical-align:middle;cursor:pointer}
 .eq-table code{font-size:11px}.eq-table small{opacity:.75}
-.eq-add{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:8px 0 0}.eq-add input{flex:1 1 16em;min-width:0}
+.eq-add{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:8px 0 0}.eq-add .eq-field{position:relative;flex:1 1 16em;min-width:0;display:flex}.eq-add input{flex:1 1 auto;min-width:0}
+.eq-sugg{position:absolute;z-index:30;left:0;right:0;top:100%;margin:2px 0 0;padding:2px 0;list-style:none;max-height:16em;overflow:auto;background:var(--repo-card-bg,Canvas);color:inherit;border:1px solid color-mix(in srgb,currentColor 25%,transparent);box-shadow:0 4px 14px rgba(0,0,0,.18)}
+.eq-sugg li{padding:4px 8px;cursor:pointer;font-size:12.5px}.eq-sugg li small{opacity:.7;margin-left:6px}.eq-sugg li[aria-selected=true],.eq-sugg li:hover{background:color-mix(in srgb,currentColor 12%,transparent)}
 .eq-sims{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px 14px}.eq-sims label{display:inline-flex;align-items:center;gap:6px;margin:0}.eq-sims input{margin:0}`;
     document.head.append(s);
   }
@@ -71,28 +73,10 @@
     const db = window.AIRCRAFT_DB || {};
     return db[ty] || db[db.__aliases?.[ty]] || {};
   };
-  /** Désignateur d'un texte saisi : type de la flotte (ou de même fiche), désignateur ou alias de la base (« A400M » →
-   *  A400, « PC-12 » → PC12), modèle de la base (« Pilatus PC-12 »), sinon le texte s'il a la forme d'un désignateur
-   *  OACI (2 à 4 caractères) ; '' sinon. */
-  function resolveType(text, fleet = new Set()) {
-    const db = window.AIRCRAFT_DB || {},
-      raw = String(text || '').trim().split(/\s+[—-]\s+/)[0].toUpperCase(),
-      key = raw.replace(/[^A-Z0-9]/g, '');
-    if (!key) return '';
-    if (fleet.has(key)) return key;
-    const r = resolveDb(db, key);
-    // même fiche qu'un type de la flotte (A400M : alias A4M de la base, A400 dans la flotte) → le type de la flotte
-    return [...fleet].find(f => r && dbInfo(f).model && dbInfo(f) === dbInfo(r)) || r;
-  }
-  /** Désignateur d'une clé (majuscules sans séparateur) d'après la base seule. */
-  function resolveDb(db, key) {
-    if (db[key] && key !== '__META') return key;
-    if (db.__aliases?.[key]) return db.__aliases[key];
-    const byModel = Object.entries(db).find(([k, v]) => !k.startsWith('__') && String(v?.model || '').toUpperCase().replace(/[^A-Z0-9]/g,
-      '') === key);
-    if (byModel) return byModel[0];
-    return /^[A-Z][A-Z0-9]{1,3}$/.test(key) ? key : '';
-  }
+  /** Clé de comparaison : majuscules sans accents ni séparateurs (« SE-210 » = « SE 210 » = SE210). */
+  const norm = s => String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+  /** Mots d'un texte (majuscules sans accents) : « Sud Aviation SE 210 » → [SUD, AVIATION, SE, 210]. */
+  const wordsOf = s => String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().split(/[^A-Z0-9]+/).filter(Boolean);
   // ---- liste OACI publiée (AircraftDB/aircraft_types.txt) et complétion de la base de ce poste par le lanceur
   let official = null;
   /** Désignateurs de la liste OACI publiée avec la suite (la base elle-même se complète sur chaque poste) : Set. */
@@ -110,24 +94,6 @@
     const a = aliasNames(code)[0];
     return a && !/\d/.test(a) ? a.charAt(0) + a.slice(1).toLowerCase() : a || '';
   };
-  /** Désignateur le plus proche d'un texte refusé : un mot (ou deux mots accolés) qui est un désignateur, un alias ou une
-   *  partie d'un nom de modèle ; codes : désignateurs connus (base, liste OACI). '' si rien n'approche. */
-  function closest(text, codes) {
-    const db = window.AIRCRAFT_DB || {},
-      words = String(text || '').toUpperCase().split(/[^A-Z0-9]+/).filter(Boolean),
-      tries = [...words.map((w, i) => i ? words[i - 1] + w : '').filter(Boolean), ...words];
-    for (const w of tries) {
-      if (codes.has(w) || (db[w] && !w.startsWith('__'))) return w;
-      if (db.__aliases?.[w]) return db.__aliases[w];
-    }
-    for (const w of words.filter(x => x.length >= 4)) {
-      const hit = Object.entries(db).find(([k, v]) => !k.startsWith('__') && String(v?.model || '').toUpperCase().replace(/[^A-Z0-9]/g,
-          '')
-        .includes(w)) || Object.entries(db.__aliases || {}).find(([k]) => k.includes(w));
-      if (hit) return typeof hit[1] === 'string' ? hit[1] : hit[0];
-    }
-    return '';
-  }
   /** Appel au lanceur (/__setup/aircraft-db) : GET (état de la passe), POST { codes, quick } ; JSON, null sans lanceur. */
   const acApi = (body = null) => fetch('/__setup/aircraft-db', {
     method: body ? 'POST' : 'GET',
@@ -267,21 +233,81 @@
           <td class="eq-c"><input type="checkbox" data-master="${esc(x.type)}"${mastered.has(x.type) ? ' checked' : ''} aria-label="${esc(tf(['{m} maîtrisé', '{m} mastered', '{m} beherrscht', '{m} dominado'], { m: name }))}"></td></tr>`;
       }).join('')}</tbody></table>`;
     };
-    /** Options de la liste : types de la base du poste et de la liste OACI publiée, hors flotte (et hors fiches de la
-     *  flotte : A4M = A400), avec leur nom (modèle, sinon nom d'usage des alias : « S210 — Caravelle »). */
-    const listHtml = () => {
+    const fleetModel = new Map(types.map(x => [x.type, x.model]));
+    /** Type de la flotte de même fiche (A4M de la base = A400 de la flotte), sinon le code lui-même. */
+    const twin = code => fleet.has(code) ? code : [...fleet].find(f => dbInfo(f).model && dbInfo(f) === dbInfo(code)) || code;
+    let index = null; // index des types connus, refait après chaque source chargée (liste OACI, autres pilotes, passe)
+    /** Types connus, Map code → { code, keys } : flotte (modèle), base du poste (modèle), alias (noms d'usage), liste OACI
+     *  publiée, types déclarés (autres pilotes, lignes de la carte) ; keys : clés comparables (code, modèle, alias). */
+    const typeIndex = () => {
+      if (index) return index;
       const db = window.AIRCRAFT_DB || {},
-        codes = [...new Set([...Object.keys(db).filter(k => !k.startsWith('__') && db[k]?.model), ...offi])].filter(k => !fleet.has(
-          k) && ![
-          ...fleet
-        ].some(f => dbInfo(f).model && dbInfo(f) === dbInfo(k))).sort();
-      return codes.map(k => `<option value="${esc(k)}${typeName(k) ? ` — ${esc(typeName(k))}` : ''}"></option>`).join('');
+        map = new Map();
+      /** Ajoute le nom name (modèle, alias) au type code (rangé sous son jumeau de la flotte). */
+      const add = (code, name = '') => {
+        code = twin(code);
+        const e = map.get(code) || map.set(code, {
+          code,
+          keys: new Set([code])
+        }).get(code);
+        if (norm(name)) e.keys.add(norm(name));
+      };
+      fleet.forEach(f => add(f, fleetModel.get(f)));
+      Object.keys(db).filter(k => !k.startsWith('__')).forEach(k => add(k, db[k]?.model));
+      Object.entries(db.__aliases || {}).forEach(([a, c]) => add(c, a));
+      offi.forEach(c => add(c));
+      [...others.keys(), ...shown].forEach(c => add(c));
+      return index = map;
     };
+    /** Types qui répondent à un texte, du plus sûr au moins sûr : [{ code, base, score }] ; base : 100 code exact, 95 nom
+     *  exact (modèle, alias), 85 un mot ou deux mots accolés exacts (« SE 210 Caravelle » → SE210, CARAVELLE), 72 début
+     *  de code, 68 début de nom, 55 nom qui contient le texte, 48 tous les mots dans les noms ; score : base + flotte (4)
+     *  ou fiche dans la base du poste (2). */
+    const candidates = text => {
+      const K = norm(text),
+        W = wordsOf(text),
+        tries = new Set([...W, ...W.slice(1).map((w, i) => W[i] + w)]);
+      if (!K) return [];
+      const out = [];
+      for (const e of typeIndex().values()) {
+        const keys = [...e.keys];
+        const base = e.keys.has(K) ? (e.code === K ? 100 : 95) : [...tries].some(w => e.keys.has(w)) ? 85 : K.length >= 2 && e.code
+          .startsWith(K) ? 72 : K.length >= 3 && keys.some(k => k.startsWith(K)) ? 68 : K.length >= 3 && keys.some(k => k.includes(
+            K)) ?
+          55 : W.some(w => w.length >= 3) && W.every(w => w.length < 2 || keys.some(k => k.includes(w))) ? 48 : 0;
+        if (base) out.push({
+          code: e.code,
+          base,
+          score: base + (fleet.has(e.code) ? 4 : dbInfo(e.code).model ? 2 : 0)
+        });
+      }
+      return out.sort((a, b) => b.score - a.score || a.code.localeCompare(b.code));
+    };
+    /** Désignateur d'un texte saisi : le candidat sûr (mot exact et plus), ou le seul candidat (nom qui contient le
+     *  texte) ; sinon un texte en forme de désignateur OACI (2 à 4 caractères) que rien n'approche, gardé tel quel ; ''
+     *  sinon (refus : le plus proche est proposé). */
+    const resolveType = text => {
+      const c = candidates(text),
+        [a, b] = c;
+      if (a && (a.base >= 85 || (a.base >= 55 && !b))) return a.code;
+      const raw = norm(String(text || '').split(/\s+[—-]\s+/)[0]);
+      return /^[A-Z][A-Z0-9]{1,3}$/.test(raw) && !(a && a.base >= 55) ? raw : '';
+    };
+    /** Origine d'un type proposé : flotte, base du poste, liste OACI (fiche complétée à l'ajout), déclaré par d'autres. */
+    const originOf = code => [fleet.has(code) ? t(['flotte', 'fleet', 'Flotte', 'flota']) : dbInfo(code).model ? t(['base du poste',
+        'this computer’s base', 'Basis dieses Rechners', 'base de este equipo'
+      ]) : offi.has(code) ? t(['liste OACI : fiche complétée à l’ajout', 'ICAO list: record completed when added',
+        'ICAO-Liste: Eintrag wird beim Hinzufügen ergänzt', 'lista OACI: ficha completada al añadir'
+      ]) : t(['hors base', 'not in the base', 'nicht in der Basis', 'fuera de la base']),
+      others.get(code)?.length ? tf(['déclaré par {p}', 'declared by {p}', 'angegeben von {p}', 'declarado por {p}'], {
+        p: others.get(code).join(', ')
+      }) : ''
+    ].filter(Boolean).join(' · ');
     const otherHtml = `<div class="sp-card" id="eqOther" data-no-i18n><h3>${esc(t(['Autres appareils (hors flotte)', 'Other aircraft (outside the fleet)', 'Andere Luftfahrzeuge (außerhalb der Flotte)', 'Otras aeronaves (fuera de la flota)']))}</h3><p class="sp-hint">${esc(t(['Types que vous possédez dans votre simulateur sans qu’ils soient dans la flotte : ajoutés ici, ils partent avec vos disponibilités déclarées — le Centre les voit pour les affectations et les autres pilotes les retrouvent dans cette carte.', 'Types you own in your simulator that are not in the fleet: added here, they go with your declared availability — the Centre sees them for assignments and other pilots find them in this card.', 'Typen, die Sie in Ihrem Simulator besitzen, die aber nicht zur Flotte gehören: Hier hinzugefügt, gehen sie mit Ihren angegebenen Verfügbarkeiten mit — das Zentrum sieht sie für Zuweisungen, andere Piloten finden sie in dieser Karte.', 'Tipos que posee en su simulador sin que estén en la flota: añadidos aquí, van con sus disponibilidades declaradas — el Centro los ve para las asignaciones y los demás pilotos los encuentran en esta tarjeta.']))}</p>
       <div data-eq-other>${otherRows()}</div>
-      <p class="eq-add"><input type="text" list="eqTypeList" data-eq-add-input placeholder="${esc(t(['Désignateur OACI ou modèle (ex. A400M, PC-12)', 'ICAO designator or model (e.g. A400M, PC-12)', 'ICAO-Kennung oder Modell (z. B. A400M, PC-12)', 'Designador OACI o modelo (p. ej. A400M, PC-12)']))}" aria-label="${esc(t(['Appareil à ajouter', 'Aircraft to add', 'Hinzuzufügendes Luftfahrzeug', 'Aeronave que añadir']))}">
-        <button type="button" class="secondary" data-eq-add>${esc(t(['Ajouter', 'Add', 'Hinzufügen', 'Añadir']))}</button></p>
-      <datalist id="eqTypeList">${listHtml()}</datalist></div>`;
+      <div class="eq-add"><div class="eq-field"><input type="text" autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="eqSugg" data-eq-add-input placeholder="${esc(t(['Désignateur OACI ou modèle (ex. A400M, PC-12)', 'ICAO designator or model (e.g. A400M, PC-12)', 'ICAO-Kennung oder Modell (z. B. A400M, PC-12)', 'Designador OACI o modelo (p. ej. A400M, PC-12)']))}" aria-label="${esc(t(['Appareil à ajouter', 'Aircraft to add', 'Hinzuzufügendes Luftfahrzeug', 'Aeronave que añadir']))}"><ul class="eq-sugg" id="eqSugg" role="listbox" hidden data-eq-sugg></ul></div>
+        <button type="button" class="secondary" data-eq-add>${esc(t(['Ajouter', 'Add', 'Hinzufügen', 'Añadir']))}</button></div>
+      <p class="sp-hint">${esc(t(['En tapant, la suite propose les types de la flotte, de la base des types de ce poste, de la liste OACI publiée et leurs noms d’usage (« Caravelle », « Rafale ») — calcul local, sans réseau. La base de ce poste n’est complétée par le lanceur qu’au clic sur « Ajouter », pour le type ajouté s’il lui manque.', 'While you type, the suite suggests the types of the fleet, of this computer’s type base, of the published ICAO list and their common names (“Caravelle”, “Rafale”) — computed locally, no network. This computer’s base is completed by the launcher only when you click “Add”, for the added type if it is missing.', 'Beim Tippen schlägt die Suite die Typen der Flotte, der Typbasis dieses Rechners, der veröffentlichten ICAO-Liste und ihre gebräuchlichen Namen vor („Caravelle“, „Rafale“) — lokal berechnet, ohne Netz. Die Basis dieses Rechners wird vom Starter nur beim Klick auf „Hinzufügen“ ergänzt, für den hinzugefügten Typ, falls er fehlt.', 'Al escribir, la suite propone los tipos de la flota, de la base de tipos de este equipo, de la lista OACI publicada y sus nombres de uso («Caravelle», «Rafale»); cálculo local, sin red. La base de este equipo solo la completa el lanzador al hacer clic en «Añadir», para el tipo añadido si le falta.']))}</p></div>`;
     const typesHtml = types.length ? `<p class="eq-sum" data-eq-sum>${esc(summary())}</p><div class="eq-cards">${groups.map(g => `<div class="repo-card" data-icon="${ICON[g[0].category] || 'plane'}" data-subtitle="${esc(tf(['{n} type(s)', '{n} type(s)', '{n} Typ(en)', '{n} tipo(s)'], { n: g.length }))}"><h3>${esc(g[0].categoryLabel)}</h3>
       <table class="eq-table"><thead><tr><th>${esc(t(['Type', 'Type', 'Typ', 'Tipo']))}</th><th>${esc(t(['Variantes de la flotte', 'Fleet variants', 'Flottenvarianten', 'Variantes de la flota']))}</th><th>${esc(t(['Appareils', 'Aircraft', 'Luftfahrzeuge', 'Aeronaves']))}</th><th class="eq-c">${esc(t(['Possédé', 'Owned', 'Besessen', 'Poseído']))}</th><th class="eq-c">${esc(t(['Maîtrisé', 'Mastered', 'Beherrscht', 'Dominado']))}</th></tr></thead><tbody>${g.map(x => `<tr>
         <td><b>${esc(x.model)}</b><br><code>${esc(x.type)}</code>${x.description ? ` <small title="${esc(t(['Description OACI (Doc 8643)', 'ICAO description (Doc 8643)', 'ICAO-Beschreibung (Doc 8643)', 'Descripción OACI (Doc 8643)']))}">${esc(x.description)}</small>` : ''}</td>
@@ -335,6 +361,7 @@
     };
     /** Carte « Autres appareils » redessinée (après un ajout, une coche des autres pilotes, une passe du lanceur). */
     const redrawOther = () => {
+      index = null; // sources changées (ajout, autres pilotes, passe du lanceur) : index refait à la prochaine frappe
       const el = host.querySelector('[data-eq-other]');
       if (el) el.innerHTML = otherRows();
     };
@@ -349,13 +376,12 @@
     };
     /** Ajout à la main : type de la flotte → sa case cochée ; autre type → ligne de « Autres appareils », possédé. */
     const addTyped = () => {
-      const input = host.querySelector('[data-eq-add-input]'),
-        ty = resolveType(input.value, fleet);
+      const ty = resolveType(input.value);
       if (!input.value.trim()) return; // champ vide : rien
       if (!ty) {
         // refus : ce qui a été lu, et le désignateur le plus proche repris dans le champ (« Ajouter » pour le confirmer)
         const typed = input.value.trim(),
-          near = closest(typed, new Set([...offi, ...Object.keys(window.AIRCRAFT_DB || {})]));
+          near = candidates(typed)[0]?.code || '';
         if (near) input.value = `${near}${typeName(near) ? ` — ${typeName(near)}` : ''}`;
         window.AppFramework?.notify?.(near ? tf([
           '« {s} » n’est ni un désignateur OACI ni un modèle connu. Le plus proche : {c} ({n}), repris dans le champ — « Ajouter » pour le confirmer.',
@@ -403,18 +429,74 @@
       }
       scheduleSync();
     };
-    host.querySelector('[data-eq-add]').onclick = addTyped;
-    host.querySelector('[data-eq-add-input]').onkeydown = e => {
-      if (e.key === 'Enter') {
+    host.querySelector('[data-eq-add]').onclick = () => {
+      closeSugg();
+      addTyped();
+    };
+    const input = host.querySelector('[data-eq-add-input]'),
+      sugg = host.querySelector('[data-eq-sugg]');
+    let active = -1;
+    /** Liste des suggestions fermée. */
+    const closeSugg = () => {
+      sugg.hidden = true;
+      input.setAttribute('aria-expanded', 'false');
+      active = -1;
+    };
+    /** Suggestions du texte saisi (8 au plus), recalculées à chaque frappe : index local, aucun appel au lanceur. */
+    const showSugg = () => {
+      const list = candidates(input.value).filter(c => c.base >= 48).slice(0, 8);
+      active = -1;
+      if (!list.length) return closeSugg();
+      sugg.innerHTML = list.map((c, i) => `<li role="option" id="eqSugg${i}" data-code="${esc(c.code)}" aria-selected="false"><b>${esc(c.code)}</b>${typeName(c.code) ? ` — ${esc(typeName(c.code))}` : ''}<small>${esc(originOf(c.code))}</small></li>`).join('');
+      sugg.hidden = false;
+      input.setAttribute('aria-expanded', 'true');
+    };
+    /** Suggestion n mise en avant (flèches). */
+    const mark = n => {
+      const items = [...sugg.children];
+      if (!items.length) return;
+      active = (n + items.length) % items.length;
+      items.forEach((li, i) => li.setAttribute('aria-selected', String(i === active)));
+      input.setAttribute('aria-activedescendant', items[active].id);
+      items[active].scrollIntoView({
+        block: 'nearest'
+      });
+    };
+    /** Suggestion choisie : son code dans le champ, puis ajout (comme « Ajouter »). */
+    const pick = code => {
+      input.value = code;
+      closeSugg();
+      addTyped();
+    };
+    input.oninput = showSugg;
+    input.onblur = () => setTimeout(closeSugg, 150);
+    sugg.onmousedown = e => {
+      const li = e.target.closest('li[data-code]');
+      if (!li) return;
+      e.preventDefault();
+      pick(li.dataset.code);
+    };
+    input.onkeydown = e => {
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        if (sugg.hidden) showSugg();
+        mark(active + (e.key === 'ArrowDown' ? 1 : -1));
         e.preventDefault();
-        addTyped();
+      } else if (e.key === 'Escape' && !sugg.hidden) {
+        closeSugg();
+        e.preventDefault();
+        e.stopPropagation();
+      } else if (e.key === 'Enter') {
+        e.preventDefault();
+        if (!sugg.hidden && active >= 0) pick(sugg.children[active].dataset.code);
+        else {
+          closeSugg();
+          addTyped();
+        }
       }
     };
-    // liste OACI publiée : options de la liste et notes des lignes, après le premier dessin
+    // liste OACI publiée : suggestions et notes des lignes, après le premier dessin
     officialCodes().then(set => {
       offi = set;
-      const dl = host.querySelector('#eqTypeList');
-      if (dl) dl.innerHTML = listHtml();
       redrawOther();
     });
     // types hors flotte des autres pilotes : lus après le premier dessin (une déclaration par pilote de l'index)
