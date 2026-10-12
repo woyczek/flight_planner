@@ -130,6 +130,8 @@ Une mission neuve (jamais enregistrée, ou squelette) s'ouvre en saisie guidée 
 | 5 Chronologie | événements H+n (H = décollage prévu) | événements de la route : arrivée à chaque point, fin du travail, retour, aux heures du calcul de durée | événement après la fin du créneau estimé |
 | 6 Cartes et documents | cartes attendues, enregistrement, puis cartes au studio et documents | cartes d'après les lieux (générale, cible, détail cible, chaque rendez-vous, chaque zone) | carte centrée sur un lieu sans coordonnées (« Placer au studio ») |
 
+« Coller un tableau de points » (étape Lieux, et bloc « Toutes les données YAML ») : collez un tableau de tableur, de Markdown ou de texte, une ligne par lieu. Le séparateur (tabulation, « | », « ; », « , ») et l'en-tête (nom, lat, lon ou latitude, longitude, coordonnées, type ou rôle, temps, id) sont reconnus ; sans en-tête, les colonnes sont nom, lat, lon, rôle. Coordonnées en décimal, en DMS (48°46'05"N 7°12'18"E) ou en degrés-minutes (N48 46.1 E007 12.3). Une ligne sans coordonnées est cherchée dans les lieux connus (terrains, balises, points, villes ; nom exact). Le type « cible », « zone » ou « rdv » range la ligne, sinon c'est un point tournant ; l'ordre des lignes devient l'ordre de route. Un aperçu (nom, coordonnées trouvées, rangé comme, à placer) précède « Ajouter n points » ; les lieux non trouvés arrivent sans coordonnées et comptent dans les points à placer.
+
 ### Commander une mission
 
 Dans le bloc Mission, « Commander à ChatGPT… » déplie ce formulaire (même formulaire que les ordres de vols) ; le registre ne commande plus rien.
@@ -245,6 +247,8 @@ Bloc du niveau Expert, masqué par défaut : cliquez « Afficher » dans son en-
 À réserver aux corrections que les autres blocs ne permettent pas.
 
 Le nom d'un lieu (départ, arrivée, cible, point tournant, rendez-vous, zone) se cherche en tapant : terrains, balises, points, VRP, puis villes ; un lieu choisi pose ses coordonnées. Départ et arrivée sont par défaut la base de l'aéronef (infobulle). L'indicatif d'un aéronef propose ceux de la flotte pour son type ; le nom de l'équipe (et les participants des rendez-vous) suit l'indicatif.
+
+« Coller un tableau de points » (étape Lieux, et bloc « Toutes les données YAML ») : collez un tableau de tableur, de Markdown ou de texte, une ligne par lieu. Le séparateur (tabulation, « | », « ; », « , ») et l'en-tête (nom, lat, lon ou latitude, longitude, coordonnées, type ou rôle, temps, id) sont reconnus ; sans en-tête, les colonnes sont nom, lat, lon, rôle. Coordonnées en décimal, en DMS (48°46'05"N 7°12'18"E) ou en degrés-minutes (N48 46.1 E007 12.3). Une ligne sans coordonnées est cherchée dans les lieux connus (terrains, balises, points, villes ; nom exact). Le type « cible », « zone » ou « rdv » range la ligne, sinon c'est un point tournant ; l'ordre des lignes devient l'ordre de route. Un aperçu (nom, coordonnées trouvées, rangé comme, à placer) précède « Ajouter n points » ; les lieux non trouvés arrivent sans coordonnées et comptent dans les points à placer.
 
 ### Cartes du dossier final
 

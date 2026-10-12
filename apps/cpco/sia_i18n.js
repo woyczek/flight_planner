@@ -16,6 +16,7 @@
     ["Ouvrir au studio", "Open in the studio", "Im Studio öffnen", "Abrir en el estudio"],
     // saisie pas à pas (générateur, mission_guide.js)
     ["Pas à pas", "Step by step", "Schritt für Schritt", "Paso a paso"],
+    ["Coller un tableau de points", "Paste a table of points", "Punktetabelle einfügen", "Pegar una tabla de puntos"],
     ["Saisie guidée en six étapes : cadre, lieux, récit, objectifs et risques, chronologie, cartes et documents",
       "Guided entry in six steps: frame, places, story, objectives and risks, timeline, maps and documents",
       "Geführte Eingabe in sechs Schritten: Rahmen, Orte, Erzählung, Ziele und Risiken, Zeitablauf, Karten und Dokumente",

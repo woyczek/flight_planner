@@ -81,6 +81,8 @@ Eine neue Mission (nie gespeichert oder Gerüst) öffnet sich auf den Stufen 1 b
 | 5 Zeitablauf | Ereignisse bei H+n (H = geplanter Start) | Ereignisse der Route: Ankunft an jedem Punkt, Arbeitsende, Rückkehr, zu den Zeiten der Dauerschätzung | Ereignis nach dem Ende des geschätzten Zeitfensters |
 | 6 Karten und Dokumente | erwartete Karten, Speichern, dann Karten im Studio und Dokumente | Karten aus den Orten (Übersicht, Zielobjekt, Detail Zielobjekt, jeder Treffpunkt, jede Zone) | Karte auf einen Ort ohne Koordinaten zentriert („Im Studio setzen“) |
 
+„Punktetabelle einfügen“ (Schritt Orte und Block „Alle YAML-Daten“): eine Tabelle aus Tabellenkalkulation, Markdown oder Text einfügen, eine Zeile pro Ort. Trennzeichen (Tabulator, „|“, „;“, „,“) und Kopfzeile (Name, lat, lon oder Breite, Länge, Koordinaten, Typ oder Rolle, Zeit, id) werden erkannt; ohne Kopfzeile sind die Spalten Name, lat, lon, Rolle. Koordinaten dezimal, in DMS (48°46'05"N 7°12'18"E) oder in Grad-Minuten (N48 46.1 E007 12.3). Eine Zeile ohne Koordinaten wird unter den bekannten Orten gesucht (Flugplätze, Funkfeuer, Punkte, Orte; exakter Name). Der Typ „Ziel“, „Zone“ oder „Treffpunkt“ ordnet die Zeile ein, sonst ist sie ein Wendepunkt; die Reihenfolge der Zeilen wird zur Routenreihenfolge. Eine Vorschau (Name, gefundene Koordinaten, abgelegt als, zu setzen) kommt vor „n Punkte hinzufügen“; nicht gefundene Orte kommen ohne Koordinaten an und zählen zu den zu setzenden Punkten.
+
 ### Mission bestellen
 
 Im Block Mission klappt „Bei ChatGPT bestellen…“ dieses Formular auf (dasselbe Formular wie bei den Flugbefehlen); das Register bestellt nichts mehr.
@@ -181,6 +183,8 @@ Block der Stufe Experte, standardmäßig ausgeblendet: Klicken Sie in seinem Kop
 Nur für Korrekturen verwenden, die die anderen Blöcke nicht erlauben.
 
 Der Name eines Orts (Abflug, Ankunft, Zielobjekt, Wendepunkt, Treffpunkt, Zone) wird beim Tippen gesucht: Flugplätze, Funkfeuer, Punkte, VRP, dann Orte; ein gewählter Ort setzt seine Koordinaten. Abflug und Ankunft sind standardmäßig die Basis des Luftfahrzeugs (Tooltip). Das Rufzeichen eines Luftfahrzeugs schlägt die der Flotte für seinen Typ vor; der Teamname (und die Teilnehmer der Treffpunkte) folgt dem Rufzeichen.
+
+„Punktetabelle einfügen“ (Schritt Orte und Block „Alle YAML-Daten“): eine Tabelle aus Tabellenkalkulation, Markdown oder Text einfügen, eine Zeile pro Ort. Trennzeichen (Tabulator, „|“, „;“, „,“) und Kopfzeile (Name, lat, lon oder Breite, Länge, Koordinaten, Typ oder Rolle, Zeit, id) werden erkannt; ohne Kopfzeile sind die Spalten Name, lat, lon, Rolle. Koordinaten dezimal, in DMS (48°46'05"N 7°12'18"E) oder in Grad-Minuten (N48 46.1 E007 12.3). Eine Zeile ohne Koordinaten wird unter den bekannten Orten gesucht (Flugplätze, Funkfeuer, Punkte, Orte; exakter Name). Der Typ „Ziel“, „Zone“ oder „Treffpunkt“ ordnet die Zeile ein, sonst ist sie ein Wendepunkt; die Reihenfolge der Zeilen wird zur Routenreihenfolge. Eine Vorschau (Name, gefundene Koordinaten, abgelegt als, zu setzen) kommt vor „n Punkte hinzufügen“; nicht gefundene Orte kommen ohne Koordinaten an und zählen zu den zu setzenden Punkten.
 
 ### Karten des Endpakets
 

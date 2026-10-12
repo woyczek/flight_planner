@@ -81,6 +81,8 @@ A new mission (never saved, or a skeleton) opens in guided entry at levels 1 to 
 | 5 Timeline | events at H+n (H = planned take-off) | route events: arrival at each point, end of work, return, at the times of the duration estimate | event after the end of the estimated block |
 | 6 Maps and documents | expected maps, saving, then maps in the studio and documents | maps from the places (general, target, target detail, each rendezvous, each zone) | map centred on a place without coordinates (“Place in the studio”) |
 
+“Paste a table of points” (Places step, and “All YAML data” block): paste a spreadsheet, Markdown or text table, one line per place. The separator (tab, “|”, “;”, “,”) and the header (name, lat, lon or latitude, longitude, coordinates, type or role, time, id) are recognised; without a header, the columns are name, lat, lon, role. Coordinates in decimal, DMS (48°46'05"N 7°12'18"E) or degrees-minutes (N48 46.1 E007 12.3). A line without coordinates is looked up among known places (airfields, beacons, points, towns; exact name). The type “target”, “zone” or “rdv” files the line, otherwise it is a turning point; the order of the lines becomes the route order. A preview (name, coordinates found, filed as, to place) comes before “Add n points”; places not found arrive without coordinates and count among the points to place.
+
 ### Order a mission
 
 In the Mission block, “Order from ChatGPT…” unfolds this form (same form as the flight orders); the registry no longer orders anything.
@@ -181,6 +183,8 @@ Expert level block, hidden by default: click “Show” in its header.
 Keep it for corrections the other blocks do not allow.
 
 The name of a place (departure, arrival, target, turning point, rendezvous, zone) is searched while typing: airfields, beacons, points, VRP, then towns; a chosen place sets its coordinates. Departure and arrival are by default the aircraft’s base (tooltip). An aircraft’s callsign suggests those of the fleet for its type; the team name (and the rendezvous participants) follows the callsign.
+
+“Paste a table of points” (Places step, and “All YAML data” block): paste a spreadsheet, Markdown or text table, one line per place. The separator (tab, “|”, “;”, “,”) and the header (name, lat, lon or latitude, longitude, coordinates, type or role, time, id) are recognised; without a header, the columns are name, lat, lon, role. Coordinates in decimal, DMS (48°46'05"N 7°12'18"E) or degrees-minutes (N48 46.1 E007 12.3). A line without coordinates is looked up among known places (airfields, beacons, points, towns; exact name). The type “target”, “zone” or “rdv” files the line, otherwise it is a turning point; the order of the lines becomes the route order. A preview (name, coordinates found, filed as, to place) comes before “Add n points”; places not found arrive without coordinates and count among the points to place.
 
 ### Maps of the final file
 

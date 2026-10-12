@@ -289,7 +289,7 @@
       rows = placeRows(y),
       canPropose = has(y.target) && has(y.origin) && arr(y.turning_points).some(p => !has(p));
     return `<table class="mg-table"><thead><tr><th>${E(t(['Lieu', 'Place', 'Ort', 'Lugar']))}</th><th>${E(t(['Nom (terrain, balise, point, ville)', 'Name (airfield, beacon, point, town)', 'Name (Flugplatz, Funkfeuer, Punkt, Ort)', 'Nombre (aeródromo, radiobaliza, punto, ciudad)']))}</th><th>${E(t(['Position', 'Position', 'Position', 'Posición']))}</th><th></th></tr></thead><tbody>${rows.map(r => `<tr${isProp(r.path) ? ' class="mg-prop"' : ''}><td><b>${E(r.id)}</b>${chip(r.path)}</td><td><input data-mg-place="${E(r.path)}" value="${E(r.name)}" list="mgPlaces" autocomplete="off"></td><td class="small">${r.placed ? '✓' : E(t(['sans coordonnées', 'no coordinates', 'ohne Koordinaten', 'sin coordenadas']))}</td><td>${r.kind === 'zone' ? `<input type="number" min="1" step="1" data-mg="${E(r.path)}.radius_km" value="${E(r.radius ?? '')}" style="width:5em"> km` : r.kind === 'rdv' ? `<input data-mg-list="${E(r.path)}.participants" value="${E(r.participants.join(', '))}" placeholder="${E(t(['indicatifs', 'callsigns', 'Rufzeichen', 'indicativos']))}">` : ''}</td></tr>${!r.placed ? `<tr><td></td><td colspan="3">${warn(t(['Lieu sans coordonnées : tapez un nom reconnu, ou placez-le au studio.', 'Place without coordinates: type a recognised name, or place it in the studio.', 'Ort ohne Koordinaten: einen erkannten Namen eingeben oder im Studio setzen.', 'Lugar sin coordenadas: escriba un nombre reconocido o colóquelo en el estudio.']), t(['Placer au studio', 'Place in the studio', 'Im Studio setzen', 'Colocar en el estudio']), 'studio')}</td></tr>` : ''}${r.kind === 'zone' && !(+r.radius > 0) ? `<tr><td></td><td colspan="3">${warn(t(['Zone sans rayon.', 'Zone without radius.', 'Zone ohne Radius.', 'Zona sin radio.']))}</td></tr>` : ''}${r.kind === 'rdv' && !r.participants.length ? `<tr><td></td><td colspan="3">${warn(t(['Rendez-vous sans participants.', 'Rendezvous without participants.', 'Treffpunkt ohne Teilnehmer.', 'Encuentro sin participantes.']))}</td></tr>` : ''}`).join('')}</tbody></table>` +
-      `<p class="mg-row">${y.target ? '' : `<button type="button" class="secondary" data-mg-act="add-target">${E(t(['+ Cible', '+ Target', '+ Zielobjekt', '+ Objetivo']))}</button> `}<button type="button" class="secondary" data-mg-act="add-zone">${E(t(['+ Zone de travail', '+ Working zone', '+ Arbeitszone', '+ Zona de trabajo']))}</button> <button type="button" class="secondary" data-mg-act="add-point">${E(t(['+ Point tournant', '+ Turning point', '+ Wendepunkt', '+ Punto de viraje']))}</button> <button type="button" class="secondary" data-mg-act="add-rdv">${E(t(['+ Rendez-vous', '+ Rendezvous', '+ Treffpunkt', '+ Encuentro']))}</button></p>` +
+      `<p class="mg-row">${y.target ? '' : `<button type="button" class="secondary" data-mg-act="add-target">${E(t(['+ Cible', '+ Target', '+ Zielobjekt', '+ Objetivo']))}</button> `}<button type="button" class="secondary" data-mg-act="add-zone">${E(t(['+ Zone de travail', '+ Working zone', '+ Arbeitszone', '+ Zona de trabajo']))}</button> <button type="button" class="secondary" data-mg-act="add-point">${E(t(['+ Point tournant', '+ Turning point', '+ Wendepunkt', '+ Punto de viraje']))}</button> <button type="button" class="secondary" data-mg-act="add-rdv">${E(t(['+ Rendez-vous', '+ Rendezvous', '+ Treffpunkt', '+ Encuentro']))}</button> <button type="button" class="secondary" data-mg-act="paste-points">${E(t(['Coller un tableau de points', 'Paste a table of points', 'Punktetabelle einfügen', 'Pegar una tabla de puntos']))}</button></p><div data-mg-pts></div>` +
       (canPropose ? `<p class="mg-row"><button type="button" class="secondary" data-mg-act="points">${E(t(['Proposer l’entrée et la sortie (15 NM de la cible, sur la route)', 'Propose entry and exit (15 NM from the target, on the route)', 'Ein- und Ausgang vorschlagen (15 NM vom Zielobjekt, auf der Route)', 'Proponer entrada y salida (15 NM del objetivo, en la ruta)']))}</button></p>` : '');
   }
   /** Étape 3 — Récit : titre, résumé, description ; canevas proposé quand tout est vide. */
@@ -639,7 +639,17 @@ html.mg-on main>section[data-block-id]:not(.mg-show){display:none!important}
       location.href = 'map_parser.html';
       return;
     } else if (act === 'all') return stop();
-    else if (act === 'add-target') y.target = {
+    else if (act === 'paste-points') {
+      // tableau collé : aperçu sous les boutons (shared/point_table.js), ajout sur « Ajouter n points »
+      window.PointTable?.run(host.querySelector('[data-mg-pts]'), {
+        yaml: () => state.yaml,
+        onAdded: () => {
+          shareMission(true);
+          renderAll();
+        }
+      });
+      return;
+    } else if (act === 'add-target') y.target = {
       id: 'TARGET',
       name: '',
       lat: null,

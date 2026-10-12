@@ -81,6 +81,8 @@ Una misión nueva (nunca guardada, o un esqueleto) se abre en entrada guiada en 
 | 5 Cronología | eventos a H+n (H = despegue previsto) | eventos de la ruta: llegada a cada punto, fin del trabajo, regreso, a las horas del cálculo de duración | evento tras el final de la franja estimada |
 | 6 Mapas y documentos | mapas previstos, guardado, luego mapas en el estudio y documentos | mapas a partir de los lugares (general, objetivo, detalle del objetivo, cada encuentro, cada zona) | mapa centrado en un lugar sin coordenadas («Colocar en el estudio») |
 
+«Pegar una tabla de puntos» (paso Lugares, y bloque «Todos los datos YAML»): pegue una tabla de hoja de cálculo, Markdown o texto, una línea por lugar. Se reconocen el separador (tabulador, «|», «;», «,») y el encabezado (nombre, lat, lon o latitud, longitud, coordenadas, tipo o rol, tiempo, id); sin encabezado, las columnas son nombre, lat, lon, rol. Coordenadas en decimal, en DMS (48°46'05"N 7°12'18"E) o en grados-minutos (N48 46.1 E007 12.3). Una línea sin coordenadas se busca entre los lugares conocidos (aeródromos, radiobalizas, puntos, ciudades; nombre exacto). El tipo «objetivo», «zona» o «encuentro» clasifica la línea; si no, es un punto de viraje; el orden de las líneas pasa a ser el orden de ruta. Una vista previa (nombre, coordenadas encontradas, clasificado como, por colocar) precede a «Añadir n puntos»; los lugares no encontrados llegan sin coordenadas y cuentan entre los puntos por colocar.
+
 ### Encargar una misión
 
 En el bloque Misión, «Encargar a ChatGPT…» despliega este formulario (el mismo que el de las órdenes de vuelo); el registro ya no encarga nada.
@@ -181,6 +183,8 @@ Bloque del nivel Experto, oculto por defecto: haga clic en «Mostrar» en su cab
 Resérvelo a las correcciones que los demás bloques no permiten.
 
 El nombre de un lugar (salida, llegada, objetivo, punto de viraje, encuentro, zona) se busca al escribir: aeródromos, radiobalizas, puntos, VRP y luego ciudades; un lugar elegido fija sus coordenadas. Salida y llegada son por defecto la base de la aeronave (descripción emergente). El indicativo de una aeronave propone los de la flota para su tipo; el nombre del equipo (y los participantes de los encuentros) sigue al indicativo.
+
+«Pegar una tabla de puntos» (paso Lugares, y bloque «Todos los datos YAML»): pegue una tabla de hoja de cálculo, Markdown o texto, una línea por lugar. Se reconocen el separador (tabulador, «|», «;», «,») y el encabezado (nombre, lat, lon o latitud, longitud, coordenadas, tipo o rol, tiempo, id); sin encabezado, las columnas son nombre, lat, lon, rol. Coordenadas en decimal, en DMS (48°46'05"N 7°12'18"E) o en grados-minutos (N48 46.1 E007 12.3). Una línea sin coordenadas se busca entre los lugares conocidos (aeródromos, radiobalizas, puntos, ciudades; nombre exacto). El tipo «objetivo», «zona» o «encuentro» clasifica la línea; si no, es un punto de viraje; el orden de las líneas pasa a ser el orden de ruta. Una vista previa (nombre, coordenadas encontradas, clasificado como, por colocar) precede a «Añadir n puntos»; los lugares no encontrados llegan sin coordenadas y cuentan entre los puntos por colocar.
 
 ### Mapas del dosier final
 

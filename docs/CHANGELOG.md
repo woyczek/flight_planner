@@ -12,6 +12,12 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Ajouté
 
+- **Mission generator: "Paste a table of points"** (Places step of "Step by step", and the "All YAML data" block;
+  `shared/point_table.js`) — separator (tab, "|", ";", ",") and header (name, lat, lon, coordinates, type/role,
+  time, id) detected, otherwise columns name, lat, lon, role; decimal, DMS or degrees-minutes coordinates; lines
+  without coordinates looked up among known places (exact name); type target / zone / rdv files the line, otherwise
+  turning point; the line order becomes the route order. In-page preview (name, coordinates found, filed as, to
+  place) before "Add n points"; unresolved places arrive without coordinates. Planner manual (four languages).
 - **Mission generator: "Step by step" guided entry (docs/technique/V2_FABLE.md § 11)** — `apps/cpco/mission_guide.js`:
   a rail of six steps (Frame, Places, Story, Objectives and risks, Timeline, Maps and documents), one open at a
   time, "Next →", "Show everything" back to the full layout; same data as the blocks. Proposals are put in the

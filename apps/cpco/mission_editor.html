@@ -6,7 +6,7 @@
 <link rel="stylesheet" href="../../shared/repository_nav.css?v=0">
 <script src="../../config/repository_tree?v=0"></script><script src="../../shared/kit.js?v=0"></script>
 <script src="../../shared/mission_core/vendor/js-yaml.min.js"></script>
-<script src="mission_prompt.js?v=0"></script><script src="../../shared/data_files.js?v=0" data-file="references/aircraft_fleet.js"></script><script src="../../shared/data_files.js?v=0" data-file="references/callsigns.js"></script><script src="../../shared/mission_order.js?v=0"></script><script src="../../AircraftDB/aircraft_db.js"></script><script src="../../AircraftDB/aircraft_perf.js"></script><script src="../../shared/mission_core/model.js?v=0"></script><script src="../../shared/mission_estimate.js?v=0"></script><script src="../../shared/sia_base.js?v=0"></script><script src="../../shared/place_search.js?v=0"></script><script src="../../shared/mission_routing.js?v=0"></script><script src="../../shared/mission_airspaces.js?v=0"></script><script src="../../shared/mission_exercise.js?v=0"></script><script src="../../shared/mission_registry.js?v=0"></script>
+<script src="mission_prompt.js?v=0"></script><script src="../../shared/data_files.js?v=0" data-file="references/aircraft_fleet.js"></script><script src="../../shared/data_files.js?v=0" data-file="references/callsigns.js"></script><script src="../../shared/mission_order.js?v=0"></script><script src="../../AircraftDB/aircraft_db.js"></script><script src="../../AircraftDB/aircraft_perf.js"></script><script src="../../shared/mission_core/model.js?v=0"></script><script src="../../shared/mission_estimate.js?v=0"></script><script src="../../shared/sia_base.js?v=0"></script><script src="../../shared/place_search.js?v=0"></script><script src="../../shared/point_table.js?v=0"></script><script src="../../shared/mission_routing.js?v=0"></script><script src="../../shared/mission_airspaces.js?v=0"></script><script src="../../shared/mission_exercise.js?v=0"></script><script src="../../shared/mission_registry.js?v=0"></script>
 <script src="mission_store.js?v=0"></script><script src="mission_skeleton.js?v=0"></script><script src="mission_guide.js?v=0"></script>
 <script src="../../shared/aar_tracks.js?v=0"></script>
 <script src="../../shared/mission_core/vocab.js?v=0"></script>
@@ -557,7 +557,7 @@ html[data-skeuo] .repo-block .mapCard.missing:not(#imp) {
 
 <section data-block-id="mission-texts" data-icon="file-text" data-subtitle="Résumé, description détaillée, puis les rubriques que le brief place à leur rang : objectifs, risques et notes vont dans le YAML, les autres complètent la section du même nom."><h2>Textes de mission</h2><div class="two"><label>Résumé<textarea id="summary"></textarea></label><label>Description détaillée<textarea id="detailed" class="long"></textarea></label></div><div id="narrativeSections" data-no-i18n></div><details id="addNarrative" class="narrMenu"><summary>Ajouter une rubrique textuelle</summary><ul id="narrChoices" data-no-i18n></ul></details></section>
 
-<section data-block-id="mission-yaml" data-default-hidden="1" data-min-level="4" data-icon="database" data-subtitle="Éditeur libre de toutes les clés du YAML de la mission."><h2>Toutes les données YAML</h2><p class="note">Cet éditeur est sans schéma imposé : les champs supplémentaires présents dans tes exemples sont conservés et restent modifiables.</p><div id="yamlEditor"></div><div class="inlineAdd"><input id="newRootKey" placeholder="Nom d’un nouveau champ racine"><button id="addRootKey" class="ghost" type="button">Ajouter</button></div></section>
+<section data-block-id="mission-yaml" data-default-hidden="1" data-min-level="4" data-icon="database" data-subtitle="Éditeur libre de toutes les clés du YAML de la mission."><h2>Toutes les données YAML</h2><p class="note">Cet éditeur est sans schéma imposé : les champs supplémentaires présents dans tes exemples sont conservés et restent modifiables.</p><p><button type="button" id="pastePoints" class="secondary" data-icon="list">Coller un tableau de points</button></p><div id="pastePointsPreview" data-no-i18n></div><div id="yamlEditor"></div><div class="inlineAdd"><input id="newRootKey" placeholder="Nom d’un nouveau champ racine"><button id="addRootKey" class="ghost" type="button">Ajouter</button></div></section>
 
 <section data-block-id="mission-maps" data-icon="map" data-subtitle="Cartes jointes au PDF, dans l’ordre du dossier."><h2>Cartes du dossier final</h2><div id="mapList" class="maps"></div><p class="small">La carte d’assemblage est intégrée au package cartographique et placée en première position dans le PDF, avant les autres cartes.</p></section>
 
@@ -3481,6 +3481,23 @@ $('yamlEditor').addEventListener('change', e => {
   t.dataset.before = now;
   renderYaml();
   shareMission(true)
+});
+// « Coller un tableau de points » (shared/point_table.js) : aperçu sous le bouton, puis ajout à la mission
+$('pastePoints').onclick = () => window.PointTable?.run($('pastePointsPreview'), {
+  yaml: () => state.yaml,
+  onAdded: (n, todo) => {
+    shareMission(true);
+    renderAll();
+    setStatus(trf(['{n} lieu(x) ajouté(s) à la mission{t}.', '{n} place(s) added to the mission{t}.',
+      '{n} Ort(e) zur Mission hinzugefügt{t}.',
+      '{n} lugar(es) añadido(s) a la misión{t}.'
+    ], {
+      n,
+      t: todo ? trf([' ({u} à placer)', ' ({u} to place)', ' ({u} zu setzen)', ' ({u} por colocar)'], {
+        u: todo
+      }) : ''
+    }), 'ok')
+  }
 });
 $('yamlEditor').addEventListener('input', e => {
   const p = e.target.dataset.path;
