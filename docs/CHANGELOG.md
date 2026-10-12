@@ -12,6 +12,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Ajouté
 
+- **My profile › Aircraft: link to Aviation Fanatic** — under the field for adding an aircraft outside the fleet, a link
+  opens the Aviation Fanatic list of aircraft types (designators, retired types included) to look up a compatible
+  type oneself (`shared/equipment_editor.js`, 4 languages).
 - **Missions: creation has a single door, the generator** — the registry no longer creates anything: its "Order a
   mission" block is removed (the order form lives in the generator's Mission block, "Order from ChatGPT…"); it
   consults, files, duplicates, deletes and imports what arrives (files, ChatGPT reply panel of an ordered mission).
