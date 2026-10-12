@@ -2104,7 +2104,7 @@ function renderSiaBaseLine(b) {
   // SiaBase.panel.reread) — sa jauge et son compte rendu, bloc déplié
   el.onclick = e => {
     if (!e.target.closest('[data-base-build]')) return;
-    window.AppFramework?.reveal?.('sia-base');
+    showBasePanel();
     basePanel.reread(true)
   };
   // textes composés (nombres) : traduits ici, la traduction du texte exact de la page ne les reconnaît pas
@@ -2128,7 +2128,7 @@ function renderSiaBaseLine(b) {
   if (!b && away) {
     const blk = document.querySelector('[data-block-id="sia-base"]');
     if (blk?.dataset.minLevel) delete blk.dataset.minLevel;
-    window.AppFramework?.reveal?.('sia-base')
+    showBasePanel()
   }
   if (!b) SiaBase.get({
     any: true
@@ -2219,7 +2219,20 @@ function showBackToUpdate() {
       window.close()
     }
   };
-  window.AppFramework?.reveal?.('sia-base')
+  showBasePanel()
+}
+/** Panneau commun de la base SIA (dossier, relecture, jauge, compte rendu). Studio : sous la ligne d'état du bloc
+ *  Mission, montré seulement quand il sert (construction lancée, base absente ou à reconstruire, relecture demandée) —
+ *  la base se met à jour dans Paramètres › Maintenance, un bloc permanent ici ne servait à rien. Cartes de vol (sans
+ *  bloc Mission) : bloc « Base de données SIA » (tools/build_map_planner.py), déplié. */
+function showBasePanel() {
+  const p = $('siaBasePanel');
+  if (p.closest('[data-block-id="sia-base"]')) return window.AppFramework?.reveal?.('sia-base');
+  p.hidden = false;
+  p.scrollIntoView({
+    behavior: 'smooth',
+    block: 'nearest'
+  })
 }
 // Bloc commun « Base de données SIA » (dossier, relire, purger, état, fichiers) : même bloc que Maintenance, étape 4.
 const basePanel = SiaBase.panel($('siaBasePanel'), {
@@ -2234,7 +2247,7 @@ const basePanel = SiaBase.panel($('siaBasePanel'), {
 async function relireOnOpen() {
   if (!RELIRE_ON_OPEN) return;
   history.replaceState(null, '', location.pathname + location.hash);
-  window.AppFramework?.reveal?.('sia-base');
+  showBasePanel();
   for (let i = 0; i < 50 && !window.FileAccess; i++) await new Promise(r => setTimeout(r, 100));
   const st = await window.FileAccess?.status?.('__sia');
   if (st?.handle && st.permission === 'granted') {
@@ -8180,7 +8193,10 @@ applyOutputPrefs();;
     for (let i = 0; i < 50 && !window.FileAccess; i++) await new Promise(r => setTimeout(r, 100));
     const st = await window.FileAccess?.status?.('__sia');
     if (st?.handle && st.permission === 'granted') basePanel.reread(false);
-    else if (st?.handle) basePanel.setMessage('<span class="err">Base à construire : cliquer « Relire le dossier ».</span>')
+    else if (st?.handle) {
+      basePanel.setMessage('<span class="err">Base à construire : cliquer « Relire le dossier ».</span>');
+      showBasePanel()
+    }
   }
 })();
 </script>

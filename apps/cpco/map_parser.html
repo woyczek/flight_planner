@@ -1140,7 +1140,7 @@
 <header><div class="header-row"><h1><span class="cpco-eyebrow">Centre de planification et de conduite des opérations</span>Studio cartographique</h1></div></header>
 
 <main>
-<section data-block-id="sia-mission" data-icon="target" data-subtitle="Mission partagée avec le générateur ; ouvrir ou coller une autre mission."><h2>Mission</h2><p id="missionStatus" data-status class="small">Formats acceptés : Markdown, YAML <code>helo-xp-mission</code>.</p><div class="actions"><button type="button" id="saveStudio" data-icon="save" class="secondary" title="Enregistrer la mission et les réglages du studio (profil et emprise de chaque carte, tracés, pistes) dans son dossier : data/missions/…/mission&lt;ID&gt;.yaml">Enregistrer dans le dossier</button></div><p id="siaBaseLine" class="small">Base SIA : lecture de la base du navigateur…</p><details id="missionOpen" class="missionOpen"><summary>Ouvrir une autre mission : fichier Markdown / YAML ou texte collé</summary><div class="grid">
+<section data-block-id="sia-mission" data-icon="target" data-subtitle="Mission partagée avec le générateur ; ouvrir ou coller une autre mission."><h2>Mission</h2><p id="missionStatus" data-status class="small">Formats acceptés : Markdown, YAML <code>helo-xp-mission</code>.</p><div class="actions"><button type="button" id="saveStudio" data-icon="save" class="secondary" title="Enregistrer la mission et les réglages du studio (profil et emprise de chaque carte, tracés, pistes) dans son dossier : data/missions/…/mission&lt;ID&gt;.yaml">Enregistrer dans le dossier</button></div><p id="siaBaseLine" class="small">Base SIA : lecture de la base du navigateur…</p><div id="siaBasePanel" hidden></div><details id="missionOpen" class="missionOpen"><summary>Ouvrir une autre mission : fichier Markdown / YAML ou texte collé</summary><div class="grid">
 <label>Ouvrir une mission Markdown ou YAML<input id="missionFile" type="file" multiple accept=".md,.markdown,.yaml,.yml,text/markdown,text/yaml,text/plain,application/yaml" data-dropzone></label>
 <div class="actions"><button id="openMissionPaste" data-icon="link" class="buttonLink" type="button">ou coller son contenu…</button></div>
 </div><div id="missionPaste" class="box" hidden><strong>Coller le contenu Markdown ou YAML de la mission</strong><textarea id="missionText" placeholder="Colle ici le contenu Markdown ou YAML de la mission…"></textarea><div class="actions"><button id="parseMission" data-icon="eye" type="button">Lire la mission</button></div></div></details>
@@ -1226,9 +1226,6 @@
 <h3>Carte d’assemblage</h3><img id="assemblyPreview" alt="Carte d’assemblage" hidden><p id="assemblyStatus" data-status class="small">Elle s’affichera automatiquement dès que le fond et la mission seront disponibles.</p>
 </section>
 
-<section data-block-id="sia-base" data-default-hidden="1" data-icon="database" data-subtitle="Dossier SIA (AIXM) lu et gardé dans le navigateur."><h2>Base de données SIA</h2>
-<p class="small">Dossier <code>data/sia</code> (mémorisé comme les autres dossiers de la suite) : « Relire le dossier » après une mise à jour AIRAC. Le fond de carte et les villes sont livrés avec l’application. Même bloc que Paramètres › Maintenance › Mise à jour SIA (étape 4).</p>
-<div id="siaBasePanel"></div></section>
 </main>
 <div class="studio-footer repo-actionbar" id="studioToolbar"><span id="studioFooterInfo" class="small"></span><span id="studioStoreSlot"></span><button id="generateAllSticky" data-icon="layers" type="button" hidden>Générer toutes les missions</button><button id="generateSticky" data-icon="download" type="button" disabled>Générer les cartes et le ZIP</button></div>
 <dialog id="previewDialog"><button id="closePreview" type="button">Fermer</button><img id="largePreview" alt="Aperçu agrandi"></dialog>
@@ -1939,7 +1936,7 @@ function renderSiaBaseLine(b) {
   // SiaBase.panel.reread) — sa jauge et son compte rendu, bloc déplié
   el.onclick = e => {
     if (!e.target.closest('[data-base-build]')) return;
-    window.AppFramework?.reveal?.('sia-base');
+    showBasePanel();
     basePanel.reread(true)
   };
   // textes composés (nombres) : traduits ici, la traduction du texte exact de la page ne les reconnaît pas
@@ -1963,7 +1960,7 @@ function renderSiaBaseLine(b) {
   if (!b && away) {
     const blk = document.querySelector('[data-block-id="sia-base"]');
     if (blk?.dataset.minLevel) delete blk.dataset.minLevel;
-    window.AppFramework?.reveal?.('sia-base')
+    showBasePanel()
   }
   if (!b) SiaBase.get({
     any: true
@@ -2054,7 +2051,20 @@ function showBackToUpdate() {
       window.close()
     }
   };
-  window.AppFramework?.reveal?.('sia-base')
+  showBasePanel()
+}
+/** Panneau commun de la base SIA (dossier, relecture, jauge, compte rendu). Studio : sous la ligne d'état du bloc
+ *  Mission, montré seulement quand il sert (construction lancée, base absente ou à reconstruire, relecture demandée) —
+ *  la base se met à jour dans Paramètres › Maintenance, un bloc permanent ici ne servait à rien. Cartes de vol (sans
+ *  bloc Mission) : bloc « Base de données SIA » (tools/build_map_planner.py), déplié. */
+function showBasePanel() {
+  const p = $('siaBasePanel');
+  if (p.closest('[data-block-id="sia-base"]')) return window.AppFramework?.reveal?.('sia-base');
+  p.hidden = false;
+  p.scrollIntoView({
+    behavior: 'smooth',
+    block: 'nearest'
+  })
 }
 // Bloc commun « Base de données SIA » (dossier, relire, purger, état, fichiers) : même bloc que Maintenance, étape 4.
 const basePanel = SiaBase.panel($('siaBasePanel'), {
@@ -2069,7 +2079,7 @@ const basePanel = SiaBase.panel($('siaBasePanel'), {
 async function relireOnOpen() {
   if (!RELIRE_ON_OPEN) return;
   history.replaceState(null, '', location.pathname + location.hash);
-  window.AppFramework?.reveal?.('sia-base');
+  showBasePanel();
   for (let i = 0; i < 50 && !window.FileAccess; i++) await new Promise(r => setTimeout(r, 100));
   const st = await window.FileAccess?.status?.('__sia');
   if (st?.handle && st.permission === 'granted') {
@@ -8015,7 +8025,10 @@ applyOutputPrefs();;
     for (let i = 0; i < 50 && !window.FileAccess; i++) await new Promise(r => setTimeout(r, 100));
     const st = await window.FileAccess?.status?.('__sia');
     if (st?.handle && st.permission === 'granted') basePanel.reread(false);
-    else if (st?.handle) basePanel.setMessage('<span class="err">Base à construire : cliquer « Relire le dossier ».</span>')
+    else if (st?.handle) {
+      basePanel.setMessage('<span class="err">Base à construire : cliquer « Relire le dossier ».</span>');
+      showBasePanel()
+    }
   }
 })();
 </script>

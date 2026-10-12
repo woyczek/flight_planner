@@ -1360,8 +1360,12 @@ function renderAirspaces() {
   const host = $('missionAirspaces');
   if (!host) return;
   if (!siaAirspaces) {
-    host.innerHTML =
-      '<p class="small">Base SIA absente de ce navigateur : la lire une fois (studio cartographique, bloc « Base de données SIA », ou Paramètres › Maintenance › Données aéronautiques).</p>';
+    // le studio n'a plus de bloc « Base de données SIA » : construction dans Maintenance, ou depuis la ligne d'état du studio
+    host.innerHTML = `<p class="small">${esc(trl(['Base SIA absente de ce navigateur : la construire une fois (Paramètres › Maintenance › Données aéronautiques, ou « Construire la base maintenant » dans le studio cartographique).',
+      'SIA database missing from this browser: build it once (Settings › Maintenance › Aeronautical data, or “Build the database now” in the map studio).',
+      'SIA-Datenbank fehlt in diesem Browser: einmal aufbauen (Einstellungen › Wartung › Luftfahrtdaten oder „Datenbank jetzt aufbauen“ im Kartenstudio).',
+      'Base SIA ausente de este navegador: construirla una vez (Ajustes › Mantenimiento › Datos aeronáuticos, o «Construir la base ahora» en el estudio cartográfico).'
+    ]))}</p>`;
     return
   }
   const list = airspaceList() || [],

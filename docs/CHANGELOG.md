@@ -108,6 +108,12 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Corrigé
 
+- **Mission registry: "ChatGPT reply" box a few pixels wide** — the suite's auto-sizing text fields (`field-sizing:
+  content`) gave an empty box the width of its content; the box now takes the card width, about eight lines high.
+- **Map studio: "SIA database" block removed** — a permanent copy of the Settings › Maintenance block, of no use in the
+  studio. Its panel (folder, re-read, gauge, report) now appears under the SIA status line of the Mission block only
+  when needed: "Build the database now", database missing or to rebuild. Flight maps (no Mission block) keeps the block
+  (`tools/build_map_planner.py`); the generator's message points to Maintenance or to that button (4 languages).
 - **Mission registry: mission without a type, and imported mission that would not open** — `affectations.yaml` (pilots
   assigned to a mission) was read as a mission file: merged after the mission, its `mission: A-001D` replaced the
   mission block (identifier, type). It is now an annex file, both in the registry (`ANNEX`) and in

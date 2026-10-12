@@ -972,11 +972,6 @@
     ["Pas d’estimation : départ ou points sans coordonnées.", "No estimate: departure or points without coordinates.",
       "Keine Schätzung: Start oder Punkte ohne Koordinaten.", "Sin estimación: salida o puntos sin coordenadas."
     ],
-    ["Base SIA absente de ce navigateur : la lire une fois (studio cartographique, bloc « Base de données SIA », ou Paramètres › Maintenance › Données aéronautiques).",
-      "SIA base missing from this browser: read it once (map studio, “SIA database” block, or Settings › Maintenance › Aeronautical data).",
-      "SIA-Basis fehlt in diesem Browser: einmal lesen (Kartenstudio, Block „SIA-Datenbank“ oder Einstellungen › Wartung › Luftfahrtdaten).",
-      "Base SIA ausente en este navegador: leerla una vez (estudio cartográfico, bloque «Base de datos SIA», o Ajustes › Mantenimiento › Datos aeronáuticos)."
-    ],
     ["Mission précédente", "Previous mission", "Vorherige Mission", "Misión anterior"],
     ["Mission suivante", "Next mission", "Nächste Mission", "Misión siguiente"],
     ["Mission du lot", "Mission of the batch", "Mission des Stapels", "Misión del lote"],

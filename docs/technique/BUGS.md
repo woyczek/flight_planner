@@ -17,6 +17,8 @@ English interface shows them.
 
 | Reported | Area | Bug | Cause | Fix |
 |---|---|---|---|---|
+| 12/10 | Mission registry (order) | "Import the reply": box 0 characters wide | Auto-sizing text fields of the suite (`field-sizing: content`, unlayered rule winning over the page): an empty box is as wide as its content | Fixed size, full card width (`data-fixed-size`, `mission_registry.html`) |
+| 12/10 | Map studio | "SIA database" block of no use | Permanent copy of the Maintenance block | Block removed from the studio; its panel shown under the Mission block's SIA line only when needed; kept in Flight maps (`map_parser.html`, `build_map_planner.py`) |
 | 12/10 | Launcher | Python traceback "'Setup' object has no attribute 'path'" in the launcher window | Unreadable request (TLS on the HTTP port, unknown HTTP version): the security headers read the request path before it existed | Path read only if present (`launch.py`) |
 | 12/10 | Mission registry | Mission without a type (A-001D), impossible to fix from the page | `affectations.yaml` (assigned pilots) read as a mission file: merged after the mission, its `mission: A-001D` replaced the mission block | Annex file in the registry and in `SiaMission.fromTexts` (`mission_registry.js`, `mission_store.js`); type back after a re-read |
 | 12/10 | Mission registry → generator | Mission imported from Downloads (T-001.yaml): "mission files not found", even after a re-read | "Add files…" listed the mission without storing it in the missions folder | Files from outside stored like a mission received in the generator; folder-less duplicate removed by "Clean up the registry" (`mission_registry.js`) |
