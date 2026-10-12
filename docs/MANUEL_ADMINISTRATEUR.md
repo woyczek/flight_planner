@@ -113,6 +113,7 @@ Ce bloc montre la mission chargée et réunit l'enregistrement et l'import.
 | « Nouvelle mission » | Vide le formulaire (date du jour) |
 | « Commander à ChatGPT… » | Déplie le formulaire de commande (voir plus bas) |
 | « Enregistrer dans le dossier » | Écrit le YAML modifié dans `data/missions/<lettre>_<FAMILLE>/<ID>/` ; l'ancienne version est remplacée, l'historique est gardé dans le YAML |
+| « Dupliquer » | Copie de la mission chargée, prête à modifier : identifiant et série suivants libres de la même famille (lettre d'équipe gardée), références à l'ancien identifiant suivies (cartes attendues, récit), titre « … (copie) », `meta.duplicated_from` ; opération réduite à la copie ; cartes et rendus à refaire au studio. La copie s'ouvre ici ; « Enregistrer dans le dossier » pour la garder |
 | « Mémoriser le brouillon » / « Recharger le brouillon » (niveau Expert) | Garde ou relit le texte de la mission dans ce navigateur (les images sont à resélectionner) |
 
 Le volet « Importer une autre mission : fichiers, texte collé, commande ChatGPT » est ouvert quand aucune mission n'est chargée :
@@ -310,7 +311,7 @@ La fiche affiche le statut, l'itinéraire, les équipes et indicatifs, puis :
 - état des cartes : « complète », « partielle : cartes à compléter » ou « partielle : cartes non générées (régénérables) » ;
 - « Durée estimée » avec la comparaison aux CR.
 
-Boutons : « Ouvrir dans le générateur », « Ouvrir dans le studio », « Affecter… » (sauf organisation …Z ; voir [affectation des missions](technique/AFFECTATION_MISSIONS.md)), « Créer le CR » ou « Nouveau CR (vol n) », et « Recopier le prompt » pour une mission commandée. « Ouvrir dans le studio » et « Recopier le prompt » sont au niveau Expert.
+Boutons : « Ouvrir dans le générateur », « Dupliquer » (copie de la mission, identifiant suivant, ouverte dans le générateur ; voir le générateur), « Ouvrir dans le studio », « Affecter… » (sauf organisation …Z ; voir [affectation des missions](technique/AFFECTATION_MISSIONS.md)), « Créer le CR » ou « Nouveau CR (vol n) », et « Recopier le prompt » pour une mission commandée. « Ouvrir dans le studio » et « Recopier le prompt » sont au niveau Expert.
 
 ### Suivi du Centre : statut, date de vol, notes
 

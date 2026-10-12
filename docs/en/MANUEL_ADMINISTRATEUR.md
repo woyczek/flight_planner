@@ -113,6 +113,7 @@ This block shows the loaded mission and groups saving and import.
 | “New mission” | Clears the form (today's date) |
 | “Order from ChatGPT…” | Expands the order form (see below) |
 | “Save to the folder” | Writes the modified YAML to `data/missions/<lettre>_<FAMILLE>/<ID>/`; the old version is replaced, the history is kept in the YAML |
+| “Duplicate” | Copy of the loaded mission, ready to edit: next free identifier and series of the same family (team letter kept), references to the old identifier followed (expected maps, narrative), title “… (copie)”, `meta.duplicated_from`; operation reduced to the copy; maps and renders to redo in the studio. The copy opens here; “Save to the folder” to keep it |
 | “Save draft” / “Reload draft” (Expert level) | Keeps or reloads the mission text in this browser (images must be selected again) |
 
 The “Import another mission: files, pasted text, ChatGPT order” pane is open when no mission is loaded:
@@ -310,7 +311,7 @@ The card shows the status, the itinerary, the teams and callsigns, then:
 - map state: “complete”, “partial: maps missing” or “partial: maps not generated (can be regenerated)”;
 - “Estimated time” with the comparison with the reports.
 
-Buttons: “Open in generator”, “Open in map studio”, “Assign…” (except organisation …Z; see [mission assignment](../technique/AFFECTATION_MISSIONS.md)), “Create report” or “New report (flight n)”, and “Copy prompt again” for an ordered mission. “Open in map studio” and “Copy prompt again” are at the Expert level.
+Buttons: “Open in generator”, “Duplicate” (copy of the mission, next identifier, opened in the generator; see the generator), “Open in map studio”, “Assign…” (except organisation …Z; see [mission assignment](../technique/AFFECTATION_MISSIONS.md)), “Create report” or “New report (flight n)”, and “Copy prompt again” for an ordered mission. “Open in map studio” and “Copy prompt again” are at the Expert level.
 
 ### Centre follow-up: status, flight date, notes
 

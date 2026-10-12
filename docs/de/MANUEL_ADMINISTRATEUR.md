@@ -113,6 +113,7 @@ Dieser Block zeigt die geladene Mission und vereint Speichern und Import.
 | „Neue Mission“ | Leert das Formular (heutiges Datum) |
 | „Bei ChatGPT bestellen…“ | Klappt das Bestellformular auf (siehe unten) |
 | „Im Ordner speichern“ | Schreibt das geänderte YAML nach `data/missions/<lettre>_<FAMILLE>/<ID>/`; die alte Version wird ersetzt, der Verlauf bleibt im YAML erhalten |
+| „Duplizieren“ | Kopie der geladenen Mission, bereit zum Bearbeiten: nächste freie Kennung und Serie derselben Familie (Teambuchstabe bleibt), Verweise auf die alte Kennung nachgeführt (erwartete Karten, Erzählung), Titel „… (copie)“, `meta.duplicated_from`; Operation auf die Kopie reduziert; Karten und Darstellungen im Studio neu erstellen. Die Kopie öffnet sich hier; „Im Ordner speichern“, um sie zu behalten |
 | „Entwurf speichern“ / „Entwurf neu laden“ (Stufe Experte) | Behält oder liest den Text der Mission in diesem Browser (die Bilder sind neu auszuwählen) |
 
 Der Bereich „Andere Mission importieren: Dateien, eingefügter Text, ChatGPT-Bestellung“ ist geöffnet, wenn keine Mission geladen ist:
@@ -310,7 +311,7 @@ Das Blatt zeigt Status, Streckenführung, Teams und Rufzeichen, danach:
 - Zustand der Karten: „vollständig“, „teilweise: Karten zu ergänzen“ oder „teilweise: Karten nicht erzeugt (wiedererzeugbar)“;
 - „Geschätzte Dauer“ mit dem Vergleich zu den Berichten.
 
-Schaltflächen: „Im Generator öffnen“, „Im Kartenstudio öffnen“, „Zuweisen…“ (außer Übungsleitung …Z; siehe [Zuweisung der Missionen](../technique/AFFECTATION_MISSIONS.md)), „Bericht erstellen“ oder „Neuer Bericht (Flug n)“, und „Prompt erneut kopieren“ für eine bestellte Mission. „Im Kartenstudio öffnen“ und „Prompt erneut kopieren“ gehören zur Stufe Experte.
+Schaltflächen: „Im Generator öffnen“, „Duplizieren“ (Kopie der Mission, nächste Kennung, im Generator geöffnet; siehe Generator), „Im Kartenstudio öffnen“, „Zuweisen…“ (außer Übungsleitung …Z; siehe [Zuweisung der Missionen](../technique/AFFECTATION_MISSIONS.md)), „Bericht erstellen“ oder „Neuer Bericht (Flug n)“, und „Prompt erneut kopieren“ für eine bestellte Mission. „Im Kartenstudio öffnen“ und „Prompt erneut kopieren“ gehören zur Stufe Experte.
 
 ### Verfolgung durch das Zentrum: Status, Flugdatum, Notizen
 

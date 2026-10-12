@@ -1558,7 +1558,7 @@
         <label>${esc(t(['Volée le', 'Flown on', 'Geflogen am', 'Volada el']))}<input type="date" id="rgFlown" value="${esc(m.flownAt || '')}"></label>
         <label class="rg-notes">${esc(t(['Notes', 'Notes', 'Notizen', 'Notas']))}<input id="rgNotes" value="${esc(m.notes || '')}"></label>
       </div>
-      <p class="row">${m.files?.length ? `<button type="button" class="primary" data-go="editor" data-icon="edit">${esc(t(['Ouvrir dans le générateur', 'Open in generator', 'Im Generator öffnen', 'Abrir en el generador']))}</button><button type="button" class="secondary" data-go="studio" data-icon="map" data-min-level="4">${esc(t(['Ouvrir dans le studio', 'Open in map studio', 'Im Kartenstudio öffnen', 'Abrir en el estudio']))}</button>${/Z$/.test(m.id || '') ? '' : `<button type="button" class="secondary" data-go="assign" data-icon="users" title="${esc(t(['Affecter la mission à un ou plusieurs pilotes : heure, appareils, astreinte (docs/technique/AFFECTATION_MISSIONS.md)', 'Assign the mission to one or more pilots: time, aircraft, standby']))}">${esc(t(['Affecter…', 'Assign…', 'Zuweisen…', 'Asignar…']))}</button>`}<button type="button" class="secondary" data-go="cr" data-icon="clipboard" title="${esc(t(['Nouveau CR de cette mission : n° de vol suivant', 'New report for this mission: next flight number']))}">${esc(m.reports?.length ? t(['Nouveau CR (vol {n})', 'New report (flight {n})', 'Neuer Bericht (Flug {n})', 'Nuevo informe (vuelo {n})'], { n: m.reports.length + 1 }) : t(['Créer le CR', 'Create report', 'Bericht erstellen', 'Crear informe']))}</button>` : ''}${m.status === 'ordered' ? `<button type="button" class="secondary" data-go="prompt" data-icon="send" data-min-level="4">${esc(t(['Recopier le prompt', 'Copy prompt again']))}</button>` : ''}<span class="rg-small">${esc((m.files || []).join(', '))}</span></p>
+      <p class="row">${m.files?.length ? `<button type="button" class="primary" data-go="editor" data-icon="edit">${esc(t(['Ouvrir dans le générateur', 'Open in generator', 'Im Generator öffnen', 'Abrir en el generador']))}</button><button type="button" class="secondary" data-go="duplicate" data-icon="layers" data-min-level="3" title="${esc(t(['Copie de la mission, prête à modifier : identifiant et série suivants de la même famille, titre « (copie) » ; ouverte dans le générateur, cartes à refaire au studio', 'Copy of the mission, ready to edit: next identifier and series of the same family, title “(copy)”; opened in the generator, maps to redo in the studio', 'Kopie der Mission, bereit zum Bearbeiten: nächste Kennung und Serie derselben Familie, Titel „(Kopie)“; im Generator geöffnet, Karten im Studio neu erstellen', 'Copia de la misión, lista para modificar: identificador y serie siguientes de la misma familia, título «(copia)»; abierta en el generador, mapas a rehacer en el estudio']))}">${esc(t(['Dupliquer', 'Duplicate', 'Duplizieren', 'Duplicar']))}</button><button type="button" class="secondary" data-go="studio" data-icon="map" data-min-level="4">${esc(t(['Ouvrir dans le studio', 'Open in map studio', 'Im Kartenstudio öffnen', 'Abrir en el estudio']))}</button>${/Z$/.test(m.id || '') ? '' : `<button type="button" class="secondary" data-go="assign" data-icon="users" title="${esc(t(['Affecter la mission à un ou plusieurs pilotes : heure, appareils, astreinte (docs/technique/AFFECTATION_MISSIONS.md)', 'Assign the mission to one or more pilots: time, aircraft, standby']))}">${esc(t(['Affecter…', 'Assign…', 'Zuweisen…', 'Asignar…']))}</button>`}<button type="button" class="secondary" data-go="cr" data-icon="clipboard" title="${esc(t(['Nouveau CR de cette mission : n° de vol suivant', 'New report for this mission: next flight number']))}">${esc(m.reports?.length ? t(['Nouveau CR (vol {n})', 'New report (flight {n})', 'Neuer Bericht (Flug {n})', 'Nuevo informe (vuelo {n})'], { n: m.reports.length + 1 }) : t(['Créer le CR', 'Create report', 'Bericht erstellen', 'Crear informe']))}</button>` : ''}${m.status === 'ordered' ? `<button type="button" class="secondary" data-go="prompt" data-icon="send" data-min-level="4">${esc(t(['Recopier le prompt', 'Copy prompt again']))}</button>` : ''}<span class="rg-small">${esc((m.files || []).join(', '))}</span></p>
       <p class="rg-small" id="rgGoMsg"></p></div>`;
     box.querySelector('#rgStatus').onchange = e => {
       m.status = e.target.value;
@@ -1996,6 +1996,20 @@
           await writeSuivi(m); // avant de quitter la page
         }
         location.href = new URL(`apps/cr/${target.cr}?from=sia`, window.RepositoryNav.root).href;
+        return;
+      }
+      if (where === 'duplicate') {
+        // « Dupliquer » : copie (SiaMission.duplicate) ouverte dans le générateur ; la mission d'origine ne change pas
+        const copy = window.SiaMission.duplicate(window.SiaMission.fromTexts(files), 'registry');
+        try {
+          sessionStorage.setItem('siaDuplicated:v1', JSON.stringify({
+            from: m.id,
+            to: copy.yaml.mission.id
+          }));
+        } catch {
+          /* stockage indisponible */
+        }
+        location.href = new URL('apps/cpco/mission_editor.html', window.RepositoryNav.root).href;
         return;
       }
       window.SiaMission.importTexts(files, 'registry');

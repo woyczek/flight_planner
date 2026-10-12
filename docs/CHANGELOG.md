@@ -10,6 +10,17 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ## [Non publié]
 
+### Ajouté
+
+- **Générateur et registre des missions : « Dupliquer »** (V2_FABLE § 8, L2) — dans le bloc « Mission » du
+  générateur et dans le registre, à côté d'« Ouvrir dans le générateur » : copie de la mission prête à modifier
+  (`SiaMission.duplicate`) — identifiant et série suivants libres de la même famille (`nextNumbering`, lettre d'équipe
+  gardée), références à l'ancien identifiant suivies dans le YAML et le récit (cartes attendues…), titre « … (copie) »,
+  `meta.duplicated_from` et `duplicated_at`, opération réduite à la copie (sans organisation d'exercice), fichiers
+  sources, cartes et rendus non repris ; la copie s'ouvre dans le générateur avec une ligne d'état qui le dit. Textes de
+  mission : sous-titre du bloc posé aussi au changement de mode, « Summary » devient « Résumé ». Manuel administrateur
+  (4 langues).
+
 ### Modifié
 
 - **Générateur de missions : rubriques textuelles nommées** (V2_FABLE § 8, L1) — « Ajouter une rubrique textuelle »

@@ -113,6 +113,7 @@ Este bloque muestra la misión cargada y reúne el guardado y la importación.
 | «Nueva misión» | Vacía el formulario (fecha del día) |
 | «Encargar a ChatGPT…» | Despliega el formulario de encargo (véase más abajo) |
 | «Guardar en la carpeta» | Escribe el YAML modificado en `data/missions/<lettre>_<FAMILLE>/<ID>/`; la versión anterior se sustituye y el historial se conserva en el YAML |
+| «Duplicar» | Copia de la misión cargada, lista para modificar: identificador y serie siguientes libres de la misma familia (letra de equipo conservada), referencias al identificador anterior seguidas (mapas previstos, relato), título «… (copie)», `meta.duplicated_from`; operación reducida a la copia; mapas y renders a rehacer en el estudio. La copia se abre aquí; «Guardar en la carpeta» para conservarla |
 | «Guardar borrador» / «Recargar borrador» (nivel Experto) | Guarda o vuelve a leer el texto de la misión en este navegador (las imágenes hay que volver a seleccionarlas) |
 
 El panel «Importar otra misión: archivos, texto pegado, encargo a ChatGPT» está abierto cuando no hay ninguna misión cargada:
@@ -310,7 +311,7 @@ La ficha muestra el estado, el itinerario, los equipos y los indicativos, y desp
 - estado de los mapas: «completa», «parcial» o «sin mapas»;
 - «Duración estimada» con la comparación con los informes.
 
-Botones: «Abrir en el generador», «Abrir en el estudio», «Asignar…» (salvo organización …Z; véase [asignación de misiones](../technique/AFFECTATION_MISSIONS.md)), «Crear informe» o «Nuevo informe (vuelo n)», y «Volver a copiar el prompt» para una misión encargada. «Abrir en el estudio» y «Volver a copiar el prompt» están en el nivel Experto.
+Botones: «Abrir en el generador», «Duplicar» (copia de la misión, identificador siguiente, abierta en el generador; véase el generador), «Abrir en el estudio», «Asignar…» (salvo organización …Z; véase [asignación de misiones](../technique/AFFECTATION_MISSIONS.md)), «Crear informe» o «Nuevo informe (vuelo n)», y «Volver a copiar el prompt» para una misión encargada. «Abrir en el estudio» y «Volver a copiar el prompt» están en el nivel Experto.
 
 ### Seguimiento del Centro: estado, fecha de vuelo, notas
 
