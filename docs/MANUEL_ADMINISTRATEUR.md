@@ -179,7 +179,7 @@ Sur une mission d'équipage, le bloc s'intitule « Exercice : ce que reçoit cet
 
 ### Textes de mission
 
-« Summary » (résumé), « Description détaillée », puis des rubriques libres : « Ajouter une rubrique textuelle », chacune avec « Titre de rubrique », « Contenu » et « Supprimer ».
+« Summary » (résumé), « Description détaillée », puis les rubriques : « Ajouter une rubrique textuelle » propose celles que le brief et le CR savent placer (Introduction, Objectif principal, Objectifs secondaires, Équipes engagées, Points tournants, Rendez-vous, Ravitaillement en vol, Risques à prendre en compte, Charge / personnel, Coordination, Chronologie, Cartographie prévue, Notes), chacune avec une ligne qui dit où elle apparaît et ce qu'on y écrit ; une rubrique déjà présente n'est plus proposée. Objectifs, risques et notes s'écrivent dans le YAML sous leur clé (`objectives.primary`, `objectives.secondary`, `risks`, `notes` ; une valeur par ligne pour les listes) ; les autres complètent dans le brief la section de même nom. « Autre rubrique… » : titre libre, ajoutée à la fin du brief. Chaque rubrique a « Contenu » et « Supprimer ».
 Si le fichier reçu n'a ni résumé ni description, ils sont proposés à partir des données : relisez-les.
 Sur une mission d'organisation, le bloc devient « Brief général » : situation, objectifs communs, créneaux, critères de fin, remis à tous.
 

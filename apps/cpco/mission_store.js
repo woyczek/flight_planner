@@ -985,8 +985,10 @@
   //      (docs/technique/PROMPT_GENERATEUR_MISSIONS.md), relu par fromTexts ; mission d'organisation (…Z) : son format propre.
   //      docs : autres missions de l'opération (YAML), pour la section « Exercice » d'une mission d'équipage.
   function markdownOf(y, {
-    docs = []
+    docs = [],
+    narrative = null
   } = {}) {
+    narrative ||= y?.narrative; // rubriques du récit (document { yaml, narrative }, ou passées par le générateur)
     y = y?.yaml || y || {};
     /** Outils de mise en forme : liste, texte nettoyé, cellule de tableau Markdown (sans « | » ni saut de ligne). */
     const arr = v => Array.isArray(v) ? v : v ? [v] : [],
@@ -1003,9 +1005,19 @@
       out = [];
     /** Paragraphes du texte, chaque paragraphe remis sur une ligne. */
     const para = v => txt(v).split(/\n\s*\n/).map(s => s.replace(/\s*\n\s*/g, ' ').trim()).filter(Boolean).join('\n\n');
-    /** Ajoute la section « ## title » si son contenu n'est pas vide. */
+    // rubriques du récit (générateur : « Ajouter une rubrique textuelle ») : sous la section de même titre (ou dont le
+    // titre commence ainsi), sinon ajoutées à la fin
+    const extras = (narrative?.sections || []).filter(x => txt(x?.content)).map(x => ({
+      title: txt(x.title),
+      content: txt(x.content),
+      used: false
+    }));
+    /** Ajoute la section « ## title » si son contenu (rubriques du récit comprises) n'est pas vide. */
     const sec = (title, body) => {
-      if (txt(body)) out.push(`## ${title}\n\n${txt(body)}`);
+      const more = extras.filter(x => !x.used && x.title && (x.title === title || title.startsWith(x.title + ' ')));
+      more.forEach(x => x.used = true);
+      const all = [txt(body), ...more.map(x => x.content)].filter(Boolean).join('\n\n');
+      if (all) out.push(`## ${title}\n\n${all}`);
     };
     const teams = arr(y.teams).filter(t => t && typeof t === 'object');
     const teamTable = teams.length ? ['| Nom / callsign | Arme / service | Département | Type | Rôle |', '|---|---|---|---|---|', ...teams
@@ -1048,6 +1060,7 @@
       ]) => `- ${k}: ${Array.isArray(v) ? v.join(', ') : v}`).join('\n'));
       sec('Risques à prendre en compte', arr(y.risks).map(r => typeof r === 'object' ? `- **${txt(r.hazard)}** — conséquence : ${txt(r.consequence)} — mesure : ${txt(r.mitigation)}` : `- ${txt(r)}`).join('\n'));
       sec('Cartographie prévue', arr(y.maps).map(mp => typeof mp === 'object' ? `- \`${txt(mp.filename || mp.file)}\` — ${txt(mp.description)}` : `- \`${txt(mp)}\``).join('\n'));
+      sec('Notes', arr(y.notes).map(n => `- ${txt(n)}`).join('\n'));
       // exercice : organisation de l'opération (docs) ; plis comptés, pas leur contenu
       const X = window.MissionExercise,
         org = X ? X.of(y, docs) : null,
@@ -1060,6 +1073,8 @@
       }
       for (const ph of arr(y.phases)) sec(`Partie ${txt(ph.id)} — ${txt(ph.title)}`, [`À ouvrir : ${txt(ph.trigger)}`, `Message : ${txt(ph.message)}`, '', para(ph.brief)].join('\n'));
     }
+    for (const x of extras)
+      if (!x.used) out.push(`## ${x.title}\n\n${x.content}`);
     out.push('> Scénario de simulation — ne pas utiliser pour une mission réelle.');
     return out.join('\n\n') + '\n';
   }

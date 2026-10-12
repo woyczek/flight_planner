@@ -179,7 +179,7 @@ En una misión de tripulación, el bloque se titula «Ejercicio: lo que recibe e
 
 ### Textos de la misión
 
-«Summary» (resumen), «Descripción detallada» y después apartados libres: «Añadir una sección de texto», cada uno con «Título de la sección», «Contenido» y «Eliminar».
+«Summary» (resumen), «Descripción detallada» y después las secciones: «Añadir una sección de texto» propone las que el brief y el informe saben colocar (Introducción, Objetivo principal, Objetivos secundarios, Equipos implicados, Puntos de viraje, Encuentros, Reabastecimiento en vuelo, Riesgos a tener en cuenta, Carga / personal, Coordinación, Cronología, Cartografía prevista, Notas), cada una con una línea que dice dónde aparece y qué se escribe en ella; una sección ya presente deja de proponerse. Objetivos, riesgos y notas se escriben en el YAML bajo su clave (`objectives.primary`, `objectives.secondary`, `risks`, `notes`; un valor por línea en las listas); las demás completan en el brief la sección del mismo nombre. «Otra sección…»: título libre, añadida al final del brief. Cada sección tiene «Contenido» y «Eliminar».
 Si el archivo recibido no tiene ni resumen ni descripción, se proponen a partir de los datos: reléalos.
 En una misión de organización, el bloque pasa a ser «Briefing general»: situación, objetivos comunes, franjas, criterios de fin, entregado a todos.
 

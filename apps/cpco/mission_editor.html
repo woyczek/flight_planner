@@ -203,6 +203,34 @@
   .err {
     color: #a12622
   }
+  /* rubriques textuelles : choix d'une rubrique nommée (où elle apparaît, ce qu'on y écrit) */
+  .narrMenu>summary {
+    cursor: pointer;
+    display: inline-block;
+    padding: 6px 10px;
+    border: 1px dashed currentColor;
+    opacity: .85
+  }
+  .narrMenu ul {
+    list-style: none;
+    margin: 6px 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 6px
+  }
+  .narrMenu li button {
+    width: 100%;
+    text-align: left;
+    padding: 6px 8px
+  }
+  .narrMenu li small,
+  .sectionCard .narrWhere {
+    display: block;
+    opacity: .7;
+    font-size: 12px;
+    font-weight: normal
+  }
   .sectionCard,
   .arrayItem {
     border: 1px solid #d8e3e8;
@@ -512,7 +540,7 @@ html[data-skeuo] .repo-block .mapCard.missing:not(#imp) {
 
 <section data-block-id="mission-exercise" data-icon="list" data-subtitle="Plis scellés à ouvrir et messages radio attendus, d’après la chronologie de l’organisation de l’exercice." hidden><h2>Exercice</h2><div id="missionExercise"></div><div id="exerciseMaps" class="small exerciseMaps"></div></section>
 
-<section data-block-id="mission-texts" data-icon="file-text" data-subtitle="Résumé, description détaillée et rubriques du brief."><h2>Textes de mission</h2><div class="two"><label>Summary<textarea id="summary"></textarea></label><label>Description détaillée<textarea id="detailed" class="long"></textarea></label></div><div id="narrativeSections"></div><button id="addNarrative" class="ghost" type="button">Ajouter une rubrique textuelle</button></section>
+<section data-block-id="mission-texts" data-icon="file-text" data-subtitle="Résumé, description détaillée, puis les rubriques que le brief place à leur rang : objectifs, risques et notes vont dans le YAML, les autres complètent la section du même nom."><h2>Textes de mission</h2><div class="two"><label>Summary<textarea id="summary"></textarea></label><label>Description détaillée<textarea id="detailed" class="long"></textarea></label></div><div id="narrativeSections"></div><details id="addNarrative" class="narrMenu"><summary>Ajouter une rubrique textuelle</summary><ul id="narrChoices"></ul></details></section>
 
 <section data-block-id="mission-yaml" data-default-hidden="1" data-min-level="4" data-icon="database" data-subtitle="Éditeur libre de toutes les clés du YAML de la mission."><h2>Toutes les données YAML</h2><p class="note">Cet éditeur est sans schéma imposé : les champs supplémentaires présents dans tes exemples sont conservés et restent modifiables.</p><div id="yamlEditor"></div><div class="inlineAdd"><input id="newRootKey" placeholder="Nom d’un nouveau champ racine"><button id="addRootKey" class="ghost" type="button">Ajouter</button></div></section>
 
@@ -876,16 +904,109 @@ function renderCommon() {
   $('detailed').value = state.narrative.detailed || state.yaml.detailed_description || state.yaml.description_detaillee || ''
 }
 
-/** Rubriques libres du récit : une carte par rubrique (titre, contenu, supprimer). */
+/* ===== Rubriques textuelles =====
+   Rubriques que le brief (Markdown, PDF) et le CR savent placer. Celles qui ont une clé YAML (objectifs, risques, notes)
+   s'écrivent sous cette clé : le brief et le CR les lisent là. Les autres vont dans narrative.sections sous leur titre et
+   complètent, dans le brief, la section de même nom (ou s'ajoutent à la fin). « Autre rubrique… » : titre libre, brief
+   seulement. key : chemin YAML ; lines : une valeur par ligne (liste). */
+const NARR_SECTIONS = [{
+  title: 'Introduction',
+  where: 'Brief : sous l’en-tête (type, aéronef, départ, destination).',
+  what: 'Contexte, situation, ce qui amène la mission.'
+}, {
+  title: 'Objectif principal',
+  key: 'objectives.primary',
+  where: 'YAML objectives.primary ; brief et CR.',
+  what: 'Ce que l’équipage doit avoir accompli, en une ou deux phrases.'
+}, {
+  title: 'Objectifs secondaires',
+  key: 'objectives.secondary',
+  lines: true,
+  where: 'YAML objectives.secondary ; brief et CR.',
+  what: 'Ce qui est souhaité en plus, un objectif par ligne.'
+}, {
+  title: 'Équipes engagées',
+  where: 'Brief : sous le tableau des équipes.',
+  what: 'Rôle de chaque équipe, liaisons, consignes communes.'
+}, {
+  title: 'Points tournants',
+  where: 'Brief : sous le tableau des points.',
+  what: 'Ce qu’il faut faire ou observer à chaque point.'
+}, {
+  title: 'Rendez-vous',
+  where: 'Brief : sous la liste des rendez-vous.',
+  what: 'Procédure de jonction, fréquences, signes de reconnaissance.'
+}, {
+  title: 'Ravitaillement en vol',
+  where: 'Brief : sous les données du ravitaillement.',
+  what: 'Procédure, quantités, consignes du ravitailleur.'
+}, {
+  title: 'Risques à prendre en compte',
+  key: 'risks',
+  lines: true,
+  where: 'YAML risks ; brief, PDF et CR.',
+  what: 'Un risque par ligne : danger — conséquence — mesure.'
+}, {
+  title: 'Charge / personnel',
+  where: 'Brief : sous la charge transportée.',
+  what: 'Ce qui est à bord, contraintes de chargement ou de personnel.'
+}, {
+  title: 'Coordination',
+  where: 'Brief : avec la coordination de l’opération, sinon section seule.',
+  what: 'Qui parle à qui, quand, sur quelle fréquence.'
+}, {
+  title: 'Chronologie',
+  where: 'Brief : sous la chronologie de l’exercice, sinon section seule.',
+  what: 'Horaires prévus : décollage, arrivée sur zone, rendez-vous, retour.'
+}, {
+  title: 'Cartographie prévue',
+  where: 'Brief : sous la liste des cartes.',
+  what: 'Ce que chaque carte doit montrer, au besoin.'
+}, {
+  title: 'Notes',
+  key: 'notes',
+  lines: true,
+  where: 'YAML notes ; brief et CR.',
+  what: 'Remarques diverses, une par ligne.'
+}];
+/** Texte d'une valeur YAML de rubrique : une ligne par élément (risque objet : danger — conséquence — mesure). */
+function narrText(v) {
+  return [].concat(v ?? []).map(x => x && typeof x === 'object' ? [x.hazard || x.risk || x.name, x.consequence, x.mitigation].filter(
+    Boolean).join(' — ') : String(x ?? '')).join('\n')
+}
+/** Rubrique à clé YAML : valeur reprise du texte (liste : une valeur par ligne ; un risque objet inchangé reste objet). */
+function narrFromText(def, text) {
+  if (!def.lines) return text;
+  const old = [].concat(getPath(state.yaml, def.key.split('.')) ?? []);
+  return text.split(/\r?\n/).map(x => x.replace(/^\s*[-*•]\s*/, '').trim()).filter(Boolean).map(line => old.find(o => o && typeof o ===
+    'object' && narrText(o) === line) || line)
+}
+/** Rubriques présentes : à clé YAML (clé présente, même vide), puis rubriques du récit (narrative.sections). */
+function narrPresent() {
+  return NARR_SECTIONS.filter(d => d.key && getPath(state.yaml, d.key.split('.')) !== undefined)
+}
+/** Rubriques textuelles : une carte par rubrique (titre, où elle apparaît, contenu, supprimer) ; menu « Ajouter » limité
+ *  aux rubriques absentes, plus « Autre rubrique… ». */
 function renderNarrative() {
-  const host = $('narrativeSections');
+  const host = $('narrativeSections'),
+    byTitle = t => NARR_SECTIONS.find(d => d.title === String(t || '').trim());
   host.innerHTML = '';
-  state.narrative.sections.forEach((s, i) => {
+  for (const d of narrPresent()) {
     const card = document.createElement('div');
     card.className = 'sectionCard';
-    card.innerHTML = `<div class="grid"><label>Titre de rubrique<input data-narr-title="${i}" value="${esc(s.title)}"></label><div class="actions"><button class="danger" data-narr-delete="${i}" type="button">Supprimer</button></div></div><label>Contenu<textarea data-narr-body="${i}">${esc(s.content)}</textarea></label>`;
+    card.innerHTML = `<div class="grid"><div><b>${esc(d.title)}</b><span class="narrWhere">${esc(d.where)} ${esc(d.what)}</span></div><div class="actions"><button class="danger" data-narr-key-delete="${esc(d.key)}" type="button">Supprimer</button></div></div><label>Contenu<textarea data-narr-key="${esc(d.key)}" placeholder="${esc(d.what)}">${esc(narrText(getPath(state.yaml, d.key.split('.'))))}</textarea></label>`;
     host.appendChild(card)
-  })
+  }
+  state.narrative.sections.forEach((s, i) => {
+    const d = byTitle(s.title),
+      card = document.createElement('div');
+    card.className = 'sectionCard';
+    card.innerHTML = `<div class="grid"><label>Titre de rubrique<input data-narr-title="${i}" value="${esc(s.title)}"></label><div class="actions"><button class="danger" data-narr-delete="${i}" type="button">Supprimer</button></div></div><span class="narrWhere">${esc(d ? `${d.where} ${d.what}` : 'Autre rubrique : brief seulement, à la fin.')}</span><label>Contenu<textarea data-narr-body="${i}" placeholder="${esc(d?.what || '')}">${esc(s.content)}</textarea></label>`;
+    host.appendChild(card)
+  });
+  // menu : rubriques nommées absentes, puis « Autre rubrique… »
+  const used = new Set([...narrPresent().map(d => d.title), ...state.narrative.sections.map(x => String(x.title || '').trim())]);
+  $('narrChoices').innerHTML = NARR_SECTIONS.filter(d => !used.has(d.title)).map(d => `<li><button type="button" class="ghost" data-narr-add="${esc(d.title)}">${esc(d.title)}<small>${esc(d.where)} ${esc(d.what)}</small></button></li>`).join('') + `<li><button type="button" class="ghost" data-narr-add="">Autre rubrique…<small>Titre libre ; brief seulement, à la fin.</small></button></li>`
 }
 
 /** Saisie d'une valeur simple de l'éditeur YAML : choix vrai / faux, zone de texte pour un texte long, sinon champ. */
@@ -1657,7 +1778,8 @@ function markdownExport() {
     detailed_description: state.narrative.detailed || state.yaml.detailed_description
   };
   return window.SiaMission.markdownOf(y, {
-    docs: opDocs().filter(d => d !== state.yaml)
+    docs: opDocs().filter(d => d !== state.yaml),
+    narrative: state.narrative
   })
 }
 // ===== Brief PDF (jsPDF local) =====
@@ -2588,12 +2710,29 @@ $('yamlEditor').addEventListener('click', e => {
 });
 $('narrativeSections').addEventListener('input', e => {
   if (e.target.dataset.narrTitle !== undefined) state.narrative.sections[+e.target.dataset.narrTitle].title = e.target.value;
-  if (e.target.dataset.narrBody !== undefined) state.narrative.sections[+e.target.dataset.narrBody].content = e.target.value
+  if (e.target.dataset.narrBody !== undefined) state.narrative.sections[+e.target.dataset.narrBody].content = e.target.value;
+  // rubrique à clé YAML : écrite sous sa clé (objectives.primary, risks, notes…)
+  const key = e.target.dataset.narrKey;
+  if (key) setPath(state.yaml, key.split('.'), narrFromText(NARR_SECTIONS.find(d => d.key === key), e.target.value))
+});
+// éditeur YAML redessiné en quittant une rubrique à clé (pas à chaque frappe : le curseur resterait en place)
+$('narrativeSections').addEventListener('change', e => {
+  if (e.target.dataset.narrKey) renderYaml()
 });
 $('narrativeSections').addEventListener('click', e => {
   if (e.target.dataset.narrDelete !== undefined) {
     state.narrative.sections.splice(+e.target.dataset.narrDelete, 1);
     renderNarrative()
+  }
+  const key = e.target.dataset.narrKeyDelete;
+  if (key) {
+    const path = key.split('.'),
+      parent = getPath(state.yaml, path.slice(0, -1));
+    if (parent && typeof parent === 'object') delete parent[path.at(-1)];
+    // objet parent vidé (objectives sans primary ni secondary) : retiré aussi
+    if (path.length > 1 && parent && !Object.keys(parent).length) delete getPath(state.yaml, path.slice(0, -2))[path.at(-2)];
+    renderNarrative();
+    renderYaml()
   }
 });
 $('missionId').addEventListener('input', () => {
@@ -2658,13 +2797,23 @@ $('missionId').addEventListener('change', () => {
   if (idBefore && now !== idBefore) idBefore = changeMissionId(idBefore, now)
 });
 $('missionType').addEventListener('input', updateIdentHints);
-$('addNarrative').onclick = () => {
-  state.narrative.sections.push({
-    title: 'Nouvelle rubrique',
+// « Ajouter une rubrique textuelle » : rubrique nommée choisie (à clé YAML : clé créée vide), ou « Autre rubrique… »
+$('narrChoices').addEventListener('click', e => {
+  const b = e.target.closest('[data-narr-add]');
+  if (!b) return;
+  const d = NARR_SECTIONS.find(x => x.title === b.dataset.narrAdd);
+  if (d?.key) setPath(state.yaml, d.key.split('.'), d.lines ? [] : '');
+  else state.narrative.sections.push({
+    title: d ? d.title : 'Autre rubrique',
     content: ''
   });
-  renderNarrative()
-};
+  $('addNarrative').open = false;
+  renderNarrative();
+  if (d?.key) renderYaml();
+  // curseur dans la rubrique ajoutée
+  const all = $('narrativeSections').querySelectorAll(d?.key ? `[data-narr-key="${d.key}"]` : '[data-narr-body]');
+  all[all.length - 1]?.focus()
+});
 $('addRootKey').onclick = () => {
   const key = $('newRootKey').value.trim();
   if (!key) return;

@@ -10,6 +10,16 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ## [Non publié]
 
+### Modifié
+
+- **Générateur de missions : rubriques textuelles nommées** (V2_FABLE § 8, L1) — « Ajouter une rubrique textuelle »
+  propose les rubriques que le brief et le CR savent placer, chacune avec une ligne « où elle apparaît, ce qu'on y
+  écrit » ; une rubrique présente n'est plus proposée ; « Autre rubrique… » : titre libre, fin du brief. Objectif
+  principal, objectifs secondaires, risques et notes s'écrivent dans le YAML sous leur clé (`objectives.primary`,
+  `objectives.secondary`, `risks`, `notes` ; un risque objet inchangé reste objet) ; les autres vont dans
+  `narrative.sections` et complètent, dans le brief Markdown (`SiaMission.markdownOf`), la section de même titre ;
+  section « Notes » ajoutée au brief. Manuel administrateur (4 langues).
+
 ## [5.1.0] — 2026-10-09
 
 Carburant devient l'atelier des profils de performances. Un bloc **« Profils de performances »** donne pour chaque

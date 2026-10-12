@@ -5,6 +5,116 @@
   if (!window.RepositoryContentI18n) return;
   window.RepositoryContentI18n([
     // ---- générateur de mission
+    // rubriques textuelles nommées (générateur)
+    ["Résumé, description détaillée, puis les rubriques que le brief place à leur rang : objectifs, risques et notes vont dans le YAML, les autres complètent la section du même nom.",
+      "Summary, detailed description, then the sections the brief places in order: objectives, risks and notes go into the YAML, the others complete the section of the same name.",
+      "Zusammenfassung, ausführliche Beschreibung, dann die Abschnitte, die das Briefing an ihre Stelle setzt: Ziele, Risiken und Notizen gehen ins YAML, die anderen ergänzen den gleichnamigen Abschnitt.",
+      "Resumen, descripción detallada y después las secciones que el brief coloca en su sitio: objetivos, riesgos y notas van al YAML, las demás completan la sección del mismo nombre."
+    ],
+    ["Introduction", "Introduction", "Einleitung", "Introducción"],
+    ["Brief : sous l’en-tête (type, aéronef, départ, destination).",
+      "Brief: under the header (type, aircraft, departure, destination).",
+      "Briefing: unter dem Kopf (Typ, Luftfahrzeug, Abflug, Ziel).", "Brief: bajo la cabecera (tipo, aeronave, salida, destino)."
+    ],
+    ["Contexte, situation, ce qui amène la mission.", "Context, situation, what leads to the mission.",
+      "Kontext, Lage, was zur Mission führt.", "Contexto, situación, lo que motiva la misión."
+    ],
+    ["Objectif principal", "Main objective", "Hauptziel", "Objetivo principal"],
+    ["YAML objectives.primary ; brief et CR.", "YAML objectives.primary; brief and report.",
+      "YAML objectives.primary; Briefing und Bericht.", "YAML objectives.primary; brief e informe."
+    ],
+    ["Ce que l’équipage doit avoir accompli, en une ou deux phrases.", "What the crew must have achieved, in one or two sentences.",
+      "Was die Besatzung erreicht haben muss, in ein oder zwei Sätzen.",
+      "Lo que la tripulación debe haber logrado, en una o dos frases."
+    ],
+    ["Objectifs secondaires", "Secondary objectives", "Nebenziele", "Objetivos secundarios"],
+    ["YAML objectives.secondary ; brief et CR.", "YAML objectives.secondary; brief and report.",
+      "YAML objectives.secondary; Briefing und Bericht.", "YAML objectives.secondary; brief e informe."
+    ],
+    ["Ce qui est souhaité en plus, un objectif par ligne.", "What is wanted in addition, one objective per line.",
+      "Was zusätzlich gewünscht ist, ein Ziel pro Zeile.", "Lo que se desea además, un objetivo por línea."
+    ],
+    ["Équipes engagées", "Teams involved", "Beteiligte Teams", "Equipos implicados"],
+    ["Brief : sous le tableau des équipes.", "Brief: under the team table.", "Briefing: unter der Teamtabelle.",
+      "Brief: bajo la tabla de equipos."
+    ],
+    ["Rôle de chaque équipe, liaisons, consignes communes.", "Role of each team, links, common instructions.",
+      "Rolle jedes Teams, Verbindungen, gemeinsame Anweisungen.", "Papel de cada equipo, enlaces, consignas comunes."
+    ],
+    ["Points tournants", "Turning points", "Wendepunkte", "Puntos de viraje"],
+    ["Brief : sous le tableau des points.", "Brief: under the point table.", "Briefing: unter der Punktetabelle.",
+      "Brief: bajo la tabla de puntos."
+    ],
+    ["Ce qu’il faut faire ou observer à chaque point.", "What to do or observe at each point.",
+      "Was an jedem Punkt zu tun oder zu beobachten ist.", "Qué hacer u observar en cada punto."
+    ],
+    ["Brief : sous la liste des rendez-vous.", "Brief: under the rendezvous list.", "Briefing: unter der Treffpunktliste.",
+      "Brief: bajo la lista de encuentros."
+    ],
+    ["Procédure de jonction, fréquences, signes de reconnaissance.", "Joining procedure, frequencies, recognition signals.",
+      "Treffverfahren, Frequenzen, Erkennungszeichen.", "Procedimiento de reunión, frecuencias, señales de reconocimiento."
+    ],
+    ["Ravitaillement en vol", "Air refuelling", "Luftbetankung", "Reabastecimiento en vuelo"],
+    ["Brief : sous les données du ravitaillement.", "Brief: under the refuelling data.", "Briefing: unter den Betankungsdaten.",
+      "Brief: bajo los datos del reabastecimiento."
+    ],
+    ["Procédure, quantités, consignes du ravitailleur.", "Procedure, quantities, tanker instructions.",
+      "Verfahren, Mengen, Anweisungen des Tankers.", "Procedimiento, cantidades, consignas del cisterna."
+    ],
+    ["Risques à prendre en compte", "Risks to consider", "Zu berücksichtigende Risiken", "Riesgos a tener en cuenta"],
+    ["YAML risks ; brief, PDF et CR.", "YAML risks; brief, PDF and report.", "YAML risks; Briefing, PDF und Bericht.",
+      "YAML risks; brief, PDF e informe."
+    ],
+    ["Un risque par ligne : danger — conséquence — mesure.", "One risk per line: hazard — consequence — measure.",
+      "Ein Risiko pro Zeile: Gefahr — Folge — Maßnahme.", "Un riesgo por línea: peligro — consecuencia — medida."
+    ],
+    ["Charge / personnel", "Load / personnel", "Ladung / Personal", "Carga / personal"],
+    ["Brief : sous la charge transportée.", "Brief: under the carried load.", "Briefing: unter der beförderten Ladung.",
+      "Brief: bajo la carga transportada."
+    ],
+    ["Ce qui est à bord, contraintes de chargement ou de personnel.", "What is on board, loading or personnel constraints.",
+      "Was an Bord ist, Lade- oder Personalbeschränkungen.", "Lo que va a bordo, restricciones de carga o de personal."
+    ],
+    ["Coordination", "Coordination", "Koordinierung", "Coordinación"],
+    ["Brief : avec la coordination de l’opération, sinon section seule.",
+      "Brief: with the operation’s coordination, otherwise on its own.",
+      "Briefing: bei der Koordinierung der Operation, sonst eigener Abschnitt.",
+      "Brief: con la coordinación de la operación, si no, sección propia."
+    ],
+    ["Qui parle à qui, quand, sur quelle fréquence.", "Who talks to whom, when, on which frequency.",
+      "Wer mit wem spricht, wann, auf welcher Frequenz.", "Quién habla con quién, cuándo, en qué frecuencia."
+    ],
+    ["Chronologie", "Timeline", "Zeitablauf", "Cronología"],
+    ["Brief : sous la chronologie de l’exercice, sinon section seule.", "Brief: under the exercise timeline, otherwise on its own.",
+      "Briefing: unter dem Übungsablauf, sonst eigener Abschnitt.", "Brief: bajo la cronología del ejercicio, si no, sección propia."
+    ],
+    ["Horaires prévus : décollage, arrivée sur zone, rendez-vous, retour.",
+      "Planned times: take-off, arrival on area, rendezvous, return.",
+      "Geplante Zeiten: Start, Ankunft im Gebiet, Treffpunkt, Rückkehr.",
+      "Horarios previstos: despegue, llegada a la zona, encuentro, regreso."
+    ],
+    ["Cartographie prévue", "Planned maps", "Vorgesehene Karten", "Cartografía prevista"],
+    ["Brief : sous la liste des cartes.", "Brief: under the map list.", "Briefing: unter der Kartenliste.",
+      "Brief: bajo la lista de mapas."
+    ],
+    ["Ce que chaque carte doit montrer, au besoin.", "What each map must show, if needed.", "Was jede Karte bei Bedarf zeigen soll.",
+      "Lo que cada mapa debe mostrar, si hace falta."
+    ],
+    ["Notes", "Notes", "Notizen", "Notas"],
+    ["YAML notes ; brief et CR.", "YAML notes; brief and report.", "YAML notes; Briefing und Bericht.",
+      "YAML notes; brief e informe."
+    ],
+    ["Remarques diverses, une par ligne.", "Miscellaneous remarks, one per line.", "Verschiedene Bemerkungen, eine pro Zeile.",
+      "Observaciones diversas, una por línea."
+    ],
+    ["Autre rubrique…", "Other section…", "Anderer Abschnitt…", "Otra sección…"],
+    ["Titre libre ; brief seulement, à la fin.", "Free title; brief only, at the end.", "Freier Titel; nur im Briefing, am Ende.",
+      "Título libre; solo en el brief, al final."
+    ],
+    ["Autre rubrique : brief seulement, à la fin.", "Other section: brief only, at the end.",
+      "Anderer Abschnitt: nur im Briefing, am Ende.", "Otra sección: solo en el brief, al final."
+    ],
+    ["Autre rubrique", "Other section", "Anderer Abschnitt", "Otra sección"],
     // identification
     ["Titre, famille et sous-type, identifiant (famille, numéro de l’opération, équipe), série de génération, auteur et date.",
       "Title, family and subtype, identifier (family, operation number, team), generation series, author and date.",

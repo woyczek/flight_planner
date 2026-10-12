@@ -179,7 +179,7 @@ On a crew mission, the block is titled “Exercise: what this crew receives” a
 
 ### Mission texts
 
-“Summary”, “Detailed description”, then free sections: “Add a text section”, each with “Section title”, “Content” and “Delete”.
+“Summary”, “Detailed description”, then the sections: “Add a text section” offers those the brief and the report know how to place (Introduction, Main objective, Secondary objectives, Teams involved, Turning points, Rendezvous, Air refuelling, Risks to consider, Load / personnel, Coordination, Timeline, Planned maps, Notes), each with a line saying where it appears and what to write in it; a section already present is no longer offered. Objectives, risks and notes are written into the YAML under their key (`objectives.primary`, `objectives.secondary`, `risks`, `notes`; one value per line for lists); the others complete the section of the same name in the brief. “Other section…”: free title, added at the end of the brief. Each section has “Content” and “Delete”.
 If the received file has neither summary nor description, they are proposed from the data: proofread them.
 On an organisation mission, the block becomes “General brief”: situation, common objectives, time windows, end criteria, handed to everyone.
 
