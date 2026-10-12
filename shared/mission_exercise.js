@@ -682,7 +682,96 @@
     once: true
   });
 
+  // ---- chronologie d'une mission (toute mission d'équipage, hors organisation) — docs/technique/V2_FABLE.md § 10, UC3
+  //   timeline: { events: [{ at: "H+30mn", place: "PT2", text: "…" }] } : H = décollage prévu de la mission ; même
+  //   écriture des heures que l'exercice ; lieu = un point de la mission (départ, point tournant, rendez-vous, zone,
+  //   cible, arrivée : son identifiant) ou vide (texte libre). Les points gardent leur time_on_task_min. Le brief place
+  //   ces événements en tête de sa section « Chronologie », dans l'ordre des heures.
+  /** Lieux d'une mission proposés aux événements : [{ id, name }] (départ, points, rendez-vous, zones, cible, arrivée). */
+  function placesOf(y) {
+    const out = [];
+    /** Ajoute le lieu q (identifiant, sinon fallback) s'il est nouveau. */
+    const add = (q, fallback = '') => {
+      if (!q || typeof q !== 'object') return;
+      const id = up(q.id || fallback);
+      if (id && !out.some(p => p.id === id)) out.push({
+        id,
+        name: String(q.name || '')
+      });
+    };
+    add(y?.origin, 'ORIGIN');
+    arr(y?.turning_points).forEach(q => add(q));
+    arr(y?.rendezvous).forEach(q => add(q));
+    arr(y?.zones).forEach(q => add(q));
+    add(y?.target, 'TARGET');
+    add(y?.destination, 'DESTINATION');
+    return out;
+  }
+  /** Événements de la chronologie d'une mission, triés par heure : [{ i, at, t (minutes depuis H, null si illisible),
+   *  place, placeName, text }]. */
+  function missionTimeline(y) {
+    const T = y?.timeline && typeof y.timeline === 'object' ? y.timeline : null,
+      places = placesOf(y);
+    return arr(T?.events).map((e, i) => ({
+      i,
+      at: String(e?.at || 'H'),
+      t: parseH(e?.at || 'H'),
+      place: up(e?.place),
+      placeName: places.find(p => p.id === up(e?.place))?.name || '',
+      text: String(e?.text || '')
+    })).filter(e => e.text || e.place).sort((a, b) => (a.t ?? 1e9) - (b.t ?? 1e9) || a.i - b.i);
+  }
+  /** Chronologie d'une mission en texte pour le brief : « • H+30 min — PT2 (Col de …) : texte », une ligne par
+   *  événement ; '' sans événement. */
+  const missionTimelineText = y => missionTimeline(y).map(e => `• ${e.t == null ? e.at : hText(e.t)}${e.place ? ` — ${e.place}${e
+    .placeName ? ` (${e.placeName})` : ''}` : ''}${e.text ? ` : ${e.text}` : ''}`).join('\n');
+  /** Éditeur de la chronologie d'une mission dans host : une ligne par événement (heure H+…, lieu de la mission ou
+   *  texte libre, ce qui se passe), « + Événement » ; onChange après chaque saisie. */
+  function missionTimelineEditor(host, y, {
+    onChange
+  } = {}) {
+    if (!host || !y) return;
+    css();
+    const T = y.timeline = y.timeline && typeof y.timeline === 'object' ? y.timeline : {};
+    T.events = arr(T.events);
+    const places = placesOf(y),
+      tt = row => window.RepositoryKit?.t ? window.RepositoryKit.t(row) : row[0];
+    host.classList.add('mx');
+    host.innerHTML = `<p class="mx-help">${esc(tt(['H = décollage prévu de la mission. Un événement par ligne : heure (H+30mn, H+1h05mn), lieu de la mission ou texte libre, ce qui se passe. Le brief les place en tête de la section Chronologie, dans l’ordre des heures.', 'H = the mission’s planned take-off. One event per line: time (H+30mn, H+1h05mn), place of the mission or free text, what happens. The brief puts them at the top of the Timeline section, in time order.', 'H = geplanter Start der Mission. Ein Ereignis pro Zeile: Zeit (H+30mn, H+1h05mn), Ort der Mission oder freier Text, was geschieht. Das Briefing setzt sie an den Anfang des Abschnitts Zeitablauf, nach Zeit geordnet.', 'H = despegue previsto de la misión. Un evento por línea: hora (H+30mn, H+1h05mn), lugar de la misión o texto libre, lo que ocurre. El brief los coloca al principio de la sección Cronología, por orden horario.']))}</p>
+      <table><thead><tr><th>${esc(tt(['Heure', 'Time', 'Zeit', 'Hora']))}</th><th>${esc(tt(['Lieu', 'Place', 'Ort', 'Lugar']))}</th><th>${esc(tt(['Ce qui se passe', 'What happens', 'Was geschieht', 'Lo que ocurre']))}</th><th></th></tr></thead><tbody>${T.events.map((e, i) => `<tr data-ev="${i}"><td><input data-k="at" value="${esc(e.at || 'H')}" placeholder="H+30mn" style="width:7em"></td><td><select data-k="place"><option value="">${esc(tt(['(texte libre)', '(free text)', '(freier Text)', '(texto libre)']))}</option>${places.concat(e.place && !places.some(p => p.id === up(e.place)) ? [{ id: up(e.place), name: '' }] : []).map(p => `<option value="${esc(p.id)}"${p.id === up(e.place) ? ' selected' : ''}>${esc(p.id)}${p.name ? ' — ' + esc(p.name) : ''}</option>`).join('')}</select></td><td><input data-k="text" value="${esc(e.text || '')}" style="width:100%"></td><td><button type="button" class="secondary mx-del" data-del-ev="${i}" title="${esc(tt(['Retirer', 'Remove', 'Entfernen', 'Quitar']))}">×</button></td></tr>`).join('')}</tbody></table>
+      <div class="mx-row"><button type="button" class="secondary" data-add-ev>${esc(tt(['+ Événement', '+ Event', '+ Ereignis', '+ Evento']))}</button></div>`;
+    /** Après une saisie : onChange, éditeur redessiné si l'ordre ou les lignes changent. */
+    const changed = redraw => {
+      onChange?.();
+      if (redraw) missionTimelineEditor(host, y, {
+        onChange
+      });
+    };
+    host.querySelectorAll('[data-ev] [data-k]').forEach(el => el.onchange = () => {
+      const e = T.events[+el.closest('[data-ev]').dataset.ev];
+      e[el.dataset.k] = el.dataset.k === 'place' ? up(el.value) : el.value;
+      changed(el.dataset.k === 'at');
+    });
+    host.querySelectorAll('[data-del-ev]').forEach(b => b.onclick = () => {
+      T.events.splice(+b.dataset.delEv, 1);
+      changed(true);
+    });
+    host.querySelector('[data-add-ev]').onclick = () => {
+      const last = missionTimeline(y).pop();
+      T.events.push({
+        at: last?.t != null ? hText(last.t + 15) : 'H',
+        place: '',
+        text: ''
+      });
+      changed(true);
+    };
+  }
+
   window.MissionExercise = {
+    placesOf,
+    missionTimeline,
+    missionTimelineText,
+    missionTimelineEditor,
     of,
     isOrganisation,
     organisationId,

@@ -12,6 +12,18 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Ajouté
 
+- **Mission generator: six paths by hand (docs/technique/V2_FABLE.md § 10)** — actions on the Operation line of the
+  Mission block, each saying first what it will create or remove (identifiers included): "Add a crew…" (standalone
+  mission → crew A, identifier migrated M-016 → M-016A, new mission B with the shared context — family, theatre,
+  departure, arrival, target, zones, rendezvous, teams, expected maps renamed — next callsign and its own brief; in an
+  operation, the next letter; operation lists, teams and organisation participants updated), "Remove this crew…" (out
+  of the batch and the operation; the last crew without organisation becomes standalone again, M-016A → M-016),
+  "Create the exercise organisation…" (now confirmed) and "Open the organisation". Timed events on any crew mission:
+  the "Timeline" text section holds an event editor (H = planned take-off, H+n, place of the mission or free text),
+  printed at the top of the brief's Timeline section (PDF and summary Markdown; `timeline.events` in the YAML,
+  `MissionExercise.missionTimeline*`). Store helpers `SiaMission.mapBatch` and `removeFromBatch`. Planner manual (four
+  languages): "Six paths by hand" table, Operation line actions, mission timeline, and tutorial steps 10 to 12
+  (standalone mission → add a crew → create the organisation).
 - **Mission generator and map studio: status line, "Undo changes", Operation line** — under the Mission block buttons,
   a status line always shown (coloured dot): "Saved to the folder (n min ago)", "Same as the folder version (loaded …)",
   "Not yet saved to the folder" or "Unsaved changes since 14:32 (n field(s))", the same in both pages since they share

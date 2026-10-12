@@ -1229,6 +1229,8 @@
       ]) => `- ${k}: ${Array.isArray(v) ? v.join(', ') : v}`).join('\n'));
       sec(BT('Risques à prendre en compte'), arr(y.risks).map(r => typeof r === 'object' ? `- **${txt(r.hazard)}** — conséquence : ${txt(r.consequence)} — mesure : ${txt(r.mitigation)}` : `- ${txt(r)}`).join('\n'));
       sec(BT('Cartographie prévue'), arr(y.maps).map(mp => typeof mp === 'object' ? `- \`${txt(mp.filename || mp.file)}\` — ${txt(mp.description)}` : `- \`${txt(mp)}\``).join('\n'));
+      // chronologie de la mission (événements horaires, V2_FABLE § 10) : la rubrique « Chronologie » du récit la complète
+      sec(BT('Chronologie'), (window.MissionExercise?.missionTimelineText?.(y) || '').replace(/^• /gm, '- '));
       sec(BT('Notes'), arr(y.notes).map(n => `- ${txt(n)}`).join('\n'));
       // exercice : organisation de l'opération (docs) ; plis comptés, pas leur contenu
       const X = window.MissionExercise,
@@ -1246,6 +1248,34 @@
       if (!x.used) out.push(`## ${x.title}\n\n${narrMarked(x)}`);
     out.push('> Scénario de simulation — ne pas utiliser pour une mission réelle.');
     return out.join('\n\n') + '\n';
+  }
+  /** Applique fn(yaml) à chaque mission du lot et à la mission partagée (modifiées en place ; fn idempotente), range le
+   *  lot et republie la mission partagée (by : page auteure). Sert aux changements d'opération (équipage ajouté ou
+   *  retiré). Retour : document partagé enregistré, null sans mission. */
+  function mapBatch(fn, by) {
+    const b = loadBatch(),
+      cur = load();
+    if (b) {
+      b.docs.forEach(d => d?.yaml && fn(d.yaml));
+      storeBatch(b);
+    }
+    if (!cur) return null;
+    fn(cur.yaml);
+    return save(cur, by);
+  }
+  /** Retire la mission id du lot ; si c'était la mission partagée, la première restante la remplace. Une seule mission
+   *  restante : plus de lot. Retour : document partagé enregistré (null s'il n'en reste aucun). */
+  function removeFromBatch(id, by) {
+    id = String(id || '').trim().toUpperCase();
+    const b = loadBatch(),
+      cur = load(),
+      rest = (b?.docs || []).filter(d => missionId(d) !== id);
+    storeBatch(rest.length > 1 ? {
+      docs: rest,
+      index: 0
+    } : null);
+    if (cur && missionId(cur) !== id) return save(cur, by);
+    return rest.length ? save(rest[0], by) : null;
   }
   // ---- version de référence : ligne d'état du générateur et du studio ---------------------------------------
   // Par mission (identifiant) : la dernière version enregistrée dans le dossier (saved), sinon celle chargée depuis le
@@ -1437,6 +1467,8 @@
     briefKey,
     cleanNarrative,
     markSaved,
+    mapBatch,
+    removeFromBatch,
     savedState,
     savedDoc,
     renderSaveState,

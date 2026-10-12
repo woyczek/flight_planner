@@ -18,7 +18,7 @@ Selon le niveau d'utilisation : la page est proposée à partir du niveau Concep
 
 ### Tutoriel : préparer une mission de bout en bout
 
-Du formulaire de commande au brief PDF, en neuf étapes. Les noms entre guillemets sont ceux des boutons.
+Du formulaire de commande au brief PDF, en neuf étapes ; les étapes 10 à 12 font d’une mission seule un exercice coordonné. Les noms entre guillemets sont ceux des boutons.
 1. **Ouvrir le générateur** : barre latérale « Missions », onglet « Générateur » (niveau Conception), ou « Générer une mission » dans le registre.
     ![Ouvrir l’onglet Générateur depuis l’entrée Missions.](images/captures-manuels/tutoriel-onglet-generateur.png)
     *Étape 1 — Ouvrir l’onglet Générateur depuis l’entrée Missions.*
@@ -59,6 +59,11 @@ Du formulaire de commande au brief PDF, en neuf étapes. Les noms entre guilleme
     ![Depuis le registre, affecter la mission à un pilote ou repartir d’une copie.](images/captures-manuels/planif-fiche-actions.png)
     *Étape 9 — Depuis le registre, affecter la mission à un pilote ou repartir d’une copie.*
 
+**Du vol seul à l'exercice coordonné** (chemins 1, 4 et 6 de « Six chemins à la main ») :
+10. **Mission autonome** : créez la mission avec une seule équipe (étapes 2 et 3, ou « Nouvelle mission ») ; la ligne Opération du bloc Mission dit « Mission autonome (hors opération) ». Au besoin, la rubrique « Chronologie » des textes reçoit les événements horaires du vol.
+11. **Ajouter un équipage** : « Ajouter un équipage… » sur la ligne Opération. La page dit ce qu'elle va créer, puis la mission M-016 devient l'équipage A (M-016A) et la mission M-016B est créée avec le même contexte (famille, théâtre, départ, arrivée, cible, zones, rendez-vous), l'indicatif suivant et son propre brief. Écrivez ce brief, placez ses points au studio, puis « Enregistrer dans le dossier » pour chacune des deux missions.
+12. **Créer l'organisation** : « Créer l'organisation de l'exercice… » sur la ligne Opération crée M-016Z (heure H, participants repris des missions, brief général proposé). Réglez l'heure H, les chiffons et la chronologie dans le bloc Exercice ; depuis un équipage, « Ouvrir l'organisation » y revient. « Documents » › « Tous les documents de l'exercice (un PDF par destinataire) » remet les briefs, les plis et le dossier de l'organisation.
+
 <!-- capture-manuels: tutoriel-etape-1-1 -->
 <!-- capture-manuels: tutoriel-etape-2-2 -->
 <!-- capture-manuels: tutoriel-etape-3-3 -->
@@ -98,7 +103,7 @@ Ce bloc montre la mission chargée et réunit l'enregistrement et l'import.
 
 Sous les boutons, deux lignes toujours présentes :
 - **Ligne d'état**, avec un point coloré : « Enregistrée dans le dossier (il y a n min) », « Identique à la version du dossier (chargée …) », « Pas encore enregistrée dans le dossier » (squelette, copie, nouvelle mission) ou « Modifications non enregistrées depuis 14:32 (n champ(s)) ». « Enregistrer dans le dossier » est la validation : bouton principal tant qu'il reste du non-enregistré. Le générateur et le studio partagent la mission aussitôt (brouillon de travail commun, gardé dans ce navigateur) : la ligne est la même dans les deux pages, son infobulle le rappelle.
-- **Ligne Opération** : « Mission autonome (hors opération) », ou ce que la mission est dans son opération — « Opération BOXING GLOVES (A-001) : équipage B sur 5 · organisation A-001Z · heure H 10:00 » (« organisation absente » tant que l'exercice n'en a pas, avec le bouton « Créer l'organisation de l'exercice… » ; pour la mission …Z : « organisation de l'exercice, n équipage(s) »).
+- **Ligne Opération** : « Mission autonome (hors opération) », ou ce que la mission est dans son opération — « Opération BOXING GLOVES (A-001) : équipage B sur 5 · organisation A-001Z · heure H 10:00 » (« organisation absente » tant que l'exercice n'en a pas, avec le bouton « Créer l'organisation de l'exercice… » ; pour la mission …Z : « organisation de l'exercice, n équipage(s) »). Ses actions — « Ajouter un équipage… », « Retirer cet équipage… », « Créer l'organisation de l'exercice… », « Ouvrir l'organisation » — sont décrites dans « Six chemins à la main ».
 
 Le volet « Importer une autre mission : fichiers, texte collé, commande ChatGPT » est ouvert quand aucune mission n'est chargée :
 - « YAML et/ou Markdown » : sélectionnez ensemble `mission<ID>.yaml` et `summary<ID>.md`, ou cliquez « ou coller son contenu… » puis « Lire la mission » ;
@@ -124,6 +129,21 @@ Bloc affiché quand l'opération a plusieurs missions ou une organisation (une m
 ![Passer d’une équipe à l’autre dans l’opération et ouvrir la création de son organisation.](images/captures-manuels/planif-operation-equipes.png)
 
 *Figure 2 — Passer d’une équipe à l’autre dans l’opération et ouvrir la création de son organisation.*
+
+### Six chemins à la main
+
+Tout se crée à la main ; chaque cas a son chemin, et ses actions sont sur la ligne Opération du bloc Mission. Une *mission* est un aéronef et son équipage ; une *opération* réunit les missions d'un même radical (lettres A, B…) ; l'*organisation* (lettre Z) porte l'exercice : heure H, participants, chiffons, chronologie.
+
+| Cas | Chemin | Ligne Opération |
+|---|---|---|
+| 1 — Mission autonome, un aéronef | « Nouvelle mission », ou « Créer le squelette ici » avec une équipe et « Exercice coordonné » non, ou ChatGPT | « Mission autonome (hors opération) » · « Ajouter un équipage… » |
+| 2 — Mission autonome, plusieurs aéronefs (une mission et un brief chacun) | Squelette à n équipes, exercice non ; ou le cas 1 puis « Ajouter un équipage… » (n − 1 fois) | « Opération X-016 : équipage A sur 2 · organisation absente » · « Ajouter un équipage… », « Retirer cet équipage… », « Créer l'organisation de l'exercice… » |
+| 3 — Mission autonome, un aéronef, événements horaires et points tournants | Le cas 1, puis la rubrique « Chronologie » des textes : événements à H+n (H = décollage prévu) à un point tournant, un rendez-vous ou une zone de la mission, ou en texte libre ; les points tournants gardent leur temps sur zone | Comme le cas 1 |
+| 4 — Mission autonome qui devient coordonnée, plusieurs aéronefs | « Ajouter un équipage… » : la mission devient l'équipage A (M-016 → M-016A), la mission B reprend le contexte commun et a son propre brief ; recommencez pour C… | « Opération M-016 : équipage A sur 2 · organisation absente » |
+| 5 — Exercice coordonné d'emblée | Squelette à n équipes avec « Exercice coordonné » oui (missions A… et Z), ou ChatGPT | « Opération X-016 : équipage A sur 3 · organisation X-016Z · heure H 10:00 » · « Ouvrir l'organisation » |
+| 6 — Missions coordonnées qui deviennent une opération avec organisation | « Créer l'organisation de l'exercice… » : mission Z avec heure H, participants repris des missions, chiffons et chronologie vides, brief général proposé | Comme le cas 5 |
+
+Chaque action dit d'abord ce qu'elle va créer ou retirer, identifiants compris. « Retirer cet équipage… » retire la mission du lot et des listes de l'opération ; s'il ne reste qu'un équipage sans organisation, il redevient une mission autonome (M-016A → M-016). Une mission déjà rangée se supprime depuis le registre (« Supprimer… »). Le studio suit le lot. Après un changement d'opération, enregistrez chaque mission modifiée.
 
 ### Identification
 
@@ -182,6 +202,8 @@ Sur une mission d'équipage, le bloc s'intitule « Exercice : ce que reçoit cet
 « Résumé », « Description détaillée », puis les rubriques : « Ajouter une rubrique textuelle » propose les types que le brief et le CR savent placer (Introduction, Objectif principal, Objectifs secondaires, Équipes engagées, Points tournants, Rendez-vous, Ravitaillement en vol, Risques à prendre en compte, Charge / personnel, Coordination, Chronologie, Cartographie prévue, Notes), chacun avec une ligne qui dit où il apparaît et ce qu'on y écrit, puis « Texte libre ». Chaque rubrique porte son type, choisi dans une liste et modifiable après coup (le contenu suit) ; un type ne sert qu'une fois (déjà pris : grisé), sauf « Texte libre », qui a un titre à saisir, s'ajoute autant de fois que voulu et va à la fin du brief. Objectifs, risques et notes s'écrivent dans le YAML sous leur clé (`objectives.primary`, `objectives.secondary`, `risks`, `notes` ; une valeur par ligne pour les listes) ; les autres complètent dans le brief la section de même nom. Le brief rangé (`summary<ID>.md`) est un rendu du YAML : relu avec le YAML, il ne rend que ces rubriques (marquées dans le fichier par un commentaire invisible), jamais les sections qu'il tire du YAML ; un fichier `.md` seul reste une source complète, d'où le YAML est construit. Chaque rubrique a « Contenu » et « Supprimer ».
 Si le fichier reçu n'a ni résumé ni description, ils sont proposés à partir des données : relisez-les.
 Sur une mission d'organisation, le bloc devient « Brief général » : situation, objectifs communs, créneaux, critères de fin, remis à tous.
+
+La rubrique « Chronologie » (« Ajouter une rubrique textuelle ») porte aussi les événements horaires de la mission, au-dessus de son texte libre : heure (H+30mn ; H = décollage prévu), lieu de la mission (départ, point tournant, rendez-vous, zone, cible, arrivée) ou texte libre, ce qui se passe ; « + Événement » ajoute une ligne. Le brief les imprime en tête de la section Chronologie, dans l'ordre des heures. Mission d'organisation : la chronologie de l'exercice se règle dans le bloc Exercice.
 
 ### Toutes les données YAML
 

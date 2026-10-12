@@ -16,7 +16,7 @@ Je nach Nutzungsstufe: Die Seite wird ab der Stufe Gestaltung (3) angeboten. Auf
 
 ### Tutorial: eine Mission von Anfang bis Ende vorbereiten
 
-Vom Bestellformular bis zum PDF-Briefing in neun Schritten. Die Namen in Anführungszeichen sind Schaltflächen.
+Vom Bestellformular bis zum PDF-Briefing in neun Schritten; die Schritte 10 bis 12 machen aus einer Einzelmission eine koordinierte Übung. Die Namen in Anführungszeichen sind Schaltflächen.
 1. **Generator öffnen**: Seitenleiste „Missionen“, Reiter „Generator“ (Stufe Gestaltung), oder „Eine Mission erzeugen“ im Register.
 2. **Bestellung einstellen**: „Bei ChatGPT bestellen…“ klappt das Formular auf. Wählen Sie „Typ“, „Untertyp“, „Schauplatz“, „Besatzungen im Flug“, „Bodenteams“ und „Dauer“; unter „Weitere Optionen“ „Treffpunkt“, „Luftbetankung“, „Koordinierte Übung“ und bei Bedarf das Luftfahrzeug jedes Teams (leer = ein Luftfahrzeug der Flotte).
 3. **Mission erstellen**, nach Wahl. Mit ChatGPT: „Bestellen: Prompt kopieren und ChatGPT öffnen“, den Prompt in ChatGPT einfügen und senden, dann die Antwort (`mission<ID>.yaml` und `summary<ID>.md`) unter „YAML und/oder Markdown“ laden, oder „oder Inhalt einfügen…“ und „Mission lesen“. Ohne ChatGPT: „Gerüst hier erstellen“ erstellt sofort die Mission(en), ohne Erzählung.
@@ -26,6 +26,11 @@ Vom Bestellformular bis zum PDF-Briefing in neun Schritten. Die Namen in Anführ
 7. **Speichern**: „Im Ordner speichern“ im Studio (Karteneinstellungen), dann im Generator; die Mission wird im Register eingetragen („Im Missionsordner ablegen…“, wenn die Seite danach fragt).
 8. **Unterlagen übergeben**: im Generator muss „Karten des Endpakets“ für jede Karte „bereit für das PDF“ zeigen; „Dokumente“ › „Briefing der Besatzung (PDF)“, oder „Alle Unterlagen der Übung“ für eine Operation.
 9. **Danach**: im Register übergibt „Zuweisen…“ die Mission an Piloten; „Duplizieren“ beginnt neu ab einer bestehenden Mission (nächste Kennung, Titel „(copie)“).
+
+**Vom Einzelflug zur koordinierten Übung** (Wege 1, 4 und 6 aus „Sechs Wege von Hand“):
+10. **Eigenständige Mission**: Legen Sie die Mission mit einer einzigen Besatzung an (Schritte 2 und 3, oder „Neue Mission“); die Zeile Operation des Blocks Mission zeigt „Eigenständige Mission (keine Operation)“. Bei Bedarf nimmt der Textabschnitt „Zeitablauf“ die zeitlichen Ereignisse des Flugs auf.
+11. **Besatzung hinzufügen**: „Besatzung hinzufügen…“ in der Zeile Operation. Die Seite sagt, was sie anlegen wird; dann wird die Mission M-016 zur Besatzung A (M-016A) und die Mission M-016B wird mit demselben Kontext (Familie, Einsatzgebiet, Abflug, Ankunft, Zielobjekt, Zonen, Treffpunkte), dem nächsten Rufzeichen und einem eigenen Briefing angelegt. Schreiben Sie dieses Briefing, setzen Sie ihre Punkte im Studio, dann „Im Ordner speichern“ für jede der beiden Missionen.
+12. **Übungsleitung anlegen**: „Übungsleitung anlegen…“ in der Zeile Operation legt M-016Z an (Stunde H, aus den Missionen übernommene Teilnehmer, vorgeschlagenes allgemeines Briefing). Stellen Sie Stunde H, Übungsziele und Zeitablauf im Block Übung ein; von einer Besatzung aus führt „Übungsleitung öffnen“ dorthin zurück. „Dokumente“ › „Alle Übungsdokumente (ein PDF pro Empfänger)“ übergibt die Briefings, die versiegelten Umschläge und das Dossier der Übungsleitung.
 
 ### Reiter „Missionsgenerator“ und „Kartenstudio“
 
@@ -53,7 +58,7 @@ Dieser Block zeigt die geladene Mission und vereint Speichern und Import.
 
 Unter den Schaltflächen stehen immer zwei Zeilen:
 - **Statuszeile** mit farbigem Punkt: „Im Ordner gespeichert (vor n Min.)“, „Wie die Version im Ordner (geladen …)“, „Noch nicht im Ordner gespeichert“ (Gerüst, Kopie, neue Mission) oder „Ungespeicherte Änderungen seit 14:32 (n Feld(er))“. „Im Ordner speichern“ ist die Bestätigung: Hauptschaltfläche, solange etwas ungespeichert ist. Generator und Studio teilen die Mission sofort (gemeinsamer Arbeitsentwurf, in diesem Browser gespeichert): Die Zeile ist auf beiden Seiten gleich, ihr Tooltip erinnert daran.
-- **Zeile Operation**: „Eigenständige Mission (keine Operation)“ oder was die Mission in ihrer Operation ist — „Operation BOXING GLOVES (A-001): Besatzung B von 5 · Übungsleitung A-001Z · Stunde H 10:00“ („noch keine Übungsleitung“, solange die Übung keine hat, mit der Schaltfläche „Übungsleitung anlegen…“; für die Mission …Z: „Übungsleitung, n Besatzung(en)“).
+- **Zeile Operation**: „Eigenständige Mission (keine Operation)“ oder was die Mission in ihrer Operation ist — „Operation BOXING GLOVES (A-001): Besatzung B von 5 · Übungsleitung A-001Z · Stunde H 10:00“ („noch keine Übungsleitung“, solange die Übung keine hat, mit der Schaltfläche „Übungsleitung anlegen…“; für die Mission …Z: „Übungsleitung, n Besatzung(en)“). Ihre Aktionen — „Besatzung hinzufügen…“, „Diese Besatzung entfernen…“, „Übungsleitung anlegen…“, „Übungsleitung öffnen“ — beschreibt „Sechs Wege von Hand“.
 
 Der Bereich „Andere Mission importieren: Dateien, eingefügter Text, ChatGPT-Bestellung“ ist geöffnet, wenn keine Mission geladen ist:
 - „YAML und/oder Markdown“: Wählen Sie `mission<ID>.yaml` und `summary<ID>.md` gemeinsam aus, oder klicken Sie auf „oder Inhalt einfügen…“ und dann auf „Mission lesen“;
@@ -69,6 +74,21 @@ Block sichtbar, wenn die Operation mehrere Missionen oder eine Übungsleitung ha
 - Jede Mission der Operation ist eine Schaltfläche: Kennung, Rufzeichen oder „Übungsleitung“, Startzeit. Klicken Sie, um sie anzuzeigen. „nicht geladen“ oder „anzulegen“ kennzeichnet eine Mission, die im Paket fehlt.
 - „Übungsleitung anlegen“ erstellt die Mission …Z (allgemeines Briefing, Stunde H, Teilnehmer, Übungsziele, Zeitablauf) und übernimmt dabei die Spuren und Einspielungen der Missionen im alten Format.
 - „Missionen der gespielten Ziele anlegen (n)“: Jedes gespielte Übungsziel wird eine Mission der Operation (Basis der ersten Besatzung, Route der Spur, berechneter Start). Prüfen Sie danach Luftfahrzeug, Basis und Uhrzeit, öffnen Sie jede im Studio, dann „Im Ordner speichern“.
+
+### Sechs Wege von Hand
+
+Alles lässt sich von Hand anlegen; jeder Fall hat seinen Weg, und seine Aktionen stehen in der Zeile Operation des Blocks Mission. Eine *Mission* ist ein Luftfahrzeug mit seiner Besatzung; eine *Operation* fasst die Missionen mit demselben Kennungsstamm zusammen (Buchstaben A, B…); die *Übungsleitung* (Buchstabe Z) trägt die Übung: Stunde H, Teilnehmer, Übungsziele, Zeitablauf.
+
+| Fall | Weg | Zeile Operation |
+|---|---|---|
+| 1 — Eigenständige Mission, ein Luftfahrzeug | „Neue Mission“, oder „Gerüst hier erstellen“ mit einer Besatzung und „Koordinierte Übung“ nein, oder ChatGPT | „Eigenständige Mission (keine Operation)“ · „Besatzung hinzufügen…“ |
+| 2 — Eigenständige Mission, mehrere Luftfahrzeuge (je eine Mission und ein Briefing) | Gerüst mit n Besatzungen, Übung nein; oder Fall 1, dann „Besatzung hinzufügen…“ (n − 1 Mal) | „Operation X-016: Besatzung A von 2 · noch keine Übungsleitung“ · „Besatzung hinzufügen…“, „Diese Besatzung entfernen…“, „Übungsleitung anlegen…“ |
+| 3 — Eigenständige Mission, ein Luftfahrzeug, zeitliche Ereignisse und Wendepunkte | Fall 1, dann der Textabschnitt „Zeitablauf“: Ereignisse bei H+n (H = geplanter Start) an einem Wendepunkt, Treffpunkt oder einer Zone der Mission, oder als freier Text; die Wendepunkte behalten ihre Zeit im Zielgebiet | Wie Fall 1 |
+| 4 — Eigenständige Mission, die koordiniert wird, mehrere Luftfahrzeuge | „Besatzung hinzufügen…“: Die Mission wird Besatzung A (M-016 → M-016A), Mission B übernimmt den gemeinsamen Kontext und hat ein eigenes Briefing; wiederholen für C… | „Operation M-016: Besatzung A von 2 · noch keine Übungsleitung“ |
+| 5 — Koordinierte Übung von Anfang an | Gerüst mit n Besatzungen und „Koordinierte Übung“ ja (Missionen A… und Z), oder ChatGPT | „Operation X-016: Besatzung A von 3 · Übungsleitung X-016Z · Stunde H 10:00“ · „Übungsleitung öffnen“ |
+| 6 — Koordinierte Missionen, die eine Operation mit Übungsleitung werden | „Übungsleitung anlegen…“: Mission Z mit Stunde H, aus den Missionen übernommenen Teilnehmern, leeren Übungszielen und leerem Zeitablauf, vorgeschlagenem allgemeinem Briefing | Wie Fall 5 |
+
+Jede Aktion sagt zuerst, was sie anlegt oder entfernt, Kennungen inbegriffen. „Diese Besatzung entfernen…“ nimmt die Mission aus dem Stapel und aus den Listen der Operation; bleibt nur eine Besatzung ohne Übungsleitung übrig, wird sie wieder eine eigenständige Mission (M-016A → M-016). Eine bereits abgelegte Mission wird im Register gelöscht („Löschen…“). Das Studio folgt dem Stapel. Nach einer Änderung der Operation jede geänderte Mission speichern.
 
 ### Identifikation
 
@@ -122,6 +142,8 @@ Auf einer Besatzungsmission heißt der Block „Übung: was diese Besatzung erh�
 „Zusammenfassung“, „Ausführliche Beschreibung“, dann die Abschnitte: „Textabschnitt hinzufügen“ bietet die Typen an, die Briefing und Bericht einordnen können (Einleitung, Hauptziel, Nebenziele, Beteiligte Teams, Wendepunkte, Treffpunkte, Luftbetankung, Zu berücksichtigende Risiken, Ladung / Personal, Koordinierung, Zeitablauf, Vorgesehene Karten, Notizen), jeweils mit einer Zeile, wo er erscheint und was hineingehört, dann „Freier Text“. Jeder Abschnitt trägt seinen Typ, aus einer Liste gewählt und nachträglich änderbar (der Inhalt folgt); ein Typ dient nur einmal (schon vergeben: ausgegraut), außer „Freier Text“, der einen einzugebenden Titel hat, beliebig oft hinzugefügt werden kann und ans Ende des Briefings kommt. Ziele, Risiken und Notizen werden im YAML unter ihrem Schlüssel gespeichert (`objectives.primary`, `objectives.secondary`, `risks`, `notes`; ein Wert pro Zeile bei Listen); die anderen ergänzen im Briefing den gleichnamigen Abschnitt. Das abgelegte Briefing (`summary<ID>.md`) ist eine Darstellung des YAML: Mit dem YAML erneut gelesen, liefert es nur diese Abschnitte zurück (in der Datei durch einen unsichtbaren Kommentar markiert), nie die Abschnitte, die es aus dem YAML zieht; eine `.md`-Datei allein bleibt eine vollständige Quelle, aus der das YAML erstellt wird. Jeder Abschnitt hat „Inhalt“ und „Löschen“.
 Hat die empfangene Datei weder Zusammenfassung noch Beschreibung, werden sie aus den Daten vorgeschlagen: Lesen Sie sie gegen.
 Auf einer Mission der Übungsleitung wird der Block zu „Allgemeines Briefing“: Lage, gemeinsame Ziele, Zeitfenster, Endkriterien, für alle.
+
+Der Abschnitt „Zeitablauf“ („Textabschnitt hinzufügen“) enthält auch die zeitlichen Ereignisse der Mission, über seinem freien Text: Zeit (H+30mn; H = geplanter Start), Ort der Mission (Abflug, Wendepunkt, Treffpunkt, Zone, Zielobjekt, Ankunft) oder freier Text, was geschieht; „+ Ereignis“ fügt eine Zeile hinzu. Das Briefing druckt sie am Anfang des Abschnitts Zeitablauf, nach Zeit geordnet. Mission der Übungsleitung: Der Zeitablauf der Übung wird im Block Übung eingestellt.
 
 ### Alle YAML-Daten
 

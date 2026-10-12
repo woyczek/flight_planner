@@ -16,7 +16,7 @@ Según el nivel de uso: la página se ofrece a partir del nivel Diseño (3). En 
 
 ### Tutorial: preparar una misión de principio a fin
 
-Del formulario de encargo al brief en PDF, en nueve pasos. Los nombres entre comillas son los de los botones.
+Del formulario de encargo al brief en PDF, en nueve pasos; los pasos 10 a 12 convierten una misión sola en un ejercicio coordinado. Los nombres entre comillas son los de los botones.
 1. **Abrir el generador**: barra lateral «Misiones», pestaña «Generador» (nivel Diseño), o «Generar una misión» en el registro.
 2. **Ajustar el encargo**: «Encargar a ChatGPT…» despliega el formulario. Elija «Tipo», «Subtipo», «Teatro», «Equipos en vuelo», «Equipos en tierra» y «Duración»; en «Más opciones», «Encuentro», «Reabastecimiento en vuelo», «Ejercicio coordinado» y, si hace falta, la aeronave de cada equipo (vacío = una aeronave de la flota).
 3. **Crear la misión**, a elegir. Con ChatGPT: «Encargar: copiar el prompt y abrir ChatGPT», pegue el prompt en ChatGPT y envíelo, después cargue la respuesta (`mission<ID>.yaml` y `summary<ID>.md`) en «YAML y/o Markdown», o «o pegar su contenido…» y «Leer la misión». Sin ChatGPT: «Crear el esqueleto aquí» crea en el acto la(s) misión(es), sin relato.
@@ -26,6 +26,11 @@ Del formulario de encargo al brief en PDF, en nueve pasos. Los nombres entre com
 7. **Guardar**: «Guardar en la carpeta» en el estudio (ajustes de los mapas), después en el generador; la misión queda inscrita en el registro («Guardar en la carpeta de misiones…» si la página lo pide).
 8. **Entregar los documentos**: en el generador, «Mapas del dosier final» debe indicar «listo para el PDF» en cada mapa; «Documentos» › «Briefing de la tripulación (PDF)», o «Todos los documentos del ejercicio» para una operación.
 9. **Después**: en el registro, «Asignar…» confía la misión a los pilotos; «Duplicar» parte de una misión existente (identificador siguiente, título «(copie)»).
+
+**Del vuelo solo al ejercicio coordinado** (caminos 1, 4 y 6 de «Seis caminos a mano»):
+10. **Misión autónoma**: cree la misión con una sola tripulación (pasos 2 y 3, o «Nueva misión»); la línea Operación del bloque Misión dice «Misión autónoma (sin operación)». Si hace falta, la sección de texto «Cronología» recibe los eventos horarios del vuelo.
+11. **Añadir una tripulación**: «Añadir una tripulación…» en la línea Operación. La página dice lo que va a crear; luego la misión M-016 pasa a ser la tripulación A (M-016A) y se crea la misión M-016B con el mismo contexto (familia, teatro, salida, llegada, objetivo, zonas, encuentros), el indicativo siguiente y su propio brief. Escriba ese brief, coloque sus puntos en el estudio y luego «Guardar en la carpeta» para cada una de las dos misiones.
+12. **Crear la organización**: «Crear la organización del ejercicio…» en la línea Operación crea M-016Z (hora H, participantes tomados de las misiones, brief general propuesto). Ajuste la hora H, los blancos y la cronología en el bloque Ejercicio; desde una tripulación, «Abrir la organización» vuelve a ella. «Documentos» › «Todos los documentos del ejercicio (un PDF por destinatario)» entrega los briefs, los sobres sellados y el dosier de la organización.
 
 ### Pestañas «Generador de misiones» y «Estudio cartográfico»
 
@@ -53,7 +58,7 @@ Este bloque muestra la misión cargada y reúne el guardado y la importación.
 
 Bajo los botones, dos líneas siempre presentes:
 - **Línea de estado**, con un punto de color: «Guardada en la carpeta (hace n min)», «Igual que la versión de la carpeta (cargada …)», «Aún no guardada en la carpeta» (esqueleto, copia, misión nueva) o «Cambios sin guardar desde las 14:32 (n campo(s))». «Guardar en la carpeta» es la validación: botón principal mientras quede algo sin guardar. El generador y el estudio comparten la misión al instante (borrador de trabajo común, guardado en este navegador): la línea es la misma en ambas páginas y su descripción emergente lo recuerda.
-- **Línea Operación**: «Misión autónoma (sin operación)», o lo que la misión es en su operación: «Operación BOXING GLOVES (A-001): tripulación B de 5 · organización A-001Z · hora H 10:00» («sin organización» mientras el ejercicio no la tenga, con el botón «Crear la organización del ejercicio…»; para la misión …Z: «organización del ejercicio, n tripulación(es)»).
+- **Línea Operación**: «Misión autónoma (sin operación)», o lo que la misión es en su operación: «Operación BOXING GLOVES (A-001): tripulación B de 5 · organización A-001Z · hora H 10:00» («sin organización» mientras el ejercicio no la tenga, con el botón «Crear la organización del ejercicio…»; para la misión …Z: «organización del ejercicio, n tripulación(es)»). Sus acciones — «Añadir una tripulación…», «Retirar esta tripulación…», «Crear la organización del ejercicio…», «Abrir la organización» — se describen en «Seis caminos a mano».
 
 El panel «Importar otra misión: archivos, texto pegado, encargo a ChatGPT» está abierto cuando no hay ninguna misión cargada:
 - «YAML y/o Markdown»: seleccione juntos `mission<ID>.yaml` y `summary<ID>.md`, o haga clic en «o pegar su contenido…» y después en «Leer la misión»;
@@ -69,6 +74,21 @@ Bloque que aparece cuando la operación tiene varias misiones o una organizació
 - Cada misión de la operación es un botón: identificador, indicativo u «Organización», hora de despegue. Haga clic para mostrarla. «no cargada» o «por crear» señalan una misión que falta en el lote.
 - «Crear la organización del ejercicio» crea la misión …Z (briefing general, hora H, participantes, blancos, cronología) y retoma las pistas y los injects de las misiones del formato antiguo.
 - «Crear las misiones de los blancos jugados (n)»: cada blanco jugado se convierte en una misión de la operación (base de la primera tripulación, ruta de la pista, despegue calculado). Compruebe después aeronave, base y horario, abra cada una en el estudio y, por último, «Guardar en la carpeta».
+
+### Seis caminos a mano
+
+Todo se crea a mano; cada caso tiene su camino, y sus acciones están en la línea Operación del bloque Misión. Una *misión* es una aeronave y su tripulación; una *operación* reúne las misiones de una misma raíz de identificador (letras A, B…); la *organización* (letra Z) lleva el ejercicio: hora H, participantes, blancos, cronología.
+
+| Caso | Camino | Línea Operación |
+|---|---|---|
+| 1 — Misión autónoma, una aeronave | «Nueva misión», o «Crear el esqueleto aquí» con una tripulación y «Ejercicio coordinado» no, o ChatGPT | «Misión autónoma (sin operación)» · «Añadir una tripulación…» |
+| 2 — Misión autónoma, varias aeronaves (una misión y un brief cada una) | Esqueleto con n tripulaciones, ejercicio no; o el caso 1 y luego «Añadir una tripulación…» (n − 1 veces) | «Operación X-016: tripulación A de 2 · sin organización» · «Añadir una tripulación…», «Retirar esta tripulación…», «Crear la organización del ejercicio…» |
+| 3 — Misión autónoma, una aeronave, eventos horarios y puntos de viraje | El caso 1 y luego la sección de texto «Cronología»: eventos a H+n (H = despegue previsto) en un punto de viraje, un encuentro o una zona de la misión, o en texto libre; los puntos de viraje conservan su tiempo sobre la zona | Como el caso 1 |
+| 4 — Misión autónoma que pasa a coordinada, varias aeronaves | «Añadir una tripulación…»: la misión pasa a ser la tripulación A (M-016 → M-016A), la misión B toma el contexto común y tiene su propio brief; repetir para C… | «Operación M-016: tripulación A de 2 · sin organización» |
+| 5 — Ejercicio coordinado desde el principio | Esqueleto con n tripulaciones y «Ejercicio coordinado» sí (misiones A… y Z), o ChatGPT | «Operación X-016: tripulación A de 3 · organización X-016Z · hora H 10:00» · «Abrir la organización» |
+| 6 — Misiones coordinadas que pasan a ser una operación con organización | «Crear la organización del ejercicio…»: misión Z con hora H, participantes tomados de las misiones, blancos y cronología vacíos, brief general propuesto | Como el caso 5 |
+
+Cada acción dice primero lo que va a crear o retirar, identificadores incluidos. «Retirar esta tripulación…» retira la misión del lote y de las listas de la operación; si solo queda una tripulación sin organización, vuelve a ser una misión autónoma (M-016A → M-016). Una misión ya guardada se elimina desde el registro («Eliminar…»). El estudio sigue el lote. Tras un cambio de operación, guarde cada misión modificada.
 
 ### Identificación
 
@@ -122,6 +142,8 @@ En una misión de tripulación, el bloque se titula «Ejercicio: lo que recibe e
 «Resumen», «Descripción detallada» y después las secciones: «Añadir una sección de texto» propone los tipos que el brief y el informe saben colocar (Introducción, Objetivo principal, Objetivos secundarios, Equipos implicados, Puntos de viraje, Encuentros, Reabastecimiento en vuelo, Riesgos a tener en cuenta, Carga / personal, Coordinación, Cronología, Cartografía prevista, Notas), cada uno con una línea que dice dónde aparece y qué se escribe en él, y después «Texto libre». Cada sección lleva su tipo, elegido en una lista y modificable después (el contenido le sigue); un tipo solo sirve una vez (ya usado: en gris), salvo «Texto libre», que tiene un título a escribir, se añade tantas veces como se quiera y va al final del brief. Objetivos, riesgos y notas se escriben en el YAML bajo su clave (`objectives.primary`, `objectives.secondary`, `risks`, `notes`; un valor por línea en las listas); las demás completan en el brief la sección del mismo nombre. El brief guardado (`summary<ID>.md`) es una representación del YAML: releído con el YAML, solo devuelve estas secciones (marcadas en el archivo con un comentario invisible), nunca las secciones que toma del YAML; un archivo `.md` solo sigue siendo una fuente completa, a partir de la cual se construye el YAML. Cada sección tiene «Contenido» y «Eliminar».
 Si el archivo recibido no tiene ni resumen ni descripción, se proponen a partir de los datos: reléalos.
 En una misión de organización, el bloque pasa a ser «Briefing general»: situación, objetivos comunes, franjas, criterios de fin, entregado a todos.
+
+La sección «Cronología» («Añadir una sección de texto») lleva también los eventos horarios de la misión, encima de su texto libre: hora (H+30mn; H = despegue previsto), lugar de la misión (salida, punto de viraje, encuentro, zona, objetivo, llegada) o texto libre, lo que ocurre; «+ Evento» añade una línea. El brief los imprime al principio de la sección Cronología, por orden horario. Misión de organización: la cronología del ejercicio se ajusta en el bloque Ejercicio.
 
 ### Todos los datos YAML
 

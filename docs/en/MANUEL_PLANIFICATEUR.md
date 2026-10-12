@@ -16,7 +16,7 @@ Depending on the usage level: the page is offered from the Design level (3). At 
 
 ### Tutorial: preparing a mission from start to finish
 
-From the order form to the PDF brief, in nine steps. Names in quotes are button labels.
+From the order form to the PDF brief, in nine steps; steps 10 to 12 turn a single mission into a coordinated exercise. Names in quotes are button labels.
 1. **Open the generator**: sidebar “Missions”, “Generator” tab (Design level), or “Generate a mission” in the registry.
 2. **Set the order**: “Order from ChatGPT…” unfolds the form. Choose “Type”, “Subtype”, “Theatre”, “Flying teams”, “Ground teams” and “Duration”; in “More options”, “Rendezvous”, “Air refuelling”, “Coordinated exercise” and, if needed, the aircraft of each team (empty = a fleet aircraft).
 3. **Create the mission**, either way. With ChatGPT: “Order: copy prompt and open ChatGPT”, paste the prompt into ChatGPT and send it, then load the answer (`mission<ID>.yaml` and `summary<ID>.md`) in “YAML and/or Markdown”, or “or paste its content…” then “Read the mission”. Without ChatGPT: “Create the skeleton here” creates the mission(s) at once, without narrative.
@@ -26,6 +26,11 @@ From the order form to the PDF brief, in nine steps. Names in quotes are button 
 7. **Save**: “Save to the folder” in the studio (map settings), then in the generator; the mission is recorded in the registry (“File in the missions folder…” if the page asks).
 8. **Hand out the documents**: in the generator, “Maps of the final package” must say “ready for the PDF” for each map; “Documents” › “Crew brief (PDF)”, or “All exercise documents” for an operation.
 9. **Next**: in the registry, “Assign…” gives the mission to pilots; “Duplicate” starts again from an existing mission (next identifier, title “(copie)”).
+
+**From a single flight to a coordinated exercise** (paths 1, 4 and 6 of “Six paths by hand”):
+10. **Standalone mission**: create the mission with a single team (steps 2 and 3, or “New mission”); the Operation line of the Mission block says “Standalone mission (no operation)”. If needed, the “Timeline” text section takes the timed events of the flight.
+11. **Add a crew**: “Add a crew…” on the Operation line. The page says what it will create, then the mission M-016 becomes crew A (M-016A) and the mission M-016B is created with the same context (family, theatre, departure, arrival, target, zones, rendezvous), the next callsign and its own brief. Write that brief, place its points in the studio, then “Save to the folder” for each of the two missions.
+12. **Create the organisation**: “Create the exercise organisation…” on the Operation line creates M-016Z (H-hour, participants taken from the missions, general brief proposed). Set the H-hour, the exercise targets and the timeline in the Exercise block; from a crew, “Open the organisation” goes back to it. “Documents” › “All exercise documents (one PDF per recipient)” hands out the briefs, the sealed envelopes and the organisation file.
 
 ### “Mission generator” and “Map studio” tabs
 
@@ -53,7 +58,7 @@ This block shows the loaded mission and groups saving and import.
 
 Under the buttons, two lines are always shown:
 - **Status line**, with a coloured dot: “Saved to the folder (n min ago)”, “Same as the folder version (loaded …)”, “Not yet saved to the folder” (skeleton, copy, new mission) or “Unsaved changes since 14:32 (n field(s))”. “Save to the folder” is the validation: main button while something is unsaved. The generator and the studio share the mission at once (common working draft, kept in this browser): the line is the same in both pages, its tooltip says so.
-- **Operation line**: “Standalone mission (no operation)”, or what the mission is in its operation — “Operation BOXING GLOVES (A-001): crew B of 5 · organisation A-001Z · H-hour 10:00” (“no organisation yet” while the exercise has none, with the “Create the exercise organisation…” button; for the …Z mission: “exercise organisation, n crew(s)”).
+- **Operation line**: “Standalone mission (no operation)”, or what the mission is in its operation — “Operation BOXING GLOVES (A-001): crew B of 5 · organisation A-001Z · H-hour 10:00” (“no organisation yet” while the exercise has none, with the “Create the exercise organisation…” button; for the …Z mission: “exercise organisation, n crew(s)”). Its actions — “Add a crew…”, “Remove this crew…”, “Create the exercise organisation…”, “Open the organisation” — are described in “Six paths by hand”.
 
 The “Import another mission: files, pasted text, ChatGPT order” pane is open when no mission is loaded:
 - “YAML and/or Markdown”: select `mission<ID>.yaml` and `summary<ID>.md` together, or click “or paste its content…” then “Read the mission”;
@@ -69,6 +74,21 @@ Block shown when the operation has several missions or an organisation (a single
 - Each mission of the operation is a button: identifier, callsign or “Organisation”, take-off time. Click to show it. “not loaded” or “to create” flags a mission missing from the batch.
 - “Create the exercise organisation” creates the …Z mission (general brief, H-hour, participants, exercise targets, timeline), taking over the tracks and injects of old-format missions.
 - “Create the missions of the played targets (n)”: each played exercise target becomes a mission of the operation (base of the first crew, route of the track, computed take-off). Then check aircraft, base and time, open each one in the studio, then “Save to the folder”.
+
+### Six paths by hand
+
+Everything can be created by hand; each case has its path, and its actions are on the Operation line of the Mission block. A *mission* is one aircraft and its crew; an *operation* gathers the missions sharing an identifier base (letters A, B…); the *organisation* (letter Z) carries the exercise: H-hour, participants, exercise targets, timeline.
+
+| Case | Path | Operation line |
+|---|---|---|
+| 1 — Standalone mission, one aircraft | “New mission”, or “Create the skeleton here” with one team and “Coordinated exercise” no, or ChatGPT | “Standalone mission (no operation)” · “Add a crew…” |
+| 2 — Standalone mission, several aircraft (one mission and one brief each) | Skeleton with n teams, exercise no; or case 1 then “Add a crew…” (n − 1 times) | “Operation X-016: crew A of 2 · no organisation yet” · “Add a crew…”, “Remove this crew…”, “Create the exercise organisation…” |
+| 3 — Standalone mission, one aircraft, timed events and turning points | Case 1, then the “Timeline” text section: events at H+n (H = planned take-off) at a turning point, rendezvous or zone of the mission, or in free text; turning points keep their time on task | As case 1 |
+| 4 — Standalone mission that becomes coordinated, several aircraft | “Add a crew…”: the mission becomes crew A (M-016 → M-016A), mission B takes the shared context and has its own brief; repeat for C… | “Operation M-016: crew A of 2 · no organisation yet” |
+| 5 — Coordinated exercise from scratch | Skeleton with n teams and “Coordinated exercise” yes (missions A… and Z), or ChatGPT | “Operation X-016: crew A of 3 · organisation X-016Z · H-hour 10:00” · “Open the organisation” |
+| 6 — Coordinated missions that become an operation with an organisation | “Create the exercise organisation…”: mission Z with H-hour, participants taken from the missions, empty exercise targets and timeline, general brief proposed | As case 5 |
+
+Each action first says what it will create or remove, identifiers included. “Remove this crew…” removes the mission from the batch and from the operation’s lists; when only one crew is left and there is no organisation, it becomes a standalone mission again (M-016A → M-016). A mission already filed is deleted from the registry (“Delete…”). The studio follows the batch. After an operation change, save each changed mission.
 
 ### Identification
 
@@ -122,6 +142,8 @@ On a crew mission, the block is titled “Exercise: what this crew receives” a
 “Summary”, “Detailed description”, then the sections: “Add a text section” offers the types the brief and the report know how to place (Introduction, Main objective, Secondary objectives, Teams involved, Turning points, Rendezvous, Air refuelling, Risks to consider, Load / personnel, Coordination, Timeline, Planned maps, Notes), each with a line saying where it appears and what to write in it, then “Free text”. Each section carries its type, chosen from a list and changeable afterwards (the content follows); a type is used only once (already taken: greyed out), except “Free text”, which has a title to type, can be added as many times as you want and goes at the end of the brief. Objectives, risks and notes are written into the YAML under their key (`objectives.primary`, `objectives.secondary`, `risks`, `notes`; one value per line for lists); the others complete the section of the same name in the brief. The stored brief (`summary<ID>.md`) is a rendering of the YAML: read again with the YAML, it only gives back these sections (marked in the file by an invisible comment), never the sections it takes from the YAML; a `.md` file alone remains a complete source, from which the YAML is built. Each section has “Content” and “Delete”.
 If the received file has neither summary nor description, they are proposed from the data: proofread them.
 On an organisation mission, the block becomes “General brief”: situation, common objectives, time windows, end criteria, handed to everyone.
+
+The “Timeline” section (“Add a text section”) also holds the mission’s timed events, above its free text: time (H+30mn; H = planned take-off), place of the mission (departure, turning point, rendezvous, zone, target, arrival) or free text, what happens; “+ Event” adds a line. The brief prints them at the top of the Timeline section, in time order. Organisation mission: the exercise timeline is set in the Exercise block.
 
 ### All YAML data
 
