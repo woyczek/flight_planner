@@ -111,6 +111,10 @@ three manuals (pilot, planner, administrator), and no native browser dialog is l
 - **Map studio and Flight maps: preview zoom buttons shown as two empty blue squares.**
 - **Launcher: Python traceback on an unreadable request** (TLS on the HTTP port, unknown HTTP version).
 
+### Livraison
+
+- Archive de livraison : `xplane-web-suite-5.2.0.zip` — SHA-256 `14a36ca4f87d387850c1d9561753360ba14d884b5451a88d0e8bbc3c3d8b4a54` (code seul, hors dépôt : dossier `dist/`).
+
 ## [5.1.0] — 2026-10-09
 
 Carburant devient l'atelier des profils de performances. Un bloc **« Profils de performances »** donne pour chaque
