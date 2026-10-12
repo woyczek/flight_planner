@@ -627,6 +627,25 @@
     return save(b.docs[b.index], by);
   }
 
+  /** Lot remplacé par les documents docs (squelette du générateur : missions des équipes, organisation …Z) ; la première
+   *  mission devient courante (by : page auteure). Une seule mission : pas de lot. Retour : document enregistré. */
+  function setBatch(docs, by) {
+    const slim = d => ({
+      yaml: d.yaml,
+      narrative: d.narrative || {
+        summary: '',
+        detailed: '',
+        sections: []
+      },
+      sourceNames: d.sourceNames || []
+    });
+    storeBatch(docs.length > 1 ? {
+      docs: docs.map(slim),
+      index: 0
+    } : null);
+    return save(slim(docs[0]), by);
+  }
+
   /** Ajoute (ou remplace, même identifiant) une mission au lot de son opération et la rend courante ; sans lot, le lot
    *  est créé avec la mission courante. Utilisé pour la mission d'organisation (<lettre>-<nnn>Z) créée par le générateur. */
   function addToBatch(doc, by) {
@@ -1150,6 +1169,7 @@
     migrateIds,
     go,
     addToBatch,
+    setBatch,
     mountNav,
     parseMarkdown,
     extractMdMetadata,

@@ -16,7 +16,7 @@
   //     traductions, ravitaillement, aéronef de chaque équipe) dans le repli « Plus d'options », ouvert au niveau Expert
   //     ou quand l'un d'eux s'écarte du défaut.
   //
-  // API : MissionOrder.mount(host, { hint, onOrdered, preset }) · sendPrompt(request, out) · families() · numbering(type)
+  // API : MissionOrder.mount(host, { hint, onOrdered, onSkeleton, preset }) · sendPrompt(request, out) · families() · numbering(type)
   //   preset : réglages imposés à l'ouverture (ordres de vols : plaquette sans mission) — { type, subtype, theatre, teams,
   //   teamSlots: [aéronef de A, B…], duration: XS | S | M | L | XL, aar: oui | non | libre, rdv, ground } ; repris dans
   //   les réglages mémorisés comme une saisie
@@ -103,6 +103,7 @@
       rdv: 'libre',
       ground: 'libre',
       aar: 'libre',
+      exercise: 'libre',
       duration: 'libre',
       translations: 'en',
       ...readJson(ORDER_KEY, {})
@@ -116,7 +117,8 @@
   let moreOpen = null;
   /** Réglage du repli « Plus d'options » qui s'écarte du défaut (second théâtre, série, rendez-vous, traductions,
    *  ravitaillement, aéronef imposé) : le repli s'ouvre pour que rien de réglé ne reste caché. */
-  const moreSet = o => !!(o.theatre2 || o.serie || o.rdv !== 'libre' || o.aar !== 'libre' || (o.translations || 'en') !== 'en' ||
+  const moreSet = o => !!(o.theatre2 || o.serie || o.rdv !== 'libre' || o.aar !== 'libre' || (o.exercise || 'libre') !== 'libre' || (o
+      .translations || 'en') !== 'en' ||
     teamSlots(o).some(Boolean));
 
   /** Numérotation par famille (lettre + 3 chiffres, série dans la famille) : SiaMission.nextNumbering. */
@@ -164,6 +166,7 @@
     rdv: o.rdv,
     ground: o.ground,
     aar: o.aar,
+    exercise: o.exercise || 'libre',
     duration: o.duration || 'libre',
     translations: o.translations || 'en'
   });
@@ -236,6 +239,7 @@
     p = set(p, 'ÉQUIPES_SOL', r.ground ?? 'libre');
     p = set(p, 'RAVITAILLEMENT', r.aar || 'libre');
     p = set(p, 'DURÉE', r.duration || 'libre');
+    p = set(p, 'EXERCICE', r.exercise || 'libre');
     p = p.replace(/^(\s*TRADUCTIONS\s*=\s*)\S+/m, (_, a) => a + String(r.translations || 'en').replace(/\$/g,
       '$$$$')); // valeur à espaces (« en, de, es »)
     // copie et ouverture de ChatGPT lancées tout de suite, dans le geste de l'utilisateur (sans attente avant) : le
@@ -293,6 +297,7 @@
   function mount(host, {
     hint = '',
     onOrdered = null,
+    onSkeleton = null, // « Créer le squelette ici » (générateur) : onSkeleton(request, aéronefs des équipes)
     preset = null
   } = {}) {
     if (!host) return;
@@ -335,13 +340,14 @@
         <label>${esc(t(['Rendez-vous', 'Rendezvous', 'Treffpunkt', 'Encuentro']))}<select data-o="rdv">${opt('libre', t(['libre', 'free', 'frei', 'libre']), o.rdv)}${opt('avec', t(['avec', 'with', 'mit', 'con']), o.rdv)}${opt('sans', t(['sans', 'without', 'ohne', 'sin']), o.rdv)}</select></label>
         <label title="${esc(t(['Langues du brief traduit dans le YAML (bloc i18n), en plus du français : les pilotes le lisent dans leur langue', 'Languages of the translated brief in the YAML (i18n block), besides French: pilots read it in their language', 'Sprachen des übersetzten Briefings im YAML (i18n-Block), zusätzlich zum Französischen: Piloten lesen es in ihrer Sprache', 'Idiomas del brief traducido en el YAML (bloque i18n), además del francés: los pilotos lo leen en su idioma']))}">${esc(t(['Traductions', 'Translations', 'Übersetzungen', 'Traducciones']))}<select data-o="translations">${opt('en', 'en', o.translations)}${opt('en, de, es', 'en, de, es', o.translations)}${opt('aucune', t(['aucune', 'none', 'keine', 'ninguna']), o.translations)}</select></label>
         <label>${esc(t(['Ravitaillement en vol', 'Air refuelling', 'Luftbetankung', 'Reabastecimiento en vuelo']))}<select data-o="aar">${opt('libre', t(['libre', 'free', 'frei', 'libre']), o.aar)}${opt('oui', t(['oui', 'yes', 'ja', 'sí']), o.aar)}${opt('non', t(['non', 'no', 'nein', 'no']), o.aar)}</select></label>
+        <label title="${esc(t(['Oui : opération en exercice, avec la mission d’organisation …Z (heure H, participants, chronologie des messages et plis) ; non : jamais ; libre : selon le scénario', 'Yes: the operation is an exercise, with the …Z organisation mission (H hour, participants, timeline of messages and envelopes); no: never; free: as the scenario needs', 'Ja: Die Operation ist eine Übung, mit der Leitungsmission …Z (Stunde H, Teilnehmer, Ablauf der Meldungen und Umschläge); nein: nie; frei: je nach Szenario', 'Sí: la operación es un ejercicio, con la misión de organización …Z (hora H, participantes, cronología de mensajes y sobres); no: nunca; libre: según el escenario']))}">${esc(t(['Exercice coordonné', 'Coordinated exercise', 'Koordinierte Übung', 'Ejercicio coordinado']))}<select data-o="exercise">${opt('libre', t(['libre', 'free', 'frei', 'libre']), o.exercise || 'libre')}${opt('oui', t(['oui', 'yes', 'ja', 'sí']), o.exercise)}${opt('non', t(['non', 'no', 'nein', 'no']), o.exercise)}</select></label>
       </div>
       <p><b>${esc(t(['Aéronef de chaque équipe en vol', 'Aircraft of each flying team', 'Luftfahrzeug jeder Besatzung', 'Aeronave de cada equipo']))}</b></p>
       <p class="mo-small">${esc(t(['Laisser vide = automatique (le générateur choisit un appareil adapté à la mission). Saisir ou choisir dans la liste : types courants et appareils de la flotte avec leur indicatif ; un même type peut servir à plusieurs équipes (indicatifs différents).', 'Empty = automatic (the generator picks a suitable aircraft). Type or pick from the list: common types and fleet aircraft with their callsign; the same type may serve several teams (different callsigns).']))}</p>
       <div class="mo-teams">${teamSlots(o).map((v, i) => `<label class="mo-team"><span>${esc(t(['Équipe', 'Team', 'Team', 'Equipo']))} ${String.fromCharCode(65 + i)}</span><input data-slot="${i}" list="moTeamList" value="${esc(v)}" placeholder="${esc(t(['automatique', 'automatic', 'automatisch', 'automático']))}"></label>`).join('')}</div>
       </details>
       <datalist id="moTeamList">${teamChoices().map(x => `<option value="${esc(x)}">`).join('')}</datalist>
-      <p class="mo-row"><button type="button" class="primary" data-mo="send" data-icon="sparkles">${esc(t(['Commander : copier le prompt et ouvrir ChatGPT', 'Order: copy prompt and open ChatGPT', 'Bestellen: Prompt kopieren und ChatGPT öffnen', 'Encargar: copiar el prompt y abrir ChatGPT']))}</button></p>
+      <p class="mo-row"><button type="button" class="primary" data-mo="send" data-icon="sparkles">${esc(t(['Commander : copier le prompt et ouvrir ChatGPT', 'Order: copy prompt and open ChatGPT', 'Bestellen: Prompt kopieren und ChatGPT öffnen', 'Encargar: copiar el prompt y abrir ChatGPT']))}</button>${onSkeleton ? `<button type="button" class="secondary" data-mo="skeleton" data-icon="layers" title="${esc(t(['Sans ChatGPT : les mêmes réglages donnent ici la ou les missions complètes mais vides de récit (aéronefs de la flotte, terrains de leur base, points, rendez-vous, zone, ravitaillement, timing, cartes attendues) ; à compléter, puis le studio pour les cartes', 'Without ChatGPT: the same settings give here the complete mission(s) without any narrative (fleet aircraft, their base airfields, points, rendezvous, area, refuelling, timing, expected maps); to complete, then the studio for the maps', 'Ohne ChatGPT: Dieselben Einstellungen erzeugen hier die vollständige(n) Mission(en) ohne Erzählung (Flottenluftfahrzeuge, Flugplätze ihrer Basis, Punkte, Treffpunkte, Zone, Betankung, Zeitplan, erwartete Karten); zu ergänzen, dann das Studio für die Karten', 'Sin ChatGPT: los mismos ajustes dan aquí la(s) misión(es) completa(s) sin relato (aeronaves de la flota, aeródromos de su base, puntos, encuentros, zona, reabastecimiento, tiempos, mapas previstos); a completar, después el estudio para los mapas']))}">${esc(t(['Créer le squelette ici', 'Create the skeleton here', 'Gerüst hier erstellen', 'Crear el esqueleto aquí']))}</button>` : ''}</p>
       <div class="mo-small" data-mo="msg"></div>
       <p class="mo-small">${esc(hint || t(['La mission apparaît dans le registre avec le statut « commandée » ; enregistrer ensuite mission<ID>.yaml et summary<ID>.md dans le dossier Missions puis « Relire le dossier » (registre) : la commande est rapprochée de la mission générée (même série).', 'The mission appears in the registry as “ordered”; then save mission<ID>.yaml and summary<ID>.md into the Missions folder and “Re-read folder” (registry): the order is matched with the generated mission (same series).']))}</p>`;
       if (lastMsg) host.querySelector('[data-mo="msg"]').append(...lastMsg.map(n => n.cloneNode(true)));
@@ -359,6 +365,9 @@
         o.teamSlots[+el.dataset.slot] = el.value.trim();
         save(o);
       }));
+      // « Créer le squelette ici » : mêmes réglages que le prompt (requestOf), aéronefs choisis pour chaque équipe
+      const sk = host.querySelector('[data-mo="skeleton"]');
+      if (sk) sk.onclick = () => onSkeleton(requestOf(o), teamSlots(o).slice());
       host.querySelector('[data-mo="send"]').onclick = async () => {
         const request = requestOf(o),
           out = host.querySelector('[data-mo="msg"]');

@@ -12,6 +12,17 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Ajouté
 
+- **Générateur de missions : « Créer le squelette ici », sans ChatGPT** (V2_FABLE § 8, L3) — à côté de « Commander :
+  copier le prompt et ouvrir ChatGPT », les mêmes réglages (`MissionOrder.requestOf`, une seule source pour les deux
+  chemins) donnent la ou les missions complètes mais vides de récit (`apps/cpco/mission_skeleton.js`,
+  `MissionSkeleton.build`) : une par équipe en vol (aéronef et indicatif de la flotte), terrains à la base de l'aéronef,
+  cible, points tournants, rendez-vous par équipe (« avec ») et sa carte `detail_rdv`, zone de travail, ravitaillement
+  planifié avec un axe AAR (ARIP, ARCP, rendez-vous) si « oui », timing d'après la durée, cartes attendues décrites,
+  rubriques vides ; exercice coordonné : mission d'organisation …Z (heure H, participants, événements H, H+15 min…).
+  Mises en lot (`SiaMission.setBatch`) et ouvertes ; ligne « Squelette : n point(s) à placer, m texte(s) à écrire —
+  puis le studio pour les cartes » avec « Ouvrir au studio » ; champs vides encadrés (« à compléter ») jusqu'à leur
+  saisie. Nouveau réglage « Exercice coordonné » (libre / oui / non) dans le formulaire de commande et paramètre
+  `EXERCICE` du prompt de génération. Manuel administrateur (4 langues).
 - **Générateur et registre des missions : « Dupliquer »** (V2_FABLE § 8, L2) — dans le bloc « Mission » du
   générateur et dans le registre, à côté d'« Ouvrir dans le générateur » : copie de la mission prête à modifier
   (`SiaMission.duplicate`) — identifiant et série suivants libres de la même famille (`nextNumbering`, lettre d'équipe

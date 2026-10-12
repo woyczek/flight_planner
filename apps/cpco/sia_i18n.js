@@ -5,6 +5,8 @@
   if (!window.RepositoryContentI18n) return;
   window.RepositoryContentI18n([
     // ---- générateur de mission
+    // squelette sans ChatGPT (générateur)
+    ["Ouvrir au studio", "Open in the studio", "Im Studio öffnen", "Abrir en el estudio"],
     // « Dupliquer » (générateur)
     ["Résumé", "Summary", "Zusammenfassung", "Resumen"],
     ["Copie de la mission chargée, prête à modifier : identifiant et série suivants de la même famille, titre « (copie) » ; cartes et rendus à refaire au studio",
