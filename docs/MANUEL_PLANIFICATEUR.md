@@ -12,14 +12,14 @@ Captures réalisées le 12 octobre 2026 dans l’interface française. Les valeu
 <!-- page: apps/cpco/mission_editor.html -->
 
 Le générateur prépare le dossier d'une mission : identification, textes du brief, exercice, durée estimée, zones à activer, puis les PDF à remettre aux équipages. Il sert aussi à commander une mission à ChatGPT et à recevoir sa réponse.
-Accès : barre latérale « Missions », onglet « Générateur » (niveau Conception, 3), ou ☰ › « Centre — Générateur de mission ». Depuis le registre, « Générer une mission » ouvre le générateur vide et « Ouvrir dans le générateur » charge la mission choisie.
+Accès : barre latérale « Missions », onglet « Générateur » (niveau Conception, 3), ou ☰ › « Centre — Générateur de mission ». La création n'a qu'une porte, ce générateur : « Nouvelle mission », « Créer le squelette ici », « Commander à ChatGPT… ». Depuis le registre, « Nouvelle mission » l'ouvre sur une mission neuve (formulaire de commande déplié) et « Ouvrir dans le générateur » charge la mission choisie. Une mission en cours pas encore enregistrée dans le dossier n'est remplacée qu'après confirmation.
 Voir aussi [prompt du générateur](technique/PROMPT_GENERATEUR_MISSIONS.md).
 Selon le niveau d'utilisation : la page est proposée à partir du niveau Conception (3). À ce niveau, elle montre sept blocs : Mission, Identification, Durée estimée, Zones à activer, Textes de mission, Cartes du dossier final et Documents (plus Opération et Exercice quand la mission en relève). Les brouillons, « Toutes les données YAML » et les paramètres du calcul des routes sont au niveau Expert (4).
 
 ### Tutoriel : préparer une mission de bout en bout
 
 Du formulaire de commande au brief PDF, en neuf étapes ; les étapes 10 à 12 font d’une mission seule un exercice coordonné. Les noms entre guillemets sont ceux des boutons.
-1. **Ouvrir le générateur** : barre latérale « Missions », onglet « Générateur » (niveau Conception), ou « Générer une mission » dans le registre.
+1. **Ouvrir le générateur** : barre latérale « Missions », onglet « Générateur » (niveau Conception), ou « Nouvelle mission » dans le registre.
     ![Ouvrir l’onglet Générateur depuis l’entrée Missions.](images/captures-manuels/tutoriel-onglet-generateur.png)
     *Étape 1 — Ouvrir l’onglet Générateur depuis l’entrée Missions.*
 
@@ -76,7 +76,6 @@ Du formulaire de commande au brief PDF, en neuf étapes ; les étapes 10 à 12 f
 <!-- capture-manuels: tutoriel-etape-8-10 -->
 <!-- capture-manuels: tutoriel-etape-9-11 -->
 
-
 ### Onglets « Générateur de mission » et « Studio cartographique »
 
 Les deux pages partagent un onglet en tête et travaillent sur **la même mission**.
@@ -108,7 +107,7 @@ Sous les boutons, deux lignes toujours présentes :
 Le volet « Importer une autre mission : fichiers, texte collé, commande ChatGPT » est ouvert quand aucune mission n'est chargée :
 - « YAML et/ou Markdown » : sélectionnez ensemble `mission<ID>.yaml` et `summary<ID>.md`, ou cliquez « ou coller son contenu… » puis « Lire la mission » ;
 - « Cartes ou ZIP livré par le générateur » : choisissez directement le ZIP du studio ; les PNG et la carte d'assemblage sont associés automatiquement ;
-- « Commander une mission à ChatGPT » : même formulaire que le registre (type, sous-type, théâtre, série, équipes, aéronefs…). « Commander : copier le prompt et ouvrir ChatGPT » copie le prompt, ouvre ChatGPT dans un nouvel onglet et inscrit la commande au registre (« commandée »). Au niveau Conception, ce repli n'apparaît que lorsque le bouton « Commander à ChatGPT… » l'ouvre ; au niveau Expert, il figure aussi, replié, dans le volet. **« Créer le squelette ici »** (générateur seulement, à côté du bouton de commande) fait la même chose sans ChatGPT : avec les mêmes réglages, il crée la ou les missions complètes mais vides de récit — une par équipe en vol (aéronef et indicatif choisis, ou pris dans la flotte : appareils des catégories du prompt qui conviennent à la famille ; ravitaillement : un ravitailleur puis des receveurs ; rien d'adapté : aéronef à compléter), terrain de départ et d'arrivée à la base de l'aéronef, cible, points tournants, un rendez-vous par équipe si « Rendez-vous » vaut « avec », zone de travail, ravitaillement planifié avec un axe AAR (ARIP, ARCP) si « oui », timing d'après la durée, cartes attendues avec leur description, objectif principal, risques, introduction et chronologie vides ; avec « Exercice coordonné : oui », la mission d'organisation …Z (heure H, participants, événements H, H+15 min…). Les missions s'ouvrent en lot ; la ligne « Squelette : n point(s) à placer, m texte(s) à écrire — puis le studio pour les cartes » compte ce qui reste, chaque champ vide est encadré jusqu'à sa saisie, et « Ouvrir au studio » passe au studio cartographique pour placer les points et générer les cartes.
+- « Commander une mission à ChatGPT » : même formulaire que les ordres de vols (type, sous-type, théâtre, série, équipes, aéronefs…). « Commander : copier le prompt et ouvrir ChatGPT » copie le prompt, ouvre ChatGPT dans un nouvel onglet et inscrit la commande au registre (« commandée »). Au niveau Conception, ce repli n'apparaît que lorsque le bouton « Commander à ChatGPT… » l'ouvre ; au niveau Expert, il figure aussi, replié, dans le volet. **« Créer le squelette ici »** (générateur seulement, à côté du bouton de commande) fait la même chose sans ChatGPT : avec les mêmes réglages, il crée la ou les missions complètes mais vides de récit — une par équipe en vol (aéronef et indicatif choisis, ou pris dans la flotte : appareils des catégories du prompt qui conviennent à la famille ; ravitaillement : un ravitailleur puis des receveurs ; rien d'adapté : aéronef à compléter), terrain de départ et d'arrivée à la base de l'aéronef, cible, points tournants, un rendez-vous par équipe si « Rendez-vous » vaut « avec », zone de travail, ravitaillement planifié avec un axe AAR (ARIP, ARCP) si « oui », timing d'après la durée, cartes attendues avec leur description, objectif principal, risques, introduction et chronologie vides ; avec « Exercice coordonné : oui », la mission d'organisation …Z (heure H, participants, événements H, H+15 min…). Les missions s'ouvrent en lot ; la ligne « Squelette : n point(s) à placer, m texte(s) à écrire — puis le studio pour les cartes » compte ce qui reste, chaque champ vide est encadré jusqu'à sa saisie, et « Ouvrir au studio » passe au studio cartographique pour placer les points et générer les cartes.
 
 Une mission reçue est inscrite au registre et rangée dans son dossier si le dossier des missions est autorisé ; sinon, cliquez « Ranger dans le dossier des missions… ». Lien « Ouvrir le registre ↗ ».
 Le texte reçu est gardé dans `recu/` ; reçue à nouveau, une mission ne remplace la précédente que si ses données changent : l'ancienne va dans `versions/`, les réglages du studio des cartes de même nom sont repris. Le collage accepte la réponse entière de ChatGPT (plusieurs missions : un lot) ; les fichiers annexes d'une série (VALIDATION.txt, manifeste) sont écartés et signalés.
@@ -117,6 +116,20 @@ Le texte reçu est gardé dans `recu/` ; reçue à nouveau, une mission ne rempl
 ![Importer, dupliquer ou enregistrer la mission : boutons du bloc Mission et volet d’import.](images/captures-manuels/planif-mission-actions.png)
 
 *Figure 1 — Importer, dupliquer ou enregistrer la mission : boutons du bloc Mission et volet d’import.*
+
+### Commander une mission
+
+Dans le bloc Mission, « Commander à ChatGPT… » déplie ce formulaire (même formulaire que les ordres de vols) ; le registre ne commande plus rien.
+1. Réglez « Type », « Sous-type », « Théâtre » (« Pays » pour l'étranger), « Équipes en vol », « Équipes au sol » et « Durée » (XS à XL).
+2. Au besoin, dépliez « Plus d'options » : « Second théâtre » (« Pays » pour l'étranger), « Série » (vide = la suivante), « Identifiant » (calculé, en lecture seule), « Rendez-vous », « Traductions », « Ravitaillement en vol », « Exercice coordonné » (oui : mission d'organisation …Z ; non : jamais ; libre : selon le scénario) et l'aéronef de chaque équipe en vol A, B… (vide = automatique). Ce repli est ouvert au niveau Expert ; aux autres niveaux, il s'ouvre de lui-même quand l'un de ses réglages s'écarte du défaut.
+3. Cliquez « Commander : copier le prompt et ouvrir ChatGPT », collez dans ChatGPT (Ctrl+V) puis envoyez.
+
+La mission apparaît au registre avec le statut « commandée ». Collez ensuite la réponse de ChatGPT dans le panneau « Réponse de ChatGPT » de sa fiche au registre (ou chargez-la ici), ou enregistrez les fichiers dans le dossier des missions puis « Relire le dossier » : la commande est rapprochée de la mission générée (même série). Les réglages sont mémorisés.
+
+<!-- capture-manuels: planif-commande-parametres -->
+![Préparer la commande : type, théâtre, équipes, durée et options ; le bouton du bas copie le prompt et ouvre ChatGPT.](images/captures-manuels/planif-commande-parametres.png)
+
+*Figure 9 — Préparer la commande : type, théâtre, équipes, durée et options ; le bouton du bas copie le prompt et ouvre ChatGPT.*
 
 ### Opération
 
@@ -321,7 +334,7 @@ Si le dossier contient plusieurs cycles, seul le plus récent est lu ; les autre
 
 Le registre recense toutes les missions générées ou commandées, avec leur suivi par le Centre : statut, date de vol, notes, comptes rendus.
 Il sert à choisir une mission, à l'ouvrir dans le générateur ou le studio, à l'affecter à des pilotes, à créer son CR et à commander de nouvelles missions.
-Accès : barre latérale « Missions », qui s'ouvre sur le registre (onglet « Registre »), ou ☰ › « Centre — Registre des missions ». En tête, « Générer une mission » ouvre le générateur pour en créer une.
+Accès : barre latérale « Missions », qui s'ouvre sur le registre (onglet « Registre »), ou ☰ › « Centre — Registre des missions ». En tête, « Nouvelle mission » ouvre le générateur sur une mission neuve : la création se fait là. Le registre consulte, range, duplique, supprime et importe ce qui arrive (fichiers, réponse de ChatGPT d'une mission commandée).
 Selon le niveau d'utilisation : la page est proposée à partir du niveau Conception (3), avec l'essentiel : « Ajouter des fichiers… » et « Relire le dossier », quatre filtres et « Plus de filtres », un tableau à sept colonnes, une fiche sans le studio et le formulaire de commande simplifié. Le reste est au niveau Expert (4), comme indiqué ci-dessous.
 
 ### Missions du registre
@@ -362,7 +375,7 @@ La fiche affiche le statut, l'itinéraire, les équipes et indicatifs, puis :
 - état des cartes : « complète », « partielle : cartes à compléter » ou « partielle : cartes non générées (régénérables) » ;
 - « Durée estimée » avec la comparaison aux CR.
 
-Boutons : « Ouvrir dans le générateur », « Dupliquer » (copie de la mission, identifiant suivant, ouverte dans le générateur ; voir le générateur), « Ouvrir dans le studio », « Affecter… » (sauf organisation …Z ; voir [affectation des missions](technique/AFFECTATION_MISSIONS.md)), « Créer le CR » ou « Nouveau CR (vol n) », et « Recopier le prompt » pour une mission commandée. « Ouvrir dans le studio » et « Recopier le prompt » sont au niveau Expert.
+Boutons : « Ouvrir dans le générateur », « Dupliquer » (copie de la mission, identifiant suivant, ouverte dans le générateur ; voir le générateur), « Ouvrir dans le studio », « Affecter… » (sauf organisation …Z ; voir [affectation des missions](technique/AFFECTATION_MISSIONS.md)), « Créer le CR » ou « Nouveau CR (vol n) », et « Recopier le prompt de cette commande » pour une mission commandée. « Ouvrir dans le studio » et « Recopier le prompt de cette commande » sont au niveau Expert.
 
 <!-- capture-manuels: planif-fiche-actions -->
 ![Depuis la fiche, ouvrir la mission dans le générateur ou le studio, la dupliquer, l’affecter ou créer son compte rendu.](images/captures-manuels/planif-fiche-actions.png)
@@ -390,20 +403,6 @@ Le suivi est écrit dans `suivi.yaml`, dans le dossier de la mission ; il est pa
 - « Créer le CR » ouvre un CR pré-rempli de la famille correspondante. Pour une mission déjà volée, « Nouveau CR (vol n) » prend le numéro de vol suivant (missions récurrentes).
 - Dans le CR, sous le champ de la mission, le lien « voir la mission dans le registre ↗ » revient à la fiche, avec la durée estimée et l'écart du vol.
 - Dès qu'un CR cite la mission, le statut passe à « CR fait », sauf si la mission est abandonnée.
-
-### Commander une mission
-
-Formulaire commun avec le générateur et les ordres de vols.
-1. Réglez « Type », « Sous-type », « Théâtre » (« Pays » pour l'étranger), « Équipes en vol », « Équipes au sol » et « Durée » (XS à XL).
-2. Au besoin, dépliez « Plus d'options » : « Second théâtre » (« Pays » pour l'étranger), « Série » (vide = la suivante), « Identifiant » (calculé, en lecture seule), « Rendez-vous », « Traductions », « Ravitaillement en vol », « Exercice coordonné » (oui : mission d'organisation …Z ; non : jamais ; libre : selon le scénario) et l'aéronef de chaque équipe en vol A, B… (vide = automatique). Ce repli est ouvert au niveau Expert ; aux autres niveaux, il s'ouvre de lui-même quand l'un de ses réglages s'écarte du défaut.
-3. Cliquez « Commander : copier le prompt et ouvrir ChatGPT », collez dans ChatGPT (Ctrl+V) puis envoyez.
-
-La mission apparaît au registre avec le statut « commandée ». Enregistrez ensuite les fichiers dans le dossier des missions puis « Relire le dossier » : la commande est rapprochée de la mission générée (même série). Les réglages sont mémorisés.
-
-<!-- capture-manuels: planif-commande-parametres -->
-![Préparer la commande : type, théâtre, équipes, durée et options ; le bouton du bas copie le prompt et ouvre ChatGPT.](images/captures-manuels/planif-commande-parametres.png)
-
-*Figure 9 — Préparer la commande : type, théâtre, équipes, durée et options ; le bouton du bas copie le prompt et ouvre ChatGPT.*
 
 ## Planning ODV
 <!-- page: apps/cpco/odv_planning.html -->

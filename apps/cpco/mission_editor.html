@@ -1562,10 +1562,17 @@ setInterval(() => renderSaveState(), 30000); // « il y a n min » tenu à jour
    Chaque action dit d'abord ce qu'elle va créer ou retirer (AppFramework.ask avec les identifiants). */
 const upId = v => String(v ?? '').trim().toUpperCase();
 const listOf = v => Array.isArray(v) ? v : v == null || v === '' ? [] : [v];
-/** Confirmation (AppFramework.ask, sinon confirm) ; ok : libellé du bouton. */
-const askOk = (msg, ok) => window.AppFramework?.ask ? window.AppFramework.ask(msg, {
-  ok
-}) : Promise.resolve(confirm(msg));
+/** Confirmation (AppFramework.ask, attendu 3 s au plus au chargement de la page, sinon confirm) ; ok : libellé du bouton. */
+/** Fin du chargement de la page (AppFramework, chargé en dernier, donc langue de la page appliquée) : 3 s au plus. */
+async function uiReady() {
+  for (let i = 0; i < 30 && !window.AppFramework?.ask; i++) await new Promise(r => setTimeout(r, 100))
+}
+async function askOk(msg, ok) {
+  await uiReady();
+  return window.AppFramework?.ask ? window.AppFramework.ask(msg, {
+    ok
+  }) : confirm(msg)
+}
 /** Première lettre d'équipage libre parmi les identifiants ids (A, B… ; Z réservé à l'organisation) ; '' si aucune. */
 function nextCrewLetter(ids) {
   for (let c = 65; c < 90; c++) {
@@ -3550,7 +3557,50 @@ $('saveToFolder').onclick = async () => {
     setStatus(explainErr(e, ['Mission non enregistrée', 'Mission not saved', 'Mission nicht gespeichert', 'Misión no guardada']), 'err')
   }
 };
-$('newMission').onclick = () => {
+/** « Nouvelle mission » (et mission_editor.html?new=1, bouton « Nouvelle mission » du registre) : formulaire vidé, lot
+ *  oublié. Mission en cours pas enregistrée dans le dossier (modifiée, ou jamais enregistrée : squelette, copie,
+ *  équipage ajouté) : confirmation d'abord. order : formulaire de commande à ChatGPT déplié ensuite (la création n'a
+ *  qu'une porte : le générateur). */
+async function newMission({
+  order = false,
+  fresh = false // page ouverte par ?new : la mission partagée n'a pas été chargée dans la page
+} = {}) {
+  await uiReady(); // message de confirmation dans la langue de la page
+  // mission en cours : celle de la page, sinon la mission partagée (page ouverte par ?new sans la charger)
+  const shared = fresh ? SiaMission.load() : null,
+    cur = shared?.yaml?.mission?.id ? shared : state.yaml?.mission?.id ? (syncNarrative(), {
+      yaml: state.yaml,
+      narrative: state.narrative
+    }) : null;
+  if (cur && (cur.yaml.title || cur.yaml.mission?.type)) { // formulaire vide (page sans mission) : rien à perdre
+    const st = SiaMission.savedState(cur);
+    if ((st.fields || st.kind === 'new') && !await askOk(trf([
+        'La mission {id} n’est pas enregistrée dans le dossier{n} : l’abandonner pour une nouvelle mission ? Sinon, « Enregistrer dans le dossier » d’abord.',
+        'The mission {id} is not saved to the folder{n}: drop it for a new mission? Otherwise, “Save to the folder” first.',
+        'Die Mission {id} ist nicht im Ordner gespeichert{n}: für eine neue Mission verwerfen? Sonst zuerst „Im Ordner speichern“.',
+        'La misión {id} no está guardada en la carpeta{n}: ¿abandonarla por una misión nueva? Si no, primero «Guardar en la carpeta».'
+      ], {
+        id: cur.yaml.mission.id,
+        n: st.fields ? trf([' ({f} champ(s) modifié(s))', ' ({f} field(s) changed)', ' ({f} Feld(er) geändert)',
+          ' ({f} campo(s) modificado(s))'
+        ], {
+          f: st.fields
+        }) : ''
+      }), trl(['Nouvelle mission', 'New mission', 'Neue Mission', 'Nueva misión']))) {
+      // refus à l'ouverture par ?new : la mission partagée est rouverte telle quelle
+      if (shared) {
+        state = {
+          ...state,
+          yaml: shared.yaml,
+          narrative: shared.narrative || state.narrative,
+          sourceNames: shared.sourceNames || []
+        };
+        renderAll();
+        syncBatchUi()
+      }
+      return
+    }
+  }
   state = {
     yaml: {
       schema: 'helo-xp-mission',
@@ -3575,9 +3625,17 @@ $('newMission').onclick = () => {
     images: new Map,
     sourceNames: []
   };
+  SiaMission.setBatch([{
+    yaml: state.yaml,
+    narrative: state.narrative,
+    sourceNames: []
+  }], 'generator'); // lot de l'ancienne opération oublié
   renderAll();
-  setStatus('Nouvelle mission prête.', 'ok')
-};
+  syncBatchUi();
+  setStatus(trl(['Nouvelle mission prête.', 'New mission ready.', 'Neue Mission bereit.', 'Nueva misión lista.']), 'ok');
+  if (order) $('orderGpt').click()
+}
+$('newMission').onclick = () => newMission();
 $('saveDraft').onclick = () => {
   shareMission(true);
   setStatus('Brouillon textuel mémorisé dans ce navigateur. Les images devront être resélectionnées.', 'ok')
@@ -3657,7 +3715,10 @@ if (FRESH) history.replaceState(null, '', location.pathname + location.hash);
     shareMission(true)
   }, 300)
 }
-if (FRESH) $('newMission').click(); // même mission vierge que « Nouvelle mission »
+if (FRESH) newMission({
+  order: true,
+  fresh: true
+}); // même mission vierge que « Nouvelle mission », formulaire de commande déplié
 else renderAll();
 let shareTimer = 0;
 

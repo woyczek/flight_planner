@@ -10,14 +10,14 @@ pages are described in the [pilot manual](MANUEL_UTILISATEUR.md); Centre access,
 <!-- page: apps/cpco/mission_editor.html -->
 
 The generator prepares a mission file: identification, brief texts, exercise, estimated duration, airspaces to activate, then the PDFs to hand to the crews. It is also used to order a mission from ChatGPT and to receive its answer.
-Access: sidebar “Missions”, “Generator” tab (Design level, 3), or ☰ › “Mission generator (SIA)”. From the registry, “Generate a mission” opens the empty generator and “Open in generator” loads the chosen mission.
+Access: sidebar “Missions”, “Generator” tab (Design level, 3), or ☰ › “Mission generator (SIA)”. Creation has a single door, this generator: “New mission”, “Create the skeleton here”, “Order from ChatGPT…”. From the registry, “New mission” opens it on a new mission (order form unfolded) and “Open in generator” loads the chosen mission. A current mission not yet saved to the folder is only replaced after confirmation.
 See also [generator prompt](../technique/PROMPT_GENERATEUR_MISSIONS.md).
 Depending on the usage level: the page is offered from the Design level (3). At that level, it shows seven blocks: Mission, Identification, Estimated duration, Airspaces to activate, Mission texts, Maps of the final file and Documents (plus Operation and Exercise when the mission belongs to one). Drafts, “All YAML data” and the route calculation settings are at the Expert level (4).
 
 ### Tutorial: preparing a mission from start to finish
 
 From the order form to the PDF brief, in nine steps; steps 10 to 12 turn a single mission into a coordinated exercise. Names in quotes are button labels.
-1. **Open the generator**: sidebar “Missions”, “Generator” tab (Design level), or “Generate a mission” in the registry.
+1. **Open the generator**: sidebar “Missions”, “Generator” tab (Design level), or “New mission” in the registry.
 2. **Set the order**: “Order from ChatGPT…” unfolds the form. Choose “Type”, “Subtype”, “Theatre”, “Flying teams”, “Ground teams” and “Duration”; in “More options”, “Rendezvous”, “Air refuelling”, “Coordinated exercise” and, if needed, the aircraft of each team (empty = a fleet aircraft).
 3. **Create the mission**, either way. With ChatGPT: “Order: copy prompt and open ChatGPT”, paste the prompt into ChatGPT and send it, then load the answer (`mission<ID>.yaml` and `summary<ID>.md`) in “YAML and/or Markdown”, or “or paste its content…” then “Read the mission”. Without ChatGPT: “Create the skeleton here” creates the mission(s) at once, without narrative.
 4. **Complete**: “Identification” (title), “Mission texts” (“Summary”, “Detailed description”, then “Add a text section”: main objective, risks, rendezvous…). Fields outlined with dots are still empty; the “Skeleton: …” line counts the points to place and the texts to write. Points without coordinates (departure, target, turning points, rendezvous, area) are placed in the studio, step 6; at the Expert level, the “All YAML data” block also lets you type `lat` and `lon` in decimal degrees. An operation with several teams is browsed with ◀ ▶ at the top of the page.
@@ -63,10 +63,19 @@ Under the buttons, two lines are always shown:
 The “Import another mission: files, pasted text, ChatGPT order” pane is open when no mission is loaded:
 - “YAML and/or Markdown”: select `mission<ID>.yaml` and `summary<ID>.md` together, or click “or paste its content…” then “Read the mission”;
 - “Maps or ZIP delivered by the generator”: choose the studio ZIP directly; the PNGs and the overview map are matched automatically;
-- “Order a mission from ChatGPT”: same form as the registry (type, subtype, theatre, series, teams, aircraft…). “Order: copy prompt and open ChatGPT” copies the prompt, opens ChatGPT in a new tab and records the order in the registry (“ordered”). At the Design level, this section only appears when the “Order from ChatGPT…” button opens it; at the Expert level, it is also shown, collapsed, in the pane. **“Create the skeleton here”** (generator only, next to the order button) does the same without ChatGPT: with the same settings, it creates the complete mission(s) without any narrative — one per flying team (aircraft and callsign chosen, or taken from the fleet: aircraft of the prompt categories suited to the family; refuelling: one tanker then receivers; nothing suitable: aircraft to complete), departure and arrival airfield at the aircraft’s base, target, turning points, one rendezvous per team if “Rendezvous” is “with”, working area, planned refuelling with an AAR track (ARIP, ARCP) if “yes”, timing from the duration, expected maps with their description, empty main objective, risks, introduction and timeline; with “Coordinated exercise: yes”, the …Z organisation mission (H hour, participants, events H, H+15 min…). The missions open as a batch; the line “Skeleton: n point(s) to place, m text(s) to write — then the studio for the maps” counts what remains, each empty field is outlined until it is filled, and “Open in the studio” goes to the map studio to place the points and generate the maps.
+- “Order a mission from ChatGPT”: same form as the flight orders (type, subtype, theatre, series, teams, aircraft…). “Order: copy prompt and open ChatGPT” copies the prompt, opens ChatGPT in a new tab and records the order in the registry (“ordered”). At the Design level, this section only appears when the “Order from ChatGPT…” button opens it; at the Expert level, it is also shown, collapsed, in the pane. **“Create the skeleton here”** (generator only, next to the order button) does the same without ChatGPT: with the same settings, it creates the complete mission(s) without any narrative — one per flying team (aircraft and callsign chosen, or taken from the fleet: aircraft of the prompt categories suited to the family; refuelling: one tanker then receivers; nothing suitable: aircraft to complete), departure and arrival airfield at the aircraft’s base, target, turning points, one rendezvous per team if “Rendezvous” is “with”, working area, planned refuelling with an AAR track (ARIP, ARCP) if “yes”, timing from the duration, expected maps with their description, empty main objective, risks, introduction and timeline; with “Coordinated exercise: yes”, the …Z organisation mission (H hour, participants, events H, H+15 min…). The missions open as a batch; the line “Skeleton: n point(s) to place, m text(s) to write — then the studio for the maps” counts what remains, each empty field is outlined until it is filled, and “Open in the studio” goes to the map studio to place the points and generate the maps.
 
 A received mission is recorded in the registry and filed in its folder if the missions folder is authorised; otherwise, click “File in the missions folder…”. Link “Open the registry ↗”.
 The received text is kept in `recu/`; received again, a mission replaces the previous one only if its data change: the old one goes to `versions/`, and the studio settings of maps with the same name are kept. Pasting accepts ChatGPT's whole answer (several missions: a batch); the side files of a series (VALIDATION.txt, manifest) are set aside and reported.
+
+### Order a mission
+
+In the Mission block, “Order from ChatGPT…” unfolds this form (same form as the flight orders); the registry no longer orders anything.
+1. Set “Type”, “Subtype”, “Theatre” (“Country” for abroad), “Flying teams”, “Ground teams” and “Duration” (XS to XL).
+2. If needed, unfold “More options”: “Second theatre” (“Country” for abroad), “Series” (empty = the next one), “Identifier” (computed, read-only), “Rendezvous”, “Translations”, “Air refuelling”, “Coordinated exercise” (yes: …Z organisation mission; no: never; free: as the scenario needs) and the aircraft of each flying team A, B… (empty = automatic). This section is open at the Expert level; at the other levels, it opens by itself when one of its settings differs from the default.
+3. Click “Order: copy prompt and open ChatGPT”, paste into ChatGPT (Ctrl+V) then send.
+
+The mission appears in the registry with the status “ordered”. Then paste the ChatGPT reply into the “ChatGPT reply” panel of its card in the registry (or load it here), or save the files to the missions folder and click “Re-read folder”: the order is matched with the generated mission (same series). The settings are stored.
 
 ### Operation
 
@@ -246,7 +255,7 @@ If the folder contains several cycles, only the most recent is read; the others 
 
 The registry lists all the generated or ordered missions, with their follow-up by the Centre: status, flight date, notes, reports.
 It is used to choose a mission, open it in the generator or the studio, assign it to pilots, create its report and order new missions.
-Access: sidebar “Missions”, which opens on the registry (“Registry” tab), or ☰ › “Mission registry (SIA)”. At the top, “Generate a mission” opens the generator to create one.
+Access: sidebar “Missions”, which opens on the registry (“Registry” tab), or ☰ › “Mission registry (SIA)”. At the top, “New mission” opens the generator on a new mission: creation happens there. The registry consults, files, duplicates, deletes and imports what arrives (files, ChatGPT reply for an ordered mission).
 Depending on the usage level: the page is offered from the Design level (3), with the essentials: “Add files…” and “Re-read folder”, four filters and “More filters”, a seven-column table, a card without the map studio and the simplified order form. The rest is at the Expert level (4), as shown below.
 
 ### Registry missions
@@ -282,7 +291,7 @@ The card shows the status, the itinerary, the teams and callsigns, then:
 - map state: “complete”, “partial: maps missing” or “partial: maps not generated (can be regenerated)”;
 - “Estimated time” with the comparison with the reports.
 
-Buttons: “Open in generator”, “Duplicate” (copy of the mission, next identifier, opened in the generator; see the generator), “Open in map studio”, “Assign…” (except organisation …Z; see [mission assignment](../technique/AFFECTATION_MISSIONS.md)), “Create report” or “New report (flight n)”, and “Copy prompt again” for an ordered mission. “Open in map studio” and “Copy prompt again” are at the Expert level.
+Buttons: “Open in generator”, “Duplicate” (copy of the mission, next identifier, opened in the generator; see the generator), “Open in map studio”, “Assign…” (except organisation …Z; see [mission assignment](../technique/AFFECTATION_MISSIONS.md)), “Create report” or “New report (flight n)”, and “Copy this order’s prompt again” for an ordered mission. “Open in map studio” and “Copy this order’s prompt again” are at the Expert level.
 
 ### Centre follow-up: status, flight date, notes
 
@@ -305,15 +314,6 @@ The follow-up is written to `suivi.yaml`, in the mission folder; it is shared wi
 - “Create report” opens a report pre-filled for the matching family. For a mission already flown, “New report (flight n)” takes the next flight number (recurring missions).
 - In the report, under the mission field, the link “see the mission in the registry ↗” goes back to the card, with the estimated duration and the flight difference.
 - As soon as a report cites the mission, the status changes to “report done”, unless the mission is dropped.
-
-### Order a mission
-
-Form shared with the generator and the flight orders.
-1. Set “Type”, “Subtype”, “Theatre” (“Country” for abroad), “Flying teams”, “Ground teams” and “Duration” (XS to XL).
-2. If needed, unfold “More options”: “Second theatre” (“Country” for abroad), “Series” (empty = the next one), “Identifier” (computed, read-only), “Rendezvous”, “Translations”, “Air refuelling”, “Coordinated exercise” (yes: …Z organisation mission; no: never; free: as the scenario needs) and the aircraft of each flying team A, B… (empty = automatic). This section is open at the Expert level; at the other levels, it opens by itself when one of its settings differs from the default.
-3. Click “Order: copy prompt and open ChatGPT”, paste into ChatGPT (Ctrl+V) then send.
-
-The mission appears in the registry with the status “ordered”. Then save the files to the missions folder and click “Re-read folder”: the order is matched with the generated mission (same series). The settings are stored.
 
 ## ODV planning
 <!-- page: apps/cpco/odv_planning.html -->

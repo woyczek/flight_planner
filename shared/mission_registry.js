@@ -1284,10 +1284,6 @@
         <div id="rgTable"></div>
         <div class="rg-resize" role="separator" aria-orientation="horizontal" title="${esc(t(['Glisser pour agrandir ou réduire le tableau (double-clic : hauteur par défaut)', 'Drag to enlarge or shrink the table (double-click: default height)', 'Ziehen, um die Tabelle zu vergrößern oder zu verkleinern (Doppelklick: Standardhöhe)', 'Arrastrar para ampliar o reducir la tabla (doble clic: altura por defecto)']))}"><span></span></div>
         <div id="rgDetail"></div>
-      </section>
-      <section data-block-id="order" data-icon="sparkles" data-subtitle="${esc(t(['Nouvelle mission à générer : paramètres choisis, prompt ChatGPT réglé, entrée « commandée » rapprochée ensuite du fichier généré', 'New mission to generate: chosen parameters, tuned ChatGPT prompt, “ordered” entry matched later with the generated file']))}">
-        <h2>${esc(t(['Commander une mission', 'Order a mission', 'Mission bestellen', 'Encargar una misión']))}</h2>
-        <div id="rgOrderHost"></div>
       </section>`;
     // dossier
     const fb = host.querySelector('#rgFolder');
@@ -1310,7 +1306,7 @@
     waitFor('FileAccess').then(FA => FA?.decorate(b, '__missions'));
     const sb = document.createElement('button');
     sb.type = 'button';
-    sb.className = 'secondary'; // action principale : « Générer une mission »
+    sb.className = 'secondary'; // action principale : « Nouvelle mission »
     sb.dataset.icon = 'refresh';
     sb.textContent = t(['Relire le dossier', 'Re-read folder', 'Ordner neu lesen', 'Releer la carpeta']);
     sb.onclick = doScan;
@@ -1335,12 +1331,19 @@
       render();
     };
     fb.append(ab);
-    // v2 : Missions s'ouvre sur le registre ; « Générer une mission » mène au générateur (mission vierge), en tête de barre
+    // v2 : Missions s'ouvre sur le registre ; la création n'a qu'une porte, le générateur : « Nouvelle mission » l'ouvre sur
+    // une mission neuve (?new : formulaire de commande déplié), en tête de barre ; le registre consulte, range, duplique,
+    // supprime et importe ce qui arrive (fichiers, réponse de ChatGPT d'une mission commandée)
     const gb = document.createElement('button');
     gb.type = 'button';
     gb.className = 'primary';
     gb.dataset.icon = 'plus';
-    gb.textContent = t(['Générer une mission', 'Generate a mission', 'Eine Mission erzeugen', 'Generar una misión']);
+    gb.textContent = t(['Nouvelle mission', 'New mission', 'Neue Mission', 'Nueva misión']);
+    gb.title = t(['Ouvrir le générateur sur une mission neuve : nouvelle mission, squelette ou commande à ChatGPT',
+      'Open the generator on a new mission: new mission, skeleton or order to ChatGPT',
+      'Den Generator mit einer neuen Mission öffnen: neue Mission, Gerüst oder Bestellung bei ChatGPT',
+      'Abrir el generador con una misión nueva: nueva misión, esqueleto o encargo a ChatGPT'
+    ]);
     gb.onclick = () => {
       // ?new : mission vierge (sans lui, le générateur rouvrait la dernière mission partagée)
       location.href = new URL('mission_editor.html?new', location.href).href;
@@ -1474,9 +1477,6 @@
       }
     };
     host.querySelector('#rgCsv').onclick = exportCsv;
-    window.MissionOrder?.mount(host.querySelector('#rgOrderHost'), {
-      onOrdered: () => render()
-    });
     refreshTable();
     renderDetail();
     window.AppFramework?.refresh?.();
@@ -1678,7 +1678,7 @@
         <textarea id="rgReplyText" rows="8" spellcheck="false" data-fixed-size></textarea>
         <p class="row"><button type="button" class="primary" id="rgReplyGo" data-icon="download">${esc(t(['Importer la réponse', 'Import the reply', 'Antwort importieren', 'Importar la respuesta']))}</button><label class="rg-file">${esc(t(['Choisir les fichiers…', 'Choose files…', 'Dateien wählen…', 'Elegir archivos…']))}<input type="file" id="rgReplyFiles" multiple accept=".yaml,.yml,.md,.txt" hidden></label></p>
       </details>` : ''}
-      <p class="row">${m.files?.length ? `<button type="button" class="primary" data-go="editor" data-icon="edit">${esc(t(['Ouvrir dans le générateur', 'Open in generator', 'Im Generator öffnen', 'Abrir en el generador']))}</button><button type="button" class="secondary" data-go="duplicate" data-icon="layers" data-min-level="3" title="${esc(t(['Copie de la mission, prête à modifier : identifiant et série suivants de la même famille, titre « (copie) » ; ouverte dans le générateur, cartes à refaire au studio', 'Copy of the mission, ready to edit: next identifier and series of the same family, title “(copy)”; opened in the generator, maps to redo in the studio', 'Kopie der Mission, bereit zum Bearbeiten: nächste Kennung und Serie derselben Familie, Titel „(Kopie)“; im Generator geöffnet, Karten im Studio neu erstellen', 'Copia de la misión, lista para modificar: identificador y serie siguientes de la misma familia, título «(copia)»; abierta en el generador, mapas a rehacer en el estudio']))}">${esc(t(['Dupliquer', 'Duplicate', 'Duplizieren', 'Duplicar']))}</button><button type="button" class="secondary" data-go="studio" data-icon="map" data-min-level="4">${esc(t(['Ouvrir dans le studio', 'Open in map studio', 'Im Kartenstudio öffnen', 'Abrir en el estudio']))}</button>${/Z$/.test(m.id || '') ? '' : `<button type="button" class="secondary" data-go="assign" data-icon="users" title="${esc(t(['Affecter la mission à un ou plusieurs pilotes : heure, appareils, astreinte (docs/technique/AFFECTATION_MISSIONS.md)', 'Assign the mission to one or more pilots: time, aircraft, standby']))}">${esc(t(['Affecter…', 'Assign…', 'Zuweisen…', 'Asignar…']))}</button>`}<button type="button" class="secondary" data-go="cr" data-icon="clipboard" title="${esc(t(['Nouveau CR de cette mission : n° de vol suivant', 'New report for this mission: next flight number']))}">${esc(m.reports?.length ? t(['Nouveau CR (vol {n})', 'New report (flight {n})', 'Neuer Bericht (Flug {n})', 'Nuevo informe (vuelo {n})'], { n: m.reports.length + 1 }) : t(['Créer le CR', 'Create report', 'Bericht erstellen', 'Crear informe']))}</button>` : ''}${m.status === 'ordered' ? `<button type="button" class="secondary" data-go="prompt" data-icon="send" data-min-level="4">${esc(t(['Recopier le prompt', 'Copy prompt again']))}</button>` : ''}<button type="button" class="secondary" id="rgDelete" data-icon="trash" title="${esc(m.files?.length ? t(['Supprimer la mission : son dossier (fichiers, cartes, versions, textes reçus) et son entrée du registre', 'Delete the mission: its folder (files, maps, versions, received texts) and its registry entry', 'Mission löschen: ihren Ordner (Dateien, Karten, Versionen, empfangene Texte) und ihren Registereintrag', 'Eliminar la misión: su carpeta (archivos, mapas, versiones, textos recibidos) y su entrada del registro']) : t(['Retirer la mission du registre (aucun fichier)', 'Remove the mission from the registry (no file)', 'Mission aus dem Register entfernen (keine Datei)', 'Retirar la misión del registro (ningún archivo)']))}">${esc(t(['Supprimer…', 'Delete…', 'Löschen…', 'Eliminar…']))}</button><span class="rg-small">${esc((m.files || []).join(', '))}</span></p>
+      <p class="row">${m.files?.length ? `<button type="button" class="primary" data-go="editor" data-icon="edit">${esc(t(['Ouvrir dans le générateur', 'Open in generator', 'Im Generator öffnen', 'Abrir en el generador']))}</button><button type="button" class="secondary" data-go="duplicate" data-icon="layers" data-min-level="3" title="${esc(t(['Copie de la mission, prête à modifier : identifiant et série suivants de la même famille, titre « (copie) » ; ouverte dans le générateur, cartes à refaire au studio', 'Copy of the mission, ready to edit: next identifier and series of the same family, title “(copy)”; opened in the generator, maps to redo in the studio', 'Kopie der Mission, bereit zum Bearbeiten: nächste Kennung und Serie derselben Familie, Titel „(Kopie)“; im Generator geöffnet, Karten im Studio neu erstellen', 'Copia de la misión, lista para modificar: identificador y serie siguientes de la misma familia, título «(copia)»; abierta en el generador, mapas a rehacer en el estudio']))}">${esc(t(['Dupliquer', 'Duplicate', 'Duplizieren', 'Duplicar']))}</button><button type="button" class="secondary" data-go="studio" data-icon="map" data-min-level="4">${esc(t(['Ouvrir dans le studio', 'Open in map studio', 'Im Kartenstudio öffnen', 'Abrir en el estudio']))}</button>${/Z$/.test(m.id || '') ? '' : `<button type="button" class="secondary" data-go="assign" data-icon="users" title="${esc(t(['Affecter la mission à un ou plusieurs pilotes : heure, appareils, astreinte (docs/technique/AFFECTATION_MISSIONS.md)', 'Assign the mission to one or more pilots: time, aircraft, standby']))}">${esc(t(['Affecter…', 'Assign…', 'Zuweisen…', 'Asignar…']))}</button>`}<button type="button" class="secondary" data-go="cr" data-icon="clipboard" title="${esc(t(['Nouveau CR de cette mission : n° de vol suivant', 'New report for this mission: next flight number']))}">${esc(m.reports?.length ? t(['Nouveau CR (vol {n})', 'New report (flight {n})', 'Neuer Bericht (Flug {n})', 'Nuevo informe (vuelo {n})'], { n: m.reports.length + 1 }) : t(['Créer le CR', 'Create report', 'Bericht erstellen', 'Crear informe']))}</button>` : ''}${m.status === 'ordered' ? `<button type="button" class="secondary" data-go="prompt" data-icon="send" data-min-level="4">${esc(t(['Recopier le prompt de cette commande', 'Copy this order’s prompt again', 'Prompt dieser Bestellung erneut kopieren', 'Volver a copiar el prompt de este encargo']))}</button>` : ''}<button type="button" class="secondary" id="rgDelete" data-icon="trash" title="${esc(m.files?.length ? t(['Supprimer la mission : son dossier (fichiers, cartes, versions, textes reçus) et son entrée du registre', 'Delete the mission: its folder (files, maps, versions, received texts) and its registry entry', 'Mission löschen: ihren Ordner (Dateien, Karten, Versionen, empfangene Texte) und ihren Registereintrag', 'Eliminar la misión: su carpeta (archivos, mapas, versiones, textos recibidos) y su entrada del registro']) : t(['Retirer la mission du registre (aucun fichier)', 'Remove the mission from the registry (no file)', 'Mission aus dem Register entfernen (keine Datei)', 'Retirar la misión del registro (ningún archivo)']))}">${esc(t(['Supprimer…', 'Delete…', 'Löschen…', 'Eliminar…']))}</button><span class="rg-small">${esc((m.files || []).join(', '))}</span></p>
       <p class="rg-small" id="rgGoMsg"></p></div>`;
     box.querySelector('#rgStatus').onchange = e => {
       m.status = e.target.value;

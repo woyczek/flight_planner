@@ -10,14 +10,14 @@ Daten das [Administratorhandbuch](MANUEL_ADMINISTRATEUR.md).
 <!-- page: apps/cpco/mission_editor.html -->
 
 Der Generator bereitet die Unterlagen einer Mission vor: Identifikation, Briefingtexte, Übung, geschätzte Dauer, zu aktivierende Gebiete, danach die PDFs für die Besatzungen. Er dient auch dazu, eine Mission bei ChatGPT zu bestellen und die Antwort zu empfangen.
-Zugang: Seitenleiste „Missionen“, Reiter „Generator“ (Stufe Gestaltung, 3), oder ☰ › „Missionsgenerator (SIA)“. Im Register öffnet „Eine Mission erzeugen“ den leeren Generator, und „Im Generator öffnen“ lädt die gewählte Mission.
+Zugang: Seitenleiste „Missionen“, Reiter „Generator“ (Stufe Gestaltung, 3), oder ☰ › „Missionsgenerator (SIA)“. Das Anlegen hat nur eine Tür, diesen Generator: „Neue Mission“, „Gerüst hier erstellen“, „Bei ChatGPT bestellen…“. Im Register öffnet „Neue Mission“ ihn mit einer neuen Mission (Bestellformular aufgeklappt), und „Im Generator öffnen“ lädt die gewählte Mission. Eine laufende, noch nicht im Ordner gespeicherte Mission wird erst nach Bestätigung ersetzt.
 Siehe auch [Prompt des Generators](../technique/PROMPT_GENERATEUR_MISSIONS.md).
 Je nach Nutzungsstufe: Die Seite wird ab der Stufe Gestaltung (3) angeboten. Auf dieser Stufe zeigt sie sieben Blöcke: Mission, Identifikation, Geschätzte Dauer, Zu aktivierende Gebiete, Missionstexte, Karten des Endpakets und Dokumente (dazu Operation und Übung, wenn die Mission dazugehört). Entwürfe, „Alle YAML-Daten“ und die Einstellungen der Routenberechnung gehören zur Stufe Experte (4).
 
 ### Tutorial: eine Mission von Anfang bis Ende vorbereiten
 
 Vom Bestellformular bis zum PDF-Briefing in neun Schritten; die Schritte 10 bis 12 machen aus einer Einzelmission eine koordinierte Übung. Die Namen in Anführungszeichen sind Schaltflächen.
-1. **Generator öffnen**: Seitenleiste „Missionen“, Reiter „Generator“ (Stufe Gestaltung), oder „Eine Mission erzeugen“ im Register.
+1. **Generator öffnen**: Seitenleiste „Missionen“, Reiter „Generator“ (Stufe Gestaltung), oder „Neue Mission“ im Register.
 2. **Bestellung einstellen**: „Bei ChatGPT bestellen…“ klappt das Formular auf. Wählen Sie „Typ“, „Untertyp“, „Schauplatz“, „Besatzungen im Flug“, „Bodenteams“ und „Dauer“; unter „Weitere Optionen“ „Treffpunkt“, „Luftbetankung“, „Koordinierte Übung“ und bei Bedarf das Luftfahrzeug jedes Teams (leer = ein Luftfahrzeug der Flotte).
 3. **Mission erstellen**, nach Wahl. Mit ChatGPT: „Bestellen: Prompt kopieren und ChatGPT öffnen“, den Prompt in ChatGPT einfügen und senden, dann die Antwort (`mission<ID>.yaml` und `summary<ID>.md`) unter „YAML und/oder Markdown“ laden, oder „oder Inhalt einfügen…“ und „Mission lesen“. Ohne ChatGPT: „Gerüst hier erstellen“ erstellt sofort die Mission(en), ohne Erzählung.
 4. **Ergänzen**: „Identifikation“ (Titel), „Missionstexte“ („Zusammenfassung“, „Ausführliche Beschreibung“, dann „Textabschnitt hinzufügen“: Hauptziel, Risiken, Treffpunkt…). Gepunktet umrahmte Felder sind noch leer; die Zeile „Gerüst: …“ zählt die zu setzenden Punkte und die zu schreibenden Texte. Punkte ohne Koordinaten (Start, Ziel, Wendepunkte, Treffpunkte, Zone) werden im Studio gesetzt, Schritt 6; auf der Stufe Experte lassen sich `lat` und `lon` auch im Block „Alle YAML-Daten“ in Dezimalgrad eingeben. Eine Operation mit mehreren Teams wird mit ◀ ▶ oben auf der Seite durchlaufen.
@@ -63,10 +63,19 @@ Unter den Schaltflächen stehen immer zwei Zeilen:
 Der Bereich „Andere Mission importieren: Dateien, eingefügter Text, ChatGPT-Bestellung“ ist geöffnet, wenn keine Mission geladen ist:
 - „YAML und/oder Markdown“: Wählen Sie `mission<ID>.yaml` und `summary<ID>.md` gemeinsam aus, oder klicken Sie auf „oder Inhalt einfügen…“ und dann auf „Mission lesen“;
 - „Karten oder vom Generator geliefertes ZIP“: Wählen Sie direkt das ZIP des Studios; die PNGs und die Übersichtskarte werden automatisch zugeordnet;
-- „Mission bei ChatGPT bestellen“: dasselbe Formular wie im Register (Typ, Untertyp, Einsatzgebiet, Serie, Teams, Luftfahrzeuge…). „Bestellen: Prompt kopieren und ChatGPT öffnen“ kopiert den Prompt, öffnet ChatGPT in einem neuen Tab und trägt die Bestellung ins Register ein („bestellt“). Auf der Stufe Gestaltung erscheint dieser Bereich nur, wenn der Knopf „Bei ChatGPT bestellen…“ ihn öffnet; auf der Stufe Experte steht er auch zugeklappt im Bereich. **„Gerüst hier erstellen“** (nur im Generator, neben dem Bestellknopf) macht dasselbe ohne ChatGPT: Mit denselben Einstellungen erstellt es die vollständige(n) Mission(en) ohne Erzählung — eine je fliegendem Team (Luftfahrzeug und Rufzeichen gewählt oder aus der Flotte: Luftfahrzeuge der Prompt-Kategorien, die zur Familie passen; Betankung: ein Tanker, dann Empfänger; nichts Passendes: Luftfahrzeug zu ergänzen), Start- und Zielflugplatz an der Basis des Luftfahrzeugs, Ziel, Wendepunkte, ein Treffpunkt je Team, wenn „Treffpunkt“ auf „mit“ steht, Arbeitsgebiet, geplante Betankung mit einer AAR-Strecke (ARIP, ARCP) bei „ja“, Zeitplan aus der Dauer, erwartete Karten mit Beschreibung, leeres Hauptziel, Risiken, Einleitung und Zeitablauf; mit „Koordinierte Übung: ja“ die Leitungsmission …Z (Stunde H, Teilnehmer, Ereignisse H, H+15 min…). Die Missionen öffnen sich als Stapel; die Zeile „Gerüst: n Punkt(e) zu setzen, m Text(e) zu schreiben — dann das Studio für die Karten“ zählt, was bleibt, jedes leere Feld ist umrahmt, bis es ausgefüllt ist, und „Im Studio öffnen“ wechselt ins Kartenstudio, um die Punkte zu setzen und die Karten zu erzeugen.
+- „Mission bei ChatGPT bestellen“: dasselbe Formular wie bei den Flugbefehlen (Typ, Untertyp, Einsatzgebiet, Serie, Teams, Luftfahrzeuge…). „Bestellen: Prompt kopieren und ChatGPT öffnen“ kopiert den Prompt, öffnet ChatGPT in einem neuen Tab und trägt die Bestellung ins Register ein („bestellt“). Auf der Stufe Gestaltung erscheint dieser Bereich nur, wenn der Knopf „Bei ChatGPT bestellen…“ ihn öffnet; auf der Stufe Experte steht er auch zugeklappt im Bereich. **„Gerüst hier erstellen“** (nur im Generator, neben dem Bestellknopf) macht dasselbe ohne ChatGPT: Mit denselben Einstellungen erstellt es die vollständige(n) Mission(en) ohne Erzählung — eine je fliegendem Team (Luftfahrzeug und Rufzeichen gewählt oder aus der Flotte: Luftfahrzeuge der Prompt-Kategorien, die zur Familie passen; Betankung: ein Tanker, dann Empfänger; nichts Passendes: Luftfahrzeug zu ergänzen), Start- und Zielflugplatz an der Basis des Luftfahrzeugs, Ziel, Wendepunkte, ein Treffpunkt je Team, wenn „Treffpunkt“ auf „mit“ steht, Arbeitsgebiet, geplante Betankung mit einer AAR-Strecke (ARIP, ARCP) bei „ja“, Zeitplan aus der Dauer, erwartete Karten mit Beschreibung, leeres Hauptziel, Risiken, Einleitung und Zeitablauf; mit „Koordinierte Übung: ja“ die Leitungsmission …Z (Stunde H, Teilnehmer, Ereignisse H, H+15 min…). Die Missionen öffnen sich als Stapel; die Zeile „Gerüst: n Punkt(e) zu setzen, m Text(e) zu schreiben — dann das Studio für die Karten“ zählt, was bleibt, jedes leere Feld ist umrahmt, bis es ausgefüllt ist, und „Im Studio öffnen“ wechselt ins Kartenstudio, um die Punkte zu setzen und die Karten zu erzeugen.
 
 Eine empfangene Mission wird ins Register eingetragen und in ihrem Ordner abgelegt, wenn der Missionsordner erlaubt ist; andernfalls klicken Sie auf „Im Missionsordner ablegen…“. Link „Register öffnen ↗“.
 Der empfangene Text wird in `recu/` aufbewahrt; erneut empfangen, ersetzt eine Mission die vorige nur, wenn sich ihre Daten ändern: Die alte kommt nach `versions/`, die Studio-Einstellungen gleichnamiger Karten werden übernommen. Das Einfügen nimmt die ganze Antwort von ChatGPT an (mehrere Missionen: ein Stapel); Begleitdateien einer Serie (VALIDATION.txt, Manifest) werden ausgesondert und gemeldet.
+
+### Mission bestellen
+
+Im Block Mission klappt „Bei ChatGPT bestellen…“ dieses Formular auf (dasselbe Formular wie bei den Flugbefehlen); das Register bestellt nichts mehr.
+1. Stellen Sie „Typ“, „Untertyp“, „Einsatzgebiet“ („Land“ für das Ausland), „Flugbesatzungen“, „Bodenteams“ und „Dauer“ (XS bis XL) ein.
+2. Klappen Sie bei Bedarf „Weitere Optionen“ auf: „Zweites Einsatzgebiet“ („Land“ für das Ausland), „Serie“ (leer = die nächste), „Kennung“ (berechnet, nur lesbar), „Treffpunkt“, „Übersetzungen“, „Luftbetankung“, „Koordinierte Übung“ (ja: Leitungsmission …Z; nein: nie; frei: je nach Szenario) und das Luftfahrzeug jedes fliegenden Teams A, B… (leer = automatisch). Dieser Bereich ist auf der Stufe Experte geöffnet; auf den anderen Stufen öffnet er sich von selbst, wenn eine seiner Einstellungen vom Standard abweicht.
+3. Klicken Sie auf „Bestellen: Prompt kopieren und ChatGPT öffnen“, fügen Sie in ChatGPT ein (Strg+V) und senden Sie ab.
+
+Die Mission erscheint im Register mit dem Status „bestellt“. Fügen Sie dann die Antwort von ChatGPT im Feld „Antwort von ChatGPT“ ihrer Karte im Register ein (oder laden Sie sie hier), oder speichern Sie die Dateien im Missionsordner und klicken Sie auf „Ordner neu lesen“: Die Bestellung wird der erzeugten Mission zugeordnet (gleiche Serie). Die Einstellungen werden gespeichert.
 
 ### Operation
 
@@ -246,7 +255,7 @@ Enthält der Ordner mehrere Zyklen, wird nur der neueste gelesen; die anderen we
 
 Das Register erfasst alle erzeugten oder bestellten Missionen mit ihrer Verfolgung durch das Zentrum: Status, Flugdatum, Notizen, Berichte.
 Es dient dazu, eine Mission auszuwählen, sie im Generator oder im Studio zu öffnen, sie Piloten zuzuweisen, ihren Bericht zu erstellen und neue Missionen zu bestellen.
-Zugang: Seitenleiste „Missionen“, die sich auf dem Register öffnet (Reiter „Register“), oder ☰ › „Missionsregister (SIA)“. Oben öffnet „Eine Mission erzeugen“ den Generator, um eine zu erstellen.
+Zugang: Seitenleiste „Missionen“, die sich auf dem Register öffnet (Reiter „Register“), oder ☰ › „Missionsregister (SIA)“. Oben öffnet „Neue Mission“ den Generator mit einer neuen Mission: Dort wird angelegt. Das Register zeigt an, legt ab, dupliziert, löscht und importiert, was ankommt (Dateien, Antwort von ChatGPT für eine bestellte Mission).
 Je nach Nutzungsstufe: Die Seite wird ab der Stufe Gestaltung (3) angeboten, mit dem Wesentlichen: „Dateien hinzufügen…“ und „Ordner neu lesen“, vier Filter und „Weitere Filter“, eine Tabelle mit sieben Spalten, ein Blatt ohne das Kartenstudio und das vereinfachte Bestellformular. Der Rest gehört zur Stufe Experte (4), wie unten angegeben.
 
 ### Missionen des Registers
@@ -282,7 +291,7 @@ Das Blatt zeigt Status, Streckenführung, Teams und Rufzeichen, danach:
 - Zustand der Karten: „vollständig“, „teilweise: Karten zu ergänzen“ oder „teilweise: Karten nicht erzeugt (wiedererzeugbar)“;
 - „Geschätzte Dauer“ mit dem Vergleich zu den Berichten.
 
-Schaltflächen: „Im Generator öffnen“, „Duplizieren“ (Kopie der Mission, nächste Kennung, im Generator geöffnet; siehe Generator), „Im Kartenstudio öffnen“, „Zuweisen…“ (außer Übungsleitung …Z; siehe [Zuweisung der Missionen](../technique/AFFECTATION_MISSIONS.md)), „Bericht erstellen“ oder „Neuer Bericht (Flug n)“, und „Prompt erneut kopieren“ für eine bestellte Mission. „Im Kartenstudio öffnen“ und „Prompt erneut kopieren“ gehören zur Stufe Experte.
+Schaltflächen: „Im Generator öffnen“, „Duplizieren“ (Kopie der Mission, nächste Kennung, im Generator geöffnet; siehe Generator), „Im Kartenstudio öffnen“, „Zuweisen…“ (außer Übungsleitung …Z; siehe [Zuweisung der Missionen](../technique/AFFECTATION_MISSIONS.md)), „Bericht erstellen“ oder „Neuer Bericht (Flug n)“, und „Prompt dieser Bestellung erneut kopieren“ für eine bestellte Mission. „Im Kartenstudio öffnen“ und „Prompt dieser Bestellung erneut kopieren“ gehören zur Stufe Experte.
 
 ### Verfolgung durch das Zentrum: Status, Flugdatum, Notizen
 
@@ -305,15 +314,6 @@ Die Verfolgung wird in `suivi.yaml` im Missionsordner geschrieben; sie wird mit 
 - „Bericht erstellen“ öffnet einen vorausgefüllten Bericht der passenden Familie. Für eine bereits geflogene Mission übernimmt „Neuer Bericht (Flug n)“ die nächste Flugnummer (wiederkehrende Missionen).
 - Im Bericht führt unter dem Missionsfeld der Link „Einsatz im Register ansehen ↗“ zum Blatt zurück, mit der geschätzten Dauer und der Abweichung des Flugs.
 - Sobald ein Bericht die Mission nennt, wechselt der Status zu „Bericht erstellt“, außer die Mission ist aufgegeben.
-
-### Mission bestellen
-
-Gemeinsames Formular mit dem Generator und den Flugbefehlen.
-1. Stellen Sie „Typ“, „Untertyp“, „Einsatzgebiet“ („Land“ für das Ausland), „Flugbesatzungen“, „Bodenteams“ und „Dauer“ (XS bis XL) ein.
-2. Klappen Sie bei Bedarf „Weitere Optionen“ auf: „Zweites Einsatzgebiet“ („Land“ für das Ausland), „Serie“ (leer = die nächste), „Kennung“ (berechnet, nur lesbar), „Treffpunkt“, „Übersetzungen“, „Luftbetankung“, „Koordinierte Übung“ (ja: Leitungsmission …Z; nein: nie; frei: je nach Szenario) und das Luftfahrzeug jedes fliegenden Teams A, B… (leer = automatisch). Dieser Bereich ist auf der Stufe Experte geöffnet; auf den anderen Stufen öffnet er sich von selbst, wenn eine seiner Einstellungen vom Standard abweicht.
-3. Klicken Sie auf „Bestellen: Prompt kopieren und ChatGPT öffnen“, fügen Sie in ChatGPT ein (Strg+V) und senden Sie ab.
-
-Die Mission erscheint im Register mit dem Status „bestellt“. Speichern Sie dann die Dateien im Missionsordner und klicken Sie auf „Ordner neu lesen“: Die Bestellung wird der erzeugten Mission zugeordnet (gleiche Serie). Die Einstellungen werden gespeichert.
 
 ## ODV-Planung
 <!-- page: apps/cpco/odv_planning.html -->

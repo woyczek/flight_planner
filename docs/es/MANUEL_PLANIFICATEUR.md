@@ -10,14 +10,14 @@ y los datos, en el [manual del administrador](MANUEL_ADMINISTRATEUR.md).
 <!-- page: apps/cpco/mission_editor.html -->
 
 El generador prepara el dosier de una misión: identificación, textos del briefing, ejercicio, duración estimada, zonas que activar y, por último, los PDF que se entregan a las tripulaciones. También sirve para encargar una misión a ChatGPT y recibir su respuesta.
-Acceso: barra lateral «Misiones», pestaña «Generador» (nivel Diseño, 3), o ☰ › «Generador de misiones (SIA)». Desde el registro, «Generar una misión» abre el generador vacío y «Abrir en el generador» carga la misión elegida.
+Acceso: barra lateral «Misiones», pestaña «Generador» (nivel Diseño, 3), o ☰ › «Generador de misiones (SIA)». La creación tiene una sola puerta, este generador: «Nueva misión», «Crear el esqueleto aquí», «Encargar a ChatGPT…». Desde el registro, «Nueva misión» lo abre con una misión nueva (formulario de encargo desplegado) y «Abrir en el generador» carga la misión elegida. Una misión en curso aún no guardada en la carpeta solo se sustituye tras confirmación.
 Véase también [prompt del generador](../technique/PROMPT_GENERATEUR_MISSIONS.md).
 Según el nivel de uso: la página se ofrece a partir del nivel Diseño (3). En ese nivel, muestra siete bloques: Misión, Identificación, Duración estimada, Zonas que activar, Textos de la misión, Mapas del dosier final y Documentos (más Operación y Ejercicio cuando la misión pertenece a uno). Los borradores, «Todos los datos YAML» y los parámetros del cálculo de rutas están en el nivel Experto (4).
 
 ### Tutorial: preparar una misión de principio a fin
 
 Del formulario de encargo al brief en PDF, en nueve pasos; los pasos 10 a 12 convierten una misión sola en un ejercicio coordinado. Los nombres entre comillas son los de los botones.
-1. **Abrir el generador**: barra lateral «Misiones», pestaña «Generador» (nivel Diseño), o «Generar una misión» en el registro.
+1. **Abrir el generador**: barra lateral «Misiones», pestaña «Generador» (nivel Diseño), o «Nueva misión» en el registro.
 2. **Ajustar el encargo**: «Encargar a ChatGPT…» despliega el formulario. Elija «Tipo», «Subtipo», «Teatro», «Equipos en vuelo», «Equipos en tierra» y «Duración»; en «Más opciones», «Encuentro», «Reabastecimiento en vuelo», «Ejercicio coordinado» y, si hace falta, la aeronave de cada equipo (vacío = una aeronave de la flota).
 3. **Crear la misión**, a elegir. Con ChatGPT: «Encargar: copiar el prompt y abrir ChatGPT», pegue el prompt en ChatGPT y envíelo, después cargue la respuesta (`mission<ID>.yaml` y `summary<ID>.md`) en «YAML y/o Markdown», o «o pegar su contenido…» y «Leer la misión». Sin ChatGPT: «Crear el esqueleto aquí» crea en el acto la(s) misión(es), sin relato.
 4. **Completar**: «Identificación» (título), «Textos de la misión» («Resumen», «Descripción detallada», después «Añadir una sección de texto»: objetivo principal, riesgos, encuentro…). Los campos enmarcados con puntos siguen vacíos; la línea «Esqueleto: …» cuenta los puntos a colocar y los textos a escribir. Los puntos sin coordenadas (salida, blanco, puntos de viraje, encuentros, zona) se colocan en el estudio, paso 6; en el nivel Experto, el bloque «Todos los datos YAML» permite también escribir `lat` y `lon` en grados decimales. Una operación con varios equipos se recorre con ◀ ▶ en la cabecera de la página.
@@ -63,10 +63,19 @@ Bajo los botones, dos líneas siempre presentes:
 El panel «Importar otra misión: archivos, texto pegado, encargo a ChatGPT» está abierto cuando no hay ninguna misión cargada:
 - «YAML y/o Markdown»: seleccione juntos `mission<ID>.yaml` y `summary<ID>.md`, o haga clic en «o pegar su contenido…» y después en «Leer la misión»;
 - «Mapas o ZIP entregado por el generador»: elija directamente el ZIP del estudio; los PNG y el mapa de conjunto se asocian automáticamente;
-- «Encargar una misión a ChatGPT»: el mismo formulario que el del registro (tipo, subtipo, teatro, serie, equipos, aeronaves…). «Encargar: copiar el prompt y abrir ChatGPT» copia el prompt, abre ChatGPT en una pestaña nueva e inscribe el encargo en el registro («encargada»). En el nivel Diseño, este plegable solo aparece cuando el botón «Encargar a ChatGPT…» lo abre; en el nivel Experto, figura también, plegado, en el panel. **«Crear el esqueleto aquí»** (solo en el generador, junto al botón de encargo) hace lo mismo sin ChatGPT: con los mismos ajustes, crea la(s) misión(es) completa(s) sin relato — una por equipo en vuelo (aeronave e indicativo elegidos, o tomados de la flota: aeronaves de las categorías del prompt adecuadas a la familia; reabastecimiento: un cisterna y después receptores; nada adecuado: aeronave a completar), aeródromo de salida y llegada en la base de la aeronave, blanco, puntos de viraje, un encuentro por equipo si «Encuentro» vale «con», zona de trabajo, reabastecimiento planificado con un eje AAR (ARIP, ARCP) si «sí», tiempos según la duración, mapas previstos con su descripción, objetivo principal, riesgos, introducción y cronología vacíos; con «Ejercicio coordinado: sí», la misión de organización …Z (hora H, participantes, eventos H, H+15 min…). Las misiones se abren en lote; la línea «Esqueleto: n punto(s) a colocar, m texto(s) a escribir — después el estudio para los mapas» cuenta lo que queda, cada campo vacío se enmarca hasta rellenarlo, y «Abrir en el estudio» pasa al estudio cartográfico para colocar los puntos y generar los mapas.
+- «Encargar una misión a ChatGPT»: el mismo formulario que el de las órdenes de vuelo (tipo, subtipo, teatro, serie, equipos, aeronaves…). «Encargar: copiar el prompt y abrir ChatGPT» copia el prompt, abre ChatGPT en una pestaña nueva e inscribe el encargo en el registro («encargada»). En el nivel Diseño, este plegable solo aparece cuando el botón «Encargar a ChatGPT…» lo abre; en el nivel Experto, figura también, plegado, en el panel. **«Crear el esqueleto aquí»** (solo en el generador, junto al botón de encargo) hace lo mismo sin ChatGPT: con los mismos ajustes, crea la(s) misión(es) completa(s) sin relato — una por equipo en vuelo (aeronave e indicativo elegidos, o tomados de la flota: aeronaves de las categorías del prompt adecuadas a la familia; reabastecimiento: un cisterna y después receptores; nada adecuado: aeronave a completar), aeródromo de salida y llegada en la base de la aeronave, blanco, puntos de viraje, un encuentro por equipo si «Encuentro» vale «con», zona de trabajo, reabastecimiento planificado con un eje AAR (ARIP, ARCP) si «sí», tiempos según la duración, mapas previstos con su descripción, objetivo principal, riesgos, introducción y cronología vacíos; con «Ejercicio coordinado: sí», la misión de organización …Z (hora H, participantes, eventos H, H+15 min…). Las misiones se abren en lote; la línea «Esqueleto: n punto(s) a colocar, m texto(s) a escribir — después el estudio para los mapas» cuenta lo que queda, cada campo vacío se enmarca hasta rellenarlo, y «Abrir en el estudio» pasa al estudio cartográfico para colocar los puntos y generar los mapas.
 
 Una misión recibida se inscribe en el registro y se guarda en su carpeta si la carpeta de misiones está autorizada; si no, haga clic en «Archivar en la carpeta de misiones…». Enlace «Abrir el registro ↗».
 El texto recibido se guarda en `recu/`; recibida de nuevo, una misión solo sustituye a la anterior si sus datos cambian: la antigua va a `versions/` y se conservan los ajustes del estudio de los mapas del mismo nombre. El pegado acepta la respuesta entera de ChatGPT (varias misiones: un lote); los archivos anexos de una serie (VALIDATION.txt, manifiesto) se descartan y se señalan.
+
+### Encargar una misión
+
+En el bloque Misión, «Encargar a ChatGPT…» despliega este formulario (el mismo que el de las órdenes de vuelo); el registro ya no encarga nada.
+1. Ajuste «Tipo», «Subtipo», «Teatro» («País» para el extranjero), «Equipos en vuelo», «Equipos en tierra» y «Duración» (XS a XL).
+2. Si es necesario, despliegue «Más opciones»: «Segundo teatro» («País» para el extranjero), «Serie» (vacío = la siguiente), «Identificador» (calculado, de solo lectura), «Encuentro», «Traducciones», «Reabastecimiento en vuelo», «Ejercicio coordinado» (sí: misión de organización …Z; no: nunca; libre: según el escenario) y la aeronave de cada equipo en vuelo A, B… (vacío = automático). Este plegable está abierto en el nivel Experto; en los demás niveles, se abre por sí solo cuando uno de sus ajustes se aparta del valor por defecto.
+3. Haga clic en «Encargar: copiar el prompt y abrir ChatGPT», pegue en ChatGPT (Ctrl+V) y envíe.
+
+La misión aparece en el registro con el estado «encargada». Pegue después la respuesta de ChatGPT en el panel «Respuesta de ChatGPT» de su ficha en el registro (o cárguela aquí), o guarde los archivos en la carpeta de misiones y haga clic en «Releer la carpeta»: el encargo se asocia con la misión generada (misma serie). Los ajustes se recuerdan.
 
 ### Operación
 
@@ -246,7 +255,7 @@ Si la carpeta contiene varios ciclos, solo se lee el más reciente; los demás s
 
 El registro recoge todas las misiones generadas o encargadas, con su seguimiento por el Centro: estado, fecha de vuelo, notas, informes.
 Sirve para elegir una misión, abrirla en el generador o en el estudio, asignarla a pilotos, crear su informe y encargar nuevas misiones.
-Acceso: barra lateral «Misiones», que se abre en el registro (pestaña «Registro»), o ☰ › «Registro de misiones (SIA)». Arriba, «Generar una misión» abre el generador para crear una.
+Acceso: barra lateral «Misiones», que se abre en el registro (pestaña «Registro»), o ☰ › «Registro de misiones (SIA)». Arriba, «Nueva misión» abre el generador con una misión nueva: la creación se hace allí. El registro consulta, guarda, duplica, elimina e importa lo que llega (archivos, respuesta de ChatGPT de una misión encargada).
 Según el nivel de uso: la página se ofrece a partir del nivel Diseño (3), con lo esencial: «Añadir archivos…» y «Releer la carpeta», cuatro filtros y «Más filtros», una tabla de siete columnas, una ficha sin el estudio y el formulario de encargo simplificado. El resto está en el nivel Experto (4), como se indica a continuación.
 
 ### Misiones del registro
@@ -282,7 +291,7 @@ La ficha muestra el estado, el itinerario, los equipos y los indicativos, y desp
 - estado de los mapas: «completa», «parcial» o «sin mapas»;
 - «Duración estimada» con la comparación con los informes.
 
-Botones: «Abrir en el generador», «Duplicar» (copia de la misión, identificador siguiente, abierta en el generador; véase el generador), «Abrir en el estudio», «Asignar…» (salvo organización …Z; véase [asignación de misiones](../technique/AFFECTATION_MISSIONS.md)), «Crear informe» o «Nuevo informe (vuelo n)», y «Volver a copiar el prompt» para una misión encargada. «Abrir en el estudio» y «Volver a copiar el prompt» están en el nivel Experto.
+Botones: «Abrir en el generador», «Duplicar» (copia de la misión, identificador siguiente, abierta en el generador; véase el generador), «Abrir en el estudio», «Asignar…» (salvo organización …Z; véase [asignación de misiones](../technique/AFFECTATION_MISSIONS.md)), «Crear informe» o «Nuevo informe (vuelo n)», y «Volver a copiar el prompt de este encargo» para una misión encargada. «Abrir en el estudio» y «Volver a copiar el prompt de este encargo» están en el nivel Experto.
 
 ### Seguimiento del Centro: estado, fecha de vuelo, notas
 
@@ -305,15 +314,6 @@ El seguimiento se escribe en `suivi.yaml`, en la carpeta de la misión; se compa
 - «Crear informe» abre un informe rellenado de la familia correspondiente. Para una misión ya volada, «Nuevo informe (vuelo n)» toma el número de vuelo siguiente (misiones recurrentes).
 - En el informe, bajo el campo de la misión, el enlace «ver la misión en el registro ↗» vuelve a la ficha, con la duración estimada y la diferencia del vuelo.
 - En cuanto un informe cita la misión, el estado pasa a «informe hecho», salvo si la misión está abandonada.
-
-### Encargar una misión
-
-Formulario común con el generador y las órdenes de vuelo.
-1. Ajuste «Tipo», «Subtipo», «Teatro» («País» para el extranjero), «Equipos en vuelo», «Equipos en tierra» y «Duración» (XS a XL).
-2. Si es necesario, despliegue «Más opciones»: «Segundo teatro» («País» para el extranjero), «Serie» (vacío = la siguiente), «Identificador» (calculado, de solo lectura), «Encuentro», «Traducciones», «Reabastecimiento en vuelo», «Ejercicio coordinado» (sí: misión de organización …Z; no: nunca; libre: según el escenario) y la aeronave de cada equipo en vuelo A, B… (vacío = automático). Este plegable está abierto en el nivel Experto; en los demás niveles, se abre por sí solo cuando uno de sus ajustes se aparta del valor por defecto.
-3. Haga clic en «Encargar: copiar el prompt y abrir ChatGPT», pegue en ChatGPT (Ctrl+V) y envíe.
-
-La misión aparece en el registro con el estado «encargada». Guarde después los archivos en la carpeta de misiones y haga clic en «Releer la carpeta»: el encargo se asocia con la misión generada (misma serie). Los ajustes se recuerdan.
 
 ## Planificación ODV
 <!-- page: apps/cpco/odv_planning.html -->

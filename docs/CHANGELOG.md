@@ -12,6 +12,14 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Ajouté
 
+- **Missions: creation has a single door, the generator** — the registry no longer creates anything: its "Order a
+  mission" block is removed (the order form lives in the generator's Mission block, "Order from ChatGPT…"); it
+  consults, files, duplicates, deletes and imports what arrives (files, ChatGPT reply panel of an ordered mission).
+  "Generate a mission" becomes "New mission" and opens the generator on a new mission with the order form unfolded
+  (`?new`); "Open in generator" still opens an existing mission. "New mission" (generator and `?new`) now asks before
+  replacing a mission not yet saved to the folder (changed, or never saved: skeleton, copy, added crew) — declining
+  from `?new` reopens the shared mission — and clears the previous operation batch. Order card button renamed "Copy
+  this order's prompt again". Planner manual (four languages): "Order a mission" moved to the generator chapter.
 - **Mission generator: six paths by hand (docs/technique/V2_FABLE.md § 10)** — actions on the Operation line of the
   Mission block, each saying first what it will create or remove (identifiers included): "Add a crew…" (standalone
   mission → crew A, identifier migrated M-016 → M-016A, new mission B with the shared context — family, theatre,
