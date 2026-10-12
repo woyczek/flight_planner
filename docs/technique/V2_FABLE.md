@@ -142,3 +142,39 @@ consommations publiées varient avec l'altitude ; le modèle interpole entre les
 **Détails.** Le choix d'appareil en tête de page devient une liste (icône, nom, type, source du profil, état) au lieu
 d'une rangée de boutons ; « Copier JSON » a un repli `execCommand("copy")` hors contexte sécurisé et se grise quand il
 n'y a rien à copier.
+
+## 8. Générateur de missions sans ChatGPT (12 octobre)
+
+**Ce que l'utilisateur a vu.** « Ajouter une rubrique textuelle » sans savoir laquelle ni à quoi elle sert ; pas de
+duplication d'une mission du registre ; des missions indexées dont les fichiers n'existent plus ; et surtout aucun
+moyen de produire une mission sans ChatGPT alors que le formulaire de commande (type, théâtre, équipes, aéronefs,
+rendez-vous, ravitaillement, durée) décrit déjà tout ce qu'il faut pour un squelette.
+
+**Rubriques textuelles.** Le bouton libre « Ajouter une rubrique textuelle » (titre « Nouvelle rubrique ») devient un
+choix parmi les rubriques que le brief, le PDF et le CR savent déjà placer : Introduction, Objectif principal,
+Objectifs secondaires, Équipes engagées, Points tournants, Rendez-vous, Ravitaillement en vol, Risques à prendre en
+compte, Charge / personnel, Coordination, Chronologie, Cartographie prévue, Notes — chacune avec une ligne qui dit où
+elle apparaît et ce qu'on y écrit ; « Autre rubrique… » reste, titre libre, et va dans le brief seulement. Une rubrique
+déjà présente n'est plus proposée. Le sous-titre du bloc le dit en une phrase.
+
+**Dupliquer une mission.** Dans le registre, à côté d'« Ouvrir dans le générateur » : « Dupliquer » — copie du
+YAML avec un identifiant suivant libre de la même famille (nextNumbering), titre suffixé « (copie) », cartes et
+rendus non copiés (ils se régénèrent au studio), `meta.duplicated_from` posé, ouverture directe dans le générateur
+sur la copie, prête à modifier. Même bouton dans le bloc « Mission » du générateur pour la mission chargée.
+
+**Squelette sans ChatGPT.** Le formulaire de commande gagne un second bouton à côté de « Copier le prompt et ouvrir
+ChatGPT » : « Créer le squelette ici ». Les mêmes réglages produisent une mission complète mais vide de récit :
+identifiant et série suivants, famille, sous-type, théâtre, équipes (une mission par équipe en vol, aéronef et
+indicatif pris dans la flotte comme pour ChatGPT), terrain de départ et d'arrivée (base de l'aéronef, ou du théâtre),
+cible et points tournants à placer (coordonnées vides, rôle rempli), un rendez-vous par équipe quand « avec » (et sa
+carte `detail_rdv`), zone de travail, ravitaillement planifié avec son axe quand « oui », exercice coordonné : mission
+d'organisation Z avec heure H, participants et chronologie d'événements vides (H+0, H+15, H+30… selon la durée) ;
+timing estimé d'après la durée choisie ; liste des cartes attendues (général, cible, détail cible, détail de chaque
+rendez-vous, zone) avec leurs descriptions ; rubriques textuelles créées vides (Introduction, Objectif principal,
+Risques, Chronologie). Le squelette s'ouvre dans le générateur avec une ligne d'état « Squelette : n points à placer,
+m textes à écrire — puis le studio pour les cartes » et le bouton « Ouvrir au studio » en évidence ; chaque champ à
+compléter est marqué (classe « à compléter ») jusqu'à sa saisie. Les champs du formulaire sont exactement ceux du
+prompt : une seule source de réglages pour les deux chemins.
+
+**Artefacts du registre.** Le registre vérifie les dossiers présents à l'ouverture (`/__setup/mission-folders`) et
+retire ou marque les missions sans dossier, avec « Nettoyer l'index (n) » ; plus besoin de passer par Caches (BUGS SOG).
