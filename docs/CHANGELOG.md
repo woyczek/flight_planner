@@ -346,6 +346,11 @@ servies depuis un autre disque, registre aux fichiers absents, profils cachés �
 
 ### Corrigé
 
+- **Bouton « Sauvegarder (n) » qui semblait ne rien faire** : tout ce que disait la sauvegarde (demande d'accès du
+  navigateur au dossier, erreur, dossier introuvable) allait dans le message d'état du menu ☰, fermé. Désormais en
+  notification : demande d'accès annoncée (« l'accepter dans la fenêtre du navigateur »), sauvegarde écrite, dossier
+  non autorisé (sauvegarde téléchargée à la place, et comment rétablir le dossier), dossier déplacé ou supprimé (en
+  choisir un autre), toute autre erreur (4 langues).
 - **Registre : artefacts de missions indexées dont le dossier n'existe plus, sans moyen simple de les retirer** : à
   l'ouverture, le registre demande au lanceur les dossiers présents et marque « fichier absent » les missions qui n'en
   ont plus ; « Nettoyer le registre (n) » les retire sans dossier autorisé (plus de sélecteur de dossier), visible à
