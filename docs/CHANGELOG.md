@@ -152,6 +152,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Corrigé
 
+- **Map studio and Flight maps: zoom buttons of the preview shown as two empty blue squares** — the page's button
+  style (blue background, padding) applied to MapLibre's + / − controls and shrank their dark icon to 0 px; the
+  controls keep MapLibre's look again (`map_parser.html`, `map_planner.html` regenerated).
 - **No native browser dialog left in the suite** — a native `confirm()` opened before the shared layer had frozen the
   generator in the user's Chrome. Every remaining `confirm()`, `prompt()` and `alert()` now asks in the page:
   `AppFramework.ask` for confirmations, new `AppFramework.askText` for input (text field, choice list, or read-only
