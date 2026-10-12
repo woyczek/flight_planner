@@ -63,7 +63,7 @@ Bajo los botones, dos líneas siempre presentes:
 El panel «Importar otra misión: archivos, texto pegado, encargo a ChatGPT» está abierto cuando no hay ninguna misión cargada:
 - «YAML y/o Markdown»: seleccione juntos `mission<ID>.yaml` y `summary<ID>.md`, o haga clic en «o pegar su contenido…» y después en «Leer la misión»;
 - «Mapas o ZIP entregado por el generador»: elija directamente el ZIP del estudio; los PNG y el mapa de conjunto se asocian automáticamente;
-- «Encargar una misión a ChatGPT»: el mismo formulario que el de las órdenes de vuelo (tipo, subtipo, teatro, serie, equipos, aeronaves…). «Encargar: copiar el prompt y abrir ChatGPT» copia el prompt, abre ChatGPT en una pestaña nueva e inscribe el encargo en el registro («encargada»). En el nivel Diseño, este plegable solo aparece cuando el botón «Encargar a ChatGPT…» lo abre; en el nivel Experto, figura también, plegado, en el panel. **«Crear el esqueleto aquí»** (solo en el generador, junto al botón de encargo) hace lo mismo sin ChatGPT: con los mismos ajustes, crea la(s) misión(es) completa(s) sin relato — una por equipo en vuelo (aeronave e indicativo elegidos, o tomados de la flota: aeronaves de las categorías del prompt adecuadas a la familia; reabastecimiento: un cisterna y después receptores; nada adecuado: aeronave a completar), aeródromo de salida y llegada en la base de la aeronave, blanco, puntos de viraje, un encuentro por equipo si «Encuentro» vale «con», zona de trabajo, reabastecimiento planificado con un eje AAR (ARIP, ARCP) si «sí», tiempos según la duración, mapas previstos con su descripción, objetivo principal, riesgos, introducción y cronología vacíos; con «Ejercicio coordinado: sí», la misión de organización …Z (hora H, participantes, eventos H, H+15 min…). Las misiones se abren en lote; la línea «Esqueleto: n punto(s) a colocar, m texto(s) a escribir — después el estudio para los mapas» cuenta lo que queda, cada campo vacío se enmarca hasta rellenarlo, y «Abrir en el estudio» pasa al estudio cartográfico para colocar los puntos y generar los mapas.
+- «Encargar una misión a ChatGPT»: el mismo formulario que el de las órdenes de vuelo (tipo, subtipo, teatro, serie, equipos, aeronaves…). «Encargar: copiar el prompt y abrir ChatGPT» copia el prompt, abre ChatGPT en una pestaña nueva e inscribe el encargo en el registro («encargada»). En el nivel Diseño, este plegable solo aparece cuando el botón «Encargar a ChatGPT…» lo abre; en el nivel Experto, figura también, plegado, en el panel. **«Crear el esqueleto aquí»** (solo en el generador, junto al botón de encargo) hace lo mismo sin ChatGPT: con los mismos ajustes, crea la(s) misión(es) completa(s) sin relato — una por equipo en vuelo (aeronave e indicativo elegidos, o tomados de la flota: aeronaves de las categorías del prompt adecuadas a la familia; reabastecimiento: un cisterna y después receptores; nada adecuado: aeronave a completar), aeródromo de salida y llegada en la base de la aeronave, blanco, puntos de viraje, un encuentro por equipo si «Encuentro» vale «con», zona de trabajo, reabastecimiento planificado con un eje AAR (ARIP, ARCP) si «sí», tiempos según la duración, mapas previstos con su descripción, objetivo principal, riesgos, introducción y cronología vacíos; con «Ejercicio coordinado: sí», la misión de organización …Z (hora H, participantes, eventos H, H+15 min…). Las misiones se abren en lote; la línea «Esqueleto: n punto(s) a colocar, m texto(s) a escribir — después el estudio para los mapas» cuenta lo que queda, cada campo vacío se enmarca hasta rellenarlo, y «Abrir en el estudio» pasa al estudio cartográfico para colocar los puntos y generar los mapas. El teatro por defecto es el de la base de la aeronave de la primera tripulación (LFQP: métropole); el indicativo viene de la flota, si no de la tabla de indicativos para ese tipo (RAFFUT01, RAFFUT02…), y el nombre de cada equipo lo sigue.
 
 Una misión recibida se inscribe en el registro y se guarda en su carpeta si la carpeta de misiones está autorizada; si no, haga clic en «Archivar en la carpeta de misiones…». Enlace «Abrir el registro ↗».
 El texto recibido se guarda en `recu/`; recibida de nuevo, una misión solo sustituye a la anterior si sus datos cambian: la antigua va a `versions/` y se conservan los ajustes del estudio de los mapas del mismo nombre. El pegado acepta la respuesta entera de ChatGPT (varias misiones: un lote); los archivos anexos de una serie (VALIDATION.txt, manifiesto) se descartan y se señalan.
@@ -113,6 +113,8 @@ Cada acción dice primero lo que va a crear o retirar, identificadores incluidos
 El siguiente identificador libre y la serie siguiente aparecen en gris en los campos vacíos: son indicaciones, no valores. Aparece una alerta si el identificador no empieza por la letra de la familia.
 Cambiar el identificador de una misión citada por otras (operación, mapas, textos) abre una confirmación: acepte para migrar todo el lote (el identificador antiguo se conserva en `mission.former_id`) o rechace para mantener el antiguo.
 
+Una línea señala un teatro que no corresponde al aeródromo de salida (código OACI: LF… métropole, LFK… Corse, TFF… Antilles, SO… Guyane, FME… Réunion, FMCZ Mayotte, NW… Nouvelle-Calédonie, NT… Polynésie): «Teatro Polynésie, salida en métropole (LFQP).»; el botón «Poner métropole» corrige el teatro.
+
 ### Duración estimada
 
 Estimación del vuelo a partir de la ruta probable y de la aeronave; se recalcula con cada cambio. Oculto en una misión de organización.
@@ -154,6 +156,8 @@ En una misión de organización, el bloque pasa a ser «Briefing general»: situ
 
 La sección «Cronología» («Añadir una sección de texto») lleva también los eventos horarios de la misión, encima de su texto libre: hora (H+30mn; H = despegue previsto), lugar de la misión (salida, punto de viraje, encuentro, zona, objetivo, llegada) o texto libre, lo que ocurre; «+ Evento» añade una línea. El brief los imprime al principio de la sección Cronología, por orden horario. Misión de organización: la cronología del ejercicio se ajusta en el bloque Ejercicio.
 
+Riesgos: uno por línea, columnas separadas por un tabulador (tabla pegada), «—», «|» o «;»; una columna de nivel (Crítico, Alto, Moderado, Bajo, en cuatro idiomas, asterisco conservado) se reconoce esté donde esté; dos columnas restantes dan el peligro y la medida, tres el peligro, la consecuencia y la medida. El nivel se imprime en el brief y el PDF. Una línea sin separador («Prioridad absoluta: …») no es un riesgo: al salir de la sección, pasa a Notas. Objetivo principal: una frase; una lista numerada se reparte (el primer elemento queda, los demás pasan al principio de los Objetivos secundarios); se quitan números y viñetas. Una misión abierta que no sigue estas reglas se ordena al abrirla (la línea de estado lo dice, «Guardar en la carpeta» lo escribe).
+
 ### Todos los datos YAML
 
 Bloque del nivel Experto, oculto por defecto: haga clic en «Mostrar» en su cabecera.
@@ -162,6 +166,8 @@ Bloque del nivel Experto, oculto por defecto: haga clic en «Mostrar» en su cab
 - «Nombre de un nuevo campo raíz» y después «Añadir» crea una clave de primer nivel.
 
 Resérvelo a las correcciones que los demás bloques no permiten.
+
+El nombre de un lugar (salida, llegada, objetivo, punto de viraje, encuentro, zona) se busca al escribir: aeródromos, radiobalizas, puntos, VRP y luego ciudades; un lugar elegido fija sus coordenadas. Salida y llegada son por defecto la base de la aeronave (descripción emergente). El indicativo de una aeronave propone los de la flota para su tipo; el nombre del equipo (y los participantes de los encuentros) sigue al indicativo.
 
 ### Mapas del dosier final
 
@@ -215,6 +221,8 @@ Una misión sin coordenadas (esqueleto del generador) muestra en el bloque Ruta 
 - Campo de búsqueda: aeródromo, radiobaliza, punto designado, punto VFR o eje AAR («LFLY», «OLIVIA ARIP») de la base SIA, por código o nombre, o coordenadas «45.72, 4.94».
 - Un punto colocado se mueve arrastrándolo en el mapa; una zona toma un radio en km. Salida y llegada idénticas se colocan juntas.
 - Las coordenadas van a la misión compartida: el generador ve bajar su cuenta de «puntos que colocar». Todo colocado: «Generar los mapas y el ZIP».
+
+La búsqueda propone también ciudades (nombres GeoNames, después de aeródromos, radiobalizas y puntos): «Guipry», «Pont-Réan»…; 40 sugerencias como máximo, al escribir.
 
 ### Mapas que producir
 

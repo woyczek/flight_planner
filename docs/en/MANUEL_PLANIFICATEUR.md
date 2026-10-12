@@ -63,7 +63,7 @@ Under the buttons, two lines are always shown:
 The “Import another mission: files, pasted text, ChatGPT order” pane is open when no mission is loaded:
 - “YAML and/or Markdown”: select `mission<ID>.yaml` and `summary<ID>.md` together, or click “or paste its content…” then “Read the mission”;
 - “Maps or ZIP delivered by the generator”: choose the studio ZIP directly; the PNGs and the overview map are matched automatically;
-- “Order a mission from ChatGPT”: same form as the flight orders (type, subtype, theatre, series, teams, aircraft…). “Order: copy prompt and open ChatGPT” copies the prompt, opens ChatGPT in a new tab and records the order in the registry (“ordered”). At the Design level, this section only appears when the “Order from ChatGPT…” button opens it; at the Expert level, it is also shown, collapsed, in the pane. **“Create the skeleton here”** (generator only, next to the order button) does the same without ChatGPT: with the same settings, it creates the complete mission(s) without any narrative — one per flying team (aircraft and callsign chosen, or taken from the fleet: aircraft of the prompt categories suited to the family; refuelling: one tanker then receivers; nothing suitable: aircraft to complete), departure and arrival airfield at the aircraft’s base, target, turning points, one rendezvous per team if “Rendezvous” is “with”, working area, planned refuelling with an AAR track (ARIP, ARCP) if “yes”, timing from the duration, expected maps with their description, empty main objective, risks, introduction and timeline; with “Coordinated exercise: yes”, the …Z organisation mission (H hour, participants, events H, H+15 min…). The missions open as a batch; the line “Skeleton: n point(s) to place, m text(s) to write — then the studio for the maps” counts what remains, each empty field is outlined until it is filled, and “Open in the studio” goes to the map studio to place the points and generate the maps.
+- “Order a mission from ChatGPT”: same form as the flight orders (type, subtype, theatre, series, teams, aircraft…). “Order: copy prompt and open ChatGPT” copies the prompt, opens ChatGPT in a new tab and records the order in the registry (“ordered”). At the Design level, this section only appears when the “Order from ChatGPT…” button opens it; at the Expert level, it is also shown, collapsed, in the pane. **“Create the skeleton here”** (generator only, next to the order button) does the same without ChatGPT: with the same settings, it creates the complete mission(s) without any narrative — one per flying team (aircraft and callsign chosen, or taken from the fleet: aircraft of the prompt categories suited to the family; refuelling: one tanker then receivers; nothing suitable: aircraft to complete), departure and arrival airfield at the aircraft’s base, target, turning points, one rendezvous per team if “Rendezvous” is “with”, working area, planned refuelling with an AAR track (ARIP, ARCP) if “yes”, timing from the duration, expected maps with their description, empty main objective, risks, introduction and timeline; with “Coordinated exercise: yes”, the …Z organisation mission (H hour, participants, events H, H+15 min…). The missions open as a batch; the line “Skeleton: n point(s) to place, m text(s) to write — then the studio for the maps” counts what remains, each empty field is outlined until it is filled, and “Open in the studio” goes to the map studio to place the points and generate the maps. The default theatre is that of the base of the first team’s aircraft (LFQP: métropole); the callsign comes from the fleet, otherwise from the callsign table for that type (RAFFUT01, RAFFUT02…), and each team’s name follows it.
 
 A received mission is recorded in the registry and filed in its folder if the missions folder is authorised; otherwise, click “File in the missions folder…”. Link “Open the registry ↗”.
 The received text is kept in `recu/`; received again, a mission replaces the previous one only if its data change: the old one goes to `versions/`, and the studio settings of maps with the same name are kept. Pasting accepts ChatGPT's whole answer (several missions: a batch); the side files of a series (VALIDATION.txt, manifest) are set aside and reported.
@@ -113,6 +113,8 @@ Each action first says what it will create or remove, identifiers included. “R
 The next free identifier and the next series appear in grey in empty fields: they are hints, not values. A warning appears if the identifier does not start with the family letter.
 Changing the identifier of a mission cited by others (operation, maps, texts) opens a confirmation: accept to migrate the whole batch (the old identifier is kept in `mission.former_id`), decline to keep the old one.
 
+A line flags a theatre that does not match the departure airfield (ICAO code: LF… métropole, LFK… Corse, TFF… Antilles, SO… Guyane, FME… Réunion, FMCZ Mayotte, NW… Nouvelle-Calédonie, NT… Polynésie): “Theatre Polynésie, departure in métropole (LFQP).”; the “Set métropole” button corrects the theatre.
+
 ### Estimated duration
 
 Flight estimate based on the probable route and the aircraft; recomputed on every change. Hidden for an organisation mission.
@@ -154,6 +156,8 @@ On an organisation mission, the block becomes “General brief”: situation, co
 
 The “Timeline” section (“Add a text section”) also holds the mission’s timed events, above its free text: time (H+30mn; H = planned take-off), place of the mission (departure, turning point, rendezvous, zone, target, arrival) or free text, what happens; “+ Event” adds a line. The brief prints them at the top of the Timeline section, in time order. Organisation mission: the exercise timeline is set in the Exercise block.
 
+Risks: one per line, columns separated by a tab (pasted table), “—”, “|” or “;”; a level column (Critical, High, Moderate, Low, in four languages, asterisk kept) is recognised wherever it is; two remaining columns give the hazard and the measure, three the hazard, the consequence and the measure. The level is printed in the brief and the PDF. A line without separator (“Absolute priority: …”) is not a risk: when leaving the section, it goes to Notes. Main objective: one sentence; a numbered list there is split (the first item stays, the others go to the top of the Secondary objectives); numbers and bullets are removed. An opened mission that does not follow these rules is tidied on opening (the status line says so, “Save to the folder” writes it).
+
 ### All YAML data
 
 Expert level block, hidden by default: click “Show” in its header.
@@ -162,6 +166,8 @@ Expert level block, hidden by default: click “Show” in its header.
 - “Name of a new root field” then “Add” creates a top-level key.
 
 Keep it for corrections the other blocks do not allow.
+
+The name of a place (departure, arrival, target, turning point, rendezvous, zone) is searched while typing: airfields, beacons, points, VRP, then towns; a chosen place sets its coordinates. Departure and arrival are by default the aircraft’s base (tooltip). An aircraft’s callsign suggests those of the fleet for its type; the team name (and the rendezvous participants) follows the callsign.
 
 ### Maps of the final file
 
@@ -215,6 +221,8 @@ A mission without coordinates (generator skeleton) shows in the Route block the 
 - Search field: airfield, beacon, designated point, VFR point or AAR track (“LFLY”, “OLIVIA ARIP”) of the SIA base, by code or name, or coordinates “45.72, 4.94”.
 - A placed point moves by dragging it on the map; an area takes a radius in km. Identical departure and arrival are placed together.
 - The coordinates go into the shared mission: the generator sees its “points to place” count go down. Everything placed: “Generate the maps and the ZIP”.
+
+The search also suggests towns (GeoNames names, after airfields, beacons and points): “Guipry”, “Pont-Réan”…; 40 suggestions at most, while typing.
 
 ### Maps to produce
 

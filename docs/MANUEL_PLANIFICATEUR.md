@@ -107,7 +107,7 @@ Sous les boutons, deux lignes toujours présentes :
 Le volet « Importer une autre mission : fichiers, texte collé, commande ChatGPT » est ouvert quand aucune mission n'est chargée :
 - « YAML et/ou Markdown » : sélectionnez ensemble `mission<ID>.yaml` et `summary<ID>.md`, ou cliquez « ou coller son contenu… » puis « Lire la mission » ;
 - « Cartes ou ZIP livré par le générateur » : choisissez directement le ZIP du studio ; les PNG et la carte d'assemblage sont associés automatiquement ;
-- « Commander une mission à ChatGPT » : même formulaire que les ordres de vols (type, sous-type, théâtre, série, équipes, aéronefs…). « Commander : copier le prompt et ouvrir ChatGPT » copie le prompt, ouvre ChatGPT dans un nouvel onglet et inscrit la commande au registre (« commandée »). Au niveau Conception, ce repli n'apparaît que lorsque le bouton « Commander à ChatGPT… » l'ouvre ; au niveau Expert, il figure aussi, replié, dans le volet. **« Créer le squelette ici »** (générateur seulement, à côté du bouton de commande) fait la même chose sans ChatGPT : avec les mêmes réglages, il crée la ou les missions complètes mais vides de récit — une par équipe en vol (aéronef et indicatif choisis, ou pris dans la flotte : appareils des catégories du prompt qui conviennent à la famille ; ravitaillement : un ravitailleur puis des receveurs ; rien d'adapté : aéronef à compléter), terrain de départ et d'arrivée à la base de l'aéronef, cible, points tournants, un rendez-vous par équipe si « Rendez-vous » vaut « avec », zone de travail, ravitaillement planifié avec un axe AAR (ARIP, ARCP) si « oui », timing d'après la durée, cartes attendues avec leur description, objectif principal, risques, introduction et chronologie vides ; avec « Exercice coordonné : oui », la mission d'organisation …Z (heure H, participants, événements H, H+15 min…). Les missions s'ouvrent en lot ; la ligne « Squelette : n point(s) à placer, m texte(s) à écrire — puis le studio pour les cartes » compte ce qui reste, chaque champ vide est encadré jusqu'à sa saisie, et « Ouvrir au studio » passe au studio cartographique pour placer les points et générer les cartes.
+- « Commander une mission à ChatGPT » : même formulaire que les ordres de vols (type, sous-type, théâtre, série, équipes, aéronefs…). « Commander : copier le prompt et ouvrir ChatGPT » copie le prompt, ouvre ChatGPT dans un nouvel onglet et inscrit la commande au registre (« commandée »). Au niveau Conception, ce repli n'apparaît que lorsque le bouton « Commander à ChatGPT… » l'ouvre ; au niveau Expert, il figure aussi, replié, dans le volet. **« Créer le squelette ici »** (générateur seulement, à côté du bouton de commande) fait la même chose sans ChatGPT : avec les mêmes réglages, il crée la ou les missions complètes mais vides de récit — une par équipe en vol (aéronef et indicatif choisis, ou pris dans la flotte : appareils des catégories du prompt qui conviennent à la famille ; ravitaillement : un ravitailleur puis des receveurs ; rien d'adapté : aéronef à compléter), terrain de départ et d'arrivée à la base de l'aéronef, cible, points tournants, un rendez-vous par équipe si « Rendez-vous » vaut « avec », zone de travail, ravitaillement planifié avec un axe AAR (ARIP, ARCP) si « oui », timing d'après la durée, cartes attendues avec leur description, objectif principal, risques, introduction et chronologie vides ; avec « Exercice coordonné : oui », la mission d'organisation …Z (heure H, participants, événements H, H+15 min…). Les missions s'ouvrent en lot ; la ligne « Squelette : n point(s) à placer, m texte(s) à écrire — puis le studio pour les cartes » compte ce qui reste, chaque champ vide est encadré jusqu'à sa saisie, et « Ouvrir au studio » passe au studio cartographique pour placer les points et générer les cartes. Le théâtre par défaut est celui de la base de l'aéronef de la première équipe (LFQP : métropole) ; l'indicatif vient de la flotte, sinon de la table des indicatifs pour ce type (RAFFUT01, RAFFUT02…), et le nom de chaque équipe le suit.
 
 Une mission reçue est inscrite au registre et rangée dans son dossier si le dossier des missions est autorisé ; sinon, cliquez « Ranger dans le dossier des missions… ». Lien « Ouvrir le registre ↗ ».
 Le texte reçu est gardé dans `recu/` ; reçue à nouveau, une mission ne remplace la précédente que si ses données changent : l'ancienne va dans `versions/`, les réglages du studio des cartes de même nom sont repris. Le collage accepte la réponse entière de ChatGPT (plusieurs missions : un lot) ; les fichiers annexes d'une série (VALIDATION.txt, manifeste) sont écartés et signalés.
@@ -177,6 +177,8 @@ Changer l'identifiant d'une mission citée par d'autres (opération, cartes, tex
 
 *Figure 3 — Renseigner le titre, la famille, le sous-type, l’identifiant et la série de génération.*
 
+Une ligne signale un théâtre qui ne correspond pas au terrain de départ (code OACI : LF… métropole, LFK… Corse, TFF… Antilles, SO… Guyane, FME… Réunion, FMCZ Mayotte, NW… Nouvelle-Calédonie, NT… Polynésie) : « Théâtre Polynésie, départ en métropole (LFQP). » ; le bouton « Mettre métropole » corrige le théâtre.
+
 ### Durée estimée
 
 Estimation du vol d'après la route probable et l'appareil ; recalculée à chaque modification. Masqué pour une mission d'organisation.
@@ -218,6 +220,8 @@ Sur une mission d'organisation, le bloc devient « Brief général » : situatio
 
 La rubrique « Chronologie » (« Ajouter une rubrique textuelle ») porte aussi les événements horaires de la mission, au-dessus de son texte libre : heure (H+30mn ; H = décollage prévu), lieu de la mission (départ, point tournant, rendez-vous, zone, cible, arrivée) ou texte libre, ce qui se passe ; « + Événement » ajoute une ligne. Le brief les imprime en tête de la section Chronologie, dans l'ordre des heures. Mission d'organisation : la chronologie de l'exercice se règle dans le bloc Exercice.
 
+Risques : un par ligne, colonnes séparées par une tabulation (copie d'un tableau), « — », « | » ou « ; » ; une colonne de niveau (Critique, Élevé, Modéré, Faible, en quatre langues, astérisque gardé) est reconnue où qu'elle soit ; deux colonnes restantes donnent le danger et la mesure, trois le danger, la conséquence et la mesure. Le niveau est imprimé dans le brief et le PDF. Une ligne sans séparateur (« Priorité absolue : … ») n'est pas un risque : en quittant la rubrique, elle va dans Notes. Objectif principal : une phrase ; une liste numérotée y est répartie (le premier item reste, les autres passent en tête des Objectifs secondaires) ; les numéros et puces sont retirés. Une mission ouverte qui ne suit pas ces règles est remise en forme à l'ouverture (la ligne d'état le dit, « Enregistrer dans le dossier » l'écrit).
+
 ### Toutes les données YAML
 
 Bloc du niveau Expert, masqué par défaut : cliquez « Afficher » dans son en-tête.
@@ -226,6 +230,8 @@ Bloc du niveau Expert, masqué par défaut : cliquez « Afficher » dans son en-
 - « Nom d'un nouveau champ racine » puis « Ajouter » crée une clé de premier niveau.
 
 À réserver aux corrections que les autres blocs ne permettent pas.
+
+Le nom d'un lieu (départ, arrivée, cible, point tournant, rendez-vous, zone) se cherche en tapant : terrains, balises, points, VRP, puis villes ; un lieu choisi pose ses coordonnées. Départ et arrivée sont par défaut la base de l'aéronef (infobulle). L'indicatif d'un aéronef propose ceux de la flotte pour son type ; le nom de l'équipe (et les participants des rendez-vous) suit l'indicatif.
 
 ### Cartes du dossier final
 
@@ -289,6 +295,8 @@ Une mission sans coordonnées (squelette du générateur) affiche dans le bloc R
 - Champ de recherche : terrain, balise, point désigné, point VFR ou axe AAR (« LFLY », « OLIVIA ARIP ») de la base SIA, par code ou nom, ou coordonnées « 45.72, 4.94 ».
 - Un point posé se déplace en le glissant sur la carte ; une zone prend un rayon en km. Départ et arrivée identiques sont posés ensemble.
 - Les coordonnées vont dans la mission partagée : le générateur voit son compte « points à placer » baisser. Tout posé : « Générer les cartes et le ZIP ».
+
+La recherche propose aussi les villes (noms GeoNames, après les terrains, balises et points) : « Guipry », « Pont-Réan »… ; 40 suggestions au plus, à la frappe.
 
 ### Cartes à produire
 

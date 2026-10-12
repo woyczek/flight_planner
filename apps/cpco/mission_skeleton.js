@@ -117,8 +117,42 @@
     return {
       row,
       type: row ? `${row.type}${row.variant && row.variant !== row.type ? ' ' + row.variant : ''}` : v.replace(/\s+—.*$/, ''),
-      callsign: row?.callsign || (tail && !row ? tail : '')
+      callsign: pickCallsign(row, fleet, used) || (tail && !row ? tail : '')
     };
+  }
+  /** Théâtre d'un terrain d'après son code OACI : LFK… Corse, LF… métropole, TFF… Antilles, SO… Guyane, FME… Réunion,
+   *  FMCZ Mayotte, NW… Nouvelle-Calédonie, NT… Polynésie ; '' hors de ces territoires (étranger, code inconnu). */
+  function theatreOf(icao) {
+    const c = String(icao || '').trim().toUpperCase();
+    if (!/^[A-Z]{4}$/.test(c)) return '';
+    return c.startsWith('LFK') ? 'Corse' : c.startsWith('LF') ? 'métropole' : c.startsWith('TFF') ? 'Antilles' : c.startsWith('SO') ?
+      'Guyane' : c === 'FMCZ' ? 'Mayotte' : c.startsWith('FME') ? 'Réunion' : c.startsWith('NW') ? 'Nouvelle-Calédonie' : c.startsWith(
+        'NT') ? 'Polynésie' : '';
+  }
+  /** Code OACI d'un terrain de mission ({ icao } ou « Nom (LFQP) ») ; '' sinon. */
+  const icaoOf = p => String(p?.icao || /\(([A-Z]{4})\)\s*$/.exec(String(p?.name || ''))?.[1] || (/^[A-Z]{4}$/.test(String(p?.id || '')) ?
+    p.id : '')).toUpperCase();
+  /** Indicatifs proposés pour un type : ceux des appareils de la flotte de ce type, puis les séries de la table des
+   *  indicatifs (data/references/callsigns.js) qui le citent, numérotées 01 à 03 ; sans doublon. */
+  function callsignsFor(type, fleet = window.DEFA_FLEET || []) {
+    const t = String(type || '').trim().split(/\s+/)[0].toUpperCase(),
+      out = [];
+    for (const r of fleet)
+      if (String(r.type || '').toUpperCase() === t)[r.callsign, ...(Array.isArray(r.callsigns) ? r.callsigns : [])].forEach(c => c && out
+        .push(String(c).toUpperCase()));
+    for (const e of window.MISSION_CALLSIGNS?.table || [])
+      if ((e.types || []).map(x => String(x).toUpperCase()).includes(t) && e.prefix && !e.role)['01', '02', '03'].forEach(n => out.push(
+        `${String(e.prefix).toUpperCase()}${n}`));
+    return [...new Set(out)];
+  }
+  /** Indicatif d'une équipe : celui de l'appareil choisi, sinon le premier proposé pour son type qu'aucune autre équipe
+   *  n'a pris (used.callsigns, partagé par le squelette) ; '' sans appareil. */
+  function pickCallsign(row, fleet, used) {
+    if (!row) return '';
+    const taken = used.callsigns || (used.callsigns = new Set()),
+      c = row.callsign || row.callsigns?.[0] || callsignsFor(row.type, fleet).find(x => !taken.has(x)) || '';
+    if (c) taken.add(String(c).toUpperCase());
+    return c;
   }
   /** Terrain { name: « Nom (OACI) », lat, lon } d'après le code OACI (base de l'aéronef) ; à compléter sinon. */
   async function field(icao, airport) {
@@ -153,7 +187,7 @@
       type = request.type && request.type !== 'aléatoire' ? request.type : pick(fams.map(f => f.id)) || 'SAR',
       fam = fams.find(f => f.id === type),
       subtype = request.subtype && request.subtype !== 'libre' ? request.subtype : pick(fam?.subtypes || []) || '',
-      theatre = request.theatre && !/aléatoire/.test(request.theatre) ? request.theatre : pick(THEATRES),
+      asked = request.theatre && !/aléatoire/.test(request.theatre) ? request.theatre : '',
       n = window.SiaMission.nextNumbering(type),
       base = n.id || request.id || 'X-001',
       serie = +request.serie || n.serie || 1,
@@ -186,6 +220,8 @@
       ground = Math.max(0, +request.ground || 0),
       today = new Date().toISOString().slice(0, 10),
       docs = [];
+    // théâtre demandé, sinon celui de la base de l'aéronef de la première équipe (LFQP → métropole), sinon au hasard
+    const theatre = asked || theatreOf(crews[0]?.ac.row?.base) || pick(THEATRES);
     for (const [i, c] of crews.entries()) {
       const home = await field(c.ac.row?.base, airport),
         rdvs = request.rdv === 'avec' ? [{
@@ -479,6 +515,10 @@
   }
   window.MissionSkeleton = {
     build,
-    todo
+    todo,
+    theatreOf,
+    icaoOf,
+    callsignsFor,
+    THEATRES
   };
 })();

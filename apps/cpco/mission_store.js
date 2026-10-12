@@ -493,6 +493,103 @@
     return y;
   }
 
+  // ---- remise en forme des rubriques saisies à la main (risques, objectifs) : à la lecture et en quittant la rubrique
+  // Niveaux de risque reconnus (4 langues, astérisque gardé : « Faible* » = risque fictif, note en bas) → libellé français.
+  const RISK_LEVELS = [
+    ['Critique', /^(critique|critical|kritisch|cr[ií]tico)$/i],
+    ['Élevé', /^([ée]lev[ée]|high|hoch|alto|elevado)$/i],
+    ['Modéré', /^(mod[ée]r[ée]|moderate|medium|mittel|moderado|medio)$/i],
+    ['Faible', /^(faible|low|niedrig|gering|bajo)$/i]
+  ];
+  /** Niveau de risque d'un morceau de ligne (« Élevé », « high* ») : libellé français (astérisque gardé), '' sinon. */
+  function riskLevel(part) {
+    const m = /^\s*([^\s*]+)\s*(\*?)\s*$/.exec(String(part || ''));
+    if (!m) return '';
+    const hit = RISK_LEVELS.find(([, rx]) => rx.test(m[1]));
+    return hit ? hit[0] + m[2] : '';
+  }
+  /** Ligne de risque saisie → { hazard, level, consequence, mitigation } ; null si la ligne n'a pas de séparateur
+   *  (tabulation, « — », « | » ou « ; » : ce n'est pas un risque, mais une note). Colonne de niveau reconnue où
+   *  qu'elle soit ; deux colonnes restantes : danger et mesure ; trois : danger, conséquence, mesure. */
+  function parseRiskLine(line) {
+    const s = String(line || '').replace(/^\s*(\d+[.)]|[-*•])\s+/, '').trim();
+    const sep = [/\t+/, /\s+[—–]\s+/, /\s*\|\s*/, /\s*;\s*/].find(rx => rx.test(s));
+    if (!s || !sep) return null;
+    const parts = s.split(sep).map(x => x.trim()).filter(Boolean);
+    const li = parts.findIndex(p => riskLevel(p)),
+      level = li >= 0 ? riskLevel(parts[li]) : '';
+    if (li >= 0) parts.splice(li, 1);
+    if (parts.length < (level ? 1 : 2)) return null;
+    const [hazard, ...rest] = parts,
+    out = {
+      hazard
+    };
+    if (level) out.level = level;
+    if (rest.length >= 2) {
+      out.consequence = rest[0];
+      out.mitigation = rest.slice(1).join(' — ');
+    } else if (rest.length) out.mitigation = rest[0];
+    return out;
+  }
+  /** Préfixe de liste retiré (« 1. », « 2) », « - », « • »). */
+  const unlist = s => String(s ?? '').replace(/^\s*(\d+[.)]|[-*•])\s+/, '').trim();
+  /** Remet en forme une mission (en place) : risques en chaînes à séparateurs → objets (niveau compris), lignes sans
+   *  séparateur → notes ; objectif principal en liste numérotée → le premier item, les autres en tête des secondaires ;
+   *  préfixes de liste retirés. Retour : { risks, notes, objectives } (nombre de valeurs changées), null si rien. */
+  function tidyMission(y) {
+    if (!y || typeof y !== 'object') return null;
+    const done = {
+      risks: 0,
+      notes: 0,
+      objectives: 0
+    };
+    if (Array.isArray(y.risks) && y.risks.some(r => typeof r === 'string')) {
+      const risks = [],
+        notes = [];
+      for (const r of y.risks) {
+        if (typeof r !== 'string') {
+          risks.push(r);
+          continue;
+        }
+        const o = parseRiskLine(r);
+        if (o) {
+          risks.push(o);
+          done.risks++;
+        } else if (unlist(r)) notes.push(unlist(r));
+      }
+      y.risks = risks;
+      if (notes.length) {
+        y.notes = [...(Array.isArray(y.notes) ? y.notes : y.notes ? [y.notes] : []), ...notes];
+        done.notes = notes.length;
+      }
+    }
+    const ob = y.objectives;
+    if (ob && typeof ob === 'object') {
+      const items = String(ob.primary ?? '').split(/\r?\n/).filter(l => /^\s*(\d+[.)]|[-*•])\s+/.test(l)),
+        sec = Array.isArray(ob.secondary) ? ob.secondary : ob.secondary ? [ob.secondary] : [];
+      if (items.length >= 2) {
+        ob.primary = unlist(items[0]);
+        ob.secondary = [...items.slice(1).map(unlist), ...sec.map(unlist)];
+        done.objectives += items.length;
+      } else {
+        const p = unlist(ob.primary);
+        if (typeof ob.primary === 'string' && p !== ob.primary.trim()) {
+          ob.primary = p;
+          done.objectives++;
+        }
+        const s2 = sec.map(x => typeof x === 'string' ? unlist(x) : x);
+        if (JSON.stringify(s2) !== JSON.stringify(sec)) {
+          done.objectives += s2.filter((x, i) => x !== sec[i]).length;
+          ob.secondary = s2;
+        }
+      }
+    }
+    return done.risks || done.notes || done.objectives ? done : null;
+  }
+  /** Risque en texte d'une ligne : « danger — niveau — conséquence — mesure » (relu tel quel par parseRiskLine). */
+  const riskText = r => typeof r === 'object' && r ? [r.hazard || r.risk || r.name, r.level, r.consequence, r.mitigation].filter(Boolean)
+    .join(' — ') : String(r ?? '');
+
   // ---- stockage partagé
   /** Document de mission partagé entre le générateur et le studio (localStorage) ; null sinon. */
   function load() {
@@ -502,6 +599,8 @@
         upgradeSchema(d.yaml);
         const n = cleanNarrative(d);
         if (n) d.cleaned = n; // rubriques issues d'un brief rangé retirées (la page le dit)
+        const t = tidyMission(d.yaml);
+        if (t) d.tidied = t; // risques, notes, objectifs remis en forme (la page le dit)
         return d;
       }
     } catch {
@@ -678,7 +777,10 @@
   function loadBatch() {
     try {
       const b = JSON.parse(localStorage.getItem(BATCH) || 'null');
-      if (b && Array.isArray(b.docs)) b.docs.forEach(d => upgradeSchema(d?.yaml));
+      if (b && Array.isArray(b.docs)) b.docs.forEach(d => {
+        upgradeSchema(d?.yaml);
+        tidyMission(d?.yaml);
+      });
       return b && Array.isArray(b.docs) && b.docs.length ? {
         docs: b.docs,
         index: Math.min(Math.max(0, b.index | 0), b.docs.length - 1)
@@ -1227,7 +1329,7 @@
         k,
         v
       ]) => `- ${k}: ${Array.isArray(v) ? v.join(', ') : v}`).join('\n'));
-      sec(BT('Risques à prendre en compte'), arr(y.risks).map(r => typeof r === 'object' ? `- **${txt(r.hazard)}** — conséquence : ${txt(r.consequence)} — mesure : ${txt(r.mitigation)}` : `- ${txt(r)}`).join('\n'));
+      sec(BT('Risques à prendre en compte'), arr(y.risks).map(r => typeof r === 'object' ? `- **${txt(r.hazard)}**${r.level ? ` — niveau : ${txt(r.level)}` : ''}${r.consequence ? ` — conséquence : ${txt(r.consequence)}` : ''}${r.mitigation ? ` — mesure : ${txt(r.mitigation)}` : ''}` : `- ${txt(r)}`).join('\n'));
       sec(BT('Cartographie prévue'), arr(y.maps).map(mp => typeof mp === 'object' ? `- \`${txt(mp.filename || mp.file)}\` — ${txt(mp.description)}` : `- \`${txt(mp)}\``).join('\n'));
       // chronologie de la mission (événements horaires, V2_FABLE § 10) : la rubrique « Chronologie » du récit la complète
       sec(BT('Chronologie'), (window.MissionExercise?.missionTimelineText?.(y) || '').replace(/^• /gm, '- '));
@@ -1467,6 +1569,10 @@
     briefKey,
     cleanNarrative,
     markSaved,
+    tidyMission,
+    parseRiskLine,
+    riskLevel,
+    riskText,
     mapBatch,
     removeFromBatch,
     savedState,

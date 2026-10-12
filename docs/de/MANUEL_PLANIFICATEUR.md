@@ -63,7 +63,7 @@ Unter den Schaltflächen stehen immer zwei Zeilen:
 Der Bereich „Andere Mission importieren: Dateien, eingefügter Text, ChatGPT-Bestellung“ ist geöffnet, wenn keine Mission geladen ist:
 - „YAML und/oder Markdown“: Wählen Sie `mission<ID>.yaml` und `summary<ID>.md` gemeinsam aus, oder klicken Sie auf „oder Inhalt einfügen…“ und dann auf „Mission lesen“;
 - „Karten oder vom Generator geliefertes ZIP“: Wählen Sie direkt das ZIP des Studios; die PNGs und die Übersichtskarte werden automatisch zugeordnet;
-- „Mission bei ChatGPT bestellen“: dasselbe Formular wie bei den Flugbefehlen (Typ, Untertyp, Einsatzgebiet, Serie, Teams, Luftfahrzeuge…). „Bestellen: Prompt kopieren und ChatGPT öffnen“ kopiert den Prompt, öffnet ChatGPT in einem neuen Tab und trägt die Bestellung ins Register ein („bestellt“). Auf der Stufe Gestaltung erscheint dieser Bereich nur, wenn der Knopf „Bei ChatGPT bestellen…“ ihn öffnet; auf der Stufe Experte steht er auch zugeklappt im Bereich. **„Gerüst hier erstellen“** (nur im Generator, neben dem Bestellknopf) macht dasselbe ohne ChatGPT: Mit denselben Einstellungen erstellt es die vollständige(n) Mission(en) ohne Erzählung — eine je fliegendem Team (Luftfahrzeug und Rufzeichen gewählt oder aus der Flotte: Luftfahrzeuge der Prompt-Kategorien, die zur Familie passen; Betankung: ein Tanker, dann Empfänger; nichts Passendes: Luftfahrzeug zu ergänzen), Start- und Zielflugplatz an der Basis des Luftfahrzeugs, Ziel, Wendepunkte, ein Treffpunkt je Team, wenn „Treffpunkt“ auf „mit“ steht, Arbeitsgebiet, geplante Betankung mit einer AAR-Strecke (ARIP, ARCP) bei „ja“, Zeitplan aus der Dauer, erwartete Karten mit Beschreibung, leeres Hauptziel, Risiken, Einleitung und Zeitablauf; mit „Koordinierte Übung: ja“ die Leitungsmission …Z (Stunde H, Teilnehmer, Ereignisse H, H+15 min…). Die Missionen öffnen sich als Stapel; die Zeile „Gerüst: n Punkt(e) zu setzen, m Text(e) zu schreiben — dann das Studio für die Karten“ zählt, was bleibt, jedes leere Feld ist umrahmt, bis es ausgefüllt ist, und „Im Studio öffnen“ wechselt ins Kartenstudio, um die Punkte zu setzen und die Karten zu erzeugen.
+- „Mission bei ChatGPT bestellen“: dasselbe Formular wie bei den Flugbefehlen (Typ, Untertyp, Einsatzgebiet, Serie, Teams, Luftfahrzeuge…). „Bestellen: Prompt kopieren und ChatGPT öffnen“ kopiert den Prompt, öffnet ChatGPT in einem neuen Tab und trägt die Bestellung ins Register ein („bestellt“). Auf der Stufe Gestaltung erscheint dieser Bereich nur, wenn der Knopf „Bei ChatGPT bestellen…“ ihn öffnet; auf der Stufe Experte steht er auch zugeklappt im Bereich. **„Gerüst hier erstellen“** (nur im Generator, neben dem Bestellknopf) macht dasselbe ohne ChatGPT: Mit denselben Einstellungen erstellt es die vollständige(n) Mission(en) ohne Erzählung — eine je fliegendem Team (Luftfahrzeug und Rufzeichen gewählt oder aus der Flotte: Luftfahrzeuge der Prompt-Kategorien, die zur Familie passen; Betankung: ein Tanker, dann Empfänger; nichts Passendes: Luftfahrzeug zu ergänzen), Start- und Zielflugplatz an der Basis des Luftfahrzeugs, Ziel, Wendepunkte, ein Treffpunkt je Team, wenn „Treffpunkt“ auf „mit“ steht, Arbeitsgebiet, geplante Betankung mit einer AAR-Strecke (ARIP, ARCP) bei „ja“, Zeitplan aus der Dauer, erwartete Karten mit Beschreibung, leeres Hauptziel, Risiken, Einleitung und Zeitablauf; mit „Koordinierte Übung: ja“ die Leitungsmission …Z (Stunde H, Teilnehmer, Ereignisse H, H+15 min…). Die Missionen öffnen sich als Stapel; die Zeile „Gerüst: n Punkt(e) zu setzen, m Text(e) zu schreiben — dann das Studio für die Karten“ zählt, was bleibt, jedes leere Feld ist umrahmt, bis es ausgefüllt ist, und „Im Studio öffnen“ wechselt ins Kartenstudio, um die Punkte zu setzen und die Karten zu erzeugen. Das Standard-Einsatzgebiet ist das der Basis des Luftfahrzeugs der ersten Besatzung (LFQP: métropole); das Rufzeichen kommt aus der Flotte, sonst aus der Rufzeichentabelle für diesen Typ (RAFFUT01, RAFFUT02…), und der Name jeder Besatzung folgt ihm.
 
 Eine empfangene Mission wird ins Register eingetragen und in ihrem Ordner abgelegt, wenn der Missionsordner erlaubt ist; andernfalls klicken Sie auf „Im Missionsordner ablegen…“. Link „Register öffnen ↗“.
 Der empfangene Text wird in `recu/` aufbewahrt; erneut empfangen, ersetzt eine Mission die vorige nur, wenn sich ihre Daten ändern: Die alte kommt nach `versions/`, die Studio-Einstellungen gleichnamiger Karten werden übernommen. Das Einfügen nimmt die ganze Antwort von ChatGPT an (mehrere Missionen: ein Stapel); Begleitdateien einer Serie (VALIDATION.txt, Manifest) werden ausgesondert und gemeldet.
@@ -113,6 +113,8 @@ Jede Aktion sagt zuerst, was sie anlegt oder entfernt, Kennungen inbegriffen. �
 Die nächste freie Kennung und die nächste Serie erscheinen grau in den leeren Feldern: Das sind Hinweise, keine Werte. Eine Warnung erscheint, wenn die Kennung nicht mit dem Buchstaben der Familie beginnt.
 Das Ändern der Kennung einer Mission, auf die andere verweisen (Operation, Karten, Texte), öffnet eine Bestätigung: Bestätigen Sie, um das ganze Paket zu migrieren (die alte Kennung bleibt in `mission.former_id` erhalten), oder lehnen Sie ab, um die alte zu behalten.
 
+Eine Zeile meldet ein Einsatzgebiet, das nicht zum Abflugplatz passt (ICAO-Code: LF… métropole, LFK… Corse, TFF… Antilles, SO… Guyane, FME… Réunion, FMCZ Mayotte, NW… Nouvelle-Calédonie, NT… Polynésie): „Einsatzgebiet Polynésie, Abflug in métropole (LFQP).“; die Schaltfläche „métropole setzen“ korrigiert das Einsatzgebiet.
+
 ### Geschätzte Dauer
 
 Schätzung des Flugs anhand der wahrscheinlichen Route und des Luftfahrzeugs; bei jeder Änderung neu berechnet. Bei einer Mission der Übungsleitung ausgeblendet.
@@ -154,6 +156,8 @@ Auf einer Mission der Übungsleitung wird der Block zu „Allgemeines Briefing�
 
 Der Abschnitt „Zeitablauf“ („Textabschnitt hinzufügen“) enthält auch die zeitlichen Ereignisse der Mission, über seinem freien Text: Zeit (H+30mn; H = geplanter Start), Ort der Mission (Abflug, Wendepunkt, Treffpunkt, Zone, Zielobjekt, Ankunft) oder freier Text, was geschieht; „+ Ereignis“ fügt eine Zeile hinzu. Das Briefing druckt sie am Anfang des Abschnitts Zeitablauf, nach Zeit geordnet. Mission der Übungsleitung: Der Zeitablauf der Übung wird im Block Übung eingestellt.
 
+Risiken: eines pro Zeile, Spalten getrennt durch Tabulator (eingefügte Tabelle), „—“, „|“ oder „;“; eine Stufenspalte (Kritisch, Hoch, Mittel, Niedrig, in vier Sprachen, Sternchen bleibt) wird erkannt, wo sie auch steht; zwei übrige Spalten ergeben Gefahr und Maßnahme, drei Gefahr, Folge und Maßnahme. Die Stufe wird im Briefing und im PDF gedruckt. Eine Zeile ohne Trennzeichen („Absolute Priorität: …“) ist kein Risiko: Beim Verlassen des Abschnitts geht sie in die Notizen. Hauptziel: ein Satz; eine nummerierte Liste wird dort aufgeteilt (der erste Punkt bleibt, die anderen kommen an den Anfang der Nebenziele); Nummern und Aufzählungszeichen werden entfernt. Eine geöffnete Mission, die diesen Regeln nicht folgt, wird beim Öffnen bereinigt (die Statuszeile meldet es, „Im Ordner speichern“ schreibt es).
+
 ### Alle YAML-Daten
 
 Block der Stufe Experte, standardmäßig ausgeblendet: Klicken Sie in seinem Kopf auf „Anzeigen“.
@@ -162,6 +166,8 @@ Block der Stufe Experte, standardmäßig ausgeblendet: Klicken Sie in seinem Kop
 - „Name eines neuen Stammfelds“ und dann „Hinzufügen“ legt einen Schlüssel der ersten Ebene an.
 
 Nur für Korrekturen verwenden, die die anderen Blöcke nicht erlauben.
+
+Der Name eines Orts (Abflug, Ankunft, Zielobjekt, Wendepunkt, Treffpunkt, Zone) wird beim Tippen gesucht: Flugplätze, Funkfeuer, Punkte, VRP, dann Orte; ein gewählter Ort setzt seine Koordinaten. Abflug und Ankunft sind standardmäßig die Basis des Luftfahrzeugs (Tooltip). Das Rufzeichen eines Luftfahrzeugs schlägt die der Flotte für seinen Typ vor; der Teamname (und die Teilnehmer der Treffpunkte) folgt dem Rufzeichen.
 
 ### Karten des Endpakets
 
@@ -215,6 +221,8 @@ Eine Mission ohne Koordinaten (Gerüst des Generators) zeigt im Block Route das 
 - Suchfeld: Flugplatz, Funkfeuer, Wegpunkt, VFR-Punkt oder AAR-Strecke („LFLY“, „OLIVIA ARIP“) der SIA-Datenbank, nach Code oder Name, oder Koordinaten „45.72, 4.94“.
 - Ein gesetzter Punkt wird durch Ziehen auf der Karte verschoben; eine Zone erhält einen Radius in km. Gleicher Start- und Zielflugplatz werden zusammen gesetzt.
 - Die Koordinaten gehen in die gemeinsame Mission: Der Generator sieht seine Zahl „zu setzende Punkte“ sinken. Alles gesetzt: „Karten und ZIP erzeugen“.
+
+Die Suche schlägt auch Orte vor (GeoNames-Namen, nach Flugplätzen, Funkfeuern und Punkten): „Guipry“, „Pont-Réan“…; höchstens 40 Vorschläge, beim Tippen.
 
 ### Zu erstellende Karten
 

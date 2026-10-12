@@ -12,6 +12,18 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Ajouté
 
+- **Mission generator: hand-written missions tidied at the source (case G-001)** — risks: one per line, columns
+  separated by tab, "—", "|" or ";", a level column (Critical / High / Moderate / Low, four languages, asterisk kept)
+  recognised anywhere, stored as `{ hazard, level, consequence, mitigation }` (`level` new, printed in brief, PDF and
+  summary); a line without separator goes to notes. Main objective: a numbered list is split (first item stays, the
+  others lead the secondaries), list prefixes removed. Applied when leaving the section and on opening a mission
+  (`SiaMission.tidyMission`; the status line says what changed). Identification: a line flags a theatre that does
+  not match the departure airfield (ICAO prefix → territory) with a one-click fix; the skeleton takes the theatre of
+  the first aircraft's base and callsigns from the fleet or the callsign table (unique per team, team name follows).
+  Place search shared by the studio's "Points to place" and the generator's YAML editor (`shared/place_search.js`):
+  airfields, beacons, points, VRP, then GeoNames towns, 40 suggestions while typing, a chosen place sets the
+  coordinates. YAML editor: callsign suggestions from the fleet, team name and rendezvous participants follow the
+  callsign, departure/arrival tooltip (aircraft base by default). Planner manual updated in four languages.
 - **My profile › Aircraft: link to Aviation Fanatic** — under the field for adding an aircraft outside the fleet, a link
   opens the Aviation Fanatic list of aircraft types (designators, retired types included) to look up a compatible
   type oneself (`shared/equipment_editor.js`, 4 languages).

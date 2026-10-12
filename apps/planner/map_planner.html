@@ -17,7 +17,7 @@
 </style>
 <script src="../../shared/carto/maplibre-gl.js"></script>
 <script src="../../shared/mission_core/vendor/js-yaml.min.js"></script>
-<script>window.SIA_MISSION_NS='planner'</script><script src="../cpco/mission_store.js?v=0"></script>
+<script>window.SIA_MISSION_NS='planner'</script><script src="../cpco/mission_store.js?v=0"></script><script src="../../shared/place_search.js?v=0"></script>
 <script src="../../shared/carto/aero_symbols.js?v=0"></script><script src="../../shared/carto/vertical_profile.js?v=0"></script><script src="../../shared/carto/vprof_editor.js?v=0"></script><script src="../../AircraftDB/aircraft_db.js"></script><script src="../../shared/flight_performance_model.js?v=0"></script><script src="../../AircraftDB/aircraft_perf.js"></script><script src="../../shared/mission_routing.js?v=0"></script><script src="../../shared/mission_estimate.js?v=0"></script><script src="../../shared/mission_exercise.js?v=0"></script>
 <script src="../../shared/sia_base.js?v=0"></script><script src="../../shared/aar_tracks.js?v=0"></script><script src="../../shared/airac.js?v=0"></script><script src="../../shared/sticky_frame.js?v=0"></script>
 <style data-layer="app">
@@ -1304,7 +1304,7 @@
 </div>
 <p id="routeInfo" class="small"></p>
 <details class="small route-help"><summary>Syntaxe et utilisation</summary><p>Case 15 du plan de vol OACI (séparée par des espaces) ou liste à virgules. Points : terrains (OACI), balises, points RNAV, points de report VFR (« MM-CV »), points de la mission (ORIGIN, TARGET…), « REN300010 » (radiale / distance), coordonnées « 4330N00125E » ou « lat lon » ; voies aériennes entre deux points (« TOU UN460 NTS ») suivies point par point ; « DCT » : direct. Niveaux : « N0450F350 » groupe vitesse / niveau (au départ ou après un point : « NTS/N0440F370 »), « FL105 » ou « 5500 ft » seul : montée ou descente après le point précédent, « /A035 », « /F065 » ou « /3000 » après un point : altitude à atteindre au point, « VFR » : pas de niveau. Le même plan de vol est repris par le planificateur carburant (Cartes de vol).</p><p>Survol d’un point du texte, de la carte ou de la coupe : les deux autres s’illuminent. Carte : glisser un point (aimanté sur balises, points de report, terrains), clic sur la route pour insérer un point, clic droit pour supprimer un point (double-clic : un point ajouté). Coupe : clic pour un point à cette altitude, glisser pour l’altitude, clic droit pour supprimer.</p></details>
-<div id="placeBox" class="placeBox" hidden><p><b id="placeTitle">Points à placer</b> <span class="small">Cliquer la carte, ou chercher un terrain, une balise, un point de la base SIA (code ou nom) ; un point posé se déplace en le glissant sur la carte.</span></p><table id="placeTable"></table><p id="placeDone" class="ok" hidden>Tout est placé. <button type="button" id="placeGenerate" class="primary" data-icon="download">Générer les cartes et le ZIP</button></p><datalist id="placeOptions"></datalist></div><div id="vprofPtsBox" class="small" hidden><span>Points de la mission (clic : ajouter au cheminement) :</span> <span id="vprofPts"></span></div>
+<div id="placeBox" class="placeBox" hidden><p><b id="placeTitle">Points à placer</b> <span class="small">Cliquer la carte, ou chercher un terrain, une balise, un point de la base SIA ou une ville (code ou nom) ; un point posé se déplace en le glissant sur la carte.</span></p><table id="placeTable"></table><p id="placeDone" class="ok" hidden>Tout est placé. <button type="button" id="placeGenerate" class="primary" data-icon="download">Générer les cartes et le ZIP</button></p><datalist id="placeOptions"></datalist></div><div id="vprofPtsBox" class="small" hidden><span>Points de la mission (clic : ajouter au cheminement) :</span> <span id="vprofPts"></span></div>
 <aside class="profilePreview routeMap box"><div class="routeMapBar"><label class="routeInline">Carte <select id="routeMapSel" title="Carte affichée (par défaut : la carte générale de la route)"></select></label><label class="routeInline" data-min-level="4">Profil <select id="routeMapProfile" title="Profil d’affichage de cette carte (même réglage que dans « Cartes à produire »)"></select></label></div><div class="profileLeft routeProfileEdit" data-min-level="4"></div><select id="previewMap" hidden><option value="">Aucune mission chargée</option></select><img id="generalPreview" alt="Carte de contrôle" hidden><div id="osmLivePreview" hidden></div><div class="viewBar"><label class="mapZip previewZip" data-min-level="4" title="Mettre cette carte dans le ZIP (décocher pour ne pas la générer)"><input type="checkbox" id="previewZip" checked disabled> ZIP</label><button id="refreshPreview" data-min-level="4" data-icon="refresh" type="button" disabled title="Redessiner l’aperçu avec les réglages en cours">Actualiser</button><button type="button" data-view="keep" data-min-level="4" data-icon="check" title="La carte générée reprendra exactement le cadre affiché (zoom et déplacement à la souris) ; écrit dans la mission">Garder ce cadrage</button><button type="button" data-view="home" data-min-level="4" class="secondary" title="Revenir au cadrage enregistré de cette carte">Recentrer</button><button type="button" data-view="auto" data-min-level="4" class="secondary" title="Oublier le cadrage enregistré : cadre calculé d’après la mission (points, zones, pistes) et le type de carte">Cadrage automatique</button><span class="viewSpacer"></span><button id="previewWindow" data-min-level="4" type="button" class="buttonLink" title="Ouvrir la carte dans une fenêtre séparée, synchronisée avec les réglages">⧉ Fenêtre</button><button id="previewPop" type="button" class="buttonLink" title="Agrandir la carte (Échap pour revenir)">⤢ Agrandir</button></div>
 <p id="previewStatus" data-status class="small">Carte choisie, dessinée avec le profil en cours de modification ; actualisée à chaque réglage.</p></aside>
 <img id="vprofImg" alt="Profil vertical" hidden style="width:100%;border:1px solid #c8d6dd;border-radius:8px;margin-top:6px">
@@ -6512,7 +6512,7 @@ function renderPlace() {
     radius: +z?.radius_km || 10,
     placed: hasPos(z?.centre || {})
   })).filter(z => z.placed && placedNow.some(x => x.path.join('.') === z.path.join('.')));
-  $('placeTable').innerHTML = list.map((e, i) => `<tr data-place="${i}"${placing && placing.path.join('.') === e.path.join('.') ? ' class="active"' : ''}><td><b>${esc(e.id)}</b></td><td>${esc(e.name || '—')}</td><td class="small">${esc(e.role)}</td><td><button type="button" class="secondary" data-place-click="${i}">${esc(tl(['Cliquer la carte', 'Click the map', 'Karte anklicken', 'Pulsar el mapa']))}</button></td><td><input data-place-search="${i}" list="placeOptions" placeholder="${esc(tl(['Chercher : terrain, balise, point, ou « lat, lon »', 'Search: airfield, beacon, point, or “lat, lon”', 'Suchen: Flugplatz, Funkfeuer, Punkt oder „Breite, Länge“', 'Buscar: aeródromo, radiobaliza, punto o «lat, lon»']))}"></td><td>${e.kind === 'zone' ? `<input type="number" min="1" step="1" data-place-radius="${e.path.join('.')}" value="${esc(e.radius || 10)}"> km` : ''}</td></tr>`).join('') +
+  $('placeTable').innerHTML = list.map((e, i) => `<tr data-place="${i}"${placing && placing.path.join('.') === e.path.join('.') ? ' class="active"' : ''}><td><b>${esc(e.id)}</b></td><td>${esc(e.name || '—')}</td><td class="small">${esc(e.role)}</td><td><button type="button" class="secondary" data-place-click="${i}">${esc(tl(['Cliquer la carte', 'Click the map', 'Karte anklicken', 'Pulsar el mapa']))}</button></td><td><input data-place-search="${i}" list="placeOptions" placeholder="${esc(tl(['Chercher : terrain, balise, point, ville, ou « lat, lon »', 'Search: airfield, beacon, point, town, or “lat, lon”', 'Suchen: Flugplatz, Funkfeuer, Punkt, Ort oder „Breite, Länge“', 'Buscar: aeródromo, radiobaliza, punto, ciudad o «lat, lon»']))}"></td><td>${e.kind === 'zone' ? `<input type="number" min="1" step="1" data-place-radius="${e.path.join('.')}" value="${esc(e.radius || 10)}"> km` : ''}</td></tr>`).join('') +
     zoneRows.map(z => `<tr><td><b>${esc(z.id)}</b></td><td colspan="4" class="small">${esc(tl(['Zone posée : rayon', 'Area placed: radius', 'Zone gesetzt: Radius', 'Zona colocada: radio']))}</td><td><input type="number" min="1" step="1" data-place-radius="${z.path.join('.')}" value="${esc(z.radius)}"> km</td></tr>`).join('');
   $('placeDone').hidden = !!list.length;
   box._list = list
@@ -6536,15 +6536,36 @@ $('placeBox').addEventListener('click', ev => {
     block: 'center'
   })
 });
-$('placeBox').addEventListener('focusin', ev => {
-  if (!ev.target.matches('[data-place-search]') || $('placeOptions').options.length) return;
-  $('placeOptions').innerHTML = [...placeEntries().keys()].map(k => `<option value="${esc(k)}">`).join('')
+/** Entrées propres au studio pour la recherche commune (shared/place_search.js) : axes de ravitaillement (ARIP, ARCP). */
+const placeExtra = () => (aarData || []).flatMap(t => [t.ip && {
+  label: `${t.name} ARIP`,
+  lat: t.ip.lat,
+  lon: t.ip.lon,
+  name: `${t.name} ARIP`
+}, t.cp && {
+  label: `${t.name} ARCP`,
+  lat: t.cp.lat,
+  lon: t.cp.lon,
+  name: `${t.name} ARCP`
+}].filter(Boolean));
+let placeSeq = 0;
+// suggestions à la frappe : terrains, balises, points, VRP, axes AAR, puis villes (PlaceSearch, 40 au plus)
+$('placeBox').addEventListener('input', async ev => {
+  if (!ev.target.matches('[data-place-search]') || !window.PlaceSearch) return;
+  const mine = ++placeSeq;
+  await PlaceSearch.index({
+    extra: placeExtra()
+  });
+  const list = await PlaceSearch.suggest(ev.target.value);
+  if (mine === placeSeq) $('placeOptions').innerHTML = list.map(k => `<option value="${esc(k)}">`).join('')
 });
-$('placeBox').addEventListener('change', ev => {
+$('placeBox').addEventListener('change', async ev => {
   const t = ev.target;
   if (t.matches('[data-place-search]')) {
     const e = $('placeBox')._list[+t.dataset.placeSearch],
-      p = placeLookup(t.value);
+      p = window.PlaceSearch ? (await PlaceSearch.index({
+        extra: placeExtra()
+      }), await PlaceSearch.lookup(t.value)) : placeLookup(t.value);
     if (!p) return $('previewStatus').innerHTML = `<span class="err">${esc(tlf(['« {q} » introuvable dans la base SIA.',
       '“{q}” not found in the SIA base.', '„{q}“ nicht in der SIA-Datenbank gefunden.', '«{q}» no encontrado en la base SIA.'
     ], {

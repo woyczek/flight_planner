@@ -6,7 +6,7 @@
 <link rel="stylesheet" href="../../shared/repository_nav.css?v=0">
 <script src="../../config/repository_tree?v=0"></script><script src="../../shared/kit.js?v=0"></script>
 <script src="../../shared/mission_core/vendor/js-yaml.min.js"></script>
-<script src="mission_prompt.js?v=0"></script><script src="../../shared/data_files.js?v=0" data-file="references/aircraft_fleet.js"></script><script src="../../shared/mission_order.js?v=0"></script><script src="../../AircraftDB/aircraft_db.js"></script><script src="../../AircraftDB/aircraft_perf.js"></script><script src="../../shared/mission_core/model.js?v=0"></script><script src="../../shared/mission_estimate.js?v=0"></script><script src="../../shared/sia_base.js?v=0"></script><script src="../../shared/mission_routing.js?v=0"></script><script src="../../shared/mission_airspaces.js?v=0"></script><script src="../../shared/mission_exercise.js?v=0"></script><script src="../../shared/mission_registry.js?v=0"></script>
+<script src="mission_prompt.js?v=0"></script><script src="../../shared/data_files.js?v=0" data-file="references/aircraft_fleet.js"></script><script src="../../shared/data_files.js?v=0" data-file="references/callsigns.js"></script><script src="../../shared/mission_order.js?v=0"></script><script src="../../AircraftDB/aircraft_db.js"></script><script src="../../AircraftDB/aircraft_perf.js"></script><script src="../../shared/mission_core/model.js?v=0"></script><script src="../../shared/mission_estimate.js?v=0"></script><script src="../../shared/sia_base.js?v=0"></script><script src="../../shared/place_search.js?v=0"></script><script src="../../shared/mission_routing.js?v=0"></script><script src="../../shared/mission_airspaces.js?v=0"></script><script src="../../shared/mission_exercise.js?v=0"></script><script src="../../shared/mission_registry.js?v=0"></script>
 <script src="mission_store.js?v=0"></script><script src="mission_skeleton.js?v=0"></script>
 <script src="../../shared/aar_tracks.js?v=0"></script>
 <script src="../../shared/mission_core/vocab.js?v=0"></script>
@@ -546,7 +546,7 @@ html[data-skeuo] .repo-block .mapCard.missing:not(#imp) {
 <label title="Lot de génération dans la famille (une commande ChatGPT = une série) ; sert au registre et au rapprochement des commandes">Série de génération<input id="missionSeries" data-common="mission.series" type="number" min="1"></label>
 <label>Auteur<input id="author" data-common="author" placeholder="Nom de l’auteur"></label><label>Date du document<input id="documentDate" data-common="date" type="date"></label>
 <input id="missionNumber" data-common="mission.number" type="number" hidden><input id="schema" data-common="schema" hidden><input id="schemaVersion" data-common="schema_version" hidden>
-</div><p class="small" id="identHint"></p></section>
+</div><p class="small" id="theatreHint" hidden data-no-i18n></p><p class="small" id="identHint"></p></section><datalist id="yamlPlaceList"></datalist><datalist id="yamlCallsignList"></datalist>
 
 <section data-block-id="mission-estimate" data-icon="clock" data-subtitle="Route probable et durée du vol (aller, sur zone, retour), options de retour, comparaison avec les CR de la mission."><h2>Durée estimée</h2><div id="routingControls" class="routingControls"></div><div id="missionEstimate"></div></section>
 
@@ -914,6 +914,7 @@ function renderCommon() {
   $('schema').value = common('schema', 'helo-xp-mission');
   $('schemaVersion').value = common('schema_version', SCHEMA_VERSION);
   updateIdentHints();
+  renderTheatreHint();
   $('summary').value = state.narrative.summary || state.yaml.summary || '';
   $('detailed').value = state.narrative.detailed || state.yaml.detailed_description || state.yaml.description_detaillee || ''
 }
@@ -944,9 +945,11 @@ const NARR_SECTIONS = [{
     'Briefing und Bericht (YAML objectives.primary).',
     'Brief e informe (YAML objectives.primary).'
   ],
-  what: ['Ce que l’équipage doit avoir accompli, en une ou deux phrases.', 'What the crew must have achieved, in one or two sentences.',
-    'Was die Besatzung erreicht haben muss, in ein oder zwei Sätzen.',
-    'Lo que la tripulación debe haber logrado, en una o dos frases.'
+  what: [
+    'Une phrase : ce que l’équipage doit avoir accompli. Une liste numérotée est répartie en quittant la rubrique : le premier item reste ici, les autres vont dans Objectifs secondaires.',
+    'One sentence: what the crew must have achieved. A numbered list is split when leaving the section: the first item stays here, the others go to Secondary objectives.',
+    'Ein Satz: was die Besatzung erreicht haben muss. Eine nummerierte Liste wird beim Verlassen des Abschnitts aufgeteilt: Der erste Punkt bleibt hier, die anderen gehen in die Nebenziele.',
+    'Una frase: lo que la tripulación debe haber logrado. Una lista numerada se reparte al salir de la sección: el primer elemento queda aquí, los demás pasan a Objetivos secundarios.'
   ]
 }, {
   type: 'secondary',
@@ -956,8 +959,10 @@ const NARR_SECTIONS = [{
   where: ['Brief et CR (YAML objectives.secondary).', 'Brief and report (YAML objectives.secondary).',
     'Briefing und Bericht (YAML objectives.secondary).', 'Brief e informe (YAML objectives.secondary).'
   ],
-  what: ['Ce qui est souhaité en plus, un objectif par ligne.', 'What is wanted in addition, one objective per line.',
-    'Was zusätzlich gewünscht ist, ein Ziel pro Zeile.', 'Lo que se desea además, un objetivo por línea.'
+  what: ['Ce qui est souhaité en plus, un objectif par ligne (les numéros « 1. » et puces « - » sont retirés).',
+    'What is wanted in addition, one objective per line (numbers “1.” and bullets “-” are removed).',
+    'Was zusätzlich gewünscht ist, ein Ziel pro Zeile (Nummern „1.“ und Aufzählungszeichen „-“ werden entfernt).',
+    'Lo que se desea además, un objetivo por línea (se quitan los números «1.» y las viñetas «-»).'
   ]
 }, {
   type: 'teams',
@@ -1008,8 +1013,11 @@ const NARR_SECTIONS = [{
   where: ['Brief, PDF et CR (YAML risks).', 'Brief, PDF and report (YAML risks).', 'Briefing, PDF und Bericht (YAML risks).',
     'Brief, PDF e informe (YAML risks).'
   ],
-  what: ['Un risque par ligne : danger — conséquence — mesure.', 'One risk per line: hazard — consequence — measure.',
-    'Ein Risiko pro Zeile: Gefahr — Folge — Maßnahme.', 'Un riesgo por línea: peligro — consecuencia — medida.'
+  what: [
+    'Un risque par ligne : danger, niveau (Critique, Élevé, Modéré, Faible), conséquence, mesure — séparés par une tabulation, « — », « | » ou « ; » (copie d’un tableau acceptée). Une ligne sans séparateur va dans Notes en quittant la rubrique.',
+    'One risk per line: hazard, level (Critical, High, Moderate, Low), consequence, measure — separated by a tab, “—”, “|” or “;” (a pasted table is accepted). A line without separator goes to Notes when leaving the section.',
+    'Ein Risiko pro Zeile: Gefahr, Stufe (Kritisch, Hoch, Mittel, Niedrig), Folge, Maßnahme — getrennt durch Tabulator, „—“, „|“ oder „;“ (eingefügte Tabelle möglich). Eine Zeile ohne Trennzeichen geht beim Verlassen des Abschnitts in die Notizen.',
+    'Un riesgo por línea: peligro, nivel (Crítico, Alto, Moderado, Bajo), consecuencia, medida — separados por un tabulador, «—», «|» o «;» (se acepta una tabla pegada). Una línea sin separador pasa a Notas al salir de la sección.'
   ]
 }, {
   type: 'payload',
@@ -1097,8 +1105,7 @@ const narrDef = type => NARR_SECTIONS.find(d => d.type === type) || NARR_FREE;
 const narrTypeOf = x => x?.type || NARR_SECTIONS.find(d => !d.key && d.title === String(x?.title || '').trim())?.type || 'free';
 /** Texte d'une valeur YAML de rubrique : une ligne par élément (risque objet : danger — conséquence — mesure). */
 function narrText(v) {
-  return [].concat(v ?? []).map(x => x && typeof x === 'object' ? [x.hazard || x.risk || x.name, x.consequence, x.mitigation].filter(
-    Boolean).join(' — ') : String(x ?? '')).join('\n')
+  return [].concat(v ?? []).map(x => x && typeof x === 'object' ? SiaMission.riskText(x) : String(x ?? '')).join('\n')
 }
 /** Rubrique à clé YAML : valeur reprise du texte (liste : une valeur par ligne ; un risque objet inchangé reste objet). */
 function narrFromText(def, text) {
@@ -1175,7 +1182,8 @@ function scalarEditor(value, path, key) {
   const kind = value === null ? 'null' : typeof value;
   if (kind === 'boolean') return`<div class="fieldRow"><label>${esc(labelFor(key))}</label><select data-path='${esc(JSON.stringify(path))}' data-kind="boolean"><option value="true"${value?' selected':''}>true</option><option value="false"${!value?' selected':''}>false</option></select></div>`;
   const long = String(value ?? '').length > 100 || /description|summary|note|objective|risk|constraint/i.test(String(key));
-  return`<div class="fieldRow"><label>${esc(labelFor(key))}</label>${long?`<textarea data-path='${esc(JSON.stringify(path))}' data-kind="${kind}">${esc(value??'')}</textarea>`:`<input data-path='${esc(JSON.stringify(path))}' data-kind="${kind}" value="${esc(value??'')}">`}</div>`
+  const extra = yamlFieldExtra(path, key);
+  return`<div class="fieldRow"><label>${esc(labelFor(key))}</label>${long?`<textarea data-path='${esc(JSON.stringify(path))}' data-kind="${kind}">${esc(value??'')}</textarea>`:`<input data-path='${esc(JSON.stringify(path))}' data-kind="${kind}" value="${esc(value??'')}"${extra}>`}</div>`
 }
 // Éditeur YAML générique : objets et listes dépliables, une saisie par valeur scalaire.
 function renderNode(value, path, key, depth = 0) {
@@ -2373,9 +2381,7 @@ function asArray(v) {
 /** Risques de la mission en lignes de texte : liste YAML (danger, conséquence, parade), sinon rubrique du récit. */
 function risksText() {
   const r = state.yaml.risks;
-  if (Array.isArray(r) && r.length) return r.map(x => typeof x === 'string' ? x : [x.hazard || x.risk || x.name, x.consequence, x
-    .mitigation
-  ].filter(Boolean).join(' - '));
+  if (Array.isArray(r) && r.length) return r.map(x => typeof x === 'string' ? x : SiaMission.riskText(x));
   const s = findSection(['risques', 'risks', 'points_d_attention']);
   return s ? s.content.split(/\r?\n/).map(x => x.replace(/^\s*[-*•]\s*/, '')).filter(Boolean) : []
 }
@@ -3320,6 +3326,148 @@ $('mapFiles').addEventListener('change', async e => {
     e.target.value = ''
   }
 });
+/** Ce que la remise en forme a changé (SiaMission.tidyMission) en une phrase. */
+function tidyText(d) {
+  return [trl(['Mission remise en forme :', 'Mission tidied:', 'Mission bereinigt:', 'Misión ordenada:']), [d.risks ? trf([
+    '{n} risque(s) structuré(s)',
+    '{n} risk(s) structured', '{n} Risiko/Risiken strukturiert', '{n} riesgo(s) estructurado(s)'
+  ], {
+    n: d.risks
+  }) : '', d.notes ? trf(['{n} ligne(s) sans séparateur rangée(s) dans Notes', '{n} line(s) without separator moved to Notes',
+    '{n} Zeile(n) ohne Trennzeichen in die Notizen verschoben', '{n} línea(s) sin separador movida(s) a Notas'
+  ], {
+    n: d.notes
+  }) : '', d.objectives ? trf(['{n} objectif(s) réparti(s) ou débarrassé(s) de leur numéro',
+    '{n} objective(s) split or stripped of their number',
+    '{n} Ziel(e) aufgeteilt oder ohne Nummer', '{n} objetivo(s) repartido(s) o sin número'
+  ], {
+    n: d.objectives
+  }) : ''].filter(Boolean).join(', ') + '.'].join(' ')
+}
+/** Ligne Théâtre de l'Identification : théâtre de la mission différent de celui de son terrain de départ (code OACI →
+ *  territoire, MissionSkeleton.theatreOf) → « Théâtre Polynésie, départ en métropole (LFQP) » et un bouton pour le corriger. */
+function renderTheatreHint() {
+  const el = $('theatreHint'),
+    S = window.MissionSkeleton,
+    th = String(state.yaml?.mission?.theatre || ''),
+    icao = S?.icaoOf?.(state.yaml?.origin) || '',
+    want = S?.theatreOf?.(icao) || '',
+    fold = v => v.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  if (!th || !want || fold(th) === fold(want)) {
+    el.hidden = true;
+    return
+  }
+  const IN = {
+    'métropole': 'en métropole',
+    'Corse': 'en Corse',
+    'Antilles': 'aux Antilles',
+    'Guyane': 'en Guyane',
+    'Réunion': 'à La Réunion',
+    'Mayotte': 'à Mayotte',
+    'Nouvelle-Calédonie': 'en Nouvelle-Calédonie',
+    'Polynésie': 'en Polynésie'
+  };
+  el.hidden = false;
+  el.innerHTML = `<span class="err">${esc(trf(['Théâtre {t}, départ {w} ({i}).', 'Theatre {t}, departure in {e} ({i}).',
+    'Einsatzgebiet {t}, Abflug in {e} ({i}).', 'Teatro {t}, salida en {e} ({i}).'
+  ], {
+    t: th,
+    w: IN[want] || want,
+    e: want,
+    i: icao
+  }))}</span> <button type="button" class="secondary" id="theatreFix">${esc(trf(['Mettre {e}', 'Set {e}', '{e} setzen', 'Poner {e}'], {
+    e: want
+  }))}</button>`;
+  $('theatreFix').onclick = () => {
+    setPath(state.yaml, ['mission', 'theatre'], want);
+    renderTheatreHint();
+    renderYaml();
+    shareMission(true)
+  }
+}
+/** Attributs en plus d'un champ de l'éditeur YAML : nom d'un lieu de la mission (recherche de terrains, balises, villes),
+ *  indicatif d'un aéronef (proposés depuis la flotte), départ et arrivée (infobulle : base de l'aéronef par défaut). */
+function yamlFieldExtra(path, key) {
+  const top = path[0],
+    isPlace = key === 'name' && (['origin', 'destination', 'target'].includes(top) && path.length === 2 || ['turning_points',
+      'rendezvous', 'zones'
+    ].includes(top) && path.length === 3);
+  if (isPlace) {
+    const base = ['origin', 'destination'].includes(top) ? trf([
+      'Par défaut, la base de l’aéronef ({t}). Modifiable : tapez un terrain, une balise, un point ou une ville ; un lieu reconnu pose ses coordonnées.',
+      'By default, the aircraft’s base ({t}). Editable: type an airfield, beacon, point or town; a recognised place sets its coordinates.',
+      'Standardmäßig die Basis des Luftfahrzeugs ({t}). Änderbar: Flugplatz, Funkfeuer, Punkt oder Ort eingeben; ein erkannter Ort setzt seine Koordinaten.',
+      'Por defecto, la base de la aeronave ({t}). Modificable: escriba un aeródromo, una radiobaliza, un punto o una ciudad; un lugar reconocido fija sus coordenadas.'
+    ], {
+      t: state.yaml.aircraft?.[0]?.type || '?'
+    }) : trl(['Tapez un terrain, une balise, un point ou une ville : un lieu reconnu pose ses coordonnées.',
+      'Type an airfield, beacon, point or town: a recognised place sets its coordinates.',
+      'Flugplatz, Funkfeuer, Punkt oder Ort eingeben: Ein erkannter Ort setzt seine Koordinaten.',
+      'Escriba un aeródromo, una radiobaliza, un punto o una ciudad: un lugar reconocido fija sus coordenadas.'
+    ]);
+    return ` data-place-name list="yamlPlaceList" autocomplete="off" title="${esc(base)}"`
+  }
+  if (top === 'aircraft' && key === 'callsign' && path.length === 3) return ` data-callsign-for="${path[1]}" list="yamlCallsignList" autocomplete="off" title="${esc(trl(['Indicatifs proposés depuis la flotte pour ce type ; le nom de l’équipe suit l’indicatif.', 'Callsigns suggested from the fleet for this type; the team name follows the callsign.', 'Rufzeichen aus der Flotte für diesen Typ vorgeschlagen; der Teamname folgt dem Rufzeichen.', 'Indicativos propuestos desde la flota para este tipo; el nombre del equipo sigue al indicativo.']))}"`;
+  return ''
+}
+// éditeur YAML : suggestions de lieux (PlaceSearch) et d'indicatifs à l'entrée dans le champ
+$('yamlEditor').addEventListener('focusin', e => {
+  const t = e.target;
+  if (t.matches('[data-place-name]') && window.PlaceSearch) PlaceSearch.attach(t, $('yamlPlaceList'), p => {
+    const path = JSON.parse(t.dataset.path).slice(0, -1),
+      o = getPath(state.yaml, path);
+    if (!o) return;
+    const lat = +(+p.lat).toFixed(6),
+      lon = +(+p.lon).toFixed(6);
+    if (path[0] === 'zones') o.centre = {
+      ...(o.centre || {}),
+      lat,
+      lon
+    };
+    else Object.assign(o, {
+      lat,
+      lon
+    });
+    o.name = p.name || t.value;
+    renderYaml();
+    renderMaps();
+    renderEstimate();
+    renderTheatreHint();
+    shareMission(true);
+    setStatus(trf(['{n} placé : {la}, {lo}.', '{n} placed: {la}, {lo}.', '{n} gesetzt: {la}, {lo}.', '{n} colocado: {la}, {lo}.'], {
+      n: o.name,
+      la: lat,
+      lo: lon
+    }), 'ok')
+  });
+  if (t.matches('[data-callsign-for]')) {
+    t.dataset.before = t.value;
+    const ac = state.yaml.aircraft?.[+t.dataset.callsignFor];
+    $('yamlCallsignList').innerHTML = (window.MissionSkeleton?.callsignsFor?.(ac?.type) || []).map(c => `<option value="${esc(c)}">`)
+      .join('')
+  }
+});
+// indicatif changé : le nom de l'équipe (et les participants des rendez-vous) qui portaient l'ancien le suivent ; une
+// équipe nommée d'après l'identifiant de la mission (squelette sans indicatif) prend le nouveau
+$('yamlEditor').addEventListener('change', e => {
+  const t = e.target;
+  if (!t.matches('[data-callsign-for]')) return;
+  const before = String(t.dataset.before || '').toUpperCase(),
+    now = String(t.value || '').trim().toUpperCase(),
+    id = String(state.yaml.mission?.id || '').toUpperCase();
+  if (!now || now === before) return;
+  for (const team of [].concat(state.yaml.teams || [])) {
+    const n = String(team?.name || '').toUpperCase();
+    if (team && (n === before && before || n === id || !n) && !/sol/i.test(String(team.type || ''))) team.name = now
+  }
+  for (const r of [].concat(state.yaml.rendezvous || []))
+    if (Array.isArray(r?.participants)) r.participants = r.participants.map(x => String(x).toUpperCase() === before && before || String(
+        x)
+      .toUpperCase() === id ? now : x);
+  t.dataset.before = now;
+  renderYaml();
+  shareMission(true)
+});
 $('yamlEditor').addEventListener('input', e => {
   const p = e.target.dataset.path;
   if (!p) return;
@@ -3366,7 +3514,15 @@ $('narrativeSections').addEventListener('change', e => {
     narrSetType(t.dataset.narrType, t.value);
     renderNarrative();
     renderYaml()
-  } else if (String(t.dataset.narrBody || '').startsWith('y:')) renderYaml()
+  } else if (String(t.dataset.narrBody || '').startsWith('y:')) {
+    const done = SiaMission.tidyMission(state.yaml);
+    if (done) {
+      renderNarrative();
+      setStatus(tidyText(done), 'ok');
+      shareMission(true)
+    }
+    renderYaml()
+  }
 });
 $('narrativeSections').addEventListener('click', e => {
   const ref = e.target.closest('[data-narr-del]')?.dataset.narrDel;
@@ -3443,6 +3599,7 @@ window.addEventListener('repository-language-change', () => renderNarrative());
 // lignes d'état et Opération : textes de la langue de la page (réglée après le premier rendu)
 window.addEventListener('repository-language-change', () => {
   renderOpLine();
+  renderTheatreHint();
   renderSaveState()
 });
 setTimeout(() => {
@@ -3710,6 +3867,12 @@ if (FRESH) history.replaceState(null, '', location.pathname + location.hash);
     sourceNames: d.sourceNames || []
   };
   // rubriques copiées d'un brief rangé (summary<ID>.md relu) retirées par SiaMission.load : dit, puis enregistré
+  if (d?.tidied) setTimeout(() => {
+    setStatus(tidyText(d.tidied) + ' ' + trl(['« Enregistrer dans le dossier » pour l’écrire.', '“Save to the folder” to write it.',
+      '„Im Ordner speichern“, um sie zu schreiben.', '«Guardar en la carpeta» para escribirla.'
+    ]), 'ok');
+    shareMission(true)
+  }, 350);
   if (d?.cleaned) setTimeout(() => {
     setStatus(`${d.cleaned} rubrique(s) issue(s) du brief rangé retirée(s) : elles doublaient les sections que le brief tire du YAML.`, 'ok');
     shareMission(true)
