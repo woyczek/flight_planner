@@ -12,6 +12,12 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Ajouté
 
+- **My profile › Aircraft and simulators: aircraft outside the fleet** — new "Other aircraft (outside the fleet)"
+  card: enter an ICAO designator or a model (list from the ICAO type base, aliases such as A400M → fleet A400) and
+  "Add"; the type is ticked "Owned" (Owned / Mastered boxes as for fleet types; an unknown designator is accepted as
+  is). These types go with the declared availability weeks, so the Centre sees them for assignments, and the card also
+  lists the out-of-fleet types declared by the other pilots ("Also declared by"), ready to tick. User manual updated in
+  four languages.
 - **Mission registry: ChatGPT reply imported on an ordered mission, deletion** — an ordered mission shows a "ChatGPT
   reply" panel: paste the reply (YAML and Markdown) or choose the received files; the mission is stored in the missions
   folder and replaces the order (order, date and notes kept, even if ChatGPT changed the series or identifier).

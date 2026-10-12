@@ -405,6 +405,8 @@ Les types de la flotte que vous possédez et maîtrisez, et vos simulateurs. Le 
 
 - Cocher « Maîtrisé » coche aussi « Possédé » ; décocher « Possédé » décoche « Maîtrisé ».
 
+**Carte « Autres appareils (hors flotte) »** : les types que vous possédez dans votre simulateur sans qu'ils soient dans la flotte. Saisissez un désignateur OACI ou un modèle (« PC-12 », « A400M » ; la liste propose les types de la base OACI) puis « Ajouter » ou Entrée : le type rejoint le tableau, coché « Possédé ». Un type de la flotte saisi ici est simplement coché dans la carte « Appareils » ; un désignateur inconnu de la base est accepté tel quel. Ces types partent avec vos disponibilités déclarées, comme ceux de la flotte : le Centre les voit pour les affectations, et les autres pilotes les retrouvent dans cette carte, avec la colonne « Aussi déclaré par » — il leur suffit de cocher « Possédé ».
+
 **Carte « Simulateurs »** : cochez les simulateurs et outils installés.
 
 Il n'y a pas de bouton « Enregistrer » : chaque coche est gardée aussitôt dans ce navigateur, puis recopiée dans vos semaines de disponibilités déjà déclarées, à partir de la semaine en cours. Le message du bas indique combien de semaines ont été mises à jour.

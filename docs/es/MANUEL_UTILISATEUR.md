@@ -383,6 +383,8 @@ Los tipos de la flota que posee y domina, y sus simuladores. El Centro los utili
 
 - Marcar «Dominado» marca también «Poseído»; desmarcar «Poseído» desmarca «Dominado».
 
+**Tarjeta «Otras aeronaves (fuera de la flota)»**: los tipos que posee en su simulador sin que estén en la flota. Introduzca un designador OACI o un modelo («PC-12», «A400M»; la lista propone los tipos de la base OACI) y luego «Añadir» o Intro: el tipo se une a la tabla, marcado «Poseído». Un tipo de la flota introducido aquí simplemente se marca en la tarjeta «Aeronaves»; un designador desconocido en la base se acepta tal cual. Estos tipos van con sus disponibilidades declaradas, como los de la flota: el Centro los ve para las asignaciones, y los demás pilotos los encuentran en esta tarjeta, con la columna «También declarado por»; solo tienen que marcar «Poseído».
+
 **Tarjeta «Simuladores»**: marque los simuladores y herramientas instalados.
 
 No hay botón «Guardar»: cada casilla se guarda al instante en este navegador y después se copia en sus semanas de disponibilidad ya declaradas, a partir de la semana actual. El mensaje inferior indica cuántas semanas se han actualizado.

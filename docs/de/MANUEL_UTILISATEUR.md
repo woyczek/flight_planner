@@ -383,6 +383,8 @@ Die Typen der Flotte, die Sie besitzen und beherrschen, und Ihre Simulatoren. Da
 
 - Das Ankreuzen von „Beherrscht“ kreuzt auch „Besessen“ an; das Abwählen von „Besessen“ wählt „Beherrscht“ ab.
 
+**Karte „Andere Luftfahrzeuge (außerhalb der Flotte)“**: die Typen, die Sie in Ihrem Simulator besitzen, die aber nicht zur Flotte gehören. Geben Sie eine ICAO-Kennung oder ein Modell ein („PC-12“, „A400M“; die Liste schlägt die Typen der ICAO-Basis vor), dann „Hinzufügen“ oder Eingabe: Der Typ kommt in die Tabelle, mit „Besessen“ angehakt. Ein hier eingegebener Flottentyp wird einfach in der Karte „Luftfahrzeuge“ angehakt; eine der Basis unbekannte Kennung wird unverändert übernommen. Diese Typen gehen wie die der Flotte mit Ihren angegebenen Verfügbarkeiten mit: Das Zentrum sieht sie für die Zuweisungen, und die anderen Piloten finden sie in dieser Karte mit der Spalte „Auch angegeben von“ — sie müssen nur „Besessen“ anhaken.
+
 **Karte „Simulatoren“**: Kreuzen Sie die installierten Simulatoren und Werkzeuge an.
 
 Es gibt keinen Knopf „Speichern“: Jedes Häkchen wird sofort in diesem Browser gespeichert und dann in Ihre bereits angegebenen Verfügbarkeitswochen übernommen, ab der aktuellen Woche. Die Meldung unten zeigt, wie viele Wochen aktualisiert wurden.

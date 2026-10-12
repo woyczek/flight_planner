@@ -383,6 +383,8 @@ The fleet types you own and master, and your simulators. The Centre uses them to
 
 - Ticking “Mastered” also ticks “Owned”; unticking “Owned” unticks “Mastered”.
 
+**“Other aircraft (outside the fleet)” card**: the types you own in your simulator that are not in the fleet. Enter an ICAO designator or a model (“PC-12”, “A400M”; the list offers the types of the ICAO base), then “Add” or Enter: the type joins the table, ticked “Owned”. A fleet type entered here is simply ticked in the “Aircraft” card; a designator unknown to the base is accepted as is. These types go with your declared availability, like the fleet ones: the Centre sees them for assignments, and the other pilots find them in this card, with the “Also declared by” column — they only have to tick “Owned”.
+
 **“Simulators” card**: tick the simulators and tools installed.
 
 There is no “Save” button: each tick is kept at once in this browser, then copied into your availability weeks already declared, from the current week onwards. The bottom message tells you how many weeks were updated.
