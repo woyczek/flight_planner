@@ -297,6 +297,8 @@ Table states:
 - If cells change: “Write mora.csv (old one archived)”, then commit the data repository.
 - Elsewhere, the X-Plane MORA grid completes it, if the X-Plane source is ticked.
 
+Computed grid method: for each 1° × 1° cell, the highest point among the terrain (AWS Terrarium elevation tiles), the OpenStreetMap peaks and the obstacles of the SIA AIXM, plus 1000 ft (2000 ft above 5000 ft), rounded up to the next hundred; without the OSM peaks, the terrain is raised by 100 m. Theatres covered: métropole, Corse and overseas territories, plus the extents of the registry missions located elsewhere (terrain and peaks only). On the maps, the value is written at the centre of the cell in ICAO notation (3⁵ = 3500 ft); when zoomed out, the cells are grouped 2 × 2 then 4 × 4 (highest value). The SIA ENR 6.1 chart is not used as a source (irregular areas).
+
 **Consistency**: “Check” verifies airspace, aircraft, fleet, performance and mission aerodromes.
 AIRAC XML files (about 80 MB per cycle) stay outside the repository, like the files of the other sources. MORA values are computed, not certified.
 

@@ -1397,6 +1397,7 @@ Block der Stufe Experte; auf den Stufen 1 bis 3 erscheint der Bericht der Erzeug
 Die „Übersichtskarte“ erscheint von selbst unter den Vorschauen; sie übernimmt das Profil der Übersichtskarte der Route.
 Formate: Menü ☰ › Kartenausgaben (PNG, bearbeitbares SVG, PNG-Breite von 400 bis 5000 px; standardmäßig 1600 px).
 Schlägt eine Karte fehl (Hintergrund nicht verfügbar, Zeitüberschreitung), enthält das ZIP `rapport_generation.txt` und die Liste bietet „Einzeln erneut versuchen“ an.
+Lassen Sie den Tab während der Erzeugung sichtbar: Der Browser bremst Tabs im Hintergrund, und eine Karte kann fehlschlagen („Zeitüberschreitung beim Laden der Hintergrundkarte“); „Einzeln erneut versuchen“ startet sie erneut.
 Die Knöpfe bleiben ausgegraut, solange keine Karte zu erstellen ist. Während der Vorschauen und der Erzeugung trägt der Fortschrittsbalken einen Knopf „Abbrechen“: Die laufende Karte wird fertiggestellt, die folgenden werden nicht erstellt. Eine abgebrochene Erzeugung lädt kein ZIP herunter (es wäre unvollständig); die bereits angezeigten Vorschauen bleiben. Starten Sie „Karten und ZIP erzeugen“ erneut für alle Karten.
 
 ### SIA-Datenbank
@@ -1429,6 +1430,7 @@ Auf breitem Bildschirm, auf der Stufe Experte, hat die Seite drei Spalten (Einga
 Die Leiste unten auf der Seite zeigt „Profil gespeichert — …“ oder „Nicht gespeicherte Änderungen — …“. Sie trägt „Lokale Datenbank neu laden“, „Profil speichern“ und „Dieses Flugzeug löschen“. Diese Leiste erscheint nur auf der Stufe Experte.
 Wechseln Sie das Flugzeug mit nicht gespeicherten Änderungen, bietet die Seite „Bleiben“, „Verwerfen und wechseln“ oder „Speichern und wechseln“ an.
 Menü ☰: Profile / CSV / JSON importieren (darunter `.lnmperf` von Little Navmap), ein SimBrief-Airframe importieren, den Leistungsordner wählen, das Profil als `.lnmperf` oder JSON exportieren, die lokale Datenbank speichern, die vorherige Sicherung wiederherstellen, die Einstellungen exportieren oder importieren. Diese Aktionen gehören zur Stufe Experte, außer Export und Import der Einstellungen.
+„Lokale Datenbank speichern“ schreibt `flight_performance_database.fpdb.json` in den Leistungsordner (sonst Download); „Vorherige Sicherung wiederherstellen“ stellt den Zustand vor dem letzten Speichern wieder her.
 Ein Import, der auf ein vorhandenes Profil trifft (gleiche Kennung, meist der ICAO-Typ), aktualisiert es: Die importierten Werte haben Vorrang, leer gelassene Felder behalten den alten Wert, die RPM-Tabellen werden zusammengeführt (Einheiten umgerechnet).
 
 ### Kraftstoffplanung
@@ -1440,6 +1442,7 @@ Ein Import, der auf ein vorhandenes Profil trifft (gleiche Kennung, meist der IC
 
 Wind leer gelassen: Die Seite weist darauf hin („Wind unbekannt: Bereich ±25 kt…“) und gibt den Kraftstoff als Bereich an.
 Mit einer ISA-Abweichung vergleicht ein Kasten „Wetter“ im Ergebnis mit der Standardatmosphäre: Strecke auf der Flughöhe des Plans (Zeit, Kraftstoff), optimale Flughöhe und Gipfelhöhe. Der QNH geht nicht in die Rechnung ein (Flugflächen sind Druckhöhen).
+Das Profil bleibt auf die Standardatmosphäre kalibriert; die Planung fliegt in der Atmosphäre des Tages: Wärmere, weniger dichte Luft ergibt bei gleicher IAS eine höhere TAS, aber weniger Schub oder Leistung, geringere Steigrate und Gipfelhöhe und bei einem Strahlflugzeug einen höheren Verbrauch.
 Der Knopf „Flugkarten“ (Stufe Experte) öffnet die Flugkarten mit diesem Flugplan; Karten und Profil werden dort bei der Ankunft erstellt.
 „Flugplan-Syntax“ zeigt die akzeptierten Formen. Ohne SIA-Datenbank im Browser werden nur Punkte in Koordinaten erkannt.
 
@@ -1459,6 +1462,7 @@ In der Detailansicht (Schaltfläche „Detailansicht“ / „Einfache Ansicht“
 Fahren Sie über eine Kurve, um die Werte in dieser Höhe abzulesen; klicken Sie, um eine Höhe anzuheften (weiße Linie auf allen Kurven). Die Planung wird dann auf dieser Höhe berechnet.
 Die Schieberegler „Gewählter Steigflug“ der Kraftstoffplanung stellen Ihren gewählten Steigflug ein, auf den Kurven violett gezeichnet.
 Der grau hinterlegte Bereich „unerreichbar“ liegt über der Gipfelhöhe des Luftfahrzeugs.
+Oberhalb der Flughöhe, auf der die Mach-Zahl des Profils nicht mehr haltbar ist, fliegt ein Strahlflugzeug mit der größten Geschwindigkeit, die 92 % seines Schubs erlauben („max. Schub“ im Ergebnis und in den Feldern); die Flughöhe wird erst oberhalb der Gipfelhöhe abgelehnt.
 Ohne „Bezugshöhe (ft)“ und „Max. Gipfelhöhe (ft)“ im Profil schätzt das Modell sie (Reise-IAS und -TAS, EUROCONTROL-Blatt, Steigverbrauch, sonst typischer Wert der Klasse) und nennt die Quelle unter den Kurven. Füllen Sie diese beiden Felder aus oder kalibrieren Sie mit einem SimBrief-OFP: Das ist zuverlässiger.
 
 ### Steigflug-Anweisungen
@@ -1559,6 +1563,7 @@ Dieser Block zeichnet einen Schnitt entlang des Flugplans der Planung: Gelände,
 Der Steigflug folgt dem Leistungsmodell des aktiven Flugzeugs; der Sinkflug folgt seiner Sinkrate. Ein Plan ohne Flughöhe (VFR) hat keine Flugbahn.
 Ein importiertes SimBrief-OFP füllt die Route und zeichnet das Profil von selbst.
 Sie brauchen die SIA-Datenbank dieses Browsers, gelesen in den Flugkarten (Block „SIA-Datenbank“) oder unter Einstellungen › Wartung. Ohne sie werden nur Punkte in Koordinaten erkannt, ohne Lufträume.
+Das Gelände stammt aus einem Geländemodell von etwa 150 m: Die ASFC-Grenzen folgen diesem Modell, nicht dem wirklichen Boden.
 
 ### OFP-Prüfung — Roh- und berechnete Werte
 

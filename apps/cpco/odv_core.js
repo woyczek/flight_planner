@@ -5,7 +5,7 @@
   // en-têtes zip + DecompressionStream) et son XML lu par DOMParser ; rien n'est envoyé, rien n'est gardé hors de la
   // mémoire de la page. Aucune donnée nominative n'est écrite dans ce fichier (trigrammes fictifs dans les exemples).
   //
-  // Structure attendue du classeur (voir docs/ODV_PLANNING.md) :
+  // Structure attendue du classeur (voir docs/technique/ODV_ORDRES.md § 8) :
   //   · feuille ODV : n° de semaine à droite du « S » (ligne 1), jours LUNDI…DIMANCHE (fusions de 3 colonnes : matin,
   //     après-midi, soir), lignes de groupe (IVAO FR, IVAO SO, DEFA : événements portés par la couleur de fond),
   //     trigrammes des pilotes en ZONES DE TEXTE (formes) sur les colonnes A:C, une par ligne, codes de disponibilité

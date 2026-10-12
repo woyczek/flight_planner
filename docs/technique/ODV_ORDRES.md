@@ -3,7 +3,7 @@
 Centre page `apps/cpco/odv_orders.html` (side bar › Schedule, ☰ › Centre — Board): the weekly editor
 of flight orders (flight strips placed on a timeline, areas, control, miscellaneous, notes). Chain: **mission →
 flight order (ODV) → execution → mission report (CR)**. The page **produces** the flight order; the ODV planning (`apps/cpco/odv_planning.html`,
-`docs/ODV_PLANNING.md`) **analyses** it (common slots, likely missions). Origin: the standalone tool “Tableau
+`docs/MANUEL_PLANIFICATEUR.md`, chapter “Planning ODV”) **analyses** it (common slots, likely missions). Origin: the standalone tool “Tableau
 V0” (single-file HTML, `localStorage`), taken over into the suite's model; its file format is not imported
 (provisional format).
 
@@ -233,4 +233,5 @@ never fatal.
   headings (TRANSPORT: …), simulators (crosses); roles inferred from keywords (indicative).
 - Privacy: cell comments shown without author; settings `odvPlanning:v1` hold no trigram; the last workbook is kept as a
   browser copy (`FileAccess` `__odvFile`) until "Clear the data"; no real workbook or trigram in the repository (tests
-  use AAA, BBB…).
+  use AAA, BBB…). Displayed name: the trigram; a full name only when the local reference
+  (`data/references/defa_reference.js`, optional `name` of a pilot) holds one.

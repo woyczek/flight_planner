@@ -10,6 +10,15 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ## [Unreleased]
 
+### Changed
+
+- **Help: one source per subject** — the per-subject guides (`DONNEES.md`, `ODV_PLANNING.md`, `SIA_MISSIONS.md`,
+  `FLIGHT_PLANNER.md`, `LANDING_DASHBOARD.md`, `PRESENTATION*.md`) are merged into the manuals and removed; what had
+  become wrong was dropped. New in the manuals (four languages where they exist): map profiles and extents, the studio's
+  vertical section, operation map and operation file, estimated-duration and exercise rules, translated briefs, MORA
+  method, ISA effect and thrust-limited cruise in the fuel quote; in the operations manual, the contents of `data/`,
+  the browser keys of the missions and the Planning, and what leaves the computer.
+
 ## [5.2.0] — 2026-10-12
 
 Missions can now be built entirely by hand in the generator — the single place where missions are created — with a
@@ -2683,7 +2692,7 @@ de la suite.
 
 ### Missions SIA (nouvelle application, dossier `SIA XML/`)
 
-- **Documentation** : [docs/SIA_MISSIONS.md](SIA_MISSIONS.md) (générateur de mission et studio :
+- **Documentation** : `docs/SIA_MISSIONS.md` (générateur de mission et studio :
   données, format des missions, profils, zones, MORA, hippodromes, stockage, services) ; README
   EN / FR (quatre applications), INSTALL (données SIA), tutoriel (§ 13, mission SIMONE), manuel
   d'exploitation (§ 9.1 : cycle AIRAC, MORA, axes ENR 5.7), FRAMEWORK (`aar_tracks.js`,

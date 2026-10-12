@@ -527,8 +527,8 @@ Adopted by default (to be challenged if needed):
   zoom of its charts goes through it; behaviour kept (period width,
   memory per file).
 - Flight Planner: the SimBrief identifier of the common pilot profile is used first.
-- Documentation: README (three applications + framework), `docs/FLIGHT_PLANNER.md`
-  (takes up and completes the original section of the README), `docs/LANDING_DASHBOARD.md`,
+- Documentation: README (three applications + framework), user manual
+  (chapters “Carburant” and “Atterrissages”), `technique/FRAMEWORK.md`,
   `docs/FRAMEWORK.md`.
 
 ## U. Step 16 — base (flight log), callsign series (2026-09-24)

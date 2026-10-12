@@ -66,7 +66,7 @@ Der Bereich „Andere Mission importieren: Dateien, eingefügter Text, ChatGPT-B
 - „Mission bei ChatGPT bestellen“: dasselbe Formular wie bei den Flugbefehlen (Typ, Untertyp, Einsatzgebiet, Serie, Teams, Luftfahrzeuge…). „Bestellen: Prompt kopieren und ChatGPT öffnen“ kopiert den Prompt, öffnet ChatGPT in einem neuen Tab und trägt die Bestellung ins Register ein („bestellt“). Auf der Stufe Gestaltung erscheint dieser Bereich nur, wenn der Knopf „Bei ChatGPT bestellen…“ ihn öffnet; auf der Stufe Experte steht er auch zugeklappt im Bereich. **„Gerüst hier erstellen“** (nur im Generator, neben dem Bestellknopf) macht dasselbe ohne ChatGPT: Mit denselben Einstellungen erstellt es die vollständige(n) Mission(en) ohne Erzählung — eine je fliegendem Team (Luftfahrzeug und Rufzeichen gewählt oder aus der Flotte: Luftfahrzeuge der Prompt-Kategorien, die zur Familie passen; Betankung: ein Tanker, dann Empfänger; nichts Passendes: Luftfahrzeug zu ergänzen), Start- und Zielflugplatz an der Basis des Luftfahrzeugs, Ziel, Wendepunkte, ein Treffpunkt je Team, wenn „Treffpunkt“ auf „mit“ steht, Arbeitsgebiet, geplante Betankung mit einer AAR-Strecke (ARIP, ARCP) bei „ja“, Zeitplan aus der Dauer, erwartete Karten mit Beschreibung, leeres Hauptziel, Risiken, Einleitung und Zeitablauf; mit „Koordinierte Übung: ja“ die Leitungsmission …Z (Stunde H, Teilnehmer, Ereignisse H, H+15 min…). Die Missionen öffnen sich als Stapel; die Zeile „Gerüst: n Punkt(e) zu setzen, m Text(e) zu schreiben — dann das Studio für die Karten“ zählt, was bleibt, jedes leere Feld ist umrahmt, bis es ausgefüllt ist, und „Im Studio öffnen“ wechselt ins Kartenstudio, um die Punkte zu setzen und die Karten zu erzeugen. Das Standard-Einsatzgebiet ist das der Basis des Luftfahrzeugs der ersten Besatzung (LFQP: métropole); das Rufzeichen kommt aus der Flotte, sonst aus der Rufzeichentabelle für diesen Typ (RAFFUT01, RAFFUT02…), und der Name jeder Besatzung folgt ihm.
 
 Eine empfangene Mission wird ins Register eingetragen und in ihrem Ordner abgelegt, wenn der Missionsordner erlaubt ist; andernfalls klicken Sie auf „Im Missionsordner ablegen…“. Link „Register öffnen ↗“.
-Der empfangene Text wird in `recu/` aufbewahrt; erneut empfangen, ersetzt eine Mission die vorige nur, wenn sich ihre Daten ändern: Die alte kommt nach `versions/`, die Studio-Einstellungen gleichnamiger Karten werden übernommen. Das Einfügen nimmt die ganze Antwort von ChatGPT an (mehrere Missionen: ein Stapel); Begleitdateien einer Serie (VALIDATION.txt, Manifest) werden ausgesondert und gemeldet.
+Der empfangene Text wird in `recu/` aufbewahrt; erneut empfangen, ersetzt eine Mission die vorige nur, wenn sich ihre Daten ändern: Die alte kommt nach `versions/`, die Studio-Einstellungen gleichnamiger Karten werden übernommen. Das Einfügen nimmt die ganze Antwort von ChatGPT an (mehrere Missionen: ein Stapel); Begleitdateien einer Serie (VALIDATION.txt, Manifest) werden ausgesondert und gemeldet. Eine Mission, deren Operation weitere Missionen ankündigt, zeigt bereits ◀ ▶ (fehlende Missionen „zu laden“): Später eingefügt oder geöffnet, schließen sie sich der Operation an. Der Stapel ist Generator und Studio gemeinsam; jede Mission behält ihre Änderungen beim Wechsel von einer zur anderen.
 
 ### Schritt für Schritt
 
@@ -89,6 +89,9 @@ Im Block Mission klappt „Bei ChatGPT bestellen…“ dieses Formular auf (dass
 1. Stellen Sie „Typ“, „Untertyp“, „Einsatzgebiet“ („Land“ für das Ausland), „Flugbesatzungen“, „Bodenteams“ und „Dauer“ (XS bis XL) ein.
 2. Klappen Sie bei Bedarf „Weitere Optionen“ auf: „Zweites Einsatzgebiet“ („Land“ für das Ausland), „Serie“ (leer = die nächste), „Kennung“ (berechnet, nur lesbar), „Treffpunkt“, „Übersetzungen“, „Luftbetankung“, „Koordinierte Übung“ (ja: Leitungsmission …Z; nein: nie; frei: je nach Szenario) und das Luftfahrzeug jedes fliegenden Teams A, B… (leer = automatisch). Dieser Bereich ist auf der Stufe Experte geöffnet; auf den anderen Stufen öffnet er sich von selbst, wenn eine seiner Einstellungen vom Standard abweicht.
 3. Klicken Sie auf „Bestellen: Prompt kopieren und ChatGPT öffnen“, fügen Sie in ChatGPT ein (Strg+V) und senden Sie ab.
+
+„Übersetzungen“ („en“ standardmäßig; „en, de, es“; leer = nur Französisch): ChatGPT ergänzt das YAML um das übersetzte Briefing
+(Block `i18n`), das „Meine Missionen“ in der Sprache des Piloten anzeigt; ein nicht übersetztes Feld bleibt französisch.
 
 Die Mission erscheint im Register mit dem Status „bestellt“. Fügen Sie dann die Antwort von ChatGPT im Feld „Antwort von ChatGPT“ ihrer Karte im Register ein (oder laden Sie sie hier), oder speichern Sie die Dateien im Missionsordner und klicken Sie auf „Ordner neu lesen“: Die Bestellung wird der erzeugten Mission zugeordnet (gleiche Serie). Die Einstellungen werden gespeichert.
 
@@ -140,6 +143,12 @@ Schätzung des Flugs anhand der wahrscheinlichen Route und des Luftfahrzeugs; be
 - Eine Tabelle vergleicht die Schätzung mit den bereits erstellten Berichten der Mission (tatsächlicher Flug, Abweichung).
 - Kästchen „Wahrscheinliche Route anzeigen“: Skizze und Tabelle der Teilstrecken.
 
+Regeln der Berechnung:
+- Wahrscheinliche Route: Abflug, Punkte in der Reihenfolge der Mission (sonst die Route des Studios; ersatzweise die Wendepunkte der Reihe nach und jeder Arbeitspunkt — Ziel, Treffpunkt, Zone — dort, wo er die Route am wenigsten verlängert), dann der Zielflugplatz, sonst der Abflugplatz.
+- Geschwindigkeit und Steigrate: die der Mission, sonst das Profil des Kraftstoffplaners für denselben Typ, sonst das EUROCONTROL-Blatt, sonst ein typischer Wert (Hubschrauber, Turboprop, Strahlflugzeug); eine Teilstrecke, die zu kurz ist, um die Flughöhe zu erreichen, wird tiefer geflogen.
+- Zeit vor Ort: die der Punkte, sonst ein typischer Wert nach Familie und Rolle (Landung, Windenbetrieb, Suche, Racetrack…). Block = Flug + 15 min (5 min für einen Hubschrauber).
+- Automatischer Transit: Flugzeug unter IFR (Reiseflug ab 6500 ft) über die auf seiner Höhe offenen Luftstraßen, direkter Ein- und Ausstieg über höchstens 60 NM, direkt, wenn der Umweg 40 % übersteigt; Flugzeug im Tiefflug (Kampf, taktischer Transport: bis 1500 ft) über die verbundenen RTBA-Gebiete (150 NM, 80 %); Hubschrauber und VFR direkt. Nur Transits über 40 NM werden geroutet. Das sind die Standardwerte der „Einstellungen der Routenberechnung“. Der Block sagt, warum ein Transit direkt bleibt (außerhalb der Datenabdeckung, kurze Teilstrecke, kein Weg, zu großer Umweg).
+
 Grenze: Ohne SIA-Datenbank im Browser bleiben die Routen direkt; eine Warnung fordert dazu auf, den SIA-Ordner neu zu lesen.
 
 ### Zu aktivierende Gebiete
@@ -154,6 +163,8 @@ Grenze: Die Berechnung ist ein Richtwert und ersetzt weder die AZBA-Karten noch 
 ### Übung
 
 Block für eine Übungsmission.
+
+Eine Operation wird zur Übung, wenn beim Start nicht allen alles bekannt ist (aufzudeckende Spuren, Meldungen im Flug, Umschläge, sich ändernde Lage). Die Übungsleitung sieht alles; jede Besatzung erhält nur die an sie (oder an alle) gerichteten Ereignisse und kennt nur die Spuren, die diese aufdecken; ein gespieltes Übungsziel erhält seine Route, seine Startzeit, seine Anweisungen und seine Karte. Zeiten relativ zu H (H, T oder M: derselbe Zeitpunkt; „H+1h30mn“, „H-20mn“; ohne Einheit Minuten); ein durch einen Punkt ausgelöstes Ereignis fällt auf den Start des Teilnehmers + geschätzte Zeit bis zum Punkt + Verzögerung. Ein gespieltes Übungsziel hat eine eigene Mission in der Operation (Rolle Übungsziel): Register, Zuweisung und Meine Missionen wie eine Besatzung.
 
 Auf der Mission der Übungsleitung (…Z) ein vollständiger Editor:
 - „Stunde H und Teilnehmer“: „Stunde H (Bezeichnung oder Uhrzeit)“, dann eine Zeile pro Teilnehmer („Rufzeichen“, „Mission“, „Start (H-20mn, H+1h)“, „Rolle“); „+ Teilnehmer“, „Missionen der Operation übernehmen“.
@@ -200,6 +211,7 @@ Um die Bilder zu laden, verwenden Sie das ZIP des Studios im Block Mission. Eine
 | „Gesamte Operation“ (Paket aus mehreren Missionen) | „Alle Übungsdokumente (ein PDF pro Empfänger)“, „Alle PDFs exportieren“, „Operationsmappe (ein PDF)“ |
 | „Daten“ | „YAML exportieren“, „Markdown exportieren“ |
 
+„Operationsmappe (ein PDF)“: Deckblatt (Operation, Missionen und Teams, gemeinsame Treffpunkte, Karte der Operation, wenn das ZIP des Studios geladen ist), dann nacheinander das Briefing jeder Mission.
 Das Briefing der Besatzung enthält ihre versiegelten Umschläge und die Karten; die Statuszeile listet die nicht beigefügten Karten. Laden Sie die Karten vor dem Export.
 Jeder versiegelte Umschlag belegt eine Seite nach den Karten, gefolgt von seiner Übungskarte; die Karte einer Funkmeldung hat ihre eigene Seite „bei Eingang der Meldung zu übergeben“.
 
@@ -230,6 +242,8 @@ Flugplan, Kontrollkarte und Vertikalschnitt sind verknüpft: Fahren Sie in einem
 
 Kontrollkarte: Listen „Karte“ und „Profil“, Kästchen „ZIP“, „Aktualisieren“, „Diesen Ausschnitt behalten“ (die erzeugte Karte übernimmt den angezeigten Rahmen), „Zentrieren“, „Automatischer Ausschnitt“, „⧉ Fenster“ (dieselbe interaktive Karte in einem eigenen Fenster, ohne den Rest des Studios: verschieben, mit Mausrad oder Kneifen zoomen, Punkte wie hier ziehen; Leiste „◀ Liste ▶“, „Zentrieren“, „Aktualisieren“, „Im Studio öffnen“, „Schließen“; Tasten ← → + − 0 Esc; es folgt den Einstellungen des Studios), „⤢ Vergrößern“ (Esc zum Zurückkehren). Auf der Karte: Ziehen Sie einen Punkt, klicken Sie auf die Route, um einzufügen, Rechtsklick zum Löschen.
 „Profileinstellungen: Schnitt, Luftfahrzeug, Steigrate, Ausgaben“: Unter- und Obergrenze des Schnitts, Luftfahrzeug, Steig- und Sinkflug, Bild `profil_vertical.png` in den Ausgaben, Standardlinie der Route.
+„Zeichnen“ zeichnet den Schnitt unter der Karte (Klick: vergrößern): Gelände entlang der Route (± 1 km), Hindernisse im Umkreis von 1 NM und durchflogene Lufträume nach dem Profil von `profil_vertical.png` (ASFC-Untergrenzen folgen dem Gelände), Punkte mit kumulierten Entfernungen, geplante Flugbahn in Violett mit TOC und TOD. Der Steigflug folgt dem gewählten Luftfahrzeug (Profile des Kraftstoffplaners), sonst den eingegebenen Raten; ohne Flughöhe oder Höhe (VFR) keine Flugbahn. Obergrenze 0 = automatisch (Gelände, Hindernisse, geplante Höhen und Untergrenzen der durchflogenen Lufträume, bis FL 195).
+Route, Flughöhe, Unter- und Obergrenze und Ausgabe werden in die Mission geschrieben (`vertical_profile`): Der Generator sieht sie. `profil_vertical.png` ist eine Karte der Liste; sie kommt ins ZIP und ans Ende des Briefing-PDFs.
 
 ### Zu setzende Punkte
 
@@ -253,6 +267,22 @@ Die Suche schlägt auch Orte vor (GeoNames-Namen, nach Flugplätzen, Funkfeuern 
 Hinzufügen: Name, Typ („Übersicht“, „Ziel“, „Detail“, „Gebiet“), dann „+ Karte“ (Ausdehnung = angezeigte Ansicht); „+ Übungskarten“ fügt die Karten der Übungsleitung, der gespielten Übungsziele oder der Besatzung hinzu.
 „Einstellungen des Profils …“ (eingeklappt): „Profilname“, „Hintergrundkarte“, „Speichern“, „Neu“, „Duplizieren“, „Löschen“, dann vier Reiter: „Hintergrundkarte“, „Lufträume“, „ICAO-Symbole“, „Elemente“. Geändert wird immer das Profil der gewählten Karte; die Profile gelten für alle Missionen und bleiben in diesem Browser. Die Vorschlagslisten der Eingabefelder (Zonen, Flugplätze, Funkfeuer: bis zu 13 000 Einträge aus der SIA-Datenbank) werden erst gefüllt, wenn Sie in das betreffende Feld klicken, nicht beim Öffnen der Seite.
 
+**Vorgeschlagenes Profil** für eine Karte ohne Profil: „VFR detailliert“ für Ziel-, Detail- und Treffpunktkarten, „VFR vereinfacht“ für den Anflug, „IFR vereinfacht“ für die Hauptkarte und die Übersichten (Übersicht, Gebiet…). `profil_vertical.png` erhält „Vertikalprofil“, von selbst angelegt (alle Luftraumfamilien, kein anderes Element); seine Ausdehnung folgt der Route.
+
+**Ausdehnung** einer Karte: der behaltene Ausschnitt („Diesen Ausschnitt behalten“), sonst Mittelpunkt und Radius oder Breite × Höhe aus der Mission (Polygon des Gebiets bei einer Gebietskarte), sonst der automatische Ausschnitt im Format der Ausgaben (16/10): Übersicht, alle Punkte und Zonen mit 12 % Rand; Gebietskarte, das Gebiet mit 20 %; Detail, 8 × 5 km; Ziel, 100 × 62 km; andere Karte, 220 × 140 km.
+
+Reiter der Profileinstellungen:
+- „Hintergrundkarte“: OSM Standard, OpenTopoMap (Relief und Höhenlinien), OSM Shortbread, OpenFreeMap Liberty / Bright / Positron, VersaTiles Colorful / Graybeard / Shadow / Eclipse; OSM-Ebenen (Boden, Gewässer, Straßen / Bahn, Gebäude, Grenzen, Reliefschattierung, Höhenlinien, Gipfel). „Städte und Ballungsräume“: Städte als ICAO-Symbole oberhalb einer Einwohnerschwelle (≥ 100 000 Einw. orange Fläche, ≥ 20 000 gelb mit orangem Rand, Ortschaft gelber Punkt), Beschriftungen oberhalb ihrer eigenen Schwelle (die bevölkerungsreichsten zuerst), bebaute Flächen (keine, Umriss, Füllung, beides) um ausreichend bevölkerte Städte; die Dateien des SIA liefern keinen Umriss von Ballungsräumen.
+- „Lufträume“: Familien R / D / P, kontrollierte (CTR, TMA, CTA, SIV), andere (TRA, RMZ, TMZ, PJE); „ICAO-Kartensymbolik“ (Klassen A rot, B / C / D blau, E hellblau; R / D schraffiert, P kariert, RTBA; rotes Kreuz für einen zu kleinen Luftraum; Kartuschen Name / Obergrenze / Untergrenze); angezeigtes Höhenband (Unter-, Obergrenze in ft); Deckkraft, Beschriftungen, „Kurznamen“ (auch im Schnitt), Höhen. „Luftraumauswahl“: Positivliste (nur diese Lufträume; leer = alle Lufträume der angehakten Familien) oder Negativliste (alle außer diesen); Leerzeichen, Bindestriche und Akzente werden ignoriert („LF-R 45 A“ = „R 45 A“); „R 166“ schlägt die Gruppe seiner Teilgebiete vor, ein Fragment erfasst alle Lufträume, die es enthalten; „Liste einfügen…“, „Alle entfernen“; „Aliasse“ für alle Profile („@RTBA“ aus der SIA-Datenbank vorgeschlagen, bearbeitbar). Die Liste sagt, welche Lufträume gezeichnet werden, nicht ihre Aktivierung.
+- „ICAO-Symbole“: Flugplätze (Länge und Belag der Piste, Hubschrauberlandeplatz; für den allgemeinen Luftverkehr offen in Blau, eingeschränkt hell, staatlich in Rot; Filter nach Kategorie und „Kontrolle“), Funknavigation (VOR, TACAN, DME, NDB, ILS; VOR-Rose in der Detailansicht), untere und obere Luftstraßen, NAT-Tracks des Tages, VFR-Meldepunkte und RNAV-Punkte, Überflugverbot (rotes ⊗), Parks und Schutzgebiete (grün), Hindernisse (≥ 300, 500 oder 1000 ft AGL). Flugplätze und Funkfeuer haben ihre Positiv- oder Negativliste („LFOJ“, „LFR*“, Name). Überdecken sich zwei Funkfeuer, bleibt das wichtigere (TACAN, dann VOR, DME, NDB, ILS).
+- „Elemente“: Wendepunkte (Größe, Farben), Meridiane und Breitenkreise, MORA-Gitter (Werte, Deckkraft, Mindestabstand), Städtebeschriftungen, Betankungs-Racetrack, „Einsatz- und Suchgebiete“ (Suche in Magenta, Einsatz in Violett, Ausschluss in Rot, Name im Norden).
+
+Betankungs-Racetrack: „Automatisch“ wählt die Strecke der ENR 5.7, deren Punkte (ARIP, ARCP, S1, S2) weniger als 2 km von einem Punkt der Mission entfernt liegen oder deren Name in der Mission vorkommt (der Grund wird angezeigt); weitere Strecken werden in der Liste angehakt; nichts angehakt, kein Racetrack. Rückflugschenkel um 14 NM zur veröffentlichten Seite versetzt; nicht veröffentlichte Seite: gestrichelt.
+
+Die Beschriftungen überlappen sich nicht: zuerst Punkte der Mission und Städte, dann ICAO-Symbole, Beschriftungen der Lufträume (in der Mitte des Luftraums, sonst entlang des Umrisses, sonst nicht geschrieben), Gradnetz und MORA-Werte.
+
+„+ Übungskarten“ benennt die Karten `organisation_<Z>.png`, `chiffon_<piste>_<Z>.png` (im Blatt des Übungsziels übernommen) und `exercice_<événement>_<mission>.png`.
+
 ### Vorschauen und Erzeugung
 
 - „Alle Karten anzeigen“: Vorschauen aller Karten; sie erzeugen keine Datei.
@@ -261,6 +291,8 @@ Hinzufügen: Name, Typ („Übersicht“, „Ziel“, „Detail“, „Gebiet“
 - Eine fehlgeschlagene Karte hält die anderen nicht auf: Das ZIP enthält `rapport_generation.txt`, und „Einzeln wiederholen“ startet die Karte erneut. „Hintergrund unvollständig“ meldet eine langsame Hintergrundkarte.
 - Hintergrundkarte mit Fehler: Die Kontrollkarte erklärt die Ursache, wechselt auf Standard-OSM und bietet „Fehlerbericht kopieren“ an (technisches Detail zur Weitergabe).
 - Paket aus mehreren Missionen: „Die n Missionen erzeugen“ erstellt ein einziges ZIP, einen Ordner pro Mission, mit der Karte der Operation.
+- Paket: „Alle Karten anzeigen (n Missionen)“ gruppiert die Vorschauen nach Mission, vorneweg die Karte der Operation (`carte_operation.png`: Punkte aller Missionen, gemeinsame Treffpunkte einmal, Weg jedes Teams in seiner Farbe, Legende); sie liegt in der Wurzel des ZIP.
+- Lassen Sie den Tab während der Erzeugung sichtbar: Der Browser bremst Tabs im Hintergrund, und eine Karte kann fehlschlagen („Zeitüberschreitung beim Laden der Hintergrundkarte“); „Einzeln wiederholen“ startet sie erneut.
 - „Abbrechen“ (Fortschrittsbalken, bei Vorschauen wie bei der Erzeugung): Die laufende Karte wird fertiggestellt, die folgenden werden nicht erstellt. Eine abgebrochene Erzeugung lädt kein ZIP herunter und legt nichts im Missionsordner ab; ein abgebrochener Stapel nennt, wie viele Missionen fertig sind (ihre Karten liegen bereits in ihrem Ordner); die bereits angezeigten Vorschauen bleiben.
 
 Ausgabeart (PNG, bearbeitbares SVG) und Breite der PNGs: Menü ☰ › „Kartenausgaben“. Die Übersichtskarte ist immer enthalten; sie erscheint unten im Block.
@@ -447,7 +479,8 @@ Dieser Block schlägt für jedes Zeitfenster, das den Schwellenwert „Mindesten
 | Planen (Missionen des Registers) | „Planen“ oder „Ändern“: öffnet das Fenster des Zeitfensters, gefiltert auf die Familie |
 
 - Klicken Sie auf eine Zeile (außerhalb der Schaltfläche), um ihre Zusammenfassung aufzuklappen: Zeitfenster, vorgeschlagene Besatzung, Verstärkungen, Regel, Punktzahl, Kontext (ATC-Sitzungen, Fluglotsen, Events), Simulatoren, bereits zugewiesene Missionen. Das Dreieck ▸ bewirkt dasselbe; es ist immer nur eine Zeile aufgeklappt.
-- „Regeln der Familien und der Punktzahl“ klappt unter der Tabelle auf. Punktzahl = Anzahl der Teilnehmer, + 2 pro Pilot mit eingeschränktem Code, der in seinem Bereich eingesetzt wird, + 1 pro Fluglotse online bei TRAINING (höchstens 2). Eine oft gespielte Familie fällt etwas zurück (je nach Anzahl der Berichte im Register), damit die Missionen abwechseln.
+- Eine Familie wird nur Piloten vorgeschlagen, deren Verfügbarkeit dieses Thema öffnet: in Meine Missionen angegebene Themen, sonst die der Kategorie des Codes aus der Arbeitsmappe (Einstellungen › Zentrum › Verfügbarkeitskategorien), je nach den Präferenzen des Piloten. Die ausgeübten Rollen kommen von den Luftfahrzeugen (Blatt FLOTTE, oder ohne Arbeitsmappe angegebene Luftfahrzeuge).
+- „Regeln der Familien und der Punktzahl“ klappt unter der Tabelle auf. Punktzahl = Anzahl der Teilnehmer, + 2 pro Pilot, der in den eingeschränkten Themen seiner Verfügbarkeit eingesetzt wird, + 1 pro Fluglotse online bei TRAINING (höchstens 2). Eine oft gespielte Familie fällt etwas zurück (je nach Anzahl der Berichte im Register), damit die Missionen abwechseln.
 - Die Anzahl der pro Zeitfenster gezeigten Missionen und die Vorzugsreihenfolge bei gleicher Punktzahl werden unter Einstellungen › Zentrum › ODV-Planung eingestellt.
 - Die Tabelle ist nach Spalte sortierbar. Die aus dem Blatt FLOTTE übernommenen Rollen bleiben Richtwerte: Der Planer entscheidet.
 

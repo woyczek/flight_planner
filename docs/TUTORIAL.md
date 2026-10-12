@@ -1,6 +1,6 @@
 # Tutoriel — votre premier compte rendu de mission
 
-*[Sommaire](README.md) · [Présentation](PRESENTATION.md) · [Installation](tutorial/installation.fr.md) · [Manuel d'exploitation](MANUEL_EXPLOITATION.md)*
+*[Sommaire](README.md) · [Installation](tutorial/installation.fr.md) · [Manuel d'exploitation](MANUEL_EXPLOITATION.md)*
 
 > **Ancien tutoriel, plus tenu à jour.** Pour installer la suite, suivre le
 > **[tutoriel d'installation](tutorial/installation.fr.md)** ([English](tutorial/installation.en.md)) ; pour les
@@ -320,7 +320,7 @@ rien n'est obligatoire ; ce qui est saisi dans une fiche reste dans le navigateu
 ## 13. Préparer une mission SIA : brief, cartes, compte rendu
 
 Exemple : `examples/missions/Mission 02.md` (ravitaillement en vol sur l'axe SIMONE). Détail :
-[SIA_MISSIONS.md](SIA_MISSIONS.md).
+[manuel du planificateur](MANUEL_PLANIFICATEUR.md).
 
 1. **Données** (une fois par cycle AIRAC) : ☰ › Centre — Studio cartographique › bloc 1 ›
    « Dossier SIA XML » → choisir `apps/cpco/` (voir [INSTALL.md](INSTALL.md)).

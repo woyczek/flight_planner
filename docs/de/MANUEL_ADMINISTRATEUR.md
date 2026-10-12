@@ -297,6 +297,8 @@ Status der Tabelle:
 - Wenn sich Zellen ändern: „mora.csv schreiben (alte archiviert)“, dann das Daten-Repository committen.
 - Anderswo ergänzt das MORA-Gitter von X-Plane, wenn die Quelle X-Plane angehakt ist.
 
+Methode des berechneten Gitters: für jedes Feld von 1° × 1° der höchste Punkt aus Gelände (AWS-Terrarium-Höhenkacheln), OpenStreetMap-Gipfeln und Hindernissen der AIXM des SIA, plus 1000 ft (2000 ft oberhalb von 5000 ft), auf das nächste volle Hundert aufgerundet; ohne die OSM-Gipfel wird das Gelände um 100 m erhöht. Abgedeckte Einsatzräume: métropole, Corse und Übersee, dazu die Ausdehnung der anderswo gelegenen Missionen des Registers (nur Gelände und Gipfel). Auf den Karten steht der Wert in der Mitte des Felds in ICAO-Schreibweise (3⁵ = 3500 ft); beim Herauszoomen werden die Felder zu 2 × 2, dann 4 × 4 zusammengefasst (höchster Wert). Die Karte ENR 6.1 des SIA dient nicht als Quelle (unregelmäßige Zonen).
+
 **Konsistenz**: „Prüfen“ kontrolliert Lufträume, Luftfahrzeuge, Flotte, Leistungen und Flugplätze der Missionen.
 Die AIRAC-XML-Dateien (etwa 80 MB pro Zyklus) bleiben außerhalb des Repositorys, wie die Dateien der anderen Quellen. Die MORA-Werte sind berechnet, nicht zertifiziert.
 

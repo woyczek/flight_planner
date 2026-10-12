@@ -1397,6 +1397,7 @@ Expert-level block; at levels 1 to 3, the generation report (maps generated, fai
 The “Index map” appears by itself under the previews; it uses the profile of the general map.
 Formats: ☰ menu › Map outputs (PNG, editable SVG, PNG width from 400 to 5000 px; 1600 px by default).
 If a map fails (base map unavailable, timeout), the ZIP contains `rapport_generation.txt` and the list offers “Retry this one”.
+Keep the tab visible during generation: the browser slows down background tabs, and a map may fail (“Timeout while loading the base map”); “Retry this one” relaunches it.
 The buttons stay greyed out as long as there is no map to produce. During the previews and the generation, the progress bar carries a “Stop” button: the map in progress is completed, the next ones are not made. A stopped generation downloads no ZIP (it would be incomplete); the previews already shown stay. Run “Generate the maps and the ZIP” again for all the maps.
 
 ### SIA database
@@ -1429,6 +1430,7 @@ On a wide screen, at the Expert level, the page has three columns (input and cur
 The bar at the bottom of the page shows “Profile saved — …” or “Unsaved changes — …”. It carries “Reload the local database”, “Save profile” and “Delete this aircraft”. This bar only appears at the Expert level.
 If you change aircraft with unsaved changes, the page offers “Stay”, “Discard and switch” or “Save and switch”.
 ☰ menu: import profiles / CSV / JSON (including Little Navmap `.lnmperf`), import a SimBrief airframe, choose the performance folder, export the `.lnmperf` or JSON profile, save the local database, restore the previous backup, export or import the preferences. These actions are at the Expert level, except exporting and importing the preferences.
+“Save the local database” writes `flight_performance_database.fpdb.json` to the performance folder (otherwise, download); “Restore the previous backup” returns to the state before the last save.
 An import that lands on an existing profile (same identifier, usually the ICAO type) updates it: the imported values win, the fields it leaves empty keep the old value, the RPM tables are merged (units converted).
 
 ### Fuel plan
@@ -1440,6 +1442,7 @@ An import that lands on an existing profile (same identifier, usually the ICAO t
 
 Wind left empty: the page says so (“Unknown wind: ±25 kt range…”) and gives the fuel as a range.
 With an ISA deviation, a “Weather” inset of the Result compares with the standard atmosphere: trip at the plan level (time, fuel), optimum level and ceiling. The QNH does not enter the calculation (flight levels are pressure altitudes).
+The profile stays calibrated in the standard atmosphere; the fuel plan flies in the atmosphere of the day: warmer, less dense air gives a higher TAS at equal IAS, but less thrust or power, a lower climb rate and ceiling, and a higher fuel flow for a jet.
 The “Flight maps” button (Expert level) opens the Flight maps with this flight plan; the maps and the profile are created there on arrival.
 “Flight plan syntax” recalls the accepted forms. Without the SIA database in the browser, only points given as coordinates are recognised.
 
@@ -1459,6 +1462,7 @@ In the detailed view (“Detailed view” / “Simple view” button of the Resu
 Hover over a curve to read the values at that altitude; click to pin a level (white line on all curves). The fuel plan is then calculated at that level.
 The “Chosen climb” sliders of the fuel plan set your chosen climb, drawn in purple on the curves.
 The greyed “unreachable” area lies above the aircraft's ceiling.
+Above the level where the profile's Mach can no longer be held, a jet flies at the highest speed allowed by 92 % of its thrust (“max. thrust” in the Result and the panels); the level is only refused beyond the ceiling.
 Without “Reference altitude (ft)” or “Max ceiling (ft)” in the profile, the model estimates them (cruise IAS and TAS, EUROCONTROL sheet, climb fuel flow, otherwise the typical value of the class) and shows the source under the curves. Fill in these two fields, or calibrate on a SimBrief OFP: it is more reliable.
 
 ### Climb instructions
@@ -1559,6 +1563,7 @@ This block draws a section along the flight plan of the fuel plan: terrain, airs
 The climb follows the performance model of the active aircraft; the descent follows its climb rate. A plan without a level (VFR) has no trajectory.
 An imported SimBrief OFP fills in the route and draws the profile on its own.
 You need the SIA database of this browser, read in the Flight maps (“SIA database” block) or in Settings › Maintenance. Without it, only points given as coordinates are recognised, without airspaces.
+The terrain comes from a terrain model of about 150 m: the ASFC limits follow this model, not the actual ground.
 
 ### OFP audit — raw and calculated values
 

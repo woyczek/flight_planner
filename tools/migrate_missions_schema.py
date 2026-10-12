@@ -1,6 +1,6 @@
 """Passe les missions du dépôt de données au format helo-xp-mission 2.0 (schema_version: '2.0').
 
-Le format 2.0 (docs/SIA_MISSIONS.md, « Format des fichiers de mission ») ne fait qu'ajouter des champs facultatifs
+Le format 2.0 (docs/technique/PROMPT_GENERATEUR_MISSIONS.md § 4, schéma helo-xp-mission) ne fait qu'ajouter des champs facultatifs
 au 1.0 et fixe l'identifiant « lettre de la famille - numéro de l'opération [équipe | Z] » : un fichier 1.0 dont
 l'identifiant est déjà à ce format (missions renumérotées par tools/renumber_missions.py) est conforme, seul son
 repère de version change. Les autres fichiers sont signalés, pas modifiés.

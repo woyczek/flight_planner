@@ -324,6 +324,8 @@ Le bouton « Vérifier » relance les contrôles.
 - Si des cases changent : « Écrire mora.csv (ancien archivé) », puis committez le dépôt de données.
 - Ailleurs, la grille MORA d'X-Plane complète, si la source X-Plane est cochée.
 
+Méthode de la grille calculée : pour chaque case de 1° × 1°, le point le plus haut entre le relief (tuiles d'altitude AWS Terrarium), les sommets OpenStreetMap et les obstacles de l'AIXM du SIA, plus 1000 ft (2000 ft au-delà de 5000 ft), arrondi à la centaine supérieure ; sans les sommets OSM, le relief est majoré de 100 m. Théâtres couverts : métropole, Corse et outre-mer, plus les emprises des missions du registre situées ailleurs (relief et sommets seulement). Sur les cartes, la valeur s'écrit au centre de la case en notation OACI (3⁵ = 3500 ft) ; en zoom arrière, les cases se regroupent par 2 × 2 puis 4 × 4 (valeur la plus haute). La carte ENR 6.1 du SIA ne sert pas de source (zones irrégulières).
+
 **Cohérence** : « Contrôler » vérifie espaces, appareils, flotte, performances et terrains des missions.
 Les XML AIRAC (environ 80 Mo par cycle) restent hors dépôt, comme les fichiers des autres sources. Les valeurs MORA sont calculées, pas certifiées.
 

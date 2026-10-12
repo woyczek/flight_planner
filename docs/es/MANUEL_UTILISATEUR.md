@@ -1397,6 +1397,7 @@ Bloque del nivel Experto; en los niveles 1 a 3, el informe de la generación (ma
 El «Mapa de conjunto» aparece por sí solo bajo las vistas previas; toma el perfil del mapa general.
 Formatos: menú ☰ › Salidas de mapas (PNG, SVG editable, ancho PNG de 400 a 5000 px; 1600 px por defecto).
 Si un mapa falla (fondo no disponible, tiempo agotado), el ZIP contiene `rapport_generation.txt` y la lista ofrece «Reintentar solo este».
+Mantenga la pestaña visible durante la generación: el navegador ralentiza las pestañas en segundo plano y un mapa puede fallar («Tiempo agotado durante la carga del mapa de fondo»); «Reintentar solo este» lo vuelve a lanzar.
 Los botones permanecen en gris mientras no haya ningún mapa que producir. Durante las vistas previas y la generación, la barra de progreso lleva un botón «Detener»: el mapa en curso se termina y los siguientes no se hacen. Una generación detenida no descarga ningún ZIP (estaría incompleto); las vistas previas ya mostradas se quedan. Vuelva a lanzar «Generar los mapas y el ZIP» para todos los mapas.
 
 ### Base de datos SIA
@@ -1429,6 +1430,7 @@ En pantalla ancha, en el nivel Experto, la página tiene tres columnas (entrada 
 La barra al pie de la página indica «Perfil guardado — …» o «Cambios sin guardar — …». Contiene «Recargar la base local», «Guardar perfil» y «Eliminar este avión». Esta barra solo aparece en el nivel Experto.
 Si cambia de avión con cambios sin guardar, la página propone «Quedarse», «Descartar y cambiar» o «Guardar y cambiar».
 Menú ☰: importar perfiles / CSV / JSON (incluido `.lnmperf` de Little Navmap), importar un airframe de SimBrief, elegir la carpeta de rendimiento, exportar el perfil `.lnmperf` o JSON, guardar la base local, restaurar la copia anterior, exportar o importar las preferencias. Estas acciones son del nivel Experto, salvo exportar e importar las preferencias.
+«Guardar la base local» escribe `flight_performance_database.fpdb.json` en la carpeta de rendimiento (si no, descarga); «Restaurar la copia anterior» recupera el estado anterior al último guardado.
 Una importación que coincide con un perfil existente (mismo identificador, casi siempre el tipo OACI) lo actualiza: los valores importados prevalecen, los campos que deja vacíos conservan el valor anterior, las tablas RPM se reúnen (unidades convertidas).
 
 ### Plan de combustible
@@ -1440,6 +1442,7 @@ Una importación que coincide con un perfil existente (mismo identificador, casi
 
 Si deja el viento vacío, la página lo indica («Viento desconocido: horquilla ±25 kt…») y da el combustible como una horquilla.
 Con una desviación ISA, un recuadro «Meteorología» del Resultado compara con la atmósfera estándar: trayecto al nivel del plan (tiempo, combustible), nivel óptimo y techo. El QNH no entra en el cálculo (los niveles de vuelo son altitudes de presión).
+El perfil sigue calibrado en atmósfera estándar; el plan de combustible vuela en la atmósfera del día: un aire más cálido, menos denso, da una TAS mayor a igual IAS, pero menos empuje o potencia, un variómetro y un techo más bajos y un consumo mayor para un reactor.
 El botón «Mapas de vuelo» (nivel Experto) abre los Mapas de vuelo con este plan de vuelo; los mapas y el perfil se crean allí al llegar.
 «Sintaxis del plan de vuelo» recuerda las formas aceptadas. Sin base SIA en el navegador, solo se reconocen los puntos en coordenadas.
 
@@ -1459,6 +1462,7 @@ En la vista detallada (botón «Vista detallada» / «Vista simple» del Resulta
 Pase el ratón por una curva para leer los valores a esa altitud; haga clic para fijar un nivel (línea blanca en todas las curvas). El plan se calcula entonces a ese nivel.
 Los cursores «Ascenso elegido» del plan de combustible ajustan su ascenso elegido, trazado en violeta en las curvas.
 La zona gris «inaccesible» está por encima del techo de la aeronave.
+Por encima del nivel en que el Mach del perfil ya no se puede mantener, un reactor vuela a la mayor velocidad que permite el 92 % de su empuje («empuje máx.» en el Resultado y los paneles); el nivel solo se rechaza más allá del techo.
 Sin «Altitud de referencia (ft)» ni «Techo máx. (ft)» en el perfil, el modelo los estima (IAS y TAS de crucero, ficha EUROCONTROL, consumo de ascenso, si no valor típico de la clase) e indica la fuente bajo las curvas. Rellene estos dos campos o calibre con un OFP de SimBrief: es más fiable.
 
 ### Consignas de ascenso
@@ -1559,6 +1563,7 @@ Este bloque dibuja un corte a lo largo del plan de vuelo del plan de combustible
 El ascenso sigue el modelo de rendimiento del avión activo; el descenso sigue su régimen de descenso. Un plan sin nivel (VFR) no tiene trayectoria.
 Un OFP de SimBrief importado rellena la ruta y traza el perfil por sí solo.
 Se necesita la base SIA de este navegador, leída en los Mapas de vuelo (bloque «Base de datos SIA») o en Ajustes › Mantenimiento. Sin ella, solo se reconocen los puntos en coordenadas, sin espacios aéreos.
+El relieve procede de un modelo de terreno de unos 150 m: los límites ASFC siguen ese modelo, no el suelo real.
 
 ### Auditoría OFP — valores brutos y calculados
 

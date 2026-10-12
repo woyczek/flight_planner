@@ -297,6 +297,8 @@ Estados de la tabla:
 - Si cambian celdas: «Escribir mora.csv (antiguo archivado)», y luego hacer commit del repositorio de datos.
 - En otros lugares, la rejilla MORA de X-Plane completa, si la fuente X-Plane está marcada.
 
+Método de la rejilla calculada: para cada casilla de 1° × 1°, el punto más alto entre el relieve (teselas de altitud AWS Terrarium), las cimas de OpenStreetMap y los obstáculos del AIXM del SIA, más 1000 ft (2000 ft por encima de 5000 ft), redondeado a la centena superior; sin las cimas OSM, el relieve se aumenta en 100 m. Teatros cubiertos: metrópoli, Córcega y ultramar, más las extensiones de las misiones del registro situadas en otros lugares (solo relieve y cimas). En los mapas, el valor se escribe en el centro de la casilla en notación OACI (3⁵ = 3500 ft); al alejar el zoom, las casillas se agrupan de 2 × 2 y luego de 4 × 4 (valor más alto). El mapa ENR 6.1 del SIA no sirve de fuente (zonas irregulares).
+
 **Coherencia**: «Comprobar» verifica espacios, aeronaves, flota, rendimientos y aeródromos de las misiones.
 Los XML AIRAC (unos 80 MB por ciclo) quedan fuera del repositorio, como los archivos de las demás fuentes. Los valores MORA son calculados, no certificados.
 

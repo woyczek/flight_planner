@@ -1439,6 +1439,7 @@ Bloc du niveau Expert ; aux niveaux 1 à 3, le compte rendu de la génération (
 La « Carte d'assemblage » s'affiche d'elle-même sous les aperçus ; elle reprend le profil de la carte générale.
 Formats : menu ☰ › Sorties des cartes (PNG, SVG éditable, largeur PNG de 400 à 5000 px ; 1600 px par défaut).
 Si une carte échoue (fond indisponible, délai dépassé), le ZIP contient `rapport_generation.txt` et la liste propose « Réessayer seule ».
+Gardez l'onglet visible pendant la génération : le navigateur ralentit les onglets en arrière-plan, et une carte peut échouer (« Délai dépassé pendant le chargement du fond de carte ») ; « Réessayer seule » la relance.
 Les boutons restent grisés tant qu'aucune carte n'est à produire. Pendant les aperçus et la génération, la barre de progression porte un bouton « Arrêter » : la carte en cours s'achève, les suivantes ne sont pas faites. Une génération arrêtée ne télécharge aucun ZIP (il serait incomplet) ; les aperçus déjà affichés restent. Relancez « Générer les cartes et le ZIP » pour toutes les cartes.
 
 ### Base de données SIA
@@ -1476,6 +1477,7 @@ Sur écran large, au niveau Expert, la page a trois colonnes (saisie et courbes 
 La barre en bas de page indique « Profil enregistré — … » ou « Modifications non enregistrées — … ». Elle porte « Recharger la base locale », « Enregistrer le profil » et « Supprimer cet avion ». Cette barre n'apparaît qu'au niveau Expert.
 Si vous changez d'avion avec des modifications non enregistrées, la page propose « Rester », « Abandonner et changer » ou « Enregistrer et changer ».
 Menu ☰ : importer profils / CSV / JSON (dont `.lnmperf` de Little Navmap), importer un airframe SimBrief, choisir le dossier performances, exporter le profil `.lnmperf` ou JSON, enregistrer la base locale, restaurer la sauvegarde précédente, exporter ou importer les préférences. Ces actions sont du niveau Expert, sauf exporter et importer les préférences.
+« Enregistrer la base locale » écrit `flight_performance_database.fpdb.json` dans le dossier performances (sinon, téléchargement) ; « Restaurer la sauvegarde précédente » reprend l'état d'avant le dernier enregistrement.
 Un import qui retombe sur un profil existant (même identifiant, le plus souvent le type OACI) le met à jour : les valeurs importées l'emportent, les champs qu'il laisse vides gardent l'ancienne valeur, les tables RPM sont réunies (unités converties).
 
 ### Devis carburant
@@ -1487,6 +1489,7 @@ Un import qui retombe sur un profil existant (même identifiant, le plus souvent
 
 Vent laissé vide : la page l'indique (« Vent inconnu : fourchette ±25 kt… ») et donne le carburant en fourchette.
 Avec un écart ISA, un encart « Météo » du Résultat compare à l'atmosphère standard : trajet au niveau du plan (temps, carburant), niveau optimal et plafond. Le QNH n'entre pas dans le calcul (les niveaux de vol sont des altitudes pression).
+Le profil reste calibré en atmosphère standard ; le devis vole dans l'atmosphère du jour : un air plus chaud, moins dense, donne une TAS plus grande à badin égal, mais moins de poussée ou de puissance, un vario et un plafond plus faibles, et une consommation plus forte pour un réacteur.
 Le bouton « Cartes de vol » (niveau Expert) ouvre les Cartes de vol avec ce plan de vol ; les cartes et le profil y sont créés à l'arrivée.
 « Syntaxe du plan de vol » rappelle les formes acceptées. Sans base SIA dans le navigateur, seuls les points en coordonnées sont reconnus.
 
@@ -1506,6 +1509,7 @@ En vue détaillée (bouton « Vue détaillée » / « Vue simple » du Résultat
 Survolez une courbe pour lire les valeurs à cette altitude ; cliquez pour épingler un niveau (trait blanc sur toutes les courbes). Le devis est alors calculé à ce niveau.
 Les curseurs « Montée choisie » du devis règlent votre montée choisie, tracée en violet sur les courbes.
 La zone grisée « inaccessible » se trouve au-dessus du plafond de l'appareil.
+Au-dessus du niveau où le Mach du profil n'est plus tenable, un réacteur vole à la plus grande vitesse permise par 92 % de sa poussée (« poussée max. » dans le Résultat et les panneaux) ; le niveau n'est refusé qu'au-delà du plafond.
 Sans « Altitude de référence (ft) » ni « Plafond max (ft) » dans le profil, le modèle les estime (badin et TAS de croisière, fiche EUROCONTROL, débit de montée, sinon valeur type de la classe) et indique la source sous les courbes. Renseignez ces deux champs, ou calibrez sur un OFP SimBrief : c'est plus fiable.
 
 ### Consignes de montée
@@ -1606,6 +1610,7 @@ Ce bloc dessine une coupe le long du plan de vol du devis : relief, espaces aér
 La montée suit le modèle de performances de l'avion actif ; la descente suit son vario. Un plan sans niveau (VFR) n'a pas de trajectoire.
 Un OFP SimBrief importé remplit la route et trace le profil tout seul.
 Il faut la base SIA de ce navigateur, lue dans les Cartes de vol (bloc « Base de données SIA ») ou dans Paramètres › Maintenance. Sans elle, seuls les points en coordonnées sont reconnus, sans espaces aériens.
+Le relief vient d'un modèle de terrain d'environ 150 m : les limites ASFC suivent ce modèle, pas le sol réel.
 
 ### Audit OFP — valeurs brutes et calculées
 

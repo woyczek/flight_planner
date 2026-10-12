@@ -291,7 +291,7 @@ CR submission web service. Event `local-store-restored` after a restoration.
 **Saved IndexedDB databases** (section `indexed` of the file): `FlightPerfCache` (OFPs, calibrations,
 planner airframes) and `LandingPerformanceDashboardCache` (loaded landing log) — list
 `IDB_SAVED`. Not saved: SIA database (re-read from the official folder), folder authorisations.
-Full inventory of the data and of its origin: [DONNEES.md](../DONNEES.md).
+Full inventory of the data and of its origin: [operations manual § 2](../MANUEL_EXPLOITATION.md).
 
 ### Backup reminder
 
@@ -555,6 +555,13 @@ the cycles and the folder inventory. Optional dependency: `SiaAero.parseAixm` (`
   1.0 and 2.0 both read; 2.0 = family-letter identifiers, `operation`, `exercise`, `zones.kind`, `route_order`, studio
   settings in `maps[]`, `meta`; `tools/migrate_missions_schema.py` only bumps the marker). Format reference:
   [PROMPT_GENERATEUR_MISSIONS.md](PROMPT_GENERATEUR_MISSIONS.md).
+- Markdown input (`SiaMission.fromTexts` / `fromTextsBatch`): the generated `summary<ID>.md` (intro lines `Type :`,
+  `Aéronef :`, `Départ :`…, turning-point and team tables, rendezvous list; no coordinates for target and zones), or the
+  legacy block format (`TYPE:`, `TARGET:`, `TURNING POINTS:` with `- PT1 | SIMIP | 46.444167 | 1.486000 | role`, `RDV:`,
+  `ZONE:`, `MAPS TO PRODUCE:`, `NOTES:`; example `examples/missions/Mission 02.md`). The YAML wins when both are loaded.
+  A pasted batch (ChatGPT answer, or YAML and Markdown one after the other) is split per `mission.id` /
+  `# Mission <ID>`; text outside missions (intro, VALIDATION, "Mission suivante") and series side files
+  (`maps_manifest.md`, `VALIDATION.txt`…) are dropped and reported.
 - `shared/mission_registry.js`: registry and mission folder `data/missions/<letter>_<FAMILY>/<ID>/` = `mission<ID>.yaml`
   (source of truth), `summary<ID>.md` (a rendering of the YAML), `suivi.yaml`, `cartes/`, `recu/`, `versions/`; no PDF
   stored.
@@ -564,3 +571,8 @@ the cycles and the folder inventory. Optional dependency: `SiaAero.parseAixm` (`
 - `apps/planner/map_planner.html` (Flight maps) is GENERATED from `apps/cpco/map_parser.html` by
   `python tools/build_map_planner.py`: never edit it by hand; its mission lives in a separate namespace
   (`SIA_MISSION_NS = 'planner'`).
+- Flight performance model: `shared/flight_performance_model.js` (`FlightPerfModel`), shared by the fuel quote, the
+  curves and the vertical profiles; its physics (ISA, parabolic polar, thrust / power lapse, calibration on the
+  profile, model ceiling) is documented in the file header.
+- Landing Dashboard test data: `python apps/landing/generate_test_landings.py` writes a synthetic CSV (thousands of
+  landings, 248 types).

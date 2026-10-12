@@ -150,12 +150,4 @@ Tout est dans [docs/](docs/README.md) : installation détaillée, tutoriel, manu
 | `tools/` | outils de maintenance |
 | `repository_tree` | relais pour les anciennes versions (contrôle des mises à jour), provisoire — rien à y faire |
 
----
-
-*English*: a set of local web pages for SO Group Virtual flight operations (mission reports, reporting, fuel and SIA
-charts, Centre missions, pilot page). Download the folder, run **`lancer.cmd`** (Windows) or **`sh lancer.sh`**
-(macOS / Linux), then in the Settings page that opens choose **this folder** on the first row. Data come from a private
-repository (or a `.zip` set sent by mail, dropped next to the launcher). Full documentation:
-[docs/PRESENTATION_en.md](docs/PRESENTATION_en.md).
-
 © 2026 Gaétan Ryckeboer (RBR) and contributors — code under the [Mozilla Public License 2.0](LICENSES/MPL-2.0.txt), content (documentation, images) under [CC BY-SA 4.0](LICENSES/CC-BY-SA-4.0.txt). Third-party code, images, data and services, with their licences and required credits: [LICENSE.md](LICENSE.md).
