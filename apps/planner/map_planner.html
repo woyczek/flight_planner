@@ -5671,11 +5671,14 @@ $('revertStudio').onclick = async () => {
       `Zur ${v} Version von ${id} zurückkehren? ${st.fields} seit ${h} geänderte(s) Feld(er) gehen verloren; der Generator folgt.`,
       `¿Volver a la versión ${v} de ${id}? Se perderán ${st.fields} campo(s) modificado(s) desde las ${h}; el generador sigue.`
     ]);
-  const ok = window.AppFramework?.ask ? await window.AppFramework.ask(msg, {
+  // confirmation dans la page (socle attendu), jamais la boîte native du navigateur
+  for (let i = 0; i < 300 && !window.AppFramework?.ask; i++) await new Promise(r => setTimeout(r, 100));
+  if (!window.AppFramework?.ask) return;
+  const ok = await window.AppFramework.ask(msg, {
     ok: tl(['Annuler les modifications', 'Undo changes', 'Änderungen verwerfen', 'Deshacer los cambios']),
     cancel: tl(['Garder', 'Keep', 'Behalten', 'Conservar']),
     danger: true
-  }) : confirm(msg);
+  });
   if (!ok) return;
   const saved = SiaMission.save({
     ...doc,

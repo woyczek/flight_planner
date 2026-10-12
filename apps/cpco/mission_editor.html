@@ -1572,16 +1572,28 @@ setInterval(() => renderSaveState(), 30000); // « il y a n min » tenu à jour
    Chaque action dit d'abord ce qu'elle va créer ou retirer (AppFramework.ask avec les identifiants). */
 const upId = v => String(v ?? '').trim().toUpperCase();
 const listOf = v => Array.isArray(v) ? v : v == null || v === '' ? [] : [v];
-/** Confirmation (AppFramework.ask, attendu 3 s au plus au chargement de la page, sinon confirm) ; ok : libellé du bouton. */
-/** Fin du chargement de la page (AppFramework, chargé en dernier, donc langue de la page appliquée) : 3 s au plus. */
+/** Socle de la page prêt (AppFramework, chargé en dernier, donc langue de la page appliquée) : attendu 30 s au plus ;
+ *  vrai s'il est là. */
 async function uiReady() {
-  for (let i = 0; i < 30 && !window.AppFramework?.ask; i++) await new Promise(r => setTimeout(r, 100))
+  for (let i = 0; i < 300 && !window.AppFramework?.ask; i++) await new Promise(r => setTimeout(r, 100));
+  return !!window.AppFramework?.ask
 }
-async function askOk(msg, ok) {
-  await uiReady();
-  return window.AppFramework?.ask ? window.AppFramework.ask(msg, {
-    ok
-  }) : confirm(msg)
+/** Confirmation dans la page (AppFramework.ask, socle attendu) — jamais la boîte native du navigateur (confirm), qui
+ *  gèle l'onglet pendant le chargement ; socle absent : pas de confirmation, réponse « non », la ligne d'état le dit.
+ *  ok : libellé du bouton ; opts : cancel, danger. */
+async function askOk(msg, ok, opts = {}) {
+  if (!await uiReady()) {
+    setStatus(trl(['Confirmation impossible : la page n’a pas fini de se charger. Réessayer.',
+      'Confirmation impossible: the page has not finished loading. Try again.',
+      'Bestätigung nicht möglich: Die Seite ist noch nicht fertig geladen. Erneut versuchen.',
+      'Confirmación imposible: la página no ha terminado de cargarse. Volver a intentarlo.'
+    ]), 'err');
+    return false
+  }
+  return window.AppFramework.ask(msg, {
+    ok,
+    ...opts
+  })
 }
 /** Première lettre d'équipage libre parmi les identifiants ids (A, B… ; Z réservé à l'organisation) ; '' si aucune. */
 function nextCrewLetter(ids) {
@@ -3724,7 +3736,6 @@ async function newMission({
   order = false,
   fresh = false // page ouverte par ?new : la mission partagée n'a pas été chargée dans la page
 } = {}) {
-  await uiReady(); // message de confirmation dans la langue de la page
   // mission en cours : celle de la page, sinon la mission partagée (page ouverte par ?new sans la charger)
   const shared = fresh ? SiaMission.load() : null,
     cur = shared?.yaml?.mission?.id ? shared : state.yaml?.mission?.id ? (syncNarrative(), {
@@ -3733,7 +3744,8 @@ async function newMission({
     }) : null;
   if (cur && (cur.yaml.title || cur.yaml.mission?.type)) { // formulaire vide (page sans mission) : rien à perdre
     const st = SiaMission.savedState(cur);
-    if ((st.fields || st.kind === 'new') && !await askOk(trf([
+    // confirmation seulement s'il y a à perdre ; socle attendu d'abord (message dans la langue de la page)
+    if ((st.fields || st.kind === 'new') && (await uiReady(), true) && !await askOk(trf([
         'La mission {id} n’est pas enregistrée dans le dossier{n} : l’abandonner pour une nouvelle mission ? Sinon, « Enregistrer dans le dossier » d’abord.',
         'The mission {id} is not saved to the folder{n}: drop it for a new mission? Otherwise, “Save to the folder” first.',
         'Die Mission {id} ist nicht im Ordner gespeichert{n}: für eine neue Mission verwerfen? Sonst zuerst „Im Ordner speichern“.',
@@ -3791,7 +3803,8 @@ async function newMission({
   }], 'generator'); // lot de l'ancienne opération oublié
   renderAll();
   syncBatchUi();
-  setStatus(trl(['Nouvelle mission prête.', 'New mission ready.', 'Neue Mission bereit.', 'Nueva misión lista.']), 'ok');
+  uiReady().then(() => setStatus(trl(['Nouvelle mission prête.', 'New mission ready.', 'Neue Mission bereit.', 'Nueva misión lista.']),
+    'ok')); // langue de la page appliquée
   if (order) $('orderGpt').click()
 }
 $('newMission').onclick = () => newMission();
@@ -3935,11 +3948,10 @@ $('revertMission').onclick = async () => {
       minute: '2-digit'
     })
   });
-  const ok = window.AppFramework?.ask ? await window.AppFramework.ask(msg, {
-    ok: trl(['Annuler les modifications', 'Undo changes', 'Änderungen verwerfen', 'Deshacer los cambios']),
+  const ok = await askOk(msg, trl(['Annuler les modifications', 'Undo changes', 'Änderungen verwerfen', 'Deshacer los cambios']), {
     cancel: trl(['Garder', 'Keep', 'Behalten', 'Conservar']),
     danger: true
-  }) : confirm(msg);
+  });
   if (!ok) return;
   state = {
     ...state,

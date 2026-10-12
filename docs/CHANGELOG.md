@@ -136,6 +136,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Corrigé
 
+- **Mission generator and studio: no native browser dialog** — the "New mission" confirmation (`?new=1` with an unsaved
+  shared mission) and both "Undo changes" fell back to `confirm()` when called before the page framework was ready,
+  freezing the tab in Chrome; they now wait for the framework (in-page `AppFramework.ask`, 30 s at most) and never use
+  `confirm`. Opening `?new=1` with a saved shared mission no longer waits for anything.
 - **Aircraft types: types without an ICAO designator not found (GZ20, Goodyear GZ-20 airship)** — Aviation Fanatic
   files them under `__CODE` with an empty ICAO field; the launcher now looks there too. The record is marked non-ICAO
   (`icao: false`) with the generic designator for a flight plan (`fpl`, ICAO Doc 8643): SHIP for an airship (powered
