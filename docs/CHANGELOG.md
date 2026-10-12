@@ -68,7 +68,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   sections hors titres générés) ; un `.md` seul reste la source complète. Missions déjà chargées assainies à
   l'ouverture (`cleanNarrative`, « n rubrique(s) issue(s) du brief rangé retirée(s) ») ; rubriques créées dans le
   générateur marquées `named`. PDF du brief : filtre par la même table, chaque rubrique une seule fois (« — compléments »
-  pour une rubrique du générateur sur un sujet déjà imprimé). Manuel administrateur (4 langues).
+  pour une rubrique du générateur sur un sujet déjà imprimé). Résumé et description reconnus dans les 4 langues
+  (« Detailed description » → « Description détaillée ») ; à l'assainissement, leur texte rejoint le résumé ou la
+  description restés vides. Manuel administrateur (4 langues).
 
 ## [5.1.0] — 2026-10-09
 

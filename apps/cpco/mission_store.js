@@ -66,6 +66,13 @@
     const list = doc?.narrative?.sections;
     if (!Array.isArray(list)) return 0;
     const keep = list.filter(x => x?.named || briefKey(x?.title) < 0);
+    // « Summary » / « Detailed description »… copiés en rubriques : leur texte va au résumé ou à la description s'ils sont vides
+    for (const x of list) {
+      const k = keep.includes(x) ? -1 : briefKey(x?.title),
+        t = String(x?.content || '').trim();
+      if (k === 1 && t && !String(doc.narrative.summary || '').trim()) doc.narrative.summary = t;
+      if (k === 2 && t && !String(doc.narrative.detailed || '').trim()) doc.narrative.detailed = t;
+    }
     doc.narrative.sections = keep;
     return list.length - keep.length;
   }
@@ -84,8 +91,9 @@
     }
     /** Section Markdown dont le titre contient l'un des mots. */
     const find = words => sections.find(s => words.some(w => norm(s.title).includes(w))),
-      sum = find(['summary', 'resume', 'synthese']),
-      det = find(['description_detaillee', 'description_complete', 'deroulement']);
+      // résumé et description : titres générés reconnus dans les 4 langues (BRIEF_TITLES), puis les anciens mots
+      sum = sections.find(x => briefKey(x.title) === 1) || find(['summary', 'resume', 'synthese']),
+      det = sections.find(x => briefKey(x.title) === 2) || find(['description_detaillee', 'description_complete', 'deroulement']);
     const strip = t => t.replace(NARR_MARK, '').trim();
     return {
       title,
