@@ -99,9 +99,9 @@ From the order form to the PDF brief, in nine steps. Names in quotes are button 
 1. **Open the generator**: sidebar “Missions”, “Generator” tab (Design level), or “Generate a mission” in the registry.
 2. **Set the order**: “Order from ChatGPT…” unfolds the form. Choose “Type”, “Subtype”, “Theatre”, “Flying teams”, “Ground teams” and “Duration”; in “More options”, “Rendezvous”, “Air refuelling”, “Coordinated exercise” and, if needed, the aircraft of each team (empty = a fleet aircraft).
 3. **Create the mission**, either way. With ChatGPT: “Order: copy prompt and open ChatGPT”, paste the prompt into ChatGPT and send it, then load the answer (`mission<ID>.yaml` and `summary<ID>.md`) in “YAML and/or Markdown”, or “or paste its content…” then “Read the mission”. Without ChatGPT: “Create the skeleton here” creates the mission(s) at once, without narrative.
-4. **Complete**: “Identification” (title), “Mission texts” (“Summary”, “Detailed description”, then “Add a text section”: main objective, risks, rendezvous…). Fields outlined with dots are still empty; the “Skeleton: …” line counts the points to place and the texts to write. Point coordinates (departure, target, turning points, rendezvous, area): at the Expert level, “All YAML data” block, `lat` and `lon` fields in decimal degrees (six decimals). An operation with several teams is browsed with ◀ ▶ at the top of the page.
+4. **Complete**: “Identification” (title), “Mission texts” (“Summary”, “Detailed description”, then “Add a text section”: main objective, risks, rendezvous…). Fields outlined with dots are still empty; the “Skeleton: …” line counts the points to place and the texts to write. Points without coordinates (departure, target, turning points, rendezvous, area) are placed in the studio, step 6; at the Expert level, the “All YAML data” block also lets you type `lat` and `lon` in decimal degrees. An operation with several teams is browsed with ◀ ▶ at the top of the page.
 5. **Check**: “Estimated duration” (probable route, outbound, time on area, return) and “Areas to activate” (activation requests to make).
-6. **Produce the maps**: “Open in the studio” (or the “Map studio” tab), the mission follows. In “Maps to produce”, one line per expected map: choose the profile, frame it in the control map and “Keep this framing”, then “Generate the maps and the ZIP” (“Generate the n missions” for an operation). The PNGs are stored in `cartes/` of the mission folder.
+6. **Produce the maps**: “Open in the studio” (or the “Map studio” tab), the mission follows. If points without coordinates remain, the “Points to place (n)” panel of the Route block lists them: “Click the map” then a click on the control map, or an airfield, a beacon, a point searched by code or name; a placed point moves by dragging it, an area takes a radius in km. In “Maps to produce”, one line per expected map: choose the profile, frame it in the control map and “Keep this framing”, then “Generate the maps and the ZIP” (“Generate the n missions” for an operation). The PNGs are stored in `cartes/` of the mission folder.
 7. **Save**: “Save to the folder” in the studio (map settings), then in the generator; the mission is recorded in the registry (“File in the missions folder…” if the page asks).
 8. **Hand out the documents**: in the generator, “Maps of the final package” must say “ready for the PDF” for each map; “Documents” › “Crew brief (PDF)”, or “All exercise documents” for an operation.
 9. **Next**: in the registry, “Assign…” gives the mission to pilots; “Duplicate” starts again from an existing mission (next identifier, title “(copie)”).
@@ -249,6 +249,14 @@ Flight plan, control map and vertical section are linked: hover a point in one, 
 
 Control map: “Map” and “Profile” lists, “ZIP” box, “Refresh”, “Keep this framing” (the generated map will use the displayed frame), “Recentre”, “Automatic framing”, “⧉ Window” (separate synchronised window), “⤢ Enlarge” (Esc to go back). On the map: drag a point, click the route to insert, right-click to delete.
 “Profile settings: section, aircraft, climb rate, outputs”: floor and ceiling of the section, aircraft, climb and descent, `profil_vertical.png` image in the outputs, default trace of the route.
+
+### Points to place
+
+A mission without coordinates (generator skeleton) shows in the Route block the “Points to place (n)” panel: departure, target, turning points, rendezvous, area centres and airfields without position, in route order.
+- “Click the map”: the line is selected, the cursor becomes a cross; a click on the control map places the point (Esc cancels).
+- Search field: airfield, beacon, designated point, VFR point or AAR track (“LFLY”, “OLIVIA ARIP”) of the SIA base, by code or name, or coordinates “45.72, 4.94”.
+- A placed point moves by dragging it on the map; an area takes a radius in km. Identical departure and arrival are placed together.
+- The coordinates go into the shared mission: the generator sees its “points to place” count go down. Everything placed: “Generate the maps and the ZIP”.
 
 ### Maps to produce
 

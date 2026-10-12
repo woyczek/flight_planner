@@ -12,6 +12,15 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Ajouté
 
+- **Studio cartographique : « Points à placer (n) »** — pour une mission sans coordonnées (squelette du générateur),
+  le bloc Route liste départ, cible, points tournants, rendez-vous, centres de zones et terrains sans position (ordre de
+  `route_order`) ; « Cliquer la carte » (curseur en croix, un clic pose le point, Échap annule) ou recherche dans la
+  base SIA (terrains, balises, points désignés, points VFR, ARIP / ARCP des axes AAR ; ou « lat, lon ») ; point posé
+  déplaçable en le glissant, rayon des zones en km, départ et arrivée identiques posés ensemble ; coordonnées écrites
+  dans la mission partagée (`editDoc`), le compte du générateur suit ; tout posé : « Générer les cartes et le ZIP ».
+  Coordonnées nulles plus prises pour 0,0 dans les cartes d'exercice, d'opération et des pistes (`hasPos`).
+  `apps/planner/map_planner.html` régénéré. Manuel administrateur (4 langues) : sous-section « Points à placer »,
+  tutoriel mis à jour.
 - **Générateur de missions : « Créer le squelette ici », sans ChatGPT** (V2_FABLE § 8, L3) — à côté de « Commander :
   copier le prompt et ouvrir ChatGPT », les mêmes réglages (`MissionOrder.requestOf`, une seule source pour les deux
   chemins) donnent la ou les missions complètes mais vides de récit (`apps/cpco/mission_skeleton.js`,

@@ -5,7 +5,14 @@
   if (!window.RepositoryContentI18n) return;
   window.RepositoryContentI18n([
     // ---- générateur de mission
-    // squelette sans ChatGPT (générateur)
+    // squelette sans ChatGPT (générateur) ; points à placer (studio)
+    ["Points à placer", "Points to place", "Zu setzende Punkte", "Puntos que colocar"],
+    ["Cliquer la carte, ou chercher un terrain, une balise, un point de la base SIA (code ou nom) ; un point posé se déplace en le glissant sur la carte.",
+      "Click the map, or search an airfield, a beacon, a point of the SIA base (code or name); a placed point moves by dragging it on the map.",
+      "Karte anklicken oder einen Flugplatz, ein Funkfeuer, einen Punkt der SIA-Datenbank suchen (Code oder Name); ein gesetzter Punkt wird durch Ziehen auf der Karte verschoben.",
+      "Pulse el mapa, o busque un aeródromo, una radiobaliza, un punto de la base SIA (código o nombre); un punto colocado se mueve arrastrándolo en el mapa."
+    ],
+    ["Tout est placé. ", "Everything is placed. ", "Alles gesetzt. ", "Todo está colocado. "],
     ["Ouvrir au studio", "Open in the studio", "Im Studio öffnen", "Abrir en el estudio"],
     // « Dupliquer » (générateur)
     ["Résumé", "Summary", "Zusammenfassung", "Resumen"],
