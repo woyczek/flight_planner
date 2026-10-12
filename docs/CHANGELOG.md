@@ -102,6 +102,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Corrigé
 
+- **Mission registry: "Generate a mission" opened the last mission instead of a new one** — the generator reloaded
+  the shared mission; it now opens a blank mission (`mission_editor.html?new`, same as "New mission"), the shared
+  mission being left as it is until the new one is edited.
 - **Aircraft outside the fleet: completion survives leaving the page** — a type added while a pass is running is now
   queued by the launcher (`AIRCRAFT['queue']`, short pass started when the running one ends) instead of waiting in the
   page, where it was lost if the page was closed; on opening, the page resumes following a running or queued pass
