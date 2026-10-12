@@ -3639,9 +3639,12 @@ $('exportPdf').onclick = async () => {
   }
 };
 // Mission partagée avec le studio : lue au démarrage, enregistrée à chaque modification, relue quand
-// le studio la change (emprises, cartes ajoutées ou supprimées).
+// le studio la change (emprises, cartes ajoutées ou supprimées). « Générer une mission » du registre (?new) : mission
+// vierge, la mission partagée n'est pas reprise (elle reste telle quelle tant que la nouvelle n'est pas modifiée).
+const FRESH = new URLSearchParams(location.search).has('new');
+if (FRESH) history.replaceState(null, '', location.pathname + location.hash);
 {
-  const d = SiaMission.load();
+  const d = FRESH ? null : SiaMission.load();
   if (d && d.yaml) state = {
     ...state,
     yaml: d.yaml,
@@ -3654,7 +3657,8 @@ $('exportPdf').onclick = async () => {
     shareMission(true)
   }, 300)
 }
-renderAll();
+if (FRESH) $('newMission').click(); // même mission vierge que « Nouvelle mission »
+else renderAll();
 let shareTimer = 0;
 
 /** Mission courante partagée avec les autres pages (SiaMission.save) : tout de suite, ou 400 ms après la dernière saisie. */

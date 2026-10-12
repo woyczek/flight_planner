@@ -1342,7 +1342,8 @@
     gb.dataset.icon = 'plus';
     gb.textContent = t(['Générer une mission', 'Generate a mission', 'Eine Mission erzeugen', 'Generar una misión']);
     gb.onclick = () => {
-      location.href = new URL('mission_editor.html', location.href).href;
+      // ?new : mission vierge (sans lui, le générateur rouvrait la dernière mission partagée)
+      location.href = new URL('mission_editor.html?new', location.href).href;
     };
     fb.prepend(gb);
     const wb = document.createElement('button');
