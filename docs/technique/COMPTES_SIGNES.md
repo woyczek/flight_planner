@@ -1,106 +1,106 @@
-# Comptes et données signés (mode groupe) — conception
+# Signed accounts and data (group mode) — design
 
-État : **conception, à relire** (8 octobre 2026). Chantier « comptes et données décentralisés par git, signés ».
-Décisions de l'utilisateur reprises telles quelles ; choix techniques proposés marqués *proposé*.
+Status: **design, to be reviewed** (8 October 2026). Work item “accounts and data decentralised through git, signed”.
+The user's decisions are reproduced as they stand; proposed technical choices are marked *proposed*.
 
-## 1. But et limites
+## 1. Goal and limits
 
-Aujourd'hui, tout membre qui peut pousser dans le dépôt de données peut :
+Today, any member who can push to the data repository can:
 
-- se donner le rôle `admin_centre` ;
-- remplacer l'empreinte du mot de passe d'un autre ;
-- écrire des affectations à la place du Centre.
+- give themselves the `admin_centre` role;
+- replace someone else's password hash;
+- write assignments in place of the Centre.
 
-Les pages croient ce qu'elles lisent ([audit du 7 octobre](AUDIT_SECURITE_2026-10-07.md), E7).
+The pages believe what they read ([audit of 7 October](AUDIT_SECURITE_2026-10-07.md), E7).
 
-Le chantier ne cherche pas à empêcher l'écriture dans git : c'est impossible sans serveur. Il fait **refuser par chaque
-navigateur ce qui n'est pas signé par qui de droit**. Une donnée falsifiée arrive bien sur le poste, mais elle n'est
-pas prise en compte, et la raison du refus est affichée.
+The work item does not try to prevent writing to git: that is impossible without a server. It makes **each
+browser refuse what is not signed by the right person**. Forged data does reach the computer, but it is
+not taken into account, and the reason for the refusal is shown.
 
-**Ce qui reste hors d'atteinte :**
+**What remains out of reach:**
 
-- **Script injecté sur un poste.** Un script qui tourne dans la suite sur un poste peut signer avec la clé de ce
-  poste : elle n'est pas exportable, mais elle reste utilisable par la page. D'où la règle : **le mode groupe ne
-  s'active qu'avec la CSP en place** (lot 4 de l'audit, `connect-src` fermé, poignées de dossiers en lecture).
-- **Lecture.** Tout membre lit tout ce qui est dans git. La confidentialité viendra du chiffrement par destinataire
-  (§ 9, étape 2).
-- **Empreintes des mots de passe.** Elles circulent avec le registre, en PBKDF2-SHA256 à 310 000 itérations
-  (décision : pas d'autre format). Un mot de passe faible se casse hors ligne. Avec les clés de poste, le mot de passe
-  n'est plus qu'un second facteur.
+- **Script injected on a device.** A script running in the suite on a device can sign with that device's
+  key: it cannot be exported, but it remains usable by the page. Hence the rule: **group mode is only
+  enabled with the CSP in place** (batch 4 of the audit, `connect-src` closed, read-only folder handles).
+- **Reading.** Every member reads everything that is in git. Confidentiality will come from per-recipient encryption
+  (§ 9, step 2).
+- **Password hashes.** They travel with the registry, in PBKDF2-SHA256 with 310,000 iterations
+  (decision: no other format). A weak password can be cracked offline. With device keys, the password
+  is only a second factor.
 
-## 2. Deux modes
+## 2. Two modes
 
-| | **Standalone** (aujourd'hui, par défaut) | **Groupe** |
+| | **Standalone** (today, by default) | **Group** |
 |---|---|---|
-| Pour qui | un poste seul, ou un groupe sans registre partagé | un SO Group qui partage `data/` par git |
-| Accès au Centre | mot de passe de `data/config/centre.json` (`DEFA` par défaut), **affiché** à côté du bouton « Activer le Centre » : verrou d'usage | rôle `admin_centre` dans le registre signé ; le mot de passe ne sert plus |
-| Utilisateurs, rôles | fiches `data/utilisateurs/<TRI>.json`, non signées (comme aujourd'hui) | registre signé `data/utilisateurs/_registre.json` ; les fiches gardent nom et préférences |
-| Affectations | non signées | signées par un admin, une signature par affectation |
-| Choix | bouton dans Paramètres › Centre ; mode affiché dans le bilan du premier lancement et dans Paramètres › Centre | idem |
+| For whom | a single computer, or a group without a shared registry | an SO Group that shares `data/` through git |
+| Centre access | password from `data/config/centre.json` (`DEFA` by default), **shown** next to the “Enable the Centre” button: usage lock | `admin_centre` role in the signed registry; the password is no longer used |
+| Users, roles | records `data/utilisateurs/<TRI>.json`, unsigned (as today) | signed registry `data/utilisateurs/_registre.json`; the records keep the name and preferences |
+| Assignments | unsigned | signed by an admin, one signature per assignment |
+| Choice | button in Settings › Centre; mode shown in the first-run summary and in Settings › Centre | same |
 
-**Passage au mode groupe** (bouton « Passer en mode groupe », Paramètres › Centre) :
+**Switching to group mode** (“Switch to group mode” (« Passer en mode groupe ») button, Settings › Centre):
 
-1. Il faut l'**accès au Centre** (mot de passe) et la **CSP** du lanceur. Le lanceur annonce `csp: true` dans
-   `/__setup/status` ; sans elle, le bouton est grisé et dit pourquoi.
-2. L'utilisateur connecté devient le **premier admin**. Son poste crée sa paire de clés, puis la **clé de secours**
-   (§ 6), exportée tout de suite dans un fichier protégé par mot de passe.
-3. La version 1 du registre est écrite et signée par ce poste. Elle reprend les fiches existantes (trigramme, nom,
-   rôle, actif, empreinte du mot de passe) : **rien n'est perdu**.
-4. Le groupe est **« en constitution »** tant qu'il n'a pas **deux admins distincts avec une clé de poste**, en plus
-   de la clé de secours (décision). Dans cet état :
-   - le registre est signé et vérifié ;
-   - les règles du mode groupe ne s'appliquent pas encore aux affectations ;
-   - le Centre reste aussi accessible par mot de passe.
-   Une alerte permanente l'indique dans Paramètres › Centre.
-5. Le **deuxième admin** s'enrôle (§ 5). Le premier l'approuve et le nomme admin dans une nouvelle version : le groupe
-   est **actif**.
+1. It requires **Centre access** (password) and the launcher's **CSP**. The launcher announces `csp: true` in
+   `/__setup/status`; without it, the button is greyed out and says why.
+2. The signed-in user becomes the **first admin**. Their device creates its key pair, then the **recovery key**
+   (§ 6), exported straight away to a password-protected file.
+3. Version 1 of the registry is written and signed by this device. It takes over the existing records (trigram, name,
+   role, active, password hash): **nothing is lost**.
+4. The group is **“being set up”** as long as it does not have **two distinct admins with a device key**, in addition
+   to the recovery key (decision). In this state:
+   - the registry is signed and verified;
+   - the group-mode rules do not yet apply to assignments;
+   - the Centre also remains accessible by password.
+   A permanent alert says so in Settings › Centre.
+5. The **second admin** enrols (§ 5). The first one approves them and names them admin in a new version: the group
+   is **active**.
 
-Retour au mode standalone : bouton réservé aux admins. Le registre est gardé, simplement plus lu ; les fiches restent
-à jour, car chaque version du registre les met à jour.
+Going back to standalone mode: button reserved for admins. The registry is kept, simply no longer read; the records stay
+up to date, because each version of the registry updates them.
 
-## 3. Clés de poste
+## 3. Device keys
 
-- **Où** : `shared/sog_keys.js`, base IndexedDB propre `sogKeys`. Elle reste hors de la sauvegarde locale
-  (`browser_store.js`), et une clé non exportable ne peut de toute façon pas être sérialisée.
-- **Quoi** : deux paires par poste, toutes deux non exportables (`extractable: false`).
-  - **Signature** : ECDSA P-256 avec SHA-256.
-  - **Échange** : ECDH P-256, réservée au chiffrement de l'étape 2. Elle est créée dès maintenant, pour ne pas devoir
-    réenrôler les postes plus tard.
-- **Un poste, c'est un navigateur sur un ordinateur.** Un pilote avec deux PC a deux clés, enrôlées chacune.
-  Navigateur réinitialisé ou profil effacé : clé perdue, il faut réenrôler. Une notification l'explique au premier
-  chargement.
-- **Empreinte** : SHA-256 de la clé publique de signature au format SPKI. On affiche les 64 premiers bits en 4 groupes
-  hexadécimaux, `7F3A-91C2-04BE-D85E`, et on garde l'empreinte complète dans les fichiers.
-- **Identifiant de clé** (`kid`) : l'empreinte complète en hexadécimal.
+- **Where**: `shared/sog_keys.js`, its own IndexedDB database `sogKeys`. It stays out of the local backup
+  (`browser_store.js`), and a non-exportable key cannot be serialised anyway.
+- **What**: two pairs per device, both non-exportable (`extractable: false`).
+  - **Signature**: ECDSA P-256 with SHA-256.
+  - **Exchange**: ECDH P-256, reserved for the encryption of step 2. It is created right now, so as not to have to
+    re-enrol the devices later.
+- **A device is a browser on a computer.** A pilot with two PCs has two keys, each enrolled.
+  Browser reset or profile cleared: key lost, re-enrolment needed. A notification explains it on the first
+  load.
+- **Fingerprint**: SHA-256 of the signature public key in SPKI format. The first 64 bits are shown in 4 hexadecimal
+  groups, `7F3A-91C2-04BE-D85E`, and the full fingerprint is kept in the files.
+- **Key identifier** (`kid`): the full fingerprint in hexadecimal.
 
-### Algorithme
+### Algorithm
 
-Champ **`alg`** dans chaque clé publique et chaque signature. L'enveloppe accepte `ES256` (ECDSA P-256, SHA-256,
-signature brute r‖s de 64 octets) et `Ed25519`.
+**`alg`** field in each public key and each signature. The envelope accepts `ES256` (ECDSA P-256, SHA-256,
+raw r‖s signature of 64 bytes) and `Ed25519`.
 
-**Choix : `ES256` pour toutes les clés créées.** C'est la réponse de l'utilisateur : ECDSA P-256, pris en charge par
-tous les navigateurs de la suite. `Ed25519` est accepté en vérification si le navigateur le connaît. Un changement
-d'algorithme plus tard ne demandera qu'une nouvelle clé par poste, sans changer de format.
+**Choice: `ES256` for all keys created.** This is the user's answer: ECDSA P-256, supported by
+all the browsers of the suite. `Ed25519` is accepted for verification if the browser knows it. A change
+of algorithm later will only require a new key per device, without changing the format.
 
-Signature et vérification se font **uniquement dans le navigateur** (WebCrypto). C'est la décision « go pour la
-signature dans le navigateur » : le lanceur reste en bibliothèque standard Python, sans aucune cryptographie, et ne
-vérifie rien.
+Signing and verification are done **only in the browser** (WebCrypto). This is the decision “go for
+signing in the browser”: the launcher stays on the Python standard library, without any cryptography, and
+verifies nothing.
 
-Mesures de la session BUGS SOG (Chrome 154, message de 6,5 Ko, moyenne sur 1 000 essais) :
+Measurements from the BUGS SOG session (Chrome 154, 6.5 KB message, average over 1,000 runs):
 
-| | Génération | Signature | Vérification | 500 affectations vérifiées |
+| | Generation | Signature | Verification | 500 assignments verified |
 |---|---|---|---|---|
-| ECDSA P-256 (navigateur) | 0,3 ms | 0,045 ms | 0,087 ms | < 50 ms |
-| Ed25519 (navigateur) | 0,1 ms | 0,028 ms | 0,045 ms | < 25 ms |
-| Ed25519 en Python pur (lanceur, RFC 8032) | — | — | 3,1 ms | 1,5 s |
+| ECDSA P-256 (browser) | 0.3 ms | 0.045 ms | 0.087 ms | < 50 ms |
+| Ed25519 (browser) | 0.1 ms | 0.028 ms | 0.045 ms | < 25 ms |
+| Ed25519 in pure Python (launcher, RFC 8032) | — | — | 3.1 ms | 1.5 s |
 
-Le coût est négligeable dans le navigateur. Le mode dégradé par le lanceur est écarté.
+The cost is negligible in the browser. The degraded mode through the launcher is ruled out.
 
-## 4. Format signé
+## 4. Signed format
 
-**JSON canonique** (JCS, RFC 8785) : clés triées par unités UTF-16, sans espaces, chaînes et nombres sérialisés comme
-le fait `JSON.stringify` (déterministe d'un navigateur à l'autre ; seuls des navigateurs signent et vérifient) ;
-`NaN` et `Infinity` refusés. La signature porte sur les octets UTF-8 de ce texte.
+**Canonical JSON** (JCS, RFC 8785): keys sorted by UTF-16 code units, no whitespace, strings and numbers serialised as
+`JSON.stringify` does (deterministic from one browser to another; only browsers sign and verify);
+`NaN` and `Infinity` refused. The signature covers the UTF-8 bytes of this text.
 
 ```json
 {
@@ -112,16 +112,16 @@ le fait `JSON.stringify` (déterministe d'un navigateur à l'autre ; seuls des n
 }
 ```
 
-- `contenu` est signé tel quel, canonisé.
-- `at` est informatif. Il ne fait pas partie de ce qui est signé : la date utile est celle du contenu.
-- Une signature est valable si :
-  - `kid` désigne une clé du registre accepté, active ;
-  - le rôle du titulaire de la clé autorise ce type de contenu ;
-  - la vérification WebCrypto réussit.
+- `contenu` is signed as is, canonicalised.
+- `at` is informative. It is not part of what is signed: the relevant date is that of the content.
+- A signature is valid if:
+  - `kid` designates an active key of the accepted registry;
+  - the role of the key holder allows this type of content;
+  - the WebCrypto verification succeeds.
 
-## 5. Registre des utilisateurs
+## 5. User registry
 
-Fichier `data/utilisateurs/_registre.json`, enveloppe signée dont le `contenu` est :
+File `data/utilisateurs/_registre.json`, signed envelope whose `contenu` is:
 
 ```json
 {
@@ -147,121 +147,121 @@ Fichier `data/utilisateurs/_registre.json`, enveloppe signée dont le `contenu` 
 }
 ```
 
-L'état `etat` vaut `constitution` ou `actif` (§ 2).
+The `etat` state is `constitution` or `actif` (§ 2).
 
-### Règles d'acceptation
+### Acceptance rules
 
-Elles sont appliquées par chaque navigateur, à chaque lecture.
+They are applied by each browser, on each read.
 
-1. **Version 1** (fondation) : signée par une clé qu'elle déclare elle-même admin.
-   - Elle est acceptée sur **confiance au premier usage**.
-   - Le poste affiche l'empreinte du premier admin et demande de la confirmer après l'avoir comparée à celle reçue par
-     un autre canal (Discord, SMS, mail), avec les boutons « Confirmer » et « Refuser ».
-   - Le poste retient l'empreinte confirmée.
-2. **Version n > 1** :
-   - signée par **une clé admin ou de secours de la version acceptée** (n − 1 ou antérieure, voir point 3) ;
-   - `version` strictement plus grande que celle acceptée ;
-   - `precedente` égale à l'empreinte du contenu accepté, sauf saut de version (point 3).
-3. **Saut de versions** (poste longtemps hors ligne) : une version n + k est acceptée si elle est signée par un admin
-   de la version acceptée **et** que la chaîne `precedente` remonte jusqu'à elle. Les versions intermédiaires se lisent
-   dans l'historique git par le lanceur (`git log -p` sur le fichier) ; *proposé* : route `/__setup/registre-historique`,
-   qui renvoie les contenus sans rien vérifier. Si la chaîne est introuvable, la version est refusée et le poste garde
-   l'ancienne, avec un message.
-4. **Jamais de retour arrière.** La dernière version acceptée est gardée dans IndexedDB (`sogKeys`, magasin
-   `registre`). Une version plus ancienne ou égale venant de git est ignorée.
-5. **Refus affiché** : notification flottante et ligne dans Paramètres › Centre › Utilisateurs (« Registre v8 refusé :
-   signé par une clé inconnue (kid …) »). Le poste continue avec la version acceptée.
-6. **Un admin ne peut pas retirer le dernier admin**, ni descendre sous deux admins en état actif. Le registre
-   resterait signable par la clé de secours, mais la règle est vérifiée à la signature et à la lecture.
+1. **Version 1** (foundation): signed by a key that it itself declares as admin.
+   - It is accepted on **trust on first use**.
+   - The device shows the first admin's fingerprint and asks for it to be confirmed after comparing it with the one received through
+     another channel (Discord, SMS, email), with the “Confirm” and “Reject” (« Refuser ») buttons.
+   - The device remembers the confirmed fingerprint.
+2. **Version n > 1**:
+   - signed by **an admin or recovery key of the accepted version** (n − 1 or earlier, see point 3);
+   - `version` strictly greater than the accepted one;
+   - `precedente` equal to the hash of the accepted content, except for a version jump (point 3).
+3. **Version jump** (device offline for a long time): a version n + k is accepted if it is signed by an admin
+   of the accepted version **and** the `precedente` chain goes back to it. The intermediate versions are read
+   from the git history by the launcher (`git log -p` on the file); *proposed*: route `/__setup/registre-historique`,
+   which returns the contents without verifying anything. If the chain cannot be found, the version is refused and the device keeps
+   the old one, with a message.
+4. **Never any rollback.** The last accepted version is kept in IndexedDB (`sogKeys`, store
+   `registre`). An older or equal version coming from git is ignored.
+5. **Refusal shown**: floating notification and a line in Settings › Centre › Users and rights (“Registry v8 refused:
+   signed by an unknown key (kid …)” (« Registre v8 refusé : signé par une clé inconnue (kid …) »)). The device carries on with the accepted version.
+6. **An admin cannot remove the last admin**, nor go below two admins in the active state. The registry
+   would remain signable by the recovery key, but the rule is checked at signing and at reading.
 
-### Conflits git
+### Git conflicts
 
-Deux admins qui publient une version en même temps créent un conflit sur `_registre.json`. `tools/data_sync.py`
-garde **le plus grand `version`**, et l'autre fichier va dans `_conflits/` comme aujourd'hui. Python ne vérifie rien.
-Si deux versions ont le même numéro, le navigateur n'accepte que celle qui suit sa chaîne. L'admin dont la version est
-écartée voit sa modification non appliquée et la refait, avec un bouton qui recharge, réapplique et signe.
+Two admins who publish a version at the same time create a conflict on `_registre.json`. `tools/data_sync.py`
+keeps **the highest `version`**, and the other file goes into `_conflits/` as today. Python verifies nothing.
+If two versions have the same number, the browser only accepts the one that follows its chain. The admin whose version is
+set aside sees their change not applied and redoes it, with a button that reloads, reapplies and signs.
 
-## 6. Clé de secours
+## 6. Recovery key
 
-Décision : deux admins au minimum, **plus** une clé de secours, et la refondation en dernier recours.
+Decision: two admins at least, **plus** a recovery key, and re-founding as a last resort.
 
-- **Création** : au passage en mode groupe, par le premier admin.
-  - Paire ECDSA P-256 **exportable cette fois seulement**.
-  - La clé privée (PKCS#8) est chiffrée en AES-GCM, sous une clé dérivée d'un mot de passe choisi pour l'occasion
-    (PBKDF2-SHA256, 600 000 itérations, sel aléatoire).
-  - Elle est téléchargée en `sog-cle-secours-<empreinte>.json`, puis effacée de la mémoire.
-  - Le poste ne la garde pas. La page demande de ranger le fichier hors ligne (clé USB) et de noter le mot de passe à
-    part.
-- **Statut** : déclarée dans `secours` du registre, elle **compte comme une clé admin** pour signer une version.
-- **Usage** : Paramètres › Centre › Utilisateurs › « Utiliser la clé de secours ».
-  - On choisit le fichier et on tape le mot de passe ; la clé est importée en mémoire, non exportable, pour une seule
+- **Creation**: when switching to group mode, by the first admin.
+  - ECDSA P-256 pair, **exportable this time only**.
+  - The private key (PKCS#8) is encrypted with AES-GCM, under a key derived from a password chosen for the occasion
+    (PBKDF2-SHA256, 600,000 iterations, random salt).
+  - It is downloaded as `sog-cle-secours-<empreinte>.json`, then wiped from memory.
+  - The device does not keep it. The page asks for the file to be stored offline (USB stick) and for the password to be written down
+    separately.
+- **Status**: declared in `secours` of the registry, it **counts as an admin key** for signing a version.
+- **Use**: Settings › Centre › Users and rights › “Use the recovery key” (« Utiliser la clé de secours »).
+  - You choose the file and type the password; the key is imported into memory, non-exportable, for a single
     signature.
-  - Usage type : nommer un nouvel admin quand les admins ont perdu leurs postes.
-  - Le registre trace l'usage (`by: "secours"`).
-- **Remplacement** : un admin peut créer une nouvelle clé de secours (nouvelle version du registre, l'ancienne retirée).
+  - Typical use: naming a new admin when the admins have lost their devices.
+  - The registry records the use (`by: "secours"`).
+- **Replacement**: an admin can create a new recovery key (new version of the registry, the old one removed).
 
-### Refondation (dernier recours)
+### Re-founding (last resort)
 
-Si toutes les clés admin et la clé de secours sont perdues :
+If all the admin keys and the recovery key are lost:
 
-1. Un utilisateur clique « Refonder le groupe ». C'est un nouveau registre en version 1, avec un nouvel identifiant de
-   groupe (`groupe` : aléatoire), signé par lui.
-2. Chaque poste voit alors « Le registre a été refondé » et doit reconfirmer l'empreinte du nouvel admin, reçue hors
-   bande, comme au premier usage.
-3. Sans confirmation, le poste garde l'ancien registre et refuse le nouveau.
+1. A user clicks “Re-found the group” (« Refonder le groupe »). This is a new registry in version 1, with a new group
+   identifier (`groupe`: random), signed by them.
+2. Each device then sees “The registry has been re-founded” (« Le registre a été refondé ») and must reconfirm the new admin's fingerprint, received out
+   of band, as on first use.
+3. Without confirmation, the device keeps the old registry and refuses the new one.
 
-## 7. Enrôlement et révocation
+## 7. Enrolment and revocation
 
-1. **Poste** (Mon profil › « Ce poste ») :
-   - la page affiche l'empreinte du poste, `7F3A-91C2-04BE-D85E` ;
-   - le bouton « Demander l'accès » écrit `data/utilisateurs/demandes/<TRI>_<empreinte>.json`, avec trigramme, nom
-     du poste, clés publiques (signature et échange), date, et une signature par la clé du poste (preuve de
-     possession) ;
-   - la demande part au prochain « Synchroniser ».
-2. **Hors bande** : le pilote transmet son empreinte à un admin (Discord, SMS, mail).
-3. **Admin** (Paramètres › Centre › Utilisateurs › Demandes) :
-   - pour chaque demande : trigramme, nom du poste, empreinte calculée par la page de l'admin ;
-   - l'admin compare avec l'empreinte reçue, puis clique « Approuver » (nouvelle version du registre avec la clé,
-     signée) ou « Refuser » (demande supprimée).
-   - Une demande pour un trigramme inconnu crée l'utilisateur, en rôle `utilisateur`.
-4. **Révocation** : « Révoquer » sur une clé publie une nouvelle version du registre sans cette clé. Ses signatures
-   postérieures sont refusées. Ses signatures antérieures restent valables tant que leur contenu reste en place
-   (*proposé* : une affectation signée par une clé révoquée reste valable, sinon il faudrait tout re-signer).
-   Désactiver un utilisateur (`actif: false`) révoque toutes ses clés.
+1. **Device** (My profile › “This device” (« Ce poste »)):
+   - the page shows the device fingerprint, `7F3A-91C2-04BE-D85E`;
+   - the “Request access” (« Demander l'accès ») button writes `data/utilisateurs/demandes/<TRI>_<empreinte>.json`, with trigram, device
+     name, public keys (signature and exchange), date, and a signature by the device key (proof of
+     possession);
+   - the request goes out with the next “Synchronise”.
+2. **Out of band**: the pilot sends their fingerprint to an admin (Discord, SMS, email).
+3. **Admin** (Settings › Centre › Users and rights › “Requests” (« Demandes »)):
+   - for each request: trigram, device name, fingerprint calculated by the admin's page;
+   - the admin compares it with the fingerprint received, then clicks “Approve” (« Approuver ») (new version of the registry with the key,
+     signed) or “Reject” (request deleted).
+   - A request for an unknown trigram creates the user, with the `utilisateur` role.
+4. **Revocation**: “Revoke” (« Révoquer ») on a key publishes a new version of the registry without that key. Its later
+   signatures are refused. Its earlier signatures remain valid as long as their content stays in place
+   (*proposed*: an assignment signed by a revoked key remains valid, otherwise everything would have to be re-signed).
+   Deactivating a user (`actif: false`) revokes all their keys.
 
-## 8. Affectations signées
+## 8. Signed assignments
 
-- **Seuls les admins affectent** (décision).
-- **Une signature par affectation**, pas par fichier. `missions/affectations.json` est fusionné **entrée par entrée** par
-  `data_sync.py`, ce qui casserait une signature de fichier. Chaque entrée devient
-  `{ …affectation…, "sig": { "kid", "alg", "sig" } }`, avec la signature portée sur l'entrée canonisée sans `sig`.
-  `affectations.yaml` (copie par mission) suit la même règle.
-- **Lecture en mode groupe actif** : une entrée non signée, ou signée par une clé qui n'est pas admin dans le registre
-  accepté, est **ignorée**. Une notification donne le nombre d'entrées et la raison ; le détail apparaît dans le
+- **Only admins assign** (decision).
+- **One signature per assignment**, not per file. `missions/affectations.json` is merged **entry by entry** by
+  `data_sync.py`, which would break a file signature. Each entry becomes
+  `{ …affectation…, "sig": { "kid", "alg", "sig" } }`, with the signature covering the canonicalised entry without `sig`.
+  `affectations.yaml` (copy per mission) follows the same rule.
+- **Reading in active group mode**: an entry that is unsigned, or signed by a key that is not admin in the accepted
+  registry, is **ignored**. A notification gives the number of entries and the reason; the detail appears in the
   Centre.
-- **Migration** : bouton admin « Signer les affectations existantes ». L'admin relit le nombre d'entrées, puis signe.
-- **Journal** (`affectations_log.json`) : entrées signées de la même façon, réunion inchangée.
+- **Migration**: admin button “Sign existing assignments” (« Signer les affectations existantes »). The admin checks the number of entries, then signs.
+- **Log** (`affectations_log.json`): entries signed in the same way, merging unchanged.
 
-## 9. Étapes suivantes (hors de ce chantier)
+## 9. Next steps (outside this work item)
 
-- **Dispos et CR** signés par la clé du pilote auteur (même enveloppe par fiche).
-- **Visibilité**, d'abord par un filtre d'affichage (lot L6) : un pilote ne voit que ses missions venant du SOG.
-- **Chiffrement par destinataire** :
-  - ECDH P-256 entre la clé d'échange du rédacteur et celle de chaque destinataire ;
-  - HKDF, puis AES-GCM sur une clé de contenu aléatoire, enveloppée pour chaque destinataire et pour les admins.
+- **Availability and mission reports (CR)** signed by the key of the authoring pilot (same envelope per record).
+- **Visibility**, first through a display filter (batch L6): a pilot only sees their missions coming from the SOG.
+- **Per-recipient encryption**:
+  - ECDH P-256 between the writer's exchange key and that of each recipient;
+  - HKDF, then AES-GCM on a random content key, wrapped for each recipient and for the admins.
 
-## 10. Lots et fichiers
+## 10. Batches and files
 
-| Lot | Contenu | Fichiers |
+| Batch | Content | Files |
 |---|---|---|
-| L0 | ce document | `docs/technique/COMPTES_SIGNES.md` |
-| L1 | Centre standalone : `data/config/centre.json` (`DEFA` par défaut, affiché), fin de `CPCO_HASH`, mode affiché | `shared/repository_nav.js` (bloc Centre), `shared/data_admin.js` (carte « Activer le Centre »), `apps/settings/premier_lancement.html` + `_i18n.js`, `tools/jeu_essai`, `tools/data_template`, `tools/launch.py` (`csp` dans `/__setup/status`, plus tard) |
-| L2 | clés de poste, empreinte, enveloppe, JSON canonique, banc d'essai | `shared/sog_keys.js` (nouveau), `tools/crypto_banc.html` (nouveau), `shared/browser_store.js` (exclusion) |
-| *audit lot 4* | CSP du lanceur, poignées en lecture : **préalable au mode groupe** | `tools/launch.py`, `shared/file_access.js`, pages |
-| L3 | registre signé, mode groupe, clé de secours, refondation | `shared/sog_registry.js` (nouveau), `shared/users.js`, `tools/data_sync.py` (conflit du registre), `tools/launch.py` (`index_users`) |
-| L4 | enrôlement, approbation, révocation | `shared/settings_panels.js` (Utilisateurs), Mon profil |
-| L5 | affectations signées | `shared/assignments.js`, `shared/assign_dialog.js` |
-| L6 | filtre d'affichage de Mes missions | `apps/pilot/mes_missions.html` |
+| L0 | this document | `docs/technique/COMPTES_SIGNES.md` |
+| L1 | standalone Centre: `data/config/centre.json` (`DEFA` by default, shown), end of `CPCO_HASH`, mode shown | `shared/repository_nav.js` (Centre block), `shared/data_admin.js` (“Enable the Centre” card), `apps/settings/premier_lancement.html` + `_i18n.js`, `tools/jeu_essai`, `tools/data_template`, `tools/launch.py` (`csp` in `/__setup/status`, later) |
+| L2 | device keys, fingerprint, envelope, canonical JSON, test bench | `shared/sog_keys.js` (new), `tools/crypto_banc.html` (new), `shared/browser_store.js` (exclusion) |
+| *audit batch 4* | launcher CSP, read-only handles: **prerequisite for group mode** | `tools/launch.py`, `shared/file_access.js`, pages |
+| L3 | signed registry, group mode, recovery key, re-founding | `shared/sog_registry.js` (new), `shared/users.js`, `tools/data_sync.py` (registry conflict), `tools/launch.py` (`index_users`) |
+| L4 | enrolment, approval, revocation | `shared/settings_panels.js` (Users), My profile |
+| L5 | signed assignments | `shared/assignments.js`, `shared/assign_dialog.js` |
+| L6 | display filter for My missions | `apps/pilot/mes_missions.html` |
 
-Chaque lot comprend les 4 langues, les notifications flottantes, les manuels ×4, le CHANGELOG et `format_sources.py`.
-Les essais du verrou du Centre se font avec le mot de passe fourni par l'utilisateur, sans contournement.
+Each batch includes the 4 languages, the floating notifications, the manuals ×4, the CHANGELOG and `format_sources.py`.
+The Centre lock tests are done with the password supplied by the user, without any workaround.

@@ -43,7 +43,10 @@
       last: 'Dernière sauvegarde',
       noFile: 'Aucune sauvegarde dans ce dossier.',
       error: 'Échec',
-      denied: 'Accès au dossier non autorisé.'
+      denied: 'Accès au dossier non autorisé.',
+      fallback: 'Dossier de sauvegarde « {d} » non autorisé : sauvegarde téléchargée à la place. Pour écrire de nouveau dans le dossier : ☰ › Données locales › Dossier de sauvegarde….',
+      asking: 'Le navigateur demande l’accès au dossier de sauvegarde « {d} » : l’accepter dans sa fenêtre (près de la barre d’adresse).',
+      gone: 'Dossier de sauvegarde « {d} » introuvable (déplacé ou supprimé) : en choisir un autre (☰ › Données locales › Dossier de sauvegarde…).'
     },
     en: {
       title: 'Local data',
@@ -60,7 +63,10 @@
       last: 'Last backup',
       noFile: 'No backup in this folder.',
       error: 'Failed',
-      denied: 'Folder access not granted.'
+      denied: 'Folder access not granted.',
+      fallback: 'Backup folder “{d}” not authorised: backup downloaded instead. To write to the folder again: ☰ › Local data › Backup folder….',
+      asking: 'The browser asks for access to the backup folder “{d}”: accept it in its window (near the address bar).',
+      gone: 'Backup folder “{d}” not found (moved or deleted): choose another one (☰ › Local data › Backup folder…).'
     },
     de: {
       title: 'Lokale Daten',
@@ -77,7 +83,10 @@
       last: 'Letzte Sicherung',
       noFile: 'Keine Sicherung in diesem Ordner.',
       error: 'Fehlgeschlagen',
-      denied: 'Ordnerzugriff nicht erlaubt.'
+      denied: 'Ordnerzugriff nicht erlaubt.',
+      fallback: 'Sicherungsordner „{d}“ nicht freigegeben: Sicherung stattdessen heruntergeladen. Um wieder in den Ordner zu schreiben: ☰ › Lokale Daten › Sicherungsordner….',
+      asking: 'Der Browser fragt nach Zugriff auf den Sicherungsordner „{d}“: im Browserfenster bestätigen (neben der Adressleiste).',
+      gone: 'Sicherungsordner „{d}“ nicht gefunden (verschoben oder gelöscht): einen anderen wählen (☰ › Lokale Daten › Sicherungsordner…).'
     },
     es: {
       title: 'Datos locales',
@@ -94,7 +103,10 @@
       last: 'Última copia',
       noFile: 'Ninguna copia en esta carpeta.',
       error: 'Error',
-      denied: 'Acceso a la carpeta no autorizado.'
+      denied: 'Acceso a la carpeta no autorizado.',
+      fallback: 'Carpeta de copia «{d}» no autorizada: copia descargada en su lugar. Para volver a escribir en la carpeta: ☰ › Datos locales › Carpeta de copia….',
+      asking: 'El navegador pide acceso a la carpeta de copia «{d}»: aceptarlo en su ventana (junto a la barra de direcciones).',
+      gone: 'Carpeta de copia «{d}» no encontrada (movida o eliminada): elegir otra (☰ › Datos locales › Carpeta de copia…).'
     }
   };
   /** Texte de l'interface (TEXT) dans la langue de la page, variables {x} remplacées. */
@@ -153,9 +165,15 @@
     let permission = await handle.queryPermission?.({
       mode: 'readwrite'
     });
-    if (permission !== 'granted' && request) permission = await handle.requestPermission?.({
-      mode: 'readwrite'
-    });
+    if (permission !== 'granted' && request) {
+      // demande du navigateur (bulle près de la barre d'adresse) : annoncée, sinon le clic semblait ne rien faire
+      window.AppFramework?.notify?.(t('asking', {
+        d: handle.name
+      }), 'info');
+      permission = await handle.requestPermission?.({
+        mode: 'readwrite'
+      });
+    }
     return permission === 'granted' ? handle : null;
   }
   // Choix du dossier : sélecteur ouvert sur le dossier actuel (composant FileAccess).
@@ -449,9 +467,17 @@
       lastQuick = quick;
       return true; // rien de nouveau
     }
-    const writable = await (await dir.getFileHandle(FILE, {
-      create: true
-    })).createWritable();
+    let writable;
+    try {
+      writable = await (await dir.getFileHandle(FILE, {
+        create: true
+      })).createWritable();
+    } catch (e) {
+      if (e?.name === 'NotFoundError') throw new Error(t('gone', {
+        d: dir.name
+      }));
+      throw e;
+    }
     await writable.write(text);
     await writable.close();
     try {
@@ -466,7 +492,11 @@
     }
     lastQuick = quick;
     reminder();
-    if (!quiet) status(`${t('saved')} : ${dir.name}/${FILE} — ${count} ${t('keys')}`);
+    if (!quiet) {
+      const done = `${t('saved')} : ${dir.name}/${FILE} — ${count} ${t('keys')}`;
+      status(done);
+      window.AppFramework?.notify?.(done, 'ok');
+    }
     return true;
   }
   /** Télécharge la sauvegarde (sans dossier autorisé). */
@@ -633,7 +663,9 @@
     try {
       await fn();
     } catch (error) {
+      // aussi en notification : le message d'état est dans le menu ☰, fermé — le clic semblait ne rien faire
       status(`${t('error')} : ${error.message}`);
+      window.AppFramework?.notify?.(`${t('error')} : ${error.message}`, 'err');
     }
   };
   box.querySelector('[data-store="save"]').onclick = run(async () => {
@@ -769,7 +801,8 @@
       reminder();
       return;
     }
-    if (window.showDirectoryPicker && !(await idbGet('folder:__store'))) {
+    const kept = await idbGet('folder:__store');
+    if (window.showDirectoryPicker && !kept) {
       await chooseFolder();
       if (await save({
           request: true
@@ -779,6 +812,9 @@
       }
     }
     await download();
+    if (kept) window.AppFramework?.notify?.(t('fallback', {
+      d: kept.name
+    }), 'warn');
     nativeSet.call(localStorage, PENDING, '0');
     reminder();
   });

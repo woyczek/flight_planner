@@ -6,6 +6,8 @@ chapitre de la page en cours. Le Centre et l'administration de la suite sont dé
 [manuel administrateur](MANUEL_ADMINISTRATEUR.md) ; pour un premier compte rendu pas à pas, voir le
 [tutoriel](TUTORIAL.md). Index de toute la documentation : [index documentaire](README.md).
 
+Captures réalisées le 12 octobre 2026 dans l’interface française. Les valeurs affichées, les rubriques disponibles et le design peuvent varier selon votre profil et vos réglages.
+
 ## Prise en main
 <!-- page: index.html -->
 
@@ -136,6 +138,11 @@ Cette page est la première entrée de la barre latérale, à tout niveau d'util
 Chaque bloc ne propose qu'une action. Les données viennent des affectations du Centre (voir « Mes missions ») et du registre des comptes rendus : rien n'est à ressaisir. La page se relit toute seule quand vous changez de langue, de trigramme ou de session.
 La page d'accueil la propose aussi en tête de « Mes tâches ».
 
+<!-- capture-manuels: utilisateur-aujourdhui -->
+![Aujourd’hui : prochaine mission, comptes rendus à écrire et calendrier de la semaine.](images/captures-manuels/utilisateur-aujourdhui.png)
+
+*Figure 1 — Aujourd’hui : prochaine mission, comptes rendus à écrire et calendrier de la semaine.*
+
 ### Ma prochaine mission
 
 - La mission qui vous est affectée la plus proche (à venir, ou décollée depuis moins de six heures) : heure en UTC, mission et titre, appareil (type et immatriculation), terrain, indicatif ; « convoyage » ou « astreinte, prêt à … » le cas échéant, et « ● nouvelle » tant que vous ne l'avez pas ouverte.
@@ -181,6 +188,11 @@ La liste des missions qui vous sont affectées pour la semaine affichée, triée
 - Une adresse `?mission=…` venant de « Aujourd'hui » ou de « Nouveau compte rendu » affiche la semaine de cette mission (missions passées montrées au besoin) ; avec `?do=cr`, le CR commence dès l'ouverture du dossier.
 - **Pilote**, **Appareils maîtrisés**, **Simulateurs** : trois boutons sous la liste, vers Paramètres › Mon profil (rubrique « Identité et réseaux » pour le trigramme ; rubrique « Appareils et simulateurs », à la carte des appareils ou à celle des simulateurs). Le bouton « Pilote » affiche le trigramme utilisé pour trouver vos missions et vos disponibilités. En mode production ou pendant une usurpation, c'est le trigramme de la connexion.
 - Ces trois boutons apparaissent à partir du niveau Planification (2). Au niveau Équipage (1), seul « Pilote » apparaît, tant que le trigramme n'est pas réglé.
+
+<!-- capture-manuels: utilisateur-mes-missions -->
+![Mes missions : décollage en UTC, titre, appareil, terrain et indicatif de la mission affectée.](images/captures-manuels/utilisateur-mes-missions.png)
+
+*Figure 2 — Mes missions : décollage en UTC, titre, appareil, terrain et indicatif de la mission affectée.*
 
 ### Mission
 
@@ -303,6 +315,11 @@ Astuces et limites :
 
 Pour la façon dont le Centre exploite ces déclarations, voir [disponibilités et réorganisation](technique/DISPOS_ET_REORGANISATION.md).
 
+<!-- capture-manuels: utilisateur-disponibilites -->
+![Mes disponibilités : palette des catégories, grille horaire en UTC et saisie d’une plage précise.](images/captures-manuels/utilisateur-disponibilites.png)
+
+*Figure 3 — Mes disponibilités : palette des catégories, grille horaire en UTC et saisie d’une plage précise.*
+
 ## Mon profil
 <!-- page: apps/settings/profil.html -->
 
@@ -324,6 +341,11 @@ Ce que la suite vous montre, selon votre usage. Quatre cartes, une par niveau (n
 | 4 · Expert | cartographe, analyste | tous les outils, studio cartographique |
 
 « Outils facultatifs » : Cartes de vol (route, cartes topographiques, approche), Carburant (performances et devis carburant), Atterrissages (tableau de bord des atterrissages), Analyse des missions (reporting des comptes rendus) ; ils se cochent à n'importe quel niveau et se rangent sous « Outils » dans la barre latérale ; au niveau 4, « Tous inclus au niveau Expert ». Par défaut : niveau 4 si le Centre est activé dans ce navigateur, sinon niveau 1. Le niveau ne donne aucun droit : le Centre garde son accès.
+
+<!-- capture-manuels: utilisateur-profil -->
+![Mon profil : les quatre niveaux d’utilisation et les outils facultatifs.](images/captures-manuels/utilisateur-profil.png)
+
+*Figure 4 — Mon profil : les quatre niveaux d’utilisation et les outils facultatifs.*
 
 ### Identité et réseaux
 
@@ -383,6 +405,8 @@ Les types de la flotte que vous possédez et maîtrisez, et vos simulateurs. Le 
 
 - Cocher « Maîtrisé » coche aussi « Possédé » ; décocher « Possédé » décoche « Maîtrisé ».
 
+**Carte « Autres appareils (hors flotte) »** : les types que vous possédez dans votre simulateur sans qu'ils soient dans la flotte. Tapez un désignateur OACI, un modèle ou un nom d'usage, même incomplet ou avec des espaces et des tirets (« PC-12 », « A 400 M », « SE 210 », « Sud Aviation Caravelle ») : pendant la frappe, une liste propose les types de la flotte, de la base des types de ce poste et de la liste OACI publiée avec la suite, avec leur nom (« S210 — Caravelle ») et leur origine (flotte, base du poste, liste OACI, déclaré par un autre pilote) ; ce calcul est local, sans réseau. Choisissez une ligne (clic, flèches puis Entrée) ou cliquez « Ajouter » : le type rejoint le tableau, coché « Possédé ». Pour corriger ou supprimer un type que vous avez ajouté, cliquez sur sa ligne : son code passe dans le champ et « Ajouter » devient « Remplacer » (« Maîtrisé » est reporté sur le nouveau type), à côté de « Supprimer » et « Annuler » (ou Échap). Un type de la flotte saisi ici est simplement coché dans la carte « Appareils » ; un désignateur que rien n'approche est accepté tel quel. Une saisie trop vague (« cara » : Caravelle ou Caravan ?) est refusée : le message dit ce qui a été lu, et le type le plus proche est repris dans le champ — « Ajouter » pour le confirmer. La base de ce poste n'est complétée par le lanceur qu'au clic sur « Ajouter », pour le type ajouté s'il lui manque : la ligne affiche « complétion de la base en cours… » le temps d'une passe courte (quelques secondes), une seule passe à la fois — si une passe tourne déjà (Maintenance), le lanceur met le type en file et le complète à la fin de cette passe. La passe se fait dans le lanceur : quitter la page ne l'interrompt pas, et en revenant la ligne reprend « complétion de la base en cours… » jusqu'à la fiche. Un type retiré que les sources officielles ne connaissent plus (Caravelle S210) est cherché en dernier recours sur Aviation Fanatic ; s'il n'y est pas non plus, il reste ajouté sous son code et son nom d'usage, avec la note « introuvable (OACI, EUROCONTROL, Aviation Fanatic) ». Ces types partent avec vos disponibilités déclarées, comme ceux de la flotte : le Centre les voit pour les affectations, et les autres pilotes les retrouvent dans cette carte, avec la colonne « Aussi déclaré par » — il leur suffit de cocher « Possédé ».
+
 **Carte « Simulateurs »** : cochez les simulateurs et outils installés.
 
 Il n'y a pas de bouton « Enregistrer » : chaque coche est gardée aussitôt dans ce navigateur, puis recopiée dans vos semaines de disponibilités déjà déclarées, à partir de la semaine en cours. Le message du bas indique combien de semaines ont été mises à jour.
@@ -425,6 +449,11 @@ La forme des pages : arrondis, densité, titres, barre latérale.
 - « Sobre » : matières et plaques seulement, sur toutes les pages.
 
 **« Couleur Aqua »** (niveau Expert) : couleur des boutons et icônes du design Aqua (Bleu, Turquoise, Vert, Graphite, Violet, Orange, Rouge, Rose), ou « Couleur de chaque application ». Les icônes d'état gardent leurs couleurs d'origine.
+
+<!-- capture-manuels: utilisateur-apparence -->
+![Apparence : choix du design, du décor et de la couleur ; le design Aqua est sélectionné.](images/captures-manuels/utilisateur-apparence.png)
+
+*Figure 5 — Apparence : choix du design, du décor et de la couleur ; le design Aqua est sélectionné.*
 
 ### Graphiques
 
@@ -593,6 +622,11 @@ Astuces :
   la page de CR ;
 - la page s'affiche à chaque fois : elle ne vous renvoie pas d'office vers la dernière famille.
 
+<!-- capture-manuels: utilisateur-nouveau-cr -->
+![Nouveau compte rendu : recherche d’une famille et choix parmi les familles de missions.](images/captures-manuels/utilisateur-nouveau-cr.png)
+
+*Figure 6 — Nouveau compte rendu : recherche d’une famille et choix parmi les familles de missions.*
+
 ### Rechercher la famille d'après la mission
 
 Le champ de recherche (exemple affiché : « évasan hélico », « ravitaillement de Rafale », « largage
@@ -659,6 +693,11 @@ dans un reporting ou une fiche (la mission s'ouvre alors en modification).
 - blocs propres à la famille et remarques.
 
 Le bouton « CR détaillé » de la barre affiche tout le formulaire sans changer de niveau (choix gardé par le navigateur) ; « CR court » revient au formulaire réduit. Les valeurs déjà saisies dans des champs masqués (import, plan de vol, suivi réseau) restent dans le compte rendu. Aux niveaux 3 et 4, le formulaire est toujours complet et ce bouton n'existe pas.
+
+<!-- capture-manuels: utilisateur-formulaire-cr -->
+![Compte rendu FIRE / GAAR : formulaire à gauche, calculs automatiques et aperçu du compte rendu à droite.](images/captures-manuels/utilisateur-formulaire-cr.png)
+
+*Figure 7 — Compte rendu FIRE / GAAR : formulaire à gauche, calculs automatiques et aperçu du compte rendu à droite.*
 
 ### En-tête et barre d'outils
 
@@ -1298,6 +1337,11 @@ Elle reprend le moteur du studio cartographique du Centre, mais travaille dans u
 Chaque bloc se replie (« Masquer » / « Afficher ») et se déplace (poignée ↕). La base SIA doit être lue une fois dans ce navigateur (voir le dernier bloc).
 Aux niveaux 1 à 3 (Mon profil › « Niveau d'utilisation »), la page se limite à deux blocs : « Cheminement » (champ de route, « Niveau », « SimBrief », carte de contrôle avec « ⤢ Agrandir ») et « Cartes », avec son unique bouton « Générer les cartes et le ZIP ». Les autres commandes décrites ci-dessous n'apparaissent qu'au niveau 4 (Expert).
 
+<!-- capture-manuels: utilisateur-cartes-vol -->
+![Cartes de vol : cheminement, profil cartographique, cadrage et choix des cartes à préparer.](images/captures-manuels/utilisateur-cartes-vol.png)
+
+*Figure 8 — Cartes de vol : cheminement, profil cartographique, cadrage et choix des cartes à préparer.*
+
 ### Réception d'une mission (« Ouvrir dans les Cartes de vol »)
 
 La page n'affiche pas de bloc « Mission » : la mission arrive toute seule depuis Mes missions.
@@ -1407,15 +1451,21 @@ Ce bloc est au niveau Expert et masqué par défaut : cliquez sur « Afficher »
 - La ligne d'état indique la base gardée, son cycle AIRAC et sa date ; « cycle périmé » s'affiche si un cycle plus récent est en vigueur. « Fichiers analysés » liste les fichiers lus.
 - Sans base, la page le signale : « Base SIA absente de ce navigateur : bloc « Base de données SIA », « Reconstruire la base aéronautique », ou Paramètres › Maintenance. »
 
-C'est le même bloc que Paramètres › Maintenance › Données aéronautiques. La même base sert au profil vertical du planificateur carburant. Détails : [missions SIA](SIA_MISSIONS.md).
+C'est le même bloc que Paramètres › Maintenance › Données aéronautiques. La même base sert au profil vertical du planificateur carburant.
 
 ## Carburant
 <!-- page: apps/planner/flight_performance_planner.html -->
 
 Le planificateur carburant (titre « Carburant ») calcule le carburant d'un vol à partir du profil de performances de votre appareil. La consommation de croisière vient, dans l'ordre, de votre saisie pour ce vol, du profil enregistré, du modèle de Poll et Schumann (avions de ligne à réaction, selon la masse, le niveau et le Mach), de SimBrief, puis d'une estimation par type ou classe OACI ; une valeur approchée est marquée ≈. Pour un type sans fiche EUROCONTROL ni SimBrief (militaires, hélicoptères), l'estimation reprend la TAS de croisière et le plafond publiés par Airframe DB quand il les connaît. Il trace aussi les altitudes et lois de montée optimales.
 Pour y aller : barre latérale « Outils », onglet « Carburant », bouton « Carburant (planificateur) » d'une mission dans Mes missions, ou bouton « Carburant » des Cartes de vol. La route, la distance, le niveau et l'appareil sont alors repris.
-En-tête : menu « Avion », bouton « Récupérer dernier FPL SimBrief », « Unités : kg / lbs ». Les imports et exports sont dans le menu ☰. Détails techniques : [planificateur](FLIGHT_PLANNER.md).
+En-tête : menu « Avion », bouton « Récupérer dernier FPL SimBrief », « Unités : kg / lbs ». Les imports et exports sont dans le menu ☰.
 Selon le niveau d'utilisation : aux niveaux 1 à 3 (Équipage, Planification, Conception), la page montre l'avion, le plan de vol (et « Récupérer dernier FPL SimBrief »), le repli « Paramètres du vol », « Calculer » et le Résultat, sur deux colonnes ; le menu ☰ n'y garde qu'exporter et importer les préférences. Courbes, panneaux, instruments, blocs du profil, barre d'état et actions de profils du menu ☰ s'ajoutent au niveau Expert, où la page est complète.
+Sur écran large, au niveau Expert, la page a trois colonnes (saisie et courbes | Résultat et panneaux | instruments) : glissez les poignées entre colonnes pour régler leur largeur ; double-clic : largeurs par défaut.
+
+<!-- capture-manuels: utilisateur-carburant -->
+![Carburant : paramètres du trajet, consignes de montée et résultat du devis pour un DHC-8-400 / Q400.](images/captures-manuels/utilisateur-carburant.png)
+
+*Figure 9 — Carburant : paramètres du trajet, consignes de montée et résultat du devis pour un DHC-8-400 / Q400.*
 
 ### Choisir l'avion et enregistrer le profil
 
@@ -1426,6 +1476,7 @@ Selon le niveau d'utilisation : aux niveaux 1 à 3 (Équipage, Planification, Co
 La barre en bas de page indique « Profil enregistré — … » ou « Modifications non enregistrées — … ». Elle porte « Recharger la base locale », « Enregistrer le profil » et « Supprimer cet avion ». Cette barre n'apparaît qu'au niveau Expert.
 Si vous changez d'avion avec des modifications non enregistrées, la page propose « Rester », « Abandonner et changer » ou « Enregistrer et changer ».
 Menu ☰ : importer profils / CSV / JSON (dont `.lnmperf` de Little Navmap), importer un airframe SimBrief, choisir le dossier performances, exporter le profil `.lnmperf` ou JSON, enregistrer la base locale, restaurer la sauvegarde précédente, exporter ou importer les préférences. Ces actions sont du niveau Expert, sauf exporter et importer les préférences.
+Un import qui retombe sur un profil existant (même identifiant, le plus souvent le type OACI) le met à jour : les valeurs importées l'emportent, les champs qu'il laisse vides gardent l'ancienne valeur, les tables RPM sont réunies (unités converties).
 
 ### Devis carburant
 
@@ -1435,6 +1486,7 @@ Menu ☰ : importer profils / CSV / JSON (dont `.lnmperf` de Little Navmap), imp
 4. Cliquez sur « Calculer ».
 
 Vent laissé vide : la page l'indique (« Vent inconnu : fourchette ±25 kt… ») et donne le carburant en fourchette.
+Avec un écart ISA, un encart « Météo » du Résultat compare à l'atmosphère standard : trajet au niveau du plan (temps, carburant), niveau optimal et plafond. Le QNH n'entre pas dans le calcul (les niveaux de vol sont des altitudes pression).
 Le bouton « Cartes de vol » (niveau Expert) ouvre les Cartes de vol avec ce plan de vol ; les cartes et le profil y sont créés à l'arrivée.
 « Syntaxe du plan de vol » rappelle les formes acceptées. Sans base SIA dans le navigateur, seuls les points en coordonnées sont reconnus.
 
@@ -1454,11 +1506,13 @@ En vue détaillée (bouton « Vue détaillée » / « Vue simple » du Résultat
 Survolez une courbe pour lire les valeurs à cette altitude ; cliquez pour épingler un niveau (trait blanc sur toutes les courbes). Le devis est alors calculé à ce niveau.
 Les curseurs « Montée choisie » du devis règlent votre montée choisie, tracée en violet sur les courbes.
 La zone grisée « inaccessible » se trouve au-dessus du plafond de l'appareil.
+Sans « Altitude de référence (ft) » ni « Plafond max (ft) » dans le profil, le modèle les estime (badin et TAS de croisière, fiche EUROCONTROL, débit de montée, sinon valeur type de la classe) et indique la source sous les courbes. Renseignez ces deux champs, ou calibrez sur un OFP SimBrief : c'est plus fiable.
 
 ### Consignes de montée
 
 Ce bloc, sous « Calculer », dit comment monter, à tout niveau d'utilisation.
 - Cinq objectifs, chacun avec son temps et son carburant jusqu'au niveau : « Éco », « Vy », « Rapide », « Profil » (vitesse de montée du profil), « Réglée » (montée choisie). Le choix est gardé dans ce navigateur.
+  « Vy » : vario maximal (niveau atteint au plus tôt) ; « Rapide » : temps de bloc minimal ; « Éco » : carburant du trajet minimal. Pour ces deux dernières, la distance de montée est retranchée de la croisière, le vario reste au moins à 50 % du maximum, et un réacteur est limité à 250 kt sous le FL100.
 - Une consigne en trois temps : « Régler » (gaz, hélice, RPM ou N1), « Tenir » (l'instrument qui porte la consigne, le plus souvent le badin), « Attendu » (vario à voir, niveau atteint, temps et carburant).
 - Un tableau par tranche d'altitude (sol, 2 000 ft, FL050, FL100… jusqu'au niveau du plan) : gaz, RPM ou N1 si le profil a une cartographie moteur, badin à tenir, vario attendu, temps cumulé.
 
@@ -1473,8 +1527,11 @@ Ce bloc, dans la colonne de droite, suit la page pendant que vous faites défile
 - Détail : taxi, montée, croisière, descente, contingence, réserve ; masse au décollage prévue et MTOW si vous l'avez saisie (en rouge si elle est dépassée).
 - Fiche du curseur (⌖ au survol, 📌 épinglé) : carburant et temps du trajet à ce niveau, vario max, vitesses de montée ; « désépingler » retire l'épingle.
 - Groupe repliable « Régimes de vol — profil ↔ cartographie » (niveau Expert) : Badin, vario, régime moteur et débit par phase, comparés à la cartographie moteur. Il contient aussi le champ « SimBrief Airframe Internal ID » et les liens vers les fiches des appareils de ce type.
+  « Importer airframe SimBrief » lit ce champ (identifiant ou lien de partage) : liste publique de SimBrief, puis lien de partage ; un airframe privé illisible ne donne qu'un profil partiel, avec son seul identifiant.
 
 « Épingler » garde le bloc entier quand il suit la page ; sinon, il se replie. « Vue simple » masque les courbes et les instruments, « Vue détaillée » les montre (choix gardé dans ce navigateur). Au niveau Expert, sous le bloc, un panneau par courbe donne les optimums, les limites (plafond, niveau demandé) et une aide à la lecture. Le bandeau d'instruments (niveau Expert) reprend badin, altimètre, vario, chronomètre (temps de montée), carburant et temps de vol.
+Dans les panneaux et les messages, un nom de champ souligné est un lien : il déplie l'éditeur du profil au besoin et montre le champ. Un niveau « inatteignable » donne sa cause et le champ à corriger (bloc « Limites »).
+Un clic sur le cadran carburant (ou son bouton) change la courbe lue, dans sa couleur : montée choisie, profil, croisière économique, montée rapide, Vy, montée économique ; choix gardé dans ce navigateur.
 
 ### Profils de performances
 
@@ -1510,6 +1567,7 @@ Ce bloc montre tous les champs du profil, exportés tels quels dans le fichier `
 - Groupes : « Identité et format », « Carburant et opération », « Piste et alternat », « Montée », « Croisière », « Descente », « Régime et consommation ».
 - Le carburant s'affiche dans l'unité choisie (kg ou lbs).
 - Quand le type a une fiche EUROCONTROL APD, une étiquette « APD … » apparaît à côté des champs comparables : un clic reprend cette valeur. Rien n'est écrit sans clic. Sinon : « Aucune donnée EUROCONTROL APD pour ce type ».
+- Couleur de l'étiquette : verte = identique (±3 %), orange = différente, bleue = champ vide ; « remplir les champs vides » reprend toutes les valeurs APD des champs vides.
 
 Une case vide reste vide et bloque l'export `.lnmperf` : aucune valeur n'est inventée.
 Après modification, cliquez sur « Enregistrer le profil » dans la barre du bas.
@@ -1569,7 +1627,12 @@ Sans import : « Aucun JSON chargé. »
 
 Ce tableau de bord (titre « Landing Performance — Synthèse ») analyse la qualité de vos atterrissages à partir des fichiers exportés du simulateur : score, taux de chute, G, par appareil et dans le temps.
 Pour y aller : barre latérale « Outils », onglet « Atterrissages ». Le fichier est lu dans le navigateur ; rien n'est envoyé.
-Le dernier fichier chargé est gardé et rechargé à l'ouverture. Ses appareils sont aussi proposés dans le menu « Avion » du planificateur carburant. Détails : [tableau de bord des atterrissages](LANDING_DASHBOARD.md).
+Le dernier fichier chargé est gardé et rechargé à l'ouverture. Ses appareils sont aussi proposés dans le menu « Avion » du planificateur carburant.
+
+<!-- capture-manuels: utilisateur-atterrissages -->
+![Atterrissages : filtres de période et d’appareil, tendance et graphiques d’évolution du score et du taux au toucher.](images/captures-manuels/utilisateur-atterrissages.png)
+
+*Figure 10 — Atterrissages : filtres de période et d’appareil, tendance et graphiques d’évolution du score et du taux au toucher.*
 
 ### Chargement du fichier
 
@@ -1587,11 +1650,12 @@ La ligne d'état rappelle le fichier, le nombre de mesures utilisées, l'apparei
 - « Méthode de tendance » : « Absolu / Asymptote », « Premiers 25 % ↔ Derniers 25 % » ou « Moyenne glissante » (avec « Lissage » : 5 ou 10).
 - « Imprimer / PDF » : imprime la page.
 
-Options de l'analyse (menu ☰) : « exclure les mesures manifestement aberrantes », « 95P — exclure les 5 % d'atterrissages accidentels les plus forts », « Crash — exclure les atterrissages déclenchés » (seuils FPM ≤ et G ≥, logique « FPM ou G », « FPM et G », « FPM seul », « G seul »), « Utiliser les champs manquants estimés ».
+Options de l'analyse (menu ☰) : « exclure les mesures manifestement aberrantes », « 95P — exclure les 5 % d'atterrissages accidentels les plus forts » (par appareil), « Crash — exclure les atterrissages déclenchés » (seuils FPM ≤ et G ≥, logique « FPM ou G », « FPM et G », « FPM seul », « G seul »), « Utiliser les champs manquants estimés ».
+« Utiliser les champs manquants estimés » complète score, G ou FPM manquants par un modèle calibré sur les vraies paires CSV + LOG ; ces valeurs, marquées « ◇ estimé », ne sont jamais écrites dans le fichier.
 
 ### Synthèse de la période
 
-En haut du tableau de bord, des cartes donnent les chiffres clés : « Atterrissages », « Score moyen », « Score min / max », « FPM moyen », « FPM min / max », « G moyen », « G min / max », « Butter / Very Good ».
+Un bandeau fixé en bas de la fenêtre, après l'icône de tendance, donne les chiffres clés : « Atterrissages », « Score moyen », « Score min / max », « FPM moyen », « FPM min / max », « G moyen », « G min / max », « Butter / Very Good ».
 Les boutons « − » et « + » changent la taille de ces cartes.
 Dessous, la conclusion de tendance : progression ou régression probable, légère, « Aucune progression nette », ou « données insuffisantes » (il faut au moins quatre mesures exploitables).
 Le texte explique la méthode choisie (par exemple asymptote estimée et gain restant).
@@ -1605,7 +1669,7 @@ Ce bloc trace les indicateurs dans le temps, avec leur tendance : score, taux au
 - La bande « Historique complet — glisser pour sélectionner », sous chaque graphe, permet de choisir une période sur tout l'historique.
 
 La période choisie s'affiche dans l'en-tête ; ses boutons permettent de revenir en arrière.
-L'indice technique relatif n'est pas un score officiel.
+L'indice technique relatif n'est pas un score officiel : 45 % landing rate brut, 25 % qualité d'arrondi, 20 % vitesse de nez, 10 % float, normalisés par appareil.
 
 ### Synthèse par appareil
 

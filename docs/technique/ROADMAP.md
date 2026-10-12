@@ -1,132 +1,132 @@
-# Feuille de route
+# Roadmap
 
-Où va la suite, dans quel ordre, et pourquoi. Écrite le 5 octobre 2026 ; à tenir à jour à chaque étape franchie.
-Détails techniques : [INDEX_DONNEES.md](INDEX_DONNEES.md) (index et synchronisation), [SYNCHRONISATION.md](SYNCHRONISATION.md)
-(architecture actuelle), [DETTE_TECHNIQUE.md](DETTE_TECHNIQUE.md) (ce qui reste à reprendre).
+Where the suite is going, in what order, and why. Written on 5 October 2026; to be kept up to date at each step completed.
+Technical details: [INDEX_DONNEES.md](INDEX_DONNEES.md) (index and synchronisation), [SYNCHRONISATION.md](SYNCHRONISATION.md)
+(current architecture), [DETTE_TECHNIQUE.md](DETTE_TECHNIQUE.md) (what remains to be reworked).
 
-## Où on en est
+## Where we stand
 
-Depuis la 4.7.0 (2 octobre), sur `develop` :
+Since 4.7.0 (2 October), on `develop`:
 
-- **Pages réorganisées** : barre latérale « pilote d'abord », un seul bouton « Missions » pour le générateur et le
-  studio, Paramètres en quatre pages (Mon profil, Centre, Installation, Maintenance).
-- **Utilisateurs et rôles** : fiches partagées, rôles `admin_centre` / `utilisateur`, mode develop / production,
-  connexion, usurpation affichée sur toutes les pages.
-- **Disponibilités** : catégories configurables (Centre), préférences de thèmes par pilote, grille heure par heure
-  avec les couleurs et les codes ODV ; Planning ODV relié à ces déclarations.
-- **Mes missions** : deux colonnes, livre de mission par design, animations d'ouverture, de fermeture et de changement
-  de mission (séquence propre au Cabinet).
-- **Données plus rapides** : index dans le navigateur (missions, CR, copies signées des fichiers partagés) — l'ODV
-  s'ouvre en 1,6 s au lieu de 7,2 s.
-- **Synchronisation git** : bouton « Synchroniser » dans l'en-tête, conflits réglés fiche par fiche, rien de perdu.
+- **Reorganised pages**: “pilot first” sidebar, a single “Missions” button for the generator and the
+  studio, Settings in four pages (My profile, Centre, Installation, Maintenance).
+- **Users and roles**: shared records, `admin_centre` / `utilisateur` roles, develop / production mode,
+  sign-in, impersonation shown on every page.
+- **Availability**: configurable categories (Centre), theme preferences per pilot, hour-by-hour grid
+  with the colours and the ODV codes; ODV planning linked to these declarations.
+- **My missions**: two columns, mission book per design, opening, closing and mission-change animations
+  (sequence specific to the Cabinet).
+- **Faster data**: index in the browser (missions, reports, signed copies of the shared files) — the ODV
+  opens in 1.6 s instead of 7.2 s.
+- **Git synchronisation**: “Synchronise” button in the header, conflicts resolved record by record, nothing lost.
 
-## Étape 1 — Stabiliser et publier la 4.8 (maintenant)
+## Step 1 — Stabilise and publish 4.8 (now)
 
-**But** : une version propre de tout ce qui précède, que chacun peut installer.
+**Goal**: a clean version of all of the above, which everyone can install.
 
-- Corrections en cours (session de stabilisation).
-- **Première synchronisation du vrai `data/`** : à lancer par toi (82 fichiers jamais commités ; crée la branche
-  distante `test`).
-- **Release 4.8.0** sur `master` quand tu le décides : notes de version (`VERSION.md` : synthèse, actions à effectuer,
+- Fixes in progress (stabilisation session).
+- **First synchronisation of the real `data/`**: to be launched by you (82 files never committed; creates the remote
+  branch `test`).
+- **Release 4.8.0** on `master` when you decide: release notes (`VERSION.md`: summary, actions to take,
   notes), changelog.
 
-## Étape 2 — Le serveur web minimal (« moteur central »)
+## Step 2 — The minimal web server (“central engine”)
 
-**Pourquoi.** Avec git, chaque poste doit avoir git, un accès au dépôt et le lanceur ; un pilote qui ouvre simplement
-la suite ne partage rien. Et les droits (qui peut affecter, qui peut modifier une fiche) ne sont vérifiés que par les
-pages : rien n'empêche un poste de pousser n'importe quoi. Un petit serveur central règle les deux : un seul endroit
-où arrivent les données, et qui vérifie qui a le droit de quoi.
+**Why.** With git, each computer must have git, access to the repository and the launcher; a pilot who simply opens
+the suite shares nothing. And the rights (who can assign, who can edit a record) are checked only by the
+pages: nothing prevents a computer from pushing anything at all. A small central server solves both: a single place
+where the data arrives, and which checks who is allowed to do what.
 
-**Ce que c'est, concrètement.**
+**What it is, concretely.**
 
-- **Un programme Python** (`tools/defa_server.py`), sans dépendance à installer (bibliothèque standard), qui tourne sur
-  **une seule machine** : un poste du Centre, un NAS Synology ou un petit serveur loué. On le lance avec
+- **A Python program** (`tools/defa_server.py`), with no dependency to install (standard library), which runs on
+  **a single machine**: a Centre computer, a Synology NAS or a small rented server. It is started with
   `python tools/defa_server.py --data <dossier> --port <n>`.
-- **Mêmes fichiers que `data/`**, rangés pareil : on peut repasser à git (ou en repartir) sans rien convertir.
-- **SQLite** pour ce qui doit être interrogé vite et écrit par un seul programme : le journal des changements (qui a
-  changé quoi, quand), les comptes, les sessions.
-- **HTTPS** : derrière un relais qui gère le certificat (Caddy ou nginx) ; jamais en clair sur Internet.
+- **Same files as `data/`**, arranged the same way: one can go back to git (or start again from it) without converting anything.
+- **SQLite** for what must be queried quickly and written by a single program: the change log (who
+  changed what, when), the accounts, the sessions.
+- **HTTPS**: behind a relay that manages the certificate (Caddy or nginx); never in clear text on the Internet.
 
-**Ce qu'il fait.**
+**What it does.**
 
-| Fonction | Détail |
+| Function | Detail |
 |---|---|
-| Connexion | trigramme + mot de passe (le même chiffrement qu'aujourd'hui, PBKDF2) → jeton de session ; mot de passe changé par l'utilisateur (ancien mot de passe) ou réinitialisé par un admin |
-| Lire | `GET /v1/file/<chemin>` avec une signature (`ETag`) : comme aujourd'hui, la page ne relit que ce qui a changé |
-| Suivre | `GET /v1/changes?since=<curseur>` : la liste de ce qui a changé depuis la dernière fois — plus besoin de bouton pour recevoir |
-| Écrire | `PUT /v1/file/<chemin>` avec la signature lue (`If-Match`) ; si quelqu'un a écrit entre-temps → refus (412), la page fusionne fiche par fiche et réessaie ; suppression = pierre tombale |
-| Droits | vérifiés **par le serveur** : `admin_centre` pour ce qui relève du Centre (affectations, catégories, utilisateurs), chaque pilote pour ses disponibilités, son profil et ses CR |
-| Administration | page `/admin` (réservée `admin_centre`) : état, journal des changements, comptes (réinitialiser un mot de passe, désactiver), purge des pierres tombales, **sauvegarde ZIP**, **export vers un dépôt git** |
+| Sign-in | trigram + password (the same encryption as today, PBKDF2) → session token; password changed by the user (old password) or reset by an admin |
+| Read | `GET /v1/file/<chemin>` with a signature (`ETag`): as today, the page only rereads what has changed |
+| Follow | `GET /v1/changes?since=<curseur>`: the list of what has changed since last time — no more need for a button to receive |
+| Write | `PUT /v1/file/<chemin>` with the signature read (`If-Match`); if someone has written in the meantime → refusal (412), the page merges record by record and tries again; deletion = tombstone |
+| Rights | checked **by the server**: `admin_centre` for what falls under the Centre (assignments, categories, users), each pilot for their availability, their profile and their reports |
+| Administration | `/admin` page (reserved for `admin_centre`): status, change log, accounts (reset a password, disable), purge of the tombstones, **ZIP backup**, **export to a git repository** |
 
-**Côté suite.** Le bouton « Synchroniser » garde sa place ; dans Paramètres › Installation, on choisit le
-**transport** : *git sur le dossier* (aujourd'hui) ou *serveur central* (adresse du serveur). Avec le serveur, la page
-lui parle directement : plus besoin du lanceur pour partager, ni de git sur chaque poste.
+**On the suite side.** The “Synchronise” button keeps its place; in Settings › Installation, one chooses the
+**transport**: *git on the folder* (today) or *central server* (server address). With the server, the page
+talks to it directly: no more need for the launcher to share, nor for git on each computer.
 
-**Découpage.**
+**Breakdown.**
 
-1. Serveur de fichiers : lire, écrire avec signature, journal des changements (SQLite), essais automatiques.
-2. Comptes et sessions : connexion, jeton, rôles vérifiés, changement et réinitialisation du mot de passe.
-3. Transport « serveur » dans la suite (`shared/sync.js`) : réception continue des changements, écriture
-   conditionnelle, fusion fiche par fiche en cas de refus.
-4. Page `/admin` : état, journal, comptes, sauvegarde ZIP, export git.
-5. Mise en service : documentation d'installation (machine, relais HTTPS, sauvegardes), bascule d'un `data/` existant.
+1. File server: read, write with signature, change log (SQLite), automated tests.
+2. Accounts and sessions: sign-in, token, checked roles, password change and reset.
+3. “Server” transport in the suite (`shared/sync.js`): continuous reception of the changes, conditional
+   writing, record-by-record merge in case of refusal.
+4. `/admin` page: status, log, accounts, ZIP backup, git export.
+5. Commissioning: installation documentation (machine, HTTPS relay, backups), switchover of an existing `data/`.
 
-**Décisions à prendre avant de commencer.**
+**Decisions to take before starting.**
 
-- **Où tourne le serveur** : poste du Centre, NAS Synology, serveur loué ?
-- **Adresse et certificat** : nom de domaine, relais HTTPS.
-- **Qui l'administre** au quotidien (comptes, sauvegardes).
-- **Git en parallèle** : garder un export régulier vers le dépôt `defa-data` (historique, filet de sécurité), ou non.
+- **Where the server runs**: Centre computer, Synology NAS, rented server?
+- **Address and certificate**: domain name, HTTPS relay.
+- **Who administers it** day to day (accounts, backups).
+- **Git in parallel**: keep a regular export to the `defa-data` repository (history, safety net), or not.
 
-## Étape 3 — Mode production
+## Step 3 — Production mode
 
-**But** : la suite en service réel, plus en mode essai.
+**Goal**: the suite in real service, no longer in trial mode.
 
-- Connexion **exigée** pour Mes missions et pour le Centre ; trigramme fixé par le compte (plus de changement à la
-  volée).
-- Vérification par le serveur central (étape 2) : sans lui, le mode production ne protège que ce que les pages
-  vérifient.
-- Usurpation d'un utilisateur par un admin tracée dans le journal du serveur.
-- Retour des données sur la branche de référence (`main`) et sort du jeu de test (voir la dette technique).
+- Sign-in **required** for My missions and for the Centre; trigram set by the account (no more changing it on the
+  fly).
+- Checking by the central server (step 2): without it, production mode only protects what the pages
+  check.
+- Impersonation of a user by an admin traced in the server log.
+- Return of the data to the reference branch (`main`) and exit from the test set (see the technical debt).
 
-## Étape 4 — Le site de la DEFA (en ligne depuis le 5 octobre 2026)
+## Step 4 — The DEFA website (online since 5 October 2026)
 
-Le site n'a **pas d'API** : on récupère ses données par **copier-coller** de ses pages (`flotte.defa-virtual.fr`).
+The website has **no API**: its data is retrieved by **copy-paste** from its pages (`flotte.defa-virtual.fr`).
 
-| Page du site | Dans la suite | État |
+| Website page | In the suite | Status |
 |---|---|---|
-| Log des vols | Paramètres › Maintenance › Base › Journal des vols : « Charger / mettre à jour le journal (page copiée ou enregistrée) », puis référence (pilotes, appareils) mise à jour depuis le journal | fait |
-| Flotte virtuelle | Paramètres › Maintenance › Flotte : « Coller la page Flotte du site… » (mêmes règles que `AircraftDB/update_fleet.py`, sans script), puis « Enregistrer dans le dépôt » | fait (5 octobre) |
-| Maintenance, Statistiques | — | rien à reprendre pour l'instant |
-| Enregistrer mon vol (connexion requise) | — | l'envoi des CR au site reste manuel : pas d'API, et pas question d'automatiser un formulaire avec les identifiants d'un pilote |
+| Log des vols (flight log) | Settings › Maintenance › Base › Flight log: “Load / update the log (copied or saved page)”, then reference (pilots, aircraft) updated from the log | done |
+| Flotte virtuelle (virtual fleet) | Settings › Maintenance › Fleet: “Paste the website Fleet page…” (same rules as `AircraftDB/update_fleet.py`, without a script), then “Save to repository” | done (5 October) |
+| Maintenance, Statistiques (statistics) | — | nothing to take over for now |
+| Enregistrer mon vol (log my flight; sign-in required) | — | sending the reports to the website stays manual: no API, and automating a form with a pilot's credentials is out of the question |
 
-Si le site ouvre un jour une API : reprendre ce tableau (lecture automatique, puis envoi des CR et des affectations
-avec les identifiants saisis au premier lancement, jamais écrits dans un fichier).
+If the website one day opens an API: revisit this table (automatic reading, then sending of the reports and of the assignments
+with the credentials entered at first launch, never written to a file).
 
-## Tableau (Centre, en cours)
+## Board (Centre, in progress)
 
-L'éditeur hebdomadaire des ordres de vols ([ODV_ORDRES.md](ODV_ORDRES.md)), repris de l'outil autonome « Tableau
-V0 » dans le modèle de la suite (dispos, affectations, zones de mission, CR). Lots L2-L3 : session Ordres de vols ;
-L4-L5 : session Features SOG. Ensuite, sur cette feuille de route :
+The weekly flight-orders editor ([ODV_ORDRES.md](ODV_ORDRES.md)), taken over from the standalone tool “Tableau
+V0” into the suite's model (availability, assignments, mission areas, reports). Batches L2-L3: “Ordres de vols” session;
+L4-L5: “Features SOG” session. Then, on this roadmap:
 
-- **Tâches du planificateur** : liste de tâches quotidiennes, variable, cochée quand c'est fait, échéance visible (V0 :
-  check-list hebdomadaire `checkPrep`, liens IVAO).
-- **Marqueurs libres** sur la frise (trait, bande, NLT : repères visuels sans calcul).
+- **Planner tasks**: list of daily tasks, variable, ticked when done, visible deadline (V0:
+  weekly `checkPrep` checklist, IVAO links).
+- **Free markers** on the timeline (line, band, NLT: visual cues without calculation).
 
-## En continu
+## Ongoing
 
-- **Dette technique** ([DETTE_TECHNIQUE.md](DETTE_TECHNIQUE.md)), avec une échéance ferme : **découpage des CR par
-  année avant le 31 décembre 2026** (pris en charge par la session « fond », avec les métadonnées par CR qui
-  permettront aussi de les fusionner fiche par fiche).
-- Corrections et petites demandes au fil de l'eau (session de stabilisation).
-- Traductions : audit (`tools/audit_i18n.html`) à chaque ajout de texte.
+- **Technical debt** ([DETTE_TECHNIQUE.md](DETTE_TECHNIQUE.md)), with a firm deadline: **splitting the reports by
+  year before 31 December 2026** (taken on by the “fond” session, with the per-report metadata that
+  will also allow them to be merged record by record).
+- Fixes and small requests as they come (stabilisation session).
+- Translations: audit (`tools/audit_i18n.html`) at each addition of text.
 
-## Décisions en attente
+## Pending decisions
 
-| Sujet | Question |
+| Subject | Question |
 |---|---|
-| Première synchronisation du vrai `data/` | quand la lancer (82 fichiers, création de la branche distante) |
-| `utilisateurs/_index.json` | l'ajouter au `.gitignore` de `data/` ? |
-| Fiches des pilotes sans fiche | création au fil de l'eau (recommandé), ou aussi automatique à la première connexion en mode develop ? |
-| Release 4.8.0 | quand la publier sur `master` |
-| Serveur central | hébergement, adresse, administrateur, export git (étape 2) |
+| First synchronisation of the real `data/` | when to launch it (82 files, creation of the remote branch) |
+| `utilisateurs/_index.json` | add it to the `.gitignore` of `data/`? |
+| Records of pilots without a record | creation as they come (recommended), or also automatic at first sign-in in develop mode? |
+| Release 4.8.0 | when to publish it on `master` |
+| Central server | hosting, address, administrator, git export (step 2) |

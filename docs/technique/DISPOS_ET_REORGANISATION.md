@@ -1,63 +1,63 @@
-# Disponibilités en arbre, Paramètres et barre latérale : proposition
+# Availability as a tree, Settings and side bar: proposal
 
-Proposition du 5 octobre 2026 (branche `feature/dispos-reorg`). Compagnie gérée : **DEFA** (celle des paramètres) ;
-une seule compagnie par Centre (un pilote pourra en avoir plusieurs plus tard : chaque fichier de configuration porte
-déjà `va: DEFA`).
+Proposal of 5 October 2026 (branch `feature/dispos-reorg`). Airline managed: **DEFA** (the one in the settings);
+a single airline per Centre (a pilot may have several later: each configuration file already carries
+`va: DEFA`).
 
-## 1. Disponibilités : catégories configurables
+## 1. Availability: configurable categories
 
-### 1.1 Aujourd'hui
+### 1.1 Today
 
-Un code ODV par heure et par jour (grille 7 × 24, UTC), 14 codes du classeur ODV : O, SC, C, T, S, N (disponible),
-AT, AM (contrôle), G, DC (occupé), IR, IN, V, Q (indisponible). Les règles de l'ODV et de l'affectation en dépendent
-(`FAMILY_ROLES`, `DOMAIN`, `eligible`, « code restreint dans son domaine »), et le classeur Excel les emploie. Une
-seule disponibilité par heure : on ne peut pas être disponible à la fois « secours » et « chasse ».
+One flight order (ODV) code per hour and per day (7 × 24 grid, UTC), 14 codes from the ODV workbook: O, SC, C, T, S, N (available),
+AT, AM (control), G, DC (busy), IR, IN, V, Q (unavailable). The ODV and assignment rules depend on them
+(`FAMILY_ROLES`, `DOMAIN`, `eligible`, “restricted code within its domain”), and the Excel workbook uses them. A
+single availability per hour: one cannot be available for both “rescue” and “fighter” at the same time.
 
-### 1.2 Retenu : quelques catégories générales, le détail dans les préférences de l'utilisateur
+### 1.2 Chosen: a few general categories, the detail in the user's preferences
 
-**Thèmes** = les familles de mission, rangées par domaine :
+**Themes** = the mission families, arranged by domain:
 
-| Domaine | Thèmes |
+| Domain | Themes |
 |---|---|
-| Sécurité civile | HEMS (secours héliporté, medevac), SAR, FIRE (feux), LE (police, douane), HADR (aide humanitaire) |
-| Défense | COMBAT (chasse), ISR (renseignement, surveillance), COMMAND (commandement), AAR (ravitaillement), AIRLIFT (transport), AIRBORNE (largage), MARITIME (marine), SPECIAL |
+| Civil security | HEMS (helicopter rescue, medevac), SAR, FIRE (fires), LE (police, customs), HADR (humanitarian aid) |
+| Defence | COMBAT (fighter), ISR (intelligence, surveillance), COMMAND (command), AAR (refuelling), AIRLIFT (transport), AIRBORNE (airdrop), MARITIME (navy), SPECIAL |
 
-**Catégories de disponibilité** (ce que le pilote déclare, peu nombreuses) :
+**Availability categories** (what the pilot declares, few in number):
 
-| Groupe (affiché dans l'ODV) | Catégorie | Thèmes ouverts | Code ODV |
+| Group (shown in the ODV) | Category | Themes opened | ODV code |
 |---|---|---|---|
-| Disponible | tout | tous | O |
-| | sécurité civile | tous ceux du domaine | SC |
-| | défense | tous ceux du domaine | — |
-| | **sécurité civile personnalisée** | selon les préférences du pilote | — |
-| | **défense personnalisée** | selon les préférences du pilote | C, T, N |
-| Exercice SOG | vol en exercice SOG | exercice | S |
-| | contrôle SOG | contrôleur d'exercice | AM |
-| Occupé | vol hors SOG (IVAO / VATSIM) | aucun | G |
-| | DCS | aucun | DC |
-| | contrôle hors SOG (IVAO / VATSIM) | aucun | AT |
-| Indisponible | indisponible | aucun | IN |
-| | congés | aucun | V |
-| | récupération | aucun | Q |
-| | activité réelle | aucun | IR |
+| Available | everything | all | O |
+| | civil security | all those of the domain | SC |
+| | defence | all those of the domain | — |
+| | **custom civil security** | according to the pilot's preferences | — |
+| | **custom defence** | according to the pilot's preferences | C, T, N |
+| SOG exercise | SOG exercise flight | exercise | S |
+| | SOG control | exercise controller | AM |
+| Busy | flight outside SOG (IVAO / VATSIM) | none | G |
+| | DCS | none | DC |
+| | control outside SOG (IVAO / VATSIM) | none | AT |
+| Unavailable | unavailable | none | IN |
+| | holidays | none | V |
+| | time off | none | Q |
+| | real-life activity | none | IR |
 
-**Préférences de l'utilisateur** (dans son profil, synchronisées) : pour chaque domaine, une **liste blanche** (seulement
-ces thèmes) ou une **liste noire** (tous sauf ces thèmes). « Défense personnalisée » d'un pilote qui n'aime que la
-chasse = liste blanche COMBAT, ISR ; d'un pilote qui refuse la chasse = liste noire COMBAT.
+**User preferences** (in their profile, synchronised): for each domain, an **allow list** (only
+these themes) or a **block list** (all but these themes). “Custom defence” for a pilot who only likes
+fighter missions = allow list COMBAT, ISR; for a pilot who refuses fighter missions = block list COMBAT.
 
-**ODV** : les catégories sont **regroupées** (Disponible, Exercice SOG, Occupé, Indisponible) pour ne pas charger la
-grille ; le détail (catégorie, thèmes ouverts) est dans l'infobulle et le panneau du créneau.
+**ODV**: the categories are **grouped** (Available, SOG exercise, Busy, Unavailable) so as not to clutter the
+grid; the detail (category, themes opened) is in the tooltip and the slot panel.
 
-**Classeur ODV** : secondaire (import). À l'import, un pilote sans préférences en reçoit par défaut d'après ses codes :
-C → défense liste blanche COMBAT, ISR, COMMAND, AAR ; T → AIRLIFT, AIRBORNE, AAR ; N → MARITIME (et SAR en sécurité
-civile) ; plusieurs codes → réunion des thèmes.
+**ODV workbook**: secondary (import). On import, a pilot without preferences gets default ones based on their codes:
+C → defence allow list COMBAT, ISR, COMMAND, AAR; T → AIRLIFT, AIRBORNE, AAR; N → MARITIME (and SAR in civil
+security); several codes → union of the themes.
 
-Les catégories et les thèmes sont configurables (Paramètres › Centre) ; une catégorie qui a servi est **retirée**
-(cachée des listes, gardée pour l'historique), jamais effacée.
+The categories and themes are configurable (Settings › Centre); a category that has been used is **retired**
+(hidden from the lists, kept for the history), never deleted.
 
-### 1.3 Format d'une disponibilité
+### 1.3 Format of an availability entry
 
-Votre structure, à quelques précisions près :
+Your structure, with a few clarifications:
 
 ```json
 {
@@ -73,86 +73,86 @@ Votre structure, à quelques précisions près :
 }
 ```
 
-- Heures en **UTC** (comme aujourd'hui), au quart d'heure ; `null` = journée entière.
-- `categorie` : identifiant stable d'une catégorie de la configuration ; les thèmes réellement ouverts se calculent à
-  la lecture (catégorie + préférences du pilote à ce moment).
-- **Plusieurs plages peuvent se chevaucher** (disponible secours ET combat sur la même soirée).
-- Un fichier par pilote et par semaine : `data/disponibilites/RBR/2026-W41.json` (peu de conflits git, archivage par
-  année naturel). Les fichiers actuels (`RBR.json`, grille de codes) sont convertis par un outil (heures consécutives
-  du même code → une plage).
+- Times in **UTC** (as today), to the quarter hour; `null` = whole day.
+- `categorie`: stable identifier of a category of the configuration; the themes actually opened are calculated on
+  reading (category + the pilot's preferences at that moment).
+- **Several ranges can overlap** (available for rescue AND combat on the same evening).
+- One file per pilot and per week: `data/disponibilites/RBR/2026-W41.json` (few git conflicts, natural archiving by
+  year). The current files (`RBR.json`, grid of codes) are converted by a tool (consecutive hours
+  of the same code → one range).
 
-### 1.4 Configuration de l'arbre
+### 1.4 Configuration of the tree
 
-`data/config/disponibilites.json` (synchronisé, daté, `va: DEFA`), modifiable dans **Paramètres › Centre ›
-Catégories de disponibilité** (usage quotidien) : groupes, catégories (libellés, couleur, thèmes ouverts, code ODV),
-thèmes par domaine. Les règles de l'ODV et de l'affectation lisent les thèmes au lieu des tables écrites en dur
+`data/config/disponibilites.json` (synchronised, dated, `va: DEFA`), editable in **Settings › Centre ›
+Availability categories** (everyday use): groups, categories (labels, colour, themes opened, ODV code),
+themes per domain. The ODV and assignment rules read the themes instead of the hard-coded tables
 (`FAMILY_ROLES`, `DOMAIN`).
 
-### 1.5 Page de saisie générique
+### 1.5 Generic entry page
 
-Même page pour tous les pilotes (Mes missions › Mes disponibilités, et ouvrable seule) :
+Same page for all pilots (My missions › My availability, and can be opened on its own):
 
-- semaine affichée (flèches, date, « semaine en cours ») ;
-- **ajout** : Groupe ▼ → Catégorie ▼ (selon le groupe) → jours (cases du lundi au dimanche) → horaires (facultatifs)
-  → « Ajouter » ; pour une catégorie personnalisée, rappel des thèmes ouverts et lien vers ses préférences ;
-- frise de la semaine : une ligne par jour, les plages en couleur (empilées quand elles se chevauchent), clic sur une
-  plage pour la modifier ou la retirer ; « ⧉ semaine précédente » conservé ;
-- l'ancienne grille horaire reste en lecture (vue d'ensemble) jusqu'à la bascule.
+- week shown (arrows, date, “current week”);
+- **adding**: Group ▼ → Category ▼ (depending on the group) → days (boxes from Monday to Sunday) → times (optional)
+  → “Add”; for a custom category, reminder of the themes opened and link to one's preferences;
+- timeline of the week: one row per day, the ranges in colour (stacked when they overlap), click on a
+  range to change or remove it; “⧉ Previous week” kept;
+- the old hourly grid remains read-only (overview) until the switchover.
 
-## 2. Paramètres : quatre pages au lieu d'une
+## 2. Settings: four pages instead of one
 
-| Page | Pour qui, quand | Contenu |
+| Page | For whom, when | Content |
 |---|---|---|
-| **Mon profil** | chaque utilisateur, ses propres données | trigramme, identifiants **VATSIM, IVAO**, SimBrief, identifiants du site de la compagnie (aujourd'hui saisis au premier lancement seulement), mot de passe, **préférences de thèmes** (listes blanches / noires), langue, appareils et simulateurs |
-| **Centre** (CPCO, déverrouillé) | quotidien | **utilisateurs et droits**, **catégories de disponibilité**, réglages du routage, envoi des CR (webservice) |
-| **Installation** | une fois | premier lancement, dépôt de données, dossiers, compagnie virtuelle (SO Group Virtual par défaut), canal de mise à jour |
-| **Maintenance** | de temps en temps | mises à jour, versions, dépendances, base SIA (28 jours), caches (dont « reconstruire l'index »), stockage, sauvegarde totale, journal, fichiers de référence (flotte, types OACI, indicatifs, base, renommages, registre des CR) |
+| **My profile** | each user, their own data | trigram, **VATSIM, IVAO** identifiers, SimBrief, airline website identifiers (today entered at first run only), password, **theme preferences** (allow / block lists), language, aircraft and simulators |
+| **Centre** (CPCO, unlocked) | everyday | **users and rights**, **availability categories**, routing settings, report sending (web service) |
+| **Installation** | once | first run, data repository, folders, virtual airline (SO Group Virtual by default), update channel |
+| **Maintenance** | from time to time | updates, versions, dependencies, SIA database (28 days), caches (including “rebuild the index”), storage, full backup, log, reference files (fleet, ICAO types, callsigns, database, renames, mission report (CR) ledger) |
 
-Apparence reste une page (et une fenêtre depuis le menu).
+Appearance remains a page (and a window from the menu).
 
-### Utilisateurs et droits
+### Users and rights
 
-- Fichier par utilisateur `data/utilisateurs/<TRI>.json` (synchronisé comme les missions) : trigramme, nom affiché,
-  rôle **`admin_centre`** ou **`utilisateur`**, actif, mot de passe (empreinte PBKDF2 salée, jamais en clair),
-  préférences de thèmes, compagnie (`va: DEFA`).
-- **Mode `develop`** (aujourd'hui, réglé dans la configuration partagée) : la sécurité est **testée, pas imposée** ;
-  on change de trigramme librement, la connexion est facultative.
-- **Mode `production`** : connexion (trigramme + mot de passe) pour les missions, et pour le Centre si l'on est
-  `admin_centre` ; le reste de la suite reste libre ; le trigramme ne change plus à la volée ; mot de passe changé en
-  connaissant l'ancien, ou réinitialisé par un admin.
-- **Usurpation** : un admin peut agir en tant qu'un autre utilisateur ; un bandeau « Usurpation : utilisateur TOTO »
-  s'affiche alors sur toutes les pages, et chaque écriture porte `by: "ADM pour TOTO"`.
-- Limite : tant que tout se vérifie dans le navigateur, ces contrôles ne protègent pas vraiment ; la vérification
-  passera côté serveur avec le webservice (voir [INDEX_DONNEES.md](INDEX_DONNEES.md) § 9, synchronisation).
+- One file per user `data/utilisateurs/<TRI>.json` (synchronised like the missions): trigram, display name,
+  role **`admin_centre`** or **`utilisateur`**, active, password (salted PBKDF2 hash, never in clear text),
+  theme preferences, airline (`va: DEFA`).
+- **`develop` mode** (today, set in the shared configuration): security is **tested, not enforced**;
+  the trigram can be changed freely, sign-in is optional.
+- **`production` mode**: sign-in (trigram + password) for the missions, and for the Centre if one is
+  `admin_centre`; the rest of the suite stays open; the trigram no longer changes on the fly; password changed by
+  knowing the old one, or reset by an admin.
+- **Impersonation**: an admin can act as another user; an “Impersonation: user TOTO” banner
+  is then shown on every page, and each write carries `by: "ADM pour TOTO"`.
+- Limit: as long as everything is checked in the browser, these checks do not really protect; verification
+  will move to the server side with the web service (see [INDEX_DONNEES.md](INDEX_DONNEES.md) § 9, synchronisation).
 
-## 3. Barre latérale
+## 3. Side bar
 
-Ordre proposé, par usage (pilote d'abord, puis Centre) :
+Proposed order, by use (pilot first, then Centre):
 
-1. Mes missions · 2. CR · 3. Cartes de vol · 4. Carburant · 5. Atterrissages · 6. Reporting
-— *Centre* — 7. **Missions** (générateur **et** studio cartographique : un bouton, deux pages, le bouton reste actif
-sur les deux ; passage de l'une à l'autre par des onglets en tête de page) · 8. Registre · 9. ODV
-— *bas* — Apparence · Paramètres · Menu
+1. My missions · 2. Report · 3. Flight maps · 4. Fuel · 5. Landings · 6. Reporting
+— *Centre* — 7. **Missions** (generator **and** map studio: one button, two pages, the button stays active
+on both; switching from one to the other through tabs at the top of the page) · 8. Registry · 9. ODV
+— *bottom* — Appearance · Settings · Menu
 
-La liste devient une clé `sidebar` de `config/repository_tree` (aujourd'hui écrite en dur dans `repository_nav.js`), avec
-des séparateurs titrés (« Centre »).
+The list becomes a `sidebar` key of `config/repository_tree` (today hard-coded in `repository_nav.js`), with
+titled separators (“Centre”).
 
-## 4. Décisions (5 octobre 2026)
+## 4. Decisions (5 October 2026)
 
-1. Catégories générales peu nombreuses, détail par préférences (listes blanches / noires) ; ODV regroupé.
-2. Classeur ODV secondaire ; préférences créées à l'import pour un pilote qui n'en a pas.
-3. Utilisateurs et rôles dans un fichier partagé et synchronisé ; mode `develop` / `production` ; usurpation affichée.
-4. Barre latérale : pilote d'abord.
+1. Few general categories, detail through preferences (allow / block lists); ODV grouped.
+2. ODV workbook secondary; preferences created on import for a pilot who has none.
+3. Users and roles in a shared and synchronised file; `develop` / `production` mode; impersonation shown.
+4. Side bar: pilot first.
 
-## 5. Mise en œuvre (branche `feature/dispos-reorg`)
+## 5. Implementation (branch `feature/dispos-reorg`)
 
-| Sujet | Où |
+| Topic | Where |
 |---|---|
-| Barre latérale (clé `sidebar`), onglets en tête de page (clé `tabs` : Mes missions ⇄ Mes disponibilités, générateur ⇄ studio, Paramètres) | `config/repository_tree`, `shared/repository_nav.js` |
-| Paramètres en quatre pages ; rubrique → page (clé `settings`) ; anciennes adresses renvoyées par `parametrage.html` | `apps/settings/{profil,centre,installation,maintenance}.html`, `shared/settings_panels.js`, `shared/data_admin.js`, `shared/maintenance_page.js` |
-| Utilisateurs, mode develop / production, connexion, usurpation | `shared/users.js`, `data/utilisateurs/`, `data/config/suite.json` |
-| Fichiers du pool écrits sous verrou (dossier des données, sinon boîte d'envoi du navigateur `suiteDataOutbox:v1`) | `MissionAssignments.readData` / `writeData` / `flushData` (`shared/assignments.js`) |
-| Catégories, thèmes ouverts, déclarations par semaine | `shared/dispos.js`, `data/config/disponibilites.json`, `data/disponibilites/<TRI>/<AAAA>-W<nn>.json` |
-| Saisie par plages (Mes missions et page seule) ; ancienne grille en lecture | `shared/dispos_editor.js`, `apps/pilot/disponibilites.html` |
-| ODV : déclarations regroupées, missions probables et contrôles des vols par thèmes, préférences créées à l'import du classeur | `apps/cpco/odv_core.js`, `odv_assign.js`, `odv_planning.js` |
-| Conversion des grilles | `python tools/convert_dispos.py` (aperçu), `--write` |
+| Side bar (`sidebar` key), tabs at the top of the page (`tabs` key: My missions ⇄ My availability, generator ⇄ studio, Settings) | `config/repository_tree`, `shared/repository_nav.js` |
+| Settings in four pages; section → page (`settings` key); old addresses redirected by `parametrage.html` | `apps/settings/{profil,centre,installation,maintenance}.html`, `shared/settings_panels.js`, `shared/data_admin.js`, `shared/maintenance_page.js` |
+| Users, develop / production mode, sign-in, impersonation | `shared/users.js`, `data/utilisateurs/`, `data/config/suite.json` |
+| Pool files written under lock (data folder, otherwise the browser's outbox `suiteDataOutbox:v1`) | `MissionAssignments.readData` / `writeData` / `flushData` (`shared/assignments.js`) |
+| Categories, themes opened, declarations per week | `shared/dispos.js`, `data/config/disponibilites.json`, `data/disponibilites/<TRI>/<AAAA>-W<nn>.json` |
+| Entry by ranges (My missions and standalone page); old grid read-only | `shared/dispos_editor.js`, `apps/pilot/disponibilites.html` |
+| ODV: grouped declarations, likely missions and flight checks by theme, preferences created on workbook import | `apps/cpco/odv_core.js`, `odv_assign.js`, `odv_planning.js` |
+| Grid conversion | `python tools/convert_dispos.py` (preview), `--write` |

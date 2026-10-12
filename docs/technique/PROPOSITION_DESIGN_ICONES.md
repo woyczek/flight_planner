@@ -1,58 +1,58 @@
-# Proposition — icônes, numéros et sous-titres de blocs, barre latérale, zones de dépôt
+# Proposal — block icons, numbers and subtitles, side bar, drop zones
 
-Statut : **proposition** accompagnée d'un **prototype non branché** (aucune page existante modifiée).
-Point de départ : la maquette du générateur de mission (barre latérale sombre, en-tête avec sélecteur de mission,
-blocs numérotés à sous-titre, sous-cartes à icône, zones de dépôt, boutons à icône, bandeau d'information).
-À lire avec [FRAMEWORK.md](FRAMEWORK.md).
+Status: **proposal** accompanied by an **unwired prototype** (no existing page modified).
+Starting point: the mock-up of the mission generator (dark side bar, header with mission selector,
+numbered blocks with subtitle, sub-cards with icon, drop zones, buttons with icon, information banner).
+To be read with [FRAMEWORK.md](FRAMEWORK.md).
 
-Prototype :
+Prototype:
 
-| Fichier | Rôle |
+| File | Role |
 |---|---|
-| `shared/icons/repository_icons.js` | registre d'icônes au trait (SVG en ligne, 43 icônes, `window.RepositoryIcons`) |
-| `shared/block_icons.js` + `.css` | lit `data-step`, `data-icon`, `data-subtitle` ; sous-cartes `.repo-card` ; zones de dépôt `input[type=file][data-dropzone]` ; couleur des icônes selon le contraste réel ; design « Console » |
-| `shared/side_nav.js` | barre latérale générée depuis `repository_tree` |
-| `docs/demo_design_icones.html` | démonstration : la maquette reconstruite avec le framework, choix du thème / design / barre latérale, tableau des contrastes de tous les thèmes, catalogue d'icônes |
+| `shared/icons/repository_icons.js` | registry of line icons (inline SVG, 43 icons, `window.RepositoryIcons`) |
+| `shared/block_icons.js` + `.css` | reads `data-step`, `data-icon`, `data-subtitle`; `.repo-card` sub-cards; drop zones `input[type=file][data-dropzone]`; icon colour according to the actual contrast; “Console” design |
+| `shared/side_nav.js` | side bar generated from `repository_tree` |
+| `docs/demo_design_icones.html` | demonstration: the mock-up rebuilt with the framework, choice of theme / design / side bar, contrast table of all themes, icon catalogue |
 
-La démonstration s'ouvre par le serveur local du dépôt (voir INSTALL), ex. `http://localhost:8765/docs/demo_design_icones.html`.
-Vérifiée : 4 langues, 5 designs, thèmes clair (`sia`) et sombre (`flight`), glisser-déposer (fichier accepté,
-fichier refusé), Masquer / Afficher.
+The demonstration is opened through the repository's local server (see INSTALL), e.g. `http://localhost:8765/docs/demo_design_icones.html`.
+Checked: 4 languages, 5 designs, light (`sia`) and dark (`flight`) themes, drag and drop (file accepted,
+file refused), “Hide” / “Show”.
 
 ---
 
-## 1. Analyse de la maquette
+## 1. Analysis of the mock-up
 
-| Élément de la maquette | Existant dans le framework | Écart |
+| Element of the mock-up | Existing in the framework | Gap |
 |---|---|---|
-| Barre latérale sombre (Missions, Générateur, Cartes, CR, Paramètres, Aide) | menu ☰ (`repository_nav.js`), arborescence complète de `repository_tree` | nouvelle : raccourcis permanents vers les applications, en complément du ☰ |
-| En-tête : icône + titre + sous-titre | `.repo-header`, `<h1>` de la page | icône et sous-titre du titre |
-| Sélecteur de mission ◀ liste ▶ + boutons d'action | propre au générateur et au studio (lots de missions, v2.2.8) | à factoriser plus tard (même composant dans les deux pages) |
-| Bloc numéroté (pastille « 1 »), titre en capitales, sous-titre, « ˄ Masquer » | bloc `.repo-block` + `.repo-block-heading` (`app_framework.js`), numéro écrit dans le titre (« 1. Importer une mission ») | pastille, sous-titre, icône ; capitales = forme (design) |
-| Sous-cartes : icône + titre + sous-titre (+ bouton agrandir) | `.pasteBox`, `<strong>` ou `<label>` selon les pages | composant commun `.repo-card` |
-| Zones de dépôt en pointillés « Choisir des fichiers ou glisser-déposer ici » | `<input type="file">` natif ; `file_access.js` ouvre le sélecteur dans le dossier paramétré | composant commun qui enveloppe l'`<input>` |
-| Libellés de champs avec icône | `<label>` texte + champ | icône avant le texte |
-| Boutons avec icône (avant ou après) | texte seul, parfois flèche « → » ou emoji (💾, 📅, ⏱) | icône SVG déclarée |
-| Bandeau d'information en bas du bloc | `#status.status`, `p.small` | style commun `.repo-notice` |
+| Dark side bar (Missions, Generator, Maps, Reports (CR), Settings, Help) | ☰ menu (`repository_nav.js`), complete tree of `repository_tree` | new: permanent shortcuts to the applications, in addition to the ☰ |
+| Header: icon + title + subtitle | `.repo-header`, `<h1>` of the page | icon and subtitle of the title |
+| Mission selector ◀ list ▶ + action buttons | specific to the generator and the studio (mission batches, v2.2.8) | to be factored later (same component in both pages) |
+| Numbered block (badge “1”), title in capitals, subtitle, “˄ Hide” | block `.repo-block` + `.repo-block-heading` (`app_framework.js`), number written in the title (“1. Import a mission”) | badge, subtitle, icon; capitals = form (design) |
+| Sub-cards: icon + title + subtitle (+ enlarge button) | `.pasteBox`, `<strong>` or `<label>` depending on the pages | common component `.repo-card` |
+| Dotted drop zones “Choose files or drag and drop here” | native `<input type="file">`; `file_access.js` opens the picker in the configured folder | common component that wraps the `<input>` |
+| Field labels with icon | text `<label>` + field | icon before the text |
+| Buttons with icon (before or after) | text only, sometimes an arrow “→” or emoji (💾, 📅, ⏱) | declared SVG icon |
+| Information banner at the bottom of the block | `#status.status`, `p.small` | common style `.repo-notice` |
 
-Constat : **tout ce qui change est déclaratif** (une icône, un numéro, un sous-titre, une zone de dépôt) et
-s'applique de la même façon à toutes les pages. C'est donc au framework de le rendre, comme il rend déjà les
-boutons ↕ / Masquer : une page déclare, le framework dessine.
+Observation: **everything that changes is declarative** (an icon, a number, a subtitle, a drop zone) and
+applies in the same way to all pages. It is therefore up to the framework to render it, as it already renders the
+↕ / “Hide” buttons: a page declares, the framework draws.
 
-## 2. Principes retenus
+## 2. Principles adopted
 
-1. **Déclaration dans le HTML**, lue par le framework — dans la continuité de `data-block-id` et
-   `data-default-hidden`. Aucune page n'écrit de SVG ni de JavaScript pour ses icônes.
-2. **Structure commune à tous les designs, forme propre à chaque design** (règle de `designs.css`) : icônes,
-   numéros et sous-titres existent partout ; leur taille, leur forme et leur densité changent avec le design.
-3. **Couleurs du thème uniquement** (`--repo-bar`, `--repo-bar-text`, `--repo-page`, `--repo-accent`) et
-   **contrastes vérifiés à l'exécution** sur la surface réelle du bloc (§ 7).
-4. **Aucune dépendance au lancement** : pas de CDN, pas de police d'icônes téléchargée ; tout est dans le dépôt.
-5. **La traduction ne change pas** : les textes restent des nœuds texte en français dans la source, traduits par
-   `content_i18n.js` ; l'icône est un élément à côté du texte, jamais dans le texte.
+1. **Declaration in the HTML**, read by the framework — in continuity with `data-block-id` and
+   `data-default-hidden`. No page writes SVG or JavaScript for its icons.
+2. **Structure common to all designs, form specific to each design** (rule of `designs.css`): icons,
+   numbers and subtitles exist everywhere; their size, their shape and their density change with the design.
+3. **Theme colours only** (`--repo-bar`, `--repo-bar-text`, `--repo-page`, `--repo-accent`) and
+   **contrasts checked at run time** on the actual surface of the block (§ 7).
+4. **No dependency at launch**: no CDN, no downloaded icon font; everything is in the repository.
+5. **Translation does not change**: the texts remain French text nodes in the source, translated by
+   `content_i18n.js`; the icon is an element next to the text, never in the text.
 
-## 3. Déclaration dans une page
+## 3. Declaration in a page
 
-### Blocs
+### Blocks
 
 ```html
 <section data-block-id="mission-import" data-step="1" data-icon="upload"
@@ -62,26 +62,26 @@ boutons ↕ / Masquer : une page déclare, le framework dessine.
 </section>
 ```
 
-| Attribut | Effet | Remarque |
+| Attribute | Effect | Remark |
 |---|---|---|
-| `data-step="1"` | pastille numérotée avant le titre | décorative (`aria-hidden`) : le titre se lit seul |
-| `data-icon="upload"` | icône avant le titre | nom du registre (§ 4) |
-| `data-subtitle="…"` | sous-titre sous le titre, dans l'en-tête du bloc | reste visible quand le bloc est masqué |
-| `<p class="repo-block-subtitle">` juste après le `<h2>` | même effet, en élément | au choix de la page (texte long, balisage) |
+| `data-step="1"` | numbered badge before the title | decorative (`aria-hidden`): the title reads on its own |
+| `data-icon="upload"` | icon before the title | name in the registry (§ 4) |
+| `data-subtitle="…"` | subtitle under the title, in the block header | remains visible when the block is hidden |
+| `<p class="repo-block-subtitle">` right after the `<h2>` | same effect, as an element | at the page's choice (long text, markup) |
 
-Le sous-titre en attribut est converti en **nœud texte** par le framework : `content_i18n.js` le traduit comme
-n'importe quel texte (il suffit d'une ligne `[fr, en, de, es]` dans la table de la page).
+The subtitle given as an attribute is converted into a **text node** by the framework: `content_i18n.js` translates it like
+any other text (a `[fr, en, de, es]` line in the page's table is enough).
 
-Rendu : `.repo-block-heading` reçoit `.repo-block-heading-rich` et contient
-`.repo-block-lead` (pastille, icône) → `.repo-block-titles` (`<h2>`, sous-titre) → `.repo-block-tools` (↕, Masquer).
-Le bouton Masquer reçoit un chevron (˄ / ˅) en CSS, car son texte est réécrit par `app_framework.js`.
+Rendering: `.repo-block-heading` receives `.repo-block-heading-rich` and contains
+`.repo-block-lead` (badge, icon) → `.repo-block-titles` (`<h2>`, subtitle) → `.repo-block-tools` (↕, “Hide”).
+The “Hide” button receives a chevron (˄ / ˅) in CSS, because its text is rewritten by `app_framework.js`.
 
-**Numéros hors du titre.** Aujourd'hui le numéro est dans le texte (« 1. Importer une mission ») et dans les
-lignes de traduction. Il passe dans `data-step` ; les lignes de traduction perdent le numéro. Le framework ne
-retire **pas** automatiquement un « 1. » du titre : `content_i18n` mémorise la ligne traduite par nœud texte, et
-modifier ce texte casserait la retraduction au changement de langue (constaté en lisant `translate()`).
+**Numbers outside the title.** Today the number is in the text (“1. Import a mission”) and in the
+translation lines. It moves into `data-step`; the translation lines lose the number. The framework does **not**
+automatically remove a “1.” from the title: `content_i18n` remembers the translated line per text node, and
+modifying that text would break re-translation on a language change (found by reading `translate()`).
 
-### Sous-cartes
+### Sub-cards
 
 ```html
 <div class="repo-card" data-icon="file" data-subtitle="Importez un ou plusieurs fichiers de mission (YAML, .md).">
@@ -91,10 +91,10 @@ modifier ce texte casserait la retraduction au changement de langue (constaté e
 </div>
 ```
 
-`.repo-card` n'est **pas** un bloc (ni ↕ ni Masquer) : c'est une subdivision d'un bloc. Nom distinct de `.card`
-(déjà stylé par les designs et utilisé par certaines pages).
+`.repo-card` is **not** a block (neither ↕ nor “Hide”): it is a subdivision of a block. Name distinct from `.card`
+(already styled by the designs and used by some pages).
 
-### Icônes en ligne (boutons, libellés, titres, bandeaux)
+### Inline icons (buttons, labels, titles, banners)
 
 ```html
 <button data-icon="plus">Nouvelle mission</button>
@@ -104,72 +104,72 @@ modifier ce texte casserait la retraduction au changement de langue (constaté e
 <p class="repo-notice" data-icon="info">Aucune mission chargée.</p>
 ```
 
-- L'icône est insérée **à côté** du nœud texte, qui n'est pas modifié (la traduction continue de le suivre).
-- Dans un `<label>` (souvent en grille : texte au-dessus du champ), l'icône et le premier texte sont regroupés
-  dans `.repo-label-line` ; le nœud texte est déplacé, pas réécrit.
-- Bouton sans texte (icône seule) : `aria-label` et `title` **obligatoires** (traduits par `content_i18n`).
-- Les flèches « → » écrites dans les textes deviennent `data-icon-end="arrow-right"` (lignes de traduction
-  sans la flèche).
+- The icon is inserted **next to** the text node, which is not modified (translation keeps following it).
+- In a `<label>` (often in a grid: text above the field), the icon and the first text are grouped
+  in `.repo-label-line`; the text node is moved, not rewritten.
+- Button without text (icon only): `aria-label` and `title` **mandatory** (translated by `content_i18n`).
+- The arrows “→” written in the texts become `data-icon-end="arrow-right"` (translation lines
+  without the arrow).
 
-### Pages rendues par JavaScript
+### Pages rendered by JavaScript
 
-- **Mission Core** (CR des 16 familles) : les blocs viennent de `shared/mission_core/blocks.js` et sont construits
-  par `form.js` (`section.dataset.blockId = mc-…`). Ajouter `icon` et `subtitle` (tableau `[fr, en, de, es]`,
-  comme `title`) aux définitions ; `form.js` pose `data-icon` et un `<p class="repo-block-subtitle">` déjà
-  traduit. Une seule modification couvre toutes les familles.
-- **Reportings** (`global_reporting.js`) : le sous-titre existe déjà sous forme de `<span class="mcg-sub">` dans le
-  `<h2>` ; il peut devenir `.repo-block-subtitle`.
-- Toute page qui redessine ses blocs appelle déjà `AppFramework.refresh()` : le décor est refait au même moment.
+- **Mission Core** (reports of the 16 families): the blocks come from `shared/mission_core/blocks.js` and are built
+  by `form.js` (`section.dataset.blockId = mc-…`). Add `icon` and `subtitle` (array `[fr, en, de, es]`,
+  like `title`) to the definitions; `form.js` sets `data-icon` and an already translated
+  `<p class="repo-block-subtitle">`. A single change covers all the families.
+- **Reportings** (`global_reporting.js`): the subtitle already exists as a `<span class="mcg-sub">` in the
+  `<h2>`; it can become `.repo-block-subtitle`.
+- Any page that redraws its blocks already calls `AppFramework.refresh()`: the decoration is redone at the same moment.
 
-### Intégration définitive (au lieu du fichier séparé du prototype)
+### Final integration (instead of the prototype's separate file)
 
-Le prototype enveloppe `AppFramework.refresh()` et observe le DOM pour rester non intrusif. En production :
+The prototype wraps `AppFramework.refresh()` and observes the DOM to remain non-intrusive. In production:
 
-- lecture de `data-step` / `data-icon` / `data-subtitle` **dans `app_framework.js`**, au moment où il construit
-  `.repo-block-heading` (plus d'enveloppe de `refresh`, plus de double passage) ;
-- registre d'icônes chargé par `repository_nav.js` (comme `designs.css`, `pilot_profile.js`, `file_access.js`),
-  donc disponible sur toutes les pages sans nouvelle balise `<script>` ;
-- icônes en ligne et `.repo-card` : petite passe commune dans `app_framework.js` (idempotente, même observateur
-  léger que le prototype) ;
-- zone de dépôt : dans `file_access.js`, qui gère déjà tous les `<input type="file">` (§ 6) ;
-- styles : `repository_nav.css` (structure) et `designs.css` (forme par design).
+- reading of `data-step` / `data-icon` / `data-subtitle` **in `app_framework.js`**, at the moment it builds
+  `.repo-block-heading` (no more wrapping of `refresh`, no more double pass);
+- icon registry loaded by `repository_nav.js` (like `designs.css`, `pilot_profile.js`, `file_access.js`),
+  hence available on all pages without a new `<script>` tag;
+- inline icons and `.repo-card`: a small common pass in `app_framework.js` (idempotent, same lightweight
+  observer as the prototype);
+- drop zone: in `file_access.js`, which already handles all the `<input type="file">` (§ 6);
+- styles: `repository_nav.css` (structure) and `designs.css` (form per design).
 
-## 4. Jeu d'icônes
+## 4. Icon set
 
 ### Options
 
-| Option | Avantages | Inconvénients | Avis |
+| Option | Advantages | Drawbacks | Opinion |
 |---|---|---|---|
-| **Registre JS de tracés SVG** (`repository_icons.js`) | aucun fichier à charger, marche en `file://` et à l'impression, `currentColor`, extensible par page (`RepositoryIcons.add`) | icônes dans un fichier JS (≈ 150 octets par icône) | **retenu** |
-| Sprite SVG externe (`<use href="../icons.svg#x">`) | fichier SVG standard | bloqué en `file://`, une requête, pas de `currentColor` fiable selon les navigateurs anciens | non |
-| Police d'icônes locale | une balise CSS | rendu flou, accessibilité médiocre (caractères privés), une seule couleur, fichier binaire | non |
-| Emoji (état actuel : 💾 📅 ⏱ ✓ ⚠) | rien à faire | rendu différent selon le système, couleurs imposées, pas thémables | à remplacer progressivement ; ✓ / ⚠ peuvent rester dans les textes |
+| **JS registry of SVG paths** (`repository_icons.js`) | no file to load, works under `file://` and in print, `currentColor`, extensible per page (`RepositoryIcons.add`) | icons in a JS file (≈ 150 bytes per icon) | **adopted** |
+| External SVG sprite (`<use href="../icons.svg#x">`) | standard SVG file | blocked under `file://`, one request, no reliable `currentColor` in older browsers | no |
+| Local icon font | one CSS tag | blurry rendering, poor accessibility (private-use characters), a single colour, binary file | no |
+| Emoji (current state: 💾 📅 ⏱ ✓ ⚠) | nothing to do | rendering differs by system, imposed colours, not themable | to be replaced gradually; ✓ / ⚠ can remain in the texts |
 
-### Source et licence
+### Source and licence
 
-Style commun : **grille 24 × 24, trait 2, extrémités arrondies, sans remplissage**, couleur `currentColor`.
+Common style: **24 × 24 grid, stroke 2, rounded ends, no fill**, colour `currentColor`.
 
-- Les 43 icônes du prototype ont été **dessinées pour le prototype** dans ce style (rien n'a été téléchargé).
-- Pour la production, **Lucide** (<https://lucide.dev>, licence **ISC**, dérivé de Feather, licence MIT) est la
-  référence naturelle : même grille, plus de 1 500 icônes, dont celles de la maquette (`map`, `wrench`, `file`,
+- The 43 icons of the prototype were **drawn for the prototype** in this style (nothing was downloaded).
+- For production, **Lucide** (<https://lucide.dev>, **ISC** licence, derived from Feather, MIT licence) is the
+  natural reference: same grid, more than 1,500 icons, including those of the mock-up (`map`, `wrench`, `file`,
   `cloud-upload`, `wand-sparkles`, `database`, `bookmark`, `refresh-cw`, `info`, `eye`, `x`, `send`, `settings`,
-  `circle-help`, `globe`, `list`, `users`, `box`, `maximize-2`…). ISC et MIT sont compatibles avec la diffusion du
-  dépôt : il suffit de conserver le texte de licence.
-- Procédure proposée (manuelle, une fois) : copier les tracés des seules icônes employées dans
-  `repository_icons.js`, ajouter `shared/icons/LICENSE` (texte ISC de Lucide + MIT de Feather), noter la version
-  de Lucide en tête du fichier. Pas de paquet npm, pas de CDN, pas de chargement au lancement.
+  `circle-help`, `globe`, `list`, `users`, `box`, `maximize-2`…). ISC and MIT are compatible with the distribution of the
+  repository: it is enough to keep the licence text.
+- Proposed procedure (manual, once): copy the paths of only the icons used into
+  `repository_icons.js`, add `shared/icons/LICENSE` (ISC text of Lucide + MIT of Feather), note the version
+  of Lucide at the top of the file. No npm package, no CDN, no loading at launch.
 
-### Règles d'usage
+### Usage rules
 
-- Nom d'icône = rôle générique (`upload`, `database`), jamais le nom d'une page.
-- Tailles : 1,15 em dans un bouton ou un libellé, 24 px pour un bloc, 28 px pour une sous-carte, 22 px dans la
-  barre latérale (réduites par le design Opérationnel).
-- Icônes **décoratives** (`aria-hidden="true"`) : le texte voisin porte le sens. Icône seule = `aria-label`.
-- Une icône par idée, la même partout (ex. `upload` = importer, `download` = exporter, `bookmark` = mémoriser).
+- Icon name = generic role (`upload`, `database`), never the name of a page.
+- Sizes: 1.15 em in a button or a label, 24 px for a block, 28 px for a sub-card, 22 px in the
+  side bar (reduced by the Operational design).
+- **Decorative** icons (`aria-hidden="true"`): the neighbouring text carries the meaning. Icon alone = `aria-label`.
+- One icon per idea, the same everywhere (e.g. `upload` = import, `download` = export, `bookmark` = remember).
 
-## 5. Barre latérale de navigation
+## 5. Navigation side bar
 
-Générée par `side_nav.js` à partir de `repository_tree` — une seule source pour le menu ☰ et la barre :
+Generated by `side_nav.js` from `repository_tree` — a single source for the ☰ menu and the bar:
 
 ```js
 // repository_tree (proposition)
@@ -186,166 +186,166 @@ sidebar:[
 ]
 ```
 
-- Entrée active : la page elle-même, sinon `match` contenu dans le chemin (tous les CR d'une famille allument
-  « CR »).
-- Seules les pages déclarées dans `pages` sont affichées ; liens calculés depuis la racine (comme le ☰).
-- Le **☰ reste** la navigation complète (arborescence, actions de page, profil, données locales, design) ; la
-  barre n'en est qu'un raccourci.
-- Affichage : préférence `html[data-sidenav="on"]` (menu ☰ › Design, case « Barre latérale ») ou design
-  « Console » ; masquée sous 760 px et à l'impression. Le décalage est posé sur `<html>` (`padding-left`), car
-  plusieurs pages imposent `body{margin:0!important;padding:0!important}`.
-- La maquette distingue « Missions » et « Générateur » : dans la suite actuelle, c'est la même page
-  (`mission_editor.html`). **À trancher** (§ 11).
+- Active entry: the page itself, otherwise `match` contained in the path (all the reports of a family light up
+  “CR”).
+- Only the pages declared in `pages` are shown; links computed from the root (like the ☰).
+- The **☰ remains** the complete navigation (tree, page actions, profile, local data, design); the
+  bar is only a shortcut to it.
+- Display: preference `html[data-sidenav="on"]` (☰ menu › Design, “Side bar” checkbox) or the
+  “Console” design; hidden below 760 px and when printing. The offset is set on `<html>` (`padding-left`), because
+  several pages impose `body{margin:0!important;padding:0!important}`.
+- The mock-up distinguishes “Missions” and “Generator” (« Générateur »): in the current suite, it is the same page
+  (`mission_editor.html`). **To be decided** (§ 11).
 
-## 6. Zones de dépôt de fichiers
+## 6. File drop zones
 
-`<input type="file" data-dropzone>` → l'`<input>` est **déplacé dans** une zone `.repo-dropzone`, jamais remplacé :
+`<input type="file" data-dropzone>` → the `<input>` is **moved into** a `.repo-dropzone` zone, never replaced:
 
-- le **clic** dans la zone appelle `input.click()` → `file_access.js` intercepte comme aujourd'hui et ouvre le
-  sélecteur **dans le dossier paramétré** (`data-picker-folder` respecté) ;
-- le **dépôt** de fichiers filtre selon `accept` (extensions, types MIME, `image/*`), respecte `multiple`, pose
-  `input.files` et émet `change` (bulles) — **le même événement que `file_access.js`** : le code des pages ne
-  change pas ;
-- fichiers refusés : message « Type de fichier non accepté : … » dans la zone (lu par les lecteurs d'écran,
-  `aria-live`) ;
-- **clavier** : l'`<input>` reste focalisable (masqué visuellement, pas `display:none`) ; contour de focus sur la
-  zone (`:focus-within`) ;
-- textes du composant (« Choisir des fichiers », « ou glisser-déposer ici », « Aucun fichier choisi ») traduits
-  par le composant lui-même (comme Masquer / Afficher), noms des fichiers choisis affichés ;
-- zone placée dans un `<label>` (cas du générateur) : `preventDefault` sur le clic, pas de double ouverture.
+- a **click** in the zone calls `input.click()` → `file_access.js` intercepts as today and opens the
+  picker **in the configured folder** (`data-picker-folder` respected);
+- **dropping** files filters according to `accept` (extensions, MIME types, `image/*`), respects `multiple`, sets
+  `input.files` and emits `change` (bubbling) — **the same event as `file_access.js`**: the code of the pages does not
+  change;
+- refused files: message “File type not accepted: …” (« Type de fichier non accepté : … ») in the zone (read by screen readers,
+  `aria-live`);
+- **keyboard**: the `<input>` remains focusable (visually hidden, not `display:none`); focus outline on the
+  zone (`:focus-within`);
+- texts of the component (“Choose files”, “or drag and drop here”, “No file chosen”) translated
+  by the component itself (like “Hide” / “Show”), names of the chosen files displayed;
+- zone placed inside a `<label>` (case of the generator): `preventDefault` on the click, no double opening.
 
-À prévoir en production : empêcher qu'un fichier lâché **à côté** d'une zone fasse quitter la page (le navigateur
-ouvre le fichier) — `dragover`/`drop` neutralisés sur `document` dès qu'une page contient une zone. Les dossiers
-(`webkitdirectory`) restent en sélecteur natif, comme aujourd'hui.
+To be planned in production: prevent a file dropped **next to** a zone from making the page leave (the browser
+opens the file) — `dragover`/`drop` neutralised on `document` as soon as a page contains a zone. Folders
+(`webkitdirectory`) remain with the native picker, as today.
 
-## 7. Designs, thèmes et contrastes
+## 7. Designs, themes and contrasts
 
-### Cohabitation avec les quatre designs
+### Coexistence with the four designs
 
-**Recommandation : éléments communs à tous les designs + un cinquième design « Console ».**
+**Recommendation: elements common to all designs + a fifth “Console” design.**
 
-| | Standard | Aéro | Opérationnel | Brief | Console (nouveau) |
+| | Standard | Aero | Operational | Brief | Console (new) |
 |---|---|---|---|---|---|
-| Pastille de numéro | ronde 28 px, couleurs du bandeau | + ombre teintée | carrée 22 px | cerclée, chiffre à empattement | ronde 44 px |
-| Icône de bloc / sous-carte | 24 / 28 px | idem | 18 / 20 px | idem | 28 / 28 px |
-| Sous-titre | 0,88 rem | idem | 12 px | italique | idem |
-| Sous-carte | bordure fine, rayon 10 | rayon 16 | rayon 3, compacte | filet bas seulement | rayon 8, aérée |
-| Zone de dépôt | pointillés, 96 px | rayon 14 | 60 px | angles vifs | idem Standard |
-| Titre de bloc | page | page | capitales (déjà) | empattement (déjà) | capitales, 1,3 rem, gras |
-| Barre latérale | préférence | préférence | préférence | préférence | **affichée** |
+| Number badge | round 28 px, banner colours | + tinted shadow | square 22 px | ringed, serif digit | round 44 px |
+| Block / sub-card icon | 24 / 28 px | same | 18 / 20 px | same | 28 / 28 px |
+| Subtitle | 0.88 rem | same | 12 px | italic | same |
+| Sub-card | thin border, radius 10 | radius 16 | radius 3, compact | bottom rule only | radius 8, airy |
+| Drop zone | dotted, 96 px | radius 14 | 60 px | sharp corners | same as Standard |
+| Block title | page | page | capitals (already) | serif (already) | capitals, 1.3 rem, bold |
+| Side bar | preference | preference | preference | preference | **shown** |
 
-Pourquoi pas « tout dans un nouveau design » : les icônes, numéros et sous-titres sont du **contenu** (repères,
-explications) utile quel que soit le goût graphique ; les réserver à un design ferait deux versions des pages à
-maintenir. Le design « Console » regroupe seulement ce qui est affaire de goût : barre latérale, cartes aérées,
-titres en capitales, boutons hauts (40 px).
+Why not “everything in a new design”: icons, numbers and subtitles are **content** (landmarks,
+explanations) useful whatever the graphic taste; reserving them for one design would make two versions of the pages to
+maintain. The “Console” design only groups what is a matter of taste: side bar, airy cards,
+titles in capitals, tall buttons (40 px).
 
-Ajouter « Console » : entrée `console` dans `repository_tree.designs.list` (libellés 4 langues) et règles
-`html[data-design="console"] …` dans `designs.css` (reprises de `block_icons.css`).
+Adding “Console”: entry `console` in `repository_tree.designs.list` (labels in 4 languages) and rules
+`html[data-design="console"] …` in `designs.css` (taken from `block_icons.css`).
 
-### Contrastes (WCAG)
+### Contrasts (WCAG)
 
-Mesures sur les thèmes de `repository_tree` (tableau complet dans la démonstration, bloc « Contrôle des contrastes ») :
+Measurements on the themes of `repository_tree` (complete table in the demonstration, block “Contrast check” (« Contrôle des contrastes »)):
 
-| Couple | Minimum mesuré | Exigence | Verdict |
+| Pair | Minimum measured | Requirement | Verdict |
 |---|---|---|---|
-| Texte du bandeau / bandeau (pastille, barre latérale) | 6,47 (hadr) | 4,5 | ✓ tous les thèmes |
-| Sous-titre d'en-tête (texte du bandeau à 84 %) / bandeau | 4,93 (hadr) | 4,5 | ✓ — à 72 % : 4,31 (sia) ✗, d'où 84 % |
-| Accent / surface blanche | **2,12 (flight), 2,45 (landing)** | 3 (icône) | ✗ pour ces deux thèmes sur surface claire |
-| Accent / surface sombre de ces pages | 7,06 (landing), 8,17 (flight) | 3 | ✓ |
-| Sous-titre de bloc (texte à 75 %) / surface | 6,96 (clair), 8,72 (sombre) | 4,5 | ✓ |
+| Banner text / banner (badge, side bar) | 6.47 (hadr) | 4.5 | ✓ all themes |
+| Header subtitle (banner text at 84 %) / banner | 4.93 (hadr) | 4.5 | ✓ — at 72 %: 4.31 (sia) ✗, hence 84 % |
+| Accent / white surface | **2.12 (flight), 2.45 (landing)** | 3 (icon) | ✗ for these two themes on a light surface |
+| Accent / dark surface of these pages | 7.06 (landing), 8.17 (flight) | 3 | ✓ |
+| Block subtitle (text at 75 %) / surface | 6.96 (light), 8.72 (dark) | 4.5 | ✓ |
 
-Conséquence : une couleur fixe « accent » pour les icônes ne suffit pas (thèmes `flight` et `landing` sur une
-carte claire). Le prototype choisit **à l'exécution**, pour chaque bloc et sous-carte, d'après la couleur de fond
-réelle :
+Consequence: a fixed “accent” colour for the icons is not enough (`flight` and `landing` themes on a
+light card). The prototype chooses **at run time**, for each block and sub-card, according to the actual background
+colour:
 
-- `--repo-icon` : première couleur du thème (accent, bandeau, texte du bandeau) à **≥ 3:1** (WCAG 1.4.11, éléments
-  graphiques), sinon la couleur du texte ;
-- `--repo-ink` : même choix à **≥ 4,5:1** pour un texte coloré (« Choisir des fichiers », chiffre en design Brief).
+- `--repo-icon`: first theme colour (accent, banner, banner text) at **≥ 3:1** (WCAG 1.4.11, graphical
+  objects), otherwise the text colour;
+- `--repo-ink`: same choice at **≥ 4.5:1** for coloured text (“Choose files”, digit in the Brief design).
 
-Pastille : texte du bandeau sur bandeau (déjà validé ≥ 6,47) + liseré intérieur, pour rester visible quand le
-bandeau a la teinte de la surface (thème `flight` sur surface sombre). Barre latérale : bandeau assombri de 14 %
-(le texte clair y gagne du contraste). Proposition complémentaire : `tools/check_contrast.py`, qui recalcule ces
-rapports pour chaque thème à chaque modification de `repository_tree`.
+Badge: banner text on banner (already validated ≥ 6.47) + inner border, to remain visible when the
+banner has the hue of the surface (`flight` theme on a dark surface). Side bar: banner darkened by 14 %
+(the light text gains contrast there). Complementary proposal: `tools/check_contrast.py`, which recomputes these
+ratios for each theme on every change of `repository_tree`.
 
-## 8. Traduction (fr / en / de / es)
+## 8. Translation (fr / en / de / es)
 
-- Sous-titres, libellés, `aria-label` / `title` des boutons à icône seule : **lignes `[fr, en, de, es]`** de la
-  table de la page (`sia_i18n.js`, `flight_i18n.js`, `landingI18nRows()`…) — aucun mécanisme nouveau.
-- Blocs Mission Core : `subtitle` en tableau `[fr, en, de, es]` dans `blocks.js`, comme `title`.
-- Textes des composants (zone de dépôt, barre latérale) : traduits par le composant (tableaux internes), retraduits
-  sur `repository-language-change`. Barre latérale : libellés dans `sidebar[].label` ou table `labels` de
+- Subtitles, labels, `aria-label` / `title` of icon-only buttons: **`[fr, en, de, es]` lines** of the
+  page's table (`sia_i18n.js`, `flight_i18n.js`, `landingI18nRows()`…) — no new mechanism.
+- Mission Core blocks: `subtitle` as a `[fr, en, de, es]` array in `blocks.js`, like `title`.
+- Texts of the components (drop zone, side bar): translated by the component (internal arrays), re-translated
+  on `repository-language-change`. Side bar: labels in `sidebar[].label` or in the `labels` table of
   `repository_tree`.
-- Numéros sortis des titres (`data-step`) → lignes de traduction à mettre à jour sans le « 1. » ; flèches « → »
-  sorties des textes → idem.
-- Capitales : `text-transform` en CSS seulement (le texte source et les lecteurs d'écran gardent la casse).
-- Typographie française (U+202F) : inchangée, appliquée à l'affichage par `content_i18n.js` ; les textes composés
-  par le code passent par `RepositoryContentI18n.typography()` (le prototype le fait pour la zone de dépôt).
-  Remarque : un texte `[data-no-i18n]` composé dans une langue n'est pas recomposé au changement de langue — le
-  code qui le produit doit se réabonner à `repository-language-change` (vu dans la démonstration).
+- Numbers taken out of the titles (`data-step`) → translation lines to be updated without the “1.”; arrows “→”
+  taken out of the texts → likewise.
+- Capitals: `text-transform` in CSS only (the source text and screen readers keep the case).
+- French typography (U+202F): unchanged, applied at display by `content_i18n.js`; texts composed
+  by code go through `RepositoryContentI18n.typography()` (the prototype does so for the drop zone).
+  Remark: a `[data-no-i18n]` text composed in one language is not recomposed on a language change — the
+  code that produces it must re-subscribe to `repository-language-change` (seen in the demonstration).
 
-## 9. Impact sur les pages existantes
+## 9. Impact on existing pages
 
-| Page | Structure actuelle | Travail | Risque |
+| Page | Current structure | Work | Risk |
 |---|---|---|---|
-| Générateur (`apps/cpco/mission_editor.html`) | 6 `section`, titres numérotés, `.pasteBox`, `<input type=file>` dans des `<label>` | `data-step/icon/subtitle`, `.repo-card` pour les sous-blocs, `data-dropzone`, icônes des boutons ; lignes `sia_i18n.js` | **session parallèle en cours sur ce fichier** : attendre sa fin |
-| Studio (`map_parser.html`) | 5 `section`, colonne d'aperçu collante (`StickyFrame.stick`) | idem ; `StickyFrame.refresh()` après décor (hauteur d'en-tête modifiée) | idem (session parallèle) |
-| CR (Mission Core, 16 familles + démo) | blocs générés par `form.js` depuis `blocks.js`, `core.css`, outils d'en-tête en `summary` | `icon`/`subtitle` dans `blocks.js`, 10 lignes dans `form.js` | faible ; vérifier l'impression (`core.css` masque déjà `.repo-block-heading` du rapport) |
-| Reportings (général, familles, HEMS/GAAR anciens) | `section.section` + `h2` avec `.mcg-sub` | icônes par section, `.mcg-sub` → sous-titre | faible |
-| Planificateur (`apps/planner/flight_performance_planner.html`) | 13 blocs, en-têtes `.row>h2` avec contrôles, thème sombre, `StickyFrame.follow`, `ColumnResize` | icônes seulement (pas de numéros : pas de parcours linéaire) | règle `.perf-side>[data-block-id=result].is-stuck>:not(.repo-block-heading)` : l'en-tête reste enfant direct, OK ; densité |
-| Landing Dashboard | thème sombre, dictionnaire propre `TR` | icônes ; sous-titres via `landingI18nRows()` | faible |
-| Paramétrage, fiches appareil / équipage | blocs simples | icônes | faible |
+| Generator (`apps/cpco/mission_editor.html`) | 6 `section`, numbered titles, `.pasteBox`, `<input type=file>` in `<label>` elements | `data-step/icon/subtitle`, `.repo-card` for the sub-blocks, `data-dropzone`, button icons; `sia_i18n.js` lines | **parallel session in progress on this file**: wait for it to finish |
+| Studio (`map_parser.html`) | 5 `section`, sticky preview column (`StickyFrame.stick`) | same; `StickyFrame.refresh()` after decoration (header height modified) | same (parallel session) |
+| Reports (Mission Core, 16 families + demo) | blocks generated by `form.js` from `blocks.js`, `core.css`, header tools in `summary` | `icon`/`subtitle` in `blocks.js`, 10 lines in `form.js` | low; check printing (`core.css` already hides the report's `.repo-block-heading`) |
+| Reportings (general, families, old HEMS/GAAR) | `section.section` + `h2` with `.mcg-sub` | icons per section, `.mcg-sub` → subtitle | low |
+| Planner (`apps/planner/flight_performance_planner.html`) | 13 blocks, `.row>h2` headers with controls, dark theme, `StickyFrame.follow`, `ColumnResize` | icons only (no numbers: no linear path) | rule `.perf-side>[data-block-id=result].is-stuck>:not(.repo-block-heading)`: the header remains a direct child, OK; density |
+| Landing Dashboard | dark theme, own dictionary `TR` | icons; subtitles via `landingI18nRows()` | low |
+| Settings (Paramétrage), aircraft / crew sheets | simple blocks | icons | low |
 
-Aucune page n'est touchée tant qu'elle ne déclare rien : sans `data-step` / `data-icon` / `data-subtitle`, l'en-tête
-de bloc reste identique à aujourd'hui (vérifié dans le prototype : le décor ne s'applique qu'aux blocs déclarés).
+No page is affected as long as it declares nothing: without `data-step` / `data-icon` / `data-subtitle`, the block header
+remains identical to today (checked in the prototype: the decoration only applies to declared blocks).
 
-## 10. Plan de migration
+## 10. Migration plan
 
-1. **Validation** de la maquette et des décisions du § 11 (sur la démonstration).
-2. **Framework, sans effet visible** : registre d'icônes chargé par `repository_nav.js` ; lecture des attributs
-   dans `app_framework.js` ; `.repo-card`, `.repo-notice`, icônes en ligne ; styles dans `repository_nav.css` et
-   `designs.css` ; FRAMEWORK.md (nouvelle section « Icônes et en-têtes de blocs ») ; `tools/bump_versions.py`.
-3. **Zone de dépôt** dans `file_access.js` (`data-dropzone`, opt-in) + neutralisation du dépôt hors zone.
-4. **Page pilote : le générateur**, une fois le travail parallèle sur `mission_editor.html` / `mission_store.js`
-   fusionné — numéros sortis des titres, lignes `sia_i18n.js` mises à jour.
-5. **Studio cartographique** (mêmes composants ; sélecteur de mission ◀ ▶ factorisé avec le générateur).
-6. **Mission Core** : `icon` / `subtitle` dans `blocks.js`, rendu par `form.js` (toutes les familles d'un coup).
-7. **Reportings, planificateur, Landing, Paramétrage** : icônes de blocs et de boutons.
-8. **Barre latérale + design « Console »** : `sidebar` et `designs.list.console` dans `repository_tree`,
-   préférence « Barre latérale » dans le menu ☰ ; clé `repositorySidenav` exclue du compteur de sauvegarde
-   (`browser_store.js`, comme `repositoryFramework:`).
-9. **Nettoyage** : emoji des boutons (💾, 📅, ⏱) remplacés par des icônes ; flèches « → » retirées des textes.
+1. **Validation** of the mock-up and of the decisions of § 11 (on the demonstration).
+2. **Framework, without visible effect**: icon registry loaded by `repository_nav.js`; reading of the attributes
+   in `app_framework.js`; `.repo-card`, `.repo-notice`, inline icons; styles in `repository_nav.css` and
+   `designs.css`; FRAMEWORK.md (new section “Icons and block headers”); `tools/bump_versions.py`.
+3. **Drop zone** in `file_access.js` (`data-dropzone`, opt-in) + neutralisation of dropping outside the zone.
+4. **Pilot page: the generator**, once the parallel work on `mission_editor.html` / `mission_store.js`
+   is merged — numbers taken out of the titles, `sia_i18n.js` lines updated.
+5. **Map studio** (same components; mission selector ◀ ▶ factored with the generator).
+6. **Mission Core**: `icon` / `subtitle` in `blocks.js`, rendered by `form.js` (all the families at once).
+7. **Reportings, planner, Landing, Settings**: block and button icons.
+8. **Side bar + “Console” design**: `sidebar` and `designs.list.console` in `repository_tree`,
+   “Side bar” preference in the ☰ menu; key `repositorySidenav` excluded from the backup counter
+   (`browser_store.js`, like `repositoryFramework:`).
+9. **Clean-up**: button emoji (💾, 📅, ⏱) replaced by icons; arrows “→” removed from the texts.
 
-Chaque étape : `bump_versions.py`, CHANGELOG, contrôle 4 langues × 5 designs × thèmes clair / sombre, impression.
+Each step: `bump_versions.py`, CHANGELOG, check 4 languages × 5 designs × light / dark themes, printing.
 
-## 11. Risques
+## 11. Risks
 
-- **Travail parallèle** sur le générateur, le studio et `mission_store.js` : toute intégration dans ces pages
-  attend la fin de cette session (conflits sinon). Le prototype n'y touche pas.
-- **Structure de l'en-tête de bloc** : le `<h2>` passe de `.repo-block-heading>h2` à
-  `.repo-block-heading>.repo-block-titles>h2`. Aucun sélecteur `…heading>h2` trouvé dans le dépôt ; les sélecteurs
-  descendants (`.repo-block-heading h2`, `.repo-block h2`) restent valables.
-- **`AppFramework.refresh()`** : le prototype l'enveloppe ; en production la lecture se fait dans
-  `app_framework.js` même (pas d'enveloppe).
-- **Numéros et réordonnancement** : l'utilisateur peut déplacer les blocs (↕) ; les numéros restent ceux de la
-  page, donc dans le désordre. Options : numéros fixes (repères de parcours), renumérotation selon l'ordre affiché,
-  ou numéros masqués dès que l'ordre est personnalisé — **à trancher**.
-- **Largeur** : la barre latérale prend 84 px ; le planificateur (grille à colonnes redimensionnables) et les
-  tableaux larges en pâtissent → barre désactivée par défaut hors design « Console ».
-- **Contraste** : garanti par le choix à l'exécution pour les icônes ; un thème ajouté plus tard avec un texte de
-  bandeau peu contrasté casserait pastille et barre → contrôle outillé (`tools/check_contrast.py`).
-- **Compteur de sauvegarde** : les préférences d'affichage (`repositoryDesign`, `repositoryLanguageMode`,
-  `repositorySidenav`) incrémentent aujourd'hui le compteur « 💾 Sauvegarder (n) » ; à exclure comme la disposition
-  des blocs.
-- **Licence** : aucune tant que les icônes sont dessinées localement ; avec Lucide, conserver ISC + MIT.
-- **Impression** : icônes imprimées (SVG, couleur du texte) ; barre latérale et pastille de dépôt masquées.
+- **Parallel work** on the generator, the studio and `mission_store.js`: any integration in these pages
+  waits for the end of that session (conflicts otherwise). The prototype does not touch them.
+- **Structure of the block header**: the `<h2>` goes from `.repo-block-heading>h2` to
+  `.repo-block-heading>.repo-block-titles>h2`. No `…heading>h2` selector found in the repository; the descendant
+  selectors (`.repo-block-heading h2`, `.repo-block h2`) remain valid.
+- **`AppFramework.refresh()`**: the prototype wraps it; in production the reading is done in
+  `app_framework.js` itself (no wrapper).
+- **Numbers and reordering**: the user can move the blocks (↕); the numbers remain those of the
+  page, hence out of order. Options: fixed numbers (path landmarks), renumbering according to the displayed order,
+  or numbers hidden as soon as the order is customised — **to be decided**.
+- **Width**: the side bar takes 84 px; the planner (grid with resizable columns) and the
+  wide tables suffer from it → bar disabled by default outside the “Console” design.
+- **Contrast**: guaranteed by the run-time choice for the icons; a theme added later with a poorly contrasted banner
+  text would break the badge and the bar → tooled check (`tools/check_contrast.py`).
+- **Backup counter**: the display preferences (`repositoryDesign`, `repositoryLanguageMode`,
+  `repositorySidenav`) currently increment the “💾 Save (n)” (« 💾 Sauvegarder (n) ») counter; to be excluded like the layout
+  of the blocks.
+- **Licence**: none as long as the icons are drawn locally; with Lucide, keep ISC + MIT.
+- **Printing**: icons printed (SVG, text colour); side bar and drop-zone badge hidden.
 
-## 12. Décisions à prendre
+## 12. Decisions to take
 
-1. **Portée** : icônes / numéros / sous-titres communs à tous les designs (recommandé) ou réservés à un design ?
-2. **Design « Console »** : l'ajouter comme 5ᵉ design (recommandé) ; faut-il en faire le design par défaut ?
-3. **Barre latérale** : entrées (la maquette sépare « Missions » et « Générateur », qui sont une même page
-   aujourd'hui ; « Aide » : quelle cible — TUTORIAL, manuel, ou le ☰ ?) ; affichée par défaut ou sur préférence ?
-4. **Jeu d'icônes** : importer les tracés Lucide (ISC) ou garder des dessins propres ?
-5. **Numérotation** : fixe, recalculée selon l'ordre affiché, ou masquée si l'ordre est personnalisé ?
-6. **Numéros et flèches hors des textes** : d'accord pour mettre à jour les lignes de traduction en conséquence ?
-7. **Ordre de migration** : générateur en pilote dès la fin de la session parallèle, puis Mission Core ?
+1. **Scope**: icons / numbers / subtitles common to all designs (recommended) or reserved for one design?
+2. **“Console” design**: add it as the 5th design (recommended); should it be made the default design?
+3. **Side bar**: entries (the mock-up separates “Missions” and “Generator”, which are the same page
+   today; “Help”: which target — TUTORIAL, manual, or the ☰?); shown by default or by preference?
+4. **Icon set**: import the Lucide paths (ISC) or keep our own drawings?
+5. **Numbering**: fixed, recomputed according to the displayed order, or hidden if the order is customised?
+6. **Numbers and arrows out of the texts**: agreed to update the translation lines accordingly?
+7. **Migration order**: generator as pilot as soon as the parallel session ends, then Mission Core?

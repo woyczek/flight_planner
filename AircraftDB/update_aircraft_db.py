@@ -8,6 +8,8 @@ Priority of evidence:
   2) ICAO Doc 8643 (strong source): exact designator, model/name, DESCRIPTION, WTC
   3) EUROCONTROL Aircraft Performance Database: wing position + alternative names + cross-check
   4) validated Wikidata/Wikipedia fallback, only for missing non-ICAO metadata
+  5) Aviation Fanatic (aviationfanatic.com), last resort for designators unknown to ICAO and EUROCONTROL (retired
+     types such as S210 Caravelle): one page per type, read on each computer, never published
 
 The ICAO PDFs are cached locally and refreshed only when stale.
 Part 2 is used as designator -> model/description/WTC.
@@ -1022,6 +1024,63 @@ def eurocontrol_lookup(code):
         raise
 
 
+# ---------------- AVIATION FANATIC (DERNIER RECOURS) ----------------
+AVIATIONFANATIC = "https://www.aviationfanatic.com/ent_show.php?ent=4&AT_ID={}"
+AF_CATEGORY = {"L", "S", "A", "H", "G", "T"}  # terrestre, hydravion, amphibie, hélicoptère, autogire, convertible
+# type sans désignateur OACI (fiche « __GZ20 » : dirigeable Goodyear GZ-20) : désignateur générique du Doc 8643 dans un
+# plan de vol (fpl) — SHIP pour un dirigeable, BALL pour un ballon, ZZZZ pour le reste ; B : ballon ou dirigeable,
+# catégorie propre à Aviation Fanatic, gardée telle quelle (silhouette « autre » dans la suite)
+AF_LOCAL_CATEGORY = AF_CATEGORY | {"B"}
+AF_ENGINE = {"J", "T", "P", "E", "R"}  # réacteur, turbopropulseur, piston, électrique, fusée
+
+
+def parse_aviationfanatic(html, requested_code, local=False):
+    """Fiche d'un type d'Aviation Fanatic (page ent_show, ent=4) : { tdesig, model, description, wtc } d'après les
+    paramètres des liens (AT_Category, AT_Engines, AT_Engine_Type, AT_WTC) et le nom du type ; None si la page n'est
+    pas celle de ce désignateur OACI ou si la description ne peut pas être reconstituée. local : fiche « __CODE » d'un
+    type sans désignateur OACI (champ OACI vide) — marquée icao: False, avec le désignateur générique du plan de vol
+    (fpl : SHIP dirigeable, c.-à-d. ballon motorisé ; BALL ballon ; ZZZZ autre)."""
+    code = normalize_key(requested_code)
+    icao = normalize_key((re.search(r"AT_ICAO=([^\"&]+)", html) or [None, ""])[1])
+    if local:
+        if icao or normalize_key((re.search(r"AT_ID=([^\"&]+)", html) or [None, ""])[1]) != code:
+            return None
+    elif icao != code:
+        return None
+    arg = lambda name: (re.search(name + r"=([^\"&]+)", html) or [None, ""])[1].strip().upper()
+    cat, n, eng, wtc = arg("AT_Category"), arg("AT_Engines"), arg("AT_Engine_Type"), arg("AT_WTC")
+    m = re.search(r'<td class="mainname">\s*(.*?)\s*</td>', html, re.S)
+    model = re.sub(r"\s+", " ", unescape(re.sub(r"<[^>]+>", "", m.group(1)))).strip() if m else ""
+    if cat not in (AF_LOCAL_CATEGORY if local else AF_CATEGORY) or not n.isdigit() or eng not in AF_ENGINE:
+        return None
+    rec = {"tdesig": code, "model": model, "description": f"{cat}{n}{eng}", "source": "Aviation Fanatic"}
+    if wtc in {"L", "M", "H", "J"}:
+        rec["wtc"] = wtc
+    if local:
+        rec["icao"] = False
+        rec["fpl"] = ("SHIP" if int(n) else "BALL") if cat == "B" else "ZZZZ"
+    if cat == "B":
+        rec["wing_position"] = "none"  # ballon, dirigeable : pas d'aile (Wikipedia non consulté)
+    return rec
+
+
+def aviationfanatic_lookup(code):
+    """Fiche Aviation Fanatic d'un désignateur (une page, cache HTTP et pause du client), sinon celle d'un type sans
+    désignateur OACI que le site range sous « __CODE » (GZ20 : dirigeable Goodyear GZ-20) ; None si absente."""
+    for at_id, local in ((code, False), ("__" + code, True)):
+        try:
+            rec = parse_aviationfanatic(HTTP.get_text(AVIATIONFANATIC.format(urllib.parse.quote(at_id))), at_id if local else code,
+                                        local)
+        except urllib.error.HTTPError as exc:
+            if exc.code in (404, 410):
+                continue
+            raise
+        if rec:
+            rec["tdesig"] = normalize_key(code)
+            return rec
+    return None
+
+
 # ---------------- WIKIDATA/WIKIPEDIA FALLBACK ----------------
 AVIATION_TERMS = (
     "aircraft", "airplane", "aeroplane", "airliner", "helicopter", "rotorcraft", "turboprop",
@@ -1094,10 +1153,12 @@ def choose_valid_wikipedia_page(code, existing_model=""):
     return best if best and best_score >= 8 else None
 
 
-def classify_wing_from_wikipedia(page):
+def classify_wing_from_wikipedia(page, cls=""):
+    """Position d'aile d'après l'article : cls, classe OACI (1re lettre de la description) ; un avion terrestre (L) n'est
+    jamais « water » — l'article du B-17 cite un hydravion, le bombardier sortait avec l'icône d'un hydravion."""
     blob = " ".join([page.get("title", ""), " ".join(page.get("categories", [])), page.get("content", "")]).lower()
     if any(x in blob for x in ("helicopter", "rotorcraft", "autogyro", "gyroplane")): return "rotor"
-    if any(x in blob for x in ("seaplane", "floatplane", "amphibious aircraft", "flying boat")): return "water"
+    if cls != "L" and any(x in blob for x in ("seaplane", "floatplane", "amphibious aircraft", "flying boat")): return "water"
     if "high-wing" in blob or "high wing" in blob or "parasol wing" in blob: return "high"
     if "low-wing" in blob or "low wing" in blob: return "low"
     if "mid-wing" in blob or "mid wing" in blob: return "mid"
@@ -1108,11 +1169,12 @@ def classify_wing_from_wikipedia(page):
 def sane_wing(rec):
     """Position d'aile cohérente avec la classe OACI (1re lettre de la description) : hélicoptère (H) → « rotor » ;
     avion, amphibie, hydravion (L, A, S) jamais « rotor » (faux positif de Wikipedia : article citant un
-    hélicoptère) → « unknown », à redéterminer. Modifie rec ; retourne vrai si la valeur a changé."""
+    hélicoptère) → « unknown », à redéterminer ; avion terrestre (L) jamais « water » (article citant un hydravion) →
+    « unknown ». Modifie rec ; retourne vrai si la valeur a changé."""
     cls, wing = str(rec.get("description") or "")[:1].upper(), rec.get("wing_position")
     if cls == "H" and wing != "rotor":
         rec["wing_position"] = "rotor"; return True
-    if cls in ("L", "A", "S") and wing == "rotor":
+    if cls in ("L", "A", "S") and wing == "rotor" or cls == "L" and wing == "water":
         rec["wing_position"] = "unknown"; return True
     return False
 
@@ -1204,12 +1266,27 @@ def update_one(db, aliases, raw_designator, icao_index, use_network=True, force=
             rec["source"] = "EUROCONTROL"
         add_safe_aliases(aliases, canonical, euro.get("alternative_names"))
 
+    # Dernier recours : ni OACI ni EUROCONTROL (type retiré du Doc 8643) → Aviation Fanatic, une page pour ce code
+    if canonical and not strong and not euro:
+        try:
+            fan = aviationfanatic_lookup(canonical)
+        except Exception:
+            fan = None
+        if fan:
+            merge_nonempty(rec, fan, overwrite=source_is_weak(rec.get("source")))
+            rec["tdesig"] = canonical
+            rec["source"] = "Aviation Fanatic"
+            if fan.get("icao") is False:  # type sans désignateur OACI : SHIP, BALL ou ZZZZ dans un plan de vol
+                rec["icao"] = False
+                rec["fpl"] = fan.get("fpl") or "ZZZZ"
+                rec["source"] = "Aviation Fanatic (hors OACI)"
+
     sane_wing(rec)  # hélicoptère : rotor sans consulter Wikipedia
     # Validated Wikipedia is now only a last-resort wing-position source.
     if canonical and rec.get("wing_position") in (None, "", "unknown"):
         validated = choose_valid_wikipedia_page(canonical, rec.get("model", ""))
         if validated:
-            wing = classify_wing_from_wikipedia(validated[0])
+            wing = classify_wing_from_wikipedia(validated[0], str(rec.get("description") or "")[:1].upper())
             if wing == "rotor" and str(rec.get("description") or "")[:1].upper() in ("L", "A", "S"):
                 wing = "unknown"  # avion : un article qui parle d'hélicoptères n'en fait pas un hélicoptère
             if wing != "unknown":

@@ -10,6 +10,14 @@
   const KEY = NS ? 'siaMissionShared' + NS : 'siaMissionShared:v1',
     LEGACY = 'missionGeneratorDraft' + NS,
     BATCH = NS ? 'siaMissionBatch' + NS : 'siaMissionBatch:v1'; // lot de missions (opération à plusieurs équipes) : { docs, index }
+  // jeton « ouverte depuis le registre » lu dès le chargement du script : la page peut le consommer ensuite (générateur)
+  // sans faire disparaître le lien « ← Registre » que mountNav pose plus tard
+  let fromRegistry = null;
+  try {
+    fromRegistry = NS ? null : JSON.parse(sessionStorage.getItem('siaFromRegistry:v1') || 'null');
+  } catch {
+    /* stockage indisponible */
+  }
   /** Clé de texte : minuscules sans accents, mots séparés par « _ ». */
   const norm = s => String(s ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(
     /^_|_$/g, '');
@@ -18,6 +26,65 @@
   const deepClone = v => v === null || typeof v !== 'object' ? v : structuredClone(v);
 
   // ---- lecture Markdown (titres « ## Summary », ancien format à blocs TYPE: / TURNING POINTS: …)
+  // ---- sections que markdownOf GÉNÈRE depuis le YAML : une seule table, pour le rendu (titre français, 1re colonne)
+  //      et pour reconnaître ces sections à la relecture d'un brief rangé, dans les 4 langues et leurs variantes
+  //      (summary<ID>.md produit en anglais, titres du PDF). Un brief rangé est un rendu du YAML, pas une source.
+  const BRIEF_TITLES = [
+    ['Introduction', 'Introduction', 'Einleitung', 'Introducción'],
+    ['Summary', 'Résumé', 'Zusammenfassung', 'Resumen'],
+    ['Description détaillée', 'Detailed description', 'Ausführliche Beschreibung', 'Descripción detallada'],
+    ['Équipes engagées', 'Teams involved', 'Beteiligte Teams', 'Equipos implicados'],
+    ['Heure H et participants', 'H hour and participants', 'Stunde H und Teilnehmer', 'Hora H y participantes'],
+    ['Chiffons', 'Played targets', 'Gespielte Ziele', 'Blancos jugados'],
+    ['Chronologie', 'Timeline', 'Zeitablauf', 'Cronología'],
+    ['Coordination de l\'opération', 'Operation coordination', 'Koordinierung der Operation', 'Coordinación de la operación',
+      'Coordination'
+    ],
+    ['Charge / personnel', 'Load / personnel', 'Ladung / Personal', 'Carga / personal'],
+    ['Objectif principal', 'Primary objective', 'Hauptziel', 'Objetivo principal', 'Main objective'],
+    ['Objectifs secondaires', 'Secondary objectives', 'Nebenziele', 'Objetivos secundarios'],
+    ['Points tournants', 'Turning points', 'Wendepunkte', 'Puntos de viraje'],
+    ['Rendez-vous', 'Rendezvous', 'Treffpunkte', 'Encuentros', 'Treffpunkt', 'Encuentro'],
+    ['Ravitaillement en vol', 'Air-to-air refuelling', 'Luftbetankung', 'Reabastecimiento en vuelo', 'Air refuelling'],
+    ['Risques à prendre en compte', 'Risks to consider', 'Zu berücksichtigende Risiken', 'Riesgos a tener en cuenta',
+      'Risques et points d\'attention', 'Risks and points of attention'
+    ],
+    ['Cartographie prévue', 'Planned maps', 'Vorgesehene Karten', 'Cartografía prevista'],
+    ['Notes', 'Notes', 'Notizen', 'Notas'],
+    ['Exercice', 'Exercise', 'Übung', 'Ejercicio']
+  ];
+  /** Rang dans BRIEF_TITLES d'un titre de section, toutes langues ; -1 si ce n'est pas une section générée. */
+  function briefKey(title) {
+    const n = norm(title);
+    return n ? BRIEF_TITLES.findIndex(row => row.some(x => norm(x) === n)) : -1;
+  }
+  /** Titre français d'une section générée (rendu de markdownOf) ; erreur s'il manque à la table. */
+  const BT = fr => {
+    if (briefKey(fr) < 0) throw Error(`Titre de brief absent de BRIEF_TITLES : ${fr}`);
+    return fr;
+  };
+  // texte libre (rubrique du générateur) écrit dans le brief : entre deux commentaires invisibles, seul relu du .md quand
+  // la mission a un YAML
+  const NARR_MARK = /<!--\s*narrative:\s*([\s\S]*?)\s*-->\s*([\s\S]*?)\s*<!--\s*\/narrative\s*-->/g;
+  /** Rubrique libre marquée pour le brief Markdown. */
+  const narrMarked = x => `<!-- narrative: ${x.title} -->\n${x.content}\n<!-- /narrative -->`;
+  /** Retire d'un document les rubriques du récit qui sont des sections générées (copies d'un brief rangé), sauf celles
+   *  créées dans le générateur (named). Retour : nombre de rubriques retirées. */
+  function cleanNarrative(doc) {
+    const list = doc?.narrative?.sections;
+    if (!Array.isArray(list)) return 0;
+    const keep = list.filter(x => x?.named || briefKey(x?.title) < 0);
+    // « Summary » / « Detailed description »… copiés en rubriques : leur texte va au résumé ou à la description s'ils sont vides
+    for (const x of list) {
+      const k = keep.includes(x) ? -1 : briefKey(x?.title),
+        t = String(x?.content || '').trim();
+      if (k === 1 && t && !String(doc.narrative.summary || '').trim()) doc.narrative.summary = t;
+      if (k === 2 && t && !String(doc.narrative.detailed || '').trim()) doc.narrative.detailed = t;
+    }
+    doc.narrative.sections = keep;
+    return list.length - keep.length;
+  }
+
   function parseMarkdown(text) {
     const headings = [...text.matchAll(/^(#{1,6})\s+(.+)\s*$/gm)],
       title = (headings[0]?.[2] || '').trim(),
@@ -32,13 +99,24 @@
     }
     /** Section Markdown dont le titre contient l'un des mots. */
     const find = words => sections.find(s => words.some(w => norm(s.title).includes(w))),
-      sum = find(['summary', 'resume', 'synthese']),
-      det = find(['description_detaillee', 'description_complete', 'deroulement']);
+      // résumé et description : titres générés reconnus dans les 4 langues (BRIEF_TITLES), puis les anciens mots
+      sum = sections.find(x => briefKey(x.title) === 1) || find(['summary', 'resume', 'synthese']),
+      det = sections.find(x => briefKey(x.title) === 2) || find(['description_detaillee', 'description_complete', 'deroulement']);
+    const strip = t => t.replace(NARR_MARK, '').trim();
     return {
       title,
-      summary: sum?.content || '',
-      detailed: det?.content || '',
-      sections: sections.filter(s => s !== sum && s !== det)
+      summary: sum?.content ? strip(sum.content) : '',
+      detailed: det?.content ? strip(det.content) : '',
+      // sections : toutes (Markdown seul : la source complète) ; marked : textes libres marqués (brief rangé d'un YAML)
+      sections: sections.filter(s => s !== sum && s !== det).map(s => ({
+        ...s,
+        content: s.content.replace(NARR_MARK, (_, t, c) => c.trim())
+      })),
+      marked: [...text.matchAll(NARR_MARK)].map(m => ({
+        title: m[1].trim(),
+        content: m[2].trim(),
+        named: true
+      }))
     }
   }
 
@@ -357,11 +435,16 @@
         parsed
       };
     });
-    // un YAML / JSON sans clé de mission (ex. VALIDATION.txt d'une série, en JSON) est un fichier annexe
+    // un YAML / JSON sans clé de mission (ex. VALIDATION.txt d'une série, en JSON) est un fichier annexe ; de même un YAML qui
+    // désigne une mission sans en être une (affectations.yaml : « mission: A-001C », pilotes affectés) — fusionné, il
+    // remplaçait le bloc mission (identifiant, type) : mission sans type au registre, introuvable dans un lot
+    const isRef = p => p.mission != null && typeof p.mission !== 'object' && !['schema', 'turning_points', 'target', 'aircraft', 'teams']
+      .some(k => k in p);
     const isMission = ({
       f,
       parsed
-    }) => /\.ya?ml$/i.test(f.name) || ['schema', 'mission', 'turning_points', 'target', 'aircraft'].some(k => k in parsed);
+    }) => !isRef(parsed) && (/\.ya?ml$/i.test(f.name) || ['schema', 'mission', 'turning_points', 'target', 'aircraft'].some(k => k in
+      parsed));
     const yamls = parsedYamls.filter(isMission);
     const mds = files.filter(f => !isYaml(f) && isMissionMd(f));
     const ignored = [...parsedYamls.filter(y => !isMission(y)).map(y => y.f.name), ...files.filter(f => !isYaml(f) && !isMissionMd(f))
@@ -386,7 +469,10 @@
       if (p.title && !yaml.title) yaml.title = p.title;
       if (p.summary) narrative.summary = p.summary;
       if (p.detailed) narrative.detailed = p.detailed;
-      narrative.sections.push(...p.sections);
+      // avec un YAML, le .md est un rendu : ses textes libres marqués seulement (fichier ancien sans marque : les sections
+      // hors titres générés) ; sans YAML, il est la source complète (toutes ses sections)
+      if (!yamls.length) narrative.sections.push(...p.sections);
+      else narrative.sections.push(...(/<!--\s*narrative:/.test(f.text) ? p.marked : p.sections.filter(x => briefKey(x.title) < 0)));
     }
     // ligne de séparation d'un tableau Markdown recopiée comme équipe par certains générateurs (« --- », « ---: »)
     if (Array.isArray(yaml.teams)) yaml.teams = yaml.teams.filter(t => !t || typeof t !== 'object' || !Object.values(t).every(v =>
@@ -407,6 +493,103 @@
     return y;
   }
 
+  // ---- remise en forme des rubriques saisies à la main (risques, objectifs) : à la lecture et en quittant la rubrique
+  // Niveaux de risque reconnus (4 langues, astérisque gardé : « Faible* » = risque fictif, note en bas) → libellé français.
+  const RISK_LEVELS = [
+    ['Critique', /^(critique|critical|kritisch|cr[ií]tico)$/i],
+    ['Élevé', /^([ée]lev[ée]|high|hoch|alto|elevado)$/i],
+    ['Modéré', /^(mod[ée]r[ée]|moderate|medium|mittel|moderado|medio)$/i],
+    ['Faible', /^(faible|low|niedrig|gering|bajo)$/i]
+  ];
+  /** Niveau de risque d'un morceau de ligne (« Élevé », « high* ») : libellé français (astérisque gardé), '' sinon. */
+  function riskLevel(part) {
+    const m = /^\s*([^\s*]+)\s*(\*?)\s*$/.exec(String(part || ''));
+    if (!m) return '';
+    const hit = RISK_LEVELS.find(([, rx]) => rx.test(m[1]));
+    return hit ? hit[0] + m[2] : '';
+  }
+  /** Ligne de risque saisie → { hazard, level, consequence, mitigation } ; null si la ligne n'a pas de séparateur
+   *  (tabulation, « — », « | » ou « ; » : ce n'est pas un risque, mais une note). Colonne de niveau reconnue où
+   *  qu'elle soit ; deux colonnes restantes : danger et mesure ; trois : danger, conséquence, mesure. */
+  function parseRiskLine(line) {
+    const s = String(line || '').replace(/^\s*(\d+[.)]|[-*•])\s+/, '').trim();
+    const sep = [/\t+/, /\s+[—–]\s+/, /\s*\|\s*/, /\s*;\s*/].find(rx => rx.test(s));
+    if (!s || !sep) return null;
+    const parts = s.split(sep).map(x => x.trim()).filter(Boolean);
+    const li = parts.findIndex(p => riskLevel(p)),
+      level = li >= 0 ? riskLevel(parts[li]) : '';
+    if (li >= 0) parts.splice(li, 1);
+    if (parts.length < (level ? 1 : 2)) return null;
+    const [hazard, ...rest] = parts,
+    out = {
+      hazard
+    };
+    if (level) out.level = level;
+    if (rest.length >= 2) {
+      out.consequence = rest[0];
+      out.mitigation = rest.slice(1).join(' — ');
+    } else if (rest.length) out.mitigation = rest[0];
+    return out;
+  }
+  /** Préfixe de liste retiré (« 1. », « 2) », « - », « • »). */
+  const unlist = s => String(s ?? '').replace(/^\s*(\d+[.)]|[-*•])\s+/, '').trim();
+  /** Remet en forme une mission (en place) : risques en chaînes à séparateurs → objets (niveau compris), lignes sans
+   *  séparateur → notes ; objectif principal en liste numérotée → le premier item, les autres en tête des secondaires ;
+   *  préfixes de liste retirés. Retour : { risks, notes, objectives } (nombre de valeurs changées), null si rien. */
+  function tidyMission(y) {
+    if (!y || typeof y !== 'object') return null;
+    const done = {
+      risks: 0,
+      notes: 0,
+      objectives: 0
+    };
+    if (Array.isArray(y.risks) && y.risks.some(r => typeof r === 'string')) {
+      const risks = [],
+        notes = [];
+      for (const r of y.risks) {
+        if (typeof r !== 'string') {
+          risks.push(r);
+          continue;
+        }
+        const o = parseRiskLine(r);
+        if (o) {
+          risks.push(o);
+          done.risks++;
+        } else if (unlist(r)) notes.push(unlist(r));
+      }
+      y.risks = risks;
+      if (notes.length) {
+        y.notes = [...(Array.isArray(y.notes) ? y.notes : y.notes ? [y.notes] : []), ...notes];
+        done.notes = notes.length;
+      }
+    }
+    const ob = y.objectives;
+    if (ob && typeof ob === 'object') {
+      const items = String(ob.primary ?? '').split(/\r?\n/).filter(l => /^\s*(\d+[.)]|[-*•])\s+/.test(l)),
+        sec = Array.isArray(ob.secondary) ? ob.secondary : ob.secondary ? [ob.secondary] : [];
+      if (items.length >= 2) {
+        ob.primary = unlist(items[0]);
+        ob.secondary = [...items.slice(1).map(unlist), ...sec.map(unlist)];
+        done.objectives += items.length;
+      } else {
+        const p = unlist(ob.primary);
+        if (typeof ob.primary === 'string' && p !== ob.primary.trim()) {
+          ob.primary = p;
+          done.objectives++;
+        }
+        const s2 = sec.map(x => typeof x === 'string' ? unlist(x) : x);
+        if (JSON.stringify(s2) !== JSON.stringify(sec)) {
+          done.objectives += s2.filter((x, i) => x !== sec[i]).length;
+          ob.secondary = s2;
+        }
+      }
+    }
+    return done.risks || done.notes || done.objectives ? done : null;
+  }
+  /** Risque en texte d'une ligne : « danger — niveau — conséquence — mesure » (relu tel quel par parseRiskLine). */
+  const riskText = r => typeof r === 'object' && r ? [r.hazard || r.risk || r.name, r.level, r.consequence, r.mitigation].filter(Boolean)
+    .join(' — ') : String(r ?? '');
+
   // ---- stockage partagé
   /** Document de mission partagé entre le générateur et le studio (localStorage) ; null sinon. */
   function load() {
@@ -414,6 +597,10 @@
       const d = JSON.parse(localStorage.getItem(KEY) || 'null');
       if (d && d.yaml) {
         upgradeSchema(d.yaml);
+        const n = cleanNarrative(d);
+        if (n) d.cleaned = n; // rubriques issues d'un brief rangé retirées (la page le dit)
+        const t = tidyMission(d.yaml);
+        if (t) d.tidied = t; // risques, notes, objectifs remis en forme (la page le dit)
         return d;
       }
     } catch {
@@ -590,7 +777,10 @@
   function loadBatch() {
     try {
       const b = JSON.parse(localStorage.getItem(BATCH) || 'null');
-      if (b && Array.isArray(b.docs)) b.docs.forEach(d => upgradeSchema(d?.yaml));
+      if (b && Array.isArray(b.docs)) b.docs.forEach(d => {
+        upgradeSchema(d?.yaml);
+        tidyMission(d?.yaml);
+      });
       return b && Array.isArray(b.docs) && b.docs.length ? {
         docs: b.docs,
         index: Math.min(Math.max(0, b.index | 0), b.docs.length - 1)
@@ -627,6 +817,26 @@
     return save(b.docs[b.index], by);
   }
 
+  /** Lot remplacé par les documents docs (squelette du générateur : missions des équipes, organisation …Z) ; la première
+   *  mission devient courante (by : page auteure). Une seule mission : pas de lot. Retour : document enregistré. */
+  function setBatch(docs, by) {
+    const slim = d => ({
+      yaml: d.yaml,
+      narrative: d.narrative || {
+        summary: '',
+        detailed: '',
+        sections: []
+      },
+      sourceNames: d.sourceNames || []
+    });
+    storeBatch(docs.length > 1 ? {
+      docs: docs.map(slim),
+      index: 0
+    } : null);
+    docs.forEach(d => markSaved(d, 'new')); // missions créées ici, pas encore enregistrées (ligne d'état)
+    return save(slim(docs[0]), by);
+  }
+
   /** Ajoute (ou remplace, même identifiant) une mission au lot de son opération et la rend courante ; sans lot, le lot
    *  est créé avec la mission courante. Utilisé pour la mission d'organisation (<lettre>-<nnn>Z) créée par le générateur. */
   function addToBatch(doc, by) {
@@ -654,6 +864,7 @@
     }));
     b.index = b.docs.findIndex(x => missionId(x) === missionId(doc));
     storeBatch(b);
+    if (!readSaved()[missionId(doc)]) markSaved(doc, 'new'); // mission créée (organisation, chiffon) : pas encore enregistrée
     return save(b.docs[b.index], by);
   }
 
@@ -795,6 +1006,7 @@
       index: 0
     };
     storeBatch(b);
+    docs.forEach(d => markSaved(d, 'loaded')); // version de référence : celle chargée (ligne d'état)
     const planned = plannedIds(b?.docs || docs),
       loaded = (b?.docs || docs).map(missionId),
       missing = planned.filter(id => !loaded.includes(id));
@@ -825,11 +1037,16 @@
       const title = line.querySelector('h1');
       title ? title.after(nav) : line.prepend(nav);
       // arrivée depuis le registre des missions (même onglet) : lien de retour vers la mission dans le registre
-      let from = null;
-      try {
-        from = NS ? null : JSON.parse(sessionStorage.getItem('siaFromRegistry:v1') || 'null');
-      } catch {
-        /* stockage indisponible */
+      let from = fromRegistry;
+      // jeton périmé (la mission partagée n'est plus celle ouverte depuis le registre : squelette, autre mission…) :
+      // abandonné, pas de lien de retour
+      if (from?.id && idBase(missionId(load()) || '') !== idBase(from.id)) {
+        try {
+          sessionStorage.removeItem('siaFromRegistry:v1');
+        } catch {
+          /* stockage indisponible */
+        }
+        from = null;
       }
       if (from) {
         const back = document.createElement('a');
@@ -974,6 +1191,58 @@
       serie
     };
   }
+  /** « Dupliquer » (registre, générateur) : copie d'une mission prête à modifier — identifiant et série suivants libres de
+   *  sa famille (nextNumbering, lettre d'équipe gardée), références à l'ancien identifiant suivies (cartes attendues,
+   *  récit), titre « … (copie) », meta.duplicated_from ; opération réduite à la copie (sans organisation d'exercice),
+   *  fichiers sources, cartes et rendus non repris (ils se refont au studio). La copie devient la mission courante,
+   *  seule dans son lot (by : page auteure). Retour : document enregistré. */
+  function duplicate(doc, by) {
+    const y0 = doc?.yaml || doc || {},
+      old = idNorm(y0.mission?.id ?? y0.mission?.number),
+      p = parseId(old),
+      n = nextNumbering(y0.mission?.type),
+      now = n.id ? n.id + (p.team || '') : `${old || 'M'}-COPIE`,
+      oldBase = idBase(old),
+      newBase = idBase(now),
+      rx = oldBase ? idToken(oldBase, true) : null,
+      sub = s => rx ? s.replace(rx, (_, team) => newBase + team) : s,
+      blank = {
+        summary: '',
+        detailed: '',
+        sections: []
+      },
+      y = mapStrings(structuredClone(y0), sub),
+      narrative = mapStrings(structuredClone(doc?.narrative || blank), sub),
+      m = y.mission || (y.mission = {});
+    m.id = now;
+    if (parseId(now).num != null) m.number = parseId(now).num;
+    m.series = n.serie || m.series;
+    delete m.former_id;
+    y.title = `${String(y.title || 'Mission').replace(/\s*\(copie\)$/i, '')} (copie)`;
+    y.meta = {
+      ...(y.meta || {}),
+      duplicated_from: old,
+      duplicated_at: new Date().toISOString()
+    };
+    if (y.operation && typeof y.operation === 'object') {
+      y.operation = {
+        ...y.operation,
+        missions: [now]
+      };
+      delete y.operation.organisation;
+    }
+    const copy = {
+      yaml: y,
+      narrative,
+      sourceNames: []
+    };
+    storeBatch({
+      docs: [copy],
+      index: 0
+    });
+    markSaved(copy, 'new'); // copie : pas encore enregistrée (ligne d'état)
+    return save(copy, by);
+  }
   /** Prochains identifiants de toutes les familles (paramètre PROCHAINS_NUMEROS du prompt, utile si TYPE = aléatoire). */
   function numberingTable() {
     return [...new Set(Object.keys(FAMILY_LETTERS).filter(f => f !== 'MEDEVAC'))].map(f => {
@@ -985,8 +1254,10 @@
   //      (docs/technique/PROMPT_GENERATEUR_MISSIONS.md), relu par fromTexts ; mission d'organisation (…Z) : son format propre.
   //      docs : autres missions de l'opération (YAML), pour la section « Exercice » d'une mission d'équipage.
   function markdownOf(y, {
-    docs = []
+    docs = [],
+    narrative = null
   } = {}) {
+    narrative ||= y?.narrative; // rubriques du récit (document { yaml, narrative }, ou passées par le générateur)
     y = y?.yaml || y || {};
     /** Outils de mise en forme : liste, texte nettoyé, cellule de tableau Markdown (sans « | » ni saut de ligne). */
     const arr = v => Array.isArray(v) ? v : v ? [v] : [],
@@ -1003,9 +1274,19 @@
       out = [];
     /** Paragraphes du texte, chaque paragraphe remis sur une ligne. */
     const para = v => txt(v).split(/\n\s*\n/).map(s => s.replace(/\s*\n\s*/g, ' ').trim()).filter(Boolean).join('\n\n');
-    /** Ajoute la section « ## title » si son contenu n'est pas vide. */
+    // rubriques du récit (générateur : « Ajouter une rubrique textuelle ») : sous la section de même titre (ou dont le
+    // titre commence ainsi), sinon ajoutées à la fin
+    const extras = (narrative?.sections || []).filter(x => txt(x?.content)).map(x => ({
+      title: txt(x.title),
+      content: txt(x.content),
+      used: false
+    }));
+    /** Ajoute la section « ## title » si son contenu (rubriques du récit comprises) n'est pas vide. */
     const sec = (title, body) => {
-      if (txt(body)) out.push(`## ${title}\n\n${txt(body)}`);
+      const more = extras.filter(x => !x.used && x.title && (x.title === title || title.startsWith(x.title + ' ')));
+      more.forEach(x => x.used = true);
+      const all = [txt(body), ...more.map(narrMarked)].filter(Boolean).join('\n\n');
+      if (all) out.push(`## ${title}\n\n${all}`);
     };
     const teams = arr(y.teams).filter(t => t && typeof t === 'object');
     const teamTable = teams.length ? ['| Nom / callsign | Arme / service | Département | Type | Rôle |', '|---|---|---|---|---|', ...teams
@@ -1014,40 +1295,45 @@
     if (ex && typeof ex === 'object') {
       // mission d'organisation
       out.push(`# Organisation ${id} — « ${txt(y.title)} »`);
-      sec('Introduction', [`Type : ${txt(m.type)}`, `Sous-type : ${txt(m.subtype)}`, op.name ? `Opération : ${txt(op.name)} — missions ${arr(op.missions).join(', ')}` : ''].filter(Boolean).join('\n'));
-      sec('Summary', para(y.summary));
-      sec('Description détaillée', para(y.detailed_description));
-      sec('Équipes engagées', teamTable);
-      sec('Heure H et participants', [`Heure H : ${txt(ex.h_hour) || 'H'}`, '', '| Indicatif | Mission | Décollage | Rôle |', '|---|---|---|---|', ...arr(ex
+      sec(BT('Introduction'), [`Type : ${txt(m.type)}`, `Sous-type : ${txt(m.subtype)}`, op.name ? `Opération : ${txt(op.name)} — missions ${arr(op.missions).join(', ')}` : ''].filter(Boolean).join('\n'));
+      sec(BT('Summary'), para(y.summary));
+      sec(BT('Description détaillée'), para(y.detailed_description));
+      sec(BT('Équipes engagées'), teamTable);
+      sec(BT('Heure H et participants'), [`Heure H : ${txt(ex.h_hour) || 'H'}`, '', '| Indicatif | Mission | Décollage | Rôle |', '|---|---|---|---|', ...arr(ex
         .participants).map(p => `| ${cell(p.callsign)} | ${cell(p.mission)} | ${cell(p.takeoff)} | ${cell(p.role)} |`)].join('\n'));
-      if (arr(ex.tracks).length) sec('Chiffons', [
+      if (arr(ex.tracks).length) sec(BT('Chiffons'), [
         '| Piste | Joué | Indicatif | Départ | Nature | Points | Niveau | Vitesse | À établir | Consignes |',
         '|---|---|---|---|---|---|---|---:|---|---|',
         ...arr(ex.tracks).map(k => `| ${cell(k.name || k.id)} | ${k.played ? 'oui' : 'non'} | ${cell(k.callsign)} | ${cell(k.start)} | ${cell(k.nature)} | ${cell(arr(k.points).map(p => `${txt(p.name)} ${num(p.lat)}, ${num(p.lon)}`).join(' → '))} | ${cell(k.level)} | ${cell(k.speed_kt)} | ${cell(k.task)} | ${cell(k.conduct)} |`)
       ].join('\n'));
-      if (arr(ex.events).length) sec('Chronologie', arr(ex.events).map(e => `- **${txt(e.id)} — ${txt(e.at)}${e.by ? ` (${txt(e.by)})` : ''}${+e.delay_min ? ` +${+e.delay_min} min` : ''}** — ${/pli/i.test(e.kind || '') ? 'pli' : 'radio'} — ${txt(e.from)} → ${arr(e.to).join(', ')} : ${txt(e.title)}${arr(e.reveals).length ? ` — pistes ${arr(e.reveals).join(', ')}` : ''}${txt(e.text) ? '\n  ' + para(e.text).replace(/\n\n/g, '\n  ') : ''}`).join('\n'));
+      if (arr(ex.events).length) sec(BT('Chronologie'), arr(ex.events).map(e => `- **${txt(e.id)} — ${txt(e.at)}${e.by ? ` (${txt(e.by)})` : ''}${+e.delay_min ? ` +${+e.delay_min} min` : ''}** — ${/pli/i.test(e.kind || '') ? 'pli' : 'radio'} — ${txt(e.from)} → ${arr(e.to).join(', ')} : ${txt(e.title)}${arr(e.reveals).length ? ` — pistes ${arr(e.reveals).join(', ')}` : ''}${txt(e.text) ? '\n  ' + para(e.text).replace(/\n\n/g, '\n  ') : ''}`).join('\n'));
     } else {
       out.push(`# Mission ${id} — ${txt(ac.callsign) || '—'} — « ${txt(y.title)} »`);
-      sec('Introduction', [`Type : ${txt(m.type)}`, `Sous-type : ${txt(m.subtype)}`, `Aéronef : ${txt(ac.type)}`, `Callsign : ${txt(ac.callsign)}`, `Départ : ${txt(y.origin?.name)}${at(y.origin)}`, `Destination : ${txt(y.destination?.name)}${at(y.destination)}`].join('\n'));
-      sec('Summary', para(y.summary));
-      sec('Description détaillée', para(y.detailed_description));
-      sec('Équipes engagées', teamTable);
-      if (arr(op.missions).length > 1) sec('Coordination de l\'opération', `Opération : ${txt(op.name)} — missions ${arr(op.missions).join(', ')}`);
+      sec(BT('Introduction'), [`Type : ${txt(m.type)}`, `Sous-type : ${txt(m.subtype)}`, `Aéronef : ${txt(ac.type)}`, `Callsign : ${txt(ac.callsign)}`, `Départ : ${txt(y.origin?.name)}${at(y.origin)}`, `Destination : ${txt(y.destination?.name)}${at(y.destination)}`].join('\n'));
+      sec(BT('Summary'), para(y.summary));
+      sec(BT('Description détaillée'), para(y.detailed_description));
+      sec(BT('Équipes engagées'), teamTable);
+      if (arr(op.missions).length > 1) sec(BT('Coordination de l\'opération'), `Opération : ${txt(op.name)} — missions ${arr(op.missions).join(', ')}`);
       const pl = y.payload;
-      if (pl && typeof pl === 'object') sec('Charge / personnel', [`Catégorie : ${txt(pl.category)}`, `Description : ${txt(pl.description)}`, pl.mass_kg != null ? `Masse : ${pl.mass_kg} kg` : '', pl
+      if (pl && typeof pl === 'object') sec(BT('Charge / personnel'), [`Catégorie : ${txt(pl.category)}`, `Description : ${txt(pl.description)}`, pl.mass_kg != null ? `Masse : ${pl.mass_kg} kg` : '', pl
         .passengers != null ? `Passagers : ${pl.passengers}` : '', arr(pl.constraints).length ? `\nContraintes :\n${arr(pl.constraints).map(c => `- ${txt(c)}`).join('\n')}` : ''
       ].filter(Boolean).join('\n'));
-      sec('Objectif principal', txt(y.objectives?.primary));
-      sec('Objectifs secondaires', arr(y.objectives?.secondary).map(o => `- ${txt(o)}`).join('\n'));
-      if (arr(y.turning_points).length) sec('Points tournants', ['| ID | Nom | Latitude | Longitude | Rôle |', '|---|---|---:|---:|---|',
+      sec(BT('Objectif principal'), txt(y.objectives?.primary));
+      sec(BT('Objectifs secondaires'), arr(y.objectives?.secondary).map(o => `- ${txt(o)}`).join('\n'));
+      if (arr(y.turning_points).length) sec(BT('Points tournants'), ['| ID | Nom | Latitude | Longitude | Rôle |',
+        '|---|---|---:|---:|---|',
         ...arr(y.turning_points).map(p => `| ${cell(p.id)} | ${cell(p.name)} | ${num(p.lat)} | ${num(p.lon)} | ${cell(p.role)} |`)
       ].join('\n'));
-      if (arr(y.rendezvous).length) sec('Rendez-vous', arr(y.rendezvous).map(r => `- **${txt(r.id)} — ${txt(r.name)}** — ${num(r.lat)}, ${num(r.lon)}${arr(r.participants).length ? ` — participants : ${arr(r.participants).join(', ')}` : ''}${r.role ? ` — ${txt(r.role)}` : ''}`).join('\n'));
-      if (y.air_refueling && typeof y.air_refueling === 'object') sec('Ravitaillement en vol', Object.entries(y.air_refueling).map(([k,
+      if (arr(y.rendezvous).length) sec(BT('Rendez-vous'), arr(y.rendezvous).map(r => `- **${txt(r.id)} — ${txt(r.name)}** — ${num(r.lat)}, ${num(r.lon)}${arr(r.participants).length ? ` — participants : ${arr(r.participants).join(', ')}` : ''}${r.role ? ` — ${txt(r.role)}` : ''}`).join('\n'));
+      if (y.air_refueling && typeof y.air_refueling === 'object') sec(BT('Ravitaillement en vol'), Object.entries(y.air_refueling).map(([
+        k,
         v
       ]) => `- ${k}: ${Array.isArray(v) ? v.join(', ') : v}`).join('\n'));
-      sec('Risques à prendre en compte', arr(y.risks).map(r => typeof r === 'object' ? `- **${txt(r.hazard)}** — conséquence : ${txt(r.consequence)} — mesure : ${txt(r.mitigation)}` : `- ${txt(r)}`).join('\n'));
-      sec('Cartographie prévue', arr(y.maps).map(mp => typeof mp === 'object' ? `- \`${txt(mp.filename || mp.file)}\` — ${txt(mp.description)}` : `- \`${txt(mp)}\``).join('\n'));
+      sec(BT('Risques à prendre en compte'), arr(y.risks).map(r => typeof r === 'object' ? `- **${txt(r.hazard)}**${r.level ? ` — niveau : ${txt(r.level)}` : ''}${r.consequence ? ` — conséquence : ${txt(r.consequence)}` : ''}${r.mitigation ? ` — mesure : ${txt(r.mitigation)}` : ''}` : `- ${txt(r)}`).join('\n'));
+      sec(BT('Cartographie prévue'), arr(y.maps).map(mp => typeof mp === 'object' ? `- \`${txt(mp.filename || mp.file)}\` — ${txt(mp.description)}` : `- \`${txt(mp)}\``).join('\n'));
+      // chronologie de la mission (événements horaires, V2_FABLE § 10) : la rubrique « Chronologie » du récit la complète
+      sec(BT('Chronologie'), (window.MissionExercise?.missionTimelineText?.(y) || '').replace(/^• /gm, '- '));
+      sec(BT('Notes'), arr(y.notes).map(n => `- ${txt(n)}`).join('\n'));
       // exercice : organisation de l'opération (docs) ; plis comptés, pas leur contenu
       const X = window.MissionExercise,
         org = X ? X.of(y, docs) : null,
@@ -1056,18 +1342,212 @@
         const tl = org ? X.timeline(org, [y, ...docs]) : [],
           mine = me ? X.eventsFor(tl, me.callsign) : [],
           plis = mine.filter(e => e.kind === 'pli');
-        sec('Exercice', [`Organisation : ${txt(op.organisation)}`, `Heure H : ${txt(org?.h_hour) || 'H'}`, `Décollage : ${txt(me?.takeoff) || 'H'}`, `Plis scellés remis : ${plis.length ? plis.map(e => `${txt(e.title) || e.id} (à ouvrir : ${e.when})`).join(' ; ') : 'aucun'}`, `Messages radio attendus en vol : ${mine.length > plis.length ? 'oui' : 'non'}`].join('\n'));
+        sec(BT('Exercice'), [`Organisation : ${txt(op.organisation)}`, `Heure H : ${txt(org?.h_hour) || 'H'}`, `Décollage : ${txt(me?.takeoff) || 'H'}`, `Plis scellés remis : ${plis.length ? plis.map(e => `${txt(e.title) || e.id} (à ouvrir : ${e.when})`).join(' ; ') : 'aucun'}`, `Messages radio attendus en vol : ${mine.length > plis.length ? 'oui' : 'non'}`].join('\n'));
       }
       for (const ph of arr(y.phases)) sec(`Partie ${txt(ph.id)} — ${txt(ph.title)}`, [`À ouvrir : ${txt(ph.trigger)}`, `Message : ${txt(ph.message)}`, '', para(ph.brief)].join('\n'));
     }
+    for (const x of extras)
+      if (!x.used) out.push(`## ${x.title}\n\n${narrMarked(x)}`);
     out.push('> Scénario de simulation — ne pas utiliser pour une mission réelle.');
     return out.join('\n\n') + '\n';
   }
+  /** Applique fn(yaml) à chaque mission du lot et à la mission partagée (modifiées en place ; fn idempotente), range le
+   *  lot et republie la mission partagée (by : page auteure). Sert aux changements d'opération (équipage ajouté ou
+   *  retiré). Retour : document partagé enregistré, null sans mission. */
+  function mapBatch(fn, by) {
+    const b = loadBatch(),
+      cur = load();
+    if (b) {
+      b.docs.forEach(d => d?.yaml && fn(d.yaml));
+      storeBatch(b);
+    }
+    if (!cur) return null;
+    fn(cur.yaml);
+    return save(cur, by);
+  }
+  /** Retire la mission id du lot ; si c'était la mission partagée, la première restante la remplace. Une seule mission
+   *  restante : plus de lot. Retour : document partagé enregistré (null s'il n'en reste aucun). */
+  function removeFromBatch(id, by) {
+    id = String(id || '').trim().toUpperCase();
+    const b = loadBatch(),
+      cur = load(),
+      rest = (b?.docs || []).filter(d => missionId(d) !== id);
+    storeBatch(rest.length > 1 ? {
+      docs: rest,
+      index: 0
+    } : null);
+    if (cur && missionId(cur) !== id) return save(cur, by);
+    return rest.length ? save(rest[0], by) : null;
+  }
+  // ---- version de référence : ligne d'état du générateur et du studio ---------------------------------------
+  // Par mission (identifiant) : la dernière version enregistrée dans le dossier (saved), sinon celle chargée depuis le
+  // dossier ou des fichiers (loaded), ou créée sans être enregistrée (new : squelette, copie, organisation, nouvelle
+  // mission). La mission partagée — brouillon de travail commun, que le générateur et le studio s'échangent aussitôt —
+  // est comparée à elle : champs modifiés, depuis quand ; « Annuler les modifications » y revient.
+  const SAVED = NS ? 'siaMissionSaved' + NS : 'siaMissionSaved:v1';
+  /** Forme comparable d'une mission (YAML et récit), en texte JSON. */
+  const snapOf = doc => JSON.stringify({
+    yaml: doc?.yaml || {},
+    narrative: doc?.narrative || {
+      summary: '',
+      detailed: '',
+      sections: []
+    }
+  });
+  /** Versions de référence connues : { identifiant → { kind, at, snap, dirtyAt } }. */
+  const readSaved = () => {
+    try {
+      return JSON.parse(localStorage.getItem(SAVED) || '{}') || {};
+    } catch {
+      return {};
+    }
+  };
+  /** Garde les versions de référence (40 missions au plus, les plus récentes). */
+  function writeSaved(all) {
+    const keep = Object.keys(all).sort((a, b) => (all[b].at || 0) - (all[a].at || 0)).slice(0, 40);
+    try {
+      localStorage.setItem(SAVED, JSON.stringify(Object.fromEntries(keep.map(k => [k, all[k]]))));
+    } catch {
+      /* stockage plein : la ligne d'état repart de la mission courante */
+    }
+  }
+  /** Pose la version de référence d'une mission : kind saved (enregistrée dans le dossier), loaded (chargée), new
+   *  (jamais enregistrée). */
+  function markSaved(doc, kind = 'saved') {
+    const id = missionId(doc);
+    if (!id) return;
+    const all = readSaved();
+    all[id] = {
+      kind,
+      at: Date.now(),
+      snap: snapOf(doc),
+      dirtyAt: null
+    };
+    writeSaved(all);
+  }
+  /** Feuilles d'une valeur : chemin → texte (un champ par feuille ; tableau ou objet vide : une feuille). */
+  function leaves(v, path = '', out = new Map()) {
+    if (v && typeof v === 'object') {
+      const e = Object.entries(v);
+      if (!e.length) out.set(path, Array.isArray(v) ? '[]' : '{}');
+      e.forEach(([k, x]) => leaves(x, `${path}/${k}`, out));
+    } else out.set(path, String(v ?? ''));
+    return out;
+  }
+  /** État d'une mission par rapport à sa version de référence : { kind, at, fields, since } — fields : champs
+   *  modifiés, since : instant de la première modification (0 : aucune). Mission inconnue : version de référence posée
+   *  (new) avec son contenu actuel. */
+  function savedState(doc) {
+    const id = missionId(doc);
+    if (!id) return {
+      kind: 'new',
+      at: 0,
+      fields: 0,
+      since: 0
+    };
+    const all = readSaved(),
+      rec = all[id];
+    if (!rec) {
+      markSaved(doc, 'new');
+      return {
+        kind: 'new',
+        at: Date.now(),
+        fields: 0,
+        since: 0
+      };
+    }
+    const a = leaves(JSON.parse(rec.snap)),
+      b = leaves(JSON.parse(snapOf(doc)));
+    let fields = 0;
+    for (const k of new Set([...a.keys(), ...b.keys()]))
+      if (a.get(k) !== b.get(k)) fields++;
+    if (!!fields !== !!rec.dirtyAt) { // première modification, ou retour à la version de référence
+      rec.dirtyAt = fields ? Date.now() : null;
+      writeSaved(all);
+    }
+    return {
+      kind: rec.kind,
+      at: rec.at,
+      fields,
+      since: rec.dirtyAt || 0
+    };
+  }
+  /** Version de référence d'une mission ({ yaml, narrative }) ; null si aucune. */
+  function savedDoc(doc) {
+    const rec = readSaved()[missionId(doc)];
+    return rec ? JSON.parse(rec.snap) : null;
+  }
+  /** Ligne d'état d'une mission dans el (point coloré, texte, infobulle) : enregistrée, identique à la version chargée,
+   *  pas encore enregistrée, ou modifications non enregistrées (depuis, nombre de champs). Retour : savedState. */
+  function renderSaveState(el, doc) {
+    const K = window.RepositoryKit,
+      t = row => K?.t ? K.t(row) : row[0],
+      tf = (row, v) => K?.tf ? K.tf(row, v) : row[0].replace(/\{(\w+)\}/g, (_, k) => v[k] ?? '');
+    if (!document.getElementById('siaSaveStateCss')) document.head.insertAdjacentHTML('beforeend',
+      '<style id="siaSaveStateCss">.sia-save-state{display:flex;align-items:center;gap:7px;margin:6px 0 2px;font-size:.88rem}.sia-save-state i{flex:none;width:9px;height:9px;border-radius:50%;background:#2e9d4f}.sia-save-state[data-tone=dirty] i{background:#d97706}.sia-save-state[data-tone=new] i{background:#8a8f98}</style>'
+    );
+    const st = savedState(doc),
+      hm = ms => new Date(ms).toLocaleTimeString(undefined, {
+        hour: '2-digit',
+        minute: '2-digit'
+      }),
+      /** Depuis combien de temps : à l'instant, il y a n min, il y a n h, le jour. */
+      ago = ms => {
+        const min = Math.round((Date.now() - ms) / 60000);
+        return min < 1 ? t(['à l’instant', 'just now', 'gerade eben', 'hace un momento']) : min < 60 ? tf(['il y a {n} min',
+          '{n} min ago',
+          'vor {n} Min.', 'hace {n} min'
+        ], {
+          n: min
+        }) : min < 24 * 60 ? tf(['il y a {n} h', '{n} h ago', 'vor {n} Std.', 'hace {n} h'], {
+          n: Math.round(min / 60)
+        }) : tf(['le {d}', 'on {d}', 'am {d}', 'el {d}'], {
+          d: new Date(ms).toLocaleDateString()
+        });
+      };
+    const text = st.kind === 'new' ? (st.fields ? tf(['Pas encore enregistrée dans le dossier (modifiée depuis {h}, {n} champ(s))',
+      'Not yet saved to the folder (changed since {h}, {n} field(s))',
+      'Noch nicht im Ordner gespeichert (geändert seit {h}, {n} Feld(er))',
+      'Aún no guardada en la carpeta (modificada desde las {h}, {n} campo(s))'
+    ], {
+      h: hm(st.since),
+      n: st.fields
+    }) : t(['Pas encore enregistrée dans le dossier', 'Not yet saved to the folder', 'Noch nicht im Ordner gespeichert',
+      'Aún no guardada en la carpeta'
+    ])) : st.fields ? tf(['Modifications non enregistrées depuis {h} ({n} champ(s))', 'Unsaved changes since {h} ({n} field(s))',
+      'Ungespeicherte Änderungen seit {h} ({n} Feld(er))', 'Cambios sin guardar desde las {h} ({n} campo(s))'
+    ], {
+      h: hm(st.since),
+      n: st.fields
+    }) : st.kind === 'saved' ? tf(['Enregistrée dans le dossier ({a})', 'Saved to the folder ({a})', 'Im Ordner gespeichert ({a})',
+      'Guardada en la carpeta ({a})'
+    ], {
+      a: ago(st.at)
+    }) : tf(['Identique à la version du dossier (chargée {a})', 'Same as the folder version (loaded {a})',
+      'Wie die Version im Ordner (geladen {a})', 'Igual que la versión de la carpeta (cargada {a})'
+    ], {
+      a: ago(st.at)
+    });
+    el.className = 'sia-save-state';
+    el.dataset.tone = st.fields ? 'dirty' : st.kind === 'new' ? 'new' : 'ok';
+    el.dataset.noI18n = '';
+    el.title = t([
+      'Le générateur et le studio partagent la mission aussitôt (brouillon de travail commun, gardé dans ce navigateur) ; « Enregistrer dans le dossier » l’écrit dans data/missions/… ; « Annuler les modifications » revient à la version enregistrée (ou chargée).',
+      'The generator and the studio share the mission at once (common working draft, kept in this browser); “Save to the folder” writes it to data/missions/…; “Undo changes” goes back to the saved (or loaded) version.',
+      'Generator und Studio teilen die Mission sofort (gemeinsamer Arbeitsentwurf, in diesem Browser gespeichert); „Im Ordner speichern“ schreibt sie nach data/missions/…; „Änderungen verwerfen“ kehrt zur gespeicherten (oder geladenen) Version zurück.',
+      'El generador y el estudio comparten la misión al instante (borrador de trabajo común, guardado en este navegador); «Guardar en la carpeta» la escribe en data/missions/…; «Deshacer los cambios» vuelve a la versión guardada (o cargada).'
+    ]);
+    el.innerHTML = `<i aria-hidden="true"></i><span></span>`;
+    el.lastChild.textContent = text;
+    return st;
+  }
+
   window.SiaMission = {
     FAMILY_LETTERS,
     parseId,
     nextNumbering,
     numberingTable,
+    duplicate,
     markdownOf,
     KEY,
     load,
@@ -1083,8 +1563,21 @@
     migrateIds,
     go,
     addToBatch,
+    setBatch,
     mountNav,
     parseMarkdown,
+    briefKey,
+    cleanNarrative,
+    markSaved,
+    tidyMission,
+    parseRiskLine,
+    riskLevel,
+    riskText,
+    mapBatch,
+    removeFromBatch,
+    savedState,
+    savedDoc,
+    renderSaveState,
     extractMdMetadata,
     mergeYaml
   };

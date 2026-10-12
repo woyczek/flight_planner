@@ -2,12 +2,92 @@
 <!-- Page générée par tools/build_map_planner.py depuis apps/cpco/map_parser.html : ne pas éditer à la main. -->
 <html data-tool="dark" lang="fr">
 <head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Cartes de vol</title>
-<link rel="stylesheet" href="../../shared/repository_nav.css?v=0">
-<script src="../../config/repository_tree?v=0"></script><script src="../../shared/kit.js?v=0"></script>
-<style data-layer="lib">
-@import url("../../shared/carto/maplibre-gl.css") layer(lib);
+<script>
+/* fenêtre « carte » (map_parser.html?carte) : repérée avant tout script, seule la carte est montrée */
+if (/[?&]carte(?:[=&]|$)/.test(location.search)) document.documentElement.setAttribute('data-map-window', '')
+</script>
+<style>
+  html[data-map-window] {
+    padding-left: 0 !important
+  }
+  html[data-map-window] body>:not(#mwRoot):not(.repo-notify):not(dialog) {
+    display: none !important
+  }
+  #mwRoot {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    background: var(--repo-page, #fff)
+  }
+  #mwRoot .mw-bar {
+    flex: none;
+    position: relative;
+    z-index: 5;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px;
+    background: var(--repo-bar, #101319);
+    color: var(--repo-bar-text, #fff);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, .25)
+  }
+  #mwRoot .mw-bar :is(button, select) {
+    font: inherit;
+    margin: 0;
+    padding: 4px 10px;
+    border-radius: 6px;
+    border: 1px solid color-mix(in srgb, var(--repo-bar-text, #fff) 35%, transparent);
+    background: color-mix(in srgb, var(--repo-bar-text, #fff) 12%, transparent);
+    color: var(--repo-bar-text, #fff)
+  }
+  #mwRoot .mw-bar :is(button, select) {
+    width: auto !important;
+    min-width: 0;
+    flex: 0 0 auto
+  }
+  #mwRoot .mw-bar select {
+    max-width: 22em;
+    flex: 0 1 auto
+  }
+  #mwRoot .mw-bar select option {
+    color: #1d2633;
+    background: #fff
+  }
+  #mwRoot .mw-sep {
+    width: 1px;
+    align-self: stretch;
+    background: color-mix(in srgb, var(--repo-bar-text, #fff) 30%, transparent)
+  }
+  #mwRoot .mw-status {
+    flex: 1 1 14em;
+    min-width: 0;
+    font-size: 12px;
+    opacity: .85;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis
+  }
+  #mwRoot .mw-status p {
+    margin: 0
+  }
+  #mwRoot .mw-map {
+    flex: 1;
+    position: relative;
+    min-height: 0
+  }
+  #mwRoot .mw-map>#osmLivePreview,
+  #mwRoot .mw-map>#generalPreview {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100% !important;
+    margin: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    object-fit: contain
+  }
 .volForm{display:grid;grid-template-columns:repeat(2,minmax(0,260px));gap:8px 12px;align-items:end}.volForm label{display:grid;gap:3px;font-size:13px}
 #volStatus:empty{display:none}
 [data-block-id="vol"] #result:not(:empty){margin-top:6px}
@@ -15,9 +95,16 @@
 #vprofPtsBox{display:none!important}
 @media(max-width:800px){.volForm{grid-template-columns:1fr 1fr}}
 </style>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Cartes de vol</title>
+<link rel="stylesheet" href="../../shared/repository_nav.css?v=0">
+<script src="../../config/repository_tree?v=0"></script><script src="../../shared/kit.js?v=0"></script>
+<style data-layer="lib">
+@import url("../../shared/carto/maplibre-gl.css") layer(lib);
+</style>
 <script src="../../shared/carto/maplibre-gl.js"></script>
 <script src="../../shared/mission_core/vendor/js-yaml.min.js"></script>
-<script>window.SIA_MISSION_NS='planner'</script><script src="../cpco/mission_store.js?v=0"></script>
+<script>window.SIA_MISSION_NS='planner'</script><script src="../cpco/mission_store.js?v=0"></script><script src="../../shared/place_search.js?v=0"></script>
 <script src="../../shared/carto/aero_symbols.js?v=0"></script><script src="../../shared/carto/vertical_profile.js?v=0"></script><script src="../../shared/carto/vprof_editor.js?v=0"></script><script src="../../AircraftDB/aircraft_db.js"></script><script src="../../shared/flight_performance_model.js?v=0"></script><script src="../../AircraftDB/aircraft_perf.js"></script><script src="../../shared/mission_routing.js?v=0"></script><script src="../../shared/mission_estimate.js?v=0"></script><script src="../../shared/mission_exercise.js?v=0"></script>
 <script src="../../shared/sia_base.js?v=0"></script><script src="../../shared/aar_tracks.js?v=0"></script><script src="../../shared/airac.js?v=0"></script><script src="../../shared/sticky_frame.js?v=0"></script>
 <style data-layer="app">
@@ -110,6 +197,16 @@
   button:disabled {
     opacity: .45;
     cursor: not-allowed
+  }
+  /* contrôles de la carte d'aperçu (zoom + / −) : gabarit de MapLibre, pas celui des boutons de la page — fond bleu et
+     marges réduisaient leur icône sombre à 0 px de large : deux carrés bleus vides */
+  .maplibregl-ctrl-group button {
+    background: #fff;
+    color: #333;
+    padding: 0;
+    border-radius: 0;
+    width: 29px;
+    height: 29px
   }
   .warn {
     background: #fff7d9;
@@ -215,6 +312,44 @@
     overflow: hidden;
     transform: translateZ(0);
     isolation: isolate
+  }
+  /* points à placer : panneau, carte en mode pose (curseur en croix), points posés déplaçables */
+  .placeBox {
+    margin: 6px 0;
+    padding: 6px 8px;
+    border: 1px dashed #d6a23c
+  }
+  .placeBox table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px
+  }
+  .placeBox td {
+    padding: 2px 4px;
+    vertical-align: middle
+  }
+  .placeBox tr.active td {
+    background: color-mix(in srgb, #d6a23c 22%, transparent)
+  }
+  .placeBox input[data-place-search] {
+    width: 100%;
+    min-width: 160px
+  }
+  .placeBox input[data-place-radius] {
+    width: 5em
+  }
+  #osmLivePreview.placing,
+  #osmLivePreview.placing .maplibregl-canvas {
+    cursor: crosshair
+  }
+  .placeMarker {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: #d6a23c;
+    border: 2px solid #fff;
+    box-shadow: 0 0 0 1px #000;
+    cursor: grab
   }
   .missionMarker,
   .cityMarker {
@@ -452,51 +587,6 @@
   .elemGrid {
     grid-template-columns: repeat(auto-fit, minmax(210px, 1fr))
   }
-  body.previewWindow>header,
-  body.previewWindow>footer,
-  body.previewWindow main>section:not([data-block-id=sia-route]),
-  body.previewWindow .routeBar,
-  body.previewWindow #routeInfo,
-  body.previewWindow #vprofImg,
-  body.previewWindow #vprofStatus,
-  body.previewWindow .vprofSettings,
-  body.previewWindow .splitter,
-  body.previewWindow .repo-block-heading,
-  body.previewWindow #previewWindow,
-  body.previewWindow #previewPop {
-    display: none !important
-  }
-  body.previewWindow {
-    max-width: none;
-    padding: 0;
-    margin: 0
-  }
-  body.previewWindow main,
-  body.previewWindow section {
-    margin: 0;
-    padding: 0;
-    border: 0;
-    box-shadow: none
-  }
-  body.previewWindow .profileLayout {
-    display: block
-  }
-  body.previewWindow .profilePreview {
-    position: fixed;
-    inset: 0;
-    margin: 0;
-    border-radius: 0;
-    display: flex;
-    flex-direction: column
-  }
-  body.previewWindow #osmLivePreview {
-    flex: 1;
-    height: auto
-  }
-  body.previewWindow #generalPreview {
-    flex: 1;
-    max-height: none
-  }
   .profileLeft,
   .profileLeft * {
     min-width: 0
@@ -535,8 +625,7 @@
   .aarOptions .check {
     margin: 2px 0
   }
-  .profilePreview.popped>:not(#osmLivePreview):not(#generalPreview):not(.viewBar):not(#previewStatus),
-  body.previewWindow .profilePreview>:not(#osmLivePreview):not(#generalPreview):not(.viewBar):not(#previewStatus) {
+  .profilePreview.popped>:not(#osmLivePreview):not(#generalPreview):not(.viewBar):not(#previewStatus) {
     display: none !important
   }
   .profilePreview.popped {
@@ -1252,7 +1341,7 @@
 <header><div class="header-row"><h1>Cartes de vol</h1><a class="headerButton" href="flight_performance_planner.html">← Planificateur</a></div><p>Route, cartes topographiques, approche, rendez-vous et destination, profil vertical — pour sa propre préparation</p></header>
 
 <main>
-<section id="siaMissionHidden" hidden><h2>Mission</h2><p id="missionStatus" data-status class="small">Formats acceptés : Markdown, YAML <code>helo-xp-mission</code>.</p><div class="actions"><button type="button" id="saveStudio" data-icon="save" class="secondary" title="Enregistrer la mission et les réglages du studio (profil et emprise de chaque carte, tracés, pistes) dans son dossier : data/missions/…/mission&lt;ID&gt;.yaml">Enregistrer dans le dossier</button></div><p id="siaBaseLine" class="small">Base SIA : lecture de la base du navigateur…</p><details id="missionOpen" class="missionOpen"><summary>Ouvrir une autre mission : fichier Markdown / YAML ou texte collé</summary><div class="grid">
+<section id="siaMissionHidden" hidden><h2>Mission</h2><p id="missionStatus" data-status class="small">Formats acceptés : Markdown, YAML <code>helo-xp-mission</code>.</p><div class="actions"><button type="button" id="saveStudio" data-icon="save" class="secondary" title="Enregistrer la mission et les réglages du studio (profil et emprise de chaque carte, tracés, pistes) dans son dossier : data/missions/…/mission&lt;ID&gt;.yaml">Enregistrer dans le dossier</button><button type="button" id="revertStudio" data-icon="undo" class="secondary" disabled title="Revenir à la dernière version enregistrée dans le dossier (ou à la version chargée), après confirmation">Annuler les modifications</button></div><p id="studioSaveState"></p><p id="siaBaseLine" class="small">Base SIA : lecture de la base du navigateur…</p><details id="missionOpen" class="missionOpen"><summary>Ouvrir une autre mission : fichier Markdown / YAML ou texte collé</summary><div class="grid">
 <label>Ouvrir une mission Markdown ou YAML<input id="missionFile" type="file" multiple accept=".md,.markdown,.yaml,.yml,text/markdown,text/yaml,text/plain,application/yaml" data-dropzone></label>
 <div class="actions"><button id="openMissionPaste" data-icon="link" class="buttonLink" type="button">ou coller son contenu…</button></div>
 </div><div id="missionPaste" class="box" hidden><strong>Coller le contenu Markdown ou YAML de la mission</strong><textarea id="missionText" placeholder="Colle ici le contenu Markdown ou YAML de la mission…"></textarea><div class="actions"><button id="parseMission" data-icon="eye" type="button">Lire la mission</button></div></div></details>
@@ -1266,8 +1355,8 @@
 </div>
 <p id="routeInfo" class="small"></p>
 <details class="small route-help"><summary>Syntaxe et utilisation</summary><p>Case 15 du plan de vol OACI (séparée par des espaces) ou liste à virgules. Points : terrains (OACI), balises, points RNAV, points de report VFR (« MM-CV »), points de la mission (ORIGIN, TARGET…), « REN300010 » (radiale / distance), coordonnées « 4330N00125E » ou « lat lon » ; voies aériennes entre deux points (« TOU UN460 NTS ») suivies point par point ; « DCT » : direct. Niveaux : « N0450F350 » groupe vitesse / niveau (au départ ou après un point : « NTS/N0440F370 »), « FL105 » ou « 5500 ft » seul : montée ou descente après le point précédent, « /A035 », « /F065 » ou « /3000 » après un point : altitude à atteindre au point, « VFR » : pas de niveau. Le même plan de vol est repris par le planificateur carburant (Cartes de vol).</p><p>Survol d’un point du texte, de la carte ou de la coupe : les deux autres s’illuminent. Carte : glisser un point (aimanté sur balises, points de report, terrains), clic sur la route pour insérer un point, clic droit pour supprimer un point (double-clic : un point ajouté). Coupe : clic pour un point à cette altitude, glisser pour l’altitude, clic droit pour supprimer.</p></details>
-<div id="vprofPtsBox" class="small" hidden><span>Points de la mission (clic : ajouter au cheminement) :</span> <span id="vprofPts"></span></div>
-<aside class="profilePreview routeMap box"><div class="routeMapBar"><label class="routeInline">Carte <select id="routeMapSel" title="Carte affichée (par défaut : la carte générale de la route)"></select></label><label class="routeInline" data-min-level="4">Profil <select id="routeMapProfile" title="Profil d’affichage de cette carte (même réglage que dans « Cartes à produire »)"></select></label></div><div class="profileLeft routeProfileEdit" data-min-level="4"></div><select id="previewMap" hidden><option value="">Aucune mission chargée</option></select><img id="generalPreview" alt="Carte de contrôle" hidden><div id="osmLivePreview" hidden></div><div class="viewBar"><label class="mapZip previewZip" data-min-level="4" title="Mettre cette carte dans le ZIP (décocher pour ne pas la générer)"><input type="checkbox" id="previewZip" checked disabled> ZIP</label><button id="refreshPreview" data-min-level="4" data-icon="refresh" type="button" disabled title="Redessiner l’aperçu avec les réglages en cours">Actualiser</button><button type="button" data-view="keep" data-min-level="4" data-icon="check" title="La carte générée reprendra exactement le cadre affiché (zoom et déplacement à la souris) ; écrit dans la mission">Garder ce cadrage</button><button type="button" data-view="home" data-min-level="4" class="secondary" title="Revenir au cadrage enregistré de cette carte">Recentrer</button><button type="button" data-view="auto" data-min-level="4" class="secondary" title="Oublier le cadrage enregistré : cadre calculé d’après la mission (points, zones, pistes) et le type de carte">Cadrage automatique</button><span class="viewSpacer"></span><button id="previewWindow" data-min-level="4" type="button" class="buttonLink" title="Ouvrir la carte dans une fenêtre séparée, synchronisée avec les réglages">⧉ Fenêtre</button><button id="previewPop" type="button" class="buttonLink" title="Agrandir la carte (Échap pour revenir)">⤢ Agrandir</button></div>
+<div id="placeBox" class="placeBox" hidden><p><b id="placeTitle">Points à placer</b> <span class="small">Cliquer la carte, ou chercher un terrain, une balise, un point de la base SIA ou une ville (code ou nom) ; un point posé se déplace en le glissant sur la carte.</span></p><table id="placeTable"></table><p id="placeDone" class="ok" hidden>Tout est placé. <button type="button" id="placeGenerate" class="primary" data-icon="download">Générer les cartes et le ZIP</button></p><datalist id="placeOptions"></datalist></div><div id="vprofPtsBox" class="small" hidden><span>Points de la mission (clic : ajouter au cheminement) :</span> <span id="vprofPts"></span></div>
+<aside class="profilePreview routeMap box"><div class="routeMapBar"><label class="routeInline">Carte <select id="routeMapSel" title="Carte affichée (par défaut : la carte générale de la route)"></select></label><label class="routeInline" data-min-level="4">Profil <select id="routeMapProfile" title="Profil d’affichage de cette carte (même réglage que dans « Cartes à produire »)"></select></label></div><div class="profileLeft routeProfileEdit" data-min-level="4"></div><select id="previewMap" hidden><option value="">Aucune mission chargée</option></select><img id="generalPreview" alt="Carte de contrôle" hidden><div id="osmLivePreview" hidden></div><div class="viewBar"><label class="mapZip previewZip" data-min-level="4" title="Mettre cette carte dans le ZIP (décocher pour ne pas la générer)"><input type="checkbox" id="previewZip" checked disabled> ZIP</label><button id="refreshPreview" data-min-level="4" data-icon="refresh" type="button" disabled title="Redessiner l’aperçu avec les réglages en cours">Actualiser</button><button type="button" data-view="keep" data-min-level="4" data-icon="check" title="La carte générée reprendra exactement le cadre affiché (zoom et déplacement à la souris) ; écrit dans la mission">Garder ce cadrage</button><button type="button" data-view="home" data-min-level="4" class="secondary" title="Revenir au cadrage enregistré de cette carte">Recentrer</button><button type="button" data-view="auto" data-min-level="4" class="secondary" title="Oublier le cadrage enregistré : cadre calculé d’après la mission (points, zones, pistes) et le type de carte">Cadrage automatique</button><span class="viewSpacer"></span><button id="previewWindow" data-min-level="4" type="button" class="buttonLink" title="Ouvrir la carte dans une fenêtre à part : la même carte interactive (déplacer, zoomer, points), sans le reste du studio ; elle suit les réglages">⧉ Fenêtre</button><button id="previewPop" type="button" class="buttonLink" title="Agrandir la carte (Échap pour revenir)">⤢ Agrandir</button></div>
 <p id="previewStatus" data-status class="small">Carte choisie, dessinée avec le profil en cours de modification ; actualisée à chaque réglage.</p></aside>
 <img id="vprofImg" alt="Profil vertical" hidden style="width:100%;border:1px solid #c8d6dd;border-radius:8px;margin-top:6px">
 <p id="vprofStatus" data-status class="small">Relief (tuiles d’altitude, ± 1 km) ; espaces et obstacles (à moins de 1 NM) selon le profil d’affichage de <code>profil_vertical.png</code> (liste des cartes).</p>
@@ -2066,7 +2155,7 @@ function renderSiaBaseLine(b) {
   // SiaBase.panel.reread) — sa jauge et son compte rendu, bloc déplié
   el.onclick = e => {
     if (!e.target.closest('[data-base-build]')) return;
-    window.AppFramework?.reveal?.('sia-base');
+    showBasePanel();
     basePanel.reread(true)
   };
   // textes composés (nombres) : traduits ici, la traduction du texte exact de la page ne les reconnaît pas
@@ -2090,7 +2179,7 @@ function renderSiaBaseLine(b) {
   if (!b && away) {
     const blk = document.querySelector('[data-block-id="sia-base"]');
     if (blk?.dataset.minLevel) delete blk.dataset.minLevel;
-    window.AppFramework?.reveal?.('sia-base')
+    showBasePanel()
   }
   if (!b) SiaBase.get({
     any: true
@@ -2181,7 +2270,20 @@ function showBackToUpdate() {
       window.close()
     }
   };
-  window.AppFramework?.reveal?.('sia-base')
+  showBasePanel()
+}
+/** Panneau commun de la base SIA (dossier, relecture, jauge, compte rendu). Studio : sous la ligne d'état du bloc
+ *  Mission, montré seulement quand il sert (construction lancée, base absente ou à reconstruire, relecture demandée) —
+ *  la base se met à jour dans Paramètres › Maintenance, un bloc permanent ici ne servait à rien. Cartes de vol (sans
+ *  bloc Mission) : bloc « Base de données SIA » (tools/build_map_planner.py), déplié. */
+function showBasePanel() {
+  const p = $('siaBasePanel');
+  if (p.closest('[data-block-id="sia-base"]')) return window.AppFramework?.reveal?.('sia-base');
+  p.hidden = false;
+  p.scrollIntoView({
+    behavior: 'smooth',
+    block: 'nearest'
+  })
 }
 // Bloc commun « Base de données SIA » (dossier, relire, purger, état, fichiers) : même bloc que Maintenance, étape 4.
 const basePanel = SiaBase.panel($('siaBasePanel'), {
@@ -2196,7 +2298,7 @@ const basePanel = SiaBase.panel($('siaBasePanel'), {
 async function relireOnOpen() {
   if (!RELIRE_ON_OPEN) return;
   history.replaceState(null, '', location.pathname + location.hash);
-  window.AppFramework?.reveal?.('sia-base');
+  showBasePanel();
   for (let i = 0; i < 50 && !window.FileAccess; i++) await new Promise(r => setTimeout(r, 100));
   const st = await window.FileAccess?.status?.('__sia');
   if (st?.handle && st.permission === 'granted') {
@@ -2911,10 +3013,15 @@ document.addEventListener('click', e => {
     input.value = '';
     pickCommit(list)
   } else if (e.target.closest('[data-pick-clear]')) {
-    if (st.items.length && confirm('Vider la liste ?')) {
+    if (st.items.length) window.AppFramework.ask(window.RepositoryKit.t(['Vider la liste ?', 'Empty the list?', 'Liste leeren?',
+      '¿Vaciar la lista?'
+    ]), {
+      danger: true
+    }).then(ok => {
+      if (!ok) return;
       st.items = [];
       pickCommit(list)
-    }
+    })
   } else if (e.target.dataset.pickRemove !== undefined) {
     st.items.splice(+e.target.dataset.pickRemove, 1);
     pickCommit(list)
@@ -3864,7 +3971,13 @@ document.addEventListener('click', e => {
   navigator.clipboard?.writeText(JSON.stringify(lastMapError, null, 2)).then(() => {
     e.target.textContent = 'Rapport copié — colle-le dans la conversation'
   }, () => {
-    prompt('Rapport d’erreur à copier :', JSON.stringify(lastMapError))
+    // presse-papiers refusé : rapport montré dans la page, sélectionné, à copier à la main
+    window.AppFramework.askText(window.RepositoryKit.t(['Rapport d’erreur à copier :', 'Error report to copy:',
+      'Fehlerbericht zum Kopieren:', 'Informe de error para copiar:'
+    ]), {
+      value: JSON.stringify(lastMapError, null, 2),
+      readonly: true
+    })
   })
 });
 // Aperçu interactif de la carte choisie (jeton liveToken : un rendu plus récent annule le précédent).
@@ -5036,8 +5149,7 @@ function exerciseLayer(layer) {
   }
 }
 /** Route d'une mission (départ, points tournants, arrivée) en lat/lon. */
-const missionSeq = y => [y?.origin, ...(y?.turning_points || []), y?.destination].filter(p => p && Number.isFinite(+p.lat) && Number
-  .isFinite(+p.lon)).map(p => ({
+const missionSeq = y => [y?.origin, ...(y?.turning_points || []), y?.destination].filter(hasPos).map(p => ({
   lat: +p.lat,
   lon: +p.lon
 }));
@@ -5157,7 +5269,7 @@ function drawTracksCanvas(ctx, toC, scale, pl, mapDef) {
   ctx.strokeStyle = col;
   ctx.fillStyle = col;
   for (const t of c.ex.tracks.filter(t => ids.has(t.id))) {
-    const pts = (t.points || []).filter(p => Number.isFinite(+p.lat) && Number.isFinite(+p.lon)).map(p => toC(+p.lat, +p.lon));
+    const pts = (t.points || []).filter(hasPos).map(p => toC(+p.lat, +p.lon));
     if (!pts.length) continue;
     ctx.lineWidth = Math.max(1.5, (chiffon ? 3.5 : 2.5) * scale);
     ctx.setLineDash([]);
@@ -5177,7 +5289,7 @@ function drawTracksCanvas(ctx, toC, scale, pl, mapDef) {
       ctx.fill()
     }
     // carte de chiffon : nom de chaque point de sa route
-    if (chiffon)(t.points || []).filter(p => Number.isFinite(+p.lat) && Number.isFinite(+p.lon)).forEach((p, i) => {
+    if (chiffon)(t.points || []).filter(hasPos).forEach((p, i) => {
       const q = pts[i];
       ctx.beginPath();
       ctx.arc(q.x, q.y, 3 * scale, 0, Math.PI * 2);
@@ -5424,8 +5536,7 @@ function exerciseMapDefs() {
      *  rayon d'au moins minKm, majoré d'une marge. */
     box = (ids, ctx = true, minKm = 15) => {
       const pts = [...T.filter(t => ids.includes(t.id)).flatMap(t => t.points || []), ...(ctx ? (c.me ? [y] : c.docs).flatMap(d => [...(d
-        .zones || []).map(z => z.centre || z.center), ...(d.rendezvous || [])]) : [])].filter(p => p && Number.isFinite(+p.lat) && Number
-        .isFinite(+p.lon));
+        .zones || []).map(z => z.centre || z.center), ...(d.rendezvous || [])]) : [])].filter(hasPos);
       if (!pts.length) return {};
       const la = pts.map(p => +p.lat),
         lo = pts.map(p => +p.lon),
@@ -5566,10 +5677,13 @@ $('saveStudio').onclick = async () => {
       request: true
     });
     if (f) {
-      SiaMission.save({
+      const saved = SiaMission.save({
         ...sharedDoc,
         yaml: y
-      }, 'studio');
+      }, STUDIO);
+      sharedDoc = saved;
+      SiaMission.markSaved(saved, 'saved');
+      renderStudioSaveState();
       report(`Mission et réglages enregistrés : data/missions/${f}/`, 'ok')
     } else report('Mission non enregistrée : dossier des missions introuvable pour cet identifiant.', 'err')
   } catch (e) {
@@ -5578,6 +5692,66 @@ $('saveStudio').onclick = async () => {
   } finally {
     btn.disabled = false
   }
+};
+/** Ligne d'état du bloc Mission (même ligne que le générateur, SiaMission.renderSaveState) : « Enregistrer dans le
+ *  dossier » en bouton primaire quand il y a du non-enregistré, « Annuler les modifications » actif dans ce cas. Les
+ *  réglages propres au studio (profil, emprise des cartes) comptent une fois partagés dans la mission. */
+function renderStudioSaveState() {
+  const doc = SiaMission.load() || sharedDoc,
+    el = $('studioSaveState');
+  if (!el) return;
+  if (!doc?.yaml?.mission) {
+    el.hidden = true;
+    return
+  }
+  el.hidden = false;
+  const st = SiaMission.renderSaveState(el, doc),
+    dirty = st.fields > 0 || st.kind === 'new';
+  $('saveStudio').classList.toggle('primary', dirty);
+  $('saveStudio').classList.toggle('secondary', !dirty);
+  $('revertStudio').disabled = !st.fields
+}
+setInterval(renderStudioSaveState, 30000); // « il y a n min » tenu à jour
+window.addEventListener('repository-language-change', renderStudioSaveState); // ligne dans la langue de la page
+// « Annuler les modifications » : retour à la version de référence (enregistrée, sinon chargée), après confirmation ;
+// le générateur suit (mission partagée republiée)
+$('revertStudio').onclick = async () => {
+  const doc = SiaMission.load() || sharedDoc,
+    st = doc ? SiaMission.savedState(doc) : null,
+    back = doc ? SiaMission.savedDoc(doc) : null;
+  if (!back || !st?.fields) return;
+  const v = st.kind === 'saved' ? tl(['enregistrée', 'saved', 'gespeicherten', 'guardada']) : tl(['chargée', 'loaded', 'geladenen',
+      'cargada'
+    ]),
+    h = new Date(st.since).toLocaleTimeString(undefined, {
+      hour: '2-digit',
+      minute: '2-digit'
+    }),
+    id = doc.yaml?.mission?.id || '',
+    msg = tl([`Revenir à la version ${v} de ${id} ? ${st.fields} champ(s) modifié(s) depuis ${h} seront perdus ; le générateur suit.`,
+      `Go back to the ${v} version of ${id}? ${st.fields} field(s) changed since ${h} will be lost; the generator follows.`,
+      `Zur ${v} Version von ${id} zurückkehren? ${st.fields} seit ${h} geänderte(s) Feld(er) gehen verloren; der Generator folgt.`,
+      `¿Volver a la versión ${v} de ${id}? Se perderán ${st.fields} campo(s) modificado(s) desde las ${h}; el generador sigue.`
+    ]);
+  // confirmation dans la page (socle attendu), jamais la boîte native du navigateur
+  for (let i = 0; i < 300 && !window.AppFramework?.ask; i++) await new Promise(r => setTimeout(r, 100));
+  if (!window.AppFramework?.ask) return;
+  const ok = await window.AppFramework.ask(msg, {
+    ok: tl(['Annuler les modifications', 'Undo changes', 'Änderungen verwerfen', 'Deshacer los cambios']),
+    cancel: tl(['Garder', 'Keep', 'Behalten', 'Conservar']),
+    danger: true
+  });
+  if (!ok) return;
+  const saved = SiaMission.save({
+    ...doc,
+    yaml: back.yaml,
+    narrative: back.narrative
+  }, STUDIO);
+  useDoc(saved, true, true);
+  $('missionStatus').innerHTML = `<span class="ok">${esc(tl([`Modifications annulées : version ${v} de ${id} rétablie.`,
+    `Changes undone: ${v} version of ${id} restored.`, `Änderungen verworfen: Version von ${id} wiederhergestellt.`,
+    `Cambios deshechos: versión ${v} de ${id} restablecida.`
+  ]))}</span>`
 };
 /* Cheminement → route de plan de vol OACI (points non publiés en coordonnées, changements de niveau « /N0180F055 ») et
    ouverture du planificateur carburant avec route, distance, niveau, route vraie et appareil (plannerHandoff:v1). */
@@ -5632,8 +5806,12 @@ $('vprofIcaoCopy').onclick = () => {
     window.AppFramework?.notify?.('Route : au moins deux points connus de la base SIA.', 'warn');
     return
   }
-  navigator.clipboard?.writeText(r.full).then(() => window.AppFramework?.notify?.(`Plan de vol OACI copié : ${r.full}`, 'ok'), () => window.prompt(
-    'Plan de vol OACI', r.full))
+  // presse-papiers refusé : plan de vol montré dans la page, sélectionné, à copier à la main
+  navigator.clipboard?.writeText(r.full).then(() => window.AppFramework?.notify?.(`Plan de vol OACI copié : ${r.full}`, 'ok'), () => window
+    .AppFramework.askText(window.RepositoryKit.t(['Plan de vol OACI', 'ICAO flight plan', 'ICAO-Flugplan', 'Plan de vuelo OACI']), {
+      value: r.full,
+      readonly: true
+    }))
 };
 /* Route du dernier OFP SimBrief (identifiant du profil pilote commun) : départ, groupe vitesse / niveau, route ATC (case 15), destination. */
 $('routeSimbrief').onclick = async () => {
@@ -6205,6 +6383,7 @@ const mapPrefs = new Map();
  *  profile / view du YAML) et l'axe AAR ; keepIndex garde la carte affichée, fresh oublie les réglages en mémoire. */
 function useDoc(doc, keepIndex = true, fresh = false) {
   sharedDoc = doc;
+  setTimeout(renderStudioSaveState, 0);
   scheduleExerciseMaps();
   if (fresh) mapPrefs.clear();
   else
@@ -6236,7 +6415,7 @@ function useDoc(doc, keepIndex = true, fresh = false) {
     renderMapProfiles();
     fillAarChoice();
     updateViewStatus();
-    pushPreviewState()
+    mapWindowSoon()
   }, 0)
 }
 
@@ -6249,9 +6428,309 @@ function editDoc(change, message) {
     filename: m
   } : m);
   change(doc.yaml);
-  const saved = SiaMission.save(doc, 'studio');
+  const saved = SiaMission.save(doc, STUDIO);
   useDoc(saved);
   $('viewStatus').innerHTML = `<span class="ok">${esc(message)} (révision ${saved.rev}).</span>`
+}
+/** Vrai pour un point qui a une position (latitude et longitude renseignées : null et '' ne valent pas 0). */
+function hasPos(p) {
+  return !!p && p.lat !== null && p.lat !== '' && p.lat !== undefined && p.lon !== null && p.lon !== '' && p.lon !== undefined && Number
+    .isFinite(+p.lat) && Number.isFinite(+p.lon)
+}
+/* ===== Points à placer (mission sans coordonnées : squelette du générateur) =====
+   Éléments sans position de la mission partagée (cible, points tournants, rendez-vous, centres de zones, terrains), dans
+   l'ordre de route_order ; posés d'un clic sur la carte de contrôle ou par recherche dans la base SIA, écrits dans le
+   YAML de la mission (editDoc) comme depuis le générateur. Un point posé ici se déplace en le glissant. */
+let placing = null, // élément en cours de pose (ligne du panneau)
+  placedNow = []; // éléments posés dans cette page : marqueurs déplaçables
+/** Objet du YAML au chemin path (liste de clés). */
+const atPath = (y, path) => path.reduce((o, k) => o?.[k], y);
+/** Éléments sans position : [{ path, id, name, role, kind ('field' | 'point' | 'zone'), radius }], ordre de route_order. */
+function unplaced(y = sharedDoc?.yaml) {
+  if (!y) return [];
+  const out = [],
+    add = (path, p, id, kind) => {
+      if (p && typeof p === 'object' && !hasPos(kind === 'zone' ? p.centre || p.center || {} : p)) out.push({
+        path,
+        id,
+        name: String(p.name || ''),
+        role: String(p.role || ''),
+        kind,
+        radius: +p.radius_km || null
+      })
+    };
+  add(['origin'], y.origin, 'ORIGIN', 'field');
+  add(['target'], y.target, y.target?.id || 'TARGET', 'point');
+  asList(y.turning_points).forEach((p, i) => add(['turning_points', i], p, p?.id || `PT${i + 1}`, 'point'));
+  asList(y.rendezvous).forEach((p, i) => add(['rendezvous', i], p, p?.id || `RDV-${i + 1}`, 'point'));
+  asList(y.zones).forEach((z, i) => {
+    if (!(z?.points?.length >= 3)) add(['zones', i], z, z?.id || `ZONE-${i + 1}`, 'zone')
+  });
+  add(['destination'], y.destination, 'DESTINATION', 'field');
+  const order = asList(y.route_order).map(x => String(x).toUpperCase()),
+    rank = e => {
+      const i = order.indexOf(e.id.toUpperCase());
+      return i < 0 ? 999 : i
+    };
+  return out.sort((a, b) => rank(a) - rank(b))
+}
+/** Entrées de recherche de la base SIA : libellé → { lat, lon, name } (terrains, balises, points désignés, points VFR,
+ *  ARIP / ARCP des axes AAR). Construites à la première recherche. */
+let placeIndex = null;
+
+function placeEntries() {
+  if (placeIndex) return placeIndex;
+  const m = new Map(),
+    put = (label, p, name) => {
+      if (hasPos(p) && !m.has(label)) m.set(label, {
+        lat: +p.lat,
+        lon: +p.lon,
+        name: name || label
+      })
+    };
+  for (const a of aero.aerodromes || []) put(`${a.icao || a.id} — ${a.name || ''}`.trim(), a, `${a.name || a.icao} (${a.icao || a.id})`);
+  for (const n of aero.navaids || []) put(`${n.id} — ${n.kind || ''} ${n.name || ''}`.trim(), n, `${n.id} ${n.name || ''}`.trim());
+  for (const p of aero.points || []) put(String(p.id), p, String(p.id));
+  for (const v of aero.vrp || []) put(`${v.id} — ${v.name || ''}`.trim(), v, v.name || v.id);
+  for (const t of aarData || []) {
+    if (t.ip) put(`${t.name} ARIP`, t.ip, `${t.name} ARIP`);
+    if (t.cp) put(`${t.name} ARCP`, t.cp, `${t.name} ARCP`)
+  }
+  return placeIndex = m
+}
+/** Position d'un texte saisi : entrée de la liste, code seul (« LFLY », « OLIVIA ARIP »), ou coordonnées « 45.72, 4.94 ». */
+function placeLookup(text) {
+  const q = String(text || '').trim();
+  if (!q) return null;
+  const c = /^(-?\d+(?:[.,]\d+)?)\s*[,; ]\s*(-?\d+(?:[.,]\d+)?)$/.exec(q);
+  if (c) return {
+    lat: +c[1].replace(',', '.'),
+    lon: +c[2].replace(',', '.'),
+    name: ''
+  };
+  const idx = placeEntries(),
+    up = q.toUpperCase();
+  if (idx.has(q)) return idx.get(q);
+  for (const [k, v] of idx)
+    if (k.toUpperCase() === up || k.toUpperCase().startsWith(up + ' —')) return v;
+  for (const [k, v] of idx)
+    if (k.toUpperCase().includes(up)) return v;
+  return null
+}
+/** Pose l'élément e en lat, lon (nom proposé : name, gardé si l'élément en a déjà un ; terrain : nom repris) ; départ et
+ *  arrivée identiques et sans position (squelette) posés ensemble. */
+function placeAt(e, lat, lon, name = '') {
+  try {
+    editDoc(y => {
+      const o = atPath(y, e.path);
+      if (!o) return;
+      const la = +(+lat).toFixed(6),
+        lo = +(+lon).toFixed(6);
+      if (e.kind === 'zone') {
+        o.centre = {
+          lat: la,
+          lon: lo
+        };
+        if (!(+o.radius_km > 0)) o.radius_km = 10
+      } else {
+        const was = String(o.name || '');
+        Object.assign(o, {
+          lat: la,
+          lon: lo
+        });
+        if (name && (!was.trim() || e.kind === 'field')) o.name = name;
+        if (e.kind === 'field')
+          for (const k of ['origin', 'destination']) {
+            const t = y[k];
+            if (t && t !== o && !hasPos(t) && String(t.name || '') === was) Object.assign(t, {
+              lat: la,
+              lon: lo,
+              name: o.name
+            })
+          }
+      }
+    }, tlf(['Position de {id} posée', 'Position of {id} set', 'Position von {id} gesetzt', 'Posición de {id} colocada'], {
+      id: e.id
+    }));
+    if (!placedNow.some(x => x.path.join('.') === e.path.join('.'))) placedNow.push(e);
+    placing = null;
+    $('osmLivePreview')?.classList.remove('placing');
+    renderPlace();
+    if (osmMap) $('refreshPreview').click()
+  } catch (x) {
+    $('previewStatus').innerHTML = `<span class="err">${esc(x.message)}</span>`
+  }
+}
+/** Panneau « Points à placer (n) » : une ligne par élément sans position (« Cliquer la carte », recherche, rayon d'une
+ *  zone) ; tout posé : « Générer les cartes et le ZIP ». Masqué sans mission ni point à placer. */
+function renderPlace() {
+  const box = $('placeBox');
+  if (!box) return;
+  const list = unplaced();
+  box.hidden = !list.length && !placedNow.length;
+  if (box.hidden) return;
+  $('placeTitle').textContent = list.length ? tlf(['Points à placer ({n})', 'Points to place ({n})', 'Zu setzende Punkte ({n})',
+    'Puntos que colocar ({n})'
+  ], {
+    n: list.length
+  }) : tl(['Points à placer', 'Points to place', 'Zu setzende Punkte', 'Puntos que colocar']);
+  const zoneRows = asList(sharedDoc?.yaml?.zones).map((z, i) => ({
+    path: ['zones', i],
+    id: z?.id || `ZONE-${i + 1}`,
+    kind: 'zone',
+    radius: +z?.radius_km || 10,
+    placed: hasPos(z?.centre || {})
+  })).filter(z => z.placed && placedNow.some(x => x.path.join('.') === z.path.join('.')));
+  $('placeTable').innerHTML = list.map((e, i) => `<tr data-place="${i}"${placing && placing.path.join('.') === e.path.join('.') ? ' class="active"' : ''}><td><b>${esc(e.id)}</b></td><td>${esc(e.name || '—')}</td><td class="small">${esc(e.role)}</td><td><button type="button" class="secondary" data-place-click="${i}">${esc(tl(['Cliquer la carte', 'Click the map', 'Karte anklicken', 'Pulsar el mapa']))}</button></td><td><input data-place-search="${i}" list="placeOptions" placeholder="${esc(tl(['Chercher : terrain, balise, point, ville, ou « lat, lon »', 'Search: airfield, beacon, point, town, or “lat, lon”', 'Suchen: Flugplatz, Funkfeuer, Punkt, Ort oder „Breite, Länge“', 'Buscar: aeródromo, radiobaliza, punto, ciudad o «lat, lon»']))}"></td><td>${e.kind === 'zone' ? `<input type="number" min="1" step="1" data-place-radius="${e.path.join('.')}" value="${esc(e.radius || 10)}"> km` : ''}</td></tr>`).join('') +
+    zoneRows.map(z => `<tr><td><b>${esc(z.id)}</b></td><td colspan="4" class="small">${esc(tl(['Zone posée : rayon', 'Area placed: radius', 'Zone gesetzt: Radius', 'Zona colocada: radio']))}</td><td><input type="number" min="1" step="1" data-place-radius="${z.path.join('.')}" value="${esc(z.radius)}"> km</td></tr>`).join('');
+  $('placeDone').hidden = !!list.length;
+  box._list = list
+}
+// panneau : « Cliquer la carte » (mode pose), recherche (datalist remplie à la première saisie), rayon des zones
+$('placeBox').addEventListener('click', ev => {
+  const b = ev.target.closest('[data-place-click]');
+  if (!b) return;
+  placing = $('placeBox')._list[+b.dataset.placeClick];
+  renderPlace();
+  if (!osmMap) $('refreshPreview').click(); // carte de contrôle affichée pour la pose
+  $('osmLivePreview')?.classList.add('placing');
+  $('previewStatus').innerHTML = `<span class="ok">${esc(tlf(['Cliquez la carte pour poser {id} (Échap : annuler).',
+    'Click the map to place {id} (Esc: cancel).', 'Karte anklicken, um {id} zu setzen (Esc: abbrechen).',
+    'Pulse el mapa para colocar {id} (Esc: cancelar).'
+  ], {
+    id: placing.id
+  }))}</span>`;
+  $('osmLivePreview')?.scrollIntoView({
+    behavior: 'smooth',
+    block: 'center'
+  })
+});
+/** Entrées propres au studio pour la recherche commune (shared/place_search.js) : axes de ravitaillement (ARIP, ARCP). */
+const placeExtra = () => (aarData || []).flatMap(t => [t.ip && {
+  label: `${t.name} ARIP`,
+  lat: t.ip.lat,
+  lon: t.ip.lon,
+  name: `${t.name} ARIP`
+}, t.cp && {
+  label: `${t.name} ARCP`,
+  lat: t.cp.lat,
+  lon: t.cp.lon,
+  name: `${t.name} ARCP`
+}].filter(Boolean));
+let placeSeq = 0;
+// suggestions à la frappe : terrains, balises, points, VRP, axes AAR, puis villes (PlaceSearch, 40 au plus)
+$('placeBox').addEventListener('input', async ev => {
+  if (!ev.target.matches('[data-place-search]') || !window.PlaceSearch) return;
+  const mine = ++placeSeq;
+  await PlaceSearch.index({
+    extra: placeExtra()
+  });
+  const list = await PlaceSearch.suggest(ev.target.value);
+  if (mine === placeSeq) $('placeOptions').innerHTML = list.map(k => `<option value="${esc(k)}">`).join('')
+});
+$('placeBox').addEventListener('change', async ev => {
+  const t = ev.target;
+  if (t.matches('[data-place-search]')) {
+    const e = $('placeBox')._list[+t.dataset.placeSearch],
+      p = window.PlaceSearch ? (await PlaceSearch.index({
+        extra: placeExtra()
+      }), await PlaceSearch.lookup(t.value)) : placeLookup(t.value);
+    if (!p) return $('previewStatus').innerHTML = `<span class="err">${esc(tlf(['« {q} » introuvable dans la base SIA.',
+      '“{q}” not found in the SIA base.', '„{q}“ nicht in der SIA-Datenbank gefunden.', '«{q}» no encontrado en la base SIA.'
+    ], {
+      q: t.value
+    }))}</span>`;
+    placeAt(e, p.lat, p.lon, p.name)
+  }
+  if (t.matches('[data-place-radius]')) {
+    const path = t.dataset.placeRadius.split('.').map(k => /^\d+$/.test(k) ? +k : k),
+      km = Math.max(1, +t.value || 10);
+    try {
+      editDoc(y => {
+        const z = atPath(y, path);
+        if (z) z.radius_km = km
+      }, tlf(['Rayon de la zone : {km} km', 'Area radius: {km} km', 'Zonenradius: {km} km', 'Radio de la zona: {km} km'], {
+        km
+      }));
+      if (osmMap) $('refreshPreview').click()
+    } catch (x) {
+      $('previewStatus').innerHTML = `<span class="err">${esc(x.message)}</span>`
+    }
+  }
+});
+$('placeGenerate').onclick = () => $('generate').click();
+// pose d'un clic sur la carte de contrôle (avant les gestes de la carte : pas d'insertion dans la route) ; un glisser
+// (déplacement de la carte) ne pose rien ; Échap annule
+{
+  let down = null;
+  const host = $('osmLivePreview');
+  host?.addEventListener('mousedown', ev => down = [ev.clientX, ev.clientY], true);
+  host?.addEventListener('click', ev => {
+    if (!placing || !osmMap) return;
+    if (down && Math.hypot(ev.clientX - down[0], ev.clientY - down[1]) > 4) return;
+    ev.stopPropagation();
+    const r = osmMap.getCanvas().getBoundingClientRect(),
+      ll = osmMap.unproject([ev.clientX - r.left, ev.clientY - r.top]);
+    placeAt(placing, ll.lat, ll.lng)
+  }, true);
+  document.addEventListener('keydown', ev => {
+    if (ev.key !== 'Escape' || !placing) return;
+    placing = null;
+    host?.classList.remove('placing');
+    renderPlace()
+  })
+}
+/** Marqueurs déplaçables des éléments posés dans cette page (carte de contrôle) : glisser = nouvelle position. */
+function placeMarkers() {
+  if (!osmMap || !window.maplibregl) return;
+  (placeMarkers.list || []).forEach(m => m.remove());
+  placeMarkers.list = placedNow.map(e => {
+    const o = atPath(sharedDoc?.yaml, e.path),
+      p = e.kind === 'zone' ? o?.centre : o;
+    if (!hasPos(p)) return null;
+    const node = Object.assign(document.createElement('div'), {
+      className: 'placeMarker',
+      title: tlf(['{id} : glisser pour déplacer', '{id}: drag to move', '{id}: zum Verschieben ziehen',
+        '{id}: arrastrar para mover'
+      ], {
+        id: e.id
+      })
+    });
+    const mk = new maplibregl.Marker({
+      element: node,
+      draggable: true
+    }).setLngLat([+p.lon, +p.lat]).addTo(osmMap);
+    mk.on('dragend', () => {
+      const ll = mk.getLngLat();
+      placeAt(e, ll.lat, ll.lng)
+    });
+    return mk
+  }).filter(Boolean)
+}
+// mission relue (générateur, lot, import) : panneau redessiné ; carte reconstruite : marqueurs des points posés remis
+{
+  const use = useDoc,
+    show = showOsmLive;
+  useDoc = function(...a) {
+    const r = use.apply(this, a);
+    if (a[2] || a[1] === false) placedNow = []; // autre mission
+    renderPlace();
+    return r
+  };
+  showOsmLive = function(...a) {
+    const before = osmMap,
+      run = show.apply(this, a);
+    // marqueurs posés dès que la nouvelle carte existe (sans attendre ses tuiles, parfois longues à venir)
+    let n = 0;
+    const wait = setInterval(() => {
+      if ((osmMap && osmMap !== before) || ++n > 50) {
+        clearInterval(wait);
+        placeMarkers();
+        if (placing) $('osmLivePreview')?.classList.add('placing')
+      }
+    }, 200);
+    return run
+  }
 }
 // Emprise : zoom, déplacement, vue affichée ; « Appliquer » l'écrit dans la mission (bbox [O, S, E, N]).
 let lastCamKey = null;
@@ -6450,7 +6929,7 @@ $('missionFile').addEventListener('change', async e => {
     const r = SiaMission.importTexts(await Promise.all(files.map(async f => ({
       name: f.name,
       text: await f.text()
-    }))), 'studio');
+    }))), STUDIO);
     useDoc(r.doc, false, true);
     batchNote(r)
   } catch (err) {
@@ -6470,7 +6949,7 @@ $('parseMission').addEventListener('click', () => {
       const r = SiaMission.importTexts([{
         name: /^\s*#/m.test(text) ? 'mission.md' : 'mission.yaml',
         text
-      }], 'studio');
+      }], STUDIO);
       useDoc(r.doc, false, true);
       batchNote(r)
     }
@@ -6629,7 +7108,7 @@ function operationContext() {
       }
     }
     const y = d.yaml || {},
-      seq = [y.origin, ...(y.turning_points || []), y.destination].filter(p => p && Number.isFinite(+p.lat) && Number.isFinite(+p.lon))
+      seq = [y.origin, ...(y.turning_points || []), y.destination].filter(hasPos)
       .map(p => ({
         lat: +p.lat,
         lon: +p.lon
@@ -6718,13 +7197,13 @@ async function forEachMission(fn, task) {
   try {
     for (let i = 0; i < b.docs.length; i++) {
       if (task?.cancelled) break;
-      const d = SiaMission.go(i, 'studio');
+      const d = SiaMission.go(i, STUDIO);
       useDoc(d, false);
       await sleep(120);
       await fn(d, i, b.docs.length)
     }
   } finally {
-    useDoc(SiaMission.go(start, 'studio'), false);
+    useDoc(SiaMission.go(start, STUDIO), false);
     await sleep(60)
   }
 }
@@ -7175,7 +7654,7 @@ $('mapProfiles').addEventListener('change', e => {
   e.target.closest('.mapRow').classList.toggle('off', e.target.value === 'off');
   assemblyRenderKey = '';
   updateGenerate();
-  pushPreviewState()
+  mapWindowSoon()
 });
 $('mapProfiles').addEventListener('click', e => {
   const show = e.target.closest('[data-map-show]'),
@@ -7214,15 +7693,24 @@ function fillPreviewMaps() {
 }
 let previewShown = false,
   previewTimer = 0;
-// Fenêtre séparée (#fenetre) : même page réduite à la carte ; état (mission, profils, alias, carte,
-// hippodromes) transmis par BroadcastChannel ; la base SIA vient du cache commun (IndexedDB).
-const previewChannel = 'BroadcastChannel' in window ? new BroadcastChannel('sia-studio-preview') : null,
-  isPreviewWindow = location.hash === '#fenetre';
-// État envoyé à la fenêtre séparée (canal 'sia-studio-preview').
-function pushPreviewState() {
-  if (!previewChannel || isPreviewWindow) return;
+// Fenêtre « carte » : ce même studio ouvert par « ⧉ Fenêtre » (map_parser.html?carte, window.open nom « carte »),
+// réduit à sa carte interactive — même objet que la fenêtre principale (déplacer, zoomer à la roulette ou au pincement,
+// mêmes surcouches, points déplaçables) ; ni barre latérale, ni en-tête, ni pied (html[data-map-window], posé dans le
+// <head>). Synchronisée par BroadcastChannel « sia-studio-carte » : le studio principal pousse l'état (mission,
+// profils, profil actif, carte affichée, alias de zones) à l'ouverture, à chaque réglage et à chaque mission adoptée ; la
+// fenêtre demande « hello » (actualiser), « studio » (ramener la fenêtre principale sur sa carte), « bye » (fermée).
+// Les points déplacés dans la fenêtre sont enregistrés sous la source « studio-carte » (le studio principal les reçoit
+// une fois, puis renvoie son état sans réécrire la mission) : une révision par déplacement, jamais de boucle.
+const MAP_WINDOW = document.documentElement.hasAttribute('data-map-window'),
+  STUDIO = MAP_WINDOW ? 'studio-carte' : 'studio',
+  studioChannel = 'BroadcastChannel' in window ? new BroadcastChannel('sia-studio-carte') : null;
+let mapWinAlive = false,
+  mapWinTimer = 0;
+/** Studio principal : pousse l'état à la fenêtre « carte » si elle est ouverte. */
+function pushMapWindow() {
+  if (MAP_WINDOW || !studioChannel || !mapWinAlive) return;
   try {
-    previewChannel.postMessage({
+    studioChannel.postMessage({
       state: JSON.parse(JSON.stringify({
         mission,
         profiles: displayProfiles,
@@ -7233,29 +7721,141 @@ function pushPreviewState() {
     })
   } catch {}
 }
-if (previewChannel) previewChannel.onmessage = e => {
-  const d = e.data || {};
-  if (!isPreviewWindow) {
-    if (d.hello) pushPreviewState();
-    return
-  }
-  if (!d.state) return;
-  const st = d.state;
-  mission = st.mission;
-  displayProfiles = st.profiles;
-  zoneAliases = st.aliases || {};
-  fillProfileSelects();
-  $('activeProfile').value = st.active;
-  applyProfileToUi();
-  fillPreviewMaps();
-  fillAarChoice();
-  $('previewMap').value = st.index;
-  renderMapProfiles();
-  updateGenerate();
-  previewShown = true;
-  clearTimeout(previewTimer);
-  previewTimer = setTimeout(() => $('refreshPreview').click(), 300)
+/** État poussé 0,3 s après le dernier réglage (plusieurs réglages rapprochés : un envoi). */
+const mapWindowSoon = () => {
+  if (MAP_WINDOW || !mapWinAlive) return;
+  clearTimeout(mapWinTimer);
+  mapWinTimer = setTimeout(pushMapWindow, 300)
 };
+if (studioChannel && !MAP_WINDOW) {
+  studioChannel.onmessage = e => {
+    const d = e.data || {};
+    if (d.hello) {
+      mapWinAlive = true;
+      pushMapWindow()
+    } else if (d.bye) mapWinAlive = false;
+    else if (d.studio != null) {
+      // « Ouvrir au studio » : la fenêtre principale montre la carte de la fenêtre
+      const n = mission?.maps?.length || 0;
+      if (n && String(d.studio) !== $('previewMap').value) {
+        $('previewMap').value = String(d.studio);
+        $('previewMap').dispatchEvent(new Event('change'))
+      }
+      window.focus();
+      $('osmLivePreview')?.scrollIntoView({
+        block: 'center'
+      })
+    }
+  };
+  studioChannel.postMessage({
+    ping: true
+  }) // fenêtre déjà ouverte avant un rechargement du studio : elle se signale
+}
+if (MAP_WINDOW) {
+  // ---- carte seule, sous une barre d'outils fixe
+  const root = document.createElement('div');
+  root.id = 'mwRoot';
+  root.innerHTML = `<div class="mw-bar" role="toolbar"><button type="button" data-mw="prev">◀</button><select data-mw="pick"></select><button type="button" data-mw="next">▶</button><span class="mw-sep"></span><button type="button" data-mw="home"></button><button type="button" data-mw="refresh"></button><button type="button" data-mw="studio"></button><button type="button" data-mw="close"></button><span class="mw-status"></span></div><div class="mw-map"></div>`;
+  document.body.append(root);
+  const box = root.querySelector('.mw-map');
+  box.append($('generalPreview'), $('osmLivePreview'));
+  root.querySelector('.mw-status').append($('previewStatus'));
+  const B = k => root.querySelector(`[data-mw="${k}"]`);
+  /** Libellés de la barre dans la langue de la page. */
+  const labelBar = () => {
+    B('prev').title = tl(['Carte précédente (←)', 'Previous map (←)', 'Vorherige Karte (←)', 'Mapa anterior (←)']);
+    B('next').title = tl(['Carte suivante (→)', 'Next map (→)', 'Nächste Karte (→)', 'Mapa siguiente (→)']);
+    B('home').textContent = tl(['Recentrer', 'Recentre', 'Zentrieren', 'Recentrar']);
+    B('home').title = tl(['Revenir au cadrage de la carte (0)', 'Back to the map framing (0)', 'Zurück zum Kartenausschnitt (0)',
+      'Volver al encuadre del mapa (0)'
+    ]);
+    B('refresh').textContent = tl(['Actualiser', 'Refresh', 'Aktualisieren', 'Actualizar']);
+    B('refresh').title = tl(['Reprendre l’état du studio', 'Take the studio state again', 'Zustand des Studios neu übernehmen',
+      'Retomar el estado del estudio'
+    ]);
+    B('studio').textContent = tl(['Ouvrir au studio', 'Open in the studio', 'Im Studio öffnen', 'Abrir en el estudio']);
+    B('studio').title = tl(['Ramener la fenêtre du studio sur cette carte', 'Bring the studio window back to this map',
+      'Das Studiofenster auf diese Karte zurückholen', 'Llevar la ventana del estudio a este mapa'
+    ]);
+    B('close').textContent = tl(['Fermer', 'Close', 'Schließen', 'Cerrar']);
+    B('close').title = tl(['Fermer la fenêtre (Échap)', 'Close the window (Esc)', 'Fenster schließen (Esc)', 'Cerrar la ventana (Esc)'])
+  };
+  labelBar();
+  window.addEventListener('repository-language-change', labelBar);
+  /** Liste des cartes et titre de la fenêtre d'après la carte affichée. */
+  const syncBar = () => {
+    const maps = mission?.maps || [],
+      i = +$('previewMap').value || 0;
+    B('pick').innerHTML = maps.map((m, k) => `<option value="${k}">${esc(m.file)}</option>`).join('');
+    B('pick').value = String(i);
+    B('prev').disabled = B('next').disabled = maps.length < 2;
+    document.title = maps[i]?.file || tl(['Carte', 'Map', 'Karte', 'Mapa'])
+  };
+  /** Affiche la carte k de la mission (boucle aux extrémités). */
+  const goMap = k => {
+    const n = mission?.maps?.length || 0;
+    if (!n) return;
+    $('previewMap').value = String(((k % n) + n) % n);
+    $('previewMap').dispatchEvent(new Event('change'));
+    syncBar()
+  };
+  B('prev').onclick = () => goMap((+$('previewMap').value || 0) - 1);
+  B('next').onclick = () => goMap((+$('previewMap').value || 0) + 1);
+  B('pick').onchange = () => goMap(+B('pick').value);
+  B('home').onclick = () => document.querySelector('[data-view="home"]')?.click();
+  B('refresh').onclick = () => studioChannel?.postMessage({
+    hello: true
+  });
+  B('studio').onclick = () => {
+    studioChannel?.postMessage({
+      studio: +$('previewMap').value || 0
+    });
+    window.opener?.focus()
+  };
+  B('close').onclick = () => window.close();
+  document.addEventListener('keydown', e => {
+    if (e.target.closest?.('select, input, textarea')) return;
+    if (e.key === 'ArrowLeft') B('prev').click();
+    else if (e.key === 'ArrowRight') B('next').click();
+    else if (e.key === '+' || e.key === '=') osmMap?.zoomIn();
+    else if (e.key === '-' || e.key === '_') osmMap?.zoomOut();
+    else if (e.key === '0') B('home').click();
+    else if (e.key === 'Escape') window.close();
+    else return;
+    e.preventDefault()
+  });
+  // ---- état reçu du studio principal : mission, profils, carte ; aperçu redessiné (cadrage gardé pour la même carte)
+  if (studioChannel) studioChannel.onmessage = e => {
+    const d = e.data || {};
+    if (d.ping) return studioChannel.postMessage({
+      hello: true
+    });
+    if (!d.state) return;
+    const st = d.state;
+    mission = st.mission;
+    displayProfiles = st.profiles;
+    zoneAliases = st.aliases || {};
+    fillProfileSelects();
+    $('activeProfile').value = st.active;
+    applyProfileToUi();
+    fillPreviewMaps();
+    fillAarChoice();
+    $('previewMap').value = st.index;
+    renderMapProfiles();
+    updateGenerate();
+    syncBar();
+    previewShown = true;
+    clearTimeout(previewTimer);
+    previewTimer = setTimeout(() => $('refreshPreview').click(), 200)
+  };
+  window.addEventListener('pagehide', () => studioChannel?.postMessage({
+    bye: true
+  }));
+  window.addEventListener('resize', () => osmMap?.resize());
+  studioChannel?.postMessage({
+    hello: true
+  })
+}
 // Onglets du profil (mémorisés), barre de redimensionnement (60 / 40 par défaut, mémorisée), carte agrandie.
 const store = {
   get: k => {
@@ -7325,13 +7925,12 @@ function popPreview(on) {
   setTimeout(() => osmMap?.resize(), 50)
 }
 $('previewWindow').onclick = () => {
-  pushPreviewState();
-  window.open(location.pathname + '#fenetre', 'siaPreview', 'width=1100,height=760')
+  // même page, réduite à sa carte (?carte) ; déjà ouverte : ramenée devant et resynchronisée
+  const w = window.open(`${location.pathname}?carte`, 'carte', 'width=1100,height=760');
+  w?.focus();
+  mapWinAlive = true;
+  pushMapWindow()
 };
-if (isPreviewWindow) {
-  document.body.classList.add('previewWindow');
-  document.title = 'Carte de contrôle — Studio SIA'
-}
 $('previewPop').onclick = () => popPreview(!document.querySelector('.profilePreview').classList.contains('popped'));
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape' && document.querySelector('.profilePreview.popped')) popPreview(false)
@@ -7342,7 +7941,8 @@ $('refreshPreview').onclick = async () => {
     const def = previewDef();
     if (!def) return;
     previewShown = true;
-    await showOsmLive(def)
+    await showOsmLive(def);
+    mapWindowSoon() // fenêtre « carte » ouverte : nouvelle image
   } catch (e) {
     $('previewStatus').innerHTML = `<span class="err">${esc(explainErr(e, tl(['Aperçu de la carte non affiché', 'Map preview not shown',
       'Kartenvorschau nicht angezeigt', 'Vista previa del mapa no mostrada'
@@ -7352,7 +7952,7 @@ $('refreshPreview').onclick = async () => {
 /** Relance l'aperçu 0,7 s après le dernier réglage (si un aperçu est déjà affiché) ; état publié à la fenêtre
  *  de contrôle. */
 const schedulePreview = () => {
-  pushPreviewState();
+  mapWindowSoon();
   if (!previewShown || $('refreshPreview').disabled) return;
   clearTimeout(previewTimer);
   previewTimer = setTimeout(() => $('refreshPreview').click(), 700)
@@ -7399,7 +7999,7 @@ async function storeMapPngs(request) {
   SiaMission.save({
     ...sharedDoc,
     yaml: y
-  }, 'studio');
+  }, STUDIO);
   const n = lastMapPngs.length;
   return {
     ok: true,
@@ -7836,7 +8436,7 @@ applyOutputPrefs();;
   fillProfileSelects();
   applyProfileToUi();
   loadAarTracks().then(updateGenerate);
-  if (isPreviewWindow) {} else {
+  {
     const doc = SiaMission.load();
     if (doc) try {
       useDoc(doc, false)
@@ -7845,27 +8445,28 @@ applyOutputPrefs();;
         'Geteilte Mission nicht lesbar', 'Misión compartida ilegible'
       ])))}</span>`
     }
-    SiaMission.subscribe('studio', d => {
+    if (!MAP_WINDOW) SiaMission.subscribe(STUDIO, d => {
       useDoc(d);
       $('missionStatus').insertAdjacentHTML('beforeend', ' <span class="ok">Mise à jour par le générateur.</span>')
     })
   }
   const cached = await SiaBase.get();
   updateGenerate();
-  if (isPreviewWindow) previewChannel?.postMessage({
-    hello: true
-  });
   // Ouverture depuis la mise à jour SIA (?relire=1) ; sinon base absente : relecture du dossier mémorisé si l'accès est déjà accordé.
+  if (MAP_WINDOW) return; // fenêtre « carte » : rien d'autre au démarrage
   if (RELIRE_ON_OPEN) {
     relireOnOpen();
     return
   }
   if (!cached) renderSiaBaseLine(null);
-  if (!cached && !isPreviewWindow) {
+  if (!cached) {
     for (let i = 0; i < 50 && !window.FileAccess; i++) await new Promise(r => setTimeout(r, 100));
     const st = await window.FileAccess?.status?.('__sia');
     if (st?.handle && st.permission === 'granted') basePanel.reread(false);
-    else if (st?.handle) basePanel.setMessage('<span class="err">Base à construire : cliquer « Relire le dossier ».</span>')
+    else if (st?.handle) {
+      basePanel.setMessage('<span class="err">Base à construire : cliquer « Relire le dossier ».</span>');
+      showBasePanel()
+    }
   }
 })();
 </script>
@@ -7933,7 +8534,7 @@ function build(quiet,gen){
  return true;
 }
 // mission reçue de Mes missions (autre qu'un vol « VOL » de cette page) : remplacée par le vol libre seulement après confirmation
-$v('volBuild').onclick=()=>{if(mission&&sharedDoc?.yaml?.mission?.id!=='VOL'&&!confirm(K.t(['Remplacer la mission chargée par un vol libre construit à partir du cheminement ?','Replace the loaded mission with a free flight built from the route?','Die geladene Mission durch einen freien Flug aus der Route ersetzen?','¿Sustituir la misión cargada por un vuelo libre construido a partir de la ruta?'])))return;build(false)};
+$v('volBuild').onclick=async()=>{if(mission&&sharedDoc?.yaml?.mission?.id!=='VOL'&&!await window.AppFramework.ask(K.t(['Remplacer la mission chargée par un vol libre construit à partir du cheminement ?','Replace the loaded mission with a free flight built from the route?','Die geladene Mission durch einen freien Flug aus der Route ersetzen?','¿Sustituir la misión cargada por un vuelo libre construido a partir de la ruta?'])))return;build(false)};
 // niveaux 1 à 3 : un seul bouton, cartes créées puis aperçu et génération des fichiers et du ZIP par le moteur du studio
 // (« Générer » du studio, masqué ici : compte rendu dans #result, sous ce bouton) ; mission reçue de Mes missions
 // (autre qu'un vol « VOL » de cette page) : ses cartes sont générées telles quelles, sans les remplacer par celles du bloc

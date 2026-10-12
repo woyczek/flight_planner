@@ -346,14 +346,16 @@ class Setup(http.server.SimpleHTTPRequestHandler):
         # ni chargé comme script ou image par un autre site (en plus du contrôle Sec-Fetch-Site)
         self.send_header('X-Frame-Options', 'SAMEORIGIN')
         self.send_header('Cross-Origin-Resource-Policy', 'same-origin')
-        path = (self.path or '').split('?', 1)[0].lower()
+        # requête illisible (TLS sur le port HTTP, version inconnue) : send_error passe par ici avant que path existe
+        raw = getattr(self, 'path', '') or ''
+        path = raw.split('?', 1)[0].lower()
         sandbox = path.startswith('/data/') and path.endswith(SANDBOXED)
         self.send_header('Content-Security-Policy', ("sandbox; " if sandbox else '') + "frame-ancestors 'self'")
         # fichier versionné par son empreinte (?v=…, tools/bump_versions.py : elle change avec le contenu) : gardé tel
         # quel, sans revalidation — une quarantaine d'allers-retours de moins par page, qui retardaient la fin de
         # l'analyse et laissaient voir la page à moitié construite ; le reste (pages, données) : revalidé à chaque fois,
         # jamais de script périmé (ni de type) en cache
-        versioned = re.search(r'[?&]v=[0-9a-f]{6,}', self.path or '')
+        versioned = re.search(r'[?&]v=[0-9a-f]{6,}', raw)
         self.send_header('Cache-Control', 'public, max-age=31536000, immutable' if versioned else 'no-cache')
         super().end_headers()
 
@@ -628,7 +630,7 @@ class Setup(http.server.SimpleHTTPRequestHandler):
                 a = json.loads(body or b'{}')
             except ValueError:
                 a = {}
-            return self._json({'started': aircraft_start(a.get('codes') or []), **AIRCRAFT, **aircraft_files()})
+            return self._json({'started': aircraft_start(a.get('codes') or [], bool(a.get('quick'))), **AIRCRAFT, **aircraft_files()})
         if path == '/__setup/defa-site':
             # flotte et journal DEFA depuis le site : { refresh, auto, force } (une fois par jour en auto) ou
             # { auto_enabled } (réglage de Paramètres › Maintenance)
@@ -1271,7 +1273,7 @@ def sync_status_reset():
 # type par type, par AircraftDB/update_aircraft_db.py (--only CODES, puis --apd CODES) : un nouvel appareil, ou une liste
 # (flotte, missions de l'ODV et du registre) — Paramètres › Maintenance › Références et dépendances, /__setup/aircraft-db.
 # Jamais toute la base EUROCONTROL d'un coup.
-AIRCRAFT = {'state': 'idle', 'step': '', 'started': None, 'ended': None, 'log': []}
+AIRCRAFT = {'state': 'idle', 'step': '', 'started': None, 'ended': None, 'log': [], 'codes': [], 'queue': []}
 AIRCRAFT_LOCK = threading.Lock()
 
 
@@ -1281,10 +1283,11 @@ def aircraft_files():
     return {'db': os.path.exists(os.path.join(d, 'aircraft_db.js')), 'perf': os.path.exists(os.path.join(d, 'aircraft_perf.js'))}
 
 
-def aircraft_rebuild(codes):
+def aircraft_rebuild(codes, quick=False):
     """Complète la base des types pour les désignateurs donnés : types OACI Doc 8643, performances EUROCONTROL APD,
     puis consommations SimBrief (tous les types de SimBrief, liste en cache une semaine), enfin alias et caractéristiques
-    d'Airframe DB (40 fiches au plus par passe)."""
+    d'Airframe DB (40 fiches au plus par passe). quick : types et performances de ces codes seulement (ajout d'un type
+    à la main dans Mon profil › Appareils et simulateurs : une passe de quelques secondes)."""
     d = os.path.join(ROOT, 'AircraftDB')
     script = os.path.join(d, 'update_aircraft_db.py')
     overrides = os.path.join(DATA, 'references', 'aircraft_overrides.json')
@@ -1295,6 +1298,8 @@ def aircraft_rebuild(codes):
              # alias (noms en usage → code OACI) et caractéristiques d'Airframe DB : au plus 40 fiches par passe (≈ 1 min),
              # la base se complète au fil des passes puis se rafraîchit tous les 30 jours
              ('alias et caractéristiques (Airframe DB)', [sys.executable, script, '--airframedb', '40'])]
+    if quick:
+        steps = steps[:2]
     env = {**os.environ, 'PYTHONIOENCODING': 'utf-8'}
     ok = True
     for name, cmd in steps:
@@ -1308,19 +1313,28 @@ def aircraft_rebuild(codes):
             AIRCRAFT['log'].append(str(e))
             ok = False
     AIRCRAFT.update(state='done' if ok else 'error', step='', ended=time.time())
+    # file d'attente : codes ajoutés à la main pendant la passe (Mon profil), lancés maintenant en passe courte — la page
+    # qui les a demandés peut avoir été fermée entre-temps
+    with AIRCRAFT_LOCK:
+        queued, AIRCRAFT['queue'] = AIRCRAFT.get('queue') or [], []
+    if queued:
+        aircraft_start(queued, quick=True)
 
 
-def aircraft_start(codes):
+def aircraft_start(codes, quick=False):
     """Complète les types donnés (désignateurs OACI) en tâche de fond ; False si une passe tourne déjà ou si la liste
-    est vide."""
+    est vide ; quick : passe courte (types et performances de ces codes, voir aircraft_rebuild). Une passe courte
+    demandée pendant une passe est mise en file (AIRCRAFT['queue']) et part à la fin de celle-ci."""
     codes = sorted({re.sub(r'[^A-Z0-9]', '', str(c).upper())[:8] for c in codes} - {''})[:200]
     if not codes:
         return False
     with AIRCRAFT_LOCK:
         if AIRCRAFT['state'] == 'running':
+            if quick:
+                AIRCRAFT['queue'] = sorted(set(AIRCRAFT.get('queue') or []) | (set(codes) - set(AIRCRAFT.get('codes') or [])))
             return False
         AIRCRAFT.update(state='running', started=time.time(), ended=None, log=[], codes=codes)
-    threading.Thread(target=aircraft_rebuild, args=(codes,), daemon=True).start()
+    threading.Thread(target=aircraft_rebuild, args=(codes, quick), daemon=True).start()
     return True
 
 

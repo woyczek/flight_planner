@@ -1,14 +1,14 @@
-# Prompt — générateur de série de missions (Helo XP)
+# Prompt — mission series generator (Helo XP)
 
-Prompt à donner à un assistant externe (ChatGPT…) pour produire une série de missions directement
-lisible par la suite : générateur de mission, studio cartographique, profil vertical, CR et
-statistiques. Il décrit **exactement** ce que lisent `apps/cpco/mission_store.js` (YAML + Markdown),
-`apps/cpco/map_parser.html` (cartes, zones, profil vertical) et `shared/mission_core/core.js`
-(passerelle mission → CR : famille, appareils, terrains). À mettre à jour avec eux.
+Prompt to give to an external assistant (ChatGPT…) to produce a series of missions directly
+readable by the suite: mission generator, map studio, vertical profile, reports and
+statistics. It describes **exactly** what `apps/cpco/mission_store.js` (YAML + Markdown),
+`apps/cpco/map_parser.html` (maps, areas, vertical profile) and `shared/mission_core/core.js`
+(mission → report bridge: family, aircraft, airfields) read. To be updated along with them.
 
-Copier tout le bloc ci-dessous, régler les paramètres en tête — ou utiliser « Créer une mission avec ChatGPT » du
-générateur de mission (bloc 1), qui les règle et copie le prompt. Après modification de ce document : lancer
-`python tools/build_mission_prompt.py` (ou `tools/bump_versions.py`), qui régénère `apps/cpco/mission_prompt.js`.
+Copy the whole block below and set the parameters at the top — or use “Create a mission with ChatGPT” in the
+mission generator (block 1), which sets them and copies the prompt. After changing this document: run
+`python tools/build_mission_prompt.py` (or `tools/bump_versions.py`), which regenerates `apps/cpco/mission_prompt.js`.
 
 ---
 
@@ -32,6 +32,7 @@ PARAMÈTRES DE CETTE EXÉCUTION
   TYPES_EQUIPES   = libre            (aéronef de chaque équipe en vol, dans l'ordre A, B, C…, ex. « A : A400M — COTAM71 + B : automatique + C : A400M — COTAM72 » ; « automatique » = au choix du générateur ; un même type peut revenir avec des indicatifs différents)
   ÉQUIPES_SOL     = libre            (0 à 3 : équipes au sol en plus des équipes en vol)
   RAVITAILLEMENT  = libre            (oui : ravitaillement en vol planifié ; non : aucun)
+  EXERCICE        = libre            (oui : opération en exercice, avec sa mission d'organisation ; non : jamais)
   DURÉE           = libre            (XS · S · M · L · XL : durée de l'opération, voir ci-dessous)
   TRADUCTIONS     = en               (langues du brief traduit, en plus du français : en · de · es, liées par
                                      « , », ex. « en, de, es » ; aucune : français seul — bloc i18n, voir ci-dessous)
@@ -50,6 +51,8 @@ le § 5 (unités, bases, théâtres) et sur le § 6 : si l'appareil semble peu a
 réelle, distances, tâche) et jamais l'appareil ; ne jamais le remplacer par un appareil « plus adapté » ;
 « automatique » : choisir un appareil adapté à la mission ; ÉQUIPES_SOL = nombre exact d'équipes au sol dans teams (en plus des équipes en vol) ;
 RAVITAILLEMENT = oui → air_refueling.planned: true avec son axe (§ 7), non → pas de bloc air_refueling planifié.
+EXERCICE = oui → l'opération est un EXERCICE (voir ci-dessous) et reçoit sa mission d'organisation NN + « Z » ; non → aucune
+mission d'organisation ; libre → selon le scénario.
 DURÉE = durée de l'opération, du premier décollage au dernier atterrissage des équipes (organisation et attente
 au sol comprises pour un exercice), en tailles : XS ≈ 30 à 45 min · S ≈ 45 min à 1 h 30 · M ≈ 1 h 30 à 3 h ·
 L ≈ 3 à 5 h · XL ≈ 5 à 8 h. Repères et non bornes strictes : dimensionner distances, nombre de points, temps sur

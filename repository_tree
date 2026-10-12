@@ -19,4 +19,4 @@
 
    Vous en êtes venu à bout ? Alors vous lisez aussi les notices de montage. Respect.
    ═══════════════════════════════════════════════════════════════════════════════════════════════════════ */
-window.REPOSITORY_TREE_COMPAT = { release:{date:"2026-10-09",version:"5.1.0",id:"XPS-5.1.0"} };
+window.REPOSITORY_TREE_COMPAT = { release:{date:"2026-10-12",version:"5.2.0",id:"XPS-5.2.0"} };

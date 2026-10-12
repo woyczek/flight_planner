@@ -15,7 +15,8 @@
   /** Rang de la langue de la page dans LANGS (français à défaut). */
   const li = () => Math.max(0, LANGS.indexOf(window.RepositoryNav?.getLanguage?.() || 'fr'));
   /** Traduction d'une ligne [fr, en, de, es] (anglais puis français à défaut) avec ses variables {x}. */
-  const t = (row, vars = {}) => (Array.isArray(row) ? (row[li()] || row[1] || row[0]) : String(row ?? '')).replace(/\{(\w+)\}/g, (_, k) =>
+  const t = (row, vars = {}) => (Array.isArray(row) ? (row[li()] || row[1] || row[0] || '') : String(row ?? '')).replace(/\{(\w+)\}/g, (_,
+      k) =>
     vars[k] ?? '');
   const esc = window.RepositoryKit.esc; // échappement HTML commun (shared/kit.js)
   /** Message d'erreur lisible : ce qui a échoué (contexte, traduit) et quoi faire (AppFramework.explain) ; repli : contexte
@@ -124,6 +125,29 @@
   let reg = loadReg();
   /** Clé d'une entrée du registre : « dossier|identifiant » (titre à défaut d'identifiant). */
   const keyOf = m => `${m.folder || ''}|${m.id || m.title || ''}`;
+  // missions de l'index sans dossier sur le disque (registre périmé repris, mission retirée entre deux lancements) :
+  // dossiers présents demandés au lanceur à l'ouverture ; ces missions sont marquées « fichier absent », comme après une
+  // relecture du dossier, et « Nettoyer le registre (n) » les retire — sans dossier autorisé ni purge de l'index dans
+  // Paramètres › Maintenance › Caches, où personne ne pensait à aller
+  let servedChecked = false; // dossiers présents lus auprès du lanceur (nettoyage possible sans dossier autorisé)
+  /** Marque « fichier absent » les missions dont le dossier n'est pas servi par le lanceur, puis redessine la page. */
+  const ghostsLoad = () => /^https?:$/.test(location.protocol) ? fetch('/__setup/mission-folders', {
+    headers: {
+      'X-SOG-Setup': '1'
+    },
+    cache: 'no-store'
+  }).then(r => r.ok ? r.json() : null).catch(() => null).then(j => {
+    if (!Array.isArray(j?.folders)) return;
+    servedChecked = true;
+    const present = new Set(j.folders);
+    let n = 0;
+    for (const m of reg.missions)
+      if (m.folder && !m.missingFile && !present.has(String(m.folder).replace(/\\/g, '/'))) {
+        m.missingFile = true;
+        n++;
+      }
+    if (n && host) render();
+  }) : Promise.resolve();
 
   /** Enregistre le registre (MissionIndex, échec notifié ; « missionRegistry:v1 » sans IndexedDB) et réécrit
    *  Missions/mission_registry.yaml si le dossier est déjà autorisé. */
@@ -446,6 +470,9 @@
     received: 'recu',
     versions: 'versions'
   };
+  /** Fichiers d'un dossier de mission qui ne sont pas la mission : références de série, et affectations.yaml (pilotes
+   *  affectés, docs/technique/AFFECTATION_MISSIONS.md) — lu comme une mission, il en effaçait l'identifiant et le type. */
+  const ANNEX = /^(maps_manifest|AAR_TRACKS_REFERENCE|OSM_WORK_PROMPT|README|VALIDATION|affectations\.ya?ml$)/i;
   /** Horodatage des noms de fichiers rangés (AAAA-MM-JJTHH-MM-SS, sans « : »). */
   const stamp = () => new Date().toISOString().slice(0, 19).replace(/:/g, '-');
   /** Données comparables d'un YAML (sans meta ni réglages du studio), clés triées. */
@@ -535,7 +562,7 @@
   /** Identifiant rangeable (lettre de la famille + numéro : « A-001A ») ; sinon identifiant proposé d'après la famille
    *  (« BFM-001A » en COMBAT → « A-001A ») : request (clic) → confirmation, l'ancien gardé dans mission.former_id ;
    *  sans confirmation → erreur explicite (et non « dossier non autorisé »). */
-  function checkMissionId(y, request) {
+  async function checkMissionId(y, request) {
     const raw = String(y?.mission?.id ?? '').trim().toUpperCase(),
       SM = window.SiaMission;
     if (SM?.parseId?.(raw)?.letter) return;
@@ -544,7 +571,7 @@
       letter = L[type] || L[window.MissionVocab?.familyForType?.(type)] || '',
       m = /(\d{1,3})([A-Z]?)$/.exec(raw),
       guess = letter && m ? `${letter}-${m[1].padStart(3, '0')}${m[2]}` : '';
-    if (guess && request && confirm(t([
+    if (guess && request && await window.AppFramework.ask(t([
         'Identifiant « {r} » hors format (lettre de la famille + numéro). Enregistrer la mission sous « {g} » ? (l’ancien identifiant est gardé dans mission.former_id)',
         'ID “{r}” is not in the expected format (family letter + number). Save the mission as “{g}”? (the old ID is kept in mission.former_id)'
       ], {
@@ -572,7 +599,7 @@
     request = false,
     source = 'collage'
   } = {}) {
-    checkMissionId(doc.yaml, request);
+    await checkMissionId(doc.yaml, request);
     const id = normMissionId(doc.yaml?.mission?.id || ''),
       at = new Date().toISOString(),
       st = stamp();
@@ -654,7 +681,7 @@
     action = 'modifiée',
     request = false
   } = {}) {
-    checkMissionId(y, request);
+    await checkMissionId(y, request);
     const id = normMissionId(y?.mission?.id || ''),
       m = await missionHandle(id, y?.mission?.type, {
         request,
@@ -678,7 +705,7 @@
   async function saveMaps(y, maps, {
     request = false
   } = {}) {
-    checkMissionId(y, request);
+    await checkMissionId(y, request);
     const id = normMissionId(y?.mission?.id || ''),
       m = await missionHandle(id, y?.mission?.type, {
         request,
@@ -910,8 +937,7 @@
           } else if (depth < 3 && !/^(_|\.)/.test(name)) subs.push([name, x]);
         } else if (/\.(png|jpe?g|webp)$/i.test(name)) images.push(name);
         else if (name === SUIVI) suiviFile = x;
-        else if (/\.(ya?ml|md)$/i.test(name) && name !== FILE && !
-          /^(maps_manifest|AAR_TRACKS_REFERENCE|OSM_WORK_PROMPT|README|VALIDATION)/i.test(name)) files.push(x);
+        else if (/\.(ya?ml|md)$/i.test(name) && name !== FILE && !ANNEX.test(name)) files.push(x);
       }
       if (files.length) {
         const got = await Promise.all(files.map(fh => fh.getFile()));
@@ -962,9 +988,12 @@
       job?.end();
     }
     for (const e of found) upsert(e, 'dossier');
-    const seen = new Set(found.map(keyOf));
+    const seen = new Set(found.map(keyOf)),
+      stored = new Set(found.map(e => e.id).filter(Boolean));
     reg.missions.forEach(m => {
-      m.missingFile = m.source === 'dossier' && !seen.has(keyOf(m));
+      // entrée sans dossier (fichiers ajoutés de l'extérieur, mission reçue sans dossier autorisé) dont la mission est
+      // rangée : doublon, retiré par « Nettoyer le registre » (statut, notes et date de vol passent à la mission rangée)
+      m.missingFile = m.source === 'dossier' ? !seen.has(keyOf(m)) : !m.folder && m.status !== 'ordered' && stored.has(m.id);
     });
     linkReports();
     writeJson(SCAN, nextSig);
@@ -977,13 +1006,84 @@
       problems
     };
   }
-  /** Ajoute des fichiers choisis (File) : groupés par dossier (webkitRelativePath) puis par mission. Retourne le nombre de missions. */
+  /** Missions reçues hors du dossier des missions (fichiers choisis, réponse de ChatGPT collée) : rangées dans
+   *  data/missions/<lettre>_<FAMILLE>/<identifiant>/ (record : textes reçus gardés dans recu/), puis inscrites au registre.
+   *  order : commande qu'elles livrent, remplacée même si la réponse a changé de série ou d'identifiant. Dossier des
+   *  missions non autorisé : demandé (bouton de la page, le choix des fichiers ayant consommé le geste) ; refusé :
+   *  missions inscrites sans être rangées, notification. Sortie : entrées inscrites. */
+  async function receive(texts, {
+    order = null,
+    source = 'fichiers'
+  } = {}) {
+    await waitFor('SiaMission');
+    const SM = window.SiaMission,
+      {
+        docs
+      } = SM.fromTextsBatch(texts);
+    const parts = texts.flatMap(f => {
+      const p = /\.ya?ml$/i.test(f.name || '') ? [] : SM.splitBundle(f.text);
+      return p.length ? p : [f];
+    });
+    /** Markdown de la mission id (titre « # Mission … ») parmi les textes reçus. */
+    const mdOf = id => parts.find(f => !/\.ya?ml$/i.test(f.name || '') && SM.parseId(/^#\s+Mission\s+([A-Z]?-?\d+[A-Z]?)/im.exec(f.text)
+      ?.[
+        1
+      ] || '').id === id)?.text || '';
+    if (!await missionsDir(false) && await window.AppFramework?.ask?.(t([
+        'Ranger les missions reçues dans le dossier des missions ? Le navigateur va demander l’accès au dossier.',
+        'Store the received missions in the missions folder? The browser will ask for access to the folder.',
+        'Die empfangenen Missionen im Missionsordner ablegen? Der Browser fragt nach dem Zugriff auf den Ordner.',
+        '¿Guardar las misiones recibidas en la carpeta de misiones? El navegador pedirá acceso a la carpeta.'
+      ]))) try {
+      await missionsDir(true);
+    } catch (e) {
+      window.AppFramework?.notify?.(explain(e, t(['Dossier des missions non autorisé', 'Missions folder not authorised',
+        'Missionsordner nicht freigegeben', 'Carpeta de misiones no autorizada'
+      ])), 'err');
+    }
+    const got = [],
+      unstored = [];
+    for (const d of docs) {
+      const id = normMissionId(d.yaml?.mission?.id || '');
+      const res = await record(d, {
+        md: mdOf(id),
+        raw: texts,
+        source,
+        request: true
+      });
+      got.push(res.entry);
+      if (!res.folder) unstored.push(res.error ? `${id || '—'} (${res.error})` : id || '—');
+    }
+    // commande livrée mais non rapprochée par upsert (série ou identifiant changés par ChatGPT) : remplacée par la
+    // première mission reçue (commande, date d'ajout et notes reprises)
+    const left = order && reg.missions.find(x => x.status === 'ordered' && x.addedAt === order.addedAt && JSON.stringify(x.request) ===
+      JSON.stringify(order.request));
+    const first = got[0] && reg.missions.find(x => keyOf(x) === keyOf(got[0]));
+    if (left && first) {
+      first.request = first.request || left.request;
+      first.addedAt = left.addedAt || first.addedAt;
+      first.notes = first.notes || left.notes || '';
+      reg.missions = reg.missions.filter(x => x !== left);
+      persist();
+    }
+    if (unstored.length) window.AppFramework?.notify?.(t([
+      'Dossier des missions non autorisé : {m} inscrite(s) au registre sans être rangée(s). L’autoriser (« Relire le dossier »), puis importer de nouveau.',
+      'Missions folder not authorised: {m} added to the registry without being stored. Authorise it (“Re-read folder”), then import again.',
+      'Missionsordner nicht freigegeben: {m} ins Register eingetragen, aber nicht abgelegt. Ordner freigeben („Ordner neu lesen“), dann erneut importieren.',
+      'Carpeta de misiones no autorizada: {m} inscrita(s) en el registro sin guardarse. Autorizarla («Releer la carpeta») y volver a importar.'
+    ], {
+      m: unstored.join(', ')
+    }), 'warn');
+    return got;
+  }
+  /** Ajoute des fichiers choisis (File) : groupés par dossier (webkitRelativePath) puis par mission. Fichiers pris hors du
+   *  dossier des missions (Téléchargements…) : rangés dans le dossier des missions (receive) — inscrits seulement, le
+   *  générateur ne les retrouvait pas (« fichiers de la mission introuvables »). Retourne le nombre de missions. */
   async function addFiles(list) {
     await waitFor('SiaMission');
     const groups = new Map();
     for (const f of list) {
-      if (!/\.(ya?ml|md)$/i.test(f.name) || /^(maps_manifest|AAR_TRACKS_REFERENCE|OSM_WORK_PROMPT|README|VALIDATION)/i.test(f.name) || f
-        .name === FILE) continue;
+      if (!/\.(ya?ml|md)$/i.test(f.name) || ANNEX.test(f.name) || f.name === FILE) continue;
       const folder = (f.webkitRelativePath || '').split('/').slice(0, -1).join('/') || f.folder || '';
       if (!groups.has(folder)) groups.set(folder, []);
       groups.get(folder).push(f);
@@ -994,6 +1094,10 @@
         name: f.name,
         text: await f.text()
       })));
+      if (!folder) {
+        n += (await receive(texts)).length;
+        continue;
+      }
       const newest = Math.max(...files.map(f => f.lastModified || 0));
       const {
         docs
@@ -1106,7 +1210,8 @@
     (!filters.rdv || (filters.rdv === 'with' ? m.rdv > 0 : m.rdv === 0)) &&
     (filters.teamsMin === '' || m.teamCount >= +filters.teamsMin) &&
     (filters.teamsMax === '' || m.teamCount <= +filters.teamsMax) &&
-    (!filters.teamType || [...m.teamTypes, ...m.aircraftTypes].some(x => x.toLowerCase().includes(filters.teamType.toLowerCase()))) &&
+    (!filters.teamType || [...(m.teamTypes || []), ...(m.aircraftTypes || [])].some(x => String(x).toLowerCase().includes(filters.teamType
+      .toLowerCase()))) &&
     (!filters.aar || (filters.aar === 'yes') === !!m.aar) &&
     (!filters.theatre || m.theatre === filters.theatre) &&
     (!filters.status || m.status === filters.status) &&
@@ -1147,7 +1252,8 @@
     const types = uniq([...reg.missions.map(m => m.type), ...fam.map(f => f.id)]);
     const subtypes = uniq([...reg.missions.filter(m => !filters.type || m.type === filters.type).map(m => m.subtype), ...(fam.find(f => f
       .id === filters.type)?.subtypes || [])]);
-    const teamTypes = uniq(reg.missions.flatMap(m => [...m.teamTypes, ...m.aircraftTypes]));
+    // entrée incomplète (registre ancien, repris) : ni type d'équipe ni type d'aéronef, sans faire tomber la page
+    const teamTypes = uniq(reg.missions.flatMap(m => [...(m.teamTypes || []), ...(m.aircraftTypes || [])]));
     const opt = (v, l, cur) => `<option value="${esc(v)}" ${String(cur) === String(v) ? 'selected' : ''}>${esc(l)}</option>`;
     const counts = Object.keys(STATUS).map(k => [k, reg.missions.filter(m => m.status === k).length]).filter(([, n]) => n);
     host.innerHTML = `
@@ -1178,10 +1284,6 @@
         <div id="rgTable"></div>
         <div class="rg-resize" role="separator" aria-orientation="horizontal" title="${esc(t(['Glisser pour agrandir ou réduire le tableau (double-clic : hauteur par défaut)', 'Drag to enlarge or shrink the table (double-click: default height)', 'Ziehen, um die Tabelle zu vergrößern oder zu verkleinern (Doppelklick: Standardhöhe)', 'Arrastrar para ampliar o reducir la tabla (doble clic: altura por defecto)']))}"><span></span></div>
         <div id="rgDetail"></div>
-      </section>
-      <section data-block-id="order" data-icon="sparkles" data-subtitle="${esc(t(['Nouvelle mission à générer : paramètres choisis, prompt ChatGPT réglé, entrée « commandée » rapprochée ensuite du fichier généré', 'New mission to generate: chosen parameters, tuned ChatGPT prompt, “ordered” entry matched later with the generated file']))}">
-        <h2>${esc(t(['Commander une mission', 'Order a mission', 'Mission bestellen', 'Encargar una misión']))}</h2>
-        <div id="rgOrderHost"></div>
       </section>`;
     // dossier
     const fb = host.querySelector('#rgFolder');
@@ -1204,7 +1306,7 @@
     waitFor('FileAccess').then(FA => FA?.decorate(b, '__missions'));
     const sb = document.createElement('button');
     sb.type = 'button';
-    sb.className = 'secondary'; // action principale : « Générer une mission »
+    sb.className = 'secondary'; // action principale : « Nouvelle mission »
     sb.dataset.icon = 'refresh';
     sb.textContent = t(['Relire le dossier', 'Re-read folder', 'Ordner neu lesen', 'Releer la carpeta']);
     sb.onclick = doScan;
@@ -1229,14 +1331,22 @@
       render();
     };
     fb.append(ab);
-    // v2 : Missions s'ouvre sur le registre ; « Générer une mission » mène au générateur (mission vierge), en tête de barre
+    // v2 : Missions s'ouvre sur le registre ; la création n'a qu'une porte, le générateur : « Nouvelle mission » l'ouvre sur
+    // une mission neuve (?new : formulaire de commande déplié), en tête de barre ; le registre consulte, range, duplique,
+    // supprime et importe ce qui arrive (fichiers, réponse de ChatGPT d'une mission commandée)
     const gb = document.createElement('button');
     gb.type = 'button';
     gb.className = 'primary';
     gb.dataset.icon = 'plus';
-    gb.textContent = t(['Générer une mission', 'Generate a mission', 'Eine Mission erzeugen', 'Generar una misión']);
+    gb.textContent = t(['Nouvelle mission', 'New mission', 'Neue Mission', 'Nueva misión']);
+    gb.title = t(['Ouvrir le générateur sur une mission neuve : nouvelle mission, squelette ou commande à ChatGPT',
+      'Open the generator on a new mission: new mission, skeleton or order to ChatGPT',
+      'Den Generator mit einer neuen Mission öffnen: neue Mission, Gerüst oder Bestellung bei ChatGPT',
+      'Abrir el generador con una misión nueva: nueva misión, esqueleto o encargo a ChatGPT'
+    ]);
     gb.onclick = () => {
-      location.href = new URL('mission_editor.html', location.href).href;
+      // ?new : mission vierge (sans lui, le générateur rouvrait la dernière mission partagée)
+      location.href = new URL('mission_editor.html?new', location.href).href;
     };
     fb.prepend(gb);
     const wb = document.createElement('button');
@@ -1261,7 +1371,8 @@
     cb.type = 'button';
     cb.className = 'secondary';
     cb.dataset.icon = 'trash';
-    cb.dataset.minLevel = '4'; // v2 : niveau Expert
+    // v2 : niveau Expert, sauf s'il y a des missions à retirer (registre périmé : à tous les niveaux)
+    if (!missing) cb.dataset.minLevel = '4';
     cb.textContent = t(['Nettoyer le registre ({n})', 'Clean up the registry ({n})', 'Register bereinigen ({n})',
       'Limpiar el registro ({n})'
     ], {
@@ -1273,7 +1384,9 @@
     ]);
     cb.disabled = !missing;
     cb.onclick = async () => {
-      if (!await doScan()) return; // état « fichier absent » à jour avant de retirer quoi que ce soit
+      // état « fichier absent » à jour avant de retirer quoi que ce soit : relecture du dossier s'il est autorisé ; sinon,
+      // dossiers présents d'après le lanceur (déjà lus) — sans ouvrir le sélecteur de dossier
+      if ((await missionsDir(false) || !servedChecked) && !await doScan()) return;
       const n = reg.missions.filter(m => m.missingFile).length;
       if (!n) {
         msg = pill('generated', t(['Rien à nettoyer : toutes les missions ont leur fichier.',
@@ -1282,8 +1395,10 @@
         render();
         return;
       }
-      if (!confirm(t(['Retirer {n} mission(s) dont le fichier n’existe plus du registre ?',
-          'Remove {n} mission(s) whose file no longer exists from the registry?'
+      if (!await window.AppFramework.ask(t(['Retirer {n} mission(s) dont le fichier n’existe plus du registre ?',
+          'Remove {n} mission(s) whose file no longer exists from the registry?',
+          '{n} Mission(en), deren Datei nicht mehr existiert, aus dem Register entfernen?',
+          '¿Retirar del registro {n} misión(es) cuyo archivo ya no existe?'
         ], {
           n
         }))) return;
@@ -1296,7 +1411,41 @@
       }));
       render();
     };
-    fb.append(b, sb, wb, cb);
+    // commandes jamais livrées (aucun fichier reçu) : « missions vides » à retirer en une fois
+    const pending = reg.missions.filter(m => m.status === 'ordered' && !m.files?.length);
+    const ob = document.createElement('button');
+    ob.type = 'button';
+    ob.className = 'secondary';
+    ob.dataset.icon = 'trash';
+    ob.hidden = !pending.length;
+    ob.textContent = t(['Retirer les commandes en attente ({n})', 'Remove pending orders ({n})', 'Offene Bestellungen entfernen ({n})',
+      'Retirar los encargos pendientes ({n})'
+    ], {
+      n: pending.length
+    });
+    ob.title = t([
+      'Missions commandées dont la réponse n’a jamais été importée (aucun fichier) : retirées du registre.',
+      'Ordered missions whose reply was never imported (no file): removed from the registry.',
+      'Bestellte Missionen, deren Antwort nie importiert wurde (keine Datei): aus dem Register entfernt.',
+      'Misiones encargadas cuya respuesta nunca se importó (ningún archivo): retiradas del registro.'
+    ]);
+    ob.onclick = async () => {
+      const pending = reg.missions.filter(m => m.status === 'ordered' && !m.files?.length);
+      if (!pending.length) return;
+      if (!await window.AppFramework.ask(t(['Retirer {n} commande(s) en attente du registre ?',
+          'Remove {n} pending order(s) from the registry?', '{n} offene Bestellung(en) aus dem Register entfernen?',
+          '¿Retirar del registro {n} encargo(s) pendiente(s)?'
+        ], {
+          n: pending.length
+        }), {
+          danger: true
+        })) return;
+      reg.missions = reg.missions.filter(m => !pending.includes(m));
+      if (!reg.missions.some(m => keyOf(m) === selected)) select(null);
+      persist();
+      render();
+    };
+    fb.append(b, sb, wb, cb, ob);
     // filtres
     host.querySelector('[data-rg-more]').addEventListener('toggle', e => {
       moreFilters = e.target.open;
@@ -1328,9 +1477,6 @@
       }
     };
     host.querySelector('#rgCsv').onclick = exportCsv;
-    window.MissionOrder?.mount(host.querySelector('#rgOrderHost'), {
-      onOrdered: () => render()
-    });
     refreshTable();
     renderDetail();
     window.AppFramework?.refresh?.();
@@ -1527,7 +1673,12 @@
         <label>${esc(t(['Volée le', 'Flown on', 'Geflogen am', 'Volada el']))}<input type="date" id="rgFlown" value="${esc(m.flownAt || '')}"></label>
         <label class="rg-notes">${esc(t(['Notes', 'Notes', 'Notizen', 'Notas']))}<input id="rgNotes" value="${esc(m.notes || '')}"></label>
       </div>
-      <p class="row">${m.files?.length ? `<button type="button" class="primary" data-go="editor" data-icon="edit">${esc(t(['Ouvrir dans le générateur', 'Open in generator', 'Im Generator öffnen', 'Abrir en el generador']))}</button><button type="button" class="secondary" data-go="studio" data-icon="map" data-min-level="4">${esc(t(['Ouvrir dans le studio', 'Open in map studio', 'Im Kartenstudio öffnen', 'Abrir en el estudio']))}</button>${/Z$/.test(m.id || '') ? '' : `<button type="button" class="secondary" data-go="assign" data-icon="users" title="${esc(t(['Affecter la mission à un ou plusieurs pilotes : heure, appareils, astreinte (docs/technique/AFFECTATION_MISSIONS.md)', 'Assign the mission to one or more pilots: time, aircraft, standby']))}">${esc(t(['Affecter…', 'Assign…', 'Zuweisen…', 'Asignar…']))}</button>`}<button type="button" class="secondary" data-go="cr" data-icon="clipboard" title="${esc(t(['Nouveau CR de cette mission : n° de vol suivant', 'New report for this mission: next flight number']))}">${esc(m.reports?.length ? t(['Nouveau CR (vol {n})', 'New report (flight {n})', 'Neuer Bericht (Flug {n})', 'Nuevo informe (vuelo {n})'], { n: m.reports.length + 1 }) : t(['Créer le CR', 'Create report', 'Bericht erstellen', 'Crear informe']))}</button>` : ''}${m.status === 'ordered' ? `<button type="button" class="secondary" data-go="prompt" data-icon="send" data-min-level="4">${esc(t(['Recopier le prompt', 'Copy prompt again']))}</button>` : ''}<span class="rg-small">${esc((m.files || []).join(', '))}</span></p>
+      ${m.status === 'ordered' && !m.files?.length ? `<details class="rg-reply" open><summary><b>${esc(t(['Réponse de ChatGPT', 'ChatGPT reply', 'Antwort von ChatGPT', 'Respuesta de ChatGPT']))}</b></summary>
+        <p class="rg-small">${esc(t(['Coller la réponse (YAML et Markdown), ou choisir les fichiers reçus : la mission est rangée dans le dossier des missions et remplace la commande.', 'Paste the reply (YAML and Markdown), or choose the received files: the mission is stored in the missions folder and replaces the order.', 'Antwort einfügen (YAML und Markdown) oder die empfangenen Dateien wählen: Die Mission wird im Missionsordner abgelegt und ersetzt die Bestellung.', 'Pegar la respuesta (YAML y Markdown) o elegir los archivos recibidos: la misión se guarda en la carpeta de misiones y sustituye al encargo.']))}</p>
+        <textarea id="rgReplyText" rows="8" spellcheck="false" data-fixed-size></textarea>
+        <p class="row"><button type="button" class="primary" id="rgReplyGo" data-icon="download">${esc(t(['Importer la réponse', 'Import the reply', 'Antwort importieren', 'Importar la respuesta']))}</button><label class="rg-file">${esc(t(['Choisir les fichiers…', 'Choose files…', 'Dateien wählen…', 'Elegir archivos…']))}<input type="file" id="rgReplyFiles" multiple accept=".yaml,.yml,.md,.txt" hidden></label></p>
+      </details>` : ''}
+      <p class="row">${m.files?.length ? `<button type="button" class="primary" data-go="editor" data-icon="edit">${esc(t(['Ouvrir dans le générateur', 'Open in generator', 'Im Generator öffnen', 'Abrir en el generador']))}</button><button type="button" class="secondary" data-go="duplicate" data-icon="layers" data-min-level="3" title="${esc(t(['Copie de la mission, prête à modifier : identifiant et série suivants de la même famille, titre « (copie) » ; ouverte dans le générateur, cartes à refaire au studio', 'Copy of the mission, ready to edit: next identifier and series of the same family, title “(copy)”; opened in the generator, maps to redo in the studio', 'Kopie der Mission, bereit zum Bearbeiten: nächste Kennung und Serie derselben Familie, Titel „(Kopie)“; im Generator geöffnet, Karten im Studio neu erstellen', 'Copia de la misión, lista para modificar: identificador y serie siguientes de la misma familia, título «(copia)»; abierta en el generador, mapas a rehacer en el estudio']))}">${esc(t(['Dupliquer', 'Duplicate', 'Duplizieren', 'Duplicar']))}</button><button type="button" class="secondary" data-go="studio" data-icon="map" data-min-level="4">${esc(t(['Ouvrir dans le studio', 'Open in map studio', 'Im Kartenstudio öffnen', 'Abrir en el estudio']))}</button>${/Z$/.test(m.id || '') ? '' : `<button type="button" class="secondary" data-go="assign" data-icon="users" title="${esc(t(['Affecter la mission à un ou plusieurs pilotes : heure, appareils, astreinte (docs/technique/AFFECTATION_MISSIONS.md)', 'Assign the mission to one or more pilots: time, aircraft, standby']))}">${esc(t(['Affecter…', 'Assign…', 'Zuweisen…', 'Asignar…']))}</button>`}<button type="button" class="secondary" data-go="cr" data-icon="clipboard" title="${esc(t(['Nouveau CR de cette mission : n° de vol suivant', 'New report for this mission: next flight number']))}">${esc(m.reports?.length ? t(['Nouveau CR (vol {n})', 'New report (flight {n})', 'Neuer Bericht (Flug {n})', 'Nuevo informe (vuelo {n})'], { n: m.reports.length + 1 }) : t(['Créer le CR', 'Create report', 'Bericht erstellen', 'Crear informe']))}</button>` : ''}${m.status === 'ordered' ? `<button type="button" class="secondary" data-go="prompt" data-icon="send" data-min-level="4">${esc(t(['Recopier le prompt de cette commande', 'Copy this order’s prompt again', 'Prompt dieser Bestellung erneut kopieren', 'Volver a copiar el prompt de este encargo']))}</button>` : ''}<button type="button" class="secondary" id="rgDelete" data-icon="trash" title="${esc(m.files?.length ? t(['Supprimer la mission : son dossier (fichiers, cartes, versions, textes reçus) et son entrée du registre', 'Delete the mission: its folder (files, maps, versions, received texts) and its registry entry', 'Mission löschen: ihren Ordner (Dateien, Karten, Versionen, empfangene Texte) und ihren Registereintrag', 'Eliminar la misión: su carpeta (archivos, mapas, versiones, textos recibidos) y su entrada del registro']) : t(['Retirer la mission du registre (aucun fichier)', 'Remove the mission from the registry (no file)', 'Mission aus dem Register entfernen (keine Datei)', 'Retirar la misión del registro (ningún archivo)']))}">${esc(t(['Supprimer…', 'Delete…', 'Löschen…', 'Eliminar…']))}</button><span class="rg-small">${esc((m.files || []).join(', '))}</span></p>
       <p class="rg-small" id="rgGoMsg"></p></div>`;
     box.querySelector('#rgStatus').onchange = e => {
       m.status = e.target.value;
@@ -1550,6 +1701,43 @@
       writeSuivi(m);
     };
     box.querySelectorAll('[data-go]').forEach(x => x.onclick = () => go(m, x.dataset.go));
+    box.querySelector('#rgDelete').onclick = () => removeMission(m);
+    /** Réponse de ChatGPT reçue pour la commande m (texte collé ou fichiers) : rangée, inscrite, affichée. */
+    const reply = async texts => {
+      try {
+        const got = await receive(texts, {
+          order: m,
+          source: 'collage'
+        });
+        if (got[0]) select(keyOf(got[0]));
+        window.AppFramework?.notify?.(t(['{n} mission(s) reçue(s) : {m}.', '{n} mission(s) received: {m}.',
+          '{n} Mission(en) empfangen: {m}.', '{n} misión(es) recibida(s): {m}.'
+        ], {
+          n: got.length,
+          m: got.map(e => e.id || e.title).join(', ')
+        }), 'ok');
+        render();
+      } catch (e) {
+        window.AppFramework?.notify?.(explain(e, t(['Réponse non importée', 'Reply not imported', 'Antwort nicht importiert',
+          'Respuesta no importada'
+        ])), 'err');
+      }
+    };
+    const rt = box.querySelector('#rgReplyText');
+    if (rt) {
+      box.querySelector('#rgReplyGo').onclick = () => rt.value.trim() ? reply([{
+        name: 'réponse collée.txt',
+        text: rt.value
+      }]) : rt.focus();
+      box.querySelector('#rgReplyFiles').onchange = async e => {
+        const list = [...e.target.files];
+        e.target.value = '';
+        if (list.length) reply(await Promise.all(list.map(async f => ({
+          name: f.name,
+          text: await f.text()
+        }))));
+      };
+    }
     box.querySelectorAll('[data-op-select]').forEach(x => x.onclick = () => {
       select(x.dataset.opSelect);
       refreshTable();
@@ -1723,7 +1911,7 @@
           why = dup ? t(['doublon : la même carte reste dans cartes/', 'duplicate: the same map stays in cartes/']) : extra ? t([
             'absente de la liste des cartes de la mission', 'not in the mission’s map list'
           ]) : t(['carte de la mission : le studio pourra la régénérer', 'mission map: the studio can regenerate it']);
-        if (!confirm(t(['Supprimer « {f} » ({s}) du dossier de la mission ?\n{w}',
+        if (!await window.AppFramework.ask(t(['Supprimer « {f} » ({s}) du dossier de la mission ?\n{w}',
             'Delete “{f}” ({s}) from the mission folder?\n{w}'
           ], {
             f: label,
@@ -1743,7 +1931,8 @@
     if (dupRoot.length) {
       thumbs.insertAdjacentHTML('afterend', `<p class="rg-small">${esc(t(['{n} carte(s) en double à la racine du dossier (la même carte est dans cartes/).', '{n} duplicate map(s) at the folder root (same map in cartes/).'], { n: dupRoot.length }))} <button type="button" class="secondary" id="rgDelDup" data-icon="trash">${esc(t(['Supprimer les doublons à la racine ({n}, {s})', 'Delete root duplicates ({n}, {s})'], { n: dupRoot.length, s: B(dupRoot.reduce((a, f) => a + f.size, 0)) }))}</button></p>`);
       host.querySelector('#rgDelDup').addEventListener('click', async () => {
-        if (!confirm(t(['Supprimer {n} carte(s) en double à la racine du dossier ? Les exemplaires de cartes/ sont gardés.',
+        if (!await window.AppFramework.ask(t([
+            'Supprimer {n} carte(s) en double à la racine du dossier ? Les exemplaires de cartes/ sont gardés.',
             'Delete {n} duplicate map(s) at the folder root? The copies in cartes/ are kept.'
           ], {
             n: dupRoot.length
@@ -1758,7 +1947,7 @@
     const sz = usage.sizes;
     thumbs.insertAdjacentHTML('afterend', `<p class="rg-small">${esc(t(['Place : {t} — données {d}, cartes {c}, versions {v}, textes reçus {r}.', 'Space: {t} — data {d}, maps {c}, versions {v}, received texts {r}.'], { t: B(sz.total), d: B(sz.data), c: B(sz.maps), v: B(sz.versions), r: B(sz.recu) }))}${sz.pdf ? esc(t([' PDF : {p}.', ' PDF: {p}.'], { p: B(sz.pdf) })) : ''}${usage.surplus.length ? ` <button type="button" class="secondary" id="rgDelSurplus" data-icon="trash">${esc(t(['Supprimer les cartes surnuméraires ({n}, {s})', 'Delete surplus maps ({n}, {s})'], { n: usage.surplus.length, s: B(usage.surplusSize) }))}</button>` : ''}</p>`);
     host.querySelector('#rgDelSurplus')?.addEventListener('click', async () => {
-      if (!confirm(t([
+      if (!await window.AppFramework.ask(t([
           'Supprimer {n} carte(s) surnuméraire(s) ({s}) du dossier de la mission ? Elles ne figurent plus dans sa liste de cartes.',
           'Delete {n} surplus map(s) ({s}) from the mission folder?'
         ], {
@@ -1853,6 +2042,7 @@
     const id = normMissionId(m.id),
       names = [...new Set([...(m.files || []), `mission${id}.yaml`, `summary${id}.md`])]; // noms du registre, sinon noms d'usage
     for (const name of names) {
+      if (ANNEX.test(name)) continue;
       if (files.some(f => /\.ya?ml$/i.test(f.name)) && /\.ya?ml$/i.test(name) && !(m.files || []).includes(name)) continue;
       try {
         const f = await (await h.getFileHandle(name)).getFile();
@@ -1906,9 +2096,84 @@
       else if (out) out.textContent = text;
     }
   }
+  /** Mission partagée qui serait perdue en ouvrant m : squelette du générateur jamais rangé (meta.skeleton sans
+   *  historique), d'une autre opération ; confirmation demandée. Vrai : on peut continuer. */
+  async function keepSkeleton(m) {
+    const cur = window.SiaMission?.load?.(),
+      y = cur?.yaml,
+      base = id => String(id || '').toUpperCase().replace(/(\d)[A-Z]$/, '$1');
+    if (!y?.meta?.skeleton || y.meta.history?.length || base(y.mission?.id) === base(m.id)) return true;
+    return !!await window.AppFramework?.ask?.(t([
+      'La mission partagée {s} (squelette, jamais rangée) sera remplacée par {m} dans le générateur et le studio. Continuer ? (Sinon, rangez d’abord le squelette : « Enregistrer dans le dossier » du générateur.)',
+      'The shared mission {s} (skeleton, never stored) will be replaced by {m} in the generator and the studio. Continue? (Otherwise store the skeleton first: “Save to the folder” in the generator.)',
+      'Die gemeinsame Mission {s} (Gerüst, nie abgelegt) wird im Generator und im Studio durch {m} ersetzt. Fortfahren? (Sonst zuerst das Gerüst ablegen: „Im Ordner speichern“ im Generator.)',
+      'La misión compartida {s} (esqueleto, nunca guardado) será sustituida por {m} en el generador y el estudio. ¿Continuar? (Si no, guarde primero el esqueleto: «Guardar en la carpeta» del generador.)'
+    ], {
+      s: y.mission?.id || '—',
+      m: m.id
+    }), {
+      danger: true
+    });
+  }
+  /** Supprime une mission : sans fichier (commande en attente), retirée du registre ; rangée, son dossier
+   *  (data/missions/<famille>/<identifiant>/ : fichiers, cartes, versions, textes reçus) supprimé, puis l'entrée. */
+  async function removeMission(m) {
+    const files = !!(m.folder && m.files?.length),
+      name = `${m.id || ''} ${m.title || ''}`.trim() || t(['commande', 'order', 'Bestellung', 'encargo']);
+    if (!await window.AppFramework.ask(files ? t([
+        'Supprimer la mission « {m} » ? Son dossier data/missions/{f}/ (fichiers, cartes, versions, textes reçus) est supprimé, puis son entrée du registre. Une copie déjà synchronisée reste dans l’historique des données.',
+        'Delete the mission “{m}”? Its folder data/missions/{f}/ (files, maps, versions, received texts) is deleted, then its registry entry. A copy already synchronised stays in the data history.',
+        'Mission „{m}“ löschen? Ihr Ordner data/missions/{f}/ (Dateien, Karten, Versionen, empfangene Texte) wird gelöscht, dann ihr Registereintrag. Eine bereits synchronisierte Kopie bleibt im Datenverlauf.',
+        '¿Eliminar la misión «{m}»? Se elimina su carpeta data/missions/{f}/ (archivos, mapas, versiones, textos recibidos) y luego su entrada del registro. Una copia ya sincronizada queda en el historial de datos.'
+      ], {
+        m: name,
+        f: m.folder
+      }) : t(['Retirer « {m} » du registre ? (aucun fichier)', 'Remove “{m}” from the registry? (no file)',
+        '„{m}“ aus dem Register entfernen? (keine Datei)', '¿Retirar «{m}» del registro? (ningún archivo)'
+      ], {
+        m: name
+      }), {
+        danger: true,
+        ok: t(['Supprimer', 'Delete', 'Löschen', 'Eliminar'])
+      })) return;
+    try {
+      if (files) {
+        const dir = await missionsDir(true);
+        if (!dir) throw new Error(t(NO_DIR));
+        const parts = m.folder.split('/').filter(Boolean),
+          last = parts.pop();
+        let h = dir;
+        for (const part of parts) h = await h.getDirectoryHandle(part);
+        try {
+          await h.removeEntry(last, {
+            recursive: true
+          });
+        } catch (e) {
+          if (e?.name !== 'NotFoundError') throw e; // déjà absent : l'entrée seule est retirée
+        }
+      }
+      // registre relu entre-temps (autre onglet, index) : même entrée par clé et date d'ajout
+      reg.missions = reg.missions.filter(x => x !== m && !(keyOf(x) === keyOf(m) && x.addedAt === m.addedAt));
+      if (selected === keyOf(m)) select(null);
+      persist();
+      window.AppFramework?.notify?.(t(['Mission « {m} » supprimée.', 'Mission “{m}” deleted.', 'Mission „{m}“ gelöscht.',
+        'Misión «{m}» eliminada.'
+      ], {
+        m: name
+      }), 'ok');
+      render();
+    } catch (e) {
+      window.AppFramework?.notify?.(explain(e, t(['Mission « {m} » non supprimée', 'Mission “{m}” not deleted',
+        'Mission „{m}“ nicht gelöscht', 'Misión «{m}» no eliminada'
+      ], {
+        m: name
+      })), 'err');
+    }
+  }
   /** Ouvre la mission : générateur / studio (mission partagée), CR (passerelle ?from=sia), prompt de commande. */
   async function go(m, where) {
     const out = document.getElementById('rgGoMsg');
+    if (['editor', 'studio', 'duplicate'].includes(where) && !await keepSkeleton(m)) return;
     try {
       if (where === 'prompt') {
         await sendPrompt(m.request);
@@ -1965,6 +2230,20 @@
           await writeSuivi(m); // avant de quitter la page
         }
         location.href = new URL(`apps/cr/${target.cr}?from=sia`, window.RepositoryNav.root).href;
+        return;
+      }
+      if (where === 'duplicate') {
+        // « Dupliquer » : copie (SiaMission.duplicate) ouverte dans le générateur ; la mission d'origine ne change pas
+        const copy = window.SiaMission.duplicate(window.SiaMission.fromTexts(files), 'registry');
+        try {
+          sessionStorage.setItem('siaDuplicated:v1', JSON.stringify({
+            from: m.id,
+            to: copy.yaml.mission.id
+          }));
+        } catch {
+          /* stockage indisponible */
+        }
+        location.href = new URL('apps/cpco/mission_editor.html', window.RepositoryNav.root).href;
         return;
       }
       window.SiaMission.importTexts(files, 'registry');
@@ -2106,6 +2385,8 @@
     if (selected) setTimeout(() => document.getElementById('rgDetail')?.scrollIntoView({
       block: 'start'
     }), 300);
+    // missions de l'index sans dossier : bandeau « Nettoyer l'index » (page du registre seulement)
+    if (host) ghostsLoad();
     // relecture silencieuse si le dossier est déjà autorisé
     if (await missionsDir(false)) doScan();
   })();

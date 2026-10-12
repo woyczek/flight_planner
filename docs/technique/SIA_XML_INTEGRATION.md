@@ -1,103 +1,103 @@
-# Intégration de l'application « SIA XML » — analyse et plan
+# Integration of the “SIA XML” application — analysis and plan
 
-Notes de conception de l'intégration (2026-09-24 / 25). **Documentation de l'application :
-[SIA_MISSIONS.md](../SIA_MISSIONS.md).** Tout le plan du § 2 est réalisé : en-tête et menu communs,
-blocs, thème `sia` et `assets/favicon-sia.svg`, js-yaml commun, dossier SIA mémorisé
-(`FileAccess`, `__sia`), collage de mission et de listes de zones (`pastePanel`), couche des
-hippodromes, passerelle vers CR (`?from=sia`, `siaMissionToCr:v1`,
-`MissionVocab.familyForType`, `fromSia` dans `core.js`). Évolutions ensuite : profils d'affichage
-(onglets, carte de contrôle), sélection des zones (listes, groupes, alias RTBA), grille MORA
-calculée (l'import de la carte ENR 6.1 est abandonné : elle n'a pas de grille), générateur
-Python et pdf.js retirés. Le tableau du § 1 décrit l'état **initial** du dossier.
+Design notes for the integration (2026-09-24 / 25). **Documentation of the application:
+[SIA_MISSIONS.md](../SIA_MISSIONS.md).** The whole plan of § 2 has been carried out: common header and menu,
+blocks, `sia` theme and `assets/favicon-sia.svg`, common js-yaml, remembered SIA folder
+(`FileAccess`, `__sia`), pasting of missions and of zone lists (`pastePanel`), racetrack
+layer, bridge to CR (`?from=sia`, `siaMissionToCr:v1`,
+`MissionVocab.familyForType`, `fromSia` in `core.js`). Later developments: display profiles
+(tabs, check map), zone selection (lists, groups, RTBA aliases), computed MORA
+grid (import of the ENR 6.1 chart abandoned: it has no grid), Python
+generator and pdf.js removed. The table in § 1 describes the **initial** state of the folder.
 
-## 1. Ce que contient le dossier
+## 1. What the folder contains
 
-| Élément | Rôle |
+| Item | Role |
 |---|---|
-| `mission_editor.html` — « Générateur complet de mission » | Import YAML (`schema: helo-xp-mission`) / Markdown de mission, identification, textes, éditeur YAML sans schéma, cartes du dossier (ZIP livré par le générateur de cartes), export Markdown et **PDF** (jsPDF). Brouillon : `missionGeneratorDraft` ; passage au générateur de cartes : `missionGeneratorHandoff`. |
-| `map_parser.html` — « Studio cartographique aéronautique SIA » | Dossier SIA XML (sélection de dossier, base mémorisée en IndexedDB `sia-map-parser`), fond (PNG local, OSM raster ou vectoriel MapLibre, couches réglables), mission (MD / YAML), zones R / D / P, CTR, TMA…, MORA (CSV / PDF), villes (GeoNames), sorties **SVG / PNG / ZIP** et carte d'assemblage. Réglages : `siaMapSource`, `siaOsmLayers`, `siaCities`, `siaPopulation`, `siaDetailLayerProfile`, `siaFolderName`. |
-| Données SIA (AIRAC 2026-10-01) | `XML_SIA_2026-10-01.xml` (27 Mo), `AIXM4.5_all_FR_OM_2026-10-01.xml` (44 Mo), `sia-airspaces-2026-10-01.xml` (6 Mo), `miam-enr-5-7-coordinates.xml` (MILAIP ENR 5.7 : axes de ravitaillement), `mora.csv`, `villes_geonames.csv`, fonds `Carte france vierge*.png`. |
-| Bibliothèques | `maplibre-gl.js/.css`, `pdf.min.js` + worker, `jspdf.umd.min.js`, `js-yaml.min.js` (doublon de `shared/mission_core/vendor/js-yaml.min.js`). |
-| `.git` propre | **Dépôt git imbriqué** (2 commits, PNG en Git LFS) — à décider avant intégration (§ 4). |
-| Sauvegardes `*.backup-20260924-*.html` | Versions intermédiaires (à ne pas intégrer). |
+| `mission_editor.html` — “Complete mission generator” | YAML (`schema: helo-xp-mission`) / Markdown mission import, identification, texts, schema-less YAML editor, maps of the folder (ZIP delivered by the map generator), Markdown and **PDF** export (jsPDF). Draft: `missionGeneratorDraft`; hand-off to the map generator: `missionGeneratorHandoff`. |
+| `map_parser.html` — “SIA aeronautical map studio” | SIA XML folder (folder selection, database remembered in IndexedDB `sia-map-parser`), background (local PNG, OSM raster or MapLibre vector, adjustable layers), mission (MD / YAML), R / D / P zones, CTR, TMA…, MORA (CSV / PDF), cities (GeoNames), **SVG / PNG / ZIP** outputs and assembly map. Settings: `siaMapSource`, `siaOsmLayers`, `siaCities`, `siaPopulation`, `siaDetailLayerProfile`, `siaFolderName`. |
+| SIA data (AIRAC 2026-10-01) | `XML_SIA_2026-10-01.xml` (27 MB), `AIXM4.5_all_FR_OM_2026-10-01.xml` (44 MB), `sia-airspaces-2026-10-01.xml` (6 MB), `miam-enr-5-7-coordinates.xml` (MILAIP ENR 5.7: refuelling tracks), `mora.csv`, `villes_geonames.csv`, backgrounds `Carte france vierge*.png`. |
+| Libraries | `maplibre-gl.js/.css`, `pdf.min.js` + worker, `jspdf.umd.min.js`, `js-yaml.min.js` (duplicate of `shared/mission_core/vendor/js-yaml.min.js`). |
+| Own `.git` | **Nested git repository** (2 commits, PNG in Git LFS) — to be decided before integration (§ 4). |
+| Backups `*.backup-20260924-*.html` | Intermediate versions (not to be integrated). |
 
-Données de test : `examples/missions/Mission 02.md` (ravitaillement en vol, axe SIMONE, patrouille
-MISTRAL 41/42 + tanker VAILLANT 31), `data/missions/AIRLIFT_serie_1_precomplete/` (missions 11 à 15 :
-YAML `helo-xp-mission`, résumés, `maps_manifest.md`), `data/missions/MEDEVAC_serie_1..3_OSM/` (cartes
-produites : général, cible, détail cible, zone, assemblage).
+Test data: `examples/missions/Mission 02.md` (air-to-air refuelling, SIMONE track, patrol
+MISTRAL 41/42 + tanker VAILLANT 31), `data/missions/AIRLIFT_serie_1_precomplete/` (missions 11 to 15:
+YAML `helo-xp-mission`, summaries, `maps_manifest.md`), `data/missions/MEDEVAC_serie_1..3_OSM/` (maps
+produced: general, target, target detail, zone, assembly).
 
-## 2. Intégration dans la suite (plan — réalisé)
+## 2. Integration into the suite (plan — carried out)
 
-1. **Emplacement** : garder `apps/sia/` comme dossier de l'application (menu ☰ : « Missions SIA ›
-   Générateur de mission », « Missions SIA › Studio cartographique »), thème et favicon existants
-   (favicon SVG en ligne des pages → fichier `assets/`).
-2. **En-tête du framework** : `<header>` avec `<h1>`, `repository_tree` en tête,
-   `repository_nav.js`, `content_i18n.js`, `app_framework.js` en fin de page ; le bouton
-   « Transmettre au générateur de cartes » et le lien retour passent dans la barre d'en-tête ou
-   dans les actions du menu ☰ (`RepositoryNav.addAction`).
-3. **Blocs masquables / déplaçables** : envelopper les `<section>` dans un `<main>` (le framework
-   ne gère que les blocs d'un `<main>`), un `data-block-id` stable par section, blocs secondaires
-   masqués par défaut (`data-default-hidden="1"` : sauvegardes intermédiaires, XML analysés…).
-4. **Composants communs** au lieu des doublons : `js-yaml` du framework ; sélecteur de dossier
-   → `FileAccess` (dossier « SIA XML » mémorisé et affiché, ouverture des fichiers dans ce dossier) ;
-   zone « coller son contenu » → `FileAccess.pastePanel` (× / Fermer / Charger → Valider) ;
-   sauvegarde locale (`browser_store`) des brouillons et réglages.
-5. **Hippodromes de ravitaillement** (voir § 3) : dans le studio, couche « Axes AAR (ENR 5.7) »
-   dessinée depuis `miam-enr-5-7-coordinates.xml` avec `AarTracks` ; dans une mission, l'axe
-   désigné (SIMONE, point SIMIP / S1…) est retrouvé par proximité et tracé exactement.
-6. **Passerelles avec CR** : la mission générée (`helo-xp-mission`) pré-remplit un CR
-   (famille d'après `mission.type`, terrains, points tournants, appareils / indicatifs) ; le
-   catalogue commun fournit appareils et indicatifs (VAILLANT, MISTRAL…).
-7. Documentation (`docs/SIA_XML.md`, README, changelog) et version.
+1. **Location**: keep `apps/sia/` as the application folder (☰ menu: “SIA missions ›
+   Mission generator”, “SIA missions › Map studio”), existing theme and favicon
+   (inline SVG favicon of the pages → file in `assets/`).
+2. **Framework header**: `<header>` with `<h1>`, `repository_tree` at the top,
+   `repository_nav.js`, `content_i18n.js`, `app_framework.js` at the end of the page; the
+   “Send to the map generator” (« Transmettre au générateur de cartes ») button and the back link move into the header bar or
+   into the actions of the ☰ menu (`RepositoryNav.addAction`).
+3. **Hideable / movable blocks**: wrap the `<section>`s in a `<main>` (the framework
+   only handles the blocks of a `<main>`), a stable `data-block-id` per section, secondary blocks
+   hidden by default (`data-default-hidden="1"`: intermediate backups, analysed XML…).
+4. **Shared components** instead of the duplicates: the framework's `js-yaml`; folder picker
+   → `FileAccess` (“SIA XML” folder remembered and displayed, files opened in this folder);
+   “paste its content” zone → `FileAccess.pastePanel` (× / “Close” / “Load” → “Confirm”);
+   local backup (`browser_store`) of drafts and settings.
+5. **Refuelling racetracks** (see § 3): in the studio, layer “AAR tracks (ENR 5.7)”
+   drawn from `miam-enr-5-7-coordinates.xml` with `AarTracks`; in a mission, the
+   designated track (SIMONE, point SIMIP / S1…) is found by proximity and drawn exactly.
+6. **Bridges with CR**: the generated mission (`helo-xp-mission`) pre-fills a CR
+   (family from `mission.type`, airfields, turning points, aircraft / callsigns); the
+   common catalogue provides aircraft and callsigns (VAILLANT, MISTRAL…).
+7. Documentation (`docs/SIA_XML.md`, README, changelog) and version.
 
-## 3. Hippodromes de ravitaillement en vol — géométrie exacte
+## 3. Air-to-air refuelling racetracks — exact geometry
 
-`miam-enr-5-7-coordinates.xml` : 126 points de la MILAIP ENR 5.7, par page, dans l'ordre du
-document, **sans nom** d'axe. Les points d'un axe se suivent : **IP** (entrée), **CP** (fin d'axe),
-**S1** (milieu exact de l'axe), puis parfois **S2**, décalé **perpendiculairement** à l'axe depuis S1 :
-centre de la branche retour, donc **largeur** et **côté** du circuit.
+`miam-enr-5-7-coordinates.xml`: 126 points of the MILAIP ENR 5.7, by page, in the order of the
+document, **without** track **names**. The points of a track follow one another: **IP** (entry), **CP** (end of track),
+**S1** (exact middle of the track), then sometimes **S2**, offset **perpendicularly** to the track from S1:
+centre of the return leg, hence the **width** and **side** of the pattern.
 
-Exemple vérifié — SIMONE (Mission 02) : SIMIP 46,444167 / 1,486 → SIMCP 47,231833 / 1,689 :
-**48 NM au 010°**, S1 au milieu (44,5 km de chaque extrémité), S2 à **14,1 NM au 280°** →
-branche retour à l'**ouest**, virages en demi-cercles de 14,1 NM de diamètre. S2 tombe au milieu
-de la branche retour calculée à 117 m près.
+Verified example — SIMONE (Mission 02): SIMIP 46.444167 / 1.486 → SIMCP 47.231833 / 1.689:
+**48 NM on 010°**, S1 in the middle (44.5 km from each end), S2 at **14.1 NM on 280°** →
+return leg to the **west**, turns as semicircles of 14.1 NM diameter. S2 falls in the middle
+of the computed return leg to within 117 m.
 
-Inventaire : 25 axes reconnus (48 NM et 30 NM), dont 4 avec largeur mesurée (S2) ; 47 points
-restants (zones EPT en quadrilatères de la page 5, groupes irréguliers) à traiter à part.
+Inventory: 25 tracks recognised (48 NM and 30 NM), 4 of them with a measured width (S2); 47 points
+remaining (EPT zones as quadrilaterals on page 5, irregular groups) to be handled separately.
 
-`shared/aar_tracks.js` : `parsePages(xml)`, `groups(pages)` (IP / CP / S1 / S2, tolérances),
-`racetrack(axe, { defaultWidthNm, defaultSide })` → cap, longueur, largeur, côté, contour
-(polygone), branche retour ; `toGeoJson(tracks)` pour MapLibre / SVG ; `nearest(tracks, point)`
-pour retrouver l'axe d'un point de mission.
+`shared/aar_tracks.js`: `parsePages(xml)`, `groups(pages)` (IP / CP / S1 / S2, tolerances),
+`racetrack(track, { defaultWidthNm, defaultSide })` → heading, length, width, side, outline
+(polygon), return leg; `toGeoJson(tracks)` for MapLibre / SVG; `nearest(tracks, point)`
+to find the track of a mission point.
 
-### XML corrigé et nommé depuis le PDF MILAIP
+### XML corrected and named from the MILAIP PDF
 
-Le XML d'origine étant incomplet (pas de noms, points EPT mêlés), un second fichier est produit
-depuis le PDF officiel (`MIAM_OACI_ENR 5.7.pdf`, AMDT 10/24 du 05 SEP 24, pages 1 à 5) :
-`data/sia/miam-enr-5-7-tracks.xml` (le fichier d'origine est conservé).
+As the original XML is incomplete (no names, EPT points mixed in), a second file is produced
+from the official PDF (`MIAM_OACI_ENR 5.7.pdf`, AMDT 10/24 of 05 SEP 24, pages 1 to 5):
+`data/sia/miam-enr-5-7-tracks.xml` (the original file is kept).
 
-- `parseEnr57(textePages)` (texte extrait par pdf.js) : points DMS nommés et minutes décimales,
-  **comparés** ; axes IP / CP / points particuliers ; noms complets (colonne du tableau : SIM →
-  SIMONE, SCY → STACY) ; renvois communs à toutes les pages (3, 8, 9 : 30 NM ; 5 : 40 NM ;
-  4 : « ne pas dégager à l'ouest » ; 6, 11) ; axes « heavy » FOXnn → ROMnn par paires.
-- Règles de la MILAIP : lignes droites **48 NM** sauf renvoi (30 NM pour la page 4), **largeur
-  14 NM** (distance entre deux points particuliers) ; **côté** donné par S2 — inconnu sans S2
-  (16 axes : YVETTE, OLIVIA, ZOE, FABIOLA, TANIA, NADIA, KATIA, URSULA, REGINA, VIVIANE, ZORA,
+- `parseEnr57(pageText)` (text extracted by pdf.js): named DMS points and decimal minutes,
+  **compared**; IP / CP tracks / particular points; full names (table column: SIM →
+  SIMONE, SCY → STACY); footnotes shared by all pages (3, 8, 9: 30 NM; 5: 40 NM;
+  4: “do not break off to the west” (« ne pas dégager à l'ouest »); 6, 11); “heavy” tracks FOXnn → ROMnn in pairs.
+- Rules of the MILAIP: straight legs of **48 NM** unless footnoted (30 NM for page 4), **width
+  14 NM** (distance between two particular points); **side** given by S2 — unknown without S2
+  (16 tracks: YVETTE, OLIVIA, ZOE, FABIOLA, TANIA, NADIA, KATIA, URSULA, REGINA, VIVIANE, ZORA,
   VALENTINA, TIPHAINE, OCEANE, STEPHANIE, ALOHA).
-- `toXml(résultat)` → XML 2.0 (`miam:Track name kind page lengthNm expectedLengthNm widthNm
-  heading side remark`, points avec rôle ARIP / ARCP / S1 / S2 et leurs deux écritures
-  d'origine, liste `miam:issues`) ; `parseTrackXml(xml)` le relit ; `trackRacetrack(axe)` trace.
-- Résultat : 31 axes + 6 circuits heavy. **Anomalies du PDF** relevées :
-  AMEIP (DMS 000°45'43.80W recopiée de LUCIP ; minutes décimales 000°23.87'W retenues → AMELIE
-  30,1 NM) et A1 (0,3 NM, minutes décimales retenues) ; TANIA, NADIA, KATIA, REGINA, TIPHAINE
-  mesurent 30 NM sans renvoi ; URSULA 30 NM pour un renvoi « 40 NM » et U à 3,7 NM du milieu ;
-  LUCIE 36,9 NM pour 30 NM (L1 à 2,9 NM du milieu) ; DIANA 49,5 NM (D1 à 0,7 NM du milieu).
+- `toXml(result)` → XML 2.0 (`miam:Track name kind page lengthNm expectedLengthNm widthNm
+  heading side remark`, points with role ARIP / ARCP / S1 / S2 and their two original
+  notations, list `miam:issues`); `parseTrackXml(xml)` reads it back; `trackRacetrack(track)` draws it.
+- Result: 31 tracks + 6 heavy patterns. **Anomalies in the PDF** found:
+  AMEIP (DMS 000°45'43.80W copied from LUCIP; decimal minutes 000°23.87'W kept → AMELIE
+  30.1 NM) and A1 (0.3 NM, decimal minutes kept); TANIA, NADIA, KATIA, REGINA, TIPHAINE
+  measure 30 NM without a footnote; URSULA 30 NM for a “40 NM” footnote and U at 3.7 NM from the middle;
+  LUCIE 36.9 NM for 30 NM (L1 at 2.9 NM from the middle); DIANA 49.5 NM (D1 at 0.7 NM from the middle).
 
-## 4. Réponses (2026-09-24)
+## 4. Answers (2026-09-24)
 
-1. Dépôt imbriqué : historique rejoué linéairement sous `apps/sia/`, `.git` imbriqué supprimé.
-2. Données AIRAC hors dépôt (`.gitignore`).
-3. XML incomplet : corrigé par le XML nommé ci-dessus.
-4. Largeur : dans le PDF (14 NM) ; côté : seulement quand S2 existe.
-5. Sauvegardes `*.backup-*` et générateur Python en ligne de commande supprimés (remplacé par le
+1. Nested repository: history replayed linearly under `apps/sia/`, nested `.git` removed.
+2. AIRAC data outside the repository (`.gitignore`).
+3. Incomplete XML: corrected by the named XML above.
+4. Width: in the PDF (14 NM); side: only when S2 exists.
+5. `*.backup-*` backups and command-line Python generator removed (replaced by the
    studio).

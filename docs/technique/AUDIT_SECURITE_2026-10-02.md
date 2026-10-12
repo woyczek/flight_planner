@@ -1,45 +1,45 @@
-# Audit de sécurité — 2 octobre 2026
+# Security audit — 2 October 2026
 
-Périmètre : la suite telle qu'elle est servie (pages statiques et scripts de `apps/` et `shared/`), le lanceur
-(`tools/launch.py`), les données lues (missions YAML et Markdown écrites par ChatGPT, fichiers importés), les secrets
-gardés par le navigateur. Méthode : lecture du code, recherches ciblées (insertion HTML, adresses, évaluation de code,
-messages entre pages), essais du lanceur (requêtes forgées).
+Scope: the suite as it is served (static pages and scripts of `apps/` and `shared/`), the launcher
+(`tools/launch.py`), the data read (YAML and Markdown missions written by ChatGPT, imported files), the secrets
+kept by the browser. Method: code reading, targeted searches (HTML insertion, addresses, code evaluation,
+messages between pages), launcher tests (forged requests).
 
-## Corrigé
+## Fixed
 
-| Point | Risque | Correction |
+| Item | Risk | Fix |
 |---|---|---|
-| Lanceur : fichiers servis sans contrôle de l'en-tête `Host` | Une page d'un autre site qui ferait pointer son nom vers 127.0.0.1 (« DNS rebinding ») pouvait lire le dossier, `data/` (données privées) compris | `Host` de la machine exigé pour toute requête (GET, HEAD, POST) : 127.0.0.1, localhost, [::1] et le port du lanceur ; sinon 403 |
-| Lanceur : taille des envois non bornée | Mémoire saturée par un envoi démesuré | 512 Mo au plus, sinon 413 ; taille invalide : 400 |
-| Lanceur : identifiants framagit passés à `git credential approve` | Un retour à la ligne dans l'identifiant ou le mot de passe glissait un champ de plus | Retours à la ligne et caractère nul refusés |
-| Lanceur : type des fichiers | Interprétation d'un fichier dans un autre type par le navigateur | En-tête `X-Content-Type-Options: nosniff` ; `config/repository_tree` (script sans extension) servi en `text/javascript`, sinon refusé par le navigateur (plus de menu) |
-| Planificateur carburant : commentaire d'un profil d'appareil, noms de phase | Un profil importé (fichier) pouvait glisser du HTML dans le tableau | Échappés (`RepositoryKit.esc`) |
-| Paramètres : adresse du webservice d'envoi des CR | La clef d'envoi part dans un en-tête : en `http://`, elle passerait en clair | `https://` obligatoire, sauf sur la machine (localhost, essais) |
+| Launcher: files served without checking the `Host` header | A page from another site that pointed its name at 127.0.0.1 (“DNS rebinding”) could read the folder, including `data/` (private data) | Machine `Host` required for every request (GET, HEAD, POST): 127.0.0.1, localhost, [::1] and the launcher's port; otherwise 403 |
+| Launcher: upload size unbounded | Memory exhausted by an oversized upload | 512 MB at most, otherwise 413; invalid size: 400 |
+| Launcher: framagit credentials passed to `git credential approve` | A line break in the username or password slipped in an extra field | Line breaks and null character rejected |
+| Launcher: file types | The browser interpreting a file as another type | `X-Content-Type-Options: nosniff` header; `config/repository_tree` (script without extension) served as `text/javascript`, otherwise rejected by the browser (no more menu) |
+| Fuel planner: aircraft profile comment, phase names | An imported profile (file) could slip HTML into the table | Escaped (`RepositoryKit.esc`) |
+| Settings: address of the mission report sending webservice | The sending key goes in a header: over `http://`, it would travel in clear text | `https://` mandatory, except on the machine (localhost, tests) |
 
-## Vérifié, conforme
+## Checked, compliant
 
-- **YAML** : js-yaml 4.1.0, `load` sans type exécutable (pas de fonction, pas d'expression).
-- **Insertion HTML** : les textes des missions, plis, pistes, registres et CR passent par `esc` (kit) avant d'entrer
-  dans la page ; les deux rendus Markdown (registre, « Mes missions ») échappent le texte avant de poser gras, italique,
-  code et tableaux ; les liens construits viennent de la configuration de la suite, jamais des données.
-- **Code évalué** : ni `eval` ni `new Function` dans le code de la suite (hors bibliothèques tierces).
-- **Messages entre pages** : `BroadcastChannel` (même origine seulement), aucun `postMessage` reçu d'une autre fenêtre.
-- **Interface du lanceur** (`/__setup/…`) : en-tête `X-DEFA-Setup` exigé, auquel une autre page ne peut répondre sans
-  pré-vérification CORS, que ce serveur ne traite pas ; écoute sur 127.0.0.1 seulement ; archive de données extraite dans
-  `data/` seulement (chemins sortants ignorés) ; identifiants framagit passés à Git par l'environnement, jamais écrits
-  dans `.git/config` ni dans l'adresse.
-- **Secrets du navigateur** : clef du webservice d'envoi (`missionSendKey:`), identifiants du site DEFA
-  (`defaCredentials:`) exclus des sauvegardes (`browser_store.js`, liste SKIP) ; jamais écrits dans un fichier.
-- **Liens externes** : ouverts avec `noopener`.
+- **YAML**: js-yaml 4.1.0, `load` without executable types (no functions, no expressions).
+- **HTML insertion**: the texts of missions, envelopes, tracks, registries and mission reports go through `esc` (kit) before
+  entering the page; both Markdown renderers (registry, “My missions”) escape the text before applying bold,
+  italics, code and tables; the links built come from the suite's configuration, never from the data.
+- **Evaluated code**: neither `eval` nor `new Function` in the suite's code (excluding third-party libraries).
+- **Messages between pages**: `BroadcastChannel` (same origin only), no `postMessage` received from another window.
+- **Launcher interface** (`/__setup/…`): `X-DEFA-Setup` header required, which another page cannot send without a
+  CORS preflight, which this server does not handle; listens on 127.0.0.1 only; data archive extracted into
+  `data/` only (outgoing paths ignored); framagit credentials passed to Git through the environment, never written
+  to `.git/config` or into the address.
+- **Browser secrets**: sending webservice key (`missionSendKey:`), DEFA site credentials
+  (`defaCredentials:`) excluded from backups (`browser_store.js`, SKIP list); never written to a file.
+- **External links**: opened with `noopener`.
 
-## Risques restants (acceptés ou à suivre)
+## Remaining risks (accepted or to be monitored)
 
-- **Secrets en clair dans le stockage du navigateur** (clef d'envoi, identifiants DEFA) : lisibles par tout script de
-  la page ; la suite n'en charge aucun d'ailleurs (bibliothèques, styles et polices servis avec elle, vérifié). À revoir si un
-  webservice DEFA réel est branché (jeton à durée limitée plutôt qu'une clef permanente).
-- **Pas de politique de sécurité du contenu (CSP)** : les pages ont des scripts en ligne ; une CSP stricte demanderait
-  de les sortir dans des fichiers. Bénéfice limité pour une suite servie en local.
-- **Dossier `.git` servi par le lanceur** : nécessaire au numéro de commit du pied de page ; il ne contient pas les
-  identifiants (gestionnaire d'identifiants du système), et reste limité à la machine.
-- **Fichiers ouverts par l'utilisateur** (missions, profils, classeurs ODV) : traités comme des données, jamais comme
-  du code ; un fichier piégé ne peut au pire qu'afficher un texte trompeur.
+- **Secrets in clear text in browser storage** (sending key, DEFA credentials): readable by any script on
+  the page; the suite loads none from elsewhere (libraries, styles and fonts served with it, checked). To be reviewed if a
+  real DEFA webservice is connected (time-limited token rather than a permanent key).
+- **No content security policy (CSP)**: the pages have inline scripts; a strict CSP would require
+  moving them out into files. Limited benefit for a suite served locally.
+- **`.git` folder served by the launcher**: needed for the commit number in the footer; it does not contain the
+  credentials (system credential manager), and remains limited to the machine.
+- **Files opened by the user** (missions, profiles, ODV workbooks): treated as data, never as
+  code; a booby-trapped file can at worst only display misleading text.

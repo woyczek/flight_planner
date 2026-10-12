@@ -164,6 +164,29 @@
       animation: none
     }
   }
+  /* accueil : tutoriels et manuels en liste aérée ; index : chapitres repliables, développeurs repliés */
+  article.doc-body ul.doc-cards {
+    list-style: none;
+    padding: 0
+  }
+  article.doc-body ul.doc-cards li {
+    margin: 0 0 10px
+  }
+  article.doc-body details summary h2,
+  .doc-side details summary h3 {
+    display: inline
+  }
+  .doc-side details>summary {
+    cursor: pointer
+  }
+  .doc-side details ul {
+    margin-left: 10px
+  }
+  .doc-dev-toggle {
+    display: block;
+    font-size: 12px;
+    margin: 4px 0 8px
+  }
   .doc-empty {
     opacity: .75
   }
@@ -172,10 +195,11 @@
 <!-- Aide : documentation de la suite (docs/*.md), affichée ici. Index documentaire : docs/README.md (colonne de gauche) ;
      ?doc=FICHIER.md#ancre ouvre un document ; ?from=apps/…html (entrée « Aide » de la barre latérale) ouvre le chapitre de
      la page d'où l'on vient (commentaires « page: apps/…html » placés sous le titre du chapitre dans les manuels). Rendu : apps/aide/markdown.js. -->
-<header class="mc-header"><h1>Aide</h1><p>Manuels, guides et documentation de la suite</p></header>
+<header class="mc-header"><h1>Aide</h1><p>Tutoriels, manuels et documentation de la suite</p></header>
 <main class="doc-page">
   <nav class="doc-side repo-block" data-no-deco aria-label="Documentation">
-    <input type="search" class="doc-search" placeholder="Rechercher dans les manuels…" aria-label="Rechercher dans les manuels">
+    <input type="search" class="doc-search" placeholder="Rechercher dans les tutoriels et les manuels…" aria-label="Rechercher dans les tutoriels et les manuels">
+    <label class="doc-dev-toggle"><input type="checkbox" class="doc-dev-search"> Inclure la documentation développeur</label>
     <ul class="doc-hits" hidden></ul>
     <div class="doc-index"></div>
     <h3 class="doc-toc-title" hidden>Dans ce document</h3>

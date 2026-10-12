@@ -303,7 +303,8 @@
           if (!target) return;
           const G = window.MissionGridEdit,
             n = G.affected(kind, current).length;
-          if (!confirm(tr(UI.mergeConfirm).replace('{n}', n).replace('{a}', current).replace('{b}', target.toUpperCase()))) return;
+          if (!await window.AppFramework.ask(tr(UI.mergeConfirm).replace('{n}', n).replace('{a}', current).replace('{b}', target
+              .toUpperCase()))) return;
           const result = await G.rename(kind, current, target);
           location.href = urlOf(result.target || target);
         };

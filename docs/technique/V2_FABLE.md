@@ -1,144 +1,267 @@
-# V2-fable — la suite dit quoi faire, et se tait quand ça ne vous concerne pas
+# V2-fable — the suite says what to do, and keeps quiet when it does not concern you
 
-*Branche `v2-fable`, posée sur `feature/v2-niveaux` · proposition du 8 octobre 2026 · [Sommaire technique](README.md)*
+*Branch `v2-fable`, based on `feature/v2-niveaux` · proposal of 8 October 2026 · [Technical index](README.md)*
 
-La v2 ([V2_NIVEAUX.md](V2_NIVEAUX.md)) range l'interface par niveau d'utilisation : chacun ne voit que les pages de
-son usage. Ce qui manque encore, c'est le **parcours** : un pilote qui ouvre la suite doit encore deviner où aller
-(l'accueil liste les pages, « Compte rendu » commence par seize familles, « Mes missions » répond « Aucun trigramme
-réglé » et renvoie aux réglages), et la suite lui parle de choses qui ne le concernent pas (rappels de maintenance à
-chaque page, compteur de synchronisation, avis techniques). Cette proposition ne retire rien et n'invente pas de
-nouveau cadre : elle s'appuie sur les socles existants (blocs et notifications d'`app_framework.js`, niveaux de
-`repository_nav.js`, affectations de `assignments.js`, registre des CR de `mission_core/ledger.js`) et ajoute
-**une page et un module**.
+V2 ([V2_NIVEAUX.md](V2_NIVEAUX.md)) arranges the interface by usage level: everyone sees only the pages of their own
+use. What is still missing is the **path**: a pilot opening the suite still has to guess where to go (the home page
+lists pages, "Mission report" starts with sixteen families, "My missions" answers "No trigram set" and points to the
+settings), and the suite talks to them about things that are none of their concern (maintenance reminders on every
+page, synchronisation counter, technical notices). This proposal removes nothing and invents no new framework: it
+relies on the existing foundations (blocks and notifications of `app_framework.js`, levels of `repository_nav.js`,
+assignments of `assignments.js`, report ledger of `mission_core/ledger.js`) and adds **one page and one module**.
 
-## 1. Constat (relevé le 8 octobre, niveaux 1 et 4, designs Standard et Aqua)
+## 1. Findings (recorded on 8 October, levels 1 and 4, Standard and Aqua designs)
 
-| Page | Ce qui gêne | Règle d'ergonomie touchée |
+| Page | What gets in the way | Ergonomics rule involved |
 |---|---|---|
-| Accueil | une liste de pages, la même pour tous ; rien ne dit *ce qu'il y a à faire* | hiérarchie visuelle, actions rapides |
-| Mes missions | sans trigramme : un texte qui renvoie à Réglages › Mon profil ; la page reste vide | rien à retaper, pas d'impasse |
-| Compte rendu | seize familles et un champ de recherche en premier, même quand une mission affectée attend son CR | une page = une tâche |
-| Planning, Studio, Cartes de vol | « Base SIA absente… » en notification à **chaque** ouverture, aussi au niveau 1 où l'on ne peut rien y faire | se taire quand ça ne concerne pas |
-| Tâches longues (cartes, zones) | une barre de progression, mais rien pour arrêter | statut visible **et** possibilité d'arrêter |
-| Champs longs (route, remarques) | hauteur fixe, ascenseur interne dès trois lignes | champs qui s'agrandissent |
+| Home | a list of pages, the same for everyone; nothing says *what there is to do* | visual hierarchy, quick actions |
+| My missions | without a trigram: a text pointing to Settings › My profile; the page stays empty | nothing to retype, no dead end |
+| Mission report | sixteen families and a search field first, even when an assigned mission is waiting for its report | one page = one task |
+| Schedule, Studio, Flight maps | "SIA database missing…" as a notification at **every** opening, even at level 1 where nothing can be done about it | keep quiet when it is not relevant |
+| Long tasks (maps, zones) | a progress bar, but nothing to stop it | visible status **and** a way to stop |
+| Long fields (route, remarks) | fixed height, inner scrollbar from the third line | fields that grow |
 
-## 2. Proposition
+## 2. Proposal
 
-### 2.1 Une page d'arrivée : « Aujourd'hui »
+### 2.1 An arrival page: "Today"
 
-`apps/pilot/aujourdhui.html`, première entrée de la barre latérale à tout niveau. Trois blocs, **une action chacun** :
+`apps/pilot/aujourdhui.html`, first entry of the sidebar at every level. Three blocks, **one action each**:
 
-1. **Ma prochaine mission** — heure (UTC), mission, appareil, terrain, indicatif ; « Ouvrir le dossier ».
-2. **Comptes rendus à écrire** — missions passées (21 jours) affectées au pilote, sans CR dans le registre ;
-   « Écrire le compte rendu » ouvre le dossier et commence le CR dans la bonne famille (`?mission=…&do=cr`) ;
-   « Pas de CR » écarte une mission (mémorisé dans ce navigateur). Au plus sept lignes.
-3. **Ma semaine** — sept colonnes, mes missions en vignettes, le jour courant marqué ; clic : le dossier.
+1. **My next mission** — time (UTC), mission, aircraft, aerodrome, callsign; "Open the folder".
+2. **Reports to write** — past missions (21 days) assigned to the pilot, without a report in the ledger; "Write the
+   report" opens the folder and starts the report in the right family (`?mission=…&do=cr`); "No report" sets a
+   mission aside (remembered in this browser). Seven lines at most.
+3. **My week** — seven columns, my missions as thumbnails, the current day marked; click: the folder.
 
-Sans trigramme, le premier bloc **demande le trigramme sur place** (un champ, un bouton), au lieu de renvoyer aux
-réglages. L'accueil `index.html` (généré depuis la barre latérale) la propose en tête de « Mes tâches ».
+Without a trigram, the first block **asks for the trigram on the spot** (one field, one button) instead of pointing to
+the settings. The home page `index.html` (generated from the sidebar) offers it at the top of "My tasks".
 
-### 2.2 Un compte rendu guidé
+### 2.2 A guided report
 
-`apps/cr/mission_cr.html` commence par **« Mes missions à rendre »** (même liste que ci-dessus) ; le choix de la
-famille, inchangé, passe en second bloc pour les missions hors affectation. Le bouton mène au CR prérempli depuis
-l'ordre de mission (mécanisme existant de « Mes missions » : `siaMissionToCr:v1`, `metadata.orderRef`).
+`apps/cr/mission_cr.html` starts with **"My missions to report"** (same list as above); the family choice, unchanged,
+moves to a second block for missions outside any assignment. The button leads to the report pre-filled from the mission
+order (existing mechanism of "My missions": `siaMissionToCr:v1`, `metadata.orderRef`).
 
-### 2.3 Le socle : se taire, s'arrêter, s'agrandir
+### 2.3 The foundation: keep quiet, stop, grow
 
-- `AppFramework.notify(message, kind, { once, minLevel })` : `once` — une fois par session du navigateur pour ce
-  texte (rappels de maintenance) ; `minLevel` — sous ce niveau d'utilisation, le message va au journal, pas à l'écran.
-  Appliqué aux rappels « Base SIA absente » (Studio, Cartes de vol, Carburant).
-- `AppFramework.task(titre, { total, cancel })` : avec `cancel`, la barre porte un bouton **Arrêter** ; `job.cancelled`
-  passe à vrai, la fonction est appelée (`AbortController`, drapeau de boucle), la barre dit « Arrêt… » puis « Annulé. ».
-- Champs qui s'agrandissent : `textarea` suit son contenu (`field-sizing: content`, plafond 60 % de l'écran),
-  `data-fixed-size` pour garder une hauteur fixe.
+- `AppFramework.notify(message, kind, { once, minLevel })`: `once` — once per browser session for this text
+  (maintenance reminders); `minLevel` — below this usage level, the message goes to the log, not to the screen. Applied
+  to the "SIA database missing" reminders (Studio, Flight maps, Fuel).
+- `AppFramework.task(title, { total, cancel })`: with `cancel`, the bar carries a **Stop** button; `job.cancelled`
+  turns true, the function is called (`AbortController`, loop flag), the bar says "Stopping…" then "Cancelled.".
+- Fields that grow: `textarea` follows its content (`field-sizing: content`, capped at 60 % of the screen),
+  `data-fixed-size` to keep a fixed height.
 
-### 2.4 Mes missions
+### 2.4 My missions
 
-Sans trigramme : le champ de saisie dans la liste elle-même (module commun), la liste se remplit dès la validation.
-`?do=cr` : le dossier s'ouvre et le CR commence sans clic supplémentaire.
+Without a trigram: the entry field inside the list itself (shared module), the list fills in as soon as it is validated.
+`?do=cr`: the folder opens and the report starts without any further click.
 
-## 3. Ce qui ne change pas
+## 3. What does not change
 
-Les pages, leurs blocs, les niveaux, les designs, les données. Aucun texte traduit après coup : les nouveaux textes
-sont produits dans la langue de la page (`K.t`, `K.tf`), en quatre langues.
+The pages, their blocks, the levels, the designs, the data. No text translated after the fact: new texts are produced
+in the page's language (`K.t`, `K.tf`), in four languages.
 
-## 4. Fichiers
+## 4. Files
 
-| Fichier | Rôle |
+| File | Role |
 |---|---|
-| `shared/pilot_today.js` | prochaine mission, CR à écrire, semaine, saisie du trigramme (`PilotToday.mount`) |
-| `apps/pilot/aujourdhui.html` | la page d'arrivée |
-| `apps/cr/mission_cr.html` | bloc « Mes missions à rendre » |
-| `apps/pilot/mes_missions.html` | trigramme sur place, `?do=cr` |
-| `shared/app_framework.js` | `notify` : `once`, `minLevel` ; `task` : `cancel` |
-| `shared/repository_nav.css` | champs qui s'agrandissent |
-| `shared/icons/repository_icons.js` | icône `today` |
-| `config/repository_tree` | entrée « Aujourd'hui », page, libellés |
+| `shared/pilot_today.js` | next mission, reports to write, week, trigram entry (`PilotToday.mount`) |
+| `apps/pilot/aujourdhui.html` | the arrival page |
+| `apps/cr/mission_cr.html` | "My missions to report" block |
+| `apps/pilot/mes_missions.html` | trigram on the spot, `?do=cr` |
+| `shared/app_framework.js` | `notify`: `once`, `minLevel`; `task`: `cancel` |
+| `shared/repository_nav.css` | fields that grow |
+| `shared/icons/repository_icons.js` | `today` icon |
+| `config/repository_tree` | "Today" entry, page, labels |
 
-## 5. Fait ensuite (8 octobre, soir)
+## 5. Done afterwards (8 October, evening)
 
-- **Pastille de synchronisation** : le bouton « Synchroniser » de l'en-tête porte une pastille aux niveaux 1-2 (le nombre
-  reste dans l'infobulle, le compteur « (n) » aux niveaux 3-4) — fait, voir CHANGELOG « v2-fable, lot 2 ».
-- **Messages d'erreur relus** : `AppFramework.explain` dit ce qui a échoué et quoi faire, en quatre langues, appliqué
-  aux pages concernées — fait, voir CHANGELOG « v2-fable, lot 2 ».
-- **Bouton « Arrêter »** branché sur les tâches longues (cartes du Studio et des Cartes de vol, MORA, import MILAIP,
-  lecture du dossier des missions ; l'état partiel est annoncé) — fait, voir CHANGELOG « v2-fable, lot 2 ».
+- **Synchronisation badge**: the header's "Synchronise" button carries a badge at levels 1–2 (the number stays in the
+  tooltip, the "(n)" counter at levels 3–4) — done, see CHANGELOG "v2-fable, lot 2".
+- **Error messages reread**: `AppFramework.explain` says what failed and what to do, in four languages, applied to the
+  pages concerned — done, see CHANGELOG "v2-fable, lot 2".
+- **"Stop" button** wired to the long tasks (Studio and Flight maps maps, MORA, MILAIP import, reading the missions
+  folder; the partial state is announced) — done, see CHANGELOG "v2-fable, lot 2".
 
 ## 6. Performance
 
-Mesures du 8 octobre dans le Chrome de l'utilisateur (onglet visible, design Aqua) : détail et chiffres dans le
-[rapport](perf/RAPPORT_2026-10-08.md).
+Measurements of 8 October in the user's Chrome (visible tab, Aqua design): details and figures in the
+[report](perf/RAPPORT_2026-10-08.md).
 
-**Ce que les mesures ont montré.** Les pages ordinaires sont saines (scripts chargés en 150 à 370 ms, aucune tâche
-longue, traduction après coup de 6 à 28 ms, observateurs < 1 ms). Deux pages dérogent : le **Planning** (206 requêtes
-dont 48 en 404, 1 902 `JSON.parse`) et les **Cartes de vol** (15 073 éléments du DOM dont 13 552 `<option>`, page figée
-≈ 1,5 s au chargement par trois tâches longues de 600, 655 et 264 ms). Dans un onglet en arrière-plan Chrome suspend
-l'affichage : les mesures de temps ne valent qu'onglet visible.
+**What the measurements showed.** Ordinary pages are healthy (scripts loaded in 150 to 370 ms, no long task,
+after-the-fact translation 6 to 28 ms, observers < 1 ms). Two pages stand out: the **Schedule** (206 requests of which
+48 in 404, 1,902 `JSON.parse`) and the **Flight maps** (15,073 DOM elements of which 13,552 `<option>`, page frozen
+≈ 1.5 s at load by three long tasks of 600, 655 and 264 ms). In a background tab Chrome suspends rendering: timings are
+only valid with the tab visible.
 
-| Lot | Correction | Effet mesuré |
+| Lot | Fix | Measured effect |
 |---|---|---|
-| (1) Planning | semaines demandées filtrées par l'index des disponibilités ; réglages lus par analyse mémorisée (`jsonCached`) | 206 → 19 requêtes (404 : 48 → 4) ; 1 902 → 157 `JSON.parse` |
-| (2) Cartes de vol, Studio | listes de complétion (zones, aérodromes, balises) construites au focus du champ | 15 073 → 1 555 éléments ; tâches longues 600 + 655 + 264 → 268 + 294 ms |
-| (3) Base SIA | villes (≈ 70 000) rangées sous leur propre clé (`SiaBase.cities()`), lues à l'inactivité ; axes AAR à l'inactivité | `SiaBase.get()` 212 → 116 ms, `applyBase` 140 → 84-94 ms ; tâches longues au chargement 200 + 211 ms |
+| (1) Schedule | requested weeks filtered through the availability index; settings read through a memoised parse (`jsonCached`) | 206 → 19 requests (404: 48 → 4); 1,902 → 157 `JSON.parse` |
+| (2) Flight maps, Studio | completion lists (zones, aerodromes, beacons) built at the field's focus | 15,073 → 1,555 elements; long tasks 600 + 655 + 264 → 268 + 294 ms |
+| (3) SIA database | cities (≈ 70,000) stored under their own key (`SiaBase.cities()`), read at idle time; AAR tracks at idle time | `SiaBase.get()` 212 → 116 ms, `applyBase` 140 → 84–94 ms; long tasks at load 200 + 211 ms |
 
-**Restes.** `shared/browser_store.js` `snapshot()` analyse toutes les clés du `localStorage` à chaque page (41
-`JSON.parse`, 409 Ko) : signalé à la session BUGS SOG (socle), non touché. Non faits : `renderZonePick` (≈ 100 ms,
-`selectedAirspaces` sur 7 000 espaces à chaque rendu), géométrie des espaces en tableaux compacts, DOM du Planning
-(7 700 éléments).
+**Leftovers.** `shared/browser_store.js` `snapshot()` parses every `localStorage` key on every page (41 `JSON.parse`,
+409 KB): reported to the BUGS SOG session (foundation), not touched. Not done: `renderZonePick` (≈ 100 ms,
+`selectedAirspaces` over 7,000 airspaces at every render), airspace geometry as compact arrays, Schedule DOM
+(7,700 elements).
 
-## 7. Carburant : consignes de montée, base de performances (10 octobre)
+## 7. Fuel: climb instructions, performance base (10 October)
 
-**Ce que l'utilisateur veut savoir** (ses mots : « comment régler mon throttle, mon pas d'hélice et/ou le rpm, et si je dois
-surveiller le badin, l'altimètre ou le vario durant la montée », « le sweet point entre le pilotage éco et le pilotage
-rapide »). À chaque altitude, trois grandeurs sont liées : vitesse indiquée, vario, régime (gaz, RPM ou N1). Deux fixent
-la troisième — c'est ce que fait déjà le modèle (`FlightPerfModel.manualLaw` / `manualPoint`, régime retrouvé par la
-cartographie moteur `rpmForFF`). La page le montrait mal : deux curseurs verticaux faits main autour des courbes, la
-loi « plein gaz » qui déplace la ligne de base du calcul, l'altimètre et le chronomètre retirés, aucune vue d'ensemble
-des profils de performances chargés.
+**What the user wants to know** (their words: "how to set my throttle, my propeller pitch and/or the rpm, and whether
+I should watch the airspeed, the altimeter or the vario during the climb", "the sweet spot between economic and fast
+flying"). At every altitude, three quantities are linked: indicated airspeed, vario, setting (throttle, RPM or N1). Two
+fix the third — which the model already does (`FlightPerfModel.manualLaw` / `manualPoint`, setting recovered from the
+engine map by `rpmForFF`). The page showed it badly: two hand-made vertical sliders around the curves, the "full
+throttle" law shifting the calculation's basis line, altimeter and stopwatch removed, no overview of the loaded
+performance profiles.
 
-**Vue simple (niveaux 1 à 3).** Un bloc « Consignes de montée » dans la colonne de gauche, sous le devis : un choix
-d'objectif par segments (Éco · Vy · Rapide · Profil · Réglée) et, pour l'objectif choisi, un tableau par tranche
-d'altitude (sol, 2 000, 5 000, 10 000 ft… jusqu'au niveau du plan) : gaz (« plein » ou %), RPM ou N1 quand la
-cartographie le permet, badin à tenir, vario attendu, temps cumulé ; au-dessus, une phrase de consigne produite à la
-source (« Plein gaz, hélice plein petit pas, tenir 120 kt au badin ; le vario décroît de 900 à 500 ft/min »), qui dit
-quoi régler et quoi surveiller (l'instrument qui porte la consigne est nommé, l'autre est « attendu »). Les instruments
-du bandeau (badin, vario) restent.
+**Simple view (levels 1 to 3).** A "Climb instructions" block in the left column, under the fuel plan: a goal chosen by
+segments (Eco · Vy · Fast · Profile · Set) and, for the chosen goal, a table per altitude band (ground, 2,000, 5,000,
+10,000 ft… up to the plan level): throttle ("full" or %), RPM or N1 when the engine map allows it, airspeed to hold,
+expected vario, cumulative time; above it, an instruction sentence produced at the source ("Full throttle, propeller
+fully fine, hold 120 kt indicated; the vario decreases from 900 to 500 ft/min") that says what to set and what to watch
+(the instrument carrying the instruction is named, the other is "expected"). The band's instruments (airspeed, vario)
+stay.
 
-**Vue détaillée (niveau 4, ou « Vue détaillée »).** Trois curseurs — badin, vario, régime — avec une case « fixé »
-devant chacun : deux au plus sont fixés, le troisième est calculé et grisé (composant du framework : champ `.field` avec
-`input[type=range]`, libellé au-dessus, valeur et état sous le curseur — « plein gaz » s'affiche sous le curseur de vario,
-plus dans la ligne de base du calcul, qui ne bouge plus). Les courbes existantes, avec une bascule « par altitude ↔ par
-régime » du graphe de montée ; altimètre et chronomètre reviennent dans le bandeau au niveau 4 (ils redisent le
-niveau survolé et le temps de montée : ludiques et parlants, dixit l'utilisateur).
+**Detailed view (level 4, or "Detailed view").** Three sliders — airspeed, vario, setting — each with a "fixed" box:
+two at most are fixed, the third is computed and greyed out (framework component: `.field` with `input[type=range]`,
+label above, value and state under the slider — "full throttle" shows under the vario slider, no longer in the
+calculation's basis line, which no longer moves). The existing curves, with an "by altitude ↔ by setting" toggle of the
+climb chart; altimeter and stopwatch come back to the band at level 4 (they repeat the hovered level and the climb
+time: playful and telling, in the user's words).
 
-**Base de performances.** Un bloc « Profils de performances » (niveau 3 et plus) : une ligne par type de la flotte et
-des missions — profil chargé (source : `.lnmperf`, SimBrief, JSON, saisie, estimation par classe), cartographie moteur
-(oui, n lignes / non), consommation de croisière, plafond, données manquantes nommées ; actions : Importer (`.lnmperf`,
-JSON, CSV, texte d'une fiche PDF collé), Dossier, Relire. Les profils du dossier sont relus quand le dossier change
-ailleurs (`file-access-change`, clé `__perf`). La cartographie moteur gagne une colonne « Altitude » facultative (les
-consommations publiées varient avec l'altitude ; le modèle interpole entre les lignes d'une même altitude).
+**Performance base.** A "Performance profiles" block (level 3 and above): one line per fleet and mission type — loaded
+profile (source: `.lnmperf`, SimBrief, JSON, entry, class estimate), engine map (yes, n rows / no), cruise consumption,
+ceiling, missing data named; actions: Import (`.lnmperf`, JSON, CSV, pasted text of a PDF sheet), Folder, Re-read. The
+folder's profiles are re-read when the folder changes elsewhere (`file-access-change`, key `__perf`). The engine map
+gains an optional "Altitude" column (published consumptions vary with altitude; the model interpolates between the rows
+of a same altitude).
 
-**Détails.** Le choix d'appareil en tête de page devient une liste (icône, nom, type, source du profil, état) au lieu
-d'une rangée de boutons ; « Copier JSON » a un repli `execCommand("copy")` hors contexte sécurisé et se grise quand il
-n'y a rien à copier.
+**Details.** The aircraft choice at the top of the page becomes a list (icon, name, type, profile source, state)
+instead of a row of buttons; "Copy JSON" has an `execCommand("copy")` fallback outside a secure context and is greyed
+out when there is nothing to copy.
+
+## 8. Mission generator without ChatGPT (12 October)
+
+**What the user saw.** "Add a text section" without knowing which one or what it is for; no duplication of a registry
+mission; indexed missions whose files no longer exist; and above all no way to produce a mission without ChatGPT,
+although the order form (type, theatre, teams, aircraft, rendezvous, refuelling, duration) already describes everything
+a skeleton needs.
+
+**Text sections.** The free "Add a text section" button (title "New section") becomes a choice among the sections the
+brief, the PDF and the report already know how to place: Introduction, Primary objective, Secondary objectives, Teams
+involved, Turning points, Rendezvous, Air-to-air refuelling, Risks to consider, Load / personnel, Coordination,
+Timeline, Planned maps, Notes — each with a line saying where it appears and what to write in it; "Other section…"
+stays, free title, and goes into the brief only. A section already present is no longer offered. The block's subtitle
+says so in one sentence.
+
+**Duplicate a mission.** In the registry, next to "Open in the generator": "Duplicate" — copy of the YAML with the next
+free identifier of the same family (nextNumbering), title suffixed "(copy)", maps and renderings not copied (they are
+regenerated in the studio), `meta.duplicated_from` set, direct opening in the generator on the copy, ready to edit.
+Same button in the generator's "Mission" block for the loaded mission.
+
+**Skeleton without ChatGPT.** The order form gains a second button next to "Copy the prompt and open ChatGPT":
+"Create the skeleton here". The same settings produce a complete mission without narrative: next identifier and
+series, family, subtype, theatre, teams (one mission per flying team, aircraft and callsign taken from the fleet as for
+ChatGPT), departure and arrival aerodrome (the aircraft's base, or the theatre's), target and turning points to place
+(empty coordinates, role filled), one rendezvous per team when "with" (and its `detail_rdv` map), working zone,
+planned refuelling with its track when "yes", coordinated exercise: organisation mission Z with H hour, participants
+and an empty timeline of events (H+0, H+15, H+30… according to the duration); estimated timing from the chosen
+duration; list of expected maps (general, target, target detail, detail of each rendezvous, zone) with their
+descriptions; text sections created empty (Introduction, Primary objective, Risks, Timeline). The skeleton opens in the
+generator with a status line "Skeleton: n points to place, m texts to write — then the studio for the maps" and the
+"Open in the studio" button highlighted; every field to complete is marked ("to complete" class) until it is filled.
+The form's fields are exactly those of the prompt: a single source of settings for both paths.
+
+**Registry artefacts.** The registry checks the present folders on opening (`/__setup/mission-folders`) and removes or
+flags missions without a folder, with "Clean the index (n)"; no need to go through Caches any more (BUGS SOG).
+
+## 9. Online help and repository language (12 October) — written in English, the repository's target language
+
+**What the user said.** The online help is a jumble: a lot of legacy documentation, not up to date. Redo it, make
+the tutorials visible. The repository's target language is English; some READMEs and tutorials are translated into
+French in git, but the essential lives in the online help. The changelog, in English.
+
+**Decisions.**
+
+1. **One source per subject.** The user manual and the administrator manual are the reference, chapter per page,
+   in four languages (fr, en, de, es), as today. The per-subject guides that duplicate them (`DONNEES.md`,
+   `ODV_PLANNING.md`, `SIA_MISSIONS.md`, `FLIGHT_PLANNER.md`, `LANDING_DASHBOARD.md`, `PRESENTATION*.md`, the old
+   `TUTORIAL.md`) are merged into the manual chapter they belong to, then deleted. Nothing is kept "for history": an
+   outdated text is a wrong text.
+2. **Tutorials first.** `docs/tutorial/` holds step-by-step walkthroughs with screenshots, named by language
+   (`<name>.en.md`, `<name>.fr.md`): installation (exists), first mission report (replaces `TUTORIAL.md`), prepare a
+   mission end to end (generator → studio → documents, moved out of the administrator manual), build a fuel profile
+   (Carburant). The help page shows them at the top, before the manuals.
+3. **The help page** (`apps/aide`) gets a fixed structure: Tutorials · User manual · Administrator manual ·
+   Operations manual (install, data, backups, updates, release) · For developers (`docs/technique`, collapsed, not
+   searched by default). The index is produced from that structure, not from a hand-written `docs/README.md` table.
+   Search covers tutorials and manuals in the current language.
+4. **Languages.** Repository documents (`README.md`, `docs/README.md`, `docs/technique/*`, `docs/CHANGELOG.md`,
+   `VERSION.md`, `INSTALL.md`) are written in English; tutorials are written in English and translated into French;
+   manuals stay French-first in four languages because they are the online help. Every published repository document
+   (all of `docs/technique/*`, history included, the bug log too) is translated into English or made bilingual — the
+   user's precision of 12 October; new sections and new documents are English. Split: BUGS SOG — `BUGS.md` (done),
+   `perf/SYNTHESE.md`, `perf/RAPPORT_PERF.md`, `SYNCHRONISATION.md`, `INDEX_DONNEES.md`, `DETTE_TECHNIQUE.md`;
+   Features SOG — functional design documents (`AFFECTATION_MISSIONS.md`, `COMPTES_SIGNES.md`,
+   `DISPOS_ET_REORGANISATION.md`, `ODV_ORDRES.md`, `PROMPT_*.md` and `PROMPTS_*.md` framing text, `V2_NIVEAUX.md`,
+   `FRAMEWORK.md`, `REFACTORING_TOOLKIT.md`, `SIA_XML_INTEGRATION.md`, `DONNEES_AERO_ETRANGER.md`,
+   `ASSETS_A_FOURNIR.md`, `PROPOSITION_DESIGN_ICONES.md`, `ROADMAP.md`, `mission_report_core_audit.md`, `README.md`);
+   this session — `V2_FABLE.md`, `CONTRASTE_2026-10-09.md`, `perf/RAPPORT_2026-10-08.md`, the audits
+   (`AUDIT_2026-09-28.md`, `AUDIT_SECURITE_*.md`).
+5. **Changelog.** Entries are in English from now on, under the section `Unreleased`; the history before 5.1.0 stays
+   as written. Release notes (`VERSION.md`) in English.
+
+**Who.** Features SOG: tutorials, merges into the manuals, help page structure, index generation, search. BUGS SOG:
+`CHANGELOG` section renaming and the `Unreleased` convention in tools (`publish_dist`, release checks). This session:
+ergonomics review of the help page and the tutorials in the browser.
+
+## 10. Every mission by hand: one path per use case (12 October)
+
+The user's requirement: "since everything must be creatable by hand, every case needs a path". Six use cases, in the
+data model's words: a *mission* is one aircraft and its crew (letter A, B… when there are several); an *operation* is
+the set of missions sharing an identifier base; the *organisation* (letter Z) is the mission that carries the exercise:
+H hour, participants, played tracks, timeline. Three things are missing today: a structured timeline on a single
+mission, and two transitions (add a crew to a standalone mission; create the organisation of an existing operation)
+that exist in the code but are not offered where the user is.
+
+| Use case | Path | State of the "Operation" line of the Mission block |
+|---|---|---|
+| UC1 — standalone mission, one aircraft | "New mission", or "Create the skeleton here" with 1 team and exercise = no, or ChatGPT | "Standalone mission (no operation)" · action **Add a crew** |
+| UC2 — standalone mission, several aircraft (several missions, one brief each) | skeleton with n teams, exercise = no; or UC1 then **Add a crew** (n − 1 times) | "Operation X-016: crew A of 2 · no organisation" · actions **Add a crew**, **Create the exercise organisation** |
+| UC3 — standalone mission, one aircraft, timed events and waypoints | UC1, then the **Timeline** block of the mission (same editor as the organisation's, H = planned take-off by default): events at H+n with a place (a turning point, rendezvous or zone of the mission, or free text); turning points keep `time_on_task_min` | as UC1 |
+| UC4 — standalone mission that becomes coordinated, several aircraft | **Add a crew** on the mission: it becomes crew A (identifier migrated by `migrateIds`: M-016 → M-016A), the new mission B copies the shared context (family, theatre, departure and arrival, target, zones, rendezvous with both callsigns), gets its own brief; repeat for C… | "Operation M-016: crew A of 2 · no organisation" |
+| UC5 — coordinated exercise (operation) from scratch | skeleton with n teams and exercise = yes (missions A… and Z), or ChatGPT | "Operation X-016: crew A of 3 · organisation X-016Z · H hour 10:00" · action **Open the organisation** |
+| UC6 — coordinated missions that become an operation with an organiser and an organisation brief | **Create the exercise organisation** on the operation line (existing function: Z created with H hour, participants from the missions, tracks, empty timeline, general brief proposed from the missions) | as UC5 |
+
+Rules: the three actions live on the "Operation" line of the Mission block, never elsewhere; each one says what it
+will create before doing it (AppFramework.ask with the identifiers); a crew can also be **removed** (its mission
+deleted after confirmation; the last remaining crew becomes a standalone mission again, identifier migrated back);
+the studio follows the shared lot; the planner manual describes the six paths with the same words, and the "prepare a
+mission end to end" tutorial walks UC1 → UC4 → UC6.
+
+## 11. Guided mission entry: "step by step" (12 October)
+
+The user wrote a mission by hand (G-001, SURVEY): rich texts, but the fields did not help him — a theatre left at the
+skeleton's default, points never placed although the story names the villages, risks pasted as tab-separated
+columns, four objectives in the "primary" field, no callsign. His request: fields that propose and warn, and, if
+needed, a guided process.
+
+**Decision.** The generator gets a **step-by-step mode** for a new mission (and for a skeleton), reusing the existing
+blocks: a rail of six steps like the First run page, one step open at a time, "Next" at the bottom of each, the other
+steps folded; the expert layout (all blocks) stays one click away ("Show everything"). No new data model.
+
+| Step | What is entered | Proposals (filled before the user types) | Warnings (inline, under the field, never a popup) |
+|---|---|---|---|
+| 1 Frame | family, subtype, theatre, duration, aircraft and callsign, departure and arrival | theatre from the aircraft's base; callsigns from the fleet for the type; team name = callsign; departure = base; timing from the duration | theatre ≠ country of the departure aerodrome; aircraft unsuited to the family; no callsign |
+| 2 Places | target, working zone, turning points, rendezvous | search over aerodromes, beacons, designated points **and cities**; points proposed around the target (entry / exit at 15 NM on the route) | a place without coordinates; a rendezvous without participants; a zone without radius |
+| 3 Story | title, summary, detailed description | a canvas built from the frame and the places (family wording, aircraft, departure, target, duration) that the user rewrites | empty title; summary over 600 characters |
+| 4 Objectives and risks | one primary objective, secondary objectives, risks | risks entered one per row with four fields (hazard, level, consequence, mitigation) in a small table, a level selector; pasted text split on tabs, dashes or pipes | primary with several numbered items (split proposed); a risk without mitigation |
+| 5 Timeline | H hour, events | H = planned take-off; events proposed from the route (entry, on target, exit, return) at times computed from the model | an event outside the estimated block time |
+| 6 Maps and documents | expected maps, save | maps proposed from the places (general, target, target detail, each rendezvous, zone) | a map centred on an unplaced point |
+
+Every proposal is a value put in the field, marked "proposed" until the user confirms or changes it; every warning is
+a line under the field with a one-click fix when one exists ("Set theatre to mainland", "Split into secondary
+objectives", "Place in the studio"). The step-by-step mode is the default for a new mission at levels 1 to 3, a
+choice at level 4. Same vocabulary in the planner manual and in the "prepare a mission end to end" tutorial.

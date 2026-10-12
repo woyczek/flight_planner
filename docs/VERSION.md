@@ -5,6 +5,48 @@ Une section par version publiée, la plus récente en tête, écrite à chaque r
 effectuer** (ce que chacun doit faire après la mise à jour), **notes** (limites connues, points d'attention, à venir).
 Entre deux versions, le pied de page affiche le commit en cours (`v4.6.0+abc1234`).
 
+## 5.2.0 — 12 October 2026
+
+### Summary
+
+- **One door to create a mission: the generator.** "New mission", "Create the skeleton here" (without ChatGPT) and
+  "Order from ChatGPT…" are in its Mission block. The registry consults, files, duplicates, deletes and imports the
+  reply of an ordered mission; its "New mission" button opens the generator on a new mission.
+- **"Step by step"**: a new mission opens as six steps — Frame, Places, Story, Objectives and risks, Timeline, Maps and
+  documents — with values proposed in the fields ("proposed ✓") and warnings under them, each with its one-click fix.
+  "Show everything" brings back the full page. Places can be pasted as a table (spreadsheet, Markdown, text).
+- **Six paths by hand**, from a standalone flight to a coordinated exercise: "Add a crew…", "Remove this crew…",
+  "Create the exercise organisation…", "Open the organisation", on the Operation line of the Mission block. Any crew
+  mission can carry a timeline of events at H+n.
+- **What is saved, at a glance**: a status line in the generator and the studio ("Saved to the folder", "Unsaved
+  changes since 14:32 (n fields)"…) and "Undo changes".
+- **Tidy hand-written missions**: risks pasted as columns become hazard, level, consequence and mitigation; a numbered
+  main objective is split; a theatre that does not match the departure airfield is flagged; places are searched among
+  airfields, beacons, points and towns; callsigns are proposed from the fleet.
+- **Map studio**: "Points to place" for a mission without coordinates; "⧉ Window" shows the same interactive map
+  (pan, zoom, draggable points) without the rest of the studio; the "SIA database" block is gone (managed in
+  Settings › Maintenance).
+- **My profile › Aircraft**: declare aircraft outside the fleet, shared with the Centre and the other pilots; their type
+  record is completed by the launcher (ICAO, EUROCONTROL, then Aviation Fanatic for retired types).
+- **Help**: tutorials first, then the pilot, planner and administrator manuals; the "Help" link of a Centre page
+  opens the planner manual. No native browser dialog is left: every confirmation is asked in the page.
+
+### Actions to take
+
+1. **Restart the launcher**, then **reload each page** (Ctrl+F5): the launcher now queues aircraft-type completions
+   and runs short passes for types added in My profile.
+2. **Hand-written missions** (risks pasted as columns, numbered objectives): open each in the generator — the status
+   line says what was tidied — then "Save to the folder".
+3. **Missions with a theatre left at the skeleton's default**: open them; if a line flags the theatre, click "Set …".
+
+### Notes
+
+- The English, German and Spanish manuals lag behind the French ones on the latest screenshots: a translation pass is
+  due (`tools/doc_traductions.py` lists what to re-translate).
+- The town list (GeoNames) does not hold every locality (e.g. "Guipry" but not "Guipry-Messac").
+- The old guides `SIA_MISSIONS.md` and `PRESENTATION_en.md` still mention the studio's "SIA database" block; they are
+  to be folded into the manuals and removed.
+
 ## 5.1.0 — 9 octobre 2026
 
 ### Synthèse

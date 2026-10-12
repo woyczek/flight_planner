@@ -383,6 +383,8 @@ The fleet types you own and master, and your simulators. The Centre uses them to
 
 - Ticking “Mastered” also ticks “Owned”; unticking “Owned” unticks “Mastered”.
 
+**“Other aircraft (outside the fleet)” card**: the types you own in your simulator that are not in the fleet. Type an ICAO designator, a model or a common name, even incomplete or with spaces and hyphens (“PC-12”, “A 400 M”, “SE 210”, “Sud Aviation Caravelle”): while you type, a list suggests the types of the fleet, of this computer's type base and of the ICAO list published with the suite, with their name (“S210 — Caravelle”) and origin (fleet, this computer's base, ICAO list, declared by another pilot); this is computed locally, with no network. Choose a line (click, or arrows then Enter) or click “Add”: the type joins the table, ticked “Owned”. To correct or delete a type you added, click its row: its code goes into the field and “Add” becomes “Replace” (“Mastered” is carried over to the new type), next to “Delete” and “Cancel” (or Esc). A fleet type entered here is simply ticked in the “Aircraft” card; a designator that nothing comes close to is accepted as is. An entry that is too vague (“cara”: Caravelle or Caravan?) is refused: the message says what was read, and the closest type is put in the field — “Add” to confirm. This computer's base is completed by the launcher only when you click “Add”, for the added type if it is missing: the row shows “completing the type base…” during a short pass (a few seconds), one pass at a time — if a pass is already running (Maintenance), the launcher queues the type and completes it when that pass ends. The pass runs in the launcher: leaving the page does not stop it, and when you come back the row shows “completing the type base…” again until the record arrives. A retired type that the official sources no longer know (S210 Caravelle) is looked up as a last resort on Aviation Fanatic; if it is not there either, it stays added under its code and common name, with the note “not found (ICAO, EUROCONTROL, Aviation Fanatic)”. These types go with your declared availability, like the fleet ones: the Centre sees them for assignments, and the other pilots find them in this card, with the “Also declared by” column — they only have to tick “Owned”.
+
 **“Simulators” card**: tick the simulators and tools installed.
 
 There is no “Save” button: each tick is kept at once in this browser, then copied into your availability weeks already declared, from the current week onwards. The bottom message tells you how many weeks were updated.
@@ -1407,15 +1409,16 @@ This block is at the Expert level and hidden by default: click “Show”. When 
 - The status line shows the database kept, its AIRAC cycle and its date; “outdated cycle” is shown if a more recent cycle is in force. “Files analysed” lists the files read.
 - Without a database, the page says so: “SIA database missing from this browser: ‘SIA database’ block, ‘Rebuild the aeronautical database’, or Settings › Maintenance.”
 
-It is the same block as Settings › Maintenance › Aeronautical data. The same database is used for the vertical profile of the fuel planner. Details: [SIA missions](../SIA_MISSIONS.md).
+It is the same block as Settings › Maintenance › Aeronautical data. The same database is used for the vertical profile of the fuel planner.
 
 ## Fuel
 <!-- page: apps/planner/flight_performance_planner.html -->
 
 The fuel planner (title “Fuel”) calculates the fuel for a flight from the performance profile of your aircraft. The cruise fuel flow comes, in order, from your entry for this flight, the saved profile, the Poll-Schumann model (jet airliners, according to mass, level and Mach), SimBrief, then an estimate by ICAO type or class; an approximate value is marked ≈. For a type without an EUROCONTROL or SimBrief record (military aircraft, helicopters), the estimate uses the cruise TAS and ceiling published by Airframe DB when it knows them. It also draws the optimum altitudes and climb laws.
 To go there: “Tools” in the side bar, “Fuel” tab, the “Fuel (planner)” button of a mission in My missions, or the “Fuel” button of the Flight maps. The route, the distance, the level and the aircraft are then carried over.
-Header: “Aircraft” menu, “Fetch latest SimBrief FPL” button, “Units: kg / lbs”. Imports and exports are in the ☰ menu. Technical details: [planner](../FLIGHT_PLANNER.md).
+Header: “Aircraft” menu, “Fetch latest SimBrief FPL” button, “Units: kg / lbs”. Imports and exports are in the ☰ menu.
 Depending on the usage level: at levels 1 to 3 (Crew, Planning, Design), the page shows the aircraft, the flight plan (and “Fetch latest SimBrief FPL”), the collapsible “Flight parameters” section, “Calculate” and the Result, in two columns; the ☰ menu only keeps exporting and importing the preferences. Curves, panels, instruments, profile blocks, status bar and the profile actions of the ☰ menu are added at the Expert level, where the page is complete.
+On a wide screen, at the Expert level, the page has three columns (input and curves | Result and panels | instruments): drag the handles between columns to set their width; double-click: default widths.
 
 ### Choose the aircraft and save the profile
 
@@ -1426,6 +1429,7 @@ Depending on the usage level: at levels 1 to 3 (Crew, Planning, Design), the pag
 The bar at the bottom of the page shows “Profile saved — …” or “Unsaved changes — …”. It carries “Reload the local database”, “Save profile” and “Delete this aircraft”. This bar only appears at the Expert level.
 If you change aircraft with unsaved changes, the page offers “Stay”, “Discard and switch” or “Save and switch”.
 ☰ menu: import profiles / CSV / JSON (including Little Navmap `.lnmperf`), import a SimBrief airframe, choose the performance folder, export the `.lnmperf` or JSON profile, save the local database, restore the previous backup, export or import the preferences. These actions are at the Expert level, except exporting and importing the preferences.
+An import that lands on an existing profile (same identifier, usually the ICAO type) updates it: the imported values win, the fields it leaves empty keep the old value, the RPM tables are merged (units converted).
 
 ### Fuel plan
 
@@ -1435,6 +1439,7 @@ If you change aircraft with unsaved changes, the page offers “Stay”, “Disc
 4. Click “Calculate”.
 
 Wind left empty: the page says so (“Unknown wind: ±25 kt range…”) and gives the fuel as a range.
+With an ISA deviation, a “Weather” inset of the Result compares with the standard atmosphere: trip at the plan level (time, fuel), optimum level and ceiling. The QNH does not enter the calculation (flight levels are pressure altitudes).
 The “Flight maps” button (Expert level) opens the Flight maps with this flight plan; the maps and the profile are created there on arrival.
 “Flight plan syntax” recalls the accepted forms. Without the SIA database in the browser, only points given as coordinates are recognised.
 
@@ -1454,11 +1459,13 @@ In the detailed view (“Detailed view” / “Simple view” button of the Resu
 Hover over a curve to read the values at that altitude; click to pin a level (white line on all curves). The fuel plan is then calculated at that level.
 The “Chosen climb” sliders of the fuel plan set your chosen climb, drawn in purple on the curves.
 The greyed “unreachable” area lies above the aircraft's ceiling.
+Without “Reference altitude (ft)” or “Max ceiling (ft)” in the profile, the model estimates them (cruise IAS and TAS, EUROCONTROL sheet, climb fuel flow, otherwise the typical value of the class) and shows the source under the curves. Fill in these two fields, or calibrate on a SimBrief OFP: it is more reliable.
 
 ### Climb instructions
 
 This block, under “Calculate”, says how to climb, at every usage level.
 - Five goals, each with its time and fuel up to the level: “Eco”, “Vy”, “Fast”, “Profile” (climb speed of the profile), “Set” (chosen climb). The choice is kept in this browser.
+  “Vy”: maximum climb rate (level reached soonest); “Fast”: minimum block time; “Eco”: minimum trip fuel. For the last two, the climb distance is taken off the cruise, the climb rate stays at least 50% of the maximum, and a jet is limited to 250 kt below FL100.
 - An instruction in three parts: “Set” (throttle, propeller, RPM or N1), “Hold” (the instrument that carries the instruction, usually the IAS), “Expect” (climb rate to see, level reached, time and fuel).
 - A table by altitude band (ground, 2,000 ft, FL050, FL100… up to the plan level): throttle, RPM or N1 if the profile has an engine map, IAS to fly, expected climb rate, cumulative time.
 
@@ -1473,8 +1480,11 @@ This block, in the right-hand column, follows the page while you scroll through 
 - Detail: taxi, climb, cruise, descent, contingency, reserve; planned take-off mass and MTOW if you entered it (in red if it is exceeded).
 - Cursor card (⌖ on hover, 📌 pinned): fuel and time for the trip at that level, max climb rate, climb speeds; “unpin” removes the pin.
 - Collapsible group “Flight regimes — profile ↔ map” (Expert level): IAS, climb rate, engine setting and flow per phase, compared with the engine map. It also contains the “SimBrief Airframe Internal ID” field and the links to the sheets of the aircraft of this type.
+  “Import SimBrief airframe” reads this field (identifier or share link): SimBrief's public list, then the share link; an unreadable private airframe only gives a partial profile, with its identifier alone.
 
 “Pin” keeps the whole block when it follows the page; otherwise, it collapses. “Simple view” hides the curves and instruments, “Detailed view” shows them (choice kept in this browser). At the Expert level, under the block, one panel per curve gives the optimums, the limits (ceiling, requested level) and reading help. The instrument strip (Expert level) shows IAS, altimeter, climb rate, stopwatch (climb time), fuel and flight time.
+In the panels and messages, an underlined field name is a link: it unfolds the profile editor if needed and shows the field. An “unreachable” level gives its cause and the field to correct (“Limits” block).
+A click on the fuel dial (or its button) changes the curve read, in its colour: chosen climb, profile, economic cruise, fast climb, Vy, economic climb; choice kept in this browser.
 
 ### Performance profiles
 
@@ -1510,6 +1520,7 @@ This block shows all the fields of the profile, exported as they are in the Litt
 - Groups: “Identity and format”, “Fuel and operation”, “Runway and alternate”, “Climb”, “Cruise”, “Descent”, “Power setting and consumption”.
 - Fuel is shown in the chosen unit (kg or lbs).
 - When the type has a EUROCONTROL APD sheet, an “APD …” label appears next to the comparable fields: a click takes that value. Nothing is written without a click. Otherwise: “No EUROCONTROL APD data for this type”.
+- Label colour: green = identical (±3%), orange = different, blue = empty field; “fill the empty fields” takes all the APD values of the empty fields.
 
 An empty box stays empty and blocks the `.lnmperf` export: no value is made up.
 After a change, click “Save profile” in the bottom bar.
@@ -1569,7 +1580,7 @@ Without an import: “No JSON loaded.”
 
 This dashboard (title “Landing Performance — Summary”) analyses the quality of your landings from the files exported by the simulator: score, sink rate, G, per aircraft and over time.
 To go there: “Tools” in the side bar, “Landings” tab. The file is read in the browser; nothing is sent.
-The last file loaded is kept and reloaded when the page opens. Its aircraft are also offered in the “Aircraft” menu of the fuel planner. Details: [landings dashboard](../LANDING_DASHBOARD.md).
+The last file loaded is kept and reloaded when the page opens. Its aircraft are also offered in the “Aircraft” menu of the fuel planner.
 
 ### Loading the file
 
@@ -1587,11 +1598,12 @@ The status line recalls the file, the number of measurements used, the aircraft,
 - “Trend method”: “Absolute / Asymptote”, “First 25% ↔ Last 25%” or “Moving average” (with “Smoothing”: 5 or 10).
 - “Print / PDF”: prints the page.
 
-Analysis options (☰ menu): “exclude clearly implausible measurements”, “95P — exclude the strongest accidental 5%”, “Crash — exclude triggered landings” (thresholds FPM ≤ and G ≥, logic “FPM or G”, “FPM and G”, “FPM only”, “G only”), “Use estimated missing fields”.
+Analysis options (☰ menu): “exclude clearly implausible measurements”, “95P — exclude the strongest accidental 5%” (per aircraft), “Crash — exclude triggered landings” (thresholds FPM ≤ and G ≥, logic “FPM or G”, “FPM and G”, “FPM only”, “G only”), “Use estimated missing fields”.
+“Use estimated missing fields” fills a missing score, G or FPM with a model calibrated on the real CSV + LOG pairs; these values, marked “◇ estimated”, are never written to the file.
 
 ### Period summary
 
-At the top of the dashboard, cards give the key figures: “Landings”, “Average score”, “Score min / max”, “Average FPM”, “FPM min / max”, “Average G”, “G min / max”, “Butter / Very Good”.
+A bar pinned to the bottom of the window, after the trend icon, gives the key figures: “Landings”, “Average score”, “Score min / max”, “Average FPM”, “FPM min / max”, “Average G”, “G min / max”, “Butter / Very Good”.
 The “−” and “+” buttons change the size of these cards.
 Below, the trend conclusion: probable improvement or regression, slight, “No clear progress”, or “insufficient data” (at least four usable measurements are needed).
 The text explains the chosen method (for example estimated asymptote and remaining gain).
@@ -1605,7 +1617,7 @@ This block draws the indicators over time, with their trend: score, touchdown ra
 - The “Full history — drag to select” strip, under each chart, lets you choose a period over the whole history.
 
 The chosen period is shown in the header; its buttons let you go back.
-The relative technical index is not an official score.
+The relative technical index is not an official score: 45% raw landing rate, 25% flare quality, 20% nose speed, 10% float, normalised per aircraft.
 
 ### Summary by aircraft
 

@@ -158,8 +158,9 @@
     const ledgerTarget = () => {
       const stored = window.MissionReportingConfig?.cached?.(draft.configKey);
       if (!stored?.text) {
-        alert(
-          'Copie locale du registre introuvable : rouvrez le reporting, rechargez le registre puis cliquez à nouveau sur la mission.');
+        window.AppFramework?.notify?.(
+          'Copie locale du registre introuvable : rouvrez le reporting, rechargez le registre puis cliquez à nouveau sur la mission.',
+          'err');
         return null;
       }
       const {
@@ -169,7 +170,7 @@
       const target = rows[draft.index],
         idColumn = head.indexOf('missionId');
       if (!target || normId(target[idColumn]) !== normId(draft.record?.missionId)) {
-        alert(`La ligne ${draft.index + 1} du registre ne correspond plus à la mission ${draft.record?.missionId || ''} (registre rechargé ou modifié entre-temps). Rouvrez le reporting puis cliquez à nouveau sur la mission.`);
+        window.AppFramework?.notify?.(`La ligne ${draft.index + 1} du registre ne correspond plus à la mission ${draft.record?.missionId || ''} (registre rechargé ou modifié entre-temps). Rouvrez le reporting puis cliquez à nouveau sur la mission.`);
         return null;
       }
       return {
@@ -184,7 +185,9 @@
       const text = csvLine(head) + '\n' + rows.map(values => csvLine(head.map((_, index) => values[index] ?? ''))).join('\n') + '\n';
       window.MissionReportingConfig.cacheText(draft.configKey, stored.filename, text);
       if (window.MissionReportingConfig.cached(draft.configKey)?.text === text) return true;
-      alert('Enregistrement impossible dans le stockage du navigateur (quota dépassé ?). Exportez le CSV de la mission à la place.');
+      window.AppFramework?.notify?.(
+        'Enregistrement impossible dans le stockage du navigateur (quota dépassé ?). Exportez le CSV de la mission à la place.',
+        'err');
       return false;
     };
     /** Retour à la page de reporting d'origine. */
@@ -218,14 +221,14 @@
       status(`Modifications enregistrées dans la copie locale du registre (${new Date().toLocaleTimeString()}).`);
     });
     $('backToReportingBtn').addEventListener('click', back);
-    $('deleteEditBtn').addEventListener('click', () => {
+    $('deleteEditBtn').addEventListener('click', async () => {
       if (!draft.configKey) {
         status('Données d’exemple : rien à supprimer.');
         return;
       }
       const found = ledgerTarget();
       if (!found) return;
-      if (!confirm(`Supprimer la mission ${draft.record?.missionId || ''} du ${draft.record?.date || ''} ?\nLa suppression s'applique à la copie locale du registre (navigateur) ; pensez à exporter le registre modifié depuis le reporting.`)) return;
+      if (!await window.AppFramework.ask(`Supprimer la mission ${draft.record?.missionId || ''} du ${draft.record?.date || ''} ?\nLa suppression s'applique à la copie locale du registre (navigateur) ; pensez à exporter le registre modifié depuis le reporting.`)) return;
       found.rows.splice(draft.index, 1);
       if (!writeLedger(found.stored, found.head, found.rows)) return;
       localStorage.removeItem(DRAFT_KEY);
@@ -266,7 +269,7 @@
       const message = draft && normId(draft.record?.missionId) === id ?
         `La mission ${label} est en cours de modification et figure déjà dans le registre.\nPour mettre à jour la ligne existante, utilisez « Générer / actualiser les modifications ».\n\nAjouter quand même une NOUVELLE ligne ${label} au fichier mission ?` :
         `Le n° de mission ${label} figure déjà${count > 1 ? ' ' + count + ' fois' : ''} dans le registre.\n\nAjouter quand même cette mission au fichier (doublon) ?\nAnnuler pour corriger le n° de mission.`;
-      if (!confirm(message)) {
+      if (!await window.AppFramework.ask(message)) {
         field('missionId').focus();
         return;
       }

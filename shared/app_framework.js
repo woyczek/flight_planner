@@ -357,18 +357,26 @@
   // pas été enregistrées (beforeunload + interception des liens de navigation internes).
   function guardUnsavedChanges(isDirty, options) {
     options = options || {};
+    let confirmed = false; // départ déjà confirmé dans la page : pas de seconde question du navigateur
     window.addEventListener("beforeunload", e => {
-      if (isDirty()) {
+      if (isDirty() && !confirmed) {
         e.preventDefault();
         e.returnValue = "";
       }
     });
     if (options.linkSelector) {
       document.querySelectorAll(options.linkSelector).forEach(link => {
-        link.addEventListener("click", e => {
+        link.addEventListener("click", async e => {
           if (!isDirty()) return;
+          // confirmation dans la page (jamais de boîte native) : navigation retenue, reprise si confirmé
+          e.preventDefault();
           const message = options.message || "Des données saisies n'ont pas été enregistrées. Quitter quand même ?";
-          if (!window.confirm(message)) e.preventDefault();
+          if (await ask(message, {
+              danger: true
+            })) {
+            confirmed = true;
+            location.href = link.href;
+          }
         });
       });
     }
@@ -488,6 +496,81 @@
       });
       d.showModal();
       yes.focus();
+    });
+  }
+
+  /** Saisie dans la page (remplace window.prompt) : message, puis un champ — texte (value, placeholder), liste de choix
+   *  (options : [[valeur, libellé]…]), zone de plusieurs lignes (multiline) ou texte en lecture seule à copier
+   *  (readonly : sélectionné à l'ouverture). Promesse : la valeur saisie ou choisie, null si annulé (Échap, Annuler,
+   *  clic à côté). Entrée valide un champ d'une ligne. */
+  function askText(message, {
+    value = "",
+    placeholder = "",
+    options = null,
+    multiline = false,
+    readonly = false,
+    ok,
+    cancel
+  } = {}) {
+    const K = window.RepositoryKit,
+      tt = row => K?.t ? K.t(row) : row[0];
+    dialogCss();
+    const d = document.createElement("dialog"),
+      p = document.createElement("p"),
+      foot = document.createElement("footer"),
+      no = document.createElement("button"),
+      yes = document.createElement("button");
+    let field;
+    if (options) {
+      field = document.createElement("select");
+      for (const [v, label] of options) field.append(new Option(label, v, false, String(v) === String(value)));
+    } else {
+      field = document.createElement(multiline || readonly ? "textarea" : "input");
+      if (field.tagName === "TEXTAREA") {
+        field.rows = readonly ? 8 : 4;
+        field.dataset.fixedSize = ""; // hauteur fixe (pas d'agrandissement automatique des champs de la suite)
+      } else field.type = "text";
+      field.value = String(value ?? "");
+      field.placeholder = placeholder;
+      field.readOnly = !!readonly;
+    }
+    field.style.cssText = "display:block;box-sizing:border-box;width:calc(100% - 36px);margin:4px 18px 0;font:inherit" + (
+      readonly ? ";font:12px/1.4 ui-monospace,Consolas,monospace" : "");
+    d.className = "repo-ask";
+    p.textContent = String(message ?? "");
+    no.type = yes.type = "button";
+    no.className = "ghost";
+    yes.className = "primary";
+    no.textContent = cancel || tt(["Annuler", "Cancel", "Abbrechen", "Cancelar"]);
+    yes.textContent = ok || (readonly ? tt(["Fermer", "Close", "Schließen", "Cerrar"]) : tt(["Valider", "OK", "OK", "Aceptar"]));
+    foot.append(...(readonly ? [yes] : [no, yes]));
+    d.append(p, field, foot);
+    document.body.append(d);
+    return new Promise(resolve => {
+      /** Ferme et retire la fenêtre, puis résout la promesse (valeur, ou null). */
+      const end = v => {
+        d.close();
+        d.remove();
+        resolve(v);
+      };
+      yes.onclick = () => end(field.value);
+      no.onclick = () => end(null);
+      d.addEventListener("cancel", e => {
+        e.preventDefault();
+        end(readonly ? field.value : null);
+      });
+      d.addEventListener("click", e => {
+        if (e.target === d) end(readonly ? field.value : null);
+      });
+      if (field.tagName === "INPUT") field.addEventListener("keydown", e => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          end(field.value);
+        }
+      });
+      d.showModal();
+      field.focus();
+      if (readonly) field.select();
     });
   }
 
@@ -782,8 +865,9 @@
   }
   /** Titres des tâches en cours entre « », pour la confirmation de sortie de page. */
   const busy = () => [...tasks].map(j => `« ${j.title} »`).join(", ");
+  let leaving = false; // départ confirmé dans la page (lien interne) : pas de seconde question du navigateur
   window.addEventListener("beforeunload", e => {
-    if (!tasks.size) return;
+    if (!tasks.size || leaving) return;
     e.preventDefault();
     e.returnValue = "";
   });
@@ -795,10 +879,16 @@
     const url = new URL(a.href, location.href);
     if (url.origin === location.origin && url.pathname === location.pathname && url.search === location.search)
       return; // ancre de la page
-    if (!window.confirm(tk("leave").replace("{t}", busy()))) {
-      e.preventDefault();
-      e.stopImmediatePropagation();
-    }
+    // confirmation dans la page (jamais de boîte native) : navigation retenue, reprise si confirmé
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    ask(tk("leave").replace("{t}", busy()), {
+      danger: true
+    }).then(go => {
+      if (!go) return;
+      leaving = true;
+      location.href = a.href;
+    });
   }, true);
   // ---- Journal des alertes de la page : erreurs et avertissements notifiés (effacés au bout de quelques secondes)
   // gardés en mémoire le temps de la page (rien n'est conservé au changement de page) ; témoin « ⚠ n » dans l'en-tête
@@ -1005,6 +1095,8 @@
     notify,
     /** Confirmation dans la page (promesse : true si confirmé) ; remplace window.confirm. */
     ask,
+    /** Saisie dans la page (promesse : valeur, ou null) ; remplace window.prompt. */
+    askText,
     dialogCss,
     /** Journal des alertes de la page (erreurs, avertissements) : liste, tout acquitter. */
     alerts: {

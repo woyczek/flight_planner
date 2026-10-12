@@ -31,6 +31,11 @@ SRC = os.path.join(ROOT, 'apps', 'cpco', 'map_parser.html')
 OUT = os.path.join(ROOT, 'apps', 'planner', 'map_planner.html')
 
 # titre, sous-titre et boutons : écrits par VOL_SCRIPT (K.t, avant le cadre de page qui les lit)
+# bloc « Base de données SIA » de Cartes de vol (le studio n'a plus qu'un panneau sous sa ligne d'état, masqué ici)
+SIA_BASE_BLOCK = '''<section data-block-id="sia-base" data-min-level="4" data-default-hidden="1" data-icon="database" data-subtitle="Dossier SIA (AIXM) lu et gardé dans le navigateur."><h2>Base de données SIA</h2>
+<p class="small">Dossier <code>data/sia</code> (mémorisé comme les autres dossiers de la suite) : « Relire le dossier » après une mise à jour AIRAC. Le fond de carte et les villes sont livrés avec l’application. Même bloc que Paramètres › Maintenance › Mise à jour SIA (étape 4).</p>
+<div id="siaBasePanel"></div></section>
+'''
 VOL_BLOCK = r'''<section data-block-id="vol" data-icon="plane">
 <h2 id="volTitle"></h2>
 <div class="volForm">
@@ -268,7 +273,7 @@ function build(quiet,gen){
  return true;
 }
 // mission reçue de Mes missions (autre qu'un vol « VOL » de cette page) : remplacée par le vol libre seulement après confirmation
-$v('volBuild').onclick=()=>{if(mission&&sharedDoc?.yaml?.mission?.id!=='VOL'&&!confirm(K.t(['Remplacer la mission chargée par un vol libre construit à partir du cheminement ?','Replace the loaded mission with a free flight built from the route?','Die geladene Mission durch einen freien Flug aus der Route ersetzen?','¿Sustituir la misión cargada por un vuelo libre construido a partir de la ruta?'])))return;build(false)};
+$v('volBuild').onclick=async()=>{if(mission&&sharedDoc?.yaml?.mission?.id!=='VOL'&&!await window.AppFramework.ask(K.t(['Remplacer la mission chargée par un vol libre construit à partir du cheminement ?','Replace the loaded mission with a free flight built from the route?','Die geladene Mission durch einen freien Flug aus der Route ersetzen?','¿Sustituir la misión cargada por un vuelo libre construido a partir de la ruta?'])))return;build(false)};
 // niveaux 1 à 3 : un seul bouton, cartes créées puis aperçu et génération des fichiers et du ZIP par le moteur du studio
 // (« Générer » du studio, masqué ici : compte rendu dans #result, sous ce bouton) ; mission reçue de Mes missions
 // (autre qu'un vol « VOL » de cette page) : ses cartes sont générées telles quelles, sans les remplacer par celles du bloc
@@ -348,8 +353,11 @@ def main():
         lit(f'<button type="button" data-view="{v}"', f'<button type="button" data-view="{v}" data-min-level="4"')
     lit('<button id="previewWindow"', '<button id="previewWindow" data-min-level="4"')
     lit('<section data-block-id="sia-profiles"', '<section data-block-id="sia-profiles" data-min-level="4"')
-    # base SIA : niveau 4 ; montrée à tout niveau tant qu'elle manque (renderSiaBaseLine du studio)
-    lit('<section data-block-id="sia-base"', '<section data-block-id="sia-base" data-min-level="4"')
+    # base SIA : le studio montre son panneau sous la ligne d'état du bloc Mission, masqué ici ; Cartes de vol garde le
+    # bloc « Base de données SIA » en fin de page, niveau 4, montré à tout niveau tant que la base manque
+    # (renderSiaBaseLine du studio)
+    lit('<div id="siaBasePanel" hidden></div>', '')
+    sub(r'</main>', SIA_BASE_BLOCK + '</main>')
     # « Aperçus et génération » et pied de page : niveau 4 (l'action des niveaux 1 à 3 est dans le bloc « Cartes », le
     # compte rendu #result y est déplacé par VOL_SCRIPT) ; au niveau 4, « Générer » une seule fois, dans le pied de page
     # (generateSticky, qui clique celui-ci, gardé masqué)

@@ -6,8 +6,8 @@
 <link rel="stylesheet" href="../../shared/repository_nav.css?v=0">
 <script src="../../config/repository_tree?v=0"></script><script src="../../shared/kit.js?v=0"></script>
 <script src="../../shared/mission_core/vendor/js-yaml.min.js"></script>
-<script src="mission_prompt.js?v=0"></script><script src="../../shared/data_files.js?v=0" data-file="references/aircraft_fleet.js"></script><script src="../../shared/mission_order.js?v=0"></script><script src="../../AircraftDB/aircraft_db.js"></script><script src="../../AircraftDB/aircraft_perf.js"></script><script src="../../shared/mission_core/model.js?v=0"></script><script src="../../shared/mission_estimate.js?v=0"></script><script src="../../shared/sia_base.js?v=0"></script><script src="../../shared/mission_routing.js?v=0"></script><script src="../../shared/mission_airspaces.js?v=0"></script><script src="../../shared/mission_exercise.js?v=0"></script><script src="../../shared/mission_registry.js?v=0"></script>
-<script src="mission_store.js?v=0"></script>
+<script src="mission_prompt.js?v=0"></script><script src="../../shared/data_files.js?v=0" data-file="references/aircraft_fleet.js"></script><script src="../../shared/data_files.js?v=0" data-file="references/callsigns.js"></script><script src="../../shared/mission_order.js?v=0"></script><script src="../../AircraftDB/aircraft_db.js"></script><script src="../../AircraftDB/aircraft_perf.js"></script><script src="../../shared/mission_core/model.js?v=0"></script><script src="../../shared/mission_estimate.js?v=0"></script><script src="../../shared/sia_base.js?v=0"></script><script src="../../shared/place_search.js?v=0"></script><script src="../../shared/point_table.js?v=0"></script><script src="../../shared/mission_routing.js?v=0"></script><script src="../../shared/mission_airspaces.js?v=0"></script><script src="../../shared/mission_exercise.js?v=0"></script><script src="../../shared/mission_registry.js?v=0"></script>
+<script src="mission_store.js?v=0"></script><script src="mission_skeleton.js?v=0"></script><script src="mission_guide.js?v=0"></script>
 <script src="../../shared/aar_tracks.js?v=0"></script>
 <script src="../../shared/mission_core/vocab.js?v=0"></script>
 <script src="jspdf.umd.min.js"></script>
@@ -202,6 +202,48 @@
   }
   .err {
     color: #a12622
+  }
+  /* rubriques textuelles : choix d'une rubrique nommée (où elle apparaît, ce qu'on y écrit) */
+  .narrMenu>summary {
+    cursor: pointer;
+    display: inline-block;
+    padding: 6px 10px;
+    border: 1px dashed currentColor;
+    opacity: .85
+  }
+  .narrMenu ul {
+    list-style: none;
+    margin: 6px 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 6px
+  }
+  .narrMenu li button {
+    width: 100%;
+    text-align: left;
+    padding: 6px 8px
+  }
+  .narrMenu li small,
+  .sectionCard .narrWhere {
+    display: block;
+    opacity: .7;
+    font-size: 12px;
+    font-weight: normal
+  }
+  /* squelette (meta.skeleton) : champ à compléter jusqu'à sa saisie, ligne d'état */
+  .todo {
+    outline: 2px dashed #d6a23c;
+    outline-offset: 1px
+  }
+  .skeletonBar {
+    font-weight: 600
+  }
+  .opLine {
+    margin: 2px 0 6px
+  }
+  .opLine button {
+    margin-left: 6px
   }
   .sectionCard,
   .arrayItem {
@@ -492,8 +534,9 @@ html[data-skeuo] .repo-block .mapCard.missing:not(#imp) {
 <header><div class="header-row"><h1><span class="cpco-eyebrow">Centre de planification et de conduite des opérations</span>Générateur de mission</h1><button id="openCr" class="headerButton" type="button" title="Nouveau compte rendu CR pré-rempli (famille d’après le type de mission)">Créer le CR →</button></div></header>
 
 <main>
-<section data-block-id="mission-import" data-deco-bg="import" data-icon="upload" data-subtitle="Mission chargée, enregistrement et brouillon ; importer une autre mission ou en commander une à ChatGPT."><h2>Mission</h2><div class="actions"><button id="newMission" data-icon="plus" class="ghost" type="button">Nouvelle mission</button><button id="orderGpt" data-icon="sparkles" class="secondary" type="button" title="Ouvrir le formulaire de commande : type, théâtre, équipes, aéronefs ; le prompt est copié et ChatGPT s’ouvre">Commander à ChatGPT…</button><button id="saveToFolder" data-icon="save" class="secondary" type="button" title="Enregistrer le YAML de la mission (modifications comprises) dans son dossier : data/missions/&lt;lettre&gt;_&lt;FAMILLE&gt;/&lt;ID&gt;/">Enregistrer dans le dossier</button><button id="saveDraft" data-icon="bookmark" class="secondary" type="button" data-min-level="4">Mémoriser le brouillon</button><button id="loadDraft" data-icon="refresh" class="secondary" type="button" data-min-level="4">Recharger le brouillon</button></div><div id="status" class="status" data-status>Aucune mission chargée.</div><p id="registryInfo" class="small" hidden><span></span> <button type="button" id="storeMission" class="secondary" data-icon="folder" hidden>Ranger dans le dossier des missions…</button> <a href="mission_registry.html">Ouvrir le registre ↗</a></p><details id="importMore" class="importMore"><summary>Importer une autre mission : fichiers, texte collé, commande ChatGPT</summary><div class="grid"><label>YAML et/ou Markdown<input id="missionFiles" type="file" accept=".yaml,.yml,.md,text/markdown,text/yaml" multiple data-dropzone><button id="openMissionPaste" data-icon="link" class="secondary" type="button" style="margin-top:6px">ou coller son contenu…</button></label><label>Cartes ou ZIP livré par le générateur<input id="mapFiles" type="file" accept=".zip,application/zip,image/png,image/jpeg,image/webp" multiple data-dropzone></label></div><div class="subBlocks"><details id="gptBox" class="pasteBox gptBox"><summary><strong>Commander une mission à ChatGPT</strong> <span class="small">type, théâtre, équipes, aéronefs : le prompt est copié et ChatGPT s’ouvre</span></summary><div id="gptOrder"></div></details><div id="missionPaste" class="pasteBox" hidden><strong>Coller le contenu Markdown ou YAML de la mission</strong><textarea id="missionText" placeholder="Colle ici le contenu Markdown ou YAML de la mission…"></textarea><div class="actions"><button id="parseMission" data-icon="eye" type="button">Lire la mission</button></div></div></div><p class="small">Tu peux sélectionner le YAML et le Markdown ensemble. Pour les cartes, sélectionne directement le ZIP produit par le générateur : les PNG, dont la carte d’assemblage, seront extraits et associés automatiquement.</p></details></section>
+<section data-block-id="mission-import" data-deco-bg="import" data-icon="upload" data-subtitle="Mission chargée, enregistrement et brouillon ; importer une autre mission ou en commander une à ChatGPT."><h2>Mission</h2><div class="actions"><button id="newMission" data-icon="plus" class="ghost" type="button">Nouvelle mission</button><button id="orderGpt" data-icon="sparkles" class="secondary" type="button" title="Ouvrir le formulaire de commande : type, théâtre, équipes, aéronefs ; le prompt est copié et ChatGPT s’ouvre">Commander à ChatGPT…</button><button id="guideToggle" data-icon="list" class="secondary" type="button" title="Saisie guidée en six étapes : cadre, lieux, récit, objectifs et risques, chronologie, cartes et documents">Pas à pas</button><button id="dupMission" data-icon="layers" class="secondary" type="button" title="Copie de la mission chargée, prête à modifier : identifiant et série suivants de la même famille, titre « (copie) » ; cartes et rendus à refaire au studio">Dupliquer</button><button id="saveToFolder" data-icon="save" class="secondary" type="button" title="Enregistrer le YAML de la mission (modifications comprises) dans son dossier : data/missions/&lt;lettre&gt;_&lt;FAMILLE&gt;/&lt;ID&gt;/">Enregistrer dans le dossier</button><button id="revertMission" data-icon="undo" class="secondary" type="button" disabled title="Revenir à la dernière version enregistrée dans le dossier (ou à la version chargée), après confirmation">Annuler les modifications</button><button id="saveDraft" data-icon="bookmark" class="secondary" type="button" data-min-level="4">Mémoriser le brouillon</button><button id="loadDraft" data-icon="refresh" class="secondary" type="button" data-min-level="4">Recharger le brouillon</button></div><p id="saveState"></p><p id="opLine" class="small opLine" data-no-i18n></p><div id="status" class="status" data-status>Aucune mission chargée.</div><p id="skeletonBar" class="skeletonBar" hidden><span></span> <button type="button" id="skeletonStudio" class="primary" data-icon="map">Ouvrir au studio</button></p><p id="registryInfo" class="small" hidden><span></span> <button type="button" id="storeMission" class="secondary" data-icon="folder" hidden>Ranger dans le dossier des missions…</button> <a href="mission_registry.html">Ouvrir le registre ↗</a></p><details id="importMore" class="importMore"><summary>Importer une autre mission : fichiers, texte collé, commande ChatGPT</summary><div class="grid"><label>YAML et/ou Markdown<input id="missionFiles" type="file" accept=".yaml,.yml,.md,text/markdown,text/yaml" multiple data-dropzone><button id="openMissionPaste" data-icon="link" class="secondary" type="button" style="margin-top:6px">ou coller son contenu…</button></label><label>Cartes ou ZIP livré par le générateur<input id="mapFiles" type="file" accept=".zip,application/zip,image/png,image/jpeg,image/webp" multiple data-dropzone></label></div><div class="subBlocks"><details id="gptBox" class="pasteBox gptBox"><summary><strong>Commander une mission à ChatGPT</strong> <span class="small">type, théâtre, équipes, aéronefs : le prompt est copié et ChatGPT s’ouvre</span></summary><div id="gptOrder"></div></details><div id="missionPaste" class="pasteBox" hidden><strong>Coller le contenu Markdown ou YAML de la mission</strong><textarea id="missionText" placeholder="Colle ici le contenu Markdown ou YAML de la mission…"></textarea><div class="actions"><button id="parseMission" data-icon="eye" type="button">Lire la mission</button></div></div></div><p class="small">Tu peux sélectionner le YAML et le Markdown ensemble. Pour les cartes, sélectionne directement le ZIP produit par le générateur : les PNG, dont la carte d’assemblage, seront extraits et associés automatiquement.</p></details></section>
 
+<section data-block-id="mission-guide" id="missionGuide" data-icon="list" data-subtitle="Saisie guidée en six étapes ; « Tout afficher » rend la mise en page complète." hidden><h2>Pas à pas</h2><div id="missionGuideBody" data-no-i18n></div></section>
 <section data-block-id="mission-operation" data-icon="layers" data-subtitle="Missions de l’opération et organisation de l’exercice : cliquer une mission pour l’afficher." hidden><h2>Opération</h2><div id="missionOperation"></div></section>
 
 <section data-block-id="mission-identification" data-deco-bg="identification" data-icon="hash" data-subtitle="Titre, famille et sous-type, identifiant (famille, numéro de l’opération, équipe), série de génération, auteur et date."><h2>Identification</h2><div class="grid">
@@ -504,7 +547,7 @@ html[data-skeuo] .repo-block .mapCard.missing:not(#imp) {
 <label title="Lot de génération dans la famille (une commande ChatGPT = une série) ; sert au registre et au rapprochement des commandes">Série de génération<input id="missionSeries" data-common="mission.series" type="number" min="1"></label>
 <label>Auteur<input id="author" data-common="author" placeholder="Nom de l’auteur"></label><label>Date du document<input id="documentDate" data-common="date" type="date"></label>
 <input id="missionNumber" data-common="mission.number" type="number" hidden><input id="schema" data-common="schema" hidden><input id="schemaVersion" data-common="schema_version" hidden>
-</div><p class="small" id="identHint"></p></section>
+</div><p class="small" id="theatreHint" hidden data-no-i18n></p><p class="small" id="identHint"></p></section><datalist id="yamlPlaceList"></datalist><datalist id="yamlCallsignList"></datalist>
 
 <section data-block-id="mission-estimate" data-icon="clock" data-subtitle="Route probable et durée du vol (aller, sur zone, retour), options de retour, comparaison avec les CR de la mission."><h2>Durée estimée</h2><div id="routingControls" class="routingControls"></div><div id="missionEstimate"></div></section>
 
@@ -512,9 +555,9 @@ html[data-skeuo] .repo-block .mapCard.missing:not(#imp) {
 
 <section data-block-id="mission-exercise" data-icon="list" data-subtitle="Plis scellés à ouvrir et messages radio attendus, d’après la chronologie de l’organisation de l’exercice." hidden><h2>Exercice</h2><div id="missionExercise"></div><div id="exerciseMaps" class="small exerciseMaps"></div></section>
 
-<section data-block-id="mission-texts" data-icon="file-text" data-subtitle="Résumé, description détaillée et rubriques du brief."><h2>Textes de mission</h2><div class="two"><label>Summary<textarea id="summary"></textarea></label><label>Description détaillée<textarea id="detailed" class="long"></textarea></label></div><div id="narrativeSections"></div><button id="addNarrative" class="ghost" type="button">Ajouter une rubrique textuelle</button></section>
+<section data-block-id="mission-texts" data-icon="file-text" data-subtitle="Résumé, description détaillée, puis les rubriques que le brief place à leur rang : objectifs, risques et notes vont dans le YAML, les autres complètent la section du même nom."><h2>Textes de mission</h2><div class="two"><label>Résumé<textarea id="summary"></textarea></label><label>Description détaillée<textarea id="detailed" class="long"></textarea></label></div><div id="narrativeSections" data-no-i18n></div><details id="addNarrative" class="narrMenu"><summary>Ajouter une rubrique textuelle</summary><ul id="narrChoices" data-no-i18n></ul></details></section>
 
-<section data-block-id="mission-yaml" data-default-hidden="1" data-min-level="4" data-icon="database" data-subtitle="Éditeur libre de toutes les clés du YAML de la mission."><h2>Toutes les données YAML</h2><p class="note">Cet éditeur est sans schéma imposé : les champs supplémentaires présents dans tes exemples sont conservés et restent modifiables.</p><div id="yamlEditor"></div><div class="inlineAdd"><input id="newRootKey" placeholder="Nom d’un nouveau champ racine"><button id="addRootKey" class="ghost" type="button">Ajouter</button></div></section>
+<section data-block-id="mission-yaml" data-default-hidden="1" data-min-level="4" data-icon="database" data-subtitle="Éditeur libre de toutes les clés du YAML de la mission."><h2>Toutes les données YAML</h2><p class="note">Cet éditeur est sans schéma imposé : les champs supplémentaires présents dans tes exemples sont conservés et restent modifiables.</p><p><button type="button" id="pastePoints" class="secondary" data-icon="list">Coller un tableau de points</button></p><div id="pastePointsPreview" data-no-i18n></div><div id="yamlEditor"></div><div class="inlineAdd"><input id="newRootKey" placeholder="Nom d’un nouveau champ racine"><button id="addRootKey" class="ghost" type="button">Ajouter</button></div></section>
 
 <section data-block-id="mission-maps" data-icon="map" data-subtitle="Cartes jointes au PDF, dans l’ordre du dossier."><h2>Cartes du dossier final</h2><div id="mapList" class="maps"></div><p class="small">La carte d’assemblage est intégrée au package cartographique et placée en première position dans le PDF, avant les autres cartes.</p></section>
 
@@ -872,28 +915,276 @@ function renderCommon() {
   $('schema').value = common('schema', 'helo-xp-mission');
   $('schemaVersion').value = common('schema_version', SCHEMA_VERSION);
   updateIdentHints();
+  renderTheatreHint();
   $('summary').value = state.narrative.summary || state.yaml.summary || '';
   $('detailed').value = state.narrative.detailed || state.yaml.detailed_description || state.yaml.description_detaillee || ''
 }
 
-/** Rubriques libres du récit : une carte par rubrique (titre, contenu, supprimer). */
-function renderNarrative() {
-  const host = $('narrativeSections');
-  host.innerHTML = '';
-  state.narrative.sections.forEach((s, i) => {
-    const card = document.createElement('div');
-    card.className = 'sectionCard';
-    card.innerHTML = `<div class="grid"><label>Titre de rubrique<input data-narr-title="${i}" value="${esc(s.title)}"></label><div class="actions"><button class="danger" data-narr-delete="${i}" type="button">Supprimer</button></div></div><label>Contenu<textarea data-narr-body="${i}">${esc(s.content)}</textarea></label>`;
-    host.appendChild(card)
-  })
+/* ===== Rubriques textuelles =====
+   Chaque rubrique a un TYPE (clé interne stable), choisi dans une liste traduite et modifiable après coup (contenu
+   conservé) ; son titre affiché est la traduction du type. Une rubrique par type, sauf « Texte libre » (titre saisi,
+   autant que voulu, à la fin du brief). Types à clé YAML (objectifs, risques, notes) : écrits sous leur clé, que le brief
+   et le CR lisent ; les autres : narrative.sections { type, title (titre français du brief, stable), content, named },
+   qui complètent dans le brief la section de même titre. lines : une valeur par ligne (liste). */
+const NARR_SECTIONS = [{
+  type: 'introduction',
+  title: 'Introduction',
+  label: ['Introduction', 'Introduction', 'Einleitung', 'Introducción'],
+  where: ['Brief : sous l’en-tête (type, aéronef, départ, destination).',
+    'Brief: under the header (type, aircraft, departure, destination).',
+    'Briefing: unter dem Kopf (Typ, Luftfahrzeug, Abflug, Ziel).', 'Brief: bajo la cabecera (tipo, aeronave, salida, destino).'
+  ],
+  what: ['Contexte, situation, ce qui amène la mission.', 'Context, situation, what leads to the mission.',
+    'Kontext, Lage, was zur Mission führt.',
+    'Contexto, situación, lo que motiva la misión.'
+  ]
+}, {
+  type: 'objective',
+  key: 'objectives.primary',
+  label: ['Objectif principal', 'Main objective', 'Hauptziel', 'Objetivo principal'],
+  where: ['Brief et CR (YAML objectives.primary).', 'Brief and report (YAML objectives.primary).',
+    'Briefing und Bericht (YAML objectives.primary).',
+    'Brief e informe (YAML objectives.primary).'
+  ],
+  what: [
+    'Une phrase : ce que l’équipage doit avoir accompli. Une liste numérotée est répartie en quittant la rubrique : le premier item reste ici, les autres vont dans Objectifs secondaires.',
+    'One sentence: what the crew must have achieved. A numbered list is split when leaving the section: the first item stays here, the others go to Secondary objectives.',
+    'Ein Satz: was die Besatzung erreicht haben muss. Eine nummerierte Liste wird beim Verlassen des Abschnitts aufgeteilt: Der erste Punkt bleibt hier, die anderen gehen in die Nebenziele.',
+    'Una frase: lo que la tripulación debe haber logrado. Una lista numerada se reparte al salir de la sección: el primer elemento queda aquí, los demás pasan a Objetivos secundarios.'
+  ]
+}, {
+  type: 'secondary',
+  key: 'objectives.secondary',
+  lines: true,
+  label: ['Objectifs secondaires', 'Secondary objectives', 'Nebenziele', 'Objetivos secundarios'],
+  where: ['Brief et CR (YAML objectives.secondary).', 'Brief and report (YAML objectives.secondary).',
+    'Briefing und Bericht (YAML objectives.secondary).', 'Brief e informe (YAML objectives.secondary).'
+  ],
+  what: ['Ce qui est souhaité en plus, un objectif par ligne (les numéros « 1. » et puces « - » sont retirés).',
+    'What is wanted in addition, one objective per line (numbers “1.” and bullets “-” are removed).',
+    'Was zusätzlich gewünscht ist, ein Ziel pro Zeile (Nummern „1.“ und Aufzählungszeichen „-“ werden entfernt).',
+    'Lo que se desea además, un objetivo por línea (se quitan los números «1.» y las viñetas «-»).'
+  ]
+}, {
+  type: 'teams',
+  title: 'Équipes engagées',
+  label: ['Équipes engagées', 'Teams involved', 'Beteiligte Teams', 'Equipos implicados'],
+  where: ['Brief : sous le tableau des équipes.', 'Brief: under the team table.', 'Briefing: unter der Teamtabelle.',
+    'Brief: bajo la tabla de equipos.'
+  ],
+  what: ['Rôle de chaque équipe, liaisons, consignes communes.', 'Role of each team, links, common instructions.',
+    'Rolle jedes Teams, Verbindungen, gemeinsame Anweisungen.', 'Papel de cada equipo, enlaces, consignas comunes.'
+  ]
+}, {
+  type: 'turning_points',
+  title: 'Points tournants',
+  label: ['Points tournants', 'Turning points', 'Wendepunkte', 'Puntos de viraje'],
+  where: ['Brief : sous le tableau des points.', 'Brief: under the point table.', 'Briefing: unter der Punktetabelle.',
+    'Brief: bajo la tabla de puntos.'
+  ],
+  what: ['Ce qu’il faut faire ou observer à chaque point.', 'What to do or observe at each point.',
+    'Was an jedem Punkt zu tun oder zu beobachten ist.', 'Qué hacer u observar en cada punto.'
+  ]
+}, {
+  type: 'rendezvous',
+  title: 'Rendez-vous',
+  label: ['Rendez-vous', 'Rendezvous', 'Treffpunkte', 'Encuentros'],
+  where: ['Brief : sous la liste des rendez-vous.', 'Brief: under the rendezvous list.', 'Briefing: unter der Treffpunktliste.',
+    'Brief: bajo la lista de encuentros.'
+  ],
+  what: ['Procédure de jonction, fréquences, signes de reconnaissance.', 'Joining procedure, frequencies, recognition signals.',
+    'Treffverfahren, Frequenzen, Erkennungszeichen.', 'Procedimiento de reunión, frecuencias, señales de reconocimiento.'
+  ]
+}, {
+  type: 'refuelling',
+  title: 'Ravitaillement en vol',
+  label: ['Ravitaillement en vol', 'Air refuelling', 'Luftbetankung', 'Reabastecimiento en vuelo'],
+  where: ['Brief : sous les données du ravitaillement.', 'Brief: under the refuelling data.', 'Briefing: unter den Betankungsdaten.',
+    'Brief: bajo los datos del reabastecimiento.'
+  ],
+  what: ['Procédure, quantités, consignes du ravitailleur.', 'Procedure, quantities, tanker instructions.',
+    'Verfahren, Mengen, Anweisungen des Tankers.',
+    'Procedimiento, cantidades, consignas del cisterna.'
+  ]
+}, {
+  type: 'risks',
+  key: 'risks',
+  lines: true,
+  label: ['Risques à prendre en compte', 'Risks to consider', 'Zu berücksichtigende Risiken', 'Riesgos a tener en cuenta'],
+  where: ['Brief, PDF et CR (YAML risks).', 'Brief, PDF and report (YAML risks).', 'Briefing, PDF und Bericht (YAML risks).',
+    'Brief, PDF e informe (YAML risks).'
+  ],
+  what: [
+    'Un risque par ligne : danger, niveau (Critique, Élevé, Modéré, Faible), conséquence, mesure — séparés par une tabulation, « — », « | » ou « ; » (copie d’un tableau acceptée). Une ligne sans séparateur va dans Notes en quittant la rubrique.',
+    'One risk per line: hazard, level (Critical, High, Moderate, Low), consequence, measure — separated by a tab, “—”, “|” or “;” (a pasted table is accepted). A line without separator goes to Notes when leaving the section.',
+    'Ein Risiko pro Zeile: Gefahr, Stufe (Kritisch, Hoch, Mittel, Niedrig), Folge, Maßnahme — getrennt durch Tabulator, „—“, „|“ oder „;“ (eingefügte Tabelle möglich). Eine Zeile ohne Trennzeichen geht beim Verlassen des Abschnitts in die Notizen.',
+    'Un riesgo por línea: peligro, nivel (Crítico, Alto, Moderado, Bajo), consecuencia, medida — separados por un tabulador, «—», «|» o «;» (se acepta una tabla pegada). Una línea sin separador pasa a Notas al salir de la sección.'
+  ]
+}, {
+  type: 'payload',
+  title: 'Charge / personnel',
+  label: ['Charge / personnel', 'Load / personnel', 'Ladung / Personal', 'Carga / personal'],
+  where: ['Brief : sous la charge transportée.', 'Brief: under the carried load.', 'Briefing: unter der beförderten Ladung.',
+    'Brief: bajo la carga transportada.'
+  ],
+  what: ['Ce qui est à bord, contraintes de chargement ou de personnel.', 'What is on board, loading or personnel constraints.',
+    'Was an Bord ist, Lade- oder Personalbeschränkungen.', 'Lo que va a bordo, restricciones de carga o de personal.'
+  ]
+}, {
+  type: 'coordination',
+  title: 'Coordination',
+  label: ['Coordination', 'Coordination', 'Koordinierung', 'Coordinación'],
+  where: ['Brief : avec la coordination de l’opération, sinon section seule.',
+    'Brief: with the operation’s coordination, otherwise on its own.',
+    'Briefing: bei der Koordinierung der Operation, sonst eigener Abschnitt.',
+    'Brief: con la coordinación de la operación, si no, sección propia.'
+  ],
+  what: ['Qui parle à qui, quand, sur quelle fréquence.', 'Who talks to whom, when, on which frequency.',
+    'Wer mit wem spricht, wann, auf welcher Frequenz.',
+    'Quién habla con quién, cuándo, en qué frecuencia.'
+  ]
+}, {
+  type: 'timeline',
+  title: 'Chronologie',
+  label: ['Chronologie', 'Timeline', 'Zeitablauf', 'Cronología'],
+  where: ['Brief : sous la chronologie de l’exercice, sinon section seule.',
+    'Brief: under the exercise timeline, otherwise on its own.',
+    'Briefing: unter dem Übungsablauf, sonst eigener Abschnitt.', 'Brief: bajo la cronología del ejercicio, si no, sección propia.'
+  ],
+  what: ['Horaires prévus : décollage, arrivée sur zone, rendez-vous, retour.',
+    'Planned times: take-off, arrival on area, rendezvous, return.',
+    'Geplante Zeiten: Start, Ankunft im Gebiet, Treffpunkt, Rückkehr.',
+    'Horarios previstos: despegue, llegada a la zona, encuentro, regreso.'
+  ]
+}, {
+  type: 'maps',
+  title: 'Cartographie prévue',
+  label: ['Cartographie prévue', 'Planned maps', 'Vorgesehene Karten', 'Cartografía prevista'],
+  where: ['Brief : sous la liste des cartes.', 'Brief: under the map list.', 'Briefing: unter der Kartenliste.',
+    'Brief: bajo la lista de mapas.'
+  ],
+  what: ['Ce que chaque carte doit montrer, au besoin.', 'What each map must show, if needed.',
+    'Was jede Karte bei Bedarf zeigen soll.',
+    'Lo que cada mapa debe mostrar, si hace falta.'
+  ]
+}, {
+  type: 'notes',
+  key: 'notes',
+  lines: true,
+  label: ['Notes', 'Notes', 'Notizen', 'Notas'],
+  where: ['Brief et CR (YAML notes).', 'Brief and report (YAML notes).', 'Briefing und Bericht (YAML notes).',
+    'Brief e informe (YAML notes).'
+  ],
+  what: ['Remarques diverses, une par ligne.', 'Miscellaneous remarks, one per line.', 'Verschiedene Bemerkungen, eine pro Zeile.',
+    'Observaciones diversas, una por línea.'
+  ]
+}];
+/** Type ouvert : texte libre, titre saisi, autant que voulu. */
+const NARR_FREE = {
+  type: 'free',
+  label: ['Texte libre', 'Free text', 'Freier Text', 'Texto libre'],
+  where: ['Brief : à la fin, sous le titre saisi.', 'Brief: at the end, under the title you type.',
+    'Briefing: am Ende, unter dem eingegebenen Titel.',
+    'Brief: al final, bajo el título escrito.'
+  ],
+  what: ['Ce que les autres rubriques ne couvrent pas ; autant de textes libres que voulu.',
+    'Whatever the other sections do not cover; as many free texts as you want.',
+    'Was die anderen Abschnitte nicht abdecken; beliebig viele freie Texte.',
+    'Lo que las demás secciones no cubren; tantos textos libres como quiera.'
+  ]
+};
+/** Libellés des cartes de rubrique (langue de la page). */
+const NARR_UI = {
+  type: ['Type', 'Type', 'Typ', 'Tipo'],
+  title: ['Titre', 'Title', 'Titel', 'Título'],
+  content: ['Contenu', 'Content', 'Inhalt', 'Contenido'],
+  del: ['Supprimer', 'Delete', 'Löschen', 'Eliminar']
+};
+/** Définition d'un type de rubrique. */
+const narrDef = type => NARR_SECTIONS.find(d => d.type === type) || NARR_FREE;
+/** Type d'une rubrique du récit (anciennes rubriques sans type : d'après leur titre français, sinon texte libre). */
+const narrTypeOf = x => x?.type || NARR_SECTIONS.find(d => !d.key && d.title === String(x?.title || '').trim())?.type || 'free';
+/** Texte d'une valeur YAML de rubrique : une ligne par élément (risque objet : danger — conséquence — mesure). */
+function narrText(v) {
+  return [].concat(v ?? []).map(x => x && typeof x === 'object' ? SiaMission.riskText(x) : String(x ?? '')).join('\n')
 }
-
+/** Rubrique à clé YAML : valeur reprise du texte (liste : une valeur par ligne ; un risque objet inchangé reste objet). */
+function narrFromText(def, text) {
+  if (!def.lines) return text;
+  const old = [].concat(getPath(state.yaml, def.key.split('.')) ?? []);
+  return text.split(/\r?\n/).map(x => x.replace(/^\s*[-*•]\s*/, '').trim()).filter(Boolean).map(line => old.find(o => o && typeof o ===
+    'object' && narrText(o) === line) || line)
+}
+/** Retire la clé YAML d'une rubrique (objet parent vidé, comme objectives sans primary ni secondary : retiré aussi). */
+function narrDropKey(key) {
+  const path = key.split('.'),
+    parent = getPath(state.yaml, path.slice(0, -1));
+  if (parent && typeof parent === 'object') delete parent[path.at(-1)];
+  if (path.length > 1 && parent && !Object.keys(parent).length) delete getPath(state.yaml, path.slice(0, -2))[path.at(-2)]
+}
+/** Rubriques affichées : à clé YAML présente (même vide), puis rubriques du récit. ref : « y:type » ou « s:index ». */
+function narrCards() {
+  return [...NARR_SECTIONS.filter(d => d.key && getPath(state.yaml, d.key.split('.')) !== undefined).map(d => ({
+    ref: 'y:' + d.type,
+    type: d.type,
+    title: '',
+    text: narrText(getPath(state.yaml, d.key.split('.')))
+  })), ...state.narrative.sections.map((x, i) => ({
+    ref: 's:' + i,
+    type: narrTypeOf(x),
+    title: x.title || '',
+    text: x.content || ''
+  }))]
+}
+/** Change le type d'une rubrique : contenu déplacé vers la clé YAML ou la section du nouveau type (texte libre : titre
+ *  repris du type quitté, à la même place). */
+function narrSetType(ref, to) {
+  const card = narrCards().find(c => c.ref === ref);
+  if (!card || card.type === to) return;
+  const d = narrDef(to);
+  let at = null;
+  if (ref.startsWith('y:')) narrDropKey(narrDef(card.type).key);
+  else {
+    at = +ref.slice(2);
+    state.narrative.sections.splice(at, 1)
+  }
+  if (d.key) setPath(state.yaml, d.key.split('.'), narrFromText(d, card.text));
+  else {
+    const sec = {
+      type: to,
+      title: to === 'free' ? trl(narrDef(card.type).label) : d.title,
+      content: card.text,
+      named: true // créée ici : jamais prise pour une copie du brief rangé
+    };
+    at === null ? state.narrative.sections.push(sec) : state.narrative.sections.splice(at, 0, sec)
+  }
+}
+/** Rubriques textuelles : une carte par rubrique (liste des types, titre pour un texte libre, où elle apparaît et ce
+ *  qu'on y écrit, contenu, supprimer) ; menu « Ajouter » : types absents, puis « Texte libre ». Textes dans la langue de
+ *  la page (trl), zone non retraduite (data-no-i18n). */
+function renderNarrative() {
+  const cards = narrCards(),
+    taken = new Set(cards.map(c => c.type)),
+    all = [...NARR_SECTIONS, NARR_FREE];
+  $('narrativeSections').innerHTML = cards.map(c => {
+    const d = narrDef(c.type),
+      opts = all.map(x => `<option value="${x.type}"${x.type === c.type ? ' selected' : ''}${x.type !== 'free' && x.type !== c.type && taken.has(x.type) ? ' disabled' : ''}>${esc(trl(x.label))}</option>`).join('');
+    return `<div class="sectionCard"><div class="grid"><label>${esc(trl(NARR_UI.type))}<select data-narr-type="${c.ref}">${opts}</select></label>${c.type === 'free' ? `<label>${esc(trl(NARR_UI.title))}<input data-narr-title="${c.ref}" value="${esc(c.title)}"></label>` : ''}<div class="actions"><button class="danger" data-narr-del="${c.ref}" type="button">${esc(trl(NARR_UI.del))}</button></div></div><span class="narrWhere">${esc(trl(d.where))} ${esc(trl(d.what))}</span>${c.type === 'timeline' && !isOrgDoc() ? '<div data-mtl></div>' : ''}<label>${esc(trl(NARR_UI.content))}<textarea data-narr-body="${c.ref}" placeholder="${esc(trl(d.what))}">${esc(c.text)}</textarea></label></div>`
+  }).join('');
+  // chronologie d'une mission (V2_FABLE § 10, UC3) : événements horaires au-dessus du texte libre de la rubrique
+  const mtl = $('narrativeSections').querySelector('[data-mtl]');
+  if (mtl) window.MissionExercise?.missionTimelineEditor?.(mtl, state.yaml, {
+    onChange: () => shareMission()
+  });
+  $('narrChoices').innerHTML = [...NARR_SECTIONS.filter(d => !taken.has(d.type)), NARR_FREE].map(d => `<li><button type="button" class="ghost" data-narr-add="${d.type}">${esc(trl(d.label))}<small>${esc(trl(d.where))} ${esc(trl(d.what))}</small></button></li>`).join('')
+}
 /** Saisie d'une valeur simple de l'éditeur YAML : choix vrai / faux, zone de texte pour un texte long, sinon champ. */
 function scalarEditor(value, path, key) {
   const kind = value === null ? 'null' : typeof value;
   if (kind === 'boolean') return`<div class="fieldRow"><label>${esc(labelFor(key))}</label><select data-path='${esc(JSON.stringify(path))}' data-kind="boolean"><option value="true"${value?' selected':''}>true</option><option value="false"${!value?' selected':''}>false</option></select></div>`;
   const long = String(value ?? '').length > 100 || /description|summary|note|objective|risk|constraint/i.test(String(key));
-  return`<div class="fieldRow"><label>${esc(labelFor(key))}</label>${long?`<textarea data-path='${esc(JSON.stringify(path))}' data-kind="${kind}">${esc(value??'')}</textarea>`:`<input data-path='${esc(JSON.stringify(path))}' data-kind="${kind}" value="${esc(value??'')}">`}</div>`
+  const extra = yamlFieldExtra(path, key);
+  return`<div class="fieldRow"><label>${esc(labelFor(key))}</label>${long?`<textarea data-path='${esc(JSON.stringify(path))}' data-kind="${kind}">${esc(value??'')}</textarea>`:`<input data-path='${esc(JSON.stringify(path))}' data-kind="${kind}" value="${esc(value??'')}"${extra}>`}</div>`
 }
 // Éditeur YAML générique : objets et listes dépliables, une saisie par valeur scalaire.
 function renderNode(value, path, key, depth = 0) {
@@ -1023,7 +1314,9 @@ function renderAll() {
   renderExerciseMaps();
   applyMode();
   syncImportPanel();
-  scheduleAirspaces()
+  scheduleAirspaces();
+  syncSkeletonBar();
+  window.MissionGuide?.render() // saisie pas à pas (mission_guide.js)
 }
 /* Cartes d'exercice de la mission (maps[].exercise : cartes des messages et plis de l'équipage, carte organisation,
    cartes des chiffons) : définies d'office par le studio à l'ouverture de la mission, générées avec les autres cartes,
@@ -1088,8 +1381,12 @@ function renderAirspaces() {
   const host = $('missionAirspaces');
   if (!host) return;
   if (!siaAirspaces) {
-    host.innerHTML =
-      '<p class="small">Base SIA absente de ce navigateur : la lire une fois (studio cartographique, bloc « Base de données SIA », ou Paramètres › Maintenance › Données aéronautiques).</p>';
+    // le studio n'a plus de bloc « Base de données SIA » : construction dans Maintenance, ou depuis la ligne d'état du studio
+    host.innerHTML = `<p class="small">${esc(trl(['Base SIA absente de ce navigateur : la construire une fois (Paramètres › Maintenance › Données aéronautiques, ou « Construire la base maintenant » dans le studio cartographique).',
+      'SIA database missing from this browser: build it once (Settings › Maintenance › Aeronautical data, or “Build the database now” in the map studio).',
+      'SIA-Datenbank fehlt in diesem Browser: einmal aufbauen (Einstellungen › Wartung › Luftfahrtdaten oder „Datenbank jetzt aufbauen“ im Kartenstudio).',
+      'Base SIA ausente de este navegador: construirla una vez (Ajustes › Mantenimiento › Datos aeronáuticos, o «Construir la base ahora» en el estudio cartográfico).'
+    ]))}</p>`;
     return
   }
   const list = airspaceList() || [],
@@ -1169,8 +1466,386 @@ function setBlock(id, title, sub) {
   if (p && p.textContent !== sub) p.textContent = sub
 }
 
+const trf = (row, v) => window.RepositoryKit?.tf ? window.RepositoryKit.tf(row, v) : row[0].replace(/\{(\w+)\}/g, (_, k) => v[k] ?? '');
+/** Résumé d'une opération (bloc Opération) : « Opération X (A-001) : 5 équipage(s) · organisation A-001Z · heure H 10:00 ». */
+function opSummary(docs, zId, ex) {
+  const op = state.yaml.operation || {},
+    crews = [...new Set((op.missions || []).map(v => String(v).toUpperCase()))].filter(id => id !== zId),
+    hasZ = !!op.organisation || docs.some(d => String(d.mission?.id || '').toUpperCase() === zId);
+  return [trf(['Opération {o} ({id}) : {n} équipage(s)', 'Operation {o} ({id}): {n} crew(s)', 'Operation {o} ({id}): {n} Besatzung(en)',
+      'Operación {o} ({id}): {n} tripulación(es)'
+    ], {
+      o: op.name || op.id,
+      id: op.id,
+      n: Math.max(crews.length, 1)
+    }), hasZ ? trf(['organisation {z}', 'organisation {z}', 'Übungsleitung {z}', 'organización {z}'], {
+      z: zId
+    }) : trl(['organisation absente', 'no organisation yet', 'noch keine Übungsleitung', 'sin organización']),
+    ...(ex && !ex.legacy && ex.h_hour && upId(ex.h_hour) !== 'H' ? [trf(['heure H {h}', 'H-hour {h}', 'Stunde H {h}', 'hora H {h}'], {
+      h: ex.h_hour
+    })] : [])
+  ].join(' · ')
+}
+/** Ligne « Opération » du bloc Mission, toujours présente : mission autonome, ou ce que la mission est dans son
+ *  opération (lettre de l'équipage et total, organisation ou son absence, heure H si fixée). */
+function renderOpLine() {
+  const el = $('opLine'),
+    y = state.yaml || {},
+    op = y.operation,
+    X = window.MissionExercise;
+  /** Bouton d'action de la ligne (id, libellé [fr, en, de, es], effet). */
+  const act = (id, row) => ` <button type="button" class="secondary" id="${id}">${esc(trl(row))}</button>`;
+  const ADD = ['Ajouter un équipage…', 'Add a crew…', 'Besatzung hinzufügen…', 'Añadir una tripulación…'];
+  if (!op?.id || !X) {
+    el.innerHTML = esc(trl(['Mission autonome (hors opération)', 'Standalone mission (no operation)',
+      'Eigenständige Mission (keine Operation)',
+      'Misión autónoma (sin operación)'
+    ])) + act('opLineAddCrew', ADD);
+    $('opLineAddCrew').onclick = addCrew;
+    window.AppFramework?.refresh?.();
+    return
+  }
+  const docs = opDocs(),
+    zId = String(op.organisation || X.organisationId(op.id)).toUpperCase(),
+    crews = [...new Set((op.missions || []).map(v => String(v).toUpperCase()))].filter(id => id !== zId),
+    hasZ = !!op.organisation || docs.some(d => String(d.mission?.id || '').toUpperCase() === zId),
+    ex = X.of(y, docs),
+    org = isOrgDoc(),
+    team = SiaMission.parseId(String(y.mission?.id || '').toUpperCase()).team || '?';
+  const parts = [org ? trf(['organisation de l’exercice, {n} équipage(s)', 'exercise organisation, {n} crew(s)',
+    'Übungsleitung, {n} Besatzung(en)', 'organización del ejercicio, {n} tripulación(es)'
+  ], {
+    n: crews.length
+  }) : trf(['équipage {l} sur {n}', 'crew {l} of {n}', 'Besatzung {l} von {n}', 'tripulación {l} de {n}'], {
+    l: team,
+    n: Math.max(crews.length, 1)
+  })];
+  if (!org) parts.push(hasZ ? trf(['organisation {z}', 'organisation {z}', 'Übungsleitung {z}', 'organización {z}'], {
+    z: zId
+  }) : trl(['organisation absente', 'no organisation yet', 'noch keine Übungsleitung', 'sin organización']));
+  if (ex && !ex.legacy && ex.h_hour && upId(ex.h_hour) !== 'H') parts.push(trf(['heure H {h}', 'H-hour {h}', 'Stunde H {h}',
+    'hora H {h}'
+  ], {
+    h: ex.h_hour
+  }));
+  el.innerHTML = esc(trf(['Opération {o} ({id}) : {p}', 'Operation {o} ({id}): {p}', 'Operation {o} ({id}): {p}',
+    'Operación {o} ({id}): {p}'
+  ], {
+    o: op.name || op.id,
+    id: op.id,
+    p: parts.join(' · ')
+  })) + (org ? '' : act('opLineAddCrew', ADD) + act('opLineRemoveCrew', ['Retirer cet équipage…', 'Remove this crew…',
+    'Diese Besatzung entfernen…', 'Retirar esta tripulación…'
+  ]) + (hasZ ? act('opLineOpenOrg', ['Ouvrir l’organisation', 'Open the organisation', 'Übungsleitung öffnen',
+      'Abrir la organización'
+    ]) :
+    act('opLineCreateOrg', ['Créer l’organisation de l’exercice…', 'Create the exercise organisation…', 'Übungsleitung anlegen…',
+      'Crear la organización del ejercicio…'
+    ])));
+  const on = (id, fn) => {
+    const b = $(id);
+    if (b) b.onclick = fn
+  };
+  on('opLineAddCrew', addCrew);
+  on('opLineRemoveCrew', removeCrew);
+  on('opLineCreateOrg', () => askCreateOrganisation(zId));
+  on('opLineOpenOrg', () => openOrganisation(zId));
+  window.AppFramework?.refresh?.()
+}
+/** Ligne d'état du bloc Mission (SiaMission.renderSaveState) : « Enregistrer dans le dossier » en bouton primaire
+ *  quand il y a du non-enregistré, « Annuler les modifications » actif seulement dans ce cas. */
+function renderSaveState() {
+  if (!state.yaml?.mission) return;
+  const st = SiaMission.renderSaveState($('saveState'), {
+      yaml: state.yaml,
+      narrative: state.narrative
+    }),
+    dirty = st.fields > 0 || st.kind === 'new';
+  $('saveToFolder').classList.toggle('primary', dirty);
+  $('saveToFolder').classList.toggle('secondary', !dirty);
+  $('revertMission').disabled = !st.fields
+}
+setInterval(() => renderSaveState(), 30000); // « il y a n min » tenu à jour
+/* ===== Chemins à la main (docs/technique/V2_FABLE.md § 10) : actions de la ligne Opération =====
+   Ajouter un équipage (mission autonome → équipage A + mission B ; opération → lettre suivante), retirer cet équipage
+   (le dernier restant redevient une mission autonome), créer l'organisation de l'exercice, ouvrir l'organisation.
+   Chaque action dit d'abord ce qu'elle va créer ou retirer (AppFramework.ask avec les identifiants). */
+const upId = v => String(v ?? '').trim().toUpperCase();
+const listOf = v => Array.isArray(v) ? v : v == null || v === '' ? [] : [v];
+/** Socle de la page prêt (AppFramework, chargé en dernier, donc langue de la page appliquée) : attendu 30 s au plus ;
+ *  vrai s'il est là. */
+async function uiReady() {
+  for (let i = 0; i < 300 && !window.AppFramework?.ask; i++) await new Promise(r => setTimeout(r, 100));
+  return !!window.AppFramework?.ask
+}
+/** Confirmation dans la page (AppFramework.ask, socle attendu) — jamais la boîte native du navigateur (confirm), qui
+ *  gèle l'onglet pendant le chargement ; socle absent : pas de confirmation, réponse « non », la ligne d'état le dit.
+ *  ok : libellé du bouton ; opts : cancel, danger. */
+async function askOk(msg, ok, opts = {}) {
+  if (!await uiReady()) {
+    setStatus(trl(['Confirmation impossible : la page n’a pas fini de se charger. Réessayer.',
+      'Confirmation impossible: the page has not finished loading. Try again.',
+      'Bestätigung nicht möglich: Die Seite ist noch nicht fertig geladen. Erneut versuchen.',
+      'Confirmación imposible: la página no ha terminado de cargarse. Volver a intentarlo.'
+    ]), 'err');
+    return false
+  }
+  return window.AppFramework.ask(msg, {
+    ok,
+    ...opts
+  })
+}
+/** Première lettre d'équipage libre parmi les identifiants ids (A, B… ; Z réservé à l'organisation) ; '' si aucune. */
+function nextCrewLetter(ids) {
+  for (let c = 65; c < 90; c++) {
+    const l = String.fromCharCode(c);
+    if (!ids.some(id => SiaMission.parseId(id).team === l)) return l
+  }
+  return ''
+}
+/** Indicatif suivant libre : chiffres de fin augmentés (CYRANO01 → CYRANO02), sinon suffixe 2 ; '' sans indicatif. */
+function nextCallsign(cs, taken) {
+  cs = upId(cs);
+  if (!cs) return '';
+  const m = /^(.*?)(\d+)$/.exec(cs);
+  for (let i = 1; i < 99; i++) {
+    const c = m ? m[1] + String(+m[2] + i).padStart(m[2].length, '0') : cs + (i + 1);
+    if (!taken.includes(c)) return c
+  }
+  return cs + 'B'
+}
+/** Mission d'un nouvel équipage d'après src : même contexte (famille, théâtre, opération, départ, arrivée, cible, zones,
+ *  rendez-vous, points, timing, équipes, cartes attendues renommées), son identifiant, son aéronef (même type, indicatif
+ *  callsign), son propre brief (textes vides, pas de chronologie). */
+function crewFrom(src, id, callsign) {
+  const y = structuredClone(src),
+    from = upId(src.mission?.id);
+  y.mission = {
+    ...y.mission,
+    id
+  };
+  delete y.mission.former_id;
+  delete y.mission.role;
+  y.aircraft = listOf(src.aircraft).slice(0, 1).map(a => ({
+    ...a,
+    callsign
+  }));
+  y.maps = listOf(src.maps).map(m => m && typeof m === 'object' ? {
+    ...m,
+    filename: String(m.filename ?? m.file ?? '').split(from).join(id)
+  } : String(m).split(from).join(id));
+  y.summary = '';
+  y.detailed_description = '';
+  delete y.timeline;
+  delete y.exercise;
+  y.meta = {
+    ...(src.meta || {}),
+    crew_from: from,
+    created_at: new Date().toISOString()
+  };
+  return y
+}
+/** « Ajouter un équipage » : mission autonome → elle devient l'équipage A (identifiant migré) et la mission B est créée ;
+ *  mission d'une opération → mission de la lettre suivante. La nouvelle mission reprend le contexte commun, a son
+ *  propre brief ; toutes les missions de l'opération la citent (operation.missions, équipes, participants de
+ *  l'organisation). */
+async function addCrew() {
+  syncNarrative();
+  const X = window.MissionExercise,
+    y0 = state.yaml,
+    id = upId(y0.mission?.id),
+    p = SiaMission.parseId(id),
+    standalone = !y0.operation?.id;
+  if (!id || !p.letter) return setStatus(trl(['Identifiant à régler d’abord (lettre de famille et numéro, ex. M-016).',
+    'Set the identifier first (family letter and number, e.g. M-016).',
+    'Zuerst die Kennung festlegen (Familienbuchstabe und Nummer, z. B. M-016).',
+    'Fijar primero el identificador (letra de familia y número, p. ej. M-016).'
+  ]), 'err');
+  const base = standalone ? id : upId(y0.operation.id),
+    zId = upId(X?.organisationId?.(base) || base + 'Z'),
+    me = standalone ? base + 'A' : id,
+    crews = standalone ? [me] : [...new Set(listOf(y0.operation.missions).map(upId))].filter(x => x !== zId),
+    letter = nextCrewLetter(crews.length ? crews : [me]);
+  if (!letter) return setStatus(trl(['Plus de lettre d’équipage libre (A à Y).', 'No free crew letter left (A to Y).',
+    'Kein freier Besatzungsbuchstabe mehr (A bis Y).', 'No queda letra de tripulación libre (A a Y).'
+  ]), 'err');
+  const newId = base + letter,
+    taken = opDocs().flatMap(d => listOf(d.aircraft).map(a => upId(a.callsign))),
+    callsign = nextCallsign(y0.aircraft?.[0]?.callsign, taken);
+  const ok = await askOk(standalone ? trf([
+    'Ajouter un équipage : {a} devient l’équipage A ({me}, identifiant migré) et la mission {n} est créée — même famille, théâtre, départ, arrivée, cible, zones et rendez-vous, indicatif {c}, brief à écrire. Les deux missions forment l’opération {a}. Continuer ?',
+    'Add a crew: {a} becomes crew A ({me}, identifier migrated) and the mission {n} is created — same family, theatre, departure, arrival, target, zones and rendezvous, callsign {c}, brief to write. Both missions form the operation {a}. Continue?',
+    'Besatzung hinzufügen: {a} wird Besatzung A ({me}, Kennung migriert) und die Mission {n} wird angelegt — gleiche Familie, gleiches Einsatzgebiet, Abflug, Ziel, Zielobjekt, Zonen und Treffpunkte, Rufzeichen {c}, Briefing zu schreiben. Beide Missionen bilden die Operation {a}. Fortfahren?',
+    'Añadir una tripulación: {a} pasa a ser la tripulación A ({me}, identificador migrado) y se crea la misión {n}: misma familia, teatro, salida, llegada, objetivo, zonas y encuentros, indicativo {c}, brief por escribir. Las dos misiones forman la operación {a}. ¿Continuar?'
+  ], {
+    a: id,
+    me,
+    n: newId,
+    c: callsign || '—'
+  }) : trf([
+    'Ajouter un équipage à l’opération {o} : la mission {n} est créée d’après {a} (même contexte, indicatif {c}, brief à écrire) ; les missions de l’opération la citent ensuite. Continuer ?',
+    'Add a crew to the operation {o}: the mission {n} is created from {a} (same context, callsign {c}, brief to write); the operation’s missions then list it. Continue?',
+    'Besatzung zur Operation {o} hinzufügen: Die Mission {n} wird nach {a} angelegt (gleicher Kontext, Rufzeichen {c}, Briefing zu schreiben); die Missionen der Operation führen sie danach auf. Fortfahren?',
+    'Añadir una tripulación a la operación {o}: se crea la misión {n} a partir de {a} (mismo contexto, indicativo {c}, brief por escribir); las misiones de la operación la citan después. ¿Continuar?'
+  ], {
+    o: base,
+    n: newId,
+    a: id,
+    c: callsign || '—'
+  }), trl(['Ajouter l’équipage', 'Add the crew', 'Besatzung hinzufügen', 'Añadir la tripulación']));
+  if (!ok) return;
+  shareMission(true);
+  if (standalone) {
+    // M-016 → M-016A partout (textes, listes, noms de cartes), puis l'opération M-016 autour de l'équipage A
+    SiaMission.migrateIds(id, me, {
+      type: y0.mission?.type || ''
+    });
+    SiaMission.mapBatch(y => {
+      if (upId(y.mission?.id) === me && !y.operation?.id) y.operation = {
+        id: base,
+        name: y.title || '',
+        missions: [me]
+      }
+    }, 'generator');
+  }
+  const cur = SiaMission.load();
+  const ac = listOf(cur.yaml.aircraft)[0] || {},
+    team = {
+      name: callsign || newId,
+      service: ac.operator || '',
+      department: '',
+      type: ac.type || '',
+      role: 'autre équipage'
+    };
+  // la nouvelle mission rejoint l'opération dans chaque mission du lot (et les participants de l'organisation)
+  SiaMission.mapBatch(y => {
+    if (upId(y.operation?.id) !== base) return;
+    y.operation.missions = [...new Set([...listOf(y.operation.missions).map(upId), newId])].sort();
+    if (listOf(y.teams).length && !listOf(y.teams).some(t => upId(t.name) === upId(team.name))) y.teams = [...listOf(y.teams), {
+      ...team
+    }];
+    if (X?.isOrganisation(y) && y.exercise && !listOf(y.exercise.participants).some(q => upId(q.mission) === newId)) y.exercise
+      .participants = [...listOf(y.exercise.participants), {
+        callsign,
+        mission: newId,
+        takeoff: 'H'
+      }];
+  }, 'generator');
+  const src = SiaMission.load().yaml,
+    ny = crewFrom(src, newId, callsign);
+  ny.teams = listOf(ny.teams).map(t => ({
+    ...t,
+    role: upId(t.name) === upId(team.name) ? 'équipage' : String(t.role || '').replace(/^équipage/, 'autre équipage')
+  }));
+  applyBatchDoc(SiaMission.addToBatch({
+    yaml: ny,
+    narrative: {
+      summary: '',
+      detailed: '',
+      sections: []
+    },
+    sourceNames: []
+  }, 'generator'));
+  setStatus(trf([
+    'Équipage ajouté : {n} (opération {o}). Écrire son brief, placer ses points au studio, puis « Enregistrer dans le dossier » pour chaque mission modifiée de l’opération.',
+    'Crew added: {n} (operation {o}). Write its brief, place its points in the studio, then “Save to the folder” for each changed mission of the operation.',
+    'Besatzung hinzugefügt: {n} (Operation {o}). Briefing schreiben, Punkte im Studio setzen, dann „Im Ordner speichern“ für jede geänderte Mission der Operation.',
+    'Tripulación añadida: {n} (operación {o}). Escribir su brief, colocar sus puntos en el estudio y luego «Guardar en la carpeta» para cada misión modificada de la operación.'
+  ], {
+    n: newId,
+    o: base
+  }), 'ok')
+}
+/** « Retirer cet équipage » : la mission courante quitte le lot et l'opération (listes, équipes, participants) ; s'il ne
+ *  reste qu'un équipage et pas d'organisation, il redevient une mission autonome (identifiant migré, M-016A → M-016). */
+async function removeCrew() {
+  syncNarrative();
+  const X = window.MissionExercise,
+    y0 = state.yaml,
+    id = upId(y0.mission?.id),
+    base = upId(y0.operation?.id),
+    zId = upId(X?.organisationId?.(base) || base + 'Z'),
+    docs = opDocs(),
+    hasZ = !!y0.operation?.organisation || docs.some(d => upId(d.mission?.id) === zId),
+    rest = [...new Set(listOf(y0.operation?.missions).map(upId))].filter(x => x !== zId && x !== id),
+    solo = rest.length === 1 && !hasZ ? rest[0] : '',
+    callsign = upId(y0.aircraft?.[0]?.callsign);
+  const ok = await askOk(trf([
+    'Retirer l’équipage {a} de l’opération {o} : la mission est retirée du lot et des listes de l’opération{s}. Si elle est déjà rangée dans son dossier, la supprimer aussi depuis le registre (« Supprimer… » sur sa fiche). Continuer ?',
+    'Remove crew {a} from the operation {o}: the mission is removed from the batch and from the operation’s lists{s}. If it is already filed in its folder, delete it from the registry as well (“Delete…” on its card). Continue?',
+    'Besatzung {a} aus der Operation {o} entfernen: Die Mission wird aus dem Stapel und den Listen der Operation entfernt{s}. Ist sie bereits in ihrem Ordner abgelegt, sie auch im Register löschen („Löschen…“ auf ihrer Karte). Fortfahren?',
+    'Retirar la tripulación {a} de la operación {o}: la misión se retira del lote y de las listas de la operación{s}. Si ya está guardada en su carpeta, eliminarla también desde el registro («Eliminar…» en su ficha). ¿Continuar?'
+  ], {
+    a: id,
+    o: base,
+    s: solo ? trf([' ; {r} redevient une mission autonome ({b})', '; {r} becomes a standalone mission again ({b})',
+      '; {r} wird wieder eine eigenständige Mission ({b})', '; {r} vuelve a ser una misión autónoma ({b})'
+    ], {
+      r: solo,
+      b: base
+    }) : ''
+  }), trl(['Retirer l’équipage', 'Remove the crew', 'Besatzung entfernen', 'Retirar la tripulación']));
+  if (!ok) return;
+  shareMission(true);
+  SiaMission.mapBatch(y => {
+    if (upId(y.operation?.id) !== base) return;
+    y.operation.missions = listOf(y.operation.missions).map(upId).filter(x => x !== id);
+    if (callsign) y.teams = listOf(y.teams).filter(t => upId(t.name) !== callsign);
+    if (y.exercise) y.exercise.participants = listOf(y.exercise.participants).filter(q => upId(q.mission) !== id);
+  }, 'generator');
+  SiaMission.removeFromBatch(id, 'generator');
+  if (solo) {
+    // dernier équipage sans organisation : M-016A → M-016, plus d'opération
+    SiaMission.migrateIds(solo, base, {
+      type: y0.mission?.type || ''
+    });
+    SiaMission.mapBatch(y => {
+      if (upId(y.mission?.id) === base) delete y.operation
+    }, 'generator');
+  }
+  applyBatchDoc(SiaMission.load());
+  setStatus(trf(['Équipage {a} retiré de l’opération {o}.{s}', 'Crew {a} removed from the operation {o}.{s}',
+    'Besatzung {a} aus der Operation {o} entfernt.{s}', 'Tripulación {a} retirada de la operación {o}.{s}'
+  ], {
+    a: id,
+    o: base,
+    s: solo ? ' ' + trf(['{b} est de nouveau une mission autonome.', '{b} is a standalone mission again.',
+      '{b} ist wieder eine eigenständige Mission.', '{b} vuelve a ser una misión autónoma.'
+    ], {
+      b: base
+    }) : ''
+  }), 'ok')
+}
+/** « Créer l'organisation de l'exercice » : dit ce qui sera créé (mission …Z, participants), puis createOrganisation. */
+async function askCreateOrganisation(zId) {
+  const crews = opDocs().filter(d => !window.MissionExercise?.isOrganisation(d)).map(d => upId(d.mission?.id)).filter(Boolean);
+  const ok = await askOk(trf([
+    'Créer l’organisation de l’exercice {z} : heure H, participants {p} (repris des missions), chiffons et chronologie vides, brief général proposé d’après les missions. Continuer ?',
+    'Create the exercise organisation {z}: H-hour, participants {p} (taken from the missions), empty exercise targets and timeline, general brief proposed from the missions. Continue?',
+    'Übungsleitung {z} anlegen: Stunde H, Teilnehmer {p} (aus den Missionen übernommen), leere Übungsziele und leerer Zeitablauf, allgemeines Briefing aus den Missionen vorgeschlagen. Fortfahren?',
+    'Crear la organización del ejercicio {z}: hora H, participantes {p} (tomados de las misiones), blancos y cronología vacíos, brief general propuesto a partir de las misiones. ¿Continuar?'
+  ], {
+    z: zId,
+    p: crews.join(', ') || '—'
+  }), trl(['Créer l’organisation', 'Create the organisation', 'Übungsleitung anlegen', 'Crear la organización']));
+  if (ok) createOrganisation(zId)
+}
+/** « Ouvrir l'organisation » : la mission …Z du lot devient la mission affichée. */
+function openOrganisation(zId) {
+  const b = SiaMission.loadBatch(),
+    i = b ? b.docs.findIndex(d => upId(d.yaml?.mission?.id) === zId) : -1;
+  if (i >= 0) applyBatchDoc(SiaMission.go(i, 'generator'));
+  else setStatus(trf(['Organisation {z} non chargée : l’ouvrir depuis le registre des missions.',
+    'Organisation {z} not loaded: open it from the mission registry.', 'Übungsleitung {z} nicht geladen: im Missionsregister öffnen.',
+    'Organización {z} no cargada: abrirla desde el registro de misiones.'
+  ], {
+    z: zId
+  }), 'err')
+}
 /** Bloc « Opération » : missions de l'opération (chargées ou non), mission d'organisation, navigation ; masqué hors opération. */
 function renderOperation() {
+  renderOpLine();
+  renderSaveState();
   const host = $('missionOperation'),
     sec = host.closest('section'),
     y = state.yaml,
@@ -1188,14 +1863,13 @@ function renderOperation() {
     have = id => docs.find(d => String(d.mission?.id || '').toUpperCase() === id),
     cur = String(y.mission?.id || '').toUpperCase(),
     ex = X.of(y, docs);
-  // mission seule, sans organisation ni éléments d'exercice : pas de bloc d'opération, une proposition discrète
+  // mission seule, sans organisation ni éléments d'exercice : pas de bloc d'opération (la ligne Opération du bloc
+  // Mission la décrit et propose de créer l'organisation)
   if (ids.length <= 2 && !have(zId) && !op.organisation && !ex) {
-    host.innerHTML = `<p class="small">Mission seule (opération ${esc(op.name||op.id)}) : pas d’organisation d’exercice, le brief de la mission suffit. <button type="button" id="createOrganisation" class="secondary" data-icon="plus">Ajouter une organisation d’exercice…</button></p>`;
-    $('createOrganisation').onclick = () => createOrganisation(zId);
-    window.AppFramework?.refresh?.();
+    sec.hidden = true;
     return
   }
-  host.innerHTML = `<p class="small">Opération <b>${esc(op.name||op.id)}</b> (${esc(op.id)}) : ${ids.length-1} mission(s) d’équipage et l’organisation de l’exercice ${esc(zId)}.${ex&&!ex.legacy?` Heure H : ${esc(ex.h_hour)}.`:''}</p><div class="opMembers">${ids.map(id=>{const d=have(id),z=id===zId,p=X.participantOf(ex,id),label=z?'Organisation':(d?.aircraft?.[0]?.callsign||p?.callsign||'—'),note=!d?(z?'à créer':'non chargée'):z?'brief général, chiffons, chronologie':p?`${p.track?'chiffon · ':''}décollage ${X.hText(X.parseH(p.takeoff)??0)}`:(d.aircraft?.[0]?.type||'');return`<button type="button" class="opMember${id===cur?' current':''}${d?'':' missing'}" data-op-go="${esc(id)}"${d&&id!==cur?'':' disabled'}><b>${esc(id)}</b><span>${esc(label)}</span><small>${esc(note)}</small></button>`}).join('')}</div>${have(zId)?'':`<div class="actions"><button type="button" id="createOrganisation" data-icon="plus">Créer l’organisation de l’exercice</button><span class="small">Mission ${esc(zId)} : brief général, heure H, participants, chiffons et chronologie ; les pistes et injects des missions (ancien format) y sont repris.</span></div>`}${chiffonsToCreate(docs).length?`<div class="actions"><button type="button" id="createChiffons" data-icon="plus">Créer les missions des chiffons joués (${chiffonsToCreate(docs).length})</button><span class="small">Chaque chiffon joué devient une mission de l’opération, affectée et volée comme les autres : départ de la base du premier équipage, route de la piste, consignes, décollage calculé d’après son heure de départ.</span></div>`:''}`;
+  host.innerHTML = `<p class="small" data-no-i18n>${esc(opSummary(docs, zId, ex))}</p><div class="opMembers">${ids.map(id=>{const d=have(id),z=id===zId,p=X.participantOf(ex,id),label=z?'Organisation':(d?.aircraft?.[0]?.callsign||p?.callsign||'—'),note=!d?(z?'à créer':'non chargée'):z?'brief général, chiffons, chronologie':p?`${p.track?'chiffon · ':''}décollage ${X.hText(X.parseH(p.takeoff)??0)}`:(d.aircraft?.[0]?.type||'');return`<button type="button" class="opMember${id===cur?' current':''}${d?'':' missing'}" data-op-go="${esc(id)}"${d&&id!==cur?'':' disabled'}><b>${esc(id)}</b><span>${esc(label)}</span><small>${esc(note)}</small></button>`}).join('')}</div>${have(zId)?'':`<div class="actions"><button type="button" id="createOrganisation" data-icon="plus">Créer l’organisation de l’exercice</button><span class="small">Mission ${esc(zId)} : brief général, heure H, participants, chiffons et chronologie ; les pistes et injects des missions (ancien format) y sont repris.</span></div>`}${chiffonsToCreate(docs).length?`<div class="actions"><button type="button" id="createChiffons" data-icon="plus">Créer les missions des chiffons joués (${chiffonsToCreate(docs).length})</button><span class="small">Chaque chiffon joué devient une mission de l’opération, affectée et volée comme les autres : départ de la base du premier équipage, route de la piste, consignes, décollage calculé d’après son heure de départ.</span></div>`:''}`;
   const cc = $('createChiffons');
   if (cc) cc.onclick = () => createChiffonMissions();
   host.querySelectorAll('[data-op-go]').forEach(b => b.onclick = () => {
@@ -1205,7 +1879,7 @@ function renderOperation() {
     if (i >= 0) applyBatchDoc(SiaMission.go(i, 'generator'))
   });
   const c = $('createOrganisation');
-  if (c) c.onclick = () => createOrganisation(zId);
+  if (c) c.onclick = () => askCreateOrganisation(zId);
   window.AppFramework?.refresh?.()
 }
 /** Mission d'organisation d'une opération (<lettre>-<nnn>Z) : participants = missions chargées ; pistes et injects des
@@ -1483,7 +2157,8 @@ function applyMode() {
   document.querySelector('[data-block-id="mission-estimate"]').hidden = org;
   setBlock('mission-texts', org ? 'Brief général' : 'Textes de mission', org ?
     'Brief de la coordination, remis à tous : situation, objectifs communs, créneaux, critères de fin.' :
-    'Résumé, description détaillée et rubriques du brief.');
+    'Résumé, description détaillée, puis les rubriques que le brief place à leur rang : objectifs, risques et notes vont dans le YAML, les autres complètent la section du même nom.'
+  );
   syncDocButtons()
 }
 /** Boutons des documents selon la mission et l'opération. */
@@ -1657,7 +2332,8 @@ function markdownExport() {
     detailed_description: state.narrative.detailed || state.yaml.detailed_description
   };
   return window.SiaMission.markdownOf(y, {
-    docs: opDocs().filter(d => d !== state.yaml)
+    docs: opDocs().filter(d => d !== state.yaml),
+    narrative: state.narrative
   })
 }
 // ===== Brief PDF (jsPDF local) =====
@@ -1719,9 +2395,7 @@ function asArray(v) {
 /** Risques de la mission en lignes de texte : liste YAML (danger, conséquence, parade), sinon rubrique du récit. */
 function risksText() {
   const r = state.yaml.risks;
-  if (Array.isArray(r) && r.length) return r.map(x => typeof x === 'string' ? x : [x.hazard || x.risk || x.name, x.consequence, x
-    .mitigation
-  ].filter(Boolean).join(' - '));
+  if (Array.isArray(r) && r.length) return r.map(x => typeof x === 'string' ? x : SiaMission.riskText(x));
   const s = findSection(['risques', 'risks', 'points_d_attention']);
   return s ? s.content.split(/\r?\n/).map(x => x.replace(/^\s*[-*•]\s*/, '')).filter(Boolean) : []
 }
@@ -2212,10 +2886,26 @@ async function exportPdf(opts) {
   y = addRendezvous(doc, y);
   /** Section « Partie B… » (et suivantes) du récit : non reprise telle quelle dans ce PDF. */
   const isPart = s => /^partie\s+[b-z]\b/i.test(String(s.title || '').trim());
+  // rubriques du récit : jamais une section que le PDF a déjà (titre généré, toutes langues : SiaMission.briefKey) ni deux
+  // fois la même ; une rubrique créée dans le générateur sur un sujet déjà imprimé passe en « compléments »
+  const printed = new Set(['Summary', 'Description détaillée', 'Risques à prendre en compte', 'Équipes engagées', 'Rendez-vous'].map(t =>
+    'k' + SiaMission.briefKey(t)));
+  // chronologie de la mission (événements horaires, V2_FABLE § 10) : en tête de la rubrique Chronologie, sinon seule
+  const tlText = isOrgDoc() ? '' : window.MissionExercise?.missionTimelineText?.(state.yaml) || '',
+    tlId = 'k' + SiaMission.briefKey('Chronologie');
+  let tlDone = !tlText;
   for (const s of state.narrative.sections) {
-    if (isPart(s) || /introduction|risque|equipe|rendez_vous|summary|description/i.test(norm(s.title))) continue;
-    y = addSection(doc, s.title, s.content, y)
+    const k = SiaMission.briefKey(s.title),
+      id = k >= 0 ? 'k' + k : 't' + norm(s.title),
+      isTl = !tlDone && id === tlId && (s.named || k < 0);
+    if (isPart(s) || (!String(s.content || '').trim() && !isTl)) continue;
+    if (k >= 0 && !s.named) continue; // copie d'une section générée (brief rangé relu)
+    const body = isTl ? [tlText, s.content].filter(x => String(x || '').trim()).join('\n\n') : s.content;
+    if (isTl) tlDone = true;
+    y = addSection(doc, printed.has(id) ? `${s.title} — compléments` : s.title, body, y);
+    printed.add(id)
   }
+  if (!tlDone) y = addSection(doc, 'Chronologie', tlText, y);
   y = addCrewExercise(doc, y);
   {
     const c = crewExercise();
@@ -2249,10 +2939,99 @@ $('detailed').addEventListener('input', () => state.narrative.detailed = $('deta
    prompt, commande inscrite au registre ; les fichiers produits (mission<ID>.yaml, summary<ID>.md) se chargent ensuite
    ci-dessus ou se collent. */
 window.MissionOrder?.mount($('gptOrder'), {
+  onSkeleton: (request, slots) => createSkeleton(request, slots),
   hint: 'Le prompt (une mission) est copié, puis ChatGPT s’ouvre dans un nouvel onglet : coller et envoyer. Charger ou coller ensuite les fichiers mission<ID>.yaml et summary<ID>.md (ex. missionM-016.yaml) ; la commande figure au registre des missions (« commandée »).'
 });
+/* ===== Squelette sans ChatGPT (« Créer le squelette ici », formulaire de commande) =====
+   Mêmes réglages que le prompt (MissionOrder.requestOf) → missions vides de récit (apps/cpco/mission_skeleton.js), mises
+   en lot ; les champs à compléter sont marqués jusqu'à leur saisie, la ligne d'état compte ce qui reste. */
+/** Terrain d'après son code OACI : base aéronautique (SiaBase), sinon terrains déjà vus par les missions ; null sinon. */
+async function airportOf(icao) {
+  const code = String(icao || '').toUpperCase();
+  try {
+    const b = await window.SiaBase?.get?.({
+        any: true
+      }),
+      a = b?.aero?.aerodromes?.find(x => String(x.icao || '').toUpperCase() === code);
+    if (a) return a
+  } catch {
+    /* base aéronautique absente */
+  }
+  try {
+    return JSON.parse(localStorage.getItem('missionAirports:v1') || '{}')[code] || null
+  } catch {
+    return null
+  }
+}
+/** « Créer le squelette ici » : missions de la commande (une par équipe en vol, organisation …Z si exercice) mises en lot
+ *  et ouvertes ici ; ravitaillement : axe AAR de la base. */
+async function createSkeleton(request, slots) {
+  try {
+    const docs = await window.MissionSkeleton.build(request, slots, {
+        airport: airportOf,
+        aarTracks: request.aar === 'oui' ? await aarTracksData() : []
+      }),
+      d = SiaMission.setBatch(docs, 'generator');
+    applyBatchDoc(d);
+    $('importMore').open = false;
+    setStatus(`Squelette créé : ${docs.map(x => x.yaml.mission.id).join(', ')}. Compléter les champs marqués, puis le studio pour les cartes.`, 'ok');
+    $('skeletonBar').scrollIntoView({
+      behavior: 'smooth',
+      block: 'center'
+    })
+  } catch (e) {
+    setStatus(`Squelette non créé : ${e.message}`, 'err')
+  }
+}
+/** Ligne « Squelette : n points à placer, m textes à écrire — puis le studio pour les cartes » (missions du lot, la
+ *  courante avec ses saisies) et champs vides marqués « à compléter » ; rien hors squelette (meta.skeleton). */
+function syncSkeletonBar() {
+  const bar = $('skeletonBar');
+  if (!bar || !window.MissionSkeleton) return;
+  const cur = state.yaml?.mission?.id,
+    docs = (SiaMission.loadBatch()?.docs || []).map(x => x.yaml?.mission?.id === cur ? state.yaml : x.yaml),
+    all = docs.length ? docs : [state.yaml],
+    on = all.some(y => y?.meta?.skeleton),
+    sum = all.reduce((a, y) => {
+      const t = window.MissionSkeleton.todo(y || {});
+      return {
+        points: a.points + t.points,
+        texts: a.texts + t.texts
+      }
+    }, {
+      points: 0,
+      texts: 0
+    });
+  bar.hidden = !on;
+  if (on) bar.querySelector('span').textContent =
+    `Squelette : ${sum.points} point(s) à placer, ${sum.texts} texte(s) à écrire — puis le studio pour les cartes.`;
+  document.querySelectorAll('.todo').forEach(el => el.classList.remove('todo'));
+  if (!state.yaml?.meta?.skeleton) return;
+  // champs vides de la mission courante : titre, textes, rubriques, et dans l'éditeur YAML les noms et coordonnées
+  const els = [...document.querySelectorAll('[data-common="title"], #summary, #detailed, [data-narr-body]')];
+  for (const el of document.querySelectorAll('#yamlEditor [data-path]')) {
+    try {
+      if (['lat', 'lon', 'name', 'title', 'text', 'callsign', 'type'].includes(String(JSON.parse(el.dataset.path).at(-1)))) els.push(el)
+    } catch {
+      /* chemin illisible */
+    }
+  }
+  els.filter(el => !String(el.value ?? '').trim()).forEach(el => el.classList.add('todo'))
+}
+// saisie : compte et marques mis à jour (un peu après la frappe)
+let skeletonTimer = 0;
+document.querySelector('main').addEventListener('input', () => {
+  clearTimeout(skeletonTimer);
+  skeletonTimer = setTimeout(syncSkeletonBar, 400)
+});
+// « Ouvrir au studio » : mission partagée à jour, puis le studio cartographique (même onglet)
+$('skeletonStudio').onclick = () => {
+  shareMission(true);
+  location.href = 'map_parser.html'
+};
 /* Lot de missions : navigation dans l'en-tête (◀ Mission 41A ▶) ; la mission choisie remplace le formulaire. */
 function applyBatchDoc(d) {
+  const cleaned = SiaMission.cleanNarrative?.(d) || 0; // rubriques copiées d'un brief rangé
   state = {
     ...state,
     yaml: d.yaml || {},
@@ -2264,7 +3043,7 @@ function applyBatchDoc(d) {
     sourceNames: d.sourceNames || []
   };
   renderAll();
-  setStatus(`Mission ${d.yaml?.mission?.id||''} du lot : ${d.yaml?.title||''}.`, 'ok');
+  setStatus(`Mission ${d.yaml?.mission?.id||''} du lot : ${d.yaml?.title||''}.${cleaned ? ` ${cleaned} rubrique(s) issue(s) du brief rangé retirée(s).` : ''}`, 'ok');
   syncBatchUi()
 }
 SiaMission.mountNav('generator', applyBatchDoc);
@@ -2561,6 +3340,165 @@ $('mapFiles').addEventListener('change', async e => {
     e.target.value = ''
   }
 });
+/** Ce que la remise en forme a changé (SiaMission.tidyMission) en une phrase. */
+function tidyText(d) {
+  return [trl(['Mission remise en forme :', 'Mission tidied:', 'Mission bereinigt:', 'Misión ordenada:']), [d.risks ? trf([
+    '{n} risque(s) structuré(s)',
+    '{n} risk(s) structured', '{n} Risiko/Risiken strukturiert', '{n} riesgo(s) estructurado(s)'
+  ], {
+    n: d.risks
+  }) : '', d.notes ? trf(['{n} ligne(s) sans séparateur rangée(s) dans Notes', '{n} line(s) without separator moved to Notes',
+    '{n} Zeile(n) ohne Trennzeichen in die Notizen verschoben', '{n} línea(s) sin separador movida(s) a Notas'
+  ], {
+    n: d.notes
+  }) : '', d.objectives ? trf(['{n} objectif(s) réparti(s) ou débarrassé(s) de leur numéro',
+    '{n} objective(s) split or stripped of their number',
+    '{n} Ziel(e) aufgeteilt oder ohne Nummer', '{n} objetivo(s) repartido(s) o sin número'
+  ], {
+    n: d.objectives
+  }) : ''].filter(Boolean).join(', ') + '.'].join(' ')
+}
+/** Ligne Théâtre de l'Identification : théâtre de la mission différent de celui de son terrain de départ (code OACI →
+ *  territoire, MissionSkeleton.theatreOf) → « Théâtre Polynésie, départ en métropole (LFQP) » et un bouton pour le corriger. */
+function renderTheatreHint() {
+  const el = $('theatreHint'),
+    S = window.MissionSkeleton,
+    th = String(state.yaml?.mission?.theatre || ''),
+    icao = S?.icaoOf?.(state.yaml?.origin) || '',
+    want = S?.theatreOf?.(icao) || '',
+    fold = v => v.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  if (!th || !want || fold(th) === fold(want)) {
+    el.hidden = true;
+    return
+  }
+  const IN = {
+    'métropole': 'en métropole',
+    'Corse': 'en Corse',
+    'Antilles': 'aux Antilles',
+    'Guyane': 'en Guyane',
+    'Réunion': 'à La Réunion',
+    'Mayotte': 'à Mayotte',
+    'Nouvelle-Calédonie': 'en Nouvelle-Calédonie',
+    'Polynésie': 'en Polynésie'
+  };
+  el.hidden = false;
+  el.innerHTML = `<span class="err">${esc(trf(['Théâtre {t}, départ {w} ({i}).', 'Theatre {t}, departure in {e} ({i}).',
+    'Einsatzgebiet {t}, Abflug in {e} ({i}).', 'Teatro {t}, salida en {e} ({i}).'
+  ], {
+    t: th,
+    w: IN[want] || want,
+    e: want,
+    i: icao
+  }))}</span> <button type="button" class="secondary" id="theatreFix">${esc(trf(['Mettre {e}', 'Set {e}', '{e} setzen', 'Poner {e}'], {
+    e: want
+  }))}</button>`;
+  $('theatreFix').onclick = () => {
+    setPath(state.yaml, ['mission', 'theatre'], want);
+    renderTheatreHint();
+    renderYaml();
+    shareMission(true)
+  }
+}
+/** Attributs en plus d'un champ de l'éditeur YAML : nom d'un lieu de la mission (recherche de terrains, balises, villes),
+ *  indicatif d'un aéronef (proposés depuis la flotte), départ et arrivée (infobulle : base de l'aéronef par défaut). */
+function yamlFieldExtra(path, key) {
+  const top = path[0],
+    isPlace = key === 'name' && (['origin', 'destination', 'target'].includes(top) && path.length === 2 || ['turning_points',
+      'rendezvous', 'zones'
+    ].includes(top) && path.length === 3);
+  if (isPlace) {
+    const base = ['origin', 'destination'].includes(top) ? trf([
+      'Par défaut, la base de l’aéronef ({t}). Modifiable : tapez un terrain, une balise, un point ou une ville ; un lieu reconnu pose ses coordonnées.',
+      'By default, the aircraft’s base ({t}). Editable: type an airfield, beacon, point or town; a recognised place sets its coordinates.',
+      'Standardmäßig die Basis des Luftfahrzeugs ({t}). Änderbar: Flugplatz, Funkfeuer, Punkt oder Ort eingeben; ein erkannter Ort setzt seine Koordinaten.',
+      'Por defecto, la base de la aeronave ({t}). Modificable: escriba un aeródromo, una radiobaliza, un punto o una ciudad; un lugar reconocido fija sus coordenadas.'
+    ], {
+      t: state.yaml.aircraft?.[0]?.type || '?'
+    }) : trl(['Tapez un terrain, une balise, un point ou une ville : un lieu reconnu pose ses coordonnées.',
+      'Type an airfield, beacon, point or town: a recognised place sets its coordinates.',
+      'Flugplatz, Funkfeuer, Punkt oder Ort eingeben: Ein erkannter Ort setzt seine Koordinaten.',
+      'Escriba un aeródromo, una radiobaliza, un punto o una ciudad: un lugar reconocido fija sus coordenadas.'
+    ]);
+    return ` data-place-name list="yamlPlaceList" autocomplete="off" title="${esc(base)}"`
+  }
+  if (top === 'aircraft' && key === 'callsign' && path.length === 3) return ` data-callsign-for="${path[1]}" list="yamlCallsignList" autocomplete="off" title="${esc(trl(['Indicatifs proposés depuis la flotte pour ce type ; le nom de l’équipe suit l’indicatif.', 'Callsigns suggested from the fleet for this type; the team name follows the callsign.', 'Rufzeichen aus der Flotte für diesen Typ vorgeschlagen; der Teamname folgt dem Rufzeichen.', 'Indicativos propuestos desde la flota para este tipo; el nombre del equipo sigue al indicativo.']))}"`;
+  return ''
+}
+// éditeur YAML : suggestions de lieux (PlaceSearch) et d'indicatifs à l'entrée dans le champ
+$('yamlEditor').addEventListener('focusin', e => {
+  const t = e.target;
+  if (t.matches('[data-place-name]') && window.PlaceSearch) PlaceSearch.attach(t, $('yamlPlaceList'), p => {
+    const path = JSON.parse(t.dataset.path).slice(0, -1),
+      o = getPath(state.yaml, path);
+    if (!o) return;
+    const lat = +(+p.lat).toFixed(6),
+      lon = +(+p.lon).toFixed(6);
+    if (path[0] === 'zones') o.centre = {
+      ...(o.centre || {}),
+      lat,
+      lon
+    };
+    else Object.assign(o, {
+      lat,
+      lon
+    });
+    o.name = p.name || t.value;
+    renderYaml();
+    renderMaps();
+    renderEstimate();
+    renderTheatreHint();
+    shareMission(true);
+    setStatus(trf(['{n} placé : {la}, {lo}.', '{n} placed: {la}, {lo}.', '{n} gesetzt: {la}, {lo}.', '{n} colocado: {la}, {lo}.'], {
+      n: o.name,
+      la: lat,
+      lo: lon
+    }), 'ok')
+  });
+  if (t.matches('[data-callsign-for]')) {
+    t.dataset.before = t.value;
+    const ac = state.yaml.aircraft?.[+t.dataset.callsignFor];
+    $('yamlCallsignList').innerHTML = (window.MissionSkeleton?.callsignsFor?.(ac?.type) || []).map(c => `<option value="${esc(c)}">`)
+      .join('')
+  }
+});
+// indicatif changé : le nom de l'équipe (et les participants des rendez-vous) qui portaient l'ancien le suivent ; une
+// équipe nommée d'après l'identifiant de la mission (squelette sans indicatif) prend le nouveau
+$('yamlEditor').addEventListener('change', e => {
+  const t = e.target;
+  if (!t.matches('[data-callsign-for]')) return;
+  const before = String(t.dataset.before || '').toUpperCase(),
+    now = String(t.value || '').trim().toUpperCase(),
+    id = String(state.yaml.mission?.id || '').toUpperCase();
+  if (!now || now === before) return;
+  for (const team of [].concat(state.yaml.teams || [])) {
+    const n = String(team?.name || '').toUpperCase();
+    if (team && (n === before && before || n === id || !n) && !/sol/i.test(String(team.type || ''))) team.name = now
+  }
+  for (const r of [].concat(state.yaml.rendezvous || []))
+    if (Array.isArray(r?.participants)) r.participants = r.participants.map(x => String(x).toUpperCase() === before && before || String(
+        x)
+      .toUpperCase() === id ? now : x);
+  t.dataset.before = now;
+  renderYaml();
+  shareMission(true)
+});
+// « Coller un tableau de points » (shared/point_table.js) : aperçu sous le bouton, puis ajout à la mission
+$('pastePoints').onclick = () => window.PointTable?.run($('pastePointsPreview'), {
+  yaml: () => state.yaml,
+  onAdded: (n, todo) => {
+    shareMission(true);
+    renderAll();
+    setStatus(trf(['{n} lieu(x) ajouté(s) à la mission{t}.', '{n} place(s) added to the mission{t}.',
+      '{n} Ort(e) zur Mission hinzugefügt{t}.',
+      '{n} lugar(es) añadido(s) a la misión{t}.'
+    ], {
+      n,
+      t: todo ? trf([' ({u} à placer)', ' ({u} to place)', ' ({u} zu setzen)', ' ({u} por colocar)'], {
+        u: todo
+      }) : ''
+    }), 'ok')
+  }
+});
 $('yamlEditor').addEventListener('input', e => {
   const p = e.target.dataset.path;
   if (!p) return;
@@ -2587,14 +3525,43 @@ $('yamlEditor').addEventListener('click', e => {
   }
 });
 $('narrativeSections').addEventListener('input', e => {
-  if (e.target.dataset.narrTitle !== undefined) state.narrative.sections[+e.target.dataset.narrTitle].title = e.target.value;
-  if (e.target.dataset.narrBody !== undefined) state.narrative.sections[+e.target.dataset.narrBody].content = e.target.value
+  const t = e.target,
+    ref = t.dataset.narrBody || t.dataset.narrTitle;
+  if (!ref) return;
+  if (ref.startsWith('s:')) {
+    const x = state.narrative.sections[+ref.slice(2)];
+    if (t.dataset.narrTitle) x.title = t.value;
+    else x.content = t.value
+  } else {
+    // rubrique à clé YAML : écrite sous sa clé (objectives.primary, risks, notes…)
+    const d = narrDef(ref.slice(2));
+    setPath(state.yaml, d.key.split('.'), narrFromText(d, t.value))
+  }
+});
+// type changé : contenu déplacé ; éditeur YAML redessiné en quittant une rubrique à clé (pas à chaque frappe)
+$('narrativeSections').addEventListener('change', e => {
+  const t = e.target;
+  if (t.dataset.narrType) {
+    narrSetType(t.dataset.narrType, t.value);
+    renderNarrative();
+    renderYaml()
+  } else if (String(t.dataset.narrBody || '').startsWith('y:')) {
+    const done = SiaMission.tidyMission(state.yaml);
+    if (done) {
+      renderNarrative();
+      setStatus(tidyText(done), 'ok');
+      shareMission(true)
+    }
+    renderYaml()
+  }
 });
 $('narrativeSections').addEventListener('click', e => {
-  if (e.target.dataset.narrDelete !== undefined) {
-    state.narrative.sections.splice(+e.target.dataset.narrDelete, 1);
-    renderNarrative()
-  }
+  const ref = e.target.closest('[data-narr-del]')?.dataset.narrDel;
+  if (!ref) return;
+  if (ref.startsWith('y:')) narrDropKey(narrDef(ref.slice(2)).key);
+  else state.narrative.sections.splice(+ref.slice(2), 1);
+  renderNarrative();
+  renderYaml()
 });
 $('missionId').addEventListener('input', () => {
   const p = window.SiaMission?.parseId?.($('missionId').value);
@@ -2608,8 +3575,9 @@ $('missionId').addEventListener('input', () => {
 /* Identifiant changé : une mission d'opération est citée par les autres (operation.missions / organisation, participants
    de l'exercice, noms des cartes, récits). Changer son seul identifiant casserait ces liens : migration globale proposée
    (toute l'opération si la base change : BFM-001C → A-001C migre BFM-001 → A-001), sinon l'identifiant est rétabli.
-   Pendant la saisie, la mission garde sa place dans le lot (SiaMission.save). Retour : identifiant retenu. */
-function changeMissionId(from, to) {
+   Pendant la saisie, la mission garde sa place dans le lot (SiaMission.save). Promesse : identifiant retenu (question
+   posée dans la page, jamais de boîte native). */
+async function changeMissionId(from, to) {
   from = String(from || '').trim().toUpperCase();
   to = String(to || '').trim().toUpperCase();
   if (!from || !to || from === to) return to;
@@ -2626,7 +3594,7 @@ function changeMissionId(from, to) {
     // famille : celle de la nouvelle lettre, pour toute l'opération, si la lettre change (ou si la famille saisie ne va pas)
     newType = fam && (SiaMission.parseId(from).letter !== letter || L[type] !== letter) ? fam : '';
   const others = rel.filter(r => r.id !== to && r.id !== from);
-  const ok = confirm(`« ${from} » est cité ${others.length ? `par ${others.map(r => `${r.id} (${r.count} fois)`).join(', ')}` : 'dans cette mission (opération, cartes, textes)'}.\n\n` +
+  const ok = await window.AppFramework.ask(`« ${from} » est cité ${others.length ? `par ${others.map(r => `${r.id} (${r.count} fois)`).join(', ')}` : 'dans cette mission (opération, cartes, textes)'}.\n\n` +
     (global ? `Migrer toute l’opération ${a} → ${b} : chaque mission (${a}A → ${b}A…), l’organisation, les participants, les noms des cartes et les textes` : `Migrer ${from} → ${to} dans toutes les missions du lot (listes, participants, cartes, textes)`) +
     (newType ? ` ; famille ${newType}` : '') + ` ?\n(ancien identifiant gardé dans mission.former_id)\n\nAnnuler : l’identifiant reste ${from} (le changer seul casserait ces liens).`);
   if (!ok) {
@@ -2655,16 +3623,42 @@ let idBefore = '';
 $('missionId').addEventListener('focus', () => idBefore = $('missionId').value.trim());
 $('missionId').addEventListener('change', () => {
   const now = $('missionId').value.trim();
-  if (idBefore && now !== idBefore) idBefore = changeMissionId(idBefore, now)
+  if (idBefore && now !== idBefore) changeMissionId(idBefore, now).then(id => idBefore = id)
 });
 $('missionType').addEventListener('input', updateIdentHints);
-$('addNarrative').onclick = () => {
-  state.narrative.sections.push({
-    title: 'Nouvelle rubrique',
-    content: ''
+// langue de la page fixée après le premier rendu (mode auto) ou changée : rubriques redessinées dans cette langue
+window.addEventListener('repository-language-change', () => renderNarrative());
+// lignes d'état et Opération : textes de la langue de la page (réglée après le premier rendu)
+window.addEventListener('repository-language-change', () => {
+  renderOpLine();
+  renderTheatreHint();
+  renderSaveState()
+});
+setTimeout(() => {
+  renderOpLine();
+  renderSaveState()
+}, 600);
+window.RepositoryNav?.ready?.then?.(() => renderNarrative());
+setTimeout(() => renderNarrative(), 600);
+// « Ajouter une rubrique textuelle » : type choisi (à clé YAML : clé créée vide), ou « Texte libre » (titre à saisir)
+$('narrChoices').addEventListener('click', e => {
+  const b = e.target.closest('[data-narr-add]');
+  if (!b) return;
+  const d = narrDef(b.dataset.narrAdd);
+  if (d.key) setPath(state.yaml, d.key.split('.'), d.lines ? [] : '');
+  else state.narrative.sections.push({
+    type: d.type,
+    title: d.type === 'free' ? trl(NARR_FREE.label) : d.title,
+    content: '',
+    named: true // créée ici : jamais prise pour une copie du brief rangé
   });
-  renderNarrative()
-};
+  $('addNarrative').open = false;
+  renderNarrative();
+  if (d.key) renderYaml();
+  // curseur dans la rubrique ajoutée (texte libre : son titre)
+  const ref = d.key ? `y:${d.type}` : `s:${state.narrative.sections.length - 1}`;
+  $('narrativeSections').querySelector(d.type === 'free' ? `[data-narr-title="${ref}"]` : `[data-narr-body="${ref}"]`)?.focus()
+});
 $('addRootKey').onclick = () => {
   const key = $('newRootKey').value.trim();
   if (!key) return;
@@ -2687,7 +3681,9 @@ setTimeout(async () => {
   try {
     from = JSON.parse(sessionStorage.getItem('siaFromRegistry:v1') || 'null');
     autoPdf = sessionStorage.getItem('siaAutoPdf:v1') || '';
-    sessionStorage.removeItem('siaAutoPdf:v1')
+    sessionStorage.removeItem('siaAutoPdf:v1');
+    // jeton du registre consommé au premier usage : un retour plus tard au générateur ne le rejoue pas
+    sessionStorage.removeItem('siaFromRegistry:v1')
   } catch {} // demande de PDF consommée à l'arrivée, quoi qu'il arrive ensuite
   const C = window.MissionRegistryCore;
   if (!from?.folder || !C) return;
@@ -2721,7 +3717,7 @@ $('saveToFolder').onclick = async () => {
     setPath(state.yaml, ['mission', 'id'], guess);
     renderCommon();
     shareMission(true);
-    if (changeMissionId(id, guess) !== guess) return
+    if (await changeMissionId(id, guess) !== guess) return
   }
   try {
     const f = await C.saveYaml(state.yaml, {
@@ -2739,13 +3735,61 @@ $('saveToFolder').onclick = async () => {
       if (d) SiaMission.save({
         ...d,
         yaml: state.yaml
-      }, 'generator')
+      }, 'generator');
+      SiaMission.markSaved({
+        yaml: state.yaml,
+        narrative: state.narrative
+      }, 'saved');
+      renderSaveState()
     }
   } catch (e) {
     setStatus(explainErr(e, ['Mission non enregistrée', 'Mission not saved', 'Mission nicht gespeichert', 'Misión no guardada']), 'err')
   }
 };
-$('newMission').onclick = () => {
+/** « Nouvelle mission » (et mission_editor.html?new=1, bouton « Nouvelle mission » du registre) : formulaire vidé, lot
+ *  oublié. Mission en cours pas enregistrée dans le dossier (modifiée, ou jamais enregistrée : squelette, copie,
+ *  équipage ajouté) : confirmation d'abord. order : formulaire de commande à ChatGPT déplié ensuite (la création n'a
+ *  qu'une porte : le générateur). */
+async function newMission({
+  order = false,
+  fresh = false // page ouverte par ?new : la mission partagée n'a pas été chargée dans la page
+} = {}) {
+  // mission en cours : celle de la page, sinon la mission partagée (page ouverte par ?new sans la charger)
+  const shared = fresh ? SiaMission.load() : null,
+    cur = shared?.yaml?.mission?.id ? shared : state.yaml?.mission?.id ? (syncNarrative(), {
+      yaml: state.yaml,
+      narrative: state.narrative
+    }) : null;
+  if (cur && (cur.yaml.title || cur.yaml.mission?.type)) { // formulaire vide (page sans mission) : rien à perdre
+    const st = SiaMission.savedState(cur);
+    // confirmation seulement s'il y a à perdre ; socle attendu d'abord (message dans la langue de la page)
+    if ((st.fields || st.kind === 'new') && (await uiReady(), true) && !await askOk(trf([
+        'La mission {id} n’est pas enregistrée dans le dossier{n} : l’abandonner pour une nouvelle mission ? Sinon, « Enregistrer dans le dossier » d’abord.',
+        'The mission {id} is not saved to the folder{n}: drop it for a new mission? Otherwise, “Save to the folder” first.',
+        'Die Mission {id} ist nicht im Ordner gespeichert{n}: für eine neue Mission verwerfen? Sonst zuerst „Im Ordner speichern“.',
+        'La misión {id} no está guardada en la carpeta{n}: ¿abandonarla por una misión nueva? Si no, primero «Guardar en la carpeta».'
+      ], {
+        id: cur.yaml.mission.id,
+        n: st.fields ? trf([' ({f} champ(s) modifié(s))', ' ({f} field(s) changed)', ' ({f} Feld(er) geändert)',
+          ' ({f} campo(s) modificado(s))'
+        ], {
+          f: st.fields
+        }) : ''
+      }), trl(['Nouvelle mission', 'New mission', 'Neue Mission', 'Nueva misión']))) {
+      // refus à l'ouverture par ?new : la mission partagée est rouverte telle quelle
+      if (shared) {
+        state = {
+          ...state,
+          yaml: shared.yaml,
+          narrative: shared.narrative || state.narrative,
+          sourceNames: shared.sourceNames || []
+        };
+        renderAll();
+        syncBatchUi()
+      }
+      return
+    }
+  }
   state = {
     yaml: {
       schema: 'helo-xp-mission',
@@ -2770,9 +3814,18 @@ $('newMission').onclick = () => {
     images: new Map,
     sourceNames: []
   };
+  SiaMission.setBatch([{
+    yaml: state.yaml,
+    narrative: state.narrative,
+    sourceNames: []
+  }], 'generator'); // lot de l'ancienne opération oublié
   renderAll();
-  setStatus('Nouvelle mission prête.', 'ok')
-};
+  syncBatchUi();
+  uiReady().then(() => setStatus(trl(['Nouvelle mission prête.', 'New mission ready.', 'Neue Mission bereit.', 'Nueva misión lista.']),
+    'ok')); // langue de la page appliquée
+  if (order) $('orderGpt').click()
+}
+$('newMission').onclick = () => newMission();
 $('saveDraft').onclick = () => {
   shareMission(true);
   setStatus('Brouillon textuel mémorisé dans ce navigateur. Les images devront être resélectionnées.', 'ok')
@@ -2834,17 +3887,35 @@ $('exportPdf').onclick = async () => {
   }
 };
 // Mission partagée avec le studio : lue au démarrage, enregistrée à chaque modification, relue quand
-// le studio la change (emprises, cartes ajoutées ou supprimées).
+// le studio la change (emprises, cartes ajoutées ou supprimées). « Générer une mission » du registre (?new) : mission
+// vierge, la mission partagée n'est pas reprise (elle reste telle quelle tant que la nouvelle n'est pas modifiée).
+const FRESH = new URLSearchParams(location.search).has('new');
+if (FRESH) history.replaceState(null, '', location.pathname + location.hash);
 {
-  const d = SiaMission.load();
+  const d = FRESH ? null : SiaMission.load();
   if (d && d.yaml) state = {
     ...state,
     yaml: d.yaml,
     narrative: d.narrative || state.narrative,
     sourceNames: d.sourceNames || []
-  }
+  };
+  // rubriques copiées d'un brief rangé (summary<ID>.md relu) retirées par SiaMission.load : dit, puis enregistré
+  if (d?.tidied) setTimeout(() => {
+    setStatus(tidyText(d.tidied) + ' ' + trl(['« Enregistrer dans le dossier » pour l’écrire.', '“Save to the folder” to write it.',
+      '„Im Ordner speichern“, um sie zu schreiben.', '«Guardar en la carpeta» para escribirla.'
+    ]), 'ok');
+    shareMission(true)
+  }, 350);
+  if (d?.cleaned) setTimeout(() => {
+    setStatus(`${d.cleaned} rubrique(s) issue(s) du brief rangé retirée(s) : elles doublaient les sections que le brief tire du YAML.`, 'ok');
+    shareMission(true)
+  }, 300)
 }
-renderAll();
+if (FRESH) newMission({
+  order: true,
+  fresh: true
+}); // même mission vierge que « Nouvelle mission », formulaire de commande déplié
+else renderAll();
 let shareTimer = 0;
 
 /** Mission courante partagée avec les autres pages (SiaMission.save) : tout de suite, ou 400 ms après la dernière saisie. */
@@ -2858,7 +3929,8 @@ function shareMission(now) {
         yaml: state.yaml,
         narrative: state.narrative,
         sourceNames: state.sourceNames
-      }, 'generator')
+      }, 'generator');
+      renderSaveState()
     } catch (e) {
       setStatus(explainErr(e, ['Mission non transmise aux autres pages', 'Mission not passed to the other pages',
         'Mission nicht an die anderen Seiten übergeben', 'Misión no transmitida a las demás páginas'
@@ -2868,11 +3940,88 @@ function shareMission(now) {
   if (now) run();
   else shareTimer = setTimeout(run, 400)
 }
+// « Annuler les modifications » : retour à la version de référence (enregistrée, sinon chargée), après confirmation ;
+// le studio suit (mission partagée republiée)
+$('revertMission').onclick = async () => {
+  syncNarrative();
+  const doc = {
+      yaml: state.yaml,
+      narrative: state.narrative
+    },
+    st = SiaMission.savedState(doc),
+    back = SiaMission.savedDoc(doc);
+  if (!back || !st.fields) return;
+  const msg = trf(['Revenir à la version {v} de {id} ? {n} champ(s) modifié(s) depuis {h} seront perdus ; le studio suit.',
+    'Go back to the {v} version of {id}? {n} field(s) changed since {h} will be lost; the studio follows.',
+    'Zur {v} Version von {id} zurückkehren? {n} seit {h} geänderte(s) Feld(er) gehen verloren; das Studio folgt.',
+    '¿Volver a la versión {v} de {id}? Se perderán {n} campo(s) modificado(s) desde las {h}; el estudio sigue.'
+  ], {
+    v: st.kind === 'saved' ? trl(['enregistrée', 'saved', 'gespeicherten', 'guardada']) : trl(['chargée', 'loaded', 'geladenen',
+      'cargada'
+    ]),
+    id: state.yaml.mission?.id || '',
+    n: st.fields,
+    h: new Date(st.since).toLocaleTimeString(undefined, {
+      hour: '2-digit',
+      minute: '2-digit'
+    })
+  });
+  const ok = await askOk(msg, trl(['Annuler les modifications', 'Undo changes', 'Änderungen verwerfen', 'Deshacer los cambios']), {
+    cancel: trl(['Garder', 'Keep', 'Behalten', 'Conservar']),
+    danger: true
+  });
+  if (!ok) return;
+  state = {
+    ...state,
+    yaml: back.yaml,
+    narrative: back.narrative
+  };
+  renderAll();
+  shareMission(true);
+  setStatus(trf(['Modifications annulées : version {v} de {id} rétablie.', 'Changes undone: {v} version of {id} restored.',
+    'Änderungen verworfen: {v} Version von {id} wiederhergestellt.', 'Cambios deshechos: versión {v} de {id} restablecida.'
+  ], {
+    v: st.kind === 'saved' ? trl(['enregistrée', 'saved', 'gespeicherte', 'guardada']) : trl(['chargée', 'loaded', 'geladene',
+      'cargada'
+    ]),
+    id: state.yaml.mission?.id || ''
+  }), 'ok')
+};
 document.querySelector('main').addEventListener('input', () => shareMission());
 document.querySelector('main').addEventListener('change', () => shareMission());
 document.querySelector('main').addEventListener('click', e => {
   if (e.target.closest('button')) setTimeout(() => shareMission(), 50)
 });
+// « Dupliquer » : copie de la mission chargée (SiaMission.duplicate), ouverte ici ; l'état de la page devient la copie
+// avant le rechargement (l'enregistrement qui suit chaque clic écrit donc la copie, pas l'ancienne mission)
+$('dupMission').onclick = () => {
+  if (!state.yaml?.mission) return setStatus('Aucune mission chargée à dupliquer.', 'err');
+  try {
+    syncNarrative();
+    const was = state.yaml.mission.id,
+      d = SiaMission.duplicate({
+        yaml: state.yaml,
+        narrative: state.narrative
+      }, 'generator');
+    state = {
+      ...state,
+      yaml: d.yaml,
+      narrative: d.narrative,
+      sourceNames: []
+    };
+    try {
+      sessionStorage.setItem('siaDuplicated:v1', JSON.stringify({
+        from: was,
+        to: d.yaml.mission.id
+      }))
+    } catch {
+      /* stockage indisponible */
+    }
+    location.reload()
+  } catch (e) {
+    setStatus(`Duplication impossible : ${e.message}`, 'err')
+  }
+};
 SiaMission.subscribe('generator', d => {
   state = {
     ...state,
@@ -2883,6 +4032,16 @@ SiaMission.subscribe('generator', d => {
   renderAll();
   setStatus(`Mission mise à jour par le studio cartographique (révision ${d.rev}).`, 'ok')
 });
+// Après « Dupliquer » (générateur ou registre) : la copie est chargée, la page le dit
+try {
+  const dup = JSON.parse(sessionStorage.getItem('siaDuplicated:v1') || 'null');
+  if (dup) {
+    sessionStorage.removeItem('siaDuplicated:v1');
+    setTimeout(() => setStatus(`Copie de ${dup.from} créée : ${dup.to}, titre « (copie) ». À modifier, puis « Enregistrer dans le dossier » ; cartes à refaire au studio.`, 'ok'), 300)
+  }
+} catch {
+  /* stockage indisponible */
+}
 // Passerelle vers CR : la mission (YAML) est confiée au CR de la famille correspondante.
 $('openCr').onclick = () => {
   try {

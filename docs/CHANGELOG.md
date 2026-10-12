@@ -8,7 +8,108 @@ La version affichée en pied de page de chaque page (lien vers ce fichier) vient
 
 Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n`.
 
-## [Non publié]
+## [Unreleased]
+
+## [5.2.0] — 2026-10-12
+
+Missions can now be built entirely by hand in the generator — the single place where missions are created — with a
+"Step by step" guided entry, six documented paths from a standalone flight to a coordinated exercise, tidy risks and
+objectives, a shared place search including towns, and a status line telling what is saved. The map studio's window
+shows the same interactive map. Pilots can declare aircraft outside the fleet. The help is rebuilt around tutorials and
+three manuals (pilot, planner, administrator), and no native browser dialog is left in the suite.
+
+### Added
+
+- **Missions: creation has a single door, the generator** — "New mission", "Create the skeleton here" and "Order
+  from ChatGPT…" live in the generator's Mission block. The registry no longer creates anything (its "Order a mission"
+  block is gone): it consults, files, duplicates, deletes and imports what arrives. Its "New mission" button opens the
+  generator on a new mission with the order form unfolded (`mission_editor.html?new`); "Open in generator" opens an
+  existing one. "New mission" asks before replacing a mission not yet saved to the folder (declining reopens it) and
+  clears the previous operation batch. The order card's button reads "Copy this order's prompt again".
+- **Mission generator: "Create the skeleton here", without ChatGPT** — the order settings give complete missions
+  without story: one per flying team, aircraft from the fleet suited to the family (prompt § 6 categories; tanker and
+  receivers for air refuelling), callsign from the fleet or the callsign table, airfields at the aircraft base,
+  theatre of that base, target, turning points, rendezvous, working zone, AAR track if planned, timing from the
+  duration, expected maps, empty sections; with "Coordinated exercise", the organisation mission …Z. A "Skeleton: n
+  point(s) to place, m text(s) to write" line leads to the studio; empty fields are framed until filled.
+- **Mission generator: "Step by step" guided entry** (`apps/cpco/mission_guide.js`) — a rail of six steps (Frame,
+  Places, Story, Objectives and risks, Timeline, Maps and documents), one open at a time, "Next →", "Show everything"
+  for the full layout; same data as the blocks. Proposals are put in the field and marked "proposed ✓" (theatre from
+  the aircraft base, fleet callsign, departure = base, entry/exit 15 NM from the target, story canvas, route events,
+  maps from the places); warnings are lines under the field with one-click fixes. Places: search over airfields,
+  beacons, points and towns, "+ Target / Working zone / Turning point / Rendezvous", and "Paste a table of points"
+  (`shared/point_table.js`: separator and header detected, decimal, DMS or degrees-minutes coordinates, unresolved
+  places looked up by exact name, preview before "Add n points", line order = route order; also in the YAML block).
+  Risks in a four-column table with a level selector. Default for a new mission at levels 1 to 3.
+- **Mission generator: six paths by hand** (docs/technique/V2_FABLE.md § 10) — on the Operation line of the Mission
+  block, each action saying first what it creates or removes: "Add a crew…" (standalone mission → crew A, M-016 →
+  M-016A, new mission B with the shared context and its own brief; in an operation, the next letter), "Remove this
+  crew…" (the last crew becomes standalone again), "Create the exercise organisation…", "Open the organisation". Any
+  crew mission gets a timeline in its "Timeline" section (H = planned take-off, events at H+n at a place of the
+  mission or free text), printed at the top of the brief's Timeline section.
+- **Mission generator and map studio: status line, "Undo changes", Operation line** — a status line under the Mission
+  buttons, the same in both pages: "Saved to the folder (n min ago)", "Same as the folder version", "Not yet saved to
+  the folder" or "Unsaved changes since 14:32 (n field(s))"; "Save to the folder" is the main button while something is
+  unsaved; "Undo changes" goes back to the saved or loaded version, the other page following. In the generator, an
+  Operation line always shown ("Standalone mission (no operation)" or "Operation X (A-001): crew B of 5 ·
+  organisation A-001Z · H-hour 10:00"); the Operation block only for operations.
+- **Mission generator: hand-written missions tidied at the source** — risks one per line with columns separated by
+  tab, "—", "|" or ";", a level (Critical / High / Moderate / Low, four languages) recognised anywhere, stored as
+  `{ hazard, level, consequence, mitigation }` and printed with their level; a line without separator goes to notes.
+  A numbered list in the main objective is split (first item stays, the others lead the secondaries). Applied when
+  leaving the section and on opening a mission. A line in Identification flags a theatre that does not match the
+  departure airfield, with a one-click fix. YAML editor: place names searched (airfields, beacons, points, towns;
+  `shared/place_search.js`), callsigns suggested from the fleet, the team name follows the callsign.
+- **Mission generator and registry: "Duplicate"** — a copy ready to edit: next free identifier and series of the same
+  family, references to the old identifier followed, title "… (copy)", operation reduced to the copy, maps and renders
+  to redo; it opens in the generator.
+- **Mission generator: text sections by type** — "Add a text section" offers the sections the brief and the report can
+  place, each typed (stable key, translated title, "where it appears, what to write"), one per type except "Free
+  text"; objectives, risks and notes are written under their YAML keys, the others complete the brief section of the
+  same name. The sections follow the page language.
+- **Map studio: "Points to place (n)"** — for a mission without coordinates, the Route block lists the places to
+  place: click the map, or search airfields, beacons, points, towns or "lat, lon"; a placed point can be dragged;
+  zone radius in km.
+- **Map studio: "⧉ Window" shows the same interactive map** — the window is the studio itself reduced to its live
+  map (`map_parser.html?carte`): no side bar, header or footer; pan, wheel and pinch zoom, same overlays and draggable
+  points; toolbar ◀ list ▶, Recentre, Refresh, Open in the studio, Close; keys ← → + − 0 Esc. Synchronised with the
+  main studio; a point moved in the window is saved once, without looping.
+- **Mission registry: ChatGPT reply, deletion** — an ordered mission shows a "ChatGPT reply" panel (paste the reply or
+  choose the files): the mission is filed in the missions folder and replaces the order. "Delete…" on the card
+  (folder included, after confirmation); "Remove pending orders (n)".
+- **My profile › Aircraft: aircraft outside the fleet** — an "Other aircraft (outside the fleet)" card: type a
+  designator, a model or a common name (suggestions while typing: fleet, this computer's type base, published ICAO list,
+  aliases, types declared by other pilots); the type is ticked "Owned" and goes with the declared availability, so the
+  Centre and the other pilots see it. Click a row to correct or delete it. A type missing from this computer's base is
+  completed by the launcher on "Add" (short pass, queued if one is running, still running if the page is closed):
+  ICAO, EUROCONTROL, then Aviation Fanatic as a last resort for retired or non-ICAO types (S210 Caravelle, GZ20
+  airship; read on each computer, never published). A link opens the Aviation Fanatic type list.
+- **Help page: fixed structure, tutorials first** — Tutorials · Pilot, planner and administrator manuals · For
+  developers; the home page and the index come from that structure, search covers tutorials and the three manuals in
+  the current language.
+
+### Changed
+
+- **Map studio: "SIA database" block removed** — its panel (folder, re-read, gauge, report) appears under the "SIA base"
+  line of the Mission block only when needed; the database is managed in Settings › Maintenance › Aeronautical data.
+  Flight maps keeps the block.
+- **No native browser dialog left in the suite** — every `confirm()`, `prompt()` and `alert()` now asks in the page
+  (`AppFramework.ask`, new `AppFramework.askText`); confirmations wait for the shared layer instead of freezing the tab.
+  Only the two bookmarklets, which run on the airline's website, keep `alert()`.
+
+### Fixed
+
+- **Mission registry: mission without a type, imported mission that would not open** — `affectations.yaml` was read as
+  a mission file; files added from outside the missions folder are now filed in it; a folder-less duplicate is removed
+  by "Clean up the registry".
+- **Mission generator: duplicated brief sections in two languages** ("Summary", "Teams involved"… next to their
+  French titles) — one table of generated sections, recognised in four languages; missions already loaded are cleaned
+  on opening; the PDF prints each section once.
+- **Mission generator: back from the registry reopened the wrong mission** — the "opened from the registry" token is
+  used once and dropped when it no longer matches the shared mission.
+- **Registry and generator: "Estimated duration" left in French** in the other languages.
+- **Map studio and Flight maps: preview zoom buttons shown as two empty blue squares.**
+- **Launcher: Python traceback on an unreadable request** (TLS on the HTTP port, unknown HTTP version).
 
 ## [5.1.0] — 2026-10-09
 
@@ -284,6 +385,16 @@ servies depuis un autre disque, registre aux fichiers absents, profils cachés �
 
 ### Corrigé
 
+- **Bouton « Sauvegarder (n) » qui semblait ne rien faire** : tout ce que disait la sauvegarde (demande d'accès du
+  navigateur au dossier, erreur, dossier introuvable) allait dans le message d'état du menu ☰, fermé. Désormais en
+  notification : demande d'accès annoncée (« l'accepter dans la fenêtre du navigateur »), sauvegarde écrite, dossier
+  non autorisé (sauvegarde téléchargée à la place, et comment rétablir le dossier), dossier déplacé ou supprimé (en
+  choisir un autre), toute autre erreur (4 langues).
+- **Registre : artefacts de missions indexées dont le dossier n'existe plus, sans moyen simple de les retirer** : à
+  l'ouverture, le registre demande au lanceur les dossiers présents et marque « fichier absent » les missions qui n'en
+  ont plus ; « Nettoyer le registre (n) » les retire sans dossier autorisé (plus de sélecteur de dossier), visible à
+  tous les niveaux dès qu'il y a quelque chose à nettoyer, confirmation dans la page (4 langues). Une entrée
+  incomplète (sans statut ni types) ne fait plus tomber la page du registre.
 - **Carburant, profils supprimés ou fusionnés : retirés aussi du dossier performances** — plus de profils cachés à chaque
   relecture sans moyen de les retrouver (DC3, Caravelle) : après la confirmation (qui nomme les fichiers), la base
   exportée (`flight_performance_database.fpdb.json`…) est réécrite sans eux et un fichier d'un seul profil est renommé
@@ -455,6 +566,10 @@ servies depuis un autre disque, registre aux fichiers absents, profils cachés �
   empreinte des fichiers lus (taille, date), des zones actives, des sources cochées et de la version du lecteur, gardée
   à chaque relecture (`SiaBase.upToDate`) et suivie quand la suite réécrit `mora.csv` ou les axes ENR 5.7 avec la base.
   Relancée sans rien de nouveau, la mise en place ne télécharge, n'écrit et ne recalcule rien (« base déjà à jour »).
+
+### Livraison
+
+- Archive de livraison : `xplane-web-suite-5.1.0.zip` — SHA-256 `07ed25ee741ff296d6a789224cf42721385b9671266c5b91d38f82837c7492d9` (code seul, hors dépôt : dossier `dist/`).
 
 ## [5.0.0] — 2026-10-08
 

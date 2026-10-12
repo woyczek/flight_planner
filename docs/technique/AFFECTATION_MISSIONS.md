@@ -1,56 +1,56 @@
-# Affectation des missions aux pilotes — conception (à valider)
+# Assigning missions to pilots — design (to be validated)
 
-État : **publiée en 4.6.0** (1ᵉʳ octobre 2026). Lots 1 à 4
-faits (§ 8), astreinte : bloc `alert` dans le prompt et affichage côté pilote ; décisions par défaut ci-dessous (§ 9). Objet : le Centre (CPCO) affecte une mission existante à un ou
-plusieurs pilotes, sur un horaire, avec un appareil nominatif chacun ; chaque pilote voit, hors du Centre, les missions à
-venir qui lui sont affectées, signalées par un pli cacheté dans l'en-tête.
+Status: **released in 4.6.0** (1 October 2026). Batches 1 to 4
+done (§ 8), standby: `alert` block in the prompt and display on the pilot side; default decisions below (§ 9). Purpose: the Centre (CPCO) assigns an existing mission to one or
+more pilots, at a given time, with a named aircraft each; each pilot sees, outside the Centre, the upcoming
+missions assigned to them, flagged by a sealed envelope in the header.
 
-## 1. Vocabulaire
+## 1. Vocabulary
 
-| Terme | Sens |
+| Term | Meaning |
 | --- | --- |
-| **Affectation** | Une mission × un participant : pilote (trigramme), appareil (immatriculation), indicatif, terrain de départ, heure de décollage demandée. |
-| **Participant** | Un pilote d'une mission. Une mission peut en avoir plusieurs (patrouille VAILLANT 31 / 32) : un appareil chacun. |
-| **Créneau** | Plage horaire où un pilote est disponible et où un appareil est libre. Aujourd'hui : tranches « MMS » de l'ODV (matin, après-midi, soir) ; à raffiner à l'heure. |
-| **Convoyage** | Vol de mise en place d'un appareil pris hors du terrain de départ de la mission ; il avance le décollage du participant. |
-| **Astreinte** | Mission sans heure de décollage fixe : « soyez prêt à HH:MM sur LFXX et attendez les ordres ; décollage prévisible en XX minutes ». |
-| **Pli cacheté** | Icône de l'en-tête signalant une affectation nouvelle (non lue). |
+| **Assignment** | One mission × one participant: pilot (trigram), aircraft (registration), callsign, departure airfield, requested take-off time. |
+| **Participant** | One pilot of a mission. A mission can have several (patrol VAILLANT 31 / 32): one aircraft each. |
+| **Slot** | Time range in which a pilot is available and an aircraft is free. Today: the “MMS” periods of the flight order (ODV) (morning, afternoon, evening); to be refined to the hour. |
+| **Ferry** | Positioning flight of an aircraft taken from outside the mission's departure airfield; it brings the participant's take-off forward. |
+| **Standby** | Mission without a fixed take-off time: “be ready at HH:MM at LFXX and wait for orders; expected take-off within XX minutes”. |
+| **Sealed envelope** | Header icon flagging a new (unread) assignment. |
 
-## 2. Parcours
+## 2. Flow
 
-**Côté Centre** (registre des missions, détail d'une mission → « Affecter… ») :
-1. choisir la date et l'heure H (pour un exercice : `exercise.h_hour` ; les décollages des participants en découlent,
-   `exercise.participants[].takeoff` = « H-20 »…) ;
-2. pour chaque participant (autant que d'équipes de la mission, ajout possible pour une patrouille) : pilote parmi ceux
-   **disponibles sur le créneau** (ODV, raffiné à l'heure), appareil parmi ceux **du type demandé, libres sur le créneau,
-   basés sur le terrain de départ** ; sinon appareils d'un autre terrain avec **temps de convoyage** calculé (distance /
-   vitesse de croisière du type + marge de mise en œuvre) et décollage avancé d'autant ;
-3. contrôles : pilote ou appareil déjà pris (autre affectation, bloc + remise en œuvre), qualification du pilote sur le
-   type (`defa_reference.pilots[].types`), appareil non opérationnel (`aircraft_fleet.operational`) ;
-4. enregistrer : l'affectation est rangée avec la mission (§ 4) ; statut « proposée », puis « confirmée » par le pilote
-   (à décider, § 9).
+**Centre side** (mission registry, mission details → “Assign…”):
+1. choose the date and the H-hour (for an exercise: `exercise.h_hour`; the participants' take-offs follow from it,
+   `exercise.participants[].takeoff` = “H-20”…);
+2. for each participant (as many as the mission has teams, one can be added for a patrol): pilot among those
+   **available in the slot** (ODV, refined to the hour), aircraft among those **of the requested type, free in the slot,
+   based at the departure airfield**; otherwise aircraft from another airfield with a calculated **ferry time** (distance /
+   cruise speed of the type + preparation margin) and take-off brought forward accordingly;
+3. checks: pilot or aircraft already taken (another assignment, block time + turnaround), pilot's qualification on the
+   type (`defa_reference.pilots[].types`), aircraft not operational (`aircraft_fleet.operational`);
+4. save: the assignment is stored with the mission (§ 4); status “proposed”, then “confirmed” by the pilot
+   (to be decided, § 9).
 
-**Côté pilote** (page hors Centre, « Mes missions ») :
-1. l'utilisateur est identifié par son trigramme (réglage local, § 3 ; essai : RBR) ;
-2. pli cacheté dans l'en-tête quand une affectation nouvelle l'attend (compteur, clic → « Mes missions ») ;
-3. liste des missions à venir (date, heure, mission, appareil, terrain) puis, pour une mission, **vue en lecture seule** :
-   récit et objectifs, appareil attribué (immatriculation, indicatif), terrain et heure de décollage demandée (ou
-   consigne d'astreinte), route (points tournants sur la carte), éléments graphiques fournis (cartes `cartes/` du
-   dossier de la mission, carte d'opération), coéquipiers (patrouille) ;
-4. boutons « Ouvrir dans Cartes » (planificateur de cartes, route fournie) et « Carburant » (planificateur de
-   performances : route, distance, niveau, appareil — même transfert que le studio, `plannerHandoff:v1`) ;
-   « Créer le CR » une fois la mission volée.
+**Pilot side** (page outside the Centre, “My missions”):
+1. the user is identified by their trigram (local setting, § 3; test: RBR);
+2. sealed envelope in the header when a new assignment is waiting for them (counter, click → “My missions”);
+3. list of upcoming missions (date, time, mission, aircraft, airfield) then, for a mission, a **read-only view**:
+   narrative and objectives, assigned aircraft (registration, callsign), airfield and requested take-off time (or
+   standby instruction), route (turning points on the map), graphic material supplied (maps in `cartes/` of the
+   mission folder, operation map), team mates (patrol);
+4. “Open in Maps” (« Ouvrir dans Cartes ») buttons (map planner, route supplied) and “Fuel” (performance
+   planner: route, distance, level, aircraft — same hand-off as the studio, `plannerHandoff:v1`);
+   “Create the report” once the mission has been flown.
 
-## 3. Identité de l'utilisateur
+## 3. User identity
 
-Réglage local **« Mon trigramme »** (Paramètres, `defaUser:v1` dans ce navigateur, non partagé) : trigramme choisi dans
-la référence (`data/references/defa_reference.js`, `pilots[].trigram`). Sert à « Mes missions », au pli cacheté et,
-plus tard, à préremplir l'équipage des CR. Pas de mot de passe : la suite reste locale ; ce n'est pas un contrôle d'accès.
+Local setting **“My trigram”** (« Mon trigramme ») (Settings, `defaUser:v1` in this browser, not shared): trigram chosen from
+the reference (`data/references/defa_reference.js`, `pilots[].trigram`). Used by “My missions”, the sealed envelope and,
+later, to pre-fill the crew of mission reports (CR). No password: the suite stays local; this is not access control.
 
-## 4. Données
+## 4. Data
 
-Une affectation est rangée **avec sa mission** : `data/missions/<lettre>_<FAMILLE>/<ID>/affectations.yaml` (plus un index
-`data/missions/affectations.yaml` reconstruit par le registre, pour la page du pilote et les contrôles de conflits) :
+An assignment is stored **with its mission**: `data/missions/<lettre>_<FAMILLE>/<ID>/affectations.yaml` (plus an index
+`data/missions/affectations.yaml` rebuilt by the registry, for the pilot page and the conflict checks):
 
 ```yaml
 mission: A-001A
@@ -74,58 +74,58 @@ participants:
 alert: null                         # astreinte : § 6
 ```
 
-**Partage** : le Centre et les pilotes ne sont pas sur le même poste. Le dossier `data/` est déjà un dépôt git
-(`missions-defa`, Framagit) : l'affectation y voyage comme les missions (commit côté Centre, mise à jour côté pilote,
-`tools/update_suite.py`). Données nominatives (trigrammes, horaires) : à valider (§ 9), le dépôt devant rester privé.
+**Sharing**: the Centre and the pilots are not on the same computer. The `data/` folder is already a git repository
+(`missions-defa`, Framagit): the assignment travels there like the missions (commit on the Centre side, update on the pilot side,
+`tools/update_suite.py`). Personal data (trigrams, times): to be validated (§ 9), the repository having to remain private.
 
-## 5. Créneaux, disponibilités et appareils
+## 5. Slots, availability and aircraft
 
-- **Pilotes** : disponibilités de l'ODV (`OdvCore.extract` : codes par jour × matin / après-midi / soir) ; raffinement à
-  l'**heure** dans une grille jours × heures (cases cliquables et glissables, comme la grille horaire jointe à la demande ;
-  15 min est trop fin : **1 h** par défaut, 30 min en option), « disponible » / « indisponible » ; une tranche MMS
-  « disponible » préremplit ses heures, le pilote (ou le Centre) les ajuste. Stockage : avec l'ODV de la semaine
-  (`data/odv/<semaine>/disponibilites.yaml`, nominatif : même règle de partage que § 4).
-- **Appareils** : flotte (`aircraft_fleet.js` : type, immatriculation, base, opérationnel), disponibilités de la feuille
-  FLOTTE de l'ODV (vert / orange / rouge), occupation par les autres affectations (décollage → atterrissage estimé
-  `timing.estimated_block_min` + remise en œuvre, réglable, 30 min par défaut).
-- **Convoyage** : appareil pris hors du terrain de départ → distance orthodromique base → départ, vitesse de croisière du
-  type (`AircraftDB`), + 20 min de mise en œuvre ; le décollage du convoyage est affiché et contrôlé (pilote et appareil
-  disponibles dès ce moment) ; le convoyage peut être confié au même pilote ou laissé « à organiser ».
-- **Appareils compatibles** : le type écrit en clair dans la mission (« H225M Caracal », « Rafale », « E-3F / A400M »)
-  est ramené aux désignateurs de la flotte (alias de la base OACI, synonymes d'usage, variantes et modèles :
-  `MissionAssignments.postsOf`) ; seuls les appareils de ce type (ou de ces types, ou de la catégorie d'un poste
-  générique) sont proposés, et seulement ceux de l'opérateur quand le service du poste en désigne un (« Hélicoptère /
-  Gendarmerie » → hélicoptères de la Gendarmerie nationale).
-- **Fenêtre d'un créneau** (bouton « Missions du registre… », dès qu'un pilote est libre sur le créneau : une mission à
-  un seul équipage se planifie comme une patrouille) : rien n'est présélectionné ; on coche la mission, on choisit
-  l'appareil (compatibles seulement, du plus proche au plus lointain du terrain de départ, temps de convoyage dans la
-  liste), puis le pilote (libres jusqu'à la fin de la mission et possédant le type d'abord). Les missions déjà affectées
-  (semaine affichée ou passé) ne sont pas proposées ; celles que les pilotes libres peuvent armer viennent d'abord.
-- **Créneaux et missions probables** : un pilote affecté sur un créneau (mission ou convoyage) n'y compte plus ;
-  effectif, missions probables et score sont recalculés après chaque affectation.
-- **Mission sur plusieurs créneaux** (fenêtre d'un créneau du planning ODV) : décollage au début du créneau, fin =
-  décollage + bloc + remise en œuvre ; les créneaux recouverts sont affichés (« mobilise lundi après-midi, lundi soir »)
-  et le pilote doit être libre jusqu'à la fin (déclaration heure par heure, sinon classeur ; aucune autre affectation).
-- **Convoyage depuis la fenêtre d'un créneau** : affiché de bout en bout (trajet, décollage → arrivée). Trois choix :
-  - **un autre pilote** (proposé parmi les pilotes libres sur toute la durée du convoyage, maîtrise du type d'abord) ;
-  - **le pilote de la mission lui-même** : convoyage avancé avant le créneau s'il y est déclaré libre (au quart d'heure le
-    plus tôt), sinon fait dès le début du créneau, la mission décalée d'autant ;
-  - **à affecter** : le convoyage devient une mission à part, sans pilote (ligne « convoyage », statut « à affecter ») ;
-    il apparaît dans la fenêtre du créneau où il tombe (« Convoyages à affecter »), où on le confie à un pilote libre.
-  Décollage de la mission modifiable (heure UTC, avancée ou retardée ; vide : automatique) ; un pilote non déclaré libre
-  sur toute la plage (convoyage compris) est signalé.
-- **Le convoyage par un tiers est une mission** : sa propre ligne dans l'index (role `convoyage`, pilote, appareil,
-  trajet, heures), visible dans « Mes missions » du convoyeur, dans la semaine du planning et sur son créneau. Il
-  n'occupe que le convoyeur : le pilote de la mission n'est pris qu'à son décollage (il ne l'est dès le convoyage que
-  s'il le fait lui-même).
-- **Patrouille** : un appareil nominatif par participant ; indicatifs suivis (MERCURE31 → MERCURE32) ; même type si
-  la mission l'impose (`TYPES_EQUIPES` imposés), sinon type compatible.
+- **Pilots**: availability from the ODV (`OdvCore.extract`: codes per day × morning / afternoon / evening); refinement to
+  the **hour** in a days × hours grid (clickable and draggable cells, like the hourly grid attached to the request;
+  15 min is too fine: **1 h** by default, 30 min as an option), “available” / “unavailable”; an MMS period
+  marked “available” pre-fills its hours, and the pilot (or the Centre) adjusts them. Storage: with the ODV of the week
+  (`data/odv/<semaine>/disponibilites.yaml`, personal data: same sharing rule as § 4).
+- **Aircraft**: fleet (`aircraft_fleet.js`: type, registration, base, operational), availability from the
+  FLOTTE sheet of the ODV (green / orange / red), occupation by the other assignments (take-off → estimated landing
+  `timing.estimated_block_min` + turnaround, adjustable, 30 min by default).
+- **Ferry**: aircraft taken from outside the departure airfield → great-circle distance base → departure, cruise speed of the
+  type (`AircraftDB`), + 20 min of preparation; the ferry take-off is shown and checked (pilot and aircraft
+  available from that moment); the ferry can be given to the same pilot or left “to be organised”.
+- **Compatible aircraft**: the type written in plain text in the mission (“H225M Caracal”, “Rafale”, “E-3F / A400M”)
+  is mapped to the fleet designators (aliases from the ICAO database, common synonyms, variants and models:
+  `MissionAssignments.postsOf`); only the aircraft of this type (or of these types, or of the category of a generic
+  post) are offered, and only those of the operator when the post's service names one (“Helicopter /
+  Gendarmerie” → helicopters of the Gendarmerie nationale).
+- **Slot window** (“Registry missions…” button, as soon as a pilot is free in the slot: a mission with
+  a single crew is planned like a patrol): nothing is preselected; you tick the mission, choose
+  the aircraft (compatible ones only, from the nearest to the farthest from the departure airfield, ferry time in the
+  list), then the pilot (those free until the end of the mission and owning the type first). Missions already assigned
+  (week shown or past) are not offered; those that the free pilots can crew come first.
+- **Slots and likely missions**: a pilot assigned in a slot (mission or ferry) no longer counts there;
+  headcount, likely missions and score are recalculated after each assignment.
+- **Mission over several slots** (slot window of the ODV planning): take-off at the start of the slot, end =
+  take-off + block time + turnaround; the slots covered are shown (“takes up Monday afternoon, Monday evening”)
+  and the pilot must be free until the end (hour-by-hour declaration, otherwise workbook; no other assignment).
+- **Ferry from the slot window**: shown end to end (route, take-off → arrival). Three choices:
+  - **another pilot** (offered among the pilots free for the whole duration of the ferry, mastery of the type first);
+  - **the mission pilot themselves**: ferry brought forward before the slot if they are declared free then (at the
+    earliest quarter hour), otherwise flown from the start of the slot, the mission being shifted accordingly;
+  - **to assign**: the ferry becomes a separate mission, without a pilot (“ferry” row, status “to assign”);
+    it appears in the window of the slot it falls in (“Ferries to assign”), where it is given to a free pilot.
+  Mission take-off can be changed (UTC time, brought forward or delayed; empty: automatic); a pilot not declared free
+  over the whole range (ferry included) is flagged.
+- **A ferry by a third party is a mission**: its own row in the index (role `convoyage`, pilot, aircraft,
+  route, times), visible in the ferry pilot's “My missions”, in the week of the planning and in its slot. It
+  only occupies the ferry pilot: the mission pilot is only taken from their take-off (they are taken from the ferry
+  onwards only if they fly it themselves).
+- **Patrol**: one named aircraft per participant; consecutive callsigns (MERCURE31 → MERCURE32); same type if
+  the mission requires it (imposed `TYPES_EQUIPES`), otherwise a compatible type.
 
-## 6. Missions d'astreinte
+## 6. Standby missions
 
-Le générateur connaît des sous-types d'alerte (QRA d'AAR, AIR_POLICING de COMMAND) et les exercices à chronologie
-(heure H, pistes « chiffons », messages radio) mais **aucune mission ne décrit une attente au sol** : à ajouter au prompt
-(`docs/PROMPT_GENERATEUR_MISSIONS.md`), bloc facultatif :
+The generator knows alert subtypes (QRA of AAR, AIR_POLICING of COMMAND) and exercises with a timeline
+(H-hour, tracks (“chiffons”), radio messages) but **no mission describes waiting on the ground**: to be added to the prompt
+(`docs/PROMPT_GENERATEUR_MISSIONS.md`), optional block:
 
 ```yaml
 alert:
@@ -139,118 +139,118 @@ alert:
     - { id: P2, if: "piste sud",  route: [PT3], task: "identification" }
 ```
 
-Affichage pilote : « Soyez prêt à 12:30 sur LFBM et attendez les ordres ; décollage prévisible en 15 minutes. Fin
-d'astreinte 15:00. » ; l'ordre de décollage et la phase retenue viennent de la mission d'organisation (événement), comme
-les pistes révélées aujourd'hui. Créneau occupé : de `ready_at` à `window_end` + bloc estimé.
+Pilot display: “Be ready at 12:30 at LFBM and wait for orders; expected take-off within 15 minutes. End
+of standby 15:00.”; the take-off order and the phase selected come from the organisation mission (event), like
+the tracks revealed today. Slot occupied: from `ready_at` to `window_end` + estimated block time.
 
-## 7. Pli cacheté
+## 7. Sealed envelope
 
-Indicateur de l'en-tête (à côté du bouton de sauvegarde), visible seulement quand une affectation non lue existe pour
-l'utilisateur : enveloppe à cachet de cire dans les designs à matières (image à fournir : `shared/deco/<design>/sealed.webp`,
-détourée ; Cabinet : cire rouge, Durci : pli kaki et tampon, Aqua : enveloppe de verre), icône d'enveloppe et pastille
-ailleurs. Clic → « Mes missions » ; ouvrir la mission marque l'affectation lue (`read_at`).
+Header indicator (next to the save button), visible only when an unread assignment exists for
+the user: envelope with a wax seal in the material designs (image to supply: `shared/deco/<design>/sealed.webp`,
+cut out; Cabinet: red wax, Rugged: khaki envelope and stamp, Aqua: glass envelope), envelope icon and badge
+elsewhere. Click → “My missions”; opening the mission marks the assignment as read (`read_at`).
 
-## 8. Découpage proposé
+## 8. Proposed breakdown
 
-1. **Identité** (« Mon trigramme ») + **page « Mes missions »** en lecture seule sur des affectations écrites à la main
-   (fichier d'exemple) + pli cacheté. Valide l'affichage et les transferts Cartes / Carburant.
-2. **Affectation côté Centre** : dialogue « Affecter… » (participants, pilotes et appareils filtrés par créneau MMS,
-   conflits), écriture de `affectations.yaml`, index.
-3. **Grille horaire** des disponibilités (raffinement des tranches MMS à l'heure).
-4. **Pool d'appareils et convoyage** (autres terrains, temps de convoyage, décollage avancé).
-5. **Astreinte** : bloc `alert` dans le prompt et le schéma, affichage pilote, occupation du créneau.
+1. **Identity** (“My trigram”) + **“My missions” page**, read-only, on hand-written assignments
+   (sample file) + sealed envelope. Validates the display and the Maps / Fuel hand-offs.
+2. **Assignment on the Centre side**: “Assign…” dialog (participants, pilots and aircraft filtered by MMS slot,
+   conflicts), writing of `affectations.yaml`, index.
+3. **Hourly grid** of availability (refinement of the MMS periods to the hour).
+4. **Aircraft pool and ferry** (other airfields, ferry time, take-off brought forward).
+5. **Standby**: `alert` block in the prompt and the schema, pilot display, slot occupation.
 
-## 9. Questions ouvertes
+## 9. Open questions
 
-1. **Partage des affectations et des disponibilités** : par le dépôt git `data/` (privé ?), ou export / import de
-   fichiers, ou autre canal ? (données nominatives : trigrammes, horaires)
-2. **Confirmation** : le pilote accepte / décline-t-il une affectation, ou l'affectation vaut-elle ordre ?
-3. **Heures** : saisie et affichage en UTC (Z) ou en heure locale du terrain ?
-4. **Granularité** : 1 h par défaut, 30 min en option — d'accord ?
-5. **Page pilote** : dans le menu ☰ de tous (« Mes missions ») ou seulement si un trigramme est réglé ?
-6. **Pli cacheté** : une image par design à matières (à fournir), ou une seule partagée ?
+1. **Sharing assignments and availability**: through the `data/` git repository (private?), or file export / import,
+   or another channel? (personal data: trigrams, times)
+2. **Confirmation**: does the pilot accept / decline an assignment, or is the assignment an order?
+3. **Times**: entry and display in UTC (Z) or in the airfield's local time?
+4. **Granularity**: 1 h by default, 30 min as an option — agreed?
+5. **Pilot page**: in everyone's ☰ menu (“My missions”) or only if a trigram is set?
+6. **Sealed envelope**: one image per material design (to supply), or a single shared one?
 
-## 10. Réalisation (branche feature/affectations)
+## 10. Implementation (branch feature/affectations)
 
-- **Socle** `shared/assignments.js` (toutes les pages, chargé par `repository_nav.js`) : trigramme du profil pilote
-  (☰ › Profil pilote, champ « Trigramme »), index `data/missions/affectations.json` lu par fetch, lu / non lu local
-  (`assignmentsRead:v1`), **pli cacheté** dans l'en-tête (enveloppe à cachet de cire, compteur ; habillage des designs à
-  matières), grille de disponibilités, écriture d'une affectation (Centre).
-- **Page pilote** `apps/pilot/mes_missions.html` (menu ☰ « Mes missions ») : missions à venir, mission en lecture seule
-  (appareil, indicatif, terrain, heure de décollage ou consigne d'astreinte, convoyage, coéquipiers, résumé, route et
-  plan, cartes fournies), **Ouvrir dans les Cartes de vol** (mission partagée de l'espace « planner »), **Carburant**
-  (route OACI, distance, niveau, route vraie : `plannerHandoff:v1`), **Créer le CR** (immatriculation attribuée) ;
-  **Mes disponibilités** : semaine type, cases d'une heure peintes avec les **codes de l'ODV** (palette : O, SC, C, T,
-  S, N, AT, AM, G, DC, IR, IN, V, Q — légende « Code couleur » du classeur ; couleurs = familles de l'ODV accordées au
-  design) ; clic ou glisser pose le code choisi, un second clic sur une case de ce code l'efface ; enregistrées dans le
-  navigateur et, au bouton, dans `data/disponibilites/<TRI>.json`. Le dialogue du Centre affiche le code à l'heure du
-  décollage et avertit s'il ne couvre pas la famille de la mission (ex. T « Transport » sur une mission COMBAT).
-- **Centre** : bouton **« Affecter… »** du détail d'une mission (registre ; pas pour les missions d'organisation Z),
-  `shared/assign_dialog.js` : heure de décollage ou heure H (exercice : décalage du participant), astreinte (prêt à,
-  préavis, fin), participants (+ équipier, indicatif suivi), pilote (référence : qualification sur le type,
-  disponibilité à l'heure), appareil du type demandé (flotte ; basé au terrain de départ ou **convoyage** : distance
-  depuis la base SIA, le registre ou la base mondiale des aérodromes, vitesse de croisière + 20 min, décollage du
-  convoyage = décollage − durée − 30 min), conflits (pilote ou appareil déjà pris, doublons), enregistrement
-  (`affectations.yaml` de la mission + index).
-- **Planning ODV** (`apps/cpco/odv_assign.js`) : **deux lignes par pilote** dans la grille — code du classeur, puis
-  déclaration du pilote ramenée au créneau (code dominant des heures déclarées, même rendu que le classeur) ; **encadré
-  rouge** : disponible (déclaration, sinon classeur) et non affecté ; n° de mission : affecté ; **clic sur la déclaration**
-  → missions du registre pour ce pilote et ce créneau → « Affecter » (dialogue prérempli : pilote, heure de début du
-  créneau) ; **créneau commun** (« Missions du registre… ») : « Affecter » propose les pilotes libres du créneau (autant
-  que d'équipes de la mission, les autres cités).
-- **Appareils du pilote** (« Mes appareils ») : types de la flotte possédés / maîtrisés, rangés avec ses disponibilités ;
-  le dialogue s'en sert (maîtrisé : ok ; possédé ou vols connus : avertissement ; non déclaré : erreur).
-- **Convoyage** confiable à un autre pilote (« par … » dans le dialogue) : ligne « convoyage » dans l'index, visible dans
-  ses « Mes missions » (amener l'appareil de sa base au terrain de départ).
-- **Factorisation** : géographie, terrains, convoyage, qualification, créneaux, conflits et écriture dans
-  `shared/assignments.js`, utilisés par le dialogue, l'ODV et la page pilote ; l'écriture ne dépend plus du registre.
-- **Décisions par défaut** (§ 9, à confirmer) : partage par le dépôt `data/` ; pas d'acceptation (l'affectation vaut
-  ordre, le pilote en accuse lecture) ; heures UTC ; cases d'une heure ; « Mes missions » dans le menu de tous ; une
-  enveloppe dessinée (SVG) habillée par design.
-- **Tester** : régler son trigramme (☰ › Profil pilote, ex. RBR) ; dans le registre, détail d'une mission →
-  « Affecter… » (dossier des missions autorisé) ; recharger une page : pli cacheté ; « Mes missions ».
-- **Postes** (1ᵉʳ octobre 2026) : une mission demande un pilote par équipage aérien — `aircraft[]`, ou `teams[]` du
-  schéma hélico (indicatif, type ; type générique « Hélicoptère » : un hélicoptère de la flotte, du service de l'équipe
-  d'abord — Gendarmerie → Gendarmerie nationale) ; équipes au sol écartées (`MissionAssignments.postsOf`, `planesFor`,
-  `fits`). Le dialogue présente un poste par carte (type, appareils et qualification propres).
-- **Matrice d'un créneau (ODV)** : missions × postes, pilote libre et appareil par poste, préremplis par la proposition ;
-  transaction : choix en attente visibles (« RBR → I-01A · appareil · indicatif »), « Enregistrer » écrit les missions
-  cochées, « Annuler les modifications » revient à la proposition ; fermeture quand tous les pilotes libres sont affectés,
-  ou sur demande (confirmation si modifications en attente). « ✎ détail » : dialogue complet, dont le résultat revient
-  dans la matrice (« Reporter dans le créneau »), rien n'est écrit avant « Enregistrer ».
-- **Exercice dans la matrice** (2 octobre 2026) : les missions d'une même opération (`I-001A`, `I-001B`, `I-001C` ;
-  opération tirée de l'identifiant, sinon du registre ; la mission d'organisation …Z n'est jamais proposée) tiennent
-  sur **une ligne** : bandeau « ⛓ Opération … — n missions liées », liseré, **une seule coche**, un poste par équipage de
-  chaque mission (ses propres indicatifs), **« + équipier » sous chaque équipage** (patrouille dans sa mission,
-  indicatif suivant) ; « Enregistrer » écrit toutes les missions de l'opération, chacune avec ses pilotes.
-- **Heure H** : un exercice n'a qu'une heure de référence (H, T ou M : le même instant) ; décalages avec leur unité
-  (`H+2mn`, `H-20mn`, `H+1h`, `H+1h30mn` ; sans unité : minutes, anciens fichiers ; lecture et écriture communes
-  `RepositoryKit.hOffset` / `hText`). Sur la ligne d'une opération, le champ devient « heure H » (par défaut, le
-  premier équipage décolle au début du créneau) ; chaque équipage décolle à H + son décalage (participants de la …Z),
-  son convoyage est calculé sur ce décollage, chaque mission est enregistrée à son heure.
-- **« Modifier »** (créneau garni) : les missions enregistrées sur le créneau sont en tête de la matrice, cochées et
-  préremplies (pilotes, appareils, indicatifs, convoyage, décollage) ; « Enregistrer » les réécrit. Vols de la frise
-  horaire : bouton **Planifier… / Modifier…** vers leur créneau.
-- **Appareils** : un appareil déjà pris par un autre poste coché (équipier, autre mission) ou engagé sur le créneau
-  est grisé (« déjà affecté », « engagé »). La fenêtre reste ancrée sur l'élément en cours de saisie au redessin.
-- **Une mission par pilote et par tranche** (matin, après-midi, soir), même si ses disponibilités déclarées sont plus
-  larges ; un convoyeur n'a aucune autre mission dans les créneaux que touche son convoyage.
-- **Convoyage** : le pilote convoyeur ne reçoit que l'ordre de convoyage (appareil, départ, arrivée, heure, pour qui),
-  pas le brief, les cartes ni les plis de la mission.
-- **Plis de l'exercice dans « Mes missions »** : les événements adressés à l'équipage (ou émis par lui : « message à
-  transmettre ») sont des **plis scellés** derrière le signet : l'enveloppe du design (`shared/deco/<design>/pli-sealed.webp`),
-  l'heure d'ouverture (décollage du participant − son décalage + heure de l'événement), le nombre de pistes et de cartes
-  jointes. Le pli s'ouvre seul à l'heure (notification) ; un clic sur l'enveloppe brise le scellé (avant l'heure :
-  confirmation en deux temps) ; « Resceller » le referme. Les pistes (nature, route, niveau, à établir) et les cartes
-  d'exercice (`maps[].exercise`) ne paraissent que dans le pli ouvert ; la fiche technique ne montre ni `tracks`, ni
-  `injects`, ni `exercise`.
-- **Livre** : la dernière page du dossier est à gauche (page « intentionnellement laissée blanche » avant si besoin) ;
-  en face, la page « Informations complémentaires » mène aux annexes (plis) par le coin ou d'un clic ; le signet, posé
-  à la fin du dossier, les ouvre ou y ramène, et tourne avec la page. Cartes : visionneuse commune
-  (`RepositoryKit.viewImage` : croix, Échap).
-- **Journal** (`LocalStore.logEvent`, `kind: 'mission'`) : mission ouverte, rescellée, plis ouverts (à l'heure, avant
-  l'heure), rescellés, envois vers les Cartes de vol, le carburant, le CR — base du CR prérempli à venir.
-- **Semaines** (1ᵉʳ octobre 2026) : disponibilités par semaine (`weeks`, clé : lundi ISO UTC, douze semaines passées
-  gardées) ; l'ancienne grille « semaine type » (`grid`) vaut tant qu'aucune semaine n'est saisie. « Mes missions » :
-  barre de semaine (‹, date, ›, ⟲ semaine en cours) commune à la liste et à la grille ; « ⧉ S-1 » recopie la semaine
-  précédente ; tracé en rectangle (jours × heures). Le Centre et l'ODV lisent la grille de la semaine concernée.
+- **Foundation** `shared/assignments.js` (all pages, loaded by `repository_nav.js`): trigram from the pilot profile
+  (☰ › Pilot profile, “Trigram” field), index `data/missions/affectations.json` read by fetch, local read / unread
+  (`assignmentsRead:v1`), **sealed envelope** in the header (envelope with a wax seal, counter; dressing of the
+  material designs), availability grid, writing of an assignment (Centre).
+- **Pilot page** `apps/pilot/mes_missions.html` (☰ menu “My missions”): upcoming missions, read-only mission
+  (aircraft, callsign, airfield, take-off time or standby instruction, ferry, team mates, summary, route and
+  plan, maps supplied), **Open in the flight maps** (shared mission of the “planner” space), **Fuel**
+  (ICAO route, distance, level, true track: `plannerHandoff:v1`), **Create the report** (assigned registration);
+  **My availability**: standard week, one-hour cells painted with the **ODV codes** (palette: O, SC, C, T,
+  S, N, AT, AM, G, DC, IR, IN, V, Q — “Colour code” (« Code couleur ») legend of the workbook; colours = ODV families matched to the
+  design); a click or a drag sets the chosen code, a second click on a cell with this code clears it; saved in the
+  browser and, with the button, in `data/disponibilites/<TRI>.json`. The Centre dialog shows the code at the
+  take-off time and warns if it does not cover the mission's family (e.g. T “Transport” on a COMBAT mission).
+- **Centre**: **“Assign…”** button in a mission's details (registry; not for organisation missions Z),
+  `shared/assign_dialog.js`: take-off time or H-hour (exercise: participant's offset), standby (ready at,
+  notice, end), participants (+ wingman, consecutive callsign), pilot (reference: qualification on the type,
+  availability at that hour), aircraft of the requested type (fleet; based at the departure airfield or **ferry**: distance
+  from the SIA database, the registry or the world aerodrome database, cruise speed + 20 min, ferry
+  take-off = take-off − duration − 30 min), conflicts (pilot or aircraft already taken, duplicates), saving
+  (`affectations.yaml` of the mission + index).
+- **ODV planning** (`apps/cpco/odv_assign.js`): **two rows per pilot** in the grid — workbook code, then
+  the pilot's declaration mapped to the slot (dominant code of the declared hours, same rendering as the workbook); **red
+  frame**: available (declaration, otherwise workbook) and not assigned; mission number: assigned; **click on the declaration**
+  → registry missions for this pilot and this slot → “Assign” (pre-filled dialog: pilot, start time of the
+  slot); **common slot** (“Registry missions…”): “Assign” offers the free pilots of the slot (as many
+  as the mission has teams, the others listed).
+- **The pilot's aircraft** (“My aircraft”): fleet types owned / mastered, stored with their availability;
+  the dialog uses them (mastered: ok; owned or known flights: warning; not declared: error).
+- **Ferry** can be given to another pilot (“by …” in the dialog): “ferry” row in the index, visible in
+  their “My missions” (bring the aircraft from its base to the departure airfield).
+- **Factoring**: geography, airfields, ferry, qualification, slots, conflicts and writing in
+  `shared/assignments.js`, used by the dialog, the ODV and the pilot page; writing no longer depends on the registry.
+- **Default decisions** (§ 9, to be confirmed): sharing through the `data/` repository; no acceptance (the assignment is an
+  order, the pilot acknowledges reading it); UTC times; one-hour cells; “My missions” in everyone's menu; one
+  drawn envelope (SVG) dressed per design.
+- **Testing**: set your trigram (☰ › Pilot profile, e.g. RBR); in the registry, a mission's details →
+  “Assign…” (missions folder authorised); reload a page: sealed envelope; “My missions”.
+- **Posts** (1 October 2026): a mission asks for one pilot per air crew — `aircraft[]`, or `teams[]` of the
+  helicopter schema (callsign, type; generic type “Helicopter”: a helicopter of the fleet, from the team's service
+  first — Gendarmerie → Gendarmerie nationale); ground teams are left out (`MissionAssignments.postsOf`, `planesFor`,
+  `fits`). The dialog shows one post per card (its own type, aircraft and qualification).
+- **Slot matrix (ODV)**: missions × posts, free pilot and aircraft per post, pre-filled by the proposal;
+  transaction: pending choices visible (“RBR → I-01A · aircraft · callsign”), “Save” writes the ticked
+  missions, “Undo changes” goes back to the proposal; closes when all the free pilots are assigned,
+  or on request (confirmation if changes are pending). “✎ detail”: full dialog, whose result comes back
+  into the matrix (“Carry over to the slot”), nothing is written before “Save”.
+- **Exercise in the matrix** (2 October 2026): the missions of a same operation (`I-001A`, `I-001B`, `I-001C`;
+  operation taken from the identifier, otherwise from the registry; the organisation mission …Z is never offered) fit
+  on **one row**: banner “⛓ Operation … — n linked missions”, edge line, **a single tick box**, one post per crew of
+  each mission (its own callsigns), **“+ wingman” under each crew** (patrol within its mission,
+  next callsign); “Save” writes all the missions of the operation, each with its pilots.
+- **H-hour**: an exercise has only one reference time (H, T or M: the same instant); offsets with their unit
+  (`H+2mn`, `H-20mn`, `H+1h`, `H+1h30mn`; without a unit: minutes, old files; shared reading and writing
+  `RepositoryKit.hOffset` / `hText`). On the row of an operation, the field becomes “H-hour” (by default, the
+  first crew takes off at the start of the slot); each crew takes off at H + its offset (participants of the …Z),
+  its ferry is calculated on that take-off, each mission is saved at its own time.
+- **“Edit”** (filled slot): the missions saved in the slot are at the top of the matrix, ticked and
+  pre-filled (pilots, aircraft, callsigns, ferry, take-off); “Save” rewrites them. Flights of the
+  timeline: **Plan… / Edit…** button leading to their slot.
+- **Aircraft**: an aircraft already taken by another ticked post (wingman, other mission) or committed in the slot
+  is greyed out (“already assigned”, “committed”). The window stays anchored on the element being edited when redrawn.
+- **One mission per pilot and per period** (morning, afternoon, evening), even if their declared availability is
+  wider; a ferry pilot has no other mission in the slots touched by their ferry.
+- **Ferry**: the ferry pilot only receives the ferry order (aircraft, departure, arrival, time, for whom),
+  not the brief, the maps or the envelopes of the mission.
+- **Exercise envelopes in “My missions”**: the events addressed to the crew (or sent by it: “Message to
+  pass on”) are **sealed envelopes** behind the bookmark: the design's envelope (`shared/deco/<design>/pli-sealed.webp`),
+  the opening time (participant's take-off − its offset + time of the event), the number of tracks and of maps
+  attached. The envelope opens by itself at the time (notification); a click on the envelope breaks the seal (before the time:
+  two-step confirmation); “Reseal” closes it again. The tracks (nature, route, level, to be established) and the exercise
+  maps (`maps[].exercise`) only appear in the open envelope; the technical sheet shows neither `tracks`, nor
+  `injects`, nor `exercise`.
+- **Book**: the last page of the folder is on the left (“intentionally left blank” page before it if needed);
+  opposite, the “Additional information” page leads to the annexes (envelopes) through the corner or with a click; the bookmark, placed
+  at the end of the folder, opens them or goes back to them, and turns with the page. Maps: shared viewer
+  (`RepositoryKit.viewImage`: cross, Esc).
+- **Log** (`LocalStore.logEvent`, `kind: 'mission'`): mission opened, resealed, envelopes opened (on time, before
+  time), resealed, hand-offs to the Flight maps, the fuel, the report — the basis of the upcoming pre-filled report.
+- **Weeks** (1 October 2026): availability per week (`weeks`, key: ISO Monday UTC, twelve past weeks
+  kept); the old “standard week” grid (`grid`) applies as long as no week has been entered. “My missions”:
+  week bar (‹, date, ›, ⟲ current week) shared by the list and the grid; “⧉ S-1” copies the previous
+  week; drawing by rectangle (days × hours). The Centre and the ODV read the grid of the week concerned.

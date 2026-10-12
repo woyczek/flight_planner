@@ -383,6 +383,8 @@ Die Typen der Flotte, die Sie besitzen und beherrschen, und Ihre Simulatoren. Da
 
 - Das Ankreuzen von „Beherrscht“ kreuzt auch „Besessen“ an; das Abwählen von „Besessen“ wählt „Beherrscht“ ab.
 
+**Karte „Andere Luftfahrzeuge (außerhalb der Flotte)“**: die Typen, die Sie in Ihrem Simulator besitzen, die aber nicht zur Flotte gehören. Geben Sie eine ICAO-Kennung, ein Modell oder einen gebräuchlichen Namen ein, auch unvollständig oder mit Leerzeichen und Bindestrichen („PC-12“, „A 400 M“, „SE 210“, „Sud Aviation Caravelle“): Beim Tippen schlägt eine Liste die Typen der Flotte, der Typbasis dieses Rechners und der mit der Suite veröffentlichten ICAO-Liste vor, mit Namen („S210 — Caravelle“) und Herkunft (Flotte, Basis dieses Rechners, ICAO-Liste, von einem anderen Piloten angegeben); die Berechnung ist lokal, ohne Netz. Wählen Sie eine Zeile (Klick, oder Pfeiltasten und Eingabe) oder klicken Sie auf „Hinzufügen“: Der Typ kommt in die Tabelle, mit „Besessen“ angehakt. Um einen hinzugefügten Typ zu korrigieren oder zu löschen, klicken Sie auf seine Zeile: Seine Kennung kommt ins Feld, und „Hinzufügen“ wird zu „Ersetzen“ („Beherrscht“ wird auf den neuen Typ übertragen), neben „Löschen“ und „Abbrechen“ (oder Esc). Ein hier eingegebener Flottentyp wird einfach in der Karte „Luftfahrzeuge“ angehakt; eine Kennung, der nichts nahekommt, wird unverändert übernommen. Eine zu ungenaue Eingabe („cara“: Caravelle oder Caravan?) wird abgelehnt: Die Meldung nennt das Gelesene, und der nächstliegende Typ wird ins Feld übernommen — „Hinzufügen“ zum Bestätigen. Die Basis dieses Rechners wird vom Starter nur beim Klick auf „Hinzufügen“ ergänzt, für den hinzugefügten Typ, falls er fehlt: Die Zeile zeigt „Typbasis wird ergänzt…“ während eines kurzen Durchlaufs (einige Sekunden), immer nur ein Durchlauf — läuft bereits einer (Wartung), stellt der Starter den Typ in die Warteschlange und ergänzt ihn am Ende dieses Durchlaufs. Der Durchlauf läuft im Starter: Das Verlassen der Seite unterbricht ihn nicht, und bei der Rückkehr zeigt die Zeile wieder „Typbasis wird ergänzt…“, bis der Eintrag da ist. Ein ausgemusterter Typ, den die offiziellen Quellen nicht mehr kennen (Caravelle S210), wird als letzter Ausweg bei Aviation Fanatic gesucht; ist er auch dort nicht, bleibt er unter Kennung und gebräuchlichem Namen hinzugefügt, mit dem Hinweis „nicht gefunden (ICAO, EUROCONTROL, Aviation Fanatic)“. Diese Typen gehen wie die der Flotte mit Ihren angegebenen Verfügbarkeiten mit: Das Zentrum sieht sie für die Zuweisungen, und die anderen Piloten finden sie in dieser Karte mit der Spalte „Auch angegeben von“ — sie müssen nur „Besessen“ anhaken.
+
 **Karte „Simulatoren“**: Kreuzen Sie die installierten Simulatoren und Werkzeuge an.
 
 Es gibt keinen Knopf „Speichern“: Jedes Häkchen wird sofort in diesem Browser gespeichert und dann in Ihre bereits angegebenen Verfügbarkeitswochen übernommen, ab der aktuellen Woche. Die Meldung unten zeigt, wie viele Wochen aktualisiert wurden.
@@ -1407,15 +1409,16 @@ Dieser Block gehört zur Stufe Experte und ist standardmäßig ausgeblendet: Kli
 - Die Statuszeile zeigt die gespeicherte Datenbank, ihren AIRAC-Zyklus und ihr Datum; „Zyklus veraltet“ erscheint, wenn ein neuerer Zyklus gilt. „Analysierte Dateien“ listet die gelesenen Dateien.
 - Ohne Datenbank meldet die Seite: „SIA-Datenbank fehlt in diesem Browser: Block ‚SIA-Datenbank‘, ‚Luftfahrtdatenbank neu aufbauen‘ oder Einstellungen › Wartung.“
 
-Es ist derselbe Block wie unter Einstellungen › Wartung › Luftfahrtdaten. Dieselbe Datenbank dient dem Vertikalprofil des Kraftstoffplaners. Einzelheiten: [SIA-Missionen](../SIA_MISSIONS.md).
+Es ist derselbe Block wie unter Einstellungen › Wartung › Luftfahrtdaten. Dieselbe Datenbank dient dem Vertikalprofil des Kraftstoffplaners.
 
 ## Kraftstoff
 <!-- page: apps/planner/flight_performance_planner.html -->
 
 Der Kraftstoffplaner (Titel „Kraftstoff“) berechnet den Kraftstoff eines Flugs aus dem Leistungsprofil Ihres Luftfahrzeugs. Der Reiseverbrauch stammt, in dieser Reihenfolge, aus Ihrer Eingabe für diesen Flug, dem gespeicherten Profil, dem Modell von Poll und Schumann (Strahlverkehrsflugzeuge, nach Masse, Flughöhe und Mach), SimBrief, dann aus einer Schätzung nach ICAO-Typ oder -Klasse; ein Näherungswert ist mit ≈ gekennzeichnet. Für einen Typ ohne EUROCONTROL- oder SimBrief-Eintrag (Militär, Hubschrauber) übernimmt die Schätzung die Reise-TAS und die Gipfelhöhe aus Airframe DB, wenn sie dort bekannt sind. Er zeichnet auch die optimalen Flughöhen und Steiggesetze.
 Zugang: Seitenleiste „Werkzeuge“, Reiter „Kraftstoff“, Knopf „Kraftstoff (Planer)“ einer Mission in Meine Missionen oder Knopf „Kraftstoff“ der Flugkarten. Route, Distanz, Flughöhe und Luftfahrzeug werden dann übernommen.
-Kopfzeile: Menü „Flugzeug“, Knopf „Letzten SimBrief-FPL abrufen“, „Einheiten: kg / lbs“. Importe und Exporte befinden sich im Menü ☰. Technische Einzelheiten: [Planer](../FLIGHT_PLANNER.md).
+Kopfzeile: Menü „Flugzeug“, Knopf „Letzten SimBrief-FPL abrufen“, „Einheiten: kg / lbs“. Importe und Exporte befinden sich im Menü ☰.
 Je nach Nutzungsstufe: Auf den Stufen 1 bis 3 (Besatzung, Planung, Gestaltung) zeigt die Seite das Flugzeug, den Flugplan (und „Letzten SimBrief-FPL abrufen“), den aufklappbaren Bereich „Flugparameter“, „Berechnen“ und das Ergebnis in zwei Spalten; das Menü ☰ behält dort nur Export und Import der Einstellungen. Kurven, Felder, Instrumente, Profilblöcke, Statusleiste und die Profilaktionen des Menüs ☰ kommen auf der Stufe Experte hinzu, wo die Seite vollständig ist.
+Auf breitem Bildschirm, auf der Stufe Experte, hat die Seite drei Spalten (Eingabe und Kurven | Ergebnis und Felder | Instrumente): Ziehen Sie die Griffe zwischen den Spalten, um ihre Breite einzustellen; Doppelklick: Standardbreiten.
 
 ### Flugzeug wählen und Profil speichern
 
@@ -1426,6 +1429,7 @@ Je nach Nutzungsstufe: Auf den Stufen 1 bis 3 (Besatzung, Planung, Gestaltung) z
 Die Leiste unten auf der Seite zeigt „Profil gespeichert — …“ oder „Nicht gespeicherte Änderungen — …“. Sie trägt „Lokale Datenbank neu laden“, „Profil speichern“ und „Dieses Flugzeug löschen“. Diese Leiste erscheint nur auf der Stufe Experte.
 Wechseln Sie das Flugzeug mit nicht gespeicherten Änderungen, bietet die Seite „Bleiben“, „Verwerfen und wechseln“ oder „Speichern und wechseln“ an.
 Menü ☰: Profile / CSV / JSON importieren (darunter `.lnmperf` von Little Navmap), ein SimBrief-Airframe importieren, den Leistungsordner wählen, das Profil als `.lnmperf` oder JSON exportieren, die lokale Datenbank speichern, die vorherige Sicherung wiederherstellen, die Einstellungen exportieren oder importieren. Diese Aktionen gehören zur Stufe Experte, außer Export und Import der Einstellungen.
+Ein Import, der auf ein vorhandenes Profil trifft (gleiche Kennung, meist der ICAO-Typ), aktualisiert es: Die importierten Werte haben Vorrang, leer gelassene Felder behalten den alten Wert, die RPM-Tabellen werden zusammengeführt (Einheiten umgerechnet).
 
 ### Kraftstoffplanung
 
@@ -1435,6 +1439,7 @@ Menü ☰: Profile / CSV / JSON importieren (darunter `.lnmperf` von Little Navm
 4. Klicken Sie auf „Berechnen“.
 
 Wind leer gelassen: Die Seite weist darauf hin („Wind unbekannt: Bereich ±25 kt…“) und gibt den Kraftstoff als Bereich an.
+Mit einer ISA-Abweichung vergleicht ein Kasten „Wetter“ im Ergebnis mit der Standardatmosphäre: Strecke auf der Flughöhe des Plans (Zeit, Kraftstoff), optimale Flughöhe und Gipfelhöhe. Der QNH geht nicht in die Rechnung ein (Flugflächen sind Druckhöhen).
 Der Knopf „Flugkarten“ (Stufe Experte) öffnet die Flugkarten mit diesem Flugplan; Karten und Profil werden dort bei der Ankunft erstellt.
 „Flugplan-Syntax“ zeigt die akzeptierten Formen. Ohne SIA-Datenbank im Browser werden nur Punkte in Koordinaten erkannt.
 
@@ -1454,11 +1459,13 @@ In der Detailansicht (Schaltfläche „Detailansicht“ / „Einfache Ansicht“
 Fahren Sie über eine Kurve, um die Werte in dieser Höhe abzulesen; klicken Sie, um eine Höhe anzuheften (weiße Linie auf allen Kurven). Die Planung wird dann auf dieser Höhe berechnet.
 Die Schieberegler „Gewählter Steigflug“ der Kraftstoffplanung stellen Ihren gewählten Steigflug ein, auf den Kurven violett gezeichnet.
 Der grau hinterlegte Bereich „unerreichbar“ liegt über der Gipfelhöhe des Luftfahrzeugs.
+Ohne „Bezugshöhe (ft)“ und „Max. Gipfelhöhe (ft)“ im Profil schätzt das Modell sie (Reise-IAS und -TAS, EUROCONTROL-Blatt, Steigverbrauch, sonst typischer Wert der Klasse) und nennt die Quelle unter den Kurven. Füllen Sie diese beiden Felder aus oder kalibrieren Sie mit einem SimBrief-OFP: Das ist zuverlässiger.
 
 ### Steigflug-Anweisungen
 
 Dieser Block unter „Berechnen“ sagt auf jeder Nutzungsstufe, wie zu steigen ist.
 - Fünf Ziele, jedes mit Zeit und Kraftstoff bis zur Flughöhe: „Spar“, „Vy“, „Schnell“, „Profil“ (Steiggeschwindigkeit des Profils), „Eingestellt“ (gewählter Steigflug). Die Wahl bleibt in diesem Browser gespeichert.
+  „Vy“: maximale Steigrate (Flughöhe am frühesten erreicht); „Schnell“: minimale Blockzeit; „Spar“: minimaler Streckenkraftstoff. Bei den beiden letzten wird die Steigstrecke vom Reiseflug abgezogen, die Steigrate bleibt bei mindestens 50 % des Maximums, und ein Strahlflugzeug ist unter FL100 auf 250 kt begrenzt.
 - Eine Anweisung in drei Teilen: „Einstellen“ (Leistung, Propeller, RPM oder N1), „Halten“ (das Instrument, das die Anweisung trägt, meist die IAS), „Erwartet“ (zu sehende Steigrate, erreichte Flughöhe, Zeit und Kraftstoff).
 - Eine Tabelle nach Höhenstufen (Boden, 2 000 ft, FL050, FL100… bis zur Planflughöhe): Leistung, RPM oder N1, wenn das Profil ein Motorkennfeld hat, zu fliegende IAS, erwartete Steigrate, kumulierte Zeit.
 
@@ -1473,8 +1480,11 @@ Dieser Block in der rechten Spalte folgt der Seite, während Sie durch die Kurve
 - Einzelheiten: Rollen, Steigflug, Reiseflug, Sinkflug, Unvorhergesehenes, Reserve; geplante Startmasse und MTOW, wenn Sie sie eingegeben haben (rot, wenn sie überschritten ist).
 - Karte des Cursors (⌖ beim Überfahren, 📌 angeheftet): Kraftstoff und Zeit der Strecke auf dieser Höhe, maximale Steigrate, Steiggeschwindigkeiten; „lösen“ entfernt die Anheftung.
 - Aufklappbare Gruppe „Flugphasen — Profil ↔ Kennfeld“ (Stufe Experte): IAS, Steigrate, Triebwerksdrehzahl und Durchfluss pro Phase, verglichen mit dem Triebwerkskennfeld. Sie enthält auch das Feld „SimBrief Airframe Internal ID“ und die Links zu den Blättern der Luftfahrzeuge dieses Typs.
+  „SimBrief-Airframe importieren“ liest dieses Feld (Kennung oder Freigabelink): öffentliche Liste von SimBrief, dann Freigabelink; ein unlesbares privates Airframe ergibt nur ein Teilprofil mit seiner Kennung allein.
 
 „Anheften“ behält den ganzen Block, wenn er der Seite folgt; sonst klappt er zusammen. „Einfache Ansicht“ blendet Kurven und Instrumente aus, „Detailansicht“ zeigt sie (Wahl in diesem Browser gespeichert). Auf der Stufe Experte gibt unter dem Block ein Feld pro Kurve die Optima, die Grenzen (Gipfelhöhe, angeforderte Flughöhe) und eine Lesehilfe an. Die Instrumentenleiste (Stufe Experte) zeigt IAS, Höhenmesser, Steigrate, Stoppuhr (Steigzeit), Kraftstoff und Flugzeit.
+In den Feldern und Meldungen ist ein unterstrichener Feldname ein Link: Er klappt bei Bedarf den Profileditor auf und zeigt das Feld. Eine „unerreichbare“ Flughöhe nennt ihre Ursache und das zu korrigierende Feld (Block „Grenzen“).
+Ein Klick auf die Kraftstoffanzeige (oder ihren Knopf) wechselt die gelesene Kurve, in ihrer Farbe: gewählter Steigflug, Profil, wirtschaftlicher Reiseflug, schneller Steigflug, Vy, wirtschaftlicher Steigflug; Wahl in diesem Browser gespeichert.
 
 ### Leistungsprofile
 
@@ -1510,6 +1520,7 @@ Dieser Block zeigt alle Felder des Profils, die unverändert in die Datei `.lnmp
 - Gruppen: „Identität und Format“, „Kraftstoff und Betrieb“, „Piste und Ausweichflugplatz“, „Steigflug“, „Reiseflug“, „Sinkflug“, „Leistungseinstellung und Verbrauch“.
 - Der Kraftstoff erscheint in der gewählten Einheit (kg oder lbs).
 - Hat der Typ ein EUROCONTROL-APD-Blatt, erscheint neben den vergleichbaren Feldern ein Etikett „APD …“: Ein Klick übernimmt diesen Wert. Ohne Klick wird nichts geschrieben. Sonst: „Keine EUROCONTROL-APD-Daten für diesen Typ“.
+- Farbe des Etiketts: grün = gleich (±3 %), orange = abweichend, blau = leeres Feld; „leere Felder ausfüllen“ übernimmt alle APD-Werte der leeren Felder.
 
 Ein leeres Feld bleibt leer und blockiert den Export als `.lnmperf`: Kein Wert wird erfunden.
 Klicken Sie nach einer Änderung in der unteren Leiste auf „Profil speichern“.
@@ -1569,7 +1580,7 @@ Ohne Import: „Kein JSON geladen.“
 
 Diese Übersicht (Titel „Landing Performance — Übersicht“) analysiert die Qualität Ihrer Landungen anhand der vom Simulator exportierten Dateien: Score, Sinkrate, G, pro Luftfahrzeug und im Zeitverlauf.
 Zugang: Seitenleiste „Werkzeuge“, Reiter „Landungen“. Die Datei wird im Browser gelesen; nichts wird gesendet.
-Die zuletzt geladene Datei wird gespeichert und beim Öffnen neu geladen. Ihre Luftfahrzeuge werden auch im Menü „Flugzeug“ des Kraftstoffplaners vorgeschlagen. Einzelheiten: [Landungsübersicht](../LANDING_DASHBOARD.md).
+Die zuletzt geladene Datei wird gespeichert und beim Öffnen neu geladen. Ihre Luftfahrzeuge werden auch im Menü „Flugzeug“ des Kraftstoffplaners vorgeschlagen.
 
 ### Datei laden
 
@@ -1587,11 +1598,12 @@ Die Statuszeile zeigt die Datei, die Anzahl der verwendeten Messungen, das Luftf
 - „Trendmethode“: „Absolut / Asymptote“, „Erste 25 % ↔ Letzte 25 %“ oder „Gleitender Mittelwert“ (mit „Glättung“: 5 oder 10).
 - „Drucken / PDF“: druckt die Seite.
 
-Optionen der Analyse (Menü ☰): „offensichtlich unplausible Messwerte ausschließen“, „95P — die stärksten 5 % Unfall-/Crashwerte ausschließen“, „Crash — ausgelöste Landungen ausschließen“ (Schwellen FPM ≤ und G ≥, Logik „FPM oder G“, „FPM und G“, „nur FPM“, „nur G“), „Geschätzte fehlende Felder verwenden“.
+Optionen der Analyse (Menü ☰): „offensichtlich unplausible Messwerte ausschließen“, „95P — die stärksten 5 % Unfall-/Crashwerte ausschließen“ (je Luftfahrzeug), „Crash — ausgelöste Landungen ausschließen“ (Schwellen FPM ≤ und G ≥, Logik „FPM oder G“, „FPM und G“, „nur FPM“, „nur G“), „Geschätzte fehlende Felder verwenden“.
+„Geschätzte fehlende Felder verwenden“ ergänzt fehlenden Score, G oder FPM mit einem Modell, das an den echten Paaren CSV + LOG kalibriert ist; diese Werte, markiert mit „◇ geschätzt“, werden nie in die Datei geschrieben.
 
 ### Übersicht des Zeitraums
 
-Oben in der Übersicht geben Karten die Schlüsselzahlen an: „Landungen“, „Durchschnittlicher Score“, „Score Min / Max“, „Durchschnitt FPM“, „FPM Min / Max“, „Durchschnitt G“, „G Min / Max“, „Butter / Very Good“.
+Eine am unteren Fensterrand fixierte Leiste, nach dem Trendsymbol, gibt die Schlüsselzahlen an: „Landungen“, „Durchschnittlicher Score“, „Score Min / Max“, „Durchschnitt FPM“, „FPM Min / Max“, „Durchschnitt G“, „G Min / Max“, „Butter / Very Good“.
 Die Knöpfe „−“ und „+“ ändern die Größe dieser Karten.
 Darunter das Trendfazit: wahrscheinlicher Fortschritt oder Rückschritt, leicht, „Kein klarer Fortschritt“ oder „zu wenig Daten“ (es braucht mindestens vier verwertbare Messungen).
 Der Text erklärt die gewählte Methode (zum Beispiel geschätzte Asymptote und verbleibender Gewinn).
@@ -1605,7 +1617,7 @@ Dieser Block zeichnet die Kennzahlen im Zeitverlauf, mit ihrem Trend: Score, Sin
 - Das Band „Gesamtverlauf — ziehen zum Auswählen“ unter jedem Diagramm erlaubt die Wahl eines Zeitraums über den gesamten Verlauf.
 
 Der gewählte Zeitraum erscheint in der Kopfzeile; mit seinen Knöpfen können Sie zurückgehen.
-Der relative technische Index ist kein offizieller Score.
+Der relative technische Index ist kein offizieller Score: 45 % rohe Landing Rate, 25 % Qualität des Abfangens, 20 % Bugradgeschwindigkeit, 10 % Float, je Luftfahrzeug normalisiert.
 
 ### Übersicht nach Luftfahrzeug
 

@@ -5,6 +5,152 @@
   if (!window.RepositoryContentI18n) return;
   window.RepositoryContentI18n([
     // ---- générateur de mission
+    // squelette sans ChatGPT (générateur) ; points à placer (studio)
+    ["Points à placer", "Points to place", "Zu setzende Punkte", "Puntos que colocar"],
+    ["Cliquer la carte, ou chercher un terrain, une balise, un point de la base SIA ou une ville (code ou nom) ; un point posé se déplace en le glissant sur la carte.",
+      "Click the map, or search an airfield, a beacon, a point of the SIA base or a town (code or name); a placed point moves by dragging it on the map.",
+      "Karte anklicken oder einen Flugplatz, ein Funkfeuer, einen Punkt der SIA-Datenbank oder einen Ort suchen (Code oder Name); ein gesetzter Punkt wird durch Ziehen auf der Karte verschoben.",
+      "Pulse el mapa, o busque un aeródromo, una radiobaliza, un punto de la base SIA o una ciudad (código o nombre); un punto colocado se mueve arrastrándolo en el mapa."
+    ],
+    ["Tout est placé. ", "Everything is placed. ", "Alles gesetzt. ", "Todo está colocado. "],
+    ["Ouvrir au studio", "Open in the studio", "Im Studio öffnen", "Abrir en el estudio"],
+    // saisie pas à pas (générateur, mission_guide.js)
+    ["Pas à pas", "Step by step", "Schritt für Schritt", "Paso a paso"],
+    ["Coller un tableau de points", "Paste a table of points", "Punktetabelle einfügen", "Pegar una tabla de puntos"],
+    ["Saisie guidée en six étapes : cadre, lieux, récit, objectifs et risques, chronologie, cartes et documents",
+      "Guided entry in six steps: frame, places, story, objectives and risks, timeline, maps and documents",
+      "Geführte Eingabe in sechs Schritten: Rahmen, Orte, Erzählung, Ziele und Risiken, Zeitablauf, Karten und Dokumente",
+      "Entrada guiada en seis pasos: marco, lugares, relato, objetivos y riesgos, cronología, mapas y documentos"
+    ],
+    ["Saisie guidée en six étapes ; « Tout afficher » rend la mise en page complète.",
+      "Guided entry in six steps; “Show everything” brings back the full layout.",
+      "Geführte Eingabe in sechs Schritten; „Alles anzeigen“ stellt das vollständige Layout wieder her.",
+      "Entrada guiada en seis pasos; «Mostrar todo» devuelve el diseño completo."
+    ],
+    // ligne d'état et « Annuler les modifications » (générateur, studio)
+    ["Annuler les modifications", "Undo changes", "Änderungen verwerfen", "Deshacer los cambios"],
+    ["Revenir à la dernière version enregistrée dans le dossier (ou à la version chargée), après confirmation",
+      "Go back to the last version saved to the folder (or to the loaded version), after confirmation",
+      "Zur zuletzt im Ordner gespeicherten Version (oder zur geladenen Version) zurückkehren, nach Bestätigung",
+      "Volver a la última versión guardada en la carpeta (o a la versión cargada), tras confirmación"
+    ],
+    // « Dupliquer » (générateur)
+    ["Résumé", "Summary", "Zusammenfassung", "Resumen"],
+    ["Copie de la mission chargée, prête à modifier : identifiant et série suivants de la même famille, titre « (copie) » ; cartes et rendus à refaire au studio",
+      "Copy of the loaded mission, ready to edit: next identifier and series of the same family, title “(copy)”; maps and renders to redo in the studio",
+      "Kopie der geladenen Mission, bereit zum Bearbeiten: nächste Kennung und Serie derselben Familie, Titel „(Kopie)“; Karten und Darstellungen im Studio neu erstellen",
+      "Copia de la misión cargada, lista para modificar: identificador y serie siguientes de la misma familia, título «(copia)»; mapas y renders a rehacer en el estudio"
+    ],
+    // rubriques textuelles nommées (générateur)
+    ["Résumé, description détaillée, puis les rubriques que le brief place à leur rang : objectifs, risques et notes vont dans le YAML, les autres complètent la section du même nom.",
+      "Summary, detailed description, then the sections the brief places in order: objectives, risks and notes go into the YAML, the others complete the section of the same name.",
+      "Zusammenfassung, ausführliche Beschreibung, dann die Abschnitte, die das Briefing an ihre Stelle setzt: Ziele, Risiken und Notizen gehen ins YAML, die anderen ergänzen den gleichnamigen Abschnitt.",
+      "Resumen, descripción detallada y después las secciones que el brief coloca en su sitio: objetivos, riesgos y notas van al YAML, las demás completan la sección del mismo nombre."
+    ],
+    ["Introduction", "Introduction", "Einleitung", "Introducción"],
+    ["Brief : sous l’en-tête (type, aéronef, départ, destination).",
+      "Brief: under the header (type, aircraft, departure, destination).",
+      "Briefing: unter dem Kopf (Typ, Luftfahrzeug, Abflug, Ziel).", "Brief: bajo la cabecera (tipo, aeronave, salida, destino)."
+    ],
+    ["Contexte, situation, ce qui amène la mission.", "Context, situation, what leads to the mission.",
+      "Kontext, Lage, was zur Mission führt.", "Contexto, situación, lo que motiva la misión."
+    ],
+    ["Objectif principal", "Main objective", "Hauptziel", "Objetivo principal"],
+    ["YAML objectives.primary ; brief et CR.", "YAML objectives.primary; brief and report.",
+      "YAML objectives.primary; Briefing und Bericht.", "YAML objectives.primary; brief e informe."
+    ],
+    ["Ce que l’équipage doit avoir accompli, en une ou deux phrases.", "What the crew must have achieved, in one or two sentences.",
+      "Was die Besatzung erreicht haben muss, in ein oder zwei Sätzen.",
+      "Lo que la tripulación debe haber logrado, en una o dos frases."
+    ],
+    ["Objectifs secondaires", "Secondary objectives", "Nebenziele", "Objetivos secundarios"],
+    ["YAML objectives.secondary ; brief et CR.", "YAML objectives.secondary; brief and report.",
+      "YAML objectives.secondary; Briefing und Bericht.", "YAML objectives.secondary; brief e informe."
+    ],
+    ["Ce qui est souhaité en plus, un objectif par ligne.", "What is wanted in addition, one objective per line.",
+      "Was zusätzlich gewünscht ist, ein Ziel pro Zeile.", "Lo que se desea además, un objetivo por línea."
+    ],
+    ["Équipes engagées", "Teams involved", "Beteiligte Teams", "Equipos implicados"],
+    ["Brief : sous le tableau des équipes.", "Brief: under the team table.", "Briefing: unter der Teamtabelle.",
+      "Brief: bajo la tabla de equipos."
+    ],
+    ["Rôle de chaque équipe, liaisons, consignes communes.", "Role of each team, links, common instructions.",
+      "Rolle jedes Teams, Verbindungen, gemeinsame Anweisungen.", "Papel de cada equipo, enlaces, consignas comunes."
+    ],
+    ["Points tournants", "Turning points", "Wendepunkte", "Puntos de viraje"],
+    ["Brief : sous le tableau des points.", "Brief: under the point table.", "Briefing: unter der Punktetabelle.",
+      "Brief: bajo la tabla de puntos."
+    ],
+    ["Ce qu’il faut faire ou observer à chaque point.", "What to do or observe at each point.",
+      "Was an jedem Punkt zu tun oder zu beobachten ist.", "Qué hacer u observar en cada punto."
+    ],
+    ["Brief : sous la liste des rendez-vous.", "Brief: under the rendezvous list.", "Briefing: unter der Treffpunktliste.",
+      "Brief: bajo la lista de encuentros."
+    ],
+    ["Procédure de jonction, fréquences, signes de reconnaissance.", "Joining procedure, frequencies, recognition signals.",
+      "Treffverfahren, Frequenzen, Erkennungszeichen.", "Procedimiento de reunión, frecuencias, señales de reconocimiento."
+    ],
+    ["Ravitaillement en vol", "Air refuelling", "Luftbetankung", "Reabastecimiento en vuelo"],
+    ["Brief : sous les données du ravitaillement.", "Brief: under the refuelling data.", "Briefing: unter den Betankungsdaten.",
+      "Brief: bajo los datos del reabastecimiento."
+    ],
+    ["Procédure, quantités, consignes du ravitailleur.", "Procedure, quantities, tanker instructions.",
+      "Verfahren, Mengen, Anweisungen des Tankers.", "Procedimiento, cantidades, consignas del cisterna."
+    ],
+    ["Risques à prendre en compte", "Risks to consider", "Zu berücksichtigende Risiken", "Riesgos a tener en cuenta"],
+    ["YAML risks ; brief, PDF et CR.", "YAML risks; brief, PDF and report.", "YAML risks; Briefing, PDF und Bericht.",
+      "YAML risks; brief, PDF e informe."
+    ],
+    ["Un risque par ligne : danger — conséquence — mesure.", "One risk per line: hazard — consequence — measure.",
+      "Ein Risiko pro Zeile: Gefahr — Folge — Maßnahme.", "Un riesgo por línea: peligro — consecuencia — medida."
+    ],
+    ["Charge / personnel", "Load / personnel", "Ladung / Personal", "Carga / personal"],
+    ["Brief : sous la charge transportée.", "Brief: under the carried load.", "Briefing: unter der beförderten Ladung.",
+      "Brief: bajo la carga transportada."
+    ],
+    ["Ce qui est à bord, contraintes de chargement ou de personnel.", "What is on board, loading or personnel constraints.",
+      "Was an Bord ist, Lade- oder Personalbeschränkungen.", "Lo que va a bordo, restricciones de carga o de personal."
+    ],
+    ["Coordination", "Coordination", "Koordinierung", "Coordinación"],
+    ["Brief : avec la coordination de l’opération, sinon section seule.",
+      "Brief: with the operation’s coordination, otherwise on its own.",
+      "Briefing: bei der Koordinierung der Operation, sonst eigener Abschnitt.",
+      "Brief: con la coordinación de la operación, si no, sección propia."
+    ],
+    ["Qui parle à qui, quand, sur quelle fréquence.", "Who talks to whom, when, on which frequency.",
+      "Wer mit wem spricht, wann, auf welcher Frequenz.", "Quién habla con quién, cuándo, en qué frecuencia."
+    ],
+    ["Chronologie", "Timeline", "Zeitablauf", "Cronología"],
+    ["Brief : sous la chronologie de l’exercice, sinon section seule.", "Brief: under the exercise timeline, otherwise on its own.",
+      "Briefing: unter dem Übungsablauf, sonst eigener Abschnitt.", "Brief: bajo la cronología del ejercicio, si no, sección propia."
+    ],
+    ["Horaires prévus : décollage, arrivée sur zone, rendez-vous, retour.",
+      "Planned times: take-off, arrival on area, rendezvous, return.",
+      "Geplante Zeiten: Start, Ankunft im Gebiet, Treffpunkt, Rückkehr.",
+      "Horarios previstos: despegue, llegada a la zona, encuentro, regreso."
+    ],
+    ["Cartographie prévue", "Planned maps", "Vorgesehene Karten", "Cartografía prevista"],
+    ["Brief : sous la liste des cartes.", "Brief: under the map list.", "Briefing: unter der Kartenliste.",
+      "Brief: bajo la lista de mapas."
+    ],
+    ["Ce que chaque carte doit montrer, au besoin.", "What each map must show, if needed.", "Was jede Karte bei Bedarf zeigen soll.",
+      "Lo que cada mapa debe mostrar, si hace falta."
+    ],
+    ["Notes", "Notes", "Notizen", "Notas"],
+    ["YAML notes ; brief et CR.", "YAML notes; brief and report.", "YAML notes; Briefing und Bericht.",
+      "YAML notes; brief e informe."
+    ],
+    ["Remarques diverses, une par ligne.", "Miscellaneous remarks, one per line.", "Verschiedene Bemerkungen, eine pro Zeile.",
+      "Observaciones diversas, una por línea."
+    ],
+    ["Autre rubrique…", "Other section…", "Anderer Abschnitt…", "Otra sección…"],
+    ["Titre libre ; brief seulement, à la fin.", "Free title; brief only, at the end.", "Freier Titel; nur im Briefing, am Ende.",
+      "Título libre; solo en el brief, al final."
+    ],
+    ["Autre rubrique : brief seulement, à la fin.", "Other section: brief only, at the end.",
+      "Anderer Abschnitt: nur im Briefing, am Ende.", "Otra sección: solo en el brief, al final."
+    ],
+    ["Autre rubrique", "Other section", "Anderer Abschnitt", "Otra sección"],
     // identification
     ["Titre, famille et sous-type, identifiant (famille, numéro de l’opération, équipe), série de génération, auteur et date.",
       "Title, family and subtype, identifier (family, operation number, team), generation series, author and date.",
@@ -618,10 +764,10 @@
       "Diese Ausdehnung in die gemeinsame Mission schreiben (Generator, YAML-/Markdown-Export)",
       "Escribir esta extensión en la misión compartida (generador, exportación YAML / Markdown)"
     ],
-    ["Ouvrir la carte dans une fenêtre séparée, synchronisée avec les réglages",
-      "Open the map in a separate window, synchronised with the settings",
-      "Karte in einem separaten, mit den Einstellungen synchronisierten Fenster öffnen",
-      "Abrir el mapa en una ventana aparte, sincronizada con los ajustes"
+    ["Ouvrir la carte dans une fenêtre à part : la même carte interactive (déplacer, zoomer, points), sans le reste du studio ; elle suit les réglages",
+      "Open the map in a separate window: the same interactive map (pan, zoom, points), without the rest of the studio; it follows the settings",
+      "Karte in einem eigenen Fenster öffnen: dieselbe interaktive Karte (verschieben, zoomen, Punkte), ohne den Rest des Studios; sie folgt den Einstellungen",
+      "Abrir el mapa en una ventana aparte: el mismo mapa interactivo (desplazar, ampliar, puntos), sin el resto del estudio; sigue los ajustes"
     ],
     ["Agrandir la carte (Échap pour revenir)", "Enlarge the map (Esc to return)", "Karte vergrößern (Esc zum Zurückkehren)",
       "Ampliar el mapa (Esc para volver)"
@@ -845,11 +991,6 @@
     ],
     ["Pas d’estimation : départ ou points sans coordonnées.", "No estimate: departure or points without coordinates.",
       "Keine Schätzung: Start oder Punkte ohne Koordinaten.", "Sin estimación: salida o puntos sin coordenadas."
-    ],
-    ["Base SIA absente de ce navigateur : la lire une fois (studio cartographique, bloc « Base de données SIA », ou Paramètres › Maintenance › Données aéronautiques).",
-      "SIA base missing from this browser: read it once (map studio, “SIA database” block, or Settings › Maintenance › Aeronautical data).",
-      "SIA-Basis fehlt in diesem Browser: einmal lesen (Kartenstudio, Block „SIA-Datenbank“ oder Einstellungen › Wartung › Luftfahrtdaten).",
-      "Base SIA ausente en este navegador: leerla una vez (estudio cartográfico, bloque «Base de datos SIA», o Ajustes › Mantenimiento › Datos aeronáuticos)."
     ],
     ["Mission précédente", "Previous mission", "Vorherige Mission", "Misión anterior"],
     ["Mission suivante", "Next mission", "Nächste Mission", "Misión siguiente"],

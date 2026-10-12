@@ -1840,7 +1840,9 @@
     $('.sia-base-reread').onclick = () => reread(true);
     /** Purger : après confirmation, vide le cache, dit s'il y avait une base, rafraîchit l'état et appelle opts.onPurged. */
     $('.sia-base-purge').onclick = async () => {
-      if (!confirm(L(T.confirmPurge))) return;
+      if (!await window.AppFramework.ask(L(T.confirmPurge), {
+          danger: true
+        })) return;
       const had = await purge();
       setMessage(`<span class="${had ? 'ok' : 'small'}">${esc(L(had ? T.purged : T.empty))}</span>`);
       await refresh();

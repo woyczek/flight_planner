@@ -1,7 +1,8 @@
 (() => {
   'use strict';
-  // Page Aide (apps/aide/aide.html) : index documentaire (docs/README.md, colonne de gauche), document affiché
-  // (docs/<FICHIER>.md, rendu par markdown.js), sommaire du document, recherche dans les deux manuels.
+  // Page Aide (apps/aide/aide.html) : structure fixe (HELP ci-dessous : tutoriels, manuels, exploitation, développeurs),
+  // dont sont tirés l'accueil et l'index de gauche ; document affiché (docs/<FICHIER>.md, rendu par markdown.js),
+  // sommaire du document, recherche dans les tutoriels et les manuels (documentation développeur en option).
   //   ?doc=MANUEL_UTILISATEUR.md#ancre : document et chapitre ;
   //   ?from=apps/pilot/mes_missions.html : chapitre de cette page (entrée « Aide » de la barre latérale) — cherché dans
   //   le manuel utilisateur puis le manuel administrateur (commentaires <!-- page: … --> après le titre du chapitre).
@@ -9,8 +10,111 @@
   // adresses (?doc=) restent sans langue, la page suit le changement de langue.
   const HERE = document.currentScript?.src || location.href; // adresse de ce script (paquet des documents à côté)
   const DOCS = new URL('../../docs/', location.href),
-    MANUALS = ['MANUEL_UTILISATEUR.md', 'MANUEL_ADMINISTRATEUR.md'],
-    INDEX = 'README.md';
+    MANUALS = ['MANUEL_UTILISATEUR.md', 'MANUEL_PLANIFICATEUR.md', 'MANUEL_ADMINISTRATEUR.md'],
+    INDEX = 'README.md'; // ancien index (docs/README.md) : l'accueil de l'aide le remplace
+  // ---- structure de l'aide : une source par sujet. Tutoriels d'abord (pas à pas, captures ; absents : non montrés),
+  // manuels (un chapitre par page, quatre langues), exploitation, documentation développeur (repliée, hors recherche
+  // par défaut, liste tirée de docs/technique/README.md).
+  const TUTORIALS = [{
+    file: 'tutorial/installation.fr.md',
+    title: ['Installer la suite', 'Install the suite', 'Die Suite installieren', 'Instalar la suite'],
+    desc: ['Lanceur, données, navigateur, premier réglage : la suite prête en quelques minutes.',
+      'Launcher, data, browser, first settings: the suite ready in a few minutes.',
+      'Starter, Daten, Browser, erste Einstellungen: die Suite in wenigen Minuten bereit.',
+      'Lanzador, datos, navegador, primeros ajustes: la suite lista en pocos minutos.'
+    ]
+  }, {
+    file: 'tutorial/first_report.fr.md',
+    title: ['Écrire son premier compte rendu', 'Write your first mission report', 'Den ersten Einsatzbericht schreiben',
+      'Escribir su primer informe de misión'
+    ],
+    desc: ['D’une mission reçue au compte rendu envoyé, champ par champ.',
+      'From a received mission to the report sent, field by field.',
+      'Von der erhaltenen Mission bis zum gesendeten Bericht, Feld für Feld.',
+      'De la misión recibida al informe enviado, campo por campo.'
+    ]
+  }, {
+    file: 'tutorial/mission_end_to_end.fr.md',
+    title: ['Préparer une mission de bout en bout', 'Prepare a mission end to end', 'Eine Mission von Anfang bis Ende vorbereiten',
+      'Preparar una misión de principio a fin'
+    ],
+    desc: ['Commande ou squelette, textes, points au studio, cartes, brief PDF.',
+      'Order or skeleton, texts, points in the studio, maps, PDF brief.',
+      'Bestellung oder Gerüst, Texte, Punkte im Studio, Karten, PDF-Briefing.',
+      'Encargo o esqueleto, textos, puntos en el estudio, mapas, brief PDF.'
+    ]
+  }, {
+    file: 'tutorial/fuel_profile.fr.md',
+    title: ['Construire un profil de performances', 'Build a performance profile', 'Ein Leistungsprofil erstellen',
+      'Construir un perfil de rendimiento'
+    ],
+    desc: ['Carburant : sources (SimBrief, ChatGPT…), fusion avec aperçu, cartographie moteur.',
+      'Fuel: sources (SimBrief, ChatGPT…), merge with preview, engine map.',
+      'Kraftstoff: Quellen (SimBrief, ChatGPT…), Zusammenführen mit Vorschau, Motorkennfeld.',
+      'Combustible: fuentes (SimBrief, ChatGPT…), fusión con vista previa, mapa motor.'
+    ]
+  }];
+  const HELP = [{
+    id: 'tutorials',
+    title: ['Tutoriels', 'Tutorials', 'Tutorials', 'Tutoriales'],
+    items: TUTORIALS
+  }, {
+    id: 'manuals',
+    title: ['Manuels', 'Manuals', 'Handbücher', 'Manuales'],
+    items: [{
+      file: 'MANUEL_UTILISATEUR.md',
+      chapters: true,
+      title: ['Manuel du pilote', 'Pilot manual', 'Pilotenhandbuch', 'Manual del piloto'],
+      desc: ['Pilotes : chaque page de la suite, bloc par bloc.', 'Pilots: every page of the suite, block by block.',
+        'Piloten: jede Seite der Suite, Block für Block.', 'Pilotos: cada página de la suite, bloque por bloque.'
+      ]
+    }, {
+      file: 'MANUEL_PLANIFICATEUR.md',
+      chapters: true,
+      title: ['Manuel du planificateur', 'Planner manual', 'Handbuch des Planers', 'Manual del planificador'],
+      desc: ['Centre : préparer et suivre les missions (générateur, studio, registre, Planning ODV, tableau).',
+        'Centre: prepare and follow the missions (generator, studio, registry, ODV planning, board).',
+        'Zentrum: Missionen vorbereiten und verfolgen (Generator, Studio, Register, ODV-Planung, Einsatztafel).',
+        'Centro: preparar y seguir las misiones (generador, estudio, registro, planificación ODV, tablero).'
+      ]
+    }, {
+      file: 'MANUEL_ADMINISTRATEUR.md',
+      chapters: true,
+      title: ['Manuel de l’administrateur', 'Administrator manual', 'Administratorhandbuch', 'Manual del administrador'],
+      desc: ['Fonctionnement global : accès au Centre, paramètres, synchronisation, lanceur, données et sauvegardes.',
+        'How the suite works: Centre access, settings, synchronisation, launcher, data and backups.',
+        'Gesamtbetrieb: Zugang zum Zentrum, Einstellungen, Synchronisierung, Starter, Daten und Sicherungen.',
+        'Funcionamiento global: acceso al Centro, ajustes, sincronización, lanzador, datos y copias de seguridad.'
+      ]
+    }]
+  }, {
+    id: 'operations',
+    title: ['Exploitation', 'Operations', 'Betrieb', 'Operación'],
+    items: [{
+      file: 'MANUEL_EXPLOITATION.md',
+      title: ['Manuel d’exploitation', 'Operations manual', 'Betriebshandbuch', 'Manual de operación'],
+      desc: ['Installation, données, sauvegardes, mises à jour, publication d’une version.',
+        'Installation, data, backups, updates, publishing a release.',
+        'Installation, Daten, Sicherungen, Aktualisierungen, Veröffentlichung.',
+        'Instalación, datos, copias de seguridad, actualizaciones, publicación de una versión.'
+      ]
+    }, {
+      file: 'INSTALL.md',
+      title: ['Installation (référence)', 'Installation (reference)', 'Installation (Referenz)', 'Instalación (referencia)']
+    }, {
+      file: 'VERSION.md',
+      title: ['Notes de version', 'Release notes', 'Versionshinweise', 'Notas de versión']
+    }, {
+      file: 'CHANGELOG.md',
+      title: ['Journal des modifications', 'Changelog', 'Änderungsprotokoll', 'Registro de cambios']
+    }]
+  }, {
+    id: 'developers',
+    title: ['Pour les développeurs', 'For developers', 'Für Entwickler', 'Para desarrolladores'],
+    collapsed: true,
+    from: 'technique/README.md'
+  }];
+  const HOME = ''; // accueil de l'aide (produit depuis HELP)
   const $ = s => document.querySelector(s),
     body = $('.doc-body'),
     esc = s => String(s).replace(/[&<>"]/g, c => ({
@@ -42,6 +146,15 @@
       'Handbücher, Anleitungen und Dokumentation der Suite', 'Manuales, guías y documentación de la suite'
     ],
     ['Rechercher dans les manuels…', 'Search the manuals…', 'In den Handbüchern suchen…', 'Buscar en los manuales…'],
+    ['Rechercher dans les tutoriels et les manuels…', 'Search the tutorials and manuals…', 'In Tutorials und Handbüchern suchen…',
+      'Buscar en los tutoriales y los manuales…'
+    ],
+    ['Inclure la documentation développeur', 'Include developer documentation', 'Entwicklerdokumentation einbeziehen',
+      'Incluir la documentación para desarrolladores'
+    ],
+    ['Tutoriels, manuels et documentation de la suite', 'Tutorials, manuals and documentation of the suite',
+      'Tutorials, Handbücher und Dokumentation der Suite', 'Tutoriales, manuales y documentación de la suite'
+    ],
     ['Dans ce document', 'In this document', 'In diesem Dokument', 'En este documento'],
     ['Chargement de la documentation…', 'Loading the documentation…', 'Dokumentation wird geladen…', 'Cargando la documentación…']
   ]);
@@ -118,53 +231,102 @@
     image: s => new URL(s, new URL(name, DOCS)).href
   });
 
-  // ---- index documentaire : liens de docs/README.md, par section
-  async function drawIndex(current) {
-    const file = await localized(INDEX),
-      md = await text(file),
-      host = $('.doc-index');
-    if (!md && LOCAL) {
-      host.innerHTML = '';
-      return;
-    }
-    if (!md) {
-      host.innerHTML = `<p class="doc-empty">${esc(window.RepositoryKit.tf(['Index documentaire introuvable (docs/README.md{c}).', 'Documentation index not found (docs/README.md{c}).', 'Dokumentationsverzeichnis nicht gefunden (docs/README.md{c}).', 'Índice de la documentación no encontrado (docs/README.md{c}).'], {
-        c: failed.has(file) ? ` — ${failed.get(file)}` : ''
-      }))}</p>`;
-      return;
-    }
-    const groups = [];
-    let g = null;
-    for (const line of md.split(/\r?\n/)) {
-      const h = /^##\s+(.*)$/.exec(line);
-      if (h) groups.push(g = {
-        title: h[1],
-        items: []
-      });
-      for (const m of line.matchAll(/\[([^\]]+)\]\(([^)\s]+\.md)(#[^)\s]*)?\)/g)) {
-        const doc = decodeURIComponent(link(m[2], file).replace(/^\?doc=/, '')); // relatif à docs/, sans langue
-        if (g && !g.items.some(x => x.file === doc)) g.items.push({
-          label: m[1],
-          file: doc
+  /** Documents d'une section de l'aide : [{ file, title, desc, chapters }] — tutoriels présents seulement ;
+   *  développeurs : liens de docs/technique/README.md. */
+  async function sectionItems(sec) {
+    if (sec.from) {
+      const md = await text(sec.from);
+      if (!md) return [];
+      const out = [{
+        file: sec.from,
+        title: [tr(['Index technique', 'Technical index', 'Technischer Index', 'Índice técnico'])]
+      }];
+      for (const m of md.matchAll(/\[([^\]]+)\]\(([^)\s#]+\.md)\)/g)) {
+        const f = new URL(m[2], new URL(sec.from, DOCS)).href.slice(DOCS.href.length);
+        if (f && !out.some(x => x.file === f)) out.push({
+          file: f,
+          title: [m[1]]
         });
       }
+      return out;
     }
-    host.innerHTML = [{
-      title: tr(['Accueil', 'Home', 'Start', 'Inicio']),
-      items: [{
-        label: tr(['Index documentaire', 'Documentation index', 'Dokumentationsverzeichnis', 'Índice de la documentación']),
-        file: INDEX
-      }]
-    }, ...groups].filter(x => x.items.length).map(x => `<h3>${esc(x.title)}</h3><ul>${x.items.map(i => `<li><a href="?doc=${encodeURIComponent(i.file)}"${i.file === current ? ' class="on"' : ''}>${esc(i.label)}</a></li>`).join('')}</ul>`).join('');
+    const out = [];
+    for (const it of sec.items)
+      if (!it.file.startsWith('tutorial/') || (await text(await localized(it.file))) != null) out.push(it);
+    return out;
   }
+  /** Chapitres (titres de niveau 2) d'un manuel dans la langue de la page : [{ id, text }]. */
+  async function chapters(file) {
+    const f = await localized(file),
+      md = await text(f);
+    return md ? render(md, f).headings.filter(h => h.level === 2).map(h => ({
+      id: h.id,
+      text: h.text.replace(/\*\*/g, '')
+    })) : [];
+  }
+  // ---- index de gauche : sections de l'aide ; manuels avec leurs chapitres (dépliés pour le manuel affiché) ;
+  // développeurs repliés
+  async function drawIndex(current) {
+    const host = $('.doc-index'),
+      parts = [`<ul><li><a href="?"${current === HOME ? ' class="on"' : ''}>${esc(tr(['Accueil de l’aide', 'Help home', 'Hilfe-Startseite', 'Inicio de la ayuda']))}</a></li></ul>`];
+    for (const sec of HELP) {
+      const items = await sectionItems(sec);
+      if (!items.length) continue;
+      const li = [];
+      for (const it of items) {
+        const on = it.file === current;
+        let sub = '';
+        if (it.chapters) {
+          const ch = await chapters(it.file);
+          if (ch.length) sub = `<details${on ? ' open' : ''}><summary>${esc(tr(['Chapitres', 'Chapters', 'Kapitel', 'Capítulos']))}</summary><ul>${ch.map(c => `<li><a href="?doc=${encodeURIComponent(it.file)}#${esc(c.id)}">${esc(c.text)}</a></li>`).join('')}</ul></details>`;
+        }
+        li.push(`<li><a href="?doc=${encodeURIComponent(it.file)}"${on ? ' class="on"' : ''}>${esc(tr(it.title))}</a>${sub}</li>`);
+      }
+      const list = `<ul>${li.join('')}</ul>`;
+      parts.push(sec.collapsed ? `<details class="doc-dev"${items.some(i => i.file === current) ? ' open' : ''}><summary><h3>${esc(tr(sec.title))}</h3></summary>${list}</details>` : `<h3>${esc(tr(sec.title))}</h3>${list}`);
+    }
+    host.innerHTML = parts.join('');
+  }
+  /** Accueil de l'aide : tutoriels en tête (une phrase chacun), puis manuels et exploitation ; développeurs replié. */
+  async function showHome() {
+    const card = it => `<li><a href="?doc=${encodeURIComponent(it.file)}"><b>${esc(tr(it.title))}</b></a>${it.desc ? `<br><span>${esc(tr(it.desc))}</span>` : ''}</li>`;
+    const html = [`<h1>${esc(tr(['Aide', 'Help', 'Hilfe', 'Ayuda']))}</h1><p>${esc(tr([
+      'Commencez par un tutoriel ; les manuels décrivent chaque page, bloc par bloc. Depuis n’importe quelle page, « Aide » de la barre latérale ouvre le chapitre de la page.',
+      'Start with a tutorial; the manuals describe every page, block by block. From any page, “Help” in the sidebar opens the page’s chapter.',
+      'Beginnen Sie mit einem Tutorial; die Handbücher beschreiben jede Seite, Block für Block. Von jeder Seite aus öffnet „Hilfe“ in der Seitenleiste das Kapitel der Seite.',
+      'Empiece por un tutorial; los manuales describen cada página, bloque por bloque. Desde cualquier página, «Ayuda» en la barra lateral abre el capítulo de la página.'
+    ]))}</p>`];
+    for (const sec of HELP) {
+      const items = await sectionItems(sec);
+      if (!items.length) continue;
+      if (sec.collapsed) html.push(`<details><summary><h2>${esc(tr(sec.title))}</h2></summary><ul>${items.map(card).join('')}</ul></details>`);
+      else html.push(`<h2>${esc(tr(sec.title))}</h2><ul class="doc-cards">${items.map(card).join('')}</ul>`);
+    }
+    body.innerHTML = html.join('');
+    shown = '';
+    current = HOME;
+    document.title = tr(['Aide', 'Help', 'Hilfe', 'Ayuda']);
+    $('.doc-toc-title').hidden = true;
+    $('.doc-toc').innerHTML = '';
+    await drawIndex(HOME);
+    window.scrollTo(0, 0);
+  }
+  /** Titre d'un document de l'aide (structure), sinon son nom. */
+  const docTitle = file => {
+    for (const sec of HELP)
+      for (const it of sec.items || [])
+        if (it.file === file) return tr(it.title);
+    return file.replace(/\.md$/, '').replace(/_/g, ' ');
+  };
 
   // ---- document
   let shown = '', // fichier affiché (langue comprise)
-    current = INDEX; // document affiché (sans langue)
+    current = HOME; // document affiché (sans langue) ; HOME : accueil de l'aide
   async function show(name, hash = '') {
+    if (!name || name === INDEX) return showHome();
     // un document de docs/ seulement (chemin relatif .md) : ?doc=https://… chargeait le texte d'un autre site, dont
     // les liens s'ouvraient ensuite dans la suite
-    if (!/^(?:[\w-]+\/)*[\w.-]+\.md$/i.test(String(name || '')) || /(?:^|\/)\.\.?\//.test(name)) name = INDEX;
+    if (!/^(?:[\w-]+\/)*[\w.-]+\.md$/i.test(String(name || '')) || /(?:^|\/)\.\.?\//.test(name)) return showHome();
     tell({
       repoHelp: 'at',
       href: location.href
@@ -231,7 +393,7 @@
       history.replaceState(null, '', `?doc=${encodeURIComponent(MANUALS[0])}`);
       return show(MANUALS[0]);
     }
-    return show(q.get('doc') || INDEX, location.hash);
+    return show(q.get('doc') || HOME, location.hash);
   }
 
   // ---- navigation interne (sans recharger la page)
@@ -266,6 +428,8 @@
 
   // ---- recherche dans les manuels (titres et texte des chapitres)
   const hits = $('.doc-hits');
+  // case « documentation développeur » : recherche relancée
+  $('.doc-dev-search')?.addEventListener('change', () => $('.doc-search').dispatchEvent(new Event('input')));
   let timer = 0;
   $('.doc-search').addEventListener('input', e => {
     clearTimeout(timer);
@@ -277,7 +441,10 @@
         return;
       }
       const found = [];
-      for (const m of ['tutorial/installation.fr.md', ...MANUALS, 'MANUEL_EXPLOITATION.md']) {
+      const scope = [...(await sectionItems(HELP[0])).map(x => x.file), ...MANUALS, 'MANUEL_EXPLOITATION.md', ...($(
+          '.doc-dev-search')
+        ?.checked ? (await sectionItems(HELP[4])).map(x => x.file) : [])];
+      for (const m of scope) {
         const f = await localized(m),
           md = await text(f);
         if (!md) continue;
@@ -299,7 +466,7 @@
         });
       }
       hits.hidden = false;
-      hits.innerHTML = found.length ? found.slice(0, 40).map(f => `<li><a href="?doc=${encodeURIComponent(f.doc)}#${esc(f.id)}">${esc(f.text)}<small>${esc(f.doc.replace(/\.md$/, '').replace(/_/g, ' ').toLowerCase())}</small></a></li>`).join('') : `<li class="doc-empty">${esc(tr(['Aucun résultat.', 'No results.', 'Keine Ergebnisse.', 'Sin resultados.']))}</li>`;
+      hits.innerHTML = found.length ? found.slice(0, 40).map(f => `<li><a href="?doc=${encodeURIComponent(f.doc)}#${esc(f.id)}">${esc(f.text)}<small>${esc(docTitle(f.doc))}</small></a></li>`).join('') : `<li class="doc-empty">${esc(tr(['Aucun résultat.', 'No results.', 'Keine Ergebnisse.', 'Sin resultados.']))}</li>`;
     }, 200);
   });
 

@@ -1,87 +1,87 @@
-# V2 — une suite à complexité progressive
+# V2 — a suite with progressive complexity
 
-*Branche `feature/v2-niveaux` · proposition du 8 octobre 2026 · [Sommaire technique](README.md)*
+*Branch `feature/v2-niveaux` · proposal of 8 October 2026 · [Technical contents](README.md)*
 
-La suite actuelle se règle en deux positions, « avec ou sans Centre (CPCO) ». Le pilote qui veut seulement
-recevoir ses missions et écrire son compte rendu voit aujourd'hui une quinzaine d'entrées. La v2 part de
-**ce que fait la personne**, et non de ce que sait faire la suite : quatre niveaux, chacun complet pour son usage,
-les trois premiers simples.
+The current suite has two settings, “with or without the Centre (CPCO)”. The pilot who only wants to
+receive their missions and write their mission report today sees some fifteen entries. The v2 starts from
+**what the person does**, and not from what the suite can do: four levels, each complete for its use,
+the first three simple.
 
-## 1. Règles
+## 1. Rules
 
-1. **Au plus 7 éléments** par barre, menu, page ou groupe. Au-delà, on regroupe ou on replie (« Plus… »).
-2. **Une page = une tâche.** Un titre qui dit la tâche, **une** action principale visible, le reste en second plan.
-3. **Divulgation progressive** : l'option avancée existe, mais repliée ; elle ne gêne pas le niveau 1.
-4. **Toujours un état** : ce qui se passe (chargement, envoi, calcul) se voit, peut s'arrêter, et dit clairement
-   ce qui a échoué et quoi faire (pas de code d'erreur seul).
-5. **Rien à retaper** : ce que la suite sait déjà (profil, ordre de mission, suivi IVAO/VATSIM) préremplit la page.
-6. **Typographie au service du contenu** : sans empattement pour l'interface ; écarts voulus permis
-   (machine à écrire pour l'ordre de mission, serif pour un document à lire).
-7. **Mêmes fonctions qu'aujourd'hui** : rien n'est retiré ; ce qui dépasse le niveau choisi est rangé, pas supprimé.
+1. **At most 7 items** per bar, menu, page or group. Beyond that, items are grouped or collapsed (“More…” (« Plus… »)).
+2. **One page = one task.** A title that states the task, **one** visible main action, the rest in the background.
+3. **Progressive disclosure**: the advanced option exists, but collapsed; it does not get in the way of level 1.
+4. **Always a status**: what is happening (loading, sending, calculating) is visible, can be stopped, and states clearly
+   what failed and what to do (no error code alone).
+5. **Nothing to retype**: what the suite already knows (profile, mission order, IVAO/VATSIM tracking) pre-fills the page.
+6. **Typography serving the content**: sans serif for the interface; deliberate departures allowed
+   (typewriter for the mission order, serif for a document to be read).
+7. **Same functions as today**: nothing is removed; what goes beyond the chosen level is put away, not deleted.
 
-## 2. Les quatre niveaux
+## 2. The four levels
 
-| Niveau | Pour qui | Ce qu'on y fait | Accès |
+| Level | For whom | What you do there | Access |
 |---|---|---|---|
-| **1 · Équipage** | tout pilote | recevoir ses missions, voir le planning des ordres, écrire son compte rendu | libre |
-| **2 · Planification** | officier de permanence | niveau 1 + planifier les ordres (Tableau modifiable, disponibilités, ODV) | Centre (mot de passe, plus tard rôle) |
-| **3 · Conception** | rédacteur de missions | niveau 2 + générer, modifier et registrer les missions | Centre |
-| **4 · Expert** | cartographe, analyste | niveau 3 + cartes avancées, profils, studio, analyses | Centre |
+| **1 · Crew** | every pilot | receive their missions, see the schedule of the orders, write their mission report | open |
+| **2 · Planning** | duty officer | level 1 + plan the orders (editable Board, availability, flight order (ODV) planning) | Centre (password, later role) |
+| **3 · Design** | mission writer | level 2 + generate, edit and register the missions | Centre |
+| **4 · Expert** | cartographer, analyst | level 3 + advanced maps, profiles, studio, analyses | Centre |
 
-Le niveau se choisit dans Réglages (et au premier lancement) ; il remplace « avec ou sans Centre ». Un niveau
-supérieur au rôle autorisé reste proposé en lecture seule (comme le Tableau aujourd'hui).
+The level is chosen in Settings (and at first run); it replaces “with or without the Centre”. A level
+above the authorised role remains offered read-only (like the Board today).
 
-**Modules facultatifs**, à cocher quel que soit le niveau (cachés par défaut aux niveaux 1 et 2) : Carburant
-(planificateur de vol), Cartes de vol, Atterrissages, Analyse des missions (reporting).
+**Optional modules**, to be ticked whatever the level (hidden by default at levels 1 and 2): Fuel
+(flight planner), Flight maps, Landings, Mission analysis (reporting).
 
-## 3. Navigation par niveau (≤ 7 entrées)
+## 3. Navigation per level (≤ 7 entries)
 
-| Niveau 1 | Niveau 2 | Niveau 3 | Niveau 4 |
+| Level 1 | Level 2 | Level 3 | Level 4 |
 |---|---|---|---|
-| Aujourd'hui | Aujourd'hui | Aujourd'hui | Aujourd'hui |
-| Mes missions | Mes missions | Mes missions | Mes missions |
-| Compte rendu | Compte rendu | Compte rendu | Compte rendu |
-| Planning (lecture) | **Planifier** (Tableau, ODV) | Planifier | Planifier |
-| — | — | **Missions** (générateur, registre) | Missions |
-| — | — | — | Missions + **studio cartographique** |
-| Réglages · Aide | Réglages · Aide | Réglages · Aide | Réglages · Aide |
+| Today | Today | Today | Today |
+| My missions | My missions | My missions | My missions |
+| Report | Report | Report | Report |
+| Schedule (read-only) | **Plan** (Board, ODV) | Plan | Plan |
+| — | — | **Missions** (generator, registry) | Missions |
+| — | — | — | Missions + **map studio** |
+| Settings · Help | Settings · Help | Settings · Help | Settings · Help |
 
-Réglages et Aide forment le groupe du bas (2 éléments). Les modules facultatifs cochés s'ajoutent sous un
-seul élément « Outils » pour ne jamais dépasser 7. Apparence passe dans Réglages.
+Settings and Help form the bottom group (2 items). The optional modules that are ticked are added under a
+single “Tools” item so as never to exceed 7. Appearance moves into Settings.
 
-## 4. Pages, du plus simple au plus complet
+## 4. Pages, from the simplest to the most complete
 
-- **Aujourd'hui** (nouvelle, accueil) : ma prochaine mission (heure, appareil, briefing), le compte rendu en
-  attente, ma semaine en ligne de temps. Trois cartes, une action chacune.
-- **Mes missions** : liste des ordres reçus ; l'ordre s'affiche comme un document (police machine à écrire).
-  Disponibilités en onglet.
-- **Compte rendu** : niveau 1 = une page courte préremplie depuis l'ordre et le suivi réseau (heures, terrain,
-  résultat, remarques) ; « CR détaillé » ouvre le formulaire complet de la famille de mission.
-- **Planning / Planifier** : niveau 1 = frise de la semaine en lecture seule, ses vols mis en évidence ; niveau 2 =
-  le Tableau actuel, épuré (palette repliée, ≤ 7 commandes visibles), l'ODV en onglet.
-- **Missions** (niveau 3) : générateur en assistant pas à pas (≤ 7 étapes), registre en onglet.
-- **Outils** : cartes de vol, carburant, atterrissages, analyse des missions — facultatifs, tous au niveau 4 ; rien du
-  Centre. Le **studio cartographique** (cartes avancées, profils) est un onglet de Missions, au niveau 4.
-- **Réglages** : profil, niveau et modules, apparence, Centre, installation, maintenance ; chaque page ≤ 7 blocs,
-  les blocs techniques repliés.
+- **Today** (new, home page): my next mission (time, aircraft, briefing), the pending mission
+  report, my week as a timeline. Three cards, one action each.
+- **My missions**: list of the orders received; the order is shown as a document (typewriter font).
+  Availability as a tab.
+- **Report**: level 1 = a short page pre-filled from the order and the network tracking (times, airfield,
+  result, remarks); “Detailed report” opens the full form of the mission family.
+- **Schedule / Plan**: level 1 = timeline of the week, read-only, with one's own flights highlighted; level 2 =
+  the current Board, pared down (palette collapsed, ≤ 7 visible controls), the ODV as a tab.
+- **Missions** (level 3): generator as a step-by-step wizard (≤ 7 steps), registry as a tab.
+- **Tools**: flight maps, fuel, landings, mission analysis — optional, all at level 4; nothing from the
+  Centre. The **map studio** (advanced maps, profiles) is a tab of Missions, at level 4.
+- **Settings**: profile, level and modules, appearance, Centre, installation, maintenance; each page ≤ 7 blocks,
+  technical blocks collapsed.
 
-## 5. Lots
+## 5. Batches
 
-| Lot | Contenu | Visible pour l'utilisateur |
+| Batch | Content | Visible to the user |
 |---|---|---|
-| L0 | niveau et modules (réglage, premier lancement), navigation filtrée par niveau | la barre latérale ne montre que son niveau |
-| L1 | page « Aujourd'hui », accueil des niveaux 1-2 | une page d'arrivée utile |
-| L2 | Mes missions épurée, ordre en document, CR court prérempli | le parcours pilote complet en 3 pages |
-| L3 | Planning lecture (niveau 1), Tableau épuré (niveau 2) | planifier sans se perdre |
-| L4 | générateur en assistant | concevoir une mission pas à pas |
-| L5 | Réglages : ≤ 7 blocs par page, blocs techniques repliés | réglages lisibles |
-| L6 | habillage v2 sobre (une feuille de style commune, designs actuels gardés en option) ; refonte du framework si nécessaire | interface homogène |
+| L0 | level and modules (setting, first run), navigation filtered by level | the side bar only shows its level |
+| L1 | “Today” page, home page of levels 1-2 | a useful landing page |
+| L2 | pared-down My missions, order as a document, short pre-filled report | the complete pilot journey in 3 pages |
+| L3 | read-only Schedule (level 1), pared-down Board (level 2) | planning without getting lost |
+| L4 | generator as a wizard | designing a mission step by step |
+| L5 | Settings: ≤ 7 blocks per page, technical blocks collapsed | readable settings |
+| L6 | sober v2 look (one common stylesheet, current designs kept as an option); framework overhaul if needed | consistent interface |
 
-Chaque lot est utilisable seul et testé dans les quatre langues avant le suivant.
+Each batch can be used on its own and is tested in the four languages before the next one.
 
-## 6. Questions ouvertes
+## 6. Open questions
 
-- Les designs à matières (Cabinet, Carnet de vol, Durci, Aqua…) : gardés comme thèmes au-dessus de l'habillage v2,
-  ou réservés au niveau 4 ?
-- « Planning » dans la liste des pages facultatives : compris ici comme le planificateur de vol (Carburant) ; le
-  planning des ordres reste visible dès le niveau 1.
+- The material designs (Cabinet, Flight log, Rugged, Aqua…): kept as themes on top of the v2 look,
+  or reserved for level 4?
+- “Planning” in the list of optional pages: understood here as the flight planner (Fuel); the
+  schedule of the orders stays visible from level 1.

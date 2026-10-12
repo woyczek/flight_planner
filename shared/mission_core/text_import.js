@@ -451,6 +451,7 @@
   // la page, sections masquées comprises, un élément par ligne (un Ctrl+A / Ctrl+C ne copie que
   // ce qui est affiché). La page du CR l'analyse au retour. Pas de commentaire de ligne ni de
   // « % » dans cette fonction : elle devient une adresse javascript: sur une seule ligne.
+  // alert() : favori exécuté sur un autre site, sans le socle de la suite (AppFramework) — seule boîte native admise.
   async function trackerCopy() {
     /** Attente de ms millisecondes. */
     const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));

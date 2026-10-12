@@ -1,195 +1,195 @@
-# Index des données : IndexedDB, réplication, expiration, conflits
+# Data index: IndexedDB, replication, expiry, conflicts
 
-Proposition du 5 octobre 2026 (branche `feature/index-idb`). Suite de l'audit de performance
-([perf/PLAN_PERF_2026-10-04.md](perf/PLAN_PERF_2026-10-04.md)) : les points de rupture de la montée en charge sont le
-registre du navigateur (quota du stockage, ≈ 2 000 à 4 000 missions), le registre des CR lu en entier (≈ 2,5 s à
-20 000 CR) et la grille de l'ODV.
+Proposal of 5 October 2026 (branch `feature/index-idb`). Follow-up to the performance audit
+([perf/PLAN_PERF_2026-10-04.md](perf/PLAN_PERF_2026-10-04.md)): the breaking points under growing load are the
+browser registry (storage quota, ≈ 2,000 to 4,000 missions), the report registry read in full (≈ 2.5 s at
+20,000 reports) and the ODV grid.
 
-## 1. Principe : les fichiers font foi, l'index se reconstruit
+## 1. Principle: the files are authoritative, the index is rebuilt
 
-| Rôle | Où | Règle |
+| Role | Where | Rule |
 |---|---|---|
-| **Source** | fichiers de `data/` (YAML, JSON), partagés par git | seule vérité ; texte lisible, comparable, fusionnable |
-| **Index** | IndexedDB, base `defaIndex` | **dérivé** : copie organisée pour lire vite ; peut être jetée et reconstruite à tout moment (Paramètres › Maintenance › Caches) |
-| **Boîte d'envoi** | IndexedDB, store `outbox` | ce qui n'existe encore que dans ce navigateur (disponibilités non enregistrées, brouillons de CR, écritures refusées faute de dossier) ; jamais mélangé à l'index |
-| **Préférences** | localStorage | petits réglages de l'interface (langue, design, filtres) : inchangé |
+| **Source** | files in `data/` (YAML, JSON), shared through git | the only truth; readable, comparable, mergeable text |
+| **Index** | IndexedDB, database `defaIndex` | **derived**: an organised copy for fast reading; can be discarded and rebuilt at any time (Settings › Maintenance › Caches) |
+| **Outbox** | IndexedDB, store `outbox` | what exists so far only in this browser (unsaved availability, report drafts, writes refused for lack of a folder); never mixed with the index |
+| **Preferences** | localStorage | small interface settings (language, design, filters): unchanged |
 
-Conséquence : un index ne crée jamais de conflit à lui seul. Les conflits n'existent qu'entre **deux écritures de
-fichiers** ; l'index se contente de suivre.
+Consequence: an index never creates a conflict on its own. Conflicts only exist between **two file
+writes**; the index merely follows.
 
-## 2. Ce qui est indexé (là où c'est pertinent)
+## 2. What is indexed (where it is relevant)
 
-| Store | Clé | Index secondaires | Source | Remplace | Pourquoi |
+| Store | Key | Secondary indexes | Source | Replaces | Why |
 |---|---|---|---|---|---|
-| `missions` | `id` | `family`, `status`, `folder`, `generatedAt` | `data/missions/**/mission*.yaml` + suivi (§ 6) | `missionRegistry:v1` (230 Ko, croît) | quota du stockage ; l'estimation et les listes lisent une mission par son id |
-| `reports` | `key` (famille\|id\|date) | `family`, `year`, `missionId`, `date`, `pilots` (multiEntry) | `data/cr/missions.yaml` puis `data/cr/<année>.yaml` (§ 7) | `missionCoreLedger:v2` (texte entier) | reporting par période, liaison mission → CR sans tout relire |
-| `assignments` | `[mission, pilot, role]` | `pilot`, `day` (aaaa-mm-jj), `mission`, `[pilot, day]` | `data/missions/affectations.json` | lecture complète à chaque page | Mes missions : semaine d'un pilote ; ODV : grille par jour (fin du coût pilotes × créneaux × affectations) |
-| `availability` | `[pilot, week]` | `week` | `data/disponibilites/<TRI>.json` | `pilotAvailability:v1` | grille de l'ODV par semaine |
-| `readMarks` | `[mission, pilot, at]` | `takeoff` | local | `assignmentsRead:v1`, `pilotPlis:v2` (jamais purgés) | expiration (§ 4) |
-| `files` | `path` | — | métadonnées des fichiers lus | `missionRegistryScan:v1` | signature de chaque source (§ 3) |
+| `missions` | `id` | `family`, `status`, `folder`, `generatedAt` | `data/missions/**/mission*.yaml` + tracking (§ 6) | `missionRegistry:v1` (230 KB, growing) | storage quota; the estimate and the lists read a mission by its id |
+| `reports` | `key` (family\|id\|date) | `family`, `year`, `missionId`, `date`, `pilots` (multiEntry) | `data/cr/missions.yaml` then `data/cr/<année>.yaml` (§ 7) | `missionCoreLedger:v2` (whole text) | reporting by period, mission → report link without re-reading everything |
+| `assignments` | `[mission, pilot, role]` | `pilot`, `day` (yyyy-mm-dd), `mission`, `[pilot, day]` | `data/missions/affectations.json` | full read on every page | My missions: a pilot's week; ODV: grid by day (end of the pilots × slots × assignments cost) |
+| `availability` | `[pilot, week]` | `week` | `data/disponibilites/<TRI>.json` | `pilotAvailability:v1` | ODV grid by week |
+| `readMarks` | `[mission, pilot, at]` | `takeoff` | local | `assignmentsRead:v1`, `pilotPlis:v2` (never purged) | expiry (§ 4) |
+| `files` | `path` | — | metadata of the files read | `missionRegistryScan:v1` | signature of each source (§ 3) |
 
-**Pas d'index** pour : les préférences, les passages entre pages (handoffs), la base SIA (déjà en IndexedDB, base
-`sia-map-parser`), les profils de performance (60 Ko, lus en entier par une seule page).
+**No index** for: preferences, hand-overs between pages (handoffs), the SIA database (already in IndexedDB, database
+`sia-map-parser`), performance profiles (60 KB, read in full by a single page).
 
-## 3. Réplication : fichier → index, dans un seul sens
+## 3. Replication: file → index, one way only
 
-- **Lecture** : l'index garde pour chaque fichier source sa **signature** (`lastModified:size` via le dossier autorisé ;
-  `Last-Modified`/`ETag` via le lanceur, avec requête conditionnelle → 304) et le hash de son contenu. Une page lit
-  l'index tout de suite, puis **revalide** : si la signature a changé, seul ce fichier est relu et réindexé (comme la
-  relecture incrémentale du registre aujourd'hui, généralisée).
-- **Écriture** : on écrit **d'abord le fichier** (sous verrou, § 5), puis on réindexe à partir de ce qui a été écrit.
-  L'index n'est jamais écrit « en avance » sur le fichier.
-- **Déclencheurs de revalidation** : ouverture de page, retour sur l'onglet (`visibilitychange`), message d'un autre
-  onglet (BroadcastChannel `defa-data`, déjà en place pour les affectations, étendu au registre et aux CR), bouton
-  « Relire ».
-- **Sans serveur** (`file://`) : mêmes règles, la signature vient du dossier autorisé (File System Access).
+- **Reading**: for each source file the index keeps its **signature** (`lastModified:size` via the authorised folder;
+  `Last-Modified`/`ETag` via the launcher, with a conditional request → 304) and the hash of its content. A page reads
+  the index straight away, then **revalidates**: if the signature has changed, only that file is re-read and re-indexed
+  (like today's incremental re-reading of the registry, generalised).
+- **Writing**: the **file is written first** (under a lock, § 5), then it is re-indexed from what was written.
+  The index is never written "ahead" of the file.
+- **Revalidation triggers**: page opening, return to the tab (`visibilitychange`), message from another
+  tab (BroadcastChannel `defa-data`, already in place for assignments, extended to the registry and to reports),
+  "Re-read" button.
+- **Without a server** (`file://`): same rules, the signature comes from the authorised folder (File System Access).
 
-### 3.1 Fichiers du pool lus par signature (fait)
+### 3.1 Pool files read by signature (done)
 
-Les index du dossier portent la signature de chaque fichier : `data/disponibilites/_index.json` (`at` : semaine →
-`updated_at` du fichier de la semaine ; `legacy_at` : ancien fichier `<TRI>.json`) et `data/utilisateurs/_index.json`
-(`updated_at` de chaque fiche). Le lanceur les refait **à chaque demande** (fichiers changés par git, un autre poste
-ou un éditeur : la signature dit vrai) ; une page qui écrit met à jour l'entrée du fichier écrit. La page lit l'index
-du dossier (une requête), puis `MissionAssignments.readIndexed(fichier, signature)` : la copie du store `files`
-(chemin, signature, contenu) sert sans requête tant qu'elle a la même signature ; sinon le fichier est relu et sa copie
-remplacée. Pas de copie utilisée pour un fichier de la boîte d'envoi, une lecture « fraîche », ou sans signature
-(ancien lanceur). Sans lanceur, l'index du dossier n'est tenu à jour que par les écritures des pages : après un
-changement extérieur (git sans lanceur), Paramètres › Maintenance › Caches › Index des données (Purger).
+The folder indexes carry the signature of each file: `data/disponibilites/_index.json` (`at`: week →
+`updated_at` of the week's file; `legacy_at`: old `<TRI>.json` file) and `data/utilisateurs/_index.json`
+(`updated_at` of each card). The launcher rebuilds them **on every request** (files changed by git, another workstation
+or an editor: the signature tells the truth); a page that writes updates the entry of the file written. The page reads
+the folder index (one request), then `MissionAssignments.readIndexed(fichier, signature)`: the copy in the `files` store
+(path, signature, content) is used without a request as long as it has the same signature; otherwise the file is re-read
+and its copy replaced. No copy is used for a file from the outbox, a "fresh" read, or without a signature
+(old launcher). Without the launcher, the folder index is kept up to date only by the pages' writes: after an
+external change (git without the launcher), Settings › Maintenance › Caches › Data index (Purge).
 
-## 4. Expiration
+## 4. Expiry
 
-- **Pas de durée de vie pour l'exactitude** : une entrée d'index est valable tant que la signature de son fichier n'a
-  pas changé, ni plus ni moins. Le délai actuel de 60 s des affectations devient un simple **pas de revalidation** (au
-  plus une vérification par fichier toutes les N secondes) ; ce n'est plus lui qui décide si la donnée est juste.
-- **Purge de ce qui grossit sans fin** : marques de lecture et état des plis effacés 6 mois après le décollage ;
-  journal des affectations : index sur 12 mois (le fichier garde tout) ; brouillons de CR : 90 jours sans
-  modification, avec une notification avant effacement.
-- **Changement de format** : la version de la base (`defaIndex` v1, v2…) et une version de schéma par store ; un schéma
-  inconnu → store vidé et reconstruit (jamais de migration hasardeuse d'un cache).
-- **Pierres tombales** (§ 5) : gardées 90 jours, puis purgées.
+- **No lifetime for correctness**: an index entry is valid as long as its file's signature has not
+  changed, no more and no less. The current 60 s delay for assignments becomes a mere **revalidation step** (at
+  most one check per file every N seconds); it no longer decides whether the data is correct.
+- **Purging what grows without end**: read marks and envelope state erased 6 months after take-off;
+  assignment log: index over 12 months (the file keeps everything); report drafts: 90 days without
+  modification, with a notification before erasure.
+- **Format change**: the database version (`defaIndex` v1, v2…) and a schema version per store; an unknown
+  schema → store emptied and rebuilt (never a hazardous migration of a cache).
+- **Tombstones** (§ 5): kept for 90 days, then purged.
 
-## 5. Conflits : trois niveaux, trois réponses
+## 5. Conflicts: three levels, three answers
 
-| Niveau | Exemple | Réponse |
+| Level | Example | Answer |
 |---|---|---|
-| **Deux onglets** du même navigateur | registre ouvert deux fois, CR enregistré dans un onglet pendant qu'un autre est ouvert | verrou Web Locks par fichier (`defa:<chemin>`) + message BroadcastChannel après écriture : l'autre onglet se met à jour. **Aujourd'hui le registre des CR n'a ni verrou ni relecture** : un onglet resté ouvert écrase les CR enregistrés par un autre (corrigé en premier, étape 1). |
-| **Deux postes** sur le même dossier (Synology, OneDrive) ou deux lanceurs | deux personnes du Centre affectent en même temps | **écriture conditionnelle** : on retient la signature du fichier au moment de la lecture ; sous verrou, on relit la signature juste avant d'écrire. Inchangée → écriture. Changée → **fusion par enregistrement** (ci-dessous), puis écriture. |
-| **Deux copies** réunies par git | deux pilotes qui poussent `data/` | fichiers découpés finement (un fichier par mission, par pilote et par semaine, par année de CR) pour que git fusionne seul ; enregistrements écrits un par ligne ou par bloc stable ; journaux en ajout seul. |
+| **Two tabs** of the same browser | registry opened twice, report saved in one tab while another is open | Web Locks lock per file (`defa:<chemin>`) + BroadcastChannel message after writing: the other tab updates itself. **Today the report registry has neither a lock nor a re-read**: a tab left open overwrites the reports saved by another (fixed first, step 1). |
+| **Two workstations** on the same folder (Synology, OneDrive) or two launchers | two people from the Centre assign at the same time | **conditional write**: the file's signature is remembered at read time; under the lock, the signature is re-read just before writing. Unchanged → write. Changed → **record-level merge** (below), then write. |
+| **Two copies** brought together by git | two pilots pushing `data/` | finely split files (one file per mission, per pilot and per week, per report year) so that git merges on its own; records written one per line or per stable block; append-only logs. |
 
-**Fusion par enregistrement** (trois versions : *base* = ce que j'avais lu, *mienne*, *la leur* = le fichier actuel) :
+**Record-level merge** (three versions: *base* = what I had read, *mine*, *theirs* = the current file):
 
-1. chaque enregistrement porte `id`, `updated_at`, `by` (et `rev`, compteur) — **à ajouter aux CR**, qui n'ont
-   aujourd'hui qu'une date pour tout le fichier ;
-2. enregistrement modifié d'un seul côté → on garde ce côté ; ajoutés des deux côtés avec des id différents → on garde
-   les deux ;
-3. **même enregistrement modifié des deux côtés** → conflit réel : pas d'écrasement silencieux. On écrit la version la
-   plus récente, l'autre est gardée dans `data/<…>/_conflits/<id>_<date>.yaml` et une notification flottante propose
-   de comparer et de choisir ;
-4. suppression → **pierre tombale** (`deleted: true`, `deleted_at`, `by`) au lieu d'un retrait : sans elle, un
-   enregistrement supprimé reviendrait par l'autre copie.
+1. each record carries `id`, `updated_at`, `by` (and `rev`, a counter) — **to be added to reports**, which today
+   only have one date for the whole file;
+2. record modified on one side only → that side is kept; added on both sides with different ids → both
+   are kept;
+3. **same record modified on both sides** → a real conflict: no silent overwrite. The most recent version
+   is written, the other is kept in `data/<…>/_conflits/<id>_<date>.yaml` and a floating notification offers
+   to compare and choose;
+4. deletion → **tombstone** (`deleted: true`, `deleted_at`, `by`) instead of removal: without it, a
+   deleted record would come back through the other copy.
 
-La base de la fusion (version lue) est gardée dans l'index (`files.base`), ce qui permet la fusion à trois sans
-historique git.
+The merge base (the version read) is kept in the index (`files.base`), which allows the three-way merge without
+git history.
 
-## 6. Champs du Centre sur les missions (statut, notes, vol, CR liés)
+## 6. Centre fields on missions (status, notes, flight, linked reports)
 
-Aujourd'hui ils n'existent que dans le navigateur (`missionRegistry:v1`) et dans `mission_registry.yaml`, **écrit mais
-jamais relu** : un navigateur vidé les perd, un autre poste ne les voit pas. Proposition : un petit fichier
-`suivi.yaml` dans le dossier de chaque mission (comme `affectations.yaml`), relu et indexé ; `mission_registry.yaml`
-reste un export lisible.
+Today they only exist in the browser (`missionRegistry:v1`) and in `mission_registry.yaml`, **written but
+never re-read**: a cleared browser loses them, another workstation does not see them. Proposal: a small file
+`suivi.yaml` in each mission's folder (like `affectations.yaml`), re-read and indexed; `mission_registry.yaml`
+remains a readable export.
 
-## 7. Découpage par année (d'ici la fin de l'année)
+## 7. Splitting by year (by the end of the year)
 
-- `data/cr/missions.yaml` → `data/cr/<année>.yaml` (année de la date du CR) + `data/cr/_index.json` (années présentes,
-  nombre de CR, signature) ; lecture de la seule période affichée ; l'ancien fichier lu tant qu'il existe.
-- Même principe pour `affectations_log.json` (`affectations_log_<année>.json`) et les disponibilités (un fichier par
-  pilote et par semaine : `data/disponibilites/<TRI>/<année>-S<nn>.json`).
-- Bascule faite par un outil (`tools/split_by_year.py`, aperçu puis écriture), réversible.
+- `data/cr/missions.yaml` → `data/cr/<année>.yaml` (year of the report date) + `data/cr/_index.json` (years present,
+  number of reports, signature); only the displayed period is read; the old file is read as long as it exists.
+- Same principle for `affectations_log.json` (`affectations_log_<année>.json`) and availability (one file per
+  pilot and per week: `data/disponibilites/<TRI>/<année>-S<nn>.json`).
+- Switch-over done by a tool (`tools/split_by_year.py`, preview then write), reversible.
 
-## 8. Étapes
+## 8. Steps
 
-1. **Correctif** : registre des CR sous verrou, relecture avant écriture, message aux autres onglets (perte de données
-   possible aujourd'hui).
-2. `RepositoryKit.idb` → module `shared/data_index.js` : base `defaIndex`, stores, signatures, revalidation,
-   reconstruction, purge.
-3. Registre des missions dans l'index (fin du quota) ; avertissement si une écriture échoue.
-4. Affectations et disponibilités indexées ; Mes missions et l'ODV lisent par pilote / semaine / jour.
-5. CR indexés (année, famille, mission) ; reporting par période.
-6. Écriture conditionnelle + fusion par enregistrement + pierres tombales (affectations, CR, suivi des missions).
-7. Découpage par année (outil + lecture), avant le 31 décembre.
+1. **Fix**: report registry under a lock, re-read before writing, message to the other tabs (data loss
+   possible today).
+2. `RepositoryKit.idb` → module `shared/data_index.js`: database `defaIndex`, stores, signatures, revalidation,
+   rebuilding, purging.
+3. Mission registry in the index (end of the quota); warning if a write fails.
+4. Assignments and availability indexed; My missions and the ODV read by pilot / week / day.
+5. Reports indexed (year, family, mission); reporting by period.
+6. Conditional write + record-level merge + tombstones (assignments, reports, mission tracking).
+7. Splitting by year (tool + reading), before 31 December.
 
-Chaque étape : audit `tools/perf_audit.html` et banc `tools/perf_scale.html` avant / après, rapport régénéré.
+Each step: audit `tools/perf_audit.html` and bench `tools/perf_scale.html` before / after, report regenerated.
 
-## 9. Synchronisation : git sur le dossier, ou webservice vers un moteur central
+## 9. Synchronisation: git on the folder, or a web service to a central engine
 
-Décision du 5 octobre : les disponibilités, les missions (et leurs affectations, leur suivi, leurs CR), les
-utilisateurs et la configuration partagée forment un **pool synchronisé**, centralisé (webservice) ou décentralisé
-(git). Les préférences d'affichage restent propres à chaque navigateur.
+Decision of 5 October: availability, missions (and their assignments, their tracking, their reports),
+users and the shared configuration form a **synchronised pool**, centralised (web service) or decentralised
+(git). Display preferences remain specific to each browser.
 
-### 9.1 Une interface, deux transports
+### 9.1 One interface, two transports
 
-`shared/sync.js` expose `status()`, `pull()`, `push(chemins)`, `onChange(cb)` ; l'index (§ 3) s'abonne aux changements
-reçus, les écritures (§ 5) appellent `push` après le fichier. Le transport se choisit dans Paramètres › Installation.
+`shared/sync.js` exposes `status()`, `pull()`, `push(chemins)`, `onChange(cb)`; the index (§ 3) subscribes to the changes
+received, writes (§ 5) call `push` after the file. The transport is chosen in Settings › Installation.
 
-| | **Git sur le dossier** (décentralisé) | **Webservice** (centralisé) |
+| | **Git on the folder** (decentralised) | **Web service** (centralised) |
 |---|---|---|
-| Où | `data/` est un clone git ; le lanceur fait `pull` / `commit` / `push` (`/__sync/*`) | API HTTPS d'un moteur central « en face » |
-| Quand | au démarrage, toutes les N minutes, après chaque écriture (commit groupé), bouton « Synchroniser » | flux des changements depuis un curseur (`GET /v1/changes?since=`), puis à chaque écriture |
-| Conflit | `pull --rebase` ; fichier en conflit → fusion par enregistrement (§ 5, base = ancêtre commun git), commit de la fusion | `PUT` avec `If-Match: <ETag>` → `412` si le fichier a changé → fusion par enregistrement, nouvel essai |
-| Identité | auteur du commit = trigramme de l'utilisateur connecté | jeton de session ; rôles vérifiés **par le serveur** |
-| Sans lanceur | impossible (pas de git dans le navigateur) : écriture conditionnelle seule (dossier partagé Synology / OneDrive) | possible (le navigateur parle directement au serveur) |
+| Where | `data/` is a git clone; the launcher does `pull` / `commit` / `push` (`/__sync/*`) | HTTPS API of a central engine "on the other side" |
+| When | at start-up, every N minutes, after each write (grouped commit), "Synchronise" button | stream of changes since a cursor (`GET /v1/changes?since=`), then on each write |
+| Conflict | `pull --rebase`; file in conflict → record-level merge (§ 5, base = git common ancestor), commit of the merge | `PUT` with `If-Match: <ETag>` → `412` if the file has changed → record-level merge, new attempt |
+| Identity | commit author = trigram of the logged-in user | session token; roles checked **by the server** |
+| Without the launcher | impossible (no git in the browser): conditional write only (Synology / OneDrive shared folder) | possible (the browser talks directly to the server) |
 
-### 9.2 Moteur central minimal
+### 9.2 Minimal central engine
 
-`tools/defa_server.py` (Python, bibliothèque standard) :
+`tools/defa_server.py` (Python, standard library):
 
-- **stockage** : les fichiers, rangés comme `data/` (on peut toujours repasser à git), et **SQLite** pour l'index et le
-  journal des changements (un seul processus écrit : c'est là que SQLite est le bon outil) ;
-- **API** : `POST /v1/login` (trigramme + mot de passe → jeton), `GET /v1/changes?since=`, `GET /v1/file/<chemin>`
-  (`ETag`), `PUT` / `DELETE` (pierre tombale) avec `If-Match`, contrôle des rôles (`admin_centre` pour les écritures du
-  Centre, l'utilisateur pour ses disponibilités et ses CR) ;
-- **maintenance** (`/admin`, réservé `admin_centre`) : état, journal, comptes (réinitialiser un mot de passe), purge des
-  pierres tombales, sauvegarde ZIP, export vers un dépôt git ; lancement `python tools/defa_server.py --data <dossier>
-  --port <n>`, HTTPS derrière un proxy (Caddy, nginx) ;
-- même format de fichiers que `data/` : un poste peut passer de git au webservice (et revenir) sans conversion.
+- **storage**: the files, arranged like `data/` (one can always go back to git), and **SQLite** for the index and the
+  change log (a single process writes: this is where SQLite is the right tool);
+- **API**: `POST /v1/login` (trigram + password → token), `GET /v1/changes?since=`, `GET /v1/file/<chemin>`
+  (`ETag`), `PUT` / `DELETE` (tombstone) with `If-Match`, role checks (`admin_centre` for the Centre's
+  writes, the user for their own availability and reports);
+- **maintenance** (`/admin`, reserved for `admin_centre`): status, log, accounts (reset a password), purging of
+  tombstones, ZIP backup, export to a git repository; started with `python tools/defa_server.py --data <dossier>
+  --port <n>`, HTTPS behind a proxy (Caddy, nginx);
+- same file format as `data/`: a workstation can switch from git to the web service (and back) without conversion.
 
-### 9.4 Transport git : ce qui est fait (étape 8, décisions du 5 octobre)
+### 9.4 Git transport: what has been done (step 8, decisions of 5 October)
 
-- **Déclenchement** : bouton « Synchroniser (n) » de l'en-tête (`shared/sync.js`), pas d'envoi automatique ; n =
-  modifications de ce poste + commits à envoyer et à recevoir (dépôt distant relu toutes les 5 minutes). Affiché quand
-  la suite est servie par le lanceur et que `data/` est un dépôt git.
-- **Un passage** (`tools/data_sync.py`, routes `GET /__setup/sync-status`, `POST /__setup/sync` du lanceur) : boîte
-  d'envoi du navigateur écrite dans le dossier, commit des fichiers du pool (`disponibilites`, `utilisateurs`, `config`,
-  `missions`, `cr`, `atc` ; sans les `_index.json` régénérés ni les copies `_conflits/`) **au nom du trigramme connecté**,
-  `fetch` puis **fusion** (merge, pas de rebase : historique jamais réécrit), `push`. Compte rendu en notifications.
-- **Conflits, fiche par fiche** : une fiche par fichier (semaine d'un pilote, utilisateur, mission…) → la plus récente
-  (`updated_at`) l'emporte, l'autre est gardée dans `<dossier>/_conflits/<nom>.<locale|distante>.<date>` (non
-  synchronisé) et signalée ; `missions/affectations.json` fusionné par affectation (mission, pilote, rôle) à trois
-  versions ; `missions/affectations_log.json` (journal en ajout seul) réuni. Échec au milieu d'une fusion : fusion
-  annulée, dépôt jamais laissé à moitié fusionné.
-- **Limite connue** : `cr/missions.yaml` regroupe tous les CR — en conflit, la plus récente l'emporte et l'autre est
-  gardée dans `_conflits/` (à fusionner à la main) ; le découpage par année (étape 7) réduira ces conflits.
-- **Essais** : `python tools/data_sync.py --essai` (dépôt distant et deux copies temporaires : modifications croisées,
-  conflit, fusion, réception) ; `python tools/launch.py --port 8774 --data <copie>` sert une copie de `data/` pour
-  essayer le bouton sans toucher au vrai dépôt.
+- **Triggering**: "Synchronise (n)" button in the header (`shared/sync.js`), no automatic sending; n =
+  changes on this workstation + commits to send and to receive (remote repository re-read every 5 minutes). Shown when
+  the suite is served by the launcher and `data/` is a git repository.
+- **One pass** (`tools/data_sync.py`, launcher routes `GET /__setup/sync-status`, `POST /__setup/sync`): the browser's
+  outbox written to the folder, commit of the pool files (`disponibilites`, `utilisateurs`, `config`,
+  `missions`, `cr`, `atc`; without the regenerated `_index.json` files or the `_conflits/` copies) **in the name of the logged-in trigram**,
+  `fetch` then **merge** (merge, not rebase: history never rewritten), `push`. Report in notifications.
+- **Conflicts, card by card**: one card per file (a pilot's week, user, mission…) → the most recent
+  (`updated_at`) wins, the other is kept in `<dossier>/_conflits/<nom>.<locale|distante>.<date>` (not
+  synchronised) and flagged; `missions/affectations.json` merged per assignment (mission, pilot, role) with three
+  versions; `missions/affectations_log.json` (append-only log) combined. Failure in the middle of a merge: merge
+  aborted, repository never left half-merged.
+- **Known limitation**: `cr/missions.yaml` groups all the reports — in a conflict, the most recent wins and the other is
+  kept in `_conflits/` (to be merged by hand); splitting by year (step 7) will reduce these conflicts.
+- **Tests**: `python tools/data_sync.py --essai` (remote repository and two temporary copies: crossed changes,
+  conflict, merge, receipt); `python tools/launch.py --port 8774 --data <copie>` serves a copy of `data/` to
+  try the button without touching the real repository.
 
-### 9.3 Étapes (après le § 8)
+### 9.3 Steps (after § 8)
 
-8. `shared/sync.js`, transport git (routes `/__sync/*` du lanceur), bouton et état dans l'en-tête.
-9. Moteur central minimal : API, SQLite, comptes ; transport webservice ; page `/admin`.
-10. Mode `production` : connexion exigée pour les missions et le Centre, vérification par le serveur.
+8. `shared/sync.js`, git transport (launcher routes `/__sync/*`), button and status in the header.
+9. Minimal central engine: API, SQLite, accounts; web service transport; `/admin` page.
+10. `production` mode: login required for missions and the Centre, checked by the server.
 
-## 10. Avancement (branche `feature/index-idb`)
+## 10. Progress (branch `feature/index-idb`)
 
-| Étape | État |
+| Step | Status |
 |---|---|
-| 1. Registre des CR sous verrou, fusion par CR, onglets prévenus | fait (`a33c7f84`, course corrigée `c1ffb070`) |
-| 2. `shared/data_index.js` (base `defaIndex`) | fait (`72be400c`) |
-| 3. Registre des missions dans l'index (fin du quota), copie de compatibilité < 2 Mo | fait (`72be400c`, `ec676adb`) |
-| 4. Affectations et disponibilités indexées | fait : déclarations (semaines et anciens fichiers) et fiches utilisateurs lues par signature (§ 3.1) — ODV, 2e ouverture : 11 requêtes au lieu de 114, données à 1,6 s au lieu de 7,2 s ; affectations : un seul fichier (≈ 23 Ko, ≈ 40 ms), pas indexé (rien à gagner) |
-| 5. CR indexés, relus seulement si un fichier a changé (signature, 304) | fait (`c1ffb070`) |
-| 6. Suivi des missions dans `suivi.yaml` (fusion champ par champ) | fait (`eabd0a6f`) ; affectations : remplacement par mission sous verrou (existant) |
-| 7. Découpage par année | classé en dette technique (docs/DETTE_TECHNIQUE.md), gardé par la session « fond » : avant le 31 décembre 2026 |
-| 8. Synchronisation git par le lanceur | fait (§ 9.4) : bouton « Synchroniser » de l'en-tête, auteur = trigramme connecté, fusion fiche par fiche ; essais sur des copies (`python tools/data_sync.py --essai`, lanceur `--data <copie>`) |
-| 9. Moteur central minimal et transport webservice | à faire |
-| 10. Mode `production` | à faire |
+| 1. Report registry under a lock, merge per report, tabs notified | done (`a33c7f84`, race fixed `c1ffb070`) |
+| 2. `shared/data_index.js` (database `defaIndex`) | done (`72be400c`) |
+| 3. Mission registry in the index (end of the quota), compatibility copy < 2 MB | done (`72be400c`, `ec676adb`) |
+| 4. Assignments and availability indexed | done: declarations (weeks and old files) and user cards read by signature (§ 3.1) — ODV, 2nd opening: 11 requests instead of 114, data at 1.6 s instead of 7.2 s; assignments: a single file (≈ 23 KB, ≈ 40 ms), not indexed (nothing to gain) |
+| 5. Reports indexed, re-read only if a file has changed (signature, 304) | done (`c1ffb070`) |
+| 6. Mission tracking in `suivi.yaml` (field-by-field merge) | done (`eabd0a6f`); assignments: replacement per mission under a lock (existing) |
+| 7. Splitting by year | filed as technical debt (docs/DETTE_TECHNIQUE.md), kept by the "background" session: before 31 December 2026 |
+| 8. Git synchronisation through the launcher | done (§ 9.4): "Synchronise" button in the header, author = logged-in trigram, card-by-card merge; tests on copies (`python tools/data_sync.py --essai`, launcher `--data <copie>`) |
+| 9. Minimal central engine and web service transport | to do |
+| 10. `production` mode | to do |

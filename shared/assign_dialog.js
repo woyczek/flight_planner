@@ -68,7 +68,8 @@ dialog.ad-dialog{overflow:hidden;max-height:92vh}dialog.ad-dialog[open]{display:
 </style>`);
   };
   /** Fenêtre au gabarit du dialogue (en-tête : titre, sous-titre, ×, corps défilant, pied facultatif) ; titre, sous-titre,
-   *  corps et pied en HTML (échappés par l'appelant) ; beforeClose : false refuse la fermeture. Réutilisée par le
+   *  corps et pied en HTML (échappés par l'appelant) ; beforeClose : false (ou promesse de false : question posée dans
+   *  la page) refuse la fermeture. Réutilisée par le
    *  planning ODV (matrice d'un créneau). */
   function frame(id, {
     title,
@@ -84,12 +85,17 @@ dialog.ad-dialog{overflow:hidden;max-height:92vh}dialog.ad-dialog[open]{display:
       d = document.createElement('dialog');
       d.id = id;
       document.body.append(d);
-      // fermeture (×, Fermer, fond, Échap) : beforeClose() === false la refuse (modifications en attente)
+      // fermeture (×, Fermer, fond, Échap) : beforeClose() === false la refuse (modifications en attente) ; elle peut
+      // rendre une promesse (confirmation dans la page) : fermeture à sa réponse
+      const tryClose = async () => {
+        if (await d._beforeClose?.() !== false) d.close();
+      };
       d.addEventListener('click', e => {
-        if ((e.target === d || e.target.closest('[data-close]')) && d._beforeClose?.() !== false) d.close();
+        if (e.target === d || e.target.closest('[data-close]')) tryClose();
       });
       d.addEventListener('cancel', e => {
-        if (d._beforeClose?.() === false) e.preventDefault();
+        e.preventDefault();
+        tryClose();
       });
     }
     d._beforeClose = beforeClose;
@@ -350,14 +356,15 @@ dialog.ad-dialog{overflow:hidden;max-height:92vh}dialog.ad-dialog[open]{display:
         });
       }
     }
-    box.addEventListener('change', e => {
+    box.addEventListener('change', async e => {
       const card = e.target.closest('.ad-card'),
         k = e.target.dataset.r;
       if (!card || !k) return;
       const i = +card.dataset.i;
       let v = e.target.value.trim();
       if ((k === 'pilot' || k === 'ferryPilot') && v !== '__open') v = v.toUpperCase();
-      if (k === 'registration' && v === '__other') v = (prompt(L(['Immatriculation de l’appareil', 'Aircraft registration',
+      if (k === 'registration' && v === '__other') v = (await window.AppFramework.askText(L(['Immatriculation de l’appareil',
+        'Aircraft registration',
         'Kennzeichen des Luftfahrzeugs', 'Matrícula de la aeronave'
       ])) || '').trim().toUpperCase();
       rows[i][k] = v;

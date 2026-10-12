@@ -1,17 +1,17 @@
-# Prompts — assets de la phase 2 (refactoring du toolkit)
+# Prompts — phase 2 assets (toolkit refactoring)
 
-But : chaque design à matières a le même jeu d'images aux noms convenus ; les exceptions de code disparaissent
-(`PANELS.field.only`, `clair.alias`, fonds `BG` du Carnet de vol, frise HTML de Durci, `erase`/`shear` de la découpe).
-Suivi : [REFACTORING_TOOLKIT.md](REFACTORING_TOOLKIT.md), « Assets à fournir ou à refaire ».
+Goal: each material design has the same set of images under the agreed names; the code exceptions disappear
+(`PANELS.field.only`, `clair.alias`, `BG` backgrounds of Flight log, HTML frieze of Rugged, `erase`/`shear` of the cutting).
+Tracking: [REFACTORING_TOOLKIT.md](REFACTORING_TOOLKIT.md), “Assets to provide or to redo”.
 
-Dépôt : `shared/deco/<design>/…` (PNG accepté, je convertis en WebP et recadre). Les PNG sources déposés sont gardés.
-Une **conversation ChatGPT par design** (même style d'une image à l'autre) : coller d'abord les règles communes.
+Drop location: `shared/deco/<design>/…` (PNG accepted, I convert to WebP and crop). The dropped source PNGs are kept.
+One **ChatGPT conversation per design** (same style from one image to the next): paste the common rules first.
 
-## 1. Panneaux de fond des blocs (9 thèmes × 2 orientations)
+## 1. Block background panels (9 themes × 2 orientations)
 
-Fichiers : `panel-<thème>-w` (paysage, recadré en 2:1, 1100×550) et `panel-<thème>-t` (portrait, 1:2, 550×1100).
+Files: `panel-<theme>-w` (landscape, cropped to 2:1, 1100×550) and `panel-<theme>-t` (portrait, 1:2, 550×1100).
 
-### Règles communes (à coller en tête)
+### Common rules (to paste at the start)
 
 ```
 Je vais te demander une série d'images de fond pour les blocs d'une interface web, toutes dans le même style. Règles :
@@ -25,9 +25,11 @@ Je vais te demander une série d'images de fond pour les blocs d'une interface w
 Confirme, puis j'enverrai les thèmes un par un, chacun en paysage (1536×1024) puis en portrait (1024×1536).
 ```
 
-### Thèmes (le sujet des motifs de bord)
+### Themes (the subject of the edge motifs)
 
-| Thème | Sujet des motifs |
+The subjects stay in French: they are pasted as is into the message for each theme.
+
+| Theme | Subject of the motifs |
 |---|---|
 | `aircraft` | silhouettes et plans d'avions et d'hélicoptères |
 | `airfield` | plans d'aérodromes : pistes, taxiways, manche à air, balisage |
@@ -39,22 +41,22 @@ Confirme, puis j'enverrai les thèmes un par un, chacun en paysage (1536×1024) 
 | `radio` | poste radio, casque d'écoute, micro, antenne, fréquences (sans chiffres) |
 | `time` | horloge, chronographe, calendrier vierge, sablier, soleil / lune |
 
-Message par thème : « Thème `<thème>` : <sujet>. D'abord en paysage 1536×1024, puis la même composition en portrait
+Message for each theme: « Thème `<thème>` : <sujet>. D'abord en paysage 1536×1024, puis la même composition en portrait
 1024×1536. »
 
-### Par design
+### By design
 
-| Design | Dossier | À produire | Style à donner en tête de conversation |
+| Design | Folder | To produce | Style to give at the start of the conversation |
 |---|---|---|---|
-| **Carnet de vol** | `flightlog/panels/` | les 9 thèmes × 2 (18) | « page de carnet de vol de pilote ancien, papier crème légèrement quadrillé, croquis à l'encre bleue et au crayon, tampons pâles » |
-| **Cabinet clair** | `cabinet/1930/clair/` | `airfield`, `ops`, `families`, `awards`, `gear`, `radio`, `time` × 2 (14) | « papier ivoire ancien, gravures à l'encre bleu-gris des années 1930 (cartes côtières, aéronavale), aquarelle pâle » — joindre 2 panneaux ivoire existants (`panel-nav-w`, `panel-ships-t`) comme référence |
-| **Durci** | `field/` | `awards-w`, `families-w` (2) | joindre `panel-awards-t` et `panel-families-t` : « la même chose en paysage » |
-| **Aqua** | `aqua/panels/` | les 9 thèmes × 2 (18) | « interface Aqua de Mac OS X : fond à fines rayures horizontales gris très clair (pinstripe), motifs en plastique gel bleu translucide brillant, reflets nets, ombres douces » |
+| **Flight log** | `flightlog/panels/` | the 9 themes × 2 (18) | « page de carnet de vol de pilote ancien, papier crème légèrement quadrillé, croquis à l'encre bleue et au crayon, tampons pâles » |
+| **Light Cabinet** | `cabinet/1930/clair/` | `airfield`, `ops`, `families`, `awards`, `gear`, `radio`, `time` × 2 (14) | « papier ivoire ancien, gravures à l'encre bleu-gris des années 1930 (cartes côtières, aéronavale), aquarelle pâle » — attach 2 existing ivory panels (`panel-nav-w`, `panel-ships-t`) as a reference |
+| **Rugged** | `field/` | `awards-w`, `families-w` (2) | attach `panel-awards-t` and `panel-families-t`: « la même chose en paysage » |
+| **Aqua** | `aqua/panels/` | the 9 themes × 2 (18) | « interface Aqua de Mac OS X : fond à fines rayures horizontales gris très clair (pinstripe), motifs en plastique gel bleu translucide brillant, reflets nets, ombres douces » |
 
-## 2. Feuille de registre (Cabinet, Carnet de vol, Durci, Aqua)
+## 2. Register sheet (Cabinet, Flight log, Rugged, Aqua)
 
-Aujourd'hui la planche est découpée avec effacement du tableau imprimé et redressement ; avec des pièces propres, la
-découpe devient directe. Fichiers attendus par design : `sheet-board.png` (planche entière), `sheet-head.png`,
+Today the board is cut out with erasure of the printed table and straightening; with clean pieces, the cutting
+becomes direct. Files expected per design: `sheet-board.png` (whole board), `sheet-head.png`,
 `sheet-stamp.png`.
 
 ```
@@ -65,16 +67,18 @@ Image 2 : l'en-tête seul de cette feuille (bandeau décoratif du haut, sans tex
 Image 3 : un cachet / tampon seul assorti (cercle ou cartouche, sans texte lisible), fond transparent, 1024×1024.
 ```
 
+The values stay in French: they replace the placeholders of the prompt above.
+
 | Design | `[PAPIER]` | `[ACCESSOIRE]` |
 |---|---|---|
 | Cabinet | ivoire épais, patiné | ficelle nouée dans deux œillets |
-| Carnet de vol | crème, très léger quadrillage bleu | pince en laiton |
-| Durci | papier kraft clair, taché | élastique olive et crayon |
+| Flight log | crème, très léger quadrillage bleu | pince en laiton |
+| Rugged | papier kraft clair, taché | élastique olive et crayon |
 | Aqua | blanc pur, très légère texture | pince en plastique gel bleu |
 
-## 3. Durci — frise de pied de page en une image
+## 3. Rugged — footer frieze in a single image
 
-`field/footer.png` — remplace la frise HTML (radar, plaque, voyant).
+`field/footer.png` — replaces the HTML frieze (radar, plate, indicator light).
 
 ```
 Une longue frise horizontale de pied de page, matériel militaire de terrain : tôle olive rivetée, petit écran radar
@@ -82,10 +86,10 @@ rond à gauche, plaque métallique vierge au centre, voyant lumineux vert étein
 fond transparent, très allongée (environ 14:1), sans texte. Format 1536×1024 : la frise occupe une bande centrée.
 ```
 
-## 4. Aqua — rejoindre les familles communes
+## 4. Aqua — joining the common families
 
-Outre les panneaux et la feuille (ci-dessus) : livre de mission ouvert / fermé (voir `PROMPTS_LIVRE_MISSION.md`,
-branche `feature/affectations`), et l'appareil de page :
+Besides the panels and the sheet (above): open / closed mission book (see `PROMPTS_LIVRE_MISSION.md`,
+branch `feature/affectations`), and the page device:
 
 ```
 Deux objets d'interface Aqua (Mac OS X), chacun seul sur fond transparent, vue de face : (1) un petit poste radio
@@ -93,18 +97,18 @@ rétro en plastique gel bleu translucide et aluminium brossé, (2) un cadran ron
 Sans texte. 1024×1024 chacun.
 ```
 
-## 5. Carnet de vol — appareil de page
+## 5. Flight log — page device
 
-À vérifier d'abord : les PNG `flightlog/ChatGPT Image 30 Sept 2026, 15_29_2x.png` (deux postes à cadrans) conviennent
-peut-être ; sinon :
+To check first: the PNGs `flightlog/ChatGPT Image 30 Sept 2026, 15_29_2x.png` (two sets with dials) may be
+suitable; otherwise:
 
 ```
 Deux objets de cockpit ancien, chacun seul sur fond transparent, vue de face : (1) un poste radio de bord à cadrans
 crème et boutons bakélite, (2) un instrument de bord rond (DME) à aiguille. Sans texte lisible. 1024×1024 chacun.
 ```
 
-## Contrôle avant dépôt
+## Check before dropping
 
-- Aucun texte lisible ; fonds réellement transparents (pas de damier dessiné) là où c'est demandé.
-- Panneaux : centre calme ; paysage et portrait du même thème cohérents entre eux.
-- Nommer le fichier d'après la liste (sinon je renomme d'après le contenu).
+- No readable text; truly transparent backgrounds (no drawn checkerboard) where requested.
+- Panels: calm centre; landscape and portrait of the same theme consistent with each other.
+- Name the file according to the list (otherwise I rename it according to its content).
