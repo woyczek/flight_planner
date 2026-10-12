@@ -17,7 +17,12 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   "Add"; the type is ticked "Owned" (Owned / Mastered boxes as for fleet types; an unknown designator is accepted as
   is). These types go with the declared availability weeks, so the Centre sees them for assignments, and the card also
   lists the out-of-fleet types declared by the other pilots ("Also declared by"), ready to tick. User manual updated in
-  four languages.
+  four languages. The list also offers the published ICAO list (`AircraftDB/aircraft_types.txt`) with common names
+  from the aliases ("S210 — Caravelle"), so types missing from this computer's base are proposed; such a type, once
+  added, is completed by the launcher in a short pass (`POST /__setup/aircraft-db { codes, quick }`: ICAO type and
+  EUROCONTROL performance only), one pass at a time, started by "Add" only, never while typing; a retired type the
+  official sources no longer know is kept with the note "not found in the official sources". A refused entry now says
+  what was read and puts the closest designator in the field ("Add" to confirm).
 - **Mission registry: ChatGPT reply imported on an ordered mission, deletion** — an ordered mission shows a "ChatGPT
   reply" panel: paste the reply (YAML and Markdown) or choose the received files; the mission is stored in the missions
   folder and replaces the order (order, date and notes kept, even if ChatGPT changed the series or identifier).

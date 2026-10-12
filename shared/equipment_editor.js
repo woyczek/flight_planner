@@ -19,6 +19,7 @@
     t = K.t,
     tf = K.tf;
   const A = () => window.MissionAssignments;
+  const HERE = document.currentScript?.src || location.href; // adresse de ce script (AircraftDB/ à côté de shared/)
 
   function css() {
     if (document.getElementById('equipmentEditorCss')) return;
@@ -92,6 +93,113 @@
     if (byModel) return byModel[0];
     return /^[A-Z][A-Z0-9]{1,3}$/.test(key) ? key : '';
   }
+  // ---- liste OACI publiée (AircraftDB/aircraft_types.txt) et complétion de la base de ce poste par le lanceur
+  let official = null;
+  /** Désignateurs de la liste OACI publiée avec la suite (la base elle-même se complète sur chaque poste) : Set. */
+  const officialCodes = () => official ||= fetch(new URL('../AircraftDB/aircraft_types.txt', HERE), {
+    cache: 'no-cache'
+  }).then(r => r.ok ? r.text() : '').then(s => new Set(s.split(/\r?\n/).map(l => l.trim().toUpperCase()).filter(l => /^[A-Z0-9]{2,4}$/
+    .test(l)))).catch(() => new Set());
+  /** Noms d'usage d'un désignateur d'après les alias de la base (S210 → « Caravelle », « SE210 ») : mots seuls d'abord. */
+  const aliasNames = code => Object.entries(window.AIRCRAFT_DB?.__aliases || {}).filter(([k, v]) => v === code && k !== code).map((
+    [k]) => k).sort((a, b) => /\d/.test(a) - /\d/.test(b) || b.length - a.length);
+  /** Nom affiché d'un type : modèle de la base, sinon son premier nom d'usage (« Caravelle »), sinon ''. */
+  const typeName = code => {
+    const m = dbInfo(code).model;
+    if (m) return modelName(m);
+    const a = aliasNames(code)[0];
+    return a && !/\d/.test(a) ? a.charAt(0) + a.slice(1).toLowerCase() : a || '';
+  };
+  /** Désignateur le plus proche d'un texte refusé : un mot (ou deux mots accolés) qui est un désignateur, un alias ou une
+   *  partie d'un nom de modèle ; codes : désignateurs connus (base, liste OACI). '' si rien n'approche. */
+  function closest(text, codes) {
+    const db = window.AIRCRAFT_DB || {},
+      words = String(text || '').toUpperCase().split(/[^A-Z0-9]+/).filter(Boolean),
+      tries = [...words.map((w, i) => i ? words[i - 1] + w : '').filter(Boolean), ...words];
+    for (const w of tries) {
+      if (codes.has(w) || (db[w] && !w.startsWith('__'))) return w;
+      if (db.__aliases?.[w]) return db.__aliases[w];
+    }
+    for (const w of words.filter(x => x.length >= 4)) {
+      const hit = Object.entries(db).find(([k, v]) => !k.startsWith('__') && String(v?.model || '').toUpperCase().replace(/[^A-Z0-9]/g,
+          '')
+        .includes(w)) || Object.entries(db.__aliases || {}).find(([k]) => k.includes(w));
+      if (hit) return typeof hit[1] === 'string' ? hit[1] : hit[0];
+    }
+    return '';
+  }
+  /** Appel au lanceur (/__setup/aircraft-db) : GET (état de la passe), POST { codes, quick } ; JSON, null sans lanceur. */
+  const acApi = (body = null) => fetch('/__setup/aircraft-db', {
+    method: body ? 'POST' : 'GET',
+    headers: {
+      'X-SOG-Setup': '1',
+      'Content-Type': 'application/json'
+    },
+    body: body ? JSON.stringify(body) : undefined,
+    cache: 'no-store'
+  }).then(r => r.ok ? r.json() : null).catch(() => null);
+  const sleep = ms => new Promise(r => setTimeout(r, ms));
+  /** Base des types relue après une passe du lanceur (AIRCRAFT_DB remplacée par le fichier réécrit). */
+  const reloadDb = () => new Promise(res => {
+    const s = document.createElement('script');
+    s.src = new URL(`../AircraftDB/aircraft_db.js?t=${Date.now()}`, HERE).href;
+    s.onload = s.onerror = () => {
+      s.remove();
+      res();
+    };
+    document.head.append(s);
+  });
+  // complétion : une seule boucle par page, jamais pendant la frappe (seulement après « Ajouter ») ; une passe du lanceur
+  // à la fois — si une passe tourne (Maintenance, autre onglet), on attend sa fin ; les codes ajoutés entre-temps partent
+  // ensemble dans la passe suivante
+  const pending = new Set(),
+    running = new Set(),
+    tried = new Set(); // codes passés au lanceur et toujours absents (type retiré de l'OACI, source muette)
+  let looping = false;
+  /** Fait compléter par le lanceur les codes en attente ; redraw() après chaque passe terminée. */
+  async function completeTypes(redraw) {
+    if (looping) return;
+    looping = true;
+    try {
+      while (pending.size) {
+        let s = await acApi();
+        if (!s) { // pas de lanceur : le code reste tel quel
+          pending.clear();
+          break;
+        }
+        while (s?.state === 'running') {
+          await sleep(4000);
+          s = await acApi();
+        }
+        const codes = [...pending];
+        s = await acApi({
+          codes,
+          quick: true
+        });
+        if (!s?.started) { // une autre passe vient de partir : attendre la sienne
+          await sleep(4000);
+          continue;
+        }
+        codes.forEach(c => {
+          pending.delete(c);
+          running.add(c);
+        });
+        redraw();
+        do {
+          await sleep(4000);
+          s = await acApi();
+        } while (s?.state === 'running');
+        await reloadDb();
+        codes.forEach(c => {
+          running.delete(c);
+          if (!dbInfo(c).model) tried.add(c);
+        });
+        redraw();
+      }
+    } finally {
+      looping = false;
+    }
+  }
   /** Types hors flotte déclarés par les autres pilotes (index des déclarations) : Map type → [trigrammes]. */
   async function othersTypes(M, tri, fleet) {
     const idx = await M.readData?.('disponibilites/_index.json').catch(() => null),
@@ -118,6 +226,7 @@
     const owned = new Set([...(ac.owned || []), ...(ac.mastered || [])]),
       mastered = new Set(ac.mastered || []);
     let others = new Map(); // types hors flotte des autres pilotes (lus après le premier dessin)
+    let offi = new Set(); // liste OACI publiée (lue après le premier dessin)
     const shown = new Set([...owned].filter(ty => !fleet.has(ty))); // lignes de la carte « Autres appareils »
     const mine = new Set(decl?.sims || []),
       sims = [...new Set([...M.simulators(), ...mine])];
@@ -148,21 +257,31 @@
         .type)));
       if (!list.length) return `<p class="small">${esc(t(['Aucun appareil hors flotte déclaré.', 'No aircraft outside the fleet declared.', 'Kein Luftfahrzeug außerhalb der Flotte angegeben.', 'Ninguna aeronave fuera de la flota declarada.']))}</p>`;
       return `<table class="eq-table"><thead><tr><th>${esc(t(['Type', 'Type', 'Typ', 'Tipo']))}</th><th>${esc(t(['Aussi déclaré par', 'Also declared by', 'Auch angegeben von', 'También declarado por']))}</th><th class="eq-c">${esc(t(['Possédé', 'Owned', 'Besessen', 'Poseído']))}</th><th class="eq-c">${esc(t(['Maîtrisé', 'Mastered', 'Beherrscht', 'Dominado']))}</th></tr></thead><tbody>${list.map(x => {
-        const name = x.info.model ? modelName(x.info.model) : x.type;
-        return `<tr><td><b>${esc(name)}</b><br><code>${esc(x.type)}</code>${x.info.description ? ` <small>${esc(x.info.description)}</small>` : x.info.model ? '' : ` <small>${esc(t(['type inconnu de la base OACI', 'type unknown to the ICAO base', 'Typ in der ICAO-Basis unbekannt', 'tipo desconocido en la base OACI']))}</small>`}</td>
+        const name = typeName(x.type) || x.type;
+        const note = pending.has(x.type) || running.has(x.type) ? t(['complétion de la base en cours…', 'completing the type base…', 'Typbasis wird ergänzt…', 'completando la base de tipos…']) :
+          x.info.description || (x.info.model ? '' : tried.has(x.type) ? t(['introuvable dans les sources officielles (OACI, EUROCONTROL) : type retiré ?', 'not found in the official sources (ICAO, EUROCONTROL): retired type?', 'in den offiziellen Quellen (ICAO, EUROCONTROL) nicht gefunden: ausgemusterter Typ?', 'no encontrado en las fuentes oficiales (OACI, EUROCONTROL): ¿tipo retirado?']) : offi.has(x.type) ? t(['absent de la base de ce poste', 'missing from this computer’s type base', 'fehlt in der Typbasis dieses Rechners', 'ausente de la base de este equipo']) :
+            t(['type inconnu de la base OACI', 'type unknown to the ICAO base', 'Typ in der ICAO-Basis unbekannt', 'tipo desconocido en la base OACI']));
+        return `<tr><td><b>${esc(name)}</b><br><code>${esc(x.type)}</code>${note ? ` <small>${esc(note)}</small>` : ''}</td>
           <td>${esc(x.by.join(', ') || '—')}</td>
           <td class="eq-c"><input type="checkbox" data-own="${esc(x.type)}"${owned.has(x.type) ? ' checked' : ''} aria-label="${esc(tf(['{m} possédé', '{m} owned', '{m} besessen', '{m} poseído'], { m: name }))}"></td>
           <td class="eq-c"><input type="checkbox" data-master="${esc(x.type)}"${mastered.has(x.type) ? ' checked' : ''} aria-label="${esc(tf(['{m} maîtrisé', '{m} mastered', '{m} beherrscht', '{m} dominado'], { m: name }))}"></td></tr>`;
       }).join('')}</tbody></table>`;
     };
-    const db = window.AIRCRAFT_DB || {},
-      dbTypes = Object.keys(db).filter(k => !k.startsWith('__') && db[k]?.model && !fleet.has(k) && ![...fleet].some(f => dbInfo(f) ===
-        db[k])).sort();
+    /** Options de la liste : types de la base du poste et de la liste OACI publiée, hors flotte (et hors fiches de la
+     *  flotte : A4M = A400), avec leur nom (modèle, sinon nom d'usage des alias : « S210 — Caravelle »). */
+    const listHtml = () => {
+      const db = window.AIRCRAFT_DB || {},
+        codes = [...new Set([...Object.keys(db).filter(k => !k.startsWith('__') && db[k]?.model), ...offi])].filter(k => !fleet.has(
+          k) && ![
+          ...fleet
+        ].some(f => dbInfo(f).model && dbInfo(f) === dbInfo(k))).sort();
+      return codes.map(k => `<option value="${esc(k)}${typeName(k) ? ` — ${esc(typeName(k))}` : ''}"></option>`).join('');
+    };
     const otherHtml = `<div class="sp-card" id="eqOther" data-no-i18n><h3>${esc(t(['Autres appareils (hors flotte)', 'Other aircraft (outside the fleet)', 'Andere Luftfahrzeuge (außerhalb der Flotte)', 'Otras aeronaves (fuera de la flota)']))}</h3><p class="sp-hint">${esc(t(['Types que vous possédez dans votre simulateur sans qu’ils soient dans la flotte : ajoutés ici, ils partent avec vos disponibilités déclarées — le Centre les voit pour les affectations et les autres pilotes les retrouvent dans cette carte.', 'Types you own in your simulator that are not in the fleet: added here, they go with your declared availability — the Centre sees them for assignments and other pilots find them in this card.', 'Typen, die Sie in Ihrem Simulator besitzen, die aber nicht zur Flotte gehören: Hier hinzugefügt, gehen sie mit Ihren angegebenen Verfügbarkeiten mit — das Zentrum sieht sie für Zuweisungen, andere Piloten finden sie in dieser Karte.', 'Tipos que posee en su simulador sin que estén en la flota: añadidos aquí, van con sus disponibilidades declaradas — el Centro los ve para las asignaciones y los demás pilotos los encuentran en esta tarjeta.']))}</p>
       <div data-eq-other>${otherRows()}</div>
       <p class="eq-add"><input type="text" list="eqTypeList" data-eq-add-input placeholder="${esc(t(['Désignateur OACI ou modèle (ex. A400M, PC-12)', 'ICAO designator or model (e.g. A400M, PC-12)', 'ICAO-Kennung oder Modell (z. B. A400M, PC-12)', 'Designador OACI o modelo (p. ej. A400M, PC-12)']))}" aria-label="${esc(t(['Appareil à ajouter', 'Aircraft to add', 'Hinzuzufügendes Luftfahrzeug', 'Aeronave que añadir']))}">
         <button type="button" class="secondary" data-eq-add>${esc(t(['Ajouter', 'Add', 'Hinzufügen', 'Añadir']))}</button></p>
-      <datalist id="eqTypeList">${dbTypes.map(k => `<option value="${esc(k)} — ${esc(modelName(db[k].model))}"></option>`).join('')}</datalist></div>`;
+      <datalist id="eqTypeList">${listHtml()}</datalist></div>`;
     const typesHtml = types.length ? `<p class="eq-sum" data-eq-sum>${esc(summary())}</p><div class="eq-cards">${groups.map(g => `<div class="repo-card" data-icon="${ICON[g[0].category] || 'plane'}" data-subtitle="${esc(tf(['{n} type(s)', '{n} type(s)', '{n} Typ(en)', '{n} tipo(s)'], { n: g.length }))}"><h3>${esc(g[0].categoryLabel)}</h3>
       <table class="eq-table"><thead><tr><th>${esc(t(['Type', 'Type', 'Typ', 'Tipo']))}</th><th>${esc(t(['Variantes de la flotte', 'Fleet variants', 'Flottenvarianten', 'Variantes de la flota']))}</th><th>${esc(t(['Appareils', 'Aircraft', 'Luftfahrzeuge', 'Aeronaves']))}</th><th class="eq-c">${esc(t(['Possédé', 'Owned', 'Besessen', 'Poseído']))}</th><th class="eq-c">${esc(t(['Maîtrisé', 'Mastered', 'Beherrscht', 'Dominado']))}</th></tr></thead><tbody>${g.map(x => `<tr>
         <td><b>${esc(x.model)}</b><br><code>${esc(x.type)}</code>${x.description ? ` <small title="${esc(t(['Description OACI (Doc 8643)', 'ICAO description (Doc 8643)', 'ICAO-Beschreibung (Doc 8643)', 'Descripción OACI (Doc 8643)']))}">${esc(x.description)}</small>` : ''}</td>
@@ -214,8 +333,10 @@
       const sum = host.querySelector('[data-eq-sum]');
       if (sum) sum.textContent = summary();
     };
+    /** Carte « Autres appareils » redessinée (après un ajout, une coche des autres pilotes, une passe du lanceur). */
     const redrawOther = () => {
-      host.querySelector('[data-eq-other]').innerHTML = otherRows();
+      const el = host.querySelector('[data-eq-other]');
+      if (el) el.innerHTML = otherRows();
     };
     host.onchange = e => {
       const x = e.target;
@@ -230,13 +351,29 @@
     const addTyped = () => {
       const input = host.querySelector('[data-eq-add-input]'),
         ty = resolveType(input.value, fleet);
+      if (!input.value.trim()) return; // champ vide : rien
       if (!ty) {
-        window.AppFramework?.notify?.(t([
-          'Type non reconnu : saisir un désignateur OACI (2 à 4 caractères, ex. PC12) ou un modèle de la liste.',
-          'Type not recognised: enter an ICAO designator (2 to 4 characters, e.g. PC12) or a model from the list.',
-          'Typ nicht erkannt: eine ICAO-Kennung (2 bis 4 Zeichen, z. B. PC12) oder ein Modell aus der Liste eingeben.',
-          'Tipo no reconocido: introducir un designador OACI (2 a 4 caracteres, p. ej. PC12) o un modelo de la lista.'
-        ]), 'warn');
+        // refus : ce qui a été lu, et le désignateur le plus proche repris dans le champ (« Ajouter » pour le confirmer)
+        const typed = input.value.trim(),
+          near = closest(typed, new Set([...offi, ...Object.keys(window.AIRCRAFT_DB || {})]));
+        if (near) input.value = `${near}${typeName(near) ? ` — ${typeName(near)}` : ''}`;
+        window.AppFramework?.notify?.(near ? tf([
+          '« {s} » n’est ni un désignateur OACI ni un modèle connu. Le plus proche : {c} ({n}), repris dans le champ — « Ajouter » pour le confirmer.',
+          '“{s}” is neither an ICAO designator nor a known model. Closest: {c} ({n}), put in the field — “Add” to confirm.',
+          '„{s}“ ist weder eine ICAO-Kennung noch ein bekanntes Modell. Am nächsten: {c} ({n}), ins Feld übernommen — „Hinzufügen“ zum Bestätigen.',
+          '«{s}» no es ni un designador OACI ni un modelo conocido. El más cercano: {c} ({n}), puesto en el campo; «Añadir» para confirmarlo.'
+        ], {
+          s: typed,
+          c: near,
+          n: typeName(near) || near
+        }) : tf([
+          '« {s} » n’est ni un désignateur OACI (2 à 4 caractères, ex. PC12) ni un modèle de la liste.',
+          '“{s}” is neither an ICAO designator (2 to 4 characters, e.g. PC12) nor a model from the list.',
+          '„{s}“ ist weder eine ICAO-Kennung (2 bis 4 Zeichen, z. B. PC12) noch ein Modell aus der Liste.',
+          '«{s}» no es ni un designador OACI (2 a 4 caracteres, p. ej. PC12) ni un modelo de la lista.'
+        ], {
+          s: typed
+        }), 'warn');
         return;
       }
       input.value = '';
@@ -257,6 +394,11 @@
       } else {
         shown.add(ty);
         saveTypes(ty);
+        // type de la liste OACI absent de la base de ce poste : complété par le lanceur (une passe courte, à la suite)
+        if (!dbInfo(ty).model && offi.has(ty) && !tried.has(ty)) {
+          pending.add(ty);
+          completeTypes(redrawOther);
+        }
         redrawOther();
       }
       scheduleSync();
@@ -268,6 +410,13 @@
         addTyped();
       }
     };
+    // liste OACI publiée : options de la liste et notes des lignes, après le premier dessin
+    officialCodes().then(set => {
+      offi = set;
+      const dl = host.querySelector('#eqTypeList');
+      if (dl) dl.innerHTML = listHtml();
+      redrawOther();
+    });
     // types hors flotte des autres pilotes : lus après le premier dessin (une déclaration par pilote de l'index)
     othersTypes(M, tri, fleet).then(map => {
       others = map;
