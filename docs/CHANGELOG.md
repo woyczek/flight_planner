@@ -12,6 +12,12 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Ajouté
 
+- **Map studio: map window as a dedicated page** (`apps/cpco/map_window.html`) — "⧉ Window" opens a page without the
+  suite frame (no side bar, header or footer; design, tone and colours sent by the studio) by `window.open` (name
+  "carte"); it receives by `postMessage` the rendered PNG of the displayed map (same overlays as generation) and its
+  context (name, mission, type, framing, map list): fit or 1:1, zoom − +, previous / next map, "Refresh", "Open in the
+  studio", "Close", fixed toolbar, keys ← → + − 0 Esc, window title = map name; the image follows each new preview.
+  The former `#fenetre` mode of the studio and its CSS rules are removed. Planner manual (four languages).
 - **Mission generator: "Paste a table of points"** (Places step of "Step by step", and the "All YAML data" block;
   `shared/point_table.js`) — separator (tab, "|", ";", ",") and header (name, lat, lon, coordinates, type/role,
   time, id) detected, otherwise columns name, lat, lon, role; decimal, DMS or degrees-minutes coordinates; lines

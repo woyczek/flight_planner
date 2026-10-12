@@ -1,0 +1,324 @@
+<!doctype html>
+<html lang="fr">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Carte</title>
+  <!-- Fenêtre « carte » du studio cartographique (map_parser.html, bouton « Fenêtre ») : page seule, sans socle de
+       navigation (ni barre latérale, ni en-tête, ni pied). Le studio l'ouvre par window.open (nom « carte ») et lui
+       envoie par postMessage l'image de la carte affichée (rendu PNG, mêmes surcouches que la génération), son
+       contexte (nom, mission, type, cadrage, liste des cartes) et son thème (design, ton, couleurs). La fenêtre
+       demande « actualiser », la carte précédente ou suivante, et « ouvrir au studio ». Clavier : ← → (cartes),
+       + − (zoom), 0 (ajuster), Échap (fermer). -->
+  <style>
+    :root {
+      --repo-bar: #101319;
+      --repo-bar-text: #fff;
+      --repo-page: #f4f6f8;
+      --repo-accent: #2f6fd6;
+      --bar-h: 46px;
+      color-scheme: light dark
+    }
+    html,
+    body {
+      margin: 0;
+      height: 100%;
+      background: var(--repo-page);
+      color: #1d2633;
+      font: 13px/1.4 system-ui, sans-serif
+    }
+    html[data-tone=dark] body {
+      color: #e8edf3
+    }
+    .bar {
+      position: fixed;
+      inset: 0 0 auto 0;
+      z-index: 10;
+      min-height: var(--bar-h);
+      box-sizing: border-box;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 10px;
+      background: var(--repo-bar);
+      color: var(--repo-bar-text);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, .25)
+    }
+    .bar button,
+    .bar select {
+      font: inherit;
+      padding: 4px 10px;
+      border-radius: 6px;
+      border: 1px solid color-mix(in srgb, var(--repo-bar-text) 35%, transparent);
+      background: color-mix(in srgb, var(--repo-bar-text) 12%, transparent);
+      color: var(--repo-bar-text);
+      cursor: pointer
+    }
+    .bar select {
+      max-width: 22em
+    }
+    .bar select option {
+      color: #1d2633;
+      background: #fff
+    }
+    .bar button:hover,
+    .bar button:focus-visible {
+      background: color-mix(in srgb, var(--repo-bar-text) 25%, transparent)
+    }
+    .bar button[aria-pressed=true] {
+      background: var(--repo-accent);
+      border-color: var(--repo-accent)
+    }
+    .bar .sep {
+      width: 1px;
+      align-self: stretch;
+      background: color-mix(in srgb, var(--repo-bar-text) 30%, transparent);
+      margin: 0 4px
+    }
+    .bar #zoom {
+      min-width: 4.5em;
+      text-align: center
+    }
+    .bar #info {
+      flex: 1 1 14em;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      opacity: .85;
+      text-align: right
+    }
+    main {
+      position: absolute;
+      inset: var(--bar-top, var(--bar-h)) 0 0 0;
+      overflow: auto;
+      display: grid;
+      place-items: center
+    }
+    main.fit img {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain
+    }
+    main img {
+      display: block;
+      image-rendering: auto
+    }
+    #state {
+      position: fixed;
+      left: 50%;
+      bottom: 14px;
+      transform: translateX(-50%);
+      margin: 0;
+      padding: 5px 12px;
+      border-radius: 14px;
+      background: rgba(0, 0, 0, .65);
+      color: #fff;
+      font-size: 12.5px
+    }
+    #state:empty {
+      display: none
+    }
+</style>
+</head>
+
+<body>
+  <div class="bar" role="toolbar">
+    <button type="button" id="prev" data-t="prev">◀</button><select id="pick" aria-label="Carte"></select><button type="button" id="next" data-t="next">▶</button>
+    <span class="sep"></span>
+    <button type="button" id="fit" aria-pressed="true" data-t="fit"></button><button type="button" id="one" aria-pressed="false">1:1</button>
+    <button type="button" id="zout" data-t="zout">−</button><span id="zoom"></span><button type="button" id="zin" data-t="zin">+</button>
+    <span class="sep"></span>
+    <button type="button" id="refresh" data-t="refresh"></button><button type="button" id="studio" data-t="studio"></button><button type="button" id="close" data-t="close"></button>
+    <span id="info"></span>
+  </div>
+  <main id="view" class="fit"><img id="img" alt=""></main>
+  <p id="state" role="status"></p>
+  <script>
+    (() => {
+      'use strict';
+      // textes (langue reçue du studio) : [fr, en, de, es]
+      const T = {
+        prev: ['Carte précédente (←)', 'Previous map (←)', 'Vorherige Karte (←)', 'Mapa anterior (←)'],
+        next: ['Carte suivante (→)', 'Next map (→)', 'Nächste Karte (→)', 'Mapa siguiente (→)'],
+        fit: ['Ajuster', 'Fit', 'Einpassen', 'Ajustar'],
+        fitTitle: ['Image ajustée à la fenêtre (0)', 'Image fitted to the window (0)', 'Bild an das Fenster angepasst (0)',
+          'Imagen ajustada a la ventana (0)'
+        ],
+        oneTitle: ['Taille réelle (1:1)', 'Actual size (1:1)', 'Originalgröße (1:1)', 'Tamaño real (1:1)'],
+        zout: ['Zoom arrière (−)', 'Zoom out (−)', 'Verkleinern (−)', 'Alejar (−)'],
+        zin: ['Zoom avant (+)', 'Zoom in (+)', 'Vergrößern (+)', 'Acercar (+)'],
+        refresh: ['Actualiser', 'Refresh', 'Aktualisieren', 'Actualizar'],
+        refreshTitle: ['Redemander l’image au studio', 'Ask the studio for the image again', 'Bild erneut beim Studio anfordern',
+          'Volver a pedir la imagen al estudio'
+        ],
+        studio: ['Ouvrir au studio', 'Open in the studio', 'Im Studio öffnen', 'Abrir en el estudio'],
+        studioTitle: ['Ramener la fenêtre du studio sur cette carte', 'Bring the studio window back to this map',
+          'Das Studiofenster auf diese Karte zurückholen', 'Llevar la ventana del estudio a este mapa'
+        ],
+        close: ['Fermer', 'Close', 'Schließen', 'Cerrar'],
+        busy: ['Rendu de la carte…', 'Rendering the map…', 'Karte wird gerendert…', 'Renderizando el mapa…'],
+        wait: ['En attente du studio…', 'Waiting for the studio…', 'Warte auf das Studio…', 'Esperando al estudio…'],
+        orphan: ['Fenêtre ouverte sans le studio : l’ouvrir depuis le studio cartographique (bouton « Fenêtre »).',
+          'Window opened without the studio: open it from the map studio (“Window” button).',
+          'Fenster ohne Studio geöffnet: aus dem Kartenstudio öffnen (Schaltfläche „Fenster“).',
+          'Ventana abierta sin el estudio: abrirla desde el estudio cartográfico (botón «Ventana»).'
+        ],
+        gone: ['Le studio est fermé : image figée.', 'The studio is closed: image frozen.',
+          'Das Studio ist geschlossen: Bild eingefroren.', 'El estudio está cerrado: imagen fija.'
+        ],
+        frameKept: ['cadrage gardé', 'kept framing', 'gespeicherter Ausschnitt', 'encuadre guardado'],
+        frameAuto: ['cadrage automatique', 'automatic framing', 'automatischer Ausschnitt', 'encuadre automático']
+      };
+      const LANGS = ['fr', 'en', 'de', 'es'];
+      let lang = 0,
+        ctx = null,
+        zoom = 1,
+        fit = true;
+      const $ = id => document.getElementById(id),
+        img = $('img'),
+        view = $('view'),
+        t = k => (T[k] || [k])[lang] || T[k][0],
+        say = s => $('state').textContent = s || '';
+      /** Libellés et infobulles dans la langue reçue. */
+      function labels() {
+        document.documentElement.lang = LANGS[lang];
+        $('prev').title = t('prev');
+        $('next').title = t('next');
+        $('fit').textContent = t('fit');
+        $('fit').title = t('fitTitle');
+        $('one').title = t('oneTitle');
+        $('zout').title = t('zout');
+        $('zin').title = t('zin');
+        $('refresh').textContent = t('refresh');
+        $('refresh').title = t('refreshTitle');
+        $('studio').textContent = t('studio');
+        $('studio').title = t('studioTitle');
+        $('close').textContent = t('close');
+      }
+      /** Thème du studio : design, ton, couleurs (la page n'a pas le socle de navigation qui les calcule). */
+      function theme(th) {
+        if (!th) return;
+        const d = document.documentElement;
+        if (th.design) d.dataset.design = th.design;
+        if (th.tone) d.dataset.tone = th.tone;
+        for (const [k, v] of Object.entries(th.vars || {}))
+          if (v) d.style.setProperty(k, v);
+        const i = LANGS.indexOf(String(th.lang || '').slice(0, 2));
+        if (i >= 0 && i !== lang) {
+          lang = i;
+          labels();
+        }
+      }
+      /** Affichage : ajusté à la fenêtre, ou zoom (1 = taille réelle). */
+      function show() {
+        view.classList.toggle('fit', fit);
+        $('fit').setAttribute('aria-pressed', String(fit));
+        $('one').setAttribute('aria-pressed', String(!fit && zoom === 1));
+        if (fit) {
+          img.style.width = '';
+          const r = img.naturalWidth ? Math.min(view.clientWidth / img.naturalWidth, view.clientHeight / img.naturalHeight, 1) : 1;
+          $('zoom').textContent = `${Math.round(r * 100)} %`;
+        } else {
+          img.style.width = `${Math.round(img.naturalWidth * zoom)}px`;
+          $('zoom').textContent = `${Math.round(zoom * 100)} %`;
+        }
+      }
+      const setZoom = z => {
+        fit = false;
+        zoom = Math.min(8, Math.max(.1, Math.round(z * 100) / 100));
+        show();
+      };
+      /** Hauteur réelle de la barre (elle passe sur deux lignes dans une fenêtre étroite) : la carte commence dessous. */
+      const barTop = () => document.documentElement.style.setProperty('--bar-top', `${document.querySelector('.bar').offsetHeight || 46}px`);
+      /** Message au studio (fenêtre d'origine). */
+      function ask(msg) {
+        if (!window.opener || window.opener.closed) return say(t('gone'));
+        window.opener.postMessage({
+          mapWindow: msg.type,
+          ...msg
+        }, location.origin);
+      }
+      window.addEventListener('message', e => {
+        if (e.origin !== location.origin || e.source !== window.opener) return;
+        const d = e.data || {};
+        if (!d.type) return;
+        ctx = d;
+        theme(d.theme);
+        document.title = d.name || t('fit');
+        $('pick').innerHTML = (d.names || []).map((n, i) => `<option value="${i}">${String(n).replace(/[&<>"]/g, c => `&#${c.charCodeAt(0)};`)}</option>`).join('');
+        $('pick').value = String(d.index ?? 0);
+        $('prev').disabled = $('next').disabled = (d.names || []).length < 2;
+        $('info').textContent = [d.mission, d.kind, d.view ? t('frameKept') : t('frameAuto')].filter(Boolean).join(' · ');
+        if (d.type === 'context' && d.busy) say(t('busy'));
+        else if (d.type === 'map' && d.url) {
+          img.onload = () => {
+            say('');
+            show();
+          };
+          img.alt = d.name || '';
+          img.src = d.url;
+        } else if (d.type === 'error') say(d.message || '');
+        barTop();
+      });
+      $('prev').onclick = () => ctx && ask({
+        type: 'go',
+        index: (+ctx.index || 0) - 1
+      });
+      $('next').onclick = () => ctx && ask({
+        type: 'go',
+        index: (+ctx.index || 0) + 1
+      });
+      $('pick').onchange = () => ask({
+        type: 'go',
+        index: +$('pick').value
+      });
+      $('fit').onclick = () => {
+        fit = true;
+        show();
+      };
+      $('one').onclick = () => setZoom(1);
+      $('zin').onclick = () => setZoom((fit ? (img.clientWidth / (img.naturalWidth || 1)) : zoom) * 1.25);
+      $('zout').onclick = () => setZoom((fit ? (img.clientWidth / (img.naturalWidth || 1)) : zoom) / 1.25);
+      $('refresh').onclick = () => {
+        say(t('busy'));
+        ask({
+          type: 'refresh'
+        });
+      };
+      $('studio').onclick = () => ask({
+        type: 'studio',
+        index: ctx?.index
+      });
+      $('close').onclick = () => window.close();
+      document.addEventListener('keydown', e => {
+        if (e.target.closest?.('select')) return;
+        if (e.key === 'ArrowLeft') $('prev').click();
+        else if (e.key === 'ArrowRight') $('next').click();
+        else if (e.key === '+' || e.key === '=') $('zin').click();
+        else if (e.key === '-' || e.key === '_') $('zout').click();
+        else if (e.key === '0') $('fit').click();
+        else if (e.key === 'Escape') window.close();
+        else return;
+        e.preventDefault();
+      });
+      window.addEventListener('resize', () => {
+        barTop();
+        show();
+      });
+      labels();
+      barTop();
+      show();
+      if (window.opener && !window.opener.closed) {
+        say(t('wait'));
+        ask({
+          type: 'hello'
+        });
+      } else say(t('orphan'));
+    })();
+</script>
+</body>
+
+</html>

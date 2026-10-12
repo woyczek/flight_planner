@@ -228,7 +228,7 @@ Flugplan, Kontrollkarte und Vertikalschnitt sind verknüpft: Fahren Sie in einem
 - „Zeichnen“ (Vertikalschnitt), „Kraftstoff“ (öffnet den Planer mit dieser Route), „ICAO kopieren“ (strikter Flugplan).
 - „Punkte der Mission“: Klicken Sie auf einen Punkt, um ihn zur Route hinzuzufügen.
 
-Kontrollkarte: Listen „Karte“ und „Profil“, Kästchen „ZIP“, „Aktualisieren“, „Diesen Ausschnitt behalten“ (die erzeugte Karte übernimmt den angezeigten Rahmen), „Zentrieren“, „Automatischer Ausschnitt“, „⧉ Fenster“ (separates, synchronisiertes Fenster), „⤢ Vergrößern“ (Esc zum Zurückkehren). Auf der Karte: Ziehen Sie einen Punkt, klicken Sie auf die Route, um einzufügen, Rechtsklick zum Löschen.
+Kontrollkarte: Listen „Karte“ und „Profil“, Kästchen „ZIP“, „Aktualisieren“, „Diesen Ausschnitt behalten“ (die erzeugte Karte übernimmt den angezeigten Rahmen), „Zentrieren“, „Automatischer Ausschnitt“, „⧉ Fenster“ (die Karte allein in einem eigenen Fenster, ohne Seitenleiste: „Einpassen“ oder 1:1, Zoom − +, vorherige oder nächste Karte, „Aktualisieren“, „Im Studio öffnen“, „Schließen“; Tasten ← → + − 0 Esc; das Bild folgt jeder neuen Vorschau), „⤢ Vergrößern“ (Esc zum Zurückkehren). Auf der Karte: Ziehen Sie einen Punkt, klicken Sie auf die Route, um einzufügen, Rechtsklick zum Löschen.
 „Profileinstellungen: Schnitt, Luftfahrzeug, Steigrate, Ausgaben“: Unter- und Obergrenze des Schnitts, Luftfahrzeug, Steig- und Sinkflug, Bild `profil_vertical.png` in den Ausgaben, Standardlinie der Route.
 
 ### Zu setzende Punkte

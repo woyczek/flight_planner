@@ -228,7 +228,7 @@ Flight plan, control map and vertical section are linked: hover a point in one, 
 - “Draw” (vertical section), “Fuel” (opens the planner with this route), “Copy ICAO” (strict flight plan).
 - “Mission points”: click a point to add it to the route.
 
-Control map: “Map” and “Profile” lists, “ZIP” box, “Refresh”, “Keep this framing” (the generated map will use the displayed frame), “Recentre”, “Automatic framing”, “⧉ Window” (separate synchronised window), “⤢ Enlarge” (Esc to go back). On the map: drag a point, click the route to insert, right-click to delete.
+Control map: “Map” and “Profile” lists, “ZIP” box, “Refresh”, “Keep this framing” (the generated map will use the displayed frame), “Recentre”, “Automatic framing”, “⧉ Window” (the map alone in a separate window, without side bar: “Fit” or 1:1, zoom − +, previous or next map, “Refresh”, “Open in the studio”, “Close”; keys ← → + − 0 Esc; the image follows each new preview), “⤢ Enlarge” (Esc to go back). On the map: drag a point, click the route to insert, right-click to delete.
 “Profile settings: section, aircraft, climb rate, outputs”: floor and ceiling of the section, aircraft, climb and descent, `profil_vertical.png` image in the outputs, default trace of the route.
 
 ### Points to place

@@ -764,10 +764,10 @@
       "Diese Ausdehnung in die gemeinsame Mission schreiben (Generator, YAML-/Markdown-Export)",
       "Escribir esta extensión en la misión compartida (generador, exportación YAML / Markdown)"
     ],
-    ["Ouvrir la carte dans une fenêtre séparée, synchronisée avec les réglages",
-      "Open the map in a separate window, synchronised with the settings",
-      "Karte in einem separaten, mit den Einstellungen synchronisierten Fenster öffnen",
-      "Abrir el mapa en una ventana aparte, sincronizada con los ajustes"
+    ["Ouvrir la carte dans une fenêtre à part (map_window.html) : image ajustée ou 1:1, zoom, cartes précédente et suivante ; elle suit chaque nouvel aperçu",
+      "Open the map in a separate window (map_window.html): fitted or 1:1 image, zoom, previous and next maps; it follows each new preview",
+      "Karte in einem eigenen Fenster öffnen (map_window.html): eingepasstes oder 1:1-Bild, Zoom, vorherige und nächste Karte; es folgt jeder neuen Vorschau",
+      "Abrir el mapa en una ventana aparte (map_window.html): imagen ajustada o 1:1, zoom, mapas anterior y siguiente; sigue cada nueva vista previa"
     ],
     ["Agrandir la carte (Échap pour revenir)", "Enlarge the map (Esc to return)", "Karte vergrößern (Esc zum Zurückkehren)",
       "Ampliar el mapa (Esc para volver)"
