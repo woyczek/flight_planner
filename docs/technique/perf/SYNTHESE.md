@@ -1,90 +1,90 @@
-## Passe du 8 octobre 2026 (nuit, `develop`)
+## Pass of 8 October 2026 (night, `develop`)
 
-**Mesure.** `tools/perf_audit.html`, mode serveur, un passage avant (`runs/2026-10-08_avant.json`) et un après
-(`runs/2026-10-08_apres.json`), onglet au premier plan. Comparaison sur les six pages communes aux deux parcours (Mes
-missions, Planning, registre, générateur, studio, Maintenance) ; le parcours compte désormais aussi le CR, le reporting,
-Aujourd'hui, le Tableau et l'accueil (pages de CR renommées : l'ancien parcours ouvrait deux pages en 404). Un seul
-passage de chaque côté : les compteurs sont exacts, les temps se lisent en tendance.
+**Measurement.** `tools/perf_audit.html`, server mode, one run before (`runs/2026-10-08_avant.json`) and one after
+(`runs/2026-10-08_apres.json`), tab in the foreground. Comparison over the six pages common to both routes (My
+missions, Planning, registry, generator, studio, Maintenance); the route now also covers the report, reporting,
+Today, the Board and the home page (report pages renamed: the old route opened two pages returning 404). A single
+run on each side: the counters are exact, the timings are read as trends.
 
-| | avant | après |
+| | before | after |
 |---|---:|---:|
-| analyses JSON | 1 525 | 400 (−74 %) |
-| tâches longues | 942 ms | 50 ms (−95 %) |
-| retard des minuteries (page bloquée) | 1 995 ms | 411 ms (−79 %) |
-| décor des designs | 43 passes, 670 ms | 31 passes, 255 ms |
-| icônes des blocs | 434 ms | 291 ms |
-| plus gros DOM (Maintenance) | 11 300 éléments | 4 563 |
+| JSON parses | 1,525 | 400 (−74%) |
+| long tasks | 942 ms | 50 ms (−95%) |
+| timer delay (page blocked) | 1,995 ms | 411 ms (−79%) |
+| design decorations | 43 passes, 670 ms | 31 passes, 255 ms |
+| block icons | 434 ms | 291 ms |
+| largest DOM (Maintenance) | 11,300 elements | 4,563 |
 
-**Ce qui a été fait.**
+**What was done.**
 
-- Réglages des zones aéronautiques analysés une fois tant qu'ils ne changent pas (1 122 analyses à l'ouverture de
+- Aeronautical zone settings parsed once as long as they do not change (1,122 parses when opening
   Maintenance, `aero_zones.js`).
-- Tableaux éditables des bases paginés par 100 lignes, listes de choix calculées une fois par colonne
+- Editable database tables paginated by 100 rows, choice lists computed once per column
   (`data_admin.js`).
-- Sauvegarde automatique des données du navigateur : au départ d'une page, empreinte rapide des textes bruts au lieu de
-  tout analyser et refaire le YAML ; rien de construit sans dossier autorisé (`browser_store.js`).
-- Activations de zones : tableau des importées construit à l'ouverture de son volet, liste des zones au premier passage
-  dans un champ (`odv_activations_editor.js`).
-- Décor : passe du chargement complet regroupée avec celles des changements de hauteur, passe d'une seconde après
-  seulement si la mise en page a changé (`design_deco.js`) ; icônes : `refresh(racine)` limité à la racine
+- Automatic backup of browser data: when leaving a page, a quick fingerprint of the raw texts instead of
+  parsing everything and rebuilding the YAML; nothing is built without an authorised folder (`browser_store.js`).
+- Zone activations: table of imported zones built when its panel is opened, zone list on the first entry
+  into a field (`odv_activations_editor.js`).
+- Decoration: the full-load pass merged with the height-change passes, the one-second pass only if the layout
+  has changed (`design_deco.js`); icons: `refresh(racine)` limited to the root
   (`block_icons.js`).
-- En parallèle (session « Simplification ») : Planning sans rafale de 404, listes de complétion du studio construites au
-  focus (13 000 options en moins), villes de la base SIA à part.
+- In parallel ("Simplification" session): Planning without a burst of 404s, Studio completion lists built on
+  focus (13,000 fewer options), SIA base cities kept separate.
 
-**Ce qui reste.** Les 404 restants viennent du bac d'essai (fichiers absents : `aircraft_positions.json`, SIA) et, dans
-un espace de travail git en « worktree », de `.git/HEAD` (un fichier, pas un dossier) ; rien côté utilisateur. Les
-lectures du stockage (`getItem`, ≈ 8 Mo par parcours, surtout la boîte d'envoi relue à chaque fichier du pool) sont
-des copies de chaînes sans analyse : quelques millisecondes. Les premiers affichages restent sous 220 ms sur ce poste ;
-une lenteur ressentie ailleurs se mesure dans le profil concerné (même outil, mesures exportables).
+**What remains.** The remaining 404s come from the test bench (missing files: `aircraft_positions.json`, SIA) and, in
+a git workspace set up as a "worktree", from `.git/HEAD` (a file, not a folder); nothing on the user side. Storage
+reads (`getItem`, ≈ 8 MB per route, mostly the outbox re-read for every file in the pool) are string copies
+without parsing: a few milliseconds. First renders stay under 220 ms on this machine; slowness felt elsewhere is
+measured in the profile concerned (same tool, exportable measurements).
 
-## Synthèse (4 octobre 2026, branche `feature/perf-audit`)
+## Summary (4 October 2026, branch `feature/perf-audit`)
 
-**Ce qui a été fait.** Les sept actions de priorité 1 du plan, plus deux corrections trouvées par l'audit « après » :
-une lecture mémorisée qui relisait deux fois une clé absente (réglages de routage : 440 analyses JSON par ouverture du
-registre) et une recherche de préfixes de traduction qui parcourait toutes les lignes connues pour chaque texte
-inconnu (désormais rangées par premier mot).
+**What was done.** The seven priority-1 actions of the plan, plus two fixes found by the "after" audit: a
+memoised read that read a missing key twice (routing settings: 440 JSON parses each time the registry was
+opened) and a search for translation prefixes that went through every known line for each unknown text (now
+indexed by first word).
 
-**Comment c'est mesuré.** Même parcours de clics (Mes missions, ODV, registre, générateur, studio, CR, Paramètres),
-avec serveur et sans serveur (dossiers simulés comme en `file://`). Avant et après **alternés** (avant, après, avant,
-après…), trois passages chacun, **médiane par étape**, page visible, même sonde des deux côtés. Les écarts de temps
-d'une même mesure d'un passage à l'autre atteignent ±30 % sur cette machine : seuls les compteurs (requêtes, analyses,
-ouvertures…) sont exacts ; les temps se lisent en tendance.
+**How it is measured.** Same click route (My missions, ODV, registry, generator, studio, report, Settings), with a
+server and without a server (folders simulated as under `file://`). Before and after **alternated** (before, after,
+before, after…), three runs each, **median per step**, page visible, same probe on both sides. Timing variations
+of the same measurement from one run to the next reach ±30% on this machine: only the counters (requests, parses,
+openings…) are exact; the timings are read as trends.
 
-**Gains du parcours** (totaux, serveur / sans serveur) :
+**Route gains** (totals, server / no server):
 
-| | avant | après |
+| | before | after |
 |---|---:|---:|
-| ouvertures IndexedDB | 213 / 51 | 17 / 19 (−92 % / −63 %) |
-| analyses JSON | 690 / 5 296 | 465 / 435 (−33 % / −92 %) |
-| requêtes | 146 / 129 | 79 / 110 (−46 % / −15 %) |
-| requêtes en 404 | 86 / 9 | 15 / 9 (−83 %) |
-| passes de traduction | 236 / 247 | 79 / 84 (−67 %) |
-| temps de traduction | 709 / 727 ms | 140 / 141 ms (−80 %) |
-| rappels d'observateurs | 1 365 / 1 831 | 570 / 817 (−58 %) |
+| IndexedDB openings | 213 / 51 | 17 / 19 (−92% / −63%) |
+| JSON parses | 690 / 5,296 | 465 / 435 (−33% / −92%) |
+| requests | 146 / 129 | 79 / 110 (−46% / −15%) |
+| 404 requests | 86 / 9 | 15 / 9 (−83%) |
+| translation passes | 236 / 247 | 79 / 84 (−67%) |
+| translation time | 709 / 727 ms | 140 / 141 ms (−80%) |
+| observer callbacks | 1,365 / 1,831 | 570 / 817 (−58%) |
 
-**Ce qui n'a pas bougé.** Le temps de blocage (tâches longues) reste à ≈ 255 ms sur tout le parcours : il vient du
-studio cartographique (≈ 300 ms au chargement, construction de la base SIA) et de Paramètres, pas touchés. Les
-lectures du stockage (`getItem`) sont stables : elles restent, mais ne sont plus suivies d'une analyse JSON. Coût des
-observateurs eux-mêmes : 1 → 5 ms sur tout le parcours (le traducteur unique note les nœuds modifiés), négligeable.
+**What did not change.** Blocking time (long tasks) stays at ≈ 255 ms over the whole route: it comes from the
+map studio (≈ 300 ms at load, building the SIA base) and from Settings, which were not touched. Storage
+reads (`getItem`) are stable: they remain, but are no longer followed by a JSON parse. Cost of the
+observers themselves: 1 → 5 ms over the whole route (the single translator records the modified nodes), negligible.
 
-**Montée en charge.** Deux courbes changent de pente :
+**Scaling.** Two curves change slope:
 
-- estimation de route : 22,8 → 0,9 ms par estimation à 2 400 missions (× 25), et le registre n'est plus réanalysé à
-  chaque estimation ;
-- traduction : 290 → 24 ms par passe à 8 000 textes (× 12) ; extrapolé à 30 000 textes : 0,95 s → 55 ms.
+- route estimation: 22.8 → 0.9 ms per estimate at 2,400 missions (× 25), and the registry is no longer re-parsed on
+  every estimate;
+- translation: 290 → 24 ms per pass at 8,000 texts (× 12); extrapolated to 30,000 texts: 0.95 s → 55 ms.
 
-Les autres sont **inchangées** (linéaires, non traitées) et donnent les prochains points de rupture :
+The others are **unchanged** (linear, not addressed) and give the next breaking points:
 
-| Cas | Aujourd'hui | À 20 000 | Seuil gênant |
+| Case | Today | At 20,000 | Troublesome threshold |
 |---|---|---|---|
-| Registre des CR (un seul `missions.yaml`) | 13 ms (100 CR) | ≈ 2,5 s à chaque page de CR / reporting | ≈ 3 000 CR (0,5 s) |
-| Grille de l'ODV (50 pilotes × 21 créneaux) | 7 ms (500 affectations) | ≈ 240 ms par semaine affichée | ≈ 40 000 affectations |
-| Registre du navigateur (≈ 2,7 Ko par mission) | 219 Ko (73 missions) | — | **quota du stockage du navigateur** (5 à 10 Mo selon le navigateur ; le panneau de mesure en accepte davantage, le banc ne le voit donc pas) : atteint entre ≈ 1 900 et 3 800 missions, et l'écriture du registre échoue alors **sans message** |
-| Index des affectations (Mes missions) | < 1 ms | 17 ms | pas avant 100 000 |
+| Report registry (a single `missions.yaml`) | 13 ms (100 reports) | ≈ 2.5 s on each report / reporting page | ≈ 3,000 reports (0.5 s) |
+| ODV grid (50 pilots × 21 slots) | 7 ms (500 assignments) | ≈ 240 ms per displayed week | ≈ 40,000 assignments |
+| Browser registry (≈ 2.7 KB per mission) | 219 KB (73 missions) | — | **browser storage quota** (5 to 10 MB depending on the browser; the measurement panel accepts more, so the bench does not see it): reached between ≈ 1,900 and 3,800 missions, and writing the registry then fails **without any message** |
+| Assignment index (My missions) | < 1 ms | 17 ms | not before 100,000 |
 
-**Proposé ensuite** (priorité 2 du plan, à décider) : registre du navigateur allégé (≈ 0,5 Ko par mission au lieu de
-3 Ko, détail lu dans les fichiers — repousse le quota au-delà de 10 000 missions — et un avertissement si
-l'écriture échoue) ; registre des CR découpé par année avec un
-index ; grille de l'ODV indexée par pilote et par jour ; signatures du dossier des missions écrites dans
-`data/missions/` pour qu'un autre poste profite de la relecture incrémentale ; et, hors plan, la construction de la
-base SIA du studio cartographique faite en tâche de fond (seul blocage notable restant).
+**Proposed next** (priority 2 of the plan, to be decided): a lighter browser registry (≈ 0.5 KB per mission instead
+of 3 KB, details read from the files — pushes the quota beyond 10,000 missions — and a warning if the
+write fails); report registry split by year with an
+index; ODV grid indexed by pilot and by day; mission folder signatures written to
+`data/missions/` so that another machine benefits from incremental re-reading; and, outside the plan, building the
+map studio's SIA base as a background task (the only notable blocking point remaining).

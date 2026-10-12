@@ -1,97 +1,97 @@
-# Mission Report Core — audit et plan d'intégration
+# Mission Report Core — audit and integration plan
 
-> Étape « travail demandé avant codage » (§28 du cahier des charges).
-> État de référence : `repository_tree` v3 + branches `fix/explicit-option-values` (!1),
+> Step “work required before coding” (§28 of the specification).
+> Reference state: `repository_tree` v3 + branches `fix/explicit-option-values` (!1),
 > `feat/reporting-tables-tracking` (!2), `feat/network-tracker` (!3).
-> **Aucun fichier n'est modifié par ce document.** Décisions validées le 2026-09-23 :
-> voir §G (stockage YAML + CSV généré, HEMS/FIRE reconstruits sur le Core, dossier
-> `FIRE/` sans redirection).
+> **No file is modified by this document.** Decisions validated on 2026-09-23:
+> see §G (YAML storage + generated CSV, HEMS/FIRE rebuilt on the Core, `FIRE/`
+> folder without redirection).
 
 ---
 
-## A. Audit de l'existant
+## A. Audit of the existing code
 
-### A.1 Pages déclarées dans `repository_tree`
+### A.1 Pages declared in `repository_tree`
 
-| Page | Rôle | Remarques |
+| Page | Role | Remarks |
 |---|---|---|
-| `HEMS/hems_medevac_cr.html` | Générateur CR HEMS / MEDEVAC | Script inline minifié (`headers`, `row()`, `data()`), CSV plat 50 colonnes |
-| `HEMS/hems_medevac_reporting.html` | Reporting HEMS | `shared/hems_reporting.js` |
-| `GAAR/DEFA-Virtual.cr.gen.securite-civile.html` | Générateur CR GAAR | Script inline lisible (`ledgerHeader`, `flattenRow()`), CSV plat 46 colonnes. **Titre et nom de fichier à corriger** |
-| `GAAR/mission_stats.html` | Redirection vers `gaar_mission_reporting.html` | Seule entrée de menu GAAR « Statistiques » |
-| `mission_operations_reporting.html` | Reporting général GAAR + HEMS | Codé pour deux familles seulement |
-| `apps/landing/…_i18n.html` | Tableau des atterrissages | Référence visuelle des tableaux |
-| `apps/planner/flight_performance_planner.html` | Planificateur carburant/performances | Hors périmètre missions |
+| `HEMS/hems_medevac_cr.html` | HEMS / MEDEVAC report generator | Minified inline script (`headers`, `row()`, `data()`), flat 50-column CSV |
+| `HEMS/hems_medevac_reporting.html` | HEMS reporting | `shared/hems_reporting.js` |
+| `GAAR/DEFA-Virtual.cr.gen.securite-civile.html` | GAAR report generator | Readable inline script (`ledgerHeader`, `flattenRow()`), flat 46-column CSV. **Title and file name to be corrected** |
+| `GAAR/mission_stats.html` | Redirection to `gaar_mission_reporting.html` | Only GAAR menu entry, “Statistics” (« Statistiques ») |
+| `mission_operations_reporting.html` | General GAAR + HEMS reporting | Coded for two families only |
+| `apps/landing/…_i18n.html` | Landings table | Visual reference for the tables |
+| `apps/planner/flight_performance_planner.html` | Fuel/performance planner | Outside the missions scope |
 
-Non déclarée : **`GAAR/gaar_mission_reporting.html`** (atteinte seulement via la redirection).
+Not declared: **`GAAR/gaar_mission_reporting.html`** (reached only through the redirection).
 
-### A.2 Composants communs (`shared/`)
+### A.2 Common components (`shared/`)
 
-| Domaine | Fichiers | Constat |
+| Area | Files | Finding |
 |---|---|---|
-| Framework UI | `repository_nav.js/.css` (en-tête, menu, langue, thèmes par dossier), `app_framework.js` (blocs repliables/déplaçables, ordre mémorisé, pied de page, `guardUnsavedChanges`) | Générique, réutilisable tel quel |
-| Tableaux | `mission_table.js` → `SortedTable` (!2) | Générique |
-| Période | `time_period.js` | Générique |
-| i18n | `content_i18n.js` (traduction des nœuds texte par dictionnaire FR/EN/DE/ES) + `hems_i18n.js`, `gaar_i18n.js`, `reporting_i18n.js`, `mission_operations_i18n.js`, `flight_i18n.js` | Système commun = **dictionnaire de lignes `[fr, en, de, es]`** |
-| Persistance | `mission_reporting_config.js` (préférences `missionReportingConfig:v1`, copies locales des registres `missionReportingData:v1:<clé>`, chargement auto, `traceLink`, `serializeLedger`, `openEditor`), `pilot_profile.js` | Clés de registre codées en dur pour 2 familles (`ledgerName`, `gaarLedgerName`) |
-| Valeurs de référence | `mission_values.js` (valeurs anglaises des listes, conversion des anciennes valeurs FR) | Liste unique HEMS + GAAR |
-| Édition / contrôle | `mission_edit.js` (mode modification, suppression, doublons), `mission_record_loader.js`, `cr_extras.js` | S'appuient sur les globales des pages (`headers`/`row`/`data` ou `ledgerHeader`/`flattenRow`) |
-| Extensions CR | `mission_extensions.js` (altitude-densité HEMS, sélecteur FMS GAAR, section trace réseau, mise en cache après archivage), `hems_mission_sync.js` (horaires ↔ événements HEMS), `network_tracker.js` (!3) | Mélange de générique et de spécifique famille |
-| Données appareils | `aircraft_directory.js` (flotte type/immat/indicatif + associations locales), `AircraftDB/aircraft_db.js` (base OACI), `aircraft_icons.js` | Réutilisables pour toutes les familles |
-| Reportings | `hems_reporting.js`, `gaar_reporting.js` | ~80 % identiques (parse, cartes, répartitions, tableau, export) |
-| Registres par défaut | `mission_ledger_defaults.js` | base64 des deux CSV |
-| **Inutilisés** | `reporting_data_loader.js`, `gaar_reporting_bridge.js` | Référencés par aucune page |
+| UI framework | `repository_nav.js/.css` (header, menu, language, themes per folder), `app_framework.js` (collapsible/movable blocks, remembered order, footer, `guardUnsavedChanges`) | Generic, reusable as is |
+| Tables | `mission_table.js` → `SortedTable` (!2) | Generic |
+| Period | `time_period.js` | Generic |
+| i18n | `content_i18n.js` (translation of text nodes through a FR/EN/DE/ES dictionary) + `hems_i18n.js`, `gaar_i18n.js`, `reporting_i18n.js`, `mission_operations_i18n.js`, `flight_i18n.js` | Common system = **dictionary of `[fr, en, de, es]` lines** |
+| Persistence | `mission_reporting_config.js` (preferences `missionReportingConfig:v1`, local copies of the ledgers `missionReportingData:v1:<clé>`, auto-loading, `traceLink`, `serializeLedger`, `openEditor`), `pilot_profile.js` | Ledger keys hard-coded for 2 families (`ledgerName`, `gaarLedgerName`) |
+| Reference values | `mission_values.js` (English values of the lists, conversion of the old FR values) | Single HEMS + GAAR list |
+| Editing / checking | `mission_edit.js` (edit mode, deletion, duplicates), `mission_record_loader.js`, `cr_extras.js` | Rely on the pages' globals (`headers`/`row`/`data` or `ledgerHeader`/`flattenRow`) |
+| Report extensions | `mission_extensions.js` (HEMS density altitude, GAAR FMS selector, network trace section, caching after archiving), `hems_mission_sync.js` (times ↔ HEMS events), `network_tracker.js` (!3) | Mix of generic and family-specific |
+| Aircraft data | `aircraft_directory.js` (fleet type/registration/callsign + local associations), `AircraftDB/aircraft_db.js` (ICAO database), `aircraft_icons.js` | Reusable for all families |
+| Reportings | `hems_reporting.js`, `gaar_reporting.js` | ~80 % identical (parse, cards, breakdowns, table, export) |
+| Default ledgers | `mission_ledger_defaults.js` | base64 of the two CSVs |
+| **Unused** | `reporting_data_loader.js`, `gaar_reporting_bridge.js` | Referenced by no page |
 
-### A.3 Données, exports, statistiques
+### A.3 Data, exports, statistics
 
-- **Registre** : un CSV `;` à plat par famille, une ligne par mission ; en-tête défini en dur dans chaque page CR. Les collections (événements, destinations) ne vont **pas** dans le registre : seulement dans le CSV unitaire (`# events`) et le JSON.
-- **JSON** : `Object.fromEntries(FormData)` + `events` + `kpi` — pas de `schemaVersion`.
-- **Statistiques** : calculées côté reporting à partir des colonnes plates (minutes, carburant, patients, largages…).
-- **Limite structurelle** : le modèle plat ne peut pas porter `aircraft[]`, `crew[]`, `legs[]`, `contacts[]`, `passes[]`… exigés par le cahier des charges (§18).
+- **Ledger**: one flat `;` CSV per family, one line per mission; header hard-coded in each report page. Collections (events, destinations) do **not** go into the ledger: only into the single-mission CSV (`# events`) and the JSON.
+- **JSON**: `Object.fromEntries(FormData)` + `events` + `kpi` — no `schemaVersion`.
+- **Statistics**: computed on the reporting side from the flat columns (minutes, fuel, patients, drops…).
+- **Structural limit**: the flat model cannot carry `aircraft[]`, `crew[]`, `legs[]`, `contacts[]`, `passes[]`… required by the specification (§18).
 
-### A.4 Écarts avec le cahier des charges
+### A.4 Gaps with the specification
 
-1. Deux générateurs écrits à la main, sans moteur commun : toute nouvelle famille = une copie de page (à proscrire, §27).
-2. Registres et clés de configuration codés pour 2 familles.
-3. Pas de collections dynamiques génériques (seuls les événements et destinations HEMS existent).
-4. Pas de capacités combinables (NVG, HOIST… sont aujourd'hui du texte libre « conditions »).
-5. Pas de `schemaVersion`, pas de résumé automatique par famille.
-6. Reporting général limité à GAAR + HEMS.
+1. Two generators written by hand, without a common engine: any new family = a copy of a page (to be prohibited, §27).
+2. Ledgers and configuration keys coded for 2 families.
+3. No generic dynamic collections (only the HEMS events and destinations exist).
+4. No combinable capabilities (NVG, HOIST… are currently free “conditions” text).
+5. No `schemaVersion`, no automatic summary per family.
+6. General reporting limited to GAAR + HEMS.
 
 ---
 
-## B. Mapping des fichiers existants
+## B. Mapping of the existing files
 
-| Fichier | Décision | Détail |
+| File | Decision | Detail |
 |---|---|---|
-| `repository_nav.js/.css`, `app_framework.js`, `time_period.js`, `mission_table.js`, `pilot_profile.js`, `content_i18n.js` | **Retenu** | Base du Core, inchangés |
-| `mission_reporting_config.js` | **Modifié** | Registres déclarés par famille (registre de familles) au lieu de 2 clés en dur ; clés existantes conservées |
-| `mission_values.js` | **Modifié** | Devient le registre des vocabulaires (listes par famille + communes) ; table de conversion FR conservée |
-| `mission_edit.js`, `mission_record_loader.js`, `cr_extras.js`, `network_tracker.js` | **Modifiés** | Adaptateur : globales HEMS/GAAR **ou** API du Core (`MissionCore.currentRecord()`…) |
-| `mission_extensions.js` | **Modifié puis éclaté** | Trace réseau → bloc commun du Core ; altitude-densité → module HEMS ; sélecteur FMS → module FIRE |
-| `hems_mission_sync.js` | **Remplacé** (étape 2) | Par le modèle événementiel commun (horaires ⇄ événements pour toutes les familles) |
-| `hems_reporting.js`, `gaar_reporting.js` | **Remplacés** (étape 2) | Par le reporting commun `mission_core/reporting.js` configuré par famille |
-| `aircraft_directory.js`, `AircraftDB/*` | **Retenus** | Alimentent le bloc Appareil(s) de toutes les familles |
-| `*_i18n.js` existants | **Retenus** | Nouveaux dictionnaires par famille dans `shared/mission_core/i18n/` |
-| `HEMS/hems_medevac_cr.html`, `HEMS/hems_medevac_reporting.html` | **Reconstruits** (étape 2) | Même adresse ; rendus par le Core (famille HEMS) une fois la parité validée |
-| `GAAR/DEFA-Virtual.cr.gen.securite-civile.html` | **Déplacé** → `FIRE/fire_cr.html` (étape 0), reconstruit (étape 2) | Titre « FIRE / GAAR — Compte rendu de mission » ; **pas de redirection** |
-| `GAAR/gaar_mission_reporting.html` | **Déplacé** → `FIRE/fire_reporting.html` | Déclaré dans `repository_tree` ; **pas de redirection** |
-| `GAAR/mission_stats.html` | **Supprimé** | Redirection devenue inutile |
-| `GAAR/DEFA-Virtual.cr_gen.secucivile.html` | **Supprimé** | Ancienne copie du générateur GAAR |
-| `GAAR/cl415_gaar_fms_pack/`, `GAAR/milan_gaar_pack/` | **Déplacés** → `FIRE/` | Chemins du sélecteur FMS relatifs à la page |
-| `mission_operations_reporting.html` | **Modifié** | Reporting multi-familles (filtre famille, stats communes + spécifiques) |
-| `shared/reporting_data_loader.js`, `shared/gaar_reporting_bridge.js` | **Dépréciés → supprimés** | Non référencés |
-| `DEFA_mission_reporting_HEMS_GAAR_2026-09-23.zip` | **À retirer du dépôt** | Archive de livraison versionnée par erreur |
-| `mission_ledger_defaults.js` | **Modifié** | Registres d'exemple par famille (générés) |
+| `repository_nav.js/.css`, `app_framework.js`, `time_period.js`, `mission_table.js`, `pilot_profile.js`, `content_i18n.js` | **Kept** | Base of the Core, unchanged |
+| `mission_reporting_config.js` | **Modified** | Ledgers declared per family (family registry) instead of 2 hard-coded keys; existing keys kept |
+| `mission_values.js` | **Modified** | Becomes the vocabulary registry (lists per family + common ones); FR conversion table kept |
+| `mission_edit.js`, `mission_record_loader.js`, `cr_extras.js`, `network_tracker.js` | **Modified** | Adapter: HEMS/GAAR globals **or** Core API (`MissionCore.currentRecord()`…) |
+| `mission_extensions.js` | **Modified then split up** | Network trace → common Core block; density altitude → HEMS module; FMS selector → FIRE module |
+| `hems_mission_sync.js` | **Replaced** (step 2) | By the common event model (times ⇄ events for all families) |
+| `hems_reporting.js`, `gaar_reporting.js` | **Replaced** (step 2) | By the common reporting `mission_core/reporting.js` configured per family |
+| `aircraft_directory.js`, `AircraftDB/*` | **Kept** | Feed the Aircraft block of all families |
+| Existing `*_i18n.js` | **Kept** | New dictionaries per family in `shared/mission_core/i18n/` |
+| `HEMS/hems_medevac_cr.html`, `HEMS/hems_medevac_reporting.html` | **Rebuilt** (step 2) | Same address; rendered by the Core (HEMS family) once parity is validated |
+| `GAAR/DEFA-Virtual.cr.gen.securite-civile.html` | **Moved** → `FIRE/fire_cr.html` (step 0), rebuilt (step 2) | Title “FIRE / GAAR — Mission report” (« FIRE / GAAR — Compte rendu de mission »); **no redirection** |
+| `GAAR/gaar_mission_reporting.html` | **Moved** → `FIRE/fire_reporting.html` | Declared in `repository_tree`; **no redirection** |
+| `GAAR/mission_stats.html` | **Deleted** | Redirection no longer needed |
+| `GAAR/DEFA-Virtual.cr_gen.secucivile.html` | **Deleted** | Old copy of the GAAR generator |
+| `GAAR/cl415_gaar_fms_pack/`, `GAAR/milan_gaar_pack/` | **Moved** → `FIRE/` | Paths of the FMS selector relative to the page |
+| `mission_operations_reporting.html` | **Modified** | Multi-family reporting (family filter, common + specific stats) |
+| `shared/reporting_data_loader.js`, `shared/gaar_reporting_bridge.js` | **Deprecated → deleted** | Not referenced |
+| `DEFA_mission_reporting_HEMS_GAAR_2026-09-23.zip` | **To be removed from the repository** | Delivery archive versioned by mistake |
+| `mission_ledger_defaults.js` | **Modified** | Example ledgers per family (generated) |
 
 ---
 
-## C. Tree cible
+## C. Target tree
 
-Convention : **un dossier par famille, deux pages minces par famille** (`<famille>_cr.html`
-pour la saisie, `<famille>_reporting.html` pour le reporting, ~25 lignes chacune : en-tête,
-`data-family`, scripts). Toute la logique est dans `shared/mission_core/`. Pas de copie de
-générateur (§27), mais bien deux pages par catégorie avec boutons de bascule CR ⇄ reporting.
+Convention: **one folder per family, two thin pages per family** (`<famille>_cr.html`
+for entry, `<famille>_reporting.html` for reporting, ~25 lines each: header,
+`data-family`, scripts). All the logic is in `shared/mission_core/`. No copy of a
+generator (§27), but indeed two pages per category with report ⇄ reporting toggle buttons.
 
 ```text
 repository_tree                       (pages, dossiers, thèmes, favicons des 14 familles)
@@ -150,32 +150,32 @@ shared/
 
 ---
 
-## D. Matrice fonctionnelle
+## D. Functional matrix
 
-| Famille | Séries | Voilure fixe | Voilure tournante | Blocs spécifiques (affichage conditionnel) | Stats spécifiques |
+| Family | Series | Fixed wing | Rotary wing | Specific blocks (conditional display) | Specific stats |
 |---|---|---|---|---|---|
-| HEMS / MEDEVAC *(existant)* | primaire, secondaire, secours… | ○ (MEDEVAC avion) | ● | patients, médicalisation, destinations | patients, alerte→décollage |
-| FIRE / GAAR *(existant)* | GAAR, intervention… | ● | ● (HBE) | largages, écopages, FMS | largages, recharges |
-| SAR / PR | SAR-LAND, SAR-MARITIME, SAR-AIRCRAFT, PR, CSAR* | ● | ● | datum/LKP, balise, zone + patterns (collection), contacts, survivants, récupération ; **ROTARY+HOIST → treuil** ; **FW+AIRDROP → kit SAR** | recherches, localisés, secourus, treuillages, kits largués |
-| LAW ENFORCEMENT | POLICE OBS, GENDARMERIE, BORDER, CUSTOMS, TRAFFIC, PURSUIT, MISSING PERSON, TACTICAL SUPPORT, EVENT SECURITY | ● | ● | autorité, unités sol, objectif, suivi (positions), masquage export public | suivis, durée de suivi |
-| MARITIME | MARPAT, FISHERY, CUSTOMS MARITIME, POLLUTION, SHIPPING, ICE, SHIP ID, ANTI-POLLUTION, OFFSHORE | ● | ● | contacts navires (collection : IMO, MMSI, pavillon, AIS/radar/visuel), pollution | navires détectés / identifiés, anomalies, pollutions |
-| ISR / RECON | ISR, RECON, EO/IR, IMINT, SIGINT, ELINT, COMINT, BORDER/MARITIME/INFRA ISR | ● | ● | tâche de collecte, orbite, capteurs/modes, contacts/tracks, couverture ; mode générique non classifié | heures sur zone, contacts, couverture |
-| SOF / TACTICAL | INSERTION, EXTRACTION, INFIL, EXFIL, TACTICAL TRANSPORT, SR SUPPORT, FAST ROPE, RAPPEL, PARA INSERTION, LZ, SHIP INSERTION | ● | ● | PZ/LZ/DZ (collection), personnels embarqués/déposés/récupérés, profil ; **niveau CR uniquement** | personnels déposés / récupérés |
-| AIRLIFT / LOGISTICS | STRATEGIC, TACTICAL, REMOTE, OFFSHORE, POLAR, HUMANITARIAN, PAX, CARGO, COMBI | ● | ● | étapes (legs), manifeste, piste (type/longueur/surface), rotations | passagers, tonnes, rotations |
-| HADR / EVACUATION | DISASTER, FLOOD, EARTHQUAKE, CYCLONE, STORM, VOLCANO, HUMANITARIAN, NEO, CIVIL EVAC, ISOLATED, SUPPLY DROP | ● | ● | points d'évacuation, évacués (catégories), fret de secours, rotations | évacués, personnels, fret, sorties |
-| AIRBORNE / AIRDROP | PERSONNEL PARADROP, CARGO AIRDROP, RESUPPLY, HUMANITARIAN AIRDROP, SAR KIT DROP, TRAINING DROP | ● | ○ | DZ, passages de largage (collection : prévu/réel, dispersion) | parachutistes, largages, charge larguée |
-| COMMAND / AEW / RELAY | AIRBORNE COMMAND, AEW, AIR COORD, COMM RELAY, DISASTER RELAY, FIRE COORD, SAR COORD | ● | ● | unités coordonnées (collection), fréquences/réseaux, orbite, relais, coupures | temps sur station, unités coordonnées, relais |
-| FLIGHT INSPECTION | ILS, LOC, GP, VOR, DME, NDB, TACAN, RADAR, PAPI/VASI, RNAV/GNSS, PROC VALIDATION, LIGHTING | ● | ○ | installation, **passes (collection)** ; blocs ILS / VOR-DME-TACAN / validation de procédure selon série | installations inspectées, passes, anomalies, en service / hors service |
-| SURVEY / SCIENCE | AERIAL PHOTO, MAPPING, LIDAR, PHOTOGRAMMETRY, GEOPHYSICS, ATMOSPHERIC, WEATHER RECON, VOLCANO, WILDLIFE, ENVIRONMENT, ICE, OCEANOGRAPHIC | ● | ● | projet, lignes (collection), capteurs, qualité données ; **WEATHER RECON → mesures** | heures de survey, lignes, surface couverte, jeux de données |
-| SPECIAL / TEST / TRAINING | VIP/GOV, FERRY, TEST, TRAINING | ● | ● | sous-module par série (VIP, convoyage, cartes d'essai + points, exercices de formation) | selon série |
+| HEMS / MEDEVAC *(existing)* | primary, secondary, rescue… | ○ (MEDEVAC aeroplane) | ● | patients, medical team, destinations | patients, alert→take-off |
+| FIRE / GAAR *(existing)* | GAAR, intervention… | ● | ● (HBE) | drops, scoopings, FMS | drops, reloads |
+| SAR / PR | SAR-LAND, SAR-MARITIME, SAR-AIRCRAFT, PR, CSAR* | ● | ● | datum/LKP, beacon, area + patterns (collection), contacts, survivors, recovery; **ROTARY+HOIST → hoist**; **FW+AIRDROP → SAR kit** | searches, located, rescued, hoistings, kits dropped |
+| LAW ENFORCEMENT | POLICE OBS, GENDARMERIE, BORDER, CUSTOMS, TRAFFIC, PURSUIT, MISSING PERSON, TACTICAL SUPPORT, EVENT SECURITY | ● | ● | authority, ground units, objective, tracking (positions), masking in public export | trackings, tracking duration |
+| MARITIME | MARPAT, FISHERY, CUSTOMS MARITIME, POLLUTION, SHIPPING, ICE, SHIP ID, ANTI-POLLUTION, OFFSHORE | ● | ● | vessel contacts (collection: IMO, MMSI, flag, AIS/radar/visual), pollution | vessels detected / identified, anomalies, pollutions |
+| ISR / RECON | ISR, RECON, EO/IR, IMINT, SIGINT, ELINT, COMINT, BORDER/MARITIME/INFRA ISR | ● | ● | collection task, orbit, sensors/modes, contacts/tracks, coverage; generic unclassified mode | hours on station, contacts, coverage |
+| SOF / TACTICAL | INSERTION, EXTRACTION, INFIL, EXFIL, TACTICAL TRANSPORT, SR SUPPORT, FAST ROPE, RAPPEL, PARA INSERTION, LZ, SHIP INSERTION | ● | ● | PZ/LZ/DZ (collection), personnel embarked/delivered/recovered, profile; **report level only** | personnel delivered / recovered |
+| AIRLIFT / LOGISTICS | STRATEGIC, TACTICAL, REMOTE, OFFSHORE, POLAR, HUMANITARIAN, PAX, CARGO, COMBI | ● | ● | stages (legs), manifest, runway (type/length/surface), rotations | passengers, tonnes, rotations |
+| HADR / EVACUATION | DISASTER, FLOOD, EARTHQUAKE, CYCLONE, STORM, VOLCANO, HUMANITARIAN, NEO, CIVIL EVAC, ISOLATED, SUPPLY DROP | ● | ● | evacuation points, evacuees (categories), relief cargo, rotations | evacuees, personnel, cargo, sorties |
+| AIRBORNE / AIRDROP | PERSONNEL PARADROP, CARGO AIRDROP, RESUPPLY, HUMANITARIAN AIRDROP, SAR KIT DROP, TRAINING DROP | ● | ○ | DZ, drop passes (collection: planned/actual, dispersion) | parachutists, drops, load dropped |
+| COMMAND / AEW / RELAY | AIRBORNE COMMAND, AEW, AIR COORD, COMM RELAY, DISASTER RELAY, FIRE COORD, SAR COORD | ● | ● | coordinated units (collection), frequencies/networks, orbit, relays, outages | time on station, coordinated units, relays |
+| FLIGHT INSPECTION | ILS, LOC, GP, VOR, DME, NDB, TACAN, RADAR, PAPI/VASI, RNAV/GNSS, PROC VALIDATION, LIGHTING | ● | ○ | facility, **passes (collection)**; ILS / VOR-DME-TACAN / procedure validation blocks according to the series | facilities inspected, passes, anomalies, serviceable / unserviceable |
+| SURVEY / SCIENCE | AERIAL PHOTO, MAPPING, LIDAR, PHOTOGRAMMETRY, GEOPHYSICS, ATMOSPHERIC, WEATHER RECON, VOLCANO, WILDLIFE, ENVIRONMENT, ICE, OCEANOGRAPHIC | ● | ● | project, lines (collection), sensors, data quality; **WEATHER RECON → measurements** | survey hours, lines, area covered, datasets |
+| SPECIAL / TEST / TRAINING | VIP/GOV, FERRY, TEST, TRAINING | ● | ● | sub-module per series (VIP, ferry, test cards + points, training exercises) | depending on series |
 
-● pertinent · ○ possible/rare · \* CSAR visible seulement si le contexte « militaire » est activé.
+● relevant · ○ possible/rare · \* CSAR visible only if the “military” context is enabled.
 
 ---
 
-## E. Schéma de données
+## E. Data schema
 
-### E.1 Mission commune (`schemaVersion: 2`)
+### E.1 Common mission (`schemaVersion: 2`)
 
 ```jsonc
 {
@@ -214,14 +214,14 @@ shared/
 }
 ```
 
-Calculs automatiques (§4.4) : bloc = off-block→on-block (ou mise en route→arrêt) ;
-vol = décollage→atterrissage ; transit aller = décollage→entrée zone ; temps sur zone =
-entrée→sortie zone ; transit retour = sortie zone→atterrissage ; temps mission =
-début→fin mission. Passage de minuit géré comme aujourd'hui.
+Automatic calculations (§4.4): block = off-block→on-block (or engine start→shutdown);
+flight = take-off→landing; outbound transit = take-off→zone entry; time on station =
+zone entry→zone exit; return transit = zone exit→landing; mission time =
+mission start→end. Crossing midnight handled as today.
 
-### E.2 Extensions `missionData` par famille (résumé)
+### E.2 `missionData` extensions per family (summary)
 
-| Famille | Structure principale |
+| Family | Main structure |
 |---|---|
 | SAR | `rcc, sarNumber, datum{lat,lon,time}, lkp{…}, alertSource, beacon{type,frequency}, persons[{count,description,status}], searchAreas[{pattern,trackSpacing,altitude,speed,visibility,cloud}], sensors[], contacts[{time,position,identified}], recovery{located,recovered,method,destination,sarKitDropped}` |
 | LE | `authority, groundUnit, objective{type,description}, contactGround{callsign,frequency}, track[{time,position}], acquisitionTime, lossTime, publicRedaction: true` |
@@ -235,383 +235,383 @@ début→fin mission. Passage de minuit géré comme aujourd'hui.
 | FLIGHT INSPECTION | `airport, icao, runway, facility{type,id,frequency,channel}, procedure, inspectionType, passes[{kind,altitude,distance,radial,course,result,anomaly}], ils{locFreq,course,gpAngle,interceptAlt,locResult,gpResult,dmeResult,coverage}, serviceable` |
 | SURVEY | `project, organisation, pi, area{polygon}, lines[{number,plannedAlt,actualAlt,plannedSpeed,actualSpeed,start,end,status}], sensors[], dataQuantity, coverage, missedLines, repeatRequired, samples, weatherRecon{points[{altitude,pressure,temperature,humidity,wind,turbulence,icing,dropsonde}]}` |
 | SPECIAL | `vip{passengers,authority,schedule,delays,handling} | ferry{reason,technicalStatus,stops,defects} | test{card,points[{id,altitude,speed,config,result,pass}],repeatRequired} | training{instructor,trainee,exercises[{objective,repetitions,completed}],grading}` |
-| HEMS | `service, outcome, medicalization, incidentType, patientProfile, sceneLocation, coordinates, destinations[{name,arrival,departure,note}], patients, densityAltitude, alertToTakeoffMinutes, sceneMinutes` (import des anciens CSV/JSON = `schemaVersion: 1`) |
-| FIRE / GAAR | `risk, sector, reloadBase, fms, load, drops, reloads, reloadTime, eventDrops, eventReloads, fireAlert, patrolStart, firstDrop, endIntervention` (import des anciens CSV/JSON = `schemaVersion: 1`) |
+| HEMS | `service, outcome, medicalization, incidentType, patientProfile, sceneLocation, coordinates, destinations[{name,arrival,departure,note}], patients, densityAltitude, alertToTakeoffMinutes, sceneMinutes` (import of the old CSV/JSON = `schemaVersion: 1`) |
+| FIRE / GAAR | `risk, sector, reloadBase, fms, load, drops, reloads, reloadTime, eventDrops, eventReloads, fireAlert, patrolStart, firstDrop, endIntervention` (import of the old CSV/JSON = `schemaVersion: 1`) |
 
-### E.3 Registre YAML, export CSV et compatibilité *(décision validée)*
+### E.3 YAML ledger, CSV export and compatibility *(validated decision)*
 
-- **Source de vérité : un registre YAML par famille** (`<famille>_missions.yaml`) :
-  `schemaVersion`, `family`, puis `missions:` (liste de missions au format E.1, arborescent).
-  Chargement/écriture comme aujourd'hui : auto-chargement à côté de la page, dossier local
-  autorisé (Chrome/Edge), copie locale navigateur partagée entre pages.
-- **CSV = export simplifié généré** (une ligne par mission : identifiants, date, famille,
-  série, appareil principal, temps calculés, résultat, stats principales) pour les tableurs.
-  Il n'est plus relu comme source.
-- **Écriture YAML sûre** : dates, heures (`"10:39"`), identifiants et immatriculations
-  toujours entre guillemets ; lecture avec le schéma YAML 1.2 « core » (pas de conversion
-  implicite des dates) ; commentaires d'en-tête générés.
-- **Migration** : les anciens registres CSV HEMS/GAAR et les anciens JSON de CR (sans
-  `schemaVersion`) restent importables une fois, convertis vers le YAML (`model.js`).
-- JSON reste un format interne (mémoire, copie navigateur), pas un fichier utilisateur.
+- **Source of truth: one YAML ledger per family** (`<famille>_missions.yaml`):
+  `schemaVersion`, `family`, then `missions:` (list of missions in the E.1 format, tree-structured).
+  Loading/writing as today: auto-loading next to the page, local folder
+  authorised (Chrome/Edge), local browser copy shared between pages.
+- **CSV = generated simplified export** (one line per mission: identifiers, date, family,
+  series, main aircraft, computed times, result, main stats) for spreadsheets.
+  It is no longer read back as a source.
+- **Safe YAML writing**: dates, times (`"10:39"`), identifiers and registrations
+  always quoted; reading with the YAML 1.2 “core” schema (no implicit
+  conversion of dates); generated header comments.
+- **Migration**: the old HEMS/GAAR CSV ledgers and the old report JSON files (without
+  `schemaVersion`) remain importable once, converted to YAML (`model.js`).
+- JSON remains an internal format (memory, browser copy), not a user file.
 
 ---
 
-## F. Plan d'intégration (une MR par étape, validation après chacune)
+## F. Integration plan (one MR per step, validation after each one)
 
-| # | Étape | Contenu | Validation |
+| # | Step | Content | Validation |
 |---|---|---|---|
-| 0 | Nettoyage + FIRE | fichiers inutilisés/archivés supprimés ; `GAAR/` → `FIRE/` (pages, packs FMS, données locales) sans redirection ; titres corrigés ; `repository_tree` à jour | pages FIRE/HEMS/général fonctionnelles, registres rechargés |
-| 1a | Core : modèle + montage | `core.js`, `model.js`, blocs communs (identification, appareils[], équipage[], chronologie, météo, carburant, résultat, remarques, réseau), `collection.js`, capacités | page de démonstration ; export/import JSON ; i18n FR/EN/DE/ES |
-| 1a-bis | Core : registre, appareils, reporting *(avancé avant 1b, 2026-09-23)* | `ledger.js` (registre YAML + CSV), `aircraft.js` (appareils connus, types OACI enrichissables, équipements), `reporting.js`, mode modification/suppression, doublons, suivi réseau, pages `MissionCore/demo_cr.html` / `demo_reporting.html` | round-trip CR → registre → reporting → modification / suppression |
-| 1b | Core : CR + résumé | `report.js` (sections §21 sans vides), résumé par famille, impression | rapport d'une mission de démo |
-| 1c | Core : statistiques | `stats.js` (statistiques communes + points d'extension famille, alimentant reporting famille et général) | totaux vérifiés sur registre de test |
-| 2a | HEMS reconstruit sur le Core | `families/hems.js` (mêmes champs, horaires ⇄ événements, destinations), import des anciens CSV/JSON, reporting HEMS par le Core | comparaison champ à champ avec l'ancienne page ; stats identiques |
-| 2b | FIRE reconstruit sur le Core | `families/fire.js` (largages, écopages, sélecteur FMS), import des anciens CSV/JSON | idem |
-| 2c | Reporting général multi-familles | filtre famille, stats communes + spécifiques, lecture des registres YAML | totaux identiques à l'étape 0 |
-| 3 | SAR / PR | famille complète (treuil, kit SAR, patterns) | CR H145 treuillage, H225 recherche maritime |
-| 4 | AIRLIFT | legs, manifeste, pistes | A400M tactique, Twin Otter polaire |
-| 5 | MARITIME | contacts navires, pollution | CN-235 / Atlantique 2 MARPAT |
-| 6 | HADR | évacués, fret de secours | C-130 humanitaire |
-| 7 | AIRBORNE | DZ, passes de largage | PC-6 parachutage |
-| 8 | FLIGHT INSPECTION | passes, ILS / VOR / procédure | King Air calibration ILS |
-| 9 | SURVEY / SCIENCE | lignes, capteurs, weather recon | survey LiDAR |
-| 10 | LAW ENFORCEMENT | suivi, masquage export public | hélicoptère police |
-| 11 | ISR / RECON | collecte, contacts, mode générique | King Air ISR |
-| 12 | COMMAND / AEW / RELAY | unités coordonnées, relais | appareil relais incendie |
-| 13 | SOF / TACTICAL | zones, personnels (niveau CR) | insertion hélico NVG |
-| 14 | SPECIAL / TEST / TRAINING | VIP, convoyage, essais, formation | vol d'essai, mission gouvernementale |
+| 0 | Clean-up + FIRE | unused/archived files deleted; `GAAR/` → `FIRE/` (pages, FMS packs, local data) without redirection; titles corrected; `repository_tree` up to date | FIRE/HEMS/general pages working, ledgers reloaded |
+| 1a | Core: model + mounting | `core.js`, `model.js`, common blocks (identification, aircraft[], crew[], timeline, weather, fuel, result, remarks, network), `collection.js`, capabilities | demonstration page; JSON export/import; i18n FR/EN/DE/ES |
+| 1a-bis | Core: ledger, aircraft, reporting *(brought forward before 1b, 2026-09-23)* | `ledger.js` (YAML ledger + CSV), `aircraft.js` (known aircraft, extensible ICAO types, equipment), `reporting.js`, edit/delete mode, duplicates, network tracking, pages `MissionCore/demo_cr.html` / `demo_reporting.html` | round trip report → ledger → reporting → edit / delete |
+| 1b | Core: report + summary | `report.js` (§21 sections without empty ones), summary per family, printing | report of a demo mission |
+| 1c | Core: statistics | `stats.js` (common statistics + family extension points, feeding family and general reporting) | totals checked on a test ledger |
+| 2a | HEMS rebuilt on the Core | `families/hems.js` (same fields, times ⇄ events, destinations), import of the old CSV/JSON, HEMS reporting through the Core | field-by-field comparison with the old page; identical stats |
+| 2b | FIRE rebuilt on the Core | `families/fire.js` (drops, scoopings, FMS selector), import of the old CSV/JSON | same |
+| 2c | Multi-family general reporting | family filter, common + specific stats, reading of the YAML ledgers | totals identical to step 0 |
+| 3 | SAR / PR | complete family (hoist, SAR kit, patterns) | H145 hoisting report, H225 maritime search |
+| 4 | AIRLIFT | legs, manifest, runways | tactical A400M, polar Twin Otter |
+| 5 | MARITIME | vessel contacts, pollution | CN-235 / Atlantique 2 MARPAT |
+| 6 | HADR | evacuees, relief cargo | humanitarian C-130 |
+| 7 | AIRBORNE | DZ, drop passes | PC-6 parachute drop |
+| 8 | FLIGHT INSPECTION | passes, ILS / VOR / procedure | King Air ILS calibration |
+| 9 | SURVEY / SCIENCE | lines, sensors, weather recon | LiDAR survey |
+| 10 | LAW ENFORCEMENT | tracking, masking in public export | police helicopter |
+| 11 | ISR / RECON | collection, contacts, generic mode | King Air ISR |
+| 12 | COMMAND / AEW / RELAY | coordinated units, relays | firefighting relay aircraft |
+| 13 | SOF / TACTICAL | zones, personnel (report level) | NVG helicopter insertion |
+| 14 | SPECIAL / TEST / TRAINING | VIP, ferry, tests, training | test flight, government mission |
 
-Après chaque étape : anciens CR/registres testés, nouveau testé, import/export, i18n,
-persistance, `repository_tree` mis à jour (pages, dossier, thème, favicon).
+After each step: old reports/ledgers tested, new one tested, import/export, i18n,
+persistence, `repository_tree` updated (pages, folder, theme, favicon).
 
 ---
 
-## G. Décisions
+## G. Decisions
 
-Validées le 2026-09-23 :
+Validated on 2026-09-23:
 
-1. **Pages** : deux pages minces par famille (`<famille>_cr.html` + `<famille>_reporting.html`)
-   rendues par le Core, avec boutons de bascule CR ⇄ reporting.
-2. **Nommage** : dossier `FIRE/` (famille « FIRE / GAAR »), `FIRE/fire_cr.html` et
-   `FIRE/fire_reporting.html`, **sans redirection** depuis `GAAR/`. HEMS garde ses noms.
-3. **Stockage** : registre **YAML** par famille (source de vérité) + **CSV simplifié généré**
-   pour les tableurs (§E.3). Pas de colonne JSON, pas de fichier JSON utilisateur.
-4. **HEMS / FIRE** : **reconstruits sur le Core** (étapes 2a/2b), anciennes données importées.
+1. **Pages**: two thin pages per family (`<famille>_cr.html` + `<famille>_reporting.html`)
+   rendered by the Core, with report ⇄ reporting toggle buttons.
+2. **Naming**: folder `FIRE/` (family “FIRE / GAAR”), `FIRE/fire_cr.html` and
+   `FIRE/fire_reporting.html`, **without redirection** from `GAAR/`. HEMS keeps its names.
+3. **Storage**: **YAML** ledger per family (source of truth) + **generated simplified CSV**
+   for spreadsheets (§E.3). No JSON column, no user JSON file.
+4. **HEMS / FIRE**: **rebuilt on the Core** (steps 2a/2b), old data imported.
 
-Retenues par défaut (à contester si besoin) :
+Adopted by default (to be challenged if needed):
 
-5. **i18n** : libellés des familles déclarés en lignes `[fr, en, de, es]` et enregistrés dans
-   le système commun `RepositoryContentI18n` (pas de second système).
-6. **Contexte militaire** (CSAR, SOF, ISR) : champs limités au niveau compte rendu de
-   simulation, mode générique non classifié par défaut, masquage des champs sensibles à
-   l'export public.
+5. **i18n**: family labels declared as `[fr, en, de, es]` lines and registered in
+   the common `RepositoryContentI18n` system (no second system).
+6. **Military context** (CSAR, SOF, ISR): fields limited to the level of a simulation
+   report, generic unclassified mode by default, masking of sensitive fields in
+   public export.
 
-## G. Étape 3 — aides à la saisie (2026-09-24)
+## G. Step 3 — entry aids (2026-09-24)
 
-- **Valeurs connues** : chaque champ texte propose les valeurs des missions enregistrées
-  (famille courante + registres des autres familles en cache), les plus récentes d'abord.
-  Réserves partagées : aérodromes, personnes, organismes, unités, autorités, opérations,
-  points tournants, altitudes (`pool` des champs, `shared/mission_core/assist.js`).
-- **Appareils** : immatriculation, indicatif, type OACI et variante se filtrent
-  mutuellement ; une seule possibilité → champs vides remplis ; valeurs reprises d'un
-  appareil précédent remplacées quand on en choisit un autre. Types H160 / CL2T ajoutés.
-- **Équipements / capacités techniques** : repliés par défaut (appareil connu, plan de
-  vol) ; groupe « Équipements plan de vol (OACI, case 10) ». Techniques employées :
-  bloc replié, reprises de la dernière mission de la même série.
-- **Plan de vol déposé** (`fpl.js`) : SimBrief (identifiant dans le profil pilote), IVAO
-  (vol en cours), VATSIM (vol en cours ou prefile) → appareil, équipements, route, points,
-  niveaux, terrains, METAR / TAF, masses et carburant prévus (champs vides uniquement).
-- **Météo / soleil** : METAR analysé à la saisie ; METAR actuel (metar.vatsim.net) ; météo
-  modèle à l'heure du vol (Open-Meteo) ; lever / coucher et jour / nuit calculés (heure
-  locale du terrain, base mondiale des aérodromes chargée à la demande via jsDelivr).
-- **En-tête** : popup famille / sous-type (CR : série de la mission ; reporting : filtre).
-- **Champs par famille** : `only` / `hideFor` sur les champs communs, `hide` par famille.
-- Sources impossibles depuis une page statique : aviationweather.gov (pas de CORS),
-  plans de vol déposés IVAO (API authentifiée).
+- **Known values**: each text field offers the values of the recorded missions
+  (current family + cached ledgers of the other families), most recent first.
+  Shared pools: aerodromes, people, organisations, units, authorities, operations,
+  waypoints, altitudes (`pool` of the fields, `shared/mission_core/assist.js`).
+- **Aircraft**: registration, callsign, ICAO type and variant filter one another;
+  a single possibility → empty fields filled; values taken from a
+  previous aircraft replaced when another one is chosen. Types H160 / CL2T added.
+- **Equipment / technical capabilities**: folded by default (known aircraft, flight
+  plan); group “Flight plan equipment (ICAO, item 10)” (« Équipements plan de vol (OACI, case 10) »). Techniques used:
+  folded block, taken from the last mission of the same series.
+- **Filed flight plan** (`fpl.js`): SimBrief (identifier in the pilot profile), IVAO
+  (flight in progress), VATSIM (flight in progress or prefile) → aircraft, equipment, route, waypoints,
+  levels, airfields, METAR / TAF, planned masses and fuel (empty fields only).
+- **Weather / sun**: METAR analysed on entry; current METAR (metar.vatsim.net); model
+  weather at the time of the flight (Open-Meteo); sunrise / sunset and day / night computed (local
+  time of the airfield, worldwide aerodrome database loaded on demand via jsDelivr).
+- **Header**: family / subtype popup (report: series of the mission; reporting: filter).
+- **Fields per family**: `only` / `hideFor` on the common fields, `hide` per family.
+- Sources impossible from a static page: aviationweather.gov (no CORS),
+  IVAO filed flight plans (authenticated API).
 
-## H. Étape 4 — flotte et données locales (2026-09-24)
+## H. Step 4 — fleet and local data (2026-09-24)
 
-- **Flotte** : `data/references/aircraft_fleet.js` généré depuis la page « Flotte virtuelle »
-  (flotte.defa-virtual.fr) par `python AircraftDB/update_fleet.py Flotte.html` :
-  205 appareils, 6 opérateurs (AAE, Marine nationale, ALAT, Sécurité civile, SAMU,
-  Gendarmerie), type OACI, variante (Rafale B/C/M, Mirage 2000-5/B/D, A330 MRTT…), code
-  tactique, numéro, indicatifs (plusieurs possibles), base d'attache. Un appareil connu
-  remplit aussi la base de départ et l'organisme (opérateur). Types absents de la base OACI
-  ajoutés en supplément (`aircraft.js`). Doublons de la source : F-ZBPD, F-YSBK.
-- **Données locales** (`shared/browser_store.js`, menu ☰ › Données locales) : tout le
-  localStorage du site (registres, brouillons, appareils, types, aérodromes, préférences,
-  caches, FMS, planificateur) copié dans `defa_local_store.yaml` d'un dossier choisi ;
-  sauvegarde automatique au départ de page et toutes les 5 min si le dossier est autorisé
-  et que les données ont changé ; restauration / resynchronisation par fusion (la donnée
-  la plus récente l'emporte, collections fusionnées entrée par entrée), aussi depuis un
-  fichier ; les pages du Core relisent leur registre après restauration.
+- **Fleet**: `data/references/aircraft_fleet.js` generated from the “Virtual fleet” page (« Flotte virtuelle »)
+  (flotte.defa-virtual.fr) by `python AircraftDB/update_fleet.py Flotte.html`:
+  205 aircraft, 6 operators (AAE, Marine nationale, ALAT, Sécurité civile, SAMU,
+  Gendarmerie), ICAO type, variant (Rafale B/C/M, Mirage 2000-5/B/D, A330 MRTT…), tactical
+  code, number, callsigns (several possible), home base. A known aircraft
+  also fills in the departure base and the organisation (operator). Types missing from the ICAO database
+  added as a supplement (`aircraft.js`). Duplicates in the source: F-ZBPD, F-YSBK.
+- **Local data** (`shared/browser_store.js`, ☰ menu › “Local data”): the whole
+  localStorage of the site (ledgers, drafts, aircraft, types, aerodromes, preferences,
+  caches, FMS, planner) copied into `defa_local_store.yaml` in a chosen folder;
+  automatic backup when leaving the page and every 5 min if the folder is authorised
+  and the data has changed; restore / resynchronisation by merging (the most recent
+  data wins, collections merged entry by entry), also from a
+  file; the Core pages reread their ledger after a restore.
 
-## I. Étape 5 — indicatifs, catégories, blocs masqués par défaut (2026-09-24)
+## I. Step 5 — callsigns, categories, blocks hidden by default (2026-09-24)
 
-- **Indicatif radio** décliné en *indicatif* (série : DRAGON, PELICAN, MILAN, SAMU,
-  CHOUCAS…) + *numéro* ; l'indicatif complet reste un champ libre, décomposé à la saisie.
-  Base des indicatifs connus dérivée de la flotte et des missions enregistrées
-  (`MissionAircraft.callsignSeries()`), rattachée aux séries d'appareils (type, opérateur) :
-  Sécurité civile + H145 → DRAGON, SAMU + H145 → SAMU (série majoritaire ≥ 80 %).
-- **Forme plan de vol** : 7 caractères au plus, sans tiret (OACI Doc 4444, app. 2,
-  case 7). Abréviations apprises de la base (DRAGO → DRAGON), sinon troncature
-  (PELICAN41 → PELIC41). Champ « Indicatif plan de vol » calculé et modifiable ; un
-  indicatif déposé ou saisi sous forme abrégée est ramené à sa forme complète ; le suivi
-  réseau utilise la forme plan de vol.
-- **Catégorie** : voilure tournante → ni avions ni hydravions proposés (types,
-  immatriculations, indicatifs) ; voilure fixe / amphibie → pas d'hélicoptères.
-- **Blocs masqués par défaut** : mécanisme afficher / masquer / déplacer du framework
-  (`app_framework.js`) étendu par `data-default-hidden="1"` ; réappliqué après chaque
-  rendu des pages du Core. Le bloc « Capacités / techniques employées » l'utilise.
-  (Les équipements d'un appareil restent un groupe repliable à l'intérieur du bloc
-  Appareil(s), le framework ne gérant que des blocs.)
+- **Radio callsign** split into *callsign* (series: DRAGON, PELICAN, MILAN, SAMU,
+  CHOUCAS…) + *number*; the full callsign remains a free field, broken down on entry.
+  Database of known callsigns derived from the fleet and the recorded missions
+  (`MissionAircraft.callsignSeries()`), attached to the aircraft series (type, operator):
+  Sécurité civile + H145 → DRAGON, SAMU + H145 → SAMU (majority series ≥ 80 %).
+- **Flight plan form**: 7 characters at most, without a hyphen (ICAO Doc 4444, app. 2,
+  item 7). Abbreviations learnt from the database (DRAGO → DRAGON), otherwise truncation
+  (PELICAN41 → PELIC41). “Flight plan callsign” field (« Indicatif plan de vol ») computed and editable; a
+  callsign filed or entered in abbreviated form is brought back to its full form; network
+  tracking uses the flight plan form.
+- **Category**: rotary wing → neither aeroplanes nor seaplanes offered (types,
+  registrations, callsigns); fixed wing / amphibious → no helicopters.
+- **Blocks hidden by default**: the framework's show / hide / move mechanism
+  (`app_framework.js`) extended by `data-default-hidden="1"`; reapplied after each
+  rendering of the Core pages. The “Capabilities / techniques used” block (« Capacités / techniques employées ») uses it.
+  (The equipment of an aircraft remains a collapsible group inside the
+  Aircraft block, since the framework only handles blocks.)
 
-## J. Étape 6 — table de correspondance des indicatifs, exploitant OPR/ (2026-09-24)
+## J. Step 6 — callsign mapping table, OPR/ operator (2026-09-24)
 
-- La forme **complète** reste celle des CR ; la **table de correspondance**
-  (`MissionVocab.callsignTable`) donne la forme plan de vol (case 7) et le désignateur OACI
-  de l'exploitant (OPR/, case 18) : PELICAN ↔ PCAN (FRU), MILAN, BENGALE ↔ BENGA, ICARE
-  (fonction), DRAGON ↔ DRAGO, CHOUCAS ↔ CHOUC (FGN), KETOUPA ↔ KETOU, MORANE (HBE), LAT,
-  FMN (F.M.N.), COTAM ↔ CTM, et désignateurs génériques FAF, FRU, FMY, FNY, FGN, FDO, DGAEV
-  (formes génériques ; les noms de série sont les indicatifs de mission parlés).
-- Priorité : table statique, formes corrigées par le pilote (mémorisées dans
-  `missionCallsignTable:v1`, donc dans la sauvegarde des données locales), abréviations
-  apprises de la base, troncature à 7 caractères. Accents et points ignorés (PÉLICAN).
-- Série automatique : appareils connus de l'opérateur, sinon table (Sécurité civile + BE20
-  → BENGALE ; Gendarmerie + EC135 → KETOUPA), hors indicatifs de fonction.
-- Champ **Exploitant OACI (OPR/)** : d'après l'organisme (Sécurité civile → FRU…), la série
-  ou l'appareil connu ; lu dans l'OPR/ des plans de vol importés (organisme déduit).
+- The **full** form remains that of the reports; the **mapping table**
+  (`MissionVocab.callsignTable`) gives the flight plan form (item 7) and the ICAO designator
+  of the operator (OPR/, item 18): PELICAN ↔ PCAN (FRU), MILAN, BENGALE ↔ BENGA, ICARE
+  (function), DRAGON ↔ DRAGO, CHOUCAS ↔ CHOUC (FGN), KETOUPA ↔ KETOU, MORANE (HBE), LAT,
+  FMN (F.M.N.), COTAM ↔ CTM, and generic designators FAF, FRU, FMY, FNY, FGN, FDO, DGAEV
+  (generic forms; the series names are the spoken mission callsigns).
+- Priority: static table, forms corrected by the pilot (remembered in
+  `missionCallsignTable:v1`, hence in the local data backup), abbreviations
+  learnt from the database, truncation to 7 characters. Accents and dots ignored (PÉLICAN).
+- Automatic series: known aircraft of the operator, otherwise table (Sécurité civile + BE20
+  → BENGALE; Gendarmerie + EC135 → KETOUPA), except function callsigns.
+- **“ICAO operator (OPR/)”** field (« Exploitant OACI (OPR/) »): from the organisation (Sécurité civile → FRU…), the series
+  or the known aircraft; read from the OPR/ of imported flight plans (organisation deduced).
 
-## K. Étape 7 — événements et capacités par famille, menu simplifié (2026-09-24)
+## K. Step 7 — events and capabilities per family, simplified menu (2026-09-24)
 
-- **Événements** : base commune (décollage, atterrissage, début / fin de tâche, déroutement,
-  ravitaillement, technique, météo, interruption, autre) + événements spécialisés par
-  famille (`MissionVocab.eventProfiles` : contact, observation, prise en charge, largage,
-  treuillage, insertion, extraction) + événements propres de la famille. GAAR : largage,
-  alerte feu, rechargement, écopage — plus d'insertion / extraction.
-- **Capacités / techniques** : profils par famille (`capabilityProfiles`) pour FIRE, HEMS,
-  contrôle en vol et levés ; les autres familles gardent la liste complète.
-- **Menu ☰** : « Missions › Nouveau compte rendu » (`mission_cr.html` : choix de la
-  famille à chaque ouverture, la dernière utilisée en premier) et
-  « Missions › Reporting missions » (reporting général). Les pages des familles restent
-  déclarées dans `repository_tree` (thème, réglages) avec `menu:false` ; on passe de l'une
-  à l'autre par la popup d'en-tête et les boutons CR ⇄ reporting.
+- **Events**: common base (take-off, landing, task start / end, diversion,
+  refuelling, technical, weather, interruption, other) + specialised events per
+  family (`MissionVocab.eventProfiles`: contact, observation, pick-up, drop,
+  hoisting, insertion, extraction) + the family's own events. GAAR: drop,
+  fire alert, reload, scooping — no more insertion / extraction.
+- **Capabilities / techniques**: profiles per family (`capabilityProfiles`) for FIRE, HEMS,
+  flight inspection and surveys; the other families keep the complete list.
+- **☰ menu**: “Missions › New report” (`mission_cr.html`: choice of the
+  family at each opening, the last one used first) and
+  “Missions › Mission reporting” (general reporting). The family pages remain
+  declared in `repository_tree` (theme, settings) with `menu:false`; one goes from one
+  to the other through the header popup and the report ⇄ reporting buttons.
 
-## L. Étape 8 — Paramétrage › Bases de données (2026-09-24)
+## L. Step 8 — Settings › Databases (2026-09-24)
 
-- Page `parametrage.html` (menu ☰ › Paramétrage › Bases de données, `shared/data_admin.js`) :
-  - **fichiers du dépôt** : flotte (`data/references/aircraft_fleet.js`), types d'aéronefs + alias
-    (`AircraftDB/aircraft_db.js`, modifications reportées dans `aircraft_overrides.json` pour
-    le script), correspondance des indicatifs + organismes / OPR/
-    (`data/references/callsigns.js`, sorti de vocab.js) ; « Appliquer dans ce
-    navigateur » (modification locale prioritaire tant qu'elle est plus récente que le
-    fichier), « Enregistrer dans le dépôt » (dossier du dépôt autorisé une fois), « Télécharger »,
-    retour au fichier ; mode opératoire des scripts Python ;
-  - **données du navigateur** : appareils des missions, types ajoutés, indicatifs appris,
-    aérodromes — avec intégration dans les bases du dépôt ;
-  - **registres des missions** (base des opérations) : édition YAML par famille, contrôlée.
-- Format commun des fichiers de données (`AircraftDB/datafile.py` = `DataAdmin.render`) :
-  JSON une ligne par élément, date `META.updatedAt`, contenu du fichier (`fileData`) et
-  surcouche locale ; sortie identique octet pour octet entre le script et la page.
-- À rendre éditables ensuite : profils d'événements / capacités et index des familles
-  (vocab.js), listes des anciens CR (mission_values.js), icônes (aircraft_icons.js).
+- Page `parametrage.html` (☰ menu › “Settings › Databases” (« Paramétrage › Bases de données »), `shared/data_admin.js`):
+  - **repository files**: fleet (`data/references/aircraft_fleet.js`), aircraft types + aliases
+    (`AircraftDB/aircraft_db.js`, changes carried over into `aircraft_overrides.json` for
+    the script), callsign mapping + organisations / OPR/
+    (`data/references/callsigns.js`, moved out of vocab.js); “Apply in this
+    browser” (local change takes priority as long as it is more recent than the
+    file), “Save to the repository” (« Enregistrer dans le dépôt ») (repository folder authorised once), “Download”,
+    back to the file; operating procedure of the Python scripts;
+  - **browser data**: aircraft from the missions, added types, learnt callsigns,
+    aerodromes — with integration into the repository databases;
+  - **mission ledgers** (operations base): YAML editing per family, checked.
+- Common format of the data files (`AircraftDB/datafile.py` = `DataAdmin.render`):
+  JSON one line per element, date `META.updatedAt`, file content (`fileData`) and
+  local overlay; output identical byte for byte between the script and the page.
+- To be made editable next: event / capability profiles and family index
+  (vocab.js), lists of the old reports (mission_values.js), icons (aircraft_icons.js).
 
-## M. Réorganisation — dossier « CR » (2026-09-24)
+## M. Reorganisation — “CR” folder (2026-09-24)
 
-- Toutes les pages de l'application (familles, anciens CR HEMS / GAAR, démonstration,
-  « Nouveau compte rendu », reporting général, Paramétrage) et leurs registres sont dans
-  `apps/cr/` ; le code commun reste dans `shared/`, `AircraftDB/`, `assets/`. Menu ☰ inchangé.
-- Chemins : liens relatifs entre pages de l'application inchangés ; liens vers la racine
-  (`shared/`, `AircraftDB/`, `assets/`, `repository_tree`) d'un niveau de plus ; adresses
-  calculées depuis la racine du site dans `global.js` (d'après son propre emplacement),
-  `mission_reporting_config.js` (d'après repository_tree), `data_admin.js` et les favicons
-  des anciens reportings. `repository_tree` : dossiers et pages préfixés par `apps/cr/`.
-- Autorisations de dossiers des registres : à redonner une fois par famille (« Dossier du
-  registre… ») si elles visaient les anciens dossiers.
+- All the pages of the application (families, old HEMS / GAAR reports, demonstration,
+  “New report”, general reporting, Settings) and their ledgers are in
+  `apps/cr/`; the common code stays in `shared/`, `AircraftDB/`, `assets/`. ☰ menu unchanged.
+- Paths: relative links between pages of the application unchanged; links to the root
+  (`shared/`, `AircraftDB/`, `assets/`, `repository_tree`) one level up; addresses
+  computed from the site root in `global.js` (from its own location),
+  `mission_reporting_config.js` (from repository_tree), `data_admin.js` and the favicons
+  of the old reportings. `repository_tree`: folders and pages prefixed with `apps/cr/`.
+- Folder permissions of the ledgers: to be granted again once per family (“Ledger
+  folder…”) if they pointed to the old folders.
 
-## N. Étape 9 — registre unique, majuscules, disposition de la page de CR (2026-09-24)
+## N. Step 9 — single ledger, capitals, layout of the report page (2026-09-24)
 
-- **Registre unique** `data/cr/missions.yaml` (toutes familles ; `shared/mission_core/ledger.js`) :
-  vues par famille (même interface), une seule autorisation de dossier (« CR »), migration
-  automatique et idempotente des anciens registres par famille (`legacyImported`).
-- **Majuscules** : champs de texte simple déclarés par les blocs communs et des familles
-  (`MissionModel.registerUpperFields`, `isUpperField`, exception `keepCase` pour les URL) ;
-  saisie convertie à la frappe, valeurs remplies automatiquement converties, anciennes
-  missions converties à la lecture puis réenregistrées.
-- **Page de CR** : barre d'outils dans l'en-tête (registre des missions ; suivi réseau en mode
-  compact, mode d'emploi en infobulle), aperçu du CR dans la colonne de droite (collée,
-  défilement propre, calculs sur 4 colonnes), blocs Navigation et Météo en bas de page.
+- **Single ledger** `data/cr/missions.yaml` (all families; `shared/mission_core/ledger.js`):
+  views per family (same interface), a single folder permission (“CR”), automatic
+  and idempotent migration of the old per-family ledgers (`legacyImported`).
+- **Capitals**: simple text fields declared by the common blocks and by the families
+  (`MissionModel.registerUpperFields`, `isUpperField`, exception `keepCase` for URLs);
+  entry converted while typing, automatically filled values converted, old
+  missions converted on reading then saved again.
+- **Report page**: toolbar in the header (mission ledger; network tracking in compact
+  mode, instructions in a tooltip), report preview in the right-hand column (sticky,
+  own scrolling, calculations on 4 columns), Navigation and Weather blocks at the bottom of the page.
 
-## O. Étape 10 — analyse de textes collés, menu (2026-09-24)
+## O. Step 10 — analysis of pasted texts, menu (2026-09-24)
 
-- `shared/mission_core/text_import.js` (« Analyser / importer… » dans l'en-tête des CR) : plan de
-  vol OACI (cases 7 à 19), page « détails » du tracker IVAO (plan de vol, connexion / déconnexion,
-  trace → décollage, atterrissage, distance, altitude max ; heures converties en heure locale du
-  terrain), liste des connexions IVAO, historique VATSIM (JSON), METAR ; favori « → CR »
-  (copie de la page du tracker, analysée au retour). Une page d'un autre site n'est pas lisible
-  par la page du CR : copier-coller ou favori.
-- Menu ☰ : « Reporting missions » seul en tête ; « Nouveau compte rendu » par le bouton de
-  l'en-tête des reportings ; « Paramétrage — bases de données » en bas, avant « Données locales »
-  (`slot:"settings"` dans repository_tree).
+- `shared/mission_core/text_import.js` (“Analyse / import…” in the report header): ICAO flight
+  plan (items 7 to 19), “details” page of the IVAO tracker (flight plan, connection / disconnection,
+  track → take-off, landing, distance, max altitude; times converted to the local time of the
+  airfield), list of IVAO connections, VATSIM history (JSON), METAR; “→ CR” bookmarklet
+  (copy of the tracker page, analysed on return). A page from another site cannot be read
+  by the report page: copy-paste or bookmarklet.
+- ☰ menu: “Mission reporting” alone at the top; “New report” through the button in
+  the reportings' header; “Settings — databases” at the bottom, before “Local data”
+  (`slot:"settings"` in repository_tree).
 
-## P. Étape 11 — indicatif intelligent, METAR calculé, envoi des CR (2026-09-24)
+## P. Step 11 — smart callsign, computed METAR, sending of reports (2026-09-24)
 
-- Indicatif : une saisie avec numéro dans le champ indicatif (`ctm58`) est découpée
-  (COTAM / 58, forme plan de vol CTM58, OPR/ CTM) ; la série de la table de correspondance
-  renseigne l'organisme et, si elle n'en a qu'un, le type (`seriesAssist`, après l'effacement des
-  valeurs de l'appareil précédent).
-- Météo (`assist.js`) : `buildMetar()` — vent, visibilité (≥ 10 km supposés sans brouillard ni
-  précipitations quand l'archive n'en donne pas), temps présent (code WMO), nuages par étage (base
-  des nuages bas ≈ 400 ft par °C d'écart T / Td), T / Td, QNH, `CAVOK` si applicable,
-  `RMK CALC OPEN-METEO`. Lever / coucher Open-Meteo (`daily`), calcul NOAA local à défaut. Source
-  retenue seulement si elle a des valeurs (l'api de prévision renvoie des nulls pour un passé
-  lointain → archive-api).
-- `autoEnvironment()` : signature terrain de départ | date | heure ; requête 1,2 s après un
-  changement ; état de référence à l'ouverture d'une mission (pas de requête), requête immédiate
-  pour une nouvelle mission. Un remplissage automatique ne rend pas « modifiée » une mission non
-  touchée (`changed(path, auto)`).
-- « Envoyer le CR » : POST JSON, configuration `missionSendConfig:v1`, clef `missionSendKey:v1`
-  (exclue de browser_store), journal `missionSendLog:v1`. Testé avec un service local (201,
-  en-tête Bearer, corps complet) et un service injoignable (message CORS).
+- Callsign: an entry with a number in the callsign field (`ctm58`) is split
+  (COTAM / 58, flight plan form CTM58, OPR/ CTM); the series in the mapping table
+  fills in the organisation and, if it has only one, the type (`seriesAssist`, after clearing the
+  values of the previous aircraft).
+- Weather (`assist.js`): `buildMetar()` — wind, visibility (≥ 10 km assumed without fog or
+  precipitation when the archive gives none), present weather (WMO code), clouds by layer (base
+  of low clouds ≈ 400 ft per °C of T / Td spread), T / Td, QNH, `CAVOK` if applicable,
+  `RMK CALC OPEN-METEO`. Open-Meteo sunrise / sunset (`daily`), local NOAA computation otherwise. Source
+  kept only if it has values (the forecast api returns nulls for a distant
+  past → archive-api).
+- `autoEnvironment()`: signature departure airfield | date | time; request 1.2 s after a
+  change; reference state when opening a mission (no request), immediate request
+  for a new mission. An automatic fill does not make an untouched mission
+  “modified” (`changed(path, auto)`).
+- “Send report”: POST JSON, configuration `missionSendConfig:v1`, key `missionSendKey:v1`
+  (excluded from browser_store), log `missionSendLog:v1`. Tested with a local service (201,
+  Bearer header, complete body) and an unreachable service (CORS message).
 
-## Q. Étape 12 — reporting général, effacement de l'appareil, robustesse du registre (2026-09-24)
+## Q. Step 12 — general reporting, clearing the aircraft, ledger robustness (2026-09-24)
 
-- `apps/cr/mission_operations_reporting.html` réécrite sur le registre unique
-  (`shared/mission_core/global_reporting.js`) : titre « Reporting missions — CR », puces de
-  familles colorées (`COLORS`), indicateurs, graphiques SVG autonomes (`charts.js` : barres
-  empilées par période avec unité automatique ou choisie, anneaux, classements), synthèses par
-  famille (indicateurs `family.stats`), appareil, équipage ; import des anciens CSV HEMS / GAAR.
-  Les anciens chargements CSV de la page et `global.js` sont supprimés.
-- Carte d'appareil : bouton « ⟲ Effacer » (option `collection.clear` de form.js, crochet
-  `onClear` : l'organisme repris de la flotte est retiré).
-- `ledger.js` : un registre illisible (erreur réseau, ≠ 404) n'est plus traité comme vide — plus
-  de migration ni d'écriture d'une copie partielle (qui remplaçait le registre complet) ;
-  `save()` relit d'abord le registre. Anciens registres servis absents : une vérification par jour.
-- `model.js` : transit / temps sur zone jamais plus longs que le vol (heure inversée = erreur,
-  pas un passage de minuit).
+- `apps/cr/mission_operations_reporting.html` rewritten on the single ledger
+  (`shared/mission_core/global_reporting.js`): title “Mission reporting — CR”, coloured family
+  chips (`COLORS`), indicators, standalone SVG charts (`charts.js`: stacked bars
+  per period with automatic or chosen unit, rings, rankings), summaries per
+  family (`family.stats` indicators), aircraft, crew; import of the old HEMS / GAAR CSVs.
+  The page's old CSV loadings and `global.js` are removed.
+- Aircraft card: “⟲ Clear” button (option `collection.clear` of form.js, hook
+  `onClear`: the organisation taken from the fleet is removed).
+- `ledger.js`: an unreadable ledger (network error, ≠ 404) is no longer treated as empty — no more
+  migration nor writing of a partial copy (which replaced the complete ledger);
+  `save()` rereads the ledger first. Old ledgers served as missing: one check per day.
+- `model.js`: transit / time on station never longer than the flight (inverted time = error,
+  not a midnight crossing).
 
-## R. Étape 13 — barre d'en-tête des CR (2026-09-24)
+## R. Step 13 — header bar of the reports (2026-09-24)
 
-- Une ligne, sept entrées par ordre d'importance : famille · série (popup déplacée dans la
-  barre), Ajouter / Enregistrer (principal), Envoyer le CR (vert ; en pointillés tant que le
-  webservice n'est pas paramétré, avec proposition d'ouvrir le paramétrage), Analyse / import ▾
-  (le fichier YAML / JSON y rejoint le texte collé), Suivi réseau ▾ (panneau compact du
-  network_tracker, ● rouge pendant le suivi), Mission ▾ (nouvelle, export, suppression),
-  Registre des missions ▾ (infos, reporting, dossier, téléchargement, paramétrage de l'envoi,
-  Paramétrage). Un seul menu ouvert, fermeture au clic extérieur ; `data-action` inchangés.
+- One line, seven entries in order of importance: family · series (popup moved into the
+  bar), “Add / Save” (« Ajouter / Enregistrer ») (main), “Send report” (green; dotted as long as the
+  web service is not set up, with an offer to open the settings), “Analyse / import…” ▾
+  (the YAML / JSON file joins the pasted text there), “Network tracking” ▾ (compact panel of the
+  network_tracker, red ● during tracking), “Mission” ▾ (new, export, deletion),
+  “Mission ledger” ▾ (info, reporting, folder, download, sending settings,
+  Settings). Only one menu open, closed by clicking outside; `data-action` unchanged.
 
-## S. Étape 14 — contrôles de cohérence, graphiques des reportings de famille (2026-09-24)
+## S. Step 14 — consistency checks, charts of the family reportings (2026-09-24)
 
-- `MissionModel.checkMission` : heures invalides, chronologie inversée (écart ≥ 12 h entre deux
-  étapes de mise en route → arrêt, fin de mission ≥ 20 h après le début), chronologie > 20 h,
-  carburant final > départ. Libellés : `MissionBlocks.describeIssue(issue, langue)`.
-- CR : liste ⚠ sous les calculs (clic = champ), champs surlignés (`.mc-invalid`).
-- Reporting général : section « Contrôle des données » (missions à corriger, clic = CR).
-- Reporting de famille : graphique par période empilé par série (`charts.js` chargé par les
-  15 pages), colonne « Contrôle » ; bouton « Nouveau compte rendu » en double retiré du corps
-  (il est dans l'en-tête).
-- `charts.js` injecte ses styles (thème par variables `--muted`, `--soft`, `--mcg-grid`…).
+- `MissionModel.checkMission`: invalid times, inverted timeline (gap ≥ 12 h between two
+  steps from engine start → shutdown, mission end ≥ 20 h after the start), timeline > 20 h,
+  final fuel > departure. Labels: `MissionBlocks.describeIssue(issue, langue)`.
+- Report: ⚠ list under the calculations (click = field), highlighted fields (`.mc-invalid`).
+- General reporting: “Data checks” section (« Contrôle des données ») (missions to correct, click = report).
+- Family reporting: chart per period stacked by series (`charts.js` loaded by the
+  15 pages), “Check” column; duplicate “New report” button removed from the body
+  (it is in the header).
+- `charts.js` injects its styles (theme through the variables `--muted`, `--soft`, `--mcg-grid`…).
 
-## T. Étape 15 — période et zoom unifiés, en-têtes des reportings, documentation de la suite (2026-09-24)
+## T. Step 15 — unified period and zoom, reporting headers, suite documentation (2026-09-24)
 
-- `shared/time_period.js` réécrit en composant unique : préréglages, dates toujours visibles,
-  ◀ / zoom arrière ×2 / ▶ bornés par les données, `zoomTo()` / `zoomOut()` appelés par les
-  graphiques ; mode partagé (reportings) ou piloté (Landing Dashboard, période par fichier) ;
-  précision à la milliseconde pour les événements horodatés, arrondi aux jours sinon.
-  API ancienne (`mount`, `read`, `write`, `range`, `filterRows`) conservée.
-- `charts.js` : périodes des barres (`start` / `end`), `enableZoom()` (glisser, clic, double-clic).
-- Reporting général : période et filtres dans l'en-tête collé ; le `<header>` n'est plus
-  réécrit (le menu ☰ et la langue avaient disparu). Reportings de famille : famille · série,
-  nouveau CR, période, regroupement et mesure dans l'en-tête.
-- Landing Dashboard : dates et ◀ 🔍 ▶ remplacés par le composant (mode piloté) ; le zoom par
-  glisser de ses graphiques passe par lui ; comportement conservé (largeur de période,
-  mémoire par fichier).
-- Flight Planner : l'identifiant SimBrief du profil pilote commun est utilisé en premier.
-- Documentation : README (trois applications + framework), `docs/FLIGHT_PLANNER.md`
-  (reprend et complète la section d'origine du README), `docs/LANDING_DASHBOARD.md`,
+- `shared/time_period.js` rewritten as a single component: presets, dates always visible,
+  ◀ / zoom out ×2 / ▶ bounded by the data, `zoomTo()` / `zoomOut()` called by the
+  charts; shared mode (reportings) or driven mode (Landing Dashboard, period per file);
+  millisecond precision for time-stamped events, rounded to days otherwise.
+  Old API (`mount`, `read`, `write`, `range`, `filterRows`) kept.
+- `charts.js`: bar periods (`start` / `end`), `enableZoom()` (drag, click, double-click).
+- General reporting: period and filters in the sticky header; the `<header>` is no longer
+  rewritten (the ☰ menu and the language had disappeared). Family reportings: family · series,
+  new report, period, grouping and measure in the header.
+- Landing Dashboard: dates and ◀ 🔍 ▶ replaced by the component (driven mode); the drag
+  zoom of its charts goes through it; behaviour kept (period width,
+  memory per file).
+- Flight Planner: the SimBrief identifier of the common pilot profile is used first.
+- Documentation: README (three applications + framework), `docs/FLIGHT_PLANNER.md`
+  (takes up and completes the original section of the README), `docs/LANDING_DASHBOARD.md`,
   `docs/FRAMEWORK.md`.
 
-## U. Étape 16 — base (journal des vols), séries d'indicatifs (2026-09-24)
+## U. Step 16 — base (flight log), callsign series (2026-09-24)
 
-- `shared/mission_core/defa_log.js` : lecture de la page « Log des vols » enregistrée (tableau
-  à 9 colonnes, lien vers la fiche flotte), d'un CSV ou d'un JSON ; stockage navigateur
-  `defaFlightLog:v1` (exclu de browser_store) ; séries d'indicatifs (suffixes de patrouille,
-  parasites, variantes `ALIASES`) ; export CSV / JSON.
-- Paramétrage › Base : chargement, statistiques, séries (Ajouter / Compléter la
-  correspondance), vols filtrables, export, effacement ; colonne « Autres formes » (`aliases`)
-  dans la correspondance des indicatifs.
-- `aircraft.js` : le journal est une source d'appareils connus (sans indicatif par défaut) ;
-  `aliases` pris en compte dans les abréviations. `assist.js` : trigrammes (équipage) et
-  terrains du journal dans les valeurs proposées.
-- `data/callsigns.js` : 49 séries relevées dans le journal de 2025-05 à 2026-09 (≥ 3 vols ;
-  organisme déduit seulement si tous les types concordent) et 4 séries complétées (DRAGON,
-  PELICAN, BENGALE, CHOUCAS) ; le journal lui-même n'est pas dans le dépôt.
+- `shared/mission_core/defa_log.js`: reading of the saved “Log des vols” page (table
+  with 9 columns, link to the fleet sheet), of a CSV or of a JSON; browser storage
+  `defaFlightLog:v1` (excluded from browser_store); callsign series (patrol suffixes,
+  noise, `ALIASES` variants); CSV / JSON export.
+- Settings › Base (« Paramétrage › Base »): loading, statistics, series (“Add” / “Complete the
+  mapping” (« Ajouter / Compléter la correspondance »)), filterable flights, export, clearing; “Other forms” column (`aliases`)
+  in the callsign mapping.
+- `aircraft.js`: the log is a source of known aircraft (without a callsign by default);
+  `aliases` taken into account in the abbreviations. `assist.js`: trigrams (crew) and
+  airfields of the log among the suggested values.
+- `data/callsigns.js`: 49 series found in the log from 2025-05 to 2026-09 (≥ 3 flights;
+  organisation deduced only if all the types agree) and 4 completed series (DRAGON,
+  PELICAN, BENGALE, CHOUCAS); the log itself is not in the repository.
 
-## V. Étape 17 — saisie du CR, dossiers, rappel de sauvegarde (2026-09-24)
+## V. Step 17 — report entry, folders, backup reminder (2026-09-24)
 
-- Formulaire : « + » dans le titre des collections (framework `form.js`), équipage au moins 1 ;
-  bouton « maintenant » sur toutes les dates / heures (option `now` du formulaire) ; bloc
-  Résultat en 2e position.
-- `core.js` : fuseau du terrain de départ (Europe/Paris par défaut) à la date de la mission ;
-  heure locale ⇄ UTC (identification, événements) ; heure du briefing → heure du CR ;
-  événements de la chronologie (types BRIEFING, ENGINE_START, OFF_BLOCK, MISSION_START,
-  MISSION_END, ON_BLOCK, SHUTDOWN ajoutés, `source: timeline.<champ>`) ; autorités (historique,
-  sinon département : `MissionVocab.departments`).
-- `checkMission` : date future, date invalide.
-- `shared/file_access.js` (framework, chargé par repository_nav) : dossiers mémorisés, libellés
-  et infobulles, sélecteur de fichiers ouvert dans le dossier paramétré pour tous les
-  `<input type=file>` ; Paramétrage : « Dossiers paramétrés » ; Flight Planner : dossier
-  performances mémorisé.
-- `browser_store.js` : compteur de modifications, bouton « Sauvegarder » dans l'en-tête à partir
-  de 10, horodatage de la dernière sauvegarde.
+- Form: “+” in the title of the collections (framework `form.js`), crew at least 1;
+  “now” button on all dates / times (`now` option of the form); Result
+  block in 2nd position.
+- `core.js`: time zone of the departure airfield (Europe/Paris by default) on the date of the mission;
+  local time ⇄ UTC (identification, events); briefing time → report time;
+  timeline events (types BRIEFING, ENGINE_START, OFF_BLOCK, MISSION_START,
+  MISSION_END, ON_BLOCK, SHUTDOWN added, `source: timeline.<champ>`); authorities (history,
+  otherwise department: `MissionVocab.departments`).
+- `checkMission`: future date, invalid date.
+- `shared/file_access.js` (framework, loaded by repository_nav): remembered folders, labels
+  and tooltips, file picker opened in the configured folder for all the
+  `<input type=file>`; Settings: “Configured folders” (« Dossiers paramétrés »); Flight Planner: performance
+  folder remembered.
+- `browser_store.js`: change counter, “Save” button (« Sauvegarder ») in the header from
+  10, time stamp of the last backup.
 
-## W. Étape 18 — référence, catalogue commun, journal alternatif (2026-09-24)
+## W. Step 18 — reference, common catalogue, alternative log (2026-09-24)
 
-- `data/references/defa_reference.js` (committé) + `tools/defa_reference.py` + `DefaFlightLog.reference()` :
-  pilotes et appareils agrégés, sans vols ni missions ; jeu de données « Référence » dans
-  Paramétrage (statut, rattachement, mise en service modifiables).
-- `shared/aircraft_catalog.js` (framework) : types communs (OACI + SUPPLEMENT déplacé depuis
-  aircraft.js + types locaux) fusionnés dans `AIRCRAFT_DB`, appareils et types ; chargé
-  par les 16 pages CR / Paramétrage, le Landing Dashboard et le Planner.
-- Planner : types sans profil proposés (« flotte, sans profil »). CR : référence comme source
-  d'appareils connus, trigrammes et terrains proposés.
-- Reportings : **Données** registre / journal (`DefaFlightLog.toMissions()`, familles par
-  règles de libellé, lecture seule) ; `defa_log.js` chargé par les 16 pages de reporting.
+- `data/references/defa_reference.js` (committed) + `tools/defa_reference.py` + `DefaFlightLog.reference()`:
+  aggregated pilots and aircraft, without flights or missions; “Reference” dataset in
+  Settings (status, assignment, entry into service editable).
+- `shared/aircraft_catalog.js` (framework): common types (ICAO + SUPPLEMENT moved from
+  aircraft.js + local types) merged into `AIRCRAFT_DB`, aircraft and types; loaded
+  by the 16 report / Settings pages, the Landing Dashboard and the Planner.
+- Planner: types without a profile offered (“fleet, no profile” (« flotte, sans profil »)). Report: reference as a source
+  of known aircraft, trigrams and airfields offered.
+- Reportings: **Data** ledger / log (`DefaFlightLog.toMissions()`, families by
+  label rules, read-only); `defa_log.js` loaded by the 16 reporting pages.
 
-## X. Étape 19 — fiches appareil / équipage, navigation des reportings (2026-09-24)
+## X. Step 19 — aircraft / crew sheets, navigation of the reportings (2026-09-24)
 
-- `shared/mission_core/sheets.js`, `apps/cr/appareil.html`, `apps/cr/equipage.html` : fiches
-  « lâches » (catalogue commun, registre, journal, profil du Flight Planner) ; saisie locale
-  (statut, rattachement, mise en service, événements, qualifications).
-- Reporting général : clic famille → reporting de famille, appareil → fiche, équipage → fiche.
-- `TimePeriod.zoomIn()`, `shift()`, `edges()` : repères avant / après et zoom sous les tableaux.
-- Flight Planner : `?aircraft=<type>` (alias OACI résolus), liens vers les fiches des appareils
-  Du type actif.
+- `shared/mission_core/sheets.js`, `apps/cr/appareil.html`, `apps/cr/equipage.html`: “loose”
+  sheets (common catalogue, ledger, log, Flight Planner profile); local entry
+  (status, assignment, entry into service, events, qualifications).
+- General reporting: click on family → family reporting, aircraft → sheet, crew → sheet.
+- `TimePeriod.zoomIn()`, `shift()`, `edges()`: before / after markers and zoom under the tables.
+- Flight Planner: `?aircraft=<type>` (ICAO aliases resolved), links to the sheets of the aircraft
+  of the active type.
 
-## Y. Étape 20 — modification en grille, fusions, journal depuis les reportings (2026-09-24)
+## Y. Step 20 — grid editing, merges, log from the reportings (2026-09-24)
 
-- `shared/mission_core/grid_edit.js` : modification en grille (règles validées : fin déplacée,
-  heure créée, durée déclarée `timeline.declared`, trace `mission.history`) ; fusion / renommage
-  d'appareils et de pilotes (`missionMergeMap:v1`, fiches fusionnées). `computeStatistics` et
-  `checkMission` prennent en compte les durées déclarées.
-- Reportings : bouton « ✎ Modifier dans le tableau » ; menu « Données » toujours visible avec
-  « Charger / mettre à jour le journal… » (`DefaFlightLog.loaderDialog` : copier-coller
-  tabulé ou page enregistrée, fusion sans doublon — clé = ligne complète).
-- `form.js` : collections en tableau compact (`layout: 'cards'` pour les appareils), lien
-  « Fiche appareil » ; routes proposées pour le même trajet (départ / destination, couples
-  d'étapes) ; altitude densité ; `otherMissions` sur le registre unique.
-- Fiche appareil : performances à 1 décimale.
+- `shared/mission_core/grid_edit.js`: grid editing (validated rules: end moved,
+  time created, declared duration `timeline.declared`, trace `mission.history`); merging / renaming
+  of aircraft and pilots (`missionMergeMap:v1`, sheets merged). `computeStatistics` and
+  `checkMission` take the declared durations into account.
+- Reportings: “✎ Edit in the table” button; “Data” menu always visible with
+  “Load / update the log…” (`DefaFlightLog.loaderDialog`: tab-separated
+  copy-paste or saved page, merge without duplicates — key = complete line).
+- `form.js`: collections as a compact table (`layout: 'cards'` for the aircraft), “Aircraft sheet”
+  link; routes offered for the same journey (departure / destination, pairs
+  of stages); density altitude; `otherMissions` on the single ledger.
+- Aircraft sheet: performance to 1 decimal place.
 
-## Z. Correctif — fenêtres de copier-coller (2026-09-24)
+## Z. Fix — copy-paste windows (2026-09-24)
 
-`FileAccess.pastePanel` (framework) appliqué à « Analyse / import » (CR), à la fenêtre du journal
-Et à la zone de l'historique VATSIM : × et « Fermer », bouton désactivé si vide, « Valider »
-après chargement (ferme), retour à « Charger » à la saisie.
+`FileAccess.pastePanel` (framework) applied to “Analyse / import…” (report), to the log window
+and to the VATSIM history area: × and “Close”, button disabled if empty, “Confirm” (« Valider »)
+after loading (closes), back to “Load” on entry.
 
-## AA. Version 2.1.0, changelog, période sur les fiches (2026-09-24)
+## AA. Version 2.1.0, changelog, period on the sheets (2026-09-24)
 
-- `repository_tree` : `release` 2.1.0 (+ `changelog`) ; pied de page (`app_framework.js`) : la
-  version renvoie à `CHANGELOG.md` sur framagit ; `CHANGELOG.md` créé (2.0.7 → 2.1.0).
-- Fiches appareil / équipage : période commune dans l'en-tête, cartes / graphique / tableau
-  filtrés, zoom sur le graphique, repères avant / après.
-- `TimePeriod.edges()` conserve les classes du conteneur (le 2e rendu perdait le conteneur).
+- `repository_tree`: `release` 2.1.0 (+ `changelog`); footer (`app_framework.js`): the
+  version links to `CHANGELOG.md` on framagit; `CHANGELOG.md` created (2.0.7 → 2.1.0).
+- Aircraft / crew sheets: common period in the header, cards / chart / table
+  filtered, zoom on the chart, before / after markers.
+- `TimePeriod.edges()` keeps the classes of the container (the 2nd rendering lost the container).

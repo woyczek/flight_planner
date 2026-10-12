@@ -17,7 +17,7 @@ ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)),
 DOCS = os.path.join(ROOT, 'docs')
 REF = os.path.join(DOCS, 'traductions.json')
 LANGS = ('en', 'de', 'es')
-SOURCES = ('README.md', 'MANUEL_UTILISATEUR.md', 'MANUEL_ADMINISTRATEUR.md')
+SOURCES = ('README.md', 'MANUEL_UTILISATEUR.md', 'MANUEL_PLANIFICATEUR.md', 'MANUEL_ADMINISTRATEUR.md')
 
 
 def git(*args):

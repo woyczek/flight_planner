@@ -1,197 +1,197 @@
-# Architecture de la synchronisation des données
+# Data synchronisation architecture
 
-Comment les données partagées de la suite (disponibilités, missions, affectations, CR, utilisateurs, configuration)
-circulent entre les pages, le navigateur, le dossier `data/` et les autres postes. Décisions du 5 octobre 2026 ;
-conception d'origine : [INDEX_DONNEES.md](INDEX_DONNEES.md) § 3 à § 9.
+How the suite's shared data (availability, missions, assignments, reports, users, configuration) moves between the
+pages, the browser, the `data/` folder and the other workstations. Decisions of 5 October 2026;
+original design: [INDEX_DONNEES.md](INDEX_DONNEES.md) § 3 to § 9.
 
-## 1. En bref
+## 1. In brief
 
-- **Les fichiers de `data/` font foi.** Tout le reste (index du navigateur, copies, boîte d'envoi) se reconstruit.
-- **Lire vite** : le navigateur garde une copie de chaque fichier, signée de sa date (`updated_at`) ; il ne relit que
-  les fichiers dont la date a changé.
-- **Écrire sûr** : chaque écriture passe par un verrou ; sans dossier autorisé, elle attend dans le navigateur (boîte
-  d'envoi).
-- **Partager** : `data/` est un dépôt git à part (pas celui du code). Le bouton **« Synchroniser »** de l'en-tête
-  commite les changements du poste au nom du trigramme connecté, récupère ceux des autres, fusionne, puis envoie.
-- **Conflits** : résolus **fiche par fiche** par le lanceur ; rien n'est jamais perdu (la version écartée est gardée
-  dans `_conflits/` et signalée).
+- **The files in `data/` are authoritative.** Everything else (browser index, copies, outbox) can be rebuilt.
+- **Read fast**: the browser keeps a copy of each file, signed with its date (`updated_at`); it only rereads the
+  files whose date has changed.
+- **Write safely**: every write goes through a lock; without an authorised folder, it waits in the browser (the
+  outbox).
+- **Share**: `data/` is a separate git repository (not the code one). The header's **"Synchronise"** button
+  commits the workstation's changes in the name of the signed-in trigram, fetches everyone else's, merges, then pushes.
+- **Conflicts**: resolved **record by record** by the launcher; nothing is ever lost (the discarded version is kept
+  in `_conflits/` and reported).
 
-## 2. Les acteurs
+## 2. The actors
 
-| Acteur | Où | Rôle |
+| Actor | Where | Role |
 |---|---|---|
-| **Page** | navigateur | lit et écrit les données du pool par `MissionAssignments.readData` / `readIndexed` / `writeData` (`shared/assignments.js`) |
-| **Index du navigateur** | IndexedDB, base `defaIndex` (`shared/data_index.js`) | registre des missions, CR, copies signées des fichiers du pool (store `files`) ; reconstruit à volonté |
-| **Boîte d'envoi** | `localStorage` `suiteDataOutbox:v1` | écritures faites sans dossier autorisé ; relues en priorité tant qu'elles sont plus récentes ; écrites au prochain `flushData()` (au plus tard avant une synchronisation) |
-| **Dossier `data/`** | disque (ici `E:\DEFA\data`, partagé par jonction entre les espaces de travail) | **la référence** : un fichier par fiche autant que possible |
-| **Lanceur** | `tools/launch.py` (serveur local, port 8000 par défaut) | sert la suite et `data/`, refait les index du dossier à la demande, exécute la synchronisation (`tools/data_sync.py`) |
-| **Dépôt git de `data/`** | `data/.git` | historique des données ; branche en cours (aujourd'hui `test`) |
-| **Dépôt distant** | `gitnet` : `git@gitnet.fr:woyczek/defa-data.git` | point de rencontre des postes |
+| **Page** | browser | reads and writes pool data through `MissionAssignments.readData` / `readIndexed` / `writeData` (`shared/assignments.js`) |
+| **Browser index** | IndexedDB, database `defaIndex` (`shared/data_index.js`) | register of missions, reports, signed copies of the pool files (store `files`); rebuilt at will |
+| **Outbox** | `localStorage` `suiteDataOutbox:v1` | writes made without an authorised folder; read first as long as they are more recent; written at the next `flushData()` (at the latest before a synchronisation) |
+| **`data/` folder** | disk (here `E:\DEFA\data`, shared by junction between the workspaces) | **the reference**: one file per record wherever possible |
+| **Launcher** | `tools/launch.py` (local server, port 8000 by default) | serves the suite and `data/`, rebuilds the folder indexes on demand, runs the synchronisation (`tools/data_sync.py`) |
+| **`data/` git repository** | `data/.git` | data history; current branch (currently `test`) |
+| **Remote repository** | `gitnet`: `git@gitnet.fr:woyczek/defa-data.git` | meeting point for the workstations |
 
 ```mermaid
 flowchart LR
-  subgraph Navigateur
+  subgraph Browser
     P[Page] --> RI[readIndexed]
-    RI -->|signature identique| IDX[(Index defaIndex<br/>store files)]
-    P -->|écriture| WD[writeData]
-    WD -->|sans dossier autorisé| OB[(Boîte d'envoi)]
-    BTN[Bouton Synchroniser<br/>shared/sync.js]
+    RI -->|same signature| IDX[(defaIndex index<br/>store files)]
+    P -->|write| WD[writeData]
+    WD -->|no authorised folder| OB[(Outbox)]
+    BTN[Synchronise button<br/>shared/sync.js]
   end
-  subgraph Poste
-    L[Lanceur<br/>tools/launch.py]
-    D[(data/<br/>fichiers = référence)]
+  subgraph Workstation
+    L[Launcher<br/>tools/launch.py]
+    D[(data/<br/>files = reference)]
     G[(data/.git)]
   end
-  R[(Dépôt distant<br/>gitnet)]
-  RI -->|signature changée| L --> D
-  WD -->|verrou, dossier autorisé| D
+  R[(Remote repository<br/>gitnet)]
+  RI -->|signature changed| L --> D
+  WD -->|lock, authorised folder| D
   OB -->|flushData| D
   BTN -->|POST /__setup/sync| L
-  L -->|commit, fusion| G
+  L -->|commit, merge| G
   G <-->|fetch, push| R
 ```
 
-## 3. Ce qui est synchronisé
+## 3. What is synchronised
 
-| Synchronisé (pool) | Pas synchronisé |
+| Synchronised (pool) | Not synchronised |
 |---|---|
-| `disponibilites/` (déclarations par pilote et par semaine, anciens fichiers) | `**/_index.json` : index régénérés par le lanceur et les pages |
-| `utilisateurs/` (fiches, rôles, préférences de thèmes) | `**/_conflits/` : versions écartées lors d'une fusion (propres au poste) |
-| `config/` (catégories de disponibilité, mode develop / production…) | `local/` : sauvegardes du navigateur, état de la dernière synchronisation (`local/sync.json`) |
-| `missions/` (missions, affectations, suivi, journal) | `.defa_instance` : repère du lanceur |
-| `cr/` (comptes rendus) | préférences d'affichage (thème, langue, blocs…) : propres à chaque navigateur |
-| `atc/` (sessions ATC de la semaine) | réglages du planning ODV (`odvPlanning:v1`, voir la dette technique) |
+| `disponibilites/` (declarations per pilot and per week, legacy files) | `**/_index.json`: indexes regenerated by the launcher and the pages |
+| `utilisateurs/` (records, roles, theme preferences) | `**/_conflits/`: versions discarded during a merge (specific to the workstation) |
+| `config/` (availability categories, develop / production mode…) | `local/`: browser backups, state of the last synchronisation (`local/sync.json`) |
+| `missions/` (missions, assignments, follow-up, log) | `.defa_instance`: launcher marker |
+| `cr/` (reports) | display preferences (theme, language, blocks…): specific to each browser |
+| `atc/` (the week's ATC sessions) | ODV planning settings (`odvPlanning:v1`, see the technical debt) |
 
-## 4. Lire : copies signées
+## 4. Reading: signed copies
 
-1. La page lit l'**index du dossier** (`disponibilites/_index.json`, `utilisateurs/_index.json`) : une requête. Le
-   lanceur le refait à chaque demande ; il porte la date (`updated_at`) de chaque fichier.
-2. Pour chaque fichier voulu, `readIndexed(fichier, date)` : copie de l'index du navigateur **de même date** → servie
-   sans requête ; sinon le fichier est lu, et sa copie remplacée.
-3. Pas de copie utilisée pour un fichier de la boîte d'envoi, une lecture « fraîche », ou sans date connue.
+1. The page reads the **folder index** (`disponibilites/_index.json`, `utilisateurs/_index.json`): one request. The
+   launcher rebuilds it on every request; it carries the date (`updated_at`) of each file.
+2. For each file needed, `readIndexed(fichier, date)`: a copy in the browser index **with the same date** → served
+   without a request; otherwise the file is read and its copy replaced.
+3. No copy is used for a file in the outbox, for a "fresh" read, or when no date is known.
 
-Effet mesuré (Planning ODV, 57 pilotes) : à la deuxième ouverture, 11 requêtes au lieu de 114, données à 1,6 s au lieu
-de 7,2 s.
+Measured effect (ODV Planning, 57 pilots): on the second opening, 11 requests instead of 114, data in 1.6 s instead
+of 7.2 s.
 
-## 5. Écrire : verrou, puis annonce
+## 5. Writing: lock, then announcement
 
-1. `writeData(fichier, valeur)` : sous un verrou Web Locks par fichier (`defa:data:<chemin>`), écriture dans le
-   **dossier autorisé** (Paramètres › Installation › Sources et dossiers) ; sinon dans la boîte d'envoi, avec une
-   notification qui donne la raison.
-2. La copie de l'index du navigateur est mise à jour, l'entrée de l'index du dossier aussi (date du fichier écrit).
-3. Les autres onglets sont prévenus (BroadcastChannel `defa-data`) et relisent à la demande.
+1. `writeData(fichier, valeur)`: under a per-file Web Locks lock (`defa:data:<chemin>`), written to the
+   **authorised folder** (Settings › Installation › Sources and folders); otherwise to the outbox, with a
+   notification giving the reason.
+2. The browser index copy is updated, and so is the folder index entry (date of the written file).
+3. The other tabs are notified (BroadcastChannel `defa-data`) and reread on demand.
 
-## 6. Synchroniser : un passage
+## 6. Synchronising: one pass
 
 ```mermaid
 sequenceDiagram
-  participant U as Utilisateur
+  participant U as User
   participant S as sync.js (page)
-  participant L as Lanceur (data_sync.py)
+  participant L as Launcher (data_sync.py)
   participant G as data/.git
-  participant R as Dépôt distant
-  U->>S: clic « Synchroniser (n) »
-  S->>S: flushData() : boîte d'envoi → dossier
-  S->>L: POST /__setup/sync { author: trigramme }
-  L->>G: git add (fichiers du pool modifiés) + commit, auteur = trigramme
+  participant R as Remote repository
+  U->>S: click « Synchronise (n) »
+  S->>S: flushData() : outbox → folder
+  S->>L: POST /__setup/sync { author: trigram }
+  L->>G: git add (modified pool files) + commit, author = trigram
   L->>R: git fetch
-  L->>G: git merge (branche distante)
-  alt conflit
-    L->>G: fusion fiche par fiche (§ 7), commit de la fusion
+  L->>G: git merge (remote branch)
+  alt conflict
+    L->>G: record-by-record merge (§ 7), merge commit
   end
   L->>R: git push
-  L-->>S: compte rendu (envoyés, reçus, conflits)
-  S->>U: notifications ; pages relues (fichiers changés seuls)
+  L-->>S: report (sent, received, conflicts)
+  S->>U: notifications ; pages reread (changed files only)
 ```
 
-- **Déclenchement : à la main.** Pas d'envoi automatique. Le bouton affiche `(n)` = modifications de ce poste +
-  commits à envoyer + commits à recevoir (dépôt distant relu à la fréquence réglée par navigateur, `syncCheck:v1` : à chaque page, 30 min par défaut, 3 fois par jour, une fois par jour ; dernier état connu `syncState:v1` affiché entre deux vérifications ; lanceur : dernier relevé servi, relu en tâche de fond au-delà de 20 s).
-- **Fusion (merge), pas de rebase** : l'historique n'est jamais réécrit, une seule fusion à résoudre.
-- **Un passage à la fois** par lanceur (verrou). Une fusion qui échoue au milieu est **annulée** : le dépôt n'est
-  jamais laissé à moitié fusionné.
-- **Branche sans branche distante** : le premier passage la crée (push `-u`).
+- **Trigger: manual.** No automatic push. The button shows `(n)` = changes on this workstation +
+  commits to push + commits to receive (remote repository rechecked at the frequency set per browser, `syncCheck:v1`: on every page, every 30 min by default, 3 times a day, once a day; last known state `syncState:v1` shown between two checks; launcher: last reading served, refreshed in the background after 20 s).
+- **Merge, not rebase**: history is never rewritten, only one merge to resolve.
+- **One pass at a time** per launcher (lock). A merge that fails halfway is **aborted**: the repository is
+  never left half-merged.
+- **Branch without a remote branch**: the first pass creates it (push `-u`).
 
-## 7. Conflits : trois niveaux
+## 7. Conflicts: three levels
 
-| Niveau | Exemple | Réponse |
+| Level | Example | Response |
 |---|---|---|
-| Deux onglets du même navigateur | deux pages ouvertes écrivent le même fichier | verrou par fichier, relecture sous verrou, message aux autres onglets |
-| Deux postes sur le même dossier | dossier partagé (Synology, OneDrive) | écriture sous verrou ; fusions propres à certains fichiers (registre des CR, index des dispos) |
-| Deux copies réunies par git | deux pilotes qui synchronisent | **fusion fiche par fiche par le lanceur**, ci-dessous |
+| Two tabs in the same browser | two open pages write the same file | per-file lock, reread under the lock, message to the other tabs |
+| Two workstations on the same folder | shared folder (Synology, OneDrive) | write under lock; merges specific to certain files (report register, availability indexes) |
+| Two copies brought together by git | two pilots synchronising | **record-by-record merge by the launcher**, below |
 
-**Fusion fiche par fiche** (`tools/data_sync.py`, fonction `resolve`) :
+**Record-by-record merge** (`tools/data_sync.py`, function `resolve`):
 
-| Fichier en conflit | Règle |
+| Conflicting file | Rule |
 |---|---|
-| Une fiche par fichier (semaine d'un pilote, utilisateur, mission, suivi, configuration…) | la plus récente (`updated_at`) l'emporte ; l'autre est gardée dans `<dossier>/_conflits/<nom>.<locale\|distante>.<date>` et signalée |
-| `missions/affectations.json` | fusion à trois (ancêtre commun, ma version, la leur) par affectation (mission, pilote, rôle) ; modifiée des deux côtés : la plus récente |
-| `missions/affectations_log.json` | journal en ajout seul : les deux côtés réunis, triés par date |
-| Supprimé d'un côté, modifié de l'autre | la version modifiée est gardée |
-| `cr/missions.yaml` (tous les CR) | comme une fiche : la plus récente l'emporte, l'autre dans `_conflits/` — **à fusionner à la main** (limite connue jusqu'au découpage par année, voir la dette technique) |
+| One record per file (a pilot's week, user, mission, follow-up, configuration…) | the most recent (`updated_at`) wins; the other is kept in `<dossier>/_conflits/<nom>.<locale\|distante>.<date>` and reported |
+| `missions/affectations.json` | three-way merge (common ancestor, my version, theirs) per assignment (mission, pilot, role); modified on both sides: the most recent |
+| `missions/affectations_log.json` | append-only log: both sides combined, sorted by date |
+| Deleted on one side, modified on the other | the modified version is kept |
+| `cr/missions.yaml` (all reports) | like a record: the most recent wins, the other goes to `_conflits/` — **to be merged by hand** (known limitation until the split by year, see the technical debt) |
 
-## 8. Identité et sécurité
+## 8. Identity and security
 
-- **Auteur des commits** : le trigramme de l'utilisateur connecté (utilisateur usurpé compris), adresse
-  `<tri>@defa.local`. Sans trigramme, la synchronisation est refusée (notification).
-- **Accès** : les routes `/__setup/sync-status` et `/__setup/sync` ne répondent qu'aux pages de cette machine (en-tête
-  `Host` local, en-tête `X-SOG-Setup`), comme les autres routes du lanceur.
-- **Identifiants git** : ceux du système (clé SSH, gestionnaire d'identifiants) ; git ne pose jamais de question
-  (`GIT_TERMINAL_PROMPT=0`) ; la suite ne stocke aucun identifiant.
-- **Droits** : en transport git, chacun peut écrire tout le pool (les rôles sont vérifiés par les pages). La
-  vérification par un serveur viendra avec le moteur central (voir la [feuille de route](ROADMAP.md)).
+- **Commit author**: the trigram of the signed-in user (including an impersonated user), address
+  `<tri>@defa.local`. Without a trigram, synchronisation is refused (notification).
+- **Access**: the routes `/__setup/sync-status` and `/__setup/sync` only answer pages on this machine (local `Host`
+  header, `X-SOG-Setup` header), like the launcher's other routes.
+- **Git credentials**: the system's own (SSH key, credential manager); git never asks a question
+  (`GIT_TERMINAL_PROMPT=0`); the suite stores no credentials.
+- **Permissions**: over git transport, anyone can write the whole pool (roles are checked by the pages).
+  Server-side checking will come with the central engine (see the [roadmap](ROADMAP.md)).
 
-## 9. Plusieurs utilisateurs, en attendant le serveur central
+## 9. Several users, pending the central server
 
-- **Recevoir** : à chaque lancement, le lanceur fait un `git pull` de `data/` ; le bouton « Synchroniser » reçoit
-  aussi ce qui est arrivé depuis (son compteur l'annonce, dépôt distant relu à la fréquence réglée).
-- **Envoyer** : le bouton « Synchroniser » commite les changements du poste, fusionne avec ceux des autres et pousse.
-- **Ce qu'il faut à chaque poste qui envoie** : git installé, la suite ouverte par le lanceur, un **droit d'écriture
-  sur le dépôt de données** (un compte par personne sur l'hébergeur git, ou un compte partagé), et une **clé SSH**
-  (adresse `git@…`) ou des **identifiants HTTPS enregistrés dans git** (adresse `https://…`).
-- **Préciser et vérifier le dépôt** : Premier lancement, étape 1, carte « Dépôt git de synchronisation des données » —
-  adresse `git@hôte:compte/dépôt.git` ou `https://hôte/compte/dépôt.git`, « Vérifier » (le dépôt répond-il depuis ce
-  poste ? `git ls-remote`, 30 s au plus, sans aucune question) et « Enregistrer » (dépôt distant de `data/` ; sans
-  données encore, l'adresse sert à les récupérer). **Jamais bloquant** : un dépôt qui ne répond pas (accès refusé,
-  introuvable, hôte injoignable) est signalé, la suite fonctionne, sans partage. Une branche absente du dépôt distant
-  est créée par la première synchronisation.
-- **Poste sans git ni droit d'écriture** : choisir comme dossier des données un **dossier partagé** (Synology,
-  OneDrive…) que synchronise un poste qui a git (le Centre, par exemple) ; ses écritures arrivent dans ce dossier, le
-  poste équipé les envoie au dépôt. C'est ce que le serveur central rendra inutile : un compte suffira
-  ([ROADMAP.md](ROADMAP.md), étape 2).
+- **Receive**: at each start, the launcher runs a `git pull` of `data/`; the "Synchronise" button also receives
+  whatever has arrived since (its counter shows it, remote repository rechecked at the configured frequency).
+- **Send**: the "Synchronise" button commits the workstation's changes, merges them with everyone else's and pushes.
+- **What each sending workstation needs**: git installed, the suite opened through the launcher, **write access
+  to the data repository** (one account per person on the git host, or a shared account), and an **SSH key**
+  (address `git@…`) or **HTTPS credentials stored in git** (address `https://…`).
+- **Specifying and checking the repository**: First launch, step 1, card "Git repository for data synchronisation" —
+  address `git@hôte:compte/dépôt.git` or `https://hôte/compte/dépôt.git`, "Check" (does the repository answer from this
+  workstation? `git ls-remote`, 30 s at most, without any question asked) and "Save" (remote repository of `data/`; with no
+  data yet, the address is used to fetch it). **Never blocking**: a repository that does not answer (access denied,
+  not found, host unreachable) is reported, and the suite keeps working, without sharing. A branch missing from the remote
+  repository is created by the first synchronisation.
+- **Workstation without git or write access**: choose as data folder a **shared folder** (Synology,
+  OneDrive…) synchronised by a workstation that has git (the Centre, for example); its writes land in that folder, and the
+  equipped workstation pushes them to the repository. This is what the central server will make unnecessary: an account will be enough
+  ([ROADMAP.md](ROADMAP.md), step 2).
 
-## 10. Exploitation
+## 10. Operations
 
-| Situation | Que faire |
+| Situation | What to do |
 |---|---|
-| **Première synchronisation** | le bouton compte tout ce qui n'a jamais été commité dans `data/` ; le premier clic l'envoie et crée la branche distante si besoin |
-| **Notification de conflit** | ouvrir le fichier indiqué dans `_conflits/`, comparer avec le fichier gardé, reporter à la main ce qui manque, synchroniser ; supprimer la copie ensuite |
-| « Une fusion ou un rebase est en cours dans data/ » | une opération git manuelle n'est pas finie : `git -C data merge --abort` (ou la terminer), puis recommencer |
-| « Commit local seulement : pas de dépôt distant » | `data/` n'a pas de dépôt distant : rien n'est partagé |
-| « Synchronisation interrompue : … » | message de git (réseau, accès au dépôt distant refusé…) ; rien n'a été perdu, recommencer plus tard |
-| Lanceur injoignable | la synchronisation exige le lanceur (git ne tourne pas dans le navigateur) |
-| Une page affiche une vieille donnée après un changement fait hors de la suite sans lanceur | Paramètres › Maintenance › Caches › Index des données : Purger |
+| **First synchronisation** | the button counts everything that has never been committed in `data/`; the first click pushes it and creates the remote branch if needed |
+| **Conflict notification** | open the file indicated in `_conflits/`, compare it with the kept file, carry over by hand what is missing, synchronise; then delete the copy |
+| "A merge or rebase is in progress in data/" | a manual git operation has not finished: `git -C data merge --abort` (or finish it), then try again |
+| "Local commit only: no remote repository" | `data/` has no remote repository: nothing is shared |
+| "Synchronisation interrupted: …" | git message (network, access to the remote repository denied…); nothing has been lost, try again later |
+| Launcher unreachable | synchronisation requires the launcher (git does not run in the browser) |
+| A page shows stale data after a change made outside the suite without the launcher | Settings › Maintenance › Caches › Data index: Purge |
 
-**Essais sans risque** :
+**Risk-free trials**:
 
-- `python tools/data_sync.py --essai` : dépôt distant et deux copies temporaires, modifications croisées, conflit,
-  fusion, réception ; tout est vérifié puis effacé ;
-- `python tools/launch.py --port 8774 --data <copie de data>` : sert une copie de `data/` (par exemple un clone d'un
-  dépôt nu) pour essayer le bouton dans le navigateur sans toucher au vrai dépôt.
+- `python tools/data_sync.py --essai`: remote repository and two temporary copies, cross changes, conflict,
+  merge, reception; everything is checked then erased;
+- `python tools/launch.py --port 8774 --data <copie de data>`: serves a copy of `data/` (for example a clone of a
+  bare repository) to try the button in the browser without touching the real repository.
 
-## 11. Évolution : le webservice
+## 11. Next step: the web service
 
-Le même pool pourra passer par un **moteur central** (webservice) au lieu de git, sans changer le format des fichiers :
-`GET /v1/changes?since=`, `GET /v1/file/<chemin>` (avec `ETag`), `PUT` avec `If-Match` (412 → fusion fiche par fiche,
-nouvel essai), comptes et rôles vérifiés par le serveur. Détail et calendrier : [ROADMAP.md](ROADMAP.md).
+The same pool will be able to go through a **central engine** (web service) instead of git, without changing the file format:
+`GET /v1/changes?since=`, `GET /v1/file/<chemin>` (with `ETag`), `PUT` with `If-Match` (412 → record-by-record merge,
+retry), accounts and roles checked by the server. Details and schedule: [ROADMAP.md](ROADMAP.md).
 
-## 12. Fichiers
+## 12. Files
 
-| Fichier | Contenu |
+| File | Content |
 |---|---|
-| `shared/sync.js` | bouton « Synchroniser » de l'en-tête, état, compte rendu en notifications |
-| `tools/data_sync.py` | passage de synchronisation, fusion fiche par fiche, essai sur copies |
-| `tools/launch.py` | routes `/__setup/sync-status`, `/__setup/sync` ; index du dossier refaits à la demande ; option `--data` |
-| `shared/assignments.js` | `readData`, `readIndexed`, `writeData`, `flushData`, boîte d'envoi, verrous |
-| `shared/data_index.js` | base `defaIndex` (missions, CR, copies signées) |
-| `shared/dispos.js`, `shared/users.js` | lectures par signature des déclarations et des fiches ; index du dossier tenu à jour à l'écriture |
-| `docs/INDEX_DONNEES.md` | conception d'ensemble (index, réplication, expiration, conflits, étapes) |
+| `shared/sync.js` | header "Synchronise" button, state, report as notifications |
+| `tools/data_sync.py` | synchronisation pass, record-by-record merge, trial on copies |
+| `tools/launch.py` | routes `/__setup/sync-status`, `/__setup/sync`; folder indexes rebuilt on demand; option `--data` |
+| `shared/assignments.js` | `readData`, `readIndexed`, `writeData`, `flushData`, outbox, locks |
+| `shared/data_index.js` | database `defaIndex` (missions, reports, signed copies) |
+| `shared/dispos.js`, `shared/users.js` | signature-based reads of declarations and records; folder index kept up to date on write |
+| `docs/INDEX_DONNEES.md` | overall design (index, replication, expiry, conflicts, steps) |

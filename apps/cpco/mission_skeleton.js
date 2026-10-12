@@ -384,11 +384,15 @@
           summary: '',
           detailed: '',
           sections: [{
+            type: 'introduction',
             title: 'Introduction',
-            content: ''
+            content: '',
+            named: true
           }, {
+            type: 'timeline',
             title: 'Chronologie',
-            content: ''
+            content: '',
+            named: true
           }]
         }
       });

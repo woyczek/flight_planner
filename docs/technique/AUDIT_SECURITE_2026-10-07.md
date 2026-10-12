@@ -1,642 +1,642 @@
-# Audit de sécurité — 7 octobre 2026
+# Security audit — 7 October 2026
 
-Suite de l'[audit du 2 octobre](AUDIT_SECURITE_2026-10-02.md). Quatre questions :
+Follow-up to the [audit of 2 October](AUDIT_SECURITE_2026-10-02.md). Four questions:
 
-1. quelles failles peuvent faire **sortir des données** (évasion) ;
-2. quelle est la **surface d'attaque locale** (ce qui écoute ou s'exécute sur le poste d'un pilote) ;
-3. comment éviter que la suite fasse du poste un **zombie** (code étranger exécuté, poste piloté de l'extérieur) ;
-4. comment préparer un **mode client/serveur**, avec les données nominatives derrière un webservice authentifié.
+1. which flaws can let **data get out** (exfiltration);
+2. what is the **local attack surface** (what listens or runs on a pilot's machine);
+3. how to keep the suite from turning the machine into a **zombie** (foreign code executed, machine controlled from outside);
+4. how to prepare a **client/server mode**, with personal data behind an authenticated web service.
 
-Périmètre : `develop` au commit `e230773a`, plus le premier lancement repensé (`43a33d89`) pour les identifiants
-(pages `apps/`, scripts `shared/`, lanceur `tools/launch.py`,
-synchronisation `tools/data_sync.py`, mise à jour `tools/update_suite.py` et `shared/suite_update.js`, `lancer.cmd` /
-`lancer.sh`). Méthode : lecture du code, traces des sources non fiables jusqu'aux points d'insertion HTML, essais du
-lanceur sur un jeu d'essai (requêtes forgées, page hostile servie depuis une autre origine). Aucune donnée réelle lue.
+Scope: `develop` at commit `e230773a`, plus the redesigned first run (`43a33d89`) for credentials
+(pages `apps/`, scripts `shared/`, launcher `tools/launch.py`,
+synchronisation `tools/data_sync.py`, update `tools/update_suite.py` and `shared/suite_update.js`, `lancer.cmd` /
+`lancer.sh`). Method: code reading, tracing untrusted sources down to the HTML insertion points, tests of the
+launcher on a test data set (forged requests, hostile page served from another origin). No real data read.
 
-## Synthèse
+## Summary
 
-Le lanceur et les outils Python sont sains sur les points classiques : écoute sur la boucle locale seulement,
-contrôle de l'en-tête `Host` (DNS rebinding), interface `/__setup/` fermée aux autres sites, aucune commande shell,
-aucun `eval`, TLS jamais désactivé, Python installé par winget sans élévation.
+The launcher and the Python tools are sound on the classic points: listening on the loopback only,
+`Host` header check (DNS rebinding), `/__setup/` interface closed to other sites, no shell command,
+no `eval`, TLS never disabled, Python installed by winget without elevation.
 
-Le risque principal est ailleurs. **Les données partagées sont du code**. `data_tree.js`, `references/*.js` et
-`cr/mission_ledger_defaults.js` sont chargés par `<script>`. Ces scripts tournent dans l'origine de la suite, qui :
+The main risk lies elsewhere. **Shared data is code**. `data_tree.js`, `references/*.js` and
+`cr/mission_ledger_defaults.js` are loaded by `<script>`. These scripts run in the suite's origin, which:
 
-- lit tous les secrets du navigateur et du dossier `secrets/` ;
-- appelle toute l'interface du lanceur ;
-- garde des autorisations d'écriture sur le dossier de l'application et sur celui de X-Plane.
+- reads all the secrets of the browser and of the `secrets/` folder;
+- calls the whole launcher interface;
+- holds write permissions on the application folder and on the X-Plane folder.
 
-Quiconque peut écrire dans le dépôt de données peut donc lire tout ce que voit un pilote, et finir par exécuter du
-code natif sur son poste. Ce peut être un membre, un compte framagit volé, une archive « reçue par mail » ou une faille
-XSS chez un pilote qui synchronise.
+Anyone who can write to the data repository can therefore read everything a pilot sees, and end up executing
+native code on their machine. That can be a member, a stolen framagit account, an archive “received by email” or an
+XSS flaw at a pilot who synchronises.
 
-S'y ajoute une fuite directe, **prouvée** : n'importe quel site web visité pendant que la suite tourne peut lire les
-fichiers `data/*.js` par simple `<script src>`.
+On top of that comes a direct, **proven** leak: any website visited while the suite is running can read the
+`data/*.js` files with a simple `<script src>`.
 
-| # | Gravité | Constat | Axe |
+| # | Severity | Finding | Axis |
 |---|---|---|---|
-| [C1](#c1) | Critique | Données du dépôt exécutées comme JavaScript dans l'origine de la suite | évasion, zombie |
-| [C2](#c2) | Critique | Fichiers `data/*.js` lisibles par n'importe quel site web (inclusion de script entre sites) — **prouvé** | évasion |
-| [C3](#c3) | Critique | Archive de données : `.git/` extrait tel quel → commande lancée par git (`core.fsmonitor`) | zombie |
-| [E1](#e1) | Élevé | `secrets/`, `.git/`, listes de dossiers servis en clair — **prouvé** | évasion |
-| [E2](#e2) | Élevé | `/__setup/downloads` : motif libre → tout le dossier Téléchargements — **prouvé** | évasion |
-| [E3](#e3) | Élevé | Dépôt distant de `data/` modifiable par la page, puis « Synchroniser » pousse tout | évasion |
-| [E4](#e4) | Élevé | Poignées de dossiers en écriture sur la racine de l'application et sur X-Plane | zombie |
-| [E5](#e5) | Élevé | Version distante injectée sans échappement dans l'en-tête de chaque page | zombie |
-| [E6](#e6) | Élevé | Mises à jour de la suite sans signature | zombie |
-| [E7](#e7) | Élevé | Comptes : empreintes et rôles dans le dépôt partagé, droits vérifiés par les pages seules | évasion |
-| [M1](#m1) | Moyen | XSS : couleur de catégorie et statut de mission (dépôt partagé), profil de performance (SimBrief, `.lnmperf`), aide (`?doc=` externe et liens `javascript:`) | évasion |
-| [M2](#m2) | Moyen | Pas de CSP, pas de protection contre l'encadrement | évasion |
-| [M3](#m3) | Moyen | Origine `127.0.0.1:8000` partagée avec tout autre serveur local | évasion, zombie |
-| [M4](#m4) | Moyen | Code tiers : pdf.js depuis jsDelivr sans intégrité, js-yaml 4.1.0, jsPDF 2.5.2 | zombie |
-| [M5](#m5) | Moyen | Exécutables cherchés dans le dossier courant (`lancer.cmd`, `git`) | zombie |
-| [M6](#m6) | Moyen | Secrets en clair (fichiers, localStorage), identifiants possibles dans l'adresse du dépôt | évasion |
-| [F](#faible) | Faible | SSH `accept-new`, `--` manquant devant les adresses, `git lfs install` global, aide en `postMessage('*')`… | — |
+| [C1](#c1) | Critical | Repository data executed as JavaScript in the suite's origin | exfiltration, zombie |
+| [C2](#c2) | Critical | `data/*.js` files readable by any website (cross-site script inclusion) — **proven** | exfiltration |
+| [C3](#c3) | Critical | Data archive: `.git/` extracted as is → command run by git (`core.fsmonitor`) | zombie |
+| [E1](#e1) | High | `secrets/`, `.git/`, directory listings served in clear — **proven** | exfiltration |
+| [E2](#e2) | High | `/__setup/downloads`: free pattern → the whole Downloads folder — **proven** | exfiltration |
+| [E3](#e3) | High | Remote of `data/` changeable by the page, then “Synchronise” pushes everything | exfiltration |
+| [E4](#e4) | High | Write folder handles on the application root and on X-Plane | zombie |
+| [E5](#e5) | High | Remote version injected without escaping into the header of every page | zombie |
+| [E6](#e6) | High | Suite updates without signature | zombie |
+| [E7](#e7) | High | Accounts: hashes and roles in the shared repository, rights checked by the pages alone | exfiltration |
+| [M1](#m1) | Medium | XSS: category colour and mission status (shared repository), performance profile (SimBrief, `.lnmperf`), help (external `?doc=` and `javascript:` links) | exfiltration |
+| [M2](#m2) | Medium | No CSP, no framing protection | exfiltration |
+| [M3](#m3) | Medium | `127.0.0.1:8000` origin shared with any other local server | exfiltration, zombie |
+| [M4](#m4) | Medium | Third-party code: pdf.js from jsDelivr without integrity, js-yaml 4.1.0, jsPDF 2.5.2 | zombie |
+| [M5](#m5) | Medium | Executables looked up in the current folder (`lancer.cmd`, `git`) | zombie |
+| [M6](#m6) | Medium | Secrets in clear (files, localStorage), credentials possible in the repository address | exfiltration |
+| [F](#faible) | Low | SSH `accept-new`, missing `--` before addresses, global `git lfs install`, help using `postMessage('*')`… | — |
 
-## État des corrections
+## Status of the fixes
 
-**Lots 1 à 3 faits le 7 octobre** (détail : [changelog](../CHANGELOG.md), section Sécurité du « Non publié »).
-Vérifiés par la même page hostile, des requêtes forgées et le chargement des 60 pages de la suite.
+**Batches 1 to 3 done on 7 October** (details: [changelog](../CHANGELOG.md), Security section of “Unreleased”).
+Verified with the same hostile page, forged requests and loading the 60 pages of the suite.
 
-| Constat | État |
+| Finding | Status |
 |---|---|
-| C2, E1, E2, E3, E5, M5 | **corrigés** |
-| M1 | **corrigé** (couleurs, statut, profil de performance, aide, altitude-densité, couleurs d'ODV) |
-| C1 | **palliatif** : `.js` de `data/` servis et commités seulement au format des données (`tools/data_guard.py`) ; le fond (données en JSON, lot 6) reste à faire |
-| C3 | **corrigé** à l'extraction (ni `.git` ni exécutable) ; git durci (`core.fsmonitor`, `ext::`, sous-modules) |
-| M2 | **partiel** : protection contre l'encadrement en place ; la CSP qui ferme les sorties (`connect-src`) reste au lot 4 |
-| M6 | **partiel** : plus de mot de passe ni de jeton dans l'adresse du dépôt, `secrets/` plus servi ; secrets toujours en clair sur le disque et dans le stockage du navigateur (lot 8) |
-| E4, E6, E7, M3, M4 | à faire (lots 4, 5, 7, 9) |
+| C2, E1, E2, E3, E5, M5 | **fixed** |
+| M1 | **fixed** (colours, status, performance profile, help, density altitude, ODV colours) |
+| C1 | **stopgap**: `.js` files of `data/` served and committed only in the data format (`tools/data_guard.py`); the underlying fix (data in JSON, batch 6) remains to be done |
+| C3 | **fixed** at extraction (neither `.git` nor executable); git hardened (`core.fsmonitor`, `ext::`, submodules) |
+| M2 | **partial**: framing protection in place; the CSP that closes the exits (`connect-src`) remains in batch 4 |
+| M6 | **partial**: no more password or token in the repository address, `secrets/` no longer served; secrets still in clear on disk and in browser storage (batch 8) |
+| E4, E6, E7, M3, M4 | to do (batches 4, 5, 7, 9) |
 
-Choix faits en corrigeant :
+Choices made while fixing:
 
-- **Crochets git conservés.** `core.hooksPath` n'est pas neutralisé : les crochets de Git LFS en ont besoin pour
-  envoyer les fichiers. Le danger venait du `.git/` reçu dans une archive, qui n'est plus extrait.
-- **Navigations venues d'un autre site refusées.** Le lanceur rend une page explicative avec un lien vers l'accueil,
-  jamais vers l'adresse demandée.
-- **Changement de dépôt distant confirmé hors du navigateur.** Pour un autre dépôt que celui en place ou celui de la
-  configuration, le lanceur ouvre une fenêtre Oui / Non du système. Elle montre l'adresse actuelle et la nouvelle,
-  avec « Non » par défaut. Une confirmation dans la page ne protégerait rien, puisqu'un script injecté la validerait
-  lui-même. Après un « Non », aucune nouvelle demande pendant 30 s.
+- **Git hooks kept.** `core.hooksPath` is not neutralised: the Git LFS hooks need it to
+  send the files. The danger came from the `.git/` received in an archive, which is no longer extracted.
+- **Navigations coming from another site refused.** The launcher renders an explanatory page with a link to the home page,
+  never to the requested address.
+- **Remote repository change confirmed outside the browser.** For a repository other than the current one or the one in the
+  configuration, the launcher opens a system Yes / No window. It shows the current and the new address,
+  with “No” as default. A confirmation in the page would protect nothing, since an injected script would validate it
+  itself. After a “No”, no new request for 30 s.
 
-## Qui attaque
+## Who attacks
 
-| Attaquant | Ce qu'il contrôle | Constats qui le servent |
+| Attacker | What they control | Findings that serve them |
 |---|---|---|
-| **Site web quelconque** visité pendant que la suite tourne | des requêtes de son navigateur vers `127.0.0.1:<port>` | C2, M2 (encadrement), M3 |
-| **Membre du dépôt de données** (ou son compte framagit volé) | le contenu de `data/` chez tous les pilotes, à la prochaine synchronisation ou au prochain lancement (`git pull`) | C1, M1, E7 → E1, E2, E3, E4 |
-| **Utilisateur d'IVAO ou VATSIM** (n'importe qui) | indicatifs, remarques, textes des flux publics affichés par la suite | aucun : flux écrits en `textContent` ou validés ([annexe C](#annexe-c--inventaire-des-insertions-html)) |
-| **Auteur d'un profil partagé** (appareil SimBrief, profil Little Navmap) | nom, indicatif, commentaires du profil collé ou importé | M1 (planificateur de performances) |
-| **Compte mainteneur framagit** volé | le code de la suite, le `repository_tree` lu par le contrôle de mise à jour | E5, E6 |
-| **Pièce jointe** (archive de données par mail) | le contenu extrait dans `data/` | C3, C1 |
-| **Autre programme du poste** | n'importe quel port de la boucle locale | M3, M5 |
+| **Any website** visited while the suite is running | requests from their browser to `127.0.0.1:<port>` | C2, M2 (framing), M3 |
+| **Member of the data repository** (or their stolen framagit account) | the content of `data/` at every pilot, at the next synchronisation or the next launch (`git pull`) | C1, M1, E7 → E1, E2, E3, E4 |
+| **IVAO or VATSIM user** (anyone) | callsigns, remarks, texts of the public feeds displayed by the suite | none: feeds written with `textContent` or validated ([appendix C](#appendix-c--inventory-of-html-insertions)) |
+| **Author of a shared profile** (SimBrief airframe, Little Navmap profile) | name, callsign, comments of the pasted or imported profile | M1 (performance planner) |
+| Stolen **framagit maintainer account** | the suite's code, the `repository_tree` read by the update check | E5, E6 |
+| **Attachment** (data archive by email) | the content extracted into `data/` | C3, C1 |
+| **Other program on the machine** | any loopback port | M3, M5 |
 
-Une fois qu'un script tourne dans l'origine de la suite (C1, C3, E5, M1 ou une XSS), tout le reste suit :
+Once a script runs in the suite's origin (C1, C3, E5, M1 or an XSS), everything else follows:
 
-- il lit le localStorage, l'IndexedDB, `/secrets/` et Téléchargements ;
-- il change le dépôt distant et pousse ;
-- il réécrit les fichiers de l'application ;
-- il envoie le tout où il veut, faute de CSP.
+- it reads localStorage, IndexedDB, `/secrets/` and Downloads;
+- it changes the remote repository and pushes;
+- it rewrites the application files;
+- it sends it all wherever it wants, for lack of a CSP.
 
-**Corriger les points d'entrée ne suffit pas, il faut aussi réduire ce que l'origine a le droit de faire.**
+**Fixing the entry points is not enough; what the origin is allowed to do must also be reduced.**
 
-## 1. Évasion de données
+## 1. Data exfiltration
 
-### <a id="c2"></a>C2 — Inclusion de script entre sites (prouvé)
+### <a id="c2"></a>C2 — Cross-site script inclusion (proven)
 
-Le lanceur sert tout fichier à quiconque envoie `Host: 127.0.0.1:<port>`. C'est le cas de **toute page web** qui
-charge `<script src="http://127.0.0.1:8000/data/references/defa_reference.js">`. La protection `Host` du 2 octobre
-vise le DNS rebinding, pas ce cas.
+The launcher serves any file to whoever sends `Host: 127.0.0.1:<port>`. That is the case of **any web page** that
+loads `<script src="http://127.0.0.1:8000/data/references/defa_reference.js">`. The `Host` protection of 2 October
+targets DNS rebinding, not this case.
 
-Les fichiers de données déclarent des variables globales (`window.DATA_TREE`, `window.DEFA_REFERENCE`,
-`window.DEFA_FLEET`, `window.MISSION_CALLSIGNS`), que la page hostile lit ensuite.
+The data files declare global variables (`window.DATA_TREE`, `window.DEFA_REFERENCE`,
+`window.DEFA_FLEET`, `window.MISSION_CALLSIGNS`), which the hostile page then reads.
 
-**Essai** : suite sur le port 8790 (jeu d'essai), page hostile servie depuis `localhost:8791`. La page a lu
-`DATA_TREE` (organisation des données), `DEFA_REFERENCE` (trigrammes, premiers et derniers vols, nombre de vols, types)
-et `REPOSITORY_TREE` (configuration, adresses des dépôts). Les JSON restent illisibles : sans en-tête CORS, `fetch` est
-bloqué.
+**Test**: suite on port 8790 (test data set), hostile page served from `localhost:8791`. The page read
+`DATA_TREE` (data organisation), `DEFA_REFERENCE` (trigrams, first and last flights, number of flights, types)
+and `REPOSITORY_TREE` (configuration, repository addresses). The JSON files remain unreadable: without a CORS header,
+`fetch` is blocked.
 
-Le port est prévisible (8000, puis 8001…). Le filtre « accès au réseau local » des Chrome récents peut demander une
-autorisation, mais ni tous les navigateurs ni tous les profils ne l'appliquent.
+The port is predictable (8000, then 8001…). The “local network access” filter of recent Chrome versions may ask for
+permission, but neither all browsers nor all profiles apply it.
 
-**Correction (lanceur, quelques lignes)** : refuser toute requête dont `Sec-Fetch-Site` vaut `cross-site` ou
-`same-site`. Seuls `same-origin` et `none` (adresse tapée, favori, ouverture par le lanceur) passent. Tous les
-navigateurs pris en charge envoient ces en-têtes.
+**Fix (launcher, a few lines)**: refuse any request whose `Sec-Fetch-Site` is `cross-site` or
+`same-site`. Only `same-origin` and `none` (typed address, bookmark, opening by the launcher) go through. All
+supported browsers send these headers.
 
-Les navigations venues d'un autre site sont refusées aussi. Aucun usage n'en a besoin, et elles ouvrent la porte aux
-liens piégés. Exemple : l'aide accepte un document externe (`aide.html?doc=https://…`, annexe C).
+Navigations coming from another site are refused too. No use case needs them, and they open the door to
+booby-trapped links. Example: the help accepts an external document (`aide.html?doc=https://…`, appendix C).
 
-### <a id="e1"></a>E1 — `secrets/`, `.git/` et listes de dossiers servis (prouvé)
+### <a id="e1"></a>E1 — `secrets/`, `.git/` and directory listings served (proven)
 
-Le serveur statique sert toute la racine de la suite (`launch.py:376`), avec les listes de dossiers de
+The static server serves the whole root of the suite (`launch.py:376`), with the directory listings of
 `SimpleHTTPRequestHandler`.
 
-**Essai** : `GET /secrets/ivao.json` a rendu la clé IVAO en clair, et `GET /secrets/` en a listé le contenu. Le code
-(`launch.py:630`) dit pourtant « jamais relus par la page » ; la route `/__setup/secrets` respecte ce principe (4 derniers
-caractères seulement), le serveur statique le contourne.
+**Test**: `GET /secrets/ivao.json` returned the IVAO key in clear, and `GET /secrets/` listed its content. The code
+(`launch.py:630`) nevertheless says “never read back by the page”; the `/__setup/secrets` route respects this principle (last 4
+characters only), the static server bypasses it.
 
-Sont servis de la même façon :
+Served in the same way:
 
-- `secrets/users/<TRI>.json` (clientSecret IVAO de chaque utilisateur) ;
-- `/.git/` et `/data/.git/` (historique complet, `config` avec l'adresse du dépôt, et un éventuel jeton si l'adresse en
-  contient un, voir M6) ;
-- `data/local/defa_local_store.yaml` (instantané du localStorage) ;
+- `secrets/users/<TRI>.json` (IVAO clientSecret of each user);
+- `/.git/` and `/data/.git/` (full history, `config` with the repository address, and a possible token if the address
+  contains one, see M6);
+- `data/local/defa_local_store.yaml` (snapshot of the localStorage);
 - `tools/.defa_site.json`.
 
-C'est réservé à la même origine (pas de CORS), mais tout script de la suite y a accès.
+This is restricted to the same origin (no CORS), but any script of the suite has access to it.
 
-**Correction** :
+**Fix**:
 
-- 403 sur `/secrets/`, tout chemin dont un segment commence par un point (`.git`, `.defa_site.json`…), et `data/local/` ;
-- plus de listes de dossiers (`list_directory` → 404) ;
-- `.git/` : seul `HEAD` (numéro de commit du pied de page) peut être donné par une route dédiée.
+- 403 on `/secrets/`, any path one of whose segments starts with a dot (`.git`, `.defa_site.json`…), and `data/local/`;
+- no more directory listings (`list_directory` → 404);
+- `.git/`: only `HEAD` (commit number in the footer) may be given, through a dedicated route.
 
-### <a id="e2"></a>E2 — Téléchargements lisibles par motif (prouvé)
+### <a id="e2"></a>E2 — Downloads readable by pattern (proven)
 
-`/__setup/downloads?glob=…` accepte tout motif de 3 à 80 caractères contenant `*`.
+`/__setup/downloads?glob=…` accepts any pattern of 3 to 80 characters containing `*`.
 
-**Essai** : `*.*` a rendu la liste du dossier Téléchargements de l'utilisateur, et `&name=` rend n'importe lequel de
-ces fichiers. Tout script de la suite peut donc lire tout le dossier Téléchargements.
+**Test**: `*.*` returned the listing of the user's Downloads folder, and `&name=` returns any one of
+these files. Any script of the suite can therefore read the whole Downloads folder.
 
-**Correction** : liste fermée côté lanceur des motifs utiles (sources aéronautiques déclarées dans `aero_sources.js`).
-La page envoie un identifiant de source, plus un motif.
+**Fix**: closed list, on the launcher side, of the useful patterns (aeronautical sources declared in `aero_sources.js`).
+The page sends a source identifier, no longer a pattern.
 
-### <a id="e3"></a>E3 — Changement du dépôt distant, puis envoi
+### <a id="e3"></a>E3 — Remote repository change, then push
 
-Deux routes s'enchaînent :
+Two routes chain together:
 
-- `POST /__setup/sync-remote {url, save: true}` remplace l'adresse du dépôt distant de `data/` (`data_sync.set_remote`) ;
-  `REMOTE_RE` accepte toute adresse `https://` ou SSH ;
-- `POST /__setup/sync` pousse ensuite tout l'historique du pool : fiches utilisateurs avec empreintes, dispos, CR, ODV,
-  affectations.
+- `POST /__setup/sync-remote {url, save: true}` replaces the address of the remote repository of `data/` (`data_sync.set_remote`);
+  `REMOTE_RE` accepts any `https://` or SSH address;
+- `POST /__setup/sync` then pushes the whole history of the pool: user records with hashes, availability, reports, ODV,
+  assignments.
 
-Aucune requête sortante n'est visible côté page : c'est git qui envoie.
+No outgoing request is visible on the page side: git does the sending.
 
-**Correction** :
+**Fix**:
 
-- changer de dépôt distant seulement après confirmation hors du navigateur (fenêtre Oui / Non ouverte par le lanceur), ou vers un hôte d'une liste
-  fixée dans `config/repository_tree` (framagit.org) ;
-- à la synchronisation, refuser de pousser vers un hôte qui n'est pas celui du clone d'origine.
+- change the remote repository only after confirmation outside the browser (Yes / No window opened by the launcher), or towards a host from a list
+  fixed in `config/repository_tree` (framagit.org);
+- at synchronisation, refuse to push to a host other than that of the original clone.
 
-### <a id="e7"></a>E7 — Comptes et rôles dans le dépôt partagé
+### <a id="e7"></a>E7 — Accounts and roles in the shared repository
 
-`data/utilisateurs/<TRI>.json` contient :
+`data/utilisateurs/<TRI>.json` contains:
 
-- le **rôle** ;
-- l'**empreinte du mot de passe** (PBKDF2-SHA256, 310 000 itérations, salée : correct en soi).
+- the **role**;
+- the **password hash** (PBKDF2-SHA256, 310,000 iterations, salted: correct in itself).
 
-Ces fiches sont synchronisées chez tous les membres. Il en découle :
+These records are synchronised to all members. It follows that:
 
-- chacun peut tenter de casser les mots de passe des autres hors ligne, dangereux s'ils sont réutilisés ailleurs ;
-- chacun peut s'attribuer `admin_centre` en éditant sa fiche ;
-- la session (`suiteSession:v1`) se forge dans le localStorage.
+- anyone can try to crack the others' passwords offline, dangerous if they are reused elsewhere;
+- anyone can grant themselves `admin_centre` by editing their record;
+- the session (`suiteSession:v1`) can be forged in the localStorage.
 
-La limite est connue et documentée (`users.js:13`, manuel administrateur, feuille de route étape 3). Elle n'est
-corrigeable que par un serveur (§ 4).
+The limitation is known and documented (`users.js:13`, administrator manual, roadmap step 3). It can only be
+fixed by a server (§ 4).
 
-**D'ici là**, dire clairement aux pilotes que ce mot de passe ne protège rien et ne doit être réutilisé nulle part.
+**Until then**, tell pilots clearly that this password protects nothing and must not be reused anywhere.
 
-### Autres voies de sortie
+### Other exit routes
 
-- **CR envoyés à un webservice configurable** (`mission_core/core.js:1255-1297`) : CR complet, identifiants IVAO et
-  VATSIM, jeton Bearer. L'adresse est un réglage du localStorage : un script injecté peut la détourner sans bruit.
-- **Fournisseurs tiers** : ils reçoivent des identifiants ou des zones géographiques, ce qui est attendu mais à
-  connaître ([annexe A](#annexe-a--hôtes-contactés)). Rien n'est envoyé à des services d'analyse d'audience ni de
-  traduction : la traduction automatique utilise l'API intégrée au navigateur.
+- **Reports sent to a configurable web service** (`mission_core/core.js:1255-1297`): full report, IVAO and
+  VATSIM identifiers, Bearer token. The address is a localStorage setting: an injected script can divert it silently.
+- **Third-party providers**: they receive identifiers or geographic areas, which is expected but worth
+  knowing ([appendix A](#appendix-a--hosts-contacted)). Nothing is sent to audience analytics or
+  translation services: automatic translation uses the API built into the browser.
 
-## 2. Surface d'attaque locale
+## 2. Local attack surface
 
-### Ce qui écoute
+### What listens
 
-Un seul programme écoute : le lanceur (`tools/launch.py`).
+A single program listens: the launcher (`tools/launch.py`).
 
-| Élément | État |
+| Element | Status |
 |---|---|
-| Adresses | `127.0.0.1` et `::1` seulement, premier port libre à partir de 8000 : pas joignable depuis le réseau local |
-| `Host` | exigé local sur GET, HEAD, POST (DNS rebinding) ✔ |
-| `/__setup/*` | en-tête `X-SOG-Setup` exigé ; pas de réponse à `OPTIONS` → aucune autre origine ne peut l'envoyer ✔ |
-| Fichiers statiques | **toute la racine**, listes de dossiers comprises (E1), lisibles par inclusion de script depuis tout site (C2) |
-| Taille des envois | 512 Mo au plus ✔ (lus en mémoire : saturation possible par un script de la suite, sans gravité) |
-| En-têtes | `nosniff`, `Cache-Control` ; **ni CSP, ni `frame-ancestors`** (M2) |
-| Authentification | aucune : la boucle locale suffit. Tout programme du poste (autre utilisateur Windows, outil, extension) peut appeler `/__setup/*` en ajoutant l'en-tête |
+| Addresses | `127.0.0.1` and `::1` only, first free port from 8000: not reachable from the local network |
+| `Host` | required to be local on GET, HEAD, POST (DNS rebinding) ✔ |
+| `/__setup/*` | `X-SOG-Setup` header required; no response to `OPTIONS` → no other origin can send it ✔ |
+| Static files | **the whole root**, directory listings included (E1), readable by script inclusion from any site (C2) |
+| Upload size | 512 MB at most ✔ (read into memory: saturation possible by a script of the suite, not serious) |
+| Headers | `nosniff`, `Cache-Control`; **neither CSP nor `frame-ancestors`** (M2) |
+| Authentication | none: the loopback is enough. Any program on the machine (other Windows user, tool, extension) can call `/__setup/*` by adding the header |
 
-### Ce que l'interface du lanceur permet
+### What the launcher interface allows
 
-L'interface compte 21 routes, listées en [annexe B](#annexe-b--routes-du-lanceur). Les routes sensibles, pour un
-script qui tourne dans l'origine de la suite :
+The interface has 21 routes, listed in [appendix B](#appendix-b--launcher-routes). The sensitive routes, for a
+script running in the suite's origin:
 
-| Route | Effet | Garde actuelle |
+| Route | Effect | Current guard |
 |---|---|---|
-| `GET /__setup/downloads` | lire le dossier Téléchargements | motif libre (E2) |
-| `GET /secrets/…` (statique) | lire les secrets | aucune (E1) |
-| `POST /__setup/sync-remote` + `/sync` | envoyer tout `data/` ailleurs | aucune (E3) |
-| `POST /__setup/clone` | cloner un dépôt choisi dans `data/` (si vide) | adresse validée par `REMOTE_RE` |
-| `POST /__setup/upload?kind=data` | extraire une archive dans `data/` (si vide) | chemins sortants refusés, `.git/` accepté (C3) |
-| `POST /__setup/aircraft-db`, `aero-fetch`, `defa-site` | lancer des scripts Python à paramètres filtrés | ✔ (listes de codes, pas de shell) |
-| `POST /__setup/secrets` | écrire les secrets | champs en liste fermée ✔ |
+| `GET /__setup/downloads` | read the Downloads folder | free pattern (E2) |
+| `GET /secrets/…` (static) | read the secrets | none (E1) |
+| `POST /__setup/sync-remote` + `/sync` | send all of `data/` elsewhere | none (E3) |
+| `POST /__setup/clone` | clone a chosen repository into `data/` (if empty) | address validated by `REMOTE_RE` |
+| `POST /__setup/upload?kind=data` | extract an archive into `data/` (if empty) | outgoing paths refused, `.git/` accepted (C3) |
+| `POST /__setup/aircraft-db`, `aero-fetch`, `defa-site` | run Python scripts with filtered parameters | ✔ (code lists, no shell) |
+| `POST /__setup/secrets` | write the secrets | fields in a closed list ✔ |
 
-### Ce que le navigateur a le droit de faire
+### What the browser is allowed to do
 
-C'est la partie la plus large de la surface. Avec les autorisations de dossiers (File System Access API, poignées
-gardées dans IndexedDB `missionCore/handles`), l'origine `http://127.0.0.1:8000` peut écrire dans :
+This is the widest part of the surface. With folder permissions (File System Access API, handles
+kept in IndexedDB `missionCore/handles`), the `http://127.0.0.1:8000` origin can write to:
 
-- `__repo` : racine de l'application (`file_access.js:18-22`, mode `readwrite` par défaut `:340`) ;
-- `__data`, `__ledger`, `__missions` : les données, ce qui est attendu ;
-- `__xplane`, `__xpnav` : dossier X-Plane (`maintenance_page.js:158,492`) ;
-- `__store` : sauvegarde locale, par défaut à la racine (`file_access.js:332-335`).
+- `__repo`: application root (`file_access.js:18-22`, `readwrite` mode by default `:340`);
+- `__data`, `__ledger`, `__missions`: the data, which is expected;
+- `__xplane`, `__xpnav`: X-Plane folder (`maintenance_page.js:158,492`);
+- `__store`: local backup, at the root by default (`file_access.js:332-335`).
 
-Voir E4 pour les conséquences.
+See E4 for the consequences.
 
-### Fichiers lus et exécutés au démarrage
+### Files read and executed at startup
 
-`lancer.cmd` → Python → `launch.py` :
+`lancer.cmd` → Python → `launch.py`:
 
-- `git pull --ff-only` de `data/` à chaque lancement ;
-- extraction de toute `*.zip` de la racine qui contient `data_tree.js` (si `data/` manque) ;
-- `git lfs install` (configuration git globale modifiée, sans gravité).
+- `git pull --ff-only` of `data/` at every launch;
+- extraction of any `*.zip` at the root that contains `data_tree.js` (if `data/` is missing);
+- `git lfs install` (global git configuration modified, not serious).
 
-## 3. Ne pas devenir un zombie
+## 3. Not becoming a zombie
 
-Un poste devient zombie quand du code étranger s'y exécute et y reste. Cinq chemins y mènent aujourd'hui, du plus au
-moins probable.
+A machine becomes a zombie when foreign code runs on it and stays there. Five paths lead there today, from most to
+least likely.
 
-### <a id="c1"></a>C1 — Les données sont du code
+### <a id="c1"></a>C1 — Data is code
 
-- **Mécanisme** : `shared/data_files.js:31,35` écrit des `<script src="data/…">` (`data_tree.js` sur toutes les pages,
-  `callsigns.js` sur 42, `aircraft_fleet.js` sur 31, `defa_reference.js` sur 28). `mission_reporting_config.js:9-12`
-  charge `data/cr/mission_ledger_defaults.js`.
-- **Propagation** : ces fichiers arrivent par `git pull` au lancement ou par « Synchroniser ». `cr/` et `config/` font
-  partie du pool poussé par chaque pilote (`data_sync.py:22`) : une XSS chez un pilote peut réécrire
-  `cr/mission_ledger_defaults.js` et le propager à tous. C'est un ver.
-- **Accès obtenus** : le script lit les secrets du navigateur, appelle `/__setup/*` et, par les poignées de dossiers
-  déjà accordées (E4), réécrit `tools/launch.py` ou `lancer.cmd`. Il peut aussi déposer un greffon `.xpl` (une DLL)
-  dans X-Plane. Au prochain double-clic ou au prochain vol, c'est du code natif.
-- **Correction de fond** : plus aucun fichier de données exécutable. Les pages lisent du JSON (`fetch` puis
-  `JSON.parse`). Le chargement synchrone actuel (`document.write`) devient une promesse attendue avant le rendu, ce qui
-  touche une quarantaine de pages : chantier à part entière.
-- **Correction immédiate**, sans toucher aux pages :
-  - le lanceur ne sert un `data/**/*.js` que s'il suit le gabarit de `AircraftDB/datafile.py` : commentaires,
-    `let data = <JSON>;`, puis des exports `window.NOM = data.clé;` en liste fermée. Sinon, 403 et alerte dans la
-    console ;
-  - `data_sync.py` refuse de committer ou de fusionner un `.js` hors gabarit.
-- **Côté framagit** : branche protégée sur le dépôt de données, revue obligatoire des `.js`.
+- **Mechanism**: `shared/data_files.js:31,35` writes `<script src="data/…">` tags (`data_tree.js` on every page,
+  `callsigns.js` on 42, `aircraft_fleet.js` on 31, `defa_reference.js` on 28). `mission_reporting_config.js:9-12`
+  loads `data/cr/mission_ledger_defaults.js`.
+- **Propagation**: these files arrive by `git pull` at launch or through “Synchronise”. `cr/` and `config/` are
+  part of the pool pushed by each pilot (`data_sync.py:22`): an XSS at one pilot can rewrite
+  `cr/mission_ledger_defaults.js` and propagate it to everyone. It is a worm.
+- **Access gained**: the script reads the browser's secrets, calls `/__setup/*` and, through the folder handles
+  already granted (E4), rewrites `tools/launch.py` or `lancer.cmd`. It can also drop a `.xpl` plugin (a DLL)
+  into X-Plane. At the next double-click or the next flight, it is native code.
+- **Underlying fix**: no more executable data files at all. Pages read JSON (`fetch` then
+  `JSON.parse`). The current synchronous loading (`document.write`) becomes a promise awaited before rendering, which
+  affects about forty pages: a project in its own right.
+- **Immediate fix**, without touching the pages:
+  - the launcher serves a `data/**/*.js` only if it follows the template of `AircraftDB/datafile.py`: comments,
+    `let data = <JSON>;`, then `window.NOM = data.clé;` exports from a closed list. Otherwise, 403 and a warning in the
+    console;
+  - `data_sync.py` refuses to commit or merge a `.js` that does not follow the template.
+- **On the framagit side**: protected branch on the data repository, mandatory review of the `.js` files.
 
-### <a id="c3"></a>C3 — Archive « reçue par mail »
+### <a id="c3"></a>C3 — Archive “received by email”
 
-- **Mécanisme** : `extract_data` (`launch.py:74-96`) refuse bien les chemins sortants, mais extrait `.git/` tel quel.
-  Une archive piégée peut donc contenir un `.git/config` avec `core.fsmonitor = <commande>` ou un `core.hooksPath`.
-  La commande part au premier `git status`, appelé par chaque page (`/__setup/sync-status`), puis à chaque `git pull`
-  au lancement.
-- **Sans `.git/`**, l'archive reproduit C1.
-- **Correction** :
-  - ne rien extraire sous un segment `.git` ;
-  - liste blanche d'extensions (`.json`, `.yaml`, `.md`, `.csv`, `.xml`, `.js` au gabarit) ;
-  - durcir chaque commande git de la suite avec `-c core.fsmonitor=false -c core.hooksPath=<dossier vide>
-    -c protocol.ext.allow=never -c protocol.file.allow=user -c submodule.recurse=false` ;
-  - à terme, empreinte SHA-256 de l'archive annoncée par un autre canal.
+- **Mechanism**: `extract_data` (`launch.py:74-96`) does refuse outgoing paths, but extracts `.git/` as is.
+  A booby-trapped archive can therefore contain a `.git/config` with `core.fsmonitor = <commande>` or a `core.hooksPath`.
+  The command runs at the first `git status`, called by every page (`/__setup/sync-status`), then at every `git pull`
+  at launch.
+- **Without `.git/`**, the archive reproduces C1.
+- **Fix**:
+  - extract nothing under a `.git` segment;
+  - extension allowlist (`.json`, `.yaml`, `.md`, `.csv`, `.xml`, `.js` following the template);
+  - harden every git command of the suite with `-c core.fsmonitor=false -c core.hooksPath=<dossier vide>
+    -c protocol.ext.allow=never -c protocol.file.allow=user -c submodule.recurse=false`;
+  - eventually, SHA-256 hash of the archive announced through another channel.
 
-### <a id="e4"></a>E4 — Poignées de dossiers en écriture trop larges
+### <a id="e4"></a>E4 — Write folder handles too broad
 
-- **Mécanisme** : la suite ne demande pas l'écriture au moment où elle en a besoin : elle demande la racine de
-  l'application et X-Plane en `readwrite` une fois pour toutes.
-- **Risque** : si Chrome garde l'autorisation (« Autoriser à chaque visite »), un script injecté n'a besoin d'aucun geste
-  de l'utilisateur pour réécrire le code. Ce point n'a pas été essayé en navigateur.
-- **Correction** :
-  - `__repo`, `__xplane`, `__xpnav` en `read` ;
-  - écriture réservée à `data/` ;
-  - pour les rares écritures ailleurs (CSS de textures, `save_textures`…), demande ponctuelle au clic.
+- **Mechanism**: the suite does not ask for write access when it needs it: it asks for the application root
+  and X-Plane in `readwrite` once and for all.
+- **Risk**: if Chrome keeps the permission (“Allow on every visit”), an injected script needs no user
+  gesture to rewrite the code. This point was not tested in a browser.
+- **Fix**:
+  - `__repo`, `__xplane`, `__xpnav` in `read`;
+  - writing reserved to `data/`;
+  - for the rare writes elsewhere (texture CSS, `save_textures`…), one-off request on click.
 
-### <a id="e5"></a>E5 — XSS par le contrôle de mise à jour
+### <a id="e5"></a>E5 — XSS through the update check
 
-- **Mécanisme** : `suite_update.js:108` lit `version: "([^"]+)"` dans le `repository_tree` distant. `:401` l'insère
-  sans échappement dans l'en-tête de chaque page (attribut `title` et texte). Il est mémorisé dans le localStorage,
-  donc réaffiché même hors ligne.
-- **Portée** : un compte framagit volé atteint tous les postes qui regardent les mises à jour, **sans qu'ils mettent à
-  jour**, installations par archive comprises. L'adresse source peut aussi être changée (`suiteRepo`, `:27-34`).
-- **Correction** : valider `^\d+\.\d+\.\d+(-[\w.]+)?$` à la lecture, et `esc()` à l'affichage.
+- **Mechanism**: `suite_update.js:108` reads `version: "([^"]+)"` in the remote `repository_tree`. `:401` inserts it
+  without escaping into the header of every page (`title` attribute and text). It is stored in the localStorage,
+  so displayed again even offline.
+- **Reach**: a stolen framagit account reaches every machine that checks for updates, **without them
+  updating**, archive installations included. The source address can also be changed (`suiteRepo`, `:27-34`).
+- **Fix**: validate `^\d+\.\d+\.\d+(-[\w.]+)?$` on reading, and `esc()` on display.
 
-### <a id="e6"></a>E6 — Mises à jour sans signature
+### <a id="e6"></a>E6 — Updates without signature
 
-- **Mécanisme** : `update_suite.py:150` fait `merge --ff-only origin/<canal>`, sans `verify-tag`. L'empreinte SHA-256 de
-  `publish_dist.py` est publiée dans le même dépôt, donc elle ne prouve rien.
-- **Point positif** : la mise à jour est manuelle, aucune route ne la lance.
-- **Correction** :
-  - tags signés (clé SSH ou GPG des mainteneurs, épinglée dans la suite) ;
-  - `git verify-tag` avant fusion ;
-  - mise à jour vers un tag, pas vers une branche ;
-  - double authentification exigée sur framagit pour les mainteneurs et pour le dépôt de données.
+- **Mechanism**: `update_suite.py:150` does `merge --ff-only origin/<canal>`, without `verify-tag`. The SHA-256 hash from
+  `publish_dist.py` is published in the same repository, so it proves nothing.
+- **Positive point**: the update is manual, no route triggers it.
+- **Fix**:
+  - signed tags (SSH or GPG key of the maintainers, pinned in the suite);
+  - `git verify-tag` before merging;
+  - update to a tag, not to a branch;
+  - two-factor authentication required on framagit for the maintainers and for the data repository.
 
-### <a id="m5"></a>M5 — Exécutables pris dans le dossier courant
+### <a id="m5"></a>M5 — Executables taken from the current folder
 
-- **Mécanisme** :
-  - sous Windows, `cmd` cherche `py`, `python` dans le dossier courant avant le `PATH` (`lancer.cmd:10-12`) ;
-  - `data_sync.py` appelle `git` sans chemin ;
-  - un `git.exe` ou un `py.cmd` déposé à la racine (archive, C1 via `__repo`) serait exécuté.
-- **Correction** :
-  - `set NoDefaultCurrentDirectoryInExePath=1` en tête de `lancer.cmd` ;
-  - `git` résolu une fois par `shutil.which` après avoir retiré la racine du `PATH`, puis appelé par son chemin
-    absolu.
+- **Mechanism**:
+  - under Windows, `cmd` looks for `py`, `python` in the current folder before the `PATH` (`lancer.cmd:10-12`);
+  - `data_sync.py` calls `git` without a path;
+  - a `git.exe` or a `py.cmd` dropped at the root (archive, C1 via `__repo`) would be executed.
+- **Fix**:
+  - `set NoDefaultCurrentDirectoryInExePath=1` at the top of `lancer.cmd`;
+  - `git` resolved once by `shutil.which` after removing the root from the `PATH`, then called by its absolute
+    path.
 
-### <a id="m4"></a>M4 — Code tiers
+### <a id="m4"></a>M4 — Third-party code
 
-| Bibliothèque | Où | Problème | Correction |
+| Library | Where | Problem | Fix |
 |---|---|---|---|
-| pdf.js 4.10.38 | `maintenance_page.js:1984,2015` | `import()` depuis jsDelivr : pas de contrôle d'intégrité possible, code exécuté dans l'origine | livrer pdf.js dans `shared/vendor/` |
-| js-yaml 4.1.0 | `shared/mission_core/vendor/` | pollution de prototype par la clé de fusion `<<`, corrigée en 4.1.1 (avis de novembre 2025) ; lit le YAML du dépôt partagé | passer en 4.1.1 |
-| jsPDF 2.5.2 | `apps/cpco/jspdf.umd.min.js` | dénis de service corrigés en 3.0.x ; ne traite que des données locales | mise à jour à l'occasion |
-| acorn (cdnjs, sans SRI) | `tools/verify_format.html` | outil de développement seulement | SRI ou copie locale |
-| `airports.json` (GitHub, branche `master`) | `mission_core/assist.js:162` | données seulement ; noms d'aérodromes à échapper à l'affichage | épingler un commit |
+| pdf.js 4.10.38 | `maintenance_page.js:1984,2015` | `import()` from jsDelivr: no integrity check possible, code executed in the origin | ship pdf.js in `shared/vendor/` |
+| js-yaml 4.1.0 | `shared/mission_core/vendor/` | prototype pollution through the `<<` merge key, fixed in 4.1.1 (advisory of November 2025); reads the YAML of the shared repository | move to 4.1.1 |
+| jsPDF 2.5.2 | `apps/cpco/jspdf.umd.min.js` | denials of service fixed in 3.0.x; only processes local data | update when convenient |
+| acorn (cdnjs, without SRI) | `tools/verify_format.html` | development tool only | SRI or local copy |
+| `airports.json` (GitHub, `master` branch) | `mission_core/assist.js:162` | data only; aerodrome names to escape on display | pin a commit |
 
-### Hygiène anti-zombie — la règle du projet
+### Anti-zombie hygiene — the project rule
 
-1. **Ne jamais exécuter de données.** Un fichier qui vient d'un autre poste est du JSON, du YAML ou du texte, pas un
+1. **Never execute data.** A file that comes from another machine is JSON, YAML or text, not a
    script.
-2. **Le moins de droits possible pour l'origine** : écriture sur `data/` seulement, le reste en lecture ; une CSP qui
-   ferme les sorties.
-3. **Ne rien servir qui ne serve à rien** : pas de `secrets/`, pas de `.git/`, pas de listes de dossiers, rien pour les
-   autres sites.
-4. **Git en défiance** : options de durcissement sur chaque appel, `--` devant les adresses, pas d'identifiants dans
-   les adresses, `.git/` jamais reçu d'une archive.
-5. **Mises à jour vérifiables** : tags signés, vérifiés avant fusion.
-6. **Échapper tout ce qui vient d'ailleurs** (dépôt partagé, réseaux, framagit, CDN) avant `innerHTML`, y compris dans
-   les attributs `style` et `class`.
-7. **Côté pilote** :
-   - Chrome ou Edge à jour ;
-   - Git à jour ;
-   - ne pas faire tourner d'autre serveur sur le port de la suite ;
-   - ne pas accorder « Autoriser à chaque visite » sur la racine.
+2. **The fewest rights possible for the origin**: write access to `data/` only, the rest read-only; a CSP that
+   closes the exits.
+3. **Serve nothing that serves no purpose**: no `secrets/`, no `.git/`, no directory listings, nothing for
+   other sites.
+4. **Git in distrust**: hardening options on every call, `--` before addresses, no credentials in
+   addresses, `.git/` never received from an archive.
+5. **Verifiable updates**: signed tags, verified before merging.
+6. **Escape everything that comes from elsewhere** (shared repository, networks, framagit, CDN) before `innerHTML`, including in
+   the `style` and `class` attributes.
+7. **On the pilot side**:
+   - up-to-date Chrome or Edge;
+   - up-to-date Git;
+   - do not run any other server on the suite's port;
+   - do not grant “Allow on every visit” on the root.
 
-## 4. Mode client/serveur
+## 4. Client/server mode
 
-La feuille de route (étape 2, [ROADMAP.md](ROADMAP.md#étape-2--le-serveur-web-minimal--moteur-central-)) prévoit déjà un
-« moteur central » (`tools/defa_server.py`, SQLite, HTTPS derrière Caddy, `GET/PUT /v1/file/<chemin>` avec ETag et
-If-Match, `/v1/changes`). Ce qui suit en reprend le cadre et fixe les exigences de sécurité que l'audit fait apparaître.
+The roadmap (step 2, [ROADMAP.md](ROADMAP.md#step-2--the-minimal-web-server-central-engine)) already plans a
+“central engine” (`tools/defa_server.py`, SQLite, HTTPS behind Caddy, `GET/PUT /v1/file/<chemin>` with ETag and
+If-Match, `/v1/changes`). What follows takes up its framework and sets the security requirements that the audit brings out.
 
-### 4.1 Ce qui part derrière le serveur
+### 4.1 What goes behind the server
 
-| Classe | Contenu | Où aujourd'hui | Mode serveur |
+| Class | Content | Where today | Server mode |
 |---|---|---|---|
-| **Référence** (public) | SIA, zones aéro, MORA, catalogue des types, modèles de missions, catégories de dispos | `data/sia`, `AircraftDB`, `examples/`, `data/config/disponibilites.json` | peut rester locale ou être servie sans connexion |
-| **Nominatif** | fiches utilisateurs, identifiants IVAO/VATSIM/SimBrief, dispos, affectations, ODV (personnel, équipes), sessions ATC, CR (équipage, remarques), positions des appareils, journal et référence DEFA, appareils personnels, missions générées (auteur, équipes) | `data/utilisateurs`, `disponibilites`, `missions`, `odv`, `atc`, `cr`, `references/defa_reference.js`, `aircraft_personal.js` ; localStorage `missionReportingConfig:v1`, `defaFlightLog:v1` | **serveur seulement**, filtré par droits |
-| **Secrets** | empreintes des mots de passe, clé IVAO de la suite, secrets IVAO des utilisateurs, clé d'envoi des CR, identifiants du site DEFA, identifiants git | `data/utilisateurs/*.json` (empreintes), `secrets/`, localStorage | empreintes et clés de la suite : serveur, jamais transmises ; secrets d'un utilisateur : son poste (trousseau du système) |
+| **Reference** (public) | SIA, aero areas, MORA, type catalogue, mission templates, availability categories | `data/sia`, `AircraftDB`, `examples/`, `data/config/disponibilites.json` | can stay local or be served without login |
+| **Personal** | user records, IVAO/VATSIM/SimBrief identifiers, availability, assignments, ODV (personnel, crews), ATC sessions, reports (crew, remarks), aircraft positions, DEFA log and reference, personal aircraft, generated missions (author, crews) | `data/utilisateurs`, `disponibilites`, `missions`, `odv`, `atc`, `cr`, `references/defa_reference.js`, `aircraft_personal.js`; localStorage `missionReportingConfig:v1`, `defaFlightLog:v1` | **server only**, filtered by rights |
+| **Secrets** | password hashes, suite IVAO key, users' IVAO secrets, report sending key, DEFA site credentials, git credentials | `data/utilisateurs/*.json` (hashes), `secrets/`, localStorage | hashes and suite keys: server, never transmitted; a user's secrets: their machine (system keychain) |
 
-### 4.2 Point de bascule dans le code
+### 4.2 Switch-over point in the code
 
-Le bon point existe déjà : `MissionAssignments.store` / `readData` / `writeData` (`shared/assignments.js:61,235,278`).
-Lecture conditionnelle, signature `updated_at`, écriture par File System Access ou boîte d'envoi. Y passent
+The right point already exists: `MissionAssignments.store` / `readData` / `writeData` (`shared/assignments.js:61,235,278`).
+Conditional read, `updated_at` signature, writing through File System Access or outbox. Through it go
 `users.js`, `dispos.js`, `odv_orders_store.js`, `atc_sessions.js`, `aircraft_positions.js`, `odv_airspace.js`.
 
-Remplacer `store.read` par `GET /v1/file/<rel>` (ETag) et `writeFile` par `PUT` (If-Match) suffit pour tout ce
-périmètre.
+Replacing `store.read` with `GET /v1/file/<rel>` (ETag) and `writeFile` with `PUT` (If-Match) is enough for this whole
+scope.
 
-**À faire converger avant** : les écritures directes hors de ce point.
+**To converge beforehand**: the direct writes outside this point.
 
-- affectations : `assignments.js:1659,1779,1836` ;
-- registre des CR : `mission_core/ledger.js:226,241,547,565` ;
-- registre des missions : `mission_registry.js:173,207,430,631` ;
-- fichiers de référence : `data_admin.js:137`.
+- assignments: `assignments.js:1659,1779,1836`;
+- report ledger: `mission_core/ledger.js:226,241,547,565`;
+- mission registry: `mission_registry.js:173,207,430,631`;
+- reference files: `data_admin.js:137`.
 
-**Et deux préalables de format** :
+**And two format prerequisites**:
 
-- **fin des `.js` de données** (C1) : un serveur ne doit jamais servir du code produit par ses utilisateurs ;
-- **CR découpés** (par CR, au moins par année : déjà prévu avant le 31 décembre) : le serveur ne peut pas appliquer de
-  droit « ce CR est le mien » sur un registre unique `cr/missions.yaml`.
+- **end of data `.js` files** (C1): a server must never serve code produced by its users;
+- **split reports** (per report, at least per year: already planned before 31 December): the server cannot apply a
+  “this report is mine” right on a single ledger `cr/missions.yaml`.
 
-### 4.3 Où vit le jeton de session
+### 4.3 Where the session token lives
 
-C'est la décision qui conditionne le reste, car la suite est servie par `127.0.0.1` et le serveur serait sur un autre
-domaine.
+This is the decision that conditions the rest, because the suite is served by `127.0.0.1` and the server would be on another
+domain.
 
-| Option | Principe | Pour | Contre |
+| Option | Principle | For | Against |
 |---|---|---|---|
-| **A. Le lanceur relaie** (recommandé pour commencer) | la page parle au lanceur (`/__setup/api/…`), le lanceur parle au serveur avec le jeton, gardé dans le trousseau du système | jeton jamais dans le navigateur, même modèle que les clés IVAO aujourd'hui ; pas de CORS, pas de cookie tiers ; la page garde son origine locale | le lanceur reste nécessaire ; il faut d'abord fermer C2, E1 et E3 (le lanceur devient le gardien) |
-| **B. Le serveur sert aussi la suite** | `https://suite.sog…/` sert pages et API, même origine | cookie de session `HttpOnly; Secure; SameSite=Strict`, CSP stricte, pas de lanceur | plus d'accès aux dossiers locaux (X-Plane, Téléchargements, SIA) sans lanceur ; deux modes à maintenir |
-| C. Jeton Bearer dans le localStorage, appel direct | la page appelle le serveur (CORS) | simple | tout script injecté lit le jeton : c'est exactement ce que l'audit cherche à éviter |
+| **A. The launcher relays** (recommended to start with) | the page talks to the launcher (`/__setup/api/…`), the launcher talks to the server with the token, kept in the system keychain | token never in the browser, same model as the IVAO keys today; no CORS, no third-party cookie; the page keeps its local origin | the launcher remains necessary; C2, E1 and E3 must be closed first (the launcher becomes the gatekeeper) |
+| **B. The server also serves the suite** | `https://suite.sog…/` serves pages and API, same origin | `HttpOnly; Secure; SameSite=Strict` session cookie, strict CSP, no launcher | no more access to local folders (X-Plane, Downloads, SIA) without the launcher; two modes to maintain |
+| C. Bearer token in the localStorage, direct call | the page calls the server (CORS) | simple | any injected script reads the token: exactly what the audit seeks to avoid |
 
-Recommandation : **A** d'abord, puis **B** si un usage « sans installation » est voulu. **C** est à écarter.
+Recommendation: **A** first, then **B** if a “no installation” use is wanted. **C** is to be ruled out.
 
-### 4.4 Exigences pour le serveur
+### 4.4 Requirements for the server
 
-- **Comptes** :
-  - empreintes `scrypt` (bibliothèque standard Python, `hashlib.scrypt`) ou PBKDF2 ≥ 600 000 itérations, côté serveur
-    seulement ;
-  - **réinitialisation de tous les mots de passe à la bascule**, puisque les empreintes actuelles ont circulé chez tous
-    les membres ;
-  - limitation des essais (par compte et par adresse), verrouillage temporaire.
-- **Sessions** :
-  - jeton d'accès court (15 min) et jeton de renouvellement révocable, par appareil ;
-  - déconnexion = révocation ;
-  - usurpation par un admin tracée et signalée à l'utilisateur.
-- **Droits par ressource**, vérifiés par le serveur sur le chemin du fichier. Matrice de départ ; `L` = lire,
-  `E` = écrire.
+- **Accounts**:
+  - `scrypt` hashes (Python standard library, `hashlib.scrypt`) or PBKDF2 ≥ 600,000 iterations, on the server side
+    only;
+  - **reset of all passwords at the switch-over**, since the current hashes have circulated to all
+    members;
+  - rate limiting of attempts (per account and per address), temporary lockout.
+- **Sessions**:
+  - short access token (15 min) and revocable refresh token, per device;
+  - logout = revocation;
+  - impersonation by an admin logged and reported to the user.
+- **Rights per resource**, checked by the server on the file path. Starting matrix; `L` = read,
+  `E` = write.
 
-  | Ressource | Pilote (soi) | Pilote (autres) | Centre | Admin |
+  | Resource | Pilot (self) | Pilot (others) | Centre | Admin |
   |---|---|---|---|---|
-  | Fiche utilisateur | L, E (sauf rôle et actif) | L : trigramme et nom | L | L, E, réinitialisation |
-  | Disponibilités | L, E | — (ou créneaux communs agrégés) | L | L |
-  | Affectations | L (les siennes), marquer lu | L : équipage de ses missions | L, E | L, E |
+  | User record | L, E (except role and active) | L: trigram and name | L | L, E, reset |
+  | Availability | L, E | — (or aggregated common slots) | L | L |
+  | Assignments | L (their own), mark as read | L: crew of their missions | L, E | L, E |
   | ODV, ATC, activations | L | L | L, E | L, E |
-  | CR | L, E (rédacteur = soi) | L s'il est dans l'équipage | L, statut | L, E |
-  | Journal et référence DEFA | — | — | L | L, E |
-  | Missions (générateur, registre) | L (affectées) | — | L, E | L, E |
-  | Configuration, utilisateurs, catégories | — | — | L | L, E |
+  | Reports | L, E (author = self) | L if in the crew | L, status | L, E |
+  | DEFA log and reference | — | — | L | L, E |
+  | Missions (generator, registry) | L (assigned) | — | L, E | L, E |
+  | Configuration, users, categories | — | — | L | L, E |
 
-- **Le serveur filtre ce qu'il envoie** : une page ne reçoit jamais ce qu'elle n'a pas le droit de voir. L'index des
-  utilisateurs ne porte ni empreinte ni rôle d'un autre.
-- **Écritures validées** :
-  - schéma par type de fichier, taille bornée ;
-  - texte seulement : refus de tout contenu exécutable ;
-  - champs `by` et `updated_at` posés par le serveur, pas par la page.
-- **Journal** (SQLite) : qui a lu ou écrit quoi, quand ; consultable par l'admin ; conservation limitée.
-- **Transport** : HTTPS seulement (HSTS), Caddy ou nginx devant ; serveur Python sur la boucle locale de sa machine.
-- **Secrets de la suite** (clé IVAO) : sur le serveur, qui relaie les appels IVAO comme le lanceur aujourd'hui.
-- **Cache du navigateur** : IndexedDB `defaIndex` et la boîte d'envoi contiennent des données nominatives ; à vider à la
-  déconnexion.
-- **Données personnelles (RGPD)** : une association qui garde noms, identifiants et activité de ses membres doit
-  pouvoir dire quoi, pourquoi et combien de temps.
-  - Registre des traitements, durée de conservation (CR, journal, dispos passées), droit d'accès et d'effacement.
-  - L'export git prévu par la feuille de route recopie tout : à réserver à l'admin, chiffré, ou pseudonymisé.
+- **The server filters what it sends**: a page never receives what it is not allowed to see. The users index
+  carries neither the hash nor the role of anyone else.
+- **Validated writes**:
+  - schema per file type, bounded size;
+  - text only: any executable content refused;
+  - `by` and `updated_at` fields set by the server, not by the page.
+- **Log** (SQLite): who read or wrote what, when; viewable by the admin; limited retention.
+- **Transport**: HTTPS only (HSTS), Caddy or nginx in front; Python server on its machine's loopback.
+- **Suite secrets** (IVAO key): on the server, which relays the IVAO calls as the launcher does today.
+- **Browser cache**: IndexedDB `defaIndex` and the outbox contain personal data; to be cleared on
+  logout.
+- **Personal data (GDPR)**: an association that keeps the names, identifiers and activity of its members must
+  be able to say what, why and for how long.
+  - Record of processing activities, retention period (reports, log, past availability), right of access and erasure.
+  - The git export planned by the roadmap copies everything: to be reserved to the admin, encrypted, or pseudonymised.
 
-### 4.5 Étapes proposées
+### 4.5 Proposed steps
 
-1. **Prérequis côté suite** (utiles même sans serveur) : C1 (données en JSON), CR découpés, écritures convergées vers
+1. **Prerequisites on the suite side** (useful even without a server): C1 (data in JSON), split reports, writes converged towards
    `readData` / `writeData`.
-2. **Serveur en lecture seule** : comptes, sessions, `GET /v1/file` filtré par droits, relais par le lanceur (option A).
-   La synchronisation git continue pour l'écriture.
-3. **Écriture par le serveur** : `PUT` avec If-Match, `/v1/changes`, fin de git pour le pool nominatif (export admin
-   seulement).
-4. **Bascule** : réinitialisation des mots de passe, retrait des empreintes et des fichiers nominatifs du dépôt git.
-   L'historique git en garde une copie : nouveau dépôt, ou réécriture de l'historique et rotation de tout ce qui y a
-   figuré.
+2. **Read-only server**: accounts, sessions, `GET /v1/file` filtered by rights, relay through the launcher (option A).
+   Git synchronisation continues for writing.
+3. **Writing through the server**: `PUT` with If-Match, `/v1/changes`, end of git for the personal pool (admin export
+   only).
+4. **Switch-over**: reset of passwords, removal of the hashes and personal files from the git repository.
+   The git history keeps a copy of them: new repository, or history rewrite and rotation of everything that has
+   appeared in it.
 
-## <a id="faible"></a>Constats moyens et faibles restants
+## <a id="faible"></a>Remaining medium and low findings
 
-- **<a id="m1"></a>M1 — XSS par données synchronisées** (traces vérifiées) :
-  - **Couleur de catégorie** : `data/config/disponibilites.json` › `categories[].couleur` →
-    `dispos.color()` (`dispos.js:346`) → `RepositoryNav.chartColor()`, qui rend la valeur telle quelle si ce n'est pas
-    une couleur → `style="--c:${…}"` (`dispos_editor.js:62,242`) → `innerHTML`.
-    - Charge : `"couleur": "red\"><img src=x onerror=…>"`.
-    - Touche tout pilote qui ouvre ses disponibilités.
-    - Correction : n'accepter que `^#[0-9a-f]{3,8}$` dans `dispos.color()`.
-  - **Statut de mission** : `data/missions/<dossier>/suivi.yaml` › `status` → `pill(level, …)`
-    (`mission_registry.js:1041`, `class="rg-pill rg-${level}"` non échappé), via `:1235` et `:1356`. Pages du Centre.
-    - Correction : `esc(level)`, ou classe fixe si le statut n'est pas dans `STATUS`.
-  - **Carte du profil de performance** (`apps/planner/flight_performance_planner.html:1673`) :
-    - Sources : `name`, `callsign`, `registration`, `simbriefAirframeId` du profil actif. Elles viennent d'un appareil
-      SimBrief partagé (`airframe_name`, `airframe_comments`, `callsign`, `registration`, collés par lien, `:2598`),
-      d'un OFP (`:2622`), d'un `.lnmperf` (`<Name>`, `:2524`) ou d'un JSON ou CSV importé.
-    - Le profil est mémorisé : la charge se rejoue à chaque ouverture de la page.
-    - Même défaut en `:3036` (`ofpTimestamp`, `airframeId`) et `:2810` (identifiant tapé, sans conséquence).
-    - Correction : `esc(x[1])`.
-  - **Aide** (`apps/aide/aide.js:79,88-94`, `markdown.js:30-33`) :
-    - `aide.html?doc=https://…` charge un document d'un autre site (si celui-ci répond avec CORS) ;
-    - `link()` laisse passer `javascript:` (`new URL(href).href`), et un clic exécute le lien dans l'origine de la suite
-      (`:220`, `window.top.location.href` dans la fenêtre d'aide).
-    - Il suffit d'un lien envoyé au pilote et d'un clic.
-    - Correction : `doc` limité aux chemins relatifs `.md` de `docs/` ; `link()` limité à `http(s)`, `mailto`, `#` et
-      `?doc=` ; refus des navigations entre sites (C2).
-  - **Altitude densité** (`mission_extensions.js:261`) : champ tapé ou rechargé d'un CSV d'archive, non échappé. Faible.
-  - Le reste de l'inventaire est en [annexe C](#annexe-c--inventaire-des-insertions-html).
-- **<a id="m2"></a>M2 — Ni CSP ni protection contre l'encadrement.**
-  - Une CSP envoyée par le lanceur limiterait la sortie des données même avec des scripts en ligne :
-    `connect-src 'self'` plus les hôtes de l'annexe A, `form-action 'self'`, `base-uri 'self'`,
+- **<a id="m1"></a>M1 — XSS through synchronised data** (traces verified):
+  - **Category colour**: `data/config/disponibilites.json` › `categories[].couleur` →
+    `dispos.color()` (`dispos.js:346`) → `RepositoryNav.chartColor()`, which returns the value as is if it is not
+    a colour → `style="--c:${…}"` (`dispos_editor.js:62,242`) → `innerHTML`.
+    - Payload: `"couleur": "red\"><img src=x onerror=…>"`.
+    - Affects every pilot who opens their availability.
+    - Fix: accept only `^#[0-9a-f]{3,8}$` in `dispos.color()`.
+  - **Mission status**: `data/missions/<dossier>/suivi.yaml` › `status` → `pill(level, …)`
+    (`mission_registry.js:1041`, `class="rg-pill rg-${level}"` not escaped), via `:1235` and `:1356`. Centre pages.
+    - Fix: `esc(level)`, or fixed class if the status is not in `STATUS`.
+  - **Performance profile card** (`apps/planner/flight_performance_planner.html:1673`):
+    - Sources: `name`, `callsign`, `registration`, `simbriefAirframeId` of the active profile. They come from a shared
+      SimBrief airframe (`airframe_name`, `airframe_comments`, `callsign`, `registration`, pasted by link, `:2598`),
+      from an OFP (`:2622`), from a `.lnmperf` (`<Name>`, `:2524`) or from an imported JSON or CSV.
+    - The profile is stored: the payload replays every time the page is opened.
+    - Same defect at `:3036` (`ofpTimestamp`, `airframeId`) and `:2810` (typed identifier, without consequence).
+    - Fix: `esc(x[1])`.
+  - **Help** (`apps/aide/aide.js:79,88-94`, `markdown.js:30-33`):
+    - `aide.html?doc=https://…` loads a document from another site (if that site responds with CORS);
+    - `link()` lets `javascript:` through (`new URL(href).href`), and a click executes the link in the suite's origin
+      (`:220`, `window.top.location.href` in the help window).
+    - A link sent to the pilot and one click are enough.
+    - Fix: `doc` limited to relative `.md` paths of `docs/`; `link()` limited to `http(s)`, `mailto`, `#` and
+      `?doc=`; cross-site navigations refused (C2).
+  - **Density altitude** (`mission_extensions.js:261`): typed field or reloaded from an archive CSV, not escaped. Low.
+  - The rest of the inventory is in [appendix C](#appendix-c--inventory-of-html-insertions).
+- **<a id="m2"></a>M2 — Neither CSP nor framing protection.**
+  - A CSP sent by the launcher would limit data exfiltration even with inline scripts:
+    `connect-src 'self'` plus the hosts of appendix A, `form-action 'self'`, `base-uri 'self'`,
     `frame-ancestors 'self'`.
-  - `script-src 'self'` viendra quand les scripts en ligne seront sortis (et C1 fait).
-  - Sans `frame-ancestors`, un site peut encadrer la suite et faire cliquer « Synchroniser » à l'insu du pilote.
-- **<a id="m3"></a>M3 — Origine partagée.**
-  - Tout serveur lancé plus tard sur `127.0.0.1:8000` (`python -m http.server`, outil de développement) hérite du
-    localStorage, de l'IndexedDB et des poignées de dossiers de la suite.
-  - Correction : nom d'hôte propre, par exemple `sog.localhost:<port>`. Les navigateurs le résolvent vers la boucle
-    locale ; à ajouter dans `_local_host`. Sinon, port fixe peu courant.
-- **<a id="m6"></a>M6 — Secrets en clair.**
-  - `secrets/*.json` (JSON clair, copié avec le dossier : Synology, « DEFA - Copy ») ; une source de sauvegarde posée
-    sur la racine l'emporte aussi (`maintenance_page.js:129` n'exclut pas `secrets/`).
-  - localStorage : `missionSendKey:v1`, profil réseau.
-  - **Identifiant et mot de passe du site DEFA** : `defaCredentials:v1` est de nouveau écrit en clair depuis le
-    premier lancement repensé (`43a33d89`, `premier_lancement.html`, étape 4). Le site n'a pas d'API (feuille de route,
-    étape 4), donc ce mot de passe ne sert à rien aujourd'hui, et tout script de l'origine peut le lire. À ne plus
-    garder, ou à confier au lanceur (`secrets/users/<TRI>.json`, puis trousseau) le jour où une API existera.
-  - `REMOTE_RE` accepte `https://utilisateur:jeton@…`, qui finit dans `data/.git/config` (servi, E1).
-  - `INSTALL.md` propose le **mot de passe** framagit plutôt qu'un jeton limité au projet.
-  - Corrections :
-    - trousseau du système (DPAPI sous Windows) ou dossier hors de la racine servie ;
-    - refuser les identifiants dans l'adresse ;
-    - recommander un jeton d'accès au seul dépôt de données, en lecture/écriture du dépôt seulement.
-- **Faibles** :
-  - SSH `StrictHostKeyChecking=accept-new` (`data_sync.py:36`) : clé du serveur acceptée sans contrôle à la première
-    connexion ;
-  - adresses passées à git sans `--` (`launch.py:132`, `data_sync.py:60,90`) : à ajouter, et refuser un `-` en tête ;
-  - `git lfs install` modifie la configuration globale ;
-  - l'aide envoie son adresse par `postMessage(msg, '*')` (`apps/aide/aide.js:26`) : à adresser à `location.origin` ;
-  - la restauration d'une sauvegarde locale (`browser_store.js:510-519`) réécrit toutes les clés, `suiteSession` et
-    `dataOverride:*` comprises ;
-  - le prompt ChatGPT part dans l'adresse (`mission_order.js:231`) : paramètres de mission, pas de nominatif constaté.
+  - `script-src 'self'` will come once the inline scripts have been moved out (and C1 done).
+  - Without `frame-ancestors`, a site can frame the suite and get the pilot to click “Synchronise” unknowingly.
+- **<a id="m3"></a>M3 — Shared origin.**
+  - Any server started later on `127.0.0.1:8000` (`python -m http.server`, development tool) inherits the
+    localStorage, the IndexedDB and the folder handles of the suite.
+  - Fix: a dedicated host name, for example `sog.localhost:<port>`. Browsers resolve it to the
+    loopback; to be added in `_local_host`. Otherwise, an uncommon fixed port.
+- **<a id="m6"></a>M6 — Secrets in clear.**
+  - `secrets/*.json` (plain JSON, copied with the folder: Synology, “DEFA - Copy”); a backup source placed
+    on the root carries it away too (`maintenance_page.js:129` does not exclude `secrets/`).
+  - localStorage: `missionSendKey:v1`, network profile.
+  - **DEFA site login and password**: `defaCredentials:v1` is again written in clear since the
+    redesigned first run (`43a33d89`, `premier_lancement.html`, step 4). The site has no API (roadmap,
+    step 4), so this password is of no use today, and any script of the origin can read it. To stop
+    keeping, or to entrust to the launcher (`secrets/users/<TRI>.json`, then keychain) the day an API exists.
+  - `REMOTE_RE` accepts `https://utilisateur:jeton@…`, which ends up in `data/.git/config` (served, E1).
+  - `INSTALL.md` suggests the framagit **password** rather than a token limited to the project.
+  - Fixes:
+    - system keychain (DPAPI under Windows) or folder outside the served root;
+    - refuse credentials in the address;
+    - recommend an access token for the data repository only, with repository read/write only.
+- **Low**:
+  - SSH `StrictHostKeyChecking=accept-new` (`data_sync.py:36`): server key accepted without check on the first
+    connection;
+  - addresses passed to git without `--` (`launch.py:132`, `data_sync.py:60,90`): to be added, and refuse a leading `-`;
+  - `git lfs install` modifies the global configuration;
+  - the help sends its address by `postMessage(msg, '*')` (`apps/aide/aide.js:26`): to be addressed to `location.origin`;
+  - restoring a local backup (`browser_store.js:510-519`) rewrites all the keys, `suiteSession` and
+    `dataOverride:*` included;
+  - the ChatGPT prompt goes out in the address (`mission_order.js:231`): mission parameters, no personal data found.
 
-## Plan de correction
+## Remediation plan
 
-Par lots, du plus rentable au plus lourd. Chaque lot est indépendant. Le lot 1 touche aux en-têtes du lanceur : à
-essayer sur le port 8000 avec le navigateur habituel (cache ancien) et sur les 50 pages de l'index.
+In batches, from the most cost-effective to the heaviest. Each batch is independent. Batch 1 touches the launcher headers: to
+be tested on port 8000 with the usual browser (old cache) and on the 50 pages of the index.
 
-| Lot | Contenu | Constats | Taille |
+| Batch | Content | Findings | Size |
 |---|---|---|---|
-| **1. Lanceur fermé** | `Sec-Fetch-Site`, 403 sur `secrets/`, segments en point et `data/local/`, plus de listes de dossiers ; motifs de Téléchargements en liste fermée ; changement de dépôt distant confirmé dans une fenêtre du lanceur ; `frame-ancestors` / `X-Frame-Options` ; gabarit exigé pour `data/**/*.js` | C2, E1, E2, E3, C1 (palliatif), M2 (partiel) | petit |
-| **2. Git et archives durcis** | options `-c` de durcissement sur chaque appel, `--`, `.git/` et extensions refusées à l'extraction, identifiants refusés dans l'adresse, `NoDefaultCurrentDirectoryInExePath`, git par chemin absolu | C3, M5, M6 (partiel), faibles | petit |
-| **3. Échappements** | `suite_update.js` (version), `dispos.color()`, `mission_registry` `pill`, profil de performance, aide (`?doc=`, schémas de liens), couleurs des modèles ODV, altitude densité | E5, M1 | petit |
-| **4. Droits du navigateur** | poignées `__repo` / `__xplane` / `__xpnav` en lecture, écriture au clic ; CSP `connect-src` envoyée par le lanceur | E4, M2 | moyen |
-| **5. Bibliothèques** | pdf.js livré localement, js-yaml 4.1.1, jsPDF 3.x, `airports.json` épinglé | M4 | petit |
-| **6. Données en JSON** | fin des `.js` de données, chargement asynchrone dans les pages | C1 (fond) | gros |
-| **7. Mises à jour signées** | tags signés, `verify-tag`, double authentification framagit | E6 | moyen (surtout organisation) |
-| **8. Secrets** | trousseau du système, exclusion des sauvegardes | M6 | moyen |
-| **9. Serveur** | § 4.5 | E7, M6 | gros |
+| **1. Launcher locked down** | `Sec-Fetch-Site`, 403 on `secrets/`, dot segments and `data/local/`, no more directory listings; Downloads patterns in a closed list; remote repository change confirmed in a launcher window; `frame-ancestors` / `X-Frame-Options`; template required for `data/**/*.js` | C2, E1, E2, E3, C1 (stopgap), M2 (partial) | small |
+| **2. Git and archives hardened** | `-c` hardening options on every call, `--`, `.git/` and extensions refused at extraction, credentials refused in the address, `NoDefaultCurrentDirectoryInExePath`, git by absolute path | C3, M5, M6 (partial), low | small |
+| **3. Escaping** | `suite_update.js` (version), `dispos.color()`, `mission_registry` `pill`, performance profile, help (`?doc=`, link schemes), ODV template colours, density altitude | E5, M1 | small |
+| **4. Browser rights** | `__repo` / `__xplane` / `__xpnav` handles read-only, writing on click; `connect-src` CSP sent by the launcher | E4, M2 | medium |
+| **5. Libraries** | pdf.js shipped locally, js-yaml 4.1.1, jsPDF 3.x, `airports.json` pinned | M4 | small |
+| **6. Data in JSON** | end of data `.js` files, asynchronous loading in the pages | C1 (underlying) | large |
+| **7. Signed updates** | signed tags, `verify-tag`, framagit two-factor authentication | E6 | medium (mostly organisation) |
+| **8. Secrets** | system keychain, exclusion from backups | M6 | medium |
+| **9. Server** | § 4.5 | E7, M6 | large |
 
-## Suivi de l'audit du 2 octobre
+## Follow-up of the 2 October audit
 
-| Point du 2 octobre | Aujourd'hui |
+| Point of 2 October | Today |
 |---|---|
-| `Host` exigé (DNS rebinding) | en place ✔ ; ne couvre pas l'inclusion de script entre sites (C2) |
-| Taille des envois bornée, retours à la ligne refusés dans les identifiants, `nosniff` | en place ✔ |
-| « Insertion HTML : textes passés par `esc` » | vrai pour les textes ; **faux pour les attributs `style` et `class`** (M1) et pour la version distante (E5) |
-| « Fichiers ouverts traités comme des données, jamais comme du code » | vrai pour les fichiers ouverts ; **faux pour le dépôt de données** (C1) |
-| « La suite ne charge aucun script d'ailleurs » | plus vrai : pdf.js depuis jsDelivr (M4) |
-| Risque accepté : `.git` servi « limité à la machine » | à revoir : servi à tout script de l'origine, avec un jeton éventuel dans l'adresse (E1, M6) |
-| Risque accepté : pas de CSP | à revoir : la CSP sert d'abord à fermer les sorties (`connect-src`), sans attendre la sortie des scripts en ligne (M2) |
-| Nouveau depuis : `secrets/` (clé IVAO), `/__setup/downloads` | servis ou lisibles sans restriction (E1, E2) |
+| `Host` required (DNS rebinding) | in place ✔; does not cover cross-site script inclusion (C2) |
+| Upload size bounded, line breaks refused in identifiers, `nosniff` | in place ✔ |
+| “HTML insertion: texts passed through `esc`” | true for texts; **false for the `style` and `class` attributes** (M1) and for the remote version (E5) |
+| “Opened files treated as data, never as code” | true for opened files; **false for the data repository** (C1) |
+| “The suite loads no script from elsewhere” | no longer true: pdf.js from jsDelivr (M4) |
+| Accepted risk: `.git` served “limited to the machine” | to be reviewed: served to any script of the origin, with a possible token in the address (E1, M6) |
+| Accepted risk: no CSP | to be reviewed: the CSP serves first to close the exits (`connect-src`), without waiting for the inline scripts to be moved out (M2) |
+| New since: `secrets/` (IVAO key), `/__setup/downloads` | served or readable without restriction (E1, E2) |
 
-## Annexe A — Hôtes contactés
+## Appendix A — Hosts contacted
 
-| Hôte | Depuis | Ce qui part |
+| Host | From | What goes out |
 |---|---|---|
-| api.ivao.aero, data.vatsim.net | `network_tracker.js`, `fpl.js`, `mission_extensions.js` | rien de nominatif (flux publics) |
-| api.vatsim.net, stats.vatsim.net, statsim.net | `network_tracker.js`, `core.js` | **CID VATSIM, VID IVAO** |
-| www.simbrief.com | `mission_core/fpl.js:98` | **identifiant SimBrief** |
-| metar.vatsim.net, api.open-meteo.com, archive-api.open-meteo.com | `assist.js` | codes OACI, coordonnées, dates |
-| cdn.jsdelivr.net, purge.jsdelivr.net | `assist.js`, `assignments.js`, `maintenance_page.js` | rien ; **code pdf.js exécuté** |
-| framagit.org (API GitLab) | `suite_update.js` (`credentials: 'omit'`) | rien |
-| overpass-api.de, s3.amazonaws.com (terrarium), tuiles OSM, OpenTopoMap, OpenFreeMap, Versatiles | `sia_base.js`, cartes | zones consultées, adresse IP |
-| chatgpt.com | `mission_order.js:231` | paramètres de mission dans l'adresse |
-| webservice des CR (configurable) | `core.js:1293` | **CR complet, identifiants réseau, jeton** |
-| atc-bookings.vatsim.net, api.ivao.aero (sous clé), flotte.defa-virtual.fr | lanceur (Python) | rien de nominatif ; clé IVAO dans l'en-tête |
+| api.ivao.aero, data.vatsim.net | `network_tracker.js`, `fpl.js`, `mission_extensions.js` | nothing personal (public feeds) |
+| api.vatsim.net, stats.vatsim.net, statsim.net | `network_tracker.js`, `core.js` | **VATSIM CID, IVAO VID** |
+| www.simbrief.com | `mission_core/fpl.js:98` | **SimBrief identifier** |
+| metar.vatsim.net, api.open-meteo.com, archive-api.open-meteo.com | `assist.js` | ICAO codes, coordinates, dates |
+| cdn.jsdelivr.net, purge.jsdelivr.net | `assist.js`, `assignments.js`, `maintenance_page.js` | nothing; **pdf.js code executed** |
+| framagit.org (GitLab API) | `suite_update.js` (`credentials: 'omit'`) | nothing |
+| overpass-api.de, s3.amazonaws.com (terrarium), OSM tiles, OpenTopoMap, OpenFreeMap, Versatiles | `sia_base.js`, maps | areas viewed, IP address |
+| chatgpt.com | `mission_order.js:231` | mission parameters in the address |
+| reports web service (configurable) | `core.js:1293` | **full report, network identifiers, token** |
+| atc-bookings.vatsim.net, api.ivao.aero (with key), flotte.defa-virtual.fr | launcher (Python) | nothing personal; IVAO key in the header |
 
-## Annexe B — Routes du lanceur
+## Appendix B — Launcher routes
 
-- **GET `/__setup/`** : `status`, `sync-remote`, `sync-status`, `tools`, `vatsim-bookings`, `secrets` (indicateurs),
+- **GET `/__setup/`**: `status`, `sync-remote`, `sync-status`, `tools`, `vatsim-bookings`, `secrets` (indicators),
   `ivao-activations`, `ivao-bookings`, `defa-site`, `aircraft-db`, `downloads`, `sia-zip`.
-- **POST `/__setup/`** : `perf`, `sync-remote`, `sync`, `aircraft-db`, `defa-site`, `secrets`, `aero-fetch`, `jeu-essai`,
+- **POST `/__setup/`**: `perf`, `sync-remote`, `sync`, `aircraft-db`, `defa-site`, `secrets`, `aero-fetch`, `jeu-essai`,
   `clone`, `upload?kind=data|log`.
-- **Autres** : tout le reste est servi en statique depuis la racine. `/data/` est redirigé vers `--data`, et les index
-  `disponibilites/_index.json` et `utilisateurs/_index.json` sont refaits à chaque demande.
+- **Others**: everything else is served statically from the root. `/data/` is redirected to `--data`, and the indexes
+  `disponibilites/_index.json` and `utilisateurs/_index.json` are rebuilt on each request.
 
-Aucune route n'écrit un fichier du pool : toutes les écritures de données viennent du navigateur (File System Access).
+No route writes a file of the pool: all data writes come from the browser (File System Access).
 
-## Annexe C — Inventaire des insertions HTML
+## Appendix C — Inventory of HTML insertions
 
-Environ 700 insertions (`innerHTML`, `insertAdjacentHTML`, `DOMParser`) dans 54 fichiers. Elles ont été relevées par
-script (chaque `${…}` dans un gabarit HTML), puis suivies à la main depuis chaque source non fiable. Aucun `eval`,
-`new Function` ni `setTimeout` sur une chaîne.
+About 700 insertions (`innerHTML`, `insertAdjacentHTML`, `DOMParser`) in 54 files. They were collected by
+script (each `${…}` in an HTML template), then traced by hand from each untrusted source. No `eval`,
+`new Function` or `setTimeout` on a string.
 
-**Exploitables** : voir [M1](#m1) et [E5](#e5) (six chemins).
+**Exploitable**: see [M1](#m1) and [E5](#e5) (six paths).
 
-**Injection CSS sans script** : couleurs des modèles et éléments d'ODV.
+**CSS injection without script**: colours of ODV templates and items.
 
-- Où : `apps/cpco/odv_orders.js:1126,1133`, `style="…${esc(tint(m.couleur))}"`.
-- Ce qui passe : `esc` empêche de sortir de l'attribut, mais `red;background:url(https://…)` passe. Cela permet une
-  requête de pistage ou un trompe-l'œil, pas de script.
-- Correction : n'accepter que `^#[0-9a-f]{3,8}$` à la lecture (`odv_orders_store.js`).
+- Where: `apps/cpco/odv_orders.js:1126,1133`, `style="…${esc(tint(m.couleur))}"`.
+- What gets through: `esc` prevents leaving the attribute, but `red;background:url(https://…)` gets through. This allows a
+  tracking request or a visual deception, not a script.
+- Fix: accept only `^#[0-9a-f]{3,8}$` on reading (`odv_orders_store.js`).
 
-**Vérifié, conforme** (la trace finit sur `esc`, `textContent`, une liste fermée ou un nombre) :
+**Verified, compliant** (the trace ends on `esc`, `textContent`, a closed list or a number):
 
-- **Flux des réseaux** :
-  - `network_tracker.js` (flux IVAO et VATSIM, historique) : `.value` et `textContent` seulement ;
-  - `atc_sessions.js` : positions au format strict, texte vidé ;
-  - `odv_airspace.js`, `odv_activations_editor.js`, `sia_base.js` : échappés ;
-  - `map_parser.html` (SimBrief, étiquettes KML, AAR, OpenAir) : `textContent` ou dessin sur canevas.
-- **CR** :
+- **Network feeds**:
+  - `network_tracker.js` (IVAO and VATSIM feeds, history): `.value` and `textContent` only;
+  - `atc_sessions.js`: positions in strict format, text stripped;
+  - `odv_airspace.js`, `odv_activations_editor.js`, `sia_base.js`: escaped;
+  - `map_parser.html` (SimBrief, KML labels, AAR, OpenAir): `textContent` or drawing on canvas.
+- **Reports**:
   - `report.js`, `form.js`, `blocks.js`, `core.js`, `reporting.js`, `global_reporting.js`, `charts.js`, `sheets.js`,
-    `grid_edit.js`, `fleet_reporting.js`, `mission_exercise.js`, `mission_order.js` : échappés ;
-  - liens de suivi limités à `https?://` (`report.js:149`, `traceLink`) ;
-  - identifiants de mission reconstruits par expression stricte (`vocab.js:256`).
-- **ODV** :
-  - `odv_planning.js`, `odv_orders.js` (environ 120 `esc`) ;
-  - couleurs du classeur forcées en hexadécimal (`rgbOf`) ;
-  - `etat` et `type` en liste fermée.
-- **Données partagées** :
-  - `assign_dialog.js`, `assignments.js` (grille limitée aux codes de la légende), `dispos_editor.js` (sauf la couleur),
-    `settings_panels.js`, `users.js`, `pilot_profile.js`, `data_admin.js`, `mission_registry.js` (sauf le statut) ;
-  - `apps/pilot/mes_missions.html` (plis, équipes, sections Markdown, fiche technique).
-- **Collages et imports** :
-  - journal des vols (`defa_log.js:81`) et page Flotte (`data_admin.js:299`) : lus par `DOMParser`, seuls
-    `textContent` et un `href` filtré sont gardés ;
-  - `zip_store.js`, `text_import.js`, CSV et JSON passent par les rendus échappés.
-- **Traduction automatique** : texte échappé avant mise en forme (`mes_missions.html:2887`).
-- **Fenêtres** :
-  - les sites extérieurs s'ouvrent avec `noopener` ;
-  - les 7 `window.open` sans `noopener` ouvrent des pages de la suite qui ont besoin de `window.opener` ;
-  - un seul `iframe` (l'aide, même origine, message vérifié par `e.source`).
+    `grid_edit.js`, `fleet_reporting.js`, `mission_exercise.js`, `mission_order.js`: escaped;
+  - tracking links limited to `https?://` (`report.js:149`, `traceLink`);
+  - mission identifiers rebuilt by a strict expression (`vocab.js:256`).
+- **ODV**:
+  - `odv_planning.js`, `odv_orders.js` (about 120 `esc`);
+  - workbook colours forced to hexadecimal (`rgbOf`);
+  - `etat` and `type` in a closed list.
+- **Shared data**:
+  - `assign_dialog.js`, `assignments.js` (grid limited to the legend codes), `dispos_editor.js` (except the colour),
+    `settings_panels.js`, `users.js`, `pilot_profile.js`, `data_admin.js`, `mission_registry.js` (except the status);
+  - `apps/pilot/mes_missions.html` (envelopes, crews, Markdown sections, technical sheet).
+- **Pastes and imports**:
+  - flight log (`defa_log.js:81`) and Fleet page (`data_admin.js:299`): read by `DOMParser`, only
+    `textContent` and a filtered `href` are kept;
+  - `zip_store.js`, `text_import.js`, CSV and JSON go through the escaped renderings.
+- **Automatic translation**: text escaped before formatting (`mes_missions.html:2887`).
+- **Windows**:
+  - external sites open with `noopener`;
+  - the 7 `window.open` without `noopener` open pages of the suite that need `window.opener`;
+  - a single `iframe` (the help, same origin, message checked by `e.source`).
 
-**Points de vigilance pour la suite** : les colonnes `html:` et `detail()` de `SortedTable` (`mission_table.js:126`),
-les substitutions de `RepositoryKit.tf` et `AssignDialog.frame()` prennent du HTML tel quel par conception. C'est là
-qu'une régression se glisserait. Les attributs `style` et `class` construits à partir de données doivent être validés,
-pas seulement échappés.
+**Points to watch going forward**: the `html:` columns and `detail()` of `SortedTable` (`mission_table.js:126`),
+the substitutions of `RepositoryKit.tf` and `AssignDialog.frame()` take HTML as is by design. That is where
+a regression would slip in. `style` and `class` attributes built from data must be validated,
+not only escaped.
 
-**Non couvert en détail** : `map_parser.html` (sondages seulement, conformes), import PDF de `maintenance_page.js`,
+**Not covered in detail**: `map_parser.html` (spot checks only, compliant), PDF import of `maintenance_page.js`,
 `odv_settings.js`.

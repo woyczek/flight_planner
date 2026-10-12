@@ -1,14 +1,14 @@
-# Prompt — générateur de série de missions (Helo XP)
+# Prompt — mission series generator (Helo XP)
 
-Prompt à donner à un assistant externe (ChatGPT…) pour produire une série de missions directement
-lisible par la suite : générateur de mission, studio cartographique, profil vertical, CR et
-statistiques. Il décrit **exactement** ce que lisent `apps/cpco/mission_store.js` (YAML + Markdown),
-`apps/cpco/map_parser.html` (cartes, zones, profil vertical) et `shared/mission_core/core.js`
-(passerelle mission → CR : famille, appareils, terrains). À mettre à jour avec eux.
+Prompt to give to an external assistant (ChatGPT…) to produce a series of missions directly
+readable by the suite: mission generator, map studio, vertical profile, reports and
+statistics. It describes **exactly** what `apps/cpco/mission_store.js` (YAML + Markdown),
+`apps/cpco/map_parser.html` (maps, areas, vertical profile) and `shared/mission_core/core.js`
+(mission → report bridge: family, aircraft, airfields) read. To be updated along with them.
 
-Copier tout le bloc ci-dessous, régler les paramètres en tête — ou utiliser « Créer une mission avec ChatGPT » du
-générateur de mission (bloc 1), qui les règle et copie le prompt. Après modification de ce document : lancer
-`python tools/build_mission_prompt.py` (ou `tools/bump_versions.py`), qui régénère `apps/cpco/mission_prompt.js`.
+Copy the whole block below and set the parameters at the top — or use “Create a mission with ChatGPT” in the
+mission generator (block 1), which sets them and copies the prompt. After changing this document: run
+`python tools/build_mission_prompt.py` (or `tools/bump_versions.py`), which regenerates `apps/cpco/mission_prompt.js`.
 
 ---
 

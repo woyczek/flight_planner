@@ -20,6 +20,11 @@ Lues par toutes les sessions qui travaillent sur ce dépôt. Elles priment sur l
 
 - Interface en français d'abord, **quatre langues** (fr, en, de, es) ; tout texte écrit en dur est traduit, y compris
   les phrases composées, infobulles et statuts.
+- **Dépôt en anglais** (décision du 12 octobre 2026) : README, `docs/README.md`, `docs/technique/*`, `INSTALL.md`,
+  `VERSION.md` et le CHANGELOG s'écrivent en anglais ; les tutoriels (`docs/tutorial/`) en anglais, traduits en
+  français ; les manuels (aide en ligne) restent en quatre langues, français d'abord. Les documents publiés du dépôt
+  (tout `docs/technique/*`, historique compris, journal des bugs inclus) sont traduits en anglais ou rendus bilingues ;
+  tout document ou toute section nouvelle est en anglais.
 - **Des boutons pour l'utilisateur final** : jamais de console ni de fichier à poser à la main ; la page enchaîne.
 - Avertissements en notifications flottantes (`AppFramework.notify`).
 - Python du lanceur et des outils : **bibliothèque standard** seulement.
@@ -30,8 +35,10 @@ Lues par toutes les sessions qui travaillent sur ce dépôt. Elles priment sur l
      servant, `tools/version_stamps.py` ; la livraison les pose dans l'archive) — `python tools/bump_versions.py --neutral`
      seulement si une empreinte réelle s'est glissée ;
   3. pages modifiées rechargées, sans erreur JavaScript ;
-  4. entrée au CHANGELOG, rubrique « Non publié » ;
+  4. entrée au CHANGELOG, en anglais, rubrique « Unreleased » ;
   5. aucune marque de conflit : `git grep -l -E "^(<<<<<<<|>>>>>>>) "` vide.
 - Commits : préfixes gitmoji, message en français ; develop reçoit des avances rapides seulement (rebase, puis push).
+- **Documentation : un commit par lot, jamais un commit par document** (traductions, manuels, tutoriels, aide) ;
+  on squashe le plus possible avant de pousser.
 - Chaque session travaille dans son espace et sur sa branche. La refonte v2 vit sur `feature/v2-niveaux`, les comptes
   signés sur `feature/audit-securite` : rien de ces chantiers sur develop sans l'accord de l'utilisateur.

@@ -628,10 +628,145 @@
         return true;
       })
       .map(p => `<circle cx="${X(p).toFixed(1)}" cy="${Y(p).toFixed(1)}" r="${p.kind === 'origin' || p.kind === 'destination' ? 5 : 3.5}" fill="${p.kind === 'target' ? '#d0021b' : p.kind === 'return' ? 'none' : 'currentColor'}" stroke="currentColor"/><text x="${(X(p) + 6).toFixed(1)}" y="${(Y(p) - 6).toFixed(1)}" font-size="11">${esc(p.id === 'ORIGIN' || p.id === 'DESTINATION' || p.kind === 'return' ? String(p.name).replace(/\s*[(–-].*$/, '') : p.id || p.name)}</text>`).join('');
-    return `<svg class="me-sketch" viewBox="0 0 ${W} ${H}" role="img" aria-label="Route probable">${opts}<polyline points="${line(sum.points)}" fill="none" stroke="currentColor" stroke-width="2"/>${marks}</svg>`;
+    return `<svg class="me-sketch" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(T(['Route probable', 'Probable route', 'Wahrscheinliche Route', 'Ruta probable']))}">${opts}<polyline points="${line(sum.points)}" fill="none" stroke="currentColor" stroke-width="2"/>${marks}</svg>`;
+  }
+  // ---- textes de l'estimation dans la langue de la page (RepositoryKit.t) : ceux du panneau, écrits ici, et les phrases du
+  // calcul (méthode, source de la vitesse, mode et raison du transit) gardées en français dans le registre — vocabulaire
+  // fermé produit par ce module et par mission_routing.js, reconnu et traduit à l'affichage ; une phrase inconnue reste
+  // telle quelle
+  const T = (row, v = {}) => String(window.RepositoryKit?.t ? window.RepositoryKit.t(row) : row[0]).replace(/\{(\w+)\}/g, (m, k) => v[
+    k] ?? m);
+  const WORDS = {
+    'hélicoptère': ['hélicoptère', 'helicopter', 'Hubschrauber', 'helicóptero'],
+    'avion à pistons': ['avion à pistons', 'piston aircraft', 'Kolbenflugzeug', 'avión de pistón'],
+    'turbopropulseur': ['turbopropulseur', 'turboprop', 'Turboprop', 'turbohélice'],
+    'réacteur': ['réacteur', 'jet', 'Jet', 'reactor'],
+    'aller': ['aller', 'outbound', 'Hinflug', 'ida'],
+    'sur zone': ['sur zone', 'on station', 'im Einsatzgebiet', 'en zona'],
+    'retour': ['retour', 'return', 'Rückflug', 'regreso'],
+    'voies aériennes': ['voies aériennes', 'airways', 'Luftstraßen', 'aerovías'],
+    'RTBA (basse hauteur)': ['RTBA (basse hauteur)', 'RTBA (low level)', 'RTBA (Tiefflug)', 'RTBA (baja altura)'],
+    'direct': ['direct', 'direct', 'direkt', 'directo'],
+    'principal': ['principal', 'main', 'Haupt', 'principal']
+  };
+  /** Mot du calcul traduit (classe d'appareil, phase, mode de transit) ; inconnu : tel quel. */
+  const word = x => WORDS[x] ? T(WORDS[x]) : x;
+  const RULES = [
+    [/^valeur type (.+)$/, m => T(['valeur type {c}', 'typical value ({c})', 'Typwert ({c})', 'valor típico ({c})'], {
+      c: word(m[1])
+    })],
+    [/^vitesse donnée par la mission$/, () => T(['vitesse donnée par la mission', 'speed given by the mission',
+      'Geschwindigkeit aus der Mission', 'velocidad dada por la misión'
+    ])],
+    [/^profil du planificateur (.+)$/, m => T(['profil du planificateur {p}', 'planner profile {p}', 'Planer-Profil {p}',
+      'perfil del planificador {p}'
+    ], {
+      p: m[1]
+    })],
+    [/^fiche APD (.+)$/, m => T(['fiche APD {c}', 'APD sheet {c}', 'APD-Datenblatt {c}', 'ficha APD {c}'], {
+      c: m[1]
+    })],
+    [/^ordre donné par la mission \(route_order\)$/, () => T(['ordre donné par la mission (route_order)',
+      'order given by the mission (route_order)', 'Reihenfolge aus der Mission (route_order)',
+      'orden dado por la misión (route_order)'
+    ])],
+    [/^cheminement du profil vertical$/, () => T(['cheminement du profil vertical', 'vertical profile path', 'Weg des Vertikalprofils',
+      'recorrido del perfil vertical'
+    ])],
+    [/^points tournants dans l’ordre, chaque point de travail après le point tournant le plus proche$/, () => T([
+      'points tournants dans l’ordre, chaque point de travail après le point tournant le plus proche',
+      'turning points in order, each work point after the nearest turning point',
+      'Wendepunkte der Reihe nach, jeder Arbeitspunkt nach dem nächstgelegenen Wendepunkt',
+      'puntos de viraje en orden, cada punto de trabajo tras el punto de viraje más cercano'
+    ])],
+    [/^(.+), puis partie (.+?) \((.*)\)$/, m => T(['{a}, puis partie {p} ({t})', '{a}, then part {p} ({t})', '{a}, dann Teil {p} ({t})',
+      '{a}, luego parte {p} ({t})'
+    ], {
+      a: say(m[1]),
+      p: m[2],
+      t: m[3]
+    })],
+    [/^transit par les voies aériennes \((.*)\)$/, m => T(['transit par les voies aériennes ({v})', 'transit along the airways ({v})',
+      'Transit über Luftstraßen ({v})', 'tránsito por aerovías ({v})'
+    ], {
+      v: m[1]
+    })],
+    [/^transit à basse hauteur par le RTBA \((.*)\)$/, m => T(['transit à basse hauteur par le RTBA ({v})',
+      'low-level transit through the RTBA ({v})', 'Tiefflugtransit über das RTBA ({v})', 'tránsito a baja altura por el RTBA ({v})'
+    ], {
+      v: m[1]
+    })],
+    [/^(.+) — resté direct : (.+)$/, m => T(['{a} — resté direct : {b}', '{a} — kept direct: {b}', '{a} — direkt geblieben: {b}',
+      '{a} — quedó directo: {b}'
+    ], {
+      a: say(m[1]),
+      b: m[2].split(', ').map(say).join(', ')
+    })],
+    [/^calcul des routes non chargé$/, () => T(['calcul des routes non chargé', 'route calculation not loaded',
+      'Routenberechnung nicht geladen', 'cálculo de rutas no cargado'
+    ])],
+    [/^base SIA du navigateur sans voies aériennes ni zones du RTBA : relire le dossier SIA \(format 14\)$/, () => T([
+      'base SIA du navigateur sans voies aériennes ni zones du RTBA : relire le dossier SIA (format 14)',
+      'browser SIA database without airways or RTBA areas: read the SIA folder again (format 14)',
+      'SIA-Datenbank des Browsers ohne Luftstraßen und RTBA-Zonen: SIA-Ordner neu lesen (Format 14)',
+      'base SIA del navegador sin aerovías ni zonas RTBA: releer la carpeta SIA (formato 14)'
+    ])],
+    [/^mode imposé par la mission \(route_mode : (.+)\)$/, m => T(['mode imposé par la mission (route_mode : {m})',
+      'mode set by the mission (route_mode: {m})', 'Modus von der Mission vorgegeben (route_mode: {m})',
+      'modo impuesto por la misión (route_mode: {m})'
+    ], {
+      m: m[1]
+    })],
+    [/^appareil inconnu$/, () => T(['appareil inconnu', 'unknown aircraft', 'unbekanntes Luftfahrzeug', 'aeronave desconocida'])],
+    [/^hélicoptère : transit direct$/, () => T(['hélicoptère : transit direct', 'helicopter: direct transit',
+      'Hubschrauber: Direkttransit', 'helicóptero: tránsito directo'
+    ])],
+    [/^basse hauteur \(≤ (\d+) ft\) : RTBA$/, m => T(['basse hauteur (≤ {f} ft) : RTBA', 'low level (≤ {f} ft): RTBA',
+      'Tiefflug (≤ {f} ft): RTBA', 'baja altura (≤ {f} ft): RTBA'
+    ], {
+      f: m[1]
+    })],
+    [/^croisière (\d+) ft \(≥ (\d+)\) : voies aériennes$/, m => T(['croisière {c} ft (≥ {m}) : voies aériennes',
+      'cruise {c} ft (≥ {m}): airways', 'Reiseflug {c} ft (≥ {m}): Luftstraßen', 'crucero {c} ft (≥ {m}): aerovías'
+    ], {
+      c: m[1],
+      m: m[2]
+    })],
+    [/^croisière (\d+) ft : VFR, transit direct$/, m => T(['croisière {c} ft : VFR, transit direct',
+      'cruise {c} ft: VFR, direct transit', 'Reiseflug {c} ft: VFR, Direkttransit', 'crucero {c} ft: VFR, tránsito directo'
+    ], {
+      c: m[1]
+    })],
+    [/^hors de la couverture des données SIA \(France et outre-mer\)$/, () => T([
+      'hors de la couverture des données SIA (France et outre-mer)', 'outside SIA data coverage (France and overseas)',
+      'außerhalb der SIA-Datenabdeckung (Frankreich und Überseegebiete)', 'fuera de la cobertura de datos SIA (Francia y ultramar)'
+    ])],
+    [/^tronçons ≤ (\d+) NM$/, m => T(['tronçons ≤ {n} NM', 'legs ≤ {n} NM', 'Abschnitte ≤ {n} NM', 'tramos ≤ {n} NM'], {
+      n: m[1]
+    })],
+    [/^pas de chemin par les (.+) à ce niveau$/, m => T(['pas de chemin par les {m} à ce niveau', 'no path via the {m} at this level',
+      'kein Weg über {m} auf dieser Höhe', 'sin camino por {m} a este nivel'
+    ], {
+      m: word(m[1])
+    })],
+    [/^détour excessif$/, () => T(['détour excessif', 'excessive detour', 'zu großer Umweg', 'desvío excesivo'])],
+    [/^aucun tronçon à router$/, () => T(['aucun tronçon à router', 'no leg to route', 'kein Abschnitt zu routen',
+      'ningún tramo que enrutar'
+    ])]
+  ];
+  /** Phrase du calcul dans la langue de la page : parties séparées par « ; » traduites une à une. */
+  function say(x) {
+    const str = String(x ?? '');
+    if (!str) return str;
+    if (str.includes(' ; ')) return str.split(' ; ').map(say).join(' ; ');
+    for (const [re, f] of RULES) {
+      const m = re.exec(str);
+      if (m) return f(m);
+    }
+    return word(str);
   }
   /** Tableau des tronçons d'une route. */
-  const legTable = legs => `<table class="me-legs"><thead><tr><th>Tronçon</th><th>Phase</th><th>NM</th><th>Vol</th><th>Sur place</th></tr></thead><tbody>${legs.map(l => `<tr><td>${esc(l.from)} → ${esc(l.to)}</td><td>${esc(l.phase)}</td><td>${l.nm}</td><td>${l.min} min</td><td>${l.task ? l.task + ' min' : ''}</td></tr>`).join('')}</tbody></table>`;
+  const legTable = legs => `<table class="me-legs"><thead><tr><th>${esc(T(['Tronçon', 'Leg', 'Abschnitt', 'Tramo']))}</th><th>${esc(T(['Phase', 'Phase', 'Phase', 'Fase']))}</th><th>NM</th><th>${esc(T(['Vol', 'Flight', 'Flug', 'Vuelo']))}</th><th>${esc(T(['Sur place', 'On site', 'Vor Ort', 'En el lugar']))}</th></tr></thead><tbody>${legs.map(l => `<tr><td>${esc(l.from)} → ${esc(l.to)}</td><td>${esc(word(l.phase))}</td><td>${l.nm}</td><td>${l.min} min</td><td>${l.task ? l.task + ' min' : ''}</td></tr>`).join('')}</tbody></table>`;
   /** Bloc « durée estimée » dans host : résumé, options de retour, estimation de la mission (timing), comparaison
    *  avec les CR [{ missionId, date, flight, block, transitOut, onStation, transitIn }], route affichable (mémorisé). */
   function panel(host, sum, {
@@ -639,7 +774,7 @@
   } = {}) {
     if (!host) return;
     if (!sum) {
-      host.innerHTML = '<p class="small">Pas d’estimation : départ ou points sans coordonnées.</p>';
+      host.innerHTML = `<p class="small">${esc(T(['Pas d’estimation : départ ou points sans coordonnées.', 'No estimate: departure or points without coordinates.', 'Keine Schätzung: Abflugort oder Punkte ohne Koordinaten.', 'Sin estimación: salida o puntos sin coordenadas.']))}</p>`;
       return;
     }
     if (!document.getElementById('missionEstimateCss')) {
@@ -649,23 +784,30 @@
         '.me-box .me-kpi{display:flex;flex-wrap:wrap;gap:6px 14px;margin:4px 0}.me-box .me-kpi span{white-space:nowrap}.me-box .me-kpi b{font-size:1.05em}.me-box table{border-collapse:collapse;font-size:13px;margin:6px 0}.me-box td,.me-box th{padding:2px 8px;border-bottom:1px solid rgba(127,127,127,.25);text-align:left}.me-box .me-sketch{width:100%;max-width:560px;height:auto;display:block;margin:6px 0}.me-box .me-routecols{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));gap:4px 16px;align-items:start}.me-box .me-routecols table{width:100%}.me-box .me-small{font-size:12px;opacity:.8}.me-box .me-toggle{display:flex!important;flex-direction:row;gap:6px;align-items:center;justify-content:flex-start;width:auto;margin:6px 0}.me-box .me-toggle input{width:auto;margin:0}.me-box .me-up{color:#b45309}.me-box .me-down{color:#15803d}';
       document.head.append(css);
     }
-    const phase = `aller ${hm(sum.transitOut)} · sur zone ${hm(sum.onStation)} · retour ${hm(sum.transitIn)}`;
-    const range = sum.options.length ? ` <span class="me-small">(${hm(sum.min)} à ${hm(sum.max)} selon le retour)</span>` : '';
+    const phase = `${word('aller')} ${hm(sum.transitOut)} · ${word('sur zone')} ${hm(sum.onStation)} · ${word('retour')} ${hm(sum.transitIn)}`;
+    const range = sum.options.length ? ` <span class="me-small">(${esc(T(['{a} à {b} selon le retour', '{a} to {b} depending on the return', '{a} bis {b} je nach Rückflug', '{a} a {b} según el regreso'], { a: hm(sum.min), b: hm(sum.max) }))})</span>` : '';
     /** Écart coloré (hausse / baisse) entre la durée estimée key et celle du CR r. */
     const cmp = (r, key) => {
       const c = compare(sum[key], r[key]);
       return c ? `<span class="${c.diff > 0 ? 'me-up' : 'me-down'}">${esc(c.text)}</span>` : '';
     };
     host.classList.add('me-box');
-    host.innerHTML = `<div class="me-kpi"><span>Vol estimé <b>${hm(sum.flight)}</b>${range}</span><span>Bloc <b>${hm(sum.block)}</b></span><span>${esc(phase)}</span><span>${sum.nm} NM</span></div>
-      <p class="me-small">${esc(sum.code || '?')} (${esc(sum.label || '')}) à ${sum.tas} kt — ${esc(sum.source || '')} ; ${esc(sum.how || '')}.${sum.statedFlight ? ` Durée annoncée par la mission : ${hm(sum.statedFlight)} (ce calcul : ${esc(compare(sum.statedFlight, sum.flight)?.text || '=')}).` : ''}</p>
-      ${sum.routing ? `<p class="me-small"><b>Transit</b> : ${esc(sum.routing.how || window.MissionRouting?.LABEL?.[sum.routing.mode] || sum.routing.mode)} — ${esc(sum.routing.reason || '')}.</p>` : ''}
-      ${sum.provenOut || sum.provenIn ? `<p class="me-small"><b>Temps éprouvés</b> (CR des missions de même départ et mêmes points) : ${[sum.provenOut ? `aller ${hm(sum.provenOut.min)} (${sum.provenOut.n} vol${sum.provenOut.n > 1 ? 's' : ''})` : '', sum.provenIn ? `retour ${hm(sum.provenIn.min)} (${sum.provenIn.n} vol${sum.provenIn.n > 1 ? 's' : ''})` : ''].filter(Boolean).join(', ')} — repris à la place du calcul.</p>` : ''}
-      ${(sum.phases || []).length ? `<p class="me-small"><b>Briefs successifs</b> : ${sum.phases.map(p => `partie ${esc(p.id)}${p.title ? ` « ${esc(p.title)} »` : ''} remise vers T + ${p.at == null ? '?' : hm(p.at)}${p.trigger ? ` (${esc(p.trigger)})` : ''}`).join(' ; ')}.</p>` : ''}
-      ${sum.options.length ? `<table><thead><tr><th>Retour</th><th>Condition</th><th>Vol</th><th>Retour</th></tr></thead><tbody><tr><td>${esc(String(sum.points[sum.points.length - 1]?.name || 'Base'))}</td><td class="me-small">principal</td><td>${hm(sum.flight)}</td><td>${hm(sum.transitIn)}</td></tr>${sum.options.map(o => `<tr><td>${esc(o.label)}</td><td class="me-small">${esc(o.condition)}</td><td>${hm(o.flight)}</td><td>${hm(o.transitIn)}</td></tr>`).join('')}</tbody></table>` : ''}
-      ${reports.length ? `<table><thead><tr><th>CR</th><th>Date</th><th>Vol réel</th><th>Écart</th><th>Aller</th><th>Sur zone</th><th>Retour</th></tr></thead><tbody>${reports.map(r => `<tr><td>${esc(r.missionId)}</td><td>${esc(r.date || '')}</td><td>${hm(r.flight)}</td><td>${cmp(r, 'flight')}</td><td>${r.transitOut ? hm(r.transitOut) + ' ' + cmp(r, 'transitOut') : ''}</td><td>${r.onStation ? hm(r.onStation) + ' ' + cmp(r, 'onStation') : ''}</td><td>${r.transitIn ? hm(r.transitIn) + ' ' + cmp(r, 'transitIn') : ''}</td></tr>`).join('')}</tbody></table>` : '<p class="me-small">Aucun CR de cette mission pour comparer.</p>'}
-      <label class="me-small me-toggle"><input type="checkbox" data-me-route ${routeOn() ? 'checked' : ''}> Afficher la route probable</label>
-      <div data-me-routebox ${routeOn() ? '' : 'hidden'}><div class="me-routecols"><div>${sketch(sum)}</div><div>${legTable(sum.legs)}</div></div>${sum.options.map(o => `<p class="me-small"><b>Retour ${esc(o.label)}</b>${o.condition ? ` — ${esc(o.condition)}` : ''}</p>${legTable(o.legs.filter(l => l.phase === 'retour'))}`).join('')}</div>`;
+    const H = row => esc(T(row)); // en-tête ou libellé traduit, échappé
+    const RET = ['Retour', 'Return', 'Rückflug', 'Regreso'];
+    const flights = n => T(n > 1 ? ['{n} vols', '{n} flights', '{n} Flüge', '{n} vuelos'] : ['{n} vol', '{n} flight', '{n} Flug',
+      '{n} vuelo'
+    ], {
+      n
+    });
+    host.innerHTML = `<div class="me-kpi"><span>${H(['Vol estimé', 'Estimated flight', 'Geschätzter Flug', 'Vuelo estimado'])} <b>${hm(sum.flight)}</b>${range}</span><span>${H(['Bloc', 'Block', 'Block', 'Bloque'])} <b>${hm(sum.block)}</b></span><span>${esc(phase)}</span><span>${sum.nm} NM</span></div>
+      <p class="me-small">${esc(T(['{c} ({l}) à {s} kt', '{c} ({l}) at {s} kt', '{c} ({l}) mit {s} kt', '{c} ({l}) a {s} kt'], { c: sum.code || '?', l: word(sum.label || ''), s: sum.tas }))} — ${esc(say(sum.source || ''))} ; ${esc(say(sum.how || ''))}.${sum.statedFlight ? ` ${esc(T(['Durée annoncée par la mission : {d} (ce calcul : {c}).', 'Duration stated by the mission: {d} (this calculation: {c}).', 'Von der Mission angegebene Dauer: {d} (diese Berechnung: {c}).', 'Duración indicada por la misión: {d} (este cálculo: {c}).'], { d: hm(sum.statedFlight), c: compare(sum.statedFlight, sum.flight)?.text || '=' }))}` : ''}</p>
+      ${sum.routing ? `<p class="me-small"><b>${H(['Transit', 'Transit', 'Transit', 'Tránsito'])}</b> : ${esc(say(sum.routing.how || window.MissionRouting?.LABEL?.[sum.routing.mode] || sum.routing.mode))} — ${esc(say(sum.routing.reason || ''))}.</p>` : ''}
+      ${sum.provenOut || sum.provenIn ? `<p class="me-small"><b>${H(['Temps éprouvés', 'Proven times', 'Bewährte Zeiten', 'Tiempos comprobados'])}</b> ${H(['(CR des missions de même départ et mêmes points)', '(reports of missions with the same departure and points)', '(Berichte von Missionen mit gleichem Abflugort und gleichen Punkten)', '(informes de misiones con la misma salida y los mismos puntos)'])} : ${[sum.provenOut ? `${word('aller')} ${hm(sum.provenOut.min)} (${esc(flights(sum.provenOut.n))})` : '', sum.provenIn ? `${word('retour')} ${hm(sum.provenIn.min)} (${esc(flights(sum.provenIn.n))})` : ''].filter(Boolean).join(', ')} — ${H(['repris à la place du calcul.', 'used instead of the calculation.', 'anstelle der Berechnung verwendet.', 'usados en lugar del cálculo.'])}</p>` : ''}
+      ${(sum.phases || []).length ? `<p class="me-small"><b>${H(['Briefs successifs', 'Successive briefs', 'Aufeinanderfolgende Briefings', 'Briefings sucesivos'])}</b> : ${sum.phases.map(p => esc(T(['partie {i}{t} remise vers T + {a}{g}', 'part {i}{t} handed over around T + {a}{g}', 'Teil {i}{t} übergeben gegen T + {a}{g}', 'parte {i}{t} entregada hacia T + {a}{g}'], { i: p.id, t: p.title ? ` « ${p.title} »` : '', a: p.at == null ? '?' : hm(p.at), g: p.trigger ? ` (${p.trigger})` : '' }))).join(' ; ')}.</p>` : ''}
+      ${sum.options.length ? `<table><thead><tr><th>${H(RET)}</th><th>${H(['Condition', 'Condition', 'Bedingung', 'Condición'])}</th><th>${H(['Vol', 'Flight', 'Flug', 'Vuelo'])}</th><th>${H(RET)}</th></tr></thead><tbody><tr><td>${esc(String(sum.points[sum.points.length - 1]?.name || 'Base'))}</td><td class="me-small">${esc(word('principal'))}</td><td>${hm(sum.flight)}</td><td>${hm(sum.transitIn)}</td></tr>${sum.options.map(o => `<tr><td>${esc(o.label)}</td><td class="me-small">${esc(o.condition)}</td><td>${hm(o.flight)}</td><td>${hm(o.transitIn)}</td></tr>`).join('')}</tbody></table>` : ''}
+      ${reports.length ? `<table><thead><tr><th>CR</th><th>${H(['Date', 'Date', 'Datum', 'Fecha'])}</th><th>${H(['Vol réel', 'Actual flight', 'Tatsächlicher Flug', 'Vuelo real'])}</th><th>${H(['Écart', 'Difference', 'Abweichung', 'Diferencia'])}</th><th>${H(['Aller', 'Outbound', 'Hinflug', 'Ida'])}</th><th>${H(['Sur zone', 'On station', 'Im Einsatzgebiet', 'En zona'])}</th><th>${H(RET)}</th></tr></thead><tbody>${reports.map(r => `<tr><td>${esc(r.missionId)}</td><td>${esc(r.date || '')}</td><td>${hm(r.flight)}</td><td>${cmp(r, 'flight')}</td><td>${r.transitOut ? hm(r.transitOut) + ' ' + cmp(r, 'transitOut') : ''}</td><td>${r.onStation ? hm(r.onStation) + ' ' + cmp(r, 'onStation') : ''}</td><td>${r.transitIn ? hm(r.transitIn) + ' ' + cmp(r, 'transitIn') : ''}</td></tr>`).join('')}</tbody></table>` : `<p class="me-small">${H(['Aucun CR de cette mission pour comparer.', 'No report of this mission to compare with.', 'Kein Bericht dieser Mission zum Vergleich.', 'Ningún informe de esta misión para comparar.'])}</p>`}
+      <label class="me-small me-toggle"><input type="checkbox" data-me-route ${routeOn() ? 'checked' : ''}> ${H(['Afficher la route probable', 'Show the probable route', 'Wahrscheinliche Route anzeigen', 'Mostrar la ruta probable'])}</label>
+      <div data-me-routebox ${routeOn() ? '' : 'hidden'}><div class="me-routecols"><div>${sketch(sum)}</div><div>${legTable(sum.legs)}</div></div>${sum.options.map(o => `<p class="me-small"><b>${H(RET)} ${esc(o.label)}</b>${o.condition ? ` — ${esc(o.condition)}` : ''}</p>${legTable(o.legs.filter(l => l.phase === 'retour'))}`).join('')}</div>`;
     host.querySelector('[data-me-route]').onchange = e => {
       try {
         localStorage.setItem(ROUTE_KEY, e.target.checked ? '1' : '0');

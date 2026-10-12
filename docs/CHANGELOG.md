@@ -8,10 +8,11 @@ La version affichée en pied de page de chaque page (lien vers ce fichier) vient
 
 Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n`.
 
-## [Non publié]
+## [Unreleased]
 
 ### Ajouté
 
+- **Technical documentation in English**: `docs/technique/V2_FABLE.md`, `CONTRASTE_2026-10-09.md` and `perf/RAPPORT_2026-10-08.md` translated in full (file names, anchors and internal links unchanged), as decided on 12 October — every published repository document is written in English.
 - **Studio cartographique : « Points à placer (n) »** — pour une mission sans coordonnées (squelette du générateur),
   le bloc Route liste départ, cible, points tournants, rendez-vous, centres de zones et terrains sans position (ordre de
   `route_order`) ; « Cliquer la carte » (curseur en croix, un clic pose le point, Échap annule) ou recherche dans la
@@ -43,6 +44,29 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Modifié
 
+- **Technical documents translated into English** (Features SOG share): `AFFECTATION_MISSIONS.md`, `ASSETS_A_FOURNIR.md`,
+  `COMPTES_SIGNES.md`, `DISPOS_ET_REORGANISATION.md`, `DONNEES_AERO_ETRANGER.md`, `FRAMEWORK.md`, `ODV_ORDRES.md`,
+  `PROMPTS_ASSETS_PHASE2.md`, `PROMPTS_LIVRE_MISSION.md`, `PROPOSITION_DESIGN_ICONES.md`, `REFACTORING_TOOLKIT.md`,
+  `ROADMAP.md`, `SIA_XML_INTEGRATION.md`, `V2_NIVEAUX.md`, `mission_report_core_audit.md`, and the framing text of
+  `PROMPT_GENERATEUR_MISSIONS.md` / `PROMPT_PROFIL_PERFORMANCES.md` (prompt blocks unchanged, generated prompts identical);
+  same file names, internal anchor links updated.
+- **Technical documents translated into English** (BUGS SOG share): `docs/technique/BUGS.md`, `perf/SYNTHESE.md`,
+  `perf/RAPPORT_PERF.md`, `SYNCHRONISATION.md` (diagram labels included), `INDEX_DONNEES.md`, `DETTE_TECHNIQUE.md` —
+  history included; file names, section numbers, paths and links unchanged.
+- **Security audits translated into English** (repository in English, decision of 12 October): `docs/technique/AUDIT_SECURITE_2026-10-02.md`, `docs/technique/AUDIT_2026-09-28.md`, `docs/technique/AUDIT_SECURITE_2026-10-07.md` — same file names, translated headings, internal links following them.
+- **Help page: fixed structure, tutorials first** — Tutorials · Manuals (user, administrator) · Operations
+  (operations manual, installation, release notes, changelog) · For developers (collapsed, from
+  `docs/technique/README.md`); the home page and the left index are produced from that structure (`HELP` in
+  `apps/aide/aide.js`), no longer from the hand-written table of `docs/README.md` (now a short pointer, in English);
+  tutorials listed with one sentence each (only those present); manuals with their chapters; search over tutorials and
+  manuals in the current language, developer documentation on request; results named by document title.
+- **Mission generator: text sections follow the page language** — redrawn when the language is resolved or changed.
+- **Mission generator: text sections by type** — each section carries a type (stable internal key) chosen from a
+  translated list and changeable afterwards (content moved to the right YAML key or brief section); its displayed title
+  is the translated type; one section per type (taken types greyed out), except “Free text”, which has a typed title,
+  can be added any number of times and goes at the end of the brief. Explanations (“where it appears, what to write”)
+  and the card labels are in the page language only. Skeleton sections typed and marked as created in the generator.
+  Administrator manual (4 languages).
 - **Générateur, squelette : appareil adapté à la famille** — « automatique » choisit dans la flotte un appareil des
   catégories du prompt (§ 6 : Transport, Chasse / surveillance, Sécurité civile, Hélicoptères) qui conviennent à la
   famille (HEMS et police : hélicoptères ; feux : Sécurité civile ; combat : chasseurs ; surveillance maritime : ni
@@ -65,6 +89,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   le générateur et le studio s'il ne vise plus la mission partagée (pas de lien « ← Registre » périmé), et lu par
   `mission_store.js` dès son chargement (le lien reste posé quand il est juste) ; le registre demande confirmation
   avant de remplacer, dans le générateur et le studio, un squelette jamais rangé d'une autre opération.
+- **Registre et générateur, « Durée estimée » restée en français dans les autres langues** (« Vol estimé », « Bloc »,
+  « aller · sur zone · retour », méthode, transit, « Aucun CR… », « Afficher la route probable ») : textes du panneau
+  traduits (4 langues) ; les phrases du calcul gardées en français dans le registre (méthode, source de la vitesse,
+  mode et raison du transit) sont reconnues et traduites à l'affichage (`shared/mission_estimate.js`).
 - **Générateur : rubriques du brief en double et en deux langues** (« Summary », « Teams involved », « Risks to
   consider »… à côté de leurs équivalents) — le brief rangé `summary<ID>.md` relu avec son YAML redevenait une
   rubrique libre par section. Désormais une seule table des sections générées (`BRIEF_TITLES`, rendu français et

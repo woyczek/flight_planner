@@ -548,7 +548,7 @@ html[data-skeuo] .repo-block .mapCard.missing:not(#imp) {
 
 <section data-block-id="mission-exercise" data-icon="list" data-subtitle="Plis scellés à ouvrir et messages radio attendus, d’après la chronologie de l’organisation de l’exercice." hidden><h2>Exercice</h2><div id="missionExercise"></div><div id="exerciseMaps" class="small exerciseMaps"></div></section>
 
-<section data-block-id="mission-texts" data-icon="file-text" data-subtitle="Résumé, description détaillée, puis les rubriques que le brief place à leur rang : objectifs, risques et notes vont dans le YAML, les autres complètent la section du même nom."><h2>Textes de mission</h2><div class="two"><label>Résumé<textarea id="summary"></textarea></label><label>Description détaillée<textarea id="detailed" class="long"></textarea></label></div><div id="narrativeSections"></div><details id="addNarrative" class="narrMenu"><summary>Ajouter une rubrique textuelle</summary><ul id="narrChoices"></ul></details></section>
+<section data-block-id="mission-texts" data-icon="file-text" data-subtitle="Résumé, description détaillée, puis les rubriques que le brief place à leur rang : objectifs, risques et notes vont dans le YAML, les autres complètent la section du même nom."><h2>Textes de mission</h2><div class="two"><label>Résumé<textarea id="summary"></textarea></label><label>Description détaillée<textarea id="detailed" class="long"></textarea></label></div><div id="narrativeSections" data-no-i18n></div><details id="addNarrative" class="narrMenu"><summary>Ajouter une rubrique textuelle</summary><ul id="narrChoices" data-no-i18n></ul></details></section>
 
 <section data-block-id="mission-yaml" data-default-hidden="1" data-min-level="4" data-icon="database" data-subtitle="Éditeur libre de toutes les clés du YAML de la mission."><h2>Toutes les données YAML</h2><p class="note">Cet éditeur est sans schéma imposé : les champs supplémentaires présents dans tes exemples sont conservés et restent modifiables.</p><div id="yamlEditor"></div><div class="inlineAdd"><input id="newRootKey" placeholder="Nom d’un nouveau champ racine"><button id="addRootKey" class="ghost" type="button">Ajouter</button></div></section>
 
@@ -913,70 +913,182 @@ function renderCommon() {
 }
 
 /* ===== Rubriques textuelles =====
-   Rubriques que le brief (Markdown, PDF) et le CR savent placer. Celles qui ont une clé YAML (objectifs, risques, notes)
-   s'écrivent sous cette clé : le brief et le CR les lisent là. Les autres vont dans narrative.sections sous leur titre et
-   complètent, dans le brief, la section de même nom (ou s'ajoutent à la fin). « Autre rubrique… » : titre libre, brief
-   seulement. key : chemin YAML ; lines : une valeur par ligne (liste). */
+   Chaque rubrique a un TYPE (clé interne stable), choisi dans une liste traduite et modifiable après coup (contenu
+   conservé) ; son titre affiché est la traduction du type. Une rubrique par type, sauf « Texte libre » (titre saisi,
+   autant que voulu, à la fin du brief). Types à clé YAML (objectifs, risques, notes) : écrits sous leur clé, que le brief
+   et le CR lisent ; les autres : narrative.sections { type, title (titre français du brief, stable), content, named },
+   qui complètent dans le brief la section de même titre. lines : une valeur par ligne (liste). */
 const NARR_SECTIONS = [{
+  type: 'introduction',
   title: 'Introduction',
-  where: 'Brief : sous l’en-tête (type, aéronef, départ, destination).',
-  what: 'Contexte, situation, ce qui amène la mission.'
+  label: ['Introduction', 'Introduction', 'Einleitung', 'Introducción'],
+  where: ['Brief : sous l’en-tête (type, aéronef, départ, destination).',
+    'Brief: under the header (type, aircraft, departure, destination).',
+    'Briefing: unter dem Kopf (Typ, Luftfahrzeug, Abflug, Ziel).', 'Brief: bajo la cabecera (tipo, aeronave, salida, destino).'
+  ],
+  what: ['Contexte, situation, ce qui amène la mission.', 'Context, situation, what leads to the mission.',
+    'Kontext, Lage, was zur Mission führt.',
+    'Contexto, situación, lo que motiva la misión.'
+  ]
 }, {
-  title: 'Objectif principal',
+  type: 'objective',
   key: 'objectives.primary',
-  where: 'YAML objectives.primary ; brief et CR.',
-  what: 'Ce que l’équipage doit avoir accompli, en une ou deux phrases.'
+  label: ['Objectif principal', 'Main objective', 'Hauptziel', 'Objetivo principal'],
+  where: ['Brief et CR (YAML objectives.primary).', 'Brief and report (YAML objectives.primary).',
+    'Briefing und Bericht (YAML objectives.primary).',
+    'Brief e informe (YAML objectives.primary).'
+  ],
+  what: ['Ce que l’équipage doit avoir accompli, en une ou deux phrases.', 'What the crew must have achieved, in one or two sentences.',
+    'Was die Besatzung erreicht haben muss, in ein oder zwei Sätzen.',
+    'Lo que la tripulación debe haber logrado, en una o dos frases.'
+  ]
 }, {
-  title: 'Objectifs secondaires',
+  type: 'secondary',
   key: 'objectives.secondary',
   lines: true,
-  where: 'YAML objectives.secondary ; brief et CR.',
-  what: 'Ce qui est souhaité en plus, un objectif par ligne.'
+  label: ['Objectifs secondaires', 'Secondary objectives', 'Nebenziele', 'Objetivos secundarios'],
+  where: ['Brief et CR (YAML objectives.secondary).', 'Brief and report (YAML objectives.secondary).',
+    'Briefing und Bericht (YAML objectives.secondary).', 'Brief e informe (YAML objectives.secondary).'
+  ],
+  what: ['Ce qui est souhaité en plus, un objectif par ligne.', 'What is wanted in addition, one objective per line.',
+    'Was zusätzlich gewünscht ist, ein Ziel pro Zeile.', 'Lo que se desea además, un objetivo por línea.'
+  ]
 }, {
+  type: 'teams',
   title: 'Équipes engagées',
-  where: 'Brief : sous le tableau des équipes.',
-  what: 'Rôle de chaque équipe, liaisons, consignes communes.'
+  label: ['Équipes engagées', 'Teams involved', 'Beteiligte Teams', 'Equipos implicados'],
+  where: ['Brief : sous le tableau des équipes.', 'Brief: under the team table.', 'Briefing: unter der Teamtabelle.',
+    'Brief: bajo la tabla de equipos.'
+  ],
+  what: ['Rôle de chaque équipe, liaisons, consignes communes.', 'Role of each team, links, common instructions.',
+    'Rolle jedes Teams, Verbindungen, gemeinsame Anweisungen.', 'Papel de cada equipo, enlaces, consignas comunes.'
+  ]
 }, {
+  type: 'turning_points',
   title: 'Points tournants',
-  where: 'Brief : sous le tableau des points.',
-  what: 'Ce qu’il faut faire ou observer à chaque point.'
+  label: ['Points tournants', 'Turning points', 'Wendepunkte', 'Puntos de viraje'],
+  where: ['Brief : sous le tableau des points.', 'Brief: under the point table.', 'Briefing: unter der Punktetabelle.',
+    'Brief: bajo la tabla de puntos.'
+  ],
+  what: ['Ce qu’il faut faire ou observer à chaque point.', 'What to do or observe at each point.',
+    'Was an jedem Punkt zu tun oder zu beobachten ist.', 'Qué hacer u observar en cada punto.'
+  ]
 }, {
+  type: 'rendezvous',
   title: 'Rendez-vous',
-  where: 'Brief : sous la liste des rendez-vous.',
-  what: 'Procédure de jonction, fréquences, signes de reconnaissance.'
+  label: ['Rendez-vous', 'Rendezvous', 'Treffpunkte', 'Encuentros'],
+  where: ['Brief : sous la liste des rendez-vous.', 'Brief: under the rendezvous list.', 'Briefing: unter der Treffpunktliste.',
+    'Brief: bajo la lista de encuentros.'
+  ],
+  what: ['Procédure de jonction, fréquences, signes de reconnaissance.', 'Joining procedure, frequencies, recognition signals.',
+    'Treffverfahren, Frequenzen, Erkennungszeichen.', 'Procedimiento de reunión, frecuencias, señales de reconocimiento.'
+  ]
 }, {
+  type: 'refuelling',
   title: 'Ravitaillement en vol',
-  where: 'Brief : sous les données du ravitaillement.',
-  what: 'Procédure, quantités, consignes du ravitailleur.'
+  label: ['Ravitaillement en vol', 'Air refuelling', 'Luftbetankung', 'Reabastecimiento en vuelo'],
+  where: ['Brief : sous les données du ravitaillement.', 'Brief: under the refuelling data.', 'Briefing: unter den Betankungsdaten.',
+    'Brief: bajo los datos del reabastecimiento.'
+  ],
+  what: ['Procédure, quantités, consignes du ravitailleur.', 'Procedure, quantities, tanker instructions.',
+    'Verfahren, Mengen, Anweisungen des Tankers.',
+    'Procedimiento, cantidades, consignas del cisterna.'
+  ]
 }, {
-  title: 'Risques à prendre en compte',
+  type: 'risks',
   key: 'risks',
   lines: true,
-  where: 'YAML risks ; brief, PDF et CR.',
-  what: 'Un risque par ligne : danger — conséquence — mesure.'
+  label: ['Risques à prendre en compte', 'Risks to consider', 'Zu berücksichtigende Risiken', 'Riesgos a tener en cuenta'],
+  where: ['Brief, PDF et CR (YAML risks).', 'Brief, PDF and report (YAML risks).', 'Briefing, PDF und Bericht (YAML risks).',
+    'Brief, PDF e informe (YAML risks).'
+  ],
+  what: ['Un risque par ligne : danger — conséquence — mesure.', 'One risk per line: hazard — consequence — measure.',
+    'Ein Risiko pro Zeile: Gefahr — Folge — Maßnahme.', 'Un riesgo por línea: peligro — consecuencia — medida.'
+  ]
 }, {
+  type: 'payload',
   title: 'Charge / personnel',
-  where: 'Brief : sous la charge transportée.',
-  what: 'Ce qui est à bord, contraintes de chargement ou de personnel.'
+  label: ['Charge / personnel', 'Load / personnel', 'Ladung / Personal', 'Carga / personal'],
+  where: ['Brief : sous la charge transportée.', 'Brief: under the carried load.', 'Briefing: unter der beförderten Ladung.',
+    'Brief: bajo la carga transportada.'
+  ],
+  what: ['Ce qui est à bord, contraintes de chargement ou de personnel.', 'What is on board, loading or personnel constraints.',
+    'Was an Bord ist, Lade- oder Personalbeschränkungen.', 'Lo que va a bordo, restricciones de carga o de personal.'
+  ]
 }, {
+  type: 'coordination',
   title: 'Coordination',
-  where: 'Brief : avec la coordination de l’opération, sinon section seule.',
-  what: 'Qui parle à qui, quand, sur quelle fréquence.'
+  label: ['Coordination', 'Coordination', 'Koordinierung', 'Coordinación'],
+  where: ['Brief : avec la coordination de l’opération, sinon section seule.',
+    'Brief: with the operation’s coordination, otherwise on its own.',
+    'Briefing: bei der Koordinierung der Operation, sonst eigener Abschnitt.',
+    'Brief: con la coordinación de la operación, si no, sección propia.'
+  ],
+  what: ['Qui parle à qui, quand, sur quelle fréquence.', 'Who talks to whom, when, on which frequency.',
+    'Wer mit wem spricht, wann, auf welcher Frequenz.',
+    'Quién habla con quién, cuándo, en qué frecuencia.'
+  ]
 }, {
+  type: 'timeline',
   title: 'Chronologie',
-  where: 'Brief : sous la chronologie de l’exercice, sinon section seule.',
-  what: 'Horaires prévus : décollage, arrivée sur zone, rendez-vous, retour.'
+  label: ['Chronologie', 'Timeline', 'Zeitablauf', 'Cronología'],
+  where: ['Brief : sous la chronologie de l’exercice, sinon section seule.',
+    'Brief: under the exercise timeline, otherwise on its own.',
+    'Briefing: unter dem Übungsablauf, sonst eigener Abschnitt.', 'Brief: bajo la cronología del ejercicio, si no, sección propia.'
+  ],
+  what: ['Horaires prévus : décollage, arrivée sur zone, rendez-vous, retour.',
+    'Planned times: take-off, arrival on area, rendezvous, return.',
+    'Geplante Zeiten: Start, Ankunft im Gebiet, Treffpunkt, Rückkehr.',
+    'Horarios previstos: despegue, llegada a la zona, encuentro, regreso.'
+  ]
 }, {
+  type: 'maps',
   title: 'Cartographie prévue',
-  where: 'Brief : sous la liste des cartes.',
-  what: 'Ce que chaque carte doit montrer, au besoin.'
+  label: ['Cartographie prévue', 'Planned maps', 'Vorgesehene Karten', 'Cartografía prevista'],
+  where: ['Brief : sous la liste des cartes.', 'Brief: under the map list.', 'Briefing: unter der Kartenliste.',
+    'Brief: bajo la lista de mapas.'
+  ],
+  what: ['Ce que chaque carte doit montrer, au besoin.', 'What each map must show, if needed.',
+    'Was jede Karte bei Bedarf zeigen soll.',
+    'Lo que cada mapa debe mostrar, si hace falta.'
+  ]
 }, {
-  title: 'Notes',
+  type: 'notes',
   key: 'notes',
   lines: true,
-  where: 'YAML notes ; brief et CR.',
-  what: 'Remarques diverses, une par ligne.'
+  label: ['Notes', 'Notes', 'Notizen', 'Notas'],
+  where: ['Brief et CR (YAML notes).', 'Brief and report (YAML notes).', 'Briefing und Bericht (YAML notes).',
+    'Brief e informe (YAML notes).'
+  ],
+  what: ['Remarques diverses, une par ligne.', 'Miscellaneous remarks, one per line.', 'Verschiedene Bemerkungen, eine pro Zeile.',
+    'Observaciones diversas, una por línea.'
+  ]
 }];
+/** Type ouvert : texte libre, titre saisi, autant que voulu. */
+const NARR_FREE = {
+  type: 'free',
+  label: ['Texte libre', 'Free text', 'Freier Text', 'Texto libre'],
+  where: ['Brief : à la fin, sous le titre saisi.', 'Brief: at the end, under the title you type.',
+    'Briefing: am Ende, unter dem eingegebenen Titel.',
+    'Brief: al final, bajo el título escrito.'
+  ],
+  what: ['Ce que les autres rubriques ne couvrent pas ; autant de textes libres que voulu.',
+    'Whatever the other sections do not cover; as many free texts as you want.',
+    'Was die anderen Abschnitte nicht abdecken; beliebig viele freie Texte.',
+    'Lo que las demás secciones no cubren; tantos textos libres como quiera.'
+  ]
+};
+/** Libellés des cartes de rubrique (langue de la page). */
+const NARR_UI = {
+  type: ['Type', 'Type', 'Typ', 'Tipo'],
+  title: ['Titre', 'Title', 'Titel', 'Título'],
+  content: ['Contenu', 'Content', 'Inhalt', 'Contenido'],
+  del: ['Supprimer', 'Delete', 'Löschen', 'Eliminar']
+};
+/** Définition d'un type de rubrique. */
+const narrDef = type => NARR_SECTIONS.find(d => d.type === type) || NARR_FREE;
+/** Type d'une rubrique du récit (anciennes rubriques sans type : d'après leur titre français, sinon texte libre). */
+const narrTypeOf = x => x?.type || NARR_SECTIONS.find(d => !d.key && d.title === String(x?.title || '').trim())?.type || 'free';
 /** Texte d'une valeur YAML de rubrique : une ligne par élément (risque objet : danger — conséquence — mesure). */
 function narrText(v) {
   return [].concat(v ?? []).map(x => x && typeof x === 'object' ? [x.hazard || x.risk || x.name, x.consequence, x.mitigation].filter(
@@ -989,34 +1101,64 @@ function narrFromText(def, text) {
   return text.split(/\r?\n/).map(x => x.replace(/^\s*[-*•]\s*/, '').trim()).filter(Boolean).map(line => old.find(o => o && typeof o ===
     'object' && narrText(o) === line) || line)
 }
-/** Rubriques présentes : à clé YAML (clé présente, même vide), puis rubriques du récit (narrative.sections). */
-function narrPresent() {
-  return NARR_SECTIONS.filter(d => d.key && getPath(state.yaml, d.key.split('.')) !== undefined)
+/** Retire la clé YAML d'une rubrique (objet parent vidé, comme objectives sans primary ni secondary : retiré aussi). */
+function narrDropKey(key) {
+  const path = key.split('.'),
+    parent = getPath(state.yaml, path.slice(0, -1));
+  if (parent && typeof parent === 'object') delete parent[path.at(-1)];
+  if (path.length > 1 && parent && !Object.keys(parent).length) delete getPath(state.yaml, path.slice(0, -2))[path.at(-2)]
 }
-/** Rubriques textuelles : une carte par rubrique (titre, où elle apparaît, contenu, supprimer) ; menu « Ajouter » limité
- *  aux rubriques absentes, plus « Autre rubrique… ». */
-function renderNarrative() {
-  const host = $('narrativeSections'),
-    byTitle = t => NARR_SECTIONS.find(d => d.title === String(t || '').trim());
-  host.innerHTML = '';
-  for (const d of narrPresent()) {
-    const card = document.createElement('div');
-    card.className = 'sectionCard';
-    card.innerHTML = `<div class="grid"><div><b>${esc(d.title)}</b><span class="narrWhere">${esc(d.where)} ${esc(d.what)}</span></div><div class="actions"><button class="danger" data-narr-key-delete="${esc(d.key)}" type="button">Supprimer</button></div></div><label>Contenu<textarea data-narr-key="${esc(d.key)}" placeholder="${esc(d.what)}">${esc(narrText(getPath(state.yaml, d.key.split('.'))))}</textarea></label>`;
-    host.appendChild(card)
+/** Rubriques affichées : à clé YAML présente (même vide), puis rubriques du récit. ref : « y:type » ou « s:index ». */
+function narrCards() {
+  return [...NARR_SECTIONS.filter(d => d.key && getPath(state.yaml, d.key.split('.')) !== undefined).map(d => ({
+    ref: 'y:' + d.type,
+    type: d.type,
+    title: '',
+    text: narrText(getPath(state.yaml, d.key.split('.')))
+  })), ...state.narrative.sections.map((x, i) => ({
+    ref: 's:' + i,
+    type: narrTypeOf(x),
+    title: x.title || '',
+    text: x.content || ''
+  }))]
+}
+/** Change le type d'une rubrique : contenu déplacé vers la clé YAML ou la section du nouveau type (texte libre : titre
+ *  repris du type quitté, à la même place). */
+function narrSetType(ref, to) {
+  const card = narrCards().find(c => c.ref === ref);
+  if (!card || card.type === to) return;
+  const d = narrDef(to);
+  let at = null;
+  if (ref.startsWith('y:')) narrDropKey(narrDef(card.type).key);
+  else {
+    at = +ref.slice(2);
+    state.narrative.sections.splice(at, 1)
   }
-  state.narrative.sections.forEach((s, i) => {
-    const d = byTitle(s.title),
-      card = document.createElement('div');
-    card.className = 'sectionCard';
-    card.innerHTML = `<div class="grid"><label>Titre de rubrique<input data-narr-title="${i}" value="${esc(s.title)}"></label><div class="actions"><button class="danger" data-narr-delete="${i}" type="button">Supprimer</button></div></div><span class="narrWhere">${esc(d ? `${d.where} ${d.what}` : 'Autre rubrique : brief seulement, à la fin.')}</span><label>Contenu<textarea data-narr-body="${i}" placeholder="${esc(d?.what || '')}">${esc(s.content)}</textarea></label>`;
-    host.appendChild(card)
-  });
-  // menu : rubriques nommées absentes, puis « Autre rubrique… »
-  const used = new Set([...narrPresent().map(d => d.title), ...state.narrative.sections.map(x => String(x.title || '').trim())]);
-  $('narrChoices').innerHTML = NARR_SECTIONS.filter(d => !used.has(d.title)).map(d => `<li><button type="button" class="ghost" data-narr-add="${esc(d.title)}">${esc(d.title)}<small>${esc(d.where)} ${esc(d.what)}</small></button></li>`).join('') + `<li><button type="button" class="ghost" data-narr-add="">Autre rubrique…<small>Titre libre ; brief seulement, à la fin.</small></button></li>`
+  if (d.key) setPath(state.yaml, d.key.split('.'), narrFromText(d, card.text));
+  else {
+    const sec = {
+      type: to,
+      title: to === 'free' ? trl(narrDef(card.type).label) : d.title,
+      content: card.text,
+      named: true // créée ici : jamais prise pour une copie du brief rangé
+    };
+    at === null ? state.narrative.sections.push(sec) : state.narrative.sections.splice(at, 0, sec)
+  }
 }
-
+/** Rubriques textuelles : une carte par rubrique (liste des types, titre pour un texte libre, où elle apparaît et ce
+ *  qu'on y écrit, contenu, supprimer) ; menu « Ajouter » : types absents, puis « Texte libre ». Textes dans la langue de
+ *  la page (trl), zone non retraduite (data-no-i18n). */
+function renderNarrative() {
+  const cards = narrCards(),
+    taken = new Set(cards.map(c => c.type)),
+    all = [...NARR_SECTIONS, NARR_FREE];
+  $('narrativeSections').innerHTML = cards.map(c => {
+    const d = narrDef(c.type),
+      opts = all.map(x => `<option value="${x.type}"${x.type === c.type ? ' selected' : ''}${x.type !== 'free' && x.type !== c.type && taken.has(x.type) ? ' disabled' : ''}>${esc(trl(x.label))}</option>`).join('');
+    return `<div class="sectionCard"><div class="grid"><label>${esc(trl(NARR_UI.type))}<select data-narr-type="${c.ref}">${opts}</select></label>${c.type === 'free' ? `<label>${esc(trl(NARR_UI.title))}<input data-narr-title="${c.ref}" value="${esc(c.title)}"></label>` : ''}<div class="actions"><button class="danger" data-narr-del="${c.ref}" type="button">${esc(trl(NARR_UI.del))}</button></div></div><span class="narrWhere">${esc(trl(d.where))} ${esc(trl(d.what))}</span><label>${esc(trl(NARR_UI.content))}<textarea data-narr-body="${c.ref}" placeholder="${esc(trl(d.what))}">${esc(c.text)}</textarea></label></div>`
+  }).join('');
+  $('narrChoices').innerHTML = [...NARR_SECTIONS.filter(d => !taken.has(d.type)), NARR_FREE].map(d => `<li><button type="button" class="ghost" data-narr-add="${d.type}">${esc(trl(d.label))}<small>${esc(trl(d.where))} ${esc(trl(d.what))}</small></button></li>`).join('')
+}
 /** Saisie d'une valeur simple de l'éditeur YAML : choix vrai / faux, zone de texte pour un texte long, sinon champ. */
 function scalarEditor(value, path, key) {
   const kind = value === null ? 'null' : typeof value;
@@ -2458,7 +2600,7 @@ function syncSkeletonBar() {
   document.querySelectorAll('.todo').forEach(el => el.classList.remove('todo'));
   if (!state.yaml?.meta?.skeleton) return;
   // champs vides de la mission courante : titre, textes, rubriques, et dans l'éditeur YAML les noms et coordonnées
-  const els = [...document.querySelectorAll('[data-common="title"], #summary, #detailed, [data-narr-key], [data-narr-body]')];
+  const els = [...document.querySelectorAll('[data-common="title"], #summary, #detailed, [data-narr-body]')];
   for (const el of document.querySelectorAll('#yamlEditor [data-path]')) {
     try {
       if (['lat', 'lon', 'name', 'title', 'text', 'callsign', 'type'].includes(String(JSON.parse(el.dataset.path).at(-1)))) els.push(el)
@@ -2816,31 +2958,35 @@ $('yamlEditor').addEventListener('click', e => {
   }
 });
 $('narrativeSections').addEventListener('input', e => {
-  if (e.target.dataset.narrTitle !== undefined) state.narrative.sections[+e.target.dataset.narrTitle].title = e.target.value;
-  if (e.target.dataset.narrBody !== undefined) state.narrative.sections[+e.target.dataset.narrBody].content = e.target.value;
-  // rubrique à clé YAML : écrite sous sa clé (objectives.primary, risks, notes…)
-  const key = e.target.dataset.narrKey;
-  if (key) setPath(state.yaml, key.split('.'), narrFromText(NARR_SECTIONS.find(d => d.key === key), e.target.value))
-});
-// éditeur YAML redessiné en quittant une rubrique à clé (pas à chaque frappe : le curseur resterait en place)
-$('narrativeSections').addEventListener('change', e => {
-  if (e.target.dataset.narrKey) renderYaml()
-});
-$('narrativeSections').addEventListener('click', e => {
-  if (e.target.dataset.narrDelete !== undefined) {
-    state.narrative.sections.splice(+e.target.dataset.narrDelete, 1);
-    renderNarrative()
+  const t = e.target,
+    ref = t.dataset.narrBody || t.dataset.narrTitle;
+  if (!ref) return;
+  if (ref.startsWith('s:')) {
+    const x = state.narrative.sections[+ref.slice(2)];
+    if (t.dataset.narrTitle) x.title = t.value;
+    else x.content = t.value
+  } else {
+    // rubrique à clé YAML : écrite sous sa clé (objectives.primary, risks, notes…)
+    const d = narrDef(ref.slice(2));
+    setPath(state.yaml, d.key.split('.'), narrFromText(d, t.value))
   }
-  const key = e.target.dataset.narrKeyDelete;
-  if (key) {
-    const path = key.split('.'),
-      parent = getPath(state.yaml, path.slice(0, -1));
-    if (parent && typeof parent === 'object') delete parent[path.at(-1)];
-    // objet parent vidé (objectives sans primary ni secondary) : retiré aussi
-    if (path.length > 1 && parent && !Object.keys(parent).length) delete getPath(state.yaml, path.slice(0, -2))[path.at(-2)];
+});
+// type changé : contenu déplacé ; éditeur YAML redessiné en quittant une rubrique à clé (pas à chaque frappe)
+$('narrativeSections').addEventListener('change', e => {
+  const t = e.target;
+  if (t.dataset.narrType) {
+    narrSetType(t.dataset.narrType, t.value);
     renderNarrative();
     renderYaml()
-  }
+  } else if (String(t.dataset.narrBody || '').startsWith('y:')) renderYaml()
+});
+$('narrativeSections').addEventListener('click', e => {
+  const ref = e.target.closest('[data-narr-del]')?.dataset.narrDel;
+  if (!ref) return;
+  if (ref.startsWith('y:')) narrDropKey(narrDef(ref.slice(2)).key);
+  else state.narrative.sections.splice(+ref.slice(2), 1);
+  renderNarrative();
+  renderYaml()
 });
 $('missionId').addEventListener('input', () => {
   const p = window.SiaMission?.parseId?.($('missionId').value);
@@ -2904,23 +3050,28 @@ $('missionId').addEventListener('change', () => {
   if (idBefore && now !== idBefore) idBefore = changeMissionId(idBefore, now)
 });
 $('missionType').addEventListener('input', updateIdentHints);
-// « Ajouter une rubrique textuelle » : rubrique nommée choisie (à clé YAML : clé créée vide), ou « Autre rubrique… »
+// langue de la page fixée après le premier rendu (mode auto) ou changée : rubriques redessinées dans cette langue
+window.addEventListener('repository-language-change', () => renderNarrative());
+window.RepositoryNav?.ready?.then?.(() => renderNarrative());
+setTimeout(() => renderNarrative(), 600);
+// « Ajouter une rubrique textuelle » : type choisi (à clé YAML : clé créée vide), ou « Texte libre » (titre à saisir)
 $('narrChoices').addEventListener('click', e => {
   const b = e.target.closest('[data-narr-add]');
   if (!b) return;
-  const d = NARR_SECTIONS.find(x => x.title === b.dataset.narrAdd);
-  if (d?.key) setPath(state.yaml, d.key.split('.'), d.lines ? [] : '');
+  const d = narrDef(b.dataset.narrAdd);
+  if (d.key) setPath(state.yaml, d.key.split('.'), d.lines ? [] : '');
   else state.narrative.sections.push({
-    title: d ? d.title : 'Autre rubrique',
+    type: d.type,
+    title: d.type === 'free' ? trl(NARR_FREE.label) : d.title,
     content: '',
     named: true // créée ici : jamais prise pour une copie du brief rangé
   });
   $('addNarrative').open = false;
   renderNarrative();
-  if (d?.key) renderYaml();
-  // curseur dans la rubrique ajoutée
-  const all = $('narrativeSections').querySelectorAll(d?.key ? `[data-narr-key="${d.key}"]` : '[data-narr-body]');
-  all[all.length - 1]?.focus()
+  if (d.key) renderYaml();
+  // curseur dans la rubrique ajoutée (texte libre : son titre)
+  const ref = d.key ? `y:${d.type}` : `s:${state.narrative.sections.length - 1}`;
+  $('narrativeSections').querySelector(d.type === 'free' ? `[data-narr-title="${ref}"]` : `[data-narr-body="${ref}"]`)?.focus()
 });
 $('addRootKey').onclick = () => {
   const key = $('newRootKey').value.trim();

@@ -1407,15 +1407,16 @@ Este bloque está en el nivel Experto y oculto por defecto: haga clic en «Mostr
 - La línea de estado indica la base guardada, su ciclo AIRAC y su fecha; se muestra «ciclo caducado» si hay un ciclo más reciente en vigor. «Archivos analizados» muestra los archivos leídos.
 - Sin base, la página lo indica: «Base SIA ausente de este navegador: bloque “Base de datos SIA”, “Reconstruir la base aeronáutica”, o Ajustes › Mantenimiento.»
 
-Es el mismo bloque que Ajustes › Mantenimiento › Datos aeronáuticos. La misma base sirve para el perfil vertical del planificador de combustible. Detalles: [misiones SIA](../SIA_MISSIONS.md).
+Es el mismo bloque que Ajustes › Mantenimiento › Datos aeronáuticos. La misma base sirve para el perfil vertical del planificador de combustible.
 
 ## Combustible
 <!-- page: apps/planner/flight_performance_planner.html -->
 
 El planificador de combustible (título «Combustible») calcula el combustible de un vuelo a partir del perfil de rendimiento de su aeronave. El consumo de crucero viene, por este orden, de su entrada para este vuelo, del perfil guardado, del modelo de Poll y Schumann (aviones de línea a reacción, según la masa, el nivel y el Mach), de SimBrief y después de una estimación por tipo o clase OACI; un valor aproximado se marca con ≈. Para un tipo sin ficha EUROCONTROL ni SimBrief (militares, helicópteros), la estimación toma la TAS de crucero y el techo publicados por Airframe DB cuando los conoce. También traza las altitudes y leyes de ascenso óptimas.
 Para ir a él: barra lateral «Herramientas», pestaña «Combustible», botón «Combustible (planificador)» de una misión en Mis misiones, o botón «Combustible» de los Mapas de vuelo. En ese caso se recuperan la ruta, la distancia, el nivel y la aeronave.
-Cabecera: menú «Avión», botón «Recuperar último FPL de SimBrief», «Unidades: kg / lbs». Las importaciones y exportaciones están en el menú ☰. Detalles técnicos: [planificador](../FLIGHT_PLANNER.md).
+Cabecera: menú «Avión», botón «Recuperar último FPL de SimBrief», «Unidades: kg / lbs». Las importaciones y exportaciones están en el menú ☰.
 Según el nivel de uso: en los niveles 1 a 3 (Tripulación, Planificación, Diseño), la página muestra el avión, el plan de vuelo (y «Recuperar último FPL de SimBrief»), el plegable «Parámetros del vuelo», «Calcular» y el Resultado, en dos columnas; el menú ☰ solo conserva exportar e importar las preferencias. Curvas, paneles, instrumentos, bloques del perfil, barra de estado y acciones de perfiles del menú ☰ se añaden en el nivel Experto, donde la página está completa.
+En pantalla ancha, en el nivel Experto, la página tiene tres columnas (entrada y curvas | Resultado y paneles | instrumentos): arrastre los tiradores entre columnas para ajustar su anchura; doble clic: anchuras por defecto.
 
 ### Elegir el avión y guardar el perfil
 
@@ -1426,6 +1427,7 @@ Según el nivel de uso: en los niveles 1 a 3 (Tripulación, Planificación, Dise
 La barra al pie de la página indica «Perfil guardado — …» o «Cambios sin guardar — …». Contiene «Recargar la base local», «Guardar perfil» y «Eliminar este avión». Esta barra solo aparece en el nivel Experto.
 Si cambia de avión con cambios sin guardar, la página propone «Quedarse», «Descartar y cambiar» o «Guardar y cambiar».
 Menú ☰: importar perfiles / CSV / JSON (incluido `.lnmperf` de Little Navmap), importar un airframe de SimBrief, elegir la carpeta de rendimiento, exportar el perfil `.lnmperf` o JSON, guardar la base local, restaurar la copia anterior, exportar o importar las preferencias. Estas acciones son del nivel Experto, salvo exportar e importar las preferencias.
+Una importación que coincide con un perfil existente (mismo identificador, casi siempre el tipo OACI) lo actualiza: los valores importados prevalecen, los campos que deja vacíos conservan el valor anterior, las tablas RPM se reúnen (unidades convertidas).
 
 ### Plan de combustible
 
@@ -1435,6 +1437,7 @@ Menú ☰: importar perfiles / CSV / JSON (incluido `.lnmperf` de Little Navmap)
 4. Haga clic en «Calcular».
 
 Si deja el viento vacío, la página lo indica («Viento desconocido: horquilla ±25 kt…») y da el combustible como una horquilla.
+Con una desviación ISA, un recuadro «Meteorología» del Resultado compara con la atmósfera estándar: trayecto al nivel del plan (tiempo, combustible), nivel óptimo y techo. El QNH no entra en el cálculo (los niveles de vuelo son altitudes de presión).
 El botón «Mapas de vuelo» (nivel Experto) abre los Mapas de vuelo con este plan de vuelo; los mapas y el perfil se crean allí al llegar.
 «Sintaxis del plan de vuelo» recuerda las formas aceptadas. Sin base SIA en el navegador, solo se reconocen los puntos en coordenadas.
 
@@ -1454,11 +1457,13 @@ En la vista detallada (botón «Vista detallada» / «Vista simple» del Resulta
 Pase el ratón por una curva para leer los valores a esa altitud; haga clic para fijar un nivel (línea blanca en todas las curvas). El plan se calcula entonces a ese nivel.
 Los cursores «Ascenso elegido» del plan de combustible ajustan su ascenso elegido, trazado en violeta en las curvas.
 La zona gris «inaccesible» está por encima del techo de la aeronave.
+Sin «Altitud de referencia (ft)» ni «Techo máx. (ft)» en el perfil, el modelo los estima (IAS y TAS de crucero, ficha EUROCONTROL, consumo de ascenso, si no valor típico de la clase) e indica la fuente bajo las curvas. Rellene estos dos campos o calibre con un OFP de SimBrief: es más fiable.
 
 ### Consignas de ascenso
 
 Este bloque, bajo «Calcular», dice cómo ascender, en todos los niveles de uso.
 - Cinco objetivos, cada uno con su tiempo y su combustible hasta el nivel: «Eco», «Vy», «Rápida», «Perfil» (velocidad de ascenso del perfil), «Ajustada» (ascenso elegido). La elección se guarda en este navegador.
+  «Vy»: régimen de ascenso máximo (nivel alcanzado lo antes posible); «Rápida»: tiempo de bloque mínimo; «Eco»: combustible de trayecto mínimo. En estas dos últimas, la distancia de ascenso se descuenta del crucero, el régimen de ascenso se mantiene al menos en el 50 % del máximo y un reactor queda limitado a 250 kt por debajo del FL100.
 - Una consigna en tres partes: «Ajustar» (gases, hélice, RPM o N1), «Mantener» (el instrumento que lleva la consigna, casi siempre la IAS), «Esperado» (variómetro que se debe ver, nivel alcanzado, tiempo y combustible).
 - Una tabla por tramo de altitud (suelo, 2 000 ft, FL050, FL100… hasta el nivel del plan): gases, RPM o N1 si el perfil tiene mapa motor, IAS a mantener, variómetro esperado, tiempo acumulado.
 
@@ -1473,8 +1478,11 @@ Este bloque, en la columna de la derecha, acompaña a la página mientras se des
 - Detalle: rodaje, ascenso, crucero, descenso, contingencia, reserva; masa de despegue prevista y MTOW si la ha introducido (en rojo si se supera).
 - Ficha del cursor (⌖ al pasar el ratón, 📌 fijado): combustible y tiempo del trayecto a ese nivel, régimen de ascenso máximo, velocidades de ascenso; «soltar» quita la fijación.
 - Grupo plegable «Regímenes de vuelo — perfil ↔ mapa» (nivel Experto): IAS, régimen de ascenso, régimen del motor y flujo por fase, comparados con el mapa del motor. También contiene el campo «SimBrief Airframe Internal ID» y los enlaces a las fichas de las aeronaves de ese tipo.
+  «Importar airframe de SimBrief» lee este campo (identificador o enlace para compartir): lista pública de SimBrief y después el enlace; un airframe privado ilegible solo da un perfil parcial, con su identificador.
 
 «Fijar» conserva el bloque entero cuando acompaña a la página; si no, se pliega. «Vista simple» oculta las curvas y los instrumentos, «Vista detallada» los muestra (elección guardada en este navegador). En el nivel Experto, bajo el bloque, un panel por curva da los óptimos, los límites (techo, nivel solicitado) y una ayuda de lectura. La banda de instrumentos (nivel Experto) muestra IAS, altímetro, variómetro, cronómetro (tiempo de ascenso), combustible y tiempo de vuelo.
+En los paneles y los mensajes, un nombre de campo subrayado es un enlace: despliega el editor del perfil si hace falta y muestra el campo. Un nivel «inalcanzable» da su causa y el campo que corregir (bloque «Límites»).
+Un clic en el dial de combustible (o su botón) cambia la curva leída, en su color: ascenso elegido, perfil, crucero económico, ascenso rápido, Vy, ascenso económico; elección guardada en este navegador.
 
 ### Perfiles de rendimiento
 
@@ -1510,6 +1518,7 @@ Este bloque muestra todos los campos del perfil, exportados tal cual en el archi
 - Grupos: «Identidad y formato», «Combustible y operación», «Pista y alternativa», «Ascenso», «Crucero», «Descenso», «Régimen y consumo».
 - El combustible se muestra en la unidad elegida (kg o lbs).
 - Cuando el tipo tiene una ficha EUROCONTROL APD, aparece una etiqueta «APD …» junto a los campos comparables: un clic toma ese valor. No se escribe nada sin clic. Si no: «Sin datos EUROCONTROL APD para este tipo».
+- Color de la etiqueta: verde = idéntico (±3 %), naranja = diferente, azul = campo vacío; «rellenar los campos vacíos» toma todos los valores APD de los campos vacíos.
 
 Una casilla vacía sigue vacía y bloquea la exportación `.lnmperf`: no se inventa ningún valor.
 Después de modificar, haga clic en «Guardar perfil» en la barra inferior.
@@ -1569,7 +1578,7 @@ Sin importación: «Ningún JSON cargado.»
 
 Este panel (título «Landing Performance — Resumen») analiza la calidad de sus aterrizajes a partir de los archivos exportados del simulador: puntuación, régimen de descenso, G, por aeronave y a lo largo del tiempo.
 Para ir a él: barra lateral «Herramientas», pestaña «Aterrizajes». El archivo se lee en el navegador; no se envía nada.
-El último archivo cargado se conserva y se vuelve a cargar al abrir la página. Sus aeronaves también se proponen en el menú «Avión» del planificador de combustible. Detalles: [panel de los aterrizajes](../LANDING_DASHBOARD.md).
+El último archivo cargado se conserva y se vuelve a cargar al abrir la página. Sus aeronaves también se proponen en el menú «Avión» del planificador de combustible.
 
 ### Carga del archivo
 
@@ -1587,11 +1596,12 @@ La línea de estado recuerda el archivo, el número de mediciones utilizadas, la
 - «Método de tendencia»: «Absoluto / Asíntota», «Primer 25 % ↔ Último 25 %» o «Media móvil» (con «Suavizado»: 5 o 10).
 - «Imprimir / PDF»: imprime la página.
 
-Opciones del análisis (menú ☰): «excluir mediciones claramente inverosímiles», «95P — excluir el 5 % de aterrizajes accidentales más extremos», «Crash — excluir aterrizajes activados» (umbrales FPM ≤ y G ≥, lógica «FPM o G», «FPM y G», «solo FPM», «solo G»), «Usar campos ausentes estimados».
+Opciones del análisis (menú ☰): «excluir mediciones claramente inverosímiles», «95P — excluir el 5 % de aterrizajes accidentales más extremos» (por aeronave), «Crash — excluir aterrizajes activados» (umbrales FPM ≤ y G ≥, lógica «FPM o G», «FPM y G», «solo FPM», «solo G»), «Usar campos ausentes estimados».
+«Usar campos ausentes estimados» completa el score, la G o los FPM que faltan con un modelo calibrado sobre los pares reales CSV + LOG; esos valores, marcados «◇ estimado», nunca se escriben en el archivo.
 
 ### Resumen del periodo
 
-En la parte superior del panel, unas tarjetas dan las cifras clave: «Aterrizajes», «Score medio», «Score mín / máx», «FPM medio», «FPM mín / máx», «G medio», «G mín / máx», «Butter / Very Good».
+Una banda fijada en la parte inferior de la ventana, tras el icono de tendencia, da las cifras clave: «Aterrizajes», «Score medio», «Score mín / máx», «FPM medio», «FPM mín / máx», «G medio», «G mín / máx», «Butter / Very Good».
 Los botones «−» y «+» cambian el tamaño de estas tarjetas.
 Debajo, la conclusión de tendencia: progresión o regresión probable, ligera, «Sin progresión clara», o «datos insuficientes» (se necesitan al menos cuatro mediciones aprovechables).
 El texto explica el método elegido (por ejemplo, asíntota estimada y ganancia restante).
@@ -1605,7 +1615,7 @@ Este bloque traza los indicadores a lo largo del tiempo, con su tendencia: puntu
 - La banda «Historial completo — arrastra para seleccionar», bajo cada gráfico, permite elegir un periodo en todo el historial.
 
 El periodo elegido se muestra en la cabecera; sus botones permiten volver atrás.
-El índice técnico relativo no es una puntuación oficial.
+El índice técnico relativo no es una puntuación oficial: 45 % landing rate bruto, 25 % calidad de la recogida, 20 % velocidad de morro, 10 % float, normalizados por aeronave.
 
 ### Resumen por aeronave
 

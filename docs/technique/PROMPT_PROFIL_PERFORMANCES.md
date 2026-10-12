@@ -1,29 +1,28 @@
-# Prompt « Demander le profil à ChatGPT » (Carburant, Profils de performances)
+# Prompt “Ask ChatGPT for the profile” (Fuel, Performance profiles)
 
-Le bouton « Demander à ChatGPT » du bloc « Profils de performances » (page Carburant) construit ce prompt pour un
-type d'appareil, le copie dans le presse-papiers et ouvre ChatGPT ; la réponse (le JSON, ou un CSV de performances)
-se colle sous le bouton, puis s'importe comme nouveau profil ou se fusionne avec le profil existant (aperçu des
-changements d'abord).
+The “Ask ChatGPT” button of the “Performance profiles” block (Fuel page) builds this prompt for an aircraft
+type, copies it to the clipboard and opens ChatGPT; the reply (the JSON, or a performance CSV) is pasted under
+the button, then imported as a new profile or merged with the existing profile (preview of the changes first).
 
-Ce document est la **source unique** du prompt : `tools/build_perf_prompt.py` en tire
-`apps/planner/perf_prompt.js` (relancé aussi par `tools/bump_versions.py`). Un bloc ` ```text <langue> ` par langue
-de la page (fr, en, de, es) ; le bloc ` ```json ` est le schéma, commun aux quatre langues.
+This document is the **single source** of the prompt: `tools/build_perf_prompt.py` derives
+`apps/planner/perf_prompt.js` from it (also rerun by `tools/bump_versions.py`). One ` ```text <language> ` block per
+page language (fr, en, de, es); the ` ```json ` block is the schema, common to the four languages.
 
-Marques remplacées par la page :
+Placeholders replaced by the page:
 
-| Marque | Contenu |
+| Placeholder | Content |
 | --- | --- |
-| `{{TYPE}}` | code OACI du type |
-| `{{MODELE}}` | modèle (base OACI, sinon nom du profil) |
-| `{{VARIANTE}}` | variante de la flotte ou nom du profil, immatriculations de la flotte |
-| `{{MOTORISATION}}` | motorisation connue (description OACI, moteurs SimBrief, profil) |
-| `{{CONNU}}` | ce que la suite sait déjà : EUROCONTROL APD, SimBrief, Airframe DB, profil actuel |
-| `{{SCHEMA}}` | le bloc ` ```json ` ci-dessous |
+| `{{TYPE}}` | ICAO code of the type |
+| `{{MODELE}}` | model (ICAO base, otherwise the profile name) |
+| `{{VARIANTE}}` | fleet variant or profile name, fleet registrations |
+| `{{MOTORISATION}}` | known powerplant (ICAO description, SimBrief engines, profile) |
+| `{{CONNU}}` | what the suite already knows: EUROCONTROL APD, SimBrief, Airframe DB, current profile |
+| `{{SCHEMA}}` | the ` ```json ` block below |
 
-Règle de rédaction (choix de l'utilisateur) : des **règles de sélection**, pas des listes ; listes fermées seulement
-pour ce que le programme exige (les clés du JSON, `engineType`, `runwayType`, `phaseLabel`, `unit`).
+Writing rule (the user's choice): **selection rules**, not lists; closed lists only for what the program requires
+(the JSON keys, `engineType`, `runwayType`, `phaseLabel`, `unit`).
 
-## Schéma
+## Schema
 
 ```json
 {
@@ -54,7 +53,7 @@ pour ce que le programme exige (les clés du JSON, `engineType`, `runwayType`, `
 }
 ```
 
-## Français
+## French
 
 ```text fr
 PROFIL DE PERFORMANCES — {{TYPE}} ({{MODELE}})
@@ -100,7 +99,7 @@ Schema:
 {{SCHEMA}}
 ```
 
-## Deutsch
+## German
 
 ```text de
 LEISTUNGSPROFIL — {{TYPE}} ({{MODELE}})
@@ -123,7 +122,7 @@ Schema:
 {{SCHEMA}}
 ```
 
-## Español
+## Spanish
 
 ```text es
 PERFIL DE RENDIMIENTO — {{TYPE}} ({{MODELE}})

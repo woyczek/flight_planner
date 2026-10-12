@@ -1,271 +1,268 @@
-# Passe de contraste et cohérence des designs à matières — 2026-10-09
+# Contrast pass and consistency of the textured designs — 2026-10-09
 
-Demande : « une passe de contraste sur toutes les pages, tous les styles » et « que tous les éléments d'un design soient
-cohérents entre eux ». Périmètre des corrections : `shared/designs_skeuo.css` (Cabinet, Carnet de vol, Durci, Aqua,
-Tactique) et `shared/repository_nav.css` (menus communs). Les défauts relevant de `shared/designs.css` (Standard, Aéro,
-Opérationnel, Console) ou des feuilles de page sont listés (§ 5), pas corrigés.
+Request: "a contrast pass on every page, every style" and "every element of a design consistent with the others".
+Scope of the fixes: `shared/designs_skeuo.css` (Cabinet, Flight log, Rugged, Aqua, Tactical) and
+`shared/repository_nav.css` (shared menus). Defects belonging to `shared/designs.css` (Standard, Aero, Operational,
+Console) or to page stylesheets are listed (§ 5), not fixed.
 
-## 1. Méthode
+## 1. Method
 
-Outil : `tools/contrast_audit.html` (bibliothèque standard du navigateur, sans dépendance). Pour chaque page × design ×
-décor, il pose les réglages (`repositoryDesign`, `repositoryDecor`, niveau 4, accès Centre, français) dans le stockage du
-navigateur, charge la page dans un cadre de 1280 × 900, attend 600 ms sans modification du document (8 s au plus), puis
-mesure chaque texte visible (nœud texte non vide, élément affiché, hors `[aria-hidden]`, `script`, `option`, `svg`) et
-chaque champ rempli :
+Tool: `tools/contrast_audit.html` (browser standard library, no dependency). For each page × design × decor, it sets
+the preferences (`repositoryDesign`, `repositoryDecor`, level 4, Centre access, French) in the browser storage, loads
+the page in a 1280 × 900 frame, waits 600 ms without any change to the document (8 s at most), then measures every
+visible text (non-empty text node, displayed element, excluding `[aria-hidden]`, `script`, `option`, `svg`) and every
+filled field:
 
-- **couleur** : `color` (ou `-webkit-text-fill-color`), opacité cumulée des ancêtres ;
-- **fond effectif** : couche de l'élément, puis des ancêtres jusqu'au premier fond opaque, fonds semi-transparents
-  composés ; image ou dégradé : couleur moyenne (image réduite sur un canevas ; dégradé : moyenne des arrêts) ; images
-  de bord remplies (`border-image … fill` : onglets découpés dans les planches) : partie centrale de l'image ; panneaux
-  posés sous le contenu (enfant en position absolue à `z-index` négatif : `.repo-deco-bgimg`, feuille de registre
-  `.repo-deco-sheet` et ses pièces) et pseudo-éléments couvrants ; images partielles non répétées (vis, filigranes)
-  ignorées, sauf sur un petit élément (bouton à médaillon) ;
-- **seuils WCAG** : 4,5:1, 3:1 pour le grand texte (≥ 24 px, ou ≥ 18,66 px en gras) et pour un glyphe seul sans lettre
-  ni chiffre (flèche, ↕ : élément graphique, 1.4.11) ; commandes désactivées ignorées (hors exigence) ;
-- **menus** : le menu ☰ (groupes dépliés) et le menu des langues sont ouverts et mesurés à part.
+- **colour**: `color` (or `-webkit-text-fill-color`), cumulative opacity of the ancestors;
+- **effective background**: the element's layer, then the ancestors' up to the first opaque background,
+  semi-transparent backgrounds composited; image or gradient: average colour (image reduced on a canvas; gradient:
+  average of the stops); filled border images (`border-image … fill`: tabs cut out of the sprite sheets): centre part
+  of the image; panels laid under the content (absolutely positioned child at negative `z-index`: `.repo-deco-bgimg`,
+  registry sheet `.repo-deco-sheet` and its parts) and covering pseudo-elements; partial, non-repeated images (screws,
+  watermarks) ignored, except on a small element (medallion button);
+- **WCAG thresholds**: 4.5:1, 3:1 for large text (≥ 24 px, or ≥ 18.66 px bold) and for a lone glyph without letter or
+  digit (arrow, ↕: graphical object, 1.4.11); disabled controls ignored (out of scope);
+- **menus**: the ☰ menu (groups expanded) and the language menu are opened and measured separately.
 
-Relevés : 18 pages (accueil, Aujourd'hui, Mes missions, CR, CR et reporting HEMS, Ordres de vols, générateur, registre,
-Studio cartographique, Cartes de vol, Carburant, Atterrissages, Mon profil, Apparence, Installation, Maintenance, Aide)
-× 9 designs × 2 décors = 324 relevés par passe, ~4 100 textes mesurés par design et décor. Le ton (clair / sombre) est
-celui du thème de chaque page : Cartes de vol, Carburant et Atterrissages donnent les variantes sombres (Cabinet « carte
-de nuit », Aqua sombre).
+Readings: 18 pages (home, Today, My missions, Report, HEMS report and reporting, Flight orders, generator, registry,
+Map studio, Flight maps, Fuel, Landings, My profile, Appearance, Installation, Maintenance, Help) × 9 designs × 2 decors
+= 324 readings per pass, ~4,100 texts measured per design and decor. The tone (light / dark) is that of each page's
+theme: Flight maps, Fuel and Landings give the dark variants (Cabinet "night chart", dark Aqua).
 
-- **Avant** : feuilles de référence = `designs_skeuo.css` et `repository_nav.css` du commit `4190dc47`, copiées dans
-  `tools/_verify/ref/` (dossier ignoré ; adresses `url()` réécrites vers `shared/`) et substituées par l'outil (champ
-  « Feuilles de référence »). Recréer la référence :
+- **Before**: reference stylesheets = `designs_skeuo.css` and `repository_nav.css` from commit `4190dc47`, copied into
+  `tools/_verify/ref/` (ignored folder; `url()` addresses rewritten towards `shared/`) and substituted by the tool
+  ("Reference stylesheets" field). To recreate the reference:
   `git show HEAD:shared/designs_skeuo.css | sed -E 's#url\("(textures|deco|icons|fonts|panels)/#url("../../../shared/\1/#g' > tools/_verify/ref/designs_skeuo.css`.
-- **Après** : feuilles de travail, relues sans le cache « immutable » (option « feuilles communes sans cache »).
-- Données : `docs/technique/perf/runs/contrast_2026-10-09.json` (`runs[0]` avant, `runs[1]` après ; par relevé :
-  page, design, décor, ton, textes mesurés, défauts regroupés par sélecteur × couleur × fond, 80 au plus).
+- **After**: working stylesheets, re-read without the "immutable" cache (option "shared stylesheets without cache").
+- Data: `docs/technique/perf/runs/contrast_2026-10-09.json` (`runs[0]` before, `runs[1]` after; per reading: page,
+  design, decor, tone, texts measured, defects grouped by selector × colour × background, 80 at most).
 
-Limites : moyenne d'une texture ou d'un dégradé et non pire cas local ; ombres portées du texte ignorées (plaques
-gravées) ; décors en éléments frères non vus ; survol et focus non testés ; `index.html` n'applique pas le design
-(page d'aiguillage, relevé `applied: false`). Conseil : ouvrir l'outil sur une origine que personne d'autre n'utilise
-(`http://[::1]:<port>/…`), les réglages étant ceux du navigateur pour l'origine.
+Limits: average of a texture or gradient rather than the local worst case; text drop shadows ignored (engraved plates);
+decors made of sibling elements not seen; hover and focus not tested; `index.html` does not apply the design (routing
+page, reading `applied: false`). Advice: open the tool on an origin nobody else uses (`http://[::1]:<port>/…`), since
+the preferences are those of the browser for the origin.
 
-## 2. Résultats avant / après
+## 2. Results before / after
 
-Textes sous le seuil (somme des occurrences) sur les 18 pages ; entre parenthèses : dans les menus ☰ et langues, puis
-sur les pages à thème sombre.
+Texts below the threshold (sum of occurrences) over the 18 pages; in brackets: in the ☰ and language menus, then on
+dark-themed pages.
 
-| Design | Décor | Avant | Après | Menus avant → après | Ton sombre avant → après |
+| Design | Decor | Before | After | Menus before → after | Dark tone before → after |
 |---|---|---:|---:|---|---|
-| Standard | complet / sobre | 119 / 119 | 119 / 119 | 0 → 0 | 0 → 0 |
-| Aéro | complet / sobre | 114 / 114 | 114 / 114 | 0 → 0 | 0 → 0 |
-| Opérationnel | complet / sobre | 119 / 119 | 119 / 119 | 0 → 0 | 0 → 0 |
-| Console | complet / sobre | 119 / 119 | 119 / 119 | 0 → 0 | 0 → 0 |
-| Cabinet | complet | 439 | 94 | 252 → 0 | 125 → 0 |
-| Cabinet | sobre | 729 | 159 | 252 → 0 | 125 → 0 |
-| Carnet de vol | complet | 444 | 95 | 254 → 0 | 125 → 0 |
-| Carnet de vol | sobre | 738 | 159 | 252 → 0 | 125 → 0 |
-| Durci | complet | 152 | 110 | 0 → 0 | 12 → 3 |
-| Durci | sobre | 204 | 162 | 0 → 0 | 12 → 3 |
-| Aqua | complet | 618 | 83 | 154 → 0 | 69 → 0 |
-| Aqua | sobre | 583 | 117 | 154 → 0 | 69 → 0 |
-| Tactique | complet / sobre | 247 / 247 | 58 / 58 | 0 → 0 | 0 → 0 |
+| Standard | full / plain | 119 / 119 | 119 / 119 | 0 → 0 | 0 → 0 |
+| Aero | full / plain | 114 / 114 | 114 / 114 | 0 → 0 | 0 → 0 |
+| Operational | full / plain | 119 / 119 | 119 / 119 | 0 → 0 | 0 → 0 |
+| Console | full / plain | 119 / 119 | 119 / 119 | 0 → 0 | 0 → 0 |
+| Cabinet | full | 439 | 94 | 252 → 0 | 125 → 0 |
+| Cabinet | plain | 729 | 159 | 252 → 0 | 125 → 0 |
+| Flight log | full | 444 | 95 | 254 → 0 | 125 → 0 |
+| Flight log | plain | 738 | 159 | 252 → 0 | 125 → 0 |
+| Rugged | full | 152 | 110 | 0 → 0 | 12 → 3 |
+| Rugged | plain | 204 | 162 | 0 → 0 | 12 → 3 |
+| Aqua | full | 618 | 83 | 154 → 0 | 69 → 0 |
+| Aqua | plain | 583 | 117 | 154 → 0 | 69 → 0 |
+| Tactical | full / plain | 247 / 247 | 58 / 58 | 0 → 0 | 0 → 0 |
 
-Le reste des designs à matières vient pour l'essentiel des Ordres de vols (pastilles de simulateur blanches sur couleurs
-claires : 684 des ~1 100 occurrences restantes, § 5) et de trois composants hors de ces feuilles (§ 5).
+What remains in the textured designs comes mostly from the Flight orders (white simulator chips on light colours: 684
+of the ~1,100 remaining occurrences, § 5) and from three components outside these stylesheets (§ 5).
 
-## 3. Les trois constats
+## 3. The three findings
 
-### 3.1 Menu ☰ de Cabinet illisible
+### 3.1 Cabinet's ☰ menu unreadable
 
-Causes (deux, cumulées) :
+Causes (two, cumulative):
 
-1. `repository_nav.css` colorait les titres de groupe (`.repo-group`, `summary` des groupes), séparateurs, réglages et
-   champs du profil avec `--repo-bar-text` (blanc du bandeau), pensé pour un menu au fond du bandeau ; les designs à
-   matières posent un parchemin clair (`--sk-menu-bg`) : blanc 66 % sur parchemin = 1,8:1. Les actions « Données
-   locales » et « Page » (`button.repo-action`) prenaient en plus le cuir marine des boutons du design, sous l'encre
-   foncée forcée par `.repo-menu :is(a, button, summary)` : 1,1:1.
-2. En **ton sombre** (thème de page sombre : Cartes de vol, Carburant, Atterrissages), `--cab-ink` devient clair mais
-   `--sk-menu-bg` restait le parchemin clair : tout le menu, le menu des langues, les notifications et le pied de page
-   à 1,2-1,9:1.
+1. `repository_nav.css` coloured the group titles (`.repo-group`, the groups' `summary`), separators, settings and
+   profile fields with `--repo-bar-text` (the header's white), meant for a menu on the header's background; the
+   textured designs lay a light parchment (`--sk-menu-bg`): white at 66 % on parchment = 1.8:1. The "Local data" and
+   "Page" actions (`button.repo-action`) additionally took the design's navy leather of the buttons, under the dark ink
+   forced by `.repo-menu :is(a, button, summary)`: 1.1:1.
+2. In **dark tone** (dark page theme: Flight maps, Fuel, Landings), `--cab-ink` turns light but `--sk-menu-bg` stayed
+   the light parchment: the whole menu, the language menu, the notifications and the footer at 1.2–1.9:1.
 
-Correction à la source : `repository_nav.css` définit `--repo-menu-ink` (`--sk-menu-ink` du design, sinon
-`--repo-bar-text`), `--repo-menu-ink-2`, `--repo-menu-line`, `--repo-menu-hover`, dont dérivent titres, séparateurs,
-survol et réglages ; `designs_skeuo.css` (COMPOSANTS COMMUNS) donne une encre de groupe `--sk-menu-ink-2` par design,
-rend les entrées du menu plates (liens, actions, langues : même ligne, même survol), habille les champs du profil comme
-les champs du design et ôte l'opacité posée en ligne sur l'état de sauvegarde ; Cabinet et Carnet de vol en ton sombre
-ont un menu et un pied de page en parchemin sombre. Résultat : 0 défaut dans les menus des cinq designs, deux décors,
-deux tons.
+Fix at the source: `repository_nav.css` defines `--repo-menu-ink` (the design's `--sk-menu-ink`, else
+`--repo-bar-text`), `--repo-menu-ink-2`, `--repo-menu-line`, `--repo-menu-hover`, from which titles, separators, hover
+and settings derive; `designs_skeuo.css` (SHARED COMPONENTS) gives a group ink `--sk-menu-ink-2` per design, makes the
+menu entries flat (links, actions, languages: same line, same hover), dresses the profile fields like the design's
+fields and removes the inline opacity set on the save state; Cabinet and Flight log in dark tone get a dark-parchment
+menu and footer. Result: 0 defects in the menus of the five designs, two decors, two tones.
 
-### 3.2 Aqua en ton foncé
+### 3.2 Aqua in dark tone
 
-Constat : l'Aqua sombre ne redéfinissait que quelques couleurs, en dur et élément par élément : le rail des onglets
-restait le métal clair de l'Aqua clair sous des poussoirs sombres, les jetons `--sk-mbtn-*`, `--sk-lbtn-*`,
-`--sk-pick-*`, `--sk-tool-*` gardaient le verre clair sous une encre devenue claire (règle de rattrapage en dur pour
-☰, langue et secondaires seulement), l'entrée courante de la barre latérale avait un voile blanc .55 (1,9:1), et le gel
-(reflet haut à 45 % de blanc) donnait 3,6:1 sous le texte blanc dans les deux tons.
+Finding: dark Aqua only redefined a few colours, hard-coded and element by element: the tab rail stayed the light metal
+of light Aqua under dark push-buttons, the tokens `--sk-mbtn-*`, `--sk-lbtn-*`, `--sk-pick-*`, `--sk-tool-*` kept the
+light glass under an ink that had turned light (hard-coded catch-up rule for ☰, language and secondary buttons only),
+the current entry of the sidebar had a white .55 veil (1.9:1), and the gel (top highlight at 45 % white) gave 3.6:1
+under white text in both tones.
 
-Correction : matières en jetons, posés une fois dans l'Aqua clair et seuls redéfinis par l'Aqua sombre —
-`--aq-glass`, `--aq-glass-ink`, `--aq-glass-edge`, `--aq-glass-sep`, `--aq-glass-shine`, `--aq-glass-drop`,
-`--aq-glass-text-shadow` (verre clair ou fumé), `--aq-slate`, `--aq-slate-edge` (bouton discret), `--aq-rail`,
-`--aq-rail-shadow` (métal du rail). Segments et onglets au repos, ☰, langue, boutons secondaires et de l'en-tête,
-liens-boutons, outils de bloc, listes déroulantes, boutons d'en-tête des pages (`--sk-hb*`) en verre ; page courante,
-segment choisi et action principale en gel ; rail sombre en ton sombre. Règle de rattrapage en dur de l'Aqua sombre
-supprimée. Gel : reflet ramené à 15 % de blanc et bas assombri (moyenne ≥ 4,5:1 pour toutes les teintes Aqua). Barre
-latérale sombre : voile .14. Résultat : 0 défaut en Aqua sombre.
+Fix: materials as tokens, set once in light Aqua and only redefined by dark Aqua — `--aq-glass`, `--aq-glass-ink`,
+`--aq-glass-edge`, `--aq-glass-sep`, `--aq-glass-shine`, `--aq-glass-drop`, `--aq-glass-text-shadow` (clear or smoked
+glass), `--aq-slate`, `--aq-slate-edge` (discreet button), `--aq-rail`, `--aq-rail-shadow` (rail metal). Segments and
+tabs at rest, ☰, language, secondary and header buttons, link-buttons, block tools, dropdowns, page header buttons
+(`--sk-hb*`) in glass; current page, chosen segment and primary action in gel; dark rail in dark tone. Dark Aqua's
+hard-coded catch-up rule removed. Gel: highlight brought down to 15 % white and bottom darkened (average ≥ 4.5:1 for
+every Aqua hue). Dark sidebar: .14 veil. Result: 0 defects in dark Aqua.
 
-### 3.3 Rail des onglets (« marqueur filet ») inégal
+### 3.3 Uneven tab rail ("marker line")
 
-Inventaire des onglets :
+Inventory of the tabs:
 
-| Onglets | Pages | Composant |
+| Tabs | Pages | Component |
 |---|---|---|
-| Communs `pilot` | Mes missions, Mes disponibilités | `.repo-tabs` (repository_nav.js) |
-| Communs `missions` | Registre, Générateur, Studio cartographique | `.repo-tabs` (selon le niveau) |
-| Communs `tools` | Cartes de vol, Carburant, Atterrissages, Analyse des missions | `.repo-tabs` |
-| Communs `settings` | Mon profil, Apparence, Centre, Installation, Maintenance, Premier lancement | `.repo-tabs` |
-| Communs `planning` | Tableau (Ordres de vols) seul | aucune barre : un seul onglet visible (voulu) |
-| Propres à une page | Studio cartographique (`map_parser.html`) et Cartes de vol (`map_planner.html`, généré) : Fond de carte, Zones, Symboles OACI, Éléments | `.profileTabs` + `.tabPanel` |
-| Pas des onglets | Paramètres (menu latéral `.da-nav`), Apparence (sélecteurs `.repo-segs`) | — |
+| Shared `pilot` | My missions, My availability | `.repo-tabs` (repository_nav.js) |
+| Shared `missions` | Registry, Generator, Map studio | `.repo-tabs` (by level) |
+| Shared `tools` | Flight maps, Fuel, Landings, Mission analysis | `.repo-tabs` |
+| Shared `settings` | My profile, Appearance, Centre, Installation, Maintenance, First run | `.repo-tabs` |
+| Shared `planning` | Board (Flight orders) only | no bar: a single visible tab (intended) |
+| Page-specific | Map studio (`map_parser.html`) and Flight maps (`map_planner.html`, generated): Base map, Zones, ICAO symbols, Elements | `.profileTabs` + `.tabPanel` |
+| Not tabs | Settings (side menu `.da-nav`), Appearance (`.repo-segs` selectors) | — |
 
-Mesure dans les cinq designs à matières, décor complet et sobre : le rail (image découpée, ou jeton `--sk-tabs-rail`)
-et les poussoirs sont identiques sur toutes les pages qui ont `.repo-tabs`, quel que soit le décor (aucune règle de
-décor ne les touche). Les différences venaient de :
+Measured in the five textured designs, full and plain decor: the rail (cut-out image, or `--sk-tabs-rail` token) and
+the push-buttons are identical on every page that has `.repo-tabs`, whatever the decor (no decor rule touches them).
+The differences came from:
 
-1. **Carburant** : le contenu qui suit la barre est `div.wrap`, pas `main` → pas de liseré (« filet ») autour du bloc à
-   onglets (`.repo-tabs+main`). Corrigé : `.repo-tabs+:is(main, .wrap)`.
-2. **Studio cartographique et Cartes de vol** : leurs onglets propres (`.profileTabs`) gardaient le dessin de la page
-   (onglets bleus en classeur). Corrigé : les règles d'onglets des designs à matières visent aussi `.profileTabs`
-   (rail) et `.profileTabs>button` (poussoir, `.on` = page courante) — rail, poussoirs, vis, voyants et images des
-   planches de chaque design, sans toucher au HTML ni au générateur.
-3. **Aqua sombre** : rail clair sous des poussoirs sombres (§ 3.2).
-4. **Planning** et niveaux bas : une seule page visible dans le groupe → pas de barre (comportement voulu de
-   `repository_nav.js`). **Tactique** : pas de liseré (`--sk-tabs-lisere: none`, design sans image), voulu.
+1. **Fuel**: the content following the bar is `div.wrap`, not `main` → no border ("marker line") around the tabbed
+   block (`.repo-tabs+main`). Fixed: `.repo-tabs+:is(main, .wrap)`.
+2. **Map studio and Flight maps**: their own tabs (`.profileTabs`) kept the page's drawing (blue binder tabs). Fixed:
+   the tab rules of the textured designs also target `.profileTabs` (rail) and `.profileTabs>button` (push-button,
+   `.on` = current page) — rail, push-buttons, screws, lamps and sprite images of each design, without touching the
+   HTML or the generator.
+3. **Dark Aqua**: light rail under dark push-buttons (§ 3.2).
+4. **Schedule** and low levels: a single visible page in the group → no bar (intended behaviour of
+   `repository_nav.js`). **Tactical**: no border (`--sk-tabs-lisere: none`, design without image), intended.
 
-Encres des onglets en image relevées : Carnet de vol (étiquettes) encres assombries (#1c160d, page courante #241803),
-Durci page courante #0d0d06 sur la toile éclairée.
+Inks of the image tabs recorded: Flight log (labels) darkened inks (#1c160d, current page #241803), Rugged current page
+#0d0d06 on the lit canvas.
 
-## 4. Autres corrections (designs_skeuo.css)
+## 4. Other fixes (designs_skeuo.css)
 
-- **Encre secondaire de Cabinet** (`--cab-ink-2`) : #5b4a2e → #45361f. La texture de parchemin a pour couleur moyenne
-  #c0a883 (et non #efe3c4, base des calculs d'origine) : 3,7 → 4,9:1 pour sous-titres de blocs, `.small`, résumés.
-- **Gris des pages** (`--muted`) et petits textes (`.small`, `.note`, `.muted`, `.hint`) : encre secondaire du design
-  dans les blocs de **tous** les designs à matières (Aqua et Tactique compris : #6b7280 et #5c6d76 des pages à 3,1-3,7:1) ;
-  dans l'en-tête, encre de l'en-tête atténuée (et `--odvo-mute` des Ordres de vols) ; dans les boutons, encre du
-  bouton ; dans les barres d'état, encre de la barre.
-- **Liens des blocs** : jeton `--sk-link` par design (marine de Cabinet, voyant de Durci, bleu / bleu clair d'Aqua,
-  cyan de Tactique), règle commune ; encre de la feuille sur les feuilles de registre et de l'impression sur l'aperçu.
-- **Aperçu imprimable** (`.report`, Mission Core) : jetons d'encre redéfinis sur la feuille (le texte clair de Durci et
-  Tactique tombait à 1:1 sur le papier) ; papier de Tactique clair ; en-têtes de tableau du rapport neutres.
-- **Menu latéral des Paramètres** (`.da-nav`) : surface des blocs (`--repo-surface`) posée dessous par un
-  pseudo-élément (la matière des cartes, semi-transparente, laissait voir le bois : 2,9:1).
-- **Opacités de page** neutralisées dans les designs à matières : libellés des formulaires d'ordre
-  (`mission_order.js`, .85), intertitres du sommaire de l'Aide (.7).
-- **Carnet de vol** : sélecteur segmenté en aluminium brossé clair (l'acier donnait 3,8:1). **Durci** : vert du bouton
-  principal approfondi (4,4 → 5:1), lien `.secondary` à l'encre des boutons (1:1), sous-titres des cartes en encre
-  pleine. **Aqua** : sous-titre de l'en-tête et libellé de langue en encre de l'en-tête atténuée (3,9 → > 7:1).
+- **Cabinet's secondary ink** (`--cab-ink-2`): #5b4a2e → #45361f. The parchment texture's average colour is #c0a883
+  (not #efe3c4, the basis of the original computations): 3.7 → 4.9:1 for block subtitles, `.small`, summaries.
+- **Page greys** (`--muted`) and small texts (`.small`, `.note`, `.muted`, `.hint`): the design's secondary ink inside
+  the blocks of **every** textured design (Aqua and Tactical included: the pages' #6b7280 and #5c6d76 at 3.1–3.7:1); in
+  the header, the header's ink dimmed (and the Flight orders' `--odvo-mute`); in buttons, the button's ink; in status
+  bars, the bar's ink.
+- **Block links**: `--sk-link` token per design (Cabinet's navy, Rugged's lamp, Aqua's blue / light blue, Tactical's
+  cyan), shared rule; the sheet's ink on registry sheets and the print ink on the preview.
+- **Printable preview** (`.report`, Mission Core): ink tokens redefined on the sheet (Rugged's and Tactical's light
+  text fell to 1:1 on the paper); Tactical's paper made light; neutral table headers in the report.
+- **Settings side menu** (`.da-nav`): the blocks' surface (`--repo-surface`) laid underneath by a pseudo-element (the
+  cards' semi-transparent material let the wood show through: 2.9:1).
+- **Page opacities** neutralised in the textured designs: order-form labels (`mission_order.js`, .85), subheadings of
+  the Help index (.7).
+- **Flight log**: segmented selector in light brushed aluminium (the steel gave 3.8:1). **Rugged**: primary button
+  green deepened (4.4 → 5:1), `.secondary` link in the buttons' ink (1:1), card subtitles in full ink. **Aqua**: header
+  subtitle and language label in the header's dimmed ink (3.9 → > 7:1).
 
-Aucune règle n'a changé une matière : les seuls `background` modifiés sont ceux des entrées du menu (lignes plates, au
-lieu du cuir des boutons), du rail et des poussoirs Aqua (mêmes dégradés, passés en jetons), du menu des Paramètres
-(pseudo-élément dessous) ; textures de page, en-tête, blocs, barre latérale et pied vérifiées (`backgroundImage`) sur
-Mes missions, Mon profil, CR et Ordres de vols en Aqua, Cabinet, Carnet de vol et Durci.
+No rule changed a material: the only `background` values modified are those of the menu entries (flat lines instead of
+the buttons' leather), of the Aqua rail and push-buttons (same gradients, moved into tokens), of the Settings menu
+(pseudo-element underneath); page, header, block, sidebar and footer textures checked (`backgroundImage`) on My
+missions, My profile, Report and Flight orders in Aqua, Cabinet, Flight log and Rugged.
 
-## 5. Ce qui reste
+## 5. What remains
 
-Hors des feuilles corrigées ici ; dernière colonne : état après la passe G (§ 6).
+Outside the stylesheets fixed here; last column: state after pass G (§ 6).
 
-| Où | Défaut | Designs | Ratio | Passe G |
+| Where | Defect | Designs | Ratio | Pass G |
 |---|---|---|---|---|
-| `apps/cpco/odv_orders.html` (Ordres de vols) | pastilles de simulateur `.sim-chip` blanches sur couleurs claires (vert, jaune, cyan) | tous | 2,4-4,3 | encre calculée par `assignments.js` (`chipInk`, autre session) ; non remesuré (pas de planning dans le stockage de l'origine d'audit) |
-| `apps/cpco/odv_orders.html` | `.odvo-tpl small` (gabarits de la palette), `.odvo-tr span` (or #7a5c12 sur sombre), `.odvo-atc-reservation`, `button.repo-plain.low small` ; jours `.odvo-days button.on` #0b1016 sur l'accent #7a5c12 (3,1:1) | tous | 1,3-4,5 | reste : page réservée à une autre session (même correction que `odv_blocks.css` à reporter : texte sur l'accent = `var(--repo-page)`) |
-| `apps/cpco/odv_blocks.css` | `sup.odv-rank` (encre à 82 %) ; `button.primary` #0b1016 et `.odv-tri3 i.on` #fff sur l'accent | tous | 3,6-4,3 ; 3,1 | **corrigé** : encre pleine ; texte sur l'accent = `var(--repo-page)` (≥ 4,5:1 par construction) |
-| `shared/mission_table.js` (tableaux triables) | flèches de tri `.st-arrow` (#a9adb5 sur #f5f5f6 ; or ou violet sur sombre) ; en-têtes `.st-sortable` #6b7280 sur #f5f5f6 | tous | 1,3-4,4 | reste (#7a5c12 sur #22282e : 2,4:1) : fichier réservé à une autre session |
-| `shared/mission_core/` (CR HEMS) | `.mc-kpi .small` #6b7280 sur #ececf3 ; `p.small` du choix de famille (CR) 4,47:1 | Standard, Ops, Console | 4,1 | **corrigé** : `--muted` #5b6270 (5,2:1 sur #ececf3) |
-| `shared/designs.css` (Aéro) | titre de bloc `h2` des Ordres de vols #7a5c12 sur #181d23 (page d'outil sombre) | Aéro | 2,7 | **corrigé** : `var(--repo-ink, var(--repo-accent))` → #e2c16b sur #181d23 (9,8:1) ; accent inchangé sur les blocs clairs |
-| `tools/build_skeuo_icons_css.py` → `block_icons.css` (section générée) | bouton « déplacer » des blocs en jeu Gel : glyphe blanc sur bulle grise teintée, or (#ffd23f) sur les pages du Centre | Aqua | 2,0-3,0 | **Centre corrigé** (bulle marine, § 6.2) ; bulle bleue : 4,1:1 réels, reste signalée par l'outil (limite de mesure, § 6.2) |
-| `apps/aide/aide.html`, `apps/cpco/mission_registry.html` | `.small` à opacité .8 sur parchemin (#483e2d) | Cabinet, Carnet de vol (sobre) | 4,48 | Aide : 0 défaut au relevé (déjà réglé) ; registre : `.mo-small` posé par `shared/mission_order.js` (JS, hors périmètre) |
-| Mesure | Durci : onglet courant, toile éclairée — la moyenne de la colonne centrale inclut le cadre d'acier (2,5:1 mesuré) ; visuellement lisible, à confirmer sur la planche | Durci | — | — |
+| `apps/cpco/odv_orders.html` (Flight orders) | white simulator chips `.sim-chip` on light colours (green, yellow, cyan) | all | 2.4–4.3 | ink computed by `assignments.js` (`chipInk`, another session); not re-measured (no schedule in the audit origin's storage) |
+| `apps/cpco/odv_orders.html` | `.odvo-tpl small` (palette templates), `.odvo-tr span` (gold #7a5c12 on dark), `.odvo-atc-reservation`, `button.repo-plain.low small`; days `.odvo-days button.on` #0b1016 on the accent #7a5c12 (3.1:1) | all | 1.3–4.5 | remains: page reserved to another session (same fix as `odv_blocks.css` to carry over: text on the accent = `var(--repo-page)`) |
+| `apps/cpco/odv_blocks.css` | `sup.odv-rank` (ink at 82 %); `button.primary` #0b1016 and `.odv-tri3 i.on` #fff on the accent | all | 3.6–4.3; 3.1 | **fixed**: full ink; text on the accent = `var(--repo-page)` (≥ 4.5:1 by construction) |
+| `shared/mission_table.js` (sortable tables) | sort arrows `.st-arrow` (#a9adb5 on #f5f5f6; gold or purple on dark); headers `.st-sortable` #6b7280 on #f5f5f6 | all | 1.3–4.4 | remains (#7a5c12 on #22282e: 2.4:1): file reserved to another session |
+| `shared/mission_core/` (HEMS report) | `.mc-kpi .small` #6b7280 on #ececf3; `p.small` of the family choice (Report) 4.47:1 | Standard, Ops, Console | 4.1 | **fixed**: `--muted` #5b6270 (5.2:1 on #ececf3) |
+| `shared/designs.css` (Aero) | block title `h2` of the Flight orders #7a5c12 on #181d23 (dark tool page) | Aero | 2.7 | **fixed**: `var(--repo-ink, var(--repo-accent))` → #e2c16b on #181d23 (9.8:1); accent unchanged on light blocks |
+| `tools/build_skeuo_icons_css.py` → `block_icons.css` (generated section) | block "move" button in the Gel set: white glyph on a grey tinted bubble, gold (#ffd23f) on the Centre pages | Aqua | 2.0–3.0 | **Centre fixed** (navy bubble, § 6.2); blue bubble: 4.1:1 real, still flagged by the tool (measurement limit, § 6.2) |
+| `apps/aide/aide.html`, `apps/cpco/mission_registry.html` | `.small` at opacity .8 on parchment (#483e2d) | Cabinet, Flight log (plain) | 4.48 | Help: 0 defects at reading (already settled); registry: `.mo-small` set by `shared/mission_order.js` (JS, out of scope) |
+| Measurement | Rugged: current tab, lit canvas — the average of the centre column includes the steel frame (2.5:1 measured); visually readable, to be confirmed on the sprite sheet | Rugged | — | — |
 
-À noter pour `designs.css` (autre session) : les menus d'Aéro et Opérationnel peuvent désormais s'appuyer sur
-`--repo-menu-ink` / `--repo-menu-line` si leur fond change.
+Note for `designs.css` (another session): Aero's and Operational's menus can now rely on `--repo-menu-ink` /
+`--repo-menu-line` if their background changes.
 
-## 6. Passe G : contrastes restants, Opérationnel et Console cohérents
+## 6. Pass G: remaining contrasts, Operational and Console made consistent
 
-Périmètre : `shared/designs.css` (Aéro : contraste seulement ; Opérationnel, Console), `shared/block_icons.css`
-(Console de base, Opérationnel, jeu Gel du Centre), `shared/mission_core/core.css`, `apps/cpco/odv_blocks.css`.
-Règle tenue : un design ne change que la forme ; aucune couleur fixe ajoutée dans les designs ; toutes les nouvelles
-règles de design commencent par `html[data-design="ops"]` ou `html[data-design="console"]` (Standard et Aéro
-inchangés, vérifié par mesure des styles calculés sur les cinq pages ci-dessous).
+Scope: `shared/designs.css` (Aero: contrast only; Operational, Console), `shared/block_icons.css` (base Console,
+Operational, the Centre's Gel set), `shared/mission_core/core.css`, `apps/cpco/odv_blocks.css`. Rule kept: a design only
+changes the shape; no fixed colour added in the designs; every new design rule starts with
+`html[data-design="ops"]` or `html[data-design="console"]` (Standard and Aero unchanged, checked by measuring the
+computed styles on the five pages below).
 
-### 6.1 Relevés avant / après (`tools/contrast_audit.html`, 18 pages, niveau 4, origine `[::1]`)
+### 6.1 Readings before / after (`tools/contrast_audit.html`, 18 pages, level 4, origin `[::1]`)
 
-| Design | Décor | Avant | Après | Reste (tous designs) |
+| Design | Decor | Before | After | Remains (all designs) |
 |---|---|---:|---:|---|
-| Standard | complet / sobre | 16 / 16 | 5 / 5 | Ordres de vols : `.st-arrow` (2,4), jour courant (3,1), `.odvo-tpl small` ×3 (3,9-4,4) |
-| Aéro | complet / sobre | 11 / 11 | 5 / 5 | idem |
-| Opérationnel | complet / sobre | 16 / 16 | 5 / 5 | idem |
-| Console | complet / sobre | 16 / 16 | 5 / 5 | idem |
-| Aqua (5 pages : Mes missions, générateur, Ordres de vols, Mon profil, CR HEMS) | complet | 28 | 42 | bulles du jeu Gel (§ 6.2) ; Ordres de vols `.odvo-tr span`, `.odvo-atc-reservation` (1,03, fond mesuré clair sous un texte clair : page réservée) |
-| Cabinet, Carnet de vol (Aide, registre) | sobre | 2 / 2 | 2 / 2 | registre : `.mo-small` (opacité .8, `mission_order.js`) |
+| Standard | full / plain | 16 / 16 | 5 / 5 | Flight orders: `.st-arrow` (2.4), current day (3.1), `.odvo-tpl small` ×3 (3.9–4.4) |
+| Aero | full / plain | 11 / 11 | 5 / 5 | same |
+| Operational | full / plain | 16 / 16 | 5 / 5 | same |
+| Console | full / plain | 16 / 16 | 5 / 5 | same |
+| Aqua (5 pages: My missions, generator, Flight orders, My profile, HEMS report) | full | 28 | 42 | Gel set bubbles (§ 6.2); Flight orders `.odvo-tr span`, `.odvo-atc-reservation` (1.03, light background measured under light text: reserved page) |
+| Cabinet, Flight log (Help, registry) | plain | 2 / 2 | 2 / 2 | registry: `.mo-small` (opacity .8, `mission_order.js`) |
 
-Écart de comptage Aqua : le CR HEMS comptait 3 bulles « déplacer » au premier relevé et 17 au second (même mesure,
-2,94:1, sur chaque bloc) ; aucune règle de la bulle bleue n'a changé — l'écart vient de l'état de la page au relevé.
+Aqua count discrepancy: the HEMS report counted 3 "move" bubbles at the first reading and 17 at the second (same
+measurement, 2.94:1, on every block); no rule of the blue bubble changed — the gap comes from the page's state at the
+reading.
 
-Défauts corrigés (ratios mesurés par l'outil, sauf mention) :
+Defects fixed (ratios measured by the tool, unless noted):
 
-| Élément | Où | Avant | Après |
+| Element | Where | Before | After |
 |---|---|---:|---:|
-| `.mc-kpi .small`, `.mc-tools p.small` (CR HEMS) | `core.css` `--muted` #6b7280 → #5b6270 | 4,13 | 5,2 |
-| `section#family p.small` (CR) | idem | 4,47 | 5,7 |
-| `h2` des blocs des Ordres de vols (Aéro) | `designs.css` | 2,72 | 9,8 (#e2c16b sur #181d23) |
-| `sup.odv-rank` (Cabinet, Carnet de vol, Durci) | `odv_blocks.css` | 3,6-4,3 (relevé du 09/10, `runs[1]`) | encre pleine du bloc (non remesuré : pas de planning sur l'origine d'audit) |
-| `button.primary`, `.odv-tri3 i.on` sur l'accent | `odv_blocks.css` | 3,1 (même motif que les jours du Planning) | ≥ 4,5 (accent réglé sur la page) |
-| bouton « déplacer » / « masquer », jeu Gel, pages du Centre | `block_icons.css` | 2,9 réel (or sur gel or #916d12) | 10,2 réel (or sur marine #1b2440) |
+| `.mc-kpi .small`, `.mc-tools p.small` (HEMS report) | `core.css` `--muted` #6b7280 → #5b6270 | 4.13 | 5.2 |
+| `section#family p.small` (Report) | same | 4.47 | 5.7 |
+| `h2` of the Flight orders blocks (Aero) | `designs.css` | 2.72 | 9.8 (#e2c16b on #181d23) |
+| `sup.odv-rank` (Cabinet, Flight log, Rugged) | `odv_blocks.css` | 3.6–4.3 (reading of 09/10, `runs[1]`) | the block's full ink (not re-measured: no schedule on the audit origin) |
+| `button.primary`, `.odv-tri3 i.on` on the accent | `odv_blocks.css` | 3.1 (same pattern as the Schedule's days) | ≥ 4.5 (accent set on the page) |
+| "move" / "hide" button, Gel set, Centre pages | `block_icons.css` | 2.9 real (gold on gold gel #916d12) | 10.2 real (gold on navy #1b2440) |
 
-### 6.2 Bulles du jeu Gel
+### 6.2 Gel set bubbles
 
-Rendu réel calculé sur un canevas (disque du gel, puis la bulle `vierge.gris.webp` en `overlay`, moyenne et pire
-pixel du carré central où se trouve le glyphe) :
+Real rendering computed on a canvas (gel disc, then the `vierge.gris.webp` bubble in `overlay`, average and worst
+pixel of the central square where the glyph sits):
 
-| Bulle | Glyphe | Moyenne | Pire pixel |
+| Bubble | Glyph | Average | Worst pixel |
 |---|---|---:|---:|
-| gel bleu #2473db (CR et autres pages) | blanc | 4,1 | 3,2 |
-| Centre, avant : gel or #916d12 (accent) | or #ffd23f | 2,9 | 2,2 |
-| Centre, après : gel marine #1b2440 (celui des icônes du Centre) | or #ffd23f | 10,2 | 9,2 |
+| blue gel #2473db (Report and other pages) | white | 4.1 | 3.2 |
+| Centre, before: gold gel #916d12 (accent) | gold #ffd23f | 2.9 | 2.2 |
+| Centre, after: navy gel #1b2440 (that of the Centre's icons) | gold #ffd23f | 10.2 | 9.2 |
 
-Le glyphe ↕ est un élément graphique (seuil 3:1) : la bulle bleue passe. L'outil, lui, compose l'image en mode
-normal (il ignore `background-blend-mode: overlay`) : il voit la bulle grise et donne 2,5-2,9. Correction de l'outil
-à prévoir (`layer()` : appliquer le mode de fusion de la couche), sinon ces lignes resteront signalées.
+The ↕ glyph is a graphical object (3:1 threshold): the blue bubble passes. The tool, though, composites the image in
+normal mode (it ignores `background-blend-mode: overlay`): it sees the grey bubble and reports 2.5–2.9. A fix of the
+tool is to plan (`layer()`: apply the layer's blend mode), otherwise these lines will stay flagged.
 
-Règle du générateur à reporter (`tools/build_skeuo_icons_css.py`, boucle des jeux, ligne
-`out.append(f'html[data-app-theme="cpco"][data-icons="{key}"] .repo-block .repo-block-tools button:is(.repo-drag,.repo-toggle){{color:{g["centre"]}!important}}')`) :
-pour un jeu teinté (`g.get('centreGel')`), ajouter dans la même règle
+Generator rule to carry over (`tools/build_skeuo_icons_css.py`, loop over the sets, line
+`out.append(f'html[data-app-theme="cpco"][data-icons="{key}"] .repo-block .repo-block-tools button:is(.repo-drag,.repo-toggle){{color:{g["centre"]}!important}}')`):
+for a tinted set (`g.get('centreGel')`), add to the same rule
 `--aq-gel:{g["centreGel"]};background:url("icons/skeuo/{centre}") center/contain no-repeat,{disc({**g, "up": -0.5})} center/contain no-repeat!important;background-blend-mode:overlay,normal!important;`
-(le même disque recentré que les icônes du Centre, `CENTRE`).
+(the same re-centred disc as the Centre's icons, `CENTRE`).
 
-### 6.3 Opérationnel : incohérences et corrections
+### 6.3 Operational: inconsistencies and fixes
 
-Pages : Mes missions, générateur, Mon profil, CR HEMS, Carburant (ton foncé). Mesure : styles calculés des éléments
-(rayon, marges, hauteur, taille, casse) en Standard, Opérationnel et Console.
+Pages: My missions, generator, My profile, HEMS report, Fuel (dark tone). Measurement: computed styles of the elements
+(radius, margins, height, size, case) in Standard, Operational and Console.
 
-| Élément | Page | Ce qui différait | Correction |
+| Element | Page | What differed | Fix |
 |---|---|---|---|
-| Onglets `.repo-tab` | Mes missions, générateur, Mon profil, Carburant | 7 px arrondis (Standard) au milieu d'angles vifs de 3 px | `--repo-round: .4` (tous les rayons écrits en `calc`) ; onglet 3 px 3 px 0 0, 5/12 px |
-| En-tête | Mes missions, Mon profil, CR (marges 18 px) ; générateur, Carburant (10 px) | hauteur selon la page ; description 16, 15 ou 13 px | marges 7 px ; description 12,5 px partout |
-| Boutons du contenu `.primary/.secondary/.ghost/.danger`, `a.mc-button` | Mes missions et générateur 37 px, Carburant et CR 33 px | pas denses, à côté de champs de 27-31 px | marges verticales 5 px → 27 px |
-| Liens-boutons `a.mc-button`, `a.headerButton` | CR, en-têtes | 7-10 px, hors de la règle des boutons | 3 px |
-| Sous-cartes `.mc-item`, `.mc-tools`, `.mc-kpi>div`, `fieldset`, `.note` | CR HEMS | 10 px dans des blocs à 3 px | 3 px |
-| Menu ☰ | toutes | conteneur 3 px ; liens 6 px, Apparence / Paramètres 7 px, actions 3 px, choix du design 6 px | 3 px |
-| Champs, bandeaux `.repo-notice`, zones de dépôt | toutes | 2 px, contre 3 px pour boutons, blocs, menus | 3 px |
-| Titre de l'aperçu imprimable (`.report h2`) | CR HEMS | mis en capitales 12,5 px comme un titre de bloc (`.repo-block h2`) | capitales limitées à `.repo-block-heading h2` et `.card>h2` |
+| `.repo-tab` tabs | My missions, generator, My profile, Fuel | 7 px rounded (Standard) among sharp 3 px corners | `--repo-round: .4` (every radius written as `calc`); tab 3 px 3 px 0 0, 5/12 px |
+| Header | My missions, My profile, Report (18 px margins); generator, Fuel (10 px) | height depending on the page; description 16, 15 or 13 px | 7 px margins; description 12.5 px everywhere |
+| Content buttons `.primary/.secondary/.ghost/.danger`, `a.mc-button` | My missions and generator 37 px, Fuel and Report 33 px | not dense, next to 27–31 px fields | vertical margins 5 px → 27 px |
+| Link-buttons `a.mc-button`, `a.headerButton` | Report, headers | 7–10 px, outside the buttons' rule | 3 px |
+| Sub-cards `.mc-item`, `.mc-tools`, `.mc-kpi>div`, `fieldset`, `.note` | HEMS report | 10 px inside 3 px blocks | 3 px |
+| ☰ menu | all | container 3 px; links 6 px, Appearance / Settings 7 px, actions 3 px, design choice 6 px | 3 px |
+| Fields, `.repo-notice` banners, drop zones | all | 2 px, against 3 px for buttons, blocks, menus | 3 px |
+| Printable preview title (`.report h2`) | HEMS report | set in 12.5 px capitals like a block title (`.repo-block h2`) | capitals limited to `.repo-block-heading h2` and `.card>h2` |
 
-### 6.4 Console : incohérences et corrections
+### 6.4 Console: inconsistencies and fixes
 
-| Élément | Page | Ce qui différait | Correction |
+| Element | Page | What differed | Fix |
 |---|---|---|---|
-| Titre d'un bloc sans icône | Carburant (« JSON importé / SimBrief ») | 15 px, casse normale ; les autres en capitales 1,3 rem 800 (règle limitée à `.repo-block-heading-rich`) | `.repo-block-heading h2`, `.card>h2` |
-| Boutons de l'en-tête (Synchroniser, Sauvegarder, Créer le CR, outils du CR) | toutes | 40 px à côté de ☰ et langue (32 px) et des menus du CR (30 px) | hauteur 40 px réservée au contenu |
-| Rayons de l'en-tête | toutes | ☰ et langue 7 px, boutons 6 px, menus du CR 8 px et pilule, `a.mc-button` 7 px | 6 px |
-| Menu ☰ | toutes | actions (Données locales, Page) 40 px contre liens 37 px ; menu 9 px, fenêtres du CR 12 px ; Apparence / Paramètres 7 px | menus hors 40 px ; conteneurs 10 px (rayon des blocs) ; entrées 6 px |
-| Boutons à icône seule (« maintenant » des heures) | CR HEMS (19) | étirés à 40 px de haut | exclus de la hauteur 40 |
-| Champs dans les tableaux | CR HEMS | 40 px dans les cellules (lignes de 45 px) | exclus (saisie dense, comme Aéro) |
-| Sous-cartes, groupes de champs, bandeaux, zones de dépôt | CR HEMS (10 px), `.repo-card` (8 px) | deux rayons de sous-carte | 8 px |
-| Onglets `.repo-tab` | Mes missions, générateur, Mon profil, Carburant | dessin Standard (7 px, 7/14 px) dans un design aéré | 8 px, 9/16 px |
-| Description de l'en-tête | toutes | 16, 15 ou 13 px selon la page | 14 px |
+| Title of a block without icon | Fuel ("Imported JSON / SimBrief") | 15 px, normal case; the others in 1.3 rem 800 capitals (rule limited to `.repo-block-heading-rich`) | `.repo-block-heading h2`, `.card>h2` |
+| Header buttons (Synchronise, Save, Create the report, report tools) | all | 40 px next to ☰ and language (32 px) and the report's menus (30 px) | 40 px height reserved to the content |
+| Header radii | all | ☰ and language 7 px, buttons 6 px, report menus 8 px and pill, `a.mc-button` 7 px | 6 px |
+| ☰ menu | all | actions (Local data, Page) 40 px against links 37 px; menu 9 px, report windows 12 px; Appearance / Settings 7 px | menus outside the 40 px; containers 10 px (the blocks' radius); entries 6 px |
+| Icon-only buttons ("now" of the times) | HEMS report (19) | stretched to 40 px high | excluded from the 40 px height |
+| Fields inside tables | HEMS report | 40 px in the cells (45 px rows) | excluded (dense entry, like Aero) |
+| Sub-cards, field groups, banners, drop zones | HEMS report (10 px), `.repo-card` (8 px) | two sub-card radii | 8 px |
+| `.repo-tab` tabs | My missions, generator, My profile, Fuel | Standard drawing (7 px, 7/14 px) in an airy design | 8 px, 9/16 px |
+| Header description | all | 16, 15 or 13 px depending on the page | 14 px |
 
-Hors correction (voulu ou hors périmètre) : le bouton rond de fermeture `fa-x` prend le rayon des boutons du design
-(comme en Aéro) ; tableaux et barre latérale identiques à Standard dans les deux designs (densité de tableau déjà
-réglée en Opérationnel) ; pas de `.repo-actionbar` sur ces cinq pages (studio et Cartes de vol seulement).
+Out of scope (intended or elsewhere): the round close button `fa-x` takes the design's button radius (as in Aero);
+tables and sidebar identical to Standard in both designs (table density already set in Operational); no
+`.repo-actionbar` on these five pages (studio and Flight maps only).
