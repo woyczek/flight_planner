@@ -12,6 +12,17 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Ajouté
 
+- **Mission generator: "Step by step" guided entry (docs/technique/V2_FABLE.md § 11)** — `apps/cpco/mission_guide.js`:
+  a rail of six steps (Frame, Places, Story, Objectives and risks, Timeline, Maps and documents), one open at a
+  time, "Next →", "Show everything" back to the full layout; same data as the blocks. Proposals are put in the
+  field and marked "proposed ✓" until confirmed or changed (theatre from the aircraft base, fleet callsign, team
+  name, departure = base, entry/exit 15 NM from the target on the route, story canvas, route events from the
+  duration estimate, maps from the places); warnings are lines under the field with one-click fixes ("Set …",
+  "Split into secondary objectives", "Place in the studio"). Places step with search over airfields, beacons,
+  points and towns and "+ Target / Working zone / Turning point / Rendezvous"; risks in a four-column table with
+  a level selector and a paste box. Default for a new mission (never saved, or skeleton) at levels 1 to 3; the
+  "Step by step" button of the Mission block at any level. Planner manual and end-to-end tutorial aligned (four
+  languages).
 - **Mission generator: hand-written missions tidied at the source (case G-001)** — risks: one per line, columns
   separated by tab, "—", "|" or ";", a level column (Critical / High / Moderate / Low, four languages, asterisk kept)
   recognised anywhere, stored as `{ hazard, level, consequence, mitigation }` (`level` new, printed in brief, PDF and

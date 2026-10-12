@@ -16,7 +16,7 @@ Je nach Nutzungsstufe: Die Seite wird ab der Stufe Gestaltung (3) angeboten. Auf
 
 ### Tutorial: eine Mission von Anfang bis Ende vorbereiten
 
-Vom Bestellformular bis zum PDF-Briefing in neun Schritten; die Schritte 10 bis 12 machen aus einer Einzelmission eine koordinierte Übung. Die Namen in Anführungszeichen sind Schaltflächen.
+Vom Bestellformular bis zum PDF-Briefing in neun Schritten; die Schritte 10 bis 12 machen aus einer Einzelmission eine koordinierte Übung. Auf den Stufen 1 bis 3 öffnet sich eine neue Mission in „Schritt für Schritt“: Ihre Schritte Rahmen, Orte, Erzählung, Ziele und Risiken, Zeitablauf, Karten und Dokumente übernehmen die Schritte 4 bis 8 unten; „Alles anzeigen“ führt zur vollständigen Seite zurück. Die Namen in Anführungszeichen sind Schaltflächen.
 1. **Generator öffnen**: Seitenleiste „Missionen“, Reiter „Generator“ (Stufe Gestaltung), oder „Neue Mission“ im Register.
 2. **Bestellung einstellen**: „Bei ChatGPT bestellen…“ klappt das Formular auf. Wählen Sie „Typ“, „Untertyp“, „Schauplatz“, „Besatzungen im Flug“, „Bodenteams“ und „Dauer“; unter „Weitere Optionen“ „Treffpunkt“, „Luftbetankung“, „Koordinierte Übung“ und bei Bedarf das Luftfahrzeug jedes Teams (leer = ein Luftfahrzeug der Flotte).
 3. **Mission erstellen**, nach Wahl. Mit ChatGPT: „Bestellen: Prompt kopieren und ChatGPT öffnen“, den Prompt in ChatGPT einfügen und senden, dann die Antwort (`mission<ID>.yaml` und `summary<ID>.md`) unter „YAML und/oder Markdown“ laden, oder „oder Inhalt einfügen…“ und „Mission lesen“. Ohne ChatGPT: „Gerüst hier erstellen“ erstellt sofort die Mission(en), ohne Erzählung.
@@ -67,6 +67,19 @@ Der Bereich „Andere Mission importieren: Dateien, eingefügter Text, ChatGPT-B
 
 Eine empfangene Mission wird ins Register eingetragen und in ihrem Ordner abgelegt, wenn der Missionsordner erlaubt ist; andernfalls klicken Sie auf „Im Missionsordner ablegen…“. Link „Register öffnen ↗“.
 Der empfangene Text wird in `recu/` aufbewahrt; erneut empfangen, ersetzt eine Mission die vorige nur, wenn sich ihre Daten ändern: Die alte kommt nach `versions/`, die Studio-Einstellungen gleichnamiger Karten werden übernommen. Das Einfügen nimmt die ganze Antwort von ChatGPT an (mehrere Missionen: ein Stapel); Begleitdateien einer Serie (VALIDATION.txt, Manifest) werden ausgesondert und gemeldet.
+
+### Schritt für Schritt
+
+Eine neue Mission (nie gespeichert oder Gerüst) öffnet sich auf den Stufen 1 bis 3 in der geführten Eingabe; auf der Stufe Experte öffnet sie die Schaltfläche „Schritt für Schritt“ des Blocks Mission. Eine Leiste mit sechs Schritten, immer nur einer offen, „Weiter →“ unten; „Alles anzeigen“ stellt das vollständige Layout wieder her (und „Schritt für Schritt“ führt dorthin zurück). Es sind dieselben Daten wie in den Blöcken: Beim Wechsel geht nichts verloren. Ein vorgeschlagener Wert steht im Feld, gestrichelt umrandet, mit dem Abzeichen „vorgeschlagen ✓“ (Klick bestätigt, Ändern ebenfalls); eine Warnung ist eine Zeile unter dem Feld, mit Korrektur per Klick, wenn es eine gibt.
+
+| Schritt | Was eingegeben wird | Vorschläge | Warnungen |
+|---|---|---|---|
+| 1 Rahmen | Familie, Untertyp, Kennung (Block Identifikation), Einsatzgebiet, Flugzeit, Luftfahrzeug und Rufzeichen, Abflug und Ankunft | Einsatzgebiet der Basis des Luftfahrzeugs, Rufzeichen aus der Flotte, Team danach benannt, Abflug = Basis | Einsatzgebiet ≠ Abflug („… setzen“), Luftfahrzeug außerhalb der Familie, kein Rufzeichen, Abflug ohne Koordinaten |
+| 2 Orte | Zielobjekt, Zonen (Radius), Wendepunkte, Treffpunkte (Teilnehmer); „+ Zielobjekt“, „+ Arbeitszone“, „+ Wendepunkt“, „+ Treffpunkt“ | Suche über Flugplätze, Funkfeuer, Punkte und Orte; Ein- und Ausgang 15 NM vom Zielobjekt auf der Route | Ort ohne Koordinaten („Im Studio setzen“), Zone ohne Radius, Treffpunkt ohne Teilnehmer |
+| 3 Erzählung | Titel, Zusammenfassung, ausführliche Beschreibung | Gerüsttext aus Rahmen und Orten, umzuschreiben | leerer Titel, Zusammenfassung über 600 Zeichen |
+| 4 Ziele und Risiken | Hauptziel, Nebenziele, Risiken in einer Tabelle (Gefahr, Stufe, Folge, Maßnahme); „Risikotabelle einfügen“ | — | mehrere nummerierte Ziele („Auf Nebenziele aufteilen“), Risiko ohne Maßnahme |
+| 5 Zeitablauf | Ereignisse bei H+n (H = geplanter Start) | Ereignisse der Route: Ankunft an jedem Punkt, Arbeitsende, Rückkehr, zu den Zeiten der Dauerschätzung | Ereignis nach dem Ende des geschätzten Zeitfensters |
+| 6 Karten und Dokumente | erwartete Karten, Speichern, dann Karten im Studio und Dokumente | Karten aus den Orten (Übersicht, Zielobjekt, Detail Zielobjekt, jeder Treffpunkt, jede Zone) | Karte auf einen Ort ohne Koordinaten zentriert („Im Studio setzen“) |
 
 ### Mission bestellen
 

@@ -16,7 +16,7 @@ Depending on the usage level: the page is offered from the Design level (3). At 
 
 ### Tutorial: preparing a mission from start to finish
 
-From the order form to the PDF brief, in nine steps; steps 10 to 12 turn a single mission into a coordinated exercise. Names in quotes are button labels.
+From the order form to the PDF brief, in nine steps; steps 10 to 12 turn a single mission into a coordinated exercise. At levels 1 to 3, a new mission opens in “Step by step”: its steps Frame, Places, Story, Objectives and risks, Timeline, Maps and documents take over steps 4 to 8 below; “Show everything” goes back to the full page. Names in quotes are button labels.
 1. **Open the generator**: sidebar “Missions”, “Generator” tab (Design level), or “New mission” in the registry.
 2. **Set the order**: “Order from ChatGPT…” unfolds the form. Choose “Type”, “Subtype”, “Theatre”, “Flying teams”, “Ground teams” and “Duration”; in “More options”, “Rendezvous”, “Air refuelling”, “Coordinated exercise” and, if needed, the aircraft of each team (empty = a fleet aircraft).
 3. **Create the mission**, either way. With ChatGPT: “Order: copy prompt and open ChatGPT”, paste the prompt into ChatGPT and send it, then load the answer (`mission<ID>.yaml` and `summary<ID>.md`) in “YAML and/or Markdown”, or “or paste its content…” then “Read the mission”. Without ChatGPT: “Create the skeleton here” creates the mission(s) at once, without narrative.
@@ -67,6 +67,19 @@ The “Import another mission: files, pasted text, ChatGPT order” pane is open
 
 A received mission is recorded in the registry and filed in its folder if the missions folder is authorised; otherwise, click “File in the missions folder…”. Link “Open the registry ↗”.
 The received text is kept in `recu/`; received again, a mission replaces the previous one only if its data change: the old one goes to `versions/`, and the studio settings of maps with the same name are kept. Pasting accepts ChatGPT's whole answer (several missions: a batch); the side files of a series (VALIDATION.txt, manifest) are set aside and reported.
+
+### Step by step
+
+A new mission (never saved, or a skeleton) opens in guided entry at levels 1 to 3; at the Expert level, the “Step by step” button of the Mission block opens it. A rail of six steps, one open at a time, “Next →” at the bottom; “Show everything” brings back the full layout (and “Step by step” returns to it). It is the same data as the blocks: nothing is lost switching from one to the other. A proposed value is put in the field, framed in dashes with the “proposed ✓” chip (clicking confirms, changing it too); a warning is a line under the field, with its one-click fix when there is one.
+
+| Step | What is entered | Proposals | Warnings |
+|---|---|---|---|
+| 1 Frame | family, subtype, identifier (Identification block), theatre, flight time, aircraft and callsign, departure and arrival | theatre from the aircraft’s base, callsign from the fleet, team named after it, departure = base | theatre ≠ departure (“Set …”), aircraft outside the family, no callsign, departure without coordinates |
+| 2 Places | target, zones (radius), turning points, rendezvous (participants); “+ Target”, “+ Working zone”, “+ Turning point”, “+ Rendezvous” | search over airfields, beacons, points and towns; entry and exit 15 NM from the target on the route | place without coordinates (“Place in the studio”), zone without radius, rendezvous without participants |
+| 3 Story | title, summary, detailed description | canvas from the frame and the places, to rewrite | empty title, summary over 600 characters |
+| 4 Objectives and risks | main objective, secondaries, risks in a table (hazard, level, consequence, mitigation); “Paste a risk table” | — | several numbered objectives (“Split into secondary objectives”), risk without mitigation |
+| 5 Timeline | events at H+n (H = planned take-off) | route events: arrival at each point, end of work, return, at the times of the duration estimate | event after the end of the estimated block |
+| 6 Maps and documents | expected maps, saving, then maps in the studio and documents | maps from the places (general, target, target detail, each rendezvous, each zone) | map centred on a place without coordinates (“Place in the studio”) |
 
 ### Order a mission
 

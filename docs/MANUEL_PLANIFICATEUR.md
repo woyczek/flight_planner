@@ -18,7 +18,7 @@ Selon le niveau d'utilisation : la page est proposée à partir du niveau Concep
 
 ### Tutoriel : préparer une mission de bout en bout
 
-Du formulaire de commande au brief PDF, en neuf étapes ; les étapes 10 à 12 font d’une mission seule un exercice coordonné. Les noms entre guillemets sont ceux des boutons.
+Du formulaire de commande au brief PDF, en neuf étapes ; les étapes 10 à 12 font d’une mission seule un exercice coordonné. Aux niveaux 1 à 3, une mission neuve s'ouvre en « Pas à pas » : ses étapes Cadre, Lieux, Récit, Objectifs et risques, Chronologie, Cartes et documents reprennent les étapes 4 à 8 ci-dessous ; « Tout afficher » revient à la page complète. Les noms entre guillemets sont ceux des boutons.
 1. **Ouvrir le générateur** : barre latérale « Missions », onglet « Générateur » (niveau Conception), ou « Nouvelle mission » dans le registre.
     ![Ouvrir l’onglet Générateur depuis l’entrée Missions.](images/captures-manuels/tutoriel-onglet-generateur.png)
     *Étape 1 — Ouvrir l’onglet Générateur depuis l’entrée Missions.*
@@ -116,6 +116,19 @@ Le texte reçu est gardé dans `recu/` ; reçue à nouveau, une mission ne rempl
 ![Importer, dupliquer ou enregistrer la mission : boutons du bloc Mission et volet d’import.](images/captures-manuels/planif-mission-actions.png)
 
 *Figure 1 — Importer, dupliquer ou enregistrer la mission : boutons du bloc Mission et volet d’import.*
+
+### Pas à pas
+
+Une mission neuve (jamais enregistrée, ou squelette) s'ouvre en saisie guidée aux niveaux 1 à 3 ; au niveau Expert, le bouton « Pas à pas » du bloc Mission l'ouvre. Un rail de six étapes, une seule ouverte à la fois, « Suivant → » en bas ; « Tout afficher » rend la mise en page complète (et « Pas à pas » y ramène). Ce sont les mêmes données que les blocs : rien n'est perdu en passant de l'un à l'autre. Une valeur proposée est posée dans le champ, encadrée en pointillés avec la pastille « proposé ✓ » (cliquer confirme, modifier aussi) ; un avertissement est une ligne sous le champ, avec sa correction en un clic quand elle existe.
+
+| Étape | Ce qu'on saisit | Propositions | Avertissements |
+|---|---|---|---|
+| 1 Cadre | famille, sous-type, identifiant (bloc Identification), théâtre, durée de vol, aéronef et indicatif, départ et arrivée | théâtre de la base de l'aéronef, indicatif de la flotte, équipe nommée d'après lui, départ = base | théâtre ≠ départ (« Mettre … »), appareil hors famille, pas d'indicatif, départ sans coordonnées |
+| 2 Lieux | cible, zones (rayon), points tournants, rendez-vous (participants) ; « + Cible », « + Zone de travail », « + Point tournant », « + Rendez-vous » | recherche de terrains, balises, points et villes ; entrée et sortie à 15 NM de la cible sur la route | lieu sans coordonnées (« Placer au studio »), zone sans rayon, rendez-vous sans participants |
+| 3 Récit | titre, résumé, description détaillée | canevas d'après le cadre et les lieux, à réécrire | titre vide, résumé de plus de 600 caractères |
+| 4 Objectifs et risques | objectif principal, secondaires, risques dans un tableau (danger, niveau, conséquence, mesure) ; « Coller un tableau de risques » | — | plusieurs objectifs numérotés (« Répartir en secondaires »), risque sans mesure |
+| 5 Chronologie | événements H+n (H = décollage prévu) | événements de la route : arrivée à chaque point, fin du travail, retour, aux heures du calcul de durée | événement après la fin du créneau estimé |
+| 6 Cartes et documents | cartes attendues, enregistrement, puis cartes au studio et documents | cartes d'après les lieux (générale, cible, détail cible, chaque rendez-vous, chaque zone) | carte centrée sur un lieu sans coordonnées (« Placer au studio ») |
 
 ### Commander une mission
 

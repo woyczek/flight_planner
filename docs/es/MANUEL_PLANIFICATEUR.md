@@ -16,7 +16,7 @@ Según el nivel de uso: la página se ofrece a partir del nivel Diseño (3). En 
 
 ### Tutorial: preparar una misión de principio a fin
 
-Del formulario de encargo al brief en PDF, en nueve pasos; los pasos 10 a 12 convierten una misión sola en un ejercicio coordinado. Los nombres entre comillas son los de los botones.
+Del formulario de encargo al brief en PDF, en nueve pasos; los pasos 10 a 12 convierten una misión sola en un ejercicio coordinado. En los niveles 1 a 3, una misión nueva se abre en «Paso a paso»: sus pasos Marco, Lugares, Relato, Objetivos y riesgos, Cronología, Mapas y documentos retoman los pasos 4 a 8 de abajo; «Mostrar todo» vuelve a la página completa. Los nombres entre comillas son los de los botones.
 1. **Abrir el generador**: barra lateral «Misiones», pestaña «Generador» (nivel Diseño), o «Nueva misión» en el registro.
 2. **Ajustar el encargo**: «Encargar a ChatGPT…» despliega el formulario. Elija «Tipo», «Subtipo», «Teatro», «Equipos en vuelo», «Equipos en tierra» y «Duración»; en «Más opciones», «Encuentro», «Reabastecimiento en vuelo», «Ejercicio coordinado» y, si hace falta, la aeronave de cada equipo (vacío = una aeronave de la flota).
 3. **Crear la misión**, a elegir. Con ChatGPT: «Encargar: copiar el prompt y abrir ChatGPT», pegue el prompt en ChatGPT y envíelo, después cargue la respuesta (`mission<ID>.yaml` y `summary<ID>.md`) en «YAML y/o Markdown», o «o pegar su contenido…» y «Leer la misión». Sin ChatGPT: «Crear el esqueleto aquí» crea en el acto la(s) misión(es), sin relato.
@@ -67,6 +67,19 @@ El panel «Importar otra misión: archivos, texto pegado, encargo a ChatGPT» es
 
 Una misión recibida se inscribe en el registro y se guarda en su carpeta si la carpeta de misiones está autorizada; si no, haga clic en «Archivar en la carpeta de misiones…». Enlace «Abrir el registro ↗».
 El texto recibido se guarda en `recu/`; recibida de nuevo, una misión solo sustituye a la anterior si sus datos cambian: la antigua va a `versions/` y se conservan los ajustes del estudio de los mapas del mismo nombre. El pegado acepta la respuesta entera de ChatGPT (varias misiones: un lote); los archivos anexos de una serie (VALIDATION.txt, manifiesto) se descartan y se señalan.
+
+### Paso a paso
+
+Una misión nueva (nunca guardada, o un esqueleto) se abre en entrada guiada en los niveles 1 a 3; en el nivel Experto, la abre el botón «Paso a paso» del bloque Misión. Un carril de seis pasos, uno abierto a la vez, «Siguiente →» abajo; «Mostrar todo» devuelve el diseño completo (y «Paso a paso» vuelve a él). Son los mismos datos que los bloques: nada se pierde al pasar de uno a otro. Un valor propuesto se coloca en el campo, enmarcado con trazos y la etiqueta «propuesto ✓» (hacer clic confirma, modificarlo también); un aviso es una línea bajo el campo, con su corrección en un clic cuando existe.
+
+| Paso | Lo que se introduce | Propuestas | Avisos |
+|---|---|---|---|
+| 1 Marco | familia, subtipo, identificador (bloque Identificación), teatro, tiempo de vuelo, aeronave e indicativo, salida y llegada | teatro de la base de la aeronave, indicativo de la flota, equipo nombrado según él, salida = base | teatro ≠ salida («Poner …»), aeronave fuera de la familia, sin indicativo, salida sin coordenadas |
+| 2 Lugares | objetivo, zonas (radio), puntos de viraje, encuentros (participantes); «+ Objetivo», «+ Zona de trabajo», «+ Punto de viraje», «+ Encuentro» | búsqueda de aeródromos, radiobalizas, puntos y ciudades; entrada y salida a 15 NM del objetivo en la ruta | lugar sin coordenadas («Colocar en el estudio»), zona sin radio, encuentro sin participantes |
+| 3 Relato | título, resumen, descripción detallada | esbozo a partir del marco y los lugares, por reescribir | título vacío, resumen de más de 600 caracteres |
+| 4 Objetivos y riesgos | objetivo principal, secundarios, riesgos en una tabla (peligro, nivel, consecuencia, medida); «Pegar una tabla de riesgos» | — | varios objetivos numerados («Repartir en secundarios»), riesgo sin medida |
+| 5 Cronología | eventos a H+n (H = despegue previsto) | eventos de la ruta: llegada a cada punto, fin del trabajo, regreso, a las horas del cálculo de duración | evento tras el final de la franja estimada |
+| 6 Mapas y documentos | mapas previstos, guardado, luego mapas en el estudio y documentos | mapas a partir de los lugares (general, objetivo, detalle del objetivo, cada encuentro, cada zona) | mapa centrado en un lugar sin coordenadas («Colocar en el estudio») |
 
 ### Encargar una misión
 

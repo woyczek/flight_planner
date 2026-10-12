@@ -14,6 +14,18 @@
     ],
     ["Tout est placé. ", "Everything is placed. ", "Alles gesetzt. ", "Todo está colocado. "],
     ["Ouvrir au studio", "Open in the studio", "Im Studio öffnen", "Abrir en el estudio"],
+    // saisie pas à pas (générateur, mission_guide.js)
+    ["Pas à pas", "Step by step", "Schritt für Schritt", "Paso a paso"],
+    ["Saisie guidée en six étapes : cadre, lieux, récit, objectifs et risques, chronologie, cartes et documents",
+      "Guided entry in six steps: frame, places, story, objectives and risks, timeline, maps and documents",
+      "Geführte Eingabe in sechs Schritten: Rahmen, Orte, Erzählung, Ziele und Risiken, Zeitablauf, Karten und Dokumente",
+      "Entrada guiada en seis pasos: marco, lugares, relato, objetivos y riesgos, cronología, mapas y documentos"
+    ],
+    ["Saisie guidée en six étapes ; « Tout afficher » rend la mise en page complète.",
+      "Guided entry in six steps; “Show everything” brings back the full layout.",
+      "Geführte Eingabe in sechs Schritten; „Alles anzeigen“ stellt das vollständige Layout wieder her.",
+      "Entrada guiada en seis pasos; «Mostrar todo» devuelve el diseño completo."
+    ],
     // ligne d'état et « Annuler les modifications » (générateur, studio)
     ["Annuler les modifications", "Undo changes", "Änderungen verwerfen", "Deshacer los cambios"],
     ["Revenir à la dernière version enregistrée dans le dossier (ou à la version chargée), après confirmation",
