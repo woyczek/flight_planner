@@ -1,7 +1,7 @@
 # Technical debt
 
 Known issues, kept as they are by choice or for lack of time, to be revisited. Each entry: what happens, why we
-keep it, what should be done. Updated: 9 October 2026.
+keep it, what should be done. Updated: 12 October 2026.
 
 ## Data and synchronisation
 
@@ -26,6 +26,7 @@ keep it, what should be done. Updated: 9 October 2026.
 
 | Since | Subject | Finding | Why we keep it | To do |
 |---|---|---|---|---|
+| 12/10/2026 | **Documentation screenshots** | the tutorials and manuals carry screenshots (`docs/tutorial/img`, manuals) that are not precise or relevant enough: taken before the v2 levels, the three manuals, the typed sections, the skeleton and the studio's "Points to place"; some show states that no longer exist | the help overhaul (one source per subject, three manuals, tutorials first) comes first; screenshots are retaken once the pages are stable | a screenshot campaign: one capture per step of each tutorial and per chapter opening, same design (Standard) and level, 1280 px wide, named `<doc>-<step>.png`, produced by a script driving the browser so that they can be regenerated at every release |
 | 05/10/2026 | ODV, "Assign free pilots" window | "Save (2)" shown as soon as a slot that already has missions is opened (existing assignments count as changes) | not a nuisance in use | count only changes relative to the assignments read on opening (`apps/cpco/odv_assign.js`) |
 | 05/10/2026 | **Untranslated interface text** (found while translating the manuals) | text hard-coded in French in the pages (Flight charts: "Plot", "Search", plotting options, messages; Fuel: "Aircraft" menu, "Remaining", audit columns; studio, Registry, ODV, envelope-opening notification); `T(fr, en)` calls in Settings with no German or Spanish entry (Centre activation: the interface shows English); launcher messages (synchronisation, remote repository) in French only | not blocking: the meaning remains understandable | move these texts into the translation tables (translation audit `tools/audit_i18n.html`), launcher messages translated by the page |
 | 05/10/2026 | Configuration labels in French only | availability category labels are entered in French; missing translations are listed by the audit (`tools/audit_i18n.html`) but are completed by hand in `data/config/disponibilites.json` | decided on 5 October | entry of translations in the audit itself |
