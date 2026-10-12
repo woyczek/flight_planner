@@ -10,7 +10,8 @@
        envoie par postMessage l'image de la carte affichée (rendu PNG, mêmes surcouches que la génération), son
        contexte (nom, mission, type, cadrage, liste des cartes) et son thème (design, ton, couleurs). La fenêtre
        demande « actualiser », la carte précédente ou suivante, et « ouvrir au studio ». Clavier : ← → (cartes),
-       + − (zoom), 0 (ajuster), Échap (fermer). -->
+       + − (zoom), 0 (ajuster), Échap (fermer). Souris et doigt : roulette = zoom sous le curseur (×1,1 par cran),
+       glisser = déplacer, pincement = zoom, double-clic = ajusté ↔ 1:1 au point cliqué. -->
   <style>
     :root {
       --repo-bar: #101319;
@@ -93,18 +94,23 @@
     main {
       position: absolute;
       inset: var(--bar-top, var(--bar-h)) 0 0 0;
-      overflow: auto;
-      display: grid;
-      place-items: center
+      overflow: hidden;
+      touch-action: none;
+      cursor: grab;
+      user-select: none
     }
-    main.fit img {
-      max-width: 100%;
-      max-height: 100%;
-      object-fit: contain
+    main.drag {
+      cursor: grabbing
     }
     main img {
+      position: absolute;
+      left: 0;
+      top: 0;
       display: block;
-      image-rendering: auto
+      max-width: none;
+      transform-origin: 0 0;
+      pointer-events: none;
+      -webkit-user-drag: none
     }
     #state {
       position: fixed;
@@ -134,7 +140,7 @@
     <button type="button" id="refresh" data-t="refresh"></button><button type="button" id="studio" data-t="studio"></button><button type="button" id="close" data-t="close"></button>
     <span id="info"></span>
   </div>
-  <main id="view" class="fit"><img id="img" alt=""></main>
+  <main id="view"><img id="img" alt="" draggable="false"></main>
   <p id="state" role="status"></p>
   <script>
     (() => {
@@ -175,7 +181,6 @@
       const LANGS = ['fr', 'en', 'de', 'es'];
       let lang = 0,
         ctx = null,
-        zoom = 1,
         fit = true;
       const $ = id => document.getElementById(id),
         img = $('img'),
@@ -212,25 +217,42 @@
           labels();
         }
       }
-      /** Affichage : ajusté à la fenêtre, ou zoom (1 = taille réelle). */
-      function show() {
-        view.classList.toggle('fit', fit);
+      // vue : échelle sc et position (x, y) de l'image dans la zone ; fit : échelle qui fait tenir l'image, centrée
+      let sc = 1,
+        px = 0,
+        py = 0;
+      /** Échelle « ajustée » : l'image tient dans la zone (jamais agrandie au-delà de 1:1). */
+      const fitScale = () => img.naturalWidth ? Math.min(view.clientWidth / img.naturalWidth, view.clientHeight / img.naturalHeight, 1) :
+        1;
+      /** Applique l'échelle et la position ; image plus petite que la zone : centrée sur cet axe. */
+      function paint() {
+        const w = img.naturalWidth * sc,
+          h = img.naturalHeight * sc;
+        if (w <= view.clientWidth) px = (view.clientWidth - w) / 2;
+        else px = Math.min(0, Math.max(view.clientWidth - w, px));
+        if (h <= view.clientHeight) py = (view.clientHeight - h) / 2;
+        else py = Math.min(0, Math.max(view.clientHeight - h, py));
+        img.style.transform = `translate(${px}px, ${py}px) scale(${sc})`;
+        $('zoom').textContent = `${Math.round(sc * 100)} %`;
         $('fit').setAttribute('aria-pressed', String(fit));
-        $('one').setAttribute('aria-pressed', String(!fit && zoom === 1));
-        if (fit) {
-          img.style.width = '';
-          const r = img.naturalWidth ? Math.min(view.clientWidth / img.naturalWidth, view.clientHeight / img.naturalHeight, 1) : 1;
-          $('zoom').textContent = `${Math.round(r * 100)} %`;
-        } else {
-          img.style.width = `${Math.round(img.naturalWidth * zoom)}px`;
-          $('zoom').textContent = `${Math.round(zoom * 100)} %`;
-        }
+        $('one').setAttribute('aria-pressed', String(!fit && Math.abs(sc - 1) < 1e-6));
       }
-      const setZoom = z => {
+      /** Affichage ajusté à la fenêtre (fit), sinon échelle et position gardées. */
+      function show() {
+        if (fit) sc = fitScale();
+        paint();
+      }
+      /** Zoom à l'échelle z autour du point (cx, cy) de la zone (par défaut son centre) : le point sous le curseur reste
+       *  sous le curseur. */
+      function zoomAt(z, cx = view.clientWidth / 2, cy = view.clientHeight / 2) {
+        const nz = Math.min(8, Math.max(Math.min(.05, fitScale()), z));
+        px = cx - (cx - px) * nz / sc;
+        py = cy - (cy - py) * nz / sc;
+        sc = nz;
         fit = false;
-        zoom = Math.min(8, Math.max(.1, Math.round(z * 100) / 100));
-        show();
-      };
+        paint();
+      }
+      const setZoom = z => zoomAt(z);
       /** Hauteur réelle de la barre (elle passe sur deux lignes dans une fenêtre étroite) : la carte commence dessous. */
       const barTop = () => document.documentElement.style.setProperty('--bar-top', `${document.querySelector('.bar').offsetHeight || 46}px`);
       /** Message au studio (fenêtre d'origine). */
@@ -256,7 +278,7 @@
         else if (d.type === 'map' && d.url) {
           img.onload = () => {
             say('');
-            show();
+            show(); // ajustée si l'on était ajusté ; sinon échelle et position gardées (nouvel aperçu de la même carte)
           };
           img.alt = d.name || '';
           img.src = d.url;
@@ -280,8 +302,76 @@
         show();
       };
       $('one').onclick = () => setZoom(1);
-      $('zin').onclick = () => setZoom((fit ? (img.clientWidth / (img.naturalWidth || 1)) : zoom) * 1.25);
-      $('zout').onclick = () => setZoom((fit ? (img.clientWidth / (img.naturalWidth || 1)) : zoom) / 1.25);
+      $('zin').onclick = () => setZoom(sc * 1.25);
+      $('zout').onclick = () => setZoom(sc / 1.25);
+      // roulette : zoom doux (×1,1 par cran) centré sous le curseur (rien d'autre à faire défiler dans la page)
+      view.addEventListener('wheel', e => {
+        e.preventDefault();
+        const r = view.getBoundingClientRect(),
+          steps = e.deltaMode === 1 ? e.deltaY / 3 : e.deltaY / 100;
+        zoomAt(sc * Math.pow(1.1, -Math.max(-5, Math.min(5, steps))), e.clientX - r.left, e.clientY - r.top);
+      }, {
+        passive: false
+      });
+      // glisser (souris, un doigt) : déplacement ; deux doigts : pincement = zoom autour du milieu
+      const pts = new Map();
+      let pinch = null;
+      view.addEventListener('pointerdown', e => {
+        try {
+          view.setPointerCapture(e.pointerId);
+        } catch {
+          /* pointeur déjà relâché : suivi sans capture */
+        }
+        pts.set(e.pointerId, {
+          x: e.clientX,
+          y: e.clientY
+        });
+        view.classList.add('drag');
+        if (pts.size === 2) {
+          const [a, b] = [...pts.values()];
+          pinch = {
+            d: Math.hypot(a.x - b.x, a.y - b.y),
+            sc
+          };
+        }
+      });
+      view.addEventListener('pointermove', e => {
+        const prev = pts.get(e.pointerId);
+        if (!prev) return;
+        const now = {
+          x: e.clientX,
+          y: e.clientY
+        };
+        pts.set(e.pointerId, now);
+        if (pts.size >= 2 && pinch) {
+          const [a, b] = [...pts.values()],
+          r = view.getBoundingClientRect(),
+            d = Math.hypot(a.x - b.x, a.y - b.y);
+          if (pinch.d > 0) zoomAt(pinch.sc * d / pinch.d, (a.x + b.x) / 2 - r.left, (a.y + b.y) / 2 - r.top);
+        } else if (pts.size === 1) {
+          px += now.x - prev.x;
+          py += now.y - prev.y;
+          if (fit && (now.x !== prev.x || now.y !== prev.y)) fit = false;
+          paint();
+        }
+      });
+      /** Fin d'un appui : pointeur oublié, pincement terminé. */
+      const up = e => {
+        pts.delete(e.pointerId);
+        if (pts.size < 2) pinch = null;
+        if (!pts.size) view.classList.remove('drag');
+      };
+      view.addEventListener('pointerup', up);
+      view.addEventListener('pointercancel', up);
+      // double-clic : ajusté ↔ 1:1 au point cliqué
+      view.addEventListener('dblclick', e => {
+        const r = view.getBoundingClientRect();
+        if (fit || Math.abs(sc - 1) > 1e-6) zoomAt(1, e.clientX - r.left, e.clientY - r.top);
+        else {
+          fit = true;
+          show();
+        }
+      });
       $('refresh').onclick = () => {
         say(t('busy'));
         ask({

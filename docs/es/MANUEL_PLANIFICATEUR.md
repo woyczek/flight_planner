@@ -228,7 +228,7 @@ Plan de vuelo, mapa de control y corte vertical están vinculados: al pasar el r
 - «Trazar» (corte vertical), «Combustible» (abre el planificador con esta ruta), «Copiar OACI» (plan de vuelo estricto).
 - «Puntos de la misión»: haga clic en un punto para añadirlo al recorrido.
 
-Mapa de control: listas «Mapa» y «Perfil», casilla «ZIP», «Actualizar», «Mantener este encuadre» (el mapa generado tomará el encuadre mostrado), «Recentrar», «Encuadre automático», «⧉ Ventana» (el mapa solo en una ventana aparte, sin barra lateral: «Ajustar» o 1:1, zoom − +, mapa anterior o siguiente, «Actualizar», «Abrir en el estudio», «Cerrar»; teclas ← → + − 0 Esc; la imagen sigue cada nueva vista previa), «⤢ Ampliar» (Esc para volver). En el mapa: arrastre un punto, haga clic en la ruta para insertar uno, clic derecho para eliminarlo.
+Mapa de control: listas «Mapa» y «Perfil», casilla «ZIP», «Actualizar», «Mantener este encuadre» (el mapa generado tomará el encuadre mostrado), «Recentrar», «Encuadre automático», «⧉ Ventana» (el mapa solo en una ventana aparte, sin barra lateral: «Ajustar» o 1:1, zoom − +, mapa anterior o siguiente, «Actualizar», «Abrir en el estudio», «Cerrar»; teclas ← → + − 0 Esc; rueda = zoom bajo el cursor, arrastrar = desplazar, pellizco, doble clic = ajustado ↔ 1:1; la imagen sigue cada nueva vista previa), «⤢ Ampliar» (Esc para volver). En el mapa: arrastre un punto, haga clic en la ruta para insertar uno, clic derecho para eliminarlo.
 «Ajustes del perfil: corte, aeronave, variómetro, salidas»: suelo y techo del corte, aeronave, ascenso y descenso, imagen `profil_vertical.png` en las salidas, trazado por defecto del recorrido.
 
 ### Puntos que colocar

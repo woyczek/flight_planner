@@ -12,6 +12,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Ajouté
 
+- **Map window: wheel zoom and panning** (`apps/cpco/map_window.html`) — wheel zoom centred under the cursor (×1.1
+  per notch, no Ctrl needed), drag to pan with the mouse (grab / grabbing cursor) or one finger, pinch to zoom,
+  double-click toggles fitted ↔ 1:1 at the clicked point; buttons and keys unchanged. The view uses a transform
+  (scale and position) instead of scrolling.
 - **Map studio: map window as a dedicated page** (`apps/cpco/map_window.html`) — "⧉ Window" opens a page without the
   suite frame (no side bar, header or footer; design, tone and colours sent by the studio) by `window.open` (name
   "carte"); it receives by `postMessage` the rendered PNG of the displayed map (same overlays as generation) and its
