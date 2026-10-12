@@ -1273,7 +1273,7 @@ def sync_status_reset():
 # type par type, par AircraftDB/update_aircraft_db.py (--only CODES, puis --apd CODES) : un nouvel appareil, ou une liste
 # (flotte, missions de l'ODV et du registre) — Paramètres › Maintenance › Références et dépendances, /__setup/aircraft-db.
 # Jamais toute la base EUROCONTROL d'un coup.
-AIRCRAFT = {'state': 'idle', 'step': '', 'started': None, 'ended': None, 'log': []}
+AIRCRAFT = {'state': 'idle', 'step': '', 'started': None, 'ended': None, 'log': [], 'codes': [], 'queue': []}
 AIRCRAFT_LOCK = threading.Lock()
 
 
@@ -1313,16 +1313,25 @@ def aircraft_rebuild(codes, quick=False):
             AIRCRAFT['log'].append(str(e))
             ok = False
     AIRCRAFT.update(state='done' if ok else 'error', step='', ended=time.time())
+    # file d'attente : codes ajoutés à la main pendant la passe (Mon profil), lancés maintenant en passe courte — la page
+    # qui les a demandés peut avoir été fermée entre-temps
+    with AIRCRAFT_LOCK:
+        queued, AIRCRAFT['queue'] = AIRCRAFT.get('queue') or [], []
+    if queued:
+        aircraft_start(queued, quick=True)
 
 
 def aircraft_start(codes, quick=False):
     """Complète les types donnés (désignateurs OACI) en tâche de fond ; False si une passe tourne déjà ou si la liste
-    est vide ; quick : passe courte (types et performances de ces codes, voir aircraft_rebuild)."""
+    est vide ; quick : passe courte (types et performances de ces codes, voir aircraft_rebuild). Une passe courte
+    demandée pendant une passe est mise en file (AIRCRAFT['queue']) et part à la fin de celle-ci."""
     codes = sorted({re.sub(r'[^A-Z0-9]', '', str(c).upper())[:8] for c in codes} - {''})[:200]
     if not codes:
         return False
     with AIRCRAFT_LOCK:
         if AIRCRAFT['state'] == 'running':
+            if quick:
+                AIRCRAFT['queue'] = sorted(set(AIRCRAFT.get('queue') or []) | (set(codes) - set(AIRCRAFT.get('codes') or [])))
             return False
         AIRCRAFT.update(state='running', started=time.time(), ended=None, log=[], codes=codes)
     threading.Thread(target=aircraft_rebuild, args=(codes, quick), daemon=True).start()

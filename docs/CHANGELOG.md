@@ -35,41 +35,7 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   Caravelle): one page per type, name, ICAO description rebuilt from the category, engine count and type (L2J) and wake
   category; the wing position then comes from Wikipedia as for other types. Kept on each computer, never published
   (`LICENSE.md`: © Bálint Tóth, no open licence). Administrator and user manuals updated in four languages.
-- **Mission registry: ChatGPT reply imported on an ordered mission, deletion** — an ordered mission shows a "ChatGPT
-  reply" panel: paste the reply (YAML and Markdown) or choose the received files; the mission is stored in the missions
-  folder and replaces the order (order, date and notes kept, even if ChatGPT changed the series or identifier).
-  "Delete…" on the mission card: an order is removed from the registry; a stored mission has its folder deleted (files,
-  maps, versions, received texts), after confirmation. "Remove pending orders (n)" in the toolbar removes the orders
-  whose reply was never imported. Four languages.
-- **Technical documentation in English**: `docs/technique/V2_FABLE.md`, `CONTRASTE_2026-10-09.md` and `perf/RAPPORT_2026-10-08.md` translated in full (file names, anchors and internal links unchanged), as decided on 12 October — every published repository document is written in English.
-- **Studio cartographique : « Points à placer (n) »** — pour une mission sans coordonnées (squelette du générateur),
-  le bloc Route liste départ, cible, points tournants, rendez-vous, centres de zones et terrains sans position (ordre de
-  `route_order`) ; « Cliquer la carte » (curseur en croix, un clic pose le point, Échap annule) ou recherche dans la
-  base SIA (terrains, balises, points désignés, points VFR, ARIP / ARCP des axes AAR ; ou « lat, lon ») ; point posé
-  déplaçable en le glissant, rayon des zones en km, départ et arrivée identiques posés ensemble ; coordonnées écrites
-  dans la mission partagée (`editDoc`), le compte du générateur suit ; tout posé : « Générer les cartes et le ZIP ».
-  Coordonnées nulles plus prises pour 0,0 dans les cartes d'exercice, d'opération et des pistes (`hasPos`).
-  `apps/planner/map_planner.html` régénéré. Manuel administrateur (4 langues) : sous-section « Points à placer »,
-  tutoriel mis à jour.
-- **Générateur de missions : « Créer le squelette ici », sans ChatGPT** (V2_FABLE § 8, L3) — à côté de « Commander :
-  copier le prompt et ouvrir ChatGPT », les mêmes réglages (`MissionOrder.requestOf`, une seule source pour les deux
-  chemins) donnent la ou les missions complètes mais vides de récit (`apps/cpco/mission_skeleton.js`,
-  `MissionSkeleton.build`) : une par équipe en vol (aéronef et indicatif de la flotte), terrains à la base de l'aéronef,
-  cible, points tournants, rendez-vous par équipe (« avec ») et sa carte `detail_rdv`, zone de travail, ravitaillement
-  planifié avec un axe AAR (ARIP, ARCP, rendez-vous) si « oui », timing d'après la durée, cartes attendues décrites,
-  rubriques vides ; exercice coordonné : mission d'organisation …Z (heure H, participants, événements H, H+15 min…).
-  Mises en lot (`SiaMission.setBatch`) et ouvertes ; ligne « Squelette : n point(s) à placer, m texte(s) à écrire —
-  puis le studio pour les cartes » avec « Ouvrir au studio » ; champs vides encadrés (« à compléter ») jusqu'à leur
-  saisie. Nouveau réglage « Exercice coordonné » (libre / oui / non) dans le formulaire de commande et paramètre
-  `EXERCICE` du prompt de génération. Manuel administrateur (4 langues).
-- **Générateur et registre des missions : « Dupliquer »** (V2_FABLE § 8, L2) — dans le bloc « Mission » du
-  générateur et dans le registre, à côté d'« Ouvrir dans le générateur » : copie de la mission prête à modifier
-  (`SiaMission.duplicate`) — identifiant et série suivants libres de la même famille (`nextNumbering`, lettre d'équipe
-  gardée), références à l'ancien identifiant suivies dans le YAML et le récit (cartes attendues…), titre « … (copie) »,
-  `meta.duplicated_from` et `duplicated_at`, opération réduite à la copie (sans organisation d'exercice), fichiers
-  sources, cartes et rendus non repris ; la copie s'ouvre dans le générateur avec une ligne d'état qui le dit. Textes de
-  mission : sous-titre du bloc posé aussi au changement de mode, « Summary » devient « Résumé ». Manuel administrateur
-  (4 langues).
+
 
 ### Modifié
 
@@ -113,6 +79,45 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Corrigé
 
+- **Aircraft outside the fleet: completion survives leaving the page** — a type added while a pass is running is now
+  queued by the launcher (`AIRCRAFT['queue']`, short pass started when the running one ends) instead of waiting in the
+  page, where it was lost if the page was closed; on opening, the page resumes following a running or queued pass
+  ("completing the type base…", record shown at the end) and marks a type the last pass could not find.
+- **Mission registry: ChatGPT reply imported on an ordered mission, deletion** — an ordered mission shows a "ChatGPT
+  reply" panel: paste the reply (YAML and Markdown) or choose the received files; the mission is stored in the missions
+  folder and replaces the order (order, date and notes kept, even if ChatGPT changed the series or identifier).
+  "Delete…" on the mission card: an order is removed from the registry; a stored mission has its folder deleted (files,
+  maps, versions, received texts), after confirmation. "Remove pending orders (n)" in the toolbar removes the orders
+  whose reply was never imported. Four languages.
+- **Technical documentation in English**: `docs/technique/V2_FABLE.md`, `CONTRASTE_2026-10-09.md` and `perf/RAPPORT_2026-10-08.md` translated in full (file names, anchors and internal links unchanged), as decided on 12 October — every published repository document is written in English.
+- **Studio cartographique : « Points à placer (n) »** — pour une mission sans coordonnées (squelette du générateur),
+  le bloc Route liste départ, cible, points tournants, rendez-vous, centres de zones et terrains sans position (ordre de
+  `route_order`) ; « Cliquer la carte » (curseur en croix, un clic pose le point, Échap annule) ou recherche dans la
+  base SIA (terrains, balises, points désignés, points VFR, ARIP / ARCP des axes AAR ; ou « lat, lon ») ; point posé
+  déplaçable en le glissant, rayon des zones en km, départ et arrivée identiques posés ensemble ; coordonnées écrites
+  dans la mission partagée (`editDoc`), le compte du générateur suit ; tout posé : « Générer les cartes et le ZIP ».
+  Coordonnées nulles plus prises pour 0,0 dans les cartes d'exercice, d'opération et des pistes (`hasPos`).
+  `apps/planner/map_planner.html` régénéré. Manuel administrateur (4 langues) : sous-section « Points à placer »,
+  tutoriel mis à jour.
+- **Générateur de missions : « Créer le squelette ici », sans ChatGPT** (V2_FABLE § 8, L3) — à côté de « Commander :
+  copier le prompt et ouvrir ChatGPT », les mêmes réglages (`MissionOrder.requestOf`, une seule source pour les deux
+  chemins) donnent la ou les missions complètes mais vides de récit (`apps/cpco/mission_skeleton.js`,
+  `MissionSkeleton.build`) : une par équipe en vol (aéronef et indicatif de la flotte), terrains à la base de l'aéronef,
+  cible, points tournants, rendez-vous par équipe (« avec ») et sa carte `detail_rdv`, zone de travail, ravitaillement
+  planifié avec un axe AAR (ARIP, ARCP, rendez-vous) si « oui », timing d'après la durée, cartes attendues décrites,
+  rubriques vides ; exercice coordonné : mission d'organisation …Z (heure H, participants, événements H, H+15 min…).
+  Mises en lot (`SiaMission.setBatch`) et ouvertes ; ligne « Squelette : n point(s) à placer, m texte(s) à écrire —
+  puis le studio pour les cartes » avec « Ouvrir au studio » ; champs vides encadrés (« à compléter ») jusqu'à leur
+  saisie. Nouveau réglage « Exercice coordonné » (libre / oui / non) dans le formulaire de commande et paramètre
+  `EXERCICE` du prompt de génération. Manuel administrateur (4 langues).
+- **Générateur et registre des missions : « Dupliquer »** (V2_FABLE § 8, L2) — dans le bloc « Mission » du
+  générateur et dans le registre, à côté d'« Ouvrir dans le générateur » : copie de la mission prête à modifier
+  (`SiaMission.duplicate`) — identifiant et série suivants libres de la même famille (`nextNumbering`, lettre d'équipe
+  gardée), références à l'ancien identifiant suivies dans le YAML et le récit (cartes attendues…), titre « … (copie) »,
+  `meta.duplicated_from` et `duplicated_at`, opération réduite à la copie (sans organisation d'exercice), fichiers
+  sources, cartes et rendus non repris ; la copie s'ouvre dans le générateur avec une ligne d'état qui le dit. Textes de
+  mission : sous-titre du bloc posé aussi au changement de mode, « Summary » devient « Résumé ». Manuel administrateur
+  (4 langues).
 - **Mission registry: "ChatGPT reply" box a few pixels wide** — the suite's auto-sizing text fields (`field-sizing:
   content`) gave an empty box the width of its content; the box now takes the card width, about eight lines high.
 - **Map studio: "SIA database" block removed** — a permanent copy of the Settings › Maintenance block, of no use in the

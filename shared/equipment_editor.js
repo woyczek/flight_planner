@@ -116,56 +116,65 @@
     };
     document.head.append(s);
   });
-  // complétion : une seule boucle par page, jamais pendant la frappe (seulement après « Ajouter ») ; une passe du lanceur
-  // à la fois — si une passe tourne (Maintenance, autre onglet), on attend sa fin ; les codes ajoutés entre-temps partent
-  // ensemble dans la passe suivante
-  const pending = new Set(),
-    running = new Set(),
+  // complétion : demandée au lanceur au clic sur « Ajouter » seulement (jamais pendant la frappe) ; le lanceur fait une
+  // passe à la fois et met en file les codes demandés pendant une passe (lancés à sa fin, même si la page est fermée).
+  // La page ne fait que suivre : codes de la passe en cours et de la file (« complétion en cours… »), base relue à la fin ;
+  // à l'ouverture, elle reprend le suivi d'une passe en cours.
+  const running = new Set(), // codes suivis : dans la passe en cours ou en file
     tried = new Set(); // codes passés au lanceur et toujours absents (type retiré de l'OACI, source muette)
-  let looping = false;
-  /** Fait compléter par le lanceur les codes en attente ; redraw() après chaque passe terminée. */
-  async function completeTypes(redraw) {
-    if (looping) return;
-    looping = true;
+  let watching = false;
+  /** Codes de la passe en cours et de la file d'attente d'après l'état du lanceur. */
+  const busyCodes = s => new Set([...(s?.state === 'running' ? s.codes || [] : []), ...(s?.queue || [])]);
+  /** Suit les codes suivis jusqu'à la fin de leur passe : base relue, redraw() à chaque changement. */
+  async function watchTypes(redraw) {
+    if (watching) return;
+    watching = true;
     try {
-      while (pending.size) {
-        let s = await acApi();
-        if (!s) { // pas de lanceur : le code reste tel quel
-          pending.clear();
+      while (running.size) {
+        await sleep(4000);
+        const s = await acApi();
+        if (!s) { // lanceur arrêté : plus rien à suivre
+          running.clear();
           break;
         }
-        while (s?.state === 'running') {
-          await sleep(4000);
-          s = await acApi();
-        }
-        const codes = [...pending];
-        s = await acApi({
-          codes,
-          quick: true
-        });
-        if (!s?.started) { // une autre passe vient de partir : attendre la sienne
-          await sleep(4000);
-          continue;
-        }
-        codes.forEach(c => {
-          pending.delete(c);
-          running.add(c);
-        });
-        redraw();
-        do {
-          await sleep(4000);
-          s = await acApi();
-        } while (s?.state === 'running');
+        const busy = busyCodes(s),
+          done = [...running].filter(c => !busy.has(c));
+        if (!done.length) continue;
         await reloadDb();
-        codes.forEach(c => {
+        done.forEach(c => {
           running.delete(c);
           if (!dbInfo(c).model) tried.add(c);
         });
         redraw();
       }
     } finally {
-      looping = false;
+      watching = false;
     }
+  }
+  /** Demande au lanceur de compléter un code (passe courte, ou file d'attente si une passe tourne), puis le suit. */
+  async function completeType(code, redraw) {
+    running.add(code);
+    redraw();
+    const s = await acApi({
+      codes: [code],
+      quick: true
+    });
+    if (!s || !(s.started || busyCodes(s).has(code))) running.delete(code); // pas de lanceur : le code reste tel quel
+    redraw();
+    watchTypes(redraw);
+  }
+  /** À l'ouverture : passe en cours ou file d'attente qui concernent ces codes → suivies ; dernière passe terminée
+   *  sans fiche pour un code → « introuvable ». */
+  async function resumeTypes(codes, redraw) {
+    const s = await acApi();
+    if (!s) return;
+    const busy = busyCodes(s);
+    codes.forEach(c => {
+      if (busy.has(c)) running.add(c);
+      else if (s.state !== 'running' && (s.codes || []).includes(c) && !dbInfo(c).model) tried.add(c);
+    });
+    redraw();
+    if (running.size) watchTypes(redraw);
   }
   /** Types hors flotte déclarés par les autres pilotes (index des déclarations) : Map type → [trigrammes]. */
   async function othersTypes(M, tri, fleet) {
@@ -226,7 +235,7 @@
       if (!list.length) return `<p class="small">${esc(t(['Aucun appareil hors flotte déclaré.', 'No aircraft outside the fleet declared.', 'Kein Luftfahrzeug außerhalb der Flotte angegeben.', 'Ninguna aeronave fuera de la flota declarada.']))}</p>`;
       return `<table class="eq-table"><thead><tr><th>${esc(t(['Type', 'Type', 'Typ', 'Tipo']))}</th><th>${esc(t(['Aussi déclaré par', 'Also declared by', 'Auch angegeben von', 'También declarado por']))}</th><th class="eq-c">${esc(t(['Possédé', 'Owned', 'Besessen', 'Poseído']))}</th><th class="eq-c">${esc(t(['Maîtrisé', 'Mastered', 'Beherrscht', 'Dominado']))}</th></tr></thead><tbody>${list.map(x => {
         const name = typeName(x.type) || x.type;
-        const note = pending.has(x.type) || running.has(x.type) ? t(['complétion de la base en cours…', 'completing the type base…', 'Typbasis wird ergänzt…', 'completando la base de tipos…']) :
+        const note = running.has(x.type) ? t(['complétion de la base en cours…', 'completing the type base…', 'Typbasis wird ergänzt…', 'completando la base de tipos…']) :
           x.info.description || (x.info.model ? '' : tried.has(x.type) ? t(['introuvable (OACI, EUROCONTROL, Aviation Fanatic)', 'not found (ICAO, EUROCONTROL, Aviation Fanatic)', 'nicht gefunden (ICAO, EUROCONTROL, Aviation Fanatic)', 'no encontrado (OACI, EUROCONTROL, Aviation Fanatic)']) : offi.has(x.type) ? t(['absent de la base de ce poste', 'missing from this computer’s type base', 'fehlt in der Typbasis dieses Rechners', 'ausente de la base de este equipo']) :
             t(['type inconnu de la base OACI', 'type unknown to the ICAO base', 'Typ in der ICAO-Basis unbekannt', 'tipo desconocido en la base OACI']));
         const mineRow = owned.has(x.type) || shown.has(x.type);
@@ -439,10 +448,7 @@
           saveTypes();
         }
         // type de la liste OACI absent de la base de ce poste : complété par le lanceur (une passe courte, à la suite)
-        if (!dbInfo(ty).model && offi.has(ty) && !tried.has(ty)) {
-          pending.add(ty);
-          completeTypes(redrawOther);
-        }
+        if (!dbInfo(ty).model && offi.has(ty) && !tried.has(ty)) completeType(ty, redrawOther);
         redrawOther();
       }
       scheduleSync();
@@ -452,7 +458,6 @@
     function dropType(code, sync = true) {
       host.querySelectorAll(`[data-own="${code}"], [data-master="${code}"]`).forEach(x => x.checked = false);
       shown.delete(code);
-      pending.delete(code);
       saveTypes();
       redrawOther();
       if (sync) scheduleSync();
@@ -595,6 +600,8 @@
     officialCodes().then(set => {
       offi = set;
       redrawOther();
+      // passe du lanceur lancée avant l'ouverture de la page (ou file d'attente) pour un type de la carte : suivie
+      resumeTypes([...shown].filter(c => !dbInfo(c).model), redrawOther);
     });
     // types hors flotte des autres pilotes : lus après le premier dessin (une déclaration par pilote de l'index)
     othersTypes(M, tri, fleet).then(map => {
