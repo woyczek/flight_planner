@@ -60,6 +60,11 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Corrigé
 
+- **Générateur : retour au générateur qui rouvrait la mission du registre au lieu du squelette** — le jeton
+  « ouverte depuis le registre » (`siaFromRegistry:v1`) est consommé au premier usage par le générateur, abandonné par
+  le générateur et le studio s'il ne vise plus la mission partagée (pas de lien « ← Registre » périmé), et lu par
+  `mission_store.js` dès son chargement (le lien reste posé quand il est juste) ; le registre demande confirmation
+  avant de remplacer, dans le générateur et le studio, un squelette jamais rangé d'une autre opération.
 - **Générateur : rubriques du brief en double et en deux langues** (« Summary », « Teams involved », « Risks to
   consider »… à côté de leurs équivalents) — le brief rangé `summary<ID>.md` relu avec son YAML redevenait une
   rubrique libre par section. Désormais une seule table des sections générées (`BRIEF_TITLES`, rendu français et

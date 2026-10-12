@@ -2944,7 +2944,9 @@ setTimeout(async () => {
   try {
     from = JSON.parse(sessionStorage.getItem('siaFromRegistry:v1') || 'null');
     autoPdf = sessionStorage.getItem('siaAutoPdf:v1') || '';
-    sessionStorage.removeItem('siaAutoPdf:v1')
+    sessionStorage.removeItem('siaAutoPdf:v1');
+    // jeton du registre consommé au premier usage : un retour plus tard au générateur ne le rejoue pas
+    sessionStorage.removeItem('siaFromRegistry:v1')
   } catch {} // demande de PDF consommée à l'arrivée, quoi qu'il arrive ensuite
   const C = window.MissionRegistryCore;
   if (!from?.folder || !C) return;

@@ -1937,9 +1937,29 @@
       else if (out) out.textContent = text;
     }
   }
+  /** Mission partagée qui serait perdue en ouvrant m : squelette du générateur jamais rangé (meta.skeleton sans
+   *  historique), d'une autre opération ; confirmation demandée. Vrai : on peut continuer. */
+  async function keepSkeleton(m) {
+    const cur = window.SiaMission?.load?.(),
+      y = cur?.yaml,
+      base = id => String(id || '').toUpperCase().replace(/(\d)[A-Z]$/, '$1');
+    if (!y?.meta?.skeleton || y.meta.history?.length || base(y.mission?.id) === base(m.id)) return true;
+    return !!await window.AppFramework?.ask?.(t([
+      'La mission partagée {s} (squelette, jamais rangée) sera remplacée par {m} dans le générateur et le studio. Continuer ? (Sinon, rangez d’abord le squelette : « Enregistrer dans le dossier » du générateur.)',
+      'The shared mission {s} (skeleton, never stored) will be replaced by {m} in the generator and the studio. Continue? (Otherwise store the skeleton first: “Save to the folder” in the generator.)',
+      'Die gemeinsame Mission {s} (Gerüst, nie abgelegt) wird im Generator und im Studio durch {m} ersetzt. Fortfahren? (Sonst zuerst das Gerüst ablegen: „Im Ordner speichern“ im Generator.)',
+      'La misión compartida {s} (esqueleto, nunca guardado) será sustituida por {m} en el generador y el estudio. ¿Continuar? (Si no, guarde primero el esqueleto: «Guardar en la carpeta» del generador.)'
+    ], {
+      s: y.mission?.id || '—',
+      m: m.id
+    }), {
+      danger: true
+    });
+  }
   /** Ouvre la mission : générateur / studio (mission partagée), CR (passerelle ?from=sia), prompt de commande. */
   async function go(m, where) {
     const out = document.getElementById('rgGoMsg');
+    if (['editor', 'studio', 'duplicate'].includes(where) && !await keepSkeleton(m)) return;
     try {
       if (where === 'prompt') {
         await sendPrompt(m.request);

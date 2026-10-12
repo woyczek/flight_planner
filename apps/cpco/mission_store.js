@@ -10,6 +10,14 @@
   const KEY = NS ? 'siaMissionShared' + NS : 'siaMissionShared:v1',
     LEGACY = 'missionGeneratorDraft' + NS,
     BATCH = NS ? 'siaMissionBatch' + NS : 'siaMissionBatch:v1'; // lot de missions (opération à plusieurs équipes) : { docs, index }
+  // jeton « ouverte depuis le registre » lu dès le chargement du script : la page peut le consommer ensuite (générateur)
+  // sans faire disparaître le lien « ← Registre » que mountNav pose plus tard
+  let fromRegistry = null;
+  try {
+    fromRegistry = NS ? null : JSON.parse(sessionStorage.getItem('siaFromRegistry:v1') || 'null');
+  } catch {
+    /* stockage indisponible */
+  }
   /** Clé de texte : minuscules sans accents, mots séparés par « _ ». */
   const norm = s => String(s ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(
     /^_|_$/g, '');
@@ -919,11 +927,16 @@
       const title = line.querySelector('h1');
       title ? title.after(nav) : line.prepend(nav);
       // arrivée depuis le registre des missions (même onglet) : lien de retour vers la mission dans le registre
-      let from = null;
-      try {
-        from = NS ? null : JSON.parse(sessionStorage.getItem('siaFromRegistry:v1') || 'null');
-      } catch {
-        /* stockage indisponible */
+      let from = fromRegistry;
+      // jeton périmé (la mission partagée n'est plus celle ouverte depuis le registre : squelette, autre mission…) :
+      // abandonné, pas de lien de retour
+      if (from?.id && idBase(missionId(load()) || '') !== idBase(from.id)) {
+        try {
+          sessionStorage.removeItem('siaFromRegistry:v1');
+        } catch {
+          /* stockage indisponible */
+        }
+        from = null;
       }
       if (from) {
         const back = document.createElement('a');
