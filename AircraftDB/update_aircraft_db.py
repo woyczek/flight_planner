@@ -1027,36 +1027,58 @@ def eurocontrol_lookup(code):
 # ---------------- AVIATION FANATIC (DERNIER RECOURS) ----------------
 AVIATIONFANATIC = "https://www.aviationfanatic.com/ent_show.php?ent=4&AT_ID={}"
 AF_CATEGORY = {"L", "S", "A", "H", "G", "T"}  # terrestre, hydravion, amphibie, hélicoptère, autogire, convertible
+# type sans désignateur OACI (fiche « __GZ20 » : dirigeable Goodyear GZ-20) : désignateur générique du Doc 8643 dans un
+# plan de vol (fpl) — SHIP pour un dirigeable, BALL pour un ballon, ZZZZ pour le reste ; B : ballon ou dirigeable,
+# catégorie propre à Aviation Fanatic, gardée telle quelle (silhouette « autre » dans la suite)
+AF_LOCAL_CATEGORY = AF_CATEGORY | {"B"}
 AF_ENGINE = {"J", "T", "P", "E", "R"}  # réacteur, turbopropulseur, piston, électrique, fusée
 
 
-def parse_aviationfanatic(html, requested_code):
+def parse_aviationfanatic(html, requested_code, local=False):
     """Fiche d'un type d'Aviation Fanatic (page ent_show, ent=4) : { tdesig, model, description, wtc } d'après les
     paramètres des liens (AT_Category, AT_Engines, AT_Engine_Type, AT_WTC) et le nom du type ; None si la page n'est
-    pas celle de ce désignateur OACI ou si la description ne peut pas être reconstituée."""
+    pas celle de ce désignateur OACI ou si la description ne peut pas être reconstituée. local : fiche « __CODE » d'un
+    type sans désignateur OACI (champ OACI vide) — marquée icao: False, avec le désignateur générique du plan de vol
+    (fpl : SHIP dirigeable, c.-à-d. ballon motorisé ; BALL ballon ; ZZZZ autre)."""
     code = normalize_key(requested_code)
-    if normalize_key((re.search(r"AT_ICAO=([^\"&]+)", html) or [None, ""])[1]) != code:
+    icao = normalize_key((re.search(r"AT_ICAO=([^\"&]+)", html) or [None, ""])[1])
+    if local:
+        if icao or normalize_key((re.search(r"AT_ID=([^\"&]+)", html) or [None, ""])[1]) != code:
+            return None
+    elif icao != code:
         return None
     arg = lambda name: (re.search(name + r"=([^\"&]+)", html) or [None, ""])[1].strip().upper()
     cat, n, eng, wtc = arg("AT_Category"), arg("AT_Engines"), arg("AT_Engine_Type"), arg("AT_WTC")
     m = re.search(r'<td class="mainname">\s*(.*?)\s*</td>', html, re.S)
     model = re.sub(r"\s+", " ", unescape(re.sub(r"<[^>]+>", "", m.group(1)))).strip() if m else ""
-    if cat not in AF_CATEGORY or not n.isdigit() or eng not in AF_ENGINE:
+    if cat not in (AF_LOCAL_CATEGORY if local else AF_CATEGORY) or not n.isdigit() or eng not in AF_ENGINE:
         return None
     rec = {"tdesig": code, "model": model, "description": f"{cat}{n}{eng}", "source": "Aviation Fanatic"}
     if wtc in {"L", "M", "H", "J"}:
         rec["wtc"] = wtc
+    if local:
+        rec["icao"] = False
+        rec["fpl"] = ("SHIP" if int(n) else "BALL") if cat == "B" else "ZZZZ"
+    if cat == "B":
+        rec["wing_position"] = "none"  # ballon, dirigeable : pas d'aile (Wikipedia non consulté)
     return rec
 
 
 def aviationfanatic_lookup(code):
-    """Fiche Aviation Fanatic d'un désignateur (une page, cache HTTP et pause du client) ; None si absente."""
-    try:
-        return parse_aviationfanatic(HTTP.get_text(AVIATIONFANATIC.format(urllib.parse.quote(code))), code)
-    except urllib.error.HTTPError as exc:
-        if exc.code in (404, 410):
-            return None
-        raise
+    """Fiche Aviation Fanatic d'un désignateur (une page, cache HTTP et pause du client), sinon celle d'un type sans
+    désignateur OACI que le site range sous « __CODE » (GZ20 : dirigeable Goodyear GZ-20) ; None si absente."""
+    for at_id, local in ((code, False), ("__" + code, True)):
+        try:
+            rec = parse_aviationfanatic(HTTP.get_text(AVIATIONFANATIC.format(urllib.parse.quote(at_id))), at_id if local else code,
+                                        local)
+        except urllib.error.HTTPError as exc:
+            if exc.code in (404, 410):
+                continue
+            raise
+        if rec:
+            rec["tdesig"] = normalize_key(code)
+            return rec
+    return None
 
 
 # ---------------- WIKIDATA/WIKIPEDIA FALLBACK ----------------
@@ -1254,6 +1276,10 @@ def update_one(db, aliases, raw_designator, icao_index, use_network=True, force=
             merge_nonempty(rec, fan, overwrite=source_is_weak(rec.get("source")))
             rec["tdesig"] = canonical
             rec["source"] = "Aviation Fanatic"
+            if fan.get("icao") is False:  # type sans désignateur OACI : SHIP, BALL ou ZZZZ dans un plan de vol
+                rec["icao"] = False
+                rec["fpl"] = fan.get("fpl") or "ZZZZ"
+                rec["source"] = "Aviation Fanatic (hors OACI)"
 
     sane_wing(rec)  # hélicoptère : rotor sans consulter Wikipedia
     # Validated Wikipedia is now only a last-resort wing-position source.

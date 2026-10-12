@@ -1357,7 +1357,10 @@
     A: ['amphibie', 'amphibian', 'Amphibienflugzeug', 'anfibio'],
     H: ['hélicoptère', 'helicopter', 'Hubschrauber', 'helicóptero'],
     G: ['autogire', 'gyroplane', 'Tragschrauber', 'autogiro'],
-    T: ['convertible', 'tiltrotor', 'Kipprotor', 'convertiplano']
+    T: ['convertible', 'tiltrotor', 'Kipprotor', 'convertiplano'],
+    B: ['ballon ou dirigeable (hors OACI)', 'balloon or airship (non-ICAO)', 'Ballon oder Luftschiff (nicht ICAO)',
+      'globo o dirigible (no OACI)'
+    ]
   };
   // motorisation [singulier, pluriel] par langue ; T : turbopropulseur (avion) ou turbomoteur (hélicoptère)
   const AC_POWER = {

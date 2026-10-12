@@ -125,6 +125,12 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Corrigé
 
+- **Aircraft types: types without an ICAO designator not found (GZ20, Goodyear GZ-20 airship)** — Aviation Fanatic
+  files them under `__CODE` with an empty ICAO field; the launcher now looks there too. The record is marked non-ICAO
+  (`icao: false`) with the generic designator for a flight plan (`fpl`, ICAO Doc 8643): SHIP for an airship (powered
+  balloon), BALL for a balloon, ZZZZ otherwise; shown in My profile › Aircraft ("non-ICAO: SHIP in a flight plan"),
+  class "balloon or airship" in Maintenance, "other" silhouette (`update_aircraft_db.py`, `equipment_editor.js`,
+  `maintenance_page.js`, `aircraft_icons.js`).
 - **Mission registry: "Generate a mission" opened the last mission instead of a new one** — the generator reloaded
   the shared mission; it now opens a blank mission (`mission_editor.html?new`, same as "New mission"), the shared
   mission being left as it is until the new one is edited.

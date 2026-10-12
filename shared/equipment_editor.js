@@ -238,6 +238,7 @@
       return `<table class="eq-table"><thead><tr><th>${esc(t(['Type', 'Type', 'Typ', 'Tipo']))}</th><th>${esc(t(['Aussi déclaré par', 'Also declared by', 'Auch angegeben von', 'También declarado por']))}</th><th class="eq-c">${esc(t(['Possédé', 'Owned', 'Besessen', 'Poseído']))}</th><th class="eq-c">${esc(t(['Maîtrisé', 'Mastered', 'Beherrscht', 'Dominado']))}</th></tr></thead><tbody>${list.map(x => {
         const name = typeName(x.type) || x.type;
         const note = running.has(x.type) ? t(['complétion de la base en cours…', 'completing the type base…', 'Typbasis wird ergänzt…', 'completando la base de tipos…']) :
+          (x.info.icao === false ? `${x.info.description || ''} · ${tf(['hors OACI : {f} dans un plan de vol', 'non-ICAO: {f} in a flight plan', 'nicht ICAO: {f} im Flugplan', 'no OACI: {f} en un plan de vuelo'], { f: x.info.fpl || 'ZZZZ' })}` : '') ||
           x.info.description || (x.info.model ? '' : tried.has(x.type) ? t(['introuvable (OACI, EUROCONTROL, Aviation Fanatic)', 'not found (ICAO, EUROCONTROL, Aviation Fanatic)', 'nicht gefunden (ICAO, EUROCONTROL, Aviation Fanatic)', 'no encontrado (OACI, EUROCONTROL, Aviation Fanatic)']) : offi.has(x.type) ? t(['absent de la base de ce poste', 'missing from this computer’s type base', 'fehlt in der Typbasis dieses Rechners', 'ausente de la base de este equipo']) :
             t(['type inconnu de la base OACI', 'type unknown to the ICAO base', 'Typ in der ICAO-Basis unbekannt', 'tipo desconocido en la base OACI']));
         const mineRow = owned.has(x.type) || shown.has(x.type);
