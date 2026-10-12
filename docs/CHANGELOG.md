@@ -10,6 +10,14 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ## [Unreleased]
 
+## [5.2.0] — 2026-10-12
+
+Missions can now be built entirely by hand in the generator — the single place where missions are created — with a
+"Step by step" guided entry, six documented paths from a standalone flight to a coordinated exercise, tidy risks and
+objectives, a shared place search including towns, and a status line telling what is saved. The map studio's window
+shows the same interactive map. Pilots can declare aircraft outside the fleet. The help is rebuilt around tutorials and
+three manuals (pilot, planner, administrator), and no native browser dialog is left in the suite.
+
 ### Added
 
 - **Missions: creation has a single door, the generator** — "New mission", "Create the skeleton here" and "Order
