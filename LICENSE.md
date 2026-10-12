@@ -65,7 +65,10 @@ le poste de chaque utilisateur, type par type, par `AircraftDB/update_aircraft_d
 © EUROCONTROL. Le bloc `simbrief` de `aircraft_perf.js` (consommation de croisière, masses, plafond : liste publique
 `inputs.airframes.json` de SimBrief) suit la même règle : lu sur chaque poste, jamais publié ; © Navigraph (SimBrief). Le bloc `airframedb` et les alias qu'il ajoute viennent des fiches publiques d'Airframe DB
 (<https://airframedb.com>, accès automatisé limité comme le demandent ses conditions) ; ses caractéristiques sont celles
-de Wikipédia (CC BY-SA 4.0) ; lus sur chaque poste, jamais publiés.
+de Wikipédia (CC BY-SA 4.0) ; lus sur chaque poste, jamais publiés. En dernier recours, pour un désignateur que
+ni l'OACI ni EUROCONTROL ne connaissent (type retiré, comme la Caravelle S210), la fiche d'Aviation Fanatic
+(<https://www.aviationfanatic.com>, © Bálint Tóth, sans licence ouverte) est lue : une page par type ajouté à la main,
+à la demande, jamais en masse ; nom, catégorie, motorisation et turbulence gardés sur le poste, jamais publiés.
 
 ## 5. Données aéronautiques
 

@@ -30,6 +30,11 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   or Caravan?) is refused with the closest type proposed. Added types can be corrected or deleted: click the row (or
   Enter on it) to edit it — its code goes into the field with suggestions, "Add" becomes "Replace" ("Mastered" carried
   over), next to "Delete" and "Cancel" (Esc); no buttons in the rows.
+- **Aircraft type base: Aviation Fanatic as a last resort** — `AircraftDB/update_aircraft_db.py` looks a designator up
+  on aviationfanatic.com when neither ICAO Doc 8643 nor EUROCONTROL knows it (retired types such as the S210
+  Caravelle): one page per type, name, ICAO description rebuilt from the category, engine count and type (L2J) and wake
+  category; the wing position then comes from Wikipedia as for other types. Kept on each computer, never published
+  (`LICENSE.md`: © Bálint Tóth, no open licence). Administrator and user manuals updated in four languages.
 - **Mission registry: ChatGPT reply imported on an ordered mission, deletion** — an ordered mission shows a "ChatGPT
   reply" panel: paste the reply (YAML and Markdown) or choose the received files; the mission is stored in the missions
   folder and replaces the order (order, date and notes kept, even if ChatGPT changed the series or identifier).

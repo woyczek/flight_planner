@@ -8,6 +8,8 @@ Priority of evidence:
   2) ICAO Doc 8643 (strong source): exact designator, model/name, DESCRIPTION, WTC
   3) EUROCONTROL Aircraft Performance Database: wing position + alternative names + cross-check
   4) validated Wikidata/Wikipedia fallback, only for missing non-ICAO metadata
+  5) Aviation Fanatic (aviationfanatic.com), last resort for designators unknown to ICAO and EUROCONTROL (retired
+     types such as S210 Caravelle): one page per type, read on each computer, never published
 
 The ICAO PDFs are cached locally and refreshed only when stale.
 Part 2 is used as designator -> model/description/WTC.
@@ -1022,6 +1024,41 @@ def eurocontrol_lookup(code):
         raise
 
 
+# ---------------- AVIATION FANATIC (DERNIER RECOURS) ----------------
+AVIATIONFANATIC = "https://www.aviationfanatic.com/ent_show.php?ent=4&AT_ID={}"
+AF_CATEGORY = {"L", "S", "A", "H", "G", "T"}  # terrestre, hydravion, amphibie, hélicoptère, autogire, convertible
+AF_ENGINE = {"J", "T", "P", "E", "R"}  # réacteur, turbopropulseur, piston, électrique, fusée
+
+
+def parse_aviationfanatic(html, requested_code):
+    """Fiche d'un type d'Aviation Fanatic (page ent_show, ent=4) : { tdesig, model, description, wtc } d'après les
+    paramètres des liens (AT_Category, AT_Engines, AT_Engine_Type, AT_WTC) et le nom du type ; None si la page n'est
+    pas celle de ce désignateur OACI ou si la description ne peut pas être reconstituée."""
+    code = normalize_key(requested_code)
+    if normalize_key((re.search(r"AT_ICAO=([^\"&]+)", html) or [None, ""])[1]) != code:
+        return None
+    arg = lambda name: (re.search(name + r"=([^\"&]+)", html) or [None, ""])[1].strip().upper()
+    cat, n, eng, wtc = arg("AT_Category"), arg("AT_Engines"), arg("AT_Engine_Type"), arg("AT_WTC")
+    m = re.search(r'<td class="mainname">\s*(.*?)\s*</td>', html, re.S)
+    model = re.sub(r"\s+", " ", unescape(re.sub(r"<[^>]+>", "", m.group(1)))).strip() if m else ""
+    if cat not in AF_CATEGORY or not n.isdigit() or eng not in AF_ENGINE:
+        return None
+    rec = {"tdesig": code, "model": model, "description": f"{cat}{n}{eng}", "source": "Aviation Fanatic"}
+    if wtc in {"L", "M", "H", "J"}:
+        rec["wtc"] = wtc
+    return rec
+
+
+def aviationfanatic_lookup(code):
+    """Fiche Aviation Fanatic d'un désignateur (une page, cache HTTP et pause du client) ; None si absente."""
+    try:
+        return parse_aviationfanatic(HTTP.get_text(AVIATIONFANATIC.format(urllib.parse.quote(code))), code)
+    except urllib.error.HTTPError as exc:
+        if exc.code in (404, 410):
+            return None
+        raise
+
+
 # ---------------- WIKIDATA/WIKIPEDIA FALLBACK ----------------
 AVIATION_TERMS = (
     "aircraft", "airplane", "aeroplane", "airliner", "helicopter", "rotorcraft", "turboprop",
@@ -1203,6 +1240,17 @@ def update_one(db, aliases, raw_designator, icao_index, use_network=True, force=
             rec["tdesig"] = canonical
             rec["source"] = "EUROCONTROL"
         add_safe_aliases(aliases, canonical, euro.get("alternative_names"))
+
+    # Dernier recours : ni OACI ni EUROCONTROL (type retiré du Doc 8643) → Aviation Fanatic, une page pour ce code
+    if canonical and not strong and not euro:
+        try:
+            fan = aviationfanatic_lookup(canonical)
+        except Exception:
+            fan = None
+        if fan:
+            merge_nonempty(rec, fan, overwrite=source_is_weak(rec.get("source")))
+            rec["tdesig"] = canonical
+            rec["source"] = "Aviation Fanatic"
 
     sane_wing(rec)  # hélicoptère : rotor sans consulter Wikipedia
     # Validated Wikipedia is now only a last-resort wing-position source.
