@@ -28,7 +28,8 @@
     s.textContent = `.eq-sum{margin:0 0 8px;font-weight:600}.eq-cards{display:grid;gap:10px}
 .eq-table{width:100%;border-collapse:collapse;font-size:12.5px}.eq-table th,.eq-table td{padding:5px 8px;text-align:left;vertical-align:middle;border-bottom:1px solid color-mix(in srgb,currentColor 12%,transparent)}
 .eq-table th{font-size:11.5px;font-weight:700;opacity:.8}.eq-table .eq-c{width:5.5em;text-align:center}.eq-table .eq-c input{margin:0;width:16px;height:16px;vertical-align:middle;cursor:pointer}
-.eq-table code{font-size:11px}.eq-table small{opacity:.75}
+.eq-table code{font-size:11px}.eq-table small{opacity:.75}.eq-table td[data-eq-fix]{cursor:pointer}.eq-table td[data-eq-fix]:hover b,.eq-table td[data-eq-fix]:focus-visible b{text-decoration:underline}
+.eq-table tr.eq-fixing td{background:color-mix(in srgb,currentColor 8%,transparent)}
 .eq-add{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:8px 0 0}.eq-add .eq-field{position:relative;flex:1 1 16em;min-width:0;display:flex}.eq-add input{flex:1 1 auto;min-width:0}
 .eq-sugg{position:absolute;z-index:30;left:0;right:0;top:100%;margin:2px 0 0;padding:2px 0;list-style:none;max-height:16em;overflow:auto;background:var(--repo-card-bg,Canvas);color:inherit;border:1px solid color-mix(in srgb,currentColor 25%,transparent);box-shadow:0 4px 14px rgba(0,0,0,.18)}
 .eq-sugg li{padding:4px 8px;cursor:pointer;font-size:12.5px}.eq-sugg li small{opacity:.7;margin-left:6px}.eq-sugg li[aria-selected=true],.eq-sugg li:hover{background:color-mix(in srgb,currentColor 12%,transparent)}
@@ -193,6 +194,7 @@
       mastered = new Set(ac.mastered || []);
     let others = new Map(); // types hors flotte des autres pilotes (lus après le premier dessin)
     let offi = new Set(); // liste OACI publiée (lue après le premier dessin)
+    let editing = ''; // type en cours de correction (« Corriger ») : « Ajouter » devient « Remplacer »
     const shown = new Set([...owned].filter(ty => !fleet.has(ty))); // lignes de la carte « Autres appareils »
     const mine = new Set(decl?.sims || []),
       sims = [...new Set([...M.simulators(), ...mine])];
@@ -227,7 +229,9 @@
         const note = pending.has(x.type) || running.has(x.type) ? t(['complétion de la base en cours…', 'completing the type base…', 'Typbasis wird ergänzt…', 'completando la base de tipos…']) :
           x.info.description || (x.info.model ? '' : tried.has(x.type) ? t(['introuvable dans les sources officielles (OACI, EUROCONTROL) : type retiré ?', 'not found in the official sources (ICAO, EUROCONTROL): retired type?', 'in den offiziellen Quellen (ICAO, EUROCONTROL) nicht gefunden: ausgemusterter Typ?', 'no encontrado en las fuentes oficiales (OACI, EUROCONTROL): ¿tipo retirado?']) : offi.has(x.type) ? t(['absent de la base de ce poste', 'missing from this computer’s type base', 'fehlt in der Typbasis dieses Rechners', 'ausente de la base de este equipo']) :
             t(['type inconnu de la base OACI', 'type unknown to the ICAO base', 'Typ in der ICAO-Basis unbekannt', 'tipo desconocido en la base OACI']));
-        return `<tr><td><b>${esc(name)}</b><br><code>${esc(x.type)}</code>${note ? ` <small>${esc(note)}</small>` : ''}</td>
+        const mineRow = owned.has(x.type) || shown.has(x.type);
+        const fixAttr = mineRow ? ` data-eq-fix="${esc(x.type)}" tabindex="0" role="button" title="${esc(tf(['Cliquer pour corriger ou supprimer {m}', 'Click to correct or delete {m}', 'Klicken, um {m} zu korrigieren oder zu löschen', 'Hacer clic para corregir o eliminar {m}'], { m: name }))}"` : '';
+        return `<tr${editing === x.type ? ' class="eq-fixing"' : ''}><td${fixAttr}><b>${esc(name)}</b><br><code>${esc(x.type)}</code>${note ? ` <small>${esc(note)}</small>` : ''}</td>
           <td>${esc(x.by.join(', ') || '—')}</td>
           <td class="eq-c"><input type="checkbox" data-own="${esc(x.type)}"${owned.has(x.type) ? ' checked' : ''} aria-label="${esc(tf(['{m} possédé', '{m} owned', '{m} besessen', '{m} poseído'], { m: name }))}"></td>
           <td class="eq-c"><input type="checkbox" data-master="${esc(x.type)}"${mastered.has(x.type) ? ' checked' : ''} aria-label="${esc(tf(['{m} maîtrisé', '{m} mastered', '{m} beherrscht', '{m} dominado'], { m: name }))}"></td></tr>`;
@@ -306,7 +310,8 @@
     const otherHtml = `<div class="sp-card" id="eqOther" data-no-i18n><h3>${esc(t(['Autres appareils (hors flotte)', 'Other aircraft (outside the fleet)', 'Andere Luftfahrzeuge (außerhalb der Flotte)', 'Otras aeronaves (fuera de la flota)']))}</h3><p class="sp-hint">${esc(t(['Types que vous possédez dans votre simulateur sans qu’ils soient dans la flotte : ajoutés ici, ils partent avec vos disponibilités déclarées — le Centre les voit pour les affectations et les autres pilotes les retrouvent dans cette carte.', 'Types you own in your simulator that are not in the fleet: added here, they go with your declared availability — the Centre sees them for assignments and other pilots find them in this card.', 'Typen, die Sie in Ihrem Simulator besitzen, die aber nicht zur Flotte gehören: Hier hinzugefügt, gehen sie mit Ihren angegebenen Verfügbarkeiten mit — das Zentrum sieht sie für Zuweisungen, andere Piloten finden sie in dieser Karte.', 'Tipos que posee en su simulador sin que estén en la flota: añadidos aquí, van con sus disponibilidades declaradas — el Centro los ve para las asignaciones y los demás pilotos los encuentran en esta tarjeta.']))}</p>
       <div data-eq-other>${otherRows()}</div>
       <div class="eq-add"><div class="eq-field"><input type="text" autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="eqSugg" data-eq-add-input placeholder="${esc(t(['Désignateur OACI ou modèle (ex. A400M, PC-12)', 'ICAO designator or model (e.g. A400M, PC-12)', 'ICAO-Kennung oder Modell (z. B. A400M, PC-12)', 'Designador OACI o modelo (p. ej. A400M, PC-12)']))}" aria-label="${esc(t(['Appareil à ajouter', 'Aircraft to add', 'Hinzuzufügendes Luftfahrzeug', 'Aeronave que añadir']))}"><ul class="eq-sugg" id="eqSugg" role="listbox" hidden data-eq-sugg></ul></div>
-        <button type="button" class="secondary" data-eq-add>${esc(t(['Ajouter', 'Add', 'Hinzufügen', 'Añadir']))}</button></div>
+        <button type="button" class="secondary" data-eq-add>${esc(t(['Ajouter', 'Add', 'Hinzufügen', 'Añadir']))}</button><button type="button" class="secondary" data-eq-delete hidden>${esc(t(['Supprimer', 'Delete', 'Löschen', 'Eliminar']))}</button><button type="button" class="secondary" data-eq-cancel hidden>${esc(t(['Annuler', 'Cancel', 'Abbrechen', 'Cancelar']))}</button></div>
+      <p class="small" data-eq-fixing hidden></p>
       <p class="sp-hint">${esc(t(['En tapant, la suite propose les types de la flotte, de la base des types de ce poste, de la liste OACI publiée et leurs noms d’usage (« Caravelle », « Rafale ») — calcul local, sans réseau. La base de ce poste n’est complétée par le lanceur qu’au clic sur « Ajouter », pour le type ajouté s’il lui manque.', 'While you type, the suite suggests the types of the fleet, of this computer’s type base, of the published ICAO list and their common names (“Caravelle”, “Rafale”) — computed locally, no network. This computer’s base is completed by the launcher only when you click “Add”, for the added type if it is missing.', 'Beim Tippen schlägt die Suite die Typen der Flotte, der Typbasis dieses Rechners, der veröffentlichten ICAO-Liste und ihre gebräuchlichen Namen vor („Caravelle“, „Rafale“) — lokal berechnet, ohne Netz. Die Basis dieses Rechners wird vom Starter nur beim Klick auf „Hinzufügen“ ergänzt, für den hinzugefügten Typ, falls er fehlt.', 'Al escribir, la suite propone los tipos de la flota, de la base de tipos de este equipo, de la lista OACI publicada y sus nombres de uso («Caravelle», «Rafale»); cálculo local, sin red. La base de este equipo solo la completa el lanzador al hacer clic en «Añadir», para el tipo añadido si le falta.']))}</p></div>`;
     const typesHtml = types.length ? `<p class="eq-sum" data-eq-sum>${esc(summary())}</p><div class="eq-cards">${groups.map(g => `<div class="repo-card" data-icon="${ICON[g[0].category] || 'plane'}" data-subtitle="${esc(tf(['{n} type(s)', '{n} type(s)', '{n} Typ(en)', '{n} tipo(s)'], { n: g.length }))}"><h3>${esc(g[0].categoryLabel)}</h3>
       <table class="eq-table"><thead><tr><th>${esc(t(['Type', 'Type', 'Typ', 'Tipo']))}</th><th>${esc(t(['Variantes de la flotte', 'Fleet variants', 'Flottenvarianten', 'Variantes de la flota']))}</th><th>${esc(t(['Appareils', 'Aircraft', 'Luftfahrzeuge', 'Aeronaves']))}</th><th class="eq-c">${esc(t(['Possédé', 'Owned', 'Besessen', 'Poseído']))}</th><th class="eq-c">${esc(t(['Maîtrisé', 'Mastered', 'Beherrscht', 'Dominado']))}</th></tr></thead><tbody>${g.map(x => `<tr>
@@ -403,6 +408,13 @@
         return;
       }
       input.value = '';
+      // correction : l'ancien type retiré, « Maîtrisé » reporté sur le nouveau
+      const old = editing,
+        wasMastered = !!old && mastered.has(old);
+      if (old) {
+        endFix();
+        if (old !== ty) dropType(old, false);
+      }
       if (fleet.has(ty)) {
         const box = host.querySelector(`[data-own="${ty}"]`);
         if (box) box.checked = true;
@@ -416,10 +428,16 @@
         ], {
           t: ty
         }), 'info');
+        if (wasMastered) host.querySelector(`[data-master="${ty}"]`).checked = true;
         saveTypes();
       } else {
         shown.add(ty);
         saveTypes(ty);
+        if (wasMastered) {
+          redrawOther();
+          host.querySelector(`[data-master="${ty}"]`).checked = true;
+          saveTypes();
+        }
         // type de la liste OACI absent de la base de ce poste : complété par le lanceur (une passe courte, à la suite)
         if (!dbInfo(ty).model && offi.has(ty) && !tried.has(ty)) {
           pending.add(ty);
@@ -428,6 +446,81 @@
         redrawOther();
       }
       scheduleSync();
+    };
+    /** Retire un type des appareils du pilote (cases décochées, ligne ôtée sauf s'il est déclaré par d'autres) ;
+     *  sync : recopie dans les semaines déclarées (non pendant une correction, qui la fait elle-même). */
+    function dropType(code, sync = true) {
+      host.querySelectorAll(`[data-own="${code}"], [data-master="${code}"]`).forEach(x => x.checked = false);
+      shown.delete(code);
+      pending.delete(code);
+      saveTypes();
+      redrawOther();
+      if (sync) scheduleSync();
+    }
+    /** Fin de l'édition : « Ajouter » remis, « Supprimer », « Annuler » et la ligne d'aide cachés. */
+    function endFix() {
+      editing = '';
+      host.querySelector('[data-eq-add]').textContent = t(['Ajouter', 'Add', 'Hinzufügen', 'Añadir']);
+      host.querySelector('[data-eq-cancel]').hidden = true;
+      host.querySelector('[data-eq-delete]').hidden = true;
+      host.querySelector('[data-eq-fixing]').hidden = true;
+      redrawOther();
+    }
+    /** Édition d'un type ajouté (clic sur sa ligne) : son code dans le champ (suggestions comprises), « Remplacer »,
+     *  « Supprimer » et « Annuler » à la place d'« Ajouter ». */
+    function startFix(code) {
+      editing = code;
+      input.value = code;
+      host.querySelector('[data-eq-add]').textContent = t(['Remplacer', 'Replace', 'Ersetzen', 'Sustituir']);
+      host.querySelector('[data-eq-cancel]').hidden = false;
+      host.querySelector('[data-eq-delete]').hidden = false;
+      const line = host.querySelector('[data-eq-fixing]');
+      line.textContent = tf([
+        'Édition de {c} ({n}) : saisissez ou choisissez le bon type, puis « Remplacer » (« Maîtrisé » est reporté) ; ou « Supprimer ».',
+        'Editing {c} ({n}): type or choose the right type, then “Replace” (“Mastered” is carried over); or “Delete”.',
+        'Bearbeitung von {c} ({n}): den richtigen Typ eingeben oder wählen, dann „Ersetzen“ („Beherrscht“ wird übertragen); oder „Löschen“.',
+        'Edición de {c} ({n}): escriba o elija el tipo correcto y luego «Sustituir» («Dominado» se traslada); o «Eliminar».'
+      ], {
+        c: code,
+        n: typeName(code) || code
+      });
+      line.hidden = false;
+      redrawOther();
+      input.focus();
+      input.select();
+      showSugg();
+    }
+    /** Supprime le type en cours d'édition (bouton « Supprimer » de l'édition). */
+    const deleteEdited = () => {
+      const code = editing;
+      if (!code) return;
+      input.value = '';
+      closeSugg();
+      endFix();
+      dropType(code);
+      window.AppFramework?.notify?.(tf(['{c} retiré de vos appareils.', '{c} removed from your aircraft.',
+        '{c} aus Ihren Luftfahrzeugen entfernt.',
+        '{c} quitado de sus aeronaves.'
+      ], {
+        c: typeName(code) ? `${code} (${typeName(code)})` : code
+      }), 'info');
+    };
+    host.onclick = e => {
+      const fix = e.target.closest('[data-eq-fix]');
+      if (fix) startFix(fix.dataset.eqFix);
+      else if (e.target.closest('[data-eq-delete]')) deleteEdited();
+      else if (e.target.closest('[data-eq-cancel]')) {
+        input.value = '';
+        closeSugg();
+        endFix();
+      }
+    };
+    // clavier : Entrée ou Espace sur la cellule d'un type ouvre son édition
+    host.onkeydown = e => {
+      const fix = (e.key === 'Enter' || e.key === ' ') && e.target.matches?.('[data-eq-fix]') ? e.target : null;
+      if (!fix) return;
+      e.preventDefault();
+      startFix(fix.dataset.eqFix);
     };
     host.querySelector('[data-eq-add]').onclick = () => {
       closeSugg();
@@ -481,8 +574,12 @@
         if (sugg.hidden) showSugg();
         mark(active + (e.key === 'ArrowDown' ? 1 : -1));
         e.preventDefault();
-      } else if (e.key === 'Escape' && !sugg.hidden) {
-        closeSugg();
+      } else if (e.key === 'Escape' && (!sugg.hidden || editing)) {
+        if (!sugg.hidden) closeSugg();
+        else {
+          input.value = '';
+          endFix();
+        }
         e.preventDefault();
         e.stopPropagation();
       } else if (e.key === 'Enter') {

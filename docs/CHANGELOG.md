@@ -27,7 +27,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   types declared by other pilots; arrows, Enter, Escape; origin shown on each line), with a hint under the field saying
   the base is only completed by the launcher on "Add". Wider recognition: accents, spaces and hyphens ignored, single
   words or two joined words ("SE 210 Caravelle" → S210), name prefixes and substrings; a vague entry ("cara": Caravelle
-  or Caravan?) is refused with the closest type proposed.
+  or Caravan?) is refused with the closest type proposed. Added types can be corrected or deleted: click the row (or
+  Enter on it) to edit it — its code goes into the field with suggestions, "Add" becomes "Replace" ("Mastered" carried
+  over), next to "Delete" and "Cancel" (Esc); no buttons in the rows.
 - **Mission registry: ChatGPT reply imported on an ordered mission, deletion** — an ordered mission shows a "ChatGPT
   reply" panel: paste the reply (YAML and Markdown) or choose the received files; the mission is stored in the missions
   folder and replaces the order (order, date and notes kept, even if ChatGPT changed the series or identifier).
