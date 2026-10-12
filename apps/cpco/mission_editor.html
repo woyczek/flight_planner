@@ -520,7 +520,7 @@ html[data-skeuo] .repo-block .mapCard.missing:not(#imp) {
 <header><div class="header-row"><h1><span class="cpco-eyebrow">Centre de planification et de conduite des opérations</span>Générateur de mission</h1><button id="openCr" class="headerButton" type="button" title="Nouveau compte rendu CR pré-rempli (famille d’après le type de mission)">Créer le CR →</button></div></header>
 
 <main>
-<section data-block-id="mission-import" data-deco-bg="import" data-icon="upload" data-subtitle="Mission chargée, enregistrement et brouillon ; importer une autre mission ou en commander une à ChatGPT."><h2>Mission</h2><div class="actions"><button id="newMission" data-icon="plus" class="ghost" type="button">Nouvelle mission</button><button id="orderGpt" data-icon="sparkles" class="secondary" type="button" title="Ouvrir le formulaire de commande : type, théâtre, équipes, aéronefs ; le prompt est copié et ChatGPT s’ouvre">Commander à ChatGPT…</button><button id="saveToFolder" data-icon="save" class="secondary" type="button" title="Enregistrer le YAML de la mission (modifications comprises) dans son dossier : data/missions/&lt;lettre&gt;_&lt;FAMILLE&gt;/&lt;ID&gt;/">Enregistrer dans le dossier</button><button id="saveDraft" data-icon="bookmark" class="secondary" type="button" data-min-level="4">Mémoriser le brouillon</button><button id="loadDraft" data-icon="refresh" class="secondary" type="button" data-min-level="4">Recharger le brouillon</button></div><div id="status" class="status" data-status>Aucune mission chargée.</div><p id="registryInfo" class="small" hidden><span></span> <button type="button" id="storeMission" class="secondary" data-icon="folder" hidden>Ranger dans le dossier des missions…</button> <a href="mission_registry.html">Ouvrir le registre ↗</a></p><details id="importMore" class="importMore"><summary>Importer une autre mission : fichiers, texte collé, commande ChatGPT</summary><div class="grid"><label>YAML et/ou Markdown<input id="missionFiles" type="file" accept=".yaml,.yml,.md,text/markdown,text/yaml" multiple data-dropzone><button id="openMissionPaste" data-icon="link" class="secondary" type="button" style="margin-top:6px">ou coller son contenu…</button></label><label>Cartes ou ZIP livré par le générateur<input id="mapFiles" type="file" accept=".zip,application/zip,image/png,image/jpeg,image/webp" multiple data-dropzone></label></div><div class="subBlocks"><details id="gptBox" class="pasteBox gptBox"><summary><strong>Commander une mission à ChatGPT</strong> <span class="small">type, théâtre, équipes, aéronefs : le prompt est copié et ChatGPT s’ouvre</span></summary><div id="gptOrder"></div></details><div id="missionPaste" class="pasteBox" hidden><strong>Coller le contenu Markdown ou YAML de la mission</strong><textarea id="missionText" placeholder="Colle ici le contenu Markdown ou YAML de la mission…"></textarea><div class="actions"><button id="parseMission" data-icon="eye" type="button">Lire la mission</button></div></div></div><p class="small">Tu peux sélectionner le YAML et le Markdown ensemble. Pour les cartes, sélectionne directement le ZIP produit par le générateur : les PNG, dont la carte d’assemblage, seront extraits et associés automatiquement.</p></details></section>
+<section data-block-id="mission-import" data-deco-bg="import" data-icon="upload" data-subtitle="Mission chargée, enregistrement et brouillon ; importer une autre mission ou en commander une à ChatGPT."><h2>Mission</h2><div class="actions"><button id="newMission" data-icon="plus" class="ghost" type="button">Nouvelle mission</button><button id="orderGpt" data-icon="sparkles" class="secondary" type="button" title="Ouvrir le formulaire de commande : type, théâtre, équipes, aéronefs ; le prompt est copié et ChatGPT s’ouvre">Commander à ChatGPT…</button><button id="dupMission" data-icon="layers" class="secondary" type="button" title="Copie de la mission chargée, prête à modifier : identifiant et série suivants de la même famille, titre « (copie) » ; cartes et rendus à refaire au studio">Dupliquer</button><button id="saveToFolder" data-icon="save" class="secondary" type="button" title="Enregistrer le YAML de la mission (modifications comprises) dans son dossier : data/missions/&lt;lettre&gt;_&lt;FAMILLE&gt;/&lt;ID&gt;/">Enregistrer dans le dossier</button><button id="saveDraft" data-icon="bookmark" class="secondary" type="button" data-min-level="4">Mémoriser le brouillon</button><button id="loadDraft" data-icon="refresh" class="secondary" type="button" data-min-level="4">Recharger le brouillon</button></div><div id="status" class="status" data-status>Aucune mission chargée.</div><p id="registryInfo" class="small" hidden><span></span> <button type="button" id="storeMission" class="secondary" data-icon="folder" hidden>Ranger dans le dossier des missions…</button> <a href="mission_registry.html">Ouvrir le registre ↗</a></p><details id="importMore" class="importMore"><summary>Importer une autre mission : fichiers, texte collé, commande ChatGPT</summary><div class="grid"><label>YAML et/ou Markdown<input id="missionFiles" type="file" accept=".yaml,.yml,.md,text/markdown,text/yaml" multiple data-dropzone><button id="openMissionPaste" data-icon="link" class="secondary" type="button" style="margin-top:6px">ou coller son contenu…</button></label><label>Cartes ou ZIP livré par le générateur<input id="mapFiles" type="file" accept=".zip,application/zip,image/png,image/jpeg,image/webp" multiple data-dropzone></label></div><div class="subBlocks"><details id="gptBox" class="pasteBox gptBox"><summary><strong>Commander une mission à ChatGPT</strong> <span class="small">type, théâtre, équipes, aéronefs : le prompt est copié et ChatGPT s’ouvre</span></summary><div id="gptOrder"></div></details><div id="missionPaste" class="pasteBox" hidden><strong>Coller le contenu Markdown ou YAML de la mission</strong><textarea id="missionText" placeholder="Colle ici le contenu Markdown ou YAML de la mission…"></textarea><div class="actions"><button id="parseMission" data-icon="eye" type="button">Lire la mission</button></div></div></div><p class="small">Tu peux sélectionner le YAML et le Markdown ensemble. Pour les cartes, sélectionne directement le ZIP produit par le générateur : les PNG, dont la carte d’assemblage, seront extraits et associés automatiquement.</p></details></section>
 
 <section data-block-id="mission-operation" data-icon="layers" data-subtitle="Missions de l’opération et organisation de l’exercice : cliquer une mission pour l’afficher." hidden><h2>Opération</h2><div id="missionOperation"></div></section>
 
@@ -540,7 +540,7 @@ html[data-skeuo] .repo-block .mapCard.missing:not(#imp) {
 
 <section data-block-id="mission-exercise" data-icon="list" data-subtitle="Plis scellés à ouvrir et messages radio attendus, d’après la chronologie de l’organisation de l’exercice." hidden><h2>Exercice</h2><div id="missionExercise"></div><div id="exerciseMaps" class="small exerciseMaps"></div></section>
 
-<section data-block-id="mission-texts" data-icon="file-text" data-subtitle="Résumé, description détaillée, puis les rubriques que le brief place à leur rang : objectifs, risques et notes vont dans le YAML, les autres complètent la section du même nom."><h2>Textes de mission</h2><div class="two"><label>Summary<textarea id="summary"></textarea></label><label>Description détaillée<textarea id="detailed" class="long"></textarea></label></div><div id="narrativeSections"></div><details id="addNarrative" class="narrMenu"><summary>Ajouter une rubrique textuelle</summary><ul id="narrChoices"></ul></details></section>
+<section data-block-id="mission-texts" data-icon="file-text" data-subtitle="Résumé, description détaillée, puis les rubriques que le brief place à leur rang : objectifs, risques et notes vont dans le YAML, les autres complètent la section du même nom."><h2>Textes de mission</h2><div class="two"><label>Résumé<textarea id="summary"></textarea></label><label>Description détaillée<textarea id="detailed" class="long"></textarea></label></div><div id="narrativeSections"></div><details id="addNarrative" class="narrMenu"><summary>Ajouter une rubrique textuelle</summary><ul id="narrChoices"></ul></details></section>
 
 <section data-block-id="mission-yaml" data-default-hidden="1" data-min-level="4" data-icon="database" data-subtitle="Éditeur libre de toutes les clés du YAML de la mission."><h2>Toutes les données YAML</h2><p class="note">Cet éditeur est sans schéma imposé : les champs supplémentaires présents dans tes exemples sont conservés et restent modifiables.</p><div id="yamlEditor"></div><div class="inlineAdd"><input id="newRootKey" placeholder="Nom d’un nouveau champ racine"><button id="addRootKey" class="ghost" type="button">Ajouter</button></div></section>
 
@@ -1604,7 +1604,8 @@ function applyMode() {
   document.querySelector('[data-block-id="mission-estimate"]').hidden = org;
   setBlock('mission-texts', org ? 'Brief général' : 'Textes de mission', org ?
     'Brief de la coordination, remis à tous : situation, objectifs communs, créneaux, critères de fin.' :
-    'Résumé, description détaillée et rubriques du brief.');
+    'Résumé, description détaillée, puis les rubriques que le brief place à leur rang : objectifs, risques et notes vont dans le YAML, les autres complètent la section du même nom.'
+  );
   syncDocButtons()
 }
 /** Boutons des documents selon la mission et l'opération. */
@@ -3022,6 +3023,36 @@ document.querySelector('main').addEventListener('change', () => shareMission());
 document.querySelector('main').addEventListener('click', e => {
   if (e.target.closest('button')) setTimeout(() => shareMission(), 50)
 });
+// « Dupliquer » : copie de la mission chargée (SiaMission.duplicate), ouverte ici ; l'état de la page devient la copie
+// avant le rechargement (l'enregistrement qui suit chaque clic écrit donc la copie, pas l'ancienne mission)
+$('dupMission').onclick = () => {
+  if (!state.yaml?.mission) return setStatus('Aucune mission chargée à dupliquer.', 'err');
+  try {
+    syncNarrative();
+    const was = state.yaml.mission.id,
+      d = SiaMission.duplicate({
+        yaml: state.yaml,
+        narrative: state.narrative
+      }, 'generator');
+    state = {
+      ...state,
+      yaml: d.yaml,
+      narrative: d.narrative,
+      sourceNames: []
+    };
+    try {
+      sessionStorage.setItem('siaDuplicated:v1', JSON.stringify({
+        from: was,
+        to: d.yaml.mission.id
+      }))
+    } catch {
+      /* stockage indisponible */
+    }
+    location.reload()
+  } catch (e) {
+    setStatus(`Duplication impossible : ${e.message}`, 'err')
+  }
+};
 SiaMission.subscribe('generator', d => {
   state = {
     ...state,
@@ -3032,6 +3063,16 @@ SiaMission.subscribe('generator', d => {
   renderAll();
   setStatus(`Mission mise à jour par le studio cartographique (révision ${d.rev}).`, 'ok')
 });
+// Après « Dupliquer » (générateur ou registre) : la copie est chargée, la page le dit
+try {
+  const dup = JSON.parse(sessionStorage.getItem('siaDuplicated:v1') || 'null');
+  if (dup) {
+    sessionStorage.removeItem('siaDuplicated:v1');
+    setTimeout(() => setStatus(`Copie de ${dup.from} créée : ${dup.to}, titre « (copie) ». À modifier, puis « Enregistrer dans le dossier » ; cartes à refaire au studio.`, 'ok'), 300)
+  }
+} catch {
+  /* stockage indisponible */
+}
 // Passerelle vers CR : la mission (YAML) est confiée au CR de la famille correspondante.
 $('openCr').onclick = () => {
   try {

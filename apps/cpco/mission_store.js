@@ -974,6 +974,57 @@
       serie
     };
   }
+  /** « Dupliquer » (registre, générateur) : copie d'une mission prête à modifier — identifiant et série suivants libres de
+   *  sa famille (nextNumbering, lettre d'équipe gardée), références à l'ancien identifiant suivies (cartes attendues,
+   *  récit), titre « … (copie) », meta.duplicated_from ; opération réduite à la copie (sans organisation d'exercice),
+   *  fichiers sources, cartes et rendus non repris (ils se refont au studio). La copie devient la mission courante,
+   *  seule dans son lot (by : page auteure). Retour : document enregistré. */
+  function duplicate(doc, by) {
+    const y0 = doc?.yaml || doc || {},
+      old = idNorm(y0.mission?.id ?? y0.mission?.number),
+      p = parseId(old),
+      n = nextNumbering(y0.mission?.type),
+      now = n.id ? n.id + (p.team || '') : `${old || 'M'}-COPIE`,
+      oldBase = idBase(old),
+      newBase = idBase(now),
+      rx = oldBase ? idToken(oldBase, true) : null,
+      sub = s => rx ? s.replace(rx, (_, team) => newBase + team) : s,
+      blank = {
+        summary: '',
+        detailed: '',
+        sections: []
+      },
+      y = mapStrings(structuredClone(y0), sub),
+      narrative = mapStrings(structuredClone(doc?.narrative || blank), sub),
+      m = y.mission || (y.mission = {});
+    m.id = now;
+    if (parseId(now).num != null) m.number = parseId(now).num;
+    m.series = n.serie || m.series;
+    delete m.former_id;
+    y.title = `${String(y.title || 'Mission').replace(/\s*\(copie\)$/i, '')} (copie)`;
+    y.meta = {
+      ...(y.meta || {}),
+      duplicated_from: old,
+      duplicated_at: new Date().toISOString()
+    };
+    if (y.operation && typeof y.operation === 'object') {
+      y.operation = {
+        ...y.operation,
+        missions: [now]
+      };
+      delete y.operation.organisation;
+    }
+    const copy = {
+      yaml: y,
+      narrative,
+      sourceNames: []
+    };
+    storeBatch({
+      docs: [copy],
+      index: 0
+    });
+    return save(copy, by);
+  }
   /** Prochains identifiants de toutes les familles (paramètre PROCHAINS_NUMEROS du prompt, utile si TYPE = aléatoire). */
   function numberingTable() {
     return [...new Set(Object.keys(FAMILY_LETTERS).filter(f => f !== 'MEDEVAC'))].map(f => {
@@ -1083,6 +1134,7 @@
     parseId,
     nextNumbering,
     numberingTable,
+    duplicate,
     markdownOf,
     KEY,
     load,

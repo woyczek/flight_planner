@@ -5,6 +5,13 @@
   if (!window.RepositoryContentI18n) return;
   window.RepositoryContentI18n([
     // ---- générateur de mission
+    // « Dupliquer » (générateur)
+    ["Résumé", "Summary", "Zusammenfassung", "Resumen"],
+    ["Copie de la mission chargée, prête à modifier : identifiant et série suivants de la même famille, titre « (copie) » ; cartes et rendus à refaire au studio",
+      "Copy of the loaded mission, ready to edit: next identifier and series of the same family, title “(copy)”; maps and renders to redo in the studio",
+      "Kopie der geladenen Mission, bereit zum Bearbeiten: nächste Kennung und Serie derselben Familie, Titel „(Kopie)“; Karten und Darstellungen im Studio neu erstellen",
+      "Copia de la misión cargada, lista para modificar: identificador y serie siguientes de la misma familia, título «(copia)»; mapas y renders a rehacer en el estudio"
+    ],
     // rubriques textuelles nommées (générateur)
     ["Résumé, description détaillée, puis les rubriques que le brief place à leur rang : objectifs, risques et notes vont dans le YAML, les autres complètent la section du même nom.",
       "Summary, detailed description, then the sections the brief places in order: objectives, risks and notes go into the YAML, the others complete the section of the same name.",
