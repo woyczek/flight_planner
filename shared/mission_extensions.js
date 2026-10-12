@@ -187,7 +187,7 @@
           bubbles: true
         }));
       }
-      if (files.length && window.showDirectoryPicker && confirm(message({
+      if (files.length && window.showDirectoryPicker && await window.AppFramework.ask(message({
           fr: 'Copier aussi le ou les FMS dans un dossier local ?',
           en: 'Also copy the FMS file(s) to a local folder?',
           de: 'FMS-Datei(en) auch in einen lokalen Ordner kopieren?',

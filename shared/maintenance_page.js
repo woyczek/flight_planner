@@ -3315,7 +3315,7 @@
     const z = Z.byId(id),
       files = (aeroInv.files || []).filter(f => Z.fileSource(f.rel)?.zone === id),
       cells = moraCount(Z, id, aeroInv);
-    if (!confirm(t([
+    if (!await window.AppFramework.ask(t([
         'Purger la zone {z} : {n} fichier(s) supprimé(s) du dossier SIA{m}, zone désactivée, base relue. Une nouvelle activation réinstalle tout. Continuer ?',
         'Purge the zone {z}: {n} file(s) deleted from the SIA folder{m}, zone deactivated, database read again. Activating it again reinstalls everything. Continue?',
         'Zone {z} leeren: {n} Datei(en) aus dem SIA-Ordner gelöscht{m}, Zone deaktiviert, Datenbank neu gelesen. Eine neue Aktivierung installiert alles neu. Fortfahren?',
@@ -4321,13 +4321,17 @@
   /** Ajoute un dossier à la sauvegarde : nom et motif des fichiers demandés (motif vérifié), dossier choisi par FileAccess,
    *  source mémorisée dans suiteBackupSources:v1 ; le bloc est redessiné. */
   async function addSource() {
-    const label = prompt(t(['Nom de ce dossier (ex. « Journaux d’atterrissage du plugin »)',
-      'Name of this folder (e.g. “Plugin landing logs”)'
+    const label = await window.AppFramework.askText(t(['Nom de ce dossier (ex. « Journaux d’atterrissage du plugin »)',
+      'Name of this folder (e.g. “Plugin landing logs”)', 'Name dieses Ordners (z. B. „Landeprotokolle des Plugins“)',
+      'Nombre de esta carpeta (p. ej. «Registros de aterrizaje del plugin»)'
     ]));
     if (!label) return;
-    const pattern = prompt(t(['Fichiers à inclure (expression régulière sur le nom) :',
-      'Files to include (regular expression on the name):'
-    ]), '\\.(csv|ya?ml|json|md|txt|fms|lnmperf)$');
+    const pattern = await window.AppFramework.askText(t(['Fichiers à inclure (expression régulière sur le nom) :',
+      'Files to include (regular expression on the name):', 'Einzuschließende Dateien (regulärer Ausdruck auf den Namen):',
+      'Archivos que incluir (expresión regular sobre el nombre):'
+    ]), {
+      value: '\\.(csv|ya?ml|json|md|txt|fms|lnmperf)$'
+    });
     if (pattern == null) return;
     try {
       new RegExp(pattern);

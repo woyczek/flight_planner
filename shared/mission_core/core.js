@@ -1687,7 +1687,11 @@
         } catch {
           sia = null;
         }
-        if (sia && dirty && !confirm(t('fromSiaReplace'))) sia = null;
+        // question dans la page : le socle (AppFramework) peut se charger après ce script, il est attendu
+        if (sia && dirty) {
+          for (let i = 0; i < 100 && !window.AppFramework?.ask; i++) await new Promise(r => setTimeout(r, 50));
+          if (!await window.AppFramework.ask(t('fromSiaReplace'))) sia = null;
+        }
         if (sia) {
           mission = fresh();
           fromSia(mission, sia);

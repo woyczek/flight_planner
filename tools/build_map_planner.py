@@ -273,7 +273,7 @@ function build(quiet,gen){
  return true;
 }
 // mission reçue de Mes missions (autre qu'un vol « VOL » de cette page) : remplacée par le vol libre seulement après confirmation
-$v('volBuild').onclick=()=>{if(mission&&sharedDoc?.yaml?.mission?.id!=='VOL'&&!confirm(K.t(['Remplacer la mission chargée par un vol libre construit à partir du cheminement ?','Replace the loaded mission with a free flight built from the route?','Die geladene Mission durch einen freien Flug aus der Route ersetzen?','¿Sustituir la misión cargada por un vuelo libre construido a partir de la ruta?'])))return;build(false)};
+$v('volBuild').onclick=async()=>{if(mission&&sharedDoc?.yaml?.mission?.id!=='VOL'&&!await window.AppFramework.ask(K.t(['Remplacer la mission chargée par un vol libre construit à partir du cheminement ?','Replace the loaded mission with a free flight built from the route?','Die geladene Mission durch einen freien Flug aus der Route ersetzen?','¿Sustituir la misión cargada por un vuelo libre construido a partir de la ruta?'])))return;build(false)};
 // niveaux 1 à 3 : un seul bouton, cartes créées puis aperçu et génération des fichiers et du ZIP par le moteur du studio
 // (« Générer » du studio, masqué ici : compte rendu dans #result, sous ce bouton) ; mission reçue de Mes missions
 // (autre qu'un vol « VOL » de cette page) : ses cartes sont générées telles quelles, sans les remplacer par celles du bloc

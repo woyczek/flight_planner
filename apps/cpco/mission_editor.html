@@ -3558,8 +3558,9 @@ $('missionId').addEventListener('input', () => {
 /* Identifiant changé : une mission d'opération est citée par les autres (operation.missions / organisation, participants
    de l'exercice, noms des cartes, récits). Changer son seul identifiant casserait ces liens : migration globale proposée
    (toute l'opération si la base change : BFM-001C → A-001C migre BFM-001 → A-001), sinon l'identifiant est rétabli.
-   Pendant la saisie, la mission garde sa place dans le lot (SiaMission.save). Retour : identifiant retenu. */
-function changeMissionId(from, to) {
+   Pendant la saisie, la mission garde sa place dans le lot (SiaMission.save). Promesse : identifiant retenu (question
+   posée dans la page, jamais de boîte native). */
+async function changeMissionId(from, to) {
   from = String(from || '').trim().toUpperCase();
   to = String(to || '').trim().toUpperCase();
   if (!from || !to || from === to) return to;
@@ -3576,7 +3577,7 @@ function changeMissionId(from, to) {
     // famille : celle de la nouvelle lettre, pour toute l'opération, si la lettre change (ou si la famille saisie ne va pas)
     newType = fam && (SiaMission.parseId(from).letter !== letter || L[type] !== letter) ? fam : '';
   const others = rel.filter(r => r.id !== to && r.id !== from);
-  const ok = confirm(`« ${from} » est cité ${others.length ? `par ${others.map(r => `${r.id} (${r.count} fois)`).join(', ')}` : 'dans cette mission (opération, cartes, textes)'}.\n\n` +
+  const ok = await window.AppFramework.ask(`« ${from} » est cité ${others.length ? `par ${others.map(r => `${r.id} (${r.count} fois)`).join(', ')}` : 'dans cette mission (opération, cartes, textes)'}.\n\n` +
     (global ? `Migrer toute l’opération ${a} → ${b} : chaque mission (${a}A → ${b}A…), l’organisation, les participants, les noms des cartes et les textes` : `Migrer ${from} → ${to} dans toutes les missions du lot (listes, participants, cartes, textes)`) +
     (newType ? ` ; famille ${newType}` : '') + ` ?\n(ancien identifiant gardé dans mission.former_id)\n\nAnnuler : l’identifiant reste ${from} (le changer seul casserait ces liens).`);
   if (!ok) {
@@ -3605,7 +3606,7 @@ let idBefore = '';
 $('missionId').addEventListener('focus', () => idBefore = $('missionId').value.trim());
 $('missionId').addEventListener('change', () => {
   const now = $('missionId').value.trim();
-  if (idBefore && now !== idBefore) idBefore = changeMissionId(idBefore, now)
+  if (idBefore && now !== idBefore) changeMissionId(idBefore, now).then(id => idBefore = id)
 });
 $('missionType').addEventListener('input', updateIdentHints);
 // langue de la page fixée après le premier rendu (mode auto) ou changée : rubriques redessinées dans cette langue
@@ -3699,7 +3700,7 @@ $('saveToFolder').onclick = async () => {
     setPath(state.yaml, ['mission', 'id'], guess);
     renderCommon();
     shareMission(true);
-    if (changeMissionId(id, guess) !== guess) return
+    if (await changeMissionId(id, guess) !== guess) return
   }
   try {
     const f = await C.saveYaml(state.yaml, {

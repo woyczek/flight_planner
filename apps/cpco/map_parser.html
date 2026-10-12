@@ -2794,10 +2794,15 @@ document.addEventListener('click', e => {
     input.value = '';
     pickCommit(list)
   } else if (e.target.closest('[data-pick-clear]')) {
-    if (st.items.length && confirm('Vider la liste ?')) {
+    if (st.items.length) window.AppFramework.ask(window.RepositoryKit.t(['Vider la liste ?', 'Empty the list?', 'Liste leeren?',
+      '¿Vaciar la lista?'
+    ]), {
+      danger: true
+    }).then(ok => {
+      if (!ok) return;
       st.items = [];
       pickCommit(list)
-    }
+    })
   } else if (e.target.dataset.pickRemove !== undefined) {
     st.items.splice(+e.target.dataset.pickRemove, 1);
     pickCommit(list)
@@ -3747,7 +3752,13 @@ document.addEventListener('click', e => {
   navigator.clipboard?.writeText(JSON.stringify(lastMapError, null, 2)).then(() => {
     e.target.textContent = 'Rapport copié — colle-le dans la conversation'
   }, () => {
-    prompt('Rapport d’erreur à copier :', JSON.stringify(lastMapError))
+    // presse-papiers refusé : rapport montré dans la page, sélectionné, à copier à la main
+    window.AppFramework.askText(window.RepositoryKit.t(['Rapport d’erreur à copier :', 'Error report to copy:',
+      'Fehlerbericht zum Kopieren:', 'Informe de error para copiar:'
+    ]), {
+      value: JSON.stringify(lastMapError, null, 2),
+      readonly: true
+    })
   })
 });
 // Aperçu interactif de la carte choisie (jeton liveToken : un rendu plus récent annule le précédent).
@@ -5576,8 +5587,12 @@ $('vprofIcaoCopy').onclick = () => {
     window.AppFramework?.notify?.('Route : au moins deux points connus de la base SIA.', 'warn');
     return
   }
-  navigator.clipboard?.writeText(r.full).then(() => window.AppFramework?.notify?.(`Plan de vol OACI copié : ${r.full}`, 'ok'), () => window.prompt(
-    'Plan de vol OACI', r.full))
+  // presse-papiers refusé : plan de vol montré dans la page, sélectionné, à copier à la main
+  navigator.clipboard?.writeText(r.full).then(() => window.AppFramework?.notify?.(`Plan de vol OACI copié : ${r.full}`, 'ok'), () => window
+    .AppFramework.askText(window.RepositoryKit.t(['Plan de vol OACI', 'ICAO flight plan', 'ICAO-Flugplan', 'Plan de vuelo OACI']), {
+      value: r.full,
+      readonly: true
+    }))
 };
 /* Route du dernier OFP SimBrief (identifiant du profil pilote commun) : départ, groupe vitesse / niveau, route ATC (case 15), destination. */
 $('routeSimbrief').onclick = async () => {

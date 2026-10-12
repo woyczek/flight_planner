@@ -619,8 +619,10 @@
   const K = window.RepositoryKit;
   /** Libellé dans la langue courante (fr, en, de, es). */
   const L = (fr, en, de, es) => K.t([fr, en, de, es]);
-  /** Notification flottante (AppFramework.notify), sinon alert. */
-  const notify = (m, k) => window.AppFramework?.notify ? window.AppFramework.notify(m, k) : alert(m);
+  /** Notification flottante (AppFramework.notify) ; socle pas encore chargé : notification un peu plus tard (jamais de
+   *  boîte native). */
+  const notify = (m, k) => window.AppFramework?.notify ? window.AppFramework.notify(m, k) : setTimeout(() => window.AppFramework
+    ?.notify?.(m, k), 1500);
   const DONE = 'suiteSetup:v1',
     STATE = 'suiteSetupState:v1',
     PROFILE = 'missionReportingConfig:v1',

@@ -653,7 +653,7 @@
       } : {})
     });
     // Dossier attendu (v3) : data/cr du dépôt de données.
-    if (picked.name !== 'cr' && !confirm(`Le dossier « ${picked.name} » n'est pas data/cr (dépôt de données) : y écrire quand même le registre ${FILE} ?`)) throw new Error('Dossier refusé');
+    if (picked.name !== 'cr' && !await window.AppFramework.ask(`Le dossier « ${picked.name} » n'est pas data/cr (dépôt de données) : y écrire quand même le registre ${FILE} ?`)) throw new Error('Dossier refusé');
     handle = picked;
     await idbSet(HANDLE, picked);
     store.folder = picked.name;

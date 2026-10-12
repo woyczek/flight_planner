@@ -523,6 +523,7 @@
   // copie la page entière (son HTML : le tableau garde ses colonnes et les liens des appareils) ; la suite la lit comme
   // la page enregistrée. Le copier-coller ordinaire ne donne que du texte, souvent sans les colonnes.
   // Pas de commentaire de ligne ni de « % » dans cette fonction : elle devient une adresse javascript: sur une ligne.
+  // alert() : favori exécuté sur un autre site, sans le socle de la suite (AppFramework) — seule boîte native admise.
   async function defaLogCopy() {
     const html = '<!-- ' + location.href + ' -->' + String.fromCharCode(10) + document.documentElement.outerHTML;
     const rows = document.querySelectorAll('tr').length;

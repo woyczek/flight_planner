@@ -244,7 +244,7 @@
         event.target.click();
       }
     };
-    container.onclick = event => {
+    container.onclick = async event => {
       const th = event.target.closest('th[data-key]');
       if (th && (event.target.closest('.st-grip') || Date.now() - resizedAt < 300)) return; // fin d'un redimensionnement : pas de tri
       if (th) {
@@ -263,7 +263,9 @@
       if (!row) return;
       if (event.target.closest('.st-delete')) {
         const message = opts.deleteMessage ? opts.deleteMessage(row) : 'Supprimer cette ligne ?';
-        if (!window.confirm(message)) return;
+        if (!await window.AppFramework.ask(message, {
+            danger: true
+          })) return;
         if (opts.onDelete(row) === false) return;
         rows = rows.filter(r => r !== row);
         if (typeof opts.onChange === 'function') opts.onChange(rows.slice());

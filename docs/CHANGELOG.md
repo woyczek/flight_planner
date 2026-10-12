@@ -136,6 +136,17 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Corrigé
 
+- **No native browser dialog left in the suite** — a native `confirm()` opened before the shared layer had frozen the
+  generator in the user's Chrome. Every remaining `confirm()`, `prompt()` and `alert()` now asks in the page:
+  `AppFramework.ask` for confirmations, new `AppFramework.askText` for input (text field, choice list, or read-only
+  text to copy). Covered: generator (mission ID migration, now asynchronous), studio and Flight maps (clear the list,
+  error report and ICAO flight plan to copy, free flight), mission registry (ID format, map deletions), sortable tables
+  (row deletion), SIA database purge, Maintenance (zone purge, backup source), assignment dialog (other registration;
+  closing with pending assignments, `beforeClose` may now return a promise), reports (SIA mission replacing a draft,
+  report folder, legacy import, merge), reporting mission editing, FMS copy, CSV mission choice, first run, and the
+  shared "leave the page?" link checks (`guardUnsavedChanges`, running tasks), which no longer add the browser's own
+  question once confirmed. Only the two bookmarklets keep `alert()`: they run on the airline's website, without the
+  suite's shared layer.
 - **Mission generator and studio: no native browser dialog** — the "New mission" confirmation (`?new=1` with an unsaved
   shared mission) and both "Undo changes" fell back to `confirm()` when called before the page framework was ready,
   freezing the tab in Chrome; they now wait for the framework (in-page `AppFramework.ask`, 30 s at most) and never use

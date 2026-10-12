@@ -1753,7 +1753,7 @@
           p: pend.length,
           a: assigned.length
         }),
-        beforeClose: () => !dirty() || confirm(L(['Abandonner les affectations en attente (non enregistrées) ?',
+        beforeClose: () => !dirty() || window.AppFramework.ask(L(['Abandonner les affectations en attente (non enregistrées) ?',
           'Discard the pending (unsaved) assignments?', 'Ausstehende (nicht gespeicherte) Zuweisungen verwerfen?',
           '¿Descartar las asignaciones pendientes (no guardadas)?'
         ])),

@@ -578,9 +578,9 @@
         status.textContent = `${added} ${t('legacyDone')} ${skipped}`;
         render();
       };
-      button.onclick = () => {
+      button.onclick = async () => {
         const cached = window.MissionReportingConfig?.cached?.(family.legacy.configKey);
-        if (cached?.text && confirm(t('legacyUseCache'))) importText(cached.text);
+        if (cached?.text && await window.AppFramework.ask(t('legacyUseCache'))) importText(cached.text);
         else legacyPicker.click();
       };
       legacyPicker.onchange = async () => {

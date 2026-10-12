@@ -70,12 +70,19 @@
       const file = picker.files[0];
       if (!file) return;
       const reader = new FileReader();
-      reader.onload = () => {
+      reader.onload = async () => {
         const records = parse(reader.result);
         nextNumber(records);
-        const choices = records.map((record, i) => `${i + 1}. ${record.missionId || '—'} — ${record.date || ''} — ${record.missionType || ''}`).join('\n');
-        const selected = Number(prompt(`Choisir une mission à charger :\n${choices}`, '1'));
-        if (selected >= 1 && selected <= records.length) apply(records[selected - 1]);
+        if (!records.length) return;
+        // choix dans la page (liste), jamais de boîte native
+        const K = window.RepositoryKit,
+          picked = await window.AppFramework.askText(K?.t ? K.t(['Choisir une mission à charger :', 'Choose a mission to load:',
+            'Zu ladende Mission wählen:', 'Elegir una misión que cargar:'
+          ]) : 'Choisir une mission à charger :', {
+            value: '0',
+            options: records.map((record, i) => [String(i), `${record.missionId || '—'} — ${record.date || ''} — ${record.missionType || ''}`])
+          });
+        if (picked != null && records[+picked]) apply(records[+picked]);
       };
       reader.readAsText(file);
     };

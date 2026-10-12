@@ -562,7 +562,7 @@
   /** Identifiant rangeable (lettre de la famille + numéro : « A-001A ») ; sinon identifiant proposé d'après la famille
    *  (« BFM-001A » en COMBAT → « A-001A ») : request (clic) → confirmation, l'ancien gardé dans mission.former_id ;
    *  sans confirmation → erreur explicite (et non « dossier non autorisé »). */
-  function checkMissionId(y, request) {
+  async function checkMissionId(y, request) {
     const raw = String(y?.mission?.id ?? '').trim().toUpperCase(),
       SM = window.SiaMission;
     if (SM?.parseId?.(raw)?.letter) return;
@@ -571,7 +571,7 @@
       letter = L[type] || L[window.MissionVocab?.familyForType?.(type)] || '',
       m = /(\d{1,3})([A-Z]?)$/.exec(raw),
       guess = letter && m ? `${letter}-${m[1].padStart(3, '0')}${m[2]}` : '';
-    if (guess && request && confirm(t([
+    if (guess && request && await window.AppFramework.ask(t([
         'Identifiant « {r} » hors format (lettre de la famille + numéro). Enregistrer la mission sous « {g} » ? (l’ancien identifiant est gardé dans mission.former_id)',
         'ID “{r}” is not in the expected format (family letter + number). Save the mission as “{g}”? (the old ID is kept in mission.former_id)'
       ], {
@@ -599,7 +599,7 @@
     request = false,
     source = 'collage'
   } = {}) {
-    checkMissionId(doc.yaml, request);
+    await checkMissionId(doc.yaml, request);
     const id = normMissionId(doc.yaml?.mission?.id || ''),
       at = new Date().toISOString(),
       st = stamp();
@@ -681,7 +681,7 @@
     action = 'modifiée',
     request = false
   } = {}) {
-    checkMissionId(y, request);
+    await checkMissionId(y, request);
     const id = normMissionId(y?.mission?.id || ''),
       m = await missionHandle(id, y?.mission?.type, {
         request,
@@ -705,7 +705,7 @@
   async function saveMaps(y, maps, {
     request = false
   } = {}) {
-    checkMissionId(y, request);
+    await checkMissionId(y, request);
     const id = normMissionId(y?.mission?.id || ''),
       m = await missionHandle(id, y?.mission?.type, {
         request,
@@ -1911,7 +1911,7 @@
           why = dup ? t(['doublon : la même carte reste dans cartes/', 'duplicate: the same map stays in cartes/']) : extra ? t([
             'absente de la liste des cartes de la mission', 'not in the mission’s map list'
           ]) : t(['carte de la mission : le studio pourra la régénérer', 'mission map: the studio can regenerate it']);
-        if (!confirm(t(['Supprimer « {f} » ({s}) du dossier de la mission ?\n{w}',
+        if (!await window.AppFramework.ask(t(['Supprimer « {f} » ({s}) du dossier de la mission ?\n{w}',
             'Delete “{f}” ({s}) from the mission folder?\n{w}'
           ], {
             f: label,
@@ -1931,7 +1931,8 @@
     if (dupRoot.length) {
       thumbs.insertAdjacentHTML('afterend', `<p class="rg-small">${esc(t(['{n} carte(s) en double à la racine du dossier (la même carte est dans cartes/).', '{n} duplicate map(s) at the folder root (same map in cartes/).'], { n: dupRoot.length }))} <button type="button" class="secondary" id="rgDelDup" data-icon="trash">${esc(t(['Supprimer les doublons à la racine ({n}, {s})', 'Delete root duplicates ({n}, {s})'], { n: dupRoot.length, s: B(dupRoot.reduce((a, f) => a + f.size, 0)) }))}</button></p>`);
       host.querySelector('#rgDelDup').addEventListener('click', async () => {
-        if (!confirm(t(['Supprimer {n} carte(s) en double à la racine du dossier ? Les exemplaires de cartes/ sont gardés.',
+        if (!await window.AppFramework.ask(t([
+            'Supprimer {n} carte(s) en double à la racine du dossier ? Les exemplaires de cartes/ sont gardés.',
             'Delete {n} duplicate map(s) at the folder root? The copies in cartes/ are kept.'
           ], {
             n: dupRoot.length
@@ -1946,7 +1947,7 @@
     const sz = usage.sizes;
     thumbs.insertAdjacentHTML('afterend', `<p class="rg-small">${esc(t(['Place : {t} — données {d}, cartes {c}, versions {v}, textes reçus {r}.', 'Space: {t} — data {d}, maps {c}, versions {v}, received texts {r}.'], { t: B(sz.total), d: B(sz.data), c: B(sz.maps), v: B(sz.versions), r: B(sz.recu) }))}${sz.pdf ? esc(t([' PDF : {p}.', ' PDF: {p}.'], { p: B(sz.pdf) })) : ''}${usage.surplus.length ? ` <button type="button" class="secondary" id="rgDelSurplus" data-icon="trash">${esc(t(['Supprimer les cartes surnuméraires ({n}, {s})', 'Delete surplus maps ({n}, {s})'], { n: usage.surplus.length, s: B(usage.surplusSize) }))}</button>` : ''}</p>`);
     host.querySelector('#rgDelSurplus')?.addEventListener('click', async () => {
-      if (!confirm(t([
+      if (!await window.AppFramework.ask(t([
           'Supprimer {n} carte(s) surnuméraire(s) ({s}) du dossier de la mission ? Elles ne figurent plus dans sa liste de cartes.',
           'Delete {n} surplus map(s) ({s}) from the mission folder?'
         ], {
