@@ -2,18 +2,105 @@
 <!-- Page générée par tools/build_map_planner.py depuis apps/cpco/map_parser.html : ne pas éditer à la main. -->
 <html data-tool="dark" lang="fr">
 <head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Cartes de vol</title>
-<link rel="stylesheet" href="../../shared/repository_nav.css?v=0">
-<script src="../../config/repository_tree?v=0"></script><script src="../../shared/kit.js?v=0"></script>
-<style data-layer="lib">
-@import url("../../shared/carto/maplibre-gl.css") layer(lib);
+<script>
+/* fenêtre « carte » (map_parser.html?carte) : repérée avant tout script, seule la carte est montrée */
+if (/[?&]carte(?:[=&]|$)/.test(location.search)) document.documentElement.setAttribute('data-map-window', '')
+</script>
+<style>
+  html[data-map-window] {
+    padding-left: 0 !important
+  }
+  html[data-map-window] body>:not(#mwRoot):not(.repo-notify):not(dialog) {
+    display: none !important
+  }
+  #mwRoot {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    background: var(--repo-page, #fff)
+  }
+  #mwRoot .mw-bar {
+    flex: none;
+    position: relative;
+    z-index: 5;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px;
+    background: var(--repo-bar, #101319);
+    color: var(--repo-bar-text, #fff);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, .25)
+  }
+  #mwRoot .mw-bar :is(button, select) {
+    font: inherit;
+    margin: 0;
+    padding: 4px 10px;
+    border-radius: 6px;
+    border: 1px solid color-mix(in srgb, var(--repo-bar-text, #fff) 35%, transparent);
+    background: color-mix(in srgb, var(--repo-bar-text, #fff) 12%, transparent);
+    color: var(--repo-bar-text, #fff)
+  }
+  #mwRoot .mw-bar :is(button, select) {
+    width: auto !important;
+    min-width: 0;
+    flex: 0 0 auto
+  }
+  #mwRoot .mw-bar select {
+    max-width: 22em;
+    flex: 0 1 auto
+  }
+  #mwRoot .mw-bar select option {
+    color: #1d2633;
+    background: #fff
+  }
+  #mwRoot .mw-sep {
+    width: 1px;
+    align-self: stretch;
+    background: color-mix(in srgb, var(--repo-bar-text, #fff) 30%, transparent)
+  }
+  #mwRoot .mw-status {
+    flex: 1 1 14em;
+    min-width: 0;
+    font-size: 12px;
+    opacity: .85;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis
+  }
+  #mwRoot .mw-status p {
+    margin: 0
+  }
+  #mwRoot .mw-map {
+    flex: 1;
+    position: relative;
+    min-height: 0
+  }
+  #mwRoot .mw-map>#osmLivePreview,
+  #mwRoot .mw-map>#generalPreview {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100% !important;
+    margin: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    object-fit: contain
+  }
 .volForm{display:grid;grid-template-columns:repeat(2,minmax(0,260px));gap:8px 12px;align-items:end}.volForm label{display:grid;gap:3px;font-size:13px}
 #volStatus:empty{display:none}
 [data-block-id="vol"] #result:not(:empty){margin-top:6px}
 .volMaps{display:flex;flex-wrap:wrap;gap:4px 14px;align-items:center;margin:8px 0 2px}
 #vprofPtsBox{display:none!important}
 @media(max-width:800px){.volForm{grid-template-columns:1fr 1fr}}
+</style>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Cartes de vol</title>
+<link rel="stylesheet" href="../../shared/repository_nav.css?v=0">
+<script src="../../config/repository_tree?v=0"></script><script src="../../shared/kit.js?v=0"></script>
+<style data-layer="lib">
+@import url("../../shared/carto/maplibre-gl.css") layer(lib);
 </style>
 <script src="../../shared/carto/maplibre-gl.js"></script>
 <script src="../../shared/mission_core/vendor/js-yaml.min.js"></script>
@@ -500,51 +587,6 @@
   .elemGrid {
     grid-template-columns: repeat(auto-fit, minmax(210px, 1fr))
   }
-  body.previewWindow>header,
-  body.previewWindow>footer,
-  body.previewWindow main>section:not([data-block-id=sia-route]),
-  body.previewWindow .routeBar,
-  body.previewWindow #routeInfo,
-  body.previewWindow #vprofImg,
-  body.previewWindow #vprofStatus,
-  body.previewWindow .vprofSettings,
-  body.previewWindow .splitter,
-  body.previewWindow .repo-block-heading,
-  body.previewWindow #previewWindow,
-  body.previewWindow #previewPop {
-    display: none !important
-  }
-  body.previewWindow {
-    max-width: none;
-    padding: 0;
-    margin: 0
-  }
-  body.previewWindow main,
-  body.previewWindow section {
-    margin: 0;
-    padding: 0;
-    border: 0;
-    box-shadow: none
-  }
-  body.previewWindow .profileLayout {
-    display: block
-  }
-  body.previewWindow .profilePreview {
-    position: fixed;
-    inset: 0;
-    margin: 0;
-    border-radius: 0;
-    display: flex;
-    flex-direction: column
-  }
-  body.previewWindow #osmLivePreview {
-    flex: 1;
-    height: auto
-  }
-  body.previewWindow #generalPreview {
-    flex: 1;
-    max-height: none
-  }
   .profileLeft,
   .profileLeft * {
     min-width: 0
@@ -583,8 +625,7 @@
   .aarOptions .check {
     margin: 2px 0
   }
-  .profilePreview.popped>:not(#osmLivePreview):not(#generalPreview):not(.viewBar):not(#previewStatus),
-  body.previewWindow .profilePreview>:not(#osmLivePreview):not(#generalPreview):not(.viewBar):not(#previewStatus) {
+  .profilePreview.popped>:not(#osmLivePreview):not(#generalPreview):not(.viewBar):not(#previewStatus) {
     display: none !important
   }
   .profilePreview.popped {
@@ -1315,7 +1356,7 @@
 <p id="routeInfo" class="small"></p>
 <details class="small route-help"><summary>Syntaxe et utilisation</summary><p>Case 15 du plan de vol OACI (séparée par des espaces) ou liste à virgules. Points : terrains (OACI), balises, points RNAV, points de report VFR (« MM-CV »), points de la mission (ORIGIN, TARGET…), « REN300010 » (radiale / distance), coordonnées « 4330N00125E » ou « lat lon » ; voies aériennes entre deux points (« TOU UN460 NTS ») suivies point par point ; « DCT » : direct. Niveaux : « N0450F350 » groupe vitesse / niveau (au départ ou après un point : « NTS/N0440F370 »), « FL105 » ou « 5500 ft » seul : montée ou descente après le point précédent, « /A035 », « /F065 » ou « /3000 » après un point : altitude à atteindre au point, « VFR » : pas de niveau. Le même plan de vol est repris par le planificateur carburant (Cartes de vol).</p><p>Survol d’un point du texte, de la carte ou de la coupe : les deux autres s’illuminent. Carte : glisser un point (aimanté sur balises, points de report, terrains), clic sur la route pour insérer un point, clic droit pour supprimer un point (double-clic : un point ajouté). Coupe : clic pour un point à cette altitude, glisser pour l’altitude, clic droit pour supprimer.</p></details>
 <div id="placeBox" class="placeBox" hidden><p><b id="placeTitle">Points à placer</b> <span class="small">Cliquer la carte, ou chercher un terrain, une balise, un point de la base SIA ou une ville (code ou nom) ; un point posé se déplace en le glissant sur la carte.</span></p><table id="placeTable"></table><p id="placeDone" class="ok" hidden>Tout est placé. <button type="button" id="placeGenerate" class="primary" data-icon="download">Générer les cartes et le ZIP</button></p><datalist id="placeOptions"></datalist></div><div id="vprofPtsBox" class="small" hidden><span>Points de la mission (clic : ajouter au cheminement) :</span> <span id="vprofPts"></span></div>
-<aside class="profilePreview routeMap box"><div class="routeMapBar"><label class="routeInline">Carte <select id="routeMapSel" title="Carte affichée (par défaut : la carte générale de la route)"></select></label><label class="routeInline" data-min-level="4">Profil <select id="routeMapProfile" title="Profil d’affichage de cette carte (même réglage que dans « Cartes à produire »)"></select></label></div><div class="profileLeft routeProfileEdit" data-min-level="4"></div><select id="previewMap" hidden><option value="">Aucune mission chargée</option></select><img id="generalPreview" alt="Carte de contrôle" hidden><div id="osmLivePreview" hidden></div><div class="viewBar"><label class="mapZip previewZip" data-min-level="4" title="Mettre cette carte dans le ZIP (décocher pour ne pas la générer)"><input type="checkbox" id="previewZip" checked disabled> ZIP</label><button id="refreshPreview" data-min-level="4" data-icon="refresh" type="button" disabled title="Redessiner l’aperçu avec les réglages en cours">Actualiser</button><button type="button" data-view="keep" data-min-level="4" data-icon="check" title="La carte générée reprendra exactement le cadre affiché (zoom et déplacement à la souris) ; écrit dans la mission">Garder ce cadrage</button><button type="button" data-view="home" data-min-level="4" class="secondary" title="Revenir au cadrage enregistré de cette carte">Recentrer</button><button type="button" data-view="auto" data-min-level="4" class="secondary" title="Oublier le cadrage enregistré : cadre calculé d’après la mission (points, zones, pistes) et le type de carte">Cadrage automatique</button><span class="viewSpacer"></span><button id="previewWindow" data-min-level="4" type="button" class="buttonLink" title="Ouvrir la carte dans une fenêtre à part (map_window.html) : image ajustée ou 1:1, zoom, cartes précédente et suivante ; elle suit chaque nouvel aperçu">⧉ Fenêtre</button><button id="previewPop" type="button" class="buttonLink" title="Agrandir la carte (Échap pour revenir)">⤢ Agrandir</button></div>
+<aside class="profilePreview routeMap box"><div class="routeMapBar"><label class="routeInline">Carte <select id="routeMapSel" title="Carte affichée (par défaut : la carte générale de la route)"></select></label><label class="routeInline" data-min-level="4">Profil <select id="routeMapProfile" title="Profil d’affichage de cette carte (même réglage que dans « Cartes à produire »)"></select></label></div><div class="profileLeft routeProfileEdit" data-min-level="4"></div><select id="previewMap" hidden><option value="">Aucune mission chargée</option></select><img id="generalPreview" alt="Carte de contrôle" hidden><div id="osmLivePreview" hidden></div><div class="viewBar"><label class="mapZip previewZip" data-min-level="4" title="Mettre cette carte dans le ZIP (décocher pour ne pas la générer)"><input type="checkbox" id="previewZip" checked disabled> ZIP</label><button id="refreshPreview" data-min-level="4" data-icon="refresh" type="button" disabled title="Redessiner l’aperçu avec les réglages en cours">Actualiser</button><button type="button" data-view="keep" data-min-level="4" data-icon="check" title="La carte générée reprendra exactement le cadre affiché (zoom et déplacement à la souris) ; écrit dans la mission">Garder ce cadrage</button><button type="button" data-view="home" data-min-level="4" class="secondary" title="Revenir au cadrage enregistré de cette carte">Recentrer</button><button type="button" data-view="auto" data-min-level="4" class="secondary" title="Oublier le cadrage enregistré : cadre calculé d’après la mission (points, zones, pistes) et le type de carte">Cadrage automatique</button><span class="viewSpacer"></span><button id="previewWindow" data-min-level="4" type="button" class="buttonLink" title="Ouvrir la carte dans une fenêtre à part : la même carte interactive (déplacer, zoomer, points), sans le reste du studio ; elle suit les réglages">⧉ Fenêtre</button><button id="previewPop" type="button" class="buttonLink" title="Agrandir la carte (Échap pour revenir)">⤢ Agrandir</button></div>
 <p id="previewStatus" data-status class="small">Carte choisie, dessinée avec le profil en cours de modification ; actualisée à chaque réglage.</p></aside>
 <img id="vprofImg" alt="Profil vertical" hidden style="width:100%;border:1px solid #c8d6dd;border-radius:8px;margin-top:6px">
 <p id="vprofStatus" data-status class="small">Relief (tuiles d’altitude, ± 1 km) ; espaces et obstacles (à moins de 1 NM) selon le profil d’affichage de <code>profil_vertical.png</code> (liste des cartes).</p>
@@ -5639,7 +5680,7 @@ $('saveStudio').onclick = async () => {
       const saved = SiaMission.save({
         ...sharedDoc,
         yaml: y
-      }, 'studio');
+      }, STUDIO);
       sharedDoc = saved;
       SiaMission.markSaved(saved, 'saved');
       renderStudioSaveState();
@@ -5705,7 +5746,7 @@ $('revertStudio').onclick = async () => {
     ...doc,
     yaml: back.yaml,
     narrative: back.narrative
-  }, 'studio');
+  }, STUDIO);
   useDoc(saved, true, true);
   $('missionStatus').innerHTML = `<span class="ok">${esc(tl([`Modifications annulées : version ${v} de ${id} rétablie.`,
     `Changes undone: ${v} version of ${id} restored.`, `Änderungen verworfen: Version von ${id} wiederhergestellt.`,
@@ -6387,7 +6428,7 @@ function editDoc(change, message) {
     filename: m
   } : m);
   change(doc.yaml);
-  const saved = SiaMission.save(doc, 'studio');
+  const saved = SiaMission.save(doc, STUDIO);
   useDoc(saved);
   $('viewStatus').innerHTML = `<span class="ok">${esc(message)} (révision ${saved.rev}).</span>`
 }
@@ -6888,7 +6929,7 @@ $('missionFile').addEventListener('change', async e => {
     const r = SiaMission.importTexts(await Promise.all(files.map(async f => ({
       name: f.name,
       text: await f.text()
-    }))), 'studio');
+    }))), STUDIO);
     useDoc(r.doc, false, true);
     batchNote(r)
   } catch (err) {
@@ -6908,7 +6949,7 @@ $('parseMission').addEventListener('click', () => {
       const r = SiaMission.importTexts([{
         name: /^\s*#/m.test(text) ? 'mission.md' : 'mission.yaml',
         text
-      }], 'studio');
+      }], STUDIO);
       useDoc(r.doc, false, true);
       batchNote(r)
     }
@@ -7156,13 +7197,13 @@ async function forEachMission(fn, task) {
   try {
     for (let i = 0; i < b.docs.length; i++) {
       if (task?.cancelled) break;
-      const d = SiaMission.go(i, 'studio');
+      const d = SiaMission.go(i, STUDIO);
       useDoc(d, false);
       await sleep(120);
       await fn(d, i, b.docs.length)
     }
   } finally {
-    useDoc(SiaMission.go(start, 'studio'), false);
+    useDoc(SiaMission.go(start, STUDIO), false);
     await sleep(60)
   }
 }
@@ -7652,96 +7693,169 @@ function fillPreviewMaps() {
 }
 let previewShown = false,
   previewTimer = 0;
-// Fenêtre « carte » (map_window.html, ouverte par « Fenêtre », nom « carte ») : page seule sans socle de navigation ;
-// reçoit par postMessage l'image de la carte affichée (rendu PNG de renderOsmMap, mêmes surcouches que la génération),
-// son contexte (nom, mission, type, cadrage, liste des cartes) et le thème (design, ton, couleurs, langue). Elle
-// demande « actualiser », la carte précédente ou suivante (go), « ouvrir au studio ». L'image suit chaque nouvel
-// aperçu tant qu'elle est ouverte (rendu 0,9 s après le dernier réglage, le dernier seulement).
-let mapWin = null,
-  mapWinTimer = 0,
-  mapWinSeq = 0;
-const mapWinOpen = () => !!mapWin && !mapWin.closed;
-/** Thème transmis à la fenêtre : design, ton, couleurs de la suite, langue de la page. */
-function mapWinTheme() {
-  const d = document.documentElement,
-    cs = getComputedStyle(d);
-  return {
-    design: d.dataset.design || '',
-    tone: d.dataset.tone || '',
-    lang: d.lang || 'fr',
-    vars: Object.fromEntries(['--repo-bar', '--repo-bar-text', '--repo-page', '--repo-accent'].map(k => [k, cs.getPropertyValue(k).trim()]))
-  }
-}
-/** Envoie à la fenêtre le contexte, puis l'image rendue de la carte affichée (le dernier envoi seulement). */
-async function sendMapWindow() {
-  if (!mapWinOpen()) return;
-  const seq = ++mapWinSeq,
-    def = previewDef(),
-    maps = mission?.maps || [],
-    y = sharedDoc?.yaml || {},
-    ctx = {
-      name: def?.file || '',
-      mission: [y.mission?.id, y.title].filter(Boolean).join(' — '),
-      kind: def?.type || '',
-      view: !!def?._view,
-      index: +$('previewMap').value || 0,
-      names: maps.map(m => m.file),
-      theme: mapWinTheme()
-    };
-  if (!def) return mapWin.postMessage({
-    ...ctx,
-    type: 'error',
-    message: tl(['Aucune carte à montrer : ouvrir une mission dans le studio.', 'No map to show: open a mission in the studio.',
-      'Keine Karte anzuzeigen: eine Mission im Studio öffnen.', 'Ningún mapa que mostrar: abrir una misión en el estudio.'
-    ])
-  }, location.origin);
-  mapWin.postMessage({
-    ...ctx,
-    type: 'context',
-    busy: true
-  }, location.origin);
+// Fenêtre « carte » : ce même studio ouvert par « ⧉ Fenêtre » (map_parser.html?carte, window.open nom « carte »),
+// réduit à sa carte interactive — même objet que la fenêtre principale (déplacer, zoomer à la roulette ou au pincement,
+// mêmes surcouches, points déplaçables) ; ni barre latérale, ni en-tête, ni pied (html[data-map-window], posé dans le
+// <head>). Synchronisée par BroadcastChannel « sia-studio-carte » : le studio principal pousse l'état (mission,
+// profils, profil actif, carte affichée, alias de zones) à l'ouverture, à chaque réglage et à chaque mission adoptée ; la
+// fenêtre demande « hello » (actualiser), « studio » (ramener la fenêtre principale sur sa carte), « bye » (fermée).
+// Les points déplacés dans la fenêtre sont enregistrés sous la source « studio-carte » (le studio principal les reçoit
+// une fois, puis renvoie son état sans réécrire la mission) : une révision par déplacement, jamais de boucle.
+const MAP_WINDOW = document.documentElement.hasAttribute('data-map-window'),
+  STUDIO = MAP_WINDOW ? 'studio-carte' : 'studio',
+  studioChannel = 'BroadcastChannel' in window ? new BroadcastChannel('sia-studio-carte') : null;
+let mapWinAlive = false,
+  mapWinTimer = 0;
+/** Studio principal : pousse l'état à la fenêtre « carte » si elle est ouverte. */
+function pushMapWindow() {
+  if (MAP_WINDOW || !studioChannel || !mapWinAlive) return;
   try {
-    const r = await renderOsmMap(def, 1600, /assemblage/i.test(def.file) ? outputMaps() : []);
-    if (seq === mapWinSeq && mapWinOpen()) mapWin.postMessage({
-      ...ctx,
-      type: 'map',
-      url: r.dataUrl
-    }, location.origin)
-  } catch (e) {
-    if (mapWinOpen()) mapWin.postMessage({
-      ...ctx,
-      type: 'error',
-      message: explainErr(e, tl(['Carte non rendue', 'Map not rendered', 'Karte nicht gerendert', 'Mapa no renderizado']))
-    }, location.origin)
-  }
-}
-/** Nouvel envoi à la fenêtre ouverte, 0,9 s après le dernier réglage. */
-const mapWindowSoon = () => {
-  if (!mapWinOpen()) return;
-  clearTimeout(mapWinTimer);
-  mapWinTimer = setTimeout(sendMapWindow, 900)
-};
-// demandes de la fenêtre : hello / refresh (renvoi), go (autre carte), studio (fenêtre principale ramenée sur la carte)
-window.addEventListener('message', e => {
-  if (e.origin !== location.origin || !mapWin || e.source !== mapWin) return;
-  const d = e.data || {},
-    n = mission?.maps?.length || 0;
-  if (d.mapWindow === 'hello' || d.mapWindow === 'refresh') sendMapWindow();
-  else if (d.mapWindow === 'go' && n) {
-    $('previewMap').value = String(((+d.index % n) + n) % n);
-    $('previewMap').dispatchEvent(new Event('change'));
-    sendMapWindow()
-  } else if (d.mapWindow === 'studio') {
-    if (n && d.index != null && String(d.index) !== $('previewMap').value) {
-      $('previewMap').value = String(d.index);
-      $('previewMap').dispatchEvent(new Event('change'))
-    }
-    window.focus();
-    $('osmLivePreview')?.scrollIntoView({
-      block: 'center'
+    studioChannel.postMessage({
+      state: JSON.parse(JSON.stringify({
+        mission,
+        profiles: displayProfiles,
+        active: $('activeProfile').value,
+        index: $('previewMap').value,
+        aliases: zoneAliases
+      }))
     })
-  }
-});
+  } catch {}
+}
+/** État poussé 0,3 s après le dernier réglage (plusieurs réglages rapprochés : un envoi). */
+const mapWindowSoon = () => {
+  if (MAP_WINDOW || !mapWinAlive) return;
+  clearTimeout(mapWinTimer);
+  mapWinTimer = setTimeout(pushMapWindow, 300)
+};
+if (studioChannel && !MAP_WINDOW) {
+  studioChannel.onmessage = e => {
+    const d = e.data || {};
+    if (d.hello) {
+      mapWinAlive = true;
+      pushMapWindow()
+    } else if (d.bye) mapWinAlive = false;
+    else if (d.studio != null) {
+      // « Ouvrir au studio » : la fenêtre principale montre la carte de la fenêtre
+      const n = mission?.maps?.length || 0;
+      if (n && String(d.studio) !== $('previewMap').value) {
+        $('previewMap').value = String(d.studio);
+        $('previewMap').dispatchEvent(new Event('change'))
+      }
+      window.focus();
+      $('osmLivePreview')?.scrollIntoView({
+        block: 'center'
+      })
+    }
+  };
+  studioChannel.postMessage({
+    ping: true
+  }) // fenêtre déjà ouverte avant un rechargement du studio : elle se signale
+}
+if (MAP_WINDOW) {
+  // ---- carte seule, sous une barre d'outils fixe
+  const root = document.createElement('div');
+  root.id = 'mwRoot';
+  root.innerHTML = `<div class="mw-bar" role="toolbar"><button type="button" data-mw="prev">◀</button><select data-mw="pick"></select><button type="button" data-mw="next">▶</button><span class="mw-sep"></span><button type="button" data-mw="home"></button><button type="button" data-mw="refresh"></button><button type="button" data-mw="studio"></button><button type="button" data-mw="close"></button><span class="mw-status"></span></div><div class="mw-map"></div>`;
+  document.body.append(root);
+  const box = root.querySelector('.mw-map');
+  box.append($('generalPreview'), $('osmLivePreview'));
+  root.querySelector('.mw-status').append($('previewStatus'));
+  const B = k => root.querySelector(`[data-mw="${k}"]`);
+  /** Libellés de la barre dans la langue de la page. */
+  const labelBar = () => {
+    B('prev').title = tl(['Carte précédente (←)', 'Previous map (←)', 'Vorherige Karte (←)', 'Mapa anterior (←)']);
+    B('next').title = tl(['Carte suivante (→)', 'Next map (→)', 'Nächste Karte (→)', 'Mapa siguiente (→)']);
+    B('home').textContent = tl(['Recentrer', 'Recentre', 'Zentrieren', 'Recentrar']);
+    B('home').title = tl(['Revenir au cadrage de la carte (0)', 'Back to the map framing (0)', 'Zurück zum Kartenausschnitt (0)',
+      'Volver al encuadre del mapa (0)'
+    ]);
+    B('refresh').textContent = tl(['Actualiser', 'Refresh', 'Aktualisieren', 'Actualizar']);
+    B('refresh').title = tl(['Reprendre l’état du studio', 'Take the studio state again', 'Zustand des Studios neu übernehmen',
+      'Retomar el estado del estudio'
+    ]);
+    B('studio').textContent = tl(['Ouvrir au studio', 'Open in the studio', 'Im Studio öffnen', 'Abrir en el estudio']);
+    B('studio').title = tl(['Ramener la fenêtre du studio sur cette carte', 'Bring the studio window back to this map',
+      'Das Studiofenster auf diese Karte zurückholen', 'Llevar la ventana del estudio a este mapa'
+    ]);
+    B('close').textContent = tl(['Fermer', 'Close', 'Schließen', 'Cerrar']);
+    B('close').title = tl(['Fermer la fenêtre (Échap)', 'Close the window (Esc)', 'Fenster schließen (Esc)', 'Cerrar la ventana (Esc)'])
+  };
+  labelBar();
+  window.addEventListener('repository-language-change', labelBar);
+  /** Liste des cartes et titre de la fenêtre d'après la carte affichée. */
+  const syncBar = () => {
+    const maps = mission?.maps || [],
+      i = +$('previewMap').value || 0;
+    B('pick').innerHTML = maps.map((m, k) => `<option value="${k}">${esc(m.file)}</option>`).join('');
+    B('pick').value = String(i);
+    B('prev').disabled = B('next').disabled = maps.length < 2;
+    document.title = maps[i]?.file || tl(['Carte', 'Map', 'Karte', 'Mapa'])
+  };
+  /** Affiche la carte k de la mission (boucle aux extrémités). */
+  const goMap = k => {
+    const n = mission?.maps?.length || 0;
+    if (!n) return;
+    $('previewMap').value = String(((k % n) + n) % n);
+    $('previewMap').dispatchEvent(new Event('change'));
+    syncBar()
+  };
+  B('prev').onclick = () => goMap((+$('previewMap').value || 0) - 1);
+  B('next').onclick = () => goMap((+$('previewMap').value || 0) + 1);
+  B('pick').onchange = () => goMap(+B('pick').value);
+  B('home').onclick = () => document.querySelector('[data-view="home"]')?.click();
+  B('refresh').onclick = () => studioChannel?.postMessage({
+    hello: true
+  });
+  B('studio').onclick = () => {
+    studioChannel?.postMessage({
+      studio: +$('previewMap').value || 0
+    });
+    window.opener?.focus()
+  };
+  B('close').onclick = () => window.close();
+  document.addEventListener('keydown', e => {
+    if (e.target.closest?.('select, input, textarea')) return;
+    if (e.key === 'ArrowLeft') B('prev').click();
+    else if (e.key === 'ArrowRight') B('next').click();
+    else if (e.key === '+' || e.key === '=') osmMap?.zoomIn();
+    else if (e.key === '-' || e.key === '_') osmMap?.zoomOut();
+    else if (e.key === '0') B('home').click();
+    else if (e.key === 'Escape') window.close();
+    else return;
+    e.preventDefault()
+  });
+  // ---- état reçu du studio principal : mission, profils, carte ; aperçu redessiné (cadrage gardé pour la même carte)
+  if (studioChannel) studioChannel.onmessage = e => {
+    const d = e.data || {};
+    if (d.ping) return studioChannel.postMessage({
+      hello: true
+    });
+    if (!d.state) return;
+    const st = d.state;
+    mission = st.mission;
+    displayProfiles = st.profiles;
+    zoneAliases = st.aliases || {};
+    fillProfileSelects();
+    $('activeProfile').value = st.active;
+    applyProfileToUi();
+    fillPreviewMaps();
+    fillAarChoice();
+    $('previewMap').value = st.index;
+    renderMapProfiles();
+    updateGenerate();
+    syncBar();
+    previewShown = true;
+    clearTimeout(previewTimer);
+    previewTimer = setTimeout(() => $('refreshPreview').click(), 200)
+  };
+  window.addEventListener('pagehide', () => studioChannel?.postMessage({
+    bye: true
+  }));
+  window.addEventListener('resize', () => osmMap?.resize());
+  studioChannel?.postMessage({
+    hello: true
+  })
+}
 // Onglets du profil (mémorisés), barre de redimensionnement (60 / 40 par défaut, mémorisée), carte agrandie.
 const store = {
   get: k => {
@@ -7811,11 +7925,11 @@ function popPreview(on) {
   setTimeout(() => osmMap?.resize(), 50)
 }
 $('previewWindow').onclick = () => {
-  // même adresse depuis le studio (apps/cpco/) et Cartes de vol (apps/planner/, page construite d'après le studio)
-  mapWin = window.open(new URL('../cpco/map_window.html', location.href).href, 'carte', 'width=1100,height=760');
-  mapWin?.focus();
-  // la fenêtre dit « hello » à son chargement ; déjà ouverte : elle reçoit l'image tout de suite
-  if (mapWinOpen() && mapWin.document?.readyState === 'complete') sendMapWindow()
+  // même page, réduite à sa carte (?carte) ; déjà ouverte : ramenée devant et resynchronisée
+  const w = window.open(`${location.pathname}?carte`, 'carte', 'width=1100,height=760');
+  w?.focus();
+  mapWinAlive = true;
+  pushMapWindow()
 };
 $('previewPop').onclick = () => popPreview(!document.querySelector('.profilePreview').classList.contains('popped'));
 document.addEventListener('keydown', e => {
@@ -7885,7 +7999,7 @@ async function storeMapPngs(request) {
   SiaMission.save({
     ...sharedDoc,
     yaml: y
-  }, 'studio');
+  }, STUDIO);
   const n = lastMapPngs.length;
   return {
     ok: true,
@@ -8331,7 +8445,7 @@ applyOutputPrefs();;
         'Geteilte Mission nicht lesbar', 'Misión compartida ilegible'
       ])))}</span>`
     }
-    SiaMission.subscribe('studio', d => {
+    if (!MAP_WINDOW) SiaMission.subscribe(STUDIO, d => {
       useDoc(d);
       $('missionStatus').insertAdjacentHTML('beforeend', ' <span class="ok">Mise à jour par le générateur.</span>')
     })
@@ -8339,6 +8453,7 @@ applyOutputPrefs();;
   const cached = await SiaBase.get();
   updateGenerate();
   // Ouverture depuis la mise à jour SIA (?relire=1) ; sinon base absente : relecture du dossier mémorisé si l'accès est déjà accordé.
+  if (MAP_WINDOW) return; // fenêtre « carte » : rien d'autre au démarrage
   if (RELIRE_ON_OPEN) {
     relireOnOpen();
     return

@@ -12,16 +12,14 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Ajouté
 
-- **Map window: wheel zoom and panning** (`apps/cpco/map_window.html`) — wheel zoom centred under the cursor (×1.1
-  per notch, no Ctrl needed), drag to pan with the mouse (grab / grabbing cursor) or one finger, pinch to zoom,
-  double-click toggles fitted ↔ 1:1 at the clicked point; buttons and keys unchanged. The view uses a transform
-  (scale and position) instead of scrolling.
-- **Map studio: map window as a dedicated page** (`apps/cpco/map_window.html`) — "⧉ Window" opens a page without the
-  suite frame (no side bar, header or footer; design, tone and colours sent by the studio) by `window.open` (name
-  "carte"); it receives by `postMessage` the rendered PNG of the displayed map (same overlays as generation) and its
-  context (name, mission, type, framing, map list): fit or 1:1, zoom − +, previous / next map, "Refresh", "Open in the
-  studio", "Close", fixed toolbar, keys ← → + − 0 Esc, window title = map name; the image follows each new preview.
-  The former `#fenetre` mode of the studio and its CSS rules are removed. Planner manual (four languages).
+- **Map studio: "⧉ Window" shows the same interactive map** — the window is the studio itself reduced to its live
+  MapLibre map (`map_parser.html?carte`, window name "carte"; `html[data-map-window]` set in the `<head>` before any
+  script: no side bar, header or footer, the suite's notifications and dialogs kept): pan, wheel and pinch zoom,
+  same overlays and draggable points as the main window; fixed toolbar ◀ list ▶, Recentre, Refresh, Open in the
+  studio, Close, keys ← → + − 0 Esc, window title = map name. Synchronised by BroadcastChannel "sia-studio-carte"
+  (mission, profiles, displayed map, aliases); points moved in the window are saved with the source
+  "studio-carte", one revision per move, never looping with the main studio. The former `#fenetre` mode and its
+  CSS rules are removed.
 - **Mission generator: "Paste a table of points"** (Places step of "Step by step", and the "All YAML data" block;
   `shared/point_table.js`) — separator (tab, "|", ";", ",") and header (name, lat, lon, coordinates, type/role,
   time, id) detected, otherwise columns name, lat, lon, role; decimal, DMS or degrees-minutes coordinates; lines
