@@ -240,3 +240,28 @@ will create before doing it (AppFramework.ask with the identifiers); a crew can 
 deleted after confirmation; the last remaining crew becomes a standalone mission again, identifier migrated back);
 the studio follows the shared lot; the planner manual describes the six paths with the same words, and the "prepare a
 mission end to end" tutorial walks UC1 → UC4 → UC6.
+
+## 11. Guided mission entry: "step by step" (12 October)
+
+The user wrote a mission by hand (G-001, SURVEY): rich texts, but the fields did not help him — a theatre left at the
+skeleton's default, points never placed although the story names the villages, risks pasted as tab-separated
+columns, four objectives in the "primary" field, no callsign. His request: fields that propose and warn, and, if
+needed, a guided process.
+
+**Decision.** The generator gets a **step-by-step mode** for a new mission (and for a skeleton), reusing the existing
+blocks: a rail of six steps like the First run page, one step open at a time, "Next" at the bottom of each, the other
+steps folded; the expert layout (all blocks) stays one click away ("Show everything"). No new data model.
+
+| Step | What is entered | Proposals (filled before the user types) | Warnings (inline, under the field, never a popup) |
+|---|---|---|---|
+| 1 Frame | family, subtype, theatre, duration, aircraft and callsign, departure and arrival | theatre from the aircraft's base; callsigns from the fleet for the type; team name = callsign; departure = base; timing from the duration | theatre ≠ country of the departure aerodrome; aircraft unsuited to the family; no callsign |
+| 2 Places | target, working zone, turning points, rendezvous | search over aerodromes, beacons, designated points **and cities**; points proposed around the target (entry / exit at 15 NM on the route) | a place without coordinates; a rendezvous without participants; a zone without radius |
+| 3 Story | title, summary, detailed description | a canvas built from the frame and the places (family wording, aircraft, departure, target, duration) that the user rewrites | empty title; summary over 600 characters |
+| 4 Objectives and risks | one primary objective, secondary objectives, risks | risks entered one per row with four fields (hazard, level, consequence, mitigation) in a small table, a level selector; pasted text split on tabs, dashes or pipes | primary with several numbered items (split proposed); a risk without mitigation |
+| 5 Timeline | H hour, events | H = planned take-off; events proposed from the route (entry, on target, exit, return) at times computed from the model | an event outside the estimated block time |
+| 6 Maps and documents | expected maps, save | maps proposed from the places (general, target, target detail, each rendezvous, zone) | a map centred on an unplaced point |
+
+Every proposal is a value put in the field, marked "proposed" until the user confirms or changes it; every warning is
+a line under the field with a one-click fix when one exists ("Set theatre to mainland", "Split into secondary
+objectives", "Place in the studio"). The step-by-step mode is the default for a new mission at levels 1 to 3, a
+choice at level 4. Same vocabulary in the planner manual and in the "prepare a mission end to end" tutorial.
