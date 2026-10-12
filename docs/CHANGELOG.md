@@ -12,6 +12,17 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Ajouté
 
+- **Mission generator and map studio: status line, "Undo changes", Operation line** — under the Mission block buttons,
+  a status line always shown (coloured dot): "Saved to the folder (n min ago)", "Same as the folder version (loaded …)",
+  "Not yet saved to the folder" or "Unsaved changes since 14:32 (n field(s))", the same in both pages since they share
+  the mission at once (common working draft; tooltip says so). "Save to the folder" is the validation (main button
+  while something is unsaved); "Undo changes" (after confirmation) goes back to the last saved or loaded version, the
+  other page following. Reference versions are kept per mission in this browser (`SiaMission.markSaved`,
+  `savedState`, `savedDoc`, `renderSaveState`): loaded on import or from the registry, "new" for skeletons, copies and
+  organisations. In the generator, an Operation line always shown: "Standalone mission (no operation)" or "Operation
+  BOXING GLOVES (A-001): crew B of 5 · organisation A-001Z · H-hour 10:00" ("no organisation yet" with "Create the
+  exercise organisation…"); the Operation block is hidden for a single mission and its sentence uses the same words.
+  Four languages; planner manual updated in four languages.
 - **My profile › Aircraft and simulators: aircraft outside the fleet** — new "Other aircraft (outside the fleet)"
   card: enter an ICAO designator or a model (list from the ICAO type base, aliases such as A400M → fleet A400) and
   "Add"; the type is ticked "Owned" (Owned / Mastered boxes as for fleet types; an unknown designator is accepted as

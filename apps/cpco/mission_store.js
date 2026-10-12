@@ -731,6 +731,7 @@
       docs: docs.map(slim),
       index: 0
     } : null);
+    docs.forEach(d => markSaved(d, 'new')); // missions créées ici, pas encore enregistrées (ligne d'état)
     return save(slim(docs[0]), by);
   }
 
@@ -761,6 +762,7 @@
     }));
     b.index = b.docs.findIndex(x => missionId(x) === missionId(doc));
     storeBatch(b);
+    if (!readSaved()[missionId(doc)]) markSaved(doc, 'new'); // mission créée (organisation, chiffon) : pas encore enregistrée
     return save(b.docs[b.index], by);
   }
 
@@ -902,6 +904,7 @@
       index: 0
     };
     storeBatch(b);
+    docs.forEach(d => markSaved(d, 'loaded')); // version de référence : celle chargée (ligne d'état)
     const planned = plannedIds(b?.docs || docs),
       loaded = (b?.docs || docs).map(missionId),
       missing = planned.filter(id => !loaded.includes(id));
@@ -1135,6 +1138,7 @@
       docs: [copy],
       index: 0
     });
+    markSaved(copy, 'new'); // copie : pas encore enregistrée (ligne d'état)
     return save(copy, by);
   }
   /** Prochains identifiants de toutes les familles (paramètre PROCHAINS_NUMEROS du prompt, utile si TYPE = aléatoire). */
@@ -1243,6 +1247,169 @@
     out.push('> Scénario de simulation — ne pas utiliser pour une mission réelle.');
     return out.join('\n\n') + '\n';
   }
+  // ---- version de référence : ligne d'état du générateur et du studio ---------------------------------------
+  // Par mission (identifiant) : la dernière version enregistrée dans le dossier (saved), sinon celle chargée depuis le
+  // dossier ou des fichiers (loaded), ou créée sans être enregistrée (new : squelette, copie, organisation, nouvelle
+  // mission). La mission partagée — brouillon de travail commun, que le générateur et le studio s'échangent aussitôt —
+  // est comparée à elle : champs modifiés, depuis quand ; « Annuler les modifications » y revient.
+  const SAVED = NS ? 'siaMissionSaved' + NS : 'siaMissionSaved:v1';
+  /** Forme comparable d'une mission (YAML et récit), en texte JSON. */
+  const snapOf = doc => JSON.stringify({
+    yaml: doc?.yaml || {},
+    narrative: doc?.narrative || {
+      summary: '',
+      detailed: '',
+      sections: []
+    }
+  });
+  /** Versions de référence connues : { identifiant → { kind, at, snap, dirtyAt } }. */
+  const readSaved = () => {
+    try {
+      return JSON.parse(localStorage.getItem(SAVED) || '{}') || {};
+    } catch {
+      return {};
+    }
+  };
+  /** Garde les versions de référence (40 missions au plus, les plus récentes). */
+  function writeSaved(all) {
+    const keep = Object.keys(all).sort((a, b) => (all[b].at || 0) - (all[a].at || 0)).slice(0, 40);
+    try {
+      localStorage.setItem(SAVED, JSON.stringify(Object.fromEntries(keep.map(k => [k, all[k]]))));
+    } catch {
+      /* stockage plein : la ligne d'état repart de la mission courante */
+    }
+  }
+  /** Pose la version de référence d'une mission : kind saved (enregistrée dans le dossier), loaded (chargée), new
+   *  (jamais enregistrée). */
+  function markSaved(doc, kind = 'saved') {
+    const id = missionId(doc);
+    if (!id) return;
+    const all = readSaved();
+    all[id] = {
+      kind,
+      at: Date.now(),
+      snap: snapOf(doc),
+      dirtyAt: null
+    };
+    writeSaved(all);
+  }
+  /** Feuilles d'une valeur : chemin → texte (un champ par feuille ; tableau ou objet vide : une feuille). */
+  function leaves(v, path = '', out = new Map()) {
+    if (v && typeof v === 'object') {
+      const e = Object.entries(v);
+      if (!e.length) out.set(path, Array.isArray(v) ? '[]' : '{}');
+      e.forEach(([k, x]) => leaves(x, `${path}/${k}`, out));
+    } else out.set(path, String(v ?? ''));
+    return out;
+  }
+  /** État d'une mission par rapport à sa version de référence : { kind, at, fields, since } — fields : champs
+   *  modifiés, since : instant de la première modification (0 : aucune). Mission inconnue : version de référence posée
+   *  (new) avec son contenu actuel. */
+  function savedState(doc) {
+    const id = missionId(doc);
+    if (!id) return {
+      kind: 'new',
+      at: 0,
+      fields: 0,
+      since: 0
+    };
+    const all = readSaved(),
+      rec = all[id];
+    if (!rec) {
+      markSaved(doc, 'new');
+      return {
+        kind: 'new',
+        at: Date.now(),
+        fields: 0,
+        since: 0
+      };
+    }
+    const a = leaves(JSON.parse(rec.snap)),
+      b = leaves(JSON.parse(snapOf(doc)));
+    let fields = 0;
+    for (const k of new Set([...a.keys(), ...b.keys()]))
+      if (a.get(k) !== b.get(k)) fields++;
+    if (!!fields !== !!rec.dirtyAt) { // première modification, ou retour à la version de référence
+      rec.dirtyAt = fields ? Date.now() : null;
+      writeSaved(all);
+    }
+    return {
+      kind: rec.kind,
+      at: rec.at,
+      fields,
+      since: rec.dirtyAt || 0
+    };
+  }
+  /** Version de référence d'une mission ({ yaml, narrative }) ; null si aucune. */
+  function savedDoc(doc) {
+    const rec = readSaved()[missionId(doc)];
+    return rec ? JSON.parse(rec.snap) : null;
+  }
+  /** Ligne d'état d'une mission dans el (point coloré, texte, infobulle) : enregistrée, identique à la version chargée,
+   *  pas encore enregistrée, ou modifications non enregistrées (depuis, nombre de champs). Retour : savedState. */
+  function renderSaveState(el, doc) {
+    const K = window.RepositoryKit,
+      t = row => K?.t ? K.t(row) : row[0],
+      tf = (row, v) => K?.tf ? K.tf(row, v) : row[0].replace(/\{(\w+)\}/g, (_, k) => v[k] ?? '');
+    if (!document.getElementById('siaSaveStateCss')) document.head.insertAdjacentHTML('beforeend',
+      '<style id="siaSaveStateCss">.sia-save-state{display:flex;align-items:center;gap:7px;margin:6px 0 2px;font-size:.88rem}.sia-save-state i{flex:none;width:9px;height:9px;border-radius:50%;background:#2e9d4f}.sia-save-state[data-tone=dirty] i{background:#d97706}.sia-save-state[data-tone=new] i{background:#8a8f98}</style>'
+    );
+    const st = savedState(doc),
+      hm = ms => new Date(ms).toLocaleTimeString(undefined, {
+        hour: '2-digit',
+        minute: '2-digit'
+      }),
+      /** Depuis combien de temps : à l'instant, il y a n min, il y a n h, le jour. */
+      ago = ms => {
+        const min = Math.round((Date.now() - ms) / 60000);
+        return min < 1 ? t(['à l’instant', 'just now', 'gerade eben', 'hace un momento']) : min < 60 ? tf(['il y a {n} min',
+          '{n} min ago',
+          'vor {n} Min.', 'hace {n} min'
+        ], {
+          n: min
+        }) : min < 24 * 60 ? tf(['il y a {n} h', '{n} h ago', 'vor {n} Std.', 'hace {n} h'], {
+          n: Math.round(min / 60)
+        }) : tf(['le {d}', 'on {d}', 'am {d}', 'el {d}'], {
+          d: new Date(ms).toLocaleDateString()
+        });
+      };
+    const text = st.kind === 'new' ? (st.fields ? tf(['Pas encore enregistrée dans le dossier (modifiée depuis {h}, {n} champ(s))',
+      'Not yet saved to the folder (changed since {h}, {n} field(s))',
+      'Noch nicht im Ordner gespeichert (geändert seit {h}, {n} Feld(er))',
+      'Aún no guardada en la carpeta (modificada desde las {h}, {n} campo(s))'
+    ], {
+      h: hm(st.since),
+      n: st.fields
+    }) : t(['Pas encore enregistrée dans le dossier', 'Not yet saved to the folder', 'Noch nicht im Ordner gespeichert',
+      'Aún no guardada en la carpeta'
+    ])) : st.fields ? tf(['Modifications non enregistrées depuis {h} ({n} champ(s))', 'Unsaved changes since {h} ({n} field(s))',
+      'Ungespeicherte Änderungen seit {h} ({n} Feld(er))', 'Cambios sin guardar desde las {h} ({n} campo(s))'
+    ], {
+      h: hm(st.since),
+      n: st.fields
+    }) : st.kind === 'saved' ? tf(['Enregistrée dans le dossier ({a})', 'Saved to the folder ({a})', 'Im Ordner gespeichert ({a})',
+      'Guardada en la carpeta ({a})'
+    ], {
+      a: ago(st.at)
+    }) : tf(['Identique à la version du dossier (chargée {a})', 'Same as the folder version (loaded {a})',
+      'Wie die Version im Ordner (geladen {a})', 'Igual que la versión de la carpeta (cargada {a})'
+    ], {
+      a: ago(st.at)
+    });
+    el.className = 'sia-save-state';
+    el.dataset.tone = st.fields ? 'dirty' : st.kind === 'new' ? 'new' : 'ok';
+    el.dataset.noI18n = '';
+    el.title = t([
+      'Le générateur et le studio partagent la mission aussitôt (brouillon de travail commun, gardé dans ce navigateur) ; « Enregistrer dans le dossier » l’écrit dans data/missions/… ; « Annuler les modifications » revient à la version enregistrée (ou chargée).',
+      'The generator and the studio share the mission at once (common working draft, kept in this browser); “Save to the folder” writes it to data/missions/…; “Undo changes” goes back to the saved (or loaded) version.',
+      'Generator und Studio teilen die Mission sofort (gemeinsamer Arbeitsentwurf, in diesem Browser gespeichert); „Im Ordner speichern“ schreibt sie nach data/missions/…; „Änderungen verwerfen“ kehrt zur gespeicherten (oder geladenen) Version zurück.',
+      'El generador y el estudio comparten la misión al instante (borrador de trabajo común, guardado en este navegador); «Guardar en la carpeta» la escribe en data/missions/…; «Deshacer los cambios» vuelve a la versión guardada (o cargada).'
+    ]);
+    el.innerHTML = `<i aria-hidden="true"></i><span></span>`;
+    el.lastChild.textContent = text;
+    return st;
+  }
+
   window.SiaMission = {
     FAMILY_LETTERS,
     parseId,
@@ -1269,6 +1436,10 @@
     parseMarkdown,
     briefKey,
     cleanNarrative,
+    markSaved,
+    savedState,
+    savedDoc,
+    renderSaveState,
     extractMdMetadata,
     mergeYaml
   };

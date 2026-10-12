@@ -1290,7 +1290,7 @@
 <header><div class="header-row"><h1>Cartes de vol</h1><a class="headerButton" href="flight_performance_planner.html">← Planificateur</a></div><p>Route, cartes topographiques, approche, rendez-vous et destination, profil vertical — pour sa propre préparation</p></header>
 
 <main>
-<section id="siaMissionHidden" hidden><h2>Mission</h2><p id="missionStatus" data-status class="small">Formats acceptés : Markdown, YAML <code>helo-xp-mission</code>.</p><div class="actions"><button type="button" id="saveStudio" data-icon="save" class="secondary" title="Enregistrer la mission et les réglages du studio (profil et emprise de chaque carte, tracés, pistes) dans son dossier : data/missions/…/mission&lt;ID&gt;.yaml">Enregistrer dans le dossier</button></div><p id="siaBaseLine" class="small">Base SIA : lecture de la base du navigateur…</p><details id="missionOpen" class="missionOpen"><summary>Ouvrir une autre mission : fichier Markdown / YAML ou texte collé</summary><div class="grid">
+<section id="siaMissionHidden" hidden><h2>Mission</h2><p id="missionStatus" data-status class="small">Formats acceptés : Markdown, YAML <code>helo-xp-mission</code>.</p><div class="actions"><button type="button" id="saveStudio" data-icon="save" class="secondary" title="Enregistrer la mission et les réglages du studio (profil et emprise de chaque carte, tracés, pistes) dans son dossier : data/missions/…/mission&lt;ID&gt;.yaml">Enregistrer dans le dossier</button><button type="button" id="revertStudio" data-icon="undo" class="secondary" disabled title="Revenir à la dernière version enregistrée dans le dossier (ou à la version chargée), après confirmation">Annuler les modifications</button></div><p id="studioSaveState"></p><p id="siaBaseLine" class="small">Base SIA : lecture de la base du navigateur…</p><details id="missionOpen" class="missionOpen"><summary>Ouvrir une autre mission : fichier Markdown / YAML ou texte collé</summary><div class="grid">
 <label>Ouvrir une mission Markdown ou YAML<input id="missionFile" type="file" multiple accept=".md,.markdown,.yaml,.yml,text/markdown,text/yaml,text/plain,application/yaml" data-dropzone></label>
 <div class="actions"><button id="openMissionPaste" data-icon="link" class="buttonLink" type="button">ou coller son contenu…</button></div>
 </div><div id="missionPaste" class="box" hidden><strong>Coller le contenu Markdown ou YAML de la mission</strong><textarea id="missionText" placeholder="Colle ici le contenu Markdown ou YAML de la mission…"></textarea><div class="actions"><button id="parseMission" data-icon="eye" type="button">Lire la mission</button></div></div></details>
@@ -5615,10 +5615,13 @@ $('saveStudio').onclick = async () => {
       request: true
     });
     if (f) {
-      SiaMission.save({
+      const saved = SiaMission.save({
         ...sharedDoc,
         yaml: y
       }, 'studio');
+      sharedDoc = saved;
+      SiaMission.markSaved(saved, 'saved');
+      renderStudioSaveState();
       report(`Mission et réglages enregistrés : data/missions/${f}/`, 'ok')
     } else report('Mission non enregistrée : dossier des missions introuvable pour cet identifiant.', 'err')
   } catch (e) {
@@ -5627,6 +5630,63 @@ $('saveStudio').onclick = async () => {
   } finally {
     btn.disabled = false
   }
+};
+/** Ligne d'état du bloc Mission (même ligne que le générateur, SiaMission.renderSaveState) : « Enregistrer dans le
+ *  dossier » en bouton primaire quand il y a du non-enregistré, « Annuler les modifications » actif dans ce cas. Les
+ *  réglages propres au studio (profil, emprise des cartes) comptent une fois partagés dans la mission. */
+function renderStudioSaveState() {
+  const doc = SiaMission.load() || sharedDoc,
+    el = $('studioSaveState');
+  if (!el) return;
+  if (!doc?.yaml?.mission) {
+    el.hidden = true;
+    return
+  }
+  el.hidden = false;
+  const st = SiaMission.renderSaveState(el, doc),
+    dirty = st.fields > 0 || st.kind === 'new';
+  $('saveStudio').classList.toggle('primary', dirty);
+  $('saveStudio').classList.toggle('secondary', !dirty);
+  $('revertStudio').disabled = !st.fields
+}
+setInterval(renderStudioSaveState, 30000); // « il y a n min » tenu à jour
+window.addEventListener('repository-language-change', renderStudioSaveState); // ligne dans la langue de la page
+// « Annuler les modifications » : retour à la version de référence (enregistrée, sinon chargée), après confirmation ;
+// le générateur suit (mission partagée republiée)
+$('revertStudio').onclick = async () => {
+  const doc = SiaMission.load() || sharedDoc,
+    st = doc ? SiaMission.savedState(doc) : null,
+    back = doc ? SiaMission.savedDoc(doc) : null;
+  if (!back || !st?.fields) return;
+  const v = st.kind === 'saved' ? tl(['enregistrée', 'saved', 'gespeicherten', 'guardada']) : tl(['chargée', 'loaded', 'geladenen',
+      'cargada'
+    ]),
+    h = new Date(st.since).toLocaleTimeString(undefined, {
+      hour: '2-digit',
+      minute: '2-digit'
+    }),
+    id = doc.yaml?.mission?.id || '',
+    msg = tl([`Revenir à la version ${v} de ${id} ? ${st.fields} champ(s) modifié(s) depuis ${h} seront perdus ; le générateur suit.`,
+      `Go back to the ${v} version of ${id}? ${st.fields} field(s) changed since ${h} will be lost; the generator follows.`,
+      `Zur ${v} Version von ${id} zurückkehren? ${st.fields} seit ${h} geänderte(s) Feld(er) gehen verloren; der Generator folgt.`,
+      `¿Volver a la versión ${v} de ${id}? Se perderán ${st.fields} campo(s) modificado(s) desde las ${h}; el generador sigue.`
+    ]);
+  const ok = window.AppFramework?.ask ? await window.AppFramework.ask(msg, {
+    ok: tl(['Annuler les modifications', 'Undo changes', 'Änderungen verwerfen', 'Deshacer los cambios']),
+    cancel: tl(['Garder', 'Keep', 'Behalten', 'Conservar']),
+    danger: true
+  }) : confirm(msg);
+  if (!ok) return;
+  const saved = SiaMission.save({
+    ...doc,
+    yaml: back.yaml,
+    narrative: back.narrative
+  }, 'studio');
+  useDoc(saved, true, true);
+  $('missionStatus').innerHTML = `<span class="ok">${esc(tl([`Modifications annulées : version ${v} de ${id} rétablie.`,
+    `Changes undone: ${v} version of ${id} restored.`, `Änderungen verworfen: Version von ${id} wiederhergestellt.`,
+    `Cambios deshechos: versión ${v} de ${id} restablecida.`
+  ]))}</span>`
 };
 /* Cheminement → route de plan de vol OACI (points non publiés en coordonnées, changements de niveau « /N0180F055 ») et
    ouverture du planificateur carburant avec route, distance, niveau, route vraie et appareil (plannerHandoff:v1). */
@@ -6254,6 +6314,7 @@ const mapPrefs = new Map();
  *  profile / view du YAML) et l'axe AAR ; keepIndex garde la carte affichée, fresh oublie les réglages en mémoire. */
 function useDoc(doc, keepIndex = true, fresh = false) {
   sharedDoc = doc;
+  setTimeout(renderStudioSaveState, 0);
   scheduleExerciseMaps();
   if (fresh) mapPrefs.clear();
   else

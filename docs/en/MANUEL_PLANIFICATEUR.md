@@ -47,8 +47,13 @@ This block shows the loaded mission and groups saving and import.
 | “New mission” | Clears the form (today's date) |
 | “Order from ChatGPT…” | Expands the order form (see below) |
 | “Save to the folder” | Writes the modified YAML to `data/missions/<lettre>_<FAMILLE>/<ID>/`; the old version is replaced, the history is kept in the YAML |
+| “Undo changes” | Active when the mission has unsaved changes: after confirmation, goes back to the last version saved to the folder (or to the loaded version); the studio follows |
 | “Duplicate” | Copy of the loaded mission, ready to edit: next free identifier and series of the same family (team letter kept), references to the old identifier followed (expected maps, narrative), title “… (copie)”, `meta.duplicated_from`; operation reduced to the copy; maps and renders to redo in the studio. The copy opens here; “Save to the folder” to keep it |
 | “Save draft” / “Reload draft” (Expert level) | Keeps or reloads the mission text in this browser (images must be selected again) |
+
+Under the buttons, two lines are always shown:
+- **Status line**, with a coloured dot: “Saved to the folder (n min ago)”, “Same as the folder version (loaded …)”, “Not yet saved to the folder” (skeleton, copy, new mission) or “Unsaved changes since 14:32 (n field(s))”. “Save to the folder” is the validation: main button while something is unsaved. The generator and the studio share the mission at once (common working draft, kept in this browser): the line is the same in both pages, its tooltip says so.
+- **Operation line**: “Standalone mission (no operation)”, or what the mission is in its operation — “Operation BOXING GLOVES (A-001): crew B of 5 · organisation A-001Z · H-hour 10:00” (“no organisation yet” while the exercise has none, with the “Create the exercise organisation…” button; for the …Z mission: “exercise organisation, n crew(s)”).
 
 The “Import another mission: files, pasted text, ChatGPT order” pane is open when no mission is loaded:
 - “YAML and/or Markdown”: select `mission<ID>.yaml` and `summary<ID>.md` together, or click “or paste its content…” then “Read the mission”;
@@ -60,10 +65,9 @@ The received text is kept in `recu/`; received again, a mission replaces the pre
 
 ### Operation
 
-Block shown only when the mission belongs to an operation (`operation` in the YAML).
+Block shown when the operation has several missions or an organisation (a single mission is described by the Operation line of the Mission block). Its first line uses the same words: “Operation BOXING GLOVES (A-001): 5 crew(s) · organisation A-001Z · H-hour 10:00”.
 - Each mission of the operation is a button: identifier, callsign or “Organisation”, take-off time. Click to show it. “not loaded” or “to create” flags a mission missing from the batch.
 - “Create the exercise organisation” creates the …Z mission (general brief, H-hour, participants, exercise targets, timeline), taking over the tracks and injects of old-format missions.
-- Single mission: a discreet line offers “Add an exercise organisation…”.
 - “Create the missions of the played targets (n)”: each played exercise target becomes a mission of the operation (base of the first crew, route of the track, computed take-off). Then check aircraft, base and time, open each one in the studio, then “Save to the folder”.
 
 ### Identification
@@ -154,7 +158,7 @@ It works on the mission shared with the generator. Technical details: [missions 
 
 ### Mission
 
-- Status line of the loaded mission and “Save to the folder” button: writes the mission and the studio settings (profile and framing of each map, traces, tracks) to `mission<ID>.yaml`. The result is shown next to the button and as a notification.
+- Status line of the loaded mission and “Save to the folder” button: writes the mission and the studio settings (profile and framing of each map, traces, tracks) to `mission<ID>.yaml`. The result is shown next to the button and as a notification. Below, the same status line as in the generator, with “Undo changes”.
 - “SIA base” line: AIRAC cycle, number of airspaces and of MORA cells, link to Settings › Maintenance › Aeronautical data.
 - “Open another mission: Markdown / YAML file or pasted text” (collapsed when a mission is loaded): choose a file, or “or paste its content…” then “Read the mission”.
 

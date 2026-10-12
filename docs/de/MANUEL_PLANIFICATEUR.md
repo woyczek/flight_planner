@@ -47,8 +47,13 @@ Dieser Block zeigt die geladene Mission und vereint Speichern und Import.
 | „Neue Mission“ | Leert das Formular (heutiges Datum) |
 | „Bei ChatGPT bestellen…“ | Klappt das Bestellformular auf (siehe unten) |
 | „Im Ordner speichern“ | Schreibt das geänderte YAML nach `data/missions/<lettre>_<FAMILLE>/<ID>/`; die alte Version wird ersetzt, der Verlauf bleibt im YAML erhalten |
+| „Änderungen verwerfen“ | Aktiv, wenn die Mission ungespeicherte Änderungen hat: kehrt nach Bestätigung zur zuletzt im Ordner gespeicherten Version (oder zur geladenen Version) zurück; das Studio folgt |
 | „Duplizieren“ | Kopie der geladenen Mission, bereit zum Bearbeiten: nächste freie Kennung und Serie derselben Familie (Teambuchstabe bleibt), Verweise auf die alte Kennung nachgeführt (erwartete Karten, Erzählung), Titel „… (copie)“, `meta.duplicated_from`; Operation auf die Kopie reduziert; Karten und Darstellungen im Studio neu erstellen. Die Kopie öffnet sich hier; „Im Ordner speichern“, um sie zu behalten |
 | „Entwurf speichern“ / „Entwurf neu laden“ (Stufe Experte) | Behält oder liest den Text der Mission in diesem Browser (die Bilder sind neu auszuwählen) |
+
+Unter den Schaltflächen stehen immer zwei Zeilen:
+- **Statuszeile** mit farbigem Punkt: „Im Ordner gespeichert (vor n Min.)“, „Wie die Version im Ordner (geladen …)“, „Noch nicht im Ordner gespeichert“ (Gerüst, Kopie, neue Mission) oder „Ungespeicherte Änderungen seit 14:32 (n Feld(er))“. „Im Ordner speichern“ ist die Bestätigung: Hauptschaltfläche, solange etwas ungespeichert ist. Generator und Studio teilen die Mission sofort (gemeinsamer Arbeitsentwurf, in diesem Browser gespeichert): Die Zeile ist auf beiden Seiten gleich, ihr Tooltip erinnert daran.
+- **Zeile Operation**: „Eigenständige Mission (keine Operation)“ oder was die Mission in ihrer Operation ist — „Operation BOXING GLOVES (A-001): Besatzung B von 5 · Übungsleitung A-001Z · Stunde H 10:00“ („noch keine Übungsleitung“, solange die Übung keine hat, mit der Schaltfläche „Übungsleitung anlegen…“; für die Mission …Z: „Übungsleitung, n Besatzung(en)“).
 
 Der Bereich „Andere Mission importieren: Dateien, eingefügter Text, ChatGPT-Bestellung“ ist geöffnet, wenn keine Mission geladen ist:
 - „YAML und/oder Markdown“: Wählen Sie `mission<ID>.yaml` und `summary<ID>.md` gemeinsam aus, oder klicken Sie auf „oder Inhalt einfügen…“ und dann auf „Mission lesen“;
@@ -60,10 +65,9 @@ Der empfangene Text wird in `recu/` aufbewahrt; erneut empfangen, ersetzt eine M
 
 ### Operation
 
-Block nur sichtbar, wenn die Mission zu einer Operation gehört (`operation` im YAML).
+Block sichtbar, wenn die Operation mehrere Missionen oder eine Übungsleitung hat (eine Einzelmission beschreibt die Zeile Operation des Blocks Mission). Seine erste Zeile verwendet dieselben Worte: „Operation BOXING GLOVES (A-001): 5 Besatzung(en) · Übungsleitung A-001Z · Stunde H 10:00“.
 - Jede Mission der Operation ist eine Schaltfläche: Kennung, Rufzeichen oder „Übungsleitung“, Startzeit. Klicken Sie, um sie anzuzeigen. „nicht geladen“ oder „anzulegen“ kennzeichnet eine Mission, die im Paket fehlt.
 - „Übungsleitung anlegen“ erstellt die Mission …Z (allgemeines Briefing, Stunde H, Teilnehmer, Übungsziele, Zeitablauf) und übernimmt dabei die Spuren und Einspielungen der Missionen im alten Format.
-- Einzelmission: Eine unauffällige Zeile bietet „Übungsleitung hinzufügen…“ an.
 - „Missionen der gespielten Ziele anlegen (n)“: Jedes gespielte Übungsziel wird eine Mission der Operation (Basis der ersten Besatzung, Route der Spur, berechneter Start). Prüfen Sie danach Luftfahrzeug, Basis und Uhrzeit, öffnen Sie jede im Studio, dann „Im Ordner speichern“.
 
 ### Identifikation
@@ -154,7 +158,7 @@ Es arbeitet an der mit dem Generator geteilten Mission. Technische Details: [Mis
 
 ### Mission
 
-- Statuszeile der geladenen Mission und Schaltfläche „Im Ordner speichern“: schreibt die Mission und die Einstellungen des Studios (Profil und Ausschnitt jeder Karte, Linien, Spuren) in `mission<ID>.yaml`. Das Ergebnis erscheint neben der Schaltfläche und als Benachrichtigung.
+- Statuszeile der geladenen Mission und Schaltfläche „Im Ordner speichern“: schreibt die Mission und die Einstellungen des Studios (Profil und Ausschnitt jeder Karte, Linien, Spuren) in `mission<ID>.yaml`. Das Ergebnis erscheint neben der Schaltfläche und als Benachrichtigung. Darunter dieselbe Statuszeile wie im Generator, mit „Änderungen verwerfen“.
 - Zeile „SIA-Datenbank“: AIRAC-Zyklus, Anzahl der Lufträume und der MORA-Zellen, Link zu Einstellungen › Wartung › Luftfahrtdaten.
 - „Andere Mission öffnen: Markdown-/YAML-Datei oder eingefügter Text“ (eingeklappt, wenn eine Mission geladen ist): Wählen Sie eine Datei, oder „oder Inhalt einfügen…“ und dann „Mission lesen“.
 

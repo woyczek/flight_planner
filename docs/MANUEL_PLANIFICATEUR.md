@@ -92,8 +92,13 @@ Ce bloc montre la mission chargée et réunit l'enregistrement et l'import.
 | « Nouvelle mission » | Vide le formulaire (date du jour) |
 | « Commander à ChatGPT… » | Déplie le formulaire de commande (voir plus bas) |
 | « Enregistrer dans le dossier » | Écrit le YAML modifié dans `data/missions/<lettre>_<FAMILLE>/<ID>/` ; l'ancienne version est remplacée, l'historique est gardé dans le YAML |
+| « Annuler les modifications » | Actif quand la mission a des modifications non enregistrées : après confirmation, revient à la dernière version enregistrée dans le dossier (ou à la version chargée) ; le studio suit |
 | « Dupliquer » | Copie de la mission chargée, prête à modifier : identifiant et série suivants libres de la même famille (lettre d'équipe gardée), références à l'ancien identifiant suivies (cartes attendues, récit), titre « … (copie) », `meta.duplicated_from` ; opération réduite à la copie ; cartes et rendus à refaire au studio. La copie s'ouvre ici ; « Enregistrer dans le dossier » pour la garder |
 | « Mémoriser le brouillon » / « Recharger le brouillon » (niveau Expert) | Garde ou relit le texte de la mission dans ce navigateur (les images sont à resélectionner) |
+
+Sous les boutons, deux lignes toujours présentes :
+- **Ligne d'état**, avec un point coloré : « Enregistrée dans le dossier (il y a n min) », « Identique à la version du dossier (chargée …) », « Pas encore enregistrée dans le dossier » (squelette, copie, nouvelle mission) ou « Modifications non enregistrées depuis 14:32 (n champ(s)) ». « Enregistrer dans le dossier » est la validation : bouton principal tant qu'il reste du non-enregistré. Le générateur et le studio partagent la mission aussitôt (brouillon de travail commun, gardé dans ce navigateur) : la ligne est la même dans les deux pages, son infobulle le rappelle.
+- **Ligne Opération** : « Mission autonome (hors opération) », ou ce que la mission est dans son opération — « Opération BOXING GLOVES (A-001) : équipage B sur 5 · organisation A-001Z · heure H 10:00 » (« organisation absente » tant que l'exercice n'en a pas, avec le bouton « Créer l'organisation de l'exercice… » ; pour la mission …Z : « organisation de l'exercice, n équipage(s) »).
 
 Le volet « Importer une autre mission : fichiers, texte collé, commande ChatGPT » est ouvert quand aucune mission n'est chargée :
 - « YAML et/ou Markdown » : sélectionnez ensemble `mission<ID>.yaml` et `summary<ID>.md`, ou cliquez « ou coller son contenu… » puis « Lire la mission » ;
@@ -110,10 +115,9 @@ Le texte reçu est gardé dans `recu/` ; reçue à nouveau, une mission ne rempl
 
 ### Opération
 
-Bloc affiché seulement quand la mission appartient à une opération (`operation` dans le YAML).
+Bloc affiché quand l'opération a plusieurs missions ou une organisation (une mission seule est décrite par la ligne Opération du bloc Mission). Sa première ligne reprend les mêmes mots : « Opération BOXING GLOVES (A-001) : 5 équipage(s) · organisation A-001Z · heure H 10:00 ».
 - Chaque mission de l'opération est un bouton : identifiant, indicatif ou « Organisation », heure de décollage. Cliquez pour l'afficher. « non chargée » ou « à créer » signale une mission absente du lot.
 - « Créer l'organisation de l'exercice » crée la mission …Z (brief général, heure H, participants, chiffons, chronologie), en reprenant les pistes et injects des missions de l'ancien format.
-- Mission seule : une ligne discrète propose « Ajouter une organisation d'exercice… ».
 - « Créer les missions des chiffons joués (n) » : chaque chiffon joué devient une mission de l'opération (base du premier équipage, route de la piste, décollage calculé). Vérifiez ensuite appareil, base et horaire, ouvrez chacune dans le studio, puis « Enregistrer dans le dossier ».
 
 <!-- capture-manuels: planif-operation-equipes -->
@@ -214,7 +218,7 @@ Il travaille sur la mission partagée avec le générateur. Détails techniques 
 
 ### Mission
 
-- Ligne d'état de la mission chargée et bouton « Enregistrer dans le dossier » : écrit la mission et les réglages du studio (profil et cadrage de chaque carte, tracés, pistes) dans `mission<ID>.yaml`. Le résultat s'affiche à côté du bouton et en notification.
+- Ligne d'état de la mission chargée et bouton « Enregistrer dans le dossier » : écrit la mission et les réglages du studio (profil et cadrage de chaque carte, tracés, pistes) dans `mission<ID>.yaml`. Le résultat s'affiche à côté du bouton et en notification. Dessous, la même ligne d'état que dans le générateur, avec « Annuler les modifications ».
 - Ligne « Base SIA » : cycle AIRAC, nombre d'espaces et de cellules MORA, lien vers Paramètres › Maintenance › Données aéronautiques.
 - « Ouvrir une autre mission : fichier Markdown / YAML ou texte collé » (replié quand une mission est chargée) : choisissez un fichier, ou « ou coller son contenu… » puis « Lire la mission ».
 

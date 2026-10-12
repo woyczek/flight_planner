@@ -47,8 +47,13 @@ Este bloque muestra la misión cargada y reúne el guardado y la importación.
 | «Nueva misión» | Vacía el formulario (fecha del día) |
 | «Encargar a ChatGPT…» | Despliega el formulario de encargo (véase más abajo) |
 | «Guardar en la carpeta» | Escribe el YAML modificado en `data/missions/<lettre>_<FAMILLE>/<ID>/`; la versión anterior se sustituye y el historial se conserva en el YAML |
+| «Deshacer los cambios» | Activo cuando la misión tiene cambios sin guardar: tras confirmación, vuelve a la última versión guardada en la carpeta (o a la versión cargada); el estudio sigue |
 | «Duplicar» | Copia de la misión cargada, lista para modificar: identificador y serie siguientes libres de la misma familia (letra de equipo conservada), referencias al identificador anterior seguidas (mapas previstos, relato), título «… (copie)», `meta.duplicated_from`; operación reducida a la copia; mapas y renders a rehacer en el estudio. La copia se abre aquí; «Guardar en la carpeta» para conservarla |
 | «Guardar borrador» / «Recargar borrador» (nivel Experto) | Guarda o vuelve a leer el texto de la misión en este navegador (las imágenes hay que volver a seleccionarlas) |
+
+Bajo los botones, dos líneas siempre presentes:
+- **Línea de estado**, con un punto de color: «Guardada en la carpeta (hace n min)», «Igual que la versión de la carpeta (cargada …)», «Aún no guardada en la carpeta» (esqueleto, copia, misión nueva) o «Cambios sin guardar desde las 14:32 (n campo(s))». «Guardar en la carpeta» es la validación: botón principal mientras quede algo sin guardar. El generador y el estudio comparten la misión al instante (borrador de trabajo común, guardado en este navegador): la línea es la misma en ambas páginas y su descripción emergente lo recuerda.
+- **Línea Operación**: «Misión autónoma (sin operación)», o lo que la misión es en su operación: «Operación BOXING GLOVES (A-001): tripulación B de 5 · organización A-001Z · hora H 10:00» («sin organización» mientras el ejercicio no la tenga, con el botón «Crear la organización del ejercicio…»; para la misión …Z: «organización del ejercicio, n tripulación(es)»).
 
 El panel «Importar otra misión: archivos, texto pegado, encargo a ChatGPT» está abierto cuando no hay ninguna misión cargada:
 - «YAML y/o Markdown»: seleccione juntos `mission<ID>.yaml` y `summary<ID>.md`, o haga clic en «o pegar su contenido…» y después en «Leer la misión»;
@@ -60,10 +65,9 @@ El texto recibido se guarda en `recu/`; recibida de nuevo, una misión solo sust
 
 ### Operación
 
-Bloque que solo aparece cuando la misión pertenece a una operación (`operation` en el YAML).
+Bloque que aparece cuando la operación tiene varias misiones o una organización (una misión sola la describe la línea Operación del bloque Misión). Su primera línea usa las mismas palabras: «Operación BOXING GLOVES (A-001): 5 tripulación(es) · organización A-001Z · hora H 10:00».
 - Cada misión de la operación es un botón: identificador, indicativo u «Organización», hora de despegue. Haga clic para mostrarla. «no cargada» o «por crear» señalan una misión que falta en el lote.
 - «Crear la organización del ejercicio» crea la misión …Z (briefing general, hora H, participantes, blancos, cronología) y retoma las pistas y los injects de las misiones del formato antiguo.
-- Misión aislada: una línea discreta propone «Añadir una organización de ejercicio…».
 - «Crear las misiones de los blancos jugados (n)»: cada blanco jugado se convierte en una misión de la operación (base de la primera tripulación, ruta de la pista, despegue calculado). Compruebe después aeronave, base y horario, abra cada una en el estudio y, por último, «Guardar en la carpeta».
 
 ### Identificación
@@ -154,7 +158,7 @@ Trabaja sobre la misión compartida con el generador. Detalles técnicos: [misio
 
 ### Misión
 
-- Línea de estado de la misión cargada y botón «Guardar en la carpeta»: escribe la misión y los ajustes del estudio (perfil y encuadre de cada mapa, trazados, pistas) en `mission<ID>.yaml`. El resultado aparece junto al botón y en una notificación.
+- Línea de estado de la misión cargada y botón «Guardar en la carpeta»: escribe la misión y los ajustes del estudio (perfil y encuadre de cada mapa, trazados, pistas) en `mission<ID>.yaml`. El resultado aparece junto al botón y en una notificación. Debajo, la misma línea de estado que en el generador, con «Deshacer los cambios».
 - Línea «Base SIA»: ciclo AIRAC, número de espacios y de celdas MORA, enlace a Ajustes › Mantenimiento › Datos aeronáuticos.
 - «Abrir otra misión: archivo Markdown / YAML o texto pegado» (plegado cuando hay una misión cargada): elija un archivo, o «o pegar su contenido…» y después «Leer la misión».
 

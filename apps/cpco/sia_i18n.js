@@ -14,6 +14,13 @@
     ],
     ["Tout est placé. ", "Everything is placed. ", "Alles gesetzt. ", "Todo está colocado. "],
     ["Ouvrir au studio", "Open in the studio", "Im Studio öffnen", "Abrir en el estudio"],
+    // ligne d'état et « Annuler les modifications » (générateur, studio)
+    ["Annuler les modifications", "Undo changes", "Änderungen verwerfen", "Deshacer los cambios"],
+    ["Revenir à la dernière version enregistrée dans le dossier (ou à la version chargée), après confirmation",
+      "Go back to the last version saved to the folder (or to the loaded version), after confirmation",
+      "Zur zuletzt im Ordner gespeicherten Version (oder zur geladenen Version) zurückkehren, nach Bestätigung",
+      "Volver a la última versión guardada en la carpeta (o a la versión cargada), tras confirmación"
+    ],
     // « Dupliquer » (générateur)
     ["Résumé", "Summary", "Zusammenfassung", "Resumen"],
     ["Copie de la mission chargée, prête à modifier : identifiant et série suivants de la même famille, titre « (copie) » ; cartes et rendus à refaire au studio",

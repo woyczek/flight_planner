@@ -239,6 +239,12 @@
   .skeletonBar {
     font-weight: 600
   }
+  .opLine {
+    margin: 2px 0 6px
+  }
+  .opLine button {
+    margin-left: 6px
+  }
   .sectionCard,
   .arrayItem {
     border: 1px solid #d8e3e8;
@@ -528,7 +534,7 @@ html[data-skeuo] .repo-block .mapCard.missing:not(#imp) {
 <header><div class="header-row"><h1><span class="cpco-eyebrow">Centre de planification et de conduite des opérations</span>Générateur de mission</h1><button id="openCr" class="headerButton" type="button" title="Nouveau compte rendu CR pré-rempli (famille d’après le type de mission)">Créer le CR →</button></div></header>
 
 <main>
-<section data-block-id="mission-import" data-deco-bg="import" data-icon="upload" data-subtitle="Mission chargée, enregistrement et brouillon ; importer une autre mission ou en commander une à ChatGPT."><h2>Mission</h2><div class="actions"><button id="newMission" data-icon="plus" class="ghost" type="button">Nouvelle mission</button><button id="orderGpt" data-icon="sparkles" class="secondary" type="button" title="Ouvrir le formulaire de commande : type, théâtre, équipes, aéronefs ; le prompt est copié et ChatGPT s’ouvre">Commander à ChatGPT…</button><button id="dupMission" data-icon="layers" class="secondary" type="button" title="Copie de la mission chargée, prête à modifier : identifiant et série suivants de la même famille, titre « (copie) » ; cartes et rendus à refaire au studio">Dupliquer</button><button id="saveToFolder" data-icon="save" class="secondary" type="button" title="Enregistrer le YAML de la mission (modifications comprises) dans son dossier : data/missions/&lt;lettre&gt;_&lt;FAMILLE&gt;/&lt;ID&gt;/">Enregistrer dans le dossier</button><button id="saveDraft" data-icon="bookmark" class="secondary" type="button" data-min-level="4">Mémoriser le brouillon</button><button id="loadDraft" data-icon="refresh" class="secondary" type="button" data-min-level="4">Recharger le brouillon</button></div><div id="status" class="status" data-status>Aucune mission chargée.</div><p id="skeletonBar" class="skeletonBar" hidden><span></span> <button type="button" id="skeletonStudio" class="primary" data-icon="map">Ouvrir au studio</button></p><p id="registryInfo" class="small" hidden><span></span> <button type="button" id="storeMission" class="secondary" data-icon="folder" hidden>Ranger dans le dossier des missions…</button> <a href="mission_registry.html">Ouvrir le registre ↗</a></p><details id="importMore" class="importMore"><summary>Importer une autre mission : fichiers, texte collé, commande ChatGPT</summary><div class="grid"><label>YAML et/ou Markdown<input id="missionFiles" type="file" accept=".yaml,.yml,.md,text/markdown,text/yaml" multiple data-dropzone><button id="openMissionPaste" data-icon="link" class="secondary" type="button" style="margin-top:6px">ou coller son contenu…</button></label><label>Cartes ou ZIP livré par le générateur<input id="mapFiles" type="file" accept=".zip,application/zip,image/png,image/jpeg,image/webp" multiple data-dropzone></label></div><div class="subBlocks"><details id="gptBox" class="pasteBox gptBox"><summary><strong>Commander une mission à ChatGPT</strong> <span class="small">type, théâtre, équipes, aéronefs : le prompt est copié et ChatGPT s’ouvre</span></summary><div id="gptOrder"></div></details><div id="missionPaste" class="pasteBox" hidden><strong>Coller le contenu Markdown ou YAML de la mission</strong><textarea id="missionText" placeholder="Colle ici le contenu Markdown ou YAML de la mission…"></textarea><div class="actions"><button id="parseMission" data-icon="eye" type="button">Lire la mission</button></div></div></div><p class="small">Tu peux sélectionner le YAML et le Markdown ensemble. Pour les cartes, sélectionne directement le ZIP produit par le générateur : les PNG, dont la carte d’assemblage, seront extraits et associés automatiquement.</p></details></section>
+<section data-block-id="mission-import" data-deco-bg="import" data-icon="upload" data-subtitle="Mission chargée, enregistrement et brouillon ; importer une autre mission ou en commander une à ChatGPT."><h2>Mission</h2><div class="actions"><button id="newMission" data-icon="plus" class="ghost" type="button">Nouvelle mission</button><button id="orderGpt" data-icon="sparkles" class="secondary" type="button" title="Ouvrir le formulaire de commande : type, théâtre, équipes, aéronefs ; le prompt est copié et ChatGPT s’ouvre">Commander à ChatGPT…</button><button id="dupMission" data-icon="layers" class="secondary" type="button" title="Copie de la mission chargée, prête à modifier : identifiant et série suivants de la même famille, titre « (copie) » ; cartes et rendus à refaire au studio">Dupliquer</button><button id="saveToFolder" data-icon="save" class="secondary" type="button" title="Enregistrer le YAML de la mission (modifications comprises) dans son dossier : data/missions/&lt;lettre&gt;_&lt;FAMILLE&gt;/&lt;ID&gt;/">Enregistrer dans le dossier</button><button id="revertMission" data-icon="undo" class="secondary" type="button" disabled title="Revenir à la dernière version enregistrée dans le dossier (ou à la version chargée), après confirmation">Annuler les modifications</button><button id="saveDraft" data-icon="bookmark" class="secondary" type="button" data-min-level="4">Mémoriser le brouillon</button><button id="loadDraft" data-icon="refresh" class="secondary" type="button" data-min-level="4">Recharger le brouillon</button></div><p id="saveState"></p><p id="opLine" class="small opLine" data-no-i18n></p><div id="status" class="status" data-status>Aucune mission chargée.</div><p id="skeletonBar" class="skeletonBar" hidden><span></span> <button type="button" id="skeletonStudio" class="primary" data-icon="map">Ouvrir au studio</button></p><p id="registryInfo" class="small" hidden><span></span> <button type="button" id="storeMission" class="secondary" data-icon="folder" hidden>Ranger dans le dossier des missions…</button> <a href="mission_registry.html">Ouvrir le registre ↗</a></p><details id="importMore" class="importMore"><summary>Importer une autre mission : fichiers, texte collé, commande ChatGPT</summary><div class="grid"><label>YAML et/ou Markdown<input id="missionFiles" type="file" accept=".yaml,.yml,.md,text/markdown,text/yaml" multiple data-dropzone><button id="openMissionPaste" data-icon="link" class="secondary" type="button" style="margin-top:6px">ou coller son contenu…</button></label><label>Cartes ou ZIP livré par le générateur<input id="mapFiles" type="file" accept=".zip,application/zip,image/png,image/jpeg,image/webp" multiple data-dropzone></label></div><div class="subBlocks"><details id="gptBox" class="pasteBox gptBox"><summary><strong>Commander une mission à ChatGPT</strong> <span class="small">type, théâtre, équipes, aéronefs : le prompt est copié et ChatGPT s’ouvre</span></summary><div id="gptOrder"></div></details><div id="missionPaste" class="pasteBox" hidden><strong>Coller le contenu Markdown ou YAML de la mission</strong><textarea id="missionText" placeholder="Colle ici le contenu Markdown ou YAML de la mission…"></textarea><div class="actions"><button id="parseMission" data-icon="eye" type="button">Lire la mission</button></div></div></div><p class="small">Tu peux sélectionner le YAML et le Markdown ensemble. Pour les cartes, sélectionne directement le ZIP produit par le générateur : les PNG, dont la carte d’assemblage, seront extraits et associés automatiquement.</p></details></section>
 
 <section data-block-id="mission-operation" data-icon="layers" data-subtitle="Missions de l’opération et organisation de l’exercice : cliquer une mission pour l’afficher." hidden><h2>Opération</h2><div id="missionOperation"></div></section>
 
@@ -1445,8 +1451,88 @@ function setBlock(id, title, sub) {
   if (p && p.textContent !== sub) p.textContent = sub
 }
 
+const trf = (row, v) => window.RepositoryKit?.tf ? window.RepositoryKit.tf(row, v) : row[0].replace(/\{(\w+)\}/g, (_, k) => v[k] ?? '');
+/** Résumé d'une opération (bloc Opération) : « Opération X (A-001) : 5 équipage(s) · organisation A-001Z · heure H 10:00 ». */
+function opSummary(docs, zId, ex) {
+  const op = state.yaml.operation || {},
+    crews = [...new Set((op.missions || []).map(v => String(v).toUpperCase()))].filter(id => id !== zId),
+    hasZ = !!op.organisation || docs.some(d => String(d.mission?.id || '').toUpperCase() === zId);
+  return [trf(['Opération {o} ({id}) : {n} équipage(s)', 'Operation {o} ({id}): {n} crew(s)', 'Operation {o} ({id}): {n} Besatzung(en)',
+      'Operación {o} ({id}): {n} tripulación(es)'
+    ], {
+      o: op.name || op.id,
+      id: op.id,
+      n: Math.max(crews.length, 1)
+    }), hasZ ? trf(['organisation {z}', 'organisation {z}', 'Übungsleitung {z}', 'organización {z}'], {
+      z: zId
+    }) : trl(['organisation absente', 'no organisation yet', 'noch keine Übungsleitung', 'sin organización']),
+    ...(ex && !ex.legacy && ex.h_hour ? [trf(['heure H {h}', 'H-hour {h}', 'Stunde H {h}', 'hora H {h}'], {
+      h: ex.h_hour
+    })] : [])
+  ].join(' · ')
+}
+/** Ligne « Opération » du bloc Mission, toujours présente : mission autonome, ou ce que la mission est dans son
+ *  opération (lettre de l'équipage et total, organisation ou son absence, heure H si fixée). */
+function renderOpLine() {
+  const el = $('opLine'),
+    y = state.yaml || {},
+    op = y.operation,
+    X = window.MissionExercise;
+  if (!op?.id || !X) {
+    el.textContent = trl(['Mission autonome (hors opération)', 'Standalone mission (no operation)',
+      'Eigenständige Mission (keine Operation)',
+      'Misión autónoma (sin operación)'
+    ]);
+    return
+  }
+  const docs = opDocs(),
+    zId = String(op.organisation || X.organisationId(op.id)).toUpperCase(),
+    crews = [...new Set((op.missions || []).map(v => String(v).toUpperCase()))].filter(id => id !== zId),
+    hasZ = !!op.organisation || docs.some(d => String(d.mission?.id || '').toUpperCase() === zId),
+    ex = X.of(y, docs),
+    org = isOrgDoc(),
+    team = SiaMission.parseId(String(y.mission?.id || '').toUpperCase()).team || '?';
+  const parts = [org ? trf(['organisation de l’exercice, {n} équipage(s)', 'exercise organisation, {n} crew(s)',
+    'Übungsleitung, {n} Besatzung(en)', 'organización del ejercicio, {n} tripulación(es)'
+  ], {
+    n: crews.length
+  }) : trf(['équipage {l} sur {n}', 'crew {l} of {n}', 'Besatzung {l} von {n}', 'tripulación {l} de {n}'], {
+    l: team,
+    n: Math.max(crews.length, 1)
+  })];
+  if (!org) parts.push(hasZ ? trf(['organisation {z}', 'organisation {z}', 'Übungsleitung {z}', 'organización {z}'], {
+    z: zId
+  }) : trl(['organisation absente', 'no organisation yet', 'noch keine Übungsleitung', 'sin organización']));
+  if (ex && !ex.legacy && ex.h_hour) parts.push(trf(['heure H {h}', 'H-hour {h}', 'Stunde H {h}', 'hora H {h}'], {
+    h: ex.h_hour
+  }));
+  el.innerHTML = `${esc(trf(['Opération {o} ({id}) : {p}', 'Operation {o} ({id}): {p}', 'Operation {o} ({id}): {p}', 'Operación {o} ({id}): {p}'], {
+    o: op.name || op.id,
+    id: op.id,
+    p: parts.join(' · ')
+  }))}${!org && !hasZ ? ` <button type="button" class="secondary" id="opLineCreateOrg" data-icon="plus">${esc(trl(['Créer l’organisation de l’exercice…', 'Create the exercise organisation…', 'Übungsleitung anlegen…', 'Crear la organización del ejercicio…']))}</button>` : ''}`;
+  const c = $('opLineCreateOrg');
+  if (c) c.onclick = () => createOrganisation(zId);
+  window.AppFramework?.refresh?.()
+}
+/** Ligne d'état du bloc Mission (SiaMission.renderSaveState) : « Enregistrer dans le dossier » en bouton primaire
+ *  quand il y a du non-enregistré, « Annuler les modifications » actif seulement dans ce cas. */
+function renderSaveState() {
+  if (!state.yaml?.mission) return;
+  const st = SiaMission.renderSaveState($('saveState'), {
+      yaml: state.yaml,
+      narrative: state.narrative
+    }),
+    dirty = st.fields > 0 || st.kind === 'new';
+  $('saveToFolder').classList.toggle('primary', dirty);
+  $('saveToFolder').classList.toggle('secondary', !dirty);
+  $('revertMission').disabled = !st.fields
+}
+setInterval(() => renderSaveState(), 30000); // « il y a n min » tenu à jour
 /** Bloc « Opération » : missions de l'opération (chargées ou non), mission d'organisation, navigation ; masqué hors opération. */
 function renderOperation() {
+  renderOpLine();
+  renderSaveState();
   const host = $('missionOperation'),
     sec = host.closest('section'),
     y = state.yaml,
@@ -1464,14 +1550,13 @@ function renderOperation() {
     have = id => docs.find(d => String(d.mission?.id || '').toUpperCase() === id),
     cur = String(y.mission?.id || '').toUpperCase(),
     ex = X.of(y, docs);
-  // mission seule, sans organisation ni éléments d'exercice : pas de bloc d'opération, une proposition discrète
+  // mission seule, sans organisation ni éléments d'exercice : pas de bloc d'opération (la ligne Opération du bloc
+  // Mission la décrit et propose de créer l'organisation)
   if (ids.length <= 2 && !have(zId) && !op.organisation && !ex) {
-    host.innerHTML = `<p class="small">Mission seule (opération ${esc(op.name||op.id)}) : pas d’organisation d’exercice, le brief de la mission suffit. <button type="button" id="createOrganisation" class="secondary" data-icon="plus">Ajouter une organisation d’exercice…</button></p>`;
-    $('createOrganisation').onclick = () => createOrganisation(zId);
-    window.AppFramework?.refresh?.();
+    sec.hidden = true;
     return
   }
-  host.innerHTML = `<p class="small">Opération <b>${esc(op.name||op.id)}</b> (${esc(op.id)}) : ${ids.length-1} mission(s) d’équipage et l’organisation de l’exercice ${esc(zId)}.${ex&&!ex.legacy?` Heure H : ${esc(ex.h_hour)}.`:''}</p><div class="opMembers">${ids.map(id=>{const d=have(id),z=id===zId,p=X.participantOf(ex,id),label=z?'Organisation':(d?.aircraft?.[0]?.callsign||p?.callsign||'—'),note=!d?(z?'à créer':'non chargée'):z?'brief général, chiffons, chronologie':p?`${p.track?'chiffon · ':''}décollage ${X.hText(X.parseH(p.takeoff)??0)}`:(d.aircraft?.[0]?.type||'');return`<button type="button" class="opMember${id===cur?' current':''}${d?'':' missing'}" data-op-go="${esc(id)}"${d&&id!==cur?'':' disabled'}><b>${esc(id)}</b><span>${esc(label)}</span><small>${esc(note)}</small></button>`}).join('')}</div>${have(zId)?'':`<div class="actions"><button type="button" id="createOrganisation" data-icon="plus">Créer l’organisation de l’exercice</button><span class="small">Mission ${esc(zId)} : brief général, heure H, participants, chiffons et chronologie ; les pistes et injects des missions (ancien format) y sont repris.</span></div>`}${chiffonsToCreate(docs).length?`<div class="actions"><button type="button" id="createChiffons" data-icon="plus">Créer les missions des chiffons joués (${chiffonsToCreate(docs).length})</button><span class="small">Chaque chiffon joué devient une mission de l’opération, affectée et volée comme les autres : départ de la base du premier équipage, route de la piste, consignes, décollage calculé d’après son heure de départ.</span></div>`:''}`;
+  host.innerHTML = `<p class="small" data-no-i18n>${esc(opSummary(docs, zId, ex))}</p><div class="opMembers">${ids.map(id=>{const d=have(id),z=id===zId,p=X.participantOf(ex,id),label=z?'Organisation':(d?.aircraft?.[0]?.callsign||p?.callsign||'—'),note=!d?(z?'à créer':'non chargée'):z?'brief général, chiffons, chronologie':p?`${p.track?'chiffon · ':''}décollage ${X.hText(X.parseH(p.takeoff)??0)}`:(d.aircraft?.[0]?.type||'');return`<button type="button" class="opMember${id===cur?' current':''}${d?'':' missing'}" data-op-go="${esc(id)}"${d&&id!==cur?'':' disabled'}><b>${esc(id)}</b><span>${esc(label)}</span><small>${esc(note)}</small></button>`}).join('')}</div>${have(zId)?'':`<div class="actions"><button type="button" id="createOrganisation" data-icon="plus">Créer l’organisation de l’exercice</button><span class="small">Mission ${esc(zId)} : brief général, heure H, participants, chiffons et chronologie ; les pistes et injects des missions (ancien format) y sont repris.</span></div>`}${chiffonsToCreate(docs).length?`<div class="actions"><button type="button" id="createChiffons" data-icon="plus">Créer les missions des chiffons joués (${chiffonsToCreate(docs).length})</button><span class="small">Chaque chiffon joué devient une mission de l’opération, affectée et volée comme les autres : départ de la base du premier équipage, route de la piste, consignes, décollage calculé d’après son heure de départ.</span></div>`:''}`;
   const cc = $('createChiffons');
   if (cc) cc.onclick = () => createChiffonMissions();
   host.querySelectorAll('[data-op-go]').forEach(b => b.onclick = () => {
@@ -3056,6 +3141,15 @@ $('missionId').addEventListener('change', () => {
 $('missionType').addEventListener('input', updateIdentHints);
 // langue de la page fixée après le premier rendu (mode auto) ou changée : rubriques redessinées dans cette langue
 window.addEventListener('repository-language-change', () => renderNarrative());
+// lignes d'état et Opération : textes de la langue de la page (réglée après le premier rendu)
+window.addEventListener('repository-language-change', () => {
+  renderOpLine();
+  renderSaveState()
+});
+setTimeout(() => {
+  renderOpLine();
+  renderSaveState()
+}, 600);
 window.RepositoryNav?.ready?.then?.(() => renderNarrative());
 setTimeout(() => renderNarrative(), 600);
 // « Ajouter une rubrique textuelle » : type choisi (à clé YAML : clé créée vide), ou « Texte libre » (titre à saisir)
@@ -3153,7 +3247,12 @@ $('saveToFolder').onclick = async () => {
       if (d) SiaMission.save({
         ...d,
         yaml: state.yaml
-      }, 'generator')
+      }, 'generator');
+      SiaMission.markSaved({
+        yaml: state.yaml,
+        narrative: state.narrative
+      }, 'saved');
+      renderSaveState()
     }
   } catch (e) {
     setStatus(explainErr(e, ['Mission non enregistrée', 'Mission not saved', 'Mission nicht gespeichert', 'Misión no guardada']), 'err')
@@ -3277,7 +3376,8 @@ function shareMission(now) {
         yaml: state.yaml,
         narrative: state.narrative,
         sourceNames: state.sourceNames
-      }, 'generator')
+      }, 'generator');
+      renderSaveState()
     } catch (e) {
       setStatus(explainErr(e, ['Mission non transmise aux autres pages', 'Mission not passed to the other pages',
         'Mission nicht an die anderen Seiten übergeben', 'Misión no transmitida a las demás páginas'
@@ -3287,6 +3387,54 @@ function shareMission(now) {
   if (now) run();
   else shareTimer = setTimeout(run, 400)
 }
+// « Annuler les modifications » : retour à la version de référence (enregistrée, sinon chargée), après confirmation ;
+// le studio suit (mission partagée republiée)
+$('revertMission').onclick = async () => {
+  syncNarrative();
+  const doc = {
+      yaml: state.yaml,
+      narrative: state.narrative
+    },
+    st = SiaMission.savedState(doc),
+    back = SiaMission.savedDoc(doc);
+  if (!back || !st.fields) return;
+  const msg = trf(['Revenir à la version {v} de {id} ? {n} champ(s) modifié(s) depuis {h} seront perdus ; le studio suit.',
+    'Go back to the {v} version of {id}? {n} field(s) changed since {h} will be lost; the studio follows.',
+    'Zur {v} Version von {id} zurückkehren? {n} seit {h} geänderte(s) Feld(er) gehen verloren; das Studio folgt.',
+    '¿Volver a la versión {v} de {id}? Se perderán {n} campo(s) modificado(s) desde las {h}; el estudio sigue.'
+  ], {
+    v: st.kind === 'saved' ? trl(['enregistrée', 'saved', 'gespeicherten', 'guardada']) : trl(['chargée', 'loaded', 'geladenen',
+      'cargada'
+    ]),
+    id: state.yaml.mission?.id || '',
+    n: st.fields,
+    h: new Date(st.since).toLocaleTimeString(undefined, {
+      hour: '2-digit',
+      minute: '2-digit'
+    })
+  });
+  const ok = window.AppFramework?.ask ? await window.AppFramework.ask(msg, {
+    ok: trl(['Annuler les modifications', 'Undo changes', 'Änderungen verwerfen', 'Deshacer los cambios']),
+    cancel: trl(['Garder', 'Keep', 'Behalten', 'Conservar']),
+    danger: true
+  }) : confirm(msg);
+  if (!ok) return;
+  state = {
+    ...state,
+    yaml: back.yaml,
+    narrative: back.narrative
+  };
+  renderAll();
+  shareMission(true);
+  setStatus(trf(['Modifications annulées : version {v} de {id} rétablie.', 'Changes undone: {v} version of {id} restored.',
+    'Änderungen verworfen: {v} Version von {id} wiederhergestellt.', 'Cambios deshechos: versión {v} de {id} restablecida.'
+  ], {
+    v: st.kind === 'saved' ? trl(['enregistrée', 'saved', 'gespeicherte', 'guardada']) : trl(['chargée', 'loaded', 'geladene',
+      'cargada'
+    ]),
+    id: state.yaml.mission?.id || ''
+  }), 'ok')
+};
 document.querySelector('main').addEventListener('input', () => shareMission());
 document.querySelector('main').addEventListener('change', () => shareMission());
 document.querySelector('main').addEventListener('click', e => {
