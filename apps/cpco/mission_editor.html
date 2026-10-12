@@ -2314,8 +2314,11 @@ function safeStem() {
     /** Texte sans accents, caractères spéciaux remplacés par « _ » (bords rognés). */
     slug = v => String(v ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/gi, '_').replace(/^_+|_+$/g, ''),
     id = m.id ?? m.number,
-    num = id != null && id !== '' ? 'M' + String(id).padStart(2, '0') : '',
-    series = m.series != null && m.series !== '' ? 'S' + m.series : '',
+    // identifiant actuel (lettre de la famille + numéro : « M-016 ») gardé tel quel, il est unique ; ancien numéro seul
+    // (« 16 ») : « M16 » précédé de la série (« S4-M16 ») — « 'M' + id » donnait « S4-MM-016 »
+    p = SiaMission.parseId(id ?? ''),
+    num = p.letter ? p.id : id != null && id !== '' ? 'M' + String(id).padStart(2, '0') : '',
+    series = !p.letter && m.series != null && m.series !== '' ? 'S' + m.series : '',
     title = String(y.title || '').trim(),
     name = !title || /^mission\s*\d*$/i.test(title) ? (y.target?.name || y.zone?.name || title) : title;
   return [

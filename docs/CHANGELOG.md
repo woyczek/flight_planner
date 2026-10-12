@@ -398,6 +398,11 @@ servies depuis un autre disque, registre aux fichiers absents, profils cachés �
 
 ### Corrigé
 
+- **Audit fixes (reported by Features SOG)** — ODV planning: the "timeline flights to check" notification pointed to a
+  removed block; it now names the flights (day, times, callsign, reason). Generator: exported files were named
+  "S4-MM-016_…" with current IDs; current IDs are kept as they are ("M-016_…"). `apps/landing/README.md` rewritten in
+  English for the current layout (shared type base in `AircraftDB/`, sources, command line); the outdated French section
+  of `README.md` ("four steps") removed — the French installation tutorial stays linked at the top.
 - **Bouton « Sauvegarder (n) » qui semblait ne rien faire** : tout ce que disait la sauvegarde (demande d'accès du
   navigateur au dossier, erreur, dossier introuvable) allait dans le message d'état du menu ☰, fermé. Désormais en
   notification : demande d'accès annoncée (« l'accepter dans la fenêtre du navigateur »), sauvegarde écrite, dossier
