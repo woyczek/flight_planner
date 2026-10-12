@@ -18,6 +18,58 @@
   const deepClone = v => v === null || typeof v !== 'object' ? v : structuredClone(v);
 
   // ---- lecture Markdown (titres « ## Summary », ancien format à blocs TYPE: / TURNING POINTS: …)
+  // ---- sections que markdownOf GÉNÈRE depuis le YAML : une seule table, pour le rendu (titre français, 1re colonne)
+  //      et pour reconnaître ces sections à la relecture d'un brief rangé, dans les 4 langues et leurs variantes
+  //      (summary<ID>.md produit en anglais, titres du PDF). Un brief rangé est un rendu du YAML, pas une source.
+  const BRIEF_TITLES = [
+    ['Introduction', 'Introduction', 'Einleitung', 'Introducción'],
+    ['Summary', 'Résumé', 'Zusammenfassung', 'Resumen'],
+    ['Description détaillée', 'Detailed description', 'Ausführliche Beschreibung', 'Descripción detallada'],
+    ['Équipes engagées', 'Teams involved', 'Beteiligte Teams', 'Equipos implicados'],
+    ['Heure H et participants', 'H hour and participants', 'Stunde H und Teilnehmer', 'Hora H y participantes'],
+    ['Chiffons', 'Played targets', 'Gespielte Ziele', 'Blancos jugados'],
+    ['Chronologie', 'Timeline', 'Zeitablauf', 'Cronología'],
+    ['Coordination de l\'opération', 'Operation coordination', 'Koordinierung der Operation', 'Coordinación de la operación',
+      'Coordination'
+    ],
+    ['Charge / personnel', 'Load / personnel', 'Ladung / Personal', 'Carga / personal'],
+    ['Objectif principal', 'Primary objective', 'Hauptziel', 'Objetivo principal', 'Main objective'],
+    ['Objectifs secondaires', 'Secondary objectives', 'Nebenziele', 'Objetivos secundarios'],
+    ['Points tournants', 'Turning points', 'Wendepunkte', 'Puntos de viraje'],
+    ['Rendez-vous', 'Rendezvous', 'Treffpunkte', 'Encuentros', 'Treffpunkt', 'Encuentro'],
+    ['Ravitaillement en vol', 'Air-to-air refuelling', 'Luftbetankung', 'Reabastecimiento en vuelo', 'Air refuelling'],
+    ['Risques à prendre en compte', 'Risks to consider', 'Zu berücksichtigende Risiken', 'Riesgos a tener en cuenta',
+      'Risques et points d\'attention', 'Risks and points of attention'
+    ],
+    ['Cartographie prévue', 'Planned maps', 'Vorgesehene Karten', 'Cartografía prevista'],
+    ['Notes', 'Notes', 'Notizen', 'Notas'],
+    ['Exercice', 'Exercise', 'Übung', 'Ejercicio']
+  ];
+  /** Rang dans BRIEF_TITLES d'un titre de section, toutes langues ; -1 si ce n'est pas une section générée. */
+  function briefKey(title) {
+    const n = norm(title);
+    return n ? BRIEF_TITLES.findIndex(row => row.some(x => norm(x) === n)) : -1;
+  }
+  /** Titre français d'une section générée (rendu de markdownOf) ; erreur s'il manque à la table. */
+  const BT = fr => {
+    if (briefKey(fr) < 0) throw Error(`Titre de brief absent de BRIEF_TITLES : ${fr}`);
+    return fr;
+  };
+  // texte libre (rubrique du générateur) écrit dans le brief : entre deux commentaires invisibles, seul relu du .md quand
+  // la mission a un YAML
+  const NARR_MARK = /<!--\s*narrative:\s*([\s\S]*?)\s*-->\s*([\s\S]*?)\s*<!--\s*\/narrative\s*-->/g;
+  /** Rubrique libre marquée pour le brief Markdown. */
+  const narrMarked = x => `<!-- narrative: ${x.title} -->\n${x.content}\n<!-- /narrative -->`;
+  /** Retire d'un document les rubriques du récit qui sont des sections générées (copies d'un brief rangé), sauf celles
+   *  créées dans le générateur (named). Retour : nombre de rubriques retirées. */
+  function cleanNarrative(doc) {
+    const list = doc?.narrative?.sections;
+    if (!Array.isArray(list)) return 0;
+    const keep = list.filter(x => x?.named || briefKey(x?.title) < 0);
+    doc.narrative.sections = keep;
+    return list.length - keep.length;
+  }
+
   function parseMarkdown(text) {
     const headings = [...text.matchAll(/^(#{1,6})\s+(.+)\s*$/gm)],
       title = (headings[0]?.[2] || '').trim(),
@@ -34,11 +86,21 @@
     const find = words => sections.find(s => words.some(w => norm(s.title).includes(w))),
       sum = find(['summary', 'resume', 'synthese']),
       det = find(['description_detaillee', 'description_complete', 'deroulement']);
+    const strip = t => t.replace(NARR_MARK, '').trim();
     return {
       title,
-      summary: sum?.content || '',
-      detailed: det?.content || '',
-      sections: sections.filter(s => s !== sum && s !== det)
+      summary: sum?.content ? strip(sum.content) : '',
+      detailed: det?.content ? strip(det.content) : '',
+      // sections : toutes (Markdown seul : la source complète) ; marked : textes libres marqués (brief rangé d'un YAML)
+      sections: sections.filter(s => s !== sum && s !== det).map(s => ({
+        ...s,
+        content: s.content.replace(NARR_MARK, (_, t, c) => c.trim())
+      })),
+      marked: [...text.matchAll(NARR_MARK)].map(m => ({
+        title: m[1].trim(),
+        content: m[2].trim(),
+        named: true
+      }))
     }
   }
 
@@ -386,7 +448,10 @@
       if (p.title && !yaml.title) yaml.title = p.title;
       if (p.summary) narrative.summary = p.summary;
       if (p.detailed) narrative.detailed = p.detailed;
-      narrative.sections.push(...p.sections);
+      // avec un YAML, le .md est un rendu : ses textes libres marqués seulement (fichier ancien sans marque : les sections
+      // hors titres générés) ; sans YAML, il est la source complète (toutes ses sections)
+      if (!yamls.length) narrative.sections.push(...p.sections);
+      else narrative.sections.push(...(/<!--\s*narrative:/.test(f.text) ? p.marked : p.sections.filter(x => briefKey(x.title) < 0)));
     }
     // ligne de séparation d'un tableau Markdown recopiée comme équipe par certains générateurs (« --- », « ---: »)
     if (Array.isArray(yaml.teams)) yaml.teams = yaml.teams.filter(t => !t || typeof t !== 'object' || !Object.values(t).every(v =>
@@ -414,6 +479,8 @@
       const d = JSON.parse(localStorage.getItem(KEY) || 'null');
       if (d && d.yaml) {
         upgradeSchema(d.yaml);
+        const n = cleanNarrative(d);
+        if (n) d.cleaned = n; // rubriques issues d'un brief rangé retirées (la page le dit)
         return d;
       }
     } catch {
@@ -1086,7 +1153,7 @@
     const sec = (title, body) => {
       const more = extras.filter(x => !x.used && x.title && (x.title === title || title.startsWith(x.title + ' ')));
       more.forEach(x => x.used = true);
-      const all = [txt(body), ...more.map(x => x.content)].filter(Boolean).join('\n\n');
+      const all = [txt(body), ...more.map(narrMarked)].filter(Boolean).join('\n\n');
       if (all) out.push(`## ${title}\n\n${all}`);
     };
     const teams = arr(y.teams).filter(t => t && typeof t === 'object');
@@ -1096,41 +1163,43 @@
     if (ex && typeof ex === 'object') {
       // mission d'organisation
       out.push(`# Organisation ${id} — « ${txt(y.title)} »`);
-      sec('Introduction', [`Type : ${txt(m.type)}`, `Sous-type : ${txt(m.subtype)}`, op.name ? `Opération : ${txt(op.name)} — missions ${arr(op.missions).join(', ')}` : ''].filter(Boolean).join('\n'));
-      sec('Summary', para(y.summary));
-      sec('Description détaillée', para(y.detailed_description));
-      sec('Équipes engagées', teamTable);
-      sec('Heure H et participants', [`Heure H : ${txt(ex.h_hour) || 'H'}`, '', '| Indicatif | Mission | Décollage | Rôle |', '|---|---|---|---|', ...arr(ex
+      sec(BT('Introduction'), [`Type : ${txt(m.type)}`, `Sous-type : ${txt(m.subtype)}`, op.name ? `Opération : ${txt(op.name)} — missions ${arr(op.missions).join(', ')}` : ''].filter(Boolean).join('\n'));
+      sec(BT('Summary'), para(y.summary));
+      sec(BT('Description détaillée'), para(y.detailed_description));
+      sec(BT('Équipes engagées'), teamTable);
+      sec(BT('Heure H et participants'), [`Heure H : ${txt(ex.h_hour) || 'H'}`, '', '| Indicatif | Mission | Décollage | Rôle |', '|---|---|---|---|', ...arr(ex
         .participants).map(p => `| ${cell(p.callsign)} | ${cell(p.mission)} | ${cell(p.takeoff)} | ${cell(p.role)} |`)].join('\n'));
-      if (arr(ex.tracks).length) sec('Chiffons', [
+      if (arr(ex.tracks).length) sec(BT('Chiffons'), [
         '| Piste | Joué | Indicatif | Départ | Nature | Points | Niveau | Vitesse | À établir | Consignes |',
         '|---|---|---|---|---|---|---|---:|---|---|',
         ...arr(ex.tracks).map(k => `| ${cell(k.name || k.id)} | ${k.played ? 'oui' : 'non'} | ${cell(k.callsign)} | ${cell(k.start)} | ${cell(k.nature)} | ${cell(arr(k.points).map(p => `${txt(p.name)} ${num(p.lat)}, ${num(p.lon)}`).join(' → '))} | ${cell(k.level)} | ${cell(k.speed_kt)} | ${cell(k.task)} | ${cell(k.conduct)} |`)
       ].join('\n'));
-      if (arr(ex.events).length) sec('Chronologie', arr(ex.events).map(e => `- **${txt(e.id)} — ${txt(e.at)}${e.by ? ` (${txt(e.by)})` : ''}${+e.delay_min ? ` +${+e.delay_min} min` : ''}** — ${/pli/i.test(e.kind || '') ? 'pli' : 'radio'} — ${txt(e.from)} → ${arr(e.to).join(', ')} : ${txt(e.title)}${arr(e.reveals).length ? ` — pistes ${arr(e.reveals).join(', ')}` : ''}${txt(e.text) ? '\n  ' + para(e.text).replace(/\n\n/g, '\n  ') : ''}`).join('\n'));
+      if (arr(ex.events).length) sec(BT('Chronologie'), arr(ex.events).map(e => `- **${txt(e.id)} — ${txt(e.at)}${e.by ? ` (${txt(e.by)})` : ''}${+e.delay_min ? ` +${+e.delay_min} min` : ''}** — ${/pli/i.test(e.kind || '') ? 'pli' : 'radio'} — ${txt(e.from)} → ${arr(e.to).join(', ')} : ${txt(e.title)}${arr(e.reveals).length ? ` — pistes ${arr(e.reveals).join(', ')}` : ''}${txt(e.text) ? '\n  ' + para(e.text).replace(/\n\n/g, '\n  ') : ''}`).join('\n'));
     } else {
       out.push(`# Mission ${id} — ${txt(ac.callsign) || '—'} — « ${txt(y.title)} »`);
-      sec('Introduction', [`Type : ${txt(m.type)}`, `Sous-type : ${txt(m.subtype)}`, `Aéronef : ${txt(ac.type)}`, `Callsign : ${txt(ac.callsign)}`, `Départ : ${txt(y.origin?.name)}${at(y.origin)}`, `Destination : ${txt(y.destination?.name)}${at(y.destination)}`].join('\n'));
-      sec('Summary', para(y.summary));
-      sec('Description détaillée', para(y.detailed_description));
-      sec('Équipes engagées', teamTable);
-      if (arr(op.missions).length > 1) sec('Coordination de l\'opération', `Opération : ${txt(op.name)} — missions ${arr(op.missions).join(', ')}`);
+      sec(BT('Introduction'), [`Type : ${txt(m.type)}`, `Sous-type : ${txt(m.subtype)}`, `Aéronef : ${txt(ac.type)}`, `Callsign : ${txt(ac.callsign)}`, `Départ : ${txt(y.origin?.name)}${at(y.origin)}`, `Destination : ${txt(y.destination?.name)}${at(y.destination)}`].join('\n'));
+      sec(BT('Summary'), para(y.summary));
+      sec(BT('Description détaillée'), para(y.detailed_description));
+      sec(BT('Équipes engagées'), teamTable);
+      if (arr(op.missions).length > 1) sec(BT('Coordination de l\'opération'), `Opération : ${txt(op.name)} — missions ${arr(op.missions).join(', ')}`);
       const pl = y.payload;
-      if (pl && typeof pl === 'object') sec('Charge / personnel', [`Catégorie : ${txt(pl.category)}`, `Description : ${txt(pl.description)}`, pl.mass_kg != null ? `Masse : ${pl.mass_kg} kg` : '', pl
+      if (pl && typeof pl === 'object') sec(BT('Charge / personnel'), [`Catégorie : ${txt(pl.category)}`, `Description : ${txt(pl.description)}`, pl.mass_kg != null ? `Masse : ${pl.mass_kg} kg` : '', pl
         .passengers != null ? `Passagers : ${pl.passengers}` : '', arr(pl.constraints).length ? `\nContraintes :\n${arr(pl.constraints).map(c => `- ${txt(c)}`).join('\n')}` : ''
       ].filter(Boolean).join('\n'));
-      sec('Objectif principal', txt(y.objectives?.primary));
-      sec('Objectifs secondaires', arr(y.objectives?.secondary).map(o => `- ${txt(o)}`).join('\n'));
-      if (arr(y.turning_points).length) sec('Points tournants', ['| ID | Nom | Latitude | Longitude | Rôle |', '|---|---|---:|---:|---|',
+      sec(BT('Objectif principal'), txt(y.objectives?.primary));
+      sec(BT('Objectifs secondaires'), arr(y.objectives?.secondary).map(o => `- ${txt(o)}`).join('\n'));
+      if (arr(y.turning_points).length) sec(BT('Points tournants'), ['| ID | Nom | Latitude | Longitude | Rôle |',
+        '|---|---|---:|---:|---|',
         ...arr(y.turning_points).map(p => `| ${cell(p.id)} | ${cell(p.name)} | ${num(p.lat)} | ${num(p.lon)} | ${cell(p.role)} |`)
       ].join('\n'));
-      if (arr(y.rendezvous).length) sec('Rendez-vous', arr(y.rendezvous).map(r => `- **${txt(r.id)} — ${txt(r.name)}** — ${num(r.lat)}, ${num(r.lon)}${arr(r.participants).length ? ` — participants : ${arr(r.participants).join(', ')}` : ''}${r.role ? ` — ${txt(r.role)}` : ''}`).join('\n'));
-      if (y.air_refueling && typeof y.air_refueling === 'object') sec('Ravitaillement en vol', Object.entries(y.air_refueling).map(([k,
+      if (arr(y.rendezvous).length) sec(BT('Rendez-vous'), arr(y.rendezvous).map(r => `- **${txt(r.id)} — ${txt(r.name)}** — ${num(r.lat)}, ${num(r.lon)}${arr(r.participants).length ? ` — participants : ${arr(r.participants).join(', ')}` : ''}${r.role ? ` — ${txt(r.role)}` : ''}`).join('\n'));
+      if (y.air_refueling && typeof y.air_refueling === 'object') sec(BT('Ravitaillement en vol'), Object.entries(y.air_refueling).map(([
+        k,
         v
       ]) => `- ${k}: ${Array.isArray(v) ? v.join(', ') : v}`).join('\n'));
-      sec('Risques à prendre en compte', arr(y.risks).map(r => typeof r === 'object' ? `- **${txt(r.hazard)}** — conséquence : ${txt(r.consequence)} — mesure : ${txt(r.mitigation)}` : `- ${txt(r)}`).join('\n'));
-      sec('Cartographie prévue', arr(y.maps).map(mp => typeof mp === 'object' ? `- \`${txt(mp.filename || mp.file)}\` — ${txt(mp.description)}` : `- \`${txt(mp)}\``).join('\n'));
-      sec('Notes', arr(y.notes).map(n => `- ${txt(n)}`).join('\n'));
+      sec(BT('Risques à prendre en compte'), arr(y.risks).map(r => typeof r === 'object' ? `- **${txt(r.hazard)}** — conséquence : ${txt(r.consequence)} — mesure : ${txt(r.mitigation)}` : `- ${txt(r)}`).join('\n'));
+      sec(BT('Cartographie prévue'), arr(y.maps).map(mp => typeof mp === 'object' ? `- \`${txt(mp.filename || mp.file)}\` — ${txt(mp.description)}` : `- \`${txt(mp)}\``).join('\n'));
+      sec(BT('Notes'), arr(y.notes).map(n => `- ${txt(n)}`).join('\n'));
       // exercice : organisation de l'opération (docs) ; plis comptés, pas leur contenu
       const X = window.MissionExercise,
         org = X ? X.of(y, docs) : null,
@@ -1139,12 +1208,12 @@
         const tl = org ? X.timeline(org, [y, ...docs]) : [],
           mine = me ? X.eventsFor(tl, me.callsign) : [],
           plis = mine.filter(e => e.kind === 'pli');
-        sec('Exercice', [`Organisation : ${txt(op.organisation)}`, `Heure H : ${txt(org?.h_hour) || 'H'}`, `Décollage : ${txt(me?.takeoff) || 'H'}`, `Plis scellés remis : ${plis.length ? plis.map(e => `${txt(e.title) || e.id} (à ouvrir : ${e.when})`).join(' ; ') : 'aucun'}`, `Messages radio attendus en vol : ${mine.length > plis.length ? 'oui' : 'non'}`].join('\n'));
+        sec(BT('Exercice'), [`Organisation : ${txt(op.organisation)}`, `Heure H : ${txt(org?.h_hour) || 'H'}`, `Décollage : ${txt(me?.takeoff) || 'H'}`, `Plis scellés remis : ${plis.length ? plis.map(e => `${txt(e.title) || e.id} (à ouvrir : ${e.when})`).join(' ; ') : 'aucun'}`, `Messages radio attendus en vol : ${mine.length > plis.length ? 'oui' : 'non'}`].join('\n'));
       }
       for (const ph of arr(y.phases)) sec(`Partie ${txt(ph.id)} — ${txt(ph.title)}`, [`À ouvrir : ${txt(ph.trigger)}`, `Message : ${txt(ph.message)}`, '', para(ph.brief)].join('\n'));
     }
     for (const x of extras)
-      if (!x.used) out.push(`## ${x.title}\n\n${x.content}`);
+      if (!x.used) out.push(`## ${x.title}\n\n${narrMarked(x)}`);
     out.push('> Scénario de simulation — ne pas utiliser pour une mission réelle.');
     return out.join('\n\n') + '\n';
   }
@@ -1172,6 +1241,8 @@
     setBatch,
     mountNav,
     parseMarkdown,
+    briefKey,
+    cleanNarrative,
     extractMdMetadata,
     mergeYaml
   };

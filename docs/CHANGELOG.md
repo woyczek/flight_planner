@@ -58,6 +58,18 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   `narrative.sections` et complètent, dans le brief Markdown (`SiaMission.markdownOf`), la section de même titre ;
   section « Notes » ajoutée au brief. Manuel administrateur (4 langues).
 
+### Corrigé
+
+- **Générateur : rubriques du brief en double et en deux langues** (« Summary », « Teams involved », « Risks to
+  consider »… à côté de leurs équivalents) — le brief rangé `summary<ID>.md` relu avec son YAML redevenait une
+  rubrique libre par section. Désormais une seule table des sections générées (`BRIEF_TITLES`, rendu français et
+  reconnaissance en 4 langues, `SiaMission.briefKey`) ; `markdownOf` marque les textes libres qu'il écrit
+  (`<!-- narrative: … -->`) ; avec un YAML, `fromTexts` ne reprend du `.md` que ces textes (fichier ancien : les
+  sections hors titres générés) ; un `.md` seul reste la source complète. Missions déjà chargées assainies à
+  l'ouverture (`cleanNarrative`, « n rubrique(s) issue(s) du brief rangé retirée(s) ») ; rubriques créées dans le
+  générateur marquées `named`. PDF du brief : filtre par la même table, chaque rubrique une seule fois (« — compléments »
+  pour une rubrique du générateur sur un sujet déjà imprimé). Manuel administrateur (4 langues).
+
 ## [5.1.0] — 2026-10-09
 
 Carburant devient l'atelier des profils de performances. Un bloc **« Profils de performances »** donne pour chaque

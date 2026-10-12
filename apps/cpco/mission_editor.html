@@ -2344,9 +2344,17 @@ async function exportPdf(opts) {
   y = addRendezvous(doc, y);
   /** Section « Partie B… » (et suivantes) du récit : non reprise telle quelle dans ce PDF. */
   const isPart = s => /^partie\s+[b-z]\b/i.test(String(s.title || '').trim());
+  // rubriques du récit : jamais une section que le PDF a déjà (titre généré, toutes langues : SiaMission.briefKey) ni deux
+  // fois la même ; une rubrique créée dans le générateur sur un sujet déjà imprimé passe en « compléments »
+  const printed = new Set(['Summary', 'Description détaillée', 'Risques à prendre en compte', 'Équipes engagées', 'Rendez-vous'].map(t =>
+    'k' + SiaMission.briefKey(t)));
   for (const s of state.narrative.sections) {
-    if (isPart(s) || /introduction|risque|equipe|rendez_vous|summary|description/i.test(norm(s.title))) continue;
-    y = addSection(doc, s.title, s.content, y)
+    if (isPart(s) || !String(s.content || '').trim()) continue;
+    const k = SiaMission.briefKey(s.title),
+      id = k >= 0 ? 'k' + k : 't' + norm(s.title);
+    if (k >= 0 && !s.named) continue; // copie d'une section générée (brief rangé relu)
+    y = addSection(doc, printed.has(id) ? `${s.title} — compléments` : s.title, s.content, y);
+    printed.add(id)
   }
   y = addCrewExercise(doc, y);
   {
@@ -2473,6 +2481,7 @@ $('skeletonStudio').onclick = () => {
 };
 /* Lot de missions : navigation dans l'en-tête (◀ Mission 41A ▶) ; la mission choisie remplace le formulaire. */
 function applyBatchDoc(d) {
+  const cleaned = SiaMission.cleanNarrative?.(d) || 0; // rubriques copiées d'un brief rangé
   state = {
     ...state,
     yaml: d.yaml || {},
@@ -2484,7 +2493,7 @@ function applyBatchDoc(d) {
     sourceNames: d.sourceNames || []
   };
   renderAll();
-  setStatus(`Mission ${d.yaml?.mission?.id||''} du lot : ${d.yaml?.title||''}.`, 'ok');
+  setStatus(`Mission ${d.yaml?.mission?.id||''} du lot : ${d.yaml?.title||''}.${cleaned ? ` ${cleaned} rubrique(s) issue(s) du brief rangé retirée(s).` : ''}`, 'ok');
   syncBatchUi()
 }
 SiaMission.mountNav('generator', applyBatchDoc);
@@ -2903,7 +2912,8 @@ $('narrChoices').addEventListener('click', e => {
   if (d?.key) setPath(state.yaml, d.key.split('.'), d.lines ? [] : '');
   else state.narrative.sections.push({
     title: d ? d.title : 'Autre rubrique',
-    content: ''
+    content: '',
+    named: true // créée ici : jamais prise pour une copie du brief rangé
   });
   $('addNarrative').open = false;
   renderNarrative();
@@ -3089,7 +3099,12 @@ $('exportPdf').onclick = async () => {
     yaml: d.yaml,
     narrative: d.narrative || state.narrative,
     sourceNames: d.sourceNames || []
-  }
+  };
+  // rubriques copiées d'un brief rangé (summary<ID>.md relu) retirées par SiaMission.load : dit, puis enregistré
+  if (d?.cleaned) setTimeout(() => {
+    setStatus(`${d.cleaned} rubrique(s) issue(s) du brief rangé retirée(s) : elles doublaient les sections que le brief tire du YAML.`, 'ok');
+    shareMission(true)
+  }, 300)
 }
 renderAll();
 let shareTimer = 0;
