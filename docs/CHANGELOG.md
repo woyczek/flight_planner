@@ -294,6 +294,11 @@ servies depuis un autre disque, registre aux fichiers absents, profils cachés �
 
 ### Corrigé
 
+- **Registre : artefacts de missions indexées dont le dossier n'existe plus, sans moyen simple de les retirer** : à
+  l'ouverture, le registre demande au lanceur les dossiers présents et marque « fichier absent » les missions qui n'en
+  ont plus ; « Nettoyer le registre (n) » les retire sans dossier autorisé (plus de sélecteur de dossier), visible à
+  tous les niveaux dès qu'il y a quelque chose à nettoyer, confirmation dans la page (4 langues). Une entrée
+  incomplète (sans statut ni types) ne fait plus tomber la page du registre.
 - **Carburant, profils supprimés ou fusionnés : retirés aussi du dossier performances** — plus de profils cachés à chaque
   relecture sans moyen de les retrouver (DC3, Caravelle) : après la confirmation (qui nomme les fichiers), la base
   exportée (`flight_performance_database.fpdb.json`…) est réécrite sans eux et un fichier d'un seul profil est renommé

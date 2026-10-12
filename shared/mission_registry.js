@@ -15,7 +15,8 @@
   /** Rang de la langue de la page dans LANGS (français à défaut). */
   const li = () => Math.max(0, LANGS.indexOf(window.RepositoryNav?.getLanguage?.() || 'fr'));
   /** Traduction d'une ligne [fr, en, de, es] (anglais puis français à défaut) avec ses variables {x}. */
-  const t = (row, vars = {}) => (Array.isArray(row) ? (row[li()] || row[1] || row[0]) : String(row ?? '')).replace(/\{(\w+)\}/g, (_, k) =>
+  const t = (row, vars = {}) => (Array.isArray(row) ? (row[li()] || row[1] || row[0] || '') : String(row ?? '')).replace(/\{(\w+)\}/g, (_,
+      k) =>
     vars[k] ?? '');
   const esc = window.RepositoryKit.esc; // échappement HTML commun (shared/kit.js)
   /** Message d'erreur lisible : ce qui a échoué (contexte, traduit) et quoi faire (AppFramework.explain) ; repli : contexte
@@ -124,6 +125,29 @@
   let reg = loadReg();
   /** Clé d'une entrée du registre : « dossier|identifiant » (titre à défaut d'identifiant). */
   const keyOf = m => `${m.folder || ''}|${m.id || m.title || ''}`;
+  // missions de l'index sans dossier sur le disque (registre périmé repris, mission retirée entre deux lancements) :
+  // dossiers présents demandés au lanceur à l'ouverture ; ces missions sont marquées « fichier absent », comme après une
+  // relecture du dossier, et « Nettoyer le registre (n) » les retire — sans dossier autorisé ni purge de l'index dans
+  // Paramètres › Maintenance › Caches, où personne ne pensait à aller
+  let servedChecked = false; // dossiers présents lus auprès du lanceur (nettoyage possible sans dossier autorisé)
+  /** Marque « fichier absent » les missions dont le dossier n'est pas servi par le lanceur, puis redessine la page. */
+  const ghostsLoad = () => /^https?:$/.test(location.protocol) ? fetch('/__setup/mission-folders', {
+    headers: {
+      'X-SOG-Setup': '1'
+    },
+    cache: 'no-store'
+  }).then(r => r.ok ? r.json() : null).catch(() => null).then(j => {
+    if (!Array.isArray(j?.folders)) return;
+    servedChecked = true;
+    const present = new Set(j.folders);
+    let n = 0;
+    for (const m of reg.missions)
+      if (m.folder && !m.missingFile && !present.has(String(m.folder).replace(/\\/g, '/'))) {
+        m.missingFile = true;
+        n++;
+      }
+    if (n && host) render();
+  }) : Promise.resolve();
 
   /** Enregistre le registre (MissionIndex, échec notifié ; « missionRegistry:v1 » sans IndexedDB) et réécrit
    *  Missions/mission_registry.yaml si le dossier est déjà autorisé. */
@@ -1106,7 +1130,8 @@
     (!filters.rdv || (filters.rdv === 'with' ? m.rdv > 0 : m.rdv === 0)) &&
     (filters.teamsMin === '' || m.teamCount >= +filters.teamsMin) &&
     (filters.teamsMax === '' || m.teamCount <= +filters.teamsMax) &&
-    (!filters.teamType || [...m.teamTypes, ...m.aircraftTypes].some(x => x.toLowerCase().includes(filters.teamType.toLowerCase()))) &&
+    (!filters.teamType || [...(m.teamTypes || []), ...(m.aircraftTypes || [])].some(x => String(x).toLowerCase().includes(filters.teamType
+      .toLowerCase()))) &&
     (!filters.aar || (filters.aar === 'yes') === !!m.aar) &&
     (!filters.theatre || m.theatre === filters.theatre) &&
     (!filters.status || m.status === filters.status) &&
@@ -1147,7 +1172,8 @@
     const types = uniq([...reg.missions.map(m => m.type), ...fam.map(f => f.id)]);
     const subtypes = uniq([...reg.missions.filter(m => !filters.type || m.type === filters.type).map(m => m.subtype), ...(fam.find(f => f
       .id === filters.type)?.subtypes || [])]);
-    const teamTypes = uniq(reg.missions.flatMap(m => [...m.teamTypes, ...m.aircraftTypes]));
+    // entrée incomplète (registre ancien, repris) : ni type d'équipe ni type d'aéronef, sans faire tomber la page
+    const teamTypes = uniq(reg.missions.flatMap(m => [...(m.teamTypes || []), ...(m.aircraftTypes || [])]));
     const opt = (v, l, cur) => `<option value="${esc(v)}" ${String(cur) === String(v) ? 'selected' : ''}>${esc(l)}</option>`;
     const counts = Object.keys(STATUS).map(k => [k, reg.missions.filter(m => m.status === k).length]).filter(([, n]) => n);
     host.innerHTML = `
@@ -1261,7 +1287,8 @@
     cb.type = 'button';
     cb.className = 'secondary';
     cb.dataset.icon = 'trash';
-    cb.dataset.minLevel = '4'; // v2 : niveau Expert
+    // v2 : niveau Expert, sauf s'il y a des missions à retirer (registre périmé : à tous les niveaux)
+    if (!missing) cb.dataset.minLevel = '4';
     cb.textContent = t(['Nettoyer le registre ({n})', 'Clean up the registry ({n})', 'Register bereinigen ({n})',
       'Limpiar el registro ({n})'
     ], {
@@ -1273,7 +1300,9 @@
     ]);
     cb.disabled = !missing;
     cb.onclick = async () => {
-      if (!await doScan()) return; // état « fichier absent » à jour avant de retirer quoi que ce soit
+      // état « fichier absent » à jour avant de retirer quoi que ce soit : relecture du dossier s'il est autorisé ; sinon,
+      // dossiers présents d'après le lanceur (déjà lus) — sans ouvrir le sélecteur de dossier
+      if ((await missionsDir(false) || !servedChecked) && !await doScan()) return;
       const n = reg.missions.filter(m => m.missingFile).length;
       if (!n) {
         msg = pill('generated', t(['Rien à nettoyer : toutes les missions ont leur fichier.',
@@ -1282,8 +1311,10 @@
         render();
         return;
       }
-      if (!confirm(t(['Retirer {n} mission(s) dont le fichier n’existe plus du registre ?',
-          'Remove {n} mission(s) whose file no longer exists from the registry?'
+      if (!await window.AppFramework.ask(t(['Retirer {n} mission(s) dont le fichier n’existe plus du registre ?',
+          'Remove {n} mission(s) whose file no longer exists from the registry?',
+          '{n} Mission(en), deren Datei nicht mehr existiert, aus dem Register entfernen?',
+          '¿Retirar del registro {n} misión(es) cuyo archivo ya no existe?'
         ], {
           n
         }))) return;
@@ -2106,6 +2137,8 @@
     if (selected) setTimeout(() => document.getElementById('rgDetail')?.scrollIntoView({
       block: 'start'
     }), 300);
+    // missions de l'index sans dossier : bandeau « Nettoyer l'index » (page du registre seulement)
+    if (host) ghostsLoad();
     // relecture silencieuse si le dossier est déjà autorisé
     if (await missionsDir(false)) doScan();
   })();
