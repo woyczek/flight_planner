@@ -149,7 +149,7 @@ List of the R, D, TRA zones and of the RTBA crossed by the probable route and th
 - Mission of a coordinated exercise: list for information only.
 - Single mission: requests to be made by the crew; the list is included in the PDF brief.
 
-Limit: indicative calculation, which replaces neither the AZBA charts nor the NOTAMs. Without an SIA base, the block says where to read it (studio, “SIA database” block, or Settings › Maintenance › Aeronautical data).
+Limit: indicative calculation, which replaces neither the AZBA charts nor the NOTAMs. Without an SIA base, the block says where to read it (Settings › Maintenance › Aeronautical data, or the “SIA base” line of the studio’s Mission block).
 
 ### Exercise
 
@@ -213,7 +213,7 @@ It works on the mission shared with the generator. Technical details: [missions 
 ### Mission
 
 - Status line of the loaded mission and “Save to the folder” button: writes the mission and the studio settings (profile and framing of each map, traces, tracks) to `mission<ID>.yaml`. The result is shown next to the button and as a notification. Below, the same status line as in the generator, with “Undo changes”.
-- “SIA base” line: AIRAC cycle, number of airspaces and of MORA cells, link to Settings › Maintenance › Aeronautical data.
+- “SIA base” line: AIRAC cycle, number of airspaces and of MORA cells, link to Settings › Maintenance › Aeronautical data. The studio no longer has an “SIA database” block: its panel (folder, re-read, gauge, report) appears under this line only when needed — “Build the database now”, database missing or to rebuild. The database is managed in Settings › Maintenance › Aeronautical data (“Rebuild the aeronautical database”).
 - “Open another mission: Markdown / YAML file or pasted text” (collapsed when a mission is loaded): choose a file, or “or paste its content…” then “Read the mission”.
 
 The mission opened here becomes the mission shared with the generator. For an exercise mission, the missing exercise maps are added automatically: save the mission to keep them.
@@ -265,21 +265,11 @@ Adding: name, type (“general”, “target”, “detail”, “zone”) then 
 
 Output type (PNG, editable SVG) and PNG width: ☰ menu › “Map outputs”. The overview map is always included; it is shown at the bottom of the block.
 
-### SIA database
-
-Block hidden by default: click “Show” in its header.
-- `data/sia` folder, stored like the other folders of the suite.
-- “Rebuild the aeronautical database” after each AIRAC update; “Cancel” stops without changing the stored base.
-- “Purge the cache” clears the base kept in this browser (to be re-read afterwards).
-- The status line shows the stored base (folder, AIRAC cycle, date); “Files analysed” lists the XML files read.
-
-If the folder contains several cycles, only the most recent is read; the others are flagged, to be archived. This is the same block as Settings › Maintenance › Aeronautical data (“Rebuild the aeronautical database”), which reads the active zones and their ticked sources.
-
 ## Mission registry
 <!-- page: apps/cpco/mission_registry.html -->
 
 The registry lists all the generated or ordered missions, with their follow-up by the Centre: status, flight date, notes, reports.
-It is used to choose a mission, open it in the generator or the studio, assign it to pilots, create its report and order new missions.
+It is used to choose a mission, open it in the generator or the studio, assign it to pilots, create its report and import the reply of an ordered mission.
 Access: sidebar “Missions”, which opens on the registry (“Registry” tab), or ☰ › “Mission registry (SIA)”. At the top, “New mission” opens the generator on a new mission: creation happens there. The registry consults, files, duplicates, deletes and imports what arrives (files, ChatGPT reply for an ordered mission).
 Depending on the usage level: the page is offered from the Design level (3), with the essentials: “Add files…” and “Re-read folder”, four filters and “More filters”, a seven-column table, a card without the map studio and the simplified order form. The rest is at the Expert level (4), as shown below.
 

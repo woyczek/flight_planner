@@ -213,7 +213,7 @@ Liste des zones R, D, TRA et du RTBA recoupées par la route probable et les zon
 - Mission d'un exercice coordonné : liste pour information seulement.
 - Mission seule : demandes à faire par l'équipage ; la liste est reprise dans le brief PDF.
 
-Limite : calcul indicatif, qui ne remplace ni les cartes AZBA ni les NOTAM. Sans base SIA, le bloc indique où la lire (studio, bloc « Base de données SIA », ou Paramètres › Maintenance › Données aéronautiques).
+Limite : calcul indicatif, qui ne remplace ni les cartes AZBA ni les NOTAM. Sans base SIA, le bloc indique où la lire (Paramètres › Maintenance › Données aéronautiques, ou ligne « Base SIA » du bloc Mission du studio).
 
 ### Exercice
 
@@ -277,7 +277,7 @@ Il travaille sur la mission partagée avec le générateur. Détails techniques 
 ### Mission
 
 - Ligne d'état de la mission chargée et bouton « Enregistrer dans le dossier » : écrit la mission et les réglages du studio (profil et cadrage de chaque carte, tracés, pistes) dans `mission<ID>.yaml`. Le résultat s'affiche à côté du bouton et en notification. Dessous, la même ligne d'état que dans le générateur, avec « Annuler les modifications ».
-- Ligne « Base SIA » : cycle AIRAC, nombre d'espaces et de cellules MORA, lien vers Paramètres › Maintenance › Données aéronautiques.
+- Ligne « Base SIA » : cycle AIRAC, nombre d'espaces et de cellules MORA, lien vers Paramètres › Maintenance › Données aéronautiques. Le studio n'a plus de bloc « Base de données SIA » : son panneau (dossier, relecture, jauge, rapport) n'apparaît sous cette ligne que s'il le faut — « Construire la base maintenant », base absente ou à reconstruire. La base se gère dans Paramètres › Maintenance › Données aéronautiques (« Reconstruire la base aéronautique »).
 - « Ouvrir une autre mission : fichier Markdown / YAML ou texte collé » (replié quand une mission est chargée) : choisissez un fichier, ou « ou coller son contenu… » puis « Lire la mission ».
 
 La mission ouverte ici devient la mission partagée avec le générateur. Pour une mission d'exercice, les cartes d'exercice manquantes sont ajoutées d'office : enregistrez la mission pour les garder.
@@ -344,21 +344,11 @@ Ajout : nom, type (« générale », « cible », « détail », « zone ») pui
 
 Type de sortie (PNG, SVG éditable) et largeur des PNG : menu ☰ › « Sorties des cartes ». La carte d'assemblage est toujours incluse ; elle s'affiche en bas du bloc.
 
-### Base de données SIA
-
-Bloc masqué par défaut : cliquez « Afficher » dans son en-tête.
-- Dossier `data/sia`, mémorisé comme les autres dossiers de la suite.
-- « Reconstruire la base aéronautique » après chaque mise à jour AIRAC ; « Annuler » interrompt sans changer la base mémorisée.
-- « Purger le cache » efface la base gardée dans ce navigateur (à relire ensuite).
-- La ligne d'état indique la base mémorisée (dossier, cycle AIRAC, date) ; « Fichiers analysés » liste les XML lus.
-
-Si le dossier contient plusieurs cycles, seul le plus récent est lu ; les autres sont signalés, à archiver. C'est le même bloc que Paramètres › Maintenance › Données aéronautiques (« Reconstruire la base aéronautique »), qui lit les zones actives et leurs sources cochées.
-
 ## Registre des missions
 <!-- page: apps/cpco/mission_registry.html -->
 
 Le registre recense toutes les missions générées ou commandées, avec leur suivi par le Centre : statut, date de vol, notes, comptes rendus.
-Il sert à choisir une mission, à l'ouvrir dans le générateur ou le studio, à l'affecter à des pilotes, à créer son CR et à commander de nouvelles missions.
+Il sert à choisir une mission, à l'ouvrir dans le générateur ou le studio, à l'affecter à des pilotes, à créer son CR et à importer la réponse d'une mission commandée.
 Accès : barre latérale « Missions », qui s'ouvre sur le registre (onglet « Registre »), ou ☰ › « Centre — Registre des missions ». En tête, « Nouvelle mission » ouvre le générateur sur une mission neuve : la création se fait là. Le registre consulte, range, duplique, supprime et importe ce qui arrive (fichiers, réponse de ChatGPT d'une mission commandée).
 Selon le niveau d'utilisation : la page est proposée à partir du niveau Conception (3), avec l'essentiel : « Ajouter des fichiers… » et « Relire le dossier », quatre filtres et « Plus de filtres », un tableau à sept colonnes, une fiche sans le studio et le formulaire de commande simplifié. Le reste est au niveau Expert (4), comme indiqué ci-dessous.
 

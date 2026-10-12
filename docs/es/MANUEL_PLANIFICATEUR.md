@@ -149,7 +149,7 @@ Lista de las zonas R, D, TRA y de la RTBA atravesadas por la ruta probable y las
 - Misión de un ejercicio coordinado: lista solo a título informativo.
 - Misión aislada: solicitudes que debe hacer la tripulación; la lista se incluye en el briefing PDF.
 
-Límite: cálculo indicativo, que no sustituye ni los mapas AZBA ni los NOTAM. Sin base SIA, el bloque indica dónde leerla (estudio, bloque «Base de datos SIA», o Ajustes › Mantenimiento › Datos aeronáuticos).
+Límite: cálculo indicativo, que no sustituye ni los mapas AZBA ni los NOTAM. Sin base SIA, el bloque indica dónde leerla (Ajustes › Mantenimiento › Datos aeronáuticos, o línea «Base SIA» del bloque Misión del estudio).
 
 ### Ejercicio
 
@@ -213,7 +213,7 @@ Trabaja sobre la misión compartida con el generador. Detalles técnicos: [misio
 ### Misión
 
 - Línea de estado de la misión cargada y botón «Guardar en la carpeta»: escribe la misión y los ajustes del estudio (perfil y encuadre de cada mapa, trazados, pistas) en `mission<ID>.yaml`. El resultado aparece junto al botón y en una notificación. Debajo, la misma línea de estado que en el generador, con «Deshacer los cambios».
-- Línea «Base SIA»: ciclo AIRAC, número de espacios y de celdas MORA, enlace a Ajustes › Mantenimiento › Datos aeronáuticos.
+- Línea «Base SIA»: ciclo AIRAC, número de espacios y de celdas MORA, enlace a Ajustes › Mantenimiento › Datos aeronáuticos. El estudio ya no tiene bloque «Base de datos SIA»: su panel (carpeta, relectura, indicador, informe) solo aparece bajo esta línea cuando hace falta — «Construir la base ahora», base ausente o por reconstruir. La base se gestiona en Ajustes › Mantenimiento › Datos aeronáuticos («Reconstruir la base aeronáutica»).
 - «Abrir otra misión: archivo Markdown / YAML o texto pegado» (plegado cuando hay una misión cargada): elija un archivo, o «o pegar su contenido…» y después «Leer la misión».
 
 La misión abierta aquí pasa a ser la misión compartida con el generador. En una misión de ejercicio, los mapas de ejercicio que faltan se añaden automáticamente: guarde la misión para conservarlos.
@@ -265,21 +265,11 @@ Para añadir: nombre, tipo («general», «objetivo», «detalle», «zona») y 
 
 Tipo de salida (PNG, SVG editable) y anchura de los PNG: menú ☰ › «Salidas de mapas». El mapa de conjunto siempre se incluye; aparece al pie del bloque.
 
-### Base de datos SIA
-
-Bloque oculto por defecto: haga clic en «Mostrar» en su cabecera.
-- Carpeta `data/sia`, recordada como las demás carpetas de la suite.
-- «Reconstruir la base aeronáutica» después de cada actualización AIRAC; «Cancelar» interrumpe sin cambiar la base guardada.
-- «Vaciar la caché» borra la base guardada en este navegador (hay que releerla después).
-- La línea de estado indica la base guardada (carpeta, ciclo AIRAC, fecha); «Archivos analizados» lista los XML leídos.
-
-Si la carpeta contiene varios ciclos, solo se lee el más reciente; los demás se señalan para archivarlos. Es el mismo bloque que Ajustes › Mantenimiento › Datos aeronáuticos («Reconstruir la base aeronáutica»), que lee las zonas activas y sus fuentes marcadas.
-
 ## Registro de misiones
 <!-- page: apps/cpco/mission_registry.html -->
 
 El registro recoge todas las misiones generadas o encargadas, con su seguimiento por el Centro: estado, fecha de vuelo, notas, informes.
-Sirve para elegir una misión, abrirla en el generador o en el estudio, asignarla a pilotos, crear su informe y encargar nuevas misiones.
+Sirve para elegir una misión, abrirla en el generador o en el estudio, asignarla a pilotos, crear su informe e importar la respuesta de una misión encargada.
 Acceso: barra lateral «Misiones», que se abre en el registro (pestaña «Registro»), o ☰ › «Registro de misiones (SIA)». Arriba, «Nueva misión» abre el generador con una misión nueva: la creación se hace allí. El registro consulta, guarda, duplica, elimina e importa lo que llega (archivos, respuesta de ChatGPT de una misión encargada).
 Según el nivel de uso: la página se ofrece a partir del nivel Diseño (3), con lo esencial: «Añadir archivos…» y «Releer la carpeta», cuatro filtros y «Más filtros», una tabla de siete columnas, una ficha sin el estudio y el formulario de encargo simplificado. El resto está en el nivel Experto (4), como se indica a continuación.
 

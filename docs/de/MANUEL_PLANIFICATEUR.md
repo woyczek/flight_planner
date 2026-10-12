@@ -149,7 +149,7 @@ Liste der Gebiete R, D, TRA und des RTBA, die von der wahrscheinlichen Route und
 - Mission einer koordinierten Übung: Liste nur zur Information.
 - Einzelmission: Anträge durch die Besatzung; die Liste wird ins Briefing-PDF übernommen.
 
-Grenze: Die Berechnung ist ein Richtwert und ersetzt weder die AZBA-Karten noch die NOTAM. Ohne SIA-Datenbank gibt der Block an, wo sie zu lesen ist (Studio, Block „SIA-Datenbank“, oder Einstellungen › Wartung › Luftfahrtdaten).
+Grenze: Die Berechnung ist ein Richtwert und ersetzt weder die AZBA-Karten noch die NOTAM. Ohne SIA-Datenbank gibt der Block an, wo sie zu lesen ist (Einstellungen › Wartung › Luftfahrtdaten, oder Zeile „SIA-Datenbank“ im Block Mission des Studios).
 
 ### Übung
 
@@ -213,7 +213,7 @@ Es arbeitet an der mit dem Generator geteilten Mission. Technische Details: [Mis
 ### Mission
 
 - Statuszeile der geladenen Mission und Schaltfläche „Im Ordner speichern“: schreibt die Mission und die Einstellungen des Studios (Profil und Ausschnitt jeder Karte, Linien, Spuren) in `mission<ID>.yaml`. Das Ergebnis erscheint neben der Schaltfläche und als Benachrichtigung. Darunter dieselbe Statuszeile wie im Generator, mit „Änderungen verwerfen“.
-- Zeile „SIA-Datenbank“: AIRAC-Zyklus, Anzahl der Lufträume und der MORA-Zellen, Link zu Einstellungen › Wartung › Luftfahrtdaten.
+- Zeile „SIA-Datenbank“: AIRAC-Zyklus, Anzahl der Lufträume und der MORA-Zellen, Link zu Einstellungen › Wartung › Luftfahrtdaten. Das Studio hat keinen Block „SIA-Datenbank“ mehr: Sein Feld (Ordner, Neueinlesen, Fortschritt, Bericht) erscheint unter dieser Zeile nur bei Bedarf — „Datenbank jetzt aufbauen“, Datenbank fehlt oder ist neu aufzubauen. Die Datenbank wird unter Einstellungen › Wartung › Luftfahrtdaten verwaltet („Luftfahrtdatenbank neu aufbauen“).
 - „Andere Mission öffnen: Markdown-/YAML-Datei oder eingefügter Text“ (eingeklappt, wenn eine Mission geladen ist): Wählen Sie eine Datei, oder „oder Inhalt einfügen…“ und dann „Mission lesen“.
 
 Die hier geöffnete Mission wird zur mit dem Generator geteilten Mission. Bei einer Übungsmission werden fehlende Übungskarten automatisch hinzugefügt: Speichern Sie die Mission, um sie zu behalten.
@@ -265,21 +265,11 @@ Hinzufügen: Name, Typ („Übersicht“, „Ziel“, „Detail“, „Gebiet“
 
 Ausgabeart (PNG, bearbeitbares SVG) und Breite der PNGs: Menü ☰ › „Kartenausgaben“. Die Übersichtskarte ist immer enthalten; sie erscheint unten im Block.
 
-### SIA-Datenbank
-
-Block standardmäßig ausgeblendet: Klicken Sie in seinem Kopf auf „Anzeigen“.
-- Ordner `data/sia`, gespeichert wie die anderen Ordner der Suite.
-- „Luftfahrtdatenbank neu aufbauen“ nach jeder AIRAC-Aktualisierung; „Abbrechen“ unterbricht, ohne die gespeicherte Datenbank zu ändern.
-- „Cache leeren“ löscht die in diesem Browser gespeicherte Datenbank (danach neu einzulesen).
-- Die Statuszeile zeigt die gespeicherte Datenbank (Ordner, AIRAC-Zyklus, Datum); „Analysierte Dateien“ listet die gelesenen XML.
-
-Enthält der Ordner mehrere Zyklen, wird nur der neueste gelesen; die anderen werden gemeldet und sind zu archivieren. Es ist derselbe Block wie unter Einstellungen › Wartung › Luftfahrtdaten („Luftfahrtdatenbank neu aufbauen“), der die aktiven Zonen und ihre angehakten Quellen liest.
-
 ## Missionsregister
 <!-- page: apps/cpco/mission_registry.html -->
 
 Das Register erfasst alle erzeugten oder bestellten Missionen mit ihrer Verfolgung durch das Zentrum: Status, Flugdatum, Notizen, Berichte.
-Es dient dazu, eine Mission auszuwählen, sie im Generator oder im Studio zu öffnen, sie Piloten zuzuweisen, ihren Bericht zu erstellen und neue Missionen zu bestellen.
+Es dient dazu, eine Mission auszuwählen, sie im Generator oder im Studio zu öffnen, sie Piloten zuzuweisen, ihren Bericht zu erstellen und die Antwort einer bestellten Mission zu importieren.
 Zugang: Seitenleiste „Missionen“, die sich auf dem Register öffnet (Reiter „Register“), oder ☰ › „Missionsregister (SIA)“. Oben öffnet „Neue Mission“ den Generator mit einer neuen Mission: Dort wird angelegt. Das Register zeigt an, legt ab, dupliziert, löscht und importiert, was ankommt (Dateien, Antwort von ChatGPT für eine bestellte Mission).
 Je nach Nutzungsstufe: Die Seite wird ab der Stufe Gestaltung (3) angeboten, mit dem Wesentlichen: „Dateien hinzufügen…“ und „Ordner neu lesen“, vier Filter und „Weitere Filter“, eine Tabelle mit sieben Spalten, ein Blatt ohne das Kartenstudio und das vereinfachte Bestellformular. Der Rest gehört zur Stufe Experte (4), wie unten angegeben.
 

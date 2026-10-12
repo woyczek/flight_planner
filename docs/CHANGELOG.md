@@ -10,254 +10,98 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ## [Unreleased]
 
-### Ajouté
+### Added
 
+- **Missions: creation has a single door, the generator** — "New mission", "Create the skeleton here" and "Order
+  from ChatGPT…" live in the generator's Mission block. The registry no longer creates anything (its "Order a mission"
+  block is gone): it consults, files, duplicates, deletes and imports what arrives. Its "New mission" button opens the
+  generator on a new mission with the order form unfolded (`mission_editor.html?new`); "Open in generator" opens an
+  existing one. "New mission" asks before replacing a mission not yet saved to the folder (declining reopens it) and
+  clears the previous operation batch. The order card's button reads "Copy this order's prompt again".
+- **Mission generator: "Create the skeleton here", without ChatGPT** — the order settings give complete missions
+  without story: one per flying team, aircraft from the fleet suited to the family (prompt § 6 categories; tanker and
+  receivers for air refuelling), callsign from the fleet or the callsign table, airfields at the aircraft base,
+  theatre of that base, target, turning points, rendezvous, working zone, AAR track if planned, timing from the
+  duration, expected maps, empty sections; with "Coordinated exercise", the organisation mission …Z. A "Skeleton: n
+  point(s) to place, m text(s) to write" line leads to the studio; empty fields are framed until filled.
+- **Mission generator: "Step by step" guided entry** (`apps/cpco/mission_guide.js`) — a rail of six steps (Frame,
+  Places, Story, Objectives and risks, Timeline, Maps and documents), one open at a time, "Next →", "Show everything"
+  for the full layout; same data as the blocks. Proposals are put in the field and marked "proposed ✓" (theatre from
+  the aircraft base, fleet callsign, departure = base, entry/exit 15 NM from the target, story canvas, route events,
+  maps from the places); warnings are lines under the field with one-click fixes. Places: search over airfields,
+  beacons, points and towns, "+ Target / Working zone / Turning point / Rendezvous", and "Paste a table of points"
+  (`shared/point_table.js`: separator and header detected, decimal, DMS or degrees-minutes coordinates, unresolved
+  places looked up by exact name, preview before "Add n points", line order = route order; also in the YAML block).
+  Risks in a four-column table with a level selector. Default for a new mission at levels 1 to 3.
+- **Mission generator: six paths by hand** (docs/technique/V2_FABLE.md § 10) — on the Operation line of the Mission
+  block, each action saying first what it creates or removes: "Add a crew…" (standalone mission → crew A, M-016 →
+  M-016A, new mission B with the shared context and its own brief; in an operation, the next letter), "Remove this
+  crew…" (the last crew becomes standalone again), "Create the exercise organisation…", "Open the organisation". Any
+  crew mission gets a timeline in its "Timeline" section (H = planned take-off, events at H+n at a place of the
+  mission or free text), printed at the top of the brief's Timeline section.
+- **Mission generator and map studio: status line, "Undo changes", Operation line** — a status line under the Mission
+  buttons, the same in both pages: "Saved to the folder (n min ago)", "Same as the folder version", "Not yet saved to
+  the folder" or "Unsaved changes since 14:32 (n field(s))"; "Save to the folder" is the main button while something is
+  unsaved; "Undo changes" goes back to the saved or loaded version, the other page following. In the generator, an
+  Operation line always shown ("Standalone mission (no operation)" or "Operation X (A-001): crew B of 5 ·
+  organisation A-001Z · H-hour 10:00"); the Operation block only for operations.
+- **Mission generator: hand-written missions tidied at the source** — risks one per line with columns separated by
+  tab, "—", "|" or ";", a level (Critical / High / Moderate / Low, four languages) recognised anywhere, stored as
+  `{ hazard, level, consequence, mitigation }` and printed with their level; a line without separator goes to notes.
+  A numbered list in the main objective is split (first item stays, the others lead the secondaries). Applied when
+  leaving the section and on opening a mission. A line in Identification flags a theatre that does not match the
+  departure airfield, with a one-click fix. YAML editor: place names searched (airfields, beacons, points, towns;
+  `shared/place_search.js`), callsigns suggested from the fleet, the team name follows the callsign.
+- **Mission generator and registry: "Duplicate"** — a copy ready to edit: next free identifier and series of the same
+  family, references to the old identifier followed, title "… (copy)", operation reduced to the copy, maps and renders
+  to redo; it opens in the generator.
+- **Mission generator: text sections by type** — "Add a text section" offers the sections the brief and the report can
+  place, each typed (stable key, translated title, "where it appears, what to write"), one per type except "Free
+  text"; objectives, risks and notes are written under their YAML keys, the others complete the brief section of the
+  same name. The sections follow the page language.
+- **Map studio: "Points to place (n)"** — for a mission without coordinates, the Route block lists the places to
+  place: click the map, or search airfields, beacons, points, towns or "lat, lon"; a placed point can be dragged;
+  zone radius in km.
 - **Map studio: "⧉ Window" shows the same interactive map** — the window is the studio itself reduced to its live
-  MapLibre map (`map_parser.html?carte`, window name "carte"; `html[data-map-window]` set in the `<head>` before any
-  script: no side bar, header or footer, the suite's notifications and dialogs kept): pan, wheel and pinch zoom,
-  same overlays and draggable points as the main window; fixed toolbar ◀ list ▶, Recentre, Refresh, Open in the
-  studio, Close, keys ← → + − 0 Esc, window title = map name. Synchronised by BroadcastChannel "sia-studio-carte"
-  (mission, profiles, displayed map, aliases); points moved in the window are saved with the source
-  "studio-carte", one revision per move, never looping with the main studio. The former `#fenetre` mode and its
-  CSS rules are removed.
-- **Mission generator: "Paste a table of points"** (Places step of "Step by step", and the "All YAML data" block;
-  `shared/point_table.js`) — separator (tab, "|", ";", ",") and header (name, lat, lon, coordinates, type/role,
-  time, id) detected, otherwise columns name, lat, lon, role; decimal, DMS or degrees-minutes coordinates; lines
-  without coordinates looked up among known places (exact name); type target / zone / rdv files the line, otherwise
-  turning point; the line order becomes the route order. In-page preview (name, coordinates found, filed as, to
-  place) before "Add n points"; unresolved places arrive without coordinates. Planner manual (four languages).
-- **Mission generator: "Step by step" guided entry (docs/technique/V2_FABLE.md § 11)** — `apps/cpco/mission_guide.js`:
-  a rail of six steps (Frame, Places, Story, Objectives and risks, Timeline, Maps and documents), one open at a
-  time, "Next →", "Show everything" back to the full layout; same data as the blocks. Proposals are put in the
-  field and marked "proposed ✓" until confirmed or changed (theatre from the aircraft base, fleet callsign, team
-  name, departure = base, entry/exit 15 NM from the target on the route, story canvas, route events from the
-  duration estimate, maps from the places); warnings are lines under the field with one-click fixes ("Set …",
-  "Split into secondary objectives", "Place in the studio"). Places step with search over airfields, beacons,
-  points and towns and "+ Target / Working zone / Turning point / Rendezvous"; risks in a four-column table with
-  a level selector and a paste box. Default for a new mission (never saved, or skeleton) at levels 1 to 3; the
-  "Step by step" button of the Mission block at any level. Planner manual and end-to-end tutorial aligned (four
-  languages).
-- **Mission generator: hand-written missions tidied at the source (case G-001)** — risks: one per line, columns
-  separated by tab, "—", "|" or ";", a level column (Critical / High / Moderate / Low, four languages, asterisk kept)
-  recognised anywhere, stored as `{ hazard, level, consequence, mitigation }` (`level` new, printed in brief, PDF and
-  summary); a line without separator goes to notes. Main objective: a numbered list is split (first item stays, the
-  others lead the secondaries), list prefixes removed. Applied when leaving the section and on opening a mission
-  (`SiaMission.tidyMission`; the status line says what changed). Identification: a line flags a theatre that does
-  not match the departure airfield (ICAO prefix → territory) with a one-click fix; the skeleton takes the theatre of
-  the first aircraft's base and callsigns from the fleet or the callsign table (unique per team, team name follows).
-  Place search shared by the studio's "Points to place" and the generator's YAML editor (`shared/place_search.js`):
-  airfields, beacons, points, VRP, then GeoNames towns, 40 suggestions while typing, a chosen place sets the
-  coordinates. YAML editor: callsign suggestions from the fleet, team name and rendezvous participants follow the
-  callsign, departure/arrival tooltip (aircraft base by default). Planner manual updated in four languages.
-- **My profile › Aircraft: link to Aviation Fanatic** — under the field for adding an aircraft outside the fleet, a link
-  opens the Aviation Fanatic list of aircraft types (designators, retired types included) to look up a compatible
-  type oneself (`shared/equipment_editor.js`, 4 languages).
-- **Missions: creation has a single door, the generator** — the registry no longer creates anything: its "Order a
-  mission" block is removed (the order form lives in the generator's Mission block, "Order from ChatGPT…"); it
-  consults, files, duplicates, deletes and imports what arrives (files, ChatGPT reply panel of an ordered mission).
-  "Generate a mission" becomes "New mission" and opens the generator on a new mission with the order form unfolded
-  (`?new`); "Open in generator" still opens an existing mission. "New mission" (generator and `?new`) now asks before
-  replacing a mission not yet saved to the folder (changed, or never saved: skeleton, copy, added crew) — declining
-  from `?new` reopens the shared mission — and clears the previous operation batch. Order card button renamed "Copy
-  this order's prompt again". Planner manual (four languages): "Order a mission" moved to the generator chapter.
-- **Mission generator: six paths by hand (docs/technique/V2_FABLE.md § 10)** — actions on the Operation line of the
-  Mission block, each saying first what it will create or remove (identifiers included): "Add a crew…" (standalone
-  mission → crew A, identifier migrated M-016 → M-016A, new mission B with the shared context — family, theatre,
-  departure, arrival, target, zones, rendezvous, teams, expected maps renamed — next callsign and its own brief; in an
-  operation, the next letter; operation lists, teams and organisation participants updated), "Remove this crew…" (out
-  of the batch and the operation; the last crew without organisation becomes standalone again, M-016A → M-016),
-  "Create the exercise organisation…" (now confirmed) and "Open the organisation". Timed events on any crew mission:
-  the "Timeline" text section holds an event editor (H = planned take-off, H+n, place of the mission or free text),
-  printed at the top of the brief's Timeline section (PDF and summary Markdown; `timeline.events` in the YAML,
-  `MissionExercise.missionTimeline*`). Store helpers `SiaMission.mapBatch` and `removeFromBatch`. Planner manual (four
-  languages): "Six paths by hand" table, Operation line actions, mission timeline, and tutorial steps 10 to 12
-  (standalone mission → add a crew → create the organisation).
-- **Mission generator and map studio: status line, "Undo changes", Operation line** — under the Mission block buttons,
-  a status line always shown (coloured dot): "Saved to the folder (n min ago)", "Same as the folder version (loaded …)",
-  "Not yet saved to the folder" or "Unsaved changes since 14:32 (n field(s))", the same in both pages since they share
-  the mission at once (common working draft; tooltip says so). "Save to the folder" is the validation (main button
-  while something is unsaved); "Undo changes" (after confirmation) goes back to the last saved or loaded version, the
-  other page following. Reference versions are kept per mission in this browser (`SiaMission.markSaved`,
-  `savedState`, `savedDoc`, `renderSaveState`): loaded on import or from the registry, "new" for skeletons, copies and
-  organisations. In the generator, an Operation line always shown: "Standalone mission (no operation)" or "Operation
-  BOXING GLOVES (A-001): crew B of 5 · organisation A-001Z · H-hour 10:00" ("no organisation yet" with "Create the
-  exercise organisation…"); the Operation block is hidden for a single mission and its sentence uses the same words.
-  Four languages; planner manual updated in four languages.
-- **My profile › Aircraft and simulators: aircraft outside the fleet** — new "Other aircraft (outside the fleet)"
-  card: enter an ICAO designator or a model (list from the ICAO type base, aliases such as A400M → fleet A400) and
-  "Add"; the type is ticked "Owned" (Owned / Mastered boxes as for fleet types; an unknown designator is accepted as
-  is). These types go with the declared availability weeks, so the Centre sees them for assignments, and the card also
-  lists the out-of-fleet types declared by the other pilots ("Also declared by"), ready to tick. User manual updated in
-  four languages. The list also offers the published ICAO list (`AircraftDB/aircraft_types.txt`) with common names
-  from the aliases ("S210 — Caravelle"), so types missing from this computer's base are proposed; such a type, once
-  added, is completed by the launcher in a short pass (`POST /__setup/aircraft-db { codes, quick }`: ICAO type and
-  EUROCONTROL performance only), one pass at a time, started by "Add" only, never while typing; a retired type the
-  official sources no longer know is kept with the note "not found in the official sources". A refused entry now says
-  what was read and puts the closest designator in the field ("Add" to confirm). The browser's datalist is replaced by
-  suggestions computed while typing (local index of fleet, this computer's base, published ICAO list, alias names and
-  types declared by other pilots; arrows, Enter, Escape; origin shown on each line), with a hint under the field saying
-  the base is only completed by the launcher on "Add". Wider recognition: accents, spaces and hyphens ignored, single
-  words or two joined words ("SE 210 Caravelle" → S210), name prefixes and substrings; a vague entry ("cara": Caravelle
-  or Caravan?) is refused with the closest type proposed. Added types can be corrected or deleted: click the row (or
-  Enter on it) to edit it — its code goes into the field with suggestions, "Add" becomes "Replace" ("Mastered" carried
-  over), next to "Delete" and "Cancel" (Esc); no buttons in the rows.
-- **Aircraft type base: Aviation Fanatic as a last resort** — `AircraftDB/update_aircraft_db.py` looks a designator up
-  on aviationfanatic.com when neither ICAO Doc 8643 nor EUROCONTROL knows it (retired types such as the S210
-  Caravelle): one page per type, name, ICAO description rebuilt from the category, engine count and type (L2J) and wake
-  category; the wing position then comes from Wikipedia as for other types. Kept on each computer, never published
-  (`LICENSE.md`: © Bálint Tóth, no open licence). Administrator and user manuals updated in four languages.
+  map (`map_parser.html?carte`): no side bar, header or footer; pan, wheel and pinch zoom, same overlays and draggable
+  points; toolbar ◀ list ▶, Recentre, Refresh, Open in the studio, Close; keys ← → + − 0 Esc. Synchronised with the
+  main studio; a point moved in the window is saved once, without looping.
+- **Mission registry: ChatGPT reply, deletion** — an ordered mission shows a "ChatGPT reply" panel (paste the reply or
+  choose the files): the mission is filed in the missions folder and replaces the order. "Delete…" on the card
+  (folder included, after confirmation); "Remove pending orders (n)".
+- **My profile › Aircraft: aircraft outside the fleet** — an "Other aircraft (outside the fleet)" card: type a
+  designator, a model or a common name (suggestions while typing: fleet, this computer's type base, published ICAO list,
+  aliases, types declared by other pilots); the type is ticked "Owned" and goes with the declared availability, so the
+  Centre and the other pilots see it. Click a row to correct or delete it. A type missing from this computer's base is
+  completed by the launcher on "Add" (short pass, queued if one is running, still running if the page is closed):
+  ICAO, EUROCONTROL, then Aviation Fanatic as a last resort for retired or non-ICAO types (S210 Caravelle, GZ20
+  airship; read on each computer, never published). A link opens the Aviation Fanatic type list.
+- **Help page: fixed structure, tutorials first** — Tutorials · Pilot, planner and administrator manuals · For
+  developers; the home page and the index come from that structure, search covers tutorials and the three manuals in
+  the current language.
 
+### Changed
 
-### Modifié
+- **Map studio: "SIA database" block removed** — its panel (folder, re-read, gauge, report) appears under the "SIA base"
+  line of the Mission block only when needed; the database is managed in Settings › Maintenance › Aeronautical data.
+  Flight maps keeps the block.
+- **No native browser dialog left in the suite** — every `confirm()`, `prompt()` and `alert()` now asks in the page
+  (`AppFramework.ask`, new `AppFramework.askText`); confirmations wait for the shared layer instead of freezing the tab.
+  Only the two bookmarklets, which run on the airline's website, keep `alert()`.
 
-- **Technical documents translated into English** (Features SOG share): `AFFECTATION_MISSIONS.md`, `ASSETS_A_FOURNIR.md`,
-  `COMPTES_SIGNES.md`, `DISPOS_ET_REORGANISATION.md`, `DONNEES_AERO_ETRANGER.md`, `FRAMEWORK.md`, `ODV_ORDRES.md`,
-  `PROMPTS_ASSETS_PHASE2.md`, `PROMPTS_LIVRE_MISSION.md`, `PROPOSITION_DESIGN_ICONES.md`, `REFACTORING_TOOLKIT.md`,
-  `ROADMAP.md`, `SIA_XML_INTEGRATION.md`, `V2_NIVEAUX.md`, `mission_report_core_audit.md`, and the framing text of
-  `PROMPT_GENERATEUR_MISSIONS.md` / `PROMPT_PROFIL_PERFORMANCES.md` (prompt blocks unchanged, generated prompts identical);
-  same file names, internal anchor links updated.
-- **Technical documents translated into English** (BUGS SOG share): `docs/technique/BUGS.md`, `perf/SYNTHESE.md`,
-  `perf/RAPPORT_PERF.md`, `SYNCHRONISATION.md` (diagram labels included), `INDEX_DONNEES.md`, `DETTE_TECHNIQUE.md` —
-  history included; file names, section numbers, paths and links unchanged.
-- **Security audits translated into English** (repository in English, decision of 12 October): `docs/technique/AUDIT_SECURITE_2026-10-02.md`, `docs/technique/AUDIT_2026-09-28.md`, `docs/technique/AUDIT_SECURITE_2026-10-07.md` — same file names, translated headings, internal links following them.
-- **Help page: fixed structure, tutorials first** — Tutorials · Manuals (user, administrator) · Operations
-  (operations manual, installation, release notes, changelog) · For developers (collapsed, from
-  `docs/technique/README.md`); the home page and the left index are produced from that structure (`HELP` in
-  `apps/aide/aide.js`), no longer from the hand-written table of `docs/README.md` (now a short pointer, in English);
-  tutorials listed with one sentence each (only those present); manuals with their chapters; search over tutorials and
-  manuals in the current language, developer documentation on request; results named by document title.
-- **Mission generator: text sections follow the page language** — redrawn when the language is resolved or changed.
-- **Mission generator: text sections by type** — each section carries a type (stable internal key) chosen from a
-  translated list and changeable afterwards (content moved to the right YAML key or brief section); its displayed title
-  is the translated type; one section per type (taken types greyed out), except “Free text”, which has a typed title,
-  can be added any number of times and goes at the end of the brief. Explanations (“where it appears, what to write”)
-  and the card labels are in the page language only. Skeleton sections typed and marked as created in the generator.
-  Administrator manual (4 languages).
-- **Générateur, squelette : appareil adapté à la famille** — « automatique » choisit dans la flotte un appareil des
-  catégories du prompt (§ 6 : Transport, Chasse / surveillance, Sécurité civile, Hélicoptères) qui conviennent à la
-  famille (HEMS et police : hélicoptères ; feux : Sécurité civile ; combat : chasseurs ; surveillance maritime : ni
-  chasseur ni monomoteur…) ; ravitaillement en vol : l'équipe A ravitailleur, les autres receveurs (prompt § 7), rôles
-  posés (`aircraft.role`, équipes, `air_refueling.role`) ; rien d'adapté : aéronef laissé à compléter. Manuel
-  administrateur (4 langues) : tutoriel « Préparer une mission de bout en bout » (générateur, studio, dossier, PDF) en
-  tête du chapitre Générateur de mission.
-- **Générateur de missions : rubriques textuelles nommées** (V2_FABLE § 8, L1) — « Ajouter une rubrique textuelle »
-  propose les rubriques que le brief et le CR savent placer, chacune avec une ligne « où elle apparaît, ce qu'on y
-  écrit » ; une rubrique présente n'est plus proposée ; « Autre rubrique… » : titre libre, fin du brief. Objectif
-  principal, objectifs secondaires, risques et notes s'écrivent dans le YAML sous leur clé (`objectives.primary`,
-  `objectives.secondary`, `risks`, `notes` ; un risque objet inchangé reste objet) ; les autres vont dans
-  `narrative.sections` et complètent, dans le brief Markdown (`SiaMission.markdownOf`), la section de même titre ;
-  section « Notes » ajoutée au brief. Manuel administrateur (4 langues).
+### Fixed
 
-### Corrigé
-
-- **Map studio and Flight maps: zoom buttons of the preview shown as two empty blue squares** — the page's button
-  style (blue background, padding) applied to MapLibre's + / − controls and shrank their dark icon to 0 px; the
-  controls keep MapLibre's look again (`map_parser.html`, `map_planner.html` regenerated).
-- **No native browser dialog left in the suite** — a native `confirm()` opened before the shared layer had frozen the
-  generator in the user's Chrome. Every remaining `confirm()`, `prompt()` and `alert()` now asks in the page:
-  `AppFramework.ask` for confirmations, new `AppFramework.askText` for input (text field, choice list, or read-only
-  text to copy). Covered: generator (mission ID migration, now asynchronous), studio and Flight maps (clear the list,
-  error report and ICAO flight plan to copy, free flight), mission registry (ID format, map deletions), sortable tables
-  (row deletion), SIA database purge, Maintenance (zone purge, backup source), assignment dialog (other registration;
-  closing with pending assignments, `beforeClose` may now return a promise), reports (SIA mission replacing a draft,
-  report folder, legacy import, merge), reporting mission editing, FMS copy, CSV mission choice, first run, and the
-  shared "leave the page?" link checks (`guardUnsavedChanges`, running tasks), which no longer add the browser's own
-  question once confirmed. Only the two bookmarklets keep `alert()`: they run on the airline's website, without the
-  suite's shared layer.
-- **Mission generator and studio: no native browser dialog** — the "New mission" confirmation (`?new=1` with an unsaved
-  shared mission) and both "Undo changes" fell back to `confirm()` when called before the page framework was ready,
-  freezing the tab in Chrome; they now wait for the framework (in-page `AppFramework.ask`, 30 s at most) and never use
-  `confirm`. Opening `?new=1` with a saved shared mission no longer waits for anything.
-- **Aircraft types: types without an ICAO designator not found (GZ20, Goodyear GZ-20 airship)** — Aviation Fanatic
-  files them under `__CODE` with an empty ICAO field; the launcher now looks there too. The record is marked non-ICAO
-  (`icao: false`) with the generic designator for a flight plan (`fpl`, ICAO Doc 8643): SHIP for an airship (powered
-  balloon), BALL for a balloon, ZZZZ otherwise; shown in My profile › Aircraft ("non-ICAO: SHIP in a flight plan"),
-  class "balloon or airship" in Maintenance, "other" silhouette (`update_aircraft_db.py`, `equipment_editor.js`,
-  `maintenance_page.js`, `aircraft_icons.js`).
-- **Mission registry: "Generate a mission" opened the last mission instead of a new one** — the generator reloaded
-  the shared mission; it now opens a blank mission (`mission_editor.html?new`, same as "New mission"), the shared
-  mission being left as it is until the new one is edited.
-- **Aircraft outside the fleet: completion survives leaving the page** — a type added while a pass is running is now
-  queued by the launcher (`AIRCRAFT['queue']`, short pass started when the running one ends) instead of waiting in the
-  page, where it was lost if the page was closed; on opening, the page resumes following a running or queued pass
-  ("completing the type base…", record shown at the end) and marks a type the last pass could not find.
-- **Mission registry: ChatGPT reply imported on an ordered mission, deletion** — an ordered mission shows a "ChatGPT
-  reply" panel: paste the reply (YAML and Markdown) or choose the received files; the mission is stored in the missions
-  folder and replaces the order (order, date and notes kept, even if ChatGPT changed the series or identifier).
-  "Delete…" on the mission card: an order is removed from the registry; a stored mission has its folder deleted (files,
-  maps, versions, received texts), after confirmation. "Remove pending orders (n)" in the toolbar removes the orders
-  whose reply was never imported. Four languages.
-- **Technical documentation in English**: `docs/technique/V2_FABLE.md`, `CONTRASTE_2026-10-09.md` and `perf/RAPPORT_2026-10-08.md` translated in full (file names, anchors and internal links unchanged), as decided on 12 October — every published repository document is written in English.
-- **Studio cartographique : « Points à placer (n) »** — pour une mission sans coordonnées (squelette du générateur),
-  le bloc Route liste départ, cible, points tournants, rendez-vous, centres de zones et terrains sans position (ordre de
-  `route_order`) ; « Cliquer la carte » (curseur en croix, un clic pose le point, Échap annule) ou recherche dans la
-  base SIA (terrains, balises, points désignés, points VFR, ARIP / ARCP des axes AAR ; ou « lat, lon ») ; point posé
-  déplaçable en le glissant, rayon des zones en km, départ et arrivée identiques posés ensemble ; coordonnées écrites
-  dans la mission partagée (`editDoc`), le compte du générateur suit ; tout posé : « Générer les cartes et le ZIP ».
-  Coordonnées nulles plus prises pour 0,0 dans les cartes d'exercice, d'opération et des pistes (`hasPos`).
-  `apps/planner/map_planner.html` régénéré. Manuel administrateur (4 langues) : sous-section « Points à placer »,
-  tutoriel mis à jour.
-- **Générateur de missions : « Créer le squelette ici », sans ChatGPT** (V2_FABLE § 8, L3) — à côté de « Commander :
-  copier le prompt et ouvrir ChatGPT », les mêmes réglages (`MissionOrder.requestOf`, une seule source pour les deux
-  chemins) donnent la ou les missions complètes mais vides de récit (`apps/cpco/mission_skeleton.js`,
-  `MissionSkeleton.build`) : une par équipe en vol (aéronef et indicatif de la flotte), terrains à la base de l'aéronef,
-  cible, points tournants, rendez-vous par équipe (« avec ») et sa carte `detail_rdv`, zone de travail, ravitaillement
-  planifié avec un axe AAR (ARIP, ARCP, rendez-vous) si « oui », timing d'après la durée, cartes attendues décrites,
-  rubriques vides ; exercice coordonné : mission d'organisation …Z (heure H, participants, événements H, H+15 min…).
-  Mises en lot (`SiaMission.setBatch`) et ouvertes ; ligne « Squelette : n point(s) à placer, m texte(s) à écrire —
-  puis le studio pour les cartes » avec « Ouvrir au studio » ; champs vides encadrés (« à compléter ») jusqu'à leur
-  saisie. Nouveau réglage « Exercice coordonné » (libre / oui / non) dans le formulaire de commande et paramètre
-  `EXERCICE` du prompt de génération. Manuel administrateur (4 langues).
-- **Générateur et registre des missions : « Dupliquer »** (V2_FABLE § 8, L2) — dans le bloc « Mission » du
-  générateur et dans le registre, à côté d'« Ouvrir dans le générateur » : copie de la mission prête à modifier
-  (`SiaMission.duplicate`) — identifiant et série suivants libres de la même famille (`nextNumbering`, lettre d'équipe
-  gardée), références à l'ancien identifiant suivies dans le YAML et le récit (cartes attendues…), titre « … (copie) »,
-  `meta.duplicated_from` et `duplicated_at`, opération réduite à la copie (sans organisation d'exercice), fichiers
-  sources, cartes et rendus non repris ; la copie s'ouvre dans le générateur avec une ligne d'état qui le dit. Textes de
-  mission : sous-titre du bloc posé aussi au changement de mode, « Summary » devient « Résumé ». Manuel administrateur
-  (4 langues).
-- **My profile › Aircraft: no type-base lookup for BN2T, B17…** — the record of a type missing from this computer's base
-  was looked up only for the 279 designators published with the suite (`AircraftDB/aircraft_types.txt`); any other
-  designator stayed "type unknown to the ICAO base". Any designator-shaped code (letter + 1 to 3 letters or digits) is
-  now looked up when added (ICAO, EUROCONTROL, then Aviation Fanatic); a type added earlier without a record gets a
-  "Look up the record" button (`shared/equipment_editor.js`, 4 languages). A landplane (ICAO class L) is no longer given
-  the seaplane wing position because its Wikipedia article mentions a seaplane (B-17) (`update_aircraft_db.py`).
-- **Mission registry: "ChatGPT reply" box a few pixels wide** — the suite's auto-sizing text fields (`field-sizing:
-  content`) gave an empty box the width of its content; the box now takes the card width, about eight lines high.
-- **Map studio: "SIA database" block removed** — a permanent copy of the Settings › Maintenance block, of no use in the
-  studio. Its panel (folder, re-read, gauge, report) now appears under the SIA status line of the Mission block only
-  when needed: "Build the database now", database missing or to rebuild. Flight maps (no Mission block) keeps the block
-  (`tools/build_map_planner.py`); the generator's message points to Maintenance or to that button (4 languages).
-- **Mission registry: mission without a type, and imported mission that would not open** — `affectations.yaml` (pilots
-  assigned to a mission) was read as a mission file: merged after the mission, its `mission: A-001D` replaced the
-  mission block (identifier, type). It is now an annex file, both in the registry (`ANNEX`) and in
-  `SiaMission.fromTexts`; a re-read gives these missions their type back. Files added with "Add files…" from outside the
-  missions folder (Downloads…) were only listed, so the generator answered "mission files not found": they are now stored
-  in `data/missions/<letter>_<FAMILY>/<id>/` like a mission received in the generator, with the folder access asked for
-  by a button if needed. A folder-less duplicate of a stored mission is marked "missing file", so "Clean up the registry"
-  removes it (status, notes and flight date moved to the stored mission).
-- **Launcher: Python traceback on an unreadable request** (TLS on the HTTP port, unknown HTTP version): the security
-  headers read the request path before it existed (`tools/launch.py`).
-- **Générateur : retour au générateur qui rouvrait la mission du registre au lieu du squelette** — le jeton
-  « ouverte depuis le registre » (`siaFromRegistry:v1`) est consommé au premier usage par le générateur, abandonné par
-  le générateur et le studio s'il ne vise plus la mission partagée (pas de lien « ← Registre » périmé), et lu par
-  `mission_store.js` dès son chargement (le lien reste posé quand il est juste) ; le registre demande confirmation
-  avant de remplacer, dans le générateur et le studio, un squelette jamais rangé d'une autre opération.
-- **Registre et générateur, « Durée estimée » restée en français dans les autres langues** (« Vol estimé », « Bloc »,
-  « aller · sur zone · retour », méthode, transit, « Aucun CR… », « Afficher la route probable ») : textes du panneau
-  traduits (4 langues) ; les phrases du calcul gardées en français dans le registre (méthode, source de la vitesse,
-  mode et raison du transit) sont reconnues et traduites à l'affichage (`shared/mission_estimate.js`).
-- **Générateur : rubriques du brief en double et en deux langues** (« Summary », « Teams involved », « Risks to
-  consider »… à côté de leurs équivalents) — le brief rangé `summary<ID>.md` relu avec son YAML redevenait une
-  rubrique libre par section. Désormais une seule table des sections générées (`BRIEF_TITLES`, rendu français et
-  reconnaissance en 4 langues, `SiaMission.briefKey`) ; `markdownOf` marque les textes libres qu'il écrit
-  (`<!-- narrative: … -->`) ; avec un YAML, `fromTexts` ne reprend du `.md` que ces textes (fichier ancien : les
-  sections hors titres générés) ; un `.md` seul reste la source complète. Missions déjà chargées assainies à
-  l'ouverture (`cleanNarrative`, « n rubrique(s) issue(s) du brief rangé retirée(s) ») ; rubriques créées dans le
-  générateur marquées `named`. PDF du brief : filtre par la même table, chaque rubrique une seule fois (« — compléments »
-  pour une rubrique du générateur sur un sujet déjà imprimé). Résumé et description reconnus dans les 4 langues
-  (« Detailed description » → « Description détaillée ») ; à l'assainissement, leur texte rejoint le résumé ou la
-  description restés vides. Manuel administrateur (4 langues).
+- **Mission registry: mission without a type, imported mission that would not open** — `affectations.yaml` was read as
+  a mission file; files added from outside the missions folder are now filed in it; a folder-less duplicate is removed
+  by "Clean up the registry".
+- **Mission generator: duplicated brief sections in two languages** ("Summary", "Teams involved"… next to their
+  French titles) — one table of generated sections, recognised in four languages; missions already loaded are cleaned
+  on opening; the PDF prints each section once.
+- **Mission generator: back from the registry reopened the wrong mission** — the "opened from the registry" token is
+  used once and dropped when it no longer matches the shared mission.
+- **Registry and generator: "Estimated duration" left in French** in the other languages.
+- **Map studio and Flight maps: preview zoom buttons shown as two empty blue squares.**
+- **Launcher: Python traceback on an unreadable request** (TLS on the HTTP port, unknown HTTP version).
 
 ## [5.1.0] — 2026-10-09
 
