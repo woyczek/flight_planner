@@ -26,6 +26,10 @@ Lues par toutes les sessions qui travaillent sur ce dépôt. Elles priment sur l
   (tout `docs/technique/*`, historique compris, journal des bugs inclus) sont traduits en anglais ou rendus bilingues ;
   tout document ou toute section nouvelle est en anglais.
 - **Des boutons pour l'utilisateur final** : jamais de console ni de fichier à poser à la main ; la page enchaîne.
+- **Ergonomie : la session en charge a la vision d'ensemble** (décision de l'utilisateur du 12 octobre 2026). Une
+  demande d'ergonomie formulée « du genre … » est une intention, pas une spécification : la session peut ne pas
+  l'appliquer telle quelle, refuser en argumentant, reformuler ou proposer autre chose, et demander confirmation
+  quand le choix engage l'ensemble des pages. Elle dit toujours ce qu'elle a fait du mot de l'utilisateur.
 - Avertissements en notifications flottantes (`AppFramework.notify`).
 - Python du lanceur et des outils : **bibliothèque standard** seulement.
 - Avant chaque commit :
