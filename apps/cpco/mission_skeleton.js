@@ -27,15 +27,92 @@
     role,
     time_on_task_min: tot
   });
+  // ---- appareil « automatique » : règles de choix, pas de liste d'appareils propre — catégories du prompt (§ 6 :
+  // Transport, Chasse / surveillance, Sécurité civile, Hélicoptères) attendues par la famille, ravitailleurs et receveurs
+  // du prompt (§ 7) ; combat : chasseurs (réacteur, deux moteurs au plus) ; rien d'adapté dans la flotte : à compléter.
+  /** Catégories du § 6 du prompt attendues par famille (début de leur libellé) ; absente = tout appareil reconnu. */
+  const FAMILY_CATS = {
+    HEMS: ['Hélicoptères'],
+    LE: ['Hélicoptères'],
+    FIRE: ['Sécurité civile'],
+    AIRLIFT: ['Transport'],
+    AIRBORNE: ['Transport'],
+    FI: ['Transport'],
+    SURVEY: ['Transport', 'Hélicoptères'],
+    HADR: ['Transport', 'Hélicoptères'],
+    SOF: ['Hélicoptères', 'Transport'],
+    SAR: ['Hélicoptères', 'Sécurité civile'],
+    MARITIME: ['Sécurité civile', 'Hélicoptères', 'Chasse'],
+    COMBAT: ['Chasse'],
+    COMMAND: ['Chasse'],
+    ISR: ['Chasse']
+  };
+  /** Désignateurs du § 6 du prompt par catégorie : { « Transport » : [A400, C30J…], … } (lignes « Libellé : codes »). */
+  function promptCategories() {
+    const text = String(window.MISSION_PROMPT || ''),
+      a = text.indexOf('6. AÉRONEFS'),
+      sec = a < 0 ? '' : text.slice(a, text.indexOf('\n────', text.indexOf('\n────', a) + 5)),
+      db = window.AIRCRAFT_DB || {},
+      out = {};
+    let cur = null;
+    for (const line of sec.split('\n')) {
+      const m = /^\s{2}(\S[^:]*?)\s*:\s*(.*)$/.exec(line);
+      if (m && !/^\s{3,}/.test(line)) cur = out[m[1]] = [];
+      else if (!/^\s{3,}\S/.test(line)) cur = null; // fin de la liste
+      if (cur) cur.push(...((m && !/^\s{3,}/.test(line) ? m[2] : line).match(/\b[A-Z][A-Z0-9]{1,3}\b/g) || []).filter(c => db[c]))
+    }
+    return out
+  }
+  /** Désignateurs attendus pour une famille (catégories du § 6) ; combat : chasseurs seulement ; [] = sans contrainte. */
+  function familyCodes(type) {
+    const cats = promptCategories(),
+      want = FAMILY_CATS[type];
+    if (!want) return [];
+    let codes = Object.entries(cats).filter(([k]) => want.some(w => k.startsWith(w))).flatMap(([, v]) => v);
+    // chasseurs : réacteur, un ou deux moteurs (description OACI L1J / L2J) — seuls admis au combat, exclus de la
+    // surveillance maritime
+    const fighter = c => /^L[12]J/.test(String((window.AIRCRAFT_DB || {})[c]?.description || ''));
+    if (type === 'COMBAT') codes = codes.filter(fighter);
+    // surveillance maritime : ni chasseur ni avion monomoteur (école, drone) — multimoteurs et hélicoptères
+    if (type === 'MARITIME') codes = codes.filter(c => !fighter(c) && !/^L1/.test(String((window.AIRCRAFT_DB || {})[c]?.description ||
+      '')));
+    return [...new Set(codes)]
+  }
+  /** Désignateurs OACI cités dans une section du prompt de génération (« 6. AÉRONEFS », « 7. RAVITAILLEMENT »…). */
+  function promptCodes(title, from = '', to = '') {
+    const text = String(window.MISSION_PROMPT || ''),
+      a = text.indexOf(title);
+    if (a < 0) return [];
+    const rule = text.indexOf('\n────', a), // filet sous le titre, puis filet de fin de section
+      end = text.indexOf('\n────', rule + 5),
+      sec = text.slice(a, end > 0 ? end : undefined),
+      i = from ? Math.max(0, sec.indexOf(from)) : 0,
+      j = to ? sec.indexOf(to, i + 1) : -1,
+      part = sec.slice(i, j > i ? j : undefined);
+    const db = window.AIRCRAFT_DB || {},
+      codes = (part.match(/\b[A-Z][A-Z0-9]{1,3}\b/g) || []).filter(c => db[c]);
+    // noms usuels (« Rafale ») : désignateur d'après la base OACI
+    for (const w of part.match(/\b[A-Z][a-z]+\b/g) || []) {
+      const c = window.MissionEstimate?.designator?.(w);
+      if (c) codes.push(c)
+    }
+    return [...new Set(codes)]
+  }
+  /** La ligne de la flotte convient-elle au besoin need { codes } ? (pas de codes : toute ligne). */
+  const fits = (r, need) => !need.codes || need.codes.includes(r.type);
   /** Ligne de la flotte d'un réglage d'équipe : « TYPE VARIANTE — INDICATIF » (liste du formulaire), type seul, ou vide
-   *  (automatique : un appareil de la flotte pas encore pris). */
-  function aircraftFor(slot, fleet, used) {
+   *  (automatique : un appareil de la flotte pas encore pris, adapté au besoin need ; aucun : à compléter). */
+  function aircraftFor(slot, fleet, used, need = {}) {
     const v = String(slot || '').trim(),
       tail = v.split(' — ')[1]?.trim().toUpperCase(),
-      code = window.MissionEstimate?.designator?.(v) || '';
+      code = window.MissionEstimate?.designator?.(v) || '',
+      known = promptCodes('6. AÉRONEFS');
     let row = tail ? fleet.find(r => [r.callsign, r.registration, r.code].some(x => String(x || '').toUpperCase() === tail)) : null;
     if (!row && code) row = fleet.find(r => r.type === code && !used.has(r)) || fleet.find(r => r.type === code);
-    if (!row && !v) row = pick(fleet.filter(r => r.operational !== false && !used.has(r))) || pick(fleet);
+    if (!row && !v) {
+      const ok = fleet.filter(r => r.operational !== false && !used.has(r) && fits(r, need));
+      row = pick(ok.filter(r => known.includes(r.type))) || pick(ok) || null // rien d'adapté : à compléter
+    }
     if (row) used.add(row);
     return {
       row,
@@ -89,9 +166,20 @@
       zId = exercise ? window.MissionExercise?.organisationId?.(base) || base + 'Z' : '',
       minutes = MINUTES[request.duration] || 90,
       used = new Set(),
+      tankers = promptCodes('7. RAVITAILLEMENT', 'Tanker', 'receveurs'),
+      receivers = promptCodes('7. RAVITAILLEMENT', 'receveurs'),
+      famCodes = familyCodes(type),
+      /** Besoin de l'équipe i : ravitailleur (AAR, équipe A), receveur (ceux du prompt § 7 et les chasseurs), ou appareils
+       *  des catégories de la famille ; famille sans catégorie : tout appareil. */
+      needFor = i => type === 'AAR' ? {
+        codes: i === 0 ? tankers : [...new Set([...receivers, ...familyCodes('COMBAT')])]
+      } : famCodes.length ? {
+        codes: famCodes
+      } : {},
       crews = ids.map((id, i) => ({
         id,
-        ac: aircraftFor(slots[i], fleet, used)
+        ac: aircraftFor(slots[i], fleet, used, needFor(i)),
+        aar: type === 'AAR' ? i === 0 ? 'tanker' : 'receiver' : request.aar === 'oui' ? 'receiver' : ''
       })),
       callsigns = crews.map(c => c.ac.callsign).filter(Boolean),
       track = request.aar === 'oui' ? pick(aarTracks) : null,
@@ -224,7 +312,7 @@
             type: c.ac.type,
             callsign: c.ac.callsign,
             operator: c.ac.row?.operator || '',
-            role: ''
+            role: c.aar === 'tanker' ? 'ravitailleur' : c.aar === 'receiver' ? 'receveur' : ''
           }],
           origin: home,
           destination: {
@@ -253,7 +341,10 @@
             service: x.ac.row?.operator || '',
             department: '',
             type: x.ac.type,
-            role: x.id === c.id ? 'équipage' : 'autre équipage'
+            role: [x.id === c.id ? 'équipage' : 'autre équipage', x.aar === 'tanker' ? 'ravitailleur' : x.aar ===
+              'receiver' ? 'receveur' :
+              ''
+            ].filter(Boolean).join(', ')
           })), ...Array.from({
             length: ground
           }, (_, k) => ({
@@ -272,7 +363,7 @@
             air_refueling: {
               capable: true,
               planned: true,
-              role: type === 'AAR' && i === 0 ? 'tanker' : 'receiver',
+              role: c.aar || 'receiver',
               track: track?.name || ''
             }
           } : {}),

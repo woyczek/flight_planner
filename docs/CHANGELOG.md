@@ -34,6 +34,13 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Modifié
 
+- **Générateur, squelette : appareil adapté à la famille** — « automatique » choisit dans la flotte un appareil des
+  catégories du prompt (§ 6 : Transport, Chasse / surveillance, Sécurité civile, Hélicoptères) qui conviennent à la
+  famille (HEMS et police : hélicoptères ; feux : Sécurité civile ; combat : chasseurs ; surveillance maritime : ni
+  chasseur ni monomoteur…) ; ravitaillement en vol : l'équipe A ravitailleur, les autres receveurs (prompt § 7), rôles
+  posés (`aircraft.role`, équipes, `air_refueling.role`) ; rien d'adapté : aéronef laissé à compléter. Manuel
+  administrateur (4 langues) : tutoriel « Préparer une mission de bout en bout » (générateur, studio, dossier, PDF) en
+  tête du chapitre Générateur de mission.
 - **Générateur de missions : rubriques textuelles nommées** (V2_FABLE § 8, L1) — « Ajouter une rubrique textuelle »
   propose les rubriques que le brief et le CR savent placer, chacune avec une ligne « où elle apparaît, ce qu'on y
   écrit » ; une rubrique présente n'est plus proposée ; « Autre rubrique… » : titre libre, fin du brief. Objectif
