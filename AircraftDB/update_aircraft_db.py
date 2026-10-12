@@ -1131,10 +1131,12 @@ def choose_valid_wikipedia_page(code, existing_model=""):
     return best if best and best_score >= 8 else None
 
 
-def classify_wing_from_wikipedia(page):
+def classify_wing_from_wikipedia(page, cls=""):
+    """Position d'aile d'après l'article : cls, classe OACI (1re lettre de la description) ; un avion terrestre (L) n'est
+    jamais « water » — l'article du B-17 cite un hydravion, le bombardier sortait avec l'icône d'un hydravion."""
     blob = " ".join([page.get("title", ""), " ".join(page.get("categories", [])), page.get("content", "")]).lower()
     if any(x in blob for x in ("helicopter", "rotorcraft", "autogyro", "gyroplane")): return "rotor"
-    if any(x in blob for x in ("seaplane", "floatplane", "amphibious aircraft", "flying boat")): return "water"
+    if cls != "L" and any(x in blob for x in ("seaplane", "floatplane", "amphibious aircraft", "flying boat")): return "water"
     if "high-wing" in blob or "high wing" in blob or "parasol wing" in blob: return "high"
     if "low-wing" in blob or "low wing" in blob: return "low"
     if "mid-wing" in blob or "mid wing" in blob: return "mid"
@@ -1145,11 +1147,12 @@ def classify_wing_from_wikipedia(page):
 def sane_wing(rec):
     """Position d'aile cohérente avec la classe OACI (1re lettre de la description) : hélicoptère (H) → « rotor » ;
     avion, amphibie, hydravion (L, A, S) jamais « rotor » (faux positif de Wikipedia : article citant un
-    hélicoptère) → « unknown », à redéterminer. Modifie rec ; retourne vrai si la valeur a changé."""
+    hélicoptère) → « unknown », à redéterminer ; avion terrestre (L) jamais « water » (article citant un hydravion) →
+    « unknown ». Modifie rec ; retourne vrai si la valeur a changé."""
     cls, wing = str(rec.get("description") or "")[:1].upper(), rec.get("wing_position")
     if cls == "H" and wing != "rotor":
         rec["wing_position"] = "rotor"; return True
-    if cls in ("L", "A", "S") and wing == "rotor":
+    if cls in ("L", "A", "S") and wing == "rotor" or cls == "L" and wing == "water":
         rec["wing_position"] = "unknown"; return True
     return False
 
@@ -1257,7 +1260,7 @@ def update_one(db, aliases, raw_designator, icao_index, use_network=True, force=
     if canonical and rec.get("wing_position") in (None, "", "unknown"):
         validated = choose_valid_wikipedia_page(canonical, rec.get("model", ""))
         if validated:
-            wing = classify_wing_from_wikipedia(validated[0])
+            wing = classify_wing_from_wikipedia(validated[0], str(rec.get("description") or "")[:1].upper())
             if wing == "rotor" and str(rec.get("description") or "")[:1].upper() in ("L", "A", "S"):
                 wing = "unknown"  # avion : un article qui parle d'hélicoptères n'en fait pas un hélicoptère
             if wing != "unknown":

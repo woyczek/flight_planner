@@ -76,6 +76,8 @@
   };
   /** Clé de comparaison : majuscules sans accents ni séparateurs (« SE-210 » = « SE 210 » = SE210). */
   const norm = s => String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+  /** Code au format d'un désignateur OACI (lettre puis 1 à 3 lettres ou chiffres : BN2T, B17, S210). */
+  const designator = c => /^[A-Z][A-Z0-9]{1,3}$/.test(String(c || ''));
   /** Mots d'un texte (majuscules sans accents) : « Sud Aviation SE 210 » → [SUD, AVIATION, SE, 210]. */
   const wordsOf = s => String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().split(/[^A-Z0-9]+/).filter(Boolean);
   // ---- liste OACI publiée (AircraftDB/aircraft_types.txt) et complétion de la base de ce poste par le lanceur
@@ -239,8 +241,11 @@
           x.info.description || (x.info.model ? '' : tried.has(x.type) ? t(['introuvable (OACI, EUROCONTROL, Aviation Fanatic)', 'not found (ICAO, EUROCONTROL, Aviation Fanatic)', 'nicht gefunden (ICAO, EUROCONTROL, Aviation Fanatic)', 'no encontrado (OACI, EUROCONTROL, Aviation Fanatic)']) : offi.has(x.type) ? t(['absent de la base de ce poste', 'missing from this computer’s type base', 'fehlt in der Typbasis dieses Rechners', 'ausente de la base de este equipo']) :
             t(['type inconnu de la base OACI', 'type unknown to the ICAO base', 'Typ in der ICAO-Basis unbekannt', 'tipo desconocido en la base OACI']));
         const mineRow = owned.has(x.type) || shown.has(x.type);
+        // désignateur sans fiche, jamais cherché sur cette page (type ajouté avant que la recherche ne vaille pour tout
+        // désignateur) : recherche à la demande
+        const ask = mineRow && !x.info.model && designator(x.type) && !tried.has(x.type) && !running.has(x.type) ? ` <button type="button" class="secondary" data-eq-complete="${esc(x.type)}">${esc(t(['Chercher la fiche', 'Look up the record', 'Eintrag suchen', 'Buscar la ficha']))}</button>` : '';
         const fixAttr = mineRow ? ` data-eq-fix="${esc(x.type)}" tabindex="0" role="button" title="${esc(tf(['Cliquer pour corriger ou supprimer {m}', 'Click to correct or delete {m}', 'Klicken, um {m} zu korrigieren oder zu löschen', 'Hacer clic para corregir o eliminar {m}'], { m: name }))}"` : '';
-        return `<tr${editing === x.type ? ' class="eq-fixing"' : ''}><td${fixAttr}><b>${esc(name)}</b><br><code>${esc(x.type)}</code>${note ? ` <small>${esc(note)}</small>` : ''}</td>
+        return `<tr${editing === x.type ? ' class="eq-fixing"' : ''}><td${fixAttr}><b>${esc(name)}</b><br><code>${esc(x.type)}</code>${note ? ` <small>${esc(note)}</small>` : ''}${ask}</td>
           <td>${esc(x.by.join(', ') || '—')}</td>
           <td class="eq-c"><input type="checkbox" data-own="${esc(x.type)}"${owned.has(x.type) ? ' checked' : ''} aria-label="${esc(tf(['{m} possédé', '{m} owned', '{m} besessen', '{m} poseído'], { m: name }))}"></td>
           <td class="eq-c"><input type="checkbox" data-master="${esc(x.type)}"${mastered.has(x.type) ? ' checked' : ''} aria-label="${esc(tf(['{m} maîtrisé', '{m} mastered', '{m} beherrscht', '{m} dominado'], { m: name }))}"></td></tr>`;
@@ -311,6 +316,8 @@
         'this computer’s base', 'Basis dieses Rechners', 'base de este equipo'
       ]) : offi.has(code) ? t(['liste OACI : fiche complétée à l’ajout', 'ICAO list: record completed when added',
         'ICAO-Liste: Eintrag wird beim Hinzufügen ergänzt', 'lista OACI: ficha completada al añadir'
+      ]) : designator(code) ? t(['fiche cherchée à l’ajout', 'record looked up when added', 'Eintrag wird beim Hinzufügen gesucht',
+        'ficha buscada al añadir'
       ]) : t(['hors base', 'not in the base', 'nicht in der Basis', 'fuera de la base']),
       others.get(code)?.length ? tf(['déclaré par {p}', 'declared by {p}', 'angegeben von {p}', 'declarado por {p}'], {
         p: others.get(code).join(', ')
@@ -447,8 +454,10 @@
           host.querySelector(`[data-master="${ty}"]`).checked = true;
           saveTypes();
         }
-        // type de la liste OACI absent de la base de ce poste : complété par le lanceur (une passe courte, à la suite)
-        if (!dbInfo(ty).model && offi.has(ty) && !tried.has(ty)) completeType(ty, redrawOther);
+        // désignateur absent de la base de ce poste : fiche cherchée par le lanceur (passe courte ou file : OACI,
+        // EUROCONTROL, puis Aviation Fanatic pour un type retiré) — tout désignateur, pas seulement ceux de la liste
+        // publiée avec la suite (279 types : BN2T, B17 restaient « inconnus » sans recherche)
+        if (!dbInfo(ty).model && designator(ty) && !tried.has(ty)) completeType(ty, redrawOther);
         redrawOther();
       }
       scheduleSync();
@@ -511,8 +520,10 @@
       }), 'info');
     };
     host.onclick = e => {
-      const fix = e.target.closest('[data-eq-fix]');
-      if (fix) startFix(fix.dataset.eqFix);
+      const look = e.target.closest('[data-eq-complete]'),
+        fix = !look && e.target.closest('[data-eq-fix]');
+      if (look) completeType(look.dataset.eqComplete, redrawOther);
+      else if (fix) startFix(fix.dataset.eqFix);
       else if (e.target.closest('[data-eq-delete]')) deleteEdited();
       else if (e.target.closest('[data-eq-cancel]')) {
         input.value = '';

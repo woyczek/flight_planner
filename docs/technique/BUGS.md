@@ -17,6 +17,7 @@ English interface shows them.
 
 | Reported | Area | Bug | Cause | Fix |
 |---|---|---|---|---|
+| 12/10 | My profile › Aircraft and simulators | Adding BN2T or B17: no lookup of the type base, "type unknown to the ICAO base" | Lookup limited to the 279 designators of `aircraft_types.txt`, taken for the full ICAO list | Any designator looked up when added, "Look up the record" button on older rows (`equipment_editor.js`); B-17 no longer classed as a seaplane (`update_aircraft_db.py`) |
 | 12/10 | Mission registry (order) | "Import the reply": box 0 characters wide | Auto-sizing text fields of the suite (`field-sizing: content`, unlayered rule winning over the page): an empty box is as wide as its content | Fixed size, full card width (`data-fixed-size`, `mission_registry.html`) |
 | 12/10 | Map studio | "SIA database" block of no use | Permanent copy of the Maintenance block | Block removed from the studio; its panel shown under the Mission block's SIA line only when needed; kept in Flight maps (`map_parser.html`, `build_map_planner.py`) |
 | 12/10 | Launcher | Python traceback "'Setup' object has no attribute 'path'" in the launcher window | Unreadable request (TLS on the HTTP port, unknown HTTP version): the security headers read the request path before it existed | Path read only if present (`launch.py`) |

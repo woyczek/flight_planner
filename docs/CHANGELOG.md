@@ -129,6 +129,12 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   sources, cartes et rendus non repris ; la copie s'ouvre dans le générateur avec une ligne d'état qui le dit. Textes de
   mission : sous-titre du bloc posé aussi au changement de mode, « Summary » devient « Résumé ». Manuel administrateur
   (4 langues).
+- **My profile › Aircraft: no type-base lookup for BN2T, B17…** — the record of a type missing from this computer's base
+  was looked up only for the 279 designators published with the suite (`AircraftDB/aircraft_types.txt`); any other
+  designator stayed "type unknown to the ICAO base". Any designator-shaped code (letter + 1 to 3 letters or digits) is
+  now looked up when added (ICAO, EUROCONTROL, then Aviation Fanatic); a type added earlier without a record gets a
+  "Look up the record" button (`shared/equipment_editor.js`, 4 languages). A landplane (ICAO class L) is no longer given
+  the seaplane wing position because its Wikipedia article mentions a seaplane (B-17) (`update_aircraft_db.py`).
 - **Mission registry: "ChatGPT reply" box a few pixels wide** — the suite's auto-sizing text fields (`field-sizing:
   content`) gave an empty box the width of its content; the box now takes the card width, about eight lines high.
 - **Map studio: "SIA database" block removed** — a permanent copy of the Settings › Maintenance block, of no use in the
