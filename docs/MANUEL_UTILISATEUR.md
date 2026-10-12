@@ -6,6 +6,8 @@ chapitre de la page en cours. Le Centre et l'administration de la suite sont dé
 [manuel administrateur](MANUEL_ADMINISTRATEUR.md) ; pour un premier compte rendu pas à pas, voir le
 [tutoriel](TUTORIAL.md). Index de toute la documentation : [index documentaire](README.md).
 
+Captures réalisées le 12 octobre 2026 dans l’interface française. Les valeurs affichées, les rubriques disponibles et le design peuvent varier selon votre profil et vos réglages.
+
 ## Prise en main
 <!-- page: index.html -->
 
@@ -136,6 +138,11 @@ Cette page est la première entrée de la barre latérale, à tout niveau d'util
 Chaque bloc ne propose qu'une action. Les données viennent des affectations du Centre (voir « Mes missions ») et du registre des comptes rendus : rien n'est à ressaisir. La page se relit toute seule quand vous changez de langue, de trigramme ou de session.
 La page d'accueil la propose aussi en tête de « Mes tâches ».
 
+<!-- capture-manuels: utilisateur-aujourdhui -->
+![Aujourd’hui : prochaine mission, comptes rendus à écrire et calendrier de la semaine.](images/captures-manuels/utilisateur-aujourdhui.png)
+
+*Figure 1 — Aujourd’hui : prochaine mission, comptes rendus à écrire et calendrier de la semaine.*
+
 ### Ma prochaine mission
 
 - La mission qui vous est affectée la plus proche (à venir, ou décollée depuis moins de six heures) : heure en UTC, mission et titre, appareil (type et immatriculation), terrain, indicatif ; « convoyage » ou « astreinte, prêt à … » le cas échéant, et « ● nouvelle » tant que vous ne l'avez pas ouverte.
@@ -181,6 +188,11 @@ La liste des missions qui vous sont affectées pour la semaine affichée, triée
 - Une adresse `?mission=…` venant de « Aujourd'hui » ou de « Nouveau compte rendu » affiche la semaine de cette mission (missions passées montrées au besoin) ; avec `?do=cr`, le CR commence dès l'ouverture du dossier.
 - **Pilote**, **Appareils maîtrisés**, **Simulateurs** : trois boutons sous la liste, vers Paramètres › Mon profil (rubrique « Identité et réseaux » pour le trigramme ; rubrique « Appareils et simulateurs », à la carte des appareils ou à celle des simulateurs). Le bouton « Pilote » affiche le trigramme utilisé pour trouver vos missions et vos disponibilités. En mode production ou pendant une usurpation, c'est le trigramme de la connexion.
 - Ces trois boutons apparaissent à partir du niveau Planification (2). Au niveau Équipage (1), seul « Pilote » apparaît, tant que le trigramme n'est pas réglé.
+
+<!-- capture-manuels: utilisateur-mes-missions -->
+![Mes missions : décollage en UTC, titre, appareil, terrain et indicatif de la mission affectée.](images/captures-manuels/utilisateur-mes-missions.png)
+
+*Figure 2 — Mes missions : décollage en UTC, titre, appareil, terrain et indicatif de la mission affectée.*
 
 ### Mission
 
@@ -303,6 +315,11 @@ Astuces et limites :
 
 Pour la façon dont le Centre exploite ces déclarations, voir [disponibilités et réorganisation](technique/DISPOS_ET_REORGANISATION.md).
 
+<!-- capture-manuels: utilisateur-disponibilites -->
+![Mes disponibilités : palette des catégories, grille horaire en UTC et saisie d’une plage précise.](images/captures-manuels/utilisateur-disponibilites.png)
+
+*Figure 3 — Mes disponibilités : palette des catégories, grille horaire en UTC et saisie d’une plage précise.*
+
 ## Mon profil
 <!-- page: apps/settings/profil.html -->
 
@@ -324,6 +341,11 @@ Ce que la suite vous montre, selon votre usage. Quatre cartes, une par niveau (n
 | 4 · Expert | cartographe, analyste | tous les outils, studio cartographique |
 
 « Outils facultatifs » : Cartes de vol (route, cartes topographiques, approche), Carburant (performances et devis carburant), Atterrissages (tableau de bord des atterrissages), Analyse des missions (reporting des comptes rendus) ; ils se cochent à n'importe quel niveau et se rangent sous « Outils » dans la barre latérale ; au niveau 4, « Tous inclus au niveau Expert ». Par défaut : niveau 4 si le Centre est activé dans ce navigateur, sinon niveau 1. Le niveau ne donne aucun droit : le Centre garde son accès.
+
+<!-- capture-manuels: utilisateur-profil -->
+![Mon profil : les quatre niveaux d’utilisation et les outils facultatifs.](images/captures-manuels/utilisateur-profil.png)
+
+*Figure 4 — Mon profil : les quatre niveaux d’utilisation et les outils facultatifs.*
 
 ### Identité et réseaux
 
@@ -425,6 +447,11 @@ La forme des pages : arrondis, densité, titres, barre latérale.
 - « Sobre » : matières et plaques seulement, sur toutes les pages.
 
 **« Couleur Aqua »** (niveau Expert) : couleur des boutons et icônes du design Aqua (Bleu, Turquoise, Vert, Graphite, Violet, Orange, Rouge, Rose), ou « Couleur de chaque application ». Les icônes d'état gardent leurs couleurs d'origine.
+
+<!-- capture-manuels: utilisateur-apparence -->
+![Apparence : choix du design, du décor et de la couleur ; le design Aqua est sélectionné.](images/captures-manuels/utilisateur-apparence.png)
+
+*Figure 5 — Apparence : choix du design, du décor et de la couleur ; le design Aqua est sélectionné.*
 
 ### Graphiques
 
@@ -593,6 +620,11 @@ Astuces :
   la page de CR ;
 - la page s'affiche à chaque fois : elle ne vous renvoie pas d'office vers la dernière famille.
 
+<!-- capture-manuels: utilisateur-nouveau-cr -->
+![Nouveau compte rendu : recherche d’une famille et choix parmi les familles de missions.](images/captures-manuels/utilisateur-nouveau-cr.png)
+
+*Figure 6 — Nouveau compte rendu : recherche d’une famille et choix parmi les familles de missions.*
+
 ### Rechercher la famille d'après la mission
 
 Le champ de recherche (exemple affiché : « évasan hélico », « ravitaillement de Rafale », « largage
@@ -659,6 +691,11 @@ dans un reporting ou une fiche (la mission s'ouvre alors en modification).
 - blocs propres à la famille et remarques.
 
 Le bouton « CR détaillé » de la barre affiche tout le formulaire sans changer de niveau (choix gardé par le navigateur) ; « CR court » revient au formulaire réduit. Les valeurs déjà saisies dans des champs masqués (import, plan de vol, suivi réseau) restent dans le compte rendu. Aux niveaux 3 et 4, le formulaire est toujours complet et ce bouton n'existe pas.
+
+<!-- capture-manuels: utilisateur-formulaire-cr -->
+![Compte rendu FIRE / GAAR : formulaire à gauche, calculs automatiques et aperçu du compte rendu à droite.](images/captures-manuels/utilisateur-formulaire-cr.png)
+
+*Figure 7 — Compte rendu FIRE / GAAR : formulaire à gauche, calculs automatiques et aperçu du compte rendu à droite.*
 
 ### En-tête et barre d'outils
 
@@ -1298,6 +1335,11 @@ Elle reprend le moteur du studio cartographique du Centre, mais travaille dans u
 Chaque bloc se replie (« Masquer » / « Afficher ») et se déplace (poignée ↕). La base SIA doit être lue une fois dans ce navigateur (voir le dernier bloc).
 Aux niveaux 1 à 3 (Mon profil › « Niveau d'utilisation »), la page se limite à deux blocs : « Cheminement » (champ de route, « Niveau », « SimBrief », carte de contrôle avec « ⤢ Agrandir ») et « Cartes », avec son unique bouton « Générer les cartes et le ZIP ». Les autres commandes décrites ci-dessous n'apparaissent qu'au niveau 4 (Expert).
 
+<!-- capture-manuels: utilisateur-cartes-vol -->
+![Cartes de vol : cheminement, profil cartographique, cadrage et choix des cartes à préparer.](images/captures-manuels/utilisateur-cartes-vol.png)
+
+*Figure 8 — Cartes de vol : cheminement, profil cartographique, cadrage et choix des cartes à préparer.*
+
 ### Réception d'une mission (« Ouvrir dans les Cartes de vol »)
 
 La page n'affiche pas de bloc « Mission » : la mission arrive toute seule depuis Mes missions.
@@ -1417,6 +1459,11 @@ Pour y aller : barre latérale « Outils », onglet « Carburant », bouton « C
 En-tête : menu « Avion », bouton « Récupérer dernier FPL SimBrief », « Unités : kg / lbs ». Les imports et exports sont dans le menu ☰.
 Selon le niveau d'utilisation : aux niveaux 1 à 3 (Équipage, Planification, Conception), la page montre l'avion, le plan de vol (et « Récupérer dernier FPL SimBrief »), le repli « Paramètres du vol », « Calculer » et le Résultat, sur deux colonnes ; le menu ☰ n'y garde qu'exporter et importer les préférences. Courbes, panneaux, instruments, blocs du profil, barre d'état et actions de profils du menu ☰ s'ajoutent au niveau Expert, où la page est complète.
 Sur écran large, au niveau Expert, la page a trois colonnes (saisie et courbes | Résultat et panneaux | instruments) : glissez les poignées entre colonnes pour régler leur largeur ; double-clic : largeurs par défaut.
+
+<!-- capture-manuels: utilisateur-carburant -->
+![Carburant : paramètres du trajet, consignes de montée et résultat du devis pour un DHC-8-400 / Q400.](images/captures-manuels/utilisateur-carburant.png)
+
+*Figure 9 — Carburant : paramètres du trajet, consignes de montée et résultat du devis pour un DHC-8-400 / Q400.*
 
 ### Choisir l'avion et enregistrer le profil
 
@@ -1579,6 +1626,11 @@ Sans import : « Aucun JSON chargé. »
 Ce tableau de bord (titre « Landing Performance — Synthèse ») analyse la qualité de vos atterrissages à partir des fichiers exportés du simulateur : score, taux de chute, G, par appareil et dans le temps.
 Pour y aller : barre latérale « Outils », onglet « Atterrissages ». Le fichier est lu dans le navigateur ; rien n'est envoyé.
 Le dernier fichier chargé est gardé et rechargé à l'ouverture. Ses appareils sont aussi proposés dans le menu « Avion » du planificateur carburant.
+
+<!-- capture-manuels: utilisateur-atterrissages -->
+![Atterrissages : filtres de période et d’appareil, tendance et graphiques d’évolution du score et du taux au toucher.](images/captures-manuels/utilisateur-atterrissages.png)
+
+*Figure 10 — Atterrissages : filtres de période et d’appareil, tendance et graphiques d’évolution du score et du taux au toucher.*
 
 ### Chargement du fichier
 

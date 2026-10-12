@@ -8,6 +8,8 @@ au chapitre de la page en cours (pages du Centre et des paramètres). Les pages 
 dans le [manuel d'exploitation](MANUEL_EXPLOITATION.md). Index de toute la documentation :
 [index documentaire](README.md).
 
+Captures réalisées le 12 octobre 2026 dans l’interface française. Les valeurs affichées, les rubriques disponibles et le design peuvent varier selon votre profil et vos réglages.
+
 ## Accès au Centre
 
 Le Centre de planification et de conduite des opérations (CPCO) regroupe le générateur de mission, le studio cartographique, le registre des missions et le planning ODV. Il est réservé aux administrateurs de la suite.
@@ -110,6 +112,11 @@ Une fois le Centre activé, la rubrique affiche « Mode et accès » (mode, chan
 
 Un champ vide reprend la valeur par défaut, affichée en grisé. Boutons : « Enregistrer », « Valeurs par défaut », « Verrouiller le Centre ». Ces réglages restent dans ce navigateur.
 
+<!-- capture-manuels: admin-centre -->
+![Paramètres › Centre : navigation entre les rubriques et état « Centre activé dans ce navigateur ».](images/captures-manuels/admin-centre.png)
+
+*Figure 1 — Paramètres › Centre : navigation entre les rubriques et état « Centre activé dans ce navigateur ».*
+
 ### Utilisateurs et droits
 
 Cette rubrique gère les fiches des utilisateurs. Il y a une fiche par utilisateur (`data/utilisateurs/<TRI>.json`), synchronisée avec le pool de données.
@@ -146,6 +153,11 @@ Cette rubrique définit ce que les pilotes peuvent déclarer comme disponibilit�
 - « Valeurs par défaut » rétablit les catégories d'origine. Les catégories ajoutées sont gardées, mais retirées.
 Voir aussi [disponibilités et réorganisation](technique/DISPOS_ET_REORGANISATION.md).
 
+<!-- capture-manuels: admin-categories -->
+![Catégories de disponibilité : identifiant, groupe, libellé, couleur, thèmes, type et codes ODV.](images/captures-manuels/admin-categories.png)
+
+*Figure 2 — Catégories de disponibilité : identifiant, groupe, libellé, couleur, thèmes, type et codes ODV.*
+
 ### Planning ODV
 
 Cette rubrique contient les réglages propres à la compagnie pour la page Planning ODV. Ils sont gardés dans ce navigateur et ne sont pas synchronisés. Une page ODV ouverte dans un autre onglet les applique aussitôt.
@@ -163,6 +175,11 @@ Cette rubrique contient les réglages propres à la compagnie pour la page Plann
 | Ignorer une ligne de groupe colorée les 7 jours sur un créneau (habillage) | coché |
 
 Chaque modification est enregistrée aussitôt. « Réglages par défaut » rétablit toutes les valeurs ci-dessus.
+
+<!-- capture-manuels: admin-planning-odv -->
+![Paramètres › Centre › Planning ODV : créneaux horaires, pays préféré et règles de lecture du classeur.](images/captures-manuels/admin-planning-odv.png)
+
+*Figure 3 — Paramètres › Centre › Planning ODV : créneaux horaires, pays préféré et règles de lecture du classeur.*
 
 ### Tableau
 
@@ -222,6 +239,11 @@ Cette rubrique est le seul endroit où régler les dossiers locaux et les adress
 - **Compagnie virtuelle** : « Nom », « Nom long », « Sigle », « Centre (sigle) », « Centre (nom complet) », et les pages du site (« Page d'accueil », « Log des vols », « Flotte », « Fiche d'un appareil »). Un champ vide garde la valeur par défaut. « Revenir à SO Group Virtual » efface tous ces réglages.
 - **Premier lancement** : « Rouvrir le premier lancement ». Pour repartir de zéro, « Nettoyer et recommencer… » se trouve en bas de la page du premier lancement (rubrique « Recommencer »).
 
+<!-- capture-manuels: admin-installation -->
+![Sources et dossiers : dépôt, données, classeur ODV, X-Plane, performances et sauvegarde locale.](images/captures-manuels/admin-installation.png)
+
+*Figure 4 — Sources et dossiers : dépôt, données, classeur ODV, X-Plane, performances et sauvegarde locale.*
+
 ## Paramètres › Maintenance
 <!-- page: apps/settings/maintenance.html -->
 
@@ -242,6 +264,11 @@ Ce bloc règle d'où viennent les mises à jour du code et quand la suite les ch
 - `update` refuse de s'exécuter si des fichiers suivis sont modifiés, n'avance qu'en fast-forward et trace chaque opération.
 - **Dépôt git local** : choisissez le « Dossier du dépôt », puis « Lire l'état git ». Le tableau affiche la branche, HEAD, origin, le suivi, master / develop, le dernier fetch et le canal mémorisé par git. Un écart avec le canal choisi est signalé.
 - Une installation par archive ZIP n'a pas de `.git` : on la met à jour avec une nouvelle archive.
+
+<!-- capture-manuels: admin-maintenance -->
+![Maintenance › Mises à jour : canal, mode de contrôle, état de la version et dépôt local.](images/captures-manuels/admin-maintenance.png)
+
+*Figure 5 — Maintenance › Mises à jour : canal, mode de contrôle, état de la version et dépôt local.*
 
 ### Versions et synchronisations
 
@@ -342,6 +369,11 @@ Ce bloc produit une archive ZIP de toutes les données locales, avec un manifest
 - **Recharger une sauvegarde totale** : « Choisir l'archive… ». Chaque fichier reçoit un état : identique, absent du disque, plus ancien ou plus récent sur le disque. Cochez les fichiers voulus, puis « Restaurer la sélection ».
 - Avant d'être remplacés, les fichiers sont copiés dans `_avant_restauration/` de leur dossier. Les données du navigateur sont fusionnées : la valeur la plus récente l'emporte.
 - Volontairement hors sauvegarde : clef du webservice, suivi réseau en cours, base SIA analysée, autorisations de dossiers, journal des vols (rechargé depuis le site), identifiants du site de la compagnie.
+
+<!-- capture-manuels: admin-sauvegarde -->
+![Sauvegarde totale : contenu de l’archive, dossiers inclus et commandes de sauvegarde et de rechargement.](images/captures-manuels/admin-sauvegarde.png)
+
+*Figure 6 — Sauvegarde totale : contenu de l’archive, dossiers inclus et commandes de sauvegarde et de rechargement.*
 
 ### Journal des sauvegardes et rechargements
 

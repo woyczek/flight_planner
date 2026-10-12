@@ -6,6 +6,8 @@ Dans la suite, l'entrée **« Aide »** de la barre latérale ouvre ce manuel au
 des pilotes sont décrites dans le [manuel du pilote](MANUEL_UTILISATEUR.md) ; l'accès au Centre, les paramètres et les
 données dans le [manuel de l'administrateur](MANUEL_ADMINISTRATEUR.md).
 
+Captures réalisées le 12 octobre 2026 dans l’interface française. Les valeurs affichées, les rubriques disponibles et le design peuvent varier selon votre profil et vos réglages.
+
 ## Générateur de mission
 <!-- page: apps/cpco/mission_editor.html -->
 
@@ -18,14 +20,57 @@ Selon le niveau d'utilisation : la page est proposée à partir du niveau Concep
 
 Du formulaire de commande au brief PDF, en neuf étapes. Les noms entre guillemets sont ceux des boutons.
 1. **Ouvrir le générateur** : barre latérale « Missions », onglet « Générateur » (niveau Conception), ou « Générer une mission » dans le registre.
+    ![Ouvrir l’onglet Générateur depuis l’entrée Missions.](images/captures-manuels/tutoriel-onglet-generateur.png)
+    *Étape 1 — Ouvrir l’onglet Générateur depuis l’entrée Missions.*
+
 2. **Régler la commande** : « Commander à ChatGPT… » déplie le formulaire. Choisissez « Type », « Sous-type », « Théâtre », « Équipes en vol », « Équipes au sol » et « Durée » ; dans « Plus d'options », « Rendez-vous », « Ravitaillement en vol », « Exercice coordonné » et, au besoin, l'aéronef de chaque équipe (vide = un appareil de la flotte).
+    ![Régler le type, le théâtre, les équipes, la durée et les options de la commande.](images/captures-manuels/planif-commande-parametres.png)
+    *Étape 2 — Régler le type, le théâtre, les équipes, la durée et les options de la commande.*
+
 3. **Créer la mission**, au choix. Avec ChatGPT : « Commander : copier le prompt et ouvrir ChatGPT », collez le prompt dans ChatGPT et envoyez, puis chargez la réponse (`mission<ID>.yaml` et `summary<ID>.md`) dans « YAML et/ou Markdown », ou « ou coller son contenu… » puis « Lire la mission ». Sans ChatGPT : « Créer le squelette ici » crée aussitôt la ou les missions, vides de récit.
+    ![Choisir entre la commande à ChatGPT et la création du squelette dans la suite.](images/captures-manuels/tutoriel-choix-creation.png)
+    *Étape 3 — Choisir entre la commande à ChatGPT et la création du squelette dans la suite.*
+    ![Charger les fichiers YAML et Markdown, ou ouvrir le collage du contenu reçu.](images/captures-manuels/tutoriel-import-fichiers.png)
+    *Étape 3 — Charger les fichiers YAML et Markdown, ou ouvrir le collage du contenu reçu.*
+    ![Coller le contenu de la mission, puis utiliser Lire la mission.](images/captures-manuels/tutoriel-lire-contenu.png)
+    *Étape 3 — Coller le contenu de la mission, puis utiliser Lire la mission.*
+
 4. **Compléter** : « Identification » (titre), « Textes de mission » (« Résumé », « Description détaillée », puis « Ajouter une rubrique textuelle » : objectif principal, risques, rendez-vous…). Les champs encadrés en pointillés sont encore vides ; la ligne « Squelette : … » compte les points à placer et les textes à écrire. Les points sans coordonnées (départ, cible, points tournants, rendez-vous, zone) se placent au studio, étape 6 ; au niveau Expert, le bloc « Toutes les données YAML » permet aussi de saisir `lat` et `lon` en degrés décimaux. Une opération à plusieurs équipes se parcourt avec ◀ ▶ en tête de page.
+    ![Compléter le titre, la famille, le sous-type et l’identifiant de la mission.](images/captures-manuels/planif-identification.png)
+    *Étape 4 — Compléter le titre, la famille, le sous-type et l’identifiant de la mission.*
+
 5. **Vérifier** : « Durée estimée » (route probable, aller, temps sur zone, retour) et « Zones à activer » (demandes d'activation à faire).
+
 6. **Produire les cartes** : « Ouvrir au studio » (ou l'onglet « Studio cartographique »), la mission suit. S'il reste des points sans coordonnées, le panneau « Points à placer (n) » du bloc Route les liste : « Cliquer la carte » puis un clic sur la carte de contrôle, ou un terrain, une balise, un point cherché par code ou nom ; un point posé se déplace en le glissant, une zone prend un rayon en km. Dans « Cartes à produire », une ligne par carte attendue : choisissez le profil, cadrez dans la carte de contrôle et « Garder ce cadrage », puis « Générer les cartes et le ZIP » (« Générer les n missions » pour une opération). Les PNG sont rangés dans `cartes/` du dossier de la mission.
+    ![Choisir la carte et son profil, puis garder le cadrage retenu.](images/captures-manuels/planif-cadrage.png)
+    *Étape 6 — Choisir la carte et son profil, puis garder le cadrage retenu.*
+    ![Vérifier les cartes à produire, leur profil et leur inclusion dans le ZIP.](images/captures-manuels/planif-cartes-profils.png)
+    *Étape 6 — Vérifier les cartes à produire, leur profil et leur inclusion dans le ZIP.*
+
 7. **Enregistrer** : « Enregistrer dans le dossier » dans le studio (réglages des cartes), puis dans le générateur ; la mission est inscrite au registre (« Ranger dans le dossier des missions… » si la page le demande).
+    ![Enregistrer la mission dans son dossier après les réglages du studio.](images/captures-manuels/tutoriel-enregistrer.png)
+    *Étape 7 — Enregistrer la mission dans son dossier après les réglages du studio.*
+
 8. **Remettre les documents** : dans le générateur, « Cartes du dossier final » doit dire « prête pour le PDF » pour chaque carte ; « Documents » › « Brief de l'équipage (PDF) », ou « Tous les documents de l'exercice » pour une opération.
+    ![Choisir le brief de l’équipage ou les documents de l’opération à remettre.](images/captures-manuels/tutoriel-documents-pdf.png)
+    *Étape 8 — Choisir le brief de l’équipage ou les documents de l’opération à remettre.*
+
 9. **Ensuite** : dans le registre, « Affecter… » confie la mission aux pilotes ; « Dupliquer » repart d'une mission existante (identifiant suivant, titre « (copie) »).
+    ![Depuis le registre, affecter la mission à un pilote ou repartir d’une copie.](images/captures-manuels/planif-fiche-actions.png)
+    *Étape 9 — Depuis le registre, affecter la mission à un pilote ou repartir d’une copie.*
+
+<!-- capture-manuels: tutoriel-etape-1-1 -->
+<!-- capture-manuels: tutoriel-etape-2-2 -->
+<!-- capture-manuels: tutoriel-etape-3-3 -->
+<!-- capture-manuels: tutoriel-etape-3-4 -->
+<!-- capture-manuels: tutoriel-etape-3-5 -->
+<!-- capture-manuels: tutoriel-etape-4-6 -->
+<!-- capture-manuels: tutoriel-etape-6-7 -->
+<!-- capture-manuels: tutoriel-etape-6-8 -->
+<!-- capture-manuels: tutoriel-etape-7-9 -->
+<!-- capture-manuels: tutoriel-etape-8-10 -->
+<!-- capture-manuels: tutoriel-etape-9-11 -->
+
 
 ### Onglets « Générateur de mission » et « Studio cartographique »
 
@@ -58,6 +103,11 @@ Le volet « Importer une autre mission : fichiers, texte collé, commande ChatGP
 Une mission reçue est inscrite au registre et rangée dans son dossier si le dossier des missions est autorisé ; sinon, cliquez « Ranger dans le dossier des missions… ». Lien « Ouvrir le registre ↗ ».
 Le texte reçu est gardé dans `recu/` ; reçue à nouveau, une mission ne remplace la précédente que si ses données changent : l'ancienne va dans `versions/`, les réglages du studio des cartes de même nom sont repris. Le collage accepte la réponse entière de ChatGPT (plusieurs missions : un lot) ; les fichiers annexes d'une série (VALIDATION.txt, manifeste) sont écartés et signalés.
 
+<!-- capture-manuels: planif-mission-actions -->
+![Importer, dupliquer ou enregistrer la mission : boutons du bloc Mission et volet d’import.](images/captures-manuels/planif-mission-actions.png)
+
+*Figure 1 — Importer, dupliquer ou enregistrer la mission : boutons du bloc Mission et volet d’import.*
+
 ### Opération
 
 Bloc affiché seulement quand la mission appartient à une opération (`operation` dans le YAML).
@@ -65,6 +115,11 @@ Bloc affiché seulement quand la mission appartient à une opération (`operatio
 - « Créer l'organisation de l'exercice » crée la mission …Z (brief général, heure H, participants, chiffons, chronologie), en reprenant les pistes et injects des missions de l'ancien format.
 - Mission seule : une ligne discrète propose « Ajouter une organisation d'exercice… ».
 - « Créer les missions des chiffons joués (n) » : chaque chiffon joué devient une mission de l'opération (base du premier équipage, route de la piste, décollage calculé). Vérifiez ensuite appareil, base et horaire, ouvrez chacune dans le studio, puis « Enregistrer dans le dossier ».
+
+<!-- capture-manuels: planif-operation-equipes -->
+![Passer d’une équipe à l’autre dans l’opération et ouvrir la création de son organisation.](images/captures-manuels/planif-operation-equipes.png)
+
+*Figure 2 — Passer d’une équipe à l’autre dans l’opération et ouvrir la création de son organisation.*
 
 ### Identification
 
@@ -79,6 +134,11 @@ Bloc affiché seulement quand la mission appartient à une opération (`operatio
 
 Le prochain identifiant libre et la série suivante s'affichent en gris dans les champs vides : ce sont des indications, pas des valeurs. Une alerte apparaît si l'identifiant ne commence pas par la lettre de la famille.
 Changer l'identifiant d'une mission citée par d'autres (opération, cartes, textes) ouvre une confirmation : acceptez pour migrer tout le lot (l'ancien identifiant est gardé dans `mission.former_id`), refusez pour garder l'ancien.
+
+<!-- capture-manuels: planif-identification -->
+![Renseigner le titre, la famille, le sous-type, l’identifiant et la série de génération.](images/captures-manuels/planif-identification.png)
+
+*Figure 3 — Renseigner le titre, la famille, le sous-type, l’identifiant et la série de génération.*
 
 ### Durée estimée
 
@@ -173,6 +233,16 @@ Plan de vol, carte de contrôle et coupe verticale liés : survolez un point dan
 Carte de contrôle : listes « Carte » et « Profil », case « ZIP », « Actualiser », « Garder ce cadrage » (la carte générée reprendra le cadre affiché), « Recentrer », « Cadrage automatique », « ⧉ Fenêtre » (fenêtre séparée synchronisée), « ⤢ Agrandir » (Échap pour revenir). Sur la carte : glissez un point, cliquez la route pour insérer, clic droit pour supprimer.
 « Réglages du profil : coupe, appareil, vario, sorties » : plancher et plafond de la coupe, appareil, montée et descente, image `profil_vertical.png` dans les sorties, tracé par défaut du cheminement.
 
+<!-- capture-manuels: planif-cheminement -->
+![Préparer le cheminement : route, niveau, recherche, tracé et points de la mission.](images/captures-manuels/planif-cheminement.png)
+
+*Figure 4 — Préparer le cheminement : route, niveau, recherche, tracé et points de la mission.*
+
+<!-- capture-manuels: planif-cadrage -->
+![Choisir la carte et son profil, puis garder le cadrage, recentrer ou revenir au cadrage automatique.](images/captures-manuels/planif-cadrage.png)
+
+*Figure 5 — Choisir la carte et son profil, puis garder le cadrage, recentrer ou revenir au cadrage automatique.*
+
 ### Points à placer
 
 Une mission sans coordonnées (squelette du générateur) affiche dans le bloc Route le panneau « Points à placer (n) » : départ, cible, points tournants, rendez-vous, centres de zones et terrains sans position, dans l'ordre de la route.
@@ -192,6 +262,11 @@ Une mission sans coordonnées (squelette du générateur) affiche dans le bloc R
 
 Ajout : nom, type (« générale », « cible », « détail », « zone ») puis « + Carte » (emprise = vue affichée) ; « + Cartes d'exercice » ajoute les cartes de l'organisation, des chiffons joués ou de l'équipage.
 « Réglages du profil … » (replié) : « Nom du profil », « Fond de carte », « Sauvegarder », « Nouveau », « Dupliquer », « Supprimer », puis quatre onglets : « Fond de carte », « Zones », « Symboles OACI », « Éléments ». Le profil modifié est toujours celui de la carte choisie ; les profils sont communs à toutes les missions et gardés dans ce navigateur. Les listes de suggestions de la saisie (zones, aérodromes, balises : jusqu'à 13 000 entrées d'après la base SIA) ne se remplissent que lorsque vous cliquez dans le champ concerné, pas à l'ouverture de la page.
+
+<!-- capture-manuels: planif-cartes-profils -->
+![Pour chaque carte, choisir le profil, le tracé et le destinataire, puis décider de son inclusion dans le ZIP.](images/captures-manuels/planif-cartes-profils.png)
+
+*Figure 6 — Pour chaque carte, choisir le profil, le tracé et le destinataire, puis décider de son inclusion dans le ZIP.*
 
 ### Aperçus et génération
 
@@ -248,6 +323,11 @@ Filtres : « Type », « Statut », « Théâtre », « Recherche » ; les autre
 
 Cliquez une ligne pour ouvrir la fiche de la mission, décrite ci-dessous. Le lien `?mission=M-016` ouvre directement la fiche.
 
+<!-- capture-manuels: planif-registre-filtres -->
+![Retrouver une mission par type, statut, théâtre et recherche ; affiner avec les filtres supplémentaires.](images/captures-manuels/planif-registre-filtres.png)
+
+*Figure 7 — Retrouver une mission par type, statut, théâtre et recherche ; affiner avec les filtres supplémentaires.*
+
 ### Fiche de la mission
 
 La fiche affiche le statut, l'itinéraire, les équipes et indicatifs, puis :
@@ -257,6 +337,11 @@ La fiche affiche le statut, l'itinéraire, les équipes et indicatifs, puis :
 - « Durée estimée » avec la comparaison aux CR.
 
 Boutons : « Ouvrir dans le générateur », « Dupliquer » (copie de la mission, identifiant suivant, ouverte dans le générateur ; voir le générateur), « Ouvrir dans le studio », « Affecter… » (sauf organisation …Z ; voir [affectation des missions](technique/AFFECTATION_MISSIONS.md)), « Créer le CR » ou « Nouveau CR (vol n) », et « Recopier le prompt » pour une mission commandée. « Ouvrir dans le studio » et « Recopier le prompt » sont au niveau Expert.
+
+<!-- capture-manuels: planif-fiche-actions -->
+![Depuis la fiche, ouvrir la mission dans le générateur ou le studio, la dupliquer, l’affecter ou créer son compte rendu.](images/captures-manuels/planif-fiche-actions.png)
+
+*Figure 8 — Depuis la fiche, ouvrir la mission dans le générateur ou le studio, la dupliquer, l’affecter ou créer son compte rendu.*
 
 ### Suivi du Centre : statut, date de vol, notes
 
@@ -288,6 +373,11 @@ Formulaire commun avec le générateur et les ordres de vols.
 3. Cliquez « Commander : copier le prompt et ouvrir ChatGPT », collez dans ChatGPT (Ctrl+V) puis envoyez.
 
 La mission apparaît au registre avec le statut « commandée ». Enregistrez ensuite les fichiers dans le dossier des missions puis « Relire le dossier » : la commande est rapprochée de la mission générée (même série). Les réglages sont mémorisés.
+
+<!-- capture-manuels: planif-commande-parametres -->
+![Préparer la commande : type, théâtre, équipes, durée et options ; le bouton du bas copie le prompt et ouvre ChatGPT.](images/captures-manuels/planif-commande-parametres.png)
+
+*Figure 9 — Préparer la commande : type, théâtre, équipes, durée et options ; le bouton du bas copie le prompt et ouvre ChatGPT.*
 
 ## Planning ODV
 <!-- page: apps/cpco/odv_planning.html -->
@@ -345,6 +435,16 @@ Ce planning détaille une journée de la semaine.
 - En fond, les trois créneaux sont tracés ; un trait marque l'heure présente.
 - Cliquez sur un bloc (ou appuyez sur Entrée) pour modifier l'affectation.
 - Plus bas, « Journal des affectations (n) » se déplie et montre les 30 dernières opérations.
+
+<!-- capture-manuels: planif-odv-disponibilites -->
+![Choisir la semaine et les filtres, puis lire la disponibilité de chaque pilote par jour et créneau.](images/captures-manuels/planif-odv-disponibilites.png)
+
+*Figure 10 — Choisir la semaine et les filtres, puis lire la disponibilité de chaque pilote par jour et créneau.*
+
+<!-- capture-manuels: planif-odv-affectations -->
+![Lire la mission affectée, son pilote, son appareil et son horaire dans le planning heure par heure.](images/captures-manuels/planif-odv-affectations.png)
+
+*Figure 11 — Lire la mission affectée, son pilote, son appareil et son horaire dans le planning heure par heure.*
 
 ### Sessions ATC des réseaux
 
@@ -454,6 +554,11 @@ Les heures sont en z (UTC). Modèle de données : [Tableau](technique/ODV_ORDRES
 - « Briefing » (ou la touche F) passe l'ordre du jour en plein écran ; les flèches ← et → changent de jour.
 - La ligne d'état indique « Enregistré », ou « Enregistré dans ce navigateur » si le dossier des données n'est pas autorisé.
 
+<!-- capture-manuels: planif-tableau-semaine -->
+![Choisir la semaine et le jour, régler la permanence, ouvrir le briefing et ajuster le zoom.](images/captures-manuels/planif-tableau-semaine.png)
+
+*Figure 12 — Choisir la semaine et le jour, régler la permanence, ouvrir le briefing et ajuster le zoom.*
+
 ### Ordre du jour
 
 À gauche, la palette : modèles de vols, de contrôle et de divers, la note, puis les membres (Staff, puis Membres) avec la barre de leurs dispos du jour. À droite, la frise :
@@ -473,6 +578,11 @@ Manipulations :
 - « Zoom » règle l'échelle de la frise.
 
 Sur une plaquette : « ⚠ n » compte ses conflits, « P » signale qu'aucun équipier n'est disponible dans l'heure et demie qui précède le vol, « ↻ » une récurrence ; une barre verte (fait) ou orange (non fait) souligne l'état ; une plaquette annulée est barrée. Sous la frise, « Problèmes d'affectation » liste les conflits du jour : un clic montre la plaquette.
+
+<!-- capture-manuels: planif-tableau-creneaux -->
+![Lire les vols dans les créneaux et comparer leurs horaires aux zones, à l’ATC et aux disponibilités.](images/captures-manuels/planif-tableau-creneaux.png)
+
+*Figure 13 — Lire les vols dans les créneaux et comparer leurs horaires aux zones, à l’ATC et aux disponibilités.*
 
 ### Fenêtre d'un élément
 
@@ -505,11 +615,21 @@ Sur une plaquette : « ⚠ n » compte ses conflits, « P » signale qu'aucun é
 
 Un vol demande une catégorie disponible ; un contrôle, une catégorie disponible ou « Contrôle SOG » ; un divers accepte aussi « Disponible au sol seulement ». Contrôle et vol hors SOG, DCS, indisponible et récupération ne sont jamais affectables.
 
+<!-- capture-manuels: planif-tableau-conflits -->
+![Repérer les problèmes d’affectation : disponibilité insuffisante d’un pilote ou zones non activées.](images/captures-manuels/planif-tableau-conflits.png)
+
+*Figure 14 — Repérer les problèmes d’affectation : disponibilité insuffisante d’un pilote ou zones non activées.*
+
 ### Équipage de la semaine
 
 Bloc du niveau 2 : une ligne par membre, une case par jour avec la barre des dispos déclarées et le nombre d'éléments où il figure. Un clic sur une case ouvre ses plages du jour : catégorie, début, fin, et « Récup à partir de », qui pose une récupération jusqu'à minuit. Les plages sont écrites dans la déclaration du pilote.
 - **DLO et butées** (tableau replié ou ouvert par son triangle, état gardé dans ce navigateur) : objectifs permanents de chaque membre (« ＋ » pour en ajouter, clic pour modifier), avec une butée facultative (date limite : rouge à 3 jours ouvrés ou moins, jaune à 10 ou moins) ; une DLO est fermée d'office par un vol fait qui la contient (DLO de l'élément, libellé, mission) avec le membre dans l'équipage. La palette montre « ◎n » DLO en cours par membre, et la fenêtre d'un élément rappelle celles de l'équipage.
 - « Modifications de dispo » liste les déclarations modifiées depuis leur dernière prise en compte ; « Pris en compte » et « Tout prendre en compte » les marquent dans ce navigateur.
+
+<!-- capture-manuels: planif-tableau-equipage -->
+![Comparer les disponibilités de l’équipage sur les sept jours et masquer les pilotes indisponibles.](images/captures-manuels/planif-tableau-equipage.png)
+
+*Figure 15 — Comparer les disponibilités de l’équipage sur les sept jours et masquer les pilotes indisponibles.*
 
 ### Zones
 
