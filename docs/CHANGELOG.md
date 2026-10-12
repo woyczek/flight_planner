@@ -12,6 +12,12 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Ajouté
 
+- **Mission registry: ChatGPT reply imported on an ordered mission, deletion** — an ordered mission shows a "ChatGPT
+  reply" panel: paste the reply (YAML and Markdown) or choose the received files; the mission is stored in the missions
+  folder and replaces the order (order, date and notes kept, even if ChatGPT changed the series or identifier).
+  "Delete…" on the mission card: an order is removed from the registry; a stored mission has its folder deleted (files,
+  maps, versions, received texts), after confirmation. "Remove pending orders (n)" in the toolbar removes the orders
+  whose reply was never imported. Four languages.
 - **Technical documentation in English**: `docs/technique/V2_FABLE.md`, `CONTRASTE_2026-10-09.md` and `perf/RAPPORT_2026-10-08.md` translated in full (file names, anchors and internal links unchanged), as decided on 12 October — every published repository document is written in English.
 - **Studio cartographique : « Points à placer (n) »** — pour une mission sans coordonnées (squelette du générateur),
   le bloc Route liste départ, cible, points tournants, rendez-vous, centres de zones et terrains sans position (ordre de
@@ -84,6 +90,16 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Corrigé
 
+- **Mission registry: mission without a type, and imported mission that would not open** — `affectations.yaml` (pilots
+  assigned to a mission) was read as a mission file: merged after the mission, its `mission: A-001D` replaced the
+  mission block (identifier, type). It is now an annex file, both in the registry (`ANNEX`) and in
+  `SiaMission.fromTexts`; a re-read gives these missions their type back. Files added with "Add files…" from outside the
+  missions folder (Downloads…) were only listed, so the generator answered "mission files not found": they are now stored
+  in `data/missions/<letter>_<FAMILY>/<id>/` like a mission received in the generator, with the folder access asked for
+  by a button if needed. A folder-less duplicate of a stored mission is marked "missing file", so "Clean up the registry"
+  removes it (status, notes and flight date moved to the stored mission).
+- **Launcher: Python traceback on an unreadable request** (TLS on the HTTP port, unknown HTTP version): the security
+  headers read the request path before it existed (`tools/launch.py`).
 - **Générateur : retour au générateur qui rouvrait la mission du registre au lieu du squelette** — le jeton
   « ouverte depuis le registre » (`siaFromRegistry:v1`) est consommé au premier usage par le générateur, abandonné par
   le générateur et le studio s'il ne vise plus la mission partagée (pas de lien « ← Registre » périmé), et lu par

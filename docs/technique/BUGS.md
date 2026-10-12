@@ -11,11 +11,16 @@ English interface shows them.
 |---|---|---|---|
 | 07/10 | First run | "villes_geonames.csv not found: no city names" while building the aeronautical database | Not reproduced. Since 079ca0af: two attempts, then address and reason (HTTP code, network, folder) in the report — to be captured if it happens again. |
 | 08/10 | All pages | About 4 s before the page responds, in the user's Chrome profile | Not reproduced on the development machine (first paint < 220 ms). To measure in the profile concerned: `tools/perf_audit.html`, "Export the measurements (JSON)". |
+| 12/10 | Mission registry (exercise) | "Open in generator" on A-001C opens A-001A | Not reproduced (registry card, operation chips, generator and studio tabs open: A-001C opens). Possibly linked to `affectations.yaml` read as a mission (fixed the same day); to be described again if it happens (where the click was made). |
 
 ## Closed
 
 | Reported | Area | Bug | Cause | Fix |
 |---|---|---|---|---|
+| 12/10 | Launcher | Python traceback "'Setup' object has no attribute 'path'" in the launcher window | Unreadable request (TLS on the HTTP port, unknown HTTP version): the security headers read the request path before it existed | Path read only if present (`launch.py`) |
+| 12/10 | Mission registry | Mission without a type (A-001D), impossible to fix from the page | `affectations.yaml` (assigned pilots) read as a mission file: merged after the mission, its `mission: A-001D` replaced the mission block | Annex file in the registry and in `SiaMission.fromTexts` (`mission_registry.js`, `mission_store.js`); type back after a re-read |
+| 12/10 | Mission registry → generator | Mission imported from Downloads (T-001.yaml): "mission files not found", even after a re-read | "Add files…" listed the mission without storing it in the missions folder | Files from outside stored like a mission received in the generator; folder-less duplicate removed by "Clean up the registry" (`mission_registry.js`) |
+| 12/10 | Mission registry | Ordered mission never delivered: the ChatGPT reply could not be pasted; no way to delete a mission | No import on an order; only a "✕" removing the entry, files left | "ChatGPT reply" panel on an order, "Delete…" on the card (folder included), "Remove pending orders (n)" (`mission_registry.js`) |
 | 12/10 | Registry (mission card), en / de / es | "Estimated time": texts left in French | Estimate panel hard-coded in French; calculation phrases stored in French in the registry | Panel texts in 4 languages, calculation phrases translated on display (`mission_estimate.js`) |
 | 12/10 | Header (localhost:8000) | "Save (38)" does nothing | Remembered backup folder ("local") no longer authorised, or gone: the browser's access request and the errors were only reported in the closed ☰ menu | Notifications: access request, backup written, fallback download, folder not found, errors (`browser_store.js`) |
 | 12/10 | Mission registry | Still "missing files" artefacts (index already filled, never purged) | "Missing file" only set by re-reading an authorised folder; "Clean up the registry" restricted to Expert and re-reading that folder first | Present folders read from the launcher on opening, clean-up without an authorised folder, button shown as soon as there is something to clean; page robust to incomplete entries (`mission_registry.js`) |

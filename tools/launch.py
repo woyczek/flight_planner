@@ -346,14 +346,16 @@ class Setup(http.server.SimpleHTTPRequestHandler):
         # ni chargé comme script ou image par un autre site (en plus du contrôle Sec-Fetch-Site)
         self.send_header('X-Frame-Options', 'SAMEORIGIN')
         self.send_header('Cross-Origin-Resource-Policy', 'same-origin')
-        path = (self.path or '').split('?', 1)[0].lower()
+        # requête illisible (TLS sur le port HTTP, version inconnue) : send_error passe par ici avant que path existe
+        raw = getattr(self, 'path', '') or ''
+        path = raw.split('?', 1)[0].lower()
         sandbox = path.startswith('/data/') and path.endswith(SANDBOXED)
         self.send_header('Content-Security-Policy', ("sandbox; " if sandbox else '') + "frame-ancestors 'self'")
         # fichier versionné par son empreinte (?v=…, tools/bump_versions.py : elle change avec le contenu) : gardé tel
         # quel, sans revalidation — une quarantaine d'allers-retours de moins par page, qui retardaient la fin de
         # l'analyse et laissaient voir la page à moitié construite ; le reste (pages, données) : revalidé à chaque fois,
         # jamais de script périmé (ni de type) en cache
-        versioned = re.search(r'[?&]v=[0-9a-f]{6,}', self.path or '')
+        versioned = re.search(r'[?&]v=[0-9a-f]{6,}', raw)
         self.send_header('Cache-Control', 'public, max-age=31536000, immutable' if versioned else 'no-cache')
         super().end_headers()
 

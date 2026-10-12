@@ -435,11 +435,16 @@
         parsed
       };
     });
-    // un YAML / JSON sans clé de mission (ex. VALIDATION.txt d'une série, en JSON) est un fichier annexe
+    // un YAML / JSON sans clé de mission (ex. VALIDATION.txt d'une série, en JSON) est un fichier annexe ; de même un YAML qui
+    // désigne une mission sans en être une (affectations.yaml : « mission: A-001C », pilotes affectés) — fusionné, il
+    // remplaçait le bloc mission (identifiant, type) : mission sans type au registre, introuvable dans un lot
+    const isRef = p => p.mission != null && typeof p.mission !== 'object' && !['schema', 'turning_points', 'target', 'aircraft', 'teams']
+      .some(k => k in p);
     const isMission = ({
       f,
       parsed
-    }) => /\.ya?ml$/i.test(f.name) || ['schema', 'mission', 'turning_points', 'target', 'aircraft'].some(k => k in parsed);
+    }) => !isRef(parsed) && (/\.ya?ml$/i.test(f.name) || ['schema', 'mission', 'turning_points', 'target', 'aircraft'].some(k => k in
+      parsed));
     const yamls = parsedYamls.filter(isMission);
     const mds = files.filter(f => !isYaml(f) && isMissionMd(f));
     const ignored = [...parsedYamls.filter(y => !isMission(y)).map(y => y.f.name), ...files.filter(f => !isYaml(f) && !isMissionMd(f))
