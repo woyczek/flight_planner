@@ -216,3 +216,27 @@ French in git, but the essential lives in the online help. The changelog, in Eng
 **Who.** Features SOG: tutorials, merges into the manuals, help page structure, index generation, search. BUGS SOG:
 `CHANGELOG` section renaming and the `Unreleased` convention in tools (`publish_dist`, release checks). This session:
 ergonomics review of the help page and the tutorials in the browser.
+
+## 10. Every mission by hand: one path per use case (12 October)
+
+The user's requirement: "since everything must be creatable by hand, every case needs a path". Six use cases, in the
+data model's words: a *mission* is one aircraft and its crew (letter A, B… when there are several); an *operation* is
+the set of missions sharing an identifier base; the *organisation* (letter Z) is the mission that carries the exercise:
+H hour, participants, played tracks, timeline. Three things are missing today: a structured timeline on a single
+mission, and two transitions (add a crew to a standalone mission; create the organisation of an existing operation)
+that exist in the code but are not offered where the user is.
+
+| Use case | Path | State of the "Operation" line of the Mission block |
+|---|---|---|
+| UC1 — standalone mission, one aircraft | "New mission", or "Create the skeleton here" with 1 team and exercise = no, or ChatGPT | "Standalone mission (no operation)" · action **Add a crew** |
+| UC2 — standalone mission, several aircraft (several missions, one brief each) | skeleton with n teams, exercise = no; or UC1 then **Add a crew** (n − 1 times) | "Operation X-016: crew A of 2 · no organisation" · actions **Add a crew**, **Create the exercise organisation** |
+| UC3 — standalone mission, one aircraft, timed events and waypoints | UC1, then the **Timeline** block of the mission (same editor as the organisation's, H = planned take-off by default): events at H+n with a place (a turning point, rendezvous or zone of the mission, or free text); turning points keep `time_on_task_min` | as UC1 |
+| UC4 — standalone mission that becomes coordinated, several aircraft | **Add a crew** on the mission: it becomes crew A (identifier migrated by `migrateIds`: M-016 → M-016A), the new mission B copies the shared context (family, theatre, departure and arrival, target, zones, rendezvous with both callsigns), gets its own brief; repeat for C… | "Operation M-016: crew A of 2 · no organisation" |
+| UC5 — coordinated exercise (operation) from scratch | skeleton with n teams and exercise = yes (missions A… and Z), or ChatGPT | "Operation X-016: crew A of 3 · organisation X-016Z · H hour 10:00" · action **Open the organisation** |
+| UC6 — coordinated missions that become an operation with an organiser and an organisation brief | **Create the exercise organisation** on the operation line (existing function: Z created with H hour, participants from the missions, tracks, empty timeline, general brief proposed from the missions) | as UC5 |
+
+Rules: the three actions live on the "Operation" line of the Mission block, never elsewhere; each one says what it
+will create before doing it (AppFramework.ask with the identifiers); a crew can also be **removed** (its mission
+deleted after confirmation; the last remaining crew becomes a standalone mission again, identifier migrated back);
+the studio follows the shared lot; the planner manual describes the six paths with the same words, and the "prepare a
+mission end to end" tutorial walks UC1 → UC4 → UC6.
