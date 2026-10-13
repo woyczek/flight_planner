@@ -265,3 +265,27 @@ Every proposal is a value put in the field, marked "proposed" until the user con
 a line under the field with a one-click fix when one exists ("Set theatre to mainland", "Split into secondary
 objectives", "Place in the studio"). The step-by-step mode is the default for a new mission at levels 1 to 3, a
 choice at level 4. Same vocabulary in the planner manual and in the "prepare a mission end to end" tutorial.
+
+## 12. Fuel: the level decision chart (13 October)
+
+The user: "in the fuel tool's chart I struggle to decide the optimal flight level; I need a chart that shows the
+essentials — optimal level against speed and fuel — and lets me plan the airspeed and vario that follow." The page has
+the curves (trip fuel by level, climb rate and fuel per 1,000 ft, climb speeds) but no single view that answers
+"which level, and what does it cost in time and fuel, and how do I climb to it".
+
+**Decision.** One chart, "Flight level decision", first in the detailed view and the only chart of the simple view:
+
+- X axis: flight level, from the lowest usable to the ceiling, standard levels ticked; two curves on two scales —
+  **trip fuel** (kg or lb, left) and **trip time** (minutes, right) for the whole flight flown at that level, climb
+  and descent included; the plan level, the **best-fuel level** and the **best-time level** are marked and named; a
+  shaded "unreachable" band beyond the ceiling as today.
+- Hover or a slider under the chart moves a cursor: a card beside the chart shows for that level fuel, time, cruise
+  TAS, climb time and fuel, **climb IAS to hold** and **expected vario** (from the chosen climb goal: Eco, Vy, Fast,
+  Profile, Set), top of climb distance; the "Climb instructions" block follows the cursor.
+- "Use this level" sets the plan level, updates the fuel plan and the climb instructions; a second button
+  "Compare" pins the current level so that two levels are read side by side (fuel and time deltas).
+- Under the chart, the same figures as a table for the standard levels only (one row per level), sortable by fuel or
+  time, the chosen row highlighted.
+
+The three existing curves stay in the detailed view, below. Nothing new is computed: the model already gives trip fuel
+and time per level (`m.trip`), climb points (`climbTo`, `manualPoint`) and the climb law of the chosen goal.
