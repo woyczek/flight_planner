@@ -141,7 +141,7 @@
     ["Régimes de montée — cartographie moteur", "Climb settings — engine map", "Steigflugeinstellungen — Motorkennfeld",
       "Regímenes de ascenso — mapa motor"
     ],
-    ["Comparaison des montées", "Climb comparison", "Vergleich der Steigflüge", "Comparación de ascensos"],
+    ["Objectifs de montée", "Climb goals", "Steigflugziele", "Objetivos de ascenso"],
     ["Débit total", "Total fuel flow", "Gesamtverbrauch", "Flujo total"],
     ["Régime de vol ↕", "Flight phase ↕", "Flugphase ↕", "Fase de vuelo ↕"],
     ["État", "Status", "Status", "Estado"],

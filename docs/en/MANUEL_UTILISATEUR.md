@@ -1448,18 +1448,18 @@ The “Flight maps” button (Expert level) opens the Flight maps with this flig
 
 ### Flight level decision
 
-After “Calculate”, at the top of the fuel plan (simple and detailed view), a two-panel chart gives for each level the fuel (top) and the time (bottom) of the whole trip: climb with the goal chosen in “Climb instructions”, profile cruise, descent. Both panels share the level axis and the cursor; the chosen level is the only mark drawn (line and “FL300”).
+After “Calculate”, at the top of the fuel plan (simple and detailed view), a chart gives for each level the fuel (left scale, solid curve) and the time (right scale, thin curve) of the whole trip: climb with the goal chosen in “Climb instructions”, profile cruise, descent. Each scale has the colour and the title of its curve; the card gives both values in the same colours. The plan level is a solid line, the cursor a dashed line.
 - Above the chart, two pills: “Least fuel” and “Fastest”, with level, fuel and time; a click puts the cursor there. In the detailed view, with the “Eco” goal, a third one gives the economy cruise.
-- Grey: level that cannot be held — above the ceiling, trip too short (climbing then descending takes more than the distance) or not enough thrust; the reason and the field to change are in the cursor card.
-- Hover over the chart, click it or move the slider under it: the card beside it gives three lines for that level — “Trip” (fuel, time, cruise TAS), “Climb” (time, fuel, distance, IAS to fly, rate) and “Descent” (TOD, time, fuel, IAS — the profile's if entered in Descent › IAS —, rate). The “Climb instructions” block follows that level.
-- Under the card, “Use this level” puts it in “Level (FL)” and redoes the fuel plan; “Compare” pins the current level to read it beside another one, with the fuel and time difference (“Stop comparing” removes it).
-- The table below lists the round levels (every 1,000 ft; 2,000 ft for a ceiling above 20,000 ft), sortable by level, fuel or time; clicking a row chooses that level; a level that cannot be held shows “—” and its cause.
+- Grey: level that cannot be held — above the ceiling, trip too short (climbing then descending takes more than the distance) or not enough thrust; the reason and the field to change appear in the cursor card.
+- Hover over the chart, click it or move the slider under it. Cursor on the plan level: the card gives three lines — “Trip” (fuel, time, cruise TAS), “Climb” (time, fuel, distance, IAS to fly, rate) and “Descent” (TOD, time, fuel, IAS — the profile's if entered in Descent › IAS —, rate). Cursor on another level: it compares with the plan, in three columns “Plan”, cursor and “Difference” (fuel, time, climb, TOD). The “Climb instructions” block follows the cursor.
+- “Use this level” makes the cursor the new plan level (“Level (FL)”) and redoes the fuel plan; the comparison closes by itself.
+- The “Levels” table below lists the round levels (every 1,000 ft; 2,000 ft for a ceiling above 20,000 ft), sortable by level, fuel or time; clicking a row chooses that level; a level that cannot be held shows “—” and its cause.
 
 ### Climb (detailed view)
 
 In the detailed view (“Detailed view” / “Simple view” button of the Result; detailed by default at the Expert level), under the climb instructions:
 - “Climb — rate, fuel and speeds by altitude”: three panels on the same axis and with the same cursor as the level decision — climb rate (dashed: maximum rate at Vy), fuel per 1,000 ft, IAS to fly (line) and TAS (dashed), for the goal chosen in the climb instructions. With an engine map, “by altitude” / “by engine setting” also shows the rate by setting at mid-climb.
-- “Climb comparison”: one goal per row (“Eco”, “Vy”, “Fast”, “Profile”, “Set”) — time, fuel, IAS and rate up to the level of the instructions; ★: best time and best fuel; clicking a row chooses the goal.
+- “Climb goals”: one goal per row (“Eco”, “Vy”, “Fast”, “Profile”, “Set”) — time, fuel, IAS and rate, always up to the plan level; ★: best time and best fuel; clicking a row chooses the goal.
 - “Climb settings — engine map” (only if there is one): rate and fuel per 1,000 ft at mid-climb for each setting; ★: most economical.
 
 The “Chosen climb” sliders of the fuel plan set the “Set” goal.

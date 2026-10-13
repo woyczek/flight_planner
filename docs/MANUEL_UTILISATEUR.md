@@ -1495,18 +1495,18 @@ Le bouton « Cartes de vol » (niveau Expert) ouvre les Cartes de vol avec ce pl
 
 ### Décision du niveau de vol
 
-Après « Calculer », en tête du devis (vue simple comme vue détaillée), un graphe à deux panneaux donne pour chaque niveau le carburant (en haut) et le temps (en bas) du trajet entier : montée selon l'objectif choisi dans « Consignes de montée », croisière du profil, descente. Les deux panneaux partagent l'axe des niveaux et le curseur ; le niveau choisi est le seul repère dessiné (trait et « FL300 »).
+Après « Calculer », en tête du devis (vue simple comme vue détaillée), un graphe donne pour chaque niveau le carburant (échelle de gauche, courbe pleine) et le temps (échelle de droite, courbe fine) du trajet entier : montée selon l'objectif choisi dans « Consignes de montée », croisière du profil, descente. Chaque échelle a la couleur et le titre de sa courbe ; la fiche donne les deux valeurs dans les mêmes couleurs. Le niveau du plan est un trait plein, le curseur un trait pointillé.
 - Au-dessus du graphe, deux pastilles : « Le plus économe » et « Le plus rapide », avec niveau, carburant et temps ; un clic y met le curseur. En vue détaillée, avec l'objectif « Éco », une troisième donne la croisière économique.
-- Grisé : niveau non tenable — au-delà du plafond, trajet trop court (monter puis redescendre prend plus que la distance) ou poussée insuffisante ; la raison et le champ à modifier sont dans la fiche du curseur.
-- Survolez le graphe, cliquez-y ou réglez la réglette dessous : la fiche à côté donne pour ce niveau trois lignes — « Trajet » (carburant, temps, TAS de croisière), « Montée » (temps, carburant, distance, badin à tenir, vario) et « Descente » (TOD, temps, carburant, badin — celui du profil s'il est saisi dans Descente › Badin —, vario). Le bloc « Consignes de montée » suit ce niveau.
-- Sous la fiche, « Utiliser ce niveau » le pose dans « Niveau (FL) » et refait le devis ; « Comparer » épingle le niveau courant pour le lire à côté d'un autre, avec l'écart de carburant et de temps (« Ne plus comparer » le retire).
-- Le tableau dessous reprend les niveaux ronds (tous les 1000 ft ; 2000 ft pour un plafond au-delà de 20 000 ft), triable par niveau, carburant ou temps ; un clic sur une ligne choisit ce niveau ; un niveau non tenable affiche « — » et sa cause.
+- Grisé : niveau non tenable — au-delà du plafond, trajet trop court (monter puis redescendre prend plus que la distance) ou poussée insuffisante ; la raison et le champ à modifier s'affichent dans la fiche du curseur.
+- Survolez le graphe, cliquez-y ou réglez la réglette dessous. Curseur sur le niveau du plan : la fiche donne trois lignes — « Trajet » (carburant, temps, TAS de croisière), « Montée » (temps, carburant, distance, badin à tenir, vario) et « Descente » (TOD, temps, carburant, badin — celui du profil s'il est saisi dans Descente › Badin —, vario). Curseur sur un autre niveau : elle compare au plan, en trois colonnes « Plan », curseur et « Écart » (carburant, temps, montée, TOD). Le bloc « Consignes de montée » suit le curseur.
+- « Utiliser ce niveau » fait du curseur le nouveau niveau du plan (« Niveau (FL) ») et refait le devis ; la comparaison se referme d'elle-même.
+- Le tableau « Niveaux », dessous, reprend les niveaux ronds (tous les 1000 ft ; 2000 ft pour un plafond au-delà de 20 000 ft), triable par niveau, carburant ou temps ; un clic sur une ligne choisit ce niveau ; un niveau non tenable affiche « — » et sa cause.
 
 ### Montée (vue détaillée)
 
 En vue détaillée (bouton « Vue détaillée » / « Vue simple » du Résultat ; détaillée par défaut au niveau Expert), sous les consignes de montée :
 - « Montée — vario, carburant et vitesses selon l'altitude » : trois panneaux sur le même axe et avec le même curseur que la décision du niveau — vario (tirets : vario max à Vy), carburant par 1000 ft, badin à tenir (trait) et TAS (tirets), pour l'objectif choisi dans les consignes de montée. Avec une cartographie moteur, « par altitude » / « par régime » montre aussi le vario selon le régime à mi-montée.
-- « Comparaison des montées » : un objectif par ligne (« Éco », « Vy », « Rapide », « Profil », « Réglée ») — temps, carburant, badin et vario jusqu'au niveau des consignes ; ★ : meilleur temps et meilleur carburant ; un clic sur une ligne choisit l'objectif.
+- « Objectifs de montée » : un objectif par ligne (« Éco », « Vy », « Rapide », « Profil », « Réglée ») — temps, carburant, badin et vario, toujours jusqu'au niveau du plan ; ★ : meilleur temps et meilleur carburant ; un clic sur une ligne choisit l'objectif.
 - « Régimes de montée — cartographie moteur » (seulement s'il y en a une) : vario et carburant par 1000 ft à mi-montée pour chaque régime ; ★ : le plus économe.
 
 Les curseurs « Montée choisie » du devis règlent l'objectif « Réglée ».

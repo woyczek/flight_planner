@@ -1085,6 +1085,18 @@
     font-weight: 400;
     color: var(--muted)
   }
+  .fl-dec .dec-warn {
+    min-height: 4.2em;
+    margin: 4px 0;
+    font-size: 12px
+  }
+  .fl-dec-tabtitle {
+    margin: 12px 0 4px;
+    font-size: 13px
+  }
+  .climb-guide-table tr.pad {
+    visibility: hidden
+  }
   .fl-dec-tablewrap {
     overflow: auto;
     max-height: 260px;
@@ -1144,6 +1156,33 @@
     stroke: currentColor;
     stroke-opacity: .8;
     stroke-width: 1.5
+  }
+  .opt-chart .dec-cur {
+    stroke: currentColor;
+    stroke-opacity: .75;
+    stroke-width: 1.3;
+    stroke-dasharray: 4 3
+  }
+  .opt-chart text.ax-fuel {
+    fill: var(--fc-eco, #7ed69b)
+  }
+  .opt-chart text.ax-time {
+    fill: var(--fc-fast, #f0b86e)
+  }
+  .opt-chart line.ax-fuel {
+    stroke: var(--fc-eco, #7ed69b)
+  }
+  .opt-chart line.ax-time {
+    stroke: var(--fc-fast, #f0b86e)
+  }
+  .opt-chart .ax-title {
+    font-weight: 600
+  }
+  .fl-dec .v-fuel {
+    color: var(--fc-eco, #7ed69b)
+  }
+  .fl-dec .v-time {
+    color: var(--fc-fast, #f0b86e)
   }
   .opt-chart .dec-sel-txt {
     font-weight: 700;
@@ -1569,7 +1608,7 @@ html[data-skeuo] .repo-block-tools .fp-result-pin[aria-pressed="true"]:not(#imp)
 <div id="optEmpty" class="mut">Lance « Calculer » pour tracer la courbe de montée.</div>
 <div id="climbBlock" hidden>
 <div class="perf-row" id="rowClimb"><h3>Montée — vario, carburant et vitesses selon l’altitude</h3><div class="climb-x-row" data-no-i18n><span id="climbX" class="repo-segs" role="group" hidden></span></div><div class="chart-wrap"><svg id="climbChart" class="opt-chart" viewBox="0 0 540 298" hidden></svg></div></div>
-<div class="perf-row" id="rowCompare"><h3>Comparaison des montées</h3><div id="climbCompare" data-no-i18n></div></div>
+<div class="perf-row" id="rowCompare"><h3>Objectifs de montée</h3><div id="climbCompare" data-no-i18n></div></div>
 <div class="perf-row" id="rowTable" hidden><h3>Régimes de montée — cartographie moteur</h3><div id="climbTable" data-no-i18n></div></div>
 </div></div></section>
 

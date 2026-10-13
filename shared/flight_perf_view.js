@@ -554,6 +554,20 @@
   // et grisé. Valeurs lues à mi-montée ; valeur et état (« plein gaz », « calculé ») sous chaque curseur.
   // ---------------------------------------------------------------------------------------------------
 
+  /** Hauteur tenue : l'élément ne rapetisse plus (min-height = plus grande hauteur vue), pour qu'un contenu qui suit le
+   *  curseur ne fasse jamais bouger la page ; reset : repart de la hauteur actuelle. */
+  const holdHeight = (el, reset = false) => {
+    if (!el) return;
+    if (reset) {
+      el._hh = 0;
+      el.style.minHeight = "";
+    }
+    const h = el.offsetHeight;
+    if (h > (el._hh || 0)) {
+      el._hh = h;
+      el.style.minHeight = `${h}px`;
+    }
+  };
   /** Écrit une propriété d'un élément seulement si sa valeur change. */
   const put = (el, k, v) => {
     if (el && el[k] !== v) el[k] = v;
@@ -917,7 +931,11 @@
     ] : []), tl("Badin à tenir (kt)", "IAS to fly (kt)", "Zu haltende IAS (kt)",
       "IAS a mantener (kt)"), tl("Vario attendu (ft/min)", "Expected rate (ft/min)", "Erwartete Steigrate (ft/min)",
       "Régimen esperado (ft/min)"), tl("Temps", "Time", "Zeit", "Tiempo")];
-    const body = g.rows.map(r => `<tr><td>${altTxt(r.h)}</td><td>${r.frac >= .995 ? tl("plein", "full", "voll", "a fondo") : `${fmt(r.frac * 100, 0)} %`}</td>${map ? `<td>${Number.isFinite(r.rpm) ? fmt(r.rpm, jet ? 1 : 0) : "—"}</td>` : ""}<td>${fmt(r.ias, 0)}${jet && r.mach >= .4 ? ` <small>M${fmt(r.mach, 2)}</small>` : ""}</td><td>${fmt(Math.max(0, r.roc), 0)}</td><td>${r.h ? hmTxt(r.t) : "—"}</td></tr>`).join("");
+    // tranches jusqu'au plafond : lignes vides invisibles en complément (hauteur du tableau fixe quel que soit le niveau)
+    const topMax = Math.floor(m.ceiling / 100) * 100,
+      nMax = [0, 2000, 5000, 10000, 15000, 20000, 25000, 30000, 35000, 40000, 45000, 50000].filter(h => h < topMax - 250).length + 1,
+      pad = Math.max(0, nMax - g.rows.length);
+    const body = g.rows.map(r => `<tr><td>${altTxt(r.h)}</td><td>${r.frac >= .995 ? tl("plein", "full", "voll", "a fondo") : `${fmt(r.frac * 100, 0)} %`}</td>${map ? `<td>${Number.isFinite(r.rpm) ? fmt(r.rpm, jet ? 1 : 0) : "—"}</td>` : ""}<td>${fmt(r.ias, 0)}${jet && r.mach >= .4 ? ` <small>M${fmt(r.mach, 2)}</small>` : ""}</td><td>${fmt(Math.max(0, r.roc), 0)}</td><td>${r.h ? hmTxt(r.t) : "—"}</td></tr>`).join("") + `<tr class="pad" aria-hidden="true"><td colspan="${head.length}">&nbsp;</td></tr>`.repeat(pad);
     return typo(`<table class="climb-guide-table"><thead><tr>${head.map(x => `<th>${x}</th>`).join("")}</tr></thead><tbody>${body}</tbody></table>`);
   }
   let guideTimer = 0,
@@ -928,23 +946,23 @@
     guideTimer = setTimeout(renderGuide, 60);
   }
   /** Montée d'un objectif, mémorisée par modèle et niveau (la montée réglée : par réglage) ; null en cas d'échec. */
-  function guideFor(goal) {
+  function guideFor(goal, atPlan = false) {
     const m = S.m,
-      c = S.guideH != null && S.c ? {
+      c = !atPlan && S.guideH != null && S.c ? {
         ...S.c,
         FL: S.guideH / 100
       } : S.c,
       q = S.manual;
-    if (S.gModel !== m || S.gFL !== c?.FL) {
+    if (S.gModel !== m || S.gPlan !== S.c?.FL) {
       S.gCache = new Map();
       S.gModel = m;
-      S.gFL = c?.FL;
+      S.gPlan = S.c?.FL;
     }
-    const k = goal === "man" ? `man|${q ? [q.ias, q.vs, q.full, q.frac, q.calc].join("|") : ""}` : goal;
+    const k = `${c?.FL}|${goal === "man" ? `man|${q ? [q.ias, q.vs, q.full, q.frac, q.calc].join("|") : ""}` : goal}`;
     if (!S.gCache.has(k)) {
       if (goal === "man")
         for (const x of [...S.gCache.keys()])
-          if (x.startsWith("man|")) S.gCache.delete(x);
+          if (x.includes("|man|")) S.gCache.delete(x);
       let g = null;
       try {
         g = climbGuide(m, c, goal);
@@ -984,6 +1002,10 @@
       guideHtml = html;
       box.innerHTML = html;
     }
+    // hauteur tenue tant que le devis ne change pas (la phrase « Attendu » peut changer de longueur avec le curseur)
+    holdHeight(box, box._hm !== S.m || box._hp !== S.c?.FL);
+    box._hm = S.m;
+    box._hp = S.c?.FL;
     if (!box.dataset.ready) {
       box.dataset.ready = "1";
       box.addEventListener("click", e => {
@@ -1008,22 +1030,22 @@
     }, 30);
   }
 
-  /** Comparaison des montées (#climbCompare, vue détaillée) : un objectif par ligne — temps, carburant, Badin à tenir,
-   *  vario, jusqu'au niveau des consignes ; ligne de l'objectif choisi surlignée, ★ meilleur temps et carburant ; clic sur
+  /** Objectifs de montée (#climbCompare, vue détaillée) : un objectif par ligne — temps, carburant, Badin à tenir,
+   *  vario, toujours jusqu'au niveau du plan (le tableau ne suit pas le curseur) ; ligne de l'objectif choisi surlignée, ★ meilleur temps et carburant ; clic sur
    *  une ligne : objectif choisi. */
   function compareTable(goal) {
     const box = $("climbCompare");
     if (!box || !S.m) return;
     const rows = GOALS.map(gl => ({
         gl,
-        x: gl === "prof" && !(profileClimbIas() > 0) ? null : guideFor(gl)
+        x: gl === "prof" && !(profileClimbIas() > 0) ? null : guideFor(gl, true)
       })),
       okR = rows.filter(r => r.x?.reached),
       bT = okR.reduce((a, b) => !a || b.x.minutes < a.x.minutes ? b : a, null),
       bF = okR.reduce((a, b) => !a || b.x.fuel < a.x.fuel ? b : a, null),
       r100 = v => fmt(Math.round(Math.max(0, v) / 100) * 100, 0),
       top = okR[0]?.x.top ?? rows.find(r => r.x)?.x.top;
-    const html = `<table><thead><tr><th>${tl("Objectif", "Goal", "Ziel", "Objetivo")}${top ? ` — ${tl("montée jusqu’au", "climb to", "Steigflug auf", "ascenso a")} ${flTxt(top)}` : ""}</th><th>${tl("Temps", "Time", "Zeit", "Tiempo")}</th><th>${tl("Carburant", "Fuel", "Kraftstoff", "Combustible")} (${fuelUnit()})</th><th>${tl("Badin", "IAS", "IAS", "IAS")} (kt)</th><th>${tl("Vario", "Rate", "Steigrate", "Régimen")} (ft/min)</th></tr></thead><tbody>` +
+    const html = `<table><thead><tr><th>${tl("Objectif", "Goal", "Ziel", "Objetivo")}${top ? ` — ${tl("montée jusqu’au niveau du plan", "climb to the plan level", "Steigflug auf die Planhöhe", "ascenso al nivel del plan")}, ${flTxt(top)}` : ""}</th><th>${tl("Temps", "Time", "Zeit", "Tiempo")}</th><th>${tl("Carburant", "Fuel", "Kraftstoff", "Combustible")} (${fuelUnit()})</th><th>${tl("Badin", "IAS", "IAS", "IAS")} (kt)</th><th>${tl("Vario", "Rate", "Steigrate", "Régimen")} (ft/min)</th></tr></thead><tbody>` +
       rows.map(({
         gl,
         x
@@ -1204,15 +1226,14 @@
       sort: prev?.sort || "h",
       dir: prev?.dir || 1
     });
-    if (S.decCmp && S.decCmp.id !== active.id) S.decCmp = null; // niveau comparé : gardé pour le même appareil
     const goalName = GOAL_TXT[goal]()[0];
     box.innerHTML = typo(`<div class="fl-dec-head"><h3>${title}</h3><span class="mut">${tl(`trajet entier à chaque niveau : montée « ${goalName} », croisière du profil, descente`, `whole trip at each level: “${goalName}” climb, profile cruise, descent`, `ganze Strecke auf jeder Flughöhe: Steigflug „${goalName}“, Profil-Reiseflug, Sinkflug`, `trayecto completo a cada nivel: ascenso «${goalName}», crucero del perfil, descenso`)}</span></div>` +
       `<div id="decPills" class="fl-dec-pills"></div>` +
       `<div class="fl-dec-body"><div class="fl-dec-main"><div class="chart-wrap"><svg id="decChart" class="opt-chart"></svg></div>` +
       `<p class="mut fl-dec-note">${tl("Grisé : niveau non tenable — plafond, trajet trop court ou poussée insuffisante ; la raison est dans la fiche du curseur.", "Grey: level that cannot be held — ceiling, trip too short or not enough thrust; the reason is in the cursor card.", "Grau: nicht haltbare Flughöhe — Gipfelhöhe, Strecke zu kurz oder Schub reicht nicht; der Grund steht in der Karte des Cursors.", "Gris: nivel no mantenible — techo, trayecto demasiado corto o empuje insuficiente; la razón está en la ficha del cursor.")}</p>` +
       `<div class="fl-dec-ctl"><input id="decSlider" type="range" min="${D.lo}" max="${D.hi}" step="${D.step}" value="${D.sel}" aria-label="${escXml(tl("Niveau étudié", "Level studied", "Untersuchte Flughöhe", "Nivel estudiado"))}"><output id="decLvl"></output></div></div>` +
-      `<div class="fl-dec-side"><div id="decCard" class="fl-dec-card"></div><div class="fl-dec-actions"><button type="button" id="decUse" class="mini">${tl("Utiliser ce niveau", "Use this level", "Diese Flughöhe verwenden", "Usar este nivel")}</button><button type="button" id="decCmp" class="mini secondary"></button></div></div></div>` +
-      `<div class="fl-dec-tablewrap"><table id="decTable" class="climb-guide-table fl-dec-table"></table></div>`);
+      `<div class="fl-dec-side"><div id="decCard" class="fl-dec-card"></div><div class="fl-dec-actions"><button type="button" id="decUse" class="mini">${tl("Utiliser ce niveau", "Use this level", "Diese Flughöhe verwenden", "Usar este nivel")}</button></div></div></div>` +
+      `<h4 class="fl-dec-tabtitle">${tl("Niveaux", "Levels", "Flughöhen", "Niveles")}</h4><div class="fl-dec-tablewrap"><table id="decTable" class="climb-guide-table fl-dec-table"></table></div>`);
     decPills();
     drawDecision();
     const sl = $("decSlider");
@@ -1223,14 +1244,6 @@
         bubbles: true
       }));
       if (typeof calculateFromButton === "function") calculateFromButton();
-    };
-    $("decCmp").onclick = () => {
-      const X = S.dec;
-      S.decCmp = S.decCmp ? null : {
-        id: active.id,
-        h: X.hover ?? X.sel
-      };
-      decUpdate();
     };
     $("decPills").onclick = e => {
       const b = e.target.closest("button[data-h]");
@@ -1273,40 +1286,34 @@
       if (b.getAttribute("aria-pressed") !== on) b.setAttribute("aria-pressed", on);
     }
   }
-  /** Graphe : carburant du trajet (panneau du haut, courbe pleine) et temps du trajet (panneau du bas, courbe fine), même
-   *  axe des niveaux et un seul quadrillage vertical ; un seul gris (niveaux non tenables) ; niveau choisi, curseur et
-   *  niveau comparé placés par decUpdate. */
+  /** Graphe : carburant du trajet (échelle de gauche, courbe pleine) et temps du trajet (échelle de droite, courbe fine),
+   *  chaque échelle dans la couleur de sa courbe ; un seul gris (niveaux non tenables) ; niveau du plan en trait plein,
+   *  curseur en pointillés (placé par decUpdate). */
   function drawDecision() {
     const D = S.dec,
       m = D.m,
       svg = $("decChart"),
       W = Math.max(320, Math.round((svg.parentElement?.clientWidth || 540) - 2)), // à l'échelle 1 : texte lisible
-      Lm = 58,
-      R = 14,
-      P1 = {
-        t: 18,
-        b: 132
-      },
-      P2 = {
-        t: 150,
-        b: 222
-      },
-      H = 258,
+      Lm = 54,
+      R = 54,
+      T = 24,
+      B = 32,
+      H = 256,
       rows = D.rows.filter(r => r?.ok),
       af = niceAxis(Math.min(...rows.map(r => cv(r.fuel))), Math.max(...rows.map(r => cv(r.fuel))), 4),
-      at = niceAxis(Math.min(...rows.map(r => r.minutes)), Math.max(...rows.map(r => r.minutes)), 2),
+      at = niceAxis(Math.min(...rows.map(r => r.minutes)), Math.max(...rows.map(r => r.minutes)), 4),
       X = h => Lm + h / D.xmax * (W - Lm - R),
-      Yf = v => P1.t + (1 - (v - af.lo) / (af.hi - af.lo || 1)) * (P1.b - P1.t),
-      Yt = v => P2.t + (1 - (v - at.lo) / (at.hi - at.lo || 1)) * (P2.b - P2.t);
+      Yf = v => T + (1 - (v - af.lo) / (af.hi - af.lo || 1)) * (H - B - T),
+      Yt = v => T + (1 - (v - at.lo) / (at.hi - at.lo || 1)) * (H - B - T);
     let g = "";
-    // quadrillage vertical commun (niveaux), horizontal par panneau
     const tk = D.xmax > 30000 ? 5000 : D.xmax > 12000 ? 2000 : 1000;
-    for (let h = 0; h <= D.xmax; h += tk) g += `<line class="grid-line" x1="${X(h).toFixed(1)}" x2="${X(h).toFixed(1)}" y1="${P1.t}" y2="${P2.b}"/><text x="${X(h).toFixed(1)}" y="${P2.b + 14}" text-anchor="middle">${flTxt(h)}</text>`;
-    for (const v of af.ticks) g += `<line class="grid-line" x1="${Lm}" x2="${W - R}" y1="${Yf(v).toFixed(1)}" y2="${Yf(v).toFixed(1)}"/><text x="${Lm - 5}" y="${(Yf(v) + 4).toFixed(1)}" text-anchor="end">${fmt(v, af.dec)}</text>`;
-    for (const v of at.ticks) g += `<line class="grid-line" x1="${Lm}" x2="${W - R}" y1="${Yt(v).toFixed(1)}" y2="${Yt(v).toFixed(1)}"/><text x="${Lm - 5}" y="${(Yt(v) + 4).toFixed(1)}" text-anchor="end">${hmTxt(v)}</text>`;
+    for (let h = 0; h <= D.xmax; h += tk) g += `<line class="grid-line" x1="${X(h).toFixed(1)}" x2="${X(h).toFixed(1)}" y1="${T}" y2="${H - B}"/><text x="${X(h).toFixed(1)}" y="${H - B + 14}" text-anchor="middle">${flTxt(h)}</text>`;
+    // graduations : carburant à gauche (quadrillage), temps à droite, chacune dans la couleur de sa courbe
+    for (const v of af.ticks) g += `<line class="grid-line" x1="${Lm}" x2="${W - R}" y1="${Yf(v).toFixed(1)}" y2="${Yf(v).toFixed(1)}"/><text class="ax-fuel" x="${Lm - 5}" y="${(Yf(v) + 4).toFixed(1)}" text-anchor="end">${fmt(v, af.dec)}</text>`;
+    for (const v of at.ticks) g += `<text class="ax-time" x="${W - R + 5}" y="${(Yt(v) + 4).toFixed(1)}">${hmTxt(v)}</text>`;
     // un seul gris : niveaux non tenables sous le plafond, puis au-delà du plafond
     const g0 = D.gap ? D.gap.from : m.ceiling;
-    if (g0 < D.xmax - 1) g += `<rect class="beyond" x="${X(g0).toFixed(1)}" y="${P1.t}" width="${(X(D.xmax) - X(g0)).toFixed(1)}" height="${P1.b - P1.t}"/><rect class="beyond" x="${X(g0).toFixed(1)}" y="${P2.t}" width="${(X(D.xmax) - X(g0)).toFixed(1)}" height="${P2.b - P2.t}"/>`;
+    if (g0 < D.xmax - 1) g += `<rect class="beyond" x="${X(g0).toFixed(1)}" y="${T}" width="${(X(D.xmax) - X(g0)).toFixed(1)}" height="${H - B - T}"/>`;
     /** Tracé d'une grandeur (val) le long de la série, interrompu là où elle manque ; extrapolé en pointillés. */
     const pth = (val, Y, cls) => {
       let d = "",
@@ -1326,16 +1333,17 @@
       }
       return `<path class="${cls}" d="${d}"/>${e ? `<path class="${cls} extrap" d="${e}"/>` : ""}`;
     };
-    g += `<line class="axis" x1="${Lm}" x2="${W - R}" y1="${P1.b}" y2="${P1.b}"/><line class="axis" x1="${Lm}" x2="${W - R}" y1="${P2.b}" y2="${P2.b}"/><line class="axis" x1="${Lm}" x2="${Lm}" y1="${P1.t}" y2="${P1.b}"/><line class="axis" x1="${Lm}" x2="${Lm}" y1="${P2.t}" y2="${P2.b}"/>` +
+    const xp = X(Math.min(D.plan, D.xmax)),
+      pl = xp > W - R - 90;
+    g += `<line class="axis" x1="${Lm}" x2="${W - R}" y1="${H - B}" y2="${H - B}"/><line class="axis ax-fuel" x1="${Lm}" x2="${Lm}" y1="${T}" y2="${H - B}"/><line class="axis ax-time" x1="${W - R}" x2="${W - R}" y1="${T}" y2="${H - B}"/>` +
       pth(r => cv(r.fuel), Yf, "curve-eco") + pth(r => r.minutes, Yt, "curve-fuel dec-time") +
-      `<text class="dec-ptitle" x="${Lm + 4}" y="${P1.t - 5}">${tl("Carburant du trajet", "Trip fuel", "Kraftstoff der Strecke", "Combustible del trayecto")} (${fuelUnit()})</text>` +
-      `<text class="dec-ptitle" x="${Lm + 4}" y="${P2.t - 5}">${tl("Temps du trajet", "Trip time", "Flugzeit", "Tiempo del trayecto")}</text>` +
+      `<text class="ax-fuel ax-title" x="4" y="${T - 10}">${tl("Carburant du trajet", "Trip fuel", "Kraftstoff der Strecke", "Combustible del trayecto")} (${fuelUnit()})</text>` +
+      `<text class="ax-time ax-title" x="${W - 4}" y="${T - 10}" text-anchor="end">${tl("Temps du trajet", "Trip time", "Flugzeit", "Tiempo del trayecto")}</text>` +
       `<text x="${(Lm + W - R) / 2}" y="${H - 2}" text-anchor="middle">${tl("Niveau", "Level", "Flughöhe", "Nivel")}</text>` +
-      `<line id="decCmpLine" class="pin" x1="0" x2="0" y1="${P1.t}" y2="${P2.b}" visibility="hidden"/>` +
-      `<line id="decSelLine" class="dec-sel" x1="0" x2="0" y1="${P1.t}" y2="${P2.b}"/><text id="decSelTxt" class="dec-sel-txt" x="0" y="${P1.t + 11}"></text>` +
+      (D.plan > 0 && D.plan <= D.xmax ? `<line class="dec-sel" x1="${xp.toFixed(1)}" x2="${xp.toFixed(1)}" y1="${T}" y2="${H - B}"/><text class="dec-sel-txt" x="${(xp + (pl ? -4 : 4)).toFixed(1)}" y="${T + 11}" text-anchor="${pl ? "end" : "start"}">${flTxt(D.plan)} ${tl("plan", "plan", "Plan", "plan")}</text>` : "") +
+      `<line id="decCurLine" class="dec-cur" x1="0" x2="0" y1="${T}" y2="${H - B}" visibility="hidden"/><text id="decCurTxt" class="dec-sel-txt" x="0" y="${T + 24}"></text>` +
       `<circle id="decSelF" class="dec-dot" r="4" cx="-9" cy="-9"/><circle id="decSelT" class="dec-dot dec-dot-t" r="3.5" cx="-9" cy="-9"/>` +
-      `<line id="decCursor" class="cursor" x1="0" x2="0" y1="${P1.t}" y2="${P2.b}" visibility="hidden"/>` +
-      `<rect id="decHit" x="${Lm}" y="${P1.t}" width="${W - Lm - R}" height="${P2.b - P1.t}" fill="transparent"/>`;
+      `<rect id="decHit" x="${Lm}" y="${T}" width="${W - Lm - R}" height="${H - B - T}" fill="transparent"/>`;
     svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
     svg.innerHTML = typo(g);
     Object.assign(D, {
@@ -1410,7 +1418,7 @@
       dIas = iasProf > 0 ? `${fmt(iasProf, 0)} kt` : `${rng(de.tas * Math.sqrt(m.atm(r.h).sigma), de.tas * Math.sqrt(m.atm(0).sigma))} kt`,
       L3 = [tl("Trajet", "Trip", "Strecke", "Trayecto"), tl("Montée", "Climb", "Steigflug", "Ascenso"), tl("Descente", "Descent",
         "Sinkflug", "Descenso")];
-    const trip = r.ok ? `<b>${fu(r.fuel)}</b> · ${hmTxt(r.minutes)} · ${def("TAS")} ${fmt(r.tas, 0)} kt${jet && r.mach >= .4 ? ` (M${r.mach.toFixed(2)})` : ""}${r.limited ? ` · ${tl("poussée max.", "max. thrust", "max. Schub", "empuje máx.")}` : ""}` : "—",
+    const trip = r.ok ? `<b class="v-fuel">${fu(r.fuel)}</b> · <span class="v-time">${hmTxt(r.minutes)}</span> · ${def("TAS")} ${fmt(r.tas, 0)} kt${jet && r.mach >= .4 ? ` (M${r.mach.toFixed(2)})` : ""}${r.limited ? ` · ${tl("poussée max.", "max. thrust", "max. Schub", "empuje máx.")}` : ""}` : "—",
       climb = cl ? `<b>${hmTxt(cl.minutes)}</b> · ${fu(cl.fuel)} · ${fmt(cl.nm, 0)} NM${r0 && rN ? ` · ${tl("tenir", "fly", "halten", "mantener")} ${rng(r0.ias, rN.ias)} kt · ${tl("vario", "rate", "Steigrate", "régimen")} ${rng(r0.roc, rN.roc, r100)} ft/min` : ""}` : "—",
       tod = r.ok ? Math.max(0, D.c.D - r.climb.nm - r.cruiseNm) : dd,
       desc = `<b>${r.ok ? tl(`TOD à ${fmt(tod, 0)} NM`, `TOD at ${fmt(tod, 0)} NM`, `TOD bei ${fmt(tod, 0)} NM`, `TOD a ${fmt(tod, 0)} NM`) : `${fmt(dd, 0)} NM`}</b> · ${hmTxt(td)} · ${fu(de.ff * td / 60)} · ${dIas} · −${fmt(de.rate, 0)} ft/min`;
@@ -1421,9 +1429,16 @@
         [L3[1], climb],
         [L3[2], desc]
       ],
-      trip: r.ok ? [cv(r.fuel), r.minutes] : null,
+      // grandeurs brutes (unité affichée) pour la comparaison avec le plan ; null si absentes
+      nums: {
+        fuel: r.ok ? cv(r.fuel) : null,
+        min: r.ok ? r.minutes : null,
+        climb: cl ? cl.minutes : null,
+        tod: r.ok ? tod : null
+      },
       short: {
-        trip: r.ok ? `${fu(r.fuel)} · ${hmTxt(r.minutes)}` : "—",
+        fuel: r.ok ? `<span class="v-fuel">${fu(r.fuel)}</span>` : "—",
+        time: r.ok ? `<span class="v-time">${hmTxt(r.minutes)}</span>` : "—",
         climb: cl ? `${hmTxt(cl.minutes)} · ${fu(cl.fuel)}` : "—",
         desc: r.ok ? `${fmt(tod, 0)} NM` : "—"
       },
@@ -1436,65 +1451,61 @@
       r = decNearest(D, h);
     return [flTxt(h), ...(r.ok ? decTags(D, h).map(k => DEC_TAG[k]()) : [gapTxt(r.reason)])].join(" · ");
   };
-  /** Curseur, niveau choisi, fiche, boutons, pastilles, tableau, graphe de montée, instruments et consignes de montée au
-   *  niveau courant (survolé, sinon choisi). */
+  /** Curseur (survolé, sinon choisi), fiche, réglette, bouton, pastilles, tableau, graphe de montée, instruments et
+   *  consignes de montée. Curseur sur le niveau du plan : une colonne ; ailleurs : plan, curseur et écart. */
   function decUpdate() {
     const D = S.dec;
     if (!D || !$("decCard")) return;
     const h = D.hover ?? D.sel,
-      cmp = S.decCmp ? decNearest(D, S.decCmp.h).h : null,
       X = D.X,
-      rs = decNearest(D, D.sel);
-    // niveau choisi : trait, étiquette et points sur les deux courbes
-    const xs = X(D.sel),
-      left = xs > D.W - D.R - 60,
-      st = $("decSelTxt");
-    for (const id of ["decSelLine"]) {
-      $(id).setAttribute("x1", xs);
-      $(id).setAttribute("x2", xs);
+      rc = decNearest(D, h),
+      rp = decNearest(D, D.plan),
+      same = rc.h === rp.h,
+      xc = X(h),
+      left = xc > D.W - D.R - 60,
+      ct = $("decCurTxt");
+    // curseur en pointillés (rien sur le plan) et points sur les deux courbes
+    if (same) {
+      $("decCurLine").setAttribute("visibility", "hidden");
+      put(ct, "textContent", "");
+    } else {
+      cursorAt("decCurLine", xc);
+      ct.setAttribute("x", (xc + (left ? -4 : 4)).toFixed(1));
+      ct.setAttribute("text-anchor", left ? "end" : "start");
+      put(ct, "textContent", flTxt(h));
     }
-    st.setAttribute("x", (xs + (left ? -4 : 4)).toFixed(1));
-    st.setAttribute("text-anchor", left ? "end" : "start");
-    put(st, "textContent", flTxt(D.sel));
     for (const [id, y] of [
-        ["decSelF", rs.ok ? D.Yf(cv(rs.fuel)) : -9],
-        ["decSelT", rs.ok ? D.Yt(rs.minutes) : -9]
+        ["decSelF", rc.ok ? D.Yf(cv(rc.fuel)) : -9],
+        ["decSelT", rc.ok ? D.Yt(rc.minutes) : -9]
       ]) {
-      $(id).setAttribute("cx", rs.ok ? xs : -9);
+      $(id).setAttribute("cx", rc.ok ? xc : -9);
       $(id).setAttribute("cy", y);
     }
-    if (D.hover != null && D.hover !== D.sel) cursorAt("decCursor", X(D.hover));
-    else $("decCursor").setAttribute("visibility", "hidden");
-    if (cmp != null) cursorAt("decCmpLine", X(cmp));
-    else $("decCmpLine").setAttribute("visibility", "hidden");
     put($("decSlider"), "value", String(D.sel));
     put($("decLvl"), "textContent", flTxt(D.sel));
-    put($("decUse"), "disabled", Math.abs(D.sel - D.plan) < 1 || !rs.ok);
-    put($("decCmp"), "textContent", cmp != null ? tl(`Ne plus comparer (${flTxt(cmp)})`, `Stop comparing (${flTxt(cmp)})`, `Vergleich beenden (${flTxt(cmp)})`, `Dejar de comparar (${flTxt(cmp)})`) : tl("Comparer", "Compare",
-      "Vergleichen", "Comparar"));
-    put($("decCmp"), "title", tl("Épingle le niveau courant pour le lire à côté d’un autre (écarts de carburant et de temps).",
-      "Pins the current level to read it beside another one (fuel and time differences).",
-      "Heftet die aktuelle Flughöhe an, um sie neben einer anderen zu lesen (Kraftstoff- und Zeitunterschiede).",
-      "Fija el nivel actual para leerlo junto a otro (diferencias de combustible y de tiempo)."));
-    // fiche : trois lignes, ou deux niveaux côte à côte avec l'écart (niveau courant − niveau comparé)
+    put($("decUse"), "disabled", decNearest(D, D.sel).h === rp.h || !decNearest(D, D.sel).ok);
+    // fiche : le niveau seul, ou plan · curseur · écart (curseur − plan)
     const a = decFacts(h);
     let html;
-    if (cmp == null || cmp === h) html = `<div class="fl-dec-title">${D.hover != null ? "⌖" : "▸"} ${escXml(decTitle(h))}</div>${a.note ? `<p class="perf-warn">⚠ ${a.note}</p>` : ""}<dl class="kvp">${a.lines.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join("")}</dl>`;
+    if (same) html = `<div class="fl-dec-title">${D.hover != null ? "⌖" : "▸"} ${escXml(decTitle(h))}</div><p class="perf-warn dec-warn">${a.note ? `⚠ ${a.note}` : ""}</p><dl class="kvp">${a.lines.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join("")}</dl>`;
     else {
-      const b = decFacts(cmp),
+      const p = decFacts(rp.h),
         sg = d => d > 0 ? "+" : d < 0 ? "−" : "±",
-        dl = a.trip && b.trip ? (() => {
-          const df = a.trip[0] - b.trip[0],
-            dm = a.trip[1] - b.trip[1];
-          return `${sg(df)}${fmt(Math.abs(df), 0)} ${fuelUnit()} · ${sg(dm)}${Math.abs(dm) < 60 ? `${fmt(Math.abs(dm), 0)} min` : hmTxt(Math.abs(dm))}`;
-        })() : "—";
-      html = `<table class="fl-dec-cmp"><thead><tr><th></th><th>${escXml(decTitle(h))}</th><th>📌 ${escXml(decTitle(cmp))}</th></tr></thead><tbody>` +
-        `<tr><th>${a.lines[0][0]}</th><td>${a.short.trip}</td><td>${b.short.trip}</td></tr>` +
-        `<tr><th>${tl("Écart", "Difference", "Differenz", "Diferencia")}</th><td colspan="2"><b>${dl}</b></td></tr>` +
-        `<tr><th>${a.lines[1][0]}</th><td>${a.short.climb}</td><td>${b.short.climb}</td></tr>` +
-        `<tr><th>TOD</th><td>${a.short.desc}</td><td>${b.short.desc}</td></tr></tbody></table>` + [a.note, b.note].filter(Boolean).map(n => `<p class="perf-warn">⚠ ${n}</p>`).join("");
+        dif = (k, f) => {
+          if (a.nums[k] == null || p.nums[k] == null) return "—";
+          const d = a.nums[k] - p.nums[k],
+            t = f(Math.abs(d));
+          return `${/^0(\D|$)/.test(t) ? "±" : sg(d)}${t}`; // écart arrondi à zéro : « ±0 »
+        },
+        mins = v => v < 60 ? `${fmt(v, 0)} min` : hmTxt(v);
+      html = `<table class="fl-dec-cmp"><thead><tr><th></th><th>${tl("Plan", "Plan", "Plan", "Plan")} ${flTxt(rp.h)}</th><th>${D.hover != null ? "⌖" : "▸"} ${escXml(decTitle(h))}</th><th>${tl("Écart", "Difference", "Differenz", "Diferencia")}</th></tr></thead><tbody>` +
+        `<tr><th>${tl("Carburant", "Fuel", "Kraftstoff", "Combustible")}</th><td>${p.short.fuel}</td><td>${a.short.fuel}</td><td class="v-fuel"><b>${dif("fuel", v => `${fmt(v, 0)} ${fuelUnit()}`)}</b></td></tr>` +
+        `<tr><th>${tl("Temps", "Time", "Zeit", "Tiempo")}</th><td>${p.short.time}</td><td>${a.short.time}</td><td class="v-time"><b>${dif("min", mins)}</b></td></tr>` +
+        `<tr><th>${tl("Montée", "Climb", "Steigflug", "Ascenso")}</th><td>${p.short.climb}</td><td>${a.short.climb}</td><td>${dif("climb", mins)}</td></tr>` +
+        `<tr><th>TOD</th><td>${p.short.desc}</td><td>${a.short.desc}</td><td>${dif("tod", v => `${fmt(v, 0)} NM`)}</td></tr></tbody></table>` + `<p class="perf-warn dec-warn">${[p.note, a.note].filter(Boolean).map(n => `⚠ ${n}`).join("<br>")}</p>`; // emplacement réservé
     }
     $("decCard").innerHTML = typo(html);
+    holdHeight($("decCard"));
     decPills();
     decTable();
     S.climbShow?.(h); // graphe de montée (vue détaillée) : même curseur
@@ -1513,7 +1524,7 @@
       tb = $("decTable");
     if (!D || !tb) return;
     const st = D.m.ceiling > 20000 ? 2000 : 1000,
-      list = D.all.filter(r => r.h % st === 0 || (r.ok && decTags(D, r.h).length) || r.h === D.sel),
+      list = D.all.filter(r => r.h % st === 0 || (r.ok && decTags(D, r.h).length)),
       key = {
         h: r => r.h,
         fuel: r => r.ok ? r.fuel : Infinity,
@@ -2137,6 +2148,7 @@
       cursorAt("climbCursor", X(p.h));
       const ro = $("climbReadout");
       if (ro) ro.innerHTML = typo(`<b>⌖ ${altTxt(p.h)}</b> — « ${gName} » : ${fmt(p.g.ias, 0)} kt (TAS ${fmt(p.g.tas, 0)}) · ${fmt(Math.max(0, p.g.roc), 0)} ft/min${Number.isFinite(p.f1000) ? ` · ${fmt(cv(p.f1000), 1)} ${PER}` : ""}${m.kind !== "jet" ? ` · ${tl("gaz", "throttle", "Leistung", "gases")} ${fmt(p.g.frac * 100, 0)} %` : ""} ; Vy ${fmt(p.v.vyIas, 0)} kt, ${fmt(p.v.roc, 0)} ft/min`);
+      holdHeight(ro);
     };
     S.climbShow = show;
     const hit = $("climbHit"),

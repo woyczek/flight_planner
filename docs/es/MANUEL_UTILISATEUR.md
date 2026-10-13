@@ -1448,18 +1448,18 @@ El botón «Mapas de vuelo» (nivel Experto) abre los Mapas de vuelo con este pl
 
 ### Decisión del nivel de vuelo
 
-Tras «Calcular», en la cabecera del plan (vista simple y detallada), un gráfico de dos paneles da para cada nivel el combustible (arriba) y el tiempo (abajo) del trayecto completo: ascenso según el objetivo elegido en «Consignas de ascenso», crucero del perfil, descenso. Los dos paneles comparten el eje de niveles y el cursor; el nivel elegido es la única marca dibujada (línea y «FL300»).
+Tras «Calcular», en la cabecera del plan (vista simple y detallada), un gráfico da para cada nivel el combustible (escala izquierda, curva llena) y el tiempo (escala derecha, curva fina) del trayecto completo: ascenso según el objetivo elegido en «Consignas de ascenso», crucero del perfil, descenso. Cada escala tiene el color y el título de su curva; la ficha da los dos valores en los mismos colores. El nivel del plan es una línea continua, el cursor una línea de puntos.
 - Encima del gráfico, dos pastillas: «El más económico» y «El más rápido», con nivel, combustible y tiempo; un clic lleva el cursor allí. En la vista detallada, con el objetivo «Eco», una tercera da el crucero económico.
-- Gris: nivel no mantenible — por encima del techo, trayecto demasiado corto (subir y bajar requiere más que la distancia) o empuje insuficiente; la razón y el campo que modificar están en la ficha del cursor.
-- Pase el ratón por el gráfico, haga clic en él o mueva el cursor de debajo: la ficha de al lado da para ese nivel tres líneas — «Trayecto» (combustible, tiempo, TAS de crucero), «Ascenso» (tiempo, combustible, distancia, IAS a mantener, régimen) y «Descenso» (TOD, tiempo, combustible, IAS — la del perfil si figura en Descenso › IAS —, régimen). El bloque «Consignas de ascenso» sigue ese nivel.
-- Bajo la ficha, «Usar este nivel» lo pone en «Nivel (FL)» y rehace el plan; «Comparar» fija el nivel actual para leerlo junto a otro, con la diferencia de combustible y de tiempo («Dejar de comparar» lo quita).
-- La tabla de debajo recoge los niveles redondos (cada 1000 ft; 2000 ft para un techo por encima de 20 000 ft), ordenable por nivel, combustible o tiempo; un clic en una fila elige ese nivel; un nivel no mantenible muestra «—» y su causa.
+- Gris: nivel no mantenible — por encima del techo, trayecto demasiado corto (subir y bajar requiere más que la distancia) o empuje insuficiente; la razón y el campo que modificar aparecen en la ficha del cursor.
+- Pase el ratón por el gráfico, haga clic en él o mueva el cursor de debajo. Cursor en el nivel del plan: la ficha da tres líneas — «Trayecto» (combustible, tiempo, TAS de crucero), «Ascenso» (tiempo, combustible, distancia, IAS a mantener, régimen) y «Descenso» (TOD, tiempo, combustible, IAS — la del perfil si figura en Descenso › IAS —, régimen). Cursor en otro nivel: compara con el plan, en tres columnas «Plan», cursor y «Diferencia» (combustible, tiempo, ascenso, TOD). El bloque «Consignas de ascenso» sigue al cursor.
+- «Usar este nivel» convierte el cursor en el nuevo nivel del plan («Nivel (FL)») y rehace el plan; la comparación se cierra sola.
+- La tabla «Niveles», debajo, recoge los niveles redondos (cada 1000 ft; 2000 ft para un techo por encima de 20 000 ft), ordenable por nivel, combustible o tiempo; un clic en una fila elige ese nivel; un nivel no mantenible muestra «—» y su causa.
 
 ### Ascenso (vista detallada)
 
 En la vista detallada (botón «Vista detallada» / «Vista simple» del Resultado; detallada por defecto en el nivel Experto), bajo las consignas de ascenso:
 - «Ascenso — régimen, combustible y velocidades según la altitud»: tres paneles en el mismo eje y con el mismo cursor que la decisión del nivel — régimen (trazos: régimen máximo a Vy), combustible por 1000 ft, IAS a mantener (línea) y TAS (trazos), para el objetivo elegido en las consignas de ascenso. Con un mapa motor, «por altitud» / «por régimen» muestra también el régimen de ascenso según el ajuste a media subida.
-- «Comparación de ascensos»: un objetivo por fila («Eco», «Vy», «Rápida», «Perfil», «Ajustada») — tiempo, combustible, IAS y régimen hasta el nivel de las consignas; ★: mejor tiempo y mejor combustible; un clic en una fila elige el objetivo.
+- «Objetivos de ascenso»: un objetivo por fila («Eco», «Vy», «Rápida», «Perfil», «Ajustada») — tiempo, combustible, IAS y régimen, siempre hasta el nivel del plan; ★: mejor tiempo y mejor combustible; un clic en una fila elige el objetivo.
 - «Regímenes de ascenso — mapa motor» (solo si existe): régimen y combustible por 1000 ft a media subida para cada régimen; ★: el más económico.
 
 Los cursores «Ascenso elegido» del plan ajustan el objetivo «Ajustada».
