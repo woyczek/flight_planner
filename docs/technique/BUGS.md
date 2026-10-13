@@ -11,12 +11,12 @@ English interface shows them.
 |---|---|---|---|
 | 07/10 | First run | "villes_geonames.csv not found: no city names" while building the aeronautical database | Not reproduced. Since 079ca0af: two attempts, then address and reason (HTTP code, network, folder) in the report — to be captured if it happens again. |
 | 08/10 | All pages | About 4 s before the page responds, in the user's Chrome profile | Not reproduced on the development machine (first paint < 220 ms). To measure in the profile concerned: `tools/perf_audit.html`, "Export the measurements (JSON)". |
-| 12/10 | Mission registry (exercise) | "Open in generator" on A-001C opens A-001A | Not reproduced (registry card, operation chips, generator and studio tabs open: A-001C opens). Possibly linked to `affectations.yaml` read as a mission (fixed the same day); to be described again if it happens (where the click was made). |
 
 ## Closed
 
 | Reported | Area | Bug | Cause | Fix |
 |---|---|---|---|---|
+| 12/10 | Mission registry (exercise) | "Open in generator" on A-001C opens A-001A | Not reproduced; most likely `affectations.yaml` read as a mission file (mission block overwritten, mission not found in the batch) | Annex file ignored (fixed on 12/10); confirmed fixed by the user on 13/10 |
 | 12/10 | Map studio, Flight maps (Aqua at least) | Preview map: zoom buttons shown as two empty blue squares | Page-wide button style (blue background, 10 × 16 px padding) applied to MapLibre's controls: icon 0 px wide, dark on blue | MapLibre's look restored for its control buttons (`map_parser.html`) |
 | 12/10 | Generator (and the whole suite) | Page frozen in the user's Chrome by a native dialog (reported by Simplification) | `confirm()` / `prompt()` / `alert()` called, one of them before the shared layer was loaded | All replaced by in-page dialogs (`AppFramework.ask`, new `AppFramework.askText`); bookmarklets excepted (run on another site) |
 | 12/10 | My profile › Aircraft and simulators | GZ20 (Goodyear GZ-20 airship): "not found (ICAO, EUROCONTROL, Aviation Fanatic)" | Type without an ICAO designator: Aviation Fanatic files it under `__GZ20`, only `GZ20` was looked up | `__CODE` record read, marked non-ICAO with its flight-plan designator: SHIP (airship), BALL (balloon), ZZZZ (`update_aircraft_db.py`) |
