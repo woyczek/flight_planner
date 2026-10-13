@@ -1416,31 +1416,26 @@
         }
       })(),
       dIas = iasProf > 0 ? `${fmt(iasProf, 0)} kt` : `${rng(de.tas * Math.sqrt(m.atm(r.h).sigma), de.tas * Math.sqrt(m.atm(0).sigma))} kt`,
-      L3 = [tl("Trajet", "Trip", "Strecke", "Trayecto"), tl("Montée", "Climb", "Steigflug", "Ascenso"), tl("Descente", "Descent",
-        "Sinkflug", "Descenso")];
-    const trip = r.ok ? `<b class="v-fuel">${fu(r.fuel)}</b> · <span class="v-time">${hmTxt(r.minutes)}</span> · ${def("TAS")} ${fmt(r.tas, 0)} kt${jet && r.mach >= .4 ? ` (M${r.mach.toFixed(2)})` : ""}${r.limited ? ` · ${tl("poussée max.", "max. thrust", "max. Schub", "empuje máx.")}` : ""}` : "—",
-      climb = cl ? `<b>${hmTxt(cl.minutes)}</b> · ${fu(cl.fuel)} · ${fmt(cl.nm, 0)} NM${r0 && rN ? ` · ${tl("tenir", "fly", "halten", "mantener")} ${rng(r0.ias, rN.ias)} kt · ${tl("vario", "rate", "Steigrate", "régimen")} ${rng(r0.roc, rN.roc, r100)} ft/min` : ""}` : "—",
-      tod = r.ok ? Math.max(0, D.c.D - r.climb.nm - r.cruiseNm) : dd,
-      desc = `<b>${r.ok ? tl(`TOD à ${fmt(tod, 0)} NM`, `TOD at ${fmt(tod, 0)} NM`, `TOD bei ${fmt(tod, 0)} NM`, `TOD a ${fmt(tod, 0)} NM`) : `${fmt(dd, 0)} NM`}</b> · ${hmTxt(td)} · ${fu(de.ff * td / 60)} · ${dIas} · −${fmt(de.rate, 0)} ft/min`;
+      tod = r.ok ? Math.max(0, D.c.D - r.climb.nm - r.cruiseNm) : null;
     return {
       ok: r.ok,
-      lines: [
-        [L3[0], trip],
-        [L3[1], climb],
-        [L3[2], desc]
-      ],
-      // grandeurs brutes (unité affichée) pour la comparaison avec le plan ; null si absentes
+      // cellules de la fiche (HTML), une par ligne du tableau
+      cells: {
+        fuel: r.ok ? `<b class="v-fuel">${fu(r.fuel)}</b>` : "—",
+        time: r.ok ? `<b class="v-time">${hmTxt(r.minutes)}</b>` : "—",
+        tas: r.ok ? `${fmt(r.tas, 0)} kt${jet && r.mach >= .4 ? ` (M${r.mach.toFixed(2)})` : ""}${r.limited ? ` · ${tl("poussée max.", "max. thrust", "max. Schub", "empuje máx.")}` : ""}` : "—",
+        climb: cl ? `${hmTxt(cl.minutes)} · ${fu(cl.fuel)} · ${fmt(cl.nm, 0)} NM` : "—",
+        climbHold: r0 && rN ? `${rng(r0.ias, rN.ias)} kt · ${rng(r0.roc, rN.roc, r100)} ft/min` : "—",
+        tod: r.ok ? tl(`à ${fmt(tod, 0)} NM`, `${fmt(tod, 0)} NM out`, `${fmt(tod, 0)} NM vorher`, `a ${fmt(tod, 0)} NM`) : "—",
+        desc: `${hmTxt(td)} · ${fu(de.ff * td / 60)} · ${fmt(dd, 0)} NM`,
+        descHold: `${dIas} · −${fmt(de.rate, 0)} ft/min`
+      },
+      // grandeurs brutes (unité affichée) pour les écarts au plan ; null si absentes
       nums: {
         fuel: r.ok ? cv(r.fuel) : null,
         min: r.ok ? r.minutes : null,
         climb: cl ? cl.minutes : null,
-        tod: r.ok ? tod : null
-      },
-      short: {
-        fuel: r.ok ? `<span class="v-fuel">${fu(r.fuel)}</span>` : "—",
-        time: r.ok ? `<span class="v-time">${hmTxt(r.minutes)}</span>` : "—",
-        climb: cl ? `${hmTxt(cl.minutes)} · ${fu(cl.fuel)}` : "—",
-        desc: r.ok ? `${fmt(tod, 0)} NM` : "—"
+        tod
       },
       note: r.ok ? "" : `${tl("Niveau impossible sur ce trajet", "Level impossible on this trip", "Flughöhe auf dieser Strecke unmöglich", "Nivel imposible en este trayecto")} : ${whyNot(m, D.c, r, r.h, D.law)}.`
     };
@@ -1451,8 +1446,8 @@
       r = decNearest(D, h);
     return [flTxt(h), ...(r.ok ? decTags(D, h).map(k => DEC_TAG[k]()) : [gapTxt(r.reason)])].join(" · ");
   };
-  /** Curseur (survolé, sinon choisi), fiche, réglette, bouton, pastilles, tableau, graphe de montée, instruments et
-   *  consignes de montée. Curseur sur le niveau du plan : une colonne ; ailleurs : plan, curseur et écart. */
+  /** Curseur (survolé, sinon choisi), fiche, réglette, bouton, pastilles, tableau, graphe de montée et instruments ;
+   *  consignes de montée au niveau choisi. Fiche : toujours le même tableau, plan · curseur · écart. */
   function decUpdate() {
     const D = S.dec;
     if (!D || !$("decCard")) return;
@@ -1484,34 +1479,42 @@
     put($("decSlider"), "value", String(D.sel));
     put($("decLvl"), "textContent", flTxt(D.sel));
     put($("decUse"), "disabled", decNearest(D, D.sel).h === rp.h || !decNearest(D, D.sel).ok);
-    // fiche : le niveau seul, ou plan · curseur · écart (curseur − plan)
-    const a = decFacts(h);
-    let html;
-    if (same) html = `<div class="fl-dec-title">${D.hover != null ? "⌖" : "▸"} ${escXml(decTitle(h))}</div><p class="perf-warn dec-warn">${a.note ? `⚠ ${a.note}` : ""}</p><dl class="kvp">${a.lines.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join("")}</dl>`;
-    else {
-      const p = decFacts(rp.h),
-        sg = d => d > 0 ? "+" : d < 0 ? "−" : "±",
-        dif = (k, f) => {
-          if (a.nums[k] == null || p.nums[k] == null) return "—";
-          const d = a.nums[k] - p.nums[k],
-            t = f(Math.abs(d));
-          return `${/^0(\D|$)/.test(t) ? "±" : sg(d)}${t}`; // écart arrondi à zéro : « ±0 »
-        },
-        mins = v => v < 60 ? `${fmt(v, 0)} min` : hmTxt(v);
-      html = `<table class="fl-dec-cmp"><thead><tr><th></th><th>${tl("Plan", "Plan", "Plan", "Plan")} ${flTxt(rp.h)}</th><th>${D.hover != null ? "⌖" : "▸"} ${escXml(decTitle(h))}</th><th>${tl("Écart", "Difference", "Differenz", "Diferencia")}</th></tr></thead><tbody>` +
-        `<tr><th>${tl("Carburant", "Fuel", "Kraftstoff", "Combustible")}</th><td>${p.short.fuel}</td><td>${a.short.fuel}</td><td class="v-fuel"><b>${dif("fuel", v => `${fmt(v, 0)} ${fuelUnit()}`)}</b></td></tr>` +
-        `<tr><th>${tl("Temps", "Time", "Zeit", "Tiempo")}</th><td>${p.short.time}</td><td>${a.short.time}</td><td class="v-time"><b>${dif("min", mins)}</b></td></tr>` +
-        `<tr><th>${tl("Montée", "Climb", "Steigflug", "Ascenso")}</th><td>${p.short.climb}</td><td>${a.short.climb}</td><td>${dif("climb", mins)}</td></tr>` +
-        `<tr><th>TOD</th><td>${p.short.desc}</td><td>${a.short.desc}</td><td>${dif("tod", v => `${fmt(v, 0)} NM`)}</td></tr></tbody></table>` + `<p class="perf-warn dec-warn">${[p.note, a.note].filter(Boolean).map(n => `⚠ ${n}`).join("<br>")}</p>`; // emplacement réservé
-    }
+    // fiche : un seul tableau, toujours le même — plan · curseur · écart (curseur − plan) ; curseur sur le plan : même
+    // colonne, estompée, sans écart
+    const a = decFacts(h),
+      p = same ? a : decFacts(rp.h),
+      sg = d => d > 0 ? "+" : d < 0 ? "−" : "±",
+      dif = (k, f) => {
+        if (same || a.nums[k] == null || p.nums[k] == null) return "";
+        const d = a.nums[k] - p.nums[k],
+          t = f(Math.abs(d));
+        return `${/^0(\D|$)/.test(t) ? "±" : sg(d)}${t}`; // écart arrondi à zéro : « ±0 »
+      },
+      mins = v => v < 60 ? `${fmt(v, 0)} min` : hmTxt(v),
+      ROWS = [
+        ["fuel", tl("Carburant du trajet", "Trip fuel", "Kraftstoff der Strecke", "Combustible del trayecto"), dif("fuel", v =>
+          `${fmt(v, 0)} ${fuelUnit()}`), "v-fuel"],
+        ["time", tl("Temps du trajet", "Trip time", "Flugzeit", "Tiempo del trayecto"), dif("min", mins), "v-time"],
+        ["tas", `${def("TAS")} ${tl("de croisière", "in cruise", "im Reiseflug", "de crucero")}`, "", ""],
+        ["climb", tl("Montée", "Climb", "Steigflug", "Ascenso"), dif("climb", mins), ""],
+        ["climbHold", `${tl("Montée", "Climb", "Steigflug", "Ascenso")} : ${tl("badin · vario", "IAS · rate", "IAS · Steigrate", "IAS · régimen")}`, "", ""],
+        ["tod", tl("Début de descente (TOD)", "Top of descent (TOD)", "Sinkflugbeginn (TOD)", "Inicio del descenso (TOD)"), dif("tod",
+          v => `${fmt(v, 0)} NM`), ""],
+        ["desc", tl("Descente", "Descent", "Sinkflug", "Descenso"), "", ""],
+        ["descHold", `${tl("Descente", "Descent", "Sinkflug", "Descenso")} : ${tl("badin · vario", "IAS · rate", "IAS · Sinkrate", "IAS · régimen")}`, "", ""]
+      ];
+    const html = `<table class="fl-dec-cmp${same ? " same" : ""}"><thead><tr><th></th><th>${tl("Plan", "Plan", "Plan", "Plan")} ${flTxt(rp.h)}</th><th>${D.hover != null ? "⌖" : "▸"} ${escXml(decTitle(h))}</th><th>${tl("Écart", "Difference", "Differenz", "Diferencia")}</th></tr></thead><tbody>` +
+      ROWS.map(([k, label, d, cls]) => `<tr><th>${label}</th><td>${p.cells[k]}</td><td class="cur">${a.cells[k]}</td><td${cls ? ` class="${cls}"` : ""}>${d ? `<b>${d}</b>` : ""}</td></tr>`).join("") +
+      `</tbody></table><p class="perf-warn dec-warn">${[...new Set([p.note, a.note].filter(Boolean))].map(n => `⚠ ${n}`).join("<br>")}</p>`; // avertissement : emplacement réservé
     $("decCard").innerHTML = typo(html);
     holdHeight($("decCard"));
     decPills();
     decTable();
     S.climbShow?.(h); // graphe de montée (vue détaillée) : même curseur
     feedInstruments(h);
-    // consignes de montée : jusqu'au niveau courant
-    const gh = Math.abs(h - D.plan) < 1 ? null : h;
+    // consignes de montée : jusqu'au niveau choisi (clic, réglette, pastille, tableau), pas au survol — un grand tableau qui
+    // change à chaque mouvement de souris clignote
+    const gh = Math.abs(D.sel - D.plan) < 1 ? null : D.sel;
     if (S.guideH !== gh) {
       S.guideH = gh;
       scheduleGuide();
@@ -1904,6 +1907,7 @@
         try {
           localStorage.setItem("fpClimbX", b.dataset.x);
         } catch {}
+        mountClimbX(); // bouton enfoncé : le choix fait
         if (S.m && S.c && curvesShown() && S.cache) drawClimbChart(S.m, S.c, S.cache);
       });
     }

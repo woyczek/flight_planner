@@ -17,11 +17,11 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   plan, in the simple and the detailed view: trip fuel (left scale) and trip time (right scale, thin curve) of the whole
   flight at each level, each scale in the colour of its curve, climbing with the goal of the climb instructions; "Least
   fuel" and "Fastest" pills (click: cursor there); plan level as a solid line, cursor dashed; one grey for levels that
-  cannot be held (ceiling, trip too short, not enough thrust), the reason being in the cursor card. The card gives three
-  lines (trip, climb, descent) and, on another level than the plan, compares it with the plan (fuel, time, climb, TOD and
-  differences); "Use this level" makes the cursor the plan level. Fixed tables: "Levels" (round levels, sortable) and,
-  in the detailed view, "Climb goals" (always to the plan level). The climb instructions, the climb chart and the
-  instruments follow the cursor; nothing moves the page while hovering (stable heights, reserved warning line).
+  cannot be held (ceiling, trip too short, not enough thrust), the reason being in the cursor card. The card is one table,
+  always the same: plan, cursor and difference (trip fuel and time, cruise TAS, climb, TOD, descent, IAS and rates);
+  "Use this level" makes the cursor the plan level. Fixed tables: "Levels" (round levels, sortable) and,
+  in the detailed view, "Climb goals" (always to the plan level). The climb chart and the instruments follow the
+  cursor, the climb instructions the chosen level (not the hover); nothing moves the page while hovering (stable heights, reserved warning line).
   Detailed view: "Optimum altitude" and "TAS by level" removed; one "Climb" chart (rate, fuel per 1,000 ft, IAS and TAS
   by altitude) for the chosen goal; engine settings only with an engine map; one side panel per chart, three lines and
   "Learn more"; the Result's cursor card is gone.
