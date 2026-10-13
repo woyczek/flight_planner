@@ -1041,22 +1041,35 @@
     const rows = extendSeries(raw, m.ceiling, TRIP_KEYS),
       real = rows.filter(r => r?.ok && !r.extrap && r.h <= m.ceiling && r.h >= 1000);
     if (!real.length) return null;
-    // série coupée au-dessus du dernier niveau tenable s'il est nettement sous le plafond (trajet court, poussée)
+    // série coupée au-dessus du dernier niveau tenable s'il est nettement sous le plafond (trajet court, poussée) ; la
+    // zone entre ce niveau et le plafond reste lisible au curseur (cause, montée et distance nécessaire)
     const top = real.at(-1).h,
-      cutRows = top < m.ceiling - step ? rows.map(r => r && r.h > top ? null : r) : rows;
+      cutRows = top < m.ceiling - step ? rows.map(r => r && r.h > top ? null : r) : rows,
+      all = raw.filter(r => r && r.h >= 1000 && r.h <= m.ceiling),
+      gapAt = all.find(r => r.h > top && !r.ok);
     return {
       step,
       xmax,
       rows: cutRows,
       real,
+      all,
+      gap: gapAt ? {
+        from: top,
+        to: m.ceiling,
+        reason: gapAt.reason || "thrust"
+      } : null,
       lo: real[0].h,
-      hi: top,
+      hi: all.at(-1).h,
       best: real.reduce((a, b) => b.fuel < a.fuel ? b : a),
       fast: real.reduce((a, b) => b.minutes < a.minutes ? b : a)
     };
   }
-  /** Niveau tenable de la série le plus proche de h (ft). */
-  const decNearest = (D, h) => D.real.reduce((a, r) => Math.abs(r.h - h) < Math.abs(a.h - h) ? r : a, D.real[0]);
+  /** Niveau de la série le plus proche de h (ft), tenable ou non (résultat de m.trip ; ok faux : cause dans reason). */
+  const decNearest = (D, h) => D.all.reduce((a, r) => Math.abs(r.h - h) < Math.abs(a.h - h) ? r : a, D.all[0]);
+  /** Cause courte d'un niveau non tenable (zone du graphe, tableau). */
+  const gapTxt = reason => reason === "short" ? tl("trajet trop court", "trip too short", "Strecke zu kurz", "trayecto demasiado corto") :
+    reason === "ceiling" ? tl("vario nul avant ce niveau", "climb rate nil before this level", "Steigrate vorher null",
+      "régimen nulo antes de este nivel") : tl("poussée insuffisante", "not enough thrust", "Schub reicht nicht", "empuje insuficiente");
   /** Montée de l'objectif jusqu'au niveau h (Badin à tenir et vario attendu, en tête et au sommet), mémorisée. */
   function decClimb(m, h) {
     const D = S.dec;
@@ -1219,6 +1232,7 @@
     /** Repère d'un niveau remarquable : point sur les deux courbes et étiquette « FL310 le plus économe ». */
     const mark = (r, key, cls, dy) => `<circle class="${cls}" cx="${X(r.h).toFixed(1)}" cy="${Yf(cv(r.fuel)).toFixed(1)}" r="4"/><circle class="${cls}" cx="${X(r.h).toFixed(1)}" cy="${Yt(r.minutes).toFixed(1)}" r="4"/>${tagAt(r.h, T + 26 + dy, cls, `${flTxt(r.h)} ${DEC_TAG[key]()}`)}`;
     g += `<line class="axis" x1="${Lm}" x2="${W - R}" y1="${H - B}" y2="${H - B}"/><line class="axis" x1="${Lm}" x2="${Lm}" y1="${T}" y2="${H - B}"/><line class="axis" x1="${W - R}" x2="${W - R}" y1="${T}" y2="${H - B}"/>` +
+      (D.gap ? `<rect class="short-zone" x="${X(D.gap.from).toFixed(1)}" y="${T}" width="${(X(D.gap.to) - X(D.gap.from)).toFixed(1)}" height="${H - B - T}"/><text class="beyond-label zone-tip" x="${((X(D.gap.from) + X(D.gap.to)) / 2).toFixed(1)}" y="${T + 11}" text-anchor="middle"><title>${escXml(tl(`Au-dessus de ${flTxt(D.gap.from)}, ce trajet ne permet pas de tenir le niveau : survolez la zone pour lire la montée et la distance nécessaire.`, `Above ${flTxt(D.gap.from)}, this trip cannot hold the level: hover over the zone to read the climb and the distance needed.`, `Über ${flTxt(D.gap.from)} lässt diese Strecke die Flughöhe nicht zu: Zone überfahren, um Steigflug und nötige Strecke zu lesen.`, `Por encima de ${flTxt(D.gap.from)}, este trayecto no permite mantener el nivel: pase el ratón por la zona para leer el ascenso y la distancia necesaria.`))}</title>${gapTxt(D.gap.reason)}</text>` : "") +
       beyondZone(X, T, H - B, m.ceiling, D.xmax) + planMark(X, T, H - B, D.plan, D.xmax) +
       pth(r => cv(r.fuel), Yf, "curve-eco") + pth(r => r.minutes, Yt, "curve-fuel dec-time") +
       mark(D.best, "best", "dec-best", 0) + (D.fast.h !== D.best.h ? mark(D.fast, "fast", "dec-fast", 13) : "") +
@@ -1265,8 +1279,9 @@
   function decFacts(h) {
     const D = S.dec,
       m = D.m,
-      r = decNearest(D, h),
-      g = decClimb(m, r.h),
+      r = decNearest(D, h);
+    if (!r.ok) return decFactsOff(r);
+    const g = decClimb(m, r.h),
       jet = m.kind === "jet",
       cl = r.climb || {
         minutes: 0,
@@ -1305,10 +1320,53 @@
       [tl("Vario en descente", "Descent rate", "Sinkrate", "Régimen de descenso"), `−${fmt(de.rate, 0)} ft/min`, null]
     ];
   }
+  /** Fiche d'un niveau non tenable sur ce trajet (r : résultat de m.trip, ok faux) : mêmes lignes que decFacts (lecture
+   *  côte à côte), trajet « — », montée jusqu'au niveau et descente telles qu'elles seraient ; note = cause et correction. */
+  function decFactsOff(r) {
+    const D = S.dec,
+      m = D.m,
+      h = r.h,
+      law = tripLaw(m, D.goal),
+      k = m.cruise(h, "normal"),
+      sp = law === "time" || law === "fuel" ? m.climbLaw(law, k.ok ? k : undefined) : law,
+      clx = (() => {
+        try {
+          return m.climbTo(h, {
+            speed: sp
+          });
+        } catch {
+          return null;
+        }
+      })(),
+      g = decClimb(m, h),
+      r0 = g?.rows?.[0],
+      rN = g?.rows?.at(-1),
+      de = m.desc,
+      td = h / de.rate,
+      dd = de.tas * td / 60,
+      rng = (a, b) => Math.abs(a - b) < 5 ? fmt(a, 0) : `${fmt(a, 0)} → ${fmt(b, 0)}`;
+    const out = [
+      [tl("Carburant du trajet", "Trip fuel", "Kraftstoff der Strecke", "Combustible del trayecto"), "—", null],
+      [tl("Temps du trajet", "Trip time", "Flugzeit", "Tiempo del trayecto"), "—", null],
+      [`${def("TAS")} ${tl("de croisière", "in cruise", "im Reiseflug", "de crucero")}`, k.ok ? `${fmt(k.tas, 0)} kt` : "—", null],
+      [tl("Montée", "Climb", "Steigflug", "Ascenso"), clx ? `${hmTxt(clx.minutes)} · ${showFuel(clx.fuel)} ${fuelUnit()} · ${fmt(clx.nm, 0)} NM` : "—", null],
+      [`${def("Badin", tl("Badin", "IAS", "IAS", "IAS"))} ${tl("à tenir", "to fly", "zu halten", "a mantener")}`, r0 && rN ? `${rng(r0.ias, rN.ias)} kt` : "—", null],
+      [tl("Vario attendu", "Expected rate", "Erwartete Steigrate", "Régimen esperado"), r0 && rN ? `${rng(Math.max(0, r0.roc), Math.max(0, rN.roc))} ft/min` : "—", null],
+      [tl("Début de descente (TOD)", "Top of descent (TOD)", "Sinkflugbeginn (TOD)", "Inicio del descenso (TOD)"), "—", null],
+      [tl("Descente", "Descent", "Sinkflug", "Descenso"), `${hmTxt(td)} · ${showFuel(de.ff * td / 60)} ${fuelUnit()} · ${fmt(dd, 0)} NM`, null],
+      [`${def("Badin", tl("Badin", "IAS", "IAS", "IAS"))} ${tl("en descente", "in descent", "im Sinkflug", "en descenso")}`, "—", null],
+      [tl("Vario en descente", "Descent rate", "Sinkrate", "Régimen de descenso"), `−${fmt(de.rate, 0)} ft/min`, null]
+    ];
+    // cause et correction (whyNot : distance nécessaire, champ à modifier en lien)
+    out.note = `${tl("Niveau impossible sur ce trajet", "Level impossible on this trip", "Flughöhe auf dieser Strecke unmöglich", "Nivel imposible en este trayecto")} : ${whyNot(m, D.c, r, h, law)}.`;
+    out.off = true;
+    return out;
+  }
   /** Titre d'un niveau avec ses repères : « FL310 · le plus économe ». */
   const decTitle = h => {
     const D = S.dec;
-    return [flTxt(h), ...decTags(D, h).map(k => DEC_TAG[k]())].join(" · ");
+    const r = decNearest(D, h);
+    return [flTxt(h), ...(r.ok ? decTags(D, h).map(k => DEC_TAG[k]()) : [gapTxt(r.reason)])].join(" · ");
   };
   /** Curseur, fiche, réglette, boutons, tableau et consignes de montée au niveau courant (survolé, sinon choisi). */
   function decUpdate() {
@@ -1323,7 +1381,7 @@
     else cl.setAttribute("visibility", "hidden");
     put($("decSlider"), "value", String(D.sel));
     put($("decLvl"), "textContent", flTxt(D.sel));
-    put($("decUse"), "disabled", Math.abs(D.sel - D.plan) < 1);
+    put($("decUse"), "disabled", Math.abs(D.sel - D.plan) < 1 || !decNearest(D, D.sel).ok);
     put($("decCmp"), "textContent", cmp != null ? tl(`Ne plus comparer (${flTxt(cmp)})`, `Stop comparing (${flTxt(cmp)})`, `Vergleich beenden (${flTxt(cmp)})`, `Dejar de comparar (${flTxt(cmp)})`) : tl("Comparer", "Compare",
       "Vergleichen", "Comparar"));
     put($("decCmp"), "title", tl("Épingle le niveau courant pour le lire à côté d’un autre (écarts de carburant et de temps).",
@@ -1333,7 +1391,8 @@
     // fiche : un niveau, ou deux côte à côte avec l'écart (niveau courant − niveau comparé)
     const a = decFacts(h);
     let html;
-    if (cmp == null || cmp === h) html = `<div class="fl-dec-title">${D.hover != null ? "⌖" : "▸"} ${escXml(decTitle(h))}</div><dl class="kvp">${a.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join("")}</dl>`;
+    const notes = [a, ...(cmp != null && cmp !== h ? [decFacts(cmp)] : [])].filter(x => x.note).map(x => `<p class="perf-warn">⚠ ${x.note}</p>`).join("");
+    if (cmp == null || cmp === h) html = `<div class="fl-dec-title">${D.hover != null ? "⌖" : "▸"} ${escXml(decTitle(h))}</div>${notes}<dl class="kvp">${a.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join("")}</dl>`;
     else {
       const b = decFacts(cmp),
         dlt = (x, y) => {
@@ -1342,7 +1401,7 @@
             s = d > 0 ? "+" : d < 0 ? "−" : "±";
           return x[0] === "fuel" ? `${s}${fmt(Math.abs(d), 0)} ${fuelUnit()}` : Math.abs(d) < 60 ? `${s}${fmt(Math.abs(d), 0)} min` : `${s}${hmTxt(Math.abs(d))}`;
         };
-      html = `<table class="fl-dec-cmp"><thead><tr><th></th><th>${escXml(decTitle(h))}</th><th>📌 ${escXml(decTitle(cmp))}</th><th>${tl("Écart", "Difference", "Differenz", "Diferencia")}</th></tr></thead><tbody>${a.map(([k, v, x], i) => `<tr><th>${k}</th><td>${v}</td><td>${b[i][1]}</td><td>${dlt(x, b[i][2])}</td></tr>`).join("")}</tbody></table>`;
+      html = `<table class="fl-dec-cmp"><thead><tr><th></th><th>${escXml(decTitle(h))}</th><th>📌 ${escXml(decTitle(cmp))}</th><th>${tl("Écart", "Difference", "Differenz", "Diferencia")}</th></tr></thead><tbody>${a.map(([k, v, x], i) => `<tr><th>${k}</th><td>${v}</td><td>${b[i][1]}</td><td>${dlt(x, b[i][2])}</td></tr>`).join("")}</tbody></table>${notes}`;
     }
     $("decCard").innerHTML = typo(html);
     decTable();
@@ -1360,16 +1419,16 @@
       tb = $("decTable");
     if (!D || !tb) return;
     const st = D.m.ceiling > 20000 ? 2000 : 1000,
-      list = D.real.filter(r => r.h % st === 0 || decTags(D, r.h).length || r.h === D.sel),
+      list = D.all.filter(r => r.h % st === 0 || (r.ok && decTags(D, r.h).length) || r.h === D.sel),
       key = {
         h: r => r.h,
-        fuel: r => r.fuel,
-        min: r => r.minutes
+        fuel: r => r.ok ? r.fuel : Infinity,
+        min: r => r.ok ? r.minutes : Infinity
       } [D.sort] || (r => r.h);
-    list.sort((a, b) => (key(a) - key(b)) * D.dir);
+    list.sort((a, b) => !a.ok !== !b.ok ? (a.ok ? -1 : 1) * (D.sort === "h" ? D.dir : 1) : (key(a) - key(b)) * D.dir || 0);
     const th = (k, t) => `<th data-sort="${k}" aria-sort="${D.sort === k ? (D.dir > 0 ? "ascending" : "descending") : "none"}" title="${escXml(tl("Trier", "Sort", "Sortieren", "Ordenar"))}">${t}${D.sort === k ? (D.dir > 0 ? " ▲" : " ▼") : ""}</th>`;
     const html = `<thead><tr>${th("h", tl("Niveau", "Level", "Flughöhe", "Nivel"))}${th("fuel", `${tl("Carburant", "Fuel", "Kraftstoff", "Combustible")} (${fuelUnit()})`)}${th("min", tl("Temps", "Time", "Zeit", "Tiempo"))}<th>TAS (kt)</th><th>${tl("Montée", "Climb", "Steigflug", "Ascenso")}</th><th></th></tr></thead><tbody>` +
-      list.map(r => `<tr data-h="${r.h}" class="${r.h === D.sel ? "on" : ""}"><td>${flTxt(r.h)}</td><td>${showFuel(r.fuel)}</td><td>${hmTxt(r.minutes)}</td><td>${fmt(r.tas, 0)}</td><td>${hmTxt(r.climb?.minutes || 0)}</td><td class="mut">${decTags(D, r.h).map(k => DEC_TAG[k]()).join(", ")}</td></tr>`).join("") + "</tbody>";
+      list.map(r => r.ok ? `<tr data-h="${r.h}" class="${r.h === D.sel ? "on" : ""}"><td>${flTxt(r.h)}</td><td>${showFuel(r.fuel)}</td><td>${hmTxt(r.minutes)}</td><td>${fmt(r.tas, 0)}</td><td>${hmTxt(r.climb?.minutes || 0)}</td><td class="mut">${decTags(D, r.h).map(k => DEC_TAG[k]()).join(", ")}</td></tr>` : `<tr data-h="${r.h}" class="off${r.h === D.sel ? " on" : ""}"><td>${flTxt(r.h)}</td><td>—</td><td>—</td><td>—</td><td>—</td><td class="mut">${gapTxt(r.reason)}</td></tr>`).join("") + "</tbody>";
     if (tb._html !== html) {
       tb._html = html;
       tb.innerHTML = typo(html);
@@ -1425,7 +1484,7 @@
     if (m.kind === "jet" && lim) rows.push([tl(`Mach ${m.mRef.toFixed(2)} tenable jusqu’à`, `Mach ${m.mRef.toFixed(2)} held up to`, `Mach ${m.mRef.toFixed(2)} haltbar bis`, `Mach ${m.mRef.toFixed(2)} mantenible hasta`), `${flTxt(held?.h ?? 0)} ${tl(`(au-dessus : poussée max., jusqu’à ${flTxt(top?.h ?? 0)})`, `(above: max. thrust, up to ${flTxt(top?.h ?? 0)})`, `(darüber: max. Schub, bis ${flTxt(top?.h ?? 0)})`, `(por encima: empuje máx., hasta ${flTxt(top?.h ?? 0)})`)}`]);
     const warn = [];
     if (req > m.ceiling) warn.push(`${tl("Niveau demandé au-dessus du plafond : montées calculées jusqu’à", "Requested level above the ceiling: climbs computed up to", "Angeforderte Höhe über der Gipfelhöhe: Steigflüge bis", "Nivel pedido por encima del techo: ascensos calculados hasta")} ${flTxt(Math.floor(m.ceiling / 500) * 500)}. ${tl(`Baisser le ${F_FL()} ou corriger le ${F_CEIL()}.`, `Lower the ${F_FL()} or correct the ${F_CEIL()}.`, `${F_FL()} senken oder ${F_CEIL()} korrigieren.`, `Baje el ${F_FL()} o corrija el ${F_CEIL()}.`)}`);
-    else if (need != null && need > c.D) warn.push(`${tl("Distance trop courte pour", "Distance too short for", "Entfernung zu kurz für", "Distancia demasiado corta para")} ${flTxt(req)} : ${tl("monter puis redescendre demande", "climbing then descending takes", "Steig- und Sinkflug brauchen", "subir y bajar requiere")} ${fmt(need, 0)} NM. ${tl(`Baisser le ${F_FL()}`, `Lower the ${F_FL()}`, `${F_FL()} senken`, `Baje el ${F_FL()}`)}${reach ? ` (≤ ${flTxt(reach.h)})` : ""} ${tl(`ou allonger la ${F_DIST()}.`, `or increase the ${F_DIST()}.`, `oder ${F_DIST()} erhöhen.`, `o aumente el ${F_DIST()}.`)}`);
+    else if (need != null && need > c.D) warn.push(`${tl("Distance trop courte pour", "Distance too short for", "Entfernung zu kurz für", "Distancia demasiado corta para")} ${flTxt(req)} : ${tl("monter puis redescendre demande", "climbing then descending takes", "Steig- und Sinkflug brauchen", "subir y bajar requiere")} ${fmt(need, 0)} NM. ${tl(`Baisser le ${F_FL()}`, `Lower the ${F_FL()}`, `${F_FL()} senken`, `Baje el ${F_FL()}`)}${reach ? ` (≤ ${flTxt(reach.h)})` : ""} ${tl(`ou allonger le ${F_DIST()}.`, `or increase the ${F_DIST()}.`, `oder ${F_DIST()} erhöhen.`, `o aumente el ${F_DIST()}.`)}`);
     return `<dl class="kvp">${rows.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join("")}</dl>${warn.map(w => `<p class="perf-warn">⚠ ${w}</p>`).join("")}`;
   }
   /** Cause d'un « inatteignable » de la table comparative (r : résultat de m.trip ; law : loi de montée). */
@@ -1433,7 +1492,7 @@
     const lower = tl(`baisser le ${F_FL()}`, `lower the ${F_FL()}`, `${F_FL()} senken`, `bajar el ${F_FL()}`);
     if (r.reason === "short") {
       const d = minDistance(m, h, law);
-      return `${tl("trajet trop court", "trip too short", "Strecke zu kurz", "trayecto demasiado corto")}${d ? ` (${fmt(d, 0)} NM > ${fmt(c.D, 0)} NM)` : ""} → ${lower} ${tl(`ou allonger la ${F_DIST()}`, `or increase the ${F_DIST()}`, `oder ${F_DIST()} erhöhen`, `o aumentar el ${F_DIST()}`)}`;
+      return `${tl("trajet trop court", "trip too short", "Strecke zu kurz", "trayecto demasiado corto")}${d ? ` (${fmt(d, 0)} NM > ${fmt(c.D, 0)} NM)` : ""} → ${lower} ${tl(`ou allonger le ${F_DIST()}`, `or increase the ${F_DIST()}`, `oder ${F_DIST()} erhöhen`, `o aumentar el ${F_DIST()}`)}`;
     }
     if (r.reason === "ceiling") return `${tl(`vario nul avant ${flTxt(h)} à cette vitesse`, `climb rate reaches zero before ${flTxt(h)} at this speed`, `Steigrate vor ${flTxt(h)} bei dieser Geschwindigkeit null`, `régimen nulo antes de ${flTxt(h)} a esta velocidad`)} → ${lower}`;
     return `${tl("poussée / puissance insuffisante en croisière à", "not enough thrust / power to cruise at", "Schub / Leistung reicht für Reiseflug nicht auf", "empuje / potencia insuficiente para crucero a")} ${flTxt(h)} → ${lower}`;
@@ -1834,7 +1893,7 @@
   /** Cause d'une courbe d'altitude vide : plafond sous le plancher de calcul (1000 ft) ou trajet trop court. */
   function noLevelTxt(m, c) {
     if (m.ceiling < 1000) return tl(`Plafond ${fmt(m.ceiling, 0)} ft : sous le plancher de calcul (1000 ft). Vérifier le ${F_CEIL()} ou les données de montée (vario, Badin, débit).`, `Ceiling ${fmt(m.ceiling, 0)} ft: below the 1000 ft computation floor. Check the ${F_CEIL()} or the climb data (rate, IAS, fuel flow).`, `Gipfelhöhe ${fmt(m.ceiling, 0)} ft: unter der Rechenuntergrenze (1000 ft). ${F_CEIL()} oder Steigflugdaten (Steigrate, IAS, Verbrauch) prüfen.`, `Techo ${fmt(m.ceiling, 0)} ft: por debajo del suelo de cálculo (1000 ft). Revise el ${F_CEIL()} o los datos de ascenso (régimen, IAS, flujo).`);
-    return tl(`Aucun niveau atteignable sur ${fmt(c.D, 0)} NM : même à 1000 ft, monter puis redescendre est plus long que le trajet, ou la croisière n’est tenable nulle part. Allonger la ${F_DIST()} ou vérifier le profil.`, `No level reachable over ${fmt(c.D, 0)} NM: even at 1000 ft, climbing then descending is longer than the trip, or cruise cannot be held anywhere. Increase the ${F_DIST()} or check the profile.`, `Auf ${fmt(c.D, 0)} NM ist keine Flughöhe erreichbar: selbst auf 1000 ft sind Steig- und Sinkflug länger als die Strecke, oder der Reiseflug ist nirgends haltbar. ${F_DIST()} erhöhen oder Profil prüfen.`, `Ningún nivel alcanzable en ${fmt(c.D, 0)} NM: incluso a 1000 ft, subir y bajar es más largo que el trayecto, o el crucero no se mantiene en ningún nivel. Aumente la ${F_DIST()} o revise el perfil.`);
+    return tl(`Aucun niveau atteignable sur ${fmt(c.D, 0)} NM : même à 1000 ft, monter puis redescendre est plus long que le trajet, ou la croisière n’est tenable nulle part. Allonger le ${F_DIST()} ou vérifier le profil.`, `No level reachable over ${fmt(c.D, 0)} NM: even at 1000 ft, climbing then descending is longer than the trip, or cruise cannot be held anywhere. Increase the ${F_DIST()} or check the profile.`, `Auf ${fmt(c.D, 0)} NM ist keine Flughöhe erreichbar: selbst auf 1000 ft sind Steig- und Sinkflug länger als die Strecke, oder der Reiseflug ist nirgends haltbar. ${F_DIST()} erhöhen oder Profil prüfen.`, `Ningún nivel alcanzable en ${fmt(c.D, 0)} NM: incluso a 1000 ft, subir y bajar es más largo que el trayecto, o el crucero no se mantiene en ningún nivel. Aumente la ${F_DIST()} o revise el perfil.`);
   }
 
   /** Calculs lourds, faits une fois par calcul (réutilisés quand on bouge les curseurs) :
