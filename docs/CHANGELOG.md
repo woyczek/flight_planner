@@ -398,6 +398,10 @@ servies depuis un autre disque, registre aux fichiers absents, profils cachés �
 
 ### Corrigé
 
+- **Generator and studio: no city names, silently** — a browser SIA database built while `villes_geonames.csv` could
+  not be read was stored without cities: towns were not suggested for turning points and maps had no city labels, with
+  no message. When the database has no cities, they are now read from `shared/carto/villes_geonames.csv` and stored
+  with it (no rebuild); if that fails, a notification gives the address and the reason (`shared/sia_base.js`).
 - **Audit fixes (reported by Features SOG)** — ODV planning: the "timeline flights to check" notification pointed to a
   removed block; it now names the flights (day, times, callsign, reason). Generator: exported files were named
   "S4-MM-016_…" with current IDs; current IDs are kept as they are ("M-016_…"). `apps/landing/README.md` rewritten in
