@@ -1465,13 +1465,21 @@ La zona gris «inaccesible» está por encima del techo de la aeronave.
 Por encima del nivel en que el Mach del perfil ya no se puede mantener, un reactor vuela a la mayor velocidad que permite el 92 % de su empuje («empuje máx.» en el Resultado y los paneles); el nivel solo se rechaza más allá del techo.
 Sin «Altitud de referencia (ft)» ni «Techo máx. (ft)» en el perfil, el modelo los estima (IAS y TAS de crucero, ficha EUROCONTROL, consumo de ascenso, si no valor típico de la clase) e indica la fuente bajo las curvas. Rellene estos dos campos o calibre con un OFP de SimBrief: es más fiable.
 
+### Decisión del nivel de vuelo
+
+Tras «Calcular», en la cabecera del plan (vista simple y detallada), un gráfico da para cada nivel el combustible (escala izquierda) y el tiempo (escala derecha) del trayecto completo: ascenso según el objetivo elegido en «Consignas de ascenso», crucero del perfil, descenso. El nivel del plan, el más económico y el más rápido están marcados; la zona gris «inaccesible» está por encima del techo.
+- Pase el ratón por el gráfico, haga clic en él o mueva el cursor de debajo: la ficha de al lado da para ese nivel el combustible y el tiempo del trayecto, la TAS de crucero, el ascenso (tiempo, combustible, distancia), la IAS a mantener y el régimen esperado, el inicio del descenso (TOD). El bloque «Consignas de ascenso» sigue ese nivel.
+- «Usar este nivel» lo pone en «Nivel (FL)» y rehace el plan.
+- «Comparar» fija el nivel actual: la ficha muestra entonces dos niveles uno al lado del otro, con la diferencia de combustible y de tiempo; «Dejar de comparar» lo quita.
+- La tabla de debajo recoge los niveles redondos (cada 1000 ft; 2000 ft para un techo por encima de 20 000 ft), ordenable por nivel, combustible o tiempo (clic en la cabecera); un clic en una fila elige ese nivel.
+
 ### Consignas de ascenso
 
 Este bloque, bajo «Calcular», dice cómo ascender, en todos los niveles de uso.
 - Cinco objetivos, cada uno con su tiempo y su combustible hasta el nivel: «Eco», «Vy», «Rápida», «Perfil» (velocidad de ascenso del perfil), «Ajustada» (ascenso elegido). La elección se guarda en este navegador.
   «Vy»: régimen de ascenso máximo (nivel alcanzado lo antes posible); «Rápida»: tiempo de bloque mínimo; «Eco»: combustible de trayecto mínimo. En estas dos últimas, la distancia de ascenso se descuenta del crucero, el régimen de ascenso se mantiene al menos en el 50 % del máximo y un reactor queda limitado a 250 kt por debajo del FL100.
 - Una consigna en tres partes: «Ajustar» (gases, hélice, RPM o N1), «Mantener» (el instrumento que lleva la consigna, casi siempre la IAS), «Esperado» (variómetro que se debe ver, nivel alcanzado, tiempo y combustible).
-- Una tabla por tramo de altitud (suelo, 2 000 ft, FL050, FL100… hasta el nivel del plan): gases, RPM o N1 si el perfil tiene mapa motor, IAS a mantener, variómetro esperado, tiempo acumulado.
+- Una tabla por tramo de altitud (suelo, 2 000 ft, FL050, FL100… hasta el nivel del plan, o hasta el nivel estudiado en «Decisión del nivel de vuelo», indicado en el título): gases, RPM o N1 si el perfil tiene mapa motor, IAS a mantener, variómetro esperado, tiempo acumulado.
 
 Las consignas guían el pilotaje; el plan de combustible cuenta el ascenso elegido. Proceden del modelo de rendimiento del perfil (atmósfera del plan, masa no modelada): a contrastar con el manual de vuelo.
 

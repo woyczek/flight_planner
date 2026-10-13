@@ -1465,13 +1465,21 @@ Der grau hinterlegte Bereich „unerreichbar“ liegt über der Gipfelhöhe des 
 Oberhalb der Flughöhe, auf der die Mach-Zahl des Profils nicht mehr haltbar ist, fliegt ein Strahlflugzeug mit der größten Geschwindigkeit, die 92 % seines Schubs erlauben („max. Schub“ im Ergebnis und in den Feldern); die Flughöhe wird erst oberhalb der Gipfelhöhe abgelehnt.
 Ohne „Bezugshöhe (ft)“ und „Max. Gipfelhöhe (ft)“ im Profil schätzt das Modell sie (Reise-IAS und -TAS, EUROCONTROL-Blatt, Steigverbrauch, sonst typischer Wert der Klasse) und nennt die Quelle unter den Kurven. Füllen Sie diese beiden Felder aus oder kalibrieren Sie mit einem SimBrief-OFP: Das ist zuverlässiger.
 
+### Wahl der Flughöhe
+
+Nach „Berechnen“ zeigt ein Diagramm oben in der Kraftstoffplanung (einfache wie Detailansicht) für jede Flughöhe den Kraftstoff (linke Skala) und die Zeit (rechte Skala) der ganzen Strecke: Steigflug mit dem unter „Steigflug-Anweisungen“ gewählten Ziel, Profil-Reiseflug, Sinkflug. Planflughöhe, sparsamste und schnellste Flughöhe sind markiert; die graue Zone „unerreichbar“ liegt über der Gipfelhöhe.
+- Fahren Sie über das Diagramm, klicken Sie hinein oder bewegen Sie den Schieberegler darunter: Die Karte daneben nennt für diese Flughöhe Kraftstoff und Zeit der Strecke, Reiseflug-TAS, Steigflug (Zeit, Kraftstoff, Strecke), zu haltende IAS und erwartete Steigrate, Sinkflugbeginn (TOD). Der Block „Steigflug-Anweisungen“ folgt dieser Flughöhe.
+- „Diese Flughöhe verwenden“ trägt sie in „Flugfläche (FL)“ ein und berechnet die Planung neu.
+- „Vergleichen“ heftet die aktuelle Flughöhe an: Die Karte zeigt dann zwei Flughöhen nebeneinander mit dem Kraftstoff- und Zeitunterschied; „Vergleich beenden“ entfernt sie.
+- Die Tabelle darunter listet die runden Flughöhen (alle 1 000 ft; 2 000 ft bei einer Gipfelhöhe über 20 000 ft), sortierbar nach Flughöhe, Kraftstoff oder Zeit (Klick auf die Kopfzeile); ein Klick auf eine Zeile wählt diese Flughöhe.
+
 ### Steigflug-Anweisungen
 
 Dieser Block unter „Berechnen“ sagt auf jeder Nutzungsstufe, wie zu steigen ist.
 - Fünf Ziele, jedes mit Zeit und Kraftstoff bis zur Flughöhe: „Spar“, „Vy“, „Schnell“, „Profil“ (Steiggeschwindigkeit des Profils), „Eingestellt“ (gewählter Steigflug). Die Wahl bleibt in diesem Browser gespeichert.
   „Vy“: maximale Steigrate (Flughöhe am frühesten erreicht); „Schnell“: minimale Blockzeit; „Spar“: minimaler Streckenkraftstoff. Bei den beiden letzten wird die Steigstrecke vom Reiseflug abgezogen, die Steigrate bleibt bei mindestens 50 % des Maximums, und ein Strahlflugzeug ist unter FL100 auf 250 kt begrenzt.
 - Eine Anweisung in drei Teilen: „Einstellen“ (Leistung, Propeller, RPM oder N1), „Halten“ (das Instrument, das die Anweisung trägt, meist die IAS), „Erwartet“ (zu sehende Steigrate, erreichte Flughöhe, Zeit und Kraftstoff).
-- Eine Tabelle nach Höhenstufen (Boden, 2 000 ft, FL050, FL100… bis zur Planflughöhe): Leistung, RPM oder N1, wenn das Profil ein Motorkennfeld hat, zu fliegende IAS, erwartete Steigrate, kumulierte Zeit.
+- Eine Tabelle nach Höhenstufen (Boden, 2 000 ft, FL050, FL100… bis zur Planflughöhe oder bis zu der in „Wahl der Flughöhe“ untersuchten Flughöhe, die der Titel nennt): Leistung, RPM oder N1, wenn das Profil ein Motorkennfeld hat, zu fliegende IAS, erwartete Steigrate, kumulierte Zeit.
 
 Die Anweisungen leiten das Fliegen; die Kraftstoffplanung zählt den gewählten Steigflug. Sie stammen aus dem Leistungsmodell des Profils (Atmosphäre der Planung, Masse nicht modelliert): mit dem Flughandbuch abzugleichen.
 

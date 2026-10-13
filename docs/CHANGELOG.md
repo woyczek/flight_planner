@@ -10,6 +10,15 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ## [Unreleased]
 
+### Added
+
+- **Fuel: "Flight level decision" chart** (docs/technique/V2_FABLE.md § 12) — first block of the fuel plan, in the simple
+  and the detailed view: trip fuel (left scale) and trip time (right scale) of the whole flight at each level, climbing
+  with the goal of the climb instructions; plan, least-fuel and fastest levels marked, "unreachable" zone above the
+  ceiling. Hover, click or slider: a card gives fuel, time, cruise TAS, climb, IAS to fly, expected rate and top of
+  descent for that level, and the climb instructions follow it; "Use this level" sets the plan level; "Compare" pins a
+  level to read two side by side with their differences; table of round levels, sortable, chosen row highlighted.
+
 ### Changed
 
 - **Help: one source per subject** — the per-subject guides (`DONNEES.md`, `ODV_PLANNING.md`, `SIA_MISSIONS.md`,

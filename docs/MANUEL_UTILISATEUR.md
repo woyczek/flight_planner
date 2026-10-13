@@ -1512,13 +1512,21 @@ La zone grisée « inaccessible » se trouve au-dessus du plafond de l'appareil.
 Au-dessus du niveau où le Mach du profil n'est plus tenable, un réacteur vole à la plus grande vitesse permise par 92 % de sa poussée (« poussée max. » dans le Résultat et les panneaux) ; le niveau n'est refusé qu'au-delà du plafond.
 Sans « Altitude de référence (ft) » ni « Plafond max (ft) » dans le profil, le modèle les estime (badin et TAS de croisière, fiche EUROCONTROL, débit de montée, sinon valeur type de la classe) et indique la source sous les courbes. Renseignez ces deux champs, ou calibrez sur un OFP SimBrief : c'est plus fiable.
 
+### Décision du niveau de vol
+
+Après « Calculer », en tête du devis (vue simple comme vue détaillée), un graphe donne pour chaque niveau le carburant (échelle de gauche) et le temps (échelle de droite) du trajet entier : montée selon l'objectif choisi dans « Consignes de montée », croisière du profil, descente. Le niveau du plan, le niveau le plus économe et le plus rapide sont repérés ; la zone grisée « inaccessible » est au-dessus du plafond.
+- Survolez le graphe, cliquez-y ou réglez la réglette dessous : la fiche à côté donne pour ce niveau le carburant et le temps du trajet, la TAS de croisière, la montée (temps, carburant, distance), le badin à tenir et le vario attendu, le début de descente (TOD). Le bloc « Consignes de montée » suit ce niveau.
+- « Utiliser ce niveau » le pose dans « Niveau (FL) » et refait le devis.
+- « Comparer » épingle le niveau courant : la fiche montre alors deux niveaux côte à côte, avec l'écart de carburant et de temps ; « Ne plus comparer » le retire.
+- Le tableau dessous reprend les niveaux ronds (tous les 1000 ft ; 2000 ft pour un plafond au-delà de 20 000 ft), triable par niveau, carburant ou temps (clic sur l'en-tête) ; un clic sur une ligne choisit ce niveau.
+
 ### Consignes de montée
 
 Ce bloc, sous « Calculer », dit comment monter, à tout niveau d'utilisation.
 - Cinq objectifs, chacun avec son temps et son carburant jusqu'au niveau : « Éco », « Vy », « Rapide », « Profil » (vitesse de montée du profil), « Réglée » (montée choisie). Le choix est gardé dans ce navigateur.
   « Vy » : vario maximal (niveau atteint au plus tôt) ; « Rapide » : temps de bloc minimal ; « Éco » : carburant du trajet minimal. Pour ces deux dernières, la distance de montée est retranchée de la croisière, le vario reste au moins à 50 % du maximum, et un réacteur est limité à 250 kt sous le FL100.
 - Une consigne en trois temps : « Régler » (gaz, hélice, RPM ou N1), « Tenir » (l'instrument qui porte la consigne, le plus souvent le badin), « Attendu » (vario à voir, niveau atteint, temps et carburant).
-- Un tableau par tranche d'altitude (sol, 2 000 ft, FL050, FL100… jusqu'au niveau du plan) : gaz, RPM ou N1 si le profil a une cartographie moteur, badin à tenir, vario attendu, temps cumulé.
+- Un tableau par tranche d'altitude (sol, 2 000 ft, FL050, FL100… jusqu'au niveau du plan, ou au niveau étudié dans « Décision du niveau de vol », nommé dans le titre) : gaz, RPM ou N1 si le profil a une cartographie moteur, badin à tenir, vario attendu, temps cumulé.
 
 Les consignes guident le pilotage ; le devis compte la montée choisie. Elles viennent du modèle de performances du profil (atmosphère du devis, masse non modélisée) : à confronter au manuel de vol.
 

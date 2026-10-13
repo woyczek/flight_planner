@@ -1014,6 +1014,115 @@
       grid-template-columns: 1fr
     }
   }
+  /* décision du niveau de vol (shared/flight_perf_view.js, renderDecision) : graphe et fiche côte à côte, réglette et
+     boutons sous le graphe, tableau des niveaux ronds */
+  .fl-dec {
+    margin-top: 14px;
+    padding-top: 10px;
+    border-top: 1px solid var(--line)
+  }
+  .fl-dec-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 4px 12px;
+    margin-bottom: 8px
+  }
+  .fl-dec-head h3 {
+    margin: 0;
+    font-size: 14px
+  }
+  .fl-dec-head .mut {
+    font-size: 12px
+  }
+  .fl-dec-body {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 14px;
+    align-items: flex-start
+  }
+  .fl-dec-main {
+    flex: 3 1 440px;
+    min-width: 0
+  }
+  .fl-dec-card {
+    flex: 1 1 230px;
+    font-size: 12.5px;
+    font-variant-numeric: tabular-nums
+  }
+  .fl-dec-title {
+    font-weight: 700;
+    margin-bottom: 4px
+  }
+  .fl-dec-ctl {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 10px;
+    margin-top: 6px
+  }
+  .fl-dec-ctl input[type=range] {
+    flex: 1 1 160px;
+    margin: 0
+  }
+  .fl-dec-ctl output {
+    min-width: 4.5em;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums
+  }
+  .fl-dec-cmp {
+    width: 100%;
+    font-variant-numeric: tabular-nums
+  }
+  .fl-dec-cmp th,
+  .fl-dec-cmp td {
+    text-align: right;
+    padding: 1px 4px;
+    vertical-align: top
+  }
+  .fl-dec-cmp tbody th {
+    text-align: left;
+    font-weight: 400;
+    color: var(--muted)
+  }
+  .fl-dec-tablewrap {
+    overflow: auto;
+    max-height: 260px;
+    margin-top: 8px
+  }
+  .fl-dec-table th[data-sort] {
+    cursor: pointer;
+    user-select: none
+  }
+  .fl-dec-table tr[data-h] {
+    cursor: pointer
+  }
+  .fl-dec-table tr.on td {
+    background: color-mix(in srgb, var(--fc-eco, #7ed69b) 18%, transparent);
+    font-weight: 700
+  }
+  .opt-chart .extrap {
+    stroke-dasharray: 4 3;
+    opacity: .6
+  }
+  .opt-chart .dec-time {
+    stroke-width: 2.2
+  }
+  .opt-chart circle.dec-best {
+    fill: var(--fc-eco, #7ed69b)
+  }
+  .opt-chart circle.dec-fast {
+    fill: var(--fc-fast, #f0b86e)
+  }
+  .opt-chart text.dec-best {
+    fill: var(--fc-eco, #7ed69b)
+  }
+  .opt-chart text.dec-fast {
+    fill: var(--fc-fast, #f0b86e)
+  }
+  .opt-chart .dec-cursor {
+    stroke-opacity: .7
+  }
   /* consignes de montée (shared/flight_perf_view.js, renderGuide) : objectif par segments, phrase, tableau */
   .climb-guide {
     margin-top: 14px;
@@ -1399,7 +1508,7 @@ html[data-skeuo] .repo-block-tools .fp-result-pin[aria-pressed="true"]:not(#imp)
 <div class="field" title="Température mesurée au terrain (METAR) : l’écart ISA en est déduit avec l’altitude du terrain."><label>Température sol (°C)</label><input id="tGround" type="number" step="1" placeholder="15"></div>
 <div class="field" title="Altitude du terrain de la température au sol (ft)."><label>Altitude terrain (ft)</label><input id="elevFt" type="number" step="10" value="0"></div>
 <div class="field" title="Température prévue au niveau de croisière (prévision TEMSI / vents et températures en altitude, OFP) : l’écart ISA en est déduit."><label>Température au niveau (°C)</label><input id="tLevel" type="number" step="1"></div>
-</div></details><div class="ff-quick" data-no-i18n><label for="cruiseFF" id="cruiseFFLabel"></label><div class="row ff-quick-row"><input id="cruiseFF" type="number" min="0" step="any" inputmode="decimal"><button id="ffUseEstimate" type="button" class="secondary" hidden></button><button id="ffRemember" type="button" class="secondary" hidden></button></div><div id="ffSource" class="mut ff-source"></div></div><div id="climbCtl" class="climb-ctl" data-no-i18n data-fp-detail hidden></div><div style="height:12px"></div><div class="row"><button id="calc" data-icon="chart" class="primary">Calculer</button><span id="windInfo" class="mut" data-no-i18n></span></div><div id="climbGuide" class="climb-guide" data-no-i18n hidden></div><div id="optBlock" data-fp-detail>
+</div></details><div class="ff-quick" data-no-i18n><label for="cruiseFF" id="cruiseFFLabel"></label><div class="row ff-quick-row"><input id="cruiseFF" type="number" min="0" step="any" inputmode="decimal"><button id="ffUseEstimate" type="button" class="secondary" hidden></button><button id="ffRemember" type="button" class="secondary" hidden></button></div><div id="ffSource" class="mut ff-source"></div></div><div id="climbCtl" class="climb-ctl" data-no-i18n data-fp-detail hidden></div><div style="height:12px"></div><div class="row"><button id="calc" data-icon="chart" class="primary">Calculer</button><span id="windInfo" class="mut" data-no-i18n></span></div><div id="levelDecision" class="fl-dec" data-no-i18n hidden></div><div id="climbGuide" class="climb-guide" data-no-i18n hidden></div><div id="optBlock" data-fp-detail>
 <div class="perf-row" id="rowOpt"><h3>Altitude optimale — carburant et vitesse</h3><div id="optEmpty" class="mut">Lance « Calculer » pour tracer les courbes d’altitude et de montée optimales.</div><div class="chart-wrap"><svg id="optChart" class="opt-chart" viewBox="0 0 540 270" hidden></svg></div><ul id="optZones" class="chart-zones" hidden></ul></div>
 <div id="climbBlock" hidden>
 <div class="perf-row" id="rowClimb"><h3>Montée optimale — vario et carburant</h3><div class="climb-x-row" data-no-i18n><span id="climbX" class="repo-segs" role="group"></span></div><div class="chart-wrap"><svg id="climbChart" class="opt-chart" viewBox="0 0 540 230" hidden></svg></div></div>

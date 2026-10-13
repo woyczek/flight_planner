@@ -289,3 +289,7 @@ the curves (trip fuel by level, climb rate and fuel per 1,000 ft, climb speeds) 
 
 The three existing curves stay in the detailed view, below. Nothing new is computed: the model already gives trip fuel
 and time per level (`m.trip`), climb points (`climbTo`, `manualPoint`) and the climb law of the chosen goal.
+
+**Done (13 October)** — `shared/flight_perf_view.js` (`renderDecision`), block `#levelDecision` of the fuel page; see
+CHANGELOG "Flight level decision". The table lists round levels (every 1,000 ft, 2,000 ft above a 20,000 ft ceiling);
+the curves use the climb goal of the climb instructions, so changing the goal redraws them.

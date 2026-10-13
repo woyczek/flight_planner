@@ -1465,13 +1465,21 @@ The greyed “unreachable” area lies above the aircraft's ceiling.
 Above the level where the profile's Mach can no longer be held, a jet flies at the highest speed allowed by 92 % of its thrust (“max. thrust” in the Result and the panels); the level is only refused beyond the ceiling.
 Without “Reference altitude (ft)” or “Max ceiling (ft)” in the profile, the model estimates them (cruise IAS and TAS, EUROCONTROL sheet, climb fuel flow, otherwise the typical value of the class) and shows the source under the curves. Fill in these two fields, or calibrate on a SimBrief OFP: it is more reliable.
 
+### Flight level decision
+
+After “Calculate”, at the top of the fuel plan (simple and detailed view), a chart gives for each level the fuel (left scale) and the time (right scale) of the whole trip: climb with the goal chosen in “Climb instructions”, profile cruise, descent. The plan level, the least-fuel level and the fastest level are marked; the grey “unreachable” zone lies above the ceiling.
+- Hover over the chart, click it or move the slider under it: the card beside it gives for that level the trip fuel and time, the cruise TAS, the climb (time, fuel, distance), the IAS to fly and the expected climb rate, the top of descent (TOD). The “Climb instructions” block follows that level.
+- “Use this level” puts it in “Level (FL)” and redoes the fuel plan.
+- “Compare” pins the current level: the card then shows two levels side by side, with the fuel and time difference; “Stop comparing” removes it.
+- The table below lists the round levels (every 1,000 ft; 2,000 ft for a ceiling above 20,000 ft), sortable by level, fuel or time (click the header); clicking a row chooses that level.
+
 ### Climb instructions
 
 This block, under “Calculate”, says how to climb, at every usage level.
 - Five goals, each with its time and fuel up to the level: “Eco”, “Vy”, “Fast”, “Profile” (climb speed of the profile), “Set” (chosen climb). The choice is kept in this browser.
   “Vy”: maximum climb rate (level reached soonest); “Fast”: minimum block time; “Eco”: minimum trip fuel. For the last two, the climb distance is taken off the cruise, the climb rate stays at least 50% of the maximum, and a jet is limited to 250 kt below FL100.
 - An instruction in three parts: “Set” (throttle, propeller, RPM or N1), “Hold” (the instrument that carries the instruction, usually the IAS), “Expect” (climb rate to see, level reached, time and fuel).
-- A table by altitude band (ground, 2,000 ft, FL050, FL100… up to the plan level): throttle, RPM or N1 if the profile has an engine map, IAS to fly, expected climb rate, cumulative time.
+- A table by altitude band (ground, 2,000 ft, FL050, FL100… up to the plan level, or to the level studied in “Flight level decision”, named in the title): throttle, RPM or N1 if the profile has an engine map, IAS to fly, expected climb rate, cumulative time.
 
 The instructions guide the flying; the fuel plan counts the chosen climb. They come from the performance model of the profile (atmosphere of the fuel plan, mass not modelled): to be checked against the flight manual.
 
