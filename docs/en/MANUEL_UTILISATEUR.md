@@ -1468,7 +1468,7 @@ Without “Reference altitude (ft)” or “Max ceiling (ft)” in the profile, 
 ### Flight level decision
 
 After “Calculate”, at the top of the fuel plan (simple and detailed view), a chart gives for each level the fuel (left scale) and the time (right scale) of the whole trip: climb with the goal chosen in “Climb instructions”, profile cruise, descent. The plan level, the least-fuel level and the fastest level are marked; the grey “unreachable” zone lies above the ceiling.
-- Hover over the chart, click it or move the slider under it: the card beside it gives for that level the trip fuel and time, the cruise TAS, the climb (time, fuel, distance), the IAS to fly and the expected climb rate, the top of descent (TOD). The “Climb instructions” block follows that level.
+- Hover over the chart, click it or move the slider under it: the card beside it gives for that level the trip fuel and time, the cruise TAS, the climb (time, fuel, distance), the IAS to fly and the expected climb rate, the top of descent (TOD) and the descent: time, fuel, IAS (the profile's if entered in Descent › IAS, otherwise derived from the descent TAS, from TOD to the ground) and rate. The “Climb instructions” block follows that level.
 - “Use this level” puts it in “Level (FL)” and redoes the fuel plan.
 - “Compare” pins the current level: the card then shows two levels side by side, with the fuel and time difference; “Stop comparing” removes it.
 - The table below lists the round levels (every 1,000 ft; 2,000 ft for a ceiling above 20,000 ft), sortable by level, fuel or time (click the header); clicking a row chooses that level.

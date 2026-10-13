@@ -1515,7 +1515,7 @@ Sans « Altitude de référence (ft) » ni « Plafond max (ft) » dans le profil
 ### Décision du niveau de vol
 
 Après « Calculer », en tête du devis (vue simple comme vue détaillée), un graphe donne pour chaque niveau le carburant (échelle de gauche) et le temps (échelle de droite) du trajet entier : montée selon l'objectif choisi dans « Consignes de montée », croisière du profil, descente. Le niveau du plan, le niveau le plus économe et le plus rapide sont repérés ; la zone grisée « inaccessible » est au-dessus du plafond.
-- Survolez le graphe, cliquez-y ou réglez la réglette dessous : la fiche à côté donne pour ce niveau le carburant et le temps du trajet, la TAS de croisière, la montée (temps, carburant, distance), le badin à tenir et le vario attendu, le début de descente (TOD). Le bloc « Consignes de montée » suit ce niveau.
+- Survolez le graphe, cliquez-y ou réglez la réglette dessous : la fiche à côté donne pour ce niveau le carburant et le temps du trajet, la TAS de croisière, la montée (temps, carburant, distance), le badin à tenir et le vario attendu, le début de descente (TOD) et la descente : temps, carburant, badin (celui du profil s'il est saisi dans Descente › Badin, sinon déduit de la TAS de descente, du TOD au sol) et vario. Le bloc « Consignes de montée » suit ce niveau.
 - « Utiliser ce niveau » le pose dans « Niveau (FL) » et refait le devis.
 - « Comparer » épingle le niveau courant : la fiche montre alors deux niveaux côte à côte, avec l'écart de carburant et de temps ; « Ne plus comparer » le retire.
 - Le tableau dessous reprend les niveaux ronds (tous les 1000 ft ; 2000 ft pour un plafond au-delà de 20 000 ft), triable par niveau, carburant ou temps (clic sur l'en-tête) ; un clic sur une ligne choisit ce niveau.

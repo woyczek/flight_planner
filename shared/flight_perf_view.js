@@ -1274,6 +1274,20 @@
         nm: 0
       },
       tod = Math.max(0, D.c.D - cl.nm - r.cruiseNm),
+      // descente du modèle : vario et TAS du profil (constants), Badin qui en découle (au TOD → au sol), sauf Badin de
+      // descente saisi dans le profil (Descente › Badin), donné tel quel
+      de = m.desc,
+      td = r.h / de.rate,
+      iasTop = de.tas * Math.sqrt(m.atm(r.h).sigma),
+      iasLow = de.tas * Math.sqrt(m.atm(0).sigma),
+      machTop = de.tas / m.atm(r.h).a,
+      iasProf = (() => {
+        try {
+          return +(window.modelProfile?.() || active)?.descent?.iasKt || 0;
+        } catch {
+          return 0;
+        }
+      })(),
       rN = g?.rows?.at(-1),
       r0 = g?.rows?.[0],
       rng = (a, b, d = 0) => Math.abs(a - b) < (d ? .5 : 5) ? fmt(a, d) : `${fmt(a, d)} → ${fmt(b, d)}`;
@@ -1285,7 +1299,10 @@
       [`${def("Badin", tl("Badin", "IAS", "IAS", "IAS"))} ${tl("à tenir", "to fly", "zu halten", "a mantener")}`, r0 && rN ? `${rng(r0.ias, rN.ias)} kt` : "—", null],
       [tl("Vario attendu", "Expected rate", "Erwartete Steigrate", "Régimen esperado"), r0 && rN ? `${rng(Math.max(0, r0.roc), Math.max(0, rN.roc))} ft/min` : "—", null],
       [tl("Début de descente (TOD)", "Top of descent (TOD)", "Sinkflugbeginn (TOD)", "Inicio del descenso (TOD)"), tl(`à ${fmt(tod, 0)} NM de l’arrivée`,
-        `${fmt(tod, 0)} NM before arrival`, `${fmt(tod, 0)} NM vor der Ankunft`, `a ${fmt(tod, 0)} NM de la llegada`), null]
+        `${fmt(tod, 0)} NM before arrival`, `${fmt(tod, 0)} NM vor der Ankunft`, `a ${fmt(tod, 0)} NM de la llegada`), null],
+      [tl("Descente", "Descent", "Sinkflug", "Descenso"), `${hmTxt(td)} · ${showFuel(de.ff * td / 60)} ${fuelUnit()}`, null],
+      [`${def("Badin", tl("Badin", "IAS", "IAS", "IAS"))} ${tl("en descente", "in descent", "im Sinkflug", "en descenso")}`, iasProf > 0 ? `${fmt(iasProf, 0)} kt (${tl("profil", "profile", "Profil", "perfil")})` : `${rng(iasTop, iasLow)} kt${jet && machTop >= .4 ? ` · M${machTop.toFixed(2)} ${tl("au TOD", "at TOD", "am TOD", "en el TOD")}` : ""}`, null],
+      [tl("Vario en descente", "Descent rate", "Sinkrate", "Régimen de descenso"), `−${fmt(de.rate, 0)} ft/min`, null]
     ];
   }
   /** Titre d'un niveau avec ses repères : « FL310 · le plus économe ». */
