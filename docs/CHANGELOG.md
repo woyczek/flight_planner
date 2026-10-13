@@ -12,13 +12,16 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Added
 
-- **Fuel: "Flight level decision" chart** (docs/technique/V2_FABLE.md § 12) — first block of the fuel plan, in the simple
-  and the detailed view: trip fuel (left scale) and trip time (right scale) of the whole flight at each level, climbing
-  with the goal of the climb instructions; plan, least-fuel and fastest levels marked, "unreachable" zone above the
-  ceiling, and below it the levels the trip cannot hold, named by their cause (trip too short, not enough thrust), where
-  the card gives the climb, the descent and the distance needed. Hover, click or slider: a card gives fuel, time, cruise TAS, climb, IAS to fly, expected rate, top of
-  descent and descent (time, fuel, IAS, rate) for that level, and the climb instructions follow it; "Use this level" sets the plan level; "Compare" pins a
-  level to read two side by side with their differences; table of round levels, sortable, chosen row highlighted.
+- **Fuel: "Flight level decision" chart, and simpler curves** (docs/technique/V2_FABLE.md § 12) — first block of the fuel
+  plan, in the simple and the detailed view: two stacked panels sharing the level axis and the cursor, trip fuel (top)
+  and trip time (bottom) of the whole flight at each level, climbing with the goal of the climb instructions; "Least
+  fuel" and "Fastest" pills (click: cursor there); the chosen level is the only mark; one grey for levels that cannot be
+  held (ceiling, trip too short, not enough thrust), the reason being in the cursor card. The card gives three lines
+  (trip, climb, descent); "Use this level" sets the plan level, "Compare" pins a level to read two side by side; table
+  of round levels, sortable. The climb instructions, the climb chart and the instruments follow the cursor. Detailed
+  view: "Optimum altitude" and "TAS by level" removed; one "Climb" chart (rate, fuel per 1,000 ft, IAS and TAS by
+  altitude) for the chosen goal; the climb comparison is a table of goals; engine settings only with an engine map;
+  one side panel per chart, three lines and "Learn more"; the Result's cursor card is gone.
 
 ### Changed
 

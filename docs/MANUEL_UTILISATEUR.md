@@ -1457,7 +1457,7 @@ C'est le même bloc que Paramètres › Maintenance › Données aéronautiques.
 ## Carburant
 <!-- page: apps/planner/flight_performance_planner.html -->
 
-Le planificateur carburant (titre « Carburant ») calcule le carburant d'un vol à partir du profil de performances de votre appareil. La consommation de croisière vient, dans l'ordre, de votre saisie pour ce vol, du profil enregistré, du modèle de Poll et Schumann (avions de ligne à réaction, selon la masse, le niveau et le Mach), de SimBrief, puis d'une estimation par type ou classe OACI ; une valeur approchée est marquée ≈. Pour un type sans fiche EUROCONTROL ni SimBrief (militaires, hélicoptères), l'estimation reprend la TAS de croisière et le plafond publiés par Airframe DB quand il les connaît. Il trace aussi les altitudes et lois de montée optimales.
+Le planificateur carburant (titre « Carburant ») calcule le carburant d'un vol à partir du profil de performances de votre appareil. La consommation de croisière vient, dans l'ordre, de votre saisie pour ce vol, du profil enregistré, du modèle de Poll et Schumann (avions de ligne à réaction, selon la masse, le niveau et le Mach), de SimBrief, puis d'une estimation par type ou classe OACI ; une valeur approchée est marquée ≈. Pour un type sans fiche EUROCONTROL ni SimBrief (militaires, hélicoptères), l'estimation reprend la TAS de croisière et le plafond publiés par Airframe DB quand il les connaît. Il aide aussi à choisir le niveau de vol et la façon d'y monter.
 Pour y aller : barre latérale « Outils », onglet « Carburant », bouton « Carburant (planificateur) » d'une mission dans Mes missions, ou bouton « Carburant » des Cartes de vol. La route, la distance, le niveau et l'appareil sont alors repris.
 En-tête : menu « Avion », bouton « Récupérer dernier FPL SimBrief », « Unités : kg / lbs ». Les imports et exports sont dans le menu ☰.
 Selon le niveau d'utilisation : aux niveaux 1 à 3 (Équipage, Planification, Conception), la page montre l'avion, le plan de vol (et « Récupérer dernier FPL SimBrief »), le repli « Paramètres du vol », « Calculer » et le Résultat, sur deux colonnes ; le menu ☰ n'y garde qu'exporter et importer les préférences. Courbes, panneaux, instruments, blocs du profil, barre d'état et actions de profils du menu ☰ s'ajoutent au niveau Expert, où la page est complète.
@@ -1493,32 +1493,25 @@ Le profil reste calibré en atmosphère standard ; le devis vole dans l'atmosph�
 Le bouton « Cartes de vol » (niveau Expert) ouvre les Cartes de vol avec ce plan de vol ; les cartes et le profil y sont créés à l'arrivée.
 « Syntaxe du plan de vol » rappelle les formes acceptées. Sans base SIA dans le navigateur, seuls les points en coordonnées sont reconnus.
 
-### Courbes du devis (altitude et montée optimales)
-
-En vue détaillée (bouton « Vue détaillée » / « Vue simple » du Résultat ; détaillée par défaut au niveau Expert, simple aux niveaux 1 à 3), après « Calculer », le bloc « Devis carburant » affiche, dans l'ordre :
-
-| Titre | Ce qu'il montre |
-|---|---|
-| « Altitude optimale — carburant et vitesse » | Trajet entier volé à chaque niveau : plus la courbe est haute, moins on consomme par mille. |
-| « Montée optimale — vario et carburant » | Vario disponible et carburant par 1000 ft, « par altitude » ou « par régime ». |
-| « Vitesses de montée — Badin et TAS selon l'altitude » | Vy, montée rapide, montée économique, montée choisie, Vx. |
-| « TAS selon le niveau — croisière et montée » | Vitesse vraie en croisière et en montée. |
-| « Comparaison des montées » | Durée, distance et carburant de chaque montée, jusqu'au niveau du plan puis sur le trajet entier ; ★ : meilleur de la colonne. |
-| « Montée par altitude — régimes RPM / N1 » | Table à Vy avec cumuls depuis le sol. |
-
-Survolez une courbe pour lire les valeurs à cette altitude ; cliquez pour épingler un niveau (trait blanc sur toutes les courbes). Le devis est alors calculé à ce niveau.
-Les curseurs « Montée choisie » du devis règlent votre montée choisie, tracée en violet sur les courbes.
-La zone grisée « inaccessible » se trouve au-dessus du plafond de l'appareil.
-Au-dessus du niveau où le Mach du profil n'est plus tenable, un réacteur vole à la plus grande vitesse permise par 92 % de sa poussée (« poussée max. » dans le Résultat et les panneaux) ; le niveau n'est refusé qu'au-delà du plafond.
-Sans « Altitude de référence (ft) » ni « Plafond max (ft) » dans le profil, le modèle les estime (badin et TAS de croisière, fiche EUROCONTROL, débit de montée, sinon valeur type de la classe) et indique la source sous les courbes. Renseignez ces deux champs, ou calibrez sur un OFP SimBrief : c'est plus fiable.
-
 ### Décision du niveau de vol
 
-Après « Calculer », en tête du devis (vue simple comme vue détaillée), un graphe donne pour chaque niveau le carburant (échelle de gauche) et le temps (échelle de droite) du trajet entier : montée selon l'objectif choisi dans « Consignes de montée », croisière du profil, descente. Le niveau du plan, le niveau le plus économe et le plus rapide sont repérés ; la zone grisée « inaccessible » est au-dessus du plafond. Sous le plafond, les niveaux que ce trajet ne permet pas de tenir forment une zone nommée par sa cause (« trajet trop court » : monter puis redescendre prend plus que la distance ; « poussée insuffisante ») ; la fiche y donne la montée jusqu'au niveau, la descente, la distance nécessaire et le champ à modifier, et le tableau y affiche « — ».
-- Survolez le graphe, cliquez-y ou réglez la réglette dessous : la fiche à côté donne pour ce niveau le carburant et le temps du trajet, la TAS de croisière, la montée (temps, carburant, distance), le badin à tenir et le vario attendu, le début de descente (TOD) et la descente : temps, carburant, badin (celui du profil s'il est saisi dans Descente › Badin, sinon déduit de la TAS de descente, du TOD au sol) et vario. Le bloc « Consignes de montée » suit ce niveau.
-- « Utiliser ce niveau » le pose dans « Niveau (FL) » et refait le devis.
-- « Comparer » épingle le niveau courant : la fiche montre alors deux niveaux côte à côte, avec l'écart de carburant et de temps ; « Ne plus comparer » le retire.
-- Le tableau dessous reprend les niveaux ronds (tous les 1000 ft ; 2000 ft pour un plafond au-delà de 20 000 ft), triable par niveau, carburant ou temps (clic sur l'en-tête) ; un clic sur une ligne choisit ce niveau.
+Après « Calculer », en tête du devis (vue simple comme vue détaillée), un graphe à deux panneaux donne pour chaque niveau le carburant (en haut) et le temps (en bas) du trajet entier : montée selon l'objectif choisi dans « Consignes de montée », croisière du profil, descente. Les deux panneaux partagent l'axe des niveaux et le curseur ; le niveau choisi est le seul repère dessiné (trait et « FL300 »).
+- Au-dessus du graphe, deux pastilles : « Le plus économe » et « Le plus rapide », avec niveau, carburant et temps ; un clic y met le curseur. En vue détaillée, avec l'objectif « Éco », une troisième donne la croisière économique.
+- Grisé : niveau non tenable — au-delà du plafond, trajet trop court (monter puis redescendre prend plus que la distance) ou poussée insuffisante ; la raison et le champ à modifier sont dans la fiche du curseur.
+- Survolez le graphe, cliquez-y ou réglez la réglette dessous : la fiche à côté donne pour ce niveau trois lignes — « Trajet » (carburant, temps, TAS de croisière), « Montée » (temps, carburant, distance, badin à tenir, vario) et « Descente » (TOD, temps, carburant, badin — celui du profil s'il est saisi dans Descente › Badin —, vario). Le bloc « Consignes de montée » suit ce niveau.
+- Sous la fiche, « Utiliser ce niveau » le pose dans « Niveau (FL) » et refait le devis ; « Comparer » épingle le niveau courant pour le lire à côté d'un autre, avec l'écart de carburant et de temps (« Ne plus comparer » le retire).
+- Le tableau dessous reprend les niveaux ronds (tous les 1000 ft ; 2000 ft pour un plafond au-delà de 20 000 ft), triable par niveau, carburant ou temps ; un clic sur une ligne choisit ce niveau ; un niveau non tenable affiche « — » et sa cause.
+
+### Montée (vue détaillée)
+
+En vue détaillée (bouton « Vue détaillée » / « Vue simple » du Résultat ; détaillée par défaut au niveau Expert), sous les consignes de montée :
+- « Montée — vario, carburant et vitesses selon l'altitude » : trois panneaux sur le même axe et avec le même curseur que la décision du niveau — vario (tirets : vario max à Vy), carburant par 1000 ft, badin à tenir (trait) et TAS (tirets), pour l'objectif choisi dans les consignes de montée. Avec une cartographie moteur, « par altitude » / « par régime » montre aussi le vario selon le régime à mi-montée.
+- « Comparaison des montées » : un objectif par ligne (« Éco », « Vy », « Rapide », « Profil », « Réglée ») — temps, carburant, badin et vario jusqu'au niveau des consignes ; ★ : meilleur temps et meilleur carburant ; un clic sur une ligne choisit l'objectif.
+- « Régimes de montée — cartographie moteur » (seulement s'il y en a une) : vario et carburant par 1000 ft à mi-montée pour chaque régime ; ★ : le plus économe.
+
+Les curseurs « Montée choisie » du devis règlent l'objectif « Réglée ».
+Au-dessus du niveau où le Mach du profil n'est plus tenable, un réacteur vole à la plus grande vitesse permise par 92 % de sa poussée (« poussée max. » dans la fiche) ; le niveau n'est refusé qu'au-delà du plafond.
+Sans « Altitude de référence (ft) » ni « Plafond max (ft) » dans le profil, le modèle les estime (badin et TAS de croisière, fiche EUROCONTROL, débit de montée, sinon valeur type de la classe) et l'indique dans le panneau de la décision du niveau. Renseignez ces deux champs, ou calibrez sur un OFP SimBrief : c'est plus fiable.
 
 ### Consignes de montée
 
@@ -1537,11 +1530,10 @@ Ce bloc, dans la colonne de droite, suit la page pendant que vous faites défile
 - « Block fuel » (en fourchette si le vent est inconnu), « Temps de vol », « TOD ».
 - Ligne d'état « Calculé pour <avion> à <heure> : <distance> NM au FL…, temps de vol, TOD. Consommation de croisière : … », puis base du calcul : niveau, montée retenue et origine de la consommation de croisière (« profil enregistré », « saisie pour ce vol », « Poll-Schumann, 70 t à mi-croisière, FL350, M0,78 », « SimBrief », « estimation… »). Sans consommation connue, « Carburant bloc » affiche « — » : saisissez la consommation dans le devis.
 - Détail : taxi, montée, croisière, descente, contingence, réserve ; masse au décollage prévue et MTOW si vous l'avez saisie (en rouge si elle est dépassée).
-- Fiche du curseur (⌖ au survol, 📌 épinglé) : carburant et temps du trajet à ce niveau, vario max, vitesses de montée ; « désépingler » retire l'épingle.
 - Groupe repliable « Régimes de vol — profil ↔ cartographie » (niveau Expert) : Badin, vario, régime moteur et débit par phase, comparés à la cartographie moteur. Il contient aussi le champ « SimBrief Airframe Internal ID » et les liens vers les fiches des appareils de ce type.
   « Importer airframe SimBrief » lit ce champ (identifiant ou lien de partage) : liste publique de SimBrief, puis lien de partage ; un airframe privé illisible ne donne qu'un profil partiel, avec son seul identifiant.
 
-« Épingler » garde le bloc entier quand il suit la page ; sinon, il se replie. « Vue simple » masque les courbes et les instruments, « Vue détaillée » les montre (choix gardé dans ce navigateur). Au niveau Expert, sous le bloc, un panneau par courbe donne les optimums, les limites (plafond, niveau demandé) et une aide à la lecture. Le bandeau d'instruments (niveau Expert) reprend badin, altimètre, vario, chronomètre (temps de montée), carburant et temps de vol.
+« Épingler » garde le bloc entier quand il suit la page ; sinon, il se replie. « Vue simple » masque les courbes et les instruments, « Vue détaillée » les montre (choix gardé dans ce navigateur). Au niveau Expert, sous le bloc, un panneau par graphe (décision du niveau, montée) donne l'essentiel en trois lignes ; « En savoir plus » déplie la lecture et les hypothèses du modèle. Le bandeau d'instruments (niveau Expert) reprend badin, altimètre, vario, chronomètre (temps de montée), carburant et temps de vol.
 Dans les panneaux et les messages, un nom de champ souligné est un lien : il déplie l'éditeur du profil au besoin et montre le champ. Un niveau « inatteignable » donne sa cause et le champ à corriger (bloc « Limites »).
 Un clic sur le cadran carburant (ou son bouton) change la courbe lue, dans sa couleur : montée choisie, profil, croisière économique, montée rapide, Vy, montée économique ; choix gardé dans ce navigateur.
 

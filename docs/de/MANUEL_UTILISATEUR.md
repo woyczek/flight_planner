@@ -1415,7 +1415,7 @@ Es ist derselbe Block wie unter Einstellungen › Wartung › Luftfahrtdaten. Di
 ## Kraftstoff
 <!-- page: apps/planner/flight_performance_planner.html -->
 
-Der Kraftstoffplaner (Titel „Kraftstoff“) berechnet den Kraftstoff eines Flugs aus dem Leistungsprofil Ihres Luftfahrzeugs. Der Reiseverbrauch stammt, in dieser Reihenfolge, aus Ihrer Eingabe für diesen Flug, dem gespeicherten Profil, dem Modell von Poll und Schumann (Strahlverkehrsflugzeuge, nach Masse, Flughöhe und Mach), SimBrief, dann aus einer Schätzung nach ICAO-Typ oder -Klasse; ein Näherungswert ist mit ≈ gekennzeichnet. Für einen Typ ohne EUROCONTROL- oder SimBrief-Eintrag (Militär, Hubschrauber) übernimmt die Schätzung die Reise-TAS und die Gipfelhöhe aus Airframe DB, wenn sie dort bekannt sind. Er zeichnet auch die optimalen Flughöhen und Steiggesetze.
+Der Kraftstoffplaner (Titel „Kraftstoff“) berechnet den Kraftstoff eines Flugs aus dem Leistungsprofil Ihres Luftfahrzeugs. Der Reiseverbrauch stammt, in dieser Reihenfolge, aus Ihrer Eingabe für diesen Flug, dem gespeicherten Profil, dem Modell von Poll und Schumann (Strahlverkehrsflugzeuge, nach Masse, Flughöhe und Mach), SimBrief, dann aus einer Schätzung nach ICAO-Typ oder -Klasse; ein Näherungswert ist mit ≈ gekennzeichnet. Für einen Typ ohne EUROCONTROL- oder SimBrief-Eintrag (Militär, Hubschrauber) übernimmt die Schätzung die Reise-TAS und die Gipfelhöhe aus Airframe DB, wenn sie dort bekannt sind. Er hilft auch, die Flughöhe und den Steigflug dorthin zu wählen.
 Zugang: Seitenleiste „Werkzeuge“, Reiter „Kraftstoff“, Knopf „Kraftstoff (Planer)“ einer Mission in Meine Missionen oder Knopf „Kraftstoff“ der Flugkarten. Route, Distanz, Flughöhe und Luftfahrzeug werden dann übernommen.
 Kopfzeile: Menü „Flugzeug“, Knopf „Letzten SimBrief-FPL abrufen“, „Einheiten: kg / lbs“. Importe und Exporte befinden sich im Menü ☰.
 Je nach Nutzungsstufe: Auf den Stufen 1 bis 3 (Besatzung, Planung, Gestaltung) zeigt die Seite das Flugzeug, den Flugplan (und „Letzten SimBrief-FPL abrufen“), den aufklappbaren Bereich „Flugparameter“, „Berechnen“ und das Ergebnis in zwei Spalten; das Menü ☰ behält dort nur Export und Import der Einstellungen. Kurven, Felder, Instrumente, Profilblöcke, Statusleiste und die Profilaktionen des Menüs ☰ kommen auf der Stufe Experte hinzu, wo die Seite vollständig ist.
@@ -1446,32 +1446,25 @@ Das Profil bleibt auf die Standardatmosphäre kalibriert; die Planung fliegt in 
 Der Knopf „Flugkarten“ (Stufe Experte) öffnet die Flugkarten mit diesem Flugplan; Karten und Profil werden dort bei der Ankunft erstellt.
 „Flugplan-Syntax“ zeigt die akzeptierten Formen. Ohne SIA-Datenbank im Browser werden nur Punkte in Koordinaten erkannt.
 
-### Kurven der Kraftstoffplanung (optimale Flughöhe und optimaler Steigflug)
-
-In der Detailansicht (Schaltfläche „Detailansicht“ / „Einfache Ansicht“ des Ergebnisses; auf der Stufe Experte standardmäßig detailliert, auf den Stufen 1 bis 3 einfach) zeigt der Block „Kraftstoffplanung“ nach „Berechnen“ in dieser Reihenfolge:
-
-| Titel | Was er zeigt |
-|---|---|
-| „Optimale Flughöhe — Kraftstoff und Geschwindigkeit“ | Gesamte Strecke auf jeder Höhe geflogen: Je höher die Kurve, desto weniger Verbrauch pro Meile. |
-| „Optimaler Steigflug — Steigrate und Kraftstoff“ | Verfügbare Steigrate und Kraftstoff pro 1000 ft, „nach Höhe“ oder „nach Leistungseinstellung“. |
-| „Steiggeschwindigkeiten — IAS und TAS nach Höhe“ | Vy, schneller Steigflug, wirtschaftlicher Steigflug, gewählter Steigflug, Vx. |
-| „TAS nach Flughöhe — Reise- und Steigflug“ | Wahre Geschwindigkeit im Reise- und im Steigflug. |
-| „Vergleich der Steigflüge“ | Dauer, Distanz und Kraftstoff jedes Steigflugs, bis zur Planflughöhe und dann über die ganze Strecke; ★: Bester der Spalte. |
-| „Steigflug nach Höhe — RPM-/N1-Einstellungen“ | Tabelle bei Vy mit Summen ab dem Boden. |
-
-Fahren Sie über eine Kurve, um die Werte in dieser Höhe abzulesen; klicken Sie, um eine Höhe anzuheften (weiße Linie auf allen Kurven). Die Planung wird dann auf dieser Höhe berechnet.
-Die Schieberegler „Gewählter Steigflug“ der Kraftstoffplanung stellen Ihren gewählten Steigflug ein, auf den Kurven violett gezeichnet.
-Der grau hinterlegte Bereich „unerreichbar“ liegt über der Gipfelhöhe des Luftfahrzeugs.
-Oberhalb der Flughöhe, auf der die Mach-Zahl des Profils nicht mehr haltbar ist, fliegt ein Strahlflugzeug mit der größten Geschwindigkeit, die 92 % seines Schubs erlauben („max. Schub“ im Ergebnis und in den Feldern); die Flughöhe wird erst oberhalb der Gipfelhöhe abgelehnt.
-Ohne „Bezugshöhe (ft)“ und „Max. Gipfelhöhe (ft)“ im Profil schätzt das Modell sie (Reise-IAS und -TAS, EUROCONTROL-Blatt, Steigverbrauch, sonst typischer Wert der Klasse) und nennt die Quelle unter den Kurven. Füllen Sie diese beiden Felder aus oder kalibrieren Sie mit einem SimBrief-OFP: Das ist zuverlässiger.
-
 ### Wahl der Flughöhe
 
-Nach „Berechnen“ zeigt ein Diagramm oben in der Kraftstoffplanung (einfache wie Detailansicht) für jede Flughöhe den Kraftstoff (linke Skala) und die Zeit (rechte Skala) der ganzen Strecke: Steigflug mit dem unter „Steigflug-Anweisungen“ gewählten Ziel, Profil-Reiseflug, Sinkflug. Planflughöhe, sparsamste und schnellste Flughöhe sind markiert; die graue Zone „unerreichbar“ liegt über der Gipfelhöhe. Unter der Gipfelhöhe bilden die Flughöhen, die diese Strecke nicht zulässt, eine nach ihrer Ursache benannte Zone („Strecke zu kurz“: Steig- und Sinkflug brauchen mehr als die Entfernung; „Schub reicht nicht“); dort nennt die Karte den Steigflug bis zur Flughöhe, den Sinkflug, die nötige Strecke und das zu ändernde Feld, und die Tabelle zeigt „—“.
-- Fahren Sie über das Diagramm, klicken Sie hinein oder bewegen Sie den Schieberegler darunter: Die Karte daneben nennt für diese Flughöhe Kraftstoff und Zeit der Strecke, Reiseflug-TAS, Steigflug (Zeit, Kraftstoff, Strecke), zu haltende IAS und erwartete Steigrate, Sinkflugbeginn (TOD) und Sinkflug: Zeit, Kraftstoff, IAS (die des Profils, wenn unter Sinkflug › IAS eingetragen, sonst aus der Sink-TAS abgeleitet, vom TOD bis zum Boden) und Sinkrate. Der Block „Steigflug-Anweisungen“ folgt dieser Flughöhe.
-- „Diese Flughöhe verwenden“ trägt sie in „Flugfläche (FL)“ ein und berechnet die Planung neu.
-- „Vergleichen“ heftet die aktuelle Flughöhe an: Die Karte zeigt dann zwei Flughöhen nebeneinander mit dem Kraftstoff- und Zeitunterschied; „Vergleich beenden“ entfernt sie.
-- Die Tabelle darunter listet die runden Flughöhen (alle 1 000 ft; 2 000 ft bei einer Gipfelhöhe über 20 000 ft), sortierbar nach Flughöhe, Kraftstoff oder Zeit (Klick auf die Kopfzeile); ein Klick auf eine Zeile wählt diese Flughöhe.
+Nach „Berechnen“ zeigt oben in der Kraftstoffplanung (einfache wie Detailansicht) ein Diagramm mit zwei Feldern für jede Flughöhe den Kraftstoff (oben) und die Zeit (unten) der ganzen Strecke: Steigflug mit dem unter „Steigflug-Anweisungen“ gewählten Ziel, Profil-Reiseflug, Sinkflug. Beide Felder teilen die Achse der Flughöhen und den Cursor; die gewählte Flughöhe ist die einzige eingezeichnete Marke (Linie und „FL300“).
+- Über dem Diagramm zwei Plaketten: „Am sparsamsten“ und „Am schnellsten“ mit Flughöhe, Kraftstoff und Zeit; ein Klick setzt den Cursor dorthin. In der Detailansicht mit dem Ziel „Spar“ nennt eine dritte den Spar-Reiseflug.
+- Grau: nicht haltbare Flughöhe — über der Gipfelhöhe, Strecke zu kurz (Steig- und Sinkflug brauchen mehr als die Entfernung) oder Schub reicht nicht; Grund und zu änderndes Feld stehen in der Karte des Cursors.
+- Fahren Sie über das Diagramm, klicken Sie hinein oder bewegen Sie den Schieberegler darunter: Die Karte daneben nennt für diese Flughöhe drei Zeilen — „Strecke“ (Kraftstoff, Zeit, Reiseflug-TAS), „Steigflug“ (Zeit, Kraftstoff, Strecke, zu haltende IAS, Steigrate) und „Sinkflug“ (TOD, Zeit, Kraftstoff, IAS — die des Profils, wenn unter Sinkflug › IAS eingetragen —, Sinkrate). Der Block „Steigflug-Anweisungen“ folgt dieser Flughöhe.
+- Unter der Karte trägt „Diese Flughöhe verwenden“ sie in „Flugfläche (FL)“ ein und berechnet die Planung neu; „Vergleichen“ heftet die aktuelle Flughöhe an, um sie neben einer anderen zu lesen, mit Kraftstoff- und Zeitunterschied („Vergleich beenden“ entfernt sie).
+- Die Tabelle darunter listet die runden Flughöhen (alle 1 000 ft; 2 000 ft bei einer Gipfelhöhe über 20 000 ft), sortierbar nach Flughöhe, Kraftstoff oder Zeit; ein Klick auf eine Zeile wählt diese Flughöhe; eine nicht haltbare Flughöhe zeigt „—“ und ihre Ursache.
+
+### Steigflug (Detailansicht)
+
+In der Detailansicht (Schaltfläche „Detailansicht“ / „Einfache Ansicht“ im Ergebnis; auf der Stufe Experte standardmäßig) unter den Steigflug-Anweisungen:
+- „Steigflug — Steigrate, Kraftstoff und Geschwindigkeiten nach Höhe“: drei Felder auf derselben Achse und mit demselben Cursor wie die Wahl der Flughöhe — Steigrate (gestrichelt: maximale Steigrate bei Vy), Kraftstoff je 1 000 ft, zu haltende IAS (Linie) und TAS (gestrichelt), für das in den Steigflug-Anweisungen gewählte Ziel. Mit einem Motorkennfeld zeigt „nach Höhe“ / „nach Drehzahl“ auch die Steigrate je Einstellung im halben Steigflug.
+- „Vergleich der Steigflüge“: ein Ziel pro Zeile („Spar“, „Vy“, „Schnell“, „Profil“, „Eingestellt“) — Zeit, Kraftstoff, IAS und Steigrate bis zur Flughöhe der Anweisungen; ★: beste Zeit und bester Kraftstoff; ein Klick auf eine Zeile wählt das Ziel.
+- „Steigflugeinstellungen — Motorkennfeld“ (nur wenn vorhanden): Steigrate und Kraftstoff je 1 000 ft im halben Steigflug für jede Einstellung; ★: am sparsamsten.
+
+Die Regler „Gewählter Steigflug“ der Planung stellen das Ziel „Eingestellt“ ein.
+Über der Flughöhe, auf der die Profil-Machzahl nicht mehr haltbar ist, fliegt ein Strahlflugzeug mit der größten Geschwindigkeit, die 92 % seines Schubs erlauben („max. Schub“ in der Karte); die Flughöhe wird erst über der Gipfelhöhe abgelehnt.
+Ohne „Bezugshöhe (ft)“ und „Maximale Gipfelhöhe (ft)“ im Profil schätzt das Modell sie (Reiseflug-IAS und -TAS, EUROCONTROL-Datenblatt, Steigflugverbrauch, sonst Typwert der Klasse) und nennt dies im Feld der Wahl der Flughöhe. Füllen Sie diese beiden Felder aus oder kalibrieren Sie mit einem SimBrief-OFP: Das ist zuverlässiger.
 
 ### Steigflug-Anweisungen
 
@@ -1490,11 +1483,10 @@ Dieser Block in der rechten Spalte folgt der Seite, während Sie durch die Kurve
 - „Block fuel“ (als Bereich, wenn der Wind unbekannt ist), „Flugzeit“, „TOD“.
 - Statuszeile „Berechnet für <Luftfahrzeug> um <Uhrzeit>: <Distanz> NM auf FL…, Flugzeit, TOD. Reiseverbrauch: …“, dann Berechnungsgrundlage: Flughöhe, verwendeter Steigflug und Herkunft des Reiseverbrauchs („gespeichertes Profil“, „für diesen Flug eingegeben“, „Poll-Schumann, 70 t in Reiseflugmitte, FL350, M0,78“, „SimBrief“, „Schätzung…“). Ohne bekannten Verbrauch zeigt „Blockkraftstoff“ „—“: den Verbrauch in der Kraftstoffplanung eingeben.
 - Einzelheiten: Rollen, Steigflug, Reiseflug, Sinkflug, Unvorhergesehenes, Reserve; geplante Startmasse und MTOW, wenn Sie sie eingegeben haben (rot, wenn sie überschritten ist).
-- Karte des Cursors (⌖ beim Überfahren, 📌 angeheftet): Kraftstoff und Zeit der Strecke auf dieser Höhe, maximale Steigrate, Steiggeschwindigkeiten; „lösen“ entfernt die Anheftung.
 - Aufklappbare Gruppe „Flugphasen — Profil ↔ Kennfeld“ (Stufe Experte): IAS, Steigrate, Triebwerksdrehzahl und Durchfluss pro Phase, verglichen mit dem Triebwerkskennfeld. Sie enthält auch das Feld „SimBrief Airframe Internal ID“ und die Links zu den Blättern der Luftfahrzeuge dieses Typs.
   „SimBrief-Airframe importieren“ liest dieses Feld (Kennung oder Freigabelink): öffentliche Liste von SimBrief, dann Freigabelink; ein unlesbares privates Airframe ergibt nur ein Teilprofil mit seiner Kennung allein.
 
-„Anheften“ behält den ganzen Block, wenn er der Seite folgt; sonst klappt er zusammen. „Einfache Ansicht“ blendet Kurven und Instrumente aus, „Detailansicht“ zeigt sie (Wahl in diesem Browser gespeichert). Auf der Stufe Experte gibt unter dem Block ein Feld pro Kurve die Optima, die Grenzen (Gipfelhöhe, angeforderte Flughöhe) und eine Lesehilfe an. Die Instrumentenleiste (Stufe Experte) zeigt IAS, Höhenmesser, Steigrate, Stoppuhr (Steigzeit), Kraftstoff und Flugzeit.
+„Anheften“ behält den ganzen Block, wenn er der Seite folgt; sonst klappt er zusammen. „Einfache Ansicht“ blendet Kurven und Instrumente aus, „Detailansicht“ zeigt sie (Wahl in diesem Browser gespeichert). Auf der Stufe Experte gibt unter dem Block ein Feld pro Diagramm (Wahl der Flughöhe, Steigflug) das Wesentliche in drei Zeilen an; „Mehr erfahren“ klappt die Lesehilfe und die Modellannahmen auf. Die Instrumentenleiste (Stufe Experte) zeigt IAS, Höhenmesser, Steigrate, Stoppuhr (Steigzeit), Kraftstoff und Flugzeit.
 In den Feldern und Meldungen ist ein unterstrichener Feldname ein Link: Er klappt bei Bedarf den Profileditor auf und zeigt das Feld. Eine „unerreichbare“ Flughöhe nennt ihre Ursache und das zu korrigierende Feld (Block „Grenzen“).
 Ein Klick auf die Kraftstoffanzeige (oder ihren Knopf) wechselt die gelesene Kurve, in ihrer Farbe: gewählter Steigflug, Profil, wirtschaftlicher Reiseflug, schneller Steigflug, Vy, wirtschaftlicher Steigflug; Wahl in diesem Browser gespeichert.
 

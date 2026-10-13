@@ -1104,27 +1104,81 @@
     background: color-mix(in srgb, var(--fc-eco, #7ed69b) 18%, transparent);
     font-weight: 700
   }
+  .fl-dec-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin: 0 0 8px
+  }
+  .fl-dec-pill {
+    padding: 4px 10px;
+    font-size: 12.5px;
+    border-radius: 999px;
+    border: 1px solid var(--pill, var(--line));
+    background: color-mix(in srgb, var(--pill, #888) 12%, transparent);
+    color: inherit;
+    cursor: pointer
+  }
+  .fl-dec-pill[aria-pressed="true"] {
+    background: color-mix(in srgb, var(--pill, #888) 32%, transparent)
+  }
+  .fl-dec-side {
+    flex: 1 1 240px;
+    min-width: 0
+  }
+  .fl-dec-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 8px
+  }
+  .fl-dec-note {
+    font-size: 11.5px;
+    margin: 4px 0 0
+  }
+  .opt-chart .dec-ptitle {
+    font-size: 10.5px;
+    font-weight: 600
+  }
+  .opt-chart .dec-sel {
+    stroke: currentColor;
+    stroke-opacity: .8;
+    stroke-width: 1.5
+  }
+  .opt-chart .dec-sel-txt {
+    font-weight: 700;
+    fill: currentColor
+  }
+  .opt-chart .dec-dot {
+    fill: var(--fc-eco, #7ed69b)
+  }
+  .opt-chart .dec-dot-t {
+    fill: var(--fc-fast, #f0b86e)
+  }
+  .opt-chart .curve-goal {
+    fill: none;
+    stroke-width: 2.2
+  }
+  .opt-chart .curve-goal.thin {
+    stroke-width: 1.4
+  }
+  #climbCompare tr[data-goal] {
+    cursor: pointer
+  }
+  #climbCompare tr.on td {
+    background: color-mix(in srgb, var(--fc-eco, #7ed69b) 14%, transparent);
+    font-weight: 700
+  }
+  .side-panel details.more>summary {
+    cursor: pointer;
+    color: var(--muted)
+  }
   .opt-chart .extrap {
     stroke-dasharray: 4 3;
     opacity: .6
   }
   .opt-chart .dec-time {
-    stroke-width: 2.2
-  }
-  .opt-chart circle.dec-best {
-    fill: var(--fc-eco, #7ed69b)
-  }
-  .opt-chart circle.dec-fast {
-    fill: var(--fc-fast, #f0b86e)
-  }
-  .opt-chart text.dec-best {
-    fill: var(--fc-eco, #7ed69b)
-  }
-  .opt-chart text.dec-fast {
-    fill: var(--fc-fast, #f0b86e)
-  }
-  .opt-chart .dec-cursor {
-    stroke-opacity: .7
+    stroke-width: 1.4
   }
   /* consignes de montée (shared/flight_perf_view.js, renderGuide) : objectif par segments, phrase, tableau */
   .climb-guide {
@@ -1512,23 +1566,17 @@ html[data-skeuo] .repo-block-tools .fp-result-pin[aria-pressed="true"]:not(#imp)
 <div class="field" title="Altitude du terrain de la température au sol (ft)."><label>Altitude terrain (ft)</label><input id="elevFt" type="number" step="10" value="0"></div>
 <div class="field" title="Température prévue au niveau de croisière (prévision TEMSI / vents et températures en altitude, OFP) : l’écart ISA en est déduit."><label>Température au niveau (°C)</label><input id="tLevel" type="number" step="1"></div>
 </div></details><div class="ff-quick" data-no-i18n><label for="cruiseFF" id="cruiseFFLabel"></label><div class="row ff-quick-row"><input id="cruiseFF" type="number" min="0" step="any" inputmode="decimal"><button id="ffUseEstimate" type="button" class="secondary" hidden></button><button id="ffRemember" type="button" class="secondary" hidden></button></div><div id="ffSource" class="mut ff-source"></div></div><div id="climbCtl" class="climb-ctl" data-no-i18n data-fp-detail hidden></div><div style="height:12px"></div><div class="row"><button id="calc" data-icon="chart" class="primary">Calculer</button><span id="windInfo" class="mut" data-no-i18n></span></div><div id="levelDecision" class="fl-dec" data-no-i18n hidden></div><div id="climbGuide" class="climb-guide" data-no-i18n hidden></div><div id="optBlock" data-fp-detail>
-<div class="perf-row" id="rowOpt"><h3>Altitude optimale — carburant et vitesse</h3><div id="optEmpty" class="mut">Lance « Calculer » pour tracer les courbes d’altitude et de montée optimales.</div><div class="chart-wrap"><svg id="optChart" class="opt-chart" viewBox="0 0 540 270" hidden></svg></div><ul id="optZones" class="chart-zones" hidden></ul></div>
+<div id="optEmpty" class="mut">Lance « Calculer » pour tracer la courbe de montée.</div>
 <div id="climbBlock" hidden>
-<div class="perf-row" id="rowClimb"><h3>Montée optimale — vario et carburant</h3><div class="climb-x-row" data-no-i18n><span id="climbX" class="repo-segs" role="group"></span></div><div class="chart-wrap"><svg id="climbChart" class="opt-chart" viewBox="0 0 540 230" hidden></svg></div></div>
-<div class="perf-row" id="rowSpeed"><h3>Vitesses de montée — Badin et TAS selon l’altitude</h3><div class="chart-wrap"><svg id="climbSpeedChart" class="opt-chart" viewBox="0 0 540 200" hidden></svg></div></div>
-<div class="perf-row" id="rowTas"><h3>TAS selon le niveau — croisière et montée</h3><div class="chart-wrap"><svg id="tasChart" class="opt-chart" viewBox="0 0 540 220" hidden></svg></div><ul id="tasZones" class="chart-zones" hidden></ul></div>
-<div class="perf-row" id="rowCompare"><h3>Comparaison des montées</h3><div id="climbCompare"></div></div>
-<div class="perf-row" id="rowTable"><h3>Montée par altitude — régimes RPM / N1</h3><div id="climbTable"></div></div>
+<div class="perf-row" id="rowClimb"><h3>Montée — vario, carburant et vitesses selon l’altitude</h3><div class="climb-x-row" data-no-i18n><span id="climbX" class="repo-segs" role="group" hidden></span></div><div class="chart-wrap"><svg id="climbChart" class="opt-chart" viewBox="0 0 540 298" hidden></svg></div></div>
+<div class="perf-row" id="rowCompare"><h3>Comparaison des montées</h3><div id="climbCompare" data-no-i18n></div></div>
+<div class="perf-row" id="rowTable" hidden><h3>Régimes de montée — cartographie moteur</h3><div id="climbTable" data-no-i18n></div></div>
 </div></div></section>
 
 <aside id="perfSide" class="perf-side">
 <section class="card span6" data-block-id="result" data-deco-bg="result" data-icon="check" data-subtitle="Carburant bloc, temps de vol et détail par phase."><h2>Résultat</h2><div class="row"><div><div id="lblBlock" class="mut" data-no-i18n></div><div id="block" class="big">—</div></div><div style="flex:1"></div><div><div id="lblTime" class="mut" data-no-i18n></div><div id="tripTime" class="big">—</div></div><div style="flex:1"></div><div><div id="lblTod" class="mut" data-no-i18n></div><div id="tod" class="big">—</div></div></div><div id="calcStatus" class="calc-status" role="status" aria-live="polite" data-no-i18n></div><div id="quoteBasis" class="mut quote-basis" data-no-i18n data-fp-detail></div><div id="breakdown" class="kv"></div><div id="wxImpact" class="wx-impact" data-no-i18n></div><div id="perfPinned"></div><div class="row fp-view-row" data-no-i18n><button id="viewToggle" type="button" class="secondary" aria-pressed="false"></button></div></section>
-<div class="side-panel" data-fp-detail id="panelOpt" data-row="rowOpt"></div>
+<div class="side-panel" data-fp-detail id="panelDecision" data-row="levelDecision"></div>
 <div class="side-panel" data-fp-detail id="panelClimb" data-row="rowClimb"></div>
-<div class="side-panel" data-fp-detail id="panelSpeed" data-row="rowSpeed"></div>
-<div class="side-panel" data-fp-detail id="panelTas" data-row="rowTas"></div>
-<div class="side-panel" data-fp-detail id="panelCompare" data-row="rowCompare"></div>
-<div class="side-panel" data-fp-detail id="panelTable" data-row="rowTable"></div>
 </aside>
 <aside id="fpInstrCol" class="instr-col" data-fp-detail aria-label="Instruments"><div class="fp-instr-sticky"></div></aside>
 

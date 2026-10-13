@@ -73,17 +73,13 @@
     ["Dossier performances", "Performance folder", "Leistungsordner", "Carpeta de rendimiento"],
     ["Récupérer dernier FPL SimBrief", "Fetch latest SimBrief FPL", "Letzten SimBrief-FPL abrufen", "Recuperar último FPL de SimBrief"],
     ["Unités :", "Units:", "Einheiten:", "Unidades:"],
-    ["Altitude optimale — carburant et vitesse", "Optimum altitude — fuel and speed",
-      "Optimale Flughöhe — Kraftstoff und Geschwindigkeit", "Altitud óptima — combustible y velocidad"
-    ],
-    ["Lance « Calculer » pour tracer les courbes d’altitude et de montée optimales.",
-      "Press “Calculate” to draw the optimum altitude and climb curves.",
-      "„Berechnen“ drücken, um die Kurven für optimale Flughöhe und Steigflug zu zeichnen.",
-      "Pulse «Calcular» para trazar las curvas de altitud y ascenso óptimos."
+    ["Lance « Calculer » pour tracer la courbe de montée.", "Press “Calculate” to draw the climb chart.",
+      "„Berechnen“ drücken, um das Steigflugdiagramm zu zeichnen.", "Pulse «Calcular» para trazar el gráfico de ascenso."
     ],
     ["Hypothèses du modèle", "Model assumptions", "Modellannahmen", "Hipótesis del modelo"],
-    ["Montée optimale — vario et carburant", "Optimum climb — rate and fuel", "Optimaler Steigflug — Steigrate und Kraftstoff",
-      "Ascenso óptimo — régimen y combustible"
+    ["Montée — vario, carburant et vitesses selon l’altitude", "Climb — rate, fuel and speeds by altitude",
+      "Steigflug — Steigrate, Kraftstoff und Geschwindigkeiten nach Höhe",
+      "Ascenso — régimen, combustible y velocidades según la altitud"
     ],
     ["Trajet, niveau, vent, météo et réserves du vol.", "Trip, level, wind, weather and reserves of the flight.",
       "Strecke, Flughöhe, Wind, Wetter und Reserven des Flugs.", "Trayecto, nivel, viento, meteorología y reservas del vuelo."
@@ -119,9 +115,6 @@
     ["Tous les champs du profil de l’appareil.", "Every field of the aircraft profile.", "Alle Felder des Luftfahrzeugprofils.",
       "Todos los campos del perfil de la aeronave."
     ],
-    ["TAS selon le niveau — croisière et montée", "TAS by level — cruise and climb", "TAS nach Flughöhe — Reise- und Steigflug",
-      "TAS según el nivel — crucero y ascenso"
-    ],
     ["Écart ISA (°C)", "ISA deviation (°C)", "ISA-Abweichung (°C)", "Desviación ISA (°C)"],
     ["Température sol (°C)", "Ground temperature (°C)", "Bodentemperatur (°C)", "Temperatura en tierra (°C)"],
     ["Altitude terrain (ft)", "Field elevation (ft)", "Platzhöhe (ft)", "Elevación del aeródromo (ft)"],
@@ -145,16 +138,10 @@
       "Vorhergesagte Temperatur auf Reiseflughöhe (Höhenwind- und Temperaturvorhersage, OFP): daraus wird die ISA-Abweichung abgeleitet.",
       "Temperatura prevista en el nivel de crucero (pronóstico de vientos y temperaturas en altura, OFP): de ella se deduce la desviación ISA."
     ],
-    ["Vitesses de montée — Badin et TAS selon l’altitude", "Climb speeds — IAS and TAS by altitude",
-      "Steiggeschwindigkeiten — IAS und TAS nach Höhe", "Velocidades de ascenso — IAS y TAS según la altitud"
-    ],
-    ["Vitesses de montée — Badin selon l’altitude", "Climb speeds — IAS by altitude", "Steiggeschwindigkeiten — IAS nach Höhe",
-      "Velocidades de ascenso — IAS según la altitud"
+    ["Régimes de montée — cartographie moteur", "Climb settings — engine map", "Steigflugeinstellungen — Motorkennfeld",
+      "Regímenes de ascenso — mapa motor"
     ],
     ["Comparaison des montées", "Climb comparison", "Vergleich der Steigflüge", "Comparación de ascensos"],
-    ["Montée par altitude — régimes RPM / N1", "Climb by altitude — RPM / N1 settings", "Steigflug nach Höhe — RPM-/N1-Einstellungen",
-      "Ascenso por altitud — regímenes RPM / N1"
-    ],
     ["Débit total", "Total fuel flow", "Gesamtverbrauch", "Flujo total"],
     ["Régime de vol ↕", "Flight phase ↕", "Flugphase ↕", "Fase de vuelo ↕"],
     ["État", "Status", "Status", "Estado"],
@@ -219,8 +206,9 @@
     ["Motorisation (auto : base OACI)", "Engine type (auto: ICAO database)", "Antriebsart (auto: ICAO-Datenbank)",
       "Motorización (auto: base OACI)"
     ],
-    ["Montée optimale — vario et carburant", "Optimum climb — rate and fuel", "Optimaler Steigflug — Steigrate und Kraftstoff",
-      "Ascenso óptimo — régimen y combustible"
+    ["Montée — vario, carburant et vitesses selon l’altitude", "Climb — rate, fuel and speeds by altitude",
+      "Steigflug — Steigrate, Kraftstoff und Geschwindigkeiten nach Höhe",
+      "Ascenso — régimen, combustible y velocidades según la altitud"
     ],
     // Éditeur de profil (groupes, champs), courbe moteur, messages.
     ["Identité et format", "Identity and format", "Identität und Format", "Identidad y formato"],

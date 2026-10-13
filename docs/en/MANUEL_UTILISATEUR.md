@@ -1415,7 +1415,7 @@ It is the same block as Settings › Maintenance › Aeronautical data. The same
 ## Fuel
 <!-- page: apps/planner/flight_performance_planner.html -->
 
-The fuel planner (title “Fuel”) calculates the fuel for a flight from the performance profile of your aircraft. The cruise fuel flow comes, in order, from your entry for this flight, the saved profile, the Poll-Schumann model (jet airliners, according to mass, level and Mach), SimBrief, then an estimate by ICAO type or class; an approximate value is marked ≈. For a type without an EUROCONTROL or SimBrief record (military aircraft, helicopters), the estimate uses the cruise TAS and ceiling published by Airframe DB when it knows them. It also draws the optimum altitudes and climb laws.
+The fuel planner (title “Fuel”) calculates the fuel for a flight from the performance profile of your aircraft. The cruise fuel flow comes, in order, from your entry for this flight, the saved profile, the Poll-Schumann model (jet airliners, according to mass, level and Mach), SimBrief, then an estimate by ICAO type or class; an approximate value is marked ≈. For a type without an EUROCONTROL or SimBrief record (military aircraft, helicopters), the estimate uses the cruise TAS and ceiling published by Airframe DB when it knows them. It also helps choose the flight level and how to climb to it.
 To go there: “Tools” in the side bar, “Fuel” tab, the “Fuel (planner)” button of a mission in My missions, or the “Fuel” button of the Flight maps. The route, the distance, the level and the aircraft are then carried over.
 Header: “Aircraft” menu, “Fetch latest SimBrief FPL” button, “Units: kg / lbs”. Imports and exports are in the ☰ menu.
 Depending on the usage level: at levels 1 to 3 (Crew, Planning, Design), the page shows the aircraft, the flight plan (and “Fetch latest SimBrief FPL”), the collapsible “Flight parameters” section, “Calculate” and the Result, in two columns; the ☰ menu only keeps exporting and importing the preferences. Curves, panels, instruments, profile blocks, status bar and the profile actions of the ☰ menu are added at the Expert level, where the page is complete.
@@ -1446,32 +1446,25 @@ The profile stays calibrated in the standard atmosphere; the fuel plan flies in 
 The “Flight maps” button (Expert level) opens the Flight maps with this flight plan; the maps and the profile are created there on arrival.
 “Flight plan syntax” recalls the accepted forms. Without the SIA database in the browser, only points given as coordinates are recognised.
 
-### Fuel plan curves (optimum altitude and climb)
-
-In the detailed view (“Detailed view” / “Simple view” button of the Result; detailed by default at the Expert level, simple at levels 1 to 3), after “Calculate”, the “Fuel plan” block shows, in order:
-
-| Title | What it shows |
-|---|---|
-| “Optimum altitude — fuel and speed” | Whole trip flown at each level: the higher the curve, the less fuel per mile. |
-| “Optimum climb — rate and fuel” | Available climb rate and fuel per 1000 ft, “by altitude” or “by power setting”. |
-| “Climb speeds — IAS and TAS by altitude” | Vy, fast climb, economy climb, chosen climb, Vx. |
-| “TAS by level — cruise and climb” | True airspeed in cruise and in climb. |
-| “Climb comparison” | Time, distance and fuel of each climb, up to the plan level then over the whole trip; ★: best in the column. |
-| “Climb by altitude — RPM / N1 settings” | Table at Vy with totals from the ground. |
-
-Hover over a curve to read the values at that altitude; click to pin a level (white line on all curves). The fuel plan is then calculated at that level.
-The “Chosen climb” sliders of the fuel plan set your chosen climb, drawn in purple on the curves.
-The greyed “unreachable” area lies above the aircraft's ceiling.
-Above the level where the profile's Mach can no longer be held, a jet flies at the highest speed allowed by 92 % of its thrust (“max. thrust” in the Result and the panels); the level is only refused beyond the ceiling.
-Without “Reference altitude (ft)” or “Max ceiling (ft)” in the profile, the model estimates them (cruise IAS and TAS, EUROCONTROL sheet, climb fuel flow, otherwise the typical value of the class) and shows the source under the curves. Fill in these two fields, or calibrate on a SimBrief OFP: it is more reliable.
-
 ### Flight level decision
 
-After “Calculate”, at the top of the fuel plan (simple and detailed view), a chart gives for each level the fuel (left scale) and the time (right scale) of the whole trip: climb with the goal chosen in “Climb instructions”, profile cruise, descent. The plan level, the least-fuel level and the fastest level are marked; the grey “unreachable” zone lies above the ceiling. Below the ceiling, the levels this trip cannot hold form a zone named by its cause (“trip too short”: climbing then descending takes more than the distance; “not enough thrust”); there the card gives the climb to the level, the descent, the distance needed and the field to change, and the table shows “—”.
-- Hover over the chart, click it or move the slider under it: the card beside it gives for that level the trip fuel and time, the cruise TAS, the climb (time, fuel, distance), the IAS to fly and the expected climb rate, the top of descent (TOD) and the descent: time, fuel, IAS (the profile's if entered in Descent › IAS, otherwise derived from the descent TAS, from TOD to the ground) and rate. The “Climb instructions” block follows that level.
-- “Use this level” puts it in “Level (FL)” and redoes the fuel plan.
-- “Compare” pins the current level: the card then shows two levels side by side, with the fuel and time difference; “Stop comparing” removes it.
-- The table below lists the round levels (every 1,000 ft; 2,000 ft for a ceiling above 20,000 ft), sortable by level, fuel or time (click the header); clicking a row chooses that level.
+After “Calculate”, at the top of the fuel plan (simple and detailed view), a two-panel chart gives for each level the fuel (top) and the time (bottom) of the whole trip: climb with the goal chosen in “Climb instructions”, profile cruise, descent. Both panels share the level axis and the cursor; the chosen level is the only mark drawn (line and “FL300”).
+- Above the chart, two pills: “Least fuel” and “Fastest”, with level, fuel and time; a click puts the cursor there. In the detailed view, with the “Eco” goal, a third one gives the economy cruise.
+- Grey: level that cannot be held — above the ceiling, trip too short (climbing then descending takes more than the distance) or not enough thrust; the reason and the field to change are in the cursor card.
+- Hover over the chart, click it or move the slider under it: the card beside it gives three lines for that level — “Trip” (fuel, time, cruise TAS), “Climb” (time, fuel, distance, IAS to fly, rate) and “Descent” (TOD, time, fuel, IAS — the profile's if entered in Descent › IAS —, rate). The “Climb instructions” block follows that level.
+- Under the card, “Use this level” puts it in “Level (FL)” and redoes the fuel plan; “Compare” pins the current level to read it beside another one, with the fuel and time difference (“Stop comparing” removes it).
+- The table below lists the round levels (every 1,000 ft; 2,000 ft for a ceiling above 20,000 ft), sortable by level, fuel or time; clicking a row chooses that level; a level that cannot be held shows “—” and its cause.
+
+### Climb (detailed view)
+
+In the detailed view (“Detailed view” / “Simple view” button of the Result; detailed by default at the Expert level), under the climb instructions:
+- “Climb — rate, fuel and speeds by altitude”: three panels on the same axis and with the same cursor as the level decision — climb rate (dashed: maximum rate at Vy), fuel per 1,000 ft, IAS to fly (line) and TAS (dashed), for the goal chosen in the climb instructions. With an engine map, “by altitude” / “by engine setting” also shows the rate by setting at mid-climb.
+- “Climb comparison”: one goal per row (“Eco”, “Vy”, “Fast”, “Profile”, “Set”) — time, fuel, IAS and rate up to the level of the instructions; ★: best time and best fuel; clicking a row chooses the goal.
+- “Climb settings — engine map” (only if there is one): rate and fuel per 1,000 ft at mid-climb for each setting; ★: most economical.
+
+The “Chosen climb” sliders of the fuel plan set the “Set” goal.
+Above the level where the profile Mach can no longer be held, a jet flies at the highest speed allowed by 92 % of its thrust (“max. thrust” in the card); the level is refused only above the ceiling.
+Without “Reference altitude (ft)” or “Maximum ceiling (ft)” in the profile, the model estimates them (cruise IAS and TAS, EUROCONTROL record, climb fuel flow, otherwise a typical value for the class) and says so in the level decision panel. Fill in these two fields, or calibrate on a SimBrief OFP: it is more reliable.
 
 ### Climb instructions
 
@@ -1490,11 +1483,10 @@ This block, in the right-hand column, follows the page while you scroll through 
 - “Block fuel” (as a range if the wind is unknown), “Flight time”, “TOD”.
 - Status line “Calculated for <aircraft> at <time>: <distance> NM at FL…, flight time, TOD. Cruise fuel flow: …”, then basis of the calculation: level, climb used and origin of the cruise fuel flow (“saved profile”, “entered for this flight”, “Poll-Schumann, 70 t at mid-cruise, FL350, M0.78”, “SimBrief”, “estimate…”). With no known fuel flow, “Block fuel” shows “—”: enter the fuel flow in the fuel plan.
 - Detail: taxi, climb, cruise, descent, contingency, reserve; planned take-off mass and MTOW if you entered it (in red if it is exceeded).
-- Cursor card (⌖ on hover, 📌 pinned): fuel and time for the trip at that level, max climb rate, climb speeds; “unpin” removes the pin.
 - Collapsible group “Flight regimes — profile ↔ map” (Expert level): IAS, climb rate, engine setting and flow per phase, compared with the engine map. It also contains the “SimBrief Airframe Internal ID” field and the links to the sheets of the aircraft of this type.
   “Import SimBrief airframe” reads this field (identifier or share link): SimBrief's public list, then the share link; an unreadable private airframe only gives a partial profile, with its identifier alone.
 
-“Pin” keeps the whole block when it follows the page; otherwise, it collapses. “Simple view” hides the curves and instruments, “Detailed view” shows them (choice kept in this browser). At the Expert level, under the block, one panel per curve gives the optimums, the limits (ceiling, requested level) and reading help. The instrument strip (Expert level) shows IAS, altimeter, climb rate, stopwatch (climb time), fuel and flight time.
+“Pin” keeps the whole block when it follows the page; otherwise, it collapses. “Simple view” hides the curves and instruments, “Detailed view” shows them (choice kept in this browser). At the Expert level, under the block, one panel per chart (level decision, climb) gives the essentials in three lines; “Learn more” unfolds the reading help and the model assumptions. The instrument strip (Expert level) shows IAS, altimeter, climb rate, stopwatch (climb time), fuel and flight time.
 In the panels and messages, an underlined field name is a link: it unfolds the profile editor if needed and shows the field. An “unreachable” level gives its cause and the field to correct (“Limits” block).
 A click on the fuel dial (or its button) changes the curve read, in its colour: chosen climb, profile, economic cruise, fast climb, Vy, economic climb; choice kept in this browser.
 

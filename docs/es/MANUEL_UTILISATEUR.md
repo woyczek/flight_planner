@@ -1415,7 +1415,7 @@ Es el mismo bloque que Ajustes › Mantenimiento › Datos aeronáuticos. La mis
 ## Combustible
 <!-- page: apps/planner/flight_performance_planner.html -->
 
-El planificador de combustible (título «Combustible») calcula el combustible de un vuelo a partir del perfil de rendimiento de su aeronave. El consumo de crucero viene, por este orden, de su entrada para este vuelo, del perfil guardado, del modelo de Poll y Schumann (aviones de línea a reacción, según la masa, el nivel y el Mach), de SimBrief y después de una estimación por tipo o clase OACI; un valor aproximado se marca con ≈. Para un tipo sin ficha EUROCONTROL ni SimBrief (militares, helicópteros), la estimación toma la TAS de crucero y el techo publicados por Airframe DB cuando los conoce. También traza las altitudes y leyes de ascenso óptimas.
+El planificador de combustible (título «Combustible») calcula el combustible de un vuelo a partir del perfil de rendimiento de su aeronave. El consumo de crucero viene, por este orden, de su entrada para este vuelo, del perfil guardado, del modelo de Poll y Schumann (aviones de línea a reacción, según la masa, el nivel y el Mach), de SimBrief y después de una estimación por tipo o clase OACI; un valor aproximado se marca con ≈. Para un tipo sin ficha EUROCONTROL ni SimBrief (militares, helicópteros), la estimación toma la TAS de crucero y el techo publicados por Airframe DB cuando los conoce. También ayuda a elegir el nivel de vuelo y la forma de subir a él.
 Para ir a él: barra lateral «Herramientas», pestaña «Combustible», botón «Combustible (planificador)» de una misión en Mis misiones, o botón «Combustible» de los Mapas de vuelo. En ese caso se recuperan la ruta, la distancia, el nivel y la aeronave.
 Cabecera: menú «Avión», botón «Recuperar último FPL de SimBrief», «Unidades: kg / lbs». Las importaciones y exportaciones están en el menú ☰.
 Según el nivel de uso: en los niveles 1 a 3 (Tripulación, Planificación, Diseño), la página muestra el avión, el plan de vuelo (y «Recuperar último FPL de SimBrief»), el plegable «Parámetros del vuelo», «Calcular» y el Resultado, en dos columnas; el menú ☰ solo conserva exportar e importar las preferencias. Curvas, paneles, instrumentos, bloques del perfil, barra de estado y acciones de perfiles del menú ☰ se añaden en el nivel Experto, donde la página está completa.
@@ -1446,32 +1446,25 @@ El perfil sigue calibrado en atmósfera estándar; el plan de combustible vuela 
 El botón «Mapas de vuelo» (nivel Experto) abre los Mapas de vuelo con este plan de vuelo; los mapas y el perfil se crean allí al llegar.
 «Sintaxis del plan de vuelo» recuerda las formas aceptadas. Sin base SIA en el navegador, solo se reconocen los puntos en coordenadas.
 
-### Curvas del plan (altitud y ascenso óptimos)
-
-En la vista detallada (botón «Vista detallada» / «Vista simple» del Resultado; detallada por defecto en el nivel Experto, simple en los niveles 1 a 3), después de «Calcular», el bloque «Plan de combustible» muestra, en este orden:
-
-| Título | Lo que muestra |
-|---|---|
-| «Altitud óptima — combustible y velocidad» | Trayecto completo volado a cada nivel: cuanto más alta es la curva, menos se consume por milla. |
-| «Ascenso óptimo — régimen y combustible» | Variómetro disponible y combustible por 1000 ft, «por altitud» o «por régimen». |
-| «Velocidades de ascenso — IAS y TAS según la altitud» | Vy, ascenso rápido, ascenso económico, ascenso elegido, Vx. |
-| «TAS según el nivel — crucero y ascenso» | Velocidad verdadera en crucero y en ascenso. |
-| «Comparación de ascensos» | Duración, distancia y combustible de cada ascenso, hasta el nivel del plan y después en todo el trayecto; ★: el mejor de la columna. |
-| «Ascenso por altitud — regímenes RPM / N1» | Tabla a Vy con acumulados desde el suelo. |
-
-Pase el ratón por una curva para leer los valores a esa altitud; haga clic para fijar un nivel (línea blanca en todas las curvas). El plan se calcula entonces a ese nivel.
-Los cursores «Ascenso elegido» del plan de combustible ajustan su ascenso elegido, trazado en violeta en las curvas.
-La zona gris «inaccesible» está por encima del techo de la aeronave.
-Por encima del nivel en que el Mach del perfil ya no se puede mantener, un reactor vuela a la mayor velocidad que permite el 92 % de su empuje («empuje máx.» en el Resultado y los paneles); el nivel solo se rechaza más allá del techo.
-Sin «Altitud de referencia (ft)» ni «Techo máx. (ft)» en el perfil, el modelo los estima (IAS y TAS de crucero, ficha EUROCONTROL, consumo de ascenso, si no valor típico de la clase) e indica la fuente bajo las curvas. Rellene estos dos campos o calibre con un OFP de SimBrief: es más fiable.
-
 ### Decisión del nivel de vuelo
 
-Tras «Calcular», en la cabecera del plan (vista simple y detallada), un gráfico da para cada nivel el combustible (escala izquierda) y el tiempo (escala derecha) del trayecto completo: ascenso según el objetivo elegido en «Consignas de ascenso», crucero del perfil, descenso. El nivel del plan, el más económico y el más rápido están marcados; la zona gris «inaccesible» está por encima del techo. Por debajo del techo, los niveles que este trayecto no permite mantener forman una zona nombrada por su causa («trayecto demasiado corto»: subir y bajar requiere más que la distancia; «empuje insuficiente»); allí la ficha da el ascenso hasta el nivel, el descenso, la distancia necesaria y el campo que modificar, y la tabla muestra «—».
-- Pase el ratón por el gráfico, haga clic en él o mueva el cursor de debajo: la ficha de al lado da para ese nivel el combustible y el tiempo del trayecto, la TAS de crucero, el ascenso (tiempo, combustible, distancia), la IAS a mantener y el régimen esperado, el inicio del descenso (TOD) y el descenso: tiempo, combustible, IAS (la del perfil si figura en Descenso › IAS; si no, deducida de la TAS de descenso, del TOD al suelo) y régimen. El bloque «Consignas de ascenso» sigue ese nivel.
-- «Usar este nivel» lo pone en «Nivel (FL)» y rehace el plan.
-- «Comparar» fija el nivel actual: la ficha muestra entonces dos niveles uno al lado del otro, con la diferencia de combustible y de tiempo; «Dejar de comparar» lo quita.
-- La tabla de debajo recoge los niveles redondos (cada 1000 ft; 2000 ft para un techo por encima de 20 000 ft), ordenable por nivel, combustible o tiempo (clic en la cabecera); un clic en una fila elige ese nivel.
+Tras «Calcular», en la cabecera del plan (vista simple y detallada), un gráfico de dos paneles da para cada nivel el combustible (arriba) y el tiempo (abajo) del trayecto completo: ascenso según el objetivo elegido en «Consignas de ascenso», crucero del perfil, descenso. Los dos paneles comparten el eje de niveles y el cursor; el nivel elegido es la única marca dibujada (línea y «FL300»).
+- Encima del gráfico, dos pastillas: «El más económico» y «El más rápido», con nivel, combustible y tiempo; un clic lleva el cursor allí. En la vista detallada, con el objetivo «Eco», una tercera da el crucero económico.
+- Gris: nivel no mantenible — por encima del techo, trayecto demasiado corto (subir y bajar requiere más que la distancia) o empuje insuficiente; la razón y el campo que modificar están en la ficha del cursor.
+- Pase el ratón por el gráfico, haga clic en él o mueva el cursor de debajo: la ficha de al lado da para ese nivel tres líneas — «Trayecto» (combustible, tiempo, TAS de crucero), «Ascenso» (tiempo, combustible, distancia, IAS a mantener, régimen) y «Descenso» (TOD, tiempo, combustible, IAS — la del perfil si figura en Descenso › IAS —, régimen). El bloque «Consignas de ascenso» sigue ese nivel.
+- Bajo la ficha, «Usar este nivel» lo pone en «Nivel (FL)» y rehace el plan; «Comparar» fija el nivel actual para leerlo junto a otro, con la diferencia de combustible y de tiempo («Dejar de comparar» lo quita).
+- La tabla de debajo recoge los niveles redondos (cada 1000 ft; 2000 ft para un techo por encima de 20 000 ft), ordenable por nivel, combustible o tiempo; un clic en una fila elige ese nivel; un nivel no mantenible muestra «—» y su causa.
+
+### Ascenso (vista detallada)
+
+En la vista detallada (botón «Vista detallada» / «Vista simple» del Resultado; detallada por defecto en el nivel Experto), bajo las consignas de ascenso:
+- «Ascenso — régimen, combustible y velocidades según la altitud»: tres paneles en el mismo eje y con el mismo cursor que la decisión del nivel — régimen (trazos: régimen máximo a Vy), combustible por 1000 ft, IAS a mantener (línea) y TAS (trazos), para el objetivo elegido en las consignas de ascenso. Con un mapa motor, «por altitud» / «por régimen» muestra también el régimen de ascenso según el ajuste a media subida.
+- «Comparación de ascensos»: un objetivo por fila («Eco», «Vy», «Rápida», «Perfil», «Ajustada») — tiempo, combustible, IAS y régimen hasta el nivel de las consignas; ★: mejor tiempo y mejor combustible; un clic en una fila elige el objetivo.
+- «Regímenes de ascenso — mapa motor» (solo si existe): régimen y combustible por 1000 ft a media subida para cada régimen; ★: el más económico.
+
+Los cursores «Ascenso elegido» del plan ajustan el objetivo «Ajustada».
+Por encima del nivel en que el Mach del perfil ya no se mantiene, un reactor vuela a la mayor velocidad que permite el 92 % de su empuje («empuje máx.» en la ficha); el nivel solo se rechaza por encima del techo.
+Sin «Altitud de referencia (ft)» ni «Techo máximo (ft)» en el perfil, el modelo los estima (IAS y TAS de crucero, ficha EUROCONTROL, flujo de ascenso o, si no, valor típico de la clase) y lo indica en el panel de la decisión del nivel. Rellene estos dos campos, o calibre con un OFP de SimBrief: es más fiable.
 
 ### Consignas de ascenso
 
@@ -1490,11 +1483,10 @@ Este bloque, en la columna de la derecha, acompaña a la página mientras se des
 - «Block fuel» (en horquilla si el viento es desconocido), «Tiempo de vuelo», «TOD».
 - Línea de estado «Calculado para <aeronave> a las <hora>: <distancia> NM a FL…, tiempo de vuelo, TOD. Consumo de crucero: …», y después base del cálculo: nivel, ascenso utilizado y origen del consumo de crucero («perfil guardado», «introducido para este vuelo», «Poll-Schumann, 70 t a mitad del crucero, FL350, M0,78», «SimBrief», «estimación…»). Sin consumo conocido, «Combustible de bloque» muestra «—»: introduzca el consumo en el plan de combustible.
 - Detalle: rodaje, ascenso, crucero, descenso, contingencia, reserva; masa de despegue prevista y MTOW si la ha introducido (en rojo si se supera).
-- Ficha del cursor (⌖ al pasar el ratón, 📌 fijado): combustible y tiempo del trayecto a ese nivel, régimen de ascenso máximo, velocidades de ascenso; «soltar» quita la fijación.
 - Grupo plegable «Regímenes de vuelo — perfil ↔ mapa» (nivel Experto): IAS, régimen de ascenso, régimen del motor y flujo por fase, comparados con el mapa del motor. También contiene el campo «SimBrief Airframe Internal ID» y los enlaces a las fichas de las aeronaves de ese tipo.
   «Importar airframe de SimBrief» lee este campo (identificador o enlace para compartir): lista pública de SimBrief y después el enlace; un airframe privado ilegible solo da un perfil parcial, con su identificador.
 
-«Fijar» conserva el bloque entero cuando acompaña a la página; si no, se pliega. «Vista simple» oculta las curvas y los instrumentos, «Vista detallada» los muestra (elección guardada en este navegador). En el nivel Experto, bajo el bloque, un panel por curva da los óptimos, los límites (techo, nivel solicitado) y una ayuda de lectura. La banda de instrumentos (nivel Experto) muestra IAS, altímetro, variómetro, cronómetro (tiempo de ascenso), combustible y tiempo de vuelo.
+«Fijar» conserva el bloque entero cuando acompaña a la página; si no, se pliega. «Vista simple» oculta las curvas y los instrumentos, «Vista detallada» los muestra (elección guardada en este navegador). En el nivel Experto, bajo el bloque, un panel por gráfico (decisión del nivel, ascenso) da lo esencial en tres líneas; «Saber más» despliega la ayuda de lectura y las hipótesis del modelo. La banda de instrumentos (nivel Experto) muestra IAS, altímetro, variómetro, cronómetro (tiempo de ascenso), combustible y tiempo de vuelo.
 En los paneles y los mensajes, un nombre de campo subrayado es un enlace: despliega el editor del perfil si hace falta y muestra el campo. Un nivel «inalcanzable» da su causa y el campo que corregir (bloque «Límites»).
 Un clic en el dial de combustible (o su botón) cambia la curva leída, en su color: ascenso elegido, perfil, crucero económico, ascenso rápido, Vy, ascenso económico; elección guardada en este navegador.
 

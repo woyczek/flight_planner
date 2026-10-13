@@ -2,10 +2,10 @@
    Flight Performance Planner — vue des courbes de performances
    -----------------------------------------------------------------------------------------------------
    Dessine, à partir du modèle calibré (shared/flight_performance_model.js, FlightPerfModel) :
-     1. l'altitude optimale : carburant du trajet entier selon le niveau de croisière ;
-     2. la montée : vario et carburant par 1000 ft selon l'altitude ;
-     3. les vitesses de montée : Badin à tenir selon l'altitude, pour chaque objectif ;
-     4. la comparaison des lois de montée, la table par altitude et les régimes RPM / N1.
+     1. la décision du niveau de vol (toutes vues) : carburant et temps du trajet entier selon le niveau ;
+     2. la montée (vue détaillée) : vario, carburant par 1000 ft, Badin et TAS selon l'altitude, pour l'objectif des
+        consignes, sur le même axe et avec le même curseur que la décision ;
+     3. la comparaison des objectifs de montée (tableau) et les régimes de la cartographie moteur, s'il y en a une.
 
    Mise en page (flight_performance_planner.html) : colonne gauche = saisie, courbes et tables ;
    colonne droite (#perfSide) = bloc Résultat puis un panneau d'explications par courbe. Ces cadres
@@ -23,8 +23,8 @@
    réglette) avec sa fiche et les consignes de montée jusqu'à ce niveau ; « Utiliser ce niveau », « Comparer » ;
    tableau des niveaux ronds, triable.
 
-   Jauges : les trois courbes ont l'altitude en abscisse ; survoler l'une place la jauge sur les trois,
-   un clic épingle le niveau (trait blanc) ; la fiche ⌖ / 📌 du bloc Résultat résume ce niveau.
+   Curseur : celui de la décision du niveau (survol, clic, réglette, pastilles), repris par le graphe de montée, les
+   consignes de montée et les instruments.
 
    Couleurs : une par série (COL), portée par le trait de la courbe et par le LIBELLÉ seulement — les
    valeurs restent en texte normal. Définitions (Vy, Vx, Badin…) au survol des termes soulignés.
@@ -37,7 +37,7 @@
      c = { D : distance (NM), FL : niveau du plan (centaines de ft), windKnown : vent saisi,
            wc : composante de vent sur la route (kt, + = arrière), low / high : fourchette si vent inconnu,
            climbFF / cruiseFF / descentFF : débits du profil (unité du profil) }.
-   Sortie : SVG des trois courbes, tables, panneaux #panelOpt… et window.altitudeOptimum (fiche curseur).
+   Sortie : graphe de montée, tableaux, panneaux #panelDecision et #panelClimb, window.altitudeOptimum (repère de recalcul).
    ===================================================================================================== */
 (() => {
   "use strict";
@@ -1004,14 +1004,60 @@
           x = el && !el.closest("button").disabled ? guideFor(gl) : null;
         if (el) put(el, "textContent", x?.reached ? `${hmTxt(x.minutes)} · ${showFuel(x.fuel)} ${fuelUnit()}` : "—");
       }
+      compareTable(goal);
     }, 30);
   }
 
+  /** Comparaison des montées (#climbCompare, vue détaillée) : un objectif par ligne — temps, carburant, Badin à tenir,
+   *  vario, jusqu'au niveau des consignes ; ligne de l'objectif choisi surlignée, ★ meilleur temps et carburant ; clic sur
+   *  une ligne : objectif choisi. */
+  function compareTable(goal) {
+    const box = $("climbCompare");
+    if (!box || !S.m) return;
+    const rows = GOALS.map(gl => ({
+        gl,
+        x: gl === "prof" && !(profileClimbIas() > 0) ? null : guideFor(gl)
+      })),
+      okR = rows.filter(r => r.x?.reached),
+      bT = okR.reduce((a, b) => !a || b.x.minutes < a.x.minutes ? b : a, null),
+      bF = okR.reduce((a, b) => !a || b.x.fuel < a.x.fuel ? b : a, null),
+      r100 = v => fmt(Math.round(Math.max(0, v) / 100) * 100, 0),
+      top = okR[0]?.x.top ?? rows.find(r => r.x)?.x.top;
+    const html = `<table><thead><tr><th>${tl("Objectif", "Goal", "Ziel", "Objetivo")}${top ? ` — ${tl("montée jusqu’au", "climb to", "Steigflug auf", "ascenso a")} ${flTxt(top)}` : ""}</th><th>${tl("Temps", "Time", "Zeit", "Tiempo")}</th><th>${tl("Carburant", "Fuel", "Kraftstoff", "Combustible")} (${fuelUnit()})</th><th>${tl("Badin", "IAS", "IAS", "IAS")} (kt)</th><th>${tl("Vario", "Rate", "Steigrate", "Régimen")} (ft/min)</th></tr></thead><tbody>` +
+      rows.map(({
+        gl,
+        x
+      }) => {
+        const [name, tip] = GOAL_TXT[gl](),
+          a = x?.rows?.[0],
+          b = x?.rows?.at(-1);
+        return `<tr data-goal="${gl}" class="${gl === goal ? "on" : ""}" title="${escXml(tip)}"><td>${lab(name, goalCol(gl))}</td>` + (x?.reached ?
+          `<td${x === bT?.x ? ' class="best"' : ""}>${hmTxt(x.minutes)}${x === bT?.x ? " ★" : ""}</td><td${x === bF?.x ? ' class="best"' : ""}>${showFuel(x.fuel)}${x === bF?.x ? " ★" : ""}</td><td>${Math.abs(a.ias - b.ias) < 4 ? fmt(a.ias, 0) : `${fmt(a.ias, 0)} → ${fmt(b.ias, 0)}`}</td><td>${r100(a.roc)} → ${r100(b.roc)}</td>` :
+          `<td colspan="4" class="unreach">${x ? tl("niveau non atteint", "level not reached", "Flughöhe nicht erreicht", "nivel no alcanzado") : tl("pas de Badin de montée dans le profil", "no climb IAS in the profile", "keine Steig-IAS im Profil", "sin IAS de ascenso en el perfil")}</td>`) + "</tr>";
+      }).join("") + "</tbody></table>";
+    if (box._html !== html) {
+      box._html = html;
+      box.innerHTML = typo(html);
+    }
+    if (!box.dataset.ready) {
+      box.dataset.ready = "1";
+      box.addEventListener("click", e => {
+        const tr = e.target.closest("tr[data-goal]");
+        if (!tr || tr.querySelector(".unreach")) return;
+        try {
+          localStorage.setItem("fpClimbGoal", tr.dataset.goal);
+        } catch {}
+        renderGuide();
+      });
+    }
+  }
+
   // ---------------------------------------------------------------------------------------------------
-  // Décision du niveau de vol (#levelDecision, toutes vues ; docs/technique/V2_FABLE.md § 12) : carburant et temps du
-  // trajet entier selon le niveau, montée à l'objectif choisi (Consignes de montée), croisière du profil, descente.
-  // Curseur (survol, clic ou réglette) : fiche du niveau, consignes de montée qui le suivent ; « Utiliser ce niveau »
-  // pose le niveau du plan ; « Comparer » épingle un niveau pour en lire deux côte à côte ; tableau des niveaux ronds.
+  // Décision du niveau de vol (#levelDecision, toutes vues ; docs/technique/V2_FABLE.md § 12) : carburant (panneau du haut)
+  // et temps (panneau du bas) du trajet entier selon le niveau, même axe des niveaux et même curseur ; montée à l'objectif
+  // des consignes, croisière du profil, descente. Pastilles « Le plus économe » / « Le plus rapide » (clic : curseur
+  // dessus) ; un seul repère dessiné, le niveau choisi ; un seul gris pour les niveaux non tenables (cause dans la fiche).
+  // Fiche en trois lignes (trajet, montée, descente), « Utiliser ce niveau », « Comparer » ; tableau des niveaux ronds.
   // ---------------------------------------------------------------------------------------------------
 
   /** Objectif de montée retenu (celui des consignes ; « Profil » sans Badin de montée dans le profil : Vy). */
@@ -1028,9 +1074,16 @@
     const ias = profileClimbIas();
     return ias > 0 ? m.manualLaw(ias, 0) : "profile";
   }
+  /** Couleur d'un objectif de montée (courbes de montée, tableau comparatif). */
+  const goalCol = goal => ({
+    eco: COL.eco,
+    fast: COL.fast,
+    vy: COL.prof,
+    man: COL.man
+  } [goal] || COL.ref);
   /** Série du graphe : trajet entier à chaque niveau (pas de 500 ft, 1000 ft au-delà de 20 000 ft de plafond), prolongée
-   *  au-delà du plafond (zone grisée), avec le niveau le plus économe et le plus rapide. Sortie : { step, xmax, rows,
-   *  best, fast, lo, hi } (lo, hi : premier et dernier niveau tenables) ou null si aucun niveau n'est tenable. */
+   *  au-delà du plafond. Sortie : { step, xmax, rows (tracé), real (tenables), all (tous les niveaux ≤ plafond, résultats
+   *  de m.trip), gap (zone non tenable sous le plafond : { from, reason }), lo, hi, best, fast } ou null. */
   function decisionSeries(m, c, goal) {
     const step = m.ceiling > 20000 ? 1000 : 500,
       xmax = Math.max(step * 2, Math.ceil(m.ceiling * 1.1 / step) * step),
@@ -1041,8 +1094,8 @@
     const rows = extendSeries(raw, m.ceiling, TRIP_KEYS),
       real = rows.filter(r => r?.ok && !r.extrap && r.h <= m.ceiling && r.h >= 1000);
     if (!real.length) return null;
-    // série coupée au-dessus du dernier niveau tenable s'il est nettement sous le plafond (trajet court, poussée) ; la
-    // zone entre ce niveau et le plafond reste lisible au curseur (cause, montée et distance nécessaire)
+    // série coupée au-dessus du dernier niveau tenable s'il est nettement sous le plafond (trajet court, poussée) ; ces
+    // niveaux restent lisibles au curseur (cause, montée et distance nécessaire)
     const top = real.at(-1).h,
       cutRows = top < m.ceiling - step ? rows.map(r => r && r.h > top ? null : r) : rows,
       all = raw.filter(r => r && r.h >= 1000 && r.h <= m.ceiling),
@@ -1050,12 +1103,12 @@
     return {
       step,
       xmax,
+      law,
       rows: cutRows,
       real,
       all,
       gap: gapAt ? {
         from: top,
-        to: m.ceiling,
         reason: gapAt.reason || "thrust"
       } : null,
       lo: real[0].h,
@@ -1066,7 +1119,7 @@
   }
   /** Niveau de la série le plus proche de h (ft), tenable ou non (résultat de m.trip ; ok faux : cause dans reason). */
   const decNearest = (D, h) => D.all.reduce((a, r) => Math.abs(r.h - h) < Math.abs(a.h - h) ? r : a, D.all[0]);
-  /** Cause courte d'un niveau non tenable (zone du graphe, tableau). */
+  /** Cause courte d'un niveau non tenable (fiche, tableau). */
   const gapTxt = reason => reason === "short" ? tl("trajet trop court", "trip too short", "Strecke zu kurz", "trayecto demasiado corto") :
     reason === "ceiling" ? tl("vario nul avant ce niveau", "climb rate nil before this level", "Steigrate vorher null",
       "régimen nulo antes de este nivel") : tl("poussée insuffisante", "not enough thrust", "Schub reicht nicht", "empuje insuficiente");
@@ -1086,7 +1139,7 @@
     }
     return D.climb.get(h);
   }
-  /** Libellés des repères du graphe et des lignes : plan, le plus économe, le plus rapide (4 langues). */
+  /** Libellés des repères (titre de la fiche, pastilles, tableau) : plan, le plus économe, le plus rapide (4 langues). */
   const DEC_TAG = {
     plan: () => tl("plan", "plan", "Plan", "plan"),
     best: () => tl("le plus économe", "least fuel", "sparsamste", "más económico"),
@@ -1096,8 +1149,8 @@
   const decTags = (D, h) => [
     ...(Math.abs(h - D.plan) < 1 ? ["plan"] : []), ...(h === D.best.h ? ["best"] : []), ...(h === D.fast.h ? ["fast"] : [])
   ];
-  /** Bloc « Décision du niveau de vol » : recalculé si l'appareil, le trajet, le niveau du plan ou l'objectif de montée
-   *  changent (sinon gardé tel quel) ; masqué sans modèle ni distance. */
+  /** Bloc « Décision du niveau de vol » : recalculé si l'appareil, le trajet, le niveau du plan, l'objectif de montée ou
+   *  la vue changent (sinon gardé tel quel) ; masqué sans modèle ni distance. */
   function renderDecision(m = S.m, c = S.c) {
     const box = $("levelDecision");
     if (!box) return;
@@ -1108,8 +1161,9 @@
     }
     const goal = goalNow(),
       q = S.manual,
+      detail = curvesShown(),
       key = JSON.stringify([active.id, c.D, c.wc, c.FL, goal, goal === "man" && q ? [q.ias, q.vs, q.full, q.frac, q.calc] : 0, fuelUnit(),
-        window.RepositoryNav?.getLanguage?.() || "fr"
+        window.RepositoryNav?.getLanguage?.() || "fr", detail
       ]);
     if (S.dec && S.dec.key === key && S.dec.m === m) return;
     let D = null;
@@ -1119,41 +1173,52 @@
       console.error("Décision du niveau :", e);
     }
     put(box, "hidden", false);
+    const title = tl("Décision du niveau de vol", "Flight level decision", "Wahl der Flughöhe", "Decisión del nivel de vuelo");
     if (!D) {
       S.dec = null;
       S.guideH = null;
-      box.innerHTML = typo(`<div class="fl-dec-head"><h3>${tl("Décision du niveau de vol", "Flight level decision", "Wahl der Flughöhe", "Decisión del nivel de vuelo")}</h3></div><p class="perf-warn">⚠ ${noLevelTxt(m, c)}</p>`);
+      box.innerHTML = typo(`<div class="fl-dec-head"><h3>${title}</h3></div><p class="perf-warn">⚠ ${noLevelTxt(m, c)}</p>`);
       return;
     }
     const prev = S.dec,
       plan = c.FL * 100;
+    // croisière économique (vue détaillée, objectif « Éco » seulement) : niveau du carburant minimal à cette croisière
+    let eco = null;
+    if (detail && goal === "eco") try {
+      eco = D.real.map(r => m.trip(r.h, c.D, c.wc, "eco", D.law)).filter(r => r.ok).reduce((a, b) => !a || b.fuel < a.fuel ? b : a,
+        null);
+    } catch (e) {
+      console.error("Décision du niveau — croisière économique :", e);
+    }
     S.dec = Object.assign(D, {
       key,
       m,
       c,
       goal,
       plan,
+      eco,
       climb: new Map(),
-      // niveau choisi : le niveau du plan (le plus proche tenable) à chaque nouveau devis, sinon gardé
+      // niveau choisi : le niveau du plan (le plus proche) à chaque nouveau devis, sinon gardé
       sel: prev && prev.m === m && prev.plan === plan && prev.sel != null ? decNearest(D, prev.sel).h : decNearest(D, plan).h,
       hover: null,
       sort: prev?.sort || "h",
       dir: prev?.dir || 1
     });
-    // niveau comparé : gardé pour le même appareil (ramené au niveau tenable le plus proche)
-    if (S.decCmp && S.decCmp.id !== active.id) S.decCmp = null;
+    if (S.decCmp && S.decCmp.id !== active.id) S.decCmp = null; // niveau comparé : gardé pour le même appareil
     const goalName = GOAL_TXT[goal]()[0];
-    box.innerHTML = typo(`<div class="fl-dec-head"><h3>${tl("Décision du niveau de vol", "Flight level decision", "Wahl der Flughöhe", "Decisión del nivel de vuelo")}</h3><span class="mut">${tl(`trajet entier à chaque niveau : montée « ${goalName} », croisière du profil, descente`, `whole trip at each level: “${goalName}” climb, profile cruise, descent`, `ganze Strecke auf jeder Flughöhe: Steigflug „${goalName}“, Profil-Reiseflug, Sinkflug`, `trayecto completo a cada nivel: ascenso «${goalName}», crucero del perfil, descenso`)}</span><span class="fl-dec-legend">${sw(COL.eco)}${lab(tl("carburant", "fuel", "Kraftstoff", "combustible"), COL.eco)} ${sw(COL.fast)}${lab(tl("temps", "time", "Zeit", "tiempo"), COL.fast)}</span></div>` +
-      `<div class="fl-dec-body"><div class="fl-dec-main"><div class="chart-wrap"><svg id="decChart" class="opt-chart" viewBox="0 0 540 240"></svg></div>` +
-      `<div class="fl-dec-ctl"><input id="decSlider" type="range" min="${D.lo}" max="${D.hi}" step="${D.step}" value="${D.sel}" aria-label="${escXml(tl("Niveau étudié", "Level studied", "Untersuchte Flughöhe", "Nivel estudiado"))}"><output id="decLvl"></output>` +
-      `<button type="button" id="decUse" class="mini">${tl("Utiliser ce niveau", "Use this level", "Diese Flughöhe verwenden", "Usar este nivel")}</button><button type="button" id="decCmp" class="mini secondary"></button></div></div>` +
-      `<div id="decCard" class="fl-dec-card"></div></div><div class="fl-dec-tablewrap"><table id="decTable" class="climb-guide-table fl-dec-table"></table></div>`);
+    box.innerHTML = typo(`<div class="fl-dec-head"><h3>${title}</h3><span class="mut">${tl(`trajet entier à chaque niveau : montée « ${goalName} », croisière du profil, descente`, `whole trip at each level: “${goalName}” climb, profile cruise, descent`, `ganze Strecke auf jeder Flughöhe: Steigflug „${goalName}“, Profil-Reiseflug, Sinkflug`, `trayecto completo a cada nivel: ascenso «${goalName}», crucero del perfil, descenso`)}</span></div>` +
+      `<div id="decPills" class="fl-dec-pills"></div>` +
+      `<div class="fl-dec-body"><div class="fl-dec-main"><div class="chart-wrap"><svg id="decChart" class="opt-chart"></svg></div>` +
+      `<p class="mut fl-dec-note">${tl("Grisé : niveau non tenable — plafond, trajet trop court ou poussée insuffisante ; la raison est dans la fiche du curseur.", "Grey: level that cannot be held — ceiling, trip too short or not enough thrust; the reason is in the cursor card.", "Grau: nicht haltbare Flughöhe — Gipfelhöhe, Strecke zu kurz oder Schub reicht nicht; der Grund steht in der Karte des Cursors.", "Gris: nivel no mantenible — techo, trayecto demasiado corto o empuje insuficiente; la razón está en la ficha del cursor.")}</p>` +
+      `<div class="fl-dec-ctl"><input id="decSlider" type="range" min="${D.lo}" max="${D.hi}" step="${D.step}" value="${D.sel}" aria-label="${escXml(tl("Niveau étudié", "Level studied", "Untersuchte Flughöhe", "Nivel estudiado"))}"><output id="decLvl"></output></div></div>` +
+      `<div class="fl-dec-side"><div id="decCard" class="fl-dec-card"></div><div class="fl-dec-actions"><button type="button" id="decUse" class="mini">${tl("Utiliser ce niveau", "Use this level", "Diese Flughöhe verwenden", "Usar este nivel")}</button><button type="button" id="decCmp" class="mini secondary"></button></div></div></div>` +
+      `<div class="fl-dec-tablewrap"><table id="decTable" class="climb-guide-table fl-dec-table"></table></div>`);
+    decPills();
     drawDecision();
     const sl = $("decSlider");
     sl.oninput = () => decSelect(+sl.value);
     $("decUse").onclick = () => {
-      const lvl = Math.round(S.dec.sel / 100);
-      $("fl").value = lvl;
+      $("fl").value = Math.round(S.dec.sel / 100);
       $("fl").dispatchEvent(new Event("input", {
         bubbles: true
       }));
@@ -1167,6 +1232,10 @@
       };
       decUpdate();
     };
+    $("decPills").onclick = e => {
+      const b = e.target.closest("button[data-h]");
+      if (b) decSelect(+b.dataset.h);
+    };
     $("decTable").onclick = e => {
       const th = e.target.closest("th[data-sort]");
       if (th) {
@@ -1178,33 +1247,66 @@
       const tr = e.target.closest("tr[data-h]");
       if (tr) decSelect(+tr.dataset.h);
     };
+    decPanel();
     decUpdate();
+    // vue détaillée : le graphe de montée suit l'objectif et partage l'axe des niveaux
+    if (detail && S.cache && $("climbChart")) guard("panelClimb", "climbChart", tl("Montée", "Climb", "Steigflug", "Ascenso"), () =>
+      drawClimbChart(m, c, S.cache));
   }
-  /** Graphe : carburant (échelle de gauche) et temps (échelle de droite) du trajet selon le niveau ; plan, le plus
-   *  économe et le plus rapide repérés ; zone « inaccessible » au-delà du plafond ; curseur et niveau comparé. */
+  /** Pastilles au-dessus du graphe : le plus économe, le plus rapide (et la croisière économique en vue détaillée avec
+   *  l'objectif « Éco ») ; niveau · carburant · temps ; clic : curseur sur ce niveau. */
+  function decPills() {
+    const D = S.dec,
+      box = $("decPills");
+    if (!D || !box) return;
+    const pill = (r, name, col) => `<button type="button" class="fl-dec-pill" data-h="${r.h}" aria-pressed="${r.h === D.sel}" style="--pill:${col}">${name} <b>${flTxt(r.h)}</b> · ${showFuel(r.fuel)} ${fuelUnit()} · ${hmTxt(r.minutes)}</button>`;
+    const html = pill(D.best, tl("Le plus économe", "Least fuel", "Am sparsamsten", "El más económico"), COL.eco) +
+      (D.fast.h !== D.best.h ? pill(D.fast, tl("Le plus rapide", "Fastest", "Am schnellsten", "El más rápido"), COL.fast) : "") +
+      (D.eco ? pill(D.eco, def("eco", tl("Croisière économique", "Economy cruise", "Spar-Reiseflug", "Crucero económico")), COL.ref) :
+        "");
+    if (box._html !== html) {
+      box._html = html;
+      box.innerHTML = typo(html);
+    }
+    for (const b of box.querySelectorAll("button[data-h]")) {
+      const on = String(+b.dataset.h === D.sel);
+      if (b.getAttribute("aria-pressed") !== on) b.setAttribute("aria-pressed", on);
+    }
+  }
+  /** Graphe : carburant du trajet (panneau du haut, courbe pleine) et temps du trajet (panneau du bas, courbe fine), même
+   *  axe des niveaux et un seul quadrillage vertical ; un seul gris (niveaux non tenables) ; niveau choisi, curseur et
+   *  niveau comparé placés par decUpdate. */
   function drawDecision() {
     const D = S.dec,
       m = D.m,
       svg = $("decChart"),
-      H = 240,
       W = Math.max(320, Math.round((svg.parentElement?.clientWidth || 540) - 2)), // à l'échelle 1 : texte lisible
-      Lm = 54,
-      R = 54,
-      T = 14,
-      B = 30,
+      Lm = 58,
+      R = 14,
+      P1 = {
+        t: 18,
+        b: 132
+      },
+      P2 = {
+        t: 150,
+        b: 222
+      },
+      H = 258,
       rows = D.rows.filter(r => r?.ok),
-      fu = rows.map(r => cv(r.fuel)),
-      mi = rows.map(r => r.minutes),
-      af = niceAxis(Math.min(...fu) * .98, Math.max(...fu) * 1.02),
-      at = niceAxis(Math.min(...mi) * .98, Math.max(...mi) * 1.02),
+      af = niceAxis(Math.min(...rows.map(r => cv(r.fuel))), Math.max(...rows.map(r => cv(r.fuel))), 4),
+      at = niceAxis(Math.min(...rows.map(r => r.minutes)), Math.max(...rows.map(r => r.minutes)), 2),
       X = h => Lm + h / D.xmax * (W - Lm - R),
-      Yf = v => T + (1 - (v - af.lo) / (af.hi - af.lo || 1)) * (H - T - B),
-      Yt = v => T + (1 - (v - at.lo) / (at.hi - at.lo || 1)) * (H - T - B);
+      Yf = v => P1.t + (1 - (v - af.lo) / (af.hi - af.lo || 1)) * (P1.b - P1.t),
+      Yt = v => P2.t + (1 - (v - at.lo) / (at.hi - at.lo || 1)) * (P2.b - P2.t);
     let g = "";
-    for (const v of af.ticks) g += `<line class="grid-line" x1="${Lm}" x2="${W - R}" y1="${Yf(v).toFixed(1)}" y2="${Yf(v).toFixed(1)}"/><text x="${Lm - 5}" y="${(Yf(v) + 4).toFixed(1)}" text-anchor="end">${fmt(v, af.dec)}</text>`;
-    for (const v of at.ticks) g += `<text x="${W - R + 5}" y="${(Yt(v) + 4).toFixed(1)}">${hmTxt(v)}</text>`;
+    // quadrillage vertical commun (niveaux), horizontal par panneau
     const tk = D.xmax > 30000 ? 5000 : D.xmax > 12000 ? 2000 : 1000;
-    for (let h = 0; h <= D.xmax; h += tk) g += `<line class="grid-line" x1="${X(h).toFixed(1)}" x2="${X(h).toFixed(1)}" y1="${T}" y2="${H - B}"/><text x="${X(h).toFixed(1)}" y="${H - B + 14}" text-anchor="middle">${flTxt(h)}</text>`;
+    for (let h = 0; h <= D.xmax; h += tk) g += `<line class="grid-line" x1="${X(h).toFixed(1)}" x2="${X(h).toFixed(1)}" y1="${P1.t}" y2="${P2.b}"/><text x="${X(h).toFixed(1)}" y="${P2.b + 14}" text-anchor="middle">${flTxt(h)}</text>`;
+    for (const v of af.ticks) g += `<line class="grid-line" x1="${Lm}" x2="${W - R}" y1="${Yf(v).toFixed(1)}" y2="${Yf(v).toFixed(1)}"/><text x="${Lm - 5}" y="${(Yf(v) + 4).toFixed(1)}" text-anchor="end">${fmt(v, af.dec)}</text>`;
+    for (const v of at.ticks) g += `<line class="grid-line" x1="${Lm}" x2="${W - R}" y1="${Yt(v).toFixed(1)}" y2="${Yt(v).toFixed(1)}"/><text x="${Lm - 5}" y="${(Yt(v) + 4).toFixed(1)}" text-anchor="end">${hmTxt(v)}</text>`;
+    // un seul gris : niveaux non tenables sous le plafond, puis au-delà du plafond
+    const g0 = D.gap ? D.gap.from : m.ceiling;
+    if (g0 < D.xmax - 1) g += `<rect class="beyond" x="${X(g0).toFixed(1)}" y="${P1.t}" width="${(X(D.xmax) - X(g0)).toFixed(1)}" height="${P1.b - P1.t}"/><rect class="beyond" x="${X(g0).toFixed(1)}" y="${P2.t}" width="${(X(D.xmax) - X(g0)).toFixed(1)}" height="${P2.b - P2.t}"/>`;
     /** Tracé d'une grandeur (val) le long de la série, interrompu là où elle manque ; extrapolé en pointillés. */
     const pth = (val, Y, cls) => {
       let d = "",
@@ -1224,50 +1326,45 @@
       }
       return `<path class="${cls}" d="${d}"/>${e ? `<path class="${cls} extrap" d="${e}"/>` : ""}`;
     };
-    /** Étiquette d'un repère au niveau h, à droite du trait, à gauche près du bord droit (sous la mention « inaccessible »). */
-    const tagAt = (h, y, cls, t) => {
-      const left = X(h) > W - R - 130;
-      return `<text class="dec-tag ${cls}" x="${(X(h) + (left ? -6 : 6)).toFixed(1)}" y="${y}" text-anchor="${left ? "end" : "start"}">${t}</text>`;
-    };
-    /** Repère d'un niveau remarquable : point sur les deux courbes et étiquette « FL310 le plus économe ». */
-    const mark = (r, key, cls, dy) => `<circle class="${cls}" cx="${X(r.h).toFixed(1)}" cy="${Yf(cv(r.fuel)).toFixed(1)}" r="4"/><circle class="${cls}" cx="${X(r.h).toFixed(1)}" cy="${Yt(r.minutes).toFixed(1)}" r="4"/>${tagAt(r.h, T + 26 + dy, cls, `${flTxt(r.h)} ${DEC_TAG[key]()}`)}`;
-    g += `<line class="axis" x1="${Lm}" x2="${W - R}" y1="${H - B}" y2="${H - B}"/><line class="axis" x1="${Lm}" x2="${Lm}" y1="${T}" y2="${H - B}"/><line class="axis" x1="${W - R}" x2="${W - R}" y1="${T}" y2="${H - B}"/>` +
-      (D.gap ? `<rect class="short-zone" x="${X(D.gap.from).toFixed(1)}" y="${T}" width="${(X(D.gap.to) - X(D.gap.from)).toFixed(1)}" height="${H - B - T}"/><text class="beyond-label zone-tip" x="${((X(D.gap.from) + X(D.gap.to)) / 2).toFixed(1)}" y="${T + 11}" text-anchor="middle"><title>${escXml(tl(`Au-dessus de ${flTxt(D.gap.from)}, ce trajet ne permet pas de tenir le niveau : survolez la zone pour lire la montée et la distance nécessaire.`, `Above ${flTxt(D.gap.from)}, this trip cannot hold the level: hover over the zone to read the climb and the distance needed.`, `Über ${flTxt(D.gap.from)} lässt diese Strecke die Flughöhe nicht zu: Zone überfahren, um Steigflug und nötige Strecke zu lesen.`, `Por encima de ${flTxt(D.gap.from)}, este trayecto no permite mantener el nivel: pase el ratón por la zona para leer el ascenso y la distancia necesaria.`))}</title>${gapTxt(D.gap.reason)}</text>` : "") +
-      beyondZone(X, T, H - B, m.ceiling, D.xmax) + planMark(X, T, H - B, D.plan, D.xmax) +
+    g += `<line class="axis" x1="${Lm}" x2="${W - R}" y1="${P1.b}" y2="${P1.b}"/><line class="axis" x1="${Lm}" x2="${W - R}" y1="${P2.b}" y2="${P2.b}"/><line class="axis" x1="${Lm}" x2="${Lm}" y1="${P1.t}" y2="${P1.b}"/><line class="axis" x1="${Lm}" x2="${Lm}" y1="${P2.t}" y2="${P2.b}"/>` +
       pth(r => cv(r.fuel), Yf, "curve-eco") + pth(r => r.minutes, Yt, "curve-fuel dec-time") +
-      mark(D.best, "best", "dec-best", 0) + (D.fast.h !== D.best.h ? mark(D.fast, "fast", "dec-fast", 13) : "") +
-      `<text x="11" y="${(T + H - B) / 2}" text-anchor="middle" transform="rotate(-90 11 ${(T + H - B) / 2})">${tl("Carburant", "Fuel", "Kraftstoff", "Combustible")} (${fuelUnit()})</text>` +
-      `<text x="${W - 8}" y="${(T + H - B) / 2}" text-anchor="middle" transform="rotate(90 ${W - 8} ${(T + H - B) / 2})">${tl("Temps du trajet", "Trip time", "Flugzeit", "Tiempo del trayecto")}</text>` +
-      `<text x="${(Lm + W - R) / 2}" y="${H - 3}" text-anchor="middle">${tl("Niveau", "Level", "Flughöhe", "Nivel")}</text>` +
-      `<line id="decCmpLine" class="pin" x1="0" x2="0" y1="${T}" y2="${H - B}" visibility="hidden"/><line id="decCursor" class="cursor dec-cursor" x1="0" x2="0" y1="${T}" y2="${H - B}" visibility="hidden"/>` +
-      `<rect id="decHit" x="${Lm}" y="${T}" width="${W - Lm - R}" height="${H - T - B}" fill="transparent"/>`;
+      `<text class="dec-ptitle" x="${Lm + 4}" y="${P1.t - 5}">${tl("Carburant du trajet", "Trip fuel", "Kraftstoff der Strecke", "Combustible del trayecto")} (${fuelUnit()})</text>` +
+      `<text class="dec-ptitle" x="${Lm + 4}" y="${P2.t - 5}">${tl("Temps du trajet", "Trip time", "Flugzeit", "Tiempo del trayecto")}</text>` +
+      `<text x="${(Lm + W - R) / 2}" y="${H - 2}" text-anchor="middle">${tl("Niveau", "Level", "Flughöhe", "Nivel")}</text>` +
+      `<line id="decCmpLine" class="pin" x1="0" x2="0" y1="${P1.t}" y2="${P2.b}" visibility="hidden"/>` +
+      `<line id="decSelLine" class="dec-sel" x1="0" x2="0" y1="${P1.t}" y2="${P2.b}"/><text id="decSelTxt" class="dec-sel-txt" x="0" y="${P1.t + 11}"></text>` +
+      `<circle id="decSelF" class="dec-dot" r="4" cx="-9" cy="-9"/><circle id="decSelT" class="dec-dot dec-dot-t" r="3.5" cx="-9" cy="-9"/>` +
+      `<line id="decCursor" class="cursor" x1="0" x2="0" y1="${P1.t}" y2="${P2.b}" visibility="hidden"/>` +
+      `<rect id="decHit" x="${Lm}" y="${P1.t}" width="${W - Lm - R}" height="${P2.b - P1.t}" fill="transparent"/>`;
     svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
     svg.innerHTML = typo(g);
-    D.X = X;
-    D.geo = {
+    Object.assign(D, {
+      X,
+      Yf,
+      Yt,
       W,
-      Lm,
       R
-    };
+    });
     const hit = $("decHit"),
-      /** Niveau tenable sous le pointeur e. */
-      at_ = e => {
+      /** Niveau sous le pointeur e. */
+      hAt = e => {
         const b = svg.getBoundingClientRect(),
           x = (e.clientX - b.left) / (b.width || 1) * W;
         return decNearest(D, (x - Lm) / (W - Lm - R) * D.xmax).h;
       };
     hit.style.cursor = "crosshair";
-    hit.onpointermove = e => {
-      D.hover = at_(e);
-      decUpdate();
-    };
-    hit.onpointerleave = () => {
-      D.hover = null;
-      decUpdate();
-    };
-    hit.onclick = e => decSelect(at_(e));
+    hit.onpointermove = e => decHover(hAt(e));
+    hit.onpointerleave = () => decHover(null);
+    hit.onclick = e => decSelect(hAt(e));
   }
-  /** Choisit le niveau h (réglette, clic sur le graphe ou sur une ligne du tableau). */
+  /** Niveau survolé (graphe de décision ou graphe de montée) ; null : retour au niveau choisi. */
+  function decHover(h) {
+    const D = S.dec;
+    if (!D) return;
+    D.hover = h == null ? null : decNearest(D, h).h;
+    decUpdate();
+  }
+  /** Choisit le niveau h (réglette, pastille, clic sur un graphe ou sur une ligne du tableau). */
   function decSelect(h) {
     const D = S.dec;
     if (!D) return;
@@ -1275,27 +1372,34 @@
     D.hover = null;
     decUpdate();
   }
-  /** Lignes d'un niveau pour la fiche : [libellé, valeur texte, valeur brute pour l'écart (carburant, minutes) ou null]. */
+  /** Fiche d'un niveau : trois lignes HTML (trajet, montée, descente), chiffre clé en gras ; trip : carburant (unité
+   *  affichée) et minutes du trajet pour les écarts (null si le niveau n'est pas tenable) ; note : cause et correction. */
   function decFacts(h) {
     const D = S.dec,
       m = D.m,
-      r = decNearest(D, h);
-    if (!r.ok) return decFactsOff(r);
-    const g = decClimb(m, r.h),
+      r = decNearest(D, h),
       jet = m.kind === "jet",
-      cl = r.climb || {
-        minutes: 0,
-        fuel: 0,
-        nm: 0
-      },
-      tod = Math.max(0, D.c.D - cl.nm - r.cruiseNm),
-      // descente du modèle : vario et TAS du profil (constants), Badin qui en découle (au TOD → au sol), sauf Badin de
-      // descente saisi dans le profil (Descente › Badin), donné tel quel
-      de = m.desc,
+      g = decClimb(m, r.h),
+      r0 = g?.rows?.[0],
+      rN = g?.rows?.at(-1),
+      r100 = x => Math.round(Math.max(0, x) / 100) * 100,
+      rng = (a, b, k = x => x) => Math.abs(k(a) - k(b)) < 1 ? fmt(k(a), 0) : `${fmt(k(a), 0)} → ${fmt(k(b), 0)}`,
+      fu = v => `${showFuel(v)} ${fuelUnit()}`;
+    // montée : celle du trajet si le niveau est tenable, sinon la montée seule jusqu'au niveau
+    let cl = r.ok ? r.climb : null;
+    if (!r.ok) try {
+      const k = m.cruise(r.h, "normal");
+      cl = m.climbTo(r.h, {
+        speed: D.law === "time" || D.law === "fuel" ? m.climbLaw(D.law, k.ok ? k : undefined) : D.law
+      });
+    } catch {
+      cl = null;
+    }
+    // descente : vario et TAS du profil (constants) ; Badin du profil s'il est saisi (Descente › Badin), sinon déduit de la
+    // TAS de descente, du TOD au sol
+    const de = m.desc,
       td = r.h / de.rate,
-      iasTop = de.tas * Math.sqrt(m.atm(r.h).sigma),
-      iasLow = de.tas * Math.sqrt(m.atm(0).sigma),
-      machTop = de.tas / m.atm(r.h).a,
+      dd = de.tas * td / 60,
       iasProf = (() => {
         try {
           return +(window.modelProfile?.() || active)?.descent?.iasKt || 0;
@@ -1303,108 +1407,98 @@
           return 0;
         }
       })(),
-      rN = g?.rows?.at(-1),
-      r0 = g?.rows?.[0],
-      rng = (a, b, d = 0) => Math.abs(a - b) < (d ? .5 : 5) ? fmt(a, d) : `${fmt(a, d)} → ${fmt(b, d)}`;
-    return [
-      [tl("Carburant du trajet", "Trip fuel", "Kraftstoff der Strecke", "Combustible del trayecto"), `${showFuel(r.fuel)} ${fuelUnit()}`, ["fuel", cv(r.fuel)]],
-      [tl("Temps du trajet", "Trip time", "Flugzeit", "Tiempo del trayecto"), hmTxt(r.minutes), ["min", r.minutes]],
-      [`${def("TAS")} ${tl("de croisière", "in cruise", "im Reiseflug", "de crucero")}`, `${fmt(r.tas, 0)} kt${jet && r.mach >= .4 ? ` · M${r.mach.toFixed(2)}` : ""}${r.limited ? ` (${tl("poussée max.", "max. thrust", "max. Schub", "empuje máx.")})` : ""}`, null],
-      [tl("Montée", "Climb", "Steigflug", "Ascenso"), `${hmTxt(cl.minutes)} · ${showFuel(cl.fuel)} ${fuelUnit()} · ${fmt(cl.nm, 0)} NM`, null],
-      [`${def("Badin", tl("Badin", "IAS", "IAS", "IAS"))} ${tl("à tenir", "to fly", "zu halten", "a mantener")}`, r0 && rN ? `${rng(r0.ias, rN.ias)} kt` : "—", null],
-      [tl("Vario attendu", "Expected rate", "Erwartete Steigrate", "Régimen esperado"), r0 && rN ? `${rng(Math.max(0, r0.roc), Math.max(0, rN.roc))} ft/min` : "—", null],
-      [tl("Début de descente (TOD)", "Top of descent (TOD)", "Sinkflugbeginn (TOD)", "Inicio del descenso (TOD)"), tl(`à ${fmt(tod, 0)} NM de l’arrivée`,
-        `${fmt(tod, 0)} NM before arrival`, `${fmt(tod, 0)} NM vor der Ankunft`, `a ${fmt(tod, 0)} NM de la llegada`), null],
-      [tl("Descente", "Descent", "Sinkflug", "Descenso"), `${hmTxt(td)} · ${showFuel(de.ff * td / 60)} ${fuelUnit()}`, null],
-      [`${def("Badin", tl("Badin", "IAS", "IAS", "IAS"))} ${tl("en descente", "in descent", "im Sinkflug", "en descenso")}`, iasProf > 0 ? `${fmt(iasProf, 0)} kt (${tl("profil", "profile", "Profil", "perfil")})` : `${rng(iasTop, iasLow)} kt${jet && machTop >= .4 ? ` · M${machTop.toFixed(2)} ${tl("au TOD", "at TOD", "am TOD", "en el TOD")}` : ""}`, null],
-      [tl("Vario en descente", "Descent rate", "Sinkrate", "Régimen de descenso"), `−${fmt(de.rate, 0)} ft/min`, null]
-    ];
+      dIas = iasProf > 0 ? `${fmt(iasProf, 0)} kt` : `${rng(de.tas * Math.sqrt(m.atm(r.h).sigma), de.tas * Math.sqrt(m.atm(0).sigma))} kt`,
+      L3 = [tl("Trajet", "Trip", "Strecke", "Trayecto"), tl("Montée", "Climb", "Steigflug", "Ascenso"), tl("Descente", "Descent",
+        "Sinkflug", "Descenso")];
+    const trip = r.ok ? `<b>${fu(r.fuel)}</b> · ${hmTxt(r.minutes)} · ${def("TAS")} ${fmt(r.tas, 0)} kt${jet && r.mach >= .4 ? ` (M${r.mach.toFixed(2)})` : ""}${r.limited ? ` · ${tl("poussée max.", "max. thrust", "max. Schub", "empuje máx.")}` : ""}` : "—",
+      climb = cl ? `<b>${hmTxt(cl.minutes)}</b> · ${fu(cl.fuel)} · ${fmt(cl.nm, 0)} NM${r0 && rN ? ` · ${tl("tenir", "fly", "halten", "mantener")} ${rng(r0.ias, rN.ias)} kt · ${tl("vario", "rate", "Steigrate", "régimen")} ${rng(r0.roc, rN.roc, r100)} ft/min` : ""}` : "—",
+      tod = r.ok ? Math.max(0, D.c.D - r.climb.nm - r.cruiseNm) : dd,
+      desc = `<b>${r.ok ? tl(`TOD à ${fmt(tod, 0)} NM`, `TOD at ${fmt(tod, 0)} NM`, `TOD bei ${fmt(tod, 0)} NM`, `TOD a ${fmt(tod, 0)} NM`) : `${fmt(dd, 0)} NM`}</b> · ${hmTxt(td)} · ${fu(de.ff * td / 60)} · ${dIas} · −${fmt(de.rate, 0)} ft/min`;
+    return {
+      ok: r.ok,
+      lines: [
+        [L3[0], trip],
+        [L3[1], climb],
+        [L3[2], desc]
+      ],
+      trip: r.ok ? [cv(r.fuel), r.minutes] : null,
+      short: {
+        trip: r.ok ? `${fu(r.fuel)} · ${hmTxt(r.minutes)}` : "—",
+        climb: cl ? `${hmTxt(cl.minutes)} · ${fu(cl.fuel)}` : "—",
+        desc: r.ok ? `${fmt(tod, 0)} NM` : "—"
+      },
+      note: r.ok ? "" : `${tl("Niveau impossible sur ce trajet", "Level impossible on this trip", "Flughöhe auf dieser Strecke unmöglich", "Nivel imposible en este trayecto")} : ${whyNot(m, D.c, r, r.h, D.law)}.`
+    };
   }
-  /** Fiche d'un niveau non tenable sur ce trajet (r : résultat de m.trip, ok faux) : mêmes lignes que decFacts (lecture
-   *  côte à côte), trajet « — », montée jusqu'au niveau et descente telles qu'elles seraient ; note = cause et correction. */
-  function decFactsOff(r) {
-    const D = S.dec,
-      m = D.m,
-      h = r.h,
-      law = tripLaw(m, D.goal),
-      k = m.cruise(h, "normal"),
-      sp = law === "time" || law === "fuel" ? m.climbLaw(law, k.ok ? k : undefined) : law,
-      clx = (() => {
-        try {
-          return m.climbTo(h, {
-            speed: sp
-          });
-        } catch {
-          return null;
-        }
-      })(),
-      g = decClimb(m, h),
-      r0 = g?.rows?.[0],
-      rN = g?.rows?.at(-1),
-      de = m.desc,
-      td = h / de.rate,
-      dd = de.tas * td / 60,
-      rng = (a, b) => Math.abs(a - b) < 5 ? fmt(a, 0) : `${fmt(a, 0)} → ${fmt(b, 0)}`;
-    const out = [
-      [tl("Carburant du trajet", "Trip fuel", "Kraftstoff der Strecke", "Combustible del trayecto"), "—", null],
-      [tl("Temps du trajet", "Trip time", "Flugzeit", "Tiempo del trayecto"), "—", null],
-      [`${def("TAS")} ${tl("de croisière", "in cruise", "im Reiseflug", "de crucero")}`, k.ok ? `${fmt(k.tas, 0)} kt` : "—", null],
-      [tl("Montée", "Climb", "Steigflug", "Ascenso"), clx ? `${hmTxt(clx.minutes)} · ${showFuel(clx.fuel)} ${fuelUnit()} · ${fmt(clx.nm, 0)} NM` : "—", null],
-      [`${def("Badin", tl("Badin", "IAS", "IAS", "IAS"))} ${tl("à tenir", "to fly", "zu halten", "a mantener")}`, r0 && rN ? `${rng(r0.ias, rN.ias)} kt` : "—", null],
-      [tl("Vario attendu", "Expected rate", "Erwartete Steigrate", "Régimen esperado"), r0 && rN ? `${rng(Math.max(0, r0.roc), Math.max(0, rN.roc))} ft/min` : "—", null],
-      [tl("Début de descente (TOD)", "Top of descent (TOD)", "Sinkflugbeginn (TOD)", "Inicio del descenso (TOD)"), "—", null],
-      [tl("Descente", "Descent", "Sinkflug", "Descenso"), `${hmTxt(td)} · ${showFuel(de.ff * td / 60)} ${fuelUnit()} · ${fmt(dd, 0)} NM`, null],
-      [`${def("Badin", tl("Badin", "IAS", "IAS", "IAS"))} ${tl("en descente", "in descent", "im Sinkflug", "en descenso")}`, "—", null],
-      [tl("Vario en descente", "Descent rate", "Sinkrate", "Régimen de descenso"), `−${fmt(de.rate, 0)} ft/min`, null]
-    ];
-    // cause et correction (whyNot : distance nécessaire, champ à modifier en lien)
-    out.note = `${tl("Niveau impossible sur ce trajet", "Level impossible on this trip", "Flughöhe auf dieser Strecke unmöglich", "Nivel imposible en este trayecto")} : ${whyNot(m, D.c, r, h, law)}.`;
-    out.off = true;
-    return out;
-  }
-  /** Titre d'un niveau avec ses repères : « FL310 · le plus économe ». */
+  /** Titre d'un niveau avec ses repères : « FL310 · le plus économe », « FL360 · trajet trop court ». */
   const decTitle = h => {
-    const D = S.dec;
-    const r = decNearest(D, h);
+    const D = S.dec,
+      r = decNearest(D, h);
     return [flTxt(h), ...(r.ok ? decTags(D, h).map(k => DEC_TAG[k]()) : [gapTxt(r.reason)])].join(" · ");
   };
-  /** Curseur, fiche, réglette, boutons, tableau et consignes de montée au niveau courant (survolé, sinon choisi). */
+  /** Curseur, niveau choisi, fiche, boutons, pastilles, tableau, graphe de montée, instruments et consignes de montée au
+   *  niveau courant (survolé, sinon choisi). */
   function decUpdate() {
     const D = S.dec;
     if (!D || !$("decCard")) return;
     const h = D.hover ?? D.sel,
       cmp = S.decCmp ? decNearest(D, S.decCmp.h).h : null,
-      X = D.X;
-    cursorAt("decCursor", X(h));
-    const cl = $("decCmpLine");
+      X = D.X,
+      rs = decNearest(D, D.sel);
+    // niveau choisi : trait, étiquette et points sur les deux courbes
+    const xs = X(D.sel),
+      left = xs > D.W - D.R - 60,
+      st = $("decSelTxt");
+    for (const id of ["decSelLine"]) {
+      $(id).setAttribute("x1", xs);
+      $(id).setAttribute("x2", xs);
+    }
+    st.setAttribute("x", (xs + (left ? -4 : 4)).toFixed(1));
+    st.setAttribute("text-anchor", left ? "end" : "start");
+    put(st, "textContent", flTxt(D.sel));
+    for (const [id, y] of [
+        ["decSelF", rs.ok ? D.Yf(cv(rs.fuel)) : -9],
+        ["decSelT", rs.ok ? D.Yt(rs.minutes) : -9]
+      ]) {
+      $(id).setAttribute("cx", rs.ok ? xs : -9);
+      $(id).setAttribute("cy", y);
+    }
+    if (D.hover != null && D.hover !== D.sel) cursorAt("decCursor", X(D.hover));
+    else $("decCursor").setAttribute("visibility", "hidden");
     if (cmp != null) cursorAt("decCmpLine", X(cmp));
-    else cl.setAttribute("visibility", "hidden");
+    else $("decCmpLine").setAttribute("visibility", "hidden");
     put($("decSlider"), "value", String(D.sel));
     put($("decLvl"), "textContent", flTxt(D.sel));
-    put($("decUse"), "disabled", Math.abs(D.sel - D.plan) < 1 || !decNearest(D, D.sel).ok);
+    put($("decUse"), "disabled", Math.abs(D.sel - D.plan) < 1 || !rs.ok);
     put($("decCmp"), "textContent", cmp != null ? tl(`Ne plus comparer (${flTxt(cmp)})`, `Stop comparing (${flTxt(cmp)})`, `Vergleich beenden (${flTxt(cmp)})`, `Dejar de comparar (${flTxt(cmp)})`) : tl("Comparer", "Compare",
       "Vergleichen", "Comparar"));
     put($("decCmp"), "title", tl("Épingle le niveau courant pour le lire à côté d’un autre (écarts de carburant et de temps).",
       "Pins the current level to read it beside another one (fuel and time differences).",
       "Heftet die aktuelle Flughöhe an, um sie neben einer anderen zu lesen (Kraftstoff- und Zeitunterschiede).",
       "Fija el nivel actual para leerlo junto a otro (diferencias de combustible y de tiempo)."));
-    // fiche : un niveau, ou deux côte à côte avec l'écart (niveau courant − niveau comparé)
+    // fiche : trois lignes, ou deux niveaux côte à côte avec l'écart (niveau courant − niveau comparé)
     const a = decFacts(h);
     let html;
-    const notes = [a, ...(cmp != null && cmp !== h ? [decFacts(cmp)] : [])].filter(x => x.note).map(x => `<p class="perf-warn">⚠ ${x.note}</p>`).join("");
-    if (cmp == null || cmp === h) html = `<div class="fl-dec-title">${D.hover != null ? "⌖" : "▸"} ${escXml(decTitle(h))}</div>${notes}<dl class="kvp">${a.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join("")}</dl>`;
+    if (cmp == null || cmp === h) html = `<div class="fl-dec-title">${D.hover != null ? "⌖" : "▸"} ${escXml(decTitle(h))}</div>${a.note ? `<p class="perf-warn">⚠ ${a.note}</p>` : ""}<dl class="kvp">${a.lines.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join("")}</dl>`;
     else {
       const b = decFacts(cmp),
-        dlt = (x, y) => {
-          if (!x || !y) return "";
-          const d = x[1] - y[1],
-            s = d > 0 ? "+" : d < 0 ? "−" : "±";
-          return x[0] === "fuel" ? `${s}${fmt(Math.abs(d), 0)} ${fuelUnit()}` : Math.abs(d) < 60 ? `${s}${fmt(Math.abs(d), 0)} min` : `${s}${hmTxt(Math.abs(d))}`;
-        };
-      html = `<table class="fl-dec-cmp"><thead><tr><th></th><th>${escXml(decTitle(h))}</th><th>📌 ${escXml(decTitle(cmp))}</th><th>${tl("Écart", "Difference", "Differenz", "Diferencia")}</th></tr></thead><tbody>${a.map(([k, v, x], i) => `<tr><th>${k}</th><td>${v}</td><td>${b[i][1]}</td><td>${dlt(x, b[i][2])}</td></tr>`).join("")}</tbody></table>${notes}`;
+        sg = d => d > 0 ? "+" : d < 0 ? "−" : "±",
+        dl = a.trip && b.trip ? (() => {
+          const df = a.trip[0] - b.trip[0],
+            dm = a.trip[1] - b.trip[1];
+          return `${sg(df)}${fmt(Math.abs(df), 0)} ${fuelUnit()} · ${sg(dm)}${Math.abs(dm) < 60 ? `${fmt(Math.abs(dm), 0)} min` : hmTxt(Math.abs(dm))}`;
+        })() : "—";
+      html = `<table class="fl-dec-cmp"><thead><tr><th></th><th>${escXml(decTitle(h))}</th><th>📌 ${escXml(decTitle(cmp))}</th></tr></thead><tbody>` +
+        `<tr><th>${a.lines[0][0]}</th><td>${a.short.trip}</td><td>${b.short.trip}</td></tr>` +
+        `<tr><th>${tl("Écart", "Difference", "Differenz", "Diferencia")}</th><td colspan="2"><b>${dl}</b></td></tr>` +
+        `<tr><th>${a.lines[1][0]}</th><td>${a.short.climb}</td><td>${b.short.climb}</td></tr>` +
+        `<tr><th>TOD</th><td>${a.short.desc}</td><td>${b.short.desc}</td></tr></tbody></table>` + [a.note, b.note].filter(Boolean).map(n => `<p class="perf-warn">⚠ ${n}</p>`).join("");
     }
     $("decCard").innerHTML = typo(html);
+    decPills();
     decTable();
+    S.climbShow?.(h); // graphe de montée (vue détaillée) : même curseur
+    feedInstruments(h);
     // consignes de montée : jusqu'au niveau courant
     const gh = Math.abs(h - D.plan) < 1 ? null : h;
     if (S.guideH !== gh) {
@@ -1413,7 +1507,7 @@
     }
   }
   /** Tableau des niveaux ronds (tous les 1000 ft, 2000 ft au-delà de 20 000 ft de plafond), triable par niveau,
-   *  carburant ou temps ; ligne choisie surlignée, repères plan / le plus économe / le plus rapide. */
+   *  carburant ou temps ; ligne choisie surlignée ; niveaux non tenables : « — » et cause. */
   function decTable() {
     const D = S.dec,
       tb = $("decTable");
@@ -1433,6 +1527,25 @@
       tb._html = html;
       tb.innerHTML = typo(html);
     }
+  }
+  /** Panneau de la décision (colonne droite, vue détaillée) : limites en trois lignes (plafond, niveau demandé, plus haut
+   *  possible), avertissements, puis « En savoir plus » (lecture, hypothèses du modèle). */
+  function decPanel() {
+    const D = S.dec;
+    if (!D || !$("panelDecision")) return;
+    const m = D.m,
+      c = D.c;
+    panel("panelDecision", tl("Décision du niveau de vol", "Flight level decision", "Wahl der Flughöhe", "Decisión del nivel de vuelo"),
+      limitsHtml(m, c, [0, ...D.all.map(r => r.h)]),
+      `<details class="more"><summary>${tl("En savoir plus", "Learn more", "Mehr erfahren", "Saber más")}</summary>` +
+      reading(tl(
+        "chaque point est le trajet entier (montée, croisière, descente) volé à ce niveau. Plus haut, la croisière consomme moins mais la montée coûte plus : le niveau le plus économe est au creux de la courbe du haut. Sur un trajet court, monter puis redescendre peut ne plus tenir dans la distance : ces niveaux sont grisés.",
+        "each point is the whole trip (climb, cruise, descent) flown at that level. Higher, the cruise burns less but the climb costs more: the least-fuel level is at the bottom of the upper curve. On a short trip, climbing then descending may no longer fit in the distance: those levels are greyed.",
+        "jeder Punkt ist die ganze Strecke (Steig-, Reise-, Sinkflug) auf dieser Flughöhe. Höher verbraucht der Reiseflug weniger, der Steigflug kostet mehr: die sparsamste Flughöhe liegt im Tiefpunkt der oberen Kurve. Auf einer kurzen Strecke passen Steig- und Sinkflug eventuell nicht mehr in die Entfernung: diese Flughöhen sind grau.",
+        "cada punto es el trayecto completo (ascenso, crucero, descenso) a ese nivel. Más alto, el crucero consume menos pero el ascenso cuesta más: el nivel más económico está en el fondo de la curva de arriba. En un trayecto corto, subir y bajar puede no caber en la distancia: esos niveles están en gris."
+      )) +
+      ((m.estimatedRef || m.notes.length) ? `<p class="mut">${[m.estimatedRef ? `${tl("Point de croisière", "Cruise reference", "Reiseflug-Bezug", "Referencia de crucero")} : ${escXml(m.refSrc)} (${fieldLink("cruise.refAltFt")}, ${fieldLink("cruise.ceilingFt")})` : "", ...m.notes.map(escXml)].filter(Boolean).join(" · ")}</p>` : "") +
+      `<p class="mut">${assumptions(m, c)}</p></details>`);
   }
 
   // ---------------------------------------------------------------------------------------------------
@@ -1502,46 +1615,9 @@
   // Fiche du curseur (bloc Résultat)
   // ---------------------------------------------------------------------------------------------------
 
-  /** Fiche ⌖ / 📌 du bloc Résultat : trajet, montée et vitesses à l'altitude survolée (hover) ou épinglée.
-   *  hover : altitude (ft) sous le pointeur, ou rien pour afficher le niveau épinglé. */
+  /** Instruments à l'altitude survolée (hover) ou épinglée : la fiche du niveau est celle de la décision du niveau. */
   function renderPinned(hover) {
     feedInstruments(hover);
-    const box = $("perfPinned"),
-      pinned = sync.pinned,
-      o = window.altitudeOptimum,
-      h = hover ?? pinned;
-    if (!box) return;
-    if (h == null || !o) {
-      box.innerHTML = "";
-      StickyFrame.refresh();
-      return;
-    }
-    const m = o.model,
-      c = o.c,
-      unit = fuelUnit(),
-      k = Math.min(o.eco.length - 1, Math.round(h / 500)),
-      kc = m.cruise(Math.min(c.FL * 100, m.ceiling), "normal"),
-      cp = h <= m.ceiling ? m.climbPoint(h) : null,
-      law = t => h <= m.ceiling ? m.climbOpt(h, t, kc) : null,
-      man = manualLaw(m);
-    /** Trajet en texte : carburant · durée, « poussée max. » si limité ; « — » sinon. */
-    const trip = r => r && r.ok ? `${fmt(cv(r.fuel), 0)} ${unit} · ${hmTxt(r.minutes)}${r.limited ? ` (${tl("poussée max.", "max. thrust", "max. Schub", "empuje máx.")})` : ""}` : "—";
-    /** Vitesse et vario d'un point de montée en texte, « — » si absent. */
-    const spd = x => x ? `${fmt(x.ias, 0)} kt · ${fmt(x.roc, 0)} ft/min` : "—";
-    const isPin = pinned != null && Math.abs(h - pinned) < 1;
-    box.innerHTML = typo(`<div class="pinned">
-      <div class="pin-head"><b>${isPin ? "📌" : "⌖"} ${flTxt(h)}</b>${pinned != null ? `<button type="button" id="perfUnpin" class="mini">${tl("désépingler", "unpin", "lösen", "soltar")}</button>` : `<span class="mut">${tl("clic sur une courbe : épingler", "click a curve: pin", "Kurve anklicken: anheften", "clic en una curva: fijar")}</span>`}</div>
-      <dl class="kvp">
-        <dt>${lab(L.prof(), COL.prof)}</dt><dd>${trip(o.norm[k])}</dd>
-        <dt>${lab(L.eco(), COL.eco)}</dt><dd>${trip(o.eco[k])}</dd>
-        <dt>${tl("Vario max", "Max. rate", "Max. Steigrate", "Régimen máx.")} (${def("Vy")})</dt><dd>${cp ? `${fmt(cp.roc, 0)} ft/min · ${fmt(cp.vyIas, 0)} kt` : tl("au-dessus du plafond", "above the ceiling", "über der Gipfelhöhe", "por encima del techo")}</dd>
-        ${cp ? `<dt>${tl("Pente max", "Max. angle", "Max. Steigwinkel", "Ángulo máx.")} (${def("Vx")})</dt><dd>${fmt(cp.vxIas, 0)} kt</dd>` : ""}
-        <dt>${lab(L.fast(), COL.fast)}</dt><dd>${spd(law("time"))}</dd>
-        <dt>${lab(L.fuelLaw(), COL.eco)}</dt><dd>${spd(law("fuel"))}</dd>
-        ${man && h <= m.ceiling ? `<dt>${lab(L.man(), COL.man)}</dt><dd>${spd(m.manualPoint(h, man))}</dd>` : ""}
-      </dl></div>`);
-    if ($("perfUnpin")) $("perfUnpin").onclick = () => sync.unpin();
-    StickyFrame.refresh();
   }
 
   // ---------------------------------------------------------------------------------------------------
@@ -1640,12 +1716,11 @@
     /** Arrêt du calcul : courbes masquées, message (champs manquants en liens vers le profil), panneaux vidés. */
     const stop = (msg, fields = []) => {
       S.m = null;
-      $("optChart").hidden = true;
       $("climbBlock").hidden = true;
       $("optEmpty").hidden = false;
       // champs manquants : liens vers l'éditeur de profil
       $("optEmpty").innerHTML = typo(escXml(msg) + (fields.length ? ` — ${tl("à renseigner", "to fill in", "auszufüllen", "por rellenar")} : ${fields.map(f => fieldLink(f)).join(", ")}` : ""));
-      ["panelOpt", "panelClimb", "panelSpeed", "panelTas", "panelCompare", "panelTable"].forEach(id => {
+      ["panelDecision", "panelClimb"].forEach(id => {
         if ($(id)) $(id).innerHTML = "";
       });
       window.altitudeOptimum = null;
@@ -1683,198 +1758,19 @@
       console.error("Vue des courbes — calcul :", e);
       return stop(`${failTxt()} : ${e.message}`);
     }
-    const man = manualLaw(m),
-      altOk = !!K.bestFuel;
-    // altitude optimale : absente si aucun niveau n'est tenable ; les courbes de montée restent affichées
+    const altOk = !!K.bestFuel;
+    // aucun niveau tenable : message à la place du graphe de montée (la décision du niveau dit pourquoi)
     $("optEmpty").hidden = altOk;
+    if (!altOk) $("optEmpty").innerHTML = typo(noLevelTxt(m, c));
     window.altitudeOptimum = altOk ? {
       model: m,
-      c,
-      bestFuel: K.bestFuel,
-      bestProf: K.bestProf,
-      bestEco: K.bestEco,
-      fastest: K.fastest,
-      plan: K.plan,
-      eco: K.eco,
-      norm: K.norm
-    } : null;
-    if (altOk) guard("panelOpt", "optChart", tl("Altitude optimale", "Optimum altitude", "Optimale Flughöhe", "Altitud óptima"), () => {
-      K.manTrips = K.cut(extendSeries(K.hs.map(h => h > m.ceiling ? m.unbounded(() => m.trip(h, c.D, c.wc, "normal", man)) : m.trip(h,
-        c.D, c.wc, "normal", man)), m.ceiling, TRIP_KEYS)); // même coupe que les autres courbes
-      drawAltitude(m, c, K);
-    });
-    else {
-      $("optChart").hidden = true;
-      $("optEmpty").innerHTML = typo(noLevelTxt(m, c));
-      guard("panelOpt", "optChart", tl("Altitude optimale", "Optimum altitude", "Optimale Flughöhe", "Altitud óptima"), () =>
-        panel("panelOpt", tl("Altitude optimale", "Optimum altitude", "Optimale Flughöhe", "Altitud óptima"), `<p class="perf-warn">⚠ ${noLevelTxt(m, c)}</p>`, `<details class="limits" open><summary>${tl("Limites", "Limits", "Grenzen", "Límites")}</summary>${limitsHtml(m, c, K.hs)}</details>`));
-    }
+      c
+    } : null; // repère lu par la page (recalcul au changement de langue)
     if (K.top > 0) guard("panelClimb", "climbChart", tl("Montée", "Climb", "Steigflug", "Ascenso"), () => drawClimb(m, c, K));
     else $("climbBlock").hidden = true;
-    if (K.top > 0) guard("panelTas", "tasChart", tl("TAS selon le niveau", "TAS by level", "TAS nach Flughöhe", "TAS según el nivel"),
-      () => drawTas(m, c, K));
     syncManual();
-    if (sync.pinned != null) sync.charts.forEach(ch => sync.drawPin(ch, sync.pinned));
     renderPinned();
     StickyFrame.refresh();
-  }
-
-  // --- TAS selon le niveau ---------------------------------------------------------------------------------
-  /** Courbe TAS (vitesse vraie) selon le niveau : croisière du profil, croisière économique, montée à la loi réglée ;
-   *  si un écart ISA est saisi, croisière du profil en atmosphère standard en pointillés (effet de la température).
-   *  Jauge synchronisée avec les autres courbes ; relevé : TAS, Badin et Mach de chaque série. */
-  function drawTas(m, c, K) {
-    const svg = $("tasChart"),
-      H = 220,
-      W = chartW(svg, H),
-      Lm = 52,
-      R = 12,
-      T = 12,
-      B = 30,
-      xmax = Math.max(K.topX, 1000),
-      man = manualLaw(m);
-    let m0 = null;
-    if (m.dIsa) try {
-      m0 = perfModel(0);
-    } catch {
-      m0 = null;
-    }
-    const step = xmax > 20000 ? 1000 : 500,
-      rows = [];
-    for (let h = 0; h <= xmax + 1; h += step) {
-      /** Calcul au niveau h, sans le refus de croisière au-delà du plafond (prolongement dans la zone grisée). */
-      const un = f => h > m.ceiling ? m.unbounded(f) : f(),
-        cr = un(() => m.cruise(h, "normal")),
-        ec = un(() => m.cruise(h, "eco")),
-        mp = m.manualPoint(h, man),
-        c0 = m0 && (h > m0.ceiling ? m0.unbounded(() => m0.cruise(h, "normal")) : m0.cruise(h, "normal"));
-      const a = m.atm(h).a,
-        a0 = FlightPerfModel.isa(h).a,
-        pt = (x, sa) => ({
-          tas: x.tas,
-          ias: x.ias,
-          mach: x.tas / sa
-        });
-      rows.push({
-        h,
-        prof: cr?.ok ? pt(cr, a) : null,
-        eco: ec?.ok ? pt(ec, a) : null,
-        man: mp && mp.roc > 0 ? pt(mp, a) : null,
-        isa: c0?.ok ? pt(c0, a0) : null
-      });
-    }
-    // prolongement dans la zone grisée (série par série)
-    for (const k of ["prof", "eco", "man", "isa"]) {
-      const e = extendSeries(rows.map(r => r[k] ? {
-        ...r[k],
-        h: r.h,
-        ok: true
-      } : {
-        h: r.h,
-        ok: false
-      }), k === "isa" && m0 ? m0.ceiling : m.ceiling, ["tas", "ias", "mach"]);
-      e.forEach((x, i) => {
-        rows[i][k] = x?.ok ? x : null;
-      });
-      // série interrompue sous le plafond (croisière impossible plus haut) : pas de prolongement au-delà du plafond
-      const ceilK = k === "isa" && m0 ? m0.ceiling : m.ceiling,
-        top = rows.reduce((a, r) => r[k] && !r[k].extrap && r.h <= ceilK && r.h > a ? r.h : a, -1);
-      if (top >= 0 && top < ceilK - step) rows.forEach(r => {
-        if (r.h > top) r[k] = null;
-      });
-    }
-    // plus haut niveau où la croisière du profil est tenable : zone « inaccessible — puissance insuffisante » au-dessus
-    let profTop = rows.reduce((a, r) => r.prof && r.h <= m.ceiling && r.h > a ? r.h : a, -1);
-    if (!(profTop >= 0 && profTop < m.ceiling - 2 * step && m.cruise(profTop + step, "normal")?.reason === "thrust")) profTop = -
-      1; // vrai refus (puissance), pas l'arrondi du dernier pas
-    const all = rows.flatMap(r => [r.prof, r.eco, r.man, r.isa].filter(Boolean).map(x => x.tas));
-    if (!all.length) throw Error(tl("aucune vitesse calculable", "no computable speed", "keine berechenbare Geschwindigkeit",
-      "ninguna velocidad calculable"));
-    // axe des vitesses gradué en valeurs rondes (kt)
-    const ax = niceAxis(Math.min(...all) * .97, Math.max(...all) * 1.02),
-      vmin = ax.lo,
-      vmax = ax.hi,
-      X = h => Lm + h / xmax * (W - Lm - R),
-      Y = v => T + (1 - (v - vmin) / (vmax - vmin || 1)) * (H - T - B);
-    let g = "";
-    for (const v of ax.ticks) g += `<line class="grid-line" x1="${Lm}" x2="${W - R}" y1="${Y(v)}" y2="${Y(v)}"/><text x="${Lm - 5}" y="${Y(v) + 4}" text-anchor="end">${fmt(v, ax.dec)}</text>`;
-    const tk = xmax > 30000 ? 10000 : xmax > 12000 ? 5000 : 2000;
-    for (let h = 0; h <= xmax; h += tk) g += `<line class="grid-line" x1="${X(h)}" x2="${X(h)}" y1="${T}" y2="${H - B}"/><text x="${X(h)}" y="${H - B + 14}" text-anchor="middle">${flTxt(h)}</text>`;
-    g += planMark(X, T, H - B, c.FL * 100, xmax); // niveau du vol
-    /** Tracé SVG de la série k (TAS), interrompu là où la série manque. */
-    const pth = (k, cls) => {
-      let d = "",
-        pen = false;
-      for (const r of rows) {
-        if (!r[k]) {
-          pen = false;
-          continue;
-        }
-        d += `${pen ? "L" : "M"}${X(r.h).toFixed(1)},${Y(r[k].tas).toFixed(1)}`;
-        pen = true;
-      }
-      return d ? `<path class="${cls}" d="${d}"/>` : "";
-    };
-    g += `<line class="axis" x1="${Lm}" x2="${W - R}" y1="${H - B}" y2="${H - B}"/><line class="axis" x1="${Lm}" x2="${Lm}" y1="${T}" y2="${H - B}"/>${pth("isa", "band")}${pth("eco", "curve-eco")}${pth("prof", "curve")}${pth("man", "curve-man")}` +
-      (profTop >= 0 ? `<rect class="short-zone" x="${X(profTop).toFixed(1)}" y="${T}" width="${(X(m.ceiling) - X(profTop)).toFixed(1)}" height="${H - B - T}"/>` : "") +
-      beyondZone(X, T, H - B, m.ceiling, xmax) +
-      `<text x="${(Lm + W - R) / 2}" y="${H - 3}" text-anchor="middle">${tl("Niveau", "Level", "Flughöhe", "Nivel")}</text><text x="11" y="${(T + H - B) / 2}" text-anchor="middle" transform="rotate(-90 11 ${(T + H - B) / 2})">TAS (kt)</text>` +
-      `<line id="tasCursor" class="cursor" x1="0" x2="0" y1="${T}" y2="${H - B}" visibility="hidden"/><rect id="tasHit" x="${Lm}" y="${T}" width="${W - Lm - R}" height="${H - T - B}" fill="transparent"/>` +
-      (profTop >= 0 ? `<text class="beyond-label zone-tip" x="${((X(profTop) + X(m.ceiling)) / 2).toFixed(1)}" y="${T + 11}" text-anchor="middle"><title>${escXml(tl(`Niveaux au-dessus de ${flTxt(profTop)} : la puissance disponible ne suffit plus pour tenir la vitesse de croisière du profil.`, `Levels above ${flTxt(profTop)}: the available power no longer holds the profile cruise speed.`, `Flughöhen über ${flTxt(profTop)}: die verfügbare Leistung reicht nicht mehr für die Reisegeschwindigkeit des Profils.`, `Niveles por encima de ${flTxt(profTop)}: la potencia disponible ya no mantiene la velocidad de crucero del perfil.`))}</title>${tl("inaccessible — puissance insuffisante", "unreachable — not enough power", "unerreichbar — zu wenig Leistung", "inaccesible — potencia insuficiente")}</text>` : "");
-    svg.innerHTML = typo(g);
-    svg.hidden = false;
-    svg.dataset.t = T;
-    svg.dataset.b = B;
-    zoneNotes("tasZones", [...(profTop >= 0 ? [
-      [tl("inaccessible — puissance insuffisante", "unreachable — not enough power", "unerreichbar — zu wenig Leistung",
-        "inaccesible — potencia insuficiente"), tl(`au-dessus de ${flTxt(profTop)}, la puissance disponible ne suffit plus pour tenir la vitesse de croisière du profil.`, `above ${flTxt(profTop)}, the available power no longer holds the profile cruise speed.`, `über ${flTxt(profTop)} reicht die verfügbare Leistung nicht mehr für die Reisegeschwindigkeit des Profils.`, `por encima de ${flTxt(profTop)}, la potencia disponible ya no mantiene la velocidad de crucero del perfil.`)]
-    ] : []), ...(m.ceiling < xmax - 1 ? [ceilingNote(m)] : [])]);
-    /** Ligne de la lecture : TAS, Badin et Mach (au-delà de 0,3) d'un point, ou « — ». */
-    const one = (x, col, name) => `<dt>${lab(name, col)}</dt><dd>${x ? `TAS ${fmt(x.tas, 0)} kt · ${tl("Badin", "IAS", "IAS", "IAS")} ${fmt(x.ias, 0)} kt${x.mach >= .3 ? ` · M${x.mach.toFixed(2)}` : ""}` : "—"}</dd>`;
-    const isaName = tl("croisière en ISA", "cruise at ISA", "Reiseflug bei ISA", "crucero en ISA"),
-      climbName = `${L.man()} (${tl("montée", "climb", "Steigflug", "ascenso")})`;
-    sync.add({
-      svg,
-      hit: $("tasHit"),
-      W,
-      L: Lm,
-      R,
-      T,
-      bottom: H - B,
-      xmax,
-      /** Jauge et lecture au niveau calculé le plus proche de h. */
-      show: h => {
-        const r = rows.reduce((a, x) => Math.abs(x.h - h) < Math.abs(a.h - h) ? x : a, rows[0]);
-        cursorAt("tasCursor", X(r.h));
-        $("tasReadout").innerHTML = typo(`<b>⌖ ${flTxt(r.h)}</b><dl class="kvp">${one(r.prof, COL.prof, L.prof())}${one(r.eco, COL.eco, L.eco())}${one(r.man, COL.man, climbName)}${m0 ? one(r.isa, COL.ref, isaName) : ""}</dl>`);
-      },
-      /** Jauge masquée et lecture vidée. */
-      leave: () => {
-        $("tasCursor").setAttribute("visibility", "hidden");
-        $("tasReadout").textContent = "";
-      }
-    });
-    const plan = rows.reduce((a, x) => Math.abs(x.h - c.FL * 100) < Math.abs(a.h - c.FL * 100) ? x : a, rows[0]);
-    panel("panelTas", tl("TAS selon le niveau", "TAS by level", "TAS nach Flughöhe", "TAS según el nivel"),
-      legend([
-        [sw(COL.prof), lab(L.prof(), COL.prof), ""],
-        [sw(COL.eco), lab(L.eco(), COL.eco), ""],
-        [sw(COL.man), lab(climbName, COL.man), tl("TAS de la montée choisie (curseurs)", "TAS of the chosen climb (sliders)",
-          "TAS des gewählten Steigflugs (Regler)", "TAS del ascenso elegido (cursores)")],
-        ...(m0 ? [
-          [sw(COL.ref, true), lab(isaName, COL.ref), tl("même croisière en atmosphère standard",
-            "same cruise in the standard atmosphere", "gleicher Reiseflug in der Standardatmosphäre",
-            "mismo crucero en atmósfera estándar")]
-        ] : [])
-      ]),
-      `<p>${tl("Au niveau du plan", "At the plan level", "Auf der Planhöhe", "Al nivel del plan")} (${flTxt(plan.h)}) :</p><dl class="kvp">${one(plan.prof, COL.prof, L.prof())}${m0 ? one(plan.isa, COL.ref, isaName) : ""}</dl>`,
-      `<div id="tasReadout" class="readout"></div>`,
-      reading(tl(
-        "la TAS (vitesse vraie) croît avec le niveau à Badin égal (air moins dense, environ 2 % par 1000 ft) ; un réacteur tenu au Mach voit sa TAS baisser avec la température au-dessus de l’altitude de conjonction. Air plus chaud que l’ISA : TAS plus grande à Badin égal (≈ 1 % pour 5 °C), mais poussée et plafond plus faibles.",
-        "TAS (true airspeed) increases with level at a given IAS (thinner air, about 2 % per 1000 ft); a jet flown at constant Mach sees its TAS fall with temperature above the crossover altitude. Air warmer than ISA: higher TAS at a given IAS (≈ 1 % per 5 °C), but less thrust and a lower ceiling.",
-        "Die TAS (wahre Fluggeschwindigkeit) steigt bei gleicher IAS mit der Flughöhe (dünnere Luft, etwa 2 % je 1000 ft); ein mit konstanter Machzahl geflogener Jet verliert über der Übergangshöhe TAS mit der Temperatur. Wärmer als ISA: höhere TAS bei gleicher IAS (≈ 1 % je 5 °C), aber weniger Schub und niedrigere Gipfelhöhe.",
-        "la TAS (velocidad verdadera) crece con el nivel a IAS igual (aire menos denso, cerca del 2 % por 1000 ft); un reactor a Mach constante pierde TAS con la temperatura por encima de la altitud de cruce. Aire más cálido que la ISA: TAS mayor a IAS igual (≈ 1 % por 5 °C), pero menos empuje y techo más bajo."
-      )));
   }
 
   /** Libellé « courbe indisponible » (4 langues). */
@@ -1958,176 +1854,6 @@
     };
   }
 
-  // ---------------------------------------------------------------------------------------------------
-  // 1. Altitude optimale
-  // ---------------------------------------------------------------------------------------------------
-
-  /** Courbe d'altitude optimale (NM par unité de carburant sur le trajet entier, selon le niveau) et son panneau. */
-  function drawAltitude(m, c, K) {
-    const {
-      hs,
-      ok,
-      eco,
-      norm,
-      bands,
-      bestProf,
-      bestEco,
-      fastest,
-      plan,
-      step
-    } = K, unit = fuelUnit(), man = K.manTrips;
-    const svg = $("optChart"),
-      H = 270,
-      W = chartW(svg, H),
-      Lm = 52,
-      R = 12,
-      T = 16,
-      B = 30,
-      xmax = Math.max(K.topX, 1000);
-    /** Distance parcourue par unité de carburant (NM par unité affichée). */
-    const eff = r => c.D / cv(r.fuel);
-    const vals = [eco, norm, man, ...bands].flat().filter(ok).map(eff),
-      ay = niceAxis(Math.max(0, Math.min(...vals) * .95), Math.max(...vals) * 1.03), // graduations rondes (NM par unité)
-      ymax = ay.hi,
-      ymin = ay.lo;
-    /** Coordonnées du graphique : X (altitude), Y (rendement). */
-    const X = h => Lm + h / xmax * (W - Lm - R),
-      Y = v => T + (1 - (v - ymin) / (ymax - ymin || 1)) * (H - T - B);
-    const tick = xmax > 30000 ? 10000 : xmax > 12000 ? 5000 : 2000;
-    let g = "";
-    for (const v of ay.ticks) g += `<line class="grid-line" x1="${Lm}" x2="${W - R}" y1="${Y(v)}" y2="${Y(v)}"/><text x="${Lm - 5}" y="${Y(v) + 4}" text-anchor="end">${fmt(v, ay.dec)}</text>`;
-    for (let h = 0; h <= xmax; h += tick) g += `<line class="grid-line" x1="${X(h)}" x2="${X(h)}" y1="${T}" y2="${H - B}"/><text x="${X(h)}" y="${H - B + 14}" text-anchor="middle">${flTxt(h)}</text>`;
-    /** Tracé SVG du rendement d'une série, interrompu sur les niveaux non utilisables. */
-    const path = rs => {
-      let d = "",
-        pen = false;
-      for (const r of rs) {
-        if (!ok(r)) {
-          pen = false;
-          continue;
-        }
-        d += `${pen ? "L" : "M"}${X(r.h).toFixed(1)},${Y(eff(r)).toFixed(1)}`;
-        pen = true;
-      }
-      return d;
-    };
-    bands.forEach(b => g += `<path class="band" d="${path(b)}"/>`);
-    g += `<line class="axis" x1="${Lm}" x2="${W - R}" y1="${H - B}" y2="${H - B}"/><line class="axis" x1="${Lm}" x2="${Lm}" y1="${T}" y2="${H - B}"/>` +
-      `<path class="curve-eco" d="${path(eco)}"/><path class="curve" d="${path(norm)}"/><path class="curve-man" d="${path(man)}"/>`;
-    // optimums : pastilles de la couleur de leur courbe, étiquette neutre
-    // explication au survol de chaque pastille (<title> : infobulle native, lue aussi par les lecteurs d'écran)
-    // pastilles et libellés de zones : posés APRÈS la zone de survol du graphique (optHit), sinon leurs infobulles ne
-    // s'afficheraient jamais
-    let ov = "";
-    const zn = []; // explications des zones, sous le graphique
-    /** Point remarquable (optimum, niveau du plan) avec étiquette et info-bulle, ajouté à la surcouche. */
-    const dot = (r, col, label, dy, tip) => {
-      if (!ok(r)) return;
-      const x = X(r.h),
-        y = Y(eff(r)),
-        t = `<title>${escXml(tip)}</title>`;
-      ov += `<g class="opt-dot" style="cursor:help"><circle cx="${x}" cy="${y}" r="9" fill="transparent"/><circle cx="${x}" cy="${y}" r="4.5" style="fill:${col}"/>${t}</g><text x="${Math.min(Math.max(x, Lm + 30), W - R - 30)}" y="${y + dy}" text-anchor="middle" style="cursor:help">${t}${label}</text>`;
-    };
-    /** Niveau, carburant et durée d'un trajet en texte (fin de l'info-bulle). */
-    const at = r => ok(r) ? ` ${flTxt(r.h)} : ${fmt(cv(r.fuel), 0)} ${unit}, ${hmTxt(r.minutes)}.` : "";
-    if (ok(plan)) dot(plan, COL.ref, `${flTxt(plan.h)} ${tl("plan", "plan", "Plan", "plan")}`, 16,
-      tl(`Niveau du plan de vol, à la vitesse du profil.${at(plan)}`, `Flight plan level, at the profile speed.${at(plan)}`, `Flugplanhöhe, mit der Profilgeschwindigkeit.${at(plan)}`, `Nivel del plan de vuelo, a la velocidad del perfil.${at(plan)}`));
-    dot(fastest, COL.fast, flTxt(fastest?.h), -9,
-      tl(`Le plus rapide : niveau où le trajet entier (montée, croisière, descente) dure le moins, à la vitesse du profil.${at(fastest)}`, `Fastest: level where the whole trip (climb, cruise, descent) takes the least time, at the profile speed.${at(fastest)}`, `Am schnellsten: Flughöhe, auf der die ganze Strecke (Steig-, Reise-, Sinkflug) am kürzesten dauert, mit Profilgeschwindigkeit.${at(fastest)}`, `El más rápido: nivel en que el trayecto completo (ascenso, crucero, descenso) dura menos, a la velocidad del perfil.${at(fastest)}`));
-    dot(bestProf, COL.prof, flTxt(bestProf?.h), -9,
-      tl(`Carburant minimal à la vitesse du profil : niveau où le trajet entier consomme le moins en volant à la vitesse de croisière du profil.${at(bestProf)}`, `Minimum fuel at the profile speed: level where the whole trip burns the least when flown at the profile cruise speed.${at(bestProf)}`, `Minimaler Kraftstoff bei Profilgeschwindigkeit: Flughöhe mit dem geringsten Verbrauch der ganzen Strecke bei Reisegeschwindigkeit des Profils.${at(bestProf)}`, `Combustible mínimo a la velocidad del perfil: nivel en que el trayecto completo consume menos a la velocidad de crucero del perfil.${at(bestProf)}`));
-    dot(bestEco, COL.eco, flTxt(bestEco?.h), 16,
-      tl(`Carburant minimal en croisière économique (vitesse réduite, régime éco) : le moins de carburant possible, au prix d'un vol plus long.${at(bestEco)}`, `Minimum fuel in economy cruise (reduced speed, eco setting): the least fuel possible, at the cost of a longer flight.${at(bestEco)}`, `Minimaler Kraftstoff im Sparreiseflug (reduzierte Geschwindigkeit): geringstmöglicher Verbrauch, dafür längerer Flug.${at(bestEco)}`, `Combustible mínimo en crucero económico (velocidad reducida): el menor consumo posible, a cambio de un vuelo más largo.${at(bestEco)}`));
-    // niveaux sous le plafond mais pas tenables : zone teintée, libellé et explication selon la cause
-    // (seulement pour un vrai niveau refusé sous le plafond, sur au moins deux pas : pas pour l'arrondi du dernier pas)
-    if (K.stopReason && K.reachTop >= 0 && K.reachTop < m.ceiling - 2 * step) {
-      const x0 = X(K.reachTop),
-        x1 = X(m.ceiling),
-        above = flTxt(K.reachTop);
-      const why = K.stopReason === "short" ? [tl("inaccessible — trajet trop court", "unreachable — trip too short",
-            "unerreichbar — Strecke zu kurz", "inaccesible — trayecto corto"),
-          tl(`Niveaux au-dessus de ${above} : le trajet (${fmt(c.D, 0)} NM) est trop court pour y monter puis redescendre.`, `Levels above ${above}: the trip (${fmt(c.D, 0)} NM) is too short to climb there and descend again.`, `Flughöhen über ${above}: die Strecke (${fmt(c.D, 0)} NM) ist zu kurz, um dorthin zu steigen und wieder zu sinken.`, `Niveles por encima de ${above}: el trayecto (${fmt(c.D, 0)} NM) es demasiado corto para subir y volver a bajar.`)
-        ] :
-        K.stopReason === "thrust" ? [tl("inaccessible — puissance insuffisante", "unreachable — not enough power",
-            "unerreichbar — zu wenig Leistung", "inaccesible — potencia insuficiente"),
-          tl(`Niveaux au-dessus de ${above} : la puissance disponible ne suffit plus pour tenir la vitesse de croisière du profil (moteurs, air moins dense).`, `Levels above ${above}: the available power no longer holds the profile cruise speed (engines, thinner air).`, `Flughöhen über ${above}: die verfügbare Leistung reicht nicht mehr für die Reisegeschwindigkeit des Profils (Triebwerke, dünnere Luft).`, `Niveles por encima de ${above}: la potencia disponible ya no mantiene la velocidad de crucero del perfil (motores, aire menos denso).`)
-        ] : [tl("inaccessible", "unreachable", "unerreichbar", "inaccesible"),
-          tl(`Niveaux au-dessus de ${above} : le modèle ne trouve pas de vol possible (voir Limites).`, `Levels above ${above}: the model finds no feasible flight (see Limits).`, `Flughöhen über ${above}: das Modell findet keinen möglichen Flug (siehe Grenzen).`, `Niveles por encima de ${above}: el modelo no encuentra vuelo posible (ver Límites).`)
-        ];
-      zn.push(why);
-      g += `<rect class="short-zone" x="${x0.toFixed(1)}" y="${T}" width="${(x1 - x0).toFixed(1)}" height="${H - B - T}"/>`;
-      ov += `<text class="beyond-label zone-tip" x="${((x0 + x1) / 2).toFixed(1)}" y="${T + 11}" text-anchor="middle"><title>${escXml(why[1])}</title>${why[0]}</text>`;
-    }
-    // avion non pressurisé : au-dessus de l'altitude sans oxygène (Paramétrage › Planificateur, 10 000 ft par défaut),
-    // zone « oxygène requis » (information : le calcul n'est pas limité)
-    const oxy = oxygenAltFt();
-    if (!m.pressurized && oxy < xmax) {
-      const x0 = X(oxy),
-        x1 = X(xmax);
-      const oxyTxt = (tl(`Cabine non pressurisée : au-dessus de ${flTxt(oxy)}, oxygène requis pour l'équipage et les passagers (seuil réglable dans Paramétrage › Planificateur). Information : le calcul n'est pas limité.`, `Unpressurised cabin: above ${flTxt(oxy)}, oxygen required for crew and passengers (threshold set in Settings › Planner). Information: the computation is not limited.`, `Keine Druckkabine: oberhalb ${flTxt(oxy)} Sauerstoff für Besatzung und Passagiere erforderlich (Schwelle in Einstellungen › Planer). Hinweis: die Berechnung wird nicht begrenzt.`, `Cabina sin presurizar: por encima de ${flTxt(oxy)}, oxígeno necesario para tripulación y pasajeros (umbral en Ajustes › Planificador). Información: el cálculo no se limita.`)),
-        oxyTip = escXml(oxyTxt);
-      zn.push([tl("oxygène requis", "oxygen required", "Sauerstoff erforderlich", "oxígeno necesario"), oxyTxt]);
-      g += `<rect class="oxygen-zone" x="${x0.toFixed(1)}" y="${T}" width="${(x1 - x0).toFixed(1)}" height="${H - B - T}"/><line class="oxygen-edge" x1="${x0.toFixed(1)}" x2="${x0.toFixed(1)}" y1="${T}" y2="${H - B}"/>`;
-      ov += `<text class="oxygen-label zone-tip" x="${(x0 + 4).toFixed(1)}" y="${H - B - 5}"><title>${oxyTip}</title>${tl("oxygène requis", "oxygen required", "Sauerstoff erforderlich", "oxígeno necesario")}</text>`;
-    }
-    g += beyondZone(X, T, H - B, m.ceiling, xmax);
-    g += `<text x="${(Lm + W - R) / 2}" y="${H - 3}" text-anchor="middle">${tl("Niveau de croisière", "Cruise level", "Reiseflughöhe", "Nivel de crucero")}</text><text x="11" y="${(T + H - B) / 2}" text-anchor="middle" transform="rotate(-90 11 ${(T + H - B) / 2})">NM / ${unit}</text>` +
-      `<line id="optCursor" class="cursor" x1="0" x2="0" y1="${T}" y2="${H - B}" visibility="hidden"/><rect id="optHit" x="${Lm}" y="${T}" width="${W - Lm - R}" height="${H - T - B}" fill="transparent"/>` + ov;
-    svg.innerHTML = typo(g);
-    svg.hidden = false;
-    svg.dataset.t = T;
-    svg.dataset.b = B;
-    if (m.ceiling < xmax - 1) zn.push(ceilingNote(m));
-    zoneNotes("optZones", zn);
-
-    // relevé de la jauge (panneau) : trajet entier au niveau survolé, pour chaque série
-    const line = (r, col, name) => `<dt>${lab(name, col)}</dt><dd>${ok(r) ? `${fmt(cv(r.fuel), 0)} ${unit} · ${hmTxt(r.minutes)} · TAS ${fmt(r.tas, 0)} kt` : "—"}</dd>`;
-    sync.add({
-      svg,
-      hit: $("optHit"),
-      W,
-      L: Lm,
-      R,
-      T,
-      bottom: H - B,
-      xmax,
-      /** Jauge et lecture au niveau calculé le plus proche de h. */
-      show: h => {
-        const k = Math.min(hs.length - 1, Math.round(h / step));
-        cursorAt("optCursor", X(hs[k]));
-        $("optReadout").innerHTML = typo(`<b>⌖ ${flTxt(hs[k])}</b><dl class="kvp">${line(norm[k], COL.prof, L.prof())}${line(eco[k], COL.eco, L.eco())}${line(man[k], COL.man, L.man())}</dl>`);
-      },
-      /** Jauge masquée et lecture vidée. */
-      leave: () => {
-        $("optCursor").setAttribute("visibility", "hidden");
-        $("optReadout").textContent = "";
-      }
-    });
-
-    // panneau : optimums (libellé coloré, valeur neutre), niveau du plan, limites, lecture, hypothèses
-    const spd = r => m.kind === "jet" && r.mach > .5 ? `M${r.mach.toFixed(2)}` : `${fmt(r.ias, 0)} kt`;
-    /** Ligne d'un optimum dans le panneau : niveau · carburant · durée · vitesse. */
-    const best = (r, col, name) => r ? `<dt>${lab(name, col)}</dt><dd>${flTxt(r.h)} · ${fmt(cv(r.fuel), 0)} ${unit} · ${hmTxt(r.minutes)} · ${spd(r)}</dd>` : "";
-    const manBest = man.filter(r => ok(r) && r.h >= 1000 && r.h <= m.ceiling).reduce((a, b) => !a || b.fuel < a.fuel ? b : a, null);
-    const planTxt = ok(plan) ?
-      `${fmt(cv(plan.fuel), 0)} ${unit} · ${hmTxt(plan.minutes)}${plan.fuel > K.bestFuel.fuel * 1.005 ? ` (+${fmt(cv(plan.fuel - K.bestFuel.fuel), 0)} ${unit} ${tl("sur l’optimum", "over the optimum", "über dem Optimum", "sobre el óptimo")})` : ` (${tl("proche de l’optimum", "close to the optimum", "nahe am Optimum", "cerca del óptimo")})`}` :
-      tl("non utilisable (voir Limites)", "not usable (see Limits)", "nicht nutzbar (siehe Grenzen)", "no utilizable (ver Límites)");
-    panel("panelOpt", tl("Altitude optimale", "Optimum altitude", "Optimale Flughöhe", "Altitud óptima"),
-      `<dl class="kvp">${best(bestProf, COL.prof, `${tl("Carburant", "Fuel", "Kraftstoff", "Combustible")} — ${def("prof", L.prof())}`)}${best(bestEco, COL.eco, `${tl("Carburant", "Fuel", "Kraftstoff", "Combustible")} — ${def("eco", L.eco())}`)}${best(fastest, COL.fast, tl("Vitesse", "Speed", "Geschwindigkeit", "Velocidad"))}${best(manBest, COL.man, `${L.man()} (${manualTxt()})`)}<dt>${tl("Niveau du plan", "Plan level", "Planhöhe", "Nivel del plan")} ${flTxt(c.FL * 100)}</dt><dd>${planTxt}</dd></dl>`,
-      `<div id="optReadout" class="readout"></div>`,
-      `<details class="limits"${limitsWarn(m, c) ? " open" : ""}><summary>${tl("Limites", "Limits", "Grenzen", "Límites")}</summary>${limitsHtml(m, c, hs)}</details>`,
-      reading(tl(
-        "chaque point est le trajet entier (montée, croisière, descente) volé à ce niveau : plus la courbe est haute, moins on consomme par mille. Pointillés : fourchette de vent inconnu. Clic : épingler un niveau, reporté sur les courbes de montée.",
-        "each point is the whole trip (climb, cruise, descent) flown at that level: the higher the curve, the less fuel per mile. Dashed: unknown-wind range. Click: pin a level, carried over to the climb curves.",
-        "jeder Punkt ist die gesamte Strecke (Steig-, Reise-, Sinkflug) auf dieser Höhe: je höher die Kurve, desto weniger Kraftstoff pro Meile. Gestrichelt: Bereich bei unbekanntem Wind. Klick: Höhe anheften, auf die Steigkurven übertragen.",
-        "cada punto es el trayecto completo (ascenso, crucero, descenso) a ese nivel: cuanto más alta la curva, menos combustible por milla. Punteado: horquilla de viento desconocido. Clic: fijar un nivel, trasladado a las curvas de ascenso."
-      )),
-      (m.estimatedRef || m.notes.length) ? `<p class="mut">${[m.estimatedRef ? `${tl("Point de croisière", "Cruise reference", "Reiseflug-Bezug", "Referencia de crucero")} : ${escXml(m.refSrc)} (${fieldLink("cruise.refAltFt")}, ${fieldLink("cruise.ceilingFt")})` : "", ...m.notes.map(escXml)].filter(Boolean).join(" · ")}</p>` : "",
-      `<details><summary>${tl("Hypothèses du modèle", "Model assumptions", "Modellannahmen", "Hipótesis del modelo")}</summary><p class="mut">${assumptions(m, c)}</p></details>`);
-  }
-  /** Vrai si les limites contiennent un avertissement (le bloc Limites s'ouvre alors de lui-même). */
-  const limitsWarn = (m, c) => c.FL * 100 > m.ceiling || (minDistance(m, c.FL * 100) ?? 0) > c.D;
-
   /** Texte des hypothèses du modèle (4 langues). */
   function assumptions(m, c) {
     const jet = m.kind === "jet",
@@ -2140,7 +1866,7 @@
   }
 
   // ---------------------------------------------------------------------------------------------------
-  // 2 à 4. Montée : vario, vitesses, comparaison, tables
+  // Montée : graphe (vario, carburant par 1000 ft, vitesses), régimes de la cartographie moteur
   // ---------------------------------------------------------------------------------------------------
 
   /** Abscisse du graphe de montée : « alt » (selon l'altitude, défaut) ou « rpm » (selon le régime, à mi-montée) ;
@@ -2167,9 +1893,10 @@
         try {
           localStorage.setItem("fpClimbX", b.dataset.x);
         } catch {}
-        if (S.m && S.c && curvesShown()) renderAll(S.m, S.c);
+        if (S.m && S.c && curvesShown() && S.cache) drawClimbChart(S.m, S.c, S.cache);
       });
     }
+    put(box, "hidden", !hasEngineMap());
     const x = climbX();
     for (const b of box.querySelectorAll("button")) {
       put(b, "textContent", b.dataset.x === "alt" ? tl("par altitude", "by altitude", "nach Höhe", "por altitud") : tl("par régime",
@@ -2283,271 +2010,154 @@
     hit.onpointerdown = null;
   }
 
-  /** Courbes de montée (vario, Badin), table comparative des lois, table par altitude et régimes RPM, et leurs panneaux. */
+  /** Vrai si le profil actif a une cartographie moteur (au moins deux régimes avec débit). */
+  const hasEngineMap = () => (active?.rpmFuelCurve || []).filter(r => Number.isFinite(+r.rpm) && Number.isFinite(+(r.fuelFlowPerHour ?? r
+    .fuelFlowMax))).length >= 2;
+
+  /** Montée (vue détaillée) : graphe « Montée » (vario, carburant par 1000 ft, Badin et TAS selon l'altitude), tableau des
+   *  régimes s'il y a une cartographie moteur. La comparaison des montées est un tableau tenu par les consignes
+   *  (renderGuide). */
   function drawClimb(m, c, K) {
     $("climbBlock").hidden = false;
-    const unit = fuelUnit(),
-      PER = L.per1000(),
-      top = K.top,
-      step = top > 20000 ? 1000 : 500,
-      man = manualLaw(m);
-    const pts = K.pts ||= (() => {
-      const a = [];
-      for (let h = 0; h <= K.topX; h += step) {
-        try {
-          const p = m.climbPoint(h);
-          if (p && Number.isFinite(p.roc)) a.push(p);
-        } catch {
-          break;
-        }
-      }
-      return a;
-    })();
-    const mpts = pts.map(p => m.manualPoint(p.h, man)),
-      p0 = pts[0];
-    const hTarget = Math.min(c.FL * 100, top),
-      kC = m.cruise(hTarget, "normal");
-
-    // --- 2. vario selon l'altitude ------------------------------------------------------------------
     mountClimbX();
-    guard("panelClimb", "climbChart", tl("Montée — vario", "Climb — rate", "Steigflug — Steigrate", "Ascenso — régimen"), () => {
-      if (climbX() === "rpm") return drawClimbRegime(m, c);
-      const svg = $("climbChart"),
-        H = 230,
-        W = chartW(svg, H),
-        Lm = 52,
-        R = 44,
-        T = 14,
-        B = 30,
-        xmax = Math.max(K.topX, 1000);
-      // axes gradués en valeurs rondes depuis 0 : vario (ft/min) à gauche, carburant par 1000 ft à droite
-      const rAx = niceAxis(0, Math.max(...pts.map((p, i) => Math.max(p.roc, p.profileRoc, mpts[i].roc))) * 1.03, 4, true),
-        rmax = rAx.hi;
-      const fAx = niceAxis(0, Math.max(...pts.filter(p => Number.isFinite(p.fuelPer1000) && p.roc > 100).map(p => cv(p
-          .fuelPer1000))) * 1.03 || 1, 4, true),
-        fmax = fAx.hi;
-      /** Coordonnées du graphique : X (altitude), Y (vario), Yf (carburant par 1000 ft). */
-      const X = h => Lm + h / xmax * (W - Lm - R),
-        Y = v => T + (1 - v / rmax) * (H - T - B),
-        Yf = v => T + (1 - v / fmax) * (H - T - B);
-      let g = "";
-      for (const v of rAx.ticks) g += `<line class="grid-line" x1="${Lm}" x2="${W - R}" y1="${Y(v)}" y2="${Y(v)}"/><text x="${Lm - 5}" y="${Y(v) + 4}" text-anchor="end">${fmt(v, rAx.dec)}</text>`;
-      for (const v of fAx.ticks) g += `<text x="${W - R + 5}" y="${Yf(v) + 4}">${fmt(v, fAx.dec)}</text>`;
-      const tick = xmax > 30000 ? 10000 : xmax > 12000 ? 5000 : 2000;
-      for (let h = 0; h <= xmax; h += tick) g += `<text x="${X(h)}" y="${H - B + 14}" text-anchor="middle">${flTxt(h)}</text>`;
-      g += planMark(X, T, H - B, c.FL * 100, xmax); // niveau du vol (haut de la montée)
-      /** Tracé SVG d'une grandeur f(point, index) sur les points retenus par sel. */
-      const pl = (f, sel = () => true) => pts.map((p, i) => [p, i]).filter(([p]) => sel(p)).map(([p, i], j) => `${j ? "L" : "M"}${X(p.h).toFixed(1)},${f(p, i).toFixed(1)}`).join("");
-      g += `<line class="axis" x1="${Lm}" x2="${W - R}" y1="${H - B}" y2="${H - B}"/>` +
-        `<path class="band" d="${pl(p => Y(Math.max(0, p.profileRoc)))}"/><path class="curve" d="${pl(p => Y(Math.max(0, p.roc)))}"/>` +
-        `<path class="curve-fuel" d="${pl(p => Yf(cv(p.fuelPer1000)), p => p.roc > 100)}"/><path class="curve-man" d="${pl((p, i) => Y(Math.max(0, mpts[i].roc)))}"/>`;
-      if (S.manual.calc !== "vs" && !(S.manual.calc === "rpm" && S.manual.full) && S.manual.vs < rmax) g += `<line class="target" x1="${Lm}" x2="${W - R}" y1="${Y(S.manual.vs)}" y2="${Y(S.manual.vs)}"/>`; // vario visé
-      g += beyondZone(X, T, H - B, m.ceiling, xmax);
-      g += `<text x="${(Lm + W - R) / 2}" y="${H - 3}" text-anchor="middle">${tl("Altitude", "Altitude", "Höhe", "Altitud")}</text><text x="11" y="${(T + H - B) / 2}" text-anchor="middle" transform="rotate(-90 11 ${(T + H - B) / 2})">ft/min</text>` +
-        `<text x="${W - 8}" y="${(T + H - B) / 2}" text-anchor="middle" transform="rotate(90 ${W - 8} ${(T + H - B) / 2})">${PER}</text>` +
-        `<line id="climbCursor" class="cursor" x1="0" x2="0" y1="${T}" y2="${H - B}" visibility="hidden"/><rect id="climbHit" x="${Lm}" y="${T}" width="${W - Lm - R}" height="${H - T - B}" fill="transparent"/>`;
-      svg.innerHTML = typo(g);
-      svg.hidden = false;
-      svg.dataset.t = T;
-      svg.dataset.b = B;
-      sync.add({
-        svg,
-        hit: $("climbHit"),
-        W,
-        L: Lm,
-        R,
-        T,
-        bottom: H - B,
-        xmax,
-        /** Jauge et lecture au point de montée le plus proche de h. */
-        show: h => {
-          const i = Math.min(pts.length - 1, Math.round(h / step)),
-            p = pts[i],
-            mp = mpts[i];
-          cursorAt("climbCursor", X(p.h));
-          $("climbReadout").innerHTML = typo(`<b>⌖ ${flTxt(p.h)}</b><dl class="kvp"><dt>${lab(tl("Vario max", "Max. rate", "Max. Steigrate", "Régimen máx."), COL.prof)}</dt><dd>${fmt(p.roc, 0)} ft/min · ${def("Vy")} ${fmt(p.vyIas, 0)} kt (${def("TAS")} ${fmt(p.vyTas, 0)})</dd><dt>${lab(L.climbSpd(), COL.ref)}</dt><dd>${fmt(Math.max(0, p.profileRoc), 0)} ft/min</dd><dt>${lab(tl("Carburant", "Fuel", "Kraftstoff", "Combustible"), COL.fast)}</dt><dd>${fmt(cv(p.fuelPer1000), 1)} ${PER} · ${showFuel(p.ff)} ${unit}/h</dd><dt>${lab(L.man(), COL.man)}</dt><dd>${fmt(Math.max(0, mp.roc), 0)} ft/min · ${fmt(mp.ias, 0)} kt · ${tl("gaz", "throttle", "Leistung", "gases")} ${fmt(mp.frac * 100, 0)} %</dd><dt>${def("Vx")}</dt><dd>${fmt(p.vxIas, 0)} kt</dd></dl>`);
-        },
-        /** Jauge masquée et lecture vidée. */
-        leave: () => {
-          $("climbCursor").setAttribute("visibility", "hidden");
-          $("climbReadout").textContent = "";
-        }
-      });
-      panel("panelClimb", tl("Montée — vario", "Climb — rate", "Steigflug — Steigrate", "Ascenso — régimen"),
-        `<p>${tl("Au sol", "At sea level", "Am Boden", "Al nivel del mar")} : ${def("Vy")} ${fmt(p0.vyIas, 0)} kt, ${fmt(p0.roc, 0)} ft/min · ${def("Vx")} ${fmt(p0.vxIas, 0)} kt</p>`,
-        legend([
-          [sw(COL.prof), lab(tl("Vario max", "Max. rate", "Max. Steigrate", "Régimen máx."), COL.prof), tl(`obtenu à ${def("Vy")}`, `flown at ${def("Vy")}`,
-            `bei ${def("Vy")}`, `a ${def("Vy")}`)],
-          [sw(COL.ref, true), lab(def("climbSpd", L.climbSpd()), COL.ref), tl("vario à cette vitesse", "rate at this speed",
-            "Steigrate bei dieser Geschwindigkeit", "régimen a esta velocidad")],
-          [sw(COL.fast), lab(tl("Carburant", "Fuel", "Kraftstoff", "Combustible"), COL.fast), `${PER} ${tl("(échelle de droite)", "(right scale)", "(rechte Skala)", "(escala derecha)")}`],
-          [sw(COL.man), lab(L.man(), COL.man), `${manualTxt()} — ${tl("curseurs « Montée choisie » du devis", "“Chosen climb” sliders of the fuel plan", "Regler „Gewählter Steigflug“ der Planung", "cursores «Ascenso elegido» del plan")}`]
-        ]),
-        `<div id="climbReadout" class="readout"></div>`,
-        reading(tl(
-          "au trait blanc (niveau épinglé), le vario encore disponible : il baisse jusqu’au plafond. Violet sous le bleu : la montée choisie monte moins vite que Vy, en réduisant les gaz.",
-          "at the white line (pinned level), the rate still available: it drops towards the ceiling. Violet below blue: the chosen climb is slower than Vy, with reduced throttle.",
-          "an der weißen Linie (angeheftete Höhe) die noch verfügbare Steigrate: sie sinkt bis zur Gipfelhöhe. Violett unter Blau: der gewählte Steigflug steigt langsamer als Vy, mit reduzierter Leistung.",
-          "en la línea blanca (nivel fijado), el régimen aún disponible: baja hasta el techo. Violeta bajo el azul: el ascenso elegido sube más despacio que Vy, con gases reducidos."
-        )));
-    });
-
-    // --- 3. Badin des lois de montée selon l'altitude ----------------------------------------------------
-    const hMidC = Math.round(hTarget / 2 / 500) * 500;
-    let mv = null,
-      mt = null,
-      mf = null;
-    try {
-      [mv, mt, mf] = K.mid ||= ["vy", "time", "fuel"].map(o => m.climbOpt(hMidC, o, kC));
-    } catch (e) {
-      console.error("Vue des courbes — lois optimales :", e);
-    }
-    guard("panelSpeed", "climbSpeedChart", tl("Vitesses de montée", "Climb speeds", "Steiggeschwindigkeiten", "Velocidades de ascenso"),
+    guard("panelClimb", "climbChart", tl("Montée", "Climb", "Steigflug", "Ascenso"), () => drawClimbChart(m, c, K));
+    // --- régimes de la table RPM / N1 à mi-montée (cartographie moteur seulement) ---------------------------------
+    const map = hasEngineMap();
+    $("rowTable").hidden = !map;
+    if (!map) return;
+    guard("panelClimb", "climbTable", tl("Régimes de montée", "Climb settings", "Steigflugeinstellungen", "Regímenes de ascenso"),
       () => {
-        const sv = $("climbSpeedChart"),
-          H = 200,
-          W = chartW(sv, H),
-          Lm = 52,
-          R = 12,
-          T = 12,
-          B = 30;
-        const sch = (K.sch ||= pts.filter(p => p.h <= hTarget || hTarget < step).map(p => ({
-            h: p.h,
-            vy: m.climbOpt(p.h, "vy", kC),
-            t: m.climbOpt(p.h, "time", kC),
-            f: m.climbOpt(p.h, "fuel", kC),
-            vx: p.vxIas,
-            pr: active.climb?.iasKt ? +active.climb.iasKt : null
-          })))
-          .map(r => ({
-            ...r,
-            mn: m.manualPoint(r.h, man)
-          }));
-        // Badin (traits pleins) et TAS (pointillés, même couleur) de chaque loi
-        const xm = Math.max(hTarget, step),
-          all = sch.flatMap(r => [r.vy?.ias, r.t?.ias, r.f?.ias, r.pr, r.mn.ias, r.vx, r.vy?.tas, r.t?.tas, r.f?.tas, r.mn.tas]).filter(
-            Number.isFinite);
-        // axe des vitesses gradué en valeurs rondes (kt)
-        const ax = niceAxis(Math.min(...all) * .96, Math.max(...all) * 1.03),
-          vmin = ax.lo,
-          vmax = ax.hi,
-          X = h => Lm + h / xm * (W - Lm - R),
-          Y = v => T + (1 - (v - vmin) / (vmax - vmin || 1)) * (H - T - B);
-        let g = "";
-        for (const v of ax.ticks) g += `<line class="grid-line" x1="${Lm}" x2="${W - R}" y1="${Y(v)}" y2="${Y(v)}"/><text x="${Lm - 5}" y="${Y(v) + 4}" text-anchor="end">${fmt(v, ax.dec)}</text>`;
-        const tk = xm > 30000 ? 10000 : xm > 12000 ? 5000 : 2000;
-        for (let h = 0; h <= xm; h += tk) g += `<text x="${X(h)}" y="${H - B + 14}" text-anchor="middle">${flTxt(h)}</text>`;
-        /** Tracé SVG d'une grandeur de la table des vitesses (trait coloré si col). */
-        const pth = (f, cls, col) => {
-          const d = sch.map(r => [r.h, f(r)]).filter(x => Number.isFinite(x[1])).map((x, i) => `${i ? "L" : "M"}${X(x[0]).toFixed(1)},${Y(x[1]).toFixed(1)}`).join("");
-          return d ? `<path class="${cls}" d="${d}"${col ? ` style="stroke:${col}"` : ""}/>` : "";
-        };
-        g += `<line class="axis" x1="${Lm}" x2="${W - R}" y1="${H - B}" y2="${H - B}"/>${pth(r => r.pr, "band")}${pth(r => r.vx, "curve-vx")}${pth(r => r.vy?.ias, "curve")}${pth(r => r.t?.ias, "curve-fuel")}${pth(r => r.f?.ias, "curve-eco")}${pth(r => r.mn.ias, "curve-man")}` +
-          `${pth(r => r.vy?.tas, "tas-line", COL.prof)}${pth(r => r.t?.tas, "tas-line", COL.fast)}${pth(r => r.f?.tas, "tas-line", COL.eco)}${pth(r => r.mn.tas, "tas-line", COL.man)}` +
-          `<text x="${(Lm + W - R) / 2}" y="${H - 3}" text-anchor="middle">${tl("Altitude", "Altitude", "Höhe", "Altitud")}</text><text x="11" y="${(T + H - B) / 2}" text-anchor="middle" transform="rotate(-90 11 ${(T + H - B) / 2})">kt</text>` +
-          `<line id="climbSpeedCursor" class="cursor" x1="0" x2="0" y1="${T}" y2="${H - B}" visibility="hidden"/><rect id="climbSpeedHit" x="${Lm}" y="${T}" width="${W - Lm - R}" height="${H - T - B}" fill="transparent"/>`;
-        sv.innerHTML = typo(g);
-        sv.hidden = false;
-        sv.dataset.t = T;
-        sv.dataset.b = B;
-        /** Ligne de la lecture : Badin (TAS) · vario · débit carburant d'une loi, ou « — ». */
-        const one = (x, col, name) => `<dt>${lab(name, col)}</dt><dd>${x ? `${fmt(x.ias, 0)} kt (TAS ${fmt(x.tas, 0)}) · ${fmt(x.roc, 0)} ft/min · ${showFuel(x.ff)} ${unit}/h${m.kind !== "jet" ? ` · ${fmt(x.frac * 100, 0)} %` : ""}` : "—"}</dd>`;
-        sync.add({
-          svg: sv,
-          hit: $("climbSpeedHit"),
-          W,
-          L: Lm,
-          R,
-          T,
-          bottom: H - B,
-          xmax: xm,
-          /** Jauge et lecture au niveau de la table le plus proche de h. */
-          show: h => {
-            const r = sch.reduce((a, x) => Math.abs(x.h - h) < Math.abs(a.h - h) ? x : a, sch[0]);
-            if (!r) return;
-            cursorAt("climbSpeedCursor", X(r.h));
-            $("climbSpeedReadout").innerHTML = typo(`<b>⌖ ${flTxt(r.h)}</b><dl class="kvp">${one(r.vy, COL.prof, "Vy")}${one(r.t, COL.fast, L.fast())}${one(r.f, COL.eco, L.fuelLaw())}${one(r.mn, COL.man, L.man())}<dt>${def("Vx")}</dt><dd>${fmt(r.vx, 0)} kt</dd></dl>`);
-          },
-          /** Jauge masquée et lecture vidée. */
-          leave: () => {
-            $("climbSpeedCursor").setAttribute("visibility", "hidden");
-            $("climbSpeedReadout").textContent = "";
-          }
-        });
-        /** Ligne du panneau : Badin · vario (et gaz hors réacteur) d'une loi à mi-montée. */
-        const law = (x, col, name) => `<dt>${lab(name, col)}</dt><dd>${x ? `${fmt(x.ias, 0)} kt · ${fmt(x.roc, 0)} ft/min${m.kind !== "jet" ? ` · ${tl("gaz", "throttle", "Leistung", "gases")} ${fmt(x.frac * 100, 0)} %` : ""}` : "—"}</dd>`;
-        panel("panelSpeed", tl("Vitesses de montée", "Climb speeds", "Steiggeschwindigkeiten", "Velocidades de ascenso"),
-          `<p>${tl("Badin à tenir, à mi-montée", "IAS to fly, at mid-climb", "Zu fliegende IAS, halber Steigflug", "IAS a mantener, a media subida")} (${flTxt(hMidC)}) :</p><dl class="kvp">${law(mv, COL.prof, def("Vy"))}${law(mt, COL.fast, L.fast())}${law(mf, COL.eco, L.fuelLaw())}${law(m.manualPoint(hMidC, man), COL.man, L.man())}<dt>${def("Vx")} (${tl("pente max", "max. angle", "max. Steigwinkel", "ángulo máx.")})</dt><dd>${fmt(m.climbPoint(hMidC).vxIas, 0)} kt</dd></dl>`,
-          `<div id="climbSpeedReadout" class="readout"></div>`,
-          reading(tl(`trois objectifs incompatibles : ${def("Vy")} gagne l’altitude au plus vite ; la montée rapide arrive au plus tôt (plus vite, moins de vario) ; la montée économique dépense le moins. Pointillés : ${def("climbSpd", L.climbSpd())} ; pointillés fins bleus : ${def("Vx")} (obstacle à franchir) ; tirets de la couleur de chaque montée : sa TAS (vitesse vraie), qui s’écarte du Badin en montant. Les curseurs « Montée choisie » du devis (badin, vario, régime) règlent votre montée choisie (violet).`, `three incompatible goals: ${def("Vy")} gains altitude fastest; the fast climb arrives soonest (faster, less rate); the economy climb burns least. Dashed: ${def("climbSpd", L.climbSpd())}; thin blue dots: ${def("Vx")} (obstacle clearance). The “Chosen climb” sliders of the fuel plan (IAS, vario, engine setting) set your chosen climb (violet).`, `drei unvereinbare Ziele: ${def("Vy")} gewinnt am schnellsten Höhe; der schnelle Steigflug kommt am frühesten an (schneller, weniger Steigrate); der sparsame verbraucht am wenigsten. Gestrichelt: ${def("climbSpd", L.climbSpd())}; feine blaue Punkte: ${def("Vx")} (Hindernisfreiheit). Die Regler „Gewählter Steigflug“ der Planung (IAS, Vario, Drehzahl) stellen Ihren gewählten Steigflug (violett) ein.`, `tres objetivos incompatibles: ${def("Vy")} gana altitud lo antes posible; el ascenso rápido llega antes (más rápido, menos régimen); el económico gasta lo mínimo. Punteado: ${def("climbSpd", L.climbSpd())}; puntos azules finos: ${def("Vx")} (franqueo de obstáculos). Los cursores «Ascenso elegido» del plan (IAS, vario, régimen) ajustan su ascenso elegido (violeta).`)));
-      });
-
-    // --- comparaison des lois : montée au niveau du plan et trajet entier ----------------------------------
-    guard("panelCompare", "climbCompare", tl("Comparaison des montées", "Climb comparison", "Vergleich der Steigflüge",
-        "Comparación de ascensos"),
-      () => {
-        const laws = [
-          ["profile", L.climbSpd(), COL.ref],
-          ["vy", "Vy", COL.prof],
-          ["time", L.fast(), COL.fast],
-          ["fuel", L.fuelLaw(), COL.eco]
-        ];
-        const res = [...(K.res ||= laws.map(([id, label, col]) => ({
-          id,
-          label,
-          col,
-          t: m.trip(hTarget, c.D, c.wc, "normal", id)
-        }))), {
-          id: man,
-          label: `${L.man()} (${manualTxt()})`,
-          col: COL.man,
-          t: m.trip(hTarget, c.D, c.wc, "normal", man)
-        }];
-        const okR = res.filter(r => r.t.ok),
-          min = k => okR.reduce((a, b) => !a || k(b) < k(a) ? b : a, null);
-        const bT = min(r => r.t.minutes),
-          bF = min(r => r.t.fuel),
-          bV = min(r => r.t.climb.minutes);
-        /** Cellule du tableau, marquée ★ si la loi est la meilleure de la colonne. */
-        const cell = (r, best, txt) => `<td${r === best ? ' class="best"' : ""}>${txt}${r === best ? " ★" : ""}</td>`;
-        $("climbCompare").innerHTML = typo(`<table><thead><tr><th>${tl("Montée jusqu’au", "Climb to", "Steigflug auf", "Ascenso a")} ${flTxt(hTarget)}</th><th>${tl("Durée", "Time", "Dauer", "Duración")}</th><th>NM</th><th>${unit}</th><th>${tl("Trajet", "Trip", "Strecke", "Trayecto")}</th><th>${unit}</th></tr></thead><tbody>${res.map(r => r.t.ok
-        ? `<tr><td>${lab(r.label, r.col)}</td>${cell(r, bV, hmTxt(r.t.climb.minutes))}<td>${fmt(r.t.climb.nm, 0)}</td><td>${fmt(cv(r.t.climb.fuel), 0)}</td>${cell(r, bT, hmTxt(r.t.minutes))}${cell(r, bF, fmt(cv(r.t.fuel), 0))}</tr>`
-        : `<tr><td>${lab(r.label, r.col)}</td><td colspan="5" class="unreach">${tl("inatteignable", "unreachable", "nicht erreichbar", "inalcanzable")} — ${whyNot(m, c, r.t, hTarget, r.id)}</td></tr>`).join("")}</tbody></table>`);
-        panel("panelCompare", tl("Comparaison des montées", "Climb comparison", "Vergleich der Steigflüge", "Comparación de ascensos"),
-          reading(tl(`montée jusqu’au niveau du plan (${flTxt(hTarget)}) puis trajet entier de ${fmt(c.D, 0)} NM, pour chaque montée. ★ : meilleur de la colonne. Montées rapide et économique : la distance parcourue en montée est retranchée de la croisière ; vario ≥ 50 % du vario max ; réacteur limité à 250 kt sous FL100.`, `climb to the plan level (${flTxt(hTarget)}) then the whole ${fmt(c.D, 0)} NM trip, for each climb. ★: best in the column. Fast and economy climbs: the distance covered while climbing is deducted from the cruise; rate ≥ 50 % of the maximum; jets limited to 250 kt below FL100.`, `Steigflug auf die Planhöhe (${flTxt(hTarget)}) und gesamte Strecke von ${fmt(c.D, 0)} NM, je Steigflug. ★: bester Wert der Spalte. Schneller und sparsamer Steigflug: die Steigstrecke wird vom Reiseflug abgezogen; Steigrate ≥ 50 % des Maximums; Strahlflugzeuge unter FL100 auf 250 kt begrenzt.`, `ascenso al nivel del plan (${flTxt(hTarget)}) y trayecto completo de ${fmt(c.D, 0)} NM, para cada ascenso. ★: mejor de la columna. Ascensos rápido y económico: la distancia en ascenso se descuenta del crucero; régimen ≥ 50 % del máximo; reactores limitados a 250 kt bajo FL100.`)));
-      });
-
-    // --- table par altitude (cumuls à Vy) et régimes de la table RPM / N1 -----------------------------------
-    guard("panelTable", "climbTable", tl("Montée par altitude", "Climb by altitude", "Steigflug nach Höhe", "Ascenso por altitud"),
-      () => {
-        const every = Math.max(step, Math.round(top / 6 / 1000) * 1000 || step);
-        const rows = pts.filter(p => p.h <= top && (p.h % every === 0 || p.h === top)).map(p => {
-          const k = p.h ? m.climbTo(p.h, {
-            speed: "vy"
-          }) : {
-            minutes: 0,
-            nm: 0,
-            fuel: 0
-          };
-          return `<tr><td>${flTxt(p.h)}</td><td>${fmt(p.vyIas, 0)} / ${fmt(p.vyTas, 0)}</td><td>${fmt(p.roc, 0)}</td><td>${fmt(p.vxIas, 0)}</td><td>${showFuel(p.ff)}</td><td>${fmt(cv(p.fuelPer1000), 1)}</td><td>${k ? `${hmTxt(k.minutes)} · ${fmt(k.nm, 0)} NM · ${fmt(cv(k.fuel), 0)}` : "—"}</td></tr>`;
-        }).join("");
-        const hMid = hMidC,
-          ffOf = r => r.fuelFlowPerHour ?? r.fuelFlowMax;
-        const rpm = (active.rpmFuelCurve || []).filter(r => Number.isFinite(r.rpm) && Number.isFinite(ffOf(r)))
-          .map(r => ({
+        const unit = fuelUnit(),
+          PER = L.per1000(),
+          hMid = Math.round(Math.min(c.FL * 100, K.top) / 2 / 500) * 500,
+          ffOf = r => +(r.fuelFlowPerHour ?? r.fuelFlowMax),
+          rpm = (active.rpmFuelCurve || []).filter(r => Number.isFinite(+r.rpm) && Number.isFinite(ffOf(r))).map(r => ({
             r,
             ff: ffOf(r),
             at: m.settingAt(ffOf(r), hMid),
             sl: m.settingAt(ffOf(r), 0)
-          })).filter(x => x.at.roc > 100);
-        const bestRpm = rpm.reduce((a, b) => !a || b.at.fuelPer1000 < a.at.fuelPer1000 ? b : a, null),
+          })).filter(x => x.at.roc > 100),
+          bestRpm = rpm.reduce((a, b) => !a || b.at.fuelPer1000 < a.at.fuelPer1000 ? b : a, null),
           RATE = tl("Vario", "Rate", "Steigrate", "Régimen");
-        $("climbTable").innerHTML = typo(`<table><thead><tr><th>${tl("Altitude", "Altitude", "Höhe", "Altitud")}</th><th>Vy ${tl("Badin", "IAS", "IAS", "IAS")} / TAS (kt)</th><th>${tl("Vario max", "Max. rate", "Max. Steigrate", "Régimen máx.")} (ft/min)</th><th>Vx (kt)</th><th>${tl("Débit", "Fuel flow", "Verbrauch", "Flujo")} (${unit}/h)</th><th>${PER}</th><th>${tl("Cumul depuis le sol à Vy", "Cumulative from ground at Vy", "Kumuliert ab Boden mit Vy", "Acumulado desde el suelo a Vy")}</th></tr></thead><tbody>${rows}</tbody></table>` +
-          (rpm.length ? `<h4>${tl("Régimes de montée (table RPM / N1)", "Climb settings (RPM / N1 table)", "Steigflugeinstellungen (RPM-/N1-Tabelle)", "Regímenes de ascenso (tabla RPM / N1)")} — ${flTxt(hMid)}</h4><table><thead><tr><th>RPM / N1</th><th>${tl("Débit", "Fuel flow", "Verbrauch", "Flujo")}</th><th>${tl("Gaz", "Throttle", "Leistungshebel", "Gases")}</th><th>${RATE} ${tl("sol", "SL", "Boden", "nivel del mar")}</th><th>${RATE} ${flTxt(hMid)}</th><th>${PER}</th></tr></thead><tbody>${rpm.sort((a, b) => a.r.rpm - b.r.rpm).map(x => `<tr><td${x === bestRpm ? ' class="best"' : ""}>${fmt(x.r.rpm, 0)}${x === bestRpm ? " ★" : ""}</td><td>${showFuel(x.ff)}</td><td>${fmt(x.at.frac * 100, 0)} %</td><td>${fmt(x.sl.roc, 0)}</td><td>${fmt(x.at.roc, 0)}</td><td>${fmt(cv(x.at.fuelPer1000), 1)}</td></tr>`).join("")}</tbody></table>` : ""));
-        panel("panelTable", tl("Montée par altitude", "Climb by altitude", "Steigflug nach Höhe", "Ascenso por altitud"),
-          reading(tl(`montée à ${def("Vy")} : vario, débit et carburant par 1000 ft à chaque altitude, cumuls depuis le sol.`, `climb at ${def("Vy")}: rate, fuel flow and fuel per 1000 ft at each altitude, totals from the ground.`, `Steigflug mit ${def("Vy")}: Steigrate, Verbrauch und Kraftstoff je 1000 ft auf jeder Höhe, Summen ab Boden.`, `ascenso a ${def("Vy")}: régimen, flujo y combustible por 1000 ft a cada altitud, acumulados desde el suelo.`)),
-          rpm.length ? `<p>${tl(`Table RPM / N1 : vario et carburant par pied gagné à ${flTxt(hMid)} pour chaque régime de la table (au-delà de la puissance disponible : plein gaz). ★ : le plus économique.`, `RPM / N1 table: rate and fuel per foot gained at ${flTxt(hMid)} for each setting of the table (beyond the power available: full throttle). ★: most economical.`, `RPM-/N1-Tabelle: Steigrate und Kraftstoff je gewonnenem Fuß auf ${flTxt(hMid)} für jede Einstellung (über der verfügbaren Leistung: Vollgas). ★: am sparsamsten.`, `Tabla RPM / N1: régimen y combustible por pie ganado a ${flTxt(hMid)} para cada régimen de la tabla (por encima de la potencia disponible: gases a fondo). ★: el más económico.`)}${mf && m.kind !== "jet" ? ` ${tl(`Montée économique : gaz ${fmt(mf.frac * 100, 0)} %, ${showFuel(mf.ff)} ${unit}/h.`, `Economy climb: throttle ${fmt(mf.frac * 100, 0)} %, ${showFuel(mf.ff)} ${unit}/h.`, `Sparsamer Steigflug: Leistung ${fmt(mf.frac * 100, 0)} %, ${showFuel(mf.ff)} ${unit}/h.`, `Ascenso económico: gases ${fmt(mf.frac * 100, 0)} %, ${showFuel(mf.ff)} ${unit}/h.`)}` : ""}</p>` : "");
+        $("climbTable").innerHTML = typo(rpm.length ? `<p class="mut">${tl(`Vario et carburant par pied gagné à ${flTxt(hMid)} (mi-montée) pour chaque régime de la cartographie ; ★ : le plus économe.`, `Rate and fuel per foot gained at ${flTxt(hMid)} (mid-climb) for each setting of the engine map; ★: most economical.`, `Steigrate und Kraftstoff je gewonnenem Fuß auf ${flTxt(hMid)} (halber Steigflug) für jede Einstellung des Motorkennfelds; ★: am sparsamsten.`, `Régimen y combustible por pie ganado a ${flTxt(hMid)} (media subida) para cada régimen del mapa motor; ★: el más económico.`)}</p><table><thead><tr><th>RPM / N1</th><th>${tl("Débit", "Fuel flow", "Verbrauch", "Flujo")} (${unit}/h)</th><th>${tl("Gaz", "Throttle", "Leistungshebel", "Gases")}</th><th>${RATE} ${tl("sol", "SL", "Boden", "nivel del mar")}</th><th>${RATE} ${flTxt(hMid)}</th><th>${PER}</th></tr></thead><tbody>${rpm.sort((a, b) => a.r.rpm - b.r.rpm).map(x => `<tr><td${x === bestRpm ? ' class="best"' : ""}>${fmt(+x.r.rpm, 0)}${x === bestRpm ? " ★" : ""}</td><td>${showFuel(x.ff)}</td><td>${fmt(x.at.frac * 100, 0)} %</td><td>${fmt(x.sl.roc, 0)}</td><td>${fmt(x.at.roc, 0)}</td><td>${fmt(cv(x.at.fuelPer1000), 1)}</td></tr>`).join("")}</tbody></table>` : `<p class="mut">${tl("Aucun régime de la cartographie ne permet de monter à mi-montée.", "No setting of the engine map climbs at mid-climb.", "Keine Einstellung des Motorkennfelds steigt im halben Steigflug.", "Ningún régimen del mapa motor permite subir a media subida.")}</p>`);
       });
+  }
+
+  /** Graphe « Montée » : trois panneaux empilés sur le même axe des altitudes que la décision du niveau — vario (objectif
+   *  des consignes, et vario max à Vy en tirets), carburant par 1000 ft (objectif), Badin (trait plein) et TAS (tirets) de
+   *  l'objectif ; un seul gris au-delà du plafond ; même curseur que la décision (survol, clic). Mode « par régime »
+   *  (cartographie moteur seulement) : drawClimbRegime. */
+  function drawClimbChart(m, c, K) {
+    S.climbShow = null;
+    if (climbX() === "rpm" && hasEngineMap()) return drawClimbRegime(m, c);
+    const svg = $("climbChart"),
+      W = Math.max(320, Math.round((svg.parentElement?.clientWidth || 540) - 2)),
+      Lm = 58,
+      R = 14,
+      PV = {
+        t: 18,
+        b: 108
+      },
+      PF = {
+        t: 126,
+        b: 176
+      },
+      PS = {
+        t: 194,
+        b: 274
+      },
+      H = 310,
+      xmax = S.dec?.xmax || Math.max(K.topX, 1000),
+      step = m.ceiling > 20000 ? 1000 : 500,
+      goal = goalNow(),
+      col = goalCol(goal),
+      top = Math.floor(m.ceiling / step) * step,
+      law = goalLaw(m, goal, m.cruise(Math.min(c.FL * 100, top), "normal")),
+      PER = L.per1000(),
+      unit = fuelUnit();
+    if (!law) throw Error(tl("objectif de montée indisponible", "climb goal unavailable", "Steigflugziel nicht verfügbar",
+      "objetivo de ascenso no disponible"));
+    const pts = [];
+    for (let h = 0; h <= top; h += step) {
+      const v = m.climbPoint(h),
+        g = m.manualPoint(h, law);
+      if (!v || !Number.isFinite(v.roc)) break;
+      pts.push({
+        h,
+        v,
+        g,
+        f1000: g.roc > 50 ? g.ff / g.roc * 1000 / 60 : NaN
+      });
+    }
+    if (!pts.length) throw Error(tl("aucun point de montée", "no climb point", "kein Steigpunkt", "ningún punto de ascenso"));
+    const X = h => Lm + h / xmax * (W - Lm - R),
+      rAx = niceAxis(0, Math.max(...pts.map(p => Math.max(p.v.roc, p.g.roc))) * 1.03, 3, true),
+      fv = pts.map(p => cv(p.f1000)).filter(Number.isFinite),
+      fAx = niceAxis(0, (fv.length ? Math.max(...fv) : 1) * 1.03, 2, true),
+      sv = pts.flatMap(p => [p.g.ias, p.g.tas]).filter(Number.isFinite),
+      sAx = niceAxis(Math.min(...sv) * .96, Math.max(...sv) * 1.03, 3),
+      Y = (P, ax) => v => P.t + (1 - (v - ax.lo) / ((ax.hi - ax.lo) || 1)) * (P.b - P.t),
+      Yv = Y(PV, rAx),
+      Yf = Y(PF, fAx),
+      Ys = Y(PS, sAx);
+    let g = "";
+    const tk = xmax > 30000 ? 5000 : xmax > 12000 ? 2000 : 1000;
+    for (let h = 0; h <= xmax; h += tk) g += `<line class="grid-line" x1="${X(h).toFixed(1)}" x2="${X(h).toFixed(1)}" y1="${PV.t}" y2="${PS.b}"/><text x="${X(h).toFixed(1)}" y="${PS.b + 14}" text-anchor="middle">${flTxt(h)}</text>`;
+    /** Graduations horizontales d'un panneau (valeurs à gauche). */
+    const ticks = (ax, Yp) => ax.ticks.map(v => `<line class="grid-line" x1="${Lm}" x2="${W - R}" y1="${Yp(v).toFixed(1)}" y2="${Yp(v).toFixed(1)}"/><text x="${Lm - 5}" y="${(Yp(v) + 4).toFixed(1)}" text-anchor="end">${fmt(v, ax.dec)}</text>`).join("");
+    g += ticks(rAx, Yv) + ticks(fAx, Yf) + ticks(sAx, Ys);
+    if (m.ceiling < xmax - 1)
+      for (const P of [PV, PF, PS]) g += `<rect class="beyond" x="${X(m.ceiling).toFixed(1)}" y="${P.t}" width="${(X(xmax) - X(m.ceiling)).toFixed(1)}" height="${P.b - P.t}"/>`;
+    /** Tracé d'une grandeur f(point) sur les points où elle est finie. */
+    const pl = (f, Yp) => pts.filter(p => Number.isFinite(f(p))).map((p, j) => `${j ? "L" : "M"}${X(p.h).toFixed(1)},${Yp(f(p)).toFixed(1)}`).join("");
+    for (const P of [PV, PF, PS]) g += `<line class="axis" x1="${Lm}" x2="${W - R}" y1="${P.b}" y2="${P.b}"/><line class="axis" x1="${Lm}" x2="${Lm}" y1="${P.t}" y2="${P.b}"/>`;
+    const gName = GOAL_TXT[goal]()[0];
+    g += (goal !== "vy" ? `<path class="band" d="${pl(p => Math.max(0, p.v.roc), Yv)}"/>` : "") +
+      `<path class="curve-goal" style="stroke:${col}" d="${pl(p => Math.max(0, p.g.roc), Yv)}"/>` +
+      `<path class="curve-goal thin" style="stroke:${col}" d="${pl(p => cv(p.f1000), Yf)}"/>` +
+      `<path class="curve-goal" style="stroke:${col}" d="${pl(p => p.g.ias, Ys)}"/><path class="tas-line" style="stroke:${col}" d="${pl(p => p.g.tas, Ys)}"/>` +
+      `<text class="dec-ptitle" x="${Lm + 4}" y="${PV.t - 5}">${tl("Vario", "Climb rate", "Steigrate", "Régimen")} (ft/min) — « ${gName} »${goal !== "vy" ? tl(", tirets : vario max (Vy)", ", dashed: max. rate (Vy)", ", gestrichelt: max. Steigrate (Vy)", ", trazos: régimen máx. (Vy)") : ""}</text>` +
+      `<text class="dec-ptitle" x="${Lm + 4}" y="${PF.t - 5}">${tl("Carburant", "Fuel", "Kraftstoff", "Combustible")} (${PER})</text>` +
+      `<text class="dec-ptitle" x="${Lm + 4}" y="${PS.t - 5}">${tl("Badin à tenir (trait) et TAS (tirets), kt", "IAS to fly (line) and TAS (dashed), kt", "Zu haltende IAS (Linie) und TAS (gestrichelt), kt", "IAS a mantener (línea) y TAS (trazos), kt")}</text>` +
+      `<text x="${(Lm + W - R) / 2}" y="${H - 2}" text-anchor="middle">${tl("Altitude", "Altitude", "Höhe", "Altitud")}</text>` +
+      `<line id="climbCursor" class="cursor" x1="0" x2="0" y1="${PV.t}" y2="${PS.b}" visibility="hidden"/>` +
+      `<rect id="climbHit" x="${Lm}" y="${PV.t}" width="${W - Lm - R}" height="${PS.b - PV.t}" fill="transparent"/>`;
+    svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+    svg.innerHTML = typo(g);
+    svg.hidden = false;
+    sync.charts = sync.charts.filter(x => x.svg !== svg); // le curseur est celui de la décision du niveau
+    const p0 = pts[0];
+    /** Curseur et relevé (panneau) au point de montée le plus proche de h. */
+    const show = h => {
+      if (h == null) {
+        $("climbCursor")?.setAttribute("visibility", "hidden");
+        return;
+      }
+      const p = pts.reduce((a, x) => Math.abs(x.h - h) < Math.abs(a.h - h) ? x : a, pts[0]);
+      cursorAt("climbCursor", X(p.h));
+      const ro = $("climbReadout");
+      if (ro) ro.innerHTML = typo(`<b>⌖ ${altTxt(p.h)}</b> — « ${gName} » : ${fmt(p.g.ias, 0)} kt (TAS ${fmt(p.g.tas, 0)}) · ${fmt(Math.max(0, p.g.roc), 0)} ft/min${Number.isFinite(p.f1000) ? ` · ${fmt(cv(p.f1000), 1)} ${PER}` : ""}${m.kind !== "jet" ? ` · ${tl("gaz", "throttle", "Leistung", "gases")} ${fmt(p.g.frac * 100, 0)} %` : ""} ; Vy ${fmt(p.v.vyIas, 0)} kt, ${fmt(p.v.roc, 0)} ft/min`);
+    };
+    S.climbShow = show;
+    const hit = $("climbHit"),
+      /** Altitude sous le pointeur e. */
+      hAt = e => {
+        const b = svg.getBoundingClientRect();
+        return Math.max(0, ((e.clientX - b.left) / (b.width || 1) * W - Lm) / (W - Lm - R) * xmax);
+      };
+    hit.style.cursor = "crosshair";
+    hit.onpointermove = e => S.dec ? decHover(hAt(e)) : show(hAt(e));
+    hit.onpointerleave = () => S.dec ? decHover(null) : show(null);
+    hit.onclick = e => S.dec && decSelect(hAt(e));
+    if (S.dec) show(S.dec.hover ?? S.dec.sel);
+    panel("panelClimb", tl("Montée", "Climb", "Steigflug", "Ascenso"),
+      `<dl class="kvp"><dt>${tl("Objectif", "Goal", "Ziel", "Objetivo")}</dt><dd>${lab(gName, col)} — ${tl("choisi dans les consignes de montée", "chosen in the climb instructions", "in den Steigflug-Anweisungen gewählt", "elegido en las consignas de ascenso")}</dd><dt>${tl("Au sol", "At sea level", "Am Boden", "Al nivel del mar")}</dt><dd>${def("Vy")} ${fmt(p0.v.vyIas, 0)} kt, ${fmt(p0.v.roc, 0)} ft/min · ${def("Vx")} ${fmt(p0.v.vxIas, 0)} kt</dd></dl>`,
+      `<div id="climbReadout" class="readout"></div>`,
+      `<details class="more"><summary>${tl("En savoir plus", "Learn more", "Mehr erfahren", "Saber más")}</summary>` + reading(tl(
+        `le vario baisse en montant jusqu’au plafond ; tirets : le vario max (à ${def("Vy")}) encore disponible. Le carburant par 1000 ft monte quand le vario baisse. Le Badin à tenir reste à peu près constant, la TAS (vitesse vraie) s’en écarte en montant. Changez d’objectif dans « Consignes de montée » ; la comparaison des objectifs est sous le graphe.`,
+        `the climb rate drops as you climb towards the ceiling; dashed: the maximum rate (at ${def("Vy")}) still available. Fuel per 1000 ft rises as the rate drops. The IAS to fly stays roughly constant, the TAS (true airspeed) moves away from it as you climb. Change the goal in “Climb instructions”; the comparison of goals is under the chart.`,
+        `die Steigrate sinkt beim Steigen bis zur Gipfelhöhe; gestrichelt: die noch verfügbare maximale Steigrate (bei ${def("Vy")}). Der Kraftstoff je 1000 ft steigt, wenn die Steigrate sinkt. Die zu haltende IAS bleibt ungefähr gleich, die TAS (wahre Fluggeschwindigkeit) entfernt sich beim Steigen davon. Ziel unter „Steigflug-Anweisungen“ ändern; der Vergleich der Ziele steht unter dem Diagramm.`,
+        `el régimen baja al subir hasta el techo; trazos: el régimen máximo (a ${def("Vy")}) aún disponible. El combustible por 1000 ft sube cuando baja el régimen. La IAS a mantener queda más o menos constante, la TAS (velocidad verdadera) se aleja de ella al subir. Cambie el objetivo en «Consignas de ascenso»; la comparación de objetivos está bajo el gráfico.`)) + `</details>`);
   }
 
   // largeur de colonne ou hauteur de fenêtre changée : courbes redessinées à la nouvelle taille (sans recalcul du cache)
@@ -2557,10 +2167,15 @@
     addEventListener("resize", () => {
       clearTimeout(t);
       t = setTimeout(() => {
-        const w = document.querySelector("#optBlock .chart-wrap")?.clientWidth || 0,
+        const w = document.querySelector("#levelDecision .chart-wrap")?.clientWidth || 0,
           key = `${Math.round(w / 20)}|${Math.round(innerHeight / 20)}`;
-        if (key !== last && S.m && S.c && curvesShown()) {
-          last = key;
+        if (key === last) return;
+        last = key;
+        if (S.dec && $("decChart")) {
+          drawDecision();
+          decUpdate();
+        }
+        if (S.m && S.c && curvesShown()) {
           renderAll(S.m, S.c);
           window.StickyFrame?.resetGrow?.();
         }
