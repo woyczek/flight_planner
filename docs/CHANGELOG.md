@@ -12,6 +12,7 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Added
 
+- **Textured designs: sliders and scrollbars** — `input[type=range]` (climb instructions, level slider, zone radius) and scrollbars (page, tables, menus) now wear the design's materials (track = tab rail, thumb = the design's button, square corners, rounded in Aqua) in Cabinet, Flight log, Rugged, Aqua (both tones) and Tactical; flat designs unchanged.
 - **Fuel: "Flight level decision" chart, and simpler curves** (docs/technique/V2_FABLE.md § 12) — first block of the fuel
   plan, in the simple and the detailed view: trip fuel (left scale) and trip time (right scale, thin curve) of the whole
   flight at each level, each scale in the colour of its curve, climbing with the goal of the climb instructions; "Least
