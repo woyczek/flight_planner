@@ -747,11 +747,16 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
     store.changed('data/disponibilites/_index.json');
     return path;
   }
-  /** Types d'appareils du pilote (désignateurs OACI) : { owned, mastered } — gardés avec ses disponibilités (même
-   *  déclaration, même fichier) ; enregistrés dans le dossier des données avec la grille. */
+  /** Types d'appareils du pilote (désignateurs OACI) : { owned, mastered, variants } — gardés avec ses disponibilités
+   *  (même déclaration, même fichier) ; enregistrés dans le dossier des données avec la grille. variants : variantes
+   *  déclarées d'un désignateur partagé par plusieurs modèles ({ CL2T: [« Canadair CL-415 »] }) ; absent : celles déjà
+   *  gardées (réduites aux types possédés). */
   function saveAircraft(tri, aircraft) {
     tri = String(tri || '').toUpperCase();
-    const all = json(AVAIL, {});
+    const all = json(AVAIL, {}),
+      own = new Set([...(aircraft?.owned || []), ...(aircraft?.mastered || [])]),
+      vars = Object.fromEntries(Object.entries(aircraft?.variants || all[tri]?.aircraft?.variants || {}).filter(([k, v]) => own.has(k) &&
+        Array.isArray(v) && v.length));
     all[tri] = {
       pilot: tri,
       granularity_min: 60,
@@ -760,7 +765,8 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
       ...(all[tri] || {}),
       aircraft: {
         owned: [...new Set(aircraft?.owned || [])].sort(),
-        mastered: [...new Set(aircraft?.mastered || [])].sort()
+        mastered: [...new Set(aircraft?.mastered || [])].sort(),
+        variants: vars
       },
       updated_at: new Date().toISOString()
     };

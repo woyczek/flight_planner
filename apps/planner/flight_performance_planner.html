@@ -5071,14 +5071,16 @@ function renderPerfProfiles() {
     used = new Set(),
     rows = [];
   // appareils du pilote, avec leur profil s'il en ont un (même type, alias compris ; nom pour un appareil sans désignateur)
+  // une ligne par variante d'un désignateur partagé (CL2T : CL-215T, CL-415) : même profil, « commun aux variantes »
   for (const a of myList || []) {
     const k = aircraftTypeKey(a.code),
-      p = profiles.find(x => !used.has(x.id) && [x.id, x.icao, x.type].some(v => v && aircraftTypeKey(v) === k)) || profiles.find(x =>
-        !used.has(x.id) && aKey(x.name) === aKey(a.name));
+      p = profiles.find(x => [x.id, x.icao, x.type].some(v => v && aircraftTypeKey(v) === k)) || profiles.find(x => aKey(x.name) ===
+        aKey(a.name));
     if (p) used.add(p.id);
     rows.push({
       code: a.code,
       name: a.name,
+      common: !!a.variant,
       category: a.category || cat(a.code),
       p,
       mine: true
@@ -5165,7 +5167,8 @@ function renderPerfProfiles() {
     const p = r.p,
       nm = (E?.nameCell?.({
         code: r.code,
-        name: r.name
+        name: r.name,
+        common: r.common
       }) || `<b>${esc(r.name)}</b>`) + (r.mine || r.fleet ? "" : `<div class="pp-outside">${esc(kt(["pas dans « Mes appareils »", "not in “My aircraft”", "nicht in „Meine Luftfahrzeuge“", "no está en «Mis aeronaves»"]))}</div>`);
     if (!p) return `<tr><td></td><td>${nm}</td><td>${noneCell(r)}</td><td>—</td><td>—</td><td>—</td><td><span class="pp-missing">${esc(kt(["tout le profil", "the whole profile", "das ganze Profil", "todo el perfil"]))}</span></td><td></td></tr>`;
     const i = profileInfo(p),
