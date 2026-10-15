@@ -1525,11 +1525,24 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
   const variantsOf = (decl, type) => (decl?.aircraft?.variants?.[String(type || '').toUpperCase()] || []).filter(Boolean);
   /** La variante d'un appareil de la flotte répond-elle à une variante déclarée par le pilote ? null : rien à comparer
    *  (pas de variante déclarée pour ce type, ou appareil sans variante). */
+  /** Mots d'une variante qui portent un chiffre (numéro du modèle) : « Canadair CL-415 » → [CL415]. */
+  const vnums = s => String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().split(/\s+/).map(w => w.replace(
+    /[^A-Z0-9]/g, '')).filter(w => /\d/.test(w));
+  /** Même variante : même numéro de modèle (« Canadair CL-415 » = « CL-415 Pélican », ≠ « CL-215T ») ; sans numéro,
+   *  l'un contient l'autre (« Rafale B » = « Dassault Rafale B »). */
+  const sameVariant = (a, b) => {
+    const na = vnums(a),
+      nb = vnums(b);
+    if (na.length && nb.length) return na.some(x => nb.includes(x));
+    const ka = vkey(a),
+      kb = vkey(b);
+    return !!ka && !!kb && (ka.includes(kb) || kb.includes(ka));
+  };
+
   function variantMatch(decl, plane) {
-    const want = variantsOf(decl, plane?.type).map(vkey).filter(Boolean),
-      have = vkey(plane?.variant);
-    if (!want.length || !have) return null;
-    return want.some(w => have.includes(w) || w.includes(have));
+    const want = variantsOf(decl, plane?.type);
+    if (!want.length || !vkey(plane?.variant)) return null;
+    return want.some(w => sameVariant(w, plane.variant));
   }
   /** Écart de variante : { declared: « CL-415 », fleet: « CL-215T » } quand le pilote a déclaré une autre variante du
    *  type que celle de l'appareil ; sinon null. */

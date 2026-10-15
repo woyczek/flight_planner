@@ -9,12 +9,12 @@ English interface shows them.
 
 | Reported | Area | Bug | Status |
 |---|---|---|---|
-| 15/10 | Aircraft types (E:\DEFA) | CL-215T and CL-415 cannot be told apart, they share their information | Same ICAO designator (CL2T) in Doc 8643: one record, named after the first ICAO model (CL-215T) | Names: record named "Canadair CL-215T / CL-415" (done 15/10). Variants (Simplification decision, 15/10): assignment side done (preference, mismatch shown on the card and the mission order); declaration editor: Features SOG |
 
 ## Closed
 
 | Reported | Area | Bug | Cause | Fix |
 |---|---|---|---|---|
+| 15/10 | Aircraft types (E:\DEFA) | CL-215T and CL-415 cannot be told apart, they share their information | Same ICAO designator (CL2T) in Doc 8643: one record, named after the first ICAO model (CL-215T) | Record named "Canadair CL-215T / CL-415" (01496aff9); declared variants (Simplification decision): editor and display by Features SOG (93414fc93), assignment preference and mismatch notice (a063a085f, comparison by model number) — closed for Simplification |
 | 13/10 | Generator (turning points), First run | No city names (towns not suggested for turning points), with no message, address or reason (first reported 07/10: "villes_geonames.csv not found") | Browser SIA database built while the city file could not be read: stored without cities; the failure was only written in the rebuild report | Cities read from `shared/carto/villes_geonames.csv` and stored with the database when it has none, no rebuild needed; failure notified with address and reason (`sia_base.js`) |
 | 08/10 | All pages | About 4 s before the page responds, in the user's Chrome profile | Not reproduced on the development machine | Closed by the user on 13/10 |
 | 12/10 | Mission registry (exercise) | "Open in generator" on A-001C opens A-001A | Not reproduced; most likely `affectations.yaml` read as a mission file (mission block overwritten, mission not found in the batch) | Annex file ignored (fixed on 12/10); confirmed fixed by the user on 13/10 |

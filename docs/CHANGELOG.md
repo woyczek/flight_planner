@@ -433,6 +433,9 @@ servies depuis un autre disque, registre aux fichiers absents, profils cachés �
 
 ### Corrigé
 
+- **Assignment: declared variant "Canadair CL-415" not matched with the fleet's "CL-415 Pélican"** — variants are now
+  compared by model number (CL415 ≠ CL215T), by inclusion only when they have none ("Rafale B" = "Dassault Rafale B")
+  (`shared/assignments.js`).
 - **Aircraft types: CL-415 shown as "Canadair CL-215T"** — ICAO Doc 8643 files the CL-215T and the CL-415 under one
   designator, CL2T (one record, one set of performance figures, CL2T in a flight plan); the record took the first ICAO
   model name. It is now named "Canadair CL-215T / CL-415" (`SHARED_DESIGNATOR_NAMES` in `update_aircraft_db.py`, a short
