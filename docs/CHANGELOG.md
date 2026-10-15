@@ -53,6 +53,12 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Fixed
 
+- **Fuel: all the profiles of an aircraft on its row** — an aircraft of "My aircraft" took only the first profile of
+  its type; its other profiles were listed apart as "not in My aircraft", and a profile whose codes the base did not
+  know (an X-Plane or Little Navmap file named "Ecureuil AS350 B3" without a type) was never attached, leaving the
+  aircraft's row at "none" without a selection box. Now one row per profile under the aircraft (each under its own
+  name when there are several), the type being read from the profile's name when its codes are unknown; a row has a
+  selection box when it carries a profile, "none" rows have the creation buttons instead.
 - **Aircraft types: the record is completed for the Fuel profiles too** — a profile created in Fuel (ChatGPT, SimBrief,
   file, estimate) for a type this computer's base did not know yet (EPIC, the Epic LT) stayed "missing from this
   computer's type base": only "Add" in Settings asked the launcher. Fuel now asks the launcher for every profile type

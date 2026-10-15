@@ -5099,30 +5099,50 @@ function renderPerfProfiles() {
     cat = code => E?.categoryOf?.(code) || "other",
     used = new Set(),
     rows = [];
-  // appareils du pilote, avec leur profil s'il en ont un (même type, alias compris ; nom pour un appareil sans désignateur)
-  // une ligne par variante d'un désignateur partagé (CL2T : CL-215T, CL-415) : même profil, « commun aux variantes »
+  const db = window.AIRCRAFT_DB || {},
+    /** Clé de type d'un profil : le premier de ses codes (OACI, type, identifiant) connu de la base, alias compris ;
+     *  sinon le type lu dans son nom (« Ecureuil AS350 B3 » → AS50) ; sinon son premier code. */
+    pkey = x => {
+      const codes = [x.icao, x.type, x.id].filter(Boolean).map(aircraftTypeKey);
+      return codes.find(c => db[c]) || aircraftTypeKey(window.AircraftCatalog?.codeOf?.(x.name) || "") || codes[0] || ""
+    },
+    myKeys = new Set((myList || []).map(a => aircraftTypeKey(a.code)));
+  // appareils du pilote, avec leurs profils (même type, alias compris, ou type lu dans le nom ; nom pour un appareil sans
+  // désignateur) : une ligne par profil, ou une ligne « aucune » ; une ligne par variante d'un désignateur partagé
+  // (CL2T : CL-215T, CL-415) : le premier profil du type, « commun aux variantes »
   for (const a of myList || []) {
     const k = aircraftTypeKey(a.code),
-      p = profiles.find(x => [x.id, x.icao, x.type].some(v => v && aircraftTypeKey(v) === k)) || profiles.find(x => aKey(x.name) ===
-        aKey(a.name));
-    if (p) used.add(p.id);
-    rows.push({
-      code: a.code,
-      name: a.name,
-      common: !!a.variant,
-      category: a.category || cat(a.code),
-      p,
-      mine: true
-    })
+      match = profiles.filter(x => pkey(x) === k || aKey(x.name) === aKey(a.name)),
+      list = a.variant ? match.slice(0, 1) : match,
+      base = {
+        code: a.code,
+        name: a.name,
+        common: !!a.variant,
+        category: a.category || cat(a.code),
+        mine: true
+      };
+    if (!list.length) rows.push({
+      ...base,
+      p: null
+    });
+    for (const p of list) {
+      used.add(p.id);
+      rows.push({
+        ...base,
+        p,
+        note: list.length > 1 ? p.name || p.id : "" // plusieurs profils du même appareil : chacun sous son nom
+      })
+    }
   }
-  // profils enregistrés hors de « Mes appareils » ; sans « Mes appareils » : types de la flotte sans profil aussi
+  // autres profils enregistrés : d'un type de « Mes appareils » (variante restante) ou hors de « Mes appareils » ; sans
+  // « Mes appareils » : types de la flotte sans profil aussi
   for (const p of profiles)
     if (!used.has(p.id)) rows.push({
       code: p.icao || p.type || p.id,
       name: p.name || p.id,
       category: cat(p.icao || p.type || p.id),
       p,
-      mine: false
+      mine: myKeys.has(pkey(p))
     });
   if (!(myList || []).length)
     for (const p of landingOnlyAircraft(profiles).filter(p => p._defa)) rows.push({
@@ -5212,9 +5232,10 @@ function renderPerfProfiles() {
         code: r.code,
         name: r.name,
         common: r.common,
-        note: r.mine || r.fleet ? "" : kt(["pas dans « Mes appareils »", "not in “My aircraft”", "nicht in „Meine Luftfahrzeuge“",
+        note: r.note || (r.mine || r.fleet ? "" : kt(["pas dans « Mes appareils »", "not in “My aircraft”",
+          "nicht in „Meine Luftfahrzeuge“",
           "no está en «Mis aeronaves»"
-        ])
+        ]))
       }) || `<b>${esc(r.name)}</b>`;
     if (!p) return `<tr><td></td><td>${nm}</td><td>${noneCell(r)}</td><td>—</td><td>—</td><td>—</td><td><span class="pp-missing">${esc(kt(["tout le profil", "the whole profile", "das ganze Profil", "todo el perfil"]))}</span></td><td></td></tr>`;
     const i = profileInfo(p),
