@@ -168,6 +168,12 @@ servies depuis un autre disque, registre aux fichiers absents, profils cachés �
 
 ### Ajouté
 
+- **Assignment: declared aircraft variants** — a pilot's declaration may list variants per ICAO designator
+  (`appareils.variantes`, e.g. `{ "CL2T": ["CL-415"] }`; editor by Features SOG). Qualification stays per designator
+  (never a block); among candidate aircraft and pilots, the matching variant comes first (fleet `variant` = declared
+  variant); a mismatch shows "different variant: CL-415 declared, CL-215T in the fleet" on the assignment card and in
+  the pilot's mission order (`aircraft.declared_variant`, *My missions*). Schema in
+  `docs/technique/DISPOS_ET_REORGANISATION.md` § 1.3 (`shared/assignments.js`, `shared/assign_dialog.js`, 4 languages).
 - **Carburant, Profils de performances : « Demander à ChatGPT »** — bouton dans la barre du bloc et dans la fiche du
   profil actif ; panneau : appareil (profil ou type de la flotte sans profil), « Copier le prompt et ouvrir ChatGPT »
   (repli `execCommand`, prompt prérempli s'il est court), « Voir le prompt ». Prompt rédigé en règles, dans la langue de

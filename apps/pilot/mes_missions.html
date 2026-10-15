@@ -3307,7 +3307,7 @@
     /** Texte → paragraphes HTML (ligne vide : nouveau paragraphe). */
     const para = s => s ? String(s).trim().split(/\n\s*\n/).map(p => `<p>${esc(p).replace(/\n/g, '<br>')}</p>`).join('') : '';
     const order = `<div class="pm-order">
-      <div><span>Appareil attribué</span><b>${esc([a.aircraft?.type, a.aircraft?.registration].filter(Boolean).join(' · ') || '—')}</b></div>
+      <div><span>Appareil attribué</span><b>${esc([a.aircraft?.type, a.aircraft?.variant, a.aircraft?.registration].filter(Boolean).join(' · ') || '—')}</b>${a.aircraft?.declared_variant ? `<small>${tv(['variante différente : {d} déclaré, {f} en flotte', 'different variant: {d} declared, {f} in the fleet', 'andere Variante: {d} angegeben, {f} in der Flotte', 'variante distinta: {d} declarada, {f} en la flota'], { d: esc(a.aircraft.declared_variant), f: esc(a.aircraft.variant) })}</small>` : ''}</div>
       <div><span>Indicatif</span><b>${esc(a.callsign || y.aircraft?.[0]?.callsign || '—')}</b></div>
       <div><span>Terrain de départ</span><b>${esc(a.departure || icaoOf(y.origin) || y.origin?.name || '—')}</b></div>
       <div><span>${alert ? 'Prêt à' : 'Décollage demandé'}</span><b>${esc(alert ? hhmm(Date.parse(alert.ready_at_utc)) : fmt(A.when(a)))}</b></div>

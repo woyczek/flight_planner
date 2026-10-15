@@ -9,7 +9,7 @@ English interface shows them.
 
 | Reported | Area | Bug | Status |
 |---|---|---|---|
-| 15/10 | Aircraft types (E:\DEFA) | CL-215T and CL-415 cannot be told apart, they share their information | Same ICAO designator (CL2T) in Doc 8643: one record, named after the first ICAO model (CL-215T) | Names: record named "Canadair CL-215T / CL-415" (done 15/10). Variants declarable separately: handed to the Simplification session (ergonomics) |
+| 15/10 | Aircraft types (E:\DEFA) | CL-215T and CL-415 cannot be told apart, they share their information | Same ICAO designator (CL2T) in Doc 8643: one record, named after the first ICAO model (CL-215T) | Names: record named "Canadair CL-215T / CL-415" (done 15/10). Variants (Simplification decision, 15/10): assignment side done (preference, mismatch shown on the card and the mission order); declaration editor: Features SOG |
 
 ## Closed
 

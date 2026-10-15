@@ -180,7 +180,8 @@ dialog.ad-dialog{overflow:hidden;max-height:92vh}dialog.ad-dialog[open]{display:
     /** Déclaration d'un pilote (disponibilités, appareils), lue une fois puis gardée dans decl. */
     const declOf = async tri => tri ? (decl[tri] ??= await M.availability(tri)) : null;
     /** Appareils proposés pour un poste. */
-    const planesOf = post => M.planesFor(post, departure); // du type ou de la catégorie du poste, service puis terrain d'abord
+    // du type ou de la catégorie du poste, service puis terrain d'abord, puis la variante déclarée par le pilote de la ligne
+    const planesOf = (post, tri = '') => M.planesFor(post, departure, decls[tri] || null);
     const pilotList = [...new Set([...ref.map(p => p.trigram), ...preset, ...rows.map(r => r.pilot)])].filter(Boolean).sort();
     const decls = await M.declarations(pilotList);
     /** Options d'un choix de pilote : vivier (disponibles et possédant le type, à l'heure donnée), puis les autres. */
@@ -188,13 +189,15 @@ dialog.ad-dialog{overflow:hidden;max-height:92vh}dialog.ad-dialog[open]{display:
       exclude = [],
       none = '',
       spec = '',
-      open = false // convoyage : « à affecter »
+      open = false, // convoyage : « à affecter »
+      plane = null // appareil choisi : variante déclarée qui correspond d'abord
     } = {}) => {
       const list = M.pool(pilotList, decls, {
         type: spec,
         at,
         family: m.type,
-        exclude
+        exclude,
+        plane
       });
       const opt = c => `<option value="${esc(c.tri)}" ${c.tri === sel ? 'selected' : ''}>${esc(M.poolLabel(c))}</option>`;
       const ok = list.filter(c => c.ok),
@@ -241,12 +244,12 @@ dialog.ad-dialog{overflow:hidden;max-height:92vh}dialog.ad-dialog[open]{display:
      *  Options du choix d'appareil d'un poste : immatriculation, variante, terrain (« convoyage » s'il diffère
      *  du départ), exploitant si le poste vise un service, indisponibilité ; « autre (saisie)… » : saisie libre.
      */
-    const planeOpts = (sel, post) => `<option value="">${L(['— appareil —', '— aircraft —', '— Luftfahrzeug —', '— aeronave —'])}</option>${planesOf(post).map(p => `<option value="${esc(p.registration)}" ${p.registration === sel ? 'selected' : ''}>${esc(p.registration)} · ${esc(p.variant || p.type)} · ${esc(adOf(p) || '?')}${post?.service && p.operator ? ` · ${esc(p.operator)}` : ''}${adOf(p) && adOf(p) !== departure ? L([' (convoyage)', ' (ferry)', ' (Überführung)', ' (traslado)']) : ''}${p.operational === false ? L([' — indisponible', ' — unavailable', ' — nicht verfügbar', ' — no disponible']) : ''}</option>`).join('')}<option value="__other">${L(['autre (saisie)…', 'other (type in)…', 'andere (Eingabe)…', 'otra (introducir)…'])}</option>`;
+    const planeOpts = (sel, post, tri = '') => `<option value="">${L(['— appareil —', '— aircraft —', '— Luftfahrzeug —', '— aeronave —'])}</option>${planesOf(post, tri).map(p => `<option value="${esc(p.registration)}" ${p.registration === sel ? 'selected' : ''}>${esc(p.registration)} · ${esc(p.variant || p.type)} · ${esc(adOf(p) || '?')}${post?.service && p.operator ? ` · ${esc(p.operator)}` : ''}${adOf(p) && adOf(p) !== departure ? L([' (convoyage)', ' (ferry)', ' (Überführung)', ' (traslado)']) : ''}${p.operational === false ? L([' — indisponible', ' — unavailable', ' — nicht verfügbar', ' — no disponible']) : ''}</option>`).join('')}<option value="__other">${L(['autre (saisie)…', 'other (type in)…', 'andere (Eingabe)…', 'otra (introducir)…'])}</option>`;
     /** Redessine les cartes des participants (le vivier dépend de l'heure et des autres pilotes), puis lance check. */
     const draw = () => {
       box.innerHTML = rows.map((r, i) => `<section class="ad-card" data-i="${i}"><h4 class="ad-post">${esc(r.callsign || L(['Équipage {n}', 'Crew {n}', 'Besatzung {n}', 'Tripulación {n}'], { n: i + 1 }))} — ${esc(r.post?.type || r.post?.label || L(['type libre', 'any type', 'beliebiger Typ', 'tipo libre']))}${r.post?.service ? ` · ${esc(r.post.service)}` : ''}</h4>
-        <div class="ad-line"><label class="ad-pilot">${L(['Pilote', 'Pilot', 'Pilot', 'Piloto'])}<select data-r="pilot">${poolOpts(r.pilot, takeoffOf() + i * 6e4, { exclude: rows.filter((x, j) => j !== i).map(x => x.pilot), spec: r.post })}</select></label>
-        <label class="ad-grow">${L(['Appareil', 'Aircraft', 'Luftfahrzeug', 'Aeronave'])}<select data-r="registration">${planeOpts(r.registration, r.post)}</select></label>
+        <div class="ad-line"><label class="ad-pilot">${L(['Pilote', 'Pilot', 'Pilot', 'Piloto'])}<select data-r="pilot">${poolOpts(r.pilot, takeoffOf() + i * 6e4, { exclude: rows.filter((x, j) => j !== i).map(x => x.pilot), spec: r.post, plane: fleet.find(f => f.registration === r.registration) || null })}</select></label>
+        <label class="ad-grow">${L(['Appareil', 'Aircraft', 'Luftfahrzeug', 'Aeronave'])}<select data-r="registration">${planeOpts(r.registration, r.post, r.pilot)}</select></label>
         <label>${L(['Indicatif', 'Callsign', 'Rufzeichen', 'Indicativo'])}<input data-r="callsign" value="${esc(r.callsign)}"></label>
         ${i ? `<button type="button" class="repo-plain ad-del" data-del="${i}" title="${L(['Retirer cet équipier', 'Remove this wingman', 'Diesen Flügelmann entfernen', 'Quitar este punto'])}">✕</button>` : ''}</div>
         <div class="ad-ferry" hidden></div><div class="ad-checks"></div></section>`).join('');
@@ -294,6 +297,15 @@ dialog.ad-dialog{overflow:hidden;max-height:92vh}dialog.ad-dialog[open]{display:
           const d = await declOf(r.pilot),
             q = M.qualification(d, r.pilot, plane ? plane.type : r.post);
           notes.push(chip(esc(q.text), q.level === 'mastered' ? 'ok' : q.level === 'owned' || q.level === 'flown' ? 'warn' : 'err'));
+          // variante : information seulement (même désignateur OACI, même type pour la simulation)
+          const gap = M.variantGap?.(d, plane);
+          if (gap) notes.push(chip(L(['variante différente : {d} déclaré, {f} en flotte',
+            'different variant: {d} declared, {f} in the fleet',
+            'andere Variante: {d} angegeben, {f} in der Flotte', 'variante distinta: {d} declarada, {f} en la flota'
+          ], {
+            d: esc(gap.declared),
+            f: esc(gap.fleet)
+          })));
           const s = M.availabilityAt(d, ferry?.takeoff && (r.ferryPilot || r.pilot) === r.pilot ? Date.parse(ferry.takeoff) : tk, m
             .type);
           notes.push(!s ? chip(L(['disponibilité non renseignée', 'availability not filled in', 'Verfügbarkeit nicht angegeben',
@@ -340,7 +352,11 @@ dialog.ad-dialog{overflow:hidden;max-height:92vh}dialog.ad-dialog[open]{display:
             registration: plane.registration,
             type: plane.type,
             variant: plane.variant || '',
-            base: plane.base || ''
+            base: plane.base || '',
+            // variante déclarée par le pilote, autre que celle de l'appareil : redite dans l'ordre de mission
+            ...(r.pilot && M.variantGap?.(decl[r.pilot], plane) ? {
+              declared_variant: M.variantGap(decl[r.pilot], plane).declared
+            } : {})
           } : r.registration ? {
             registration: r.registration,
             type

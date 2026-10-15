@@ -662,7 +662,9 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
     const last = has2 ? weeks2[Object.keys(weeks2).sort().pop()] : null;
     const ac = last?.appareils && (last.appareils.possedes?.length || last.appareils.maitrises?.length) ? {
       owned: last.appareils.possedes || [],
-      mastered: last.appareils.maitrises || []
+      mastered: last.appareils.maitrises || [],
+      // variantes déclarées par désignateur ({ CL2T: ['CL-415'] }, DISPOS_ET_REORGANISATION.md § 1.3)
+      variants: last.appareils.variantes || null
     } : null;
     return {
       pilot: tri,
@@ -1509,16 +1511,37 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
     const o = fold(f.operator);
     return !!svc && !!o && (o.startsWith(svc) || svc.startsWith(o));
   };
+  // ---- variantes déclarées (CL-415 / CL-215T sous le même désignateur CL2T) : la qualification reste par désignateur
+  // OACI (même type pour la simulation, jamais un blocage) ; la variante départage les candidats et signale un écart
+  /** Texte comparable d'une variante : majuscules, lettres et chiffres (« CL-415 Pélican » → CL415PELICAN). */
+  const vkey = s => String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+  /** Variantes déclarées par un pilote (déclaration decl) pour un désignateur ; [] : aucune. */
+  const variantsOf = (decl, type) => (decl?.aircraft?.variants?.[String(type || '').toUpperCase()] || []).filter(Boolean);
+  /** La variante d'un appareil de la flotte répond-elle à une variante déclarée par le pilote ? null : rien à comparer
+   *  (pas de variante déclarée pour ce type, ou appareil sans variante). */
+  function variantMatch(decl, plane) {
+    const want = variantsOf(decl, plane?.type).map(vkey).filter(Boolean),
+      have = vkey(plane?.variant);
+    if (!want.length || !have) return null;
+    return want.some(w => have.includes(w) || w.includes(have));
+  }
+  /** Écart de variante : { declared: « CL-415 », fleet: « CL-215T » } quand le pilote a déclaré une autre variante du
+   *  type que celle de l'appareil ; sinon null. */
+  const variantGap = (decl, plane) => variantMatch(decl, plane) === false ? {
+    declared: variantsOf(decl, plane.type).join(', '),
+    fleet: String(plane.variant)
+  } : null;
   /** Appareils compatibles avec un poste : du type (ou des types, ou de la catégorie d'un poste générique) et, quand
-   *  le service du poste est un opérateur de la flotte, de cet opérateur seulement ; terrain de départ d'abord. */
-  function planesFor(spec, departure = '') {
+   *  le service du poste est un opérateur de la flotte, de cet opérateur seulement ; terrain de départ d'abord, puis la
+   *  variante déclarée par le pilote (decl) quand il en a une pour le type. */
+  function planesFor(spec, departure = '', decl = null) {
     const svc = fold(spec?.service || '');
     let list = (window.DEFA_FLEET || []).filter(f => fits(spec, f.type) || (spec?.type && typeOf(f.variant) === spec.type));
     if (list.some(f => serves(svc, f))) list = list.filter(f => serves(svc, f));
     /** Terrain actuel de l'appareil (positions connues), sinon sa base. */
     const at = f => window.AircraftPositions?.adOf?.(f) || f.base; // terrain actuel (site, ordre de mission), sinon la base
-    return list.sort((a, b) => (at(b) === departure) - (at(a) === departure) || (b.operational !== false) - (a.operational !== false) ||
-      String(a.base).localeCompare(String(b.base)));
+    return list.sort((a, b) => (at(b) === departure) - (at(a) === departure) || (variantMatch(decl, b) === true) - (variantMatch(decl,
+      a) === true) || (b.operational !== false) - (a.operational !== false) || String(a.base).localeCompare(String(b.base)));
   }
   /** Le pilote a-t-il un appareil pour ce poste (type, ou catégorie d'un poste générique) ? null : appareils non déclarés. */
   const ownsType = (decl, spec) => decl?.aircraft ? [...(decl.aircraft.owned || []), ...(decl.aircraft.mastered || [])].some(ty => fits(
@@ -1530,7 +1553,8 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
     type,
     at,
     family = '',
-    exclude = []
+    exclude = [],
+    plane = null // appareil choisi : à rang égal, variante déclarée qui correspond d'abord
   }) {
     /** Rang de tri d'un candidat : disponible et possesseur d'abord, puis maîtrise, puis disponibilité. */
     const rank = c => (c.ok ? 0 : 10) + (c.qual.level === 'mastered' ? 0 : c.qual.level === 'owned' ? 1 : c.qual.level === 'flown' ? 2 :
@@ -1547,7 +1571,9 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
         owns,
         ok: !!owns && !!avail?.ok
       };
-    }).sort((a, b) => rank(a) - rank(b) || a.tri.localeCompare(b.tri));
+    }).sort((a, b) => rank(a) - rank(b) || (variantMatch(decls[b.tri], plane) === true) - (variantMatch(decls[a.tri], plane) ===
+        true) ||
+      a.tri.localeCompare(b.tri));
   }
   /** Libellé court d'un pilote du vivier : « RBR — maîtrisé · C dispo ». */
   const poolLabel = c => `${c.tri} — ${c.qual.level === 'mastered' ? t(['maîtrisé', 'mastered']) : c.qual.level === 'owned' ? t(['possédé', 'owned']) : c.qual.level === 'flown' ? t(['vols connus', 'known flights']) : t(['type non déclaré', 'type not declared'])} · ${c.avail ? `${c.avail.code}${c.avail.ok ? '' : ' (' + c.avail.label + ')'}` : t(['dispo. non renseignée', 'availability unknown'])}`;
@@ -1706,6 +1732,7 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
       }) : null;
       if (ferry && r.ferryPilot === '__open') ferry.open = true; // convoyage à affecter : une mission à part, sans pilote
       if (ferry && !ferry.minutes) unknown.push(`${r.pilot || '?'} ${ferry.from} → ${ferry.to}`);
+      const gap = plane && r.pilot ? variantGap(await availability(r.pilot), plane) : null;
       out.push({
         pilot: r.pilot,
         callsign: r.callsign || '',
@@ -1713,7 +1740,10 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
           registration: plane.registration,
           type: plane.type,
           variant: plane.variant || '',
-          base: plane.base || ''
+          base: plane.base || '',
+          ...(gap ? {
+            declared_variant: gap.declared // variante déclarée par le pilote, autre que celle de l'appareil
+          } : {})
         } : null,
         departure,
         takeoff: new Date(tk).toISOString(),
@@ -2040,6 +2070,8 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
     ownsType,
     postsOf,
     planesFor,
+    variantGap,
+    variantMatch,
     fits,
     specLabel,
     pool,

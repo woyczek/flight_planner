@@ -69,7 +69,7 @@ Your structure, with a few clarifications:
       { "debut": null, "fin": null, "categorie": "conges" }
     ]
   },
-  "appareils": { "possedes": [], "maitrises": [] }, "simulateurs": []
+  "appareils": { "possedes": [], "maitrises": [], "variantes": { "CL2T": ["CL-415"] } }, "simulateurs": []
 }
 ```
 
@@ -77,6 +77,15 @@ Your structure, with a few clarifications:
 - `categorie`: stable identifier of a category of the configuration; the themes actually opened are calculated on
   reading (category + the pilot's preferences at that moment).
 - **Several ranges can overlap** (available for rescue AND combat on the same evening).
+- `appareils.possedes` / `maitrises`: ICAO designators only. `appareils.variantes` (optional): the variants the pilot
+  flies, per designator (`{ "CL2T": ["CL-415"] }`) — several models share one ICAO designator (Doc 8643: CL-215T and
+  CL-415 are both CL2T). Proposed from the designator's ICAO models, the fleet's variants, or free text (*My profile ›
+  Aircraft*). Qualification stays per designator: a pilot who declared a CL-415 can be assigned a CL-215T of the fleet
+  (same type for the simulation, never a block). When several aircraft or pilots are candidates, the matching variant
+  comes first (fleet `variant` = declared variant); otherwise the assignment card shows "different variant: CL-415
+  declared, CL-215T in the fleet", and the mission order keeps it (`aircraft.declared_variant` in `affectations.yaml`,
+  shown in *My missions*). The name shown follows the declared variant when there is one, otherwise the record's common
+  name.
 - One file per pilot and per week: `data/disponibilites/RBR/2026-W41.json` (few git conflicts, natural archiving by
   year). The current files (`RBR.json`, grid of codes) are converted by a tool (consecutive hours
   of the same code → one range).
