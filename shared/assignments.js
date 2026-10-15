@@ -1253,8 +1253,8 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
     }
     const db = window.AIRCRAFT_DB || {};
     return [...out.values()].map(e => {
-      const info = db[e.type] || db[db.__aliases?.[e.type]] || {},
-        [category, categoryLabel] = categoryOf(window.AircraftCatalog?.record?.(e.type) || info);
+      const info = window.AircraftCatalog?.record?.(e.type) || db[e.type] || db[db.__aliases?.[e.type]] || {},
+        [category, categoryLabel] = categoryOf(info);
       return {
         type: e.type,
         model: modelName(info.model) || [...e.variants][0] || e.type,
@@ -1416,21 +1416,15 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
   const kindOf = s => /h[ée]lico|helicopter|rotor/i.test(s) ? 'helico' : /avion|airplane|plane|jet/i.test(s) ? 'avion' :
     /a[ée]ronef|aircraft/i.test(s) ? 'any' : '';
   // ---- type écrit en clair dans une mission (« H225M Caracal », « Rafale », « E-3F / A400M ») → désignateurs de la
-  // flotte, mot à mot : désignateur, alias de la base OACI (H135 → EC35), synonymes d'usage ci-dessous (noms militaires
-  // absents des alias), mots de la variante (« Rafale B ») ou du modèle (« LOCKHEED C-130H Hercules ») d'un type de la
+  // flotte, mot à mot : désignateur, alias de la base OACI (H135 → EC35), noms d'usage du catalogue commun et
+  // rapprochements propres à la flotte (ci-dessous), mots de la variante (« Rafale B ») ou du modèle (« LOCKHEED C-130H Hercules ») d'un type de la
   // flotte. Sans cela, un type inconnu rendait le poste générique : toute la flotte était proposée.
-  const SYNONYMS = {
-    H225: 'EC25',
-    H225M: 'EC25',
-    CARACAL: 'EC25',
-    E3F: 'E3CF',
-    AWACS: 'E3CF',
-    A400M: 'A400',
-    ATLAS: 'A400',
+  // Noms d'usage : table commune du catalogue (AircraftCatalog.USAGE : Caracal, AWACS, Atlas, Phénix…) ; ici seulement
+  // les rapprochements propres à la flotte — un C-130J demandé, la flotte a des C-130H (C130) : même famille, l'appareil
+  // proposé plutôt qu'un poste générique (le catalogue, lui, donne le désignateur OACI du C-130J : C30J)
+  const FLEET_APPROX = {
     C130J: 'C130',
-    C130J30: 'C130',
-    MRTT: 'A332',
-    PHENIX: 'A332'
+    C130J30: 'C130'
   };
   /** Texte réduit à ses lettres et chiffres en majuscules (clé de l'index de la flotte). */
   const norm = s => fold(s).replace(/[^A-Z0-9]/g, '');
@@ -1446,9 +1440,14 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
         if (k.length >= 2 && !keys.has(k)) keys.set(k, ty);
       };
     types.forEach(ty => add(ty, ty));
-    for (const [k, v] of Object.entries(db.__aliases || {}))
-      if (types.includes(v)) add(k, v);
-    for (const [k, v] of Object.entries(SYNONYMS))
+    // alias de la base et noms d'usage du catalogue, suivis jusqu'au désignateur (catalogue commun)
+    const C = window.AircraftCatalog,
+      to = v => C?.canonical?.(v) || v;
+    for (const k of Object.keys(db.__aliases || {}))
+      if (types.includes(to(k))) add(k, to(k));
+    for (const [k, v] of Object.entries(C?.USAGE || {}))
+      if (types.includes(to(v))) add(k, to(v));
+    for (const [k, v] of Object.entries(FLEET_APPROX))
       if (types.includes(v)) add(k, v);
     for (const f of window.DEFA_FLEET || [])
       for (const w of String(f.variant || '').split(/\s+/))

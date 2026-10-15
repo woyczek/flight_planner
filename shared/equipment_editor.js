@@ -91,10 +91,7 @@ dialog.eq-dialog h3{margin:0 0 6px}dialog.eq-dialog footer{display:flex;justify-
   const modelName = s => String(s || '').replace(/(^|[\s(])([A-Z]{3,})(?=$|[\s),])/g, (_, b, w) => b + w.charAt(0) + w.slice(1)
     .toLowerCase());
   /** Fiche d'un type dans la base OACI (AIRCRAFT_DB, alias compris) ; {} si inconnu. */
-  const dbInfo = ty => {
-    const db = window.AIRCRAFT_DB || {};
-    return db[ty] || db[db.__aliases?.[ty]] || {};
-  };
+  const dbInfo = ty => window.AircraftCatalog?.record?.(ty) || {}; // alias suivis (catalogue commun)
   /** Clé de comparaison : majuscules sans accents ni séparateurs (« SE-210 » = « SE 210 » = SE210). */
   const norm = s => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().replace(/[^A-Z0-9]/g, '');
   /** Code au format d'un désignateur OACI (lettre puis 1 à 3 lettres ou chiffres : BN2T, B17, S210). */
@@ -407,12 +404,7 @@ dialog.eq-dialog h3{margin:0 0 6px}dialog.eq-dialog footer{display:flex;justify-
 
   // ---- performances (profils du Carburant gardés dans ce navigateur)
   /** Clé d'un type suivie à travers les alias de la base (CL415 → CL2T). */
-  const typeKey = v => {
-    const al = window.AIRCRAFT_DB?.__aliases || {};
-    let x = norm(v);
-    for (let i = 0; i < 5 && al[x] && al[x] !== x; i++) x = norm(al[x]);
-    return x;
-  };
+  const typeKey = v => window.AircraftCatalog?.canonical?.(v) ?? norm(v); // alias suivis (catalogue commun)
   /** Profils de performances du Carburant (flightPerfState de ce navigateur) : liste. */
   const perfProfiles = () => {
     try {
@@ -444,15 +436,9 @@ dialog.eq-dialog h3{margin:0 0 6px}dialog.eq-dialog footer{display:flex;justify-
   };
   /** Fiche SimBrief du type connue de ce poste (AIRCRAFT_PERF[code].simbrief, alias suivis) : vrai si SimBrief le connaît. */
   const simbriefKnows = code => {
-    const perf = window.AIRCRAFT_PERF || {},
-      al = window.AIRCRAFT_DB?.__aliases || {};
-    let x = norm(code);
-    for (let i = 0; i < 6 && x; i++) {
-      if (perf[x]?.simbrief?.fuelflowKgh > 0) return true;
-      if (!al[x] || al[x] === x) break;
-      x = norm(al[x]);
-    }
-    return false;
+    const perf = window.AIRCRAFT_PERF || {};
+    // code, chaîne d'alias, alias qui y renvoient (catalogue commun)
+    return (window.AircraftCatalog?.related?.(code) || [norm(code)]).some(x => perf[x]?.simbrief?.fuelflowKgh > 0);
   };
   /** Adresse des Fiches de performances ouvertes sur un appareil ; create : « simbrief », « gpt » ou « estimate » (fiche à
    *  créer). */

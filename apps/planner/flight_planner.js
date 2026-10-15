@@ -263,7 +263,7 @@ const PROFILE_FIELDS = [
 function apdFor(p) {
   const perf = window.AIRCRAFT_PERF || {},
     code = String(p?.icao || p?.type || p?.id || "").toUpperCase().replace(/[^A-Z0-9]/g, ""),
-    key = perf[code] ? code : window.AIRCRAFT_DB?.__aliases?.[code];
+    key = (window.AircraftCatalog?.related?.(code) || [code]).find(k => perf[k]); // fiche rangée sous un code équivalent
   const a = key && perf[key];
   if (!a) return null;
   const out = {},
@@ -745,15 +745,11 @@ function setHtml(id, html) {
 /** Fiche EUROCONTROL APD d'un profil : code OACI, type ou identifiant, directement ou par les alias de la base des types
  *  (A4M ↔ A400) ; null si absente (base non installée). */
 function apdOf(p) {
-  const P = window.AIRCRAFT_PERF || {},
-    al = window.AIRCRAFT_DB?.__aliases || {};
+  const P = window.AIRCRAFT_PERF || {};
   for (const v of [p?.icao, p?.type, p?.id]) {
-    const k = aKey(v);
-    if (!k) continue;
-    if (P[k]) return P[k];
-    if (al[k] && P[al[k]]) return P[al[k]];
-    const back = Object.keys(al).find(a => al[a] === k && P[a]);
-    if (back) return P[back]
+    // code, chaîne d'alias, alias qui y renvoient (catalogue commun)
+    const k = (window.AircraftCatalog?.related?.(v) || [aKey(v)]).find(x => x && P[x]);
+    if (k) return P[k]
   }
   return null
 }
@@ -3114,10 +3110,7 @@ function landingName(code, rec) {
 /** Appareils du Landing Performance et types qui n'ont pas encore de profil (proposés dans la liste, profil vide créé au choix). */
 function landingOnlyAircraft(profiles) {
   const db = window.AIRCRAFT_DB || {},
-    resolve = n => {
-      const k = aKey(n);
-      return db[k] || db[db.__aliases?.[k]] || null
-    },
+    resolve = n => window.AircraftCatalog?.record?.(aKey(n)) || db[aKey(n)] || null, // alias suivis (catalogue commun)
     known = new Set();
   for (const p of profiles)
     for (const v of [p.id, p.icao, p.type, p.name]) {
@@ -3451,10 +3444,7 @@ const ppCollapsed = () => {
 };
 /** Clé d'un type suivie à travers les alias de la base (CL415 → CL2T). */
 function aircraftTypeKey(v) {
-  const al = window.AIRCRAFT_DB?.__aliases || {};
-  let x = aKey(v || "");
-  for (let i = 0; i < 5 && al[x] && al[x] !== x; i++) x = aKey(al[x]);
-  return x
+  return window.AircraftCatalog?.canonical?.(v || "") ?? aKey(v || "") // catalogue commun
 }
 /** Bloc « Profils de performances » : les appareils de « Mes appareils » dans leur ordre (catégorie, puis nom), groupés
  *  par catégorie (en-têtes repliables) ou triés par nom ou par source, puis les profils enregistrés hors de « Mes
@@ -3708,7 +3698,7 @@ function noSheetLine(code) {
 function perfCreate(code, name, how) {
   const db = window.AIRCRAFT_DB || {},
     k = aKey(code || ""),
-    rec = db[k] || db[db.__aliases?.[k]],
+    rec = window.AircraftCatalog?.record?.(k) || db[k], // alias suivis (catalogue commun)
     icao = rec?.tdesig || (/^[A-Z][A-Z0-9]{1,3}$/.test(k) ? k : ""),
     notify = (m, kind = "warn") => window.AppFramework?.notify?.(m, kind),
     /** Profil vide de l'appareil (identifiant : désignateur, sinon nom). */
@@ -3837,11 +3827,7 @@ function ppSelectionFollowActive() {
 }
 /** Clé de type d'un profil (code OACI, alias suivis) : deux profils ne se fusionnent que s'ils ont la même. */
 function profileTypeKey(p) {
-  const k = aKey(p?.icao || p?.type || p?.id || ""),
-    al = window.AIRCRAFT_DB?.__aliases || {};
-  let x = k;
-  for (let i = 0; i < 5 && al[x] && al[x] !== x; i++) x = aKey(al[x]);
-  return x
+  return aircraftTypeKey(p?.icao || p?.type || p?.id || "")
 }
 /** Boutons de la barre du bloc selon les profils cochés : « Exporter (n) », « Enregistrer dans le dossier (n) » et
  *  « Supprimer (n) » dès un profil, « Fusionner (n) » à partir de deux profils du même type. */
@@ -4881,15 +4867,9 @@ async function saveSelectedToFolder() {
  *  connaît pas. */
 function simbriefRecordFor(code) {
   const perf = window.AIRCRAFT_PERF || {},
-    k = aKey(code || ""),
-    al = window.AIRCRAFT_DB?.__aliases || {};
-  let x = k;
-  for (let i = 0; i < 6 && x; i++) {
-    if (perf[x]?.simbrief?.fuelflowKgh > 0) return perf[x].simbrief;
-    if (!al[x] || al[x] === x) break;
-    x = aKey(al[x])
-  }
-  return null
+    // code, chaîne d'alias, alias qui y renvoient (catalogue commun)
+    k = (window.AircraftCatalog?.related?.(code || "") || [aKey(code || "")]).find(x => perf[x]?.simbrief?.fuelflowKgh > 0);
+  return k ? perf[k].simbrief : null
 }
 /** TAS (kt) en atmosphère standard au niveau ft : depuis un Mach, ou depuis une vitesse indiquée (ias). */
 function isaTas(ft, {
@@ -5934,12 +5914,12 @@ $("ppReload").onclick = () => reloadPerfFolder(true);
 function renderDefaSheets() {
   const box = $("defaSheets");
   if (!box) return;
+  // même type à alias près (catalogue commun : alias suivis jusqu'au désignateur)
   const t = aKey(active?.type || active?.icao || active?.id),
-    db = window.AIRCRAFT_DB || {},
-    r = t && (db.__aliases?.[t] || t);
+    r = t && aircraftTypeKey(t);
   const list = (window.AircraftCatalog?.defaAircraft() || []).filter(a => {
     const k = aKey(a.type);
-    return k && (k === t || k === r || aKey(db.__aliases?.[k]) === r)
+    return k && (k === t || aircraftTypeKey(k) === r)
   });
   box.innerHTML = list.length ? `Appareils de ce type (fiche : statut, terrain, activité) : ${list.map(a=>`<a href="../cr/appareil.html?reg=${encodeURIComponent(a.registration)}">${escXml(a.registration)}</a>`).join(" · ")}` : ""
 }
@@ -5966,11 +5946,10 @@ renderPerfProfilesSoon();
     wanted = params.get("aircraft") || handoff?.aircraft,
     why = params.get("aircraft") ? "fiche appareil" : "mission transmise",
     k = aKey(wanted || ""),
-    db = window.AIRCRAFT_DB || {},
-    res = aKey(db.__aliases?.[k] || k),
+    res = aircraftTypeKey(k), // alias suivis jusqu'au désignateur (catalogue commun)
     same = v => {
       const x = aKey(v);
-      return x && (x === k || x === res || aKey(db.__aliases?.[x]) === res)
+      return x && (x === k || aircraftTypeKey(x) === res)
     },
     found = k && Object.values(state.profiles || {}).find(p => [p.id, p.icao, p.type].some(same)),
     cand = k && !found && landingOnlyAircraft(Object.values(state.profiles || {}).filter(p => p && typeof p === "object").map(p =>

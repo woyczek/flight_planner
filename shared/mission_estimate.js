@@ -82,16 +82,17 @@
   };
   /** Désignateur OACI d'un texte « A332 A330 MRTT Phénix » ou « H160 » (alias de la base des types). */
   function designator(text) {
-    const db = window.AIRCRAFT_DB || {},
-      al = db.__aliases || {};
+    const C = window.AircraftCatalog;
     for (const raw of String(text || '').toUpperCase().split(/[\s,/()—-]+/).filter(Boolean)) {
       const k = raw.replace(/[^A-Z0-9]/g, '');
       if (!k) continue;
-      if (db[k]) return k;
-      if (al[k]) return al[k];
+      // désignateur ou alias (suivis jusqu'au bout, catalogue commun), sinon type des performances
+      const rec = C?.record?.(k);
+      if (rec) return C.canonical(k);
       if (window.AIRCRAFT_PERF?.[k]) return k;
     }
-    return '';
+    // nom d'usage ou écrit en clair (« Rafale », « A330 MRTT Phénix ») : résolveur commun
+    return C?.codeOf?.(text) || '';
   }
   /** Classe d'un type pour l'estimation : classement commun de la suite (AircraftCatalog.classify : hélicoptère et
    *  autogire, puis motorisation — un dirigeable, à pistons, compte en pistons), sinon nom d'hélicoptère, sinon vitesse. */

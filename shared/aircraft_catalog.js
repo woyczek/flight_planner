@@ -215,12 +215,35 @@
   // ---- classement d'un type : une seule réponse pour toute la suite (affectations, Mes appareils, Carburant et fiches de
   // performances, icônes, CR, estimation de durée, Maintenance) — « quel est le type ou la catégorie de ce type OACI ou
   // de cet appareil ? »
-  /** Fiche de la base d'un code (désignateur, alias suivis jusqu'au bout : A4M → A400M → A400) ; null si inconnu. */
-  function record(code) {
-    const db = window.AIRCRAFT_DB || {},
-      al = db.__aliases || {};
+  /** Désignateur d'un code (majuscules sans séparateurs, alias de la base suivis jusqu'au bout : A4M → A400M → A400) ;
+   *  le code normalisé s'il n'est pas un alias. Pour un texte libre (« Rafale B — Patrouille »), codeOf. */
+  function canonical(code) {
+    const al = (window.AIRCRAFT_DB || {}).__aliases || {};
     let k = fold(code);
     for (let i = 0; i < 6 && al[k] && al[k] !== k; i++) k = al[k];
+    return k;
+  }
+  /** Codes équivalents d'un code : lui-même, la chaîne d'alias jusqu'au désignateur, puis les alias qui renvoient à ce
+   *  désignateur (A4M ↔ A400M ↔ A400) — pour trouver une donnée rangée sous l'un d'eux (performances, profils). */
+  function related(code) {
+    const al = (window.AIRCRAFT_DB || {}).__aliases || {},
+      out = [];
+    let k = fold(code);
+    for (let i = 0; i < 7 && k && !out.includes(k); i++) {
+      out.push(k);
+      if (!al[k] || al[k] === k) break;
+      k = al[k];
+    }
+    const end = out[out.length - 1];
+    if (end)
+      for (const [a, b] of Object.entries(al))
+        if (b === end && !out.includes(a)) out.push(a);
+    return out;
+  }
+  /** Fiche de la base d'un code (désignateur ou alias, canonical) ; null si inconnu. */
+  function record(code) {
+    const db = window.AIRCRAFT_DB || {},
+      k = canonical(code);
     return k && !k.startsWith('__') && db[k] && typeof db[k] === 'object' ? db[k] : null;
   }
   /** Catégories, dans l'ordre d'affichage : hélicoptères, turbopropulseurs, réacteurs, pistons, autres. */
@@ -263,6 +286,9 @@
     };
   }
   window.AircraftCatalog = {
+    USAGE,
+    canonical,
+    related,
     record,
     classify,
     CATEGORIES,

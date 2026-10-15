@@ -10,7 +10,7 @@ function aircraftSvgForVisual(visual){
 /** Clé de recherche : majuscules sans accents, lettres et chiffres seulement (« A-400m » → « A400M »). */
 function fpNormalizeKey(s){return String(s||"").toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^A-Z0-9]/g,"")}
 /** Fiche AIRCRAFT_DB du profil (OACI, type, id puis nom, alias __aliases compris) ; fiche minimale si introuvable. */
-function fpResolve(profile){const db=window.AIRCRAFT_DB||{}, candidates=[profile?.icao,profile?.type,profile?.id,profile?.name];for(const c of candidates){const k=fpNormalizeKey(c),resolved=db[k]||db[db.__aliases?.[k]];if(resolved)return resolved}return {tdesig:profile?.icao||profile?.type||"?",model:profile?.name||"",description:"",wtc:"",wing_position:"unknown"}}
+function fpResolve(profile){const db=window.AIRCRAFT_DB||{}, candidates=[profile?.icao,profile?.type,profile?.id,profile?.name];for(const c of candidates){const k=fpNormalizeKey(c),resolved=window.AircraftCatalog?.record?.(k)||db[k]||db[db.__aliases?.[k]];if(resolved)return resolved}return {tdesig:profile?.icao||profile?.type||"?",model:profile?.name||"",description:"",wtc:"",wing_position:"unknown"}}
 /** Classement de la fiche (AircraftCatalog.classify, règle commune de la suite : famille, moteurs, motorisation, catégorie)
  *  et clé de recherche du nom ; « ? » sans catalogue. */
 function fpSpec(rec){const c=window.AircraftCatalog?.classify?.(rec)||{};return {family:c.family||"?",engines:c.engines||0,power:c.power||"?",category:c.category||"other",key:fpNormalizeKey([rec?.tdesig,rec?.model].join(" ")),wtc:String(rec?.wtc||"").toUpperCase()}}

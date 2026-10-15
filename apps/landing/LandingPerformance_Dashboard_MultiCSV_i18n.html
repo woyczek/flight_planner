@@ -2800,8 +2800,8 @@ function aircraftDbCache() {
 function resolveAircraftInfo(name) {
   const key = normalizeAircraftKey(name),
     db = aircraftDbCache();
-  let rec = db[key] || null;
-  if (!rec && db.__aliases && db.__aliases[key]) rec = db[db.__aliases[key]] || null;
+  // catalogue commun : alias suivis jusqu'au bout
+  let rec = window.AircraftCatalog?.record?.(key) || db[key] || null;
   if (!rec) return {
     tdesig: key || "?",
     name: String(name || ""),
@@ -3094,7 +3094,7 @@ function profileOnlyAircraft(landingCodes) {
     /** Clés normalisées d'un nom d'appareil : la sienne et celle de son type OACI dans AircraftDB (alias compris). */
     resolveKey = n => {
       const k = normalizeAircraftKey(n),
-        r = db[k] || db[db.__aliases?.[k]];
+        r = window.AircraftCatalog?.record?.(k) || db[k]; // alias suivis (catalogue commun)
       return [k, r?.tdesig ? normalizeAircraftKey(r.tdesig) : k]
     };
   const known = new Set();

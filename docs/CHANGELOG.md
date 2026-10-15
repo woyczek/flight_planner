@@ -619,6 +619,13 @@ servies depuis un autre disque, registre aux fichiers absents, profils cachés �
 
 ### Modifié
 
+- **Aircraft type lookup factored into the shared framework** (second step) — about twenty places resolved a
+  designator from a code, alias or name on their own, most following only one alias (A4M → A400M, not to A400).
+  `AircraftCatalog.canonical` / `.record` / `.related` (with `codeOf` for free text) now do it for *My aircraft*,
+  Maintenance, first run, fleet reporting, the Fuel planner and performance sheets (APD, SimBrief, profile keys),
+  Landing, the CR, duration estimates and the fuel reference. The assignment fleet index uses the catalogue's usage
+  names (`USAGE`) instead of a drifted copy; only the fleet approximations stay local (C-130J requested → the fleet's
+  C-130H). `docs/technique/FRAMEWORK.md` § 11 bis.
 - **Aircraft type classification factored into the shared framework** — about a dozen pages each decoded the ICAO
   description their own way (five category sets that disagreed on gyroplanes, tiltrotors, amphibians, airships).
   `AircraftCatalog.record` / `.classify` / `.CATEGORIES` now give one answer (helicopters = H and gyroplanes; then by

@@ -912,9 +912,8 @@
       al = window.AIRCRAFT_DB?.__aliases || {};
     // résolveur commun des types écrits en clair (shared/aircraft_catalog.js : alias, noms d'usage, modèle), puis la
     // chaîne d'alias suivie jusqu'au bout (A400M → A400 : les données de la compagnie peuvent renvoyer un code vers un autre)
-    let x = al[k] || window.AircraftCatalog?.codeOf?.(k) || k;
-    for (let i = 0; i < 5 && al[x] && al[x] !== x; i++) x = al[x];
-    return x;
+    return al[k] ? window.AircraftCatalog?.canonical?.(k) ?? al[k] : window.AircraftCatalog?.codeOf?.(k) || window.AircraftCatalog
+      ?.canonical?.(k) || k;
   };
   /** Vrai si code (ou son alias) figure dans l'ensemble de types. */
   const knownType = (types, code) => types.has(alias(code)) || types.has(String(code || '').toUpperCase().trim());

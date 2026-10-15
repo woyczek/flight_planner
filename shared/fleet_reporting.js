@@ -116,15 +116,10 @@
   }
 
   // ---- types d'aéronefs : base OACI (AircraftDB/aircraft_db.js) et alias (H145 → EC45…)
-  const alias = code => {
-    const k = String(code || '').toUpperCase().trim();
-    return window.AIRCRAFT_DB?.__aliases?.[k] || k;
-  };
+  // (catalogue commun : alias suivis jusqu'au bout)
+  const alias = code => window.AircraftCatalog?.canonical?.(code) || String(code || '').toUpperCase().trim();
   /** Le type (code OACI ou alias) figure-t-il dans la base des types d'aéronefs chargée (window.AIRCRAFT_DB) ? */
-  const known = code => {
-    const db = window.AIRCRAFT_DB || {};
-    return !!(db[alias(code)] || db[String(code || '').toUpperCase().trim()]);
-  };
+  const known = code => !!window.AircraftCatalog?.record?.(code);
   /** Appel au lanceur (/__setup/aircraft-db) : GET sans corps (état de la passe), POST { codes } pour compléter ces types ;
    *  renvoie la réponse JSON, null sans lanceur ou en erreur. */
   const acApi = (body = null) => fetch('/__setup/aircraft-db', {

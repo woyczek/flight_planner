@@ -492,8 +492,10 @@ Loaded right after `AircraftDB/aircraft_db.js` in **all** the pages that use it
 Every page that asks “what type or category is this ICAO designator or this aircraft?” calls
 `AircraftCatalog` (no local decoding of the ICAO description):
 
-- `record(code)`: record of a designator or alias (alias chain followed to the end: A4M → A400M → A400), `null` if
-  unknown;
+- `canonical(code)`: designator of a code (alias chain followed to the end: A4M → A400M → A400), the normalised code
+  otherwise; `record(code)`: its record, `null` if unknown; `related(code)`: equivalent codes (the code, its chain, the
+  aliases pointing to the designator) to find data filed under one of them (performance, profiles); `codeOf(text)`:
+  designator of a free text (fleet variant, aliases, usage names `USAGE` — Caracal, AWACS, Phénix…, model name);
 - `classify(code | record, { description })`: `{ code, rec, icao, fpl, family, kind, engines, power, category, wing,
   wtc }` — `family` L/S/A/H/G/T, or B for a balloon or airship (`kind` airship / balloon, non-ICAO); `engines` (“C”,
   coupled: 2); `power` J/T/P/E/R; `category` (rules decided on 15/10/2026): **helico** for H and G, otherwise by
@@ -507,7 +509,10 @@ then number of engines for pistons — and `.groupLabel` in four languages), ass
 (`MissionAssignments.fleetTypes`), *My aircraft* (`EquipmentEditor.categoryOf`), the CR wing category
 (`MissionAircraft.categoryOf`), duration estimates (`mission_estimate.js`), the performance model
 (`FlightPerfModel.kindOf`), Maintenance class labels, the Fuel planner (`gptEngines`, groups) and the Landing
-dashboard. The catalogue is loaded on every page that loads `aircraft_db.js`.
+dashboard. Designator lookups (*My aircraft*, Maintenance, first run, fleet reporting, Fuel planner and performance
+sheets, Landing, CR, duration estimates, fuel reference, assignment fleet index) go through `canonical` / `record` /
+`related` / `codeOf` instead of their own single-hop alias lookups. The catalogue is loaded on every page that loads
+`aircraft_db.js`.
 
 ### Form collections (`form.js`)
 

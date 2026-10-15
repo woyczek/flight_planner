@@ -91,7 +91,8 @@
     const code = String(value || '').trim().toUpperCase().replace(/\s+/g, '');
     if (!code) return null;
     const base = db();
-    let resolved = base.__aliases?.[code] || code,
+    // alias suivis jusqu'au bout (catalogue commun : A400M → A400)
+    let resolved = window.AircraftCatalog?.canonical?.(code) || base.__aliases?.[code] || code,
       entry = base[resolved] || localTypes()[resolved] || localTypes()[code];
     // écrit en clair (« A330 MRTT Phénix », « A332 A330 MRTT Phénix ») : désignateur trouvé par le catalogue commun
     // (shared/aircraft_catalog.js : flotte, alias, noms d'usage) — rien n'est ajouté en type local pour ces libellés
