@@ -3858,6 +3858,13 @@ function syncMergeButton() {
           "Enregistrer dans le dossier ({n})", "Save to the folder ({n})", "Im Ordner speichern ({n})", "Guardar en la carpeta ({n})"
         ]
       ],
+      ["ppFillMissing", "ppFillMissingLbl", ["Renseigner les champs manquants", "Fill in the missing fields", "Fehlende Felder ausfüllen",
+          "Rellenar los campos que faltan"
+        ],
+        ["Renseigner les champs manquants ({n})", "Fill in the missing fields ({n})", "Fehlende Felder ausfüllen ({n})",
+          "Rellenar los campos que faltan ({n})"
+        ]
+      ],
       ["ppDelete", "ppDeleteLbl", ["Supprimer", "Delete", "Löschen", "Eliminar"],
         ["Supprimer ({n})", "Delete ({n})", "Löschen ({n})",
           "Eliminar ({n})"
@@ -5215,7 +5222,7 @@ function execCopy(txt) {
 /** « Copier le prompt et ouvrir ChatGPT » : copie lancée dans le geste de l'utilisateur, ChatGPT ouvert (prompt prérempli
  *  s'il est assez court), état affiché ; le prompt reste lisible dans « Voir le prompt ». */
 async function gptCopyAndOpen() {
-  const txt = gptPrompt();
+  const txt = gptCurrentPrompt();
   if (!txt) return setText("ppGptStatus", kt(["Prompt absent (perf_prompt.js non chargé).", "Prompt missing (perf_prompt.js not loaded).",
     "Prompt fehlt (perf_prompt.js nicht geladen).", "Falta el prompt (perf_prompt.js no cargado)."
   ]));
@@ -5586,13 +5593,245 @@ async function gptMerge() {
     profilesChanged()
   })
 }
+/** « Renseigner les champs manquants » : identifiants des fiches cochées traitées par le panneau ChatGPT ; null : le
+ *  panneau demande la fiche complète de l'appareil choisi. */
+let gptMissingIds = null;
+/** Chemins du schéma de réponse (PERF_PROMPT_SCHEMA) renseignables un par un : valeurs simples à la racine et dans
+ *  taxi / climb / cruise / descent (identité, unité, textes, cartographie et listes à part). */
+function gptSchemaPaths() {
+  const out = [];
+  for (const [k, v] of Object.entries(window.PERF_PROMPT_SCHEMA || {})) {
+    if (["name", "icao", "unit", "rpmPowerReference", "rpmFuelCurve", "estimated", "sources", "notes"].includes(k)) continue;
+    if (v && typeof v === "object" && !Array.isArray(v)) out.push(...Object.keys(v).map(x => `${k}.${x}`));
+    else out.push(k)
+  }
+  return out
+}
+/** Champs vides d'une fiche (chemins du schéma), plus « rpmFuelCurve » quand elle n'a aucune ligne de cartographie. */
+function sheetMissingPaths(p) {
+  const paths = gptSchemaPaths().filter(k => isBlankValue(pathGet(p, k)));
+  if (!(p.rpmFuelCurve || []).some(r => r.rpm !== null && r.rpm !== "" && Number.isFinite(+r.rpm))) paths.push("rpmFuelCurve");
+  return paths
+}
+/** Fiches du panneau « champs manquants » : [{ p (fiche, saisies en cours comprises), paths }] — celles qui ont des
+ *  champs vides seulement. */
+function gptMissingList() {
+  if (active && (gptMissingIds || []).includes(active.id)) commitProfileEditor(false);
+  return (gptMissingIds || []).map(id => state.profiles?.[id]).filter(Boolean).map(p => {
+    const q = normalize(structuredClone(p));
+    return {
+      p: q,
+      paths: sheetMissingPaths(q)
+    }
+  }).filter(x => x.paths.length)
+}
+/** Modèle de réponse d'une fiche : son id, ses champs vides seulement (valeurs du schéma : null, ou choix proposés),
+ *  estimated, sources, notes. */
+function sheetMissingModel(p, paths) {
+  const S = window.PERF_PROMPT_SCHEMA || {},
+    o = {
+      id: p.id
+    };
+  for (const k of paths) {
+    if (k === "rpmFuelCurve") {
+      o.rpmPowerReference = "";
+      o.rpmFuelCurve = structuredClone(S.rpmFuelCurve || []);
+      continue
+    }
+    const [a, b] = k.split(".");
+    if (b)(o[a] ||= {})[b] = S[a]?.[b] ?? null;
+    else o[a] = S[a] ?? null
+  }
+  return Object.assign(o, {
+    estimated: [],
+    sources: [],
+    notes: ""
+  })
+}
+/** Prompt « champs manquants » des fiches cochées (langue de la page) : par fiche, ce que la suite sait et les champs à
+ *  renseigner ; modèle de réponse { sheets: [...] }. Chaîne vide si perf_prompt.js n'est pas chargé ou rien ne manque. */
+function gptMissingPrompt(list = gptMissingList()) {
+  const base = window.PERF_PROMPT_MISSING?.[KIT.lang()] || window.PERF_PROMPT_MISSING?.fr;
+  if (!base || !list.length) return "";
+  const colon = kt([" :", ":", ":", ":"]),
+    sheets = list.map(({
+      p,
+      paths
+    }) => {
+      const code = aKey(p.icao || p.type || p.id),
+        model = (window.AIRCRAFT_DB || {})[code]?.model || code;
+      return [`### id "${p.id}" — ${p.name || model} (${kt(["OACI", "ICAO", "ICAO", "OACI"])} ${code}, ${model})`,
+        `${kt(["Motorisation connue", "Known powerplant", "Bekannte Motorisierung", "Motorización conocida"])}${colon} ${gptEngines(p, code)}`,
+        `${kt(["Déjà connu", "Already known", "Schon bekannt", "Ya conocido"])}${colon}`, gptKnown(p, code, false),
+        `${kt(["Champs à renseigner", "Fields to fill", "Auszufüllende Felder", "Campos que rellenar"])}${colon} ${paths.map(k => k === "rpmFuelCurve" ? "rpmFuelCurve + rpmPowerReference" : k).join(", ")}`
+      ].join("\n")
+    }).join("\n\n"),
+    reply = JSON.stringify({
+      sheets: list.map(x => sheetMissingModel(x.p, x.paths))
+    }, null, 1);
+  let out = base;
+  for (const [k, v] of [
+      ["NOMBRE", list.length],
+      ["FICHES", sheets],
+      ["MODELE_REPONSE", reply]
+    ]) out = out.split(`{{${k}}}`).join(String(v));
+  return out
+}
+/** Prompt du panneau : champs manquants des fiches cochées, ou fiche complète de l'appareil choisi. */
+function gptCurrentPrompt() {
+  return gptMissingIds ? gptMissingPrompt() : gptPrompt()
+}
+/** « Renseigner les champs manquants (n) » (barre du bas, lignes cochées ; sinon l'appareil choisi) : panneau ChatGPT
+ *  ouvert sur ces fiches, une seule question pour toutes. */
+function openGptMissing() {
+  const ids = [...ppSelected].filter(id => state.profiles?.[id]);
+  if (!ids.length && active && state.profiles?.[active.id]) ids.push(active.id);
+  if (!ids.length) return window.AppFramework?.notify?.(kt(["Coche d’abord les fiches à compléter.", "First tick the sheets to complete.",
+    "Zuerst die zu ergänzenden Blätter ankreuzen.", "Marca primero las fichas que completar."
+  ]));
+  gptMissingIds = ids;
+  if (!gptMissingList().length) {
+    gptMissingIds = null;
+    return window.AppFramework?.notify?.(kt(["Rien à renseigner : les fiches cochées n’ont pas de champ vide.",
+      "Nothing to fill in: the ticked sheets have no empty field.",
+      "Nichts auszufüllen: die angekreuzten Blätter haben kein leeres Feld.",
+      "Nada que rellenar: las fichas marcadas no tienen ningún campo vacío."
+    ]), "ok")
+  }
+  openGptPanel(null, true);
+  $("ppGptPanel")?.scrollIntoView({
+    block: "nearest"
+  })
+}
+/** Lit la réponse « champs manquants » (bloc de code accepté) : entrées { id, … } de "sheets" (ou un tableau, ou une
+ *  seule fiche). Pour chaque fiche : réponse relue comme une fiche ChatGPT (parseGptReply, unités converties dans celles
+ *  de la fiche), puis seuls ses champs vides sont remplis — rien de saisi n'est écrasé ; valeurs estimées et sources
+ *  reprises. Résumé avant de valider, « Annuler » 10 s. */
+async function gptFillMissing() {
+  const list = gptMissingList();
+  let t = String($("ppGptReply").value || "").trim(),
+    obj;
+  const fence = t.match(/```[a-z]*\s*([\s\S]*?)```/i);
+  if (fence) t = fence[1].trim();
+  try {
+    obj = JSON.parse(t.slice(t.indexOf("{"), t.lastIndexOf("}") + 1))
+  } catch {
+    try {
+      obj = JSON.parse(t.slice(t.indexOf("["), t.lastIndexOf("]") + 1))
+    } catch {
+      return gptReport(kt(["Réponse illisible : le JSON attendu ({\"sheets\": [...]}) est introuvable.",
+        "Unreadable answer: the expected JSON ({\"sheets\": [...]}) is missing.",
+        "Antwort unlesbar: das erwartete JSON ({\"sheets\": [...]}) fehlt.",
+        "Respuesta ilegible: no se encuentra el JSON esperado ({\"sheets\": [...]})."
+      ]), "err")
+    }
+  }
+  const items = Array.isArray(obj) ? obj : Array.isArray(obj?.sheets) ? obj.sheets : obj ? [obj] : [],
+    warnings = [],
+    plan = [];
+  for (const {
+      p,
+      paths
+    }
+    of list) {
+    const item = items.find(x => String(x?.id ?? "") === p.id) || (list.length === 1 && items.length === 1 ? items[0] : null);
+    if (!item) continue;
+    let r;
+    try {
+      r = parseGptReply(JSON.stringify({
+        ...item,
+        id: undefined
+      }), aKey(p.icao || p.type || p.id))
+    } catch (e) {
+      warnings.push(`${p.name || p.id} : ${e.message}`);
+      continue
+    }
+    warnings.push(...(r.warnings || []).map(w => `${p.name || p.id} : ${w}`));
+    const u = p.unit || "kg",
+      src = r.profile.unit && r.profile.unit !== u ? fuelConvertedCopy(r.profile, r.profile.unit, u, true) : r.profile,
+      after = structuredClone(state.profiles[p.id]),
+      filled = [];
+    for (const k of paths) {
+      if (k === "rpmFuelCurve") {
+        if ((src.rpmFuelCurve || []).length) {
+          after.rpmFuelCurve = structuredClone(src.rpmFuelCurve);
+          if (isBlankValue(after.rpmPowerReference) && !isBlankValue(src.rpmPowerReference)) after.rpmPowerReference = src
+            .rpmPowerReference;
+          filled.push(k)
+        }
+        continue
+      }
+      const v = pathGet(src, k);
+      if (!isBlankValue(v) && isBlankValue(pathGet(after, k))) {
+        pathSet(after, k, structuredClone(v));
+        filled.push(k)
+      }
+    }
+    if (!filled.length) continue;
+    const est = (src.estimatedFields || []).filter(k => filled.includes(k));
+    if (est.length) after.estimatedFields = [...new Set([...(after.estimatedFields || []), ...est])];
+    if (src.gptSources?.length) after.gptSources = [...(after.gptSources || []), ...src.gptSources];
+    after.updatedAt = new Date().toISOString();
+    plan.push({
+      before: structuredClone(state.profiles[p.id]),
+      after,
+      filled
+    })
+  }
+  gptReport(warnings);
+  if (!plan.length) return gptReport(kt(["Rien à renseigner : la réponse ne donne aucune valeur pour les champs vides des fiches.",
+    "Nothing to fill in: the answer gives no value for the sheets’ empty fields.",
+    "Nichts auszufüllen: die Antwort gibt keinen Wert für die leeren Felder der Blätter.",
+    "Nada que rellenar: la respuesta no da ningún valor para los campos vacíos de las fichas."
+  ]), "warn");
+  const lines = plan.map(x => `${x.after.name || x.after.id} : ${x.filled.map(k => k === "rpmFuelCurve" ? kt(["cartographie moteur", "engine map", "Motorkennfeld", "mapa motor"]) : profileFieldLabel(k)).join(", ")}`);
+  if (!await window.AppFramework.ask(ktf(["Renseigner {n} champ(s) dans {f} fiche(s) ? Rien de déjà saisi n’est remplacé.",
+      "Fill in {n} field(s) in {f} sheet(s)? Nothing already entered is replaced.",
+      "{n} Feld(er) in {f} Blatt/Blättern ausfüllen? Nichts bereits Eingetragenes wird ersetzt.",
+      "¿Rellenar {n} campo(s) en {f} ficha(s)? No se sustituye nada ya introducido."
+    ], {
+      n: plan.reduce((a, x) => a + x.filled.length, 0),
+      f: plan.length
+    }) + "\n\n" + lines.join("\n"), {
+      ok: kt(["Renseigner", "Fill in", "Ausfüllen", "Rellenar"])
+    })) return;
+  for (const x of plan) {
+    state.profiles[x.after.id] = x.after;
+    if (active?.id === x.after.id) setActive(x.after, "ChatGPT")
+  }
+  profilesChanged();
+  $("ppGptReply").value = "";
+  gptRefresh();
+  notifyUndo(ktf(["Champs renseignés par ChatGPT : {list}.", "Fields filled in by ChatGPT: {list}.",
+    "Von ChatGPT ausgefüllte Felder: {list}.",
+    "Campos rellenados por ChatGPT: {list}."
+  ], {
+    list: lines.join(" ; ")
+  }), () => {
+    for (const x of plan) {
+      state.profiles[x.before.id] = x.before;
+      if (active?.id === x.before.id) setActive(x.before, kt(["champs renseignés annulés", "filled fields undone",
+        "ausgefüllte Felder rückgängig",
+        "campos rellenados deshechos"
+      ]))
+    }
+    profilesChanged();
+    gptRefresh()
+  })
+}
 /** Met à jour le panneau : prompt (si prompt), boutons « Importer » / « Fusionner avec « … » » selon la réponse collée et
- *  l'appareil (pas de fusion pour un type sans profil). */
+ *  l'appareil (pas de fusion pour un type sans profil) ; « champs manquants » : « Renseigner les champs manquants » à la
+ *  place. */
 function gptRefresh(prompt = true) {
-  if (prompt) $("ppGptPrompt").value = gptPrompt();
+  if (prompt) $("ppGptPrompt").value = gptCurrentPrompt();
   const has = !!$("ppGptReply").value.trim(),
     target = gptFor && !gptFor.landing ? state.profiles?.[gptFor.id] : null,
-    m = $("ppGptMerge");
+    m = $("ppGptMerge"),
+    missing = !!gptMissingIds;
+  $("ppGptImport").hidden = m.hidden = missing;
+  $("ppGptFill").hidden = !missing;
+  $("ppGptFill").disabled = !has;
+  if (prompt) gptForLabel();
   $("ppGptImport").disabled = !has;
   m.textContent = target ? ktf(["Fusionner avec « {p} »", "Merge with “{p}”", "Mit „{p}“ zusammenführen", "Fusionar con «{p}»"], {
     p: target.name || target.id
@@ -5606,7 +5845,7 @@ function gptRefresh(prompt = true) {
 function gptFollow(e) {
   // (getElementById : le Carburant n'a pas ce panneau, $ y rendrait un élément fantôme)
   const box = document.getElementById("ppGptPanel");
-  if (!box || box.hidden || !e?.id || (gptFor?.id === e.id && gptFor.landing === !!e.landing)) return;
+  if (!box || box.hidden || gptMissingIds || !e?.id || (gptFor?.id === e.id && gptFor.landing === !!e.landing)) return;
   gptFor = {
     id: e.id,
     landing: !!e.landing
@@ -5616,13 +5855,20 @@ function gptFollow(e) {
 }
 /** Nom de l'appareil du panneau ChatGPT (celui de l'en-tête). */
 function gptForLabel() {
-  const el = document.getElementById("ppGptFor"),
-    p = gptProfileOf(gptFor);
-  if (el) el.textContent = p ? `${p.name || p.id} (${p.type || p.icao || p.id})` : "—"
+  const el = document.getElementById("ppGptFor");
+  if (!el) return;
+  if (gptMissingIds) { // champs manquants : fiches et nombre de champs vides
+    const list = gptMissingList();
+    return el.textContent = list.length ? list.map(x => `${x.p.name || x.p.id} (${x.paths.length})`).join(", ") : kt(["rien à renseigner",
+      "nothing to fill in", "nichts auszufüllen", "nada que rellenar"
+    ])
+  }
+  const p = gptProfileOf(gptFor);
+  el.textContent = p ? `${p.name || p.id} (${p.type || p.icao || p.id})` : "—"
 }
 /** Ouvre le panneau « Demander à ChatGPT » pour pick { id, landing } (sinon : l'appareil choisi dans l'en-tête) : copie
  *  du prompt et ouverture de ChatGPT, prompt replié, réponse à coller. Sans appareil choisi : le sélecteur de l'en-tête. */
-function openGptPanel(pick) {
+function openGptPanel(pick, missing = false) {
   const box = $("ppGptPanel"),
     esc = KIT.esc,
     // l'appareil choisi dans l'en-tête (ou par « Modifier » dans le tableau)
@@ -5630,10 +5876,13 @@ function openGptPanel(pick) {
       id: active.id,
       landing: !state.profiles?.[active.id]
     } : null;
+  if (!missing) gptMissingIds = null; // fiche complète de l'appareil choisi
   pick ||= picked;
-  if (!pick) {
-    notify(kt(["Choisis d’abord l’appareil dans l’en-tête.", "First choose the aircraft in the header.",
-      "Zuerst das Luftfahrzeug in der Kopfzeile wählen.", "Elige primero la aeronave en la cabecera."
+  if (!pick && !missing) {
+    window.AppFramework?.notify?.(kt(["Choisis d’abord l’appareil (barre du bas, ou clic sur sa ligne).",
+      "First choose the aircraft (bottom bar, or click on its row).",
+      "Zuerst das Luftfahrzeug wählen (untere Leiste oder Klick auf seine Zeile).",
+      "Elige primero la aeronave (barra inferior, o clic en su fila)."
     ]));
     return document.getElementById("sheetPick")?.focus()
   }
@@ -5641,7 +5890,7 @@ function openGptPanel(pick) {
     id: pick.id,
     landing: !!pick.landing
   } : null;
-  box.innerHTML = `<div class="pp-gpt-row"><span>${esc(kt(["Appareil", "Aircraft", "Luftfahrzeug", "Aeronave"]))} : <strong id="ppGptFor"></strong></span><button type="button" id="ppGptCopy" class="primary">${esc(kt(["Copier le prompt et ouvrir ChatGPT", "Copy the prompt and open ChatGPT", "Prompt kopieren und ChatGPT öffnen", "Copiar el prompt y abrir ChatGPT"]))}</button><a href="https://chatgpt.com/" target="_blank" rel="noopener">chatgpt.com</a><button type="button" id="ppGptClose" class="ghost" title="${esc(kt(["Fermer", "Close", "Schließen", "Cerrar"]))}">×</button></div><p id="ppGptStatus" class="mut">${esc(kt(["Le prompt demande à ChatGPT de compiler toutes les sources (manuels, constructeur, Wikipédia, forums de simulation), en unités imposées, valeurs estimées marquées, cartographie moteur comprise ; il donne aussi ce que la suite sait déjà.", "The prompt asks ChatGPT to compile every source (manuals, manufacturer, Wikipedia, simulation forums), in required units, estimated values marked, engine map included; it also gives what the suite already knows.", "Der Prompt bittet ChatGPT, alle Quellen zusammenzutragen (Handbücher, Hersteller, Wikipedia, Simulationsforen), in vorgeschriebenen Einheiten, geschätzte Werte markiert, Motorkennfeld inklusive; er nennt auch, was die Suite schon weiß.", "El prompt pide a ChatGPT reunir todas las fuentes (manuales, fabricante, Wikipedia, foros de simulación), en unidades impuestas, valores estimados marcados, mapa motor incluido; también da lo que la suite ya sabe."]))}</p><details><summary>${esc(kt(["Voir le prompt", "Show the prompt", "Prompt anzeigen", "Ver el prompt"]))}</summary><textarea id="ppGptPrompt" rows="12" readonly></textarea></details><label class="pp-gpt-paste">${esc(kt(["Coller ici la réponse de ChatGPT (le JSON, ou un CSV de performances)", "Paste ChatGPT’s answer here (the JSON, or a performance CSV)", "ChatGPTs Antwort hier einfügen (das JSON oder ein Leistungs-CSV)", "Pegar aquí la respuesta de ChatGPT (el JSON, o un CSV de rendimiento)"]))}<textarea id="ppGptReply" rows="6" spellcheck="false"></textarea></label><div class="pp-gpt-row"><button type="button" id="ppGptImport" class="secondary">${esc(kt(["Importer comme nouveau profil", "Import as a new profile", "Als neues Profil importieren", "Importar como perfil nuevo"]))}</button><button type="button" id="ppGptMerge" class="secondary"></button></div><p id="ppGptReport" class="mut"></p>`;
+  box.innerHTML = `<div class="pp-gpt-row"><span>${esc(missing ? kt(["Champs manquants", "Missing fields", "Fehlende Felder", "Campos que faltan"]) : kt(["Appareil", "Aircraft", "Luftfahrzeug", "Aeronave"]))} : <strong id="ppGptFor"></strong></span><button type="button" id="ppGptCopy" class="primary">${esc(kt(["Copier le prompt et ouvrir ChatGPT", "Copy the prompt and open ChatGPT", "Prompt kopieren und ChatGPT öffnen", "Copiar el prompt y abrir ChatGPT"]))}</button><a href="https://chatgpt.com/" target="_blank" rel="noopener">chatgpt.com</a><button type="button" id="ppGptClose" class="ghost" title="${esc(kt(["Fermer", "Close", "Schließen", "Cerrar"]))}">×</button></div><p id="ppGptStatus" class="mut">${esc(kt(["Le prompt demande à ChatGPT de compiler toutes les sources (manuels, constructeur, Wikipédia, forums de simulation), en unités imposées, valeurs estimées marquées, cartographie moteur comprise ; il donne aussi ce que la suite sait déjà.", "The prompt asks ChatGPT to compile every source (manuals, manufacturer, Wikipedia, simulation forums), in required units, estimated values marked, engine map included; it also gives what the suite already knows.", "Der Prompt bittet ChatGPT, alle Quellen zusammenzutragen (Handbücher, Hersteller, Wikipedia, Simulationsforen), in vorgeschriebenen Einheiten, geschätzte Werte markiert, Motorkennfeld inklusive; er nennt auch, was die Suite schon weiß.", "El prompt pide a ChatGPT reunir todas las fuentes (manuales, fabricante, Wikipedia, foros de simulación), en unidades impuestas, valores estimados marcados, mapa motor incluido; también da lo que la suite ya sabe."]))}</p><details><summary>${esc(kt(["Voir le prompt", "Show the prompt", "Prompt anzeigen", "Ver el prompt"]))}</summary><textarea id="ppGptPrompt" rows="12" readonly></textarea></details><label class="pp-gpt-paste">${esc(kt(["Coller ici la réponse de ChatGPT (le JSON, ou un CSV de performances)", "Paste ChatGPT’s answer here (the JSON, or a performance CSV)", "ChatGPTs Antwort hier einfügen (das JSON oder ein Leistungs-CSV)", "Pegar aquí la respuesta de ChatGPT (el JSON, o un CSV de rendimiento)"]))}<textarea id="ppGptReply" rows="6" spellcheck="false"></textarea></label><div class="pp-gpt-row"><button type="button" id="ppGptImport" class="secondary">${esc(kt(["Importer comme nouveau profil", "Import as a new profile", "Als neues Profil importieren", "Importar como perfil nuevo"]))}</button><button type="button" id="ppGptMerge" class="secondary"></button><button type="button" id="ppGptFill" class="secondary" hidden>${esc(kt(["Renseigner les champs manquants", "Fill in the missing fields", "Fehlende Felder ausfüllen", "Rellenar los campos que faltan"]))}</button></div><p id="ppGptReport" class="mut"></p>`;
   box.hidden = false;
   gptForLabel();
   $("ppGptCopy").onclick = () => gptCopyAndOpen();
@@ -5649,6 +5898,7 @@ function openGptPanel(pick) {
   $("ppGptReply").oninput = () => gptRefresh(false);
   $("ppGptImport").onclick = () => gptImportNew();
   $("ppGptMerge").onclick = () => gptMerge();
+  $("ppGptFill").onclick = () => gptFillMissing();
   gptRefresh()
 }
 $("sbTypeBtn").onclick = () => active && simbriefProfileFor(active.id);
@@ -5669,6 +5919,7 @@ $("ppMerge").onclick = () => mergeSelected();
 $("ppExport").onclick = () => exportSelected();
 $("ppSaveDir").onclick = () => saveSelectedToFolder();
 $("ppDelete").onclick = () => deleteSelectedAsk();
+$("ppFillMissing").onclick = () => openGptMissing();
 $("ppImport").onclick = () => $("fileInput").click();
 $("ppFolder").onclick = () => $("dirBtn").click();
 $("ppReload").onclick = () => reloadPerfFolder(true);

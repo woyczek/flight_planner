@@ -12,6 +12,11 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Added
 
+- **"Fill in the missing fields (n)"** (Performance sheets, bottom bar, ticked rows) — one ChatGPT question for every
+  ticked sheet: for each, what the suite already knows and its empty fields (engine map included when the sheet has
+  none); the pasted answer (one entry per sheet) fills only the empty fields, never what is already entered, with a
+  summary per sheet before confirming and "Undo" for 10 s. Prompt in docs/technique/PROMPT_PROFIL_PERFORMANCES.md
+  (`<language>-missing` blocks, rules shared with the full prompt).
 - **"Performance sheets" page** (`apps/planner/performance_sheets.html`, Tools, level 3; docs/technique/V2_FABLE.md
   § 13, step 1) — the management of the aircraft's performance sheets: the "Performance profiles" table and all its
   actions, the field editor, engine performance and RPM table, engine map, flight regimes, OFP calibration and audit.
