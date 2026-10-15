@@ -218,10 +218,12 @@
   dialog.innerHTML =
     '<h2>Modifications non enregistrées</h2><p>Le profil courant a été modifié. Que veux-tu faire avant de changer d’avion ?</p><div class="dialog-actions"><button data-choice="stay">Rester</button><button data-choice="discard">Abandonner et changer</button><button class="primary" data-choice="save">Enregistrer et changer</button></div>';
   document.body.append(dialog);
-  // Change d'avion (profil p) : direct si rien n'est modifié ; sinon demande rester / abandonner / enregistrer puis changer.
+  // Change d'avion (profil p ; null : aucun) : direct si rien n'est modifié ; sinon demande rester / abandonner /
+  // enregistrer puis changer.
   function requestSwitch(p) {
+    const go = msg => p ? rawSetActive(p, msg) : clearActive(msg);
     if (!profileDirty) {
-      rawSetActive(p, "base locale");
+      go("base locale");
       closeHeaderMenus();
       return
     }
@@ -229,9 +231,13 @@
     dialog.querySelectorAll("button").forEach(b => b.onclick = () => {
       let choice = b.dataset.choice;
       dialog.close();
-      if (choice === "stay") return syncAircraftPicker();
+      if (choice === "stay") {
+        syncAircraftPicker();
+        if (typeof ppSelectionFollowActive === "function") ppSelectionFollowActive();
+        return
+      }
       if (choice === "save") saveCurrent();
-      rawSetActive(p, choice === "save" ? "profil enregistré puis changé" : "modifications abandonnées");
+      go(choice === "save" ? "profil enregistré puis changé" : "modifications abandonnées");
       closeHeaderMenus()
     })
   }

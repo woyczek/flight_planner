@@ -661,6 +661,7 @@ function setActive(p, source = "local") {
     id: active.id,
     landing: !state.profiles?.[active.id]
   }); // panneau ChatGPT ouvert : il suit l'appareil choisi
+  if (!ppSelected.has(active.id) || ppSelected.size !== 1) ppSelectionFollowActive();
   try {
     calculate()
   } catch (e) {
@@ -672,7 +673,7 @@ function clearActive(message = "Aucun profil actif") {
   active = null;
   activeSavedSnapshot = "";
   profileDirty = false;
-  state.lastAircraft = null;
+  state[PERF_PAGE === "sheets" ? "lastSheet" : "lastAircraft"] = null;
   $("airBtn").textContent = "Avion : aucun";
   $("source").textContent = message;
   syncAircraftPicker();
@@ -3545,10 +3546,14 @@ function renderPerfProfiles() {
       }
       const cr = e.target.closest("[data-pp-create]");
       if (cr) return perfCreate(cr.dataset.code, cr.dataset.name, cr.dataset.ppCreate);
-      const b = e.target.closest(".pp-pick");
-      if (!b) return;
-      const p = state.profiles?.[b.dataset.id];
-      if (p) setActive(p, kt(["base de performances", "performance database", "Leistungsdatenbank", "base de rendimiento"]))
+      // clic sur une ligne (hors case, lien, bouton) : cet appareil seul coché, donc choisi ; Ctrl / Maj + clic : la
+      // coche ou la décoche en gardant les autres (plusieurs cochées : aucun appareil choisi)
+      const tr = e.target.closest("tr.pp-row");
+      if (!tr || e.target.closest("input, a, button, select, textarea, label")) return;
+      if (e.ctrlKey || e.metaKey || e.shiftKey) ppSelected.has(tr.dataset.id) ? ppSelected.delete(tr.dataset.id) : ppSelected.add(tr
+        .dataset.id);
+      else ppSelected = new Set([tr.dataset.id]);
+      ppApplySelection()
     });
     // cases de fusion : sélection gardée d'un rendu à l'autre (ppSelected), bouton « Fusionner » mis à jour
     box.addEventListener("change", e => {
@@ -3559,23 +3564,12 @@ function renderPerfProfiles() {
           a.checked ? ppSelected.add(b.dataset.id) : ppSelected.delete(b.dataset.id)
         });
         a.indeterminate = false;
-        return syncMergeButton()
+        return ppApplySelection()
       }
       const c = e.target.closest(".pp-sel");
       if (!c) return;
-      if (c.checked) ppSelected.add(c.dataset.id);
-      if (c.checked) gptFollow({
-        id: c.dataset.id,
-        landing: false
-      }); // panneau ChatGPT ouvert : il suit la ligne cochée
-      else ppSelected.delete(c.dataset.id);
-      const all = box.querySelector(".pp-sel-all"),
-        bs = [...box.querySelectorAll(".pp-sel")];
-      if (all) {
-        all.checked = bs.every(b => b.checked);
-        all.indeterminate = !all.checked && bs.some(b => b.checked)
-      }
-      syncMergeButton()
+      c.checked ? ppSelected.add(c.dataset.id) : ppSelected.delete(c.dataset.id);
+      ppApplySelection()
     });
   }
   for (const id of [...ppSelected])
@@ -3619,7 +3613,7 @@ function renderPerfProfiles() {
     "Rendimiento"
   ]), kt(["Carto.", "Map", "Kennfeld", "Mapa"]), kt(["Conso. croisière", "Cruise flow", "Reiseverbrauch", "Consumo crucero"]), kt([
     "Plafond", "Ceiling", "Gipfelhöhe", "Techo"
-  ]), kt(["Manques", "Missing", "Fehlt", "Falta"]), ""];
+  ]), kt(["Manques", "Missing", "Fehlt", "Falta"])];
   /** Cellule « Performances » d'un appareil sans profil : « aucune » et les trois façons d'en créer un. */
   const noneCell = r => {
     const at = how => `data-pp-create="${how}" data-code="${esc(r.code)}" data-name="${esc(r.name)}"`;
@@ -3637,7 +3631,7 @@ function renderPerfProfiles() {
           "no está en «Mis aeronaves»"
         ]))
       }) || `<b>${esc(r.name)}</b>`;
-    if (!p) return `<tr><td></td><td>${nm}</td><td>${noneCell(r)}</td><td>—</td><td>—</td><td>—</td><td><span class="pp-missing">${esc(kt(["tout le profil", "the whole profile", "das ganze Profil", "todo el perfil"]))}</span></td><td></td></tr>`;
+    if (!p) return `<tr><td></td><td>${nm}</td><td>${noneCell(r)}</td><td>—</td><td>—</td><td>—</td><td><span class="pp-missing">${esc(kt(["tout le profil", "the whole profile", "das ganze Profil", "todo el perfil"]))}</span></td></tr>`;
     const i = profileInfo(p),
       s = i.s,
       on = active?.id === p.id,
@@ -3659,7 +3653,7 @@ function renderPerfProfiles() {
         "Auswahl: mehrere Profile zusammenführen, exportieren, speichern oder löschen",
         "Selección: fusionar, exportar, guardar o eliminar varios perfiles"
       ]))}"${ppSelected.has(p.id) ? " checked" : ""}>`;
-    return `<tr${on ? ' class="is-active"' : ""}><td>${sel}</td><td>${nm}</td><td>${esc(profileSourceText(p, i))}</td><td>${map}</td><td>${ff}</td><td>${ceil}</td><td>${miss}</td><td class="pp-act"><button type="button" class="secondary pp-pick" data-id="${esc(p.id)}"${on ? " disabled" : ""}>${esc(PERF_PAGE === "sheets" ? (on ? kt(["en cours", "editing", "in Bearbeitung", "en edición"]) : kt(["Modifier", "Edit", "Bearbeiten", "Modificar"])) : on ? kt(["actif", "active", "aktiv", "activo"]) : kt(["Choisir", "Choose", "Wählen", "Elegir"]))}</button></td></tr>`
+    return `<tr class="pp-row${on ? " is-active" : ""}" data-id="${esc(p.id)}"><td>${sel}</td><td>${nm}</td><td>${esc(profileSourceText(p, i))}</td><td>${map}</td><td>${ff}</td><td>${ceil}</td><td>${miss}</td></tr>`
   };
   let body = "";
   if (sortBy === "cat") {
@@ -3818,7 +3812,26 @@ window.addEventListener("storage", e => {
 // Supprimer et fusionner retirent des profils de la base locale ; un profil retiré est noté (state.removedProfiles) pour
 // que la relecture du dossier performances ne le ramène pas (le fichier du dossier n'est jamais effacé ; un import
 // explicite du fichier le ramène). Chaque retrait propose « Annuler » pendant 10 s.
-let ppSelected = new Set(); // profils cochés pour une fusion (identifiants)
+let ppSelected = new Set(); // profils cochés (identifiants) : un seul = l'appareil choisi ; plusieurs = fusion, export…
+/** Fiches de performances : une seule ligne cochée = cet appareil choisi (fiche modifiée, panneau ChatGPT) ; aucune ou
+ *  plusieurs = aucun appareil choisi. Changement confirmé si la fiche ouverte est modifiée (shared/flight_ui.js). */
+function ppApplySelection() {
+  const ids = [...ppSelected].filter(id => state.profiles?.[id]),
+    p = ids.length === 1 ? state.profiles[ids[0]] : null;
+  syncMergeButton();
+  if (p ? active?.id === p.id : !active) return renderPerfProfilesSoon();
+  if (window.requestAircraftSwitch) window.requestAircraftSwitch(p);
+  else if (p) setActive(p, kt(["base de performances", "performance database", "Leistungsdatenbank", "base de rendimiento"]));
+  else clearActive(kt(["Aucun appareil choisi", "No aircraft chosen", "Kein Luftfahrzeug gewählt", "Ninguna aeronave elegida"]))
+}
+/** Fiches de performances : coches remises sur l'appareil choisi (choix par l'en-tête, « Rester » après une
+ *  confirmation, fiche créée ou importée). */
+function ppSelectionFollowActive() {
+  if (PERF_PAGE !== "sheets") return;
+  ppSelected.clear();
+  if (active && state.profiles?.[active.id]) ppSelected.add(active.id);
+  renderPerfProfilesSoon()
+}
 /** Clé de type d'un profil (code OACI, alias suivis) : deux profils ne se fusionnent que s'ils ont la même. */
 function profileTypeKey(p) {
   const k = aKey(p?.icao || p?.type || p?.id || ""),

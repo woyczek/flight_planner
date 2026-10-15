@@ -15,7 +15,7 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 - **"Performance sheets" page** (`apps/planner/performance_sheets.html`, Tools, level 3; docs/technique/V2_FABLE.md
   § 13, step 1) — the management of the aircraft's performance sheets: the "Performance profiles" table and all its
   actions, the field editor, engine performance and RPM table, engine map, flight regimes, OFP calibration and audit;
-  the header holds the action bar (ChatGPT, search and sorting stay above the table) and an "Aircraft" selector, divided like Fuel's menu, that picks the sheet being edited and the ChatGPT panel's aircraft ("Edit" in the table too). It shares its script and styles with Fuel
+  the header holds the action bar (ChatGPT, search and sorting stay above the table) and an "Aircraft" selector, divided like Fuel's menu, that picks the sheet being edited and the ChatGPT panel's aircraft (a click on a table row too; several rows ticked: none). It shares its script and styles with Fuel
   (`apps/planner/flight_planner.js` / `.css`, moved out of the fuel page) and the same local database; a sheet saved
   on one page is picked up at once by the other one open in another tab. Fuel keeps its blocks during this step.
 - **My aircraft, one list with its performance side** — Settings › My profile › Aircraft and simulators ("My aircraft",
