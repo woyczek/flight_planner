@@ -369,10 +369,10 @@
     group: GROUP_PROFILE,
     title: L('Appareils et simulateurs', 'Aircraft and simulators', 'Luftfahrzeuge und Simulatoren', 'Aeronaves y simuladores'),
     intro: L(
-      'Types de la flotte possédés et maîtrisés, simulateurs installés : le Centre s’en sert pour vous affecter un appareil et réunir des pilotes sur un simulateur commun. Recopiés dans vos semaines de disponibilités déclarées.',
-      'Fleet types owned and mastered, installed simulators: the Centre uses them to assign you an aircraft and to gather pilots on a common simulator. Copied into your declared availability weeks.',
-      'Besessene und beherrschte Flottentypen, installierte Simulatoren: Das Zentrum nutzt sie für die Zuweisung eines Luftfahrzeugs und um Piloten auf einem gemeinsamen Simulator zusammenzubringen. In Ihre angegebenen Verfügbarkeitswochen übernommen.',
-      'Tipos de la flota poseídos y dominados, simuladores instalados: el Centro los usa para asignarle una aeronave y reunir a pilotos en un simulador común. Copiados en sus semanas de disponibilidad declaradas.'
+      '« Mes appareils » (flotte comprise, possédés et maîtrisés) et simulateurs installés : le Centre s’en sert pour vous affecter un appareil et réunir des pilotes sur un simulateur commun. Recopiés dans vos semaines de disponibilités déclarées. Les performances de ces appareils sont dans le Carburant (bloc « Profils de performances », mêmes appareils).',
+      '“My aircraft” (fleet included, owned and mastered) and installed simulators: the Centre uses them to assign you an aircraft and to gather pilots on a common simulator. Copied into your declared availability weeks. The performance of these aircraft is in Fuel (“Performance profiles” block, same aircraft).',
+      '„Meine Luftfahrzeuge“ (Flotte inbegriffen, besessen und beherrscht) und installierte Simulatoren: Das Zentrum nutzt sie für die Zuweisung eines Luftfahrzeugs und um Piloten auf einem gemeinsamen Simulator zusammenzubringen. In Ihre angegebenen Verfügbarkeitswochen übernommen. Die Leistungen dieser Luftfahrzeuge stehen unter Kraftstoff (Block „Leistungsprofile“, dieselben Luftfahrzeuge).',
+      '«Mis aeronaves» (flota incluida, poseídas y dominadas) y simuladores instalados: el Centro los usa para asignarle una aeronave y reunir a pilotos en un simulador común. Copiados en sus semanas de disponibilidad declaradas. El rendimiento de estas aeronaves está en Combustible (bloque «Perfiles de rendimiento», mismas aeronaves).'
     ),
     /** Appareils et simulateurs du pilote : éditeur commun (EquipmentEditor) monté pour son trigramme. */
     async render(body, api) {

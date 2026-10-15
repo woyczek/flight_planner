@@ -1284,6 +1284,45 @@
     font-size: 11.5px;
     margin: 6px 0 0
   }
+  /* base de performances : groupes repliables par catégorie, cellule « Performances » (aucune : trois façons d'en créer) */
+  .perf-profiles tr.pp-group th {
+    text-align: left;
+    padding-top: 10px
+  }
+  .perf-profiles tr.pp-group button {
+    font-weight: 700;
+    background: none;
+    border: 0;
+    padding: 2px 0;
+    color: inherit;
+    cursor: pointer
+  }
+  .perf-profiles .pp-none {
+    font-size: 12px
+  }
+  .perf-profiles .pp-none .pp-acts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: 3px
+  }
+  .perf-profiles .pp-none .pp-acts button {
+    font-size: 11.5px;
+    padding: 2px 8px
+  }
+  .perf-profiles .pp-outside {
+    font-size: 11px;
+    opacity: .7
+  }
+  .pp-mine {
+    margin: 2px 0 8px
+  }
+  .pp-sortlbl {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12.5px
+  }
   /* base de performances (bloc « Profils de performances », niveau 3 et plus) */
   .perf-profiles-actions {
     flex-wrap: wrap;
@@ -1622,7 +1661,7 @@ html[data-skeuo] .repo-block-tools .fp-result-pin[aria-pressed="true"]:not(#imp)
 </aside>
 <aside id="fpInstrCol" class="instr-col" data-fp-detail aria-label="Instruments"><div class="fp-instr-sticky"></div></aside>
 
-<section class="card span12" data-min-level="3" data-block-id="perf-profiles" data-icon="list" data-no-i18n><h2 id="ppTitle">Profils de performances</h2><p id="ppIntro" class="mut"></p><div class="row perf-profiles-actions"><button id="ppImport" type="button" class="secondary" data-icon="upload"><span id="ppImportLbl">Importer…</span></button><button id="ppFolder" type="button" class="secondary" data-icon="folder"><span id="ppFolderLbl">Dossier…</span></button><button id="ppReload" type="button" class="secondary" data-icon="refresh"><span id="ppReloadLbl">Relire</span></button><button id="ppMerge" type="button" class="secondary" data-icon="layers" disabled><span id="ppMergeLbl">Fusionner</span></button><button id="ppExport" type="button" class="secondary" data-icon="download" disabled><span id="ppExportLbl">Exporter</span></button><button id="ppSaveDir" type="button" class="secondary" data-icon="save" disabled><span id="ppSaveDirLbl">Enregistrer dans le dossier</span></button><button id="ppDelete" type="button" class="secondary" data-icon="trash" disabled><span id="ppDeleteLbl">Supprimer</span></button><button id="ppGpt" type="button" class="secondary" data-icon="sparkles"><span id="ppGptLbl">Demander à ChatGPT</span></button><span id="ppStatus" class="mut"></span><span id="ppRemoved" class="mut" hidden></span></div><div id="ppGptPanel" class="pp-gpt" hidden></div><div id="perfProfiles" class="perf-profiles"></div></section>
+<section class="card span12" data-min-level="3" data-block-id="perf-profiles" data-icon="list" data-no-i18n><h2 id="ppTitle">Profils de performances</h2><p id="ppIntro" class="mut"></p><p id="ppMine" class="mut pp-mine"></p><div class="row perf-profiles-actions"><button id="ppAdd" type="button" class="primary" data-icon="plus"><span id="ppAddLbl">Ajouter un appareil</span></button><button id="ppImport" type="button" class="secondary" data-icon="upload"><span id="ppImportLbl">Importer…</span></button><button id="ppFolder" type="button" class="secondary" data-icon="folder"><span id="ppFolderLbl">Dossier…</span></button><button id="ppReload" type="button" class="secondary" data-icon="refresh"><span id="ppReloadLbl">Relire</span></button><button id="ppMerge" type="button" class="secondary" data-icon="layers" disabled><span id="ppMergeLbl">Fusionner</span></button><button id="ppExport" type="button" class="secondary" data-icon="download" disabled><span id="ppExportLbl">Exporter</span></button><button id="ppSaveDir" type="button" class="secondary" data-icon="save" disabled><span id="ppSaveDirLbl">Enregistrer dans le dossier</span></button><button id="ppDelete" type="button" class="secondary" data-icon="trash" disabled><span id="ppDeleteLbl">Supprimer</span></button><button id="ppGpt" type="button" class="secondary" data-icon="sparkles"><span id="ppGptLbl">Demander à ChatGPT</span></button><label class="pp-sortlbl"><span id="ppSortLbl">Trier par</span> <select id="ppSort"><option value="cat"></option><option value="name"></option><option value="source"></option></select></label><span id="ppStatus" class="mut"></span><span id="ppRemoved" class="mut" hidden></span></div><div id="ppGptPanel" class="pp-gpt" hidden></div><div id="perfProfiles" class="perf-profiles"></div></section>
 
 
 <section class="card span6 engine-card" data-min-level="4" data-block-id="engine-performance" data-icon="wrench" data-subtitle="Performances du moteur selon le régime."><h2>Fiche performance moteur</h2><div class="fields">
@@ -1665,7 +1704,7 @@ html[data-skeuo] .repo-block-tools .fp-result-pin[aria-pressed="true"]:not(#imp)
 <script src="../../shared/kit.js?v=0"></script>
 <script src="../../shared/repository_nav.js?v=0"></script>
 <script src="../../AircraftDB/aircraft_db.js"></script><script src="../../shared/data_files.js?v=0" data-file="references/aircraft_fleet.js"></script><script src="../../shared/data_files.js?v=0" data-file="references/defa_reference.js"></script><script src="../../shared/aircraft_catalog.js?v=0"></script>
-<script src="../../AircraftDB/aircraft_icons.js"></script>
+<script src="../../AircraftDB/aircraft_icons.js"></script><script src="../../shared/equipment_editor.js?v=0"></script>
 <script src="../../AircraftDB/aircraft_perf.js"></script><script src="../../shared/fuel_reference.js?v=0"></script><script src="../../shared/fuel_poll_schumann.js?v=0"></script><script src="perf_prompt.js?v=0"></script>
 <script src="../../shared/sticky_frame.js?v=0"></script><script src="../../shared/flight_profile_help.js?v=0"></script><script src="../../shared/column_resize.js?v=0"></script><script src="../../shared/flight_instruments.js?v=0"></script><script src="../../shared/flight_perf_view.js?v=0"></script>
 <script src="../../shared/flight_performance_model.js?v=0"></script>
@@ -4884,6 +4923,9 @@ function profileSourceText(p, info) {
   if (p.lnmSource) return "Little Navmap (.lnmperf)";
   const f = String(p.source?.format || "");
   if (/chatgpt/i.test(f)) return "ChatGPT";
+  if (/class/i.test(f)) return kt(["estimé par la classe", "estimated from the class", "aus der Klasse geschätzt",
+    "estimado por la clase"
+  ]);
   if (/csv/i.test(f)) return "CSV";
   if (/json/i.test(f)) return "JSON";
   return kt(["saisie", "manual entry", "manuelle Eingabe", "entrada manual"])
@@ -4926,11 +4968,23 @@ function profileInfo(p) {
 function perfProfilesLabels() {
   setText("ppTitle", kt(["Profils de performances", "Performance profiles", "Leistungsprofile", "Perfiles de rendimiento"]));
   setText("ppIntro", kt([
-    "Un état par type de la flotte et des profils enregistrés : d’où vient le profil, s’il a une cartographie moteur, ce qui lui manque. Le dossier performances est relu quand il change ailleurs (autre page, autre onglet).",
-    "One status per fleet type and saved profile: where the profile comes from, whether it has an engine map, what it lacks. The performance folder is reread when it changes elsewhere (another page or tab).",
-    "Ein Status je Flottenmuster und gespeichertem Profil: Herkunft des Profils, Motorkennfeld vorhanden, was fehlt. Der Leistungsordner wird neu gelesen, wenn er anderswo geändert wird (andere Seite, anderer Tab).",
-    "Un estado por tipo de la flota y perfil guardado: de dónde viene el perfil, si tiene mapa motor, qué le falta. La carpeta de rendimiento se relee cuando cambia en otro lugar (otra página u otra pestaña)."
+    "La face performances de « Mes appareils » : mêmes appareils, même ordre, même nom ; pour chacun, d’où vient le profil, s’il a une cartographie moteur, ce qui lui manque. Le dossier performances est relu quand il change ailleurs (autre page, autre onglet).",
+    "The performance side of “My aircraft”: same aircraft, same order, same name; for each, where the profile comes from, whether it has an engine map, what it lacks. The performance folder is reread when it changes elsewhere (another page or tab).",
+    "Die Leistungsseite von „Meine Luftfahrzeuge“: dieselben Luftfahrzeuge, dieselbe Reihenfolge, derselbe Name; für jedes die Herkunft des Profils, ob es ein Motorkennfeld hat, was fehlt. Der Leistungsordner wird neu gelesen, wenn er anderswo geändert wird (andere Seite, anderer Tab).",
+    "La cara de rendimiento de «Mis aeronaves»: mismas aeronaves, mismo orden, mismo nombre; para cada una, de dónde viene el perfil, si tiene mapa motor, qué le falta. La carpeta de rendimiento se relee cuando cambia en otro lugar (otra página u otra pestaña)."
   ]));
+  const mineHtml = `${KIT.esc(kt(["Appareils", "Aircraft", "Luftfahrzeuge", "Aeronaves"]))} : <a href="../settings/profil.html?base=equipment">${KIT.esc(kt(["Mes appareils", "My aircraft", "Meine Luftfahrzeuge", "Mis aeronaves"]))} ↗</a> — ${KIT.esc(kt(["Paramètres › Mon profil › Appareils et simulateurs (ajouter, retirer, possédé, maîtrisé)", "Settings › My profile › Aircraft and simulators (add, remove, owned, mastered)", "Einstellungen › Mein Profil › Luftfahrzeuge und Simulatoren (hinzufügen, entfernen, besessen, beherrscht)", "Ajustes › Mi perfil › Aeronaves y simuladores (añadir, quitar, poseída, dominada)"]))}`;
+  if ($("ppMine") && $("ppMine").innerHTML !== mineHtml) $("ppMine").innerHTML = mineHtml;
+  setText("ppAddLbl", kt(["Ajouter un appareil", "Add an aircraft", "Luftfahrzeug hinzufügen", "Añadir una aeronave"]));
+  setText("ppSortLbl", kt(["Trier par", "Sort by", "Sortieren nach", "Ordenar por"]));
+  const so = $("ppSort")?.options;
+  if (so)[
+    ["catégorie", "category", "Kategorie", "categoría"],
+    ["nom", "name", "Name", "nombre"],
+    ["source", "source", "Quelle", "origen"]
+  ].forEach((l, i) => {
+    if (so[i].textContent !== kt(l)) so[i].textContent = kt(l)
+  });
   setText("ppImportLbl", kt(["Importer…", "Import…", "Importieren…", "Importar…"]));
   setText("ppFolderLbl", kt(["Dossier…", "Folder…", "Ordner…", "Carpeta…"]));
   setText("ppReloadLbl", kt(["Relire", "Reread", "Neu lesen", "Releer"]));
@@ -4961,32 +5015,108 @@ function renderPerfProfilesSoon() {
   clearTimeout(ppTimer);
   ppTimer = setTimeout(renderPerfProfiles, 50)
 }
-/** Bloc « Profils de performances » : une ligne par type (profils enregistrés, puis types de la flotte sans profil) —
- *  appareil (bouton Choisir / Créer), source du profil, cartographie moteur, consommation de croisière, plafond, données
- *  manquantes nommées. Écrit seulement si le contenu change. */
+// « Mes appareils » (Paramètres › Mon profil › Appareils et simulateurs, shared/equipment_editor.js) : la liste du pilote,
+// flotte comprise ; ce bloc en est la face performances (mêmes lignes, même ordre, même nom).
+let myList = null; // appareils du pilote ; null : pas encore lus
+/** Relit « Mes appareils » (chargement, ajout, changement dans un autre onglet), puis redessine le bloc. */
+async function refreshMyAircraft() {
+  try {
+    myList = await window.EquipmentEditor?.myAircraft?.() || [];
+  } catch {
+    myList = []
+  }
+  renderPerfProfilesSoon()
+}
+/** Tri du bloc mémorisé dans ce navigateur (fpPpSort) : « cat » (groupes par catégorie), « name », « source ». */
+const ppSortGet = () => {
+  const v = localStorage.getItem("fpPpSort");
+  return ["cat", "name", "source"].includes(v) ? v : "cat"
+};
+/** Groupes repliés (catégories), mémorisés dans ce navigateur (fpPpCollapsed). */
+const ppCollapsed = () => {
+  try {
+    return new Set(JSON.parse(localStorage.getItem("fpPpCollapsed") || "[]"))
+  } catch {
+    return new Set()
+  }
+};
+/** Clé d'un type suivie à travers les alias de la base (CL415 → CL2T). */
+function aircraftTypeKey(v) {
+  const al = window.AIRCRAFT_DB?.__aliases || {};
+  let x = aKey(v || "");
+  for (let i = 0; i < 5 && al[x] && al[x] !== x; i++) x = aKey(al[x]);
+  return x
+}
+/** Bloc « Profils de performances » : les appareils de « Mes appareils » dans leur ordre (catégorie, puis nom), groupés
+ *  par catégorie (en-têtes repliables) ou triés par nom ou par source, puis les profils enregistrés hors de « Mes
+ *  appareils » ; sans « Mes appareils » (trigramme non réglé, rien de déclaré) : profils et types de la flotte. Colonnes :
+ *  appareil (silhouette, nom, type et classe), performances (source, ou « aucune » et ses trois façons d'en créer),
+ *  cartographie moteur, consommation de croisière, plafond, données manquantes, Choisir. Écrit seulement s'il change. */
 function renderPerfProfiles() {
   perfProfilesLabels();
   syncSbTypeButton();
-  const box = $("perfProfiles");
+  const box = $("perfProfiles"),
+    E = window.EquipmentEditor;
   if (!box) return;
+  E?.css?.();
+  if (myList === null && E) {
+    myList = [];
+    refreshMyAircraft()
+  }
   const esc = KIT.esc,
     u = fuelUnit(),
     profiles = Object.values(state.profiles || {}).filter(p => p && typeof p === "object" && String(p.id || p.icao || p.type || p
       .name || "").trim()).map(p => normalize(p)),
-    all = [...profiles, ...landingOnlyAircraft(profiles).filter(p => p._defa)].sort((a, b) => String(a.type || a.icao || a.id)
-      .localeCompare(String(b.type || b.icao || b.id), "fr", {
-        numeric: true
-      }) || String(a.name || a.id).localeCompare(String(b.name || b.id), "fr", {
-        numeric: true
-      }));
+    cat = code => E?.categoryOf?.(code) || "other",
+    used = new Set(),
+    rows = [];
+  // appareils du pilote, avec leur profil s'il en ont un (même type, alias compris ; nom pour un appareil sans désignateur)
+  for (const a of myList || []) {
+    const k = aircraftTypeKey(a.code),
+      p = profiles.find(x => !used.has(x.id) && [x.id, x.icao, x.type].some(v => v && aircraftTypeKey(v) === k)) || profiles.find(x =>
+        !used.has(x.id) && aKey(x.name) === aKey(a.name));
+    if (p) used.add(p.id);
+    rows.push({
+      code: a.code,
+      name: a.name,
+      category: a.category || cat(a.code),
+      p,
+      mine: true
+    })
+  }
+  // profils enregistrés hors de « Mes appareils » ; sans « Mes appareils » : types de la flotte sans profil aussi
+  for (const p of profiles)
+    if (!used.has(p.id)) rows.push({
+      code: p.icao || p.type || p.id,
+      name: p.name || p.id,
+      category: cat(p.icao || p.type || p.id),
+      p,
+      mine: false
+    });
+  if (!(myList || []).length)
+    for (const p of landingOnlyAircraft(profiles).filter(p => p._defa)) rows.push({
+      code: p.type || p.icao || p.id,
+      name: p.name || p.id,
+      category: cat(p.type || p.icao || p.id),
+      p: null,
+      mine: false,
+      fleet: true
+    });
   if (!box.dataset.ready) {
     box.dataset.ready = "1";
     box.addEventListener("click", e => {
-      const sb = e.target.closest(".pp-sb");
-      if (sb) return simbriefProfileFor(sb.dataset.id, !!sb.dataset.landing);
+      const g = e.target.closest("[data-pp-group]");
+      if (g) {
+        const c = ppCollapsed();
+        c.has(g.dataset.ppGroup) ? c.delete(g.dataset.ppGroup) : c.add(g.dataset.ppGroup);
+        localStorage.setItem("fpPpCollapsed", JSON.stringify([...c]));
+        return renderPerfProfiles()
+      }
+      const cr = e.target.closest("[data-pp-create]");
+      if (cr) return perfCreate(cr.dataset.code, cr.dataset.name, cr.dataset.ppCreate);
       const b = e.target.closest(".pp-pick");
       if (!b) return;
-      const p = b.dataset.landing ? newProfileFromLanding(b.dataset.id) : state.profiles?.[b.dataset.id];
+      const p = state.profiles?.[b.dataset.id];
       if (p) setActive(p, kt(["base de performances", "performance database", "Leistungsdatenbank", "base de rendimiento"]))
     });
     // cases de fusion : sélection gardée d'un rendu à l'autre (ppSelected), bouton « Fusionner » mis à jour
@@ -5005,52 +5135,182 @@ function renderPerfProfiles() {
   for (const id of [...ppSelected])
     if (!state.profiles?.[id]) ppSelected.delete(id);
   syncMergeButton();
-  if (!all.length) return setHtml("perfProfiles", `<p class="mut">${esc(kt(["Aucun profil ni type de flotte : importer un profil ou choisir le dossier performances.",
-    "No profile and no fleet type: import a profile or choose the performance folder.",
-    "Weder Profil noch Flottenmuster: ein Profil importieren oder den Leistungsordner wählen.",
-    "Ningún perfil ni tipo de flota: importar un perfil o elegir la carpeta de rendimiento."
+  if (!rows.length) return setHtml("perfProfiles", `<p class="mut">${esc(kt(["Aucun appareil ni profil : « Ajouter un appareil », importer un profil ou choisir le dossier performances.",
+    "No aircraft and no profile: “Add an aircraft”, import a profile or choose the performance folder.",
+    "Weder Luftfahrzeug noch Profil: „Luftfahrzeug hinzufügen“, ein Profil importieren oder den Leistungsordner wählen.",
+    "Ninguna aeronave ni perfil: «Añadir una aeronave», importar un perfil o elegir la carpeta de rendimiento."
   ]))}</p>`);
-  const head = ["", "", kt(["Appareil", "Aircraft", "Luftfahrzeug", "Aeronave"]), kt(["Profil (source)", "Profile (source)",
-    "Profil (Quelle)",
-    "Perfil (origen)"
-  ]), kt(["Cartographie moteur", "Engine map", "Motorkennfeld", "Mapa motor"]), kt(["Consommation de croisière", "Cruise fuel flow",
-    "Reiseverbrauch", "Consumo de crucero"
-  ]), kt(["Plafond", "Ceiling", "Gipfelhöhe", "Techo"]), kt(["Données manquantes", "Missing data", "Fehlende Daten",
-    "Datos que faltan"
-  ])];
-  const rows = all.map(p => {
+  const sortBy = ppSortGet(),
+    src = r => r.p ? profileSourceText(r.p) : "",
+    byName = (a, b) => String(a.name).localeCompare(String(b.name), "fr", {
+      numeric: true
+    }),
+    CATS = E?.CATEGORIES || ["helico", "turboprop", "jet", "piston", "other"];
+  // ordre : « Mes appareils » d'abord (son ordre), puis le reste par catégorie et nom ; tri par nom ou par source : liste à plat
+  const ordered = sortBy === "name" ? [...rows].sort(byName) : sortBy === "source" ? [...rows].sort((a, b) => (!a.p - !b.p) || src(a)
+    .localeCompare(src(b), "fr") || byName(a, b)) : [...rows].sort((a, b) => CATS.indexOf(a.category) - CATS.indexOf(b.category) || (
+    b.mine - a.mine) || byName(a, b));
+  const head = ["", kt(["Appareil", "Aircraft", "Luftfahrzeug", "Aeronave"]), kt(["Performances", "Performance", "Leistungen",
+    "Rendimiento"
+  ]), kt(["Carto.", "Map", "Kennfeld", "Mapa"]), kt(["Conso. croisière", "Cruise flow", "Reiseverbrauch", "Consumo crucero"]), kt([
+    "Plafond", "Ceiling", "Gipfelhöhe", "Techo"
+  ]), kt(["Manques", "Missing", "Fehlt", "Falta"]), ""];
+  /** Cellule « Performances » d'un appareil sans profil : « aucune » et les trois façons d'en créer un. */
+  const noneCell = r => {
+    const at = how => `data-pp-create="${how}" data-code="${esc(r.code)}" data-name="${esc(r.name)}"`;
+    return `<div class="pp-none">${esc(kt(["aucune", "none", "keine", "ninguno"]))}<div class="pp-acts">${simbriefRecordFor(r.code) ? `<button type="button" class="secondary" ${at("simbrief")}>${esc(kt(["Créer depuis SimBrief", "Create from SimBrief", "Aus SimBrief anlegen", "Crear desde SimBrief"]))}</button>` : ""}<button type="button" class="secondary" ${at("gpt")}>${esc(kt(["Demander à ChatGPT", "Ask ChatGPT", "ChatGPT fragen", "Preguntar a ChatGPT"]))}</button><button type="button" class="secondary" ${at("estimate")}>${esc(kt(["Estimer par la classe", "Estimate from the class", "Aus der Klasse schätzen", "Estimar por la clase"]))}</button></div></div>`
+  };
+  /** Ligne d'un appareil. */
+  const row = r => {
+    const p = r.p,
+      nm = (E?.nameCell?.({
+        code: r.code,
+        name: r.name
+      }) || `<b>${esc(r.name)}</b>`) + (r.mine || r.fleet ? "" : `<div class="pp-outside">${esc(kt(["pas dans « Mes appareils »", "not in “My aircraft”", "nicht in „Meine Luftfahrzeuge“", "no está en «Mis aeronaves»"]))}</div>`);
+    if (!p) return `<tr><td></td><td>${nm}</td><td>${noneCell(r)}</td><td>—</td><td>—</td><td>—</td><td><span class="pp-missing">${esc(kt(["tout le profil", "the whole profile", "das ganze Profil", "todo el perfil"]))}</span></td><td></td></tr>`;
     const i = profileInfo(p),
       s = i.s,
       on = active?.id === p.id,
-      pick = on ? kt(["actif", "active", "aktiv", "activo"]) : p._landingOnly ? kt(["Créer", "Create", "Anlegen", "Crear"]) : kt([
-        "Choisir",
-        "Choose", "Wählen", "Elegir"
-      ]),
-      map = i.map ? `${esc(ktf(["oui, {n} ligne(s)", "yes, {n} row(s)", "ja, {n} Zeile(n)", "sí, {n} fila(s)"], {
+      map = i.map ? `${esc(ktf(["oui ({n})", "yes ({n})", "ja ({n})", "sí ({n})"], {
         n: i.map
-      }))}${i.alts > 1 ? `<br><small class="mut">${esc(ktf(["{n} altitudes", "{n} altitudes", "{n} Höhen", "{n} altitudes"], {
+      }))}${i.alts > 1 ? `<br><small class="mut">${esc(ktf(["{n} alt.", "{n} alt.", "{n} Höhen", "{n} alt."], {
         n: i.alts
       }))}</small>` : ""}` : esc(kt(["non", "no", "nein", "no"])),
       ff = s.ff > 0 ? `${s.approx ? "≈ " : ""}${fmt(convertFuel(s.ff, p.unit || "kg", u), 0)} ${u}/h<br><small class="mut">${esc(ffSourceText(s))}</small>` : "—",
       ceil = i.ceil ? `${flTxt(i.ceil)}${i.ceilSrc === "apd" ? ` <small class="mut">(EUROCONTROL)</small>` : ""}` : "—",
-      miss = p._landingOnly ? `<span class="pp-missing">${esc(kt(["tout le profil", "the whole profile", "das ganze Profil", "todo el perfil"]))}</span>` :
-      (i.missing.length ? `<span class="pp-missing">${esc(i.missing.join(", "))}</span>` : `<span class="pp-ok">${esc(kt(["rien", "nothing", "nichts", "nada"]))}</span>`) +
+      miss = (i.missing.length ? `<span class="pp-missing">${esc(i.missing.join(", "))}</span>` : `<span class="pp-ok">${esc(kt(["rien", "nothing", "nichts", "nada"]))}</span>`) +
       (i.estimated?.length ? `<br><small class="mut">${esc(ktf(["estimé : {list}", "estimated: {list}", "geschätzt: {list}", "estimado: {list}"], {
         list: i.estimated.join(", ")
-      }))}</small>` : "");
-    // case de sélection (profils enregistrés : fusion, export, enregistrement, suppression par la barre du bloc) ; pour un
-    // type de la flotte sans profil que SimBrief connaît, « Créer depuis SimBrief » à côté de « Créer »
-    const sel = p._landingOnly ? "" : `<input type="checkbox" class="pp-sel" data-id="${esc(p.id)}" title="${esc(kt([
-      "Sélection : fusionner, exporter, enregistrer ou supprimer plusieurs profils",
-      "Selection: merge, export, save or delete several profiles",
-      "Auswahl: mehrere Profile zusammenführen, exportieren, speichern oder löschen",
-      "Selección: fusionar, exportar, guardar o eliminar varios perfiles"
-    ]))}"${ppSelected.has(p.id) ? " checked" : ""}>`,
-      sb = p._landingOnly && simbriefRecordFor(p.type || p.icao || p.id) ? `<button type="button" class="secondary pp-sb" data-id="${esc(p.id)}" data-landing="1">${esc(kt(["Créer depuis SimBrief", "Create from SimBrief", "Aus SimBrief anlegen", "Crear desde SimBrief"]))}</button>` : "";
-    return `<tr${on ? ' class="is-active"' : ""}><td>${sel}</td><td class="pp-act"><button type="button" class="secondary pp-pick" data-id="${esc(p.id)}"${p._landingOnly ? ' data-landing="1"' : ""}${on ? " disabled" : ""}>${esc(pick)}</button>${sb}</td><td><div class="pp-name"><span>${aircraftIcon(p)}</span><span><b>${esc(p.name || p.id)}</b><br><small class="mut">${esc(p.type || p.icao || p.id)}</small></span></div></td><td>${esc(profileSourceText(p, i))}</td><td>${map}</td><td>${ff}</td><td>${ceil}</td><td>${miss}</td></tr>`
-  }).join("");
-  setHtml("perfProfiles", typo(`<table><thead><tr>${head.map(h => `<th>${esc(h)}</th>`).join("")}</tr></thead><tbody>${rows}</tbody></table>`))
+      }))}</small>` : ""),
+      sel = `<input type="checkbox" class="pp-sel" data-id="${esc(p.id)}" title="${esc(kt([
+        "Sélection : fusionner, exporter, enregistrer ou supprimer plusieurs profils",
+        "Selection: merge, export, save or delete several profiles",
+        "Auswahl: mehrere Profile zusammenführen, exportieren, speichern oder löschen",
+        "Selección: fusionar, exportar, guardar o eliminar varios perfiles"
+      ]))}"${ppSelected.has(p.id) ? " checked" : ""}>`;
+    return `<tr${on ? ' class="is-active"' : ""}><td>${sel}</td><td>${nm}</td><td>${esc(profileSourceText(p, i))}</td><td>${map}</td><td>${ff}</td><td>${ceil}</td><td>${miss}</td><td class="pp-act"><button type="button" class="secondary pp-pick" data-id="${esc(p.id)}"${on ? " disabled" : ""}>${esc(on ? kt(["actif", "active", "aktiv", "activo"]) : kt(["Choisir", "Choose", "Wählen", "Elegir"]))}</button></td></tr>`
+  };
+  let body = "";
+  if (sortBy === "cat") {
+    const shut = ppCollapsed();
+    for (const c of CATS) {
+      const g = ordered.filter(r => r.category === c);
+      if (!g.length) continue;
+      const closed = shut.has(c);
+      body += `<tbody><tr class="pp-group"><th colspan="${head.length}"><button type="button" data-pp-group="${c}" aria-expanded="${!closed}">${closed ? "▸" : "▾"} ${esc(E?.categoryLabel?.(c) || c)} (${g.length})</button></th></tr>${closed ? "" : g.map(row).join("")}</tbody>`
+    }
+  } else body = `<tbody>${ordered.map(row).join("")}</tbody>`;
+  setHtml("perfProfiles", typo(`<table><thead><tr>${head.map(h => `<th>${esc(h)}</th>`).join("")}</tr></thead>${body}</table>`))
 }
+/** Crée le profil de performances d'un appareil qui n'en a pas (code : désignateur ou nom ; name : nom affiché), puis
+ *  l'ouvre : how = « simbrief » (fiche SimBrief du type), « gpt » (profil vide et panneau « Demander à ChatGPT »),
+ *  « estimate » (profil minimal estimé par la classe : consommation, TAS, plafond — shared/fuel_reference.js, champs
+ *  marqués estimés). Le profil est rattaché à l'appareil par son type (ou son nom pour un appareil sans désignateur). */
+function perfCreate(code, name, how) {
+  const db = window.AIRCRAFT_DB || {},
+    k = aKey(code || ""),
+    rec = db[k] || db[db.__aliases?.[k]],
+    icao = rec?.tdesig || (/^[A-Z][A-Z0-9]{1,3}$/.test(k) ? k : ""),
+    notify = (m, kind = "warn") => window.AppFramework?.notify?.(m, kind),
+    /** Profil vide de l'appareil (identifiant : désignateur, sinon nom). */
+    blank = () => normalize({
+      id: icao || String(name || code).trim(),
+      ...(icao ? {
+        icao,
+        type: icao
+      } : {
+        type: String(name || code).trim()
+      }),
+      name: name || code,
+      unit: "kg"
+    }),
+    /** Profil enregistré, base locale et vues remises à jour, puis profil ouvert. */
+    keep = (p, why) => {
+      state.profiles[p.id] = p;
+      profilesChanged();
+      setActive(p, why)
+    };
+  if (how === "simbrief") {
+    const sb = simbriefRecordFor(icao || code);
+    if (!sb) return notify(kt(["SimBrief ne connaît pas ce type : « Demander à ChatGPT » ou « Estimer par la classe ».",
+      "SimBrief does not know this type: “Ask ChatGPT” or “Estimate from the class”.",
+      "SimBrief kennt diesen Typ nicht: „ChatGPT fragen“ oder „Aus der Klasse schätzen“.",
+      "SimBrief no conoce este tipo: «Preguntar a ChatGPT» o «Estimar por la clase»."
+    ]));
+    return keep(profileFromSimbriefType(icao || code, sb), "SimBrief")
+  }
+  if (how === "gpt") {
+    const p = state.profiles?.[blank().id] ? normalize(structuredClone(state.profiles[blank().id])) : blank();
+    keep(p, kt(["Mes appareils", "My aircraft", "Meine Luftfahrzeuge", "Mis aeronaves"]));
+    openGptPanel({
+      id: p.id,
+      landing: false
+    });
+    return $("ppGptPanel")?.scrollIntoView({
+      block: "nearest"
+    })
+  }
+  if (how === "estimate") {
+    const est = window.FuelReference?.estimate({
+      codes: [icao, code, name].filter(Boolean),
+      db,
+      apd: icao ? window.AIRCRAFT_PERF?.[icao] : null
+    });
+    if (!est) return notify(icao ? kt(["Classe OACI inconnue pour ce type : « Demander à ChatGPT », ou saisir le profil.",
+      "ICAO class unknown for this type: “Ask ChatGPT”, or enter the profile.",
+      "ICAO-Klasse für diesen Typ unbekannt: „ChatGPT fragen“ oder das Profil eingeben.",
+      "Clase OACI desconocida para este tipo: «Preguntar a ChatGPT» o introducir el perfil."
+    ]) : kt([
+      "Sans type OACI, pas de classe : rattacher l’appareil à son type (Mes appareils › « Chercher le type »), ou « Demander à ChatGPT ».",
+      "Without an ICAO type, no class: link the aircraft to its type (My aircraft › “Find the type”), or “Ask ChatGPT”.",
+      "Ohne ICAO-Typ keine Klasse: das Luftfahrzeug seinem Typ zuordnen (Meine Luftfahrzeuge › „Typ suchen“) oder „ChatGPT fragen“.",
+      "Sin tipo OACI, no hay clase: vincular la aeronave a su tipo (Mis aeronaves › «Buscar el tipo») o «Preguntar a ChatGPT»."
+    ]));
+    const p = blank();
+    p.cruise = {
+      ...p.cruise,
+      tasKt: est.tasKt,
+      fuelFlowPerHour: est.kgPerHour,
+      ...(est.ceilingFt > 0 ? {
+        ceilingFt: est.ceilingFt
+      } : {})
+    };
+    p.estimatedFields = ["cruise.tasKt", "cruise.fuelFlowPerHour", ...(est.ceilingFt > 0 ? ["cruise.ceilingFt"] : [])];
+    p.source = {
+      format: "class-estimate"
+    };
+    p.description = `${kt(["Estimé par la classe", "Estimated from the class", "Aus der Klasse geschätzt", "Estimado por la clase"])} (${est.basis === "type" ? est.code : est.cls || "?"}${est.wtc ? `, ${est.wtc}` : ""}) — ${est.src || ""}`.trim();
+    keep(p, kt(["estimé par la classe", "estimated from the class", "aus der Klasse geschätzt", "estimado por la clase"]));
+    return notify(kt([
+      "Profil minimal estimé par la classe : consommation, TAS et plafond, marqués « estimé ». À compléter (montée, descente) ou à remplacer par SimBrief, ChatGPT ou un import.",
+      "Minimal profile estimated from the class: fuel flow, TAS and ceiling, marked “estimated”. To complete (climb, descent) or replace with SimBrief, ChatGPT or an import.",
+      "Minimales Profil aus der Klasse geschätzt: Verbrauch, TAS und Gipfelhöhe, als „geschätzt“ markiert. Zu ergänzen (Steig-, Sinkflug) oder durch SimBrief, ChatGPT oder einen Import zu ersetzen.",
+      "Perfil mínimo estimado por la clase: consumo, TAS y techo, marcados como «estimado». Por completar (ascenso, descenso) o sustituir por SimBrief, ChatGPT o una importación."
+    ]), "info")
+  }
+}
+// « Ajouter un appareil » : la fenêtre d'ajout de Paramètres (composant commun) ; l'appareil ajouté arrive dans le bloc
+// avec « Performances : aucune » et ses trois façons d'en créer
+$("ppAdd").onclick = () => window.EquipmentEditor?.addDialog?.(null, a => {
+  refreshMyAircraft();
+  window.AppFramework?.notify?.(ktf([
+    "{n} ajouté à « Mes appareils » : créez ses performances dans sa ligne (SimBrief, ChatGPT ou estimation par la classe).",
+    "{n} added to “My aircraft”: create its performance in its row (SimBrief, ChatGPT or estimate from the class).",
+    "{n} zu „Meine Luftfahrzeuge“ hinzugefügt: Leistungen in seiner Zeile anlegen (SimBrief, ChatGPT oder Schätzung aus der Klasse).",
+    "{n} añadida a «Mis aeronaves»: cree su rendimiento en su fila (SimBrief, ChatGPT o estimación por la clase)."
+  ], {
+    n: a.name
+  }), "ok")
+});
+$("ppSort").value = ppSortGet();
+$("ppSort").onchange = () => {
+  localStorage.setItem("fpPpSort", $("ppSort").value);
+  renderPerfProfiles()
+};
+// « Mes appareils » changé dans un autre onglet (Paramètres) : bloc relu
+window.addEventListener("storage", e => {
+  if (/availability/i.test(e.key || "")) refreshMyAircraft()
+});
 // ===== Base de performances : supprimer, fusionner, profil SimBrief =====
 // Supprimer et fusionner retirent des profils de la base locale ; un profil retiré est noté (state.removedProfiles) pour
 // que la relecture du dossier performances ne le ramène pas (le fichier du dossier n'est jamais effacé ; un import
@@ -6930,8 +7190,10 @@ renderPerfProfilesSoon();
     found = k && Object.values(state.profiles || {}).find(p => [p.id, p.icao, p.type].some(same)),
     cand = k && !found && landingOnlyAircraft(Object.values(state.profiles || {}).filter(p => p && typeof p === "object").map(p =>
       normalize(p))).find(p => [p.id, p.icao, p.type].some(same)),
-    created = cand && newProfileFromLanding(cand.id);
+    create = params.get("create"),
+    created = !create && cand && newProfileFromLanding(cand.id);
   if (found) setActive(found, why);
+  else if (create && wanted) perfCreate(wanted, window.EquipmentEditor?.typeName?.(wanted) || wanted, create);
   else if (created) setActive(created, `${why} (type)`);
   else if (state.lastAircraft && state.profiles[state.lastAircraft]) setActive(state.profiles[state.lastAircraft], "état restauré");
   else syncAircraftPicker();

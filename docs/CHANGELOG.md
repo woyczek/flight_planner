@@ -12,6 +12,16 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Added
 
+- **My aircraft, one list with its performance side** — Settings › My profile › Aircraft and simulators ("My aircraft",
+  fleet included) and the fuel page's "Performance profiles" block show the same aircraft, in the same order and with
+  the same name (silhouette, bold name, designator and class); each Settings row has a "Performance" column (profile
+  source, linked to Fuel, or "none" with "Create from SimBrief" when SimBrief knows the type, "Ask ChatGPT", "Estimate
+  from the class"). Aircraft are always added by a name ("CL-415", "Canadair 415" and "CL415" give CL2T, shown
+  "Canadair CL-415"); with no match the aircraft is kept under its name, "ICAO type to confirm". The fuel block is
+  grouped by category (collapsible), sortable by name, category or source, has an "Add an aircraft" window (the same
+  as Settings) and creates a profile in one click: SimBrief record, ChatGPT panel, or a minimal profile estimated from
+  the ICAO class (fuel flow, TAS, ceiling, marked estimated). The reporting section "My aircraft (reporting)" is renamed
+  "Aircraft flown (reports)".
 - **Textured designs: sliders and scrollbars** — `input[type=range]` (climb instructions, level slider, zone radius) and scrollbars (page, tables, menus) now wear the design's materials (track = tab rail, thumb = the design's button, square corners, rounded in Aqua) in Cabinet, Flight log, Rugged, Aqua (both tones) and Tactical; flat designs unchanged.
 - **Fuel: "Flight level decision" chart, and simpler curves** (docs/technique/V2_FABLE.md § 12) — first block of the fuel
   plan, in the simple and the detailed view: trip fuel (left scale) and trip time (right scale, thin curve) of the whole

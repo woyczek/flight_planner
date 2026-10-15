@@ -15,7 +15,7 @@
   //   · « Rafraîchir types et performances » : types inconnus de la base (flotte et reporting) complétés par le lanceur
   //     (POST /__setup/aircraft-db, OACI Doc 8643 et EUROCONTROL, type par type) ; mise à jour de la flotte et du
   //     journal depuis le site (shared/defa_site.js).
-  // Mon profil (rubrique « Mes appareils (reporting) ») : la même liste réduite aux CR où le trigramme connecté figure
+  // Mon profil (rubrique « Appareils pilotés (CR) » ; « Mes appareils » est la liste de Appareils et simulateurs) : la même liste réduite aux CR où le trigramme connecté figure
   // dans l'équipage (l'appareil de son poste quand le CR le précise), en lecture seule : coche grisée « Flotte »
   // (cochée : appareil de la flotte ; décochée : appareil hors flotte, indicatif compris).
   // API (window.FleetReporting) : aircraft({ pilot }) → [{ key, registration, type, variant, callsigns, operator,
@@ -312,8 +312,8 @@
   window.SettingsPanels?.add({
     id: 'myAircraft',
     group: window.SettingsPanels.L('Mon profil', 'My profile', 'Mein Profil', 'Mi perfil'),
-    title: window.SettingsPanels.L('Mes appareils (reporting)', 'My aircraft (reporting)', 'Meine Luftfahrzeuge (Reporting)',
-      'Mis aeronaves (reporting)'),
+    title: window.SettingsPanels.L('Appareils pilotés (CR)', 'Aircraft flown (reports)', 'Geflogene Luftfahrzeuge (Berichte)',
+      'Aeronaves pilotadas (informes)'),
     intro: window.SettingsPanels.L(
       'Appareils que vous avez pilotés ou reportés (CR où votre trigramme figure dans l’équipage) ; coche grisée : appareil de la flotte ou non.',
       'Aircraft you flew or reported (reports with your trigram in the crew); greyed box: fleet aircraft or not.',
