@@ -5446,7 +5446,14 @@ function profilesChanged() {
   save();
   syncAircraftPicker();
   renderPerfProfilesSoon();
-  syncSbTypeButton()
+  syncSbTypeButton();
+  completeProfileTypes()
+}
+/** Types des profils sans fiche sur ce poste (profil ChatGPT, SimBrief, fichier ou estimé d'un type que la base ne
+ *  connaît pas encore, EPIC par exemple) : fiche complétée par le lanceur (passe courte), tableau redessiné ensuite. */
+function completeProfileTypes() {
+  window.EquipmentEditor?.completeTypes?.(Object.values(state.profiles || {}).map(p => p?.icao || p?.type), () =>
+    renderPerfProfilesSoon())
 }
 /** Retire les profils ids de la base locale, puis du dossier performances (removeFromPerfFolder) ; actif retiré : plus
  *  d'actif. Un profil resté dans un fichier du dossier (écriture impossible, CSV à plusieurs profils) est noté
@@ -7256,6 +7263,7 @@ renderPerfProfilesSoon();
   else syncAircraftPicker();
 }
 if (!active) calculate(); // sans avion : ligne d'état et champ de consommation disent quoi faire
+completeProfileTypes();
 </script>
 <script src="../../shared/app_framework.js?v=0"></script>
 <script src="../../shared/flight_ui.js?v=0"></script>

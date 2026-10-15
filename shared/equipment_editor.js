@@ -265,9 +265,26 @@ dialog.eq-dialog h3{margin:0 0 6px}dialog.eq-dialog footer{display:flex;justify-
       codes: [code],
       quick: true
     });
-    if (!s || !(s.started || busyCodes(s).has(code))) running.delete(code); // pas de lanceur : le code reste tel quel
+    if (!s || !(s.started || busyCodes(s).has(code))) {
+      running.delete(code); // pas de lanceur : le code reste tel quel, et on le dit (sinon le type reste « absent » sans raison)
+      if (!s) window.AppFramework?.notify?.(tf([
+        'Lanceur arrêté : la fiche du type {c} n’a pas pu être complétée. Relancer le lanceur, puis « Chercher la fiche » (Paramètres › Mon profil › Appareils et simulateurs).',
+        'Launcher stopped: the record of type {c} could not be completed. Restart the launcher, then “Look up the record” (Settings › My profile › Aircraft and simulators).',
+        'Starter beendet: der Eintrag des Typs {c} konnte nicht ergänzt werden. Starter neu starten, dann „Eintrag suchen“ (Einstellungen › Mein Profil › Luftfahrzeuge und Simulatoren).',
+        'Lanzador detenido: la ficha del tipo {c} no se pudo completar. Reiniciar el lanzador y después «Buscar la ficha» (Ajustes › Mi perfil › Aeronaves y simuladores).'
+      ], {
+        c: code
+      }), 'warn');
+    }
     redraw?.();
     watchTypes();
+  }
+  /** Fiches manquantes d'une liste de codes (profils du Carburant : ChatGPT, SimBrief, fichier, estimation) : chaque
+   *  désignateur sans fiche sur ce poste, pas déjà cherché ni en cours, est passé au lanceur ; redraw à chaque fin de
+   *  passe. */
+  function completeTypes(codes, redraw) {
+    for (const c of new Set((codes || []).map(norm).filter(Boolean)))
+      if (designator(c) && !dbInfo(c).model && !tried.has(c) && !running.has(c)) completeType(c, redraw);
   }
   /** À l'ouverture : passe en cours ou file d'attente qui concernent ces codes → suivies ; dernière passe terminée
    *  sans fiche pour un code → « introuvable ». */
@@ -1117,6 +1134,7 @@ dialog.eq-dialog h3{margin:0 0 6px}dialog.eq-dialog footer{display:flex;justify-
 
   window.EquipmentEditor = {
     mount,
+    completeTypes,
     css,
     myAircraft,
     addDialog,

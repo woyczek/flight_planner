@@ -53,6 +53,11 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Fixed
 
+- **Aircraft types: the record is completed for the Fuel profiles too** — a profile created in Fuel (ChatGPT, SimBrief,
+  file, estimate) for a type this computer's base did not know yet (EPIC, the Epic LT) stayed "missing from this
+  computer's type base": only "Add" in Settings asked the launcher. Fuel now asks the launcher for every profile type
+  without a record (short pass, a few seconds, table redrawn), on opening and after each change; with the launcher
+  stopped, a warning says to restart it and click "Look up the record" instead of staying silent.
 - **Fuel: merging profiles that differ by nothing** — "Merge" stayed disabled when the most recent profile already
   held every value (label "Merge (nothing)"), although the other ticked profiles would be removed. The button now
   counts the removed profiles ("Merge (1 profile removed)") and stays active: the most recent is kept as is, the
