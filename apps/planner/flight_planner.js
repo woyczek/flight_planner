@@ -3372,7 +3372,9 @@ function perfProfilesLabels() {
     "La cara de rendimiento de «Mis aeronaves»: mismas aeronaves, mismo orden, mismo nombre; para cada una, de dónde viene el perfil, si tiene mapa motor, qué le falta. La carpeta de rendimiento se relee cuando cambia en otro lugar (otra página u otra pestaña)."
   ]));
   const mineHtml = `${KIT.esc(kt(["Appareils", "Aircraft", "Luftfahrzeuge", "Aeronaves"]))} : <a href="../settings/profil.html?base=equipment">${KIT.esc(kt(["Mes appareils", "My aircraft", "Meine Luftfahrzeuge", "Mis aeronaves"]))} ↗</a> — ${KIT.esc(kt(["Paramètres › Mon profil › Appareils et simulateurs (ajouter, retirer, possédé, maîtrisé)", "Settings › My profile › Aircraft and simulators (add, remove, owned, mastered)", "Einstellungen › Mein Profil › Luftfahrzeuge und Simulatoren (hinzufügen, entfernen, besessen, beherrscht)", "Ajustes › Mi perfil › Aeronaves y simuladores (añadir, quitar, poseída, dominada)"]))}`;
-  if ($("ppMine") && $("ppMine").innerHTML !== mineHtml) $("ppMine").innerHTML = mineHtml;
+  const mineShort = `<a href="../settings/profil.html?base=equipment" title="${KIT.esc(kt(["Paramètres › Mon profil › Appareils et simulateurs (ajouter, retirer, possédé, maîtrisé)", "Settings › My profile › Aircraft and simulators (add, remove, owned, mastered)", "Einstellungen › Mein Profil › Luftfahrzeuge und Simulatoren (hinzufügen, entfernen, besessen, beherrscht)", "Ajustes › Mi perfil › Aeronaves y simuladores (añadir, quitar, poseída, dominada)"]))}">${KIT.esc(kt(["Mes appareils", "My aircraft", "Meine Luftfahrzeuge", "Mis aeronaves"]))} ↗</a>`,
+    mineOut = PERF_PAGE === "sheets" ? mineShort : mineHtml; // Fiches de performances : lien court dans la barre du bas
+  if ($("ppMine") && $("ppMine").innerHTML !== mineOut) $("ppMine").innerHTML = mineOut;
   setText("ppAddLbl", kt(["Ajouter un appareil", "Add an aircraft", "Luftfahrzeug hinzufügen", "Añadir una aeronave"]));
   setText("ppSortLbl", kt(["Trier par", "Sort by", "Sortieren nach", "Ordenar por"]));
   const ph = kt(["Chercher un appareil (nom, variante, désignateur, classe, source)",

@@ -1312,16 +1312,39 @@
   .pp-mine {
     margin: 2px 0 8px
   }
-  /* Fiches de performances : sélecteur d'appareil et barre d'actions dans l'en-tête */
-  .sheet-head .pp-mine {
-    margin: 0;
-    flex: 1 1 260px
+  /* Fiches de performances : barre du bas unique, en groupes (appareil et fiche · lignes cochées · sources · infos) */
+  .sheet-bar {
+    flex-wrap: wrap;
+    row-gap: 6px
+  }
+  .sheet-bar .bar-group {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap
+  }
+  .sheet-bar .bar-group+.bar-group {
+    padding-left: 8px;
+    border-left: 1px solid var(--line)
+  }
+  .sheet-bar button {
+    padding: 3px 8px;
+    font-size: 12px
+  }
+  .sheet-bar .status-text {
+    flex: 0 1 auto
+  }
+  .sheet-bar .pp-mine {
+    margin: 0
+  }
+  .sheet-pick {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12.5px
   }
   .sheet-pick select {
-    max-width: 340px
-  }
-  header .sheet-actions {
-    margin: 8px 0 0
+    max-width: 300px
   }
   .pp-sortlbl {
     display: inline-flex;

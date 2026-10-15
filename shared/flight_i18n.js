@@ -154,6 +154,8 @@
       "Campos exportados tal cual en el `.lnmperf`. Un campo vacío sigue vacío en el JSON y bloquea la exportación XML: no se añade ningún valor automáticamente."
     ],
     ["Enregistrer le profil", "Save profile", "Profil speichern", "Guardar perfil"],
+    ["Enregistrer la fiche", "Save the sheet", "Blatt speichern", "Guardar la ficha"],
+    ["Abandonner les modifications", "Discard changes", "Änderungen verwerfen", "Descartar los cambios"],
     ["Supprimer cet avion", "Delete this aircraft", "Dieses Flugzeug löschen", "Eliminar este avión"],
     ["Choisis ou importe un profil.", "Choose or import a profile.", "Profil wählen oder importieren.", "Elija o importe un perfil."],
     ["« Récupérer dernier FPL SimBrief » charge directement le dernier OFP de l’identifiant SimBrief du profil pilote (☰ › Profil pilote). L’import JSON reste un secours si le navigateur bloque SimBrief.",

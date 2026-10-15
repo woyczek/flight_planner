@@ -159,8 +159,12 @@
   if (!window.AppFramework) prepareBlocks();
 
   // Les anciens boutons (enregistrer, importer, exporter, dossier…) sont masqués : leurs actions passent par la barre d'état et le menu ☰ (addMenuActions).
-  const oldControls = $("saveProfileBtn")?.parentElement;
-  if (oldControls) oldControls.style.display = "none";
+  // Seuls « Enregistrer le profil » et « Supprimer cet avion » de la fiche (doublons de la barre du bas) : le reste de leur
+  // ligne (« Mettre à jour depuis SimBrief », « Demander à ChatGPT », état de l'éditeur) reste affiché.
+  ["saveProfileBtn", "deleteProfileBtn"].forEach(id => {
+    const b = document.getElementById(id);
+    if (b) b.style.display = "none"
+  });
   $("toggleProfileEditor").style.display = "none";
   document.querySelector(".prefs-popup").style.display = "none";
   ["importBtn", "exportLnmBtn", "exportBtn", "exportDbBtn", "sbAirframeBtn"].forEach(id => {
@@ -171,16 +175,27 @@
   // Niveau Expert seulement (édition des profils) : aux niveaux 1 à 3, ni barre ni marge réservée en bas de page.
   // (Fiches de performances seulement : le Carburant ne modifie aucune fiche)
   const sheetsPage = typeof PERF_PAGE === "undefined" || PERF_PAGE === "sheets";
-  if (sheetsPage && (window.RepositoryNav?.levels?.get?.() ?? 4) >= 4) document.body.classList.add("has-status-bar");
-  const status = document.createElement("div");
-  status.className = "status-bar";
-  status.dataset.minLevel = "4";
-  status.innerHTML =
-    '<span id="persistentStatus" class="status-text">Base locale prête.</span><button id="statusReload">Recharger la base locale</button><button id="statusSave" class="primary">Enregistrer le profil</button><button id="statusDelete">Supprimer cet avion</button>';
-  if (sheetsPage) document.body.append(status);
+  // Fiches de performances : la page porte sa barre (#sheetBar : appareil, fiche, lignes cochées, sources), à son propre
+  // niveau ; la marge du bas suit sa hauteur (une ou deux lignes selon la largeur)
+  const pageBar = document.getElementById("sheetBar");
+  if (pageBar || (sheetsPage && (window.RepositoryNav?.levels?.get?.() ?? 4) >= 4)) document.body.classList.add("has-status-bar");
+  const status = pageBar || document.createElement("div");
+  if (!pageBar) {
+    status.className = "status-bar";
+    status.dataset.minLevel = "4";
+    status.innerHTML =
+      '<span id="persistentStatus" class="status-text">Base locale prête.</span><button id="statusReload">Recharger la base locale</button><button id="statusSave" class="primary">Enregistrer le profil</button><button id="statusDelete">Supprimer cet avion</button>';
+    if (sheetsPage) document.body.append(status)
+  } else if (window.ResizeObserver) new ResizeObserver(() => document.body.style.paddingBottom = `${status.offsetHeight + 8}px`).observe(
+    status);
   // Texte et couleur de la barre d'état selon le profil actif et profileDirty ; appelée par la page après chaque modification.
   window.updateProfileStatus = () => {
     status.classList.toggle("dirty", profileDirty);
+    // « Abandonner les modifications » : seulement s'il y en a ; « Enregistrer » : seulement avec une fiche ouverte
+    if (pageBar) {
+      $("statusReload").disabled = !profileDirty;
+      $("statusSave").disabled = !active
+    }
     $("persistentStatus").textContent = !active ? "Aucun profil actif." : profileDirty ? `Modifications non enregistrées — ${active.name||active.id}` : `Profil enregistré — ${active.name||active.id}`
   };
   // Profil d'appareil : enregistrement, rechargement, changement avec confirmation.
@@ -200,13 +215,15 @@
   }
   $("statusSave").onclick = saveCurrent;
   $("saveProfileBtn").onclick = saveCurrent;
-  $("statusDelete").onclick = () => $("deleteProfileBtn").click();
-  // Recharge la base locale depuis le stockage (abandonne les modifications en mémoire) et réactive le dernier avion.
+  if (document.getElementById("statusDelete")) $("statusDelete").onclick = () => $("deleteProfileBtn").click();
+  // Recharge la base locale depuis le stockage (abandonne les modifications en mémoire) et rouvre la fiche ouverte (sinon
+  // le dernier appareil de la page).
   $("statusReload").onclick = () => {
     let restored = JSON.parse(localStorage.getItem("flightPerfState") || "null");
     if (!restored?.profiles) return window.AppFramework.notify("Aucune base locale enregistrée.", 'warn');
+    const keep = active?.id;
     state = restored;
-    let id = state.lastAircraft;
+    let id = keep || state[typeof PERF_PAGE !== "undefined" && PERF_PAGE === "sheets" ? "lastSheet" : "lastAircraft"];
     if (id && state.profiles[id]) rawSetActive(state.profiles[id], "base locale rechargée");
     else clearActive("Base locale rechargée");
     updateProfileStatus()
