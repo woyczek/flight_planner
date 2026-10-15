@@ -51,6 +51,13 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   method, ISA effect and thrust-limited cruise in the fuel quote; in the operations manual, the contents of `data/`,
   the browser keys of the missions and the Planning, and what leaves the computer.
 
+### Fixed
+
+- **Fuel: merging profiles that differ by nothing** — "Merge" stayed disabled when the most recent profile already
+  held every value (label "Merge (nothing)"), although the other ticked profiles would be removed. The button now
+  counts the removed profiles ("Merge (1 profile removed)") and stays active: the most recent is kept as is, the
+  others disappear.
+
 ## [5.2.0] — 2026-10-12
 
 Missions can now be built entirely by hand in the generator — the single place where missions are created — with a

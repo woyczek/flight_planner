@@ -6068,19 +6068,25 @@ function profileDiff(before, after, origin = {}, defaultSrc = "") {
   }
 }
 /** Libellé du bouton de validation selon les données cochées : « Fusionner (7 champs, 2 lignes) » ; none : rien de coché. */
-function takeLabel(base, diff, sel) {
+function takeLabel(base, diff, sel, removed = 0) {
   const f = diff.rows.filter(r => r.changed && !sel.skip.has(r.path)).length,
     c = diff.curve.filter(x => !sel.skipCurve.has(x.key)).length,
     parts = [f ? ktf(["{n} champ(s)", "{n} field(s)", "{n} Feld(er)", "{n} campo(s)"], {
       n: f
     }) : "", c ? ktf(["{n} ligne(s) de cartographie", "{n} engine map row(s)", "{n} Kennfeldzeile(n)", "{n} fila(s) del mapa motor"], {
       n: c
+    }) : "", removed ? ktf(["{n} profil(s) retiré(s)", "{n} profile(s) removed", "{n} Profil(e) entfernt",
+      "{n} perfil(es) retirado(s)"
+    ], {
+      n: removed
     }) : ""].filter(Boolean);
   return {
     label: `${base} (${parts.join(", ") || kt(["rien", "nothing", "nichts", "nada"])})`,
     none: !parts.length
   }
 }
+/* (removed : profils retirés par la fusion — le bouton reste actif même sans champ repris : le plus récent est gardé tel
+ *  quel, les autres disparaissent) */
 /** Aperçu d'un écart (profileDiff) : champs qui changent (actuel → retenu, source), lignes de cartographie ajoutées ou
  *  remplacées, champs inchangés repliés et grisés, note facultative. Avec sel ({ skip, skipCurve, onChange }) : une case
  *  par donnée qui change (décochée : la valeur actuelle est gardée), « Tout reprendre » / « Ne rien reprendre ». */
@@ -6266,7 +6272,7 @@ async function mergeSelected() {
         sel
       };
       sel.onChange = () => {
-        const t = takeLabel(kt(["Fusionner", "Merge", "Zusammenführen", "Fusionar"]), diff, sel);
+        const t = takeLabel(kt(["Fusionner", "Merge", "Zusammenführen", "Fusionar"]), diff, sel, removed.length);
         ui.setOk(t.label, t.none)
       };
       sel.onChange();
