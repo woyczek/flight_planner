@@ -369,7 +369,7 @@ Las preferencias se guardan en su ficha de usuario, compartida con el Centro med
 
 ### Aeronaves y simuladores
 
-«Mis aeronaves»: sus aeronaves, flota incluida —las que posee en su simulador y las que domina—, y sus simuladores. El Centro los utiliza para asignarle una aeronave y para reunir pilotos en un simulador común. Es la misma lista que el bloque «Perfiles de rendimiento» del Combustible, que muestra su rendimiento: mismas aeronaves, mismo orden, mismo nombre.
+«Mis aeronaves»: sus aeronaves, flota incluida —las que posee en su simulador y las que domina—, y sus simuladores. El Centro los utiliza para asignarle una aeronave y para reunir pilotos en un simulador común. Es la misma lista que el bloque «Perfiles de rendimiento» de la página «Fichas de rendimiento», que muestra su rendimiento: mismas aeronaves, mismo orden, mismo nombre.
 
 **Tarjeta «Mis aeronaves»**: un resumen («… tipo(s) dominado(s), … poseído(s) de … tipos de la flota.») y, después, una subtarjeta por categoría (helicópteros, turbohélices, reactores, pistón), con una tabla:
 
@@ -378,7 +378,7 @@ Las preferencias se guardan en su ficha de usuario, compartida con el Centro med
 | «Aeronave» | Silueta, nombre en negrita, designador OACI y clase en pequeño |
 | «Variantes de la flota» | Variantes presentes en la flota |
 | «Aeronaves» | Número de aeronaves en servicio (sobre el total) y sus bases |
-| «Rendimiento» | Para una aeronave poseída: origen de su perfil en el Combustible (enlace que lo abre en esa aeronave), o «ninguno» y las formas de crear uno |
+| «Rendimiento» | Para una aeronave poseída: un enlace — el origen de su ficha, que abre la página «Fichas de rendimiento» en esa aeronave, o «ninguno» y las formas de crear una, que abren esa misma página |
 | «Poseído» | Tiene este tipo en su simulador |
 | «Dominado» | Lo pilota con soltura |
 
@@ -395,9 +395,9 @@ No hay botón «Guardar»: cada casilla se guarda al instante en este navegador 
 ### Añadir una aeronave y su rendimiento
 
 Para volar en una aeronave que la suite aún no conoce, por ejemplo un CL-415 sin rendimiento:
-1. Añádala por su nombre: Ajustes › Mi perfil › Aeronaves y simuladores, tarjeta «Otras aeronaves», o botón «Añadir una aeronave» del bloque «Perfiles de rendimiento» del Combustible (la misma ventana de alta). Se une a «Mis aeronaves».
+1. Añádala por su nombre: Ajustes › Mi perfil › Aeronaves y simuladores, tarjeta «Otras aeronaves», o botón «Añadir una aeronave» de la página «Fichas de rendimiento» (la misma ventana de alta). Se une a «Mis aeronaves».
 2. Su fila muestra «Rendimiento: ninguno» y tres botones, en este orden: «Crear desde SimBrief» (solo si SimBrief conoce el tipo), «Preguntar a ChatGPT» (perfil vacío y panel de ChatGPT abierto en él), «Estimar por la clase» (perfil mínimo deducido de la clase OACI del tipo: consumo, TAS y techo, marcados «estimado»; una aeronave sin designador no tiene clase: asóciela primero a su tipo).
-3. El perfil creado se asocia a la aeronave y el Combustible se abre en él (desde Ajustes, el botón abre el Combustible). Complételo después (ascenso, descenso), fusiónelo con otro perfil o sustitúyalo por una importación.
+3. La ficha creada se asocia a la aeronave y la página «Fichas de rendimiento» se abre en ella (desde Ajustes, el botón abre esa página). Complétela después (ascenso, descenso), fusiónela con otra ficha o sustitúyala por una importación. Combustible la propone después en su menú «Avión».
 
 ### Altitud sin oxígeno (aviones no presurizados)
 
@@ -1427,21 +1427,17 @@ Es el mismo bloque que Ajustes › Mantenimiento › Datos aeronáuticos. La mis
 
 El planificador de combustible (título «Combustible») calcula el combustible de un vuelo a partir del perfil de rendimiento de su aeronave. El consumo de crucero viene, por este orden, de su entrada para este vuelo, del perfil guardado, del modelo de Poll y Schumann (aviones de línea a reacción, según la masa, el nivel y el Mach), de SimBrief y después de una estimación por tipo o clase OACI; un valor aproximado se marca con ≈. Para un tipo sin ficha EUROCONTROL ni SimBrief (militares, helicópteros), la estimación toma la TAS de crucero y el techo publicados por Airframe DB cuando los conoce. También ayuda a elegir el nivel de vuelo y la forma de subir a él.
 Para ir a él: barra lateral «Herramientas», pestaña «Combustible», botón «Combustible (planificador)» de una misión en Mis misiones, o botón «Combustible» de los Mapas de vuelo. En ese caso se recuperan la ruta, la distancia, el nivel y la aeronave.
-Cabecera: menú «Avión», botón «Recuperar último FPL de SimBrief», «Unidades: kg / lbs». Las importaciones y exportaciones están en el menú ☰.
-Según el nivel de uso: en los niveles 1 a 3 (Tripulación, Planificación, Diseño), la página muestra el avión, el plan de vuelo (y «Recuperar último FPL de SimBrief»), el plegable «Parámetros del vuelo», «Calcular» y el Resultado, en dos columnas; el menú ☰ solo conserva exportar e importar las preferencias. Curvas, paneles, instrumentos, bloques del perfil, barra de estado y acciones de perfiles del menú ☰ se añaden en el nivel Experto, donde la página está completa.
+Cabecera: menú «Avión» (las fichas de rendimiento existentes), botón «Recuperar último FPL de SimBrief», «Unidades: kg / lbs». Combustible hace el plan de combustible y solo el plan: las fichas se crean y se modifican en «Fichas de rendimiento» (capítulo siguiente), las aeronaves se declaran en «Mis aeronaves» (Ajustes › Mi perfil › Aeronaves y simuladores).
+Según el nivel de uso: en los niveles 1 a 3 (Tripulación, Planificación, Diseño), la página muestra el avión, el plan de vuelo (y «Recuperar último FPL de SimBrief»), el plegable «Parámetros del vuelo», «Calcular» y el Resultado, en dos columnas; el menú ☰ solo conserva exportar e importar las preferencias. Curvas, paneles, instrumentos y perfil vertical se añaden en el nivel Experto, donde la página está completa.
 En pantalla ancha, en el nivel Experto, la página tiene tres columnas (entrada y curvas | Resultado y paneles | instrumentos): arrastre los tiradores entre columnas para ajustar su anchura; doble clic: anchuras por defecto.
 
-### Elegir el avión y guardar el perfil
+### Elegir el avión
 
-1. Haga clic en el botón de aeronave de la cabecera («Ninguna aeronave» al principio): se abre una lista, una línea por aeronave (icono, nombre, tipo, origen del perfil, estado).
-2. Elija una aeronave con el ratón, o con las flechas y después Intro; Escape cierra la lista.
-3. Un tipo de la flota sin perfil crea un perfil vacío: sus rendimientos deben rellenarse (véase también «Perfiles de rendimiento»).
+1. Haga clic en el botón de aeronave de la cabecera («Ninguna aeronave» al principio): la lista solo muestra las aeronaves que tienen una ficha de rendimiento, las de «Mis aeronaves» primero y después las demás por categoría (icono, nombre, tipo, origen de la ficha, estado).
+2. Elija una aeronave con el ratón, o con las flechas y después Intro; Escape cierra la lista. «Gestionar las fichas de rendimiento ↗», al pie de la lista, abre la página de las fichas.
+3. Abierto en una aeronave sin ficha (botón de una misión, dirección `?aircraft=`), el plan de combustible muestra «Ninguna ficha de rendimiento para … — abrir las Fichas de rendimiento ↗»: el enlace abre la página de las fichas en esa aeronave, donde crearla.
 
-La barra al pie de la página indica «Perfil guardado — …» o «Cambios sin guardar — …». Contiene «Recargar la base local», «Guardar perfil» y «Eliminar este avión». Esta barra solo aparece en el nivel Experto.
-Si cambia de avión con cambios sin guardar, la página propone «Quedarse», «Descartar y cambiar» o «Guardar y cambiar».
-Menú ☰: importar perfiles / CSV / JSON (incluido `.lnmperf` de Little Navmap), importar un airframe de SimBrief, elegir la carpeta de rendimiento, exportar el perfil `.lnmperf` o JSON, guardar la base local, restaurar la copia anterior, exportar o importar las preferencias. Estas acciones son del nivel Experto, salvo exportar e importar las preferencias.
-«Guardar la base local» escribe `flight_performance_database.fpdb.json` en la carpeta de rendimiento (si no, descarga); «Restaurar la copia anterior» recupera el estado anterior al último guardado.
-Una importación que coincide con un perfil existente (mismo identificador, casi siempre el tipo OACI) lo actualiza: los valores importados prevalecen, los campos que deja vacíos conservan el valor anterior, las tablas RPM se reúnen (unidades convertidas).
+La ficha elegida sigue visible en solo lectura en el Resultado (grupo plegable «Regímenes de vuelo — perfil ↔ mapa»), con «Modificar esta ficha en las Fichas de rendimiento ↗». Una ficha guardada en las Fichas de rendimiento abiertas en otra pestaña se retoma de inmediato, y el plan de combustible se rehace.
 
 ### Plan de combustible
 
@@ -1493,18 +1489,49 @@ Este bloque, en la columna de la derecha, acompaña a la página mientras se des
 - «Block fuel» (en horquilla si el viento es desconocido), «Tiempo de vuelo», «TOD».
 - Línea de estado «Calculado para <aeronave> a las <hora>: <distancia> NM a FL…, tiempo de vuelo, TOD. Consumo de crucero: …», y después base del cálculo: nivel, ascenso utilizado y origen del consumo de crucero («perfil guardado», «introducido para este vuelo», «Poll-Schumann, 70 t a mitad del crucero, FL350, M0,78», «SimBrief», «estimación…»). Sin consumo conocido, «Combustible de bloque» muestra «—»: introduzca el consumo en el plan de combustible.
 - Detalle: rodaje, ascenso, crucero, descenso, contingencia, reserva; masa de despegue prevista y MTOW si la ha introducido (en rojo si se supera).
-- Grupo plegable «Regímenes de vuelo — perfil ↔ mapa» (nivel Experto): IAS, régimen de ascenso, régimen del motor y flujo por fase, comparados con el mapa del motor. También contiene el campo «SimBrief Airframe Internal ID» y los enlaces a las fichas de las aeronaves de ese tipo.
-  «Importar airframe de SimBrief» lee este campo (identificador o enlace para compartir): lista pública de SimBrief y después el enlace; un airframe privado ilegible solo da un perfil parcial, con su identificador.
+- Grupo plegable «Regímenes de vuelo — perfil ↔ mapa» (nivel Experto): la ficha de la aeronave en solo lectura — IAS, régimen de ascenso, régimen del motor y flujo por fase, comparados con el mapa del motor, enlaces a las fichas de las aeronaves de ese tipo — y «Modificar esta ficha en las Fichas de rendimiento ↗».
 
 «Fijar» conserva el bloque entero cuando acompaña a la página; si no, se pliega. «Vista simple» oculta las curvas y los instrumentos, «Vista detallada» los muestra (elección guardada en este navegador). En el nivel Experto, bajo el bloque, un panel por gráfico (decisión del nivel, ascenso) da lo esencial en tres líneas; «Saber más» despliega la ayuda de lectura y las hipótesis del modelo. La banda de instrumentos (nivel Experto) muestra IAS, altímetro, variómetro, cronómetro (tiempo de ascenso), combustible y tiempo de vuelo.
-En los paneles y los mensajes, un nombre de campo subrayado es un enlace: despliega el editor del perfil si hace falta y muestra el campo. Un nivel «inalcanzable» da su causa y el campo que corregir (bloque «Límites»).
+En los paneles y los mensajes, un nombre de campo subrayado designa un campo de la ficha (que se modifica en las Fichas de rendimiento). Un nivel «inalcanzable» da su causa y el campo que corregir (bloque «Límites»).
 Un clic en el dial de combustible (o su botón) cambia la curva leída, en su color: ascenso elegido, perfil, crucero económico, ascenso rápido, Vy, ascenso económico; elección guardada en este navegador.
+
+### Perfil vertical
+
+Este bloque dibuja un corte a lo largo del plan de vuelo del plan de combustible: relieve, espacios aéreos, obstáculos, trayectoria (TOC, TOD). Bloque del nivel Experto.
+
+1. Compruebe el plan de vuelo en «Plan de combustible».
+2. Elija el «Perfil de visualización (estudio)»: son los mismos perfiles que en los Mapas de vuelo.
+3. Ajuste «Suelo (ft)» y «Techo (ft, 0 = auto)».
+4. Haga clic en «Trazar el perfil».
+
+El ascenso sigue el modelo de rendimiento del avión activo; el descenso sigue su régimen de descenso. Un plan sin nivel (VFR) no tiene trayectoria.
+Un OFP de SimBrief importado rellena la ruta y traza el perfil por sí solo.
+Se necesita la base SIA de este navegador, leída en los Mapas de vuelo (bloque «Base de datos SIA») o en Ajustes › Mantenimiento. Sin ella, solo se reconocen los puntos en coordenadas, sin espacios aéreos.
+El relieve procede de un modelo de terreno de unos 150 m: los límites ASFC siguen ese modelo, no el suelo real.
+
+## Fichas de rendimiento
+<!-- page: apps/planner/performance_sheets.html -->
+
+Esta página (barra lateral «Herramientas», a partir del nivel Diseño) gestiona las fichas de rendimiento de sus aeronaves: de ella parten todas las acciones que crean o modifican una ficha. Combustible las usa para el plan; «Mis aeronaves» (Ajustes › Mi perfil › Aeronaves y simuladores) dice qué aeronaves posee. Las dos páginas leen la misma base de este navegador y la misma carpeta de rendimiento: una ficha guardada aquí la retoma de inmediato una página Combustible abierta en otra pestaña.
+
+- Cabecera: «Ficha en edición», la ficha que se modifica (se elige en la tabla, no en la cabecera), y «Recuperar último FPL de SimBrief» para la calibración.
+- «Perfiles de rendimiento»: la tabla de sus aeronaves y fichas, con búsqueda, orden, grupos, «Añadir una aeronave», «Importar…», «Carpeta…», «Releer», «Fusionar», «Exportar», «Guardar en la carpeta», «Eliminar», «Preguntar a ChatGPT» y, para una aeronave sin ficha, «Crear desde SimBrief», «Preguntar a ChatGPT», «Estimar por la clase». «Modificar» abre una ficha en el editor («en edición» en su fila).
+- Bloques de la ficha en edición (nivel Experto): «Prestaciones motor — RPM / potencia / consumo», «Tabla RPM / potencia → consumo», «Regímenes de vuelo — perfil ↔ mapa motor» (airframe de SimBrief), «Datos de perfil — JSON ⇄ Little Navmap» (el editor de todos los campos, «Actualizar desde SimBrief»), «Mapa motor — editar RPM / potencia → consumo», «Calibración SimBrief desde OFP», «Trazabilidad de la calibración», «Auditoría OFP» y «JSON importado / SimBrief», descritos más abajo.
+- Una ficha guardada aquí la retoma de inmediato una página Combustible abierta en otra pestaña (la ficha que muestra y su plan).
+
+### Barra inferior y menú ☰
+
+La barra al pie de la página indica «Perfil guardado — …» o «Cambios sin guardar — …». Contiene «Recargar la base local», «Guardar perfil» y «Eliminar este avión». Esta barra solo aparece en el nivel Experto.
+Si abre otra ficha («Modificar») con cambios sin guardar, la página propone «Quedarse», «Descartar y cambiar» o «Guardar y cambiar».
+Menú ☰: importar perfiles / CSV / JSON (incluido `.lnmperf` de Little Navmap), importar un airframe de SimBrief, elegir la carpeta de rendimiento, exportar el perfil `.lnmperf` o JSON, guardar la base local, restaurar la copia anterior, exportar o importar las preferencias. Estas acciones son del nivel Experto, salvo exportar e importar las preferencias.
+«Guardar la base local» escribe `flight_performance_database.fpdb.json` en la carpeta de rendimiento (si no, descarga); «Restaurar la copia anterior» recupera el estado anterior al último guardado.
+Una importación que coincide con un perfil existente (mismo identificador, casi siempre el tipo OACI) lo actualiza: los valores importados prevalecen, los campos que deja vacíos conservan el valor anterior, las tablas RPM se reúnen (unidades convertidas).
 
 ### Perfiles de rendimiento
 
-Este bloque (a partir del nivel Diseño) es la cara de rendimiento de «Mis aeronaves» (Ajustes › Mi perfil › Aeronaves y simuladores): mismas aeronaves, mismo orden, mismo nombre. Bajo el título, «Aeronaves: Mis aeronaves ↗» abre esa lista en Ajustes.
+Este bloque (a partir del nivel Diseño), el primero de la página, es la cara de rendimiento de «Mis aeronaves» (Ajustes › Mi perfil › Aeronaves y simuladores): mismas aeronaves, mismo orden, mismo nombre. Bajo el título, «Aeronaves: Mis aeronaves ↗» abre esa lista en Ajustes.
 - Una línea por aeronave, agrupadas por categoría (helicópteros, turbohélices, reactores, pistón) con una cabecera de grupo plegable; «Ordenar por»: categoría, nombre u origen. Después vienen los perfiles guardados fuera de «Mis aeronaves», marcados «no está en «Mis aeronaves»». Sin «Mis aeronaves» (trigrama no configurado, nada declarado), el bloque muestra los perfiles y los tipos de la flota.
-- Columnas: «Aeronave» (silueta, nombre en negrita, designador y clase en pequeño, como en Ajustes), «Rendimiento» (origen del perfil: `.lnmperf`, SimBrief, ChatGPT, JSON, entrada, estimado por la clase; o «ninguno» y sus tres botones), «Mapa» (mapa motor), «Consumo crucero» y su origen, «Techo», «Falta» y, por último, «Elegir» («activo» para la aeronave elegida).
+- Columnas: «Aeronave» (silueta, nombre en negrita, designador y clase en pequeño, como en Ajustes), «Rendimiento» (origen del perfil: `.lnmperf`, SimBrief, ChatGPT, JSON, entrada, estimado por la clase; o «ninguno» y sus tres botones), «Mapa» (mapa motor), «Consumo crucero» y su origen, «Techo», «Falta» y, por último, «Modificar» («en edición» para la ficha abierta en el editor).
 - «Añadir una aeronave» abre la misma ventana de alta que Ajustes (véase «Añadir una aeronave y su rendimiento»); la aeronave añadida llega con «ninguno» y sus tres botones: «Crear desde SimBrief» (si SimBrief conoce el tipo), «Preguntar a ChatGPT», «Estimar por la clase».
 - Un designador declarado con varias variantes (CL2T: «Canadair CL-415», «Canadair CL-215T») tiene una sola fila, con el nombre del tipo: el rendimiento es el del tipo, las variantes no cambian nada aquí. Una aeronave con varios perfiles tiene una fila por perfil, cada una con el nombre del perfil.
 - La casilla de la cabecera de la columna marca o desmarca todas las filas mostradas; los bordes de los títulos se arrastran para ajustar el ancho de las columnas (doble clic: anchos por defecto).
@@ -1512,7 +1539,7 @@ Este bloque (a partir del nivel Diseño) es la cara de rendimiento de «Mis aero
 - «Importar…» (`.lnmperf`, JSON, CSV), «Carpeta…» (carpeta de rendimiento), «Releer». La carpeta se relee sola cuando cambia en otro lugar (Ajustes, otra pestaña).
 - En la ficha del perfil activo, «Actualizar desde SimBrief» toma la ficha SimBrief del tipo (consumo de crucero, masas, techo, velocidad) y conserva sus entradas; frente a un perfil personal, propone «Completar los campos vacíos», «Fusionar» (la ficha cuenta como un perfil fechado en su obtención: el más reciente gana campo por campo, los vacíos se completan), «Sustituir» (valores de SimBrief en su lugar, el resto conservado) o «Perfil nuevo». Cuando cambian campos, una vista previa los muestra antes de validar. «Eliminar este avión», en la misma ficha, retira el perfil activo.
 - Las casillas delante de los nombres seleccionan perfiles para la barra del bloque: «Fusionar (n)» (al menos dos perfiles del mismo tipo, o uno solo cuando SimBrief conoce el tipo: la casilla «Incluir la ficha SimBrief del tipo», marcada de antemano, la añade a las fuentes; nombre elegido, el del más completo por defecto; el más reciente gana campo por campo, los demás completan lo que falta, el mapa motor reúne sus filas; la ventana muestra primero los cambios — valor actual, valor retenido y su origen, campos sin cambios plegados, filas del mapa motor añadidas o sustituidas; una casilla por dato que cambia (desmarcada: se conserva el valor actual), «Tomar todo» / «No tomar nada», y el botón dice lo que se tomará, «Fusionar (7 campos, 1 fila del mapa motor)»; la nota de fusión solo lista lo tomado; la notificación dice qué se tomó de cada fuente, «Deshacer» 10 s), «Exportar (n)» (un archivo descargado por perfil: `.lnmperf` si el perfil está completo, si no JSON), «Guardar en la carpeta (n)» (un archivo JSON por perfil en la carpeta de rendimiento, con el nombre del perfil) y «Eliminar (n)» (una confirmación, un solo mensaje para el lote con «Deshacer» durante 10 s; un perfil de la carpeta de rendimiento también se retira de ella: base exportada reescrita sin él, archivo de un solo perfil renombrado .bak; «Deshacer» también restaura los archivos; si la carpeta no admite escritura, el perfil volverá en la próxima relectura). «Carpeta…» y «Releer» recuperan todo lo que contiene la carpeta; mientras un perfil eliminado siga en ella (CSV con varios perfiles, escritura denegada), una línea «n perfil(es) retirado(s) aún en la carpeta — Restaurar» lo indica.
-- «Preguntar a ChatGPT» (barra del bloque, y ficha del perfil activo) abre un panel: elegir la aeronave (perfil, o tipo de la flota sin perfil) y después «Copiar el prompt y abrir ChatGPT» (una sola pestaña de ChatGPT, donde pegar el prompt). El panel sigue la aeronave elegida («Elegir», lista de la cabecera) o marcada. El prompt, en el idioma de la página, pide reunir todas las fuentes (manuales, fabricante, autoridades, Wikipedia, foros de simulación), en kt, ft, ft/min y kg/h, valores estimados marcados, mapa motor incluido; también da lo que la suite ya sabe (EUROCONTROL, SimBrief, Airframe DB, perfil actual) para que ChatGPT complete en lugar de repetir. «Ver el prompt» lo muestra. Pegar la respuesta (el JSON, o un CSV de rendimiento) bajo el botón y después «Importar como perfil nuevo» («<nombre> — ChatGPT») o «Fusionar con «…»» (la respuesta lleva la fecha del día: gana campo por campo, los vacíos se completan; primero la vista previa de los cambios, datos para marcar). Las claves desconocidas y los valores ilegibles o fuera de rango se descartan y se señalan; los valores estimados aparecen en «Datos que faltan» («estimado: …») y dejan de serlo en cuanto los cambia a mano (ficha o mapa motor). El tipo y el nombre vienen de la respuesta (la aeronave elegida solo es un recurso); si la respuesta describe otro tipo, una pregunta decide: importar como uno u otro, o, para una fusión, perfil nuevo o fusionar de todos modos. Se acepta un CSV con comas o con puntos y coma.
+- «Preguntar a ChatGPT» (barra del bloque, y ficha del perfil activo) abre un panel: elegir la aeronave (perfil, o tipo de la flota sin perfil) y después «Copiar el prompt y abrir ChatGPT» (una sola pestaña de ChatGPT, donde pegar el prompt). El panel sigue la ficha abierta («Modificar») o marcada. El prompt, en el idioma de la página, pide reunir todas las fuentes (manuales, fabricante, autoridades, Wikipedia, foros de simulación), en kt, ft, ft/min y kg/h, valores estimados marcados, mapa motor incluido; también da lo que la suite ya sabe (EUROCONTROL, SimBrief, Airframe DB, perfil actual) para que ChatGPT complete en lugar de repetir. «Ver el prompt» lo muestra. Pegar la respuesta (el JSON, o un CSV de rendimiento) bajo el botón y después «Importar como perfil nuevo» («<nombre> — ChatGPT») o «Fusionar con «…»» (la respuesta lleva la fecha del día: gana campo por campo, los vacíos se completan; primero la vista previa de los cambios, datos para marcar). Las claves desconocidas y los valores ilegibles o fuera de rango se descartan y se señalan; los valores estimados aparecen en «Datos que faltan» («estimado: …») y dejan de serlo en cuanto los cambia a mano (ficha o mapa motor). El tipo y el nombre vienen de la respuesta (la aeronave elegida solo es un recurso); si la respuesta describe otro tipo, una pregunta decide: importar como uno u otro, o, para una fusión, perfil nuevo o fusionar de todos modos. Se acepta un CSV con comas o con puntos y coma.
 
 ### Prestaciones motor — RPM / potencia / consumo
 
@@ -1566,20 +1593,6 @@ Este bloque ajusta el perfil activo a un plan de vuelo real de SimBrief. Bloque 
 
 «Trazabilidad de la calibración» (en este bloque) recuerda la última calibración aplicada; si no, «Sin calibración OFP».
 
-### Perfil vertical
-
-Este bloque dibuja un corte a lo largo del plan de vuelo del plan de combustible: relieve, espacios aéreos, obstáculos, trayectoria (TOC, TOD). Bloque del nivel Experto.
-
-1. Compruebe el plan de vuelo en «Plan de combustible».
-2. Elija el «Perfil de visualización (estudio)»: son los mismos perfiles que en los Mapas de vuelo.
-3. Ajuste «Suelo (ft)» y «Techo (ft, 0 = auto)».
-4. Haga clic en «Trazar el perfil».
-
-El ascenso sigue el modelo de rendimiento del avión activo; el descenso sigue su régimen de descenso. Un plan sin nivel (VFR) no tiene trayectoria.
-Un OFP de SimBrief importado rellena la ruta y traza el perfil por sí solo.
-Se necesita la base SIA de este navegador, leída en los Mapas de vuelo (bloque «Base de datos SIA») o en Ajustes › Mantenimiento. Sin ella, solo se reconocen los puntos en coordenadas, sin espacios aéreos.
-El relieve procede de un modelo de terreno de unos 150 m: los límites ASFC siguen ese modelo, no el suelo real.
-
 ### Auditoría OFP — valores brutos y calculados
 
 Esta tabla compara, fase por fase, los valores leídos en el OFP y los valores recalculados: «Tiempo», «Distancia», «Combustible», «FF calculado», «TAS / GS», «Variómetro». Bloque del nivel Experto.
@@ -1594,16 +1607,6 @@ Este bloque muestra el contenido bruto del último archivo importado (OFP de Sim
 - «Borrar»: vacía la visualización (el perfil no se toca).
 
 Sin importación: «Ningún JSON cargado.»
-
-## Fichas de rendimiento
-<!-- page: apps/planner/performance_sheets.html -->
-
-Esta página (barra lateral «Herramientas», a partir del nivel Concepción) gestiona las fichas de rendimiento de sus aeronaves: de ella parten todas las acciones que crean o modifican una ficha. Combustible las usa para el plan; «Mis aeronaves» (Ajustes › Mi perfil › Aeronaves y simuladores) dice qué aeronaves posee. Las dos páginas leen la misma base de este navegador y la misma carpeta de rendimiento: una ficha guardada aquí la retoma de inmediato una página Combustible abierta en otra pestaña.
-
-- Cabecera: «Ficha en edición», la ficha que se modifica (se elige en la tabla, no en la cabecera), y «Recuperar último FPL de SimBrief» para la calibración.
-- «Perfiles de rendimiento»: la tabla de sus aeronaves y fichas, con búsqueda, orden, grupos, «Añadir una aeronave», «Importar…», «Carpeta…», «Releer», «Fusionar», «Exportar», «Guardar en la carpeta», «Eliminar», «Preguntar a ChatGPT» y, para una aeronave sin ficha, «Crear desde SimBrief», «Preguntar a ChatGPT», «Estimar por la clase». «Modificar» abre una ficha en el editor («en edición» en su fila).
-- Bloques de la ficha en edición (nivel Experto): «Rendimiento motor — RPM / potencia / consumo», «Tabla RPM / potencia → consumo», «Regímenes de vuelo — perfil ↔ mapa motor» (airframe de SimBrief), «Datos del perfil — JSON ⇄ Little Navmap» (el editor de todos los campos, «Actualizar desde SimBrief»), «Mapa motor — edición», «Calibración SimBrief desde OFP», «Trazabilidad de la calibración», «Auditoría OFP» y «JSON importado / SimBrief». Cada uno se describe en el capítulo «Combustible».
-- La barra inferior lleva «Recargar la base local», «Guardar el perfil» y «Eliminar esta aeronave», como en Combustible.
 
 ## Aterrizajes
 <!-- page: apps/landing/LandingPerformance_Dashboard_MultiCSV_i18n.html -->

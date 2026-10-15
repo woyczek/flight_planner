@@ -369,7 +369,7 @@ Die Einstellungen werden in Ihrem Benutzereintrag gespeichert und durch die Sync
 
 ### Luftfahrzeuge und Simulatoren
 
-„Meine Luftfahrzeuge“: Ihre Luftfahrzeuge, Flotte inbegriffen — die, die Sie in Ihrem Simulator besitzen, und die, die Sie beherrschen —, und Ihre Simulatoren. Das Zentrum nutzt dies, um Ihnen ein Luftfahrzeug zuzuweisen und Piloten auf einem gemeinsamen Simulator zusammenzubringen. Es ist dieselbe Liste wie im Block „Leistungsprofile“ des Kraftstoffplaners, der ihre Leistungen zeigt: dieselben Luftfahrzeuge, dieselbe Reihenfolge, derselbe Name.
+„Meine Luftfahrzeuge“: Ihre Luftfahrzeuge, Flotte inbegriffen — die, die Sie in Ihrem Simulator besitzen, und die, die Sie beherrschen —, und Ihre Simulatoren. Das Zentrum nutzt dies, um Ihnen ein Luftfahrzeug zuzuweisen und Piloten auf einem gemeinsamen Simulator zusammenzubringen. Es ist dieselbe Liste wie im Block „Leistungsprofile“ der Seite „Leistungsblätter“, der ihre Leistungen zeigt: dieselben Luftfahrzeuge, dieselbe Reihenfolge, derselbe Name.
 
 **Karte „Meine Luftfahrzeuge“**: eine Zusammenfassung („… Typ(en) beherrscht, … besessen von … Flottentypen.“), dann eine Unterkarte pro Kategorie (Hubschrauber, Turboprops, Jets, Kolbenflugzeuge), mit einer Tabelle:
 
@@ -378,7 +378,7 @@ Die Einstellungen werden in Ihrem Benutzereintrag gespeichert und durch die Sync
 | „Luftfahrzeug“ | Silhouette, Name in Fettschrift, ICAO-Kennung und Klasse klein |
 | „Flottenvarianten“ | In der Flotte vorhandene Varianten |
 | „Luftfahrzeuge“ | Anzahl der Luftfahrzeuge im Dienst (von der Gesamtzahl) und ihre Basen |
-| „Leistungen“ | Für ein besessenes Luftfahrzeug: Quelle seines Profils im Kraftstoffplaner (Link, der ihn auf diesem Luftfahrzeug öffnet), oder „keine“ und die Möglichkeiten, eines anzulegen |
+| „Leistungen“ | Für ein besessenes Luftfahrzeug: ein Link — die Quelle seines Blatts, der die Seite „Leistungsblätter“ auf diesem Luftfahrzeug öffnet, oder „keine“ und die Möglichkeiten, eines anzulegen, die dieselbe Seite öffnen |
 | „Besessen“ | Sie haben diesen Typ in Ihrem Simulator |
 | „Beherrscht“ | Sie fliegen ihn sicher |
 
@@ -395,9 +395,9 @@ Es gibt keinen Knopf „Speichern“: Jedes Häkchen wird sofort in diesem Brows
 ### Luftfahrzeug und seine Leistungen hinzufügen
 
 Um ein Luftfahrzeug zu fliegen, das die Suite noch nicht kennt, zum Beispiel eine CL-415 ohne Leistungen:
-1. Fügen Sie es über seinen Namen hinzu: Einstellungen › Mein Profil › Luftfahrzeuge und Simulatoren, Karte „Andere Luftfahrzeuge“, oder Schaltfläche „Luftfahrzeug hinzufügen“ des Blocks „Leistungsprofile“ des Kraftstoffplaners (dasselbe Fenster zum Hinzufügen). Es kommt zu „Meine Luftfahrzeuge“.
+1. Fügen Sie es über seinen Namen hinzu: Einstellungen › Mein Profil › Luftfahrzeuge und Simulatoren, Karte „Andere Luftfahrzeuge“, oder Schaltfläche „Luftfahrzeug hinzufügen“ der Seite „Leistungsblätter“ (dasselbe Fenster zum Hinzufügen). Es kommt zu „Meine Luftfahrzeuge“.
 2. Seine Zeile zeigt „Leistungen: keine“ und drei Schaltflächen, in dieser Reihenfolge: „Aus SimBrief anlegen“ (nur wenn SimBrief den Typ kennt), „ChatGPT fragen“ (leeres Profil, ChatGPT-Feld darauf geöffnet), „Aus der Klasse schätzen“ (Minimalprofil aus der ICAO-Klasse des Typs: Verbrauch, TAS und Gipfelhöhe, als „geschätzt“ markiert; ein Luftfahrzeug ohne Kennung hat keine Klasse: ordnen Sie es zuerst seinem Typ zu).
-3. Das angelegte Profil wird dem Luftfahrzeug zugeordnet, und der Kraftstoffplaner öffnet sich darauf (aus den Einstellungen öffnet die Schaltfläche den Kraftstoffplaner). Ergänzen Sie es danach (Steigflug, Sinkflug), führen Sie es mit einem anderen Profil zusammen oder ersetzen Sie es durch einen Import.
+3. Das angelegte Blatt wird dem Luftfahrzeug zugeordnet, und die Seite „Leistungsblätter“ öffnet sich darauf (aus den Einstellungen öffnet die Schaltfläche diese Seite). Ergänzen Sie es danach (Steigflug, Sinkflug), führen Sie es mit einem anderen Blatt zusammen oder ersetzen Sie es durch einen Import. Kraftstoff bietet es danach in seinem Menü „Flugzeug“ an.
 
 ### Höhe ohne Sauerstoff (Flugzeuge ohne Druckkabine)
 
@@ -1427,21 +1427,17 @@ Es ist derselbe Block wie unter Einstellungen › Wartung › Luftfahrtdaten. Di
 
 Der Kraftstoffplaner (Titel „Kraftstoff“) berechnet den Kraftstoff eines Flugs aus dem Leistungsprofil Ihres Luftfahrzeugs. Der Reiseverbrauch stammt, in dieser Reihenfolge, aus Ihrer Eingabe für diesen Flug, dem gespeicherten Profil, dem Modell von Poll und Schumann (Strahlverkehrsflugzeuge, nach Masse, Flughöhe und Mach), SimBrief, dann aus einer Schätzung nach ICAO-Typ oder -Klasse; ein Näherungswert ist mit ≈ gekennzeichnet. Für einen Typ ohne EUROCONTROL- oder SimBrief-Eintrag (Militär, Hubschrauber) übernimmt die Schätzung die Reise-TAS und die Gipfelhöhe aus Airframe DB, wenn sie dort bekannt sind. Er hilft auch, die Flughöhe und den Steigflug dorthin zu wählen.
 Zugang: Seitenleiste „Werkzeuge“, Reiter „Kraftstoff“, Knopf „Kraftstoff (Planer)“ einer Mission in Meine Missionen oder Knopf „Kraftstoff“ der Flugkarten. Route, Distanz, Flughöhe und Luftfahrzeug werden dann übernommen.
-Kopfzeile: Menü „Flugzeug“, Knopf „Letzten SimBrief-FPL abrufen“, „Einheiten: kg / lbs“. Importe und Exporte befinden sich im Menü ☰.
-Je nach Nutzungsstufe: Auf den Stufen 1 bis 3 (Besatzung, Planung, Gestaltung) zeigt die Seite das Flugzeug, den Flugplan (und „Letzten SimBrief-FPL abrufen“), den aufklappbaren Bereich „Flugparameter“, „Berechnen“ und das Ergebnis in zwei Spalten; das Menü ☰ behält dort nur Export und Import der Einstellungen. Kurven, Felder, Instrumente, Profilblöcke, Statusleiste und die Profilaktionen des Menüs ☰ kommen auf der Stufe Experte hinzu, wo die Seite vollständig ist.
+Kopfzeile: Menü „Flugzeug“ (die vorhandenen Leistungsblätter), Knopf „Letzten SimBrief-FPL abrufen“, „Einheiten: kg / lbs“. Kraftstoff erstellt die Planung und nur die Planung: Die Blätter werden unter „Leistungsblätter“ (nächstes Kapitel) angelegt und geändert, die Luftfahrzeuge unter „Meine Luftfahrzeuge“ (Einstellungen › Mein Profil › Luftfahrzeuge und Simulatoren) angegeben.
+Je nach Nutzungsstufe: Auf den Stufen 1 bis 3 (Besatzung, Planung, Gestaltung) zeigt die Seite das Flugzeug, den Flugplan (und „Letzten SimBrief-FPL abrufen“), den aufklappbaren Bereich „Flugparameter“, „Berechnen“ und das Ergebnis in zwei Spalten; das Menü ☰ behält dort nur Export und Import der Einstellungen. Kurven, Felder, Instrumente und Vertikalprofil kommen auf der Stufe Experte hinzu, wo die Seite vollständig ist.
 Auf breitem Bildschirm, auf der Stufe Experte, hat die Seite drei Spalten (Eingabe und Kurven | Ergebnis und Felder | Instrumente): Ziehen Sie die Griffe zwischen den Spalten, um ihre Breite einzustellen; Doppelklick: Standardbreiten.
 
-### Flugzeug wählen und Profil speichern
+### Flugzeug wählen
 
-1. Klicken Sie auf die Flugzeug-Schaltfläche der Kopfzeile (anfangs „Kein Flugzeug“): Eine Liste öffnet sich, eine Zeile pro Luftfahrzeug (Symbol, Name, Typ, Quelle des Profils, Zustand).
-2. Wählen Sie ein Luftfahrzeug mit der Maus oder mit den Pfeiltasten und dann Eingabe; Escape schließt die Liste.
-3. Ein Flottentyp ohne Profil legt ein leeres Profil an: Seine Leistungen sind einzutragen (siehe auch „Leistungsprofile“).
+1. Klicken Sie auf die Flugzeug-Schaltfläche der Kopfzeile (anfangs „Kein Flugzeug“): Die Liste zeigt nur die Luftfahrzeuge, die ein Leistungsblatt haben, die aus „Meine Luftfahrzeuge“ zuerst, dann die anderen nach Kategorie (Symbol, Name, Typ, Quelle des Blatts, Zustand).
+2. Wählen Sie ein Luftfahrzeug mit der Maus oder mit den Pfeiltasten und dann Eingabe; Escape schließt die Liste. „Leistungsblätter verwalten ↗“ unten in der Liste öffnet die Seite der Blätter.
+3. Auf einem Luftfahrzeug ohne Blatt geöffnet (Schaltfläche einer Mission, Adresse `?aircraft=`), zeigt die Planung „Kein Leistungsblatt für … — Leistungsblätter öffnen ↗“: Der Link öffnet die Seite der Blätter auf diesem Luftfahrzeug, wo Sie es anlegen.
 
-Die Leiste unten auf der Seite zeigt „Profil gespeichert — …“ oder „Nicht gespeicherte Änderungen — …“. Sie trägt „Lokale Datenbank neu laden“, „Profil speichern“ und „Dieses Flugzeug löschen“. Diese Leiste erscheint nur auf der Stufe Experte.
-Wechseln Sie das Flugzeug mit nicht gespeicherten Änderungen, bietet die Seite „Bleiben“, „Verwerfen und wechseln“ oder „Speichern und wechseln“ an.
-Menü ☰: Profile / CSV / JSON importieren (darunter `.lnmperf` von Little Navmap), ein SimBrief-Airframe importieren, den Leistungsordner wählen, das Profil als `.lnmperf` oder JSON exportieren, die lokale Datenbank speichern, die vorherige Sicherung wiederherstellen, die Einstellungen exportieren oder importieren. Diese Aktionen gehören zur Stufe Experte, außer Export und Import der Einstellungen.
-„Lokale Datenbank speichern“ schreibt `flight_performance_database.fpdb.json` in den Leistungsordner (sonst Download); „Vorherige Sicherung wiederherstellen“ stellt den Zustand vor dem letzten Speichern wieder her.
-Ein Import, der auf ein vorhandenes Profil trifft (gleiche Kennung, meist der ICAO-Typ), aktualisiert es: Die importierten Werte haben Vorrang, leer gelassene Felder behalten den alten Wert, die RPM-Tabellen werden zusammengeführt (Einheiten umgerechnet).
+Das gewählte Blatt bleibt im Ergebnis schreibgeschützt sichtbar (aufklappbare Gruppe „Flugphasen — Profil ↔ Kennfeld“), mit „Dieses Blatt in den Leistungsblättern bearbeiten ↗“. Wird ein Blatt in den Leistungsblättern gespeichert, die in einem anderen Tab geöffnet sind, übernimmt Kraftstoff es sofort und berechnet die Planung neu.
 
 ### Kraftstoffplanung
 
@@ -1493,18 +1489,49 @@ Dieser Block in der rechten Spalte folgt der Seite, während Sie durch die Kurve
 - „Block fuel“ (als Bereich, wenn der Wind unbekannt ist), „Flugzeit“, „TOD“.
 - Statuszeile „Berechnet für <Luftfahrzeug> um <Uhrzeit>: <Distanz> NM auf FL…, Flugzeit, TOD. Reiseverbrauch: …“, dann Berechnungsgrundlage: Flughöhe, verwendeter Steigflug und Herkunft des Reiseverbrauchs („gespeichertes Profil“, „für diesen Flug eingegeben“, „Poll-Schumann, 70 t in Reiseflugmitte, FL350, M0,78“, „SimBrief“, „Schätzung…“). Ohne bekannten Verbrauch zeigt „Blockkraftstoff“ „—“: den Verbrauch in der Kraftstoffplanung eingeben.
 - Einzelheiten: Rollen, Steigflug, Reiseflug, Sinkflug, Unvorhergesehenes, Reserve; geplante Startmasse und MTOW, wenn Sie sie eingegeben haben (rot, wenn sie überschritten ist).
-- Aufklappbare Gruppe „Flugphasen — Profil ↔ Kennfeld“ (Stufe Experte): IAS, Steigrate, Triebwerksdrehzahl und Durchfluss pro Phase, verglichen mit dem Triebwerkskennfeld. Sie enthält auch das Feld „SimBrief Airframe Internal ID“ und die Links zu den Blättern der Luftfahrzeuge dieses Typs.
-  „SimBrief-Airframe importieren“ liest dieses Feld (Kennung oder Freigabelink): öffentliche Liste von SimBrief, dann Freigabelink; ein unlesbares privates Airframe ergibt nur ein Teilprofil mit seiner Kennung allein.
+- Aufklappbare Gruppe „Flugphasen — Profil ↔ Kennfeld“ (Stufe Experte): das Blatt des Luftfahrzeugs schreibgeschützt — IAS, Steigrate, Triebwerksdrehzahl und Durchfluss pro Phase, verglichen mit dem Triebwerkskennfeld, Links zu den Blättern der Luftfahrzeuge dieses Typs — und „Dieses Blatt in den Leistungsblättern bearbeiten ↗“.
 
 „Anheften“ behält den ganzen Block, wenn er der Seite folgt; sonst klappt er zusammen. „Einfache Ansicht“ blendet Kurven und Instrumente aus, „Detailansicht“ zeigt sie (Wahl in diesem Browser gespeichert). Auf der Stufe Experte gibt unter dem Block ein Feld pro Diagramm (Wahl der Flughöhe, Steigflug) das Wesentliche in drei Zeilen an; „Mehr erfahren“ klappt die Lesehilfe und die Modellannahmen auf. Die Instrumentenleiste (Stufe Experte) zeigt IAS, Höhenmesser, Steigrate, Stoppuhr (Steigzeit), Kraftstoff und Flugzeit.
-In den Feldern und Meldungen ist ein unterstrichener Feldname ein Link: Er klappt bei Bedarf den Profileditor auf und zeigt das Feld. Eine „unerreichbare“ Flughöhe nennt ihre Ursache und das zu korrigierende Feld (Block „Grenzen“).
+In den Feldern und Meldungen bezeichnet ein unterstrichener Feldname ein Feld des Blatts (in den Leistungsblättern zu ändern). Eine „unerreichbare“ Flughöhe nennt ihre Ursache und das zu korrigierende Feld (Block „Grenzen“).
 Ein Klick auf die Kraftstoffanzeige (oder ihren Knopf) wechselt die gelesene Kurve, in ihrer Farbe: gewählter Steigflug, Profil, wirtschaftlicher Reiseflug, schneller Steigflug, Vy, wirtschaftlicher Steigflug; Wahl in diesem Browser gespeichert.
+
+### Vertikalprofil
+
+Dieser Block zeichnet einen Schnitt entlang des Flugplans der Planung: Gelände, Lufträume, Hindernisse, Flugbahn (TOC, TOD). Block der Stufe Experte.
+
+1. Prüfen Sie den Flugplan in „Kraftstoffplanung“.
+2. Wählen Sie das „Anzeigeprofil (Studio)“: Es sind dieselben Profile wie in den Flugkarten.
+3. Stellen Sie „Untergrenze (ft)“ und „Obergrenze (ft, 0 = auto)“ ein.
+4. Klicken Sie auf „Profil zeichnen“.
+
+Der Steigflug folgt dem Leistungsmodell des aktiven Flugzeugs; der Sinkflug folgt seiner Sinkrate. Ein Plan ohne Flughöhe (VFR) hat keine Flugbahn.
+Ein importiertes SimBrief-OFP füllt die Route und zeichnet das Profil von selbst.
+Sie brauchen die SIA-Datenbank dieses Browsers, gelesen in den Flugkarten (Block „SIA-Datenbank“) oder unter Einstellungen › Wartung. Ohne sie werden nur Punkte in Koordinaten erkannt, ohne Lufträume.
+Das Gelände stammt aus einem Geländemodell von etwa 150 m: Die ASFC-Grenzen folgen diesem Modell, nicht dem wirklichen Boden.
+
+## Leistungsblätter
+<!-- page: apps/planner/performance_sheets.html -->
+
+Diese Seite (Seitenleiste „Werkzeuge“, ab der Stufe Konzeption) verwaltet die Leistungsblätter Ihrer Luftfahrzeuge: Jede Aktion, die ein Blatt anlegt oder ändert, geht von hier aus. Kraftstoff nutzt sie für die Planung; „Meine Luftfahrzeuge“ (Einstellungen › Mein Profil › Luftfahrzeuge und Simulatoren) sagt, welche Luftfahrzeuge Sie besitzen. Beide Seiten lesen dieselbe Datenbank dieses Browsers und denselben Leistungsordner: Ein hier gespeichertes Blatt übernimmt eine in einem anderen Tab geöffnete Kraftstoff-Seite sofort.
+
+- Kopfzeile: „Blatt in Bearbeitung“, das gerade geänderte Blatt (in der Tabelle gewählt, nicht in der Kopfzeile), und „Letzten SimBrief-FPL abrufen“ für die Kalibrierung.
+- „Leistungsprofile“: die Tabelle Ihrer Luftfahrzeuge und Blätter mit Suche, Sortierung, Gruppen, „Luftfahrzeug hinzufügen“, „Importieren…“, „Ordner…“, „Neu lesen“, „Zusammenführen“, „Exportieren“, „Im Ordner speichern“, „Löschen“, „ChatGPT fragen“ und, für ein Luftfahrzeug ohne Blatt, „Aus SimBrief anlegen“, „ChatGPT fragen“, „Aus der Klasse schätzen“. „Bearbeiten“ öffnet ein Blatt im Editor („in Bearbeitung“ in seiner Zeile).
+- Blöcke des bearbeiteten Blatts (Stufe Experte): „Triebwerksleistung — Drehzahl / Leistung / Verbrauch“, „Tabelle Drehzahl / Leistung → Verbrauch“, „Flugregime — Profil ↔ Motorkennfeld“ (SimBrief-Airframe), „Profildaten — JSON ⇄ Little Navmap“ (der Editor aller Felder, „Aus SimBrief aktualisieren“), „Motorkennfeld — Drehzahl / Leistung → Verbrauch bearbeiten“, „SimBrief-Kalibrierung aus OFP“, „Kalibrierungsverlauf“, „OFP-Prüfung“ und „Importiertes JSON / SimBrief“, unten beschrieben.
+- Ein hier gespeichertes Blatt übernimmt eine in einem anderen Tab geöffnete Kraftstoff-Seite sofort (das angezeigte Blatt und ihre Planung).
+
+### Untere Leiste und Menü ☰
+
+Die Leiste unten auf der Seite zeigt „Profil gespeichert — …“ oder „Nicht gespeicherte Änderungen — …“. Sie trägt „Lokale Datenbank neu laden“, „Profil speichern“ und „Dieses Flugzeug löschen“. Diese Leiste erscheint nur auf der Stufe Experte.
+Öffnen Sie ein anderes Blatt („Bearbeiten“) mit nicht gespeicherten Änderungen, bietet die Seite „Bleiben“, „Verwerfen und wechseln“ oder „Speichern und wechseln“ an.
+Menü ☰: Profile / CSV / JSON importieren (darunter `.lnmperf` von Little Navmap), ein SimBrief-Airframe importieren, den Leistungsordner wählen, das Profil als `.lnmperf` oder JSON exportieren, die lokale Datenbank speichern, die vorherige Sicherung wiederherstellen, die Einstellungen exportieren oder importieren. Diese Aktionen gehören zur Stufe Experte, außer Export und Import der Einstellungen.
+„Lokale Datenbank speichern“ schreibt `flight_performance_database.fpdb.json` in den Leistungsordner (sonst Download); „Vorherige Sicherung wiederherstellen“ stellt den Zustand vor dem letzten Speichern wieder her.
+Ein Import, der auf ein vorhandenes Profil trifft (gleiche Kennung, meist der ICAO-Typ), aktualisiert es: Die importierten Werte haben Vorrang, leer gelassene Felder behalten den alten Wert, die RPM-Tabellen werden zusammengeführt (Einheiten umgerechnet).
 
 ### Leistungsprofile
 
-Dieser Block (ab der Stufe Gestaltung) ist die Leistungsseite von „Meine Luftfahrzeuge“ (Einstellungen › Mein Profil › Luftfahrzeuge und Simulatoren): dieselben Luftfahrzeuge, dieselbe Reihenfolge, derselbe Name. Unter dem Titel öffnet „Luftfahrzeuge: Meine Luftfahrzeuge ↗“ diese Liste in den Einstellungen.
+Dieser Block (ab der Stufe Gestaltung), der erste der Seite, ist die Leistungsseite von „Meine Luftfahrzeuge“ (Einstellungen › Mein Profil › Luftfahrzeuge und Simulatoren): dieselben Luftfahrzeuge, dieselbe Reihenfolge, derselbe Name. Unter dem Titel öffnet „Luftfahrzeuge: Meine Luftfahrzeuge ↗“ diese Liste in den Einstellungen.
 - Eine Zeile pro Luftfahrzeug, gruppiert nach Kategorie (Hubschrauber, Turboprops, Jets, Kolbenflugzeuge) mit einer einklappbaren Gruppenkopfzeile; „Sortieren nach“: Kategorie, Name oder Quelle. Danach folgen die gespeicherten Profile außerhalb von „Meine Luftfahrzeuge“, markiert mit „nicht in „Meine Luftfahrzeuge““. Ohne „Meine Luftfahrzeuge“ (Kürzel nicht eingestellt, nichts angegeben) zeigt der Block die Profile und die Flottentypen.
-- Spalten: „Luftfahrzeug“ (Silhouette, Name in Fettschrift, Kennung und Klasse klein, wie in den Einstellungen), „Leistungen“ (Quelle des Profils: `.lnmperf`, SimBrief, ChatGPT, JSON, Eingabe, aus der Klasse geschätzt; oder „keine“ und seine drei Schaltflächen), „Kennfeld“ (Motorkennfeld), „Reiseverbrauch“ und seine Herkunft, „Gipfelhöhe“, „Fehlt“, dann „Wählen“ („aktiv“ für das gewählte Luftfahrzeug).
+- Spalten: „Luftfahrzeug“ (Silhouette, Name in Fettschrift, Kennung und Klasse klein, wie in den Einstellungen), „Leistungen“ (Quelle des Profils: `.lnmperf`, SimBrief, ChatGPT, JSON, Eingabe, aus der Klasse geschätzt; oder „keine“ und seine drei Schaltflächen), „Kennfeld“ (Motorkennfeld), „Reiseverbrauch“ und seine Herkunft, „Gipfelhöhe“, „Fehlt“, dann „Bearbeiten“ („in Bearbeitung“ für das im Editor geöffnete Blatt).
 - „Luftfahrzeug hinzufügen“ öffnet dasselbe Fenster zum Hinzufügen wie die Einstellungen (siehe „Luftfahrzeug und seine Leistungen hinzufügen“); das hinzugefügte Luftfahrzeug kommt mit „keine“ und seinen drei Schaltflächen: „Aus SimBrief anlegen“ (wenn SimBrief den Typ kennt), „ChatGPT fragen“, „Aus der Klasse schätzen“.
 - Eine Kennung, die unter mehreren Varianten angegeben ist (CL2T: „Canadair CL-415“, „Canadair CL-215T“), hat nur eine Zeile, unter dem Namen des Typs: Die Leistungen sind die des Typs, Varianten ändern hier nichts. Ein Luftfahrzeug mit mehreren Profilen hat eine Zeile je Profil, jede unter dem Namen des Profils.
 - Das Kästchen im Spaltenkopf wählt alle angezeigten Zeilen an oder ab; die Ränder der Titel lassen sich ziehen, um die Spaltenbreiten einzustellen (Doppelklick: Standardbreiten).
@@ -1512,7 +1539,7 @@ Dieser Block (ab der Stufe Gestaltung) ist die Leistungsseite von „Meine Luftf
 - „Importieren…“ (`.lnmperf`, JSON, CSV), „Ordner…“ (Leistungsordner), „Neu lesen“. Der Ordner wird von selbst neu gelesen, wenn er sich anderswo ändert (Einstellungen, anderer Tab).
 - Im Blatt des aktiven Profils übernimmt „Aus SimBrief aktualisieren“ den SimBrief-Eintrag des Typs (Reiseverbrauch, Massen, Gipfelhöhe, Geschwindigkeit) und behält Ihre Eingaben; gegenüber einem persönlichen Profil bietet es „Leere Felder ergänzen“, „Zusammenführen“ (der Eintrag zählt als Profil mit dem Datum seines Abrufs: das Neueste gewinnt Feld für Feld, leere Felder werden ergänzt), „Ersetzen“ (SimBrief-Werte statt der eigenen, der Rest bleibt) oder „Neues Profil“. Wenn sich Felder ändern, zeigt eine Vorschau sie vor der Bestätigung. „Dieses Flugzeug löschen“ im selben Blatt entfernt das aktive Profil.
 - Die Kästchen vor den Namen wählen Profile für die Leiste des Blocks: „Zusammenführen (n)“ (mindestens zwei Profile desselben Typs, oder nur eines, wenn SimBrief den Typ kennt: das vorab angekreuzte Kästchen „SimBrief-Eintrag des Typs einbeziehen“ fügt ihn den Quellen hinzu; Name wählbar, standardmäßig der des vollständigsten; das Neueste gewinnt Feld für Feld, die anderen füllen seine Lücken, das Motorkennfeld vereint ihre Zeilen; das Fenster zeigt zuerst die Änderungen — aktueller Wert, übernommener Wert und seine Quelle, unveränderte Felder eingeklappt, hinzugefügte oder ersetzte Kennfeldzeilen; ein Kästchen je geänderter Angabe (nicht angekreuzt: der aktuelle Wert bleibt), „Alles übernehmen“ / „Nichts übernehmen“, und die Schaltfläche nennt, was übernommen wird, „Zusammenführen (7 Felder, 1 Kennfeldzeile)“; die Zusammenführungsnotiz listet nur das Übernommene; die Benachrichtigung sagt, was aus jeder Quelle übernommen wurde, „Rückgängig“ 10 s), „Exportieren (n)“ (eine heruntergeladene Datei pro Profil: `.lnmperf`, wenn das Profil vollständig ist, sonst JSON), „Im Ordner speichern (n)“ (eine JSON-Datei pro Profil im Leistungsordner, nach dem Profil benannt) und „Löschen (n)“ (eine Bestätigung, eine einzige Meldung für alle mit 10 s lang „Rückgängig“; ein Profil aus dem Leistungsordner wird auch dort entfernt: exportierte Datenbank ohne es neu geschrieben, Datei mit einem einzigen Profil in .bak umbenannt; „Rückgängig“ stellt auch die Dateien wieder her; ist der Ordner nicht beschreibbar, kommt das Profil beim nächsten Neulesen zurück). „Ordner…“ und „Neu lesen“ übernehmen alles, was der Ordner enthält; solange ein gelöschtes Profil dort bleibt (CSV mit mehreren Profilen, Schreiben verweigert), meldet es eine Zeile „n entfernte(s) Profil(e) noch im Ordner — Wiederherstellen“.
-- „ChatGPT fragen“ (Leiste des Blocks und Blatt des aktiven Profils) öffnet ein Feld: das Luftfahrzeug wählen (Profil oder Flottentyp ohne Profil), dann „Prompt kopieren und ChatGPT öffnen“ (ein einziger ChatGPT-Tab, in den der Prompt eingefügt wird). Das Feld folgt dem gewählten („Wählen“, Liste in der Kopfzeile) oder angekreuzten Luftfahrzeug. Der Prompt in der Sprache der Seite bittet, alle Quellen zusammenzutragen (Handbücher, Hersteller, Behörden, Wikipedia, Simulationsforen), in kt, ft, ft/min und kg/h, geschätzte Werte markiert, Motorkennfeld inklusive; er nennt auch, was die Suite schon weiß (EUROCONTROL, SimBrief, Airframe DB, aktuelles Profil), damit ChatGPT ergänzt statt wiederholt. „Prompt anzeigen“ zeigt ihn. Die Antwort (das JSON oder ein Leistungs-CSV) unter der Schaltfläche einfügen, dann „Als neues Profil importieren“ („<Name> — ChatGPT“) oder „Mit „…“ zusammenführen“ (die Antwort trägt das heutige Datum: sie gewinnt Feld für Feld, leere Felder werden ergänzt; zuerst die Vorschau der Änderungen, Angaben zum Ankreuzen). Unbekannte Schlüssel und unlesbare oder außerhalb des Bereichs liegende Werte werden verworfen und gemeldet; geschätzte Werte erscheinen unter „Fehlende Daten“ („geschätzt: …“) und gelten nicht mehr als geschätzt, sobald Sie sie von Hand ändern (Blatt oder Motorkennfeld). Typ und Name kommen aus der Antwort (das gewählte Luftfahrzeug ist nur ein Ersatz); beschreibt die Antwort einen anderen Typ, entscheidet eine Frage: als der eine oder der andere importieren, oder beim Zusammenführen: neues Profil oder trotzdem zusammenführen. Ein CSV mit Kommas oder Semikolons wird angenommen.
+- „ChatGPT fragen“ (Leiste des Blocks und Blatt des aktiven Profils) öffnet ein Feld: das Luftfahrzeug wählen (Profil oder Flottentyp ohne Profil), dann „Prompt kopieren und ChatGPT öffnen“ (ein einziger ChatGPT-Tab, in den der Prompt eingefügt wird). Das Feld folgt dem geöffneten („Bearbeiten“) oder angekreuzten Blatt. Der Prompt in der Sprache der Seite bittet, alle Quellen zusammenzutragen (Handbücher, Hersteller, Behörden, Wikipedia, Simulationsforen), in kt, ft, ft/min und kg/h, geschätzte Werte markiert, Motorkennfeld inklusive; er nennt auch, was die Suite schon weiß (EUROCONTROL, SimBrief, Airframe DB, aktuelles Profil), damit ChatGPT ergänzt statt wiederholt. „Prompt anzeigen“ zeigt ihn. Die Antwort (das JSON oder ein Leistungs-CSV) unter der Schaltfläche einfügen, dann „Als neues Profil importieren“ („<Name> — ChatGPT“) oder „Mit „…“ zusammenführen“ (die Antwort trägt das heutige Datum: sie gewinnt Feld für Feld, leere Felder werden ergänzt; zuerst die Vorschau der Änderungen, Angaben zum Ankreuzen). Unbekannte Schlüssel und unlesbare oder außerhalb des Bereichs liegende Werte werden verworfen und gemeldet; geschätzte Werte erscheinen unter „Fehlende Daten“ („geschätzt: …“) und gelten nicht mehr als geschätzt, sobald Sie sie von Hand ändern (Blatt oder Motorkennfeld). Typ und Name kommen aus der Antwort (das gewählte Luftfahrzeug ist nur ein Ersatz); beschreibt die Antwort einen anderen Typ, entscheidet eine Frage: als der eine oder der andere importieren, oder beim Zusammenführen: neues Profil oder trotzdem zusammenführen. Ein CSV mit Kommas oder Semikolons wird angenommen.
 
 ### Triebwerksleistung — Drehzahl / Leistung / Verbrauch
 
@@ -1566,20 +1593,6 @@ Dieser Block gleicht das aktive Profil mit einem echten SimBrief-Flugplan ab. Bl
 
 „Kalibrierungsnachweis“ (in diesem Block) zeigt die zuletzt angewandte Kalibrierung; sonst „Keine OFP-Kalibrierung“.
 
-### Vertikalprofil
-
-Dieser Block zeichnet einen Schnitt entlang des Flugplans der Planung: Gelände, Lufträume, Hindernisse, Flugbahn (TOC, TOD). Block der Stufe Experte.
-
-1. Prüfen Sie den Flugplan in „Kraftstoffplanung“.
-2. Wählen Sie das „Anzeigeprofil (Studio)“: Es sind dieselben Profile wie in den Flugkarten.
-3. Stellen Sie „Untergrenze (ft)“ und „Obergrenze (ft, 0 = auto)“ ein.
-4. Klicken Sie auf „Profil zeichnen“.
-
-Der Steigflug folgt dem Leistungsmodell des aktiven Flugzeugs; der Sinkflug folgt seiner Sinkrate. Ein Plan ohne Flughöhe (VFR) hat keine Flugbahn.
-Ein importiertes SimBrief-OFP füllt die Route und zeichnet das Profil von selbst.
-Sie brauchen die SIA-Datenbank dieses Browsers, gelesen in den Flugkarten (Block „SIA-Datenbank“) oder unter Einstellungen › Wartung. Ohne sie werden nur Punkte in Koordinaten erkannt, ohne Lufträume.
-Das Gelände stammt aus einem Geländemodell von etwa 150 m: Die ASFC-Grenzen folgen diesem Modell, nicht dem wirklichen Boden.
-
 ### OFP-Prüfung — Roh- und berechnete Werte
 
 Diese Tabelle vergleicht Phase für Phase die im OFP gelesenen und die neu berechneten Werte: „Zeit“, „Distanz“, „Kraftstoff“, „Berechneter Verbrauch“, „TAS / GS“, „Variometer“. Block der Stufe Experte.
@@ -1594,16 +1607,6 @@ Dieser Block zeigt den Rohinhalt der zuletzt importierten Datei (SimBrief-OFP od
 - „Leeren“: leert die Anzeige (das Profil wird nicht berührt).
 
 Ohne Import: „Kein JSON geladen.“
-
-## Leistungsblätter
-<!-- page: apps/planner/performance_sheets.html -->
-
-Diese Seite (Seitenleiste „Werkzeuge“, ab der Stufe Konzeption) verwaltet die Leistungsblätter Ihrer Luftfahrzeuge: Jede Aktion, die ein Blatt anlegt oder ändert, geht von hier aus. Kraftstoff nutzt sie für die Planung; „Meine Luftfahrzeuge“ (Einstellungen › Mein Profil › Luftfahrzeuge und Simulatoren) sagt, welche Luftfahrzeuge Sie besitzen. Beide Seiten lesen dieselbe Datenbank dieses Browsers und denselben Leistungsordner: Ein hier gespeichertes Blatt übernimmt eine in einem anderen Tab geöffnete Kraftstoff-Seite sofort.
-
-- Kopfzeile: „Blatt in Bearbeitung“, das gerade geänderte Blatt (in der Tabelle gewählt, nicht in der Kopfzeile), und „Letzten SimBrief-FPL abrufen“ für die Kalibrierung.
-- „Leistungsprofile“: die Tabelle Ihrer Luftfahrzeuge und Blätter mit Suche, Sortierung, Gruppen, „Luftfahrzeug hinzufügen“, „Importieren…“, „Ordner…“, „Neu lesen“, „Zusammenführen“, „Exportieren“, „Im Ordner speichern“, „Löschen“, „ChatGPT fragen“ und, für ein Luftfahrzeug ohne Blatt, „Aus SimBrief anlegen“, „ChatGPT fragen“, „Aus der Klasse schätzen“. „Bearbeiten“ öffnet ein Blatt im Editor („in Bearbeitung“ in seiner Zeile).
-- Blöcke des bearbeiteten Blatts (Stufe Experte): „Triebwerksleistung — RPM / Leistung / Verbrauch“, „Tabelle RPM / Leistung → Verbrauch“, „Flugregime — Profil ↔ Motorkennfeld“ (SimBrief-Airframe), „Profildaten — JSON ⇄ Little Navmap“ (der Editor aller Felder, „Aus SimBrief aktualisieren“), „Motorkennfeld — Bearbeitung“, „SimBrief-Kalibrierung aus OFP“, „Kalibrierungsverlauf“, „OFP-Prüfung“ und „Importiertes JSON / SimBrief“. Jeder ist im Kapitel „Kraftstoff“ beschrieben.
-- Die untere Leiste trägt „Lokale Datenbank neu laden“, „Profil speichern“ und „Dieses Luftfahrzeug löschen“, wie unter Kraftstoff.
 
 ## Landungen
 <!-- page: apps/landing/LandingPerformance_Dashboard_MultiCSV_i18n.html -->

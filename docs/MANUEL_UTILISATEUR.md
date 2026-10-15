@@ -391,7 +391,7 @@ Les préférences sont gardées dans votre fiche utilisateur, partagée avec le 
 
 ### Appareils et simulateurs
 
-« Mes appareils » : vos appareils, flotte comprise — ceux que vous possédez dans votre simulateur et ceux que vous maîtrisez —, et vos simulateurs. Le Centre s'en sert pour vous affecter un appareil et pour réunir des pilotes sur un simulateur commun. C'est la même liste que le bloc « Profils de performances » du Carburant, qui en montre les performances : mêmes appareils, même ordre, même nom.
+« Mes appareils » : vos appareils, flotte comprise — ceux que vous possédez dans votre simulateur et ceux que vous maîtrisez —, et vos simulateurs. Le Centre s'en sert pour vous affecter un appareil et pour réunir des pilotes sur un simulateur commun. C'est la même liste que le bloc « Profils de performances » de la page « Fiches de performances », qui en montre les performances : mêmes appareils, même ordre, même nom.
 
 **Carte « Mes appareils »** : un résumé (« … type(s) maîtrisé(s), … possédé(s) sur … types de la flotte. »), puis une sous-carte par catégorie (hélicoptères, turbopropulseurs, réacteurs, pistons), avec un tableau :
 
@@ -400,7 +400,7 @@ Les préférences sont gardées dans votre fiche utilisateur, partagée avec le 
 | « Appareil » | Silhouette, nom en gras, désignateur OACI et classe en petit |
 | « Variantes de la flotte » | Variantes présentes dans la flotte |
 | « Appareils » | Nombre d'appareils en service (sur le total) et leurs bases |
-| « Performances » | Pour un appareil possédé : source de son profil dans le Carburant (lien qui l'ouvre sur cet appareil), ou « aucune » et les façons d'en créer un |
+| « Performances » | Pour un appareil possédé : un lien — la source de sa fiche, qui ouvre la page « Fiches de performances » sur cet appareil, ou « aucune » et les façons d'en créer une, qui ouvrent cette même page |
 | « Possédé » | Vous avez ce type dans votre simulateur |
 | « Maîtrisé » | Vous le pilotez avec aisance |
 
@@ -417,9 +417,9 @@ Il n'y a pas de bouton « Enregistrer » : chaque coche est gardée aussitôt da
 ### Ajouter un appareil et ses performances
 
 Pour voler sur un appareil que la suite ne connaît pas encore, par exemple un CL-415 sans performances :
-1. Ajoutez-le par son nom : Paramètres › Mon profil › Appareils et simulateurs, carte « Autres appareils », ou bouton « Ajouter un appareil » du bloc « Profils de performances » du Carburant (la même fenêtre d'ajout). Il rejoint « Mes appareils ».
+1. Ajoutez-le par son nom : Paramètres › Mon profil › Appareils et simulateurs, carte « Autres appareils », ou bouton « Ajouter un appareil » de la page « Fiches de performances » (la même fenêtre d'ajout). Il rejoint « Mes appareils ».
 2. Sa ligne affiche « Performances : aucune » et trois boutons, dans cet ordre : « Créer depuis SimBrief » (seulement si SimBrief connaît le type), « Demander à ChatGPT » (profil vide et panneau ChatGPT ouvert dessus), « Estimer par la classe » (profil minimal tiré de la classe OACI du type : consommation, TAS et plafond, marqués « estimé » ; un appareil sans désignateur n'a pas de classe : rattachez-le d'abord à son type).
-3. Le profil créé est rattaché à l'appareil et le Carburant s'ouvre dessus (depuis Paramètres, le bouton ouvre le Carburant). Complétez-le ensuite (montée, descente), fusionnez-le avec un autre profil ou remplacez-le par un import.
+3. La fiche créée est rattachée à l'appareil et la page « Fiches de performances » s'ouvre dessus (depuis Paramètres, le bouton ouvre cette page). Complétez-la ensuite (montée, descente), fusionnez-la avec une autre fiche ou remplacez-la par un import. Le Carburant la propose ensuite dans son menu « Avion ».
 
 ### Altitude sans oxygène (avions non pressurisés)
 
@@ -1469,8 +1469,8 @@ C'est le même bloc que Paramètres › Maintenance › Données aéronautiques.
 
 Le planificateur carburant (titre « Carburant ») calcule le carburant d'un vol à partir du profil de performances de votre appareil. La consommation de croisière vient, dans l'ordre, de votre saisie pour ce vol, du profil enregistré, du modèle de Poll et Schumann (avions de ligne à réaction, selon la masse, le niveau et le Mach), de SimBrief, puis d'une estimation par type ou classe OACI ; une valeur approchée est marquée ≈. Pour un type sans fiche EUROCONTROL ni SimBrief (militaires, hélicoptères), l'estimation reprend la TAS de croisière et le plafond publiés par Airframe DB quand il les connaît. Il aide aussi à choisir le niveau de vol et la façon d'y monter.
 Pour y aller : barre latérale « Outils », onglet « Carburant », bouton « Carburant (planificateur) » d'une mission dans Mes missions, ou bouton « Carburant » des Cartes de vol. La route, la distance, le niveau et l'appareil sont alors repris.
-En-tête : menu « Avion », bouton « Récupérer dernier FPL SimBrief », « Unités : kg / lbs ». Les imports et exports sont dans le menu ☰.
-Selon le niveau d'utilisation : aux niveaux 1 à 3 (Équipage, Planification, Conception), la page montre l'avion, le plan de vol (et « Récupérer dernier FPL SimBrief »), le repli « Paramètres du vol », « Calculer » et le Résultat, sur deux colonnes ; le menu ☰ n'y garde qu'exporter et importer les préférences. Courbes, panneaux, instruments, blocs du profil, barre d'état et actions de profils du menu ☰ s'ajoutent au niveau Expert, où la page est complète.
+En-tête : menu « Avion » (les fiches de performances existantes), bouton « Récupérer dernier FPL SimBrief », « Unités : kg / lbs ». Le Carburant fait le devis et seulement le devis : les fiches se créent et se modifient dans « Fiches de performances » (chapitre suivant), les appareils se déclarent dans « Mes appareils » (Paramètres › Mon profil › Appareils et simulateurs).
+Selon le niveau d'utilisation : aux niveaux 1 à 3 (Équipage, Planification, Conception), la page montre l'avion, le plan de vol (et « Récupérer dernier FPL SimBrief »), le repli « Paramètres du vol », « Calculer » et le Résultat, sur deux colonnes ; le menu ☰ n'y garde qu'exporter et importer les préférences. Courbes, panneaux, instruments et profil vertical s'ajoutent au niveau Expert, où la page est complète.
 Sur écran large, au niveau Expert, la page a trois colonnes (saisie et courbes | Résultat et panneaux | instruments) : glissez les poignées entre colonnes pour régler leur largeur ; double-clic : largeurs par défaut.
 
 <!-- capture-manuels: utilisateur-carburant -->
@@ -1478,17 +1478,13 @@ Sur écran large, au niveau Expert, la page a trois colonnes (saisie et courbes 
 
 *Figure 9 — Carburant : paramètres du trajet, consignes de montée et résultat du devis pour un DHC-8-400 / Q400.*
 
-### Choisir l'avion et enregistrer le profil
+### Choisir l'avion
 
-1. Cliquez sur le bouton d'avion de l'en-tête (« Aucun avion » au départ) : une liste s'ouvre, une ligne par appareil (icône, nom, type, source du profil, état).
-2. Choisissez un appareil à la souris, ou avec les flèches puis Entrée ; Échap ferme la liste.
-3. Un type de la flotte sans profil crée un profil vide : ses performances sont à renseigner (voir aussi « Profils de performances »).
+1. Cliquez sur le bouton d'avion de l'en-tête (« Aucun avion » au départ) : la liste ne montre que les appareils qui ont une fiche de performances, ceux de « Mes appareils » en tête, puis les autres par catégorie (icône, nom, type, source de la fiche, état).
+2. Choisissez un appareil à la souris, ou avec les flèches puis Entrée ; Échap ferme la liste. « Gérer les fiches de performances ↗ », en bas de la liste, ouvre la page des fiches.
+3. Ouvert sur un appareil sans fiche (bouton d'une mission, adresse `?aircraft=`), le devis affiche « Pas de fiche de performances pour … — ouvrir les Fiches de performances ↗ » : le lien ouvre la page des fiches sur cet appareil, où la créer.
 
-La barre en bas de page indique « Profil enregistré — … » ou « Modifications non enregistrées — … ». Elle porte « Recharger la base locale », « Enregistrer le profil » et « Supprimer cet avion ». Cette barre n'apparaît qu'au niveau Expert.
-Si vous changez d'avion avec des modifications non enregistrées, la page propose « Rester », « Abandonner et changer » ou « Enregistrer et changer ».
-Menu ☰ : importer profils / CSV / JSON (dont `.lnmperf` de Little Navmap), importer un airframe SimBrief, choisir le dossier performances, exporter le profil `.lnmperf` ou JSON, enregistrer la base locale, restaurer la sauvegarde précédente, exporter ou importer les préférences. Ces actions sont du niveau Expert, sauf exporter et importer les préférences.
-« Enregistrer la base locale » écrit `flight_performance_database.fpdb.json` dans le dossier performances (sinon, téléchargement) ; « Restaurer la sauvegarde précédente » reprend l'état d'avant le dernier enregistrement.
-Un import qui retombe sur un profil existant (même identifiant, le plus souvent le type OACI) le met à jour : les valeurs importées l'emportent, les champs qu'il laisse vides gardent l'ancienne valeur, les tables RPM sont réunies (unités converties).
+La fiche choisie reste visible en lecture seule dans le Résultat (groupe repliable « Régimes de vol — profil ↔ cartographie »), avec « Modifier cette fiche dans les Fiches de performances ↗ ». Une fiche enregistrée dans les Fiches de performances ouvertes dans un autre onglet est reprise aussitôt, et le devis refait.
 
 ### Devis carburant
 
@@ -1540,18 +1536,49 @@ Ce bloc, dans la colonne de droite, suit la page pendant que vous faites défile
 - « Block fuel » (en fourchette si le vent est inconnu), « Temps de vol », « TOD ».
 - Ligne d'état « Calculé pour <avion> à <heure> : <distance> NM au FL…, temps de vol, TOD. Consommation de croisière : … », puis base du calcul : niveau, montée retenue et origine de la consommation de croisière (« profil enregistré », « saisie pour ce vol », « Poll-Schumann, 70 t à mi-croisière, FL350, M0,78 », « SimBrief », « estimation… »). Sans consommation connue, « Carburant bloc » affiche « — » : saisissez la consommation dans le devis.
 - Détail : taxi, montée, croisière, descente, contingence, réserve ; masse au décollage prévue et MTOW si vous l'avez saisie (en rouge si elle est dépassée).
-- Groupe repliable « Régimes de vol — profil ↔ cartographie » (niveau Expert) : Badin, vario, régime moteur et débit par phase, comparés à la cartographie moteur. Il contient aussi le champ « SimBrief Airframe Internal ID » et les liens vers les fiches des appareils de ce type.
-  « Importer airframe SimBrief » lit ce champ (identifiant ou lien de partage) : liste publique de SimBrief, puis lien de partage ; un airframe privé illisible ne donne qu'un profil partiel, avec son seul identifiant.
+- Groupe repliable « Régimes de vol — profil ↔ cartographie » (niveau Expert) : la fiche de l'appareil en lecture seule — Badin, vario, régime moteur et débit par phase, comparés à la cartographie moteur, liens vers les fiches des appareils de ce type — et « Modifier cette fiche dans les Fiches de performances ↗ ».
 
 « Épingler » garde le bloc entier quand il suit la page ; sinon, il se replie. « Vue simple » masque les courbes et les instruments, « Vue détaillée » les montre (choix gardé dans ce navigateur). Au niveau Expert, sous le bloc, un panneau par graphe (décision du niveau, montée) donne l'essentiel en trois lignes ; « En savoir plus » déplie la lecture et les hypothèses du modèle. Le bandeau d'instruments (niveau Expert) reprend badin, altimètre, vario, chronomètre (temps de montée), carburant et temps de vol.
-Dans les panneaux et les messages, un nom de champ souligné est un lien : il déplie l'éditeur du profil au besoin et montre le champ. Un niveau « inatteignable » donne sa cause et le champ à corriger (bloc « Limites »).
+Dans les panneaux et les messages, un nom de champ souligné désigne un champ de la fiche (à modifier dans les Fiches de performances). Un niveau « inatteignable » donne sa cause et le champ à corriger (bloc « Limites »).
 Un clic sur le cadran carburant (ou son bouton) change la courbe lue, dans sa couleur : montée choisie, profil, croisière économique, montée rapide, Vy, montée économique ; choix gardé dans ce navigateur.
+
+### Profil vertical
+
+Ce bloc dessine une coupe le long du plan de vol du devis : relief, espaces aériens, obstacles, trajectoire (TOC, TOD). Bloc du niveau Expert.
+
+1. Vérifiez le plan de vol dans « Devis carburant ».
+2. Choisissez le « Profil d'affichage (studio) » : ce sont les mêmes profils que dans les Cartes de vol.
+3. Réglez « Plancher (ft) » et « Plafond (ft, 0 = auto) ».
+4. Cliquez sur « Tracer le profil ».
+
+La montée suit le modèle de performances de l'avion actif ; la descente suit son vario. Un plan sans niveau (VFR) n'a pas de trajectoire.
+Un OFP SimBrief importé remplit la route et trace le profil tout seul.
+Il faut la base SIA de ce navigateur, lue dans les Cartes de vol (bloc « Base de données SIA ») ou dans Paramètres › Maintenance. Sans elle, seuls les points en coordonnées sont reconnus, sans espaces aériens.
+Le relief vient d'un modèle de terrain d'environ 150 m : les limites ASFC suivent ce modèle, pas le sol réel.
+
+## Fiches de performances
+<!-- page: apps/planner/performance_sheets.html -->
+
+Cette page (barre latérale « Outils », à partir du niveau Conception) gère les fiches de performances de vos appareils : c'est d'elle que partent toutes les actions qui créent ou modifient une fiche. Le Carburant s'en sert pour le devis ; « Mes appareils » (Paramètres › Mon profil › Appareils et simulateurs) dit quels appareils vous possédez. Les deux pages lisent la même base de ce navigateur et le même dossier performances : une fiche enregistrée ici est reprise aussitôt par un Carburant ouvert dans un autre onglet.
+
+- En-tête : « Fiche en cours », la fiche qu'on modifie (on la choisit dans le tableau, pas dans l'en-tête), et « Récupérer dernier FPL SimBrief » pour la calibration.
+- « Profils de performances » : le tableau de vos appareils et de vos fiches, avec la recherche, le tri, les groupes, « Ajouter un appareil », « Importer… », « Dossier… », « Relire », « Fusionner », « Exporter », « Enregistrer dans le dossier », « Supprimer », « Demander à ChatGPT » et, pour un appareil sans fiche, « Créer depuis SimBrief », « Demander à ChatGPT », « Estimer par la classe ». « Modifier » ouvre une fiche dans l'éditeur (« en cours » sur sa ligne).
+- Blocs de la fiche en cours (niveau Expert) : « Performances moteur — RPM / puissance / consommation », « Table RPM / puissance → consommation », « Régimes de vol — profil ↔ cartographie » (airframe SimBrief), « Données du profil — JSON ⇄ Little Navmap » (l'éditeur de tous les champs, « Mettre à jour depuis SimBrief »), « Cartographie moteur — édition », « Calibration SimBrief depuis OFP », « Traçabilité de calibration », « Audit OFP » et « JSON importé / SimBrief », décrits ci-dessous.
+- Une fiche enregistrée ici est reprise aussitôt par un Carburant ouvert dans un autre onglet (la fiche qu'il affiche, et son devis).
+
+### Barre du bas et menu ☰
+
+La barre en bas de page indique « Profil enregistré — … » ou « Modifications non enregistrées — … ». Elle porte « Recharger la base locale », « Enregistrer le profil » et « Supprimer cet avion ». Cette barre n'apparaît qu'au niveau Expert.
+Si vous ouvrez une autre fiche (« Modifier ») avec des modifications non enregistrées, la page propose « Rester », « Abandonner et changer » ou « Enregistrer et changer ».
+Menu ☰ : importer profils / CSV / JSON (dont `.lnmperf` de Little Navmap), importer un airframe SimBrief, choisir le dossier performances, exporter le profil `.lnmperf` ou JSON, enregistrer la base locale, restaurer la sauvegarde précédente, exporter ou importer les préférences. Ces actions sont du niveau Expert, sauf exporter et importer les préférences.
+« Enregistrer la base locale » écrit `flight_performance_database.fpdb.json` dans le dossier performances (sinon, téléchargement) ; « Restaurer la sauvegarde précédente » reprend l'état d'avant le dernier enregistrement.
+Un import qui retombe sur un profil existant (même identifiant, le plus souvent le type OACI) le met à jour : les valeurs importées l'emportent, les champs qu'il laisse vides gardent l'ancienne valeur, les tables RPM sont réunies (unités converties).
 
 ### Profils de performances
 
-Ce bloc (à partir du niveau Conception) est la face performances de « Mes appareils » (Paramètres › Mon profil › Appareils et simulateurs) : mêmes appareils, même ordre, même nom. Sous le titre, « Appareils : Mes appareils ↗ » ouvre cette liste dans Paramètres.
+Ce bloc (à partir du niveau Conception), le premier de la page, est la face performances de « Mes appareils » (Paramètres › Mon profil › Appareils et simulateurs) : mêmes appareils, même ordre, même nom. Sous le titre, « Appareils : Mes appareils ↗ » ouvre cette liste dans Paramètres.
 - Une ligne par appareil, groupées par catégorie (hélicoptères, turbopropulseurs, réacteurs, pistons) avec un en-tête de groupe repliable ; « Trier par » : catégorie, nom ou source. Viennent ensuite les profils enregistrés hors de « Mes appareils », marqués « pas dans « Mes appareils » ». Sans « Mes appareils » (trigramme non réglé, rien de déclaré), le bloc montre les profils et les types de la flotte.
-- Colonnes : « Appareil » (silhouette, nom en gras, désignateur et classe en petit, comme dans Paramètres), « Performances » (source du profil : `.lnmperf`, SimBrief, ChatGPT, JSON, saisie, estimé par la classe ; ou « aucune » et ses trois boutons), « Carto. » (cartographie moteur), « Conso. croisière » et son origine, « Plafond », « Manques », puis « Choisir » (« actif » pour l'appareil choisi).
+- Colonnes : « Appareil » (silhouette, nom en gras, désignateur et classe en petit, comme dans Paramètres), « Performances » (source du profil : `.lnmperf`, SimBrief, ChatGPT, JSON, saisie, estimé par la classe ; ou « aucune » et ses trois boutons), « Carto. » (cartographie moteur), « Conso. croisière » et son origine, « Plafond », « Manques », puis « Modifier » (« en cours » pour la fiche ouverte dans l'éditeur).
 - « Ajouter un appareil » ouvre la même fenêtre d'ajout que Paramètres (voir « Ajouter un appareil et ses performances ») ; l'appareil ajouté arrive avec « aucune » et ses trois boutons : « Créer depuis SimBrief » (si SimBrief connaît le type), « Demander à ChatGPT », « Estimer par la classe ».
 - Un désignateur déclaré sous plusieurs variantes (CL2T : « Canadair CL-415 », « Canadair CL-215T ») n'a qu'une ligne, au nom du type : les performances sont celles du type, les variantes ne changent rien ici. Un appareil qui a plusieurs profils a une ligne par profil, chacune sous le nom du profil.
 - La case en tête de colonne coche ou décoche toutes les lignes affichées ; les bords des titres se glissent pour régler la largeur des colonnes (double-clic : largeurs par défaut).
@@ -1559,7 +1586,7 @@ Ce bloc (à partir du niveau Conception) est la face performances de « Mes appa
 - « Importer… » (`.lnmperf`, JSON, CSV), « Dossier… » (dossier performances), « Relire ». Le dossier est relu de lui-même quand il change ailleurs (Paramètres, autre onglet).
 - Dans la fiche du profil actif, « Mettre à jour depuis SimBrief » reprend la fiche SimBrief du type (consommation de croisière, masses, plafond, vitesse) en gardant vos saisies ; face à un profil perso, il propose « Mettre à jour les champs vides », « Fusionner » (la fiche compte comme un profil daté de sa récupération : le plus récent gagne champ par champ, les vides sont comblés), « Remplacer » (valeurs SimBrief à la place, le reste gardé) ou « Nouveau profil ». Quand des champs changent, un aperçu les montre avant de valider. « Supprimer cet avion », dans la même fiche, retire le profil actif.
 - Les cases devant les noms sélectionnent des profils pour la barre du bloc : « Fusionner (n) » (deux profils au moins du même type, ou un seul quand SimBrief connaît le type : la case « Inclure la fiche SimBrief du type », cochée d'avance, l'ajoute aux sources ; nom choisi, celui du plus complet par défaut ; le plus récent gagne champ par champ, les autres comblent ses manques, la cartographie moteur réunit leurs lignes ; la fenêtre montre d'abord les changements — valeur actuelle, valeur retenue et sa source, champs inchangés repliés, lignes de cartographie ajoutées ou remplacées ; une case par donnée qui change (décochée : la valeur actuelle est gardée), « Tout reprendre » / « Ne rien reprendre », et le bouton dit ce qui sera repris, « Fusionner (7 champs, 1 ligne de cartographie) » ; la note de fusion ne liste que ce qui a été repris ; la notification dit ce qui a été repris de chaque source, « Annuler » 10 s), « Exporter (n) » (un fichier téléchargé par profil : `.lnmperf` si le profil est complet, sinon JSON), « Enregistrer dans le dossier (n) » (un fichier JSON par profil dans le dossier performances, nommé d'après le profil) et « Supprimer (n) » (une confirmation, un seul message pour le lot avec « Annuler » pendant 10 s ; un profil du dossier performances en est aussi retiré : base exportée réécrite sans lui, fichier d'un seul profil renommé .bak ; « Annuler » remet aussi les fichiers ; si le dossier n'est pas accessible en écriture, le profil reviendra à la prochaine relecture). « Dossier… » et « Relire » reprennent tout ce que le dossier contient ; tant qu'un profil supprimé y reste (CSV à plusieurs profils, écriture refusée), une ligne « n profil(s) retiré(s) encore dans le dossier — Restaurer » le signale.
-- « Demander à ChatGPT » (barre du bloc, et fiche du profil actif) ouvre un panneau : choisir l'appareil (profil, ou type de la flotte sans profil), puis « Copier le prompt et ouvrir ChatGPT » (un seul onglet ChatGPT, où coller le prompt). Le panneau suit l'appareil choisi (« Choisir », liste de l'en-tête) ou coché. Le prompt, dans la langue de la page, demande de compiler toutes les sources (manuels, constructeur, autorités, Wikipédia, forums de simulation), en kt, ft, ft/min et kg/h, valeurs estimées marquées, cartographie moteur comprise ; il donne aussi ce que la suite sait déjà (EUROCONTROL, SimBrief, Airframe DB, profil actuel) pour que ChatGPT complète plutôt que répète. « Voir le prompt » le montre. Coller la réponse (le JSON, ou un CSV de performances) sous le bouton, puis « Importer comme nouveau profil » (« <nom> — ChatGPT ») ou « Fusionner avec « … » » (la réponse est datée du jour : elle gagne champ par champ, les vides sont comblés ; aperçu des changements d'abord, données à cocher). Les clés inconnues et les valeurs illisibles ou hors plage sont écartées et signalées ; les valeurs estimées apparaissent sous « Données manquantes » (« estimé : … ») et ne le sont plus dès que vous les changez à la main (fiche ou cartographie). Le type et le nom viennent de la réponse (l'appareil choisi n'est qu'un repli) ; si la réponse décrit un autre type, une question tranche : importer comme l'un ou l'autre, ou, pour une fusion, nouveau profil ou fusionner quand même. Un CSV à virgules ou à points-virgules est accepté.
+- « Demander à ChatGPT » (barre du bloc, et fiche du profil actif) ouvre un panneau : choisir l'appareil (profil, ou type de la flotte sans profil), puis « Copier le prompt et ouvrir ChatGPT » (un seul onglet ChatGPT, où coller le prompt). Le panneau suit la fiche ouverte (« Modifier ») ou cochée. Le prompt, dans la langue de la page, demande de compiler toutes les sources (manuels, constructeur, autorités, Wikipédia, forums de simulation), en kt, ft, ft/min et kg/h, valeurs estimées marquées, cartographie moteur comprise ; il donne aussi ce que la suite sait déjà (EUROCONTROL, SimBrief, Airframe DB, profil actuel) pour que ChatGPT complète plutôt que répète. « Voir le prompt » le montre. Coller la réponse (le JSON, ou un CSV de performances) sous le bouton, puis « Importer comme nouveau profil » (« <nom> — ChatGPT ») ou « Fusionner avec « … » » (la réponse est datée du jour : elle gagne champ par champ, les vides sont comblés ; aperçu des changements d'abord, données à cocher). Les clés inconnues et les valeurs illisibles ou hors plage sont écartées et signalées ; les valeurs estimées apparaissent sous « Données manquantes » (« estimé : … ») et ne le sont plus dès que vous les changez à la main (fiche ou cartographie). Le type et le nom viennent de la réponse (l'appareil choisi n'est qu'un repli) ; si la réponse décrit un autre type, une question tranche : importer comme l'un ou l'autre, ou, pour une fusion, nouveau profil ou fusionner quand même. Un CSV à virgules ou à points-virgules est accepté.
 
 ### Performances moteur — RPM / puissance / consommation
 
@@ -1613,20 +1640,6 @@ Ce bloc recale le profil actif sur un plan de vol SimBrief réel. Bloc du niveau
 
 « Traçabilité de calibration » (dans ce bloc) rappelle la dernière calibration appliquée ; sinon « Pas de calibration OFP ».
 
-### Profil vertical
-
-Ce bloc dessine une coupe le long du plan de vol du devis : relief, espaces aériens, obstacles, trajectoire (TOC, TOD). Bloc du niveau Expert.
-
-1. Vérifiez le plan de vol dans « Devis carburant ».
-2. Choisissez le « Profil d'affichage (studio) » : ce sont les mêmes profils que dans les Cartes de vol.
-3. Réglez « Plancher (ft) » et « Plafond (ft, 0 = auto) ».
-4. Cliquez sur « Tracer le profil ».
-
-La montée suit le modèle de performances de l'avion actif ; la descente suit son vario. Un plan sans niveau (VFR) n'a pas de trajectoire.
-Un OFP SimBrief importé remplit la route et trace le profil tout seul.
-Il faut la base SIA de ce navigateur, lue dans les Cartes de vol (bloc « Base de données SIA ») ou dans Paramètres › Maintenance. Sans elle, seuls les points en coordonnées sont reconnus, sans espaces aériens.
-Le relief vient d'un modèle de terrain d'environ 150 m : les limites ASFC suivent ce modèle, pas le sol réel.
-
 ### Audit OFP — valeurs brutes et calculées
 
 Ce tableau compare, phase par phase, les valeurs lues dans l'OFP et les valeurs recalculées : « Temps », « Distance », « Carburant », « FF calculé », « TAS / GS », « Vario ». Bloc du niveau Expert.
@@ -1641,16 +1654,6 @@ Ce bloc affiche le contenu brut du dernier fichier importé (OFP SimBrief ou JSO
 - « Effacer » : vide l'affichage (le profil n'est pas touché).
 
 Sans import : « Aucun JSON chargé. »
-
-## Fiches de performances
-<!-- page: apps/planner/performance_sheets.html -->
-
-Cette page (barre latérale « Outils », à partir du niveau Conception) gère les fiches de performances de vos appareils : c'est d'elle que partent toutes les actions qui créent ou modifient une fiche. Le Carburant s'en sert pour le devis ; « Mes appareils » (Paramètres › Mon profil › Appareils et simulateurs) dit quels appareils vous possédez. Les deux pages lisent la même base de ce navigateur et le même dossier performances : une fiche enregistrée ici est reprise aussitôt par un Carburant ouvert dans un autre onglet.
-
-- En-tête : « Fiche en cours », la fiche qu'on modifie (on la choisit dans le tableau, pas dans l'en-tête), et « Récupérer dernier FPL SimBrief » pour la calibration.
-- « Profils de performances » : le tableau de vos appareils et de vos fiches, avec la recherche, le tri, les groupes, « Ajouter un appareil », « Importer… », « Dossier… », « Relire », « Fusionner », « Exporter », « Enregistrer dans le dossier », « Supprimer », « Demander à ChatGPT » et, pour un appareil sans fiche, « Créer depuis SimBrief », « Demander à ChatGPT », « Estimer par la classe ». « Modifier » ouvre une fiche dans l'éditeur (« en cours » sur sa ligne).
-- Blocs de la fiche en cours (niveau Expert) : « Performances moteur — RPM / puissance / consommation », « Table RPM / puissance → consommation », « Régimes de vol — profil ↔ cartographie » (airframe SimBrief), « Données du profil — JSON ⇄ Little Navmap » (l'éditeur de tous les champs, « Mettre à jour depuis SimBrief »), « Cartographie moteur — édition », « Calibration SimBrief depuis OFP », « Traçabilité de calibration », « Audit OFP » et « JSON importé / SimBrief ». Chacun est décrit dans le chapitre « Carburant ».
-- La barre du bas porte « Recharger la base locale », « Enregistrer le profil » et « Supprimer cet avion », comme dans le Carburant.
 
 ## Atterrissages
 <!-- page: apps/landing/LandingPerformance_Dashboard_MultiCSV_i18n.html -->

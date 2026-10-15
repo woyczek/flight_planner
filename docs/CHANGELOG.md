@@ -50,6 +50,14 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Changed
 
+- **Fuel: the fuel plan only** (docs/technique/V2_FABLE.md § 13, step 2) — the sheet management moved to Performance
+  sheets: the fuel page loses the "Performance profiles" block, the field editor, engine performance and RPM table,
+  engine map, OFP calibration and audit, the ChatGPT panel, the "Performance folder" button, the sheet actions of the ☰
+  menu and the status bar. One aircraft choice, in the header, listing existing sheets only (My aircraft first, then
+  "Manage performance sheets ↗"); without a sheet for the wanted aircraft, a line links to the sheets page
+  (`?aircraft=`); `?create=` is redirected there. The sheet consulted stays read only in the Result (collapsible
+  "Flight regimes" group, "Edit this sheet in Performance sheets ↗"). My aircraft: the "Performance" column links to
+  the sheets page.
 - **Fuel tables: resizable columns, clipped comments, one row per type** — the "Comment" column of the RPM / power
   table no longer stretches it: the comment sits on one line with an ellipsis, the whole text in a tooltip, and a
   double-click unfolds it. The columns of this table and of the performance profiles table can be resized by

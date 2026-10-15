@@ -1664,3 +1664,19 @@ html[data-skeuo] .repo-block-tools .fp-result-pin[aria-pressed="true"]:not(#imp)
     cursor: default
   }
 }
+
+/* ---- Carburant : ligne « pas de fiche pour cet appareil », lien « Gérer les fiches » du menu des appareils ---- */
+@layer app {
+  .no-sheet:not([hidden]) {
+    margin: 4px 0 10px;
+    padding: 6px 10px;
+    border-left: 3px solid var(--warn, #e0a030);
+    background: color-mix(in srgb, var(--warn, #e0a030) 10%, transparent)
+  }
+  .aircraft-menu .aircraft-manage {
+    display: block;
+    padding: 8px 10px;
+    border-top: 1px solid var(--line, #3335);
+    font-weight: 600
+  }
+}

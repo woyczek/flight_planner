@@ -596,7 +596,16 @@ function isPristineInput(el) {
 }
 /** Rend un profil actif : copie normalisée, complétée par la version stockée ; mise à jour de l'en-tête, de la fiche, de l'état « modifié », enregistrement et recalcul du devis. source : texte d'origine affiché. */
 function setActive(p, source = "local") {
+  if (PERF_PAGE === "fuel") noSheetLine("");
   active = normalize(structuredClone(p));
+  // Carburant : la fiche consultée se modifie dans les Fiches de performances
+  const edit = document.getElementById("editSheetLink");
+  if (edit) {
+    edit.href = `performance_sheets.html?aircraft=${encodeURIComponent(active.id)}`;
+    edit.textContent = kt(["Modifier cette fiche dans les Fiches de performances ↗", "Edit this sheet in Performance sheets ↗",
+      "Dieses Blatt in den Leistungsblättern bearbeiten ↗", "Modificar esta ficha en las Fichas de rendimiento ↗"
+    ])
+  }
   let stored = state.profiles[active.id];
   if (stored && stored !== p && p !== active) fillProfileGaps(active, stored);
   if (!stored) {
@@ -3120,7 +3129,9 @@ function listAircraft() {
     menu = $("aircraftMenu"),
     profiles = Object.values(state.profiles || {}).filter(p => p && typeof p === "object" && String(p.id || p.icao || p.type || p
       .name || "").trim()).map(p => normalize(p));
-  const all = [...profiles, ...landingOnlyAircraft(profiles)].sort((a, b) => {
+  // Carburant : les fiches existantes seulement (pas de type sans fiche), « Mes appareils » en tête ; Fiches de
+  // performances : fiches et types de la flotte sans fiche
+  const all = [...profiles, ...(PERF_PAGE === "sheets" ? landingOnlyAircraft(profiles) : [])].sort((a, b) => {
       let x = profileVisual(a),
         y = profileVisual(b),
         group = ((x[0] === "Autres") - (y[0] === "Autres")) || String(x[0] || "").localeCompare(String(y[0] || ""), "fr");
@@ -3128,12 +3139,20 @@ function listAircraft() {
         numeric: true
       })
     }),
-    groups = new Map();
+    groups = new Map(),
+    mineKeys = new Set((myList || []).map(a => aircraftTypeKey(a.code))),
+    mineNames = new Set((myList || []).map(a => aKey(a.name))),
+    MINE = kt(["Mes appareils", "My aircraft", "Meine Luftfahrzeuge", "Mis aeronaves"]);
+  if (PERF_PAGE === "fuel" && mineKeys.size) groups.set(MINE, []);
   for (const p of all) {
     let g = profileVisual(p);
-    if (!groups.has(g[0])) groups.set(g[0], []);
-    groups.get(g[0]).push([p, g])
+    const mine = PERF_PAGE === "fuel" && ([p.id, p.icao, p.type].some(v => v && mineKeys.has(aircraftTypeKey(v))) || mineNames.has(aKey(p
+      .name)));
+    const key = mine ? MINE : g[0];
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push([p, g])
   }
+  if (groups.get(MINE)?.length === 0) groups.delete(MINE);
   /** Rangée d'un appareil : état « actif », « sans profil », « à compléter (n) » (manques en infobulle) ou « complet ». */
   const row = (p, g) => {
     const i = profileInfo(p),
@@ -3156,8 +3175,10 @@ function listAircraft() {
     return `<div class="aircraft-row aircraft-item${on ? " active" : ""}" role="option" tabindex="-1" aria-selected="${on}" data-id="${esc(p.id)}"${p._landingOnly ? ' data-landing="1"' : ""} title="${esc([p.name || p.id, g[2], tip].filter(Boolean).join(" · "))}"><span>${aircraftIcon(p)}</span><span class="ac-name">${esc(p.name || p.id)}</span><span class="ac-type">${esc(p.type || p.icao || p.id)}</span><span class="ac-src">${esc(profileSourceText(p, i))}</span><span class="ac-state ${cls}">${esc(st)}</span></div>`
   };
   const head = `<div class="aircraft-row aircraft-row-head" role="presentation"><span></span><span>${esc(kt(["Appareil", "Aircraft", "Luftfahrzeug", "Aeronave"]))}</span><span>${esc(kt(["Type", "Type", "Muster", "Tipo"]))}</span><span>${esc(kt(["Profil", "Profile", "Profil", "Perfil"]))}</span><span>${esc(kt(["État", "Status", "Status", "Estado"]))}</span></div>`;
+  // lien vers la page qui gère les fiches (Carburant : la liste ne crée ni ne modifie rien)
+  const manage = PERF_PAGE === "fuel" ? `<a class="aircraft-manage" href="performance_sheets.html">${esc(kt(["Gérer les fiches de performances ↗", "Manage performance sheets ↗", "Leistungsblätter verwalten ↗", "Gestionar las fichas de rendimiento ↗"]))}</a>` : "";
   menu.innerHTML = all.length ? head + [...groups].map(([label, items]) => `<div class="aircraft-group" role="presentation">${esc(label)}</div>` + items.map(([p, g]) => row(p, g)).join("")).join(
-      "") :
+      "") + manage : PERF_PAGE === "fuel" ? `<div class="mut" style="padding:8px">${esc(kt(["Aucune fiche de performances.", "No performance sheet.", "Kein Leistungsblatt.", "Ninguna ficha de rendimiento."]))}</div>${manage}` :
     `<div class="mut" style="padding:8px">${esc(kt(["Aucun avion. Importe un profil, choisis le dossier performances ou charge des atterrissages dans le Landing Performance.",
       "No aircraft. Import a profile, choose the performance folder or load landings in Landing Performance.",
       "Kein Flugzeug. Profil importieren, Leistungsordner wählen oder Landungen in Landing Performance laden.",
@@ -3623,6 +3644,22 @@ function renderPerfProfiles() {
       "Ziehen: Spaltenbreite — Doppelklick: Standardbreiten", "Arrastrar: ancho de la columna — doble clic: anchos por defecto"
     ])
   })
+}
+/** Carburant : ligne « pas de fiche pour cet appareil — ouvrir les Fiches de performances ↗ » (lien ?aircraft=code) en
+ *  tête du devis ; vide : ligne masquée. */
+function noSheetLine(code) {
+  const el = document.getElementById("noSheet");
+  if (!el) return;
+  el.hidden = !code;
+  if (!code) return;
+  const name = window.EquipmentEditor?.myName?.(code) || code;
+  el.innerHTML = `${KIT.esc(ktf(["Pas de fiche de performances pour {n}", "No performance sheet for {n}", "Kein Leistungsblatt für {n}",
+    "Ninguna ficha de rendimiento para {n}"
+  ], {
+    n: name
+  }))} — <a href="performance_sheets.html?aircraft=${encodeURIComponent(code)}">${KIT.esc(kt(["ouvrir les Fiches de performances ↗",
+    "open Performance sheets ↗", "Leistungsblätter öffnen ↗", "abrir las Fichas de rendimiento ↗"
+  ]))}</a>`
 }
 /** Crée le profil de performances d'un appareil qui n'en a pas (code : désignateur ou nom ; name : nom affiché), puis
  *  l'ouvre : how = « simbrief » (fiche SimBrief du type), « gpt » (profil vide et panneau « Demander à ChatGPT »),
@@ -5509,8 +5546,9 @@ function gptRefresh(prompt = true) {
 /** Panneau ChatGPT ouvert : passe à l'appareil e { id, landing } (sélecteur et prompt), sans toucher à la réponse
  *  collée ; panneau refait si l'appareil n'est pas encore dans le sélecteur (profil tout juste créé). */
 function gptFollow(e) {
-  const box = $("ppGptPanel"),
-    sel = $("ppGptFor");
+  // (getElementById : le Carburant n'a pas ce panneau, $ y rendrait un élément fantôme)
+  const box = document.getElementById("ppGptPanel"),
+    sel = document.getElementById("ppGptFor");
   if (!box || box.hidden || !sel || !e?.id) return;
   const v = (e.landing ? "L:" : "P:") + e.id;
   if (sel.value === v) return;
@@ -5627,10 +5665,13 @@ renderPerfProfilesSoon();
     cand = k && !found && landingOnlyAircraft(Object.values(state.profiles || {}).filter(p => p && typeof p === "object").map(p =>
       normalize(p))).find(p => [p.id, p.icao, p.type].some(same)),
     create = params.get("create"),
-    created = !create && cand && newProfileFromLanding(cand.id);
+    created = PERF_PAGE === "sheets" && !create && cand && newProfileFromLanding(cand.id);
+  // Carburant : la création d'une fiche se fait sur la page des Fiches de performances
+  if (PERF_PAGE === "fuel" && create) location.replace(`performance_sheets.html${location.search}`);
   if (found) setActive(found, why);
-  else if (create && wanted) perfCreate(wanted, window.EquipmentEditor?.typeName?.(wanted) || wanted, create);
+  else if (PERF_PAGE === "sheets" && create && wanted) perfCreate(wanted, window.EquipmentEditor?.typeName?.(wanted) || wanted, create);
   else if (created) setActive(created, `${why} (type)`);
+  else if (PERF_PAGE === "fuel" && wanted) noSheetLine(wanted);
   else if (PERF_PAGE === "sheets" && state.lastSheet && state.profiles[state.lastSheet]) setActive(state.profiles[state.lastSheet],
     "état restauré");
   else if (state.lastAircraft && state.profiles[state.lastAircraft]) setActive(state.profiles[state.lastAircraft], "état restauré");

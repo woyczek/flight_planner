@@ -326,5 +326,9 @@ other page reread the sheets (the open sheet is replaced unless it has unsaved c
 ping-pong).
 
 **Steps.** (1) Performance sheets page working with the management blocks; Fuel keeps its own meanwhile (no
-regression) — done. (2) Fuel reduced to the plan, My aircraft as links.
+regression) — done. (2) Fuel reduced to the plan, My aircraft as links — done: the fuel page keeps the plan, the
+result (with the sheet read only, "Edit this sheet in Performance sheets ↗"), the level decision, the climb charts and
+the vertical profile; its "Aircraft" menu lists existing sheets, My aircraft first, then "Manage performance sheets ↗";
+without a sheet, a line links to the sheets page; the ☰ menu and the status bar keep their sheet actions on the sheets
+page only. The shared script stays one file (`flight_planner.js`), no split into modules.
 

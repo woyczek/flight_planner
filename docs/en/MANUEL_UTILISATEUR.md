@@ -369,7 +369,7 @@ The preferences are kept in your user record, shared with the Centre by synchron
 
 ### Aircraft and simulators
 
-“My aircraft”: your aircraft, fleet included — those you own in your simulator and those you master —, and your simulators. The Centre uses them to assign you an aircraft and to bring pilots together on a common simulator. It is the same list as the Fuel tool’s “Performance profiles” block, which shows their performance: same aircraft, same order, same name.
+“My aircraft”: your aircraft, fleet included — those you own in your simulator and those you master —, and your simulators. The Centre uses them to assign you an aircraft and to bring pilots together on a common simulator. It is the same list as the “Performance profiles” block of the “Performance sheets” page, which shows their performance: same aircraft, same order, same name.
 
 **“My aircraft” card**: a summary (“… type(s) mastered, … owned out of … fleet types.”), then one sub-card per category (helicopters, turboprops, jets, pistons), with a table:
 
@@ -378,7 +378,7 @@ The preferences are kept in your user record, shared with the Centre by synchron
 | “Aircraft” | Silhouette, name in bold, ICAO designator and class in small print |
 | “Fleet variants” | Variants present in the fleet |
 | “Aircraft” | Number of aircraft in service (out of the total) and their bases |
-| “Performance” | For an owned aircraft: source of its profile in the Fuel tool (a link that opens it on this aircraft), or “none” and the ways to create one |
+| “Performance” | For an owned aircraft: a link — the source of its sheet, which opens the “Performance sheets” page on this aircraft, or “none” and the ways to create one, which open that same page |
 | “Owned” | You have this type in your simulator |
 | “Mastered” | You fly it with ease |
 
@@ -395,9 +395,9 @@ There is no “Save” button: each tick is kept at once in this browser, then c
 ### Add an aircraft and its performance
 
 To fly an aircraft the suite does not know yet, for example a CL-415 without performance data:
-1. Add it by its name: Settings › My profile › Aircraft and simulators, “Other aircraft” card, or the “Add an aircraft” button of the Fuel tool’s “Performance profiles” block (the same add window). It joins “My aircraft”.
+1. Add it by its name: Settings › My profile › Aircraft and simulators, “Other aircraft” card, or the “Add an aircraft” button of the “Performance sheets” page (the same add window). It joins “My aircraft”.
 2. Its row shows “Performance: none” and three buttons, in this order: “Create from SimBrief” (only if SimBrief knows the type), “Ask ChatGPT” (empty profile and ChatGPT panel opened on it), “Estimate from the class” (minimal profile taken from the type’s ICAO class: fuel flow, TAS and ceiling, marked “estimated”; an aircraft without a designator has no class: link it to its type first).
-3. The created profile is linked to the aircraft and the Fuel tool opens on it (from Settings, the button opens the Fuel tool). Then complete it (climb, descent), merge it with another profile or replace it with an import.
+3. The created sheet is linked to the aircraft and the “Performance sheets” page opens on it (from Settings, the button opens this page). Then complete it (climb, descent), merge it with another sheet or replace it with an import. Fuel then offers it in its “Aircraft” menu.
 
 ### Altitude without oxygen (unpressurised aircraft)
 
@@ -1427,21 +1427,17 @@ It is the same block as Settings › Maintenance › Aeronautical data. The same
 
 The fuel planner (title “Fuel”) calculates the fuel for a flight from the performance profile of your aircraft. The cruise fuel flow comes, in order, from your entry for this flight, the saved profile, the Poll-Schumann model (jet airliners, according to mass, level and Mach), SimBrief, then an estimate by ICAO type or class; an approximate value is marked ≈. For a type without an EUROCONTROL or SimBrief record (military aircraft, helicopters), the estimate uses the cruise TAS and ceiling published by Airframe DB when it knows them. It also helps choose the flight level and how to climb to it.
 To go there: “Tools” in the side bar, “Fuel” tab, the “Fuel (planner)” button of a mission in My missions, or the “Fuel” button of the Flight maps. The route, the distance, the level and the aircraft are then carried over.
-Header: “Aircraft” menu, “Fetch latest SimBrief FPL” button, “Units: kg / lbs”. Imports and exports are in the ☰ menu.
-Depending on the usage level: at levels 1 to 3 (Crew, Planning, Design), the page shows the aircraft, the flight plan (and “Fetch latest SimBrief FPL”), the collapsible “Flight parameters” section, “Calculate” and the Result, in two columns; the ☰ menu only keeps exporting and importing the preferences. Curves, panels, instruments, profile blocks, status bar and the profile actions of the ☰ menu are added at the Expert level, where the page is complete.
+Header: “Aircraft” menu (the existing performance sheets), “Fetch latest SimBrief FPL” button, “Units: kg / lbs”. Fuel makes the fuel plan and only the fuel plan: sheets are created and edited in “Performance sheets” (next chapter), aircraft are declared in “My aircraft” (Settings › My profile › Aircraft and simulators).
+Depending on the usage level: at levels 1 to 3 (Crew, Planning, Design), the page shows the aircraft, the flight plan (and “Fetch latest SimBrief FPL”), the collapsible “Flight parameters” section, “Calculate” and the Result, in two columns; the ☰ menu only keeps exporting and importing the preferences. Curves, panels, instruments and the vertical profile are added at the Expert level, where the page is complete.
 On a wide screen, at the Expert level, the page has three columns (input and curves | Result and panels | instruments): drag the handles between columns to set their width; double-click: default widths.
 
-### Choose the aircraft and save the profile
+### Choose the aircraft
 
-1. Click the aircraft button in the header (“No aircraft” at first): a list opens, one line per aircraft (icon, name, type, profile source, state).
-2. Choose an aircraft with the mouse, or with the arrow keys then Enter; Escape closes the list.
-3. A fleet type without a profile creates an empty profile: its performance must be filled in (see also “Performance profiles”).
+1. Click the aircraft button in the header (“No aircraft” at first): the list only shows the aircraft that have a performance sheet, those of “My aircraft” first, then the others by category (icon, name, type, sheet source, state).
+2. Choose an aircraft with the mouse, or with the arrow keys then Enter; Escape closes the list. “Manage performance sheets ↗”, at the bottom of the list, opens the sheets page.
+3. Opened on an aircraft without a sheet (button of a mission, `?aircraft=` address), the fuel plan shows “No performance sheet for … — open Performance sheets ↗”: the link opens the sheets page on this aircraft, where you can create it.
 
-The bar at the bottom of the page shows “Profile saved — …” or “Unsaved changes — …”. It carries “Reload the local database”, “Save profile” and “Delete this aircraft”. This bar only appears at the Expert level.
-If you change aircraft with unsaved changes, the page offers “Stay”, “Discard and switch” or “Save and switch”.
-☰ menu: import profiles / CSV / JSON (including Little Navmap `.lnmperf`), import a SimBrief airframe, choose the performance folder, export the `.lnmperf` or JSON profile, save the local database, restore the previous backup, export or import the preferences. These actions are at the Expert level, except exporting and importing the preferences.
-“Save the local database” writes `flight_performance_database.fpdb.json` to the performance folder (otherwise, download); “Restore the previous backup” returns to the state before the last save.
-An import that lands on an existing profile (same identifier, usually the ICAO type) updates it: the imported values win, the fields it leaves empty keep the old value, the RPM tables are merged (units converted).
+The chosen sheet stays visible read-only in the Result (collapsible group “Flight regimes — profile ↔ engine map”), with “Edit this sheet in Performance sheets ↗”. A sheet saved in Performance sheets open in another tab is picked up at once, and the fuel plan redone.
 
 ### Fuel plan
 
@@ -1493,18 +1489,49 @@ This block, in the right-hand column, follows the page while you scroll through 
 - “Block fuel” (as a range if the wind is unknown), “Flight time”, “TOD”.
 - Status line “Calculated for <aircraft> at <time>: <distance> NM at FL…, flight time, TOD. Cruise fuel flow: …”, then basis of the calculation: level, climb used and origin of the cruise fuel flow (“saved profile”, “entered for this flight”, “Poll-Schumann, 70 t at mid-cruise, FL350, M0.78”, “SimBrief”, “estimate…”). With no known fuel flow, “Block fuel” shows “—”: enter the fuel flow in the fuel plan.
 - Detail: taxi, climb, cruise, descent, contingency, reserve; planned take-off mass and MTOW if you entered it (in red if it is exceeded).
-- Collapsible group “Flight regimes — profile ↔ map” (Expert level): IAS, climb rate, engine setting and flow per phase, compared with the engine map. It also contains the “SimBrief Airframe Internal ID” field and the links to the sheets of the aircraft of this type.
-  “Import SimBrief airframe” reads this field (identifier or share link): SimBrief's public list, then the share link; an unreadable private airframe only gives a partial profile, with its identifier alone.
+- Collapsible group “Flight regimes — profile ↔ engine map” (Expert level): the aircraft's sheet, read-only — IAS, climb rate, engine setting and flow per phase, compared with the engine map, links to the sheets of the aircraft of this type — and “Edit this sheet in Performance sheets ↗”.
 
 “Pin” keeps the whole block when it follows the page; otherwise, it collapses. “Simple view” hides the curves and instruments, “Detailed view” shows them (choice kept in this browser). At the Expert level, under the block, one panel per chart (level decision, climb) gives the essentials in three lines; “Learn more” unfolds the reading help and the model assumptions. The instrument strip (Expert level) shows IAS, altimeter, climb rate, stopwatch (climb time), fuel and flight time.
-In the panels and messages, an underlined field name is a link: it unfolds the profile editor if needed and shows the field. An “unreachable” level gives its cause and the field to correct (“Limits” block).
+In the panels and messages, an underlined field name refers to a field of the sheet (to be changed in Performance sheets). An “unreachable” level gives its cause and the field to correct (“Limits” block).
 A click on the fuel dial (or its button) changes the curve read, in its colour: chosen climb, profile, economic cruise, fast climb, Vy, economic climb; choice kept in this browser.
+
+### Vertical profile
+
+This block draws a section along the flight plan of the fuel plan: terrain, airspaces, obstacles, trajectory (TOC, TOD). Expert level block.
+
+1. Check the flight plan in “Fuel plan”.
+2. Choose the “Display profile (studio)”: these are the same profiles as in the Flight maps.
+3. Set “Floor (ft)” and “Ceiling (ft, 0 = auto)”.
+4. Click “Draw the profile”.
+
+The climb follows the performance model of the active aircraft; the descent follows its climb rate. A plan without a level (VFR) has no trajectory.
+An imported SimBrief OFP fills in the route and draws the profile on its own.
+You need the SIA database of this browser, read in the Flight maps (“SIA database” block) or in Settings › Maintenance. Without it, only points given as coordinates are recognised, without airspaces.
+The terrain comes from a terrain model of about 150 m: the ASFC limits follow this model, not the actual ground.
+
+## Performance sheets
+<!-- page: apps/planner/performance_sheets.html -->
+
+This page (side bar “Tools”, from the Design level) manages the performance sheets of your aircraft: every action that creates or changes a sheet starts here. Fuel uses them for the fuel plan; “My aircraft” (Settings › My profile › Aircraft and simulators) says which aircraft you own. Both pages read the same database of this browser and the same performance folder: a sheet saved here is picked up at once by a Fuel page open in another tab.
+
+- Header: “Sheet being edited”, the sheet being changed (chosen in the table, not in the header), and “Fetch latest SimBrief FPL” for calibration.
+- “Performance profiles”: the table of your aircraft and sheets, with search, sorting, groups, “Add an aircraft”, “Import…”, “Folder…”, “Reread”, “Merge”, “Export”, “Save to the folder”, “Delete”, “Ask ChatGPT” and, for an aircraft without a sheet, “Create from SimBrief”, “Ask ChatGPT”, “Estimate from the class”. “Edit” opens a sheet in the editor (“editing” on its row).
+- Blocks of the sheet being edited (Expert level): “Engine performance — RPM / power / consumption”, “RPM / power → consumption table”, “Flight regimes — profile ↔ engine map” (SimBrief airframe), “Profile data — JSON ⇄ Little Navmap” (the editor of all fields, “Update from SimBrief”), “Engine map — edit RPM / power → consumption”, “SimBrief calibration from OFP”, “Calibration traceability”, “OFP audit — raw and calculated values” and “Imported JSON / SimBrief”, described below.
+- A sheet saved here is picked up at once by a Fuel page open in another tab (the sheet it shows, and its fuel plan).
+
+### Bottom bar and ☰ menu
+
+The bar at the bottom of the page shows “Profile saved — …” or “Unsaved changes — …”. It carries “Reload the local database”, “Save profile” and “Delete this aircraft”. This bar only appears at the Expert level.
+If you open another sheet (“Edit”) with unsaved changes, the page offers “Stay”, “Discard and switch” or “Save and switch”.
+☰ menu: import profiles / CSV / JSON (including Little Navmap `.lnmperf`), import a SimBrief airframe, choose the performance folder, export the `.lnmperf` or JSON profile, save the local database, restore the previous backup, export or import the preferences. These actions are at the Expert level, except exporting and importing the preferences.
+“Save the local database” writes `flight_performance_database.fpdb.json` to the performance folder (otherwise, download); “Restore the previous backup” returns to the state before the last save.
+An import that lands on an existing profile (same identifier, usually the ICAO type) updates it: the imported values win, the fields it leaves empty keep the old value, the RPM tables are merged (units converted).
 
 ### Performance profiles
 
-This block (from the Design level) is the performance side of “My aircraft” (Settings › My profile › Aircraft and simulators): same aircraft, same order, same name. Under the title, “Aircraft: My aircraft ↗” opens that list in Settings.
+This block (from the Design level), the first of the page, is the performance side of “My aircraft” (Settings › My profile › Aircraft and simulators): same aircraft, same order, same name. Under the title, “Aircraft: My aircraft ↗” opens that list in Settings.
 - One line per aircraft, grouped by category (helicopters, turboprops, jets, pistons) with a foldable group header; “Sort by”: category, name or source. Then come the saved profiles outside “My aircraft”, marked “not in “My aircraft””. Without “My aircraft” (trigram not set, nothing declared), the block shows the profiles and the fleet types.
-- Columns: “Aircraft” (silhouette, name in bold, designator and class in small print, as in Settings), “Performance” (profile source: `.lnmperf`, SimBrief, ChatGPT, JSON, entry, estimated from the class; or “none” and its three buttons), “Map” (engine map), “Cruise flow” and its origin, “Ceiling”, “Missing”, then “Choose” (“active” for the chosen aircraft).
+- Columns: “Aircraft” (silhouette, name in bold, designator and class in small print, as in Settings), “Performance” (profile source: `.lnmperf`, SimBrief, ChatGPT, JSON, entry, estimated from the class; or “none” and its three buttons), “Map” (engine map), “Cruise flow” and its origin, “Ceiling”, “Missing”, then “Edit” (“editing” for the sheet open in the editor).
 - “Add an aircraft” opens the same add window as Settings (see “Add an aircraft and its performance”); the added aircraft arrives with “none” and its three buttons: “Create from SimBrief” (if SimBrief knows the type), “Ask ChatGPT”, “Estimate from the class”.
 - A designator declared under several variants (CL2T: “Canadair CL-415”, “Canadair CL-215T”) has a single row, under the type's name: the performance is the type's, variants change nothing here. An aircraft with several profiles has one row per profile, each under the profile's name.
 - The box at the head of the column ticks or unticks every displayed row; drag the edges of the titles to set the column widths (double-click: default widths).
@@ -1512,7 +1539,7 @@ This block (from the Design level) is the performance side of “My aircraft” 
 - “Import…” (`.lnmperf`, JSON, CSV), “Folder…” (performance folder), “Reread”. The folder is read again by itself when it changes elsewhere (Settings, another tab).
 - In the sheet of the active profile, “Update from SimBrief” takes the type’s SimBrief record (cruise fuel flow, weights, ceiling, speed) and keeps your entries; against a personal profile, it offers “Fill the empty fields”, “Merge” (the record counts as a profile dated from its retrieval: the most recent wins field by field, empty fields are filled), “Replace” (SimBrief values instead, the rest kept) or “New profile”. When fields change, a preview shows them before you confirm. “Delete this aircraft”, in the same sheet, removes the active profile.
 - The boxes before the names select profiles for the block’s bar: “Merge (n)” (at least two profiles of the same type, or a single one when SimBrief knows the type: the box “Include the type’s SimBrief record”, ticked beforehand, adds it to the sources; name chosen, the most complete one’s by default; the most recent wins field by field, the others fill its gaps, the engine map gathers their rows; the window first shows the changes — current value, kept value and its source, unchanged fields folded, engine map rows added or replaced; one box per changing value (unticked: the current value is kept), “Take everything” / “Take nothing”, and the button says what will be taken, “Merge (7 fields, 1 engine map row)”; the merge note only lists what was taken; the notification says what was taken from each source, “Undo” 10 s), “Export (n)” (one downloaded file per profile: `.lnmperf` if the profile is complete, JSON otherwise), “Save to the folder (n)” (one JSON file per profile in the performance folder, named after the profile) and “Delete (n)” (one confirmation, a single message for the batch with “Undo” for 10 s; a profile from the performance folder is removed from it too: exported database rewritten without it, single-profile file renamed .bak; “Undo” also restores the files; if the folder is not writable, the profile will come back at the next reread). “Folder…” and “Reread” take back everything the folder holds; as long as a deleted profile remains there (CSV with several profiles, writing denied), a line “n removed profile(s) still in the folder — Restore” says so.
-- “Ask ChatGPT” (block’s bar, and sheet of the active profile) opens a panel: choose the aircraft (profile, or fleet type without a profile), then “Copy the prompt and open ChatGPT” (a single ChatGPT tab, where you paste the prompt). The panel follows the chosen aircraft (“Choose”, header list) or the ticked one. The prompt, in the page’s language, asks to compile every source (manuals, manufacturer, authorities, Wikipedia, simulation forums), in kt, ft, ft/min and kg/h, estimated values marked, engine map included; it also gives what the suite already knows (EUROCONTROL, SimBrief, Airframe DB, current profile) so that ChatGPT completes rather than repeats. “Show the prompt” displays it. Paste the answer (the JSON, or a performance CSV) under the button, then “Import as a new profile” (“<name> — ChatGPT”) or “Merge with “…”” (the answer is dated today: it wins field by field, empty fields are filled; preview of the changes first, values to tick). Unknown keys and unreadable or out-of-range values are discarded and reported; estimated values appear under “Missing data” (“estimated: …”) and stop being estimated as soon as you change them by hand (sheet or engine map). The type and the name come from the answer (the chosen aircraft is only a fallback); if the answer describes another type, a question decides: import as one or the other, or, for a merge, a new profile or merge anyway. A CSV with commas or semicolons is accepted.
+- “Ask ChatGPT” (block’s bar, and sheet of the active profile) opens a panel: choose the aircraft (profile, or fleet type without a profile), then “Copy the prompt and open ChatGPT” (a single ChatGPT tab, where you paste the prompt). The panel follows the open sheet (“Edit”) or the ticked one. The prompt, in the page’s language, asks to compile every source (manuals, manufacturer, authorities, Wikipedia, simulation forums), in kt, ft, ft/min and kg/h, estimated values marked, engine map included; it also gives what the suite already knows (EUROCONTROL, SimBrief, Airframe DB, current profile) so that ChatGPT completes rather than repeats. “Show the prompt” displays it. Paste the answer (the JSON, or a performance CSV) under the button, then “Import as a new profile” (“<name> — ChatGPT”) or “Merge with “…”” (the answer is dated today: it wins field by field, empty fields are filled; preview of the changes first, values to tick). Unknown keys and unreadable or out-of-range values are discarded and reported; estimated values appear under “Missing data” (“estimated: …”) and stop being estimated as soon as you change them by hand (sheet or engine map). The type and the name come from the answer (the chosen aircraft is only a fallback); if the answer describes another type, a question decides: import as one or the other, or, for a merge, a new profile or merge anyway. A CSV with commas or semicolons is accepted.
 
 ### Engine performance — RPM / power / consumption
 
@@ -1566,20 +1593,6 @@ This block adjusts the active profile to a real SimBrief flight plan. Expert lev
 
 “Calibration traceability” (in this block) recalls the last calibration applied; otherwise “No OFP calibration”.
 
-### Vertical profile
-
-This block draws a section along the flight plan of the fuel plan: terrain, airspaces, obstacles, trajectory (TOC, TOD). Expert level block.
-
-1. Check the flight plan in “Fuel plan”.
-2. Choose the “Display profile (studio)”: these are the same profiles as in the Flight maps.
-3. Set “Floor (ft)” and “Ceiling (ft, 0 = auto)”.
-4. Click “Draw the profile”.
-
-The climb follows the performance model of the active aircraft; the descent follows its climb rate. A plan without a level (VFR) has no trajectory.
-An imported SimBrief OFP fills in the route and draws the profile on its own.
-You need the SIA database of this browser, read in the Flight maps (“SIA database” block) or in Settings › Maintenance. Without it, only points given as coordinates are recognised, without airspaces.
-The terrain comes from a terrain model of about 150 m: the ASFC limits follow this model, not the actual ground.
-
 ### OFP audit — raw and calculated values
 
 This table compares, phase by phase, the values read in the OFP and the recalculated values: “Time”, “Distance”, “Fuel”, “Computed FF”, “TAS / GS”, “V/S”. Expert level block.
@@ -1594,16 +1607,6 @@ This block shows the raw content of the last imported file (SimBrief OFP or JSON
 - “Clear”: empties the display (the profile is not touched).
 
 Without an import: “No JSON loaded.”
-
-## Performance sheets
-<!-- page: apps/planner/performance_sheets.html -->
-
-This page (side bar “Tools”, from the Design level) manages the performance sheets of your aircraft: every action that creates or changes a sheet starts here. Fuel uses them for the fuel plan; “My aircraft” (Settings › My profile › Aircraft and simulators) says which aircraft you own. Both pages read the same database of this browser and the same performance folder: a sheet saved here is picked up at once by a Fuel page open in another tab.
-
-- Header: “Sheet being edited”, the sheet being changed (chosen in the table, not in the header), and “Fetch latest SimBrief FPL” for calibration.
-- “Performance profiles”: the table of your aircraft and sheets, with search, sorting, groups, “Add an aircraft”, “Import…”, “Folder…”, “Reread”, “Merge”, “Export”, “Save to the folder”, “Delete”, “Ask ChatGPT” and, for an aircraft without a sheet, “Create from SimBrief”, “Ask ChatGPT”, “Estimate from the class”. “Edit” opens a sheet in the editor (“editing” on its row).
-- Blocks of the sheet being edited (Expert level): “Engine performance — RPM / power / fuel flow”, “RPM / power → fuel flow table”, “Flight regimes — profile ↔ engine map” (SimBrief airframe), “Profile data — JSON ⇄ Little Navmap” (the editor of all fields, “Update from SimBrief”), “Engine map — editing”, “SimBrief calibration from OFP”, “Calibration traceability”, “OFP audit” and “Imported JSON / SimBrief”. Each is described in the “Fuel” chapter.
-- The bottom bar carries “Reload local database”, “Save profile” and “Delete this aircraft”, as in Fuel.
 
 ## Landings
 <!-- page: apps/landing/LandingPerformance_Dashboard_MultiCSV_i18n.html -->

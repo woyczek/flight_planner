@@ -169,13 +169,15 @@
   if ($("dirBtn")) $("dirBtn").style.display = "none";
   // Barre d'état fixe en bas de page : état du profil (enregistré / modifié), recharger la base locale, enregistrer, supprimer.
   // Niveau Expert seulement (édition des profils) : aux niveaux 1 à 3, ni barre ni marge réservée en bas de page.
-  if ((window.RepositoryNav?.levels?.get?.() ?? 4) >= 4) document.body.classList.add("has-status-bar");
+  // (Fiches de performances seulement : le Carburant ne modifie aucune fiche)
+  const sheetsPage = typeof PERF_PAGE === "undefined" || PERF_PAGE === "sheets";
+  if (sheetsPage && (window.RepositoryNav?.levels?.get?.() ?? 4) >= 4) document.body.classList.add("has-status-bar");
   const status = document.createElement("div");
   status.className = "status-bar";
   status.dataset.minLevel = "4";
   status.innerHTML =
     '<span id="persistentStatus" class="status-text">Base locale prête.</span><button id="statusReload">Recharger la base locale</button><button id="statusSave" class="primary">Enregistrer le profil</button><button id="statusDelete">Supprimer cet avion</button>';
-  document.body.append(status);
+  if (sheetsPage) document.body.append(status);
   // Texte et couleur de la barre d'état selon le profil actif et profileDirty ; appelée par la page après chaque modification.
   window.updateProfileStatus = () => {
     status.classList.toggle("dirty", profileDirty);
@@ -471,25 +473,29 @@
     const expertAction = (label, handler) => {
       n.addAction(label, handler).dataset.minLevel = "4"
     };
-    expertAction(["Importer profils / CSV / JSON", "Import profiles / CSV / JSON", "Profile / CSV / JSON importieren",
-      "Importar perfiles / CSV / JSON"
-    ], () => $("importBtn").click());
-    expertAction(["Importer un airframe SimBrief", "Import a SimBrief airframe", "SimBrief-Airframe importieren",
-      "Importar un airframe de SimBrief"
-    ], () => $("sbAirframeBtn").click());
-    expertAction(["Choisir le dossier performances", "Choose the performance folder", "Leistungsordner wählen",
-      "Elegir la carpeta de rendimiento"
-    ], () => $("dirBtn").click());
-    expertAction(["Exporter le profil .lnmperf", "Export .lnmperf profile", ".lnmperf-Profil exportieren", "Exportar perfil .lnmperf"],
-      () => $("exportLnmBtn").click());
-    expertAction(["Exporter le profil JSON", "Export JSON profile", "JSON-Profil exportieren", "Exportar perfil JSON"], () => $(
-      "exportBtn").click());
-    expertAction(["Enregistrer / exporter la BDD locale", "Save / export the local database", "Lokale Datenbank speichern / exportieren",
-      "Guardar / exportar la base local"
-    ], () => $("exportDbBtn").click());
-    expertAction(["Restaurer la sauvegarde locale précédente", "Restore the previous local backup",
-      "Vorherige lokale Sicherung wiederherstellen", "Restaurar la copia local anterior"
-    ], restoreBackup);
+    // actions qui créent ou modifient des fiches : page des Fiches de performances seulement
+    if (typeof PERF_PAGE === "undefined" || PERF_PAGE === "sheets") {
+      expertAction(["Importer profils / CSV / JSON", "Import profiles / CSV / JSON", "Profile / CSV / JSON importieren",
+        "Importar perfiles / CSV / JSON"
+      ], () => $("importBtn").click());
+      expertAction(["Importer un airframe SimBrief", "Import a SimBrief airframe", "SimBrief-Airframe importieren",
+        "Importar un airframe de SimBrief"
+      ], () => $("sbAirframeBtn").click());
+      expertAction(["Choisir le dossier performances", "Choose the performance folder", "Leistungsordner wählen",
+        "Elegir la carpeta de rendimiento"
+      ], () => $("dirBtn").click());
+      expertAction(["Exporter le profil .lnmperf", "Export .lnmperf profile", ".lnmperf-Profil exportieren", "Exportar perfil .lnmperf"],
+        () => $("exportLnmBtn").click());
+      expertAction(["Exporter le profil JSON", "Export JSON profile", "JSON-Profil exportieren", "Exportar perfil JSON"], () => $(
+        "exportBtn").click());
+      expertAction(["Enregistrer / exporter la BDD locale", "Save / export the local database",
+        "Lokale Datenbank speichern / exportieren",
+        "Guardar / exportar la base local"
+      ], () => $("exportDbBtn").click());
+      expertAction(["Restaurer la sauvegarde locale précédente", "Restore the previous local backup",
+        "Vorherige lokale Sicherung wiederherstellen", "Restaurar la copia local anterior"
+      ], restoreBackup);
+    }
     let units = document.createElement("div");
     units.className = "repo-unit-control";
     units.innerHTML =
