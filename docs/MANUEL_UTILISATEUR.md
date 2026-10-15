@@ -1642,6 +1642,16 @@ Ce bloc affiche le contenu brut du dernier fichier importé (OFP SimBrief ou JSO
 
 Sans import : « Aucun JSON chargé. »
 
+## Fiches de performances
+<!-- page: apps/planner/performance_sheets.html -->
+
+Cette page (barre latérale « Outils », à partir du niveau Conception) gère les fiches de performances de vos appareils : c'est d'elle que partent toutes les actions qui créent ou modifient une fiche. Le Carburant s'en sert pour le devis ; « Mes appareils » (Paramètres › Mon profil › Appareils et simulateurs) dit quels appareils vous possédez. Les deux pages lisent la même base de ce navigateur et le même dossier performances : une fiche enregistrée ici est reprise aussitôt par un Carburant ouvert dans un autre onglet.
+
+- En-tête : « Fiche en cours », la fiche qu'on modifie (on la choisit dans le tableau, pas dans l'en-tête), et « Récupérer dernier FPL SimBrief » pour la calibration.
+- « Profils de performances » : le tableau de vos appareils et de vos fiches, avec la recherche, le tri, les groupes, « Ajouter un appareil », « Importer… », « Dossier… », « Relire », « Fusionner », « Exporter », « Enregistrer dans le dossier », « Supprimer », « Demander à ChatGPT » et, pour un appareil sans fiche, « Créer depuis SimBrief », « Demander à ChatGPT », « Estimer par la classe ». « Modifier » ouvre une fiche dans l'éditeur (« en cours » sur sa ligne).
+- Blocs de la fiche en cours (niveau Expert) : « Performances moteur — RPM / puissance / consommation », « Table RPM / puissance → consommation », « Régimes de vol — profil ↔ cartographie » (airframe SimBrief), « Données du profil — JSON ⇄ Little Navmap » (l'éditeur de tous les champs, « Mettre à jour depuis SimBrief »), « Cartographie moteur — édition », « Calibration SimBrief depuis OFP », « Traçabilité de calibration », « Audit OFP » et « JSON importé / SimBrief ». Chacun est décrit dans le chapitre « Carburant ».
+- La barre du bas porte « Recharger la base locale », « Enregistrer le profil » et « Supprimer cet avion », comme dans le Carburant.
+
 ## Atterrissages
 <!-- page: apps/landing/LandingPerformance_Dashboard_MultiCSV_i18n.html -->
 

@@ -298,3 +298,33 @@ panels instead of two scales, "Least fuel" / "Fastest" pills, one mark (the chos
 cannot be held, a three-line card; detailed view reduced to one "Climb" chart sharing the axis and the cursor, a table
 of goals and the engine settings (engine map only); "Optimum altitude", "TAS by level" and the Result's cursor card
 removed.
+
+## 13. Three roles: My aircraft / Performance sheets / Fuel (15 October)
+
+**What the user said.** "Three places to choose the aircraft, it is not clear; it is not this page's job to do that
+work." The fuel page had become a manager of performance sheets that also made fuel plans.
+
+**Decision** (validated by the user, ergonomics review):
+
+1. **My aircraft** (Settings › My profile › Aircraft and simulators): declare what I own and master, variants included.
+   The "Performance" column is only a link — to the sheet on the Performance sheets page, or "none → create", which
+   opens that page on the aircraft (`?aircraft=<code>`, `&create=…`). No creation flow in Settings.
+2. **Performance sheets** (`apps/planner/performance_sheets.html`, Tools, level 3): the management. One list, my
+   aircraft first, then the other sheets; every action that creates or changes a sheet starts here (add an aircraft,
+   import, folder, reread, SimBrief / ChatGPT / class estimate, merge, export, save to the folder, delete, field
+   editor, "Update from SimBrief", engine map, RPM table and curve, ChatGPT panel, OFP calibration). The page's
+   "active" sheet is the sheet being edited ("Edit" instead of "Choose").
+3. **Fuel**: the fuel plan only. One aircraft choice, in the header, listing existing sheets only (my aircraft first);
+   without a sheet: "no sheet for this aircraft — open Performance sheets ↗". The sheet consulted stays visible read
+   only. `?aircraft=` still picks the sheet; `?create=` is redirected to the sheets page.
+
+**Technique.** Both pages share one script and one style sheet (`apps/planner/flight_planner.js` / `.css`, moved out
+of the fuel page) and the same local database (`flightPerfState`, performance folder); the page's role is
+`<body data-perf-page>`; `$` returns a detached empty element for an id the page does not have. Each page writes only
+the fields it owns (quote settings from the fuel page, `lastAircraft` / `lastSheet`); a `storage` event makes the
+other page reread the sheets (the open sheet is replaced unless it has unsaved changes; nothing is written back, so no
+ping-pong).
+
+**Steps.** (1) Performance sheets page working with the management blocks; Fuel keeps its own meanwhile (no
+regression) — done. (2) Fuel reduced to the plan, My aircraft as links.
+

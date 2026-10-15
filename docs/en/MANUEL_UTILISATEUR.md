@@ -1595,6 +1595,16 @@ This block shows the raw content of the last imported file (SimBrief OFP or JSON
 
 Without an import: “No JSON loaded.”
 
+## Performance sheets
+<!-- page: apps/planner/performance_sheets.html -->
+
+This page (side bar “Tools”, from the Design level) manages the performance sheets of your aircraft: every action that creates or changes a sheet starts here. Fuel uses them for the fuel plan; “My aircraft” (Settings › My profile › Aircraft and simulators) says which aircraft you own. Both pages read the same database of this browser and the same performance folder: a sheet saved here is picked up at once by a Fuel page open in another tab.
+
+- Header: “Sheet being edited”, the sheet being changed (chosen in the table, not in the header), and “Fetch latest SimBrief FPL” for calibration.
+- “Performance profiles”: the table of your aircraft and sheets, with search, sorting, groups, “Add an aircraft”, “Import…”, “Folder…”, “Reread”, “Merge”, “Export”, “Save to the folder”, “Delete”, “Ask ChatGPT” and, for an aircraft without a sheet, “Create from SimBrief”, “Ask ChatGPT”, “Estimate from the class”. “Edit” opens a sheet in the editor (“editing” on its row).
+- Blocks of the sheet being edited (Expert level): “Engine performance — RPM / power / fuel flow”, “RPM / power → fuel flow table”, “Flight regimes — profile ↔ engine map” (SimBrief airframe), “Profile data — JSON ⇄ Little Navmap” (the editor of all fields, “Update from SimBrief”), “Engine map — editing”, “SimBrief calibration from OFP”, “Calibration traceability”, “OFP audit” and “Imported JSON / SimBrief”. Each is described in the “Fuel” chapter.
+- The bottom bar carries “Reload local database”, “Save profile” and “Delete this aircraft”, as in Fuel.
+
 ## Landings
 <!-- page: apps/landing/LandingPerformance_Dashboard_MultiCSV_i18n.html -->
 

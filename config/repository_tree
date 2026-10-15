@@ -158,6 +158,7 @@ window.REPOSITORY_TREE={
     {id:"tools",pages:[
       {path:"apps/planner/map_planner.html",label:["Cartes de vol","Flight maps","Flugkarten","Mapas de vuelo"]},
       {path:"apps/planner/flight_performance_planner.html",label:["Carburant","Fuel","Kraftstoff","Combustible"]},
+      {path:"apps/planner/performance_sheets.html",label:["Fiches de performances","Performance sheets","Leistungsblätter","Fichas de rendimiento"]},
       {path:"apps/landing/LandingPerformance_Dashboard_MultiCSV_i18n.html",label:["Atterrissages","Landings","Landungen","Aterrizajes"]},
       {path:"apps/cr/mission_operations_reporting.html",label:["Analyse des missions","Mission analysis","Missionsanalyse","Análisis de misiones"]}]},
     {id:"settings",pages:[
@@ -240,6 +241,7 @@ window.REPOSITORY_TREE={
     {path:"apps/cpco/map_parser.html",level:4,menu:"Centre — Studio cartographique",label:"Studio cartographique — Centre de planification et de conduite des opérations"},
     {path:"apps/cpco/mission_registry.html",level:3,menu:"Centre — Registre des missions",label:"Registre des missions — Centre de planification et de conduite des opérations"},
     {path:"apps/planner/flight_performance_planner.html",module:"fuel",menu:"Carburant",label:"Carburant — performances et devis carburant"},
+    {path:"apps/planner/performance_sheets.html",module:"fuel",level:3,menu:"Fiches de performances",label:"Fiches de performances — profils des appareils : imports, SimBrief, ChatGPT, éditeur, cartographie moteur"},
     {path:"apps/pilot/disponibilites.html",menu:false,label:"Mes disponibilités — saisie par plages, par catégorie"},
     {path:"apps/pilot/aujourdhui.html",menu:"Aujourd’hui",label:"Aujourd’hui — ma prochaine mission, comptes rendus à écrire, ma semaine"},
     {path:"apps/pilot/mes_missions.html",menu:"Mes missions",label:"Mes missions — missions affectées par le Centre, disponibilités"},

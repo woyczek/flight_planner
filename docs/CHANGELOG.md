@@ -12,6 +12,12 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Added
 
+- **"Performance sheets" page** (`apps/planner/performance_sheets.html`, Tools, level 3; docs/technique/V2_FABLE.md
+  § 13, step 1) — the management of the aircraft's performance sheets: the "Performance profiles" table and all its
+  actions, the field editor, engine performance and RPM table, engine map, flight regimes, OFP calibration and audit;
+  "Edit" picks the sheet being edited, shown in the header. It shares its script and styles with Fuel
+  (`apps/planner/flight_planner.js` / `.css`, moved out of the fuel page) and the same local database; a sheet saved
+  on one page is picked up at once by the other one open in another tab. Fuel keeps its blocks during this step.
 - **My aircraft, one list with its performance side** — Settings › My profile › Aircraft and simulators ("My aircraft",
   fleet included) and the fuel page's "Performance profiles" block show the same aircraft, in the same order and with
   the same name (silhouette, bold name, designator and class); each Settings row has a "Performance" column (profile

@@ -1126,6 +1126,10 @@
         path: "apps/planner/flight_performance_planner.html",
         label: ["Carburant", "Fuel", "Kraftstoff", "Combustible"]
       }, {
+        icon: "list",
+        path: "apps/planner/performance_sheets.html",
+        label: ["Fiches de performances", "Performance sheets", "Leistungsblätter", "Fichas de rendimiento"]
+      }, {
         icon: "plane",
         path: "apps/landing/LandingPerformance_Dashboard_MultiCSV_i18n.html",
         label: ["Atterrissages", "Landings", "Landungen", "Aterrizajes"]

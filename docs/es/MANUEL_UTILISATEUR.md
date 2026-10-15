@@ -1595,6 +1595,16 @@ Este bloque muestra el contenido bruto del último archivo importado (OFP de Sim
 
 Sin importación: «Ningún JSON cargado.»
 
+## Fichas de rendimiento
+<!-- page: apps/planner/performance_sheets.html -->
+
+Esta página (barra lateral «Herramientas», a partir del nivel Concepción) gestiona las fichas de rendimiento de sus aeronaves: de ella parten todas las acciones que crean o modifican una ficha. Combustible las usa para el plan; «Mis aeronaves» (Ajustes › Mi perfil › Aeronaves y simuladores) dice qué aeronaves posee. Las dos páginas leen la misma base de este navegador y la misma carpeta de rendimiento: una ficha guardada aquí la retoma de inmediato una página Combustible abierta en otra pestaña.
+
+- Cabecera: «Ficha en edición», la ficha que se modifica (se elige en la tabla, no en la cabecera), y «Recuperar último FPL de SimBrief» para la calibración.
+- «Perfiles de rendimiento»: la tabla de sus aeronaves y fichas, con búsqueda, orden, grupos, «Añadir una aeronave», «Importar…», «Carpeta…», «Releer», «Fusionar», «Exportar», «Guardar en la carpeta», «Eliminar», «Preguntar a ChatGPT» y, para una aeronave sin ficha, «Crear desde SimBrief», «Preguntar a ChatGPT», «Estimar por la clase». «Modificar» abre una ficha en el editor («en edición» en su fila).
+- Bloques de la ficha en edición (nivel Experto): «Rendimiento motor — RPM / potencia / consumo», «Tabla RPM / potencia → consumo», «Regímenes de vuelo — perfil ↔ mapa motor» (airframe de SimBrief), «Datos del perfil — JSON ⇄ Little Navmap» (el editor de todos los campos, «Actualizar desde SimBrief»), «Mapa motor — edición», «Calibración SimBrief desde OFP», «Trazabilidad de la calibración», «Auditoría OFP» y «JSON importado / SimBrief». Cada uno se describe en el capítulo «Combustible».
+- La barra inferior lleva «Recargar la base local», «Guardar el perfil» y «Eliminar esta aeronave», como en Combustible.
+
 ## Aterrizajes
 <!-- page: apps/landing/LandingPerformance_Dashboard_MultiCSV_i18n.html -->
 

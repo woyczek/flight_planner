@@ -1595,6 +1595,16 @@ Dieser Block zeigt den Rohinhalt der zuletzt importierten Datei (SimBrief-OFP od
 
 Ohne Import: „Kein JSON geladen.“
 
+## Leistungsblätter
+<!-- page: apps/planner/performance_sheets.html -->
+
+Diese Seite (Seitenleiste „Werkzeuge“, ab der Stufe Konzeption) verwaltet die Leistungsblätter Ihrer Luftfahrzeuge: Jede Aktion, die ein Blatt anlegt oder ändert, geht von hier aus. Kraftstoff nutzt sie für die Planung; „Meine Luftfahrzeuge“ (Einstellungen › Mein Profil › Luftfahrzeuge und Simulatoren) sagt, welche Luftfahrzeuge Sie besitzen. Beide Seiten lesen dieselbe Datenbank dieses Browsers und denselben Leistungsordner: Ein hier gespeichertes Blatt übernimmt eine in einem anderen Tab geöffnete Kraftstoff-Seite sofort.
+
+- Kopfzeile: „Blatt in Bearbeitung“, das gerade geänderte Blatt (in der Tabelle gewählt, nicht in der Kopfzeile), und „Letzten SimBrief-FPL abrufen“ für die Kalibrierung.
+- „Leistungsprofile“: die Tabelle Ihrer Luftfahrzeuge und Blätter mit Suche, Sortierung, Gruppen, „Luftfahrzeug hinzufügen“, „Importieren…“, „Ordner…“, „Neu lesen“, „Zusammenführen“, „Exportieren“, „Im Ordner speichern“, „Löschen“, „ChatGPT fragen“ und, für ein Luftfahrzeug ohne Blatt, „Aus SimBrief anlegen“, „ChatGPT fragen“, „Aus der Klasse schätzen“. „Bearbeiten“ öffnet ein Blatt im Editor („in Bearbeitung“ in seiner Zeile).
+- Blöcke des bearbeiteten Blatts (Stufe Experte): „Triebwerksleistung — RPM / Leistung / Verbrauch“, „Tabelle RPM / Leistung → Verbrauch“, „Flugregime — Profil ↔ Motorkennfeld“ (SimBrief-Airframe), „Profildaten — JSON ⇄ Little Navmap“ (der Editor aller Felder, „Aus SimBrief aktualisieren“), „Motorkennfeld — Bearbeitung“, „SimBrief-Kalibrierung aus OFP“, „Kalibrierungsverlauf“, „OFP-Prüfung“ und „Importiertes JSON / SimBrief“. Jeder ist im Kapitel „Kraftstoff“ beschrieben.
+- Die untere Leiste trägt „Lokale Datenbank neu laden“, „Profil speichern“ und „Dieses Luftfahrzeug löschen“, wie unter Kraftstoff.
+
 ## Landungen
 <!-- page: apps/landing/LandingPerformance_Dashboard_MultiCSV_i18n.html -->
 

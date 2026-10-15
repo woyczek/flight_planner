@@ -70,6 +70,10 @@
     ["Exporter les préférences", "Export preferences", "Einstellungen exportieren", "Exportar preferencias"],
     ["Importer les préférences", "Import preferences", "Einstellungen importieren", "Importar preferencias"],
     ["Aucun avion", "No aircraft", "Kein Flugzeug", "Ningún avión"],
+    ["Fiche en cours", "Sheet being edited", "Blatt in Bearbeitung", "Ficha en edición"],
+    ["Choisir la fiche à modifier : « Modifier » dans le tableau", "Choose the sheet to edit: “Edit” in the table",
+      "Zu bearbeitendes Blatt wählen: „Bearbeiten“ in der Tabelle", "Elegir la ficha que modificar: «Modificar» en la tabla"
+    ],
     ["Dossier performances", "Performance folder", "Leistungsordner", "Carpeta de rendimiento"],
     ["Récupérer dernier FPL SimBrief", "Fetch latest SimBrief FPL", "Letzten SimBrief-FPL abrufen", "Recuperar último FPL de SimBrief"],
     ["Unités :", "Units:", "Einheiten:", "Unidades:"],
