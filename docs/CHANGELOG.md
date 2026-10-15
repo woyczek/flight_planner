@@ -424,6 +424,11 @@ servies depuis un autre disque, registre aux fichiers absents, profils cachés �
 
 ### Corrigé
 
+- **Aircraft types: CL-415 shown as "Canadair CL-215T"** — ICAO Doc 8643 files the CL-215T and the CL-415 under one
+  designator, CL2T (one record, one set of performance figures, CL2T in a flight plan); the record took the first ICAO
+  model name. It is now named "Canadair CL-215T / CL-415" (`SHARED_DESIGNATOR_NAMES` in `update_aircraft_db.py`, a short
+  chosen list, applied at every pass of the updater; data overrides still win). Telling the two apart in the declared
+  aircraft (variants) is a separate change.
 - **Generator and studio: no city names, silently** — a browser SIA database built while `villes_geonames.csv` could
   not be read was stored without cities: towns were not suggested for turning points and maps had no city labels, with
   no message. When the database has no cities, they are now read from `shared/carto/villes_geonames.csv` and stored

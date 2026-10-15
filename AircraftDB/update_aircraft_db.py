@@ -67,6 +67,12 @@ ICAO_PART3_URLS = [
     "https://cfapps.icao.int/doc8643/reports/Part3-By%20Model%20Number_Name.pdf",
 ]
 
+# Désignateur OACI commun à des modèles que les pilotes distinguent (Doc 8643 : CL2T = Canadair CL-215T et CL-415,
+# Bombardier CL-415, UD-13/14) : nom affiché qui les cite, au lieu du seul premier modèle (« CL-215T » pour un CL-415).
+# Liste courte et choisie : les autres désignateurs à plusieurs modèles (≈ 1 350) gardent leur nom représentatif (les
+# joindre tous donnerait « PA-28-161 Cadet / PA-28-181 Pilot / … »). Les corrections des données (overrides) priment.
+SHARED_DESIGNATOR_NAMES = {"CL2T": "CANADAIR CL-215T / CL-415"}
+
 DEFAULT_COMMON = [
     "C152","C172","C182","C206","C208","BN2P","BE58","B350","AT42","AT72","AT76",
     "DH8A","DH8B","DH8C","DH8D","DHC6","DHC7","F27","F50","L410","D228","C212",
@@ -1308,6 +1314,9 @@ def apply_overrides(db, aliases, overrides):
     fixed = official_aliases(aliases, db, ICAO_INDEX, quiet=True)
     aliases.clear()
     aliases.update(fixed)
+    for code, name in SHARED_DESIGNATOR_NAMES.items():
+        if code in db and db[code].get("model") != name:
+            db[code]["model"] = name
     for key, patch in overrides.get("__records", {}).items():
         canonical = normalize_key(key)
         base = dict(db.get(canonical, {"tdesig": canonical}))
