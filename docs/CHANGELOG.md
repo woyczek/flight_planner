@@ -44,6 +44,14 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Changed
 
+- **Fuel tables: resizable columns, clipped comments, one row per type** — the "Comment" column of the RPM / power
+  table no longer stretches it: the comment sits on one line with an ellipsis, the whole text in a tooltip, and a
+  double-click unfolds it. The columns of this table and of the performance profiles table can be resized by
+  dragging the edge of a header (double-click: default widths); the setting is kept in the browser. Common framework
+  `shared/table_resize.js` (`TableResize.attach(table, { key })`), usable on any table of the suite. In the profiles
+  table, a designator declared under several variants has a single row (the performance is the type's; no variant
+  badge, no duplicated creation buttons), and a box at the head of the selection column ticks or unticks every
+  displayed row.
 - **Help: one source per subject** — the per-subject guides (`DONNEES.md`, `ODV_PLANNING.md`, `SIA_MISSIONS.md`,
   `FLIGHT_PLANNER.md`, `LANDING_DASHBOARD.md`, `PRESENTATION*.md`) are merged into the manuals and removed; what had
   become wrong was dropped. New in the manuals (four languages where they exist): map profiles and extents, the studio's

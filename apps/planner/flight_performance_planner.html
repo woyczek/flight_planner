@@ -1727,7 +1727,7 @@ html[data-skeuo] .repo-block-tools .fp-result-pin[aria-pressed="true"]:not(#imp)
 <script src="../../AircraftDB/aircraft_db.js"></script><script src="../../shared/data_files.js?v=0" data-file="references/aircraft_fleet.js"></script><script src="../../shared/data_files.js?v=0" data-file="references/defa_reference.js"></script><script src="../../shared/aircraft_catalog.js?v=0"></script>
 <script src="../../AircraftDB/aircraft_icons.js"></script><script src="../../shared/equipment_editor.js?v=0"></script>
 <script src="../../AircraftDB/aircraft_perf.js"></script><script src="../../shared/fuel_reference.js?v=0"></script><script src="../../shared/fuel_poll_schumann.js?v=0"></script><script src="perf_prompt.js?v=0"></script>
-<script src="../../shared/sticky_frame.js?v=0"></script><script src="../../shared/flight_profile_help.js?v=0"></script><script src="../../shared/column_resize.js?v=0"></script><script src="../../shared/flight_instruments.js?v=0"></script><script src="../../shared/flight_perf_view.js?v=0"></script>
+<script src="../../shared/sticky_frame.js?v=0"></script><script src="../../shared/flight_profile_help.js?v=0"></script><script src="../../shared/column_resize.js?v=0"></script><script src="../../shared/table_resize.js?v=0"></script><script src="../../shared/flight_instruments.js?v=0"></script><script src="../../shared/flight_perf_view.js?v=0"></script>
 <script src="../../shared/flight_performance_model.js?v=0"></script>
 <script>
 // Planificateur de performances : profils d'appareils (SimBrief, Little Navmap, CSV, calibration par
@@ -2357,7 +2357,7 @@ function renderProfile() {
   /** Altitude d'une ligne de cartographie (−1 sans altitude : en tête du tri). */
   const altOf = x => x.altFt !== null && x.altFt !== undefined && x.altFt !== "" && Number.isFinite(+x.altFt) ? +x.altFt : -1;
   setText("curveAltTh", kt(["Altitude (ft)", "Altitude (ft)", "Höhe (ft)", "Altitud (ft)"]));
-  $("curve").innerHTML = (active.rpmFuelCurve || []).sort((a, b) => (altOf(a) - altOf(b)) || a.rpm - b.rpm).map(x => `<tr><td>${x.rpm}</td><td>${altOf(x) >= 0 ? fmt(altOf(x), 0) : "—"}</td><td>${showFuel(x.fuelFlowMin??x.fuelFlowPerHour)}</td><td>${showFuel(x.fuelFlowPerHour)}</td><td>${showFuel(x.fuelFlowMax??x.fuelFlowPerHour)}</td><td>${fuelUnit()}/h</td><td>${window.RepositoryKit.esc(x.comment||"")}</td></tr>`).join("") ||
+  $("curve").innerHTML = (active.rpmFuelCurve || []).sort((a, b) => (altOf(a) - altOf(b)) || a.rpm - b.rpm).map(x => `<tr><td>${x.rpm}</td><td>${altOf(x) >= 0 ? fmt(altOf(x), 0) : "—"}</td><td>${showFuel(x.fuelFlowMin??x.fuelFlowPerHour)}</td><td>${showFuel(x.fuelFlowPerHour)}</td><td>${showFuel(x.fuelFlowMax??x.fuelFlowPerHour)}</td><td>${fuelUnit()}/h</td><td class="tbl-clip" title="${window.RepositoryKit.esc(x.comment||"")}">${window.RepositoryKit.esc(x.comment||"")}</td></tr>`).join("") ||
     '<tr><td colspan="7">Pas de courbe RPM dans ce profil.</td></tr>';
   renderProfileEditor();
   renderPerfProfilesSoon();
@@ -5108,29 +5108,32 @@ function renderPerfProfiles() {
     },
     myKeys = new Set((myList || []).map(a => aircraftTypeKey(a.code)));
   // appareils du pilote, avec leurs profils (même type, alias compris, ou type lu dans le nom ; nom pour un appareil sans
-  // désignateur) : une ligne par profil, ou une ligne « aucune » ; une ligne par variante d'un désignateur partagé
-  // (CL2T : CL-215T, CL-415) : le premier profil du type, « commun aux variantes »
-  for (const a of myList || []) {
-    const k = aircraftTypeKey(a.code),
-      match = profiles.filter(x => pkey(x) === k || aKey(x.name) === aKey(a.name)),
-      list = a.variant ? match.slice(0, 1) : match,
+  // désignateur) : une ligne par profil, ou une ligne « aucune ». Un désignateur déclaré sous plusieurs variantes
+  // (CL2T : CL-215T, CL-415) n'a qu'une ligne, celle du type : les performances sont celles du type, pas de notion de
+  // variante ici (une seule coche, un seul jeu de boutons)
+  const byCode = new Map();
+  for (const a of myList || [])(byCode.get(a.code) || byCode.set(a.code, []).get(a.code)).push(a);
+  for (const [code, entries] of byCode) {
+    const a = entries[0],
+      vs = entries.map(e => e.variant).filter(Boolean),
+      k = aircraftTypeKey(code),
+      match = profiles.filter(x => pkey(x) === k || entries.some(e => aKey(x.name) === aKey(e.name))),
       base = {
-        code: a.code,
-        name: a.name,
-        common: !!a.variant,
-        category: a.category || cat(a.code),
+        code,
+        name: vs.length > 1 ? E?.fullName?.(code) || a.name : a.name, // une variante : son nom ; plusieurs : le type
+        category: a.category || cat(code),
         mine: true
       };
-    if (!list.length) rows.push({
+    if (!match.length) rows.push({
       ...base,
       p: null
     });
-    for (const p of list) {
+    for (const p of match) {
       used.add(p.id);
       rows.push({
         ...base,
         p,
-        note: list.length > 1 ? p.name || p.id : "" // plusieurs profils du même appareil : chacun sous son nom
+        note: match.length > 1 ? p.name || p.id : "" // plusieurs profils du même appareil : chacun sous son nom
       })
     }
   }
@@ -5172,6 +5175,15 @@ function renderPerfProfiles() {
     });
     // cases de fusion : sélection gardée d'un rendu à l'autre (ppSelected), bouton « Fusionner » mis à jour
     box.addEventListener("change", e => {
+      const a = e.target.closest(".pp-sel-all");
+      if (a) { // tout cocher / décocher (lignes affichées)
+        box.querySelectorAll(".pp-sel").forEach(b => {
+          b.checked = a.checked;
+          a.checked ? ppSelected.add(b.dataset.id) : ppSelected.delete(b.dataset.id)
+        });
+        a.indeterminate = false;
+        return syncMergeButton()
+      }
       const c = e.target.closest(".pp-sel");
       if (!c) return;
       if (c.checked) ppSelected.add(c.dataset.id);
@@ -5180,6 +5192,12 @@ function renderPerfProfiles() {
         landing: false
       }); // panneau ChatGPT ouvert : il suit la ligne cochée
       else ppSelected.delete(c.dataset.id);
+      const all = box.querySelector(".pp-sel-all"),
+        bs = [...box.querySelectorAll(".pp-sel")];
+      if (all) {
+        all.checked = bs.every(b => b.checked);
+        all.indeterminate = !all.checked && bs.some(b => b.checked)
+      }
       syncMergeButton()
     });
   }
@@ -5215,7 +5233,12 @@ function renderPerfProfiles() {
   const ordered = sortBy === "name" ? [...rows].sort(byName) : sortBy === "source" ? [...rows].sort((a, b) => (!a.p - !b.p) || src(a)
     .localeCompare(src(b), "fr") || byName(a, b)) : [...rows].sort((a, b) => CATS.indexOf(a.category) - CATS.indexOf(b.category) || (
     b.mine - a.mine) || byName(a, b));
-  const head = ["", kt(["Appareil", "Aircraft", "Luftfahrzeug", "Aeronave"]), kt(["Performances", "Performance", "Leistungen",
+  const selAll = `<input type="checkbox" class="pp-sel-all" title="${esc(kt(["Tout cocher ou décocher — les profils cochés se fusionnent, s'exportent, s'enregistrent ou se suppriment ensemble",
+      "Tick or untick all — ticked profiles are merged, exported, saved or deleted together",
+      "Alle an- oder abwählen — angekreuzte Profile werden zusammen zusammengeführt, exportiert, gespeichert oder gelöscht",
+      "Marcar o desmarcar todo — los perfiles marcados se fusionan, exportan, guardan o eliminan juntos"
+    ]))}" aria-label="${esc(kt(["Tout cocher", "Tick all", "Alle anwählen", "Marcar todo"]))}">`;
+  const head = [selAll, kt(["Appareil", "Aircraft", "Luftfahrzeug", "Aeronave"]), kt(["Performances", "Performance", "Leistungen",
     "Rendimiento"
   ]), kt(["Carto.", "Map", "Kennfeld", "Mapa"]), kt(["Conso. croisière", "Cruise flow", "Reiseverbrauch", "Consumo crucero"]), kt([
     "Plafond", "Ceiling", "Gipfelhöhe", "Techo"
@@ -5271,7 +5294,22 @@ function renderPerfProfiles() {
       body += `<tbody><tr class="pp-group"><th colspan="${head.length}"><button type="button" data-pp-group="${c}" aria-expanded="${!closed}">${closed ? "▸" : "▾"} ${esc(E?.categoryLabel?.(c) || c)} (${g.length})</button></th></tr>${closed ? "" : g.map(row).join("")}</tbody>`
     }
   } else body = `<tbody>${ordered.map(row).join("")}</tbody>`;
-  setHtml("perfProfiles", typo(`<table><thead><tr>${head.map(h => `<th>${esc(h)}</th>`).join("")}</tr></thead>${body}</table>`))
+  setHtml("perfProfiles", typo(`<table><thead><tr>${head.map((h, i) => `<th>${i ? esc(h) : h}</th>`).join("")}</tr></thead>${body}</table>`));
+  // case d'en-tête : cochée si tout l'est, indéterminée si une partie ; colonnes réglables (framework table_resize.js)
+  const boxes = [...box.querySelectorAll(".pp-sel")],
+    all = box.querySelector(".pp-sel-all");
+  if (all) {
+    all.checked = boxes.length > 0 && boxes.every(b => b.checked);
+    all.indeterminate = !all.checked && boxes.some(b => b.checked);
+    all.disabled = !boxes.length
+  }
+  window.TableResize?.attach(box.querySelector("table"), {
+    key: "flightPerfProfilesCols",
+    title: kt(["Glisser : largeur de la colonne — double-clic : largeurs par défaut",
+      "Drag: column width — double-click: default widths",
+      "Ziehen: Spaltenbreite — Doppelklick: Standardbreiten", "Arrastrar: ancho de la columna — doble clic: anchos por defecto"
+    ])
+  })
 }
 /** Crée le profil de performances d'un appareil qui n'en a pas (code : désignateur ou nom ; name : nom affiché), puis
  *  l'ouvre : how = « simbrief » (fiche SimBrief du type), « gpt » (profil vide et panneau « Demander à ChatGPT »),
@@ -7325,7 +7363,15 @@ completeProfileTypes();
       'Glisser : largeur des colonnes — double-clic : largeurs par défaut', 'Drag: column widths — double-click: default widths',
       'Ziehen: Spaltenbreite — Doppelklick: Standardbreiten', 'Arrastrar: ancho de columnas — doble clic: anchos por defecto'))
   });
-  setTimeout(() => cols?.refresh(), 800)
+  setTimeout(() => cols?.refresh(), 800);
+  /* table RPM / puissance : colonnes réglables (poignées sur les en-têtes, framework shared/table_resize.js) ; le
+     commentaire tient sur une ligne, texte entier en infobulle, double-clic pour le déplier */
+  window.TableResize?.attach(document.getElementById('engineCurveTable'), {
+    key: 'flightPerfCurveCols',
+    title: tl('Glisser : largeur de la colonne — double-clic : largeurs par défaut',
+      'Drag: column width — double-click: default widths', 'Ziehen: Spaltenbreite — Doppelklick: Standardbreiten',
+      'Arrastrar: ancho de la columna — doble clic: anchos por defecto')
+  })
 })();
 </script>
 </body></html>

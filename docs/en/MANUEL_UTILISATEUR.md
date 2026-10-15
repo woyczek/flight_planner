@@ -1506,7 +1506,8 @@ This block (from the Design level) is the performance side of “My aircraft” 
 - One line per aircraft, grouped by category (helicopters, turboprops, jets, pistons) with a foldable group header; “Sort by”: category, name or source. Then come the saved profiles outside “My aircraft”, marked “not in “My aircraft””. Without “My aircraft” (trigram not set, nothing declared), the block shows the profiles and the fleet types.
 - Columns: “Aircraft” (silhouette, name in bold, designator and class in small print, as in Settings), “Performance” (profile source: `.lnmperf`, SimBrief, ChatGPT, JSON, entry, estimated from the class; or “none” and its three buttons), “Map” (engine map), “Cruise flow” and its origin, “Ceiling”, “Missing”, then “Choose” (“active” for the chosen aircraft).
 - “Add an aircraft” opens the same add window as Settings (see “Add an aircraft and its performance”); the added aircraft arrives with “none” and its three buttons: “Create from SimBrief” (if SimBrief knows the type), “Ask ChatGPT”, “Estimate from the class”.
-- A designator shared by several declared variants (CL2T: “Canadair CL-415”, “Canadair CL-215T”) has one row per variant; all show the same profile, “performance shared by the variants”.
+- A designator declared under several variants (CL2T: “Canadair CL-415”, “Canadair CL-215T”) has a single row, under the type's name: the performance is the type's, variants change nothing here. An aircraft with several profiles has one row per profile, each under the profile's name.
+- The box at the head of the column ticks or unticks every displayed row; drag the edges of the titles to set the column widths (double-click: default widths).
 - “Search an aircraft”, next to “Sort by”, filters the same way (name, variant, designator, class, source): groups with a match unfolded, the others folded, “n aircraft”.
 - “Import…” (`.lnmperf`, JSON, CSV), “Folder…” (performance folder), “Reread”. The folder is read again by itself when it changes elsewhere (Settings, another tab).
 - In the sheet of the active profile, “Update from SimBrief” takes the type’s SimBrief record (cruise fuel flow, weights, ceiling, speed) and keeps your entries; against a personal profile, it offers “Fill the empty fields”, “Merge” (the record counts as a profile dated from its retrieval: the most recent wins field by field, empty fields are filled), “Replace” (SimBrief values instead, the rest kept) or “New profile”. When fields change, a preview shows them before you confirm. “Delete this aircraft”, in the same sheet, removes the active profile.
@@ -1527,7 +1528,7 @@ Without an RPM table in the profile, the page shows “RPM curve missing from th
 ### RPM / power → consumption table
 
 This table lists the points of the engine map of the active profile: “RPM / N1”, “Min.”, “Nominal”, “Max.”, “Altitude (ft)” (optional: one line per published altitude), “Flight phase”, “Comment”. Expert level block.
-Click a column title (↕) to sort.
+Click a column title (↕) to sort. Drag the right edge of a title to set the column width (double-click the edge: default widths); the setting is kept in the browser. A long comment stays on one line with an ellipsis: the whole text is in a tooltip, a double-click on the cell unfolds it.
 It is read-only: to change it, use the “Engine map — edit RPM / power → consumption” block.
 Without data, it shows “No RPM curve in this profile.”
 

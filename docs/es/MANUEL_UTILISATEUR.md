@@ -1506,7 +1506,8 @@ Este bloque (a partir del nivel Diseño) es la cara de rendimiento de «Mis aero
 - Una línea por aeronave, agrupadas por categoría (helicópteros, turbohélices, reactores, pistón) con una cabecera de grupo plegable; «Ordenar por»: categoría, nombre u origen. Después vienen los perfiles guardados fuera de «Mis aeronaves», marcados «no está en «Mis aeronaves»». Sin «Mis aeronaves» (trigrama no configurado, nada declarado), el bloque muestra los perfiles y los tipos de la flota.
 - Columnas: «Aeronave» (silueta, nombre en negrita, designador y clase en pequeño, como en Ajustes), «Rendimiento» (origen del perfil: `.lnmperf`, SimBrief, ChatGPT, JSON, entrada, estimado por la clase; o «ninguno» y sus tres botones), «Mapa» (mapa motor), «Consumo crucero» y su origen, «Techo», «Falta» y, por último, «Elegir» («activo» para la aeronave elegida).
 - «Añadir una aeronave» abre la misma ventana de alta que Ajustes (véase «Añadir una aeronave y su rendimiento»); la aeronave añadida llega con «ninguno» y sus tres botones: «Crear desde SimBrief» (si SimBrief conoce el tipo), «Preguntar a ChatGPT», «Estimar por la clase».
-- Un designador compartido por varias variantes declaradas (CL2T: «Canadair CL-415», «Canadair CL-215T») tiene una fila por variante; todas muestran el mismo perfil, «rendimiento común a las variantes».
+- Un designador declarado con varias variantes (CL2T: «Canadair CL-415», «Canadair CL-215T») tiene una sola fila, con el nombre del tipo: el rendimiento es el del tipo, las variantes no cambian nada aquí. Una aeronave con varios perfiles tiene una fila por perfil, cada una con el nombre del perfil.
+- La casilla de la cabecera de la columna marca o desmarca todas las filas mostradas; los bordes de los títulos se arrastran para ajustar el ancho de las columnas (doble clic: anchos por defecto).
 - «Buscar una aeronave», junto a «Ordenar por», filtra igual (nombre, variante, designador, clase, origen): grupos con coincidencia desplegados, los demás plegados, «n aeronave(s)».
 - «Importar…» (`.lnmperf`, JSON, CSV), «Carpeta…» (carpeta de rendimiento), «Releer». La carpeta se relee sola cuando cambia en otro lugar (Ajustes, otra pestaña).
 - En la ficha del perfil activo, «Actualizar desde SimBrief» toma la ficha SimBrief del tipo (consumo de crucero, masas, techo, velocidad) y conserva sus entradas; frente a un perfil personal, propone «Completar los campos vacíos», «Fusionar» (la ficha cuenta como un perfil fechado en su obtención: el más reciente gana campo por campo, los vacíos se completan), «Sustituir» (valores de SimBrief en su lugar, el resto conservado) o «Perfil nuevo». Cuando cambian campos, una vista previa los muestra antes de validar. «Eliminar este avión», en la misma ficha, retira el perfil activo.
@@ -1527,7 +1528,7 @@ Sin tabla RPM en el perfil, la página muestra «Curva RPM ausente del perfil.»
 ### Tabla RPM / potencia → consumo
 
 Esta tabla muestra los puntos del mapa del motor del perfil activo: «RPM / N1», «Mín.», «Nominal», «Máx.», «Altitud (ft)» (opcional: una línea por altitud publicada), «Fase de vuelo», «Comentario». Bloque del nivel Experto.
-Haga clic en un título de columna (↕) para ordenar.
+Haga clic en un título de columna (↕) para ordenar. Arrastre el borde derecho de un título para ajustar el ancho de la columna (doble clic en el borde: anchos por defecto); el ajuste se guarda en el navegador. Un comentario largo se queda en una línea, con puntos suspensivos: el texto completo está en la información emergente y un doble clic en la celda lo despliega.
 Es de solo lectura: para modificarla, utilice el bloque «Mapa motor — editar RPM / potencia → consumo».
 Sin datos, muestra «No hay curva RPM en este perfil.»
 

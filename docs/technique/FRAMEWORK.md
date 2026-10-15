@@ -11,6 +11,7 @@ on every page. This document describes each component, its role and its interfac
 | Header bar, ☰ menu, language | `shared/repository_nav.js`, `.css` | all pages |
 | Appearance (designs, icons, side bar, colours) | `shared/designs.css`, `block_icons.js/.css`, `icons/repository_icons.js`, `side_nav.js`, `appearance_page.js` | all pages; settings on the “Appearance” page |
 | Resizable columns | `shared/column_resize.js` | Planner |
+| Resizable table columns, clipped cells | `shared/table_resize.js` | Planner (RPM / power table) |
 | Blocks (move / hide) | `shared/app_framework.js` | all pages |
 | Text translation | `shared/content_i18n.js` | CR, Planner, reporting pages |
 | Pilot profile | `shared/pilot_profile.js` | all pages (☰ menu) |
@@ -209,6 +210,15 @@ default widths. Widths kept as fractions (`fr`, fluid grid), remembered under `k
 query where the grid has its columns (handles hidden elsewhere); `until()`: element whose bottom limits the
 height of the handles. Returns: `{ reset(), refresh() }`. Used by the planner (input and curves |
 Result | instruments).
+
+## 3 quater. `table_resize.js` — resizable table columns, clipped cells
+
+`TableResize.attach(table, { key, min, title })` puts a handle on the right edge of every header cell but the
+last: dragging sets that column's width (`table-layout: fixed`, widths in px kept on the `<th>`, so they survive
+a redraw of the body), double-clicking a handle returns to the natural widths. Remembered under `key`. A long cell
+gets `class="tbl-clip"` and a `title` with the whole text: one line with an ellipsis, the text in a tooltip, a
+double-click unfolds it over several lines. Returns `{ reset(), refresh() }`; a second `attach` on the same table
+only refreshes. Used by the planner (RPM / power → consumption table, "Comment" column).
 
 ## 3 bis. `sticky_frame.js` — semi-mobile frames
 
