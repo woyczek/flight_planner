@@ -3124,14 +3124,10 @@ function newProfileFromLanding(id) {
 /** Liste des appareils de l'en-tête : une rangée par appareil (icône, nom, type, source du profil, état), groupées par
  *  catégorie ; profils enregistrés et appareils sans profil (Landing Performance, flotte). Choix au clic ou au clavier
  *  (flèches, Entrée ou Espace, Échap) : le profil devient actif (ou est créé vide). */
-function listAircraft() {
-  const esc = KIT.esc,
-    menu = $("aircraftMenu"),
-    profiles = Object.values(state.profiles || {}).filter(p => p && typeof p === "object" && String(p.id || p.icao || p.type || p
-      .name || "").trim()).map(p => normalize(p));
-  // Carburant : les fiches existantes seulement (pas de type sans fiche), « Mes appareils » en tête ; Fiches de
-  // performances : fiches et types de la flotte sans fiche
-  const all = [...profiles, ...(PERF_PAGE === "sheets" ? landingOnlyAircraft(profiles) : [])].sort((a, b) => {
+/** Appareils rangés par section : « Mes appareils » en tête (si mineFirst), puis par catégorie (« Autres » en dernier),
+ *  par nom dans chaque section. Rend Map(libellé → [[profil, profileVisual(profil)], …]) ; liste déjà triée en sortie. */
+function aircraftGroups(list, mineFirst) {
+  const all = [...list].sort((a, b) => {
       let x = profileVisual(a),
         y = profileVisual(b),
         group = ((x[0] === "Autres") - (y[0] === "Autres")) || String(x[0] || "").localeCompare(String(y[0] || ""), "fr");
@@ -3143,16 +3139,27 @@ function listAircraft() {
     mineKeys = new Set((myList || []).map(a => aircraftTypeKey(a.code))),
     mineNames = new Set((myList || []).map(a => aKey(a.name))),
     MINE = kt(["Mes appareils", "My aircraft", "Meine Luftfahrzeuge", "Mis aeronaves"]);
-  if (PERF_PAGE === "fuel" && mineKeys.size) groups.set(MINE, []);
+  if (mineFirst && mineKeys.size) groups.set(MINE, []);
   for (const p of all) {
     let g = profileVisual(p);
-    const mine = PERF_PAGE === "fuel" && ([p.id, p.icao, p.type].some(v => v && mineKeys.has(aircraftTypeKey(v))) || mineNames.has(aKey(p
-      .name)));
+    const mine = mineFirst && ([p.id, p.icao, p.type].some(v => v && mineKeys.has(aircraftTypeKey(v))) || mineNames.has(aKey(p.name)));
     const key = mine ? MINE : g[0];
     if (!groups.has(key)) groups.set(key, []);
     groups.get(key).push([p, g])
   }
   if (groups.get(MINE)?.length === 0) groups.delete(MINE);
+  return groups
+}
+
+function listAircraft() {
+  const esc = KIT.esc,
+    menu = $("aircraftMenu"),
+    profiles = Object.values(state.profiles || {}).filter(p => p && typeof p === "object" && String(p.id || p.icao || p.type || p
+      .name || "").trim()).map(p => normalize(p));
+  // Carburant : les fiches existantes seulement (pas de type sans fiche), « Mes appareils » en tête ; Fiches de
+  // performances : fiches et types de la flotte sans fiche
+  const all = [...profiles, ...(PERF_PAGE === "sheets" ? landingOnlyAircraft(profiles) : [])],
+    groups = aircraftGroups(all, PERF_PAGE === "fuel");
   /** Rangée d'un appareil : état « actif », « sans profil », « à compléter (n) » (manques en infobulle) ou « complet ». */
   const row = (p, g) => {
     const i = profileInfo(p),
@@ -5578,7 +5585,11 @@ function openGptPanel(pick) {
     id: pick.id,
     landing: !!pick.landing
   } : null;
-  const opts = entries.map(x => `<option value="${esc((x.landing ? "L:" : "P:") + x.id)}"${gptFor && x.id === gptFor.id && x.landing === gptFor.landing ? " selected" : ""}>${esc(x.landing ? ktf(["{p} — aucun profil", "{p} — no profile", "{p} — kein Profil", "{p} — sin perfil"], { p: x.p.name || x.id }) : `${x.p.name || x.id} (${x.p.type || x.p.icao || x.id})`)}</option>`).join("");
+  // sélecteur découpé comme le menu « Avion » du Carburant : « Mes appareils », puis par catégorie
+  const byP = new Map(entries.map(x => [x.p, x])),
+    option = x => `<option value="${esc((x.landing ? "L:" : "P:") + x.id)}"${gptFor && x.id === gptFor.id && x.landing === gptFor.landing ? " selected" : ""}>${esc(x.landing ? ktf(["{p} — aucun profil", "{p} — no profile", "{p} — kein Profil", "{p} — sin perfil"], { p: x.p.name || x.id }) : `${x.p.name || x.id} (${x.p.type || x.p.icao || x.id})`)}</option>`,
+    opts = [...aircraftGroups(entries.map(x => x.p), true)].map(([label, items]) =>
+      `<optgroup label="${esc(label)}">${items.map(([p]) => option(byP.get(p))).join("")}</optgroup>`).join("");
   box.innerHTML = `<div class="pp-gpt-row"><label>${esc(kt(["Appareil", "Aircraft", "Luftfahrzeug", "Aeronave"]))} <select id="ppGptFor">${opts}</select></label><button type="button" id="ppGptCopy" class="primary">${esc(kt(["Copier le prompt et ouvrir ChatGPT", "Copy the prompt and open ChatGPT", "Prompt kopieren und ChatGPT öffnen", "Copiar el prompt y abrir ChatGPT"]))}</button><a href="https://chatgpt.com/" target="_blank" rel="noopener">chatgpt.com</a><button type="button" id="ppGptClose" class="ghost" title="${esc(kt(["Fermer", "Close", "Schließen", "Cerrar"]))}">×</button></div><p id="ppGptStatus" class="mut">${esc(kt(["Le prompt demande à ChatGPT de compiler toutes les sources (manuels, constructeur, Wikipédia, forums de simulation), en unités imposées, valeurs estimées marquées, cartographie moteur comprise ; il donne aussi ce que la suite sait déjà.", "The prompt asks ChatGPT to compile every source (manuals, manufacturer, Wikipedia, simulation forums), in required units, estimated values marked, engine map included; it also gives what the suite already knows.", "Der Prompt bittet ChatGPT, alle Quellen zusammenzutragen (Handbücher, Hersteller, Wikipedia, Simulationsforen), in vorgeschriebenen Einheiten, geschätzte Werte markiert, Motorkennfeld inklusive; er nennt auch, was die Suite schon weiß.", "El prompt pide a ChatGPT reunir todas las fuentes (manuales, fabricante, Wikipedia, foros de simulación), en unidades impuestas, valores estimados marcados, mapa motor incluido; también da lo que la suite ya sabe."]))}</p><details><summary>${esc(kt(["Voir le prompt", "Show the prompt", "Prompt anzeigen", "Ver el prompt"]))}</summary><textarea id="ppGptPrompt" rows="12" readonly></textarea></details><label class="pp-gpt-paste">${esc(kt(["Coller ici la réponse de ChatGPT (le JSON, ou un CSV de performances)", "Paste ChatGPT’s answer here (the JSON, or a performance CSV)", "ChatGPTs Antwort hier einfügen (das JSON oder ein Leistungs-CSV)", "Pegar aquí la respuesta de ChatGPT (el JSON, o un CSV de rendimiento)"]))}<textarea id="ppGptReply" rows="6" spellcheck="false"></textarea></label><div class="pp-gpt-row"><button type="button" id="ppGptImport" class="secondary">${esc(kt(["Importer comme nouveau profil", "Import as a new profile", "Als neues Profil importieren", "Importar como perfil nuevo"]))}</button><button type="button" id="ppGptMerge" class="secondary"></button></div><p id="ppGptReport" class="mut"></p>`;
   box.hidden = false;
   $("ppGptFor").onchange = ev => {
