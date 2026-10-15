@@ -24,7 +24,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   "Aircraft flown (reports)". Variants of a shared designator (CL2T: CL-215T and CL-415): the declaration keeps
   `appareils.variantes` next to the designator lists; the add list offers each variant (record model, fleet variants,
   common names), one row per variant in My aircraft and in Fuel, named after the variant (otherwise "Canadair CL-215T /
-  CL-415"), the performance profile staying per designator ("performance shared by the variants").
+  CL-415"), the performance profile staying per designator ("performance shared by the variants"). Common name cell (48 px
+  silhouette box, left-aligned name on one line with the full name as a tooltip, one line of badges: designator, class,
+  mentions), constant row height; "Search an aircraft" field in both places (name, variant, designator, class, source;
+  groups with a match unfolded, the others folded, "n aircraft").
 - **Textured designs: sliders and scrollbars** — `input[type=range]` (climb instructions, level slider, zone radius) and scrollbars (page, tables, menus) now wear the design's materials (track = tab rail, thumb = the design's button, square corners, rounded in Aqua) in Cabinet, Flight log, Rugged, Aqua (both tones) and Tactical; flat designs unchanged.
 - **Fuel: "Flight level decision" chart, and simpler curves** (docs/technique/V2_FABLE.md § 12) — first block of the fuel
   plan, in the simple and the detailed view: trip fuel (left scale) and trip time (right scale, thin curve) of the whole

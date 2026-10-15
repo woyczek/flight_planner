@@ -1465,10 +1465,31 @@
     justify-content: flex-start;
     gap: 6px
   }
-  /* colonne de l'appareil (nom, type) alignée à gauche, en-tête compris */
-  .perf-profiles td:nth-child(3),
-  .perf-profiles th:nth-child(3) {
+  /* colonne de l'appareil (silhouette, nom, badges) alignée à gauche, en-tête compris ; lignes centrées verticalement */
+  .perf-profiles td:nth-child(2),
+  .perf-profiles th:nth-child(2) {
     text-align: left
+  }
+  .perf-profiles tbody td {
+    vertical-align: middle;
+    white-space: nowrap;
+    height: 46px
+  }
+  .perf-profiles .pp-clip {
+    max-width: 240px;
+    overflow: hidden;
+    text-overflow: ellipsis
+  }
+  .perf-profiles .pp-none .pp-acts {
+    flex-wrap: nowrap
+  }
+  .pp-find {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px
+  }
+  .pp-find input {
+    width: 16em
   }
   .perf-profiles .pp-pick,
   .perf-profiles .pp-sb {
@@ -1661,7 +1682,7 @@ html[data-skeuo] .repo-block-tools .fp-result-pin[aria-pressed="true"]:not(#imp)
 </aside>
 <aside id="fpInstrCol" class="instr-col" data-fp-detail aria-label="Instruments"><div class="fp-instr-sticky"></div></aside>
 
-<section class="card span12" data-min-level="3" data-block-id="perf-profiles" data-icon="list" data-no-i18n><h2 id="ppTitle">Profils de performances</h2><p id="ppIntro" class="mut"></p><p id="ppMine" class="mut pp-mine"></p><div class="row perf-profiles-actions"><button id="ppAdd" type="button" class="primary" data-icon="plus"><span id="ppAddLbl">Ajouter un appareil</span></button><button id="ppImport" type="button" class="secondary" data-icon="upload"><span id="ppImportLbl">Importer…</span></button><button id="ppFolder" type="button" class="secondary" data-icon="folder"><span id="ppFolderLbl">Dossier…</span></button><button id="ppReload" type="button" class="secondary" data-icon="refresh"><span id="ppReloadLbl">Relire</span></button><button id="ppMerge" type="button" class="secondary" data-icon="layers" disabled><span id="ppMergeLbl">Fusionner</span></button><button id="ppExport" type="button" class="secondary" data-icon="download" disabled><span id="ppExportLbl">Exporter</span></button><button id="ppSaveDir" type="button" class="secondary" data-icon="save" disabled><span id="ppSaveDirLbl">Enregistrer dans le dossier</span></button><button id="ppDelete" type="button" class="secondary" data-icon="trash" disabled><span id="ppDeleteLbl">Supprimer</span></button><button id="ppGpt" type="button" class="secondary" data-icon="sparkles"><span id="ppGptLbl">Demander à ChatGPT</span></button><label class="pp-sortlbl"><span id="ppSortLbl">Trier par</span> <select id="ppSort"><option value="cat"></option><option value="name"></option><option value="source"></option></select></label><span id="ppStatus" class="mut"></span><span id="ppRemoved" class="mut" hidden></span></div><div id="ppGptPanel" class="pp-gpt" hidden></div><div id="perfProfiles" class="perf-profiles"></div></section>
+<section class="card span12" data-min-level="3" data-block-id="perf-profiles" data-icon="list" data-no-i18n><h2 id="ppTitle">Profils de performances</h2><p id="ppIntro" class="mut"></p><p id="ppMine" class="mut pp-mine"></p><div class="row perf-profiles-actions"><button id="ppAdd" type="button" class="primary" data-icon="plus"><span id="ppAddLbl">Ajouter un appareil</span></button><button id="ppImport" type="button" class="secondary" data-icon="upload"><span id="ppImportLbl">Importer…</span></button><button id="ppFolder" type="button" class="secondary" data-icon="folder"><span id="ppFolderLbl">Dossier…</span></button><button id="ppReload" type="button" class="secondary" data-icon="refresh"><span id="ppReloadLbl">Relire</span></button><button id="ppMerge" type="button" class="secondary" data-icon="layers" disabled><span id="ppMergeLbl">Fusionner</span></button><button id="ppExport" type="button" class="secondary" data-icon="download" disabled><span id="ppExportLbl">Exporter</span></button><button id="ppSaveDir" type="button" class="secondary" data-icon="save" disabled><span id="ppSaveDirLbl">Enregistrer dans le dossier</span></button><button id="ppDelete" type="button" class="secondary" data-icon="trash" disabled><span id="ppDeleteLbl">Supprimer</span></button><button id="ppGpt" type="button" class="secondary" data-icon="sparkles"><span id="ppGptLbl">Demander à ChatGPT</span></button><span class="pp-find"><input id="ppSearch" type="search"><small id="ppFound" class="mut"></small></span><label class="pp-sortlbl"><span id="ppSortLbl">Trier par</span> <select id="ppSort"><option value="cat"></option><option value="name"></option><option value="source"></option></select></label><span id="ppStatus" class="mut"></span><span id="ppRemoved" class="mut" hidden></span></div><div id="ppGptPanel" class="pp-gpt" hidden></div><div id="perfProfiles" class="perf-profiles"></div></section>
 
 
 <section class="card span6 engine-card" data-min-level="4" data-block-id="engine-performance" data-icon="wrench" data-subtitle="Performances du moteur selon le régime."><h2>Fiche performance moteur</h2><div class="fields">
@@ -4977,6 +4998,14 @@ function perfProfilesLabels() {
   if ($("ppMine") && $("ppMine").innerHTML !== mineHtml) $("ppMine").innerHTML = mineHtml;
   setText("ppAddLbl", kt(["Ajouter un appareil", "Add an aircraft", "Luftfahrzeug hinzufügen", "Añadir una aeronave"]));
   setText("ppSortLbl", kt(["Trier par", "Sort by", "Sortieren nach", "Ordenar por"]));
+  const ph = kt(["Chercher un appareil (nom, variante, désignateur, classe, source)",
+    "Search an aircraft (name, variant, designator, class, source)",
+    "Luftfahrzeug suchen (Name, Variante, Kennung, Klasse, Quelle)", "Buscar una aeronave (nombre, variante, designador, clase, origen)"
+  ]);
+  if ($("ppSearch") && $("ppSearch").placeholder !== ph) {
+    $("ppSearch").placeholder = ph;
+    $("ppSearch").setAttribute("aria-label", ph)
+  }
   const so = $("ppSort")?.options;
   if (so)[
     ["catégorie", "category", "Kategorie", "categoría"],
@@ -5144,7 +5173,21 @@ function renderPerfProfiles() {
   ]))}</p>`);
   const sortBy = ppSortGet(),
     src = r => r.p ? profileSourceText(r.p) : "",
-    byName = (a, b) => String(a.name).localeCompare(String(b.name), "fr", {
+    Q = aKey($("ppSearch")?.value || ""),
+    /** La ligne répond-elle à la recherche (nom, variante, désignateur, classe OACI, source du profil) ? */
+    hit = r => !Q || [r.name, r.code, window.AIRCRAFT_DB?.[aKey(r.code)]?.description, src(r) || kt(["aucune", "none", "keine",
+      "ninguno"
+    ])].some(v => aKey(v || "").includes(Q));
+  const allCats = new Set(rows.map(r => r.category)); // groupes présents avant la recherche
+  if (Q) {
+    const kept = rows.filter(hit);
+    rows.length = 0;
+    rows.push(...kept)
+  }
+  setText("ppFound", Q ? ktf(["{n} appareil(s)", "{n} aircraft", "{n} Luftfahrzeug(e)", "{n} aeronave(s)"], {
+    n: rows.length
+  }) : "");
+  byName = (a, b) => String(a.name).localeCompare(String(b.name), "fr", {
       numeric: true
     }),
     CATS = E?.CATEGORIES || ["helico", "turboprop", "jet", "piston", "other"];
@@ -5165,11 +5208,14 @@ function renderPerfProfiles() {
   /** Ligne d'un appareil. */
   const row = r => {
     const p = r.p,
-      nm = (E?.nameCell?.({
+      nm = E?.nameCell?.({
         code: r.code,
         name: r.name,
-        common: r.common
-      }) || `<b>${esc(r.name)}</b>`) + (r.mine || r.fleet ? "" : `<div class="pp-outside">${esc(kt(["pas dans « Mes appareils »", "not in “My aircraft”", "nicht in „Meine Luftfahrzeuge“", "no está en «Mis aeronaves»"]))}</div>`);
+        common: r.common,
+        note: r.mine || r.fleet ? "" : kt(["pas dans « Mes appareils »", "not in “My aircraft”", "nicht in „Meine Luftfahrzeuge“",
+          "no está en «Mis aeronaves»"
+        ])
+      }) || `<b>${esc(r.name)}</b>`;
     if (!p) return `<tr><td></td><td>${nm}</td><td>${noneCell(r)}</td><td>—</td><td>—</td><td>—</td><td><span class="pp-missing">${esc(kt(["tout le profil", "the whole profile", "das ganze Profil", "todo el perfil"]))}</span></td><td></td></tr>`;
     const i = profileInfo(p),
       s = i.s,
@@ -5181,10 +5227,11 @@ function renderPerfProfiles() {
       }))}</small>` : ""}` : esc(kt(["non", "no", "nein", "no"])),
       ff = s.ff > 0 ? `${s.approx ? "≈ " : ""}${fmt(convertFuel(s.ff, p.unit || "kg", u), 0)} ${u}/h<br><small class="mut">${esc(ffSourceText(s))}</small>` : "—",
       ceil = i.ceil ? `${flTxt(i.ceil)}${i.ceilSrc === "apd" ? ` <small class="mut">(EUROCONTROL)</small>` : ""}` : "—",
-      miss = (i.missing.length ? `<span class="pp-missing">${esc(i.missing.join(", "))}</span>` : `<span class="pp-ok">${esc(kt(["rien", "nothing", "nichts", "nada"]))}</span>`) +
-      (i.estimated?.length ? `<br><small class="mut">${esc(ktf(["estimé : {list}", "estimated: {list}", "geschätzt: {list}", "estimado: {list}"], {
+      estTxt = i.estimated?.length ? ktf(["estimé : {list}", "estimated: {list}", "geschätzt: {list}", "estimado: {list}"], {
         list: i.estimated.join(", ")
-      }))}</small>` : ""),
+      }) : "",
+      miss = (i.missing.length ? `<div class="pp-clip pp-missing" title="${esc(i.missing.join(", "))}">${esc(i.missing.join(", "))}</div>` : `<div class="pp-clip pp-ok">${esc(kt(["rien", "nothing", "nichts", "nada"]))}</div>`) +
+      (estTxt ? `<div class="pp-clip mut" title="${esc(estTxt)}"><small>${esc(estTxt)}</small></div>` : ""),
       sel = `<input type="checkbox" class="pp-sel" data-id="${esc(p.id)}" title="${esc(kt([
         "Sélection : fusionner, exporter, enregistrer ou supprimer plusieurs profils",
         "Selection: merge, export, save or delete several profiles",
@@ -5198,8 +5245,8 @@ function renderPerfProfiles() {
     const shut = ppCollapsed();
     for (const c of CATS) {
       const g = ordered.filter(r => r.category === c);
-      if (!g.length) continue;
-      const closed = shut.has(c);
+      if (!g.length && !(Q && allCats.has(c))) continue;
+      const closed = Q ? !g.length : shut.has(c); // recherche : groupes avec correspondance dépliés, autres repliés
       body += `<tbody><tr class="pp-group"><th colspan="${head.length}"><button type="button" data-pp-group="${c}" aria-expanded="${!closed}">${closed ? "▸" : "▾"} ${esc(E?.categoryLabel?.(c) || c)} (${g.length})</button></th></tr>${closed ? "" : g.map(row).join("")}</tbody>`
     }
   } else body = `<tbody>${ordered.map(row).join("")}</tbody>`;
@@ -5306,6 +5353,7 @@ $("ppAdd").onclick = () => window.EquipmentEditor?.addDialog?.(null, a => {
   }), "ok")
 });
 $("ppSort").value = ppSortGet();
+$("ppSearch").oninput = () => renderPerfProfiles(); // recherche à la frappe
 $("ppSort").onchange = () => {
   localStorage.setItem("fpPpSort", $("ppSort").value);
   renderPerfProfiles()

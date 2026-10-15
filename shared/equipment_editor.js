@@ -40,7 +40,11 @@
 .eq-table th{font-size:11.5px;font-weight:700;opacity:.8}.eq-table .eq-c{width:5.5em;text-align:center}.eq-table .eq-c input{margin:0;width:16px;height:16px;vertical-align:middle;cursor:pointer}
 .eq-table code{font-size:11px}.eq-table small{opacity:.75}.eq-table td[data-eq-fix]{cursor:pointer}.eq-table td[data-eq-fix]:hover b,.eq-table td[data-eq-fix]:focus-visible b{text-decoration:underline}
 .eq-table tr.eq-fixing td{background:color-mix(in srgb,currentColor 8%,transparent)}
-.eq-name{display:flex;align-items:center;gap:8px}.eq-name .ac-icon{flex:none;display:inline-flex;width:36px;height:20px}.eq-name .ac-icon svg{width:100%;height:100%;fill:currentColor}
+.eq-name{display:flex;align-items:center;gap:8px;text-align:left;min-width:0;max-width:300px;line-height:1.3}
+.eq-name .eq-ic{flex:0 0 48px;width:48px;height:24px;display:flex;align-items:center;justify-content:center}.eq-name .eq-ic .ac-icon{display:inline-flex;width:44px;height:22px;margin:0}
+.eq-name .eq-ic .ac-icon svg{width:100%;height:100%;fill:currentColor}.eq-name .eq-tx{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;align-items:flex-start}
+.eq-name .eq-tx b{display:block;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.eq-name .eq-bdg{display:block;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:11px;opacity:.78}
+.eq-name .eq-bdg code{font-size:10.5px}.eq-find{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:0 0 10px}.eq-find input{flex:0 1 22em;min-width:12em}.eq-find small{opacity:.75}
 .eq-perf{font-size:12px}.eq-perf .eq-perf-acts{display:flex;flex-wrap:wrap;gap:4px;margin-top:3px}.eq-perf .eq-perf-acts a{font-size:11.5px;padding:2px 7px;border:1px solid color-mix(in srgb,currentColor 25%,transparent);border-radius:999px;text-decoration:none;color:inherit}
 .eq-perf .eq-perf-acts a:hover{background:color-mix(in srgb,currentColor 10%,transparent)}.eq-tbc{color:#c98a1b;font-weight:600}
 .eq-unvar{padding:0 6px;margin-left:6px;line-height:1.4;font-size:11px}.eq-table tr.eq-var td{padding-top:2px}
@@ -444,7 +448,9 @@ dialog.eq-dialog h3{margin:0 0 6px}dialog.eq-dialog footer{display:flex;justify-
   };
   /** Cellule de nom commune à Paramètres et au Carburant : silhouette, nom en gras, désignateur et classe en petit
    *  (« type OACI à confirmer » pour un appareil gardé sous son nom) ; a.common : variante d'un désignateur partagé
-   *  (« performances communes aux variantes »). a : { code, name, common }. */
+   *  (« variantes de CL2T ») ; a.note : mention ajoutée aux badges (« pas dans Mes appareils »). Silhouette dans une boîte
+   *  de 48 px, nom sur une ligne (ellipse, nom complet en infobulle), badges sur une ligne : hauteur de ligne constante.
+   *  a : { code, name, common, note }. */
   const nameCell = a => {
     const code = a.code,
       d = dbInfo(code).description || '',
@@ -455,8 +461,16 @@ dialog.eq-dialog h3{margin:0 0 6px}dialog.eq-dialog footer{display:flex;justify-
       }) || '',
       sub = designator(code) || dbInfo(code).model ? `<code>${esc(code)}</code>${d ? ` · ${esc(d)}` : ''}` :
       `<span class="eq-tbc">${esc(t(['type OACI à confirmer', 'ICAO type to confirm', 'ICAO-Typ zu bestätigen', 'tipo OACI por confirmar']))}</span>`;
-    const common = a.common ? `<br><small>${esc(tf(['performances communes aux variantes de {c}', 'performance shared by the variants of {c}', 'Leistungen gemeinsam für die Varianten von {c}', 'rendimiento común a las variantes de {c}'], { c: code }))}</small>` : '';
-    return `<div class="eq-name">${icon}<span><b>${esc(a.name || fullName(code) || code)}</b><br><small>${sub}</small>${common}</span></div>`;
+    const name = a.name || fullName(code) || code,
+      notes = [a.common ? tf(['variantes de {c}', 'variants of {c}', 'Varianten von {c}', 'variantes de {c}'], {
+        c: code
+      }) : '', a.note || ''].filter(Boolean),
+      tip = [name, code, d, a.common ? tf(['performances communes aux variantes de {c}', 'performance shared by the variants of {c}',
+        'Leistungen gemeinsam für die Varianten von {c}', 'rendimiento común a las variantes de {c}'
+      ], {
+        c: code
+      }) : '', a.note || ''].filter(Boolean).join(' · ');
+    return `<div class="eq-name" title="${esc(tip)}"><span class="eq-ic">${icon}</span><span class="eq-tx"><b>${esc(name)}</b><span class="eq-bdg">${sub}${notes.map(n => ` · ${esc(n)}`).join('')}</span></span></div>`;
   };
 
   /** Appareils du pilote, flotte comprise (possédés ou maîtrisés), dans l'ordre commun : catégorie (CATEGORIES), puis
@@ -801,7 +815,7 @@ dialog.eq-dialog h3{margin:0 0 6px}dialog.eq-dialog footer{display:flex;justify-
         ${perfTd(x.type)}
         <td class="eq-c"><input type="checkbox" data-own="${esc(x.type)}"${owned.has(x.type) ? ' checked' : ''} aria-label="${esc(tf(['{m} possédé', '{m} owned', '{m} besessen', '{m} poseído'], { m: x.model }))}"></td>
         <td class="eq-c"><input type="checkbox" data-master="${esc(x.type)}"${mastered.has(x.type) ? ' checked' : ''} aria-label="${esc(tf(['{m} maîtrisé', '{m} mastered', '{m} beherrscht', '{m} dominado'], { m: x.model }))}"></td></tr>${varRows(x.type, 2)}`).join('')}</tbody></table></div>`).join('')}</div>` : `<p class="small">${esc(t(['Flotte non chargée.', 'Fleet not loaded.', 'Flotte nicht geladen.', 'Flota no cargada.']))}</p>`;
-    host.innerHTML = `<div class="sp-card" id="eqTypes" data-no-i18n><h3>${esc(t(['Mes appareils', 'My aircraft', 'Meine Luftfahrzeuge', 'Mis aeronaves']))}</h3><p class="sp-hint">${esc(t(['Vos appareils, flotte comprise : ceux que vous possédez dans votre simulateur et ceux que vous maîtrisez — le Centre s’en sert pour vous affecter un appareil. Leurs performances sont dans le Carburant (bloc « Profils de performances », mêmes appareils) : colonne « Performances ».', 'Your aircraft, fleet included: those you own in your simulator and those you have mastered — the Centre uses them to assign you an aircraft. Their performance is in Fuel (“Performance profiles” block, same aircraft): “Performance” column.', 'Ihre Luftfahrzeuge, Flotte inbegriffen: die, die Sie in Ihrem Simulator besitzen, und die, die Sie beherrschen — das Zentrum nutzt sie, um Ihnen ein Luftfahrzeug zuzuweisen. Ihre Leistungen stehen unter Kraftstoff (Block „Leistungsprofile“, dieselben Luftfahrzeuge): Spalte „Leistungen“.', 'Sus aeronaves, flota incluida: las que posee en su simulador y las que domina — el Centro las usa para asignarle una aeronave. Su rendimiento está en Combustible (bloque «Perfiles de rendimiento», mismas aeronaves): columna «Rendimiento».']))}</p><div data-eq-types>${typesHtml()}</div></div>
+    host.innerHTML = `<div class="sp-card" id="eqTypes" data-no-i18n><h3>${esc(t(['Mes appareils', 'My aircraft', 'Meine Luftfahrzeuge', 'Mis aeronaves']))}</h3><p class="sp-hint">${esc(t(['Vos appareils, flotte comprise : ceux que vous possédez dans votre simulateur et ceux que vous maîtrisez — le Centre s’en sert pour vous affecter un appareil. Leurs performances sont dans le Carburant (bloc « Profils de performances », mêmes appareils) : colonne « Performances ».', 'Your aircraft, fleet included: those you own in your simulator and those you have mastered — the Centre uses them to assign you an aircraft. Their performance is in Fuel (“Performance profiles” block, same aircraft): “Performance” column.', 'Ihre Luftfahrzeuge, Flotte inbegriffen: die, die Sie in Ihrem Simulator besitzen, und die, die Sie beherrschen — das Zentrum nutzt sie, um Ihnen ein Luftfahrzeug zuzuweisen. Ihre Leistungen stehen unter Kraftstoff (Block „Leistungsprofile“, dieselben Luftfahrzeuge): Spalte „Leistungen“.', 'Sus aeronaves, flota incluida: las que posee en su simulador y las que domina — el Centro las usa para asignarle una aeronave. Su rendimiento está en Combustible (bloque «Perfiles de rendimiento», mismas aeronaves): columna «Rendimiento».']))}</p><div class="eq-find"><input type="search" data-eq-find placeholder="${esc(t(['Chercher un appareil (nom, variante, désignateur, classe, source)', 'Search an aircraft (name, variant, designator, class, source)', 'Luftfahrzeug suchen (Name, Variante, Kennung, Klasse, Quelle)', 'Buscar una aeronave (nombre, variante, designador, clase, origen)']))}" aria-label="${esc(t(['Chercher un appareil', 'Search an aircraft', 'Luftfahrzeug suchen', 'Buscar una aeronave']))}"><small data-eq-found></small></div><div data-eq-types>${typesHtml()}</div></div>
       ${otherHtml}
       <div class="sp-card" id="eqSims" data-no-i18n><h3>${esc(t(['Simulateurs', 'Simulators', 'Simulatoren', 'Simuladores']))}</h3><p class="sp-hint">${esc(t(['Simulateurs et outils installés (colonnes de la feuille FLOTTE du classeur ODV) : le Centre s’en sert pour réunir des pilotes sur un simulateur commun.', 'Installed simulators and tools (columns of the FLOTTE sheet of the ODV workbook): the Centre uses them to gather pilots on a common simulator.', 'Installierte Simulatoren und Werkzeuge (Spalten des Blatts FLOTTE der ODV-Arbeitsmappe): Das Zentrum nutzt sie, um Piloten auf einem gemeinsamen Simulator zusammenzubringen.', 'Simuladores y herramientas instalados (columnas de la hoja FLOTTE del libro ODV): el Centro los usa para reunir a pilotos en un simulador común.']))}</p>
         <div class="eq-sims" data-eq-sims>${sims.map(s => `<label><input type="checkbox" data-sim="${esc(s)}"${mine.has(s) ? ' checked' : ''}> ${M.simChips([s])}${esc(s)}</label>`).join('')}</div></div>
@@ -860,6 +874,7 @@ dialog.eq-dialog h3{margin:0 0 6px}dialog.eq-dialog footer{display:flex;justify-
       search.reset(); // sources changées (ajout, autres pilotes, passe du lanceur) : index refait à la prochaine frappe
       const el = host.querySelector('[data-eq-other]');
       if (el) el.innerHTML = otherRows();
+      if (host.querySelector('[data-eq-find]')?.value) find();
     };
     /** Tout redessiné (silhouettes ou fiches SimBrief chargées après le premier dessin). */
     function redrawAll() {
@@ -869,6 +884,33 @@ dialog.eq-dialog h3{margin:0 0 6px}dialog.eq-dialog footer{display:flex;justify-
       redrawOther();
       window.AppFramework?.refresh?.();
     }
+    /** Recherche à la frappe : lignes des cartes (flotte et hors flotte) filtrées sur leur texte (nom, variante,
+     *  désignateur, classe, source des performances…) ; carte sans correspondance repliée (tableau masqué), les autres
+     *  dépliées ; « n appareil(s) » ; champ vide : tout. */
+    const find = () => {
+      const fq = host.querySelector('[data-eq-find]'),
+        out = host.querySelector('[data-eq-found]'),
+        Q = norm(fq?.value || '');
+      let n = 0;
+      host.querySelectorAll('#eqTypes .repo-card, #eqOther').forEach(card => {
+        const tb = card.querySelector('table');
+        if (!tb) return;
+        let any = false;
+        tb.querySelectorAll('tbody tr').forEach(tr => {
+          const ok = !Q || norm(tr.textContent).includes(Q) || norm(tr.querySelector('[title]')?.title || '').includes(Q);
+          tr.hidden = !ok;
+          if (ok) {
+            any = true;
+            n++;
+          }
+        });
+        tb.hidden = !!Q && !any;
+      });
+      if (out) out.textContent = Q ? tf(['{n} appareil(s)', '{n} aircraft', '{n} Luftfahrzeug(e)', '{n} aeronave(s)'], {
+        n
+      }) : '';
+    };
+    host.querySelector('[data-eq-find]').oninput = find;
     // profil créé ou supprimé dans le Carburant (autre onglet) : colonne « Performances » à jour
     window.addEventListener('storage', e => {
       if (e.key === 'flightPerfState' && host.isConnected) refreshPerf();
