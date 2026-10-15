@@ -1404,6 +1404,17 @@
   /** Classe OACI d'une fiche (« L2J ») et son libellé lisible (« avion, 2 réacteurs ») ; libellé de la famille seule
    *  pour une fiche incomplète (type saisi dans un CR : « H », « L »). */
   function acClass(rec) {
+    // ballon, dirigeable (hors OACI) : pas de classe OACI ; nature, moteurs et motorisation en clair, code de plan de vol
+    if (rec?.kind === 'airship' || rec?.kind === 'balloon') {
+      const n = +rec.engines || 0,
+        pw = AC_POWER[rec.engine_type];
+      return {
+        code: rec.fpl || '',
+        label: `${t(rec.kind === 'airship' ? ['dirigeable', 'airship', 'Luftschiff', 'dirigible'] : ['ballon', 'balloon', 'Ballon',
+          'globo'
+        ])}${n && pw ? `, ${n} ${pw[li()][n > 1 ? 1 : 0]}` : ''} (${t(['hors OACI', 'non-ICAO', 'nicht ICAO', 'no OACI'])})`
+      };
+    }
     const d = String(rec?.description || '').toUpperCase(),
       fam = AC_FAMILY[d[0]] ? t(AC_FAMILY[d[0]]) : '';
     const n = d[1] === 'C' ? 2 : parseInt(d[1], 10) || 0,

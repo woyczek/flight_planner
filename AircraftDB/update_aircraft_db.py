@@ -1066,8 +1066,20 @@ def parse_aviationfanatic(html, requested_code, local=False):
         rec["icao"] = False
         rec["fpl"] = ("SHIP" if int(n) else "BALL") if cat == "B" else "ZZZZ"
     if cat == "B":
-        rec["wing_position"] = "none"  # ballon, dirigeable : pas d'aile (Wikipedia non consulté)
+        lighter_than_air(rec, int(n), eng)
     return rec
+
+
+def lighter_than_air(rec, engines, engine_type):
+    """Ballon ou dirigeable (catégorie B d'Aviation Fanatic, hors OACI) : aucune classe OACI n'existe pour eux — pas de
+    description « B2P » prise pour un code OACI (lue « 2 moteurs à pistons » : classé avec les avions à pistons dans les
+    fiches de performances) ; nature (kind), moteurs et motorisation gardés à part, pas d'aile. Modifie rec."""
+    rec["description"] = ""
+    rec["kind"] = "airship" if engines else "balloon"
+    rec["engines"] = engines
+    if engines:
+        rec["engine_type"] = engine_type
+    rec["wing_position"] = "none"  # Wikipedia non consulté
 
 
 def aviationfanatic_lookup(code):
@@ -1210,7 +1222,8 @@ def source_is_weak(source):
 
 
 def record_complete(rec):
-    return bool(rec and rec.get("tdesig") and rec.get("description") and rec.get("wtc") and rec.get("wing_position"))
+    # ballon, dirigeable (kind) : complet sans description, aucune classe OACI ne leur correspond
+    return bool(rec and rec.get("tdesig") and (rec.get("description") or rec.get("kind")) and rec.get("wtc") and rec.get("wing_position"))
 
 
 def add_safe_aliases(aliases, canonical, alternative_names):
@@ -1285,6 +1298,11 @@ def update_one(db, aliases, raw_designator, icao_index, use_network=True, force=
             if fan.get("icao") is False:  # type sans désignateur OACI : SHIP, BALL ou ZZZZ dans un plan de vol
                 rec["icao"] = False
                 rec["fpl"] = fan.get("fpl") or "ZZZZ"
+            for k in ("kind", "engines", "engine_type"):  # ballon, dirigeable (merge_nonempty ne les reprend pas)
+                if k in fan:
+                    rec[k] = fan[k]
+            if fan.get("kind"):
+                rec["description"] = ""
                 rec["source"] = "Aviation Fanatic (hors OACI)"
 
     sane_wing(rec)  # hélicoptère : rotor sans consulter Wikipedia
@@ -1317,6 +1335,11 @@ def apply_overrides(db, aliases, overrides):
     for code, name in SHARED_DESIGNATOR_NAMES.items():
         if code in db and db[code].get("model") != name:
             db[code]["model"] = name
+    # fiches d'avant (description « B2P » d'Aviation Fanatic) : ballon ou dirigeable remis sans faux code OACI
+    for rec in db.values():
+        d = str(rec.get("description") or "") if isinstance(rec, dict) else ""
+        if rec and isinstance(rec, dict) and rec.get("icao") is False and len(d) == 3 and d[0] == "B" and d[1].isdigit():
+            lighter_than_air(rec, int(d[1]), d[2])
     for key, patch in overrides.get("__records", {}).items():
         canonical = normalize_key(key)
         base = dict(db.get(canonical, {"tdesig": canonical}))

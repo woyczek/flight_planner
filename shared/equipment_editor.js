@@ -791,7 +791,7 @@ dialog.eq-dialog h3{margin:0 0 6px}dialog.eq-dialog footer{display:flex;justify-
           name = vs[0] || fullName(x.type) || x.type,
           named = !designator(x.type) && !x.info.model; // appareil gardé sous son nom
         const note = running.has(x.type) ? t(['complétion de la base en cours…', 'completing the type base…', 'Typbasis wird ergänzt…', 'completando la base de tipos…']) :
-          named ? '' : (x.info.icao === false ? `${tf(['hors OACI : {f} dans un plan de vol', 'non-ICAO: {f} in a flight plan', 'nicht ICAO: {f} im Flugplan', 'no OACI: {f} en un plan de vuelo'], { f: x.info.fpl || 'ZZZZ' })}` : '') ||
+          named ? '' : (x.info.icao === false ? `${x.info.kind ? `${t(x.info.kind === 'airship' ? ['dirigeable', 'airship', 'Luftschiff', 'dirigible'] : ['ballon', 'balloon', 'Ballon', 'globo'])} · ` : ''}${tf(['hors OACI : {f} dans un plan de vol', 'non-ICAO: {f} in a flight plan', 'nicht ICAO: {f} im Flugplan', 'no OACI: {f} en un plan de vuelo'], { f: x.info.fpl || 'ZZZZ' })}` : '') ||
           (x.info.model ? '' : tried.has(x.type) ? t(['introuvable (OACI, EUROCONTROL, Aviation Fanatic)', 'not found (ICAO, EUROCONTROL, Aviation Fanatic)', 'nicht gefunden (ICAO, EUROCONTROL, Aviation Fanatic)', 'no encontrado (OACI, EUROCONTROL, Aviation Fanatic)']) : offi.has(x.type) ? t(['absent de la base de ce poste', 'missing from this computer’s type base', 'fehlt in der Typbasis dieses Rechners', 'ausente de la base de este equipo']) :
             t(['type inconnu de la base OACI', 'type unknown to the ICAO base', 'Typ in der ICAO-Basis unbekannt', 'tipo desconocido en la base OACI']));
         const mineRow = owned.has(x.type) || shown.has(x.type);

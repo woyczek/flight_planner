@@ -476,6 +476,11 @@ servies depuis un autre disque, registre aux fichiers absents, profils cachés �
 
 ### Corrigé
 
+- **Aircraft types: Goodyear GZ-20 airship shown as "B2P" and classed with piston aircraft** — "B2P" was Aviation
+  Fanatic's category (B = balloon) taken for an ICAO description. Balloons and airships (no ICAO class exists for them)
+  now have no description but their nature (`kind`: airship / balloon), engines and engine type; shown as "airship ·
+  non-ICAO: SHIP in a flight plan", class "airship, 2 piston engines (non-ICAO)" in Maintenance, "Others" in the
+  performance sheets, "other" silhouette. Existing records are converted at the next pass of the updater.
 - **Assignment: declared variant "Canadair CL-415" not matched with the fleet's "CL-415 Pélican"** — variants are now
   compared by model number (CL415 ≠ CL215T), by inclusion only when they have none ("Rafale B" = "Dassault Rafale B")
   (`shared/assignments.js`).
