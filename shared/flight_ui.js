@@ -229,12 +229,13 @@
     dialog.querySelectorAll("button").forEach(b => b.onclick = () => {
       let choice = b.dataset.choice;
       dialog.close();
-      if (choice === "stay") return;
+      if (choice === "stay") return syncAircraftPicker();
       if (choice === "save") saveCurrent();
       rawSetActive(p, choice === "save" ? "profil enregistré puis changé" : "modifications abandonnées");
       closeHeaderMenus()
     })
   }
+  window.requestAircraftSwitch = requestSwitch; // sélecteur de l'en-tête des Fiches de performances
   // Surcharge de la liste des appareils : le choix passe par requestSwitch (confirmation des modifications).
   listAircraft = function() {
     rawListAircraft();

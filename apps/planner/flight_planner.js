@@ -68,10 +68,45 @@ function aircraftIcon(p) {
 }
 /** Met à jour le bouton d'appareil de l'en-tête (icône, nom, info-bulle) d'après le profil actif. */
 function syncAircraftPicker() {
+  if (PERF_PAGE === "sheets") renderSheetPick();
   let p = active;
   $('aircraftCurrentIcon').innerHTML = p ? aircraftIcon(p) : '<span class="ac-icon">✈</span>';
   $('aircraftCurrentText').textContent = p ? (p.name || p.id) : 'Aucun avion';
   $('aircraftCurrent').title = p ? `${p.type||p.icao||p.id} · ${p.name||p.id}` : 'Choisir l’avion'
+}
+/** Fiches de performances : sélecteur « Appareil » de l'en-tête, la fiche modifiée et l'appareil du panneau ChatGPT.
+ *  Fiches enregistrées et types de la flotte sans fiche, découpés comme le menu « Avion » du Carburant (« Mes appareils »
+ *  en tête, puis par catégorie). Choix : changement de fiche (confirmation si elle est modifiée, shared/flight_ui.js) ;
+ *  type sans fiche : fiche vide à compléter. Refait seulement si la liste ou le choix ont changé. */
+function renderSheetPick() {
+  const sel = document.getElementById("sheetPick");
+  if (!sel) return;
+  const esc = KIT.esc,
+    entries = gptEntries(),
+    byP = new Map(entries.map(x => [x.p, x])),
+    cur = active ? (state.profiles?.[active.id] ? "P:" : "L:") + active.id : "",
+    option = x => `<option value="${esc((x.landing ? "L:" : "P:") + x.id)}">${esc(x.landing ? ktf(["{p} — aucune fiche", "{p} — no sheet", "{p} — kein Blatt", "{p} — sin ficha"], { p: x.p.name || x.id }) : `${x.p.name || x.id} (${x.p.type || x.p.icao || x.id})`)}</option>`,
+    html = (cur ? "" : `<option value="">${esc(kt(["— choisir un appareil —", "— choose an aircraft —", "— Luftfahrzeug wählen —", "— elegir una aeronave —"]))}</option>`) + [...aircraftGroups(entries.map(x => x.p), true)].map(([label, items]) =>
+      `<optgroup label="${esc(label)}">${items.map(([p]) => option(byP.get(p))).join("")}</optgroup>`).join("");
+  $("sheetPickLbl").textContent = kt(["Appareil", "Aircraft", "Luftfahrzeug", "Aeronave"]);
+  if (sel.dataset.html !== html) {
+    sel.innerHTML = html;
+    sel.dataset.html = html
+  }
+  // fiche active pas encore enregistrée (créée hors de la liste) : ajoutée en tête pour que le sélecteur la montre
+  if (cur && ![...sel.options].some(o => o.value === cur)) {
+    sel.insertAdjacentHTML("afterbegin", `<option value="${esc(cur)}">${esc(active.name || active.id)}</option>`);
+    sel.dataset.html = ""
+  }
+  sel.value = cur;
+  sel.onchange = () => {
+    const v = sel.value,
+      id = v.slice(2),
+      p = v.startsWith("L:") ? newProfileFromLanding(id) : state.profiles?.[id];
+    if (!p) return renderSheetPick();
+    if (window.requestAircraftSwitch) window.requestAircraftSwitch(p);
+    else setActive(p, kt(["base de performances", "performance database", "Leistungsdatenbank", "base de rendimiento"]))
+  }
 }
 /** Ferme les menus déroulants de l'en-tête (langue, préférences, appareils). */
 function closeHeaderMenus() {
@@ -3424,6 +3459,7 @@ function aircraftTypeKey(v) {
  *  cartographie moteur, consommation de croisière, plafond, données manquantes, Choisir. Écrit seulement s'il change. */
 function renderPerfProfiles() {
   perfProfilesLabels();
+  if (PERF_PAGE === "sheets") renderSheetPick();
   syncSbTypeButton();
   const box = $("perfProfiles"),
     E = window.EquipmentEditor;
@@ -5554,52 +5590,45 @@ function gptRefresh(prompt = true) {
  *  collée ; panneau refait si l'appareil n'est pas encore dans le sélecteur (profil tout juste créé). */
 function gptFollow(e) {
   // (getElementById : le Carburant n'a pas ce panneau, $ y rendrait un élément fantôme)
-  const box = document.getElementById("ppGptPanel"),
-    sel = document.getElementById("ppGptFor");
-  if (!box || box.hidden || !sel || !e?.id) return;
-  const v = (e.landing ? "L:" : "P:") + e.id;
-  if (sel.value === v) return;
-  if (![...sel.options].some(o => o.value === v)) return openGptPanel(e);
-  sel.value = v;
+  const box = document.getElementById("ppGptPanel");
+  if (!box || box.hidden || !e?.id || (gptFor?.id === e.id && gptFor.landing === !!e.landing)) return;
   gptFor = {
     id: e.id,
     landing: !!e.landing
   };
+  gptForLabel();
   gptRefresh()
 }
-/** Ouvre le panneau « Demander à ChatGPT » pour pick { id, landing } (sinon : le seul profil coché, le profil actif, le
- *  premier appareil) : choix de l'appareil, copie du prompt et ouverture de ChatGPT, prompt replié, réponse à coller. */
+/** Nom de l'appareil du panneau ChatGPT (celui de l'en-tête). */
+function gptForLabel() {
+  const el = document.getElementById("ppGptFor"),
+    p = gptProfileOf(gptFor);
+  if (el) el.textContent = p ? `${p.name || p.id} (${p.type || p.icao || p.id})` : "—"
+}
+/** Ouvre le panneau « Demander à ChatGPT » pour pick { id, landing } (sinon : l'appareil choisi dans l'en-tête) : copie
+ *  du prompt et ouverture de ChatGPT, prompt replié, réponse à coller. Sans appareil choisi : le sélecteur de l'en-tête. */
 function openGptPanel(pick) {
   const box = $("ppGptPanel"),
     esc = KIT.esc,
-    entries = gptEntries(),
-    one = [...ppSelected].filter(id => state.profiles?.[id]);
-  pick ||= one.length === 1 ? {
-    id: one[0],
-    landing: false
-  } : active ? {
-    id: active.id,
-    landing: !state.profiles?.[active.id]
-  } : entries[0];
+    // l'appareil choisi dans l'en-tête (ou par « Modifier » dans le tableau)
+    picked = active ? {
+      id: active.id,
+      landing: !state.profiles?.[active.id]
+    } : null;
+  pick ||= picked;
+  if (!pick) {
+    notify(kt(["Choisis d’abord l’appareil dans l’en-tête.", "First choose the aircraft in the header.",
+      "Zuerst das Luftfahrzeug in der Kopfzeile wählen.", "Elige primero la aeronave en la cabecera."
+    ]));
+    return document.getElementById("sheetPick")?.focus()
+  }
   gptFor = pick ? {
     id: pick.id,
     landing: !!pick.landing
   } : null;
-  // sélecteur découpé comme le menu « Avion » du Carburant : « Mes appareils », puis par catégorie
-  const byP = new Map(entries.map(x => [x.p, x])),
-    option = x => `<option value="${esc((x.landing ? "L:" : "P:") + x.id)}"${gptFor && x.id === gptFor.id && x.landing === gptFor.landing ? " selected" : ""}>${esc(x.landing ? ktf(["{p} — aucun profil", "{p} — no profile", "{p} — kein Profil", "{p} — sin perfil"], { p: x.p.name || x.id }) : `${x.p.name || x.id} (${x.p.type || x.p.icao || x.id})`)}</option>`,
-    opts = [...aircraftGroups(entries.map(x => x.p), true)].map(([label, items]) =>
-      `<optgroup label="${esc(label)}">${items.map(([p]) => option(byP.get(p))).join("")}</optgroup>`).join("");
-  box.innerHTML = `<div class="pp-gpt-row"><label>${esc(kt(["Appareil", "Aircraft", "Luftfahrzeug", "Aeronave"]))} <select id="ppGptFor">${opts}</select></label><button type="button" id="ppGptCopy" class="primary">${esc(kt(["Copier le prompt et ouvrir ChatGPT", "Copy the prompt and open ChatGPT", "Prompt kopieren und ChatGPT öffnen", "Copiar el prompt y abrir ChatGPT"]))}</button><a href="https://chatgpt.com/" target="_blank" rel="noopener">chatgpt.com</a><button type="button" id="ppGptClose" class="ghost" title="${esc(kt(["Fermer", "Close", "Schließen", "Cerrar"]))}">×</button></div><p id="ppGptStatus" class="mut">${esc(kt(["Le prompt demande à ChatGPT de compiler toutes les sources (manuels, constructeur, Wikipédia, forums de simulation), en unités imposées, valeurs estimées marquées, cartographie moteur comprise ; il donne aussi ce que la suite sait déjà.", "The prompt asks ChatGPT to compile every source (manuals, manufacturer, Wikipedia, simulation forums), in required units, estimated values marked, engine map included; it also gives what the suite already knows.", "Der Prompt bittet ChatGPT, alle Quellen zusammenzutragen (Handbücher, Hersteller, Wikipedia, Simulationsforen), in vorgeschriebenen Einheiten, geschätzte Werte markiert, Motorkennfeld inklusive; er nennt auch, was die Suite schon weiß.", "El prompt pide a ChatGPT reunir todas las fuentes (manuales, fabricante, Wikipedia, foros de simulación), en unidades impuestas, valores estimados marcados, mapa motor incluido; también da lo que la suite ya sabe."]))}</p><details><summary>${esc(kt(["Voir le prompt", "Show the prompt", "Prompt anzeigen", "Ver el prompt"]))}</summary><textarea id="ppGptPrompt" rows="12" readonly></textarea></details><label class="pp-gpt-paste">${esc(kt(["Coller ici la réponse de ChatGPT (le JSON, ou un CSV de performances)", "Paste ChatGPT’s answer here (the JSON, or a performance CSV)", "ChatGPTs Antwort hier einfügen (das JSON oder ein Leistungs-CSV)", "Pegar aquí la respuesta de ChatGPT (el JSON, o un CSV de rendimiento)"]))}<textarea id="ppGptReply" rows="6" spellcheck="false"></textarea></label><div class="pp-gpt-row"><button type="button" id="ppGptImport" class="secondary">${esc(kt(["Importer comme nouveau profil", "Import as a new profile", "Als neues Profil importieren", "Importar como perfil nuevo"]))}</button><button type="button" id="ppGptMerge" class="secondary"></button></div><p id="ppGptReport" class="mut"></p>`;
+  box.innerHTML = `<div class="pp-gpt-row"><span>${esc(kt(["Appareil", "Aircraft", "Luftfahrzeug", "Aeronave"]))} : <strong id="ppGptFor"></strong></span><button type="button" id="ppGptCopy" class="primary">${esc(kt(["Copier le prompt et ouvrir ChatGPT", "Copy the prompt and open ChatGPT", "Prompt kopieren und ChatGPT öffnen", "Copiar el prompt y abrir ChatGPT"]))}</button><a href="https://chatgpt.com/" target="_blank" rel="noopener">chatgpt.com</a><button type="button" id="ppGptClose" class="ghost" title="${esc(kt(["Fermer", "Close", "Schließen", "Cerrar"]))}">×</button></div><p id="ppGptStatus" class="mut">${esc(kt(["Le prompt demande à ChatGPT de compiler toutes les sources (manuels, constructeur, Wikipédia, forums de simulation), en unités imposées, valeurs estimées marquées, cartographie moteur comprise ; il donne aussi ce que la suite sait déjà.", "The prompt asks ChatGPT to compile every source (manuals, manufacturer, Wikipedia, simulation forums), in required units, estimated values marked, engine map included; it also gives what the suite already knows.", "Der Prompt bittet ChatGPT, alle Quellen zusammenzutragen (Handbücher, Hersteller, Wikipedia, Simulationsforen), in vorgeschriebenen Einheiten, geschätzte Werte markiert, Motorkennfeld inklusive; er nennt auch, was die Suite schon weiß.", "El prompt pide a ChatGPT reunir todas las fuentes (manuales, fabricante, Wikipedia, foros de simulación), en unidades impuestas, valores estimados marcados, mapa motor incluido; también da lo que la suite ya sabe."]))}</p><details><summary>${esc(kt(["Voir le prompt", "Show the prompt", "Prompt anzeigen", "Ver el prompt"]))}</summary><textarea id="ppGptPrompt" rows="12" readonly></textarea></details><label class="pp-gpt-paste">${esc(kt(["Coller ici la réponse de ChatGPT (le JSON, ou un CSV de performances)", "Paste ChatGPT’s answer here (the JSON, or a performance CSV)", "ChatGPTs Antwort hier einfügen (das JSON oder ein Leistungs-CSV)", "Pegar aquí la respuesta de ChatGPT (el JSON, o un CSV de rendimiento)"]))}<textarea id="ppGptReply" rows="6" spellcheck="false"></textarea></label><div class="pp-gpt-row"><button type="button" id="ppGptImport" class="secondary">${esc(kt(["Importer comme nouveau profil", "Import as a new profile", "Als neues Profil importieren", "Importar como perfil nuevo"]))}</button><button type="button" id="ppGptMerge" class="secondary"></button></div><p id="ppGptReport" class="mut"></p>`;
   box.hidden = false;
-  $("ppGptFor").onchange = ev => {
-    const v = ev.target.value;
-    gptFor = {
-      id: v.slice(2),
-      landing: v.startsWith("L:")
-    };
-    gptRefresh()
-  };
+  gptForLabel();
   $("ppGptCopy").onclick = () => gptCopyAndOpen();
   $("ppGptClose").onclick = () => box.hidden = true;
   $("ppGptReply").oninput = () => gptRefresh(false);

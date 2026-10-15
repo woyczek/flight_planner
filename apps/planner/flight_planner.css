@@ -1312,6 +1312,17 @@
   .pp-mine {
     margin: 2px 0 8px
   }
+  /* Fiches de performances : sélecteur d'appareil et barre d'actions dans l'en-tête */
+  .sheet-head .pp-mine {
+    margin: 0;
+    flex: 1 1 260px
+  }
+  .sheet-pick select {
+    max-width: 340px
+  }
+  header .sheet-actions {
+    margin: 8px 0 0
+  }
   .pp-sortlbl {
     display: inline-flex;
     align-items: center;
