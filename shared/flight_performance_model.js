@@ -116,12 +116,19 @@
     return (lo + hi) / 2;
   };
 
-  // Classe de motorisation : champ du profil, sinon base OACI (3e lettre de la description : J / T / P).
+  /** Motorisation d'un profil d'après la base des types (classement commun de la suite, AircraftCatalog.classify : alias
+   *  suivis, dirigeable compris) ; repli sans catalogue : 3e lettre de la description. J, T, P, ou ''. */
+  function powerOf(profile, db) {
+    const code = String(profile?.type || profile?.icao || profile?.id || '').toUpperCase(),
+      cat = window.AircraftCatalog;
+    if (cat?.classify && (!db || db === window.AIRCRAFT_DB)) return cat.classify(code).power;
+    const row = db?.[code] || db?.[db?.__aliases?.[code]];
+    return String(row?.description || '')[2] || '';
+  }
+  // Classe de motorisation : champ du profil, sinon base des types (J / T / P).
   function kindOf(profile, db) {
     if (CLASS[profile?.engineType]) return profile.engineType;
-    const code = String(profile?.type || profile?.icao || profile?.id || '').toUpperCase(),
-      row = db?.[code] || db?.[db?.__aliases?.[code]];
-    const e = String(row?.description || '')[2];
+    const e = powerOf(profile, db);
     if (e === 'J') return 'jet';
     if (e === 'T') return 'turboprop';
     if (e === 'P') return 'piston';
@@ -136,9 +143,7 @@
   /** Vrai si la motorisation n'est ni renseignée dans le profil ni connue de la base OACI (déduite de la vitesse). */
   function kindGuessed(profile, db) {
     if (CLASS[profile?.engineType]) return false;
-    const code = String(profile?.type || profile?.icao || profile?.id || '').toUpperCase(),
-      row = db?.[code] || db?.[db?.__aliases?.[code]];
-    return !'JTP'.includes(String(row?.description || '')[2] || '-');
+    return !'JTP'.includes(powerOf(profile, db) || '-');
   }
 
   /** Modèle de performances calibré sur un profil d'appareil (et la base des types db pour la motorisation) : polaire, poussée / puissance, consommation, plafond. Lève une erreur si la TAS ou le débit de croisière manquent. Retourne les calculs exportés (cruise, trip, climbTo, climbPoint, climbOpt, manualLaw…). */

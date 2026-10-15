@@ -212,7 +212,60 @@
     }
     return '';
   }
+  // ---- classement d'un type : une seule réponse pour toute la suite (affectations, Mes appareils, Carburant et fiches de
+  // performances, icônes, CR, estimation de durée, Maintenance) — « quel est le type ou la catégorie de ce type OACI ou
+  // de cet appareil ? »
+  /** Fiche de la base d'un code (désignateur, alias suivis jusqu'au bout : A4M → A400M → A400) ; null si inconnu. */
+  function record(code) {
+    const db = window.AIRCRAFT_DB || {},
+      al = db.__aliases || {};
+    let k = fold(code);
+    for (let i = 0; i < 6 && al[k] && al[k] !== k; i++) k = al[k];
+    return k && !k.startsWith('__') && db[k] && typeof db[k] === 'object' ? db[k] : null;
+  }
+  /** Catégories, dans l'ordre d'affichage : hélicoptères, turbopropulseurs, réacteurs, pistons, autres. */
+  const CATEGORIES = ['helico', 'turboprop', 'jet', 'piston', 'other'];
+  /** Classement d'un type. input : code (désignateur, alias) ou fiche de la base ; opts.description : description OACI
+   *  seule (« L2J ») quand il n'y a pas de fiche. Sortie : { code, rec, icao, fpl, family, kind, engines, power, category,
+   *  wing, wtc } —
+   *  · family : L avion, S hydravion, A amphibie, H hélicoptère, G autogire, T convertible, B ballon ou dirigeable
+   *    (hors OACI : kind « airship » | « balloon »), '' inconnue ; engines : nombre (« C », moteurs couplés : 2) ;
+   *  · power : J réacteur, T turbine, P pistons, E électrique, R fusée, '' inconnue ;
+   *  · category (règles de l'utilisateur, 15/10/2026) : helico (H, G), puis selon la motorisation jet (J), turboprop (T),
+   *    piston (P) — convertible, amphibie et hydravion compris — ; other : ballon, dirigeable, électrique, inconnu ;
+   *  · wing : rotary (H, G, T), amphibious (A, S), fixed (L), lta (ballon, dirigeable), '' ;
+   *  · icao : faux pour un type sans désignateur OACI ; fpl : désignateur du plan de vol (SHIP, BALL, ZZZZ sinon le code). */
+  function classify(input, {
+    description
+  } = {}) {
+    const rec = input && typeof input === 'object' ? input : input ? record(input) : null,
+      d = String(description ?? rec?.description ?? '').toUpperCase(),
+      kind = rec?.kind === 'airship' || rec?.kind === 'balloon' ? rec.kind : '',
+      family = kind ? 'B' : d[0] && 'LSAHGT'.includes(d[0]) ? d[0] : '',
+      engines = kind ? +rec.engines || 0 : d[1] === 'C' ? 2 : parseInt(d[1], 10) || 0,
+      power = kind ? String(rec.engine_type || '').toUpperCase() : d[2] && 'JTPER'.includes(d[2]) ? d[2] : '';
+    const category = kind || !family ? 'other' : family === 'H' || family === 'G' ? 'helico' : power === 'J' ? 'jet' : power === 'T' ?
+      'turboprop' : power === 'P' ? 'piston' : 'other';
+    const code = rec?.tdesig ? fold(rec.tdesig) : typeof input === 'string' ? fold(input) : '';
+    return {
+      code,
+      rec,
+      icao: rec ? rec.icao !== false : null,
+      fpl: rec?.icao === false ? rec.fpl || 'ZZZZ' : code,
+      family,
+      kind,
+      engines,
+      power,
+      category,
+      wing: kind ? 'lta' : 'HGT'.includes(family) && family ? 'rotary' : family === 'A' || family === 'S' ? 'amphibious' : family ===
+        'L' ? 'fixed' : '',
+      wtc: String(rec?.wtc || '').toUpperCase()
+    };
+  }
   window.AircraftCatalog = {
+    record,
+    classify,
+    CATEGORIES,
     codeOf,
     displayName,
     SUPPLEMENT,

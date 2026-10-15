@@ -322,13 +322,13 @@ dialog.eq-dialog h3{margin:0 0 6px}dialog.eq-dialog footer{display:flex;justify-
     piston: ['Pistons', 'Pistons', 'Kolbenmotor', 'Pistón'],
     other: ['Autres', 'Others', 'Andere', 'Otros']
   } [c] || ['Autres', 'Others', 'Andere', 'Otros']);
-  /** Catégorie d'un type : celle de la flotte, sinon d'après la description OACI (H… hélicoptère, …J réacteur,
-   *  …T turbopropulseur, …P piston). */
+  /** Catégorie d'un type : celle de la flotte, sinon la règle commune de la suite (AircraftCatalog.classify :
+   *  hélicoptère et autogire, puis motorisation ; ballon, dirigeable, inconnu : autres). */
   const categoryOf = code => {
     const f = (A()?.fleetTypes?.() || []).find(x => x.type === code)?.category;
     if (CATEGORIES.includes(f)) return f;
-    const d = String(dbInfo(code).description || '').toUpperCase();
-    return d[0] === 'H' ? 'helico' : d[2] === 'J' ? 'jet' : d[2] === 'T' ? 'turboprop' : d[2] === 'P' ? 'piston' : 'other';
+    const c = window.AircraftCatalog?.classify?.(code)?.category;
+    return CATEGORIES.includes(c) ? c : 'other';
   };
 
   // ---- recherche des types par le nom (flotte, base du poste et ses alias, liste OACI publiée, types déclarés)
@@ -462,7 +462,7 @@ dialog.eq-dialog h3{margin:0 0 6px}dialog.eq-dialog footer{display:flex;justify-
   const perfCell = code => {
     const p = perfOf(code);
     if (p) return `<div class="eq-perf"><a href="${esc(fuelUrl(code))}" title="${esc(t(['Ouvrir sa fiche dans les Fiches de performances', 'Open its sheet in Performance sheets', 'Sein Blatt in den Leistungsblättern öffnen', 'Abrir su ficha en las Fichas de rendimiento']))}">${esc(p.source)} ↗</a></div>`;
-    return `<div class="eq-perf"><span>${esc(t(['aucune', 'none', 'keine', 'ninguno']))}</span><div class="eq-perf-acts">${simbriefKnows(code) ? `<a href="${esc(fuelUrl(code, 'simbrief'))}">${esc(t(['Créer depuis SimBrief', 'Create from SimBrief', 'Aus SimBrief anlegen', 'Crear desde SimBrief']))}</a>` : ''}<a href="${esc(fuelUrl(code, 'gpt'))}">${esc(t(['Demander à ChatGPT', 'Ask ChatGPT', 'ChatGPT fragen', 'Preguntar a ChatGPT']))}</a><a href="${esc(fuelUrl(code, 'estimate'))}">${esc(t(['Estimer par la classe', 'Estimate from the class', 'Aus der Klasse schätzen', 'Estimar por la clase']))}</a></div></div>`;
+    return `<div class="eq-perf"><span>${esc(t(['aucune', 'none', 'keine', 'ninguno']))}</span><div class="eq-perf-acts">${simbriefKnows(code) ? `<a href="${esc(fuelUrl(code, 'simbrief'))}">${esc(t(['Créer depuis SimBrief', 'Create from SimBrief', 'Aus SimBrief anlegen', 'Crear desde SimBrief']))}</a>` : ''}<a href="${esc(fuelUrl(code, 'gpt'))}">${esc(t(['Demander à ChatGPT', 'Ask ChatGPT', 'ChatGPT fragen', 'Preguntar a ChatGPT']))}</a>${(window.AircraftCatalog?.classify?.(code)?.category || 'other') !== 'other' ? `<a href="${esc(fuelUrl(code, 'estimate'))}">${esc(t(['Estimer par la classe', 'Estimate from the class', 'Aus der Klasse schätzen', 'Estimar por la clase']))}</a>` : ''}</div></div>`;
   };
   /** Cellule de nom commune à Paramètres et au Carburant : silhouette, nom en gras, désignateur et classe en petit
    *  (« type OACI à confirmer » pour un appareil gardé sous son nom) ; a.common : variante d'un désignateur partagé

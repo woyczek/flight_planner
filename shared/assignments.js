@@ -1213,16 +1213,17 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
   /** Catégorie d'un type d'après sa description OACI (Doc 8643 : L2J = avion terrestre biréacteur, H1T = hélicoptère
    *  monoturbine…) : clé et libellé. */
   const CATEGORY = {
-    H: ['helico', ['Hélicoptères', 'Helicopters', 'Hubschrauber', 'Helicópteros']],
-    J: ['jet', ['Avions à réaction', 'Jet aircraft', 'Strahlflugzeuge', 'Aviones a reacción']],
-    T: ['turboprop', ['Avions à turbopropulseurs', 'Turboprop aircraft', 'Turboprop-Flugzeuge', 'Aviones turbohélice']],
-    P: ['piston', ['Avions à pistons', 'Piston aircraft', 'Kolbenmotorflugzeuge', 'Aviones de pistón']],
-    '?': ['other', ['Autres', 'Other', 'Andere', 'Otros']]
+    helico: ['Hélicoptères', 'Helicopters', 'Hubschrauber', 'Helicópteros'],
+    jet: ['Avions à réaction', 'Jet aircraft', 'Strahlflugzeuge', 'Aviones a reacción'],
+    turboprop: ['Avions à turbopropulseurs', 'Turboprop aircraft', 'Turboprop-Flugzeuge', 'Aviones turbohélice'],
+    piston: ['Avions à pistons', 'Piston aircraft', 'Kolbenmotorflugzeuge', 'Aviones de pistón'],
+    other: ['Autres', 'Other', 'Andere', 'Otros']
   };
-  /** Catégorie de la flotte d'après la description OACI (H / G : hélicoptère, sinon motorisation) : [id, libellés]. */
-  const categoryOf = desc => {
-    const d = String(desc || '').toUpperCase();
-    return CATEGORY[d.startsWith('H') || d.startsWith('G') ? 'H' : d.charAt(2)] || CATEGORY['?'];
+  /** Catégorie d'un type (règle commune de la suite : AircraftCatalog.classify — hélicoptère et autogire, puis
+   *  motorisation ; ballon, dirigeable, inconnu : autres) : [id, libellés]. rec : fiche de la base, ou code. */
+  const categoryOf = rec => {
+    const id = window.AircraftCatalog?.classify?.(rec)?.category || 'other';
+    return [id, CATEGORY[id] || CATEGORY.other];
   };
   /** Nom lisible d'un modèle de la base OACI : « DASSAULT Rafale » → « Dassault Rafale ». */
   // (mots entiers de lettres seulement : « AS-365 », « EC135 » gardés en capitales)
@@ -1253,7 +1254,7 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
     const db = window.AIRCRAFT_DB || {};
     return [...out.values()].map(e => {
       const info = db[e.type] || db[db.__aliases?.[e.type]] || {},
-        [category, categoryLabel] = categoryOf(info.description);
+        [category, categoryLabel] = categoryOf(window.AircraftCatalog?.record?.(e.type) || info);
       return {
         type: e.type,
         model: modelName(info.model) || [...e.variants][0] || e.type,
@@ -1407,7 +1408,7 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
   /** Catégorie d'un désignateur (base OACI) : helico, jet, turboprop, piston, other. */
   const catOfType = ty => {
     const db = window.AIRCRAFT_DB || {};
-    return categoryOf((db[ty] || db[db.__aliases?.[ty]] || {}).description)[0];
+    return categoryOf(window.AircraftCatalog?.record?.(ty) || db[ty] || db[db.__aliases?.[ty]] || {})[0];
   };
   /** Texte en majuscules sans accents. */
   const fold = s => String(s ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().trim();

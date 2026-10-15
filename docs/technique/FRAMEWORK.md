@@ -487,6 +487,28 @@ Loaded right after `AircraftDB/aircraft_db.js` in **all** the pages that use it
 
 “Loose” database: an input aid, never a constraint — a missing value can still be entered.
 
+### Type classification — one answer for the whole suite
+
+Every page that asks “what type or category is this ICAO designator or this aircraft?” calls
+`AircraftCatalog` (no local decoding of the ICAO description):
+
+- `record(code)`: record of a designator or alias (alias chain followed to the end: A4M → A400M → A400), `null` if
+  unknown;
+- `classify(code | record, { description })`: `{ code, rec, icao, fpl, family, kind, engines, power, category, wing,
+  wtc }` — `family` L/S/A/H/G/T, or B for a balloon or airship (`kind` airship / balloon, non-ICAO); `engines` (“C”,
+  coupled: 2); `power` J/T/P/E/R; `category` (rules decided on 15/10/2026): **helico** for H and G, otherwise by
+  power — **jet**, **turboprop**, **piston** (tiltrotors, amphibians and seaplanes included) —, **other** for
+  balloons, airships, electric and unknown types; `wing`: rotary (H, G, T), amphibious (A, S), fixed (L), lta; `fpl`:
+  flight-plan designator (SHIP, BALL, ZZZZ for a non-ICAO type);
+- `CATEGORIES`: display order (helico, turboprop, jet, piston, other).
+
+Built on it: silhouettes and groups (`AircraftDB/aircraft_icons.js`: `AircraftDBIcons.visual`, `.group` — by power,
+then number of engines for pistons — and `.groupLabel` in four languages), assignment categories
+(`MissionAssignments.fleetTypes`), *My aircraft* (`EquipmentEditor.categoryOf`), the CR wing category
+(`MissionAircraft.categoryOf`), duration estimates (`mission_estimate.js`), the performance model
+(`FlightPerfModel.kindOf`), Maintenance class labels, the Fuel planner (`gptEngines`, groups) and the Landing
+dashboard. The catalogue is loaded on every page that loads `aircraft_db.js`.
+
 ### Form collections (`form.js`)
 
 Every collection is shown as a **compact table** (one row per item; long fields —

@@ -1357,10 +1357,7 @@
     A: ['amphibie', 'amphibian', 'Amphibienflugzeug', 'anfibio'],
     H: ['hélicoptère', 'helicopter', 'Hubschrauber', 'helicóptero'],
     G: ['autogire', 'gyroplane', 'Tragschrauber', 'autogiro'],
-    T: ['convertible', 'tiltrotor', 'Kipprotor', 'convertiplano'],
-    B: ['ballon ou dirigeable (hors OACI)', 'balloon or airship (non-ICAO)', 'Ballon oder Luftschiff (nicht ICAO)',
-      'globo o dirigible (no OACI)'
-    ]
+    T: ['convertible', 'tiltrotor', 'Kipprotor', 'convertiplano']
   };
   // motorisation [singulier, pluriel] par langue ; T : turbopropulseur (avion) ou turbomoteur (hélicoptère)
   const AC_POWER = {
@@ -1404,23 +1401,23 @@
   /** Classe OACI d'une fiche (« L2J ») et son libellé lisible (« avion, 2 réacteurs ») ; libellé de la famille seule
    *  pour une fiche incomplète (type saisi dans un CR : « H », « L »). */
   function acClass(rec) {
+    // classement commun de la suite (AircraftCatalog.classify) ; ici, ses libellés en clair
+    const c = window.AircraftCatalog?.classify?.(rec) || {},
+      n = c.engines || 0;
     // ballon, dirigeable (hors OACI) : pas de classe OACI ; nature, moteurs et motorisation en clair, code de plan de vol
-    if (rec?.kind === 'airship' || rec?.kind === 'balloon') {
-      const n = +rec.engines || 0,
-        pw = AC_POWER[rec.engine_type];
+    if (c.kind) {
+      const pw = AC_POWER[c.power];
       return {
-        code: rec.fpl || '',
-        label: `${t(rec.kind === 'airship' ? ['dirigeable', 'airship', 'Luftschiff', 'dirigible'] : ['ballon', 'balloon', 'Ballon',
+        code: c.fpl || '',
+        label: `${t(c.kind === 'airship' ? ['dirigeable', 'airship', 'Luftschiff', 'dirigible'] : ['ballon', 'balloon', 'Ballon',
           'globo'
         ])}${n && pw ? `, ${n} ${pw[li()][n > 1 ? 1 : 0]}` : ''} (${t(['hors OACI', 'non-ICAO', 'nicht ICAO', 'no OACI'])})`
       };
     }
-    const d = String(rec?.description || '').toUpperCase(),
-      fam = AC_FAMILY[d[0]] ? t(AC_FAMILY[d[0]]) : '';
-    const n = d[1] === 'C' ? 2 : parseInt(d[1], 10) || 0,
-      pw = AC_POWER[d[2] === 'T' && d[0] === 'H' ? 'TH' : d[2]];
+    const fam = AC_FAMILY[c.family] ? t(AC_FAMILY[c.family]) : '',
+      pw = AC_POWER[c.power === 'T' && c.family === 'H' ? 'TH' : c.power];
     return {
-      code: d,
+      code: String(rec?.description || '').toUpperCase(),
       label: n && pw ? `${fam}, ${n} ${pw[li()][n > 1 ? 1 : 0]}` : fam
     };
   }

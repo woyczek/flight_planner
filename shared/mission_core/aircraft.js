@@ -63,15 +63,15 @@
     const override = overrideCache.value;
     return override?.data && override.updatedAt > String(file.__meta?.admin_saved || '') ? override.data : file;
   };
-  // Classe OACI (Doc 8643) : H2T → hélicoptère, L2J → avion, A/S → amphibie / hydravion.
-  const categoryOf = description => ({
-    H: 'rotary',
-    G: 'rotary',
-    T: 'rotary',
-    L: 'fixed',
-    A: 'amphibious',
-    S: 'amphibious'
-  })[String(description || '').charAt(0).toUpperCase()] || '';
+  // Voilure d'après la classe OACI (Doc 8643), règle commune de la suite (AircraftCatalog.classify) : H, G, T →
+  // voilure tournante, L → avion, A / S → amphibie / hydravion ; ballon, dirigeable, inconnu → ''. Entrée : description
+  // (« H2T ») ou fiche de la base (ballon, dirigeable : sans description).
+  const categoryOf = description => {
+    const c = window.AircraftCatalog?.classify?.(description && typeof description === 'object' ? description : null, {
+      description: typeof description === 'string' ? description : undefined
+    });
+    return ['rotary', 'fixed', 'amphibious'].includes(c?.wing) ? c.wing : '';
+  };
   // Types de la flotte absents de la base OACI importée : catalogue commun
   // (shared/aircraft_catalog.js, aussi utilisé par le Landing Dashboard et le Planner).
   const SUPPLEMENT = window.AircraftCatalog?.SUPPLEMENT || {};

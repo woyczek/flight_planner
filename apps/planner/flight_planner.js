@@ -57,10 +57,11 @@ const FLAG = {
   en: '<svg viewBox="0 0 60 36"><rect width="60" height="36" fill="#012169"/><path d="M0 0L60 36M60 0L0 36" stroke="#fff" stroke-width="8"/><path d="M30 0V36M0 18H60" stroke="#C8102E" stroke-width="7"/></svg>'
 };
 // ===== En-tête : appareil courant (icône, liste), langue, préférences =====
-/** Groupe d'affichage d'un profil (liste des avions). Entrée : profil. Sortie : [groupe, visuel d'icône, libellé de catégorie] (AircraftDBIcons ; « Autres » à défaut). */
+/** Groupe d'affichage d'un profil (liste des avions). Entrée : profil. Sortie : [groupe (clé française de fpGroup : tri,
+ *  « Autres » en dernier), visuel d'icône, libellé de catégorie traduit] (AircraftDBIcons ; « Autres » à défaut). */
 function profileVisual(p) {
   let [group, label] = window.AircraftDBIcons?.group(p) || ["Autres", "Autre"];
-  return [group, window.AircraftDBIcons?.visual(p) || "other", label]
+  return [group, window.AircraftDBIcons?.visual(p) || "other", window.AircraftDBIcons?.groupLabel?.(label) || label]
 }
 /** Icône SVG (HTML) d'un profil pour la liste et l'en-tête ; ✈ à défaut. */
 function aircraftIcon(p) {
@@ -3179,7 +3180,7 @@ function aircraftGroups(list, mineFirst) {
   for (const p of all) {
     let g = profileVisual(p);
     const mine = mineFirst && ([p.id, p.icao, p.type].some(v => v && mineKeys.has(aircraftTypeKey(v))) || mineNames.has(aKey(p.name)));
-    const key = mine ? MINE : g[0];
+    const key = mine ? MINE : window.AircraftDBIcons?.groupLabel?.(g[0]) || g[0]; // libellé dans la langue de la page
     if (!groups.has(key)) groups.set(key, []);
     groups.get(key).push([p, g])
   }
@@ -3619,7 +3620,7 @@ function renderPerfProfiles() {
   /** Cellule « Performances » d'un appareil sans profil : « aucune » et les trois façons d'en créer un. */
   const noneCell = r => {
     const at = how => `data-pp-create="${how}" data-code="${esc(r.code)}" data-name="${esc(r.name)}"`;
-    return `<div class="pp-none">${esc(kt(["aucune", "none", "keine", "ninguno"]))}<div class="pp-acts">${simbriefRecordFor(r.code) ? `<button type="button" class="secondary" ${at("simbrief")}>${esc(kt(["Créer depuis SimBrief", "Create from SimBrief", "Aus SimBrief anlegen", "Crear desde SimBrief"]))}</button>` : ""}<button type="button" class="secondary" ${at("gpt")}>${esc(kt(["Demander à ChatGPT", "Ask ChatGPT", "ChatGPT fragen", "Preguntar a ChatGPT"]))}</button><button type="button" class="secondary" ${at("estimate")}>${esc(kt(["Estimer par la classe", "Estimate from the class", "Aus der Klasse schätzen", "Estimar por la clase"]))}</button></div></div>`
+    return `<div class="pp-none">${esc(kt(["aucune", "none", "keine", "ninguno"]))}<div class="pp-acts">${simbriefRecordFor(r.code) ? `<button type="button" class="secondary" ${at("simbrief")}>${esc(kt(["Créer depuis SimBrief", "Create from SimBrief", "Aus SimBrief anlegen", "Crear desde SimBrief"]))}</button>` : ""}<button type="button" class="secondary" ${at("gpt")}>${esc(kt(["Demander à ChatGPT", "Ask ChatGPT", "ChatGPT fragen", "Preguntar a ChatGPT"]))}</button>${(window.AircraftCatalog?.classify?.(r.code)?.category || "other") !== "other" ? `<button type="button" class="secondary" ${at("estimate")}>${esc(kt(["Estimer par la classe", "Estimate from the class", "Aus der Klasse schätzen", "Estimar por la clase"]))}</button>` : ""}</div></div>`
   };
   /** Ligne d'un appareil. */
   const row = r => {
@@ -5126,7 +5127,8 @@ function gptCode(e = gptFor) {
 /** Motorisation connue en clair : description OACI (nombre et nature des moteurs), moteurs SimBrief, motorisation du
  *  profil. */
 function gptEngines(p, code) {
-  const d = String((window.AIRCRAFT_DB || {})[code]?.description || ""),
+  // classement commun (AircraftCatalog.classify : alias suivis, ballon et dirigeable compris)
+  const c = window.AircraftCatalog?.classify?.(code) || {},
     kind = {
       J: ["réacteur(s)", "jet engine(s)", "Strahltriebwerk(e)", "reactor(es)"],
       T: ["turbine(s) (turbopropulseur ou turbomoteur)", "turbine(s) (turboprop or turboshaft)",
@@ -5135,10 +5137,13 @@ function gptEngines(p, code) {
       ],
       P: ["moteur(s) à pistons", "piston engine(s)", "Kolbenmotor(en)", "motor(es) de pistón"],
       E: ["moteur(s) électrique(s)", "electric motor(s)", "Elektromotor(en)", "motor(es) eléctrico(s)"]
-    } [d[2]],
+    } [c.power],
     sb = simbriefRecordFor(code),
     out = [];
-  if (kind) out.push(`${+d[1] || "?"} ${kt(kind)}${d[0] === "H" ? kt([", hélicoptère", ", helicopter", ", Hubschrauber", ", helicóptero"]) : ""}`);
+  const what = c.kind === "airship" ? kt([", dirigeable", ", airship", ", Luftschiff", ", dirigible"]) : c.category === "helico" ? kt([
+    ", hélicoptère", ", helicopter", ", Hubschrauber", ", helicóptero"
+  ]) : "";
+  if (kind) out.push(`${c.engines || "?"} ${kt(kind)}${what}`);
   if (sb?.engines) out.push(`SimBrief — ${sb.engines}`);
   if (p?.engineType && p.engineType !== "auto") out.push(`engineType = ${p.engineType}`);
   return out.join(" ; ") || kt(["inconnue", "unknown", "unbekannt", "desconocida"])

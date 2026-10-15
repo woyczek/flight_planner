@@ -619,6 +619,16 @@ servies depuis un autre disque, registre aux fichiers absents, profils cachés �
 
 ### Modifié
 
+- **Aircraft type classification factored into the shared framework** — about a dozen pages each decoded the ICAO
+  description their own way (five category sets that disagreed on gyroplanes, tiltrotors, amphibians, airships).
+  `AircraftCatalog.record` / `.classify` / `.CATEGORIES` now give one answer (helicopters = H and gyroplanes; then by
+  power: jet, turboprop, piston; balloons, airships, electric and unknown: others; wing: rotary, amphibious, fixed),
+  used by the silhouettes and groups, assignments, *My aircraft*, the CR, duration estimates, the performance model,
+  Maintenance, the Fuel planner and the Landing dashboard; the catalogue is now loaded on the 7 pages that read the
+  type base without it (studio, Flight maps, generator, registry, ODV orders and planning, My missions). Fuel planner
+  groups: by power, then number of engines for pistons ("Multi-engine piston": the four-engine pistons — B-17, DC-6 —
+  leave "Others"), translated in four languages. "Estimate from the class" is offered only for a classified type.
+  Dead code removed (`shared/aircraft_icons.js`, unused Landing functions). `docs/technique/FRAMEWORK.md` § 11 bis.
 - **Carburant, aperçu de fusion : données à cocher** — une case par champ qui change et par ligne de cartographie
   ajoutée ou remplacée (décochée : la valeur actuelle est gardée, ligne grisée « gardé »), « Tout reprendre » / « Ne rien
   reprendre », bouton « Fusionner (7 champs, 1 ligne de cartographie) » grisé si rien n'est coché ; même fenêtre pour
