@@ -5884,10 +5884,10 @@ function openGptPanel(pick, missing = false) {
   if (!missing) gptMissingIds = null; // fiche complète de l'appareil choisi
   pick ||= picked;
   if (!pick && !missing) {
-    window.AppFramework?.notify?.(kt(["Choisis d’abord l’appareil (barre du bas, ou clic sur sa ligne).",
-      "First choose the aircraft (bottom bar, or click on its row).",
-      "Zuerst das Luftfahrzeug wählen (untere Leiste oder Klick auf seine Zeile).",
-      "Elige primero la aeronave (barra inferior, o clic en su fila)."
+    window.AppFramework?.notify?.(kt(["Choisis d’abord l’appareil (en haut, ou clic sur sa ligne).",
+      "First choose the aircraft (at the top, or click on its row).",
+      "Zuerst das Luftfahrzeug wählen (oben oder Klick auf seine Zeile).",
+      "Elige primero la aeronave (arriba, o clic en su fila)."
     ]));
     return document.getElementById("sheetPick")?.focus()
   }
