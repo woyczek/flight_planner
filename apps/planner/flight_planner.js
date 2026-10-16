@@ -2123,7 +2123,8 @@ $("fileInput").onchange = async e => {
         ofpCount++;
         continue
       }
-      list.push(...got.profiles)
+      list.push(...got.profiles);
+      errors.push(...(got.errors || []).map(x => `${f.name} — ${x}`))
     } catch (x) {
       console.warn(f.name, x);
       errors.push(`${f.name}: ${x.message}`)
@@ -5303,6 +5304,57 @@ async function gptCopyAndOpen() {
     "Copia rechazada por el navegador: abrir «Ver el prompt», seleccionar todo y copiar (Ctrl+A, Ctrl+C)."
   ]))
 }
+/** Champ d'une entrée JSON (réponse ChatGPT ou fiche) à la casse près : ICAO, Icao, icao ; première valeur non vide. */
+function gptGet(x, ...names) {
+  return names.map(n => Object.entries(x || {}).find(([k]) => gptKeyEq(k, n))?.[1]).find(v => v !== undefined && v !== null && v !==
+    "")
+}
+/** Type d'une entrée : icao / type / code ; à défaut son id quand il a la forme d'un désignateur (ChatGPT met souvent le
+ *  type OACI dans « id » : { "id": "EC25", … }), sinon le segment de l'identifiant qui est un type connu. */
+function gptTypeOf(x) {
+  const t = aKey(gptGet(x, "icao", "type", "code", "tdesig", "designator") || ""),
+    raw = String(gptGet(x, "id") || "").toUpperCase(),
+    id = aKey(raw),
+    db = window.AIRCRAFT_DB || {},
+    // identifiant interne de la suite recopié par ChatGPT (GPT_CL2T, DB_DH8D_F-ZBML) : le segment qui est un type connu
+    seg = raw.split(/[^A-Z0-9]+/).find(k => k && !k.startsWith("__") && (db[k] || db.__aliases?.[k]));
+  return t || (/^[A-Z][A-Z0-9]{1,3}$/.test(id) ? id : "") || seg || ""
+}
+/** Nom d'une entrée, en clé de comparaison. */
+function gptNameOf(x) {
+  return aKey(gptGet(x, "name", "aircraft", "model") || "")
+}
+/** Rang du rapprochement d'une entrée (réponse ChatGPT, fiche importée) avec la fiche p : 0 même identifiant, 1 même
+ *  type (alias compris), 2 même nom ; -1 sinon. */
+function gptMatchRank(item, p) {
+  const id = String(gptGet(item, "id") ?? "");
+  if (id && id === p.id) return 0;
+  const t = gptTypeOf(item);
+  if (t && [p.icao, p.type, p.id].filter(Boolean).map(aKey).some(c => sameType(t, c))) return 1;
+  const n = gptNameOf(item);
+  return n && n === aKey(p.name || "") ? 2 : -1
+}
+/** Fiche de sheets qui correspond à l'entrée item (identifiant, puis type, puis nom), non encore prise (used :
+ *  identifiants pris, complété) ; null sinon. */
+function gptMatchSheet(item, sheets, used = new Set()) {
+  for (const rank of [0, 1, 2]) {
+    const s = sheets.find(x => x && !used.has(x.id) && gptMatchRank(item, x) === rank);
+    if (s) {
+      used.add(s.id);
+      return s
+    }
+  }
+  return null
+}
+/** Entrées d'un JSON lu : un tableau d'objets, ou le tableau d'une clé sheets / profiles / fiches / aircraft / items
+ *  (casse libre) ; null sinon. */
+function gptListOf(obj) {
+  if (Array.isArray(obj)) return obj.filter(x => x && typeof x === "object");
+  if (!obj || typeof obj !== "object") return null;
+  const a = ["sheets", "profiles", "fiches", "aircraft", "items"].map(k => Object.entries(obj).find(([kk]) => gptKeyEq(kk, k))?.[1]).find(
+    Array.isArray);
+  return a ? a.filter(x => x && typeof x === "object") : null
+}
 // ===== « Importer… » : fichiers ou texte collé ; une fiche du même type déjà là se complète, se fusionne ou se double =====
 /** Lit un texte importé (name : nom du fichier, ou « texte collé ») : `.lnmperf` (XML), CSV de performances, JSON de la
  *  suite (fiche, base, liste) ou OFP SimBrief ; sinon réponse ChatGPT sous toutes ses formes (parseGptReply : type
@@ -5317,11 +5369,30 @@ async function readImportText(txt, name, pasted) {
   if (lower.endsWith(".csv")) return {
     profiles: parsePerformanceCsvEnriched(t, name, csvSep(t))
   };
+  // JSON strict (texte ou blocs de code), sinon lecture tolérante (gptJsonParse : commentaires, virgules en trop…)
+  const fences = [...t.matchAll(/```[a-z]*\s*([\s\S]*?)```/gi)].map(m => m[1].trim());
   let obj = null;
-  try {
-    obj = JSON.parse(t)
-  } catch {}
-  if (obj && typeof obj === "object") {
+  for (const cand of [t, ...fences]) {
+    try {
+      obj = JSON.parse(cand)
+    } catch {
+      obj = null
+    }
+    if (obj && typeof obj === "object") break;
+    obj = null
+  }
+  if (!obj)
+    for (const cand of [...fences, t]) {
+      try {
+        obj = gptJsonParse(cand)
+      } catch {
+        obj = null
+      }
+      if (obj && typeof obj === "object") break;
+      obj = null
+    }
+  const items = obj ? gptListOf(obj) : null;
+  if (obj) {
     if (isSimbriefOfp(obj)) return {
       profiles: [],
       ofp: obj,
@@ -5329,11 +5400,52 @@ async function readImportText(txt, name, pasted) {
     };
     try {
       const ps = profilesFromJson(obj, name);
-      if (ps.length) return {
+      if (ps.length && (!items || ps.length >= items.length)) return {
         profiles: ps,
         json: obj
       }
     } catch {}
+  }
+  // plusieurs entrées (réponse ChatGPT { sheets: [...] }, tableau) : une fiche par entrée ; une entrée illisible
+  // n'arrête pas les autres
+  if (items?.length > 1 || (items?.length === 1 && !Array.isArray(obj))) {
+    const profiles = [],
+      errors = [],
+      warnings = [];
+    items.forEach((item, n) => {
+      const label = gptGet(item, "name", "aircraft", "model") || gptGet(item, "id") || `#${n + 1}`;
+      try {
+        if (!gptTypeOf(item) && !gptNameOf(item)) throw Error(kt(["ni type ni nom d’appareil", "no aircraft type or name",
+          "weder Typ noch Name",
+          "ni tipo ni nombre de aeronave"
+        ]));
+        const code = gptTypeOf(item) || gptCode(),
+          r = parseGptReply(JSON.stringify({
+            ...item,
+            id: undefined
+          }), code),
+          p = aKey(r.code || code) ? gptImportProfile(r, aKey(r.code || code)) : null,
+          iid = String(gptGet(item, "id") ?? "");
+        if (!p) throw Error(kt(["type d’appareil introuvable", "aircraft type not found", "Luftfahrzeugtyp nicht gefunden",
+          "tipo de aeronave no encontrado"
+        ]));
+        // identifiant interne de fiche (GPT_CL2T, DB_DHC6_…) gardé : la fiche existante se retrouve par son identifiant
+        if (iid && !/^[A-Z][A-Z0-9]{1,3}$/.test(aKey(iid))) p.id = iid;
+        profiles.push(p);
+        warnings.push(...(r.warnings || []).map(w => `${label} : ${w}`))
+      } catch (e) {
+        errors.push(`${label} : ${e.message}`)
+      }
+    });
+    gptReport(warnings);
+    if (!profiles.length) throw Error(errors.join("\n") || kt(["Aucune fiche lisible.", "No readable sheet.", "Kein lesbares Blatt.",
+      "Ninguna ficha legible."
+    ]));
+    return {
+      profiles,
+      errors,
+      json: obj
+    }
   }
   // texte collé : CSV de performances (ligne de titres avec l'appareil ou le code OACI)
   if (pasted && !obj && /^[^\n]*(aircraft|icao)[^\n]*[,;\t]/i.test(t)) try {
@@ -5373,13 +5485,11 @@ function gptImportProfile(r, code) {
   p.name = `${own ? String(p.name || "").replace(/\s*—\s*ChatGPT$/i, "") || model : model} — ChatGPT`;
   return p
 }
-/** Fiches déjà enregistrées qui doublent p : même identifiant, même type (alias compris) ou même nom ; la plus récente
- *  d'abord. */
+/** Fiches déjà enregistrées qui doublent p : même identifiant, même type (alias compris) ou même nom (gptMatchRank) ; le
+ *  meilleur rapprochement d'abord, puis la plus récente. */
 function importTwins(p) {
-  const code = p.icao || p.type || p.id,
-    name = aKey(p.name || "");
-  return Object.values(state.profiles || {}).filter(x => x && typeof x === "object" && x.id && (x.id === p.id || sameType(x.icao ||
-    x.type || x.id, code) || (name && aKey(x.name || "") === name))).sort((a, b) => profileWhen(b) - profileWhen(a))
+  return Object.values(state.profiles || {}).filter(x => x && typeof x === "object" && x.id).map(x => [x, gptMatchRank(p, x)]).filter((
+    [, r]) => r >= 0).sort((a, b) => a[1] - b[1] || profileWhen(b[0]) - profileWhen(a[0])).map(([x]) => x)
 }
 /** « Compléter la fiche existante » : seuls les champs vides de target sont remplis par src (carburant converti dans
  *  l'unité de target), cartographie moteur reprise si target n'en a pas, valeurs estimées et sources ChatGPT reprises.
@@ -5421,7 +5531,7 @@ function importFillPlan(target, src) {
  *  existante » (par défaut ; résumé des champs avant validation), « Fusionner » (aperçu champ par champ) ou « Créer une
  *  seconde fiche » (nom suffixé) ; au-delà de deux doublons, « même choix pour les suivants ». Sans doublon : fiche
  *  créée. Fin : fiche ouverte, notification, « Annuler » 10 s (base remise comme avant l'import). label : origine. */
-async function importProfiles(list, label) {
+async function importProfiles(list, label, errors = []) {
   if (!list.length) return;
   if (active && state.profiles?.[active.id]) commitProfileEditor(false);
   const backup = structuredClone(state.profiles),
@@ -5432,11 +5542,17 @@ async function importProfiles(list, label) {
     fills = [];
   let all = null,
     last = null;
+  const count = {
+    created: 0,
+    completed: 0,
+    merged: 0
+  };
   for (const p of list) {
     const tw = importTwins(p);
     if (!tw.length) {
       storeProfile(p);
       last = p;
+      count.created++;
       done.push(ktf(["« {p} » créée", "“{p}” created", "„{p}“ angelegt", "«{p}» creada"], {
         p: p.name || p.id
       }));
@@ -5467,15 +5583,20 @@ async function importProfiles(list, label) {
           "Gleiche Wahl für die folgenden Doppel",
           "Misma elección para los duplicados siguientes"
         ]),
-        checked: false
+        checked: true
       } : {});
       if (!c) continue; // Annuler : cette fiche n'est pas importée
       key = c.key;
       if (c.checked) all = key
     }
+    // complément déjà prévu pour cette fiche (deux entrées pour le même appareil) : on part de son résultat
+    const prev = fills.find(f => f.after.id === t.id);
     if (key === "fill") {
-      const plan = importFillPlan(state.profiles[t.id], p);
-      if (plan.filled.length) fills.push(plan);
+      const plan = importFillPlan(prev ? prev.after : state.profiles[t.id], p);
+      if (plan.filled.length && prev) {
+        prev.after = plan.after;
+        prev.filled.push(...plan.filled)
+      } else if (plan.filled.length) fills.push(plan);
       else done.push(ktf(["« {p} » : rien à compléter", "“{p}”: nothing to complete", "„{p}“: nichts zu ergänzen",
         "«{p}»: nada que completar"
       ], {
@@ -5484,7 +5605,7 @@ async function importProfiles(list, label) {
       continue
     }
     if (key === "merge") {
-      const cur = state.profiles[t.id],
+      const cur = prev ? prev.after : state.profiles[t.id],
         u = cur.unit || "kg",
         src = p.unit && p.unit !== u ? Object.assign(fuelConvertedCopy(p, p.unit, u, true), {
           unit: u
@@ -5492,8 +5613,11 @@ async function importProfiles(list, label) {
         res = mergeProfileSources(cur, [cur, src]),
         after = await confirmChanges(cur, res.target, res.origin, kt(["Fusionner", "Merge", "Zusammenführen", "Fusionar"]), "", res);
       if (!after) continue;
+      // le complément prévu est compris dans la fusion (elle est partie de son résultat)
+      if (prev) fills.splice(fills.indexOf(prev), 1);
       state.profiles[t.id] = after;
       last = after;
+      count.merged++;
       done.push(ktf(["« {p} » fusionnée", "“{p}” merged", "„{p}“ zusammengeführt", "«{p}» fusionada"], {
         p: after.name || after.id
       }));
@@ -5505,6 +5629,7 @@ async function importProfiles(list, label) {
     p.name = `${p.name || base} (${tw.length + 1})`;
     storeProfile(p);
     last = p;
+    count.created++;
     done.push(ktf(["« {p} » créée", "“{p}” created", "„{p}“ angelegt", "«{p}» creada"], {
       p: p.name
     }))
@@ -5524,6 +5649,7 @@ async function importProfiles(list, label) {
       for (const x of fills) {
         state.profiles[x.after.id] = x.after;
         last = x.after;
+        count.completed++;
         done.push(ktf(["« {p} » complétée ({n} champ(s))", "“{p}” completed ({n} field(s))", "„{p}“ ergänzt ({n} Feld(er))",
           "«{p}» completada ({n} campo(s))"
         ], {
@@ -5533,13 +5659,21 @@ async function importProfiles(list, label) {
       }
     }
   }
+  const bad = errors.length ? `\n${kt(["Entrées illisibles :", "Unreadable entries:", "Unlesbare Einträge:", "Entradas ilegibles:"])} ${errors.join(" ; ")}` : "";
   if (!last) {
-    if (done.length) window.AppFramework.notify(done.join("\n"), "warn");
+    if (done.length || bad) window.AppFramework.notify(done.join("\n") + bad, "warn");
     return
   }
   profilesChanged();
   setActive(state.profiles[last.id] || last, label);
-  notifyUndo(`${kt(["Import :", "Import:", "Import:", "Importación:"])} ${done.join(" ; ")}.`, () => {
+  // un seul résumé : nombres, puis le détail
+  notifyUndo(`${ktf(["Import : {c} fiche(s) complétée(s), {m} fusionnée(s), {k} créée(s).", "Import: {c} sheet(s) completed, {m} merged, {k} created.",
+    "Import: {c} Blatt/Blätter ergänzt, {m} zusammengeführt, {k} angelegt.", "Importación: {c} ficha(s) completada(s), {m} fusionada(s), {k} creada(s)."
+  ], {
+    c: count.completed,
+    m: count.merged,
+    k: count.created
+  })}\n${done.join(" ; ")}${bad}`, () => {
     state.profiles = backup;
     state.removedProfiles = backupRemoved;
     if (prevActive && state.profiles[prevActive]) setActive(state.profiles[prevActive], kt(["import annulé", "import undone",
@@ -5606,7 +5740,7 @@ function openImportDialog() {
       populatePlanFromOFP(got.ofp);
       return importOFPProfile(got.ofp, name, "OFP JSON importé")
     }
-    importProfiles(got.profiles, kt(["texte collé", "pasted text", "eingefügter Text", "texto pegado"]))
+    importProfiles(got.profiles, kt(["texte collé", "pasted text", "eingefügter Text", "texto pegado"]), got.errors || [])
   });
   d.addEventListener("cancel", e => {
     e.preventDefault();
@@ -6240,33 +6374,17 @@ async function gptFillMissing() {
     "Antwort unlesbar: kein lesbares JSON ({\"sheets\": [...]}, ein Array oder ein Blatt).",
     "Respuesta ilegible: ningún JSON legible ({\"sheets\": [...]}, una lista o una ficha)."
   ]) + (err ? ` (${err.message})` : ""), "err");
-  const listOf = o => ["sheets", "profiles", "fiches", "aircraft", "items"].map(k => Object.entries(o).find(([kk]) => gptKeyEq(kk, k))?.[
-      1
-    ])
-    .find(Array.isArray),
-    items = (Array.isArray(obj) ? obj : listOf(obj) || [gptJsonUnwrap(obj, S) || obj]).filter(x => x && typeof x === "object"),
-    /** Champ d'une entrée à la clé près (ICAO, Icao, icao). */
-    get = (x, ...names) => names.map(n => Object.entries(x).find(([k]) => gptKeyEq(k, n))?.[1]).find(v => v !== undefined && v !== null &&
-      v !== ""),
-    // type d'une entrée : icao / type / code ; à défaut son id quand il a la forme d'un désignateur (ChatGPT met souvent
-    // le type OACI dans « id » : { "id": "EC25", … })
-    typeOf = x => {
-      const t = aKey(get(x, "icao", "type", "code", "tdesig", "designator") || ""),
-        raw = String(get(x, "id") || "").toUpperCase(),
-        id = aKey(raw),
-        db = window.AIRCRAFT_DB || {},
-        // identifiant interne de la suite recopié par ChatGPT (GPT_CL2T, DB_DH8D_F-ZBML) : le segment qui est un type connu
-        seg = raw.split(/[^A-Z0-9]+/).find(k => k && !k.startsWith("__") && (db[k] || db.__aliases?.[k]));
-      return t || (/^[A-Z][A-Z0-9]{1,3}$/.test(id) ? id : "") || seg || ""
-    },
-    nameOf = x => aKey(get(x, "name", "aircraft", "model") || ""),
+  const items = (gptListOf(obj) || [gptJsonUnwrap(obj, S) || obj]).filter(x => x && typeof x === "object"),
+    get = gptGet,
+    typeOf = gptTypeOf,
+    nameOf = gptNameOf,
     used = new Set(),
     /** Entrée de la réponse qui décrit la fiche p : id, puis type (alias compris), puis nom ; une seule et une seule. */
     pick = p => {
-      const codes = [p.icao, p.type, p.id].filter(Boolean).map(aKey),
-        tests = [x => String(get(x, "id") ?? "") === p.id, x => typeOf(x) && codes.some(c => sameType(typeOf(x), c)), x => nameOf(x) &&
-          nameOf(x) === aKey(p.name || ""), () => list.length === 1 && items.length === 1
-        ];
+      const tests = [x => gptMatchRank(x, p) === 0, x => gptMatchRank(x, p) === 1, x => gptMatchRank(x, p) === 2, () => list.length ===
+        1 &&
+        items.length === 1
+      ];
       for (const test of tests) {
         const i = items.findIndex((x, n) => !used.has(n) && test(x));
         if (i >= 0) {

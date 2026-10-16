@@ -22,8 +22,11 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   pasted text follows a file's path, a ChatGPT answer becomes a "… — ChatGPT" sheet, an empty or unreadable text is
   reported in the window. An imported sheet that already exists (same type, aliases included, or same name) is never
   created silently: "Complete the existing sheet" (default, empty fields only, summary first), "Merge" (field by field
-  preview) or "Create a second sheet"; "same choice for the next duplicates" beyond two; "Undo" for 10 s restores the
-  database as before the import.
+  preview) or "Create a second sheet"; "same choice for the next duplicates" beyond two (ticked in advance); "Undo" for
+  10 s restores the database as before the import. A JSON with several entries (an array, or a `sheets` / `profiles` /
+  `fiches` / `aircraft` / `items` list) gives as many sheets, each matched by identifier, then type (aliases included),
+  then name — the same matching as "Fill in the missing fields" (`gptMatchRank`); two entries for the same sheet add up;
+  an unreadable entry does not stop the others; one summary at the end ("n completed, m merged, k created").
 - **Tutorial "Create a performance sheet"** (`docs/tutorial/fuel_profile.fr.md` / `.en.md`, Help › Tutorials) — the
   Performance sheets page step by step: choose the aircraft, create its sheet (SimBrief, ChatGPT, class estimate),
   complete it with ChatGPT (one aircraft, or "Fill in the missing fields" for several), check the fields and the engine
