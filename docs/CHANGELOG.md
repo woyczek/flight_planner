@@ -108,6 +108,11 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Fixed
 
+- **"Fill in the missing fields": a pasted answer found its sheet** — the answer was matched to the ticked sheets by
+  the `id` only; a plain ChatGPT answer (no `id`, several code blocks) filled nothing and the message said "no value".
+  The answer is now read like any ChatGPT answer, in the forms `{ sheets }`, `{ profiles }`, an array or a single
+  sheet, and matched by id, then by type (aliases included), then by name; with no match, the message says which
+  aircraft the answer describes and which sheets are ticked.
 - **ChatGPT answers read whatever their shape** — a long answer (several code blocks, an example before the sheet,
   comments, trailing commas, curly quotes, the sheet wrapped in `profile` or given as an array, keys in another case or
   spelling such as `ICAO` or `cruise_tas`, values given as objects `{ value, unit, source }` or `{ min, max }`, numbers

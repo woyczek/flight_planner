@@ -5905,30 +5905,57 @@ function openGptMissing() {
     block: "nearest"
   })
 }
-/** Lit la réponse « champs manquants » (bloc de code accepté) : entrées { id, … } de "sheets" (ou un tableau, ou une
- *  seule fiche). Pour chaque fiche : réponse relue comme une fiche ChatGPT (parseGptReply, unités converties dans celles
- *  de la fiche), puis seuls ses champs vides sont remplis — rien de saisi n'est écrasé ; valeurs estimées et sources
- *  reprises. Résumé avant de valider, « Annuler » 10 s. */
+/** Lit la réponse « champs manquants » : JSON cherché dans chaque bloc de code puis dans le texte (gptJsonParse :
+ *  commentaires, virgules finales… tolérés) ; formes acceptées : { sheets: [...] }, { profiles: [...] }, un tableau, une
+ *  fiche seule (même enveloppée). Chaque fiche cochée est rapprochée d'une entrée par son id, sinon par son type (alias
+ *  compris : icao, type, code), sinon par son nom ; une seule fiche et une seule entrée vont ensemble. Pour chaque fiche :
+ *  réponse relue comme une fiche ChatGPT (parseGptReply, unités converties dans celles de la fiche), puis seuls ses
+ *  champs vides sont remplis — rien de saisi n'est écrasé ; valeurs estimées et sources reprises. Résumé avant de
+ *  valider, « Annuler » 10 s. Sans correspondance, le message dit ce que la réponse décrit et ce qui est coché. */
 async function gptFillMissing() {
-  const list = gptMissingList();
-  let t = String($("ppGptReply").value || "").trim(),
-    obj;
-  const fence = t.match(/```[a-z]*\s*([\s\S]*?)```/i);
-  if (fence) t = fence[1].trim();
-  try {
-    obj = JSON.parse(t.slice(t.indexOf("{"), t.lastIndexOf("}") + 1))
-  } catch {
-    try {
-      obj = JSON.parse(t.slice(t.indexOf("["), t.lastIndexOf("]") + 1))
-    } catch {
-      return gptReport(kt(["Réponse illisible : le JSON attendu ({\"sheets\": [...]}) est introuvable.",
-        "Unreadable answer: the expected JSON ({\"sheets\": [...]}) is missing.",
-        "Antwort unlesbar: das erwartete JSON ({\"sheets\": [...]}) fehlt.",
-        "Respuesta ilegible: no se encuentra el JSON esperado ({\"sheets\": [...]})."
-      ]), "err")
-    }
+  const list = gptMissingList(),
+    S = window.PERF_PROMPT_SCHEMA || {},
+    t = String($("ppGptReply").value || "").trim(),
+    fences = [...t.matchAll(/```[a-z]*\s*([\s\S]*?)```/gi)].map(m => m[1].trim());
+  let obj = null,
+    err = null;
+  for (const cand of [...fences, t]) try {
+    obj = gptJsonParse(cand);
+    if (obj) break
+  } catch (x) {
+    err ||= x
   }
-  const items = Array.isArray(obj) ? obj : Array.isArray(obj?.sheets) ? obj.sheets : obj ? [obj] : [],
+  if (!obj) return gptReport(kt(["Réponse illisible : aucun JSON lisible ({\"sheets\": [...]}, un tableau ou une fiche).",
+    "Unreadable answer: no readable JSON ({\"sheets\": [...]}, an array or a sheet).",
+    "Antwort unlesbar: kein lesbares JSON ({\"sheets\": [...]}, ein Array oder ein Blatt).",
+    "Respuesta ilegible: ningún JSON legible ({\"sheets\": [...]}, una lista o una ficha)."
+  ]) + (err ? ` (${err.message})` : ""), "err");
+  const listOf = o => ["sheets", "profiles", "fiches", "aircraft", "items"].map(k => Object.entries(o).find(([kk]) => gptKeyEq(kk, k))?.[
+      1
+    ])
+    .find(Array.isArray),
+    items = (Array.isArray(obj) ? obj : listOf(obj) || [gptJsonUnwrap(obj, S) || obj]).filter(x => x && typeof x === "object"),
+    /** Champ d'une entrée à la clé près (ICAO, Icao, icao). */
+    get = (x, ...names) => names.map(n => Object.entries(x).find(([k]) => gptKeyEq(k, n))?.[1]).find(v => v !== undefined && v !== null &&
+      v !== ""),
+    typeOf = x => aKey(get(x, "icao", "type", "code", "tdesig", "designator") || ""),
+    nameOf = x => aKey(get(x, "name", "aircraft", "model") || ""),
+    used = new Set(),
+    /** Entrée de la réponse qui décrit la fiche p : id, puis type (alias compris), puis nom ; une seule et une seule. */
+    pick = p => {
+      const codes = [p.icao, p.type, p.id].filter(Boolean).map(aKey),
+        tests = [x => String(get(x, "id") ?? "") === p.id, x => typeOf(x) && codes.some(c => sameType(typeOf(x), c)), x => nameOf(x) &&
+          nameOf(x) === aKey(p.name || ""), () => list.length === 1 && items.length === 1
+        ];
+      for (const test of tests) {
+        const i = items.findIndex((x, n) => !used.has(n) && test(x));
+        if (i >= 0) {
+          used.add(i);
+          return items[i]
+        }
+      }
+      return null
+    },
     warnings = [],
     plan = [];
   for (const {
@@ -5936,7 +5963,7 @@ async function gptFillMissing() {
       paths
     }
     of list) {
-    const item = items.find(x => String(x?.id ?? "") === p.id) || (list.length === 1 && items.length === 1 ? items[0] : null);
+    const item = pick(p);
     if (!item) continue;
     let r;
     try {
@@ -5981,11 +6008,25 @@ async function gptFillMissing() {
     })
   }
   gptReport(warnings);
-  if (!plan.length) return gptReport(kt(["Rien à renseigner : la réponse ne donne aucune valeur pour les champs vides des fiches.",
-    "Nothing to fill in: the answer gives no value for the sheets’ empty fields.",
-    "Nichts auszufüllen: die Antwort gibt keinen Wert für die leeren Felder der Blätter.",
-    "Nada que rellenar: la respuesta no da ningún valor para los campos vacíos de las fichas."
-  ]), "warn");
+  if (!plan.length) {
+    // rien rapproché : dire ce que la réponse décrit et ce qui est coché, plutôt qu'un « aucune valeur » muet
+    const left = items.filter((x, n) => !used.has(n)).map(x => typeOf(x) || nameOf(x) || get(x, "id") || "?"),
+      ticked = list.map(x => x.p.name || x.p.id);
+    if (left.length) return gptReport(ktf([
+      "La réponse décrit {a} ; aucune fiche cochée ({f}) n’y correspond. Coche la fiche de cet appareil, ou importe la réponse comme fiche (« Importer » du panneau).",
+      "The answer describes {a}; no ticked sheet ({f}) matches it. Tick that aircraft’s sheet, or import the answer as a sheet (“Import” in the panel).",
+      "Die Antwort beschreibt {a}; kein angekreuztes Blatt ({f}) passt dazu. Das Blatt dieses Luftfahrzeugs ankreuzen oder die Antwort als Blatt importieren („Importieren“ im Bedienfeld).",
+      "La respuesta describe {a}; ninguna ficha marcada ({f}) le corresponde. Marque la ficha de esa aeronave o importe la respuesta como ficha («Importar» del panel)."
+    ], {
+      a: left.join(", "),
+      f: ticked.join(", ")
+    }), "warn");
+    return gptReport(kt(["Rien à renseigner : la réponse ne donne aucune valeur pour les champs vides des fiches.",
+      "Nothing to fill in: the answer gives no value for the sheets’ empty fields.",
+      "Nichts auszufüllen: die Antwort gibt keinen Wert für die leeren Felder der Blätter.",
+      "Nada que rellenar: la respuesta no da ningún valor para los campos vacíos de las fichas."
+    ]), "warn")
+  }
   const lines = plan.map(x => `${x.after.name || x.after.id} : ${x.filled.map(k => k === "rpmFuelCurve" ? kt(["cartographie moteur", "engine map", "Motorkennfeld", "mapa motor"]) : profileFieldLabel(k)).join(", ")}`);
   if (!await window.AppFramework.ask(ktf(["Renseigner {n} champ(s) dans {f} fiche(s) ? Rien de déjà saisi n’est remplacé.",
       "Fill in {n} field(s) in {f} sheet(s)? Nothing already entered is replaced.",
