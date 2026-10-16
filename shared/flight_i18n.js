@@ -39,6 +39,25 @@
     ["Phase", "Phase", "Phase", "Fase"],
     ["Altitude (ft)", "Altitude (ft)", "Höhe (ft)", "Altitud (ft)"],
     ["Profil actif", "Active profile", "Aktives Profil", "Perfil activo"],
+    ["Fiche en cours", "Sheet being edited", "Blatt in Bearbeitung", "Ficha en edición"],
+    ["Champs de la fiche", "Sheet fields", "Felder des Blatts", "Campos de la ficha"],
+    ["Interpolation moteur", "Engine interpolation", "Triebwerksinterpolation", "Interpolación motor"],
+    ["Airframe SimBrief", "SimBrief airframe", "SimBrief-Airframe", "Airframe de SimBrief"],
+    ["Moteur", "Engine", "Triebwerk", "Motor"],
+    ["Fichier", "File", "Datei", "Archivo"],
+    ["Régimes de vol et champs de la fiche ouverte.", "Flight regimes and fields of the open sheet.",
+      "Flugphasen und Felder des geöffneten Blatts.", "Regímenes de vuelo y campos de la ficha abierta."
+    ],
+    ["Cartographie moteur, table RPM et interpolation du débit.", "Engine map, RPM table and fuel-flow interpolation.",
+      "Motorkennfeld, Drehzahltabelle und Verbrauchsinterpolation.", "Mapa motor, tabla RPM e interpolación del consumo."
+    ],
+    ["Airframe, calibration sur un OFP réel, traçabilité et audit.", "Airframe, calibration on a real OFP, traceability and audit.",
+      "Airframe, Kalibrierung an einem echten OFP, Nachweis und Prüfung.",
+      "Airframe, calibración con un OFP real, trazabilidad y auditoría."
+    ],
+    ["Dernier JSON importé : fiche, base ou OFP.", "Last imported JSON: sheet, database or OFP.",
+      "Zuletzt importiertes JSON: Blatt, Datenbank oder OFP.", "Último JSON importado: ficha, base u OFP."
+    ],
     ["Importer `.lnmperf` / JSON / CSV", "Import `.lnmperf` / JSON / CSV", "`.lnmperf` / JSON / CSV importieren",
       "Importar `.lnmperf` / JSON / CSV"
     ],
@@ -164,6 +183,12 @@
       "«Recuperar último FPL de SimBrief» carga directamente el último OFP. La importación JSON sigue siendo una alternativa si el navegador bloquea SimBrief."
     ],
     ["Calibrer le profil actif", "Calibrate the active profile", "Aktives Profil kalibrieren", "Calibrar el perfil activo"],
+    ["Importer airframe SimBrief", "Import SimBrief airframe", "SimBrief-Airframe importieren", "Importar airframe de SimBrief"],
+    ["Importer OFP JSON", "Import OFP JSON", "OFP-JSON importieren", "Importar OFP JSON"],
+    ["Exporter audit JSON", "Export audit JSON", "Prüfung als JSON exportieren", "Exportar auditoría JSON"],
+    ["Temps", "Time", "Zeit", "Tiempo"],
+    ["Carburant", "Fuel", "Kraftstoff", "Combustible"],
+    ["FF calculé", "Computed FF", "Berechneter FF", "FF calculado"],
     ["Aucun OFP analysé.", "No OFP analysed.", "Kein OFP ausgewertet.", "Ningún OFP analizado."],
     ["Traçabilité de calibration", "Calibration traceability", "Kalibrierungsnachweis", "Trazabilidad de la calibración"],
     ["Profil vertical", "Vertical profile", "Vertikalprofil", "Perfil vertical"],

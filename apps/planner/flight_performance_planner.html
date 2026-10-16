@@ -97,15 +97,7 @@
       'Glisser : largeur des colonnes — double-clic : largeurs par défaut', 'Drag: column widths — double-click: default widths',
       'Ziehen: Spaltenbreite — Doppelklick: Standardbreiten', 'Arrastrar: ancho de columnas — doble clic: anchos por defecto'))
   });
-  setTimeout(() => cols?.refresh(), 800);
-  /* table RPM / puissance : colonnes réglables (poignées sur les en-têtes, framework shared/table_resize.js) ; le
-     commentaire tient sur une ligne, texte entier en infobulle, double-clic pour le déplier */
-  window.TableResize?.attach(document.getElementById('engineCurveTable'), {
-    key: 'flightPerfCurveCols',
-    title: tl('Glisser : largeur de la colonne — double-clic : largeurs par défaut',
-      'Drag: column width — double-click: default widths', 'Ziehen: Spaltenbreite — Doppelklick: Standardbreiten',
-      'Arrastrar: ancho de la columna — doble clic: anchos por defecto')
-  })
+  setTimeout(() => cols?.refresh(), 800)
 })();
 </script>
 </body></html>

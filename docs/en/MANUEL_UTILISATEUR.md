@@ -1517,7 +1517,7 @@ This page (side bar “Tools”, from the Design level) manages the performance 
 - Header: the “Aircraft” selector, divided like Fuel’s “Aircraft” menu (“My aircraft” first, then by category; a type without a sheet is listed with “no sheet”), which chooses the sheet being edited and the aircraft of the ChatGPT panel.
 - Bottom bar: the status of that sheet, “Save the sheet” and “Discard changes” (Expert level), or, for an aircraft without a sheet, “Create the sheet: from SimBrief, Ask ChatGPT, Estimate from the class”; the “My aircraft ↗” link; the actions on ticked rows: “Merge”, “Export”, “Save to the folder”, “Fill in the missing fields”, “Delete”; the sources: “Add an aircraft”, “Import…”, “Folder…”, “Reread” and “Fetch latest SimBrief FPL” (calibration).
 - “Performance sheets”: search, sorting and “Ask ChatGPT” above the table of your aircraft and sheets, by groups; an aircraft without a sheet only shows “none” there. A click on a row chooses that aircraft, with or without a sheet, like the header selector (row highlighted); several rows ticked: no aircraft chosen.
-- Blocks of the sheet being edited (Expert level): “Engine performance — RPM / power / consumption”, “RPM / power → consumption table”, “Flight regimes — profile ↔ engine map” (SimBrief airframe), “Profile data — JSON ⇄ Little Navmap” (the editor of all fields, “Update from SimBrief”), “Engine map — edit RPM / power → consumption”, “SimBrief calibration from OFP”, “Calibration traceability”, “OFP audit — raw and calculated values” and “Imported JSON / SimBrief”, described below.
+- Under the table, four cards: “Sheet being edited” (flight regimes and fields of the sheet, from the Design level), “Engine” (engine map, RPM table, interpolation), “SimBrief” (airframe, OFP calibration, traceability, audit) and “File” (last imported JSON, folded), described below.
 - A sheet saved here is picked up at once by a Fuel page open in another tab (the sheet it shows, and its fuel plan).
 
 ### Bottom bar and ☰ menu
@@ -1543,27 +1543,17 @@ This block (from the Design level), the first of the page, is the performance si
 - “Ask ChatGPT” (above the table, and sheet of the active profile) opens a panel for the chosen aircraft (header selector or click on its row): “Copy the prompt and open ChatGPT” (a single ChatGPT tab, where you paste the prompt). The panel follows the chosen aircraft. The prompt, in the page’s language, asks to compile every source (manuals, manufacturer, authorities, Wikipedia, simulation forums), in kt, ft, ft/min and kg/h, estimated values marked, engine map included; it also gives what the suite already knows (EUROCONTROL, SimBrief, Airframe DB, current profile) so that ChatGPT completes rather than repeats. “Show the prompt” displays it. Paste the answer (the JSON, or a performance CSV) under the button, then “Import as a new profile” (“<name> — ChatGPT”) or “Merge with “…”” (the answer is dated today: it wins field by field, empty fields are filled; preview of the changes first, values to tick). Unknown keys and unreadable or out-of-range values are discarded and reported; estimated values appear under “Missing data” (“estimated: …”) and stop being estimated as soon as you change them by hand (sheet or engine map). The type and the name come from the answer (the chosen aircraft is only a fallback); if the answer describes another type, a question decides: import as one or the other, or, for a merge, a new profile or merge anyway. A CSV with commas or semicolons is accepted.
 - “Fill in the missing fields (n)” (bottom bar) completes the ticked sheets with a single question to ChatGPT: the ChatGPT panel opens on those sheets (name and number of empty fields), “Copy the prompt and open ChatGPT” copies the question — for each sheet, what the suite already knows and its empty fields, engine map included if the sheet has none. Paste ChatGPT’s answer (one entry per sheet), then “Fill in the missing fields”: only the empty fields are filled, nothing already entered is replaced, estimated values stay marked; a summary per sheet comes before confirming, then “Undo” for 10 s.
 
-### Engine performance — RPM / power / consumption
+### Sheet being edited
 
-This block (original title “Engine performance sheet”) gives the consumption for an engine setting. Expert level block.
+This card (from the Design level), under the table, shows the sheet of the chosen aircraft.
 
-1. Enter “RPM / N1”. The “Altitude (ft)” and “Phase” fields complete the sheet.
-2. Click “Interpolate”.
-3. Read the “Total fuel flow” and its min.–max. range (interpolation in the table, by altitude when the “Altitude (ft)” column is filled in).
+#### Flight regimes — profile ↔ map
 
-Under the sheet, the “RPM / power → consumption curve” draws the min., nominal and max. flows by engine setting. Hover over it to read the values at a given setting. The interpolated point is marked on it.
-Without an RPM table in the profile, the page shows “RPM curve missing from the profile.” or “No quantified map”.
+IAS, climb rate, engine setting and fuel flow of each phase (climb, cruise, descent, taxi, diversion), compared with the engine map, and the links to the sheets of the aircraft of this type.
 
-### RPM / power → consumption table
+#### Sheet fields
 
-This table lists the points of the engine map of the active profile: “RPM / N1”, “Min.”, “Nominal”, “Max.”, “Altitude (ft)” (optional: one line per published altitude), “Flight phase”, “Comment”. Expert level block.
-Click a column title (↕) to sort. Drag the right edge of a title to set the column width (double-click the edge: default widths); the setting is kept in the browser. A long comment stays on one line with an ellipsis: the whole text is in a tooltip, a double-click on the cell unfolds it.
-It is read-only: to change it, use the “Engine map — edit RPM / power → consumption” block.
-Without data, it shows “No RPM curve in this profile.”
-
-### Profile data — JSON ⇄ Little Navmap
-
-This block shows all the fields of the profile, exported as they are in the Little Navmap `.lnmperf` file. Expert level block.
+All the fields of the sheet, exported as they are in the Little Navmap `.lnmperf` file.
 
 - Groups: “Identity and format”, “Fuel and operation”, “Runway and alternate”, “Climb”, “Cruise”, “Descent”, “Power setting and consumption”.
 - Fuel is shown in the chosen unit (kg or lbs).
@@ -1573,40 +1563,70 @@ This block shows all the fields of the profile, exported as they are in the Litt
 An empty box stays empty and blocks the `.lnmperf` export: no value is made up.
 After a change, click “Save the sheet” in the bottom bar.
 
-### Engine map — edit RPM / power → consumption
+### Engine
 
-This block is used to enter or correct the setting → consumption table, point by point. Expert level block.
+Expert level card: the engine map to edit, the RPM table and its curve, the fuel flow interpolation.
+
+#### Engine map — edit RPM / power → consumption
+
+Enter or correct the setting → consumption table, point by point.
 
 1. “Add a point” creates a line.
 2. Fill in “RPM / N1”, “Min.”, “Nominal”, “Max.”, “Altitude (ft)” (optional: one line per published altitude), “Flight phase” and “Comment”.
 3. Save the sheet (“Save the sheet”, bottom bar).
 
 Tip: a range written in the comment, for example “1,000–1,300 kg/h total”, fills in min., nominal and max. when saving.
-With no aircraft chosen, the block shows “Choose or import a profile.”
+With no aircraft chosen, the card shows “Choose or import a profile.”
 
-### SimBrief calibration from OFP
+#### RPM / power → consumption table
 
-This block adjusts the active profile to a real SimBrief flight plan. Expert level block.
+This table lists the points of the engine map of the active profile: “RPM / N1”, “Min.”, “Nominal”, “Max.”, “Altitude (ft)” (optional: one line per published altitude), “Flight phase”, “Comment”.
+Click a column title (↕) to sort. Drag the right edge of a title to set the column width (double-click the edge: default widths); the setting is kept in the browser. A long comment stays on one line with an ellipsis: the whole text is in a tooltip, a double-click on the cell unfolds it.
+It is read-only: to change it, use “Engine map — edit”, above.
+Without data, it shows “No RPM curve in this profile.”
+
+#### Engine interpolation
+
+This part gives the consumption for an engine setting.
+
+1. Enter “RPM / N1”. The “Altitude (ft)” and “Phase” fields complete the sheet.
+2. Click “Interpolate”.
+3. Read the “Total fuel flow” and its min.–max. range (interpolation in the table, by altitude when the “Altitude (ft)” column is filled in).
+
+Above the RPM table, the curve draws the min., nominal and max. flows by engine setting. Hover over it to read the values at a given setting. The interpolated point is marked on it.
+Without an RPM table in the profile, the page shows “RPM curve missing from the profile.” or “No quantified map”.
+
+### SimBrief
+
+Expert level card: the SimBrief airframe, the calibration on a real OFP, its traceability and the audit.
+
+#### SimBrief airframe
+
+Paste the “Internal ID” of a SimBrief airframe (or its share address), then “Import SimBrief airframe”: the airframe is read (SimBrief's public list, otherwise its share link) and the sheet drawn from it opens. If SimBrief does not publish the airframe, the Internal ID is kept alone, usable as a type by SimBrief Dispatch. The message under the button says what was taken; with no performance data in the airframe, complete it with a `.lnmperf`.
+
+#### SimBrief calibration from OFP
+
+Adjust the sheet to a real SimBrief flight plan.
 
 1. Click “Fetch latest SimBrief FPL” (bottom bar). The identifier is entered in ☰ › Pilot profile. Failing that, download the JSON OFP on simbrief.com and use “Import OFP JSON”.
 2. The OFP fills in the fuel plan and the flight plan; the aircraft profile is created and calibrated. The message shows a full or partial calibration (measurable phases).
 3. “Calibrate the active profile” applies the calibration of the last OFP to the chosen profile.
 4. “Export audit JSON” downloads the audit.
 
-“Calibration traceability” (in this block) recalls the last calibration applied; otherwise “No OFP calibration”.
+“Calibration traceability”, below, recalls the last calibration applied; otherwise “No OFP calibration”.
 
-### OFP audit — raw and calculated values
+#### OFP audit — raw and calculated values
 
-This table compares, phase by phase, the values read in the OFP and the recalculated values: “Time”, “Distance”, “Fuel”, “Computed FF”, “TAS / GS”, “V/S”. Expert level block.
+This table compares, phase by phase, the values read in the OFP and the recalculated values: “Time”, “Distance”, “Fuel”, “Computed FF”, “TAS / GS”, “V/S”.
 It fills in after an OFP import (“Fetch latest SimBrief FPL” or “Import OFP JSON”).
 Without an OFP: “No OFP data.”
 Useful to understand a partial calibration or a gap with SimBrief.
 
-### Imported JSON / SimBrief
+### File
 
-This block shows the raw content of the last imported file (SimBrief OFP or JSON). Expert level block.
+The “File” card (Expert level) keeps, folded under “Imported JSON / SimBrief”, the raw content of the last imported file (SimBrief OFP or JSON); a click unfolds it.
 - “Copy JSON”: copies the content to the clipboard; greyed out when there is nothing to copy.
-- “Clear”: empties the display (the profile is not touched).
+- “Clear”: empties the display (the sheet is not touched).
 
 Without an import: “No JSON loaded.”
 

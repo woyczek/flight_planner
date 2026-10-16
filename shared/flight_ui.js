@@ -53,7 +53,8 @@
   }
 
   // Bloc « Profil actif » renommé « Régimes de vol — profil ↔ cartographie ».
-  const profileCard = $("profile")?.closest(".card");
+  // (Fiches de performances : la carte « Fiche en cours » garde son titre, les régimes y sont un sous-titre)
+  const profileCard = typeof PERF_PAGE !== "undefined" && PERF_PAGE === "sheets" ? null : $("profile")?.closest(".card");
   if (profileCard) profileCard.querySelector("h2").textContent = "Régimes de vol — profil ↔ cartographie";
   // Régimes de vol : groupe repliable du bloc Résultat, sous la fiche du curseur (⌖ / 📌). Le bloc Résultat est un
   // cadre semi-mobile du framework (StickyFrame.follow, posé par shared/flight_perf_view.js). Niveau Expert seulement
@@ -167,7 +168,10 @@
   });
   $("toggleProfileEditor").style.display = "none";
   document.querySelector(".prefs-popup").style.display = "none";
-  ["importBtn", "exportLnmBtn", "exportBtn", "exportDbBtn", "sbAirframeBtn"].forEach(id => {
+  // (Fiches de performances : « Importer airframe SimBrief » reste dans la carte SimBrief)
+  ["importBtn", "exportLnmBtn", "exportBtn", "exportDbBtn", ...(typeof PERF_PAGE !== "undefined" && PERF_PAGE === "sheets" ? [] : [
+    "sbAirframeBtn"
+  ])].forEach(id => {
     if ($(id)) $(id).style.display = "none"
   });
   if ($("dirBtn")) $("dirBtn").style.display = "none";

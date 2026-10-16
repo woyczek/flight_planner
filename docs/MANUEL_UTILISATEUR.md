@@ -1564,7 +1564,7 @@ Cette page (barre latérale « Outils », à partir du niveau Conception) gère 
 - En-tête : le sélecteur « Appareil », découpé comme le menu « Avion » du Carburant (« Mes appareils » en tête, puis par catégorie ; un type sans fiche y figure avec « aucune fiche »), qui choisit la fiche qu'on modifie et l'appareil du panneau ChatGPT.
 - Barre du bas : l'état de cette fiche, « Enregistrer la fiche » et « Abandonner les modifications » (niveau Expert), ou, pour un appareil sans fiche, « Créer la fiche : depuis SimBrief, Demander à ChatGPT, Estimer par la classe » ; le lien « Mes appareils ↗ » ; les actions sur les lignes cochées : « Fusionner », « Exporter », « Enregistrer dans le dossier », « Renseigner les champs manquants », « Supprimer » ; les sources : « Ajouter un appareil », « Importer… », « Dossier… », « Relire » et « Récupérer dernier FPL SimBrief » (calibration).
 - « Fiches de performances » : la recherche, le tri et « Demander à ChatGPT » au-dessus du tableau de vos appareils et de vos fiches, par groupes ; un appareil sans fiche n'y montre que « aucune ». Un clic sur une ligne choisit cet appareil, avec ou sans fiche, comme le sélecteur de l'en-tête (ligne surlignée) ; plusieurs lignes cochées : aucun appareil choisi.
-- Blocs de la fiche en cours (niveau Expert) : « Performances moteur — RPM / puissance / consommation », « Table RPM / puissance → consommation », « Régimes de vol — profil ↔ cartographie » (airframe SimBrief), « Données du profil — JSON ⇄ Little Navmap » (l'éditeur de tous les champs, « Mettre à jour depuis SimBrief »), « Cartographie moteur — édition », « Calibration SimBrief depuis OFP », « Traçabilité de calibration », « Audit OFP » et « JSON importé / SimBrief », décrits ci-dessous.
+- Sous le tableau, quatre cartes : « Fiche en cours » (régimes de vol et champs de la fiche, dès le niveau Conception), « Moteur » (cartographie, table RPM, interpolation), « SimBrief » (airframe, calibration OFP, traçabilité, audit) et « Fichier » (dernier JSON importé, replié), décrites ci-dessous.
 - Une fiche enregistrée ici est reprise aussitôt par un Carburant ouvert dans un autre onglet (la fiche qu'il affiche, et son devis).
 
 ### Barre du bas et menu ☰
@@ -1590,27 +1590,17 @@ Ce bloc (à partir du niveau Conception), le premier de la page, est la face per
 - « Demander à ChatGPT » (au-dessus du tableau, et fiche du profil actif) ouvre un panneau pour l'appareil choisi (sélecteur de l'en-tête ou clic sur sa ligne) : « Copier le prompt et ouvrir ChatGPT » (un seul onglet ChatGPT, où coller le prompt). Le panneau suit l'appareil choisi. Le prompt, dans la langue de la page, demande de compiler toutes les sources (manuels, constructeur, autorités, Wikipédia, forums de simulation), en kt, ft, ft/min et kg/h, valeurs estimées marquées, cartographie moteur comprise ; il donne aussi ce que la suite sait déjà (EUROCONTROL, SimBrief, Airframe DB, profil actuel) pour que ChatGPT complète plutôt que répète. « Voir le prompt » le montre. Coller la réponse (le JSON, ou un CSV de performances) sous le bouton, puis « Importer comme nouveau profil » (« <nom> — ChatGPT ») ou « Fusionner avec « … » » (la réponse est datée du jour : elle gagne champ par champ, les vides sont comblés ; aperçu des changements d'abord, données à cocher). Les clés inconnues et les valeurs illisibles ou hors plage sont écartées et signalées ; les valeurs estimées apparaissent sous « Données manquantes » (« estimé : … ») et ne le sont plus dès que vous les changez à la main (fiche ou cartographie). Le type et le nom viennent de la réponse (l'appareil choisi n'est qu'un repli) ; si la réponse décrit un autre type, une question tranche : importer comme l'un ou l'autre, ou, pour une fusion, nouveau profil ou fusionner quand même. Un CSV à virgules ou à points-virgules est accepté.
 - « Renseigner les champs manquants (n) » (barre du bas) complète les fiches cochées par une seule question à ChatGPT : le panneau ChatGPT s'ouvre sur ces fiches (nom et nombre de champs vides), « Copier le prompt et ouvrir ChatGPT » copie la question — pour chaque fiche, ce que la suite sait déjà et ses champs vides, cartographie moteur comprise si la fiche n'en a pas. Collez la réponse de ChatGPT (une entrée par fiche), puis « Renseigner les champs manquants » : seuls les champs vides sont remplis, rien de déjà saisi n'est remplacé, les valeurs estimées restent marquées ; un résumé par fiche précède la validation, puis « Annuler » pendant 10 s.
 
-### Performances moteur — RPM / puissance / consommation
+### Fiche en cours
 
-Ce bloc (titre d'origine « Fiche performance moteur ») donne la consommation pour un régime moteur. Bloc du niveau Expert.
+Cette carte (dès le niveau Conception), sous le tableau, montre la fiche de l'appareil choisi.
 
-1. Saisissez « RPM / N1 ». Les champs « Altitude (ft) » et « Phase » complètent la fiche.
-2. Cliquez sur « Interpoler ».
-3. Lisez le « Débit total » et sa fourchette min.–max. (interpolation dans la table, par altitude quand la colonne « Altitude (ft) » est remplie).
+#### Régimes de vol — profil ↔ cartographie
 
-Sous la fiche, la « Courbe RPM / puissance → consommation » trace les débits min., nominal et max. selon le régime. Survolez-la pour lire les valeurs à un régime donné. Le point interpolé y est marqué.
-Sans table RPM dans le profil, la page affiche « Courbe RPM absente du profil. » ou « Aucune cartographie chiffrée ».
+Badin, vario, régime moteur et débit de chaque phase (montée, croisière, descente, roulage, dégagement), comparés à la cartographie moteur, et les liens vers les fiches des appareils de ce type.
 
-### Table RPM / puissance → consommation
+#### Champs de la fiche
 
-Cette table liste les points de la cartographie moteur du profil actif : « RPM / N1 », « Min. », « Nominal », « Max. », « Altitude (ft) » (facultative : une ligne par altitude publiée), « Régime de vol », « Commentaire ». Bloc du niveau Expert.
-Cliquez sur un titre de colonne (↕) pour trier. Glissez le bord droit d'un titre pour régler la largeur de la colonne (double-clic sur le bord : largeurs par défaut) ; le réglage est gardé dans le navigateur. Un commentaire long tient sur une ligne, points de suspension compris : le texte entier est en infobulle, un double-clic sur la cellule le déplie.
-Elle est en lecture seule : pour la modifier, utilisez le bloc « Cartographie moteur — édition RPM / puissance → consommation ».
-Sans données, elle affiche « Pas de courbe RPM dans ce profil. »
-
-### Données du profil — JSON ⇄ Little Navmap
-
-Ce bloc montre tous les champs du profil, exportés tels quels dans le fichier `.lnmperf` de Little Navmap. Bloc du niveau Expert.
+Tous les champs de la fiche, exportés tels quels dans le fichier `.lnmperf` de Little Navmap.
 
 - Groupes : « Identité et format », « Carburant et opération », « Piste et alternat », « Montée », « Croisière », « Descente », « Régime et consommation ».
 - Le carburant s'affiche dans l'unité choisie (kg ou lbs).
@@ -1620,40 +1610,70 @@ Ce bloc montre tous les champs du profil, exportés tels quels dans le fichier `
 Une case vide reste vide et bloque l'export `.lnmperf` : aucune valeur n'est inventée.
 Après modification, cliquez sur « Enregistrer la fiche » dans la barre du bas.
 
-### Cartographie moteur — édition RPM / puissance → consommation
+### Moteur
 
-Ce bloc sert à saisir ou corriger la table régime → consommation, point par point. Bloc du niveau Expert.
+Carte du niveau Expert : la cartographie moteur à éditer, la table RPM et sa courbe, l'interpolation du débit.
+
+#### Cartographie moteur — édition RPM / puissance → consommation
+
+Saisir ou corriger la table régime → consommation, point par point.
 
 1. « Ajouter un point » crée une ligne.
 2. Remplissez « RPM / N1 », « Min. », « Nominal », « Max. », « Altitude (ft) » (facultative : une ligne par altitude publiée), « Régime de vol » et « Commentaire ».
 3. Enregistrez la fiche (« Enregistrer la fiche », barre du bas).
 
 Astuce : une plage écrite dans le commentaire, par exemple « 1 000–1 300 kg/h total », remplit min., nominal et max. à l'enregistrement.
-Sans avion choisi, le bloc affiche « Choisis ou importe un profil. »
+Sans appareil choisi, la carte affiche « Choisis ou importe un profil. »
 
-### Calibration SimBrief depuis OFP
+#### Table RPM / puissance → consommation
 
-Ce bloc recale le profil actif sur un plan de vol SimBrief réel. Bloc du niveau Expert.
+Cette table liste les points de la cartographie moteur du profil actif : « RPM / N1 », « Min. », « Nominal », « Max. », « Altitude (ft) » (facultative : une ligne par altitude publiée), « Régime de vol », « Commentaire ».
+Cliquez sur un titre de colonne (↕) pour trier. Glissez le bord droit d'un titre pour régler la largeur de la colonne (double-clic sur le bord : largeurs par défaut) ; le réglage est gardé dans le navigateur. Un commentaire long tient sur une ligne, points de suspension compris : le texte entier est en infobulle, un double-clic sur la cellule le déplie.
+Elle est en lecture seule : pour la modifier, utilisez « Cartographie moteur — édition », au-dessus.
+Sans données, elle affiche « Pas de courbe RPM dans ce profil. »
+
+#### Interpolation moteur
+
+Cette partie donne la consommation pour un régime moteur.
+
+1. Saisissez « RPM / N1 ». Les champs « Altitude (ft) » et « Phase » complètent la fiche.
+2. Cliquez sur « Interpoler ».
+3. Lisez le « Débit total » et sa fourchette min.–max. (interpolation dans la table, par altitude quand la colonne « Altitude (ft) » est remplie).
+
+Au-dessus de la table RPM, la courbe trace les débits min., nominal et max. selon le régime. Survolez-la pour lire les valeurs à un régime donné. Le point interpolé y est marqué.
+Sans table RPM dans le profil, la page affiche « Courbe RPM absente du profil. » ou « Aucune cartographie chiffrée ».
+
+### SimBrief
+
+Carte du niveau Expert : l'airframe SimBrief, la calibration sur un OFP réel, sa traçabilité et l'audit.
+
+#### Airframe SimBrief
+
+Collez l'« Internal ID » d'un airframe SimBrief (ou son adresse de partage), puis « Importer airframe SimBrief » : l'airframe est lu (liste publique de SimBrief, sinon son lien de partage) et la fiche qui en est tirée s'ouvre. Si SimBrief ne publie pas l'airframe, l'Internal ID est gardé seul, utilisable comme type par SimBrief Dispatch. Le message sous le bouton dit ce qui a été repris ; sans performances dans l'airframe, complétez avec un `.lnmperf`.
+
+#### Calibration SimBrief depuis OFP
+
+Recaler la fiche sur un plan de vol SimBrief réel.
 
 1. Cliquez sur « Récupérer dernier FPL SimBrief » (barre du bas). L'identifiant se saisit dans ☰ › Profil pilote. À défaut, téléchargez l'OFP JSON sur simbrief.com et utilisez « Importer OFP JSON ».
 2. L'OFP remplit le devis et le plan de vol ; le profil de l'appareil est créé et calibré. Le message indique une calibration complète ou partielle (phases mesurables).
 3. « Calibrer le profil actif » applique la calibration du dernier OFP au profil choisi.
 4. « Exporter audit JSON » télécharge l'audit.
 
-« Traçabilité de calibration » (dans ce bloc) rappelle la dernière calibration appliquée ; sinon « Pas de calibration OFP ».
+« Traçabilité de calibration », dessous, rappelle la dernière calibration appliquée ; sinon « Pas de calibration OFP ».
 
-### Audit OFP — valeurs brutes et calculées
+#### Audit OFP — valeurs brutes et calculées
 
-Ce tableau compare, phase par phase, les valeurs lues dans l'OFP et les valeurs recalculées : « Temps », « Distance », « Carburant », « FF calculé », « TAS / GS », « Vario ». Bloc du niveau Expert.
+Ce tableau compare, phase par phase, les valeurs lues dans l'OFP et les valeurs recalculées : « Temps », « Distance », « Carburant », « FF calculé », « TAS / GS », « Vario ».
 Il se remplit après un import d'OFP (« Récupérer dernier FPL SimBrief » ou « Importer OFP JSON »).
 Sans OFP : « Aucune donnée OFP. »
 Utile pour comprendre une calibration partielle ou un écart avec SimBrief.
 
-### JSON importé / SimBrief
+### Fichier
 
-Ce bloc affiche le contenu brut du dernier fichier importé (OFP SimBrief ou JSON). Bloc du niveau Expert.
+La carte « Fichier » (niveau Expert) garde, repliée sous « JSON importé / SimBrief », le contenu brut du dernier fichier importé (OFP SimBrief ou JSON) ; un clic la déplie.
 - « Copier JSON » : copie le contenu dans le presse-papiers ; grisé quand il n'y a rien à copier.
-- « Effacer » : vide l'affichage (le profil n'est pas touché).
+- « Effacer » : vide l'affichage (la fiche n'est pas touchée).
 
 Sans import : « Aucun JSON chargé. »
 

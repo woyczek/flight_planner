@@ -1512,12 +1512,12 @@ Das Gelände stammt aus einem Geländemodell von etwa 150 m: Die ASFC-Grenzen fo
 ## Leistungsblätter
 <!-- page: apps/planner/performance_sheets.html -->
 
-Diese Seite (Seitenleiste „Werkzeuge“, ab der Stufe Konzeption) verwaltet die Leistungsblätter Ihrer Luftfahrzeuge: Jede Aktion, die ein Blatt anlegt oder ändert, geht von hier aus. Kraftstoff nutzt sie für die Planung; „Meine Luftfahrzeuge“ (Einstellungen › Mein Profil › Luftfahrzeuge und Simulatoren) sagt, welche Luftfahrzeuge Sie besitzen. Beide Seiten lesen dieselbe Datenbank dieses Browsers und denselben Leistungsordner: Ein hier gespeichertes Blatt übernimmt eine in einem anderen Tab geöffnete Kraftstoff-Seite sofort.
+Diese Seite (Seitenleiste „Werkzeuge“, ab der Stufe Gestaltung) verwaltet die Leistungsblätter Ihrer Luftfahrzeuge: Jede Aktion, die ein Blatt anlegt oder ändert, geht von hier aus. Kraftstoff nutzt sie für die Planung; „Meine Luftfahrzeuge“ (Einstellungen › Mein Profil › Luftfahrzeuge und Simulatoren) sagt, welche Luftfahrzeuge Sie besitzen. Beide Seiten lesen dieselbe Datenbank dieses Browsers und denselben Leistungsordner: Ein hier gespeichertes Blatt übernimmt eine in einem anderen Tab geöffnete Kraftstoff-Seite sofort.
 
 - Kopfzeile: die Auswahl „Luftfahrzeug“, gegliedert wie das Menü „Flugzeug“ von Kraftstoff („Meine Luftfahrzeuge“ zuerst, dann nach Kategorie; ein Typ ohne Blatt steht mit „kein Blatt“ darin), die das bearbeitete Blatt und das Luftfahrzeug des ChatGPT-Felds wählt.
 - Untere Leiste: der Zustand dieses Blatts, „Blatt speichern“ und „Änderungen verwerfen“ (Stufe Experte), oder, für ein Luftfahrzeug ohne Blatt, „Blatt anlegen: aus SimBrief / ChatGPT fragen / Aus der Klasse schätzen“; der Link „Meine Luftfahrzeuge ↗“; die Aktionen für die angekreuzten Zeilen: „Zusammenführen“, „Exportieren“, „Im Ordner speichern“, „Fehlende Felder ausfüllen“, „Löschen“; die Quellen: „Luftfahrzeug hinzufügen“, „Importieren…“, „Ordner…“, „Neu lesen“ und „Letzten SimBrief-FPL abrufen“ (Kalibrierung).
 - „Leistungsblätter“: Suche, Sortierung und „ChatGPT fragen“ über der Tabelle Ihrer Luftfahrzeuge und Blätter, nach Gruppen; ein Luftfahrzeug ohne Blatt zeigt dort nur „keine“. Ein Klick auf eine Zeile wählt dieses Luftfahrzeug, mit oder ohne Blatt, wie die Auswahl der Kopfzeile (Zeile hervorgehoben); mehrere Zeilen angekreuzt: kein Luftfahrzeug gewählt.
-- Blöcke des bearbeiteten Blatts (Stufe Experte): „Triebwerksleistung — Drehzahl / Leistung / Verbrauch“, „Tabelle Drehzahl / Leistung → Verbrauch“, „Flugregime — Profil ↔ Motorkennfeld“ (SimBrief-Airframe), „Profildaten — JSON ⇄ Little Navmap“ (der Editor aller Felder, „Aus SimBrief aktualisieren“), „Motorkennfeld — Drehzahl / Leistung → Verbrauch bearbeiten“, „SimBrief-Kalibrierung aus OFP“, „Kalibrierungsverlauf“, „OFP-Prüfung“ und „Importiertes JSON / SimBrief“, unten beschrieben.
+- Unter der Tabelle vier Karten: „Blatt in Bearbeitung“ (Flugphasen und Felder des Blatts, ab der Stufe Gestaltung), „Triebwerk“ (Kennfeld, RPM-Tabelle, Interpolation), „SimBrief“ (Airframe, OFP-Kalibrierung, Nachweis, Prüfung) und „Datei“ (zuletzt importiertes JSON, eingeklappt), unten beschrieben.
 - Ein hier gespeichertes Blatt übernimmt eine in einem anderen Tab geöffnete Kraftstoff-Seite sofort (das angezeigte Blatt und ihre Planung).
 
 ### Untere Leiste und Menü ☰
@@ -1543,27 +1543,17 @@ Dieser Block (ab der Stufe Gestaltung), der erste der Seite, ist die Leistungsse
 - „ChatGPT fragen“ (über der Tabelle und Blatt des aktiven Profils) öffnet ein Feld für das gewählte Luftfahrzeug (Auswahl der Kopfzeile oder Klick auf seine Zeile): „Prompt kopieren und ChatGPT öffnen“ (ein einziger ChatGPT-Tab, in den der Prompt eingefügt wird). Das Feld folgt dem gewählten Luftfahrzeug. Der Prompt in der Sprache der Seite bittet, alle Quellen zusammenzutragen (Handbücher, Hersteller, Behörden, Wikipedia, Simulationsforen), in kt, ft, ft/min und kg/h, geschätzte Werte markiert, Motorkennfeld inklusive; er nennt auch, was die Suite schon weiß (EUROCONTROL, SimBrief, Airframe DB, aktuelles Profil), damit ChatGPT ergänzt statt wiederholt. „Prompt anzeigen“ zeigt ihn. Die Antwort (das JSON oder ein Leistungs-CSV) unter der Schaltfläche einfügen, dann „Als neues Profil importieren“ („<Name> — ChatGPT“) oder „Mit „…“ zusammenführen“ (die Antwort trägt das heutige Datum: sie gewinnt Feld für Feld, leere Felder werden ergänzt; zuerst die Vorschau der Änderungen, Angaben zum Ankreuzen). Unbekannte Schlüssel und unlesbare oder außerhalb des Bereichs liegende Werte werden verworfen und gemeldet; geschätzte Werte erscheinen unter „Fehlende Daten“ („geschätzt: …“) und gelten nicht mehr als geschätzt, sobald Sie sie von Hand ändern (Blatt oder Motorkennfeld). Typ und Name kommen aus der Antwort (das gewählte Luftfahrzeug ist nur ein Ersatz); beschreibt die Antwort einen anderen Typ, entscheidet eine Frage: als der eine oder der andere importieren, oder beim Zusammenführen: neues Profil oder trotzdem zusammenführen. Ein CSV mit Kommas oder Semikolons wird angenommen.
 - „Fehlende Felder ausfüllen (n)“ (untere Leiste) ergänzt die angekreuzten Blätter mit einer einzigen Frage an ChatGPT: das ChatGPT-Feld öffnet sich für diese Blätter (Name und Anzahl leerer Felder), „Prompt kopieren und ChatGPT öffnen“ kopiert die Frage — für jedes Blatt, was die Suite schon weiß, und seine leeren Felder, das Motorkennfeld eingeschlossen, wenn das Blatt keins hat. Fügen Sie die Antwort von ChatGPT ein (ein Eintrag pro Blatt), dann „Fehlende Felder ausfüllen“: nur die leeren Felder werden gefüllt, nichts bereits Eingetragenes wird ersetzt, geschätzte Werte bleiben markiert; vor der Bestätigung erscheint eine Zusammenfassung pro Blatt, danach 10 s lang „Rückgängig“.
 
-### Triebwerksleistung — Drehzahl / Leistung / Verbrauch
+### Blatt in Bearbeitung
 
-Dieser Block (ursprünglicher Titel „Fiche performance moteur“) gibt den Verbrauch für eine Triebwerksdrehzahl an. Block der Stufe Experte.
+Diese Karte (ab der Stufe Gestaltung) unter der Tabelle zeigt das Blatt des gewählten Luftfahrzeugs.
 
-1. Geben Sie „RPM / N1“ ein. Die Felder „Höhe (ft)“ und „Phase“ ergänzen das Blatt.
-2. Klicken Sie auf „Interpolieren“.
-3. Lesen Sie den „Gesamtverbrauch“ und seinen Bereich Min.–Max. ab (Interpolation in der Tabelle, nach Höhe, wenn die Spalte „Höhe (ft)“ ausgefüllt ist).
+#### Flugphasen — Profil ↔ Kennfeld
 
-Unter dem Blatt zeichnet die „Drehzahl-/Leistungs-/Verbrauchskurve“ die minimalen, nominalen und maximalen Durchflüsse nach Drehzahl. Fahren Sie darüber, um die Werte bei einer bestimmten Drehzahl abzulesen. Der interpolierte Punkt ist darauf markiert.
-Ohne RPM-Tabelle im Profil zeigt die Seite „RPM-Kurve fehlt im Profil.“ oder „Keine bezifferte Kennlinie“.
+IAS, Steigrate, Triebwerksdrehzahl und Durchfluss jeder Phase (Steigflug, Reiseflug, Sinkflug, Rollen, Ausweichflug), verglichen mit dem Triebwerkskennfeld, und die Links zu den Blättern der Luftfahrzeuge dieses Typs.
 
-### Tabelle Drehzahl / Leistung → Verbrauch
+#### Felder des Blatts
 
-Diese Tabelle listet die Punkte des Triebwerkskennfelds des aktiven Profils auf: „RPM / N1“, „Min.“, „Nennwert“, „Max.“, „Höhe (ft)“ (optional: eine Zeile pro veröffentlichter Höhe), „Flugphase“, „Kommentar“. Block der Stufe Experte.
-Klicken Sie auf einen Spaltentitel (↕), um zu sortieren. Ziehen Sie den rechten Rand eines Titels, um die Spaltenbreite einzustellen (Doppelklick auf den Rand: Standardbreiten); die Einstellung bleibt im Browser erhalten. Ein langer Kommentar bleibt auf einer Zeile, mit Auslassungspunkten: der ganze Text steht im Tooltip, ein Doppelklick auf die Zelle klappt ihn auf.
-Sie ist nur lesbar: Um sie zu ändern, verwenden Sie den Block „Motorkennfeld — Drehzahl / Leistung → Verbrauch bearbeiten“.
-Ohne Daten zeigt sie „Keine Drehzahlkurve in diesem Profil.“
-
-### Profildaten — JSON ⇄ Little Navmap
-
-Dieser Block zeigt alle Felder des Profils, die unverändert in die Datei `.lnmperf` von Little Navmap exportiert werden. Block der Stufe Experte.
+Alle Felder des Blatts, die unverändert in die Datei `.lnmperf` von Little Navmap exportiert werden.
 
 - Gruppen: „Identität und Format“, „Kraftstoff und Betrieb“, „Piste und Ausweichflugplatz“, „Steigflug“, „Reiseflug“, „Sinkflug“, „Leistungseinstellung und Verbrauch“.
 - Der Kraftstoff erscheint in der gewählten Einheit (kg oder lbs).
@@ -1573,40 +1563,70 @@ Dieser Block zeigt alle Felder des Profils, die unverändert in die Datei `.lnmp
 Ein leeres Feld bleibt leer und blockiert den Export als `.lnmperf`: Kein Wert wird erfunden.
 Klicken Sie nach einer Änderung in der unteren Leiste auf „Blatt speichern“.
 
-### Motorkennfeld — Drehzahl / Leistung → Verbrauch bearbeiten
+### Triebwerk
 
-Dieser Block dient dazu, die Tabelle Drehzahl → Verbrauch Punkt für Punkt einzugeben oder zu korrigieren. Block der Stufe Experte.
+Karte der Stufe Experte: das zu bearbeitende Motorkennfeld, die RPM-Tabelle und ihre Kurve, die Interpolation des Durchflusses.
+
+#### Motorkennfeld — Drehzahl / Leistung → Verbrauch bearbeiten
+
+Die Tabelle Drehzahl → Verbrauch Punkt für Punkt eingeben oder korrigieren.
 
 1. „Punkt hinzufügen“ erzeugt eine Zeile.
 2. Füllen Sie „RPM / N1“, „Min.“, „Nennwert“, „Max.“, „Höhe (ft)“ (optional: eine Zeile pro veröffentlichter Höhe), „Flugphase“ und „Kommentar“ aus.
 3. Speichern Sie das Blatt („Blatt speichern“, untere Leiste).
 
 Tipp: Ein im Kommentar geschriebener Bereich, zum Beispiel „1 000–1 300 kg/h total“, füllt beim Speichern Min., Nennwert und Max.
-Ohne gewähltes Flugzeug zeigt der Block „Profil wählen oder importieren.“
+Ohne gewähltes Luftfahrzeug zeigt die Karte „Profil wählen oder importieren.“
 
-### SimBrief-Kalibrierung aus OFP
+#### Tabelle Drehzahl / Leistung → Verbrauch
 
-Dieser Block gleicht das aktive Profil mit einem echten SimBrief-Flugplan ab. Block der Stufe Experte.
+Diese Tabelle listet die Punkte des Triebwerkskennfelds des aktiven Profils auf: „RPM / N1“, „Min.“, „Nennwert“, „Max.“, „Höhe (ft)“ (optional: eine Zeile pro veröffentlichter Höhe), „Flugphase“, „Kommentar“.
+Klicken Sie auf einen Spaltentitel (↕), um zu sortieren. Ziehen Sie den rechten Rand eines Titels, um die Spaltenbreite einzustellen (Doppelklick auf den Rand: Standardbreiten); die Einstellung bleibt im Browser erhalten. Ein langer Kommentar bleibt auf einer Zeile, mit Auslassungspunkten: der ganze Text steht im Tooltip, ein Doppelklick auf die Zelle klappt ihn auf.
+Sie ist nur lesbar: Um sie zu ändern, verwenden Sie „Motorkennfeld — Bearbeitung“ darüber.
+Ohne Daten zeigt sie „Keine Drehzahlkurve in diesem Profil.“
+
+#### Triebwerksinterpolation
+
+Dieser Teil gibt den Verbrauch für eine Triebwerksdrehzahl an.
+
+1. Geben Sie „RPM / N1“ ein. Die Felder „Höhe (ft)“ und „Phase“ ergänzen das Blatt.
+2. Klicken Sie auf „Interpolieren“.
+3. Lesen Sie den „Gesamtverbrauch“ und seinen Bereich Min.–Max. ab (Interpolation in der Tabelle, nach Höhe, wenn die Spalte „Höhe (ft)“ ausgefüllt ist).
+
+Über der RPM-Tabelle zeichnet die Kurve die minimalen, nominalen und maximalen Durchflüsse nach Drehzahl. Fahren Sie darüber, um die Werte bei einer bestimmten Drehzahl abzulesen. Der interpolierte Punkt ist darauf markiert.
+Ohne RPM-Tabelle im Profil zeigt die Seite „RPM-Kurve fehlt im Profil.“ oder „Keine bezifferte Kennlinie“.
+
+### SimBrief
+
+Karte der Stufe Experte: das SimBrief-Airframe, die Kalibrierung an einem echten OFP, ihr Nachweis und die Prüfung.
+
+#### SimBrief-Airframe
+
+Fügen Sie die „Internal ID“ eines SimBrief-Airframes (oder seine Freigabeadresse) ein, dann „SimBrief-Airframe importieren“: Das Airframe wird gelesen (öffentliche Liste von SimBrief, sonst sein Freigabelink), und das daraus gewonnene Blatt öffnet sich. Veröffentlicht SimBrief das Airframe nicht, wird nur die Internal ID behalten, die SimBrief Dispatch als Typ verwenden kann. Die Meldung unter der Schaltfläche sagt, was übernommen wurde; enthält das Airframe keine Leistungen, ergänzen Sie mit einer `.lnmperf`-Datei.
+
+#### SimBrief-Kalibrierung aus OFP
+
+Das Blatt mit einem echten SimBrief-Flugplan abgleichen.
 
 1. Klicken Sie auf „Letzten SimBrief-FPL abrufen“ (untere Leiste). Die Kennung wird in ☰ › Pilotenprofil eingegeben. Ersatzweise laden Sie das OFP-JSON auf simbrief.com herunter und verwenden „OFP-JSON importieren“.
 2. Das OFP füllt die Planung und den Flugplan; das Profil des Luftfahrzeugs wird erstellt und kalibriert. Die Meldung zeigt eine vollständige oder teilweise Kalibrierung (messbare Phasen) an.
 3. „Aktives Profil kalibrieren“ wendet die Kalibrierung des letzten OFP auf das gewählte Profil an.
 4. „Prüfbericht als JSON exportieren“ lädt den Prüfbericht herunter.
 
-„Kalibrierungsnachweis“ (in diesem Block) zeigt die zuletzt angewandte Kalibrierung; sonst „Keine OFP-Kalibrierung“.
+„Kalibrierungsnachweis“ darunter zeigt die zuletzt angewandte Kalibrierung; sonst „Keine OFP-Kalibrierung“.
 
-### OFP-Prüfung — Roh- und berechnete Werte
+#### OFP-Prüfung — Roh- und berechnete Werte
 
-Diese Tabelle vergleicht Phase für Phase die im OFP gelesenen und die neu berechneten Werte: „Zeit“, „Distanz“, „Kraftstoff“, „Berechneter Verbrauch“, „TAS / GS“, „Variometer“. Block der Stufe Experte.
+Diese Tabelle vergleicht Phase für Phase die im OFP gelesenen und die neu berechneten Werte: „Zeit“, „Distanz“, „Kraftstoff“, „Berechneter Verbrauch“, „TAS / GS“, „Variometer“.
 Sie füllt sich nach einem OFP-Import („Letzten SimBrief-FPL abrufen“ oder „OFP-JSON importieren“).
 Ohne OFP: „Keine OFP-Daten.“
 Nützlich, um eine teilweise Kalibrierung oder eine Abweichung zu SimBrief zu verstehen.
 
-### Importiertes JSON / SimBrief
+### Datei
 
-Dieser Block zeigt den Rohinhalt der zuletzt importierten Datei (SimBrief-OFP oder JSON). Block der Stufe Experte.
+Die Karte „Datei“ (Stufe Experte) bewahrt, eingeklappt unter „Importiertes JSON / SimBrief“, den Rohinhalt der zuletzt importierten Datei (SimBrief-OFP oder JSON); ein Klick klappt sie auf.
 - „JSON kopieren“: kopiert den Inhalt in die Zwischenablage; ausgegraut, wenn nichts zu kopieren ist.
-- „Leeren“: leert die Anzeige (das Profil wird nicht berührt).
+- „Leeren“: leert die Anzeige (das Blatt wird nicht berührt).
 
 Ohne Import: „Kein JSON geladen.“
 

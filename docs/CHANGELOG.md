@@ -39,7 +39,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   state with "Save the sheet" and "Discard changes", the actions on ticked rows and the sources (add, import, folder,
   reread, SimBrief FPL); search, sorting and ChatGPT stay above the table. An aircraft without a sheet shows only
   "none" in the table; choosing it (its row, or the selector) offers "Create the sheet" (SimBrief, ChatGPT, class
-  estimate) once, in the bottom bar. Notifications sit above the bottom bar. It shares its script and styles with Fuel
+  estimate) once, in the bottom bar. Notifications sit above the bottom bar. Below the table, four cards instead of nine
+  blocks: "Sheet being edited" (flight regimes and fields, from the Design level), "Engine" (engine map, RPM table and
+  curve, interpolation), "SimBrief" (airframe, OFP calibration, traceability, audit) and "File" (last imported JSON,
+  folded); the duplicate export buttons are gone (the bottom bar exports the ticked sheets). It shares its script and styles with Fuel
   (`apps/planner/flight_planner.js` / `.css`, moved out of the fuel page) and the same local database; a sheet saved
   on one page is picked up at once by the other one open in another tab. Fuel keeps its blocks during this step.
 - **My aircraft, one list with its performance side** — Settings › My profile › Aircraft and simulators ("My aircraft",

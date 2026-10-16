@@ -1352,6 +1352,22 @@
     gap: 6px;
     font-size: 12.5px
   }
+  /* cartes des Fiches de performances : sous-titres des parties d'une carte */
+  body[data-perf-page="sheets"] .card>h3 {
+    margin: 18px 0 8px
+  }
+  body[data-perf-page="sheets"] .sheet-fields-head {
+    margin-top: 18px;
+    align-items: center
+  }
+  body[data-perf-page="sheets"] .sheet-fields-head h3 {
+    flex: 1;
+    margin: 0
+  }
+  .json-file>summary {
+    cursor: pointer;
+    margin: 4px 0 8px
+  }
   .sheet-pick select {
     max-width: 300px
   }
