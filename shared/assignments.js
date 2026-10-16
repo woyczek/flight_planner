@@ -1469,6 +1469,9 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
       ...(found.length > 1 ? {
         types: found
       } : {}),
+      // poste d'équipage : pilote d'hélicoptère ou pilote d'avion, pas de troisième poste (décision de Simplification,
+      // 16/10/2026) — helico si le classement commun dit hélicoptère (H, autogire G), avion pour tout le reste, « autres »
+      // compris (dirigeable, électrique) ; type inconnu : d'après le texte
       kind: known ? (catOfType(ty) === 'helico' ? 'helico' : 'avion') : kindOf(rawType),
       service: String(service || ''),
       label: String(rawType || '')

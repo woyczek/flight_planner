@@ -492,6 +492,10 @@ servies depuis un autre disque, registre aux fichiers absents, profils cachés �
 
 ### Corrigé
 
+- **My missions: mission order labels in French in every language** — "Assigned aircraft", "Callsign", "Departure
+  airfield", "Requested take-off" / "Ready at", "Status" and the "assigned" status are now translated at the source
+  (4 languages). Assignments: the generic crew post rule is documented (helicopter pilot if the common classification
+  says helicopter or gyroplane, aeroplane pilot otherwise, airships and electric aircraft included).
 - **Aircraft types: Goodyear GZ-20 airship shown as "B2P" and classed with piston aircraft** — "B2P" was Aviation
   Fanatic's category (B = balloon) taken for an ICAO description. Balloons and airships (no ICAO class exists for them)
   now have no description but their nature (`kind`: airship / balloon), engines and engine type; shown as "airship ·
