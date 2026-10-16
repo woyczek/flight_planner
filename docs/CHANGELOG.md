@@ -102,6 +102,13 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Fixed
 
+- **ChatGPT answers read whatever their shape** — a long answer (several code blocks, an example before the sheet,
+  comments, trailing commas, curly quotes, the sheet wrapped in `profile` or given as an array, keys in another case or
+  spelling such as `ICAO` or `cruise_tas`, values given as objects `{ value, unit, source }` or `{ min, max }`, numbers
+  with thousands separators) was refused or imported empty although the data was there. The import now tries every
+  code block and keeps the one that carries the sheet's keys, cleans the text, unwraps, renames keys to the schema,
+  reduces objects to their value and converts a per-field unit that contradicts the sheet's (lb/h in a kg sheet, with a
+  warning).
 - **Fuel: "by altitude / by engine setting" toggle without effect** — the climb chart toggle did nothing once the
   sheet had changed under the page (reread from the Performance sheets page, new sheet chosen) until the next
   calculation, because the cached optimum laws had been cleared. The toggle now rebuilds that cache when it is missing.

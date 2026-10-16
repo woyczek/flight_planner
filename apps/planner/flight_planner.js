@@ -5296,6 +5296,140 @@ async function gptCopyAndOpen() {
  *  dans l'éditeur (bornes absentes : valeur moyenne ; moyenne absente : milieu des bornes ; phase admise, sinon déduite du
  *  commentaire). Type : celui de la réponse, code (sélecteur) en repli. Sortie : { profile (daté de maintenant,
  *  _gptSource), warnings, code (type donné par la réponse, ou null) } ; erreur si rien n'est lisible. */
+/** JSON d'un texte : le premier objet (ou tableau) lisible entre accolades équilibrées, après nettoyage — guillemets
+ *  typographiques, commentaires // et /* *\/, virgules finales, NaN/Infinity ; null si rien ne se lit (dernière erreur
+ *  relancée). */
+function gptJsonParse(text) {
+  let t = String(text || "").replace(/[\u201c\u201d\u201e]/g, '"').replace(/[\u2018\u2019]/g, "'"),
+    err = null;
+  const clean = x => x.replace(/\/\*[\s\S]*?\*\//g, "").replace(/(^|[^:"'\\])\/\/[^\n]*/g, "$1").replace(/,\s*([}\]])/g, "$1").replace(
+    /:\s*(NaN|-?Infinity)\b/g, ": null");
+  for (const open of ["{", "["]) {
+    const close = open === "{" ? "}" : "]";
+    let from = 0;
+    while ((from = t.indexOf(open, from)) >= 0) {
+      // fin de l'objet : accolades équilibrées hors chaînes
+      let depth = 0,
+        str = false,
+        esc = false,
+        end = -1;
+      for (let i = from; i < t.length; i++) {
+        const ch = t[i];
+        if (str) {
+          if (esc) esc = false;
+          else if (ch === "\\") esc = true;
+          else if (ch === '"') str = false;
+          continue
+        }
+        if (ch === '"') str = true;
+        else if (ch === "{" || ch === "[") depth++;
+        else if (ch === "}" || ch === "]") {
+          if (--depth === 0) {
+            end = i;
+            break
+          }
+        }
+      }
+      if (end < 0) break;
+      const raw = t.slice(from, end + 1);
+      for (const v of [raw, clean(raw)]) try {
+        const o = JSON.parse(v);
+        if (o && typeof o === "object") return o
+      } catch (x) {
+        err = x
+      }
+      from = end + 1
+    }
+  }
+  if (err) throw err;
+  return null
+}
+/** Objet de la fiche dans ce que ChatGPT a rendu : un tableau → son premier objet ; un objet enveloppant (une seule clé,
+ *  ou profile / aircraft / data / result / performance / output) → son contenu, tant que l'objet courant n'a aucune clé du
+ *  schéma S. */
+function gptJsonUnwrap(o, S) {
+  const keys = Object.keys(S || {}),
+    known = x => x && typeof x === "object" && !Array.isArray(x) && Object.keys(x).some(k => keys.some(sk => gptKeyEq(k, sk)));
+  for (let i = 0; i < 4 && o; i++) {
+    if (Array.isArray(o)) {
+      o = o.find(x => x && typeof x === "object") || null;
+      continue
+    }
+    if (known(o)) return o;
+    if (typeof o !== "object") return null;
+    const ks = Object.keys(o),
+      wrap = ks.find(k => /^(profile|aircraft|data|result|performance|output|fiche|response|answer)$/i.test(k) && o[k] && typeof o[k] ===
+        "object") || (ks.length === 1 && o[ks[0]] && typeof o[ks[0]] === "object" ? ks[0] : null);
+    if (!wrap) return null;
+    o = o[wrap]
+  }
+  return known(o) ? o : null
+}
+/** Même clé à la casse et aux séparateurs près (ICAO, cruise_tas, « fuel flow per hour »). */
+function gptKeyEq(a, b) {
+  return String(a).toLowerCase().replace(/[^a-z0-9]/g, "") === String(b).toLowerCase().replace(/[^a-z0-9]/g, "")
+}
+/** Réponse ramenée au schéma S : clés renommées comme dans le schéma (deux niveaux, lignes de cartographie comprises) ;
+ *  une valeur donnée en objet ({ value, unit, source }, { min, max }, { nominal }) ramenée à son nombre ; un nombre en
+ *  texte avec séparateurs de milliers (« 1 200 », « 1'200 ») nettoyé. Une unité par champ contraire à celle de la fiche
+ *  (lb/h dans une fiche kg) est convertie et signalée en warnings. */
+function gptJsonNormalize(obj, S, warnings) {
+  const unit = String(obj.unit ?? Object.entries(obj).find(([k]) => gptKeyEq(k, "unit"))?.[1] ?? "kg").trim().toLowerCase(),
+    badUnit = [],
+    scalar = (v, path) => {
+      if (v && typeof v === "object" && !Array.isArray(v)) {
+        const e = Object.entries(v),
+          get = n => e.find(([k]) => gptKeyEq(k, n))?.[1],
+          u = String(get("unit") || "").toLowerCase(),
+          val = get("value") ?? get("val") ?? get("v") ?? get("nominal") ?? get("typical") ?? get("mean") ?? (
+            get("min") !== undefined && get("max") !== undefined ? (Number(get("min")) + Number(get("max"))) / 2 : undefined);
+        // unité par champ contraire à celle de la fiche (lb/h dans une fiche kg) : convertie, et signalée
+        const fu = /fuel/i.test(path) && u ? (/\blbs?\b/.test(u) ? "lb" : /\bkg\b/.test(u) ? "kg" : "") : "";
+        if (fu && fu !== unit && val !== undefined) {
+          const n = Number(scalar(val, path));
+          if (Number.isFinite(n)) {
+            badUnit.push(`${path} (${u})`);
+            return fu === "lb" ? n * KG_PER_LB : n / KG_PER_LB
+          }
+        }
+        return val === undefined ? undefined : scalar(val, path)
+      }
+      if (typeof v === "string") {
+        const n = v.trim().replace(/(\d)[\s\u00a0\u202f'](?=\d{3}\b)/g, "$1");
+        return n
+      }
+      return v
+    },
+    rename = (o, schema, prefix = "") => {
+      const out = {};
+      for (const [k, v] of Object.entries(o || {})) {
+        const sk = Object.keys(schema).find(x => gptKeyEq(x, k)) || k,
+          path = prefix ? `${prefix}.${sk}` : sk;
+        if (sk === "rpmFuelCurve" && Array.isArray(v)) out[sk] = v.map(r => r && typeof r === "object" ? rename(r, schema.rpmFuelCurve?.[
+          0
+        ] || {}, "rpmFuelCurve") : r);
+        else if (["estimated", "sources", "notes", "unit", "name", "icao"].includes(sk)) out[sk] = sk === "estimated" && typeof v ===
+          "string" ? v.split(/[,;\n]+/).map(x => x.trim()).filter(Boolean) : sk === "estimated" && v && typeof v === "object" && !Array
+          .isArray(v) ? Object.keys(v).filter(x => v[x]) : v;
+        else if (schema[sk] && typeof schema[sk] === "object" && !Array.isArray(schema[sk])) out[sk] = v && typeof v === "object" && !
+          Array.isArray(v) && !("value" in v) ? rename(v, schema[sk], path) : scalar(v, path);
+        else out[sk] = scalar(v, path)
+      }
+      return out
+    },
+    out = rename(obj, S);
+  if (badUnit.length && warnings) warnings.push(window.RepositoryKit.tf([
+    "Unité par champ différente de celle de la fiche ({u}), valeur convertie : {list}.",
+    "Per-field unit differs from the sheet's ({u}), value converted: {list}.",
+    "Einheit je Feld weicht von der des Eintrags ab ({u}), Wert umgerechnet: {list}.",
+    "Unidad por campo distinta de la de la ficha ({u}), valor convertido: {list}."
+  ], {
+    u: unit,
+    list: badUnit.join(", ")
+  }));
+  return out
+}
+
 function parseGptReply(text, code) {
   const S = window.PERF_PROMPT_SCHEMA || {},
     warnings = [],
@@ -5303,15 +5437,27 @@ function parseGptReply(text, code) {
   let t = String(text || "").trim(),
     obj = null,
     err = null;
-  const fence = t.match(/```[a-z]*\s*([\s\S]*?)```/i);
-  if (fence) t = fence[1].trim();
-  const a = t.indexOf("{"),
-    b = t.lastIndexOf("}");
-  if (a >= 0 && b > a) try {
-    obj = JSON.parse(t.slice(a, b + 1))
-  } catch (x) {
-    err = x
+  // JSON cherché dans chaque bloc de code (une longue réponse en a souvent plusieurs : le bon est celui qui se lit),
+  // puis dans le texte entier ; texte nettoyé (commentaires, virgules finales, guillemets typographiques) ; un tableau
+  // ou un objet enveloppant ({ profile: {…} }) est déballé ; clés et valeurs ramenées au schéma
+  const fences = [...t.matchAll(/```[a-z]*\s*([\s\S]*?)```/gi)].map(m => m[1].trim());
+  let fallback = null; // objet lisible mais sans clé du schéma (ex. un petit exemple avant la vraie fiche)
+  for (const cand of [...fences, t]) {
+    try {
+      const parsed = gptJsonParse(cand);
+      obj = gptJsonUnwrap(parsed, S);
+      if (obj) {
+        err = null;
+        break
+      }
+      if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) fallback ||= parsed
+    } catch (x) {
+      err ||= x
+    }
   }
+  obj ||= fallback;
+  if (fences.length && !obj) t = fences[0];
+  if (obj) obj = gptJsonNormalize(obj, S, warnings);
   if (!obj || typeof obj !== "object" || Array.isArray(obj)) {
     const head = t.split(/\r?\n/)[0] || "";
     if (/aircraft/i.test(head) && /icao/i.test(head)) {
