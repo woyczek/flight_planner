@@ -1411,6 +1411,33 @@
       display: none
     }
   }
+  /* fenêtre « Importer… » : fichiers ou texte collé */
+  .pp-import-body {
+    padding: 0 18px;
+    display: grid;
+    gap: 10px
+  }
+  .pp-import-files {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap
+  }
+  .pp-import-paste {
+    display: grid;
+    gap: 6px;
+    font-size: 13px
+  }
+  .pp-import-paste textarea {
+    width: 100%;
+    box-sizing: border-box;
+    font: 12px/1.4 ui-monospace, Consolas, monospace
+  }
+  .pp-import-msg {
+    margin: 0;
+    min-height: 1.2em;
+    color: var(--warn, #f2c879)
+  }
   .sheet-pick select {
     max-width: 300px
   }

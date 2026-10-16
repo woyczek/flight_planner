@@ -12,6 +12,14 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Added
 
+- **Performance sheets: "Import…" by file or by pasting, duplicates proposed for completion** — "Import…" (bottom bar,
+  and the ☰ menu) opens a window with two ways: choose one or more files (`.lnmperf`, JSON, CSV), or paste a text (a
+  sheet JSON, a ChatGPT answer with its prose and code blocks, a `.lnmperf`, a CSV separated by `;`, `,` or tab); the
+  pasted text follows a file's path, a ChatGPT answer becomes a "… — ChatGPT" sheet, an empty or unreadable text is
+  reported in the window. An imported sheet that already exists (same type, aliases included, or same name) is never
+  created silently: "Complete the existing sheet" (default, empty fields only, summary first), "Merge" (field by field
+  preview) or "Create a second sheet"; "same choice for the next duplicates" beyond two; "Undo" for 10 s restores the
+  database as before the import.
 - **Tutorial "Create a performance sheet"** (`docs/tutorial/fuel_profile.fr.md` / `.en.md`, Help › Tutorials) — the
   Performance sheets page step by step: choose the aircraft, create its sheet (SimBrief, ChatGPT, class estimate),
   complete it with ChatGPT (one aircraft, or "Fill in the missing fields" for several), check the fields and the engine

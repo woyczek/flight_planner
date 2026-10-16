@@ -2107,59 +2107,35 @@ function parsePerformanceCsvEnriched(text, name, sep = ";") { // sep : séparate
   return out
 }
 // Bouton d'import : ouvre le sélecteur de fichiers.
-$("importBtn").onclick = () => $("fileInput").click();
+$("importBtn").onclick = () => PERF_PAGE === "sheets" ? openImportDialog() : $("fileInput").click();
 // Import de fichiers (.lnmperf, .csv, .json ; OFP SimBrief reconnu) : profils rangés, dernier rendu actif, erreurs listées.
 $("fileInput").onchange = async e => {
-  let ok = 0,
-    last = null,
-    ofpCount = 0,
+  const list = [],
     errors = [];
+  let ofpCount = 0;
   for (const f of e.target.files) {
     try {
-      const txt = await f.text(),
-        lower = f.name.toLowerCase();
-      if (lower.endsWith(".lnmperf")) {
-        const p = parseLnmperf(txt, f.name);
-        storeProfile(p);
-        last = p;
-        ok++;
-        continue
-      }
-      if (lower.endsWith(".csv")) {
-        const profiles = parsePerformanceCsvEnriched(txt, f.name);
-        for (const p of profiles) {
-          storeProfile(p);
-          last = p;
-          ok++
-        }
-        continue
-      }
-      const obj = JSON.parse(txt);
-      showJson(obj, f.name);
-      if (isSimbriefOfp(obj)) {
-        populatePlanFromOFP(obj);
-        await importOFPProfile(obj, f.name, "OFP JSON importé");
-        last = active;
+      const got = await readImportText(await f.text(), f.name, false);
+      if (got.json) showJson(got.json, f.name);
+      if (got.ofp) {
+        populatePlanFromOFP(got.ofp);
+        await importOFPProfile(got.ofp, f.name, "OFP JSON importé");
         ofpCount++;
-        ok++;
-      } else {
-        const profiles = profilesFromJson(obj, f.name);
-        for (const p of profiles) {
-          storeProfile(p);
-          last = p;
-          ok++
-        }
+        continue
       }
+      list.push(...got.profiles)
     } catch (x) {
       console.warn(f.name, x);
       errors.push(`${f.name}: ${x.message}`)
     }
   }
-  if (last && !ofpCount) setActive(last, `${ok} profil(s) importé(s)`);
-  if (!last && !ofpCount) window.AppFramework.notify("Aucun profil reconnu." + (errors.length ? "\n\n" + errors.join("\n") : ""),
-    'warn');
-  else if (errors.length) $("profileEditStatus").textContent = `Import partiel : ${errors.join(" | ")}`;
   e.target.value = "";
+  if (!list.length && !ofpCount) return window.AppFramework.notify(kt(["Aucun profil reconnu.", "No profile recognised.",
+    "Kein Profil erkannt.",
+    "Ningún perfil reconocido."
+  ]) + (errors.length ? "\n\n" + errors.join("\n") : ""), "warn");
+  if (errors.length) window.AppFramework.notify(`${kt(["Import partiel :", "Partial import:", "Teilimport:", "Importación parcial:"])}\n${errors.join("\n")}`, "warn");
+  await importProfiles(list, kt(["fichier importé", "imported file", "importierte Datei", "archivo importado"]))
 };
 // « Enregistrer le profil » : reporte les saisies de l'éditeur.
 $("saveProfileBtn").onclick = () => {
@@ -4333,6 +4309,7 @@ function profileFieldLabel(path) {
 function choose(message, choices, {
   input,
   check,
+  checked = true,
   extra,
   wide
 } = {}) {
@@ -4346,7 +4323,7 @@ function choose(message, choices, {
       }) : null,
       box = check ? Object.assign(document.createElement("input"), {
         type: "checkbox",
-        checked: true
+        checked
       }) : null,
       boxLabel = box ? document.createElement("label") : null,
       area = extra ? document.createElement("div") : null,
@@ -5306,6 +5283,319 @@ async function gptCopyAndOpen() {
     "Copia rechazada por el navegador: abrir «Ver el prompt», seleccionar todo y copiar (Ctrl+A, Ctrl+C)."
   ]))
 }
+// ===== « Importer… » : fichiers ou texte collé ; une fiche du même type déjà là se complète, se fusionne ou se double =====
+/** Lit un texte importé (name : nom du fichier, ou « texte collé ») : `.lnmperf` (XML), CSV de performances, JSON de la
+ *  suite (fiche, base, liste) ou OFP SimBrief ; sinon réponse ChatGPT sous toutes ses formes (parseGptReply : type
+ *  confirmé s'il diffère de l'appareil choisi). Sortie : { profiles, ofp?, json? } ; erreur si rien n'est lisible. */
+async function readImportText(txt, name, pasted) {
+  const t = String(txt || "").trim(),
+    lower = String(name || "").toLowerCase();
+  if (!t) throw Error(kt(["Texte vide.", "Empty text.", "Leerer Text.", "Texto vacío."]));
+  if (lower.endsWith(".lnmperf") || /^<\?xml|^<[A-Za-z]*Perf/i.test(t)) return {
+    profiles: [parseLnmperf(t, name)]
+  };
+  if (lower.endsWith(".csv")) return {
+    profiles: parsePerformanceCsvEnriched(t, name, csvSep(t))
+  };
+  let obj = null;
+  try {
+    obj = JSON.parse(t)
+  } catch {}
+  if (obj && typeof obj === "object") {
+    if (isSimbriefOfp(obj)) return {
+      profiles: [],
+      ofp: obj,
+      json: obj
+    };
+    try {
+      const ps = profilesFromJson(obj, name);
+      if (ps.length) return {
+        profiles: ps,
+        json: obj
+      }
+    } catch {}
+  }
+  // texte collé : CSV de performances (ligne de titres avec l'appareil ou le code OACI)
+  if (pasted && !obj && /^[^\n]*(aircraft|icao)[^\n]*[,;\t]/i.test(t)) try {
+    const ps = parsePerformanceCsvEnriched(t, name, csvSep(t));
+    if (ps.length) return {
+      profiles: ps
+    }
+  } catch {}
+  // réponse ChatGPT : fiche « <nom> — ChatGPT », comme « Importer » du panneau ChatGPT
+  const r = parseGptReply(t, gptCode()),
+    pick = await gptPickType(r, "import");
+  if (!pick) return {
+    profiles: []
+  };
+  gptReport(r.warnings);
+  return {
+    profiles: [gptImportProfile(r, pick.code)]
+  }
+}
+/** Séparateur d'un CSV collé ou importé : celui qui revient le plus sur la ligne de titres (« ; » des CSV de la suite,
+ *  « , » ou tabulation). */
+function csvSep(text) {
+  const head = String(text).split(/\r?\n/, 1)[0],
+    n = c => head.split(c).length - 1;
+  return [";", ",", "\t"].sort((a, b) => n(b) - n(a))[0]
+}
+/** Fiche d'une réponse ChatGPT lue (r : parseGptReply) pour le type code : identifiant « GPT_<code> » libre, nom
+ *  « <modèle> — ChatGPT ». Rien n'est enregistré. */
+function gptImportProfile(r, code) {
+  const p = r.profile,
+    model = (window.AIRCRAFT_DB || {})[code]?.model || code,
+    own = !r.code || sameType(r.code, code);
+  p.icao = p.type = code;
+  let id = `GPT_${code}`;
+  for (let i = 2; state.profiles[id]; i++) id = `GPT_${code}_${i}`;
+  p.id = id;
+  p.name = `${own ? String(p.name || "").replace(/\s*—\s*ChatGPT$/i, "") || model : model} — ChatGPT`;
+  return p
+}
+/** Fiches déjà enregistrées qui doublent p : même identifiant, même type (alias compris) ou même nom ; la plus récente
+ *  d'abord. */
+function importTwins(p) {
+  const code = p.icao || p.type || p.id,
+    name = aKey(p.name || "");
+  return Object.values(state.profiles || {}).filter(x => x && typeof x === "object" && x.id && (x.id === p.id || sameType(x.icao ||
+    x.type || x.id, code) || (name && aKey(x.name || "") === name))).sort((a, b) => profileWhen(b) - profileWhen(a))
+}
+/** « Compléter la fiche existante » : seuls les champs vides de target sont remplis par src (carburant converti dans
+ *  l'unité de target), cartographie moteur reprise si target n'en a pas, valeurs estimées et sources ChatGPT reprises.
+ *  Sortie : { after, filled } (chemins remplis) ; rien n'est enregistré. */
+function importFillPlan(target, src) {
+  const u = target.unit || "kg",
+    s = src.unit && src.unit !== u ? Object.assign(fuelConvertedCopy(src, src.unit, u, true), {
+      unit: u
+    }) : src,
+    after = structuredClone(target),
+    filled = [];
+  for (const f of PROFILE_FIELDS) {
+    const k = f[2];
+    if (["name", "icao", "description"].includes(k)) continue;
+    const v = pathGet(s, k);
+    if (!isBlankValue(v) && isBlankValue(pathGet(after, k))) {
+      pathSet(after, k, structuredClone(v));
+      filled.push(k)
+    }
+  }
+  const rows = c => (c || []).filter(r => r && r.rpm !== null && r.rpm !== "" && Number.isFinite(+r.rpm));
+  if (!rows(after.rpmFuelCurve).length && rows(s.rpmFuelCurve).length) {
+    after.rpmFuelCurve = structuredClone(s.rpmFuelCurve);
+    if (isBlankValue(after.rpmPowerReference) && !isBlankValue(s.rpmPowerReference)) after.rpmPowerReference = s.rpmPowerReference;
+    filled.push("rpmFuelCurve")
+  }
+  if (filled.length) {
+    const est = (s.estimatedFields || []).filter(k => filled.includes(k));
+    if (est.length) after.estimatedFields = [...new Set([...(after.estimatedFields || []), ...est])];
+    if (s.gptSources?.length) after.gptSources = [...(after.gptSources || []), ...s.gptSources];
+    after.updatedAt = new Date().toISOString()
+  }
+  return {
+    after,
+    filled
+  }
+}
+/** Enregistre les fiches importées (list), en demandant pour chaque doublon (importTwins) : « Compléter la fiche
+ *  existante » (par défaut ; résumé des champs avant validation), « Fusionner » (aperçu champ par champ) ou « Créer une
+ *  seconde fiche » (nom suffixé) ; au-delà de deux doublons, « même choix pour les suivants ». Sans doublon : fiche
+ *  créée. Fin : fiche ouverte, notification, « Annuler » 10 s (base remise comme avant l'import). label : origine. */
+async function importProfiles(list, label) {
+  if (!list.length) return;
+  if (active && state.profiles?.[active.id]) commitProfileEditor(false);
+  const backup = structuredClone(state.profiles),
+    backupRemoved = structuredClone(state.removedProfiles || {}),
+    prevActive = active?.id || null,
+    nDup = list.filter(p => importTwins(p).length).length,
+    done = [],
+    fills = [];
+  let all = null,
+    last = null;
+  for (const p of list) {
+    const tw = importTwins(p);
+    if (!tw.length) {
+      storeProfile(p);
+      last = p;
+      done.push(ktf(["« {p} » créée", "“{p}” created", "„{p}“ angelegt", "«{p}» creada"], {
+        p: p.name || p.id
+      }));
+      continue
+    }
+    const t = tw[0];
+    let key = all;
+    if (!key) {
+      const c = await choose(ktf(["Une fiche « {n} » existe déjà pour {t}{o}. Que faire de « {p} » ?",
+        "A sheet “{n}” already exists for {t}{o}. What to do with “{p}”?",
+        "Für {t} gibt es schon ein Blatt „{n}“{o}. Was tun mit „{p}“?",
+        "Ya existe una ficha «{n}» para {t}{o}. ¿Qué hacer con «{p}»?"
+      ], {
+        n: t.name || t.id,
+        t: t.icao || t.type || t.id,
+        p: p.name || p.id,
+        o: tw.length > 1 ? ktf([" (autres : {l})", " (others: {l})", " (weitere: {l})", " (otras: {l})"], {
+          l: tw.slice(1).map(x => x.name || x.id).join(", ")
+        }) : ""
+      }), [
+        ["fill", kt(["Compléter la fiche existante", "Complete the existing sheet", "Vorhandenes Blatt ergänzen",
+          "Completar la ficha existente"
+        ]), true],
+        ["merge", kt(["Fusionner", "Merge", "Zusammenführen", "Fusionar"])],
+        ["new", kt(["Créer une seconde fiche", "Create a second sheet", "Ein zweites Blatt anlegen", "Crear una segunda ficha"])]
+      ], nDup > 2 ? {
+        check: kt(["Même choix pour les doublons suivants", "Same choice for the next duplicates",
+          "Gleiche Wahl für die folgenden Doppel",
+          "Misma elección para los duplicados siguientes"
+        ]),
+        checked: false
+      } : {});
+      if (!c) continue; // Annuler : cette fiche n'est pas importée
+      key = c.key;
+      if (c.checked) all = key
+    }
+    if (key === "fill") {
+      const plan = importFillPlan(state.profiles[t.id], p);
+      if (plan.filled.length) fills.push(plan);
+      else done.push(ktf(["« {p} » : rien à compléter", "“{p}”: nothing to complete", "„{p}“: nichts zu ergänzen",
+        "«{p}»: nada que completar"
+      ], {
+        p: t.name || t.id
+      }));
+      continue
+    }
+    if (key === "merge") {
+      const cur = state.profiles[t.id],
+        u = cur.unit || "kg",
+        src = p.unit && p.unit !== u ? Object.assign(fuelConvertedCopy(p, p.unit, u, true), {
+          unit: u
+        }) : p,
+        res = mergeProfileSources(cur, [cur, src]),
+        after = await confirmChanges(cur, res.target, res.origin, kt(["Fusionner", "Merge", "Zusammenführen", "Fusionar"]), "", res);
+      if (!after) continue;
+      state.profiles[t.id] = after;
+      last = after;
+      done.push(ktf(["« {p} » fusionnée", "“{p}” merged", "„{p}“ zusammengeführt", "«{p}» fusionada"], {
+        p: after.name || after.id
+      }));
+      continue
+    }
+    // seconde fiche : identifiant libre, nom suffixé du rang
+    const base = p.id;
+    for (let i = 2; state.profiles[p.id]; i++) p.id = `${base}_${i}`;
+    p.name = `${p.name || base} (${tw.length + 1})`;
+    storeProfile(p);
+    last = p;
+    done.push(ktf(["« {p} » créée", "“{p}” created", "„{p}“ angelegt", "«{p}» creada"], {
+      p: p.name
+    }))
+  }
+  if (fills.length) {
+    const lines = fills.map(x => `${x.after.name || x.after.id} : ${x.filled.map(k => k === "rpmFuelCurve" ? kt(["cartographie moteur", "engine map", "Motorkennfeld", "mapa motor"]) : profileFieldLabel(k)).join(", ")}`);
+    if (await window.AppFramework.ask(ktf(["Compléter {f} fiche(s) : {n} champ(s) vide(s) remplis, rien de déjà saisi n’est remplacé.",
+        "Complete {f} sheet(s): {n} empty field(s) filled, nothing already entered is replaced.",
+        "{f} Blatt/Blätter ergänzen: {n} leere(s) Feld(er) gefüllt, nichts bereits Eingetragenes wird ersetzt.",
+        "Completar {f} ficha(s): {n} campo(s) vacío(s) rellenados, no se sustituye nada ya introducido."
+      ], {
+        f: fills.length,
+        n: fills.reduce((a, x) => a + x.filled.length, 0)
+      }) + "\n\n" + lines.join("\n"), {
+        ok: kt(["Compléter", "Complete", "Ergänzen", "Completar"])
+      })) {
+      for (const x of fills) {
+        state.profiles[x.after.id] = x.after;
+        last = x.after;
+        done.push(ktf(["« {p} » complétée ({n} champ(s))", "“{p}” completed ({n} field(s))", "„{p}“ ergänzt ({n} Feld(er))",
+          "«{p}» completada ({n} campo(s))"
+        ], {
+          p: x.after.name || x.after.id,
+          n: x.filled.length
+        }))
+      }
+    }
+  }
+  if (!last) {
+    if (done.length) window.AppFramework.notify(done.join("\n"), "warn");
+    return
+  }
+  profilesChanged();
+  setActive(state.profiles[last.id] || last, label);
+  notifyUndo(`${kt(["Import :", "Import:", "Import:", "Importación:"])} ${done.join(" ; ")}.`, () => {
+    state.profiles = backup;
+    state.removedProfiles = backupRemoved;
+    if (prevActive && state.profiles[prevActive]) setActive(state.profiles[prevActive], kt(["import annulé", "import undone",
+      "Import rückgängig",
+      "importación deshecha"
+    ]));
+    else clearActive();
+    profilesChanged()
+  })
+}
+/** Fenêtre « Importer… » (Fiches de performances) : choisir un ou des fichiers, ou coller un texte (fiche JSON, réponse
+ *  ChatGPT, `.lnmperf`, CSV) ; le texte collé suit le chemin d'un fichier. Vide ou illisible : message dans la fenêtre,
+ *  qui reste ouverte. Échap ou « Fermer » la ferme. */
+function openImportDialog() {
+  window.AppFramework?.dialogCss?.();
+  const esc = KIT.esc,
+    d = document.createElement("dialog");
+  d.className = "repo-ask pp-choice pp-wide pp-import";
+  d.setAttribute("data-no-i18n", "");
+  d.innerHTML = `<p><b>${esc(kt(["Importer des fiches de performances", "Import performance sheets", "Leistungsblätter importieren", "Importar fichas de rendimiento"]))}</b></p>
+<div class="pp-import-body"><div class="pp-import-files"><button type="button" class="primary" data-act="files">${esc(kt(["Choisir un ou des fichiers…", "Choose one or more files…", "Eine oder mehrere Dateien wählen…", "Elegir uno o varios archivos…"]))}</button><span class="mut">${esc(kt(["`.lnmperf`, JSON, CSV — plusieurs à la fois", "`.lnmperf`, JSON, CSV — several at once", "`.lnmperf`, JSON, CSV — mehrere auf einmal", "`.lnmperf`, JSON, CSV — varios a la vez"]))}</span></div>
+<label class="pp-import-paste">${esc(kt(["Ou collez ici un JSON (fiche, réponse ChatGPT) ou un CSV de performances", "Or paste a JSON (sheet, ChatGPT answer) or a performance CSV here", "Oder hier ein JSON (Blatt, ChatGPT-Antwort) oder ein Leistungs-CSV einfügen", "O pegue aquí un JSON (ficha, respuesta de ChatGPT) o un CSV de rendimiento"]))}<textarea rows="10" spellcheck="false"></textarea></label>
+<p class="pp-import-msg" role="status"></p></div>
+<footer><button type="button" class="primary" data-act="paste">${esc(kt(["Importer le texte collé", "Import the pasted text", "Eingefügten Text importieren", "Importar el texto pegado"]))}</button><button type="button" class="ghost" data-act="close">${esc(kt(["Fermer", "Close", "Schließen", "Cerrar"]))}</button></footer>`;
+  const ta = d.querySelector("textarea"),
+    msg = d.querySelector(".pp-import-msg"),
+    close = () => {
+      d.close();
+      d.remove()
+    };
+  d.addEventListener("click", async e => {
+    const act = e.target.closest("[data-act]")?.dataset.act;
+    if (act === "close") return close();
+    if (act === "files") {
+      close();
+      return $("fileInput").click()
+    }
+    if (act !== "paste") return;
+    if (!ta.value.trim()) {
+      msg.textContent = kt(["Collez d’abord un texte (JSON, réponse ChatGPT ou CSV).",
+        "Paste a text first (JSON, ChatGPT answer or CSV).",
+        "Zuerst einen Text einfügen (JSON, ChatGPT-Antwort oder CSV).",
+        "Pegue primero un texto (JSON, respuesta de ChatGPT o CSV)."
+      ]);
+      return ta.focus()
+    }
+    const name = kt(["texte collé", "pasted text", "eingefügter Text", "texto pegado"]);
+    let got;
+    try {
+      got = await readImportText(ta.value, name, true)
+    } catch (x) {
+      msg.textContent = x.message;
+      return ta.focus()
+    }
+    if (!got.profiles.length && !got.ofp) {
+      msg.textContent = kt(["Aucune fiche reconnue dans le texte collé.", "No sheet recognised in the pasted text.",
+        "Kein Blatt im eingefügten Text erkannt.", "Ninguna ficha reconocida en el texto pegado."
+      ]);
+      return
+    }
+    close();
+    if (got.json) showJson(got.json, name);
+    if (got.ofp) {
+      populatePlanFromOFP(got.ofp);
+      return importOFPProfile(got.ofp, name, "OFP JSON importé")
+    }
+    importProfiles(got.profiles, kt(["texte collé", "pasted text", "eingefügter Text", "texto pegado"]))
+  });
+  d.addEventListener("cancel", e => {
+    e.preventDefault();
+    close()
+  });
+  document.body.append(d);
+  d.showModal();
+  d.querySelector('[data-act="files"]').focus()
+}
 /** Lit la réponse collée : JSON du schéma (bloc de code accepté), sinon CSV de performances. Clés inconnues ignorées,
  *  valeurs illisibles ou hors plage écartées, unités vérifiées (kg ou lb ; varios positifs), cartographie relue comme
  *  dans l'éditeur (bornes absentes : valeur moyenne ; moyenne absente : milieu des bornes ; phase admise, sinon déduite du
@@ -6191,7 +6481,7 @@ if (document.getElementById("ppSelBtn")) {
   document.addEventListener("keydown", e => e.key === "Escape" && !menu.hidden && (closeSelMenu(), btn.focus()))
 }
 $("ppFillMissing").onclick = () => openGptMissing();
-$("ppImport").onclick = () => $("fileInput").click();
+$("ppImport").onclick = () => openImportDialog();
 $("ppFolder").onclick = () => $("dirBtn").click();
 $("ppReload").onclick = () => reloadPerfFolder(true);
 /* Fiches appareils du type actif (apps/cr/appareil.html) : même catalogue commun que les CR et le reporting. */
