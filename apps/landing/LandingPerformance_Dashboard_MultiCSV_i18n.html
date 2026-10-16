@@ -117,16 +117,6 @@
     color: var(--muted);
     font-size: 13px
   }
-  .format-note {
-    margin: 0 0 16px;
-    padding: 10px 12px;
-    border: 1px solid var(--line);
-    border-radius: 8px;
-    background: #13171d;
-    color: #bcc4d1;
-    font-size: 12px;
-    line-height: 1.45
-  }
   .grid-cards {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -153,12 +143,35 @@
     color: var(--muted);
     margin-top: 4px
   }
-  .trend-card {
+  .reading-card {
+    display: flex;
+    align-items: flex-start;
+    gap: 20px;
     margin: 16px 0;
-    padding: 16px 18px;
+    padding: 14px 18px;
     border-radius: 10px;
     border: 1px solid var(--line);
     background: var(--card-2)
+  }
+  .reading-verdict {
+    flex: 3 1 0;
+    min-width: 0
+  }
+  .reading-legend {
+    flex: 2 1 0;
+    min-width: 0;
+    padding-left: 16px;
+    border-left: 1px solid var(--line);
+    color: #bcc4d1;
+    font-size: 12px;
+    line-height: 1.45
+  }
+  .reading-verdict:empty,
+  .reading-legend:empty {
+    display: none
+  }
+  .reading-card:has(> .reading-verdict:empty):has(> .reading-legend:empty) {
+    display: none
   }
   .trend-title {
     font-size: 18px;
@@ -1207,6 +1220,20 @@
     .chart-box {
       min-width: 0
     }
+    .reading-card {
+      flex-direction: column;
+      gap: 10px
+    }
+    .reading-verdict,
+    .reading-legend {
+      flex: none;
+      width: 100%
+    }
+    .reading-legend {
+      padding: 8px 0 0;
+      border-left: 0;
+      border-top: 1px solid var(--line)
+    }
   }
   @media print {
     header {
@@ -1223,8 +1250,7 @@
     }
     .card,
     .section,
-    .trend-card,
-    .format-note {
+    .reading-card {
       background: white;
       color: black;
       border-color: #bbb
@@ -1376,7 +1402,6 @@
   <span id="statusText" data-no-i18n>Choose or drop one or more CSV or LOG files.</span>
 </div>
 <div id="dashboard" class="hidden">
-  <div id="formatNote" data-no-i18n class="format-note"></div>
   <div id="analysisDock" class="analysis-dock analysis-size-1">
     <div id="generalTrendDock" data-no-i18n class="general-trend-dock">
       <span id="generalTrendIcon" class="trend-state trend-state-large unknown" aria-label="Undetermined" title="Undetermined">×</span>
@@ -1387,7 +1412,11 @@
       <button id="analysisLargerBtn" type="button" aria-label="Larger analysis data" title="Larger analysis data">+</button>
     </div>
   </div>
-  <div id="trendCard" data-no-i18n class="trend-card"></div>
+  <!-- Bloc de lecture : verdict de tendance (#trendCard) à gauche, légende du format lu (#formatNote) à droite -->
+  <div id="readingCard" class="reading-card">
+    <div id="trendCard" data-no-i18n class="reading-verdict"></div>
+    <div id="formatNote" data-no-i18n class="reading-legend"></div>
+  </div>
 
   <section class="section" data-icon="chart" data-subtitle="Landing indicators over the period.">
     <h2 id="evolutionTitle">Evolution</h2>

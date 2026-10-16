@@ -12,6 +12,12 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Added
 
+- **Landing: one reading block** (`apps/landing/LandingPerformance_Dashboard_MultiCSV_i18n.html`) — the format note
+  and the trend card are merged into a single card under the analysis dock: the trend verdict on the left (coloured
+  title and text, for the asymptote, first/last quarter and moving-average methods, and the empty or insufficient
+  cases), the legend on the right in small print (format read, "estimated" diamond, rating swatches, estimation on
+  or off); on two rows under 800 px. The shared block framework (`shared/app_framework.js`,
+  `shared/block_icons.js`) treats it as one block.
 - **Landing: linked points and pinned tooltip** (`apps/landing/LandingPerformance_Dashboard_MultiCSV_i18n.html`) —
   hovering a point lights up the same landing on the five charts (score, rate, G, nose, FPM × G scatter: larger,
   ringed point, the others dimmed); a click pins the tooltip with the landing's full record (date, aircraft,

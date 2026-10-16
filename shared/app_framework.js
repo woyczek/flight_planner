@@ -63,7 +63,7 @@
     const state = read();
     state.hidden ??= {};
     state.order ??= {};
-    const blocks = [...main.querySelectorAll("section,.panel,.format-note,.analysis-dock,.trend-card")].filter(el => !el.closest(
+    const blocks = [...main.querySelectorAll("section,.panel,.analysis-dock,.reading-card")].filter(el => !el.closest(
       "section") || el.matches("section,.panel"));
     const parents = new Map();
     blocks.forEach((el, i) => {

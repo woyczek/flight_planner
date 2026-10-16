@@ -1640,8 +1640,8 @@ Optionen der Analyse (Menü ☰): „offensichtlich unplausible Messwerte aussch
 
 Eine am unteren Fensterrand fixierte Leiste, nach dem Trendsymbol, gibt die Schlüsselzahlen an: „Landungen“, „Durchschnittlicher Score“, „Score Min / Max“, „Durchschnitt FPM“, „FPM Min / Max“, „Durchschnitt G“, „G Min / Max“, „Butter / Very Good“.
 Die Knöpfe „−“ und „+“ ändern die Größe dieser Karten.
-Darunter das Trendfazit: wahrscheinlicher Fortschritt oder Rückschritt, leicht, „Kein klarer Fortschritt“ oder „zu wenig Daten“ (es braucht mindestens vier verwertbare Messungen).
-Der Text erklärt die gewählte Methode (zum Beispiel geschätzte Asymptote und verbleibender Gewinn).
+Darunter zeigt der Lesebereich links das Trendfazit: wahrscheinlicher Fortschritt oder Rückschritt, leicht, „Kein klarer Fortschritt“ oder „zu wenig Daten“ (es braucht mindestens vier verwertbare Messungen), mit der gewählten Methode (zum Beispiel geschätzte Asymptote und verbleibender Gewinn).
+Rechts, klein, die Legende: gelesenes Format, Raute „◇ geschätzt“, Farbfelder der Bewertungen, Schätzung ein oder aus. Auf einem schmalen Bildschirm (unter 800 px) rückt die Legende unter das Fazit.
 
 ### Entwicklung
 

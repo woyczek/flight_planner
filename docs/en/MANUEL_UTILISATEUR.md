@@ -1640,8 +1640,8 @@ Analysis options (☰ menu): “exclude clearly implausible measurements”, “
 
 A bar pinned to the bottom of the window, after the trend icon, gives the key figures: “Landings”, “Average score”, “Score min / max”, “Average FPM”, “FPM min / max”, “Average G”, “G min / max”, “Butter / Very Good”.
 The “−” and “+” buttons change the size of these cards.
-Below, the trend conclusion: probable improvement or regression, slight, “No clear progress”, or “insufficient data” (at least four usable measurements are needed).
-The text explains the chosen method (for example estimated asymptote and remaining gain).
+Below, the reading block shows on the left the trend conclusion: probable improvement or regression, slight, “No clear progress”, or “insufficient data” (at least four usable measurements are needed), with the chosen method (for example estimated asymptote and remaining gain).
+On the right, in small print, the legend: format read, “◇ estimated” diamond, rating swatches, estimation on or off. On a narrow screen (under 800 px) the legend moves below the conclusion.
 
 ### Evolution
 

@@ -1692,8 +1692,8 @@ Options de l'analyse (menu ☰) : « exclure les mesures manifestement aberrante
 
 Un bandeau fixé en bas de la fenêtre, après l'icône de tendance, donne les chiffres clés : « Atterrissages », « Score moyen », « Score min / max », « FPM moyen », « FPM min / max », « G moyen », « G min / max », « Butter / Very Good ».
 Les boutons « − » et « + » changent la taille de ces cartes.
-Dessous, la conclusion de tendance : progression ou régression probable, légère, « Aucune progression nette », ou « données insuffisantes » (il faut au moins quatre mesures exploitables).
-Le texte explique la méthode choisie (par exemple asymptote estimée et gain restant).
+Dessous, le bloc de lecture réunit à gauche la conclusion de tendance : progression ou régression probable, légère, « Aucune progression nette », ou « données insuffisantes » (il faut au moins quatre mesures exploitables), avec la méthode choisie (par exemple asymptote estimée et gain restant).
+À droite, en petit, la légende : format lu, losange « ◇ estimé », pastilles des notes, estimation activée ou désactivée. Sur un écran étroit (moins de 800 px), la légende passe sous la conclusion.
 
 ### Évolution
 

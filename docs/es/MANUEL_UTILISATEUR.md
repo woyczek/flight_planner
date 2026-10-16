@@ -1640,8 +1640,8 @@ Opciones del análisis (menú ☰): «excluir mediciones claramente inverosímil
 
 Una banda fijada en la parte inferior de la ventana, tras el icono de tendencia, da las cifras clave: «Aterrizajes», «Score medio», «Score mín / máx», «FPM medio», «FPM mín / máx», «G medio», «G mín / máx», «Butter / Very Good».
 Los botones «−» y «+» cambian el tamaño de estas tarjetas.
-Debajo, la conclusión de tendencia: progresión o regresión probable, ligera, «Sin progresión clara», o «datos insuficientes» (se necesitan al menos cuatro mediciones aprovechables).
-El texto explica el método elegido (por ejemplo, asíntota estimada y ganancia restante).
+Debajo, el bloque de lectura reúne a la izquierda la conclusión de tendencia: progresión o regresión probable, ligera, «Sin progresión clara», o «datos insuficientes» (se necesitan al menos cuatro mediciones aprovechables), con el método elegido (por ejemplo, asíntota estimada y ganancia restante).
+A la derecha, en pequeño, la leyenda: formato leído, rombo «◇ estimado», muestras de las valoraciones, estimación activada o desactivada. En una pantalla estrecha (menos de 800 px), la leyenda pasa debajo de la conclusión.
 
 ### Evolución
 
