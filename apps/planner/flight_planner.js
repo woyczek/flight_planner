@@ -3537,6 +3537,11 @@ function renderPerfProfiles() {
       // coche ou la décoche en gardant les autres (plusieurs cochées : aucun appareil choisi)
       const tr = e.target.closest("tr.pp-row");
       if (!tr || e.target.closest("input, a, button, select, textarea, label")) return;
+      if (e.target.closest("td") === tr.cells[0]) { // cellule de la case : coche ou décoche, comme la case elle-même
+        if (!tr.dataset.id) return;
+        ppSelected.has(tr.dataset.id) ? ppSelected.delete(tr.dataset.id) : ppSelected.add(tr.dataset.id);
+        return ppApplySelection()
+      }
       if (tr.dataset.code) return chooseNoSheet(tr.dataset.code, tr.dataset.name); // appareil sans fiche
       if (e.ctrlKey || e.metaKey || e.shiftKey) ppSelected.has(tr.dataset.id) ? ppSelected.delete(tr.dataset.id) : ppSelected.add(tr
         .dataset.id);
@@ -3545,6 +3550,11 @@ function renderPerfProfiles() {
     });
     // cases de fusion : sélection gardée d'un rendu à l'autre (ppSelected), bouton « Fusionner » mis à jour
     box.addEventListener("change", e => {
+      const gsel = e.target.closest(".pp-sel-group");
+      if (gsel) { // toute la rubrique, repliée ou non
+        for (const id of ppGroupIds[gsel.dataset.group] || []) gsel.checked ? ppSelected.add(id) : ppSelected.delete(id);
+        return ppApplySelection()
+      }
       const a = e.target.closest(".pp-sel-all");
       if (a) { // tout cocher / décocher (lignes affichées)
         box.querySelectorAll(".pp-sel").forEach(b => {
@@ -3643,13 +3653,15 @@ function renderPerfProfiles() {
     return `<tr class="pp-row${on ? " is-active" : ""}" data-id="${esc(p.id)}"><td>${sel}</td><td>${nm}</td><td>${esc(profileSourceText(p, i))}</td><td>${map}</td><td>${ff}</td><td>${ceil}</td><td>${miss}</td></tr>`
   };
   let body = "";
+  ppGroupIds = {};
   if (sortBy === "cat") {
     const shut = ppCollapsed();
     for (const c of CATS) {
       const g = ordered.filter(r => r.category === c);
       if (!g.length && !(Q && allCats.has(c))) continue;
       const closed = Q ? !g.length : shut.has(c); // recherche : groupes avec correspondance dépliés, autres repliés
-      body += `<tbody><tr class="pp-group"><th colspan="${head.length}"><button type="button" data-pp-group="${c}" aria-expanded="${!closed}">${closed ? "▸" : "▾"} ${esc(E?.categoryLabel?.(c) || c)} (${g.length})</button></th></tr>${closed ? "" : g.map(row).join("")}</tbody>`
+      ppGroupIds[c] = g.filter(r => r.p).map(r => r.p.id);
+      body += `<tbody><tr class="pp-group"><th colspan="${head.length}"><input type="checkbox" class="pp-sel-group" data-group="${c}" title="${esc(kt(["Cocher ou décocher toute la rubrique", "Tick or untick the whole group", "Die ganze Gruppe an- oder abwählen", "Marcar o desmarcar todo el grupo"]))}"${ppGroupIds[c].length ? "" : " disabled"}><button type="button" data-pp-group="${c}" aria-expanded="${!closed}">${closed ? "▸" : "▾"} ${esc(E?.categoryLabel?.(c) || c)} (${g.length})</button></th></tr>${closed ? "" : g.map(row).join("")}</tbody>`
     }
   } else body = `<tbody>${ordered.map(row).join("")}</tbody>`;
   setHtml("perfProfiles", typo(`<table><thead><tr>${head.map((h, i) => `<th>${i ? esc(h) : h}</th>`).join("")}</tr></thead>${body}</table>`));
@@ -3661,6 +3673,13 @@ function renderPerfProfiles() {
     all.indeterminate = !all.checked && boxes.some(b => b.checked);
     all.disabled = !boxes.length
   }
+  // cases de rubrique : cochée si toutes ses fiches le sont, indéterminée si une partie
+  box.querySelectorAll(".pp-sel-group").forEach(gb => {
+    const ids = ppGroupIds[gb.dataset.group] || [],
+      n = ids.filter(id => ppSelected.has(id)).length;
+    gb.checked = !!ids.length && n === ids.length;
+    gb.indeterminate = n > 0 && n < ids.length
+  });
   window.TableResize?.attach(box.querySelector("table"), {
     key: "flightPerfProfilesCols",
     title: kt(["Glisser : largeur de la colonne — double-clic : largeurs par défaut",
@@ -3844,6 +3863,7 @@ function renderCreateGroup() {
     if (b) perfCreate(b.dataset.code, b.dataset.name, b.dataset.ppCreate)
   }
 }
+let ppGroupIds = {}; // rubrique du tableau (catégorie) → identifiants de ses fiches (case de rubrique)
 let ppSelected = new Set(); // profils cochés (identifiants) : un seul = l'appareil choisi ; plusieurs = fusion, export…
 /** Fiches de performances : une seule ligne cochée = cet appareil choisi (fiche modifiée, panneau ChatGPT) ; aucune ou
  *  plusieurs = aucun appareil choisi. Changement confirmé si la fiche ouverte est modifiée (shared/flight_ui.js). */

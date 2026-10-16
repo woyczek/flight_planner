@@ -1581,6 +1581,15 @@
     padding: 3px 6px
   }
   /* ligne d'appareil : un clic la coche (une seule cochée = l'appareil choisi) */
+  /* case de rubrique (en-tête de groupe) ; cellule des cases : toute la cellule coche */
+  .perf-profiles tr.pp-group th .pp-sel-group {
+    margin: 0 8px 0 4px;
+    vertical-align: middle;
+    cursor: pointer
+  }
+  .perf-profiles tr.pp-row>td:first-child {
+    cursor: pointer
+  }
   .perf-profiles tr.pp-row {
     cursor: pointer
   }

@@ -12,6 +12,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Added
 
+- **Performance sheets: one box per group, no gaps between boxes** — each group heading of the table (Helicopters,
+  Turboprops…) has a box that ticks or unticks all its sheets, folded group included (indeterminate when part of it is
+  ticked); the whole checkbox cell ticks or unticks its row, so a click that misses the box no longer replaces the
+  selection with that single row.
 - **Performance sheets: "Import…" by file or by pasting, duplicates proposed for completion** — "Import…" (bottom bar,
   and the ☰ menu) opens a window with two ways: choose one or more files (`.lnmperf`, JSON, CSV), or paste a text (a
   sheet JSON, a ChatGPT answer with its prose and code blocks, a `.lnmperf`, a CSV separated by `;`, `,` or tab); the
