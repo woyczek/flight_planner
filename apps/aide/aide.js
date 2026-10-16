@@ -45,13 +45,13 @@
     ]
   }, {
     file: 'tutorial/fuel_profile.fr.md',
-    title: ['Construire un profil de performances', 'Build a performance profile', 'Ein Leistungsprofil erstellen',
-      'Construir un perfil de rendimiento'
+    title: ['Créer une fiche de performances', 'Create a performance sheet', 'Ein Leistungsblatt anlegen',
+      'Crear una ficha de rendimiento'
     ],
-    desc: ['Carburant : sources (SimBrief, ChatGPT…), fusion avec aperçu, cartographie moteur.',
-      'Fuel: sources (SimBrief, ChatGPT…), merge with preview, engine map.',
-      'Kraftstoff: Quellen (SimBrief, ChatGPT…), Zusammenführen mit Vorschau, Motorkennfeld.',
-      'Combustible: fuentes (SimBrief, ChatGPT…), fusión con vista previa, mapa motor.'
+    desc: ['Fiches de performances : créer la fiche (SimBrief, ChatGPT, classe), la compléter, l’utiliser dans le Carburant.',
+      'Performance sheets: create the sheet (SimBrief, ChatGPT, class), complete it, use it in Fuel.',
+      'Leistungsblätter: das Blatt anlegen (SimBrief, ChatGPT, Klasse), ergänzen, in Kraftstoff nutzen.',
+      'Fichas de rendimiento: crear la ficha (SimBrief, ChatGPT, clase), completarla, usarla en Combustible.'
     ]
   }];
   const HELP = [{

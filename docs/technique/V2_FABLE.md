@@ -331,4 +331,18 @@ result (with the sheet read only, "Edit this sheet in Performance sheets ↗"), 
 the vertical profile; its "Aircraft" menu lists existing sheets, My aircraft first, then "Manage performance sheets ↗";
 without a sheet, a line links to the sheets page; the ☰ menu and the status bar keep their sheet actions on the sheets
 page only. The shared script stays one file (`flight_planner.js`), no split into modules.
+(3) Ergonomics review of the sheets page (Simplification, 16 October), applied in three commits — done:
+**A** an aircraft without a sheet shows only "none" in the table; choosing it (its row, or "— no sheet" in the
+selector) creates nothing and the bottom bar offers "Create the sheet" (SimBrief, ChatGPT, class estimate) once;
+notifications sit above the bottom bar; search and sorting before ChatGPT; one word for the object, "sheet".
+**B** nine blocks below the table become four cards: "Sheet being edited" (flight regimes and fields, from level 3,
+with "Save the sheet" / "Discard changes" visible from level 3 too), "Engine" (engine map, RPM table and curve,
+interpolation), "SimBrief" (airframe, OFP calibration, traceability, audit), "File" (imported JSON, folded); duplicate
+export buttons removed (kept hidden for the ☰ menu). **C** a bottom bar of five commands (add, import, "Selection (n)
+▾" for the ticked rows, save, discard); the folder gets its own line under the table's introduction; "Fetch latest
+SimBrief FPL" moved to the OFP calibration. A tutorial, "Create a performance sheet" (`docs/tutorial/fuel_profile.*`),
+follows the whole path.
+
+Not applied, by the user's choice: the "Aircraft" selector stays at the top of the page (the review wanted the table
+as the only way to choose), and the header's kg / lbs units stay where they are.
 

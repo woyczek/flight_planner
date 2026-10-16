@@ -12,6 +12,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Added
 
+- **Tutorial "Create a performance sheet"** (`docs/tutorial/fuel_profile.fr.md` / `.en.md`, Help › Tutorials) — the
+  Performance sheets page step by step: choose the aircraft, create its sheet (SimBrief, ChatGPT, class estimate),
+  complete it with ChatGPT (one aircraft, or "Fill in the missing fields" for several), check the fields and the engine
+  map, save, then use it in Fuel. Block names quoted as on screen, no screenshots.
 - **Landing: one reading block** (`apps/landing/LandingPerformance_Dashboard_MultiCSV_i18n.html`) — the format note
   and the trend card are merged into a single card under the analysis dock: the trend verdict on the left (coloured
   title and text, for the asymptote, first/last quarter and moving-average methods, and the empty or insufficient
