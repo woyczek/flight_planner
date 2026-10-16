@@ -1647,7 +1647,8 @@ The text explains the chosen method (for example estimated asymptote and remaini
 
 This block draws the indicators over time, with their trend: score, touchdown rate (FPM), G force, nose rotation rate, and the “FPM × G — touchdown distribution” scatter plot. In reduced format: relative technical index, raw landing rate, float.
 
-- Hover over a point: date, aircraft, score, rating, flare.
+- Hover over a point: date, aircraft, score, rating, flare. The same landing lights up on all five charts (larger, ringed point, the others dimmed); the tooltip stays inside the window, to the left of or above the pointer near the edges.
+- Click a point to pin the tooltip: it adds the full record of the landing (date, aircraft, airport and runway when present, FPM, G, nose, score, source), keeps the landing lit on every chart and highlights its row in the “Landings” table. To close it: the cross, a second click on the same point, a click outside the points or Esc. One pinned point at a time; a plain click does not select a period.
 - Drag horizontally on a chart to select a period.
 - The “Full history — drag to select” strip, under each chart, lets you choose a period over the whole history.
 

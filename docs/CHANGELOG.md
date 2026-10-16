@@ -12,6 +12,14 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Added
 
+- **Landing: linked points and pinned tooltip** (`apps/landing/LandingPerformance_Dashboard_MultiCSV_i18n.html`) —
+  hovering a point lights up the same landing on the five charts (score, rate, G, nose, FPM × G scatter: larger,
+  ringed point, the others dimmed); a click pins the tooltip with the landing's full record (date, aircraft,
+  airport and runway when present, FPM, G, nose, score, source), keeps it lit and highlights its row in the
+  landings table, centred in the table's own scroll box. Closed by the cross, a second click on the point, a click
+  outside the points or Esc; one pinned point at a time. Tooltips stay inside the window (flipped left of / above
+  the pointer near the edges, 8 px margin), and the range selection now starts only after a real drag, so a plain
+  click on a point is no longer taken as a selection.
 - **"Fill in the missing fields (n)"** (Performance sheets, bottom bar, ticked rows) — one ChatGPT question for every
   ticked sheet: for each, what the suite already knows and its empty fields (engine map included when the sheet has
   none); the pasted answer (one entry per sheet) fills only the empty fields, never what is already entered, with a

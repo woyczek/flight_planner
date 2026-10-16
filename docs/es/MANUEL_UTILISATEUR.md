@@ -1647,7 +1647,8 @@ El texto explica el método elegido (por ejemplo, asíntota estimada y ganancia 
 
 Este bloque traza los indicadores a lo largo del tiempo, con su tendencia: puntuación, régimen en la toma (FPM), fuerza G, velocidad de rotación del morro, y la nube «FPM × G — distribución de las tomas». En formato reducido: índice técnico relativo, landing rate bruto, float.
 
-- Pase el ratón por un punto: fecha, aeronave, puntuación, valoración, recogida.
+- Pase el ratón por un punto: fecha, aeronave, puntuación, valoración, recogida. La misma toma se ilumina en los cinco gráficos (punto ampliado y rodeado, los demás atenuados); la información emergente permanece dentro de la ventana, a la izquierda o por encima del puntero cerca de los bordes.
+- Haga clic en un punto para fijar la información emergente: añade el registro completo de la toma (fecha, aeronave, aeródromo y pista si existen, FPM, G, morro, puntuación, fuente), mantiene la toma iluminada en todos los gráficos y resalta su fila en la tabla «Aterrizajes». Para cerrarla: la cruz, un segundo clic en el mismo punto, un clic fuera de los puntos o Esc. Un solo punto fijado a la vez; un clic simple no selecciona ningún periodo.
 - Arrastre horizontalmente sobre un gráfico para seleccionar un periodo.
 - La banda «Historial completo — arrastra para seleccionar», bajo cada gráfico, permite elegir un periodo en todo el historial.
 

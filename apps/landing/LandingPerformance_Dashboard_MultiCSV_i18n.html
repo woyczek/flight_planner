@@ -340,6 +340,60 @@
     max-width: 340px;
     box-shadow: 0 5px 25px rgba(0, 0, 0, .45)
   }
+  .tooltip.pinned {
+    pointer-events: auto;
+    border-color: var(--accent);
+    padding-right: 26px
+  }
+  .tooltip .tip-close {
+    position: absolute;
+    top: 3px;
+    right: 4px;
+    background: none;
+    border: 0;
+    color: #cfd6e2;
+    font-size: 16px;
+    line-height: 1;
+    cursor: pointer;
+    padding: 2px 4px
+  }
+  .tooltip .tip-hint {
+    color: #8a94a6;
+    font-size: 11px;
+    margin-top: 4px
+  }
+  .tooltip .tip-detail {
+    margin-top: 6px;
+    border-collapse: collapse
+  }
+  .tooltip .tip-detail th {
+    text-align: left;
+    color: #8a94a6;
+    font-weight: normal;
+    padding: 1px 8px 1px 0
+  }
+  .tooltip .tip-detail td {
+    text-align: left;
+    padding: 1px 0
+  }
+  #chartGrid .dot[data-row] {
+    cursor: pointer
+  }
+  #chartGrid .dot.is-linked {
+    transform-box: fill-box;
+    transform-origin: center;
+    transform: scale(1.6);
+    stroke: var(--ring, #ffffff);
+    stroke-width: 3;
+    stroke-opacity: .6;
+    paint-order: stroke
+  }
+  #chartGrid.links-active .dot:not(.is-linked) {
+    opacity: .35
+  }
+  #landingTable tr.row-linked td {
+    background: rgba(100, 181, 246, .18)
+  }
   .table-wrap {
     overflow: auto
   }
@@ -2341,6 +2395,10 @@ Object.assign(TR.en, {
   shiftBack: "Move period backward",
   shiftForward: "Move period forward",
   dragSelect: "Drag horizontally on a time chart to select a period",
+  tipPinHint: "Click to pin",
+  tipClose: "Close",
+  tipAirport: "Airport",
+  tipRunway: "Runway",
   navigatorHint: "Full history — drag to select",
   unavailableMetric: "Metric unavailable in this source",
   scoreGraph: "Score",
@@ -2366,6 +2424,10 @@ Object.assign(TR.fr, {
   shiftBack: "Reculer la période",
   shiftForward: "Avancer la période",
   dragSelect: "Glisser horizontalement sur un graphe temporel pour sélectionner une période",
+  tipPinHint: "Cliquer pour figer",
+  tipClose: "Fermer",
+  tipAirport: "Aérodrome",
+  tipRunway: "Piste",
   navigatorHint: "Historique complet — glisser pour sélectionner",
   unavailableMetric: "Métrique indisponible dans cette source",
   scoreGraph: "Score",
@@ -2391,6 +2453,10 @@ Object.assign(TR.de, {
   shiftBack: "Zeitraum zurück",
   shiftForward: "Zeitraum vor",
   dragSelect: "Horizontal über ein Zeitdiagramm ziehen, um einen Zeitraum auszuwählen",
+  tipPinHint: "Zum Fixieren klicken",
+  tipClose: "Schließen",
+  tipAirport: "Flugplatz",
+  tipRunway: "Landebahn",
   navigatorHint: "Gesamtverlauf — ziehen zum Auswählen",
   unavailableMetric: "Metrik in dieser Quelle nicht verfügbar",
   scoreGraph: "Score",
@@ -2416,6 +2482,10 @@ Object.assign(TR.es, {
   shiftBack: "Retroceder el periodo",
   shiftForward: "Avanzar el periodo",
   dragSelect: "Arrastra horizontalmente sobre un gráfico temporal para seleccionar un periodo",
+  tipPinHint: "Clic para fijar",
+  tipClose: "Cerrar",
+  tipAirport: "Aeródromo",
+  tipRunway: "Pista",
   navigatorHint: "Historial completo — arrastra para seleccionar",
   unavailableMetric: "Métrica no disponible en esta fuente",
   scoreGraph: "Score",
@@ -2708,6 +2778,16 @@ let languageMode = (() => {
 let lang = languageMode === "auto" ? detectLanguage() : languageMode;
 
 /** Traduit la clé k dans la langue courante (repli en, puis fr, puis la clé) ; remplace les « {nom} » par vars. */
+/** Registre des points liés des graphiques : rang de chaque atterrissage dans la période (row → index), marqueurs
+ *  posés pour chacun sur les cinq graphiques, mesure allumée et mesure figée. */
+const pointLinks = {
+  index: new Map(),
+  els: new Map(),
+  active: null,
+  pinned: null
+};
+let lastTipHtml = "";
+
 function t(k, vars = {}) {
   let x = (TR[lang] && TR[lang][k]) || TR.en[k] || TR.fr[k] || k;
   for (const [a, b] of Object.entries(vars)) x = x.replaceAll("{" + a + "}", b);
@@ -4980,6 +5060,7 @@ function render() {
   $("statusText").textContent = `${sourceName} — ${rows.length} ${t("used")}` + (selected === "__ALL__" ? ` — ${t("allAircraft")}` : ` — ${selected}`) + (filter ? ` — ${t("filterOn")}` : ` — ${t("filterOff")}`) + (crash ?
     ` — ${crashText("on")}` : "") + (p95 ? ` — ${p95Text("on")}` : "") + ` — ${t("selectedPeriod")}`;
   updateGeneralTrendIndicator(rows);
+  resetPointLinks(rows);
 
   if (!rows.length) {
     $("cards").innerHTML = "";
@@ -5185,7 +5266,7 @@ function renderLandingTableRich(rows) {
   heads.push(t("dataQuality"));
 
   let body = [...rows].reverse().map(r => {
-    let s = `<tr><td>${esc(r.Timestamp)}</td><td data-sort-value="${esc(r.Aircraft)}">${aircraftCellHTML(r.Aircraft)}</td>` +
+    let s = `<tr${rowAttr(r)}><td>${esc(r.Timestamp)}</td><td data-sort-value="${esc(r.Aircraft)}">${aircraftCellHTML(r.Aircraft)}</td>` +
       `<td>${fmt(r.Score,0)}</td><td>${esc(r.Rating)}</td>` +
       `<td>${fmt(r.TouchdownFPM,0)}</td><td>${fmt(r.PeakG,2)}</td>` +
       `<td>${fmt(r.GroundspeedKts,1)}</td><td>${fmt(r.FloatSeconds,2)}</td>` +
@@ -5364,7 +5445,7 @@ function renderLandingTableLegacy(rows) {
     t("nose"), t("float"), t("flare"), t("touchdownQ"), t("touchdownQrad"), t("dataQuality")
   ];
   let body = [...rows].reverse().map(r => {
-    let s = `<tr>` +
+    let s = `<tr${rowAttr(r)}>` +
       `<td>${esc(r.Timestamp)}</td><td data-sort-value="${esc(r.Aircraft)}">${aircraftCellHTML(r.Aircraft)}</td>` +
       `<td style="text-align:left">${esc(translateSourceRating(r._sourceRating))}</td>` +
       `<td>${fmt(r.LandingRateFPM,2)}</td><td>${fmt(r.LandingG,2)}</td>`;
@@ -6109,29 +6190,33 @@ function installRangeDrag(svg, cfg) {
     const p = toSvg(e),
       region = regionFor(p.y);
     if (!region || p.x < cfg.L || p.x > cfg.W - cfg.R) return;
+    // The selection only starts after a real move (see pointermove): a plain click stays a click on the point.
     drag = {
       startX: clamp(p.x, cfg.L, cfg.W - cfg.R),
-      region
+      region,
+      pointerId: e.pointerId
     };
-    const b = regionBounds(region);
-    preview = svgEl("rect", {
-      x: drag.startX,
-      y: b[0],
-      width: 1,
-      height: b[1] - b[0],
-      class: "drag-preview"
-    });
-    svg.appendChild(preview);
-    try {
-      svg.setPointerCapture(e.pointerId)
-    } catch (_) {}
-    e.preventDefault();
   });
 
   svg.addEventListener("pointermove", e => {
-    if (!drag || !preview) return;
+    if (!drag) return;
     const p = toSvg(e),
       x = clamp(p.x, cfg.L, cfg.W - cfg.R);
+    if (!preview) {
+      if (Math.abs(x - drag.startX) < 5) return;
+      const b = regionBounds(drag.region);
+      preview = svgEl("rect", {
+        x: drag.startX,
+        y: b[0],
+        width: 1,
+        height: b[1] - b[0],
+        class: "drag-preview"
+      });
+      svg.appendChild(preview);
+      try {
+        svg.setPointerCapture(drag.pointerId)
+      } catch (_) {}
+    }
     preview.setAttribute("x", Math.min(drag.startX, x));
     preview.setAttribute("width", Math.max(1, Math.abs(x - drag.startX)));
   });
@@ -6139,6 +6224,10 @@ function installRangeDrag(svg, cfg) {
   /** Fin du glisser : retire l'aperçu et applique la plage si le glissé est assez long. */
   const finish = e => {
     if (!drag) return;
+    if (!preview) {
+      drag = null;
+      return;
+    }
     const p = toSvg(e),
       x = clamp(p.x, cfg.L, cfg.W - cfg.R);
     const dx = Math.abs(x - drag.startX);
@@ -6627,33 +6716,199 @@ function estimateMetaLines(r) {
   }).join("<br>");
 }
 
-/** Infobulle d'un point de graphique qui suit la souris : titre, date, appareil, mesures selon le format et détail
- *  des estimations. */
+/** Registre des points liés : rang de chaque atterrissage dans la période (row → index), marqueurs posés pour chacun
+ *  sur les cinq graphiques, mesure allumée et mesure figée. */
+
+/** Remet le registre à zéro avant un nouveau rendu (les anciens marqueurs disparaissent) et défige l'infobulle. */
+function resetPointLinks(rows) {
+  unpinTooltip();
+  linkPoints(null);
+  pointLinks.index = new Map(rows.map((r, i) => [r, i]));
+  pointLinks.els = new Map();
+  pointLinks.active = null;
+}
+
+/** Attribut data-row d'une ligne du tableau des atterrissages (rang dans la période) ; vide si inconnu. */
+function rowAttr(r) {
+  const i = pointLinks.index.get(r);
+  return i == null ? "" : ` data-row="${i}"`;
+}
+
+/** Inscrit un marqueur de graphique pour son atterrissage ; renvoie le rang, ou null hors période. */
+function registerPoint(el, r) {
+  const i = pointLinks.index.get(r);
+  if (i == null) return null;
+  el.setAttribute("data-row", i);
+  if (!pointLinks.els.has(i)) pointLinks.els.set(i, []);
+  pointLinks.els.get(i).push(el);
+  return i;
+}
+
+/** Allume la mesure i sur tous les graphiques (null : tout éteint) : marqueurs agrandis cerclés de leur couleur, les
+ *  autres estompés. N'écrit que si la mesure allumée change. */
+function linkPoints(i) {
+  if (pointLinks.active === i) return;
+  (pointLinks.els.get(pointLinks.active) || []).forEach(el => el.classList.remove("is-linked"));
+  pointLinks.active = i;
+  const els = i == null ? [] : (pointLinks.els.get(i) || []);
+  els.forEach(el => {
+    el.style.setProperty("--ring", getComputedStyle(el).fill);
+    el.classList.add("is-linked");
+    // Bring the marker to the front of its chart so that the ring is not hidden by its neighbours.
+    if (el.parentNode && el.parentNode.lastChild !== el) el.parentNode.appendChild(el);
+  });
+  const grid = $("chartGrid");
+  if (grid && grid.classList.contains("links-active") !== els.length > 0) grid.classList.toggle("links-active", els.length > 0);
+}
+
+/** Met en évidence la ligne i du tableau des atterrissages (null : aucune) et la centre dans son cadre défilant, sans
+ *  faire défiler la page (le graphique cliqué reste sous les yeux). */
+function markTableRow(i) {
+  const table = $("landingTable");
+  if (!table) return;
+  table.querySelectorAll("tr.row-linked").forEach(tr => tr.classList.remove("row-linked"));
+  if (i == null) return;
+  const tr = table.querySelector(`tr[data-row="${i}"]`);
+  if (!tr || !tr.offsetParent) return;
+  tr.classList.add("row-linked");
+  const box = tr.closest(".table-wrap");
+  if (!box) return;
+  const rb = tr.getBoundingClientRect(),
+    bb = box.getBoundingClientRect();
+  box.scrollTop += rb.top - bb.top - (box.clientHeight - rb.height) / 2;
+}
+
+/** Remplace le contenu de l'infobulle seulement s'il change. */
+function setTipHtml(tip, html) {
+  if (html === lastTipHtml) return;
+  tip.innerHTML = html;
+  lastTipHtml = html;
+}
+
+/** Pose l'infobulle à côté du pointeur et la garde dans la fenêtre : à gauche du curseur si elle déborde à droite,
+ *  au-dessus s'il elle déborde en bas (marge de 8 px), position fixe. */
+function placeTip(tip, x, y) {
+  const M = 8,
+    OFF = 14;
+  const b = tip.getBoundingClientRect(),
+    vw = document.documentElement.clientWidth,
+    vh = document.documentElement.clientHeight;
+  let left = x + OFF,
+    top = y + OFF;
+  if (left + b.width > vw - M) left = x - OFF - b.width;
+  if (top + b.height > vh - M) top = y - OFF - b.height;
+  left = Math.max(M, Math.min(left, vw - M - b.width));
+  top = Math.max(M, Math.min(top, vh - M - b.height));
+  const l = Math.round(left) + "px",
+    tp = Math.round(top) + "px";
+  if (tip.style.left !== l) tip.style.left = l;
+  if (tip.style.top !== tp) tip.style.top = tp;
+}
+
+/** Ligne complète d'une mesure pour l'infobulle figée : date, appareil, aérodrome et piste s'ils existent, FPM, G,
+ *  taux de nez, score et source. */
+function tooltipDetailHTML(r) {
+  const airport = r.Airport || r.AirportICAO || r.ArrivalICAO || r.Arrival || "";
+  const runway = r.Runway || r.RunwayIdent || "";
+  const items = [
+    [t("date"), esc(r.Timestamp)],
+    [t("aircraft"), esc(r.Aircraft)],
+    airport ? [t("tipAirport"), esc(airport)] : null,
+    runway ? [t("tipRunway"), esc(runway)] : null,
+    ["FPM", fmt(metricValue(r, "fpm"), 0)],
+    ["G", fmt(metricValue(r, "g"), 2)],
+    [t("nose"), fmt(metricValue(r, "nose"), 2)],
+    ["Score", fmt(metricValue(r, "score"), 0)],
+    r.Source ? [t("source"), esc(r.Source)] : null
+  ].filter(Boolean);
+  return `<table class="tip-detail">${items.map(([k, v]) => `<tr><th>${esc(k)}</th><td>${v}</td></tr>`).join("")}</table>`;
+}
+
+/** Fige l'infobulle sur la mesure du point (contenu du survol + ligne complète), garde la mesure allumée sur tous les
+ *  graphiques et dans le tableau ; un second clic sur le même point la défige. */
+function pinTooltip(r, headline, e) {
+  const i = pointLinks.index.get(r);
+  const same = pointLinks.pinned && pointLinks.pinned.row === i;
+  unpinTooltip();
+  if (same) return;
+  pointLinks.pinned = {
+    row: i
+  };
+  const tip = $("tooltip");
+  tip.classList.add("pinned");
+  setTipHtml(tip,
+    `<button type="button" class="tip-close" aria-label="${esc(t("tipClose"))}" title="${esc(t("tipClose"))}">×</button>` +
+    tooltipHTML(r, headline) + tooltipDetailHTML(r));
+  tip.style.display = "block";
+  placeTip(tip, e.clientX, e.clientY);
+  linkPoints(i == null ? null : i);
+  markTableRow(i == null ? null : i);
+}
+
+/** Défige l'infobulle, éteint la mesure liée et la ligne du tableau. */
+function unpinTooltip() {
+  if (!pointLinks.pinned) return;
+  pointLinks.pinned = null;
+  const tip = $("tooltip");
+  tip.classList.remove("pinned");
+  tip.style.display = "none";
+  linkPoints(null);
+  markTableRow(null);
+}
+
+// Pinned tooltip: the cross, a click outside any point or Escape closes it.
+$("tooltip").addEventListener("click", e => {
+  if (e.target.closest(".tip-close")) unpinTooltip();
+});
+document.addEventListener("click", e => {
+  if (!pointLinks.pinned) return;
+  if (e.target.closest("#tooltip") || e.target.closest("#chartGrid .dot[data-row]")) return;
+  unpinTooltip();
+});
+document.addEventListener("keydown", e => {
+  if (e.key === "Escape" && pointLinks.pinned) unpinTooltip();
+});
+
+/** Infobulle d'un point de graphique qui suit la souris (gardée dans la fenêtre) et allume la même mesure sur les
+ *  autres graphiques ; un clic la fige. */
 function attachTooltip(el, r, headline) {
   const tip = $("tooltip");
+  const i = registerPoint(el, r);
   el.addEventListener("mousemove", e => {
-    tip.style.display = "block";
-    tip.style.left = e.clientX + 14 + "px";
-    tip.style.top = e.clientY + 14 + "px";
-    let extra = "";
-    if (formatMode === "rich") {
-      extra = `Score ${fmt(r.Score,0)} · ${esc(r.Rating)} · ${esc(r.Flare||"")}`;
-      if (r.Source) extra += `<br>${esc(t("source"))}: ${esc(r.Source)}`;
-      if (r.EstimatedFields) extra += `<br>${esc(t("estimatedFields"))}: ${esc(r.EstimatedFields)}`;
-    } else {
-      extra = `${esc(translateSourceRating(r._sourceRating))} · ${fmt(r.LandingRateFPM,0)} FPM · ${fmt(r.LandingG,2)} G · ${esc(translateFlare(r.Flare))}`;
-      if (estimateEnabled() && Number.isFinite(r.Score)) {
-        extra += `<br>${esc(t("estimatedScore"))}: ${fmt(r.Score,0)} · ${esc(r.Rating||"")}`;
-      }
-      if (estimateEnabled() && Number.isFinite(r.PeakG)) {
-        extra += `<br>${esc(t("estimatedPeakG"))}: ${fmt(r.PeakG,2)} G`;
-      }
-    }
-    const meta = estimateMetaLines(r);
-    if (meta) extra += `<br>${meta}`;
-    tip.innerHTML = `<strong>${esc(headline)}</strong><br>${esc(r.Timestamp)} · ${esc(r.Aircraft)}<br>${extra}`;
+    if (pointLinks.pinned) return;
+    setTipHtml(tip, tooltipHTML(r, headline) + `<div class="tip-hint">${esc(t("tipPinHint"))}</div>`);
+    if (tip.style.display !== "block") tip.style.display = "block";
+    placeTip(tip, e.clientX, e.clientY);
+    linkPoints(i);
   });
-  el.addEventListener("mouseleave", () => tip.style.display = "none");
+  el.addEventListener("mouseleave", () => {
+    if (pointLinks.pinned) return;
+    tip.style.display = "none";
+    linkPoints(null);
+  });
+  el.addEventListener("click", e => pinTooltip(r, headline, e));
+}
+
+/** Contenu HTML d'infobulle d'un atterrissage : titre, date, appareil, mesures selon le format et détail des
+ *  estimations. */
+function tooltipHTML(r, headline) {
+  let extra = "";
+  if (formatMode === "rich") {
+    extra = `Score ${fmt(r.Score,0)} · ${esc(r.Rating)} · ${esc(r.Flare||"")}`;
+    if (r.Source) extra += `<br>${esc(t("source"))}: ${esc(r.Source)}`;
+    if (r.EstimatedFields) extra += `<br>${esc(t("estimatedFields"))}: ${esc(r.EstimatedFields)}`;
+  } else {
+    extra = `${esc(translateSourceRating(r._sourceRating))} · ${fmt(r.LandingRateFPM,0)} FPM · ${fmt(r.LandingG,2)} G · ${esc(translateFlare(r.Flare))}`;
+    if (estimateEnabled() && Number.isFinite(r.Score)) {
+      extra += `<br>${esc(t("estimatedScore"))}: ${fmt(r.Score,0)} · ${esc(r.Rating||"")}`;
+    }
+    if (estimateEnabled() && Number.isFinite(r.PeakG)) {
+      extra += `<br>${esc(t("estimatedPeakG"))}: ${fmt(r.PeakG,2)} G`;
+    }
+  }
+  const meta = estimateMetaLines(r);
+  if (meta) extra += `<br>${meta}`;
+  return `<strong>${esc(headline)}</strong><br>${esc(r.Timestamp)} · ${esc(r.Aircraft)}<br>${extra}`;
 }
 
 /* ---------- util ---------- */

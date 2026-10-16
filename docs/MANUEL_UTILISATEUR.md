@@ -1699,7 +1699,8 @@ Le texte explique la méthode choisie (par exemple asymptote estimée et gain re
 
 Ce bloc trace les indicateurs dans le temps, avec leur tendance : score, taux au toucher (FPM), force G, vitesse de rotation du nez, et le nuage « FPM × G — distribution des touchers ». En format allégé : indice technique relatif, landing rate brut, float.
 
-- Survolez un point : date, appareil, score, évaluation, arrondi.
+- Survolez un point : date, appareil, score, évaluation, arrondi. La même mesure s'allume sur les cinq graphes (point agrandi et cerclé, les autres estompés) ; l'infobulle reste dans la fenêtre, à gauche ou au-dessus du pointeur près des bords.
+- Cliquez sur un point pour figer l'infobulle : elle ajoute la ligne complète de la mesure (date, appareil, aérodrome et piste s'ils existent, FPM, G, nez, score, source), garde la mesure allumée sur tous les graphes et met en évidence sa ligne dans le tableau « Atterrissages ». Pour la fermer : la croix, un second clic sur le même point, un clic hors des points ou Échap. Un seul point figé à la fois ; un simple clic ne sélectionne pas de période.
 - Glissez horizontalement sur un graphe pour sélectionner une période.
 - La bande « Historique complet — glisser pour sélectionner », sous chaque graphe, permet de choisir une période sur tout l'historique.
 

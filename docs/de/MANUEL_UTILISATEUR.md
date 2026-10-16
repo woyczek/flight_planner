@@ -1647,7 +1647,8 @@ Der Text erklärt die gewählte Methode (zum Beispiel geschätzte Asymptote und 
 
 Dieser Block zeichnet die Kennzahlen im Zeitverlauf, mit ihrem Trend: Score, Sinkrate beim Aufsetzen (FPM), G-Kraft, Drehgeschwindigkeit der Nase und die Punktwolke „FPM × G — Verteilung der Landungen“. Im reduzierten Format: relativer technischer Index, roher Landing Rate, Float.
 
-- Fahren Sie über einen Punkt: Datum, Luftfahrzeug, Score, Bewertung, Abfangen.
+- Fahren Sie über einen Punkt: Datum, Luftfahrzeug, Score, Bewertung, Abfangen. Dieselbe Landung leuchtet in allen fünf Diagrammen auf (vergrößerter, umrandeter Punkt, die übrigen abgeblendet); der Tooltip bleibt im Fenster, an den Rändern links neben oder über dem Zeiger.
+- Klicken Sie auf einen Punkt, um den Tooltip zu fixieren: Er zeigt zusätzlich den vollständigen Datensatz der Landung (Datum, Luftfahrzeug, Flugplatz und Landebahn, falls vorhanden, FPM, G, Nase, Score, Quelle), hält die Landung in allen Diagrammen hervorgehoben und markiert ihre Zeile in der Tabelle „Landungen“. Schließen: das Kreuz, ein zweiter Klick auf denselben Punkt, ein Klick neben die Punkte oder Esc. Nur ein fixierter Punkt zugleich; ein einfacher Klick wählt keinen Zeitraum aus.
 - Ziehen Sie waagerecht über ein Diagramm, um einen Zeitraum auszuwählen.
 - Das Band „Gesamtverlauf — ziehen zum Auswählen“ unter jedem Diagramm erlaubt die Wahl eines Zeitraums über den gesamten Verlauf.
 
