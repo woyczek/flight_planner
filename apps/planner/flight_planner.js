@@ -5938,7 +5938,13 @@ async function gptFillMissing() {
     /** Champ d'une entrée à la clé près (ICAO, Icao, icao). */
     get = (x, ...names) => names.map(n => Object.entries(x).find(([k]) => gptKeyEq(k, n))?.[1]).find(v => v !== undefined && v !== null &&
       v !== ""),
-    typeOf = x => aKey(get(x, "icao", "type", "code", "tdesig", "designator") || ""),
+    // type d'une entrée : icao / type / code ; à défaut son id quand il a la forme d'un désignateur (ChatGPT met souvent
+    // le type OACI dans « id » : { "id": "EC25", … })
+    typeOf = x => {
+      const t = aKey(get(x, "icao", "type", "code", "tdesig", "designator") || ""),
+        id = aKey(get(x, "id") || "");
+      return t || (/^[A-Z][A-Z0-9]{1,3}$/.test(id) ? id : "")
+    },
     nameOf = x => aKey(get(x, "name", "aircraft", "model") || ""),
     used = new Set(),
     /** Entrée de la réponse qui décrit la fiche p : id, puis type (alias compris), puis nom ; une seule et une seule. */
