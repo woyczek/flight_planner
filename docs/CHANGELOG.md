@@ -35,9 +35,11 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   § 13, step 1) — the management of the aircraft's performance sheets: the "Performance profiles" table and all its
   actions, the field editor, engine performance and RPM table, engine map, flight regimes, OFP calibration and audit.
   In the header, an "Aircraft" selector, divided like Fuel's menu, that picks the sheet being edited and the ChatGPT
-  panel's aircraft (a click on a table row too; several rows ticked: none); one bottom bar for the rest: the sheet's
-  state with "Save the sheet" and "Discard changes", the actions on ticked rows and the sources (add, import, folder,
-  reread, SimBrief FPL); search, sorting and ChatGPT stay above the table. An aircraft without a sheet shows only
+  panel's aircraft (a click on a table row too; several rows ticked: none); a bottom bar of five commands: "Add an
+  aircraft", "Import…", a "Selection (n) ▾" menu for the ticked rows (merge, export, save to the folder, fill in the
+  missing fields, delete), the sheet's state with "Save the sheet" and "Discard changes"; the performance folder has
+  its own line under the table's introduction (My aircraft, folder state, reread, choose), and "Fetch latest SimBrief
+  FPL" moved to the OFP calibration; search, sorting and ChatGPT stay above the table. An aircraft without a sheet shows only
   "none" in the table; choosing it (its row, or the selector) offers "Create the sheet" (SimBrief, ChatGPT, class
   estimate) once, in the bottom bar. Notifications sit above the bottom bar. Below the table, four cards instead of nine
   blocks: "Sheet being edited" (flight regimes and fields, from the Design level), "Engine" (engine map, RPM table and

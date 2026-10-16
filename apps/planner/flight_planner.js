@@ -3380,6 +3380,14 @@ function perfProfilesLabels() {
     mineOut = PERF_PAGE === "sheets" ? mineShort : mineHtml; // Fiches de performances : lien court dans la barre du bas
   if ($("ppMine") && $("ppMine").innerHTML !== mineOut) $("ppMine").innerHTML = mineOut;
   setText("ppAddLbl", kt(["Ajouter un appareil", "Add an aircraft", "Luftfahrzeug hinzufügen", "Añadir una aeronave"]));
+  // ligne du dossier : sans dossier choisi ni relu, le dire (le message de relecture la remplace ensuite)
+  const ppSt = document.getElementById("ppStatus");
+  if (ppSt && (!ppSt.textContent || ppSt.dataset.none) && !dirHandle) {
+    ppSt.textContent = kt(["Aucun dossier performances choisi.", "No performance folder chosen.", "Kein Leistungsordner gewählt.",
+      "Ninguna carpeta de rendimiento elegida."
+    ]);
+    ppSt.dataset.none = "1"
+  } else if (ppSt && dirHandle) delete ppSt.dataset.none;
   setText("ppSortLbl", kt(["Trier par", "Sort by", "Sortieren nach", "Ordenar por"]));
   const ph = kt(["Chercher un appareil (nom, variante, désignateur, classe, source)",
     "Search an aircraft (name, variant, designator, class, source)",
@@ -3890,6 +3898,13 @@ function profileTypeKey(p) {
 function syncMergeButton() {
   syncRemovedLine();
   const nSel = [...ppSelected].filter(id => state.profiles?.[id]).length;
+  // menu « Sélection (n) ▾ » de la barre du bas (Fiches de performances) : actif dès une ligne cochée
+  setText("ppSelLbl", nSel ? ktf(["Sélection ({n})", "Selection ({n})", "Auswahl ({n})", "Selección ({n})"], {
+    n: nSel
+  }) : kt(["Sélection", "Selection", "Auswahl", "Selección"]));
+  const sb = document.getElementById("ppSelBtn");
+  if (sb && sb.disabled !== !nSel) sb.disabled = !nSel;
+  if (!nSel) closeSelMenu();
   for (const [id, lbl, row, rowN] of [
       ["ppExport", "ppExportLbl", ["Exporter", "Export", "Exportieren", "Exportar"],
         ["Exporter ({n})", "Export ({n})", "Exportieren ({n})",
@@ -6106,6 +6121,28 @@ $("ppMerge").onclick = () => mergeSelected();
 $("ppExport").onclick = () => exportSelected();
 $("ppSaveDir").onclick = () => saveSelectedToFolder();
 $("ppDelete").onclick = () => deleteSelectedAsk();
+/** Ferme le menu « Sélection » de la barre du bas. */
+function closeSelMenu() {
+  const m = document.getElementById("ppSelMenu");
+  if (!m || m.hidden) return;
+  m.hidden = true;
+  document.getElementById("ppSelBtn")?.setAttribute("aria-expanded", "false")
+}
+// menu « Sélection (n) ▾ » : ouvert au-dessus du bouton ; fermé par un choix, un clic ailleurs ou Échap
+if (document.getElementById("ppSelBtn")) {
+  const btn = document.getElementById("ppSelBtn"),
+    menu = document.getElementById("ppSelMenu");
+  btn.onclick = e => {
+    e.stopPropagation();
+    if (!menu.hidden) return closeSelMenu();
+    menu.hidden = false;
+    btn.setAttribute("aria-expanded", "true");
+    menu.querySelector("button:not([disabled])")?.focus()
+  };
+  menu.addEventListener("click", e => e.target.closest("button") && setTimeout(closeSelMenu));
+  document.addEventListener("click", e => !e.target.closest(".sel-popup") && closeSelMenu());
+  document.addEventListener("keydown", e => e.key === "Escape" && !menu.hidden && (closeSelMenu(), btn.focus()))
+}
 $("ppFillMissing").onclick = () => openGptMissing();
 $("ppImport").onclick = () => $("fileInput").click();
 $("ppFolder").onclick = () => $("dirBtn").click();
