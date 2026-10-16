@@ -33,36 +33,11 @@
   };
 
   // ---- types
-  // Base OACI ; modifications de la page Paramétrage plus récentes que le fichier
-  // (dataOverride:aircraftDb:v1, pas encore enregistrées dans le dépôt) : prioritaires.
-  let overrideCache = {
-    raw: undefined,
-    value: null
-  };
-  /** Base des types en vigueur : fichier OACI (AIRCRAFT_DB), modifications de Paramétrage plus récentes, types ajoutés localement. */
-  const db = () => {
-    const file = window.AIRCRAFT_DB || {};
-    let raw = null;
-    try {
-      raw = localStorage.getItem('dataOverride:aircraftDb:v1');
-    } catch {
-      /* stockage indisponible */
-    }
-    if (raw !== overrideCache.raw) {
-      let value = null;
-      try {
-        value = JSON.parse(raw || 'null');
-      } catch {
-        value = null;
-      }
-      overrideCache = {
-        raw,
-        value
-      };
-    }
-    const override = overrideCache.value;
-    return override?.data && override.updatedAt > String(file.__meta?.admin_saved || '') ? override.data : file;
-  };
+  // Base OACI ; modifications de la page Paramétrage (dataOverride:aircraftDb:v1, pas encore enregistrées dans le
+  // dépôt) : règle commune du catalogue.
+  /** Base des types en vigueur : fichier OACI, modification locale de Paramètres et types ajoutés dans les CR — règle
+   *  commune du catalogue (AircraftCatalog.typesDb : fusion type par type, relue si la modification change). */
+  const db = () => window.AircraftCatalog?.typesDb?.() || window.AIRCRAFT_DB || {};
   // Voilure d'après la classe OACI (Doc 8643), règle commune de la suite (AircraftCatalog.classify) : H, G, T →
   // voilure tournante, L → avion, A / S → amphibie / hydravion ; ballon, dirigeable, inconnu → ''. Entrée : description
   // (« H2T ») ou fiche de la base (ballon, dirigeable : sans description).

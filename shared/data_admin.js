@@ -277,64 +277,10 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
   }
 
   // ---- bases éditables
-  /** Fusion d'une modification locale faite sur un fichier plus ancien (ou d'une ancienne surcharge sans date de base) avec le
-   *  fichier actuel : lignes du fichier gardées, lignes locales prioritaires (même clé), objets fusionnés clé par clé. */
-  const mergeOverride = (file, local, keyOf) => {
-    const out = structuredClone(file);
-    for (const [k, v] of Object.entries(local || {})) {
-      if (Array.isArray(v) && Array.isArray(out[k]) && keyOf) {
-        const key = r => keyOf(r) || JSON.stringify(r),
-          seen = new Map(out[k].map((r, i) => [key(r), i]));
-        for (const r of v) {
-          const i = seen.get(key(r));
-          if (i == null) out[k].push(structuredClone(r));
-          else out[k][i] = structuredClone(r);
-        }
-      } else if (v && typeof v === 'object' && !Array.isArray(v) && out[k] && typeof out[k] === 'object' && !Array.isArray(out[k])) {
-        for (const [kk, vv] of Object.entries(v)) {
-          out[k][kk] = vv && typeof vv === 'object' && !Array.isArray(vv) && out[k][kk] && typeof out[k][kk] === 'object' ? {
-            ...out[k][kk],
-            ...structuredClone(vv)
-          } : structuredClone(vv);
-        }
-      } else out[k] = structuredClone(v);
-    }
-    return out;
-  };
-  /** Données en vigueur d'une base : modification locale (overrideKey) si plus récente que le fichier ET faite sur ce fichier
-   *  (base), sinon fusion locale + fichier (réécrite avec la date de base : les autres pages la lisent aussi), sinon le
-   *  fichier. keyOf : clé d'une ligne des tableaux (fusion). Sortie : { data, local : date de la modification locale ou '' }. */
-  const effective = (fileData, overrideKey, fileStamp, keyOf = null) => {
-    const o = read(overrideKey);
-    if (!o?.data || !(o.updatedAt > fileStamp)) return {
-      data: structuredClone(fileData),
-      local: '',
-      fileStamp
-    };
-    if (o.base === fileStamp) return {
-      data: structuredClone(o.data),
-      local: o.updatedAt,
-      fileStamp
-    };
-    // modification locale faite sur un autre état du fichier (ou ancienne, sans date de base) : fusionnée, puis réécrite
-    // avec la date de base pour que les autres pages voient la même chose
-    const data = mergeOverride(fileData, o.data, keyOf);
-    try {
-      write(overrideKey, {
-        updatedAt: now(),
-        base: fileStamp,
-        data
-      });
-    } catch {
-      /* stockage plein */
-    }
-    return {
-      data: structuredClone(data),
-      local: o.updatedAt,
-      fileStamp,
-      merged: true
-    };
-  };
+  // modifications locales (« Appliquer dans ce navigateur ») : règle commune de la suite, dans le catalogue chargé par
+  // toutes les pages (shared/aircraft_catalog.js : fusion type par type, remplacement si faite sur ce fichier)
+  const mergeOverride = (...a) => window.AircraftCatalog.mergeOverride(...a);
+  const effective = (...a) => window.AircraftCatalog.effectiveData(...a);
   /** Organismes connus (table des indicatifs + SAMU), pour les listes de choix. */
   // (les organismes sont dans work.callsigns.data.operators et dans le tableau « Organismes » en cours d'édition — l'ancienne
   // lecture de work.callsigns.operators, inexistant, ne proposait que SAMU)
@@ -555,7 +501,9 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
       name,
       designator
     }));
-    const dbFile = window.AIRCRAFT_DB || {};
+    // fichier tel que servi : le catalogue applique la modification locale en place dans AIRCRAFT_DB (la comparer à
+    // elle-même ne montrait plus les changements)
+    const dbFile = window.AircraftCatalog?.typesFile?.() || window.AIRCRAFT_DB || {};
     work.aircraftDb = effective(dbFile, 'dataOverride:aircraftDb:v1', String(dbFile.__meta?.admin_saved || ''));
     work.aircraftDb.original = dbFile;
     const d = work.aircraftDb.data;

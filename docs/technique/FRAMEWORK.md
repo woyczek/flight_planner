@@ -487,6 +487,17 @@ Loaded right after `AircraftDB/aircraft_db.js` in **all** the pages that use it
 
 “Loose” database: an input aid, never a constraint — a missing value can still be entered.
 
+### Local changes to a database — one rule
+
+“Apply in this browser” (Settings › databases) stores `dataOverride:<id>:v1` = `{ updatedAt, base, data }`. The only
+rule, `AircraftCatalog.effectiveData(fileData, key, fileStamp, keyOf)` (decision of 16/10/2026): a change newer than
+the file and made **on this file** (`base` = file date) replaces it; made on another state of the file (or old, without
+`base`): **merged** row by row / type by type (`mergeOverride`: file rows kept, local rows first) and written back with
+the file date, so that every page sees the same data. Used by `data_admin.js` (all the databases) and, for the type
+base, by the catalogue itself: `typesDb()` applies it in place in `window.AIRCRAFT_DB` (re-read when the change
+changes; types added in the CRs kept), `typesFile()` returns the file as served (Settings compares with it). No other
+`Object.assign` or whole replacement (`mission_core/aircraft.js` calls `typesDb`).
+
 ### Type classification — one answer for the whole suite
 
 Every page that asks “what type or category is this ICAO designator or this aircraft?” calls

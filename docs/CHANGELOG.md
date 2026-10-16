@@ -492,6 +492,12 @@ servies depuis un autre disque, registre aux fichiers absents, profils cachés �
 
 ### Corrigé
 
+- **Local changes to the aircraft type base applied three different ways** — the catalogue merged them with
+  `Object.assign`, the CR replaced the whole base, Settings merged them type by type; Settings also compared the
+  changes with a base already modified in place, so they no longer showed. One rule now (Simplification decision):
+  `AircraftCatalog.effectiveData` — replace when made on this file, otherwise merge type by type and rewrite with the
+  file date; the catalogue applies it (`typesDb`) and keeps the file as served (`typesFile`) for Settings.
+  `docs/technique/FRAMEWORK.md` § 11 bis.
 - **My missions: mission order labels in French in every language** — "Assigned aircraft", "Callsign", "Departure
   airfield", "Requested take-off" / "Ready at", "Status" and the "assigned" status are now translated at the source
   (4 languages). Assignments: the generic crew post rule is documented (helicopter pilot if the common classification
