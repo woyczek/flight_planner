@@ -6252,8 +6252,12 @@ async function gptFillMissing() {
     // le type OACI dans « id » : { "id": "EC25", … })
     typeOf = x => {
       const t = aKey(get(x, "icao", "type", "code", "tdesig", "designator") || ""),
-        id = aKey(get(x, "id") || "");
-      return t || (/^[A-Z][A-Z0-9]{1,3}$/.test(id) ? id : "")
+        raw = String(get(x, "id") || "").toUpperCase(),
+        id = aKey(raw),
+        db = window.AIRCRAFT_DB || {},
+        // identifiant interne de la suite recopié par ChatGPT (GPT_CL2T, DB_DH8D_F-ZBML) : le segment qui est un type connu
+        seg = raw.split(/[^A-Z0-9]+/).find(k => k && !k.startsWith("__") && (db[k] || db.__aliases?.[k]));
+      return t || (/^[A-Z][A-Z0-9]{1,3}$/.test(id) ? id : "") || seg || ""
     },
     nameOf = x => aKey(get(x, "name", "aircraft", "model") || ""),
     used = new Set(),
