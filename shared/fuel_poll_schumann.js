@@ -1762,10 +1762,18 @@
     Q_FUEL = 43.13e6,
     DETERIORATION = 0.025,
     ETA_RATIO_MIN = 0.5;
-  /** Paramètres PS d'un code OACI (le code lui-même, sinon son équivalent dans la liste des synonymes) ; null sinon. */
+  /** Paramètres PS d'un code OACI (le code lui-même, sinon son équivalent dans la liste des synonymes) ; null sinon.
+   *  SYN n'est pas une table de noms : c'est l'appareil de référence voisin que les données Poll-Schumann donnent pour un
+   *  type qu'elles ne couvrent pas (C17 → B764, E3CF → B762) — gardée telle quelle ; le code passe d'abord par le
+   *  résolveur commun (AircraftCatalog.canonical : alias suivis, H145 → EC45). */
   const typeOf = icao => {
-    const k = String(icao || '').toUpperCase().trim();
-    return PS[k] ? k : PS[SYN[k]] ? SYN[k] : null;
+    const raw = String(icao || '').toUpperCase().trim(),
+      c = window.AircraftCatalog?.canonical?.(raw) || raw;
+    for (const k of new Set([raw, c]))
+      if (PS[k]) return k;
+    for (const k of new Set([raw, c]))
+      if (PS[SYN[k]]) return SYN[k];
+    return null;
   };
   /** Atmosphère standard : température (K) et pression (Pa) à l'altitude h (m). */
   function isa(h) {

@@ -3101,10 +3101,8 @@ function aircraftVisualKey(rec) {
   }) || "other";
 }
 
-/** SVG de la silhouette (AIRCRAFT_ICON_SVGS, aircraft_icons.js) ; silhouette « other », sinon « ✈ ». */
-function aircraftSvgForVisual(visual) {
-  return window.AIRCRAFT_ICON_SVGS?.[visual] || window.AIRCRAFT_ICON_SVGS?.other || "✈";
-}
+// SVG de la silhouette : aircraftSvgForVisual d'AircraftDB/aircraft_icons.js (chargé par la page) — plus de redéfinition
+// ici, qui écrasait la fonction commune utilisée par AircraftDBIcons.icon
 
 /** Icône HTML d'un appareil, colorée par catégorie de turbulence, avec type, modèle et WTC en infobulle. */
 function aircraftIconHTML(name) {

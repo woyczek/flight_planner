@@ -643,6 +643,10 @@ servies depuis un autre disque, registre aux fichiers absents, profils cachés �
 
 ### Modifié
 
+- **Aircraft types: last duplicates** — the Poll-Schumann fuel model now resolves the type through the common
+  catalogue first (aliases followed: H145 → EC45); its `SYN` table is kept: it is not a name table but the nearby
+  reference aircraft its data give for an uncovered type (C-17 → B764). The Landing dashboard no longer redefines the
+  silhouette function of `AircraftDB/aircraft_icons.js`, which it overwrote.
 - **Aircraft categories: one set of names, wake category "L/M"** (Simplification decisions) — assignments said "Jet
   aircraft", *My aircraft* "Jets": both now use `AircraftCatalog.categoryLabel` (Helicopters, Turboprops, Jets, Pistons,
   Others; "Réacteurs" in French). Fuel planner and performance-sheet groups: "Pistons, 1 engine" and "Pistons, 2
