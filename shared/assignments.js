@@ -1212,18 +1212,13 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
   // missions », rangés avec ses disponibilités (même fichier : data/disponibilites/<TRI>.json, champ aircraft)
   /** Catégorie d'un type d'après sa description OACI (Doc 8643 : L2J = avion terrestre biréacteur, H1T = hélicoptère
    *  monoturbine…) : clé et libellé. */
-  const CATEGORY = {
-    helico: ['Hélicoptères', 'Helicopters', 'Hubschrauber', 'Helicópteros'],
-    jet: ['Avions à réaction', 'Jet aircraft', 'Strahlflugzeuge', 'Aviones a reacción'],
-    turboprop: ['Avions à turbopropulseurs', 'Turboprop aircraft', 'Turboprop-Flugzeuge', 'Aviones turbohélice'],
-    piston: ['Avions à pistons', 'Piston aircraft', 'Kolbenmotorflugzeuge', 'Aviones de pistón'],
-    other: ['Autres', 'Other', 'Andere', 'Otros']
-  };
+  // libellés : jeu unique du socle (AircraftCatalog.CATEGORY_LABELS), lu à l'usage (le catalogue peut se charger après)
+  const CATEGORY = () => window.AircraftCatalog?.CATEGORY_LABELS || {};
   /** Catégorie d'un type (règle commune de la suite : AircraftCatalog.classify — hélicoptère et autogire, puis
    *  motorisation ; ballon, dirigeable, inconnu : autres) : [id, libellés]. rec : fiche de la base, ou code. */
   const categoryOf = rec => {
     const id = window.AircraftCatalog?.classify?.(rec)?.category || 'other';
-    return [id, CATEGORY[id] || CATEGORY.other];
+    return [id, CATEGORY()[id] || CATEGORY().other || [id]];
   };
   /** Nom lisible d'un modèle de la base OACI : « DASSAULT Rafale » → « Dassault Rafale ». */
   // (mots entiers de lettres seulement : « AS-365 », « EC135 » gardés en capitales)

@@ -311,14 +311,8 @@ dialog.eq-dialog h3{margin:0 0 6px}dialog.eq-dialog footer{display:flex;justify-
 
   // ---- catégories (même ordre dans Paramètres et dans le Carburant)
   const CATEGORIES = ['helico', 'turboprop', 'jet', 'piston', 'other'];
-  /** Libellé d'une catégorie (4 langues). */
-  const categoryLabel = c => t({
-    helico: ['Hélicoptères', 'Helicopters', 'Hubschrauber', 'Helicópteros'],
-    turboprop: ['Turbopropulseurs', 'Turboprops', 'Turboprops', 'Turbohélices'],
-    jet: ['Réacteurs', 'Jets', 'Strahlflugzeuge', 'Reactores'],
-    piston: ['Pistons', 'Pistons', 'Kolbenmotor', 'Pistón'],
-    other: ['Autres', 'Others', 'Andere', 'Otros']
-  } [c] || ['Autres', 'Others', 'Andere', 'Otros']);
+  /** Libellé d'une catégorie : jeu unique du socle (AircraftCatalog.categoryLabel, 4 langues). */
+  const categoryLabel = c => window.AircraftCatalog?.categoryLabel?.(c) || c;
   /** Catégorie d'un type : celle de la flotte, sinon la règle commune de la suite (AircraftCatalog.classify :
    *  hélicoptère et autogire, puis motorisation ; ballon, dirigeable, inconnu : autres). */
   const categoryOf = code => {

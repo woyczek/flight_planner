@@ -3013,11 +3013,12 @@ function aircraftTypeLabel(name) {
   return `${type} ${size}`;
 }
 
-/** Rang de taille par catégorie de turbulence : L < M < H < J ; 9 si inconnue. */
+/** Rang de taille par catégorie de turbulence : L < L/M < M < H < J (« L/M », valeur OACI, entre L et M) ; 9 si inconnue. */
 function aircraftSizeRank(name) {
   const w = aircraftSpec(resolveAircraftInfo(name)).wtc;
   return ({
     L: 0,
+    'L/M': 0.5,
     M: 1,
     H: 2,
     J: 3

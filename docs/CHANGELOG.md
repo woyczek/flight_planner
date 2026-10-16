@@ -627,6 +627,12 @@ servies depuis un autre disque, registre aux fichiers absents, profils cachés �
 
 ### Modifié
 
+- **Aircraft categories: one set of names, wake category "L/M"** (Simplification decisions) — assignments said "Jet
+  aircraft", *My aircraft* "Jets": both now use `AircraftCatalog.categoryLabel` (Helicopters, Turboprops, Jets, Pistons,
+  Others; "Réacteurs" in French). Fuel planner and performance-sheet groups: "Pistons, 1 engine" and "Pistons, 2
+  engines or more" (names from `AircraftCatalog.groupLabel`, 4 languages). Wake category "L/M" (King Air 350, BE20, SW4)
+  is kept as given by ICAO: its icon has the size of M with a dashed outline, and the Landing dashboard orders it
+  between L and M instead of with the unknown ones.
 - **Aircraft type lookup factored into the shared framework** (second step) — about twenty places resolved a
   designator from a code, alias or name on their own, most following only one alias (A4M → A400M, not to A400).
   `AircraftCatalog.canonical` / `.record` / `.related` (with `codeOf` for free text) now do it for *My aircraft*,

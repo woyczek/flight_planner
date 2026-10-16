@@ -502,7 +502,13 @@ Every page that asks “what type or category is this ICAO designator or this ai
   power — **jet**, **turboprop**, **piston** (tiltrotors, amphibians and seaplanes included) —, **other** for
   balloons, airships, electric and unknown types; `wing`: rotary (H, G, T), amphibious (A, S), fixed (L), lta; `fpl`:
   flight-plan designator (SHIP, BALL, ZZZZ for a non-ICAO type);
-- `CATEGORIES`: display order (helico, turboprop, jet, piston, other).
+- `CATEGORIES`: display order (helico, turboprop, jet, piston, other); `CATEGORY_LABELS` / `categoryLabel(cat)`: the
+  only set of category names (decision of 16/10/2026, short names: Helicopters, Turboprops, Jets, Pistons, Others —
+  “Réacteurs” in French), used by assignments and *My aircraft*; `groupLabel(key)`: names of the display groups and
+  aircraft labels of `AircraftDBIcons.group` (French keys; groups: Helicopters, Jets, Turboprops, “Pistons, 2 engines
+  or more”, “Pistons, 1 engine”, Others), 4 languages;
+- wake turbulence category “L/M” (B350, BE20, SW4): kept as given by ICAO (badge “L/M”); icon class `wtc-LM`, size of M
+  with a dashed outline (rule set once by `AircraftDB/aircraft_icons.js`); ordered between L and M.
 
 Built on it: silhouettes and groups (`AircraftDB/aircraft_icons.js`: `AircraftDBIcons.visual`, `.group` — by power,
 then number of engines for pistons — and `.groupLabel` in four languages), assignment categories

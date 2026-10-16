@@ -248,6 +248,46 @@
   }
   /** Catégories, dans l'ordre d'affichage : hélicoptères, turbopropulseurs, réacteurs, pistons, autres. */
   const CATEGORIES = ['helico', 'turboprop', 'jet', 'piston', 'other'];
+  /** Libellés des catégories (un seul jeu pour la suite, décision du 16/10/2026 : noms courts), 4 langues. */
+  const CATEGORY_LABELS = {
+    helico: ['Hélicoptères', 'Helicopters', 'Hubschrauber', 'Helicópteros'],
+    turboprop: ['Turbopropulseurs', 'Turboprops', 'Turboprops', 'Turbohélices'],
+    jet: ['Réacteurs', 'Jets', 'Strahlflugzeuge', 'Reactores'],
+    piston: ['Pistons', 'Pistons', 'Kolbenmotoren', 'Pistón'],
+    other: ['Autres', 'Others', 'Andere', 'Otros']
+  };
+  /** Texte dans la langue de la page (RepositoryKit.t), sinon le français. */
+  const tr = row => window.RepositoryKit?.t ? window.RepositoryKit.t(row) : row[0];
+  /** Libellé d'une catégorie (classify().category) dans la langue de la page ; « Autres » si elle est inconnue. */
+  const categoryLabel = cat => tr(CATEGORY_LABELS[cat] || CATEGORY_LABELS.other);
+  /** Groupes d'affichage des appareils (AircraftDBIcons.group : par motorisation, puis nombre de moteurs pour les
+   *  pistons) et libellés d'appareil, sous leur clé française ; 4 langues. */
+  const GROUP_LABELS = {
+    'Hélicoptères': CATEGORY_LABELS.helico,
+    'Jets': ['Jets', 'Jets', 'Jets', 'Jets'],
+    'Turbopropulseurs': CATEGORY_LABELS.turboprop,
+    'Pistons, 2 moteurs et plus': ['Pistons, 2 moteurs et plus', 'Pistons, 2 engines or more', 'Kolben, 2 Motoren und mehr',
+      'Pistón, 2 motores o más'
+    ],
+    'Pistons, 1 moteur': ['Pistons, 1 moteur', 'Pistons, 1 engine', 'Kolben, 1 Motor', 'Pistón, 1 motor'],
+    'Autres': CATEGORY_LABELS.other,
+    'Hélicoptère': ['Hélicoptère', 'Helicopter', 'Hubschrauber', 'Helicóptero'],
+    'Quadriréacteur': ['Quadriréacteur', 'Four-engine jet', 'Vierstrahliger Jet', 'Cuatrirreactor'],
+    'Triréacteur': ['Triréacteur', 'Three-engine jet', 'Dreistrahliger Jet', 'Trirreactor'],
+    'Biréacteur': ['Biréacteur', 'Twin jet', 'Zweistrahliger Jet', 'Birreactor'],
+    'Jet': ['Jet', 'Jet', 'Jet', 'Jet'],
+    'Quadriturbopropulseur': ['Quadriturbopropulseur', 'Four-engine turboprop', 'Viermotoriges Turboprop', 'Cuatrimotor turbohélice'],
+    'Biturbopropulseur': ['Biturbopropulseur', 'Twin turboprop', 'Zweimotoriges Turboprop', 'Bimotor turbohélice'],
+    'Turbopropulseur': ['Turbopropulseur', 'Turboprop', 'Turboprop', 'Turbohélice'],
+    'Quadrimoteur': ['Quadrimoteur', 'Four-engine piston', 'Viermotoriges Kolbenflugzeug', 'Cuatrimotor de pistón'],
+    'Trimoteur': ['Trimoteur', 'Three-engine piston', 'Dreimotoriges Kolbenflugzeug', 'Trimotor de pistón'],
+    'Bimoteur': ['Bimoteur', 'Twin piston', 'Zweimotoriges Kolbenflugzeug', 'Bimotor de pistón'],
+    'Monomoteur': ['Monomoteur', 'Single-engine', 'Einmotoriges', 'Monomotor'],
+    'Autre': ['Autre', 'Other', 'Andere', 'Otro']
+  };
+  /** Libellé d'un groupe ou d'un appareil (clé française d'AircraftDBIcons.group) dans la langue de la page ; tel quel
+   *  s'il est inconnu. */
+  const groupLabel = key => GROUP_LABELS[key] ? tr(GROUP_LABELS[key]) : key;
   /** Classement d'un type. input : code (désignateur, alias) ou fiche de la base ; opts.description : description OACI
    *  seule (« L2J ») quand il n'y a pas de fiche. Sortie : { code, rec, icao, fpl, family, kind, engines, power, category,
    *  wing, wtc } —
@@ -292,6 +332,9 @@
     record,
     classify,
     CATEGORIES,
+    CATEGORY_LABELS,
+    categoryLabel,
+    groupLabel,
     codeOf,
     displayName,
     SUPPLEMENT,
