@@ -246,15 +246,15 @@ RepositoryContentI18n([
   ['oui', 'yes', 'ja', 'sí'],
   ['non', 'no', 'nein', 'no'],
   // disponibilités par plages (shared/dispos_editor.js), page seule apps/pilot/disponibilites.html
-  ['Semaine affichée, heures UTC : choisir une catégorie dans la palette, puis cliquer sur une case ou tracer un rectangle ; un second clic efface ; « Plage précise » pour des minutes. Le Centre s’en sert pour affecter les missions.',
-    'Shown week, UTC hours: pick a category in the palette, then click a cell or draw a rectangle; a second click clears; “Precise range” for minutes. The Centre uses it to assign missions.',
-    'Angezeigte Woche, UTC-Stunden: eine Kategorie in der Palette wählen, dann eine Zelle anklicken oder ein Rechteck ziehen; ein zweiter Klick löscht; „Genauer Zeitraum“ für Minuten. Das Zentrum nutzt sie zur Zuweisung der Missionen.',
-    'Semana mostrada, horas UTC: elegir una categoría en la paleta y luego hacer clic en una celda o trazar un rectángulo; un segundo clic borra; «Intervalo preciso» para minutos. El Centro lo usa para asignar las misiones.'
+  ['Semaine affichée, heures UTC : choisir une catégorie dans la palette, puis cliquer sur une case ou tracer un rectangle ; un second clic efface ; « Plage précise » au quart d’heure. Le Centre s’en sert pour affecter les missions.',
+    'Shown week, UTC hours: pick a category in the palette, then click a cell or draw a rectangle; a second click clears; “Precise range” to the quarter hour. The Centre uses it to assign missions.',
+    'Angezeigte Woche, UTC-Stunden: eine Kategorie in der Palette wählen, dann eine Zelle anklicken oder ein Rechteck ziehen; ein zweiter Klick löscht; „Genauer Zeitraum“ auf die Viertelstunde. Das Zentrum nutzt sie zur Zuweisung der Missionen.',
+    'Semana mostrada, horas UTC: elegir una categoría en la paleta y luego hacer clic en una celda o trazar un rectángulo; un segundo clic borra; «Intervalo preciso» al cuarto de hora. El Centro lo usa para asignar las misiones.'
   ],
-  ['Choisir une catégorie dans la palette, puis cliquer sur une case ou tracer un rectangle (heures UTC) ; un second clic efface ; « Plage précise » pour des minutes. Le Centre s’en sert pour affecter les missions.',
-    'Pick a category in the palette, then click a cell or draw a rectangle (UTC hours); a second click clears; “Precise range” for minutes. The Centre uses it to assign missions.',
-    'Eine Kategorie in der Palette wählen, dann eine Zelle anklicken oder ein Rechteck ziehen (UTC-Stunden); ein zweiter Klick löscht; „Genauer Zeitraum“ für Minuten. Das Zentrum nutzt sie zur Zuweisung der Missionen.',
-    'Elegir una categoría en la paleta y luego hacer clic en una celda o trazar un rectángulo (horas UTC); un segundo clic borra; «Intervalo preciso» para minutos. El Centro lo usa para asignar las misiones.'
+  ['Choisir une catégorie dans la palette, puis cliquer sur une case ou tracer un rectangle (heures UTC) ; un second clic efface ; « Plage précise » au quart d’heure. Le Centre s’en sert pour affecter les missions.',
+    'Pick a category in the palette, then click a cell or draw a rectangle (UTC hours); a second click clears; “Precise range” to the quarter hour. The Centre uses it to assign missions.',
+    'Eine Kategorie in der Palette wählen, dann eine Zelle anklicken oder ein Rechteck ziehen (UTC-Stunden); ein zweiter Klick löscht; „Genauer Zeitraum“ auf die Viertelstunde. Das Zentrum nutzt sie zur Zuweisung der Missionen.',
+    'Elegir una categoría en la paleta y luego hacer clic en una celda o trazar un rectángulo (horas UTC); un segundo clic borra; «Intervalo preciso» al cuarto de hora. El Centro lo usa para asignar las misiones.'
   ],
   ['Ancienne grille horaire (lecture seule)', 'Former hourly grid (read only)', 'Frühere Stundenrasterung (nur lesen)',
     'Antigua cuadrícula horaria (solo lectura)'

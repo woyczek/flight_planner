@@ -279,7 +279,7 @@ Catégories par défaut (le Centre peut modifier cette liste) :
 
 Une case partagée entre plusieurs catégories est rayée ; une heure couverte en partie (saisie au quart d'heure) est pâlie. Chaque retouche est enregistrée aussitôt.
 
-**« Plage précise »** (au quart d'heure, repliée : un clic sur son titre l'ouvre ; ouverte d'office au niveau Expert) : « Groupe », « Catégorie », cases des jours (Lun à Dim), « de » et « à » (UTC), puis « Ajouter ». Horaires vides = journée entière. Sous le formulaire, une ligne rappelle les thèmes de mission ouverts par la catégorie ; pour une catégorie personnalisée, le lien « Mes types de missions… » mène aux préférences de Mon profil.
+**« Plage précise »** (au quart d'heure, repliée : un clic sur son titre l'ouvre ; ouverte d'office au niveau Expert) : « Groupe », « Catégorie », cases des jours (Lun à Dim), « de » et « à » (UTC), puis « Ajouter ». Horaires vides = journée entière ; une heure saisie hors du quart d'heure est arrondie (le début au quart précédent, la fin au quart suivant) et le message le dit. Sous le formulaire, une ligne rappelle les thèmes de mission ouverts par la catégorie ; pour une catégorie personnalisée, le lien « Mes types de missions… » mène aux préférences de Mon profil.
 
 **Autres boutons**
 - « ⧉ Semaine précédente » : recopie les plages de la semaine précédente (remplace la semaine affichée, après confirmation).

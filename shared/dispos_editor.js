@@ -333,13 +333,19 @@
       };
     }
     /** Message d'erreur des horaires incohérents. */
-    const badSpan = () => msg(t(['Horaires incohérents : la fin doit suivre le début (UTC, au quart d’heure).',
-      'Inconsistent times: the end must follow the start (UTC, quarter hours).',
-      'Unstimmige Zeiten: Das Ende muss nach dem Beginn liegen (UTC, Viertelstunden).',
-      'Horarios incoherentes: el fin debe seguir al inicio (UTC, cuartos de hora).'
+    const badSpan = () => msg(t(['Horaires incohérents : la fin doit suivre le début (UTC).',
+      'Inconsistent times: the end must follow the start (UTC).',
+      'Unstimmige Zeiten: Das Ende muss nach dem Beginn liegen (UTC).',
+      'Horarios incoherentes: el fin debe seguir al inicio (UTC).'
     ]), 'err');
-    /** Vrai si l'horaire (facultatif) tombe sur un quart d'heure. */
-    const quarter = s => !s || mins(s) % 15 === 0;
+    /** Horaire (facultatif) ramené au quart d'heure : début au quart précédent, fin au quart suivant (le format des
+     *  disponibilités est au quart d'heure ; une saisie à la minute était refusée avec un message qui ne le disait pas). */
+    const toQuarter = (s, up) => {
+      if (!s) return s;
+      const m = mins(s),
+        q = up ? Math.ceil(m / 15) * 15 : Math.floor(m / 15) * 15;
+      return q === m ? s : hhmm(Math.min(q, 1440));
+    };
 
     // ---- grille heure par heure : couverture des heures par les plages, peinture d'un rectangle de cases
     const hhmm = m => m >= 1440 ? '24:00' : `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
@@ -516,10 +522,19 @@
         if (!days.length) return msg(t(['Cocher au moins un jour.', 'Tick at least one day.', 'Mindestens einen Tag ankreuzen.',
           'Marcar al menos un día.'
         ]), 'err');
-        const from = host.querySelector('[data-from]').value,
-          to = host.querySelector('[data-to]').value,
+        const from0 = host.querySelector('[data-from]').value,
+          to0 = host.querySelector('[data-to]').value,
+          from = toQuarter(from0, false),
+          to = toQuarter(to0, true),
           s = span(from, to);
-        if (!s || !quarter(from) || !quarter(to)) return badSpan();
+        if (!s) return badSpan();
+        const rounded = from !== from0 || to !== to0 ? tf([' Arrondi au quart d’heure : {a}–{b}.',
+          ' Rounded to the quarter hour: {a}–{b}.',
+          ' Auf die Viertelstunde gerundet: {a}–{b}.', ' Redondeado al cuarto de hora: {a}–{b}.'
+        ], {
+          a: from || '00:00',
+          b: to || '24:00'
+        }) : '';
         const mon = D.weekMonday(week);
         for (const j of days) {
           const day = isoDay(mon + j * 864e5);
@@ -532,7 +547,7 @@
           '{n} intervalo(s) añadido(s).'
         ], {
           n: days.length
-        }));
+        }) + rounded);
       }
       if (e.target.closest('[data-copy]')) {
         const key = docKey,

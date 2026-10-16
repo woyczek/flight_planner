@@ -123,6 +123,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Fixed
 
+- **Availability, "Precise range": a time off the quarter hour was refused with a misleading message** — "12:19 to
+  17:03" gave "inconsistent times" although the end followed the start: the stored format is to the quarter hour and
+  the form silently required it, while the block's subtitle promised "minutes". The start is now rounded down and the
+  end up to the quarter hour, the message says so, and the subtitle and manuals say "to the quarter hour".
 - **"Fill in the missing fields": a pasted answer found its sheet** — the answer was matched to the ticked sheets by
   the `id` only; a plain ChatGPT answer (no `id`, several code blocks) filled nothing and the message said "no value".
   The answer is now read like any ChatGPT answer, in the forms `{ sheets }`, `{ profiles }`, an array or a single

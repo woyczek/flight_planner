@@ -267,7 +267,7 @@ Categorías por defecto (el Centro puede modificar esta lista):
 
 Una casilla compartida entre varias categorías aparece rayada; una hora cubierta en parte (introducida por cuartos de hora) aparece atenuada. Cada retoque se guarda al instante.
 
-**«Intervalo preciso»** (por cuartos de hora, plegado: un clic en su título lo abre; abierto de entrada en el nivel Experto): «Grupo», «Categoría», casillas de los días (Lun a Dom), «de» y «a» (UTC) y, después, «Añadir». Horarios vacíos = día completo. Bajo el formulario, una línea recuerda los temas de misión que abre la categoría; para una categoría personalizada, el enlace «Mis tipos de misión…» lleva a las preferencias de Mi perfil.
+**«Intervalo preciso»** (por cuartos de hora, plegado: un clic en su título lo abre; abierto de entrada en el nivel Experto): «Grupo», «Categoría», casillas de los días (Lun a Dom), «de» y «a» (UTC) y, después, «Añadir». Horarios vacíos = día completo; una hora introducida fuera del cuarto de hora se redondea (el inicio al cuarto anterior, el fin al siguiente) y el mensaje lo dice. Bajo el formulario, una línea recuerda los temas de misión que abre la categoría; para una categoría personalizada, el enlace «Mis tipos de misión…» lleva a las preferencias de Mi perfil.
 
 **Otros botones**
 - «⧉ Semana anterior»: copia los intervalos de la semana anterior (sustituye la semana mostrada, tras confirmación).

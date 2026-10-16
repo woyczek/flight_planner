@@ -267,7 +267,7 @@ Default categories (the Centre can change this list):
 
 A cell shared between several categories is striped; an hour partly covered (entered by the quarter hour) is faded. Each change is saved at once.
 
-**“Precise range”** (by the quarter hour, collapsed: a click on its title opens it; open from the start at the Expert level): “Group”, “Category”, day boxes (Mon to Sun), “from” and “to” (UTC), then “Add”. Empty times = whole day. Under the form, a line recalls the mission themes opened by the category; for a custom category, the “My mission types…” link leads to the preferences in My profile.
+**“Precise range”** (by the quarter hour, collapsed: a click on its title opens it; open from the start at the Expert level): “Group”, “Category”, day boxes (Mon to Sun), “from” and “to” (UTC), then “Add”. Empty times = whole day; a time entered off the quarter hour is rounded (the start down, the end up to the next quarter) and the message says so. Under the form, a line recalls the mission themes opened by the category; for a custom category, the “My mission types…” link leads to the preferences in My profile.
 
 **Other buttons**
 - “⧉ Previous week”: copies the ranges of the previous week (replaces the week shown, after confirmation).

@@ -267,7 +267,7 @@ Standardkategorien (das Zentrum kann diese Liste ändern):
 
 Ein Feld, das sich mehrere Kategorien teilen, ist schraffiert; eine teilweise belegte Stunde (Eingabe auf die Viertelstunde) ist blasser. Jede Änderung wird sofort gespeichert.
 
-**„Genauer Zeitraum“** (auf die Viertelstunde, zugeklappt: Ein Klick auf den Titel öffnet ihn; auf der Stufe Experte von Anfang an offen): „Gruppe“, „Kategorie“, Kästchen der Tage (Mo bis So), „von“ und „bis“ (UTC), dann „Hinzufügen“. Leere Uhrzeiten = ganzer Tag. Unter dem Formular zeigt eine Zeile die Missionsthemen, die die Kategorie öffnet; bei einer Kategorie nach Wahl führt der Link „Meine Missionsarten…“ zu den Einstellungen in Mein Profil.
+**„Genauer Zeitraum“** (auf die Viertelstunde, zugeklappt: Ein Klick auf den Titel öffnet ihn; auf der Stufe Experte von Anfang an offen): „Gruppe“, „Kategorie“, Kästchen der Tage (Mo bis So), „von“ und „bis“ (UTC), dann „Hinzufügen“. Leere Uhrzeiten = ganzer Tag; eine Uhrzeit außerhalb der Viertelstunde wird gerundet (Beginn auf die vorige, Ende auf die nächste Viertelstunde), und die Meldung sagt es. Unter dem Formular zeigt eine Zeile die Missionsthemen, die die Kategorie öffnet; bei einer Kategorie nach Wahl führt der Link „Meine Missionsarten…“ zu den Einstellungen in Mein Profil.
 
 **Weitere Knöpfe**
 - „⧉ Vorherige Woche“: übernimmt die Zeiträume der vorherigen Woche (ersetzt die angezeigte Woche, nach Bestätigung).
