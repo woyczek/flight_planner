@@ -190,6 +190,8 @@
     ["Aucun JSON chargé.", "No JSON loaded.", "Kein JSON geladen.", "Ningún JSON cargado."],
     ["Choisir l’avion", "Choose the aircraft", "Flugzeug wählen", "Elegir el avión"],
     ["Aucun profil actif.", "No active profile.", "Kein aktives Profil.", "Ningún perfil activo."],
+    ["Aucune fiche en cours.", "No sheet open.", "Kein Blatt geöffnet.", "Ninguna ficha abierta."],
+    ["Fiche enregistrée", "Sheet saved", "Blatt gespeichert", "Ficha guardada"],
     ["Recharger la base locale", "Reload the local database", "Lokale Datenbank neu laden", "Recargar la base local"],
     ["Modifications non enregistrées", "Unsaved changes", "Nicht gespeicherte Änderungen", "Cambios sin guardar"],
     ["Le profil courant a été modifié. Que veux-tu faire avant de changer d’avion ?",

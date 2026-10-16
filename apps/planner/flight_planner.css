@@ -1337,6 +1337,15 @@
   .sheet-bar .pp-mine {
     margin: 0
   }
+  .sheet-bar .pp-create {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap
+  }
+  .sheet-bar .pp-create[hidden] {
+    display: none
+  }
   .sheet-pick {
     display: inline-flex;
     align-items: center;

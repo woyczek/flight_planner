@@ -37,7 +37,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   In the header, an "Aircraft" selector, divided like Fuel's menu, that picks the sheet being edited and the ChatGPT
   panel's aircraft (a click on a table row too; several rows ticked: none); one bottom bar for the rest: the sheet's
   state with "Save the sheet" and "Discard changes", the actions on ticked rows and the sources (add, import, folder,
-  reread, SimBrief FPL); ChatGPT, search and sorting stay above the table. It shares its script and styles with Fuel
+  reread, SimBrief FPL); search, sorting and ChatGPT stay above the table. An aircraft without a sheet shows only
+  "none" in the table; choosing it (its row, or the selector) offers "Create the sheet" (SimBrief, ChatGPT, class
+  estimate) once, in the bottom bar. Notifications sit above the bottom bar. It shares its script and styles with Fuel
   (`apps/planner/flight_planner.js` / `.css`, moved out of the fuel page) and the same local database; a sheet saved
   on one page is picked up at once by the other one open in another tab. Fuel keeps its blocks during this step.
 - **My aircraft, one list with its performance side** — Settings › My profile › Aircraft and simulators ("My aircraft",

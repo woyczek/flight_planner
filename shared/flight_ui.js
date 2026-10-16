@@ -186,8 +186,20 @@
     status.innerHTML =
       '<span id="persistentStatus" class="status-text">Base locale prête.</span><button id="statusReload">Recharger la base locale</button><button id="statusSave" class="primary">Enregistrer le profil</button><button id="statusDelete">Supprimer cet avion</button>';
     if (sheetsPage) document.body.append(status)
-  } else if (window.ResizeObserver) new ResizeObserver(() => document.body.style.paddingBottom = `${status.offsetHeight + 8}px`).observe(
-    status);
+  } else if (window.ResizeObserver) {
+    // marge du bas et notifications (shared/app_framework.js) au-dessus de la barre, à sa hauteur ; règle dans une
+    // feuille à part (les designs réécrivent l'attribut style de <html>)
+    const rule = document.head.appendChild(document.createElement("style")),
+      fit = () => {
+        const h = status.offsetHeight;
+        if (h) rule.textContent = `body.has-status-bar{padding-bottom:${h + 8}px}body.has-status-bar .repo-notify{bottom:${h + 12}px}`
+      };
+    // tout de suite, au chargement, puis à chaque changement de taille de la barre (largeur, libellés, groupes affichés)
+    fit();
+    addEventListener("load", fit);
+    addEventListener("resize", fit);
+    new ResizeObserver(fit).observe(status)
+  }
   // Texte et couleur de la barre d'état selon le profil actif et profileDirty ; appelée par la page après chaque modification.
   window.updateProfileStatus = () => {
     status.classList.toggle("dirty", profileDirty);
@@ -196,7 +208,8 @@
       $("statusReload").disabled = !profileDirty;
       $("statusSave").disabled = !active
     }
-    $("persistentStatus").textContent = !active ? "Aucun profil actif." : profileDirty ? `Modifications non enregistrées — ${active.name||active.id}` : `Profil enregistré — ${active.name||active.id}`
+    $("persistentStatus").textContent = !active ? (typeof noSheetStatus === "function" && noSheetStatus() || "Aucune fiche en cours.") :
+      profileDirty ? `Modifications non enregistrées — ${active.name||active.id}` : `Fiche enregistrée — ${active.name||active.id}`
   };
   // Profil d'appareil : enregistrement, rechargement, changement avec confirmation.
   // Enregistre le profil actif : saisies de l'éditeur reportées, copie rangée dans state.profiles, instantané « enregistré » mis à jour, stockage écrit.

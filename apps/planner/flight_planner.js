@@ -85,7 +85,8 @@ function renderSheetPick() {
   const esc = KIT.esc,
     entries = gptEntries(),
     byP = new Map(entries.map(x => [x.p, x])),
-    cur = active ? (state.profiles?.[active.id] ? "P:" : "L:") + active.id : "",
+    cur = active ? (state.profiles?.[active.id] ? "P:" : "L:") + active.id : ppNoSheet ? ppNoSheet.key || entries.find(x => x.landing &&
+      aircraftTypeKey(x.p.icao || x.p.type || x.id) === aircraftTypeKey(ppNoSheet.code)) && `L:${entries.find(x => x.landing && aircraftTypeKey(x.p.icao || x.p.type || x.id) === aircraftTypeKey(ppNoSheet.code)).id}` || `N:${ppNoSheet.code}` : "",
     option = x => `<option value="${esc((x.landing ? "L:" : "P:") + x.id)}">${esc(x.landing ? ktf(["{p} — aucune fiche", "{p} — no sheet", "{p} — kein Blatt", "{p} — sin ficha"], { p: x.p.name || x.id }) : `${x.p.name || x.id} (${x.p.type || x.p.icao || x.id})`)}</option>`,
     html = (cur ? "" : `<option value="">${esc(kt(["— choisir un appareil —", "— choose an aircraft —", "— Luftfahrzeug wählen —", "— elegir una aeronave —"]))}</option>`) + [...aircraftGroups(entries.map(x => x.p), true)].map(([label, items]) =>
       `<optgroup label="${esc(label)}">${items.map(([p]) => option(byP.get(p))).join("")}</optgroup>`).join("");
@@ -94,16 +95,23 @@ function renderSheetPick() {
     sel.innerHTML = html;
     sel.dataset.html = html
   }
-  // fiche active pas encore enregistrée (créée hors de la liste) : ajoutée en tête pour que le sélecteur la montre
+  // fiche active pas encore enregistrée (créée hors de la liste), appareil sans fiche hors de la flotte : ajouté en tête
+  // pour que le sélecteur le montre
   if (cur && ![...sel.options].some(o => o.value === cur)) {
-    sel.insertAdjacentHTML("afterbegin", `<option value="${esc(cur)}">${esc(active.name || active.id)}</option>`);
+    sel.insertAdjacentHTML("afterbegin", `<option value="${esc(cur)}">${esc(active ? active.name || active.id : ktf(["{p} — aucune fiche", "{p} — no sheet", "{p} — kein Blatt", "{p} — sin ficha"], { p: ppNoSheet.name }))}</option>`);
     sel.dataset.html = ""
   }
   sel.value = cur;
+  renderCreateGroup();
   sel.onchange = () => {
     const v = sel.value,
-      id = v.slice(2),
-      p = v.startsWith("L:") ? newProfileFromLanding(id) : state.profiles?.[id];
+      id = v.slice(2);
+    // type sans fiche : choisi tel quel, la barre du bas propose de créer sa fiche
+    if (v.startsWith("L:")) {
+      const x = entries.find(e => e.landing && e.id === id);
+      return x ? chooseNoSheet(x.p.icao || x.p.type || x.id, x.p.name || x.id, v) : renderSheetPick()
+    }
+    const p = state.profiles?.[id];
     if (!p) return renderSheetPick();
     if (window.requestAircraftSwitch) window.requestAircraftSwitch(p);
     else setActive(p, kt(["base de performances", "performance database", "Leistungsdatenbank", "base de rendimiento"]))
@@ -662,7 +670,9 @@ function setActive(p, source = "local") {
     id: active.id,
     landing: !state.profiles?.[active.id]
   }); // panneau ChatGPT ouvert : il suit l'appareil choisi
+  if (PERF_PAGE === "sheets") ppNoSheet = null; // une fiche ouverte : plus d'appareil sans fiche choisi
   if (!ppSelected.has(active.id) || ppSelected.size !== 1) ppSelectionFollowActive();
+  if (PERF_PAGE === "sheets") renderCreateGroup();
   try {
     calculate()
   } catch (e) {
@@ -3358,7 +3368,7 @@ function profileInfo(p) {
 }
 /** Libellés du bloc « Profils de performances » (titre, présentation, boutons et infobulles) ; écrits s'ils changent. */
 function perfProfilesLabels() {
-  setText("ppTitle", kt(["Profils de performances", "Performance profiles", "Leistungsprofile", "Perfiles de rendimiento"]));
+  setText("ppTitle", kt(["Fiches de performances", "Performance sheets", "Leistungsblätter", "Fichas de rendimiento"]));
   setText("ppIntro", kt([
     "La face performances de « Mes appareils » : mêmes appareils, même ordre, même nom ; pour chacun, d’où vient le profil, s’il a une cartographie moteur, ce qui lui manque. Le dossier performances est relu quand il change ailleurs (autre page, autre onglet).",
     "The performance side of “My aircraft”: same aircraft, same order, same name; for each, where the profile comes from, whether it has an engine map, what it lacks. The performance folder is reread when it changes elsewhere (another page or tab).",
@@ -3543,6 +3553,7 @@ function renderPerfProfiles() {
       // coche ou la décoche en gardant les autres (plusieurs cochées : aucun appareil choisi)
       const tr = e.target.closest("tr.pp-row");
       if (!tr || e.target.closest("input, a, button, select, textarea, label")) return;
+      if (tr.dataset.code) return chooseNoSheet(tr.dataset.code, tr.dataset.name); // appareil sans fiche
       if (e.ctrlKey || e.metaKey || e.shiftKey) ppSelected.has(tr.dataset.id) ? ppSelected.delete(tr.dataset.id) : ppSelected.add(tr
         .dataset.id);
       else ppSelected = new Set([tr.dataset.id]);
@@ -3608,10 +3619,9 @@ function renderPerfProfiles() {
     "Plafond", "Ceiling", "Gipfelhöhe", "Techo"
   ]), kt(["Manques", "Missing", "Fehlt", "Falta"])];
   /** Cellule « Performances » d'un appareil sans profil : « aucune » et les trois façons d'en créer un. */
-  const noneCell = r => {
-    const at = how => `data-pp-create="${how}" data-code="${esc(r.code)}" data-name="${esc(r.name)}"`;
-    return `<div class="pp-none">${esc(kt(["aucune", "none", "keine", "ninguno"]))}<div class="pp-acts">${simbriefRecordFor(r.code) ? `<button type="button" class="secondary" ${at("simbrief")}>${esc(kt(["Créer depuis SimBrief", "Create from SimBrief", "Aus SimBrief anlegen", "Crear desde SimBrief"]))}</button>` : ""}<button type="button" class="secondary" ${at("gpt")}>${esc(kt(["Demander à ChatGPT", "Ask ChatGPT", "ChatGPT fragen", "Preguntar a ChatGPT"]))}</button>${(window.AircraftCatalog?.classify?.(r.code)?.category || "other") !== "other" ? `<button type="button" class="secondary" ${at("estimate")}>${esc(kt(["Estimer par la classe", "Estimate from the class", "Aus der Klasse schätzen", "Estimar por la clase"]))}</button>` : ""}</div></div>`
-  };
+  /** Cellule « Performances » d'un appareil sans fiche : « aucune » (la création est proposée dans la barre du bas pour
+   *  l'appareil choisi). */
+  const noneCell = () => `<div class="pp-none">${esc(kt(["aucune", "none", "keine", "ninguna"]))}</div>`;
   /** Ligne d'un appareil. */
   const row = r => {
     const p = r.p,
@@ -3624,7 +3634,7 @@ function renderPerfProfiles() {
           "no está en «Mis aeronaves»"
         ]))
       }) || `<b>${esc(r.name)}</b>`;
-    if (!p) return `<tr><td></td><td>${nm}</td><td>${noneCell(r)}</td><td>—</td><td>—</td><td>—</td><td><span class="pp-missing">${esc(kt(["tout le profil", "the whole profile", "das ganze Profil", "todo el perfil"]))}</span></td></tr>`;
+    if (!p) return `<tr class="pp-row pp-nosheet${ppNoSheet && aircraftTypeKey(ppNoSheet.code) === aircraftTypeKey(r.code) ? " is-active" : ""}" data-code="${esc(r.code)}" data-name="${esc(r.name)}"><td></td><td>${nm}</td><td>${noneCell(r)}</td><td>—</td><td>—</td><td>—</td><td><span class="pp-missing">${esc(kt(["fiche vide", "empty sheet", "leeres Blatt", "ficha vacía"]))}</span></td></tr>`;
     const i = profileInfo(p),
       s = i.s,
       on = active?.id === p.id,
@@ -3805,6 +3815,51 @@ window.addEventListener("storage", e => {
 // Supprimer et fusionner retirent des profils de la base locale ; un profil retiré est noté (state.removedProfiles) pour
 // que la relecture du dossier performances ne le ramène pas (le fichier du dossier n'est jamais effacé ; un import
 // explicite du fichier le ramène). Chaque retrait propose « Annuler » pendant 10 s.
+let ppNoSheet = null; // Fiches de performances : appareil choisi qui n'a pas de fiche { code, name, key (option du sélecteur) }
+/** Fiches de performances : choisit un appareil sans fiche (ligne « aucune », ou sélecteur de l'en-tête) — plus de fiche
+ *  ouverte (confirmation si elle est modifiée) ; la barre du bas propose de créer sa fiche. */
+function chooseNoSheet(code, name, key = "") {
+  ppSelected.clear();
+  ppNoSheet = {
+    code,
+    name: name || code,
+    key
+  };
+  if (active && window.requestAircraftSwitch) window.requestAircraftSwitch(null);
+  else if (active) clearActive(kt(["Aucune fiche en cours", "No sheet open", "Kein Blatt geöffnet", "Ninguna ficha abierta"]));
+  else {
+    renderSheetPick();
+    renderPerfProfilesSoon();
+    window.updateProfileStatus?.()
+  }
+}
+/** Texte d'état de la barre du bas quand aucune fiche n'est ouverte : « Pas de fiche pour … » (appareil sans fiche
+ *  choisi), sinon vide. Lu par shared/flight_ui.js. */
+function noSheetStatus() {
+  return ppNoSheet ? ktf(["Pas de fiche pour {n}", "No sheet for {n}", "Kein Blatt für {n}", "Ninguna ficha para {n}"], {
+    n: ppNoSheet.name
+  }) : ""
+}
+/** Barre du bas : « Créer la fiche : depuis SimBrief · ChatGPT · estimée par la classe » pour l'appareil choisi sans
+ *  fiche (SimBrief : type connu ; estimation : type classé) ; masqué sinon. */
+function renderCreateGroup() {
+  const box = document.getElementById("ppCreate");
+  if (!box) return;
+  box.hidden = !ppNoSheet;
+  if (!ppNoSheet) return box.innerHTML = "";
+  const esc = KIT.esc,
+    {
+      code,
+      name
+    } = ppNoSheet,
+    at = how => `data-pp-create="${how}" data-code="${esc(code)}" data-name="${esc(name)}"`,
+    html = `<span class="mut">${esc(kt(["Créer la fiche :", "Create the sheet:", "Blatt anlegen:", "Crear la ficha:"]))}</span>${simbriefRecordFor(code) ? `<button type="button" class="primary" ${at("simbrief")}>${esc(kt(["depuis SimBrief", "from SimBrief", "aus SimBrief", "desde SimBrief"]))}</button>` : ""}<button type="button" class="secondary" ${at("gpt")}>${esc(kt(["Demander à ChatGPT", "Ask ChatGPT", "ChatGPT fragen", "Preguntar a ChatGPT"]))}</button>${(window.AircraftCatalog?.classify?.(code)?.category || "other") !== "other" ? `<button type="button" class="secondary" ${at("estimate")}>${esc(kt(["Estimer par la classe", "Estimate from the class", "Aus der Klasse schätzen", "Estimar por la clase"]))}</button>` : ""}`;
+  if (box.innerHTML !== html) box.innerHTML = html;
+  box.onclick = e => {
+    const b = e.target.closest("[data-pp-create]");
+    if (b) perfCreate(b.dataset.code, b.dataset.name, b.dataset.ppCreate)
+  }
+}
 let ppSelected = new Set(); // profils cochés (identifiants) : un seul = l'appareil choisi ; plusieurs = fusion, export…
 /** Fiches de performances : une seule ligne cochée = cet appareil choisi (fiche modifiée, panneau ChatGPT) ; aucune ou
  *  plusieurs = aucun appareil choisi. Changement confirmé si la fiche ouverte est modifiée (shared/flight_ui.js). */
@@ -3821,6 +3876,7 @@ function ppApplySelection() {
  *  confirmation, fiche créée ou importée). */
 function ppSelectionFollowActive() {
   if (PERF_PAGE !== "sheets") return;
+  if (active) ppNoSheet = null;
   ppSelected.clear();
   if (active && state.profiles?.[active.id]) ppSelected.add(active.id);
   renderPerfProfilesSoon()
