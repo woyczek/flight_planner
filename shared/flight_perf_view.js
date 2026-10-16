@@ -1893,7 +1893,9 @@
     }
   };
   /** Bascule « par altitude ↔ par régime » de la rangée de montée (#climbX) : boutons créés une fois, libellés et état
-   *  écrits seulement s'ils changent ; un clic redessine les courbes (sans recalcul du cache). */
+   *  écrits seulement s'ils changent ; un clic redessine le graphe de montée, cache des lois optimales construit s'il
+   *  manque (il est vidé quand la fiche change, par exemple relue depuis la page des Fiches : la bascule restait sans
+   *  effet jusqu'au prochain calcul). */
   function mountClimbX() {
     const box = $("climbX");
     if (!box) return;
@@ -1908,7 +1910,7 @@
           localStorage.setItem("fpClimbX", b.dataset.x);
         } catch {}
         mountClimbX(); // bouton enfoncé : le choix fait
-        if (S.m && S.c && curvesShown() && S.cache) drawClimbChart(S.m, S.c, S.cache);
+        if (S.m && S.c && curvesShown()) drawClimbChart(S.m, S.c, S.cache ||= buildCache(S.m, S.c));
       });
     }
     put(box, "hidden", !hasEngineMap());

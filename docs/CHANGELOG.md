@@ -97,6 +97,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Fixed
 
+- **Fuel: "by altitude / by engine setting" toggle without effect** — the climb chart toggle did nothing once the
+  sheet had changed under the page (reread from the Performance sheets page, new sheet chosen) until the next
+  calculation, because the cached optimum laws had been cleared. The toggle now rebuilds that cache when it is missing.
 - **Fuel: all the profiles of an aircraft on its row** — an aircraft of "My aircraft" took only the first profile of
   its type; its other profiles were listed apart as "not in My aircraft", and a profile whose codes the base did not
   know (an X-Plane or Little Navmap file named "Ecureuil AS350 B3" without a type) was never attached, leaving the
