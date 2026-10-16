@@ -3629,7 +3629,7 @@ function renderPerfProfiles() {
           "no está en «Mis aeronaves»"
         ]))
       }) || `<b>${esc(r.name)}</b>`;
-    if (!p) return `<tr class="pp-row pp-nosheet${ppNoSheet && aircraftTypeKey(ppNoSheet.code) === aircraftTypeKey(r.code) ? " is-active" : ""}" data-code="${esc(r.code)}" data-name="${esc(r.name)}"><td></td><td>${nm}</td><td>${noneCell(r)}</td><td>—</td><td>—</td><td>—</td><td><span class="pp-missing">${esc(kt(["fiche vide", "empty sheet", "leeres Blatt", "ficha vacía"]))}</span></td></tr>`;
+    if (!p) return `<tr class="pp-row pp-nosheet${ppNoSheet && aircraftTypeKey(ppNoSheet.code) === aircraftTypeKey(r.code) ? " is-active" : ""}" data-code="${esc(r.code)}" data-name="${esc(r.name)}"><td></td><td>${nm}</td><td>${noneCell(r)}</td><td>—</td><td>—</td><td>—</td><td class="mut">—</td></tr>`;
     const i = profileInfo(p),
       s = i.s,
       on = active?.id === p.id,
