@@ -261,9 +261,9 @@ The repeating period box lays one category over a date span:
 
 ```text
 DisposTimeline.mount(host, {
-  config, week, data, lang, labels, t, density, onChange, store
+  config, week, data, lang, labels, t, density, help, onChange, store
 }) → api
-api: get(), set(data), week(id?), brush(id?), clear(), undo(), redo(), history(), destroy()
+api: get(), set(data), replace(data), week(id?), brush(id?), clear(), undo(), redo(), history(), destroy()
 ```
 
 ### 6.1 `mount` options
@@ -273,6 +273,12 @@ api: get(), set(data), week(id?), brush(id?), clear(), undo(), redo(), history()
 - `data`: schema 3 data for that week.
 - `lang`: the locale of dates and day names, through `Intl`. Default: `en`.
 - `density`: `compact` (default) or `comfortable` (section 4).
+- `help`: `true` (default), `"collapsed"` or `false`. It controls the "How to use" panel under the grid, open,
+  folded or absent. The panel holds one short paragraph per idea, in the order of use: the two layers and the one
+  state per minute; the palette, which says what to draw; drawing; taking a shape; cutting; drops and double-clicks;
+  correcting; the repeating period; what is saved. Its texts are labels like any other: `help.title`, then
+  `help.layers`, `help.palette`, `help.draw`, `help.grab`, `help.cut`, `help.drop`, `help.fix`, `help.period` and
+  `help.saved`.
 - `labels` and `t`: the texts (section 6.4).
 - `onChange(data)`: called with schema 3 data after every change.
 - `store: { read(week) → data | null, write(data) }`: used by the repeating period for weeks other than the one
@@ -280,7 +286,9 @@ api: get(), set(data), week(id?), brush(id?), clear(), undo(), redo(), history()
 
 ### 6.2 Methods
 
-- `get()` returns the data of the week shown. `set(data)` replaces it, without a history step.
+- `get()` returns the data of the week shown. `set(data)` replaces it, without a history step: use it to load.
+- `replace(data)` replaces it as one history step, which can be undone: use it to import. It returns false and
+  changes nothing when the data belongs to another week.
 - `week(id)` shows another week, empty, and fires `dispos-week`. The host then loads that week with `set`.
 - `week()` without an argument returns the week shown.
 - `brush(id)` sets the brush. `clear()` empties the week, as one history step.

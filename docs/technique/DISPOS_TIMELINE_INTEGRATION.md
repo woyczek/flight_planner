@@ -29,6 +29,8 @@ the component's code unchanged: anything the page needs comes through its option
   short rectangles show their letter only; their times are in the hover text.
 - Do not style the component's inner classes (`dt-…`). Use the CSS variables (section 6) instead.
 - The page keeps its own controls outside the container: person picker, Undo / Redo buttons, Clear, Save.
+- The component shows a "How to use" panel under the grid. Choose it with the `help` option: `true` (open), `"collapsed"`
+  (folded; good for a page people use every week) or `false` (none, when the page has its own help).
 
 ## 3. Minimal configuration
 
@@ -50,6 +52,9 @@ The component never stores anything itself. It hands the data to the page, one p
 - **Load**: before mounting, read the week's data and pass it as `data`. When the person or the week changes, read the
   new data and call `api.set(data)`. The component fires `dispos-week` when the person browses weeks with its own
   buttons: listen to it, read that week, then call `set`.
+- **Import**: to replace the week with data the person pasted or picked, call `api.replace(data)`. It is one history
+  step, so Ctrl+Z undoes it. Data of another week: call `api.week(id)` first, and let the `dispos-week` handler load
+  that week.
 - **Save**: `onChange(data)` and the `dispos-change` event fire after every change, with the whole week. Save it there.
   Debounce the save when it goes over the network; the component does not wait for it.
 - **Other weeks**: the repeating period box can reach weeks other than the one shown. Pass `store: { read(week),
@@ -73,7 +78,8 @@ The component never stores anything itself. It hands the data to the page, one p
   - after reading, `DisposFormats.read(name, json, { config })`;
   - before writing, `DisposFormats.write(name, data, { config, base })`, where `base` is the stored document, whose
     other fields are kept.
-- The X-Plane Web Suite weekly declaration is the `schema2` format. For any other format, register a reader and a
+- The X-Plane Web Suite weekly declaration is the `schema2` format. The example page (`example.html`) registers a
+  third one, `flat`, to show how: one line per range and per day, `{ day, start, end, category }`. For any other format, register a reader and a
   writer once with `DisposFormats.register(name, { read, write })`.
   - `read` returns schema 3 data for one week; `write` takes schema 3 data and returns the page's JSON.
   - Build them on `DisposTimeline.model` (for example `model.toData` and `model.fromData`) rather than rewriting the

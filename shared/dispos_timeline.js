@@ -16,8 +16,8 @@
   // shared/dispos_formats.js.
   // Textes : anglais par défaut (DEFAULT_LABELS) ; la page traduit par labels { clé: texte } ou t(clé, défaut), y compris
   // les catégories (« cat.<id> ») et les groupes (« group.<id> ») ; dates et jours par Intl dans la langue lang.
-  // API (window.DisposTimeline) : mount(hôte, { config, week, data, lang, labels, t, onChange(data), store }) →
-  //   { get(), set(data), week(id), brush(id), clear(), undo(), redo(), history(), destroy() } ; événements sur l'hôte :
+  // API (window.DisposTimeline) : mount(hôte, { config, week, data, lang, labels, t, density, help, onChange(data),
+  //   store }) → { get(), set(data), replace(data), week(id), brush(id), clear(), undo(), redo(), history(), destroy() } ; événements sur l'hôte :
   //   dispos-change (detail : données), dispos-select (detail : plage { start, end, cat } ou null), dispos-week,
   //   dispos-history ; DEFAULT_CONFIG, DEFAULT_LABELS, weekId(date), weekMonday(id), addWeek(id, n), model (fonctions
   //   du modèle, pour les formats).
@@ -327,6 +327,7 @@ padding:0 6px;overflow:hidden;white-space:nowrap;font-size:11.5px;cursor:grab;bo
 .dt-period{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:center;font-size:13px}.dt-period label{display:inline-flex;gap:5px;align-items:center}
 .dt-period .dt-days label{gap:2px}.dt-period input,.dt-period select{font:inherit;padding:3px 5px}
 .dt-help{font-size:12px;opacity:.75;margin:0}
+.dt-helpbox{font-size:12.5px;line-height:1.45}.dt-helpbox>summary{cursor:pointer;font-weight:600}.dt-helpbox p{margin:6px 0 0;max-width:72em}
 .dt-compact{gap:6px;font-size:12px}.dt-compact .dt-nav button{font-size:12px;padding:1px 7px}.dt-compact .dt-nav b{font-size:12.5px}
 .dt-compact .dt-pal{gap:3px 6px}.dt-compact .dt-pal-g{font-size:10.5px;opacity:.85;text-align:left;white-space:nowrap}.dt-compact .dt-pal-r{gap:2px}
 .dt-compact .dt-brush{gap:0;padding:0 3px;border:1px solid #0000004d;background:var(--c);color:var(--k);font:400 9.5px/1.45 system-ui,sans-serif;white-space:nowrap}
@@ -342,11 +343,15 @@ padding:0 6px;overflow:hidden;white-space:nowrap;font-size:11.5px;cursor:grab;bo
 .dt-compact .dt-h{width:5px}.dt-compact .dt-x{top:0;right:7px;font:9px/11px system-ui;padding:0 3px}
 .dt-compact .dt-bg .dt-lt,.dt-compact .dt-box span{font-size:10px;padding:1px 4px}
 .dt-compact .dt-period{gap:4px 10px;font-size:11.5px}.dt-compact .dt-period input,.dt-compact .dt-period select{padding:1px 4px}
-.dt-compact .dt-pd>summary{font-size:11.5px;cursor:pointer}.dt-compact .dt-help{font-size:11px}`;
+.dt-compact .dt-pd>summary{font-size:11.5px;cursor:pointer}.dt-compact .dt-help{font-size:11px}.dt-compact .dt-helpbox{font-size:12px}`;
     document.head.append(st);
   }
   /** Textes par défaut (anglais) ; {nom} : valeur insérée. Clés en plus, sans défaut ici : « cat.<id> » et
    *  « group.<id> » (libellés de la configuration). */
+  /** Paragraphes de l'aide, dans l'ordre d'usage (option help). */
+  const HELP_KEYS = ['help.layers', 'help.palette', 'help.draw', 'help.grab', 'help.cut', 'help.drop', 'help.fix', 'help.period',
+    'help.saved'
+  ];
   const DEFAULT_LABELS = {
     'nav.prev': '‹',
     'nav.today': 'This week',
@@ -375,7 +380,16 @@ padding:0 6px;overflow:hidden;white-space:nowrap;font-size:11.5px;cursor:grab;bo
     'hover.days': 'from {day} {from} to {day2} {to}: {name}',
     box: '{label} {from}–{to}, {day} → {day2}',
     delete: 'Delete',
-    help: 'A gesture that starts on a shape (availability or background band) takes it, whatever the brush: click selects it (Delete, ← → 5 min, ↑ ↓ one day, Escape; long press with a finger), drag moves it (5 min steps; to another row: same times, another day), its edges resize it; Shift+drag draws over it (on a day covered by a background band, this is how to draw an availability). A gesture that starts beside the shapes (empty space, gutter between rows) draws with the brush, which only says what to draw: one shape, or across several rows a selection rectangle setting the same hours on each day it crosses; a background drawn through an availability cuts it. Palette: click, brush; entry dropped on an availability or a background band: changes its nature over its extent (background entry on an availability: replaced by that background; availability entry on a band: a rectangle in its place); on the empty part of a row or on the day name: whole day (a background entry changes only the background, availabilities stay); double-click on a background entry: background of the week. Double-click on a band (or on the row, with a background brush): replaces the background of the day, availabilities stay. Ctrl+Z undoes, Ctrl+Y or Ctrl+Shift+Z redoes. One state per minute: under an availability the background does not count, but it stays in place (availability moved or deleted: the background comes back); time with nothing: unavailable by default.'
+    'help.title': 'How to use',
+    'help.layers': 'Two layers. The background gives the nature of an unavailability (unavailable, leave, rest, real-life activity): colour only, full row height. The first layer holds the availabilities, exercises and busy times: rectangles with a letter and their times. A minute has one state only: where a rectangle lies, the background under it does not count, but it stays in place and comes back when the rectangle moves away.',
+    'help.palette': 'The palette. Click a chip to choose the brush: it only says what the next drawing will be. Background chips are on the last line.',
+    'help.draw': 'Draw. Drag on empty space or in the gap between two rows: the shape snaps to the half hour. Across several days, a selection rectangle lays the same hours on each day it crosses.',
+    'help.grab': 'Take a shape. A gesture that starts on a shape, rectangle or band, takes it whatever the brush: a click selects it, a drag moves it (5 min steps; up or down: same times, another day), its edges resize it. Shift+drag draws over it instead, which is how to draw an availability on a day already covered by a band.',
+    'help.cut': 'Cut. The last shape wins: a rectangle drawn over another cuts it, and a background drawn through a rectangle cuts it too. The cut shows while you drag.',
+    'help.drop': 'Drop and double-click. Drag a chip onto a shape: the shape takes that nature. Drop it on the empty part of a row or on the day name: the whole day, and a background chip then changes only the background, rectangles stay. Double-click a band: its colour becomes the background of the whole day; double-click a background chip: of the whole week.',
+    'help.fix': 'Correct. ✕ on a shape, or Delete on the selection, removes it; the arrow keys move it (← → 5 min, ↑ ↓ one day); Escape clears the selection. Ctrl+Z undoes, Ctrl+Y or Ctrl+Shift+Z redoes.',
+    'help.period': 'Repeating period. The box above the grid lays one category on chosen weekdays between two dates, at the same times, across several weeks. Empty times mean the whole day; an end before the start runs into the next day.',
+    'help.saved': 'What is saved. Times are in UTC, weeks are ISO weeks (Monday to Sunday). Each week is one JSON document: its ranges are the declaration, one state per minute; time with nothing is unavailable.'
   };
 
   /** Monte le composant dans host. opts : { config, week, data (schema 3), lang (dates et jours, Intl ; défaut « en »),
@@ -389,6 +403,7 @@ padding:0 6px;overflow:hidden;white-space:nowrap;font-size:11.5px;cursor:grab;bo
     labels = {},
     t = null,
     density = 'compact',
+    help = true,
     onChange = null,
     store = null
   } = {}) {
@@ -451,7 +466,7 @@ padding:0 6px;overflow:hidden;white-space:nowrap;font-size:11.5px;cursor:grab;bo
         <label>${esc(txt('period.timeFrom'))} <input type="time" step="300" data-p-s></label><label>${esc(txt('period.timeTo'))} <input type="time" step="300" data-p-e></label>
         <button type="button" data-p-add>${esc(txt('period.add'))}</button><span class="dt-help" data-p-msg>${esc(txt('period.hint'))}</span></div></details>
       <div class="dt-grid" data-grid></div>
-      <p class="dt-help">${esc(txt('help'))}</p></div>`;
+      ${help ? `<details class="dt-helpbox"${help === 'collapsed' ? '' : ' open'}><summary>${esc(txt('help.title'))}</summary>${HELP_KEYS.map(k => `<p>${esc(txt(k))}</p>`).join('')}</details>` : ''}</div>`;
     const grid = host.querySelector('[data-grid]');
     const cur = () => preview || state;
     /** Données changées : onChange et événement dispos-change. */
@@ -1132,6 +1147,14 @@ padding:0 6px;overflow:hidden;white-space:nowrap;font-size:11.5px;cursor:grab;bo
       undo: () => restore('undo', 'redo'),
       /** Rétablit le dernier geste annulé (false : rien à rétablir). */
       redo: () => restore('redo', 'undo'),
+      /** Remplace les données de la semaine affichée par un geste qui s'annule (import) ; données d'une autre semaine :
+       *  false, rien n'est changé. */
+      replace(d) {
+        if (d?.week && d.week !== state.week) return false;
+        state.sel = null;
+        commit(fromData(d, state.week, config));
+        return true;
+      },
       /** Vide la semaine affichée (un geste : il s'annule). */
       clear() {
         state.sel = null;

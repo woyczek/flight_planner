@@ -27,7 +27,8 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
     the whole day, and a background entry then changes only the background. Double-clicks replace the background of
     a day or of the week, never removing an availability.
   - Keyboard, long press, undo history (Ctrl+Z / Ctrl+Y, 50 steps per week), repeating period box across weeks, hover
-    text giving the visible range.
+    text giving the visible range. A "How to use" panel (option `help`: open, `"collapsed"` or off) explains it in
+    nine short paragraphs, in the order of use; `replace(data)` imports a week as one step that can be undone.
   - Two densities, a mount option that changes sizes only. `compact`, the default, has the look of the former cell
     grid: rows of 22 px, hour cells with the hours 0–23 above them, "Mon 12/10" day labels, and palette chips such as
     "O For anything" on four lines (Available, Exercise, Busy, Unavailable); still one letter per rectangle, with
@@ -39,7 +40,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   - Native format schema 3 (`ranges` is the declaration, the truth; `background` is an editing convenience a reader
     can ignore). `DisposFormats` reads and writes schema 3 and the suite's schema 2, and takes new formats through
     `register`.
-  - `labs/dispos_timeline.html` is its example page (French through `labels`, localStorage). Two prompts:
+  - `labs/dispos_timeline.html` is its example page (French through `labels`, localStorage). It has a density
+    switch, and its data panel offers every registered format: schema 3, schema 2, and a demonstration format `flat`
+    registered by the page. For the chosen format it shows the JSON, live, with "Copy" and a paste-and-import box. Two prompts:
     `docs/technique/DISPOS_TIMELINE_SPEC.md` (full description, to regenerate it) and
     `docs/technique/DISPOS_TIMELINE_INTEGRATION.md` (to put it into another single-page HTML application).
 - **Delivery: module packages** — `tools/publish_dist.py` also builds `dist/dispos-module-<version>.zip` (both scripts,
