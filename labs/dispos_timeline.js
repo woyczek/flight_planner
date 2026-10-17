@@ -10,8 +10,9 @@
   //     croix au survol, appui long au doigt ;
   //   · tracé sur plusieurs rangées : un rectangle de sélection (comme dans un logiciel de dessin), la même plage horaire
   //     posée sur chaque jour couvert, fond ou dispos ;
-  //   · palette : entrée glissée sur un jour : journée entière ; sur une dispo : elle change de nature (entrée de fond :
-  //     remplacée par ce fond sur son étendue) ;
+  //   · palette : entrée glissée sur une dispo ou une bande de fond : elle en change la nature, sur son étendue (entrée
+  //     de fond sur une dispo : remplacée par ce fond ; entrée de dispo sur une bande : un rectangle à sa place) ; sur le
+  //     vide d'une rangée ou le nom du jour : journée entière ;
   //   · historique par semaine affichée, 50 pas, un par geste : Ctrl+Z, Ctrl+Y / Ctrl+Maj+Z, undo() / redo() ;
   //   · une minute a UN état : là où une dispo est posée, le fond ne compte pas (export, survol) ; il reste pourtant en
   //     place dessous, si bien qu'une dispo déplacée ou effacée rend le fond choisi ; une non-disponibilité posée sur une
@@ -390,7 +391,7 @@
 .dt-row{position:relative;height:44px;border:1px solid #0002;touch-action:none;cursor:crosshair;
 background:repeating-linear-gradient(90deg,#0000 0,#0000 calc(100%/48 - 1px),#00000010 calc(100%/48 - 1px),#00000010 calc(100%/48)),
 repeating-linear-gradient(90deg,#0000 0,#0000 calc(100%/24 - 1px),#00000030 calc(100%/24 - 1px),#00000030 calc(100%/24)),#fafafa}
-.dt-row.drop,.dt-fg.drop{outline:2px dashed #1d6fd8;outline-offset:1px}
+.dt-row.drop,.dt-fg.drop{outline:2px dashed #1d6fd8;outline-offset:1px}.dt-bg.drop{outline:2px dashed #1d6fd8;outline-offset:-2px;z-index:1}
 .dt-box{position:absolute;border:2px solid #1d6fd8;background:#1d6fd81f;pointer-events:none;z-index:4;box-sizing:border-box}
 .dt-box span{position:absolute;left:4px;top:2px;background:#1d6fd8;color:#fff;font:600 11px/1.3 system-ui;padding:1px 5px;white-space:nowrap}
 .dt-bg{position:absolute;top:0;bottom:0;opacity:.85}
@@ -451,7 +452,7 @@ padding:0 6px;overflow:hidden;white-space:nowrap;font-size:11.5px;cursor:grab;bo
         <label>de <input type="time" step="300" data-p-s></label><label>à <input type="time" step="300" data-p-e></label>
         <button type="button" data-p-add>Ajouter</button><span class="dt-help" data-p-msg>Horaires vides : journée entière. Fin avant le début : jusqu'au lendemain.</span></div></details>
       <div class="dt-grid" data-grid></div>
-      <p class="dt-help">Glisser sur du vide : tracer (fond, couleur seule, ou dispo, rectangle) ; sur plusieurs rangées, un rectangle de sélection pose les mêmes heures sur chaque jour couvert. Dispos : glisser le corps pour déplacer (pas de 5 min ; vers une autre rangée : même horaire, autre jour), les bords pour ajuster ; Maj+glisser sur une dispo : tracer par-dessus (découpe) ; avec un pinceau de fond, le tracé découpe les dispos en direct ; clic : sélection (Suppr, ← → 5 min, ↑ ↓ un jour, Échap) ; appui long au doigt : sélection. Palette : clic, pinceau ; entrée glissée sur un jour : journée entière ; sur une dispo : elle change de nature (entrée de fond : remplacée par ce fond) ; double-clic sur une entrée de fond : fond de la semaine. Double-clic sur une bande (ou sur la rangée, pinceau de fond) : remplace le fond du jour. Ctrl+Z annule, Ctrl+Y ou Ctrl+Maj+Z rétablit. Une minute a un seul état : sous une dispo, le fond ne compte pas, mais il reste en place (dispo déplacée ou effacée : le fond revient) ; une non-disponibilité posée sur une dispo la découpe ; temps sans rien : indisponible par défaut, et un jour vide s'exporte « indisponible » toute la journée.</p></div>`;
+      <p class="dt-help">Glisser sur du vide : tracer (fond, couleur seule, ou dispo, rectangle) ; sur plusieurs rangées, un rectangle de sélection pose les mêmes heures sur chaque jour couvert. Dispos : glisser le corps pour déplacer (pas de 5 min ; vers une autre rangée : même horaire, autre jour), les bords pour ajuster ; Maj+glisser sur une dispo : tracer par-dessus (découpe) ; avec un pinceau de fond, le tracé découpe les dispos en direct ; clic : sélection (Suppr, ← → 5 min, ↑ ↓ un jour, Échap) ; appui long au doigt : sélection. Palette : clic, pinceau ; entrée glissée sur une dispo ou une bande de fond : elle en change la nature, sur son étendue (entrée de fond sur une dispo : remplacée par ce fond ; entrée de dispo sur une bande : un rectangle à sa place) ; sur le vide d'une rangée ou sur le nom du jour : journée entière ; double-clic sur une entrée de fond : fond de la semaine. Double-clic sur une bande (ou sur la rangée, pinceau de fond) : remplace le fond du jour. Ctrl+Z annule, Ctrl+Y ou Ctrl+Maj+Z rétablit. Une minute a un seul état : sous une dispo, le fond ne compte pas, mais il reste en place (dispo déplacée ou effacée : le fond revient) ; une non-disponibilité posée sur une dispo la découpe ; temps sans rien : indisponible par défaut, et un jour vide s'exporte « indisponible » toute la journée.</p></div>`;
     const grid = host.querySelector('[data-grid]');
     const cur = () => preview || state;
     const emit = () => onChange?.(toData(state));
@@ -523,7 +524,7 @@ padding:0 6px;overflow:hidden;white-space:nowrap;font-size:11.5px;cursor:grab;bo
           // vrai rectangle : heure de début à gauche, type au centre, heure de fin à droite
           return `<div class="dt-fg${r === state.sel ? ' sel' : ''}${lv ? ' live' : ''}" data-f="${st.fg.indexOf(r)}" style="${seg(r)};background:${esc(c.color)};color:${ink(c.color)}"><span data-t>${first ? esc(hhmm(r.s)) : ''}</span><b>${esc(c.letter || '')}</b><span data-t>${last ? esc(hhmm(r.e, true)) : ''}</span>${first ? '<i class="dt-h l" data-h="l"></i>' : ''}${last ? '<i class="dt-h r" data-h="r"></i>' : ''}<button type="button" class="dt-x" data-x title="Effacer">✕</button></div>`;
         }).join('');
-        html += `<div class="dt-day">${DAYS[d]}<small>${new Date(mon + d * 864e5).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', timeZone: 'UTC' })}</small></div><div class="dt-row" data-d="${d}">${bg}${fg}</div>`;
+        html += `<div class="dt-day" data-d="${d}">${DAYS[d]}<small>${new Date(mon + d * 864e5).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', timeZone: 'UTC' })}</small></div><div class="dt-row" data-d="${d}">${bg}${fg}</div>`;
       }
       grid.innerHTML = html;
       // tracé sur plusieurs rangées : un seul rectangle de sélection par-dessus la grille, bornes aimantées
@@ -860,14 +861,28 @@ padding:0 6px;overflow:hidden;white-space:nowrap;font-size:11.5px;cursor:grab;bo
         }
       }
       if (!palDrag.moved) return;
-      const el = document.elementFromPoint(e.clientX, e.clientY),
-        row = el?.closest?.('.dt-row'),
-        target = row && (palDrag.id !== ERASE && el.closest('.dt-fg') || row);
+      const target = dropTarget(document.elementFromPoint(e.clientX, e.clientY), palDrag.id)?.el;
       grid.querySelectorAll('.drop').forEach(x => x !== target && x.classList.remove('drop'));
       if (target && !target.classList.contains('drop')) target.classList.add('drop');
     }
-    /** Lâcher d'une entrée de la palette : sur une dispo, elle change de nature (entrée de fond : remplacée par ce fond
-     *  sur son étendue) ; ailleurs dans un jour, la journée entière, fond ou dispo. */
+    /** Cible d'un dépôt de la palette : une dispo, une bande de fond (sa partie visible) ou le jour (vide de la rangée,
+     *  nom du jour : la rangée est encadrée) ; « Effacer le fond » vise une bande ou le jour. */
+    function dropTarget(at, id) {
+      const f = id !== ERASE && at?.closest?.('.dt-fg'),
+        b = !f && at?.closest?.('.dt-bg'),
+        day = at?.closest?.('.dt-row, .dt-day');
+      if (!day || !grid.contains(day)) return null;
+      const d = +day.dataset.d;
+      return {
+        el: f || b || grid.querySelector(`.dt-row[data-d="${d}"]`),
+        f,
+        b,
+        d
+      };
+    }
+    /** Lâcher d'une entrée de la palette : sur une dispo ou une bande de fond, elle en change la nature sur son étendue
+     *  (entrée de fond sur une dispo : remplacée par ce fond ; entrée de dispo sur une bande : un rectangle à sa place) ;
+     *  sur le jour, la journée entière, fond ou dispo. */
     function palEnd(e) {
       const p = palDrag;
       palDrag = null;
@@ -875,19 +890,18 @@ padding:0 6px;overflow:hidden;white-space:nowrap;font-size:11.5px;cursor:grab;bo
       if (!p.moved) return;
       p.el.dataset.dragged = '1'; // le clic qui suit ne change pas de pinceau
       setTimeout(() => delete p.el.dataset.dragged, 0);
-      const at = document.elementFromPoint(e.clientX, e.clientY),
-        row = at?.closest?.('.dt-row'),
-        f = p.id !== ERASE && at?.closest?.('.dt-fg');
-      if (!row) return;
-      if (f) {
-        const r = state.fg[+f.dataset.f];
-        state.sel = null;
+      const t = dropTarget(document.elementFromPoint(e.clientX, e.clientY), p.id);
+      if (!t) return;
+      state.sel = null;
+      if (t.b) return void commit(applyBrush(state, +t.b.dataset.s, +t.b.dataset.e, p.id));
+      if (t.f) {
+        const r = state.fg[+t.f.dataset.f];
         return void commit(isBg(p.id) ? applyBg(state, r.s, r.e, p.id) : {
           bg: state.bg,
           fg: paint(state.fg.filter(x => x !== r), r.s, r.e, p.id)
         });
       }
-      const day = +row.dataset.d * DAY;
+      const day = t.d * DAY;
       commit(applyBrush(state, day, day + DAY, p.id));
     }
     host.querySelector('.dt-nav').addEventListener('click', e => {

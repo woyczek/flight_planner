@@ -19,8 +19,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   time left, type centred, end time right), snapped to the half-hour, edges and moves by 5 min, moved to another row:
   same times, another day (↑ ↓ on a selection); Shift+drag on an availability draws over it. A drag across several
   rows draws a selection rectangle (as in a vector drawing program): the same time range on each day covered. A palette
-  entry dragged onto a day fills the whole day, onto an availability changes its nature (a background entry replaces
-  it with that background). Undo history per displayed week, 50 steps, one per gesture: Ctrl+Z, Ctrl+Y /
+  entry dropped onto an availability or a background band changes its nature over its extent (a background entry on
+  an availability replaces it with that background, an availability entry on a band puts a rectangle in its place);
+  onto the empty part of a row or the day name, it fills the whole day. Undo history per displayed week, 50 steps, one per gesture: Ctrl+Z, Ctrl+Y /
   Ctrl+Shift+Z, "Undo" / "Redo" buttons. One state per minute: under an availability the background does not count
   (export, hover), but it stays in place, so a moved or deleted availability gives back the chosen background; an
   unavailability laid over an availability cuts it; time with nothing is unavailable by default, and an empty day is
