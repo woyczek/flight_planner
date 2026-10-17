@@ -97,7 +97,21 @@
     onChange: d => save({
       ...d,
       pilot: tri()
-    })
+    }),
+    // période répétitive qui déborde de la semaine affichée : les autres semaines, lues et écrites ici
+    store: {
+      read: w => read(tri(), w),
+      write: d => {
+        try {
+          localStorage.setItem(key(tri(), d.week), JSON.stringify({
+            ...d,
+            pilot: tri()
+          }));
+        } catch (e) {
+          $('status').textContent = `non enregistré : ${e.message}`;
+        }
+      }
+    }
   });
   /** Charge la semaine affichée (changement de semaine ou de pilote). */
   const load = () => {

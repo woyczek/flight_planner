@@ -12,6 +12,24 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Added
 
+- **lab: availability timeline prototype** (`labs/dispos_timeline.html`, outside the suite) — continuous week axis
+  with two layers. Background, the nature of the unavailability (unavailable, leave, rest, real-life activity): bands,
+  colour only, over several days by dragging across rows, a whole day by dragging a palette entry onto it;
+  double-click replaces the background of the day (from the palette: of the week); "Erase background" brush.
+  Availabilities on top: square rectangles (start time left, type centred, end time right), snapped to the half-hour,
+  edges and moves by 5 min. One state per minute: under an availability the background does not count (export,
+  hover), but it stays in place, so a moved or deleted availability gives back the chosen background; an
+  unavailability laid over an availability cuts it; time with nothing is unavailable by default, and an empty day is
+  exported as unavailable all day. Hover gives the visible range ("Wednesday 14 October, 00:00 to 05:30:
+  Unavailable"); while dragging, the shape itself with its times. Repeating period box (category, dates, weekdays,
+  times, across weeks). Component JSON (schema 3: `ranges` without overlap, `background` as laid) with schema 2
+  readers / writers.
+- **Assignment: declared aircraft variants** — a pilot's declaration may list variants per ICAO designator
+  (`appareils.variantes`, e.g. `{ "CL2T": ["CL-415"] }`; editor by Features SOG). Qualification stays per designator
+  (never a block); among candidate aircraft and pilots, the matching variant comes first (fleet `variant` = declared
+  variant); a mismatch shows "different variant: CL-415 declared, CL-215T in the fleet" on the assignment card and in
+  the pilot's mission order (`aircraft.declared_variant`, *My missions*). Schema in
+  `docs/technique/DISPOS_ET_REORGANISATION.md` § 1.3 (`shared/assignments.js`, `shared/assign_dialog.js`, 4 languages).
 - **Performance sheets: one box per group, no gaps between boxes** — each group heading of the table (Helicopters,
   Turboprops…) has a box that ticks or unticks all its sheets, folded group included (indeterminate when part of it is
   ticked); the whole checkbox cell ticks or unticks its row, so a click that misses the box no longer replaces the
@@ -98,6 +116,33 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Changed
 
+- **Aircraft types: last duplicates** — the Poll-Schumann fuel model now resolves the type through the common
+  catalogue first (aliases followed: H145 → EC45); its `SYN` table is kept: it is not a name table but the nearby
+  reference aircraft its data give for an uncovered type (C-17 → B764). The Landing dashboard no longer redefines the
+  silhouette function of `AircraftDB/aircraft_icons.js`, which it overwrote.
+- **Aircraft categories: one set of names, wake category "L/M"** (Simplification decisions) — assignments said "Jet
+  aircraft", *My aircraft* "Jets": both now use `AircraftCatalog.categoryLabel` (Helicopters, Turboprops, Jets, Pistons,
+  Others; "Réacteurs" in French). Fuel planner and performance-sheet groups: "Pistons, 1 engine" and "Pistons, 2
+  engines or more" (names from `AircraftCatalog.groupLabel`, 4 languages). Wake category "L/M" (King Air 350, BE20, SW4)
+  is kept as given by ICAO: its icon has the size of M with a dashed outline, and the Landing dashboard orders it
+  between L and M instead of with the unknown ones.
+- **Aircraft type lookup factored into the shared framework** (second step) — about twenty places resolved a
+  designator from a code, alias or name on their own, most following only one alias (A4M → A400M, not to A400).
+  `AircraftCatalog.canonical` / `.record` / `.related` (with `codeOf` for free text) now do it for *My aircraft*,
+  Maintenance, first run, fleet reporting, the Fuel planner and performance sheets (APD, SimBrief, profile keys),
+  Landing, the CR, duration estimates and the fuel reference. The assignment fleet index uses the catalogue's usage
+  names (`USAGE`) instead of a drifted copy; only the fleet approximations stay local (C-130J requested → the fleet's
+  C-130H). `docs/technique/FRAMEWORK.md` § 11 bis.
+- **Aircraft type classification factored into the shared framework** — about a dozen pages each decoded the ICAO
+  description their own way (five category sets that disagreed on gyroplanes, tiltrotors, amphibians, airships).
+  `AircraftCatalog.record` / `.classify` / `.CATEGORIES` now give one answer (helicopters = H and gyroplanes; then by
+  power: jet, turboprop, piston; balloons, airships, electric and unknown: others; wing: rotary, amphibious, fixed),
+  used by the silhouettes and groups, assignments, *My aircraft*, the CR, duration estimates, the performance model,
+  Maintenance, the Fuel planner and the Landing dashboard; the catalogue is now loaded on the 7 pages that read the
+  type base without it (studio, Flight maps, generator, registry, ODV orders and planning, My missions). Fuel planner
+  groups: by power, then number of engines for pistons ("Multi-engine piston": the four-engine pistons — B-17, DC-6 —
+  leave "Others"), translated in four languages. "Estimate from the class" is offered only for a classified type.
+  Dead code removed (`shared/aircraft_icons.js`, unused Landing functions). `docs/technique/FRAMEWORK.md` § 11 bis.
 - **Fuel: the fuel plan only** (docs/technique/V2_FABLE.md § 13, step 2) — the sheet management moved to Performance
   sheets: the fuel page loses the "Performance profiles" block, the field editor, engine performance and RPM table,
   engine map, OFP calibration and audit, the ChatGPT panel, the "Performance folder" button, the sheet actions of the ☰
@@ -123,6 +168,38 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Fixed
 
+- **Local changes to the aircraft type base applied three different ways** — the catalogue merged them with
+  `Object.assign`, the CR replaced the whole base, Settings merged them type by type; Settings also compared the
+  changes with a base already modified in place, so they no longer showed. One rule now (Simplification decision):
+  `AircraftCatalog.effectiveData` — replace when made on this file, otherwise merge type by type and rewrite with the
+  file date; the catalogue applies it (`typesDb`) and keeps the file as served (`typesFile`) for Settings.
+  `docs/technique/FRAMEWORK.md` § 11 bis.
+- **My missions: mission order labels in French in every language** — "Assigned aircraft", "Callsign", "Departure
+  airfield", "Requested take-off" / "Ready at", "Status" and the "assigned" status are now translated at the source
+  (4 languages). Assignments: the generic crew post rule is documented (helicopter pilot if the common classification
+  says helicopter or gyroplane, aeroplane pilot otherwise, airships and electric aircraft included).
+- **Aircraft types: Goodyear GZ-20 airship shown as "B2P" and classed with piston aircraft** — "B2P" was Aviation
+  Fanatic's category (B = balloon) taken for an ICAO description. Balloons and airships (no ICAO class exists for them)
+  now have no description but their nature (`kind`: airship / balloon), engines and engine type; shown as "airship ·
+  non-ICAO: SHIP in a flight plan", class "airship, 2 piston engines (non-ICAO)" in Maintenance, "Others" in the
+  performance sheets, "other" silhouette. Existing records are converted at the next pass of the updater.
+- **Assignment: declared variant "Canadair CL-415" not matched with the fleet's "CL-415 Pélican"** — variants are now
+  compared by model number (CL415 ≠ CL215T), by inclusion only when they have none ("Rafale B" = "Dassault Rafale B")
+  (`shared/assignments.js`).
+- **Aircraft types: CL-415 shown as "Canadair CL-215T"** — ICAO Doc 8643 files the CL-215T and the CL-415 under one
+  designator, CL2T (one record, one set of performance figures, CL2T in a flight plan); the record took the first ICAO
+  model name. It is now named "Canadair CL-215T / CL-415" (`SHARED_DESIGNATOR_NAMES` in `update_aircraft_db.py`, a short
+  chosen list, applied at every pass of the updater; data overrides still win). Telling the two apart in the declared
+  aircraft (variants) is a separate change.
+- **Generator and studio: no city names, silently** — a browser SIA database built while `villes_geonames.csv` could
+  not be read was stored without cities: towns were not suggested for turning points and maps had no city labels, with
+  no message. When the database has no cities, they are now read from `shared/carto/villes_geonames.csv` and stored
+  with it (no rebuild); if that fails, a notification gives the address and the reason (`shared/sia_base.js`).
+- **Audit fixes (reported by Features SOG)** — ODV planning: the "timeline flights to check" notification pointed to a
+  removed block; it now names the flights (day, times, callsign, reason). Generator: exported files were named
+  "S4-MM-016_…" with current IDs; current IDs are kept as they are ("M-016_…"). `apps/landing/README.md` rewritten in
+  English for the current layout (shared type base in `AircraftDB/`, sources, command line); the outdated French section
+  of `README.md` ("four steps") removed — the French installation tutorial stays linked at the top.
 - **Availability, "Precise range": a time off the quarter hour was refused with a misleading message** — "12:19 to
   17:03" gave "inconsistent times" although the end followed the start: the stored format is to the quarter hour and
   the form silently required it, while the block's subtitle promised "minutes". The start is now rounded down and the
@@ -281,17 +358,6 @@ servies depuis un autre disque, registre aux fichiers absents, profils cachés �
 
 ### Ajouté
 
-- **lab: availability timeline prototype** (`labs/dispos_timeline.html`, outside the suite) — continuous week axis,
-  background bands and foreground rectangles snapped to the half-hour, edges and moves by 5 min, last shape wins,
-  double-click fills the gaps of a day (on a band: with its category) or of the week (palette entry); while dragging,
-  the shape itself is shown, snapped, with its times (no floating tooltip), and a drag leaving the row keeps going,
-  bounded to 00:00–24:00; component JSON (schema 3) with schema 2 readers / writers.
-- **Assignment: declared aircraft variants** — a pilot's declaration may list variants per ICAO designator
-  (`appareils.variantes`, e.g. `{ "CL2T": ["CL-415"] }`; editor by Features SOG). Qualification stays per designator
-  (never a block); among candidate aircraft and pilots, the matching variant comes first (fleet `variant` = declared
-  variant); a mismatch shows "different variant: CL-415 declared, CL-215T in the fleet" on the assignment card and in
-  the pilot's mission order (`aircraft.declared_variant`, *My missions*). Schema in
-  `docs/technique/DISPOS_ET_REORGANISATION.md` § 1.3 (`shared/assignments.js`, `shared/assign_dialog.js`, 4 languages).
 - **Carburant, Profils de performances : « Demander à ChatGPT »** — bouton dans la barre du bloc et dans la fiche du
   profil actif ; panneau : appareil (profil ou type de la flotte sans profil), « Copier le prompt et ouvrir ChatGPT »
   (repli `execCommand`, prompt prérempli s'il est court), « Voir le prompt ». Prompt rédigé en règles, dans la langue de
@@ -548,38 +614,6 @@ servies depuis un autre disque, registre aux fichiers absents, profils cachés �
 
 ### Corrigé
 
-- **Local changes to the aircraft type base applied three different ways** — the catalogue merged them with
-  `Object.assign`, the CR replaced the whole base, Settings merged them type by type; Settings also compared the
-  changes with a base already modified in place, so they no longer showed. One rule now (Simplification decision):
-  `AircraftCatalog.effectiveData` — replace when made on this file, otherwise merge type by type and rewrite with the
-  file date; the catalogue applies it (`typesDb`) and keeps the file as served (`typesFile`) for Settings.
-  `docs/technique/FRAMEWORK.md` § 11 bis.
-- **My missions: mission order labels in French in every language** — "Assigned aircraft", "Callsign", "Departure
-  airfield", "Requested take-off" / "Ready at", "Status" and the "assigned" status are now translated at the source
-  (4 languages). Assignments: the generic crew post rule is documented (helicopter pilot if the common classification
-  says helicopter or gyroplane, aeroplane pilot otherwise, airships and electric aircraft included).
-- **Aircraft types: Goodyear GZ-20 airship shown as "B2P" and classed with piston aircraft** — "B2P" was Aviation
-  Fanatic's category (B = balloon) taken for an ICAO description. Balloons and airships (no ICAO class exists for them)
-  now have no description but their nature (`kind`: airship / balloon), engines and engine type; shown as "airship ·
-  non-ICAO: SHIP in a flight plan", class "airship, 2 piston engines (non-ICAO)" in Maintenance, "Others" in the
-  performance sheets, "other" silhouette. Existing records are converted at the next pass of the updater.
-- **Assignment: declared variant "Canadair CL-415" not matched with the fleet's "CL-415 Pélican"** — variants are now
-  compared by model number (CL415 ≠ CL215T), by inclusion only when they have none ("Rafale B" = "Dassault Rafale B")
-  (`shared/assignments.js`).
-- **Aircraft types: CL-415 shown as "Canadair CL-215T"** — ICAO Doc 8643 files the CL-215T and the CL-415 under one
-  designator, CL2T (one record, one set of performance figures, CL2T in a flight plan); the record took the first ICAO
-  model name. It is now named "Canadair CL-215T / CL-415" (`SHARED_DESIGNATOR_NAMES` in `update_aircraft_db.py`, a short
-  chosen list, applied at every pass of the updater; data overrides still win). Telling the two apart in the declared
-  aircraft (variants) is a separate change.
-- **Generator and studio: no city names, silently** — a browser SIA database built while `villes_geonames.csv` could
-  not be read was stored without cities: towns were not suggested for turning points and maps had no city labels, with
-  no message. When the database has no cities, they are now read from `shared/carto/villes_geonames.csv` and stored
-  with it (no rebuild); if that fails, a notification gives the address and the reason (`shared/sia_base.js`).
-- **Audit fixes (reported by Features SOG)** — ODV planning: the "timeline flights to check" notification pointed to a
-  removed block; it now names the flights (day, times, callsign, reason). Generator: exported files were named
-  "S4-MM-016_…" with current IDs; current IDs are kept as they are ("M-016_…"). `apps/landing/README.md` rewritten in
-  English for the current layout (shared type base in `AircraftDB/`, sources, command line); the outdated French section
-  of `README.md` ("four steps") removed — the French installation tutorial stays linked at the top.
 - **Bouton « Sauvegarder (n) » qui semblait ne rien faire** : tout ce que disait la sauvegarde (demande d'accès du
   navigateur au dossier, erreur, dossier introuvable) allait dans le message d'état du menu ☰, fermé. Désormais en
   notification : demande d'accès annoncée (« l'accepter dans la fenêtre du navigateur »), sauvegarde écrite, dossier
@@ -693,33 +727,6 @@ servies depuis un autre disque, registre aux fichiers absents, profils cachés �
 
 ### Modifié
 
-- **Aircraft types: last duplicates** — the Poll-Schumann fuel model now resolves the type through the common
-  catalogue first (aliases followed: H145 → EC45); its `SYN` table is kept: it is not a name table but the nearby
-  reference aircraft its data give for an uncovered type (C-17 → B764). The Landing dashboard no longer redefines the
-  silhouette function of `AircraftDB/aircraft_icons.js`, which it overwrote.
-- **Aircraft categories: one set of names, wake category "L/M"** (Simplification decisions) — assignments said "Jet
-  aircraft", *My aircraft* "Jets": both now use `AircraftCatalog.categoryLabel` (Helicopters, Turboprops, Jets, Pistons,
-  Others; "Réacteurs" in French). Fuel planner and performance-sheet groups: "Pistons, 1 engine" and "Pistons, 2
-  engines or more" (names from `AircraftCatalog.groupLabel`, 4 languages). Wake category "L/M" (King Air 350, BE20, SW4)
-  is kept as given by ICAO: its icon has the size of M with a dashed outline, and the Landing dashboard orders it
-  between L and M instead of with the unknown ones.
-- **Aircraft type lookup factored into the shared framework** (second step) — about twenty places resolved a
-  designator from a code, alias or name on their own, most following only one alias (A4M → A400M, not to A400).
-  `AircraftCatalog.canonical` / `.record` / `.related` (with `codeOf` for free text) now do it for *My aircraft*,
-  Maintenance, first run, fleet reporting, the Fuel planner and performance sheets (APD, SimBrief, profile keys),
-  Landing, the CR, duration estimates and the fuel reference. The assignment fleet index uses the catalogue's usage
-  names (`USAGE`) instead of a drifted copy; only the fleet approximations stay local (C-130J requested → the fleet's
-  C-130H). `docs/technique/FRAMEWORK.md` § 11 bis.
-- **Aircraft type classification factored into the shared framework** — about a dozen pages each decoded the ICAO
-  description their own way (five category sets that disagreed on gyroplanes, tiltrotors, amphibians, airships).
-  `AircraftCatalog.record` / `.classify` / `.CATEGORIES` now give one answer (helicopters = H and gyroplanes; then by
-  power: jet, turboprop, piston; balloons, airships, electric and unknown: others; wing: rotary, amphibious, fixed),
-  used by the silhouettes and groups, assignments, *My aircraft*, the CR, duration estimates, the performance model,
-  Maintenance, the Fuel planner and the Landing dashboard; the catalogue is now loaded on the 7 pages that read the
-  type base without it (studio, Flight maps, generator, registry, ODV orders and planning, My missions). Fuel planner
-  groups: by power, then number of engines for pistons ("Multi-engine piston": the four-engine pistons — B-17, DC-6 —
-  leave "Others"), translated in four languages. "Estimate from the class" is offered only for a classified type.
-  Dead code removed (`shared/aircraft_icons.js`, unused Landing functions). `docs/technique/FRAMEWORK.md` § 11 bis.
 - **Carburant, aperçu de fusion : données à cocher** — une case par champ qui change et par ligne de cartographie
   ajoutée ou remplacée (décochée : la valeur actuelle est gardée, ligne grisée « gardé »), « Tout reprendre » / « Ne rien
   reprendre », bouton « Fusionner (7 champs, 1 ligne de cartographie) » grisé si rien n'est coché ; même fenêtre pour
