@@ -246,10 +246,10 @@ El botón «⤢ Ancho completo» del título del bloque extiende la carpeta a to
 
 ### Mi disponibilidad
 
-Su disponibilidad de la semana mostrada, en horas UTC. El Centro la utiliza para asignarle misiones. Es el mismo editor que en la página Mi disponibilidad (capítulo siguiente); aquí, la semana es la de la barra de semana de la lista.
+Su disponibilidad de la semana mostrada, en horas UTC, al minuto. El Centro la utiliza para asignarle misiones. Es la misma introducción que en la página Mi disponibilidad (capítulo siguiente); aquí, la semana es la de la barra de semana de la lista.
 Según el nivel de uso: la barra de semana propia del bloque, la antigua cuadrícula horaria y el enlace «Abrir solo la introducción de disponibilidad» solo aparecen en el nivel Experto; en los demás niveles, la semana se cambia con la barra de la lista.
 
-**Paleta**: las categorías se ordenan por grupo («Disponible», «Ejercicio SOG», «Ocupado», «No disponible»). Cada pastilla lleva la letra de código ODV y un texto corto; el texto emergente da el nombre completo. La categoría elegida se memoriza.
+**Paleta**: las categorías se ordenan por grupo, una línea por grupo («Disponible», «Ejercicio SOG», «Ocupado», «No disponible»). Cada pastilla lleva la letra de código ODV y un texto corto; el texto emergente da el nombre completo. La categoría elegida se memoriza. Bajo la paleta, una línea recuerda los temas de misión que abre la categoría elegida; para una categoría personalizada, el enlace «Mis tipos de misión…» lleva a las preferencias de Mi perfil.
 
 Categorías por defecto (el Centro puede modificar esta lista):
 
@@ -260,18 +260,22 @@ Categorías por defecto (el Centro puede modificar esta lista):
 | Ocupado | Vuelo fuera de SOG (IVAO / VATSIM) (G), DCS (DC), Control fuera de SOG (IVAO / VATSIM) (AT) |
 | No disponible | No disponible (IN), Vacaciones (V), Descanso (Q), Actividad real (IR) |
 
-**Cuadrícula hora por hora**: una línea por día (hoy resaltado), una columna por hora de 0 a 23 UTC.
-1. Elija una categoría en la paleta.
-2. Haga clic en una casilla, o trace un rectángulo manteniendo pulsado el botón: las casillas toman el color y la letra de la categoría.
-3. Un nuevo clic (o rectángulo) que empiece en una casilla que ya tiene esa categoría la borra.
+**La cuadrícula**: una fila por día, un eje de tiempo continuo de 0 a 24 h UTC, una línea por hora y una línea más fina a la media hora. El recuadro «Cómo usarlo», plegado bajo la cuadrícula, recoge las reglas siguientes.
 
-Una casilla compartida entre varias categorías aparece rayada; una hora cubierta en parte (introducida por cuartos de hora) aparece atenuada. Cada retoque se guarda al instante.
+- **Dos capas.** El fondo indica la naturaleza de una no disponibilidad (grupo «No disponible»): solo el color, en toda la altura de la fila. La primera capa lleva las disponibilidades, ejercicios y ocupaciones: rectángulos con su letra en el centro, la hora de inicio a la izquierda y la hora de fin a la derecha (abreviadas, «8 O 12», en un rectángulo estrecho). Un minuto solo tiene un estado: donde hay un rectángulo, el fondo de debajo no cuenta, pero se queda en su sitio y vuelve cuando el rectángulo se va. El tiempo sin nada es no disponible.
+- **La paleta.** Un clic en una pastilla elige el pincel: solo indica qué trazar.
+- **Trazar.** Arrastre en la parte vacía de una fila o en el espacio entre dos filas: la forma se ajusta a la media hora y muestra sus horarios durante el gesto. En varios días, un rectángulo de selección pone el mismo horario en cada día que cruza.
+- **Tomar una forma.** Un gesto que empieza sobre una forma, rectángulo o banda de fondo, la toma sea cual sea el pincel: un clic la selecciona, arrastrar la mueve (pasos de 5 min; hacia arriba o abajo: mismo horario, otro día), sus bordes la redimensionan. Mayús+arrastrar traza encima: así se pone una disponibilidad en un día ya cubierto por una banda.
+- **Cortar.** La última forma gana: un rectángulo trazado sobre otro lo corta, y un fondo trazado a través de un rectángulo también. El corte se ve durante el gesto.
+- **Soltar, doble clic.** Arrastre una pastilla de la paleta sobre una forma: la forma toma esa naturaleza. Soltada en la parte vacía de una fila o en el nombre del día, cubre el día entero; una pastilla de fondo solo cambia entonces el fondo, los rectángulos se quedan. Doble clic en una banda: su color pasa a ser el fondo de todo el día; en una pastilla de fondo: de toda la semana.
+- **Corregir.** La ✕ de una forma, o Supr sobre la selección, la borra; las flechas la mueven (← → 5 min, ↑ ↓ un día); Esc quita la selección. Ctrl+Z deshace un retoque, Ctrl+Y o Ctrl+Mayús+Z lo rehace (50 retoques por semana mostrada).
+- **Qué se guarda.** Cada retoque se guarda al instante (carpeta de datos, si no este navegador): no hay botón «Guardar». Al pasar el ratón, un texto emergente da el intervalo en palabras, por ejemplo «miércoles 14 de octubre, de 00:00 a 05:30: No disponible».
 
-**«Intervalo preciso»** (por cuartos de hora, plegado: un clic en su título lo abre; abierto de entrada en el nivel Experto): «Grupo», «Categoría», casillas de los días (Lun a Dom), «de» y «a» (UTC) y, después, «Añadir». Horarios vacíos = día completo; una hora introducida fuera del cuarto de hora se redondea (el inicio al cuarto anterior, el fin al siguiente) y el mensaje lo dice. Bajo el formulario, una línea recuerda los temas de misión que abre la categoría; para una categoría personalizada, el enlace «Mis tipos de misión…» lleva a las preferencias de Mi perfil.
+**«Intervalo preciso»** (plegado: un clic en su título lo abre): «Grupo», «Categoría», casillas de los días, «de» y «a» (UTC, al minuto) y, después, «Añadir». El intervalo se pone en cada día marcado, con la regla de la última forma. Horarios vacíos = día completo; sin fin, hasta medianoche; un fin anterior al inicio se rechaza. Ctrl+Z deshace la adición.
 
 **Otros botones**
-- «⧉ Semana anterior»: copia los intervalos de la semana anterior (sustituye la semana mostrada, tras confirmación).
-- «Borrar todo»: vacía la semana mostrada (tras confirmación).
+- «⧉ Semana anterior»: copia la semana anterior en la semana mostrada (tras confirmación si no está vacía); Ctrl+Z lo deshace.
+- «Borrar todo»: vacía la semana mostrada; Ctrl+Z lo deshace.
 - «Escribir en la carpeta de datos (n)»: solo aparece si quedaron semanas en el navegador; las escribe en la carpeta compartida.
 
 El mensaje bajo el bloque indica adónde se ha enviado lo introducido: «Guardado en la carpeta de datos.», o «Guardado en este navegador, el Centro no lo ve: …» si la carpeta de datos no está autorizada (consulte [Primer arranque](#primer-arranque), paso 3).
@@ -281,13 +285,13 @@ El enlace «Abrir solo la introducción de disponibilidad» lleva a la página M
 ## Mi disponibilidad
 <!-- page: apps/pilot/disponibilites.html -->
 
-Esta página muestra solo el editor de disponibilidad, en más grande. Sirve para introducir rápidamente varias semanas.
+Esta página muestra solo la introducción de disponibilidad, en más grande. Sirve para introducir rápidamente varias semanas.
 Se llega a ella por la pestaña «Mi disponibilidad» (bajo la entrada «Mis misiones» de la barra lateral) o por el enlace «Abrir solo la introducción de disponibilidad» de Mis misiones. Este enlace solo aparece en el nivel Experto.
 El piloto es el del trigrama de trabajo (perfil de piloto, conexión o suplantación). En modo producción, la página pide primero conectarse.
 
 ### Mi disponibilidad
 
-El único bloque de la página. Funciona exactamente como el bloque del mismo nombre de Mis misiones (capítulo anterior): paleta, cuadrícula hora por hora, «Intervalo preciso» (plegado, abierto de entrada en el nivel Experto), «⧉ Semana anterior», «Borrar todo».
+El único bloque de la página. Funciona exactamente como el bloque del mismo nombre de Mis misiones (capítulo anterior): paleta, cuadrícula, «Cómo usarlo», «Intervalo preciso», «⧉ Semana anterior», «Borrar todo».
 
 **Navegación por semanas** (propia de esta página):
 - «‹» y «›»: semana anterior o siguiente;
@@ -295,8 +299,8 @@ El único bloque de la página. Funciona exactamente como el bloque del mismo no
 - «Semana actual»: visible fuera de la semana actual, vuelve a ella.
 
 Consejos y límites:
-- Todas las horas están en UTC. La cuadrícula trabaja por horas; «Intervalo preciso», por cuartos de hora.
-- Cada retoque se guarda de inmediato: no hay botón «Guardar».
+- Todas las horas están en UTC. Un trazo se ajusta a la media hora; mover y redimensionar van en pasos de 5 min; «Intervalo preciso» va al minuto.
+- Cada retoque se guarda de inmediato: no hay botón «Guardar». Ctrl+Z lo deshace.
 - Sin trigrama, el bloque muestra «Trigrama no definido: definirlo en Ajustes › Mi perfil (o ☰ › Perfil de piloto).»
 - Una dirección del tipo `disponibilites.html?semaine=2026-W41` abre directamente una semana concreta.
 - Si la semana todavía se está leyendo, un retoque se rechaza con «Semana aún cargando: reintentar en un momento.»

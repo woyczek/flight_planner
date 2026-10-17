@@ -881,7 +881,7 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
     code = 'O',
     onBrush = null, // code choisi dans la palette (pour le garder)
     days = null, // libellés des lignes (ex. « Lun 28/09 ») ; sinon jours de la semaine
-    readOnly = false // ancienne grille montrée en lecture seule (saisie par plages : shared/dispos_editor.js)
+    readOnly = false // ancienne grille montrée en lecture seule (saisie : shared/dispos_week.js)
   } = {}) {
     grid = normGrid(grid);
     /** Libellé d'une ligne : celui fourni (days), sinon le jour de la semaine. */

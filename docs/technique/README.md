@@ -47,7 +47,7 @@ ou maintient la suite. Les manuels et guides d'utilisation sont au [premier nive
 
 | Document | For |
 |---|---|
-| [Availability timeline: specification](DISPOS_TIMELINE_SPEC.md) · [integration](DISPOS_TIMELINE_INTEGRATION.md) | stand-alone module `shared/dispos_timeline.js` (formats: `shared/dispos_formats.js`), not yet in the suite's pages: the full description of the component, enough for a language model to regenerate it (data, rules, gestures, API), and the guide to put it into another single-page HTML application (loading, storage, formats, events, theme, pitfalls, minimal example); both delivered in `dist/dispos-module-<version>.zip` (`tools/publish_dist.py`) |
+| [Availability timeline: specification](DISPOS_TIMELINE_SPEC.md) · [integration](DISPOS_TIMELINE_INTEGRATION.md) | stand-alone module `shared/dispos_timeline.js` (formats: `shared/dispos_formats.js`), used by the suite's availability entry (`shared/dispos_week.js`): the full description of the component, enough for a language model to regenerate it (data, rules, gestures, API), and the guide to put it into another single-page HTML application (loading, storage, formats, events, theme, pitfalls, minimal example); both delivered in `dist/dispos-module-<version>.zip` (`tools/publish_dist.py`) |
 | [`labs/`](../../labs/dispos_timeline.html) — availability timeline | example page of the module, outside the suite (not linked from its menus): French texts through the `labels` option, data in the browser's localStorage, schema 3 and schema 2 shown side by side |
 
 ## Audits et mesures

@@ -246,10 +246,10 @@ Der Knopf „⤢ Volle Breite“ im Blocktitel breitet die Mappe über die ganze
 
 ### Meine Verfügbarkeit
 
-Ihre Verfügbarkeit in der angezeigten Woche, in UTC-Stunden. Das Zentrum nutzt sie, um Ihnen Missionen zuzuweisen. Es ist derselbe Editor wie auf der Seite Meine Verfügbarkeit (nächstes Kapitel); hier ist die Woche die der Wochenleiste der Liste.
+Ihre Verfügbarkeit in der angezeigten Woche, in UTC, auf die Minute. Das Zentrum nutzt sie, um Ihnen Missionen zuzuweisen. Es ist dieselbe Eingabe wie auf der Seite Meine Verfügbarkeit (nächstes Kapitel); hier ist die Woche die der Wochenleiste der Liste.
 Je nach Nutzungsstufe: Die eigene Wochenleiste des Blocks, das alte Stundenraster und der Link „Verfügbarkeitseingabe einzeln öffnen“ erscheinen nur auf der Stufe Experte; auf den anderen Stufen wechselt man die Woche über die Leiste der Liste.
 
-**Palette**: Die Kategorien sind nach Gruppen geordnet („Verfügbar“, „SOG-Übung“, „Beschäftigt“, „Nicht verfügbar“). Jeder Farbpunkt trägt den ODV-Codebuchstaben und eine kurze Beschriftung; der Tooltip zeigt die vollständige Beschriftung. Die gewählte Kategorie wird gespeichert.
+**Palette**: Die Kategorien sind nach Gruppen geordnet, eine Zeile pro Gruppe („Verfügbar“, „SOG-Übung“, „Beschäftigt“, „Nicht verfügbar“). Jeder Farbpunkt trägt den ODV-Codebuchstaben und eine kurze Beschriftung; der Tooltip zeigt die vollständige Beschriftung. Die gewählte Kategorie wird gespeichert. Unter der Palette zeigt eine Zeile die Missionsthemen, die die gewählte Kategorie öffnet; bei einer Kategorie nach Wahl führt der Link „Meine Missionsarten…“ zu den Einstellungen in Mein Profil.
 
 Standardkategorien (das Zentrum kann diese Liste ändern):
 
@@ -260,18 +260,22 @@ Standardkategorien (das Zentrum kann diese Liste ändern):
 | Beschäftigt | Flug außerhalb SOG (IVAO / VATSIM) (G), DCS (DC), Lotsendienst außerhalb SOG (IVAO / VATSIM) (AT) |
 | Nicht verfügbar | Nicht verfügbar (IN), Urlaub (V), Ausgleich (Q), Termin im echten Leben (IR) |
 
-**Stundenraster**: eine Zeile pro Tag (heute hervorgehoben), eine Spalte pro Stunde von 0 bis 23 UTC.
-1. Wählen Sie eine Kategorie in der Palette.
-2. Klicken Sie auf ein Feld oder ziehen Sie bei gedrückter Maustaste ein Rechteck: Die Felder nehmen Farbe und Buchstaben der Kategorie an.
-3. Ein erneuter Klick (oder ein Rechteck), der auf einem Feld dieser Kategorie beginnt, löscht sie.
+**Das Raster**: eine Zeile pro Tag, eine durchgehende Zeitachse von 0 bis 24 Uhr UTC, ein Strich pro Stunde und ein feinerer Strich zur halben Stunde. Der Rahmen „So geht’s“, zugeklappt unter dem Raster, wiederholt die folgenden Regeln.
 
-Ein Feld, das sich mehrere Kategorien teilen, ist schraffiert; eine teilweise belegte Stunde (Eingabe auf die Viertelstunde) ist blasser. Jede Änderung wird sofort gespeichert.
+- **Zwei Ebenen.** Der Hintergrund gibt die Art einer Nichtverfügbarkeit an (Gruppe „Nicht verfügbar“): nur die Farbe, über die ganze Zeilenhöhe. Die erste Ebene trägt Verfügbarkeiten, Übungen und Belegungen: Rechtecke mit ihrem Buchstaben in der Mitte, der Anfangszeit links und der Endzeit rechts (verkürzt, „8 O 12“, bei einem schmalen Rechteck). Eine Minute hat nur einen Zustand: Wo ein Rechteck liegt, zählt der Hintergrund darunter nicht, bleibt aber erhalten und kehrt zurück, wenn das Rechteck weggeht. Zeit ohne Eintrag gilt als nicht verfügbar.
+- **Die Palette.** Ein Klick auf einen Farbpunkt wählt den Pinsel: Er sagt nur, was gezeichnet wird.
+- **Zeichnen.** Im leeren Teil einer Zeile oder im Abstand zwischen zwei Zeilen ziehen: Die Form rastet auf der halben Stunde ein und zeigt ihre Zeiten während der Geste. Über mehrere Tage legt ein Auswahlrechteck dieselben Stunden auf jeden durchquerten Tag.
+- **Eine Form greifen.** Eine Geste, die auf einer Form (Rechteck oder Hintergrundband) beginnt, greift sie, egal welcher Pinsel: Ein Klick wählt sie aus, Ziehen verschiebt sie (in 5-min-Schritten; nach oben oder unten: gleiche Zeiten, anderer Tag), ihre Ränder ändern die Größe. Umschalt+Ziehen zeichnet stattdessen darüber: So legt man eine Verfügbarkeit auf einen Tag, der schon von einem Band bedeckt ist.
+- **Schneiden.** Die letzte Form gewinnt: Ein über ein anderes gezeichnetes Rechteck schneidet es, ein Hintergrund durch ein Rechteck ebenfalls. Der Schnitt ist während der Geste zu sehen.
+- **Ablegen, Doppelklick.** Einen Farbpunkt der Palette auf eine Form ziehen: Die Form nimmt diese Art an. Auf den leeren Teil einer Zeile oder den Tagesnamen abgelegt, bedeckt er den ganzen Tag; ein Hintergrund-Farbpunkt ändert dann nur den Hintergrund, die Rechtecke bleiben. Doppelklick auf ein Band: Seine Farbe wird Hintergrund des ganzen Tages; auf einen Hintergrund-Farbpunkt: der ganzen Woche.
+- **Korrigieren.** Das ✕ einer Form oder Entf auf der Auswahl löscht sie; die Pfeiltasten verschieben sie (← → 5 min, ↑ ↓ ein Tag); Esc hebt die Auswahl auf. Strg+Z macht eine Änderung rückgängig, Strg+Y oder Strg+Umschalt+Z stellt sie wieder her (50 Änderungen pro angezeigter Woche).
+- **Was gespeichert wird.** Jede Änderung wird sofort gespeichert (Datenordner, sonst dieser Browser): Es gibt keinen Knopf „Speichern“. Beim Überfahren zeigt ein Tooltip den Zeitraum in Worten, zum Beispiel „Mittwoch, 14. Oktober, 00:00 bis 05:30: Nicht verfügbar“.
 
-**„Genauer Zeitraum“** (auf die Viertelstunde, zugeklappt: Ein Klick auf den Titel öffnet ihn; auf der Stufe Experte von Anfang an offen): „Gruppe“, „Kategorie“, Kästchen der Tage (Mo bis So), „von“ und „bis“ (UTC), dann „Hinzufügen“. Leere Uhrzeiten = ganzer Tag; eine Uhrzeit außerhalb der Viertelstunde wird gerundet (Beginn auf die vorige, Ende auf die nächste Viertelstunde), und die Meldung sagt es. Unter dem Formular zeigt eine Zeile die Missionsthemen, die die Kategorie öffnet; bei einer Kategorie nach Wahl führt der Link „Meine Missionsarten…“ zu den Einstellungen in Mein Profil.
+**„Genauer Zeitraum“** (zugeklappt: Ein Klick auf den Titel öffnet ihn): „Gruppe“, „Kategorie“, Kästchen der Tage, „von“ und „bis“ (UTC, auf die Minute), dann „Hinzufügen“. Der Zeitraum wird auf jeden angekreuzten Tag gelegt, nach der Regel der letzten Form. Leere Uhrzeiten = ganzer Tag; ohne Ende bis Mitternacht; ein Ende vor dem Beginn wird abgelehnt. Strg+Z macht das Hinzufügen rückgängig.
 
 **Weitere Knöpfe**
-- „⧉ Vorherige Woche“: übernimmt die Zeiträume der vorherigen Woche (ersetzt die angezeigte Woche, nach Bestätigung).
-- „Alles löschen“: leert die angezeigte Woche (nach Bestätigung).
+- „⧉ Vorherige Woche“: übernimmt die vorherige Woche in die angezeigte Woche (nach Bestätigung, wenn sie nicht leer ist); Strg+Z macht es rückgängig.
+- „Alles löschen“: leert die angezeigte Woche; Strg+Z macht es rückgängig.
 - „In den Datenordner schreiben (n)“: erscheint nur, wenn Wochen im Browser geblieben sind; schreibt sie in den gemeinsamen Ordner.
 
 Die Meldung unter dem Block zeigt, wohin die Eingabe gegangen ist: „Im Datenordner gespeichert.“ oder „In diesem Browser behalten, das Zentrum sieht es nicht: …“, wenn der Datenordner nicht freigegeben ist (siehe [Erststart](#erststart), Schritt 3).
@@ -281,13 +285,13 @@ Der Link „Verfügbarkeitseingabe einzeln öffnen“ führt zur Seite Meine Ver
 ## Meine Verfügbarkeit
 <!-- page: apps/pilot/disponibilites.html -->
 
-Diese Seite zeigt nur den Verfügbarkeitseditor, in größerem Format. Sie dient dazu, schnell mehrere Wochen einzugeben.
+Diese Seite zeigt nur die Verfügbarkeitseingabe, in größerem Format. Sie dient dazu, schnell mehrere Wochen einzugeben.
 Sie erreichen sie über die Registerkarte „Meine Verfügbarkeit“ (unter dem Eintrag „Meine Missionen“ der Seitenleiste) oder über den Link „Verfügbarkeitseingabe einzeln öffnen“ in Meine Missionen. Dieser Link erscheint nur auf der Stufe Experte.
 Der Pilot ist der des Arbeitskürzels (Pilotenprofil, Anmeldung oder Identitätsübernahme). Im Produktionsmodus verlangt die Seite zuerst eine Anmeldung.
 
 ### Meine Verfügbarkeit
 
-Der einzige Block der Seite. Er funktioniert genau wie der gleichnamige Block in Meine Missionen (vorheriges Kapitel): Palette, Stundenraster, „Genauer Zeitraum“ (zugeklappt, auf der Stufe Experte von Anfang an offen), „⧉ Vorherige Woche“, „Alles löschen“.
+Der einzige Block der Seite. Er funktioniert genau wie der gleichnamige Block in Meine Missionen (vorheriges Kapitel): Palette, Raster, „So geht’s“, „Genauer Zeitraum“, „⧉ Vorherige Woche“, „Alles löschen“.
 
 **Wochennavigation** (nur auf dieser Seite):
 - „‹“ und „›“: vorherige oder nächste Woche;
@@ -295,8 +299,8 @@ Der einzige Block der Seite. Er funktioniert genau wie der gleichnamige Block in
 - „Aktuelle Woche“: sichtbar außerhalb der aktuellen Woche, führt dorthin zurück.
 
 Tipps und Grenzen:
-- Alle Uhrzeiten sind in UTC. Das Raster arbeitet stundenweise, „Genauer Zeitraum“ auf die Viertelstunde.
-- Jede Änderung wird sofort gespeichert: Es gibt keinen Knopf „Speichern“.
+- Alle Uhrzeiten sind in UTC. Eine Zeichnung rastet auf der halben Stunde ein; Verschieben und Größe ändern gehen in 5-min-Schritten; „Genauer Zeitraum“ geht auf die Minute.
+- Jede Änderung wird sofort gespeichert: Es gibt keinen Knopf „Speichern“. Strg+Z macht sie rückgängig.
 - Ohne Kürzel zeigt der Block „Kürzel nicht gesetzt: unter Einstellungen › Mein Profil (oder ☰ › Pilotenprofil) festlegen.“
 - Eine Adresse der Form `disponibilites.html?semaine=2026-W41` öffnet direkt eine bestimmte Woche.
 - Wird die Woche noch gelesen, wird eine Änderung mit „Woche wird noch gelesen: gleich noch einmal versuchen.“ abgelehnt.

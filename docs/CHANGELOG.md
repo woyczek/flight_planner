@@ -12,8 +12,8 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Added
 
-- **Availability timeline module** (`shared/dispos_timeline.js`, formats in `shared/dispos_formats.js`; not yet in the
-  suite's pages) — a stand-alone component, with no dependency on the framework, to enter one person's availability
+- **Availability timeline module** (`shared/dispos_timeline.js`, formats in `shared/dispos_formats.js`; in the suite's
+  pages through `shared/dispos_week.js`, see Changed) — a stand-alone component, with no dependency on the framework, to enter one person's availability
   for an ISO week on a continuous time axis, in UTC. Background bands give the nature of the unavailability;
   availability rectangles sit on top, with square corners, the start time on the left, the type centred and the end
   time on the right. One state per minute: under a rectangle the background does not count, but it stays in place, so
@@ -141,24 +141,27 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Changed
 
-- **Availability entry: the availability timeline module in the suite** (second step) — *My missions › My
-  availability*, *My availability* and the ODV legend now use `shared/dispos_timeline.js` through
-  `shared/dispos_week.js`: the suite's categories, texts in four languages, compact density, help folded. Around it,
-  the page keeps:
-  - its week bar (or the page's week in *My missions*), and the mission themes opened by the chosen category under the
-    palette;
-  - "Precise range" to the minute (group, category, days, from, to);
-  - "⧉ Previous week" (asks before replacing a week that is not empty; Ctrl+Z undoes it) and "Clear all" (Ctrl+Z);
-  - the status line with "Write to the data folder (n)", and the import of a former hourly grid.
-
-  New module options and methods: `nav`, `period`, `add(ranges)`, `slot("palette")`, event `dispos-brush`.
-- **Availability weeks written in schema 3** (the native format of the availability timeline module; first step of
-  replacing the availability editor) — `SuiteDispos.saveWeek` writes `{ schema: 3, pilot, week, tz, ranges, background,
-  appareils, simulateurs }`, to the minute, one state per minute; schema 2 weeks are still read, and a week moves to
-  schema 3 when it is next written (no bulk migration). `readPilot` reads both through `shared/dispos_formats.js` and
-  gives each week normalised (`ranges`, `background`, and the per-day view `dispos` to the minute) to the ODV and the
-  assignments; coverage is now computed to the minute (`cutsBetween`) instead of in quarter-hour steps.
-  `docs/technique/DISPOS_ET_REORGANISATION.md` § 1.3.
+- **Availability editor replaced by the availability timeline module** — *My missions › My availability*, *My
+  availability* and the ODV legend use `shared/dispos_timeline.js` through `shared/dispos_week.js`. It brings a
+  continuous time axis to the minute, background and availabilities, one state per minute, the single gesture rule,
+  selection rectangle, palette drops and undo (Ctrl+Z / Ctrl+Y). It is set up with the suite's categories, texts in
+  four languages, compact density, and its "How to use" panel folded.
+  - Around it, the page keeps its week bar (or the page's week in *My missions*) and the mission themes opened by the
+    chosen category under the palette.
+  - It also keeps "Precise range" to the minute, "⧉ Previous week" (asks before replacing a week that is not empty;
+    Ctrl+Z undoes it), "Clear all" (Ctrl+Z), the status line with "Write to the data folder (n)", and the import of a
+    former hourly grid.
+  - No repeating period in the suite's pages (decision pending).
+  - Weeks are written in schema 3 (`{ schema: 3, pilot, week, tz, ranges, background, appareils, simulateurs }`).
+    Schema 2 weeks are still read, and a week moves to schema 3 the next time it is written (no bulk migration).
+  - `SuiteDispos.readPilot` reads both formats through `shared/dispos_formats.js` and gives each week normalised: its
+    ranges and background, plus a per-day view to the minute for the ODV and the assignments. Coverage is now
+    computed to the minute (`cutsBetween`) instead of in quarter-hour steps; the ODV's day editing keeps the rest of
+    the week (`setDay`).
+  - In a schema 2 week, two availability categories laid over the same time are read with the later one winning.
+  - `shared/dispos_editor.js` is removed, with its texts. The user manual (four languages) is rewritten on the new
+    entry. `docs/technique/DISPOS_ET_REORGANISATION.md` § 1.3 is updated, and the module specification adds `nav`,
+    `period`, `add(ranges)`, `slot("palette")` and `dispos-brush`.
 - **Aircraft types: last duplicates** — the Poll-Schumann fuel model now resolves the type through the common
   catalogue first (aliases followed: H145 → EC45); its `SYN` table is kept: it is not a name table but the nearby
   reference aircraft its data give for an uncovered type (C-17 → B764). The Landing dashboard no longer redefines the

@@ -665,7 +665,7 @@
     return (doc.dispos?.[day] || []).filter(x => (!x.debut || x.debut <= t) && (!x.fin || t < x.fin));
   }
 
-  // ---- affichage d'une catégorie, commun à la grille de Mes missions (dispos_editor.js) et au Planning ODV
+  // ---- affichage d'une catégorie, commun à la saisie de Mes missions (dispos_week.js) et au Planning ODV
   // lettre : champ « lettre » de la configuration, sinon le code ODV de la catégorie s'il est unique, sinon un abrégé
   // (+ : tout le domaine ; − : personnalisée, thèmes choisis dans les préférences)
   const SHORT = {

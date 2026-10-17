@@ -246,10 +246,10 @@ The “⤢ Full width” button in the block title spreads the folder across the
 
 ### My availability
 
-Your availability for the week shown, in UTC. The Centre uses it to assign missions to you. It is the same editor as on the My availability page (next chapter); here, the week is the one of the week bar of the list.
+Your availability for the week shown, in UTC, to the minute. The Centre uses it to assign missions to you. It is the same entry as on the My availability page (next chapter); here, the week is the one of the week bar of the list.
 Depending on the usage level: the block’s own week bar, the old hourly grid and the “Open the availability entry on its own” link only appear at the Expert level; at the other levels, the week is changed with the bar of the list.
 
-**Palette**: the categories are arranged by group (“Available”, “SOG exercise”, “Busy”, “Unavailable”). Each badge carries the ODV code letter and a short label; the tooltip gives the full label. The chosen category is remembered.
+**Palette**: the categories are arranged by group, one line per group (“Available”, “SOG exercise”, “Busy”, “Unavailable”). Each badge carries the ODV code letter and a short label; the tooltip gives the full label. The chosen category is remembered. Under the palette, a line recalls the mission themes opened by the chosen category; for a custom category, the “My mission types…” link leads to the preferences in My profile.
 
 Default categories (the Centre can change this list):
 
@@ -260,18 +260,22 @@ Default categories (the Centre can change this list):
 | Busy | Flight outside SOG (IVAO / VATSIM) (G), DCS (DC), Control outside SOG (IVAO / VATSIM) (AT) |
 | Unavailable | Unavailable (IN), Holidays (V), Time off (Q), Real-life activity (IR) |
 
-**Hour-by-hour grid**: one line per day (today highlighted), one column per hour from 0 to 23 UTC.
-1. Choose a category in the palette.
-2. Click a cell, or draw a rectangle while holding the button down: the cells take the colour and the letter of the category.
-3. A new click (or rectangle) starting on a cell already in this category clears it.
+**The grid**: one row per day, a continuous time axis from 0 to 24 h UTC, a line per hour and a fainter line at the half hour. The “How to use” panel, folded under the grid, repeats the following rules.
 
-A cell shared between several categories is striped; an hour partly covered (entered by the quarter hour) is faded. Each change is saved at once.
+- **Two layers.** The background gives the nature of an unavailability (“Unavailable” group): colour only, full row height. The first layer holds the availabilities, exercises and busy times: rectangles with their letter in the middle, the start time on the left and the end time on the right (shortened, “8 O 12”, on a narrow rectangle). A minute has one state only: where a rectangle lies, the background under it does not count, but it stays in place and comes back when the rectangle moves away. Time with nothing is unavailable.
+- **The palette.** Click a badge to choose the brush: it only says what to draw.
+- **Draw.** Drag on the empty part of a row or in the gap between two rows: the shape snaps to the half hour and shows its times while you drag. Across several days, a selection rectangle lays the same hours on each day it crosses.
+- **Take a shape.** A gesture that starts on a shape, rectangle or background band, takes it whatever the brush: a click selects it, a drag moves it (5 min steps; up or down: same times, another day), its edges resize it. Shift+drag draws over it instead, which is how to draw an availability on a day already covered by a band.
+- **Cut.** The last shape wins: a rectangle drawn over another cuts it, and a background drawn through a rectangle cuts it too. The cut shows while you drag.
+- **Drop and double-click.** Drag a badge from the palette onto a shape: the shape takes that nature. Dropped on the empty part of a row or on the day name, it covers the whole day; a background badge then changes only the background, rectangles stay. Double-click a band: its colour becomes the background of the whole day; double-click a background badge: of the whole week.
+- **Correct.** ✕ on a shape, or Delete on the selection, removes it; the arrow keys move it (← → 5 min, ↑ ↓ one day); Escape clears the selection. Ctrl+Z undoes a change, Ctrl+Y or Ctrl+Shift+Z redoes it (50 changes per week shown).
+- **What is saved.** Each change is saved at once (data folder, otherwise this browser): there is no “Save” button. On hover, a tooltip gives the range in words, for example “Wednesday 14 October, 00:00 to 05:30: Unavailable”.
 
-**“Precise range”** (by the quarter hour, collapsed: a click on its title opens it; open from the start at the Expert level): “Group”, “Category”, day boxes (Mon to Sun), “from” and “to” (UTC), then “Add”. Empty times = whole day; a time entered off the quarter hour is rounded (the start down, the end up to the next quarter) and the message says so. Under the form, a line recalls the mission themes opened by the category; for a custom category, the “My mission types…” link leads to the preferences in My profile.
+**“Precise range”** (collapsed: a click on its title opens it): “Group”, “Category”, day boxes, “from” and “to” (UTC, to the minute), then “Add”. The range is laid on each ticked day, with the last-shape rule. Empty times = whole day; with no end, until midnight; an end before the start is refused. Ctrl+Z undoes the addition.
 
 **Other buttons**
-- “⧉ Previous week”: copies the ranges of the previous week (replaces the week shown, after confirmation).
-- “Clear all”: empties the week shown (after confirmation).
+- “⧉ Previous week”: copies the previous week into the week shown (after confirmation if it is not empty); Ctrl+Z undoes it.
+- “Clear all”: empties the week shown; Ctrl+Z undoes it.
 - “Write to the data folder (n)”: only appears if some weeks have stayed in the browser; writes them to the shared folder.
 
 The message under the block tells you where the entry went: “Saved to the data folder.”, or “Kept in this browser, the Centre cannot see it: …” if the data folder is not allowed (see [First run](#first-run), step 3).
@@ -281,13 +285,13 @@ The “Open the availability entry on its own” link leads to the My availabili
 ## My availability
 <!-- page: apps/pilot/disponibilites.html -->
 
-This page shows the availability editor on its own, in a larger size. It is used to enter several weeks quickly.
+This page shows the availability entry on its own, in a larger size. It is used to enter several weeks quickly.
 You reach it from the “My availability” tab (under the “My missions” entry of the side bar) or from the “Open the availability entry on its own” link in My missions. This link only appears at the Expert level.
 The pilot is the one of the working trigram (pilot profile, sign-in or impersonation). In production mode, the page first asks you to sign in.
 
 ### My availability
 
-The only block of the page. It works exactly like the block of the same name in My missions (previous chapter): palette, hour-by-hour grid, “Precise range” (collapsed, open from the start at the Expert level), “⧉ Previous week”, “Clear all”.
+The only block of the page. It works exactly like the block of the same name in My missions (previous chapter): palette, grid, “How to use”, “Precise range”, “⧉ Previous week”, “Clear all”.
 
 **Week navigation** (specific to this page):
 - “‹” and “›”: previous or next week;
@@ -295,8 +299,8 @@ The only block of the page. It works exactly like the block of the same name in 
 - “Current week”: visible outside the current week, goes back to it.
 
 Tips and limits:
-- All times are in UTC. The grid works by the hour; “Precise range” by the quarter hour.
-- Each change is saved straight away: there is no “Save” button.
+- All times are in UTC. A drawing snaps to the half hour; moving and resizing go by 5 min; “Precise range” goes to the minute.
+- Each change is saved straight away: there is no “Save” button. Ctrl+Z undoes it.
 - Without a trigram, the block shows “Trigram not set: set it in Settings › My profile (or ☰ › Pilot profile).”
 - An address of the form `disponibilites.html?semaine=2026-W41` opens a given week directly.
 - If the week is still loading, a change is refused with “Week still loading: try again in a moment.”

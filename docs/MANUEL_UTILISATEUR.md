@@ -258,10 +258,10 @@ Le bouton « ⤢ Pleine largeur » du titre du bloc étale le dossier sur toute 
 
 ### Mes disponibilités
 
-Vos disponibilités de la semaine affichée, en heures UTC. Le Centre s'en sert pour vous affecter des missions. C'est le même éditeur que sur la page Mes disponibilités (chapitre suivant) ; ici, la semaine est celle de la barre de semaine de la liste.
+Vos disponibilités de la semaine affichée, en heures UTC, à la minute. Le Centre s'en sert pour vous affecter des missions. C'est la même saisie que sur la page Mes disponibilités (chapitre suivant) ; ici, la semaine est celle de la barre de semaine de la liste.
 Selon le niveau d'utilisation : la barre de semaine propre au bloc, l'ancienne grille horaire et le lien « Ouvrir la saisie des disponibilités seule » n'apparaissent qu'au niveau Expert ; aux autres niveaux, la semaine se change par la barre de la liste.
 
-**Palette** : les catégories sont rangées par groupe (« Disponible », « Exercice SOG », « Occupé », « Indisponible »). Chaque pastille porte la lettre de code ODV et un libellé court ; l'infobulle donne le libellé complet. La catégorie choisie est mémorisée.
+**Palette** : les catégories sont rangées par groupe, une ligne par groupe (« Disponible », « Exercice SOG », « Occupé », « Indisponible »). Chaque pastille porte la lettre de code ODV et un libellé court ; l'infobulle donne le libellé complet. La catégorie choisie est mémorisée. Sous la palette, une ligne rappelle les thèmes de mission ouverts par la catégorie choisie ; pour une catégorie personnalisée, le lien « Mes types de missions… » mène aux préférences de Mon profil.
 
 Catégories par défaut (le Centre peut modifier cette liste) :
 
@@ -272,18 +272,22 @@ Catégories par défaut (le Centre peut modifier cette liste) :
 | Occupé | Vol hors SOG (IVAO / VATSIM) (G), DCS (DC), Contrôle hors SOG (IVAO / VATSIM) (AT) |
 | Indisponible | Indisponible (IN), Congés (V), Récupération (Q), Activité réelle (IR) |
 
-**Grille heure par heure** : une ligne par jour (aujourd'hui mis en évidence), une colonne par heure de 0 à 23 UTC.
-1. Choisissez une catégorie dans la palette.
-2. Cliquez sur une case, ou tracez un rectangle en maintenant le bouton enfoncé : les cases prennent la couleur et la lettre de la catégorie.
-3. Un nouveau clic (ou rectangle) commençant sur une case déjà de cette catégorie l'efface.
+**La grille** : une rangée par jour, un axe de temps continu de 0 à 24 h UTC, un trait par heure et un trait fin à la demi-heure. Le cadre « Comment s'en servir », replié sous la grille, reprend les règles suivantes.
 
-Une case partagée entre plusieurs catégories est rayée ; une heure couverte en partie (saisie au quart d'heure) est pâlie. Chaque retouche est enregistrée aussitôt.
+- **Deux couches.** Le fond dit la nature d'une indisponibilité (groupe « Indisponible ») : la couleur seule, sur toute la hauteur de la rangée. La première couche porte les dispos, exercices et occupations : des rectangles avec leur lettre au centre, l'heure de début à gauche et l'heure de fin à droite (en abrégé, « 8 O 12 », sur un rectangle étroit). Une minute n'a qu'un état : là où un rectangle est posé, le fond dessous ne compte pas, mais il reste en place et revient quand le rectangle s'en va. Le temps sans rien est indisponible.
+- **La palette.** Cliquer sur une pastille choisit le pinceau : il dit seulement quoi tracer.
+- **Tracer.** Glissez dans le vide d'une rangée ou dans l'espace entre deux rangées : la forme s'aimante à la demi-heure et montre ses horaires pendant le geste. Sur plusieurs jours, un rectangle de sélection pose la même plage horaire sur chaque jour traversé.
+- **Saisir une forme.** Un geste qui part sur une forme, rectangle ou bande de fond, la saisit quel que soit le pinceau : un clic la sélectionne, un glisser la déplace (pas de 5 min ; vers le haut ou le bas : même horaire, autre jour), ses bords la redimensionnent. Maj+glisser trace par-dessus : c'est ainsi qu'on pose une dispo sur un jour déjà couvert d'une bande.
+- **Découper.** La dernière forme gagne : un rectangle tracé sur un autre le découpe, un fond tracé à travers un rectangle aussi. La découpe se voit pendant le geste.
+- **Déposer, double-cliquer.** Glissez une pastille de la palette sur une forme : la forme prend cette nature. Déposée sur le vide d'une rangée ou sur le nom du jour, elle couvre toute la journée ; une pastille de fond ne change alors que le fond, les rectangles restent. Double-clic sur une bande : sa couleur devient le fond de toute la journée ; sur une pastille de fond : de toute la semaine.
+- **Corriger.** Le ✕ d'une forme, ou Suppr sur la sélection, l'efface ; les flèches la déplacent (← → 5 min, ↑ ↓ un jour) ; Échap désélectionne. Ctrl+Z annule une retouche, Ctrl+Y ou Ctrl+Maj+Z la rétablit (50 retouches par semaine affichée).
+- **Ce qui est enregistré.** Chaque retouche est enregistrée aussitôt (dossier des données, sinon ce navigateur) : il n'y a pas de bouton « Enregistrer ». Au survol, une infobulle donne la plage en clair, par exemple « mercredi 14 octobre, de 00:00 à 05:30 : Indisponible ».
 
-**« Plage précise »** (au quart d'heure, repliée : un clic sur son titre l'ouvre ; ouverte d'office au niveau Expert) : « Groupe », « Catégorie », cases des jours (Lun à Dim), « de » et « à » (UTC), puis « Ajouter ». Horaires vides = journée entière ; une heure saisie hors du quart d'heure est arrondie (le début au quart précédent, la fin au quart suivant) et le message le dit. Sous le formulaire, une ligne rappelle les thèmes de mission ouverts par la catégorie ; pour une catégorie personnalisée, le lien « Mes types de missions… » mène aux préférences de Mon profil.
+**« Plage précise »** (repliée : un clic sur son titre l'ouvre) : « Groupe », « Catégorie », cases des jours, « de » et « à » (UTC, à la minute), puis « Ajouter ». La plage est posée sur chaque jour coché, avec la règle de la dernière forme. Horaires vides = journée entière ; sans fin, jusqu'à minuit ; une fin avant le début est refusée. Ctrl+Z annule l'ajout.
 
 **Autres boutons**
-- « ⧉ Semaine précédente » : recopie les plages de la semaine précédente (remplace la semaine affichée, après confirmation).
-- « Tout effacer » : vide la semaine affichée (après confirmation).
+- « ⧉ Semaine précédente » : recopie la semaine précédente dans la semaine affichée (après confirmation si elle n'est pas vide) ; Ctrl+Z l'annule.
+- « Tout effacer » : vide la semaine affichée ; Ctrl+Z l'annule.
 - « Écrire dans le dossier des données (n) » : n'apparaît que si des semaines sont restées dans le navigateur ; les écrit dans le dossier partagé.
 
 Le message sous le bloc indique où la saisie est partie : « Enregistré dans le dossier des données. », ou « Gardé dans ce navigateur, le Centre ne le voit pas : … » si le dossier des données n'est pas autorisé (voir [Premier lancement](#premier-lancement), étape 3).
@@ -293,13 +297,13 @@ Le lien « Ouvrir la saisie des disponibilités seule » mène à la page Mes di
 ## Mes disponibilités
 <!-- page: apps/pilot/disponibilites.html -->
 
-Cette page présente seule l'éditeur des disponibilités, en plus grand. Elle sert à saisir rapidement plusieurs semaines.
+Cette page présente seule la saisie des disponibilités, en plus grand. Elle sert à saisir rapidement plusieurs semaines.
 On y arrive par l'onglet « Mes disponibilités » (sous l'entrée « Mes missions » de la barre latérale) ou par le lien « Ouvrir la saisie des disponibilités seule » de Mes missions. Ce lien n'apparaît qu'au niveau Expert.
 Le pilote est celui du trigramme de travail (profil pilote, connexion ou usurpation). En mode production, la page demande d'abord de se connecter.
 
 ### Mes disponibilités
 
-Le bloc unique de la page. Il fonctionne exactement comme le bloc du même nom de Mes missions (chapitre précédent) : palette, grille heure par heure, « Plage précise » (repliée, ouverte d'office au niveau Expert), « ⧉ Semaine précédente », « Tout effacer ».
+Le bloc unique de la page. Il fonctionne exactement comme le bloc du même nom de Mes missions (chapitre précédent) : palette, grille, « Comment s'en servir », « Plage précise », « ⧉ Semaine précédente », « Tout effacer ».
 
 **Navigation de semaine** (propre à cette page) :
 - « ‹ » et « › » : semaine précédente ou suivante ;
@@ -307,8 +311,8 @@ Le bloc unique de la page. Il fonctionne exactement comme le bloc du même nom d
 - « Semaine en cours » : visible hors de la semaine en cours, y revient.
 
 Astuces et limites :
-- Toutes les heures sont en UTC. La grille travaille à l'heure ; « Plage précise » au quart d'heure.
-- Chaque retouche est enregistrée tout de suite : il n'y a pas de bouton « Enregistrer ».
+- Toutes les heures sont en UTC. Un tracé s'aimante à la demi-heure ; déplacer et ajuster vont au pas de 5 min ; « Plage précise » va à la minute.
+- Chaque retouche est enregistrée tout de suite : il n'y a pas de bouton « Enregistrer ». Ctrl+Z l'annule.
 - Sans trigramme, le bloc affiche « Trigramme non réglé : le régler dans Paramètres › Mon profil (ou ☰ › Profil pilote). »
 - Une adresse de la forme `disponibilites.html?semaine=2026-W41` ouvre directement une semaine donnée.
 - Si la semaine est encore en cours de lecture, une retouche est refusée avec « Semaine en cours de lecture : réessayer dans un instant. »

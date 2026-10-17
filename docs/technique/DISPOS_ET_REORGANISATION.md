@@ -193,6 +193,6 @@ titled separators (“Centre”).
 | Users, develop / production mode, sign-in, impersonation | `shared/users.js`, `data/utilisateurs/`, `data/config/suite.json` |
 | Pool files written under lock (data folder, otherwise the browser's outbox `suiteDataOutbox:v1`) | `MissionAssignments.readData` / `writeData` / `flushData` (`shared/assignments.js`) |
 | Categories, themes opened, declarations per week | `shared/dispos.js`, `data/config/disponibilites.json`, `data/disponibilites/<TRI>/<AAAA>-W<nn>.json` |
-| Entry by ranges (My missions and standalone page); old grid read-only | `shared/dispos_editor.js`, `apps/pilot/disponibilites.html` |
+| Entry on a continuous time axis (My missions and standalone page), the availability timeline module; old grid read-only | `shared/dispos_week.js`, `shared/dispos_timeline.js`, `apps/pilot/disponibilites.html` |
 | ODV: grouped declarations, likely missions and flight checks by theme, preferences created on workbook import | `apps/cpco/odv_core.js`, `odv_assign.js`, `odv_planning.js` |
 | Grid conversion | `python tools/convert_dispos.py` (preview), `--write` |
