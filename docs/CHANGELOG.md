@@ -22,7 +22,8 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   unavailability laid over an availability cuts it; time with nothing is unavailable by default, and an empty day is
   exported as unavailable all day. Hover gives the visible range ("Wednesday 14 October, 00:00 to 05:30:
   Unavailable"); while dragging, the shape itself with its times. Repeating period box (category, dates, weekdays,
-  times, across weeks). Component JSON (schema 3: `ranges` without overlap, `background` as laid) with schema 2
+  times, across weeks). Component JSON (schema 3: `ranges` is the declaration, the truth, without overlap; `background`, the background
+  as laid, is an editing convenience a reader can ignore) with schema 2
   readers / writers.
 - **Assignment: declared aircraft variants** — a pilot's declaration may list variants per ICAO designator
   (`appareils.variantes`, e.g. `{ "CL2T": ["CL-415"] }`; editor by Features SOG). Qualification stays per designator

@@ -15,8 +15,8 @@
   //     Indisponible ») ; pendant un geste, la forme elle-même, aimantée, horaires dedans ;
   //   · période répétitive : catégorie, dates, jours, horaires, sur plusieurs semaines (par store).
   // Modèle du composant (schema 3) : { schema: 3, pilot, week: "AAAA-Wnn", tz: "UTC", ranges: [{ start, end, cat }],
-  // background: [...] } ; ranges : la déclaration, sans chevauchement (dispos, puis fond visible) ; background : le fond
-  // tel que posé, dessous compris (aide à l'édition). Dates « AAAA-MM-JJTHH:MM » (fin exclue). Catégories : configuration
+  // background: [...] } ; ranges : la déclaration (la vérité), sans chevauchement (dispos, puis fond visible) ;
+  // background : le fond tel que posé, dessous compris, commodité d'édition qu'un lecteur peut ignorer. Dates « AAAA-MM-JJTHH:MM » (fin exclue). Catégories : configuration
   // séparée { categories: [{ id, label, letter, color, layer: "background" | "foreground", group, legacy }] }.
   // Lecteurs / écrivains : schema 2 de la suite (une déclaration par semaine, plages par jour au quart d'heure) ↔ schema 3.
   // API (window.DisposTimeline) : mount(hôte, { config, week, data, onChange(data), store }) → { set(data), get(),

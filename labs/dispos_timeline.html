@@ -56,7 +56,7 @@
 <p class="small">Maquette hors suite, en français seulement. Les données restent dans ce navigateur (une entrée par semaine). Heures en UTC.</p>
 <div class="card"><div class="row"><label>Pilote <input id="tri" value="TST" size="5" maxlength="5"></label><button type="button" id="clear">Vider la semaine</button><span class="small" id="status"></span></div></div>
 <div class="card" id="host"></div>
-<div class="card"><details><summary>Données de la semaine (schema 3, format du composant)</summary><pre id="json3"></pre></details>
+<div class="card"><details><summary>Données de la semaine (schema 3, format du composant)</summary><p class="small"><code>ranges</code> : la déclaration (la vérité), sans chevauchement. <code>background</code> : le fond tel que posé, dessous compris, simple commodité d'édition qu'un lecteur peut ignorer.</p><pre id="json3"></pre></details>
 <details><summary>Même semaine au format de la suite (schema 2, quart d'heure)</summary><pre id="json2"></pre></details></div>
 </main>
 <script src="dispos_timeline.js"></script>

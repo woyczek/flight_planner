@@ -47,7 +47,7 @@ ou maintient la suite. Les manuels et guides d'utilisation sont au [premier nive
 
 | Document | For |
 |---|---|
-| [`labs/`](../../labs/dispos_timeline.html) — availability timeline | mock-ups, outside the suite (not linked from its menus): week view on a continuous time axis, background layer (nature of the unavailability) and availability rectangles on top, one state per minute (under an availability the background does not count, but stays in place), repeating period box; component JSON (schema 3: `ranges` without overlap, `background` as laid) and readers / writers for the suite's schema 2 (`labs/dispos_timeline.js`) |
+| [`labs/`](../../labs/dispos_timeline.html) — availability timeline | mock-ups, outside the suite (not linked from its menus): week view on a continuous time axis, background layer (nature of the unavailability) and availability rectangles on top, one state per minute (under an availability the background does not count, but stays in place), repeating period box; component JSON (schema 3: `ranges` is the declaration, the truth, without overlap; `background` is the background as laid, an editing convenience a reader can ignore) and readers / writers for the suite's schema 2 (`labs/dispos_timeline.js`) |
 
 ## Audits et mesures
 
