@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Dispos — axe continu</title>
+<!-- Maquette hors suite (labs/) : saisie des disponibilités sur un axe de temps continu (labs/dispos_timeline.js). Données
+     dans ce navigateur (localStorage), une entrée par semaine. Non reliée à la navigation de la suite. -->
+<style>
+  :root {
+    color-scheme: light
+  }
+  body {
+    margin: 0;
+    padding: 16px;
+    background: #f2f4f7;
+    color: #17202a;
+    font: 14px/1.45 system-ui, sans-serif
+  }
+  main {
+    max-width: 1280px;
+    margin: 0 auto;
+    display: grid;
+    gap: 14px
+  }
+  h1 {
+    font-size: 18px;
+    margin: 0
+  }
+  .card {
+    background: #fff;
+    border: 1px solid #0001;
+    border-radius: 8px;
+    padding: 12px 14px
+  }
+  details pre {
+    max-height: 320px;
+    overflow: auto;
+    background: #f6f8fa;
+    padding: 8px;
+    font-size: 12px
+  }
+  .row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap
+  }
+  button {
+    font: inherit
+  }
+  .small {
+    font-size: 12px;
+    opacity: .75
+  }
+</style></head>
+<body><main>
+<h1>Disponibilités — maquette : axe de temps continu</h1>
+<p class="small">Maquette hors suite, en français seulement. Les données restent dans ce navigateur (une entrée par semaine). Heures en UTC.</p>
+<div class="card"><div class="row"><label>Pilote <input id="tri" value="TST" size="5" maxlength="5"></label><button type="button" id="clear">Vider la semaine</button><span class="small" id="status"></span></div></div>
+<div class="card" id="host"></div>
+<div class="card"><details><summary>Données de la semaine (schema 3, format du composant)</summary><pre id="json3"></pre></details>
+<details><summary>Même semaine au format de la suite (schema 2, quart d'heure)</summary><pre id="json2"></pre></details></div>
+</main>
+<script src="dispos_timeline.js"></script>
+<script>
+  const T = window.DisposTimeline,
+    $ = id => document.getElementById(id),
+    key = (tri, w) => `labDisposTimeline:${tri}:${w}`,
+    read = (tri, w) => {
+      try {
+        return JSON.parse(localStorage.getItem(key(tri, w)) || 'null');
+      } catch {
+        return null;
+      }
+    };
+  const show = d => {
+    $('json3').textContent = JSON.stringify(d, null, 2);
+    $('json2').textContent = JSON.stringify(T.toSchema2(d, T.DEFAULT_CONFIG), null, 2);
+  };
+  const save = d => {
+    try {
+      localStorage.setItem(key(d.pilot, d.week), JSON.stringify(d));
+      $('status').textContent = `enregistré ${new Date().toLocaleTimeString('fr-FR')}`;
+    } catch (e) {
+      $('status').textContent = `non enregistré : ${e.message}`;
+    }
+    show(d);
+  };
+  const tri = () => $('tri').value.trim().toUpperCase() || 'TST';
+  const week0 = T.weekId(Date.now());
+  const ui = T.mount($('host'), {
+    week: week0,
+    data: read(tri(), week0) || {
+      schema: 3,
+      pilot: tri(),
+      week: week0,
+      ranges: []
+    },
+    onChange: d => save({
+      ...d,
+      pilot: tri()
+    })
+  });
+  /** Charge la semaine affichée (changement de semaine ou de pilote). */
+  const load = () => {
+    const w = ui.week();
+    ui.set(read(tri(), w) || {
+      schema: 3,
+      pilot: tri(),
+      week: w,
+      ranges: []
+    });
+    show(ui.get());
+  };
+  $('host').addEventListener('dispos-timeline-week', load);
+  $('tri').addEventListener('change', load);
+  $('clear').onclick = () => {
+    ui.set({
+      schema: 3,
+      pilot: tri(),
+      week: ui.week(),
+      ranges: []
+    });
+    save({
+      ...ui.get(),
+      pilot: tri()
+    });
+  };
+  show(ui.get());
+</script>
+</body></html>

@@ -43,6 +43,12 @@ ou maintient la suite. Les manuels et guides d'utilisation sont au [premier nive
 | [Icônes des designs](PROPOSITION_DESIGN_ICONES.md) · [démonstration](demo_design_icones.html) | proposition : icônes, numéros et sous-titres de blocs, barre latérale |
 | Planches (`planches/`) | planches de référence et sources des découpes (onglets, liserés, bannières, rubriques) |
 
+## Prototypes (outside the suite)
+
+| Document | For |
+|---|---|
+| [`labs/`](../../labs/dispos_timeline.html) — availability timeline | mock-ups, outside the suite (not linked from its menus): week view on a continuous time axis, background layer (unavailability) and foreground rectangles (available, exercise, busy), last shape wins; component JSON (schema 3) and readers / writers for the suite's schema 2 (`labs/dispos_timeline.js`) |
+
 ## Audits et mesures
 
 | Document | Pour |
