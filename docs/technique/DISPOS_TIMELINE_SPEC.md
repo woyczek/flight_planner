@@ -261,7 +261,7 @@ The repeating period box lays one category over a date span:
 
 ```text
 DisposTimeline.mount(host, {
-  config, week, data, lang, labels, t, density, help, nav, period, onChange, store
+  config, week, data, lang, labels, t, density, help, nav, period, buttonClass, onChange, store
 }) → api
 api: get(), set(data), replace(data), add(ranges), week(id?), brush(id?), slot(name), clear(), undo(), redo(),
      history(), destroy()
@@ -283,6 +283,8 @@ api: get(), set(data), replace(data), add(ranges), week(id?), brush(id?), slot(n
 - `labels` and `t`: the texts (section 6.4).
 - `nav` and `period`: `false` hides the component's own week bar, or its repeating period box. A host page that has its
   own week navigation or its own entry form uses them. Without the period box, the help leaves out its paragraph.
+- `buttonClass`: a class added to the component's own buttons (palette chips, ✕), for a host page whose theme styles
+  every button: the host's way to leave a button unstyled (`repo-plain` in the X-Plane Web Suite).
 - `onChange(data)`: called with schema 3 data after every change.
 - `store: { read(week) → data | null, write(data) }`: used by the repeating period for weeks other than the one
   shown.

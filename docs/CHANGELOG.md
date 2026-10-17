@@ -161,7 +161,8 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   - In a schema 2 week, two availability categories laid over the same time are read with the later one winning.
   - `shared/dispos_editor.js` is removed, with its texts. The user manual (four languages) is rewritten on the new
     entry. `docs/technique/DISPOS_ET_REORGANISATION.md` § 1.3 is updated, and the module specification adds `nav`,
-    `period`, `add(ranges)`, `slot("palette")` and `dispos-brush`.
+    `period`, `add(ranges)`, `slot("palette")`, `buttonClass` and `dispos-brush`. The palette chips and the ✕ keep
+    their colours and square corners under every design (`repo-plain`, and a kept `!important` for the corners).
 - **Aircraft types: last duplicates** — the Poll-Schumann fuel model now resolves the type through the common
   catalogue first (aliases followed: H145 → EC45); its `SYN` table is kept: it is not a name table but the nearby
   reference aircraft its data give for an uncovered type (C-17 → B764). The Landing dashboard no longer redefines the

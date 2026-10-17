@@ -27,7 +27,9 @@ the component's code unchanged: anything the page needs comes through its option
 - Choose the density with the `density` option. `compact`, the default, takes about 200 px of height for the grid,
   with rows of 22 px and hour cells like a timetable. `comfortable` has rows twice as high. At about 800 px of width,
   short rectangles show their letter only; their times are in the hover text.
-- Do not style the component's inner classes (`dt-…`). Use the CSS variables (section 6) instead.
+- Do not style the component's inner classes (`dt-…`). Use the CSS variables (section 6) instead. When the page's theme
+  styles every `<button>`, pass `buttonClass` with the class that exempts a button from it, or the palette chips lose
+  their colours.
 - The page keeps its own controls outside the container: person picker, Undo / Redo buttons, Clear, Save. When it has
   its own week navigation or entry form, pass `nav: false` or `period: false`, then lay its ranges with `api.add`.
   `api.slot("palette")` gives it a line under the palette; `dispos-brush` says which category is chosen.

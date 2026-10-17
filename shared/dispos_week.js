@@ -139,7 +139,8 @@
 .dw-days{display:inline-flex;flex-wrap:wrap;gap:2px 8px}.dw-days label{font-size:12px}.dw-themes{margin:2px 0 0;font-size:12px;opacity:.85}
 .dw-precise>summary{cursor:pointer;font-size:12px;opacity:.85}.dw-precise[open]>summary{margin-bottom:6px}.dw-msg{margin:0}
 .dw-legend{display:grid;grid-template-columns:max-content 1fr;gap:3px 6px;align-items:center}.dw-legend-r{display:flex;flex-wrap:wrap;gap:2px}
-.dw-legend-n{font:400 10.5px/1.2 system-ui,sans-serif;opacity:.85;white-space:nowrap}.dw-chip{padding:0 3px;border:1px solid rgba(0,0,0,.3);font:400 9.5px/1.45 system-ui,sans-serif;white-space:nowrap}`;
+.dw-legend-n{font:400 10.5px/1.2 system-ui,sans-serif;opacity:.85;white-space:nowrap}
+.dw-wrap :is(.dt-brush,.dt-x){border-radius:0 !important /* garder */;min-height:0 !important /* garder */;height:auto !important /* garder */;letter-spacing:0 !important /* garder */;text-transform:none !important /* garder */;text-shadow:none !important /* garder */;margin:0 !important /* garder */}.dw-chip{padding:0 3px;border:1px solid rgba(0,0,0,.3);font:400 9.5px/1.45 system-ui,sans-serif;white-space:nowrap}`;
     document.head.append(s);
   }
   /** Couleur d'encre lisible sur le fond c. */
@@ -211,6 +212,8 @@
         help: 'collapsed',
         nav: false,
         period: false,
+        buttonClass: 'repo-plain', // pastilles et ✕ du module : hors du style des boutons des designs (angles : règle
+        // « garder » de css(), un design arrondit aussi les boutons repo-plain)
         onChange: d => queueSave(tri, d)
       });
       const slot = ui.slot('palette');

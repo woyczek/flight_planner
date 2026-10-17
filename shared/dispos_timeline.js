@@ -17,7 +17,7 @@
   // Textes : anglais par défaut (DEFAULT_LABELS) ; la page traduit par labels { clé: texte } ou t(clé, défaut), y compris
   // les catégories (« cat.<id> ») et les groupes (« group.<id> ») ; dates et jours par Intl dans la langue lang.
   // API (window.DisposTimeline) : mount(hôte, { config, week, data, lang, labels, t, density, help, nav, period,
-  //   onChange(data), store }) → { get(), set(data), replace(data), add(plages), week(id), brush(id), slot(nom), clear(),
+  //   buttonClass, onChange(data), store }) → { get(), set(data), replace(data), add(plages), week(id), brush(id), slot(nom), clear(),
   //   undo(), redo(), history(), destroy() } (événement dispos-brush en plus) ; événements sur l'hôte :
   //   dispos-change (detail : données), dispos-select (detail : plage { start, end, cat } ou null), dispos-week,
   //   dispos-history ; DEFAULT_CONFIG, DEFAULT_LABELS, weekId(date), weekMonday(id), addWeek(id, n), model (fonctions
@@ -407,6 +407,7 @@ padding:0 6px;overflow:hidden;white-space:nowrap;font-size:11.5px;cursor:grab;bo
     help = true,
     nav = true,
     period = true,
+    buttonClass = '', // classe ajoutée aux boutons internes (pastilles, ✕) : style de boutons de la page hôte écarté
     onChange = null,
     store = null
   } = {}) {
@@ -425,6 +426,7 @@ padding:0 6px;overflow:hidden;white-space:nowrap;font-size:11.5px;cursor:grab;bo
     });
     const cap = x => x.charAt(0).toUpperCase() + x.slice(1);
     const compact = density !== 'comfortable';
+    const bc = buttonClass ? ` ${esc(buttonClass)}` : '';
     /** Libellé court d'une catégorie (palette compacte) : « short.<id> », sinon c.short, sinon le libellé sans le nom
      *  du groupe en tête ni la précision entre parenthèses, mots longs abrégés au-delà de 12 caractères. */
     const shortOf = c => {
@@ -493,8 +495,8 @@ padding:0 6px;overflow:hidden;white-space:nowrap;font-size:11.5px;cursor:grab;bo
     function renderPalette() {
       const groups = config.groups.map(g => {
         const list = config.categories.filter(c => c.group === g.id),
-          extra = g.layer === 'background' && g === config.groups.find(x => x.layer === 'background') ? `<button type="button" class="dt-brush" data-brush="${ERASE}" aria-pressed="${state.brush === ERASE}" title="${esc(txt('erase.title'))}" style="--c:#fff;--k:#111">${compact ? `⌫ ${esc(txt('erase'))}` : `<i style="background:#fff;border:1px dashed #0008;color:#111">⌫</i>${esc(txt('erase'))}`}</button>` : '';
-        return list.length ? `<span class="dt-pal-g">${esc(txt(`group.${g.id}`, null, g.label))}</span><span class="dt-pal-r">${list.map(c => `<button type="button" class="dt-brush" data-brush="${esc(c.id)}" aria-pressed="${c.id === state.brush}" title="${esc(txt(c.layer === 'background' ? 'brush.bg' : 'brush.fg', { label: lab(c) }))}" style="--c:${esc(c.color)};--k:${ink(c.color)}">${compact ? esc(`${c.letter ? `${c.letter} ` : ''}${shortOf(c)}`) : `<i style="background:${esc(c.color)};color:${ink(c.color)}">${esc(c.letter || '')}</i>${esc(lab(c))}`}</button>`).join('')}${extra}</span>` : '';
+          extra = g.layer === 'background' && g === config.groups.find(x => x.layer === 'background') ? `<button type="button" class="dt-brush${bc}" data-brush="${ERASE}" aria-pressed="${state.brush === ERASE}" title="${esc(txt('erase.title'))}" style="--c:#fff;--k:#111">${compact ? `⌫ ${esc(txt('erase'))}` : `<i style="background:#fff;border:1px dashed #0008;color:#111">⌫</i>${esc(txt('erase'))}`}</button>` : '';
+        return list.length ? `<span class="dt-pal-g">${esc(txt(`group.${g.id}`, null, g.label))}</span><span class="dt-pal-r">${list.map(c => `<button type="button" class="dt-brush${bc}" data-brush="${esc(c.id)}" aria-pressed="${c.id === state.brush}" title="${esc(txt(c.layer === 'background' ? 'brush.bg' : 'brush.fg', { label: lab(c) }))}" style="--c:${esc(c.color)};--k:${ink(c.color)}">${compact ? esc(`${c.letter ? `${c.letter} ` : ''}${shortOf(c)}`) : `<i style="background:${esc(c.color)};color:${ink(c.color)}">${esc(c.letter || '')}</i>${esc(lab(c))}`}</button>`).join('')}${extra}</span>` : '';
       });
       host.querySelector('[data-pal]').innerHTML = groups.join('');
     }
@@ -566,7 +568,7 @@ padding:0 6px;overflow:hidden;white-space:nowrap;font-size:11.5px;cursor:grab;bo
             sel = !!own && own === state.sel,
             first = r.s >= from && r.s === own?.s,
             last = r.e <= to && r.e === own?.e;
-          return `<div class="dt-bg${lv ? ' live' : ''}${sel ? ' sel' : ''}" role="button" aria-pressed="${sel}" aria-label="${esc(describe(r))}" data-b="${st.bg.indexOf(own)}" data-s="${r.s}" data-e="${r.e}" data-cat="${esc(r.cat)}" style="${seg(r)};background:${esc(c.color)}">${lv ? `<span class="dt-lt">${esc(`${lab(c)} ${hhmm(r.s)}–${hhmm(r.e, true)}`)}</span>` : ''}${first ? '<i class="dt-h l" data-h="l"></i>' : ''}${last ? '<i class="dt-h r" data-h="r"></i>' : ''}<button type="button" class="dt-x" data-x title="${esc(txt('delete'))}">✕</button></div>`;
+          return `<div class="dt-bg${lv ? ' live' : ''}${sel ? ' sel' : ''}" role="button" aria-pressed="${sel}" aria-label="${esc(describe(r))}" data-b="${st.bg.indexOf(own)}" data-s="${r.s}" data-e="${r.e}" data-cat="${esc(r.cat)}" style="${seg(r)};background:${esc(c.color)}">${lv ? `<span class="dt-lt">${esc(`${lab(c)} ${hhmm(r.s)}–${hhmm(r.e, true)}`)}</span>` : ''}${first ? '<i class="dt-h l" data-h="l"></i>' : ''}${last ? '<i class="dt-h r" data-h="r"></i>' : ''}<button type="button" class="dt-x${bc}" data-x title="${esc(txt('delete'))}">✕</button></div>`;
         }).join('');
         const fg = st.fg.filter(r => r.e > from && r.s < to).map(r => {
           const c = cats.get(r.cat) || {
@@ -578,7 +580,7 @@ padding:0 6px;overflow:hidden;white-space:nowrap;font-size:11.5px;cursor:grab;bo
             first = r.s >= from,
             last = r.e <= to;
           // vrai rectangle : heure de début à gauche, type au centre, heure de fin à droite
-          return `<div class="dt-fg${r === state.sel ? ' sel' : ''}${lv ? ' live' : ''}" role="button" aria-pressed="${r === state.sel}" aria-label="${esc(describe(r))}" data-f="${st.fg.indexOf(r)}" style="${seg(r)};background:${esc(c.color)};color:${ink(c.color)}"><span data-t data-full="${first ? esc(hhmm(r.s)) : ''}" data-short="${first ? esc(hShort(hhmm(r.s))) : ''}">${first ? esc(hhmm(r.s)) : ''}</span><b>${esc(c.letter || '')}</b><span data-t data-full="${last ? esc(hhmm(r.e, true)) : ''}" data-short="${last ? esc(hShort(hhmm(r.e, true))) : ''}">${last ? esc(hhmm(r.e, true)) : ''}</span>${first ? '<i class="dt-h l" data-h="l"></i>' : ''}${last ? '<i class="dt-h r" data-h="r"></i>' : ''}<button type="button" class="dt-x" data-x title="${esc(txt('delete'))}">✕</button></div>`;
+          return `<div class="dt-fg${r === state.sel ? ' sel' : ''}${lv ? ' live' : ''}" role="button" aria-pressed="${r === state.sel}" aria-label="${esc(describe(r))}" data-f="${st.fg.indexOf(r)}" style="${seg(r)};background:${esc(c.color)};color:${ink(c.color)}"><span data-t data-full="${first ? esc(hhmm(r.s)) : ''}" data-short="${first ? esc(hShort(hhmm(r.s))) : ''}">${first ? esc(hhmm(r.s)) : ''}</span><b>${esc(c.letter || '')}</b><span data-t data-full="${last ? esc(hhmm(r.e, true)) : ''}" data-short="${last ? esc(hShort(hhmm(r.e, true))) : ''}">${last ? esc(hhmm(r.e, true)) : ''}</span>${first ? '<i class="dt-h l" data-h="l"></i>' : ''}${last ? '<i class="dt-h r" data-h="r"></i>' : ''}<button type="button" class="dt-x${bc}" data-x title="${esc(txt('delete'))}">✕</button></div>`;
         }).join('');
         const dayMs = mon + d * 864e5,
           dayLabel = compact ? `${esc(dateOf(dayMs, { weekday: 'short' }).replace(/\.$/, ''))}<small>${esc(dateOf(dayMs, { day: '2-digit', month: '2-digit' }))}</small>` : `${esc(cap(dateOf(dayMs, { weekday: 'long' })))}<small>${esc(dateOf(dayMs, { day: 'numeric', month: 'short' }))}</small>`;
