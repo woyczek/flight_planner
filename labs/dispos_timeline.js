@@ -385,7 +385,7 @@
 .dt-brush{display:inline-flex;align-items:center;gap:6px;border:1px solid #0003;background:#fff;color:#111;padding:3px 8px;cursor:grab;font:inherit;font-size:12.5px;touch-action:none}
 .dt-brush i{display:inline-block;min-width:18px;height:18px;font:700 11px/18px system-ui;text-align:center;font-style:normal}
 .dt-brush[aria-pressed=true]{outline:2px solid #1d6fd8;outline-offset:1px}
-.dt-grid{display:grid;grid-template-columns:7.5em 1fr;gap:4px 8px;position:relative}
+.dt-grid{display:grid;grid-template-columns:7.5em 1fr;gap:11px 8px;position:relative}
 .dt-day{font-size:12.5px;line-height:1.2;align-self:center}.dt-day small{display:block;opacity:.7}
 .dt-axis{position:relative;height:18px;font-size:10.5px;opacity:.7}.dt-axis span{position:absolute;transform:translateX(-50%)}
 .dt-row{position:relative;height:44px;border:1px solid #0002;touch-action:none;cursor:crosshair;
@@ -452,7 +452,7 @@ padding:0 6px;overflow:hidden;white-space:nowrap;font-size:11.5px;cursor:grab;bo
         <label>de <input type="time" step="300" data-p-s></label><label>à <input type="time" step="300" data-p-e></label>
         <button type="button" data-p-add>Ajouter</button><span class="dt-help" data-p-msg>Horaires vides : journée entière. Fin avant le début : jusqu'au lendemain.</span></div></details>
       <div class="dt-grid" data-grid></div>
-      <p class="dt-help">Glisser sur du vide : tracer (fond, couleur seule, ou dispo, rectangle) ; sur plusieurs rangées, un rectangle de sélection pose les mêmes heures sur chaque jour couvert. Dispos : glisser le corps pour déplacer (pas de 5 min ; vers une autre rangée : même horaire, autre jour), les bords pour ajuster ; Maj+glisser sur une dispo : tracer par-dessus (découpe) ; avec un pinceau de fond, le tracé découpe les dispos en direct ; clic : sélection (Suppr, ← → 5 min, ↑ ↓ un jour, Échap) ; appui long au doigt : sélection. Palette : clic, pinceau ; entrée glissée sur une dispo ou une bande de fond : elle en change la nature, sur son étendue (entrée de fond sur une dispo : remplacée par ce fond ; entrée de dispo sur une bande : un rectangle à sa place) ; sur le vide d'une rangée ou sur le nom du jour : journée entière ; double-clic sur une entrée de fond : fond de la semaine. Double-clic sur une bande (ou sur la rangée, pinceau de fond) : remplace le fond du jour. Ctrl+Z annule, Ctrl+Y ou Ctrl+Maj+Z rétablit. Une minute a un seul état : sous une dispo, le fond ne compte pas, mais il reste en place (dispo déplacée ou effacée : le fond revient) ; une non-disponibilité posée sur une dispo la découpe ; temps sans rien : indisponible par défaut, et un jour vide s'exporte « indisponible » toute la journée.</p></div>`;
+      <p class="dt-help">Glisser depuis le vide, une bande de fond ou la gouttière entre deux rangées : tracer (fond, couleur seule, ou dispo, rectangle) ; sur plusieurs rangées, un rectangle de sélection pose les mêmes heures sur chaque jour couvert. Clic sur une dispo : sélection, quel que soit le pinceau. Dispos : glisser le corps pour déplacer (pas de 5 min ; vers une autre rangée : même horaire, autre jour), les bords pour ajuster ; Maj+glisser sur une dispo : tracer par-dessus (découpe) ; avec un pinceau de fond, le tracé découpe les dispos en direct ; clic : sélection (Suppr, ← → 5 min, ↑ ↓ un jour, Échap) ; appui long au doigt : sélection. Palette : clic, pinceau ; entrée glissée sur une dispo ou une bande de fond : elle en change la nature, sur son étendue (entrée de fond sur une dispo : remplacée par ce fond ; entrée de dispo sur une bande : un rectangle à sa place) ; sur le vide d'une rangée ou sur le nom du jour : journée entière ; double-clic sur une entrée de fond : fond de la semaine. Double-clic sur une bande (ou sur la rangée, pinceau de fond) : remplace le fond du jour. Ctrl+Z annule, Ctrl+Y ou Ctrl+Maj+Z rétablit. Une minute a un seul état : sous une dispo, le fond ne compte pas, mais il reste en place (dispo déplacée ou effacée : le fond revient) ; une non-disponibilité posée sur une dispo la découpe ; temps sans rien : indisponible par défaut, et un jour vide s'exporte « indisponible » toute la journée.</p></div>`;
     const grid = host.querySelector('[data-grid]');
     const cur = () => preview || state;
     const emit = () => onChange?.(toData(state));
@@ -591,15 +591,24 @@ padding:0 6px;overflow:hidden;white-space:nowrap;font-size:11.5px;cursor:grab;bo
       histEvent();
       return true;
     };
-    /** Jour (0–6) de la rangée sous le pointeur, borné à la semaine (au-dessus : lundi, en dessous : dimanche). */
+    /** Jour (0–6) de la rangée sous le pointeur, borné à la semaine (au-dessus : lundi, en dessous : dimanche) ; dans la
+     *  gouttière entre deux rangées : la plus proche. */
     const dayAt = y => {
-      const rows = [...grid.querySelectorAll('.dt-row')];
-      if (!rows.length) return 0;
-      for (const [i, r] of rows.entries()) {
-        const b = r.getBoundingClientRect();
-        if (y < b.bottom + 2) return i;
-      }
-      return rows.length - 1;
+      const rows = [...grid.querySelectorAll('.dt-row')].map(r => r.getBoundingClientRect());
+      for (let i = 0; i < rows.length - 1; i++)
+        if (y < (rows[i].bottom + rows[i + 1].top) / 2) return i;
+      return Math.max(0, rows.length - 1);
+    };
+    /** Rangées que traverse un rectangle de sélection, du point de départ au pointeur (gouttières comprises) ; tout
+     *  entier dans une gouttière : la rangée la plus proche. */
+    const rowsSpan = (ya, yb) => {
+      const lo = Math.min(ya, yb),
+        hi = Math.max(ya, yb),
+        hit = [...grid.querySelectorAll('.dt-row')].map((r, i) => {
+          const b = r.getBoundingClientRect();
+          return b.bottom > lo && b.top < hi ? i : -1;
+        }).filter(i => i >= 0);
+      return hit.length ? [hit[0], hit[hit.length - 1]] : [dayAt(lo), dayAt(lo)];
     };
     /** Minute de la semaine sous le pointeur, dans la rangée du jour d (bornée à 0–24 h de ce jour). */
     const minuteAt = (d, x) => {
@@ -613,14 +622,17 @@ padding:0 6px;overflow:hidden;white-space:nowrap;font-size:11.5px;cursor:grab;bo
       id);
 
     grid.addEventListener('pointerdown', e => {
-      const row = e.target.closest('.dt-row');
-      if (!row || e.button > 0) return;
-      if (e.target.closest('[data-x]')) return; // croix : clic
+      // départ dans une rangée ou dans la gouttière entre deux rangées (colonne de l'axe) ; noms des jours, axe et
+      // croix : non
+      const row = e.target.closest('.dt-row'),
+        lane = grid.querySelector('.dt-row')?.getBoundingClientRect();
+      if (e.button > 0 || e.target.closest('[data-x], .dt-day, .dt-axis')) return;
+      if (!row && (!lane || e.clientX < lane.left || e.clientX > lane.right)) return;
       hover.hidden = true;
       const fgEl = e.target.closest('.dt-fg'),
         r = fgEl ? state.fg[+fgEl.dataset.f] : null,
         handle = e.target.closest('[data-h]')?.dataset.h,
-        d = +row.dataset.d,
+        d = row ? +row.dataset.d : dayAt(e.clientY),
         m = minuteAt(d, e.clientX);
       e.preventDefault();
       if (r && handle) drag = {
@@ -648,6 +660,7 @@ padding:0 6px;overflow:hidden;white-space:nowrap;font-size:11.5px;cursor:grab;bo
       };
       drag.moved = false;
       drag.pid = e.pointerId;
+      drag.tol = r && drag.mode === 'draw' ? 8 : 3; // départ sur une dispo, pinceau de fond : un clic la sélectionne
       if (r) drag.long = setTimeout(() => { // appui long : sélection
         if (drag && !drag.moved) {
           state.sel = r;
@@ -660,7 +673,7 @@ padding:0 6px;overflow:hidden;white-space:nowrap;font-size:11.5px;cursor:grab;bo
     window.addEventListener('pointermove', e => {
       if (palDrag) return palMove(e);
       if (!drag) return hoverAt(e);
-      if (!drag.moved && Math.hypot(e.clientX - (drag.x0 ?? e.clientX), e.clientY - (drag.y0 ?? e.clientY)) > 3) {
+      if (!drag.moved && Math.hypot(e.clientX - (drag.x0 ?? e.clientX), e.clientY - (drag.y0 ?? e.clientY)) > drag.tol) {
         drag.moved = true;
         try {
           grid.setPointerCapture(drag.pid); // le geste continue hors de la rangée (la grille n'est pas redessinée)
@@ -674,13 +687,11 @@ padding:0 6px;overflow:hidden;white-space:nowrap;font-size:11.5px;cursor:grab;bo
         // tracé : dans la rangée de départ, ou en rectangle de sélection sur plusieurs rangées (la même plage horaire
         // sur chaque jour couvert) ; un pinceau de fond découpe les dispos dès l'aperçu
         const id = state.brush,
-          d1 = dayAt(e.clientY),
+          [da, db] = rowsSpan(drag.y0, e.clientY),
           t0 = drag.m0 - drag.d * DAY,
-          t1 = minuteAt(d1, e.clientX) - d1 * DAY,
+          t1 = minuteAt(da, e.clientX) - da * DAY,
           s = clamp(snap(Math.min(t0, t1), SNAP_DRAW), 0, DAY - SNAP_DRAW),
           en = clamp(snap(Math.max(t0, t1), SNAP_DRAW), s + SNAP_DRAW, DAY),
-          da = Math.min(drag.d, d1),
-          db = Math.max(drag.d, d1),
           spans = [];
         for (let d = da; d <= db; d++) spans.push([d * DAY + s, d * DAY + en]);
         drag.result = {

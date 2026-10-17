@@ -17,8 +17,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   colour only; double-click replaces the background of the day (from the palette: of the week); "Erase background"
   brush; drawn over an availability, the cut shows while dragging. Availabilities on top: square rectangles (start
   time left, type centred, end time right), snapped to the half-hour, edges and moves by 5 min, moved to another row:
-  same times, another day (↑ ↓ on a selection); Shift+drag on an availability draws over it. A drag across several
-  rows draws a selection rectangle (as in a vector drawing program): the same time range on each day covered. A palette
+  same times, another day (↑ ↓ on a selection); Shift+drag on an availability draws over it. Rows are spaced by a gutter that is
+  part of the drawing area. A drag across several rows draws a selection rectangle (as in a vector drawing program),
+  started anywhere in the grid (empty space, a background band, a gutter): the same time range on each day it crosses.
+  A plain click on an availability selects it whatever the brush. A palette
   entry dropped onto an availability or a background band changes its nature over its extent (a background entry on
   an availability replaces it with that background, an availability entry on a band puts a rectangle in its place);
   onto the empty part of a row or the day name, it fills the whole day. Undo history per displayed week, 50 steps, one per gesture: Ctrl+Z, Ctrl+Y /
