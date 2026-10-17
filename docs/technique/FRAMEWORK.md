@@ -29,6 +29,7 @@ on every page. This document describes each component, its role and its interfac
 | ZIP archives (writing, reading, SHA-256) | `shared/zip_store.js` | Maintenance (full backup, SIA export) |
 | Maintenance (versions, dependencies, step-by-step SIA, full backup, log) | `shared/maintenance_page.js` | `apps/settings/maintenance.html` |
 | Registry of generated missions | `shared/mission_registry.js` | `apps/cpco/mission_registry.html` |
+| Availability timeline (stand-alone module: no dependency on this framework, English texts, `labels` / `t`; formats schema 3 ↔ schema 2 and others) | `shared/dispos_timeline.js`, `shared/dispos_formats.js` | `labs/dispos_timeline.html` (example); not yet in the suite's pages — [specification](DISPOS_TIMELINE_SPEC.md), [integration](DISPOS_TIMELINE_INTEGRATION.md) |
 | Maintenance tools | `tools/` | repository |
 
 ## 1. `config/repository_tree` — tree, themes, menu

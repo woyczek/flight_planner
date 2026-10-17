@@ -1,8 +1,10 @@
 <!doctype html>
 <html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Dispos — axe continu</title>
-<!-- Maquette hors suite (labs/) : saisie des disponibilités sur un axe de temps continu (labs/dispos_timeline.js). Données
-     dans ce navigateur (localStorage), une entrée par semaine. Non reliée à la navigation de la suite. -->
+<!-- Page d'exemple du module de saisie des disponibilités (shared/dispos_timeline.js, formats : shared/dispos_formats.js),
+     hors suite : textes en français par l'option labels (le module est en anglais par défaut), données dans ce navigateur
+     (localStorage, une entrée par semaine). Le paquet de livraison (tools/publish_dist.py) la reprend en example.html, ses
+     scripts à côté d'elle. -->
 <style>
   :root {
     color-scheme: light
@@ -52,16 +54,18 @@
   }
 </style></head>
 <body><main>
-<h1>Disponibilités — maquette : axe de temps continu</h1>
-<p class="small">Maquette hors suite, en français seulement. Les données restent dans ce navigateur (une entrée par semaine). Heures en UTC.</p>
-<div class="card"><div class="row"><label>Pilote <input id="tri" value="TST" size="5" maxlength="5"></label><button type="button" id="clear">Vider la semaine</button><button type="button" id="undo" disabled title="Ctrl+Z">Annuler</button><button type="button" id="redo" disabled title="Ctrl+Y ou Ctrl+Maj+Z">Rétablir</button><span class="small" id="status"></span></div></div>
+<h1>Disponibilités — saisie sur un axe de temps continu</h1>
+<p class="small">Page d'exemple du module, en français par l'option <code>labels</code>. Les données restent dans ce navigateur (une entrée par semaine). Heures en UTC.</p>
+<div class="card"><div class="row"><label>Pilote <input id="tri" value="TST" size="5" maxlength="5"></label><button type="button" id="clear">Vider la semaine</button><button type="button" id="undo" disabled title="Ctrl+Z">Annuler</button><button type="button" id="redo" disabled title="Ctrl+Y ou Ctrl+Maj+Z">Rétablir</button><span class="small" id="status"></span><span class="small" id="selection"></span></div></div>
 <div class="card" id="host"></div>
 <div class="card"><details><summary>Données de la semaine (schema 3, format du composant)</summary><p class="small"><code>ranges</code> : la déclaration (la vérité), sans chevauchement. <code>background</code> : le fond tel que posé, dessous compris, simple commodité d'édition qu'un lecteur peut ignorer.</p><pre id="json3"></pre></details>
 <details><summary>Même semaine au format de la suite (schema 2, quart d'heure)</summary><pre id="json2"></pre></details></div>
 </main>
-<script src="dispos_timeline.js"></script>
+<script src="../shared/dispos_timeline.js?v=0"></script>
+<script src="../shared/dispos_formats.js?v=0"></script>
 <script>
   const T = window.DisposTimeline,
+    F = window.DisposFormats,
     $ = id => document.getElementById(id),
     key = (tri, w) => `labDisposTimeline:${tri}:${w}`,
     read = (tri, w) => {
@@ -71,46 +75,87 @@
         return null;
       }
     };
+  // textes du module en français (clés de DisposTimeline.DEFAULT_LABELS, catégories « cat.<id> », groupes « group.<id> »)
+  const LABELS = {
+    'nav.today': 'cette semaine',
+    title: 'Semaine {n} — du {from} au {to} (UTC)',
+    erase: 'Effacer le fond',
+    'erase.title': 'Effacer le fond (les dispos restent)',
+    'brush.bg': '{label} — déposé sur une bande ou une dispo : en change la nature ; sur un jour : journée entière ; double-clic : fond de toute la semaine',
+    'brush.fg': '{label} — déposé sur une bande ou une dispo : en change la nature ; sur un jour : journée entière',
+    'period.title': 'Période répétitive (saisie manuelle)',
+    'period.cat': 'Catégorie',
+    'period.dateFrom': 'du',
+    'period.dateTo': 'au',
+    'period.timeFrom': 'de',
+    'period.timeTo': 'à',
+    'period.add': 'Ajouter',
+    'period.hint': 'Horaires vides : journée entière. Fin avant le début : jusqu\'au lendemain.',
+    'period.errDates': 'Dates : « du » puis « au », dans cet ordre.',
+    'period.errDays': 'Cocher au moins un jour.',
+    'period.errTimes': 'Horaires : les deux, ou aucun (journée entière).',
+    'period.done': '{n} jour(s) posé(s)',
+    'period.other': ', dont {n} autre(s) semaine(s)',
+    'period.lost': ' — {n} semaine(s) non enregistrée(s) (stockage absent)',
+    'hover.default': 'Indisponible (par défaut)',
+    'hover.day': '{day}, de {from} à {to} : {name}',
+    'hover.days': 'du {day} {from} au {day2} {to} : {name}',
+    box: '{label} {from}–{to}, {day} → {day2}',
+    delete: 'Effacer',
+    help: 'Un geste qui part sur une forme (dispo ou bande de fond) la saisit, quel que soit le pinceau : clic, sélection (Suppr, ← → 5 min, ↑ ↓ un jour, Échap ; appui long au doigt) ; glisser, déplacement (pas de 5 min ; vers une autre rangée : même horaire, autre jour) ; ses bords, ajustement ; Maj+glisser : tracer par-dessus (sur un jour couvert d\'une bande de fond, c\'est ainsi qu\'on trace une dispo). Un geste qui part à côté des formes (vide, gouttière entre deux rangées) trace avec le pinceau, qui ne dit que quoi tracer : une forme, ou sur plusieurs rangées un rectangle de sélection qui pose les mêmes heures sur chaque jour traversé ; un fond tracé à travers une dispo la découpe. Palette : clic, pinceau ; entrée déposée sur une dispo ou une bande de fond : elle en change la nature, sur son étendue (entrée de fond sur une dispo : remplacée par ce fond ; entrée de dispo sur une bande : un rectangle à sa place) ; sur le vide d\'une rangée ou sur le nom du jour : journée entière (une entrée de fond ne change que le fond, les dispos restent) ; double-clic sur une entrée de fond : fond de la semaine. Double-clic sur une bande (ou sur la rangée, pinceau de fond) : remplace le fond du jour, les dispos restent. Ctrl+Z annule, Ctrl+Y ou Ctrl+Maj+Z rétablit. Une minute a un seul état : sous une dispo, le fond ne compte pas, mais il reste en place (dispo déplacée ou effacée : le fond revient) ; temps sans rien : indisponible par défaut.',
+    'group.indispo': 'Non disponible',
+    'group.dispo': 'Disponible',
+    'group.exercice': 'Exercice',
+    'group.occupe': 'Occupé',
+    'cat.IN': 'Indisponible',
+    'cat.V': 'Congés',
+    'cat.Q': 'Récupération',
+    'cat.IR': 'Activité réelle',
+    'cat.O': 'Disponible pour tout',
+    'cat.SC': 'Disponible sécurité civile',
+    'cat.D+': 'Disponible défense',
+    'cat.S': 'Vol en exercice SOG',
+    'cat.AM': 'Contrôle SOG',
+    'cat.G': 'Vol hors SOG (IVAO / VATSIM)',
+    'cat.DC': 'DCS',
+    'cat.AT': 'Contrôle hors SOG (IVAO / VATSIM)'
+  };
   const show = d => {
     $('json3').textContent = JSON.stringify(d, null, 2);
-    $('json2').textContent = JSON.stringify(T.toSchema2(d, T.DEFAULT_CONFIG), null, 2);
+    $('json2').textContent = JSON.stringify(F.write('schema2', d), null, 2);
   };
-  const save = d => {
+  const write = d => {
     try {
-      localStorage.setItem(key(d.pilot, d.week), JSON.stringify(d));
-      $('status').textContent = `enregistré ${new Date().toLocaleTimeString('fr-FR')}`;
+      localStorage.setItem(key(tri(), d.week), JSON.stringify({
+        ...d,
+        pilot: tri()
+      }));
+      return true;
     } catch (e) {
       $('status').textContent = `non enregistré : ${e.message}`;
+      return false;
     }
-    show(d);
   };
   const tri = () => $('tri').value.trim().toUpperCase() || 'TST';
   const week0 = T.weekId(Date.now());
   const ui = T.mount($('host'), {
     week: week0,
+    lang: 'fr',
+    labels: LABELS,
     data: read(tri(), week0) || {
       schema: 3,
       pilot: tri(),
       week: week0,
       ranges: []
     },
-    onChange: d => save({
-      ...d,
-      pilot: tri()
-    }),
+    onChange: d => {
+      if (write(d)) $('status').textContent = `enregistré ${new Date().toLocaleTimeString('fr-FR')}`;
+      show(d);
+    },
     // période répétitive qui déborde de la semaine affichée : les autres semaines, lues et écrites ici
     store: {
       read: w => read(tri(), w),
-      write: d => {
-        try {
-          localStorage.setItem(key(tri(), d.week), JSON.stringify({
-            ...d,
-            pilot: tri()
-          }));
-        } catch (e) {
-          $('status').textContent = `non enregistré : ${e.message}`;
-        }
-      }
+      write
     }
   });
   /** Charge la semaine affichée (changement de semaine ou de pilote). */
@@ -124,15 +169,19 @@
     });
     show(ui.get());
   };
-  $('host').addEventListener('dispos-timeline-week', load);
+  $('host').addEventListener('dispos-week', load);
   $('tri').addEventListener('change', load);
   // vider : un geste comme un autre (il s'annule) ; boutons d'historique grisés quand il n'y a rien
   $('clear').onclick = () => ui.clear();
   $('undo').onclick = () => ui.undo();
   $('redo').onclick = () => ui.redo();
-  $('host').addEventListener('dispos-timeline-history', e => {
+  $('host').addEventListener('dispos-history', e => {
     $('undo').disabled = !e.detail.undo;
     $('redo').disabled = !e.detail.redo;
+  });
+  $('host').addEventListener('dispos-select', e => {
+    const r = e.detail;
+    $('selection').textContent = r ? `sélection : ${LABELS[`cat.${r.cat}`] || r.cat}, ${r.start.slice(11)}–${r.end.slice(11)}` : '';
   });
   show(ui.get());
 </script>

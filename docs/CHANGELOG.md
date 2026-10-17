@@ -12,25 +12,35 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Added
 
-- **lab: availability timeline prototype** (`labs/dispos_timeline.html`, outside the suite) — continuous week axis
-  with two layers. Background, the nature of the unavailability (unavailable, leave, rest, real-life activity): bands,
-  colour only; double-click replaces the background of the day (from the palette: of the week); "Erase background"
-  brush; drawn over an availability, the cut shows while dragging. Availabilities on top: square rectangles (start
-  time left, type centred, end time right), snapped to the half-hour, edges and moves by 5 min, moved to another row:
-  same times, another day (↑ ↓ on a selection); Shift+drag on an availability draws over it. Rows are spaced by a gutter that is
-  part of the drawing area. A drag across several rows draws a selection rectangle (as in a vector drawing program),
-  started anywhere in the grid (empty space, a background band, a gutter): the same time range on each day it crosses.
-  A plain click on an availability selects it whatever the brush. A palette
-  entry dropped onto an availability or a background band changes its nature over its extent (a background entry on
-  an availability replaces it with that background, an availability entry on a band puts a rectangle in its place);
-  onto the empty part of a row or the day name, it fills the whole day. Undo history per displayed week, 50 steps, one per gesture: Ctrl+Z, Ctrl+Y /
-  Ctrl+Shift+Z, "Undo" / "Redo" buttons. One state per minute: under an availability the background does not count
-  (export, hover), but it stays in place, so a moved or deleted availability gives back the chosen background; an
-  unavailability laid over an availability cuts it; time with nothing is unavailable by default, and an empty day is
-  exported as unavailable all day. Hover gives the visible range ("Wednesday 14 October, 00:00 to 05:30:
-  Unavailable"); while dragging, the shape itself with its times. Repeating period box (category, dates, weekdays,
-  times, across weeks). Component JSON (schema 3: `ranges` is the declaration, the truth, without overlap;
-  `background`, the background as laid, is an editing convenience a reader can ignore) with schema 2 readers / writers.
+- **Availability timeline module** (`shared/dispos_timeline.js`, formats in `shared/dispos_formats.js`; not yet in the
+  suite's pages) — a stand-alone component, with no dependency on the framework, to enter one person's availability
+  for an ISO week on a continuous time axis, in UTC. Background bands give the nature of the unavailability;
+  availability rectangles sit on top, with square corners, the start time on the left, the type centred and the end
+  time on the right. One state per minute: under a rectangle the background does not count, but it stays in place, so
+  a moved or deleted rectangle gives it back.
+  - One rule for every gesture, whatever the brush: a gesture that starts on a shape (rectangle or band) takes it —
+    click selects, drag moves (5 min steps, to another row: same times, another day), the edges resize, Shift+drag
+    draws over it; a gesture that starts beside the shapes draws with the brush.
+  - Across several rows, a selection rectangle lays the same hours on each day it crosses, started anywhere (empty
+    space, gutter between rows). The last shape wins, and a background drawn through an availability cuts it, live.
+  - A palette entry dropped on a shape changes its nature; dropped on a day (empty part of the row, day name) it fills
+    the whole day, and a background entry then changes only the background. Double-clicks replace the background of
+    a day or of the week, never removing an availability.
+  - Keyboard, long press, undo history (Ctrl+Z / Ctrl+Y, 50 steps per week), repeating period box across weeks, hover
+    text giving the visible range.
+  - English texts by default; the host page translates through `labels` or `t(key, default)`, categories included;
+    dates through `Intl`. Theme through CSS variables. Events `dispos-change`, `dispos-select`, `dispos-week`,
+    `dispos-history`; `destroy()`.
+  - Native format schema 3 (`ranges` is the declaration, the truth; `background` is an editing convenience a reader
+    can ignore). `DisposFormats` reads and writes schema 3 and the suite's schema 2, and takes new formats through
+    `register`.
+  - `labs/dispos_timeline.html` is its example page (French through `labels`, localStorage). Two prompts:
+    `docs/technique/DISPOS_TIMELINE_SPEC.md` (full description, to regenerate it) and
+    `docs/technique/DISPOS_TIMELINE_INTEGRATION.md` (to put it into another single-page HTML application).
+- **Delivery: module packages** — `tools/publish_dist.py` also builds `dist/dispos-module-<version>.zip` (both scripts,
+  `example.html` loading them from its own folder, the two prompts, a README, the code licence MPL 2.0 and the
+  document licence CC BY-SA 4.0), with its SHA-256 on a "Delivery" line of the CHANGELOG and of `docs/VERSION.md`;
+  `--sans-modules` skips it, `--modules-seulement --ref HEAD` builds a package to try it.
 - **Assignment: declared aircraft variants** — a pilot's declaration may list variants per ICAO designator
   (`appareils.variantes`, e.g. `{ "CL2T": ["CL-415"] }`; editor by Features SOG). Qualification stays per designator
   (never a block); among candidate aircraft and pilots, the matching variant comes first (fleet `variant` = declared

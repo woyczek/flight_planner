@@ -1,34 +1,26 @@
 (() => {
   'use strict';
-  // Maquette (hors suite) : saisie des disponibilités sur un axe de temps continu, une rangée par jour de la semaine.
-  //   · FOND : nature de la non-disponibilité (indisponible, congés, récupération, activité réelle), bandes pleine
-  //     hauteur, couleur seule, aimantées à la demi-heure ; double-clic : REMPLACE le fond du jour (sur la palette : de
-  //     la semaine) ; pinceau « Effacer le fond » ; tracé par-dessus une dispo : la découpe se voit pendant le geste ;
-  //   · PREMIER PLAN : les dispos, par rectangle (lettre au centre, heure de début à gauche, de fin à droite), aimantés
-  //     à la demi-heure ; poignées et déplacement au pas de 5 min, déplacement vers une autre rangée : même horaire, autre
-  //     jour ; Maj+glisser sur une dispo : tracer par-dessus ; clic : sélection (Suppr, ← → 5 min, ↑ ↓ un jour, Échap),
-  //     croix au survol, appui long au doigt ;
-  //   · tracé sur plusieurs rangées : un rectangle de sélection (comme dans un logiciel de dessin), la même plage horaire
-  //     posée sur chaque jour couvert, fond ou dispos ;
-  //   · palette : entrée glissée sur une dispo ou une bande de fond : elle en change la nature, sur son étendue (entrée
-  //     de fond sur une dispo : remplacée par ce fond ; entrée de dispo sur une bande : un rectangle à sa place) ; sur le
-  //     vide d'une rangée ou le nom du jour : journée entière ;
-  //   · historique par semaine affichée, 50 pas, un par geste : Ctrl+Z, Ctrl+Y / Ctrl+Maj+Z, undo() / redo() ;
-  //   · une minute a UN état : là où une dispo est posée, le fond ne compte pas (export, survol) ; il reste pourtant en
-  //     place dessous, si bien qu'une dispo déplacée ou effacée rend le fond choisi ; une non-disponibilité posée sur une
-  //     dispo la découpe ; temps sans fond ni dispo : indisponible par défaut ;
-  //   · survol (hors geste) : la plage en clair, partie visible seulement (« mercredi 14 octobre, de 00:00 à 05:30 :
-  //     Indisponible ») ; pendant un geste, la forme elle-même, aimantée, horaires dedans ;
-  //   · période répétitive : catégorie, dates, jours, horaires, sur plusieurs semaines (par store).
-  // Modèle du composant (schema 3) : { schema: 3, pilot, week: "AAAA-Wnn", tz: "UTC", ranges: [{ start, end, cat }],
-  // background: [...] } ; ranges : la déclaration (la vérité), sans chevauchement (dispos, puis fond visible) ;
-  // background : le fond tel que posé, dessous compris, commodité d'édition qu'un lecteur peut ignorer. Dates « AAAA-MM-JJTHH:MM » (fin exclue). Catégories : configuration
-  // séparée { categories: [{ id, label, letter, color, layer: "background" | "foreground", group, legacy }] }.
-  // Lecteurs / écrivains : schema 2 de la suite (une déclaration par semaine, plages par jour au quart d'heure) ↔ schema 3.
-  // API (window.DisposTimeline) : mount(hôte, { config, week, data, onChange(data), store }) → { set(data), get(),
-  //   week(w), brush(id), undo(), redo(), clear(), history() } (événements « dispos-timeline-week » et
-  //   « dispos-timeline-history ») ; DEFAULT_CONFIG ; fromSchema2(doc, config), toSchema2(data, config, base) ; weekId(date),
-  //   weekMonday(id), addWeek(id, n).
+  // Module autonome (aucune dépendance) : saisie des disponibilités d'une personne sur un axe de temps continu, une
+  // rangée par jour de la semaine ISO, en UTC. Spécification complète : docs/technique/DISPOS_TIMELINE_SPEC.md ;
+  // intégration dans une page : docs/technique/DISPOS_TIMELINE_INTEGRATION.md.
+  //   · FOND : nature de la non-disponibilité, bandes pleine hauteur, couleur seule ; PREMIER PLAN : les dispos, par
+  //     rectangle (début à gauche, type au centre, fin à droite) ; une minute a UN état : sous une dispo, le fond ne
+  //     compte pas mais reste en place (dispo déplacée ou effacée : le fond revient) ; temps sans rien : indisponible ;
+  //   · tracé aimanté à la demi-heure, poignées et déplacement au pas de 5 min (vers une autre rangée : même horaire,
+  //     autre jour) ; tracé sur plusieurs rangées : rectangle de sélection, mêmes heures sur chaque jour traversé ; la
+  //     dernière forme gagne ; entrée de palette déposée sur une forme : change sa nature, sur un jour : journée
+  //     entière ; double-clics ; Maj ; clavier ; appui long ; historique (Ctrl+Z / Ctrl+Y) ; période répétitive.
+  // Données (schema 3) : { schema: 3, pilot, week: "AAAA-Wnn", tz: "UTC", ranges: [{ start, end, cat }], background } ;
+  // ranges : la déclaration (la vérité), sans chevauchement ; background : le fond tel que posé, dessous compris,
+  // commodité d'édition qu'un lecteur peut ignorer ; dates « AAAA-MM-JJTHH:MM » UTC, fin exclue. Autres formats :
+  // shared/dispos_formats.js.
+  // Textes : anglais par défaut (DEFAULT_LABELS) ; la page traduit par labels { clé: texte } ou t(clé, défaut), y compris
+  // les catégories (« cat.<id> ») et les groupes (« group.<id> ») ; dates et jours par Intl dans la langue lang.
+  // API (window.DisposTimeline) : mount(hôte, { config, week, data, lang, labels, t, onChange(data), store }) →
+  //   { get(), set(data), week(id), brush(id), clear(), undo(), redo(), history(), destroy() } ; événements sur l'hôte :
+  //   dispos-change (detail : données), dispos-select (detail : plage { start, end, cat } ou null), dispos-week,
+  //   dispos-history ; DEFAULT_CONFIG, DEFAULT_LABELS, weekId(date), weekMonday(id), addWeek(id, n), model (fonctions
+  //   du modèle, pour les formats).
   if (window.DisposTimeline) return;
   const DAY = 1440,
     WEEK = 7 * DAY,
@@ -37,31 +29,30 @@
     MIN_PIECE = 5,
     LONG_PRESS = 500,
     HISTORY = 50;
-  const DAYS = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
 
-  /** Catégories par défaut, reprises de la configuration de la suite (shared/dispos.js : couleurs, codes de l'ODV). */
+  /** Catégories par défaut (couleurs et codes de la grille d'origine ; legacy : code du schema 2). */
   const DEFAULT_CONFIG = {
     schema: 1,
     groups: [{
       id: 'indispo',
-      label: 'Non disponible',
+      label: 'Unavailable',
       layer: 'background'
     }, {
       id: 'dispo',
-      label: 'Disponible',
+      label: 'Available',
       layer: 'foreground'
     }, {
       id: 'exercice',
-      label: 'Exercice',
+      label: 'Exercise',
       layer: 'foreground'
     }, {
       id: 'occupe',
-      label: 'Occupé',
+      label: 'Busy',
       layer: 'foreground'
     }],
     categories: [{
       id: 'IN',
-      label: 'Indisponible',
+      label: 'Unavailable',
       letter: '',
       color: '#BFBFBF',
       layer: 'background',
@@ -69,7 +60,7 @@
       legacy: 'indispo'
     }, {
       id: 'V',
-      label: 'Congés',
+      label: 'Leave',
       letter: '',
       color: '#FFC000',
       layer: 'background',
@@ -77,7 +68,7 @@
       legacy: 'conges'
     }, {
       id: 'Q',
-      label: 'Récupération',
+      label: 'Rest',
       letter: '',
       color: '#D9D9D9',
       layer: 'background',
@@ -85,7 +76,7 @@
       legacy: 'recup'
     }, {
       id: 'IR',
-      label: 'Activité réelle',
+      label: 'Real-life activity',
       letter: '',
       color: '#FFFF00',
       layer: 'background',
@@ -93,7 +84,7 @@
       legacy: 'irl'
     }, {
       id: 'O',
-      label: 'Disponible pour tout',
+      label: 'Available for anything',
       letter: 'O',
       color: '#00B050',
       layer: 'foreground',
@@ -101,7 +92,7 @@
       legacy: 'tout'
     }, {
       id: 'SC',
-      label: 'Disponible sécurité civile',
+      label: 'Available, civil security',
       letter: 'SC',
       color: '#2F5597',
       layer: 'foreground',
@@ -109,7 +100,7 @@
       legacy: 'secu'
     }, {
       id: 'D+',
-      label: 'Disponible défense',
+      label: 'Available, defence',
       letter: 'D+',
       color: '#0070C0',
       layer: 'foreground',
@@ -117,7 +108,7 @@
       legacy: 'defense'
     }, {
       id: 'S',
-      label: 'Vol en exercice SOG',
+      label: 'Exercise flight',
       letter: 'S',
       color: '#FF0000',
       layer: 'foreground',
@@ -125,7 +116,7 @@
       legacy: 'exercice_vol'
     }, {
       id: 'AM',
-      label: 'Contrôle SOG',
+      label: 'Exercise control',
       letter: 'AM',
       color: '#C4BD97',
       layer: 'foreground',
@@ -133,7 +124,7 @@
       legacy: 'exercice_ctrl'
     }, {
       id: 'G',
-      label: 'Vol hors SOG (IVAO / VATSIM)',
+      label: 'Other flight (IVAO / VATSIM)',
       letter: 'G',
       color: '#FFD966',
       layer: 'foreground',
@@ -149,7 +140,7 @@
       legacy: 'dcs'
     }, {
       id: 'AT',
-      label: 'Contrôle hors SOG (IVAO / VATSIM)',
+      label: 'Other control (IVAO / VATSIM)',
       letter: 'AT',
       color: '#7030A0',
       layer: 'foreground',
@@ -285,84 +276,6 @@
     for (const r of all.filter(r => !bgCats.has(r.cat))) st = applyFg(st, r.s, r.e, r.cat);
     return st;
   }
-  /** Déclaration de la suite (schema 2 : { semaine, pilote, dispos: { "AAAA-MM-JJ": [{ debut, fin, categorie }] } },
-   *  heures UTC au quart d'heure, null : journée entière) → schema 3, sans perte : le fond va dans la couche de fond,
-   *  le reste dans les dispos ; dans une même couche, des plages superposées (permises dans le schema 2) : la dernière
-   *  gagne. Catégorie inconnue : son identifiant tel quel. */
-  function fromSchema2(doc, config = DEFAULT_CONFIG) {
-    const week = doc?.semaine || weekId(Date.now()),
-      mon = weekMonday(week),
-      byLegacy = new Map((config.categories || []).map(c => [c.legacy || c.id, c.id])),
-      bgCats = new Set((config.categories || []).filter(c => c.layer === 'background').map(c => c.id)),
-      items = [];
-    for (const [day, list] of Object.entries(doc?.dispos || {})) {
-      const base = Math.round((Date.parse(`${day}T00:00:00Z`) - mon) / 6e4);
-      if (base < 0 || base >= WEEK) continue;
-      const m = v => v ? +v.slice(0, 2) * 60 + +v.slice(3, 5) : null;
-      for (const it of list || []) {
-        const s = base + (m(it.debut) ?? 0),
-          e = base + (it.fin ? m(it.fin) : DAY);
-        if (e > s) items.push({
-          s,
-          e,
-          cat: byLegacy.get(it.categorie) || it.categorie
-        });
-      }
-    }
-    let st = {
-      bg: [],
-      fg: []
-    };
-    for (const r of items.filter(r => bgCats.has(r.cat))) st = applyBg(st, r.s, r.e, r.cat);
-    for (const r of items.filter(r => !bgCats.has(r.cat))) st = applyFg(st, r.s, r.e, r.cat);
-    return toData({
-      week,
-      pilot: doc?.pilote || '',
-      ...st
-    });
-  }
-  /** Schema 3 → déclaration de la suite (schema 2), par jour, horaires arrondis au quart d'heure, sans chevauchement
-   *  (dispos, puis fond visible) ; un jour sans rien : indisponible toute la journée (première catégorie de fond) ;
-   *  temps sans rien dans un jour entamé : pas d'entrée (indisponible par défaut) ; base : document schema 2 dont les
-   *  autres champs (appareils, simulateurs…) sont gardés. */
-  function toSchema2(data, config = DEFAULT_CONFIG, base = {}) {
-    const week = data.week,
-      mon = weekMonday(week),
-      legacy = new Map((config.categories || []).map(c => [c.id, c.legacy || c.id])),
-      dispos = {},
-      q = m => Math.round(m / 15) * 15,
-      st = fromData(data, week, config),
-      dflt = (config.categories || []).find(c => c.layer === 'background');
-    for (const r of [...st.fg, ...visibleBg(st)].sort((a, b) => a.s - b.s)) {
-      for (let d = Math.floor(r.s / DAY); d * DAY < r.e; d++) {
-        const s = q(Math.max(r.s, d * DAY) - d * DAY),
-          e = q(Math.min(r.e, (d + 1) * DAY) - d * DAY);
-        if (e <= s) continue;
-        (dispos[isoDay(mon + d * 864e5)] ||= []).push({
-          debut: s === 0 && e === DAY ? null : `${pad(Math.floor(s / 60))}:${pad(s % 60)}`,
-          fin: s === 0 && e === DAY ? null : `${pad(Math.floor(e / 60))}:${pad(e % 60)}`,
-          categorie: legacy.get(r.cat) || r.cat
-        });
-      }
-    }
-    for (let d = 0; d < 7 && dflt; d++) {
-      const day = isoDay(mon + d * 864e5);
-      if (!dispos[day]) dispos[day] = [{
-        debut: null,
-        fin: null,
-        categorie: dflt.legacy || dflt.id
-      }];
-    }
-    return {
-      ...base,
-      schema: 2,
-      pilote: data.pilot || base.pilote || '',
-      semaine: week,
-      updated_at: new Date().toISOString(),
-      dispos
-    };
-  }
-
   // ---- composant
   const esc = s => String(s ?? '').replace(/[&<>"']/g, c => `&#${c.charCodeAt(0)};`);
   /** Encre lisible sur une couleur (noir ou blanc selon la luminance). */
@@ -378,52 +291,100 @@
     if (document.getElementById('disposTimelineCss')) return;
     const st = document.createElement('style');
     st.id = 'disposTimelineCss';
-    st.textContent = `.dt{display:grid;gap:10px;font:14px/1.4 system-ui,sans-serif;user-select:none;-webkit-user-select:none}
+    st.textContent = `.dt{display:grid;gap:10px;font:var(--dt-font,14px/1.4 system-ui,sans-serif);color:var(--dt-ink,#17202a);user-select:none;-webkit-user-select:none}
 .dt-nav{display:flex;gap:6px;align-items:center;flex-wrap:wrap}.dt-nav b{min-width:15em}
 .dt-pal{display:grid;grid-template-columns:max-content 1fr;gap:6px 10px;align-items:center}
 .dt-pal-g{font-size:12px;opacity:.75;text-align:right}.dt-pal-r{display:flex;flex-wrap:wrap;gap:4px}
-.dt-brush{display:inline-flex;align-items:center;gap:6px;border:1px solid #0003;background:#fff;color:#111;padding:3px 8px;cursor:grab;font:inherit;font-size:12.5px;touch-action:none}
+.dt-brush{display:inline-flex;align-items:center;gap:6px;border:1px solid #0003;background:var(--dt-btn-bg,#fff);color:var(--dt-btn-ink,#111);padding:3px 8px;cursor:grab;font:inherit;font-size:12.5px;touch-action:none}
 .dt-brush i{display:inline-block;min-width:18px;height:18px;font:700 11px/18px system-ui;text-align:center;font-style:normal}
-.dt-brush[aria-pressed=true]{outline:2px solid #1d6fd8;outline-offset:1px}
+.dt-brush[aria-pressed=true]{outline:2px solid var(--dt-accent,#1d6fd8);outline-offset:1px}
 .dt-grid{display:grid;grid-template-columns:7.5em 1fr;gap:11px 8px;position:relative}
 .dt-day{font-size:12.5px;line-height:1.2;align-self:center}.dt-day small{display:block;opacity:.7}
 .dt-axis{position:relative;height:18px;font-size:10.5px;opacity:.7}.dt-axis span{position:absolute;transform:translateX(-50%)}
 .dt-row{position:relative;height:44px;border:1px solid #0002;touch-action:none;cursor:crosshair;
 background:repeating-linear-gradient(90deg,#0000 0,#0000 calc(100%/48 - 1px),#00000010 calc(100%/48 - 1px),#00000010 calc(100%/48)),
-repeating-linear-gradient(90deg,#0000 0,#0000 calc(100%/24 - 1px),#00000030 calc(100%/24 - 1px),#00000030 calc(100%/24)),#fafafa}
-.dt-row.drop,.dt-fg.drop{outline:2px dashed #1d6fd8;outline-offset:1px}.dt-bg.drop{outline:2px dashed #1d6fd8;outline-offset:-2px;z-index:1}
-.dt-box{position:absolute;border:2px solid #1d6fd8;background:#1d6fd81f;pointer-events:none;z-index:4;box-sizing:border-box}
-.dt-box span{position:absolute;left:4px;top:2px;background:#1d6fd8;color:#fff;font:600 11px/1.3 system-ui;padding:1px 5px;white-space:nowrap}
+repeating-linear-gradient(90deg,#0000 0,#0000 calc(100%/24 - 1px),#00000030 calc(100%/24 - 1px),#00000030 calc(100%/24)),var(--dt-row-bg,#fafafa)}
+.dt-row.drop,.dt-fg.drop{outline:2px dashed var(--dt-accent,#1d6fd8);outline-offset:1px}.dt-bg.drop{outline:2px dashed var(--dt-accent,#1d6fd8);outline-offset:-2px;z-index:1}
+.dt-box{position:absolute;border:2px solid var(--dt-accent,#1d6fd8);background:var(--dt-accent-soft,var(--dt-accent,#1d6fd8)1f);pointer-events:none;z-index:4;box-sizing:border-box}
+.dt-box span{position:absolute;left:4px;top:2px;background:var(--dt-accent,#1d6fd8);color:#fff;font:600 11px/1.3 system-ui;padding:1px 5px;white-space:nowrap}
 .dt-bg{position:absolute;top:0;bottom:0;opacity:.85}
 .dt-fg{position:absolute;top:3px;bottom:3px;box-shadow:0 1px 2px #0005;display:flex;align-items:center;justify-content:space-between;
 padding:0 6px;overflow:hidden;white-space:nowrap;font-size:11.5px;cursor:grab;box-sizing:border-box;z-index:1}
 .dt-fg b{font-size:13px;position:absolute;left:50%;transform:translateX(-50%)}.dt-fg.narrow{justify-content:center}
-.dt-fg.sel{outline:2px solid #1d6fd8;outline-offset:1px;z-index:2}
+.dt-fg.sel{outline:2px solid var(--dt-accent,#1d6fd8);outline-offset:1px;z-index:2}
 .dt-h{position:absolute;top:0;bottom:0;width:7px;cursor:ew-resize;display:none;background:#fff8;border:1px solid #0006;box-sizing:border-box}
-.dt-h.l{left:0}.dt-h.r{right:0}.dt-fg:hover .dt-h,.dt-fg.sel .dt-h{display:block}
+.dt-h.l{left:0}.dt-h.r{right:0}.dt-fg:hover .dt-h,.dt-fg.sel .dt-h,.dt-bg:hover .dt-h,.dt-bg.sel .dt-h{display:block}
+.dt-bg{cursor:grab}.dt-bg.sel{outline:2px solid var(--dt-accent,#1d6fd8);outline-offset:-2px;z-index:1}
 .dt-x{position:absolute;top:-1px;right:8px;display:none;border:0;background:#0008;color:#fff;font:11px/14px system-ui;padding:0 4px;cursor:pointer;z-index:2}
-.dt-fg:hover .dt-x{display:block}
-.dt-fg.live{z-index:3;box-shadow:0 0 0 2px #1d6fd8,0 2px 6px #0006}.dt-bg.live{opacity:1;box-shadow:inset 0 0 0 2px #1d6fd8}
+.dt-fg:hover .dt-x,.dt-bg:hover .dt-x{display:block}
+.dt-fg.live{z-index:3;box-shadow:0 0 0 2px var(--dt-accent,#1d6fd8),0 2px 6px #0006}.dt-bg.live{opacity:1;box-shadow:inset 0 0 0 2px var(--dt-accent,#1d6fd8)}
 .dt-bg .dt-lt{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font:600 11.5px/1 system-ui;color:#111;background:#fffc;padding:2px 5px;white-space:nowrap}
-.dt-hover{position:fixed;pointer-events:none;background:#111;color:#fff;font:12px/1.3 system-ui;padding:3px 7px;z-index:50;white-space:nowrap}
+.dt-hover{position:fixed;pointer-events:none;background:var(--dt-tip-bg,#111);color:var(--dt-tip-ink,#fff);font:12px/1.3 system-ui;padding:3px 7px;z-index:50;white-space:nowrap}
 .dt-period{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:center;font-size:13px}.dt-period label{display:inline-flex;gap:5px;align-items:center}
 .dt-period .dt-days label{gap:2px}.dt-period input,.dt-period select{font:inherit;padding:3px 5px}
 .dt-help{font-size:12px;opacity:.75;margin:0}`;
     document.head.append(st);
   }
-  const DAY_LOWER = ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche'];
+  /** Textes par défaut (anglais) ; {nom} : valeur insérée. Clés en plus, sans défaut ici : « cat.<id> » et
+   *  « group.<id> » (libellés de la configuration). */
+  const DEFAULT_LABELS = {
+    'nav.prev': '‹',
+    'nav.today': 'This week',
+    'nav.next': '›',
+    title: 'Week {n} — {from} to {to} (UTC)',
+    erase: 'Erase background',
+    'erase.title': 'Erase the background (availabilities stay)',
+    'brush.bg': '{label} — drop on a band or an availability: changes its nature; on a day: whole day; double-click: background of the whole week',
+    'brush.fg': '{label} — drop on a band or an availability: changes its nature; on a day: whole day',
+    'period.title': 'Repeating period',
+    'period.cat': 'Category',
+    'period.dateFrom': 'from',
+    'period.dateTo': 'to',
+    'period.timeFrom': 'from',
+    'period.timeTo': 'to',
+    'period.add': 'Add',
+    'period.hint': 'Empty times: whole day. End before start: until the next day.',
+    'period.errDates': 'Dates: "from" then "to", in that order.',
+    'period.errDays': 'Tick at least one day.',
+    'period.errTimes': 'Times: both, or none (whole day).',
+    'period.done': '{n} day(s) set',
+    'period.other': ', {n} in other week(s)',
+    'period.lost': ' — {n} week(s) not saved (no store)',
+    'hover.default': 'Unavailable (default)',
+    'hover.day': '{day}, {from} to {to}: {name}',
+    'hover.days': 'from {day} {from} to {day2} {to}: {name}',
+    box: '{label} {from}–{to}, {day} → {day2}',
+    delete: 'Delete',
+    help: 'A gesture that starts on a shape (availability or background band) takes it, whatever the brush: click selects it (Delete, ← → 5 min, ↑ ↓ one day, Escape; long press with a finger), drag moves it (5 min steps; to another row: same times, another day), its edges resize it; Shift+drag draws over it (on a day covered by a background band, this is how to draw an availability). A gesture that starts beside the shapes (empty space, gutter between rows) draws with the brush, which only says what to draw: one shape, or across several rows a selection rectangle setting the same hours on each day it crosses; a background drawn through an availability cuts it. Palette: click, brush; entry dropped on an availability or a background band: changes its nature over its extent (background entry on an availability: replaced by that background; availability entry on a band: a rectangle in its place); on the empty part of a row or on the day name: whole day (a background entry changes only the background, availabilities stay); double-click on a background entry: background of the week. Double-click on a band (or on the row, with a background brush): replaces the background of the day, availabilities stay. Ctrl+Z undoes, Ctrl+Y or Ctrl+Shift+Z redoes. One state per minute: under an availability the background does not count, but it stays in place (availability moved or deleted: the background comes back); time with nothing: unavailable by default.'
+  };
 
-  /** Monte le composant dans host. opts : { config, week, data (schema 3), onChange(data), store : { read(semaine) →
-   *  données schema 3 | null, write(données) } (périodes qui débordent de la semaine affichée) }. */
+  /** Monte le composant dans host. opts : { config, week, data (schema 3), lang (dates et jours, Intl ; défaut « en »),
+   *  labels ({ clé: texte }), t(clé, défaut) → texte, onChange(données), store : { read(semaine) → données schema 3 |
+   *  null, write(données) } (périodes qui débordent de la semaine affichée) }. */
   function mount(host, {
     config = DEFAULT_CONFIG,
     week = weekId(Date.now()),
     data = null,
+    lang = 'en',
+    labels = {},
+    t = null,
     onChange = null,
     store = null
   } = {}) {
     css();
     const cats = new Map(config.categories.map(c => [c.id, c]));
+    /** Texte d'une clé : t(clé, défaut), sinon labels, sinon le défaut anglais ; {nom} remplacés par vars. */
+    const txt = (key, vars = null, fallback = null) => {
+      const def = labels[key] ?? fallback ?? DEFAULT_LABELS[key] ?? key,
+        out = String((t && t(key, def)) ?? def);
+      return vars ? out.replace(/\{(\w+)\}/g, (m, k) => vars[k] ?? m) : out;
+    };
+    const lab = c => c.id ? txt(`cat.${c.id}`, null, c.label) : c.label;
+    const dateOf = (ms, o) => new Date(ms).toLocaleDateString(lang, {
+      ...o,
+      timeZone: 'UTC'
+    });
+    const cap = x => x.charAt(0).toUpperCase() + x.slice(1);
     const isBg = id => id === ERASE || cats.get(id)?.layer === 'background';
     const state = {
       week,
@@ -442,20 +403,29 @@ padding:0 6px;overflow:hidden;white-space:nowrap;font-size:11.5px;cursor:grab;bo
     hover.className = 'dt-hover';
     hover.hidden = true;
     document.body.append(hover);
-    const catOpts = config.categories.map(c => `<option value="${esc(c.id)}">${esc(c.label)}${c.letter ? ` (${esc(c.letter)})` : ''}</option>`).join('');
-    host.innerHTML = `<div class="dt"><div class="dt-nav"><button type="button" data-w="-1">‹</button><button type="button" data-w="0">cette semaine</button><button type="button" data-w="1">›</button> <b data-title></b></div>
+    const mon0 = weekMonday('2026-W01'); // un lundi : noms des jours dans la langue
+    const catOpts = config.categories.map(c => `<option value="${esc(c.id)}">${esc(lab(c))}${c.letter ? ` (${esc(c.letter)})` : ''}</option>`).join('');
+    host.innerHTML = `<div class="dt"><div class="dt-nav"><button type="button" data-w="-1">${esc(txt('nav.prev'))}</button><button type="button" data-w="0">${esc(txt('nav.today'))}</button><button type="button" data-w="1">${esc(txt('nav.next'))}</button> <b data-title></b></div>
       <div class="dt-pal" data-pal></div>
-      <details class="dt-pd" open><summary>Période répétitive (saisie manuelle)</summary><div class="dt-period">
-        <label>Catégorie <select data-p-cat>${catOpts}</select></label>
-        <label>du <input type="date" data-p-from></label><label>au <input type="date" data-p-to></label>
-        <span class="dt-days">${DAY_LOWER.map((d, i) => `<label><input type="checkbox" data-p-day="${i}" checked>${esc(d.slice(0, 3))}</label>`).join(' ')}</span>
-        <label>de <input type="time" step="300" data-p-s></label><label>à <input type="time" step="300" data-p-e></label>
-        <button type="button" data-p-add>Ajouter</button><span class="dt-help" data-p-msg>Horaires vides : journée entière. Fin avant le début : jusqu'au lendemain.</span></div></details>
+      <details class="dt-pd" open><summary>${esc(txt('period.title'))}</summary><div class="dt-period">
+        <label>${esc(txt('period.cat'))} <select data-p-cat>${catOpts}</select></label>
+        <label>${esc(txt('period.dateFrom'))} <input type="date" data-p-from></label><label>${esc(txt('period.dateTo'))} <input type="date" data-p-to></label>
+        <span class="dt-days">${Array.from({ length: 7 }, (_, i) => `<label><input type="checkbox" data-p-day="${i}" checked>${esc(dateOf(mon0 + i * 864e5, { weekday: 'short' }))}</label>`).join(' ')}</span>
+        <label>${esc(txt('period.timeFrom'))} <input type="time" step="300" data-p-s></label><label>${esc(txt('period.timeTo'))} <input type="time" step="300" data-p-e></label>
+        <button type="button" data-p-add>${esc(txt('period.add'))}</button><span class="dt-help" data-p-msg>${esc(txt('period.hint'))}</span></div></details>
       <div class="dt-grid" data-grid></div>
-      <p class="dt-help">Glisser depuis le vide, une bande de fond ou la gouttière entre deux rangées : tracer (fond, couleur seule, ou dispo, rectangle) ; sur plusieurs rangées, un rectangle de sélection pose les mêmes heures sur chaque jour couvert. Clic sur une dispo : sélection, quel que soit le pinceau. Dispos : glisser le corps pour déplacer (pas de 5 min ; vers une autre rangée : même horaire, autre jour), les bords pour ajuster ; Maj+glisser sur une dispo : tracer par-dessus (découpe) ; avec un pinceau de fond, le tracé découpe les dispos en direct ; clic : sélection (Suppr, ← → 5 min, ↑ ↓ un jour, Échap) ; appui long au doigt : sélection. Palette : clic, pinceau ; entrée glissée sur une dispo ou une bande de fond : elle en change la nature, sur son étendue (entrée de fond sur une dispo : remplacée par ce fond ; entrée de dispo sur une bande : un rectangle à sa place) ; sur le vide d'une rangée ou sur le nom du jour : journée entière ; double-clic sur une entrée de fond : fond de la semaine. Double-clic sur une bande (ou sur la rangée, pinceau de fond) : remplace le fond du jour. Ctrl+Z annule, Ctrl+Y ou Ctrl+Maj+Z rétablit. Une minute a un seul état : sous une dispo, le fond ne compte pas, mais il reste en place (dispo déplacée ou effacée : le fond revient) ; une non-disponibilité posée sur une dispo la découpe ; temps sans rien : indisponible par défaut, et un jour vide s'exporte « indisponible » toute la journée.</p></div>`;
+      <p class="dt-help">${esc(txt('help'))}</p></div>`;
     const grid = host.querySelector('[data-grid]');
     const cur = () => preview || state;
-    const emit = () => onChange?.(toData(state));
+    /** Données changées : onChange et événement dispos-change. */
+    const emit = () => {
+      const d = toData(state);
+      onChange?.(d);
+      host.dispatchEvent(new CustomEvent('dispos-change', {
+        detail: d
+      }));
+    };
+    let selSent = null; // dernière sélection annoncée (dispos-select)
     let periodTouched = false;
     /** Dates par défaut de la période : la semaine affichée (tant que l'utilisateur ne les a pas changées). */
     const periodDefaults = () => {
@@ -468,20 +438,35 @@ padding:0 6px;overflow:hidden;white-space:nowrap;font-size:11.5px;cursor:grab;bo
     function renderPalette() {
       const groups = config.groups.map(g => {
         const list = config.categories.filter(c => c.group === g.id),
-          extra = g.layer === 'background' && g === config.groups.find(x => x.layer === 'background') ? `<button type="button" class="dt-brush" data-brush="${ERASE}" aria-pressed="${state.brush === ERASE}" title="Effacer le fond (les dispos restent)"><i style="background:#fff;border:1px dashed #0008;color:#111">⌫</i>Effacer le fond</button>` : '';
-        return list.length ? `<span class="dt-pal-g">${esc(g.label)}</span><span class="dt-pal-r">${list.map(c => `<button type="button" class="dt-brush" data-brush="${esc(c.id)}" aria-pressed="${c.id === state.brush}" title="${esc(c.layer === 'background' ? `${c.label} — glisser sur un jour : journée entière ; double-clic : fond de toute la semaine` : `${c.label} — glisser sur un jour : journée entière`)}"><i style="background:${esc(c.color)};color:${ink(c.color)}">${esc(c.letter || '')}</i>${esc(c.label)}</button>`).join('')}${extra}</span>` : '';
+          extra = g.layer === 'background' && g === config.groups.find(x => x.layer === 'background') ? `<button type="button" class="dt-brush" data-brush="${ERASE}" aria-pressed="${state.brush === ERASE}" title="${esc(txt('erase.title'))}"><i style="background:#fff;border:1px dashed #0008;color:#111">⌫</i>${esc(txt('erase'))}</button>` : '';
+        return list.length ? `<span class="dt-pal-g">${esc(txt(`group.${g.id}`, null, g.label))}</span><span class="dt-pal-r">${list.map(c => `<button type="button" class="dt-brush" data-brush="${esc(c.id)}" aria-pressed="${c.id === state.brush}" title="${esc(txt(c.layer === 'background' ? 'brush.bg' : 'brush.fg', { label: lab(c) }))}"><i style="background:${esc(c.color)};color:${ink(c.color)}">${esc(c.letter || '')}</i>${esc(lab(c))}</button>`).join('')}${extra}</span>` : '';
       });
       host.querySelector('[data-pal]').innerHTML = groups.join('');
     }
-    /** Texte de survol d'une plage : « mercredi 14 octobre, de 00:00 à 05:30 : Indisponible ». */
+    /** Texte de survol d'une plage : « Wednesday 14 October, 00:00 to 05:30: Unavailable ». */
     function describe(r) {
       const mon = weekMonday(state.week),
         c = cats.get(r.cat),
-        name = !r.cat ? 'Indisponible (par défaut)' : c ? `${c.label}${c.letter ? ` (${c.letter})` : ''}` : r.cat,
-        dayOf = m => `${DAY_LOWER[Math.floor(m / DAY)]} ${new Date(mon + Math.floor(m / DAY) * 864e5).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', timeZone: 'UTC' })}`,
+        name = !r.cat ? txt('hover.default') : c ? `${lab(c)}${c.letter ? ` (${c.letter})` : ''}` : r.cat,
+        dayOf = m => dateOf(mon + Math.floor(m / DAY) * 864e5, {
+          weekday: 'long',
+          day: 'numeric',
+          month: 'long'
+        }),
         d0 = Math.floor(r.s / DAY),
         d1 = Math.floor((r.e - 1) / DAY);
-      return d0 === d1 ? `${dayOf(r.s)}, de ${hhmm(r.s)} à ${hhmm(r.e, true)} : ${name}` : `du ${dayOf(r.s)} ${hhmm(r.s)} au ${dayOf(r.e - 1)} ${hhmm(r.e, true)} : ${name}`;
+      return d0 === d1 ? txt('hover.day', {
+        day: dayOf(r.s),
+        from: hhmm(r.s),
+        to: hhmm(r.e, true),
+        name
+      }) : txt('hover.days', {
+        day: dayOf(r.s),
+        from: hhmm(r.s),
+        day2: dayOf(r.e - 1),
+        to: hhmm(r.e, true),
+        name
+      });
     }
 
     function render() {
@@ -493,7 +478,19 @@ padding:0 6px;overflow:hidden;white-space:nowrap;font-size:11.5px;cursor:grab;bo
           b &&
           r.e > a : r.s <= a && r.e >= b),
         vis = visibleBg(st);
-      host.querySelector('[data-title]').textContent = `Semaine ${state.week.slice(6)} — du ${new Date(mon).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', timeZone: 'UTC' })} au ${new Date(mon + 6 * 864e5).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' })} (UTC)`;
+      const title = txt('title', {
+        n: state.week.slice(6),
+        from: dateOf(mon, {
+          day: 'numeric',
+          month: 'long'
+        }),
+        to: dateOf(mon + 6 * 864e5, {
+          day: 'numeric',
+          month: 'long',
+          year: 'numeric'
+        })
+      });
+      if (host.querySelector('[data-title]').textContent !== title) host.querySelector('[data-title]').textContent = title;
       let html = `<span></span><div class="dt-axis">${Array.from({ length: 25 }, (_, h) => h % 2 ? '' : `<span style="left:${h / 24 * 100}%">${pad(h)}</span>`).join('')}</div>`;
       for (let d = 0; d < 7; d++) {
         const from = d * DAY,
@@ -509,8 +506,12 @@ padding:0 6px;overflow:hidden;white-space:nowrap;font-size:11.5px;cursor:grab;bo
               label: r.cat,
               color: '#999'
             },
-            lv = isLive(r, 'bg');
-          return `<div class="dt-bg${lv ? ' live' : ''}" data-s="${r.s}" data-e="${r.e}" data-cat="${esc(r.cat)}" style="${seg(r)};background:${esc(c.color)}">${lv ? `<span class="dt-lt">${esc(`${c.label} ${hhmm(r.s)}–${hhmm(r.e, true)}`)}</span>` : ''}</div>`;
+            lv = isLive(r, 'bg'),
+            own = st.bg.find(x => x.s <= r.s && x.e >= r.e), // plage de fond dont la bande est la partie visible
+            sel = !!own && own === state.sel,
+            first = r.s >= from && r.s === own?.s,
+            last = r.e <= to && r.e === own?.e;
+          return `<div class="dt-bg${lv ? ' live' : ''}${sel ? ' sel' : ''}" role="button" aria-pressed="${sel}" aria-label="${esc(describe(r))}" data-b="${st.bg.indexOf(own)}" data-s="${r.s}" data-e="${r.e}" data-cat="${esc(r.cat)}" style="${seg(r)};background:${esc(c.color)}">${lv ? `<span class="dt-lt">${esc(`${lab(c)} ${hhmm(r.s)}–${hhmm(r.e, true)}`)}</span>` : ''}${first ? '<i class="dt-h l" data-h="l"></i>' : ''}${last ? '<i class="dt-h r" data-h="r"></i>' : ''}<button type="button" class="dt-x" data-x title="${esc(txt('delete'))}">✕</button></div>`;
         }).join('');
         const fg = st.fg.filter(r => r.e > from && r.s < to).map(r => {
           const c = cats.get(r.cat) || {
@@ -522,11 +523,23 @@ padding:0 6px;overflow:hidden;white-space:nowrap;font-size:11.5px;cursor:grab;bo
             first = r.s >= from,
             last = r.e <= to;
           // vrai rectangle : heure de début à gauche, type au centre, heure de fin à droite
-          return `<div class="dt-fg${r === state.sel ? ' sel' : ''}${lv ? ' live' : ''}" data-f="${st.fg.indexOf(r)}" style="${seg(r)};background:${esc(c.color)};color:${ink(c.color)}"><span data-t>${first ? esc(hhmm(r.s)) : ''}</span><b>${esc(c.letter || '')}</b><span data-t>${last ? esc(hhmm(r.e, true)) : ''}</span>${first ? '<i class="dt-h l" data-h="l"></i>' : ''}${last ? '<i class="dt-h r" data-h="r"></i>' : ''}<button type="button" class="dt-x" data-x title="Effacer">✕</button></div>`;
+          return `<div class="dt-fg${r === state.sel ? ' sel' : ''}${lv ? ' live' : ''}" role="button" aria-pressed="${r === state.sel}" aria-label="${esc(describe(r))}" data-f="${st.fg.indexOf(r)}" style="${seg(r)};background:${esc(c.color)};color:${ink(c.color)}"><span data-t>${first ? esc(hhmm(r.s)) : ''}</span><b>${esc(c.letter || '')}</b><span data-t>${last ? esc(hhmm(r.e, true)) : ''}</span>${first ? '<i class="dt-h l" data-h="l"></i>' : ''}${last ? '<i class="dt-h r" data-h="r"></i>' : ''}<button type="button" class="dt-x" data-x title="${esc(txt('delete'))}">✕</button></div>`;
         }).join('');
-        html += `<div class="dt-day" data-d="${d}">${DAYS[d]}<small>${new Date(mon + d * 864e5).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', timeZone: 'UTC' })}</small></div><div class="dt-row" data-d="${d}">${bg}${fg}</div>`;
+        html += `<div class="dt-day" data-d="${d}">${esc(cap(dateOf(mon + d * 864e5, { weekday: 'long' })))}<small>${esc(dateOf(mon + d * 864e5, { day: 'numeric', month: 'short' }))}</small></div><div class="dt-row" data-d="${d}" aria-label="${esc(dateOf(mon + d * 864e5, { weekday: 'long', day: 'numeric', month: 'long' }))}">${bg}${fg}</div>`;
       }
       grid.innerHTML = html;
+      if (state.sel !== selSent) { // sélection changée : dispos-select (plage ou null)
+        selSent = state.sel;
+        const m0 = weekMonday(state.week);
+        host.dispatchEvent(new CustomEvent('dispos-select', {
+          detail: selSent && {
+            start: toIso(m0, selSent.s),
+            end: toIso(m0, selSent.e),
+            cat: selSent.cat,
+            layer: state.bg.includes(selSent) ? 'background' : 'foreground'
+          }
+        }));
+      }
       // tracé sur plusieurs rangées : un seul rectangle de sélection par-dessus la grille, bornes aimantées
       if (live?.box) {
         const [da, db, s, en] = live.box,
@@ -537,7 +550,7 @@ padding:0 6px;overflow:hidden;white-space:nowrap;font-size:11.5px;cursor:grab;bo
           box = document.createElement('div');
         box.className = 'dt-box';
         box.style.cssText = `left:${ra.left - g.left + s / DAY * ra.width}px;width:${(en - s) / DAY * ra.width}px;top:${ra.top - g.top}px;height:${rb.bottom - ra.top}px`;
-        box.innerHTML = `<span>${esc(`${c ? c.label : 'Effacer le fond'} ${hhmm(s)}–${hhmm(en, true)}, ${DAY_LOWER[da]} → ${DAY_LOWER[db]}`)}</span>`;
+        box.innerHTML = `<span>${esc(txt('box', { label: c ? lab(c) : txt('erase'), from: hhmm(s), to: hhmm(en, true), day: dateOf(mon + da * 864e5, { weekday: 'long' }), day2: dateOf(mon + db * 864e5, { weekday: 'long' }) }))}</span>`;
         grid.append(box);
       }
       // horaires aux bords si la largeur le permet (toujours pendant le geste), sinon le type seul
@@ -553,7 +566,7 @@ padding:0 6px;overflow:hidden;white-space:nowrap;font-size:11.5px;cursor:grab;bo
         undo: [],
         redo: []
       }).get(state.week),
-      histEvent = () => host.dispatchEvent(new CustomEvent('dispos-timeline-history', {
+      histEvent = () => host.dispatchEvent(new CustomEvent('dispos-history', {
         detail: api.history()
       }));
     /** Pose les couches d'un geste : une entrée d'historique, si elles changent. */
@@ -615,8 +628,22 @@ padding:0 6px;overflow:hidden;white-space:nowrap;font-size:11.5px;cursor:grab;bo
       const b = grid.querySelector(`.dt-row[data-d="${d}"]`).getBoundingClientRect();
       return d * DAY + clamp((x - b.left) / b.width, 0, 1) * DAY;
     };
-    /** Dispo retrouvée après une mise à jour (même catégorie qui contient la minute m). */
-    const findFg = (cat, m) => state.fg.find(r => r.cat === cat && r.s <= m && r.e > m) || null;
+    /** Forme retrouvée après une mise à jour, dans sa couche (même catégorie qui contient la minute m). */
+    const findIn = (layer, cat, m) => state[layer].find(r => r.cat === cat && r.s <= m && r.e > m) || null;
+    /** Couches après le déplacement ou le redimensionnement d'une forme de la couche layer vers [s, e[ : une dispo
+     *  découpe les dispos qu'elle recouvre ; une plage de fond, le fond seulement (les dispos restent par-dessus). */
+    const placeIn = (layer, r, s, e) => layer === 'fg' ? applyFg({
+      bg: state.bg,
+      fg: state.fg.filter(x => x !== r)
+    }, s, e, r.cat) : {
+      bg: paint(state.bg.filter(x => x !== r), s, e, r.cat),
+      fg: state.fg
+    };
+    /** Couches sans la forme r (de l'une ou l'autre couche). */
+    const without = r => ({
+      bg: state.bg.filter(x => x !== r),
+      fg: state.fg.filter(x => x !== r)
+    });
     /** Pose une plage avec un pinceau (fond, effacement du fond ou dispo) dans les couches st. */
     const applyBrush = (st, s, e, id) => id === ERASE ? applyBg(st, s, e, '') : isBg(id) ? applyBg(st, s, e, id) : applyFg(st, s, e,
       id);
@@ -629,8 +656,13 @@ padding:0 6px;overflow:hidden;white-space:nowrap;font-size:11.5px;cursor:grab;bo
       if (e.button > 0 || e.target.closest('[data-x], .dt-day, .dt-axis')) return;
       if (!row && (!lane || e.clientX < lane.left || e.clientX > lane.right)) return;
       hover.hidden = true;
+      // règle unique, quel que soit le pinceau : un geste qui part SUR une forme (dispo ou bande de fond) la saisit
+      // (clic : sélection ; glisser : déplacement ; poignée : bord ; Maj+glisser : tracer par-dessus) ; à côté (vide,
+      // gouttière), il trace avec le pinceau, qui ne dit que QUOI tracer
       const fgEl = e.target.closest('.dt-fg'),
-        r = fgEl ? state.fg[+fgEl.dataset.f] : null,
+        bgEl = !fgEl && e.target.closest('.dt-bg'),
+        layer = fgEl ? 'fg' : 'bg',
+        r = fgEl ? state.fg[+fgEl.dataset.f] : bgEl ? state.bg[+bgEl.dataset.b] || null : null,
         handle = e.target.closest('[data-h]')?.dataset.h,
         d = row ? +row.dataset.d : dayAt(e.clientY),
         m = minuteAt(d, e.clientX);
@@ -638,13 +670,15 @@ padding:0 6px;overflow:hidden;white-space:nowrap;font-size:11.5px;cursor:grab;bo
       if (r && handle) drag = {
         mode: 'resize',
         r,
+        layer,
         side: handle,
         d,
         press: true
       };
       else if (r) drag = {
-        mode: isBg(state.brush) || e.shiftKey ? 'draw' : 'move', // Maj : tracer par-dessus la dispo
+        mode: e.shiftKey ? 'draw' : 'move', // Maj : tracer par-dessus la forme
         r,
+        layer,
         d,
         m0: m,
         x0: e.clientX,
@@ -660,7 +694,6 @@ padding:0 6px;overflow:hidden;white-space:nowrap;font-size:11.5px;cursor:grab;bo
       };
       drag.moved = false;
       drag.pid = e.pointerId;
-      drag.tol = r && drag.mode === 'draw' ? 8 : 3; // départ sur une dispo, pinceau de fond : un clic la sélectionne
       if (r) drag.long = setTimeout(() => { // appui long : sélection
         if (drag && !drag.moved) {
           state.sel = r;
@@ -670,10 +703,10 @@ padding:0 6px;overflow:hidden;white-space:nowrap;font-size:11.5px;cursor:grab;bo
         }
       }, LONG_PRESS);
     });
-    window.addEventListener('pointermove', e => {
+    const onMove = e => {
       if (palDrag) return palMove(e);
       if (!drag) return hoverAt(e);
-      if (!drag.moved && Math.hypot(e.clientX - (drag.x0 ?? e.clientX), e.clientY - (drag.y0 ?? e.clientY)) > drag.tol) {
+      if (!drag.moved && Math.hypot(e.clientX - (drag.x0 ?? e.clientX), e.clientY - (drag.y0 ?? e.clientY)) > 3) {
         drag.moved = true;
         try {
           grid.setPointerCapture(drag.pid); // le geste continue hors de la rangée (la grille n'est pas redessinée)
@@ -711,12 +744,9 @@ padding:0 6px;overflow:hidden;white-space:nowrap;font-size:11.5px;cursor:grab;bo
             [s, s + len]
           ],
           cat: drag.r.cat,
-          layer: 'fg'
+          layer: drag.layer
         };
-        preview = applyFg({
-          bg: state.bg,
-          fg: state.fg.filter(x => x !== drag.r)
-        }, s, s + len, drag.r.cat);
+        preview = placeIn(drag.layer, drag.r, s, s + len);
       } else if (drag.mode === 'resize') {
         const m = minuteAt(drag.d, e.clientX);
         let {
@@ -730,15 +760,13 @@ padding:0 6px;overflow:hidden;white-space:nowrap;font-size:11.5px;cursor:grab;bo
             [s, en]
           ],
           cat: drag.r.cat,
-          layer: 'fg'
+          layer: drag.layer
         };
-        preview = applyFg({
-          bg: state.bg,
-          fg: state.fg.filter(x => x !== drag.r)
-        }, s, en, drag.r.cat);
+        preview = placeIn(drag.layer, drag.r, s, en);
       }
       render();
-    });
+    };
+    window.addEventListener('pointermove', onMove);
     const end = e => {
       if (palDrag) return palEnd(e);
       if (!drag) return;
@@ -754,12 +782,12 @@ padding:0 6px;overflow:hidden;white-space:nowrap;font-size:11.5px;cursor:grab;bo
           layer
         } = d.result;
         commit(preview);
-        state.sel = layer === 'fg' && d.mode !== 'draw' ? findFg(cat, s) : null;
+        state.sel = d.mode !== 'draw' && cat ? findIn(layer, cat, s) : null;
         render();
         return;
       }
       preview = null;
-      // clic sans glisser : sélection d'une dispo, sinon désélection ; redessin seulement si elle change (un redessin
+      // clic sans glisser : sélection de la forme, sinon désélection ; redessin seulement si elle change (un redessin
       // entre les deux clics ferait manquer le double-clic)
       const sel = d.press ? d.r : null;
       if (sel !== state.sel) {
@@ -808,13 +836,12 @@ padding:0 6px;overflow:hidden;white-space:nowrap;font-size:11.5px;cursor:grab;bo
     grid.addEventListener('click', e => {
       const x = e.target.closest('[data-x]');
       if (!x) return;
-      const r = state.fg[+x.closest('.dt-fg').dataset.f];
+      const el = x.closest('.dt-fg, .dt-bg'),
+        r = el.classList.contains('dt-fg') ? state.fg[+el.dataset.f] : state.bg[+el.dataset.b];
+      if (!r) return;
       if (state.sel === r) state.sel = null;
       hover.hidden = true;
-      commit({
-        bg: state.bg,
-        fg: state.fg.filter(y => y !== r)
-      });
+      commit(without(r));
     });
     // double-clic : sur une bande de fond, elle REMPLACE le fond du jour (sa catégorie) ; ailleurs dans la rangée, le
     // pinceau de fond (ou l'effacement) ; les dispos restent posées
@@ -912,8 +939,13 @@ padding:0 6px;overflow:hidden;white-space:nowrap;font-size:11.5px;cursor:grab;bo
           fg: paint(state.fg.filter(x => x !== r), r.s, r.e, p.id)
         });
       }
+      // journée entière : une entrée de fond ne touche que le fond (les dispos restent par-dessus) ; une entrée de dispo
+      // pose une dispo sur toute la journée
       const day = t.d * DAY;
-      commit(applyBrush(state, day, day + DAY, p.id));
+      commit(isBg(p.id) ? {
+        bg: p.id === ERASE ? tidy(cut(state.bg, day, day + DAY)) : paint(state.bg, day, day + DAY, p.id),
+        fg: state.fg
+      } : applyFg(state, day, day + DAY, p.id));
     }
     host.querySelector('.dt-nav').addEventListener('click', e => {
       const b = e.target.closest('[data-w]');
@@ -934,9 +966,9 @@ padding:0 6px;overflow:hidden;white-space:nowrap;font-size:11.5px;cursor:grab;bo
         s0 = tm(q('[data-p-s]').value),
         e0 = tm(q('[data-p-e]').value);
       if (!Number.isFinite(from) || !Number.isFinite(to) || to < from) return void(msg.textContent =
-        'Dates : « du » puis « au », dans cet ordre.');
-      if (!days.size) return void(msg.textContent = 'Cocher au moins un jour.');
-      if ((s0 == null) !== (e0 == null)) return void(msg.textContent = 'Horaires : les deux, ou aucun (journée entière).');
+        txt('period.errDates'));
+      if (!days.size) return void(msg.textContent = txt('period.errDays'));
+      if ((s0 == null) !== (e0 == null)) return void(msg.textContent = txt('period.errTimes'));
       // plages absolues (minutes depuis l'époque), puis réparties par semaine
       const spans = [];
       for (let t = from; t <= to; t += 864e5) {
@@ -981,7 +1013,7 @@ padding:0 6px;overflow:hidden;white-space:nowrap;font-size:11.5px;cursor:grab;bo
           other++;
         } else lost++;
       }
-      msg.textContent = `${spans.length} jour(s) posé(s)${other ? `, dont ${other} autre(s) semaine(s)` : ''}${lost ? ` — ${lost} semaine(s) non enregistrée(s) (stockage absent)` : ''}.`;
+      msg.textContent = `${txt('period.done', { n: spans.length })}${other ? txt('period.other', { n: other }) : ''}${lost ? txt('period.lost', { n: lost }) : ''}.`;
     });
     // clavier : historique ; dispo sélectionnée
     const onKey = e => {
@@ -1007,20 +1039,15 @@ padding:0 6px;overflow:hidden;white-space:nowrap;font-size:11.5px;cursor:grab;bo
       } else if (e.key === 'Delete' || e.key === 'Backspace') {
         e.preventDefault();
         state.sel = null;
-        commit({
-          bg: state.bg,
-          fg: state.fg.filter(x => x !== r)
-        });
-      } else if (step) { // ← → : 5 min ; ↑ ↓ : un jour, même horaire
+        commit(without(r));
+      } else if (step) { // ← → : 5 min ; ↑ ↓ : un jour, même horaire (dispo ou plage de fond)
         e.preventDefault();
         const len = r.e - r.s,
-          s = r.s + step;
+          s = r.s + step,
+          layer = state.bg.includes(r) ? 'bg' : 'fg';
         if (s < 0 || s + len > WEEK) return;
-        commit(applyFg({
-          bg: state.bg,
-          fg: state.fg.filter(x => x !== r)
-        }, s, s + len, r.cat));
-        state.sel = findFg(r.cat, s);
+        commit(placeIn(layer, r, s, s + len));
+        state.sel = findIn(layer, r.cat, s);
         render();
       }
     };
@@ -1046,7 +1073,7 @@ padding:0 6px;overflow:hidden;white-space:nowrap;font-size:11.5px;cursor:grab;bo
         state.fg = [];
         state.sel = null;
         periodDefaults();
-        host.dispatchEvent(new CustomEvent('dispos-timeline-week', {
+        host.dispatchEvent(new CustomEvent('dispos-week', {
           detail: {
             week: w
           }
@@ -1066,6 +1093,15 @@ padding:0 6px;overflow:hidden;white-space:nowrap;font-size:11.5px;cursor:grab;bo
           bg: [],
           fg: []
         });
+      },
+      /** Démonte le composant : écouteurs de la fenêtre et du document retirés, hôte vidé. */
+      destroy() {
+        window.removeEventListener('pointermove', onMove);
+        window.removeEventListener('pointerup', end);
+        document.removeEventListener('keydown', onKey);
+        hover.remove();
+        host.innerHTML = '';
+        drag = palDrag = preview = null;
       },
       /** Pas d'historique de la semaine affichée : { undo, redo }. */
       history: () => ({
@@ -1088,21 +1124,25 @@ padding:0 6px;overflow:hidden;white-space:nowrap;font-size:11.5px;cursor:grab;bo
   window.DisposTimeline = {
     mount,
     DEFAULT_CONFIG,
-    fromSchema2,
-    toSchema2,
+    DEFAULT_LABELS,
     weekId,
     weekMonday,
     addWeek,
-    // fonctions du modèle, pour les essais
-    _model: {
-      paint,
+    // modèle : pour les lecteurs / écrivains de formats (shared/dispos_formats.js)
+    model: {
+      DAY,
+      WEEK,
       cut,
       tidy,
+      paint,
       applyBg,
       applyFg,
+      visibleBg,
       fromData,
       toData,
-      visibleBg
+      toIso,
+      fromIso,
+      isoDay
     }
   };
 })();
