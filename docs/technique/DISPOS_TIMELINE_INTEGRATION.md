@@ -28,7 +28,9 @@ the component's code unchanged: anything the page needs comes through its option
   with rows of 22 px and hour cells like a timetable. `comfortable` has rows twice as high. At about 800 px of width,
   short rectangles show their letter only; their times are in the hover text.
 - Do not style the component's inner classes (`dt-…`). Use the CSS variables (section 6) instead.
-- The page keeps its own controls outside the container: person picker, Undo / Redo buttons, Clear, Save.
+- The page keeps its own controls outside the container: person picker, Undo / Redo buttons, Clear, Save. When it has
+  its own week navigation or entry form, pass `nav: false` or `period: false`, then lay its ranges with `api.add`.
+  `api.slot("palette")` gives it a line under the palette; `dispos-brush` says which category is chosen.
 - The component shows a "How to use" panel under the grid. Choose it with the `help` option: `true` (open), `"collapsed"`
   (folded; good for a page people use every week) or `false` (none, when the page has its own help).
 

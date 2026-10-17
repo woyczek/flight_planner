@@ -544,7 +544,7 @@
       }).map(c => ({
         id: c.id,
         label: label(c.label),
-        letter: layer(c.groupe) === 'background' ? '' : code(c),
+        letter: code(c), // palette ; les bandes de fond n'affichent pas de lettre
         color: color(c),
         layer: layer(c.groupe),
         group: c.groupe,

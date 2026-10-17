@@ -1059,7 +1059,7 @@
       .join('') +
       (data.virtuel ? '' : `<span>${codeCell({ categorie: 'inconnu', source: '' })} ${esc(catL('inconnu'))}</span>`) +
       // déclarations des pilotes : regroupées (Disponible, Exercice SOG, Occupé, Indisponible), détail au survol
-      (window.DisposEditor?.legend ? `<div class="odv-legend-decl"><b>${L(['Déclarations des pilotes', 'Pilot declarations', 'Pilotenangaben', 'Declaraciones de los pilotos'])}</b>${window.DisposEditor.legend()}</div>` : ''); // même légende que Mes missions
+      (window.DisposWeek?.legend ? `<div class="odv-legend-decl"><b>${L(['Déclarations des pilotes', 'Pilot declarations', 'Pilotenangaben', 'Declaraciones de los pilotos'])}</b>${window.DisposWeek.legend()}</div>` : ''); // mêmes catégories que la saisie de Mes missions
     const byPilot = new Map(data.pilotes.map(p => [p.trigramme, []]));
     for (const r of data.records) byPilot.get(r.pilote)?.push(r);
     // grille non vide : cases du classeur, ou seconde ligne du pilote (déclaration faite dans la suite — copie de ce

@@ -261,9 +261,10 @@ The repeating period box lays one category over a date span:
 
 ```text
 DisposTimeline.mount(host, {
-  config, week, data, lang, labels, t, density, help, onChange, store
+  config, week, data, lang, labels, t, density, help, nav, period, onChange, store
 }) → api
-api: get(), set(data), replace(data), week(id?), brush(id?), clear(), undo(), redo(), history(), destroy()
+api: get(), set(data), replace(data), add(ranges), week(id?), brush(id?), slot(name), clear(), undo(), redo(),
+     history(), destroy()
 ```
 
 ### 6.1 `mount` options
@@ -280,6 +281,8 @@ api: get(), set(data), replace(data), week(id?), brush(id?), clear(), undo(), re
   `help.layers`, `help.palette`, `help.draw`, `help.grab`, `help.cut`, `help.drop`, `help.fix`, `help.period` and
   `help.saved`.
 - `labels` and `t`: the texts (section 6.4).
+- `nav` and `period`: `false` hides the component's own week bar, or its repeating period box. A host page that has its
+  own week navigation or its own entry form uses them. Without the period box, the help leaves out its paragraph.
 - `onChange(data)`: called with schema 3 data after every change.
 - `store: { read(week) → data | null, write(data) }`: used by the repeating period for weeks other than the one
   shown.
@@ -291,7 +294,12 @@ api: get(), set(data), replace(data), week(id?), brush(id?), clear(), undo(), re
   changes nothing when the data belongs to another week.
 - `week(id)` shows another week, empty, and fires `dispos-week`. The host then loads that week with `set`.
 - `week()` without an argument returns the week shown.
-- `brush(id)` sets the brush. `clear()` empties the week, as one history step.
+- `brush(id)` sets the brush and fires `dispos-brush`; without an argument it returns the brush. `clear()` empties the
+  week, as one history step.
+- `add(ranges)` lays schema 3 ranges (`[{ start, end, cat }]`) with the drawing rule, as one history step. It returns
+  how many were laid. A host page's own entry form uses it, for example a precise range to the minute.
+- `slot("palette")` returns an empty element right under the palette, for the host page's own line (for example the
+  mission themes opened by the chosen category).
 - `undo()` and `redo()` return false when there is nothing to do. `history()` returns `{ undo, redo }`, the counts.
 - `destroy()` removes the listeners, the tooltip and the content.
 
@@ -301,6 +309,7 @@ api: get(), set(data), replace(data), week(id?), brush(id?), clear(), undo(), re
 - `dispos-select`: detail is `{ start, end, cat, layer }`, or `null`, whenever the selection changes.
 - `dispos-week`: detail is `{ week }`.
 - `dispos-history`: detail is `{ undo, redo }`.
+- `dispos-brush`: detail is `{ id }`, when the brush changes.
 
 ### 6.4 Texts
 

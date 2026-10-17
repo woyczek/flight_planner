@@ -141,6 +141,17 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Changed
 
+- **Availability entry: the availability timeline module in the suite** (second step) — *My missions › My
+  availability*, *My availability* and the ODV legend now use `shared/dispos_timeline.js` through
+  `shared/dispos_week.js`: the suite's categories, texts in four languages, compact density, help folded. Around it,
+  the page keeps:
+  - its week bar (or the page's week in *My missions*), and the mission themes opened by the chosen category under the
+    palette;
+  - "Precise range" to the minute (group, category, days, from, to);
+  - "⧉ Previous week" (asks before replacing a week that is not empty; Ctrl+Z undoes it) and "Clear all" (Ctrl+Z);
+  - the status line with "Write to the data folder (n)", and the import of a former hourly grid.
+
+  New module options and methods: `nav`, `period`, `add(ranges)`, `slot("palette")`, event `dispos-brush`.
 - **Availability weeks written in schema 3** (the native format of the availability timeline module; first step of
   replacing the availability editor) — `SuiteDispos.saveWeek` writes `{ schema: 3, pilot, week, tz, ranges, background,
   appareils, simulateurs }`, to the minute, one state per minute; schema 2 weeks are still read, and a week moves to

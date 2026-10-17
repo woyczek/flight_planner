@@ -1658,7 +1658,7 @@
 <section data-block-id="mission" data-icon="target" data-subtitle="Mission affectée, en lecture seule : ce qui vous est demandé, la route, les cartes fournies." id="pmMission" hidden><h2>Mission</h2>
   <div id="pmDetail"></div>
 </section>
-<section data-block-id="availability" data-icon="clock" data-subtitle="Semaine affichée, heures UTC : choisir une catégorie dans la palette, puis cliquer sur une case ou tracer un rectangle ; un second clic efface ; « Plage précise » au quart d’heure. Le Centre s’en sert pour affecter les missions."><h2>Mes disponibilités</h2>
+<section data-block-id="availability" data-icon="clock"><h2>Mes disponibilités</h2><p class="repo-block-subtitle" id="pmDisposSub" data-no-i18n></p>
   <div class="pm-week" data-weekbar data-min-level="4"></div>
   <div id="pmDispos"></div>
   <details id="pmGridOld" class="pm-legacy" data-min-level="4" hidden><summary>Ancienne grille horaire (lecture seule)</summary><div id="pmGrid"></div></details>
@@ -1669,7 +1669,7 @@
 <script src="../../shared/kit.js?v=0"></script>
 <script src="../../shared/repository_nav.js?v=0"></script>
 <script src="mes_missions_i18n.js?v=0" defer></script>
-<script src="../../shared/dispos_editor.js?v=0"></script>
+<script src="../../shared/dispos_week.js?v=0"></script>
 <script src="../../shared/content_i18n.js?v=0"></script>
 <script src="../../AircraftDB/aircraft_db.js"></script><script src="../../shared/aircraft_catalog.js?v=0"></script><script src="../../shared/mission_core/vendor/js-yaml.min.js"></script><script src="../../shared/data_files.js?v=0" data-file="references/aircraft_fleet.js"></script>
 <script src="../../shared/mission_core/vocab.js?v=0"></script>
@@ -3795,12 +3795,12 @@
     }
   }
 
-  // ---- disponibilités : saisie par plages (shared/dispos_editor.js, semaine de la page) ; l'ancienne grille horaire de la
+  // ---- disponibilités : module de saisie (shared/dispos_week.js, semaine de la page) ; l'ancienne grille horaire de la
   // semaine reste visible en lecture seule tant qu'elle existe (docs/technique/DISPOS_ET_REORGANISATION.md § 1.5)
   let doc = null; // déclaration lue (ce poste, sinon les fichiers) : anciennes semaines
   let dispoEd = null;
-  /** Disponibilités du pilote pour la semaine affichée : éditeur de plages (DisposEditor), qui reprend l'ancienne
-   *  grille horaire ; sans éditeur, ancienne grille en lecture seule. */
+  /** Disponibilités du pilote pour la semaine affichée : module de saisie (DisposWeek), qui reprend l'ancienne grille
+   *  horaire ; sans lui, ancienne grille en lecture seule. */
   async function gridLoad() {
     const tri = A.trigram();
     doc = tri ? await A.availability(tri) : null;
@@ -3813,10 +3813,11 @@
       }, (_, i) => dayFr(week, i))
     });
     for (let n = 0; !window.SuiteDispos && n < 60; n++) await new Promise(r => setTimeout(r, 50)); // chargé par repository_nav.js
-    if (!window.DisposEditor || !window.SuiteDispos) return;
-    // l'éditeur importe l'ancienne grille de la semaine (shared/dispos_editor.js) : plus de copie en lecture seule à côté
+    if (!window.DisposWeek || !window.SuiteDispos) return;
+    // la saisie importe l'ancienne grille de la semaine (shared/dispos_week.js) : plus de copie en lecture seule à côté
     $('pmGridOld').hidden = true;
-    dispoEd ||= window.DisposEditor.mount($('pmDispos'), {
+    window.DisposWeek.bindSubtitle($('pmDisposSub')); // sous-titre traduit à la source (une fois : l'élément le garde)
+    dispoEd ||= window.DisposWeek.mount($('pmDispos'), {
       nav: false // semaine de la page (barre commune à la liste)
     });
     await dispoEd.set({

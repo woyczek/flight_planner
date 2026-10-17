@@ -16,8 +16,9 @@
   // shared/dispos_formats.js.
   // Textes : anglais par défaut (DEFAULT_LABELS) ; la page traduit par labels { clé: texte } ou t(clé, défaut), y compris
   // les catégories (« cat.<id> ») et les groupes (« group.<id> ») ; dates et jours par Intl dans la langue lang.
-  // API (window.DisposTimeline) : mount(hôte, { config, week, data, lang, labels, t, density, help, onChange(data),
-  //   store }) → { get(), set(data), replace(data), week(id), brush(id), clear(), undo(), redo(), history(), destroy() } ; événements sur l'hôte :
+  // API (window.DisposTimeline) : mount(hôte, { config, week, data, lang, labels, t, density, help, nav, period,
+  //   onChange(data), store }) → { get(), set(data), replace(data), add(plages), week(id), brush(id), slot(nom), clear(),
+  //   undo(), redo(), history(), destroy() } (événement dispos-brush en plus) ; événements sur l'hôte :
   //   dispos-change (detail : données), dispos-select (detail : plage { start, end, cat } ou null), dispos-week,
   //   dispos-history ; DEFAULT_CONFIG, DEFAULT_LABELS, weekId(date), weekMonday(id), addWeek(id, n), model (fonctions
   //   du modèle, pour les formats).
@@ -404,6 +405,8 @@ padding:0 6px;overflow:hidden;white-space:nowrap;font-size:11.5px;cursor:grab;bo
     t = null,
     density = 'compact',
     help = true,
+    nav = true,
+    period = true,
     onChange = null,
     store = null
   } = {}) {
@@ -457,16 +460,16 @@ padding:0 6px;overflow:hidden;white-space:nowrap;font-size:11.5px;cursor:grab;bo
     document.body.append(hover);
     const mon0 = weekMonday('2026-W01'); // un lundi : noms des jours dans la langue
     const catOpts = config.categories.map(c => `<option value="${esc(c.id)}">${esc(lab(c))}${c.letter ? ` (${esc(c.letter)})` : ''}</option>`).join('');
-    host.innerHTML = `<div class="dt ${compact ? 'dt-compact' : 'dt-comfortable'}"><div class="dt-nav"><button type="button" data-w="-1">${esc(txt('nav.prev'))}</button><button type="button" data-w="0">${esc(txt('nav.today'))}</button><button type="button" data-w="1">${esc(txt('nav.next'))}</button> <b data-title></b></div>
-      <div class="dt-pal" data-pal></div>
-      <details class="dt-pd"${compact ? '' : ' open'}><summary>${esc(txt('period.title'))}</summary><div class="dt-period">
+    host.innerHTML = `<div class="dt ${compact ? 'dt-compact' : 'dt-comfortable'}"><div class="dt-nav"${nav ? '' : ' hidden'}><button type="button" data-w="-1">${esc(txt('nav.prev'))}</button><button type="button" data-w="0">${esc(txt('nav.today'))}</button><button type="button" data-w="1">${esc(txt('nav.next'))}</button> <b data-title></b></div>
+      <div class="dt-pal" data-pal></div><div class="dt-slot" data-slot="palette"></div>
+      <details class="dt-pd"${compact ? '' : ' open'}${period ? '' : ' hidden'}><summary>${esc(txt('period.title'))}</summary><div class="dt-period">
         <label>${esc(txt('period.cat'))} <select data-p-cat>${catOpts}</select></label>
         <label>${esc(txt('period.dateFrom'))} <input type="date" data-p-from></label><label>${esc(txt('period.dateTo'))} <input type="date" data-p-to></label>
         <span class="dt-days">${Array.from({ length: 7 }, (_, i) => `<label><input type="checkbox" data-p-day="${i}" checked>${esc(dateOf(mon0 + i * 864e5, { weekday: 'short' }))}</label>`).join(' ')}</span>
         <label>${esc(txt('period.timeFrom'))} <input type="time" step="300" data-p-s></label><label>${esc(txt('period.timeTo'))} <input type="time" step="300" data-p-e></label>
         <button type="button" data-p-add>${esc(txt('period.add'))}</button><span class="dt-help" data-p-msg>${esc(txt('period.hint'))}</span></div></details>
       <div class="dt-grid" data-grid></div>
-      ${help ? `<details class="dt-helpbox"${help === 'collapsed' ? '' : ' open'}><summary>${esc(txt('help.title'))}</summary>${HELP_KEYS.map(k => `<p>${esc(txt(k))}</p>`).join('')}</details>` : ''}</div>`;
+      ${help ? `<details class="dt-helpbox"${help === 'collapsed' ? '' : ' open'}><summary>${esc(txt('help.title'))}</summary>${HELP_KEYS.filter(k => period || k !== 'help.period').map(k => `<p>${esc(txt(k))}</p>`).join('')}</details>` : ''}</div>`;
     const grid = host.querySelector('[data-grid]');
     const cur = () => preview || state;
     /** Données changées : onChange et événement dispos-change. */
@@ -928,6 +931,11 @@ padding:0 6px;overflow:hidden;white-space:nowrap;font-size:11.5px;cursor:grab;bo
       state.brush = b.dataset.brush;
       // état des boutons seulement : redessiner la palette entre les deux clics ferait manquer le double-clic
       host.querySelectorAll('[data-brush]').forEach(x => x.setAttribute('aria-pressed', String(x.dataset.brush === state.brush)));
+      host.dispatchEvent(new CustomEvent('dispos-brush', {
+        detail: {
+          id: state.brush
+        }
+      }));
     });
     pal.addEventListener('dblclick', e => {
       const id = e.target.closest('[data-brush]')?.dataset.brush;
@@ -1177,12 +1185,41 @@ padding:0 6px;overflow:hidden;white-space:nowrap;font-size:11.5px;cursor:grab;bo
         undo: H().undo.length,
         redo: H().redo.length
       }),
-      /** Pinceau actif (identifiant de catégorie, ou « __erase »). */
+      /** Pinceau actif (identifiant de catégorie, ou « __erase ») ; sans argument : le rend. */
       brush(id) {
-        if (cats.has(id) || id === ERASE) state.brush = id;
-        renderPalette();
+        if (id !== undefined && (cats.has(id) || id === ERASE) && id !== state.brush) {
+          state.brush = id;
+          renderPalette();
+          host.dispatchEvent(new CustomEvent('dispos-brush', {
+            detail: {
+              id
+            }
+          }));
+        }
         return state.brush;
-      }
+      },
+      /** Pose des plages (schema 3 : [{ start, end, cat }], dans la semaine affichée) avec la règle de découpe, en un
+       *  geste qui s'annule ; rend le nombre de plages posées. */
+      add(list) {
+        const mon = weekMonday(state.week);
+        let st = {
+            bg: state.bg,
+            fg: state.fg
+          },
+          n = 0;
+        for (const r of [].concat(list || [])) {
+          const a = fromIso(mon, r.start),
+            b = fromIso(mon, r.end);
+          if (b > a && (cats.has(r.cat) || r.cat === ERASE)) {
+            st = applyBrush(st, a, b, r.cat);
+            n++;
+          }
+        }
+        if (n) commit(st);
+        return n;
+      },
+      /** Emplacement de la page hôte dans le composant (« palette » : sous la palette). */
+      slot: name => host.querySelector(`[data-slot="${name}"]`)
     };
     renderPalette();
     periodDefaults();
