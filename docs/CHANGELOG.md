@@ -28,8 +28,13 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
     a day or of the week, never removing an availability.
   - Keyboard, long press, undo history (Ctrl+Z / Ctrl+Y, 50 steps per week), repeating period box across weeks, hover
     text giving the visible range.
-  - English texts by default; the host page translates through `labels` or `t(key, default)`, categories included;
-    dates through `Intl`. Theme through CSS variables. Events `dispos-change`, `dispos-select`, `dispos-week`,
+  - Two densities, a mount option that changes sizes only. `compact`, the default, has the look of the former cell
+    grid: rows of 22 px, hour cells with the hours 0–23 above them, "Mon 12/10" day labels, and palette chips such as
+    "O For anything" on four lines (Available, Exercise, Busy, Unavailable); still one letter per rectangle, with
+    its times, shortened ("8 O 12") when the rectangle is narrow. `comfortable` has rows of 44 px. A gutter
+    above the first row and below the last lets a selection rectangle start there.
+  - English texts by default; the host page translates through `labels` or `t(key, default)`, categories and short
+    labels included; dates through `Intl`. Theme through CSS variables. Events `dispos-change`, `dispos-select`, `dispos-week`,
     `dispos-history`; `destroy()`.
   - Native format schema 3 (`ranges` is the declaration, the truth; `background` is an editing convenience a reader
     can ignore). `DisposFormats` reads and writes schema 3 and the suite's schema 2, and takes new formats through

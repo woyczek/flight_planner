@@ -34,10 +34,6 @@
   const DEFAULT_CONFIG = {
     schema: 1,
     groups: [{
-      id: 'indispo',
-      label: 'Unavailable',
-      layer: 'background'
-    }, {
       id: 'dispo',
       label: 'Available',
       layer: 'foreground'
@@ -49,6 +45,10 @@
       id: 'occupe',
       label: 'Busy',
       layer: 'foreground'
+    }, {
+      id: 'indispo',
+      label: 'Unavailable',
+      layer: 'background'
     }],
     categories: [{
       id: 'IN',
@@ -180,6 +180,8 @@
     const d = end && m % DAY === 0 && m > 0 ? DAY : ((m % DAY) + DAY) % DAY;
     return `${pad(Math.floor(d / 60))}:${pad(d % 60)}`;
   };
+  /** Horaire court d'un rectangle étroit : « 08:00 » → « 8 », « 08:30 » → « 8:30 ». */
+  const hShort = t => t.replace(/^0(?=\d)/, '').replace(/:00$/, '');
   const snap = (m, step) => Math.round(m / step) * step;
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 
@@ -300,12 +302,14 @@
 .dt-brush[aria-pressed=true]{outline:2px solid var(--dt-accent,#1d6fd8);outline-offset:1px}
 .dt-grid{display:grid;grid-template-columns:7.5em 1fr;gap:11px 8px;position:relative}
 .dt-day{font-size:12.5px;line-height:1.2;align-self:center}.dt-day small{display:block;opacity:.7}
-.dt-axis{position:relative;height:18px;font-size:10.5px;opacity:.7}.dt-axis span{position:absolute;transform:translateX(-50%)}
-.dt-row{position:relative;height:44px;border:1px solid #0002;touch-action:none;cursor:crosshair;
-background:repeating-linear-gradient(90deg,#0000 0,#0000 calc(100%/48 - 1px),#00000010 calc(100%/48 - 1px),#00000010 calc(100%/48)),
-repeating-linear-gradient(90deg,#0000 0,#0000 calc(100%/24 - 1px),#00000030 calc(100%/24 - 1px),#00000030 calc(100%/24)),var(--dt-row-bg,#fafafa)}
+.dt-axis{position:relative;height:18px;font-size:10.5px;opacity:.7;margin-bottom:var(--dt-edge,8px)}.dt-axis span{position:absolute;transform:translateX(-50%)}
+.dt-grid{padding-bottom:var(--dt-edge,8px)}
+.dt-row{position:relative;height:44px;border:1px solid #0002;touch-action:none;cursor:crosshair;background:var(--dt-row-bg,#fafafa)}
+.dt-row::after{content:'';position:absolute;inset:0;pointer-events:none;
+background:repeating-linear-gradient(90deg,#0000 0,#0000 calc(100%/48 - 1px),var(--dt-line-half,#00000012) calc(100%/48 - 1px),var(--dt-line-half,#00000012) calc(100%/48)),
+repeating-linear-gradient(90deg,#0000 0,#0000 calc(100%/24 - 1px),var(--dt-line,#00000033) calc(100%/24 - 1px),var(--dt-line,#00000033) calc(100%/24))}
 .dt-row.drop,.dt-fg.drop{outline:2px dashed var(--dt-accent,#1d6fd8);outline-offset:1px}.dt-bg.drop{outline:2px dashed var(--dt-accent,#1d6fd8);outline-offset:-2px;z-index:1}
-.dt-box{position:absolute;border:2px solid var(--dt-accent,#1d6fd8);background:var(--dt-accent-soft,var(--dt-accent,#1d6fd8)1f);pointer-events:none;z-index:4;box-sizing:border-box}
+.dt-box{position:absolute;border:2px solid var(--dt-accent,#1d6fd8);background:var(--dt-accent-soft,#1d6fd81f);pointer-events:none;z-index:4;box-sizing:border-box}
 .dt-box span{position:absolute;left:4px;top:2px;background:var(--dt-accent,#1d6fd8);color:#fff;font:600 11px/1.3 system-ui;padding:1px 5px;white-space:nowrap}
 .dt-bg{position:absolute;top:0;bottom:0;opacity:.85}
 .dt-fg{position:absolute;top:3px;bottom:3px;box-shadow:0 1px 2px #0005;display:flex;align-items:center;justify-content:space-between;
@@ -322,7 +326,23 @@ padding:0 6px;overflow:hidden;white-space:nowrap;font-size:11.5px;cursor:grab;bo
 .dt-hover{position:fixed;pointer-events:none;background:var(--dt-tip-bg,#111);color:var(--dt-tip-ink,#fff);font:12px/1.3 system-ui;padding:3px 7px;z-index:50;white-space:nowrap}
 .dt-period{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:center;font-size:13px}.dt-period label{display:inline-flex;gap:5px;align-items:center}
 .dt-period .dt-days label{gap:2px}.dt-period input,.dt-period select{font:inherit;padding:3px 5px}
-.dt-help{font-size:12px;opacity:.75;margin:0}`;
+.dt-help{font-size:12px;opacity:.75;margin:0}
+.dt-compact{gap:6px;font-size:12px}.dt-compact .dt-nav button{font-size:12px;padding:1px 7px}.dt-compact .dt-nav b{font-size:12.5px}
+.dt-compact .dt-pal{gap:3px 6px}.dt-compact .dt-pal-g{font-size:10.5px;opacity:.85;text-align:left;white-space:nowrap}.dt-compact .dt-pal-r{gap:2px}
+.dt-compact .dt-brush{gap:0;padding:0 3px;border:1px solid #0000004d;background:var(--c);color:var(--k);font:400 9.5px/1.45 system-ui,sans-serif;white-space:nowrap}
+.dt-compact .dt-brush[aria-pressed=true]{outline:none;box-shadow:0 0 0 2px #fff,0 0 0 4px var(--c)}
+.dt-compact .dt-brush[data-brush="${ERASE}"]{border-style:dashed}
+.dt-compact .dt-grid{grid-template-columns:max-content 1fr;gap:3px 6px}
+.dt-compact .dt-day{font-size:11px;line-height:1;white-space:nowrap;align-self:stretch;display:flex;align-items:center;gap:4px;padding:0 5px;border:1px solid #0002}
+.dt-compact .dt-day small{display:inline;opacity:.7}
+.dt-compact .dt-axis{height:13px;font-size:10.5px;--dt-edge:5px}
+.dt-compact .dt-row{height:21px}
+.dt-compact .dt-bg{opacity:1}
+.dt-compact .dt-fg{top:2px;bottom:2px;padding:0 3px;font-size:10px;box-shadow:0 0 0 1px #0004}.dt-compact .dt-fg b{font-size:11px}
+.dt-compact .dt-h{width:5px}.dt-compact .dt-x{top:0;right:7px;font:9px/11px system-ui;padding:0 3px}
+.dt-compact .dt-bg .dt-lt,.dt-compact .dt-box span{font-size:10px;padding:1px 4px}
+.dt-compact .dt-period{gap:4px 10px;font-size:11.5px}.dt-compact .dt-period input,.dt-compact .dt-period select{padding:1px 4px}
+.dt-compact .dt-pd>summary{font-size:11.5px;cursor:pointer}.dt-compact .dt-help{font-size:11px}`;
     document.head.append(st);
   }
   /** Textes par défaut (anglais) ; {nom} : valeur insérée. Clés en plus, sans défaut ici : « cat.<id> » et
@@ -368,6 +388,7 @@ padding:0 6px;overflow:hidden;white-space:nowrap;font-size:11.5px;cursor:grab;bo
     lang = 'en',
     labels = {},
     t = null,
+    density = 'compact',
     onChange = null,
     store = null
   } = {}) {
@@ -385,6 +406,22 @@ padding:0 6px;overflow:hidden;white-space:nowrap;font-size:11.5px;cursor:grab;bo
       timeZone: 'UTC'
     });
     const cap = x => x.charAt(0).toUpperCase() + x.slice(1);
+    const compact = density !== 'comfortable';
+    /** Libellé court d'une catégorie (palette compacte) : « short.<id> », sinon c.short, sinon le libellé sans le nom
+     *  du groupe en tête ni la précision entre parenthèses, mots longs abrégés au-delà de 12 caractères. */
+    const shortOf = c => {
+      const def = c.short || (() => {
+        const full = lab(c),
+          g = config.groups.find(x => x.id === c.group),
+          gl = g ? txt(`group.${g.id}`, null, g.label) : '';
+        let x = full.replace(/\s*\([^)]*\)\s*$/, '');
+        if (gl && x.toLowerCase().startsWith(`${gl.toLowerCase()} `)) x = x.slice(gl.length + 1);
+        if (!x) return full;
+        x = cap(x);
+        return x.length > 12 ? x.split(' ').map(w => w.length > 6 ? `${w.slice(0, 5)}.` : w).join(' ') : x;
+      })();
+      return txt(`short.${c.id}`, null, def);
+    };
     const isBg = id => id === ERASE || cats.get(id)?.layer === 'background';
     const state = {
       week,
@@ -405,9 +442,9 @@ padding:0 6px;overflow:hidden;white-space:nowrap;font-size:11.5px;cursor:grab;bo
     document.body.append(hover);
     const mon0 = weekMonday('2026-W01'); // un lundi : noms des jours dans la langue
     const catOpts = config.categories.map(c => `<option value="${esc(c.id)}">${esc(lab(c))}${c.letter ? ` (${esc(c.letter)})` : ''}</option>`).join('');
-    host.innerHTML = `<div class="dt"><div class="dt-nav"><button type="button" data-w="-1">${esc(txt('nav.prev'))}</button><button type="button" data-w="0">${esc(txt('nav.today'))}</button><button type="button" data-w="1">${esc(txt('nav.next'))}</button> <b data-title></b></div>
+    host.innerHTML = `<div class="dt ${compact ? 'dt-compact' : 'dt-comfortable'}"><div class="dt-nav"><button type="button" data-w="-1">${esc(txt('nav.prev'))}</button><button type="button" data-w="0">${esc(txt('nav.today'))}</button><button type="button" data-w="1">${esc(txt('nav.next'))}</button> <b data-title></b></div>
       <div class="dt-pal" data-pal></div>
-      <details class="dt-pd" open><summary>${esc(txt('period.title'))}</summary><div class="dt-period">
+      <details class="dt-pd"${compact ? '' : ' open'}><summary>${esc(txt('period.title'))}</summary><div class="dt-period">
         <label>${esc(txt('period.cat'))} <select data-p-cat>${catOpts}</select></label>
         <label>${esc(txt('period.dateFrom'))} <input type="date" data-p-from></label><label>${esc(txt('period.dateTo'))} <input type="date" data-p-to></label>
         <span class="dt-days">${Array.from({ length: 7 }, (_, i) => `<label><input type="checkbox" data-p-day="${i}" checked>${esc(dateOf(mon0 + i * 864e5, { weekday: 'short' }))}</label>`).join(' ')}</span>
@@ -438,8 +475,8 @@ padding:0 6px;overflow:hidden;white-space:nowrap;font-size:11.5px;cursor:grab;bo
     function renderPalette() {
       const groups = config.groups.map(g => {
         const list = config.categories.filter(c => c.group === g.id),
-          extra = g.layer === 'background' && g === config.groups.find(x => x.layer === 'background') ? `<button type="button" class="dt-brush" data-brush="${ERASE}" aria-pressed="${state.brush === ERASE}" title="${esc(txt('erase.title'))}"><i style="background:#fff;border:1px dashed #0008;color:#111">⌫</i>${esc(txt('erase'))}</button>` : '';
-        return list.length ? `<span class="dt-pal-g">${esc(txt(`group.${g.id}`, null, g.label))}</span><span class="dt-pal-r">${list.map(c => `<button type="button" class="dt-brush" data-brush="${esc(c.id)}" aria-pressed="${c.id === state.brush}" title="${esc(txt(c.layer === 'background' ? 'brush.bg' : 'brush.fg', { label: lab(c) }))}"><i style="background:${esc(c.color)};color:${ink(c.color)}">${esc(c.letter || '')}</i>${esc(lab(c))}</button>`).join('')}${extra}</span>` : '';
+          extra = g.layer === 'background' && g === config.groups.find(x => x.layer === 'background') ? `<button type="button" class="dt-brush" data-brush="${ERASE}" aria-pressed="${state.brush === ERASE}" title="${esc(txt('erase.title'))}" style="--c:#fff;--k:#111">${compact ? `⌫ ${esc(txt('erase'))}` : `<i style="background:#fff;border:1px dashed #0008;color:#111">⌫</i>${esc(txt('erase'))}`}</button>` : '';
+        return list.length ? `<span class="dt-pal-g">${esc(txt(`group.${g.id}`, null, g.label))}</span><span class="dt-pal-r">${list.map(c => `<button type="button" class="dt-brush" data-brush="${esc(c.id)}" aria-pressed="${c.id === state.brush}" title="${esc(txt(c.layer === 'background' ? 'brush.bg' : 'brush.fg', { label: lab(c) }))}" style="--c:${esc(c.color)};--k:${ink(c.color)}">${compact ? esc(`${c.letter ? `${c.letter} ` : ''}${shortOf(c)}`) : `<i style="background:${esc(c.color)};color:${ink(c.color)}">${esc(c.letter || '')}</i>${esc(lab(c))}`}</button>`).join('')}${extra}</span>` : '';
       });
       host.querySelector('[data-pal]').innerHTML = groups.join('');
     }
@@ -491,7 +528,7 @@ padding:0 6px;overflow:hidden;white-space:nowrap;font-size:11.5px;cursor:grab;bo
         })
       });
       if (host.querySelector('[data-title]').textContent !== title) host.querySelector('[data-title]').textContent = title;
-      let html = `<span></span><div class="dt-axis">${Array.from({ length: 25 }, (_, h) => h % 2 ? '' : `<span style="left:${h / 24 * 100}%">${pad(h)}</span>`).join('')}</div>`;
+      let html = `<span></span><div class="dt-axis">${compact ? Array.from({ length: 24 }, (_, h) => `<span style="left:${(h + 0.5) / 24 * 100}%">${h}</span>`).join('') : Array.from({ length: 25 }, (_, h) => h % 2 ? '' : `<span style="left:${h / 24 * 100}%">${pad(h)}</span>`).join('')}</div>`;
       for (let d = 0; d < 7; d++) {
         const from = d * DAY,
           to = from + DAY,
@@ -523,9 +560,11 @@ padding:0 6px;overflow:hidden;white-space:nowrap;font-size:11.5px;cursor:grab;bo
             first = r.s >= from,
             last = r.e <= to;
           // vrai rectangle : heure de début à gauche, type au centre, heure de fin à droite
-          return `<div class="dt-fg${r === state.sel ? ' sel' : ''}${lv ? ' live' : ''}" role="button" aria-pressed="${r === state.sel}" aria-label="${esc(describe(r))}" data-f="${st.fg.indexOf(r)}" style="${seg(r)};background:${esc(c.color)};color:${ink(c.color)}"><span data-t>${first ? esc(hhmm(r.s)) : ''}</span><b>${esc(c.letter || '')}</b><span data-t>${last ? esc(hhmm(r.e, true)) : ''}</span>${first ? '<i class="dt-h l" data-h="l"></i>' : ''}${last ? '<i class="dt-h r" data-h="r"></i>' : ''}<button type="button" class="dt-x" data-x title="${esc(txt('delete'))}">✕</button></div>`;
+          return `<div class="dt-fg${r === state.sel ? ' sel' : ''}${lv ? ' live' : ''}" role="button" aria-pressed="${r === state.sel}" aria-label="${esc(describe(r))}" data-f="${st.fg.indexOf(r)}" style="${seg(r)};background:${esc(c.color)};color:${ink(c.color)}"><span data-t data-full="${first ? esc(hhmm(r.s)) : ''}" data-short="${first ? esc(hShort(hhmm(r.s))) : ''}">${first ? esc(hhmm(r.s)) : ''}</span><b>${esc(c.letter || '')}</b><span data-t data-full="${last ? esc(hhmm(r.e, true)) : ''}" data-short="${last ? esc(hShort(hhmm(r.e, true))) : ''}">${last ? esc(hhmm(r.e, true)) : ''}</span>${first ? '<i class="dt-h l" data-h="l"></i>' : ''}${last ? '<i class="dt-h r" data-h="r"></i>' : ''}<button type="button" class="dt-x" data-x title="${esc(txt('delete'))}">✕</button></div>`;
         }).join('');
-        html += `<div class="dt-day" data-d="${d}">${esc(cap(dateOf(mon + d * 864e5, { weekday: 'long' })))}<small>${esc(dateOf(mon + d * 864e5, { day: 'numeric', month: 'short' }))}</small></div><div class="dt-row" data-d="${d}" aria-label="${esc(dateOf(mon + d * 864e5, { weekday: 'long', day: 'numeric', month: 'long' }))}">${bg}${fg}</div>`;
+        const dayMs = mon + d * 864e5,
+          dayLabel = compact ? `${esc(dateOf(dayMs, { weekday: 'short' }).replace(/\.$/, ''))}<small>${esc(dateOf(dayMs, { day: '2-digit', month: '2-digit' }))}</small>` : `${esc(cap(dateOf(dayMs, { weekday: 'long' })))}<small>${esc(dateOf(dayMs, { day: 'numeric', month: 'short' }))}</small>`;
+        html += `<div class="dt-day" data-d="${d}">${dayLabel}</div><div class="dt-row" data-d="${d}" aria-label="${esc(dateOf(mon + d * 864e5, { weekday: 'long', day: 'numeric', month: 'long' }))}">${bg}${fg}</div>`;
       }
       grid.innerHTML = html;
       if (state.sel !== selSent) { // sélection changée : dispos-select (plage ou null)
@@ -555,9 +594,16 @@ padding:0 6px;overflow:hidden;white-space:nowrap;font-size:11.5px;cursor:grab;bo
       }
       // horaires aux bords si la largeur le permet (toujours pendant le geste), sinon le type seul
       grid.querySelectorAll('.dt-fg').forEach(el => {
-        const narrow = !el.classList.contains('live') && el.clientWidth < 96;
-        el.classList.toggle('narrow', narrow);
-        el.querySelectorAll('[data-t]').forEach(t => t.hidden = narrow);
+        // une seule lettre par dispo, et ses horaires : complets (08:00) si la place le permet, sinon courts (8, 8:30) ;
+        // lettre seule en dessous de 44 px (horaires dans l'infobulle) ; écritures seulement si la valeur change
+        const w = el.clientWidth,
+          mode = el.classList.contains('live') || w >= (compact ? 80 : 96) ? 'full' : w >= 44 ? 'short' : 'none';
+        el.classList.toggle('narrow', mode === 'none');
+        el.querySelectorAll('[data-t]').forEach(t => {
+          const v = mode === 'short' ? t.dataset.short : t.dataset.full;
+          t.hidden = mode === 'none';
+          if (t.textContent !== v) t.textContent = v;
+        });
       });
     }
     // historique par semaine : couches avant chaque geste (undo), après une annulation (redo)

@@ -24,8 +24,9 @@ the component's code unchanged: anything the page needs comes through its option
 
 - Give the component one empty block element, such as a `<div>`, and nothing else. The component fills it, and
   `destroy()` empties it again.
-- The component needs about 900 px of width to show times inside rectangles. It still works when narrower: rectangles
-  then show their letter only.
+- Choose the density with the `density` option. `compact`, the default, takes about 200 px of height for the grid,
+  with rows of 22 px and hour cells like a timetable. `comfortable` has rows twice as high. At about 800 px of width,
+  short rectangles show their letter only; their times are in the hover text.
 - Do not style the component's inner classes (`dt-…`). Use the CSS variables (section 6) instead.
 - The page keeps its own controls outside the container: person picker, Undo / Redo buttons, Clear, Save.
 
@@ -37,8 +38,9 @@ the component's code unchanged: anything the page needs comes through its option
 - Category ids are what the data stores. Never rename an id once data exists; change its label instead.
 - With no `labels`, the texts are English. To use another language:
   - pass `lang` (for example `fr`) for dates and day names;
-  - pass `labels` (`{ key: text }`, keys from `DisposTimeline.DEFAULT_LABELS`, plus `cat.<id>` and `group.<id>` for
-    the configuration's labels), or `t(key, defaultText)` when the page already has a translation function.
+  - pass `labels` (`{ key: text }`, keys from `DisposTimeline.DEFAULT_LABELS`, plus `cat.<id>`, `group.<id>` and
+    `short.<id>` for the configuration's labels and the short palette labels), or `t(key, defaultText)` when the page
+    already has a translation function.
   - Missing keys fall back to English.
 
 ## 4. Reading and writing the data
@@ -93,7 +95,8 @@ The component never stores anything itself. It hands the data to the page, one p
 - `--dt-font`: the font shorthand.
 - `--dt-ink`: the text colour.
 - `--dt-accent` and `--dt-accent-soft`: selection, outlines, the selection rectangle.
-- `--dt-row-bg`: empty rows.
+- `--dt-row-bg`: empty rows. `--dt-line` and `--dt-line-half`: the hour and half-hour lines.
+- `--dt-edge`: the gutters above the first row and below the last one.
 - `--dt-btn-bg` and `--dt-btn-ink`: palette buttons.
 - `--dt-tip-bg` and `--dt-tip-ink`: the hover tooltip.
 

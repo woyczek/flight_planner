@@ -103,7 +103,7 @@
     box: '{label} {from}–{to}, {day} → {day2}',
     delete: 'Effacer',
     help: 'Un geste qui part sur une forme (dispo ou bande de fond) la saisit, quel que soit le pinceau : clic, sélection (Suppr, ← → 5 min, ↑ ↓ un jour, Échap ; appui long au doigt) ; glisser, déplacement (pas de 5 min ; vers une autre rangée : même horaire, autre jour) ; ses bords, ajustement ; Maj+glisser : tracer par-dessus (sur un jour couvert d\'une bande de fond, c\'est ainsi qu\'on trace une dispo). Un geste qui part à côté des formes (vide, gouttière entre deux rangées) trace avec le pinceau, qui ne dit que quoi tracer : une forme, ou sur plusieurs rangées un rectangle de sélection qui pose les mêmes heures sur chaque jour traversé ; un fond tracé à travers une dispo la découpe. Palette : clic, pinceau ; entrée déposée sur une dispo ou une bande de fond : elle en change la nature, sur son étendue (entrée de fond sur une dispo : remplacée par ce fond ; entrée de dispo sur une bande : un rectangle à sa place) ; sur le vide d\'une rangée ou sur le nom du jour : journée entière (une entrée de fond ne change que le fond, les dispos restent) ; double-clic sur une entrée de fond : fond de la semaine. Double-clic sur une bande (ou sur la rangée, pinceau de fond) : remplace le fond du jour, les dispos restent. Ctrl+Z annule, Ctrl+Y ou Ctrl+Maj+Z rétablit. Une minute a un seul état : sous une dispo, le fond ne compte pas, mais il reste en place (dispo déplacée ou effacée : le fond revient) ; temps sans rien : indisponible par défaut.',
-    'group.indispo': 'Non disponible',
+    'group.indispo': 'Indisponible',
     'group.dispo': 'Disponible',
     'group.exercice': 'Exercice',
     'group.occupe': 'Occupé',
@@ -142,6 +142,7 @@
     week: week0,
     lang: 'fr',
     labels: LABELS,
+    density: 'compact', // densité de l'ancienne grille (« comfortable » : rangées hautes)
     data: read(tri(), week0) || {
       schema: 3,
       pilot: tri(),

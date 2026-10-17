@@ -115,18 +115,20 @@ whole day, categories by their `legacy` code. Its rules:
 ## 4. Rendering
 
 - **Navigation bar**: previous week, this week, next week, and the title "Week n — first day to last day (UTC)".
-- **Palette**: one line per group, its label on the left, then one button per category: a colour swatch with the
-  letter, then the label. The active brush is marked (`aria-pressed`). The background line ends with an "Erase
-  background" brush.
+- **Palette**: one line per group, in the order of the configuration, its label on the left, then one button per
+  category. The active brush is marked (`aria-pressed`). The background line ends with an "Erase background" brush.
 - **Repeating period box** (section 5.9), above the grid, folded or open.
 - **Grid**: two columns. The left column holds the day names, with the date under each name. The right column holds an
   hour axis and one row per day, Monday to Sunday.
   - The axis is labelled every two hours, from 00 to 24. Faint lines mark the half hours, stronger lines the hours.
-  - Rows are separated by a gutter of about 11 px, which is part of the drawing area.
+  - Rows are separated by a gutter, and a gutter of about 8 px also runs above the first row and below the last one.
+    Gutters are part of the drawing area, so a selection rectangle can start above Monday or below Sunday.
 - **Bands**: full row height. Only visible parts are drawn. No text, except while being drawn.
 - **Rectangles**: a little shorter than the row, square corners.
   - The start time is on the left, the letter is centred, the end time is on the right.
-  - Below about 96 px of width, only the letter is shown.
+  - One letter per rectangle, never one per hour cell, and its times. When the full times do not fit (about 96 px,
+    80 px in compact), short times are shown ("8 O 12", "8:30 O 12"). Below about 44 px, only the letter is shown, and
+    the times are in the hover text. While dragging, the full times are always shown.
   - A rectangle that crosses midnight is drawn in each row, with its times shown only on its first and last pieces.
 - **Edges and delete button**: on hover or selection, a shape shows a grip on each of its real edges and a small ✕
   delete button.
@@ -139,8 +141,22 @@ whole day, categories by their `legacy` code. Its rules:
     floating ghost and no separate tooltip.
   - A drawing across several rows also shows one selection rectangle over the grid, covering the rows crossed,
     gutters included. It is labelled "category from–to, first day → last day".
+- **Density**, a mount option; it changes sizes only, never a rule.
+  - `compact`, the default, keeps the look of a cell grid. Rows are about 22 px high with gutters of 3 px. The axis
+    labels each hour from 0 to 23 in the middle of its cell, in 10.5 px type. The day column is narrow, with the short
+    day name and the date on one line ("Mon 12/10").
+  - In compact, the palette shows short chips in the category's own colour: the letter, then a short label, for
+    example "O For anything". The short label is the label without the group name in front and without a trailing
+    parenthesis, with words longer than 6 letters cut when it exceeds 12 characters. A `short.<id>` text or a
+    `short` field in the configuration overrides it. The repeating period box starts folded. Help and messages are
+    11–12 px.
+  - `comfortable` uses rows about 44 px high, gutters of 11 px, axis labels every two hours, and full day names with
+    the date under them. Palette buttons show a swatch with the letter and the full label.
+  - In both densities, an hour line and a fainter half-hour line run over the whole height of every row, above the
+    bands and under the rectangles.
 - **Theme** through CSS custom properties, each with a default: `--dt-font`, `--dt-ink`, `--dt-accent`,
-  `--dt-accent-soft`, `--dt-row-bg`, `--dt-btn-bg`, `--dt-btn-ink`, `--dt-tip-bg`, `--dt-tip-ink`. The component injects
+  `--dt-accent-soft`, `--dt-row-bg`, `--dt-line`, `--dt-line-half`, `--dt-btn-bg`, `--dt-btn-ink`, `--dt-tip-bg`,
+  `--dt-tip-ink`, `--dt-edge` (the gutters above and below the rows). The component injects
   its own style sheet once.
 
 ## 5. Gestures and their rules
@@ -245,7 +261,7 @@ The repeating period box lays one category over a date span:
 
 ```text
 DisposTimeline.mount(host, {
-  config, week, data, lang, labels, t, onChange, store
+  config, week, data, lang, labels, t, density, onChange, store
 }) → api
 api: get(), set(data), week(id?), brush(id?), clear(), undo(), redo(), history(), destroy()
 ```
@@ -256,6 +272,7 @@ api: get(), set(data), week(id?), brush(id?), clear(), undo(), redo(), history()
 - `week`: the week shown. Default: the current week.
 - `data`: schema 3 data for that week.
 - `lang`: the locale of dates and day names, through `Intl`. Default: `en`.
+- `density`: `compact` (default) or `comfortable` (section 4).
 - `labels` and `t`: the texts (section 6.4).
 - `onChange(data)`: called with schema 3 data after every change.
 - `store: { read(week) → data | null, write(data) }`: used by the repeating period for weeks other than the one
@@ -281,8 +298,8 @@ api: get(), set(data), week(id?), brush(id?), clear(), undo(), redo(), history()
 
 - Every text has an English default in `DisposTimeline.DEFAULT_LABELS`, keyed by name. `{name}` placeholders are
   filled in.
-- The host overrides texts with `labels` (`{ key: text }`) or with `t(key, defaultText)`. Keys `cat.<id>` and
-  `group.<id>` translate the configuration's labels.
+- The host overrides texts with `labels` (`{ key: text }`) or with `t(key, defaultText)`. Keys `cat.<id>`,
+  `group.<id>` and `short.<id>` translate the configuration's labels and the short labels of the compact palette.
 - Dates and day names come from `Intl` in the `lang` locale.
 
 ### 6.5 Exports
