@@ -57,7 +57,37 @@ The categories and themes are configurable (Settings › Centre); a category tha
 
 ### 1.3 Format of an availability entry
 
-Your structure, with a few clarifications:
+**Schema 3 (written since 17 October 2026).** A week is written in the native format of the availability timeline
+module (`shared/dispos_timeline.js`, [specification](DISPOS_TIMELINE_SPEC.md)), with the suite's fields around it:
+
+```json
+{
+  "schema": 3, "va": "SOG", "pilot": "RBR", "week": "2026-W41", "tz": "UTC", "updated_at": "…", "by": "RBR",
+  "ranges": [
+    { "start": "2026-10-06T00:00", "end": "2026-10-06T19:00", "cat": "indispo" },
+    { "start": "2026-10-06T19:00", "end": "2026-10-06T22:00", "cat": "secu_perso" },
+    { "start": "2026-10-06T22:00", "end": "2026-10-07T00:00", "cat": "indispo" }
+  ],
+  "background": [{ "start": "2026-10-06T00:00", "end": "2026-10-07T00:00", "cat": "indispo" }],
+  "appareils": { "possedes": [], "maitrises": [], "variantes": { "CL2T": ["CL-415"] } }, "simulateurs": []
+}
+```
+
+- `ranges` is the declaration, the truth: to the minute, UTC, end excluded, **one state per minute** (no overlap).
+  `background` is the unavailability laid under the availabilities, an editing convenience that readers ignore.
+- `cat` is the category identifier of the configuration, as `categorie` was in schema 2. The `indispo` group goes to
+  the background layer; the other groups are in the foreground.
+- **Reading.** Every reader accepts schema 2 and schema 3. `SuiteDispos.readPilot` reads both through
+  `shared/dispos_formats.js` into the same model, and gives each week normalised. The normalised week holds `ranges`,
+  `background`, and the per-day view `dispos` (ranges cut by day, to the minute, `null` for a whole day). The ODV and
+  the assignments read that view. Coverage is computed to the minute, piece by piece between the instants where the
+  declaration changes (`SuiteDispos.cutsBetween`), no longer in quarter-hour steps.
+- **Writing.** `SuiteDispos.saveWeek` always writes schema 3. There is no bulk migration: a week moves to schema 3 the
+  first time it is written. Old schema 2 weeks stay readable.
+- In a schema 2 week, two availability categories over the same time ("rescue AND combat") were possible. Read as
+  schema 3, the later one wins. To be available for both, declare "Available for everything" or a custom category.
+
+**Schema 2 (read, no longer written).** Your structure, with a few clarifications:
 
 ```json
 {
@@ -73,10 +103,11 @@ Your structure, with a few clarifications:
 }
 ```
 
-- Times in **UTC** (as today), to the quarter hour; `null` = whole day.
+- Times in **UTC** (as today), to the quarter hour; `null` = whole day (schema 3: to the minute).
 - `categorie`: stable identifier of a category of the configuration; the themes actually opened are calculated on
   reading (category + the pilot's preferences at that moment).
-- **Several ranges can overlap** (available for rescue AND combat on the same evening).
+- **Several ranges can overlap** (available for rescue AND combat on the same evening); schema 3 keeps one state per
+  minute (see above).
 - `appareils.possedes` / `maitrises`: ICAO designators only. `appareils.variantes` (optional): the variants the pilot
   flies, per designator (`{ "CL2T": ["CL-415"] }`) — several models share one ICAO designator (Doc 8643: CL-215T and
   CL-415 are both CL2T). Proposed from the designator's ICAO models, the fleet's variants, or free text (*My profile ›

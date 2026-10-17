@@ -460,18 +460,17 @@
     }));
     return out;
   }
-  /** Remplace les plages d'un jour dans la déclaration d'un membre (appareils et simulateurs gardés). */
+  /** Remplace les plages d'un jour dans la déclaration d'un membre (le reste de la semaine, fond posé, appareils et
+   *  simulateurs gardés ; écrite au schema 3). */
   async function setDispos(tri, week, date, plages) {
     const w = await D().readPilot(tri, {
       weeks: [week],
       fresh: true
     });
-    const doc = w?.[week] || {};
-    const dispos = {
-      ...(doc.dispos || {}),
-      [date]: plages
+    const doc = w?.[week] || {
+      week
     };
-    return D().saveWeek(tri, week, dispos, {
+    return D().saveWeek(tri, week, D().setDay(doc, date, plages), {
       appareils: doc.appareils,
       simulateurs: doc.simulateurs
     });

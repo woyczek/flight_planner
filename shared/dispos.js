@@ -8,17 +8,38 @@
   //     alias de familles ; sans fichier : DEFAULT ci-dessous ;
   //   · thèmes ouverts d'une catégorie : « all » (tous), « domain:<d> » (ceux du domaine), « prefs:<d> » (ceux du
   //     domaine selon les préférences du pilote : liste blanche ou noire), « none », ou une liste explicite ;
-  //   · déclaration : un fichier par pilote et par semaine ISO, data/disponibilites/<TRI>/<AAAA>-W<nn>.json
-  //     { schema: 2, va, pilote, semaine, updated_at, by, dispos: { "AAAA-MM-JJ": [{ debut, fin, categorie }] },
-  //     appareils, simulateurs } ; heures UTC au quart d'heure, null = journée entière, plages superposables ; index
-  //     data/disponibilites/_index.json (pilotes → semaines) refait par le lanceur et à chaque écriture.
+  //   · déclaration : un fichier par pilote et par semaine ISO, data/disponibilites/<TRI>/<AAAA>-W<nn>.json, écrit au
+  //     schema 3 du module de saisie (shared/dispos_timeline.js) : { schema: 3, va, pilot, week, tz: "UTC", ranges,
+  //     background, updated_at, by, appareils, simulateurs } — ranges : la déclaration, à la minute, sans chevauchement ;
+  //     background : le fond posé (commodité d'édition) ; lu aussi au schema 2 d'avant ({ schema: 2, pilote, semaine,
+  //     dispos: { "AAAA-MM-JJ": [{ debut, fin, categorie }] } }, plus écrit) : pas de migration en masse, une semaine
+  //     passe au schema 3 à sa première écriture ; les deux sont lus par shared/dispos_formats.js vers le même modèle,
+  //     et readPilot rend pour chaque semaine le document normalisé : ranges, background, et la vue par jour dispos
+  //     (plages à la minute, sans chevauchement, null = journée entière) que lisent l'ODV et les affectations ; index
+  //     data/disponibilites/_index.json (pilotes → semaines) refait par le lanceur et à chaque écriture ;
+  //   · le module de saisie et ses formats sont chargés ici (avant toute lecture), avec la configuration des catégories
+  //     traduite pour lui (timelineConfig).
   // API (window.SuiteDispos) : DEFAULT, config(), load(fresh), save(config), groups(), categories({ all }),
   //   category(id), domains(), themes(), label(ligne), themeLabel(id), codeCategory(code ODV), themeOfFamily(famille),
   //   openThemes(catégorie, préférences), opens(thèmes, famille), prefsFromCodes(codes), weekId(ms), weekMonday(id),
-  //   addWeek(id, n), readPilot(TRI, { weeks, fresh }), saveWeek(TRI, semaine, dispos, extra), entriesAt(semaines, ms),
-  //   affectable(catégorie) (éléments d'un ordre de vol ouverts par la catégorie : vol, controle, divers).
+  //   addWeek(id, n), readPilot(TRI, { weeks, fresh }), saveWeek(TRI, semaine, données, extra) (données : schema 3, ou
+  //   plages par jour du schema 2), entriesAt(semaines, ms), cutsBetween(semaines, début, fin) (instants où la
+  //   déclaration change), setDay(document, date, plages) → schema 3, normalize(document), timelineConfig(), ready()
+  //   (module et formats chargés), affectable(catégorie) (éléments d'un ordre de vol ouverts par la catégorie : vol,
+  //   controle, divers).
   if (window.SuiteDispos) return;
   const K = window.RepositoryKit;
+  // module de saisie et formats (schema 2 ↔ 3), chargés à côté de ce script, dans l'ordre ; ready() : les deux prêts
+  const here = document.currentScript?.src || '';
+  const loadScript = name => window[name === 'dispos_timeline.js' ? 'DisposTimeline' : 'DisposFormats'] ? Promise.resolve() : new Promise(
+    res => {
+      const el = document.createElement('script');
+      el.src = new URL(`${name}?v=0`, here || location.href).href;
+      el.onload = el.onerror = () => res();
+      document.head.append(el);
+    });
+  const modules = here ? loadScript('dispos_timeline.js').then(() => loadScript('dispos_formats.js')) : Promise.resolve();
+  const ready = () => modules;
   const A = () => window.MissionAssignments;
   const CONFIG = 'config/disponibilites.json',
     CACHE = 'disposConfigCache:v1',
@@ -405,6 +426,7 @@
       const known = new Set([...(Array.isArray(e?.weeks) ? e.weeks : []), ...pend]);
       ids = ids.filter(w => known.has(w));
     }
+    await modules;
     const out = {};
     await Promise.all(ids.map(async w => {
       const d = await (A().readIndexed ? A().readIndexed(fileOf(tri, w), sigs[w], {
@@ -412,34 +434,44 @@
       }) : A().readData(fileOf(tri, w), {
         fresh
       })).catch(() => null);
-      if (d?.dispos) out[w] = d;
+      if (d?.dispos || d?.ranges) out[w] = normalize(d, w, tri);
     }));
     return out;
   }
-  /** Enregistre une semaine (plages par jour) ; extra : appareils, simulateurs. Index des semaines tenu à jour. */
-  async function saveWeek(tri, week, dispos, extra = {}) {
+  /** Enregistre une semaine au schema 3 : données schema 3 (ranges, background), ou plages par jour du schema 2 (anciens
+   *  appelants) ; extra : appareils, simulateurs. Index des semaines tenu à jour ; doc rendu normalisé (normalize). */
+  async function saveWeek(tri, week, data, extra = {}) {
     tri = String(tri || '').toUpperCase();
-    const clean = Object.fromEntries(Object.entries(dispos || {}).map(([d, list]) => [d, (list || []).filter(x => x?.categorie).map(x =>
-      ({
-        debut: x.debut || null,
-        fin: x.fin || null,
-        categorie: x.categorie
-      })).sort((a, b) => String(a.debut ?? '').localeCompare(String(b.debut ?? '')))]).filter(([, l]) => l.length).sort(([a], [
-      b
-    ]) => a.localeCompare(b)));
-    const doc = {
+    await modules;
+    const d3 = data?.ranges ? data : read3({
       schema: 2,
-      va: window.RepositoryNav?.va?.().short || 'SOG',
-      pilote: tri,
       semaine: week,
+      pilote: tri,
+      dispos: data || {}
+    });
+    const doc = {
+      schema: 3,
+      va: window.RepositoryNav?.va?.().short || 'SOG',
+      pilot: tri,
+      week,
+      tz: 'UTC',
+      ranges: (d3.ranges || []).map(r => ({
+        start: r.start,
+        end: r.end,
+        cat: r.cat
+      })),
+      background: (d3.background || []).map(r => ({
+        start: r.start,
+        end: r.end,
+        cat: r.cat
+      })),
       updated_at: new Date().toISOString(),
       by: window.SuiteUsers?.by?.() || tri,
-      dispos: clean,
-      appareils: extra.appareils || {
+      appareils: extra.appareils || data?.appareils || {
         possedes: [],
         maitrises: []
       },
-      simulateurs: extra.simulateurs || []
+      simulateurs: extra.simulateurs || data?.simulateurs || []
     };
     const r = await A().writeData(fileOf(tri, week), doc);
     await A().dataStore.lock('data:disponibilites/_index', async () => {
@@ -489,10 +521,140 @@
     });
     return {
       ...r,
-      doc
+      doc: normalize(doc, week, tri)
     };
   }
   const hm = ms => new Date(ms).toISOString().slice(11, 16);
+  /** Configuration des catégories pour le module de saisie (shared/dispos_timeline.js) : groupes dans l'ordre de la
+   *  suite, couche de fond pour le groupe « indispo », lettre (code), couleur, libellé dans la langue courante ; le code
+   *  du schema 2 (legacy) est l'identifiant de la catégorie. */
+  function timelineConfig({
+    all = true
+  } = {}) {
+    const layer = g => g === 'indispo' ? 'background' : 'foreground';
+    return {
+      schema: 1,
+      groups: groups().map(g => ({
+        id: g.id,
+        label: label(g.label),
+        layer: layer(g.id)
+      })),
+      categories: categories({
+        all
+      }).map(c => ({
+        id: c.id,
+        label: label(c.label),
+        letter: layer(c.groupe) === 'background' ? '' : code(c),
+        color: color(c),
+        layer: layer(c.groupe),
+        group: c.groupe,
+        legacy: c.id,
+        short: shortLabel(c)
+      }))
+    };
+  }
+  /** Schema 2 → schema 3 (lecteur de shared/dispos_formats.js, configuration de la suite). */
+  const read3 = doc => window.DisposFormats ? window.DisposFormats.read(doc?.ranges ? 'schema3' : 'schema2', doc, {
+    config: timelineConfig()
+  }) : {
+    schema: 3,
+    week: doc?.week || doc?.semaine,
+    ranges: [],
+    background: []
+  };
+  /** Vue par jour d'une déclaration schema 3 : { "AAAA-MM-JJ": [{ debut, fin, categorie }] }, à la minute, sans
+   *  chevauchement ; journée entière : debut et fin null ; fin de journée : « 24:00 ». */
+  function dayView(d3) {
+    const out = {};
+    for (const r of d3?.ranges || []) {
+      let a = Date.parse(`${r.start}:00Z`);
+      const b = Date.parse(`${r.end}:00Z`);
+      while (a < b) {
+        const day0 = a - a % 864e5,
+          e = Math.min(b, day0 + 864e5),
+          s0 = (a - day0) / 6e4,
+          e0 = (e - day0) / 6e4,
+          whole = s0 === 0 && e0 === 1440,
+          t = m => `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
+        (out[new Date(day0).toISOString().slice(0, 10)] ||= []).push({
+          debut: whole ? null : t(s0),
+          fin: whole ? null : t(e0),
+          categorie: r.cat
+        });
+        a = e;
+      }
+    }
+    return out;
+  }
+  /** Document d'une semaine, lu au schema 2 ou 3, normalisé : champs du fichier (appareils, simulateurs, updated_at…),
+   *  ranges et background (schema 3), vue par jour dispos (dayView), pilote et semaine sous leurs deux noms. */
+  function normalize(doc, week = doc?.week || doc?.semaine, tri = doc?.pilot || doc?.pilote) {
+    // formats absents (script non chargé) : un document au schema 2 garde ses plages telles quelles
+    if (!window.DisposFormats && doc?.dispos) return {
+      ...doc,
+      week,
+      semaine: week,
+      pilot: tri || '',
+      pilote: tri || ''
+    };
+    const d3 = read3({
+      ...doc,
+      week: doc?.week || week,
+      semaine: doc?.semaine || week
+    });
+    return {
+      ...doc,
+      schema: doc?.schema || 2,
+      pilot: tri || '',
+      pilote: tri || '',
+      week,
+      semaine: week,
+      ranges: d3.ranges,
+      background: d3.background || [],
+      dispos: dayView(d3)
+    };
+  }
+  /** Remplace les plages d'un jour (plages du schema 2 : debut, fin, categorie ; à la minute) dans un document : données
+   *  schema 3, le reste de la semaine gardé (fond posé compris). */
+  function setDay(doc, date, plages) {
+    const T = window.DisposTimeline,
+      M = T?.model,
+      cfg3 = timelineConfig(),
+      week = doc?.week || doc?.semaine || weekId(Date.parse(`${date}T12:00:00Z`));
+    if (!M) throw new Error('dispos_timeline.js not loaded');
+    const bgCats = new Set(cfg3.categories.filter(c => c.layer === 'background').map(c => c.id)),
+      m = v => v ? +v.slice(0, 2) * 60 + +v.slice(3, 5) : null,
+      day = Math.round((Date.parse(`${date}T00:00:00Z`) - T.weekMonday(week)) / 6e4);
+    let st = M.fromData(doc?.ranges ? doc : read3(doc), week, cfg3);
+    st = {
+      bg: M.tidy(M.cut(st.bg, day, day + M.DAY)),
+      fg: M.tidy(M.cut(st.fg, day, day + M.DAY))
+    };
+    for (const x of plages || []) {
+      const a = day + (m(x.debut) ?? 0),
+        b = day + (x.fin ? m(x.fin) : M.DAY);
+      if (b > a && x.categorie) st = bgCats.has(x.categorie) ? M.applyBg(st, a, b, x.categorie) : M.applyFg(st, a, b, x.categorie);
+    }
+    return M.toData({
+      week,
+      pilot: doc?.pilot || doc?.pilote || '',
+      ...st
+    });
+  }
+  /** Instants (ms) où la déclaration peut changer entre start et end (bornes comprises) : débuts et fins des plages des
+   *  jours couverts ; une couverture se calcule ainsi à la minute, plage par plage, sans pas fixe. */
+  function cutsBetween(weeks, start, end) {
+    const out = new Set([start, end]);
+    for (let d0 = start - start % 864e5; d0 < end; d0 += 864e5) {
+      const day = new Date(d0).toISOString().slice(0, 10),
+        doc = weeks?.[weekId(d0)];
+      out.add(d0);
+      for (const x of doc?.dispos?.[day] || [])
+        for (const v of [x.debut, x.fin])
+          if (v) out.add(d0 + (+v.slice(0, 2) * 60 + +v.slice(3, 5)) * 6e4);
+    }
+    return [...out].filter(t => t >= start && t <= end).sort((a, b) => a - b);
+  }
   /** Plages déclarées qui couvrent l'instant ms (semaines : { semaine → document }) ; null si la semaine n'est pas
    *  déclarée (le reste de la semaine déclarée, sans plage : liste vide). Fin « 24:00 » : jusqu'à minuit. */
   function entriesAt(weeks, ms) {
@@ -555,6 +717,11 @@
     readPilot,
     saveWeek,
     entriesAt,
+    cutsBetween,
+    setDay,
+    normalize,
+    timelineConfig,
+    ready,
     fileOf
   };
   // configuration partagée relue au chargement et à chaque écriture d'un onglet

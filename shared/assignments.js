@@ -1325,16 +1325,22 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
   /** Déclaration d'un pilote sur une plage : code dominant (les « dispo » d'abord), dispo, codes rencontrés. */
   function declaredOver(av, start, end) {
     if (!av || !start || !end) return null;
-    // pas d'un quart d'heure pour les déclarations par plages (nouveau format), d'une heure pour les anciennes grilles
-    const step = av.weeks2 && Object.keys(av.weeks2).length ? 9e5 : 36e5;
+    // déclarations par plages (schema 2 ou 3) : couverture à la minute, morceau par morceau entre les instants où la
+    // déclaration change (codes : minutes) ; anciennes grilles : pas d'une heure (codes : heures)
+    const ranged = av.weeks2 && Object.keys(av.weeks2).length && window.SuiteDispos?.cutsBetween,
+      cuts = ranged ? window.SuiteDispos.cutsBetween(av.weeks2, start, end) : null;
     const codes = {},
       seen = {};
-    for (let ms = start; ms < end; ms += step) {
+    const count = (ms, w) => {
       const a = availabilityAt(av, ms);
-      if (!a) continue;
-      codes[a.code] = (codes[a.code] || 0) + 1;
+      if (!a) return;
+      codes[a.code] = (codes[a.code] || 0) + w;
       seen[a.code] ||= a;
-    }
+    };
+    if (cuts)
+      for (let i = 0; i < cuts.length - 1; i++) count(cuts[i], (cuts[i + 1] - cuts[i]) / 6e4);
+    else
+      for (let ms = start; ms < end; ms += 36e5) count(ms, 1);
     /** Vrai si le code est de catégorie « dispo » (déclaration par plages, sinon légende de l'ODV). */
     const isDispo = c => (seen[c].category || LEGEND[c]?.[1]) === 'dispo';
     const list = Object.entries(codes).sort((x, y) => isDispo(y[0]) - isDispo(x[0]) || y[1] - x[1]);

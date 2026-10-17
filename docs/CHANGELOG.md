@@ -141,6 +141,13 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Changed
 
+- **Availability weeks written in schema 3** (the native format of the availability timeline module; first step of
+  replacing the availability editor) — `SuiteDispos.saveWeek` writes `{ schema: 3, pilot, week, tz, ranges, background,
+  appareils, simulateurs }`, to the minute, one state per minute; schema 2 weeks are still read, and a week moves to
+  schema 3 when it is next written (no bulk migration). `readPilot` reads both through `shared/dispos_formats.js` and
+  gives each week normalised (`ranges`, `background`, and the per-day view `dispos` to the minute) to the ODV and the
+  assignments; coverage is now computed to the minute (`cutsBetween`) instead of in quarter-hour steps.
+  `docs/technique/DISPOS_ET_REORGANISATION.md` § 1.3.
 - **Aircraft types: last duplicates** — the Poll-Schumann fuel model now resolves the type through the common
   catalogue first (aliases followed: H145 → EC45); its `SYN` table is kept: it is not a name table but the nearby
   reference aircraft its data give for an uncovered type (C-17 → B764). The Landing dashboard no longer redefines the

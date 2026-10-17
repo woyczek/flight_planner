@@ -81,7 +81,7 @@ dialog.eq-dialog h3{margin:0 0 6px}dialog.eq-dialog footer{display:flex;justify-
     let n = 0;
     for (const [w, d] of Object.entries(weeks).sort())
       if (w >= cur && Object.keys(d?.dispos || {}).length) {
-        await SD.saveWeek(tri, w, d.dispos, extra);
+        await SD.saveWeek(tri, w, d, extra); // document normalisé : sa déclaration (schema 3) gardée telle quelle
         n++;
       }
     return n;
