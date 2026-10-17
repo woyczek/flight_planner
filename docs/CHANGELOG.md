@@ -14,17 +14,20 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 - **lab: availability timeline prototype** (`labs/dispos_timeline.html`, outside the suite) — continuous week axis
   with two layers. Background, the nature of the unavailability (unavailable, leave, rest, real-life activity): bands,
-  colour only, over several days by dragging across rows, a whole day by dragging a palette entry onto it;
-  double-click replaces the background of the day (from the palette: of the week); "Erase background" brush.
-  Availabilities on top: square rectangles (start time left, type centred, end time right), snapped to the half-hour,
-  edges and moves by 5 min. One state per minute: under an availability the background does not count (export,
-  hover), but it stays in place, so a moved or deleted availability gives back the chosen background; an
+  colour only; double-click replaces the background of the day (from the palette: of the week); "Erase background"
+  brush; drawn over an availability, the cut shows while dragging. Availabilities on top: square rectangles (start
+  time left, type centred, end time right), snapped to the half-hour, edges and moves by 5 min, moved to another row:
+  same times, another day (↑ ↓ on a selection); Shift+drag on an availability draws over it. A drag across several
+  rows draws a selection rectangle (as in a vector drawing program): the same time range on each day covered. A palette
+  entry dragged onto a day fills the whole day, onto an availability changes its nature (a background entry replaces
+  it with that background). Undo history per displayed week, 50 steps, one per gesture: Ctrl+Z, Ctrl+Y /
+  Ctrl+Shift+Z, "Undo" / "Redo" buttons. One state per minute: under an availability the background does not count
+  (export, hover), but it stays in place, so a moved or deleted availability gives back the chosen background; an
   unavailability laid over an availability cuts it; time with nothing is unavailable by default, and an empty day is
   exported as unavailable all day. Hover gives the visible range ("Wednesday 14 October, 00:00 to 05:30:
   Unavailable"); while dragging, the shape itself with its times. Repeating period box (category, dates, weekdays,
-  times, across weeks). Component JSON (schema 3: `ranges` is the declaration, the truth, without overlap; `background`, the background
-  as laid, is an editing convenience a reader can ignore) with schema 2
-  readers / writers.
+  times, across weeks). Component JSON (schema 3: `ranges` is the declaration, the truth, without overlap;
+  `background`, the background as laid, is an editing convenience a reader can ignore) with schema 2 readers / writers.
 - **Assignment: declared aircraft variants** — a pilot's declaration may list variants per ICAO designator
   (`appareils.variantes`, e.g. `{ "CL2T": ["CL-415"] }`; editor by Features SOG). Qualification stays per designator
   (never a block); among candidate aircraft and pilots, the matching variant comes first (fleet `variant` = declared

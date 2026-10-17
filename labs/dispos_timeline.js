@@ -2,12 +2,17 @@
   'use strict';
   // Maquette (hors suite) : saisie des disponibilités sur un axe de temps continu, une rangée par jour de la semaine.
   //   · FOND : nature de la non-disponibilité (indisponible, congés, récupération, activité réelle), bandes pleine
-  //     hauteur, couleur seule, aimantées à la demi-heure, d'une rangée à l'autre pour plusieurs jours ; glisser l'entrée
-  //     de la palette sur un jour : journée entière ; double-clic : REMPLACE le fond du jour (sur la palette : de la
-  //     semaine) ; pinceau « Effacer le fond » ;
+  //     hauteur, couleur seule, aimantées à la demi-heure ; double-clic : REMPLACE le fond du jour (sur la palette : de
+  //     la semaine) ; pinceau « Effacer le fond » ; tracé par-dessus une dispo : la découpe se voit pendant le geste ;
   //   · PREMIER PLAN : les dispos, par rectangle (lettre au centre, heure de début à gauche, de fin à droite), aimantés
-  //     à la demi-heure, poignées et déplacement au pas de 5 min ; clic : sélection (Suppr, ← →, Échap), croix au survol,
-  //     appui long au doigt ;
+  //     à la demi-heure ; poignées et déplacement au pas de 5 min, déplacement vers une autre rangée : même horaire, autre
+  //     jour ; Maj+glisser sur une dispo : tracer par-dessus ; clic : sélection (Suppr, ← → 5 min, ↑ ↓ un jour, Échap),
+  //     croix au survol, appui long au doigt ;
+  //   · tracé sur plusieurs rangées : un rectangle de sélection (comme dans un logiciel de dessin), la même plage horaire
+  //     posée sur chaque jour couvert, fond ou dispos ;
+  //   · palette : entrée glissée sur un jour : journée entière ; sur une dispo : elle change de nature (entrée de fond :
+  //     remplacée par ce fond sur son étendue) ;
+  //   · historique par semaine affichée, 50 pas, un par geste : Ctrl+Z, Ctrl+Y / Ctrl+Maj+Z, undo() / redo() ;
   //   · une minute a UN état : là où une dispo est posée, le fond ne compte pas (export, survol) ; il reste pourtant en
   //     place dessous, si bien qu'une dispo déplacée ou effacée rend le fond choisi ; une non-disponibilité posée sur une
   //     dispo la découpe ; temps sans fond ni dispo : indisponible par défaut ;
@@ -20,7 +25,8 @@
   // séparée { categories: [{ id, label, letter, color, layer: "background" | "foreground", group, legacy }] }.
   // Lecteurs / écrivains : schema 2 de la suite (une déclaration par semaine, plages par jour au quart d'heure) ↔ schema 3.
   // API (window.DisposTimeline) : mount(hôte, { config, week, data, onChange(data), store }) → { set(data), get(),
-  //   week(w), brush(id) } ; DEFAULT_CONFIG ; fromSchema2(doc, config), toSchema2(data, config, base) ; weekId(date),
+  //   week(w), brush(id), undo(), redo(), clear(), history() } (événements « dispos-timeline-week » et
+  //   « dispos-timeline-history ») ; DEFAULT_CONFIG ; fromSchema2(doc, config), toSchema2(data, config, base) ; weekId(date),
   //   weekMonday(id), addWeek(id, n).
   if (window.DisposTimeline) return;
   const DAY = 1440,
@@ -28,7 +34,8 @@
     SNAP_DRAW = 30,
     SNAP_EDIT = 5,
     MIN_PIECE = 5,
-    LONG_PRESS = 500;
+    LONG_PRESS = 500,
+    HISTORY = 50;
   const DAYS = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
 
   /** Catégories par défaut, reprises de la configuration de la suite (shared/dispos.js : couleurs, codes de l'ODV). */
@@ -377,13 +384,15 @@
 .dt-brush{display:inline-flex;align-items:center;gap:6px;border:1px solid #0003;background:#fff;color:#111;padding:3px 8px;cursor:grab;font:inherit;font-size:12.5px;touch-action:none}
 .dt-brush i{display:inline-block;min-width:18px;height:18px;font:700 11px/18px system-ui;text-align:center;font-style:normal}
 .dt-brush[aria-pressed=true]{outline:2px solid #1d6fd8;outline-offset:1px}
-.dt-grid{display:grid;grid-template-columns:7.5em 1fr;gap:4px 8px}
+.dt-grid{display:grid;grid-template-columns:7.5em 1fr;gap:4px 8px;position:relative}
 .dt-day{font-size:12.5px;line-height:1.2;align-self:center}.dt-day small{display:block;opacity:.7}
 .dt-axis{position:relative;height:18px;font-size:10.5px;opacity:.7}.dt-axis span{position:absolute;transform:translateX(-50%)}
 .dt-row{position:relative;height:44px;border:1px solid #0002;touch-action:none;cursor:crosshair;
 background:repeating-linear-gradient(90deg,#0000 0,#0000 calc(100%/48 - 1px),#00000010 calc(100%/48 - 1px),#00000010 calc(100%/48)),
 repeating-linear-gradient(90deg,#0000 0,#0000 calc(100%/24 - 1px),#00000030 calc(100%/24 - 1px),#00000030 calc(100%/24)),#fafafa}
-.dt-row.drop{outline:2px dashed #1d6fd8;outline-offset:1px}
+.dt-row.drop,.dt-fg.drop{outline:2px dashed #1d6fd8;outline-offset:1px}
+.dt-box{position:absolute;border:2px solid #1d6fd8;background:#1d6fd81f;pointer-events:none;z-index:4;box-sizing:border-box}
+.dt-box span{position:absolute;left:4px;top:2px;background:#1d6fd8;color:#fff;font:600 11px/1.3 system-ui;padding:1px 5px;white-space:nowrap}
 .dt-bg{position:absolute;top:0;bottom:0;opacity:.85}
 .dt-fg{position:absolute;top:3px;bottom:3px;box-shadow:0 1px 2px #0005;display:flex;align-items:center;justify-content:space-between;
 padding:0 6px;overflow:hidden;white-space:nowrap;font-size:11.5px;cursor:grab;box-sizing:border-box;z-index:1}
@@ -442,7 +451,7 @@ padding:0 6px;overflow:hidden;white-space:nowrap;font-size:11.5px;cursor:grab;bo
         <label>de <input type="time" step="300" data-p-s></label><label>à <input type="time" step="300" data-p-e></label>
         <button type="button" data-p-add>Ajouter</button><span class="dt-help" data-p-msg>Horaires vides : journée entière. Fin avant le début : jusqu'au lendemain.</span></div></details>
       <div class="dt-grid" data-grid></div>
-      <p class="dt-help">Fond (nature de la non-disponibilité, couleur seule) : glisser pour poser une bande, d'une rangée à l'autre pour plusieurs jours ; glisser l'entrée de la palette sur un jour : journée entière ; double-clic sur une bande (ou sur la rangée, avec un pinceau de fond) : remplace le fond du jour ; double-clic sur l'entrée de la palette : celui de la semaine. Dispos (rectangles, posés sur le fond) : glisser pour poser ; bords et corps se glissent au pas de 5 min ; clic : sélection (Suppr, ← →, Échap) ; appui long au doigt : sélection. Une minute a un seul état : sous une dispo, le fond ne compte pas, mais il reste en place (dispo déplacée ou effacée : le fond revient) ; une non-disponibilité posée sur une dispo la découpe ; temps sans rien : indisponible par défaut, et un jour vide s'exporte « indisponible » toute la journée.</p></div>`;
+      <p class="dt-help">Glisser sur du vide : tracer (fond, couleur seule, ou dispo, rectangle) ; sur plusieurs rangées, un rectangle de sélection pose les mêmes heures sur chaque jour couvert. Dispos : glisser le corps pour déplacer (pas de 5 min ; vers une autre rangée : même horaire, autre jour), les bords pour ajuster ; Maj+glisser sur une dispo : tracer par-dessus (découpe) ; avec un pinceau de fond, le tracé découpe les dispos en direct ; clic : sélection (Suppr, ← → 5 min, ↑ ↓ un jour, Échap) ; appui long au doigt : sélection. Palette : clic, pinceau ; entrée glissée sur un jour : journée entière ; sur une dispo : elle change de nature (entrée de fond : remplacée par ce fond) ; double-clic sur une entrée de fond : fond de la semaine. Double-clic sur une bande (ou sur la rangée, pinceau de fond) : remplace le fond du jour. Ctrl+Z annule, Ctrl+Y ou Ctrl+Maj+Z rétablit. Une minute a un seul état : sous une dispo, le fond ne compte pas, mais il reste en place (dispo déplacée ou effacée : le fond revient) ; une non-disponibilité posée sur une dispo la découpe ; temps sans rien : indisponible par défaut, et un jour vide s'exporte « indisponible » toute la journée.</p></div>`;
     const grid = host.querySelector('[data-grid]');
     const cur = () => preview || state;
     const emit = () => onChange?.(toData(state));
@@ -478,9 +487,10 @@ padding:0 6px;overflow:hidden;white-space:nowrap;font-size:11.5px;cursor:grab;bo
       const mon = weekMonday(state.week),
         st = cur(),
         live = drag?.result || null,
-        // forme en cours de geste (tracé, déplacement, poignée) : elle-même, aimantée, horaires dedans
-        isLive = (r, layer) => !!live && live[3] === layer && r.cat === live[2] && (layer === 'bg' ? r.s < live[1] && r.e > live[0] : r
-          .s <= live[0] && r.e >= live[1]),
+        // formes en cours de geste (tracé, déplacement, poignée) : elles-mêmes, aimantées, horaires dedans
+        isLive = (r, layer) => !!live && live.layer === layer && r.cat === live.cat && live.spans.some(([a, b]) => layer === 'bg' ? r.s <
+          b &&
+          r.e > a : r.s <= a && r.e >= b),
         vis = visibleBg(st);
       host.querySelector('[data-title]').textContent = `Semaine ${state.week.slice(6)} — du ${new Date(mon).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', timeZone: 'UTC' })} au ${new Date(mon + 6 * 864e5).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' })} (UTC)`;
       let html = `<span></span><div class="dt-axis">${Array.from({ length: 25 }, (_, h) => h % 2 ? '' : `<span style="left:${h / 24 * 100}%">${pad(h)}</span>`).join('')}</div>`;
@@ -516,6 +526,19 @@ padding:0 6px;overflow:hidden;white-space:nowrap;font-size:11.5px;cursor:grab;bo
         html += `<div class="dt-day">${DAYS[d]}<small>${new Date(mon + d * 864e5).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', timeZone: 'UTC' })}</small></div><div class="dt-row" data-d="${d}">${bg}${fg}</div>`;
       }
       grid.innerHTML = html;
+      // tracé sur plusieurs rangées : un seul rectangle de sélection par-dessus la grille, bornes aimantées
+      if (live?.box) {
+        const [da, db, s, en] = live.box,
+          g = grid.getBoundingClientRect(),
+          ra = grid.querySelector(`.dt-row[data-d="${da}"]`).getBoundingClientRect(),
+          rb = grid.querySelector(`.dt-row[data-d="${db}"]`).getBoundingClientRect(),
+          c = cats.get(live.cat),
+          box = document.createElement('div');
+        box.className = 'dt-box';
+        box.style.cssText = `left:${ra.left - g.left + s / DAY * ra.width}px;width:${(en - s) / DAY * ra.width}px;top:${ra.top - g.top}px;height:${rb.bottom - ra.top}px`;
+        box.innerHTML = `<span>${esc(`${c ? c.label : 'Effacer le fond'} ${hhmm(s)}–${hhmm(en, true)}, ${DAY_LOWER[da]} → ${DAY_LOWER[db]}`)}</span>`;
+        grid.append(box);
+      }
       // horaires aux bords si la largeur le permet (toujours pendant le geste), sinon le type seul
       grid.querySelectorAll('.dt-fg').forEach(el => {
         const narrow = !el.classList.contains('live') && el.clientWidth < 96;
@@ -523,12 +546,49 @@ padding:0 6px;overflow:hidden;white-space:nowrap;font-size:11.5px;cursor:grab;bo
         el.querySelectorAll('[data-t]').forEach(t => t.hidden = narrow);
       });
     }
+    // historique par semaine : couches avant chaque geste (undo), après une annulation (redo)
+    const hist = new Map(),
+      H = () => hist.get(state.week) || hist.set(state.week, {
+        undo: [],
+        redo: []
+      }).get(state.week),
+      histEvent = () => host.dispatchEvent(new CustomEvent('dispos-timeline-history', {
+        detail: api.history()
+      }));
+    /** Pose les couches d'un geste : une entrée d'historique, si elles changent. */
     const commit = st => {
+      preview = null;
+      if (JSON.stringify([st.bg, st.fg]) === JSON.stringify([state.bg, state.fg])) return void render();
+      const h = H();
+      h.undo.push({
+        bg: state.bg,
+        fg: state.fg
+      });
+      if (h.undo.length > HISTORY) h.undo.shift();
+      h.redo.length = 0;
       state.bg = st.bg;
       state.fg = st.fg;
+      render();
+      emit();
+      histEvent();
+    };
+    /** Annule (from « undo ») ou rétablit (from « redo ») un geste. */
+    const restore = (from, to) => {
+      const h = H(),
+        prev = h[from].pop();
+      if (!prev) return false;
+      h[to].push({
+        bg: state.bg,
+        fg: state.fg
+      });
+      state.bg = prev.bg;
+      state.fg = prev.fg;
+      state.sel = null;
       preview = null;
       render();
       emit();
+      histEvent();
+      return true;
     };
     /** Jour (0–6) de la rangée sous le pointeur, borné à la semaine (au-dessus : lundi, en dessous : dimanche). */
     const dayAt = y => {
@@ -570,7 +630,7 @@ padding:0 6px;overflow:hidden;white-space:nowrap;font-size:11.5px;cursor:grab;bo
         press: true
       };
       else if (r) drag = {
-        mode: isBg(state.brush) ? 'draw' : 'move',
+        mode: isBg(state.brush) || e.shiftKey ? 'draw' : 'move', // Maj : tracer par-dessus la dispo
         r,
         d,
         m0: m,
@@ -610,25 +670,37 @@ padding:0 6px;overflow:hidden;white-space:nowrap;font-size:11.5px;cursor:grab;bo
       if (!drag.moved && drag.mode !== 'resize') return;
       clearTimeout(drag.long);
       if (drag.mode === 'draw') {
+        // tracé : dans la rangée de départ, ou en rectangle de sélection sur plusieurs rangées (la même plage horaire
+        // sur chaque jour couvert) ; un pinceau de fond découpe les dispos dès l'aperçu
         const id = state.brush,
-          bgBrush = isBg(id),
-          // fond : d'une rangée à l'autre (plusieurs jours) ; dispo : dans la rangée de départ
-          d1 = bgBrush ? dayAt(e.clientY) : drag.d,
-          m = minuteAt(d1, e.clientX);
-        let s = snap(Math.min(drag.m0, m), SNAP_DRAW),
-          en = snap(Math.max(drag.m0, m), SNAP_DRAW);
-        if (en <= s) en = s + SNAP_DRAW;
-        const lo = bgBrush ? 0 : drag.d * DAY,
-          hi = bgBrush ? WEEK : drag.d * DAY + DAY;
-        s = clamp(s, lo, hi - SNAP_DRAW);
-        en = clamp(en, s + SNAP_DRAW, hi);
-        drag.result = [s, en, id === ERASE ? '' : id, bgBrush ? 'bg' : 'fg'];
-        preview = applyBrush(state, s, en, id);
+          d1 = dayAt(e.clientY),
+          t0 = drag.m0 - drag.d * DAY,
+          t1 = minuteAt(d1, e.clientX) - d1 * DAY,
+          s = clamp(snap(Math.min(t0, t1), SNAP_DRAW), 0, DAY - SNAP_DRAW),
+          en = clamp(snap(Math.max(t0, t1), SNAP_DRAW), s + SNAP_DRAW, DAY),
+          da = Math.min(drag.d, d1),
+          db = Math.max(drag.d, d1),
+          spans = [];
+        for (let d = da; d <= db; d++) spans.push([d * DAY + s, d * DAY + en]);
+        drag.result = {
+          spans,
+          cat: id === ERASE ? '' : id,
+          layer: isBg(id) ? 'bg' : 'fg',
+          box: db > da ? [da, db, s, en] : null
+        };
+        preview = spans.reduce((st, [a, b]) => applyBrush(st, a, b, id), state);
       } else if (drag.mode === 'move') {
+        // corps glissé : pas de 5 min ; vers une autre rangée, même horaire, autre jour
         const len = drag.r.e - drag.r.s,
           m = minuteAt(drag.d, e.clientX),
-          s = clamp(snap(drag.r.s + (m - drag.m0), SNAP_EDIT), 0, WEEK - len);
-        drag.result = [s, s + len, drag.r.cat, 'fg'];
+          s = clamp(snap(drag.r.s + (m - drag.m0), SNAP_EDIT) + (dayAt(e.clientY) - drag.d) * DAY, 0, WEEK - len);
+        drag.result = {
+          spans: [
+            [s, s + len]
+          ],
+          cat: drag.r.cat,
+          layer: 'fg'
+        };
         preview = applyFg({
           bg: state.bg,
           fg: state.fg.filter(x => x !== drag.r)
@@ -641,7 +713,13 @@ padding:0 6px;overflow:hidden;white-space:nowrap;font-size:11.5px;cursor:grab;bo
         } = drag.r;
         if (drag.side === 'l') s = clamp(snap(m, SNAP_EDIT), 0, en - SNAP_EDIT);
         else en = clamp(snap(m, SNAP_EDIT), s + SNAP_EDIT, WEEK);
-        drag.result = [s, en, drag.r.cat, 'fg'];
+        drag.result = {
+          spans: [
+            [s, en]
+          ],
+          cat: drag.r.cat,
+          layer: 'fg'
+        };
         preview = applyFg({
           bg: state.bg,
           fg: state.fg.filter(x => x !== drag.r)
@@ -656,7 +734,13 @@ padding:0 6px;overflow:hidden;white-space:nowrap;font-size:11.5px;cursor:grab;bo
       const d = drag;
       drag = null;
       if (d.result && preview) {
-        const [s, , cat, layer] = d.result;
+        const {
+          spans: [
+            [s]
+          ],
+          cat,
+          layer
+        } = d.result;
         commit(preview);
         state.sel = layer === 'fg' && d.mode !== 'draw' ? findFg(cat, s) : null;
         render();
@@ -777,20 +861,32 @@ padding:0 6px;overflow:hidden;white-space:nowrap;font-size:11.5px;cursor:grab;bo
       }
       if (!palDrag.moved) return;
       const el = document.elementFromPoint(e.clientX, e.clientY),
-        row = el?.closest?.('.dt-row');
-      grid.querySelectorAll('.dt-row.drop').forEach(x => x !== row && x.classList.remove('drop'));
-      if (row && !row.classList.contains('drop')) row.classList.add('drop');
+        row = el?.closest?.('.dt-row'),
+        target = row && (palDrag.id !== ERASE && el.closest('.dt-fg') || row);
+      grid.querySelectorAll('.drop').forEach(x => x !== target && x.classList.remove('drop'));
+      if (target && !target.classList.contains('drop')) target.classList.add('drop');
     }
-    /** Lâcher d'une entrée de la palette sur un jour : la journée entière, fond ou dispo. */
+    /** Lâcher d'une entrée de la palette : sur une dispo, elle change de nature (entrée de fond : remplacée par ce fond
+     *  sur son étendue) ; ailleurs dans un jour, la journée entière, fond ou dispo. */
     function palEnd(e) {
       const p = palDrag;
       palDrag = null;
-      grid.querySelectorAll('.dt-row.drop').forEach(x => x.classList.remove('drop'));
+      grid.querySelectorAll('.drop').forEach(x => x.classList.remove('drop'));
       if (!p.moved) return;
       p.el.dataset.dragged = '1'; // le clic qui suit ne change pas de pinceau
       setTimeout(() => delete p.el.dataset.dragged, 0);
-      const row = document.elementFromPoint(e.clientX, e.clientY)?.closest?.('.dt-row');
+      const at = document.elementFromPoint(e.clientX, e.clientY),
+        row = at?.closest?.('.dt-row'),
+        f = p.id !== ERASE && at?.closest?.('.dt-fg');
       if (!row) return;
+      if (f) {
+        const r = state.fg[+f.dataset.f];
+        state.sel = null;
+        return void commit(isBg(p.id) ? applyBg(state, r.s, r.e, p.id) : {
+          bg: state.bg,
+          fg: paint(state.fg.filter(x => x !== r), r.s, r.e, p.id)
+        });
+      }
       const day = +row.dataset.d * DAY;
       commit(applyBrush(state, day, day + DAY, p.id));
     }
@@ -862,10 +958,24 @@ padding:0 6px;overflow:hidden;white-space:nowrap;font-size:11.5px;cursor:grab;bo
       }
       msg.textContent = `${spans.length} jour(s) posé(s)${other ? `, dont ${other} autre(s) semaine(s)` : ''}${lost ? ` — ${lost} semaine(s) non enregistrée(s) (stockage absent)` : ''}.`;
     });
-    // clavier : dispo sélectionnée
+    // clavier : historique ; dispo sélectionnée
     const onKey = e => {
-      const r = state.sel;
-      if (!r || !host.isConnected || /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement?.tagName || '')) return;
+      if (!host.isConnected || /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement?.tagName || '')) return;
+      const k = e.key.toLowerCase(),
+        r = state.sel,
+        step = {
+          ArrowLeft: -SNAP_EDIT,
+          ArrowRight: SNAP_EDIT,
+          ArrowUp: -DAY,
+          ArrowDown: DAY
+        } [e.key];
+      if ((e.ctrlKey || e.metaKey) && (k === 'z' || k === 'y')) {
+        e.preventDefault();
+        if (k === 'y' || e.shiftKey) api.redo();
+        else api.undo();
+        return;
+      }
+      if (!r) return;
       if (e.key === 'Escape') {
         state.sel = null;
         render();
@@ -876,10 +986,11 @@ padding:0 6px;overflow:hidden;white-space:nowrap;font-size:11.5px;cursor:grab;bo
           bg: state.bg,
           fg: state.fg.filter(x => x !== r)
         });
-      } else if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+      } else if (step) { // ← → : 5 min ; ↑ ↓ : un jour, même horaire
         e.preventDefault();
         const len = r.e - r.s,
-          s = clamp(r.s + (e.key === 'ArrowLeft' ? -SNAP_EDIT : SNAP_EDIT), 0, WEEK - len);
+          s = r.s + step;
+        if (s < 0 || s + len > WEEK) return;
         commit(applyFg({
           bg: state.bg,
           fg: state.fg.filter(x => x !== r)
@@ -898,6 +1009,7 @@ padding:0 6px;overflow:hidden;white-space:nowrap;font-size:11.5px;cursor:grab;bo
         state.sel = null;
         periodDefaults();
         render();
+        histEvent();
       },
       /** Données de la semaine affichée (schema 3). */
       get: () => toData(state),
@@ -915,8 +1027,26 @@ padding:0 6px;overflow:hidden;white-space:nowrap;font-size:11.5px;cursor:grab;bo
           }
         }));
         render();
+        histEvent();
         return w;
       },
+      /** Annule le dernier geste de la semaine affichée (false : rien à annuler). */
+      undo: () => restore('undo', 'redo'),
+      /** Rétablit le dernier geste annulé (false : rien à rétablir). */
+      redo: () => restore('redo', 'undo'),
+      /** Vide la semaine affichée (un geste : il s'annule). */
+      clear() {
+        state.sel = null;
+        commit({
+          bg: [],
+          fg: []
+        });
+      },
+      /** Pas d'historique de la semaine affichée : { undo, redo }. */
+      history: () => ({
+        undo: H().undo.length,
+        redo: H().redo.length
+      }),
       /** Pinceau actif (identifiant de catégorie, ou « __erase »). */
       brush(id) {
         if (cats.has(id) || id === ERASE) state.brush = id;
