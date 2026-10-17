@@ -283,8 +283,9 @@ servies depuis un autre disque, registre aux fichiers absents, profils cachés �
 
 - **lab: availability timeline prototype** (`labs/dispos_timeline.html`, outside the suite) — continuous week axis,
   background bands and foreground rectangles snapped to the half-hour, edges and moves by 5 min, last shape wins,
-  double-click fills the gaps of a day (row) or of the week (palette entry); component JSON (schema 3) with schema 2
-  readers / writers.
+  double-click fills the gaps of a day (on a band: with its category) or of the week (palette entry); while dragging,
+  the shape itself is shown, snapped, with its times (no floating tooltip), and a drag leaving the row keeps going,
+  bounded to 00:00–24:00; component JSON (schema 3) with schema 2 readers / writers.
 - **Assignment: declared aircraft variants** — a pilot's declaration may list variants per ICAO designator
   (`appareils.variantes`, e.g. `{ "CL2T": ["CL-415"] }`; editor by Features SOG). Qualification stays per designator
   (never a block); among candidate aircraft and pilots, the matching variant comes first (fleet `variant` = declared

@@ -2,8 +2,9 @@
   'use strict';
   // Maquette (hors suite) : saisie des disponibilités sur un axe de temps continu, une rangée par jour de la semaine.
   //   · couche de FOND (non-disponibilités : indisponible, congés, récupération, activité réelle) : bandes pleine
-  //     hauteur, couleur seule, aimantées à la demi-heure ; double-clic sur une rangée avec un pinceau de fond : remplit
-  //     les trous du jour ; double-clic sur l'entrée de la palette : les trous de la semaine ;
+  //     hauteur, couleur seule, aimantées à la demi-heure ; double-clic sur une bande : remplit les trous du jour de sa
+  //     catégorie (ailleurs dans la rangée : avec le pinceau de fond) ; double-clic sur l'entrée de la palette : les trous
+  //     de la semaine ; pendant un geste, la forme elle-même (aimantée, horaires dedans), sans infobulle flottante ;
   //   · couche de PREMIER PLAN (disponible, exercice, occupé) : rectangles à cliquer-glisser, aimantés à la demi-heure,
   //     une lettre et les horaires ; poignées et déplacement au pas de 5 min ; clic : sélection (Suppr, ← →, Échap),
   //     croix au survol ; appui long au doigt : sélection ;
@@ -357,7 +358,8 @@ padding:0 8px;overflow:hidden;white-space:nowrap;font-size:12px;cursor:grab;box-
 .dt-fg:hover .dt-h,.dt-fg.sel .dt-h{display:block}
 .dt-x{position:absolute;top:-1px;right:10px;display:none;border:0;background:#0008;color:#fff;border-radius:3px;font:11px/14px system-ui;padding:0 4px;cursor:pointer}
 .dt-fg:hover .dt-x{display:block}
-.dt-tip{position:fixed;pointer-events:none;background:#111;color:#fff;font:12px/1.3 system-ui;padding:3px 7px;border-radius:4px;z-index:50}
+.dt-fg.live{z-index:3;box-shadow:0 0 0 2px #1d6fd8,0 2px 6px #0006}.dt-bg.live{opacity:1;box-shadow:inset 0 0 0 2px #1d6fd8}
+.dt-bg .dt-lt{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font:600 11.5px/1 system-ui;color:#111;background:#fffc;padding:2px 5px;border-radius:3px;white-space:nowrap}
 .dt-help{font-size:12px;opacity:.75;margin:0}`;
     document.head.append(st);
   }
@@ -380,14 +382,10 @@ padding:0 8px;overflow:hidden;white-space:nowrap;font-size:12px;cursor:grab;box-
     };
     let preview = null, // plages affichées pendant un glisser (null : state.ranges)
       drag = null;
-    const tip = document.createElement('div');
-    tip.className = 'dt-tip';
-    tip.hidden = true;
-    document.body.append(tip);
     host.innerHTML = `<div class="dt"><div class="dt-nav"><button type="button" data-w="-1">‹</button><button type="button" data-w="0">cette semaine</button><button type="button" data-w="1">›</button> <b data-title></b></div>
       <div class="dt-pal" data-pal></div>
       <div class="dt-grid" data-grid></div>
-      <p class="dt-help">Fond (couleur seule) : glisser pour poser une bande ; double-clic sur un jour : remplit les trous du jour ; double-clic sur l'entrée de la palette : ceux de la semaine. Premier plan : glisser pour poser un rectangle ; bords et corps se glissent au pas de 5 min ; clic : sélection (Suppr, ← →, Échap) ; appui long au doigt : sélection. La dernière forme posée découpe ce qu'elle recouvre.</p></div>`;
+      <p class="dt-help">Fond (couleur seule) : glisser pour poser une bande ; double-clic sur une bande : remplit les trous du jour avec sa catégorie (ailleurs dans la rangée : avec le pinceau de fond) ; double-clic sur l'entrée de la palette : ceux de la semaine. Premier plan : glisser pour poser un rectangle ; bords et corps se glissent au pas de 5 min ; clic : sélection (Suppr, ← →, Échap) ; appui long au doigt : sélection. La dernière forme posée découpe ce qu'elle recouvre.</p></div>`;
     const grid = host.querySelector('[data-grid]');
     const label = c => c ? c.label : '?';
     const emit = () => onChange?.(toData(state));
@@ -401,7 +399,10 @@ padding:0 8px;overflow:hidden;white-space:nowrap;font-size:12px;cursor:grab;box-
 
     function render() {
       const mon = weekMonday(state.week),
-        list = preview || state.ranges;
+        list = preview || state.ranges,
+        live = drag?.result || null,
+        // forme en cours de geste (tracé, déplacement, poignée) : elle-même, aimantée, horaires dedans
+        isLive = r => !!live && r.cat === live[2] && r.s <= live[0] && r.e >= live[1];
       host.querySelector('[data-title]').textContent = `Semaine ${state.week.slice(6)} — du ${new Date(mon).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', timeZone: 'UTC' })} au ${new Date(mon + 6 * 864e5).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' })} (UTC)`;
       let html = `<span></span><div class="dt-axis">${Array.from({ length: 25 }, (_, h) => h % 2 ? '' : `<span style="left:${h / 24 * 100}%">${pad(h)}</span>`).join('')}</div>`;
       for (let d = 0; d < 7; d++) {
@@ -419,16 +420,17 @@ padding:0 8px;overflow:hidden;white-space:nowrap;font-size:12px;cursor:grab;box-
               pos = `left:${s / DAY * 100}%;width:${(e - s) / DAY * 100}%`,
               span = r.e - r.s > DAY || Math.floor(r.s / DAY) !== Math.floor((r.e - 1) / DAY) ? `${isoDay(mon + Math.floor(r.s / DAY) * 864e5).slice(5)} ${hhmm(r.s)} → ${isoDay(mon + Math.floor((r.e - 1) / DAY) * 864e5).slice(5)} ${hhmm(r.e, true)}` : `${hhmm(r.s)}–${hhmm(r.e, true)}`,
               idx = state.ranges.indexOf(r);
-            if (c.layer === 'background') return `<div class="dt-bg" style="${pos};background:${esc(c.color)}" title="${esc(`${c.label} ${span}`)}"></div>`;
-            return `<div class="dt-fg${r === state.sel ? ' sel' : ''}" data-r="${idx}" style="${pos};background:${esc(c.color)};color:${ink(c.color)}" title="${esc(`${c.label}${c.letter ? ` (${c.letter})` : ''} ${span}`)}"><b>${esc(c.letter || '')}</b><span data-t>${esc(span)}</span><i class="dt-h l" data-h="l"></i><i class="dt-h r" data-h="r"></i><button type="button" class="dt-x" data-x title="Effacer">✕</button></div>`;
+            if (c.layer === 'background') return `<div class="dt-bg${isLive(r) ? ' live' : ''}" data-cat="${esc(r.cat)}" style="${pos};background:${esc(c.color)}" title="${esc(`${c.label} ${span}`)}">${isLive(r) ? `<span class="dt-lt">${esc(`${c.label} ${span}`)}</span>` : ''}</div>`;
+            return `<div class="dt-fg${r === state.sel ? ' sel' : ''}${isLive(r) ? ' live' : ''}" data-r="${idx}" style="${pos};background:${esc(c.color)};color:${ink(c.color)}" title="${esc(`${c.label}${c.letter ? ` (${c.letter})` : ''} ${span}`)}"><b>${esc(c.letter || '')}</b><span data-t>${esc(span)}</span><i class="dt-h l" data-h="l"></i><i class="dt-h r" data-h="r"></i><button type="button" class="dt-x" data-x title="Effacer">✕</button></div>`;
           }).join('');
         html += `<div class="dt-day">${DAYS[d]}<small>${new Date(mon + d * 864e5).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', timeZone: 'UTC' })}</small></div><div class="dt-row" data-d="${d}">${segs}</div>`;
       }
       grid.innerHTML = html;
       // horaires montrés si la largeur le permet, sinon la lettre seule (horaires en infobulle)
+      // (pendant le geste : toujours, la forme montre ses horaires en direct)
       grid.querySelectorAll('.dt-fg').forEach(el => {
         const t = el.querySelector('[data-t]');
-        if (t) t.hidden = el.clientWidth < 84;
+        if (t) t.hidden = !el.classList.contains('live') && el.clientWidth < 84;
       });
     }
     const commit = list => {
@@ -443,13 +445,6 @@ padding:0 8px;overflow:hidden;white-space:nowrap;font-size:12px;cursor:grab;box-
       const b = grid.querySelector(`.dt-row[data-d="${d}"]`).getBoundingClientRect();
       return d * DAY + clamp((x - b.left) / b.width, 0, 1) * DAY;
     };
-    const showTip = (x, y, text) => {
-      tip.hidden = false;
-      tip.textContent = text;
-      tip.style.left = `${x + 12}px`;
-      tip.style.top = `${y - 28}px`;
-    };
-    const hideTip = () => tip.hidden = true;
     /** Plage rangée retrouvée après une mise à jour (même catégorie qui contient la minute m). */
     const find = (cat, m) => state.ranges.find(r => r.cat === cat && r.s <= m && r.e > m) || null;
 
@@ -464,7 +459,8 @@ padding:0 8px;overflow:hidden;white-space:nowrap;font-size:12px;cursor:grab;box-
         m = minuteAt(d, e.clientX),
         brush = cats.get(state.brush);
       e.preventDefault();
-      const day = d * DAY;
+      const day = d * DAY,
+        pid = e.pointerId;
       if (r && handle) drag = {
         mode: 'resize',
         r,
@@ -490,6 +486,7 @@ padding:0 8px;overflow:hidden;white-space:nowrap;font-size:12px;cursor:grab;box-
         x0: e.clientX
       };
       drag.moved = false;
+      drag.pid = pid;
       if (r) drag.long = setTimeout(() => { // appui long : sélection
         if (drag && !drag.moved) {
           state.sel = r;
@@ -500,11 +497,15 @@ padding:0 8px;overflow:hidden;white-space:nowrap;font-size:12px;cursor:grab;box-
       }, LONG_PRESS);
     });
     window.addEventListener('pointermove', e => {
-      if (!drag) {
-        hideTip();
-        return;
+      if (!drag) return;
+      if (!drag.moved && Math.abs(e.clientX - (drag.x0 ?? e.clientX)) > 3) {
+        drag.moved = true;
+        try {
+          grid.setPointerCapture(drag.pid); // la position reste bornée à 0–24 h de la rangée de départ
+        } catch {
+          /* pointeur déjà relâché */
+        }
       }
-      if (Math.abs(e.clientX - (drag.x0 ?? e.clientX)) > 3) drag.moved = true;
       if (!drag.moved && drag.mode !== 'resize') return;
       clearTimeout(drag.long);
       const m = minuteAt(drag.d, e.clientX),
@@ -520,13 +521,11 @@ padding:0 8px;overflow:hidden;white-space:nowrap;font-size:12px;cursor:grab;box-
         en = clamp(en, day, day + DAY);
         drag.result = [s, en, cat];
         preview = paint(state.ranges, s, en, cat);
-        showTip(e.clientX, e.clientY, `${label(cats.get(cat))} ${hhmm(s)}–${hhmm(en, true)}`);
       } else if (drag.mode === 'move') {
         const len = drag.r.e - drag.r.s;
         const s = clamp(snap(drag.r.s + (m - drag.m0), SNAP_EDIT), day, day + DAY - len);
         drag.result = [s, s + len, drag.r.cat];
         preview = paint(state.ranges.filter(x => x !== drag.r), s, s + len, drag.r.cat);
-        showTip(e.clientX, e.clientY, `${hhmm(s)}–${hhmm(s + len, true)}`);
       } else if (drag.mode === 'resize') {
         let {
           s,
@@ -536,7 +535,6 @@ padding:0 8px;overflow:hidden;white-space:nowrap;font-size:12px;cursor:grab;box-
         else en = clamp(snap(m, SNAP_EDIT), s + SNAP_EDIT, day + DAY);
         drag.result = [s, en, drag.r.cat];
         preview = paint(state.ranges.filter(x => x !== drag.r), s, en, drag.r.cat);
-        showTip(e.clientX, e.clientY, drag.side === 'l' ? hhmm(s) : hhmm(en, true));
       }
       render();
     });
@@ -545,7 +543,6 @@ padding:0 8px;overflow:hidden;white-space:nowrap;font-size:12px;cursor:grab;box-
       clearTimeout(drag.long);
       const d = drag;
       drag = null;
-      hideTip();
       if (d.result) {
         const [s, e, cat] = d.result;
         commit(preview);
@@ -566,7 +563,6 @@ padding:0 8px;overflow:hidden;white-space:nowrap;font-size:12px;cursor:grab;box-
     grid.addEventListener('pointercancel', () => {
       drag = null;
       preview = null;
-      hideTip();
       render();
     });
     grid.addEventListener('click', e => {
@@ -578,11 +574,15 @@ padding:0 8px;overflow:hidden;white-space:nowrap;font-size:12px;cursor:grab;box-
     });
     // double-clic avec un pinceau de fond sur une rangée : trous du jour remplis
     grid.addEventListener('dblclick', e => {
-      const row = e.target.closest('.dt-row'),
-        c = cats.get(state.brush);
-      if (!row || c?.layer !== 'background' || e.target.closest('.dt-fg')) return;
+      // élément sous le pointeur (la cible d'un événement peut être la grille après une capture du pointeur)
+      const at = document.elementFromPoint(e.clientX, e.clientY),
+        row = at?.closest?.('.dt-row'),
+        band = at?.closest?.('.dt-bg'),
+        brush = cats.get(state.brush),
+        cat = band ? band.dataset.cat : brush?.layer === 'background' ? brush.id : '';
+      if (!row || !cat || at.closest('.dt-fg')) return;
       const day = +row.dataset.d * DAY;
-      commit(fillGaps(state.ranges, day, day + DAY, c.id));
+      commit(fillGaps(state.ranges, day, day + DAY, cat));
     });
     host.querySelector('[data-pal]').addEventListener('click', e => {
       const b = e.target.closest('[data-brush]');
