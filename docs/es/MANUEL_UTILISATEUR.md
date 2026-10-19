@@ -309,7 +309,7 @@ tipos más volados. El período y la búsqueda se guardan en este navegador.
 | «Misión» | familia, tipo y operación del informe, o misión del diario |
 | «Informe» | n.º del informe (enlace), o «sin informe» |
 
-Un clic en una fila abre su informe; un vuelo «sin informe» despliega su detalle (fuente, hora UTC, aeronave, misión)
+Un clic en una fila abre su informe; un vuelo «sin informe» despliega su detalle (fuente, hora, aeronave, misión)
 con «Redactar el informe», que abre el informe de la familia ya rellenado: fecha, indicativo, aeronave, matrícula,
 salida y llegada, duración de calzos declarada. Revise, complete y después «Añadir al registro»: el vuelo aparece
 entonces con su informe. Las columnas se ajustan arrastrando el borde de los títulos (doble clic: anchos por defecto).
@@ -1026,14 +1026,14 @@ valida.
 3. Inicie sesión si el sitio lo pide y después haga clic en el favorito «→ Vol»: abre la página de su aeronave
    (reconocida por su matrícula) y después «Ajouter un vol»; vuelva a hacer clic en él en ese formulario.
 4. El favorito rellena el indicativo (elegido en la lista del sitio por su nombre, CARAFON, o su código, CFON), el número de
-   vuelo, la fecha de fin del vuelo (fecha del informe y hora de fin de calzos, si no de aterrizaje, en UTC; el día siguiente si el vuelo
+   vuelo, la fecha de fin del vuelo (fecha del informe y hora de fin de calzos, si no de aterrizaje, en hora local como la cronología del informe; el día siguiente si el vuelo
    pasa la medianoche), la duración (calzos, si no vuelo), la misión (familia, tipo, operación) y la llegada. Lo rellenado
    se rodea de verde, lo que falta de rojo. La matrícula y la salida, que impone el sitio (posición actual de la
    aeronave), no se modifican: una diferencia con el informe se señala.
 5. Revise, complete y después «Valider» en el sitio.
 
 Si los campos se pierden (inicio de sesión pedido por el camino), vuelva a lanzar «Registrar el vuelo en el sitio ↗». Sin el favorito,
-«Copiar los campos» copia una línea (matrícula, tipo, indicativo, fecha UTC, duración, salida → llegada, misión) para
+«Copiar los campos» copia una línea (matrícula, tipo, indicativo, fecha, duración, salida → llegada, misión) para
 introducir a mano. El menú «Sitio de la aerolínea» solo aparece si la dirección del sitio está configurada (Ajustes ›
 Instalación › Fuentes y carpetas).
 

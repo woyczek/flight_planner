@@ -308,7 +308,7 @@ Period and search are kept in this browser.
 | “Mission” | family, type and operation of the report, or mission of the flight log |
 | “Report” | report number (link), or “no report” |
 
-A click on a row opens its report (“Open the report”); a flight with “no report” unfolds its detail (source, UTC time,
+A click on a row opens its report (“Open the report”); a flight with “no report” unfolds its detail (source, time,
 aircraft, mission) with “Write the report”, which opens the family report already filled in: date, call sign, aircraft,
 registration, departure and arrival, declared block time. Read it over, complete it, then “Add to ledger”: the flight
 then appears with its report. Columns are set by dragging the edge of the titles (double-click: default widths).
@@ -1026,14 +1026,14 @@ validate it.
 3. Sign in if the website asks, then click the “→ Vol” bookmarklet: it opens the page of your aircraft
    (recognised by its registration), then “Ajouter un vol”; click it again on that form.
 4. The bookmarklet fills in the callsign (chosen in the website's list by its name, CARAFON, or its code, CFON), the
-   flight number, the end date of the flight (report date and block-on time, otherwise landing time, in UTC; the next day
+   flight number, the end date of the flight (report date and block-on time, otherwise landing time, in local time like the report's timeline; the next day
    if the flight passes midnight), the duration (block, otherwise flight), the mission (family, type, operation) and the
    arrival. What is filled in gets a green outline, what is missing a red one. The registration and the departure, which
    the website imposes (current position of the aircraft), are not changed: a difference with the report is reported.
 5. Read over, complete, then “Valider” on the website.
 
 If the fields get lost (sign-in requested on the way), run “Record the flight on the website ↗” again. Without the
-bookmarklet, “Copy the fields” copies one line (registration, type, callsign, UTC date, duration, departure → arrival,
+bookmarklet, “Copy the fields” copies one line (registration, type, callsign, date, duration, departure → arrival,
 mission) to copy by hand. The “Airline website” menu only appears if the website address is set (Settings ›
 Installation › Sources and folders).
 

@@ -310,7 +310,7 @@ Typen. Zeitraum und Suche bleiben in diesem Browser gespeichert.
 | „Bericht“ | Nr. des Berichts (Link), oder „ohne Bericht“ |
 
 Ein Klick auf eine Zeile öffnet ihren Bericht („Bericht öffnen“); ein Flug „ohne Bericht“ klappt seine Einzelheiten auf (Quelle,
-UTC-Uhrzeit, Luftfahrzeug, Mission) mit „Bericht schreiben“, das den bereits ausgefüllten Bericht der Familie öffnet: Datum,
+Uhrzeit, Luftfahrzeug, Mission) mit „Bericht schreiben“, das den bereits ausgefüllten Bericht der Familie öffnet: Datum,
 Rufzeichen, Luftfahrzeug, Kennzeichen, Abflug und Ankunft, angegebene Blockzeit. Prüfen und ergänzen Sie, dann „Ins Register
 aufnehmen“: Der Flug erscheint dann mit seinem Bericht. Die Spalten lassen sich durch Ziehen am Rand der Titel einstellen
 (Doppelklick: Standardbreiten). Unter 800 px Breite bleiben nur Datum, Rufzeichen, Strecke und Dauer; ein Klick klappt den
@@ -1027,14 +1027,14 @@ bestätigen es.
 3. Melden Sie sich an, wenn die Website es verlangt, und klicken Sie dann auf das Lesezeichen „→ Vol“: Es öffnet die Seite Ihres Luftfahrzeugs
    (an seinem Kennzeichen erkannt), dann „Ajouter un vol“; klicken Sie es auf diesem Formular noch einmal an.
 4. Das Lesezeichen füllt das Rufzeichen (in der Liste der Website über seinen Namen, CARAFON, oder seinen Code, CFON, gewählt), die
-   Flugnummer, das Datum des Flugendes (Datum des Berichts und Uhrzeit Block-Ende, sonst Landung, in UTC; der Folgetag, wenn der Flug
+   Flugnummer, das Datum des Flugendes (Datum des Berichts und Uhrzeit Block-Ende, sonst Landung, in Ortszeit wie die Chronologie des Berichts; der Folgetag, wenn der Flug
    über Mitternacht geht), die Dauer (Block, sonst Flug), die Mission (Familie, Typ, Einsatz) und die Ankunft aus. Ausgefüllte Felder
    werden grün umrandet, fehlende rot. Kennzeichen und Abflug, die die Website vorgibt (aktuelle Position des Luftfahrzeugs), werden
    nicht geändert: Eine Abweichung vom Bericht wird gemeldet.
 5. Prüfen und ergänzen Sie, dann „Valider“ auf der Website.
 
 Gehen die Felder verloren (unterwegs verlangte Anmeldung), starten Sie „Flug auf der Website eintragen ↗“ erneut. Ohne das Lesezeichen
-kopiert „Felder kopieren“ eine Zeile (Kennzeichen, Typ, Rufzeichen, UTC-Datum, Dauer, Abflug → Ankunft, Mission), die von Hand
+kopiert „Felder kopieren“ eine Zeile (Kennzeichen, Typ, Rufzeichen, Datum, Dauer, Abflug → Ankunft, Mission), die von Hand
 zu übertragen ist. Der Teil „Website der Fluggesellschaft“ erscheint nur, wenn die Adresse der Website eingestellt ist (Einstellungen ›
 Installation › Quellen und Ordner).
 

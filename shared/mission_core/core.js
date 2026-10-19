@@ -1590,7 +1590,7 @@
 
     /** Champs du formulaire « Ajouter un vol » du site de la compagnie, tirés du CR (premier appareil) : immatriculation
      *  sans tiret, type, indicatif (série en mots, forme plan de vol, numéro), date de fin du vol (date du CR + heure de
-     *  fin bloc, sinon atterrissage, en UTC ; lendemain si elle précède le départ), durée bloc (sinon vol) HH:MM,
+     *  fin bloc, sinon atterrissage — heure locale de la chronologie du CR ; lendemain si elle précède le départ), durée bloc (sinon vol) HH:MM,
      *  mission (famille, type, opération), départ et arrivée OACI. */
     function defaFields() {
       const a = (mission.aircraft || [])[0] || {},
@@ -1658,7 +1658,7 @@
     };
     $a('defaCopy').onclick = async () => {
       const f = defaFields(),
-        line = [`reg ${f.reg}`, f.type, [f.callsign, f.number].filter(Boolean).join(' '), f.date ? `${f.date.replace('T', ' ')} UTC` : '', f.hdv,
+        line = [`reg ${f.reg}`, f.type, [f.callsign, f.number].filter(Boolean).join(' '), f.date ? f.date.replace('T', ' ') : '', f.hdv,
           [f.depart, f.arrive].filter(Boolean).join(' → '), f.mission
         ].filter(Boolean).join(' · ');
       try {

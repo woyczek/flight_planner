@@ -321,7 +321,7 @@ Période et recherche sont gardées dans ce navigateur.
 | « Mission » | famille, type et opération du CR, ou mission du journal |
 | « CR » | n° du compte rendu (lien), ou « sans CR » |
 
-Un clic sur une ligne ouvre son compte rendu ; un vol « sans CR » déplie son détail (source, heure UTC, appareil,
+Un clic sur une ligne ouvre son compte rendu ; un vol « sans CR » déplie son détail (source, heure, appareil,
 mission) avec « Rédiger le CR », qui ouvre le compte rendu de la famille déjà rempli : date, indicatif, appareil,
 immatriculation, départ et arrivée, durée de bloc déclarée. Relisez, complétez, puis « Ajouter au registre » : le vol
 apparaît alors avec son CR. Les colonnes se règlent en glissant le bord des titres (double-clic : largeurs par défaut).
@@ -1063,14 +1063,14 @@ validez.
 3. Connectez-vous si le site le demande, puis cliquez le favori « → Vol » : il ouvre la page de votre appareil
    (reconnu par son immatriculation), puis « Ajouter un vol » ; cliquez-le encore sur ce formulaire.
 4. Le favori remplit l'indicatif (choisi dans la liste du site par son nom, CARAFON, ou son code, CFON), le numéro de
-   vol, la date de fin du vol (date du CR et heure de fin bloc, sinon d'atterrissage, en UTC ; le lendemain si le vol
+   vol, la date de fin du vol (date du CR et heure de fin bloc, sinon d'atterrissage, en heure locale comme la chronologie du CR ; le lendemain si le vol
    passe minuit), la durée (bloc, sinon vol), la mission (famille, type, opération) et l'arrivée. Ce qui est rempli
    s'entoure de vert, ce qui manque de rouge. L'immatriculation et le départ, que le site impose (position actuelle de
    l'appareil), ne sont pas modifiés : un écart avec le CR est signalé.
 5. Relisez, complétez, puis « Valider » sur le site.
 
 Si les champs se perdent (connexion demandée en route), relancez « Enregistrer le vol sur le site ↗ ». Sans le favori,
-« Copier les champs » copie une ligne (immatriculation, type, indicatif, date UTC, durée, départ → arrivée, mission) à
+« Copier les champs » copie une ligne (immatriculation, type, indicatif, date, durée, départ → arrivée, mission) à
 reporter à la main. Le menu « Site de la compagnie » n'apparaît que si l'adresse du site est réglée (Paramètres ›
 Installation › Sources et dossiers).
 

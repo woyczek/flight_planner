@@ -29,7 +29,7 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   flight's fields in the fragment (`#defa=`, base64url JSON, never sent to the server); the "→ Vol" bookmark, dragged
   once to the bookmarks bar, goes to the aircraft (by registration), then to "Ajouter un vol", and fills it by field
   name — call sign chosen in the site's list by name or code, flight number, end-of-flight date (report date and
-  on-block or landing time, UTC, next day past midnight), block (else flight) duration, mission, arrival; the site's
+  on-block or landing time, local time like the report's timeline, next day past midnight), block (else flight) duration, mission, arrival; the site's
   read-only fields (registration, departure) are compared and differences reported; nothing is ever submitted. The
   fields survive the site's login in its session storage. Fallback: "Copy the fields" (one line). The suite never
   logs in to the site.
