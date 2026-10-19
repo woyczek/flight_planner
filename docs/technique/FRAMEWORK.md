@@ -12,7 +12,7 @@ on every page. This document describes each component, its role and its interfac
 | Appearance (designs, icons, side bar, colours) | `shared/designs.css`, `block_icons.js/.css`, `icons/repository_icons.js`, `side_nav.js`, `appearance_page.js` | all pages; settings on the “Appearance” page |
 | Resizable columns | `shared/column_resize.js` | Planner |
 | Resizable table columns, clipped cells | `shared/table_resize.js` | Planner (RPM / power table) |
-| Aircraft / type picker (drop-down list with search) | `shared/aircraft_picker.js` | Fuel (“Aircraft” button) |
+| Aircraft / type picker (drop-down list with search) | `shared/aircraft_picker.js` | Fuel (“Aircraft” button), Performance sheets (“Aircraft” selector), mission report (registration, ICAO type) |
 | Blocks (move / hide) | `shared/app_framework.js` | all pages |
 | Text translation | `shared/content_i18n.js` | CR, Planner, reporting pages |
 | Pilot profile | `shared/pilot_profile.js` | all pages (☰ menu) |
@@ -239,7 +239,11 @@ flipped up or shifted left when it does not fit; the list scrolls), closed by a 
   `note`: right-hand mention (the reason of a disabled entry: “already taken”); `current`: the aircraft in use. The
   page keeps its own logic: `onPick(item, text)` receives the item as given.
 - `current()` (button), `placeholder`, `findPlaceholder`, `free` (a “free entry” row when nothing matches exactly:
-  `item.free`, `item.label` = the text), `empty()`, `footer()` (HTML under the list), `onOpen()`, `minWidth`.
+  `item.free`, `item.label` = the text), `empty()`, `footer()` (HTML under the list), `onOpen()`, `minWidth`,
+  `limit` (entries shown, 200 by default), `openOnClick` / `openOnFocus` (field). A field opened by a click or ↓
+  shows the whole list with its current value highlighted; typing filters it.
+- The list is in the page only while open (a field rebuilt by a render leaves nothing behind); one set of document
+  listeners (click elsewhere, scroll, resize) serves every picker.
 
 Search: `AircraftPicker.match(keys, text, code)` is the suite's single scoring engine (100 exact code, 95 exact key,
 85 exact word, 72 code prefix, 68 key prefix, 55 key contains, 48 every word in the keys), also used by

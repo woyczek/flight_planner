@@ -16,7 +16,10 @@
  *     current() : appareil montré par le bouton ({ label, type, sub, title }, null : placeholder).
  *     placeholder (bouton sans appareil), findPlaceholder (champ de recherche), free (saisie libre acceptée), empty() (texte d'une liste vide), footer() (HTML sous la liste),
  *     onOpen(), onEnter(texte) (kind field : Entrée sans entrée choisie), onEscape() (kind field : Échap liste fermée,
- *     vrai si l'Échap a servi), minWidth (px, 320 par défaut).
+ *     vrai si l'Échap a servi), openOnFocus / openOnClick (kind field), limit (entrées montrées, 200 par défaut),
+ *     minWidth (px, 320 par défaut).
+ *   La liste n'est dans la page que tant qu'elle est ouverte (un champ recréé par un rendu ne laisse rien derrière lui) ;
+ *   écouteurs du document communs à tous les sélecteurs.
  * AircraftPicker.match(clés, texte, code) : note d'un texte contre des clés (moteur de recherche commun, repris par
  *   equipment_editor.js : 100 code exact … 48 tous les mots dans les noms ; 0 : rien).
  * AircraftPicker.byCategory(items, typeOf) : éléments rangés par catégorie de la suite (AircraftCatalog.classify :
@@ -118,6 +121,11 @@
     choose: ['Choisir l’appareil', 'Choose the aircraft', 'Luftfahrzeug wählen', 'Elegir la aeronave']
   };
   let seq = 0;
+  // Sélecteurs ouverts : clic ailleurs, défilement et redimensionnement servis par des écouteurs communs.
+  const live = new Set();
+  document.addEventListener('pointerdown', e => [...live].forEach(api => api._outside(e)), true);
+  window.addEventListener('resize', () => live.forEach(api => api._place()));
+  window.addEventListener('scroll', e => live.forEach(api => api._scroll(e)), true);
 
   /** Monte le sélecteur sur un bouton ou un champ (voir l'en-tête du fichier). */
   function attach(host, opts = {}) {
@@ -133,6 +141,7 @@
       items = [], // éléments affichés (choisissables ou non), dans l'ordre
       act = -1,
       run = 0,
+      typed = false, // champ : liste filtrée par la saisie seulement après une frappe (ouverte au clic : tout)
       openState = false;
     pop.className = 'ap-pop';
     pop.hidden = true;
@@ -154,8 +163,6 @@
     find.setAttribute('aria-autocomplete', 'list');
     find.setAttribute('aria-expanded', 'false');
     pop.append(list, foot);
-    // dans une fenêtre modale : liste posée dans la fenêtre (sinon inerte sous la modale)
-    (host.closest('dialog') || document.body).append(pop);
 
     /** Groupes des sources de la page pour un texte (fonctions synchrones ou promesses). */
     const read = async q => {
@@ -177,6 +184,18 @@
         }).filter(([, s]) => s > 0).sort((a, b) => b[1] - a[1] || a[2] - b[2]).map(([it]) => it)
       })).filter(g => g.items.length);
     };
+    /** Au plus `limit` entrées montrées (groupes coupés dans l'ordre). */
+    const cut = groups => {
+      let room = opts.limit || 200;
+      return groups.map(g => {
+        const items = g.items.slice(0, Math.max(0, room));
+        room -= items.length;
+        return {
+          ...g,
+          items
+        };
+      }).filter(g => g.items.length);
+    };
     /** Rangée d'un élément. */
     const row = (it, i) => {
       const icon = it.icon ?? (window.AircraftDBIcons?.icon?.({
@@ -189,8 +208,11 @@
     /** Redessine la liste pour le texte cherché ; garde l'entrée active si elle reste. */
     const draw = async () => {
       const mine = ++run,
-        q = find.value.trim(),
-        groups = filter(await read(q), q);
+        q = field && !typed ? '' : find.value.trim(),
+        value = norm(find.value),
+        groups = cut(filter(await read(q), q));
+      // champ ouvert sans frappe : sa valeur est l'entrée en cours
+      if (field && !typed && value) groups.forEach(g => g.items.forEach(it => it.current ||= norm(it.key) === value));
       if (mine !== run || !openState) return;
       items = [];
       let html = '';
@@ -264,6 +286,9 @@
     const open = () => {
       if (openState) return draw();
       openState = true;
+      live.add(api);
+      // dans une fenêtre modale : liste posée dans la fenêtre (sinon inerte sous la modale)
+      (host.closest('dialog') || document.body).append(pop);
       pop.hidden = false;
       find.setAttribute('aria-expanded', 'true');
       host.setAttribute('aria-expanded', 'true');
@@ -279,8 +304,10 @@
     const close = (focusHost = false) => {
       if (!openState) return;
       openState = false;
+      live.delete(api);
       run++;
       pop.hidden = true;
+      pop.remove();
       find.setAttribute('aria-expanded', 'false');
       host.setAttribute('aria-expanded', 'false');
       if (focusHost && !field) host.focus();
@@ -313,12 +340,27 @@
       e.stopPropagation();
       openState ? close() : open();
     });
-    find.addEventListener('input', () => open());
-    if (field) find.addEventListener('focus', () => opts.openOnFocus && open());
+    find.addEventListener('input', () => {
+      typed = true;
+      open();
+    });
+    if (field) find.addEventListener('focus', () => {
+      if (!opts.openOnFocus) return;
+      typed = false;
+      open();
+    });
+    if (field && opts.openOnClick) host.addEventListener('click', () => {
+      if (openState) return;
+      typed = false;
+      open();
+    });
     find.addEventListener('keydown', e => {
       if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
         e.preventDefault();
-        if (!openState) return open();
+        if (!openState) {
+          typed = false;
+          return open();
+        }
         step(e.key === 'ArrowDown' ? 1 : -1);
       } else if (e.key === 'Enter') {
         if (openState && act >= 0) {
@@ -356,19 +398,22 @@
       const li = e.target.closest('.ap-item');
       if (li && +li.dataset.i !== act && !items[+li.dataset.i]?.disabled) mark(+li.dataset.i, false);
     });
-    document.addEventListener('pointerdown', e => {
-      if (openState && !pop.contains(e.target) && !host.contains(e.target)) close();
-    }, true);
-    window.addEventListener('resize', place);
-    window.addEventListener('scroll', e => {
-      if (openState && !pop.contains(e.target)) place();
-    }, true);
-    window.addEventListener('repository-language-change', () => {
+    if (!field) window.addEventListener('repository-language-change', () => {
       paint();
       if (openState) draw();
     });
     paint();
     const api = {
+      /** Clic hors de la liste et de l'hôte : fermée (hôte retiré de la page : fermée aussi). */
+      _outside: e => {
+        if (!host.isConnected || (!pop.contains(e.target) && !host.contains(e.target))) close();
+      },
+      _place: () => place(),
+      /** Défilement de la page (pas de la liste) : liste replacée ; hôte retiré : fermée. */
+      _scroll: e => {
+        if (!host.isConnected) close();
+        else if (!pop.contains(e.target)) place();
+      },
       open,
       close,
       /** Relit les sources (liste ouverte) et l'appareil courant (bouton). */

@@ -802,7 +802,8 @@ One card per aircraft involved; there is always at least one. The “+” in the
 
 1. Type the registration (`F-ZB…`): known aircraft are suggested with type, callsign, operator
    and base. Choose one: type, category, callsign, ICAO operator, base and equipment are
-   filled in.
+   filled in. A click in the field opens a drop-down list with search (silhouettes, by category); typing filters it
+   (registration, type, callsign, operator), ↑ ↓ Enter, Esc. The “Type (ICAO)” field has the same list.
 2. Or start from the callsign: `ctm58` in “Callsign” gives the series, the number, the full callsign
    and the “Flight plan callsign (7 chars max)”.
 

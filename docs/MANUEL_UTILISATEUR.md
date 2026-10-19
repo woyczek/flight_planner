@@ -843,7 +843,9 @@ Une carte par appareil engagé ; il y en a toujours au moins un. Le « + » du t
 
 1. Tapez l'immatriculation (`F-ZB…`) : les appareils connus sont proposés avec type, indicatif, opérateur
    et base. Choisissez-en un : type, catégorie, indicatif, exploitant OACI, base et équipements se
-   remplissent.
+   remplissent. Un clic dans le champ ouvre une liste déroulante avec recherche (silhouettes, par catégorie) ; la
+   frappe la filtre (immatriculation, type, indicatif, opérateur), ↑ ↓ Entrée, Échap. Le « Type (OACI) » a la même
+   liste.
 2. Ou partez de l'indicatif : `ctm58` dans « Indicatif » donne la série, le numéro, l'indicatif complet
    et l'« Indicatif plan de vol (7 car. max) ».
 

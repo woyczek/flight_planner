@@ -805,7 +805,8 @@ Una tarjeta por aeronave desplegada; siempre hay al menos una. El «+» del tít
 
 1. Escriba la matrícula (`F-ZB…`): se proponen las aeronaves conocidas con tipo, indicativo, operador
    y base. Elija una: el tipo, la categoría, el indicativo, el operador OACI, la base y los equipos se
-   rellenan.
+   rellenan. Un clic en el campo abre una lista desplegable con búsqueda (siluetas, por categoría); escribir la filtra
+   (matrícula, tipo, indicativo, operador), ↑ ↓ Intro, Esc. El campo «Tipo (OACI)» tiene la misma lista.
 2. O parta del indicativo: `ctm58` en «Indicativo» da la serie, el número, el indicativo completo
    y el «Indicativo plan de vuelo (máx. 7 car.)».
 

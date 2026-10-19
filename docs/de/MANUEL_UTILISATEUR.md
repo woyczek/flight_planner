@@ -807,7 +807,8 @@ Eine Karte pro eingesetztem Luftfahrzeug; es gibt immer mindestens eines. Das �
 
 1. Tippen Sie das Kennzeichen (`F-ZB…`): Die bekannten Luftfahrzeuge werden mit Typ, Rufzeichen, Betreiber
    und Basis vorgeschlagen. Wählen Sie eines: Typ, Kategorie, Rufzeichen, ICAO-Betreiber, Basis und Ausrüstung werden
-   ausgefüllt.
+   ausgefüllt. Ein Klick in das Feld öffnet eine Auswahlliste mit Suche (Silhouetten, nach Kategorie); Tippen filtert
+   sie (Kennzeichen, Typ, Rufzeichen, Betreiber), ↑ ↓ Eingabe, Esc. Das Feld „Typ (ICAO)“ hat dieselbe Liste.
 2. Oder gehen Sie vom Rufzeichen aus: `ctm58` in „Rufzeichen“ ergibt Serie, Nummer, vollständiges Rufzeichen
    und das „Flugplan-Rufzeichen (max. 7 Zeichen)“.
 

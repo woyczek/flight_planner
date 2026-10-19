@@ -570,6 +570,7 @@
       const history = ranked(pools.get(`aircraft.*.${field}`));
       if (field === 'registration') return matches.map(a => ({
         value: a.registration,
+        type: a.type || '', // silhouette et catégorie du sélecteur commun
         label: [a.type, a.variant, a.callsigns.join(' / '), a.tacticalNumber, a.operator, a.base].filter(Boolean).join(' — ')
       }));
       // Indicatif (série) : ceux des appareils compatibles (type, immatriculation), l'opérateur
