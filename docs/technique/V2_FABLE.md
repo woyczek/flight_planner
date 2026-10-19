@@ -370,8 +370,16 @@ airway, no procedure, and an unknown name goes to a far-away namesake (`TOC` bec
 the “SkyVector does not take the route” bug of 19 October). So SkyVector only gets names of 2 to 5 letters and ICAO
 coordinates (`4341N00122E`, accepted as a “GPS” point); airways, procedures (`FISTO5A`) and `DCT` are dropped. In a
 route list from a SimBrief OFP (“ID lat lon” entries), any other ID (`WPT`, SimBrief `4600N` idents) becomes the
-entry's ICAO coordinates and `TOC` / `TOD` are dropped, for SimBrief as well; SimBrief keeps airways and procedures of
-an item 15 route. A call sign such as
+entry's ICAO coordinates and `TOC` / `TOD` are dropped; SimBrief keeps airways and procedures of an item 15 route
+and, from a route list, only the named IDs (no coordinates, no aerodromes: `orig`, `dest`, `fl` and `altn` go apart;
+`fl` falls back to the level of the route's speed/level group).
+
+SkyVector fields (checked 20 October): only an ICAO speed/level group **at the start** of `fpl` fills the Flight Plan
+speed and altitude (`fpl=N0236F270 LFRS … LFML` → 236, FL270); the group after the departure, the FAA form
+(`<TAIL> <TYPE>/<EQUIP> <TAS> <ADEP> <route> <ADES> <ALT>`) and a tail number or type in front fill nothing (and the
+latter breaks the group). No address parameter fills the aircraft or the ETD: `etd`, `tas`, `mach` exist in SkyVector's
+code only as arguments of its embedded chart, not of `?fpl=`. The group is sent when the route gives a speed (OFP or
+item 15), with the flight level if known, otherwise the group's. A call sign such as
 `AFR1234` gives SimBrief `airline` and `fltnum`. In Fuel, the alternate, call sign and registration come from the last
 SimBrief OFP only when its origin and destination match the flight plan.
 

@@ -72,8 +72,7 @@
         else if (e.lat != null && !/^(TOC|TOD|T\/C|T\/D)$/.test(e.id)) t.push(coord(e.lat, e.lon));
       } else if (e.lat == null) {
         if (!pseudo) t.push(e.id); // case 15 : voies aériennes et procédures gardées
-      } else if (named || latlon) t.push(e.id);
-      else if (!/^(TOC|TOD)$/.test(e.id)) t.push(coord(e.lat, e.lon)); // point d'OFP sans nom utilisable
+      } else if (named) t.push(e.id); // liste d'OFP : identifiants nommés seulement (SimBrief ne lit pas les coordonnées)
     }
     if (t[0] === dep) t.shift();
     if (t[t.length - 1] === arr) t.pop();
@@ -90,6 +89,11 @@
     return {
       dep,
       arr,
+      // groupe vitesse / niveau de la route (N0236F270) : vitesse vraie reprise pour SkyVector, niveau du vol sinon
+      spd: (/^[NKM](\d{3,4})[FASM]\d{3,4}$/.exec(entries(f.route).map(e => e.id).find(id => /^[NKM]\d{3,4}[FASM]\d{3,4}$/.test(id)) ||
+        '') || [])[1] || '',
+      grpFl: (/^[NKM]\d{3,4}[FASM](\d{3,4})$/.exec(entries(f.route).map(e => e.id).find(id => /^[NKM]\d{3,4}[FASM]\d{3,4}$/.test(id)) ||
+        '') || [])[1] || '',
       pts: points(f.route, dep, arr),
       sky: points(f.route, dep, arr, {
         sky: true
@@ -137,7 +141,7 @@
         ['fltnum', cs?.[2] || ''],
         ['callsign', f.callsign],
         ['altn', f.altn],
-        ['fl', f.fl]
+        ['fl', f.fl || (f.grpFl ? `FL${f.grpFl.padStart(3, '0')}` : '')] // niveau du vol, sinon celui du groupe de la route
       ])
       if (v) sb.set(k, v);
     const sbMiss = !f.dep ? 'dep' : !f.arr ? 'arr' : !f.type ? 'type' : '';
@@ -151,7 +155,8 @@
     // SkyVector : départ, points, arrivée
     out.push({
       label: tr(['SkyVector — la route', 'SkyVector — the route', 'SkyVector — die Route', 'SkyVector — la ruta']),
-      href: f.dep && f.arr ? `https://skyvector.com/?fpl=${encodeURIComponent([f.dep, ...f.sky, f.arr].join(' '))}` : '',
+      // SkyVector : groupe vitesse / niveau OACI en tête de fpl (seule forme lue : vitesse et altitude du panneau)
+      href: f.dep && f.arr ? `https://skyvector.com/?fpl=${encodeURIComponent([f.spd && (f.fl || f.grpFl) ? `N${f.spd.padStart(4, '0')}F${(f.fl ? f.fl.slice(2) : f.grpFl).padStart(3, '0')}` : '', f.dep, ...f.sky, f.arr].filter(Boolean).join(' '))}` : '',
       why: f.dep && f.arr ? '' : tr(MISS[f.dep ? 'arr' : 'dep'])
     });
     // cartes des terrains : Navigraph Charts et ChartFox, départ puis arrivée
