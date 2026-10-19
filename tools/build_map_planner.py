@@ -209,7 +209,17 @@ TONE_CSS = '''<style id="plannerTone" data-layer="app">
 </style>
 '''
 
-VOL_SCRIPT = r'''<script>
+VOL_SCRIPT = r'''<script src="../../shared/external_links.js?v=0"></script>
+<script>
+// « Ouvrir dans ▾ » (shared/external_links.js) dans l'en-tête : SimBrief, SkyVector, cartes des terrains, d'après la
+// route du bloc Route, son niveau et l'avion choisi (profil du Carburant, flightPerfState), lus à l'ouverture
+(()=>{const host=document.getElementById('extLinks');if(!host||!window.ExternalLinks)return;
+ExternalLinks.menu(host,()=>{let st={};try{st=JSON.parse(localStorage.getItem('flightPerfState')||'{}')||{}}catch{}
+const id=document.getElementById('vprofAircraft')?.value,p=(id&&st.profiles?.[id])||st.profiles?.[st.lastAircraft]||{};
+const m=/^(FL)?(\d{1,5})(FT)?$/.exec(String(document.getElementById('vprofCruise')?.value||'').toUpperCase().replace(/\s+/g,'')),ft=m?(m[1]?+m[2]*100:+m[2]):0;
+return{route:document.getElementById('vprofRoute')?.value||'',fl:ft?Math.round(ft/100):'',type:p.icao||p.type||'',reg:p.registration||'',callsign:p.callsign||''}})})();
+</script>
+<script>
 // ===== Cartes de vol (page publique) : bloc « Cartes » =====
 // La route est celle du bloc Route (champ vprofRoute, case 15) : points lus par SiaProfile.parseRoute (base SIA du
 // navigateur : aérodromes, balises, points RNAV, voies aériennes) ; mission locale (espace « planner ») envoyée au
@@ -322,7 +332,7 @@ def main():
     sub(r'<script src="sia_i18n\.js', '<script src="../cpco/sia_i18n.js')
     sub(r'<script src="\.\./\.\./shared/mission_registry\.js\?v=[^"]*"></script>', '')
     sub(r'</style>', VOL_CSS + '</style>')
-    sub(r'<header>.*?</header>', '<header><div class="header-row"><h1>Cartes de vol</h1><a class="headerButton" href="flight_performance_planner.html">← Planificateur</a></div><p>Route, cartes topographiques, approche, rendez-vous et destination, profil vertical — pour sa propre préparation</p></header>', re.S)
+    sub(r'<header>.*?</header>', '<header><div class="header-row"><h1>Cartes de vol</h1><a class="headerButton" href="flight_performance_planner.html">← Planificateur</a><span id="extLinks" class="header-ext"></span></div><p>Route, cartes topographiques, approche, rendez-vous et destination, profil vertical — pour sa propre préparation</p></header>', re.S)
     # bloc Mission du Centre : gardé masqué (le moteur s'en sert)
     sub(r'<section data-block-id="sia-mission"[^>]*>', '<section id="siaMissionHidden" hidden>')
     # bloc « Cartes du vol » après le bloc Route

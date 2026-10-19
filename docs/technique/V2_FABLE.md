@@ -346,3 +346,26 @@ follows the whole path.
 Not applied, by the user's choice: the "Aircraft" selector stays at the top of the page (the review wanted the table
 as the only way to choose), and the header's kg / lbs units stay where they are.
 
+## 14. External links: “Open in ▾” (19 October)
+
+`shared/external_links.js` (`ExternalLinks.menu(host, flight)`), used by Fuel (row of the flight plan, not the page
+header) and Flight maps (page header, through `tools/build_map_planner.py`); reusable by the report. `flight` is an
+object, or a function (possibly async) read when the menu opens: `{ dep, arr, route, type, reg, callsign, altn, fl }`;
+`route` is item 15 or the comma list of a SimBrief OFP route. Entries open in a new tab (`rel="noopener noreferrer"`);
+nothing is sent that is not already in the flight (no personal ID, no key); an entry whose data is missing is greyed
+out with its reason as a tooltip. Short menu: placed in the window, Escape, click elsewhere.
+
+Formats checked in the browser on 19 October 2026, without signing in:
+
+| Service | Address | Check |
+|---|---|---|
+| SimBrief | `https://dispatch.simbrief.com/options/custom?orig=&dest=&type=&route=&reg=&airline=&fltnum=&callsign=&altn=&fl=` | `www.simbrief.com/system/dispatch.php?…` redirects there keeping the parameters; names from the SimBrief API documentation (orig, dest and type required); prefills “Custom options” once signed in |
+| SkyVector | `https://skyvector.com/?fpl=<ADEP> <points> <ADES>` | Flight Plan panel filled (departure, destination), route drawn |
+| Navigraph Charts | `https://charts.navigraph.com/airport/<ICAO>` | address kept, “Sign in” page: **to be confirmed with a signed-in account** |
+| ChartFox | `https://chartfox.org/<ICAO>` | redirects to the VATSIM sign-in without keeping the address: **to be confirmed with a signed-in account** |
+
+Route points for SimBrief and SkyVector: speed/level groups (`N0450F350`), level changes after a point (`NTS/…`),
+departure and arrival aerodromes and leading/trailing `DCT` removed; SkyVector also without `DCT`. A call sign such as
+`AFR1234` gives SimBrief `airline` and `fltnum`. In Fuel, the alternate, call sign and registration come from the last
+SimBrief OFP only when its origin and destination match the flight plan.
+

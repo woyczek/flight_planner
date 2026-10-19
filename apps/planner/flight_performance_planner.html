@@ -100,4 +100,36 @@
   setTimeout(() => cols?.refresh(), 800)
 })();
 </script>
+<script src="../../shared/external_links.js?v=0"></script>
+<script>
+/* « Ouvrir dans ▾ » (shared/external_links.js) : SimBrief, SkyVector, cartes des terrains (Navigraph, ChartFox), d'après
+   le vol de la page, lu à l'ouverture : plan de vol (case 15 ou route d'OFP), niveau, avion actif (flight_planner.js) ;
+   dégagement, indicatif et immatriculation du dernier OFP SimBrief s'il porte le même trajet. Bouton dans la ligne du
+   plan de vol (pas dans l'en-tête de la page). */
+(() => {
+  const info = document.getElementById('fplInfo');
+  if (!info || !window.ExternalLinks) return;
+  const host = document.createElement('span');
+  info.before(host);
+  ExternalLinks.menu(host, async () => {
+    const p = (typeof active !== 'undefined' && active) || {},
+      f = {
+        route: document.getElementById('vpRoute')?.value || '',
+        fl: document.getElementById('fl')?.value || '',
+        type: p.icao || p.type || '',
+        reg: p.registration || '',
+        callsign: p.callsign || ''
+      };
+    const raw = typeof loadOFP === 'function' ? (await loadOFP().catch(() => null))?.raw : null,
+      v = ExternalLinks.normalize(f);
+    if (raw && raw.origin?.icao_code === v.dep && raw.destination?.icao_code === v.arr) Object.assign(f, {
+      altn: raw.alternate?.icao_code || '',
+      callsign: f.callsign || raw.atc?.callsign || '',
+      reg: f.reg || raw.aircraft?.reg || '',
+      type: f.type || raw.aircraft?.icaocode || ''
+    });
+    return f;
+  });
+})();
+</script>
 </body></html>

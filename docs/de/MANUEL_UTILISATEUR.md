@@ -1433,6 +1433,8 @@ Sie nutzt die Engine des Kartenstudios des Zentrums, arbeitet aber in einem eige
 Jeder Block lässt sich zuklappen („Ausblenden“ / „Anzeigen“) und verschieben (Griff ↕). Die SIA-Datenbank muss einmal in diesem Browser gelesen werden (siehe letzter Block).
 Auf den Stufen 1 bis 3 (Mein Profil › „Nutzungsstufe“) beschränkt sich die Seite auf zwei Blöcke: „Route“ (Routenfeld, „Höhe“, „SimBrief“, Kontrollkarte mit „⤢ Vergrößern“) und „Karten“ mit seinem einzigen Knopf „Karten und ZIP erzeugen“. Die übrigen unten beschriebenen Bedienelemente erscheinen nur auf Stufe 4 (Experte).
 
+Oben auf der Seite öffnet „Öffnen in ▾“ die Route des Blocks „Route“, ihre Flughöhe und das gewählte Flugzeug in SimBrief, SkyVector, Navigraph Charts oder ChartFox (Karten von Start- und Zielflugplatz), in einem neuen Tab; dasselbe Menü wie im Kraftstoff (siehe „Öffnen in ▾“ im Kapitel Kraftstoff).
+
 ### Empfang einer Mission („In den Flugkarten öffnen“)
 
 Die Seite zeigt keinen Block „Mission“: Die Mission kommt von selbst aus Meine Missionen.
@@ -1553,6 +1555,19 @@ Zugang: Seitenleiste „Werkzeuge“, Reiter „Kraftstoff“, Knopf „Kraftsto
 Kopfzeile: Knopf „Flugzeug“, eine Auswahlliste mit Suche (die vorhandenen Leistungsblätter: „Meine Luftfahrzeuge“ zuerst, dann nach Kategorie; einen Namen, einen Typ oder ein Kürzel tippen, um zu filtern, ↑ ↓ Eingabe, Esc), Knopf „Letzten SimBrief-FPL abrufen“, „Einheiten: kg / lbs“. Kraftstoff erstellt die Planung und nur die Planung: Die Blätter werden unter „Leistungsblätter“ (nächstes Kapitel) angelegt und geändert, die Luftfahrzeuge unter „Meine Luftfahrzeuge“ (Einstellungen › Mein Profil › Luftfahrzeuge und Simulatoren) angegeben.
 Je nach Nutzungsstufe: Auf den Stufen 1 bis 3 (Besatzung, Planung, Gestaltung) zeigt die Seite das Flugzeug, den Flugplan (und „Letzten SimBrief-FPL abrufen“), den aufklappbaren Bereich „Flugparameter“, „Berechnen“ und das Ergebnis in zwei Spalten; das Menü ☰ behält dort nur Export und Import der Einstellungen. Kurven, Felder, Instrumente und Vertikalprofil kommen auf der Stufe Experte hinzu, wo die Seite vollständig ist.
 Auf breitem Bildschirm, auf der Stufe Experte, hat die Seite drei Spalten (Eingabe und Kurven | Ergebnis und Felder | Instrumente): Ziehen Sie die Griffe zwischen den Spalten, um ihre Breite einzustellen; Doppelklick: Standardbreiten.
+
+### Öffnen in ▾ (externe Dienste)
+
+Der Knopf „Öffnen in ▾“ unter dem Flugplan öffnet den Flug der Seite in einem anderen Dienst, in einem neuen Tab:
+Start, Ziel, Route, Flughöhe und aktives Flugzeug; Ausweichflugplatz, Rufzeichen und Kennzeichen des letzten
+SimBrief-OFP, wenn er dieselbe Strecke hat. Sonst wird nichts gesendet (keine persönliche Kennung, kein Schlüssel).
+Escape oder ein Klick daneben schließt das Menü.
+- „SimBrief — diesen Flug planen“: Flugoptionen vorausgefüllt (SimBrief-Anmeldung erforderlich); ausgegraut ohne
+  Start, Ziel oder Luftfahrzeugtyp.
+- „SkyVector — die Route“: Flugplan auf der Karte gezeichnet; ausgegraut ohne Start oder Ziel.
+- „Navigraph Charts“ und „ChartFox“ — Start, Ziel: Karten des Flugplatzes (Anmeldung erforderlich; Flugplatzseite,
+  wenn die Website sie behält).
+Ein ausgegrauter Eintrag nennt seinen Grund beim Überfahren.
 
 ### Flugzeug wählen
 

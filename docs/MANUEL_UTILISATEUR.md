@@ -1475,6 +1475,8 @@ Aux niveaux 1 à 3 (Mon profil › « Niveau d'utilisation »), la page se limit
 
 *Figure 8 — Cartes de vol : cheminement, profil cartographique, cadrage et choix des cartes à préparer.*
 
+En tête de page, « Ouvrir dans ▾ » ouvre la route du bloc « Cheminement », son niveau et l'avion choisi dans SimBrief, SkyVector, Navigraph Charts ou ChartFox (cartes des terrains de départ et d'arrivée), dans un nouvel onglet ; même menu que dans le Carburant (voir « Ouvrir dans ▾ » au chapitre Carburant).
+
 ### Réception d'une mission (« Ouvrir dans les Cartes de vol »)
 
 La page n'affiche pas de bloc « Mission » : la mission arrive toute seule depuis Mes missions.
@@ -1600,6 +1602,19 @@ Sur écran large, au niveau Expert, la page a trois colonnes (saisie et courbes 
 ![Carburant : paramètres du trajet, consignes de montée et résultat du devis pour un DHC-8-400 / Q400.](images/captures-manuels/utilisateur-carburant.png)
 
 *Figure 9 — Carburant : paramètres du trajet, consignes de montée et résultat du devis pour un DHC-8-400 / Q400.*
+
+### Ouvrir dans ▾ (services externes)
+
+Le bouton « Ouvrir dans ▾ », sous le plan de vol, ouvre le vol de la page dans un autre service, dans un nouvel
+onglet : départ, arrivée, route, niveau et avion actif ; dégagement, indicatif et immatriculation du dernier OFP
+SimBrief s'il porte le même trajet. Rien d'autre n'est envoyé (ni identifiant personnel, ni clé). Échap ou un clic
+ailleurs referme le menu.
+- « SimBrief — préparer ce vol » : options du vol préremplies (connexion SimBrief requise) ; grisé sans départ,
+  arrivée ou type d'appareil.
+- « SkyVector — la route » : plan de vol tracé sur la carte ; grisé sans départ ou arrivée.
+- « Navigraph Charts » et « ChartFox » — départ, arrivée : cartes du terrain (connexion requise ; page de l'aérodrome
+  si le site la garde).
+Une entrée grisée donne son motif au survol.
 
 ### Choisir l'avion
 

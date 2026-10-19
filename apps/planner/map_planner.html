@@ -1338,7 +1338,7 @@ if (/[?&]carte(?:[=&]|$)/.test(location.search)) document.documentElement.setAtt
 </style>
 </head>
 <body>
-<header><div class="header-row"><h1>Cartes de vol</h1><a class="headerButton" href="flight_performance_planner.html">← Planificateur</a></div><p>Route, cartes topographiques, approche, rendez-vous et destination, profil vertical — pour sa propre préparation</p></header>
+<header><div class="header-row"><h1>Cartes de vol</h1><a class="headerButton" href="flight_performance_planner.html">← Planificateur</a><span id="extLinks" class="header-ext"></span></div><p>Route, cartes topographiques, approche, rendez-vous et destination, profil vertical — pour sa propre préparation</p></header>
 
 <main>
 <section id="siaMissionHidden" hidden><h2>Mission</h2><p id="missionStatus" data-status class="small">Formats acceptés : Markdown, YAML <code>helo-xp-mission</code>.</p><div class="actions"><button type="button" id="saveStudio" data-icon="save" class="secondary" title="Enregistrer la mission et les réglages du studio (profil et emprise de chaque carte, tracés, pistes) dans son dossier : data/missions/…/mission&lt;ID&gt;.yaml">Enregistrer dans le dossier</button><button type="button" id="revertStudio" data-icon="undo" class="secondary" disabled title="Revenir à la dernière version enregistrée dans le dossier (ou à la version chargée), après confirmation">Annuler les modifications</button></div><p id="studioSaveState"></p><p id="siaBaseLine" class="small">Base SIA : lecture de la base du navigateur…</p><details id="missionOpen" class="missionOpen"><summary>Ouvrir une autre mission : fichier Markdown / YAML ou texte collé</summary><div class="grid">
@@ -8469,6 +8469,16 @@ applyOutputPrefs();;
     }
   }
 })();
+</script>
+<script src="../../shared/external_links.js?v=0"></script>
+<script>
+// « Ouvrir dans ▾ » (shared/external_links.js) dans l'en-tête : SimBrief, SkyVector, cartes des terrains, d'après la
+// route du bloc Route, son niveau et l'avion choisi (profil du Carburant, flightPerfState), lus à l'ouverture
+(()=>{const host=document.getElementById('extLinks');if(!host||!window.ExternalLinks)return;
+ExternalLinks.menu(host,()=>{let st={};try{st=JSON.parse(localStorage.getItem('flightPerfState')||'{}')||{}}catch{}
+const id=document.getElementById('vprofAircraft')?.value,p=(id&&st.profiles?.[id])||st.profiles?.[st.lastAircraft]||{};
+const m=/^(FL)?(\d{1,5})(FT)?$/.exec(String(document.getElementById('vprofCruise')?.value||'').toUpperCase().replace(/\s+/g,'')),ft=m?(m[1]?+m[2]*100:+m[2]):0;
+return{route:document.getElementById('vprofRoute')?.value||'',fl:ft?Math.round(ft/100):'',type:p.icao||p.type||'',reg:p.registration||'',callsign:p.callsign||''}})})();
 </script>
 <script>
 // ===== Cartes de vol (page publique) : bloc « Cartes » =====

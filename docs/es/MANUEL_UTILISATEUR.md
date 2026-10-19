@@ -1434,6 +1434,8 @@ Retoma el motor del estudio cartográfico del Centro, pero trabaja en un espacio
 Cada bloque se pliega («Ocultar» / «Mostrar») y se mueve (asa ↕). La base SIA debe leerse una vez en este navegador (consulte el último bloque).
 En los niveles 1 a 3 (Mi perfil › «Nivel de uso»), la página se limita a dos bloques: «Ruta» (campo de ruta, «Nivel», «SimBrief», mapa de control con «⤢ Ampliar») y «Mapas», con su único botón «Generar los mapas y el ZIP». Los demás mandos descritos a continuación solo aparecen en el nivel 4 (Experto).
 
+En la parte superior de la página, «Abrir en ▾» abre la ruta del bloque «Ruta», su nivel y el avión elegido en SimBrief, SkyVector, Navigraph Charts o ChartFox (cartas de los aeródromos de salida y llegada), en una pestaña nueva; el mismo menú que en Combustible (ver «Abrir en ▾» en el capítulo Combustible).
+
 ### Recepción de una misión («Abrir en los mapas de vuelo»)
 
 La página no muestra un bloque «Misión»: la misión llega sola desde Mis misiones.
@@ -1554,6 +1556,18 @@ Para ir a él: barra lateral «Herramientas», pestaña «Combustible», botón 
 Cabecera: botón «Avión», una lista desplegable con búsqueda (las fichas de rendimiento existentes: «Mis aeronaves» primero, luego por categoría; escriba un nombre, un tipo o un designador para filtrar, ↑ ↓ Intro, Esc), botón «Recuperar último FPL de SimBrief», «Unidades: kg / lbs». Combustible hace el plan de combustible y solo el plan: las fichas se crean y se modifican en «Fichas de rendimiento» (capítulo siguiente), las aeronaves se declaran en «Mis aeronaves» (Ajustes › Mi perfil › Aeronaves y simuladores).
 Según el nivel de uso: en los niveles 1 a 3 (Tripulación, Planificación, Diseño), la página muestra el avión, el plan de vuelo (y «Recuperar último FPL de SimBrief»), el plegable «Parámetros del vuelo», «Calcular» y el Resultado, en dos columnas; el menú ☰ solo conserva exportar e importar las preferencias. Curvas, paneles, instrumentos y perfil vertical se añaden en el nivel Experto, donde la página está completa.
 En pantalla ancha, en el nivel Experto, la página tiene tres columnas (entrada y curvas | Resultado y paneles | instrumentos): arrastre los tiradores entre columnas para ajustar su anchura; doble clic: anchuras por defecto.
+
+### Abrir en ▾ (servicios externos)
+
+El botón «Abrir en ▾», bajo el plan de vuelo, abre el vuelo de la página en otro servicio, en una pestaña nueva:
+salida, llegada, ruta, nivel y avión activo; alternativo, indicativo y matrícula del último OFP de SimBrief si tiene
+el mismo trayecto. No se envía nada más (ni identificador personal, ni clave). Escape o un clic fuera cierra el menú.
+- «SimBrief — preparar este vuelo»: opciones del vuelo prerrellenadas (inicio de sesión en SimBrief necesario); en
+  gris sin salida, llegada o tipo de aeronave.
+- «SkyVector — la ruta»: plan de vuelo trazado en la carta; en gris sin salida o llegada.
+- «Navigraph Charts» y «ChartFox» — salida, llegada: cartas del aeródromo (inicio de sesión necesario; página del
+  aeródromo si el sitio la conserva).
+Una entrada en gris da su motivo al pasar el ratón.
 
 ### Elegir el avión
 

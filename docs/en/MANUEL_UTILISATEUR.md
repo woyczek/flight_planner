@@ -1427,6 +1427,8 @@ It uses the engine of the Centre's map studio, but works in a space of its own i
 Each block collapses (“Hide” / “Show”) and moves (↕ handle). The SIA database must be read once in this browser (see the last block).
 At levels 1 to 3 (My profile › “Usage level”), the page is limited to two blocks: “Route” (route field, “Level”, “SimBrief”, control map with “⤢ Enlarge”) and “Maps”, with its single “Generate the maps and the ZIP” button. The other controls described below only appear at level 4 (Expert).
 
+At the top of the page, “Open in ▾” opens the route of the “Route” block, its level and the chosen aircraft in SimBrief, SkyVector, Navigraph Charts or ChartFox (departure and arrival aerodrome charts), in a new tab; same menu as in Fuel (see “Open in ▾” in the Fuel chapter).
+
 ### Receiving a mission (“Open in the flight maps”)
 
 The page has no “Mission” block: the mission arrives on its own from My missions.
@@ -1547,6 +1549,18 @@ To go there: “Tools” in the side bar, “Fuel” tab, the “Fuel (planner)�
 Header: “Aircraft” button, a drop-down list with search (the existing performance sheets: “My aircraft” first, then by category; type a name, a type or a designator to filter, ↑ ↓ Enter, Esc), “Fetch latest SimBrief FPL” button, “Units: kg / lbs”. Fuel makes the fuel plan and only the fuel plan: sheets are created and edited in “Performance sheets” (next chapter), aircraft are declared in “My aircraft” (Settings › My profile › Aircraft and simulators).
 Depending on the usage level: at levels 1 to 3 (Crew, Planning, Design), the page shows the aircraft, the flight plan (and “Fetch latest SimBrief FPL”), the collapsible “Flight parameters” section, “Calculate” and the Result, in two columns; the ☰ menu only keeps exporting and importing the preferences. Curves, panels, instruments and the vertical profile are added at the Expert level, where the page is complete.
 On a wide screen, at the Expert level, the page has three columns (input and curves | Result and panels | instruments): drag the handles between columns to set their width; double-click: default widths.
+
+### Open in ▾ (external services)
+
+The “Open in ▾” button, under the flight plan, opens the page's flight in another service, in a new tab: departure,
+arrival, route, level and active aircraft; alternate, call sign and registration of the last SimBrief OFP if it has
+the same route. Nothing else is sent (no personal ID, no key). Escape or a click elsewhere closes the menu.
+- “SimBrief — plan this flight”: flight options prefilled (SimBrief sign-in required); greyed out without departure,
+  arrival or aircraft type.
+- “SkyVector — the route”: flight plan drawn on the chart; greyed out without departure or arrival.
+- “Navigraph Charts” and “ChartFox” — departure, arrival: aerodrome charts (sign-in required; aerodrome page if the
+  site keeps it).
+A greyed-out entry gives its reason on hover.
 
 ### Choose the aircraft
 

@@ -10,6 +10,17 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ## [Unreleased]
 
+### Added
+
+- **Fuel and Flight maps: “Open in ▾”** (`shared/external_links.js`) — a short menu that opens the page's flight in
+  another service, in a new tab: “SimBrief — plan this flight” (dispatch options prefilled: departure, arrival, type,
+  route, registration, airline and flight number from the call sign, alternate, level), “SkyVector — the route”
+  (`?fpl=`), “Navigraph Charts” and “ChartFox” for the departure and arrival aerodromes. Built from the flight plan,
+  level and aircraft of the page (Fuel: alternate, call sign and registration of the last SimBrief OFP when it has the
+  same route); nothing else is sent; a greyed-out entry gives its reason. Fuel: in the flight plan row; Flight maps:
+  page header. Formats checked in `docs/technique/V2_FABLE.md` § 14 (Navigraph and ChartFox to be confirmed signed in).
+  Pilot manual (4 languages).
+
 ## [5.3.0] — 2026-10-19
 
 The mission report is rebuilt around what a pilot does: one "Prefill ▾" menu gathers every source (a mission order,
