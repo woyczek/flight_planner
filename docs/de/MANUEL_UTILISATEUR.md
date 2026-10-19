@@ -998,7 +998,7 @@ wie das Fenster.
 Route, Wetter…), die Anzahl der bereits eingetragenen und behaltenen Felder und was die Quelle nicht geliefert hat („fehlen
 in der Quelle: Start, Landung“). Zwei Schaltflächen begleiten sie: „Rückgängig“ stellt den Bericht so wieder her, wie er
 vor dem Vorausfüllen war; „Bereits eingetragene Felder ersetzen (n)“, wenn bereits eingetragene Felder behalten wurden,
-wendet dieselbe Quelle erneut an und ersetzt sie. Einzelheiten zum Einfügen: [Tutorial](../TUTORIAL.md), § 6.
+wendet dieselbe Quelle erneut an und ersetzt sie. Die genaueste Quelle gewinnt: der Assistent „bekanntes Luftfahrzeug“ (Flotte) füllt nur Leeres aus; er ersetzt weder ein von der Quelle gesetztes noch ein bereits eingetragenes Feld, auch wenn sich das Kennzeichen im selben Schritt ändert, und die Zusammenfassung sagt es („Rufzeichen der Flotte MILAN74 nicht übernommen (CFN12 stammt aus der Quelle)“). Einzelheiten zum Einfügen: [Tutorial](../TUTORIAL.md), § 6.
 
 ### Netzwerk-Tracking
 

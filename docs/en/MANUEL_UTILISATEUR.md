@@ -996,7 +996,7 @@ route, weather…), the number of fields already entered that were kept, and wha
 source: take-off, landing”), for example “ICAO flight plan, flight of 19/10 — 8 field(s) filled: aircraft, route… —
 4 already entered kept — not in the source: take-off, landing”. Two buttons come with it: “Undo” puts the report
 back as it was before the prefill; “Replace the fields already entered (n)”, when fields already entered were kept,
-applies the same source again, replacing them. Paste details: [tutorial](../TUTORIAL.md), § 6.
+applies the same source again, replacing them. The most explicit source wins: the “known aircraft” (fleet) assistant only fills what is empty; it never replaces a field set by the source or already entered, even if the registration changes in the same step, and the summary says so (“fleet call sign MILAN74 not applied (CFN12 comes from the source)”). Paste details: [tutorial](../TUTORIAL.md), § 6.
 
 ### Network tracking
 

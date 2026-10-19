@@ -1034,7 +1034,10 @@ fenêtre.
 météo…), le nombre de champs déjà saisis gardés, et ce que la source n'a pas donné (« absents de la source : décollage,
 atterrissage »). Deux boutons l'accompagnent : « Annuler » remet le CR tel qu'il était avant le préremplissage ;
 « Remplacer les champs déjà saisis (n) », quand des champs déjà saisis ont été gardés, réapplique la même source en les
-remplaçant. Détails du collage : [tutoriel](TUTORIAL.md), § 6.
+remplaçant. La source la plus explicite gagne : l'aide « appareil connu » (flotte) ne remplit que le vide, elle ne
+remplace ni un champ posé par la source ni un champ déjà saisi, même si l'immatriculation change dans le même geste ;
+le résumé le dit (« indicatif de la flotte MILAN74 non appliqué (CFN12 vient de la source) »). Détails du collage :
+[tutoriel](TUTORIAL.md), § 6.
 
 ### Suivi réseau
 

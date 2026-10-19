@@ -170,6 +170,13 @@
     prefillFlightOf: L('vol du', 'flight of', 'Flug vom', 'vuelo del'),
     prefillFilled: L('{n} champ(s) rempli(s)', '{n} field(s) filled', '{n} Feld(er) ausgefüllt', '{n} campo(s) rellenado(s)'),
     prefillUndo: L('Annuler', 'Undo', 'Rückgängig', 'Deshacer'),
+    prefillAssistFields: L('indicatif|immatriculation|type', 'call sign|registration|type', 'Rufzeichen|Kennzeichen|Typ',
+      'indicativo|matrícula|tipo'),
+    prefillNotApplied: L('{field} de la flotte {fleet} non appliqué ({value} {why})',
+      'fleet {field} {fleet} not applied ({value} {why})', '{field} der Flotte {fleet} nicht übernommen ({value} {why})',
+      '{field} de la flota {fleet} no aplicado ({value} {why})'),
+    prefillFromSource: L('vient de la source', 'comes from the source', 'stammt aus der Quelle', 'viene de la fuente'),
+    prefillTyped: L('déjà saisi', 'already entered', 'bereits eingetragen', 'ya introducido'),
     prefillUndone: L('Préremplissage annulé', 'Prefill undone', 'Vorausfüllen rückgängig gemacht', 'Prerrelleno deshecho'),
     prefillBlocks: L(
       'appareil|chronologie|route|météo|trace réseau|identification|carburant|capacités|organisation|équipage|événements|étapes',
@@ -1683,9 +1690,11 @@
         replace: !!opts.replace
       });
       // Mêmes aides que la saisie : appareil connu, indicatif de série, terrains, METAR, soleil.
-      const lead = mission.aircraft[0] || {};
+      const lead = mission.aircraft[0] || {},
+        explicit = Object.fromEntries(Object.entries(lead).filter(([, v]) => typeof v === 'string' && v.trim()));
       if (done.includes('aircraft.0.registration') && lead.registration) aircraftAssist('aircraft.0.registration', lead.registration);
       else if (done.includes('aircraft.0.callsign') && lead.callsign) aircraftAssist('aircraft.0.callsign', lead.callsign);
+      notes.push(...sourceWins(mission.aircraft[0], explicit, done));
       if (done.includes('environment.metar')) assist.applyMetar(mission.environment.metar);
       view.render(blockList);
       assist.decorate();
@@ -1713,6 +1722,32 @@
       // fenêtre modale rendrait inerte
       if (prefillDlg.open) prefillDlg.close();
       return true;
+    }
+    /** Après les aides de l'appareil connu : la source la plus explicite gagne. Un champ de l'appareil déjà rempli
+     *  (posé par la source ou saisi par le pilote) est remis tel quel si l'aide l'a changé ; l'aide ne remplit que le
+     *  vide. Indicatif remis : série, numéro et forme plan de vol recalculés. Rend les notes du résumé (« indicatif de
+     *  la flotte MILAN74 non appliqué (CFN12 vient de la source) »). */
+    function sourceWins(item, explicit, done) {
+      if (!item) return [];
+      const notes = [],
+        names = inLanguage(UI.prefillAssistFields).split('|'),
+        NAMED = ['callsign', 'registration', 'type'];
+      for (const [k, v] of Object.entries(explicit)) {
+        const now = item[k];
+        if (now === v) continue;
+        item[k] = v;
+        const i = NAMED.indexOf(k);
+        if (i >= 0 && String(now || '').trim()) notes.push(inLanguage(UI.prefillNotApplied).replace('{field}', names[i]).replace(
+          '{fleet}', now).replace('{value}', v).replace('{why}', inLanguage(done.includes(`aircraft.0.${k}`) ? UI.prefillFromSource :
+          UI.prefillTyped)));
+      }
+      if ('callsign' in explicit) {
+        const parts = M.splitCallsign(item.callsign);
+        if (!('callsignPrefix' in explicit)) item.callsignPrefix = A.canonicalPrefix(parts.prefix);
+        if (!('callsignNumber' in explicit)) item.callsignNumber = parts.number;
+        if (!('callsignFpl' in explicit)) item.callsignFpl = String(item.callsign).toUpperCase().replace(/[^A-Z0-9]/g, '');
+      }
+      return notes;
     }
     /** Résumé commun d'un préremplissage : source et date du vol (« IVAO, vol du 19/10 »), nombre de champs remplis et
      *  blocs touchés, champs déjà saisis gardés, champs attendus absents de la source, fuseau, remarques. */

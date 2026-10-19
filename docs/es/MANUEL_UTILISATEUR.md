@@ -998,8 +998,10 @@ cierra el menú, igual que la ventana.
 cronología, ruta, meteorología…), el número de campos ya introducidos que se conservan y lo que la fuente no ha dado
 («ausentes de la fuente: despegue, aterrizaje»). La acompañan dos botones: «Deshacer» deja el informe como estaba
 antes del prerrellenado; «Reemplazar los campos ya introducidos (n)», cuando se han conservado campos ya
-introducidos, vuelve a aplicar la misma fuente sustituyéndolos. Detalles del pegado:
-[tutorial](../TUTORIAL.md), § 6.
+introducidos, vuelve a aplicar la misma fuente sustituyéndolos. Gana la fuente más explícita: el asistente «aeronave conocida»
+(flota) solo rellena lo vacío; nunca sustituye un campo puesto por la fuente ni uno ya introducido, aunque la matrícula
+cambie en el mismo paso, y el resumen lo dice («indicativo de la flota MILAN74 no aplicado (CFN12 viene de la
+fuente)»). Detalles del pegado: [tutorial](../TUTORIAL.md), § 6.
 
 ### Seguimiento de red
 

@@ -196,8 +196,11 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   fields only, the same summary naming the source and the flight date, the blocks touched, the fields already entered
   that were kept and what the source did not give, shown in a notification with "Undo" (10 s, restores the report as
   before) and "Replace the fields already entered (n)" (applies the source again with replacement: `replace` option of
-  `MissionTextImport.apply` and `MissionFpl.apply`, which also report the kept fields). Replaces the "Analyse /
-  import…" menu.
+  `MissionTextImport.apply` and `MissionFpl.apply`, which also report the kept fields). The most explicit source wins:
+  the known-aircraft assistant only fills empty aircraft fields and never replaces a value set by the source or
+  already entered, even when the registration changes in the same step (`sourceWins`); the summary names what was not
+  applied ("fleet call sign MILAN74 not applied (CFN12 comes from the source)"). Replaces the "Analyse / import…"
+  menu.
 - **Keys and external services: one place** (`shared/maintenance_page.js`, `tools/launch.py`, `shared/app_framework.js`)
   — Settings › Installation gets a "Keys and external services" section, one card per service (IVAO, VATSIM,
   SimBrief, airline website, report web service): key state ("saved on … UTC (…abcd)", "missing", "IVAO_API_KEY
