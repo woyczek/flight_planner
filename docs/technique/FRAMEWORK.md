@@ -12,7 +12,7 @@ on every page. This document describes each component, its role and its interfac
 | Appearance (designs, icons, side bar, colours) | `shared/designs.css`, `block_icons.js/.css`, `icons/repository_icons.js`, `side_nav.js`, `appearance_page.js` | all pages; settings on the “Appearance” page |
 | Resizable columns | `shared/column_resize.js` | Planner |
 | Resizable table columns, clipped cells | `shared/table_resize.js` | Planner (RPM / power table) |
-| Aircraft / type picker (drop-down list with search) | `shared/aircraft_picker.js` | Fuel (“Aircraft” button), Performance sheets (“Aircraft” selector), mission report (registration, ICAO type), My aircraft and “Add an aircraft” |
+| Aircraft / type picker (drop-down list with search) | `shared/aircraft_picker.js` | Fuel (“Aircraft” button), Performance sheets (“Aircraft” selector), mission report (registration, ICAO type), My aircraft and “Add an aircraft”, Landing Performance, vertical profile of the maps (`SiaProfile.aircraftChoice`) |
 | Blocks (move / hide) | `shared/app_framework.js` | all pages |
 | Text translation | `shared/content_i18n.js` | CR, Planner, reporting pages |
 | Pilot profile | `shared/pilot_profile.js` | all pages (☰ menu) |

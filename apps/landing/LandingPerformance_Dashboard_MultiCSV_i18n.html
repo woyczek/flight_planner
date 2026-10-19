@@ -600,72 +600,6 @@
     color: var(--muted);
     margin-left: auto
   }
-  .aircraft-menu {
-    position: absolute;
-    top: calc(100% + 5px);
-    left: 0;
-    z-index: 50;
-    min-width: 290px;
-    max-width: 420px;
-    max-height: 65vh;
-    overflow: auto;
-    padding: 5px;
-    background: #101319;
-    border: 1px solid var(--line);
-    border-radius: 8px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, .38)
-  }
-  .aircraft-menu[hidden] {
-    display: none
-  }
-  .aircraft-group {
-    margin: 7px 7px 3px;
-    padding: 5px 2px 3px;
-    border-bottom: 1px solid var(--line);
-    color: var(--muted);
-    font-size: 11px;
-    font-weight: 650;
-    text-transform: uppercase;
-    letter-spacing: .04em
-  }
-  .aircraft-item.profile-only .ac-label {
-    opacity: .78
-  }
-  .aircraft-item {
-    width: 100%;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: 6px 7px;
-    border: 0;
-    background: transparent;
-    text-align: left;
-    border-radius: 5px;
-    color: var(--ink)
-  }
-  .aircraft-item:hover,
-  .aircraft-item:focus {
-    background: #1d222b
-  }
-  .aircraft-item.active {
-    background: #202735
-  }
-  .aircraft-item .ac-icon {
-    min-width: 18px
-  }
-  .aircraft-item .ac-label {
-    flex: 1;
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap
-  }
-  .aircraft-item .ac-meta {
-    color: var(--muted);
-    font-size: 11px;
-    margin-left: 8px;
-    white-space: nowrap
-  }
   .lang-item {
     width: 100%;
     display: flex;
@@ -1327,12 +1261,7 @@
     <label class="control"><span id="aircraftLabel">Aircraft</span>
       <select id="aircraftSelect" hidden><option value="__ALL__">All</option></select>
       <div id="aircraftPopup" class="aircraft-popup">
-        <button id="aircraftCurrent" class="aircraft-current" type="button" aria-haspopup="menu" aria-expanded="false" title="Aircraft">
-          <span id="aircraftCurrentIconSlot" class="aircraft-current-icon"></span>
-          <span id="aircraftCurrentText" data-no-i18n class="aircraft-current-text">All</span>
-          <span class="caret">▾</span>
-        </button>
-        <div id="aircraftMenu" data-no-i18n class="aircraft-menu" role="menu" hidden></div>
+        <button id="aircraftCurrent" class="aircraft-current" type="button" aria-expanded="false" title="Aircraft" data-no-i18n></button>
       </div>
     </label>
 
@@ -1444,7 +1373,7 @@
 <script src="../../shared/kit.js?v=0"></script>
 <script src="../../shared/time_period.js?v=0"></script>
 <script src="../../AircraftDB/aircraft_db.js"></script><script src="../../shared/data_files.js?v=0" data-file="references/aircraft_fleet.js"></script><script src="../../shared/data_files.js?v=0" data-file="references/defa_reference.js"></script><script src="../../shared/aircraft_catalog.js?v=0"></script>
-<script src="../../AircraftDB/aircraft_icons.js"></script>
+<script src="../../AircraftDB/aircraft_icons.js"></script><script src="../../shared/aircraft_picker.js?v=0"></script>
 <script>
 const esc = window.RepositoryKit.esc; // échappement HTML commun (shared/kit.js, chargé avant ce script)
 "use strict";
@@ -3123,37 +3052,40 @@ function aircraftCellHTML(name) {
   return `<span class="ac-cell">${aircraftIconHTML(name)}<span>${esc(name)}</span></span>`
 }
 
-/** Aligne le bouton du sélecteur d'appareil (icône, libellé) et l'état coché du menu sur la valeur du select caché. */
+// Sélecteur d'appareil : sélecteur commun (shared/aircraft_picker.js) sur le bouton de l'en-tête ; la valeur reste
+// dans le select caché (#aircraftSelect), lu par le reste de la page.
+var aircraftPicker;
+/** Monte le sélecteur (une fois) et le refait d'après la valeur du select caché. */
 function syncAircraftPicker() {
-  const select = $("aircraftSelect");
-  const val = (select && select.value) || "__ALL__";
-  const label = val === "__ALL__" ? t("all") : val;
-  $("aircraftCurrentIconSlot").innerHTML = val === "__ALL__" ? aircraftAllIconHTML() : aircraftIconHTML(val);
-  $("aircraftCurrentText").textContent = label;
-  $("aircraftCurrent").title = `${t("aircraft")} — ${label}`;
-  document.querySelectorAll(".aircraft-item").forEach(btn => {
-    const active = btn.dataset.value === val;
-    btn.classList.toggle("active", active);
-    btn.setAttribute("aria-checked", active ? "true" : "false");
+  aircraftPicker ||= window.AircraftPicker?.attach($("aircraftCurrent"), {
+    kind: "button",
+    sources: () => aircraftChoices(),
+    current: () => {
+      const val = $("aircraftSelect")?.value || "__ALL__";
+      return val === "__ALL__" ? {
+        label: t("all"),
+        icon: aircraftAllIconHTML(),
+        title: `${t("aircraft")} — ${t("all")}`
+      } : {
+        label: val,
+        type: val,
+        icon: aircraftIconHTML(val),
+        title: `${t("aircraft")} — ${val}`
+      };
+    },
+    onOpen: () => {
+      closeLanguageMenu();
+      closeOptionsMenu();
+      if (allRows.length) rebuildAircraftSelect();
+    },
+    onPick: it => setAircraftSelection(it.key, true)
   });
+  aircraftPicker?.refresh();
 }
 
-/** Ferme le menu des appareils. */
+/** Ferme la liste des appareils. */
 function closeAircraftMenu() {
-  $("aircraftMenu").hidden = true;
-  $("aircraftCurrent").setAttribute("aria-expanded", "false");
-}
-
-/** Ouvre ou ferme le menu des appareils ; à l'ouverture, ferme les autres menus et reconstruit la liste. */
-function toggleAircraftMenu() {
-  const willOpen = $("aircraftMenu").hidden;
-  if (willOpen) {
-    closeLanguageMenu();
-    closeOptionsMenu();
-    if (allRows.length) rebuildAircraftSelect();
-  }
-  $("aircraftMenu").hidden = !willOpen;
-  $("aircraftCurrent").setAttribute("aria-expanded", willOpen ? "true" : "false");
+  aircraftPicker?.close();
 }
 
 /** Choisit un appareil (« __ALL__ » si la valeur n'existe pas) ; déclenche « change » si fire et si la valeur
@@ -3181,16 +3113,6 @@ const AIRCRAFT_PROFILE_TIP = {
   es: "Perfil de Flight Performance: ningún aterrizaje registrado para este avión"
 };
 
-/** Groupe d'un code d'appareil (Hélicoptères, Jets…) selon AircraftDBIcons.group ; « Autres » par défaut. */
-function aircraftGroupOf(code) {
-  const g = window.AircraftDBIcons?.group?.({
-    icao: code,
-    type: code,
-    id: code,
-    name: code
-  });
-  return g && g[0] || "Autres"
-}
 /* avions ayant un profil dans le Flight Performance (même stockage navigateur) et sans atterrissage dans les données chargées */
 function profileOnlyAircraft(landingCodes) {
   let profiles = [];
@@ -3220,11 +3142,39 @@ function profileOnlyAircraft(landingCodes) {
   return out;
 }
 
-/** Reconstruit le select caché et le menu des appareils : appareils des atterrissages puis ceux n'ayant qu'un profil
- *  Flight Performance, regroupés par famille (« Autres » en dernier), sélection précédente conservée si possible. */
+/** Appareils du sélecteur : atterrissages et appareils n'ayant qu'un profil Flight Performance (refaits par
+ *  rebuildAircraftSelect). */
+var aircraftEntries = [];
+/** Groupes du sélecteur : « Tous », puis les appareils par catégorie de la suite (AircraftCatalog.classify). */
+function aircraftChoices() {
+  const L = k => (k[lang] || k.en),
+    val = $("aircraftSelect")?.value || "__ALL__",
+    sorted = [...aircraftEntries].sort((a, b) => String(a.value).localeCompare(String(b.value), undefined, {
+      numeric: true,
+      sensitivity: "base"
+    }));
+  return [{
+    group: "",
+    items: [{
+      key: "__ALL__",
+      label: t("all"),
+      icon: aircraftAllIconHTML(),
+      current: val === "__ALL__"
+    }]
+  }, ...window.AircraftPicker.byCategory(sorted.map(e => ({
+    key: e.value,
+    label: e.value,
+    sub: [aircraftTypeLabel(e.value), e.profile ? L(AIRCRAFT_PROFILE_WORD) : ""].filter(Boolean).join(" · "),
+    type: e.value,
+    icon: aircraftIconHTML(e.value),
+    title: e.profile ? L(AIRCRAFT_PROFILE_TIP) : "",
+    current: val === e.value
+  })))]
+}
+/** Reconstruit le select caché et la liste des appareils : appareils des atterrissages puis ceux n'ayant qu'un profil
+ *  Flight Performance, sélection précédente conservée si possible. */
 function rebuildAircraftSelect() {
   const s = $("aircraftSelect"),
-    menu = $("aircraftMenu"),
     old = s.value || prefs.aircraft || "__ALL__",
     landing = [...new Set(allRows.map(r => r.Aircraft))],
     entries = [...landing.map(value => ({
@@ -3233,23 +3183,10 @@ function rebuildAircraftSelect() {
     })), ...(allRows.length ? profileOnlyAircraft(landing).map(value => ({
       value,
       profile: true
-    })) : [])],
-    L = k => (k[lang] || k.en),
-    groups = new Map();
+    })) : [])];
   s.innerHTML = `<option value="__ALL__">${esc(t("all"))}</option>` + entries.map(e => `<option value="${esc(e.value)}">${esc(e.value)}</option>`).join("");
   s.value = [...s.options].some(o => o.value === old) ? old : "__ALL__";
-  for (const e of entries) {
-    const g = aircraftGroupOf(e.value);
-    if (!groups.has(g)) groups.set(g, []);
-    groups.get(g).push(e)
-  }
-  const ordered = [...groups].sort((a, b) => ((a[0] === "Autres") - (b[0] === "Autres")) || a[0].localeCompare(b[0], "fr"));
-  menu.innerHTML = `<button class="aircraft-item" type="button" role="menuitemradio" data-value="__ALL__">${aircraftAllIconHTML()}<span class="ac-label">${esc(t("all"))}</span></button>` +
-    ordered.map(([g, items]) => `<div class="aircraft-group">${esc(window.AircraftDBIcons?.groupLabel?.(g) || g)}</div>` +
-      items.sort((a, b) => String(a.value).localeCompare(String(b.value), undefined, {
-        numeric: true,
-        sensitivity: "base"
-      })).map(e => `<button class="aircraft-item${e.profile?" profile-only":""}" type="button" role="menuitemradio" data-value="${esc(e.value)}"${e.profile?` title="${esc(L(AIRCRAFT_PROFILE_TIP))}"`:""}>${aircraftIconHTML(e.value)}<span class="ac-label">${esc(e.value)}</span><span class="ac-meta">${esc(aircraftTypeLabel(e.value))}${e.profile?" · "+esc(L(AIRCRAFT_PROFILE_WORD)):""}</span></button>`).join("")).join("");
+  aircraftEntries = entries;
   syncAircraftPicker();
 }
 // ===== Menus langue et options ; libellés P95 / crash =====
@@ -3475,7 +3412,6 @@ $("languageMenu").addEventListener("click", e => {
 });
 document.addEventListener("click", e => {
   if (!$("languagePopup").contains(e.target)) closeLanguageMenu();
-  if (!$("aircraftPopup").contains(e.target)) closeAircraftMenu();
   if (!$("optionsPopup").contains(e.target)) closeOptionsMenu();
 });
 $("optionsButton").addEventListener("click", e => {
@@ -3493,24 +3429,6 @@ $("languagePopup").addEventListener("keydown", e => {
   if (e.key === "Escape") {
     closeLanguageMenu();
     $("languageCurrent").focus()
-  }
-});
-$("aircraftCurrent").addEventListener("click", e => {
-  e.stopPropagation();
-  closeLanguageMenu();
-  closeOptionsMenu();
-  toggleAircraftMenu()
-});
-$("aircraftMenu").addEventListener("click", e => {
-  const btn = e.target.closest(".aircraft-item");
-  if (!btn) return;
-  setAircraftSelection(btn.dataset.value, true);
-  closeAircraftMenu();
-});
-$("aircraftPopup").addEventListener("keydown", e => {
-  if (e.key === "Escape") {
-    closeAircraftMenu();
-    $("aircraftCurrent").focus()
   }
 });
 window.addEventListener("languagechange", () => {

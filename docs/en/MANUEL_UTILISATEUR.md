@@ -1471,7 +1471,7 @@ Under the route field, a control map shows the chosen map with its display profi
 | “Recentre” / “Automatic framing” | Go back to the saved framing / forget it for a frame calculated from the mission. |
 | “⧉ Window” / “⤢ Enlarge” | Open the map in a separate window / enlarge it (Esc to go back). |
 
-“Profile settings: section, aircraft, climb rate, outputs” sets the vertical section: floor and ceiling (0 = auto), aircraft (fuel planner profiles) or climb and descent rates, `profil_vertical.png` image in the outputs, drawing of the route on the maps.
+“Profile settings: section, aircraft, climb rate, outputs” sets the vertical section: floor and ceiling (0 = auto), aircraft (performance sheets, a drop-down list with search) or climb and descent rates, `profil_vertical.png` image in the outputs, drawing of the route on the maps.
 
 ### Profile settings: base map, airspaces, ICAO symbols, elements
 
@@ -1781,7 +1781,7 @@ The status line recalls the file, the number of measurements used, the aircraft,
 
 ### Header: aircraft, period, trend
 
-- “Aircraft”: “All”, or a type (with its icon).
+- “Aircraft”: “All”, or a type (with its icon); a drop-down list with search, by category.
 - “Period”: “All dates”, “Today”, “Last 7 days”, “Last 30 days”, “Current month”, “Current year”, “Custom period”, with buttons to go back, widen or go forward. The period is remembered for each file.
 - “Trend method”: “Absolute / Asymptote”, “First 25% ↔ Last 25%” or “Moving average” (with “Smoothing”: 5 or 10).
 - “Print / PDF”: prints the page.

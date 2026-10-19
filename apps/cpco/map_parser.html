@@ -98,7 +98,7 @@ if (/[?&]carte(?:[=&]|$)/.test(location.search)) document.documentElement.setAtt
 <script src="../../shared/carto/maplibre-gl.js"></script>
 <script src="../../shared/mission_core/vendor/js-yaml.min.js"></script>
 <script src="mission_store.js?v=0"></script><script src="../../shared/place_search.js?v=0"></script>
-<script src="../../shared/carto/aero_symbols.js?v=0"></script><script src="../../shared/carto/vertical_profile.js?v=0"></script><script src="../../shared/carto/vprof_editor.js?v=0"></script><script src="../../AircraftDB/aircraft_db.js"></script><script src="../../shared/aircraft_catalog.js?v=0"></script><script src="../../shared/flight_performance_model.js?v=0"></script><script src="../../AircraftDB/aircraft_perf.js"></script><script src="../../shared/mission_routing.js?v=0"></script><script src="../../shared/mission_estimate.js?v=0"></script><script src="../../shared/mission_exercise.js?v=0"></script><script src="../../shared/mission_registry.js?v=0"></script>
+<script src="../../shared/carto/aero_symbols.js?v=0"></script><script src="../../shared/carto/vertical_profile.js?v=0"></script><script src="../../shared/carto/vprof_editor.js?v=0"></script><script src="../../AircraftDB/aircraft_db.js"></script><script src="../../shared/aircraft_catalog.js?v=0"></script><script src="../../AircraftDB/aircraft_icons.js"></script><script src="../../shared/aircraft_picker.js?v=0"></script><script src="../../shared/flight_performance_model.js?v=0"></script><script src="../../AircraftDB/aircraft_perf.js"></script><script src="../../shared/mission_routing.js?v=0"></script><script src="../../shared/mission_estimate.js?v=0"></script><script src="../../shared/mission_exercise.js?v=0"></script><script src="../../shared/mission_registry.js?v=0"></script>
 <script src="../../shared/sia_base.js?v=0"></script><script src="../../shared/aar_tracks.js?v=0"></script><script src="../../shared/airac.js?v=0"></script><script src="../../shared/sticky_frame.js?v=0"></script>
 <style data-layer="app">
 @layer app {
@@ -4648,7 +4648,7 @@ function syncVprofUi() {
   $('vprofFloor').value = +v.floor_ft || 0;
   $('vprofOut').checked = v.output !== false;
   $('vprofMap').checked = v.on_map !== false;
-  fillVprofAircraft(v.aircraft);
+  SiaProfile.aircraftChoice($('vprofAircraft'), v.aircraft); // appareil : sélecteur commun (vertical_profile.js)
   $('vprofClimb').value = +v.climb_fpm || 1000;
   $('vprofClimbKt').value = +v.climb_kt || 140;
   $('vprofDesc').value = +v.descent_fpm || 800;
@@ -5212,14 +5212,6 @@ const planeProfiles = () => {
   }
 };
 
-/** Liste des appareils du Flight Performance Planner (option vide = taux saisis), sel présélectionné s'il existe. */
-function fillVprofAircraft(sel) {
-  const list = planeProfiles(),
-    box = $('vprofAircraft');
-  box.innerHTML = '<option value="">— taux ci-dessous —</option>' + list.map(p => `<option value="${esc(p.id)}">${esc(p.name||p.id)}${p.icao&&p.icao!==p.name?' ('+esc(p.icao)+')':''}</option>`).join('');
-  box.value = list.some(p => p.id === sel) ? sel : ''
-}
-
 /** Taux de montée et de descente du profil vertical : modèle de performances de l'appareil choisi
  *  (climbAt selon l'altitude), sinon valeurs saisies (ft/min, kt). */
 function vprofRates() {
@@ -5776,6 +5768,7 @@ $('vprofCruise').addEventListener('change', () => {
   drawVprofPreview()
 });
 for (const id of ['vprofAircraft', 'vprofClimb', 'vprofClimbKt', 'vprofDesc', 'vprofDescKt']) $(id).addEventListener('change', saveVprof);
+SiaProfile.aircraftChoice($('vprofAircraft'), $('vprofAircraft').value); // appareil du profil : choix montré dès l'ouverture
 $('vprofOut').addEventListener('change', saveVprof);
 $('vprofMap').addEventListener('change', () => {
   saveVprof();

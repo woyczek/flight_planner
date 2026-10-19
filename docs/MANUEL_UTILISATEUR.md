@@ -1520,7 +1520,7 @@ Sous le champ de route, une carte de contrôle montre la carte choisie avec son 
 | « Recentrer » / « Cadrage automatique » | Revenir au cadrage enregistré / l'oublier pour un cadre calculé d'après la mission. |
 | « ⧉ Fenêtre » / « ⤢ Agrandir » | Ouvrir la carte dans une fenêtre séparée / l'agrandir (Échap pour revenir). |
 
-« Réglages du profil : coupe, appareil, vario, sorties » règle la coupe verticale : plancher et plafond (0 = auto), appareil (profils du planificateur carburant) ou taux de montée et de descente, image `profil_vertical.png` dans les sorties, tracé du cheminement sur les cartes.
+« Réglages du profil : coupe, appareil, vario, sorties » règle la coupe verticale : plancher et plafond (0 = auto), appareil (fiches de performances, liste déroulante avec recherche) ou taux de montée et de descente, image `profil_vertical.png` dans les sorties, tracé du cheminement sur les cartes.
 
 ### Réglages du profil : fond de carte, zones, symboles OACI, éléments
 
@@ -1841,7 +1841,7 @@ La ligne d'état rappelle le fichier, le nombre de mesures utilisées, l'apparei
 
 ### En-tête : appareil, période, tendance
 
-- « Appareil » : « Tous », ou un type (avec son icône).
+- « Appareil » : « Tous », ou un type (avec son icône) ; liste déroulante avec recherche, par catégorie.
 - « Période » : « Toutes les dates », « Aujourd'hui », « 7 derniers jours », « 30 derniers jours », « Mois en cours », « Année en cours », « Période personnalisée », avec boutons pour reculer, élargir ou avancer. La période est mémorisée pour chaque fichier.
 - « Méthode de tendance » : « Absolu / Asymptote », « Premiers 25 % ↔ Derniers 25 % » ou « Moyenne glissante » (avec « Lissage » : 5 ou 10).
 - « Imprimer / PDF » : imprime la page.

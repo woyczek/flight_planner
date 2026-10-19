@@ -88,12 +88,38 @@ if (/[?&]carte(?:[=&]|$)/.test(location.search)) document.documentElement.setAtt
     border-radius: 0 !important;
     object-fit: contain
   }
-.volForm{display:grid;grid-template-columns:repeat(2,minmax(0,260px));gap:8px 12px;align-items:end}.volForm label{display:grid;gap:3px;font-size:13px}
-#volStatus:empty{display:none}
-[data-block-id="vol"] #result:not(:empty){margin-top:6px}
-.volMaps{display:flex;flex-wrap:wrap;gap:4px 14px;align-items:center;margin:8px 0 2px}
-#vprofPtsBox{display:none!important}
-@media(max-width:800px){.volForm{grid-template-columns:1fr 1fr}}
+  .volForm {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 260px));
+    gap: 8px 12px;
+    align-items: end
+  }
+  .volForm label {
+    display: grid;
+    gap: 3px;
+    font-size: 13px
+  }
+  #volStatus:empty {
+    display: none
+  }
+  [data-block-id="vol"] #result:not(:empty) {
+    margin-top: 6px
+  }
+  .volMaps {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 14px;
+    align-items: center;
+    margin: 8px 0 2px
+  }
+  #vprofPtsBox {
+    display: none !important
+  }
+  @media(max-width:800px) {
+    .volForm {
+      grid-template-columns: 1fr 1fr
+    }
+  }
 </style>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Cartes de vol</title>
@@ -104,8 +130,10 @@ if (/[?&]carte(?:[=&]|$)/.test(location.search)) document.documentElement.setAtt
 </style>
 <script src="../../shared/carto/maplibre-gl.js"></script>
 <script src="../../shared/mission_core/vendor/js-yaml.min.js"></script>
-<script>window.SIA_MISSION_NS='planner'</script><script src="../cpco/mission_store.js?v=0"></script><script src="../../shared/place_search.js?v=0"></script>
-<script src="../../shared/carto/aero_symbols.js?v=0"></script><script src="../../shared/carto/vertical_profile.js?v=0"></script><script src="../../shared/carto/vprof_editor.js?v=0"></script><script src="../../AircraftDB/aircraft_db.js"></script><script src="../../shared/aircraft_catalog.js?v=0"></script><script src="../../shared/flight_performance_model.js?v=0"></script><script src="../../AircraftDB/aircraft_perf.js"></script><script src="../../shared/mission_routing.js?v=0"></script><script src="../../shared/mission_estimate.js?v=0"></script><script src="../../shared/mission_exercise.js?v=0"></script>
+<script>
+window.SIA_MISSION_NS = 'planner'
+</script><script src="../cpco/mission_store.js?v=0"></script><script src="../../shared/place_search.js?v=0"></script>
+<script src="../../shared/carto/aero_symbols.js?v=0"></script><script src="../../shared/carto/vertical_profile.js?v=0"></script><script src="../../shared/carto/vprof_editor.js?v=0"></script><script src="../../AircraftDB/aircraft_db.js"></script><script src="../../shared/aircraft_catalog.js?v=0"></script><script src="../../AircraftDB/aircraft_icons.js"></script><script src="../../shared/aircraft_picker.js?v=0"></script><script src="../../shared/flight_performance_model.js?v=0"></script><script src="../../AircraftDB/aircraft_perf.js"></script><script src="../../shared/mission_routing.js?v=0"></script><script src="../../shared/mission_estimate.js?v=0"></script><script src="../../shared/mission_exercise.js?v=0"></script>
 <script src="../../shared/sia_base.js?v=0"></script><script src="../../shared/aar_tracks.js?v=0"></script><script src="../../shared/airac.js?v=0"></script><script src="../../shared/sticky_frame.js?v=0"></script>
 <style data-layer="app">
 @layer app {
@@ -4816,7 +4844,7 @@ function syncVprofUi() {
   $('vprofFloor').value = +v.floor_ft || 0;
   $('vprofOut').checked = v.output !== false;
   $('vprofMap').checked = v.on_map !== false;
-  fillVprofAircraft(v.aircraft);
+  SiaProfile.aircraftChoice($('vprofAircraft'), v.aircraft); // appareil : sélecteur commun (vertical_profile.js)
   $('vprofClimb').value = +v.climb_fpm || 1000;
   $('vprofClimbKt').value = +v.climb_kt || 140;
   $('vprofDesc').value = +v.descent_fpm || 800;
@@ -5380,14 +5408,6 @@ const planeProfiles = () => {
   }
 };
 
-/** Liste des appareils du Flight Performance Planner (option vide = taux saisis), sel présélectionné s'il existe. */
-function fillVprofAircraft(sel) {
-  const list = planeProfiles(),
-    box = $('vprofAircraft');
-  box.innerHTML = '<option value="">— taux ci-dessous —</option>' + list.map(p => `<option value="${esc(p.id)}">${esc(p.name||p.id)}${p.icao&&p.icao!==p.name?' ('+esc(p.icao)+')':''}</option>`).join('');
-  box.value = list.some(p => p.id === sel) ? sel : ''
-}
-
 /** Taux de montée et de descente du profil vertical : modèle de performances de l'appareil choisi
  *  (climbAt selon l'altitude), sinon valeurs saisies (ft/min, kt). */
 function vprofRates() {
@@ -5944,6 +5964,7 @@ $('vprofCruise').addEventListener('change', () => {
   drawVprofPreview()
 });
 for (const id of ['vprofAircraft', 'vprofClimb', 'vprofClimbKt', 'vprofDesc', 'vprofDescKt']) $(id).addEventListener('change', saveVprof);
+SiaProfile.aircraftChoice($('vprofAircraft'), $('vprofAircraft').value); // appareil du profil : choix montré dès l'ouverture
 $('vprofOut').addEventListener('change', saveVprof);
 $('vprofMap').addEventListener('change', () => {
   saveVprof();
@@ -8485,83 +8506,327 @@ return{route:document.getElementById('vprofRoute')?.value||'',fl:ft?Math.round(f
 // La route est celle du bloc Route (champ vprofRoute, case 15) : points lus par SiaProfile.parseRoute (base SIA du
 // navigateur : aérodromes, balises, points RNAV, voies aériennes) ; mission locale (espace « planner ») envoyée au
 // moteur du studio (useDoc) : points de la route, cartes topographique, approche, rendez-vous, destination, profil.
-(()=>{
-const FORM_KEY='mapPlannerForm:v1',$v=id=>document.getElementById(id),K=window.RepositoryKit;
-// niveau d'utilisation (html[data-level], posé avant le rendu) : niveau 4 = studio complet
-const full=(+document.documentElement.dataset.level||4)>=4;
-// textes du bloc, traduits à la source : ce script passe avant le cadre de page (titre, sous-titre, icônes)
-document.querySelector('section[data-block-id="vol"]').dataset.subtitle=K.t(['Rendez-vous facultatif et cartes à choisir d’après la route du bloc « Route ».','Optional rendezvous and maps to choose from the route of the “Route” block.','Optionaler Treffpunkt und auszuwählende Karten nach der Route des Blocks „Route“.','Encuentro opcional y mapas que elegir según la ruta del bloque «Ruta».']);
-$v('volTitle').textContent=K.t(['Cartes','Maps','Karten','Mapas']);
-$v('volGenerate').textContent=K.t(['Générer les cartes et le ZIP','Generate the maps and the ZIP','Karten und ZIP erzeugen','Generar los mapas y el ZIP']);
-$v('volBuild').textContent=K.t(['Préparer les cartes','Prepare the maps','Karten vorbereiten','Preparar los mapas']);
-// niveaux 1 à 3 : « Aperçus et génération » est rangé au niveau 4 ; le compte rendu de la génération (#result du
-// studio, avec « Réessayer seule ») passe sous l'action du bloc, une fois au chargement (le niveau change en rechargeant)
-if(!full)$v('volStatus').after($v('result'));
-const say=(html,kind)=>{$v('volStatus').innerHTML=kind?`<span class="${kind}">${html}</span>`:html};
-const levelFt=t=>{const m=/^(FL)?(\d{1,5})(FT)?$/.exec(String(t||'').toUpperCase().replace(/\s+/g,''));return m?(m[1]?+m[2]*100:+m[2]):null};
-const coord=t=>{const m=/^\s*(-?\d+(?:\.\d+)?)\s*[,;| ]\s*(-?\d+(?:\.\d+)?)\s*$/.exec(t||'');return m&&Math.abs(+m[1])<=90&&Math.abs(+m[2])<=180?{lat:+m[1],lon:+m[2]}:null};
-const baseReady=()=>(aero?.aerodromes?.length||0)>0;
-// plan de vol partagé avec le planificateur carburant (flightPlanShared:v1) : un seul FPL, le plus récent l'emporte
-const FPL_KEY='flightPlanShared:v1',readFpl=()=>{try{return JSON.parse(localStorage.getItem(FPL_KEY)||'null')}catch{return null}};
-function saveForm(){const route=$v('vprofRoute').value.trim();try{localStorage.setItem(FORM_KEY,JSON.stringify({route,rdv:$v('volRdv').value,level:$v('vprofCruise').value,maps:[...document.querySelectorAll('[data-volmap]')].filter(i=>i.checked).map(i=>i.dataset.volmap),at:Date.now()}));if(route&&readFpl()?.route!==route)localStorage.setItem(FPL_KEY,JSON.stringify({route,at:Date.now(),by:'maps'}))}catch{}}
-function loadForm(){try{const f=JSON.parse(localStorage.getItem(FORM_KEY)||'null')||{},sh=readFpl(),route=sh?.route&&(sh.at||0)>(f.at||0)?sh.route:f.route;if(route&&(!$v('vprofRoute').value.trim()||sh?.route===route))$v('vprofRoute').value=route;$v('volRdv').value=f.rdv||'';if(f.level&&!$v('vprofCruise').value)$v('vprofCruise').value=f.level;if(Array.isArray(f.maps))document.querySelectorAll('[data-volmap]').forEach(i=>{i.checked=f.maps.includes(i.dataset.volmap)})}catch{}}
-/** Points de la route du champ (sans les points intermédiaires des voies aériennes) ; null et message si impossible. */
-function routePoints(){
- if(!baseReady()){say(esc(K.t(['Base SIA absente de ce navigateur : bloc « Base de données SIA », « Reconstruire la base aéronautique », ou Paramètres › Maintenance.','SIA database missing from this browser: “SIA database” block, “Rebuild the aeronautical database”, or Settings › Maintenance.','SIA-Datenbank fehlt in diesem Browser: Block „SIA-Datenbank“, „Luftfahrtdatenbank neu aufbauen“, oder Einstellungen › Wartung.','Base SIA ausente de este navegador: bloque «Base de datos SIA», «Reconstruir la base aeronáutica», o Ajustes › Mantenimiento.'])),'err');return null}
- const{points,unknown}=SiaProfile.parseRoute($v('vprofRoute').value.trim(),SiaProfile.resolver({aero:aero||{}}));
- if(unknown.length){say(`Route : inconnu(s) dans la base SIA : ${esc(unknown.join(', '))}.`,'err');return null}
- const pts=points.filter(p=>!p.awy);
- if(pts.length<2){say('Route : au moins un départ et une destination (bloc « Route »).','err');return null}
- return pts;
-}
-// profils choisis à la main dans la liste des cartes (cette page) : gardés d'une création à l'autre ; les autres
-// reprennent le profil par défaut de leur carte (route et approche : IFR ; destination, rendez-vous : VFR détaillé)
-const userProfile=new Map();
-document.addEventListener('change',e=>{const i=e.target?.dataset?.mapProfile;if(i!=null&&mission?.maps?.[+i])userProfile.set(mission.maps[+i].file,e.target.value)},true);
-/** Crée (ou met à jour) la mission du vol et ses cartes ; quiet : sans message ni recentrage (route modifiée) ; gen :
- *  la génération suit (bouton des niveaux 1 à 3), l'aperçu est relancé par elle. */
-function build(quiet,gen){
- const pts=routePoints();if(!pts)return false;const want=new Set([...document.querySelectorAll('[data-volmap]')].filter(i=>i.checked).map(i=>i.dataset.volmap));
- const idOf=(p,i)=>{const n=String(p.name||'').toUpperCase();return/^[A-Z0-9]{2,5}$/.test(n)?n:`P${i}`};
- let rdv=null;const rt=$v('volRdv').value.trim();if(rt){const c=coord(rt);if(c)rdv={id:'RDV',name:'RDV',...c};else{const q=SiaProfile.resolver({aero:aero||{}})(rt);if(!q){say(`Rendez-vous inconnu : ${esc(rt)}.`,'err');return false}rdv={id:'RDV',name:`RDV ${q.name||rt}`,lat:q.lat,lon:q.lon}}}
- const P=(p,i)=>({id:idOf(p,i),name:p.name||idOf(p,i),lat:+p.lat.toFixed(6),lon:+p.lon.toFixed(6)}),dep=P(pts[0],0),dest=P(pts[pts.length-1],pts.length-1),mid=pts.slice(1,-1).map((p,i)=>P(p,i+1)),ft=levelFt($v('vprofCruise').value);
- const maps=[];
- if(want.has('topo'))maps.push({filename:`route_${dep.id}_${dest.id}.png`,type:'general',description:'Carte de la route',profile:'airways'});
- if(want.has('approche'))maps.push({filename:`approche_${dest.id}.png`,type:'approche',description:`Approche de ${dest.id}`,centre_ref:'DESTINATION',range_km:30});
- if(want.has('rdv')&&rdv)maps.push({filename:'rendez_vous.png',type:'rdv',description:'Rendez-vous',centre_ref:'RDV',range_km:15});
- if(want.has('destination'))maps.push({filename:`destination_${dest.id}.png`,type:'detail',description:`Terrain de destination ${dest.id}`,centre_ref:'DESTINATION'});
- if(!maps.length){say('Aucune carte choisie.','err');return false}
- const vp={...(sharedDoc?.yaml?.mission?.id==='VOL'?sharedDoc.yaml.vertical_profile:{}),route:$v('vprofRoute').value.trim(),cruise:ft?(ft>=6000?`FL${Math.round(ft/100)}`:String(ft)):undefined};
- const yaml={schema_version:'2.0',mission:{id:'VOL',title:`Vol ${dep.id} → ${dest.id}`,type:'Vol'},origin:dep,destination:dest,turning_points:mid,...(rdv?{rendezvous:[P(rdv,0)]}:{}),vertical_profile:vp,maps};
- const views=new Map((mission?.maps||[]).filter(m=>m._view).map(m=>[m.file,m._view]));
- for(const m of maps){const u=userProfile.get(m.filename);if(u)m.profile=u;const v=views.get(m.filename);if(v)m.view=v}
- try{const doc=SiaMission.save({yaml,narrative:{summary:'',detailed:'',sections:[]},sourceNames:[]},'planner');routeCache={};useDoc(doc,true,true);saveForm()}catch(e){say(esc(e.message),'err');return false}
- setTimeout(()=>{drawVprofPreview();if(!quiet&&!gen&&!$v('refreshPreview').disabled)$v('refreshPreview').click()},400);
- // suite indiquée selon le niveau : « Cartes à produire » et les aperçus n'existent qu'au niveau 4 ; aux niveaux 1 à 3,
- // le bouton « Générer les cartes et le ZIP » du bloc (lancée par lui : progression et compte rendu dans #result,
- // dessous ; sinon à lancer, après une arrivée ?fpl=1)
- if(!quiet){const list={n:maps.length,list:esc(maps.map(m=>m.description).join(', '))};say(gen?K.tf(['{n} carte(s) : {list}, et le profil vertical de la route.','{n} map(s): {list}, and the vertical profile of the route.','{n} Karte(n): {list}, und das Höhenprofil der Route.','{n} mapa(s): {list}, y el perfil vertical de la ruta.'],list):K.tf(full?['{n} carte(s) prête(s) : {list}, et le profil vertical de la route. Réglages et aperçus dans « Cartes à produire », fichiers dans « Aperçus et génération ».','{n} map(s) ready: {list}, and the vertical profile of the route. Settings and previews in “Maps to produce”, files in “Previews and generation”.','{n} Karte(n) bereit: {list}, und das Höhenprofil der Route. Einstellungen und Vorschauen unter „Zu erstellende Karten“, Dateien unter „Vorschauen und Erzeugung“.','{n} mapa(s) listo(s): {list}, y el perfil vertical de la ruta. Ajustes y vistas previas en «Mapas que producir», archivos en «Vistas previas y generación».']:['{n} carte(s) prête(s) : {list}, et le profil vertical de la route. Fichiers : « Générer les cartes et le ZIP ».','{n} map(s) ready: {list}, and the vertical profile of the route. Files: “Generate the maps and the ZIP”.','{n} Karte(n) bereit: {list}, und das Höhenprofil der Route. Dateien: „Karten und ZIP erzeugen“.','{n} mapa(s) listo(s): {list}, y el perfil vertical de la ruta. Archivos: «Generar los mapas y el ZIP».'],list),'ok')}
- return true;
-}
-// mission reçue de Mes missions (autre qu'un vol « VOL » de cette page) : remplacée par le vol libre seulement après confirmation
-$v('volBuild').onclick=async()=>{if(mission&&sharedDoc?.yaml?.mission?.id!=='VOL'&&!await window.AppFramework.ask(K.t(['Remplacer la mission chargée par un vol libre construit à partir du cheminement ?','Replace the loaded mission with a free flight built from the route?','Die geladene Mission durch einen freien Flug aus der Route ersetzen?','¿Sustituir la misión cargada por un vuelo libre construido a partir de la ruta?'])))return;build(false)};
-// niveaux 1 à 3 : un seul bouton, cartes créées puis aperçu et génération des fichiers et du ZIP par le moteur du studio
-// (« Générer » du studio, masqué ici : compte rendu dans #result, sous ce bouton) ; mission reçue de Mes missions
-// (autre qu'un vol « VOL » de cette page) : ses cartes sont générées telles quelles, sans les remplacer par celles du bloc
-$v('volGenerate').onclick=async()=>{const b=$v('volGenerate'),own=!mission||sharedDoc?.yaml?.mission?.id==='VOL';if(b.disabled||(own&&!build(false,true)))return;b.disabled=true;try{await new Promise(r=>setTimeout(r,450));await $v('refreshPreview').onclick?.();if(mission&&outputMaps().length)await $v('generate').onclick()}finally{b.disabled=false}};
-// « Tracer » ou « Planificateur carburant » avant la création : la mission du vol est d'abord créée ; mission chargée (vol de
-// cette page ou mission reçue) : ils travaillent dessus sans la remplacer
-for(const id of ['vprofDraw','vprofToPlanner'])$v(id).addEventListener('click',e=>{if(mission||sharedDoc?.yaml?.mission?.id==='VOL')return;e.stopImmediatePropagation();if(build(true))setTimeout(()=>$v(id).click(),600)},true);
-// route modifiée (saisie, recherche, carte ou coupe) : mission, cartes et profil mis à jour
-const follow=()=>{saveForm();if(sharedDoc?.yaml?.mission?.id==='VOL')build(true)};
-$v('vprofRoute').addEventListener('change',follow);
-window.addEventListener('vprof-route-edited',follow);
-['volRdv','vprofCruise'].forEach(id=>$v(id).addEventListener('change',()=>{saveForm();if(sharedDoc?.yaml?.mission?.id==='VOL')build(true)}));document.querySelectorAll('[data-volmap]').forEach(i=>i.addEventListener('change',saveForm));
-loadForm();
-// mission enregistrée avant le passage de la carte de route en IFR (profil « VFR détaillé ») : recréée une fois
-if(!new URLSearchParams(location.search).has('fpl')&&sharedDoc?.yaml?.mission?.id==='VOL'&&(sharedDoc.yaml.maps||[]).some(m=>/^route_/.test(m.filename||'')&&m.profile==='vfr-detail'))(async()=>{for(let i=0;i<100&&!baseReady();i++)await new Promise(r=>setTimeout(r,200));if(baseReady()&&$v('vprofRoute').value.trim())build(true)})();
-// arrivée depuis le planificateur carburant (?fpl=1) : cartes et profil du plan de vol partagé, dès la base SIA chargée
-if(new URLSearchParams(location.search).has('fpl')){history.replaceState(null,'',location.pathname+location.hash);(async()=>{for(let i=0;i<100&&!baseReady();i++)await new Promise(r=>setTimeout(r,200));if(baseReady()&&$v('vprofRoute').value.trim())build(false)})()}
+(() => {
+  const FORM_KEY = 'mapPlannerForm:v1',
+    $v = id => document.getElementById(id),
+    K = window.RepositoryKit;
+  // niveau d'utilisation (html[data-level], posé avant le rendu) : niveau 4 = studio complet
+  const full = (+document.documentElement.dataset.level || 4) >= 4;
+  // textes du bloc, traduits à la source : ce script passe avant le cadre de page (titre, sous-titre, icônes)
+  document.querySelector('section[data-block-id="vol"]').dataset.subtitle = K.t([
+    'Rendez-vous facultatif et cartes à choisir d’après la route du bloc « Route ».',
+    'Optional rendezvous and maps to choose from the route of the “Route” block.',
+    'Optionaler Treffpunkt und auszuwählende Karten nach der Route des Blocks „Route“.',
+    'Encuentro opcional y mapas que elegir según la ruta del bloque «Ruta».'
+  ]);
+  $v('volTitle').textContent = K.t(['Cartes', 'Maps', 'Karten', 'Mapas']);
+  $v('volGenerate').textContent = K.t(['Générer les cartes et le ZIP', 'Generate the maps and the ZIP', 'Karten und ZIP erzeugen',
+    'Generar los mapas y el ZIP'
+  ]);
+  $v('volBuild').textContent = K.t(['Préparer les cartes', 'Prepare the maps', 'Karten vorbereiten', 'Preparar los mapas']);
+  // niveaux 1 à 3 : « Aperçus et génération » est rangé au niveau 4 ; le compte rendu de la génération (#result du
+  // studio, avec « Réessayer seule ») passe sous l'action du bloc, une fois au chargement (le niveau change en rechargeant)
+  if (!full) $v('volStatus').after($v('result'));
+  const say = (html, kind) => {
+    $v('volStatus').innerHTML = kind ? `<span class="${kind}">${html}</span>` : html
+  };
+  const levelFt = t => {
+    const m = /^(FL)?(\d{1,5})(FT)?$/.exec(String(t || '').toUpperCase().replace(/\s+/g, ''));
+    return m ? (m[1] ? +m[2] * 100 : +m[2]) : null
+  };
+  const coord = t => {
+    const m = /^\s*(-?\d+(?:\.\d+)?)\s*[,;| ]\s*(-?\d+(?:\.\d+)?)\s*$/.exec(t || '');
+    return m && Math.abs(+m[1]) <= 90 && Math.abs(+m[2]) <= 180 ? {
+      lat: +m[1],
+      lon: +m[2]
+    } : null
+  };
+  const baseReady = () => (aero?.aerodromes?.length || 0) > 0;
+  // plan de vol partagé avec le planificateur carburant (flightPlanShared:v1) : un seul FPL, le plus récent l'emporte
+  const FPL_KEY = 'flightPlanShared:v1',
+    readFpl = () => {
+      try {
+        return JSON.parse(localStorage.getItem(FPL_KEY) || 'null')
+      } catch {
+        return null
+      }
+    };
+
+  function saveForm() {
+    const route = $v('vprofRoute').value.trim();
+    try {
+      localStorage.setItem(FORM_KEY, JSON.stringify({
+        route,
+        rdv: $v('volRdv').value,
+        level: $v('vprofCruise').value,
+        maps: [...document.querySelectorAll('[data-volmap]')].filter(i => i.checked).map(i => i.dataset.volmap),
+        at: Date.now()
+      }));
+      if (route && readFpl()?.route !== route) localStorage.setItem(FPL_KEY, JSON.stringify({
+        route,
+        at: Date.now(),
+        by: 'maps'
+      }))
+    } catch {}
+  }
+
+  function loadForm() {
+    try {
+      const f = JSON.parse(localStorage.getItem(FORM_KEY) || 'null') || {},
+        sh = readFpl(),
+        route = sh?.route && (sh.at || 0) > (f.at || 0) ? sh.route : f.route;
+      if (route && (!$v('vprofRoute').value.trim() || sh?.route === route)) $v('vprofRoute').value = route;
+      $v('volRdv').value = f.rdv || '';
+      if (f.level && !$v('vprofCruise').value) $v('vprofCruise').value = f.level;
+      if (Array.isArray(f.maps)) document.querySelectorAll('[data-volmap]').forEach(i => {
+        i.checked = f.maps.includes(i.dataset.volmap)
+      })
+    } catch {}
+  }
+  /** Points de la route du champ (sans les points intermédiaires des voies aériennes) ; null et message si impossible. */
+  function routePoints() {
+    if (!baseReady()) {
+      say(esc(K.t([
+        'Base SIA absente de ce navigateur : bloc « Base de données SIA », « Reconstruire la base aéronautique », ou Paramètres › Maintenance.',
+        'SIA database missing from this browser: “SIA database” block, “Rebuild the aeronautical database”, or Settings › Maintenance.',
+        'SIA-Datenbank fehlt in diesem Browser: Block „SIA-Datenbank“, „Luftfahrtdatenbank neu aufbauen“, oder Einstellungen › Wartung.',
+        'Base SIA ausente de este navegador: bloque «Base de datos SIA», «Reconstruir la base aeronáutica», o Ajustes › Mantenimiento.'
+      ])), 'err');
+      return null
+    }
+    const {
+      points,
+      unknown
+    } = SiaProfile.parseRoute($v('vprofRoute').value.trim(), SiaProfile.resolver({
+      aero: aero || {}
+    }));
+    if (unknown.length) {
+      say(`Route : inconnu(s) dans la base SIA : ${esc(unknown.join(', '))}.`, 'err');
+      return null
+    }
+    const pts = points.filter(p => !p.awy);
+    if (pts.length < 2) {
+      say('Route : au moins un départ et une destination (bloc « Route »).', 'err');
+      return null
+    }
+    return pts;
+  }
+  // profils choisis à la main dans la liste des cartes (cette page) : gardés d'une création à l'autre ; les autres
+  // reprennent le profil par défaut de leur carte (route et approche : IFR ; destination, rendez-vous : VFR détaillé)
+  const userProfile = new Map();
+  document.addEventListener('change', e => {
+    const i = e.target?.dataset?.mapProfile;
+    if (i != null && mission?.maps?.[+i]) userProfile.set(mission.maps[+i].file, e.target.value)
+  }, true);
+  /** Crée (ou met à jour) la mission du vol et ses cartes ; quiet : sans message ni recentrage (route modifiée) ; gen :
+   *  la génération suit (bouton des niveaux 1 à 3), l'aperçu est relancé par elle. */
+  function build(quiet, gen) {
+    const pts = routePoints();
+    if (!pts) return false;
+    const want = new Set([...document.querySelectorAll('[data-volmap]')].filter(i => i.checked).map(i => i.dataset.volmap));
+    const idOf = (p, i) => {
+      const n = String(p.name || '').toUpperCase();
+      return /^[A-Z0-9]{2,5}$/.test(n) ? n : `P${i}`
+    };
+    let rdv = null;
+    const rt = $v('volRdv').value.trim();
+    if (rt) {
+      const c = coord(rt);
+      if (c) rdv = {
+        id: 'RDV',
+        name: 'RDV',
+        ...c
+      };
+      else {
+        const q = SiaProfile.resolver({
+          aero: aero || {}
+        })(rt);
+        if (!q) {
+          say(`Rendez-vous inconnu : ${esc(rt)}.`, 'err');
+          return false
+        }
+        rdv = {
+          id: 'RDV',
+          name: `RDV ${q.name||rt}`,
+          lat: q.lat,
+          lon: q.lon
+        }
+      }
+    }
+    const P = (p, i) => ({
+        id: idOf(p, i),
+        name: p.name || idOf(p, i),
+        lat: +p.lat.toFixed(6),
+        lon: +p.lon.toFixed(6)
+      }),
+      dep = P(pts[0], 0),
+      dest = P(pts[pts.length - 1], pts.length - 1),
+      mid = pts.slice(1, -1).map((p, i) => P(p, i + 1)),
+      ft = levelFt($v('vprofCruise').value);
+    const maps = [];
+    if (want.has('topo')) maps.push({
+      filename: `route_${dep.id}_${dest.id}.png`,
+      type: 'general',
+      description: 'Carte de la route',
+      profile: 'airways'
+    });
+    if (want.has('approche')) maps.push({
+      filename: `approche_${dest.id}.png`,
+      type: 'approche',
+      description: `Approche de ${dest.id}`,
+      centre_ref: 'DESTINATION',
+      range_km: 30
+    });
+    if (want.has('rdv') && rdv) maps.push({
+      filename: 'rendez_vous.png',
+      type: 'rdv',
+      description: 'Rendez-vous',
+      centre_ref: 'RDV',
+      range_km: 15
+    });
+    if (want.has('destination')) maps.push({
+      filename: `destination_${dest.id}.png`,
+      type: 'detail',
+      description: `Terrain de destination ${dest.id}`,
+      centre_ref: 'DESTINATION'
+    });
+    if (!maps.length) {
+      say('Aucune carte choisie.', 'err');
+      return false
+    }
+    const vp = {
+      ...(sharedDoc?.yaml?.mission?.id === 'VOL' ? sharedDoc.yaml.vertical_profile : {}),
+      route: $v('vprofRoute').value.trim(),
+      cruise: ft ? (ft >= 6000 ? `FL${Math.round(ft/100)}` : String(ft)) : undefined
+    };
+    const yaml = {
+      schema_version: '2.0',
+      mission: {
+        id: 'VOL',
+        title: `Vol ${dep.id} → ${dest.id}`,
+        type: 'Vol'
+      },
+      origin: dep,
+      destination: dest,
+      turning_points: mid,
+      ...(rdv ? {
+        rendezvous: [P(rdv, 0)]
+      } : {}),
+      vertical_profile: vp,
+      maps
+    };
+    const views = new Map((mission?.maps || []).filter(m => m._view).map(m => [m.file, m._view]));
+    for (const m of maps) {
+      const u = userProfile.get(m.filename);
+      if (u) m.profile = u;
+      const v = views.get(m.filename);
+      if (v) m.view = v
+    }
+    try {
+      const doc = SiaMission.save({
+        yaml,
+        narrative: {
+          summary: '',
+          detailed: '',
+          sections: []
+        },
+        sourceNames: []
+      }, 'planner');
+      routeCache = {};
+      useDoc(doc, true, true);
+      saveForm()
+    } catch (e) {
+      say(esc(e.message), 'err');
+      return false
+    }
+    setTimeout(() => {
+      drawVprofPreview();
+      if (!quiet && !gen && !$v('refreshPreview').disabled) $v('refreshPreview').click()
+    }, 400);
+    // suite indiquée selon le niveau : « Cartes à produire » et les aperçus n'existent qu'au niveau 4 ; aux niveaux 1 à 3,
+    // le bouton « Générer les cartes et le ZIP » du bloc (lancée par lui : progression et compte rendu dans #result,
+    // dessous ; sinon à lancer, après une arrivée ?fpl=1)
+    if (!quiet) {
+      const list = {
+        n: maps.length,
+        list: esc(maps.map(m => m.description).join(', '))
+      };
+      say(gen ? K.tf(['{n} carte(s) : {list}, et le profil vertical de la route.',
+        '{n} map(s): {list}, and the vertical profile of the route.', '{n} Karte(n): {list}, und das Höhenprofil der Route.',
+        '{n} mapa(s): {list}, y el perfil vertical de la ruta.'
+      ], list) : K.tf(full ? [
+        '{n} carte(s) prête(s) : {list}, et le profil vertical de la route. Réglages et aperçus dans « Cartes à produire », fichiers dans « Aperçus et génération ».',
+        '{n} map(s) ready: {list}, and the vertical profile of the route. Settings and previews in “Maps to produce”, files in “Previews and generation”.',
+        '{n} Karte(n) bereit: {list}, und das Höhenprofil der Route. Einstellungen und Vorschauen unter „Zu erstellende Karten“, Dateien unter „Vorschauen und Erzeugung“.',
+        '{n} mapa(s) listo(s): {list}, y el perfil vertical de la ruta. Ajustes y vistas previas en «Mapas que producir», archivos en «Vistas previas y generación».'
+      ] : ['{n} carte(s) prête(s) : {list}, et le profil vertical de la route. Fichiers : « Générer les cartes et le ZIP ».',
+        '{n} map(s) ready: {list}, and the vertical profile of the route. Files: “Generate the maps and the ZIP”.',
+        '{n} Karte(n) bereit: {list}, und das Höhenprofil der Route. Dateien: „Karten und ZIP erzeugen“.',
+        '{n} mapa(s) listo(s): {list}, y el perfil vertical de la ruta. Archivos: «Generar los mapas y el ZIP».'
+      ], list), 'ok')
+    }
+    return true;
+  }
+  // mission reçue de Mes missions (autre qu'un vol « VOL » de cette page) : remplacée par le vol libre seulement après confirmation
+  $v('volBuild').onclick = async () => {
+    if (mission && sharedDoc?.yaml?.mission?.id !== 'VOL' && !await window.AppFramework.ask(K.t([
+        'Remplacer la mission chargée par un vol libre construit à partir du cheminement ?',
+        'Replace the loaded mission with a free flight built from the route?',
+        'Die geladene Mission durch einen freien Flug aus der Route ersetzen?',
+        '¿Sustituir la misión cargada por un vuelo libre construido a partir de la ruta?'
+      ]))) return;
+    build(false)
+  };
+  // niveaux 1 à 3 : un seul bouton, cartes créées puis aperçu et génération des fichiers et du ZIP par le moteur du studio
+  // (« Générer » du studio, masqué ici : compte rendu dans #result, sous ce bouton) ; mission reçue de Mes missions
+  // (autre qu'un vol « VOL » de cette page) : ses cartes sont générées telles quelles, sans les remplacer par celles du bloc
+  $v('volGenerate').onclick = async () => {
+    const b = $v('volGenerate'),
+      own = !mission || sharedDoc?.yaml?.mission?.id === 'VOL';
+    if (b.disabled || (own && !build(false, true))) return;
+    b.disabled = true;
+    try {
+      await new Promise(r => setTimeout(r, 450));
+      await $v('refreshPreview').onclick?.();
+      if (mission && outputMaps().length) await $v('generate').onclick()
+    } finally {
+      b.disabled = false
+    }
+  };
+  // « Tracer » ou « Planificateur carburant » avant la création : la mission du vol est d'abord créée ; mission chargée (vol de
+  // cette page ou mission reçue) : ils travaillent dessus sans la remplacer
+  for (const id of ['vprofDraw', 'vprofToPlanner']) $v(id).addEventListener('click', e => {
+    if (mission || sharedDoc?.yaml?.mission?.id === 'VOL') return;
+    e.stopImmediatePropagation();
+    if (build(true)) setTimeout(() => $v(id).click(), 600)
+  }, true);
+  // route modifiée (saisie, recherche, carte ou coupe) : mission, cartes et profil mis à jour
+  const follow = () => {
+    saveForm();
+    if (sharedDoc?.yaml?.mission?.id === 'VOL') build(true)
+  };
+  $v('vprofRoute').addEventListener('change', follow);
+  window.addEventListener('vprof-route-edited', follow);
+  ['volRdv', 'vprofCruise'].forEach(id => $v(id).addEventListener('change', () => {
+    saveForm();
+    if (sharedDoc?.yaml?.mission?.id === 'VOL') build(true)
+  }));
+  document.querySelectorAll('[data-volmap]').forEach(i => i.addEventListener('change', saveForm));
+  loadForm();
+  // mission enregistrée avant le passage de la carte de route en IFR (profil « VFR détaillé ») : recréée une fois
+  if (!new URLSearchParams(location.search).has('fpl') && sharedDoc?.yaml?.mission?.id === 'VOL' && (sharedDoc.yaml.maps || []).some(m =>
+      /^route_/.test(m.filename || '') && m.profile === 'vfr-detail'))(async () => {
+    for (let i = 0; i < 100 && !baseReady(); i++) await new Promise(r => setTimeout(r, 200));
+    if (baseReady() && $v('vprofRoute').value.trim()) build(true)
+  })();
+  // arrivée depuis le planificateur carburant (?fpl=1) : cartes et profil du plan de vol partagé, dès la base SIA chargée
+  if (new URLSearchParams(location.search).has('fpl')) {
+    history.replaceState(null, '', location.pathname + location.hash);
+    (async () => {
+      for (let i = 0; i < 100 && !baseReady(); i++) await new Promise(r => setTimeout(r, 200));
+      if (baseReady() && $v('vprofRoute').value.trim()) build(false)
+    })()
+  }
 })();
 </script>
 <script src="../../shared/repository_nav.js?v=0"></script>

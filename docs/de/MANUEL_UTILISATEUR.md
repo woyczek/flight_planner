@@ -1477,7 +1477,7 @@ Unter dem Routenfeld zeigt eine Kontrollkarte die gewählte Karte mit ihrem Anze
 | „Zentrieren“ / „Automatischer Ausschnitt“ | Zum gespeicherten Ausschnitt zurückkehren / ihn vergessen zugunsten eines aus der Mission berechneten Rahmens. |
 | „⧉ Fenster“ / „⤢ Vergrößern“ | Die Karte in einem eigenen Fenster öffnen / sie vergrößern (Esc zum Zurückkehren). |
 
-„Profileinstellungen: Schnitt, Luftfahrzeug, Steigrate, Ausgaben“ stellt den Vertikalschnitt ein: Unter- und Obergrenze (0 = auto), Luftfahrzeug (Profile des Kraftstoffplaners) oder Steig- und Sinkrate, Bild `profil_vertical.png` in den Ausgaben, Zeichnen der Route auf den Karten.
+„Profileinstellungen: Schnitt, Luftfahrzeug, Steigrate, Ausgaben“ stellt den Vertikalschnitt ein: Unter- und Obergrenze (0 = auto), Luftfahrzeug (Leistungsblätter, Auswahlliste mit Suche) oder Steig- und Sinkrate, Bild `profil_vertical.png` in den Ausgaben, Zeichnen der Route auf den Karten.
 
 ### Profileinstellungen: Hintergrundkarte, Lufträume, ICAO-Symbole, Elemente
 
@@ -1788,7 +1788,7 @@ Die Statuszeile zeigt die Datei, die Anzahl der verwendeten Messungen, das Luftf
 
 ### Kopfzeile: Luftfahrzeug, Zeitraum, Trend
 
-- „Flugzeug“: „Alle“ oder ein Typ (mit seinem Symbol).
+- „Flugzeug“: „Alle“ oder ein Typ (mit seinem Symbol); Auswahlliste mit Suche, nach Kategorie.
 - „Zeitraum“: „Alle Daten“, „Heute“, „Letzte 7 Tage“, „Letzte 30 Tage“, „Aktueller Monat“, „Aktuelles Jahr“, „Benutzerdefinierter Zeitraum“, mit Knöpfen zum Zurückgehen, Erweitern oder Vorgehen. Der Zeitraum wird für jede Datei gespeichert.
 - „Trendmethode“: „Absolut / Asymptote“, „Erste 25 % ↔ Letzte 25 %“ oder „Gleitender Mittelwert“ (mit „Glättung“: 5 oder 10).
 - „Drucken / PDF“: druckt die Seite.

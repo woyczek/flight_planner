@@ -1478,7 +1478,7 @@ Bajo el campo de ruta, un mapa de control muestra el mapa elegido con su perfil 
 | «Recentrar» / «Encuadre automático» | Volver al encuadre guardado / olvidarlo para usar un encuadre calculado a partir de la misión. |
 | «⧉ Ventana» / «⤢ Ampliar» | Abrir el mapa en una ventana aparte / ampliarlo (Esc para volver). |
 
-«Ajustes del perfil: corte, aeronave, variómetro, salidas» configura el corte vertical: suelo y techo (0 = auto), aeronave (perfiles del planificador de combustible) o régimen de ascenso y de descenso, imagen `profil_vertical.png` en las salidas, trazado de la ruta en los mapas.
+«Ajustes del perfil: corte, aeronave, variómetro, salidas» configura el corte vertical: suelo y techo (0 = auto), aeronave (fichas de rendimiento, lista desplegable con búsqueda) o régimen de ascenso y de descenso, imagen `profil_vertical.png` en las salidas, trazado de la ruta en los mapas.
 
 ### Ajustes del perfil: mapa de fondo, espacios, símbolos OACI, elementos
 
@@ -1788,7 +1788,7 @@ La línea de estado recuerda el archivo, el número de mediciones utilizadas, la
 
 ### Cabecera: aeronave, periodo, tendencia
 
-- «Aeronave»: «Todos», o un tipo (con su icono).
+- «Aeronave»: «Todos», o un tipo (con su icono); lista desplegable con búsqueda, por categoría.
 - «Periodo»: «Todas las fechas», «Hoy», «Últimos 7 días», «Últimos 30 días», «Mes en curso», «Año en curso», «Periodo personalizado», con botones para retroceder, ampliar o avanzar. El periodo se memoriza para cada archivo.
 - «Método de tendencia»: «Absoluto / Asíntota», «Primer 25 % ↔ Último 25 %» o «Media móvil» (con «Suavizado»: 5 o 10).
 - «Imprimir / PDF»: imprime la página.

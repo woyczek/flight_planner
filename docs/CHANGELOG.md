@@ -21,6 +21,27 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   page header. Formats checked in `docs/technique/V2_FABLE.md` § 14 (Navigraph and ChartFox to be confirmed signed in).
   Pilot manual (4 languages).
 
+### Changed
+
+- **Aircraft picker in the mission report, My aircraft, Landing and the vertical profile** (`shared/aircraft_picker.js`,
+  `shared/mission_core/form.js`, `assist.js`, `shared/equipment_editor.js`, Landing Performance,
+  `shared/carto/vertical_profile.js`) — the shared drop-down list with search (5.3.0, Fuel and Performance sheets)
+  now serves:
+  - mission report (16 families): the registration and ICAO type fields of each aircraft, in field mode instead of
+    the browser's datalist — same values (`suggest`, cross-filtering), same effects (a choice is an entry: `input`
+    then `change`, hence known aircraft, auto-filled values and assistants), silhouettes and categories
+    (`AircraftDBIcons` now loaded by the report pages);
+  - My aircraft (Settings › My profile) and the "Add an aircraft" window: `attachSuggest` is the picker in field mode
+    (results of `makeSearch` kept as scored, grouped by origin — fleet, this computer's base, ICAO list —, no entry
+    active by default so Enter still adds the typed text, list closed when empty); its own list and CSS are removed;
+  - Landing Performance: the "Aircraft" button ("All", then the types by category; the hidden select keeps the
+    value); the former menu, its CSS and `aircraftGroupOf` are removed;
+  - Flight maps and map studio, vertical profile: `SiaProfile.aircraftChoice` replaces the copy of
+    `fillVprofAircraft` in both pages; the choice is shown as soon as the page opens.
+  The component keeps one set of document listeners for all pickers and puts its list in the page only while open; a
+  field opened by a click shows the whole list with its value highlighted; new options `limit`, `openOnClick`,
+  `filter: false`, `activeFirst: false`, `hideEmpty` (docs/technique/FRAMEWORK.md).
+
 ## [5.3.0] — 2026-10-19
 
 The mission report is rebuilt around what a pilot does: one "Prefill ▾" menu gathers every source (a mission order,
@@ -214,15 +235,7 @@ names) lives once in the shared framework.
   with their reason (docs/technique/FRAMEWORK.md). Fuel's "Aircraft" button uses it (sheets: "My aircraft" first,
   then by category from `AircraftCatalog.classify`); the former home-made menu and its CSS are removed. Performance
   sheets: the "Aircraft" selector of the header (sheets and types without a sheet, the one in use shown first when it
-  is not in the list) replaces its native `<select>`; `aircraftGroups` and `profileVisual` are removed. Mission
-  report (16 families): the registration and ICAO type fields of each aircraft use it in field mode instead of the
-  browser's datalist — same values (`suggest`, cross-filtering), same effects (a choice is an entry: `input` then
-  `change`, hence known aircraft, auto-filled values and assistants), silhouettes and categories (`AircraftDBIcons`
-  now loaded by the report pages). The component keeps one set of document listeners for all pickers and puts its
-  list in the page only while open; a field opened by a click shows the whole list with its value highlighted. My
-  aircraft (Settings › My profile) and the "Add an aircraft" window: `attachSuggest` is now the picker in field mode
-  (results of `makeSearch` kept as scored, grouped by origin — fleet, this computer's base, ICAO list —, no entry
-  active by default so Enter still adds the typed text, list closed when empty); its own list and CSS are removed.
+  is not in the list) replaces its native `<select>`; `aircraftGroups` and `profileVisual` are removed.
   `EquipmentEditor.makeSearch` now scores with the shared `AircraftPicker.match`.
 - **Mission report: fourth step "Flight details"** (`shared/mission_core/core.js`, `core.css`) — folded by default, it
   gathers Navigation, Environment / weather, Timed events, Legs / rotations and Capabilities; opened, it shows them at
